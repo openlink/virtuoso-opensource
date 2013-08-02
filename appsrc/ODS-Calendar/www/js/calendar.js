@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2007 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -826,13 +826,17 @@ function dismissReminder(prefix, mode) {
 	reminderDialog.hide ();
 }
 
-function davBrowse(fld) {
+function davBrowse(fld, folders) {
+	/* load stylesheets */
+	OAT.Style.include("grid.css");
+	OAT.Style.include("webdav.css");
+
 	var options = {
 		mode : 'browser',
-		onConfirmClick : function(path, fname) {
-			$(fld).value = '/DAV' + path + fname;
-		}
+    onConfirmClick: function(path, fname) {$(fld).value = '/DAV' + path + fname;}
                 };
+  if (!folders) {folders = false;}
+  OAT.WebDav.options.foldersOnly = folders;
   OAT.WebDav.open(options);
 }
 
@@ -864,15 +868,15 @@ function destinationChange(obj, actions) {
 			if (o)
 				OAT.Dom.hide(o);
 			}
-  }
+    }
 	if (actions.show) {
     var a = actions.show;
 		for ( var i = 0; i < a.length; i++) {
       var o = $(a[i])
 			if (o)
 				OAT.Dom.show(o);
+    }
   }
-	}
 	if (actions.clear) {
     var a = actions.clear;
 		for ( var i = 0; i < a.length; i++) {
@@ -881,7 +885,39 @@ function destinationChange(obj, actions) {
 				o.value = '';
 			}
     }
+	if (actions.exec) {
+		var a = actions.exec;
+		for ( var i = 0; i < a.length; i++) {
+			a[i](obj);
+		}
+	}
+}
+
+function srcImportLabel(obj) {
+  var srcLabel = $('srcLabel');
+  if (!srcLabel)
+    return;
+  if ($('icSource_0').checked)
+    srcLabel.innerHTML = 'Local File Name (.ics)';
+  if ($('icSource_1').checked)
+    srcLabel.innerHTML = 'WebDAV File URL (.ics)';
+  if ($('icSource_3').checked)
+    srcLabel.innerHTML = 'CalDAV URL';
+  if ($('icSource_2').checked)
+    srcLabel.innerHTML = 'File URL (.ics)';
   }
+
+function excLabel(obj) {
+  var srcLabel = $('excLabel');
+  if (!srcLabel)
+    return;
+  if ($('exc_options_type_1').checked)
+    srcLabel.innerHTML = 'WebDAV File URL (.ics)';
+  if ($('exc_options_type_3').checked)
+    srcLabel.innerHTML = 'CalDAV URL';
+  if ($('exc_options_type_2').checked)
+    srcLabel.innerHTML = 'File URL (.ics)';
+}
 
 var CAL = new Object();
 

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -94,7 +94,7 @@ buf_cancel_write (buffer_desc_t * buf)
    * Thus the bd_iq of an occupied buffer can be async reset by another thread. */
   io_queue_t * iq = buf->bd_iq;
   if (buf->bd_tree)
-    ASSERT_OUTSIDE_MAP (buf->bd_tree, buf->bd_page);
+      ASSERT_OUTSIDE_MAP (buf->bd_tree, buf->bd_page);
 
   /* Note that this can block waiting for IQ which is owned by another
   thread in iq_schedule. The thread in iq_schedule can block on this
@@ -216,7 +216,7 @@ iq_schedule (buffer_desc_t ** bufs, int n)
 	      ipoint = ipoint->bd_iq_next;
 	      goto next_ipoint;
 	    }
-	  else if (BUF_SORT_DP (ipoint) == BUF_SORT_DP (buf))
+	  else if (ipoint->bd_physical_page == buf->bd_physical_page && ipoint->bd_storage == buf->bd_storage) /* do the assert check without the sort offset.  Can be the sort offset changes on another thread due to dbs size changes so can have a false hit */
 	    GPF_T1 ("the same buffer can't be scheduled twice for io");
 	  else
 	    {
@@ -263,8 +263,6 @@ long tc_aio_seq_write;
 #ifdef HAVE_AIO
 
 #include <aio.h>
-
-
 
 #define IQ_LISTIO
 
@@ -648,7 +646,7 @@ iq_clear (void)
 
 
 int iq_on = 1;
-int enable_mt_sync = 0;
+int enable_mt_sync = 1;
 
 
 void
@@ -657,10 +655,12 @@ iq_shutdown (int mode)
   int all_empty, inx;
   int n_iq = dk_set_length (mti_io_queues);
   static buffer_desc_t * sync_bufs;
-  if (!sync_bufs)
+  if (!sync_bufs || box_length (sync_bufs) < sizeof (buffer_desc_t) * n_iq)
     {
       int inx = 0;
-      sync_bufs = (buffer_desc_t*)dk_alloc (sizeof (buffer_desc_t) * n_iq);
+      if (sync_bufs)
+	dk_free_box ((caddr_t)sync_bufs);
+      sync_bufs = (buffer_desc_t*)dk_alloc_box (sizeof (buffer_desc_t) * n_iq, DV_BIN);
       memset (sync_bufs, 0, n_iq * sizeof (buffer_desc_t));
       DO_SET (io_queue_t *, iq, &mti_io_queues)
 	{
@@ -814,6 +814,7 @@ iq_loop (io_queue_t * iq)
 	  iq->iq_action_ctr += 2; /* counts for 3 if syncing for cpt */
 	  LEAVE_IOQ (iq);
 	  is_read_pending++;
+	  BUF_PW (buf);
 	  buf_disk_read (buf);
 	  is_read_pending--;
 	  DBG_PT_READ (buf, ((lock_trx_t*) NULL));
@@ -1061,6 +1062,11 @@ dbs_mtwrite_init (dbe_storage_t * dbs)
 }
 
 
+extern semaphore_t * bp_flush_sem;
+extern du_thread_t * bp_flush_thr;
+void bp_flush_thread_func (void * arg);
+
+
 void
 mt_write_init ()
 {
@@ -1074,6 +1080,8 @@ mt_write_init ()
     }
   END_DO_SET();
   dbs_mtwrite_init (wi_inst.wi_temp);
+  bp_flush_sem = semaphore_allocate (0);
+  bp_flush_thr = PrpcThreadAllocate ((thread_init_func) bp_flush_thread_func, 100000, NULL)->dkt_process;
 }
 
 

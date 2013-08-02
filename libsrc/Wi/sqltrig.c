@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -216,7 +216,7 @@ trig_call_1 (query_t * qr, caddr_t * qst, state_slot_t ** args, dbe_table_t *cal
 	        col->col_id, trig_key, qst);
 
 	  if (cast_value)
-	    qst_set (qst, args[inx + calling_key_n_parts], cast_value);
+	    qst_set_with_ref (qst, args[inx + calling_key_n_parts], cast_value);
 
 	  pars[inx + trig_key_n_parts] = (caddr_t) qst_address (qst, args[inx + calling_key_n_parts]);
 	}
@@ -370,7 +370,6 @@ trig_wrapper (caddr_t * qst, state_slot_t ** args, dbe_table_t * tb,
   if (!instead)
     {
       qn_run (qn, qst, qst);
-      cl_trig_flush (qn_run, qn, qst);
       ROW_AUTOCOMMIT (qi);
     }
   for (inx = 0; inx < fill; inx++)

@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -122,9 +122,9 @@ asciistr_upc_copy (char *to, const char *from, int len)
    lowercase letters, whether Western Latin-1, Baltic, Turkish, Greek,
    Cyrillic. Only certain special letters like Polish crossed L and l
    are outside of 192-256 range.
-   else if (fc == 'ö' ) fc = 'Ö' ; // o umlaut
-   else if (fc == 'ä' ) fc ='Ä' ; // a umlaut
-   else if (fc == 'å') fc = 'Å'; // swedish o - educated guess
+   else if (fc == 'ï¿½' ) fc = 'ï¿½' ; // o umlaut
+   else if (fc == 'ï¿½' ) fc ='ï¿½' ; // a umlaut
+   else if (fc == 'ï¿½') fc = 'ï¿½'; // swedish o - educated guess
  */
 	(((unsigned char *) to)[inx]) = fc;
     }
@@ -1841,7 +1841,7 @@ static char *vt_find_index_text =
 static char *vt_create_text_index_text =
 "create procedure vt_create_text_index (in tb varchar, in col varchar,\n"
 "				       in use_id varchar, in is_xml integer, in defer_generation integer,"
-"				      in obd any, in _func any, in _lang varchar := \'*ini*\', in _enc varchar := \'*ini*\')\n"
+"				      in obd any, in _func any, in _lang varchar := \'*ini*\', in _enc varchar := \'*ini*\', in silent int := 0)\n"
 "{\n"
 "  declare str, text_id_col, kn, vt_name, pk_suits, _colname, func, ufunc, vi_column, text_id_col_type varchar;\n"
 "  declare _coldtp smallint;\n"
@@ -1858,7 +1858,7 @@ static char *vt_create_text_index_text =
 "      signal (\'42S02\', sprintf (\'No table \\\'%s\\\' in create text index\', tb), \'FT021\');\n"
 "  }\n"
 "  if (exists (select 1 from DB.DBA.SYS_VT_INDEX where 0 = casemode_strcmp (VI_TABLE,  tb))) {\n"
-"    if (is_xml = 2) \n"
+"    if (is_xml = 2 or silent) \n"
 "      return; \n"
 "    else\n"
 "      signal (\'42S01\', \'Only one text index allowed per table\', \'FT022\');\n"
@@ -2000,14 +2000,14 @@ static char *vt_create_text_index_text =
 "	} \n "
 "    }\n"
 "  vt_name := concat (tb, \'_\', col, \'_WORDS\');\n"
-/*"  str := sprintf (\'create table \"%I\".\"%I\".\"%I\" (VT_WORD varchar, VT_D_ID any, VT_D_ID_2 any, VT_DATA varchar, VT_LONG_DATA long varchar, primary key (VT_WORD, VT_D_ID))\',\n"*/
+/*"  str := sprintf (\'create table \"%I\".\"%I\".\"%I\" (VT_WORD varchar, VT_D_ID any, VT_D_ID_2 any, VT_DATA varchar, VT_LONG_DATA long varchar, primary key (VT_WORD, VT_D_ID) not column)\',\n"*/
 /* the PK can be bigint */
 "  is_bigint_id := DB.DBA.col_of_type (tb, text_id_col, 247);\n"
 "  is_int_id := DB.DBA.col_of_type (tb, text_id_col, 189); \n"
 "  if (is_bigint_id = 0 and is_int_id = 0)"
 "    signal (\'22023\', concat (\'the column \', text_id_col, \' is not an integer\'), \'FT024\'); \n"
 "  text_id_col_type := case when is_bigint_id then \'BIGINT\' when is_int_id then \'INTEGER\' else \'ANY\' end;\n"
-"  str := sprintf (\'create table \"%I\".\"%I\".\"%I\" (VT_WORD varchar, VT_D_ID %s, VT_D_ID_2 %s, VT_DATA varchar, VT_LONG_DATA long varchar, primary key (VT_WORD, VT_D_ID))\',\n"
+"  str := sprintf (\'create table \"%I\".\"%I\".\"%I\" (VT_WORD varchar, VT_D_ID %s, VT_D_ID_2 %s, VT_DATA varchar, VT_LONG_DATA long varchar, primary key (VT_WORD, VT_D_ID) not column)\',\n"
 "  name_part (vt_name, 0), name_part (vt_name, 1), name_part (vt_name, 2), text_id_col_type, text_id_col_type);\n"
 "  DB.DBA.execstr (str);\n"
 "  if (is_part) { \n" /* cluster options */
@@ -2083,7 +2083,7 @@ static char *vt_free_text_proc_gen_text =
 "{\n"
 "  declare data_table, words_table, full_words_table, text_value, data_table_suffix, dav_cond, theuser, _type_col varchar;\n"
 "  declare _flag_val integer;\n"
-"  declare dbpref varchar;\n"
+"  declare dbpref, dbpref1 varchar;\n"
 "  declare _lang_enc_args varchar;\n"
 "  theuser := user; \n"
 "  if (theuser = 'dba') theuser := 'DBA'; \n"
@@ -2092,6 +2092,7 @@ static char *vt_free_text_proc_gen_text =
 "  data_table := name_part (_data_table, 2);\n"
 "  data_table_suffix := concat (name_part (_data_table, 0), \'_\', name_part (_data_table, 1), \'_\', name_part (_data_table, 2));\n"
 "  dbpref := sprintf ('\"%I\".\"%I\".',  name_part (_data_table, 0),  name_part (_data_table, 1));\n"
+"  dbpref1 := sprintf ('%s.%s.',  name_part (_data_table, 0),  name_part (_data_table, 1));\n"
 "  data_table_suffix := DB.DBA.SYS_ALFANUM_NAME (data_table_suffix);\n"
 "  words_table := concat (data_table, \'_\', _data_column, \'_WORDS\');\n"
 "  full_words_table := concat (_data_table, \'_\', _data_column, \'_WORDS\');\n"
@@ -2250,7 +2251,19 @@ static char *vt_free_text_proc_gen_text =
 "	   sprintf (\' if (0 = in_batch and 0 = sys_stat (\\\'cl_run_local_only\\\')) "
 " 	         { \\\n %s\"VT_BATCH_REAL_PROCESS_CL_%s\" (invd, doc_id);\\\n return;\\\n }\', dbpref, data_table_suffix) "
 "	   else \'\' end, \n"
-"	   sprintf ( \'    %s\"VT_BATCH_REAL_PROCESS_1_%s\" (invd, doc_id);\', dbpref, data_table_suffix), \n"
+"	   sprintf ( \'declare len, qp, clen, part, inx, enab int; len := length (invd) / 2; qp := sys_stat (''enable_qp''); enab := sys_stat (''enable_mt_ft_inx''); "
+"		       if (0 = sys_stat (\\\'cl_run_local_only\\\') or enab = 0 or qp < 2 or len < 200) { %s\"VT_BATCH_REAL_PROCESS_1_%s\" (invd, doc_id); } "
+"                      else { \\\n"
+"			  declare aq any; \\\n"
+"			  gvector_sort (invd, 2, 0, 1); \\\n"
+"			  aq := async_queue (qp, 8);  clen := 2 * (len / qp); \\\n"
+"			  for (inx := 0; inx < qp and (inx * qp) < len; inx := inx + 1) { \\\n"
+"			     part := subseq (invd, clen * inx, clen * (inx + 1)); \\\n"
+/*"			     dbg_obj_print ('' from '', clen * inx, '' to '', clen * (inx + 1) , '' part '' , length (part), '' len '', len); \\\n"*/
+"			     aq_request (aq, ''%sVT_BATCH_REAL_PROCESS_1_%s'', vector (part, doc_id)); \\\n"
+"			  } \\\n"
+"			  aq_wait_all (aq); \\\n"
+"                      }\', dbpref, data_table_suffix, dbpref1, data_table_suffix), \n"
 " \'	 }\');\n"
 "  DB.DBA.execstr (text_value);\n"
 "\n"
@@ -2650,7 +2663,7 @@ static char *vt_create_update_log_text =
 "  cl_opts := DB.DBA.VT_GET_CLUSTER_COL_OPTS (tablename, key_name, keycol); \n"
 "  commands := vector ( "
 /* KFU_TYPE is the type of PK, can be bigint */
-"      case when create_log_tb then \'create table <DB>.<DBA>.\"VTLOG_<VTLOGSUFF>\" (\"VTLOG_<KFU>\" <KFU_TYPE> not null primary key, SNAPTIME datetime, DMLTYPE varchar (1), VT_GZ_WORDUMP long varbinary, VT_OFFBAND_DATA long varchar)\\\n\' else NULL end, "
+"      case when create_log_tb then \'create table <DB>.<DBA>.\"VTLOG_<VTLOGSUFF>\" (\"VTLOG_<KFU>\" <KFU_TYPE> not null primary key (not column), SNAPTIME datetime, DMLTYPE varchar (1), VT_GZ_WORDUMP long varbinary, VT_OFFBAND_DATA long varchar)\\\n\' else NULL end, "
 "      case when is_part then \'ALTER INDEX \"VTLOG_<VTLOGSUFF>\" on <DB>.<DBA>.\"VTLOG_<VTLOGSUFF>\" partition <CL_PART> (\"VTLOG_<KFU>\" <KFU_TYPE> <CL_OPTS>)\' else NULL end,"
 "	either (isnull (is_pk), "
 "	 \'create trigger \"<SUFF>_VTI_log\" after insert on <DB>.<DBA>.<TB>  ORDER 2 { \\\n"
@@ -2925,6 +2938,13 @@ static char *vt_create_update_log_text =
 "	     txn_error (6); \\\n"
 "	     signal (\\\'22008\\\', \\\'Invalid XML supplied for an validating free text index of <DB>.<DBA>.<TB>:\\\n\\\' || __SQL_MESSAGE, \\\'FT030\\\'); \\\n"
 "       }\', "
+// ZIV
+"       \'create procedure <DB>.<DBA>.\"VT_INC_INDEX_SLICE_<SUFF>\" (in slid int)\n"
+"       {\n"
+"         cl_set_slice (\\'<DB_1>.<DBA_1>.<TBU>\\', \\'<TBU>\\', slid);\n"
+"         <DB>.<DBA>.\"VT_INC_INDEX_1_<SUFF>\" ();\n"
+"       }\', \n"
+// ZIV end.
 "	\'create procedure <DB>.<DBA>.\"VT_INC_INDEX_<SUFF>\" () \n"
 "	{ \n"
 "	  if (0 = <IS_CL>) \n"
@@ -2932,13 +2952,20 @@ static char *vt_create_update_log_text =
 "	  else \n"
 "	    DB.DBA.CL_EXEC (\\'<DB>.<DBA>.\"VT_INC_INDEX_SRV_<SUFF>\" ()\\'); \n"
 "	}\', \n"
+// ZIV
 "	\'create procedure <DB>.<DBA>.\"VT_INC_INDEX_SRV_<SUFF>\" () \n"
 "	{ \n"
-"	  declare aq any; \n"
-"	  aq := async_queue (1); \n"
-"	  aq_request (aq, \\'<DB_1>.<DBA_1>.VT_INC_INDEX_1_<SUFF_1>\\', vector ()); \n"
+"	  declare aq, slices any; \n"
+"         declare inx int; \n"
+"	  if (not exists (select 1 from DB.DBA.SYS_CLUSTER where CL_NAME = \\'ELASTIC\\')) { aq := async_queue (1); \n"
+"	  aq_request (aq, \\'<DB_1>.<DBA_1>.VT_INC_INDEX_1_<SUFF_1>\\', vector ()); } else { \n"
+"	  aq := async_queue (sys_stat (\\'enable_qp\\')); \n"
+"         slices := cl_hosted_slices (\\'ELASTIC\\', sys_stat (\\'cl_this_host\\'));\n"
+"         for (inx := 0; inx < length (slices); inx := inx + 1) \n"
+"	    aq_request (aq, \\'<DB_1>.<DBA_1>.VT_INC_INDEX_SLICE_<SUFF>\\', vector (slices[inx])); }\n"
 "	  aq_wait_all (aq); \n"
 "	}\', \n"
+// ZIV end.
 "	\'create procedure <DB>.<DBA>.\"VT_INC_INDEX_1_<SUFF>\" () \n"
 "	{ \n"
 "	  declare _vtlog_id, _data, _dmltype, _vt_wordump, _vt_offband_data, vtb, decses, dav_res_type any; \n"
@@ -3281,6 +3308,7 @@ static char *vt_clear_free_text_index_text =
 "      _datatable := DB.DBA.SYS_ALFANUM_NAME (replace (datatable, \'.\', \'_\')); \n"
 "      exec (sprintf (\'drop procedure \"%I\".\"%I\".\"VT_INDEX_%s\"\', name_part (datatable, 0), name_part (datatable, 1), _datatable), stat, msg); \n"
 "      exec (sprintf (\'drop procedure \"%I\".\"%I\".\"VT_INDEX_1_%s\"\', name_part (datatable, 0), name_part (datatable, 1), _datatable), stat, msg); \n"
+"      exec (sprintf (\'drop procedure \"%I\".\"%I\".\"VT_INC_INDEX_SLICE_%s\"\', name_part (datatable, 0), name_part (datatable, 1), _datatable), stat, msg); \n"
 "      exec (sprintf (\'drop procedure \"%I\".\"%I\".\"VT_BATCH_PROCESS_%s\"\', name_part (datatable, 0), name_part (datatable, 1), _datatable), stat, msg); \n"
 "      exec (sprintf (\'drop procedure \"%I\".\"%I\".\"VT_HITS_%I\"\', name_part (datatable,0), name_part (datatable, 1), name_part (datatable, 2)), stat, msg); \n"
 "      exec (sprintf (\'drop procedure \"%I\".\"%I\".\"VT_BATCH_REAL_PROCESS_%s\"\', name_part (datatable, 0), name_part (datatable, 1), _datatable), stat, msg); \n"

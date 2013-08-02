@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2009 OpenLink Software
+ *  Copyright (C) 2009-2013 OpenLink Software
  *
  *  See LICENSE file for details.
  *
@@ -16,40 +16,40 @@
 // XXX move defaultPrefixes to be handled by defaults.js
 
 window.defaultPrefixes = [
-				 		 {"label":'foaf', "uri":'http://xmlns.com/foaf/0.1/'},
-						 {"label":'owl', "uri":'http://www.w3.org/2002/07/owl#'},
-						 {"label":'sioct', "uri":'http://rdfs.org/sioc/types#'},
-						 {"label":'sioc', "uri":'http://rdfs.org/sioc/ns#'},
-						 {"label":'ibis', "uri":'http://purl.org/ibis#',"hidden":1},
-						 {"label":'conf', "uri":'http://www.mindswap.org/~golbeck/web/www04photo.owl#'},
-						 {"label":'scot', "uri":'http://scot-project.org/scot/ns'},
-						 {"label":'ical', "uri":'http://www.w3.org/2002/12/cal/icaltzd#'},
-						 {"label":'mo', "uri":'http://purl.org/ontology/mo/'},
-						 {"label":'annotation', "uri":'http://www.w3.org/2000/10/annotation-ns#'},
-						 {"label":'rdfs', "uri":'http://www.w3.org/2000/01/rdf-schema#'},
-						 {"label":'rdf', "uri":'http://www.w3.org/1999/02/22-rdf-syntax-ns#'},
-						 {"label":'dcterms', "uri":'http://purl.org/dc/terms/'},
-						 {"label":'dc', "uri":'http://purl.org/dc/elements/1.1/'},
-						 {"label":'cc', "uri":'http://web.resource.org/cc/'},
-						 {"label":'geo', "uri":'http://www.w3.org/2003/01/geo/wgs84_pos#'},
+    {"label":'foaf', "uri":'http://xmlns.com/foaf/0.1/'},
+    {"label":'owl', "uri":'http://www.w3.org/2002/07/owl#'},
+    {"label":'sioct', "uri":'http://rdfs.org/sioc/types#'},
+    {"label":'sioc', "uri":'http://rdfs.org/sioc/ns#'},
+    {"label":'ibis', "uri":'http://purl.org/ibis#',"hidden":1},
+    {"label":'conf', "uri":'http://www.mindswap.org/~golbeck/web/www04photo.owl#'},
+    {"label":'scot', "uri":'http://scot-project.org/scot/ns'},
+    {"label":'ical', "uri":'http://www.w3.org/2002/12/cal/icaltzd#'},
+    {"label":'mo', "uri":'http://purl.org/ontology/mo/'},
+    {"label":'annotation', "uri":'http://www.w3.org/2000/10/annotation-ns#'},
+    {"label":'rdfs', "uri":'http://www.w3.org/2000/01/rdf-schema#'},
+    {"label":'rdf', "uri":'http://www.w3.org/1999/02/22-rdf-syntax-ns#'},
+    {"label":'dcterms', "uri":'http://purl.org/dc/terms/'},
+    {"label":'dc', "uri":'http://purl.org/dc/elements/1.1/'},
+    {"label":'cc', "uri":'http://web.resource.org/cc/'},
+    {"label":'geo', "uri":'http://www.w3.org/2003/01/geo/wgs84_pos#'},
     {"label":'georss',     "uri":'http://www.georss.org/georss/'},
-						 {"label":'rss', "uri":'http://purl.org/rss/1.0/'},
-						 {"label":'skos', "uri":'http://www.w3.org/2008/05/skos#'},
-						 {"label":'vs', "uri":'http://www.w3.org/2003/06/sw-vocab-status/ns#'},
-						 {"label":'opo',"uri":'http://ggg.milanstankovic.org/opo/ns/'},
-						 {"label":'nco',"uri":'http://www.semanticdesktop.org/ontologies/nco/'},
-						 {"label":'lsdis',"uri":'http://lsdis.cs.uga.edu/projects/meteor-s/wsdl-s/ontologies/LSDIS_FInance.owl'},
-						 {"label":'nao',"uri":'http://www.semanticdesktop.org/ontologies/nao/'},
-						 {"label":'cohere',"uri":'http://cohere.open.ac.uk/ontology/cohere.owl#'},
-						 {"label":'nfo',"uri":'http://www.semanticdesktop.org/ontologies/nfo/'},
-						 {"label":'nmo',"uri":'http://www.semanticdesktop.org/ontologies/nmo/'},
-						 {"label":'nie',"uri":'http://www.semanticdesktop.org/ontologies/nie/'},
-						 {"label":'nid3',"uri":'http://www.semanticdesktop.org/ontologies/nid3/'},
+    {"label":'rss', "uri":'http://purl.org/rss/1.0/'},
+    {"label":'skos', "uri":'http://www.w3.org/2008/05/skos#'},
+    {"label":'vs', "uri":'http://www.w3.org/2003/06/sw-vocab-status/ns#'},
+    {"label":'opo',"uri":'http://ggg.milanstankovic.org/opo/ns/'},
+    {"label":'nco',"uri":'http://www.semanticdesktop.org/ontologies/nco/'},
+    {"label":'lsdis',"uri":'http://lsdis.cs.uga.edu/projects/meteor-s/wsdl-s/ontologies/LSDIS_FInance.owl'},
+    {"label":'nao',"uri":'http://www.semanticdesktop.org/ontologies/nao/'},
+    {"label":'cohere',"uri":'http://cohere.open.ac.uk/ontology/cohere.owl#'},
+    {"label":'nfo',"uri":'http://www.semanticdesktop.org/ontologies/nfo/'},
+    {"label":'nmo',"uri":'http://www.semanticdesktop.org/ontologies/nmo/'},
+    {"label":'nie',"uri":'http://www.semanticdesktop.org/ontologies/nie/'},
+    {"label":'nid3',"uri":'http://www.semanticdesktop.org/ontologies/nid3/'},
     {"label":'kuaba',      "uri":'http://www.tecweb.inf.puc-rio.br/ontologies/kuaba/'},
-						 {"label":'wot', "uri":'http://xmlns.com/wot/0.1/',"hidden":1},
-						 {"label":'xhtml', "uri":'http://www.w3.org/1999/xhtml',"hidden":1},
-						 {"label":'atom', "uri":'http://atomowl.org/ontologies/atomrdf#',"hidden":1},
-						 {"label":'dataview', "uri":'http://www.w3.org/2003/g/data-view#',"hidden":1},
+    {"label":'wot', "uri":'http://xmlns.com/wot/0.1/',"hidden":1},
+    {"label":'xhtml', "uri":'http://www.w3.org/1999/xhtml',"hidden":1},
+    {"label":'atom', "uri":'http://atomowl.org/ontologies/atomrdf#',"hidden":1},
+    {"label":'dataview', "uri":'http://www.w3.org/2003/g/data-view#',"hidden":1},
     {"label":'xsd', "uri":'http://www.w3.org/2001/XMLSchema#',"hidden":1},
     {"label":'gr',         "uri":'http://purl.org/goodrelations/v1#'},
     {"label":'dbo',        "uri":'http://dbpedia.org/ontology/'},
@@ -200,8 +200,9 @@ var QueryExec = function(optObj) {
 		defaultGraph:false,
 		namedGraphs:[],
 		sponge:false,
-	maxrows:false,
-	sourceQuery:false /* before macro expansion */
+		maxrows:false,
+		timeout:false,
+		sourceQuery:false /* before macro expansion */
     };
 
 	this.cache = [];
@@ -211,31 +212,78 @@ var QueryExec = function(optObj) {
 	this.mini = false;
     	this.miniplnk = false;
     	this.mRDFCtr = false;
+	this.anchor_pref_c = false;
+
+// 
+// return closure to handle uri format change
+
+	this.makeUriFmtChangeHandler = function(self, ctl) {
+		return function (e) {
+			iSPARQL.Settings.raw_iris = ctl.checked;
+			self.draw(true);
+		}
+	}
+	
+	this.makeAnchorPrefs = function () {
+		var anchor_pref_c = OAT.Dom.create("div", {className: "anchor_pref_c"});
+		var anchor_label = OAT.Dom.create("label", {htmlFor: "anchor_pref_sel"});
+		anchor_label.innerHTML = "Dereferencing:";
+		anchor_pref_sel = OAT.Dom.create ("select", {id: "anchor_pref_sel"});
+		anchor_pref_sel.options.add (new Option ("SPARQL Describe",0));
+		anchor_pref_sel.options.add (new Option ("SELECT IRI as S or O",1));
+		anchor_pref_sel.options.add (new Option ("GET Page",2));
+		anchor_pref_sel.options.add (new Option ("Use Virtuoso Web Service",3)); 
+		anchor_pref_sel.selectedIndex = iSPARQL.Settings.anchorMode;
+
+		OAT.Event.attach(anchor_pref_sel, 'change', function () {
+			iSPARQL.Settings.anchorMode = ($('anchor_pref_sel').selectedIndex);
+		});
+
+		var uri_fmt_c = OAT.Dom.create ("span", {id: "uri_fmt_ctr"});
+		var uri_fmt_label = OAT.Dom.create("label", {htmlFor: "uri_fmt_ckb"});
+		uri_fmt_label.innerHTML = "Show Raw URIs";
+		uri_fmt_ckb = OAT.Dom.create ("input", {id: "uri_fmt_ckb"});
+		uri_fmt_ckb.type = "checkbox";
+		uri_fmt_ckb.checked = iSPARQL.Settings.raw_iris;
+
+		OAT.Event.attach(uri_fmt_ckb, 'change', self.makeUriFmtChangeHandler (self, uri_fmt_ckb));
+
+		OAT.Dom.append ([anchor_pref_c, anchor_label, anchor_pref_sel, uri_fmt_c]);
+		OAT.Dom.append ([uri_fmt_c, uri_fmt_ckb, uri_fmt_label]);
+
+		return anchor_pref_c;
+	}
 
 	this.init = function() {
-		this.dom.result = OAT.Dom.create("div");
+		this.dom.result =   OAT.Dom.create("div", {className:'ep_result'});
 		this.dom.request = OAT.Dom.create("div", {className:'ep_request'}); 
 		this.dom.response = OAT.Dom.create("pre",{className:'ep_response'});
-		this.dom.query = OAT.Dom.create("pre");
+		this.dom.query =    OAT.Dom.create("pre", {className:'ep_query'});
+
+		this.currentRdfMiniTabIdx = 0;
+
 //	this.dom.select = OAT.Dom.create("select");
 //	OAT.Dom.option("Machine-readable","1",this.dom.select);
 //	OAT.Dom.option("Human-readable","0",this.dom.select);
 
 		var tabs1 = ["Result","SPARQL Params","Response","Query"];
 		var tabs2 = [self.dom.result,self.dom.request,self.dom.response,self.dom.query];
-		self.dom.tab = OAT.Dom.create("div",{padding:"5px",backgroundColor:"#fff"});
+
+		self.dom.tab = OAT.Dom.create ("div",{className:'res_tab_ctr',id: 'res_tab_ctr'});
 		self.dom.ul = OAT.Dom.create("ul",{},"tabres");
 		self.tab = new OAT.Tab(self.dom.tab,{dockMode:true,dockElement:self.dom.ul});
+
 		for (var i=0;i<tabs1.length;i++) {
 			var li = OAT.Dom.create("li");
 			self.dom.ul.appendChild(li);
 			li.innerHTML = tabs1[i];
 			self.tab.add(li,tabs2[i]);
 		}
+
 		if (self.options.div) {
 			OAT.Dom.clear(self.options.div);
-	    OAT.Dom.append([self.options.div,/*self.dom.select,*/OAT.Dom.create("br")]);
-			OAT.Dom.append([self.options.div,self.dom.ul,self.dom.tab]);
+			OAT.Dom.append([self.options.div,/*self.dom.select,*/OAT.Dom.create("br")]);
+			OAT.Dom.append([self.options.div,self.dom.ul,self.dom.tab]); 
 		}
 		self.initNav();
 
@@ -254,6 +302,44 @@ var QueryExec = function(optObj) {
 	    for (var i=0;i<window.defaultPrefixes.length;i++)
 		OAT.IRIDB.insertIRI (window.defaultPrefixes[i].uri, window.defaultPrefixes[i].label);
 	}
+
+		self.load_notify = new OAT.Notify (false, {notifytype: 2});
+		self.error_notify = new OAT.Notify (false, {notifytype: 2});
+
+		self.request_count = 0;
+
+		OAT.MSG.attach ('*',
+						'iSPARQL_QE_START', 
+						function () { 
+							var msg = 'Executing query (' + self.request_count;
+
+							if (self.request_count > 1) msg += ' requests pending.)';
+							else msg += ' request pending.)';
+
+							self.load_notify.send (msg, {image: "images/notify-throbber.gif", timeout: false});
+						});
+		
+		OAT.MSG.attach ('*',
+						'iSPARQL_QE_DONE',
+						function () {
+							if (self.request_count < 1)
+								self.load_notify.hide();
+							else {
+								var msg = 'Executing query (' + self.request_count;
+
+								if (self.request_count > 1) msg += ' requests pending.)';
+								else msg += ' request pending.)';
+
+								self.load_notify.send (msg, {image: "images/notify-throbber.gif", timeout: false});
+							}
+						});
+
+		OAT.MSG.attach ('*', 
+						'iSPARQL_QE_ERROR',
+						function (m,s,l) {
+							var msg = 'Query returned error.';
+							self.error_notify.send (msg, {timeout: 3000});
+						});
 
     };
 
@@ -349,6 +435,7 @@ var QueryExec = function(optObj) {
 		cache.opts.endpoint != opts.endpoint || 
 		cache.opts.defaultGraph != opts.defaultGraph ||
 	        cache.opts.maxrows != opts.maxrows ||
+				cache.opts.timeout != opts.timeout ||
 	        cache.opts.namedGraphs != opts.namedGraphs ||
 	        cache.opts.pragmas != opts.pragmas);
     };
@@ -356,22 +443,20 @@ var QueryExec = function(optObj) {
 	this.buildRequest = function(opts) {
 		var paramsObj = {};
 
-		if (opts.defaultGraph && !opts.query.match(/from *</i)) { paramsObj["default-graph-uri"] = opts.defaultGraph; }
-	if (opts.maxrows && opts.query && !opts.query.match(/limit *[0-9].*/i)) { paramsObj["maxrows"] = opts.maxrows; }
-		if (opts.sponge && self.options.virtuoso) { paramsObj["should-sponge"] = opts.sponge; }
-
-		var pragmas = [];
-	
-		if (opts.pragmas) {
-			for (var i=0;i<opts.pragmas.length;i++) {
-				var pragma = opts.pragmas[i];
-				var name = pragma[0];
-				var values = pragma[1];
-				for(var j=0;j<values.length;j++) { pragmas.push(name+" "+values[j]); }
-			}
+		if (opts.defaultGraph && !opts.query.match(/from *</i)) { 
+			paramsObj["default-graph-uri"] = opts.defaultGraph; 
 		}
 
-		paramsObj["query"] = pragmas.join('\n') + '\n' + opts.query;
+		if (opts.maxrows && opts.query && !opts.query.match(/limit *[0-9].*/i)) { 
+			paramsObj["maxrows"] = opts.maxrows; 
+		}
+
+		if (opts.timeout) { paramsObj["timeout"] = opts.timeout; }
+		if (opts.sponge && self.options.virtuoso) { paramsObj["should-sponge"] = opts.sponge; }
+
+		var pragmas = self.getPragmas(opts);
+		if (!pragmas) pragmas = "";
+		paramsObj["query"] = pragmas + '\n' + opts.query;
 
 		var arr = [];
 		for (var p in paramsObj) {
@@ -390,7 +475,7 @@ var QueryExec = function(optObj) {
 	}
 
 	 arr.push (encodeURIComponent("format=application/rdf+xml"));
-		return arr.join("&");
+	return arr.join("&");
     };
 
     this.resultType = function(data) {
@@ -413,9 +498,8 @@ var QueryExec = function(optObj) {
 			return iSPARQL.ResultType.GRAPH;
 		default:
 			return iSPARQL.ResultType.ERROR;
-	}
+		}
     };
-	
     //
     // Cache incoming result set or graph
     //
@@ -432,8 +516,12 @@ var QueryExec = function(optObj) {
 		}
 		else {
 			rt = iSPARQL.ResultType.ERROR;
-			if (data.match (/Error SR171/))
+			if (data.match (/Error SR171/)) {
+				iSPARQL.StatusUI.errMsg = 'Query Engine Timeout on Server Detected';
 				to = true;
+		}
+			else 
+				iSPARQL.StatusUI.errMsg = 'Error executing query';
 		}
 		
 			var cacheItem = {
@@ -444,14 +532,9 @@ var QueryExec = function(optObj) {
 				request:request,
 				data:data,
 				txt:OAT.Xml.serializeXmlDoc (data),
-				store: new OAT.RDFStore(),
+				store: new OAT.RDFStore(false,{raw_iris: true}),
 				dom: {}
 			}
-			
-			cacheItem.dom.query_c    = OAT.Dom.create ("div",{className: "query_c"});
-			cacheItem.dom.result_c   = OAT.Dom.create ("div",{className: "result_c"});
-			cacheItem.dom.request_c  = OAT.Dom.create ("div",{className: "request_c"});
-			cacheItem.dom.response_c = OAT.Dom.create ("div",{className: "response_c"});
 			
 		var req_href;
 		
@@ -492,48 +575,111 @@ var QueryExec = function(optObj) {
 		
 		var nloca = document.location;
 
-		if (opts.endpoint = '/sparql') {
+		if (opts.endpoint == '/sparql') {
 			var resUriBase = nloca.protocol + 
 				"//" + nloca.host + "/sparql/?query=" + encodeURIComponent(opts.query);
 			
 			resUriBase += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
+			resUriBase += "&timeout=" + (opts.timeout ? opts.timeout : "");
 			resUriBase += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
 			resUriBase += "&format=";
 
-			$('cxml_raw_lnk').href =   resUriBase + encodeURIComponent("text/cxml");
-			$('csv_raw_lnk').href =    resUriBase + encodeURIComponent("text/csv");
+			var cxml_l_elm = OAT.Dom.create('link');
+			cxml_l_elm.setAttribute('rel','alternate');
+			cxml_l_elm.setAttribute('type','text/cxml');
+			cxml_l_elm.href = $('cxml_raw_lnk').href =   resUriBase + encodeURIComponent("text/cxml");
 
-			$('nt_raw_lnk').href =     resUriBase + encodeURIComponent("text/plain");
-			$('n3_raw_lnk').href =     resUriBase + encodeURIComponent("text/rdf+n3");
-			$('json_raw_lnk').href =   resUriBase + encodeURIComponent("application/rdf+json");
-			$('rdfxml_raw_lnk').href = resUriBase + encodeURIComponent("application/rdf+xml");
+			var csv_l_elm = OAT.Dom.create('link');
+			csv_l_elm.setAttribute('rel','alternate');
+			csv_l_elm.setAttribute('type','text/csv');
+			csv_l_elm.href = $('csv_raw_lnk').href =    resUriBase + encodeURIComponent("text/csv");
+
+			var nt_l_elm = OAT.Dom.create('link');
+			nt_l_elm.setAttribute('rel','alternate');
+			nt_l_elm.setAttribute('type','text/plain');
+			nt_l_elm.href = $('nt_raw_lnk').href =     resUriBase + encodeURIComponent("text/plain");
+
+			var n3_l_elm = OAT.Dom.create('link');
+			n3_l_elm.setAttribute('rel','alternate');
+			n3_l_elm.setAttribute('type','text/rdf+n3');
+			n3_l_elm.href = $('n3_raw_lnk').href =     resUriBase + encodeURIComponent("text/rdf+n3");
+
+			var json_l_elm = OAT.Dom.create('link');
+			json_l_elm.setAttribute('rel','alternate');
+			json_l_elm.setAttribute('type','text/rdf+json');
+			json_l_elm.href = $('json_raw_lnk').href =   resUriBase + encodeURIComponent("application/rdf+json");
+
+			var rdfxml_l_elm = OAT.Dom.create('link');
+			rdfxml_l_elm.setAttribute('rel','alternate');
+			rdfxml_l_elm.setAttribute('type','text/rdf+xml');
+			rdfxml_l_elm.href = $('rdfxml_raw_lnk').href = resUriBase + encodeURIComponent("application/rdf+xml");
 			
-			$('odata_atom_lnk').href = resUriBase + encodeURIComponent("application/atom+xml");
-			$('odata_json_lnk').href = resUriBase + encodeURIComponent("application/odata+json");
+			var atom_l_elm = OAT.Dom.create('link');
+			atom_l_elm.setAttribute('rel','alternate');
+			atom_l_elm.setAttribute('type','application/atom+xml');
+			atom_l_elm.href = $('odata_atom_lnk').href = resUriBase + encodeURIComponent("application/atom+xml");
+
+			var ojson_l_elm = OAT.Dom.create('link');
+			ojson_l_elm.setAttribute('rel','alternate');
+			ojson_l_elm.setAttribute('type','application/odata+json');
+			ojson_l_elm.href = $('odata_json_lnk').href = resUriBase + encodeURIComponent("application/odata+json");
+
+			var head_elm = document.getElementsByTagName('head')[0];
+
+			OAT.Dom.append([head_elm, cxml_l_elm, csv_l_elm, nt_l_elm, 
+							n3_l_elm, json_l_elm, rdfxml_l_elm, atom_l_elm, 
+							ojson_l_elm]);
 
 			OAT.Dom.show('data_links');
 		}
 
 	}
 
+	this.getPragmas = function (opts) {
+		var pragmas = [];
+		
+		if (opts.pragmas) { 
+			for (var i=0;i<opts.pragmas.length;i++) {
+				var pragma = opts.pragmas[i];
+				var name = pragma[0];
+				var values = pragma[1];
+				for(var j=0;j<values.length;j++) { pragmas.push(name+" "+values[j]); }
+			}
+			return (pragmas.join('\n'));
+		}
+		return false;
+	}
+
     this.makeMiniRDFPlinkURI = function (caller,msg,o) {
 	var item = self.cache[self.cacheIndex];
 	var opts = item.opts;
 	var request = item.request;
-		var ctr = self.miniplnk;
+	var ctr = self.miniplnk;
 
 		OAT.Dom.clear(ctr);
 
+		if (iSPARQL.Settings.pivotInstalled) 
+			self.makePivotPermalink(ctr);
+		
 	var nloca = document.location;
 
-	var xparm = "?query=" + encodeURIComponent(opts.query);
+		var pragmas = self.getPragmas(opts);
+		
+		var xparm = "?query=";
+
+		if (pragmas) xparm += encodeURIComponent(pragmas);
+
+		xparm += encodeURIComponent(opts.query);
 
 	if (opts.endpoint)
 	    xparm = xparm + "&endpoint="  + opts.endpoint;
 
 		xparm = xparm + "&resultview=" + item.mini.options.tabs[o.tabIndex][0];
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
+		xparm += "&timeout=" + (opts.timeout ? opts.timeout : "");
 		xparm += "&view=" + opts.view;
+		xparm += "&amode=" + iSPARQL.Settings.anchorMode;
+		xparm += "&raw_iris=" + iSPARQL.Settings.raw_iris;
 
 		var plnk_a = OAT.Dom.create("a");
 
@@ -563,6 +709,7 @@ var QueryExec = function(optObj) {
 
 		xparm = xparm + "&resultview=" + item.mini.options.tabs[o.tabIndex][0];
 		xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
+		xparm += "&timeout=" + (opts.timeout ? opts.timeout : "");
 		
 		plnk.target = "_blank";
 
@@ -630,9 +777,15 @@ var QueryExec = function(optObj) {
 	for (var i=0;i < tabs.length;i++) {
 	    if (rvVal == tabs[i][0]) return i;
 	}
-	return 0;
+		return false;
     };
 
+	this.rdfMiniViewChangeH = function (caller, msg, o) {
+		if (o.tabType != 'map')
+			self.currentRdfMiniTabIdx = o.tabIndex;
+		self.makeMiniRDFPlinkURI (caller, msg, o);
+	}
+    
     this.RESULT_TYPE = {
 	URI:0,
 	LITERAL:1
@@ -641,7 +794,11 @@ var QueryExec = function(optObj) {
     this.renderResultValue = function (val, opts) {
 	if (val.restype == self.RESULT_TYPE.URI) {
 	    var a = OAT.Dom.create("a");
-			a.innerHTML = self.cache[self.cacheIndex].store.simplify (val.value);
+			if (iSPARQL.Settings.raw_iris) {
+				a.innerHTML = val.value
+			} else {
+				a.innerHTML = self.cache[self.cacheIndex].store.simplify (val.value);
+			}
 	    a.href = val.value;
 	    self.processLink(a, val.value);
 	    return a;
@@ -738,44 +895,65 @@ var QueryExec = function(optObj) {
 // XXX produces URLs which are invalid
 //
     
-    this.makePivotPermalink = function (ctr) {
+    this.makePivotPermalink = function () {
 	var item = self.cache[self.cacheIndex];
 	var opts = item.opts;
 
 	a = OAT.Dom.create("a");
 	a.innerHTML = "Make Pivot";
-	var xparm = document.location.protocol + '//' + document.location.host + 
-	    "/sparql/?query=" + encodeURIComponent(opts.query) + 
-	    "&endpoint=" + opts.endpoint;
+
+		var pragmas = self.getPragmas(opts);
+		var xparm;
+
+		if (opts.endpoint != '/sparql')
+			xparm = opts.endpoint + "?query=";
+		else 
+			xparm = document.location.protocol + '//' + document.location.host + 
+			"/sparql/?query=";
+
+		if (pragmas) xparm += encodeURIComponent(pragmas);
+
+		xparm += encodeURIComponent(opts.query);
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
-	xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
-	xparm += "&format=text/cxml";
+		xparm += "&timeout=" + (opts.timeout ? opts.timeout : "");
+		xparm += "&default-graph-uri=" + (opts.defaultGraph ? encodeURIComponent(opts.defaultGraph) : "");
+		xparm += "&format=text%2Fcxml";
 	a.href = document.location.protocol + '//' + document.location.host + 
 	    '/PivotViewer/' + "?url=" + encodeURIComponent(xparm);
 	a.target = "_blank";
-	var spc = OAT.Dom.create("span");
-		spc.innerHTML = "&nbsp;|&nbsp;";
 
 		if (iSPARQL.Settings.shorten_uris)
 			iSPARQL.Common.shortenURI (a);
 		
-		OAT.Dom.append([ctr,a, spc]);
-		
+		return a;
     };
 
-    this.makeExecPermalink = function (ctr) {
+    this.makeExecPermalink = function () {
 	var item = self.cache[self.cacheIndex];
 	var opts = item.opts;
 	var request = item.request;
 	
 	var execURIa = OAT.Dom.create ("a");
 	execURIa.innerHTML = "Execute Permalink";
+
 	var nloca = document.location;
 
-	var xparm = "?query=" + encodeURIComponent(opts.query) + "&endpoint="  + opts.endpoint;
+		var pragmas = self.getPragmas(opts);
+		
+		var xparm = "?query=";
+
+		if (pragmas) xparm += encodeURIComponent(pragmas);
+
+		xparm += encodeURIComponent(opts.query);
+
+		xparm += "&endpoint="  + encodeURIComponent(opts.endpoint);
+		
 	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
-	xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
+		xparm += "&timeout=" + (opts.timeout ? opts.timeout : "");
+		xparm += "&default-graph-uri=" + (opts.defaultGraph ? encodeURIComponent(opts.defaultGraph) : "");
 		xparm += "&view=" + opts.view;
+		xparm += "&amode=" + iSPARQL.Settings.anchorMode;
+		xparm += "&raw_iris=" + iSPARQL.Settings.raw_iris;
 
 	execURIa.href = nloca.protocol + "//" + nloca.host + "/isparql/view/" + xparm;
 	
@@ -784,34 +962,15 @@ var QueryExec = function(optObj) {
 			
 	execURIa.target = "_blank";
 	
-		OAT.Dom.append([ctr,execURIa]);
-		OAT.Dom.hide ('data_links')
+		OAT.Dom.hide ('data_links') // XXX: WTF is this?
+
+		return execURIa;
     };
 
     this.drawSparqlResultSet = function (resSet) {
 		var item = self.cache[self.cacheIndex];
-		self.dom.plnk_ctr = OAT.Dom.create("div", {className: "result_plnk_ctr"});
 
-		if (iSPARQL.Settings.pivotInstalled) 
-			self.makePivotPermalink(self.dom.plnk_ctr);
-
-		self.makeExecPermalink (self.dom.plnk_ctr);
-
-		var anchor_pref_ctr = OAT.Dom.create("div", {className: "anchor_pref_ctr"});
-		anchor_label = OAT.Dom.create("label", {htmlFor: "anchor_pref_sel"});
-		anchor_label.innerHTML = "Anchor behavior:";
-		anchor_pref_sel = OAT.Dom.create ("select", {id: "anchor_pref_sel"});
-		anchor_pref_sel.options.add (new Option ("Describe",0));
-		anchor_pref_sel.options.add (new Option ("Get Data Items",1));
-		anchor_pref_sel.options.add (new Option ("Open Web Page",2));
-
-		OAT.Event.attach(anchor_pref_sel, 'change', function () {
-			iSPARQL.Settings.anchorMode = ($('anchor_pref_sel').selectedIndex);
-		});
-
-		OAT.Dom.append ([item.dom.result_c, self.dom.plnk_ctr, anchor_pref_ctr]);
-        OAT.Dom.append ([anchor_pref_ctr, anchor_label, anchor_pref_sel]);
-
+//		OAT.Dom.clear (item.dom.result_c);
 		var grid = new OAT.Grid (item.dom.result_c);
 	grid.createHeader(resSet.variables);
 
@@ -852,7 +1011,7 @@ var QueryExec = function(optObj) {
 			}
 		}
 
-	self.makeExecPermalink ();
+//		self.makeExecPermalink ();
 
 		var data_root = self.cache[cacheIndex].store.data.all[0];
 		var ns_var = "http://www.w3.org/2005/sparql-results#resultVariable";
@@ -962,11 +1121,16 @@ var QueryExec = function(optObj) {
     this.makeErrorResp = function (data) {
 	var txt = OAT.Xml.serializeXmlDoc(data);
 
-		if (txt.length == 0 || txt == false) txt = data;
+		if (txt.length == 0 || txt == false) {
+			if (typeof data == 'object')
+ 				txt = 'Invalid response received';
+			else {
+				txt = data;
 
 		txt = txt.replace(/</g,"&lt;");
 		txt = txt.replace(/>/g,"&gt;");
-
+			} 
+		}
 	return txt;
     };
 
@@ -990,12 +1154,16 @@ var QueryExec = function(optObj) {
 // TODO store full query context obj in cache and add functions to restore
 //
 
+		if (typeof iSPARQL.dataObj == 'undefined') iSPARQL.dataObj = {};
 		iSPARQL.dataObj.query        = item.opts.query;
 		iSPARQL.dataObj.defaultGraph = item.opts.defaultGraph;
 		iSPARQL.dataObj.maxrows      = item.opts.maxrows;
+		iSPARQL.dataObj.timeout      = item.opts.timeout;
 		iSPARQL.dataObj.namedGraphs  = item.opts.namedGraphs;
 		iSPARQL.dataObj.pragmas      = item.opts.pragmas;
+		iSPARQL.dataObj.endpoint     = item.opts.endpoint;
 
+		if (typeof iSPARQL.endpointOpts != 'undefined') 
 		iSPARQL.endpointOpts.setEndpoint (null, item.opts.endpoint);
 
 		if (item.resType == iSPARQL.ResultType.GRAPH) 
@@ -1003,13 +1171,14 @@ var QueryExec = function(optObj) {
 		else 
 			OAT.Dom.hide('data_links');
 
-		adv.redraw();
+		if (typeof adv != 'undefined') adv.redraw();
+
 //		if (!item.wasError && qbe) qbe.loadFromString(iSPARQL.dataObj.query);
 
 		self.refreshNav();
 	};
 
-	// called only when new result is received
+	// called when new result is received, or redraw is needed
 
     this.draw = function(refresh) {
 		var item = self.cache[self.cacheIndex];
@@ -1018,39 +1187,62 @@ var QueryExec = function(optObj) {
 		var wasError = item.wasError;
 		var data = item.data;
 
-		if (self.options.executeCallback) { self.options.executeCallback(item); }
+     	item.dom.result_opts_c = OAT.Dom.create ("div",{className:"result_opts_c"}); 
+		item.dom.plnk_c = OAT.Dom.create("div", {className: "result_plnk_c"});
 
-		// Generate request page
+		item.dom.deref_prefs = self.makeAnchorPrefs();
 
-		var r = decodeURIComponent(request);
-		var parts = r.split("&");
-		var req = OAT.Dom.create("pre");
+		var clrfix = OAT.Dom.create ("div", {className: "clearfix"})
 
-		OAT.Dom.append([item.dom.request_c, req]);
+		if (!refresh) {
+			item.dom.query_c    = OAT.Dom.create ("div",{className: "query_c"});
+			item.dom.result_c   = OAT.Dom.create ("div",{className: "result_c"});
+			item.dom.request_c  = OAT.Dom.create ("div",{className: "request_c"});
+			item.dom.response_c = OAT.Dom.create ("div",{className: "response_c"});
 
-		for (var i=0;i<parts.length;i++) { req.innerHTML += OAT.Xml.escape(parts[i])+"\n"; }
+			OAT.Dom.append([item.dom.result_opts_c, item.dom.plnk_c, item.dom.deref_prefs], 
+						   [item.dom.result_c, item.dom.result_opts_c, clrfix]);
 
-		// Generate query page
+			if (self.options.executeCallback) { self.options.executeCallback(item); }
 
-		var a = OAT.Dom.create("a");
-		a.innerHTML = "Query Permalink";
-	var xparm = "?query=" + encodeURIComponent(opts.query) + "&endpoint=" + opts.endpoint;
-	xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
-	xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
-		xparm += "&view=" + opts.view;
-	a.href = document.location.protocol + '//' + document.location.host + '/isparql/' + xparm;
-		a.target = "_blank";
+			// Generate request page
 
-		if (iSPARQL.Settings.shorten_uris)
-			iSPARQL.Common.shortenURI(a);
+			var r = decodeURIComponent(request);
+			var parts = r.split("&");
+			var req = OAT.Dom.create("pre");
+
+			OAT.Dom.append([item.dom.request_c, req]);
+
+			for (var i=0;i<parts.length;i++) { req.innerHTML += OAT.Xml.escape(parts[i])+"\n"; }
+
+			// Generate query page
+
+			var a = OAT.Dom.create("a");
+			a.innerHTML = "Query Permalink";
+			var xparm = "?query=" + encodeURIComponent(opts.query) + "&endpoint=" + opts.endpoint;
+			xparm += "&maxrows=" + (opts.maxrows ? opts.maxrows : "");
+			xparm += "&timeout=" + (opts.timeout ? opts.timeout : "");
+			xparm += "&default-graph-uri=" + (opts.defaultGraph ? opts.defaultGraph : "");
+			xparm += "&view=" + opts.view;
+			xparm += "&raw_iris=" + iSPARQL.Settings.raw_iris;
+			a.href = document.location.protocol + '//' + document.location.host + '/isparql/' + xparm;
+			a.target = "_blank";
 		
-		var q = OAT.Dom.create("pre");
-		q.innerHTML = OAT.Xml.escape(opts.query);
+			if (iSPARQL.Settings.shorten_uris)
+				iSPARQL.Common.shortenURI(a);
+			
+			var q = OAT.Dom.create("pre");
+			q.innerHTML = OAT.Xml.escape(opts.query);
 
-		OAT.Dom.append([item.dom.query_c,a,q]);
+			OAT.Dom.append([item.dom.query_c,a,q]);
 		
 		// Parsererror here applies only to FireFox. WebKit tries its best trying to parse the document 
 		// as far as it can, so in most cases we'll have a piece of graph to process and never get to the error.
+		} else {
+			OAT.Dom.clear (item.dom.result_c);
+			OAT.Dom.append([item.dom.result_opts_c, item.dom.plnk_c, item.dom.deref_prefs], 
+						   [item.dom.result_c, item.dom.result_opts_c, clrfix]);
+		}
 
 		if (wasError) {
 			if (typeof data != "string" && item.resType == iSPARQL.ResultType.ERROR) {
@@ -1065,8 +1257,10 @@ var QueryExec = function(optObj) {
 			item.dom.response_c.innerHTML = self.makeErrorResp (data);
 		} 
 		} else {
+
 			// Generate Response page 
 
+			if (!refresh) {
 			var xmlTxt = item.txt; // Used if we have to draw a result set - need to remove namespace, etc.
 			var txt = OAT.Xml.escape(xmlTxt);
 			var resp_p = OAT.Dom.create ("pre");
@@ -1076,40 +1270,40 @@ var QueryExec = function(optObj) {
 
 			var ua = navigator.userAgent.toLowerCase();
 		
-			if (ua.search ("iphone") || 
-				ua.search ("ipod") ||
-				ua.search ("android") ||
-				ua.search ("symbian") ||
-				ua.search ("S60"))
-				
 				map_h = OAT.Dom.getViewport()[1].toString()+'px';
-			else 
-				map_h = "600px";
-
+			}
 			//	generate Result
 			
 			if (item.resType == iSPARQL.ResultType.GRAPH) { // Use RDFMini to show Graphs
 				var lastIndex = 0;
 				var tabs = [
-					["navigator","Navigator"],
-					["browser","Raw Triples",{removeNS:true}],
-					["triples","Grid View",{}],
-					["svg","SVG Graph",{}],
-					["images","Images",{}],
+					["triples","Grid View",{raw_iris:true}],
+					["navigator","Navigator",{raw_iris:true}],
+					["browser","Raw Triples",{removeNS:true, raw_iris:true}],
+					["svg","SVG Graph",{raw_iris:true}],
+					["images","Images",{raw_iris:true}],
 		     ["map",
 		      iSPARQL.Defaults.mapProviderNames[iSPARQL.Defaults.map_type],
 		      {provider:iSPARQL.Defaults.map_type, 
 					markerMode:OAT.RDFTabsData.MARKER_MODE_AUTO,
 					clickPopup:true,
 					  hoverPopup:false,
-					  height: map_h}] 
+					  height: map_h,
+					  raw_iris: true}] 
 				];
 
-		    lastIndex = self.parseTabIndex (opts.resultView, tabs);
+				lastIndex = self.parseTabIndex (opts.resultView, tabs); // check if URI contains view def
+				
+				if (lastIndex === false) {
+					if (tabs[self.currentRdfMiniTabIdx][0] != 'map')  // sticky last manual choice for view if it's not a map
+						lastIndex = self.currentRdfMiniTabIdx;
+					else
+						lastIndex = 0;
+				}
+				
 				var c_i = self.cacheIndex;
 				
-				self.plnk_ctr = OAT.Dom.create ("div",{className:"result_plnk_ctr"}); 
-				self.miniplnk = OAT.Dom.create ("div",{id:"rdf_plink_ctr"});
+				self.miniplnk = OAT.Dom.create ("div",{id:"rdf_plink_c"});
 
 /*					self.addthis_ctr.innerHtml = '<div id="sharelink" class="addthis_toolbox addthis_default_style "' + 
 						'addthis:url=""' + 
@@ -1126,28 +1320,36 @@ var QueryExec = function(optObj) {
 //				item.content = OAT.Dom.create ("div",{className: "rdf_mini_ctr"});
 				
 
-				if (iSPARQL.Settings.pivotInstalled) 
-					self.makePivotPermalink(self.plnk_ctr);
-
-				var mini_c = OAT.Dom.create("div",{className: "rdf_mini_ctr"});
+				var mini_c = OAT.Dom.create("div",{className: "rdf_mini_c"});
 				
+				if (item.store.getTripleCount() > 0) {
 				item.mini = new OAT.RDFMini(mini_c,{tabs:tabs,
 													showSearch:false,
-													store: item.store});
+														store: item.store,
+														defaultTab: 0,
+														raw_iris: true});
+					
+				item.mini.processLink = self.processLink;
+					
+					//		self.tab.go(0); // got to do here or maps won't resize properly.
+					//		self.cache[self.cacheIndex].mini.store.addXmlDoc(data);
+					
+					item.mini.setTab(lastIndex);
+					
+					self.makeMiniRDFPlinkURI (false,false,{tabIndex:lastIndex});
+					OAT.MSG.attach (item.mini, 'RDFMINI_VIEW_CHANGED', self.rdfMiniViewChangeH)
+					
+					self.makeDataLinks();
 
-				OAT.Dom.append([item.dom.result_c, self.plnk_ctr, mini_c]);
-				
-				//		self.tab.go(0); // got to do here or maps won't resize properly.
-				//		self.cache[self.cacheIndex].mini.processLink = self.processLink;
-				//		self.cache[self.cacheIndex].mini.store.addXmlDoc(data);
-				
-				item.mini.select.selectedIndex = lastIndex;
-				item.mini.redraw();
-				
-				OAT.Dom.append ([self.plnk_ctr, self.miniplnk]);
-				
-				var ua = navigator.userAgent;
-				
+				} else {
+					mini_c.innerHTML = 
+						'<h2>No Data</h2>' +
+						'<p>This query returned an empty graph.</p>';
+				}
+
+				OAT.Dom.append ([item.dom.plnk_c, self.miniplnk]);
+				OAT.Dom.append ([item.dom.result_c, mini_c]);
+
 				//				if (iSPARQL.Settings.addthis_key && !OAT.Browser.isScreenOnly) {
 				//					self.addthis_ctr = OAT.Dom.create ("a",{id: "addthis_ctr",
 				//															className: "addthis_button"});
@@ -1157,27 +1359,39 @@ var QueryExec = function(optObj) {
 				//					OAT.MSG.attach (item.mini, 'RDFMINI_VIEW_CHANGED', self.makeAddThisURL);
 				//				}
 				
-		self.makeMiniRDFPlinkURI (false,false,{tabIndex:lastIndex});
-				OAT.MSG.attach (item.mini, 'RDFMINI_VIEW_CHANGED', self.makeMiniRDFPlinkURI);
-				self.makeDataLinks();
 			} else {
 		if (data.firstChild.tagName == 'sparql' && 
 		    data.firstChild.namespaceURI == 'http://www.w3.org/2005/sparql-results#') {		    
-		    var rs = self.parseSparqlResultSet (data);
-		    self.drawSparqlResultSet (rs);
+
+					if (iSPARQL.Settings.pivotInstalled)
+						OAT.Dom.append ([item.dom.plink_c, self.makePivotPermalink()]);
+
+					OAT.Dom.append ([item.dom.plnk_c, self.makeExecPermalink ()]);
+
+					if (!refresh)
+						item.result_set = self.parseSparqlResultSet (data);
+					
+					self.drawSparqlResultSet (item.result_set);
+			}
 		}
-	}
 	}
 
 		OAT.Dom.append ([self.dom.result, item.dom.result_c],
 						[self.dom.request, item.dom.request_c],
 						[self.dom.query, item.dom.query_c],
 						[self.dom.response, item.dom.response_c]);
+
+		if (item.resType != iSPARQL.ResultType.GRAPH) 
+			OAT.Dom.show ($('uri_fmt_ctr'))
+		else
+			OAT.Dom.hide ($('uri_fmt_ctr'))
+
 		self.tab.go(0);
 		self.refreshNav();
     };
 
 	this.simplifyPrefix = function(str) {
+		if (iSPARQL.Settings.raw_iris) return str;
 		var plist = window.defaultPrefixes;
 		var s = str;
 		if (!s) { return; }
@@ -1194,17 +1408,15 @@ var QueryExec = function(optObj) {
 
 	this.processLink = function(domNode,href) {
 		var dereferenceRef = function(event) {
-			OAT.Event.prevent(event);
-
 			var cache = self.cache[self.cacheIndex];
 
-/*	    var q = 'define get:soft "replacing" \n'+
+			var q = 'define get:soft "replacing" \n'+
 					'define input:same-as "yes" \n'+
 					'define input:grab-seealso <http://www.w3.org/2002/07/owl#sameAs> \n'+
-		'DESCRIBE <'+href+'> FROM <' + href + '>';*/
-	    var q  = 'DESCRIBE <'+href+'>';
-			var bq = 'DESCRIBE <'+href+'>';
+		        'DESCRIBE <'+ encodeURI(href) +'> FROM <' + encodeURI(href) + '>';
+			var bq = 'DESCRIBE <'+ encodeURI(href) +'>';
 			var o = {};
+
 			for (var p in cache.opts) { o[p] = cache.opts[p]; }
 			o.defaultGraph = false;
 
@@ -1217,8 +1429,18 @@ var QueryExec = function(optObj) {
 			self.execute(o);
  	};
 
+		var describeRef = function (event) {
+			var loc = window.location;
+			var go_to = loc.protocol + "//" + loc.hostname;
+			
+			if (loc.protocol == "https:" && loc.port != "443") go_to += ":" + loc.port;
+			if (loc.protocol == "http:" && loc.port != "80") go_to += ":" + loc.port;
+			
+			go_to += "/describe/?url=" + encodeURI(href); 
+			window.open (go_to);
+		}
+		
 		var selectRef = function(event) {
-			OAT.Event.prevent(event);
 			var cache = self.cache[self.cacheIndex];
 			var o = {};
 			for (var p in cache.opts) { o[p] = cache.opts[p]; }
@@ -1227,13 +1449,13 @@ var QueryExec = function(optObj) {
 
 			var q = 'SELECT DISTINCT * \n';
 			if (graph) { q += 'FROM <' + graph + '> \n'; }
-			q += 'WHERE { { <'+href+'> ?p ?o } UNION { ?s ?p <'+href+'> } }';
+			q += 'WHERE { { <'+ encodeURI(href)+'> ?p ?o } UNION { ?s ?p <'+ encodeURI(href) +'> } }';
 
 			o.query = q;
 			self.execute(o);
 	};
 
-		var genRef = function() {
+/*		var genRef = function() {
 			var ul = OAT.Dom.create("ul",{marginLeft:"20px",marginTop:"10px"});
 
 			var li = OAT.Dom.create("li");
@@ -1261,7 +1483,7 @@ var QueryExec = function(optObj) {
 			return ul;
 	};
 
-/*		var obj = {
+		var obj = {
 			title:"URL",
 			content:genRef,
 			newHref:href,
@@ -1272,16 +1494,22 @@ var QueryExec = function(optObj) {
 		}; */
 		
 		OAT.Event.attach (domNode, 'click', function (event) {
+            OAT.Event.prevent(event);
 			switch (iSPARQL.Settings.anchorMode) {
 			case 0:
 				dereferenceRef(event);
-				break;
+				event.cancelBubble = true;
+                return false;
 			case 1:
 				selectRef(event);
 				break;
-			default:
-				OAT.Event.prevent(event);
+			case 2:
 				window.open(href);
+				break;
+			default:
+				dereferenceRef(event);
+				describeRef(event);
+				break;
 			}
 		});
 
@@ -1299,8 +1527,6 @@ var QueryExec = function(optObj) {
 //	a.target = "_blank";
 //	a.href = "/about/html/" + href;
 
-//	domNode.parentNode.appendChild(img1);
-//	domNode.parentNode.appendChild(a);
     };
 
      this.detectLocationMacros = function (q) {
@@ -1342,12 +1568,14 @@ var QueryExec = function(optObj) {
 		var request = self.buildRequest(opts);
 
 		var callback = function(data) {
+			self.request_count--;
 			self.addResponse(request,optObj,0,data);
 			if (opts.callback) { opts.callback(data); }
 	    OAT.MSG.send (self,"iSPARQL_QE_DONE",self);
 	};
 
 		var onerror = function(xhr) {
+			self.request_count--;
 			var txt = xhr.getResponseText();
 			if (txt.match(/SP031/) && optObj.backupQuery) {
 				var newO = {};
@@ -1359,6 +1587,8 @@ var QueryExec = function(optObj) {
 				self.addResponse(request,optObj,1,txt);
 				if (opts.onerror) { opts.onerror(txt); }
 			}
+			OAT.MSG.send (self, "iSPARQL_QE_DONE", self);
+			OAT.MSG.send (self, "iSPARQL_QE_ERROR", self);
 	};
 
 		var o = {
@@ -1371,6 +1601,9 @@ var QueryExec = function(optObj) {
 
 		if (!opts.endpoint) { opts.endpoint = '/sparql'; }
 
+		self.request_count++;
+		OAT.MSG.send (self, "iSPARQL_QE_START", self);
+		
 		OAT.AJAX.POST(opts.endpoint,request,callback,o);
 	}
 

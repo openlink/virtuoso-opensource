@@ -1,10 +1,10 @@
 --  
---  $Id$
+--  $Id: tfk.sql,v 1.15.10.2 2013/01/02 16:15:08 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1287,18 +1287,20 @@ CREATE TABLE USERS(
 
     UNDER ACCOUNTS
     );
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": B3203: table USERS under ACCOUNTS created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- XXX: no under
+--ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": B3203: table USERS under ACCOUNTS created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 CREATE TABLE GROUPS(
     DESCRIPTION  LONG VARCHAR NOT NULL,
 
     UNDER ACCOUNTS
     );
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": B3203: table GROUPS under ACCOUNTS created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- XXX: no under
+--ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": B3203: table GROUPS under ACCOUNTS created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 CREATE TABLE MEMBERS(
     GROUP_ID  INTEGER NOT NULL,
@@ -1308,9 +1310,10 @@ CREATE TABLE MEMBERS(
     FOREIGN KEY(GROUP_ID) REFERENCES GROUPS(ID),
     FOREIGN KEY(USER_ID) REFERENCES USERS(ID)
     );
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": B3203: table MEMBERS created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- XXX: no under
+--ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": B3203: table MEMBERS created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 use DB;
 
 -- suite for bug #3684
@@ -1325,9 +1328,10 @@ CREATE TABLE P2 (ID1 INT, UNDER P1);
 CREATE TABLE PKF1 (ID2 INT, ID3 INT, PRIMARY KEY (ID2, ID3));
 
 ALTER TABLE P2 ADD CONSTRAINT FK01 FOREIGN KEY (ID, ID1) REFERENCES PKF1 (ID2, ID3);
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": B3684: FK01 FOREIGN KEY created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- XXX: no under
+--ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": B3684: FK01 FOREIGN KEY created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 use DB;
 
 -- bug #2023

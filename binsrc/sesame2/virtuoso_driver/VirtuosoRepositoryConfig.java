@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2010 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -31,6 +31,7 @@ import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.USELAZYADD
 import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.FETCHSIZE;
 import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.ROUNDROBIN;
 import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.RULESET;
+import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.BATCHSIZE;
 
 import org.openrdf.model.Graph;
 import org.openrdf.model.Literal;
@@ -60,6 +61,8 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 	private boolean roundRobin;
 
 	private String ruleSet;
+
+	private int batchSize = 5000;
 
 	public VirtuosoRepositoryConfig() {
 		super(VirtuosoRepositoryFactory.REPOSITORY_TYPE);
@@ -141,6 +144,15 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 			this.ruleSet = ruleSet;
 	}
 
+	public int getBatchSize() {
+		return fetchSize;
+	}
+
+	public void setBatchSize(int batchSize) {
+		this.batchSize = batchSize;
+	}
+
+
 	@Override
 	public void validate()
 		throws RepositoryConfigException
@@ -156,6 +168,7 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 		Resource implNode = super.export(graph);
 
 		if (hostlist != null) {
+//--			graph.add(implNode, HOSTLIST, graph.getValueFactory().createLiteral(hostlist), new Resource[0]);
 			graph.add(implNode, HOSTLIST, graph.getValueFactory().createLiteral(hostlist));
 		}
 		if (username != null) {
@@ -178,6 +191,8 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 		graph.add(implNode, ROUNDROBIN, graph.getValueFactory().createLiteral(new Boolean(roundRobin).toString()));
 
 		graph.add(implNode, FETCHSIZE, graph.getValueFactory().createLiteral(Integer.toString(fetchSize,10)));
+
+		graph.add(implNode, BATCHSIZE, graph.getValueFactory().createLiteral(Integer.toString(batchSize,10)));
 
 		return implNode;
 	}
@@ -220,6 +235,10 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 			Literal ruleset = GraphUtil.getOptionalObjectLiteral(graph, implNode, RULESET);
 			if (ruleset != null) {
 				setRuleSet(ruleset.getLabel());
+			}
+			Literal batchsize = GraphUtil.getOptionalObjectLiteral(graph, implNode, BATCHSIZE);
+			if (batchsize != null) {
+				setBatchSize(Integer.parseInt(batchsize.getLabel()));
 			}
 		}
 		catch (GraphUtilException e) {

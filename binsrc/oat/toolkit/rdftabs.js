@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2010 OpenLink Software
+ *  Copyright (C) 2005-2013 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -64,7 +64,8 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 	pageSize:20,
 	removeNS:true,
 	description:"This view shows all RDF data grouped by subject resource.",
-	desc:"RDF data by subject resource"
+	desc:"RDF data by subject resource",
+	raw_iris: false
     }
 
     for (var p in optObj) { self.options[p] = optObj[p]; }
@@ -344,7 +345,10 @@ OAT.RDFTabs.browser = function(parent,optObj) {
 		elm.href = OAT.IRIDB.getIRI(value);
 		attach(elm,value);
 	    }
-	    elm.innerHTML = self.parent.store.getCIRIorSplit(value);
+
+	    if (self.options.raw_iris) elm.innerHTML = elm.href; 
+            else elm.innerHTML = self.parent.store.getCIRIorSplit(value);
+
 	    if (i) { self.sortDiv.appendChild(OAT.Dom.text(", ")); }
 	    self.sortDiv.appendChild(elm);
 	}
@@ -374,8 +378,9 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
     this.options = {
 	limit:5,
 	description:"This module is used to navigate through locally cached data, one resource at a time. Filters are not applied.",
-	desc:"Navigate through locally cached data (Filters not applied)"
-		}
+	desc:"Navigate through locally cached data (Filters not applied)",
+        raw_iris: false
+    }
 
     for (var p in optObj) { self.options[p] = optObj[p]; }
 
@@ -595,7 +600,10 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	    } else if (type == 1) { /* dereferencable link */
 		content = OAT.Dom.create("a");
 		    content.href = value.getIRI();
-		    content.innerHTML = self.parent.store.getCIRIorSplit(value.getIID());
+
+		    if (self.options.raw_iris) content.innerHTML = value.getIRI();
+                    else content.innerHTML = self.parent.store.getCIRIorSplit(value.getIID());
+
 		    self.dattach(content,value.getIRI());
 		} 
 	    } else { /* text */
@@ -696,6 +704,9 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	    if (iid in self.parent.store.labels)
 		a.innerHTML = self.parent.store.labels[iid].label;
 	    else
+		if (self.options.raw_iris) 
+                    a.innerHTML = OAT.IRIDB.getIRI(iid);
+                else 
 		a.innerHTML = self.parent.store.getCIRIorSplit(iid);
 
 	    a.title = a.href = OAT.IRIDB.getIRI(iid);
@@ -766,15 +777,25 @@ OAT.RDFTabs.navigator = function(parent,optObj) {
 	td.colSpan = 3;
 
 	var simple;
+
+	if (self.options.raw_iris) 
+            simple = OAT.IRIDB.getIRI(label); 
+        else 
 	simple = self.parent.store.getCIRIorSplit(label);
 
 	if (cnt > 1 && simple.charAt(0) != "[" && simple in self.plurals) {
 	    simple = self.plurals[simple];
 	}//]
 
-	td.innerHTML = simple;
-	td.title = OAT.IRIDB.getIRI(label);
+	var a = OAT.Dom.create("a", {className: "nav_rdf_subject"});
+
+	a.innerHTML = simple;
+	a.title = OAT.IRIDB.getIRI(label);
+	a.href = simple;
+
+	td.appendChild (a);
 	tr.appendChild(td);
+
 	OAT.Event.attach(arrow,"click",function() {
 	    state = (state+1) % 2;
 	    arrow.innerHTML = states[state];
@@ -945,7 +966,8 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 	pageSize:100,
 	removeNS:true,
 	description:"This module displays all filtered triples.",
-	desc:"All filtered triples"
+	desc:"All filtered triples",
+        raw_iris: false
     }
     for (var p in optObj) { self.options[p] = optObj[p]; }
 
@@ -1035,13 +1057,24 @@ OAT.RDFTabs.triples = function(parent,optObj) {
 		iid = atom; // this is a plain IID value
 	}
 
-	var a = OAT.Dom.create("a");
+
+	try { 	// Dirty data does exist, you see...
 	var iri = decodeURIComponent(OAT.IRIDB.getIRI(iid));
-	a.innerHTML = self.parent.store.getCIRIorSplit(iid);
-	a.href = iri;
+            var col_v_elm = OAT.Dom.create("a");
+
+            if (self.options.raw_iris)
+              col_v_elm.innerHTML = iri;
+            else 
+              col_v_elm = self.parent.store.getCIRIorSplit(iid);
+
+	    col_v_elm.href = iri;
+	    self.parent.processLink(col_v_elm, iri);
+        } catch (e) {
+	    col_v_elm = OAT.Dom.create("span",{className:"error_col"});
+            col_v_elm.innerHTML = OAT.IRIDB.getIRI(iid) + " (invalid URI)";
+	}
 	OAT.Dom.clear(v);
-	v.appendChild(a);
-	self.parent.processLink(a,iri);
+	v.appendChild(col_v_elm);
     }
 
     this.redraw = function() {
@@ -1075,7 +1108,8 @@ OAT.RDFTabs.svg = function(parent,optObj) {
     this.options = {
 	limit:100,
 	description:"",
-	desc:"Filtered data as SVG Graph"
+	desc:"Filtered data as SVG Graph",
+        raw_iris: false
     }
     for (var p in optObj) { self.options[p] = optObj[p]; }
 
@@ -1095,9 +1129,9 @@ OAT.RDFTabs.svg = function(parent,optObj) {
 	var cnt = self.parent.data.triples.length;
 
 	if (cnt > self.options.limit) {
-	    var note = new OAT.Notify();
+	    var note = new OAT.Notify(false, {notifyType: 2});
 	    var msg = "Note: Display limited to " + self.options.limit + " triples."
-	    note.send (msg,{delayIn:10,width:350,height:50,timeout:5000});
+	    note.send (msg,{delayIn:10,timeout:5000});
 	    cnt = self.options.limit;
 	}
 
@@ -1303,6 +1337,10 @@ OAT.RDFTabs.PointList = function (opts) {
     }
 }
 
+//
+// Sends MAP_NOTHING_TO_SHOW if there's nothing to show on map
+//
+
 OAT.RDFTabs.map = function(parent,optObj) {
     var self = this;
     OAT.RDFTabs.parent(self);
@@ -1317,7 +1355,8 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	hoverPopup:true,
 	height: "600px",
 	useMobileOpts:false,
-	supportedMobileDetected:false
+	supportedMobileDetected:false,
+        raw_iris: false
     }
 
     for (var p in optObj) { self.options[p] = optObj[p]; }
@@ -1348,7 +1387,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 						     "http://www.w3.org/2003/01/geo/wgs84_pos#geometry"]); /* containing coords */
 
     this.locProperties    = OAT.IRIDB.insertIRIArr (["http://xmlns.com/foaf/0.1/location", 
-						     "http://www.w3.org/2006/vcard/ns#Locality",
+						     "http://www.w3.org/2006/vcard/ns#locality",
 						     "http://www.w3.org/2001/vcard-rdf/3.0#Locality"]); /* containing location */
 
     this.latProperties    = OAT.IRIDB.insertIRIArr (["http://www.w3.org/2003/01/geo/lat",
@@ -1356,7 +1395,8 @@ OAT.RDFTabs.map = function(parent,optObj) {
 						     "http://www.w3.org/2003/01/geo/latitude", 
 						     "http://www.w3.org/2006/vcard/ns#latitude",
 						     "http://www.w3.org/2001/vcard-rdf/3.0#latitude",
-						     "http://dbpedia.org/property/lat"]);
+						     "http://dbpedia.org/property/lat",
+						     "http://www.openlinksw.com/schemas/zillow#latitude"]);
 
     this.lonProperties    = OAT.IRIDB.insertIRIArr (["http://www.w3.org/2003/01/geo/lng",
 						     "http://www.w3.org/2003/01/geo/wgs84_pos#long",
@@ -1365,7 +1405,8 @@ OAT.RDFTabs.map = function(parent,optObj) {
 						     "http://www.w3.org/2003/01/geo/longitude",
 						     "http://www.w3.org/2006/vcard/ns#longitude",
 						     "http://www.w3.org/2001/vcard-rdf/3.0#longitude",
-						     "http://dbpedia.org/property/long"]);
+						     "http://dbpedia.org/property/long",
+						     "http://www.openlinksw.com/schemas/zillow#longitude"]);
 
     this.lookupProperties = OAT.IRIDB.insertIRIArr (["http://xmlns.com/foaf/0.1/name",
 						     "http://xmlns.com/foaf/0.1/location"]); /* interesting to be put into lookup pin */
@@ -1432,18 +1473,19 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	var coords = [0,0];
 
 	if (item.type) {
-	    for (var i=0;i<item.type.length;i++)
+	    for (var i=0;i<item.type.length;i++) {
 		if (self.pointTypes.indexOf(item.type[i].getValue()) != -1)
 	    coords = self.extractCoords (item.preds);
+	}
 	}
 
 	    for (var p in preds) {
 		var pred = preds[p];
 	    if (!!(p = parseInt(p))) {	    
 		if (self.keyProperties.indexOf(p) != -1) { 
+		    if (pred[0] instanceof OAT.RDFAtom && pred[0].isLit())
 		    pointResource = pred[0].getValue(); 
 		} /* resource containing geo coordinates */
-		
 		if (self.locProperties.indexOf(p) != -1) { 
 		    locValue = pred[0].getValue(); 
 		} /* resource containing geo coordinates */
@@ -1457,7 +1499,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	    }
 
 	if (coords[0] != 0 && coords[1] != 0) {
-	    if (!!window.console) window.console.log ('found coords :' + coords[0] + ' ' + coords[1]);
+	    if (!!window.console && window.oat_debug) window.console.log ('found coords :' + coords[0] + ' ' + coords[1]);
 	    self.attachMarker(coords, item);
 	    return;
 	}
@@ -1467,8 +1509,8 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	}
 	
 	if (!pointResource && locValue) { /* geocode location */
-	    if (!!window.console) window.console.log ('geocoding: '+locValue);
-		self.geoCode(locValue,item);
+	    if (!!window.console && window.oat_debug) window.console.log ('geocoding: '+locValue);
+	    self.geoCode(locValue,item);
 		return;
 	    }
 	
@@ -1478,7 +1520,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 		    coords[0] = cmatches[2];
 		    coords[1] = cmatches[1];
 		    if (coords[0] == 0 || coords[1] == 0) { return; }
-		    self.attachMarker(coords,item);
+		self.attachMarker(coords,item);
 		    return;
 		}
 	    
@@ -1492,8 +1534,6 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	    }
 	    }
 	
-	if (pointResource.isLit()) { return; } /* not a reference */
-
 	    self.usedBlanknodes.push(pointResource);
 
 	    /* normal marker add */
@@ -1501,7 +1541,7 @@ OAT.RDFTabs.map = function(parent,optObj) {
 
 	if (coords[0] == 0 || coords[1] == 0) { return; }
 
-	self.attachMarker(coords,item);
+	self.attachMarker(coords, item);
     } /* tryItem */
 
     this.trySimple = function(item) {
@@ -1592,25 +1632,74 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	return false;
 	}
 
+    // an item isCoordinateContainer if it's referred by another item and
+    // its type property values are all geo point types and/or it only has geo coordinate properties
+
+    this.isCoordinateContainer = function (item) {
+	type_iid = OAT.IRIDB.getIRIID("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+	if (!item.back.length) 
+	    return false;
+	var preds = item.preds;
+	var nc_cnt = 0;
+	for (var p in preds) {
+	    var pVal = parseInt(p);
+	    if (pVal == type_iid) { // go through types - pointTypes don't count
+		for (var i=0;i<preds[p].length;i++) {
+		    if (self.pointTypes.find(preds[p][i].getIID()) == -1)
+			return false;
+		}
+	    } else {
+		if (self.lonProperties.find(pVal) != -1 ||
+		    self.latProperties.find(pVal) != -1 || 
+		    self.keyProperties.find(pVal) != -1) {
+		    continue;
+		}
+		else return false; // got a non-geo-property
+	    }
+	}
+	return true;
+    }
+
+    this.drawReferences = function (item, container) {
+        var p_table = OAT.Dom.create ("table");
+	for (i=0;i<item.back.length;i++) { // include backreferences;
+	    var predC = OAT.Dom.create("tr",{className:"predicate"});
+	    var predT = OAT.Dom.create("td",{className:"pred_title"});
+	    predT.innerHTML = "Referenced by";
+	    var predV = OAT.Dom.create("td",{className:"pred_value"});
+	    var content = self.parent.getContent(item.back[i], "replace");
+	    OAT.Dom.append([predV,content],[predC,predT,predV], [p_table,predC]);
+	}
+	OAT.Dom.append ([container,p_table]);
+    }
+
 //
 // Return marker content for item
 //    
 
     this.drawAllProps = function (item, container) {
 	var preds = item.preds;
+        var p_table = OAT.Dom.create ("table");
 	for (var p in preds) {
 	    if (self.markerPredBlacklist.find(parseInt(p)) != -1) continue; // Not all predicates are created equal
 	    var pred = preds[p];
-	    var simple = self.parent.store.getCIRIorSplit(p);
+            var simple;
+
+	    if (self.options.raw_iris)
+              simple = OAT.IRIDB.getIRI (p); 
+            else 
+              simple = self.parent.store.getCIRIorSplit(p);
+
 	    if (pred.length == 1 || self.lookupProperties.find(simple) != -1) {
 		var predC = OAT.Dom.create("tr",{className:"predicate"});
 		var predT = OAT.Dom.create("td",{className:"pred_title"});
 		predT.innerHTML = simple;
 		var predV = OAT.Dom.create("td",{className:"pred_value"});
 		var content = self.parent.getContent(pred[0],"replace");
-		OAT.Dom.append([predV,content],[predC,predT,predV],[div,predC]);
+		OAT.Dom.append([predV,content],[predC,predT,predV],[p_table,predC]);
 	    } /* only interesting data */
 	} /* for all predicates */
+        OAT.Dom.append([container,p_table])
 	return container;
     }
 
@@ -1622,10 +1711,20 @@ OAT.RDFTabs.map = function(parent,optObj) {
 
     }
 
+    this.makeAnchor = function (ctr, content, href) {
+	var a = OAT.Dom.create ("a");
+	a.href=href;
+        
+    }
     this.drawMarker = function (item) {
+	if (self.isCoordinateContainer(item))
+	    var s_item = item.back[0];
+	else 
+	    s_item = false;
+
 	var titleH = OAT.Dom.create("h2",{className:"markerTitle"});
 
-	var title = self.parent.getTitle(item);
+	var title = self.parent.getTitle(s_item ? s_item : item);
 	var titleHref='';
 	var popup_ctr;
 
@@ -1635,13 +1734,15 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	}
 	else {
 	if (title.match(/^http/i)) {
-	    self.parent.processLink(titleH,title);
-	    titleH.style.cursor = "pointer";
-	titleH.innerHTML = title;
+	        var titleA = OAT.Dom.create("a",{href:titleHref,target:"_blank"});
+		self.parent.processLink(titleA, title);
+		titleA.innerHTML = title;
+		OAT.Dom.append ([titleH, titleA]);		
 	} else {
-	    var titleHref = self.parent.getURI(item);
+		var titleHref = self.parent.getURI(s_item ? s_item : item);
 	    if (titleHref) {
 		var titleA = OAT.Dom.create("a",{href:titleHref,target:"_blank"});
+		    self.parent.processLink(titleA, titleHref);
 		titleA.innerHTML = title;
 		OAT.Dom.append ([titleH, titleA]);
 	    } else {
@@ -1649,8 +1750,8 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	    }
 	}
 
-	var ctr = OAT.Dom.create("div",{overflow:"auto",className:'marker_ctr'});
-	var abstr = self.getAbstract(item);
+	    var ctr = OAT.Dom.create("div",{className:'marker_ctr'});
+	    var abstr = self.getAbstract(s_item ? s_item : item);
 
 	if (abstr) {
 	var abstrC = OAT.Dom.create("div",{className:'abstract'});
@@ -1661,12 +1762,15 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	//	if (self.parent.store.itemHasType (item, "")) { }
 	//	if (self.parent.store.itemHasType (item, "")) { }
 
-	var ap = self.drawAllProps (item, ctr);
+	var props_ctr = OAT.Dom.create("div", {className: "props_ctr"});
 
 	if (abstr)
-	OAT.Dom.append([ctr,titleH,abstrC,ap]);
+	    OAT.Dom.append([ctr,titleH,abstrC,props_ctr]);
 	else 
-	    OAT.Dom.append([ctr,titleH,ap]);
+	    OAT.Dom.append([ctr,titleH,props_ctr]);
+
+	self.drawAllProps (s_item ? s_item : item, props_ctr);
+	self.drawReferences (s_item ? s_item : item, props_ctr);
 
 	return ctr;
     }
@@ -1735,12 +1839,12 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	    for (var i=0;i<self.parent.data.structured.length;i++) {
 		var item = self.parent.data.structured[i];
 		self.trySimple(item);
-    }
+	    }
 
 	    
 	    self.addMarkers();
 	    
-    }
+	}
 
 	if (!self.map_loaded) {
 	    self.map = new OAT.Map(self.elm,
@@ -1756,18 +1860,20 @@ OAT.RDFTabs.map = function(parent,optObj) {
 	function tryList() {
 	    if (!self.pointListLock && self.map_loaded) {
 		if (!self.pointList.length()) {
-		    var note = new OAT.Notify();
+		    var note = new OAT.Notify (false, {notifyType: 2});
 		    var msg = "Current data set contains nothing that could be displayed on the map.";
-		    note.send(msg);
-		    }
-		self.map.optimalPosition(self.pointList.makePointsArray(false));
-		} else {
-		setTimeout(tryList,500);
+		    note.send(msg, {timeout: 4000});
+		    OAT.MSG.send (self, "MAP_NOTHING_TO_SHOW", false);
 		}
-    }
-	tryList();
+                clearTimeout (window.tryListTo);
+		self.map.optimalPosition(self.pointList.makePointsArray(false));
+ 	    } else {
+		window.tryListTo = setTimeout(tryList,500);
 	    }
 	}
+	tryList();
+    }
+}
 
 OAT.RDFTabs.timeline = function(parent,optObj) {
     var self = this;
@@ -1776,7 +1882,8 @@ OAT.RDFTabs.timeline = function(parent,optObj) {
     this.options = {
 	imagePath:OAT.Preferences.imagePath,
 	description:"This module displays all date/time containing resources on an interactive timeline.",
-	desc:"Date/time on timeline"
+	desc:"Date/time on timeline",
+        raw_iris: false
     }
     for (var p in optObj) { self.options[p] = optObj[p]; }
 
@@ -1883,10 +1990,14 @@ OAT.RDFTabs.timeline = function(parent,optObj) {
 	if (!uris.length) {
 	    var note = new OAT.Notify();
 	    var msg = "Current data set contains nothing that could be displayed on the timeline.";
-	    note.send(msg);
+	    note.send(msg, {timeout: 4000});
 	}
     }
 }
+
+//
+// XXX unfinished
+//
 
 OAT.RDFTabs.people = function(parent,optObj) {
     var self = this;
@@ -1895,7 +2006,8 @@ OAT.RDFTabs.people = function(parent,optObj) {
     this.options = {
 	pictSize:150,
 	columns: 2,
-	width: 800
+	width: 800,
+        raw_iris: false
     };
 
     this.personTypes = ["http://xmlns.com/foaf/0.1/Person"];
@@ -1921,8 +2033,10 @@ OAT.RDFTabs.images = function(parent,optObj) {
 	thumbSize:150,
 	size:600,
 	description:"This module displays all images found in filtered data set.",
-	desc:"Images from filtered data set"
+	desc:"Images from filtered data set",
+        raw_iris: false
     }
+
     for (var p in optObj) { self.options[p] = optObj[p]; }
 
     this.elm.style.textAlign = "center";
@@ -2074,7 +2188,7 @@ OAT.RDFTabs.images = function(parent,optObj) {
 		} else {
 		    /* look for predicates that are/contain image links */
 		    for (var j=0;j<pred.length;j++) {
-			if (item.constructor != OAT.RDFAtom ||
+			if (pred[j].constructor != OAT.RDFAtom ||
 			    pred[j].getTag() != OAT.RDFTag.IRI) { continue; }
 			var value = pred[j].getIRI();
 			if (self.parent.getContentType(value) == 3) {
@@ -2119,7 +2233,8 @@ OAT.RDFTabs.tagcloud = function(parent,optObj) {
 
     this.options = {
 	description:"This module displays all links found in filtered data set.",
-	desc:"Links from filtered data set"
+	desc:"Links from filtered data set",
+        raw_iris: false
     }
     for (var p in optObj) { self.options[p] = optObj[p]; }
 
@@ -2210,7 +2325,8 @@ OAT.RDFTabs.fresnel = function(parent, optObj) {
 	defaultURL:"",
 	autoload:false,
 	description:"This module applies Fresnel RDF Vocabularies to all dereferenced data.",
-	desc:"Fresnel RDF Vocabularies to dereferenced data"
+	desc:"Fresnel RDF Vocabularies to dereferenced data",
+        raw_iris: false
     }
     for (var p in optObj) { self.options[p] = optObj[p]; }
 

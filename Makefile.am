@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2009 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -67,7 +67,7 @@ release:
 #
 .PHONY: changelog
 changelog:
-	cvs2cl -F V7_0-DEVEL --no-ancestors --no-wrap --utc --hide-filenames --prune --window 86400
+	cvs2cl -F V6_0_0-DEVEL --no-ancestors --no-wrap --utc --hide-filenames --prune --window 86400
 
 endif
 
@@ -103,10 +103,6 @@ EXTRA_DIST = \
 	debian/virtuoso-opensource.postrm.debhelper \
 	debian/virtuoso-opensource.prerm.debhelper \
 	debian/virtuoso-opensource.substvars \
-	win32/mkperlenv.pl \
-	win32/mkpythonenv.py \
-	win32/*.bat \
-	win32/*.vcproj \
-	win32/*.sln \
-	win64/*.vcproj \
-	win64/*.sln
+	windows/*.bat \
+	windows/*.sln \
+	windows/*.vcxproj

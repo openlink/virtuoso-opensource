@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2010 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -48,7 +48,7 @@ In order to have the rest of examples of this section working, the following ste
 	Follow instructions on <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtAuthServerUI">Virtuoso Authentication Server UI</ulink>
     </listitem>
     <listitem>
-	In above step register your WebID with secure SPARQL endpoint.
+	In above step register your WebID with secure SPARQL endpoint. Note: "sparql-ssl" endpoint is alias of "sparql-webid" endpoint.
     </listitem>
     <listitem>
 	Export your certificate and key containing the WebID mentioned before from browsers key store as PKCS#12 package.

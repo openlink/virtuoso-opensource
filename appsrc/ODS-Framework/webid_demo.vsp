@@ -1,0 +1,128 @@
+<?vsp
+  declare webid, error, action, hostUrl, httpsUrl, url, callback, certificate any;
+
+	webid := get_keyword ('webid', params);
+	error := get_keyword ('error', params);
+	action := get_keyword ('go', params);
+  if (length (webid) or length (error))
+    goto html;
+
+  if (not length (action))
+    goto html;
+
+  if (is_https_ctx ())
+  {
+    hostUrl := 'https://' || ODS.ODS_API.getDefaultHttps ();
+  }
+  else
+  {
+    hostUrl := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+    if (hostUrl is null)
+    {
+      hostUrl := sys_stat ('st_host_name');
+      if (server_http_port () <> '80')
+        hostUrl := hostUrl || ':' || server_http_port ();
+    }
+    hostUrl := 'http://' || hostUrl;
+  }
+  if (isnull (hostUrl))
+  {
+    error := 'No certificate';
+    goto html;
+  }
+  httpsUrl := ODS.ODS_API.getDefaultHttps();
+  if (isnull (httpsUrl))
+    httpsUrl := 'id.myopenlink.net';
+
+  callback := hostUrl || '/ods/webid/webid_demo.vsp';
+  url := sprintf ('https://%s/ods/webid_verify.vsp?callback=%U', httpsUrl, callback);
+  if (get_keyword ('expiration', params, '') = 'true')
+    url := url || '&expiration=true';
+
+  http_status_set (302);
+  http_header (sprintf ('Location: %s\r\n', url));
+  return;
+
+html:
+?>
+<html>
+  <head>
+    <title>WebID Verification Demo</title>
+    <style type="text/css">
+      body {
+      	background-color: white;
+      	color: black;
+      	font-size: 10pt;
+      	font-family: Verdana, Helvetica, sans-serif;
+      }
+      ul {
+        font-family: Verdana, Helvetica, sans-serif;
+        list-style-type: none;
+      }
+      #qrcode {
+        float: right;
+        clear: right;
+        margin-right: 20px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>WebID Verification Demo</h1>
+    <?vsp declare qrimg, ua any;
+     ua := http_request_header (lines, 'User-Agent');
+     qrimg := ODS.ODS_API.qrcode (sprintf ('http://%{WSHost}s%s', http_path ()));
+     if (qrimg is not null and strcasestr (ua, 'Mobile') is null) {
+    ?>
+    <div id="qrcode"><img alt="QRcode image" src="data:image/jpg;base64,<?V qrimg ?>"/></div>
+    <?vsp
+      } ?>
+    <div>
+      This will check the WebID watermark in your X.509 Certificate.<br/><br/>
+      This service supports WebIDs based on the following URI schemes (more to come):
+      <ul>
+      	<li>* <b>acct</b>, e.g: <span style="font-size: 80%; color: #1DA237;">acct:ExampleUser@id.example.com</span></li>
+      	<li>* <b>http</b>, e.g: <span style="font-size: 80%; color: #1DA237;">http://id.example.com/person/ExampleUser#this</span></li>
+      	<li>* <b>ldap</b>, e.g: <span style="font-size: 80%; color: #1DA237;">ldap://ldap.example.com/o=An%20Example%5C2C%20Inc.,c=US</span></li>
+      	<li>* <b>mailto</b>, e.g: <span style="font-size: 80%; color: #1DA237;">mailto:ExampleUser@id.example.com</span></li>
+      </ul>
+    </div>
+    <div>
+    	<a href="http://ods.openlinksw.com/wiki/ODS/ODSWebIDIdP">Help</a>
+    </div>
+    <br/>
+    <br/>
+    <div>
+      <form method="get">
+	      <input type="checkbox" value="true" name="expiration" id="expiration" />  <label for="expiration">Check Certificate Expiration</label><br />
+        <input type="submit" name="go" value="Check"/>
+      </form>
+    </div>
+    <?vsp
+      if (length (webid) or length (error))
+      {
+    ?>
+      <div>
+      	The return values are:
+  	    <ul>
+          <?vsp
+            if (length (webid))
+            {
+          ?>
+  	      <li>WebID - <?vsp http(sprintf('<a href="%s">%s</a>', DB.DBA.RDF_PROXY_ENTITY_IRI (rtrim (webid, '#this')), DB.DBA.RDF_PROXY_ENTITY_IRI (rtrim (webid, '#this')) )); ?></li>
+  	      <li>Timestamp in ISO 8601 format - <?V get_keyword ('ts', params) ?></li>
+          <?vsp
+            }
+            if (length (error))
+            {
+          ?>
+  	      <li>Error - <?V error ?></li>
+          <?vsp
+            }
+          ?>
+  	    </ul>
+      </div>
+    <?vsp
+      }
+    ?>
+  </body>
+</html>

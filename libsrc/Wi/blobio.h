@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -52,6 +52,7 @@ struct blob_handle_s
     dp_addr_t 	bh_dir_page;	/* points at first directory page */
     int32	bh_position;		/* -- */ /* point on page or string */
     short	bh_frag_no;
+    unsigned short	bh_slice;
     caddr_t bh_string;		/* if BLOB is in RAM as DV string */
     int64 bh_length;		/* Number of symbols in BLOB (either char-s or wchar_t-s */
     int64 bh_diskbytes;	/* Number of bytes required to store BLOB on disk
@@ -72,6 +73,8 @@ struct blob_handle_s
     caddr_t 		bh_source_session; /* used when bh_get_data_from_client is 3 */
   };
 
+
+#define BH_CLUSTER_DAE 5 /* in bh_ask_from_client to indicate that this is a data at exec blob made as temp before use on anothr partition */
 typedef struct blob_handle_s blob_handle_t;
 
 #define BH_ANY		((uint32)(-1))
@@ -122,7 +125,6 @@ typedef struct blob_layout_s blob_layout_t;
 
 void bh_free (blob_handle_t * bh);
 
-caddr_t  box_iri_id (int64 n);
 void iri_id_write (iri_id_t *iid, dk_session_t * ses);
 
 void blobio_init (void);

@@ -1,14 +1,14 @@
 --
 --  sqlo.sql
 --
---  $Id$
+--  $Id: sqlo.sql,v 1.35.6.9.4.5 2013/01/02 16:14:57 source Exp $
 --
 --  Various SQL optimized compiler tests.
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -153,7 +153,7 @@ ECHO BOTH $IF $EQU $LAST[1] 900 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": top top 3 ROW_NO order by concat ('-', STRING1) last row ROW_NO=" $LAST[1] "\n";
 
-select * from (select ROW_NO, ROW_NO + 1 as ff from T1 where ROW_NO < 30) f;
+select * from (select ROW_NO, ROW_NO + 1 as ff from T1 where ROW_NO < 30) f order by 1;
 ECHO BOTH $IF $EQU $LAST[1] 29 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": select from subquery with where last row ROW_NO=" $LAST[1] "\n";
@@ -161,7 +161,7 @@ ECHO BOTH $IF $EQU $LAST[2] 30 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": select from subquery with where last row ff=" $LAST[2] "\n";
 
-select ff from (select * from (select ROW_NO, ROW_NO + 1 as ff from T1 where ROW_NO < 30) f) qq;
+select ff from (select * from (select ROW_NO, ROW_NO + 1 as ff from T1 where ROW_NO < 30) f) qq order by ff;
 ECHO BOTH $IF $EQU $LAST[1] 30 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": select from subquery select from a subquery with where last row ff=" $LAST[1] "\n";
@@ -191,6 +191,8 @@ ECHO BOTH ": select * from union subq with where clause in the topmost select la
 --ECHO BOTH $IF $EQU $LAST[1] 31 "PASSED" "***FAILED";
 --SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 --ECHO BOTH ": select * from union corresponding by (x) subq with where clause in the topmost select last row x=" $LAST[1] "\n";
+
+select x from (select ROW_NO, ROW_NO + 1 as x  from T1  union corresponding by (x) select ROW_NO, ROW_NO + 2 from T1 union corresponding by (x) select ROW_NO, ROW_NO + 3 from T1) un where un.ROW_NO < 30 order by x;
 
 select x from (select ROW_NO, ROW_NO + 1 as x  from T1  union all  select ROW_NO, ROW_NO + 2 from T1) un where un.ROW_NO < 30 order by x;
 ECHO BOTH $IF $EQU $LAST[1] 31 "PASSED" "***FAILED";
@@ -260,6 +262,17 @@ select count (case when 0 = mod (ROW_NO, 2) then null else 1 end) from T1;
 ECHO BOTH $IF $EQU $LAST[1] 500 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": count (case when 0 = mod (ROW_NO, 2) then null else 1 end)  returned " $LAST[1] "\n";
+set maxrows 0;
+set explain on;
+select a.ROW_NO, b.ROW_NO from T1 a left join T1 b on b.ROW_NO = a.ROW_NO + 5 where a.ROW_NO > 1000;
+set explain off;
+
+select a.ROW_NO, b.ROW_NO from T1 a left join T1 b on b.ROW_NO = a.ROW_NO + 5 where a.ROW_NO > 1000 option (hash);
+ECHO BOTH $IF $EQU $LAST[2] NULL "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": oj unique hash selecting hash key\n";
+
+set maxrows 10;
 
 select a.ROW_NO, b.ROW_NO from T1 a left join T1 b on b.ROW_NO = a.ROW_NO + 5 where a.ROW_NO > 1000;
 ECHO BOTH $IF $EQU $LAST[1] 1010 "PASSED" "***FAILED";
@@ -1019,6 +1032,9 @@ create table BUG_TB_STAT (k integer not null primary key,
 insert into BUG_TB_STAT (k, B1_L, B2_L, B3_L, B4_L, E1, E2)
   values (914, 803, 1213, 918, 2000, make_string (515), make_string (508));
 
+__dbf_set ('enable_mem_hash_join', 0);
+
+
 select __tag (B1), __tag (B2), __tag (B3), __tag (B4) from BUG_TBLOB b, BUG_TB_STAT c where c.k = b.k
   and lENgth (B1) = B1_L and lENgth (B2) = B2_L and lENgth (B3) = B3_L
   and lENgth (B4) = B4_L and b. E1 = c. E1 and b. E2 = c. E2;
@@ -1029,6 +1045,7 @@ ECHO BOTH ": hash with row longer than the table w/ inline blobs crash STATE=" $
 drop table BUG_MAX_ROW;
 create table BUG_MAX_ROW (id int primary key, data varchar);
 
+
 create procedure BUG_MAX_ROW_F (in x any) { return repeat ('x', 9000); };
 
 insert replacing BUG_MAX_ROW values (1, repeat (' ', 4071));
@@ -1037,6 +1054,9 @@ insert replacing BUG_MAX_ROW values (1, repeat (' ', 4071));
 --ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 --SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 --ECHO BOTH ": error path of the max row in hash STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+__dbf_set ('enable_mem_hash_join', 1);
+
 
 create procedure f (in x any)
 {

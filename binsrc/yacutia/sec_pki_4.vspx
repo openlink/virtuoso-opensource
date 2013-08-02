@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -144,6 +144,14 @@
             </td>
           </tr>
           <tr>
+            <th>
+              <label for="t_overwrite">Overwrite Existing</label>
+            </th>
+            <td>
+              <v:check-box name="t_overwrite" xhtml_id="t_overwrite" value="off"></v:check-box>
+            </td>
+          </tr>
+          <tr>
             <td colspan="2">
               <v:button action="simple" name="cancel1" value="Cancel">
                 <v:on-post>
@@ -208,7 +216,7 @@
                           domain := subseq(domain, 0, pos);
                         }
                       }
-                      if (exists(select 1 from HTTP_PATH where HP_HOST=domain and HP_LISTEN_HOST=ip and HP_LPATH=path))
+                      if (not self.t_overwrite.ufl_selected and exists(select 1 from HTTP_PATH where HP_HOST=domain and HP_LISTEN_HOST=ip and HP_LPATH=path))
                       {
                         self.vc_is_valid := 0;
                         self.vc_error_message := 'This site already exists';
@@ -229,6 +237,11 @@
                         rollback work;
                         return;
                       };
+                      VHOST_REMOVE(
+                        vhost=>domain,
+                        lhost=>ip,
+                        lpath=>path
+                      );
                       VHOST_DEFINE(
                         vhost=>domain,
                         lhost=>ip,
@@ -249,7 +262,7 @@
 
 		      -- Add /dataspace etc.
 		      if (__proc_exists ('DB.DBA.ods_define_common_vd') is not null)
-		        DB.DBA.ods_define_common_vd (domain, ip);
+		        DB.DBA.wa_redefine_vhosts (domain, ip, 1);
 
 	              insert replacing DB.DBA.WA_DOMAINS (WD_HOST, WD_LISTEN_HOST, WD_LPATH, WD_DOMAIN, WD_MODEL)
 		         values (domain, ip, path, top_domain, model);

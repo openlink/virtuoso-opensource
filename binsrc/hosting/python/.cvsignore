@@ -1,9 +1,0 @@
-.libs
-*.lo
-*.la
-*.o
-tags
-virt_handler.c
-.deps
-Makefile.in
-Makefile

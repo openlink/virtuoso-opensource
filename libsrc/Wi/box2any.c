@@ -81,8 +81,7 @@ name (caddr_t data, caddr_t * err_ret, MP_T * ap, int ser_flags)
 	    box[9] = 0;
 	  }
 
-	return box;
-      }
+	return box;}
     case DV_SINGLE_FLOAT:
       {
 	float f = unbox_float (data);
@@ -104,6 +103,8 @@ name (caddr_t data, caddr_t * err_ret, MP_T * ap, int ser_flags)
     case DV_STRING:
       {
 	int len = box_length (data);
+	if (box_flags (data))
+	  goto general;
 	if (len > 256)
 	  break;
 	box = ALLOC (len + 2, DV_STRING);
@@ -112,6 +113,7 @@ name (caddr_t data, caddr_t * err_ret, MP_T * ap, int ser_flags)
 	memcpy (box + 2, data, len);
 	return box;
       }
+    general:
     default:;
     }
   ROW_OUT_SES (sesn, key_image);
@@ -126,6 +128,8 @@ name (caddr_t data, caddr_t * err_ret, MP_T * ap, int ser_flags)
   }
   FAILED
   {
+      if (DKS_TO_DC & ser_flags)
+	return box_to_any_long (data, err_ret, ser_flags);
     *err_ret = srv_make_new_error ("22026", "SR477", "Error serializing the value into an ANY column");
     return NULL;
   }
@@ -133,6 +137,9 @@ name (caddr_t data, caddr_t * err_ret, MP_T * ap, int ser_flags)
 
   if (sesn.dks_out_fill > PAGE_DATA_SZ - 10)
     {
+      if (DKS_TO_DC & ser_flags)
+	return box_to_any_long (data, err_ret, ser_flags);
+      box2anyerr ();
       *err_ret = srv_make_new_error ("22026", "SR478", "Value of ANY type column too long");
       return NULL;
     }

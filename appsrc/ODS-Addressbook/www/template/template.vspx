@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2007 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -65,11 +65,6 @@
           connectionHeaders: {Authorization: '<?V AB.WA.account_basicAuthorization (self.account_id) ?>'}
         };
 
-      	/* load stylesheets */
-      	OAT.Style.include("grid.css");
-      	OAT.Style.include("webdav.css");
-      	OAT.Style.include("winms.css");
-        
         var featureList=["ajax", "json", "anchor", "dialog", "panelbar", "combolist", "calendar"];
         OAT.Loader.load(featureList);
       </script>
@@ -155,6 +150,7 @@
         <v:variable persist="0" name="domain_id" type="integer" default="-1" />
         <v:variable persist="0" name="account_id" type="integer" default="-1" />
       <v:variable persist="0" name="account_rights" type="varchar" default="''" />
+      <v:variable persist="0" name="person_rights" type="varchar" default="''" />
         <v:variable persist="0" name="settings" type="any" />
       <v:variable persist="0" name="rdf_iri" type="varchar" default="null" />
       <v:on-init>
@@ -169,6 +165,7 @@
           self.domain_id := cast(get_keyword('domain_id', aSessInfo, '-1') as integer);
           self.account_id := cast (get_keyword ('account_id', aSessInfo, '-1') as integer);
           self.account_rights := get_keyword ('account_rights', aSessInfo);
+          self.person_rights := get_keyword ('person_rights', aSessInfo);
           self.settings := vector_concat (vector ('app', DB.DBA.WA_USER_APP_ENABLE (self.account_id)), AB.WA.settings (self.domain_id));
 
           self.vc_add_attribute ('xmlns:foaf', 'http://xmlns.com/foaf/0.1/');

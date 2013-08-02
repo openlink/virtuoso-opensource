@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -274,14 +274,14 @@ In this case it is important to rename the already produced crash dump or change
 				</listitem>
 				<listitem id="ini_Database_Syslog">
 					<formalpara>
-						<title>Syslog = 1/0 (default 1)</title>
-						<para>Virtuoso normally writes log worthy messages to the system log
-            (Unix based operating systems including Linux) or the Windows Event Log (Windows
+						<title>Syslog = 1/0 (default 0)</title>
+						<para>Virtuoso can writes log worthy messages to the system log (Unix based  
+operating systems including Linux) or the Windows Event Log (Windows  
             operating systems).  Messages are written in the system/event log
             before the virtuoso.log file is opened, therefore errors due to
-            absence of virtuoso.ini log are loggable there.
-            This system/event logging can be disabled using this option,
-            by default it is set to 1 meaning on.  </para></formalpara>
+absence of virtuoso.ini log are loggable there. This system/event  
+logging can be enabled using this option, by default it is set to 0  
+meaning off.</para></formalpara>
             <para>On Unix/Linux messages are written as "Virtuoso" events.</para>
             <para>On Windows messages are written in the Application event log.</para>
 				</listitem>
@@ -366,6 +366,13 @@ threads in the thread pool should be released.</para>
 the thread queue after thread clean-up interval has expired.</para>
 					</formalpara>
 				</listitem>
+				<listitem id="ini_Parameters_SchedulerInterval">
+					<formalpara>
+						<title>SchedulerInterval</title>
+						<para>Defines the scheduler wake-up interval ( in minutes). 
+							By default is 0 i.e. the scheduler is disabled. </para>
+					</formalpara>
+				</listitem>
 				<listitem id="ini_Parameters_ResourceCleanupInterval">
 					<formalpara>
 						<title>ResourcesCleanupInterval</title>
@@ -425,6 +432,15 @@ write system calls it needs it can do one of the following depending on this set
 						<para>0. - Continue, leave the OS to flush buffers when it will.</para>
 						<para>1. - Initiate the flush but do not wait for it to complete.</para>
 						<para>2. - Block until the OS has flushed all writes pertaining to any of the database files.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_PageMapCheck">
+					<formalpara>
+						<title>PageMapCheck=0</title>
+						<para>This controls the check of page maps:
+</para>
+						<para>0. - disables the check of page maps.</para>
+						<para>1. - enables the check of page maps.</para>
 					</formalpara>
 				</listitem>
 				<listitem id="ini_Parameters_NumberOfBuffers">
@@ -597,6 +613,14 @@ SQL> select cfg_item_value (virtuoso_ini_path (), 'Parameters',
 						<para>&lt;path&gt; := &lt;absolute_path&gt; or &lt;relative_path&gt;
 OS directories denied for file operations.  See <link linkend="acl">Virtuoso
 ACL's</link> for information on functions that are restricted.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_VADInstallDir">
+					<formalpara>
+						<title>VADInstallDir=&lt;path&gt;</title>
+						<para>&lt;path&gt; := &lt;absolute_path&gt; or &lt;relative_path&gt; OS directory containig 
+						VADs files. When set, enables automatic update of vads on server startup. On Windows use in 
+						the path "\". </para>
 					</formalpara>
 				</listitem>
 				<listitem id="ini_Parameters_SSLServerPort">
@@ -1005,6 +1029,80 @@ lite is 2 in 'normal' mode is 256 by default.
 		    <para>ExtentReadStartupWindow parameter value applies while the server is freshly 
         started and the buffer pool is not yet full. It can be set to preread more aggressively.</para>
 		    <para>Default is 40000.</para>
+	    </formalpara>
+	  </listitem>
+	  <listitem id="ini_AsyncQueueMaxThreads">
+	    <formalpara>
+		    <title>AsyncQueueMaxThreads</title>
+		    <para>Sets the number of threads in a pool that is used for getting extra threads for running 
+		    	queries and for aq_request. Each running statement has at least one thread that is not allocated 
+		    	from this pool plus zero or more threads from this pool.</para>
+		    <para>Setting the pool size to the number of cores plus a few is a reasonable default. On 
+		    	platforms with core multithreading, one can count a core thread as a core for purposes of 
+		    	this parameter.</para>
+		    <para>If one expects to run many slow <link linkend="fn_aq_requests"><function>aq_requests()</function></link> 
+		    (see <link linkend="fn_async_queue"><function>async_queue()</function></link>, 
+		    <link linkend="fn_aq_request"><function>aq_request()</function></link>, etc.), 
+		    then the number of threads should be increased by the number of slow threads one expects.
+		    </para>
+		    <para>Slow threads are typically I/O bound threads used for web crawling or similar long-latency, 
+		    	low-CPU activity.</para>
+		    <para>Note: Only effective with Virtuoso 7.0 and later.</para>
+	    </formalpara>
+	  </listitem>
+	  <listitem id="ini_ThreadsPerQuery">
+	    <formalpara>
+		    <title>ThreadsPerQuery</title>
+		    <para>This is maximum number of threads that can be claimed from the thread pool by a single 
+		    	query. A value of one means that no query parallelization will take place, and all queries 
+		    	will run single threaded.</para>
+		    <para>The number of cores on the machine is a reasonable default if running large queries.</para>	
+		    <para>Note that since every query is served by at least one thread, a single query taking 
+		    	all the extra threads will not prevent other queries from progressing.</para>
+		    <para>Note: Only effective with Virtuoso 7.0 and later.</para>	
+	    </formalpara>
+	  </listitem>
+	  <listitem id="ini_VectorSize">
+	    <formalpara>
+		    <title>VectorSize</title>
+		    <para>This the number of simultaneous sets of query variable bindings processed at one time. 
+		    	The default is 10,000, which is good for most cases.</para>
+		    <para>If we are evaluating the query:</para>	
+<programlisting><![CDATA[
+SELECT COUNT (*) 
+FROM t1 a, 
+     t1 b 
+WHERE a.row_no + 1 = b.row_no 
+OPTION (LOOP, ORDER) 
+]]></programlisting>
+        <para>with vector size of 10,000, then 10,000 rows of t1 a will be fetched first; 
+        	1 will be added to the 10,000 row_no values; 
+        	and then the corresponding row of t1 b will be fetched for the 10,000 row_no of t1 a. 
+        	This process will repeat until enough batches of t1 a have been fetched to come to its end.</para>
+        <para>Note: Only effective with Virtuoso 7.0 and later.</para>	
+	    </formalpara>
+	  </listitem>
+	  <listitem id="ini_AdjustVectorSize">
+	    <formalpara>
+		    <title>AdjustVectorSize</title>
+		    <para>Using a larger vector size when evaluating large queries with indexed random-access can 
+		    	yield up to a 3x speed-up relative to using the default vector size. However, always using a 
+		    	large vector size will prohibitively increase the overhead of running small queries. For this 
+		    	reason, there is the option to adaptively select the vector size. Set AdjustVectorSize = 1 
+		    	to enable this feature. The SQL execution engine will increase the vector size when it sees 
+		    	an index lookup that does not get good locality, (e.g., after sorting the keys to look for, 
+		    	too few consecutive lookups fall on the same page). Having more keys to look up increases 
+		    	the chance that consecutive keys should be found on the same page, thus eliminating much of 
+		    	the index lookup cost.</para>
+		    <para>Note: Only effective with Virtuoso 7.0 and later.</para>	
+	    </formalpara>
+	  </listitem>
+	  <listitem id="ini_MaxVectorSize">
+	    <formalpara>
+		    <title>MaxVectorSize</title>
+		    <para>When AdjustVectorSize is on, this setting gives the maximum vector size. The 
+		    	default is 1,000,000 and the largest allowed value is about 3,500,000.</para>	
+		    <para>Note: Only effective with Virtuoso 7.0 and later.</para>		
 	    </formalpara>
 	  </listitem>
           </itemizedlist>
@@ -1527,6 +1625,17 @@ Section <link linkend="rdfandsparql">RDF Data Access and Data Management</link> 
         Defer Loading of inference rules at start up.
 	</para>
     </formalpara>
+</listitem>
+<listitem id="ini_SPARQL_ShortenLongURIs">
+  <formalpara>
+  	<title>ShortenLongURIs  = 1</title>
+  	<para>Shorten extremely long URIs in datasets when loading with the RDF Bulk Loader. Default is 0. </para>
+  	<para><emphasis>Note</emphasis>: This parameter is only in the Virtuoso 06.03.3131+ commercial builds, 
+  	at the time of writing it is not included in the open source 6.1.4 archives but will be in the 
+  	next 6.1.5 release. A patch to enable this feature is however available from the 
+  	<ulink url="http://sourceforge.net/tracker/?func=detail&amp;aid=3496331&amp;group_id=161622&amp;atid=820576">Virtuso patches page on source forge</ulink>, which can be applied to a 6.1.4 archive from source forge and the Virtuoso 
+  	server binary rebuilt.</para>
+  </formalpara>		
 </listitem>
 <listitem id="ini_SPARQL_MaxMemInUse">
     <formalpara>

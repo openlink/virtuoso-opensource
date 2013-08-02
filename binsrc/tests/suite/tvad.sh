@@ -1,13 +1,13 @@
 #!/bin/sh 
 #
-#  $Id$
+#  $Id: tvad.sh,v 1.8.6.3.4.4 2013/01/02 16:15:32 source Exp $
 #
 #  VAD tests
 #  
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -26,7 +26,7 @@
 
 LOGFILE=tvad.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 
 DoCommand()
@@ -34,7 +34,7 @@ DoCommand()
   _dsn=$1
   command=$2
   comment=$3
-  file='tvadtest.sql'
+  file="$VIRTUOSO_TEST/tvadtest.sql"
   shift 
   shift 
   shift
@@ -48,7 +48,7 @@ END_SQL
   echo $comment >> $file 
 
   echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $*		>> $LOGFILE	
-  RUN $ISQL $DSN dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tvadtest.sql 
+  RUN $ISQL $DSN dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tvadtest.sql
 }
 
 DoBadCommand()
@@ -56,7 +56,7 @@ DoBadCommand()
   _dsn=$1
   command=$2
   comment=$3
-  file='tvadbtest.sql'
+  file="$VIRTUOSO_TEST/tvadbtest.sql"
   shift 
   shift 
   shift
@@ -76,7 +76,7 @@ END_SQL
   
   START_SERVER $PORT 1000 
 
-  RUN $ISQL $DSN dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tvadbtest.sql 
+  RUN $ISQL $DSN dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tvadbtest.sql
 
   STOP_SERVER
   rm -f $DBLOGFILE
@@ -96,7 +96,7 @@ GenVAD1 ()
 	  <name package="rdf_lib">
 		<prop name="Title" value="RDF Support Library" />
 		<prop name="Developer" value="OpenLink Software" />
-		<prop name="Copyright" value="(C) 1998-2011 OpenLink Software" />
+		<prop name="Copyright" value="(C) 1998-2013 OpenLink Software" />
 		<prop name="Download" value="http://www.openlinksw.com/virtuoso/rdf_lib/download" />
 		<prop name="Download" value="http://www.openlinksw.co.uk/virtuoso/rdf_lib/download" />
 	  </name>
@@ -135,7 +135,7 @@ GenVAD2 ()
 	  <name package="test1">
 		<prop name="Title" value="test" />
 		<prop name="Developer" value="OpenLink Software" />
-		<prop name="Copyright" value="(C) 1998-2011 OpenLink Software" />
+		<prop name="Copyright" value="(C) 1998-2013 OpenLink Software" />
 		<prop name="Download" value="http://www.openlinksw.com/virtuoso/rdf_lib/download" />
 		<prop name="Download" value="http://www.openlinksw.co.uk/virtuoso/rdf_lib/download" />
 	  </name>
@@ -172,7 +172,7 @@ GenVAD3 ()
 	  <name package="test1">
 		<prop name="Title" value="test" />
 		<prop name="Developer" value="OpenLink Software" />
-		<prop name="Copyright" value="(C) 1998-2011 OpenLink Software" />
+		<prop name="Copyright" value="(C) 1998-2013 OpenLink Software" />
 		<prop name="Download" value="http://www.openlinksw.com/virtuoso/rdf_lib/download" />
 		<prop name="Download" value="http://www.openlinksw.co.uk/virtuoso/rdf_lib/download" />
 	  </name>
@@ -208,7 +208,7 @@ GenVAD4 ()
 	  <name package="test2">
 		<prop name="Title" value="test" />
 		<prop name="Developer" value="OpenLink Software" />
-		<prop name="Copyright" value="(C) 1998-2011 OpenLink Software" />
+		<prop name="Copyright" value="(C) 1998-2013 OpenLink Software" />
 		<prop name="Download" value="http://www.openlinksw.com/virtuoso/rdf_lib/download" />
 		<prop name="Download" value="http://www.openlinksw.co.uk/virtuoso/rdf_lib/download" />
 	  </name>
@@ -241,6 +241,8 @@ END_URI
 
 BANNER "STARTED VAD TEST (tvad.sh)"
 NOLITE
+
+MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 
 GenVAD1 t1.xml
 GenVAD2 t2.xml

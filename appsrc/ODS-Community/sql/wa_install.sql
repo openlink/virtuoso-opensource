@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -742,6 +742,14 @@ create method apply_custom_settings ( in template_path varchar, in logoimg_path 
      CI_CSS=customtemplate_path ||'/default.css'
   where
     CI_COMMUNITY_ID = self.wa_name;
+
+--  update ODS.COMMUNITY.SYS_COMMUNITY_INFO
+--  set
+--    CI_TEMPLATE=template_path ,
+--    CI_CSS=template_path ||'/default.css'
+--  where
+--    CI_COMMUNITY_ID = self.wa_name;
+
 
   return;
 };

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -451,7 +451,7 @@ inxop_bm_next (inx_op_t * iop , query_instance_t * qi, int op,
 	    }
 	case IOP_TARGET:
 	  itc->itc_search_mode = SM_READ;
-	  itc->itc_key_spec = iop->iop_ks_full_spec; /* set here. May have looped because of checking with iop_other and the init specs may have been the specs for next */
+	  itc->itc_key_spec = iop->iop_ks_full_spec; /* set here. May have looped because of checking with iop_other and the init speczs may have been the specs for next */
 	  buf = itc_reset (itc);
 	  rc = itc_search (itc, &buf);
 	  if (DVC_LESS == rc)
@@ -569,7 +569,7 @@ inxop_next (inx_op_t * iop , query_instance_t * qi, int op,
       itc->itc_ks = ks;
       itc->itc_out_state = qst;
 
-      itc_from (itc, ks->ks_key);
+      itc_from (itc, ks->ks_key, QI_NO_SLICE);
       itc->itc_insert_key = ks->ks_key;
       itc->itc_desc_order = ks->ks_descending;
 

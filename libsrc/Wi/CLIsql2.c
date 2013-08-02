@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1217,7 +1217,7 @@ virtodbc__SQLSetConnectOption (
 	  con->con_defs.cdef_no_char_c_escape = ((int) vParam) != 0;
 
 	  rc = virtodbc__SQLExecDirect (stmt,
-	      (SQLCHAR *) (((int) vParam) ? "set NO_CHAR_C_ESCAPE OFF" : "set NO_CHAR_C_ESCAPE ON"), SQL_NTS);
+	      (SQLCHAR *) (((int) vParam) ? "set NO_CHAR_C_ESCAPE ON" : "set NO_CHAR_C_ESCAPE OFF"), SQL_NTS);
 
 	  virtodbc__SQLFreeStmt (stmt, SQL_DROP);
 
@@ -2031,6 +2031,8 @@ virtodbc__SQLGetInfo (
   SQLRETURN rc = SQL_SUCCESS;
   int is_short = 0;
   int is_ulen = 0;
+
+  cli_dbg_printf (("SQLGetInfo called.\n"));
 
   switch (fInfoType)
     {
@@ -5232,7 +5234,7 @@ virtodbc__SQLGetData (
       int is_nts = (fCType == SQL_C_CHAR);
       int is_wnts = (fCType == SQL_C_WCHAR);
       col_binding_t *cb = stmt_nth_col (stmt, icol);
-      size_t length = bh->bh_length - cb->cb_read_up_to;
+      size_t length = bh->bh_length >= cb->cb_read_up_to ? bh->bh_length - cb->cb_read_up_to : 0; /* it may get negative turned to uint64  */
 
       if (0 == length)
 	{

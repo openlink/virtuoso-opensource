@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2007 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -34,16 +34,16 @@
       if (page_name = 'error.vspx')
         return;
 
-      if (AB.WA.check_grants (self.account_rights, page_name))
+      if (AB.WA.check_grants (self.person_rights, page_name))
         return;
 
-      if (isnull (self.account_rights) and not is_empty_or_null (self.sid))
+      if (isnull (self.person_rights) and not is_empty_or_null (self.sid))
       {
         self.vc_redirect (sprintf ('/ods/error.vspx?__PAGE=%U&__SQL_STATE=%U&__SQL_MESSAGE=%U', 'home.vspx', '23023', 'You have no access rights for the application!'));
         return;
       }
 
-      if (isnull (self.account_rights))
+      if (isnull (self.person_rights))
       {
       vh := http_map_get ('vhost');
       lh := http_map_get ('lhost');

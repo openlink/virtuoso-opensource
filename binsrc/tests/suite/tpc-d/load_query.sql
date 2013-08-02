@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -21,6 +21,10 @@
 --  
 --
 ECHO BOTH "STARTED: TPC-D queries\n";
+__dbf_set ('qp_even_if_lock', 1);
+__dbf_set ('enable_qp', 4);
+__dbf_set ('qp_thread_min_usec', 0);
+
 load Q1.sql;
 load Q2.sql;
 load Q3.sql;

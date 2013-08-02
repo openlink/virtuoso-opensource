@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2010 OpenLink Software
+ *  Copyright (C) 2005-2013 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -117,12 +117,18 @@ OAT.GhostDrag = function() {
 		self.processes.push(process);
 		self.callbacks.push(callback);
 		var cica = true;
-		var ref = function(event) {
-			OAT.Event.prevent(event);
+	var ref = function(e) {
+            var rclick;
+	    if (!e) var e = window.event;
+	    if (e.which) rclick = (e.which == 3);
+	    else if (e.button) rclick = (e.button == 2);
+	    if (rclick) return;
+	    
+            OAT.Event.prevent(e);
 			var index = self.sources.indexOf(elm);
 			if (index == -1) return;
-			var x = event.clientX;
-			var y = event.clientY;
+	    var x = e.clientX;
+	    var y = e.clientY;
 			self.startDrag(self.sources[index],self.processes[index],self.callbacks[index],x,y);
 		}
 		OAT.Event.attach(elm,"mousedown",ref);

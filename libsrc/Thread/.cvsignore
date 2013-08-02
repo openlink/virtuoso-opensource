@@ -1,8 +1,0 @@
-.libs
-.deps
-mtest_fiber
-mtest_pthread
-*.lo
-*.la
-Makefile.in
-Makefile

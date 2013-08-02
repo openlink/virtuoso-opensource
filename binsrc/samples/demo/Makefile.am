@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -53,6 +53,7 @@ doc_dav.vad: mkdoc.sh mksearch.sql drop.sql mkdemo.ini
 	HOME="$(TOP)" \
 	HTMLDOC="$(HTMLDOC)" \
 	HOST=localhost \
+	MAKE="$(MAKE)" \
 	$(SHELL) mkdoc.sh
 
 
@@ -167,7 +168,7 @@ install-data-local:
 	$(SHELL) install_ini.sh database
 if WITH_HTMLDOC
 	mkdir -p "$(DESTDIR)$(htmldocdir)"
-	$(INSTALL_DATA) $(top_srcdir)/docsrc/html_virt/*.html "$(DESTDIR)$(htmldocdir)"
+	-$(INSTALL_DATA) $(top_srcdir)/docsrc/html_virt/*.html "$(DESTDIR)$(htmldocdir)"
 	mkdir -p "$(DESTDIR)$(htmldocdir)/../images"
 	(cd $(top_srcdir)/docsrc/images; find . -name \*.gif -print | cpio -dump "$(DESTDIR)$(htmldocdir)/../images")
 	(cd $(top_srcdir)/docsrc/images; find . -name \*.jpg -print | cpio -dump "$(DESTDIR)$(htmldocdir)/../images")

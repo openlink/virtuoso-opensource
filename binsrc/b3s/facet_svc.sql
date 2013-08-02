@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2009 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -23,7 +23,7 @@
 cl_exec ('registry_set (''fct_max_timeout'',''10000'')');
 
 DB.DBA.VHOST_REMOVE (lpath=>'/fct/service');
-DB.DBA.VHOST_DEFINE (lpath=>'/fct/service', ppath=>'/SOAP/Http/fct_svc', soap_user=>'dba');
+DB.DBA.VHOST_DEFINE (lpath=>'/fct/service', ppath=>'/SOAP/Http/fct_svc', soap_user=>'SPARQL');
 
 create procedure fct_init ()
 {
@@ -31,7 +31,7 @@ create procedure fct_init ()
     {
       WS.WS.host_meta_add ('FCT.service', '<Link rel="http://openlinksw.com/virtuoso/fct/service" href="http://%{WSHost}s/fct/service"/>');
       WS.WS.host_meta_add ('FCT.browser', '<Link rel="http://openlinksw.com/virtuoso/fct/browser" href="http://%{WSHost}s/fct/"/>');
-      WS.WS.host_meta_add ('FCT.describe', 
+      WS.WS.host_meta_add ('FCT.describe',
       	'<Link rel="http://openlinksw.com/virtuoso/fct/resource-descriptor" template="http://%{WSHost}s/describe/?url={uri}"/>');
     }
 }
@@ -50,7 +50,7 @@ create procedure fct_svc_log (in qr varchar, in lines varchar)
 }
 ;
 
-create procedure 
+create procedure
 fct_svc_exec (in tree any, in timeout int, in accept varchar, in lines any)
 {
   declare start_time int;
@@ -84,7 +84,7 @@ fct_svc_exec (in tree any, in timeout int, in accept varchar, in lines any)
       if (not isarray (res) or 0 = length (res) or not isarray (res[0]) or 0 = length (res[0]))
 	res := xtree_doc ('<result/>');
       else
-        res := res[0][0];	
+        res := res[0][0];
 
       ret := xmlelement ("facets", xmlelement ("sparql", qr), xmlelement ("time", msec_time () - start_time),
 			   xmlelement ("complete", case when sqls = 'S1TAT' then 'no' else 'yes' end),
@@ -140,11 +140,11 @@ create procedure fct_svc () __soap_http 'text/xml'
 
   tmp := cast (xpath_eval ('//query/@timeout', xslt) as varchar);
   if (tmp is null)
-    timeout := atoi (registry_get ('fct_timeout'));
+    timeout := atoi (registry_get ('fct_timeout_min'));
   else
     timeout := atoi (tmp);
 
-  maxt := atoi (registry_get ('fct_max_timeout'));
+  maxt := atoi (registry_get ('fct_timeout_max'));
   if (0 >= timeout or timeout > maxt)
     timeout := maxt;
   ret := fct_svc_exec (xslt, timeout, accept, lines);
@@ -152,10 +152,10 @@ create procedure fct_svc () __soap_http 'text/xml'
 }
 ;
 
-grant execute on fct_svc to dba;
+grant execute on fct_svc to SPARQL_SELECT;
 
 DB.DBA.VHOST_REMOVE (lpath=>'/fct/soap');
-DB.DBA.VHOST_DEFINE (lpath=>'/fct/soap', ppath=>'/SOAP/', soap_user=>'dba');
+DB.DBA.VHOST_DEFINE (lpath=>'/fct/soap', ppath=>'/SOAP/', soap_user=>'SPARQL');
 
 select DB.DBA.soap_dt_define ('',
 '<element xmlns="http://www.w3.org/2001/XMLSchema" name="facets" targetNamespace="http://openlinksw.com/services/facets/1.0/">
@@ -202,4 +202,4 @@ __SOAP_DOC 'http://openlinksw.com/services/facets/1.0/:facets'
 }
 ;
 
-grant execute on fct.fct.query to dba;
+grant execute on fct.fct.query to SPARQL_SELECT;

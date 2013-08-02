@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -453,7 +453,7 @@ sqlc_select_unique_ssls (sql_comp_t * sc, select_node_t * sel, dk_set_t *code_se
 		    {
 		      sel->sel_out_slots[inx] = sqlc_new_temp (sc, ssl->ssl_name, ssl->ssl_dtp);
 		      sel->sel_out_slots[inx]->ssl_sqt = ssl->ssl_sqt;
-		      cv_artm (code_set, box_identity, sel->sel_out_slots[inx], ssl, NULL);
+		      cv_artm (code_set, (ao_func_t) box_identity, sel->sel_out_slots[inx], ssl, NULL);
 		    }
 		  break;
 		}
@@ -801,7 +801,7 @@ sqlc_table_has_subtables (sql_comp_t * sc, ST * tree)
   while (id_casemode_hit_next (&hit, (caddr_t *) & tbptr))
     {
       dbe_table_t *the_table = *tbptr;
-      if (the_table == super)
+      if (the_table == super || !the_table->tb_primary_key)
 	continue;
       if (dk_set_member (the_table->tb_primary_key->key_supers, (void *) super->tb_primary_key))
 	return 1;
@@ -816,6 +816,8 @@ sqlc_table_has_subtables (sql_comp_t * sc, ST * tree)
 #endif
 
 long sqlc_add_views_qualifiers = 0;
+int enable_vec_upd = 1;
+int ins_vec_always = 1;
 
 void
 sql_stmt_comp (sql_comp_t * sc, ST ** ptree)
@@ -830,7 +832,7 @@ sql_stmt_comp (sql_comp_t * sc, ST ** ptree)
       {
       case SELECT_STMT:
 	{
-	  if (enable_vec && tree->_.select_stmt.table_exp && !sqlo_opt_value (tree->_.select_stmt.table_exp->_.table_exp.opts, OPT_NOT_VECTORED))
+	  if (enable_vec && !(tree->_.select_stmt.table_exp && sqlo_opt_value (tree->_.select_stmt.table_exp->_.table_exp.opts, OPT_NOT_VECTORED)))
 	    sc->sc_cc->cc_query->qr_proc_vectored = QR_VEC_STMT;
 	  sqlo_top_select (sc, ptree);
 	  tree = *ptree;
@@ -847,17 +849,19 @@ sql_stmt_comp (sql_comp_t * sc, ST ** ptree)
 	tree = *ptree;
 	break;
       case INSERT_STMT:
-	if (enable_vec && (param_inx || ST_P (tree->_.insert.vals, SELECT_STMT))
-	    && INS_REPLACING != tree->_.insert.mode)
+	if (ins_vec_always  || (enable_vec && (param_inx || ST_P (tree->_.insert.vals, SELECT_STMT) || cluster_enable)
+		  && INS_REPLACING != tree->_.insert.mode))
 	  sc->sc_cc->cc_query->qr_proc_vectored = QR_VEC_STMT;
 	sqlc_insert (sc, tree);
 	break;
 
       case UPDATE_POS:
-	sqlc_update_pos (sc, tree, NULL);
+	sqlc_update_pos (sc, tree, NULL, NULL);
 	break;
 
       case UPDATE_SRC:
+	if (enable_vec_upd && !sqlc_table_has_subtables (sc, tree))
+	  sc->sc_cc->cc_query->qr_proc_vectored = QR_VEC_STMT;
 	sqlc_update_searched (sc, tree);
 	break;
 
@@ -869,7 +873,7 @@ sql_stmt_comp (sql_comp_t * sc, ST ** ptree)
 	break;
 
       case DELETE_POS:
-	sqlc_delete_pos (sc, tree, NULL);
+	sqlc_delete_pos (sc, tree, NULL, NULL);
 	break;
 
       case OP_SHUTDOWN:
@@ -952,6 +956,7 @@ sqlc_temp_tree (sql_comp_t * sc, caddr_t tree)
   t_set_push (&sc->sc_temp_trees, (void *) tree);
 }
 
+void smp_destroy (tb_sample_t * smp);
 
 void
 sc_free (sql_comp_t * sc)
@@ -1222,6 +1227,7 @@ sqlc_assign_unknown_dtps (query_t *qr)
 
 
 
+#if 0
 static int
 sql_is_ddl (sql_tree_t * tree)
 {
@@ -1236,6 +1242,7 @@ sql_is_ddl (sql_tree_t * tree)
     }
   return 0;
 }
+#endif
 
 extern int enable_vec;
 int64 sqlc_cum_memory;
@@ -1245,6 +1252,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	     caddr_t * err, volatile int cr_type, ST *the_parse_tree, char *view_name)
 {
   volatile long msecs = prof_on ? get_msec_real_time () : 0;
+  db_activity_t da_before;
   caddr_t cc_error;
   char *string = NULL;
   ST *tree;
@@ -1256,6 +1264,11 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   int nested_sql_comp = (THR_TMP_POOL ? 1 : 0);
   volatile int inside_sem = 0;
   volatile int is_ddl = 0;
+  if (!nested_sql_comp)
+    {
+      CLI_THREAD_TIME (cli);
+      da_before = cli->cli_activity;
+    }
   if (DO_LOG_INT (LOG_COMPILE))
     {
       LOG_GET;
@@ -1291,6 +1304,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
     {
       sql_warnings_clear ();
       MP_START();
+      mp_comment (THR_TMP_POOL, "compile ", string2);
     }
   string = wrap_sql_string (string2);
   if (SQLC_PARSE_ONLY_REC == cr_type)
@@ -1374,11 +1388,14 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
       sql_pop_all_buffers ();
       tree = the_parse_tree ? (ST *) t_full_box_copy_tree ((caddr_t) the_parse_tree) : parse_tree;
       if (cr_type != SQLC_PARSE_ONLY && cr_type != SQLC_TRY_SQLO && cr_type != SQLC_SQLO_SCORE)
-	is_ddl = sql_is_ddl (tree);
+	is_ddl = 0; /*sql_is_ddl (tree);*/
       if (!is_ddl)
 	{
-	  semaphore_leave (parse_sem);
-	  inside_sem = 0;
+          if (inside_sem)
+            {
+              semaphore_leave (parse_sem);
+              inside_sem = 0;
+            }
 	}
       else
 	sqlc_inside_sem = 1;
@@ -1523,9 +1540,16 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 
   if (!nested_sql_comp)
     {
-      /* printf ("sql sz %d \}n", mp_size (THR_TMP_POOL)); */
-      sqlc_cum_memory += THR_TMP_POOL->mp_bytes;
+      int64 sqlc_mem;
+      db_activity_t tmp;
+      sqlc_cum_memory += sqlc_mem = THR_TMP_POOL->mp_bytes;
     MP_DONE();
+      CLI_THREAD_TIME (cli);
+      tmp = cli->cli_activity;
+      da_sub (&tmp, &da_before);
+      da_add (&cli->cli_compile_activity, &tmp);
+      da_sub (&cli->cli_activity, &tmp);
+      cli->cli_compile_activity.da_memory = sqlc_mem;
     }
 /*  dk_free_tree ((caddr_t) tree);*/
 /*  dk_free (string, -1); */
@@ -1609,8 +1633,10 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
     }
   if (prof_on)
     {
+      uint32 elapsed = get_msec_real_time () - msecs;
       prof_n_compile++;
-      prof_compile_time += get_msec_real_time () - msecs;
+      prof_compile_time += elapsed;
+      cli->cli_compile_msec += elapsed;
     }
   return qr;
 }
@@ -1630,7 +1656,18 @@ dbg_sql_compile_static (const char *file, int line, const char *string2, client_
 	     caddr_t * err, volatile int cr_type)
 {
   caddr_t my_err = NULL;
-  query_t *qr = DBG_NAME(sql_compile_1) (DBG_ARGS string2, cli, &my_err, cr_type, NULL, NULL);
+  query_t *qr = NULL;
+  sql_tree_t *tree = NULL;
+  if (SQLC_STATIC_PRESERVES_TREE == cr_type)
+    {
+      int cr_tree_type = ((NULL != parse_sem) && parse_sem->sem_entry_count) ? SQLC_PARSE_ONLY_REC : SQLC_PARSE_ONLY;
+      tree = (sql_tree_t *)DBG_NAME(sql_compile_1) (DBG_ARGS string2, cli, err, cr_tree_type, NULL, NULL);
+      if (NULL != err[0])
+        return NULL;
+      cr_type = SQLC_DEFAULT;
+    }
+  qr = DBG_NAME(sql_compile_1) (DBG_ARGS string2, cli, err, cr_type, tree, NULL);
+  dk_free_tree ((caddr_t *)tree);
   if (NULL != err)
     err[0] = my_err;
   if (NULL == qr)
@@ -1720,26 +1757,88 @@ query_t *
 sql_compile_static (const char *string2, client_connection_t * cli,
 	     caddr_t * err, volatile int cr_type)
 {
-  query_t *qr = DBG_NAME(sql_compile_1) (DBG_ARGS string2, cli, err, cr_type, NULL, NULL);
+  query_t *qr = NULL;
+  sql_tree_t *tree = NULL;
+  if (SQLC_STATIC_PRESERVES_TREE == cr_type)
+    {
+      int cr_tree_type = ((NULL != parse_sem) && parse_sem->sem_entry_count) ? SQLC_PARSE_ONLY_REC : SQLC_PARSE_ONLY;
+      tree = (sql_tree_t *)DBG_NAME(sql_compile_1) (DBG_ARGS string2, cli, err, cr_tree_type, NULL, NULL);
+      if (NULL != err[0])
+        return NULL;
+      cr_type = SQLC_DEFAULT;
+    }
+  qr = DBG_NAME(sql_compile_1) (DBG_ARGS string2, cli, err, cr_type, tree, NULL);
+  dk_free_tree ((caddr_t *)tree);
   return qr;
 }
 #endif
 
 int sql_proc_use_recompile = 0;
 
+dtp_t
+sqlc_find_dtp (int tok, int tok2)
+{
+  if (ARRAY == tok2)
+    return DV_ARRAY_OF_POINTER;
+  switch (tok)
+    {
+      case NUMERIC:
+      case DECIMAL_L:
+	  return DV_NUMERIC;
+      case INTEGER:
+	  return DV_LONG_INT;
+      case SMALLINT:
+	  return DV_SHORT_INT;
+      case BIGINT:
+	  return DV_INT64;
+      case FLOAT_L:
+	  return DV_DOUBLE_FLOAT;
+      case REAL:
+	  return DV_SINGLE_FLOAT;
+      case DOUBLE_L:
+	  return DV_DOUBLE_FLOAT;
+      case VARCHAR:
+	  return DV_STRING;
+      case NVARCHAR:
+      case NCHAR:
+	  return DV_WIDE;
+      case BINARY:
+      case VARBINARY:
+	  return DV_BIN;
+      case DATETIME:
+	  return DV_DATETIME;
+      case TIMESTAMP:
+	  return DV_TIMESTAMP;
+      case TIME:
+	  return DV_TIME;
+      case DATE_L:
+	  return DV_DATE;
+      case ANY:
+	return DV_ANY;
+      case IRI_ID:
+	  return DV_IRI_ID;
+      case IRI_ID_8:
+	  return DV_IRI_ID_8;
+    }
+  return 0;
+}
 
 query_t *
 DBG_NAME(sql_proc_to_recompile) (DBG_PARAMS const char *string2, client_connection_t * cli, caddr_t proc_name, int text_is_constant)
 {
   query_t *qr = NULL;
   char proc_name_buffer[MAX_QUAL_NAME_LEN];
+  caddr_t **lexems;
+  int n_lexems, inx = 0;
+  dtp_t ret_dtp = 0;
 
   if (!sql_proc_use_recompile)
     return NULL;
+
+  lexems = (caddr_t **) sql_lex_analyze (string2, NULL, 0, 1, BEGINX);
+  n_lexems = BOX_ELEMENTS (lexems);
   if (!proc_name)
     { /* have to find out one using the parser */
-      caddr_t **lexems = (caddr_t **) sql_lex_analyze (string2, NULL, 10, 1);
-      int n_lexems = BOX_ELEMENTS (lexems);
       char *q, *o, *n;
       char qb[MAX_NAME_LEN], ob[MAX_NAME_LEN], nb[MAX_NAME_LEN];
       if (n_lexems < 4)
@@ -1787,9 +1886,19 @@ DBG_NAME(sql_proc_to_recompile) (DBG_PARAMS const char *string2, client_connecti
       sch_normalize_new_table_case (isp_schema (NULL), qb, sizeof (qb), ob, sizeof (ob));
       snprintf (proc_name_buffer, sizeof (proc_name_buffer), "%s.%s.%s", qb, ob, nb);
       proc_name = &(proc_name_buffer[0]);
-      dk_free_tree ((box_t) lexems);
     }
+  _DO_BOX (inx, lexems)
+    {
+      if (unbox (lexems[inx][2]) == RETURNS && (inx + 1) < n_lexems)
+	{
+	  ret_dtp = sqlc_find_dtp (unbox (lexems[inx + 1][2]),
+				   inx + 2 < n_lexems ? unbox (lexems[inx + 2][2]) : 0);
+	  break;
+	}
+    }
+  END_DO_BOX;
 
+  dk_free_tree ((box_t) lexems);
   DK_ALLOC_QUERY (qr);
   qr->qr_to_recompile = 1;
 
@@ -1799,6 +1908,8 @@ DBG_NAME(sql_proc_to_recompile) (DBG_PARAMS const char *string2, client_connecti
   if (cli->cli_user)
     qr->qr_proc_owner = cli->cli_user->usr_id;
   qr->qr_text_is_constant = text_is_constant;
+  if (ret_dtp)
+    qr->qr_proc_ret_type = list (2, ret_dtp, 0);
   SET_QR_TEXT(qr,string2);
   sch_set_proc_def (wi_inst.wi_schema, qr->qr_proc_name, qr);
   return qr;
@@ -1842,9 +1953,14 @@ sqlc_subquery_1 (sql_comp_t * super_sc, predicate_t * super_pred, ST ** ptree, i
   comp_context_t cc;
   dk_set_t gen_params_set = NULL;
   caddr_t volatile err_save = NULL;
-
+  int is_scalar_subq = 0;
   sql_comp_t sc;
   NEW_VARZ (query_t, qr);
+  if (SCALAR_SUBQ == (ptrlong)params)
+    {
+      params = NULL;
+      is_scalar_subq = 1;
+    }
   memset (&sc, 0, sizeof (sc));
   memset (subq_comp, 0, sizeof (subq_compilation_t));
 
@@ -1894,6 +2010,13 @@ sqlc_subquery_1 (sql_comp_t * super_sc, predicate_t * super_pred, ST ** ptree, i
     else
       {
 	sql_stmt_comp (&sc, ptree);
+	if (is_scalar_subq)
+	  {
+	    state_slot_t * ext_sets = ssl_new_variable (super_sc->sc_cc, "ext_sets", DV_LONG_INT);
+	    if (!IS_QN (qr->qr_head_node, set_ctr_input)) GPF_T1 ("scalar subq must start w setc ctr");
+	    ((set_ctr_node_t*)qr->qr_head_node)->sctr_ext_set_no = ext_sets;
+	    qr->qr_select_node->sel_ext_set_no = ext_sets;
+	  }
 	if (qr->qr_proc_vectored && !sc.sc_check_view_sec)
 	  sqlg_vector_subq (&sc);
 	tree = *ptree;
@@ -2027,8 +2150,17 @@ sqlc_test (void)
 #ifdef MALLOC_DEBUG
 #undef sql_compile
 query_t *
-sql_compile (char *string2, client_connection_t * cli, caddr_t * err, int store_procs)
+sql_compile (const char *string2, client_connection_t * cli, caddr_t * err, int store_procs)
 {
   return dbg_sql_compile (__FILE__, __LINE__, string2, cli, err, store_procs);
 }
+
+#undef sql_proc_to_recompile
+query_t *
+sql_proc_to_recompile (const char *string2, client_connection_t * cli, caddr_t proc_name, int text_is_constant)
+{
+  return dbg_sql_proc_to_recompile (__FILE__, __LINE__, string2, cli, proc_name, text_is_constant);
+}
+
+
 #endif

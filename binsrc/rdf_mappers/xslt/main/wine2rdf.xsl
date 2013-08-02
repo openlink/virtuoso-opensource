@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -31,20 +31,24 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
 <!ENTITY cl "http://www.ebusiness-unibw.org/ontologies/consumerelectronics/v1#">
 <!ENTITY oplbb "http://www.openlinksw.com/schemas/bestbuy#">
+<!ENTITY vcard "http://www.w3.org/2006/vcard/ns#">
 <!ENTITY review "http:/www.purl.org/stuff/rev#"> 
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:rdf="&rdf;"
+    xmlns:vcard="&vcard;"	
     xmlns:rdfs="&rdfs;"
     xmlns:foaf="&foaf;"
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
     xmlns:owl="&owl;"
+    xmlns:opl="&opl;"
     xmlns:pto="&pto;" 
     xmlns:dcterms="&dcterms;"
     xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"  
@@ -76,6 +80,13 @@
 				<dcterms:subject rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
 			</rdf:Description>
 			<gr:Offering rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.wine.com#this">
+                                 			<foaf:name>Wine.com</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.wine.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
 			    <sioc:has_container rdf:resource="{$docproxyIRI}"/>
 			    <gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 			    <rdfs:label><xsl:value-of select="Product/Name"/></rdfs:label>
@@ -93,6 +104,13 @@
                 <rdfs:seeAlso rdf:resource="{vi:proxyIRI ('http://www.wine.com')}"/>
 	        </gr:BusinessEntity>
 			<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.wine.com#this">
+                                 			<foaf:name>Wine.com</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.wine.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
 			    <rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 			    <rdf:type rdf:resource="&oplbb;Product" />
                 <gr:hasMakeAndModel>

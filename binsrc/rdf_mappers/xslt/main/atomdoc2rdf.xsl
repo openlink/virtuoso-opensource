@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -68,6 +68,7 @@
   xmlns:foaf="&foaf;"
   xmlns:dcterms="&dcterms;"
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
+  xmlns:opl="http://www.openlinksw.com/schema/attribution#"
   version="1.0">
 
 <xsl:output indent="yes" cdata-section-elements="content:encoded" />
@@ -142,7 +143,8 @@
 
 <xsl:template match="a:author">
     <dc:creator><xsl:value-of select="a:name" /> &lt;<xsl:value-of select="a:email" />&gt;</dc:creator>
-<foaf:mbox rdf:resource="mailto:{a:email}"/>
+    <foaf:mbox rdf:resource="mailto:{a:email}"/>
+    <opl:email_address_digest rdf:resource="{vi:di-uri (a:email)}"/>
 </xsl:template>
 
 <xsl:template match="a:entry" mode="li">

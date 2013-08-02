@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -25,7 +25,7 @@ ECHO BOTH "STARTED: Checking security objects on Demo DB\n";
 SET ARGV[0] 0;
 SET ARGV[1] 0;
 
-select count(*) from SYS_USERS where U_ACCOUNT_DISABLED = 0 and U_IS_ROLE = 0 and U_NAME not in ('dba', 'dav', 'demo', 'nobody', 'tutorial_demo');
+select count(*) from SYS_USERS where U_ACCOUNT_DISABLED = 0 and U_IS_ROLE = 0 and U_NAME not in ('dba', 'dav', 'demo', 'nobody', 'tutorial_demo', '__rdf_repl');
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": " $LAST[1] " Users enabled different than dba,dav,demo.\n";

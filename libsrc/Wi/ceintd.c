@@ -32,7 +32,7 @@ ce_name (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_bytes)
   it_cursor_t *itc = cpo->cpo_itc;
   int64 base, base_1, first;
   db_buf_t ce = cpo->cpo_ce;
-  db_buf_t ce_first_val, ce_end;
+  db_buf_t ce_first_val, ce_end = ce_first + n_bytes;
   VALUE_VARS;
   int first_len;
   int skip = cpo->cpo_skip;
@@ -46,27 +46,25 @@ ce_name (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_bytes)
 #endif
   CE_FIRST;
   FILTER_VALUES;
-  if (!CEINTD_INTLIKE)
+  if (!CE_INTLIKE (flags))
     {
       if (DV_DATE == any_ce_dtp (ce_first_val))
 	{
-	  base = DT_DAY (ce_first_val + 1);
-	  run1 = run = base & 0xff;
-	  base_1 = base = (base & CLEAR_LOW_BYTE) - base + run1;
+	  run1 = run = ce_first_val[3];
+	  base_1 = 0;
 	}
       else
 	{
-	  first = LONG_REF_NA (ce_first - 4);
-	  base = base_1 = 0;
-	  run1 = run = first & 0xff;
+	  base_1 = 0;
+	  run1 = run = (dtp_t) ce_first[-1];
 	}
     }
   else
     {
-      base_1 = base = first & CLEAR_LOW_BYTE;
-      run1 = run = first & 0xff;
+      base_1 = 0;
+      run1 = run = ce_first_int_low_byte (ce, ce_first);
     }
-  ce_end = ce + n_bytes;
+  base = base_1;
   while (ce_first < ce_end)
     {
       if (!run)
@@ -85,7 +83,8 @@ ce_name (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_bytes)
 	  skip = 0;
 	  for (inx = skip2; inx < last; inx++)
 	    {
-	      uint32 n = SHORT_REF_CA (ce_first + 2 * inx);
+	      uint64 n = SHORT_REF_CA (ce_first + 2 * inx);
+	    repeating_place:
 	      CE_OP;
 
 #ifdef CEINTD_RANGE
@@ -96,6 +95,8 @@ ce_name (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_bytes)
 	      if (++itc->itc_match_in >= itc->itc_n_matches)
 		return CE_AT_END;
 	      target = itc->itc_matches[itc->itc_match_in];
+	      if (target == last_row)
+		goto repeating_place;
 	      if (target > last_of_ce)
 		return target;
 	      last_row++;
@@ -123,5 +124,14 @@ ce_name (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_bytes)
       run = d & 0xff;
       base = base_1 + (d & CLEAR_LOW_BYTE);
     }
+#ifdef CEINTD_RANGE
   return cpo->cpo_ce_row_no + n_values;
+#else
+  return itc->itc_match_in >= itc->itc_n_matches ? CE_AT_END : itc->itc_matches[itc->itc_match_in];
+#endif
 }
+
+
+
+#undef ce_name
+#undef CEINTD_RANGE

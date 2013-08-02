@@ -1,10 +1,10 @@
 --  
---  $Id$
+--  $Id: tsoap_rpc.sql,v 1.6.10.2 2013/01/02 16:15:27 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -896,6 +896,7 @@ select soap_box_xml_entity_validating (aref (InteropTests.echoStructAsSimpleType
 ECHO BOTH $IF $EQU $LAST[1] 'This is a test' "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": InteropTests.echoStructAsSimpleTypes (varString element) : " $LAST[1] "\n";
+
 
 select get_keyword ('varString', aref(soap_box_xml_entity_validating (aref (InteropTests.echoStructArray (vector (soap_box_structure ('varString', 'This is a test', 'varInt', 123,'varFloat', cast(3.14 as float)),soap_box_structure ('varString', 'This is a test', 'varInt', 123,'varFloat', cast(3.14 as float)))),1), 'http://soapinterop.org/xsd:ArrayOfSOAPStruct'), 0), NULL);
 

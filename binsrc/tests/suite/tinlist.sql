@@ -42,7 +42,7 @@ echo both ":  in list join\n";
 select count (*) from sys_users where u_name in (u_name);
 
 drop table tin;
-create table tin (id1 int primary key, id2 int, id3 int);
+create table tin (id1 int primary key, id2 int not null, id3 int not null);
 create index tinidx on tin (id2);
 
 foreach integer between 1 10 insert into tin values (?, ?+1, ?+2);

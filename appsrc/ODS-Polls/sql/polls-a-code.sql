@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1546,7 +1546,7 @@ create procedure POLLS.WA.normalize_space(
 -------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.utfClear(
-  inout S varchar)
+  in S varchar)
 {
   declare N integer;
   declare retValue varchar;
@@ -1566,10 +1566,16 @@ create procedure POLLS.WA.utfClear(
 -------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.utf2wide (
-  inout S any)
+  in S any)
 {
+  declare retValue any;
+
   if (isstring (S))
-    return charset_recode (S, 'UTF-8', '_WIDE_');
+  {
+    retValue := charset_recode (S, 'UTF-8', '_WIDE_');
+    if (iswidestring (retValue))
+      return retValue;
+  }
   return S;
 }
 ;
@@ -1577,10 +1583,16 @@ create procedure POLLS.WA.utf2wide (
 -------------------------------------------------------------------------------
 --
 create procedure POLLS.WA.wide2utf (
-  inout S any)
+  in S any)
 {
+  declare retValue any;
+
   if (iswidestring (S))
-    return charset_recode (S, '_WIDE_', 'UTF-8' );
+  {
+    retValue := charset_recode (S, '_WIDE_', 'UTF-8' );
+    if (isstring (retValue))
+      return retValue;
+  }
   return charset_recode (S, null, 'UTF-8' );
 }
 ;
@@ -2158,9 +2170,10 @@ create procedure POLLS.WA.dt_iso8601 (
 create procedure POLLS.WA.test_clear (
   in S any)
 {
-  declare N integer;
+  S := substring (S, 1, coalesce (strstr (S, '<>'), length (S)));
+  S := substring (S, 1, coalesce (strstr (S, '\nin'), length (S)));
 
-  return substring(S, 1, coalesce(strstr(S, '<>'), length(S)));
+  return S;
 }
 ;
 
@@ -2305,7 +2318,7 @@ create procedure POLLS.WA.validate2 (
     if (isnull(regexp_match('^[^\\\/\?\*\"\'\>\<\:\|]*\$', propertyValue)))
       goto _error;
   } else if ((propertyType = 'uri') or (propertyType = 'anyuri')) {
-    if (isnull(regexp_match('^(ht|f)tp(s?)\:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(\/?)([a-zA-Z0-9\-\.\?\,\'\/\\\+&amp;%\$#_=:]*)?\$', propertyValue)))
+    if (isnull (regexp_match ('^(ht|f)tp(s?)\:\/\/[0-9a-zA-Z]([-.\w]*[0-9a-zA-Z])*(:(0-9)*)*(\/?)([a-zA-Z0-9\-\.\?\,\'\/\\\+&amp;%\$#_=:~]*)?\$', propertyValue)))
       goto _error;
   } else if (propertyType = 'email') {
     if (isnull(regexp_match('^([a-zA-Z0-9_\-])+(\.([a-zA-Z0-9_\-])+)*@((\[(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5])))\.(((([0-1])?([0-9])?[0-9])|(2[0-4][0-9])|(2[0-5][0-5]))\]))|((([a-zA-Z0-9])+(([\-])+([a-zA-Z0-9])+)*\.)+([a-zA-Z])+(([\-])+([a-zA-Z0-9])+)*))\$', propertyValue)))

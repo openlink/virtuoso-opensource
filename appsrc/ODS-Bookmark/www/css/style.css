@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -27,9 +27,21 @@ body {
   font-size: 9pt;
 }
 
+pre {
+  white-space: pre-wrap;       /* css-3 */
+  white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+  white-space: -pre-wrap;      /* Opera 4-6 */
+  white-space: -o-pre-wrap;    /* Opera 7 */
+  word-wrap: break-word;       /* Internet Explorer 5.5+ */
+}
+
 form {
   margin: 0;
   padding: 0;
+}
+
+abbr {
+  border: none;
 }
 
 a {
@@ -82,43 +94,6 @@ a:hover, .link:hover
   vertical-align: top;
 }
 
-/* Footer */
-#FT {
-  width: 100%;
-  position: relative;
-  bottom: 0px;
-  font-size: 8pt;
-  float: left;
-  clear: both;
-  text-align: right;
-  border-top: 2px solid #fff;
-  margin-right: 10px;
-  background-color: #fff;
-  background-image: url(../image/ods_main_footer.png);
-}
-
-#FT_L {
-  float: left;
-  clear: left;
-  margin-top: 10px;
-  margin-left: 8px;
-  border: 1px solid #788;
-}
-
-#FT_R {
-  float: right;
-  clear: right;
-  margin-top: 10px;
-  margin-bottom: 10px;
-  margin-right: 5px;
-  color: #788;
-}
-
-#FT_R a {
-  text-decoration: none;
-  color: inherit;
-}
-
 /* Left side within MT */
 .page_head {
   width: 100%;
@@ -129,6 +104,7 @@ a:hover, .link:hover
   font-size: 12px;
   background-color: #EFEFEF;
   border: 1px solid #7f94a5;
+  border-radius: 5px;
   -moz-border-radius: 5px;
   -webkit-border-radius: 5px;
   padding: 5px;
@@ -382,6 +358,7 @@ input.button {
   border: solid 1px;
   border-color: #7f94a5;
   background: #99b3c5;
+  border-radius: 3px;
   -moz-border-radius: 3px;
   -webkit-border-radius: 3px;
 }
@@ -600,6 +577,8 @@ div.tab {
   border: 1px solid #000;
   border-bottom-width: 0px;
   border-color: #7f94a5;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
   -moz-border-radius-topleft: 3px;
   -moz-border-radius-topright: 3px;
   -webkit-border-top-left-radius: 3px;
@@ -736,6 +715,7 @@ font-weight:normal !important;
 span.button {
   background: none repeat scroll 0 0 #99B3C5;
   border: 1px solid #7F94A5;
+  border-radius: 5px;
   -moz-border-radius: 5px;
   -webkit-border-radius: 5px;
   color: #FFFFFF;

@@ -36,19 +36,33 @@ ceic_all_dtp (ce_ins_ctx_t * ceic, dtp_t dtp)
   it_cursor_t *itc = ceic->ceic_itc;
   dtp_t can_dtp = dtp_canonical[dtp];
   int inx;
-  int last = itc->itc_n_sets ? itc->itc_ce_first_set + ceic->ceic_n_for_ce : 1;
   db_buf_t val;
+  int n_for_ce = ceic->ceic_n_for_ce, last;
+  /* after checking types for a merge insert after a partially done type specific insert it can be that the first set and first range are shifted up.  So ceic_n_for_ce is not the cap.  Must not read past the sets.  No harm in reprting heterogenous types due to reading more sets than actually go to the ce.  */
+  if (n_for_ce > itc->itc_range_fill - itc->itc_ce_first_range)
+    n_for_ce = itc->itc_range_fill - itc->itc_ce_first_range;
+  last = itc->itc_ce_first_set + n_for_ce;
+  if (DV_ANY == ceic->ceic_col->col_sqt.sqt_dtp)
+    {
   for (inx = itc->itc_ce_first_set; inx < last; inx++)
     {
-      if (itc->itc_param_order)
 	val = (db_buf_t) itc->itc_vec_rds[itc->itc_param_order[inx]]->rd_values[ceic->ceic_nth_col];
-      else
-	val = (db_buf_t) itc->itc_vec_rds[0]->rd_values[ceic->ceic_nth_col];
       if (can_dtp != dtp_canonical[*(db_buf_t) val])
 	return 0;
       if ((DV_LONG_INT == dtp && DV_INT64 == *(db_buf_t) val) || (DV_IRI_ID == dtp && DV_IRI_ID_8 == *(db_buf_t) val))
 	return 0;
     }
+    }
+  else
+    {
+      for (inx = itc->itc_ce_first_set; inx < last; inx++)
+	{
+	  val = (db_buf_t) itc->itc_vec_rds[itc->itc_param_order[inx]]->rd_values[ceic->ceic_nth_col];
+	  if (can_dtp != dtp_canonical[DV_TYPE_OF (val)])
+	    return 0;
+	}
+    }
+  ceic->ceic_dtp_checked = 1;
   return 1;
 }
 
@@ -61,7 +75,7 @@ ceic_all_dtp (ce_ins_ctx_t * ceic, dtp_t dtp)
 
 
 #define VEC_DTP_CK(dtp) \
-  if (DV_ANY == ceic->ceic_col->col_sqt.sqt_dtp && !ceic_all_dtp (ceic, dtp)) \
+  if ((DV_ANY == ceic->ceic_col->col_sqt.sqt_dtp || !ceic->ceic_col->col_sqt.sqt_non_null) && !ceic_all_dtp (ceic, dtp)) \
     goto general;
 
 
@@ -70,14 +84,12 @@ ceic_ins_any_value_ap (ce_ins_ctx_t * ceic, int nth, auto_pool_t * ap, int *from
 {
   caddr_t err, r;
   it_cursor_t *itc = ceic->ceic_itc;
-  caddr_t box = itc->itc_param_order
-      ? itc->itc_vec_rds[itc->itc_param_order[nth]]->rd_values[ceic->ceic_nth_col]
-      : itc->itc_vec_rds[0]->rd_values[ceic->ceic_nth_col];
+  caddr_t box = itc->itc_vec_rds[itc->itc_param_order[nth]]->rd_values[ceic->ceic_nth_col];
   if (DV_ANY == ceic->ceic_col->col_sqt.sqt_dtp)
     return (db_buf_t) box;
   *from_ap = 1;
   r = box_to_any_1 (box, &err, ap, 0);
-  CEIC_FLOAT_INT (ceic->ceic_col->col_sqt.sqt_dtp, r);
+  CEIC_FLOAT_INT (ceic->ceic_col->col_sqt.sqt_dtp, r, box_any_dv ((db_buf_t)r), ff_nop);
   return (db_buf_t) r;
 }
 
@@ -235,7 +247,7 @@ ce_insert_deltas (ce_ins_ctx_t * ceic, db_buf_t ce, db_buf_t * body_ret, int64 *
       for (inx = 0; inx < ceic->ceic_n_for_ce; inx++)
 	{
 	  values[inx] = ceic_int_value (ceic, itc->itc_ce_first_set + inx, &param_dtp) - first;
-	  if (inx && values[inx] - values[0] > CE_INT_DELTA_MAX)
+	  if (inx && values[inx] - values[0] >= CE_INT_DELTA_MAX)
 	    goto ntype;
 	  if (values[inx] < 0 || !ASC_CHECK)
 	    goto ntype;
@@ -286,8 +298,10 @@ ce_insert_deltas (ce_ins_ctx_t * ceic, db_buf_t ce, db_buf_t * body_ret, int64 *
 	      int from_ap = 0;
 	      AUTO_POOL (200);
 	      dv = ceic_ins_any_value_ap (ceic, itc->itc_ce_first_set + inx, &ap, &from_ap);
+	      if ((DV_RDF_ID == dv[0] || DV_RDF_ID_8 == dv[0]) && dv[0] != ce_first_val[0])
+		goto ntype;	/* rdf ids of different lengths do not go in the same ce even if values close. */
 	      rc = asc_cmp_delta (ce_first_val, dv, &delta, is_int_delta);
-	      if (from_ap && (dv < ap.ap_area || dv > ap.ap_area + ap.ap_fill))
+	      if (from_ap && (dv < (db_buf_t) ap.ap_area || dv > (db_buf_t) ap.ap_area + ap.ap_fill))
 		dk_free_box ((caddr_t)dv);
 	      if (rc > DVC_GREATER)
 		goto ntype;
@@ -720,6 +734,7 @@ bf_get (db_buf_t base, int bit, int n)
 }
 
 
+#undef N_ONES
 #define N_ONES(n)  (64 == (n) ? (int64)-1 : (((int64)1 << (n)) - 1))
 
 void
@@ -759,6 +774,25 @@ bit_insert (db_buf_t base, int target, int source, int bits)
   bits &= 0x3f;
   source -= bits;
   target -= bits;
+  temp = bf_get (base, source, bits);
+  bf_set (base, target, temp, bits);
+}
+
+void
+bit_delete (db_buf_t base, int target, int source, int bits)
+{
+  int64 temp;
+  int end = source + (bits & ~0x3fL);
+  if (!bits)
+    return;
+  while (source < end)
+    {
+      temp = bf_get (base, source, 64);
+      bf_set (base, target, temp, 64);
+      source += 64;
+      target += 64;
+    }
+  bits &= 0x3f;
   temp = bf_get (base, source, bits);
   bf_set (base, target, temp, bits);
 }
@@ -971,7 +1005,7 @@ ce_insert_int_delta (ce_ins_ctx_t * ceic, ce_ins_ctx_t ** col_ceic, db_buf_t ce,
     {
       if (DV_DATE == any_ce_dtp (ce_first_val))
 	{
-	  base = DT_DAY (ce_first_val + 1);
+	  base = DT_UDAY (ce_first_val + 1);
 	  run1 = run = base & 0xff;
 	  rl_ptr = ce_first_val + 3;
 	  base_1 = base = (base & CLEAR_LOW_BYTE) - base + run1;
@@ -1003,7 +1037,7 @@ ce_insert_int_delta (ce_ins_ctx_t * ceic, ce_ins_ctx_t ** col_ceic, db_buf_t ce,
 	  if (row_no >= last_row && (row_no <= last_row + run || last_row + run == n_values))
 	    {
 	      /* if falls inside run or run is last, check magnitude to see if fits */
-	      if (values[inx] - (base - base_1) > 0xff00 || values[inx] - (base - base_1) < 0)
+	      if (values[inx] - (base - base_1) > 0xff00 || values[inx] - (base - base_1) < 0 || values[inx] >= CE_INT_DELTA_MAX)
 		goto no_order;
 	    }
 	  if (row_no > last_row + run)
@@ -1197,6 +1231,9 @@ ceic_ice_string_no_trunc (ce_ins_ctx_t * ceic, int ice)
 }
 
 
+int ce_ins_spec[16];
+int ce_ins_gen[16];
+
 db_buf_t
 ce_insert_1 (ce_ins_ctx_t * ceic, ce_ins_ctx_t ** col_ceic, db_buf_t ce, int space_after, int *split_at, int ice)
 {
@@ -1208,6 +1245,7 @@ ce_insert_1 (ce_ins_ctx_t * ceic, ce_ins_ctx_t ** col_ceic, db_buf_t ce, int spa
   ce_ins_ctx_t tmp_ceic;
   int initial_len = ce_total_bytes (ce), org_set, org_count;
   int split;
+  ceic->ceic_dtp_checked = 0;
   if (ceic->ceic_n_for_ce > 1000 && (CE_RL != (flags & CE_TYPE_MASK)))
     goto general;
   if (ceic->ceic_n_updates)
@@ -1261,6 +1299,7 @@ ce_insert_1 (ce_ins_ctx_t * ceic, ce_ins_ctx_t ** col_ceic, db_buf_t ce, int spa
 	    tmp_ceic.ceic_mp = ceic->ceic_mp;
 	  tmp_ceic.ceic_top_ceic = ceic;
 	  tmp_ceic.ceic_itc = ceic->ceic_itc;
+	  tmp_ceic.ceic_is_cpt_restore = ceic->ceic_is_cpt_restore;
 	  tmp_ceic.ceic_col = ceic->ceic_col;
 	  tmp_ceic.ceic_nth_col = ceic->ceic_nth_col;
 	  tmp_ceic.ceic_n_for_ce = ceic->ceic_n_for_ce;
@@ -1292,6 +1331,7 @@ ce_insert_1 (ce_ins_ctx_t * ceic, ce_ins_ctx_t ** col_ceic, db_buf_t ce, int spa
     }
   if (CE_INSERT_GEN == ce2)
     {
+      ce_ins_gen[flags & 0xf]++;
       if (dbf_ce_ins_check)
 	{
 	  /* verify partial insert. Note that ce first set and row of ce are shifted, so shift back for the reference insert */
@@ -1316,5 +1356,9 @@ ce_insert_1 (ce_ins_ctx_t * ceic, ce_ins_ctx_t ** col_ceic, db_buf_t ce, int spa
     }
   if (!ce2 && dbf_ce_ins_check)
     dk_free_tree ((caddr_t) org);
+  if (!ce2)
+    ce_ins_gen[flags & 0xf]++;
+  else
+    ce_ins_spec[flags & 0xf]++;
   return ce2;
 }

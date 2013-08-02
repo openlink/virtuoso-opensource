@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -227,7 +227,9 @@
 
 				  -- Add /dataspace etc.
 				  if (__proc_exists ('DB.DBA.ods_define_common_vd') is not null)
+				    {	
 				    DB.DBA.ods_define_common_vd (host, _lhost);
+				    }  
 
 				  insert into DB.DBA.WA_DOMAINS (WD_HOST,WD_LPATH,WD_LISTEN_HOST,WD_MODEL,WD_DOMAIN)
 				    values (host,path,_lhost,self.t_model.ufl_value, domain);

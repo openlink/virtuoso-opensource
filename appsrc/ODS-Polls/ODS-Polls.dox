@@ -1,0 +1,5 @@
+/**
+\defgroup ods_module_poll ODS Polls API
+
+ODS-Polls Manager offers features to create, edit, or vote in a poll.
+*/

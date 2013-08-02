@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -74,14 +74,14 @@ is_ok (char *resp)
 
 static void
 pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
-    long end_size, caddr_t mode, dk_set_t * ret_v, caddr_t * in, caddr_t *qst, long cert)
+    long end_size, caddr_t mode, dk_set_t * ret_v, caddr_t * in, caddr_t * qst, long cert)
 {
   int rc;
   volatile int inx, inx_mails;
   unsigned int number;
   volatile long size;
   dk_set_t uidl = NULL;
-  caddr_t * volatile my_list = NULL;
+  caddr_t *volatile my_list = NULL;
   dk_session_t *ses = dk_session_allocate (SESCLASS_TCPIP);
   char num[11], resp[1024];
   char message[16], err_text[512], err_code[6];
@@ -93,7 +93,8 @@ pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
   SSL_METHOD *ssl_method;
 #endif
 
-  resp[0] = 0; err_code[0] = 0;
+  resp[0] = 0;
+  err_code[0] = 0;
   if (!_thread_sched_preempt)
     {
       ses->dks_read_block_timeout = dks_fibers_blocking_read_default_to;
@@ -160,8 +161,8 @@ pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
     {
       goto error_end;
     }
-  END_READ_FAIL (ses)
-      /*  IS_OK_NEXT (ses, resp, rc, "Bad user name and password"); */
+  END_READ_FAIL (ses);
+  /*  IS_OK_NEXT (ses, resp, rc, "Bad user name and password"); */
 
   inx_mails = 0;
   size = 0;
@@ -184,11 +185,11 @@ pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 	  rc = dks_read_line (ses, resp, sizeof (resp));
 	  if (!strncmp (end_msg, resp, sizeof (end_msg)))
 	    break;
-	  sscanf (resp, "%i %100s", (int *)(&number), next);
+	  sscanf (resp, "%i %100s", (int *) (&number), next);
 	  if (in)
 	    {
 	      fl = 0;
-	      for (br=0;br<l;br++)
+	      for (br = 0; br < l; br++)
 		{
 		  if (!strcmp (in[br], next))
 		    {
@@ -230,10 +231,10 @@ pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 	  sscanf (resp, "%10s %li", num, &msg_size);
 
 	  if (atoi (num) == 0)
-	    if  (num[0] != '.')
+	    if (num[0] != '.')
 	      break;
 
-	  if (my_list[atoi(num)-1])
+	  if (my_list[atoi (num) - 1])
 	    size = size + msg_size;
 
 	  if (size < end_size)
@@ -251,12 +252,11 @@ pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
     }
   END_READ_FAIL (ses);
 
-
   for (inx = 1; inx <= inx_mails; inx++)
     {
       snprintf (message, sizeof (message), "%i", inx);
 
-      if (!my_list[inx-1])
+      if (!my_list[inx - 1])
 	continue;
 
       if (stricmp ("uidl", mode))
@@ -273,12 +273,13 @@ pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 	      while (strncmp (end_msg, resp, sizeof (end_msg)))
 		{
 		  rc = dks_read_line (ses, resp, sizeof (resp));
-		  SES_PRINT (msg, resp);
+		  if (strncmp (end_msg, resp, sizeof (end_msg)))
+		    SES_PRINT (msg, resp);
 		  if (tcpses_check_disk_error (msg, qst, 0))
 		    {
 		      strcpy_ck (err_text, "Server error in accessing temp file");
 		      strcpy_ck (err_code, "PO010");
-		      SESSION_SCH_DATA(ses)->sio_read_fail_on = 0;
+		      SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
 		      goto error_end;
 		    }
 		}
@@ -287,22 +288,21 @@ pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 		{
 		  strcpy_ck (err_text, "Server error in accessing temp file");
 		  strcpy_ck (err_code, "PO010");
-		  SESSION_SCH_DATA(ses)->sio_read_fail_on = 0;
+		  SESSION_SCH_DATA (ses)->sio_read_fail_on = 0;
 		  goto error_end;
 		}
 	      if (!STRSES_CAN_BE_STRING (msg))
 		{
-		  strcpy_ck (err_text, "Server error in storing data into a string session");
-		  strcpy_ck (err_code, "PO010");
-		  SESSION_SCH_DATA(ses)->sio_read_fail_on = 0;
-		  goto error_end;
+		  dk_set_push (ret_v, list (2, my_list[inx-1], msg));
+		  msg = strses_allocate ();
 		}
-	      dk_set_push (ret_v, list (2, my_list[inx-1], strses_string (msg)));
-	      my_list[inx-1]=NULL;
+	      else
+		dk_set_push (ret_v, list (2, my_list[inx - 1], strses_string (msg)));
+	      my_list[inx - 1] = NULL;
 	    }
 	  FAILED
 	    {
-              strcpy_ck (err_code, "PO010");
+	      strcpy_ck (err_code, "PO010");
 	      strcpy_ck (err_text, "Failed reading output of LIST command on remote POP3 server");
 	      goto error_end;
 	    }
@@ -310,8 +310,8 @@ pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 	}
       else
 	{
-	  dk_set_push (ret_v, my_list[inx-1]);
-	  my_list[inx-1]=NULL;
+	  dk_set_push (ret_v, my_list[inx - 1]);
+	  my_list[inx - 1] = NULL;
 	}
 
       if (!stricmp ("delete", mode))
@@ -342,7 +342,7 @@ error_end:
   SSL_CTX_free (ssl_ctx);
 
   if (err_code[0] != 0)
-  *err_ret = srv_make_new_error ("08006", err_code, "%s", err_text);
+    *err_ret = srv_make_new_error ("08006", err_code, "%s", err_text);
   else
     *err_ret = srv_make_new_error ("08006", "PO014", "Misc. error in connection in pop3_get");
   return;
@@ -351,7 +351,7 @@ error_end:
 static caddr_t
 bif_pop3_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t * in_uidl = NULL;
+  caddr_t *in_uidl = NULL;
   caddr_t addr = bif_string_arg (qst, args, 0, "pop3_get");
   caddr_t user = bif_string_arg (qst, args, 1, "pop3_get");
   caddr_t pass = bif_string_arg (qst, args, 2, "pop3_get");
@@ -362,7 +362,7 @@ bif_pop3_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t err = NULL;
   long cert = 0;
   dk_set_t volatile uidl_mes = NULL;
-  IO_SECT(qst);
+  IO_SECT (qst);
 
   if (BOX_ELEMENTS (args) > 4)
     mode = bif_string_arg (qst, args, 4, "pop3_get");
@@ -377,7 +377,7 @@ bif_pop3_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (BOX_ELEMENTS (args) > 6)
     cert = bif_long_arg (qst, args, 6, "pop3_get");
 
-  pop3_get (addr, &err, user, pass, end_size, mode, (dk_set_t *) &uidl_mes, in_uidl, qst, cert);
+  pop3_get (addr, &err, user, pass, end_size, mode, (dk_set_t *) & uidl_mes, in_uidl, qst, cert);
 
   if (err)
     {
@@ -402,7 +402,7 @@ bif_ses_write (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dk_session_t *out;
   caddr_t string = bif_arg (qst, args, 0, "ses_write");
   dtp_t volatile dtp = DV_TYPE_OF (string);
-  IO_SECT(qst);
+  IO_SECT (qst);
   if (BOX_ELEMENTS (args) > 1)
     {
       out = http_session_arg (qst, args, 1, "ses_write");
@@ -411,7 +411,7 @@ bif_ses_write (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       if (!qi->qi_client->cli_ws)
 	sqlr_new_error ("37000", "HT043",
-    "ses_write with no argument defaults it direct to the raw client connection.\nAllowed only inside HTTP request");
+	    "ses_write with no argument defaults it direct to the raw client connection.\nAllowed only inside HTTP request");
       out = qi->qi_client->cli_ws->ws_session;
     }
 
@@ -429,7 +429,7 @@ bif_ses_write (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    box_length (string) - (IS_STRING_DTP (DV_TYPE_OF (string)) ? 1 : 0));
       else if ((dtp == DV_BLOB_HANDLE) || (dtp == DV_BLOB_WIDE_HANDLE))
 	{
-	  blob_handle_t *bh = (blob_handle_t *)string;
+	  blob_handle_t *bh = (blob_handle_t *) string;
 	  if (!bh->bh_length)
 	    {
 	      if (bh->bh_ask_from_client)

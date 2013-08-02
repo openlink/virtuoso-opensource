@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -32,6 +32,7 @@
 <!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY cl "http://www.ebusiness-unibw.org/ontologies/consumerelectronics/v1#">
 <!ENTITY oplbb "http://www.openlinksw.com/schemas/bestbuy#">
 <!ENTITY review "http:/www.purl.org/stuff/rev#"> 
@@ -51,6 +52,7 @@
     xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"  
     xmlns:review="&review;"    
     xmlns:gr="&gr;"
+    xmlns:opl="&opl;"
     xmlns:bestbuy="http://remix.bestbuy.com/"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:cl="&cl;"
@@ -77,6 +79,13 @@
 				<dcterms:subject rdf:resource="{vi:proxyIRI ($baseUri, '', 'Product')}"/>
 			</rdf:Description>
 			<gr:Offering rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.google.com#this">
+                        			<foaf:name>Google Store</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.google.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			    <sioc:has_container rdf:resource="{$docproxyIRI}"/>
 			    <gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 			    <rdfs:label><xsl:value-of select="entry[1]/title"/></rdfs:label>

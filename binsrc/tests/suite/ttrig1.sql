@@ -1,14 +1,14 @@
 --
 --  ttrig1.sql
 --
---  $Id$
+--  $Id: ttrig1.sql,v 1.6.10.3 2013/01/02 16:15:30 source Exp $
 --
 --  Test local or remote table triggers.
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -88,8 +88,7 @@ ECHO BOTH ": W_ORDER_VALUE before order delete " $LAST[1] "\n";
 
 delete from T_ORDER;
 select cast (W_ORDER_VALUE as integer) from T_WAREHOUSE;
--- XXX
---ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
---ECHO BOTH ": W_ORDER_VALUE after order delete " $LAST[1] "\n";
+echo BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+ECHO BOTH ": W_ORDER_VALUE after order delete " $LAST[1] "\n";
 
 ECHO BOTH "COMPLETED: TRIGGERS TEST 1\n";

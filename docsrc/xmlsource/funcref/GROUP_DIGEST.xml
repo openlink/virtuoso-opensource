@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_GROUP_DIGEST">
+  <refmeta>
+    <refentrytitle>GROUP_DIGEST</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>GROUP_DIGEST</refname>
+    <refpurpose>returns an arbitrary value from the multiset passed to it.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_GROUP_DIGEST">
+      <funcprototype id="fproto_GROUP_DIGEST">
+        <funcdef><function>GROUP_DIGEST</function></funcdef>
+	        <paramdef>in <parameter>token</parameter> varchar</paramdef>
+	        <paramdef>in <parameter>delim</parameter> varchar</paramdef>
+	        <paramdef>in <parameter>maxlen</parameter> integer</paramdef>
+	        <paramdef>in <parameter>mode</parameter> integer</paramdef>	        	        
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_GROUP_DIGEST">
+    <title>Description</title>
+    <para>GROUP_DIGEST is aggregate function that performs a string concatenation across 
+    	the values of an expression with a group. The order of the strings is not specified. 
+    	The separator character used in the concatenation may be given with the scalar 
+    	argument delimiter. The function is an extended version of sql:GROUP_CONCAT(), with 
+    	two more arguments: maxlen and mode.</para>
+    <para>Note: the "sql:" prefix is mandatory when this aggregate is used in SPARQL queries. 
+    	In SQL queries the prefix is "DB.DBA".
+    </para>
+  </refsect1>
+  <refsect1 id="params_GROUP_DIGEST">
+    <title>Parameters</title>
+    <refsect2><title>token</title>
+      <para>An item that should be added to a delimited list.</para>
+    </refsect2>
+    <refsect2><title>delim</title>
+      <para>The delimeter character to be used in the concatenation.</para>
+    </refsect2>
+    <refsect2><title>maxlen</title>
+      <para>The maximal allowed length of the result, in characters. Redundant values will be ignored. 
+      If the last value does not fit in the "maxlen" entirely, then it can be truncated and "..." is 
+      placed at the end of the resulting string.</para>
+    </refsect2>
+    <refsect2><title>mode</title>
+      <para>Bitmask of properties. Right now only bit 1 is used and others are reserved. If the value 
+      of the argument is 1 then duplicate values are ignored; value 0 will put duplicate values like 
+      in case of sql:GROUP_CONCAT ().</para>
+    </refsect2>        
+  </refsect1>
+  <refsect1 id="ret_GROUP_DIGEST"><title>Return Types</title>
+    <para>any</para>
+  </refsect1>
+  <refsect1 id="examples_GROUP_DIGEST">
+    <title>Examples</title>
+    <example id="ex_GROUP_DIGEST"><title>Get all ?assets as a list with delimiters.</title>
+<programlisting><![CDATA[
+SQL>SPARQL 
+SELECT ?view (sql:GROUP_DIGEST (?path, ' ', 1000, 1)) as ?path_list 
+    (sql:GROUP_DIGEST (?asset, ' ', 1000, 1)) as ?asset_list
+FROM <http://mygraph.com> 
+WHERE
+  { 
+    ?view <viewPath> ?path ; 
+      <viewContent> ?asset ; 
+      <viewType>  'phyview'. 
+  };
+]]></programlisting>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_GROUP_DIGEST">
+    <title>See Also</title>
+    <para><link linkend="fn_SAMPLE"><function>SAMPLE</function></link></para>
+    <para><link linkend="fn_GROUP_CONCAT"><function>GROUP_CONCAT</function></link></para>
+    <para><link linkend="samplegroupconcatdigest">Differences between SAMPLE, GROUP_CONCAT and GROUP_DIGEST functions usage.</link></para>        
+  </refsect1>
+</refentry>
+

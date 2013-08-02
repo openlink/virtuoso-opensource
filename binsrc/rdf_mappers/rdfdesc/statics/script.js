@@ -1,4 +1,32 @@
-var featureList = ["slidebar", "resize"];
+var featureList = ["slidebar", "resize", "ajax", "json"];
+var timer = null;
+var x = function (data) 
+   {
+     var o = null;
+     var div = $('status');
+     try 
+       {
+	 o = OAT.JSON.parse(data);
+       }
+     catch (e)
+       {
+	 o = null;
+       }
+     if (o && o.result != 0)
+       {
+	 div.innerHTML = "Status: " + o.cartridge + ", " + o.time + "sec. in queue";
+       } 
+     if (o && o.result == 0)
+       {
+	 div.innerHTML = 'Status: done';
+	 if (timer) clearTimeout (timer);
+       } 
+   }
+function getStatus ()
+   {
+     OAT.AJAX.GET ("/about/queue/status?uri=" + uri, false, x);
+     timer = setTimeout ("getStatus ()", 10000);
+   }
 
 function init() {
   var slb = new OAT.Slidebar ("slb", {imgPrefix: "statics/", autoClose: false, width: 500, handleWidth: 15, handleOpenImg: "whats_this_open_hndl_15w.png", handleCloseImg: "whats_this_close_hndl_15w.png"});
@@ -9,6 +37,7 @@ function init() {
     {
       OAT.Resize.create($('x_content'),$('x_content'),OAT.Resize.TYPE_Y,restrict);
     }
+  getStatus ();
 }
 
 var long_literal_counter = 0;

@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2013 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="sparql_create_page"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        vm:owner="yacutia_sparql_page"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+ <vm:pagetitle>R2RML Generate</vm:pagetitle>
+ <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="message" default="null" type="varchar" persist="0"/>
+      <v:variable name="graph" default="null" type="varchar" persist="0" param-name="graph"/>
+      <v:variable name="tgraph1" default="null" type="varchar" persist="0" />
+      <v:variable name="pgraph1" default="null" type="varchar" persist="0" />
+      <v:variable name="exec_ret" type="any" default="null" persist="temp"/>
+      <v:variable name="sync_ret" type="any" default="null" persist="temp"/>
+      <v:variable persist="0" name="body_v" type="any" default="null" param-name="cr_view"/>
+    </vm:variables>
+  <vm:menu>
+   <vm:menuitem value="Linked Data"/>
+  </vm:menu>
+  <vm:header caption="R2RML Generate"/>
+  <vm:pagebody>
+  <v:on-init>
+    <![CDATA[
+    set http_charset='utf-8';
+    ]]>
+  </v:on-init>
+      <v:form name="form1" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data">
+	  <v:before-data-bind><![CDATA[
+	      declare h any;
+	      h := rfc1808_parse_uri (self.graph);
+	      self.tgraph1 := self.graph || '#';
+	      self.pgraph1 := sprintf ('urn:%{URIQADefaultHost}s:%s', trim (replace (h[2], '/', ':'), ':'));
+	      self.body_v := DB.DBA.R2RML_MAKE_QM_FROM_G (self.graph, self.tgraph1);
+	    ]]>
+    </v:before-data-bind>
+    <?vsp if (self.exec_ret is null) { ?>
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+	  <tr>
+	      <td>
+		  <h2>Definitions</h2>
+		  <v:textarea name="cr_view" xhtml_cols="120" xhtml_rows="20" value="--self.body_v"/><br/>
+		  <label>Default Graph Name</label> <v:text name="tgraph" value="--self.tgraph1" xhtml_size="70" /><br />
+		  <label>Physical Graph Name</label> <v:text name="pgraph" value="--self.pgraph1" xhtml_size="70" /><br />
+		  <v:check-box name="rdb_sync" value="1" xhtml_id="rdb_sync" /> <label for="rdb_sync">Generate RDB2RDF triggers</label> <br/>
+		  <v:check-box name="fill" value="1" xhtml_id="fill" /> <label for="fill">Enable Data Syncs with Physical Quad Store</label> <br/>
+	      </td>
+	  </tr>  
+        <tr valign='top'>
+	    <td>
+	      <div class="message"><v:label name="msg" value="--self.message" /> </div>
+	      <table border='0' width='100%'  class="ctl_grp">
+                <tr align="center">
+                  <td colspan="2">
+		      <v:button action="simple" name="cnl" value="Cancel">
+			  <v:on-post>
+			      self.vc_redirect ('r2rml_import.vspx');
+			  </v:on-post>
+		      </v:button>
+                    <v:button action="simple" name="bt1" value="Execute">
+                      <v:on-post>
+			  <![CDATA[
+			 declare stat, msg, meta, data, source any;
+                         stat := '00000';
+			 exec ('sparql ' || self.cr_view.ufl_value, stat, msg, vector (), 0, meta, data);
+			 self.exec_ret := data;
+			 if (stat <> '00000') 
+			   self.exec_ret := vector (vector (stat, msg));
+			 source := self.graph;
+			 if (self.rdb_sync.ufl_selected)
+			   {
+			     self.sync_ret := RDF_VIEW_SYNC_TO_PHYSICAL (self.tgraph.ufl_value, self.fill.ufl_selected, self.pgraph.ufl_value);
+			     for select "g" from (sparql define input:storage "" prefix rr: <http://www.w3.org/ns/r2rml#> 
+				 select distinct ?g  { graph `iri(?:source)` {{ ?s rr:graph ?g } union { ?s rr:graphMap ?m . ?m rr:constant ?g }}}) x do
+			         {
+				   self.sync_ret := vector_concat (self.sync_ret, RDF_VIEW_SYNC_TO_PHYSICAL ("g", self.fill.ufl_selected, self.pgraph.ufl_value));
+				 }
+			     if (0 = length (self.sync_ret))
+			       self.sync_ret := vector (vector ('00000', 'OK'));
+			   }	       
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+		    </td>
+		    </tr>
+	      </table>
+	  </td>
+        </tr>
+      </table>
+      <?vsp } else { ?>
+	  <h2>Execution Status</h2>
+	  <div class="scroll_area">
+	  <table class="listing">
+	      <tr class="listing_header_row">
+		  <th>Status</th>
+		  <th>Message</th>
+	      </tr>
+	      <?vsp
+	      foreach (any _row in self.exec_ret) do
+                {
+	      ?>
+	      <tr>
+		  <td><?V _row[0] ?></td>
+		  <td><?V _row[1] ?></td>
+	      </tr>
+	      <?vsp
+	        }
+	      ?>
+	  </table>
+          </div>
+      <?vsp } 
+	  if (length (self.sync_ret))
+	    {
+	  ?>
+	  <br/>
+	  <h2>RDB2RDF Triggers Status</h2>
+	  <table class="listing">
+	      <tr class="listing_header_row"><th>Status</th><th>Message</th></tr>
+	      <?vsp
+	      foreach (any _row in self.sync_ret) do
+                {
+	      ?>
+	      <tr><td><?V _row[0] ?></td><td><?V _row[1] ?></td></tr>
+	      <?vsp
+	        }
+	      ?>
+	  </table>
+	  <v:button name="back" action="simple" value="Back">
+	      <v:on-post><![CDATA[
+		  self.exec_ret := null;
+		  ]]></v:on-post>
+	  </v:button>
+	  <?vsp
+	    }  
+	  ?>
+  </v:form>
+  </vm:pagebody>
+ </vm:pagewrapper>
+</v:page>

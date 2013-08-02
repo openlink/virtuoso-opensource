@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -24,65 +24,81 @@
 
 <sect2 id="admui.webservices"><title>Web Services</title>
   <sect3 id="contentcrawler"><title>Content Crawler</title>
-  <itemizedlist mark="bullet">Supported features:
-     <listitem>Import Targets: Virtuoso can be set up to retrieve content from external web sites and host it in its own
+  
+    <itemizedlist mark="bullet">Some of the supported features are:
+      <listitem><emphasis>Import Targets</emphasis>: Virtuoso can be set up to retrieve content from external web sites and host it in its own
 WebDAV repository via this page.
-        <figure float="1"><title>Web Robot - Target</title>
+        <figure float="1"><title>Web Robot - Crawl Job</title>
       <graphic fileref="ui/dav_rbt_trgt_01.png"/>
     </figure>
-    <para><emphasis>Target Description</emphasis> lets you provide a friendly description for the
-target that you are defining.
-    </para>
-    <para><emphasis>Target URL</emphasis> is the url of the web site that you are trying
+        <figure float="1"><title>Web Robot - Crawl Job</title>
+          <graphic fileref="ui/dav_rbt_trgt_02.png"/>
+        </figure>        
+        <itemizedlist mark="bullet">
+          <listitem><emphasis>Crawl Job Name</emphasis> lets you provide a friendly name for the target that you are defining.</listitem>
+          <listitem><emphasis>Data Source Address (URL)</emphasis> is the url of the web site that you are trying
 to retrieve content from. Only the hostname should be provided here, along with the protocol. For
-example http://www.myhost.com.
-    </para>
-    <para><emphasis>Login name on target</emphasis> is the username for accessing the remote server,
+example http://www.myhost.com.</listitem>
+          <listitem><emphasis>Data Source Username (Login ID)</emphasis> is the username for accessing the remote server,
 if required.
-    </para>
-    <para><emphasis>Login password on target</emphasis> is the password for the login name above.
-    </para>
-    <para><emphasis>Copy to Local DAV collection</emphasis> is the name of the collection (folder)
-where retrieved content will be stored in Dav.
-    </para>
-		<para>
-<emphasis>Single page download</emphasis> radio button specifies whether
-Virtuoso will retrieved linked content also.</para>
-		<para>
-<emphasis>Local Resources Owner</emphasis> The DAV user that will be the owner
-of the content that will copied to DAV.
-</para>
-		<para>
-The <emphasis>Download only newer than</emphasis> field allows you to specify
+          </listitem>
+          <listitem><emphasis>Data Source Password</emphasis> is the password for the login name above.</listitem>
+          <listitem><emphasis>Local WebDAV Identifier</emphasis> this *mandatory* value will serve 
+          as the DAV root location if content is stored locally.</listitem>
+          <listitem><emphasis>Single page download</emphasis> radio button specifies whether
+Virtuoso will retrieved linked content also.</listitem>
+          <listitem><emphasis>Local Resources Owner</emphasis> The DAV user that will be the owner
+of the content that will copied to DAV.</listitem>
+          <listitem>The <emphasis>Retrieve data newer than</emphasis> field allows you to specify
 a datetime value to prevent Virtuoso downloading files that are older than
-that datetime.</para>
-		<para>
-Use the <emphasis>Follow Links Matching</emphasis> field to limit the content
-that is downloaded by specify pattern matching criteria.</para>
-		<para>
-<emphasis>Do NOT follow links matching</emphasis> allows you limit content by
-specifying what files not to download.</para>
-		<para>
-<emphasis>Download Images</emphasis> radio buttons to allow Virtuoso to pull
+that datetime.</listitem>
+          <listitem>Use the <emphasis>Follow Links Matching</emphasis> field to limit the content
+that is downloaded by specify pattern matching criteria.</listitem>
+          <listitem><emphasis>Do NOT follow links matching</emphasis> allows you limit content by
+specifying what files not to download.</listitem>
+        </itemizedlist>
+      </listitem>                                                
+      <listitem><emphasis>Use robots.txt</emphasis> check-box is checked by default.</listitem>
+      <listitem><emphasis>Custom HTTP headers</emphasis> can be used to specigy custom HTTP headers.</listitem>
+      <listitem><emphasis>Number of HTTP redirects to follow</emphasis> is set by default to 1.</listitem>
+      <listitem><emphasis>XPath expression for links extraction</emphasis> allows to be entered custom XPath expression.</listitem>
+      <listitem><emphasis>Crawling depth limit</emphasis> allows to limit crawling depth. By default is set to "unlimited".</listitem>
+      <listitem><emphasis>Update Interval (minutes)</emphasis> is on what interval the updated of the crawled data should be performed.</listitem>      
+      <listitem><emphasis>Number of threads</emphasis> allows setting crawling threads.</listitem>            
+      <listitem><emphasis>Crawl delay (sec)</emphasis> allows to be specified a delay. By default is set to "0.00".</listitem>                  
+      <listitem><emphasis>Store Function</emphasis> allows to be used a specific stored function for ex. in Semantic Sitemaps crawling. 
+        <para>  
+          <tip><title>See Also:</title>
+            <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSetCrawlerJobsGuideSemanticSitemapsFuncExample">Example of Stored Functions.</ulink></para>
+          </tip>
+        </para>  
+      </listitem>                        
+      <listitem><emphasis>Extract Function</emphasis> allows to be used a specific extract function for ex. in Semantic Sitemaps crawling. If left empty, will be used a system Store function.
+        <para>  
+          <tip><title>See Also:</title>
+            <para><ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSetCrawlerJobsGuideSemanticSitemapsFuncExample">Example of Stored Functions.</ulink></para>
+          </tip>
+        </para>        
+      </listitem>                              
+      <listitem><emphasis>Semantic Web Crawling</emphasis>: hatch to retrieve Semantic Sitemaps. If left empty, will be used a system Store function.</listitem>                              
+      <listitem><emphasis>If Graph IRI is unassigned use this Data Source URL:</emphasis> use to specify a custom graph URI for data storage.</listitem>                              
+      <listitem><emphasis>Follow URLs outside of the target host</emphasis> is check-box to specify either to follow URIS outside of the target host.</listitem>                               	
+      <listitem><emphasis>Follow HTML meta link</emphasis> is check-box to specifiy either to follow HTML meta links.</listitem>                               	
+      <listitem><emphasis>Follow these properties paths (list one IRI per row)</emphasis>.</listitem>                               	
+      <listitem><emphasis>Download Images</emphasis> radio buttons to allow Virtuoso to pull
 down image type also.  You may want to prevent this if you are more interested
-in the textual content rather than bandwidth draining images.</para>
-		<para>
-<emphasis>Use WebDAV methods</emphasis> can be checked if the host is known to
-support WebDAV methods.  This would enable better copying of sites that support DAV.</para>
-		<para>
-<emphasis>Delete if Remove on Remote is Detected</emphasis> can be switched on
+in the textual content rather than bandwidth draining images.</listitem>                                    
+      <listitem><emphasis>Use WebDAV methods</emphasis> can be checked if the host is known to
+support WebDAV methods. This would enable better copying of sites that support DAV.</listitem>                                    
+      <listitem><emphasis>Delete if remove on remote detected</emphasis> can be switched on
 so that when Virtuoso synchronizes its content with that on the remote host
 it will check for files that have been removed on the remote and remove
-them from the local copy also.</para>
-		<para>
-<emphasis>Store metadata*</emphasis> when checked offers to be stored respectively
-metadata from FOAF, RDF, RSS/RDF and GRDLL data depending on which check-box is checked.</para>
-    <para>
-When all details have been completed press the <emphasis>Add</emphasis> (or
-Update if updating) button to submit the web robot task to the queue.
-    </para>
-</listitem>
-     <listitem>Import Queues: this page shows you a list of web copy targets that have been enlisted with the
+them from the local copy also.</listitem>                                    
+      <listitem><emphasis>Store metadata*</emphasis> when checked offers to be stored respectively
+metadata from FOAF, RDF, RSS/RDF and GRDLL data depending on which check-box is checked.</listitem>                                    
+      <listitem>When all details have been completed press the <emphasis>Add</emphasis> (or
+Update if updating) button to submit the web robot task to the queue.</listitem>                                    
+      <listitem><emphasis>Import Queues</emphasis>: This page shows you a list of web copy targets that have been enlisted with the
 Virtuoso Server, and a list of web robot update schedules. Several options are available for
 each item listed: Start, Update, Schedule, Reset, and Stop. You can configure the scheduled update
 interval by pressing the Schedule link and entering a value in minutes. Once that is done you can
@@ -93,13 +109,13 @@ the details of the web copy item press the Reset link.
       <graphic fileref="ui/dav_rbt_que_01.png"/>
     </figure>
 </listitem>
-     <listitem>Retrieved Sites: You can view a list of the links retrieved from the web copy from this page. You are also
+      <listitem><emphasis>Retrieved Sites</emphasis>: You can view a list of the links retrieved from the web copy from this page. You are also
 able to remove some of the content from this page by following the Edit link.
         <figure float="1"><title>Web Robot - Retrieved Links</title>
       <graphic fileref="ui/dav_rbt_rtrd_01.png"/>
     </figure>
 </listitem>
-     <listitem>Export: You can export content from the WebDAV repository. Note that you can only export content
+      <listitem><emphasis>Export</emphasis>: You can export content from the WebDAV repository. Note that you can only export content
 that has been retrieved using Virtuoso's Web Robot.
     <para>When you click the "Export" link for a retrieved collection, you will be presented
 with a form for selecting the export target location. Choose the export method: either File
@@ -119,12 +135,13 @@ to any WebDAV server. WebDAV methods assume that the target is publicly availabl
       </para>
     </note>
 </listitem>
-     <listitem>Populate the RDF Quad Store: Virtuoso's built-in Content Crawler to can be used to populate its RDF Quad Store, as a one-time run or on a scheduled basis.
+      <listitem><emphasis>Populate the RDF Quad Store</emphasis>: Virtuoso's built-in Content Crawler to can be used to populate its RDF Quad Store, as a one-time run or on a scheduled basis.
 <para>Transforming data sources into RDF "on the fly" is sufficient for many use cases, but there are times when the volume or sheer nature of a data source makes batch-loading necessary.</para>
 <para>For example, Freebase offers RDF representations of its data, but it doesn't publish RDF dumps; even if it did, such dumps would usually be outdated by the time they were loaded.</para>
 <para>One practical solution takes the form of a scheduled crawl of specific resources of interest.</para>
 </listitem>
   </itemizedlist>
+    
   <sect4 id="contentcrawlerrdf"><title>Set Up the Content Crawler to Gather RDF</title>
   <para>The Virtuoso Conductor can be used to set up various Content Crawler Jobs:</para>
   <sect5 id="contentcrawlerrdfquad"><title>Setting up a Content Crawler Job to Add RDF Data to the Quad Store</title>
@@ -154,24 +171,25 @@ to any WebDAV server. WebDAV methods assume that the target is publicly availabl
   </listitem>
   <listitem>In the form displayed:
 <itemizedlist mark="bullet">
-  <listitem>Enter a name of choice in the "Target description" text box:
+  <listitem>Enter a name of choice in the "Crawl Job Name" text box:
 <programlisting><![CDATA[
-Basic Sitemap Crawling Example 	
+Virtuoso Sample Example	
 ]]></programlisting>  	
 </listitem>
-  <listitem>Enter the URL of the site to be crawled in the "Target URL" text box: 
+  <listitem>Enter the URL of the site to be crawled in the "Data Source Address (URL)" text box: 
 <programlisting><![CDATA[
-http://psclife.pscdog.com/catalog/seo_sitemap/product/&nbsp	
+http://virtuoso.openlinksw.com/
 ]]></programlisting>  	
 </listitem>
-  <listitem>Enter the location in the Virtuoso WebDAV repository the crawled should stored in the "Copy to local DAV collection" text box, for example, if user demo is available, then:
+  <listitem>Enter the location in the Virtuoso WebDAV repository the crawled should stored, in the 
+  	"Local WebDAV Identifier" text box, for example, if user demo is available, then:
 <programlisting><![CDATA[
-/DAV/home/demo/basic_sitemap/	
+/DAV/home/demo/VirtSample/	
 ]]></programlisting>  	
 </listitem>
   <listitem>Choose the  "Local resources owner" for the collection from the list box available, for ex: user demo.</listitem>
-  <listitem>Select the "Ask for RDF" check box.</listitem>      
-  <listitem>Optionally you can select "Convert Link" to make all HREFs in the local stored content relative.</listitem>
+  <listitem>Select the "Accept RDF" check box.</listitem>      
+  <listitem>Optionally you can select "Convert Links" to make all HREFs in the local stored content relative.</listitem>
   <listitem>Click the "Create" button to create the import.</listitem>        
 </itemizedlist>
     <figure id="cr11" float="1">
@@ -188,10 +206,15 @@ http://psclife.pscdog.com/catalog/seo_sitemap/product/&nbsp
       <title>Setting up a Content Crawler Job to Retrieve Sitemaps</title>
       <graphic fileref="ui/cr12.png"/>
     </figure>
+   
   </listitem>
   <listitem>For the "Robot targets" with label "Basic Sitemap Crawling Example " click the "Run" button.
+    <figure id="cr12a" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Sitemaps</title>
+      <graphic fileref="ui/cr12a.png"/>
+    </figure>   	
   </listitem>
-  <listitem>This will result in the Target site being crawled and the retrieved pages stored locally in DAV and any sponged triples in the RDF Quad store.
+  <listitem>This will result in the Target site being crawled and the retrieved pages stored locally in DAV and any network resource triples being fetched in the RDF Quad store.
     <figure id="cr13" float="1">
       <title>Setting up a Content Crawler Job to Retrieve Sitemaps</title>
       <graphic fileref="ui/cr13.png"/>
@@ -205,7 +228,7 @@ http://psclife.pscdog.com/catalog/seo_sitemap/product/&nbsp
   </listitem>
   <listitem>Navigate to the location of newly created DAV collection:
 <programlisting><![CDATA[
-/DAV/home/demo/basic_sitemap/	
+/DAV/home/demo/VirtSample/
 ]]></programlisting>
   </listitem>
   <listitem>The retrieved content will be available in this location.
@@ -217,7 +240,7 @@ http://psclife.pscdog.com/catalog/seo_sitemap/product/&nbsp
 </orderedlist>  
   </sect5>  
   <sect5 id="contentcrawlerrdfssm"><title>Setting up a Content Crawler Job to Retrieve Semantic Sitemaps (a variation of the standard sitemap)</title>
-  <para>The following section describes how to set up crawler job for getting Semantic Sitemap's content -- a variation of standard sitemap:</para>  
+  <para>The following section describes how to set up crawler job for getting Semantic Sitemap's content: a variation of standard sitemap:</para>  
 <orderedlist>
   <listitem>From the Virtuoso Conductor User Interface i.e. http://cname:port/conductor, login as the "dba" user.</listitem>
   <listitem>Go to "Web Application Server".
@@ -240,17 +263,18 @@ http://psclife.pscdog.com/catalog/seo_sitemap/product/&nbsp
   </listitem>
   <listitem>In the shown form:
 <itemizedlist mark="bullet">
-  <listitem>Enter for "Target description":
+  <listitem>Enter for "Crawl Job Name":
 <programlisting><![CDATA[
 Semantic Web Sitemap Example 	
 ]]></programlisting>  	
 </listitem>
-  <listitem>Enter for "Target URL":
+  <listitem>Enter for "Data Source Address (URL)":
 <programlisting><![CDATA[
 http://www.connexfilter.com/sitemap_en.xml	
 ]]></programlisting>  	
 </listitem>
-  <listitem>Enter the location in the Virtuoso WebDAV  repository the crawled should stored in the "Copy to local DAV collection" text box, for example, if user demo is available, then:
+  <listitem>Enter the location in the Virtuoso WebDAV  repository the crawled should stored in the 
+  	"Local WebDAV Identifier" text box, for example, if user demo is available, then:
 <programlisting><![CDATA[
 /DAV/home/demo/semantic_sitemap/	
 ]]></programlisting>  	
@@ -390,7 +414,8 @@ create procedure WS.WS.SITEMAP_BB_STORE (
   </listitem>    
 </itemizedlist>  	
   </listitem>
-  <listitem>Hatch "Ask for RDF"
+  <listitem>Optionally you can select "Convert Link" to make all HREFs in the local stored content relative.</listitem>
+  <listitem>Hatch "Accept RDF"
     <figure id="cr16" float="1">
       <title>Setting up a Content Crawler Job to Retrieve Semantic Sitemap content</title>
       <graphic fileref="ui/cr16.png"/>
@@ -399,8 +424,13 @@ create procedure WS.WS.SITEMAP_BB_STORE (
       <title>Setting up a Content Crawler Job to Retrieve Semantic Sitemap content</title>
       <graphic fileref="ui/cr17.png"/>
     </figure>    
+  </listitem>  
+  <listitem>Optionally you can hatch "Store metadata *" and specify which RDF Cartridges to be included from the Sponger: 
+    <figure id="cr17a" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Semantic Sitemap content</title>
+      <graphic fileref="ui/cr17a.png"/>
+    </figure>        
   </listitem>
-  <listitem>Optionally you can select "Convert Link" to make all HREFs in the local stored content relative.</listitem>
   <listitem>Click the button "Create". 
     <figure id="cr18" float="1">
       <title>Setting up a Content Crawler Job to Retrieve Semantic Sitemap content</title>
@@ -462,17 +492,17 @@ WHERE
   </listitem>
   <listitem>In the shown form:
 <itemizedlist mark="bullet">
-  <listitem>Enter for "Target description":
+  <listitem>Enter for "Crawl Job Name":
 <programlisting><![CDATA[
 Gov.UK data	
 ]]></programlisting>  	
 </listitem>
-  <listitem>Enter for "Target URL":
+  <listitem>Enter for "Data Source Address (URL)":
 <programlisting><![CDATA[
 http://source.data.gov.uk/data/	
 ]]></programlisting>  	
 </listitem>
-  <listitem>Enter for "Copy to local DAV collection" for available user, for ex. demo:
+  <listitem>Enter for "Local WebDAV Identifier" for available user, for ex. demo:
 <programlisting><![CDATA[
 /DAV/home/demo/gov.uk/	
 ]]></programlisting>  	
@@ -482,6 +512,10 @@ http://source.data.gov.uk/data/
       <title>Setting up a Content Crawler Job to Retrieve Content from Specific Directories</title>
       <graphic fileref="ui/d1.png"/>
     </figure>  	
+    <figure id="d1a" float="1">
+      <title>Setting up a Content Crawler Job to Retrieve Content from Specific Directories</title>
+      <graphic fileref="ui/d1a.png"/>
+    </figure>      	
 </listitem>
   <listitem>Optionally you can select "Convert Link" to make all HREFs in the local stored content relative.</listitem>
   <listitem>Click the button "Create".</listitem>
@@ -538,10 +572,319 @@ DAV/home/demo/gov.uk/data
   </listitem>       
 </orderedlist>  
   </sect5>   
+  <sect5 id="contentcrawleratom"><title>Setting up a Content Crawler Job to Retrieve Content from ATOM feed</title>
+    <para>This section demonstrates populating the Virtuoso Quad Store using ATOM feed.</para>
+    <para>Populating the Virtuoso Quad Store can be done in different ways Virtuoso supports. The Conductor -> Content Import UI offers plenty of options, one of which is the XPath expression for crawling RDF resources URLs and this feature is a powerful and easy-to-use for managing the Quad Store.</para>
+    <para>To populate the Virtuoso Quad Store, in this Guide we will use a XPAth expression for the URLs of the RDF resources references in a given ATOM feed. For ex. this one of the "National Bibliography" Store.</para>
+    <orderedlist>
+      <listitem>Go to http://cname/conductor</listitem>
+      <listitem>Enter dba credentials</listitem>
+      <listitem>Go to Web Application Server -> Content Management -> Content Imports:
+        <figure id="cra1" float="1">
+          <title>Crawling ATOM feed</title>
+          <graphic fileref="ui/cra1.png"/>
+        </figure>       	
+      </listitem>
+      <listitem>Click "New Target":
+        <figure id="cr3" float="1">
+          <title>Crawling ATOM feed</title>
+          <graphic fileref="ui/cr3.png"/>
+        </figure>       	
+      </listitem>
+      <listitem>In the presented form specify respectively:
+        <itemizedlist mark="bullet">
+          <listitem>"Crawl Job Name": for ex. National Bibliography ;</listitem>
+          <listitem>"Data Source Address (URL)": for ex. http://data.libris.kb.se/nationalbibliography/feed/ ;
+          <para>Note: the entered URL will be the graph URI for storing the imported RDF data. 
+          	You can also set it explicitly by entering another graph URI in the 
+          	"Data Source URL" shown as option in this form.</para>
+          </listitem>
+          <listitem>"Local WebDAV Identifier": for ex.
+<programlisting><![CDATA[
+/DAV/temp/nbio/ 	
+]]></programlisting>          	
+          </listitem>
+          <listitem>"XPath expression for links extraction:":
+<programlisting><![CDATA[
+//entry/link/@href	
+]]></programlisting>          	
+          </listitem>
+          <listitem>"Update Interval (minutes)": for ex. 10 ; </listitem>
+          <listitem>"Run Sponger": hatch this check-box ; </listitem>
+          <listitem>"Accept RDF": hatch this check-box ; </listitem>
+          <listitem>"Store metadata": hatch this check-box ; </listitem>
+          <listitem>"RDF Cartridge": hatch this check-box and specify what cartridges will be used:
+            <figure id="cra3" float="1">
+              <title>Crawling ATOM feed</title>
+              <graphic fileref="ui/cra3.png"/>
+            </figure>     
+            <figure id="cra4" float="1">
+              <title>Crawling ATOM feed</title>
+              <graphic fileref="ui/cra4.png"/>
+            </figure>
+            <figure id="cra5" float="1">
+              <title>Crawling ATOM feed</title>
+              <graphic fileref="ui/cra5.png"/>
+            </figure>
+          </listitem>
+        </itemizedlist>      	
+      </listitem>
+      <listitem>Click "Create".</listitem>
+      <listitem>The new created target should be displayed in the list of available Targets:
+        <figure id="cra7" float="1">
+          <title>Crawling ATOM feed</title>
+          <graphic fileref="ui/cra7.png"/>
+        </figure>      	
+      </listitem>
+      <listitem>Click "Import Queues": 
+        <figure id="cra8" float="1">
+          <title>Crawling ATOM feed</title>
+          <graphic fileref="ui/cra8.png"/>
+        </figure>      	
+      </listitem>
+      <listitem>Click for "National Bibliography" target the "Run" link from the very-right "Action" column.</listitem>
+      <listitem>Should be presented list of Top pending URLs:
+        <figure id="cra9" float="1">
+          <title>Crawling ATOM feed</title>
+          <graphic fileref="ui/cra9.png"/>
+        </figure>       	
+      </listitem>
+      <listitem>Finally when the import is finished, should be shown the total URLs that were processed:
+        <figure id="cra10" float="1">
+          <title>Crawling ATOM feed</title>
+          <graphic fileref="ui/cra10.png"/>
+        </figure>       	
+      </listitem>
+      <listitem>Click "Back":
+        <figure id="cra11" float="1">
+          <title>Crawling ATOM feed</title>
+          <graphic fileref="ui/cra11.png"/>
+        </figure>      	
+      </listitem>
+      <listitem>Click "Retrieved Sites":
+        <figure id="cra12" float="1">
+          <title>Crawling ATOM feed</title>
+          <graphic fileref="ui/cra12.png"/>
+        </figure>       	
+      </listitem>
+      <listitem>Out target should be presented in the list of available retrieved sites. From here you could manage the retrieved URLs by editing the imported URLs or exporting to External/Internal WebDAV destination. Click for ex. the "Edit" link of the very-right "Action" column for our retrieved site.</listitem>
+      <listitem>Should be presented all downloaded URLs of RDF resources referenced in our initial ATOM feed:
+        <figure id="cra13" float="1">
+          <title>Crawling ATOM feed</title>
+          <graphic fileref="ui/cra13.png"/>
+        </figure>      	
+      </listitem>
+      <listitem>To view the imported RDF data, go to http://cname/sparql and enter a simple query for ex.: 
+<programlisting><![CDATA[
+SELECT * 
+FROM <http://data.libris.kb.se/nationalbibliography/feed/>
+WHERE 
+  {
+    ?s ?p ?o
+  }	
+]]></programlisting>      
+        <figure id="cra14" float="1">
+          <title>Crawling ATOM feed</title>
+          <graphic fileref="ui/cra14.png"/>
+        </figure>  	
+      </listitem>
+      <listitem>Click "Run Query".</listitem>
+      <listitem>The imported RDF data triples should be shown:
+        <figure id="cra15" float="1">
+          <title>Crawling ATOM feed</title>
+          <graphic fileref="ui/cra15.png"/>
+        </figure>  	      	
+      </listitem>   
+    </orderedlist>
+  </sect5>  
+  <sect5 id="contentcrawlersparqlendp"><title>Setting up a Content Crawler Job to Retrieve Content from SPARQL endpoint</title>   
+    <para>The following step-by section walks you through the process of:</para>
+    <itemizedlist mark="bullet">
+      <listitem>Populating a Virtuoso Quad Store with data from a 3rd party SPARQL endpoint</listitem>
+      <listitem>Generating RDF dumps that are accessible to basic HTTP or WebDAV user agents.</listitem>
+    </itemizedlist>
+    <orderedlist>
+      <listitem>Sample SPARQL query producing a list SPARQL endpoints:
+<programlisting><![CDATA[
+PREFIX rdf:      <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs:     <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl:      <http://www.w3.org/2002/07/owl#>
+PREFIX xsd:      <http://www.w3.org/2001/XMLSchema#>
+PREFIX foaf:     <http://xmlns.com/foaf/0.1/>
+PREFIX dcterms:  <http://purl.org/dc/terms/>
+PREFIX scovo:    <http://purl.org/NET/scovo#>
+PREFIX void:     <http://rdfs.org/ns/void#>
+PREFIX akt:      <http://www.aktors.org/ontology/portal#>
+
+SELECT DISTINCT ?endpoint 
+WHERE 
+  { 
+    ?ds a void:Dataset . 
+    ?ds void:sparqlEndpoint ?endpoint 
+  }	
+]]></programlisting>      	
+      </listitem>
+      <listitem>Here is a sample SPARQL protocol URL constructed from one of the sparql endpoints in the result from the query above: 
+<programlisting><![CDATA[
+http://void.rkbexplorer.com/sparql/?query=PREFIX+foaf%3A+%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F0.1%2F%3E+%0D%0APREFIX+void%3A+++++%3Chttp%3A%2F%2Frdfs.org%2Fns%2Fvoid%23%3E++%0D%0ASELECT+distinct+%3Furl++WHERE+%7B+%3Fds+a+void%3ADataset+%3B+foaf%3Ahomepage+%3Furl+%7D%0D%0A&format=sparql	
+]]></programlisting>      	
+      </listitem>
+      <listitem>Here is the cURL output showing a Virtuoso SPARQL URL that executes against a 3rd party SPARQL Endpoint URL: 
+<programlisting><![CDATA[
+$ curl "http://void.rkbexplorer.com/sparql/?query=PREFIX+foaf%3A+%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F0.1%2F%3E+%0D%0APREFIX+void
+%3A+++++%3Chttp%3A%2F%2Frdfs.org%2Fns%2Fvoid%23%3E++%0D%0ASELECT+distinct+%3Furl++WHERE+%7B+%3Fds+a+void%3ADataset+%3B+foaf%3Ah
+omepage+%3Furl+%7D%0D%0A&format=sparql"
+<?xml version="1.0"?>
+<sparql xmlns="http://www.w3.org/2005/sparql-results#">
+  <head>
+    <variable name="url"/>
+  </head>
+  <results ordered="false" distinct="true">
+    <result>
+      <binding name="url"><uri>http://kisti.rkbexplorer.com/</uri></binding>
+    </result>
+    <result>
+      <binding name="url"><uri>http://epsrc.rkbexplorer.com/</uri></binding>
+    </result>
+    <result>
+      <binding name="url"><uri>http://test2.rkbexplorer.com/</uri></binding>
+    </result>
+    <result>
+      <binding name="url"><uri>http://test.rkbexplorer.com/</uri></binding>
+    </result>
+    ...
+    ...
+    ...
+  </results>
+</sparql>	
+]]></programlisting>      	
+      </listitem>
+      <listitem>Go to Conductor UI. For ex. http://localhost:8890/conductor :
+        <figure id="scp1" float="1">
+          <title>Crawling SPARQL Endpoints</title>
+          <graphic fileref="ui/scp1.png"/>
+        </figure>      	
+      </listitem>
+      <listitem>Enter dba credentials;</listitem>
+      <listitem>Go to "Web Application Server"-> "Content Management" -> "Content Imports"
+        <figure id="scp2" float="1">
+          <title>Crawling SPARQL Endpoints</title>
+          <graphic fileref="ui/scp2.png"/>
+        </figure>        	
+      </listitem>
+      <listitem>Click "New Target":
+        <figure id="cr3" float="1">
+          <title>Crawling SPARQL Endpoints</title>
+          <graphic fileref="ui/cr3.png"/>
+        </figure>      	
+      </listitem>
+      <listitem>In the presented form enter for ex.:
+        <orderedlist>
+          <listitem>"Crawl Job Name": voiD store;</listitem>
+          <listitem>"Data Source Address (URL)": the url from above i.e.:
+<programlisting><![CDATA[
+http://void.rkbexplorer.com/sparql/?query=PREFIX+foaf%3A+%3Chttp%3A%2F%2Fxmlns.com%2Ffoaf%2F0.1%2F%3E+%0D%0APREFIX+void%3A+++++%3Chttp%3A%2F%2Frdfs.org%2Fns%2Fvoid%23%3E++%0D%0ASELECT+distinct+%3Furl++WHERE+%7B+%3Fds+a+void%3ADataset+%3B+foaf%3Ahomepage+%3Furl+%7D%0D%0A&format=sparql	
+]]></programlisting>          	
+          </listitem>
+          <listitem>"Local WebDAV Identifier":
+<programlisting><![CDATA[
+/DAV/void.rkbexplorer.com/content	
+]]></programlisting>          	
+          </listitem>
+          <listitem>"Follow links matching (delimited with ;)": 
+<programlisting><![CDATA[
+%
+]]></programlisting>          	
+          </listitem>
+          <listitem>Un-hatch "Use robots.txt" ;</listitem>
+          <listitem>"XPath expression for links extraction":
+<programlisting><![CDATA[
+//binding[@name="url"]/uri/text()	
+]]></programlisting>          	
+          </listitem>
+          <listitem>Hatch "Semantic Web Crawling";</listitem>
+          <listitem>"If Graph IRI is unassigned use this Data Source URL:": enter for ex:
+<programlisting><![CDATA[
+http://void.collection	
+]]></programlisting>          	
+          </listitem>
+          <listitem>Hatch "Follow URLs outside of the target host";</listitem>  
+          <listitem>Hatch "Run "Sponger" and "Accept RDF"
+            <figure id="scp4" float="1">
+              <title>Crawling SPARQL Endpoints</title>
+              <graphic fileref="ui/scp4.png"/>
+            </figure>           	
+            <figure id="scp5" float="1">
+              <title>Crawling SPARQL Endpoints</title>
+              <graphic fileref="ui/scp5.png"/>
+            </figure>           	
+          </listitem>
+        </orderedlist>      	
+      </listitem>
+      <listitem>Click "Create";</listitem>
+      <listitem>The target should be created and presented in the list of available targets:
+        <figure id="scp7" float="1">
+          <title>Crawling SPARQL Endpoints</title>
+          <graphic fileref="ui/scp7.png"/>
+        </figure>       	
+      </listitem>
+      <listitem>Click "Import Queues":
+        <figure id="scp8" float="1">
+          <title>Crawling SPARQL Endpoints</title>
+          <graphic fileref="ui/scp8.png"/>
+        </figure>      	
+      </listitem>
+      <listitem>Click "Run" for the imported target: 
+        <figure id="scp9" float="1">
+          <title>Crawling SPARQL Endpoints</title>
+          <graphic fileref="ui/scp9.png"/>
+        </figure>       	
+      </listitem>
+      <listitem>To check the retrieved content go to "Web Application Server"-> "Content Management" -> "Content Imports" -> "Retrieved Sites":
+        <figure id="scp11" float="1">
+          <title>Crawling SPARQL Endpoints</title>
+          <graphic fileref="ui/scp11.png"/>
+        </figure>       	      	
+      </listitem>
+      <listitem>Click "voiD store" -> "Edit":
+        <figure id="scp12" float="1">
+          <title>Crawling SPARQL Endpoints</title>
+          <graphic fileref="ui/scp12.png"/>
+        </figure>       	
+      </listitem>
+      <listitem>To check the imported URLs go to "Web Application Server"-> "Content Management" -> "Repository" path DAV/void.rkbexplorer.com/content:
+        <figure id="scp10" float="1">
+          <title>Crawling SPARQL Endpoints</title>
+          <graphic fileref="ui/scp10.png"/>
+        </figure>      	
+      </listitem>
+      <listitem>To check the inserted into the RDF QUAD data go to http://cname/sparql and execute the following query:
+<programlisting><![CDATA[
+SELECT * 
+FROM <http://void.collection> 
+WHERE 
+  {
+    ?s ?p ?o
+  }	
+]]></programlisting>    
+        <figure id="scp13" float="1">
+          <title>Crawling SPARQL Endpoints</title>
+          <graphic fileref="ui/scp13.png"/>
+        </figure>    	
+        <figure id="scp14" float="1">
+          <title>Crawling SPARQL Endpoints</title>
+          <graphic fileref="ui/scp14.png"/>
+        </figure>    	        
+      </listitem>
+    </orderedlist>
+  </sect5>
   </sect4>
   </sect3>
   <sect3 id="admiui.accesscontrol"><title>Access Control</title>
-    <para>From "System Admin"/"Access Controls" you can manage Rules and ACL respectively for HTTP, News and Proxy.
+    <para>From "System Admin" -&gt; Security -&gt; "Access Controls" you can manage Rules and ACL 
+    	respectively for HTTP, News, Proxy. The tabs PSH and PSH-SSL are available only when the 
+	    <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.1/virtuoso/pubsubhub_dav.vad">pubsubhub_dav.vad</ulink> 
+	    is installed.
     </para>
           <figure float="1" id="acl001"><title>Access Control Lists</title>
       <graphic fileref="ui/acl001.png"/>

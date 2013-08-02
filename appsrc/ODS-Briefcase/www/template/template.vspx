@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -57,12 +57,6 @@
           user: '<?V ODRIVE.WA.account_name (self.account_id) ?>',
           connectionHeaders: {Authorization: '<?V ODRIVE.WA.account_basicAuthorization (self.account_id) ?>'}
         };
-
-      	/* load stylesheets */
-      	OAT.Style.include("grid.css");
-      	OAT.Style.include("webdav.css");
-      	OAT.Style.include("winms.css");
-
         var featureList=["ajax", "json", "anchor", "dialog", "combolist", "calendar"];
         OAT.Loader.load(featureList);
       </script>
@@ -84,6 +78,16 @@
 
           // Init ODRIVE object
           ODRIVE.init();
+
+          // SSL data
+          OAT.Loader.load(["ajax", "json"], function() {
+            var x = function (data) {
+              try {
+                ODRIVE.sslData = OAT.JSON.parse(data);
+              } catch (e) { ODRIVE.sslData = null; }
+            }
+            OAT.AJAX.GET ('/ods/api/server.getInfo?info=sslPort', false, x, {async: false});
+          });
 
           setFooter();
           window.onresize = function() {setFooter();}

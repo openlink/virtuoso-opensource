@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2009 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -69,11 +69,27 @@
   api_key := registry_get ('iSPARQL_API_KEY');
   if (0 = api_key) api_key := '';
   
+
+  declare rdf_mappers_installed varchar;
+  rdf_mappers_installed := 'false';
+
+  if (DB.DBA.VAD_CHECK_VERSION('rdf_mappers') is not NULL)
+    rdf_mappers_installed := 'true';
+
   declare pivot_installed varchar;
   pivot_installed := 'false';
 
   if (DB.DBA.VAD_CHECK_VERSION('PivotViewer') is not NULL)
       pivot_installed := 'true';
+
+  declare sparql_cxml_installed varchar;
+  sparql_cxml_installed := 'false';
+
+  if (DB.DBA.VAD_CHECK_VERSION('sparql_cxml') is not NULL)
+      sparql_cxml_installed := 'true';
+
+  declare isparql_version varchar;
+  isparql_version := DB.DBA.VAD_CHECK_VERSION('iSPARQL');
 
   declare curi_installed varchar;
   curi_installed := 'false';
@@ -107,7 +123,10 @@
 <?vsp } ?>
    "pivotInstalled":<?= pivot_installed ?>,
    "curiInstalled":<?= curi_installed ?>,
+   "rdfMappersInstalled":<?= rdf_mappers_installed ?>,
+   "sparqlCxmlInstalled":<?= sparql_cxml_installed ?>,
    "setup_done":<?= setup_done ?>,
+   "isparql_version":"<?= isparql_version ?>",
    "namespaces":[
 <?vsp
   declare _fst integer;

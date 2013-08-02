@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2010 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -37,6 +37,11 @@
 #define VIRTRDF_NS_URI		"http://www.openlinksw.com/schemas/virtrdf#"
 #define VIRTRDF_NS_URI_LEN	42
 
+/*				 0         1         2         3         4   */
+/*				 012345678901234567890123456789012345678901234567 */
+#define RDFDF_NS_URI		"http://www.openlinksw.com/virtrdf-data-formats#"
+#define RDFDF_NS_URI_LEN	47
+
 /*				 0         1         2         3      */
 /*				 012345678901234567890123456789012345 */
 #define XHV_NS_URI		"http://www.w3.org/1999/xhtml/vocab#"
@@ -64,6 +69,19 @@ extern caddr_t uname__srcfile;
 extern caddr_t uname__srcline;
 extern caddr_t uname__txt;
 extern caddr_t uname__xslt;
+extern caddr_t uname_SPECIAL_cc_bif_c_AVG;
+extern caddr_t uname_SPECIAL_cc_bif_c_COUNT;
+extern caddr_t uname_SPECIAL_cc_bif_c_MAX;
+extern caddr_t uname_SPECIAL_cc_bif_c_MIN;
+extern caddr_t uname_SPECIAL_cc_bif_c_SUM;
+extern caddr_t uname_bif_c_contains;
+extern caddr_t uname_bif_c_spatial_contains;
+extern caddr_t uname_bif_c_spatial_intersects;
+extern caddr_t uname_bif_c_sp_contains;
+extern caddr_t uname_bif_c_sp_intersects;
+extern caddr_t uname_bif_c_xcontains;
+extern caddr_t uname_bif_c_xpath_contains;
+extern caddr_t uname_bif_c_xquery_contains;
 extern caddr_t uname_lang;
 extern caddr_t uname_nil;
 extern caddr_t uname_nodeID_ns;
@@ -88,6 +106,11 @@ extern caddr_t uname_rdf_ns_uri_type;
 extern caddr_t uname_rdf_ns_uri_datatype;
 extern caddr_t uname_rdf_ns_uri_parseType;
 extern caddr_t uname_rdf_ns_uri_value;
+extern caddr_t uname_rdfdf_ns_uri;
+extern caddr_t uname_rdfdf_ns_uri_default;
+extern caddr_t uname_rdfdf_ns_uri_default_nullable;
+extern caddr_t uname_rdfdf_ns_uri_default_iid;
+extern caddr_t uname_rdfdf_ns_uri_default_iid_nullable;
 extern caddr_t uname_space;
 extern caddr_t uname_swap_reify_ns_uri;
 extern caddr_t uname_swap_reify_ns_uri_statement;
@@ -95,6 +118,8 @@ extern caddr_t uname_virtrdf_ns_uri;
 extern caddr_t uname_virtrdf_ns_uri_DefaultQuadMap;
 extern caddr_t uname_virtrdf_ns_uri_DefaultQuadStorage;
 extern caddr_t uname_virtrdf_ns_uri_DefaultServiceStorage;
+extern caddr_t uname_virtrdf_ns_uri_DefaultSparul11Target;
+extern caddr_t uname_virtrdf_ns_uri_Geometry;
 extern caddr_t uname_virtrdf_ns_uri_PrivateGraphs;
 extern caddr_t uname_virtrdf_ns_uri_QuadMap;
 extern caddr_t uname_virtrdf_ns_uri_QuadMapFormat;
@@ -104,6 +129,10 @@ extern caddr_t uname_virtrdf_ns_uri_SyncToQuads;
 extern caddr_t uname_virtrdf_ns_uri_array_of_any;
 extern caddr_t uname_virtrdf_ns_uri_array_of_string;
 extern caddr_t uname_virtrdf_ns_uri_bitmask;
+extern caddr_t uname_virtrdf_ns_uri_bnode_base;
+extern caddr_t uname_virtrdf_ns_uri_bnode_label;
+extern caddr_t uname_virtrdf_ns_uri_bnode_row;
+extern caddr_t uname_virtrdf_ns_uri_dialect;
 extern caddr_t uname_virtrdf_ns_uri_isSpecialPredicate;
 extern caddr_t uname_virtrdf_ns_uri_isSubclassOf;
 extern caddr_t uname_virtrdf_ns_uri_loadAs;

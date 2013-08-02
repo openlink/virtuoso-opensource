@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1420,7 +1420,7 @@ static caddr_t
   else
     {
       dbe_key_t* xper_key = sch_id_to_key (wi_inst.wi_schema, KI_COLS);
-      itc_from (tmp_itc, xper_key);
+      itc_from (tmp_itc, xper_key, sqlc_client ()->cli_slice);
     }
   ITC_FAIL (tmp_itc)
   {
@@ -2139,7 +2139,7 @@ bdfi_read (void *read_cd, char *tgtbuf, size_t bsize)
   else
     {
       dbe_key_t* xper_key = sch_id_to_key (wi_inst.wi_schema, KI_COLS);
-      itc_from (tmp_itc, xper_key);
+      itc_from (tmp_itc, xper_key, sqlc_client ()->cli_slice);
     }
   ITC_FAIL (tmp_itc)
   {
@@ -2352,7 +2352,7 @@ static void xper_get_blob_page_dir (xper_doc_t *xpd)
   else
     {
       dbe_key_t* xper_key = sch_id_to_key (wi_inst.wi_schema, KI_COLS);
-      itc_from (tmp_itc, xper_key);
+      itc_from (tmp_itc, xper_key, sqlc_client ()->cli_slice);
     }
   blob_read_dir (tmp_itc, &bh->bh_pages, &bh->bh_page_dir_complete, bh->bh_dir_page, NULL);
   itc_free (tmp_itc);
@@ -2509,7 +2509,7 @@ xper_entity_t *
   if ((dtp_of_source_arg == DV_SHORT_STRING_SERIAL) ||
       (dtp_of_source_arg == DV_STRING) ||
       (dtp_of_source_arg == DV_C_STRING))
-    {
+        {
       if (!strncasecmp (source_arg, "file://", 7 /* strlen(("file://") */ ))
         {
 #ifdef WIN32
@@ -2532,15 +2532,15 @@ xper_entity_t *
 #else
 	    char *fname = ((char *) source_arg) + 7 /* strlen("file://") */ ;
 #endif
-	    sec_check_dba (qi, "<read XML from URL of type file://...>");
+          sec_check_dba (qi, "<read XML from URL of type file://...>");
 	    xper_dbg_print_1 ("File '%s'\n", fname);
 	    context.xpc_src_file = fopen (fname, "rb");
-	    if (NULL == context.xpc_src_file)
-	      {
-		xper_destroy_ctx (&context);
-		dk_free_box (uri);
+          if (NULL == context.xpc_src_file)
+            {
+              xper_destroy_ctx (&context);
+              dk_free_box (uri);
 		sqlr_new_error ("42000", "XP100", "Error opening file '%s'", fname);
-	      }
+            }
         source_type = 'F';
 	iter = file_read;
 	iter_data = context.xpc_src_file;
@@ -2595,7 +2595,7 @@ parse_source:
     xpd->xpd_bh = bh_alloc (DV_BLOB_XPER_HANDLE);
     context.xpc_itc = itc_create (NULL, qi->qi_trx);
     xper_key = sch_id_to_key (wi_inst.wi_schema, KI_COLS);
-    itc_from (context.xpc_itc, xper_key);
+    itc_from (context.xpc_itc, xper_key, sqlc_client ()->cli_slice);
     xpd->xpd_bh->bh_it = context.xpc_itc->itc_tree;
     context.xpc_index_attrs = index_attrs;
     context.xpc_attr_word_ctr = (index_attrs ? FIRST_ATTR_WORD_POS : 0);
@@ -4432,7 +4432,7 @@ xp_string_value_is_nonempty (xml_entity_t * xe)
 	    namelen = (int) skip_string_length (&ptr);
 	    ptr += namelen;
 	    alen = (long) skip_string_length (&ptr);
-	    if (alen);
+	    if (alen)
 	      return 1;
 	    ptr += alen;
 	  }
@@ -4477,7 +4477,7 @@ xp_string_value_is_nonempty (xml_entity_t * xe)
 		      namelen = (int) skip_string_length (&ptr);
 		      ptr += namelen;
 		      alen = (long) skip_string_length (&ptr);
-		      if (alen);
+		      if (alen)
 			return 1;
 		      ptr += alen;
 		    }
@@ -6350,7 +6350,7 @@ xper_entity_t *
     tgt_xpd->xpd_bh = bh_alloc (DV_BLOB_XPER_HANDLE);
     context.xpc_itc = itc_create (NULL, qi->qi_trx);
     xper_key = sch_id_to_key (wi_inst.wi_schema, KI_COLS);
-    itc_from (context.xpc_itc, xper_key);
+    itc_from (context.xpc_itc, xper_key, sqlc_client ()->cli_slice);
     tgt_xpd->xpd_bh->bh_it = context.xpc_itc->itc_tree;
     ITC_FAIL (context.xpc_itc)
     {

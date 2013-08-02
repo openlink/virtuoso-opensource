@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -445,7 +445,7 @@
               <td/>
               <td>
                 <v:check-box name="store" value="1" initial-checked="--case when self._store then 1 else 0 end" xhtml_id="store"/>
-                <label for="store">Store content locally</label>
+                <label for="store">Store documents locally</label>
               </td>
             </tr>
             <tr>

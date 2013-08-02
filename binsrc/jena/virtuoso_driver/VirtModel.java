@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2010 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -23,6 +23,7 @@
 package virtuoso.jena.driver;
 
 
+import javax.sql.*;
 import com.hp.hpl.jena.graph.Graph;
 import com.hp.hpl.jena.rdf.model.Model;
 import com.hp.hpl.jena.rdf.model.impl.ModelCom;
@@ -40,13 +41,25 @@ public class VirtModel extends ModelCom {
     }
 	
 	
-    public static VirtModel openDefaultModel(VirtuosoDataSource ds) 
+    public static VirtModel openDefaultModel(ConnectionPoolDataSource ds) 
     {
     	return new VirtModel(new VirtGraph(ds));
     }
 
     public static VirtModel openDatabaseModel(String graphName, 
-	VirtuosoDataSource ds)
+	ConnectionPoolDataSource ds)
+    {
+	return new VirtModel(new VirtGraph(graphName, ds));
+    }
+
+
+    public static VirtModel openDefaultModel(DataSource ds) 
+    {
+    	return new VirtModel(new VirtGraph(ds));
+    }
+
+    public static VirtModel openDatabaseModel(String graphName, 
+	DataSource ds)
     {
 	return new VirtModel(new VirtGraph(graphName, ds));
     }

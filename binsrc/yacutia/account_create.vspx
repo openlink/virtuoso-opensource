@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -68,6 +68,11 @@
       </h1>
     </vm:rawheader>
     <vm:pagebody>
+	<v:on-init>
+	    <![CDATA[
+	    set http_charset='utf-8';
+	    ]]>
+	</v:on-init>
 	<vm:help id="account_create" sect=""/>
 	<script tyep="text/javascript"><![CDATA[
       function onExitUserName()
@@ -258,7 +263,7 @@
                           <v:url name="b_url32" value="--'Roles'" format="%s" url="--'accounts_page.vspx?page=2'" xhtml_class="uddi"/>
                         </td>
                         <td class="page_tab" align="center">
-			  <v:url name="b_url14" value="Grants"  url="accounts_page.vspx?page=3" xhtml_class="uddi"/>
+			  <v:url name="b_url14" value="Grants"  url="-- case when self.mode = 'edit' then sprintf ('caps_browser.vspx?mode=edit&user_name=%U', self.user_name) else 'accounts_page.vspx?page=3' end" xhtml_class="uddi"/>
                         </td>
                         <td class="page_tab" align="center">
 			  <v:url name="b_url15" value="LDAP Import"  url="ldap_import.vspx" xhtml_class="uddi"/>
@@ -279,7 +284,8 @@
                   <table class="tab_page">
                     <tr>
                       <td valign="top">
-			  <v:form name="account_form" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data">
+			  <v:form name="account_form" type="simple" method="POST" action="" 
+			      xhtml_enctype="multipart/form-data" xhtml_accept-charset="UTF-8">
       <table class="main_page_area" style="valign: top">
         <tr valign="top">
           <td>
@@ -748,7 +754,13 @@
 		<tr>
 		    <td>
 			<input type="checkbox" name="cb_key" value="<?V xenc_key ?>" />
-			<?V xenc_key ?> (<?V xenc_type ?>)
+			<?V xenc_key ?> (<?V xenc_type ?>) 
+		    </td>
+		    <td>
+			<?vsp if ((xenc_type = 'X.509') or (xenc_type = 'RSA')) { ?>
+			<v:url name="dwn1" value="Download" render-only="1" 
+			    url="--sprintf ('sec_pki_download.vsp?key=%U&user=%U', xenc_key, self.user_name)"/>
+			<?vsp } ?>
 		    </td>
 		</tr>
 		<?vsp
@@ -756,7 +768,7 @@
 		   }
 		if (i = 0)
 	  	  {
-		     http ('<tr><td>~no keys available~</td></tr>');
+		     http ('<tr><td colspan="2">~no keys available~</td></tr>');
 		   }
 		?>
 	    </table>
@@ -795,6 +807,7 @@
 		    };
 		    set_user_id (self.user_name);
 		    USER_KEY_LOAD (self.k_name.ufl_value, get_keyword ('k_value', params), 'X.509', 'PKCS12', self.k_pwd.ufl_value, null, 1);
+		    exec (make_cert_stmt (self.k_name.ufl_value));
 		    ]]></v:on-post>
 	    </v:button>
 	    </td>
@@ -826,7 +839,7 @@
                 <v:script>
                   <![CDATA[
   declare i, cnt, exist, u_ident, g_name  integer;
-  declare tmp, val, user_name, user_pwd, e_mail, os_name, os_password, user_perm, user_home varchar;
+  declare tmp, val, user_name, user_pwd, user_pwd2, e_mail, os_name, os_password, user_perm, user_home varchar;
   declare attr any;
   declare st, msg varchar;
   declare webid varchar;
@@ -846,13 +859,14 @@
 
   attr := vector();
   user_name:= self.t_login_name.ufl_value;
-  user_pwd:=  self.t_user_password.ufl_value;
+  user_pwd :=  charset_recode (self.t_user_password.ufl_value, 'UTF-8', '_WIDE_');
+  user_pwd2 :=  charset_recode (self.t_user_password_conf.ufl_value, 'UTF-8', '_WIDE_');
   os_name :=  self.t_os_name.ufl_value;
   e_mail := self.t_e_mail.ufl_value;
 
   os_password :=  self.t_os_password.ufl_value;
 
-  if (user_pwd <> self.t_user_password_conf.ufl_value)
+  if (user_pwd <> user_pwd2)
     {
       control.vc_parent.vc_error_message := 'Passwords mismatch';
       self.vc_is_valid := 0;
@@ -1018,7 +1032,7 @@
               from SYS_USERS
               where U_ID = UG_GID and U_IS_ROLE = 1;
 
-            if (g_name <> '' and g_name <> self.dl_default_group.ufl_value)
+            if (g_name <> '' and g_name <> coalesce (self.dl_default_group.ufl_value, ''))
               {
                 declare st, msg any;
                 exec ('USER_REVOKE_ROLE(?,?)', st, msg, vector (user_name, g_name));
@@ -1030,7 +1044,7 @@
 
         while (i < cnt)
           {
-            if (self.roles_grant_list[i] <> self.dl_default_group.ufl_value)
+            if (self.roles_grant_list[i] <> self.dl_default_group.ufl_value or self.dl_default_group.ufl_value is null)
 	      {
 	        if (not exists (select 1 from SYS_ROLE_GRANTS, SYS_USERS g, SYS_USERS u
 		  where g.U_NAME = self.roles_grant_list[i] and gi_super = u.u_id and u.u_name = user_name and gi_grant = g.u_id))

@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2007 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -236,10 +236,8 @@ if (typeof (OAT) == 'undefined')
       OAT.Loader.load(["ajax","xml"],function(){});
 
       OAT.Preferences.imagePath="<?V self.odsbar_ods_gpath ?>images/oat/";
-      OAT.Preferences.stylePath="<?V self.odsbar_ods_gpath ?>";
-
+  OAT.Preferences.stylePath="<?V self.odsbar_ods_gpath ?>oat/styles/";
       OAT.Style.include('winrect.css');
-
 
       if (typeof ODSInitArray != 'undefined')
         {
@@ -442,7 +440,7 @@ function showSSLLink()
                    url="--self.odsbar_ods_gpath||'help.vspx'"
                    xhtml_target="_blank"
                    is-local="1"/>
-                <span id="span_ssl_link">&nbsp;</span>
+                <span id="span_ssl_link">&amp;nbsp;</span>
             <script type="text/javascript">
               <![CDATA[
                 ODSInitArray.push(function(){OAT.Loader.load(["ajax", "json"], function(){showSSLLink();});});
@@ -590,7 +588,7 @@ function showSSLLink()
  </div><!-- HD-ODS-BAR -->
  </div>
 
- <p style="font-size: 1pt;margin: 0;padding: 0;" id="ods_bar_sep">&nbsp;</p>
+      <p style="font-size: 1pt;margin: 0;padding: 0;" id="ods_bar_sep">&amp;nbsp;</p>
 
 <script  type="text/javascript">
 <![CDATA[
@@ -740,12 +738,12 @@ function ods_bar_state_set (state)
 
 var OATWaitCount = 0;
 var inFrame=0;
-if(top.location.href!=window.location.href)
+  if (window.top === window.self)
 {
+    create_cookie ('interface', 'vspx', 1);
+  } else {
     inFrame=1;
     ODSInitArray.push(function(){OAT.Dom.hide('FT');});
-} else {
-   create_cookie ('interface', 'vspx', 1);
 }
 
   function odsbarSafeInit()
@@ -1020,7 +1018,7 @@ if(coalesce(self.odsbar_app_type,get_keyword ('app_type', self.odsbar_inout_arr)
 <xsl:template match="vm:odsbar_navigation_level2">
         <ul id="ods_bar_second_lvl">
           <vm:odsbar_instances_menu/>
-      <li>&nbsp;</li>
+      <li>&amp;nbsp;</li>
         </ul>
 </xsl:template>
 

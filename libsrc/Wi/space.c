@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -327,6 +327,10 @@ it_new_page (index_tree_t * it, dp_addr_t addr, int type, oid_t col_id,
       buf->bd_content_map = NULL;
     }
 
+#ifdef PAGE_DEBUG
+  buf->bd_delta_line = __LINE__;
+  buf->bd_delta_ts = buf->bd_timestamp;
+#endif
   buf_set_dirty (buf);
   DBG_PT_PRINTF (("New page L=%d B=%p FL=%d K=%s \n", buf->bd_page, buf, type,
 		 it->it_key ? (it->it_key->key_name ? it->it_key->key_name : "unnamed key") : "no key"));
@@ -395,7 +399,7 @@ it_free_page (index_tree_t * it, buffer_desc_t * buf)
 
 
 void
-it_free_dp_no_read (index_tree_t * it, dp_addr_t dp, int dp_type)
+it_free_dp_no_read (index_tree_t * it, dp_addr_t dp, int dp_type, oid_t col_id)
 {
   buffer_desc_t * buf;
   dp_addr_t phys_dp = 0;
@@ -411,7 +415,7 @@ it_free_dp_no_read (index_tree_t * it, dp_addr_t dp, int dp_type)
       log_info ("Deleting blob page while it is being read dp=%d .\n", dp);
 /* the buffer can be a being read decoy with no dp, so check dps only if not being read */
     }
-  else if (phys_dp != dp)
+  else if (phys_dp != dp && DPF_COLUMN != dp_type)
     GPF_T1 ("A blob/hash temp dp is not supposed to be remapped in isp_free_blob_dp_no_read");
   if (buf)
     {
@@ -437,7 +441,7 @@ it_free_dp_no_read (index_tree_t * it, dp_addr_t dp, int dp_type)
   {
     dp_addr_t remap = (dp_addr_t) (ptrlong) gethash (DP_ADDR2VOID (dp), &itm->itm_remap);
     dp_addr_t cpt_remap = (dp_addr_t) (ptrlong) DP_CHECKPOINT_REMAP (it->it_storage, dp);
-    if (cpt_remap)
+    if (cpt_remap && DPF_COLUMN != dp_type)
       GPF_T1 ("Blob/hash temp dp  not expected to have cpt remap in delete no read");
     if (DPF_BLOB == dp_type)
       it->it_n_blob_est--;
@@ -445,14 +449,20 @@ it_free_dp_no_read (index_tree_t * it, dp_addr_t dp, int dp_type)
       {
 	/* if this was CREATED AND DELETED without intervening checkpoint the delete
 	 * does not carry outside commit space. */
+	extent_map_t * em = IT_COL_REMAP_EM (it, col_id);
+	if (remap == phys_dp)
+	  {
 	remhash (DP_ADDR2VOID (dp), &itm->itm_remap);
-	em_free_dp (it->it_extent_map, dp, DPF_BLOB == dp_type ? EXT_BLOB : EXT_INDEX);
+	    em_free_dp (em, dp, DPF_BLOB == dp_type ? EXT_BLOB : EXT_INDEX);
+	  }
       }
     else
       {
 	if (DPF_HASH == dp_type) GPF_T1 ("a hash temp page is not supposed to be in cpt s[space");
 	sethash (DP_ADDR2VOID (dp), &itm->itm_remap, (void *) (ptrlong) DP_DELETED);
       }
+    if (dp_type == DPF_COLUMN && phys_dp != dp)
+      it_free_remap (it, dp, phys_dp, DPF_COLUMN, col_id);
   }
 }
 

@@ -1,11 +1,11 @@
 #!/bin/sh
 #
-#  $Id$
+#  $Id: tvspxex.sh,v 1.16.4.2.4.4 2013/01/02 16:15:34 source Exp $
 #
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2009 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -21,7 +21,7 @@
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
 
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 DSN=$PORT
 
@@ -34,7 +34,7 @@ ISQL=$HOME/binsrc/tests/isql
 LOGFILE=`pwd`/tvspxex.output
 TESTDIR=`pwd`
 export LOGFILE ISQL
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 DSN=$PORT
 AWK=${AWK-gawk}
 
@@ -158,7 +158,7 @@ esac
 
 MakeIni ()
 {
-   MAKECFG_FILE ../$TESTCFGFILE $PORT $CFGFILE
+   MAKECFG_FILE $VIRTUOSO_TEST/../$TESTCFGFILE $PORT $CFGFILE
    case $SERVER in
    *[Mm]2*)
    cat >> $CFGFILE <<END_HTTP
@@ -173,7 +173,7 @@ http_proxy_connection_cache_timeout: 15
 END_HTTP
    ;;
    *virtuoso*)
-   MAKECFG_FILE ../$TESTCFGFILE $PORT $CFGFILE
+   MAKECFG_FILE $VIRTUOSO_TEST/../$TESTCFGFILE $PORT $CFGFILE
    cat >> $CFGFILE <<END_HTTP1
 [HTTPServer]
 HTTPLogFile = http.log
@@ -2593,7 +2593,7 @@ echo "" >> vspx_demo_init.sql
 echo "" >> vspx_demo_init.sql
 GenURIall
 GenBlogReq
-cp -f ../tvspxex.awk .
+cp -f $VIRTUOSO_TEST/tvspxex.awk .
 #MakeIni
 MakeConfig 
 CHECK_PORT $TPORT
@@ -2604,7 +2604,7 @@ sleep 1
 cd $TESTDIR
 DoCommand $DSN "DB.DBA.VHOST_DEFINE ('*ini*', '*ini*', '/', '/', 0, 0, NULL,  NULL, NULL, NULL, 'dba', NULL, NULL, 0);"
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < nwdemo.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/nwdemo.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tvspx.sh: loading northwind data"
@@ -2628,7 +2628,7 @@ process_commands blogtests.list
 
 cd $TESTDIR
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tblogq.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tblogq.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tvspx.sh: loading tblogq.sql"

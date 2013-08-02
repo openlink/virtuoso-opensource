@@ -1,0 +1,2347 @@
+<?xml version="1.0"?>
+<!DOCTYPE rdf:RDF
+  [<!ENTITY vCard "http://www.w3.org/2001/vcard-rdf/3.0#">
+   <!ENTITY eco "http://www.ebusiness-unibw.org/ontologies/eclass/5.1.4/">
+  ]>
+<rdf:RDF
+	xmlns="http://www.openlinksw.com/schemas/oplweb#"
+    xmlns:vCard="http://www.w3.org/2001/vcard-rdf/3.0#"
+    xmlns:eco="http://www.ebusiness-unibw.org/ontologies/eclass/5.1.4/#"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:foaf="http://xmlns.com/foaf/0.1/"
+    xmlns:gr="http://purl.org/goodrelations/v1#"
+    xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"
+    xml:base="http://www.openlinksw.com/schemas/oplweb#">
+  <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/oplweb#">
+        <rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">OpenLink ProductPortfolio</rdfs:label>
+        <rdfs:comment>OpenLink Product Portfolio Ontology making use of GoodRelations to publicise product and service offerings</rdfs:comment>
+        <virtrdf:catName>oplweb</virtrdf:catName>
+        <virtrdf:version>1.00</virtrdf:version>
+		<owl:imports rdf:resource="http://purl.org/goodrelations/v1"/>
+		<gr:BusinessEntity rdf:resource="BusinessEntity"/>
+  </owl:Ontology>
+
+  <gr:BusinessEntity rdf:ID="BusinessEntity">
+	  <owl:equivalentClass rdf:resource="http://xmlns.com/foaf/0.1/Organization" />
+		<gr:legalName rdf:datatype="http://www.w3.org/2001/XMLSchema#string">OpenLink Software Inc.</gr:legalName>
+		<rdfs:seeAlso rdf:resource="http://www.openlinksw.com"/>
+		<vCard:ADR rdf:parseType="Resource">
+		  <vCard:Street>10 Burlington Mall Road, Suite 265</vCard:Street>
+		  <vCard:Pcode>MA 01803</vCard:Pcode>
+		  <vCard:City>Burlington</vCard:City>
+		  <vCard:Country>US</vCard:Country>
+		  <vCard:TEL rdf:parseType="Resource">
+			<rdf:value>+1 781-273-0900</rdf:value>
+			<rdf:type rdf:resource="http://www.w3.org/2001/vcard-rdf/3.0#work"/>
+			<rdf:type rdf:resource="http://www.w3.org/2001/vcard-rdf/3.0#voice"/>
+		  </vCard:TEL>
+		  <vCard:EMAIL rdf:parseType="Resource">
+			<rdf:value>sales@openlinksw.com</rdf:value>
+			<rdf:type rdf:resource="http://www.w3.org/2001/vcard-rdf/3.0#internet"/>
+		  </vCard:EMAIL>
+		</vCard:ADR>
+
+		<gr:offers rdf:resource="#Offering"/>
+		<gr:offers rdf:resource="#DevelopmentOffering"/>
+		<gr:offers rdf:resource="#TrainingOffering"/>
+
+		<rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/oplweb"/>
+		<rdfs:seeAlso rdf:resource="http://www.openlinksw.com/"/>
+
+		<foaf:homepage rdf:resource="http://www.openlinksw.com/"/>
+		<foaf:logo rdf:resource="http://www.openlinksw.com/index_files/openlink150.gif" />
+		<foaf:maker rdf:resource="http://www.openlinksw.com/dataspace/organization/openlink#this" />
+		<owl:sameAs rdf:resource="http://www.openlinksw.com/dataspace/organization/openlink#this" />
+		<owl:sameAs rdf:resource="http://dbpedia.org/resource/OpenLink_Software" />
+		<rdfs:seeAlso rdf:resource="http://en.wikipedia.org/wiki/OpenLink_Software" />
+  </gr:BusinessEntity>
+
+  <gr:LocationOfSalesOrServiceProvisioning rdf:ID="LocationOfSalesOrServiceProvisioning_1">
+	<rdfs:label rdf:datatype="http://www.w3.org/2001/XMLSchema#string">OpenLink Software Inc.</rdfs:label>
+	<vCard:ADR rdf:parseType="Resource">
+	  <vCard:Street>10 Burlington Mall Road, Suite 265</vCard:Street>
+	  <vCard:Pcode>MA 01803</vCard:Pcode>
+	  <vCard:City>Burlington</vCard:City>
+	  <vCard:Country>US</vCard:Country>
+	  <vCard:TEL rdf:parseType="Resource">
+		<rdf:value>+1 781-273-0900</rdf:value>
+		<rdf:type rdf:resource="http://www.w3.org/2001/vcard-rdf/3.0#work"/>
+		<rdf:type rdf:resource="http://www.w3.org/2001/vcard-rdf/3.0#voice"/>
+	  </vCard:TEL>
+	  <vCard:EMAIL rdf:parseType="Resource">
+		<rdf:value>sales@openlinksw.com</rdf:value>
+		<rdf:type rdf:resource="http://www.w3.org/2001/vcard-rdf/3.0#internet"/>
+	  </vCard:EMAIL>
+	</vCard:ADR>
+	<rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/oplweb"/>
+  </gr:LocationOfSalesOrServiceProvisioning>
+
+  <gr:Offering rdf:ID="Offering">
+		<rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/oplweb"/>
+		<gr:availableAtOrFrom rdf:resource="#LocationOfSalesOrServiceProvisioning_1"/>
+		<gr:includes>
+			<gr:ActualProductOrServicesInstance rdf:ID="DownloadLocation"/>
+			<!-- gr:ProductOrServiceSomeInstancePlaceholder rdf:ID="ComponentArchive" / -->
+		</gr:includes>
+		<gr:includes>
+			<gr:ProductOrServiceSomeInstancePlaceholder rdf:ID="ComponentArchive" />
+		</gr:includes>
+		<gr:hasPriceSpecification>
+		  <gr:PriceSpecification rdf:ID="PriceUnitType" />
+		</gr:hasPriceSpecification>
+		<!-- step 2a -->
+		<gr:includesObject>
+		  <gr:TypeAndQuantityNode rdf:ID="TypeAndQuantityNode_1">
+			<rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			  This instance reflects that Offering_1 includes 1 unit (Code 62) of the instances placeholder ProductOrServicesSomeInstancesPlaceholder_1.
+			</rdfs:comment>
+			<gr:amountOfThisGood rdf:datatype="http://www.w3.org/2001/XMLSchema#float">1.0</gr:amountOfThisGood>
+			<gr:hasUnitOfMeasurement rdf:datatype="http://www.w3.org/2001/XMLSchema#string">C62</gr:hasUnitOfMeasurement>
+			<gr:typeOfGood>
+			  <gr:ProductOrServicesSomeInstancesPlaceholder rdf:ID="ProductOrServicesSomeInstancesPlaceholder_1">
+				<rdf:type rdf:resource="&eco;#C_AKJ315005-tax"/>
+				<rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Universal Data Access; Semantic Data Collaboration Solutions.</rdfs:comment>
+			  </gr:ProductOrServicesSomeInstancesPlaceholder>
+			</gr:typeOfGood>
+		  </gr:TypeAndQuantityNode>
+		</gr:includesObject>
+		<rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Universal Data Access; Semantic Data Collaboration Solutions.</rdfs:comment>
+		<!-- step 2b -->
+		<gr:hasBusinessFunction rdf:resource="http://purl.org/goodrelations/v1#Sell"/>
+		<gr:hasBusinessFunction rdf:resource="http://purl.org/goodrelations/v1#ProvideService"/>
+		<!-- step 3 -->
+		<gr:validFrom rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2009-06-26T00:00:00+01:00</gr:validFrom>
+		<gr:validThrough rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2020-06-26T23:59:00+01:00</gr:validThrough>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AF</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AX</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AL</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">DZ</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AS</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AD</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AO</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AI</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AQ</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AG</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AR</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AM</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AW</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AU</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AT</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AZ</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BH</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BD</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BB</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BY</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BE</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BZ</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BJ</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BM</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BT</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BO</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BA</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BW</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BV</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BR</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IO</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BN</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BG</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BF</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BI</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KH</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CM</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CA</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CV</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KY</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CF</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TD</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CL</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CN</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CX</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CC</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CO</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KM</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CG</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CD</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CK</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CR</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CI</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">HR</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CU</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CY</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CZ</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">DK</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">DJ</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">DM</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">DO</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">EC</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">EG</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SV</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GQ</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ER</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">EE</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ET</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">FK</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">FO</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">FJ</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">FI</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">FR</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GF</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PF</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TF</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GA</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GM</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GE</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">DE</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GH</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GI</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GR</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GL</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GD</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GP</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GU</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GT</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GG</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GN</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GW</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GY</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">HT</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">HM</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">VA</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">HN</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">HK</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">HU</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IS</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IN</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ID</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IR</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IQ</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IE</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IM</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IL</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IT</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">JM</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">JP</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">JE</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">JO</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KZ</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KE</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KI</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KP</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KR</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KW</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KG</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LA</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LV</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LB</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LS</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LR</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LY</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LI</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LT</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LU</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MO</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MK</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MG</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MW</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MY</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MV</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ML</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MT</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MH</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MQ</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MR</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MU</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">YT</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MX</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">FM</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MD</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MC</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MN</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ME</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MS</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MA</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MZ</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MM</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NA</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NR</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NP</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NL</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AN</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NC</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NZ</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NI</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NE</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NG</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NU</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NF</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MP</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NO</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">OM</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PK</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PW</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PS</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PA</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PG</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PY</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PE</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PH</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PN</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PL</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PT</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PR</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">QA</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">RE</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">RO</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">RU</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">RW</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BL</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SH</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KN</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LC</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MF</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PM</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">VC</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">WS</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SM</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ST</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SA</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SN</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">RS</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SC</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SL</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SG</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SK</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SI</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SB</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SO</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ZA</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GS</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ES</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LK</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SD</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SR</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SJ</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SZ</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SE</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CH</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SY</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TW</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TJ</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TZ</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TH</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TL</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TG</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TK</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TO</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TT</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TN</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TR</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TM</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TC</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TV</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">UG</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">UA</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AE</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GB</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">US</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">UM</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">UY</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">UZ</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">VU</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">VE</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">VN</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">VG</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">VI</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">WF</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">EH</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">YE</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ZM</gr:eligibleRegions>
+		<gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ZW</gr:eligibleRegions>
+		<gr:eligibleCustomerTypes rdf:resource="http://purl.org/goodrelations/v1#Enduser"/>
+		<gr:eligibleCustomerTypes rdf:resource="http://purl.org/goodrelations/v1#PublicInstitution"/>
+		<gr:eligibleCustomerTypes rdf:resource="http://purl.org/goodrelations/v1#Reseller"/>
+		<!-- step 4 -->
+		<gr:acceptedPaymentMethods rdf:resource="http://purl.org/goodrelations/v1#MasterCard"/>
+		<gr:acceptedPaymentMethods rdf:resource="http://purl.org/goodrelations/v1#VISA"/>
+		<gr:acceptedPaymentMethods rdf:resource="http://purl.org/goodrelations/v1#AmericanExpress"/>
+		<gr:acceptedPaymentMethods rdf:resource="http://purl.org/goodrelations/v1#Cash"/>
+		<gr:acceptedPaymentMethods rdf:resource="http://purl.org/goodrelations/v1#CheckInAdvance"/>
+		<gr:acceptedPaymentMethods rdf:resource="http://purl.org/goodrelations/v1#ByBankTransferInAdvance"/>
+		<!-- step 5 -->
+		<gr:availableDeliveryMethods rdf:resource="http://purl.org/goodrelations/v1#DeliveryModeDirectDownload"/>
+  </gr:Offering>
+
+	<!-- Family / Category / Format -->
+
+	<rdfs:Class rdf:ID="ProductFamily">
+		<rdfs:label>Product Family</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Product Family
+		</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://purl.org/goodrelations/v1#ProductOrService"/>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="ProductCategory">
+		<rdfs:label>Product Category</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Product Category
+		</rdfs:comment>
+      <rdfs:subClassOf rdf:resource="#ProductFamily"/>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="ProductFormat">
+		<rdfs:label>Product Format</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Product Format
+		</rdfs:comment>
+	  <rdfs:subClassOf rdf:resource="#ProductFamily"/>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="ProductFormatCategory">
+		<rdfs:label>Product Format Category</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Product Format Category
+		</rdfs:comment>
+	  <rdfs:subClassOf rdf:resource="#ProductFamily"/>
+	  <rdfs:subClassOf rdf:resource="#ProductCategory"/>
+	  <rdfs:subClassOf rdf:resource="#ProductFormat"/>
+	</rdfs:Class>
+
+	<rdf:Property rdf:ID="ProductFamilyDescription">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ProductFamily"/>
+    <rdfs:label>Product Family Description</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ProductFamilyLongDescription">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ProductFamily"/>
+    <rdfs:label>Product Family Long Description</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ProductFamilyCode">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ProductFamily"/>
+    <rdfs:label>Product Family Long Description</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ProductFormatDescription">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ProductFormat"/>
+    <rdfs:label>Product Format Description</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ProductFormatLongDescription">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ProductFormat"/>
+    <rdfs:label>Product Format Long Description</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ProductFormatCode">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ProductFormat"/>
+    <rdfs:domain rdf:resource="#ProductFormatCategory"/>
+    <rdfs:label>Product Format Long Description</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ProductCategoryDescription">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ProductCategory"/>
+    <rdfs:label>Product Category Description</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ProductCategoryLongDescription">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ProductCategory"/>
+    <rdfs:label>Product Category Long Description</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ProductCategoryCode">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ProductCategory"/>
+    <rdfs:domain rdf:resource="#ProductFormatCategory"/>
+    <rdfs:label>Product Category Short Code</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="hasProduct">
+    <rdfs:range rdf:resource="#Product"/>
+    <rdfs:domain rdf:resource="#ProductCategory"/>
+    <rdfs:domain rdf:resource="#ProductFormat"/>
+    <rdfs:domain rdf:resource="#ProductFormatCategory"/>
+    <rdfs:domain rdf:resource="#Opsys"/>
+    <rdfs:domain rdf:resource="#DbmsEngine"/>
+    <rdfs:label>Product</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="hasCategory">
+    <rdfs:range rdf:resource="#ProductCategory"/>
+    <rdfs:domain rdf:resource="#ProductFamily"/>
+    <rdfs:domain rdf:resource="#Product"/>
+    <rdfs:label>Product</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="hasFormat">
+    <rdfs:range rdf:resource="#ProductFormat"/>
+    <rdfs:domain rdf:resource="#ProductFamily"/>
+    <rdfs:domain rdf:resource="#ProductFormat"/>
+    <rdfs:label>Product</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="isProductCategory">
+    <rdfs:range rdf:resource="#ProductCategory"/>
+    <rdfs:domain rdf:resource="#ProductFamily"/>
+    <rdfs:domain rdf:resource="#Product"/>
+    <rdfs:domain rdf:resource="#ProductFormatCategory"/>
+    <rdfs:label>Product Category</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="isProductFormat">
+    <rdfs:range rdf:resource="#ProductFormat"/>
+    <rdfs:domain rdf:resource="#ProductFamily"/>
+    <rdfs:domain rdf:resource="#ProductFormat"/>
+    <rdfs:domain rdf:resource="#ProductFormatCategory"/>
+    <rdfs:label>Product Format</rdfs:label>
+  </rdf:Property>
+
+	<!-- Vendor -->
+
+	<rdfs:Class rdf:ID="VendorCategoryFamily">
+		<rdfs:label>vendor_category_family</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Vendor Category Family
+		</rdfs:comment>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="VendorCategory">
+		<rdfs:label>vendor_category</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Vendor Category
+		</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="VendorCategoryFamily"/>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="Vendors">
+		<rdfs:label>vendors</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Vendors
+		</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="VendorCategory"/>
+	</rdfs:Class>
+
+	<rdf:Property rdf:ID="VendorName">
+    <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/name"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Vendors"/>
+    <rdfs:label>Vendor Name</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="VendorCategoryFamilyDescription">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#VendorCategoryFamily"/>
+    <rdfs:label>Vendor Category Family Description</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="VendorCategoryDescription">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#VendorCategory"/>
+    <rdfs:label>Vendor Category Description</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="isOfVendorCategory">
+    <rdfs:range rdf:resource="#VendorCategory"/>
+    <rdfs:domain rdf:resource="#Vendors"/>
+    <rdfs:label>Vendor Category Description</rdfs:label>
+  </rdf:Property>
+
+	<!-- Opsys / DBMS -->
+
+	<rdfs:Class rdf:ID="OpsysFamily">
+		<rdfs:label>OS Family</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Operating System Family
+		</rdfs:comment>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="DbmsFamily">
+		<rdfs:label>DBMS Family</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Database Management System Family
+		</rdfs:comment>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="DbmsEngine">
+		<rdfs:label>DBMS Engine</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Database Management System Engine
+		</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="DbmsFamily"/>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="OpsysType">
+		<rdfs:label>OS Type</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Operating System Type
+		</rdfs:comment>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="ProcessorMode">
+		<rdfs:label>Processor Mode</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Processor Mode
+		</rdfs:comment>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="Processor">
+		<rdfs:label>Processor</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Processor
+		</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="ProcessorFamily"/>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="ProcessorFamily">
+		<rdfs:label>Processor Family</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Processor Family
+		</rdfs:comment>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="Opsys">
+		<rdfs:label>Operating System</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			The operating system or underlaying platform.
+		</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="OpsysFamily"/>
+    <rdfs:subClassOf rdf:resource="OpsysType"/>
+	</rdfs:Class>
+
+	<rdf:Property rdf:ID="OpsysFamilyName">
+    <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/name"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#OpsysFamily"/>
+    <rdfs:label>Operating System Family Name</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="OpsysFamilyRating">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#OpsysFamily"/>
+    <rdfs:label>OS Family Rating</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="OpsysFamilyLicenseCode">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#OpsysFamily"/>
+    <rdfs:label>Operating System Family License Identity</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="OpsysFamilyVendor">
+    <rdfs:range rdf:resource="#Vendors"/>
+    <rdfs:domain rdf:resource="#OpsysFamily"/>
+    <rdfs:label>Opsys Family Vendor</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="DbmsFamilyName">
+    <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/name"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#DbmsFamily"/>
+    <rdfs:label>DBMS Family Name</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="DbmsFamilyVendor">
+    <rdfs:range rdf:resource="#Vendors"/>
+    <rdfs:domain rdf:resource="#DbmsFamily"/>
+    <rdfs:label>DBMS Family Vendor</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="DbmsName">
+    <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/name"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#DbmsEngine"/>
+    <rdfs:label>DBMS Name</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="DbmsVersion">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#DbmsEngine"/>
+    <rdfs:label>DBMS Version</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="DbmsEngineRating">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#DbmsEngine"/>
+    <rdfs:label>DBMS Engine Rating</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="DbmsEngineOldArchiveCode">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#DbmsEngine"/>
+    <rdfs:label>DBMS Engine old Archive Code</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="DbmsUpwardCompatible">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#DbmsEngine"/>
+    <rdfs:label>DBMS Upward Compatible</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="DbmsDownwardCompatible">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#DbmsEngine"/>
+    <rdfs:label>DBMS Downward Compatible</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="OpsysTypeDescription">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#OpsysType"/>
+    <rdfs:label>Opsys Type Description</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="OpsysTypeShortDescription">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#OpsysType"/>
+    <rdfs:label>Opsys Type Short Description</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="OpsysName">
+    <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/name"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Opsys"/>
+    <rdfs:label>Opsys Name</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="OpsysVersion">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Opsys"/>
+    <rdfs:label>Opsys Version</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="OpsysUpwardCompatible">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Opsys"/>
+    <rdfs:label>Opsys Compatible</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="OpsysDownwardCompatible">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Opsys"/>
+    <rdfs:label>Opsys Downward Compatible</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="OpsysLicenseCode">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Opsys"/>
+    <rdfs:label>Opsys License Code</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="OpsysCommercialName">
+    <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/name"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Opsys"/>
+    <rdfs:label>Opsys Commercial Name</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="OpsysProcessor">
+    <rdfs:range rdf:resource="#Processor"/>
+    <rdfs:domain rdf:resource="#Opsys"/>
+    <rdfs:label>Opsys Processor</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="OpsysEmulationMode">
+    <rdfs:range rdf:resource="#ProcessorMode"/>
+    <rdfs:domain rdf:resource="#Opsys"/>
+    <rdfs:label>Opsys Emulation Mode</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ProcessorModeName">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ProcessorMode"/>
+    <rdfs:label>Processor Mode Name</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ProcessorName">
+    <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/name"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Processor"/>
+    <rdfs:label>Processor Name</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ProcessorProcessorMode">
+    <rdfs:range rdf:resource="#ProcessorMode"/>
+    <rdfs:domain rdf:resource="#Processor"/>
+    <rdfs:label>Processor Mode</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ProcessorDescription">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Processor"/>
+    <rdfs:label>Processor Description</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ProcessorFamilyName">
+    <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/name"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ProcessorFamily"/>
+    <rdfs:label>Processor Family Name</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ProcessorFamilyDescription">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ProcessorFamily"/>
+    <rdfs:label>Processor Family Description</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ProcessorFamilyVendor">
+    <rdfs:range rdf:resource="#Vendors"/>
+    <rdfs:domain rdf:resource="#ProcessorFamily"/>
+    <rdfs:label>Processor Family Vendor</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="isOfOpsysFamily">
+    <rdfs:range rdf:resource="#OpsysFamily"/>
+    <rdfs:domain rdf:resource="#Opsys"/>
+    <rdfs:label>Property which is a member of Operating System Family</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="OperatingSystemsFamilies">
+    <rdfs:range rdf:resource="#OpsysFamily"/>
+    <rdfs:domain rdf:resource="#ProductFamily"/>
+    <rdfs:label>Property which is a member of Operating System Family</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="isOfOpsysType">
+    <rdfs:range rdf:resource="#Opsys"/>
+    <rdfs:domain rdf:resource="#Opsys"/>
+    <rdfs:label>Property which is a member of Operating System Family</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="DatabaseFamiles">
+    <rdfs:range rdf:resource="#DbmsFamily"/>
+    <rdfs:domain rdf:resource="#ProductFamily"/>
+    <rdfs:label>Property which is a member of DBMS Family</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="ProcessorFamilies">
+    <rdfs:range rdf:resource="#ProcessorFamily"/>
+    <rdfs:domain rdf:resource="#ProductFamily"/>
+    <rdfs:label>Property which is a member of Processor Family</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="Processors">
+    <rdfs:range rdf:resource="#Processor"/>
+    <rdfs:domain rdf:resource="#ProductFormat"/>
+    <rdfs:domain rdf:resource="#ProductCategory"/>
+    <rdfs:label>has Processors</rdfs:label>
+  </rdf:Property>
+
+  <!-- Product / Product Release -->
+
+	<rdfs:Class rdf:ID="Product">
+		<rdfs:label>Product</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Product
+		</rdfs:comment>
+    <rdfs:subPropertyOf rdf:resource="#ProductFormat"/>
+    <rdfs:subPropertyOf rdf:resource="#ProductCategory"/>
+    <rdfs:subClassOf rdf:resource="http://purl.org/goodrelations/v1#ProductOrService"/>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="ProductRelease">
+		<rdfs:label>Product Release</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Product Release
+		</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="#Product"/>
+    <rdfs:subClassOf rdf:resource="http://purl.org/goodrelations/v1#ProductOrServiceModel"/>
+	</rdfs:Class>
+
+	<rdf:Property rdf:ID="hasBusinessFunction">
+    <rdfs:range rdf:resource="http://purl.org/goodrelations/v1#Sell"/>
+    <rdfs:domain rdf:resource="#Product"/>
+    <rdfs:domain rdf:resource="#ProductRelease"/>
+	<rdfs:label>GR#hasBusinessFunction to GR#Sell</rdfs:label>
+    <rdfs:comment>Product/Product Release has Good Relations Business Function to Sell</rdfs:comment>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="includesObject">
+    <rdfs:range rdf:resource="#ComponentArchive"/>
+    <rdfs:domain rdf:resource="#Component"/>
+    <rdfs:domain rdf:resource="#ProductRelease"/>
+	<rdfs:label>GR#hasBusinessFunction to GR#Sell</rdfs:label>
+    <rdfs:comment>Product/Product Release has Good Relations Business Function to Sell</rdfs:comment>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ProductId">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Product"/>
+    <rdfs:label>Product ID</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="isOfCategory">
+    <rdfs:range rdf:resource="#ProductCategory"/>
+    <rdfs:domain rdf:resource="#Product"/>
+    <rdfs:label>Product Category</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="isOfFormat">
+    <rdfs:range rdf:resource="#ProductFormat"/>
+    <rdfs:domain rdf:resource="#Product"/>
+    <rdfs:label>Product Category</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ProductDescription">
+    <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/name"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Product"/>
+    <rdfs:label>Product Description</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ProductLongDescription">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Product"/>
+    <rdfs:label>Product Long Description</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ProductReleaseId">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ProductRelease"/>
+    <rdfs:label>Product Release ID</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ProductReleaseOpsys">
+    <rdfs:range rdf:resource="#Opsys"/>
+    <rdfs:domain rdf:resource="#ProductRelease"/>
+    <rdfs:label>Product Release Opsys</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ProductReleaseDbms">
+    <rdfs:range rdf:resource="#DbmsEngine"/>
+    <rdfs:domain rdf:resource="#ProductRelease"/>
+    <rdfs:label>Product Release DBMS</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="isForDbmsEngine">
+    <rdfs:range rdf:resource="#DbmsEngine"/>
+    <rdfs:domain rdf:resource="#ProductRelease"/>
+    <rdfs:label>Database Support for Product Release</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="isForOpsys">
+    <rdfs:range rdf:resource="#Opsys"/>
+    <rdfs:domain rdf:resource="#ProductRelease"/>
+    <rdfs:label>Operating System Support for Product Release</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="OpsysSupported">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Opsys"/>
+    <rdfs:label>Operating System support indicator</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ProductReleaseUpwardCompatible">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ProductRelease"/>
+    <rdfs:label>Product Release upward compatible</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ProductReleaseDownwardCompatible">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ProductRelease"/>
+    <rdfs:label>Product Release downward compatible</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ProductReleaseSupported">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ProductRelease"/>
+    <rdfs:label>Product Release Supported</rdfs:label>
+  </rdf:Property>
+
+	<!-- Components -->
+
+	<rdfs:Class rdf:ID="Component">
+		<rdfs:label>Components</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Components
+		</rdfs:comment>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="ComponentMode">
+		<rdfs:label>Component Mode</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Component
+		</rdfs:comment>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="ComponentType">
+		<rdfs:label>Component</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Component Type
+		</rdfs:comment>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="ComponentCategory">
+		<rdfs:label>Component Category</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Component
+		</rdfs:comment>
+	</rdfs:Class>
+
+	<rdf:Property rdf:ID="ComponentModeDescription">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ComponentMode"/>
+    <rdfs:label>Component Mode Description</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ComponentModeShortDescription">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ComponentMode"/>
+    <rdfs:label>Component Mode Short Description</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ComponentTypeDescription">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ComponentType"/>
+    <rdfs:label>Component Type Description</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ComponentTypeShortDescription">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ComponentType"/>
+    <rdfs:label>Component Type Short Description</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ComponentCategoryDescription">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ComponentCategory"/>
+    <rdfs:label>Component Category Description</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ComponentCategoryLongDescription">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ComponentCategory"/>
+    <rdfs:label>Component Category Long Description</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="ComponentCategoryShortDescription">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ComponentCategory"/>
+    <rdfs:label>Component Category Short Description</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="ComponentName">
+    <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/name"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Component"/>
+    <rdfs:label>Components Name</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="ComponentCvsid">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Component"/>
+    <rdfs:label>Components CVSID</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="ComponentBuildDate">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Component"/>
+    <rdfs:label>Components Build Date</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="Notes">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Component"/>
+    <rdfs:label>Components Notes</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="BuildComments">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Component"/>
+    <rdfs:label>Components Build Comments</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="Filesize">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#Component"/>
+    <rdfs:label>Components Name</rdfs:label>
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ComponentComponentCategory">
+    <rdfs:range rdf:resource="#ComponentCategory"/>
+    <rdfs:domain rdf:resource="#Component"/>
+    <rdfs:label>Components Component Category</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="ComponentComponentType">
+    <rdfs:range rdf:resource="#ComponentType"/>
+    <rdfs:domain rdf:resource="#Component"/>
+    <rdfs:label>Components Component Type</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="ComponentComponentMode">
+    <rdfs:range rdf:resource="#ComponentMode"/>
+    <rdfs:domain rdf:resource="#Component"/>
+    <rdfs:label>Components Component Mode</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="ComponentOpsys">
+    <rdfs:range rdf:resource="#Opsys"/>
+    <rdfs:domain rdf:resource="#Component"/>
+    <rdfs:label>Components Opsys</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="ComponentDbmsEngine">
+    <rdfs:range rdf:resource="#DbmsEngine"/>
+    <rdfs:domain rdf:resource="#Component"/>
+    <rdfs:label>Components DBMS</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="hasComponents">
+    <rdfs:range rdf:resource="#Component"/>
+    <rdfs:domain rdf:resource="#Opsys"/>
+    <rdfs:label>has Components</rdfs:label>
+  </rdf:Property>
+
+	<!-- Component Archives -->
+
+	<rdfs:Class rdf:ID="ComponentArchive">
+		<rdfs:label>Component Archive</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Component Archives
+		</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://purl.org/goodrelations/v1#ProductOrServiceSomeInstancePlaceholder"/>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="ComponentArchiveType">
+		<rdfs:label>Component Archive Type</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Component Archives Type
+		</rdfs:comment>
+	</rdfs:Class>
+
+  <rdf:Property rdf:ID="ComponentArchiveTypeName">
+    <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/name"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ComponentArchiveType"/>
+    <rdfs:label>Component Archive Type Name</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="amountOfThisGood">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#double"/>
+    <rdfs:domain rdf:resource="#ComponentArchive"/>
+    <rdfs:label>GR amount of this good</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="hasUnitOfMeasure">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ComponentArchive"/>
+    <rdfs:domain rdf:resource="#PriceUnitIncrementalDiscount"/>
+    <rdfs:label>GR unit of measure</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="hasEligibleQuantity">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#PriceUnitIncrementalDiscount"/>
+    <rdfs:label>GR Eligible Quantity</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="typeOfGood">
+    <rdfs:range rdf:resource="#ProductRelease"/>
+    <rdfs:domain rdf:resource="#ComponentArchive"/>
+    <rdfs:label>GR amount of this good</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="ComponentArchiveTypeShortName">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ComponentArchiveType"/>
+    <rdfs:label>Component Archive Type Name</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="ComponentArchiveTypeExtension">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ComponentArchiveType"/>
+    <rdfs:label>Component Archive Type Extension</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty" />
+  </rdf:Property>
+
+	<rdf:Property rdf:ID="ComponentArchiveComponentArchiveType">
+    <rdfs:range rdf:resource="#ComponentArchiveType"/>
+    <rdfs:domain rdf:resource="#ComponentArchive"/>
+    <rdfs:label>Component Archive Component Archive Type</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="ComponentArchiveName">
+    <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/name"/>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ComponentArchive"/>
+    <rdfs:label>Component Archive Name</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty" />
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="ComponentArchiveAssemblyDate">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ComponentArchive"/>
+    <rdfs:label>Component Archive Assembly Date</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty" />
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="ComponentArchiveFileUri">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ComponentArchive"/>
+    <rdfs:label>Component Archive File URI</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty" />
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="ComponentArchiveLicenseCode">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ComponentArchive"/>
+    <rdfs:label>Component Archive License Code</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty" />
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="ComponentArchiveResName">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ComponentArchive"/>
+    <rdfs:label>Component Archive DAV Resource Name</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty" />
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="ComponentArchiveResFullPath">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ComponentArchive"/>
+    <rdfs:label>Component Archive DAV Full Path</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty" />
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="ComponentArchiveResFileSize">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ComponentArchive"/>
+    <rdfs:label>Component Archive File Size in DAV</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty" />
+  </rdf:Property>
+
+	<!-- Download locations -->
+
+	<rdfs:Class rdf:ID="DownloadLocation">
+		<rdfs:label>Download Location</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Download Location
+		</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://purl.org/goodrelations/v1#ActualProductOrServicesInstance"/>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="DownloadProtocol">
+		<rdfs:label>Download Protocol</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Download Protocol
+		</rdfs:comment>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="DownloadPartner">
+		<rdfs:label>Download Partner</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Download Partner
+		</rdfs:comment>
+	</rdfs:Class>
+
+  <rdf:Property rdf:ID="ProtocolName">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#DownloadProtocol"/>
+    <rdfs:label>Protocol Name</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="ProtocolDescription">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#DownloadProtocol"/>
+    <rdfs:label>Protocol Description</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="ProtocolActive">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#DownloadProtocol"/>
+    <rdfs:label>Protocol Active</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="PartnerName">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#DownloadPartner"/>
+    <rdfs:label>Download Partner Partner Name</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="HostName">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#DownloadPartner"/>
+    <rdfs:label>Download Partner Hostname</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="DomainName">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#DownloadPartner"/>
+    <rdfs:label>Download Partner Domain Name</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="PortNumber">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#DownloadPartner"/>
+    <rdfs:label>Download Partner Port Number</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="Uri">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#DownloadLocation"/>
+    <rdfs:label>Download Location URI</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="UriOld">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#DownloadLocation"/>
+    <rdfs:label>Download Location URI Old</rdfs:label>
+  </rdf:Property>
+
+	<!-- Features and Benefits -->
+
+	<rdfs:Class rdf:ID="ProductBenefit">
+		<rdfs:label>Product Benefit</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Product Benefit
+		</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="#ProductBenefitCategory"/>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="ProductBenefitCategory">
+		<rdfs:label>Product Benefit</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Product Benefit
+		</rdfs:comment>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="ProductFeatureCategory">
+		<rdfs:label>Product Feature Category</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Product Feature Category
+		</rdfs:comment>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="ProductFeature">
+		<rdfs:label>Product Features</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Product Features
+		</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="#ProductFeatureCategory"/>
+    <rdfs:subClassOf rdf:resource="#ProductBenefit"/>
+    <rdfs:subClassOf rdf:resource="#Product"/>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="ProductFamilyFeature">
+		<rdfs:label>Product Family Features</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Product Family Features
+		</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="#ProductFeatureCategory"/>
+    <rdfs:subClassOf rdf:resource="#ProductBenefit"/>
+    <rdfs:subClassOf rdf:resource="#ProductFamily"/>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="ProductFormatFeature">
+		<rdfs:label>Product Format Features</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Product Format Features
+		</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="#ProductFeatureCategory"/>
+    <rdfs:subClassOf rdf:resource="#ProductBenefit"/>
+    <rdfs:subClassOf rdf:resource="#ProductFormat"/>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="ProductCategoryFeature">
+		<rdfs:label>Product Category Features</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Product Category Features
+		</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="#ProductFeatureCategory"/>
+    <rdfs:subClassOf rdf:resource="#ProductBenefit"/>
+    <rdfs:subClassOf rdf:resource="#ProductCategory"/>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="ProductReleaseFeature">
+		<rdfs:label>Product Benefit</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Product Benefit
+		</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="#ProductFeatureCategory"/>
+    <rdfs:subClassOf rdf:resource="#ProductBenefit"/>
+    <rdfs:subClassOf rdf:resource="#ProductRelease"/>
+	</rdfs:Class>
+
+  <rdf:Property rdf:ID="ProductBenefitsCategoryDescription">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ProductBenefitsCategory"/>
+    <rdfs:label>product Benefits Category</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="Description">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ProductBenefit"/>
+    <rdfs:domain rdf:resource="#ProductBenefitCategory"/>
+    <rdfs:domain rdf:resource="#ProductFeatureCategory"/>
+    <rdfs:domain rdf:resource="#ProductFeature"/>
+    <rdfs:domain rdf:resource="#ProductFamilyFeature"/>
+    <rdfs:domain rdf:resource="#ProductFormatFeature"/>
+    <rdfs:domain rdf:resource="#ProductCategoryFeature"/>
+    <rdfs:domain rdf:resource="#ProductReleaseFeature"/>
+    <rdfs:label>Product Benefits Description</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="Details">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ProductFeature"/>
+    <rdfs:domain rdf:resource="#ProductFamilyFeature"/>
+    <rdfs:domain rdf:resource="#ProductFormatFeature"/>
+    <rdfs:domain rdf:resource="#ProductCategoryFeature"/>
+    <rdfs:domain rdf:resource="#ProductReleaseFeature"/>
+    <rdfs:label>Product Benefits Description Details</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="ProductBenefitsAcronym">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ProductBenefit"/>
+    <rdfs:label>Product Benefits Acronym</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="ProductBenefitsExplanation">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ProductBenefit"/>
+    <rdfs:label>Product Benefits Explanation</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="DemoUrl">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ProductCategoryFeature"/>
+    <rdfs:domain rdf:resource="#ProductFormatFeature"/>
+    <rdfs:domain rdf:resource="#ProductFamilyFeature"/>
+    <rdfs:domain rdf:resource="#ProductReleaseFeature"/>
+    <rdfs:label>The Features Demo URL</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty" />
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="HypesPerSecond">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    <rdfs:domain rdf:resource="#ProductCategoryFeature"/>
+    <rdfs:domain rdf:resource="#ProductFormatFeature"/>
+    <rdfs:domain rdf:resource="#ProductFamilyFeature"/>
+    <rdfs:domain rdf:resource="#ProductreleaseFeature"/>
+    <rdfs:label>The Features Number of Hypes per second</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty" />
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="Implemented">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#ProductCategoryFeature"/>
+    <rdfs:domain rdf:resource="#ProductFormatFeature"/>
+    <rdfs:domain rdf:resource="#ProductFamilyFeature"/>
+    <rdfs:domain rdf:resource="#ProductReleaseFeature"/>
+    <rdfs:label>The Features Short Description</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty" />
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="hasFeature">
+    <rdfs:range rdf:resource="#Feature"/>
+    <rdfs:domain rdf:resource="#ProductFamily"/>
+	<rdfs:label>has Features</rdfs:label>
+    <rdfs:comment>reference from subject to feature lists and descriptions</rdfs:comment>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty" />
+  </rdf:Property>
+
+<!-- shop / pricing stuff -->
+
+	<rdfs:Class rdf:ID="LicenseType">
+		<rdfs:label>License Type</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			License Type
+		</rdfs:comment>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="PriceUnitType">
+		<rdfs:label>Unit Type</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Unit Type
+		</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://purl.org/goodrelations/v1#UnitPriceSpecification"/>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="PriceType">
+		<rdfs:label>Price Type</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Price Type
+		</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://purl.org/goodrelations/v1#typeOfGood"/>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="GeneralDiscount">
+		<rdfs:label>General Discount</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			General Discount
+		</rdfs:comment>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="IncrementalDiscount">
+		<rdfs:label>Incremental Discount</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Incremental Discount
+		</rdfs:comment>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="PriceUnitIncrementalDiscount">
+		<rdfs:label>Unit Incremental Discount</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			Unit Incremental Discount
+		</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://purl.org/goodrelations/v1#QuantativeValueInteger"/>
+	</rdfs:Class>
+
+	<rdfs:Class rdf:ID="LicenseModel">
+		<rdfs:label>License</rdfs:label>
+    <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+			License
+		</rdfs:comment>
+    <rdfs:subClassOf rdf:resource="http://purl.org/goodrelations/v1#Offering"/>
+	</rdfs:Class>
+
+  <rdf:Property rdf:ID="hasCurrency">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#PriceUnitType"/>
+    <rdfs:label>GR Has Currency</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="hasCurrencyValue">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#PriceUnitType"/>
+    <rdfs:label>GR Has Currency Value</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="hasMinValueFloat">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#PriceUnitType"/>
+    <rdfs:label>GR Has Currency</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="hasMaxValueFloat">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#PriceUnitType"/>
+    <rdfs:label>GR Has Currency</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="hasUnitPriceSpecification">
+    <rdfs:range rdf:resource="#PriceUnitType"/>
+    <rdfs:domain rdf:resource="#LicenseModel"/>
+    <rdfs:label>GR Has Unit Price Specification</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="BaseCostUnit">
+    <rdfs:range rdf:resource="#UnitType"/>
+    <rdfs:domain rdf:resource="#License"/>
+    <rdfs:label>Base Unit Cost</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#quantitativeProductOrServiceProperty" />
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="PriceUnit">
+    <rdfs:range rdf:resource="#PriceUnitType"/>
+    <rdfs:domain rdf:resource="#License"/>
+    <rdfs:label>Price Unit Cost</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#quantitativeProductOrServiceProperty" />
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="hasIncrementalDiscount">
+    <rdfs:range rdf:resource="#IncrementalDiscount"/>
+    <rdfs:domain rdf:resource="#UnitType"/>
+    <rdfs:label>Base Unit Cost</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#quantitativeProductOrServiceProperty" />
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="hasGeneralDiscount">
+    <rdfs:range rdf:resource="#GeneralDiscount"/>
+    <rdfs:domain rdf:resource="#License"/>
+    <rdfs:label>General Discount</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty" />
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="unitValue">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#UnitType"/>
+    <rdfs:label>Unit Value</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#quantitativeProductOrServiceProperty" />
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="graceUnits">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#UnitType"/>
+    <rdfs:label>Grace Unit</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#quantitativeProductOrServiceProperty" />
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="minUnits">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#UnitType"/>
+    <rdfs:label>Minimum Units</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#quantitativeProductOrServiceProperty" />
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="maxUnits">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#UnitType"/>
+    <rdfs:label>Maximum Units</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#quantitativeProductOrServiceProperty" />
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="codeWord">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#GeneralDiscount"/>
+    <rdfs:label>Code Word needed to activate this discount</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#datatypeProductOrServiceProperty" />
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="startDate">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#GeneralDiscount"/>
+    <rdfs:label>Discount Start Date</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#quantitativeProductOrServiceProperty" />
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="endDate">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#GeneralDiscount"/>
+    <rdfs:label>Discount End Date</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#quantitativeProductOrServiceProperty" />
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="percentageOfCost">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#GeneralDiscount"/>
+    <rdfs:label>Percentage of cost attributing as discount</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#quantitativeProductOrServiceProperty" />
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="triggerPoint">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#IncrementalDiscount"/>
+    <rdfs:label>Discount Trigger Point</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#quantitativeProductOrServiceProperty" />
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="percentageOfBase">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:domain rdf:resource="#IncrementalDiscount"/>
+    <rdfs:label>Percentage of base cost attributing as discount</rdfs:label>
+	<rdfs:subPropertyOf rdf:resource="http://purl.org/goodrelations/v1#quantitativeProductOrServiceProperty" />
+  </rdf:Property>
+
+<!-- common properties -->
+
+  <rdf:Property rdf:ID="label">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#Literal"/>
+    <rdfs:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.w3.org/2001/XMLSchema#"/>
+    <rdfs:isDescribedUsing rdf:resource="http://www.w3.org/2001/XMLSchema#"/>
+    <rdfs:domain rdf:resource="#ProductCategory"/>
+    <rdfs:domain rdf:resource="#ProductFormat"/>
+    <rdfs:domain rdf:resource="#ProductFamily"/>
+    <rdfs:domain rdf:resource="#ProductRelease"/>
+    <rdfs:domain rdf:resource="#VendorCategory"/>
+    <rdfs:domain rdf:resource="#Vendor"/>
+    <rdfs:domain rdf:resource="#OpsysFamily"/>
+    <rdfs:domain rdf:resource="#DbmsFamily"/>
+    <rdfs:domain rdf:resource="#DbmsEngine"/>
+    <rdfs:domain rdf:resource="#OpsysType"/>
+    <rdfs:domain rdf:resource="#Processor"/>
+    <rdfs:domain rdf:resource="#ProcessorFamily"/>
+    <rdfs:domain rdf:resource="#Opsys"/>
+    <rdfs:domain rdf:resource="#Product"/>
+    <rdfs:domain rdf:resource="#ComponentMode"/>
+    <rdfs:domain rdf:resource="#ComponentType"/>
+    <rdfs:domain rdf:resource="#ComponentCategory"/>
+    <rdfs:domain rdf:resource="#ComponentArchive"/>
+    <rdfs:domain rdf:resource="#ComponentArchiveType"/>
+    <rdfs:domain rdf:resource="#DownloadLocation"/>
+    <rdfs:domain rdf:resource="#ProductBenefit"/>
+    <rdfs:domain rdf:resource="#ProductBenefitCategory"/>
+    <rdfs:domain rdf:resource="#ProductFeatureCategory"/>
+    <rdfs:domain rdf:resource="#ProductFeature"/>
+    <rdfs:domain rdf:resource="#ProductFamilyFeature"/>
+    <rdfs:domain rdf:resource="#ProductFormatFeature"/>
+    <rdfs:domain rdf:resource="#ProductCategoryFeature"/>
+    <rdfs:domain rdf:resource="#ProductReleaseFeature"/>
+    <rdfs:domain rdf:resource="#LicenseModel"/>
+    <rdfs:domain rdf:resource="#Discount"/>
+    <rdfs:domain rdf:resource="#PriceType"/>
+    <rdfs:domain rdf:resource="#PriceUnitType"/>
+    <rdfs:label>Label</rdfs:label>
+    <rdfs:comment>A human-readable description of a class or property</rdfs:comment>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="isDescribedUsing">
+    <rdfs:range rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Resource"/>
+    <rdfs:type rdf:resource="http://www.w3.org/1999/02/22-rdf-syntax-ns#Property"/>
+    <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/oplweb#"/>
+    <rdfs:isDescribedUsing rdf:resource="http://www.openlinksw.com/schemas/oplweb#"/>
+    <rdfs:domain rdf:resource="#ProductCategory"/>
+    <rdfs:domain rdf:resource="#ProductFormat"/>
+    <rdfs:domain rdf:resource="#ProductFamily"/>
+    <rdfs:domain rdf:resource="#ProductRelease"/>
+    <rdfs:domain rdf:resource="#VendorCategory"/>
+    <rdfs:domain rdf:resource="#Vendor"/>
+    <rdfs:domain rdf:resource="#OpsysFamily"/>
+    <rdfs:domain rdf:resource="#DbmsFamily"/>
+    <rdfs:domain rdf:resource="#DbmsEngine"/>
+    <rdfs:domain rdf:resource="#OpsysType"/>
+    <rdfs:domain rdf:resource="#Processor"/>
+    <rdfs:domain rdf:resource="#ProcessorFamily"/>
+    <rdfs:domain rdf:resource="#Opsys"/>
+    <rdfs:domain rdf:resource="#Product"/>
+    <rdfs:domain rdf:resource="#ComponentMode"/>
+    <rdfs:domain rdf:resource="#ComponentType"/>
+    <rdfs:domain rdf:resource="#ComponentCategory"/>
+    <rdfs:domain rdf:resource="#ComponentArchive"/>
+    <rdfs:domain rdf:resource="#ComponentArchiveType"/>
+    <rdfs:domain rdf:resource="#DownloadLocation"/>
+    <rdfs:domain rdf:resource="#ProductBenefit"/>
+    <rdfs:domain rdf:resource="#ProductBenefitCategory"/>
+    <rdfs:domain rdf:resource="#ProductFeatureCategory"/>
+    <rdfs:domain rdf:resource="#ProductFeature"/>
+    <rdfs:domain rdf:resource="#ProductFamilyFeature"/>
+    <rdfs:domain rdf:resource="#ProductFormatFeature"/>
+    <rdfs:domain rdf:resource="#ProductCategoryFeature"/>
+    <rdfs:domain rdf:resource="#ProductReleaseFeature"/>
+    <rdfs:domain rdf:resource="#LicenseModel"/>
+    <rdfs:domain rdf:resource="#Discount"/>
+    <rdfs:domain rdf:resource="#PriceType"/>
+    <rdfs:domain rdf:resource="#PriceUnitType"/>
+    <rdfs:label>A definition of the subject resource</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="name">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/name"/>
+    <rdfs:domain rdf:resource="#ProductCategory"/>
+    <rdfs:domain rdf:resource="#ProductFormat"/>
+    <rdfs:domain rdf:resource="#ProductFamily"/>
+    <rdfs:domain rdf:resource="#ProductRelease"/>
+    <rdfs:label>Name</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="logo">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/logo"/>
+    <rdfs:domain rdf:resource="#ProductFamily"/>
+    <rdfs:label>logo</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="homepage">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/homepage"/>
+    <rdfs:domain rdf:resource="#ProductFamily"/>
+    <rdfs:domain rdf:resource="#ProcessorFamily"/>
+    <rdfs:domain rdf:resource="#OpsysFamily"/>
+    <rdfs:domain rdf:resource="#DbmsFamily"/>
+    <rdfs:label>homepage</rdfs:label>
+  </rdf:Property>
+
+  <rdf:Property rdf:ID="maker">
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/maker"/>
+    <rdfs:domain rdf:resource="#ProductCategory"/>
+    <rdfs:domain rdf:resource="#ProductFormat"/>
+    <rdfs:domain rdf:resource="#ProductFamily"/>
+    <rdfs:domain rdf:resource="#ProductRelease"/>
+    <rdfs:label>Maker</rdfs:label>
+  </rdf:Property>
+
+	<gr:Manufacturer rdf:ID="Manufacturer">
+    <owl:equivalentClass rdf:resource="http://xmlns.com/foaf/0.1/Maker" />
+  </gr:Manufacturer>
+
+
+  <rdf:Property rdf:ID="sameAs">
+    <rdfs:range rdf:resource="owl#sameAs"/>
+    <rdfs:domain rdf:resource="#ProductCategory"/>
+    <rdfs:domain rdf:resource="#ProductFormat"/>
+    <rdfs:domain rdf:resource="#ProductFamily"/>
+    <rdfs:domain rdf:resource="#ProductRelease"/>
+    <rdfs:domain rdf:resource="#ProductFormatCategory"/>
+    <rdfs:label>Name</rdfs:label>
+  </rdf:Property>
+
+<gr:Offering rdf:ID="DevelopmentOffering">
+  <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/oplweb"/>
+  <gr:availableAtOrFrom rdf:resource="#LocationOfSalesOrServiceProvisioning_1"/>
+  <!-- step 2a -->
+  <gr:includesObject>
+    <gr:TypeAndQuantityNode rdf:ID="TypeAndQuantityNode_2">
+      <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+        This instance reflects that Offering_2 includes 1 unit (Code 62) of the instances placeholder ProductOrServicesSomeInstancesPlaceholder_2.
+      </rdfs:comment>
+      <gr:amountOfThisGood rdf:datatype="http://www.w3.org/2001/XMLSchema#float">1.0</gr:amountOfThisGood>
+      <gr:hasUnitOfMeasurement rdf:datatype="http://www.w3.org/2001/XMLSchema#string">C62</gr:hasUnitOfMeasurement>
+      <gr:typeOfGood>
+        <gr:ProductOrServicesSomeInstancesPlaceholder rdf:ID="ProductOrServicesSomeInstancesPlaceholder_2">
+          <rdf:type rdf:resource="&eco;#C_AAB316003-tax"/>
+          <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Custom software development and design for web, database and semantic web </rdfs:comment>
+        </gr:ProductOrServicesSomeInstancesPlaceholder>
+      </gr:typeOfGood>
+    </gr:TypeAndQuantityNode>
+  </gr:includesObject>
+  <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Custom software development and design for web, database and semantic web </rdfs:comment>
+  <!-- step 2b -->
+  <gr:hasBusinessFunction rdf:resource="http://purl.org/goodrelations/v1#Sell"/>
+  <gr:hasBusinessFunction rdf:resource="http://purl.org/goodrelations/v1#ProvideService"/>
+  <!-- step 3 -->
+  <gr:validFrom rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2009-06-26T00:00:00+01:00</gr:validFrom>
+  <gr:validThrough rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2020-06-26T23:59:00+01:00</gr:validThrough>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AF</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AX</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AL</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">DZ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AS</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AD</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AO</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AI</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AQ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AW</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AU</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AT</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AZ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BH</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BD</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BB</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BY</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BZ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BJ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BT</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BO</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BA</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BW</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BV</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IO</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BN</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BF</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BI</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KH</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CA</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CV</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KY</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CF</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TD</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CL</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CN</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CX</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CC</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CO</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CD</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CK</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CI</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">HR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CU</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CY</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CZ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">DK</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">DJ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">DM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">DO</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">EC</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">EG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SV</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GQ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ER</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">EE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ET</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">FK</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">FO</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">FJ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">FI</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">FR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GF</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PF</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TF</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GA</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">DE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GH</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GI</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GL</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GD</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GP</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GU</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GT</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GN</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GW</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GY</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">HT</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">HM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">VA</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">HN</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">HK</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">HU</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IS</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IN</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ID</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IQ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IL</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IT</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">JM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">JP</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">JE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">JO</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KZ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KI</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KP</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KW</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LA</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LV</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LB</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LS</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LY</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LI</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LT</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LU</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MO</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MK</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MW</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MY</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MV</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ML</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MT</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MH</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MQ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MU</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">YT</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MX</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">FM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MD</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MC</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MN</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ME</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MS</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MA</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MZ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NA</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NP</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NL</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AN</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NC</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NZ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NI</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NU</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NF</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MP</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NO</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">OM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PK</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PW</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PS</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PA</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PY</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PH</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PN</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PL</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PT</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">QA</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">RE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">RO</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">RU</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">RW</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BL</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SH</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KN</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LC</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MF</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">VC</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">WS</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ST</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SA</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SN</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">RS</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SC</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SL</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SK</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SI</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SB</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SO</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ZA</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GS</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ES</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LK</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SD</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SJ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SZ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CH</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SY</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TW</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TJ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TZ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TH</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TL</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TK</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TO</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TT</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TN</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TC</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TV</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">UG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">UA</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GB</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">US</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">UM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">UY</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">UZ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">VU</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">VE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">VN</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">VG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">VI</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">WF</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">EH</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">YE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ZM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ZW</gr:eligibleRegions>
+  <gr:eligibleCustomerTypes rdf:resource="http://purl.org/goodrelations/v1#Enduser"/>
+  <gr:eligibleCustomerTypes rdf:resource="http://purl.org/goodrelations/v1#PublicInstitution"/>
+  <gr:eligibleCustomerTypes rdf:resource="http://purl.org/goodrelations/v1#Reseller"/>
+  <!-- step 4 -->
+  <gr:acceptedPaymentMethods rdf:resource="http://purl.org/goodrelations/v1#MasterCard"/>
+  <gr:acceptedPaymentMethods rdf:resource="http://purl.org/goodrelations/v1#VISA"/>
+  <gr:acceptedPaymentMethods rdf:resource="http://purl.org/goodrelations/v1#AmericanExpress"/>
+  <gr:acceptedPaymentMethods rdf:resource="http://purl.org/goodrelations/v1#Cash"/>
+  <gr:acceptedPaymentMethods rdf:resource="http://purl.org/goodrelations/v1#CheckInAdvance"/>
+  <gr:acceptedPaymentMethods rdf:resource="http://purl.org/goodrelations/v1#ByBankTransferInAdvance"/>
+  <!-- step 5 -->
+  <gr:availableDeliveryMethods rdf:resource="http://purl.org/goodrelations/v1#DeliveryModeDirectDownload"/>
+</gr:Offering>
+<gr:Offering rdf:ID="TrainingOffering">
+  <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/oplweb"/>
+  <gr:availableAtOrFrom rdf:resource="#LocationOfSalesOrServiceProvisioning_1"/>
+  <!-- step 2a -->
+  <gr:includesObject>
+    <gr:TypeAndQuantityNode rdf:ID="TypeAndQuantityNode_3">
+      <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">
+        This instance reflects that Offering_3 includes 1 unit (Code 62) of the instances placeholder ProductOrServicesSomeInstancesPlaceholder_3.
+      </rdfs:comment>
+      <gr:amountOfThisGood rdf:datatype="http://www.w3.org/2001/XMLSchema#float">1.0</gr:amountOfThisGood>
+      <gr:hasUnitOfMeasurement rdf:datatype="http://www.w3.org/2001/XMLSchema#string">C62</gr:hasUnitOfMeasurement>
+      <gr:typeOfGood>
+        <gr:ProductOrServicesSomeInstancesPlaceholder rdf:ID="ProductOrServicesSomeInstancesPlaceholder_3">
+          <rdf:type rdf:resource="&eco;#C_AKE112003-tax"/>
+          <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Training course for products offered; Training for Linked Data Systems.</rdfs:comment>
+          <rdfs:seeAlso rdf:resource="http://www.openlinksw.com/"/>
+        </gr:ProductOrServicesSomeInstancesPlaceholder>
+      </gr:typeOfGood>
+    </gr:TypeAndQuantityNode>
+  </gr:includesObject>
+  <rdfs:comment rdf:datatype="http://www.w3.org/2001/XMLSchema#string">Training course for products offered; Training for Linked Data Systems.</rdfs:comment>
+  <rdfs:seeAlso rdf:resource="http://www.openlinksw.com/"/>
+  <!-- step 2b -->
+  <gr:hasBusinessFunction rdf:resource="http://purl.org/goodrelations/v1#Sell"/>
+  <gr:hasBusinessFunction rdf:resource="http://purl.org/goodrelations/v1#ProvideService"/>
+  <!-- step 3 -->
+  <gr:validFrom rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2009-06-26T00:00:00+01:00</gr:validFrom>
+  <gr:validThrough rdf:datatype="http://www.w3.org/2001/XMLSchema#dateTime">2020-06-26T23:59:00+01:00</gr:validThrough>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AF</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AX</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AL</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">DZ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AS</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AD</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AO</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AI</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AQ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AW</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AU</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AT</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AZ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BS</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BH</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BD</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BB</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BY</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BZ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BJ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BT</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BO</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BA</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BW</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BV</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IO</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BN</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BF</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BI</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KH</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CA</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CV</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KY</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CF</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TD</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CL</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CN</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CX</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CC</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CO</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CD</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CK</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CI</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">HR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CU</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CY</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CZ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">DK</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">DJ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">DM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">DO</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">EC</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">EG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SV</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GQ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ER</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">EE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ET</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">FK</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">FO</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">FJ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">FI</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">FR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GF</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PF</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TF</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GA</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">DE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GH</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GI</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GL</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GD</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GP</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GU</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GT</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GN</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GW</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GY</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">HT</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">HM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">VA</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">HN</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">HK</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">HU</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IS</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IN</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ID</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IQ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IL</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">IT</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">JM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">JP</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">JE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">JO</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KZ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KI</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KP</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KW</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LA</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LV</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LB</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LS</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LY</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LI</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LT</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LU</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MO</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MK</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MW</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MY</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MV</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ML</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MT</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MH</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MQ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MU</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">YT</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MX</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">FM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MD</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MC</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MN</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ME</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MS</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MA</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MZ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NA</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NP</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NL</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AN</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NC</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NZ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NI</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NU</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NF</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MP</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">NO</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">OM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PK</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PW</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PS</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PA</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PY</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PH</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PN</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PL</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PT</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">QA</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">RE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">RO</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">RU</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">RW</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">BL</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SH</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">KN</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LC</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">MF</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">PM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">VC</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">WS</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ST</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SA</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SN</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">RS</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SC</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SL</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SK</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SI</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SB</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SO</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ZA</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GS</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ES</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">LK</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SD</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SJ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SZ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">CH</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">SY</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TW</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TJ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TZ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TH</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TL</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TK</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TO</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TT</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TN</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TR</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TC</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">TV</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">UG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">UA</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">AE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">GB</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">US</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">UM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">UY</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">UZ</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">VU</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">VE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">VN</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">VG</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">VI</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">WF</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">EH</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">YE</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ZM</gr:eligibleRegions>
+  <gr:eligibleRegions rdf:datatype="http://www.w3.org/2001/XMLSchema#string">ZW</gr:eligibleRegions>
+  <gr:eligibleCustomerTypes rdf:resource="http://purl.org/goodrelations/v1#Enduser"/>
+  <gr:eligibleCustomerTypes rdf:resource="http://purl.org/goodrelations/v1#PublicInstitution"/>
+  <gr:eligibleCustomerTypes rdf:resource="http://purl.org/goodrelations/v1#Reseller"/>
+  <!-- step 4 -->
+  <gr:acceptedPaymentMethods rdf:resource="http://purl.org/goodrelations/v1#MasterCard"/>
+  <gr:acceptedPaymentMethods rdf:resource="http://purl.org/goodrelations/v1#VISA"/>
+  <gr:acceptedPaymentMethods rdf:resource="http://purl.org/goodrelations/v1#AmericanExpress"/>
+  <gr:acceptedPaymentMethods rdf:resource="http://purl.org/goodrelations/v1#Cash"/>
+  <gr:acceptedPaymentMethods rdf:resource="http://purl.org/goodrelations/v1#CheckInAdvance"/>
+  <gr:acceptedPaymentMethods rdf:resource="http://purl.org/goodrelations/v1#ByBankTransferInAdvance"/>
+  <!-- step 5 -->
+  <gr:availableDeliveryMethods rdf:resource="http://purl.org/goodrelations/v1#DeliveryModeDirectDownload"/>
+</gr:Offering>
+
+</rdf:RDF>

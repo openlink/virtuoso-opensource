@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -169,7 +169,11 @@ kc_var_col (dbe_key_t * key, buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * 
 	  *p2 = row + off + 2;
 	  *l2 = len - 2;
 	}
-      if ((irow & ROW_NO_MASK) >= buf->bd_content_map->pm_count) GPF_T1 ("prefix row ref out of pm range");
+      if ((irow & ROW_NO_MASK) >= buf->bd_content_map->pm_count)
+	{
+	  log_error ("Row ref %u is out of range %u", irow, buf->bd_content_map->pm_count);
+	  GPF_T1 ("prefix row ref out of pm range");
+	}
       row = buf->bd_buffer + buf->bd_content_map->pm_entries[irow & ROW_NO_MASK];
       rv = IE_ROW_VERSION (row);
       /* now row is the row ref'd from the org row.  Get the offset of the col to get the prefix.  Note that if the suffix bit is set, it refers to the previous col, not this one.  To make sure that this col which is supposed not top be prefix compressed is not, look at the next word in the length area. */
@@ -259,15 +263,6 @@ typedef struct pfe_i_s
   short		pff_irow;
   short		pff_next;
 } pfe_fixed_t;
-
-typedef struct pf_var_s
-{
-  short		pfv_place;
-  short		pfv_irow;
-  short		pfv_next;
-  short		pfv_len;
-} pfe_var_t;
-
 
 
 short
@@ -916,6 +911,8 @@ buf_order_ck (buffer_desc_t * buf)
 {
   int inx;
   page_map_t * pm = buf->bd_content_map;
+  if (buf->bd_tree->it_key->key_is_geo)
+    return; /* key order criteria do not apply */
   for (inx = 0; inx < pm->pm_count - 1; inx++)
     {
       if (DVC_LESS != buf_row_compare (buf, inx, buf, inx + 1, 1))
@@ -932,14 +929,24 @@ buf_order_ck (buffer_desc_t * buf)
 void
 pf_fill_registered (page_fill_t * pf, buffer_desc_t * buf)
 {
-  int cr_fill = 0;
+  int cr_fill = 0, reg_allocd = 0;
   it_cursor_t * cr = buf->bd_registered;
   pl_rlock_table (buf->bd_pl, pf->pf_rls, &pf->pf_rl_fill);
   for (cr = cr; cr; cr = cr->itc_next_on_page)
     {
       pf->pf_registered[cr_fill++] = (placeholder_t *) cr;
-      if (cr_fill >= MAX_ITCS_ON_PAGE)
-	GPF_T1 ("too many cursors on splitting page.");
+      if (!reg_allocd && cr_fill >= MAX_ITCS_ON_PAGE && cr->itc_next_on_page)
+	{
+	  int ctr = cr_fill;
+	  placeholder_t ** reg2;
+	  it_cursor_t * cr2;
+	  for (cr2 = cr->itc_next_on_page; cr2; cr2 = cr2->itc_next_on_page)
+	    ctr++;
+	  reg2 = (placeholder_t**)dk_alloc_box (sizeof (caddr_t) * ctr, DV_BIN);
+	  memcpy_16 (reg2, pf->pf_registered, sizeof (caddr_t) * cr_fill);
+	  pf->pf_registered = reg2;
+	  reg_allocd = 1;
+	}
     }
   pf->pf_cr_fill = cr_fill;
 }
@@ -1371,7 +1378,7 @@ rd_free (row_delta_t * rd)
   for (inx = 0; inx < rd->rd_n_values; inx++)
     {
       caddr_t val = rd->rd_values[inx];
-      if ((db_buf_t)val < rd->rd_temp || (db_buf_t)val > rd->rd_temp + rd->rd_temp_fill)
+      if (((db_buf_t)val < rd->rd_temp || (db_buf_t)val > rd->rd_temp + rd->rd_temp_fill) && COL_UPD_NO_CHANGE != val)
 	dk_free_tree (val);
     }
   if (RD_ALLOCATED_VALUES == rd->rd_allocated)
@@ -1484,23 +1491,21 @@ page_row_bm (buffer_desc_t * buf, int irow, row_delta_t * rd, int op, it_cursor_
 void
 page_whole_row (buffer_desc_t * buf, int irow, row_delta_t * rd)
 {
-  int nth = 0;
-  dbe_key_t * key;
   db_buf_t row = buf->bd_buffer + buf->bd_content_map->pm_entries[irow];
   key_ver_t kv = IE_KEY_VERSION (row);
-  row_ver_t rv = IE_ROW_VERSION (row);
   rd->rd_op = RD_INSERT;
   rd->rd_temp_fill = 0;
   rd->rd_key_version = kv;
-  rd->rd_key = buf->bd_tree->it_key->key_versions[kv];
   if (KV_LEFT_DUMMY == kv)
     {
       rd->rd_non_comp_len = 6;
       rd->rd_copy_of_deleted = 0; /* left dummy never deld  */
 	rd->rd_leaf = LONG_REF (row + LD_LEAF);
       rd->rd_whole_row = NULL;
+      rd->rd_key = NULL;
       return;
     }
+  rd->rd_key = buf->bd_tree->it_key->key_versions[kv];
   rd->rd_whole_row = row;
   rd->rd_whole_row_len = row_length (row, buf->bd_tree->it_key);
 }
@@ -1553,11 +1558,13 @@ void
 pf_rd_move_and_lock (page_fill_t * pf, row_delta_t * rd)
 {
   it_cursor_t * itc = pf->pf_itc;
+  itc->itc_lock_lt = NO_LOCK_LT;
   if (rd->rd_rl)
     {
       itc->itc_page = pf->pf_current->bd_page;
       itc->itc_map_pos = rd->rd_map_pos;
       itc->itc_pl = pf->pf_current->bd_pl;
+      if (!itc->itc_non_txn_insert)
       itc_insert_rl (pf->pf_itc, pf->pf_current, rd->rd_map_pos, rd->rd_rl, RL_NO_ESCALATE);
     }
   if (rd->rd_itc)
@@ -1730,7 +1737,7 @@ pf_rd_refit_1 (page_fill_t * pf, row_delta_t * rd, int recursive)
     {
       if (rd->rd_upd_change[inx])
 	{
-	  rc = row_refit_col (buf, rd->rd_map_pos, key, row, rd->rd_upd_change[inx], rd->rd_values[inx], box_length_on_row (rd->rd_values[inx]), &space);
+	  rc = row_refit_col (buf, rd->rd_map_pos, key, row, rd->rd_upd_change[inx], (db_buf_t)rd->rd_values[inx], box_length_on_row (rd->rd_values[inx]), &space);
 	  if (!rc)
 	    break;
 	}
@@ -1771,7 +1778,7 @@ pf_rd_refit_1 (page_fill_t * pf, row_delta_t * rd, int recursive)
 int
 pf_rd_insert_1 (page_fill_t * pf, row_delta_t * rd)
 {
-  int len;
+  int len, place;
   dtp_t row_image[MAX_ROW_BYTES];
   row_fill_t rf;
   buffer_desc_t * buf = pf->pf_current;
@@ -1817,8 +1824,7 @@ pf_rd_insert_1 (page_fill_t * pf, row_delta_t * rd)
 	GPF_T1 ("not supposed to in copy of deleted");
       IE_SET_FLAGS (rf.rf_row, IEF_DELETE);
     }
-  if (rd->rd_make_ins_rbe && !pf->pf_itc->itc_ltrx->lt_is_excl)
-    lt_rb_insert (pf->pf_itc->itc_ltrx, pf->pf_current, pf->pf_current->bd_buffer + pf->pf_current->bd_content_map->pm_filled_to);
+  place = pf->pf_current->bd_content_map->pm_filled_to;
   pf_shift_compress (pf, rd, NULL);
   map_insert_pos (&pf->pf_current->bd_content_map, rd->rd_map_pos, pm->pm_filled_to);
   pm = pf->pf_current->bd_content_map;
@@ -1827,6 +1833,8 @@ pf_rd_insert_1 (page_fill_t * pf, row_delta_t * rd)
   pm->pm_bytes_free -= ROW_ALIGN (len);
   pf->pf_org = pf->pf_current;
   pf_rd_move_and_lock (pf, rd);
+  if (rd->rd_make_ins_rbe && !pf->pf_itc->itc_lock_lt->lt_is_excl)
+    lt_rb_insert (pf->pf_itc->itc_lock_lt, pf->pf_current, pf->pf_current->bd_buffer + place);
   buf_order_ck (pf->pf_current);
   pg_check_map (pf->pf_current);
   return 1;
@@ -1894,13 +1902,23 @@ pf_rd_append (page_fill_t * pf, row_delta_t * rd, row_size_t * split_after)
 	{
 	  extend = it_new_page (pf->pf_itc->itc_tree,
 				pf->pf_org->bd_page, DPF_INDEX, 0, pf->pf_itc);
+	  if (!extend)
+	    GPF_T1("Can't get page buffer from it_new_page");
 	  if (pf->pf_itc->itc_is_ac)
 	    dk_set_push (&pf->pf_itc->itc_ac_non_leaf_splits, (void*)(ptrlong)extend->bd_page);
 	  rdbg_printf_2 ((" page L=%d split under L=%d exte L=%d  org ct=%d post ct=%d \n", pf->pf_org->bd_page, LONG_REF (pf->pf_org->bd_buffer + DP_PARENT), extend->bd_page,
 			  pf->pf_org->bd_content_map->pm_count, pf->pf_current->bd_content_map->pm_count));
 	}
       if (rd->rd_key->key_is_col)
+	{
 	pf_col_right_edge (pf, rd);
+	  if (pf->pf_left) /* first left gets checked at the very end */
+	    itc_ce_check (pf->pf_itc, pf->pf_current, 1);
+	}
+
+      if (!extend)
+        GPF_T1("Can't get page buffer");
+
       pfh_init (pf->pf_hash, extend);
       /* the row that did not fit went over the gap mark.  Put the gap mark back */
       page_write_gap (pf->pf_current->bd_buffer + pf->pf_current->bd_content_map->pm_filled_to,
@@ -1926,13 +1944,13 @@ pf_rd_append (page_fill_t * pf, row_delta_t * rd, row_size_t * split_after)
       if (len > rf.rf_space) GPF_T1 ("pf_rd_append overflowed target without splitting the page.");
       if (rd->rd_copy_of_deleted)
 	IE_SET_FLAGS (rf.rf_row, IEF_DELETE);
-      if (rd->rd_make_ins_rbe)
-	lt_rb_insert (pf->pf_itc->itc_ltrx, pf->pf_current, pf->pf_current->bd_buffer + pf->pf_current->bd_content_map->pm_filled_to);
       if (len != ROW_ALIGN (len))
 	rf.rf_row[len] = 0; /* 0 for compression */
       map_insert_pos (&pf->pf_current->bd_content_map, pm->pm_count, pm->pm_filled_to);
       pm = pf->pf_current->bd_content_map;
       pf_rd_move_and_lock (pf, rd);
+      if (rd->rd_make_ins_rbe && RD_INSERT == rd->rd_op)
+	lt_rb_insert (pf->pf_itc->itc_lock_lt, pf->pf_current, pf->pf_current->bd_buffer + pf->pf_current->bd_content_map->pm_filled_to);
       pm->pm_filled_to += ROW_ALIGN (len);
       page_write_gap (pf->pf_current->bd_buffer + pm->pm_filled_to, PAGE_SZ - pm->pm_filled_to);
       pm->pm_bytes_free -= ROW_ALIGN (len);
@@ -2213,11 +2231,11 @@ pf_change_org (page_fill_t * pf)
       map_resize (&org->bd_content_map, new_sz);
     }
   org_sz = org->bd_content_map->pm_size;
-  memcpy (org->bd_content_map, t_buf->bd_content_map, PM_ENTRIES_OFFSET + t_buf->bd_content_map->pm_count * sizeof (short));
+  memcpy_16 (org->bd_content_map, t_buf->bd_content_map, PM_ENTRIES_OFFSET + t_buf->bd_content_map->pm_count * sizeof (short));
   org->bd_content_map->pm_size = org_sz;
   fill = t_buf->bd_content_map->pm_filled_to + MAX_KV_GAP_BYTES;
   fill = MIN (fill, PAGE_SZ);
-  memcpy (org->bd_buffer + DP_DATA, t_buf->bd_buffer + DP_DATA, fill - DP_DATA);
+  memcpy_16 (org->bd_buffer + DP_DATA, t_buf->bd_buffer + DP_DATA, fill - DP_DATA);
   if (pf->pf_left)
     pf->pf_left->data = (void*) pf->pf_org;
   else
@@ -2226,6 +2244,8 @@ pf_change_org (page_fill_t * pf)
   buf_set_dirty (org);
   if (org->bd_content_map->pm_count)
       pg_check_map (org);
+  if (pf->pf_itc->itc_insert_key->key_is_col)
+    itc_ce_check (pf->pf_itc, org, 1);
     }
 
 
@@ -2241,6 +2261,11 @@ pa_page_leave (it_cursor_t * itc, buffer_desc_t * buf, int chg)
   itc->itc_buf = NULL;
   page_leave_outside_map_chg (buf, chg);
 }
+
+
+#define PF_REG_FREE \
+  if (pf.pf_registered != &paf->paf_registered[0]) \
+    dk_free_box (pf.pf_registered);
 
 
 void
@@ -2260,6 +2285,8 @@ page_apply_1 (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t *
   dtp_t * t_page = paf->paf_page;
   int delta_inx = 0, irow, inx;
   int irow_shift = 0;
+  char init_op = op;
+  op &= ~PA_SPLIT_UNLIKELY;
   pg_check_map (buf);
   memset (&pf, 0, sizeof (pf));
   pf.pf_rls = &paf->paf_rlocks[0];
@@ -2335,7 +2362,7 @@ page_apply_1 (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t *
 	  itc_hold_pages (itc, buf, DP_INSERT_RESERVE);
 	  hold_taken = 1;
 	}
-      if (PAGE_SZ == split_after)
+      if (PAGE_SZ == split_after && !(PA_SPLIT_UNLIKELY & init_op))
       split_after = SHORT_REF (buf->bd_buffer + DP_RIGHT_INSERTS) > 5 ? (PAGE_SZ /12) * 11 : PAGE_SZ /2;
     }
   {
@@ -2352,6 +2379,7 @@ page_apply_1 (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t *
       {
 	if (delta_inx < n_delta && irow == delta[delta_inx]->rd_map_pos - irow_shift)
 	  {
+	    if (delta_inx < n_delta - 1 &&  delta[delta_inx + 1]->rd_map_pos <= delta[delta_inx]->rd_map_pos) GPF_T1 ("deltas in page apply are in non increasing row number order");
 	    switch (delta[delta_inx]->rd_op)
 	      {
 	      case RD_INSERT:
@@ -2406,24 +2434,31 @@ page_apply_1 (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t *
 	    if (pf.pf_rewrite_overflow)
 	      break; /* if just for compress rewrite and got worse compression than org, return without changing the org */
 	  }
+	if (irow < -1 || irow >org_pm->pm_count + n_delta + 1) GPF_T1 ("irow out of range");
       }
     resource_store (pfh_rc, (void*)pf.pf_hash);
   }
   if (pf.pf_left)
     {
+      if (itc->itc_insert_key->key_is_geo) GPF_T1 ("geo is not supposed to split like other inxes");
       page_reloc_right_leaves (pf.pf_itc, pf.pf_current);
     }
   if (pf.pf_rewrite_overflow)
+    {
+      PF_REG_FREE;
     return; /* if unsuccessful compress rewrite, return w/o effect */
+    }
   /* next for cursors whose row was deld and had no row after it */
   for (inx = 0; inx < pf.pf_cr_fill; inx++)
     if (pf.pf_registered[inx] && ITC_DELETED == pf.pf_registered[inx]->itc_map_pos)
       pf.pf_registered[inx]->itc_map_pos = ITC_AT_END;
 
+  PF_REG_FREE;
   if (pf.pf_left)
-
-  buf_order_ck (pf.pf_current);
+      buf_order_ck (pf.pf_current);
   pf_change_org (&pf);
+  if (pf.pf_org != pf.pf_current && itc->itc_insert_key->key_is_col)
+    itc_ce_check (itc, pf.pf_current, 1);
   page_reg_past_end (pf.pf_org);
   for (inx = 0; inx < pf.pf_rl_fill; inx++)
     {
@@ -2450,6 +2485,7 @@ page_apply_1 (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t *
   if (PA_REWRITE_ONLY == op)
     return;
   if (PA_AUTOCOMPACT == op
+        || itc->itc_insert_key->key_is_geo
      )
     first_affected = 0;
   page_apply_parent (buf, &pf, first_affected, op, change, paf);
@@ -2471,13 +2507,13 @@ void
 page_apply (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t ** delta, int op)
 {
   du_thread_t * self = THREAD_CURRENT_THREAD;
-  if (THR_IS_STACK_OVERFLOW (self, &buf, PAGE_SZ + 1000 * sizeof (caddr_t)))
+  if (THR_IS_STACK_OVERFLOW (self, &self, PAGE_SZ + 1000 * sizeof (caddr_t)))
     GPF_T1 ("page_apply called with not enough stack");
-  if (THR_IS_STACK_OVERFLOW (self, &buf, sizeof (page_apply_frame_t) + PAGE_SZ + 1000 * sizeof (caddr_t)))
+  if (THR_IS_STACK_OVERFLOW (self, &self, sizeof (page_apply_frame_t) + PAGE_SZ + 1000 * sizeof (caddr_t)))
     {
       NEW_VAR (page_apply_frame_t, paf);
       page_apply_1 (itc, buf, n_delta, delta, op, paf);
-      dk_free ((caddr_t)paf, -1);
+      dk_free ((caddr_t)paf, sizeof (page_apply_frame_t));
     }
   else
     page_apply_s (itc, buf, n_delta, delta, op);
@@ -2501,6 +2537,7 @@ pf_pop_root (page_fill_t * pf)
       key_ver_t kv = IE_KEY_VERSION (row);
       dp_addr_t leaf = LONG_REF (row + LD_LEAF);
       if (kv != KV_LEFT_DUMMY
+	  && !pf->pf_itc->itc_insert_key->key_is_geo
 	  )
 	GPF_T1 ("single leaf root page with leaf other than left dummy is not expected");
       if (!leaf)

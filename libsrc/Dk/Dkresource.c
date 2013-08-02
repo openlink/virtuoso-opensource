@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -120,7 +120,7 @@ _resource_adjust (resource_t * rc)
 
   if (rc->rc_fill)
     GPF_T1 ("can only adjust empty rc's");
-  if (rc->rc_size >= rc->rc_max_size)
+  if (rc->rc_size >= rc->rc_max_size || rc->rc_item_time)
     return;
   if (rc->rc_gets > 10000000 || rc->rc_n_empty > rc->rc_gets)
     {
@@ -287,6 +287,119 @@ resource_store (resource_t * rc, void *item)
       rc->rc_n_full++;
       if (rc_mtx)
 	mutex_leave (rc_mtx);
+      if (rc->rc_destructor)
+	(*rc->rc_destructor) (item);
+      return 0;
+    }
+}
+
+
+int
+resource_store_fifo (resource_t * rc, void *item, int n_fifo)
+{
+  dk_mutex_t *rc_mtx = rc->rc_mtx;
+  if (rc_mtx)
+    mutex_enter (rc_mtx);
+
+#ifdef RC_DBG
+  {
+    uint32 inx;
+    for (inx = 0; inx < rc->rc_fill; inx++)
+      if (item == rc->rc_items[inx])
+	{
+	  GPF_T1 ("Duplicate resource free.");
+	}
+  }
+#endif /* RC_DBG */
+
+  rc->rc_stores++;
+  if (rc->rc_fill < rc->rc_size)
+    {
+      int place = MAX ((int)rc->rc_fill - n_fifo, 0);
+      if (rc->rc_clear_func)
+	(*rc->rc_clear_func) (item);
+      memmove_16 (&rc->rc_items[place + 1], &rc->rc_items[place], sizeof (caddr_t) * (rc->rc_fill - place));
+      rc->rc_items[place] = item;
+      rc->rc_fill++;
+      if (rc_mtx)
+	mutex_leave (rc_mtx);
+      return 1;
+    }
+  else
+    {
+      rc->rc_n_full++;
+      if (rc_mtx)
+	mutex_leave (rc_mtx);
+      if (rc->rc_destructor)
+	(*rc->rc_destructor) (item);
+      return 0;
+    }
+}
+
+
+void
+rc_resize (resource_t * rc, int new_sz)
+{
+  void * new_items = malloc (sizeof (void*) * new_sz);
+  void * new_time = malloc (sizeof (int32) * new_sz);
+  memzero (new_time, sizeof (int32) * new_sz);
+  memcpy (new_items, rc->rc_items, sizeof (void*) * rc->rc_fill);
+  memcpy (new_time, rc->rc_item_time, sizeof (int32) * rc->rc_fill);
+  free (rc->rc_items);
+  free (rc->rc_item_time);
+  rc->rc_items = new_items;
+  rc->rc_item_time = new_time;
+  rc->rc_size = new_sz;
+}
+
+
+
+int
+resource_store_timed (resource_t * rc, void *item)
+{
+  dk_mutex_t *rc_mtx = rc->rc_mtx;
+  uint32 time = approx_msec_real_time ();
+  if (rc_mtx)
+    mutex_enter (rc_mtx);
+
+#ifdef RC_DBG
+  {
+    uint32 inx;
+    for (inx = 0; inx < rc->rc_fill; inx++)
+      if (item == rc->rc_items[inx])
+	{
+	  GPF_T1 ("Duplicate resource free.");
+	}
+  }
+#endif /* RC_DBG */
+
+  rc->rc_stores++;
+  if (rc->rc_fill < rc->rc_size)
+    {
+      if (rc->rc_clear_func)
+	(*rc->rc_clear_func) (item);
+
+      rc->rc_item_time[rc->rc_fill] = time;
+      rc->rc_items[(rc->rc_fill)++] = item;
+      if (rc_mtx)
+	mutex_leave (rc_mtx);
+      return 1;
+    }
+  else
+    {
+      rc->rc_n_full++;
+      if (rc->rc_item_time && rc->rc_size < rc->rc_max_size)
+	{
+	  rc_resize (rc, rc->rc_size * 2);
+	  rc->rc_item_time[rc->rc_fill] = time;
+	  rc->rc_items[rc->rc_fill++] = item;
+	  if (rc->rc_mtx)
+	    mutex_leave (rc->rc_mtx);
+	  return 1;
+	}
+      if (rc_mtx)
+	mutex_leave (rc_mtx);
+      return 0;
       if (rc->rc_destructor)
 	(*rc->rc_destructor) (item);
       return 0;

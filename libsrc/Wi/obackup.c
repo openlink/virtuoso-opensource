@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -59,6 +59,8 @@
 
 #undef DBG_BREAKPOINTS
 #undef INC_DEBUG
+
+//#define OBACKUP_TRACE
 
 typedef struct ob_err_ctx_s
 {
@@ -638,7 +640,7 @@ db_backup_pages (ol_backup_context_t * backup_ctx, dp_addr_t start_dp, dp_addr_t
     start_dp = 1;
   end_page = backup_ctx->octx_last_page;
 
-  log_info("Starting online backup from page %ld to %ld", start_dp, end_page);
+  log_info("Starting online backup from page %ld to %ld, current log is: %s", start_dp, end_page, storage->dbs_log_name);
 
   for (page_no = start_dp; page_no < end_page; page_no++)
     {
@@ -1027,6 +1029,10 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
   char * log_name;
   caddr_t err = NULL;
 
+#ifdef OBACKUP_TRACE
+  obackup_trace = fopen ("obackup.out", "a");
+#endif
+
   OB_IN_CPT (need_mtx,qi);
   log_name = sf_make_new_log_name (wi_inst.wi_master);
   IN_TXN;
@@ -1049,14 +1055,17 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
   ctx->octx_dbs = wi_inst.wi_master;
   _pages = ctx->octx_page_count;
 
+  IN_DBS (dbs);
   ctx->octx_free_set = dbs_read_page_set (dbs, db.db_free_set, DPF_FREE_SET);
   ctx->octx_ext_set = dbs_read_page_set (dbs, db.db_extent_set, DPF_EXTENT_SET);
   if (db.db_checkpoint_map)
     ctx->octx_cpt_set = dbs_read_page_set (dbs, db.db_checkpoint_map, DPF_CP_REMAP);
-#if 0
-  obackup_trace = fopen ("obackup.out", "a");
-  fprintf (obackup_trace, "\n\n\Bakup file %s\n", "xx");
+  LEAVE_DBS (dbs);
+
+#ifdef OBACKUP_TRACE
+  fprintf (obackup_trace, "\n\n\Bakup file prefix %s\n", prefix);
 #endif
+
   ses = dbs_read_registry (ctx->octx_dbs, qi->qi_client);
   ctx->octx_registry = (caddr_t *) read_object (ses);
   dk_free_box ((caddr_t)ses);
@@ -1093,14 +1102,25 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
   dbs_write_page_set (dbs, dbs->dbs_incbackup_set);
   LEAVE_DBS (dbs);
 
+//  DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
+//    {
+//    if (dbs->dbs_slices)
+//      {
+//#ifdef OBACKUP_TRACE
+//  fprintf (obackup_trace, "\n\n\DBS: %s\n", dbs->dbs_name);
+//#endif
+//      }
+//    }
+//  END_DO_SET();
+
   if (obackup_trace)
     {
       fflush (obackup_trace);
       fclose (obackup_trace);
       obackup_trace = NULL;
     }
+  log_info ("Backed up pages: [%ld]", ctx->octx_page_count - _pages);
 #ifdef DEBUG
-  log_info ("Backed up pages: [%ld]", ctx->octx_page_count);
   log_info ("Log = %s", wi_inst.wi_master->dbs_log_name);
 #endif
 

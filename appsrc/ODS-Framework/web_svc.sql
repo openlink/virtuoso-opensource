@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -453,3 +453,32 @@ insert soft "DB"."DBA"."SYS_SCHEDULED_EVENT" (SE_INTERVAL, SE_LAST_COMPLETED, SE
   values (10, NULL, 'ODS NOTIFICATIONS', 'ODS.DBA.SVC_PROCESS_PINGS()', now());
 
 use DB;
+
+create procedure WA_USER_OAUTH_UPGRADE ()
+{
+  declare params any;
+
+  if (registry_get ('__WA_USER_OAUTH_UPGRADE') = 'done')
+    return;
+
+  declare exit handler for sqlstate '*' {return; };
+
+  params := (select US_KEY from WA_USER_SVC where US_U_ID = 2 and US_SVC = 'FBKey');
+  if (length (params))
+  {
+    params := replace (params, '\r\n', '&');
+    params := replace (params, '\n', '&');
+    params := split_and_decode (params);
+    if (params is not null and length (trim (get_keyword ('key', params))) > 4 and length (trim (get_keyword ('secret', params))) > 4)
+    {
+      insert into OAUTH..APP_REG (A_OWNER, A_NAME, A_KEY, A_SECRET)
+        values (0, 'Facebook API', trim(get_keyword('key', params)), trim (get_keyword ('secret', params)));
+
+      delete from WA_USER_SVC where US_SVC = 'FBKey';
+    }
+  }
+  registry_set ('__WA_USER_OAUTH_UPGRADE', 'done');
+}
+;
+
+DB.DBA.WA_USER_OAUTH_UPGRADE ();

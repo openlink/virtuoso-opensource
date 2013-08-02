@@ -1,10 +1,10 @@
 --  
---  $Id$
+--  $Id: tdcascade.sql,v 1.3.10.3 2013/01/02 16:15:04 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -73,10 +73,11 @@ create table X3 (ID int primary key);
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": X3 created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
-create table X3_SUB (under X3, DT_SUB integer);
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": X3_SUB created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- XXX: no under
+--create table X3_SUB (under X3, DT_SUB integer);
+--ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": X3_SUB created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 create table X4 (ID int primary key);
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
@@ -86,23 +87,25 @@ create table X4_FK (ID int primary key, DATA integer, foreign key (DATA) referen
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": X4_FK created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
-create table X4_FK_SUB (under X4_FK, DT_SUB integer);
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": X4_FK_SUB created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- XXX: no under
+--create table X4_FK_SUB (under X4_FK, DT_SUB integer);
+--ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": X4_FK_SUB created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 create table X5 (ID int primary key);
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": X5 created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
-create table X5_SUB (under X5, DT_SUB integer);
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": X5_SUB created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
-create table X5_SUB_FK (ID int primary key, DATA integer, foreign key (DATA) references X5_SUB (ID));
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": X5_SUB_FK created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- XXX: no under
+--create table X5_SUB (under X5, DT_SUB integer);
+--ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": X5_SUB created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+--create table X5_SUB_FK (ID int primary key, DATA integer, foreign key (DATA) references X5_SUB (ID));
+--ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": X5_SUB_FK created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 create table X6 (ID int primary key);
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
@@ -176,10 +179,11 @@ ECHO BOTH ": procedure P1 created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 reconnect dba;
 
-select * from GOGO.X5_SUB_FK;
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": X5_SUB_FK present STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- XXX: no under
+--select * from GOGO.X5_SUB_FK;
+--ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": X5_SUB_FK present STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 select new GOGO.TUUX3 ().ID;
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
@@ -199,6 +203,7 @@ ECHO BOTH ": M1 present STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 -- XXX
 drop user GOGO cascade;
+-- XXX: no under
 --ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 --SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 --ECHO BOTH ": drop cascade on GOGO STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
@@ -239,6 +244,7 @@ reconnect dba;
 
 -- XXX
 drop user GOGO2;
+-- XXX: no under
 --ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 --SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 --ECHO BOTH ": GOGO2 dropped STATE=" $STATE " MESSAGE=" $MESSAGE "\n";

@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -29,6 +29,7 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 ]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -42,6 +43,7 @@
   xmlns:dcterms="http://purl.org/dc/terms/"
   xmlns:foaf="&foaf;"
   xmlns:gr="&gr;"
+  xmlns:opl="&opl;"
   xmlns:sioc="&sioc;"
   xmlns:bibo="&bibo;"
   xmlns:owl="http://www.w3.org/2002/07/owl#"
@@ -69,6 +71,13 @@
 			<owl:sameAs rdf:resource="{$docIRI}"/>
 		</rdf:Description>
 		<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.librarything.com#this">
+                        			<foaf:name>LibraryThing</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.librarything.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&sioc;Item"/>
 			<rdf:type rdf:resource="&bibo;Book"/>
 			<rdfs:label>
@@ -111,6 +120,13 @@
 			<owl:sameAs rdf:resource="{$docIRI}"/>
 		</rdf:Description>
 		<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.librarything.com#this">
+                        			<foaf:name>LibraryThing</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.librarything.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&foaf;Person"/>
 			<foaf:name>
 				<xsl:value-of select="/response[@stat='ok']/ltml/item/author/name"/>

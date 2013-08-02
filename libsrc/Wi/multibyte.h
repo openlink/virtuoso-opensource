@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -28,6 +28,11 @@
 
 #include "libutil.h"
 
+#ifndef UTF8CHAR_DEFINED
+#define UTF8CHAR_DEFINED
+typedef unsigned char utf8char;
+#endif
+
 typedef struct wcharset_s {
   char chrs_name[100];
   wchar_t chrs_table[256];
@@ -47,6 +52,7 @@ size_t virt_wcsrtombs (unsigned char *dst, wchar_t **src, size_t len, virt_mbsta
 wchar_t *virt_wcschr (const wchar_t *__wcs, wchar_t __wc);
 wchar_t *virt_wcsrchr (const wchar_t *__wcs, wchar_t __wc);
 wchar_t *virt_wcsstr (const wchar_t *__wcs, const wchar_t *__wc);
+wchar_t *virt_wcsrstr (const wchar_t *__wcs, const wchar_t *__wc);
 size_t virt_wcslen (const wchar_t *__wcs);
 int virt_wcsncmp (const wchar_t *from, const wchar_t *to, size_t len);
 
@@ -69,7 +75,7 @@ wchar_t *virt_wcsdup(const wchar_t *s);
 int virt_wcscasecmp(const wchar_t *s1, const wchar_t *s2);
 
 /* long blob_fill_buffer_from_wide_string (caddr_t bh, caddr_t buf, int *at_end, long *char_len); moved to blob.c as static and excluded */
-size_t wide_char_length_of_utf8_string (unsigned char *str, size_t utf8_length);
+size_t wide_char_length_of_utf8_string (const unsigned char *str, size_t utf8_length);
 
 struct query_instance_s;
 extern wcharset_t *wcharset_by_name_or_dflt (ccaddr_t cs_name, struct query_instance_s *qi);

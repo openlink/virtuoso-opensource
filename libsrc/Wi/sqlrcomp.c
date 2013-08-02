@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -39,6 +39,7 @@
 #include "sqlintrp.h"
 #include "sqlo.h"
 #include "sqlcstate.h"
+#include "date.h"
 
 
 
@@ -174,6 +175,7 @@ sqlc_print_literal_proc (char *text, size_t tlen, int *fill, char *name, ST ** p
 	    {
 	      sc->sc_exp_sqt.sqt_dtp = (dtp_t) rtype[0];
 	      sc->sc_exp_sqt.sqt_precision = (uint32) rtype[1];
+	      sc->sc_exp_sqt.sqt_col_dtp = 0;
 	    }
 	}
     }
@@ -286,6 +288,7 @@ sqlc_print_standard_proc (char *text, size_t tlen, int *fill, char *name, ST ** 
 	}
       END_DO_BOX;
       sc->sc_exp_sqt.sqt_dtp = DV_DATETIME;
+      sc->sc_exp_sqt.sqt_col_dtp = 0;
     }
   else if (!stricmp (name, "_cvt"))
     {				/* convert needs SQL_xxx instead of datatype xxx for second arg */
@@ -295,6 +298,7 @@ sqlc_print_standard_proc (char *text, size_t tlen, int *fill, char *name, ST ** 
       sqlc_exp_print (sc, ct, params[1], text, tlen, fill);
       sprintf_more (text, tlen, fill, ", %s", sqlc_sql_type_name (vd_dv_to_sql_type (dtp)));
       sc->sc_exp_sqt.sqt_dtp = dtp;
+      sc->sc_exp_sqt.sqt_col_dtp = 0;
     }
   else if (!stricmp (name, "__extract"))
     {				/* extract needs a special parameter layout */
@@ -303,6 +307,7 @@ sqlc_print_standard_proc (char *text, size_t tlen, int *fill, char *name, ST ** 
       sprintf_more (text, tlen, fill, " FROM ");
       sqlc_exp_print (sc, ct, params[2], text, tlen, fill);
       sc->sc_exp_sqt.sqt_dtp = DV_LONG_INT;
+      sc->sc_exp_sqt.sqt_col_dtp = 0;
     }
   else if (!stricmp (name, "position"))
     {				/* extract needs a special parameter layout */
@@ -311,6 +316,7 @@ sqlc_print_standard_proc (char *text, size_t tlen, int *fill, char *name, ST ** 
       sprintf_more (text, tlen, fill, " IN ");
       sqlc_exp_print (sc, ct, params[2], text, tlen, fill);
       sc->sc_exp_sqt.sqt_dtp = DV_LONG_INT;
+      sc->sc_exp_sqt.sqt_col_dtp = 0;
     }
   else
     {
@@ -348,6 +354,7 @@ sqlc_print_standard_proc (char *text, size_t tlen, int *fill, char *name, ST ** 
 	      if (((dtp_t) rtype[0]) != DV_UNKNOWN)
 		{
 		  sc->sc_exp_sqt.sqt_dtp = (dtp_t) rtype[0];
+		  sc->sc_exp_sqt.sqt_col_dtp = 0;
 		  sc->sc_exp_sqt.sqt_precision = (uint32) rtype[1];
 		}
 	    }
@@ -990,6 +997,7 @@ sqlc_print_count_exp (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, 
 	      sqlc_exp_print (sc, ct, arg_st->_.comma_exp.exps[0]->_.bin_exp.left, text, tlen, fill);
 	      sprintf_more (text, tlen, fill, ")");
 	      sc->sc_exp_sqt.sqt_dtp = DV_LONG_INT;
+	      sc->sc_exp_sqt.sqt_col_dtp = 0;
 	      return 1;
 	    }
 	}
@@ -1007,6 +1015,7 @@ sqlc_print_count_exp (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, 
 	    sqlc_exp_print (sc, ct, arg_st, text, tlen, fill);
 	  sprintf_more (text, tlen, fill, ")");
 	  sc->sc_exp_sqt.sqt_dtp = DV_LONG_INT;
+	  sc->sc_exp_sqt.sqt_col_dtp = 0;
 	  return 1;
 	}
     }
@@ -1140,7 +1149,16 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
       }
       break;
 #endif
-
+    case DV_DATETIME:
+    case DV_DATE:
+    case DV_TIME:
+	{
+	  char temp[100];
+	  int dt_type = DT_DT_TYPE (exp);
+	  dt_to_string ((char *) exp, temp, sizeof (temp));
+	  sprintf_more (text, tlen, fill, "{%s '%s'}", dt_type == DT_TYPE_DATE ? "d" : dt_type == DT_TYPE_TIME ? "t" : "ts",  temp);
+	  break;
+	}
 
     case DV_LIST_OF_POINTER:
     case DV_ARRAY_OF_POINTER:
@@ -1179,7 +1197,7 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 	  {
 	    caddr_t col_alias = rds_get_info (target_rds, SQL_COLUMN_ALIAS);
 	    sqlc_exp_print (sc, ct, tree->_.as_exp.left, text, tlen, fill);
-	    if (ST_COLUMN (tree->_.as_exp.left, COL_DOTTED) && !tree->_.as_exp.left->_.col_ref.prefix &&
+	    if (ST_P (tree->_.as_exp.left, COL_DOTTED) && !tree->_.as_exp.left->_.col_ref.prefix &&
 		!CASEMODESTRCMP (tree->_.as_exp.left->_.col_ref.name, tree->_.as_exp.name))
 	      break;
 	    if (DV_STRINGP (col_alias) && box_length (col_alias) > 1 && toupper (col_alias[0]) == 'Y')
@@ -1560,6 +1578,7 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 			  if (((dtp_t) rtype[0]) != DV_UNKNOWN)
 			    {
 			      sc->sc_exp_sqt.sqt_dtp = (dtp_t) rtype[0];
+			      sc->sc_exp_sqt.sqt_col_dtp = 0;
 			      sc->sc_exp_sqt.sqt_precision = (uint32) rtype[1];
 			    }
 			}
@@ -1784,4 +1803,120 @@ sqlc_resignal (sql_comp_t * sc, caddr_t err)
   sqlc_new_error (sc->sc_cc, state, "VD032", temp);
 }
 
+
+
+ST **box_add_prime_keys (ST ** selection, dbe_table_t * tb);
+
+
+dbe_table_t *
+sqlc_expand_remote_cursor (sql_comp_t * sc, ST * tree)
+{
+  /* single table select of remote/cluster/col-wise table, add prime key cols */
+  ST **n_sel;
+  ST **from = tree->_.select_stmt.table_exp->_.table_exp.from;
+  ST *t1 = from[0]->_.table_ref.table;
+  if (1 == BOX_ELEMENTS (from) && ST_P (t1, TABLE_DOTTED) && !tree->_.select_stmt.table_exp->_.table_exp.group_by)
+    {
+      dbe_table_t *tb = sch_name_to_table (sc->sc_cc->cc_schema, t1->_.table.name);
+      remote_table_t *rt;
+      if (!tb)
+	return 0;
+      if (sqlo_opt_value (t1->_.table.opts, OPT_INDEX_ONLY))
+	return 0;
+      rt = find_remote_table (tb->tb_name, 0);
+      if (!rt && !tb->tb_primary_key->key_partition && !tb->tb_primary_key->key_is_col)
+	return 0;
+      n_sel = box_add_prime_keys ((ST **) tree->_.select_stmt.selection, tb);
+      /*dk_free_tree ((caddr_t) tree->_.select_stmt.selection); */
+      tree->_.select_stmt.selection = (caddr_t *) n_sel;
+      return tb;
+    }
+  return 0;
+}
+
+
+ST *
+sqlc_co_ref (sql_comp_t * sc, subq_compilation_t * sqc, state_slot_t * sl, dbe_column_t * col, caddr_t prefix)
+{
+  ST * ref = (ST *) t_list (3, COL_DOTTED, t_box_string (prefix), t_box_string (col->col_name));
+  col_ref_rec_t * pre_crr = sqlc_col_ref_rec (sc, ref, 0);
+  if (!pre_crr)
+    {
+      state_slot_t * copy_ssl = ssl_new_variable (sc->sc_cc, sl->ssl_name, sl->ssl_sqt.sqt_dtp);
+      t_NEW_VARZ (col_ref_rec_t, crr);
+      crr->crr_ssl = copy_ssl;
+      crr->crr_col_ref = ref;
+      t_set_push (&sc->sc_col_ref_recs, (void *) crr);
+      pre_crr = crr;
+    }
+  DO_SET (instruction_t *, ins, &sqc->sqc_fetches)
+    {
+      int pos = box_position_no_tag ((caddr_t*)ins->_.fetch.targets, (caddr_t)pre_crr->crr_ssl);
+      if (-1 == pos)
+	ins->_.fetch.targets = (state_slot_t **) box_append_1_free ((caddr_t)ins->_.fetch.targets, (caddr_t)pre_crr->crr_ssl);
+    }
+  END_DO_SET();
+  return ref;
+}
+
+
+ST *
+sqlc_pos_to_searched_where (sql_comp_t * sc, subq_compilation_t * sqc, char *cr_name, dbe_table_t * tb)
+{
+  int inx;
+  ST *tree = NULL;
+  if (sqc)
+    {
+      /*add pk cols of cr to scope, then generate where referencing these */
+      ST *pred;
+      char prefix[11];
+      static int cr_ctr;
+      state_slot_t **out = sqc->sqc_query->qr_select_node->sel_out_slots;
+      int n_out = BOX_ELEMENTS (out);
+      int n_parts = tb->tb_primary_key->key_n_significant;
+      dk_set_t pk_cols = tb->tb_primary_key->key_parts;
+
+      /* for local cr in cluster, n_out may include co placeholders which will be ignored here */
+      while (n_out &&
+	     DV_ITC == out[n_out - 1]-> ssl_sqt.sqt_dtp)
+	n_out--;
+      snprintf (prefix, sizeof (prefix), "C%d", cr_ctr++);
+
+      for (inx = 0; inx < n_parts; inx++)
+	{
+	  dbe_column_t *col = (dbe_column_t *) pk_cols->data;
+	  state_slot_t *sl = out[(n_out - n_parts) + inx];
+	  ST * cr_ref = sqlc_co_ref (sc, sqc, sl, col, prefix);
+	  pred = (ST *) t_list (4, BOP_EQ, t_list (3, COL_DOTTED, NULL, t_box_string (col->col_name)), cr_ref, NULL);
+	  if (tree)
+	    {
+	      ST *res;
+	      BIN_OP (res, BOP_AND, tree, pred);
+	      tree = res;
+	    }
+	  else
+	    tree = pred;
+	  pk_cols = pk_cols->next;
+	}
+
+      return tree;
+    }
+  else
+    {
+      int inx = 0;
+      DO_SET (dbe_column_t *, col, &tb->tb_primary_key->key_parts)
+	{
+	  t_st_and (&tree, (ST *)
+	      t_list (4, BOP_EQ, t_list (3, COL_DOTTED, NULL, t_box_string (col->col_name)),
+		  t_list (3, CALL_STMT, t_sqlp_box_id_upcase ("__cr_id_part"),
+		      t_list (3, t_box_string (cr_name), t_box_string (tb->tb_name), t_box_num (inx))), NULL));
+
+	  inx++;
+	  if (inx >= tb->tb_primary_key->key_n_significant)
+	    break;
+	}
+      END_DO_SET ();
+      return tree;
+    }
+}
 

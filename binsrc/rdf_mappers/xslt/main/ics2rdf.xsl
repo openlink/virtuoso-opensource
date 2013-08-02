@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -41,7 +41,6 @@
     xmlns:sioc="&sioc;"
     xmlns     ="http://www.w3.org/2002/12/cal/ical#"
     xmlns:vi   ="http://www.openlinksw.com/virtuoso/xslt/"
-    xmlns:xml   ="xml"
     xmlns:rdfs="&rdfs;"    
     version="1.0"
     xmlns:owl="http://www.w3.org/2002/07/owl#"

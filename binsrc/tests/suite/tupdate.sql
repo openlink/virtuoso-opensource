@@ -1,14 +1,14 @@
 --
 --  tupdate.sql
 --
---  $Id$
+--  $Id: tupdate.sql,v 1.20.2.4.4.4 2013/01/02 16:15:32 source Exp $
 --
 --  Update tests
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -32,13 +32,16 @@ CONNECT;
 -- Timeout to two hours.
 SET TIMEOUT 7200;
 set DEADLOCK_RETRIES = 200;
-load revstr.sql;
-load succ.sql;
 drop table words;
 create table words(word varchar, revword varchar, len integer, primary key(word))
   alter index words on words partition (word varchar);
 create index revword on words(revword) partition (revword varchar);
 create index len on words(len) partition (len int);
+
+load revstr.sql;
+load succ.sql;
+
+
 foreach line in words.esp
  insert into words(word,revword,len) values(?,revstr(?1),length(?1));
 
@@ -56,6 +59,15 @@ ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
 ECHO BOTH ": update words set word2 = word; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 ECHO BOTH $IF $EQU $ROWCNT 42406"PASSED" "***FAILED";
 ECHO BOTH ": " $ROWCNT " rows updated\n";
+
+select top 10 revword from words a table option (index words) where not exists (select 1 from words b table option (loop) where a.revword = b.revword);
+echo both $if $neq $rowcnt 0 "***FAILED" "PASSED";
+echo both ":  revword inx oow 1\n";
+select * from words where word = 'a';
+echo both $if $neq $rowcnt 1 "***FAILED" "PASSED";
+echo both ":  wirds a ck 1\n";
+
+
 
 -- check reading inx with mixed vcersions of keys 
 select count (*) from words where word > 'b';
@@ -84,11 +96,17 @@ ECHO BOTH ": update words set word2 = word; STATE=" $STATE " MESSAGE=" $MESSAGE 
 ECHO BOTH $IF $EQU $ROWCNT 86061 "PASSED" "***FAILED";
 ECHO BOTH ": " $ROWCNT " rows updated\n";
 
+
 update words set word2 = concat (word2, '-');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
 ECHO BOTH ": update words set word2 = concat (word2, '-'); STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 ECHO BOTH $IF $EQU $ROWCNT 86061 "PASSED" "***FAILED";
 ECHO BOTH ": " $ROWCNT " rows updated\n";
+
+select top 10 revword from words a table option (index words) where not exists (select 1 from words b table option (loop) where a.revword = b.revword);
+echo both $if $neq $rowcnt 0 "***FAILED" "PASSED";
+echo both ":  revword inx ck 2\n";
+
 
 -- Was: update words set word2 = subseq (word2, 0, length (word2) - 1);
 -- This is more to standard:
@@ -122,19 +140,37 @@ ECHO BOTH ": update words set word = concat('-',word); STATE=" $STATE " MESSAGE=
 ECHO BOTH $IF $EQU $ROWCNT 86061 "PASSED" "***FAILED";
 ECHO BOTH ": " $ROWCNT " rows updated\n";
 
+
+select top 10 revword from words a table option (index words) where not exists (select 1 from words b table option (loop) where a.revword = b.revword);
+echo both $if $neq $rowcnt 0 "***FAILED" "PASSED";
+echo both ":  revword inx ck 3\n";
+
+select * from words where word = '-a';
+echo both $if $neq $rowcnt 1 "***FAILED" "PASSED";
+echo both ":  wirds a ck 1\n";
+
 select count (*) from words where word2 = word;
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
 ECHO BOTH ": select count (*) from words; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 ECHO BOTH  $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
 ECHO BOTH  ": " $LAST[1] " words where word2 = word\n";
 
-checkpoint;
+cl_exec ('checkpoint');
 
 update words set word = word2 where word like '-%';
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
 ECHO BOTH ": update words set word = word2 where word like '-%'; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 ECHO BOTH $IF $EQU $ROWCNT 86061 "PASSED" "***FAILED";
 ECHO BOTH ": " $ROWCNT " rows updated\n";
+
+
+select top 10 revword from words a table option (index words) where not exists (select 1 from words b table option (loop) where a.revword = b.revword);
+echo both $if $neq $rowcnt 0 "***FAILED" "PASSED";
+echo both ":  revword inx ck 3\n";
+select * from words where word = 'a';
+echo both $if $neq $rowcnt 1 "***FAILED" "PASSED";
+echo both ":  wirds a ck 1\n";
+
 
 select count (*) from words where word <> word2;
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
@@ -147,15 +183,39 @@ ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
 ECHO BOTH ": update words set word = concat('-',word) where ...; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 ECHO BOTH $ROWCNT " rows updated\n";
 
+
+select top 10 revword from words a table option (index words) where not exists (select 1 from words b table option (loop) where a.revword = b.revword);
+echo both $if $neq $rowcnt 0 "***FAILED" "PASSED";
+echo both ":  revword inx ck 4\n";
+
+select * from words where word = '-a';
+echo both $if $neq $rowcnt 1 "***FAILED" "PASSED";
+echo both ":  wirds a ck 1\n";
+
+
 update words set word = subseq (word, 1, length (word)) where aref (word, 0) = aref ('-', 0);
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
 ECHO BOTH ": update words set word = subseq (word, 1, length(word)) where ...; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 ECHO BOTH $ROWCNT " rows updated\n";
 
+
+select top 10 revword from words a table option (index words) where not exists (select 1 from words b table option (loop) where a.revword = b.revword);
+echo both $if $neq $rowcnt 0 "***FAILED" "PASSED";
+echo both ":  revword inx ck 5\n";
+
 update words set word = subseq (word, 1, length (word)) where word like '-%';
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
 ECHO BOTH ": update words set word = subseq (word, 1, length(word)) where ...; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 ECHO BOTH $ROWCNT " rows updated\n";
+
+select top 10 revword from words a table option (index words) where not exists (select 1 from words b table option (loop) where a.revword = b.revword);
+echo both $if $neq $rowcnt 0 "***FAILED" "PASSED";
+echo both ":  revword inx ck 6\n";
+
+select * from words where word = 'a';
+echo both $if $neq $rowcnt 1 "***FAILED" "PASSED";
+echo both ":  wirds a ck 1\n";
+
 
 update words set word = word, word2 = word2;
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
@@ -163,6 +223,16 @@ ECHO BOTH ": update words set word = word, word2 = word2; STATE=" $STATE " MESSA
 ECHO BOTH $IF $EQU $ROWCNT 86061 "PASSED" "***FAILED";
 ECHO BOTH ": " $ROWCNT " rows updated\n";
 
+select top 10 revword from words a table option (index words) where not exists (select 1 from words b table option (loop) where a.revword = b.revword);
+echo both $if $neq $rowcnt 0 "***FAILED" "PASSED";
+echo both ":  revword inx ck 7\n";
+
+
+select * from words where word = 'a';
+echo both $if $neq $rowcnt 1 "***FAILED" "PASSED";
+echo both ":  wirds a ck 1\n";
+
+exit;
 -- Set ROWCNT to some different value, so that we see whether the next
 -- update statements have any effect:
 SET ROWCNT -12345;
@@ -532,7 +602,7 @@ ECHO BOTH ": BUG 7752: wrong max row len check STATE=" $STATE " MESSAGE=" $MESSA
 
 echo BOTH "COMPLETED: UPDATE TEST\n";
 
-exit
+
 
 echo BOTH "STARTED: keyset update tests\n";
 CONNECT;

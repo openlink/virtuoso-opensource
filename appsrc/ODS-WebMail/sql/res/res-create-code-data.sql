@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -166,7 +166,7 @@ OMAIL.WA.res_mime_create(30280,'application/x-gtar','')
 ;
 OMAIL.WA.res_mime_create(30290,'application/x-hdf','')
 ;
-OMAIL.WA.res_mime_create(30300,'application/x-javascript', '')
+OMAIL.WA.res_mime_create(30300,'application/javascript', '')
 ;
 OMAIL.WA.res_mime_create(30310,'application/x-koan', '')
 ;

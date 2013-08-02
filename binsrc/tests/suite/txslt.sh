@@ -1,35 +1,35 @@
 #!/bin/sh
-#
-#  $Id$
+#  
+#  $Id: txslt.sh,v 1.18.4.1.4.4 2013/01/02 16:15:37 source Exp $
 #
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
-#
-#  Copyright (C) 1998-2009 OpenLink Software
-#
+#  
+#  Copyright (C) 1998-2013 OpenLink Software
+#  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#
+#  
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#
+#  
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#
+#  
 
-# Used insid txslt1.sql!
+# Used inside txslt1.sql!
 TEST_DIR=`pwd`
 LOGFILE=$TEST_DIR/txslt.output
-RESULT_FILE=$TEST_DIR/txslt.result
+RESULT_FILE=$VIRTUOSO_TEST/txslt.result
 export LOGFILE RESULT_FILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 DS1=$PORT
-# Used insid txslt1.sql!
+# Used inside txslt1.sql!
 HTTP_PORT=$HTTPPORT
 
 # SQL command
@@ -41,7 +41,7 @@ DoCommand()
   shift
   shift
   shift
-#echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $*		>> $LOGFILE
+  echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $*		>> $LOGFILE
   $ISQL ${_dsn} dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* >> $LOGFILE
   if test $? -ne 0
   then
@@ -55,7 +55,7 @@ DoCommand()
 MakeConfig ()
 {
     echo "CREATING CONFIGURATION FOR SERVER"
-    MAKECFG_FILE ../$TESTCFGFILE $PORT $CFGFILE
+    MAKECFG_FILE $VIRTUOSO_TEST/$TESTCFGFILE $PORT $CFGFILE
     case $SERVER in
       *[Mm2]*)
     file=wi.cfg
@@ -126,32 +126,34 @@ NOLITE
 DSN=$DS1
 STOP_SERVER
 rm -f $LOGFILE
-rm -f $RESULT_FILE
-touch $RESULT_FILE
 
-rm -rf xslt
-mkdir xslt
-cd xslt
+rm -rf $TEST_DIR/xslt
+mkdir $TEST_DIR/xslt
+cd $TEST_DIR/xslt
 MakeConfig $DS1 $HTTP_PORT
 START_SERVER $DS1 1000
-cd ..
+cd $TEST_DIR
 
 MakeSQLXML
 MakeXSL
 
-DoCommand $DS1 "load txslt.sql" "FINISHED SQL SCRIPTS"
-cd xsl_samples
-cur_path="../xsl_samples"
+DoCommand $DS1 "load $VIRTUOSO_TEST/txslt.sql" "FINISHED SQL SCRIPTS"
+cd $VIRTUOSO_TEST/xsl_samples
+cur_path="$VIRTUOSO_TEST/xsl_samples"
 
 LOG '========= BEGIN XML SAMPLES UPLOAD =========='
    files=`ls`
    DoCommand $DS1 "DB.DBA.DAV_MKCOL ('/DAV/xslsamples/', null, 0, 0)" "CREATING COLLECTION"
    for r in $files
      do
-       DoCommand $DS1 "DB.DBA.DAV_RES_UPLOAD ('/DAV/xslsamples/$r', now (), 'dav', 'administrators', '111111111N', http_mime_type ('$r') , file_to_string ('$cur_path/$r'))" "UPLOADING RESOURCE: $r"
+       # filter out directories, do not process them. CVS subdir is usually the problem.
+       if [ -f $r ]
+       then
+	   DoCommand $DS1 "DB.DBA.DAV_RES_UPLOAD ('/DAV/xslsamples/$r', now (), 'dav', 'administrators', '111111111N', http_mime_type ('$r') , file_to_string ('$cur_path/$r'))" "UPLOADING RESOURCE: $r"
+       fi
      done
 LOG '========== END XML SAMPLES UPLOAD =========='
-cd ..
+cd $TEST_DIR
 
 DoCommand $DS1 "DB.DBA.DAV_MKCOL ('/DAV/xslt/', null, 0, 0)" "CREATING COLLECTION"
 DoCommand $DS1 "DB.DBA.DAV_RES_UPLOAD ('/DAV/xslt/xslt.vsp', now (), 'dav', 'administrators', '111111111N', http_mime_type ('xslt.vsp') , file_to_string ('../xslt.vsp'))" "UPLOADING RESOURCE: xslt.vsp"
@@ -163,14 +165,14 @@ echo ""
 
 LOG '========= BEGIN XSL-T TESTS =========='
 
-RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF -u "HTTPPORT=$HTTP_PORT" < txslt1.sql
+RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF -u "HTTPPORT=$HTTP_PORT" < $VIRTUOSO_TEST/txslt1.sql
 if test $STATUS -ne 0
 then
   LOG "***ABORTED: XSL-T SQL TEST SCRIPT"
 else
   LOG "FINISHED XSL-T SQL TEST SCRIPT"
 fi
-diff txslt.cmp txslt.result > txslt.diff
+diff txslt.cmp $RESULT_FILE > txslt.diff
 cmp=`cat txslt.diff | wc -l`
 if test $cmp -gt 0
 then
@@ -180,7 +182,7 @@ LOG 'PASSED: The results are checked'
 fi
 
 LOG '========= BEGIN XML-SQL UPDATE GRAMS TESTS =========='
-RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF < tupdg.sql
+RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF < $VIRTUOSO_TEST/tupdg.sql
 LOG '========= FINISHED XML-SQL UPDATE GRAMS TESTS =========='
 
 DSN=$DS1
@@ -188,4 +190,5 @@ SHUTDOWN_SERVER
 CHECK_LOG
 BANNER "COMPLETED XSL-T ENGINE TEST ($0)"
 
+set +x
 exit 0

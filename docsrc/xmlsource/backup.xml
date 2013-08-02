@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -291,8 +291,7 @@ or shutdown statements while a backup is in progress.
 ascertained from the virtuoso.log event log file.
 </para>
 		</sect4>
-		</sect3>
-		<sect3 id="offlinebackups">
+		<sect4 id="offlinebackups">
 			<title>Off-Line Backups</title>
 			<para>
 When Virtuoso is not running a complete and clean backup can be taken by making
@@ -307,8 +306,8 @@ TransactionFile in the database&apos;s configuration file.  When started, the lo
 will roll forward and restore the database to the state following the
 last logged transaction.
 </para>
+	</sect4>
 	</sect3>
-
 	<!-- ======================================== -->
 	<sect3 id="vdbrecovery">
 		<title>Database Recovery</title>
@@ -333,7 +332,14 @@ in virtuoso.ini and exit when complete.</para></listitem>
     <listitem><para>Take a backup of the old database file.</para></listitem>
     <listitem><para>Change the DatabaseFile setting in virtuoso.ini to a
 non-existing database file or delete the old database file.</para></listitem>
-    <listitem><para>Start the server with the +restore-crash-dump option.  The option is essential.</para></listitem>
+    <listitem><para>Start the server with the +restore-crash-dump option. The option is essential.</para>
+              <para>Important: When restore on v6 you also must give it +log6 flag i.e.: +restore-crash-dump +log6 .</para>
+              <para>
+                <tip><title>See Also:</title>
+                  <para><ulink linkend="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtTipsAndTricksDBMSBackupCrashDump">How can I move a Virtuoso database from one hardware and/or software platform to another?</ulink></para>
+                </tip>	
+              </para>
+    </listitem>
     <listitem><para>The server will build a new database file from the log and
 once completed it will, by default, perform a checkpoint of the transactions to the
 database file and start listening at the specified port.  Virtuoso can be
@@ -583,5 +589,58 @@ After this initial step the system tables will be compatible and the
 dba can proceed to replay the remaining recovery logs with the replay function.
 </para>
 		</sect4>
+		<sect4 id="procindexrecov"> 
+      <title>Backup and Restore individual table(s) and individual index(s) on a new fresh db</title>			
+      <para>This section describes how to get a part of db tables and restore on a new db.</para>
+      <para>Additionally, part of the steps from below can be used to backup separate table and recover 
+      	on same db.</para>
+      <para>Note: Only effective with Virtuoso 6.0 and later.</para>        
+      <para>Basic steps:</para>             
+      <orderedlist>
+        <listitem>Create a function for dumping the key:
+<programlisting><![CDATA[
+create procedure bkp_key (in f any, in tb_name varchar, in key_name varchar)
+{
+  backup_prepare (f);
+  backup_index (tb_name, key_name);
+  backup_flush ();
+  backup_close ();
+}
+;	
+]]></programlisting>        	
+        </listitem>
+        <listitem>On the source db execute: 
+<programlisting><![CDATA[
+bkp_key ('mylog.txn', 'DB.DBA.T1', 'T1');	
+]]></programlisting>        	
+          <para>This will dump in a "mylog.txn" file the T1 table's primary key.</para>
+        </listitem>
+        <listitem>On source db stop server and do: 
+<programlisting><![CDATA[
+virtuoso +backup-dump +foreground +mode l   ## ( lower case L )
+]]></programlisting>        	
+          <para>This will dump the schema tables only into the trx file.</para>
+        </listitem>
+        <listitem>On the target db make sure there is no db file and place the trx file produced 
+        	by previous step. Execute: 
+<programlisting><![CDATA[
+virtuoso +restore-crash-dump +foreground ;
+]]></programlisting>        	
+          <para>This will create a new db with same db schema as on the source db.</para>
+        </listitem>
+        <listitem>Start the target and do: 
+<programlisting><![CDATA[
+replay ('mylog.txn') ;	
+]]></programlisting>        	
+          <para>This will insert the PK data into the table from the source db dump.</para>
+        </listitem>
+        <listitem>If the table in question has other indexes must drop them and re-create them, since they 
+        	are empty as in previous step we have been restoring only the PK.
+        </listitem>
+      </orderedlist>      
+      <para><emphasis>Note</emphasis>: following the steps from above can be dumped each index and 
+      then replay. Also the steps may be combined for multiple tables and keys in the backup procedure - 
+      just needs to be added the corresponding calls to the backup_index() function.</para>
+    </sect4>
 		</sect3>
 </sect2>

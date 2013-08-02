@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -426,8 +426,11 @@ CREATE PROCEDURE CFIBO (IN X INTEGER)
 		<sect2 id="grantprocstmt">
 			<title>Grand Execute Statement</title>
 <programlisting><![CDATA[
-GRANT EXECUTE ON proceudre_name TO grantee_commalist;
+GRANT EXECUTE ON procedure_name TO "{USER | ROLE}" ;
 ]]></programlisting>
+<para>The identifier quote character (double quotes) is important usage information since it indicates that 
+the USER or ROLE has a literal identifier. Just as a reference (e.g., URL or URI) has the identifier quote 
+characters "&lt;" and "&gt;" . </para>
 <para>The grantee should have SQL rights in order execution of procedure to be granted to this user.
 The rights can be set from Conductor->System Admin->User Accounts->Account->Edit->User Type:</para>
      <figure id="usrt" float="1">

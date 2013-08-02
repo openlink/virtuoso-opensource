@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -272,6 +272,12 @@ pldbg_print_value (dk_session_t * ses, box_t box, query_instance_t *qi)
 	    SES_PRINT (ses, "}\n");
 	  }
 	break;
+	case DV_BIN:
+	  {
+	    snprintf (tmp, sizeof (tmp), " LEN %d", box_length (box));
+	    SES_PRINT (ses, tmp);
+	  }
+	break;
       default:
 	    {
 	      caddr_t err_ret = NULL;
@@ -287,7 +293,10 @@ pldbg_print_value (dk_session_t * ses, box_t box, query_instance_t *qi)
 		    SES_PRINT (ses, "'");
 		}
 	      else
-		SES_PRINT (ses, "<box>");
+		{
+		  snprintf (tmp, sizeof (tmp), "<box dtp=%d>", dtp);
+		  SES_PRINT (ses, tmp);
+		}
 	    }
     }
 }
@@ -535,12 +544,15 @@ static query_t *
 pldbg_get_qr (char * name)
 {
   int inx;
-  query_t * qr;
+  query_t * qr = NULL;
+  const char * pname;
 
   if (!name)
     return NULL;
 
-  qr = sch_proc_def (wi_inst.wi_schema, name);
+  pname = sch_full_proc_name (wi_inst.wi_schema, name, "DB", "DBA");
+  if (pname)
+    qr = sch_proc_def (wi_inst.wi_schema, pname);
   if (!qr) /* triggers */
     {
       dbe_table_t *tb;
@@ -825,7 +837,7 @@ pldbg_cmd_execute (dk_session_t * ses, caddr_t * args)
 			}
 		  case PDI_THRE: /* stopped threads */
 			{
-			  char conn_id[20];
+			  char conn_id[30];
 			  client_connection_t * cli;
 			  IN_TXN;
 			  DO_SET (lock_trx_t *, lt, &all_trxs)
@@ -843,7 +855,8 @@ pldbg_cmd_execute (dk_session_t * ses, caddr_t * args)
 					cli->cli_pldbg->pd_id = box_copy (c_ses->dks_peer_name);
 				      else
 					{
-					  snprintf (conn_id, sizeof (conn_id), "INTERNAL:%lX", (unsigned long) (uptrlong) cli);
+					  char * ct = cli && cli->cli_ws ? "HTTP" : "INTERNAL";
+					  snprintf (conn_id, sizeof (conn_id), "%s:%lX", ct, (unsigned long) (uptrlong) cli);
 					  cli->cli_pldbg->pd_id = box_dv_short_string (conn_id);
 					}
 				    }
@@ -1158,10 +1171,17 @@ pldbg_cmd_execute (dk_session_t * ses, caddr_t * args)
 void
 pldbg_loop (void)
 {
+  client_connection_t * cli = client_connection_create ();
   int mode;
   dk_session_t *ses;
   caddr_t cmd;
   pldbg_message_t * pd;
+  IN_TXN;
+  cli_set_new_trx (cli);
+  LEAVE_TXN;
+  sqlc_set_client (cli);
+  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_IMMEDIATE_CLIENT, cli);
+
   for(;;)
     {
       semaphore_enter (pldbg_sem);
@@ -1344,7 +1364,6 @@ pldbg_stats (query_t *qr, caddr_t * result1, int add_line, caddr_t udt_name)
 static caddr_t
 bif_pldbg_stats (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  query_instance_t *qi = (query_instance_t *)qst;
   caddr_t pname = BOX_ELEMENTS (args) > 0 ? bif_string_or_null_arg (qst, args, 0, "pldbg_stats") : NULL;
   long add_line = (long)(BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "pldbg_stats") : 0);
   caddr_t udt_name = (caddr_t)(BOX_ELEMENTS (args) > 2 ?
@@ -1428,7 +1447,6 @@ bif_pldbg_stats (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static caddr_t
 bif_pldbg_stats_load (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  query_instance_t *qi = (query_instance_t *)qst;
   caddr_t * data = (caddr_t *)bif_strict_array_or_null_arg (qst, args, 0, "pldbg_stats_load");
   query_t *qr = NULL;
   long calls, time, self_time;
@@ -1546,7 +1564,6 @@ pldbg_stats_clear (query_t *qr)
 static caddr_t
 bif_pldbg_stats_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  query_instance_t *qi = (query_instance_t *)qst;
   dbe_schema_t * sc = isp_schema (qi->qi_space);
   query_t *qr = NULL;
   query_t **ptp;

@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -87,7 +87,7 @@
             http_header (http_header_get () || sprintf ('Set-Cookie: sid=%s; path=/\r\n', self.sid));
 
           http_flush ();
-      }
+        }
       ]]>
     </v:before-render>
     <v:variable name="wa_name_ret" type="varchar" default="null" persist="0" param-name="wa_name"/>
@@ -104,32 +104,33 @@
               User Registration <img id="rf_throbber" src="/ods/images/oat/Ajax_throbber.gif" style="float: right; margin-right: 10px; display: none" />
         </div>
             <ul id="rf_tabs" class="tabs">
-              <li id="rf_tab_0" title="Digest">Digest</li>
+              <li id="rf_tab_0" title="Digest" style="display: none;">Digest</li>
+              <li id="rf_tab_3" title="WebID" style="display: none;">WebID</li>
               <li id="rf_tab_1" title="OpenID" style="display: none;">OpenID</li>
               <li id="rf_tab_2" title="Facebook" style="display: none;">Facebook</li>
-              <li id="rf_tab_3" title="WebID" style="display: none;">WebID</li>
               <li id="rf_tab_4" title="Twitter" style="display: none;">Twitter</li>
               <li id="rf_tab_5" title="LinkedIn" style="display: none;">LinkedIn</li>
+              <li id="rf_tab_6" style="display: none;"></li>
             </ul>
             <div style="min-height: 135px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
               <div id="rf_content">.
         </div>
-              <div id="rf_page_0" class="tabContent">
+              <div id="rf_page_0" class="tabContent" style="display: none;">
                 <table id="rf_table_0" class="form" cellspacing="5">
                   <tr>
                     <th width="20%">
-                      <label for="rf_uid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                      <label for="rf_uid_0">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                     </th>
                 <td nowrap="nowrap">
-                      <input type="text" name="rf_uid" value="" id="rf_uid" style="width: 150px;" />
+                      <input type="text" name="rf_uid_0" value="" id="rf_uid_0" style="width: 150px;" />
                 </td>
               </tr>
                   <tr>
                     <th>
-                      <label for="rf_email">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                      <label for="rf_email_0">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                     </th>
                 <td nowrap="nowrap">
-                      <input type="text" name="rf_email" value="" id="rf_email" style="width: 300px;" />
+                      <input type="text" name="rf_email_0" value="" id="rf_email_0" style="width: 300px;" />
                 </td>
               </tr>
                   <tr>
@@ -171,7 +172,6 @@
                       <span id="rf_facebookData" style="min-height: 20px;">.</span>
                       <br />
                     <![CDATA[
-                        <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
                         <fb:login-button autologoutlink="true" xmlns:fb="http://www.facebook.com/2008/fbml"></fb:login-button>
                     ]]>
                 </td>
@@ -180,10 +180,11 @@
               </div>
               <div id="rf_page_3" class="tabContent" style="display: none;">
                 <table id="rf_table_3" class="form" cellspacing="5">
-              <tr>
+                  <tr id="rf_table_3_throbber">
                     <th width="20%">
                     </th>
-                <td nowrap="nowrap">
+                    <td>
+                      <img alt="Import WebID Data" src="/ods/images/oat/Ajax_throbber.gif" />
                 </td>
               </tr>
                 </table>
@@ -214,6 +215,15 @@
                   </tr>
                 </table>
               </div>
+              <div id="rf_page_6" class="tabContent" style="display: none;">
+                <table id="rf_table_6" class="form" cellspacing="5" width="100%">
+                  <tr>
+                    <td style="text-align: center;">
+                      <b>The registration is not allowed!</b>
+                    </td>
+                  </tr>
+                </table>
+              </div>
             </div>
             <div>
               <table class="form" cellspacing="5">
@@ -227,6 +237,7 @@
             </table>
           </div>
             <div class="footer" id="rf_login_5">
+              <input type="button" id="rf_check" name="rf_check" value="Check Availabilty" onclick="javascript: return rfCheckAvalability();" />
               <input type="button" id="rf_signup" name="rf_signup" value="Sign Up" onclick="javascript: return rfSignupSubmit();" />
           </div>
           </div>

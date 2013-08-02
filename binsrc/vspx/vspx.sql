@@ -9,7 +9,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -2116,7 +2116,7 @@ text_split_complete:
   declare i int;
   i := 0;
   while( i < length(parsed_text) ) {
-    aset(parsed_text, i, trim(parsed_text[i], '\r\n ') );
+    --aset(parsed_text, i, trim(parsed_text[i], '\r\n ') );
     err_sqlstate := '00000'; err_msg := '';
    -- dbg_obj_print('self.isql_explain',self.isql_explain);
     result := null;
@@ -2272,8 +2272,12 @@ vspx_result_row_render (in result any, in m_dta any, in inx int := 0, in cset va
 	    }
 	  else
 	    {
+	      declare res any; 
+	      res := 0;
 	      if (__tag (res_col) = 182 and cset is not null)
-		res_col := charset_recode (res_col, cset, '_WIDE_');
+		res := charset_recode (res_col, cset, '_WIDE_');
+              if (res <> 0)
+	        res_col := res;		
 	      http_value (coalesce (res_col, '<DB NULL>'));
 	    }
 	  next:
@@ -6323,13 +6327,28 @@ create procedure DB.DBA.sys_save_http_history(in vdir any, in vres any)
   name := replace (name, ':', '_');
   name := replace (name, '/', '_');
   name := replace (name, '.', '_');
+  name := replace (name, '&', '_');
   -- collect HTTP header block
   content := http_full_request (0);
   if (registry_get ('__save_http_history_on_disk') = '1')
     {
+      declare ip varchar;
+      declare use_ip int;
+      if (registry_get ('__save_http_history_use_ip') = '1')
+	use_ip := 1;
+      else
+        use_ip := 0; 	
+      ip := http_client_ip ();
       if (file_stat ('./sys_http_recording') = 0)
 	signal ('VSPX9', 'Can not upload resource into sys_http_recording/ directory');
-      string_to_file ('./sys_http_recording/' || name, content, -2);
+      if (length (name) > 200)
+	name := subseq (name, 0, 200);
+      if (use_ip and file_stat ('./sys_http_recording/' || ip) = 0)
+	sys_mkdir ('./sys_http_recording/' || ip);
+      if (use_ip)
+	string_to_file ('./sys_http_recording/' || ip || '/' || name, content, -2);
+      else
+	string_to_file ('./sys_http_recording/' || name, content, -2);
     }
   else
     {

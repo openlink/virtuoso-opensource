@@ -1,10 +1,10 @@
--- 
---  $Id$
--- 
+--
+--  $Id: tiri.sql,v 1.5.2.1.4.2 2013/01/02 16:15:11 source Exp $
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -95,4 +95,123 @@ select * from it2 order by id desc;
 echo both $if $equ $last[1] #i11 "PASSED" "**FAILED";
 echo both " IRI_ID order by\n";
 
+select a.ik from it2 a where not exists (select 1 from it2 b table option (loop) where b.ik = a.ik);
+echo both $if $equ $rowcnt 0 "PASSED" "**FAILED";
+echo both " iri id in order.\n";
 
+-- testing ro2sq with invalid values
+
+create procedure tro2sqv_res (in xx any)
+{
+  declare x any;
+  result_names (x);
+  foreach (any e in xx) do
+    result (e);
+}
+;
+
+create procedure trov ()
+{
+  return vector (0, null, #i1, #i1000000, 10, now (), rdf_box (0, 257, 257, 1000000, 0));
+}
+;
+
+create procedure tro2sqv1 ()
+{
+  declare iv any;
+  declare ov any;
+  iv := trov ();
+  for vectored (in i any := iv, out ov := o)
+    {
+      declare o any;
+       o := __ro2sq (i);  
+    }
+  tro2sqv_res (ov);
+}
+;
+
+create procedure tro2sqv2 ()
+{
+  declare iv any array;
+  declare ov any array;
+  iv := trov ();
+  for vectored (in i any array := iv, out ov := o)
+    {
+      declare o any array;
+       o := __ro2sq (i);  
+    }
+  tro2sqv_res (ov);
+}
+;
+
+create procedure tro2sqv3 ()
+{
+  declare iv any array;
+  declare ov any;
+  iv := trov ();
+  for vectored (in i any array := iv, out ov := o)
+    {
+      declare o any;
+       o := __ro2sq (i);  
+    }
+  tro2sqv_res (ov);
+}
+;
+
+create procedure tro2sqv4 ()
+{
+  declare iv any;
+  declare ov any array;
+  iv := trov ();
+  for vectored (in i any := iv, out ov := o)
+    {
+      declare o any array;
+       o := __ro2sq (i);  
+    }
+  tro2sqv_res (ov);
+}
+;
+
+tro2sqv1 ();
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": ro2sq heterogeneous values from any to any : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+tro2sqv2 ();
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": ro2sq heterogeneous values from boxes to boxes : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+tro2sqv3 ();
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": ro2sq heterogeneous values from boxes to any : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+tro2sqv4 ();
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": ro2sq heterogeneous values from any to boxes : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+create procedure tro2sqv5 ()
+{
+  declare iv any;
+  declare ov any array;
+  declare i int;
+  iv := trov ();
+  i := 0;
+  for vectored (in i any := iv, out ov := o)
+    {
+      declare o any array;
+      if (i < 5)
+        o := __ro2sq (i);  
+      else
+        o := __ro2sq (i);  
+    }
+  tro2sqv_res (ov);
+}
+;
+
+tro2sqv5 ();
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": ro2sq heterogeneous values from any to boxes with conditinal branch : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";

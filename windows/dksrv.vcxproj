@@ -1,0 +1,164 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{58867EBA-CA07-4F41-A966-6245FF14773E}</ProjectGuid>
+    <RootNamespace>dksrv</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros">
+    <ShortPlatform Condition="'$(Platform)' == 'Win32'">x86</ShortPlatform>
+    <ShortPlatform Condition="'$(Platform)' == 'x64'">x64</ShortPlatform>
+  </PropertyGroup>
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ShortPlatform)\$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ShortPlatform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ShortPlatform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ShortPlatform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Full</Optimization>
+      <OmitFramePointers>false</OmitFramePointers>
+      <AdditionalIncludeDirectories>..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\SDK\$(ShortPlatform)\sslsdk\inc32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <PrecompiledHeaderOutputFile>
+      </PrecompiledHeaderOutputFile>
+      <BrowseInformation>
+      </BrowseInformation>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
+    </ClCompile>
+    <ResourceCompile>
+      <Culture>0x0419</Culture>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(OutDir)dksrv.lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Midl />
+    <ClCompile>
+      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Full</Optimization>
+      <OmitFramePointers>false</OmitFramePointers>
+      <AdditionalIncludeDirectories>..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\SDK\$(ShortPlatform)\sslsdk\inc32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <PrecompiledHeaderOutputFile>
+      </PrecompiledHeaderOutputFile>
+      <BrowseInformation>
+      </BrowseInformation>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
+    </ClCompile>
+    <ResourceCompile>
+      <Culture>0x0419</Culture>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(OutDir)dksrv.lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\libsrc\Dk\Dkalloc.c" />
+    <ClCompile Include="..\libsrc\Dk\Dkbasket.c" />
+    <ClCompile Include="..\libsrc\Dk\Dkbox.c" />
+    <ClCompile Include="..\libsrc\Dk\Dkdevice.c" />
+    <ClCompile Include="..\libsrc\Dk\Dkernel.c" />
+    <ClCompile Include="..\libsrc\Dk\Dkhash.c" />
+    <ClCompile Include="..\libsrc\Dk\Dkhashext.c" />
+    <ClCompile Include="..\libsrc\Dk\Dkmarshal.c" />
+    <ClCompile Include="..\libsrc\Dk\Dkmem.c" />
+    <ClCompile Include="..\libsrc\Dk\Dkpool.c" />
+    <ClCompile Include="..\libsrc\Dk\Dkresource.c" />
+    <ClCompile Include="..\libsrc\Dk\Dkrusage.c" />
+    <ClCompile Include="..\libsrc\Dk\Dkses2.c" />
+    <ClCompile Include="..\libsrc\Dk\Dksesinp.c" />
+    <ClCompile Include="..\libsrc\Dk\Dksession.c" />
+    <ClCompile Include="..\libsrc\Dk\Dksesstr.c" />
+    <ClCompile Include="..\libsrc\Dk\Dksestcp.c" />
+    <ClCompile Include="..\libsrc\Dk\Dksets.c" />
+    <ClCompile Include="..\libsrc\Dk\Dkstubs.c" />
+    <ClCompile Include="..\libsrc\Dk\Dkutil.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\libsrc\Dk\Dkalloc.h" />
+    <ClInclude Include="..\libsrc\Dk\Dkbasket.h" />
+    <ClInclude Include="..\libsrc\Dk\Dkbox.h" />
+    <ClInclude Include="..\libsrc\Dk\Dkconfig.h" />
+    <ClInclude Include="..\libsrc\Dk\Dkdevice.h" />
+    <ClInclude Include="..\libsrc\Dk\Dkernel.h" />
+    <ClInclude Include="..\libsrc\Dk\Dkhash.h" />
+    <ClInclude Include="..\libsrc\Dk\Dkhashext.h" />
+    <ClInclude Include="..\libsrc\Dk\Dkmarshal.h" />
+    <ClInclude Include="..\libsrc\Dk\Dkparam.h" />
+    <ClInclude Include="..\libsrc\Dk\Dkpool.h" />
+    <ClInclude Include="..\libsrc\Dk\Dkresource.h" />
+    <ClInclude Include="..\libsrc\Dk\Dksession.h" />
+    <ClInclude Include="..\libsrc\Dk\Dksets.h" />
+    <ClInclude Include="..\libsrc\Dk\Dkstubs.h" />
+    <ClInclude Include="..\libsrc\Dk\Dksystem.h" />
+    <ClInclude Include="..\libsrc\Dk\Dktrace.h" />
+    <ClInclude Include="..\libsrc\Dk\Dktypes.h" />
+    <ClInclude Include="..\libsrc\Dk\Dkutil.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

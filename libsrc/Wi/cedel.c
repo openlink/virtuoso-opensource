@@ -23,7 +23,14 @@
  *
  */
 
+#include "sqlnode.h"
+#include "date.h"
 
+
+int dbf_ce_del_mask;
+
+
+#if 0
 int
 ce_rld_n_for_place (ce_ins_ctx_t * ceic, int64 * values, int nth, int lower, int upper)
 {
@@ -247,4 +254,212 @@ ins_1:
   first = value;
   delta = 0;
   goto next_v;
+}
+
+#endif
+
+
+
+void
+ce_del_array (ce_ins_ctx_t * ceic, db_buf_t array, int n_elt, int elt_sz)
+{
+  it_cursor_t *itc = ceic->ceic_itc;
+  int nth, row, row2, end_row;
+  for (nth = 0; nth < ceic->ceic_n_for_ce; nth++)
+    {
+      int deld_before = nth;
+      row = itc->itc_ranges[nth + itc->itc_ce_first_range].r_first - itc->itc_row_of_ce;
+      end_row = row + 1;
+      while (nth + 1 < ceic->ceic_n_for_ce)
+	{
+	  row2 = itc->itc_ranges[itc->itc_ce_first_range + nth + 1].r_first - itc->itc_row_of_ce;
+	  if (row2 != end_row)
+	    break;
+	  end_row = row2 + 1;
+	  nth++;
+	}
+      if (nth + 1 >= ceic->ceic_n_for_ce)
+	row2 = n_elt;
+      memmove_16 (array + (row - deld_before) * elt_sz, array + elt_sz * end_row, elt_sz * (row2 - end_row));
+    }
+}
+
+
+void
+ce_del_bits (ce_ins_ctx_t * ceic, db_buf_t array, int n_elt, int elt_sz)
+{
+  it_cursor_t *itc = ceic->ceic_itc;
+  int nth, row, row2, end_row;
+  for (nth = 0; nth < ceic->ceic_n_for_ce; nth++)
+    {
+      int deld_before = nth;
+      row = itc->itc_ranges[nth + itc->itc_ce_first_range].r_first - itc->itc_row_of_ce;
+      end_row = row + 1;
+      while (nth + 1 < ceic->ceic_n_for_ce)
+	{
+	  row2 = itc->itc_ranges[itc->itc_ce_first_range + nth + 1].r_first - itc->itc_row_of_ce;
+	  if (row2 != end_row)
+	    break;
+	  end_row = row2 + 1;
+	  nth++;
+	}
+      if (nth + 1 >= ceic->ceic_n_for_ce)
+	row2 = n_elt;
+      bit_delete (array, (row - deld_before) * elt_sz, elt_sz * end_row, elt_sz * (row2 - end_row));
+    }
+}
+
+
+int
+ce_del_dict (ce_ins_ctx_t * ceic, db_buf_t ce, int *len_ret)
+{
+  db_buf_t ce_first;
+  int n_values, n_bytes;
+  dtp_t flags = *ce;
+  int n_del = ceic->ceic_n_for_ce;
+  int new_bytes;
+  db_buf_t dict;
+  int n_distinct;
+  if (CS_NO_DICT & dbf_ce_del_mask)
+    return 0;
+  CE_2_LENGTH (ce, ce_first, n_bytes, n_values);
+  if (n_values - ceic->ceic_n_for_ce < n_values / 3)
+    return 0;
+  n_distinct = ce_first[0];
+  dict = ce_dict_array (ce);
+  new_bytes = n_distinct <= 16 ? ALIGN_2 (n_values - n_del) / 2 : n_values - n_del;
+  if (n_distinct <= 16)
+    ce_del_bits (ceic, dict, n_values, 4);
+  else
+    ce_del_array (ceic, dict, n_values, 1);
+
+  n_bytes = (dict + new_bytes) - ce;
+  if (CE_IS_SHORT & flags)
+    {
+      *len_ret = n_bytes - 3;
+      ce[1] = n_bytes - 3;
+      ce[2] -= n_del;
+    }
+  else
+    {
+      *len_ret = n_bytes - 5;
+      SHORT_SET_CA (ce + 1, n_bytes - 5);
+      SHORT_SET_CA (ce + 3, SHORT_REF_CA (ce + 3) - n_del);
+    }
+  return 1;
+}
+
+
+int
+ce_del_int_delta (ce_ins_ctx_t * ceic, db_buf_t ce, int *len_ret)
+{
+  it_cursor_t *itc = ceic->ceic_itc;
+  db_buf_t rl_ptr, run_ptr;
+  db_buf_t ce_first = ce, ce_end, ce_cur, ce_first_val;
+  int n_values, n_bytes, n_for_run, is_first_run = 1;
+  int ce_first_range = itc->itc_ce_first_range, row_of_ce = itc->itc_row_of_ce;
+  dtp_t flags = *ce;
+  int64 first, base, base_1;
+  int n_deltas, first_len, nth, inx, more, row_no, last_row = 0;
+  uint32 d, run, run1;
+  if (CS_NO_DELTA & dbf_ce_del_mask)
+    return 0;
+  CE_2_LENGTH (ce, ce_first, n_bytes, n_values);
+  if (ceic->ceic_n_for_ce > n_values / 2)
+    return 0;
+  CE_FIRST;
+  n_deltas = ceic->ceic_n_for_ce;
+  first_len = ce_first - ce_first_val;
+  ce_first = ce_first_val;
+  ce_end = ce_first + n_bytes;
+  ce_cur = ce_first + first_len;
+  run_ptr = ce_first + first_len;
+  nth = 0;
+
+  if (!CE_INTLIKE (flags))
+    {
+      if (DV_DATE == any_ce_dtp (ce_first_val))
+	{
+	  base = DT_UDAY (ce_first_val + 1);
+	  run1 = run = base & 0xff;
+	  rl_ptr = ce_first_val + 3;
+	  base_1 = base = (base & CLEAR_LOW_BYTE) - base + run1;
+	}
+      else
+	{
+	  first = LONG_REF_NA (run_ptr - 4);
+	  rl_ptr = run_ptr - 1;
+	  base = base_1 = 0;
+	  run1 = run = first & 0xff;
+	}
+    }
+  else
+    {
+      base_1 = base = first & CLEAR_LOW_BYTE;
+      run1 = run = first & 0xff;
+#if WORDS_BIGENDIAN
+      rl_ptr = run_ptr - 1;
+#else
+      rl_ptr = ce_first_val;
+#endif
+    }
+  ce_end = ce_first + n_bytes;
+  while (nth < n_deltas)
+    {
+      for (inx = nth; inx < n_deltas; inx++)
+	{
+	  row_no = itc->itc_ranges[inx + ce_first_range].r_first - row_of_ce;
+	  if (row_no >= last_row + run)
+	    break;
+	}
+      n_for_run = inx - nth;
+      more = 2 * (inx - nth);
+      if (!n_for_run)
+	;
+      else if (n_for_run != run || is_first_run)
+	{
+	  itc->itc_row_of_ce = last_row + row_of_ce;
+	  ceic->ceic_n_for_ce = n_for_run;
+	  itc->itc_ce_first_range = nth + ce_first_range;
+	  ce_del_array (ceic, run_ptr, run, 2);
+	  *rl_ptr -= n_for_run;
+	  memmove_16 (run_ptr + 2 * (run - n_for_run), run_ptr + (run * 2), ce_end - (run_ptr + run * 2));
+	  n_bytes -= more;
+	}
+      else
+	{
+
+	  memmove_16 (run_ptr - 4, run_ptr + 2 * run, ce_end - (run_ptr + 2 * run));
+	  n_bytes -= 4 + 2 * run;
+	  run_ptr -= 4;
+	}
+      is_first_run = 0;
+      ce_end = ce_first + n_bytes;
+      last_row += run;
+      nth += n_for_run;
+      run_ptr += 2 * (run - n_for_run);
+      if (run_ptr == ce_end)
+	break;
+      d = LONG_REF_NA (run_ptr);
+      run = d & 0xff;
+      base = base_1 + (d & CLEAR_LOW_BYTE);
+      run_ptr += 4;
+      rl_ptr = run_ptr - 1;
+    }
+  n_bytes = ce_end - ce;
+  ceic->ceic_n_for_ce = n_deltas;
+  itc->itc_ce_first_range = ce_first_range;
+  if (CE_IS_SHORT & flags)
+    {
+      *len_ret = n_bytes - 3;
+      ce[1] = n_bytes - 3;
+      ce[2] -= n_deltas;
+    }
+  else
+    {
+      *len_ret = n_bytes - 5;
+      SHORT_SET_CA (ce + 1, n_bytes - 5);
+      SHORT_SET_CA (ce + 3, SHORT_REF_CA (ce + 3) - n_deltas);
+    }
+  return 1;
 }

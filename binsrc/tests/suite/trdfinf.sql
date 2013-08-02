@@ -54,6 +54,20 @@ ttlp (' @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 <pt1> a owl:TransitiveProperty .
 ', '', 'sc');
 
+ttlp ('<tarzan> <name> \"Tarzan\".', '', 'tarzan');
+ttlp ('<tarzan> <name> \"Tarzan\"@en.', '', 'tarzan');
+ttlp ('<tarzan> <name> \"Tarzan\"^^<name>.', '', 'tarzan');
+
+sparql select * where {{ ?s ?p "Tarzan"} union { ?s ?p "Tarzan"@en } union { ?s ?p "Tarzan"^^<name> }};
+echo both $if $equ $rowcnt 3 "PASSED" "**FAILED";
+echo both ": 3 tarzans\n";
+
+sparql select * where {{ ?s ?p "Tarzan"} union { ?s ?p "Tarzan"@en } union { ?s ?p "Tarzan"^^<name> }};
+echo both $if $equ $rowcnt 3 "PASSED" "**FAILED";
+echo both ": 3 tarzans 2\n";
+ 
+
+
 create procedure f (in q any) {return q;};
 
 rdfs_rule_set ('inft', 'sc');
@@ -110,7 +124,7 @@ echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
 echo both ": inx int on o = c1 and p = rdfs:type\n";
 
 
-explain ('select 1 from rdf_quad a table option (with ''inft''), rdf_quad b table option (with ''inft '')
+explain ('select 1 from rdf_quad a table option (with ''inft''), rdf_quad b table option (with ''inft'')
 where a.g = iri_to_id (''inft'', 0) and b.g = iri_to_id (''inft'', 0)
 	and a.o = iri_to_id (''c1'', 0) and b.o = iri_to_id (''c1'', 0)
 	and a.p = iri_to_id (''http://www.w3.org/1999/02/22-rdf-syntax-ns#type'', 0)

@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2126,6 +2126,8 @@ load_next_rel_uri:
       if (NULL != cached)
         {
 	  XD_DOM_LOCK(cached->xe_doc.xd);
+          dk_free_tree (cache_key->xdcs_abs_uri);
+          cache_key->xdcs_abs_uri = NULL;
 	  dk_set_push (&documents, (void*)(cached));
 	  goto loading_complete;
 	}
@@ -2525,29 +2527,43 @@ void
 xpf_lang (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
   caddr_t lang = xpf_arg (xqi, tree, ctx_xe, DV_C_STRING, 0);
-  xml_entity_t *xe = ctx_xe->_->xe_copy (ctx_xe);
+  ptrlong res = 0;
   caddr_t lang_in_effect = NULL;
-  ptrlong res;
-  XT *test = xtlist (NULL, 4, XP_NAME_EXACT, uname_xml, uname_lang, uname_xml_colon_lang);
-  while (!lang_in_effect)
+  switch (DV_TYPE_OF (ctx_xe))
     {
-      if (XI_NO_ATTRIBUTE == xe->_->xe_attribute (xe, -1, test, &lang_in_effect, NULL))
-	if (XI_AT_END == xe->_->xe_up (xe, (XT *) XP_NODE, 0 /* no XE_UP_MAY_TRANSIT! */))
-	    break;
+    case DV_XML_ENTITY:
+      {
+        xml_entity_t *xe = ctx_xe->_->xe_copy (ctx_xe);
+        XT *test = xtlist (NULL, 4, XP_NAME_EXACT, uname_xml, uname_lang, uname_xml_colon_lang);
+        while (!lang_in_effect)
+          {
+            if (XI_NO_ATTRIBUTE == xe->_->xe_attribute (xe, -1, test, &lang_in_effect, NULL))
+              if (XI_AT_END == xe->_->xe_up (xe, (XT *) XP_NODE, 0 /* no XE_UP_MAY_TRANSIT! */))
+                break;
+          }
+        dk_free_tree ((box_t) xe);
+        dk_free_tree ((box_t) test);
+        break;
+      }
+    case DV_RDF:
+      {
+        rdf_box_t *rb = (rdf_box_t *)ctx_xe;
+        if (!rb->rb_is_complete)
+          rb_complete (rb, xqi->xqi_qi->qi_trx, xqi->xqi_qi);
+        if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
+          lang_in_effect = rdf_lang_twobyte_to_string (rb->rb_lang);
+        break;
+      }
     }
-  dk_free_tree ((box_t) xe);
   if (DV_STRINGP (lang_in_effect))
     {
       char *minus = strchr (lang_in_effect, '-');
       if (minus)
-	res = 0 == strnicmp (lang, lang_in_effect, lang_in_effect - minus);
+        res = (0 == strnicmp (lang, lang_in_effect, lang_in_effect - minus)) ? 1 : 0;
       else
-	res = 0 == stricmp (lang, lang_in_effect);
+        res = (0 == stricmp (lang, lang_in_effect)) ? 1 : 0;
     }
-  else
-    res = 0;
   dk_free_tree (lang_in_effect);
-  dk_free_tree ((box_t) test);
   XQI_SET (xqi, tree->_.xp_func.res, (caddr_t) res);
 }
 
@@ -4573,7 +4589,7 @@ xpf_extension (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
     {
       caddr_t retc = (((caddr_t *)lc->lc_proc_ret)[1]);
       caddr_t ent;
-#ifdef DEBUG
+#ifdef XPATH_DEBUG
       dk_check_tree (retc);
 #endif
       switch (DV_TYPE_OF(retc))
@@ -4604,7 +4620,7 @@ err_end:
 #if defined (NO_XPF_EXT_CALL_CACHE)
   qr_free (qr);
 #endif
-#ifdef DEBUG
+#ifdef XPATH_DEBUG
   dk_check_tree (XQI_GET (xqi, tree->_.xp_func.var->_.var.init));
 #endif
   if (err)
@@ -4828,24 +4844,45 @@ xpf_sql_neq (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 }
 
 void
-xpf_define_builtin (
+xpfm_create_and_store_builtin (
   const char *xpfm_name,
   xp_func_t xpfm_executable,
   ptrlong xpfm_res_dtp,
   ptrlong xpfm_min_arg_no,
   xpfm_arg_descr_t **xpfm_main_args,
-  xpfm_arg_descr_t **xpfm_tail_args )
+  xpfm_arg_descr_t **xpfm_tail_args,
+  const char* nmspace )
 {
+  caddr_t key_qname;
   size_t ctr, main_arg_no, tail_arg_no;
   xpf_metadata_t ** metas_ptr;
   xpf_metadata_t * metas;
+  if (NULL != nmspace)
+    {
+      char buf[200];
+      sprintf (buf, "%.100s:%.50s", nmspace, xpfm_name);
+      key_qname = box_dv_uname_string (buf);
+    }
+  else
+    key_qname = box_dv_uname_string (xpfm_name);
+  box_dv_uname_make_immortal (key_qname);
+  metas_ptr = (xpf_metadata_t **)id_hash_get (xpf_metas, (caddr_t)(&key_qname));
+  if (NULL != metas_ptr)
+    {
+      int defs_match = (
+        (metas_ptr[0]->xpfm_executable == xpfm_executable) &&
+        (metas_ptr[0]->xpfm_defun == NULL) &&
+        (metas_ptr[0]->xpfm_res_dtp == xpfm_res_dtp) &&
+        (metas_ptr[0]->xpfm_min_arg_no == xpfm_min_arg_no) );
+      log_info ("XPATH function %s is defined twice, %s", key_qname, (defs_match ? "relatively safe" : "totally wrong"));
+      return;
+    }
   main_arg_no = ((NULL == xpfm_main_args) ? 0 : BOX_ELEMENTS(xpfm_main_args));
   tail_arg_no = ((NULL == xpfm_tail_args) ? 0 : BOX_ELEMENTS(xpfm_tail_args));
   metas = (xpf_metadata_t *)dk_alloc_box_zero (
     sizeof(xpf_metadata_t) + (main_arg_no+tail_arg_no)*sizeof(xpfm_arg_descr_t),
     DV_ARRAY_OF_LONG );
-  metas->xpfm_name = box_dv_uname_string (xpfm_name);
-  box_dv_uname_make_immortal (metas->xpfm_name);
+  metas->xpfm_name = key_qname; /* No copying because it's been made immortal above */
   metas->xpfm_type = XPF_BUILTIN;
   metas->xpfm_executable = xpfm_executable;
   metas->xpfm_defun = NULL;
@@ -4867,53 +4904,96 @@ xpf_define_builtin (
   dk_free_box ((caddr_t)(xpfm_tail_args));
   for (ctr = 0; ctr < main_arg_no + tail_arg_no; ctr++)
     box_dv_uname_make_immortal (metas->xpfm_args[ctr].xpfma_name);
-  metas_ptr = (xpf_metadata_t **)id_hash_get (xpf_metas, (caddr_t)(&xpfm_name));
-  if (NULL == metas_ptr)
-    id_hash_set (xpf_metas, (caddr_t)(&(metas->xpfm_name)), (caddr_t)(&metas));
-  else
-    {
-#ifdef XPATH_DEBUG
-	printf ("\nbody for %s is already defined!\n", xpfm_name);
-#else
-       ;
-#endif
-/*
-      id_hash_remove (xpf_reveng, (caddr_t)(&(metas_ptr[0]->xpfm_executable)));
-      dk_free_box ((caddr_t)(metas_ptr[0]));
-      metas_ptr[0] = metas;
-*/
-    }
+  id_hash_set (xpf_metas, (caddr_t)(&key_qname), (caddr_t)(&metas));
   if ((NULL != xpfm_executable) && (xpf_extension != xpfm_executable))
     {
       caddr_t *old_rev_name_ptr = (caddr_t *)id_hash_get (xpf_reveng, (caddr_t)(&xpfm_executable));
-      if (NULL == old_rev_name_ptr)
-	id_hash_set (xpf_reveng, (caddr_t)(&xpfm_executable), (caddr_t)(&(metas->xpfm_name)));
-#ifdef XPATH_DEBUG
+      if (NULL != old_rev_name_ptr)
+        log_info ("XPATH function %s can be declared as an alias of %s, but it does not", key_qname, old_rev_name_ptr[0]);
       else
-	printf ("\n%s is an alias for %s!\n", xpfm_name, old_rev_name_ptr[0]);
-#endif
+        id_hash_set (xpf_reveng, (caddr_t)(&xpfm_executable), (caddr_t)(&(metas->xpfm_name)));
     }
   dk_check_tree (metas);
 }
 
 void
-xpf_define_alias (const char *alias_local_name, const char *alias_ns, const char *main_local_name, const char *main_ns)
+xpf_define_builtin (
+  const char *xpfm_name,
+  xp_func_t xpfm_executable,
+  ptrlong xpfm_res_dtp,
+  ptrlong xpfm_min_arg_no,
+  xpfm_arg_descr_t **xpfm_main_args,
+  xpfm_arg_descr_t **xpfm_tail_args )
 {
-  caddr_t alias_n = (alias_ns ? box_sprintf (100, "%s:%s", alias_ns, alias_local_name) : box_dv_short_string (alias_local_name));
-  caddr_t main_n = (main_ns ? box_sprintf (100, "%s:%s", main_ns, main_local_name) : box_dv_short_string (main_local_name));
-  xpf_metadata_t ** metas_ptr;
-  alias_n = box_dv_uname_string (alias_n);
-  main_n = box_dv_uname_string (main_n);
-  box_dv_uname_make_immortal (alias_n);
-  box_dv_uname_make_immortal (main_n);
-  metas_ptr = (xpf_metadata_t **)id_hash_get (xpf_metas, (caddr_t)(&main_n));
-  if (NULL == metas_ptr)
-    GPF_T;
-  if (NULL != id_hash_get (xpf_metas, (caddr_t)(&alias_n)))
-    GPF_T;
-  id_hash_set (xpf_metas, (caddr_t)(&alias_n), (caddr_t)(metas_ptr));
+/* The order of these declarations is important because the first one is used for reverse searches */
+  xpfm_create_and_store_builtin (xpfm_name, xpfm_executable, xpfm_res_dtp, xpfm_min_arg_no, xpfm_main_args, xpfm_tail_args, NULL);
+  xpfm_store_alias (xpfm_name, XXF_NS_URI, xpfm_name, NULL, "/#", 0);
+  xpfm_store_alias (xpfm_name, XXF_NS_URI, xpfm_name, NULL, "#", 0);
+  xpfm_store_alias (xpfm_name, XXF_NS_URI, xpfm_name, NULL, "", 0);
 }
 
+void
+x2f_define_builtin (
+  const char *xpfm_name,
+  xp_func_t xpfm_executable,
+  ptrlong xpfm_res_dtp,
+  ptrlong xpfm_min_arg_no,
+  xpfm_arg_descr_t **xpfm_main_args,
+  xpfm_arg_descr_t **xpfm_tail_args )
+{
+/* The order of these declarations is important because the first one is used for reverse searches */
+  xpf_define_builtin (xpfm_name, xpfm_executable, xpfm_res_dtp, xpfm_min_arg_no, xpfm_main_args, xpfm_tail_args);
+  xpfm_store_alias (xpfm_name, XFN_NS_URI, xpfm_name, NULL, "/#", 0);
+  xpfm_store_alias (xpfm_name, XFN_NS_URI, xpfm_name, NULL, "#", 0);
+  xpfm_store_alias (xpfm_name, XFN_NS_URI, xpfm_name, NULL, "", 0);
+}
+
+void
+xpfm_store_alias (const char *alias_local_name, const char *alias_ns, const char *main_local_name, const char *main_ns, const char *alias_mid_chars, int insert_soft)
+{
+  caddr_t alias_n = (alias_ns ? box_sprintf (200, "%.100s%.10s:%.50s", alias_ns, alias_mid_chars, alias_local_name) : box_dv_short_string (alias_local_name));
+  caddr_t main_n = (main_ns ? box_sprintf (200, "%.100s:%s", main_ns, main_local_name) : box_dv_short_string (main_local_name));
+  xpf_metadata_t ** main_metas_ptr, **alias_metas_ptr;
+  alias_n = box_dv_uname_string (alias_n);
+  box_dv_uname_make_immortal (alias_n);
+  main_n = box_dv_uname_string (main_n);
+  box_dv_uname_make_immortal (main_n);
+  alias_metas_ptr = (xpf_metadata_t **)id_hash_get (xpf_metas, (caddr_t)(&alias_n));
+  main_metas_ptr = (xpf_metadata_t **)id_hash_get (xpf_metas, (caddr_t)(&main_n));
+  if (NULL == main_metas_ptr)
+    {
+      log_info ("XPATH function %s is not defined so it can not be aliased as %s", main_n, alias_n);
+      return;
+    }
+  if (NULL != alias_metas_ptr)
+    {
+      int defs_match;
+      if (insert_soft)
+        return;
+      defs_match = (
+        (main_metas_ptr[0]->xpfm_executable == alias_metas_ptr[0]->xpfm_executable) &&
+        (main_metas_ptr[0]->xpfm_defun == alias_metas_ptr[0]->xpfm_defun) &&
+        (main_metas_ptr[0]->xpfm_res_dtp == alias_metas_ptr[0]->xpfm_res_dtp) &&
+        (main_metas_ptr[0]->xpfm_min_arg_no == alias_metas_ptr[0]->xpfm_min_arg_no) );
+#ifndef DEBUG
+      if (!defs_match)
+#endif
+      log_info ("XPATH function %s is defined but redefind as alias of %s, %s", alias_n, main_n, (defs_match ? "relatively safe" : "totally wrong"));
+      return;
+    }
+  id_hash_set (xpf_metas, (caddr_t)(&alias_n), (caddr_t)(main_metas_ptr));
+}
+
+void
+xpf_define_alias (const char *alias_local_name, const char *alias_ns, const char *main_local_name, const char *main_ns)
+{
+  xpfm_store_alias (alias_local_name, alias_ns, main_local_name, main_ns, "/#", 0);
+  if (NULL != alias_ns)
+    {
+      xpfm_store_alias (alias_local_name, alias_ns, main_local_name, main_ns, "/", 0);
+      xpfm_store_alias (alias_local_name, alias_ns, main_local_name, main_ns, "", 0);
+    }
+}
 
 typedef struct xp_addr_ent_s {
   ptrlong *xae_addr;
@@ -5775,123 +5855,122 @@ void xpf_init(void)
 
   xpf_define_builtin (" undefined"		, xpf_extension			/* ??? */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
 
-  xpf_define_builtin ("AFTER operator"		, xpf_after_operator		/* Virt 3.0 */	, XPDV_NODESET	, 2	, xpfmalist(2, xpfma("set1",XPDV_NODESET,0), xpfma("set2",XPDV_NODESET,0))	, NULL );
-  xpf_define_builtin ("BEFORE operator"		, xpf_before_operator		/* Virt 3.0 */	, XPDV_NODESET	, 2	, xpfmalist(2, xpfma("set1",XPDV_NODESET,0), xpfma("set2",XPDV_NODESET,0))	, NULL );
-  xpf_define_builtin ("IDIV operator"		, xpf_idiv_operator		/* Virt 4.0 */	, DV_UNKNOWN	, 2	, xpfmalist(2, xpfma("i1",DV_LONG_INT,0), xpfma("i2",DV_LONG_INT,0))	, NULL );
-  xpf_define_builtin ("INSTANCE OF predicate"	, xpf_instance_of_predicate	/* Virt 3.0 */	, XPDV_BOOL	, 0	, xpfmalist(2, xpfma("input",XPDV_NODESET,0), xpfma("seqtype",DV_UNKNOWN,0)), NULL );
-  xpf_define_builtin ("ORDER BY operator"	, xpf_order_by_operator		/* Virt 3.0 */	, XPDV_NODESET	, 2	, xpfmalist(3, xpfma("input",XPDV_NODESET,0), xpfma("criterions",DV_UNKNOWN,0), xpfma("flatten-result",DV_LONG_INT,0)), NULL );
-  xpf_define_builtin ("SORTBY operator"		, xpf_sortby_operator		/* Virt 3.0 */	, XPDV_NODESET	, 2	, xpfmalist(2, xpfma("input",XPDV_NODESET,0), xpfma("criterions",DV_UNKNOWN,0)), NULL );
-  xpf_define_builtin ("TO operator"		, xpf_to_operator		/* Virt 3.0 */	, DV_UNKNOWN	, 2	, xpfmalist(2, xpfma("from",DV_LONG_INT,0), xpfma("to",DV_LONG_INT,0))	, NULL );
-  xpf_define_builtin ("TO predicate"		, xpf_to_predicate		/* Virt 3.0 */	, XPDV_NODESET	, 0	, xpfmalist(3, xpfma("input",XPDV_NODESET,0), xpfma("from",DV_LONG_INT,0), xpfma("to",DV_LONG_INT,0))	, NULL );
-  xpf_define_builtin ("abs"			, xpf_abs			/* XPath 2.0 */	, DV_NUMERIC	, 1	, xpfmalist(1, xpfma("arg",DV_NUMERIC,0))	, NULL );
-  xpf_define_builtin ("and"			, xpf_and			/* XPath 1.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma("arg",XPDV_BOOL,0)));
-  xpf_define_builtin ("append"			, xpf_append			/* XPath 1.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma("seq",DV_UNKNOWN,0)));
-  xpf_define_builtin ("assign"			, xpf_assign			/* Virt 3.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("avg"			, xpf_avg			/* XPath 1.0 */	, DV_NUMERIC	, 0	, NULL	, xpfmalist(1, xpfma("num",DV_NUMERIC,0)));
-  xpf_define_builtin ("boolean"			, xpf_boolean			/* XPath 1.0 */	, XPDV_BOOL	, 1	, xpfmalist(1, xpfma("arg",DV_UNKNOWN,0))	, NULL );
-  xpf_define_builtin ("ceiling"			, xpf_ceiling			/* XPath 1.0 */	, DV_NUMERIC	, 1	, xpfmalist(1, xpfma("num",DV_NUMERIC,0))	, NULL );
-  xpf_define_builtin ("collection"		, NULL				/* Virt 3.5 */	, XPDV_NODESET	, 0	, xpfmalist(7, xpfma("rel_uri",XPDV_NODESET,0), xpfma("base_uri",DV_UNKNOWN,0), xpfma ("recursive", DV_LONG_INT, 0), xpfma("parse_mode",DV_NUMERIC,0), xpfma("encoding",DV_STRING,0), xpfma("language",DV_STRING,0), xpfma("dtd_config",DV_STRING,0) )	, NULL	);
-  xpf_define_builtin (XFN_NS_URI ":collection"	, NULL				/* XQuery 1.0*/ , XPDV_NODESET	, 0	, xpfmalist(7, xpfma("rel_uri",XPDV_NODESET,0), xpfma("base_uri",DV_UNKNOWN,0), xpfma ("recursive", DV_LONG_INT, 0), xpfma("parse_mode",DV_NUMERIC,0), xpfma("encoding",DV_STRING,0), xpfma("language",DV_STRING,0), xpfma("dtd_config",DV_STRING,0) )	, NULL	);
-  xpf_define_builtin ("collection-dir-list"	, xpf_collection_dir_list	/* Virt 3.5 */	, XPDV_NODESET	, 0	, xpfmalist(3, xpfma("rel_uri",XPDV_NODESET,0), xpfma("base_uri",DV_UNKNOWN,0), xpfma ("recursive", DV_LONG_INT, 0)), NULL);
-  xpf_define_builtin ("concat"			, xpf_concat			/* XPath 1.0 */	, DV_STRING	, 0	, NULL	, xpfmalist(1, xpfma("strg",DV_STRING,0)));
+  x2f_define_builtin ("AFTER operator"		, xpf_after_operator		/* Virt 3.0 */	, XPDV_NODESET	, 2	, xpfmalist(2, xpfma("set1",XPDV_NODESET,0), xpfma("set2",XPDV_NODESET,0))	, NULL );
+  x2f_define_builtin ("BEFORE operator"		, xpf_before_operator		/* Virt 3.0 */	, XPDV_NODESET	, 2	, xpfmalist(2, xpfma("set1",XPDV_NODESET,0), xpfma("set2",XPDV_NODESET,0))	, NULL );
+  x2f_define_builtin ("IDIV operator"		, xpf_idiv_operator		/* Virt 4.0 */	, DV_UNKNOWN	, 2	, xpfmalist(2, xpfma("i1",DV_LONG_INT,0), xpfma("i2",DV_LONG_INT,0))	, NULL );
+  x2f_define_builtin ("INSTANCE OF predicate"	, xpf_instance_of_predicate	/* Virt 3.0 */	, XPDV_BOOL	, 0	, xpfmalist(2, xpfma("input",XPDV_NODESET,0), xpfma("seqtype",DV_UNKNOWN,0)), NULL );
+  x2f_define_builtin ("ORDER BY operator"	, xpf_order_by_operator		/* Virt 3.0 */	, XPDV_NODESET	, 2	, xpfmalist(3, xpfma("input",XPDV_NODESET,0), xpfma("criterions",DV_UNKNOWN,0), xpfma("flatten-result",DV_LONG_INT,0)), NULL );
+  x2f_define_builtin ("SORTBY operator"		, xpf_sortby_operator		/* Virt 3.0 */	, XPDV_NODESET	, 2	, xpfmalist(2, xpfma("input",XPDV_NODESET,0), xpfma("criterions",DV_UNKNOWN,0)), NULL );
+  x2f_define_builtin ("TO operator"		, xpf_to_operator		/* Virt 3.0 */	, DV_UNKNOWN	, 2	, xpfmalist(2, xpfma("from",DV_LONG_INT,0), xpfma("to",DV_LONG_INT,0))	, NULL );
+  x2f_define_builtin ("TO predicate"		, xpf_to_predicate		/* Virt 3.0 */	, XPDV_NODESET	, 0	, xpfmalist(3, xpfma("input",XPDV_NODESET,0), xpfma("from",DV_LONG_INT,0), xpfma("to",DV_LONG_INT,0))	, NULL );
+  x2f_define_builtin ("abs"			, xpf_abs			/* XPath 2.0 */	, DV_NUMERIC	, 1	, xpfmalist(1, xpfma("arg",DV_NUMERIC,0))	, NULL );
+  x2f_define_builtin ("and"			, xpf_and			/* XPath 1.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma("arg",XPDV_BOOL,0)));
+  x2f_define_builtin ("append"			, xpf_append			/* XPath 1.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma("seq",DV_UNKNOWN,0)));
+  x2f_define_builtin ("assign"			, xpf_assign			/* Virt 3.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("avg"			, xpf_avg			/* XPath 1.0 */	, DV_NUMERIC	, 0	, NULL	, xpfmalist(1, xpfma("num",DV_NUMERIC,0)));
+  x2f_define_builtin ("boolean"			, xpf_boolean			/* XPath 1.0 */	, XPDV_BOOL	, 1	, xpfmalist(1, xpfma("arg",DV_UNKNOWN,0))	, NULL );
+  x2f_define_builtin ("ceiling"			, xpf_ceiling			/* XPath 1.0 */	, DV_NUMERIC	, 1	, xpfmalist(1, xpfma("num",DV_NUMERIC,0))	, NULL );
+  x2f_define_builtin ("collection"		, NULL				/* Virt 3.5 */	, XPDV_NODESET	, 0	, xpfmalist(7, xpfma("rel_uri",XPDV_NODESET,0), xpfma("base_uri",DV_UNKNOWN,0), xpfma ("recursive", DV_LONG_INT, 0), xpfma("parse_mode",DV_NUMERIC,0), xpfma("encoding",DV_STRING,0), xpfma("language",DV_STRING,0), xpfma("dtd_config",DV_STRING,0) )	, NULL	);
+  x2f_define_builtin ("collection-dir-list"	, xpf_collection_dir_list	/* Virt 3.5 */	, XPDV_NODESET	, 0	, xpfmalist(3, xpfma("rel_uri",XPDV_NODESET,0), xpfma("base_uri",DV_UNKNOWN,0), xpfma ("recursive", DV_LONG_INT, 0)), NULL);
+  x2f_define_builtin ("concat"			, xpf_concat			/* XPath 1.0 */	, DV_STRING	, 0	, NULL	, xpfmalist(1, xpfma("strg",DV_STRING,0)));
   xpf_define_builtin ("contains"		, xpf_contains			/* XPath 1.0 */	, XPDV_BOOL	, 2	, xpfmalist(2, xpfma("string",DV_STRING,0), xpfma("substring",DV_STRING,0))	, NULL );
-  xpf_define_builtin ("count"			, xpf_count			/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("create-attribute"	, xpf_create_attribute		/* Virt 3.0 */	, DV_UNKNOWN	, 1	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("create-comment"		, xpf_create_comment		/* Virt 3.0 */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma("content",DV_STRING,0))	, NULL	);
-  xpf_define_builtin ("create-element"		, xpf_create_element		/* Virt 3.0 */	, DV_UNKNOWN	, 1	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("create-pi"		, xpf_create_pi			/* Virt 3.0 */	, DV_UNKNOWN	, 1	, xpfmalist(2, xpfma("name",DV_STRING,0), xpfma("content",DV_STRING,0))	, NULL	);
-  xpf_define_builtin ("current"			, xpf_current			/* XPath 1.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("deass"			, NULL/*xpf_deass*/		/* Virt 3.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("deep-equal"		, xpf_deep_equal		/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(3, xpfma(NULL,DV_UNKNOWN,0), xpfma(NULL,DV_UNKNOWN,0), xpfma(NULL,DV_STRING,0)), NULL);
-  xpf_define_builtin ("distinct"		, xpf_distinct			/* XPath 1.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("count"			, xpf_count			/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("create-attribute"		, xpf_create_attribute		/* Virt 3.0 */	, DV_UNKNOWN	, 1	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("create-comment"		, xpf_create_comment		/* Virt 3.0 */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma("content",DV_STRING,0))	, NULL	);
+  x2f_define_builtin ("create-element"		, xpf_create_element		/* Virt 3.0 */	, DV_UNKNOWN	, 1	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("create-pi"		, xpf_create_pi			/* Virt 3.0 */	, DV_UNKNOWN	, 1	, xpfmalist(2, xpfma("name",DV_STRING,0), xpfma("content",DV_STRING,0))	, NULL	);
+  x2f_define_builtin ("current"			, xpf_current			/* XPath 1.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("deass"			, NULL/*xpf_deass*/		/* Virt 3.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("deep-equal"		, xpf_deep_equal		/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(3, xpfma(NULL,DV_UNKNOWN,0), xpfma(NULL,DV_UNKNOWN,0), xpfma(NULL,DV_STRING,0)), NULL);
+  x2f_define_builtin ("distinct"		, xpf_distinct			/* XPath 1.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("distinct-values"		, xpf_distinct_values		/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("doc"			, xpf_doc			/* XPath 1.0 */	, XPDV_NODESET	, 0	, xpfmalist(1, xpfma("uri",DV_STRING,0)), NULL);
-  xpf_define_builtin ("document"		, xpf_document			/* XPath 1.0 */	, XPDV_NODESET	, 1	, xpfmalist(6, xpfma("rel_uri",XPDV_NODESET,0), xpfma("base_uri",DV_UNKNOWN,0), xpfma("parse_mode",DV_NUMERIC,0), xpfma("encoding",DV_STRING,0), xpfma("language",DV_STRING,0), xpfma("dtd_config",DV_STRING,0) )	, NULL	);
-  xpf_define_builtin ("document-lazy"		, xpf_document_lazy		/* Virt 6.0 */	, XPDV_NODESET	, 1	, xpfmalist(6, xpfma("rel_uri",XPDV_NODESET,0), xpfma("base_uri",DV_UNKNOWN,0), xpfma("parse_mode",DV_NUMERIC,0), xpfma("encoding",DV_STRING,0), xpfma("language",DV_STRING,0), xpfma("dtd_config",DV_STRING,0) )	, NULL	);
-  xpf_define_builtin ("document-lazy-in-coll"	, xpf_document_lazy_in_coll	/* Virt 6.0 */	, XPDV_NODESET	, 1	, xpfmalist(6, xpfma("rel_uri",XPDV_NODESET,0), xpfma("base_uri",DV_UNKNOWN,0), xpfma("parse_mode",DV_NUMERIC,0), xpfma("encoding",DV_STRING,0), xpfma("language",DV_STRING,0), xpfma("dtd_config",DV_STRING,0) )	, NULL	);
-  xpf_define_builtin ("document-get-uri"	, xpf_document_get_uri		/* Virt 3.0 */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma("ent",DV_XML_ENTITY,0))	, NULL	);
-  xpf_define_builtin ("document-literal"	, xpf_document_literal		/* XPath 1.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("doc"			, xpf_doc			/* XPath 1.0 */	, XPDV_NODESET	, 0	, xpfmalist(1, xpfma("uri",DV_STRING,0)), NULL);
+  x2f_define_builtin ("document"		, xpf_document			/* XPath 1.0 */	, XPDV_NODESET	, 1	, xpfmalist(6, xpfma("rel_uri",XPDV_NODESET,0), xpfma("base_uri",DV_UNKNOWN,0), xpfma("parse_mode",DV_NUMERIC,0), xpfma("encoding",DV_STRING,0), xpfma("language",DV_STRING,0), xpfma("dtd_config",DV_STRING,0) )	, NULL	);
+  x2f_define_builtin ("document-lazy"		, xpf_document_lazy		/* Virt 6.0 */	, XPDV_NODESET	, 1	, xpfmalist(6, xpfma("rel_uri",XPDV_NODESET,0), xpfma("base_uri",DV_UNKNOWN,0), xpfma("parse_mode",DV_NUMERIC,0), xpfma("encoding",DV_STRING,0), xpfma("language",DV_STRING,0), xpfma("dtd_config",DV_STRING,0) )	, NULL	);
+  x2f_define_builtin ("document-lazy-in-coll"	, xpf_document_lazy_in_coll	/* Virt 6.0 */	, XPDV_NODESET	, 1	, xpfmalist(6, xpfma("rel_uri",XPDV_NODESET,0), xpfma("base_uri",DV_UNKNOWN,0), xpfma("parse_mode",DV_NUMERIC,0), xpfma("encoding",DV_STRING,0), xpfma("language",DV_STRING,0), xpfma("dtd_config",DV_STRING,0) )	, NULL	);
+  x2f_define_builtin ("document-get-uri"		, xpf_document_get_uri		/* Virt 3.0 */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma("ent",DV_XML_ENTITY,0))	, NULL	);
+  x2f_define_builtin ("document-literal"		, xpf_document_literal		/* XPath 1.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_alias   ("document-uri", NULL, "document-get-uri", NULL);
-  xpf_define_builtin ("empty"			, xpf_empty			/* XPath 1.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("empty"			, xpf_empty			/* XPath 1.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("ends-with"		, xpf_ends_with			/* XPath 1.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("every"			, xpf_every			/* Virt 3.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("except"		        , xpf_except			/* XQuery 2.0 */, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("exists"			, xpf_exists			/* XQuery 2.0 */, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("expand-qname"		, xpf_expand_qname		/* Virt 3.5 */	, DV_STRING	, 1	, xpfmalist(3, xpfma("use_default",XPDV_BOOL,0), xpfma("qname",DV_STRING,0), xpfma("context",DV_XML_ENTITY,0))	, NULL	);
+  x2f_define_builtin ("every"			, xpf_every			/* Virt 3.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("except"			, xpf_except			/* XQuery 2.0 */, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("exists"			, xpf_exists			/* XQuery 2.0 */, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("expand-qname"		, xpf_expand_qname		/* Virt 3.5 */	, DV_STRING	, 1	, xpfmalist(3, xpfma("use_default",XPDV_BOOL,0), xpfma("qname",DV_STRING,0), xpfma("context",DV_XML_ENTITY,0))	, NULL	);
   xpf_define_builtin ("false"			, xpf_false			/* XPath 1.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("filter"			, xpf_filter			/* XQ 1.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("filter"			, xpf_filter			/* XQ 1.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("floor"			, xpf_floor			/* XPath 1.0 */	, DV_NUMERIC	, 1	, xpfmalist(1, xpfma("num",DV_UNKNOWN,0))	, NULL	);
-  xpf_define_builtin ("for"			, xpf_for			/* Virt 3.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("format-number"		, xpf_format_number		/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("function-available"	, xpf_function_available	/* XPath 1.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("generate-id"		, xpf_generate_id		/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("id"			, xpf_id			/* XPath 1.0 */	, XPDV_NODESET	, 1	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0))	, NULL	);
-  xpf_define_builtin ("if"			, xpf_if			/* Virt 3.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("is-after"		, xpf_is_after			/* Virt 3.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("is-before"		, xpf_is_before			/* Virt 3.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("is-descendant"		, xpf_is_descendant		/* Virt 3.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("is-same"			, xpf_is_same			/* Virt 3.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("intersect"		, xpf_intersect			/* XQuery 2.0 */, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("iterate-rev"		, xpf_iterate_rev		/* XPath 1.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("iterate"			, xpf_iterate			/* XPath 1.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("key"			, xpf_key			/* XPath 1.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("lang"			, xpf_lang			/* XPath 1.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("last"			, xpf_last			/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("let"			, xpf_let			/* Virt 3.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("list"			, xpf_list			/* Virt 3.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("local-name"		, xpf_local_name		/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("map"			, xpf_map			/* Virt 3.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("max"			, xpf_max			/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("min"			, xpf_min			/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("name"			, xpf_name			/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("namespace-uri"		, xpf_namespace_uri		/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("normalize-space"		, xpf_normalize_space		/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("not"			, xpf_not			/* XPath 1.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("number"			, xpf_number			/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("or"			, xpf_or			/* XPath 1.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("position"		, xpf_position			/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("progn"			, xpf_progn			/* Virt 3.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("processXQuery"		, xpf_processXQuery		/* BPEL */	, XPDV_NODESET	, 1	, xpfmalist(3, xpfma("module_uri",DV_STRING,0), xpfma("source",DV_XML_ENTITY,0), xpfma("nth_result",DV_LONG_INT,0))	, xpfmalist(2, xpfma("param_name",DV_STRING,0), xpfma("param_value",DV_UNKNOWN,0)));
-  xpf_define_builtin ("processXSLT"		, xpf_processXSLT		/* BPEL */	, XPDV_NODESET	, 1	, xpfmalist(2, xpfma("stylesheet_uri",DV_STRING,0), xpfma("source",DV_XML_ENTITY,0))	, xpfmalist(2, xpfma("param_name",DV_STRING,0), xpfma("param_value",DV_UNKNOWN,0)));
+  x2f_define_builtin ("for"			, xpf_for			/* Virt 3.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("format-number"		, xpf_format_number		/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("function-available"	, xpf_function_available	/* XPath 1.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("generate-id"		, xpf_generate_id		/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("id"			, xpf_id			/* XPath 1.0 */	, XPDV_NODESET	, 1	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0))	, NULL	);
+  x2f_define_builtin ("if"			, xpf_if			/* Virt 3.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("is-after"			, xpf_is_after			/* Virt 3.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("is-before"		, xpf_is_before			/* Virt 3.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("is-descendant"		, xpf_is_descendant		/* Virt 3.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("is-same"			, xpf_is_same			/* Virt 3.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("intersect"		, xpf_intersect			/* XQuery 2.0 */, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("iterate-rev"		, xpf_iterate_rev		/* XPath 1.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("iterate"			, xpf_iterate			/* XPath 1.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("key"			, xpf_key			/* XPath 1.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("lang"			, xpf_lang			/* XPath 1.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("last"			, xpf_last			/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("let"			, xpf_let			/* Virt 3.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("list"			, xpf_list			/* Virt 3.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("local-name"		, xpf_local_name		/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("map"			, xpf_map			/* Virt 3.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("max"			, xpf_max			/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("min"			, xpf_min			/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("name"			, xpf_name			/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("namespace-uri"		, xpf_namespace_uri		/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("normalize-space"		, xpf_normalize_space		/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("not"			, xpf_not			/* XPath 1.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("number"			, xpf_number			/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("or"			, xpf_or			/* XPath 1.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("position"		, xpf_position			/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("progn"			, xpf_progn			/* Virt 3.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("processXQuery"		, xpf_processXQuery		/* BPEL */	, XPDV_NODESET	, 1	, xpfmalist(3, xpfma("module_uri",DV_STRING,0), xpfma("source",DV_XML_ENTITY,0), xpfma("nth_result",DV_LONG_INT,0))	, xpfmalist(2, xpfma("param_name",DV_STRING,0), xpfma("param_value",DV_UNKNOWN,0)));
+  x2f_define_builtin ("processXSLT"		, xpf_processXSLT		/* BPEL */	, XPDV_NODESET	, 1	, xpfmalist(2, xpfma("stylesheet_uri",DV_STRING,0), xpfma("source",DV_XML_ENTITY,0))	, xpfmalist(2, xpfma("param_name",DV_STRING,0), xpfma("param_value",DV_UNKNOWN,0)));
   xpf_define_builtin ("replace"			, xpf_replace			/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("resolve-uri"		, xpf_resolve_uri		/* Virt 3.5 */	, DV_STRING	, 2	, xpfmalist(2, xpfma("base_uri",DV_STRING,0), xpfma("relative_uri",DV_STRING,0))	, NULL);
-  xpf_define_builtin ("round-half-to-even"	, xpf_round_half_to_even	/* XPath 2.0 */	, DV_NUMERIC	, 1	, xpfmalist(1, xpfma("num",DV_UNKNOWN,0))	, NULL	);
-  xpf_define_builtin ("round-number"		, xpf_round_number		/* XPath 1.0 */	, DV_NUMERIC	, 1	, xpfmalist(1, xpfma("num",DV_UNKNOWN,0))	, NULL	);
+  x2f_define_builtin ("resolve-uri"		, xpf_resolve_uri		/* Virt 3.5 */	, DV_STRING	, 2	, xpfmalist(2, xpfma("base_uri",DV_STRING,0), xpfma("relative_uri",DV_STRING,0))	, NULL);
+  x2f_define_builtin ("round-half-to-even"	, xpf_round_half_to_even	/* XPath 2.0 */	, DV_NUMERIC	, 1	, xpfmalist(1, xpfma("num",DV_UNKNOWN,0))	, NULL	);
+  x2f_define_builtin ("round-number"		, xpf_round_number		/* XPath 1.0 */	, DV_NUMERIC	, 1	, xpfmalist(1, xpfma("num",DV_UNKNOWN,0))	, NULL	);
   xpf_define_alias   ("round" , NULL, "round-number", NULL);
-  xpf_define_builtin ("sql-column-select"	, xpf_sql_column_select		/* Virt 6.2 */	, XPDV_NODESET	, 1	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("sql-scalar-select"	, xpf_sql_scalar_select		/* Virt 6.2 */	, DV_UNKNOWN	, 1	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("serialize"		, xpf_serialize			/* Virt 3.0 */	, DV_STRING	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("shallow"			, xpf_shallow			/* XQuery 1.0 */ , XPDV_NODESET , 1	, xpfmalist(1, xpfma(NULL,DV_XML_ENTITY,0))	, NULL);
-  xpf_define_builtin ("some"			, xpf_some			/* Virt 3.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("sql-equ"			, xpf_sql_equ			/* Virt 4.0 */	, XPDV_BOOL	, 2	, xpfmalist(2, xpfma("val1",DV_UNKNOWN,0), xpfma("val2",DV_UNKNOWN,0)),	 NULL);
-  xpf_define_builtin ("sql-ge"			, xpf_sql_le			/* Virt 4.0 */	, XPDV_BOOL	, 2	, xpfmalist(2, xpfma("val1",DV_UNKNOWN,0), xpfma("val2",DV_UNKNOWN,0)),	 NULL);
-  xpf_define_builtin ("sql-gt"			, xpf_sql_gt			/* Virt 4.0 */	, XPDV_BOOL	, 2	, xpfmalist(2, xpfma("val1",DV_UNKNOWN,0), xpfma("val2",DV_UNKNOWN,0)),	 NULL);
-  xpf_define_builtin ("sql-le"			, xpf_sql_le			/* Virt 4.0 */	, XPDV_BOOL	, 2	, xpfmalist(2, xpfma("val1",DV_UNKNOWN,0), xpfma("val2",DV_UNKNOWN,0)),	 NULL);
-  xpf_define_builtin ("sql-lt"			, xpf_sql_lt			/* Virt 4.0 */	, XPDV_BOOL	, 2	, xpfmalist(2, xpfma("val1",DV_UNKNOWN,0), xpfma("val2",DV_UNKNOWN,0)),	 NULL);
-  xpf_define_builtin ("sql-neq"			, xpf_sql_neq			/* Virt 4.0 */	, XPDV_BOOL	, 2	, xpfmalist(2, xpfma("val1",DV_UNKNOWN,0), xpfma("val2",DV_UNKNOWN,0)),	 NULL);
+  x2f_define_builtin ("sql-column-select"	, xpf_sql_column_select		/* Virt 6.2 */	, XPDV_NODESET	, 1	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("sql-scalar-select"	, xpf_sql_scalar_select		/* Virt 6.2 */	, DV_UNKNOWN	, 1	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("serialize"		, xpf_serialize			/* Virt 3.0 */	, DV_STRING	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("shallow"			, xpf_shallow			/* XQuery 1.0 */ , XPDV_NODESET , 1	, xpfmalist(1, xpfma(NULL,DV_XML_ENTITY,0))	, NULL);
+  x2f_define_builtin ("some"			, xpf_some			/* Virt 3.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("sql-equ"			, xpf_sql_equ			/* Virt 4.0 */	, XPDV_BOOL	, 2	, xpfmalist(2, xpfma("val1",DV_UNKNOWN,0), xpfma("val2",DV_UNKNOWN,0)),	 NULL);
+  x2f_define_builtin ("sql-ge"			, xpf_sql_ge			/* Virt 4.0 */	, XPDV_BOOL	, 2	, xpfmalist(2, xpfma("val1",DV_UNKNOWN,0), xpfma("val2",DV_UNKNOWN,0)),	 NULL);
+  x2f_define_builtin ("sql-gt"			, xpf_sql_gt			/* Virt 4.0 */	, XPDV_BOOL	, 2	, xpfmalist(2, xpfma("val1",DV_UNKNOWN,0), xpfma("val2",DV_UNKNOWN,0)),	 NULL);
+  x2f_define_builtin ("sql-le"			, xpf_sql_le			/* Virt 4.0 */	, XPDV_BOOL	, 2	, xpfmalist(2, xpfma("val1",DV_UNKNOWN,0), xpfma("val2",DV_UNKNOWN,0)),	 NULL);
+  x2f_define_builtin ("sql-lt"			, xpf_sql_lt			/* Virt 4.0 */	, XPDV_BOOL	, 2	, xpfmalist(2, xpfma("val1",DV_UNKNOWN,0), xpfma("val2",DV_UNKNOWN,0)),	 NULL);
+  x2f_define_builtin ("sql-neq"			, xpf_sql_neq			/* Virt 4.0 */	, XPDV_BOOL	, 2	, xpfmalist(2, xpfma("val1",DV_UNKNOWN,0), xpfma("val2",DV_UNKNOWN,0)),	 NULL);
   xpf_define_builtin ("starts-with"		, xpf_starts_with		/* XPath 1.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("string-length"		, xpf_string_length		/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("string"			, xpf_string			/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  xpf_define_builtin ("substring"		, xpf_substring			/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("substring-after"		, xpf_substring_after		/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("substring-before"	, xpf_substring_before		/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("substring"		, xpf_substring			/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("sum"			, xpf_sum			/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("system-property"		, xpf_system_property		/* XXLT 1.0 */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma("property_qname",DV_STRING,0))	, NULL);
-  xpf_define_builtin ("text-contains"		, xpf_text_contains		/* Virt 2.5 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("sum"			, xpf_sum			/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("system-property"		, xpf_system_property		/* XXLT 1.0 */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma("property_qname",DV_STRING,0))	, NULL);
+  x2f_define_builtin ("text-contains"		, xpf_text_contains		/* Virt 2.5 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("translate"		, xpf_translate			/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_builtin ("true"			, xpf_true			/* XPath 1.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("tuple"			, xpf_tuple			/* Virt 3.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("union"			, xpf_union			/* Virt 3.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("unordered"		, xpf_unordered			/* XQ 1.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("unparsed-entity-uri"	, xpf_unparsed_entity_uri	/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("urlify"			, xpf_urlify			/* Virt 2.5 */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0))	, NULL);
-  xpf_define_builtin ("vector"			, xpf_vector			/* Virt 3.5 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma("item",DV_UNKNOWN,0)));
-  xpf_define_builtin ("vector for ORDER BY"	, xpf_vector_for_order_by	/* Virt 3.5 */	, DV_UNKNOWN	, 2	, xpfmalist(1, xpfma("item",DV_UNKNOWN,0))	, xpfmalist(1, xpfma("key",DV_UNKNOWN,0)));
-  xpf_define_builtin ("xmlview"			, xpf_xmlview			/* XQuery  */	, XPDV_NODESET	, 1	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("xpath-debug-srcline"	, xpf_xpath_debug_srcline	/* Virt 3.0 */	, DV_STRING	, 1	, xpfmalist(1, xpfma(NULL,DV_XML_ENTITY,0))	, NULL);
-  xpf_define_builtin ("xpath-debug-srcfile"	, xpf_xpath_debug_srcfile	/* Virt 3.0 */	, DV_STRING	, 1	, xpfmalist(1, xpfma(NULL,DV_XML_ENTITY,0))	, NULL);
-  xpf_define_builtin ("xpath-debug-xslline"	, xpf_xpath_debug_xslline	/* Virt 3.0 */	, DV_STRING	, 0	, NULL	, NULL);
-  xpf_define_builtin ("xpath-debug-xslfile"	, xpf_xpath_debug_xslfile	/* Virt 3.0 */	, DV_STRING	, 0	, NULL	, NULL);
+  x2f_define_builtin ("tuple"			, xpf_tuple			/* Virt 3.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("union"			, xpf_union			/* Virt 3.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("unordered"		, xpf_unordered			/* XQ 1.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("unparsed-entity-uri"	, xpf_unparsed_entity_uri	/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("urlify"			, xpf_urlify			/* Virt 2.5 */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0))	, NULL);
+  x2f_define_builtin ("vector"			, xpf_vector			/* Virt 3.5 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma("item",DV_UNKNOWN,0)));
+  x2f_define_builtin ("vector for ORDER BY"	, xpf_vector_for_order_by	/* Virt 3.5 */	, DV_UNKNOWN	, 2	, xpfmalist(1, xpfma("item",DV_UNKNOWN,0))	, xpfmalist(1, xpfma("key",DV_UNKNOWN,0)));
+  x2f_define_builtin ("xmlview"			, xpf_xmlview			/* XQuery  */	, XPDV_NODESET	, 1	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("xpath-debug-srcline"	, xpf_xpath_debug_srcline	/* Virt 3.0 */	, DV_STRING	, 1	, xpfmalist(1, xpfma(NULL,DV_XML_ENTITY,0))	, NULL);
+  x2f_define_builtin ("xpath-debug-srcfile"	, xpf_xpath_debug_srcfile	/* Virt 3.0 */	, DV_STRING	, 1	, xpfmalist(1, xpfma(NULL,DV_XML_ENTITY,0))	, NULL);
+  x2f_define_builtin ("xpath-debug-xslline"	, xpf_xpath_debug_xslline	/* Virt 3.0 */	, DV_STRING	, 0	, NULL	, NULL);
+  x2f_define_builtin ("xpath-debug-xslfile"	, xpf_xpath_debug_xslfile	/* Virt 3.0 */	, DV_STRING	, 0	, NULL	, NULL);
   bif_define ("xpf_extension", bif_xpf_extension);
   bif_define ("xpf_extension_remove", bif_xpf_extension_remove);
 

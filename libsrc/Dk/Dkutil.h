@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -32,10 +32,27 @@ BEGIN_CPLUSPLUS
 
 int gpf_notice (const char *file, int line, const char *text);
 void get_real_time (timeout_t * time_ret);
-long get_msec_real_time (void);
-long approx_msec_real_time (void);
+uint32 get_msec_real_time (void);
+uint32 approx_msec_real_time (void);
 void time_add (timeout_t * time1, timeout_t * time2);
 int time_gt (timeout_t * time1, timeout_t * time2);
+
+/* Dkmem.h */
+
+void  memzero (void* ptr, int len);
+void  memset_16 (void* ptr, unsigned char fill, int len);
+void int_fill (int * ptr, int n, int len);
+void int64_fill (int64 * ptr, int64 n, int len);
+void int64_fill_nt (int64 * ptr, int64 n, int len);
+void int_asc_fill (int * ptr, int len, int start);
+void memcpy_16 (void * t, const void * s, size_t len);
+void memcpy_16_nt (void * t, const void * s, size_t len);
+void memmove_16 (void * t, const void * s, size_t len);
+unsigned  int64 rdtsc();
+void print_trace (void);
+
+char * dk_cslentry (const char *list, int idx);
+
 
 END_CPLUSPLUS
 #endif

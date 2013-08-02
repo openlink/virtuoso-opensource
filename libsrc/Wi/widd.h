@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -49,7 +49,7 @@
 #define GR_UDT_UNDER	0x0100
 
 /* Sequence number, object id */
-typedef uptrlong oid_t;	/* really 32 bit, but the code is too buggy */
+typedef uptrlong oid_t;	/* must be size of pointer */
 
 typedef unsigned int key_id_t;
 typedef unsigned char row_ver_t; /* the bit mask for what is on the row and what is an offset to another row */
@@ -110,7 +110,6 @@ struct dbe_table_s
     char *		tb_owner;
     char *		tb_qualifier_name;
     id_hash_t *		tb_name_to_col;
-    dk_hash_t *		tb_id_to_col;
     dbe_key_t *		tb_primary_key;
     dk_set_t		tb_keys;
     dk_set_t		tb_old_keys;
@@ -120,6 +119,7 @@ struct dbe_table_s
     dk_hash_t *		tb_grants;
     oid_t		tb_owner_col_id;
     char		tb_any_blobs;
+    char		tb_is_rdf_quad;
     struct remote_ds_s *tb_remote_ds;
     caddr_t		tb_remote_name;
     dk_hash_t *		tb_misc_id_to_col_id;
@@ -176,11 +176,15 @@ typedef struct col_partition_s
 #define CP_WORD 3
 
 
+typedef unsigned short slice_id_t;
+#define CL_MAX_SLICES (16 * 1024)
+#define CL_ALL_SLICES 0xffff
+
 typedef struct cl_host_group_s
 {
   struct cluster_map_s *	chg_clm;
   cl_host_t **	chg_hosts;
-  int32 *	chg_slices;
+  slice_id_t *	chg_slices;
   struct cl_slice_s **	chg_hosted_slices;
   char		chg_status; /* any slices in read only */
 } cl_host_group_t;
@@ -194,29 +198,36 @@ typedef struct cl_host_group_s
 
 /* location of data based on hash */
 
-typedef struct cl_slice_s
-{
-  /* unit of movable storage, several per server if elastic, else 1:1 to host groups */
-  int	csl_id;
-  cl_host_group_t *		csl_chg;
-  struct dbe_storage_s * 	csl_storage;
-} cl_slice_t;
+typedef struct cl_slice_s cl_slice_t;
 
 typedef struct cluster_map_s
 {
   caddr_t	clm_name;
+  short		clm_id;
   char		clm_is_modulo;
   char		clm_is_elastic;
+  char		clm_init_slices;
   int		clm_distinct_slices; /* no of different slices */
   int	clm_n_slices; /* no of places in the clm_slice_map */
   int		clm_n_replicas;
+  unsigned short *	clm_host_rank; /* indexed with host ch_id, gives the ordinal position of host in the host group it occupies in this map */
   char *		clm_slice_status;
+  dk_hash_t *		clm_id_to_slice;
   cl_slice_t **	clm_slices; /* which physical slice contains the data for the place in slice map, if not elastic 1:1 to host groups  */
+  cl_slice_t **	clm_phys_slices; /* distinct physical slices */
   cl_host_group_t **	clm_slice_map;
   cl_host_group_t **	clm_hosts;
+  cl_host_group_t *	clm_local_chg;
+  uint64 *		clm_slice_req_count;  /* per logical slice count  of  requests from this host */
   char		clm_any_in_transfer; /* true if logging should check whether an extra log entry is needed due to updating a slice being relocated.  True is any in cl_slice_status is CL_CLICE_LOG.  */
+  dk_mutex_t	clm_mtx; /* slice thread counts and slice status */
 } cluster_map_t;
 
+#define CLM_REQ(clm, sl)  clm->clm_slice_req_count[(uint32)sl % clm->clm_n_slices]++
+
+#define CLM_ID_TO_CSL(clm, slid) \
+  (cl_slice_t*)gethash ((void*)(ptrlong)(slid), clm->clm_id_to_slice)
+#define MAX_PART_COLS 4
 
 typedef struct key_partition_def_s
 {
@@ -235,6 +246,12 @@ typedef struct col_stat_s
   int64		cs_n_values;
 } col_stat_t;
 
+/* fields in int64 in cs_distinct counting repeats of a value */
+#define CS_IN_SAMPLE 0x8000000000000000
+#define CS_SAMPLE_INC 0x1000000000000
+#define CS_N_SAMPLES(n) (0x7fff & ((int64)(n) >> 48))
+#define CS_N_VALUES(n) ((int64)(n) & 0xffffffffffff)
+
 
 struct dbe_column_s
   {
@@ -251,6 +268,8 @@ struct dbe_column_s
     char		col_is_misc;
     char		col_is_misc_cont; /* true for a misc container, e.g. E_MISC of VXML_ENTITY */
     char		col_is_text_index;
+    char		col_is_geo_index;
+    index_tree_t *	col_it;
     caddr_t 		col_lang;
     caddr_t 		col_enc;
     dbe_column_t **	col_offband_cols;
@@ -274,6 +293,10 @@ struct dbe_column_s
 #define col_scale col_sqt.sqt_scale
 #define col_non_null col_sqt.sqt_non_null
 #define col_collation col_sqt.sqt_collation
+
+/* col_is_key_part */
+#define COL_KP_UNQ 100
+
 
 
 
@@ -321,6 +344,9 @@ struct dbe_col_loc_s
 #define CL_FIRST_VAR -1
 #define CL_VAR -2
 
+#define DO_CL_0(cl, cls) \
+  { int __inx; \
+    for (__inx = 0; cls[__inx].cl_col_id; __inx++) {
 
 #define DO_CL(cl, cls) \
   { int __inx; \
@@ -378,17 +404,21 @@ struct dbe_key_s
 
   int			key_n_significant;
   int			key_decl_parts;
+  unsigned short	key_geo_srcode;
   char			key_is_primary;
   char			key_is_unique;
   char			key_is_temp;
   char			key_is_bitmap;
   char			key_simple_compress;
   key_ver_t		key_version;
+  char			key_is_geo;
   char			key_is_col; /* column-wise layout */
   char		key_no_pk_ref; /* the key does not ref the main row */
   char		key_distinct; /* if no pk ref, do not put duplicates */
   char		key_not_null; /* if a significant key part is nullable and null, do not make an index entry */
   char		key_no_compression; /* no key part is compressed in any version of key*/
+  char		key_is_dropped;
+  char		key_is_elastic; /* key_storage->dbs_type == DBS_ELASTIC */
   key_id_t		key_migrate_to;
   key_id_t		key_super_id;
   dbe_key_t **		key_versions;
@@ -399,6 +429,7 @@ struct dbe_key_s
   /* access inx */
   int64		key_touch;
   int64		key_read;
+  int64		key_write;
   int64		key_lock_wait;
   int64		key_lock_wait_time;
   int64		key_deadlocks;
@@ -409,7 +440,8 @@ struct dbe_key_s
   int64		key_read_wait;
   int64		key_landing_wait;
   int64		key_pl_wait;
-
+  int64		key_ac_in;
+  int64		key_ac_out;
   dp_addr_t		key_last_page;
   char		key_is_last_right_edge;
   int64		key_n_last_page_hits;
@@ -420,9 +452,14 @@ struct dbe_key_s
   key_spec_t		key_bm_ins_spec;
   key_spec_t		key_bm_ins_leading;
   dk_set_t		key_visible_parts; /* parts in create table order, only if primary key */
+  struct query_s *	key_ins_qr; /* in cluster, local only qrs for ins/ins/ soft/del of key, pars in layout order */
+  struct query_s *	key_ins_soft_qr;
+  struct query_s *	key_del_qr;
+
 
   /* free text */
   dbe_table_t *	key_text_table;
+  dbe_table_t *	key_geo_table;
   dbe_column_t *	key_text_col;
 
   /* row layout */
@@ -470,11 +507,12 @@ fragment instead of searching for the the fragment actually needed. */
 
 #define ITC_MARK_READ(it) \
 { \
+  client_connection_t * cli; \
   dbe_key_t * k1 = it->itc_insert_key; \
   it->itc_read_waits += 10000; \
   if (k1) \
     k1->key_read++; \
-  if (itc->itc_ltrx && itc->itc_ltrx->lt_client) itc->itc_ltrx->lt_client->cli_activity.da_disk_reads++; \
+  if (itc->itc_ltrx && itc->itc_ltrx->lt_client) itc->itc_ltrx->lt_client->cli_activity.da_disk_reads++; else if ((cli = sqlc_client ())) cli->cli_activity.da_disk_reads++; \
 }
 
 #define ITC_MARK_LOCK_WAIT(it, t) \
@@ -486,6 +524,7 @@ fragment instead of searching for the the fragment actually needed. */
       k1->key_lock_wait++; \
       k1->key_lock_wait_time += delay; \
     } \
+  lock_wait_msec += delay; \
   it->itc_ltrx->lt_client->cli_activity.da_lock_wait_msec += delay; \
   it->itc_ltrx->lt_client->cli_activity.da_lock_waits++; \
 }

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2013 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<refentry id="fn_http_unlock">
+  <refmeta>
+    <refentrytitle>http_unlock</refentrytitle>
+    <refmiscinfo>ws</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>http_unlock</refname>
+    <refpurpose>Unlocks the HTTP Web Server port</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_http_unlock">
+      <funcprototype id="fproto_http_unlock">
+        <funcdef>any <function>http_unlock</function></funcdef>
+        <paramdef>in <parameter>pwd</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_http_unlock"><title>Description</title>
+  <para>This function takes as parameter the password of the dba user and unlocks the HTTP Web Server port</para>
+  </refsect1>	
+  <refsect1 id="params_http_unlock"><title>Parameters</title>
+    <refsect2><title>pwd</title><para>The password of the dba user.</para></refsect2>
+  </refsect1>
+  <refsect1 id="examples_http_unlock"><title>Examples</title>
+  <example id="ex_http_unlock"><title></title>
+  <screen><![CDATA[
+SQL> http_unlock('password');
+
+Done. -- 0 msec.
+SQL>
+]]></screen>
+  </example>
+  </refsect1>
+    <refsect1 id="seealso_http_unlock">
+    <title>See Also</title>
+    <para><link linkend="fn_http_lock"><function>http_lock</function></link></para>
+  </refsect1>
+</refentry>
+
+

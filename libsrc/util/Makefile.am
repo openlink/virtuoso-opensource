@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -24,7 +24,7 @@ noinst_LTLIBRARIES = libutil.la
 noinst_HEADERS		= \
 	dbgmal.h dyntab.h fnmatch.h getdate.h getopt.h itypes.h listmac.h \
 	logmsg.h md5.h mpl.h ncfg.h oplthr.h regexp.h regmagic.h setext.h \
-	startup.h strfuns.h utalloc.h utf8funs.h uuid.h uuidP.h
+	startup.h strfuns.h utalloc.h utf8funs.h uuid.h uuidP.h sslengine.h
 
 libutil_la_CFLAGS  = @VIRT_AM_CFLAGS@
 libutil_la_CFLAGS  += -D_GNU_SOURCE -DIN_LIBUTIL -DGLOBALREF=extern 
@@ -64,6 +64,7 @@ libutil_la_SOURCES = \
 	regsub.c \
 	rtrim.c \
 	setext.c \
+	sslengine.c \
 	startup.c \
 	stpcpy.c \
 	strcpyin.c \
@@ -81,6 +82,7 @@ libutil_la_SOURCES = \
 	usage.c \
 	uuid.c \
 	wcslen.c \
+	virt_mbrlen.c \
 	virt_mbrtowc.c \
 	virt_mbsnrtowcs.c \
 	virt_wcrtomb.c \

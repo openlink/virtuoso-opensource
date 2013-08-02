@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -33,6 +33,12 @@ body {
 form {
   margin: 0;
   padding: 0}
+
+input[type="text"], input[type="password"], select {
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+}
 
 h1 { font-size: 22px}
 h2 { font-size: 18px}
@@ -330,8 +336,7 @@ div.w_activity ul li a {
 
 
 /* welcome */
-div.w_welcome {
-  padding: 3px}
+div.w_welcome {}
 
 div.w_welcome p {
   margin: 4px}
@@ -345,13 +350,12 @@ div.w_welcome a {
 /* Application summary on app tab page */
 
 /* Generic sizing overriding widget size */
-
 div.w_app_summary {
-  width: 600px;
-  margin: 5px;
   min-height: 300px;}
+
 div.w_app_summary div.w_title_bar {
   width: 595px}
+
 table.app_summary_listing {
   margin: 3px;
   font-size: 9pt}
@@ -865,7 +869,6 @@ div.contents {
   background-color: #EFEFEF;
   border: 1px solid #7F94A5;
   padding: 0.5em;
-  margin-top: -1px;
 }
 
 /* ComboList */
@@ -927,6 +930,7 @@ td.calendar_selected {
 a.img_button {
   background: none repeat scroll 0 0 #99B3C5;
   border: 1px solid #7F94A5;
+  border-radius: 5px;
   -moz-border-radius: 5px;
   -webkit-border-radius: 5px;
   color: #FFFFFF;
@@ -947,6 +951,7 @@ a.img_button img {
 span.button {
   background: none repeat scroll 0 0 #99B3C5;
   border: 1px solid #7F94A5;
+  border-radius: 5px;
   -moz-border-radius: 5px;
   -webkit-border-radius: 5px;
   color: #FFFFFF;
@@ -973,6 +978,7 @@ img.button {
   border-color: #7f94a5;
   background: #99b3c5;
 	cursor: pointer;
+  border-radius: 3px;
   -moz-border-radius: 3px;
   -webkit-border-radius: 3px;
 }
@@ -1025,7 +1031,7 @@ table.form td {
 .tabs {
 	margin-top: 1.5em;
 	list-style-type: none;
-	padding-bottom: 1px;
+	padding-bottom: 0px;
 	padding-left: 0.5em;
 }
 
@@ -1037,6 +1043,8 @@ table.form td {
   border-top: 1px solid #aaa;
   border-left: 1px solid #aaa;
   border-right: 1px solid #aaa;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
   -moz-border-radius-topleft: 3px;
   -moz-border-radius-topright: 3px;
   -webkit-border-top-left-radius: 3px;
@@ -1150,4 +1158,11 @@ table.ODS_grid tfoot td {
   padding: 2px 3px 3px 3px;
   border: solid #7f94a5;
   border-width: 1px 0px 0px 0px;
+}
+
+img.resize {
+  width: auto;
+  height: auto;
+  max-height: 200px;
+  max-width: 150px;
 }

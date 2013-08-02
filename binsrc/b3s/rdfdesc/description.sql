@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2009 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -68,7 +68,7 @@ create procedure b3s_page_get_type (in val any)
 ;
 
 --
--- make a vector of languages and their quality 
+-- make a vector of languages and their quality
 --
 create procedure b3s_get_lang_acc (in lines any)
 {
@@ -123,56 +123,110 @@ create procedure b3s_str_lang_check (in lang any, in acc any)
 }
 ;
 
-create procedure 
+create procedure
 b3s_handle_ses (inout _path any, inout _lines any, inout _params any)
 {
    declare sid, refr varchar;
 
-   sid := get_keyword ('sid', _params); 
+   sid := get_keyword ('sid', _params);
 
    if (sid is null) {
      refr := http_request_header (http_request_header (), 'Referer', null, null);
 
      if (refr is not null)
        {
-         declare ht, pars any; 
+         declare ht, pars any;
          ht := WS.WS.PARSE_URI (refr);
          pars := ht[4];
          pars := split_and_decode (pars);
-         if (pars is not null) 
-         sid := get_keyword ('sid', pars);
+         if (pars is not null)
+           sid := get_keyword ('sid', pars);
        }
    }
 
-   if (sid is not null) connection_set ('sid', sid);
+   if (sid is not null and (regexp_match ('[0-9]*', sid) = sid)) connection_set ('sid', sid);
 }
 ;
 
 -- XXX should probably find the most specific if more than one class and inference rule is set
 
-create procedure b3s_type (in subj varchar, 
-                           in _from varchar, 
-                           out url varchar, 
-                           out c_iri varchar)
+create procedure
+b3s_type (in subj varchar,
+          in _from varchar,
+          out url varchar,
+          out c_iri varchar)
 {
   declare meta, data, ll any;
+  declare i int;
+
   ll := 'unknown';
   url := 'javascript:void()';
+  c_iri := 'http://www.w3.org/2002/07/owl#Thing';
+
   if (length (subj))
     {
-      exec (sprintf ('sparql select ?l ?tp %s where { <%S> a ?tp . optional { ?tp rdfs:label ?l } }', _from, subj), 
+      exec (sprintf ('sparql select ?l ?tp %s where { <%S> a ?tp optional { ?tp rdfs:label ?l } }', _from, subj), 
 	  null, null, vector (), 100, meta, data);
+
       if (length (data))
 	{
-	  if (data[0][0] is not null)
-  	    ll := data[0][0];
-	  else  
-	    ll := b3s_uri_local_part (data[0][1]);
-	  url := b3s_http_url (data[0][1]);
-          c_iri := data[0][1];
+	  for (i := 0; i < length (data); i := i + 1)
+            {
+              if (data[i][0] is not null)
+  	        ll := data[i][0];
+	      else
+	        ll := b3s_uri_local_part (data[i][1]);
+
+	      url := b3s_http_url (data[i][1]);
+
+              c_iri := data[i][1];
+            }
 	}
     }
   return ll;
+}
+;
+
+-- This is where we should have something smart... instead we return the last one...
+
+create procedure b3s_choose_e_type (inout type_a any)
+{
+    if (not length(type_a))
+      return vector ('http://www.w3.org/2002/07/owl#Thing', 'owl:Thing', 'A Thing');
+
+--    dbg_printf ('type_a length: %d', length(type_a));
+    return (type_a[length(type_a)-1]);
+}
+;
+
+--
+-- Detect if viewing an explicit or implicit class
+--
+
+create procedure b3s_find_class_type (in _s varchar, in _f varchar, inout types_a any) 
+{
+  declare i int;
+
+  for (i := 0; i < length (types_a); i := i + 1) 
+    {
+      if (types_a[i][0] in ('http://www.w3.org/2002/07/owl#Class', 
+                       'http://www.w3.org/2000/01/rdf-schema#Class')) 
+	return 1;
+    }
+
+  declare stmt, st, msg varchar;
+  declare meta,data any;
+  data := null;
+  st := '00000';
+  msg:= '';
+
+  stmt := sprintf ('sparql select ?to %s where { quad map virtrdf:DefaultQuadMap { ?to a <%S> }}', _f, _s);
+
+  exec (stmt, st, msg, vector(), 1, meta, data);
+
+  if (length (data)) return 1;
+
+  return 0;
 }
 ;
 
@@ -191,6 +245,106 @@ create procedure b3s_uri_local_part (in uri varchar)
 }
 ;
 
+
+--
+-- vector (vector (<type_iri>, <short_form>, <label or null>), vector (...), ...)
+--
+
+create procedure
+b3s_get_types (in _s varchar,
+               in _from varchar,
+               in langs any) {
+  declare stat, msg, meta, data any;
+  declare t_a any;
+  declare i int;
+  declare stmt varchar;
+
+  stmt := sprintf ('sparql select distinct ?tp %s where { quad map virtrdf:DefaultQuadMap { <%S> a ?tp } }', _from, _s);
+  data := null;
+  t_a := vector();
+
+  if (length (_s))
+    {
+      data := null;
+      exec (stmt, stat, msg, vector (), 100, meta, data);
+
+      if (length(data)) 
+        {
+	  for (i := 0;i < length(data); i := i + 1) 
+            {
+--                dbg_printf ('data[%d][0]: %s', i,data[i][0]);
+		t_a := vector_concat (t_a, 
+                                      vector (vector (data[i][0], 
+                                      b3s_uri_curie (data[i][0]),
+                                      b3s_label (data[i][0], langs))));
+            }
+        }
+    }
+  return (t_a);
+}                 
+;
+
+create procedure
+b3s_get_all_types (in _s varchar,
+               in _from varchar,
+               in langs any) {
+  declare stat, msg, meta, data any;
+  declare t_a any;
+  declare i int;
+  declare stmt varchar;
+
+  stmt := sprintf ('sparql select distinct ?tp %s where { <%S> a ?tp }', _from, _s);
+  data := null;
+  t_a := vector();
+
+  if (length (_s))
+    {
+      data := null;
+      exec (stmt, stat, msg, vector (), 100, meta, data);
+
+      if (length(data)) 
+        {
+	  for (i := 0;i < length(data); i := i + 1) 
+            {
+--                dbg_printf ('data[%d][0]: %s', i,data[i][0]);
+		t_a := vector_concat (t_a, 
+                                      vector (vector (data[i][0], 
+                                      b3s_uri_curie (data[i][0]),
+                                      b3s_label (data[i][0], langs))));
+            }
+        }
+    }
+  return (t_a);
+}                 
+;
+
+create procedure
+b3s_render_iri_select (inout types_a any, 
+                       in ins_str varchar := '',
+                       in sel int := -1)
+{
+  declare i int;
+
+  if (length (types_a) and isvector (types_a))
+    {
+      if (sel = -1) sel := length(types_a)-1;
+
+      http (sprintf ('<select %s>', ins_str));
+
+      for (i := 0; i < length(types_a); i := i + 1) 
+        { 
+          http (sprintf ('<option value="%s" title="%s" %s>%s</option>', 
+                         types_a[i][0],
+                         types_a[i][0],
+                         case when i = sel then 'selected="selected"' else '' end,
+                         case when types_a[i][2] <> '' then types_a[i][2] else types_a[i][1] end));
+        } 
+      http ('</select>');
+    }
+  return i;
+}
+;
+
 create procedure
 b3s_render_fct_link ()
 {
@@ -198,34 +352,34 @@ b3s_render_fct_link ()
   sid := connection_get ('sid');
 
   if (sid is not null)
-    return ('/fct/facet.vsp?sid='||sid||'&cmd=refresh');  
+    return ('/fct/facet.vsp?sid='||sid||'&cmd=refresh');
   else
     return '';
 }
 ;
 
 create procedure
-b3s_render_inf_opts () 
+b3s_render_inf_opts ()
 {
   declare inf varchar;
   declare f int;
   f := 0;
   inf := connection_get ('inf');
 
-  for select distinct RS_NAME as RS_NAME from SYS_RDF_SCHEMA do 
+  for select distinct RS_NAME as RS_NAME from SYS_RDF_SCHEMA do
     {
-      if (RS_NAME = inf) 
+      if (RS_NAME = inf)
         {
           http (sprintf ('<option value="%s" selected="selected">%s</option>', RS_NAME, RS_NAME));
           f := 1;
         }
-      else 
+      else
         http (sprintf ('<option value="%s">%s</option>', RS_NAME, RS_NAME));
     }
 
   if (f = 0)
     http ('<option value="**none**" selected="selected">None</option>');
-  else 
+  else
     http ('<option value="**none**">None</option>');
 }
 ;
@@ -233,22 +387,23 @@ b3s_render_inf_opts ()
 create procedure
 b3s_sas_selected ()
 {
-  if (connection_get ('sas') = 'yes') 
-    return ' checked="true" ';
-  else 
-    return ''; 
+  if (connection_get ('sas') = 'yes')
+    return ' checked="selected" ';
+  else
+    return '';
 }
 ;
- 
-create procedure 
+
+create procedure
 b3s_parse_inf (in sid varchar, inout params any)
 {
   declare _sas, _inf varchar;
+  declare grs any;
 
-  _sas := _inf := null; 
+  _sas := _inf := null;
 
   if (sid is not null)
-    { 
+    {
       for select fct_state from fct_state where fct_sid = sid do
         {
 	  declare i varchar;
@@ -277,9 +432,17 @@ b3s_parse_inf (in sid varchar, inout params any)
     {
       if (_sas = '1' or _sas = 'yes')
         connection_set ('sas', 'yes');
-      else 
+      else
         connection_set ('sas', null);
     }
+  vectorbld_init (grs);
+  for (declare i int, i := 0; i < length (params); i := i + 2)
+    {
+      if (params[i] = 'graph' and not position (params[i+1], grs))
+	vectorbld_acc (grs, params[i+1]);
+    }
+  vectorbld_final (grs);
+  connection_set ('graphs', grs);
 }
 ;
 
@@ -291,39 +454,49 @@ b3s_render_inf_clause ()
   _inf := connection_get ('inf');
   _sas := connection_get ('sas');
 
-  if (_inf is not null) 
-    _inf := sprintf (' define input:inference ''%s'' ', _inf);
-  else 
+  if (_inf is not null)
+    _inf := sprintf ('define input:inference ''%s'' ', _inf);
+  else
     _inf := '';
 
   if (_sas is not null)
-    _sas := sprintf (' define input:same-as "yes" ');
-  else 
+    _sas := sprintf ('define input:same-as "yes" ');
+  else
     _sas := '';
 
-  return (_inf || _sas); 
+  return (_inf || _sas);
 }
 ;
 
 create procedure
-b3s_render_ses_params () 
+b3s_render_ses_params (in with_graph int := 1) 
 {
   declare i,s,ifp,sid varchar;
+  declare grs any;
 
   i := connection_get ('inf');
   s := connection_get ('sas');
   sid := connection_get ('sid');
+  grs := connection_get ('graphs', null);
 
   if (i is not null) i := '&inf=' || sprintf ('%U', i);
   if (s is not null) i := i || '&sas=' || sprintf ('%V', s);
   if (sid is not null) i := i || '&sid=' || sprintf ('%V', sid);
+
+  if (grs is not null and with_graph)
+    {
+      foreach (any x in grs) do
+	{
+	  i := i || sprintf ('&graph=%U', x);
+	}
+    }
 
   if (i is not null) return i;
   else return '';
 }
 ;
 
-create procedure 
+create procedure
 b3s_dbg_out (inout ses any, in str any)
 {
   if (connection_get ('b3s_dbg'))
@@ -331,10 +504,10 @@ b3s_dbg_out (inout ses any, in str any)
 }
 ;
 
-create procedure 
+create procedure
 b3s_render_dbg_out (inout ses any)
 {
-  if (connection_get ('b3s_dbg')) 
+  if (connection_get ('b3s_dbg'))
     {
       http('<div id="dbg_output"><pre>');
       http_value (ses);
@@ -349,6 +522,8 @@ create procedure b3s_get_lang_by_q (in accept varchar, in lang varchar)
   declare arr any;
   declare i, l int;
 
+  if (not length (lang))
+    lang := 'en';
   arr := split_and_decode (accept, 0, '\0\0,;');
   q := 0;
   l := length (arr);
@@ -400,15 +575,20 @@ create procedure b3s_label_get (inout data any, in langs any)
 	    }
 	 }
      }
-   if (__tag of rdf_box = __tag (label))
-     label := rdf_box_data (label);
+   if (not isstring (label))
+     {
+       if (__tag of rdf_box = __tag (label)  and rdf_box_is_complete (label))
+	 label := rdf_box_data (label);
+       else
+	 label := __rdf_strsqlval (label);
+     }
    if (not isstring (label))
      label := cast (label as varchar);
-   --label := regexp_replace (label, '<[^>]+>', '', 1, null);  
+   --label := regexp_replace (label, '<[^>]+>', '', 1, null);
   if (0 and sys_stat ('cl_run_local_only'))
     {
-   label := xpath_eval ('string(.)', xtree_doc (label, 2));
-   label := charset_recode (label, '_WIDE_', 'UTF-8');
+      label := xpath_eval ('string(.)', xtree_doc (label, 2));
+      label := charset_recode (label, '_WIDE_', 'UTF-8');
     }
   else
     label := cast (xtree_doc (label, 2) as varchar);
@@ -416,7 +596,7 @@ create procedure b3s_label_get (inout data any, in langs any)
 }
 ;
 
-create procedure 
+create procedure
 b3s_rel_print (in val any, in rel any, in flag int := 0)
 {
   declare delim, delim1, delim2, delim3 integer;
@@ -454,7 +634,7 @@ b3s_rel_print (in val any, in rel any, in flag int := 0)
 ;
 
 
-create procedure 
+create procedure
 b3s_uri_curie (in uri varchar)
 {
   declare delim integer;
@@ -497,7 +677,7 @@ create procedure b3s_prop_label (in uri any)
   if (length (ll) = 0)
     ll := b3s_uri_curie (uri);
   if (isstring (ll) and ll like 'opl%:isDescribedUsing')
-    ll := 'Described Using Terms From';  
+    ll := 'Described Using Terms From';
   return ll;
 }
 ;
@@ -506,7 +686,7 @@ create procedure
 b3s_trunc_uri (in s varchar, in maxlen int := 80)
 {
   declare _s varchar;
-  declare _h int; 
+  declare _h int;
 
   _s := trim(s);
 
@@ -518,10 +698,10 @@ b3s_trunc_uri (in s varchar, in maxlen int := 80)
 }
 ;
 
-create procedure 
-b3s_http_url (in url varchar, in sid varchar := null, in _from varchar := null)
+create procedure
+b3s_http_url (in url varchar, in sid varchar := null, in _from varchar := null, in with_graph int := 1)
 {
-  declare host, pref, more, i varchar;
+  declare host, pref, more, i, wurl varchar;
 
 --  more := '';
 
@@ -530,32 +710,42 @@ b3s_http_url (in url varchar, in sid varchar := null, in _from varchar := null)
 --  else
 --    more := '';
 
-  i := b3s_render_ses_params();
+  i := b3s_render_ses_params(with_graph);
   if (length (_from))
     i := sprintf ('%s&graph=%U', i, _from);
-  
-  return sprintf ('/describe/?url=%U%s', url, i);
+  wurl := charset_recode (url, 'UTF-8', '_WIDE_');
+  return sprintf ('/describe/?url=%U%s', case when wurl <> 0 then wurl else url end, i);
 };
 
-create procedure 
-b3s_http_print_l (in p_text any, inout odd_position int, in r int := 0, in sid varchar := null)
+create procedure b3s_u2w (in u any)
+{
+  declare w any;
+  w := charset_recode (u, 'UTF-8', '_WIDE_');
+  return case when w <> 0 then w else u end;
+}
+;
+
+create procedure
+b3s_http_print_l (in p_text any, inout odd_position int, in r int := 0, in sid varchar := null, in langs any := null)
 {
    declare short_p, p_prefix, int_redirect, url any;
 
-   odd_position :=  odd_position + 1;
-   p_prefix := b3s_prop_label (p_text);
-   url := b3s_http_url (p_text, sid);
+   odd_position := odd_position + 1;
+   p_prefix := b3s_label (p_text, langs);
+   if (not length (p_prefix))
+     p_prefix := b3s_uri_curie (p_text);
+   url := b3s_http_url (p_text, sid, null, 0);
 
    if (not length (p_text))
      return;
 
-   http (sprintf ('<tr class="%s"><td class="property">', either(mod (odd_position, 2), 'odd', 'even')));
+   http (sprintf ('<tr class="%s"><td class="property">', either (mod (odd_position, 2), 'odd', 'even')));
 
    if (r) http ('is ');
 
-   http (sprintf ('<a class="uri" href="%s" title="%s">%s</a>\n', 
-                  url, 
-                  p_prefix, 
+   http (sprintf ('<a class="uri" href="%s" title="%s">%s</a>\n',
+                  url,
+                  p_prefix,
                   b3s_trunc_uri (p_prefix, 40)));
 
    if (r) http (' of');
@@ -564,15 +754,30 @@ b3s_http_print_l (in p_text any, inout odd_position int, in r int := 0, in sid v
 }
 ;
 
-create procedure b3s_label (in _S any, in langs any)
+create procedure b3s_label (in _S any, in langs any, in lbl_order_pref_id int := 0)
 {
   declare best_str, meta, data any;
   declare best_q, q float;
   declare lang, stat, msg varchar;
 
+  if (__proc_exists ('rdf_resolve_labels_s') is not null)
+    {
+      declare ret any;
+      ret := rdf_resolve_labels_s (adler32 (langs), vector (__i2id (_S)));
+      ret := coalesce (ret[0], '');
+      ret := __ro2sq (ret); 
+      if (__tag (ret) = 246)
+	ret := __rdf_strsqlval (ret);
+      if (isnumeric (ret)) 
+        return (cast (ret as varchar));
+      return ret;	
+    }
   stat := '00000';
-  exec (sprintf ('sparql define input:inference "facets" '||
-  'select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S), stat, msg, vector (), 0, meta, data);
+  --exec (sprintf ('sparql define input:inference "facets" '||
+  --'select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S), stat, msg, vector (), 0, meta, data);
+  exec (sprintf ('select __ro2sq (O), DB.DBA.RDF_LANGUAGE_OF_OBJ (__ro2sq (O)) , cast (b3s_lbl_order (P, %d) as int) from RDF_QUAD table option (with ''facets'')
+	where S = __i2id (?) and P = __i2id (''http://www.openlinksw.com/schemas/virtrdf#label'', 0) and not is_bnode_iri_id (O) order by 3 option (same_as)', lbl_order_pref_id), 
+	stat, msg, vector (_S), 0, meta, data);
   if (stat <> '00000')
     return '';
   best_str := '';
@@ -591,17 +796,23 @@ create procedure b3s_label (in _S any, in langs any)
 	}
     }
   if (__tag (best_str) = 246)
-    best_str := rdf_box_data (best_str);
+    {
+      best_str := __rdf_strsqlval (best_str);
+    }
+
+  if (isnumeric (best_str))
+    return (cast (best_str as varchar));
+
   return best_str;
 }
 ;
 
-create procedure 
+create procedure
 b3s_http_print_r (in _object any, in sid varchar, in prop any, in langs any, in rel int := 1, in acc any := null, in _from varchar := null)
 {
    declare lang, rdfs_type, rdfa, visible any;
 
-   if (_object is null) 
+   if (_object is null)
      return;
 
    if (__tag (_object) = 230)
@@ -644,29 +855,39 @@ again:
 	 _url := _object;
 
        if (not length (_url))
-         return;	 
+         return;
 
        http (sprintf ('<!-- %d -->', length (_url)));
 
        rdfa := b3s_rel_print (prop, rel, 0);
-       if (http_mime_type (_url) like 'image/%')
+       if (prop = 'http://bblfish.net/work/atom-owl/2006-06-06/#content' and _object like '%#content%')
+	 {
+	   declare src any;
+	   whenever not found goto usual_iri;
+	   select id_to_iri (O) into src from DB.DBA.RDF_QUAD where
+	   	S = iri_to_id (_object, 0) and P = iri_to_id ('http://bblfish.net/work/atom-owl/2006-06-06/#src', 0);
+	   http (sprintf ('<div id="x_content"><iframe src="%s" width="100%%" height="100%%" frameborder="0"><p>Your browser does not support iframes.</p></iframe></div><br/>', src));
+	 }
+       else if (http_mime_type (_url) like 'image/%' or http_mime_type (_url) = 'application/x-openlink-photo')
 	 http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" style="border-width:0" alt="External Image" /></a>', rdfa, b3s_http_url (_url, sid, _from), _url));
        else
 	 {
-	   declare lbl any;
+	   usual_iri:;
+	   declare lbl, vlbl any;
 	   lbl := '';
-	   if (registry_get ('fct_desc_value_labels') = '1' and (__tag (_object) = 243 or (isstring (_object) and __box_flags (_object) = 1)))
-	     lbl := b3s_label (_url, langs);
+	   if ((registry_get ('fct_desc_value_labels') = '1' or registry_get ('fct_desc_value_labels') = 0) and (__tag (_object) = 243 or (isstring (_object) and __box_flags (_object) = 1)))
+	     lbl := b3s_label (_url, langs, 1);
 	   if ((not isstring(lbl)) or length (lbl) = 0)
 	     lbl := b3s_uri_curie(_url);
-	   -- XXX: must encode as wide label to print correctly  
+	   -- XXX: must encode as wide label to print correctly
 	   --http (sprintf ('<a class="uri" %s href="%s">%V</a>', rdfa, b3s_http_url (_url, sid, _from), lbl));
 	   http (sprintf ('<a class="uri" %s href="%s">', rdfa, b3s_http_url (_url, sid, _from)));
-	   http_value (charset_recode (lbl, 'UTF-8', '_WIDE_'));
+	   vlbl := charset_recode (lbl, 'UTF-8', '_WIDE_');
+	   http_value (case when vlbl <> 0 then vlbl else lbl end);
 	   http (sprintf ('</a>'));
 	 }
        --if (registry_get ('fct_sponge') = '1' and _url like 'http://%' or _url like 'https://%')
-       --	 http (sprintf ('&nbsp;<a class="uri" href="%s&sp=1"><img src="/fct/images/goout.gif" title="Sponge" border="0"/></a>', 
+       --	 http (sprintf ('&nbsp;<a class="uri" href="%s&sp=1"><img src="/fct/images/goout.gif" alt="Sponge" title="Sponge" border="0"/></a>', 
        --	       b3s_http_url (_url, sid)));
 
      }
@@ -692,8 +913,16 @@ again:
      }
    else if (__tag (_object) = 182)
      {
+       declare vlbl any;
        http (sprintf ('<span %s>', rdfa));
-       http (_object);
+       _object := regexp_replace (_object, ' (http://[^ ]+) ', ' <a href="\\1">\\1</a> ', 1, null);
+       vlbl := charset_recode (_object, 'UTF-8', '_WIDE_');
+       if (vlbl = 0)
+         vlbl := charset_recode (_object, current_charset (), '_WIDE_');
+       if (vlbl = 0 or _object like '<object%')
+         http (_object);
+       else
+         http_value (vlbl);
        http ('</span>');
        lang := '';
      }
@@ -715,7 +944,7 @@ again:
    else if (__tag (_object) = 225)
      {
        http (sprintf ('<span %s>', rdfa));
-     http (charset_recode (_object, '_WIDE_', 'UTF-8'));
+       http (charset_recode (_object, '_WIDE_', 'UTF-8'));
        http ('</span>');
      }
    else if (__tag (_object) = 238)
@@ -771,25 +1000,35 @@ create procedure b3s_page_get_short (in val any)
 }
 ;
 
+create procedure fct_links_formats ()
+{
+  return vector (
+  	   vector ('application/rdf+xml','RDF/XML'),
+  	   vector ('text/n3','N3/Turtle'),
+  	   vector ('application/rdf+json','RDF/JSON'),
+  	   vector ('application/atom+xml','OData/Atom'),
+  	   vector ('application/odata+json','OData/JSON'),
+  	   vector ('text/cxml','CXML'),
+  	   vector ('text/csv','CSV'),
+  	   vector ('application/microdata+json','Microdata/JSON'),
+  	   vector ('text/html','HTML+Microdata'),
+  	   vector ('application/ld+json','JSON-LD')
+  	);
+}
+;
+
 create procedure fct_links_hdr (in subj any, in desc_link any)
 {
   declare links varchar;
+  declare vec any;
   desc_link := sprintf ('http://%{WSHost}s%s', desc_link);
   links := 'Link: ';
-  links := links || 
-  sprintf ('<%s&output=application%%2Frdf%%2Bxml>; rel="alternate"; type="application/rdf+xml"; title="Structured Descriptor Document (RDF/XML format)",', desc_link);
-  links := links || 
-  sprintf ('<%s&output=text%%2Fn3>; rel="alternate"; type="text/n3"; title="Structured Descriptor Document (N3/Turtle format)",', desc_link);
-  links := links || 
-  sprintf ('<%s&output=application%%2Frdf%%2Bjson>; rel="alternate"; type="application/rdf+json"; title="Structured Descriptor Document (RDF/JSON format)",', desc_link);
-  links := links || 
-  sprintf ('<%s&output=application%%2Fatom%%2Bxml>; rel="alternate"; type="application/atom+xml"; title="Structured Descriptor Document (OData/Atom format)",', desc_link);
-  links := links || 
-  sprintf ('<%s&output=application%%2Fodata%%2Bjson>; rel="alternate"; type="application/odata+json"; title="Structured Descriptor Document (OData/JSON format)",', desc_link);
-  links := links || 
-  sprintf ('<%s&output=text%%2Fcxml>; rel="alternate"; type="text/cxml"; title="Structured Descriptor Document (CXML format)",', desc_link);
-  links := links || 
-  sprintf ('<%s&output=text%%2Fcsv>; rel="alternate"; type="text/csv"; title="Structured Descriptor Document (CSV format)",', desc_link);
+  vec := fct_links_formats ();
+  foreach (any elm in vec) do
+    {
+      links := links ||
+      sprintf ('<%s&output=%U>; rel="alternate"; type="%s"; title="Structured Descriptor Document (%s format)",', desc_link, elm[0], elm[0], elm[1]);
+    }
   links := links || sprintf ('<%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic",', subj);
   links := links || sprintf ('<%s>; rev="describedby"\r\n', subj);
   http_header (http_header_get () || links);
@@ -800,22 +1039,15 @@ create procedure fct_links_hdr (in subj any, in desc_link any)
 create procedure fct_links_mup (in subj any, in desc_link any)
 {
   declare links varchar;
+  declare vec any;
   desc_link := sprintf ('http://%{WSHost}s%s', desc_link);
   links := '';
-  links := links || repeat (' ', 5) ||
-  sprintf ('<link href="%V&amp;output=application%%2Frdf%%2Bxml" rel="alternate" type="application/rdf+xml"  title="Structured Descriptor Document (RDF/XML format)" />\n', desc_link);
-  links := links || repeat (' ', 5) ||
-  sprintf ('<link href="%V&amp;output=text%%2Fn3" rel="alternate" type="text/n3" title="Structured Descriptor Document (N3/Turtle format)" />\n', desc_link);
-  links := links || repeat (' ', 5) ||
-  sprintf ('<link href="%V&amp;output=application%%2Frdf%%2Bjson" rel="alternate" type="application/rdf+json" title="Structured Descriptor Document (RDF/JSON format)" />\n', desc_link);
-  links := links || repeat (' ', 5) ||
-  sprintf ('<link href="%V&amp;output=application%%2Fatom%%2Bxml" rel="alternate" type="application/atom+xml" title="Structured Descriptor Document (OData/Atom format)" />\n', desc_link);
-  links := links || repeat (' ', 5) ||
-  sprintf ('<link href="%V&amp;output=application%%2Fatom%%2Bjson" rel="alternate" type="application/atom+json" title="Structured Descriptor Document (OData/JSON format)" />\n', desc_link);
-  links := links || repeat (' ', 5) ||
-  sprintf ('<link href="%V&amp;output=text%%2Fcxml" rel="alternate" type="text/cxml" title="Structured Descriptor Document (CXML format)" />\n', desc_link);
-  links := links || repeat (' ', 5) ||
-  sprintf ('<link href="%V&amp;output=text%%2Fcsv" rel="alternate" type="text/csv" title="Structured Descriptor Document (CSV format)" />\n', desc_link);
+  vec := fct_links_formats ();
+  foreach (any elm in vec) do
+    {
+      links := links || repeat (' ', 5) ||
+      sprintf ('<link href="%V&amp;output=%U" rel="alternate" type="%s"  title="Structured Descriptor Document (%s format)" />\n', desc_link, elm[0], elm[0], elm[1]);
+    }
   links := links || repeat (' ', 5) || sprintf ('<link href="%V" rel="http://xmlns.com/foaf/0.1/primaryTopic" />\n', subj);
   links := links || repeat (' ', 5) || sprintf ('<link href="%V" rev="describedby" />\n', subj);
   http (links);
@@ -823,13 +1055,13 @@ create procedure fct_links_mup (in subj any, in desc_link any)
 ;
 
 create procedure
-fct_make_selector (in subj any, in sid integer) 
+fct_make_selector (in subj any, in sid integer)
 {
   return null;
-}	
+}
 ;
 
-create procedure fct_make_qr_code (in data_to_qrcode any, in src_width int := 120, in src_height int := 120, in qr_scale int := 4)
+create procedure fct_make_qr_code (in data_to_qrcode any, in src_width int := 120, in src_height int := 120, in qr_scale int := 3)
 {
   declare qrcode_bytes, mixed_content, content varchar;
   declare qrcode any;
@@ -842,7 +1074,7 @@ create procedure fct_make_qr_code (in data_to_qrcode any, in src_width int := 12
   content := "IM CreateImageBlob" (src_width, src_height, 'white', 'jpg');
   qrcode := "QRcode encodeString8bit" (data_to_qrcode);
   qrcode_bytes := aref_set_0 (qrcode, 0);
-  mixed_content := "IM PasteQRcode" (qrcode_bytes, qrcode[1], qrcode[2], qr_scale, qr_scale, 0, 0, cast (content as varchar), length (content));
+  mixed_content := "IM PasteQRcode" (qrcode_bytes, qrcode[1], qrcode[2], qr_scale, qr_scale + 2, 0, 0, cast (content as varchar), length (content));
   mixed_content := encode_base64 (cast (mixed_content as varchar));
   mixed_content := replace (mixed_content, '\r\n', '');
   return mixed_content;
@@ -932,3 +1164,71 @@ create procedure DB.DBA.SPARQL_DESC_DICT_LOD (in subj_dict any, in consts any, i
 grant execute on DB.DBA.SPARQL_DESC_DICT_LOD_PHYSICAL to "SPARQL_SELECT";
 grant execute on DB.DBA.SPARQL_DESC_DICT_LOD to "SPARQL_SELECT";
 
+create procedure b3s_lbl_order (in p any, in lbl_order_pref_id int := 0)
+{
+  declare r int;
+  r := vector (
+  'http://www.w3.org/2000/01/rdf-schema#label',
+  'http://xmlns.com/foaf/0.1/name',
+  'http://purl.org/dc/elements/1.1/title',
+  'http://purl.org/dc/terms/title',
+  'http://xmlns.com/foaf/0.1/nick',
+  'http://usefulinc.com/ns/doap#name',
+  'http://rdf.data-vocabulary.org/name',
+  'http://www.w3.org/2002/12/cal/ical#summary',
+  'http://aims.fao.org/aos/geopolitical.owl#nameListEN',
+  'http://s.opencalais.com/1/pred/name',
+  'http://www.crunchbase.com/source_description',
+  'http://dbpedia.org/property/name',
+  'http://www.geonames.org/ontology#name',
+  'http://purl.org/ontology/bibo/shortTitle',
+  'http://www.w3.org/1999/02/22-rdf-syntax-ns#value',
+  'http://xmlns.com/foaf/0.1/accountName',
+  'http://www.w3.org/2004/02/skos/core#prefLabel',
+  'http://rdf.freebase.com/ns/type.object.name',
+  'http://s.opencalais.com/1/pred/name',
+  'http://www.w3.org/2008/05/skos#prefLabel',
+  'http://www.w3.org/2002/12/cal/icaltzd#summary',
+  'http://rdf.data-vocabulary.org/name',
+  'http://rdf.freebase.com/ns/common.topic.alias',
+  'http://opengraphprotocol.org/schema/title',
+  'http://rdf.alchemyapi.com/rdf/v1/s/aapi-schema.rdf#Name',
+  'http://poolparty.punkt.at/demozone/ont#title',
+  'http://linkedopencommerce.com/schemas/icecat/v1/hasShortSummaryDescription',
+  'http://www.openlinksw.com/schemas/googleplus#displayName'
+   );
+
+  if (lbl_order_pref_id = 1)
+    -- Give skos:prefLabel precedence
+    -- NLP meta-cartridges use skos:prefLabel to include a prefix identifying the meta-cartridge which identified a named entity
+    r := vector_concat (vector ('http://www.w3.org/2004/02/skos/core#prefLabel'), r);
+
+  r := position (id_to_iri (p), r);
+  if (r = 0)
+    return 100;
+  return r;
+}
+;
+
+create procedure b3s_gs_check_needed ()
+{
+  declare gs_user_id integer;
+  gs_user_id := get_user_id (1);
+  if ( bit_and (1,
+      coalesce (
+        dict_get (__rdf_graph_default_perms_of_user_dict(0), gs_user_id, null),
+        dict_get (__rdf_graph_default_perms_of_user_dict(0), http_nobody_uid(), 1023) ) )
+    and bit_and (1,
+      coalesce (
+        dict_get (__rdf_graph_default_perms_of_user_dict(1), gs_user_id, null),
+        dict_get (__rdf_graph_default_perms_of_user_dict(1), http_nobody_uid(), 1023) ) ) )
+  {
+    -- dbg_obj_princ ('gs sec check not needed');
+    return 0;
+  }
+  -- dbg_obj_princ ('gs sec check is needed');
+  return 1;
+}
+;
+
+grant execute on b3s_gs_check_needed to public;

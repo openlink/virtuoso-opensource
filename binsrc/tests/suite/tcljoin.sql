@@ -11,7 +11,9 @@ create unique index fi3 on t1 (fi3) partition (fi3 int);
 
 echo both "Cluster outer join\n";
 
+explain ('insert into t1 (row_no, fi2, string1) values (121, 121, ''121'')');
 
+checkpoint;
 insert into t1 (row_no, fi2, string1) values (121, 121, '121');
 __dbf_set ('cl_req_batch_size', 5);
 
@@ -129,3 +131,10 @@ create procedure cl_oj ()
 
 -- a non join outer, the outer subq will go first since card known to be 0
 select a.row_no, b.row_no from t1 a left join (select distinct row_no, o  from t1, rdf_quad where fi2 = -1 and s = iri_to_id ('ff', 0)) b on 1=1 where a.fi2 < 30;
+
+-- other oj where optional comes first in join order
+select top 10 a.row_no, b.row_no from t1 a left join t1 b on b.row_no = 111 where a.row_no between 10 and 1000;
+
+select top 10 a.row_no, b.row_no from t1 a left join (select distinct row_no from t1 c) b on b.row_no = 111 where a.row_no between 10 and 1000;
+
+

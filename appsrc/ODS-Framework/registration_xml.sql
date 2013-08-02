@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -27,7 +27,7 @@ UPDATE WA_SETTINGS SET WS_REGISTRATION_XML = xtree_doc('
       <field stored="none">
         <label for="reguid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
         <v:text xhtml_readonly="readonly" error-glyph="?" xhtml_id="reguid" value="--self.u_name">
-          <v:validator test="length" min="1" max="20" message="Login name cannot be empty or longer then 20 chars"/>
+          <v:validator test="length" min="1" max="20" message="Login name cannot be empty or longer than 20 chars"/>
         </v:text>
       </field>
       <field id="TITLE" stored="user_options">

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -38,6 +38,13 @@
 /*#include <Wi/statuslog.h>*/
 #undef _THREAD_INT_HS
 
+#if defined (__APPLE__)
+#include <AvailabilityMacros.h>
+
+# if defined (MAC_OS_X_VERSION_10_7) && (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_7)
+#  define SEM_NO_ORDER 1
+# endif
+#endif
 
 /* Default stack size for the main thread */
 #define MAIN_STACK_SIZE		800000
@@ -178,6 +185,11 @@ struct semaphore_s
     /* simulated threads */
     int			sem_entry_count;
     thread_queue_t	sem_waiting;
+#ifdef SEM_NO_ORDER
+    void *		sem_cv;			/* condition variable */
+    unsigned long 	sem_n_signalled;
+    unsigned long 	sem_last_signalled;
+#endif
 #ifdef SEM_DEBUG
     int			sem_last_left_line[MAX_SEM_ENT];
     char *		sem_last_left_file[MAX_SEM_ENT];
@@ -226,10 +238,18 @@ struct mutex_s
     long		mtx_spin_waits;
     long		mtx_waits;
     long		mtx_enters;
+    long long		mtx_wait_clocks;
 #endif
     int			mtx_type;
   };
 
+#ifdef MTX_METER
+#define MTX_TS_T(m) long m;
+#define MTX_TS_SET(m, mtx) m = mtx->mtx_enters
+#else
+#define MTX_TS_T(m)
+#define MTX_TS_SET(m, mtx)
+#endif
 /* thread_queue.c */
 void thread_queue_init (thread_queue_t *thq);
 void thread_queue_to (thread_queue_t *thq, thread_t *thr);

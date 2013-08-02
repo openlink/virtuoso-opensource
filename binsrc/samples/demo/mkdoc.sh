@@ -9,7 +9,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -365,7 +365,7 @@ LOG "Directory init..."
   cp mksearch.sql vad/data/doc/code/.
   cp drop.sql vad/data/doc/code/.
   cp doc_sql_rdf.sql vad/data/doc/code/.
-  cp -f $HOME/binsrc/dav/DET_RDFData.sql vad/data/doc/code/.
+  #cp -f $HOME/binsrc/dav/DET_RDFData.sql vad/data/doc/code/.
 }
 
 sticker_init() {
@@ -387,7 +387,7 @@ sticker_init() {
   echo "  <name package=\"doc\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"Virtuoso Documentation\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2011 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2013 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -410,7 +410,7 @@ sticker_init() {
   echo "      registry_set('_doc_build_', '$PACKDATE');" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH"/doc/code/drop.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH"/doc/code/mksearch.sql', 1, 'report', $ISDAV);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH"/doc/code/DET_RDFData.sql', 1, 'report', $ISDAV);" >> $STICKER
+  #echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH"/doc/code/DET_RDFData.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH"/doc/code/doc_sql_rdf.sql', 1, 'report', $ISDAV);" >> $STICKER
   echo "      DB.DBA.VHOST_REMOVE(lpath=>'/doc',del_vsps => 1);" >> $STICKER
   echo "      DB.DBA.VHOST_REMOVE(lpath=>'/doc/html',del_vsps => 1);" >> $STICKER

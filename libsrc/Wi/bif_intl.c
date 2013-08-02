@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -29,6 +29,7 @@
 #include <wchar.h>
 #endif
 #include <limits.h>
+#include "http.h" /* For WS_CHARSET */
 #include "wi.h"
 #include "libutil.h"
 #include "sqlnode.h"

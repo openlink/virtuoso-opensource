@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -76,10 +76,27 @@ unsigned char ins_lengths[INS_MAX + 1] = {
 
 
 
+
+caddr_t
+ins_call_vec_deflt (state_slot_t ** default_ssls, caddr_t val, int n_formal, int * ctr)
+{
+  state_slot_t * defaults = *default_ssls;
+  int nth = *ctr;
+  if (!defaults)
+    *default_ssls =  defaults = (state_slot_t *)dk_alloc_box_zero (sizeof (state_slot_t) * n_formal, DV_BIN);
+  defaults[nth].ssl_type = SSL_CONSTANT;
+  defaults[nth].ssl_constant = val;
+  defaults[nth].ssl_sqt.sqt_dtp = DV_TYPE_OF (val);
+  (*ctr)++;
+  return (caddr_t)&defaults[nth];
+}
+
+
 void
 ins_call_kwds (caddr_t * qst, query_t * proc, instruction_t * ins, caddr_t * params,
-    int * any_out, code_vec_t code_vec)
+	       int * any_out, code_vec_t code_vec, state_slot_t ** vec_defaults)
 {
+  int deflt_ctr = 0;
   int is_vec_call = proc->qr_proc_vectored;
   int n_param_box = BOX_ELEMENTS (params);
   caddr_t * kwds = ins->_.call.kwds;
@@ -126,7 +143,7 @@ ins_call_kwds (caddr_t * qst, query_t * proc, instruction_t * ins, caddr_t * par
 	  caddr_t address;
 	  if (actual_ssl->ssl_type == SSL_CONSTANT)
 	    {
-	      sqlr_new_error ("HY105", "SR181", "Cannot pass literal as reference parameter.");
+	      sqlr_new_error ("HY105", "SR181", "Cannot pass literal as reference parameter \"%.100s\"", param_ssl->ssl_name );
 	    }
 	  if (SSL_VEC == actual_ssl->ssl_type ||SSL_REF == actual_ssl->ssl_type)
 	    {
@@ -134,10 +151,11 @@ ins_call_kwds (caddr_t * qst, query_t * proc, instruction_t * ins, caddr_t * par
 	      int row = caller->qi_set;
 	      data_col_t * dc = QST_BOX (data_col_t *, qst, actual_ssl->ssl_index);
 	      if (!(DCT_BOXES & dc->dc_type))
-		sqlr_new_error ("42000", "VEC..", "In vectored code calling non-vectored inout parameter mode is supported only is caller variable is a boxed vector, e.g. type any array");
+		sqlr_new_error ("42000", "VEC..", "In vectored code calling non-vectored inout parameter mode is supported only if caller variable is a boxed vector, e.g. type any array (caller variable \"%.100s\", calling parameter \"%.100s\")",
+                  actual_ssl->ssl_name, param_ssl->ssl_name );
 	      if (SSL_REF == actual_ssl->ssl_type)
 		row = sslr_set_no (qst, actual_ssl, row);
-	      address = &((caddr_t*)dc->dc_values)[row];
+	      address = (caddr_t)&((caddr_t*)dc->dc_values)[row];
 	    }
 	  else if ((!ins->_.call.ret || !IS_REAL_SSL (ins->_.call.ret) || !ins->_.call.ret->ssl_is_observer) &&
 	      actual_ssl->ssl_is_observer)
@@ -163,10 +181,10 @@ ins_call_kwds (caddr_t * qst, query_t * proc, instruction_t * ins, caddr_t * par
 	  if (IS_SSL_REF_PARAMETER (formal->ssl_type)
 	      || formal->ssl_vec_param >= SSL_VP_OUT)
 	    sqlr_new_error ("HY502", "SR182",
-		"inout or out parameter %s not supplied in keyword parameter call", formal->ssl_name);
+		"inout or out parameter %s not supplied in keyword parameter call of %s", formal->ssl_name, proc->qr_proc_name);
 	  /* XXX: what about the =0 case */
 	  if (proc->qr_parm_default && proc->qr_parm_default[inx])
-	    params[inx] = is_vec_call ? (caddr_t)proc->qr_parm_default[inx] : box_copy_tree (proc->qr_parm_default[inx]);
+	    params[inx] = is_vec_call ? ins_call_vec_deflt (vec_defaults, (caddr_t)proc->qr_parm_default[inx], n_param_box, &deflt_ctr) : box_copy_tree (proc->qr_parm_default[inx]);
 	  else
 	    sqlr_new_error ("07S01", "SR183",
 		"Required argument %s (no %d) not supplied to %s", formal->ssl_name, inx + 1, proc->qr_proc_name);
@@ -176,12 +194,70 @@ ins_call_kwds (caddr_t * qst, query_t * proc, instruction_t * ins, caddr_t * par
   END_DO_SET();
 }
 
+caddr_t
+sqlr_run_bif_in_sandbox (bif_metadata_t *bmd, caddr_t *args, caddr_t *err_ret)
+{
+  int argctr, argcount = BOX_ELEMENTS (args);
+#ifdef MALLOC_DEBUG
+  size_t ssls_size = (argcount ? sizeof (state_slot_t) * argcount : 1); /* 1 instead of 0 to avoid "zero bytes allocation" warning */
+#else
+  size_t ssls_size = sizeof (state_slot_t) * argcount;
+#endif
+  state_slot_t *ssls = (state_slot_t *)dk_alloc (ssls_size);
+  state_slot_t **params = (state_slot_t **)dk_alloc_list (argcount);
+  query_instance_t *qi_stub = (query_instance_t *)dk_alloc_list_zero (QI_FIRST_FREE + argcount);
+  caddr_t ret_val = NULL;
+  memset (ssls, 0, ssls_size);
+  qi_stub->qi_client = sqlc_client ();
+  qi_stub->qi_u_id = U_ID_NOBODY;
+  qi_stub->qi_g_id = U_ID_NOGROUP;
+  qi_stub->qi_thread = THREAD_CURRENT_THREAD;
+  for (argctr = argcount; argctr--; /* no step */)
+    {
+      state_slot_t *sl = ssls + argctr;
+      caddr_t val = args[argctr];
+      sl->ssl_index = QI_FIRST_FREE + argctr;
+      sl->ssl_type = SSL_CONSTANT;
+      sl->ssl_constant = ((caddr_t *)(qi_stub))[QI_FIRST_FREE + argctr] = val;
+      sl->ssl_dtp = DV_TYPE_OF (val);
+      if (sl->ssl_dtp == DV_LONG_STRING)
+        sl->ssl_prec = box_length (val) - 1;
+      else
+        sl->ssl_prec = ddl_dv_default_prec (sl->ssl_dtp);
+      params[argctr] = sl;
+    }
+  QR_RESET_CTX
+    {
+      if (!bmd->bmd_is_pure)
+        sqlr_new_error ("42000", "SR650", "Only pure function can be executed in a sandbox, %.200s() is not pure", bmd->bmd_name);
+      ret_val = bmd->bmd_main_impl ((caddr_t *)qi_stub, err_ret, params);
+    }
+  QR_RESET_CODE
+    {
+      du_thread_t *self = THREAD_CURRENT_THREAD;
+      err_ret[0] = thr_get_error_code (self);
+      thr_set_error_code (self, NULL);
+      /*no POP_QR_RESET*/;
+    }
+  END_QR_RESET
+  dk_free_box ((caddr_t)qi_stub);
+  dk_free_box ((caddr_t)params);
+  dk_free (ssls, ssls_size);
+  if (NULL != err_ret[0])
+    {
+      dk_free_tree (ret_val);
+      return NULL;
+    }
+  return ret_val;
+}
 
 void
 ins_call_bif (instruction_t * ins, caddr_t * qst, code_vec_t code_vec)
 {
   caddr_t err = NULL;
       caddr_t value;
+  instruction_t ins_tmp;
+  instruction_t * ins_to_use = ins;
   if (ins->_.bif.ret == CV_CALL_PROC_TABLE)
 	{
 	  sqlr_new_error ("42000", "SR184",
@@ -189,23 +265,33 @@ ins_call_bif (instruction_t * ins, caddr_t * qst, code_vec_t code_vec)
 	      "function in a procedure view.  "
 	      "Define an intermediate PL function to call the bif.");
 	}
+  if (ins->_.bif.vectored)
+    {
+#if 0
+      sqlr_new_error ("42000", "SR184", "Vectored Built-in function is not allowed");
+#else
+      ins_tmp = *ins;
+      ins_to_use = &ins_tmp;
+      ins_tmp._.bif.bif = bif_find (ins->_.bif.proc);
+#endif
+    }
 
 #ifdef WIRE_DEBUG
   /*      list_wired_buffers (__FILE__, __LINE__, "BIF call start");*/
 #endif
-  value = ins->_.bif.bif (qst, &err, ins->_.call.params);
+  value = ins_to_use->_.bif.bif (qst, &err, ins_to_use->_.call.params);
 #ifdef WIRE_DEBUG
   /*      list_wired_buffers (__FILE__, __LINE__, "BIF call finish");*/
 #endif
 
       if (!err)
 	{
-      if (ins->_.bif.ret && IS_REAL_SSL (ins->_.bif.ret))
+      if (ins_to_use->_.bif.ret && IS_REAL_SSL (ins_to_use->_.bif.ret))
 	{
 	  if (!IS_BOX_POINTER (value))
-	    qst_set_long (qst, ins->_.bif.ret, (ptrlong)value);
+	    qst_set_long (qst, ins_to_use->_.bif.ret, (ptrlong)value);
 	  else
-	qst_set (qst, ins->_.bif.ret, value);
+	    qst_set (qst, ins_to_use->_.bif.ret, value);
 	}
 	  else
 	    dk_free_tree (value);
@@ -224,7 +310,7 @@ ins_call_bif (instruction_t * ins, caddr_t * qst, code_vec_t code_vec)
 
 
 void
-ins_call_bif_vec (instruction_t * ins, caddr_t * qst, code_vec_t code_vec)
+ins_call_bif_vec (instruction_t * ins, caddr_t * qst, code_vec_t code_vec, int * use_scalar)
 {
   caddr_t err = NULL;
   if (ins->_.bif.ret == CV_CALL_PROC_TABLE)
@@ -237,11 +323,18 @@ ins_call_bif_vec (instruction_t * ins, caddr_t * qst, code_vec_t code_vec)
 
   ((bif_vec_t)ins->_.bif.bif) (qst, &err, ins->_.call.params, ins->_.bif.ret);
   if (err)
+    {
+      if (BIF_NOT_VECTORED == err)
+	{
+	  *use_scalar = 1;
+	  return;
+	}
     sqlr_resignal (err);
+}
 }
 
 
-static void
+void
 complete_proc_name (char * proc_name, char * complete, char * def_qual, char * def_owner)
 {
   char q[MAX_NAME_LEN];
@@ -276,6 +369,7 @@ void
 ins_call (instruction_t * ins, caddr_t * qst, code_vec_t code_vec)
 {
   PROC_SAVE_VARS;
+  state_slot_t *vec_defaults = NULL;
   oid_t eff_g_id, eff_u_id;
   int is_computed = ins->ins_type == INS_CALL_IND;
   caddr_t value;
@@ -449,13 +543,15 @@ report_error:
 	eff_g_id = eff_u_id;
     }
   if (!sec_proc_check (proc, eff_g_id, eff_u_id))
-    sqlr_new_error ("42000", "SR186", "No permission to execute procedure %s with user ID %d, group ID %d", proc_name, (int)eff_g_id, (int)eff_u_id);
+    sqlr_new_error ("42000", "SR186", "No permission to execute procedure %s with user ID %d, group ID %d",
+      proc_name, (int)eff_g_id, (int)eff_u_id );
   if (1 || ins->_.call.kwds || 0 == param_len)
     {
       int formal_len = dk_set_length (proc->qr_parms);
       BOX_AUTO (ptmp, pars_auto, formal_len * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
       pars = (caddr_t *) ptmp;
-      ins_call_kwds (qst, proc, ins, pars, &any_out, code_vec);
+
+ins_call_kwds (qst, proc, ins, pars, &any_out, code_vec, &vec_defaults);
     }
 #ifndef ROLLBACK_XQ
   dk_free_tree ((caddr_t) qi->qi_thread->thr_func_value); /* IvAn/010801/LeakOnReturn: this line added */
@@ -469,8 +565,12 @@ report_error:
       cli->cli_result_ts = (table_source_t *) unbox_ptrlong (qst_get (qst, ins->_.call.proc_ssl));
     }
   if (proc->qr_proc_vectored)
+    {
     err = qr_subq_exec_vec (qi->qi_client, proc, qi,
 			    (caddr_t *) & auto_qi, sizeof (auto_qi), (state_slot_t**)pars, ins->_.call.ret, NULL, NULL);
+      if (vec_defaults)
+	dk_free_box ((caddr_t)vec_defaults);
+    }
   else
   err = qr_subq_exec (qi->qi_client, proc, qi,
 		 (caddr_t *) & auto_qi, sizeof (auto_qi), NULL, pars, NULL);
@@ -636,6 +736,7 @@ void
 ins_call_vec_vec (instruction_t * ins, caddr_t * qst, query_t * proc, code_vec_t code_vec)
 {
   PROC_SAVE_VARS;
+  state_slot_t * vec_defaults = NULL;
   oid_t eff_g_id, eff_u_id;
   query_instance_t *qi = (query_instance_t *) QST_INSTANCE (qst);
   client_connection_t * cli = qi->qi_client;
@@ -664,11 +765,12 @@ ins_call_vec_vec (instruction_t * ins, caddr_t * qst, query_t * proc, code_vec_t
 	eff_g_id = eff_u_id;
     }
   if (!sec_proc_check (proc, eff_g_id, eff_u_id))
-    sqlr_new_error ("42000", "SR186", "No permission to execute procedure %s.", proc->qr_proc_name ? proc->qr_proc_name : "<unknown>");
+    sqlr_new_error ("42000", "SR186", "No permission to execute vectored procedure %s with user ID %d, group ID %d.",
+      proc->qr_proc_name ? proc->qr_proc_name : "<unknown>", (int)eff_g_id, (int)eff_u_id );
   formal_len = dk_set_length (proc->qr_parms);
   BOX_AUTO (ptmp, pars_auto, formal_len * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
   pars = (caddr_t *) ptmp;
-  ins_call_kwds (qst, proc, ins, pars, &any_out, code_vec);
+  ins_call_kwds (qst, proc, ins, pars, &any_out, code_vec, &vec_defaults);
 #ifndef ROLLBACK_XQ
   dk_free_tree ((caddr_t) qi->qi_thread->thr_func_value); /* IvAn/010801/LeakOnReturn: this line added */
 #endif
@@ -682,6 +784,8 @@ ins_call_vec_vec (instruction_t * ins, caddr_t * qst, query_t * proc, code_vec_t
     }
   err = qr_subq_exec_vec (qi->qi_client, proc, qi,
 			  (caddr_t *) & auto_qi, sizeof (auto_qi), (state_slot_t **)pars, ins->_.call.ret, NULL, NULL);
+  if (vec_defaults)
+    dk_free_box ((caddr_t)vec_defaults);
   if (CV_CALL_PROC_TABLE == ins->_.call.ret)
     {
       hash_area_t *ha = (hash_area_t *)cli->cli_result_ts;
@@ -702,7 +806,7 @@ ins_call_vec_vec (instruction_t * ins, caddr_t * qst, query_t * proc, code_vec_t
 
 
 void
-ins_call_vec (instruction_t * ins, caddr_t * inst, code_vec_t code_vec)
+ins_call_vec (instruction_t * ins, caddr_t * inst, code_vec_t code_vec, int first_set, int n_sets)
 {
   QNCAST (query_instance_t, qi, inst);
   query_t * qr ;
@@ -710,13 +814,13 @@ ins_call_vec (instruction_t * ins, caddr_t * inst, code_vec_t code_vec)
   if (INS_CALL_IND == ins->ins_type || DV_ARRAY_OF_POINTER == box_tag (proc_name))
     goto general;
   qr = ins_call_proc (ins, inst, code_vec);
-  if (!qr->qr_proc_vectored)
+  if (!qr->qr_proc_vectored || n_sets - first_set <= 1)
     goto general;
   ins_call_vec_vec (ins, inst, qr, code_vec);
   return;
  general:
   {
-    int set, n_sets = qi->qi_n_sets, first_set = 0;
+    int set;
     db_buf_t set_mask = qi->qi_set_mask;
     SET_LOOP
       {
@@ -756,10 +860,6 @@ qn_init (table_source_t * ts, caddr_t * inst)
   if (ts->src_gen.src_out_fill)
     QST_INT (inst, ts->src_gen.src_out_fill) = 0;
   cl_node_init (ts, inst);
-#if 0 /* if needed, it is reset by itself */
-  if (subq->qr_remote_mode != QR_LOCAL)
-    remote_subq_close (subq, inst);
-#endif
 
   if (IS_TS (ts))
     {
@@ -783,8 +883,12 @@ qn_init (table_source_t * ts, caddr_t * inst)
   qn_record_in_state ((data_source_t*) ts, inst, NULL);
   /* no subq nodes continuable after init */
   if (ts->src_gen.src_input == (qn_input_fn) setp_node_input)
+    {
+      QNCAST (setp_node_t, setp, ts);
+      if (HA_FILL != setp->setp_ha->ha_op)
     setp_temp_clear ((setp_node_t *) ts, ((setp_node_t*)ts)->setp_ha, inst);
-  if (ts->src_gen.src_input == (qn_input_fn) fun_ref_node_input)
+    }
+  else if (ts->src_gen.src_input == (qn_input_fn) fun_ref_node_input)
     {
       fun_ref_node_t * fref = (fun_ref_node_t*) ts;
       DO_SET (hash_area_t *, ha, &fref->fnr_distinct_ha)
@@ -793,7 +897,7 @@ qn_init (table_source_t * ts, caddr_t * inst)
 	}
       END_DO_SET();
     }
-  if (ts->src_gen.src_input == (qn_input_fn) skip_node_input)
+  else if (ts->src_gen.src_input == (qn_input_fn) skip_node_input)
     {
       QNCAST (skip_node_t, sk, ts);
       if (sk->src_gen.src_sets)
@@ -801,7 +905,7 @@ qn_init (table_source_t * ts, caddr_t * inst)
       else
       qst_set_long (inst, ((skip_node_t *)ts)->sk_row_ctr, 0);
     }
-  if ((qn_input_fn) select_node_input == ts->src_gen.src_input
+  else if ((qn_input_fn) select_node_input == ts->src_gen.src_input
       || (qn_input_fn) select_node_input_subq == ts->src_gen.src_input)
     {
       QNCAST (select_node_t, sel, ts);
@@ -809,6 +913,17 @@ qn_init (table_source_t * ts, caddr_t * inst)
 	qst_set_long (inst, sel->sel_row_ctr, 0);
       if (sel->sel_row_ctr_array)
 	qst_set_long (inst, sel->sel_row_ctr_array, 0);
+    }
+  else if (IS_QN (ts, trans_node_input))
+    tn_qn_init ((data_source_t*)ts, inst);
+  else if (IS_QN (ts, chash_read_input))
+    {
+      key_source_t * ks = ts->ts_order_ks;
+      if (ts->ts_nth_slice)
+	QST_INT (inst, ts->ts_nth_slice) = 0;
+      QST_INT (inst, ks->ks_nth_cha_part) = 0;
+      QST_BOX (chash_page_t *, inst, ks->ks_cha_chp) = NULL;
+      QST_INT (inst, ks->ks_pos_in_temp) = 0;
     }
 }
 
@@ -818,6 +933,9 @@ void
 subq_init (query_t * subq, caddr_t * inst)
 {
   dk_set_t nodes = subq->qr_bunion_reset_nodes ? subq->qr_bunion_reset_nodes : subq->qr_nodes;
+  QNCAST (QI, qi, inst);
+  if (qi->qi_slice_needs_init)
+    return; /* this is a just allocated dfg branch that does not yet have the dcs in place.  Nodes are not inited and hence cannot be safely reset */
   /* nodes to reset - a bunion term's nodes are owned by the enclosing qr, hence the different list */
   if (subq->qr_cl_run_started)
     inst[subq->qr_cl_run_started] = NULL;
@@ -849,8 +967,6 @@ subq_init (query_t * subq, caddr_t * inst)
     {
       qn_record_in_state ((data_source_t*) ts, inst, NULL);
       /* no subq nodes continuable after init */
-      if (ts->src_gen.src_input == (qn_input_fn) setp_node_input)
-	setp_temp_clear ((setp_node_t *) ts, ((setp_node_t*)ts)->setp_ha, inst);
       if (ts->src_gen.src_input == (qn_input_fn) fun_ref_node_input)
 	{
 	  fun_ref_node_t * fref = (fun_ref_node_t*) ts;
@@ -859,6 +975,11 @@ subq_init (query_t * subq, caddr_t * inst)
 	      setp_temp_clear (NULL, ha, inst);
 	    }
 	  END_DO_SET();
+	}
+      else if (IS_QN (ts, hash_fill_node_input))
+	{
+	  QNCAST (fun_ref_node_t, fref, ts);
+	  setp_temp_clear (fref->fnr_setp, fref->fnr_setp->setp_ha, inst);
 	}
       qn_init (ts, inst);
     }
@@ -890,6 +1011,8 @@ subq_handle_reset (query_instance_t * qi, int reset)
     case RST_DEADLOCK:
       {
 	int trx_code = qi->qi_trx->lt_error;
+	if (!trx_code)
+	  trx_code = LTE_DEADLOCK;
 	SEND_TRX_ERROR_CALLER (err, caller, trx_code, LT_ERROR_DETAIL (qi->qi_trx));
 	return err;
       }
@@ -997,6 +1120,8 @@ void
 qr_resume_pending_nodes (query_t * subq, caddr_t * inst)
 {
   dk_set_t nodes = subq->qr_bunion_reset_nodes ? subq->qr_bunion_reset_nodes : subq->qr_nodes;
+  QNCAST (QI, qi, inst);
+  int n_sets_save = qi->qi_n_sets;
   /* if the qr is a union term, continue the nodes that belong to the union term itself. qr_nodes is null and the nodes of the union term are added to the nodes of the containing qr */
 cont_innermost_loop:
   DO_SET (data_source_t *, src, &nodes)
@@ -1005,7 +1130,8 @@ cont_innermost_loop:
       {
 	if (src->src_continue_reset)
 	  dc_reset_array (inst, src, src->src_continue_reset, -1);
-	SRC_ENTER (src, inst);
+	qi->qi_n_sets = n_sets_save;
+	SRC_RESUME (src, inst);
 	src->src_input (src, inst, NULL);
 	SRC_RETURN (src, inst);
 	goto cont_innermost_loop;
@@ -1031,17 +1157,35 @@ cont_innermost_loop:
 }
 
 
+void
+cli_restore_slice (client_connection_t * cli, cl_slice_t * old_csl)
+{
+  if (old_csl)
+    {
+      caddr_t err = NULL;
+      cli_set_slice (cli, old_csl->csl_clm, old_csl->csl_id, &err);
+      dk_free_tree (err);
+    }
+  else
+    cli_set_slice (cli, NULL, QI_NO_SLICE, NULL);
+}
+
+
 caddr_t
 subq_next (query_t * subq, caddr_t * inst, int cr_state)
 {
   query_instance_t *qi = (query_instance_t *) inst;
+  client_connection_t * cli = qi->qi_client;
+  cl_slice_t * old_csl = cli->cli_csl;
   QR_RESET_CTX_T (qi->qi_thread)
   {
     if (CR_INITIAL == cr_state)
       {
+	int qi_sets = qi->qi_n_sets;
 	if (subq->qr_no_cast_error)
 	  qi->qi_no_cast_error = 1;
 	qn_input (subq->qr_head_node, inst, inst);
+	qi->qi_n_sets = qi_sets;
 	qr_resume_pending_nodes (subq, inst);
       }
     else
@@ -1053,10 +1197,12 @@ subq_next (query_t * subq, caddr_t * inst, int cr_state)
   {
     POP_QR_RESET;
     QI_BUNION_RESET (qi, subq, 1);
+    cli_restore_slice (cli, old_csl);
     return (subq_handle_reset (qi, reset_code));
   }
   END_QR_RESET;
  qr_complete:
+  cli_restore_slice (cli, old_csl);
   return ((caddr_t) SQL_NO_DATA_FOUND);
 }
 
@@ -1067,14 +1213,20 @@ ins_subq (instruction_t * ins, caddr_t * qst)
 {
   caddr_t err;
   query_instance_t * qi = (query_instance_t *) qst;
+  char save_lock = qi->qi_lock_mode;
   int n_sets_save = qi->qi_n_sets;
+  db_buf_t sm_save = qi->qi_set_mask;
   client_connection_t * cli = qi->qi_client;
   int at_start = cli->cli_anytime_started;
   if (!ins->_.subq.query->qr_select_node)
     cli->cli_anytime_started = 0;
   qi->qi_n_affected = 0;
+  qi->qi_n_sets = 0;
+  qi->qi_set_mask = NULL;
   subq_init (ins->_.subq.query, qst);
   err = subq_next (ins->_.subq.query, qst, CR_INITIAL);
+  qi->qi_lock_mode = save_lock;
+  qi->qi_set_mask = sm_save;
   qi->qi_n_sets = n_sets_save;
   cli->cli_anytime_started = at_start;
   if (ins->_.subq.query->qr_proc_vectored)
@@ -1135,8 +1287,7 @@ bing ()
 }
 
 
-#define AC_ENLIST_CK(qi) \
-if (qi->qi_client->cli_row_autocommit && qi->qi_trx->lt_cl_branches) bing ();
+#define AC_ENLIST_CK(qi)
 
 void
 ins_fetch (instruction_t * ins, caddr_t * qst)
@@ -1188,7 +1339,7 @@ ins_fetch (instruction_t * ins, caddr_t * qst)
 
       AC_ENLIST_CK (((query_instance_t*)qst));
     }
-  else
+  else if (ins->_.fetch.row_ctr)
     QST_INT (qst, ins->_.fetch.row_ctr) = nth_row = nth_row + 1;
   if (ins->_.fetch.targets)
     {
@@ -1269,7 +1420,7 @@ do_pl_stats (query_instance_t *qi, int32 lineno)
   if (IS_POINTER (caller))
     {
       qr_caller = caller->qi_query;
-      caller_name = caller->qi_query->qr_proc_name;
+      caller_name = qr_caller ? qr_caller->qr_proc_name : NULL;
     }
   mutex_enter (qr->qr_stats_mtx);
   thisct = (int32) (ptrlong) gethash ((void *) (ptrlong) lineno, qr->qr_line_counts);
@@ -1560,9 +1711,9 @@ box_err_print_box (caddr_t param_value, int call_depth)
       {
         iri_id_t iid = unbox_iri_id (param_value);
         if (iid >= MIN_64BIT_BNODE_IRI_ID)
-          return box_sprintf (30, "#ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+          return box_sprintf (30, "#ib" IIDBOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
         else
-          return box_sprintf (30, "#i" BOXINT_FMT, (boxint)(iid));
+          return box_sprintf (30, "#i" IIDBOXINT_FMT, (boxint)(iid));
       }
     case DV_REFERENCE:
       {
@@ -1638,18 +1789,27 @@ qn_input_v (data_source_t * xx, caddr_t * inst, caddr_t * state)
 }
 
 void
-ins_qnode (instruction_t * ins, caddr_t * qst)
+ins_qnode (instruction_t * ins, caddr_t * qst, int from_vec)
 {
   query_instance_t * qi = (query_instance_t *) qst;
   client_connection_t * cli = qi->qi_client;
   int at_start = cli->cli_anytime_started;
+  int at_to = cli->cli_anytime_timeout;
   cli->cli_anytime_started = 0;
   QR_RESET_CTX_T (qi->qi_thread)
     {
       data_source_t * xx = ins->_.qnode.node;
+      if (!IS_QN (ins->_.qnode.node, dpipe_node_input))
       qi->qi_n_affected = 0;
       if (xx->src_sets)
+	{
+	  if (!from_vec)
+	    {
+	      qi->qi_n_sets = 1;
+	      qi->qi_set_mask = NULL;
+	    }
 	qn_input_v (ins->_.qnode.node, QST_INSTANCE (qst), qst);
+	}
       else
       qn_input (ins->_.qnode.node, QST_INSTANCE (qst), qst);
       ins_qnode_resume (ins->_.qnode.node, qst);
@@ -1658,12 +1818,14 @@ ins_qnode (instruction_t * ins, caddr_t * qst)
     {
       POP_QR_RESET;
       cli->cli_anytime_started = at_start;
+      cli->cli_anytime_timeout = at_to;
       cl_node_init ((table_source_t *) ins->_.qnode.node, (caddr_t*) qi);
       sqlr_resignal (subq_handle_reset (qi, reset_code));
     }
   END_QR_RESET;
   AC_ENLIST_CK (qi);
   cli->cli_anytime_started = at_start;
+  cli->cli_anytime_timeout = at_to;
 }
 
 
@@ -1750,6 +1912,8 @@ ins_for_vect (caddr_t * inst, instruction_t * ins)
       else if (len != BOX_ELEMENTS (arr))
 	sqlr_new_error ("42000", "VEC..", "Input arrays  in for_vectored not of equal length");
       dc_reset (dc);
+      if (len > dc_max_batch_sz)
+	sqlr_new_error ("42000", "FRVEC",  "array in for vectored over max vector length %d > %d", len, dc_max_batch_sz);
       if (ins->_.for_vect.modify && (DCT_BOXES & dc->dc_type))
 	{
 	  int len = BOX_ELEMENTS (arr);
@@ -1758,6 +1922,8 @@ ins_for_vect (caddr_t * inst, instruction_t * ins)
 	    {
 	      ((caddr_t*)dc->dc_values)[inx2] = in;
 	      arr[inx2] = NULL;
+	      if (IS_BOX_POINTER (in) && DV_DB_NULL == box_tag (in))
+		dc->dc_any_null = 1;
 	    }
 	  END_DO_BOX;
 	  dc->dc_n_values = inx2;
@@ -1765,7 +1931,9 @@ ins_for_vect (caddr_t * inst, instruction_t * ins)
       else
 	{
 	  DO_BOX (caddr_t, in, inx2, arr)
+	    {
 	    dc_append_box (dc, in);
+	    }
 	  END_DO_BOX;
 	}
     }
@@ -1787,6 +1955,15 @@ ins_for_vect (caddr_t * inst, instruction_t * ins)
   END_DO_BOX;
   qi->qi_set = 0;
   qi->qi_n_sets = 0;
+}
+
+
+void
+vdb_enter_lt_nc (lock_trx_t * lt)
+{
+  IN_TXN;
+  lt->lt_vdb_threads++;
+  LEAVE_TXN;
 }
 
 
@@ -1920,10 +2097,22 @@ lt_check_error (lock_trx_t * lt)
       IN_TXN;
       if (LT_FREEZE == lt->lt_status)
 	{
+	  if (lt->lt_vdb_threads)
+	    {
+	      /* in io sect, proceed if freeze, end of io sect will block to wait for cpt */
+	      LEAVE_TXN;
+	      return;
+	    }
 	  lt_ack_freeze_inner (lt);
 	  lt->lt_status = LT_PENDING;
 	  LEAVE_TXN;
 	  return;
+	}
+      if (lt->lt_vdb_threads)
+	{
+	  MAKE_TRX_ERROR (lt_err, err, LT_ERROR_DETAIL (lt));
+	  LEAVE_TXN;
+	  sqlr_resignal (err);
 	}
       if (lt->lt_client->cli_clt && lt->lt_client->cli_in_daq != CLI_IN_DAQ_AC)
 	{
@@ -2215,13 +2404,19 @@ code_vec_run_1 (code_vec_t code_vec, caddr_t * qst, int offset)
   instruction_t * volatile prev_breakpoint_ins = NULL;
 #endif
   query_instance_t * volatile qi = (query_instance_t *)qst;
+  int no_vec = 0;
+  if (CV_THIS_SET_ONLY == offset)
+    {
+      offset = 0;
+      no_vec = 1;
+    }
   ins = INSTR_ADD_OFS (code_vec, offset);
   qi_check_trx_error (qi, 0);
   qi_check_buf_writers ();
 again:
   QR_RESET_CTX_T (qi->qi_thread)
     {
-      if (qi->qi_query->qr_proc_vectored)
+      if (qi->qi_query->qr_proc_vectored && !no_vec)
 	{
 	  qi->qi_set_mask = NULL;
 	  code_vec_run_v (code_vec, qst, offset, -1, -1, NULL, 0, 0);
@@ -2322,7 +2517,7 @@ again:
 		ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.subq)));
 		break;
 	    case INS_QNODE:
-		  ins_qnode ((instruction_t *) ins, qst);
+	      ins_qnode ((instruction_t *) ins, qst, 0);
 		  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.qnode)));
 		  break;
 	      case INS_OPEN:
@@ -2513,7 +2708,7 @@ code_vec_run_no_catch (code_vec_t code_vec, it_cursor_t *itc)
 	  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.subq)));
 	  break;
 	case INS_QNODE:
-	  ins_qnode (ins, qst);
+	  ins_qnode (ins, qst, 0);
 	  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.qnode)));
 	  break;
 	case INS_OPEN:
@@ -2686,8 +2881,6 @@ exists_pred_func (caddr_t * qst, subq_pred_t * subp)
   int n_sets_save = qi->qi_n_sets;
   query_t *subq = subp->subp_query;
   caddr_t err;
-  if (subp->subp_cl_run)
-    return ins_cl_exists (subp, qst);
   subq_init (subq, qst);
 
 
@@ -2783,6 +2976,74 @@ subq_comp_func (caddr_t * qst, void * _subp)
   return 0;
 }
 
+#define CLRNULL(dc, set, dtp)			\
+  if (dc->dc_any_null) { \
+      if (BIT_IS_SET (dc->dc_nulls, set)) {		\
+      BIT_CLR (dc->dc_nulls, set); \
+      ((dtp*)dc->dc_values)[set] = 0; \
+      }}
+void
+ins_vec_agg_int_sum (instruction_t * ins, caddr_t * inst)
+{
+  QNCAST (QI, qi, inst);
+  int64 * resv, *argv;
+  int sets[ARTM_VEC_LEN];
+  int arg_sets[ARTM_VEC_LEN];
+  data_col_t * res_dc = QST_BOX (data_col_t *, inst, ins->_.agg.result->ssl_index);
+  data_col_t * sets_dc = QST_BOX (data_col_t *, inst, ins->_.agg.set_no->ssl_index);
+  int64 * sets_v = (int64*)sets_dc->dc_values;
+  int inx;
+  int is_const = SSL_CONSTANT == ins->_.agg.arg->ssl_type;
+  int64 cnst = is_const ? unbox (ins->_.agg.arg->ssl_constant) : 0;
+  int n_sets = qi->qi_n_sets;
+  for (inx = 0; inx < n_sets; inx += ARTM_VEC_LEN)
+    {
+      int last = MIN (n_sets, inx + ARTM_VEC_LEN);
+      int row, max_res_set =1;
+      sslr_n_consec_ref (inst, (state_slot_ref_t*)ins->_.agg.set_no, sets, inx, last - inx);
+
+      for (row = 0; row < last - inx; row++)
+	if (sets_v[sets[row]] >= max_res_set)
+	  max_res_set = sets_v[sets[row]] + 1;
+      if (max_res_set > res_dc->dc_n_values)
+	{
+	  DC_CHECK_LEN (res_dc, max_res_set - 1);
+	  memzero (((int64*)res_dc->dc_values) + res_dc->dc_n_values, sizeof (int64) * (max_res_set - res_dc->dc_n_values));
+	  res_dc->dc_n_values = max_res_set;
+	}
+      resv = (int64*)res_dc->dc_values;
+      if (!is_const)
+	{
+	  argv = (int64*)QST_BOX (data_col_t *, inst, ins->_.agg.arg->ssl_index)->dc_values;
+	  if (SSL_VEC == ins->_.agg.arg->ssl_type)
+	    {
+	      for (row = inx; row < last; row++)
+		{
+		  int set = sets_v[sets[row - inx]];
+		  CLRNULL (res_dc, set, int64);
+		  resv[set] += argv[row];
+		}
+	    }
+	  else
+	    {
+	      sslr_n_consec_ref (inst, (state_slot_ref_t*)ins->_.agg.arg, arg_sets, inx, last - inx);
+	      for (row = 0; row < last - inx; row++)
+		{
+		  int set = sets_v[sets[row]];
+		  CLRNULL (res_dc, set, int64);
+		  resv[set] += argv[arg_sets[row]];
+		}
+	    }
+	}
+      else
+	{
+	  for (row = 0; row < last - inx; row++)
+	    resv[sets_v[sets[row]]] += cnst;
+	}
+    }
+}
+
+
 
 void
 ins_vec_agg (instruction_t * ins, caddr_t * inst)
@@ -2792,9 +3053,21 @@ ins_vec_agg (instruction_t * ins, caddr_t * inst)
   int n_sets = qi->qi_n_sets, set, first_set = 0, rc;
   data_col_t * res = QST_BOX (data_col_t *, inst, ins->_.agg.result->ssl_index);
   db_buf_t set_mask = qi->qi_set_mask;
+  if (!set_mask)
+    {
+      if ((AMMSC_COUNT == ins->_.agg.op || AMMSC_COUNTSUM == ins->_.agg.op   || AMMSC_SUM == ins->_.agg.op)
+	  && !ins->_.agg.distinct
+	  && DV_LONG_INT == res->dc_dtp
+	  && ((SSL_IS_VEC_OR_REF (ins->_.agg.arg)  && DV_LONG_INT == QST_BOX (data_col_t*, inst, ins->_.agg.arg->ssl_index)->dc_sqt.sqt_dtp && !QST_BOX (data_col_t*, inst, ins->_.agg.arg->ssl_index)->dc_any_null)
+	      || (SSL_CONSTANT == ins->_.agg.arg->ssl_type && DV_LONG_INT == ins->_.agg.arg->ssl_sqt.sqt_dtp)))
+	{
+	  ins_vec_agg_int_sum (ins, inst);
+	  return;
+	}
+    }
   SET_LOOP
     {
-      int set_no = qst_vec_get_int64 (inst, ins->_.agg.set_no, set);
+      int set_no = qst_vec_get_int64 (inst, ins->_.agg.set_no, set), op;
       caddr_t arg = qst_get (inst, ins->_.agg.arg);
       dtp_t arg_dtp = DV_TYPE_OF (arg);
       if (DV_DB_NULL == arg_dtp)
@@ -2805,15 +3078,28 @@ ins_vec_agg (instruction_t * ins, caddr_t * inst)
 	  if (DVC_MATCH == itc_ha_feed (&ihfr, ins->_.agg.distinct, inst, 0))
 	    continue;
 	}
+      op = ins->_.agg.op;
       qi->qi_set = set_no;
-      switch (ins->_.agg.op)
+      if (res->dc_n_values <= set_no)
+	{
+	  int inx;
+	  DC_CHECK_LEN (res, set_no);
+	  for (inx = res->dc_n_values; inx <= set_no; inx++)
+	    {
+	      if (AMMSC_MIN == op || AMMSC_MAX == op || AMMSC_SUM == op)
+		dc_set_null (res, inx);
+	      else
+		{
+		  dc_append_box (res, (caddr_t)0);
+		}
+	    }
+	}
+      switch (op)
 	{
 	case AMMSC_COUNT:
-	  DC_CHECK_LEN (res, set_no);
 	  ((int64*)res->dc_values)[set_no]++;
 	  break;
 	case AMMSC_ONE:
-	  DC_CHECK_LEN (res, set_no);
 	  if (DC_ANY_IS_NULL (res, set_no))
 	    qst_vec_set_copy (inst, ins->_.agg.result, arg);
 	  break;
@@ -2848,16 +3134,6 @@ ins_vec_agg (instruction_t * ins, caddr_t * inst)
 }
 
 
-#define SET_MASK_CLEAR(sm, n) \
-  memset (sm, 0, ALIGN_8 (n) / 8)
-
-#define NEXT_MASK(ms, qst, inx) \
-{ \
-  ms = QST_BOX (dtp_t*, qst, inx); \
-  if (ms && box_length ((caddr_t)ms) < ALIGN_8 (qi->qi_n_sets) / 8) ms = NULL; \
-  if (!ms) \
-    ms = (dtp_t*) (qst[inx] = mp_alloc_box_ni (qi->qi_mp, ALIGN_8 (MAX (n_sets, dc_batch_sz)) / 8, DV_BIN)); \
-}
 
 
 #define SET_MASK_NEG(mask, in_mask, n_sets)		\
@@ -2916,6 +3192,8 @@ qi_caller_set (query_instance_t * caller, int * pos, int skip)
     }
   return -1;
 }
+
+int enable_cmp_vec = 1;
 
 
 void
@@ -3018,7 +3296,7 @@ code_vec_run_v (code_vec_t code_vec, caddr_t * qst, int offset, int run_until, i
 	      }
 	    else
 	      {
-		SET_MASK_NEG (next_mask, qi->qi_set_mask, n_sets);
+		SET_MASK_NEG (next_mask, save_mask, n_sets);
 		qi->qi_set_mask = next_mask;
 		ins = INSTR_ADD_OFS (code_vec, ins->_.cmp.fail);
 		continue;
@@ -3033,7 +3311,9 @@ code_vec_run_v (code_vec_t code_vec, caddr_t * qst, int offset, int run_until, i
 	    dtp_t * next_mask;
 	    NEXT_MASK (next_mask, qst, ins->_.cmp.next_mask);
 	    SET_MASK_CLEAR (next_mask, n_sets);
-	    if (ins->_.cmp.func)
+	    if (enable_cmp_vec && CMP_VEC_NA != (mix = cmp_vec (qst, ins, qi->qi_set_mask, next_mask)))
+	      ;
+	    else if (ins->_.cmp.func)
 	      mix = dc_cmp_funcs[ins->_.cmp.func] (ins, qst, next_mask);
 	    else
 	      {
@@ -3089,29 +3369,42 @@ code_vec_run_v (code_vec_t code_vec, caddr_t * qst, int offset, int run_until, i
 	  }
 	case INS_CALL:
 	case INS_CALL_IND:
-	  ins_call_vec ((instruction_t *) ins, qst, code_vec);
+	  ins_call_vec ((instruction_t *) ins, qst, code_vec, first_set, n_sets);
 	  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.call)));
 	  break;
 	case INS_CALL_BIF:
+	  {
+	    instruction_t ins_tmp;
+	    instruction_t * ins_to_use = ins;
 	  if (ins->_.bif.vectored)
 	    {
-	      ins_call_bif_vec ((instruction_t *) ins, qst, code_vec);
+		int use_scalar = 0;
+		ins_call_bif_vec ((instruction_t *) ins, qst, code_vec, &use_scalar);
+		if (use_scalar)
+		  {
+		    ins_tmp = *ins;
+		    ins_to_use = &ins_tmp;
+		    ins_tmp._.bif.bif = bif_find (ins->_.bif.proc);
+		    goto scalar_case;
+		  }
 	      ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.bif)));
 	      break;
 	    }
+	  scalar_case:
 	  SET_LOOP
 	    {
-	      ins_call_bif ((instruction_t *) ins, qst, code_vec);
+		ins_call_bif ((instruction_t *) ins_to_use, qst, code_vec);
 	    }
 	  END_SET_LOOP;
 	  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.bif)));
 	  break;
+	  }
 	case INS_SUBQ:
 	  ins_vec_subq ((instruction_t *) ins, qst);
 	  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.subq)));
 	  break;
 	case INS_QNODE:
-	  ins_qnode ((instruction_t *) ins, qst);
+	  ins_qnode ((instruction_t *) ins, qst, 1);
 	  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.qnode)));
 	  break;
 	case INS_OPEN:

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -41,6 +41,7 @@
 #include <sqlnode.h>
 #include "wiservic.h"		/* Needed also in Unix builds. Includes wi.h. */
 #include "sqlver.h"
+#include "wi.h"
 
 #if defined(__GNUC__) && __GNUC__ == 3 && (__GNUC_MINOR__ == 0 || __GNUC_MINOR__ == 1)
 /* When compiling with optimization printf is defined as a macro and
@@ -54,6 +55,7 @@
 
 char *f_config_file = "wi.cfg";
 char *f_license_file = NULL;
+PCONFIG pconfig = NULL;
 int f_read_from_rebuilt_database = 0;
 dk_session_t *listening;
 extern unsigned long int cfg_autocheckpoint;	/* Defined in disk.c */

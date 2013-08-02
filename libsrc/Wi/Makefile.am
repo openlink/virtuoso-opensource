@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -62,7 +62,7 @@ noinst_HEADERS = \
 	xml.h xmlnode.h xmlres.h xmltree.h xpath.h xpathp.h xpathp_impl.h \
 	xpf.h xqf.h xslt_impl.h aqueue.h rdf_mapping_jso.h bitmap.h jso.h \
 	json_p.h bif_audio_tags.h shcompo.h cluster.h extent.h uname_const_decl.h \
-	col.h simd.h vec.h mhash.h
+	col.h simd.h vec.h mhash.h qncache.h sparqlwords.h clq.h geo.h monitor.h
 
 
 
@@ -81,6 +81,7 @@ generated_code = \
 	sparql_l.c \
 	sparql_p.c \
 	sparql_p.h \
+	sparqlwords.h \
 	sql3.c \
 	sql_code.c \
 	sql_code_1.c \
@@ -101,6 +102,7 @@ generated_code = \
 	sql_code_vdb.c \
 	sql_code_ws.c \
 	sqlwords.h \
+	sparqlwords.h \
 	turtle_l.c \
 	turtle_p.c \
 	turtle_p.h \
@@ -149,6 +151,7 @@ libwi_la_SOURCES = \
 	bif_intl.c \
 	bif_json.c \
 	bif_regexp.c \
+	bif_search_excerpt.c \
 	bif_uuencode.c \
 	bitmap.c \
 	blob.c \
@@ -158,6 +161,7 @@ libwi_la_SOURCES = \
 	chash.c \
 	clcli.c \
 	cldaq.c \
+	clop.c \
 	cldfg.c \
 	cldt.c \
 	clnode.c \
@@ -171,6 +175,7 @@ libwi_la_SOURCES = \
 	colin.c \
 	colins.c \
 	collock.c \
+	cedel.c \
 	colsearch.c \
 	datesupp.c \
 	ddlrun.c \
@@ -188,6 +193,7 @@ libwi_la_SOURCES = \
 	json_p.c \
 	lisprdr.c \
 	lock.c \
+	monitor.c \
 	log.c \
 	map_schema.c \
 	mem.c \
@@ -295,6 +301,7 @@ libwi_odbc_la_SOURCES = \
 	bif_intl.c \
 	bif_json.c \
 	bif_regexp.c \
+	bif_search_excerpt.c \
 	bif_uuencode.c \
 	bitmap.c \
 	blob.c \
@@ -304,6 +311,7 @@ libwi_odbc_la_SOURCES = \
 	chash.c \
 	clcli.c \
 	cldaq.c \
+	clop.c \
 	cldfg.c \
 	cldt.c \
 	clnode.c \
@@ -317,6 +325,7 @@ libwi_odbc_la_SOURCES = \
 	colin.c \
 	colins.c \
 	collock.c \
+	cedel.c \
 	colsearch.c \
 	datesupp.c \
 	ddlrun.c \
@@ -334,6 +343,7 @@ libwi_odbc_la_SOURCES = \
 	json_p.c \
 	lisprdr.c \
 	lock.c \
+	monitor.c \
 	log.c \
 	map_schema.c \
 	mem.c \
@@ -443,23 +453,27 @@ libwi_la_SOURCES += \
 	bif_dav.c \
 	bif_explain.c \
 	bif_file.c \
+	bif_geo.c \
 	bif_phrasematch.c \
 	bif_smtp.c \
 	bif_soap.c \
 	bif_text.c \
 	bif_tidy.c \
+	geo.c \
+	geo_shapes.c \
 	http_client.c \
+	qncache.c \
 	shuric.c \
 	subseq.c \
 	text.c \
 	uname_const_decl.c \
-	xmlenc_algos.c \
-	xmlenc.c \
 	xmlenc-dec.c \
+	xmlenc.c \
+	xmlenc_algos.c \
+	xmllazy.c \
 	xmlschema.c \
 	xmlsearch.c \
 	xmlsql.c \
-	xmllazy.c \
 	xmltree.c \
 	xpath.c \
 	xpf.c \
@@ -476,23 +490,27 @@ libwi_odbc_la_SOURCES += \
 	bif_dav.c \
 	bif_explain.c \
 	bif_file.c \
+	bif_geo.c \
 	bif_phrasematch.c \
 	bif_smtp.c \
 	bif_soap.c \
 	bif_text.c \
 	bif_tidy.c \
+ 	geo.c \
+	geo_shapes.c \
 	http_client.c \
+	qncache.c \
 	shuric.c \
 	subseq.c \
 	text.c \
 	uname_const_decl.c \
-	xmlenc_algos.c \
-	xmlenc.c \
 	xmlenc-dec.c \
+	xmlenc.c \
+	xmlenc_algos.c \
+	xmllazy.c \
 	xmlschema.c \
 	xmlsearch.c \
 	xmlsql.c \
-	xmllazy.c \
 	xmltree.c \
 	xpath.c \
 	xpathp.c \
@@ -590,6 +608,7 @@ libwic_la_LDLAGS  = -static
 SQL_FILES		= \
 	$(srcdir)/system.sql \
 	$(srcdir)/system2.sql \
+	$(srcdir)/qlog.sql \
 	$(srcdir)/odbccat.sql \
 	$(srcdir)/useraggr.sql \
 	$(srcdir)/vt_text.sql \
@@ -767,38 +786,48 @@ sql_code_cache.c: $(top_srcdir)/binsrc/cached_resources/cached_resources.c sql_c
 	@echo "#include \"sql_code_cache_impl.c\"" >> $@
 	@echo "#include \"$(top_srcdir)/binsrc/cached_resources/cached_resources.c\"" >> $@
 
-xpathp.c xpathp.h : xpathp.y
+xpathp.c xpathp.h : xpathp.y Makefile.am
 	@$(GEN) $(YACC) -o xpathp.c -vd -pxpyy $(srcdir)/xpathp.y
 
-xpathp_lex_props.c: list_lex_props.sh xpathp.y
+xpathp_lex_props.c: list_lex_props.sh xpathp.y Makefile.am
 	list_lex_props.sh xpathp.y xpathp_lex_props.c
 
-xpscn.c: xpscn.l xpathp.h
+xpscn.c: xpscn.l xpathp.h Makefile.am
 	@$(GEN) $(LEX) -o xpscn.c -Pxpyy $(srcdir)/xpscn.l
 
-sparql_p.c sparql_p.h: sparql_p.y
+sparqlwords.h: sparqlwords.gperf Makefile.am
+	@$(GEN) --stdout $(GPERF) -o $@ \
+		-aCDGptr \
+		-Kkwd \
+		-L ANSI-C \
+		-k1,2,3,5,7,$$ \
+		--ignore-case \
+		-Nsparql_lex_hash_kw \
+		sparqlwords.gperf
+
+sparql_p.c sparql_p.h: sparql_p.y Makefile.am
 	@$(GEN) $(YACC) -o sparql_p.c -vd -psparyy $(srcdir)/sparql_p.y
 
-sparql_lex_props.c: list_lex_props.sh sparql_p.y
+sparql_lex_props.c: list_lex_props.sh sparql_p.y Makefile.am
 	list_lex_props.sh sparql_p.y sparql_lex_props.c
 
-sparql_l.c: sparql_l.l sparql_p.h
+sparql_l.c: sparql_l.l sparql_p.h Makefile.am
 	@$(GEN) $(LEX) -o sparql_l.c -Psparyy $(srcdir)/sparql_l.l
 
-nquad_p.c nquad_p.h: nquad_p.y
+nquad_p.c nquad_p.h: nquad_p.y Makefile.am
 	@$(GEN) $(YACC) -o nquad_p.c -vd -pnqyy $(srcdir)/nquad_p.y
 
-turtle_p.c turtle_p.h: turtle_p.y
+turtle_p.c turtle_p.h: turtle_p.y Makefile.am
 	@$(GEN) $(YACC) -o turtle_p.c -vd -pttlyy $(srcdir)/turtle_p.y
 
-turtle_lex_props.c: list_lex_props.sh turtle_p.y
+turtle_lex_props.c: list_lex_props.sh turtle_p.y Makefile.am
 	list_lex_props.sh turtle_p.y turtle_lex_props.c
 
-turtle_l.c: turtle_l.l turtle_p.h
+turtle_l.c: turtle_l.l turtle_p.h Makefile.am
 	@$(GEN) $(LEX) -o turtle_l.c -Pttlyy $(srcdir)/turtle_l.l
 
 
-AWK_FILES = $(srcdir)/sql_to_c.awk
+AWK_FILES = $(srcdir)/sql_to_c.awk Makefile.am
 
 sql_code.c: $(SQL_FILES) $(AWK_FILES) Makefile.am
 	@${GEN} ${GAWK} \
@@ -989,6 +1018,7 @@ generated: \
 	sparql_l.c \
 	sparql_p.c \
 	sparql_p.h \
+	sparqlwords.h \
 	sql3.c \
 	sql_code.c \
 	sql_code_1.c \
@@ -1033,13 +1063,19 @@ EXTRA_DIST = \
 	bif_mts.c \
 	bif_purify.c \
 	box2any.c \
-	cedel.c \
+	cebits.c \
+	cebitsdec.c \
 	cedict1.c \
 	cedictad.c \
+	ceintd2.c \
 	ceintd.c \
+	ceintddec.c \
 	cesearch.c \
+	cevecf.c \
 	ceveci.c \
 	cevecins.c \
+	coltry.c \
+	cl_stubs.c \
 	crypt.c \
 	dvcmp.c \
 	iodbcinst.c \
@@ -1058,5 +1094,6 @@ EXTRA_DIST = \
 	sql_code_cache_impl.c \
 	sql_to_c.awk \
 	sqlwords.gperf \
+	sparqlwords.gperf \
 	ssl.c \
 	string_tmpl.c

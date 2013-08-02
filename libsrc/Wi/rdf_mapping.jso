@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2009 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -50,6 +50,28 @@ JSO_CONST virtrdf SPART_QM_SOFT_EXCLUSIVE	0x0010	--!< The quad map is either exc
 JSO_CONST virtrdf SPART_QS_NO_IMPLICIT_USER_QM	0x0001	--!< The quad storage disables user quad maps for triple patterns with unbound graph
 JSO_CONST virtrdf SPART_QS_BLOCK_DEFAULT_QM	0x0002	--!< The quad storage disables the use of default quad map and signals an error if no other qm matches
 
+-- Flags that are responsible for various serialization features.
+-- Some features are labeled as "blocking", because if such a feature is required but flag is not set, an error is signaled.
+-- An occurrence of a non-blocking feature provides some hint to the optimizer of the SPARQL service endpoint; a blocking one alters semantics.
+JSO_CONST virtrdf SSG_SD_QUAD_MAP			0x0001	--!< Allows the use of QUAD MAP groups in the output
+JSO_CONST virtrdf SSG_SD_OPTION				0x0002	--!< Allows the use of OPTION keyword in the output
+JSO_CONST virtrdf SSG_SD_BREAKUP			0x0004	--!< Flags if BREAKUP hint options should be printed, this has no effect w/o SSG_SD_OPTION
+JSO_CONST virtrdf SSG_SD_PKSELFJOIN			0x0008	--!< Flags if PKSELFJOIN hint options should be printed, this has no effect w/o SSG_SD_OPTION
+JSO_CONST virtrdf SSG_SD_RVR				0x0010	--!< Flags if RVR hint options should be printed, this has no effect w/o SSG_SD_OPTION
+JSO_CONST virtrdf SSG_SD_IN				0x0020	--!< Allows the use of IN operator, non-blocking because can be replaced with '='
+JSO_CONST virtrdf SSG_SD_LIKE				0x0040	--!< Allows the use of LIKE operator, blocking
+JSO_CONST virtrdf SSG_SD_GLOBALS			0x0080	--!< Allows the use of global variables (with colon at the front of the name), blocking in most of cases
+JSO_CONST virtrdf SSG_SD_BI				0x0100	--!< Allows the use of SPARQL-BI extensions, blocking in most of cases
+JSO_CONST virtrdf SSG_SD_VIRTSPECIFIC			0x0200	--!< Allows the use of Virtuoso-specific features not listed above, say DEFINE, blocking in most of cases
+JSO_CONST virtrdf SSG_SD_VOS_509			0x03FF	--!< Allows everything that is supported by Virtuoso Open Source 5.0.9
+JSO_CONST virtrdf SSG_SD_SERVICE			0x0400	--!< Allows the use of SERVICE extension, blocking
+JSO_CONST virtrdf SSG_SD_VOS_5_LATEST			0x0FFF	--!< Allows everything that is supported by CVS head of Virtuoso Open Source 5.x.x
+JSO_CONST virtrdf SSG_SD_TRANSIT			0x1000	--!< Allows the use of transitivity extension, blocking
+JSO_CONST virtrdf SSG_SD_VOS_6				0x1FFF	--!< Allows everything that is supported by Virtuoso Open Source 6.0.0
+JSO_CONST virtrdf SSG_SD_SPARQL11_DRAFT			0x2000	--!< Allows the use of SPARQL 1.1 aggregates, BINDINGS, new built-in functions, MINUS, EXISTS syntax
+JSO_CONST virtrdf SSG_SD_SPARQL11_MORE			0x4000	--!< Allows the use of SPARQL 1.1 BIND, path expressions, entilement
+
+
 JSO_STRUCT_BEGIN rdf_val_range virtrdf ValRange		--!< Description of set of possible values of a variable or a format or an pattern item
 JSO_SCALAR rvrRestrictions BITMASK OPTIONAL		--!< Natural restrictions on values stored at the field
 JSO_SCALAR rvrDatatype ANY_URI OPTIONAL			--!< Datatype of stored values, if fixed
@@ -78,6 +100,7 @@ JSO_SCALAR qmfIsrefOfShortTmpl STRING REQUIRED		--!< ... whether the short is re
 JSO_SCALAR qmfIsuriOfShortTmpl STRING REQUIRED		--!< ... whether the short is uri
 JSO_SCALAR qmfIsblankOfShortTmpl STRING REQUIRED	--!< ... whether the short is blank node ref
 JSO_SCALAR qmfIslitOfShortTmpl STRING REQUIRED		--!< ... whether the short is literal
+JSO_SCALAR qmfIsnumericOfShortTmpl STRING OPTIONAL	--!< ... whether the short is number (unlike SSG_VALMODE_NUM, no DATE/TIME etc., only number)
 -- Templates of 0/1 integer expressions that tell whether the short is of some sort:
 JSO_SCALAR qmf01uriOfShortTmpl STRING OPTIONAL		--!< ... whether the short is uri, result is 1 or 0
 JSO_SCALAR qmf01blankOfShortTmpl STRING OPTIONAL	--!< ... whether the short is blank node ref, result is 1 or 0
@@ -96,7 +119,7 @@ JSO_SCALAR qmfShortOfSqlvalTmpl STRING REQUIRED		--!< ... makes short by sqlvalu
 JSO_SCALAR qmfShortOfLongTmpl STRING REQUIRED		--!< ... makes short by long
 JSO_SCALAR qmfShortOfUriTmpl STRING REQUIRED		--!< ... makes short by uri
 JSO_SCALAR qmfShortOfNiceSqlvalTmpl STRING OPTIONAL	--!< ... works like qmfShortOfSqlvalTmpl for values of one selected data type, not suitable for other types
-JSO_SCALAR qmfDtpOfNiceSqlval INTEGER OPTIONAL          --!< The 'nice' DTP that is an acceptable type of qmfShortOfNiceSqlvalTmpl, zero or unset if no nice type
+JSO_SCALAR qmfDtpOfNiceSqlval INTEGER OPTIONAL		--!< The 'nice' DTP that is an acceptable type of qmfShortOfNiceSqlvalTmpl, zero or unset if no nice type
 -- Templates of expressions that find existing short values from other representations
 JSO_SCALAR qmfExistingShortOfTypedsqlvalTmpl STRING OPTIONAL	--!< ... finds existing obj by SQL value with specified type and/or language
 JSO_SCALAR qmfExistingShortOfSqlvalTmpl STRING OPTIONAL		--!< ... finds existing obj by sqlvalue with no language and a datatype specified by SQL type
@@ -105,6 +128,7 @@ JSO_SCALAR qmfExistingShortOfUriTmpl STRING OPTIONAL		--!< ... finds existing ob
 JSO_SCALAR qmfExistingShortOfNiceSqlvalTmpl STRING OPTIONAL	--!< ... works like qmfExistingShortOfSqlvalTmpl for values of one selected data type, not suitable for other types
 -- Misc
 JSO_SCALAR qmfIsBijection BOOLEAN REQUIRED		--!< Nonzero if the format is bijection so long values are equal IFF short values of the type are equal
+JSO_SCALAR qmfMapsOnlyNullToNull BOOLEAN OPTIONAL	--!< Nonzero if the format gives NULL IFF short value is NULL
 JSO_SCALAR qmfDerefFlags BOOLEAN OPTIONAL		--!< Flags of IRI dereferencing
 JSO_SCALAR qmfIsStable BOOLEAN REQUIRED			--!< Nonzero if sql values are in order IFF of short values are in order
 JSO_SCALAR qmfIsSubformatOfLong BOOLEAN OPTIONAL	--!< Nonzero if the format is subformat of LONG valmode
@@ -120,6 +144,7 @@ JSO_SCALAR qmfOkForAnySqlvalue BOOLEAN REQUIRED		--!< Nonzero if the field forma
 JSO_SCALAR qmfUriIdOffset INTEGER OPTIONAL		--!< The value that should be added to locally stored ref id in order to get portable ref id
 JSO_SCALAR qmfCustomString1 STRING OPTIONAL		--!< The value that can be used as a value of ^{custom-string-1}^ in templates
 JSO_SCALAR qmfArgDtps STRING OPTIONAL			--!< String of dtp_t bytes, can be used as a value of ^{opt-comma-arg-dtps}^ in templates
+JSO_POINTER qmfSubFormatForRefs qm_format OPTIONAL	--!< Subformat that supports all refs (IRIs and bnodes) that are supported by this format (and NULLs if they're supported by this formats)
 JSO_POINTER qmfSuperFormats qm_format_array OPTIONAL	--!< Array of formats that can store any value that current format can store
 JSO_GROUP_BEGIN qmfValRange virtrdf rdf_val_range	--!< Natural restrictions on values stored in the source column of format
 JSO_SCALAR rvrRestrictions BITMASK OPTIONAL
@@ -169,6 +194,7 @@ JSO_SCALAR rvrDatatype ANY_URI OPTIONAL			--!< Datatype of stored values, if fix
 JSO_SCALAR rvrLanguage ANY_URI OPTIONAL			--!< Language, if fixed
 JSO_SCALAR rvrFixedValue ANY OPTIONAL			--!< Value of stored values, if fixed
 JSO_GROUP_END
+JSO_SCALAR qmvHash STRING PRIVATE			--!< Hash that uniquely identifies the qmv structure (its more reproducible than an address)
 JSO_STRUCT_END
 
 JSO_STRUCT_BEGIN quad_map virtrdf QuadMap		--!< Description of single mapping pattern, including its subpatterns
@@ -214,10 +240,19 @@ JSO_SCALAR qmAllConds STRING_array PRIVATE		--!< Complete list of all join condi
 JSO_SCALAR qmAllCondCount INTEGER PRIVATE		--!< Number of used elements in qmAllCondCount
 JSO_STRUCT_END
 
+JSO_STRUCT_BEGIN sparql_macro_library virtrdf SparqlMacroLibrary	--!< Library of SPARQL macro definitions that are loaded automatically when the storage is used
+JSO_SCALAR smlSourceText STRING REQUIRED				--!< Source text of the library
+JSO_SCALAR smlCompilationState INTEGER PRIVATE				--!< 2 for completely (and successfull compilation, 1 for compilation in progress, 0 for not even started
+JSO_SCALAR smlIncludes ANY PRIVATE					--!< IRIs of included macro libraries
+JSO_SCALAR smlList ANY PRIVATE						--!< The compiled library
+JSO_STRUCT_END
+
+
 JSO_STRUCT_BEGIN quad_storage virtrdf QuadStorage	--!< All mapping patterns plus tracking info
 JSO_POINTER qsMjvMaps quad_map_array OPTIONAL
 JSO_POINTER qsUserMaps quad_map_array OPTIONAL
 JSO_POINTER qsDefaultMap quad_map OPTIONAL
+JSO_POINTER qsMacroLibrary sparql_macro_library OPTIONAL
 JSO_SCALAR qsMatchingFlags BITMASK OPTIONAL
 JSO_SCALAR qsAlterInProgress ANY OPTIONAL
 JSO_STRUCT_END

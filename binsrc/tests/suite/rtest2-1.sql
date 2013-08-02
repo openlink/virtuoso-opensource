@@ -1,14 +1,14 @@
 --
 --  rtest2-1.sql
 --
---  $Id$
+--  $Id: rtest2-1.sql,v 1.9.10.3 2013/01/02 16:14:54 source Exp $
 --
 --  Remote database testing
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -31,6 +31,9 @@
 SET ARGV[0] 0;
 SET ARGV[1] 0;
 echo BOTH "STARTED: Remote test 2 (rtest2.sql)\n";
+
+
+__dbf_set ('dc_batch_sz', 11);
 
 select * from R1..T1 where ROW_NO < 130;
 ECHO BOTH $IF $EQU $ROWCNT 30 "PASSED" "***FAILED";
@@ -111,6 +114,11 @@ ECHO BOTH $IF $EQU $ROWCNT 31 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": insert remote, select local " $ROWCNT " rows\n";
 
+select ROW_NO, STRING1, STRING2, FS1, FI2 from DB..T1 L where ROW_NO between 3000 and 3300 and not exists (select 1 from R1..T1 C where C.ROW_NO = L.ROW_NO);
+ECHO BOTH $IF $EQU $ROWCNT 270 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": select local not exists remote (for insert remote)" $ROWCNT " rows\n";
+
 insert into R1..T1 (ROW_NO, STRING1, STRING2, FS1, FI2) select ROW_NO, STRING1, STRING2, FS1, FI2 from DB..T1 L where ROW_NO between 3000 and 3300 and not exists (select 1 from R1..T1 C where C.ROW_NO = L.ROW_NO);
 ECHO BOTH $IF $EQU $ROWCNT 270 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
@@ -126,7 +134,7 @@ ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": pass through subquery\n";
 
---- ******
+
 select count (*) from R1..T1 O  where not exists (select 1 from R1..T1 S where S.ROW_NO = O.ROW_NO) and ROW_NO = n_identity (ROW_NO);
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
@@ -136,6 +144,11 @@ select count (*) from R1..T1 O  where not exists (select 1 from R1..T1 S where S
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": rts with subq with local proc\n";
+
+select ROW_NO, STRING1, STRING2, FS1, FI2 from R1..T1 R where  not exists (select 1 from DB..T1 L where R.ROW_NO = L.ROW_NO);
+ECHO BOTH $IF $EQU $ROWCNT 1000 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": select (for insert) local select remote not exists local " $ROWCNT " rows.\n";
 
 insert into DB..T1 (ROW_NO, STRING1, STRING2, FS1, FI2) select ROW_NO, STRING1, STRING2, FS1, FI2 from R1..T1 R where  not exists (select 1 from DB..T1 L where R.ROW_NO = L.ROW_NO);
 ECHO BOTH $IF $EQU $ROWCNT 1000 "PASSED" "***FAILED";

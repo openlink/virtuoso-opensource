@@ -1,14 +1,14 @@
 --
 --  tsecini.sql
 --
---  $Id$
+--  $Id: tsecini.sql,v 1.13.10.3 2013/01/02 16:15:24 source Exp $
 --
 --  Test security - initialization
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -83,6 +83,7 @@ insert into SEC_TEST_3 values (121, 242, 363);
 insert into SEC_TEST_4 values (1331, 2662, 3993);
 
 delete user U1;
+delete user U1RUS;
 delete user U2;
 delete user U3;
 delete user U4;
@@ -105,6 +106,24 @@ ECHO BOTH ": " $ROWCNT " user(s) named 'U1' after CREATE USER U1;\n";
 ECHO BOTH $IF $EQU $LAST[1] $LAST[2] "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": U_ID (" $LAST[1] ") " $IF $LIF "==" "!=" " U_GROUP (" $LAST[2] ")\n";
+
+--
+-- Now a user named 'U1RUS' is created for tests of "national" passwords:
+--
+
+create user U1RUS;
+select U_ID, U_GROUP from SYS_USERS where U_NAME = 'U1RUS';
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $ROWCNT " user(s) named 'U1RUS' after CREATE USER U1RUS;\n";
+user_set_password ('U1RUS', charset_recode ('Абракадабра1', 'UTF-8', '_WIDE_'));
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": User U1RUS got wide password via user_set_password; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+DB.DBA.USER_CHANGE_PASSWORD ('U1RUS', charset_recode ('Абракадабра1', 'UTF-8', '_WIDE_'), charset_recode ('Абракадабра2', 'UTF-8', '_WIDE_'));
+ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": User U1RUS got changed wide password via DB.DBA.USER_CHANGE_PASSWORD; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 --
 -- First check that there is only one user named 'U2' after this command:
@@ -221,20 +240,21 @@ ECHO BOTH $IF $EQU $LAST[7] "SELECT" "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Privilege granted is " $LAST[7] "\n";
 
-grant update (b, c) on SEC_TEST_3 to U1, U3, U4;
+-- select (a) is needed for the user to get values of PK.
+grant select (a), update (b, c) on SEC_TEST_3 to U1, U3, U4;
 
 -- O, this is tedious, but nevertheless, we do it all:
 TABLEPRIVILEGES SEC_TEST_3;
 ECHO BOTH $IF $EQU $ROWCNT 12 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $ROWCNT " grants on SEC_TEST_3 after GRANT UPDATE (b, c) ON SEC_TEST_3 TO U1, U3, U4;\n";
+ECHO BOTH ": " $ROWCNT " grants on SEC_TEST_3 after GRANT select (a), UPDATE (b, c) ON SEC_TEST_3 TO U1, U3, U4;\n";
 
 ECHO BOTH $IF $EQU $LAST[3] "SEC_TEST_3" "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Granted on table " $LAST[3] "\n";
 
 --
--- Note how $+ macros work like logical OR shere, as one of the
+-- Note how $+ macros work like logical OR here, as one of the
 -- $EQU -clauses have to be non-zero that their sum were non-zero as well:
 --
 ECHO BOTH $IF $+ $+ $EQU $LAST[5] "U1" $EQU $LAST[5] "U3" $EQU $LAST[5] "U4" "PASSED" "***FAILED";
@@ -249,7 +269,7 @@ ECHO BOTH ": Privilege granted is " $LAST[6] "\n";
 -- Same with SQLColumnPrivileges:
 --
 COLUMNPRIVILEGES SEC_TEST_3;
-ECHO BOTH $IF $EQU $ROWCNT 6 "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $ROWCNT 9 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": " $ROWCNT " column grants on SEC_TEST_3 after GRANT UPDATE (b, c) ON SEC_TEST_3 TO U1, U3, U4;\n";
 

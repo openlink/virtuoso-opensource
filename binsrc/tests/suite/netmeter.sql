@@ -22,14 +22,15 @@ create procedure _NMSRV (in str varchar)
 create procedure nm_run (in n_batches int, in bytes int, in ops_per_batch int)
 {
   declare daq any;
-  declare i, h, n int;
+  declare i, h, n, nh int;
+  nh := sys_stat ('cl_n_hosts');
   set vdb_timeout = 2000;
   daq := daq (0);
   for (n:=0; n<n_batches; n := n + 1)
     {
       for (i:= 0; i < ops_per_batch; i:= i + 1)
 	{
-	  for (h := 1; h < sys_stat ('cl_n_hosts'); h:= h + 1)
+	  for (h := 1; h <= nh; h:= h + 1)
 	    {
 	      if (h <> sys_stat ('cl_this_host'))
 		daq_call (daq, '__ALL', vector (h), 'DB.DBA._NMSRV', vector (make_string (bytes)), 0);
@@ -48,7 +49,7 @@ create procedure nm_start (in n_threads int, in n_batches int, in bytes int, in 
 {
   declare aq any;
   declare c int;
- aq := async_queue (n_threads);
+ aq := async_queue (n_threads, 4);
   for (c:= 0; c < n_threads; c:= c + 1)
     {
       aq_request (aq, 'DB.DBA.NM_RUN', vector (n_batches, bytes, ops_per_batch));
@@ -59,7 +60,7 @@ create procedure nm_start (in n_threads int, in n_batches int, in bytes int, in 
 create procedure nm_run_srv (in n_threads int, in  n_batches int, in bytes int, in ops_per_batch int)
 {
   declare aq any;
- aq := async_queue (1);
+ aq := async_queue (1, 4);
   aq_request (aq, 'DB.DBA.NM_START', vector  (n_threads, n_batches, bytes, ops_per_batch));
   aq_wait_all (aq);
 }

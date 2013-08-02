@@ -2,7 +2,7 @@
 //  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 //  project.
 //  
-//  Copyright (C) 1998-2006 OpenLink Software
+//  Copyright (C) 1998-2013 OpenLink Software
 //  
 //  This project is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the
@@ -459,17 +459,19 @@ namespace OpenLink.Data.Virtuoso
 
 			bool schemaOnly = SchemaOnlyDataReader (behavior);
 			string text = GetCommandText ();
+		        bool isSparql = text.TrimStart(null).StartsWith("sparql", StringComparison.OrdinalIgnoreCase);
 			if (schemaOnly)
 			{
 				if (!isPrepared)
 				{
-					text = replaceNamedParams (text);
+                    			if (!isSparql)
+						text = replaceNamedParams (text);
 					innerCommand.Prepare (text);
 				}
 			}
 			else
 			{
-				if (parameters != null && parameters.Count > 0)
+				if (!isSparql && parameters != null && parameters.Count > 0)
 				{
 					VirtuosoParameterCollection _parameters = handleNamedParams (text, parameters);
 					Debug.Assert (_parameters.Count == parameters.Count, "Count mismatch in reordered parameter array");
@@ -560,6 +562,8 @@ namespace OpenLink.Data.Virtuoso
 
 		protected override void Dispose (bool disposing)
 		{
+			try
+			{
 			if (disposing)
 			{
 				DisposeStatement ();
@@ -570,6 +574,12 @@ namespace OpenLink.Data.Virtuoso
 				connection.innerConnection.RemoveCommand (this);
 			connection = null;
 			transaction = null;
+		}
+			catch (Exception e)
+			{
+				Debug.WriteLineIf(CLI.FnTrace.Enabled,
+					"VirtuosoCommand.Dispose caught exception: " + e.Message);
+			}
 		}
 
 		internal void OnConnectionClose ()

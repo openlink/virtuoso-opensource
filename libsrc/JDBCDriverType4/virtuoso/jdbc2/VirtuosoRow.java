@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -739,6 +739,20 @@ class VirtuosoRow
 		 case VirtuosoTypes.DV_TIME:
 		     return (new java.sql.Time (ts.getTime())).toString();
 	       }
+	   }
+	 else if (obj instanceof VirtuosoBlob)
+	   {
+	     try {
+	       Reader r = ((VirtuosoBlob)obj).getCharacterStream();
+	       char[] data = new char[1024];
+	       StringWriter w =  new StringWriter();
+	       int l;
+	       while((l = r.read(data)) != -1)
+	         w.write(data,0,l);
+	       return w.toString();
+	     } catch (IOException e) {
+	       throw new VirtuosoException(e, VirtuosoException.MISCERROR);
+	     }
 	   }
          return obj.toString();
       }

@@ -39,6 +39,8 @@ name (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_bytes)
   int len, row = cpo->cpo_skip, v_inx;
   db_buf_t val, array, dict = ce_first + 1;
   VARS;
+  if (DCT_BOXES & dc->dc_type)
+    return 0;
   CE_ANY_NTH (dict, n_distinct, n_distinct - 1, array, len);
   array += len;
   v_inx = VEC_INX (array, row);

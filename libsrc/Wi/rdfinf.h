@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -42,8 +42,8 @@ typedef struct rdf_inf_ctx_s
   id_hash_t *	ric_iid_to_rel_ifp;			/*!< Map from IRI_ID of an IFP to array of IFPs of all IFPs with a common IFP superproperty */
   caddr_t *	ric_ifp_list;				/*!< Array of IRI_IDs of inverse functional properties */
   caddr_t *	ric_ifp_rel_list;			/*!< Array of IRI_IDs of inverse functional properties that have related IFPs (i.e. IFP super- and/or sub- properties) */
-  caddr_t *	ric_inverse_prop_pair_sortedalist;	/*!< List of pairs of props that are inverse to each other. Each pair is named twice. Pairs are sorted by keys */
-  caddr_t *	ric_prop_props;				/*!< Flags of properties name1 bits1 name2 bits2... names are sorted, only bit1 is used atm means transitive */
+  caddr_t *	ric_inverse_prop_pair_sortedalist;	/*!< List of pairs of UNAMEs of props that are inverse to each other. Each pair is named twice. Pairs are sorted by keys. */
+  caddr_t *	ric_prop_props;				/*!< Flags of properties name1 bits1 name2 bits2... names are sorted UNAMEs, only bit 1 is used atm and means "transitive" */
   id_hash_t *	ric_ifp_exclude;			/*!< Map from ifp P iri to values that do not make identity even if they occur as ifp values of 2 subjects. e.g. sha1 of "mailto://" */
   id_hash_t *	ric_samples;				/*!< Cardinality estimates with this inf ctx enabled */
   dk_mutex_t *	ric_mtx;				/*!< Mutex for ric_samples sample cache */
@@ -168,6 +168,7 @@ struct trans_node_s
   caddr_t *		tn_input_pos;
   caddr_t *		tn_output_pos;
   state_slot_t **	tn_input;
+  state_slot_t **	tn_input_src;
   state_slot_t **	tn_input_ref;
   state_slot_t **	tn_output;
   state_slot_t **	tn_target;
@@ -193,10 +194,12 @@ struct trans_node_s
   caddr_t		tn_ifp_ctx_name;
   state_slot_t *	tn_ifp_g_list;
   int	        tn_nth_cache_result;
+  ssl_index_t	tn_d0_sent; /* set if input is part of output and has been passed on when first recd */
+  char	tn_step_qr_id;
 };
 
-#define TN_DEFAULT_MAX_MEMORY 100000000
-
+#define TN_DEFAULT_MAX_MEMORY tn_max_memory
+extern int64 tn_max_memory;
 extern id_hash_t * rdf_name_to_ric;
 void rdf_inf_pre_input (rdf_inf_pre_node_t * ri, caddr_t * inst, 		   caddr_t * volatile state);
 void rdf_inf_pre_free (rdf_inf_pre_node_t * ri);
@@ -228,4 +231,10 @@ extern dk_mutex_t * tn_cache_mtx;
 #define RDFS_TYPE_IRI "http://www.w3.org/1999/02/22-rdf-syntax-ns#type"
 
 caddr_t iri_ensure (caddr_t * qst, caddr_t name, int flag, caddr_t * err_ret);
+
+#define RI_INIT_NEEDED_REC(qst)			\
+  if (1 != cl_rdf_inf_inited) cl_rdf_inf_init_1 (qst);
+
+void  cl_rdf_inf_init_1 (caddr_t * qst);
+
 #endif

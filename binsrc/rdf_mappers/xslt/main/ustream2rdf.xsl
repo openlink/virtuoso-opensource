@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2010 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -31,6 +31,7 @@
 <!ENTITY video "http://purl.org/media/video#">
 <!ENTITY oplustream "http://www.openlinksw.com/schemas/ustream#">
 <!ENTITY media "http://purl.org/media#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 ]>
 
 <xsl:stylesheet version="1.0"
@@ -40,6 +41,7 @@
     xmlns:foaf="&foaf;"
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
+    xmlns:opl="&opl;"
     xmlns:dcterms="&dcterms;"
     xmlns:media="&media;"
     xmlns:oplustream="&oplustream;"
@@ -72,6 +74,13 @@
             <xsl:choose>                                                                   
                         <xsl:when test="$what = 'channel'">
                                     <rdf:Description rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.ustream.tv#this">
+                                 			<foaf:name>Ustream</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.ustream.tv"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
                                                 <rdf:type rdf:resource="&bibo;Document" />
                                                 <rdf:type rdf:resource="&oplustream;Channel" />
                                                 <sioc:has_container rdf:resource="{$docproxyIRI}"/>
@@ -104,6 +113,13 @@
                         </xsl:when>
                         <xsl:when test="$what = 'video'">
                                     <rdf:Description rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.ustream.tv#this">
+                                 			<foaf:name>Ustream</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.ustream.tv"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
                                                 <rdf:type rdf:resource="&bibo;Document" />
                                                 <rdf:type rdf:resource="&video;Recording" />
                                                 <rdfs:label><xsl:value-of select="title"/></rdfs:label>
@@ -134,6 +150,13 @@
                         </xsl:when>
                         <xsl:when test="$what = 'user'">
                                     <rdf:Description rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.ustream.tv#this">
+                                 			<foaf:name>Ustream</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.ustream.tv"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
                                                 <rdf:type rdf:resource="&foaf;Person" />
                                                 <sioc:has_container rdf:resource="{$docproxyIRI}"/>
                                                 <rdfs:label><xsl:value-of select="userName"/></rdfs:label>

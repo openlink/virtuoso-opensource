@@ -7,7 +7,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2009 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -56,11 +56,16 @@
 For your convenience we have a set of <a href="nspref.vsp">predefined name space prefixes</a>.</div>
     <div id="footer">
       <div id="ft_b">
-	<a href="about.html">About</a> 
+	<a href="about.html">About</a>
         <a href="http://virtuoso.openlinksw.com" title="OpenLink Virtuoso"><img class="powered_by" src="http://dbpedia.org/statics/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/></a>
         <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="http://dbpedia.org/statics/LoDLogo.gif" border="0"></a> &nbsp;
         <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="http://dbpedia.org/statics/sw-sparql-blue.png" border="0"></a> &nbsp;  &nbsp;
         <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="http://dbpedia.org/statics/od_80x15_red_green.png" border="0"></a>
+        <br />
+	This work is licensed under a
+	<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-Share Alike 3.0 Unported License</a>.<br />
+	<?vsp fct_virt_info (); ?><br />
+	Copyright &copy; 2009-2013 OpenLink Software
       </div> <!-- #ft_b -->
     </div> <!-- #footer -->
   </body>

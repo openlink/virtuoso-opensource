@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -255,7 +255,7 @@ create function "Stub_DAV_SYMLINK" (in detcol_id any, in path_parts any, in sour
 ;
 
 --| This gets a list of resources and/or collections as it is returned by DAV_DIR_LIST and and writes the list of quads (old_id, 'what', old_full_path, dereferenced_id, dereferenced_full_path).
-create function "Stub_DAV_DEREFERENCE_LIST" (in detcol_id any, inout report_array) returns any
+create function "Stub_DAV_DEREFERENCE_LIST" (in detcol_id any, inout report_array any) returns any
 {
   -- dbg_obj_princ ('Stub_DAV_DEREFERENCE_LIST (', detcol_id, report_array, ')');
   return -20;

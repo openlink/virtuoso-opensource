@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -210,7 +210,7 @@ qc_make_cols (sql_comp_t * sc, query_cursor_t * qc, ST * tree)
 	DO_SET (dbe_column_t *, col, &order_key->key_parts)
 	{
 	  ST *ref = sqlc_ct_col_ref (ct, col->col_name);
-	  ST *spec = (ST *) t_list (3, ORDER_BY, ref, (ptrlong) ORDER_ASC);
+	  ST *spec = (ST *) t_list (4, ORDER_BY, ref, (ptrlong) ORDER_ASC, NULL);
 	  t_NCONCF1 (new_sel, ref);
 	  NCONCF1 (new_order_by, spec);
 	  t_NCONCF1 (order_pos, (ptrlong) col_pos);
@@ -228,7 +228,7 @@ qc_make_cols (sql_comp_t * sc, query_cursor_t * qc, ST * tree)
 	{
 	  ST *ref = crr->crr_col_ref;
 	  ptrlong ord = ct->ct_order;
-	  ST *spec = (ST *) t_list (3, ORDER_BY, ref, ord);
+	  ST *spec = (ST *) t_list (4, ORDER_BY, ref, ord, NULL);
 	  t_NCONCF1 (new_sel, ref);
 	  NCONCF1 (new_order_by, spec);
 	  nth++;
@@ -452,7 +452,7 @@ qc_make_update (sql_comp_t * sc, query_cursor_t * qc)
   memset (vals, 0, box_length ((caddr_t) vals));
   DO_BOX (ST *, col_ref, inx, org_sel->_.select_stmt.selection)
   {
-    if (!ST_COLUMN (col_ref, COL_DOTTED))
+    if (!ST_P (col_ref, COL_DOTTED))
       {
 /*	dk_free_tree ((caddr_t) cols);
 	dk_free_tree ((caddr_t) vals);*/
@@ -490,7 +490,7 @@ qc_make_insert (sql_comp_t * sc, query_cursor_t * qc)
   memset (cols, 0, box_length ((caddr_t) vals));
   DO_BOX (ST *, col_ref, inx, org_sel->_.select_stmt.selection)
   {
-    if (!ST_COLUMN (col_ref, COL_DOTTED))
+    if (!ST_P (col_ref, COL_DOTTED))
       {
 /*	dk_free_tree ((caddr_t) cols);
 	dk_free_tree ((caddr_t) vals);*/

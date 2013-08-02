@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -111,6 +111,11 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 %token _AT_of_L		/*:: PUNCT_TTL_LAST("@of") ::*/
 %token _AT_prefix_L	/*:: PUNCT_TTL_LAST("@prefix") ::*/
 %token _AT_this_L	/*:: PUNCT_TTL_LAST("@this") ::*/
+%token _MINUS_INF_L	/*:: PUNCT_TTL_LAST("-INF") ::*/
+%token BASE_L		/*:: PUNCT("BASE"), TTL, LAST("BASE "), LAST("Base "), LAST("base ") ::*/
+%token INF_L		/*:: PUNCT_TTL_LAST("INF") ::*/
+%token NaN_L		/*:: PUNCT_TTL_LAST("NaN") ::*/
+%token PREFIX_L		/*:: PUNCT("PREFIX"), TTL, LAST("PREFIX "), LAST("Prefix "), LAST("prefix ") ::*/
 %token false_L		/*:: PUNCT_TTL_LAST("false") ::*/
 %token true_L		/*:: PUNCT_TTL_LAST("true") ::*/
 
@@ -157,7 +162,7 @@ clause
         | _AT_prefix_L QNAME_NS Q_IRI_REF dot_opt {
 		caddr_t *old_uri_ptr;
 		if (NULL != ttlp_arg->ttlp_namespaces_prefix2iri)
-		  old_uri_ptr = (caddr_t *)id_hash_get (ttlp_arg->ttlp_namespaces_prefix2iri, &($2));
+		  old_uri_ptr = (caddr_t *)id_hash_get (ttlp_arg->ttlp_namespaces_prefix2iri, (caddr_t)(&($2)));
 		else
 		  {
 		    ttlp_arg->ttlp_namespaces_prefix2iri = (id_hash_t *)box_dv_dict_hashtable (31);
@@ -172,7 +177,7 @@ clause
 		      ttlyyerror_action ("Namespace prefix is re-used for a different namespace IRI");
 		  }
 		else
-		  id_hash_set (ttlp_arg->ttlp_namespaces_prefix2iri, &($2), &($3)); }
+		  id_hash_set (ttlp_arg->ttlp_namespaces_prefix2iri, (caddr_t)(&($2)), (caddr_t)(&($3))); }
 	| _AT_prefix_L _COLON Q_IRI_REF dot_opt	{
 		dk_free_box (ttlp_arg->ttlp_default_ns_uri);
 		ttlp_arg->ttlp_default_ns_uri = $3; }
@@ -223,6 +228,9 @@ pred
 	| _AT_a_L	{ dk_free_tree (ttlp_arg->ttlp_pred_uri); ttlp_arg->ttlp_pred_uri = uname_rdf_ns_uri_type; }
 	| _EQ		{ dk_free_tree (ttlp_arg->ttlp_pred_uri); ttlp_arg->ttlp_pred_uri = box_dv_uname_string ("http://www.w3.org/2002/07/owl#sameAs"); }
         | _EQ_GT	{ dk_free_tree (ttlp_arg->ttlp_pred_uri); ttlp_arg->ttlp_pred_uri = box_dv_uname_string ("http://www.w3.org/2000/10/swap/log#implies"); }
+	| _AT_has_L q_complete	{ dk_free_tree (ttlp_arg->ttlp_pred_uri); ttlp_arg->ttlp_pred_uri = ttlp_arg->ttlp_last_complete_uri; ttlp_arg->ttlp_last_complete_uri = NULL; }
+	| _AT_has_L VARIABLE	{ dk_free_tree (ttlp_arg->ttlp_pred_uri); ttlp_arg->ttlp_pred_uri = $2; }
+	| _AT_has_L  error { ttlyyerror_action ("Only predicate is allowed after \"has\" keyword"); }
 	| _LSQBRA_RSQBRA
 		{
 		  TTLYYERROR_ACTION_COND (TTLP_VERB_MAY_BE_BLANK, "Blank node (written as '[]') can not be used as a predicate");
@@ -287,6 +295,24 @@ object_with_ctx
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1;
 		ttlp_triple_l_and_inf (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_double, NULL);	}
+	| NaN_L ctx_opt {
+	  	double myZERO = 0.0;
+		double myNAN_d = 0.0/myZERO;
+		dk_free_tree (ttlp_arg->ttlp_obj);
+		ttlp_arg->ttlp_obj = box_double (myNAN_d);
+		ttlp_triple_l_and_inf (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL);	}
+	| INF_L ctx_opt {
+	  	double myZERO = 0.0;
+          	double myPOSINF_d = 1.0/myZERO;
+		dk_free_tree (ttlp_arg->ttlp_obj);
+		ttlp_arg->ttlp_obj = box_double (myPOSINF_d);
+		ttlp_triple_l_and_inf (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL);	}
+	| _MINUS_INF_L ctx_opt {
+	  	double myZERO = 0.0;
+         	double myNEGINF_d = -1.0/myZERO;
+		dk_free_tree (ttlp_arg->ttlp_obj);
+		ttlp_arg->ttlp_obj = box_double (myNEGINF_d);
+		ttlp_triple_l_and_inf (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL);	}
 	| TURTLE_STRING ctx_opt	{
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1;
@@ -319,9 +345,9 @@ object_with_ctx
 ctx_opt
 	: /* empty */	{
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
-		if ((NULL == tf->tf_current_graph_uri) || strcmp (tf->tf_current_graph_uri, tf->tf_default_graph_uri))
+		if ((NULL == tf->tf_current_graph_uri) || ((NULL != tf->tf_default_graph_uri) && strcmp (tf->tf_current_graph_uri, tf->tf_default_graph_uri)))
 		  TF_CHANGE_GRAPH_TO_DEFAULT (tf);
-                  }
+		  }
 	| q_complete {
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		if ((NULL == tf->tf_current_graph_uri) || strcmp (tf->tf_current_graph_uri, ttlp_arg->ttlp_last_complete_uri))

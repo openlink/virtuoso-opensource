@@ -1,14 +1,14 @@
 --
 --  tjoin.sql
 --
---  $Id$
+--  $Id: tjoin.sql,v 1.24.6.2.4.4 2013/01/02 16:15:12 source Exp $
 --
 --  Outer Join tests
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -60,7 +60,13 @@ select A.ROW_NO, B.ROW_NO from T1 A inner join T1 B on A.ROW_NO + 19 = B.ROW_NO;
 ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
 ECHO BOTH ": Inner  join  " $ROWCNT " rows\n";
 
-select a.row_no, b.row_no, c.row_no from t1 a left join (t1 b join t1 c on c.row_no = b.row_no + 5) on b.row_no = a.row_no + 5;
+select a.row_no, b.row_no, c.row_no from t1 a left join (t1 b table option (hash) join t1 c table option (hash) on c.row_no = b.row_no + 5) on b.row_no = a.row_no + 5;
+select a.row_no, b.row_no, c.row_no from t1 a left join (t1 b table option (loop) join t1 c table option (loop) on c.row_no = b.row_no + 5) on b.row_no = a.row_no + 5;
+
+select a.row_no, b.row_no, c.row_no from t1 a left join (t1 b table option (hash) join t1 c table option (hash) on c.row_no = b.row_no + 5) on b.row_no = a.row_no + 5;
+select a.row_no, b.row_no, c.row_no from t1 a left join (t1 b table option (loop) join t1 c table option (loop) on c.row_no = b.row_no + 5) on b.row_no = a.row_no + 5;
+
+
 select a.row_no, b.row_no, c.row_no from t1 a left join (t1 b left join t1 c on c.row_no = b.row_no + 5) on b.row_no = a.row_no + 5;
 
 select count (a.row_no), count (b.row_no), count (c.row_no) from t1 a left join (t1 b  join t1 c on c.row_no = b.row_no + 5) on b.row_no = a.row_no + 5;
@@ -93,9 +99,13 @@ select T1.ROW_NO, T3.ROW_NO from T1 natural left outer join T3;
 ECHO BOTH $IF $EQU $ROWCNT 20 "PASSED" "***FAILED";
 ECHO BOTH ": Natural left outer  join   " $ROWCNT " rows\n";
 
-select A.ROW_NO, B.ROW_NO from T1 A natural inner join T1 B;
+select A.ROW_NO, B.ROW_NO from T1 A natural inner join T1 B option (hash);
 ECHO BOTH $IF $EQU $ROWCNT 20 "PASSED" "***FAILED";
-ECHO BOTH ": Natural join on itself   " $ROWCNT " rows\n";
+ECHO BOTH ": Natural hash join on itself   " $ROWCNT " rows\n";
+
+select A.ROW_NO, B.ROW_NO from T1 A natural inner join T1 B option (loop);
+ECHO BOTH $IF $EQU $ROWCNT 20 "PASSED" "***FAILED";
+ECHO BOTH ": Natural loop join on itself   " $ROWCNT " rows\n";
 
 select count (*) from T1 a cross join T1 b;
 ECHO BOTH $IF $EQU $LAST[1] 400 "PASSED" "***FAILED";

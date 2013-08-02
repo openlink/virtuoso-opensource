@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -29,6 +29,7 @@
 #include "sqlfn.h"
 #include "statuslog.h"
 #include "wifn.h"
+#include "aqueue.h"
 
 #ifdef VIRTTP
 #include "2pc.h"
@@ -71,7 +72,7 @@ itc_escalate_lock (it_cursor_t * itc, int ltype)
   DO_RLOCK (rl, pl)
   {
     if (rl->pl_waiting
-	|| rl->pl_owner != itc->itc_ltrx)
+	|| rl->pl_owner != itc->itc_lock_lt)
       GPF_T1 ("can't escalate when more than one lock owner");
     if (PL_EXCLUSIVE == PL_TYPE (rl))
       ltype = PL_EXCLUSIVE;
@@ -227,7 +228,7 @@ itc_split_lock (it_cursor_t * itc, buffer_desc_t * left, buffer_desc_t * extend)
 
       TC (tc_pl_split);
     }
-  else
+  else if (!itc->itc_non_txn_insert)
     lt_add_pl (itc->itc_ltrx, extend_pl, 1);
 
   /* must add after PL_IS_PAGE is set. If row level, extend_pl
@@ -354,7 +355,7 @@ itc_make_pl (it_cursor_t * itc, buffer_desc_t * buf)
   pl->pl_type = itc->itc_lock_mode;
   ITC_LEAVE_MAP_NC (itc);
   itc->itc_pl = pl;
-  lt_add_pl (itc->itc_ltrx, pl, 1);
+  itc->itc_lock_lt = lt_add_pl (itc->itc_ltrx, pl, 1);
 }
 
 
@@ -389,13 +390,13 @@ void
 itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t * rl, int no_escalation)
 {
   it_cursor_t * waiting;
-  int not_own = 0;
   int new_pl = 0;
   page_lock_t *pl = itc->itc_pl;
-  cl_enlist_ck (itc);
-  if (itc->itc_ltrx->lt_is_excl
-      || INS_DOUBLE_LP == rl)
+  if (itc->itc_ltrx->lt_is_excl)
+    {
+      itc->itc_lock_lt = itc->itc_ltrx;
     return;
+    }
   if (!pl)
     {
 #ifdef PAGE_DEBUG
@@ -406,13 +407,24 @@ itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t * rl,
       pl = itc->itc_pl;
       new_pl = 1;
     }
-  if (pl && pl->pl_page != itc->itc_page)
+  else
+    itc->itc_lock_lt = lt_add_pl (itc->itc_ltrx, pl, 0);
+
+  if (pl->pl_page != itc->itc_page)
     GPF_T1 ("inconsistent itc_pl for insert rlock");
 
   if (PL_IS_PAGE (pl))
     {
-      if (pl->pl_owner != itc->itc_ltrx)
+      /* if lt is a branch and main is closing, the branch gets the lock and becomes uncommittable.  The pl in this case would have 2 owners. */
+      if (!IS_MT_BRANCH (itc->itc_ltrx) && pl->pl_owner != itc->itc_lock_lt)
 	GPF_T1 ("not owner in insert page lock");
+      if (IS_MT_BRANCH (itc->itc_ltrx) && itc->itc_lock_lt == itc->itc_ltrx)
+	{
+	  /* page lock owned by closing main lt.  Must now put a row for the closing branch, to rb later.  So must go to row locks because will be 2 owners */
+	  page_lock_to_row_locks (buf);
+	  no_escalation = 1;
+	}
+      else
       return;
     }
   ITC_MARK_LOCK_SET (itc);
@@ -426,16 +438,16 @@ itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t * rl,
       rl = rl_allocate ();
     }
   PL_RL_ADD (pl, rl, pos);
-  /* if icts wait for the rl of a row that has grown and made a split, make sure the waiting lyt's get to be owners of the lock also if the itc ended up on the extend side of the split */
+  /* if icts wait for the rl of a row that has grown and made a split, make sure the waiting lt's get to be owners of the lock also if the itc ended up on the extend side of the split */
   waiting = rl->pl_waiting;
   while (waiting)
     {
-      lt_add_pl (waiting->itc_ltrx, itc->itc_pl, 0);
+      lt_add_pl (waiting->itc_lock_lt, itc->itc_pl, 0);
       waiting = waiting->itc_next_on_lock;
     }
   if (itc->itc_ltrx->lt_status != LT_PENDING)
     {
-    rdbg_printf (("*** making posthumous ins lock T=%ld L=%d \n", TRX_NO (itc->itc_ltrx), itc->itc_page));
+      rdbg_printf (("*** making posthumous ins lock T=%ld L=%d \n", TRX_NO (itc->itc_ltrx), itc->itc_page));
     }
 
   pl->pl_n_row_locks++;
@@ -446,22 +458,13 @@ itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t * rl,
       if (!rl->rl_cols)
 	rl->rl_cols = (col_row_lock_t **)dk_alloc_box (sizeof (caddr_t) * 32, DV_BIN);
       pl_clk_lt_refs (pl, rl);
-    }
+	}
   else
     {
   rl->pl_type = PL_EXCLUSIVE;
-  rl->pl_owner = itc->itc_ltrx;
+      rl->pl_owner = itc->itc_lock_lt;
     }
   rl->rl_pos = pos;
-  if (!new_pl
-      || (not_own = !pl_lt_is_owner (pl, itc->itc_ltrx)))
-    {
-      if (not_own)
-        {
-	  rdbg_printf (("would be miss insert pl T=%ld L=%d \n", TRX_NO (itc->itc_ltrx), itc->itc_page));
-	}
-      lt_add_pl (itc->itc_ltrx, pl, 0);
-    }
 }
 
 
@@ -470,7 +473,7 @@ itc_insert_lock (it_cursor_t * itc, buffer_desc_t * buf, int *res_ret, int may_w
 {
   int res = *res_ret;
   page_lock_t *pl = itc->itc_pl;
-  if (!pl)
+  if (!pl || itc->itc_non_txn_insert)
     return NO_WAIT;
   if (PL_IS_PAGE (pl))
     {
@@ -483,7 +486,7 @@ itc_insert_lock (it_cursor_t * itc, buffer_desc_t * buf, int *res_ret, int may_w
       row_lock_t *rl = pl_row_lock_at (itc->itc_pl, itc->itc_map_pos);
       if (!rl)
 	return NO_WAIT;
-      if (RL_IS_FOLLOW (rl) && rl->pl_owner != itc->itc_ltrx)
+      if (RL_IS_FOLLOW (rl) && !LT_SEES_EFFECT(itc->itc_ltrx, rl->pl_owner))
 	{
 	  TC (tc_insert_follow_wait);
 	  if (!may_wait)
@@ -511,18 +514,35 @@ itc_insert_lock (it_cursor_t * itc, buffer_desc_t * buf, int *res_ret, int may_w
 
 
 int
+lt_set_is_branch (dk_set_t list, lock_trx_t * lt, lock_trx_t ** main_lt_ret)
+{
+  DO_SET (lock_trx_t *, owner, &list)
+    {
+      if (LT_SEES_EFFECT (lt, owner))
+	{
+	  if (main_lt_ret)
+	    *main_lt_ret = owner;
+	  return 1;
+	}
+    }
+  END_DO_SET();
+  return 0;
+}
+
+
+int
 lock_is_acquirable (gen_lock_t * pl, it_cursor_t * itc)
 {
   /* for a repeatable read cursor check that it can get this lock
    * if it decides to as long as itc does not leave the page before calling itc_set_lock_on_row. */
-  if (pl->pl_owner == itc->itc_ltrx)
+  if (!pl->pl_is_owner_list && LT_SEES_EFFECT (itc->itc_ltrx, pl->pl_owner))
     return 1;
   if (PL_TYPE (pl) == PL_EXCLUSIVE)
     return 0;
   if (PL_SHARED == PL_TYPE (pl))
     {
       if (pl->pl_is_owner_list
-	  && dk_set_member ((dk_set_t) pl->pl_owner, (void*) itc->itc_ltrx))
+	  && lt_set_is_branch ((dk_set_t) pl->pl_owner, (void*) itc->itc_ltrx, NULL))
 	return 1;
       if (PL_SHARED == itc->itc_lock_mode
 	  && !pl->pl_waiting)
@@ -585,7 +605,7 @@ itc_landed_lock_check (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 
 #ifdef PAGE_TRACE
 #define LT_CHECK_NEW_PL(lt, pl) \
-  if (gethash (DP_ADDR2VOID(pl->pl_page), &lt->lt_lock)) GPF_T1 ("duplicate pl in lt")
+  if (gethash ((void*)pl, &lt->lt_lock)) GPF_T1 ("duplicate pl in lt")
 #else
 #define LT_CHECK_NEW_PL(lt, pl)
 #endif
@@ -595,20 +615,59 @@ int
 pl_lt_is_owner (page_lock_t * pl, lock_trx_t * lt)
 {
   /* is the lt already an owner of the pl? */
-  if (pl->pl_owner == lt)
+  if (!pl->pl_is_owner_list && LT_SEES_EFFECT (lt, pl->pl_owner))
     return 1;
   if (pl->pl_is_owner_list
-      && dk_set_member ((dk_set_t) pl->pl_owner, (void*) lt))
+      && lt_set_is_branch ((dk_set_t) pl->pl_owner, (void*) lt, NULL))
     return 1;
   return 0;
 }
 
 
-void
-lt_add_pl (lock_trx_t * lt, page_lock_t * pl, int is_new_pl)
+/* lt owners are main branches if there are mt transactions.  When a 2nd branch makes a lock/waits for one, the main branch is added as owner of the lock.
+ * The existence of the main branch must be checked in txn.  If the main branch is not there or is not pending, add the lock to the 2nd branch instead and mark the 2nd uncommittable */
+#define LT_ADD_CK_BRANCH \
+  if (lt->lt_rc_w_id && lt->lt_rc_w_id != lt->lt_w_id) \
+    lt = lt_pl_add_main_lt (lt, &has_txn, flags);
+
+
+long tc_rb_for_main_lt_over;
+
+lock_trx_t *
+lt_pl_add_main_lt (lock_trx_t * lt, int * has_txn, int flags)
 {
+  ptrlong plt;
+  lock_trx_t * main_lt;
+  int in_txn = flags & LT_ADD_PL_IN_TXN;
+  if (!in_txn)
+    IN_TXN;
+  gethash_64 (plt, lt->lt_rc_w_id, local_cll.cll_w_id_to_trx);
+  main_lt = (lock_trx_t*)plt;
+  if (!main_lt || LT_PENDING != main_lt->lt_status)
+    {
+      TC (tc_rb_for_main_lt_over);
+      lt->lt_status = LT_BLOWN_OFF;
+      lt->lt_error = LTE_CANCEL;
+      if (!in_txn)
+	LEAVE_TXN;
+      return lt;
+    }
+  if (!in_txn)
+    *has_txn = 1;
+  return main_lt;
+}
+
+
+lock_trx_t *
+lt_add_pl (lock_trx_t * lt, page_lock_t * pl, int flags)
+{
+  /* if the lt is a branch of a mt write txn, set the main branch as (co) owner of the pl.  If the main is not on, set the branch to uncommittable but still finish with the lock, setting it on the branch.  Return the lt that will own the rl or clk under the pl */
+  int is_new_pl = 1 & flags;
+  int has_txn = 0;
+  if (QFID_HOST (lt->lt_trx_no) != local_cll.cll_this_host && !lt->lt_cl_enlisted) ltbing2 ();
   if (PL_IS_PAGE (pl))
     {
+      LT_ADD_CK_BRANCH;
       if (is_new_pl)
 	{
 	  IN_LT_LOCKS (lt);
@@ -629,28 +688,31 @@ lt_add_pl (lock_trx_t * lt, page_lock_t * pl, int is_new_pl)
        * which reference this pl wither because of rl ownership or past / present wait at rl */
       if (pl->pl_is_owner_list)
 	{
-	  if (dk_set_member ((dk_set_t) pl->pl_owner, (void *) lt))
-	    return;
+	  if (lt_set_is_branch ((dk_set_t) pl->pl_owner, (void *) lt, &lt))
+	    return lt;
+	  LT_ADD_CK_BRANCH;
 	  dk_set_push ((dk_set_t *) & pl->pl_owner, (void *) lt);
 	  IN_LT_LOCKS  (lt);
 	  sethash ((void*)pl, &lt->lt_lock, (void*)1);
 	  LEAVE_LT_LOCKS (lt);
 	}
-      else if (lt == pl->pl_owner)
-	return;
       else if (pl->pl_owner == NULL)
 	{
+	  LT_ADD_CK_BRANCH;
 	  pl->pl_owner = lt;
 	  IN_LT_LOCKS (lt);
 	  LT_CHECK_NEW_PL (lt, pl);
 	  sethash ((void*)pl, &lt->lt_lock, (void*)1);
 	  LEAVE_LT_LOCKS (lt);
 	}
+      else if (LT_SEES_EFFECT (lt, pl->pl_owner))
+	return pl->pl_owner;
       else
 	{
 	  lock_trx_t *prev = pl->pl_owner;
 	  pl->pl_is_owner_list = 1;
 	  pl->pl_owner = NULL;
+	  LT_ADD_CK_BRANCH;
 	  dk_set_push ((dk_set_t *) & pl->pl_owner, (void *) prev);
 	  dk_set_push ((dk_set_t *) & pl->pl_owner, (void *) lt);
 	  IN_LT_LOCKS (lt);
@@ -659,6 +721,9 @@ lt_add_pl (lock_trx_t * lt, page_lock_t * pl, int is_new_pl)
 	  LEAVE_LT_LOCKS (lt);
 	}
     }
+  if (has_txn)
+    LEAVE_TXN;
+  return lt;
 }
 
 
@@ -700,7 +765,8 @@ itc_make_rl (it_cursor_t * itc)
       && !itc->itc_is_col
       && itc->itc_search_mode != SM_INSERT)
     PL_SET_FLAG (rl, RL_FOLLOW);
-  rl->pl_owner = itc->itc_ltrx;
+  if (!itc->itc_lock_lt || NO_LOCK_LT == itc->itc_lock_lt) GPF_T1 ("no lock lt for setting rl");
+  rl->pl_owner = itc->itc_lock_lt;
   ITC_MARK_LOCK_SET (itc);
 }
 
@@ -718,7 +784,8 @@ itc_set_lock_on_row (it_cursor_t * itc, buffer_desc_t ** buf_ret)
   db_buf_t row;
   key_ver_t kv;
   page_lock_t *pl = itc->itc_pl;
-  cl_enlist_ck (itc);
+  cl_enlist_ck (itc, *buf_ret);
+  itc->itc_lock_lt = NO_LOCK_LT; /* gpf if not set to right value later */
 #ifdef PAGE_DEBUG
   if ((*buf_ret)->bd_writer != THREAD_CURRENT_THREAD)
     GPF_T1 ("the thread setting a lock is not the writer of the buffer");
@@ -763,6 +830,7 @@ itc_set_lock_on_row (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 	  if (itc->itc_non_txn_insert)
 	    return NO_WAIT;
 	  ITC_MARK_LOCK_SET (itc);
+	  itc->itc_lock_lt = lt_add_pl (itc->itc_ltrx, pl, 0);
 	  if (PL_CAN_ESCALATE (itc, pl, (*buf_ret)))
 	    {
 	      itc_escalate_lock (itc, itc->itc_lock_mode);
@@ -770,7 +838,6 @@ itc_set_lock_on_row (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 	      return NO_WAIT;
 	    }
 	  itc_make_rl (itc);
-	  lt_add_pl (itc->itc_ltrx, pl, 0);
 	  return NO_WAIT;
 	}
     }
@@ -860,7 +927,7 @@ itc_read_committed_check (it_cursor_t * itc, buffer_desc_t * buf)
    * To prevent this, use repeatable.  Read committed only means that no uncommitted states are shown, not that you don't get half transactions.
    * If showing half transactions in read committed is good enough for Oracle it is good enough for us. */
 
-  rbe = lt_rb_entry (gl->pl_owner, buf, row, NULL, NULL, 1);
+  rbe = lt_rb_entry (&gl->pl_owner, buf, row, NULL, NULL, LT_RB_LEAVE_MTX |LT_RB_ONLY_OWN);
   if (!rbe)
     return DVC_MATCH; /* row not modified, just locked */
   if (RB_INSERT == rbe->rbe_op)
@@ -1195,7 +1262,7 @@ itc_rollback_row (it_cursor_t * itc, buffer_desc_t ** buf_ret, int pos, row_lock
   kv = IE_KEY_VERSION (row);
   if (KV_LEAF_PTR != kv)
     {
-      rb_entry_t *rbe = lt_rb_entry (lt, buf, row, NULL, NULL, 1);
+      rb_entry_t *rbe = lt_rb_entry (&lt, buf, row, NULL, NULL, LT_RB_LEAVE_MTX | LT_RB_ONLY_OWN | LT_RB_BRANCH_AS_SELF);
       if (!rbe)
 	return PAGE_NOT_CHANGED;
 #ifdef MTX_DEBUG
@@ -1357,7 +1424,7 @@ lt_wait_until_dead (lock_trx_t * lt)
       if (wi_inst.wi_checkpoint_atomic)
 	{
 	  log_error ("Resume of lt_wait_until_dead during atomic cpt.  Unusual.  Waiting until cpt done");
-	  lt_wait_checkpoint ();
+	  lt_wait_checkpoint_lt (lt);
 	}
       lt_weird ();
     }
@@ -1551,20 +1618,77 @@ lt_locks_to_array (lock_trx_t * lt, page_lock_t ** arr, int max, int * fill_ret,
 }
 
 
+bp_ts_t lt_start_ts[4];
+
+
+typedef struct lt_mt_transact_s
+{
+  int	ltm_op;
+  lock_trx_t * 	ltm_lt;
+  page_lock_t **	ltm_pl_arr;
+} lt_mt_transact_t;
+
+
+caddr_t
+aq_transact_func (caddr_t av, caddr_t * err_ret)
+{
+  it_cursor_t itc_auto;
+  it_cursor_t * itc = &itc_auto;
+  caddr_t * args = (caddr_t*)av;
+  lt_mt_transact_t * ltm = (lt_mt_transact_t *)unbox (args[0]);
+  int l_inx = unbox (args[1]);
+  page_lock_t * pl = ltm->ltm_pl_arr[l_inx];
+  lock_trx_t * lt = ltm->ltm_lt;
+  dk_free_tree ((caddr_t)args);
+  ITC_INIT (itc, NULL, lt);
+  itc->itc_tree = pl->pl_it;
+  itc->itc_insert_key = itc->itc_tree->it_key;
+  if (itc->itc_insert_key->key_is_col)
+    pl_col_finalize_page (pl, itc, SQL_ROLLBACK == ltm->ltm_op);
+  else if (SQL_COMMIT == ltm->ltm_op)
+    pl_finalize_page (pl, itc);
+  else
+    pl_rollback_page (pl, itc);
+  if (lt != wi_inst.wi_cpt_lt && wi_inst.wi_checkpoint_atomic)
+    log_error ("transact while cpt atomic, trx no: %d, ", lt->lt_trx_no);
+  ITC_LEAVE_MAPS (itc);
+  return NULL;
+}
+
+
+
+int enable_mt_transact = 0;
+
 void
 lt_transact (lock_trx_t * lt, int op)
 {
   it_cursor_t itc_auto;
   it_cursor_t *itc = &itc_auto;
   page_lock_t * pl_arr_auto[100];
+  async_queue_t * lt_aq = NULL;
   page_lock_t ** pl_arr;
+#ifdef PAGE_DEBUG
+  int binx;
+  for (binx = 0; binx < 4; binx++)
+    lt_start_ts[binx] = wi_inst.wi_bps[binx]->bp_ts;
+#endif
+  if (SQL_COMMIT == op && lt->lt_rc_w_id && lt->lt_rc_w_id != lt->lt_w_id)
+    {
+      /* non main branches may have some state if the main was gone by the time the state was acquired.  These will not commit */
+      op = SQL_ROLLBACK;
+    }
   if (SQL_ROLLBACK == op && QFID_HOST (lt->lt_w_id) == local_cll.cll_this_host)
     {
       rdbg_printf (("Host %d:  Own rollback with lte=%d of %d:%d\n", local_cll.cll_this_host, lt->lt_error, LT_W_NO (lt)));
     }
   ASSERT_IN_TXN;
   if (lt != wi_inst.wi_cpt_lt && wi_inst.wi_checkpoint_atomic)
-    log_error ("transact while cpt atomic, trx no %d, cpt trx no %d", lt->lt_trx_no, (wi_inst.wi_cpt_lt ? wi_inst.wi_cpt_lt->lt_trx_no : 0));
+    {
+      log_error ("transact (%d) while cpt atomic, trx no %d (status %d), cpt trx no %d, entering wait cpt",
+	  op, lt->lt_trx_no, lt->lt_status, (wi_inst.wi_cpt_lt ? wi_inst.wi_cpt_lt->lt_trx_no : 0));
+      lt_wait_checkpoint ();
+      log_error ("transact (%d) resumed, trx no %d (status %d)", op, lt->lt_trx_no, lt->lt_status);
+    }
   if (lt->lt_threads != lt->lt_lw_threads + lt->lt_close_ack_threads + lt->lt_vdb_threads)
     {
       lt_log_debug ((
@@ -1608,6 +1732,27 @@ lt_transact (lock_trx_t * lt, int op)
     {
       int n_locks, l_fill, l_inx;
       pl_arr = lt_locks_to_array (lt, pl_arr_auto, sizeof (pl_arr_auto) / sizeof (caddr_t), &l_fill, &n_locks);
+      if ((l_fill > 10 && enable_mt_transact) || lt_aq)
+	{
+	  caddr_t err = NULL;
+	  lt_mt_transact_t ltm;
+	  ltm.ltm_op = op;
+	  ltm.ltm_pl_arr = pl_arr;
+	  ltm.ltm_lt = lt;
+	  if (!lt_aq)
+	    {
+	      lt_aq = aq_allocate (bootstrap_cli, enable_qp);
+	      lt_aq->aq_do_self_if_would_wait = 1;
+	      lt_aq->aq_no_lt_enter = 1;
+	    }
+	  for (l_inx = 0; l_inx < l_fill; l_inx++)
+	    {
+	      aq_request (lt_aq, aq_transact_func, list (2, box_num ((ptrlong)&ltm), box_num (l_inx)));
+	    }
+	  aq_wait_all (lt_aq, &err);
+	}
+      else
+	{
       for (l_inx = 0; l_inx < l_fill; l_inx++)
 	{
 	  page_lock_t * pl = pl_arr[l_inx];
@@ -1623,6 +1768,7 @@ lt_transact (lock_trx_t * lt, int op)
 	    log_error ("transact while cpt atomic, trx no: %d, n locks %d", lt->lt_trx_no, n_locks);
 	  ITC_LEAVE_MAPS (itc);
 	}
+	}
       if (pl_arr != (page_lock_t**) &pl_arr_auto)
 	dk_free ((caddr_t)pl_arr, -1);
       IN_LT_LOCKS (lt);
@@ -1633,6 +1779,8 @@ lt_transact (lock_trx_t * lt, int op)
       LEAVE_LT_LOCKS (lt);
     }
   LEAVE_LT_LOCKS (lt);
+  if (lt_aq)
+    dk_free_box ((caddr_t)lt_aq);
   lt_free_rb (lt, SQL_ROLLBACK == op);
   lt_blob_transact (itc, op);
   IN_TXN;
@@ -1659,8 +1807,7 @@ lt_transact (lock_trx_t * lt, int op)
   LT_CLOSE_ACK_THREADS(lt);
   lt->lt_close_ack_threads = 0;
   lt_resume_waiting_end (lt);
-  if (wi_inst.wi_cpt_lt != lt)
-    lt_wait_checkpoint ();
+  lt_wait_checkpoint_lt (lt);
 #ifdef VIRTTP
   if (lt->lt_2pc._2pc_info)
     {
@@ -1774,8 +1921,10 @@ rb_entry_eq (buffer_desc_t * buf, db_buf_t row1, key_id_t key_id_2, db_buf_t row
 
 
 rb_entry_t *
-lt_rb_entry (lock_trx_t * lt, buffer_desc_t * buf, db_buf_t row, uint32 *code_ret, rb_entry_t ** prev_ret, int leave_mtx)
+lt_rb_entry (lock_trx_t ** lt_ret, buffer_desc_t * buf, db_buf_t row, uint32 *code_ret, rb_entry_t ** prev_ret, int flags)
 {
+  lock_trx_t * lt = *lt_ret;
+  int leave_mtx = flags & LT_RB_LEAVE_MTX;
   key_ver_t kv = IE_KEY_VERSION (row);
   dbe_key_t * key;
   uint32 rb_code;
@@ -1785,6 +1934,30 @@ lt_rb_entry (lock_trx_t * lt, buffer_desc_t * buf, db_buf_t row, uint32 *code_re
   key  = buf->bd_tree->it_key->key_versions[kv];
   rb_code = key_hash_cols (buf, row, key, key->key_key_fixed, HC_INIT);
   rb_code = key_hash_cols (buf, row, key, key->key_key_var, rb_code);
+
+  /* if the rb entry must go a main lt, check the main lt exists and is going inside txn then enter its rb mtx inside txn.  In this way a transact of that can proceed but it will not free the rb during this update because freeing the rb will need the rb mtx */
+  if (!(LT_RB_BRANCH_AS_SELF & flags)  && IS_MT_BRANCH (lt))
+    {
+      ptrlong plt;
+      lock_trx_t * main_lt;
+      if (LT_RB_ONLY_OWN & flags)
+	GPF_T1 ("the lt in getting rb entry is supposed to be the main lt");
+      IN_TXN;
+      gethash_64 (plt, lt->lt_rc_w_id, local_cll.cll_w_id_to_trx);
+      main_lt = (lock_trx_t *)plt;
+      if (main_lt && LT_PENDING == main_lt->lt_status)
+	{
+	  lt = main_lt;
+	  *lt_ret = main_lt;
+	  mutex_enter (&lt->lt_rb_mtx);
+	}
+      else
+	{
+	  mutex_enter (&lt->lt_rb_mtx);
+	}
+      LEAVE_TXN;
+    }
+  else
   mutex_enter (&lt->lt_rb_mtx);
   rbe = (rb_entry_t *) gethash ((void *) (ptrlong) rb_code, lt->lt_rb_hash);
   if (code_ret)
@@ -2005,7 +2178,7 @@ lt_rb_insert (lock_trx_t * lt, buffer_desc_t * buf, db_buf_t row)
   rb_entry_t *rbe;
   if (lt->lt_is_excl)
     return;
-  rbe = lt_rb_entry (lt, buf, row, &rb_code, &prev, 0);
+  rbe = lt_rb_entry (&lt, buf, row, &rb_code, &prev, 0);
   if (!rbe)
     {
       lt_rb_new_entry (lt, rb_code, prev, buf, row, RB_INSERT);
@@ -2025,7 +2198,7 @@ lt_no_rb_insert (lock_trx_t * lt, buffer_desc_t * buf, db_buf_t row)
   rb_entry_t *rbe;
   if (lt->lt_is_excl)
     return;
-  rbe = lt_rb_entry (lt, row, &rb_code, &prev, 0);
+  rbe = lt_rb_entry (&lt, row, &rb_code, &prev, 0);
   if (!rbe)
     GPF_T1 ("no rb entry when removing insert rb entry");
   prev = (rb_entry_t *)gethash ((void*)(ptrlong)rb_code, lt->lt_rb_hash);
@@ -2060,7 +2233,7 @@ lt_rb_update (lock_trx_t * lt, buffer_desc_t * buf, db_buf_t row)
 {
   uint32 rb_code;
   rb_entry_t *prev;
-  rb_entry_t *rbe = lt_rb_entry (lt, buf, row, &rb_code, &prev, 0);
+  rb_entry_t *rbe = lt_rb_entry (&lt, buf, row, &rb_code, &prev, 0);
   if (!rbe)
     {
       lt_rb_new_entry (lt, rb_code, prev, buf, row, RB_UPDATE);
@@ -2076,8 +2249,14 @@ lt_free_rb (lock_trx_t * lt, int is_rb)
   rb_entry_t *rbe;
   caddr_t k;
   dk_hash_iterator_t hit;
-  if (!lt->lt_rb_pages) /* in cpt rb, can have empty hash but stuff to free */
+  if (lt->lt_rc_w_id && !lt->lt_rb_pages)
     return;
+  mutex_enter (&lt->lt_rb_mtx);
+  if (!lt->lt_rb_pages) /* in cpt rb, can have empty hash but stuff to free */
+    {
+      mutex_leave (&lt->lt_rb_mtx);
+    return;
+    }
   DO_SET (db_buf_t, page, &lt->lt_rb_pages)
   {
     resource_store (rb_page_rc, (void *) page);
@@ -2103,10 +2282,12 @@ lt_free_rb (lock_trx_t * lt, int is_rb)
     {
       hash_table_free (lt->lt_rb_hash);
       lt->lt_rb_hash = hash_table_allocate (101);
+      lt->lt_rb_hash->ht_rehash_threshold = 2;
     }
   else
     clrhash (lt->lt_rb_hash);
   lt->lt_rb_page = NULL;
   lt->lt_rbp_fill = 0;
+  mutex_leave (&lt->lt_rb_mtx);
 }
 

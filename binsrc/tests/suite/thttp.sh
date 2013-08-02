@@ -1,28 +1,28 @@
 #!/bin/sh
-#
-#  $Id$
+#  
+#  $Id: thttp.sh,v 1.74.2.10.4.8 2013/01/02 16:15:10 source Exp $
 #
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
-#
-#  Copyright (C) 1998-2009 OpenLink Software
-#
+#  
+#  Copyright (C) 1998-2013 OpenLink Software
+#  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#
+#  
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#
+#  
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#
+#  
 # 
 DSN=$PORT
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 #PARAMETERS FOR HTTP TEST
 USERS=6
@@ -33,7 +33,7 @@ TPORT=$HTTPPORT
 HTTPPORT1=`expr $HTTPPORT + 1`
 HTTPPORT2=`expr $HTTPPORT + 2`
 #SERVER=M2		# OVERRIDE
-BLOG_TEST=1
+BLOG_TEST=0 ### XXX: disabled as under not working
 SYNCML_TEST=1
 
 
@@ -49,7 +49,7 @@ MAKE_VAD=yes
 
 LOGFILE=`pwd`/thttp.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 do_mappers_only=0
 if [ $# -ge 1 ]
@@ -633,7 +633,7 @@ httpGet ()
     fi
   user=${3-dba}
   pass=${4-dba}
-  ../urlsimu $file $pipeline -u $user -p $pass 
+  $VIRTUOSO_TEST/../urlsimu $file $pipeline -u $user -p $pass 
 }
 
 waitAll ()
@@ -705,7 +705,7 @@ DoCommand()
 
 MakeIni ()
 {
-   MAKECFG_FILE_WITH_HTTP ../$TESTCFGFILE $PORT $HTTPPORT $CFGFILE
+   MAKECFG_FILE_WITH_HTTP $TESTCFGFILE $PORT $HTTPPORT $CFGFILE
 }
 
 BANNER "STARTED SERIES OF HTTP SERVER TESTS"
@@ -718,22 +718,23 @@ case $1 in
 
    #CLEANUP
    STOP_SERVER
+   MakeIni
    rm -f $DBLOGFILE $DBFILE
    rm -rf http
    mkdir http
+   cp virtuoso.ini http
    cd http
    GenURI11
    GenURI10
    GenURI1011
    XSD_GENERATE
    rm -f vspsoap.vsp vspsoap_mod.vsp
-   cp ../vspsoap.vsp vspsoap.vsp
-   cp ../vspsoap_mod.vsp vspsoap_mod.vsp
-   MakeIni
-   cp ../etalon_ouput_gz etalon_ouput_gz
-   cp ../syncml.dtd syncml.dtd
+   cp $VIRTUOSO_TEST/vspsoap.vsp vspsoap.vsp
+   cp $VIRTUOSO_TEST/vspsoap_mod.vsp vspsoap_mod.vsp
+   cp $VIRTUOSO_TEST/etalon_ouput_gz etalon_ouput_gz
+   cp $VIRTUOSO_TEST/syncml.dtd syncml.dtd
    mkdir r4
-   cp -f ../r4/* r4 
+   cp -f $VIRTUOSO_TEST/r4/* r4 
    GenHTML
    GenVSP
    mkdir test_404
@@ -744,31 +745,31 @@ case $1 in
    if [ "$MAKE_VAD" = "yes" ] ; then
        if [ $do_mappers_only -eq 1 ]
        then
-	   (cd ../../../rdf_mappers; make)
-	   cp ../../../rdf_mappers/rdf_mappers_dav.vad ./
+	   (cd $VIRTUOSO_TEST/../../rdf_mappers; $MAKE)
+	   cp $VIRTUOSO_TEST/../../rdf_mappers/cartridges_dav.vad ./
        elif [ "x$HOST_OS" = "x" ]
        then
 	   LOG "Create ODS VAD Package"
-	   (cd ../../../samples/wa/; make)
-	   cp ../../../samples/wa/ods_framework_dav.vad ./
+	   (cd $VIRTUOSO_TEST/../../samples/wa/; $MAKE)
+	   cp $VIRTUOSO_TEST/../../samples/wa/ods_framework_dav.vad ./
 	   LOG "Create BLOG VAD Package"
-	   (cd ../../../weblog2/; make)
-	   cp ../../../weblog2/ods_blog_dav.vad ./
+	   (cd $VIRTUOSO_TEST/../../weblog2/; $MAKE)
+	   cp $VIRTUOSO_TEST/../../weblog2/ods_blog_dav.vad ./
 	   LOG "Create SyncML VAD Package"
-	   (cd ../../../sync/; make)
-	   cp ../../../sync/syncml_dav.vad ./
-	   (cd ../../../rdf_mappers; make)
-	   cp ../../../rdf_mappers/rdf_mappers_dav.vad ./
+	   (cd $VIRTUOSO_TEST/../../sync/; $MAKE)
+	   cp $VIRTUOSO_TEST/../../sync/syncml_dav.vad ./
+	   (cd $VIRTUOSO_TEST/../../rdf_mappers; $MAKE)
+	   cp $VIRTUOSO_TEST/../../rdf_mappers/cartridges_dav.vad ./
        elif [ "x$SRC" != "x" ]
        then
 	   LOG "Create ODS VAD Package"
-	   (cd "$SRC/binsrc/samples/wa/" ; ./make_vad.sh)
+	   (cd "$SRC/binsrc/samples/wa/" ; $MAKE)
 	   cp "$SRC/binsrc/samples/wa/ods_framework_dav.vad" .
 	   LOG "Create BLOG VAD Package"
-	   (cd "$SRC/binsrc/weblog2/" ; ./make_vad.sh)
+	   (cd "$SRC/binsrc/weblog2/" ; $MAKE)
 	   cp "$SRC/binsrc/weblog2/ods_blog_dav.vad" .
-	   (cd "$SRC/binsrc/rdf_mappers"; make)
-	   cp "$SRC/binsrc/rdf_mappers/rdf_mappers_dav.vad" .
+	   (cd "$SRC/binsrc/rdf_mappers"; $MAKE)
+	   cp "$SRC/binsrc/rdf_mappers/cartridges_dav.vad" .
        elif [ ! -f ../../../../autogen.sh ]
        then
 	   LOG "***ABORTED: Cannot build ODS & Blog2 VAD packages"
@@ -776,8 +777,8 @@ case $1 in
        fi
    fi
    # Prepare GRDDL tests to run locally
-   gzip -c -d ../grddl-tests.tar.gz | tar xf -
-   if grep ":14300" grddl-tests/* > /dev/null
+   gzip -c -d $VIRTUOSO_TEST/grddl-tests.tar.gz | tar xf -
+   if grep -r ":14300" grddl-tests/* > /dev/null
    then
        echo "The port number to replace is correct."
    else
@@ -790,9 +791,9 @@ case $1 in
        cp -f tmp.tmp $f
        rm -f tmp.tmp
    done
-   if [ ! -f rdf_mappers_dav.vad -a -f ../../../rdf_mappers/rdf_mappers_dav.vad ]
+   if [ ! -f cartridges_dav.vad -a -f $VIRTUOSO_TEST/../../rdf_mappers/cartridges_dav.vad ]
    then
-     cp ../../../rdf_mappers/rdf_mappers_dav.vad .
+     cp $VIRTUOSO_TEST/../../rdf_mappers/cartridges_dav.vad .
    fi
    if [ ! -f ods_framework_dav.vad -o ! -f ods_blog_dav.vad ]
    then
@@ -856,21 +857,21 @@ then
    checkHTTPLog
 
   fi 
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < tsoap.sql
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsoap.sql
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: tsoap.sql"
       exit 1
    fi
    
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < tsoap_rpc.sql
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsoap_rpc.sql
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: tsoap_rpc.sql"
       exit 1
    fi
 
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < tsoap_r3.sql
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsoap_r3.sql
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: tsoap_r3.sql"
@@ -878,14 +879,14 @@ then
    fi
 
 
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < wsdl_suite.sql
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/wsdl_suite.sql
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: wsdl_suite.sql"
       exit 1
    fi
    
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < twsrp.sql
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/twsrp.sql
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: twsrp.sql"
@@ -893,7 +894,7 @@ then
    fi
 
 # XXX: VJ   
-#   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < tsoapudt.sql
+#   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsoapudt.sql
 #   if test $STATUS -ne 0
 #   then
 #      LOG "***ABORTED: tsoapudt.sql"
@@ -902,7 +903,7 @@ then
 
    ECHO "Started: Testing new SOAP client"
 
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < tsoap_new.sql
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsoap_new.sql
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: tsoap_new.sql"
@@ -911,11 +912,11 @@ then
    
    ECHO "Started: New SOAP client with digest authentication"
 
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < soapauth.sql
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/soapauth.sql
    DoCommand $DSN "DB.DBA.VHOST_REMOVE ('*ini*', '*ini*', '/SOAP', 0);"
    DoCommand $DSN "DB.DBA.VHOST_DEFINE ('*ini*', '*ini*', '/SOAP', '/SOAP/', 0, 0, NULL, 'DB.DBA.AUTH_HOOK_SOAP_TEST', 'soaptest', NULL, 'dba', 'SOAP', 'DIGEST', 1);"   
 
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < tsoap_new.sql
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsoap_new.sql
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: tsoap_new.sql"
@@ -927,7 +928,7 @@ then
    DoCommand $DSN "DB.DBA.VHOST_REMOVE ('*ini*', '*ini*', '/SOAP', 0);"
    DoCommand $DSN "DB.DBA.VHOST_DEFINE ('*ini*', '*ini*', '/SOAP', '/SOAP/', 0, 0, NULL, NULL, NULL, NULL, 'dba', 'SOAP', NULL, 1);"   
 
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT1=$HTTPPORT1" "HTTPPORT2=$HTTPPORT2"  "HTTPPORT=$HTTPPORT"< thttp.sql 
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT1=$HTTPPORT1" "HTTPPORT2=$HTTPPORT2"  "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/thttp.sql 
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: thttp.sql"
@@ -937,7 +938,7 @@ then
    if [ "z$SSL" != "z" -a "z$NO_SSL" = "z" ]
    then 
    ECHO "SSL dependant tests"
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT1=$HTTPPORT1" "HTTPPORT2=$HTTPPORT2"  "HTTPPORT=$HTTPPORT"< twss.sql 
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT1=$HTTPPORT1" "HTTPPORT2=$HTTPPORT2"  "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/twss.sql 
    fi
 
    ECHO "Interop round 4 endpoints"
@@ -951,38 +952,38 @@ then
    RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < http/r4/xsd.sql
    RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < http/r4/load_xsd.sql
    ECHO "Interop round 4 tests"
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< tsoap_r4.sql 
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/tsoap_r4.sql 
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: tsoap_r4.sql"
       exit 1
    fi
    
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< txmla.sql 
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/txmla.sql 
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: txmla.sql"
       exit 1
    fi
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< txmla3.sql 
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/txmla3.sql 
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: txmla3.sql"
       exit 1
    fi
-  RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< tacl.sql 
+  RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/tacl.sql 
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: tacl.sql"
       exit 1
    fi
-#   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< twsrm.sql 
+#   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/twsrm.sql 
 #   if test $STATUS -ne 0
 #   then
 #      LOG "***ABORTED: twsrm.sql"
 #      exit 1
 #   fi
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< twstr.sql 
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/twstr.sql 
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: twsrm.sql"
@@ -990,7 +991,7 @@ then
    fi
    if [ $BLOG_TEST -eq 1 ]
    then
-       RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< tblog.sql 
+       RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/tblog.sql 
        if test $STATUS -ne 0
        then
 	   LOG "***ABORTED: tblog.sql"
@@ -1001,7 +1002,7 @@ then
 
 if [ -f $PLUGINDIR/wbxml2.so ]
 then
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< tsyncml.sql 
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/tsyncml.sql 
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: tsyncml.sql"
@@ -1011,14 +1012,14 @@ then
       LOG "SKIP      : tsyncml.sql"
 fi
 
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < tsoapcpl.sql 
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsoapcpl.sql 
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: tsoapcpl.sql"
       exit 1
    fi
 
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < url_rewrite_test.sql
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/url_rewrite_test.sql
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: url_rewrite_test.sql"
@@ -1027,7 +1028,7 @@ fi
 fi
    DoCommand $DSN "registry_set ('__rdf_cartridges_original_doc_uri__', '1');" 
    # XXX 
-   #RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < tsponge.sql
+   #RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsponge.sql
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: tsponge.sql"
@@ -1035,7 +1036,7 @@ fi
    fi
 
    # XXX
-   #RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < xhtml1-testcases.sql
+   #RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/xhtml1-testcases.sql
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: xhtml1-testcases.sql"

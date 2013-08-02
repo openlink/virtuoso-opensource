@@ -320,17 +320,21 @@ next_set:
   n_pars = itc->itc_search_par_fill;
   for (inx = 0; inx < n_pars; inx++)
     {
+      char nnf, onf;
       data_col_t *dc = ITC_P_VEC (itc, inx);
       int ninx = itc->itc_param_order[itc->itc_set + 1];
       int64 new_v;
       if (!dc)
 	goto next;
-      new_v = dc_any_value (dc, ninx);
+      new_v = dc_any_value_n (dc, ninx, &nnf);
       if (all_eq && !is_row_sp)
 	{
 	  int oinx = itc->itc_param_order[itc->itc_set];
-	  int64 old_v = dc_any_value (dc, oinx);
-	  if (!((new_v == old_v && !dc->dc_any_null) || (DV_ANY == dc->dc_dtp && DVC_MATCH == dc_cmp (dc, old_v, new_v))))
+	  int64 old_v = dc_any_value_n (dc, oinx, &onf);
+	  if (onf && nnf)
+	    ;
+	  else if (nnf || onf || !((new_v == old_v && !dc->dc_any_null) || (DV_ANY == dc->dc_dtp
+		      && DVC_MATCH == dc_cmp (dc, old_v, new_v))))
 	    all_eq = 0;
 	}
       if (DCT_NUM_INLINE & dc->dc_type)
@@ -344,7 +348,7 @@ next_set:
 	itc->itc_search_params[inx] = itc_temp_any_box (itc, inx, (db_buf_t) new_v);
       else if (DCT_BOXES & dc->dc_type)
 	itc->itc_search_params[inx] = (caddr_t) (ptrlong) new_v;
-      else if (!itc_vec_sp_copy (itc, inx, new_v))
+      else if (!itc_vec_sp_copy (itc, inx, new_v, ninx))
 	itc->itc_search_params[inx] = (caddr_t) (ptrlong) new_v;
     next:
       NEXT_SP_COL;
@@ -455,17 +459,21 @@ next_set:
   n_pars = itc->itc_search_par_fill;
   for (inx = 0; inx < n_pars; inx++)
     {
+      char nnf, onf;
       data_col_t *dc = ITC_P_VEC (itc, inx);
       int ninx = itc->itc_param_order[itc->itc_set + 1];
       int64 new_v;
       if (!dc)
 	goto next;
-      new_v = dc_any_value_prefetch (dc, ninx, next_set);
+      new_v = dc_any_value_n_prefetch (dc, ninx, next_set, &nnf);
       if (all_eq && !is_row_sp)
 	{
 	  int oinx = itc->itc_param_order[itc->itc_set];
-	  int64 old_v = dc_any_value (dc, oinx);
-	  if (!((new_v == old_v && !dc->dc_any_null) || (DV_ANY == dc->dc_dtp && DVC_MATCH == dc_cmp (dc, old_v, new_v))))
+	  int64 old_v = dc_any_value_n (dc, oinx, &onf);
+	  if (nnf && onf)
+	    ;
+	  else if (nnf || onf || !((new_v == old_v && !dc->dc_any_null) || (DV_ANY == dc->dc_dtp
+		      && DVC_MATCH == dc_cmp (dc, old_v, new_v))))
 	    {
 	      all_eq = 0;
 	      first_diff = nth_part;
@@ -482,7 +490,7 @@ next_set:
 	itc->itc_search_params[inx] = itc_temp_any_box (itc, inx, (db_buf_t) new_v);
       else if (DCT_BOXES & dc->dc_type)
 	itc->itc_search_params[inx] = (caddr_t) (ptrlong) new_v;
-      else if (!itc_vec_sp_copy (itc, inx, new_v))
+      else if (!itc_vec_sp_copy (itc, inx, new_v, ninx))
 	itc->itc_search_params[inx] = (caddr_t) (ptrlong) new_v;
     next:
       NEXT_SP_COL;
@@ -536,7 +544,10 @@ next_set:
       if (itc->itc_same_parent_miss > itc->itc_same_parent_hit)
 	goto start_at_reset;
       if (itc_next_set_parent (itc, buf_ret))
+	{
+	  NEXT_SET_SP_LAND_CHECK;
 	return DVC_MATCH;
+	}
       goto start_at_reset;
     }
   TC (tc_same_page);
@@ -613,17 +624,21 @@ next_set:
   n_pars = itc->itc_search_par_fill;
   for (inx = 0; inx < n_pars; inx++)
     {
+      char nnf, onf;
       data_col_t *dc = ITC_P_VEC (itc, inx);
       int ninx = itc->itc_param_order[itc->itc_set + 1];
       int64 new_v;
       if (!dc)
 	goto next;
-      new_v = dc_any_value_prefetch (dc, ninx, next_set);
+      new_v = dc_any_value_n_prefetch (dc, ninx, next_set, &nnf);
       if (all_eq && !is_row_sp)
 	{
 	  int oinx = itc->itc_param_order[itc->itc_set];
-	  int64 old_v = dc_any_value (dc, oinx);
-	  if (!((new_v == old_v && !dc->dc_any_null) || (DV_ANY == dc->dc_dtp && DVC_MATCH == dc_cmp (dc, old_v, new_v))))
+	  int64 old_v = dc_any_value_n (dc, oinx, &onf);
+	  if (nnf && onf)
+	    ;
+	  else if (nnf || onf || !((new_v == old_v && !dc->dc_any_null) || (DV_ANY == dc->dc_dtp
+		      && DVC_MATCH == dc_cmp (dc, old_v, new_v))))
 	    all_eq = 0;
 	}
       if (DCT_NUM_INLINE & dc->dc_type)
@@ -637,7 +652,7 @@ next_set:
 	itc->itc_search_params[inx] = itc_temp_any_box (itc, inx, (db_buf_t) new_v);
       else if (DCT_BOXES & dc->dc_type)
 	itc->itc_search_params[inx] = (caddr_t) (ptrlong) new_v;
-      else if (!itc_vec_sp_copy (itc, inx, new_v))
+      else if (!itc_vec_sp_copy (itc, inx, new_v, ninx))
 	itc->itc_search_params[inx] = (caddr_t) (ptrlong) new_v;
     next:
       NEXT_SP_COL;
@@ -690,7 +705,10 @@ next_set:
       if (itc->itc_same_parent_miss > itc->itc_same_parent_hit)
 	goto start_at_reset;
       if (itc_next_set_parent (itc, buf_ret))
+	{
+	  NEXT_SET_SP_LAND_CHECK;
 	return DVC_MATCH;
+	}
       goto start_at_reset;
     }
   TC (tc_same_page);
@@ -734,7 +752,7 @@ retry_landing:
 #define ITC_OUT_MAP(itc) itc->itc_ks->ks_out_map
 
 void
-itc_pop_last_out (it_cursor_t * itc, caddr_t * inst, v_out_map_t * om)
+itc_pop_last_out (it_cursor_t * itc, caddr_t * inst, v_out_map_t * om, buffer_desc_t * buf)
 {
   int n = box_length ((caddr_t) om) / sizeof (v_out_map_t), inx;
   for (inx = 0; inx < n; inx++)
@@ -750,7 +768,16 @@ itc_pop_last_out (it_cursor_t * itc, caddr_t * inst, v_out_map_t * om)
 	    DC_CLR_NULL (dc, dc->dc_n_values);
 	}
       else
+	{
+	  if (DCT_BOXES & dc->dc_type)
+	    {
+	      caddr_t box = ((caddr_t *) dc->dc_values)[dc->dc_n_values - 1];
+	      /* this is in on the page where the placeholder was registered so unregister before the free because free would hang in reentering the page */
+	      if (DV_ITC == DV_TYPE_OF (box))
+		itc_unregister_inner ((it_cursor_t *) box, buf, 0);
+	    }
 	dc_pop_last (dc);
+    }
     }
   if (RSP_CHANGED == itc->itc_hash_row_spec)
     {
@@ -904,6 +931,11 @@ itc_vec_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 	    }
 	  dc = QST_BOX (data_col_t *, inst, om[inx].om_ssl->ssl_index);
 	  cl = key_find_cl (row_key, om[inx].om_cl.cl_col_id);
+	  if (dc_itc_placeholder == om[inx].om_ref)
+	    {
+	      om[inx].om_ref (itc, buf, &om[inx].om_cl, itc->itc_out_state, om[inx].om_ssl);
+	      continue;
+	    }
 	  if (!cl)
 	    {
 	      dbe_column_t *col = sch_id_to_column (wi_inst.wi_schema, om[inx].om_cl.cl_col_id);
@@ -936,13 +968,18 @@ itc_vec_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 	{
 	  QST_INT (inst, ts->src_gen.src_out_fill)--;
 	  itc->itc_n_results--;
-	  itc_pop_last_out (itc, inst, ks->ks_v_out_map);
+	  itc_pop_last_out (itc, inst, ks->ks_v_out_map, buf);
 	  return DVC_LESS;
 	}
     }
   KEY_TOUCH (itc->itc_insert_key);
-  if (IS_QN (ts, table_source_input) && 1 == ts->ts_max_rows)
+  if (IS_QN (ts, table_source_input) && ts->ts_max_rows)
+    {
+      if (1 == ts->ts_max_rows)
     return DVC_GREATER;
+      else if (1 == itc->itc_n_sets && itc->itc_n_results >= ts->ts_max_rows)
+	return DVC_GREATER;
+    }
   return DVC_MATCH;
 }
 

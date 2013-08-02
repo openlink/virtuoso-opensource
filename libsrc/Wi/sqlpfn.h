@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -62,7 +62,10 @@ ST ** asg_col_list (ST ** asg_list);
 
 ST ** sqlp_local_variable_decls (caddr_t * names, ST * dtp);
 
-caddr_t sqlp_box_id_upcase (const char * str);
+caddr_t DBG_NAME (sqlp_box_id_upcase) (DBG_PARAMS const char *str);
+#ifdef MALLOC_DEBUG
+#define sqlp_box_id_upcase(s) dbg_sqlp_box_id_upcase (__FILE__, __LINE__, s)
+#endif
 caddr_t t_sqlp_box_id_upcase (const char * str);
 caddr_t sqlp_box_upcase (const char * str);
 caddr_t t_sqlp_box_upcase (const char * str);
@@ -152,7 +155,8 @@ long sqlp_xml_select_flags (char * mode, char * elt);
 ptrlong sqlp_bunion_flag (ST * l, ST * r, long f);
 ST *sqlp_wpar_nonselect (ST *subq);
 ST * sqlp_inline_order_by (ST *tree, ST **oby);
-ST * sqlp_patch_call_if_special (ST * funcall_tree);
+/*! Tweaks special calls and replaces calls of pure functions on costants with results of that functions */
+ST * sqlp_patch_call_if_special_or_optimizable (ST * funcall_tree);
 ptrlong sqlp_cursor_name_to_type (caddr_t name);
 ptrlong sqlp_fetch_type_to_code (caddr_t name);
 
@@ -183,7 +187,7 @@ void sqlp_pragma_line (char * text);
 caddr_t sqlp_hex_literal (char *yytxt, int unprocess_chars_at_end);
 caddr_t sqlp_bit_literal (char *yytxt, int unprocess_chars_at_end);
 
-caddr_t sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strval);
+caddr_t sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strval, int find_lextype);
 
 ST * sqlp_udt_create_external_proc (ptrlong routine_head, caddr_t proc_name,
     caddr_t parms, ST *opt_return, caddr_t alt_type, ptrlong language_name, caddr_t external_name, ST **opts);
@@ -192,9 +196,6 @@ ST * sqlp_wrapper_sqlxml_assign (ST * tree);
 
 int sqlp_tree_has_fun_ref (ST *tree);
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 extern int scn3_lineno;
 extern int scn3_plineno;
 extern int scn3_get_lineno (void);
@@ -217,23 +218,6 @@ extern size_t get_yyleng (void);
 int scn3_sprint_curr_line_loc (char *buf, size_t max_buf);
 extern int scn3_pragmaline_depth;
 void scn3_set_file_line (char *file, int file_nchars, int line_no);
-#ifdef YYPARSE_PARAM
-# if defined (__STDC__) || defined (__cplusplus)
-int yyparse (void *YYPARSE_PARAM);
-# else
-int yyparse ();
-# endif
-#else /* ! YYPARSE_PARAM */
-#if defined (__STDC__) || defined (__cplusplus)
-int yyparse (void);
-#else
-int yyparse ();
-#endif
-#endif /* ! YYPARSE_PARAM */
-#ifdef __cplusplus
-}
-#endif
-
 int bop_weight (int bop);
 
 extern char *part_tok (char ** place);
@@ -246,4 +230,8 @@ void sqlp_dt_header (ST * exp);
 caddr_t sqlp_col_num (caddr_t);
 int sqlp_is_num_lit (caddr_t x);
 caddr_t sqlp_minus (caddr_t n);
+char * sqlp_default_cluster ();
+dk_set_t cl_all_host_group_list ();
+dk_set_t sqlp_index_default_opts(dk_set_t opts);
+
 #endif /* _SQLPFN_H */

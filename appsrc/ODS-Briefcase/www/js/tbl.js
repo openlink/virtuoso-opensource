@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2010 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -78,9 +78,7 @@ TBL.createCell42 = function (td, prefix, fldName, No, fldOptions, disabled)
 
 TBL.createCell43 = function (td, prefix, fldName, No, fldOptions)
 {
-	var fld = OAT.Dom.create("select");
-	fld.name = fldName;
-	fld.id = fldName;
+  var fld = TBL.createCellSelect(fldName, fldOptions);
 	TBL.selectOption(fld, fldOptions.value, 'This object only', 0);
 	if (fldOptions.objectType == 'C') {
 	TBL.selectOption(fld, fldOptions.value, 'This object, subfolders and files', 1);
@@ -108,4 +106,54 @@ TBL.clickCell42 = function (fld)
     fldName = fldName.replace('fld_3', 'fld_4');
   }
   $(fldName).checked = false;
+}
+
+var Cartridges;
+TBL.createCell45 = function (td, prefix, fldName, No, fldOptions)
+{
+  var fld = TBL.createCellSelect(fldName, fldOptions);
+  if (Cartridges) {
+    TBL.createCell45Options(fld, fldOptions.value);
+  } else {
+    var x = function (data) {
+      try {
+        Cartridges = OAT.JSON.parse(data);
+        TBL.createCell45Options(fld, fldOptions.value);
+      } catch (e) {Cartridges = null;}
+    }
+    OAT.AJAX.GET('ajax.vsp?a=cartridges', '', x);
+  }
+  td.appendChild(fld);
+  return fld;
+}
+
+TBL.createCell45Options = function (fld, fldValue)
+{
+  for (var i = 0; i < Cartridges.length; i++)
+    TBL.selectOption(fld, fldValue, Cartridges[i][1], Cartridges[i][0]);
+}
+
+var MetaCartridges;
+TBL.createCell46 = function (td, prefix, fldName, No, fldOptions)
+{
+  var fld = TBL.createCellSelect(fldName, fldOptions);
+  if (MetaCartridges) {
+    TBL.createCell46Options(fld, fldOptions.value);
+  } else {
+    var x = function (data) {
+      try {
+        MetaCartridges = OAT.JSON.parse(data);
+        TBL.createCell46Options(fld, fldOptions.value);
+      } catch (e) {MetaCartridges = null;}
+    }
+    OAT.AJAX.GET('ajax.vsp?a=metaCartridges', '', x);
+  }
+  td.appendChild(fld);
+  return fld;
+}
+
+TBL.createCell46Options = function (fld, fldValue)
+{
+  for (var i = 0; i < MetaCartridges.length; i++)
+    TBL.selectOption(fld, fldValue, MetaCartridges[i][1], MetaCartridges[i][0]);
 }

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -141,7 +141,7 @@ relationship between the tables&apos; primary and other keys.
 			<title>Object ID</title>
 			<para>
 A table does not necessarily declare a primary key.  Even so, the table must
-have a primary key &mdash; in this case a synthetic record ID which is defined
+have a primary key - in this case a synthetic record ID which is defined
 as primary key. The record ID  is an autoincrementing column that is normally
 invisible but, if present, can be accessed by explicit reference. One should
 not rely on this feature being available, though.
@@ -156,7 +156,7 @@ create table nokey (a integer);
 expands to
 </para>
 			<programlisting>
-create table nokey (a integer, _IDN integer identity, primary key (_IDB));
+create table nokey (a integer, _IDN integer identity, primary key (_IDN));
 </programlisting>
 			<para>
 The first unique index to be defined will become the primary key if the table
@@ -473,8 +473,8 @@ There are 3 additional data types to enable storing of Unicode data:
 			</itemizedlist>
 			<para>
 All the Unicode types are equivalent to their corresponding
-&quot;narrow&quot; type &mdash; CHAR,
-VARCHAR and LONG VARCHAR &mdash; except that instead of storing data as one byte they allow
+&quot;narrow&quot; type - CHAR,
+VARCHAR and LONG VARCHAR - except that instead of storing data as one byte they allow
 Unicode characters. Their lengths are defined and returned in characters instead of bytes.
 They collate according to the active wide character collation, if any.  By 
 default this is the order of the Unicode serialization values.  These types 
@@ -500,8 +500,8 @@ project narrow character codes into the Unicode space
 as equally valued wide-character codes.
 </para>
 			<para>
-When conversion is done client-side &mdash; for example, when binding a VARCHAR to a
-wide buffer &mdash; the default client&apos;s system character set is used.
+When conversion is done client-side - for example, when binding a VARCHAR to a
+wide buffer - the default client&apos;s system character set is used.
 </para>
 			<para>
 Wide-character literals have ANSI SQL92 syntax: N&apos;xxx&apos; (prefixing normal literals
@@ -627,19 +627,19 @@ The descriptions below apply to insert and update operations for these types:
 <itemizedlist mark="bullet">
 <listitem><para>Long varchar = x, where x is:</para>
 <simplelist>
-<member>varchar &mdash; The text is stored as is.</member>
-<member>Long varchar &mdash; the text is stored as is.</member>
-<member>string output &mdash; the contents in the string output are stored as the value,
+<member>varchar - The text is stored as is.</member>
+<member>Long varchar - the text is stored as is.</member>
+<member>string output - the contents in the string output are stored as the value,
 unchanged.  The state of the string output is not changed. </member>
-<member>XML entity &mdash; The XML tree rooted at the entity is stored
+<member>XML entity - The XML tree rooted at the entity is stored
 as persistent XML (disk-based) if the entity references a persistent XML tree.
 Note that this may either extract a subtree or copy a tree, depending on whether
 the entity references the root.  If the entity references a memory-based tree,
 the text of the tree with the element as the topmost (document) element is
 produced and set as the value of the column.</member>
-<member>Nvarchar &mdash; The text is stored as wide, thus the value is internally a
+<member>Nvarchar - The text is stored as wide, thus the value is internally a
 long nvarchar although the declared column type is long varchar.</member>
-<member>Long nvarchar &mdash; The value is stored as a long nvarchar, as with an nvarchar.</member>
+<member>Long nvarchar - The value is stored as a long nvarchar, as with an nvarchar.</member>
 </simplelist>
 </listitem>
 
@@ -662,18 +662,18 @@ column metadata for ODBC clients, where its type conversions may be different.
 <listitem>
 <para>Varchar = x, where x is:</para>
 <simplelist>
-<member>long varchar, string output, XML entity &mdash; as with long varchar.</member>
-<member>Nvarchar, Long nvarchar &mdash; the text is stored as wide; no information is lost.</member>
+<member>long varchar, string output, XML entity - as with long varchar.</member>
+<member>Nvarchar, Long nvarchar - the text is stored as wide; no information is lost.</member>
 </simplelist>
 </listitem>
 
 <listitem>
 <para>Nvarchar = x, where x is:</para>
 <simplelist>
-<member>Long varchar, varchar &mdash; the string is converted to wide
+<member>Long varchar, varchar - the string is converted to wide
 according to the character set effective in the connection.
 </member>
-<member>Long nvarchar, Nvarchar &mdash; The text is stored as is.</member>
+<member>Long nvarchar, Nvarchar - The text is stored as is.</member>
 </simplelist>
 </listitem>
 </itemizedlist>
@@ -800,6 +800,199 @@ file:// protocol.
 </sect4>
 </sect3>
 	</sect2>
+	
+	   <!-- ======================================== -->
+   <sect2 id="colstore"><title>Virtuoso Column Store</title>
+     <para>Note: This feature only applies to Virtuoso 7.0 and later.</para>
+     <para>As of version 7, Virtuoso offers a column-wise compressed storage format alongside 
+     	its traditional row-wise storage format.</para> 
+     <para>In the column-wise storage model, each column of a table or index is stored contiguously, so 
+     	that values of a single column on consecutive rows are physically adjacent. In this way, adjacent 
+     	values are of the same type, and if the index is sorted on said value, the consecutive values 
+     	often form an ascending sequence. This organization allows the use of more powerful compression 
+     	techniques than could be used for rows where consecutive values belong to different columns, and 
+     	thus are of disparate data types with values in different ranges.</para>
+     <para>Furthermore, when queries only access a subset of columns from one table, only those 
+     	columns actually being accessed need to be read from disk, thereby making better use of I/O 
+     	throughput and memory. Unreferenced columns will not take space in the memory based cache 
+     	of the database. Further, the traffic between CPU cache and main memory is reduced when 
+     	data is more compact, leading to better CPU utilization.</para>
+     <para>The column-wise format is substantially more compact and offers substantially greater 
+     	sequential-access performance, as well as greater random-access performance in situations 
+     	where many rows are accessed together in a join. For single-row random-access, a row-wise 
+     	format offers higher performance as long as the data is in memory. In practice, for large 
+     	tables, the higher compression achieved with column-wise storage allows a larger portion 
+     	of the data to be kept in memory, leading to less frequent I/O and consequently higher 
+     	performance.</para>
+     <para>One should not use column-wise storage in cases where columns are frequently updated, 
+     	especially if a single row is updated per statement. This will give performance substantially 
+     	worse than row-wise storage. However, bulk inserts and deletes are efficient with 
+     	column-wise storage.</para>
+     
+     <sect3 id="colstorecreatetblind"><title>Creating Column Store Tables and Indices</title>
+       <para>Any index or primary key, i.e., any table, can be declared to be stored column-wise. 
+       	A single table can have multiple indices, of which some are stored column-wise and some are 
+       	not. As with tables stored row-wise, the table row itself is stored following the primary 
+       	key index entry on the index tree leaf corresponding to the entry. This arrangement is 
+       	sometimes called a <emphasis>clustered index</emphasis>.</para>
+<para>One can specify column-wise storage as the default for any new tables or indices by adding ColumnStore = 1 to the [Parameters] section of the virtuoso.ini file.  Otherwise, tables and indices are created tow-wise unless the column option is specified, as described below.
+</para>
+
+       <para>The statement below declares the table xx to be stored column-wise:</para>
+ <programlisting><![CDATA[
+CREATE TABLE xx ( id    INT, 
+                  data  VARCHAR, 
+                  PRIMARY KEY (id) COLUMN
+                );
+ ]]></programlisting>
+       <para>This statement adds a column-wise stored index to the table:</para>
+ <programlisting><![CDATA[
+CREATE COLUMN INDEX xxi 
+  ON xx (data);
+ ]]></programlisting>
+       <para>The <emphasis>COLUMN</emphasis> keyword can come after the column list of the 
+       primary key declaration of a table or anywhere between the <emphasis>CREATE</emphasis> 
+       and <emphasis>INDEX</emphasis> keywords of a create index statement.</para>
+       <para>Note that the <emphasis>BITMAP</emphasis> keyword cannot be used together 
+       with the <emphasis>COLUMN</emphasis> keyword. Column-wise indices will automatically 
+       use bitmap compression when appropriate without this being specified. A column-wise 
+       index is likely to be more space-efficient than a row-wise bitmap index with the same 
+       key parts.</para>
+       <para>The directives for column compression in <emphasis>CREATE TABLE (NO COMPRESS, COMPRESS PREFIX)</emphasis> 
+       have no effect on column-wise stored tables. Data is compressed in a manner chosen at run 
+       time based on the data itself.</para>
+     </sect3>
+       
+     <sect3 id="colstoretransup"><title>Column Store Transaction Support</title>
+       <para>All SQL operations work identically for column- or row-wise tables and indices. 
+       	The locking behavior is also identical, with row-level locking supported on all isolation 
+       	levels. The behavior of the <emphasis>READ COMMITTED</emphasis> isolation is non-locking, 
+       	showing the pre-image of updated data when reading pages with uncommitted inserts or updates.</para> 
+       <para>Recovery is by roll forward, and checkpoints will only store committed states of the 
+       	database, even if started when there are uncommitted transactions pending.</para>
+     </sect3>
+     
+     <sect3 id="colstorespaceutil"><title>Column Space Utilization</title> 
+       <para>The system table <emphasis>DB.DBA.sys_col_info</emphasis> holds information about space 
+       utilization of column-wise indices.</para>
+       <para>This table is updated only after the <emphasis>DB.DBA.sys_index_space_stats</emphasis> 
+       procedure view has been accessed. Thus, one must first make a selection from 
+       <emphasis>DB.DBA.sys_index_space_stats</emphasis>.</para>
+       <para>The columns of <emphasis>sys_col_info</emphasis> have the following meaning:</para>
+       <itemizedlist mark="bullet">
+         <listitem><emphasis>COI_TABLE</emphasis> - The table in question.</listitem>
+         <listitem><emphasis>COI_INDEX</emphasis> - The index in question.</listitem>
+         <listitem><emphasis>COI_NTH</emphasis> - The ordinal position of the column in question 
+         in the key.</listitem>
+         <listitem><emphasis>COI_TYPE</emphasis> - This indicates the type of compression entry the rest 
+         of the row concerns. For each column in the key, there is a row with <emphasis>coi_type</emphasis> 
+         set to -1, representing the total of the remaining fields.</listitem>
+         <listitem><emphasis>COI_COLUMN</emphasis> - The name of the column concerned.</listitem>
+         <listitem><emphasis>COI_PAGES</emphasis> - This is the number of database pages allocated for 
+         storing data of this column.</listitem>
+         <listitem><emphasis>COI_CES</emphasis> - The count of compression entries for the column. A 
+         compression entry is logically an array of consecutive values that share a common compression 
+         format. Different parts of the same column may have different compression.</listitem>
+         <listitem><emphasis>COI_VALUES</emphasis> - This is the count of values that are stored with the 
+         compression format in question.</listitem>
+         <listitem><emphasis>COI_BYTES</emphasis>- The is the number of bytes actually occupied by the 
+         compression entries concerned. Pages may not always by full, thus this metric can be used to 
+         measure the page fill ratio, i.e.:
+<programlisting><![CDATA[
+100 * coi_bytes / (coi_n_pages * 8192.0) 
+]]></programlisting>
+         </listitem>                                
+       </itemizedlist>
+       <para>To see which columns take the most space, and how full the pages are, as well as the 
+       	overall effectiveness of compression, one can do:</para>
+ <programlisting><![CDATA[
+SELECT                                       coi_column         , 
+                         coi_pages * 8192  AS  total_bytes        , 
+         coi_bytes / (coi_pages * 8192.0)  AS  page_fill          , 
+                                               coi_bytes          , 
+             1.0 * coi_bytes / coi_values  AS  ce_bytes_per_value , 
+          8192.0 * coi_pages / coi_values  AS  bytes_per_value 
+    FROM sys_col_info 
+   WHERE coi_type = -1 
+ORDER BY coi_pages DESC ;
+ ]]></programlisting>
+       <para>Note that issuing a query like:</para> 
+ <programlisting><![CDATA[
+ SELECT TOP 20 * 
+    FROM sys_index_space_stats 
+ORDER BY iss_pages DESC; 
+ ]]></programlisting>
+       <para>will update the <emphasis>sys_col_info</emphasis> table which is initially empty.</para> 
+       <para>The <emphasis>sys_index_space_stats</emphasis> view shows the number of pages used for 
+       the sparse row-wise index tree top for column-wise indices.</para>
+       <para>The number of rows shown there for column-wise indices is the number of entries of 
+       	the sparse index, not the row-count of the index. The space utilization here will be under 
+       	1% of the total for a column-wise index.</para>
+       <para>Below we look at space utilization of the <emphasis>O</emphasis> column of the primary 
+       key of the <emphasis>RDF_QUAD</emphasis> table.</para>
+ <programlisting><![CDATA[
+SELECT * 
+  FROM sys_col_info 
+ WHERE  coi_index = 'DB.DBA.RDF_QUAD' 
+   AND coi_column = 'O' ;
+ coi_table             coi_index           coi_nth           coi_type          coi_column    coi_pages      coi_ces    coi_values    coi_bytes
+ VARCHAR NOT NULL      VARCHAR NOT NULL    INTEGER NOT NULL  INTEGER NOT NULL  VARCHAR       INTEGER        INTEGER    INTEGER       INTEGER
+ _______________________________________________________________________________
+ 
+ DB.DBA.RDF_QUAD       DB.DBA.RDF_QUAD     2                 -1                O             654663         0          1252064815    4617808494
+ DB.DBA.RDF_QUAD       DB.DBA.RDF_QUAD     2                 1                 O             0              229074     97104862      947215
+ DB.DBA.RDF_QUAD       DB.DBA.RDF_QUAD     2                 3                 O             0              3227395    490806316     3905658370
+ DB.DBA.RDF_QUAD       DB.DBA.RDF_QUAD     2                 4                 O             0              94038      17227799      8554746
+ DB.DBA.RDF_QUAD       DB.DBA.RDF_QUAD     2                 6                 O             0              389126     551074747     579191659
+ DB.DBA.RDF_QUAD       DB.DBA.RDF_QUAD     2                 8                 O             0              160814     48480188      12026273
+ DB.DBA.RDF_QUAD       DB.DBA.RDF_QUAD     2                 10                O             0              652817     47370903      111430231
+ ]]></programlisting>
+       <para>The top line is the overall summary across all the compression types.</para>
+       <para>The lines below give information per-compression-type. The values of 
+       	<emphasis>coi_type</emphasis> mean the following:</para>
+       <itemizedlist mark="bullet">
+         <listitem>1 - <emphasis>run length</emphasis>. The value occurs once, followed 
+         by the number of repetitions.</listitem>
+         <listitem>3 - <emphasis>array</emphasis>. Values are stored consecutively without compression. 
+         The array elements are 4- or 8-byte depending on range. For variable length types, some 
+         compression applies because values differing only in their last byte will only have the 
+         last byte stored.</listitem>
+         <listitem>4 - <emphasis>bitmap</emphasis>. For closely-spaced unique ascending values, the 
+         bitmap has a start value in full, and a bitmap with the nth bit set if start + nth occurs 
+         in the column.</listitem>
+         <listitem>6 - <emphasis>dictionary</emphasis>. For non-ordered, low-cardinality columns, 
+         there can be a dictionary with either 4 or 8 bytes per entry, depending on the number of 
+         distinct values being encoded. The compression entry is prefixed by an array with the values 
+         in full, followed by an array of positions in the dictionary.</listitem>
+         <listitem>8 - <emphasis>run length with small deltas</emphasis>. For repeating, closely-spaced 
+         ascending values, the run-length-delta format stores a start value in full, followed by an 
+         array of bytes of which 4 bits are a delta to the previous value, and 4 bits are a run 
+         length.</listitem>
+         <listitem>10 - <emphasis>integer delta with large deltas</emphasis>. This format stores an 
+         initial value followed by stretches of non-ordered values within 64K of the base value. 
+         There can be multiple such stretches, each prefixed with a 32-bit delta from the base value. 
+         This is useful for closely-spaced medium- cardinality values like dates, or for relatively 
+         sparse ascending sequences, e.g., ascending sequences with a step of 1000 or more.</listitem>
+       </itemizedlist>
+     </sect3>  
+   </sect2>
+ 
+ 
+ 	<!-- ======================================== -->
+   <sect2 id="explvectprcode"><title>Explicit Vectoring of Procedural Code</title>
+     <para>Note: This feature only applies to Virtuoso 7.0 and later.</para>  
+     <para>Vectored execution can be explicitly controlled for Virtuoso PL code, either by 
+     	declaring a whole procedure to be vectored or by executing a block inside a procedure on 
+     	multiple values at one time. See more detailed description, respectively for:</para>
+       <itemizedlist mark="bullet">
+         <listitem><link linkend="vectoredprocedure">Vectored Procedures</link></listitem>
+         <listitem><link linkend="forvectorestatement">FOR VECTORED Statement</link></listitem>
+         <listitem><link linkend="limitonvectorecode">Limitations on Vectored Code</link></listitem>
+         <listitem><link linkend="datatypesandvectoring">Data Types and Vectoring</link></listitem>        
+       </itemizedlist>
+     
+   </sect2>
+
 	<!-- ======================================== -->
 	<sect2 id="Locking">
 		<title>Locking</title>
@@ -1003,7 +1196,7 @@ user id. A user account can be used as a user group.   User group ids are
 normal user ids. A user has all the privileges granted to it, all the
 privileges granted to the user whose user id appears as its group id and
 all the privileges granted to PUBLIC. Additionally if the user is dba
-&mdash; which Virtuoso sets as id 0 &mdash; or if its group id is 0, then
+- which Virtuoso sets as id 0 - or if its group id is 0, then
 it has all privileges.
 </para>
 			<para>
@@ -1216,7 +1409,7 @@ are not defined in the supertable given in the select.
 A row identity string is the part of a row string that contains the table information and the
 primary key. Each row in a database has a unique row identity string. The row identity string
 is a regular varchar object that can appear as a column value.  This is a generalization of a
-foreign key &mdash; a single column reference to an entity whose type is determined at run time.
+foreign key - a single column reference to an entity whose type is determined at run time.
 </para>
 		<para>
 The object ID is a special data type that resembles a string in that it contains a variable
@@ -1512,8 +1705,8 @@ functions such as <function>http_header()</function>.
 The HTTP server uses the character set mainly to format correctly
 values using the <function>http_value()</function> function or its VSP
 equivalent &lt;?= ...&gt;.
-In these cases wide values and XML entities &mdash; the result of XML
-processing function like <function>xpath_contains()</function> &mdash; get
+In these cases wide values and XML entities - the result of XML
+processing function like <function>xpath_contains()</function> - get
 represented using the HTTP/XML translation rules described above.
 The same rules apply for results returned by the FOR XML directive, by XML
 Views, and for WebDAV content.
@@ -1624,7 +1817,7 @@ CREATE TABLE SYS_COLLATIONS (
 </programlisting>
 			<para>
 <parameter>COLL_NAME</parameter> is the fully qualified name of the
-collation &mdash; its identifier.
+collation - its identifier.
 </para>
 			<para>
 <parameter>COLL_TABLE</parameter> holds the collation table itself.  This

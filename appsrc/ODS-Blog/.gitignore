@@ -1,0 +1,17 @@
+Makefile
+Makefile.in
+make_ods_blog_vad.log
+make_ods_blog_vad.xml
+vad
+*.vad
+virtuoso.db
+virtuoso.ini
+virtuoso.lck
+virtuoso.lic
+virtuoso.log
+virtuoso.pxa
+virtuoso.tdb
+virtuoso.trx
+version.base
+version.curr
+*.log

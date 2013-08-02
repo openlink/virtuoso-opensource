@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -121,13 +121,38 @@ itc_adaptive_read_inc (it_cursor_t * itc, buffer_desc_t * dest_buf)
 
 buffer_desc_t * bounds_check_buf;
 
+
+#define ITC_ACT(itc) itc_activity (itc)
+
+
+db_activity_t misc_activity;
+
+db_activity_t *
+itc_activity (it_cursor_t * itc)
+{
+  client_connection_t * cli;
+  if (itc->itc_out_state)
+    return &((QI*)itc->itc_out_state)->qi_client->cli_activity;
+  else if ((cli = sqlc_client ()))
+    return &cli->cli_activity;
+  else
+    return &misc_activity;
+}
+
+
+dp_addr_t pwa_trap_dp;
+
 int
 DBGP_NAME (page_wait_access) (DBGP_PARAMS it_cursor_t * itc, dp_addr_t dp,  buffer_desc_t * buf_from,
     buffer_desc_t ** buf_ret, int mode, int max_change)
 {
+  uint64 start_ts;
   buffer_desc_t decoy;
   buffer_desc_t *buf;
   dp_addr_t phys_dp;
+#ifdef PAGE_DEBUG
+  if (dp == pwa_trap_dp) bing ();
+#endif
   itc->itc_to_reset = RWG_NO_WAIT;
   itc->itc_max_transit_change = max_change;
   itc->itc_must_kill_trx = 0;
@@ -174,7 +199,7 @@ DBGP_NAME (page_wait_access) (DBGP_PARAMS it_cursor_t * itc, dp_addr_t dp,  buff
 	{
 	  /* read ahead is not guaranteed to get a buffer for all the reqd pages, including the page for which page wait acc was called.  So since this one page must in any case be had, turn off the hook for the recursive call so read is forced regardless of the hook pretending to get a buffer. */
 	  int rc;
-	  read_hook_t * rh = itc->itc_read_hook;
+	  read_hook_t rh = itc->itc_read_hook;
 	  itc->itc_read_hook = NULL;
 	  rc =  page_wait_access (itc, dp, buf_from, buf_ret, mode, max_change);
 	  itc->itc_read_hook = rh;
@@ -203,7 +228,10 @@ DBGP_NAME (page_wait_access) (DBGP_PARAMS it_cursor_t * itc, dp_addr_t dp,  buff
       itc->itc_n_reads++;
       ITC_MARK_READ (itc);
       buf->bd_tree = itc->itc_tree;
+      start_ts = rdtsc ();
+      BUF_PW (buf);
       buf_disk_read (buf);
+      ITC_ACT (itc)->da_thread_disk_wait += rdtsc () - start_ts;
       is_read_pending--;
       if (ra)
 	itc_read_ahead_blob (itc, ra, RAB_SPECULATIVE);
@@ -248,8 +276,10 @@ DBGP_NAME (page_wait_access) (DBGP_PARAMS it_cursor_t * itc, dp_addr_t dp,  buff
 	  page_read_queue_add (buf, itc);
 	  if (buf_from)
 	    page_leave_inner (buf_from);
+	  start_ts = rdtsc ();
 	  ITC_SEM_WAIT (itc);
 	  *buf_ret = itc->itc_buf_entered; /* since this was a read-read, the  itc is now in one the buffer, out of map, since the thread which did the read put it there */
+	  ITC_ACT (itc)->da_thread_disk_wait += rdtsc () - start_ts;
 	  AL_WAIT_SET_WRITER (*buf_ret);
 	  return itc->itc_to_reset;
 	}
@@ -267,7 +297,9 @@ DBGP_NAME (page_wait_access) (DBGP_PARAMS it_cursor_t * itc, dp_addr_t dp,  buff
 	page_write_queue_add (buf, itc);
       if (buf_from && RWG_WAIT_NO_ENTRY_IF_WAIT != max_change)
 	page_leave_inner (buf_from);
+      start_ts = rdtsc ();
       ITC_SEM_WAIT (itc);
+      ITC_ACT(itc)->da_thread_disk_wait += rdtsc () - start_ts;
       *buf_ret = itc->itc_buf_entered;
       /*  transit complete. The caller for landed transit must check if unregister is needed.  If this was for no entry, as in up trans wait, then the itc will still be on the source. */
       AL_WAIT_SET_WRITER (*buf_ret);
@@ -302,7 +334,9 @@ DBGP_NAME (page_wait_access) (DBGP_PARAMS it_cursor_t * itc, dp_addr_t dp,  buff
 	    }
 	  if (buf_from && RWG_WAIT_NO_ENTRY_IF_WAIT != max_change)
 	    page_leave_inner (buf_from);
+	  start_ts = rdtsc ();
 	  ITC_SEM_WAIT (itc);
+	  ITC_ACT(itc)->da_thread_pg_wait += rdtsc () - start_ts;
 	}
     }
   else
@@ -333,7 +367,9 @@ DBGP_NAME (page_wait_access) (DBGP_PARAMS it_cursor_t * itc, dp_addr_t dp,  buff
 	    }
 	  if (buf_from && RWG_WAIT_NO_ENTRY_IF_WAIT != max_change)
 	    page_leave_inner (buf_from);
+	  start_ts = rdtsc();
 	  ITC_SEM_WAIT (itc);
+	  ITC_ACT(itc)->da_thread_pg_wait += rdtsc () - start_ts;
 	}
     }
   if (itc->itc_to_reset <= max_change && itc->itc_to_reset != RWG_WAIT_NO_ENTRY_IF_WAIT)
@@ -447,6 +483,7 @@ page_release_writes (buffer_desc_t * buf)
 }
 
 
+int enable_col_leave_check = 0;
 
 void
 DBGP_NAME (page_leave_inner) (DBGP_PARAMS buffer_desc_t * buf)
@@ -456,6 +493,16 @@ DBGP_NAME (page_leave_inner) (DBGP_PARAMS buffer_desc_t * buf)
     ASSERT_IN_MAP (buf->bd_tree, buf->bd_page);
 #endif
   BUF_BOUNDS_CHECK(buf);
+#ifdef PAGE_DEBUG
+  if (enable_col_leave_check && buf->bd_buffer && DPF_INDEX == SHORT_REF (buf->bd_buffer + DP_FLAGS) && buf->bd_tree && buf->bd_tree->it_key && buf->bd_tree->it_key->key_is_col
+      &&   BUF_SEEMS_LEAF (buf, buf->bd_content_map))
+    {
+      it_map_t * itm = IT_DP_MAP (buf->bd_tree, buf->bd_page);
+      mutex_leave (&itm->itm_mtx);
+      buf_ce_check (buf);
+      mutex_enter (&itm->itm_mtx);
+    }
+#endif
   BUF_DBG_LEAVE (buf);
   if (buf->bd_readers)
     {
@@ -519,7 +566,8 @@ page_write_queue_add (buffer_desc_t * buf, it_cursor_t * itc)
   it_cursor_t **last = &buf->bd_write_waiting;
   ITC_KEY_INC (itc, key_write_wait);
   TC (tc_write_wait);
-  if (!buf->bd_being_read && buf->bd_buffer && DPF_COLUMN == SHORT_REF (buf->bd_buffer + DP_FLAGS)) log_error ("Write wait on column page %d.  Waits should be on the index leaf page", buf->bd_page);
+  if (!buf->bd_being_read && buf->bd_is_write && !buf->bd_iq && buf->bd_buffer && DPF_COLUMN == SHORT_REF (buf->bd_buffer + DP_FLAGS))
+    log_error ("Write wait on column page %d.  Waits should be on the index leaf page, except when col page is held for read by background write", buf->bd_page);
   itc->itc_thread = THREAD_CURRENT_THREAD;
   while (*last)
     last = &((*last)->itc_next_waiting);
@@ -569,6 +617,7 @@ itc_set_right_edge_cache (it_cursor_t * itc)
 int
 itc_try_land (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 {
+  uint64 start_ts;
   buffer_desc_t *buf = *buf_ret;
   itc->itc_rows_on_leaves += buf->bd_content_map->pm_count;
   if (PA_READ != itc->itc_dive_mode)
@@ -595,7 +644,9 @@ itc_try_land (it_cursor_t * itc, buffer_desc_t ** buf_ret)
       itc->itc_max_transit_change = RWG_WAIT_DATA;
       page_write_queue_add (buf, itc);
       buf->bd_readers--;
+      start_ts = rdtsc ();
       ITC_SEM_WAIT (itc);
+      ITC_ACT (itc)->da_thread_pg_wait += rdtsc () - start_ts;
       if (itc->itc_to_reset <= RWG_WAIT_DATA)
 	{
 #ifdef PAGE_DEBUG
@@ -768,7 +819,7 @@ itc_fix_back_link (it_cursor_t * itc, buffer_desc_t ** buf, dp_addr_t dp_from,
 	    }
 	}
       parent = itc_write_parent (itc, *buf);
-      if (!parent && was_landed)
+      if ((!parent && was_landed) || PF_OF_DELETED == parent)
 	return;
       if (!parent)
 	{
@@ -1031,6 +1082,10 @@ DBGP_NAME (itc_landed_down_transit) (DBGP_PARAMS it_cursor_t * itc, buffer_desc_
   ITC_LEAVE_MAPS (itc);
   itc->itc_nth_seq_page++;
   pm = (*buf_ret)->bd_content_map;
+  if (itc->itc_desc_order)
+        itc->itc_map_pos = pm->pm_count - 1;
+  else
+    itc->itc_map_pos = 0;
   if (BUF_SEEMS_LEAF ((*buf_ret), pm))
     {
       itc->itc_rows_on_leaves += pm->pm_count;
@@ -1039,13 +1094,6 @@ DBGP_NAME (itc_landed_down_transit) (DBGP_PARAMS it_cursor_t * itc, buffer_desc_
     }
   else if (itc->itc_col_prefetch)
     itc_set_siblings (itc, *buf_ret, 0);
-
-  if (itc->itc_desc_order)
-    {
-        itc->itc_map_pos = pm->pm_count - 1;
-    }
-  else
-    itc->itc_map_pos = 0;
 }
 
 void
@@ -1268,6 +1316,7 @@ DBGP_NAME (itc_reset) (DBGP_PARAMS it_cursor_t * it)
   dp_addr_t dp, back_link;
   it->itc_landed = 0;
   it->itc_prev_split_search_res = 0;
+  it->itc_bm_insert = 0;
   it->itc_siblings_parent = 0;
   if (it->itc_keep_right_leaf)
     it->itc_keep_right_leaf = ITC_RL_INIT;
@@ -1313,6 +1362,7 @@ DBGP_NAME (itc_reset) (DBGP_PARAMS it_cursor_t * it)
 	return buf;
     }
   if ((PA_READ == it->itc_dive_mode && tree->it_is_single_page )
+      || (tree->it_key->key_is_geo && SM_INSERT == it->itc_search_mode)
     )
     it->itc_dive_mode = PA_WRITE;
 
@@ -1358,6 +1408,7 @@ DBGP_NAME (itc_reset) (DBGP_PARAMS it_cursor_t * it)
   BUF_TOUCH (buf);
   if (!tree->it_is_single_page && !tree->it_root_image_version
       && tree->it_key->key_id != KI_TEMP
+      && !tree->it_key->key_is_geo
      )
     {
       it_new_root_image (tree, buf);
@@ -1386,6 +1437,7 @@ itc_write_parent (it_cursor_t * itc,buffer_desc_t * buf)
   /* in insert split, in delete, in single leaf node delete.
    * This gets write access on buf's parent without leaving the buf.
    * If the buf is root, NULL is returned.  Otherwise this will always succeed. */
+  int retry_ctr = 0;
   volatile dp_addr_t * parent_field = (dp_addr_t*) (buf->bd_buffer + DP_PARENT);
   buffer_desc_t * parent_buf;
   for (;;)
@@ -1403,7 +1455,13 @@ itc_write_parent (it_cursor_t * itc,buffer_desc_t * buf)
       ITC_LEAVE_MAPS (itc);
       if (itc->itc_to_reset <= RWG_WAIT_DATA)
 	break;
+      retry_ctr++;
       TC (tc_delete_parent_waits);
+      if (PF_OF_DELETED == parent_buf && retry_ctr > 3)
+	{
+	  ITC_LEAVE_MAPS (itc);
+	  return parent_buf;
+	}
     }
   if (BUF_NEEDS_DELTA (parent_buf))
     {
@@ -1467,7 +1525,19 @@ itc_set_parent_link (it_cursor_t * itc, dp_addr_t child_dp, dp_addr_t new_parent
   rdbg_printf_2 (("	Parent of L=%d from L=%d to L=%d.\n",
 		  buf->bd_page,
 		  LONG_REF (buf->bd_buffer + DP_PARENT), new_parent));
+#ifdef PAGE_DEBUG
+  {
+    /* The thread is in the map of the buffer, hence bd_is_write is stable, can see if need change protection */
+    int is_w = buf->bd_is_write;
+    if (!is_w)
+      BUF_PW (buf);
   LONG_SET (buf->bd_buffer + DP_PARENT, new_parent);
+    if (!is_w)
+      BUF_PR (buf);
+  }
+#else
+  LONG_SET (buf->bd_buffer + DP_PARENT, new_parent);
+#endif
   BUF_TOUCH (buf);
   buf->bd_is_dirty = 1;
 
@@ -1518,6 +1588,31 @@ itc_register (it_cursor_t * itc, buffer_desc_t * buf)
 
 
 void
+itc_register_nc (it_cursor_t * itc, buffer_desc_t * buf)
+{
+  /* Called before going through hyperspace. If the gate busts you
+     this will be the life line. */
+  dk_mutex_t * ro_entered = NULL;
+  if (itc->itc_is_registered && itc->itc_buf_registered)
+    {
+      GPF_T1 ("double registration");
+      return;			/* Already registered. */
+    }
+  if (buf->bd_page != itc->itc_page)
+    GPF_T1 ("different itc_page and bd_page in register");
+  if (!buf->bd_readers && !buf->bd_is_write)
+    GPF_T1 ("must have write or read on the buffer for registration");
+  rdbg_printf_2 (("  register itc=%x on L=%d \n", it, it->itc_page));
+  itc->itc_is_registered = 1;
+  BUF_RO_REG_ENTER (itc, buf);
+  itc->itc_next_on_page = buf->bd_registered;
+  buf->bd_registered = itc;
+  itc->itc_buf_registered = buf;
+  BUF_RO_REG_LEAVE (itc, buf);
+}
+
+
+void
 itc_register_safe (it_cursor_t * itc, buffer_desc_t * buf)
 {
   if (itc->itc_is_registered && itc->itc_buf_registered)
@@ -1554,10 +1649,10 @@ itc_unregister_inner (it_cursor_t * itc, buffer_desc_t * buf, int is_transit)
 {
   dk_mutex_t * ro_entered = NULL;
   it_cursor_t ** prev = &buf->bd_registered;
-  it_cursor_t * reg;
+  it_cursor_t * reg, *fast;
   int ctr = 0;
   BUF_RO_REG_ENTER (itc, buf);
-  reg = buf->bd_registered;
+  fast = reg = buf->bd_registered;
   for (;;)
     {
       if (!reg)
@@ -1574,8 +1669,14 @@ itc_unregister_inner (it_cursor_t * itc, buffer_desc_t * buf, int is_transit)
 	}
       prev = &reg->itc_next_on_page;
       reg = reg->itc_next_on_page;
-      if (++ctr > 10000)
-	GPF_T1 ("loop in registered cursors");
+      if (!reg)
+	GPF_T1 ("cursor not registered on buffer in unregister");
+      if (fast && fast->itc_next_on_page)
+	fast = fast->itc_next_on_page->itc_next_on_page;
+      else
+	fast = NULL;
+      if (fast == reg) GPF_T1 ("cycle in registered cursors");
+      ctr++;
     }
 }
 
@@ -1584,9 +1685,8 @@ void
 itc_unregister_inner_safe (it_cursor_t * itc, buffer_desc_t * buf, int is_transit)
 {
   it_cursor_t ** prev = &buf->bd_registered;
-  it_cursor_t * reg;
-  int ctr = 0;
-  reg = buf->bd_registered;
+  it_cursor_t * reg, *fast;
+  fast = reg = buf->bd_registered;
   for (;;)
     {
       if (!reg)
@@ -1602,11 +1702,52 @@ itc_unregister_inner_safe (it_cursor_t * itc, buffer_desc_t * buf, int is_transi
 	}
       prev = &reg->itc_next_on_page;
       reg = reg->itc_next_on_page;
-      if (++ctr > 10000)
-	GPF_T1 ("loop in registered cursors");
+      if (fast && fast->itc_next_on_page)
+	fast = fast->itc_next_on_page->itc_next_on_page;
+      else
+	fast = NULL;
+      if (!reg)
+	GPF_T1 ("cursor not registered on buffer in unregister");
+      if (fast == reg)
+	GPF_T1 ("cycle in registered cursors");
     }
 }
 
+
+void
+itc_unregister_n (buffer_desc_t * buf, id_hash_t * itcs)
+{
+  it_cursor_t ** prev = &buf->bd_registered;
+  it_cursor_t * reg, *fast;
+  fast = reg = buf->bd_registered;
+  for (;;)
+    {
+      if (!reg)
+	break;
+      if (id_hash_get (itcs, (caddr_t)&reg))
+	{
+	  it_cursor_t * itc = reg;
+	  *prev = reg->itc_next_on_page;
+	  reg = reg->itc_next_on_page;
+	  itc->itc_is_registered = 0;
+	  itc->itc_next_on_page = NULL;
+	  itc->itc_buf_registered = NULL;
+	}
+      else
+	{
+	  prev = &reg->itc_next_on_page;
+	  reg = reg->itc_next_on_page;
+	}
+      if (!reg)
+	break;
+      if (fast && fast->itc_next_on_page)
+	fast = fast->itc_next_on_page->itc_next_on_page;
+      else
+	fast = NULL;
+      if (fast == reg)
+	GPF_T1 ("cycle in registered cursors");
+    }
+}
 
 void
 itc_unregister (it_cursor_t * it_in)

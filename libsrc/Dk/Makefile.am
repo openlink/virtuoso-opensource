@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -19,7 +19,7 @@
 #  
 #  
 
-noinst_LTLIBRARIES = libdksrv.la libdk1t.la
+noinst_LTLIBRARIES = libdksrv.la libdk1t.la libdk1t_nc.la
 noinst_HEADERS = \
 	Dkconfig.h \
 	Dkalloc.h Dkbasket.h Dkbox.h \
@@ -27,7 +27,8 @@ noinst_HEADERS = \
 	Dkdevice.h Dkernel.h Dkhashext.h Dkhash.h Dkmarshal.h \
 	Dkparam.h Dkpool.h Dkresource.h Dksession.h Dksesstr.h \
 	Dksestcp.h Dksets.h Dkstubs.h Dksystem.h Dktrace.h \
-	Dktypes.h Dkutil.h Dkhash64.h Dkword.h Dksestcpint.h
+	Dktypes.h Dkutil.h Dkhash64.h Dkword.h Dksestcpint.h \
+	Dksimd.h
 
 #############################################
 #DKSRV
@@ -40,6 +41,7 @@ libdksrv_la_SOURCES = \
 	Dkhashext.c \
 	Dklongjmp.c \
 	Dkmarshal.c \
+	Dkmem.c \
 	Dkresource.c \
 	Dkrusage.c \
 	Dkses2.c \
@@ -68,6 +70,7 @@ libdk1t_la_SOURCES = \
 	Dkhashext.c \
 	Dklongjmp.c \
 	Dkmarshal.c \
+	Dkmem.c \
 	Dkresource.c \
 	Dkrusage.c \
 	Dkses2.c \
@@ -84,6 +87,35 @@ libdk1t_la_SOURCES = \
 libdk1t_la_CFLAGS   = @VIRT_AM_CFLAGS@
 libdk1t_la_CFLAGS  += -I$(top_srcdir)/libsrc
 libdk1t_la_LDFLAGS  = -prefer-pic
+
+#############################################
+#DK1T_NC
+libdk1t_nc_la_SOURCES = \
+	Dkalloc_nc.c \
+	Dkbasket.c \
+	Dkbox.c \
+	Dkdevice.c \
+	Dkhash.c \
+	Dkhashext.c \
+	Dklongjmp.c \
+	Dkmarshal.c \
+	Dkmem.c \
+	Dkresource.c \
+	Dkrusage.c \
+	Dkses2.c \
+	Dksesinp.c \
+	Dksession.c \
+	Dksesstr.c \
+	Dksestcp.c \
+	Dksets.c \
+	Dkpool.c \
+	Dkutil.c \
+	Dkstubs.c \
+	Dkstkern.c
+		     
+libdk1t_nc_la_CFLAGS  = @VIRT_AM_CFLAGS@
+libdk1t_nc_la_CFLAGS  += -I$(top_srcdir)/libsrc
+libdk1t_nc_la_LDFLAGS = -prefer-pic
 
 # ----------------------------------------------------------------------
 #

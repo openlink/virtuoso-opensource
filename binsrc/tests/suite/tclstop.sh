@@ -4,6 +4,6 @@ CLUSTER=yes
 export CLUSTER
 LOGFILE=tcl.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 STOP_SERVER 

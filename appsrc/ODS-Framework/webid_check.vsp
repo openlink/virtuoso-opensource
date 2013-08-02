@@ -48,9 +48,24 @@ html:
 <html>
   <head>
    <title>WebId Identity Provider</title>
+   <style type="text/css">
+      #qrcode {
+        float: right;
+        clear: right;
+        margin-right: 20px;
+      }
+    </style>      
   </head>
   <body>
     <h1>WebId Identity Provider</h1>
+    <?vsp declare qrimg, ua any;
+     ua := http_request_header (lines, 'User-Agent');
+     qrimg := ODS.ODS_API.qrcode (sprintf ('http://%{WSHost}s%s', http_path ()));
+     if (qrimg is not null and strcasestr (ua, 'Mobile') is null) {
+    ?>
+    <div id="qrcode"><img alt="QRcode image" src="data:image/jpg;base64,<?V qrimg ?>"/></div>
+    <?vsp
+      } ?>
     <div>
       This will send a redirection to the URL you have specified in the input, including a signed assertion by this service about your WebID.
     </div>
@@ -67,6 +82,9 @@ html:
 	  <li>ts: timestamp in ISO 8601 format</li>
 	  <li>signature: SHA1 digest over returning URL</li>
 	</ul>
+    </div>
+    <div>
+      <a href="http://ods.openlinksw.com/wiki/ODS/ODSWebIDIdpProxy">Help</a>
     </div>
   </body>
 </html>

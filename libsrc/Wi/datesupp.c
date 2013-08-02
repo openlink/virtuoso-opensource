@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -129,6 +129,7 @@ dt_day_ck (int day, int month, int year, int *err, const char **err_str)
 #endif
 
 
+#ifdef DATE2NUM_DEBUG
 /*
  *  Converts a given number of days of a year to a standard date
  *
@@ -164,7 +165,7 @@ yearday2date (int yday, const int is_leap_year, int *month, int *day)
 
   return 1;
 }
-
+#endif
 
 /*
  *  Computes the absolute number of days of the given date since 0001/01/01,
@@ -288,8 +289,6 @@ num2date_old (int32 julian_days, int *year, int *month, int *day)
 void
 num2date (int32 julian_days, int *year, int *month, int *day)
 {
-  double x;
-  int i;
   int y_civ, m_civ, d_civ;
   long midhignt_jdn;
   int mj, g, dg, c, dc, b, db, a, da, y, m, d;
@@ -614,7 +613,7 @@ GMTimestamp_struct_to_dt (GMTIMESTAMP_STRUCT * ts, char *dt)
   DT_SET_SECOND (dt, ts->second);
   DT_SET_FRACTION (dt, ts->fraction);
   DT_SET_TZ (dt, 0);
-  DT_SET_DT_TYPE (dt, DT_TYPE_DATETIME);
+  DT_SET_DT_TYPE_NOAUDIT (dt, DT_TYPE_DATETIME);
 }
 
 void
@@ -841,7 +840,6 @@ dbg_dt_to_string (const char *dt, char *str, int len)
   else
     tail += snprintf (tail, (str + len) - tail, "Z}");
   return;
-short_buf:
   snprintf (str, len, "??? short output buffer for dt_to_string()");
 }
 
@@ -954,6 +952,7 @@ iso8601_or_odbc_string_to_dt_1 (const char *str, char *dt, int dtflags, int dt_t
   int tzsign = 0, res_flags = 0, tzmin = dt_local_tz;
   int odbc_braces = 0, new_dtflags, new_dt_type = 0;
   int us_mdy_format = 0;
+  int leading_minus = 0;
   const char *tail, *group_end;
   int fld_values[9];
   static int fld_min_values[9] =	{ 1	, 1	, 1	, 0	, 0	, 0	, 0		, 0	, 0	};
@@ -1008,6 +1007,11 @@ iso8601_or_odbc_string_to_dt_1 (const char *str, char *dt, int dtflags, int dt_t
           err_msg_ret[0] = box_dv_short_string ("Syntax error in ODBC literal (single-quoted constant expected after literal type");
           return;
         }
+    }
+  if ('-' == tail[0])
+    {
+      leading_minus = 1;
+      tail++;
     }
   for (fld_idx = 0; fld_idx < 9; fld_idx++)
     {
@@ -1205,6 +1209,15 @@ field_delim_checked:
             }
         }
     }
+  if (leading_minus)
+    {
+      if (DTFLAG_DATE & dtflags)
+        fld_values[0] = -(fld_values[0]);
+      else
+        {
+          err_msg_ret[0] = box_sprintf (500, "Leading minus is allowed for year but not for time, the value is \"%.200s\"", str);
+        }
+    }
   tzmin += (60 * fld_values[7]) + fld_values[8];
   if (tzsign)
     tzmin *= -1;
@@ -1344,13 +1357,14 @@ and MUST be assumed when reading the asctime format. */
   if (1123 == fmt || 850 == fmt) /* these formats are explicitly for GMT */
 #endif
   if (0 == tz_min)
-  GMTimestamp_struct_to_dt (ts, dt);
+    GMTimestamp_struct_to_dt (ts, dt);
   else
     {
       ts_add (ts, -tz_min, "minute");
       GMTimestamp_struct_to_dt (ts, dt);
       DT_SET_TZ (dt, tz_min);
     }
+  DT_AUDIT_FIELDS (dt);
   return 1;
 }
 
@@ -1481,7 +1495,7 @@ dt_audit_fields (char *dt)
       if (0 != f) GPF_T1 ("nonzero fraction in DT_TYPE_DATE dt_audit_fields()");
       break;
     case DT_TYPE_TIME:
-      if (DAY_ZERO != d) GPF_T1 ("DAY_ZERO in DT_TYPE_TIME dt_audit_fields()");
+      if (DAY_ZERO != d) GPF_T1 ("non-DAY_ZERO in DT_TYPE_TIME dt_audit_fields()");
       break;
     default:
         GPF_T1 ("Wrong DT_DT_TYPE in dt_audit_fields()");

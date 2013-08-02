@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -190,8 +190,8 @@ public data!
   <sect2 id="vfoafsslacl"><title>WebID Protocol ACLs</title>
     <para>You can <link linkend="sparqloauthendpointfoafssl">set WebID Protocol ACLs</link> from the Virtuoso Authentication Server UI. </para>
   </sect2>
-  <sect2 id="sparqloauthendpointfoafsslsparql"><title>SPARQL-SSL based Endpoint</title>
-    <para>See details how to <link linkend="sparqloauthendpointfoafssl">create and use a SPARQL-SSL based Endpoint</link>.</para>
+  <sect2 id="sparqloauthendpointfoafsslsparql"><title>SPARQL-WebID based Endpoint</title>
+    <para>See details how to <link linkend="sparqloauthendpointfoafssl">create and use a SPARQL-WebID based Endpoint</link>.</para>
   </sect2>
   <sect2 id="vfoafsslcacondt"><title>CA Keys Import using Conductor</title>
   <para>The Virtuoso Conductor allows easy import of user-level CA (Certificate Authority) Keys through
@@ -212,13 +212,13 @@ takes the following steps:</para>
 </orderedlist>
   <para>If there is a service that requires a different key, the Conductor can be used to import another
 certificate for the relevant user.</para>
-  <para>You can use a Key from a global signing authority or produce a self-signed key using the <ulink url="http://download.openlinksw.com/packages/5.0/virtuoso/identity_manager_dav.vad">ODS Identity Manager</ulink>.</para>
+  <para>You can use a Key from a global signing authority or produce a self-signed key using the <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.1/virtuoso/conductor_dav.vad">Virtuoso Conductor</ulink>.</para>
   <para>Details and more information how to generate the key see in the next section.</para>
   </sect2>
   <sect2 id="vfoafsslst509issuer"><title>Set Up X.509 certificate issuer, HTTPS listener and generate ODS user's certificates</title>
   <para>The following Step-by-Step guide walks you through set up of an X.509 certificate issuer and HTTPS listener, and generation of ODS user certificates.</para>
 <orderedlist>
-   <listitem>Install <ulink url="http://download.openlinksw.com/packages/5.0/virtuoso/ods_framework_dav.vad">ODS</ulink> and <ulink url="http://download.openlinksw.com/packages/5.0/virtuoso/identity_manager_dav.vad">Identity manager</ulink> VAD packages.
+   <listitem>Install <ulink url="http://download.openlinksw.com/packages/5.0/virtuoso/ods_framework_dav.vad">ODS</ulink> and <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.1/virtuoso/conductor_dav.vad">Virtuoso Conductor</ulink> VAD packages.
      <figure id="foafssl6" float="1">
        <title>Setting-Up issuer CA</title>
        <graphic fileref="ui/foafssl6.png"/>

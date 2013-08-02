@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2009 OpenLink Software
+ *  Copyright (C) 2009-2013 OpenLink Software
  *
  *  See LICENSE file for details.
  *
@@ -155,7 +155,7 @@ iSPARQL.IO = {
 		addNode(pragmaNode,iNS,"name",name);
 		for(var j=0;j<values.length;j++) {
 		    addNode(pragmaNode,iNS,"value",values[j]);
-	}
+		}
 	    }
 	}
 

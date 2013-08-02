@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -41,7 +41,11 @@ typedef unsigned char  datetime_t[DT_LENGTH];
 #define SIGNC(p, n)	((signed char *)p)[n]
 #define _SIGNC(p)	((signed char)(p))
 
-#ifdef DEBUG
+#ifndef DEBUG
+#undef DATE_DEBUG
+#endif
+
+#ifdef DATE_DEBUG
 extern void dt_audit_fields (char *dt);
 #define DT_AUDIT_FIELDS(dt) dt_audit_fields(dt)
 #else
@@ -69,6 +73,14 @@ extern void dt_audit_fields (char *dt);
   ((int32)((CUC (dt, 0) << 16) | \
     (CUC (dt, 1) << 8) | \
     CUC (dt, 2) | ((CUC (dt, 0) & 0x80) ? 0xff000000 : 0)))
+
+/* unsigned day, dt sorts as unsigned binary string for index, so when using numeric offset it is also unsigned for dates that have the high bit set */
+#define DT_UDAY(dt) \
+  ((int32)((CUC (dt, 0) << 16) | \
+    (CUC (dt, 1) << 8) | \
+	   CUC (dt, 2)))
+
+
 
 #define DT_HOUR(dt) \
   CUC(dt, 3)
@@ -141,6 +153,9 @@ extern void dt_audit_fields (char *dt);
     (UC (dt, 8) = (_UC (_UC (UC (dt, 8) >> 3) << 3) | (_UC ((tz) >> 8) & 0x07)), \
      UC (dt, 9) = _UC ((tz) & 0xFF))
 
+#define DT_SET_DT_TYPE_NOAUDIT(dt, type) do { \
+  UC (dt, 8) = _UC (_UC (UC (dt, 8) & 0x07) | _UC ((type) << 5)); } while (0)
+
 #define DT_SET_DT_TYPE(dt, type) do { \
   UC (dt, 8) = _UC (_UC (UC (dt, 8) & 0x07) | _UC ((type) << 5)); \
   DT_AUDIT_FIELDS(dt); } while (0)
@@ -153,7 +168,7 @@ extern void dt_audit_fields (char *dt);
 
 /* arbitrary day component of time-only DV_DATETIME */
 #ifdef DEBUG
-#define DAY_ZERO 0xfffefd
+#define DAY_ZERO 0x7ffefd
 #else
 #define DAY_ZERO (1999 * 365)
 #endif

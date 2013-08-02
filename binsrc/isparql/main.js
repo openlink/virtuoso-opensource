@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2009 OpenLink Software
+ *  Copyright (C) 2009-2013 OpenLink Software
  *
  *  See LICENSE file for details.
  *
@@ -58,11 +58,11 @@ function init() {
 		if (OAT.Browser.hasSVG) {
 	    if (qbe.svgsparql) { qbe.svgsparql.reposition(); }
 			tab.go (1); /* is 0-based index... */
-	}
+		}
 		else
 			tab.go (iSPARQL.Settings.view);
 
-
+		
     } catch (e) {
 	if (e.prototype == iSPARQL.Exception)
 	    iSPARQL.StatusUI.errMsg = e.toString;
@@ -181,8 +181,8 @@ iSPARQL.Advanced = function () {
 	$("query").value = iSPARQL.dataObj.query;
 
 	/* default graph */
+		if (iSPARQL.dataObj.defaultGraph) 
 	$("default-graph-uri").value = iSPARQL.dataObj.defaultGraph;
-
 	}
 
     this.func_load = function() {
@@ -234,7 +234,8 @@ iSPARQL.Advanced = function () {
 	    pragmas:iSPARQL.endpointOpts.pragmas,
 	    namedGraphs:iSPARQL.dataObj.namedGraphs,
 	    callback:iSPARQL.Common.setData,
-			maxrows:iSPARQL.dataObj.maxrows,
+			maxrows:iSPARQL.Settings.maxrows,
+			timeout:iSPARQL.Settings.timeout,
 			view:1
 	}
 	
@@ -305,6 +306,7 @@ iSPARQL.Advanced = function () {
 	dataObj.endpointOpts.useProxy = iSPARQL.endpointOpts.useProxy;
 	dataObj.endpointOpts.pragmas = iSPARQL.endpointOpts.pragmas;
 	dataObj.maxrows = iSPARQL.dataObj.maxrows;
+		dataObj.timeout = iSPARQL.dataObj.timeout;
 	dataObj.defaultGraph = $v('default-graph-uri');
 		dataObj.metaDataOpts = iSPARQL.mdOpts.getMetaDataObj();
 		
@@ -359,10 +361,8 @@ OAT.Observer = {
     }
 }
 
-
-
 //
-// XXX (ghard) consider saving the whole query context (default graph, endpoint, etc.)
+// TODO (ghard) consider saving the whole query context (default graph, endpoint, etc.)
 //
 
 iSPARQL.RecentQueriesUI = function () {
@@ -435,6 +435,9 @@ iSPARQL.RecentQueriesUI = function () {
 //
 // Observes SpongerOpts
 //
+ // EndPointOptsUI
+	
+
 
 iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
     var self = this;
@@ -554,6 +557,7 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
     this.grabAllChangeCB = function (elm) {
 	if (elm.target.checked) {
 	    self.opts.setGrabAll (self);
+			self.hideSeeAlsoControls();
 	}
     }
 
@@ -583,7 +587,7 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
     }
 
     this.grabPredsChangeCB = function (elm) {
-	return 0;
+		self.opts.setSeeAlso(self);
     }
 
     this.hideSeeAlsoControls = function() {
@@ -675,11 +679,11 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
 	    || window.confirm("This will remove custom added predicates. Really restore?")) {
 
 	    $("pathTravSchemesPreds").options.length = 0;
-	    $("pathTravSchemesPreds").options[0] = new Option('foaf:knows','http://xmlns.com/foaf/0.1/',true);
-	    $("pathTravSchemesPreds").options[1] = new Option('sioc:links_to','http://rdfs.org/sioc/ns#',true);
-	    $("pathTravSchemesPreds").options[2] = new Option('rdfs:isDefinedBy','http://www.w3.org/2000/01/rdf-schema#',true);
-	    $("pathTravSchemesPreds").options[3] = new Option('rdfs:seeAlso','http://www.w3.org/2000/01/rdf-schema#',true);
-	    $("pathTravSchemesPreds").options[4] = new Option('owl:sameAs','http://www.w3.org/2002/07/owl#',true);
+			$("pathTravSchemesPreds").options[0] = new Option('foaf:knows','http://xmlns.com/foaf/0.1/knows',true);
+			$("pathTravSchemesPreds").options[1] = new Option('sioc:links_to','http://rdfs.org/sioc/ns#links_to',true);
+			$("pathTravSchemesPreds").options[2] = new Option('rdfs:isDefinedBy','http://www.w3.org/2000/01/rdf-schema#isDefinedBy',true);
+			$("pathTravSchemesPreds").options[3] = new Option('rdfs:seeAlso','http://www.w3.org/2000/01/rdf-schema#seeAlso',true);
+			$("pathTravSchemesPreds").options[4] = new Option('owl:sameAs','http://www.w3.org/2002/07/owl#sameAs',true);
 	    }
 	setGrabPragma();
     }
@@ -687,7 +691,7 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
     this.setEpOptCtl = function () {
 	self.epCombo.input.value = self.opts.endpointPath;
 
-	if (self.opts.verType == iSPARQL.SERVER_TYPE_VIRTUOSO)
+		if (self.opts.serverType == iSPARQL.SERVER_TYPE_VIRTUOSO)
 	    $("endpointTypeInd").innerHtml = "(Virtuoso)";
 	else
 	    $("endpointTypeInd").innerHtml = "(Generic)";
@@ -791,7 +795,7 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
 
     self._init ();
 
-} // EndPointOptsUI
+}
 
 //
 // EndpointOpts holds global endpoint-related options, it is observed by the EndpointOptsUI
@@ -801,6 +805,7 @@ iSPARQL.EndpointOptsUI = function (optsObj, toggler, indicator, container) {
 //
 //
 
+	
 iSPARQL.EndpointOpts = function (optsObj) {
     var self = this;
 
@@ -883,27 +888,37 @@ iSPARQL.EndpointOpts = function (optsObj) {
     }
 
     this.endpointDetectCB = function (data, headers) {
-	if (headers["Server"].match(/Virtuoso.*/)) {
+		var srv = headers["Server"];
+		if (srv && srv.match (/Virtuoso.*/)) {
 	    self.serverType = iSPARQL.SERVER_TYPE.VIRTUOSO;
 	} else { 
 	    self.serverType = iSPARQL.SERVER_TYPE.GENERIC;
 	}
+		OAT.MSG.send ("*", "ISPARQL_SERVER_DETECTED", self.serverType);
 	OAT.Observer.notify (self.observers, null, 'detectEndpoint');
     }
 
     this.detectEndpointType = function () {
+		if (self.setEndpointTO) {
+			clearTimeout (self.setEndpointTO);
 	self.setEndpointTO = false;
+		}
 	var o = {
-	    type:OAT.AJAX.TYPE_XML
+			type:OAT.AJAX.TYPE_TEXT
 	};
 
-//	OAT.AJAX.POST (self.endpointPath, "select * where {?s ?p ?o} limit 1", self.endPointDetectCB, o);
+		// FIXME: Webkit origin policies clash with detection of Server from headers :(
+//		
+//		OAT.AJAX.HEAD (self.endpointPath, 
+//                      false,
+//                      self.endpointDetectCB, o);
     }
 
     this.setEndpointTO = false;
 
     this.setEndpoint = function (callerObj, val) {
 	self.endpointPath = val;
+		iSPARQL.Settings.endpoint = val;
 	if (self.setEndpointTO) clearTimeout (self.setEndpointTO);
 	self.setEndpointTO = setTimeout (self.detectEndpointType, 3000);
 	self.saveSes();
@@ -959,7 +974,8 @@ iSPARQL.EndpointOpts = function (optsObj) {
 	    a.push(['define get:soft',[(val)? '"'+val+'"' : val]]);
 	else {
 	    a.push(['define get:soft',[false]]);
-			//	    a.push(['define input:grab-limit',[false]]); XXX will have to test which way is best for user (what happens to existing other 
+			//	    a.push(['define input:grab-limit',[false]]); 
+            //               XXX will have to test which way is best for user (what happens to existing other 
 	    //	    a.push(['define input:grab-depth',[false]]); Sponger options if sponger is set to be off.
 	    //	    a.push(['define input:grab-all',[false]]);
 			//	    a.push(['define input:grab-seealso',[false]]);
@@ -1016,10 +1032,10 @@ iSPARQL.EndpointOpts = function (optsObj) {
 	for (var i=0;i<preds.length;i++) {
 	    var p = preds[i];
 
-	    if (p.selected) { v.push("<" + p.text + ">"); pref.push(p.text + " = " + p.value); }
+			if (p.selected) v.push("<" + p.value +">");
 	}
 
-	iSPARQL.Common.addPrefix (p);
+//		iSPARQL.Common.addPrefix (p);
 
 	a.push(['define input:grab-all',[false]]);
 	a.push(['define input:grab-seealso',v]);
@@ -1207,7 +1223,7 @@ iSPARQL.AuthUI = function (conn) {
     this.errElm  = $("auth_dlg_error");
 
     this.loginIndicatorB = $("login_b");
-	
+
     this.connection = {};
 
     this._init = function (conn) {
@@ -1237,12 +1253,12 @@ iSPARQL.AuthUI = function (conn) {
 
     this.show = function () {
 	self.dlg.show ();
-		}
+    }
 
     this.hide = function () {
 	self.dlg.hide ();
     }
-		
+
     this.loginCB = function (elm) {
 	self.errElm.innerHTML = '';
 	self.connection.connect ($v(self.userElm), $v(self.passElm));
@@ -1257,7 +1273,7 @@ iSPARQL.AuthUI = function (conn) {
 	self.userElm.value="";
 	self.passElm.value="";
 	self.dlg.hide();
-}
+    }
 
     this._init(conn);
 
@@ -1268,7 +1284,7 @@ iSPARQL.ServerConnection = function (uri, authObj) {
     this.endpointUri = uri;
 
     this.authObj = OAT.JSON.deserialize(OAT.JSON.stringify(authObj)); // Deep copy param obj
-		
+
     this.connected = false;
     this.response = false;
     this.error = false;
@@ -1277,19 +1293,34 @@ iSPARQL.ServerConnection = function (uri, authObj) {
     this._init = function () {
 	self.loadAuth ();
 	self.connect (self.authObj.user, self.authObj.pass);
-	    return;
-	}
+        return;
+    }
 
     // Newest IE, FireFox and Safari/WebKit implement HTML 5.0 local storage
-		
+
     this.saveAuth = function() {
 		sessionStorage.iSPARQLAuth = OAT.JSON.serialize(self.authObj);
-	}
-		
+    }
+
     this.loadAuth = function() {
 	if (typeof sessionStorage.iSPARQLAuth != 'undefined' && sessionStorage.iSPARQLAuth)
 			self.authObj = OAT.JSON.deserialize(sessionStorage.iSPARQLAuth);
     }
+
+
+    this.connectTestCb = function () {
+		self.saveAuth ();
+		OAT.WebDav.init({imageExt:"png", 
+	    				 imagePath:toolkitImagesPath, 
+	    				 silentStart:true, 
+	    				 user:self.authObj.user,
+	    				 pass:self.authObj.password, 
+	    				 isDav:true});
+		
+		self.detectServerProperties ();
+		
+		OAT.MSG.send (self, "iSPARQL_SERVER_CONNECTED", self);
+	}
 
     this.connect = function (_user, _pass, caller) {
 	self.authObj.user = _user;
@@ -1299,10 +1330,8 @@ iSPARQL.ServerConnection = function (uri, authObj) {
 		if ((!!self.authObj.user) && self.authObj.user != '') 
 		  {
 			  OAT.AJAX.PROPFIND ('/DAV/home/' + _user,'',
-		      function (data, headers) {
-									 self.connected = true;
-		      },
-		      		  {async:false,
+								 self.connectTestCb,
+								 {async:true,
 								  user: self.authObj.user,
 								  password: self.authObj.password,
 		      		   onstart:function() {return},
@@ -1313,19 +1342,6 @@ iSPARQL.ServerConnection = function (uri, authObj) {
 									  else self.error = 'Unknown error';
 									  self.connected = false; }});
 
-	if (self.connected) {
-	    self.saveAuth ();
-	    	OAT.WebDav.init({imageExt:"png",
-	    					 imagePath:toolkitImagesPath,
-	    					 silentStart:true,
-	    					 user:self.authObj.user,
-	    						   pass:self.authObj.password, 
-	    					 isDav:true});
-
-	self.detectServerProperties ();
-
-	OAT.MSG.send (self, "iSPARQL_SERVER_CONNECTED", self);
-    }
 		  }
     }
 
@@ -1372,7 +1388,7 @@ iSPARQL.Common = {
 				var o = OAT.JSON.deserialize(data);
 				if (o.c_uri) a.href = o.c_uri;
 			} catch (e) {}
-		       });
+		});
 	},
 
 	shortenURI:function (a) {
@@ -1381,7 +1397,7 @@ iSPARQL.Common = {
 
 		OAT.AJAX.GET (req, false, cb, {});
 	},
-
+	
     initData:function () {
 	iSPARQL.StatusUI.statMsg ("Initializing data structures and objects&#8230;");
 
@@ -1389,11 +1405,11 @@ iSPARQL.Common = {
 
 	if (typeof sessionStorage == 'undefined') window.sessionStorage = {};
 	if (typeof localStorage == 'undefined') window.localStorage = {};
-					
+
 	// Set program defaults
 
 	iSPARQL.Common.reset();
-
+		
 		iSPARQL.Common.setQuery (iSPARQL.Settings.query);
 		
 		iSPARQL.Common.setDefaultGraph (iSPARQL.Settings.graph);
@@ -1418,6 +1434,7 @@ iSPARQL.Common = {
 	if (toolkitImagesPath.match(/[^\/]$/)) { toolkitImagesPath += "/"; }
 
 	OAT.Preferences.imagePath = toolkitImagesPath;
+		OAT.Preferences.showAjax = 0;
 	OAT.AJAX.imagePath = toolkitImagesPath;
 	OAT.Anchor.imagePath = toolkitImagesPath;
 	OAT.WebDav.options.imagePath = toolkitImagesPath;
@@ -1487,7 +1504,7 @@ iSPARQL.Common = {
 							  OAT.MSG.send (self,"iSPARQL_USER_PREF_CHANGE",false);
 						  });
 
-		if (iSPARQL.serverConn.isConnected) {
+/*		if (iSPARQL.serverConn.isConnected) {
 	if (iSPARQL.serverConn.isVirtuoso) {
 	    $('about_version').innerHTML = iSPARQL.serverConn.serverVersion;
 	    $('about_date').innerHTML = iSPARQL.serverConn.serverBuildDate;
@@ -1500,11 +1517,22 @@ iSPARQL.Common = {
 		else {
 			$('about_version').innerHTML = 'unknown';
 			$('about_date').innerHTML = 'unknown';
+		} */
+
+		if (iSPARQL.Settings.sparqlCxmlInstalled) {
+			OAT.Dom.show ('cxml_raw_lnk_c');
 		}
 
+        $('about_version').innerHTML = iSPARQL.Settings.isparql_version;
 	$('about_oat_version').innerHTML = OAT.Preferences.version;
 	$('about_oat_build').innerHTML = OAT.Preferences.build;
 	$('throbber').src = OAT.Preferences.imagePath + "Dav_throbber.gif";
+
+		var iridbstats = OAT.IRIDB.getStats();
+		$('iridb_stats').innerHTML = iridbstats.iriCount;
+
+
+		// FIXME: only shows triple_count, etc. stats on the latest rdfstore.
 
 	OAT.MSG.attach ("*", 
 			"OAT_RDF_STORE_LOADED", 
@@ -1512,7 +1540,6 @@ iSPARQL.Common = {
 			    var iridbstats = OAT.IRIDB.getStats();
 			    $('iridb_stats').innerHTML = iridbstats.iriCount;
 			    $('triple_count').innerHTML = m.getTripleCount();
-							$('item_count').innerHTML = m.getGraphCount();
 			    $('label_count').innerHTML = m.getLabelCount();
 			    $('label_proc_count').innerHTML = m.getLabelProcCount();
 			});
@@ -1642,7 +1669,7 @@ iSPARQL.Common = {
 			var opt_val = "PREFIX " + p_obj[1] + ": <" + p_obj[0] + ">";
 			var opt_ct  = p_obj[1].toUpperCase();
 		var opt_elm = OAT.Dom.option (opt_ct, opt_val, sel_elm);
-	}
+	    }
 
 	iSPARQL.StatusUI.statMsg ("MetaData UI&#8230;");
 	iSPARQL.mdUI = new iSPARQL.MetaDataOptsUI (iSPARQL.mdOpts,
@@ -1702,18 +1729,35 @@ iSPARQL.Common = {
 	// Help menu dismiss button
 
 	/* build info */
-	$("foot_r").innerHTML += " OAT Version " + OAT.Preferences.version + " Build " + OAT.Preferences.build;
-
+//		$("foot_r").innerHTML += " OAT Version " + OAT.Preferences.version + " Build " + OAT.Preferences.build;
 
 		$('default-graph-uri').value = iSPARQL.Settings.graph;
 		$('query').value = iSPARQL.Settings.query;
 
 		$('maxrows').value = iSPARQL.Settings.maxrows;
-	OAT.Event.attach ('maxrows', 'change',
+
+		OAT.Event.attach ('maxrows', 'blur',
 					function () {
 						var n = parseInt($v('maxrows'));
 							  iSPARQL.Settings.maxrows = isNaN(n) ? 0 : n; 
 						});
+
+		OAT.MSG.attach ("*", "iSPARQL_SERVER_DETECTED", 
+						function (m,s,l) { 
+							if (l == iSPARQL.SERVER_TYPE_VIRTUOSO) {
+								$('timeout').disabled=false;
+							}
+							else {
+								$('timeout').disabled=true;
+							}
+						});
+
+		$('timeout').value = iSPARQL.Settings.timeout ? iSPARQL.Settings.timeout : '';
+		OAT.Event.attach ('timeout', 'blur',
+						  function () {
+							  var n = parseInt($v('timeout'));
+							  iSPARQL.Settings.timeout = isNaN(n) ? false : n;
+						  });
 
 		enable_if_ubiq ($('ubiq_gem'));
 		
@@ -2072,12 +2116,16 @@ iSPARQL.Common = {
 			else 
 				iSPARQL.Settings.tab = 1;
 			qp = true;
-	}
+		}
 		if (p['endpoint']) { iSPARQL.Settings.endpoint = p['endpoint']; qp = true;}
 		if (p['resultview']) { iSPARQL.Settings.resultView = p['resultview']; qp = true;}
 		if (qp) iSPARQL.Settings.qp_override = qp;
 		if (p['__DEBUG']) iSPARQL.Settings.debug = true;
 		if (p['maxrows']) iSPARQL.Settings.maxrows = parseInt(p['maxrows']);
+		if (p['timeout']) iSPARQL.Settings.timeout = parseInt(p['timeout']);
+		if (p['amode']) iSPARQL.Settings.anchorMode = parseInt(p['amode']);
+		if (p['raw_iris']) iSPARQL.Settings.raw_iris = ((p['raw_iris'] == 'true')?true:false);
+
     },
 
 
@@ -2123,6 +2171,7 @@ iSPARQL.Common = {
 		iSPARQL.dataObj.prefixes = []; // XXX
 	iSPARQL.dataObj.pragmas = [];
 		iSPARQL.dataObj.maxrows = iSPARQL.Settings.maxrows;
+		iSPARQL.dataObj.timeout = iSPARQL.Settings.timeout;
 	iSPARQL.dataObj.canvas = false;
 		iSPARQL.dataObj.sponge = iSPARQL.Settings.sponge;
 		iSPARQL.dataObj.tab = iSPARQL.Settings.tab;
@@ -2230,7 +2279,8 @@ function tool_put_line_start(txt){
     }
     query.value = res;
     //alert(res.charAt(start - 1 - OAT.Browser.isIE));
-    if (!((res.charAt(start - 1 - OAT.Browser.isIE) == "\n" || start == 0) && start != end)) start = start + txt.length;
+    if (!((res.charAt(start - 1 - OAT.Browser.isIE) == "\n" || start == 0) && start != end)) 
+      start = start + txt.length;
 
     if (cnt > 1) end = end + (cnt * txt.length) - (OAT.Browser.isIE * (cnt - 1));
     else end = end + txt.length;

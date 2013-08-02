@@ -8,7 +8,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -340,9 +340,11 @@ BEGIN   {
 		    if (length() < 2)
 		      next
 		  }
+
                 # does escape the symbols
 		fun = $0
-	        gsub ( /\\/, "\\\\", fun)
+		gsub ("\\\\", "&&", fun)
+
 		# remove whitespace except when there is just a semicolon
 		if ((in_xsl_mode == 0) && (in_xsd_mode == 0))
   		  {
@@ -447,7 +449,7 @@ BEGIN   {
 		        dep_col = _deps[3]
 			if (dep_tb == "__PROCEDURE__")
 			  {
-			    _text = "\n if (sch_proc_def_exists (bootstrap_cli, \"" dep_col "\"))"
+			    _text = "\n if (sch_proc_def_exists (bootstrap_cli, \"" dep_col "\", 0))"
 			  }
 			else
 			  {
@@ -480,12 +482,12 @@ BEGIN   {
 		    if ((pieces[2] == "PROCEDURE" || pieces[2] == "FUNCTION") &&  three_part != "VIEW" )
 		      {
 			_defines1 = "\n  " define_proc_macro " (\"" pieces[3] "\", proc" nproc ");"
+			print "static const char *proc" nproc " = \n\"#line " line_begin_no+1 " \\\"[executable]/" end_name "\\\"\\n\"\n" fun
                         # Here is a debug comment code
 			if (pl_stats == "PLDBG")
-			  print "static const char *proc" nproc " = \n" fun "\n" "\"--src " end_name ":" line_begin_no "\\n\";\n"
+			  print "\"--src " end_name ":" line_begin_no-1 "\\n\";\n"
 			else
-			  print "static const char *proc" nproc " = \n" fun ";\n"
-
+			  print ";\n"
 			nproc = nproc + 1
 		      }
 	            else if (pieces[2] == "TYPE")
@@ -500,10 +502,11 @@ BEGIN   {
 		    else if (pieces[2] == "TRIGGER")
 		      {
 			_defines1 = "\n  ddl_std_proc (trig" ntriggers ", 0x0);"
+			print "static const char *trig" ntriggers " = \n\"#line " line_begin_no+1 " \\\"[executable]/" end_name "\\\"\\n\"\n" fun
 			if (pl_stats == "PLDBG")
-			  print "static const char *trig" ntriggers " = \n" fun "\n" "\"--src " end_name ":" line_begin_no "\\n\";\n"
+			  print "\"--src " end_name ":" line_begin_no-1 "\\n\";\n"
 			else
-			  print "static const char *trig" ntriggers " = \n" fun ";\n"
+			  print ";\n"
 			ntriggers = ntriggers + 1
 		      }
 		    else if (pieces[2] == "INDEX")
@@ -686,21 +689,23 @@ END 	{
 		print ""
 	    }
 
-           print "static int\nsch_proc_def_exists (client_connection_t *cli, const char *proc_name)\n{"
+           print "static int\nsch_proc_def_exists (client_connection_t *cli, const char *proc_name, const int report)\n{"
 	   print "  query_t *proc = NULL;"
 	   print "  char *full_name = sch_full_proc_name (isp_schema(NULL), proc_name,"
 	   print "	cli->cli_qualifier, CLI_OWNER (cli));"
 	   print "  if (full_name)"
 	   print "    proc = sch_proc_def (isp_schema(NULL), full_name);"
+	   print "  if (report && proc != NULL)"
+	   print "     log_debug (\"built-in procedure \\\"%s\\\" overruled by the RDBMS\", proc_name);"
 	   print "  return (proc != NULL);"
 	   print "}\n"
 
 	   print "#define DEFINE_PROC(name, proc) \\"
-	   print "   if (!sch_proc_def_exists (bootstrap_cli, (name))) \\"
+	   print "   if (!sch_proc_def_exists (bootstrap_cli, (name), log_proc_overwrite)) \\"
 	   print "     ddl_std_proc_1 (proc, 0x0, 1)\n\n"
 
 	   print "#define DEFINE_PUBLIC_PROC(name, proc) \\"
-	   print "   if (!sch_proc_def_exists (bootstrap_cli, (name))) \\"
+	   print "   if (!sch_proc_def_exists (bootstrap_cli, (name), log_proc_overwrite)) \\"
 	   print "     ddl_std_proc_1 (proc, 0x1, 1)\n\n"
 
 	   print "#define DEFINE_OVERWRITE_PROC(name, proc) \\"
@@ -708,7 +713,7 @@ END 	{
 	   if (stored_proc > 0)
 	   {
 	   print "#define DEFINE_STORED_PROC(name, proc) \\"
-	   print "   if (!sch_proc_def_exists (bootstrap_cli, (name))) \\"
+	   print "   if (!sch_proc_def_exists (bootstrap_cli, (name), log_proc_overwrite)) \\"
            print "     ddl_ensure_table (\"do this always\", proc);\n\n"
 	   }
            if (nudt > 0)

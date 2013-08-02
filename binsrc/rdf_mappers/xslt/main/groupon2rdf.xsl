@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -66,6 +66,11 @@ xmlns:owl="http://www.w3.org/2002/07/owl#"
             <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Vendor')}" />
             <foaf:topic rdf:resource="{vi:proxyIRI ($baseUri, '', 'Offering')}" />
             <dcterms:subject rdf:resource="{$resourceURL}" />
+            <gr:hasBrand rdf:resource="{vi:proxyIRI ($baseUri, '', 'Brand')}" />
+          </rdf:Description>
+
+          <rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Brand')}">
+            <xsl:apply-templates select="deal/merchant" mode="grbrand" />
           </rdf:Description>
           
 		  <gr:BusinessEntity rdf:about="{vi:proxyIRI ($baseUri, '', 'Vendor')}">
@@ -77,6 +82,13 @@ xmlns:owl="http://www.w3.org/2002/07/owl#"
           </gr:BusinessEntity>
 		  
           <gr:Offering rdf:about="{vi:proxyIRI ($baseUri, '', 'Offering')}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.groupon.com#this">
+                        			<foaf:name>Groupon</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.groupon.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
             <sioc:has_container rdf:resource="{$docproxyIRI}" />
             <gr:hasBusinessFunction rdf:resource="&gr;Sell" />
             <gr:validFrom rdf:datatype="&xsd;dateTime">
@@ -178,6 +190,11 @@ xmlns:owl="http://www.w3.org/2002/07/owl#"
 		</geo:long>
     </xsl:template>
 	
+    <xsl:template match="merchant" mode="grbrand">
+      <rdf:type rdf:resource="&gr;Brand" />
+      <gr:name><xsl:value-of select="normalize-space(name)" /></gr:name>
+      <foaf:page><xsl:value-of select="websiteUrl"/></foaf:page>
+    </xsl:template>
 
   <xsl:template match="text()|@*" />
   <xsl:template match="text()|@*" mode="offering" />

@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -31,6 +31,7 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
 <!ENTITY oplbb "http://www.openlinksw.com/schemas/bestbuy#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -47,6 +48,7 @@
     xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:opl="&opl;"
     xmlns:etsy="http://www.etsy.com/">
 
     <xsl:output method="xml" indent="yes" />
@@ -89,6 +91,13 @@
 					<owl:sameAs rdf:resource="{$docIRI}"/>
 				</rdf:Description>
 				<gr:Offering rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.etsy.com#this">
+                                 			<foaf:name>Etsy</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.etsy.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
 					<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 					<gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 					<!--rdfs:label><xsl:value-of select="title"/></rdfs:label-->
@@ -96,6 +105,13 @@
 					<gr:availableDeliveryMethods rdf:resource="&gr;DeliveryModePickup"/>
 				</gr:Offering>
 				<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.etsy.com#this">
+                                 			<foaf:name>Etsy</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.etsy.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
 					<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 					<rdf:type rdf:resource="&oplbb;Product" />
 					<sioc:has_container rdf:resource="{$docproxyIRI}"/>
@@ -177,7 +193,7 @@
     </xsl:template>
 
     <xsl:template match="tag">
-		<sioc:topic rdf:resource="{concat ('http://www.etsy.com/search_results.php?search_type=all&includes[]=tags&search_query=', .)}"/>
+		<sioc:topic rdf:resource="{concat ('http://www.etsy.com/search_results.php?search_type=all&amp;includes[]=tags&amp;search_query=', .)}"/>
     </xsl:template>
 
     <xsl:template match="description">

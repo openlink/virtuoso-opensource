@@ -43,6 +43,32 @@ The decodes can set the dtp of the output dc and can optimize according to wheth
 */
 
 
+
+
+int64
+cpo_iri_int64 (col_pos_t * cpo, caddr_t val, dtp_t dtp_wanted, char *dtp_match)
+{
+  search_spec_t *sp = cpo->cpo_itc->itc_col_spec;
+  dtp_t dtp;
+  *dtp_match = 1;
+  if (DV_ANY == sp->sp_cl.cl_sqt.sqt_col_dtp)
+    {
+      db_buf_t dv = (db_buf_t) val;
+      if (dtp_wanted == dtp_canonical[dv[0]])
+	return INT64_REF_NA (dv + 1);
+      *dtp_match = 0;
+      return -1;
+    }
+  dtp = DV_TYPE_OF (val);
+  if (dtp_wanted == dtp)
+    {
+      return unbox_iri_int64 (val);
+    }
+  *dtp_match = 0;
+  return -1;
+}
+
+
 int
 cpo_match_after (col_pos_t * cpo, int target)
 {
@@ -65,7 +91,31 @@ cpo_match_after (col_pos_t * cpo, int target)
   if (CE_INTLIKE (flags)) {						\
 	if (DV_SINGLE_FLOAT ==sp->sp_cl.cl_sqt.sqt_col_dtp) value = LONG_REF_NA (((db_buf_t)value) + 1); \
 	else if (DV_DOUBLE_FLOAT ==sp->sp_cl.cl_sqt.sqt_col_dtp) value = INT64_REF_NA (((db_buf_t)value) + 1); \
+      } \
+    else if (CET_ANY == (flags & CE_DTP_MASK)) { \
+      dtp_t tmp[11]; \
+      if (DV_DOUBLE_FLOAT == cpo->cpo_cl->cl_sqt.sqt_col_dtp) \
+	{ \
+          *(int64*)&tmp[1] = *(int64*)(value + 1); \
+	  tmp[0] = DV_INT64; \
+	  value = (int64)&tmp;			\
+	} \
+      else if   (DV_SINGLE_FLOAT == cpo->cpo_cl->cl_sqt.sqt_col_dtp)	\
+	{ \
+          *(int32*)&tmp[1] = *(int32*)(value + 1);	\
+	  tmp[0] = DV_LONG_INT; \
+	  value = (int64)&tmp;	\
+	}  \
       }
+
+
+
+#define CE_DICT_NULL_INX \
+  if (CET_ANY == (flags & CE_DTP_MASK) && !sp->sp_col->col_sqt.sqt_non_null && CMP_EQ != sp->sp_min_op) \
+    { dtp_t dv = DV_DB_NULL; \
+      null_v_inx = ce_dict_key (ce, ce_first, (int64)&dv, DV_DB_NULL, &dict, &n_distinct); }
+
+
 
 int
 ce_dict_generic_range_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_bytes)
@@ -74,15 +124,17 @@ ce_dict_generic_range_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, 
   search_spec_t *sp = itc->itc_col_spec;
   db_buf_t ce = cpo->cpo_ce;
   dtp_t flags = *ce;
-  int fill = itc->itc_match_out, ce_row = cpo->cpo_ce_row_no;
+  int fill = itc->itc_match_out, ce_row = cpo->cpo_ce_row_no, null_v_inx = -1;
   int dtp_cmp, inx, n_distinct;
   dtp_t dtp;
   int64 value;
   int last = MIN (n_values, cpo->cpo_to - ce_row);
   db_buf_t dict;
   int lower = -1, upper = 1000;
+  CE_DICT_NULL_INX;
   if (CMP_NONE != sp->sp_min_op)
     {
+
       value = itc_any_param (itc, itc->itc_col_spec->sp_min, &dtp);
       dtp_cmp = ce_dtp_compare (ce, dtp);
       if (dtp_cmp != DVC_MATCH)
@@ -114,7 +166,7 @@ ce_dict_generic_range_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, 
   for (inx = cpo->cpo_skip; inx < last; inx++)
     {
       int v_inx = 2 * VEC_INX (dict, inx);
-      if (v_inx > lower && v_inx < upper)
+      if (v_inx > lower && v_inx < upper && v_inx != null_v_inx)
 	itc->itc_matches[fill++] = inx + ce_row;
     }
   itc->itc_match_out = fill;
@@ -130,7 +182,7 @@ ce_dict_generic_sets_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, i
   db_buf_t ce = cpo->cpo_ce;
   int fill = itc->itc_match_out, ce_row = cpo->cpo_ce_row_no;
   int end_of_ce = ce_row + n_values;
-  int dtp_cmp, inx, n_distinct, v_inx, row;
+  int dtp_cmp, inx, n_distinct, v_inx, row, null_v_inx = -1;
   dtp_t dtp;
   dtp_t flags = *ce;
   int64 value;
@@ -138,8 +190,10 @@ ce_dict_generic_sets_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, i
   int lower = -1, upper = 1000;
   int n_matches = itc->itc_n_matches;
   row_no_t *matches = itc->itc_matches;
+  CE_DICT_NULL_INX;
   if (CMP_NONE != sp->sp_min_op)
     {
+
       value = itc_any_param (itc, itc->itc_col_spec->sp_min, &dtp);
       dtp_cmp = ce_dtp_compare (ce, dtp);
       if (dtp_cmp != DVC_MATCH)
@@ -174,7 +228,7 @@ ce_dict_generic_sets_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, i
     {
       row -= ce_row;
       v_inx = 2 * VEC_INX (dict, row);
-      if (v_inx > lower && v_inx < upper)
+      if (v_inx > lower && v_inx < upper && null_v_inx != v_inx)
 	itc->itc_matches[fill++] = row + ce_row;
       inx++;
     }
@@ -243,6 +297,7 @@ ce_dict_int32_range_decode (col_pos_t * cpo, db_buf_t ce_first, int n_values, in
   return cpo->cpo_ce_row_no + n_values;
 }
 
+#undef ELT_T
 
 
 #define CE_FILTER_BAD_DTP \
@@ -278,6 +333,19 @@ itc->itc_matches[itc->itc_match_out++] = row;
 #define CEINTD_RANGE
 
 #include "ceintd.c"
+
+int enable_intd_range = 1;
+int enable_bits_dec = 1;
+
+#define CE_NAME ce_intd_range_ltgt
+#define CEINTD_RANGE
+#include "ceintd2.c"
+
+
+#define CE_NAME ce_intd_sets_ltgt
+#undef CEINTD_RANGE
+#include "ceintd2.c"
+
 
 
 #define range_name ce_vec_int_range_decode
@@ -324,6 +392,338 @@ itc->itc_matches[itc->itc_match_out++] = row;
 
 
 
+int
+ce_vec_any_range_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_bytes)
+{
+  it_cursor_t *itc = cpo->cpo_itc;
+  search_spec_t *sp = itc->itc_col_spec;
+  dtp_t min_op = sp->sp_min_op, max_op = sp->sp_max_op;
+  db_buf_t ce = cpo->cpo_ce;
+  int lower_len, upper_len;
+  db_buf_t lower;
+  db_buf_t upper;
+  dtp_t flags = *ce;
+  int mfill = itc->itc_match_out, ce_row = cpo->cpo_ce_row_no, nth, inx;
+  db_buf_t ce_first_val;
+  short start[500];
+  short len[500];
+  short off[500];
+  short fill = 0;
+  int last = MIN (n_values, cpo->cpo_to - ce_row), first_len;
+  if (DV_STRING != sp->sp_cl.cl_sqt.sqt_col_dtp || n_values > 500)
+    return 0;
+  ce_vec_nth (ce_first, flags, n_values, cpo->cpo_skip, &ce_first_val, &first_len, 0);
+  for (nth = cpo->cpo_skip; nth < last; nth++)
+    {
+      if (ce_first_val[0] < DV_ANY_FIRST)
+	{
+	  dtp_t off1, len1;
+	  short inx = ce_first_val[0] <= MAX_1_BYTE_CE_INX ? (off1 = ce_first_val[1], len1 = 2, ce_first_val[0])
+	      : (off1 = ce_first_val[2], len1 = 3, (ce_first_val[0] - MAX_1_BYTE_CE_INX - 1) * 256 + ce_first_val[1]);
+	  db_buf_t org;
+	  int org_len;
+	  ce_vec_nth (ce_first, flags, n_values, inx, &org, &org_len, 0);
+	  if (DV_SHORT_STRING_SERIAL == org[0])
+	    {
+	      start[fill] = (org - ce_first) + 2;
+	      len[fill] = org[1];
+	    }
+	  else if (DV_STRING == org[0])
+	    {
+	      start[fill] = (org - ce_first) + 5;
+	      len[fill] = org_len - 5;
+	    }
+	  else
+	    {
+	      start[fill] = org - ce_first;
+	      len[fill] = -org_len;
+	    }
+	  off[fill++] = off1 - org[org_len - 1];
+	  ce_first_val += len1;
+	}
+      else
+	{
+	  unsigned int len1;
+	  if (DV_SHORT_STRING_SERIAL == ce_first_val[0])
+	    {
+	      start[fill] = (ce_first_val - ce_first) + 2;
+	      len[fill] = ce_first_val[1];
+	      len1 = ce_first_val[1] + 2;
+	    }
+	  else if (DV_STRING == ce_first_val[-1])
+	    {
+	      start[fill] = (ce_first_val - ce_first) + 5;
+	      len[fill] = (((uint32) ce_first_val[3]) << 8) + ce_first_val[4];
+	      len1 = len[fill] + 5;
+	    }
+	  else
+	    {
+	      start[fill] = ce_first_val - ce_first;
+	      DB_BUF_TLEN (len1, ce_first_val[0], ce_first_val);
+	      len[fill] = -len1;
+	    }
+	  off[fill++] = 0;
+	  ce_first_val += len1;
+	}
+    }
+  mfill = itc->itc_match_out;
+  if (max_op != CMP_NONE)
+    {
+      upper = (db_buf_t) cpo->cpo_cmp_max;
+      upper_len = box_length (upper) - 1;
+    }
+  else
+    upper = NULL;
+  if (CMP_NONE != min_op)
+    {
+      lower = (db_buf_t) cpo->cpo_cmp_min;
+      lower_len = box_length (lower) - 1;
+    }
+  else
+    lower = NULL;
+  if (DV_STRING == itc->itc_col_spec->sp_cl.cl_sqt.sqt_col_dtp)
+    {
+      for (inx = 0; inx < fill; inx++)
+	{
+	  if (len[inx] < 0)
+	    continue;
+	  if (!off[inx])
+	    {
+	      if (lower && !(min_op & strcmp8 (ce_first + start[inx], lower, len[inx], lower_len)))
+		continue;
+	      if (upper && !(max_op & strcmp8 (ce_first + start[inx], upper, len[inx], upper_len)))
+		continue;
+	    }
+	  else
+	    {
+	      if (lower && !(min_op & str_cmp_offset (ce_first + start[inx], lower, len[inx], lower_len, off[inx])))
+		continue;
+	      if (upper && !(max_op & str_cmp_offset (ce_first + start[inx], upper, len[inx], upper_len, off[inx])))
+		continue;
+	    }
+	  itc->itc_matches[mfill++] = ce_row + inx + cpo->cpo_skip;
+	}
+    }
+  itc->itc_match_out = mfill;
+  return ce_row + n_values;
+}
+
+
+#define RANGE_NAME ce_vec_int32_range_filter
+#define ELT_T int64
+#define VEC_ELT_T int32
+#define REF LONG_REF_CA
+#define DTP DV_LONG_INT
+#define DTP_MIN INT32_MIN
+#define DTP_MAX INT32_MAX
+#include "cevecf.c"
+
+
+#define RANGE_NAME ce_vec_int64_range_filter
+#define ELT_T int64
+#define VEC_ELT_T int64
+#define REF INT64_REF_CA
+#define DTP DV_LONG_INT
+#define DTP_MIN INT64_MIN
+#define DTP_MAX INT64_MAX
+#include "cevecf.c"
+
+#define IRI_ID_MAX 0xffffffffffffffff
+
+#define RANGE_NAME ce_vec_iri32_range_filter
+#define ELT_T iri_id_t
+#define VEC_ELT_T uint32
+#define REF (iri_id_t)(uint32)LONG_REF_CA
+#define DTP DV_IRI_ID
+#define DTP_MIN 0
+#define DTP_MAX IRI_ID_MAX
+#include "cevecf.c"
+
+
+#define RANGE_NAME ce_vec_iri64_range_filter
+#define ELT_T iri_id_t
+#define VEC_ELT_T iri_id_t
+#define REF INT64_REF_CA
+#define DTP DV_IRI_ID
+#define DTP_MIN 0
+#define DTP_MAX IRI_ID_MAX
+#include "cevecf.c"
+
+
+
+#define NAME ce_bits_int_range_eq_filter
+#define ELT_T int64
+#define ELT_DV DV_LONG_INT
+#include "cebits.c"
+
+#define NAME ce_bits_iri_range_eq_filter
+#define ELT_T iri_id_t
+#undef ELT_DV
+#define ELT_DV DV_IRI_ID
+#include "cebits.c"
+
+
+/* delta like ce decode */
+
+
+
+#define CED_ANY_VARS \
+  char is_date = 0; \
+uint32 any_base = 0;
+
+#define CED_ANY_CHECK \
+{ \
+  if (first_len < 5) return 0; \
+  if (!ced_any_dc_check (cpo, ce_first_val)) return 0; \
+  if (DV_DATETIME == ce_first_val[0]) \
+    { \
+      is_date = 1; \
+      any_base = DT_DAY (ce_first_val + 1); \
+    } \
+  else  \
+    any_base = LONG_REF_NA (ce_first_val + first_len - 4); \
+}
+
+
+#define CED_ANY_OUT(ce_first_val, first_len, off)	\
+{ \
+  if (is_date) \
+    { \
+      db_buf_t tgt = dc->dc_values + DT_LENGTH * dc->dc_n_values; \
+      memcpy_dt (tgt, ce_first_val + 1); \
+      dc->dc_n_values++; \
+      DT_SET_DAY (tgt, any_base + off); \
+    } \
+  else \
+    { \
+      db_buf_t tgt; \
+      int buf_fill = dc->dc_buf_fill, buf_len = dc->dc_buf_len; \
+      if (buf_fill + first_len <= buf_len) \
+	{ \
+	  tgt = ((db_buf_t*)dc->dc_values)[dc->dc_n_values++] = dc->dc_buffer + buf_fill; \
+	  memcpy_16 (tgt, ce_first_val, first_len); \
+	  dc->dc_buf_fill += first_len; \
+	} \
+      else \
+	{ \
+	  dc_append_bytes (dc, ce_first_val, first_len, NULL, 0); \
+	  tgt = ((db_buf_t*)dc->dc_values)[dc->dc_n_values - 1]; \
+	} \
+      LONG_SET_NA (tgt + first_len - 4, any_base + off); \
+    } \
+}
+
+
+#define CED_INT_OUT(i1, i2, off) \
+  ((int64*)dc->dc_values)[dc->dc_n_values++] = off
+
+int 
+ced_any_dc_check (col_pos_t * cpo, db_buf_t ce_first_val)
+{
+  data_col_t * dc = cpo->cpo_dc;
+  if (DV_DATETIME == dc->dc_sqt.sqt_dtp && DV_DATETIME == ce_first_val[0])
+    return 1;
+  if (DV_DATETIME == ce_first_val[0])
+    {
+      if (dc->dc_n_values || DV_ANY != dc->dc_sqt.sqt_col_dtp)
+	return 0;
+      dc_convert_empty (dc, DV_DATETIME);
+      return 1;
+    }
+  if (DV_ANY != dc->dc_sqt.sqt_col_dtp)
+    return 0;
+  if (DV_ANY != dc->dc_sqt.sqt_dtp)
+    dc_heterogenous (dc);
+  return 1;
+}
+
+
+int
+ced_intlike_dc_check (col_pos_t * cpo, dtp_t flags)
+{
+  data_col_t * dc = cpo->cpo_dc;
+  if (((CE_IS_IRI & flags) ? DV_IRI_ID : DV_LONG_INT) == dtp_canonical[dc->dc_dtp])
+    return 1;
+  if (DV_ANY == dc->dc_sqt.sqt_col_dtp)
+    {
+      if (!dc->dc_n_values)
+	{
+	  dc_convert_empty (dc, (CE_IS_IRI &flags) ? DV_IRI_ID : DV_LONG_INT);
+	  return 1;
+	}
+      else
+	return 0;
+    }
+  return 0;
+}
+
+
+
+
+#define CE_NAME ce_intd_any_range_decode 
+#define IS_INTD_ANY 1
+#define CEINTD_RANGE
+#define CED_VARS CED_ANY_VARS
+#define CED_CHECK CED_ANY_CHECK
+#define CE_OUT(first_val,first_len,off) CED_ANY_OUT (first_val,first_len,off)
+#include "ceintddec.c"
+
+#define CE_NAME ce_intd_any_sets_decode 
+#define IS_INTD_ANY 1
+#define CED_VARS CED_ANY_VARS
+#define CED_CHECK CED_ANY_CHECK
+#define CE_OUT(first_val,first_len,off) CED_ANY_OUT (first_val,first_len,off)
+#include "ceintddec.c"
+
+
+#define CE_NAME ce_bits_int_range_decode 
+#define CE_BITS_RANGE
+#define CED_CHECK if (!ced_intlike_dc_check (cpo, flags)) return 0;
+#define CED_VARS
+#define CE_OUT(first_val, first_len, off) CED_INT_OUT (first_val, first_len, off)
+#include "cebitsdec.c"
+
+
+#define CE_NAME ce_bits_int_sets_decode 
+#define CED_CHECK if (!ced_intlike_dc_check (cpo, flags)) return 0;
+#define CED_VARS
+#define CE_OUT(first_val, first_len, off) CED_INT_OUT (first_val, first_len, off)
+#include "cebitsdec.c"
+
+
+
+int enable_vecf = 1;
+
+
+void
+ce_intd_register (flags)
+{
+  ce_op_register (CE_INT_DELTA | flags, CE_ALL_LTGT, 0, ce_intd_range_ltgt);
+  ce_op_register (CE_INT_DELTA | flags, CE_ALL_LTGT, 1, ce_intd_sets_ltgt);
+  ce_op_register (CE_INT_DELTA | flags, CMP_EQ, 0, ce_intd_range_ltgt);
+  ce_op_register (CE_INT_DELTA | flags, CMP_EQ, 1, ce_intd_sets_ltgt);
+}
+
+int ce_hash_range_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_bytes);
+int ce_hash_sets_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_bytes);
+
+void
+ce_hash_register ()
+{
+  dtp_t cets[] = { CE_RL, CE_BITS, CE_VEC, CE_DICT, CE_RL_DELTA, CE_INT_DELTA};
+  dtp_t dtps[] = {0, 16, 32, 48, 64, 80, 96};
+  int i1, i2;
+  for (i1 = 0; i1 < sizeof (cets); i1++)
+    {
+      for (i2 = 0; i2 < sizeof (dtps); i2++)
+	{
+	  dtp_t cet = cets[i1] | dtps[i2];
+	  ce_op_register (cet, CE_OP_CODE (CMP_HASH_RANGE, CMP_NONE), 0, ce_hash_range_filter);
+	  ce_op_register (cet, CE_OP_CODE (CMP_HASH_RANGE, CMP_NONE), 1, ce_hash_sets_filter);
+	}
+    }
+}
+
 void
 colin_init ()
 {
@@ -350,5 +750,48 @@ colin_init ()
   ce_op_register (CE_VEC | CE_IS_IRI | CE_IS_64, CE_DECODE, 1, ce_vec_iri64_sets_decode);
   ce_op_register (CE_DICT | CE_IS_IRI | CE_IS_64, CE_DECODE, 0, ce_dict_iri64_range_decode);
   ce_op_register (CE_DICT | CE_IS_IRI | CE_IS_64, CE_DECODE, 1, ce_dict_iri64_sets_decode);
+
+
+  if (enable_vecf)
+    {
+      ce_op_register (CE_VEC | CET_ANY, CE_ALL_LTGT, 0, ce_vec_any_range_filter);
+      ce_op_register (CE_VEC, CE_ALL_LTGT, 0, ce_vec_int32_range_filter);
+      ce_op_register (CE_VEC | CE_IS_64, CE_ALL_LTGT, 0, ce_vec_int64_range_filter);
+      ce_op_register (CE_VEC | CE_IS_IRI, CE_ALL_LTGT, 0, ce_vec_iri32_range_filter);
+      ce_op_register (CE_VEC | CE_IS_64 | CE_IS_IRI, CE_ALL_LTGT, 0, ce_vec_iri64_range_filter);
+      ce_op_register (CE_VEC, CMP_EQ, 0, ce_vec_int32_range_filter);
+      ce_op_register (CE_VEC | CE_IS_64, CMP_EQ, 0, ce_vec_int64_range_filter);
+      ce_op_register (CE_VEC | CE_IS_IRI, CMP_EQ, 0, ce_vec_iri32_range_filter);
+      ce_op_register (CE_VEC | CE_IS_64 | CE_IS_IRI, CMP_EQ, 0, ce_vec_iri64_range_filter);
+    }
+  ce_op_register (CE_BITS, CMP_EQ, 0, ce_bits_int_range_eq_filter);
+  ce_op_register (CE_BITS | CE_IS_64, CMP_EQ, 0, ce_bits_int_range_eq_filter);
+  ce_op_register (CE_BITS | CE_IS_IRI, CMP_EQ, 0, ce_bits_iri_range_eq_filter);
+  ce_op_register (CE_BITS | CE_IS_IRI | CE_IS_64, CMP_EQ, 0, ce_bits_iri_range_eq_filter);
+  ce_hash_register ();
+  ce_intd_register (CET_ANY);
+  ce_intd_register (0);
+  ce_intd_register (CE_IS_64);
+  ce_intd_register (CE_IS_IRI);
+  ce_intd_register (CE_IS_IRI | CE_IS_64);
+
+
+  ce_op_decode = col_find_op (CE_DECODE);
+  ce_op_hash = col_find_op (CMP_HASH_RANGE);
+  
+
+
+  ce_op_register (CE_INT_DELTA | CET_ANY, CE_DECODE, 0, ce_intd_any_range_decode);
+  ce_op_register (CE_INT_DELTA | CET_ANY, CE_DECODE, 1, ce_intd_any_sets_decode);
+
+  ce_op_register (CE_BITS | CET_INT, CE_DECODE, 0, ce_bits_int_range_decode);
+  ce_op_register (CE_BITS | CET_INT, CE_DECODE, 1, ce_bits_int_sets_decode);
+  ce_op_register (CE_BITS | CET_INT | CE_IS_64, CE_DECODE, 0, ce_bits_int_range_decode);
+  ce_op_register (CE_BITS | CET_INT | CE_IS_64, CE_DECODE, 1, ce_bits_int_sets_decode);
+
+  ce_op_register (CE_BITS | CE_IS_IRI, CE_DECODE, 0, ce_bits_int_range_decode);
+  ce_op_register (CE_BITS | CE_IS_IRI, CE_DECODE, 1, ce_bits_int_sets_decode);
+  ce_op_register (CE_BITS | CE_IS_IRI | CE_IS_64, CE_DECODE, 0, ce_bits_int_range_decode);
+  ce_op_register (CE_BITS | CE_IS_IRI | CE_IS_64, CE_DECODE, 1, ce_bits_int_sets_decode);
 
 }

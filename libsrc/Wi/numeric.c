@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1201,7 +1201,7 @@ numeric_init (void)
 {
   _numeric_rc = resource_allocate (200,
       _numeric_rc_allocate, _numeric_rc_free, _numeric_rc_clear, 0);
-  dk_dtp_register_hash (DV_NUMERIC, (box_hash_func_t) numeric_hash, numeric_hash_cmp);
+  dk_dtp_register_hash (DV_NUMERIC, (box_hash_func_t) numeric_hash, numeric_hash_cmp, numeric_hash_cmp);
   return NUMERIC_STS_SUCCESS;
 }
 
@@ -2126,6 +2126,16 @@ numeric_to_double (numeric_t n, double *pvalue)
 /*
  *  Convert a number to a marshalled value
  */
+
+int
+numeric_dv_len (numeric_t n)
+{
+  dtp_t res[255];
+  numeric_to_dv (n, res, sizeof (res));
+  return 2 + res[1];
+}
+
+
 int
 numeric_to_dv (numeric_t n, dtp_t *res, size_t reslength)
 {
@@ -2179,6 +2189,53 @@ numeric_to_dv (numeric_t n, dtp_t *res, size_t reslength)
 
   if (rp - res - 2 > 0xff)
     return NUMERIC_STS_MARSHALLING;
+
+  return NUMERIC_STS_SUCCESS;
+}
+
+
+/*
+ *  Very similar to _numeric_normalize
+ *
+ *  "Resizes" n from x to a new precision and a new scale.
+ *  Returns NUMERIC_STS_UNDERFLOW / NUMERIC_STS_OVERFLOW on failure.
+ *
+ *  NOTE: new_prec here is SQL precision (n_len + n_scale)
+ */
+int
+numeric_rescale_noround (numeric_t n, numeric_t x, int new_prec, int new_scale)
+{
+  char *src;
+
+  if (num_is_invalid (x))
+    return numeric_copy (n, x);
+
+  new_prec = MAX (0, MIN (NUMERIC_MAX_PRECISION, new_prec));
+  new_scale = MAX (0, MIN (NUMERIC_MAX_SCALE, new_scale));
+
+  /* too big? */
+  if (x->n_len > new_prec)
+    return _numeric_inf (n, x->n_neg);
+
+  /* adjust scale if not enough digits available */
+  if (x->n_len + new_scale > new_prec + ((1 == x->n_len && 0 == x->n_value[0])?1:0))
+    new_scale = new_prec - x->n_len;
+
+  /* too much fraction? */
+  if (x->n_scale > new_scale)
+    {
+      numeric_copy (n, x);
+      n->n_scale = new_scale;
+      /* Check if we have to remove trailing zeroes. */
+      if (n->n_scale)
+        {
+          src = n->n_value + n->n_len + n->n_scale;
+          while (n->n_scale > 0 && *--src == 0)
+            n->n_scale--;
+        }
+    }
+  else
+    numeric_copy (n, x);
 
   return NUMERIC_STS_SUCCESS;
 }

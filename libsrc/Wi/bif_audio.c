@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2007 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -573,7 +573,7 @@ def_decoder (decode_TEXT)
   /* encoding[1] text */
   if (params->length > 1)
     xml_key_value (params->out, params->descriptor->xml_tag,
-	params->content + 1, params->length - 1, params->content[0]);
+	(const char *) (params->content + 1), params->length - 1, params->content[0]);
 }
 def_decoder (decode_TXXX)
 {
@@ -583,7 +583,7 @@ def_decoder (decode_TXXX)
   const byte *dp = skip_str (params->content + 1, ep, encoding);
   if (dp < ep)
     xml_key_value (params->out, params->descriptor->xml_tag,
-	dp, ep - dp, encoding);
+	(const char *) dp, ep - dp, encoding);
 }
 def_decoder (decode_COMM)
 {
@@ -593,12 +593,12 @@ def_decoder (decode_COMM)
   const byte *dp = skip_str (params->content + 4, ep, encoding);
   if (dp < ep)
     xml_key_value (params->out, params->descriptor->xml_tag,
-	dp, ep - dp, encoding);
+	(const char *) dp, ep - dp, encoding);
 }
 def_decoder (decode_URL)
 {
   xml_key_value (params->out, params->descriptor->xml_tag,
-      params->content, params->length, 0);
+      (const char *) params->content, params->length, 0);
 }
 def_decoder (decode_WXXX)
 {
@@ -608,7 +608,7 @@ def_decoder (decode_WXXX)
   const byte *dp = skip_str (params->content + 1, ep, encoding);
   if (dp < ep)
     xml_key_value (params->out, params->descriptor->xml_tag,
-	dp, ep - dp, encoding);
+	(const char *) dp, ep - dp, encoding);
 }
 
 static void
@@ -962,35 +962,35 @@ disect_mp4 (stream *out, mp4_atom_t *atom, size_t apos, int level)
       switch (atom->parent->tag)
 	{
 	case tag_Cnam: /* name tag_TIT2 */
-	  xml_key_value (out, "Title", atom->data, atom->length, 3);
+	  xml_key_value (out, "Title", (const char *) atom->data, atom->length, 3);
 	  break;
 	case tag_CART: /* artist tag_TPE1 */
-	  xml_key_value (out, "Artist", atom->data, atom->length, 3);
+	  xml_key_value (out, "Artist", (const char *) atom->data, atom->length, 3);
 	  break;
 	case tag_Cwrt: /* writer tag_TCOM */
-	  xml_key_value (out, "Composer", atom->data, atom->length, 3);
+	  xml_key_value (out, "Composer", (const char *) atom->data, atom->length, 3);
 	  break;
 	case tag_Calb: /* album tag_TALB */
-	  xml_key_value (out, "Album", atom->data, atom->length, 3);
+	  xml_key_value (out, "Album", (const char *) atom->data, atom->length, 3);
 	  break;
 	case tag_Cday: /* date tag_TYER */
 	  if (atom->length >= 4)
-	    xml_key_value (out, "Year", atom->data, 4, 3);
+	    xml_key_value (out, "Year", (const char *) atom->data, 4, 3);
 	  break;
 	case tag_Ctoo: /* tool tag_TENC */
-	  xml_key_value (out, "Encoder", atom->data, atom->length, 3);
+	  xml_key_value (out, "Encoder", (const char *) atom->data, atom->length, 3);
 	  break;
 	case tag_Ccmt: /* comment tag_COMM */
-	  xml_key_value (out, "Comment", atom->data, atom->length, 3);
+	  xml_key_value (out, "Comment", (const char *) atom->data, atom->length, 3);
 	  break;
 	case tag_Cgen: /* customgenre tag_TCON */
-	  xml_key_value (out, "Genre", atom->data, atom->length, 3);
+	  xml_key_value (out, "Genre", (const char *) atom->data, atom->length, 3);
 	  break;
         case tag_Clyr:  /* lyrics tag_USLT */
-	  xml_key_value (out, "Lyrics", atom->data, atom->length, 3);
+	  xml_key_value (out, "Lyrics", (const char *) atom->data, atom->length, 3);
 	  break;
 	case tag_Cgrp: /* grouping tag_TIT1 */
-	  xml_key_value (out, "Grouping", atom->data, atom->length, 3);
+	  xml_key_value (out, "Grouping", (const char *) atom->data, atom->length, 3);
 	  break;
 	case tag_trkn: /* tracknumber tag_TRCK */
 	  if (atom->length >= 6)
@@ -1027,13 +1027,13 @@ disect_mp4 (stream *out, mp4_atom_t *atom, size_t apos, int level)
 	    }
 	  break;
 	case tag_apID: /* ? tag_TOWN */
-	  xml_key_value (out, "FileOwnerName", atom->data, atom->length, 3);
+	  xml_key_value (out, "FileOwnerName", (const char *) atom->data, atom->length, 3);
 	  break;
 	case tag_cprt: /* copyright tag_TCOP */
-	  xml_key_value (out, "Copyright", atom->data, atom->length, 3);
+	  xml_key_value (out, "Copyright", (const char *) atom->data, atom->length, 3);
 	  break;
 	case tag_aART: /* albumartist tag_? */
-	  xml_key_value (out, "AlbumArtist", atom->data, atom->length, 3);
+	  xml_key_value (out, "AlbumArtist", (const char *) atom->data, atom->length, 3);
 	  break;
 	case tag_cpil: /* compilation tag_TCMP */
 	  if (atom->length > 0 && atom->data[0])
@@ -1433,7 +1433,7 @@ bif_audio_to_xml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   char *result;
   caddr_t res;
 
-  result = audio_to_xml (data, length, (int) type);
+  result = audio_to_xml ((const byte *) data, length, (int) type);
   if (result)
     {
       res = box_dv_short_string (result);

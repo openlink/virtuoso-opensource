@@ -1,10 +1,10 @@
 --  
---  $Id$
+--  $Id: txslt.sql,v 1.5.10.2 2013/01/02 16:15:37 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -33,7 +33,7 @@ create procedure DO_XSLT (in _xml varchar, in _xsl varchar)
   http_value (_tree, 0, _ses);
   http (concat ('\n============ END ============\n'), _ses);
   _res := string_output_string (_ses);
-  string_to_file ('../txslt.result', _res, -1);
+  string_to_file ('txslt.result', _res, -1);
   return _res;
 }
 

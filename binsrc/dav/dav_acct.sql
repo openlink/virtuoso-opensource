@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -212,7 +212,7 @@ create procedure DAV_SPACE_QUOTA_SIGNAL (in res_path varchar, in home_path varch
         signal ('HT500', sprintf ('DAV integrity violation: ancestor collection %s not found for resource %s', home_path, res_path));
       if (not isinteger (home_col_id))
         signal ('HT500', sprintf ('DAV integrity violation: collection %s is a DET subcollection, can not use DAV quotas for %s', home_path, res_path));
-      owner_u_id := coalesce ((select COL_OWNER from WS.WS.SYS_DAV_COL where COL_ID = home_col_id), http_hobody_uid());
+      owner_u_id := coalesce ((select COL_OWNER from WS.WS.SYS_DAV_COL where COL_ID = home_col_id), http_nobody_uid());
     u_descr := coalesce ((select 'owner "' || U_NAME || '"' from SYS_USERS where U_ID = owner_u_id), sprintf ('owner #%d', owner_u_id));
     }
   rollback work;

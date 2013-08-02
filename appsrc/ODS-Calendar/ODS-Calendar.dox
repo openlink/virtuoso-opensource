@@ -1,0 +1,20 @@
+/**
+\defgroup ods_module_calendar ODS Calendar API
+
+The ODS Calendar offers features to organize your Calendar Events, Tasks, and Notes.
+
+\section ods_calendar_features Feature Highlights
+
+- Management of Events, Tasks, Notes
+- Day, Week, Month View of events, tasks, and notes
+- Import Calendar files
+- Export to Calendar file
+- Search: simple and advanced form
+
+\section ods_calendar_syndication_formats Content Syndication Formats
+
+- RSS
+- Atom
+- RDF
+- SIOC
+*/

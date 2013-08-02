@@ -1,8 +1,0 @@
-.libs
-.deps
-*.la 
-*.lo
-xmlparse
-Makefile.in
-Makefile
-xhtml_ent.h

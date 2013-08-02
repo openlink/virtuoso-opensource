@@ -1,14 +1,14 @@
 --
 --  nwxmlo.sql
 --
---  $Id$
+--  $Id: nwxmlo.sql,v 1.20.6.2.4.2 2013/01/02 16:14:48 source Exp $
 --
 --  For XML auto testing
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -589,7 +589,7 @@ insert into B6594 values (1, 'a');
 select "fullname" from (
       select
         case when "ext" = 'be' then
-	    0
+	    '\0'
 	  else
         concat (case when ("path" <> '') then concat ('/', "path") else '' end, '/', "name", '.', "ext")
 	  end

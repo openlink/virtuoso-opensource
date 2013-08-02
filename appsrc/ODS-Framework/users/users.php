@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2008 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -23,27 +23,6 @@
  -
  -
 -->
-<html>
-  <head>
-    <title>Virtuoso Web Applications</title>
-    <link rel="stylesheet" type="text/css" href="/ods/users/css/users.css" />
-    <link rel="stylesheet" type="text/css" href="/ods/default.css" />
-    <link rel="stylesheet" type="text/css" href="/ods/nav_framework.css" />
-    <link rel="stylesheet" type="text/css" href="/ods/typeahead.css" />
-    <link rel="stylesheet" type="text/css" href="/ods/ods-bar.css" />
-    <link rel="stylesheet" type="text/css" href="/ods/rdfm.css" />
-    <script type="text/javascript" src="/ods/users/js/users.js"></script>
-    <script type="text/javascript" src="/ods/common.js"></script>
-    <script type="text/javascript" src="/ods/typeahead.js"></script>
-    <script type="text/javascript" src="/ods/tbl.js"></script>
-    <script type="text/javascript" src="/ods/validate.js"></script>
-    <script type="text/javascript">
-      // OAT
-      var toolkitPath="/ods/oat";
-      var featureList = ["ajax", "json", "tab", "combolist", "calendar", "rdfmini", "grid", "graphsvg", "tagcloud", "map", "timeline", "anchor"];
-    </script>
-    <script type="text/javascript" src="/ods/oat/loader.js"></script>
-  </head>
   <?php
     function parseUrl($url) {
       // parse the given URL
@@ -151,6 +130,13 @@
       return $pageURL.'/ods/api';
     }
 
+  function hostURL()
+  {
+    $pageURL = $_SERVER['HTTPS'] == 'on' ? 'https://' : 'http://';
+    $pageURL .= $_SERVER['SERVER_PORT'] <> '80' ? $_SERVER["SERVER_NAME"].":".$_SERVER["SERVER_PORT"] : $_SERVER['SERVER_NAME'];
+    return $pageURL;
+  }
+
     function myUrlencode ($S)
     {
       $S = urlencode($S);
@@ -189,11 +175,9 @@
         }
       }
     }
-    -- var_dump($_REQUEST);
 
     $_formTab = intval((isset ($_REQUEST['formTab'])) ? $_REQUEST['formTab'] : "0");
     $_formTab2 = intval((isset ($_REQUEST['formTab2'])) ? $_REQUEST['formTab2'] : "0");
-    $_formTab3 = intval((isset ($_REQUEST['formTab3'])) ? $_REQUEST['formTab3'] : "0");
     $_formMode = (isset ($_REQUEST['formMode'])) ? $_REQUEST['formMode'] : "";
 
       if ($_form == "login")
@@ -209,7 +193,6 @@
           $_form = "profile";
         $_formTab = 0;
         $_formTab2 = 0;
-        $_formTab3 = 0;
       }
       }
 
@@ -398,11 +381,25 @@
 
             break;
           }
-      }
+        }
         $_formMode = "";
       }
       else if (isset ($_REQUEST['pf_update26']) && ($_REQUEST['pf_update26'] <> ""))
       {
+      $_tmp = "";
+      if ($_REQUEST ["pf26_importFile"] == '1')
+      {
+        if ($_FILES['pf26_file']['size'] > 0)
+        {
+          $_tmpName  = $_FILES['pf26_file']['tmp_name'];
+          $_fp = fopen($_tmpName, 'r');
+          $_tmp = fread($_fp, filesize($_tmpName));
+        }
+      }
+      else if (isset ($_REQUEST['pf_update26']) && ($_REQUEST['pf_update26'] <> ""))
+      {
+        $_tmp = $_REQUEST ["pf26_certificate"];
+      }
         $_url = sprintf (
                           "%s/user.certificates.%s?sid=%s&realm=%s&id=%s&certificate=%s&enableLogin=%s",
                           apiURL(),
@@ -410,7 +407,7 @@
                           $_sid,
                           $_realm,
                           myUrlencode ($_REQUEST ["pf26_id"]),
-                          myUrlencode ($_REQUEST ["pf26_certificate"]),
+                        myUrlencode ($_tmp),
                           myUrlencode ($_REQUEST ["pf26_enableLogin"])
                         );
         $_result = file_get_contents($_url);
@@ -431,7 +428,7 @@
                 (isset ($_REQUEST['pf_next']) && ($_REQUEST['pf_next'] <> ""))     ||
                 (isset ($_REQUEST['pf_clear']) && ($_REQUEST['pf_clear'] <> ""))
          )
-        {
+      {
         $_formMode = "";
         if ((($_formTab == 0) && ($_formTab2 == 3)) || (($_formTab == 1) && ($_formTab2 == 2)))
         {
@@ -459,7 +456,9 @@
             {
               $_sufix = str_replace($_prefix."_fld_1_", "", $name);
               $_url = apiURL()."/user.onlineAccounts.new?sid=".$_sid."&realm=".$_realm."&type=".$_accountType.
-                      "&name=".myUrlencode ($_REQUEST[$_prefix."_fld_1_".$_sufix])."&url=".myUrlencode ($_REQUEST[$_prefix."_fld_2_".$_sufix]);
+                    "&name=".myUrlencode ($_REQUEST[$_prefix."_fld_1_".$_sufix]).
+                    "&url=".myUrlencode ($_REQUEST[$_prefix."_fld_2_".$_sufix]).
+                    "&uri=".myUrlencode ($_REQUEST[$_prefix."_fld_3_".$_sufix]);
               $_result = file_get_contents($_url);
               if (substr_count($_result, "<failed>") <> 0)
               {
@@ -504,7 +503,7 @@
         else if (($_formTab == 2) && ($_formTab2 == 0))
         {
           if ($_REQUEST ["pf_newPassword"] != $_REQUEST ["pf_newPassword2"])
-                {
+          {
             $_error = 'Bad new password. Please retype!';
           } else {
             $_url = sprintf (
@@ -533,6 +532,8 @@
             if ($_formTab2 == 0)
             {
               // Import
+              if ($_REQUEST['cb_item_i_photo'] == '1')
+                $_params .= '&photo' . myUrlencode ($_REQUEST['i_photo']);
               if ($_REQUEST['cb_item_i_name'] == '1')
                 $_params .= '&nickName' . myUrlencode ($_REQUEST['i_nickName']);
               if ($_REQUEST['cb_item_i_title'] == '1')
@@ -565,6 +566,18 @@
                 $_params .= '&homeLatitude=' . myUrlencode ($_REQUEST['i_homelat']);
               if ($_REQUEST['cb_item_i_homelng'] == '1')
                 $_params .= '&homeLongitude=' . myUrlencode ($_REQUEST['i_homelng']);
+            if ($_REQUEST['cb_item_i_homeCountry'] == '1')
+              $_params .= '&homeCountry=' . myUrlencode ($_REQUEST['i_homeCountry']);
+            if ($_REQUEST['cb_item_i_homeState'] == '1')
+              $_params .= '&homeState=' . myUrlencode ($_REQUEST['i_homeState']);
+            if ($_REQUEST['cb_item_i_homeCity'] == '1')
+              $_params .= '&homeCity=' . myUrlencode ($_REQUEST['i_homeCity']);
+            if ($_REQUEST['cb_item_i_homeCode'] == '1')
+              $_params .= '&homeCode=' . myUrlencode ($_REQUEST['i_homeCode']);
+            if ($_REQUEST['cb_item_i_homeAddress1'] == '1')
+              $_params .= '&homeAddress1=' . myUrlencode ($_REQUEST['i_homeAddress1']);
+            if ($_REQUEST['cb_item_i_homeAddress2'] == '1')
+              $_params .= '&homeAddress2=' . myUrlencode ($_REQUEST['i_homeAddress2']);
               if ($_REQUEST['cb_item_i_homePhone'] == '1')
                 $_params .= '&homePhone=' . myUrlencode ($_REQUEST['i_homePhone']);
               if ($_REQUEST['cb_item_i_businessOrganization'] == '1')
@@ -741,8 +754,8 @@
                 }
               }
               $_params .= "&businessMessaging=" . myUrlencode ($_tmp);
+            }
           }
-        }
           if ($_formTab == 2)
           {
             if ($_formTab2 == 1)
@@ -754,19 +767,7 @@
               $_params .=
                   "&securityOpenID=" . myUrlencode ($_REQUEST['pf_securityOpenID']);
 
-            if ($_formTab2 == 3)
-            {
-              if (isset ($_REQUEST['pf_clear']) && ($_REQUEST['pf_clear'] <> ""))
-              {
-                $_params .=
-                    "&securityFacebookID=";
-              } else {
-              $_params .=
-                  "&securityFacebookID=" . myUrlencode ($_REQUEST['pf_securityFacebookID']);
-              }
-            }
-
-            if ($_formTab2 == 4)
+          if ($_formTab2 == 3)
               $_params .=
                   "&securitySiocLimit=" . myUrlencode ($_REQUEST['pf_securitySiocLimit']);
           }
@@ -776,7 +777,7 @@
             $_xml = simplexml_load_string($_result);
             $_error = $_xml->failed->message;
             $_form = "login";
-      }
+          }
           $_url = apiURL()."/user.acl.update";
           $_tmp = "";
           foreach($_REQUEST as $name => $value)
@@ -851,8 +852,64 @@
         $_sid = "";
         $_realm = "";
       }
+  $_hostLinks = str_replace (
+    '[HOST]',
+    hostURL(),
+    '    <link rel="openid.server" title="OpenID Server" href="[HOST]/openid" />' .
+    '    <link rel="openid2.provider" title="OpenID v2 Server" href="[HOST]/openid" />'
+  );
+
+  $_userLinks = '';
+  if ($_userName != "")
+  {
+    $_userLinks =
+      '    <link rel="meta" type="application/rdf+xml" title="SIOC" href="[HOST]/dataspace/[USER]/sioc.rdf" />' .
+      '    <link rel="meta" type="application/rdf+xml" title="FOAF" href="[HOST]/dataspace/person/[USER]/foaf.rdf" />' .
+      '    <link rel="meta" type="text/rdf+n3" title="FOAF" href="[HOST]/dataspace/person/[USER]/foaf.n3" />' .
+      '    <link rel="meta" type="application/json" title="FOAF" href="[HOST]/dataspace/person/[USER]/foaf.json" />' .
+      '    <link rel="http://xmlns.com/foaf/0.1/primaryTopic"  title="About" href="[HOST]/dataspace/person/[USER]#this" />' .
+      '    <link rel="schema.dc" href="http://purl.org/dc/elements/1.1/" />' .
+      '    <meta name="dc.language" content="en" scheme="rfc1766" />' .
+      '    <meta name="dc.creator" content="[USER]" />' .
+      '    <meta name="dc.description" content="ODS HTML [USER]\'s page" />' .
+      '    <meta name="dc.title" content="ODS HTML [USER]\'s page" />' .
+      '    <link rev="describedby" title="About" href="[HOST]/dataspace/person/[USER]#this" />' .
+      '    <link rel="schema.geo" href="http://www.w3.org/2003/01/geo/wgs84_pos#" />' .
+      '    <meta http-equiv="X-XRDS-Location" content="[HOST]/dataspace/[USER]/yadis.xrds" />' .
+      '    <meta http-equiv="X-YADIS-Location" content="[HOST]/dataspace/[USER]/yadis.xrds" />' .
+      '    <link rel="meta" type="application/xml+apml" title="APML 0.6" href="[HOST]/dataspace/[USER]/apml.xml" />' .
+      '    <link rel="alternate" type="application/atom+xml" title="OpenSocial Friends" href="[HOST]/feeds/people/[USER]/friends" />';
+    $_userLinks = str_replace ('[HOST]', hostURL(), $_userLinks);
+    $_userLinks = str_replace ('[USER]', $_userName, $_userLinks);
+  }
   ?>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>ODS user's pages</title>
+<?php echo $_hostLinks; ?>
+<?php echo $_userLinks; ?>
+    <link rel="stylesheet" type="text/css" href="/ods/users/css/users.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/default.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/nav_framework.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/typeahead.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/ods-bar.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/rdfm.css" />
+    <script type="text/javascript" src="/ods/users/js/users.js"></script>
+    <script type="text/javascript" src="/ods/common.js"></script>
+    <script type="text/javascript" src="/ods/facebook.js"></script>
+    <script type="text/javascript" src="/ods/typeahead.js"></script>
+    <script type="text/javascript" src="/ods/tbl.js"></script>
+    <script type="text/javascript" src="/ods/validate.js"></script>
+    <script type="text/javascript">
+      // OAT
+      var toolkitPath="/ods/oat";
+      var featureList = ["ajax", "json", "tab", "combolist", "calendar", "rdfmini", "grid", "graphsvg", "tagcloud", "map", "timeline", "anchor"];
+    </script>
+    <script type="text/javascript" src="/ods/oat/loader.js"></script>
+  </head>
   <body onunload="myCheckLeave (document.forms['page_form'])">
+    <div id="fb-root"></div>
     <form name="page_form" id="page_form" method="post" enctype="multipart/form-data">
       <input type="hidden" name="mode" id="mode" value="php" />
       <input type="hidden" name="sid" id="sid" value="<?php print($_sid); ?>" />
@@ -860,7 +917,6 @@
       <input type="hidden" name="form" id="form" value="<?php print($_form); ?>" />
       <input type="hidden" name="formTab" id="formTab" value="<?php print($_formTab); ?>" />
       <input type="hidden" name="formTab2" id="formTab2" value="<?php print($_formTab2); ?>" />
-      <input type="hidden" name="formTab3" id="formTab3" value="<?php print($_formTab3); ?>" />
       <input type="hidden" name="formMode" id="formMode" value="<?php print($_formMode); ?>" />
       <input type="hidden" name="items" id="items" value="" />
       <input type="hidden" name="securityNo" id="securityNo" value="" />
@@ -914,19 +970,20 @@
                   Please identify yourself
                 </div>
                 <ul id="lf_tabs" class="tabs">
-                  <li id="lf_tab_0" title="Digest">Digest</li>
+                  <li id="lf_tab_0" title="Digest" style="display: none;">Digest</li>
+                  <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
                   <li id="lf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
-                  <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
                   <li id="lf_tab_4" title="Twitter" style="display: none;">Twitter</li>
                   <li id="lf_tab_5" title="LinkedIn" style="display: none;">LinkedIn</li>
+                  <li id="lf_tab_6" style="display: none;"></li>
                 </ul>
                 <div style="min-height: 120px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="lf_content"></div>
-                  <div id="lf_page_0" class="tabContent" >
+                  <div id="lf_page_0" class="tabContent" style="display: none;">
                 <table class="form" cellspacing="5">
                   <tr>
-                    <th width="30%">
+                        <th width="20%">
                           <label for="lf_uid">User ID</label>
                     </th>
                         <td>
@@ -943,10 +1000,10 @@
                   </tr>
                     </table>
                   </div>
-                  <div id="lf_page_1" class="tabContent" style="display: none">
+                  <div id="lf_page_1" class="tabContent" style="display: none;">
                     <table class="form" cellspacing="5">
                   <tr>
-                        <th width="30%">
+                        <th width="20%">
                           <label for="lf_openId">OpenID URL</label>
                     </th>
                         <td>
@@ -955,28 +1012,34 @@
                   </tr>
                     </table>
                   </div>
-                  <div id="lf_page_2" class="tabContent" style="display: none">
+                  <div id="lf_page_2" class="tabContent" style="display: none;">
                     <table class="form" cellspacing="5">
                   <tr>
-                        <th width="30%">
+                        <th width="20%">
                     </th>
                         <td>
                           <span id="lf_facebookData" style="min-height: 20px;"></span>
                           <br />
-                          <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
-                          <fb:login-button autologoutlink="true"></fb:login-button>
+                          <fb:login-button autologoutlink="true" xmlns:fb="http://www.facebook.com/2008/fbml"></fb:login-button>
                     </td>
                   </tr>
                 </table>
                   </div>
-                  <div id="lf_page_3" class="tabContent" style="display: none">
+                  <div id="lf_page_3" class="tabContent" style="display: none;">
                     <table id="lf_table_3" class="form" cellspacing="5">
+                      <tr id="lf_table_3_throbber">
+                        <th width="20%">
+                        </th>
+                        <td>
+                          <img alt="Import WebID Data" src="/ods/images/oat/Ajax_throbber.gif" />
+                        </td>
+                      </tr>
                     </table>
                   </div>
-                  <div id="lf_page_4" class="tabContent" style="display: none">
+                  <div id="lf_page_4" class="tabContent" style="display: none;">
                     <table id="lf_table_4" class="form" cellspacing="5">
                       <tr>
-                        <th width="30%">
+                        <th width="20%">
                         </th>
                         <td>
                           <span id="lf_twitter" style="min-height: 20px;"></span>
@@ -999,6 +1062,15 @@
                       </tr>
                     </table>
                   </div>
+                  <div id="lf_page_6" class="tabContent" style="display: none;">
+                    <table id="lf_table_6" class="form" cellspacing="5" width="100%">
+                      <tr>
+                        <td style="text-align: center;">
+                          <b>The login is not allowed!</b>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
                 </div>
                 <div class="footer">
                   <input type="submit" name="lf_login" value="Login" id="lf_login" onclick="javascript: return lfLoginSubmit();" />
@@ -1015,31 +1087,32 @@
                   User Registration
                 </div>
                 <ul id="rf_tabs" class="tabs">
-                  <li id="rf_tab_0" title="Digest">Digest</li>
+                  <li id="rf_tab_0" title="Digest" style="display: none;">Digest</li>
+                  <li id="rf_tab_3" title="WebID" style="display: none;">WebID</li>
                   <li id="rf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="rf_tab_2" title="Facebook" style="display: none;">Facebook</li>
-                  <li id="rf_tab_3" title="WebID" style="display: none;">WebID</li>
                   <li id="rf_tab_4" title="Twitter" style="display: none;">Twitter</li>
                   <li id="rf_tab_5" title="LinkedIn" style="display: none;">LinkedIn</li>
+                  <li id="rf_tab_6" style="display: none;"></li>
                 </ul>
                 <div style="min-height: 135px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="rf_content"></div>
-                  <div id="rf_page_0" class="tabContent" style="display: none">
+                  <div id="rf_page_0" class="tabContent" style="display: none;">
                     <table id="rf_table_0" class="form" cellspacing="5">
                       <tr>
-                        <th width="30%">
-                          <label for="rf_uid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                        <th width="20%">
+                          <label for="rf_uid_0">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
                         <td>
-                          <input type="text" name="rf_uid" value="" id="rf_uid" style="width: 150px;" />
+                          <input type="text" name="rf_uid_0" value="" id="rf_uid_0" style="width: 150px;" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="rf_email">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                          <label for="rf_email_0">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
                         <td>
-                          <input type="text" name="rf_email" value="" id="rf_email" size="40"/>
+                          <input type="text" name="rf_email_0" value="" id="rf_email_0" style="width: 300px;" />
                         </td>
                       </tr>
                       <tr>
@@ -1060,10 +1133,10 @@
                       </tr>
                     </table>
                   </div>
-                  <div id="rf_page_1" class="tabContent" style="display: none">
+                  <div id="rf_page_1" class="tabContent" style="display: none;">
                     <table id="rf_table_1" class="form" cellspacing="5">
                       <tr>
-                        <th width="30%">
+                        <th width="20%">
                           <label for="rf_openId">OpenID</label>
                         </th>
                         <td>
@@ -1072,28 +1145,34 @@
                       </tr>
                     </table>
                   </div>
-                  <div id="rf_page_2" class="tabContent" style="display: none">
+                  <div id="rf_page_2" class="tabContent" style="display: none;">
                     <table id="rf_table_2" class="form" cellspacing="5">
                       <tr>
-                        <th width="30%">
+                        <th width="20%">
                         </th>
                         <td>
                           <span id="rf_facebookData" style="min-height: 20px;"></span>
                           <br />
-                          <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
-                          <fb:login-button autologoutlink="true"></fb:login-button>
+                          <fb:login-button autologoutlink="true" xmlns:fb="http://www.facebook.com/2008/fbml"></fb:login-button>
                         </td>
                       </tr>
                     </table>
                   </div>
-                  <div id="rf_page_3" class="tabContent" style="display: none">
+                  <div id="rf_page_3" class="tabContent" style="display: none;">
                     <table id="rf_table_3" class="form" cellspacing="5">
+                      <tr id="rf_table_3_throbber">
+                        <th width="20%">
+                        </th>
+                        <td>
+                          <img alt="Import WebID Data" src="/ods/images/oat/Ajax_throbber.gif" />
+                        </td>
+                      </tr>
                     </table>
                   </div>
-                  <div id="rf_page_4" class="tabContent" style="display: none">
+                  <div id="rf_page_4" class="tabContent" style="display: none;">
                     <table id="rf_table_4" class="form" cellspacing="5">
                       <tr>
-                        <th width="30%">
+                        <th width="20%">
                         </th>
                         <td>
                           <span id="rf_twitter" style="min-height: 20px;"></span>
@@ -1116,11 +1195,20 @@
                       </tr>
                     </table>
                   </div>
+                  <div id="rf_page_6" class="tabContent" style="display: none;">
+                    <table id="rf_table_6" class="form" cellspacing="5" width="100%">
+                      <tr>
+                        <td style="text-align: center;">
+                          <b>The registration is not allowed!</b>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
                 </div>
                 <div>
                   <table class="form" cellspacing="5">
                     <tr>
-                      <th width="30%">
+                      <th width="20%">
                       </th>
                       <td>
                         <input type="checkbox" name="rf_is_agreed" value="1" id="rf_is_agreed"/><label for="rf_is_agreed">I agree to the <a href="/ods/terms.html" target="_blank">Terms of Service</a>.</label>
@@ -1129,6 +1217,7 @@
                   </table>
                 </div>
                 <div class="footer" id="rf_login_5">
+                  <input type="button" id="rf_check" name="rf_check" value="Check Availabilty" onclick="javascript: return rfCheckAvalability();" />
                   <input type="button" id="rf_signup" name="rf_signup" value="Sign Up" onclick="javascript: return rfSignupSubmit();" />
                 </div>
               </div>
@@ -1177,12 +1266,23 @@
                   ?>
                   <div id="pf_page_0" class="tabContent" style="display:none;">
                     <ul id="pf_tabs_0" class="tabs">
+                      <div id="pf_tabs_0_row_0" style="margin-top: 4px;">
                       <li id="pf_tab_0_0">Profile Import</li>
                       <li id="pf_tab_0_1">Main</li>
                       <li id="pf_tab_0_2">Address</li>
                       <li id="pf_tab_0_3">Online Accounts</li>
                       <li id="pf_tab_0_4">Messaging Services</li>
-                      <li id="pf_tab_0_5">Others</li>
+                      <li id="pf_tab_0_5">Biographical Events</li>
+                      </div>
+                      <div id="pf_tabs_0_row_1" style="margin-top: 4px;">
+                      <li id="pf_tab_0_6">Owns</li>
+                      <li id="pf_tab_0_7">Favorite Things</li>
+                      <li id="pf_tab_0_8">Creator Of</li>
+                      <li id="pf_tab_0_9">My Offers</li>
+                      <li id="pf_tab_0_10">Offers I Seek</li>
+                      <li id="pf_tab_0_11">Likes & DisLikes</li>
+                      <li id="pf_tab_0_12">Social Network</li>
+                      </div>
                     </ul>
                     <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                       <?php
@@ -1190,15 +1290,15 @@
                       {
                       ?>
                       <div id="pf_page_0_0" class="tabContent" style="display:none;">
-                        <table class="form" cellspacing="5">
-                          <tr>
+                    <table class="form" cellspacing="5">
+                      <tr>
                             <th>
                               <label for="pf_foaf">Profile Document URL</label>
                             </th>
                             <td>
                               <input type="text" name="pf_foaf" value="" id="pf_foaf" style="width: 400px;" />
                               <input type="button" value="Import" onclick="javascript: pfGetFOAFData($v('pf_foaf')); return false;" class="button" />
-                              <img id="pf_import_image" alt="Import FOAF Data" src="/ods/images/oat/Ajax_throbber.gif" style="display: none" />
+                              <img id="pf_import_image" alt="Import FOAF Data" src="/ods/images/oat/Ajax_throbber.gif" style="display: none;" />
                             </td>
                           </tr>
                         </table>
@@ -1222,11 +1322,18 @@
                       <div id="pf_page_0_1" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                           <tr>
-                            <th>
+                            <th>Account deactivation</th>
+                            <td>
+                              <input type="button" value="Deactivate" onclick="return userDisable('pf_loginName');" />
+                            </td>
+                          </tr>
+                          <tr>
+                            <th width="30%">
                               <label for="pf_loginName">Login Name</label>
                             </th>
                             <td>
                               <?php print($_xml->name); ?>
+                              <input type="hidden" name="pf_loginName" value="<?php print($_xml->name); ?>" id="pf_loginName" />
                             </td>
                           </tr>
                           <tr>
@@ -1238,7 +1345,7 @@
                             </td>
                           </tr>
                           <tr>
-                            <th width="30%">
+                            <th>
                           <label for="pf_title">Title</label>
                         </th>
                         <td>
@@ -1679,13 +1786,13 @@
                                     print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->homeCode) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
                                 ?>
                               </select>
-                              </td>
-                            </tr>
-                            <tr>
-                              <th>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
                           <label for="pf_homeaddress1">Address1</label>
-                              </th>
-                              <td>
+                        </th>
+                            <td>
                               <input type="text" name="pf_homeaddress1" value="<?php print($_xml->homeAddress1); ?>" id="pf_homeaddress1" style="width: 216px;" />
                               <select name="pf_acl_homeAddress1" id="pf_acl_homeAddress1">
                                 <?php
@@ -1693,35 +1800,35 @@
                                     print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->homeAddress1) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
                                 ?>
                               </select>
-                              </td>
-                            </tr>
-                  				  <tr>
+                        </td>
+                      </tr>
+                      <tr>
                         <th>
                           <label for="pf_homeaddress2">Address2</label>
-                  		        </th>
+                        </th>
                             <td>
                               <input type="text" name="pf_homeaddress2" value="<?php print($_xml->homeAddress2); ?>" id="pf_homeaddress2" style="width: 216px;" />
-                              </td>
-                            </tr>
+                        </td>
+                      </tr>
                       <tr>
                         <th>
                           <label for="pf_homeTimezone">Time-Zone</label>
                         </th>
                         <td>
                               <select name="pf_homeTimezone" id="pf_homeTimezone" style="width: 114px;" >
-                      <?php
+                            <?php
                               for ($N = -12; $N <= 12; $N += 1)
                                 print sprintf("<option value=\"%d\" %s>GMT %d:00</option>", $N, (($N == $_xml->homeTimezone) ? "selected=\"selected\"" : ""), $N);
-                      ?>
+                            ?>
                           </select>
                               <select name="pf_acl_homeTimezone" id="pf_acl_homeTimezone">
-                        <?php
+                                <?php
                                   for ($N = 0; $N < count ($ACL); $N += 2)
                                     print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->homeTimezone) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
-                        ?>
+                                ?>
                               </select>
                         </td>
-                      	      </tr>
+                      </tr>
                       <tr>
                         <th>
                           <label for="pf_homelat">Latitude</label>
@@ -1729,13 +1836,13 @@
                             <td>
                               <input type="text" name="pf_homelat" value="<?php print($_xml->homeLatitude); ?>" id="pf_homelat" style="width: 110px;" />
                               <select name="pf_acl_homeLatitude" id="pf_acl_homeLatitude">
-                        <?php
+                                <?php
                                   for ($N = 0; $N < count ($ACL); $N += 2)
                                     print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->homeLatitude) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
-                        ?>
+                                ?>
                               </select>
                         <td>
-                            <tr>
+                      <tr>
                       <tr>
                         <th>
                           <label for="pf_homelng">Longitude</label>
@@ -1751,8 +1858,8 @@
                       <tr>
                         <th>
                           <label for="pf_homePhone">Phone</label>
-                              </th>
-                              <td>
+                        </th>
+                        <td>
                               <input type="text" name="pf_homePhone" value="<?php print($_xml->homePhone); ?>" id="pf_homePhone" style="width: 110px;" />
                               <b>Ext.</b>
                               <input type="text" name="pf_homePhoneExt" value="<?php print($_xml->homePhoneExt); ?>" id="pf_homePhoneExt" style="width: 40px;" />
@@ -1762,20 +1869,20 @@
                                     print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->homePhone) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
                                 ?>
                               </select>
-                              </td>
-                            </tr>
-                            <tr>
-                              <th>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
                           <label for="pf_homeMobile">Mobile</label>
-                              </th>
-                              <td>
+                        </th>
+                        <td>
                               <input type="text" name="pf_homeMobile" value="<?php print($_xml->homeMobile); ?>" id="pf_homeMobile" style="width: 110px;" />
-                              </td>
-                            </tr>
-                  				  <tr>
+                            </td>
+                          </tr>
+                          <tr>
                             <th>
                               <label for="pf_set_0_2">Set access for all fields as </label>
-                  		        </th>
+                            </th>
                             <td>
                               <select name="pf_set_0_2" id="pf_set_0_2" value="0" class="dummy" onchange="javascript: pfSetACLSelects (this)">
                                 <option value="0">*no change*</option>
@@ -1783,10 +1890,10 @@
                                 <option value="2">acl</option>
                                 <option value="3">private</option>
                               </select>
-                              </td>
-                            </tr>
-                          </table>
-                    </div>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
                       <?php
                       }
                       if ($_formTab2 == 3)
@@ -1806,6 +1913,9 @@
                                     <th>
                                       Member Home Page URI
                                     </th>
+                                    <th>
+                                      Account URI
+                                    </th>
                                     <th width="65px">
                                       Action
                                     </th>
@@ -1813,12 +1923,12 @@
                                 </thead>
                                 <tr id="x4_tr_no" style="display: none;"><td colspan="3"><b>No Services</b></td></tr>
                                 <script type="text/javascript">
-                                  OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowOnlineAccounts("x4", "P", function(prefix, val0, val1, val2){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 10, value: val1}, fld_2: {value: val2, className: '_validate_ _uri_ _canEmpty_'}});});});
+                                  OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowOnlineAccounts("x4", "P", function(prefix, val0, val1, val2, val3){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 10, value: val1}, fld_2: {value: val2, className: '_validate_ _uri_ _canEmpty_'}, fld_3: {value: val3}});});});
                                 </script>
                               </table>
                             </td>
                             <td valign="top" nowrap="1">
-                              <span class="button pointer" onclick="TBL.createRow('x4', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _uri_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                              <span class="button pointer" onclick="TBL.createRow('x4', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _uri_ _canEmpty_'}, fld_3: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                             </td>
                           </tr>
                         </table>
@@ -1932,22 +2042,6 @@
                       {
                       ?>
                       <div id="pf_page_0_5" class="tabContent" style="display:none;">
-                        <ul id="pf_tabs_0_5" class="tabs">
-                          <li id="pf_tab_0_5_0">Biographical Events</li>
-                          <li id="pf_tab_0_5_1">Owns</li>
-                          <li id="pf_tab_0_5_2">Favorite Things</li>
-                          <li id="pf_tab_0_5_3">Creator Of</li>
-                          <li id="pf_tab_0_5_4">My Offers</li>
-                          <li id="pf_tab_0_5_5">Offers I Seek</li>
-                          <li id="pf_tab_0_5_6">Likes & DisLikes</li>
-                          <li id="pf_tab_0_5_7">Social Network</li>
-                        </ul>
-                        <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
-                          <?php
-                          if ($_formTab3 == 0)
-                          {
-                          ?>
-                          <div id="pf_page_0_5_0" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                           <tr>
                             <td width="600px">
@@ -1982,10 +2076,10 @@
                       </div>
                       <?php
                           }
-                          if ($_formTab3 == 1)
+                      if ($_formTab2 == 6)
                           {
                           ?>
-                          <div id="pf_page_0_5_1" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_6" class="tabContent" style="display:none;">
                             <h3>Owns</h3>
                             <?php
                               if ($_formMode == "")
@@ -2078,10 +2172,10 @@
                           </div>
                           <?php
                           }
-                          if ($_formTab3 == 2)
+                      if ($_formTab2 == 7)
                         {
                       ?>
-                          <div id="pf_page_0_5_2" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_7" class="tabContent" style="display:none;">
                         <h3>Favorites</h3>
                         <?php
                           if ($_formMode == "")
@@ -2168,10 +2262,10 @@
                       </div>
                       <?php
                         }
-                          if ($_formTab3 == 3)
+                      if ($_formTab2 == 8)
                         {
                       ?>
-                          <div id="pf_page_0_5_3" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_8" class="tabContent" style="display:none;">
                         <h3>Creator Of</h3>
                         <?php
                           if ($_formMode == "")
@@ -2262,10 +2356,10 @@
                       </div>
                       <?php
                         }
-                          if ($_formTab3 == 4)
+                      if ($_formTab2 == 9)
                         {
                       ?>
-                          <div id="pf_page_0_5_4" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_9" class="tabContent" style="display:none;">
                         <h3>My Offers</h3>
                         <?php
                           if ($_formMode == "")
@@ -2376,10 +2470,10 @@
                       </div>
                       <?php
                         }
-                          if ($_formTab3 == 5)
+                      if ($_formTab2 == 10)
                         {
                       ?>
-                          <div id="pf_page_0_5_5" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_10" class="tabContent" style="display:none;">
                         <h3>Offers I Seek</h3>
                         <?php
                           if ($_formMode == "")
@@ -2490,10 +2584,10 @@
                       </div>
                       <?php
                         }
-                          if ($_formTab3 == 6)
+                      if ($_formTab2 == 11)
                         {
                       ?>
-                          <div id="pf_page_0_5_6" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_11" class="tabContent" style="display:none;">
                         <h3>Likes &amp DisLikes</h3>
                         <?php
                           if ($_formMode == "")
@@ -2624,10 +2718,10 @@
                           </div>
                           <?php
                           }
-                          if ($_formTab3 == 7)
+                      if ($_formTab2 == 12)
                           {
                           ?>
-                          <div id="pf_page_0_5_7" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_12" class="tabContent" style="display:none;">
                             <h3>Knows</h3>
                             <?php
                               if ($_formMode == "")
@@ -2666,7 +2760,7 @@
                       		        </th>
                                   <td>
                                     <input type="text" class="_validate_ _uri_" size="100" value="" id="k_import" name="k_import">
-                                    <input type="button" class="button" onclick="javascript: knowsData(); return false;" value="Download">
+                                    <input type="button" class="button" onclick="javascript: knowsData(); return false;" value="Retrieve">
                                     <img style="display: none;" src="/ods/images/oat/Ajax_throbber.gif" alt="Import knows URIs" id="k_import_image">
                                   </td>
                                 </tr>
@@ -2693,7 +2787,7 @@
                                       <tbody>
                                         <tr id="k_tr_no">
                                            <td colspan="3">
-                                             <b>No downloaded items</b>
+                                             <b>No retrieved items</b>
                                            </td>
                                         </tr>
                                       </tbody>
@@ -2757,11 +2851,6 @@
                           </div>
                           <?php
                           }
-                          ?>
-                        </div>
-                      </div>
-                      <?php
-                      }
                       if ($_formTab2 < 5)
                       {
                       ?>
@@ -2801,24 +2890,24 @@
                         <td>
                               <select name="pf_businessIndustry" id="pf_businessIndustry" style="width: 220px;">
                             <option></option>
-                                <?php
+                            <?php
                               for ($N = 1; $N <= count ($_industries); $N += 1)
                                 print sprintf("<option %s>%s</option>", ((strcmp($_industries[$N], $_xml->businessIndustry) == 0) ? "selected=\"selected\"" : ""), $_industries[$N]);
-                                ?>
-                              </select>
+                            ?>
+                          </select>
                               <select name="pf_acl_businessIndustry" id="pf_acl_businessIndustry">
                                 <?php
                                   for ($N = 0; $N < count ($ACL); $N += 2)
                                     print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessIndustry) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
                                 ?>
                               </select>
-                            </td>
-                          </tr>
-                          <tr>
-                            <th>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
                           <label for="pf_businessOrganization">Organization</label>
-                            </th>
-                            <td>
+                        </th>
+                        <td>
                               <input type="text" name="pf_businessOrganization" value="<?php print($_xml->businessOrganization); ?>" id="pf_businessOrganization" style="width: 216px;" />
                               <select name="pf_acl_businessOrganization" id="pf_acl_businessOrganization">
                                 <?php
@@ -2826,21 +2915,21 @@
                                     print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessOrganization) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
                                 ?>
                               </select>
-                            </td>
-                          </tr>
-                          <tr>
-                            <th>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
                           <label for="pf_businessHomePage">Organization Home Page</label>
-                            </th>
+                        </th>
                             <td>
                               <input type="text" name="pf_businessHomePage" value="<?php print($_xml->businessHomePage); ?>" id="pf_businessNetwork" style="width: 216px;" />
-                            </td>
-                          </tr>
-                          <tr>
-                            <th>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
                           <label for="pf_businessJob">Job Title</label>
-                            </th>
-                            <td>
+                        </th>
+                        <td>
                               <input type="text" name="pf_businessJob" value="<?php print($_xml->businessJob); ?>" id="pf_businessJob" style="width: 216px;" />
                               <select name="pf_acl_businessJob" id="pf_acl_businessJob">
                                 <?php
@@ -2848,10 +2937,10 @@
                                     print sprintf("<option value=\"%s\" %s>%s</option>", $ACL[$N+1], ((strcmp($ACL[$N+1], $_acl->businessJob) == 0) ? "selected=\"selected\"" : ""), $ACL[$N]);
                                 ?>
                               </select>
-                            </td>
-                          </tr>
-                          <tr>
-                            <th>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
                               <label for="pf_businessRegNo">VAT Reg number (EU only) or Tax ID</label>
                             </th>
                             <td>
@@ -3342,10 +3431,9 @@
                       <li id="pf_tab_2_0" title="Password">Password</li>
                       <li id="pf_tab_2_1" title="Password Recovery">Password Recovery</li>
                       <li id="pf_tab_2_2" title="OpenID">OpenID</li>
-                      <li id="pf_tab_2_3" title="Facebook" style="display:none;">Facebook</li>
-                      <li id="pf_tab_2_4" title="Limits">Limits</li>
-                      <li id="pf_tab_2_5" title="Certificate Generator" style="display:none;">Certificate Generator</li>
-                      <li id="pf_tab_2_6" title="X.509 Certificates">X.509 Certificates</li>
+                      <li id="pf_tab_2_3" title="Limits">Limits</li>
+                      <li id="pf_tab_2_4" title="Certificate Generator" style="display:none;">Certificate Generator</li>
+                      <li id="pf_tab_2_5" title="X.509 Certificates">X.509 Certificates</li>
                     </ul>
                     <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                       <?php
@@ -3353,9 +3441,6 @@
                       {
                       ?>
                       <div id="pf_page_2_0" class="tabContent" style="display:none;">
-                        <?php
-                          print $_xml->noPassword;
-                        ?>
                         <h2>Change login password</h2>
                         <p class="fm_expln">For your security, please use a password not found in a dictionary, consisting of both letters, and numbers or non-alphanumeric characters.</p>
                     <table class="form" cellspacing="5">
@@ -3468,40 +3553,6 @@
                       <div id="pf_page_2_3" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                       <tr>
-                            <th>
-                              Saved Facebook ID
-                        </th>
-                            <td>
-                              <?php
-                                if (isset ($_xml->securityFacebookID))
-                                {
-                                  print ($_xml->securityFacebookName);
-                                } else {
-                                  print ('not yet');
-                                }
-                              ?>
-                            </td>
-                      </tr>
-                      <tr>
-                        <th>
-                        </th>
-                        <td>
-                              <span id="pf_facebookData" style="min-height: 20px;"></span>
-                              <br />
-                              <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
-                              <fb:login-button autologoutlink="true"></fb:login-button>
-                        </td>
-                      </tr>
-                        </table>
-                      </div>
-                      <?php
-                      }
-                      if ($_formTab2 == 5)
-                      {
-                      ?>
-                      <div id="pf_page_2_4" class="tabContent" style="display:none;">
-                        <table class="form" cellspacing="5">
-                      <tr>
                         <th>
                               <label for="pf_securitySiocLimit">SIOC Query Result Limit</label>
                         </th>
@@ -3513,20 +3564,20 @@
                       </div>
                       <?php
                       }
-                      if ($_formTab2 == 5)
+                      if ($_formTab2 == 4)
                       {
                       ?>
-                      <div id="pf_page_2_5" class="tabContent" style="display:none;">
+                      <div id="pf_page_2_4" class="tabContent" style="display:none;">
             	          <iframe id="cert" src="/ods/cert.vsp?sid=<?php print($_sid); ?>" width="650" height="270" frameborder="0" scrolling="no">
             	            <p>Your browser does not support iframes.</p>
             	          </iframe>
                       </div>
                       <?php
                       }
-                      if ($_formTab2 == 6)
+                      if ($_formTab2 == 5)
                       {
                       ?>
-                      <div id="pf_page_2_6" class="tabContent" style="display:none;">
+                      <div id="pf_page_2_5" class="tabContent" style="display:none;">
                         <h3>X.509 Certificates</h3>
                         <?php
                           if ($_formMode == '')
@@ -3593,6 +3644,23 @@
             	          }
             	        ?>
                       <tr>
+                              <th width="15%"></th>
+                              <td>
+                                <label>
+                                  <input type="checkbox" name="pf26_importFile" id="pf26_importFile" value="1" onclick="destinationChange(this, {checked: {show: ['pf26_form_3'], hide: ['pf26_form_4']}, unchecked: {hide: ['pf26_form_3'], show: ['pf26_form_4']}});" />
+                                  <b>Import from local file</b>
+                                </label>
+                              </td>
+                            </tr>
+                            <tr id="pf26_form_3" style="display: none;">
+                              <th width="15%">
+                                <label for="pf26_file">File to import</label>
+                              </th>
+                              <td align="left">
+                                <input type="file" name="pf26_file" id="pf26_file" />
+                              </td>
+                            </tr>
+                            <tr id="pf26_form_4">
                         <th valign="top">
                                 <label for="pf26_certificate">Certificate</label>
                         </th>
@@ -3624,19 +3692,11 @@
                       </div>
                       <?php
                         }
-                      if ($_formTab2 < 5)
+                      if ($_formTab2 < 4)
                         {
                       ?>
                     <div class="footer">
                       <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
-                        <?php
-                        if (($_formTab2 == 3) and isset($_xml->securityFacebookID))
-                        {
-                        ?>
-                        <input type="submit" name="pf_clear" value="Clear" onclick="myBeforeSubmit(); return myValidateInputs(this);"/>
-                        <?php
-                        }
-                        ?>
                         <input type="submit" name="pf_update" value="Save" onclick="myBeforeSubmit(); return myValidateInputs(this);"/>
                         <input type="submit" name="pf_next" value="Save & Next" onclick="myBeforeSubmit(); return myValidateInputs(this);"/>
                       </div>
@@ -3660,12 +3720,12 @@
     </form>
     <div id="FT">
       <div id="FT_L">
-        <a href="http://www.openlinksw.com/virtuoso"><img alt="Powered by OpenLink Virtuoso Universal Server" src="/ods/images/virt_power_no_border.png" border="0" /></a>
+        <a href="http://www.openlinksw.com/virtuoso"><img border="0" alt="Powered by OpenLink Virtuoso Universal Server" src="/ods/images/virt_power_no_border.png" border="0" /></a>
       </div>
       <div id="FT_R">
         <a href="/ods/faq.html">FAQ</a> | <a href="/ods/privacy.html">Privacy</a> | <a href="/ods/rabuse.vspx">Report Abuse</a>
         <div>
-          Copyright &copy; 1999-2011 OpenLink Software
+          Copyright &copy; 1999-2013 OpenLink Software
         </div>
       </div>
      </div>

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2011 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -128,13 +128,25 @@ ld_add (in _fname varchar, in _graph varchar)
 }
 ;
 
-create procedure ld_ttlp_flags (in fname varchar)
+create procedure ld_ttlp_flags (in fname varchar, in opt varchar)
 {
-  if (fname like '%/btc-2009%' or fname like '%.nq%' or fname like '%.n4')
+  if (fname like '%/btc-20%' or fname like '%.nq%' or fname like '%.n4%')
+{
+      if (lower (opt) = 'with_delete')
+	return 255 + 512 + 2048;
     return 255 + 512;
+    }
    if (fname like '%.trig' or fname like '%.trig.gz')
      return 255 + 256;
   return 255;
+}
+;
+
+create procedure ld_is_rdfxml (in f any)
+{
+  if (f like '%.xml' or f like '%.owl' or f like '%.rdf' or f like '%.rdfs')
+    return 1;
+  return 0;
 }
 ;
 
@@ -150,14 +162,18 @@ ld_file (in f varchar, in graph varchar)
           LL_ERROR = __sql_state || ' ' || __sql_message
       where LL_FILE = f;
     commit work;
-
+    log_stats (sprintf ('RDF load %s with error', f));
     log_message (sprintf (' File %s error %s %s', f, __sql_state, __sql_message));
     return;
   };
 
+  --log_message (sprintf ('loading: %s', f));
+  connection_set ('ld_file', f);
   if (graph like 'sql:%')
     {
-      exec (subseq (graph, 4), null, null, vector (f), vector ('max_rows', 0, 'use_cache', 1));
+  declare str varchar;
+      exec (str := subseq (graph, 4), null, null, vector (f), vector ('max_rows', 0, 'use_cache', 1));
+      log_stats (str);
       return;
     }
 
@@ -168,19 +184,20 @@ ld_file (in f varchar, in graph varchar)
   else if (f like '%.gz')
     {
       gzip_name := regexp_replace (f, '\.gz\x24', '');
-      if (gzip_name like '%.xml' or gzip_name like '%.owl' or gzip_name like '%.rdf')
+      if (ld_is_rdfxml (gzip_name))
 	DB.DBA.RDF_LOAD_RDFXML_V (gz_file_open (f), graph, graph);
       else
-	TTLP_V (gz_file_open (f), graph, graph, ld_ttlp_flags (gzip_name));
+	TTLP_V (gz_file_open (f), graph, graph, ld_ttlp_flags (gzip_name, graph));
     }
   else
     {
-      if (f like '%.xml' or f like '%.owl' or f like '%.rdf')
+      if (ld_is_rdfxml (f))
 	DB.DBA.RDF_LOAD_RDFXML_V (file_open (f), graph, graph);
       else
-	TTLP_V (file_open (f), graph, graph, ld_ttlp_flags (f));
+	TTLP_V (file_open (f), graph, graph, ld_ttlp_flags (f, graph));
     }
 
+  log_stats (sprintf ('RDF load %s', f));
   --log_message (sprintf ('loaded %s', f));
 }
 ;
@@ -203,31 +220,26 @@ rdf_load_dir (in path varchar,
 
 create procedure ld_array ()
 {
-  declare first, last, arr, fs, len, local any;
+  declare arr, fs, len, local any;
   declare cr cursor for
-      select top 200 LL_FILE, LL_GRAPH
+      select LL_FILE, LL_GRAPH
         from DB.DBA.LOAD_LIST table option (index ll_state)
         where LL_STATE = 0
 	for update;
-  declare fill, inx int;
+  declare fill int;
   declare f, g varchar;
   declare r any;
   whenever not found goto done;
-  first := 0;
-  last := 0;
  arr := make_array (100, 'any');
   fs  := make_array (100, 'any');
-  fill := 0; inx := 0;
-  open cr;
+  fill := 0;
   len := 0;
+  open cr;
   for (;;)
     {
       fetch cr into f, g;
-      inx := inx + 1;
       if (file_stat (f, 1) = 0)
 	goto next;
-      if (0 = first) first := f;
-      last := f;
       arr[fill] := vector (f, g);
       fs[fill] := f;
     len := len + cast (file_stat (f, 1) as int);
@@ -237,7 +249,7 @@ create procedure ld_array ()
       next:;
     }
  done:
-  if (0 = first)
+  if (0 = fill)
     return 0;
   if (1 <> sys_stat ('cl_run_local_only'))
     local := sys_stat ('cl_this_host');
@@ -309,6 +321,7 @@ rdf_loader_run (in max_files integer := null, in log_enable int := 2)
       if (0 = arr)
 	goto looks_empty;
       log_enable (ld_mode, 1);
+      set isolation = 'committed';
 
       for (inx := 0; inx < 100; inx := inx + 1)
 	{
@@ -316,12 +329,10 @@ rdf_loader_run (in max_files integer := null, in log_enable int := 2)
 	    goto arr_done;
 	  ld_file (arr[inx][0], arr[inx][1]);
 	  update DB.DBA.LOAD_LIST set LL_STATE = 2, LL_DONE = curdatetime () where LL_FILE = arr[inx][0];
+          if (max_files is not null) max_files := max_files - 1;
 	}
     arr_done:
       log_enable (tx_mode, 1);
-
-
-      if (max_files is not null) max_files := max_files - 100;
 
       commit work;
     }
@@ -336,7 +347,7 @@ rdf_loader_run (in max_files integer := null, in log_enable int := 2)
 
 create procedure rdf_load_stop (in force int := 0)
 {
-  insert into DB.DBA.LOAD_LIST (LL_FILE) values ('##stop');
+  insert into DB.DBA.LOAD_LIST (LL_FILE, ll_graph) values ('##stop',  'xx');
   commit work;
   if (force)
     cl_exec ('txn_killall (1)');
@@ -353,7 +364,8 @@ create procedure RDF_LOADER_RUN_1 (in x int, in y int)
 create procedure rdf_ld_srv (in log_enable int := 2)
 {
   declare aq any;
-  aq := async_queue (1);
+  cl_detach_thread ();
+  aq := async_queue (1, 4);
   aq_request (aq, 'DB.DBA.RDF_LOADER_RUN_1', vector (null, log_enable));
   aq_wait_all (aq);
 }

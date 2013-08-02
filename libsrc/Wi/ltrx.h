@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -31,7 +31,8 @@
 #define LT_FREEZE 0
 #define LT_PENDING		1
 #define LT_COMMITTED		2
-#define LT_BLOWN_OFF		3 /* Marked to be rolled back */
+#define LT_BLOWN_OFF		ltbing (3) /* Marked to be rolled back */
+#define LT_BLOWN_OFF_C 3
 #define LT_CLOSING		4 /* locks being released, finalizing commit / rollback, inside lt_transact */
 #define LT_DELTA_ROLLED_BACK	5 /* Only the trx object to be released */
 
@@ -165,6 +166,20 @@ typedef struct lt_cl_branch_s {
 #define CLBR_WRITE 1
 #define CLBR_DONE 2 /* a read branch that already got a commit needs no rb if commit fails */
 
+#define LT_TRACE_SZ 10
+
+#ifdef LT_TRACE_SZ
+#define LT_TRACE(lt) \
+  { if (LT_ID_FREE == lt->lt_trx_no) GPF_T1 ("ref to freed lt"); lt->lt_line[lt->lt_trace_ctr++ % LT_TRACE_SZ] = __LINE__;  }
+
+#define LT_TRACE_2(lt, n)							\
+  { if (LT_ID_FREE == lt->lt_trx_no) GPF_T1 ("ref to freed lt"); lt->lt_line[lt->lt_trace_ctr++ % LT_TRACE_SZ] = __LINE__ + 10000 * n;  }
+
+#else
+#define LT_TRACE(lt)
+#endif
+
+
 typedef struct lock_trx_s
   {
     char			lt_status;
@@ -173,6 +188,7 @@ typedef struct lock_trx_s
     char			lt_error;
     char		lt_cl_enlisted;
     char		lt_is_cl_server; /* serving a cluster req, whether enlisted or not */
+    char		lt_cl_detached; /* cl branch may commit independently but not hold locks if waiting for further cl ops  */
     int			lt_threads;
     int			lt_cl_ref_count; /* no of cluster continuable itc's or qf's wit ref to this.  Don't free until all gone.  Under wi_txn_mtx. No resetting on lt_clear, also no writing outside of txn_mtx, also not in lt_clear */
     int64		lt_trx_no;
@@ -182,10 +198,15 @@ typedef struct lock_trx_s
     dk_mutex_t *	lt_log_mtx;
     dk_hash_t *		lt_rb_hash;
     dk_hash_t *		lt_dirty_blobs;	/* Hashtable of blobs modified by transaction, some are deld at commit, others at rollback */
+    resource_t *	lt_alt_trx_nos; /* alternate trx_nos for use in identifying multiple threads per lt on the same cluster remote */
 
     dk_session_t *	lt_log;
     dk_set_t		lt_remotes;
     thread_t *		lt_thr;
+#ifdef LT_TRACE_SZ
+    unsigned int	lt_trace_ctr;
+    int	lt_line[LT_TRACE_SZ];
+#endif
     dk_hash_t 		lt_lock;
 #define lt_has_locks(lt) ((lt)->lt_lock.ht_count)
     /* all below members are considered data area and cleared with memset in lt_cleare, saving individual ones as needed */
@@ -199,6 +220,7 @@ typedef struct lock_trx_s
     int			lt_last_increase_line[2];
 #endif
     int		lt_age;
+    int		lt_n_col_locks;
     int			lt_lw_threads;
     int			lt_close_ack_threads;
     int			lt_vdb_threads;
@@ -213,6 +235,7 @@ typedef struct lock_trx_s
     dk_set_t		lt_blob_log; /* pdl of blob start addresses to log. Zero if overwritten in the same trx */
     char		lt_timestamp[DT_LENGTH];
     char		lt_approx_dt[DT_LENGTH];
+    char		lt_mt_waits; /* if branch or main lt of mt txn with writing branches with same rc w id.  Do not remove waits from wait graph, could be waiting on many threads */
     dk_session_t *	lt_backup;  /* if running an online backup,
 				     * the session to the backup device */
     int64		lt_backup_length;
@@ -243,8 +266,8 @@ typedef struct lock_trx_s
       caddr_t		_2pc_prepared;
       dk_set_t		_2pc_remotes;
       int		_2pc_invalid; /* is set if one of branches in unreachable  */
-      box_t		_2pc_xid;
-      char		_2pc_wait_commit;
+      box_t             _2pc_xid;
+      char              _2pc_wait_commit;
     } lt_2pc;
 #endif
 
@@ -252,15 +275,18 @@ typedef struct lock_trx_s
     dk_set_t		lt_hi_delta;
     int64		lt_w_id;
     int64		lt_rc_w_id; /* in a parallel query branch, set this to the lt_w_id of the starting lt so as to see the same uncommitted state in read committed */
+    int64		lt_main_trx_no; /* in a branch for a dfg, must issue requests with this trx no, not the local one */
     dk_set_t 		lt_cl_branches; /* cl_host_t for cluster hosts in same commit */
     caddr_t		lt_2pc_hosts; /* list of host ids with prepared state.  Use for recov consensus */
     struct cl_host_s *	lt_branch_of;
     OFF_T		lt_commit_flag_offset; /* use for updating log record state in 2pc */
     char		lt_need_branch_consensus; /* prepared originating from self comes in log sync. Must ask other branches what became of it. */
+    char		lt_cl_main_enlisted; /* set if branch of enlisted, forward enlist */
     char		lt_known_in_cl; /* if ever participated in wait or had remote branch, must notify monitor of transact, else not */
     char		lt_log_2pc;
     char		lt_transact_notify_sent; /* if non-monitor commits a branch on the monitor, no separate notify wanted */
     char		lt_cl_server_recd_rb;
+    char		lt_at_end_of_aq_thread;
     struct cl_req_group_s *	lt_clrg;
     caddr_t		lt_error_detail; /* if non-zero fill it with details about the error at hand */
 #ifdef MSDTC_DEBUG
@@ -271,11 +297,15 @@ typedef struct lock_trx_s
     struct name_id_cache_s *	lt_rdf_iri;
   } lock_trx_t;
 
-#define LT_LAST_RESERVED_NO 99 /* the first 100 trx_no are reserved for temp use, no real transaction uses them */
+#define LT_LAST_RESERVED_NO 10 /* the first so many trx_no are reserved for temp use, no real transaction uses them */
 #define LT_ID_FREE ((int64)-1) /* lt_w_id and lt_trx_no when lt is free in trx_rc */
 
 #define LT_SEES_EFFECT(branch, owner) \
   (branch == owner || branch->lt_rc_w_id == owner->lt_w_id)
+
+#define IS_MT_BRANCH(lt)  ((lt)->lt_rc_w_id && (lt)->lt_rc_w_id != (lt)->lt_w_id)
+
+#define LT_MAIN_W_ID(lt) ((lt)->lt_rc_w_id ? (lt)->lt_rc_w_id : (lt)->lt_w_id)
 
 #define LTN_HOST(ltn) ((uint32)((ltn) >> 32))
 #define LTN_NO(ltn) ((uint32)((ltn) & 0xffffffff))
@@ -352,11 +382,18 @@ typedef struct gen_lock_s
   } gen_lock_t;
 
 
+/*#define CLK_DBG */
+
 typedef struct col_lock_s
 {
   LOCK;
   row_no_t	clk_pos;
   char		clk_change; /* row inserted/deleted/both by lock owner */
+#ifdef CLK_DBG
+  char		clk_rel_ctr;
+  short		clk_init_inx;
+  int64		clk_w_id;
+#endif
   db_buf_t *	clk_rbe;
 } col_row_lock_t;
 /* clk_change */
@@ -365,6 +402,8 @@ typedef struct col_lock_s
 #define CLK_DELETE_AT_ROLLBACK 4
 #define CLK_REVERT_AT_ROLLBACK 8
 #define CLK_FINALIZED 16
+#define CLK_UC_UPDATE 32 /* set if the rb info of the clk holds an uncommitted update during checkpoint, after putting the pre-image back in the columns */
+
 #define N_RLOCK_SETS 4
 
 
@@ -457,7 +496,7 @@ typedef struct page_lock_s
   (!itc->itc_is_col && (pl->pl_n_row_locks * 100) / (buf->bd_content_map->pm_count + 1) > lock_escalation_pct \
     && !PL_IS_PAGE (pl) \
     && !pl->pl_is_owner_list \
-    && pl->pl_owner == itc->itc_ltrx \
+    && pl->pl_owner == itc->itc_lock_lt \
     && pl->pl_n_row_locks)
 
 
@@ -503,9 +542,9 @@ void lt_killall (lock_trx_t * lt, int lte);
 int lock_enter (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf);
 EXE_EXPORT (lock_trx_t *, lt_start, (void));
 lock_trx_t * lt_start_outside_map (void);
-int lt_commit (lock_trx_t * lt, int free_trx);
-int lt_commit_cl_local_only (lock_trx_t * lt);
-void lt_rollback (lock_trx_t * lt, int free_trx);
+EXE_EXPORT (int, lt_commit, (lock_trx_t * lt, int free_trx));
+EXE_EXPORT (int, lt_commit_cl_local_only, (lock_trx_t * lt));
+EXE_EXPORT (void, lt_rollback, (lock_trx_t * lt, int free_trx));
 void lt_rollback_1 (lock_trx_t * lt, int free_trx);
 void lt_transact (lock_trx_t * lt, int op);
 void lt_hi_transact (lock_trx_t * lt, int op);
@@ -549,7 +588,9 @@ void itc_insert_rl (it_cursor_t * itc, buffer_desc_t * buf, int pos, row_lock_t 
 
 int itc_insert_lock (it_cursor_t * itc, buffer_desc_t * buf, int *res_ret, int may_wait);
 int itc_landed_lock_check (it_cursor_t * itc, buffer_desc_t ** buf_ret);
-void lt_add_pl (lock_trx_t * lt, page_lock_t * pl, int is_new_pl);
+lock_trx_t * lt_add_pl (lock_trx_t * lt, page_lock_t * pl, int flags);
+#define LT_ADD_PL_NEW 1
+#define LT_ADD_PL_IN_TXN 2
 int pl_lt_is_owner (page_lock_t * pl, lock_trx_t * lt);
 int itc_set_lock_on_row (it_cursor_t * itc, buffer_desc_t ** buf_ret);
 int itc_serializable_land (it_cursor_t * itc, buffer_desc_t ** buf_ret);
@@ -557,7 +598,10 @@ int itc_read_committed_check (it_cursor_t * itc, buffer_desc_t * buf);
 void pl_set_finalize (page_lock_t * pl, buffer_desc_t * buf);
 void lt_blob_transact (it_cursor_t * itc, int op);
 
-rb_entry_t * lt_rb_entry (lock_trx_t * lt, buffer_desc_t * buf, db_buf_t row, uint32 *code_ret, rb_entry_t ** prev_ret, int leave_mtx);
+rb_entry_t * lt_rb_entry (lock_trx_t ** lt_ret, buffer_desc_t * buf, db_buf_t row, uint32 *code_ret, rb_entry_t ** prev_ret, int flags);
+#define LT_RB_LEAVE_MTX 1
+#define LT_RB_ONLY_OWN 2
+#define LT_RB_BRANCH_AS_SELF 4
 
 void lt_rb_insert (lock_trx_t * lt, buffer_desc_t * buf, db_buf_t key);
 void lt_no_rb_insert (lock_trx_t * lt, db_buf_t row);
@@ -851,4 +895,13 @@ extern resource_t * rb_page_rc;
 
 #define LW_CALL(it)  rdbg_printf (("    LW call it %p %s:%d\n", it, __FILE__, __LINE__));
 
+lock_trx_t * itc_main_lt (it_cursor_t * itc, buffer_desc_t * buf);
+lock_trx_t * lt_main_lt (lock_trx_t * lt);
+
+int lt_set_is_branch (dk_set_t list, lock_trx_t * lt, lock_trx_t ** main_lt_ret);
+int lt_log_merge (lock_trx_t * lt, int in_txn);
+#define NO_LOCK_LT ((lock_trx_t*)-1L)
+
+int ltbing (int s);
 #endif /* _LTRX_H */
+void ltbing2 ();

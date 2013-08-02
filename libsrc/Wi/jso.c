@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -56,6 +56,7 @@ jso_define_struct (jso_class_descr_t *cd)
         sd->jsosd_field_count += 1;
     }
   sd->jsosd_field_hash = hash_table_allocate (sd->jsosd_field_count);
+  sd->jsosd_fields_by_idx = (jso_field_descr_t **)dk_alloc_list_zero (sd->jsosd_sizeof / sizeof (caddr_t));
   for (field_ctr = sd->jsosd_field_count; field_ctr--; /* no step */)
     {
       jso_field_descr_t *fldd = sd->jsosd_field_list+field_ctr;
@@ -74,6 +75,18 @@ jso_define_struct (jso_class_descr_t *cd)
         }
       sethash (fldd->jsofd_property_iri, jso_properties, fldd);
       sethash (fldd->jsofd_property_iri, sd->jsosd_field_hash, fldd);
+      if ((JSO_DEPRECATED != fldd->jsofd_required) && !(fldd->jsofd_byte_offset % sizeof (caddr_t)))
+        {
+          int fld_idx_as_in_dv_array_of_pointers = fldd->jsofd_byte_offset / sizeof (caddr_t);
+          if (NULL != sd->jsosd_fields_by_idx [fld_idx_as_in_dv_array_of_pointers])
+            {
+              char buf[2000];
+              sprintf (buf, "In %s, JSO properties %s and %s have same offset (a union inside struct?)",
+                cd->jsocd_c_typedef, fldd->jsofd_property_iri, sd->jsosd_fields_by_idx[fld_idx_as_in_dv_array_of_pointers]->jsofd_property_iri);
+              GPF_T1 (buf);
+            }
+          sd->jsosd_fields_by_idx [fld_idx_as_in_dv_array_of_pointers] = fldd;
+        }
     }
 }
 
@@ -205,7 +218,6 @@ jso_get_cd_and_rtti (ccaddr_t jclass, ccaddr_t jinstance, jso_class_descr_t **cd
     }
 }
 
-
 caddr_t
 bif_jso_delete (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -231,6 +243,19 @@ bif_jso_delete (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     case JSO_STATUS_NEW: break;
     default: goto end_delete_private_members; /* see below */
     }
+#ifndef NDEBUG
+  for (fld_ctr = cd->_.sd.jsosd_field_count; fld_ctr--; /*no step*/)
+    {
+      jso_field_descr_t *fldd = cd->_.sd.jsosd_field_list + fld_ctr;
+      jso_class_descr_t *fld_type_cd = gethash (fldd->jsofd_type, jso_classes);
+      jso_rtti_t *sub = (jso_rtti_t *)(JSO_FIELD_PTR (inst, fldd)[0]);
+      if ((JSO_PRIVATE == fldd->jsofd_required) && (NULL != sub))
+        {
+          if ((NULL == fld_type_cd) && (DV_CUSTOM != DV_TYPE_OF (sub)))
+            dk_check_tree (sub);
+        }
+    }
+#endif
   for (fld_ctr = cd->_.sd.jsosd_field_count; fld_ctr--; /*no step*/)
     {
       jso_field_descr_t *fldd = cd->_.sd.jsosd_field_list + fld_ctr;
@@ -254,7 +279,7 @@ end_delete_private_members:
 
 
 void
-jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, int change_status)
+jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, int change_status, dk_set_t *warnings_log_ptr)
 {
 #define SET_STATUS_FAILED \
   do { \
@@ -405,7 +430,7 @@ jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, in
   DO_BOX_FAST (jso_rtti_t *, sub, ctr, inst)
     {
       if (DV_CUSTOM == DV_TYPE_OF(sub))
-        jso_validate (sub, root_rtti, known, change_status);
+        jso_validate (sub, root_rtti, known, change_status, warnings_log_ptr);
     }
   END_DO_BOX_FAST;
   switch (cd->jsocd_cat)
@@ -415,7 +440,7 @@ jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, in
         DO_BOX_FAST (jso_rtti_t *, sub, ctr, inst)
           {
             if (DV_CUSTOM == DV_TYPE_OF (sub))
-              jso_validate (sub, root_rtti, known, change_status);
+              jso_validate (sub, root_rtti, known, change_status, warnings_log_ptr);
           }
         END_DO_BOX_FAST;
         break;
@@ -429,13 +454,15 @@ jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, in
             jso_class_descr_t *fld_type_cd = gethash (fldd->jsofd_type, jso_classes);
             jso_rtti_t *sub = (jso_rtti_t *)(JSO_FIELD_PTR (inst, fldd)[0]);
             if ((NULL != sub) && (NULL != fld_type_cd))
-              jso_validate (sub, root_rtti, known, change_status);
+              jso_validate (sub, root_rtti, known, change_status, warnings_log_ptr);
           }
         break;
       }
     }
   if (change_status && (JSO_STATUS_FAILED == inst_rtti->jrtti_status))
     inst_rtti->jrtti_status = JSO_STATUS_NEW;
+  if (NULL != cd->jsocd_validation_cbk)
+    cd->jsocd_validation_cbk (inst_rtti, warnings_log_ptr);
 }
 
 
@@ -446,6 +473,9 @@ bif_jso_validate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t jinstance = bif_string_or_wide_or_uname_arg (qst, args, 1, "jso_validate");
   ptrlong change_status = bif_long_arg (qst, args, 2, "jso_validate");
   dk_hash_t *known = hash_table_allocate (256);
+  dk_set_t warnings_log = NULL;
+  caddr_t **report;
+  int wrnng_ctr;
   jso_class_descr_t *cd;
   jso_rtti_t *inst_rtti;
   jclass = box_cast_to_UTF8_uname (qst, jclass);
@@ -453,7 +483,7 @@ bif_jso_validate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   jso_get_cd_and_rtti (jclass, jinstance, &cd, &inst_rtti, 0);
   QR_RESET_CTX
     {
-      jso_validate (inst_rtti, inst_rtti, known, change_status);
+      jso_validate (inst_rtti, inst_rtti, known, change_status, &warnings_log);
     }
   QR_RESET_CODE
     {
@@ -461,11 +491,25 @@ bif_jso_validate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       caddr_t err = thr_get_error_code (self);
       POP_QR_RESET;
       hash_table_free (known);
+      while (NULL != warnings_log)
+        {
+          caddr_t *wrnng = (caddr_t *)dk_set_pop (&warnings_log);
+          dk_free_tree (wrnng[1]);
+          dk_free_box ((caddr_t)wrnng);
+        }
       sqlr_resignal (err);
     }
   END_QR_RESET
   hash_table_free (known);
-  return jinstance;
+  report = (caddr_t **)revlist_to_array (warnings_log);
+  DO_BOX_FAST (caddr_t *, wrnng, wrnng_ctr, report)
+    {
+      jso_rtti_t *wrnng_rtti = (jso_rtti_t *)(wrnng[0]);
+      report[wrnng_ctr] = (caddr_t *)list (3, box_copy (wrnng_rtti->jrtti_inst_iri), box_copy (wrnng_rtti->jrtti_class->jsocd_class_iri), wrnng[1]);
+      dk_free_box ((caddr_t)wrnng);
+    }
+  END_DO_BOX_FAST;
+  return (caddr_t)report;
 }
 
 
@@ -970,6 +1014,57 @@ jso_get_field_value_as_o (caddr_t val, ccaddr_t fld_type, int fld_req, ptrlong s
   return box_copy_tree (val);
 }
 
+extern jso_field_descr_t *
+jso_get_fd_by_rtti_and_member (jso_rtti_t *inst_rtti, void *inst_member_field)
+{
+  jso_class_descr_t *cd = inst_rtti->jrtti_class;
+  ptrdiff_t ofs = (char *)inst_member_field - (char *)(inst_rtti->jrtti_self);
+  if (JSO_CAT_STRUCT != cd->jsocd_cat)
+    return NULL;
+  if ((ofs < 0) || (ofs >= cd->_.sd.jsosd_sizeof) || (ofs % sizeof (caddr_t)))
+    return NULL;
+  return cd->_.sd.jsosd_fields_by_idx [ofs / sizeof (caddr_t)];
+}
+
+caddr_t
+jso_dbg_text_fd_and_member_field (jso_field_descr_t *fd, void *inst_member_field)
+{
+  caddr_t val = ((caddr_t)inst_member_field);
+  ccaddr_t fld_type = fd->jsofd_type;
+  if (NULL == val)
+    {
+      if (
+        (!strcmp (JSO_INTEGER, fld_type) ||
+          (!strcmp (JSO_ANY, fld_type) && (JSO_REQUIRED == fd->jsofd_required)) ) )
+        return box_sprintf (1000, "%.500s 0", fd->jsofd_local_name);
+      return NULL;
+    }
+  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (val))
+    {
+      jso_rtti_t *sub = (jso_rtti_t *)gethash (val, jso_rttis_of_structs);
+      if (NULL == sub)
+        return box_sprintf (1000, "%.500s " VIRTRDF_NS_URI "PointerToCorrupted", fd->jsofd_local_name);
+      else if (sub->jrtti_self != val)
+        return box_sprintf (1000, "%.500s " VIRTRDF_NS_URI "PointerToStaleDeleted", fd->jsofd_local_name);
+      else
+        return box_sprintf (1000, "%.500s <%.500s>", fd->jsofd_local_name, ((jso_rtti_t *)(sub))->jrtti_inst_iri);
+    }
+  if (DV_CUSTOM == DV_TYPE_OF (val))
+    {
+      jso_rtti_t *val_as_rtti = (jso_rtti_t *)val;
+      return box_sprintf (1000, "%.500s <%.500s>", fd->jsofd_local_name, val_as_rtti->jrtti_inst_iri);
+    }
+  switch (DV_TYPE_OF (val))
+    {
+    case DV_LONG_INT: return box_sprintf (1000, "%.500s " BOXINT_FMT, fd->jsofd_local_name, unbox (val));
+    case DV_STRING: return box_sprintf (600 + box_length (val), "%.500s '''%s'''", fd->jsofd_local_name, val);
+    case DV_DOUBLE_FLOAT: return box_sprintf (1000, "%.500s %lf", fd->jsofd_local_name, unbox_double (val));
+    case DV_UNAME: return box_sprintf (1000, "%.500s <%.500s>", fd->jsofd_local_name, val);
+    default: return box_sprintf (1000, "%.500s /* box with tag %d */", fd->jsofd_local_name, DV_TYPE_OF (val));
+    }
+  return box_copy_tree (val);
+}
+
 typedef struct jso_rtti_proplist_acc_s {
   dk_set_t acc_set;
   int acc_only_loaded;
@@ -1110,8 +1205,8 @@ bif_jso_dbg_dump_rtti (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   sec_check_dba ((query_instance_t *)qst, "jso_dbg_dump_rtti");
 #ifdef DEBUG
   rtti = ((jso_rtti_t *)((void *)bif_arg (qst, args, 0, "jso_dbg_dump_rtti")))->jrtti_loop;
-  rtti_of_name = gethash (rtti->jrtti_inst_iri, jso_rttis_of_names);
-  rtti_of_self = gethash (rtti->jrtti_self, jso_rttis_of_structs);
+  rtti_of_name = (jso_rtti_t *)gethash (rtti->jrtti_inst_iri, jso_rttis_of_names);
+  rtti_of_self = (jso_rtti_t *)gethash (rtti->jrtti_self, jso_rttis_of_structs);
   res = box_sprintf (1000,
     "DV_CUSTOM (rtti STATUS=%s(%d), %s, self %s, IRI=%.300s, CLASS=%.300s)",
     jso_status_string (rtti->jrtti_status), rtti->jrtti_status,
@@ -1138,28 +1233,28 @@ jso_triple_add (caddr_t * qst, caddr_t jsubj, caddr_t jpred, caddr_t jobj)
   new_jsubj = jsubj = box_cast_to_UTF8_uname (qst, jsubj);
   new_jpred = jpred = box_cast_to_UTF8_uname (qst, jpred);
   new_jobj = jobj = box_cast_to_UTF8_uname (qst, jobj);
-  jso_single_subj = gethash (jsubj, jso_triple_subjs);
+  jso_single_subj = (dk_hash_t *)gethash (jsubj, jso_triple_subjs);
   if (NULL == jso_single_subj)
     {
       jso_single_subj = hash_table_allocate (13);
       sethash (new_jsubj, jso_triple_subjs, jso_single_subj);
       new_jsubj = NULL;
     }
-  jso_single_pred = gethash (jpred, jso_triple_preds);
+  jso_single_pred = (dk_hash_t *)gethash (jpred, jso_triple_preds);
   if (NULL == jso_single_pred)
     {
       jso_single_pred = hash_table_allocate (251);
       sethash (new_jpred, jso_triple_preds, jso_single_pred);
       new_jpred = NULL;
     }
-  jso_single_obj = gethash (jobj, jso_triple_objs);
+  jso_single_obj = (dk_hash_t *)gethash (jobj, jso_triple_objs);
   if (NULL == jso_single_obj)
     {
       jso_single_obj = hash_table_allocate (13);
       sethash (new_jobj, jso_triple_objs, jso_single_obj);
       new_jobj = NULL;
     }
-  jso_objs = gethash (jpred, jso_single_subj);
+  jso_objs = (dk_set_t)gethash (jpred, jso_single_subj);
 #ifdef DEBUG
   if (jso_objs != gethash (jsubj, jso_single_pred))
     GPF_T1 ("jso_triple_add(): gethash (jpred, gethash (jsubj, jso_triple_subjs)) != gethash (jsubj, gethash (jpred, jso_triple_preds))");
@@ -1173,7 +1268,7 @@ jso_triple_add (caddr_t * qst, caddr_t jsubj, caddr_t jpred, caddr_t jobj)
       sethash (jpred, jso_single_subj, jso_objs);
       sethash (jsubj, jso_single_pred, jso_objs);
     }
-  jso_subjs = gethash (jpred, jso_single_obj);
+  jso_subjs = (dk_set_t)gethash (jpred, jso_single_obj);
   if (NULL == dk_set_member (jso_subjs, jsubj))
     {
       if (NULL == new_jsubj)
@@ -1188,6 +1283,105 @@ jso_triple_add (caddr_t * qst, caddr_t jsubj, caddr_t jpred, caddr_t jobj)
   return 0;
 }
 
+
+int
+jso_triples_del_impl (caddr_t jsubj, caddr_t jpred, caddr_t jobj)
+{
+  dk_hash_t *jso_single_subj = NULL;
+  dk_hash_t *jso_single_pred = NULL;
+  dk_hash_t *jso_single_obj = NULL;
+  dk_set_t jso_objs;
+  dk_set_t jso_subjs;
+  if (NULL != jsubj)
+    {
+      jso_single_subj = (dk_hash_t *)gethash (jsubj, jso_triple_subjs);
+      if (NULL == jso_single_subj)
+        return 0;
+    }
+  if (NULL != jpred)
+    {
+      jso_single_pred = (dk_hash_t *)gethash (jpred, jso_triple_preds);
+      if (NULL == jso_single_pred)
+        return 0;
+    }
+  if (NULL != jobj)
+    {
+      jso_single_obj = (dk_hash_t *)gethash (jobj, jso_triple_objs);
+      if (NULL == jso_single_obj)
+        return 0;
+    }
+  if ((NULL != jsubj) && (NULL != jpred) && (NULL != jobj))
+    {
+      jso_objs = (dk_set_t)gethash (jpred, jso_single_subj);
+      if (!dk_set_delete (&jso_objs, jobj))
+        return 0;
+      sethash (jpred, jso_single_subj, jso_objs);
+      sethash (jsubj, jso_single_pred, jso_objs);
+      jso_subjs = (dk_set_t)gethash (jpred, jso_single_obj);
+      dk_set_delete (&jso_objs, jobj);
+      sethash (jpred, jso_single_obj, jso_subjs);
+      return 1;
+    }
+  if ((NULL != jsubj) && (NULL != jpred))
+    {
+      int res = 0;
+      jso_objs = (dk_set_t)gethash (jpred, jso_single_subj);
+      if (NULL == jso_objs)
+        return 0;
+      remhash (jpred, jso_single_subj);
+      remhash (jsubj, jso_single_pred);
+      while (NULL != (jobj = (caddr_t)dk_set_pop (&jso_objs)))
+        {
+          jso_single_obj = (dk_hash_t *)gethash (jobj, jso_triple_objs);
+          jso_subjs = (dk_set_t)gethash (jpred, jso_single_obj);
+          dk_set_delete (&jso_objs, jobj);
+          sethash (jpred, jso_single_obj, jso_subjs);
+          res++;
+        }
+      return res;
+    }
+  if (((NULL != jsubj) || (NULL != jobj)) && (NULL == jpred))
+    {
+      int ctr, res = 0;
+      caddr_t *preds = (caddr_t *)hash_list_keys ((NULL != jsubj) ? jso_single_subj :  jso_single_obj);
+      DO_BOX_FAST (caddr_t, p, ctr, preds)
+        {
+          res += jso_triples_del_impl (jsubj, p, jobj);
+        }
+      END_DO_BOX_FAST;
+      dk_free_box ((caddr_t)preds);
+      return res;
+    }
+  if (NULL != jpred)
+    {
+      int ctr, res = 0;
+      caddr_t *subjs = (caddr_t *)hash_list_keys (jso_single_pred);
+      DO_BOX_FAST (caddr_t, s, ctr, subjs)
+        {
+          res += jso_triples_del_impl (s, jpred, jobj);
+        }
+      END_DO_BOX_FAST;
+      dk_free_box ((caddr_t)subjs);
+      return res;
+    }
+  return -1; /* For combinations that are not yet supported */
+}
+
+caddr_t
+jso_triples_del (caddr_t * qst, caddr_t jsubj, caddr_t jpred, caddr_t jobj)
+{
+  int res;
+  caddr_t tmp_jsubj = ((NULL == jsubj) ? NULL : box_cast_to_UTF8_uname (qst, jsubj));
+  caddr_t tmp_jpred = ((NULL == jpred) ? NULL : box_cast_to_UTF8_uname (qst, jpred));
+  caddr_t tmp_jobj = ((NULL == jobj) ? NULL : box_cast_to_UTF8_uname (qst, jobj));
+  res = jso_triples_del_impl (tmp_jsubj, tmp_jpred, tmp_jobj);
+  dk_free_box (tmp_jsubj);
+  dk_free_box (tmp_jpred);
+  dk_free_box (tmp_jobj);
+  return ((0 > res) ? NEW_DB_NULL : box_num (res));
+}
+
+
 caddr_t *
 jso_triple_get_objs_impl (caddr_t * qst, caddr_t jsubj, caddr_t jpred, dk_hash_t *top_hash)
 {
@@ -1196,14 +1390,14 @@ jso_triple_get_objs_impl (caddr_t * qst, caddr_t jsubj, caddr_t jpred, dk_hash_t
   caddr_t *res;
   int ctr, len;
   jsubj = box_cast_to_UTF8_uname (qst, jsubj);
-  jso_single_subj = gethash (jsubj, top_hash);
+  jso_single_subj = (dk_hash_t *)gethash (jsubj, top_hash);
   if (NULL == jso_single_subj)
     {
       dk_free_box (jsubj);
       return (caddr_t *)list (0);
     }
   jpred = box_cast_to_UTF8_uname (qst, jpred);
-  jso_objs = gethash (jpred, jso_single_subj);
+  jso_objs = (dk_set_t)gethash (jpred, jso_single_subj);
   if (NULL == jso_objs)
     {
       dk_free_box (jsubj);
@@ -1215,7 +1409,7 @@ jso_triple_get_objs_impl (caddr_t * qst, caddr_t jsubj, caddr_t jpred, dk_hash_t
   ctr = 0;
   while (NULL != jso_objs)
     {
-      res[ctr++] = box_copy (jso_objs->data);
+      res[ctr++] = box_copy ((caddr_t)(jso_objs->data));
       jso_objs = jso_objs->next;
     }
   return res;
@@ -1241,6 +1435,15 @@ bif_jso_triple_add (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t jpred = bif_string_or_wide_or_uname_arg (qst, args, 1, "jso_triple_add");
   caddr_t jobj = bif_string_or_wide_or_uname_arg (qst, args, 2, "jso_triple_add");
   return jso_triple_add (qst, jsubj, jpred, jobj);
+}
+
+caddr_t
+bif_jso_triples_del (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t jsubj = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "jso_triples_del");
+  caddr_t jpred = bif_string_or_uname_or_wide_or_null_arg (qst, args, 1, "jso_triples_del");
+  caddr_t jobj = bif_string_or_uname_or_wide_or_null_arg (qst, args, 2, "jso_triples_del");
+  return jso_triples_del (qst, jsubj, jpred, jobj);
 }
 
 caddr_t
@@ -1432,6 +1635,7 @@ void jso_init ()
   bif_define ("jso_proplist", bif_jso_proplist);
   bif_define ("jso_dbg_dump_rtti", bif_jso_dbg_dump_rtti);
   bif_define ("jso_triple_add", bif_jso_triple_add);
+  bif_define ("jso_triples_del", bif_jso_triples_del);
   bif_define ("jso_triple_get_objs", bif_jso_triple_get_objs);
   bif_define ("jso_triple_get_subjs", bif_jso_triple_get_subjs);
   bif_define ("jso_triple_list", bif_jso_triple_list);

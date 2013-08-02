@@ -1,9 +1,0 @@
-so_locations
-.libs
-*.fl
-*.lo
-*.la
-.deps
-Makefile
-Makefile.in
-virt_vers*.c

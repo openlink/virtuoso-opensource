@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2007 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -106,7 +106,7 @@
                       declare id, iri any;
 
                       id := row.te_column_value('A_ID');
-                      iri := AB.WA.url_fix (SIOC..calendar_annotation_iri (self.domain_id, self.v_oid, id), self.v_sid, self.v_realm);
+                      iri := CAL.WA.url_fix (SIOC..calendar_annotation_iri (self.domain_id, self.v_oid, id), self.v_sid, self.v_realm);
                       http (sprintf ('<a href="%V">', iri));
                       self.showTDValue (id, row.te_column_value('A_AUTHOR'));
                       http ('</a>');

@@ -1,14 +1,14 @@
 --
 --  recovck1.sql
 --
---  $Id$
+--  $Id: recovck1.sql,v 1.15.10.1 2013/01/02 16:14:52 source Exp $
 --
 --  Recovery check test
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the

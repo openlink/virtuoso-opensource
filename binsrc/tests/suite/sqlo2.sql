@@ -1,29 +1,29 @@
 --
 --  sqlo2.sql
 --
---  $Id$
+--  $Id: sqlo2.sql,v 1.51.2.3.2.2 2013/01/02 16:14:57 source Exp $
 --
 --  Various SQL optimized compiler tests, part 2.
---
+--  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---
---  Copyright (C) 1998-2006 OpenLink Software
---
+--  
+--  Copyright (C) 1998-2013 OpenLink Software
+--  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---
+--  
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---
+--  
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---
---
+--  
+--  
 
 echo BOTH "\nSTARTED: SQL Optimizer tests part 2 (sqlo2.sql)\n";
 SET ARGV[0] 0;
@@ -1356,7 +1356,7 @@ select count (*) from t1 where row_no = 111 or (row_no  is not null and (row_no 
 select count (*) from t1 where row_no = 111 or (row_no  is null and (row_no is null or row_no = 222));
 
 
--- hash fillers with hash joined existences
+-- hash fillers with hash joined existences 
 explain ('select count (*) from t1 a, t1 b where a.row_no = b.row_no and exists (select * from t1 c table option (hash) where c.row_no = b.row_no and c.string1 like ''1%'') option (order, hash)');
 select count (*) from t1 a, t1 b where a.row_no = b.row_no and exists (select * from t1 c table option (hash) where c.row_no = b.row_no and c.string1 like '1%') option (order, hash);
 echo both $if $equ $last[1] 353 "PASSED" "***FAILED";

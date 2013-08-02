@@ -1,13 +1,13 @@
 #!/bin/sh
 #
-#  $Id$
+#  $Id: tjdbc.sh,v 1.6.6.1.4.4 2013/01/02 16:15:12 source Exp $
 #
 #  JDBC tests
 #  
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -26,9 +26,9 @@
 
 LOGFILE=tjdbc.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
-JDBCDIR=${JDBCDIR-../../../libsrc/JDBCDriverType4}
+JDBCDIR=${JDBCDIR-$VIRTUOSO_TEST/../../../libsrc/JDBCDriverType4}
 CURRDIR=`pwd`
 
 BANNER "STARTED JDBC Driver TEST (tjdbc.sh)"
@@ -45,7 +45,7 @@ START_SERVER $PORT 1000
 
 ECHO "STARTED: JDBC 2 Test suite"
 cd $JDBCDIR
-sh ./test2.sh "jdbc:virtuoso://localhost:$PORT/" > jdbc.out 2>&1
+sh $JDBCDIR/test2.sh "jdbc:virtuoso://localhost:$PORT/" > jdbc.out 2>&1
 cd $CURRDIR
 
 passed=`grep "PASSED" $JDBCDIR/jdbc.out`
@@ -85,7 +85,7 @@ START_SERVER $PORT 1000
 
 ECHO "STARTED: JDBC 3 Test suite"
 cd $JDBCDIR
-sh ./test3.sh "jdbc:virtuoso://localhost:$PORT/" > jdbc3.out 2>&1
+sh $JDBCDIR/test3.sh "jdbc:virtuoso://localhost:$PORT/" > jdbc3.out 2>&1
 cd $CURRDIR
 
 passed=`grep "PASSED" $JDBCDIR/jdbc3.out`

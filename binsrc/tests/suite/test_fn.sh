@@ -2,7 +2,7 @@
 #
 #  test_fn.sh
 #
-#  $Id$
+#  $Id: test_fn.sh,v 1.49.6.11.4.35 2013/01/02 16:15:06 source Exp $
 #
 #  Generic test functions which should be read at the beginning of the
 #  shell script.
@@ -10,7 +10,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -34,6 +34,7 @@ LANG=C
 LC_ALL=POSIX
 export LANG LC_ALL
 
+
 #===========================================================================
 #  Set global environment variables for test suite
 #===========================================================================
@@ -42,6 +43,7 @@ SILENT=${SILENT-0}
 SERVER=${SERVER-M2}
 ISQL=${ISQL-isql}
 BLOBS=${BLOBS-blobs}
+SCROLL=${SCROLL-scroll}
 INS=${INS-ins}
 PORT=${PORT-1111}
 HTTPPORT=`expr $PORT + 7000`
@@ -397,9 +399,10 @@ CHECKPOINT_SERVER()
 
 CHECK_LOG()
 {
+#   I've modified these grep patterns to ignore ':' which may be forgoten easily.
     passed=`grep "^PASSED" $LOGFILE | wc -l`
-    failed=`grep "^\*\*\*.*FAILED:" $LOGFILE | wc -l`
-    aborted=`grep "^\*\*\*.*ABORTED:" $LOGFILE | wc -l`
+    failed=`grep "^\*\*\*.*FAILED" $LOGFILE | wc -l`
+    aborted=`grep "^\*\*\*.*ABORTED" $LOGFILE | wc -l`
 
     ECHO ""
     LINE

@@ -1,29 +1,29 @@
 --
 --  tschema1.sql
 --
---  $Id$
+--  $Id: tschema1.sql,v 1.20.6.6.4.3 2013/01/02 16:15:22 source Exp $
 --
 --  Test DDL functionality #1
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2006 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2013 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 ECHO BOTH "STARTED: Schema Evolution Test, part 1\n";
 
@@ -165,6 +165,7 @@ alter table B5258 add dt long varchar;
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": B5258 1st alter STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
+update b5258 set dt = make_string (32000);
 alter table B5258 drop dt;
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": B5258 2nd alter STATE=" $STATE " MESSAGE=" $MESSAGE "\n";

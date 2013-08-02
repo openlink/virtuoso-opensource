@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -20,6 +20,43 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
+
+/* Footer */
+#FT {
+  width: 100%;
+  position: relative;
+  bottom: 0px;
+  font-size: 8pt;
+  float: left;
+  clear: both;
+  text-align: right;
+  border-top: 2px solid #fff;
+  margin-right: 10px;
+  background-color: #fff;
+  background-image: url(/ods/images/ods_main_footer.png);
+}
+
+#FT_L {
+  float: left;
+  clear: left;
+  margin-top: 10px;
+  margin-left: 8px;
+  border: 1px solid #788;
+}
+
+#FT_R {
+  float: right;
+  clear: right;
+  margin-top: 10px;
+  margin-bottom: 10px;
+  margin-right: 5px;
+  color: #788;
+}
+
+#FT_R a {
+  text-decoration: none;
+  color: inherit;
+}
 
 /* ODS grids */
 table.ODS_grid {
@@ -43,7 +80,7 @@ table.ODS_grid tbody tr:nth-child(even) {
 }
 
 table.ODS_grid thead tr th {
-  height: 18px;
+  height: 20px;
   text-align: left !important;
   white-space: nowrap;
   padding: 0px 2px 1px 2px !important;
@@ -59,6 +96,11 @@ table.ODS_grid thead tr th[onclick] {
 
 table.ODS_grid thead tr th:last-child {
   border-width: 0px 0px 1px 0px;
+}
+
+
+table.ODS_grid tbody tr.selected {
+  background-color: #FFFFCC;
 }
 
 table.ODS_grid th.checkbox, table.ODS_grid td.checkbox {
@@ -112,6 +154,7 @@ table.ANN_grid tr td {
   border-color: #7f94a5;
   background: #99b3c5;
 	cursor: pointer;
+  border-radius: 3px;
   -moz-border-radius: 3px;
   -webkit-border-radius: 3px;
 }
@@ -173,6 +216,7 @@ td.calendar_selected {
 }
 
 .oat_winrect_container {
+  border-radius: 5px;
   -moz-border-radius: 5px;
   -webkit-border-radius: 5px;
 }
@@ -186,3 +230,138 @@ td.calendar_selected {
  	background-color: #eec;
 }
 
+/* Tabs */
+div.ODS_tabMain {
+  width: 100%;
+}
+
+div.ODS_tabs {
+  top: 0px;
+  font-size: 100%;
+  padding: 0px 0px 3px 0px;
+}
+
+div.ODS_tabContents {
+  padding: 0.5em;
+  border: 1px solid #7f94a5;
+  background-color: #EFEFEF;
+}
+
+div.ODS_tabContent {
+  border: 0px;
+  font-size: 1em;
+  padding: 6px;
+}
+
+div.ODS_tabLabel {
+  cursor: pointer;
+  display: inline;
+  font-weight: bold;
+  background-color: #b0cde4;
+  border: 1px solid #000;
+  border-bottom-width: 0px;
+  border-color: #7f94a5;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+  -moz-border-radius-topleft: 3px;
+  -moz-border-radius-topright: 3px;
+  -webkit-border-top-left-radius: 3px;
+  -webkit-border-top-right-radius: 3px;
+  padding: 2px 10px 2px 10px;
+  margin-right: 3px;
+  position: relative;
+  text-decoration: none;
+  top: 2px;
+  z-index: 100;
+}
+
+div.ODS_tabLabelActive {
+  background-color: #EFEFEF;
+  border-color: #7f94a5;
+}
+
+/* Forms */
+.ODS_formHeader {
+  font-size: 13px;
+  font-weight: bold;
+  margin: 0 0 8px 0;
+  padding: 0px 0px 3px 4px;
+  border: solid #7f94a5;
+  border-width: 1px 1px 1px 10px;
+  background-color: #B0CDE4;
+}
+
+.ODS_formFooter {
+  margin: 6px 0px;
+  text-align: center;
+  border: solid 1px #7f94a5;
+  background-color: #B0CDE4;
+  height: 20px;
+  padding-top: 0px;
+  padding-bottom: 2px;
+}
+
+.ODS_formBody {
+  font-size: 1em;
+  padding: 6px;
+  border: solid #7f94a5;
+  border-width: 1px 1px 1px 1px;
+  background-color: #EFEFEF;
+}
+
+.ODS_formBody table {
+  width: 100%;
+  background-color: #EFEFEF;
+}
+
+.ODS_formBody table td {
+  padding: 2px;
+}
+
+.ODS_formBody table th {
+  text-align: right;
+  white-space: nowrap;
+  padding: 2px 4px 2px 4px;
+}
+
+.ODS_formList {
+  width: 100%;
+  border: solid #7f94a5;
+  border-width: 1px 1px 1px 1px;
+  background-color: #fff;
+}
+
+.ODS_formList tr th {
+  text-align: center;
+  white-space: nowrap;
+  font-size: 1em;
+  font-weight: bold;
+  padding: 2px 4px 2px 4px;
+  border: solid #7f94a5;
+  background-color: #b0cde4;
+  border-width: 0px 1px 1px 0px;
+}
+
+.ODS_formList th:last-child {
+  border-width: 0px 0px 1px 0px;
+}
+
+.ODS_formList td {
+  border: solid #7f94a5;
+  border-width: 0px 0px 0px 0px;
+  padding: 2px 4px 2px 4px;
+  background-color: #FFF;
+}
+
+table.ODS_formList tbody tr:nth-child(odd) {
+  background-color:#fff;
+}
+
+table.ODS_formList tbody tr:nth-child(even) {
+  background-color:#f0f0f0;
+}
+
+/* OAT patches */
+div.oat_winms_close_b {
+  background-image: url("/ods/images/oat/MsWin_close.png");
+}

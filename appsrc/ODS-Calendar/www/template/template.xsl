@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2007 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -181,7 +181,7 @@
             </vm:if>
             <span onclick="javascript: CAL.aboutDialog(); return false;" title="About" class="link">About</span>
       </div>
-          <p style="clear: both; line-height: 0.1em">&nbsp;</p>
+          <p style="clear: both; line-height: 0.1em">&amp;nbsp;</p>
         </div>
       <v:include url="calendar_login.vspx"/>
               <xsl:apply-templates select="vm:pagebody" />
@@ -192,7 +192,7 @@
         <div id="FT" style="display: <?V case when get_keyword ('interface', C, '') = 'js' then 'none' else '' end ?>">
         <div id="FT_L">
           <a href="http://www.openlinksw.com/virtuoso">
-            <img alt="Powered by OpenLink Virtuoso Universal Server" src="image/virt_power_no_border.png" border="0" />
+              <img alt="Powered by OpenLink Virtuoso Universal Server" src="/ods/images/virt_power_no_border.png" border="0" />
           </a>
         </div>
         <div id="FT_R">
@@ -329,11 +329,11 @@
             http ('</tr>');
           ?>
           <tr id="c_footer" class="C_heading">
-            <td colspan="2">&nbsp;</td>
+            <td colspan="2">&amp;nbsp;</td>
             <td class="C_onmonth C_today" colspan="3">
               <span id="c_today_0" onmousedown="cSelect(this)" style="font-weight: bold;">today</span>
             </td>
-            <td colspan="2">&nbsp;</td>
+            <td colspan="2">&amp;nbsp;</td>
           </tr>
         </tbody>
       </table>
@@ -344,7 +344,7 @@
   <xsl:template match="vm:calendars">
     <vm:if test="((select count(*) from CAL.WA.SHARED where S_DOMAIN_ID = self.domain_id))">
       <div class="lc lc_head" onclick="shCell('calendars')">
-        <img id="calendars_image" src="image/tr_close.gif" border="0" alt="Open" style="float: left;" />&nbsp;Accepted Calendars
+        <img id="calendars_image" src="image/tr_close.gif" border="0" alt="Open" style="float: left;" />&amp;nbsp;Accepted Calendars
       </div>
       <div id="calendars" class="lc lc_closer lc_noborder" style="display: none;">
         <?vsp
@@ -464,7 +464,7 @@
         ]]>
       </v:before-render>
     </v:button>
-    &nbsp;
+    &amp;nbsp;
     <v:button name="{@data-set}_prev" action="simple" style="url" value="" xhtml_alt="Previous" xhtml_class="navi-button">
       <v:before-render>
         <![CDATA[
@@ -472,7 +472,7 @@
         ]]>
       </v:before-render>
     </v:button>
-    &nbsp;
+    &amp;nbsp;
     <v:button name="{@data-set}_next" action="simple" style="url" value="" xhtml_alt="Next" xhtml_class="navi-button">
       <v:before-render>
         <![CDATA[
@@ -480,7 +480,7 @@
         ]]>
       </v:before-render>
     </v:button>
-    &nbsp;
+    &amp;nbsp;
     <v:button name="{@data-set}_last" action="simple" style="url" value="" xhtml_alt="Last" xhtml_class="navi-button">
       <v:before-render>
         <![CDATA[

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -269,8 +269,9 @@ dbs_file_extend (dbe_storage_t * dbs, extent_t ** new_ext_ret, int is_in_sys_em)
     return 0;
   if (dbs->dbs_disks)
     {
-      n = dbs_seg_extend (dbs, EXTENT_SZ);
-      if (n != EXTENT_SZ)
+      int quota = DBS_ELASTIC == dbs->dbs_type ? 8 * EXTENT_SZ :  EXTENT_SZ;
+      n = dbs_seg_extend (dbs, quota);
+      if (n != quota)
 	return 0;
     }
   else
@@ -1788,6 +1789,7 @@ it_own_extent_map (index_tree_t * tree)
   dbe_storage_t * dbs = tree->it_storage;
   extent_map_t * em;
   extent_t * new_ext;
+  int slice = 0;
   mutex_enter (extent_map_create_mtx);
   if (tree->it_extent_map != dbs->dbs_extent_map)
     {
@@ -1809,8 +1811,10 @@ it_own_extent_map (index_tree_t * tree)
 	  mutex_leave (extent_map_create_mtx);
 	  return 0;
     }
+  if (DBS_ELASTIC == tree->it_storage->dbs_type)
+    slice = tree->it_slice;
   snprintf (name, sizeof (name), "__EM:%s",
-	    KI_TEMP == tree->it_key->key_id ? "temp": tree->it_key->key_fragments[0]->kf_name);
+	    KI_TEMP == tree->it_key->key_id ? "temp": tree->it_key->key_fragments[slice]->kf_name);
   em->em_name = box_dv_short_string (name );
   tree->it_extent_map = em;
   mutex_leave (extent_map_create_mtx);
@@ -1867,7 +1871,7 @@ kf_set_extent_map (dbe_key_frag_t * kf)
   dbe_storage_t * dbs = kf->kf_it->it_storage;
   snprintf (name, sizeof (name), "__EM:%s", kf->kf_name);
   IN_TXN;
-  dp_str = registry_get (name);
+  dp_str = dbs_registry_get (dbs, name);
   LEAVE_TXN;
   dp = dp_str ? atoi (dp_str) : 0;
   dk_free_box (dp_str);
@@ -1884,7 +1888,7 @@ kf_set_extent_map (dbe_key_frag_t * kf)
 	{
 	  snprintf (name, sizeof (name), "__EMC:%s:%s:%d", it->it_key->key_table->tb_name, it->it_key->key_name, (int)col->col_id);
 	  IN_TXN;
-	  dp_str = registry_get (name);
+	  dp_str = dbs_registry_get (dbs, name);
 	  LEAVE_TXN;
 	  dp = dp_str ? atoi (dp_str) : 0;
 	  dk_free_box (dp_str);

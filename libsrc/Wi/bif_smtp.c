@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -325,6 +325,8 @@ type_connection_destroy (caddr_t box)
       PrpcDisconnect (ses);
       PrpcSessionFree (ses);
     }
+  if (BOX_ELEMENTS (type) > 2)
+    dk_free_tree (type[2]);
   return 0;
 }
 
@@ -333,10 +335,42 @@ bif_ses_connect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   volatile dk_session_t * ses = NULL;
   caddr_t host = bif_string_arg (qst, args, 0, "ses_connect");
+  long cert = BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "ses_connect") : 0;
+  long id = BOX_ELEMENTS (args) > 2 ? bif_long_arg (qst, args, 2, "ses_connect") : 0;
   caddr_t *res, err = NULL;
+#ifdef _SSL
+  SSL *ssl;
+  SSL_CTX *ssl_ctx = NULL;
+  SSL_METHOD *ssl_method;
+#endif
+
   IO_SECT(qst);
   sec_check_dba ((query_instance_t *) qst, "ses_connect");
   ses = http_dks_connect (host, &err);
+#ifdef _SSL
+  if (cert && ses)
+    {
+      int ssl_err = 0;
+      int fd = tcpses_get_fd (ses->dks_session);
+      char err_text[512], err_code[6];
+      ssl_method = SSLv23_client_method ();
+      ssl_ctx = SSL_CTX_new (ssl_method);
+      ssl = SSL_new (ssl_ctx);
+      SSL_set_fd (ssl, fd);
+      ssl_err = SSL_connect (ssl);
+      if (ssl_err != 1)
+	{
+	  strcpy_ck (err_code, "08006");
+	  if (ERR_peek_error ())
+	    cli_ssl_get_error_string (err_text, sizeof (err_text));
+	  else
+	    strcpy_ck (err_text, "Cannot connect via SSL");
+	  *err_ret = srv_make_new_error (err_code, "CONNX", "%s", err_text);
+	}
+      else
+	tcpses_to_sslses (ses->dks_session, ssl);
+    }
+#endif
   END_IO_SECT (err_ret);
   if (err)
     {
@@ -347,8 +381,18 @@ bif_ses_connect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	}
       sqlr_resignal (err);
     }
+  if (!id)
+    {
   res = (caddr_t *) dk_alloc_box (sizeof (caddr_t), DV_CONNECTION);
   res[0] = (caddr_t) ses;
+    }
+  else
+    {
+      res = (caddr_t *) dk_alloc_box (3 * sizeof (caddr_t), DV_CONNECTION);
+      res[0] = (caddr_t) ses;
+      res[1] = (caddr_t) 1L;
+      res[2] = box_num (id);
+    }
   if (*err_ret)
     {
       dk_free_tree (res);

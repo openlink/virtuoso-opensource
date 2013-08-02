@@ -1,11 +1,17 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" version="XHTML+RDFa 1.0" xml:lang="en">
+<html 
+    xmlns="http://www.w3.org/1999/xhtml" 
+    version="XHTML+RDFa 1.0" 
+    xml:lang="en"
+    xmlns:addthis="http://www.addthis.com/help/api-spec"
+    xmlns:fb="http://www.facebook.com/2008/fbml"
+>
 <?vsp
 
    declare _G, _S, _S_save, odd_position any;
    declare rdf_link, label, true_label, _subject any;
    declare arr, data, meta, h1, h2, inx, gr, host, pars, cookievec any;
-   declare iri_type, iri_uri, links, langs, dspace, sid, error_message, cookiestr, dsn, ua varchar;
+   declare iri_type, iri_uri, links, langs, dspace, sid, error_message, cookiestr, dsn, ua, sp_mode, accept_mode varchar;
    declare do_sponge, force_clean, do_refresh, local_lookup, sponge_type, proxy_iri_fn, expir int;
 
    set http_charset='utf-8';
@@ -13,8 +19,21 @@
      {
        http_rewrite ();
        http_status_set (403);
-       return;  
+       http ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN"><html><body>You are not allowed to sponge due to Access Control restrictions.</body></html>');
+       return;
      }
+
+  --
+  -- Get AddthisKey from registry
+  --
+  --  if 0 then disable addthis support
+  --  if 1 use temp key to get basic social bookmarking
+  --  any other value should be a registered key
+  --
+  declare _addthis_key varchar;
+  _addthis_key := registry_get ('rdf_mappers_addthis_key');
+  if (0 = _addthis_key) _addthis_key := '0';
+  if ('1' = _addthis_key) _addthis_key := 'xa-4ce13e0065cdadc0';
 
    label := '';
    iri_type := 'unknown';
@@ -23,13 +42,14 @@
    odd_position := 0;
    do_refresh := null;
    sponge_type := '';
+   rdf_link := '';
    connection_set ('ns_ctr', 1); /* for unknown xmlns to print in RDFa */
    host := http_request_header (http_request_header (), 'Host');
    ua :=   http_request_header (http_request_header (), 'User-Agent');
    if (not isstring (ua))
      ua := null;
    langs := rdfdesc_get_lang_acc (lines);
-   gr := get_keyword ('g', params, '');
+   gr := rtrim (get_keyword ('g', params, ''));
    if (gr like '%?debug=on' or gr like '%&debug=on')
      gr := subseq (gr, 0, length (gr) - 9);
    if (gr like '%?@Lookup@=%' or gr like '%&@Lookup@=%')
@@ -42,8 +62,19 @@
        do_refresh := atoi (force_clean);
        if (do_refresh < 0 or force_clean = 'clean')
          do_refresh := null;
-       gr := regexp_substr ( '(.*)([\\?&]@Lookup@=.*)', gr, 1); 
-     } 
+       gr := regexp_substr ( '(.*)([\\?&]@Lookup@=.*)', gr, 1);
+     }
+   sp_mode := 'add';  
+   accept_mode := null;
+   if (gr like '%sponger:%=%')
+     {
+       declare rq any;
+       rq := WS..PARSE_URI (gr); 
+       rq := split_and_decode (rq[4]);
+       sp_mode := get_keyword ('sponger:get', rq, 'add');
+       accept_mode := get_keyword ('sponger:accept', rq);
+       gr := regexp_substr ( '(.*)([\\?&]sponger:(.*)=.*)', gr, 1);
+     }
    arr := rfc1808_parse_uri (gr);
    if (arr[0] = '' and arr[1] = '' and arr[2] <> '') -- case when /about/html/www.cname/path i.e. when no scheme the default is http
      gr := 'http://' || gr;
@@ -91,13 +122,14 @@
 
    arr := rfc1808_parse_uri (_G);
    dspace := arr[1];
+
    if (arr[2] = '/' and DB.DBA.vspx_uri_compose (arr) <> _G)
      arr[2] := '';
    -- enable to stop sponge for #fragment
    --if (arr[5] <> '')
    --  do_sponge := 0;
    arr[0] := lower (arr[0]);
-   if (arr[0] not in ('http', 'https', 'file', 'feed', 'doi', 'webcal', 'oai') and _G not like 'urn:lsid:%')
+   if (arr[0] not in ('http', 'https', 'file', 'feed', 'doi', 'webcal', 'oai', 'acct', 'mailto', 'ftp') and _G not like 'urn:lsid:%')
      {
        do_sponge := 0;
        local_lookup := 1;
@@ -120,7 +152,15 @@
 	    arr[0] := sch;
 	    arr[1] := nhost;
 	    arr[2] := npath;
+
+	    if (lower(arr[0]) in ('acct', 'mailto'))
+	      {
+	        arr [2] := arr[1];
+	        arr [1] := '';
+              }
+
 	    _G := DB.DBA.vspx_uri_compose (arr);
+
 	    --do_sponge := 0;
          }
        else if (length (pa) > 4 and pa[3] <> '' and pa [4] <> '')
@@ -132,6 +172,13 @@
 	    arr[0] := sch;
 	    arr[1] := nhost;
 	    arr[2] := npath;
+
+	    if (sch in ('acct', 'mailto'))
+	      {
+	        arr[2] := arr[1];
+		arr[1] := '';
+	      }
+
 	    _G := DB.DBA.vspx_uri_compose (arr);
 	    --do_sponge := 0;
          }
@@ -170,7 +217,7 @@
          {
            sparql clear graph ?:_G;
 	 }
-       DB.DBA.RM_DO_SPONGE (_G, sponge_type, do_refresh);
+       DB.DBA.RM_DO_SPONGE (_G, sponge_type, do_refresh, sp_mode, accept_mode);
        commit work;
      }
    else if (_S like 'nodeID://%' or local_lookup = 1)
@@ -201,11 +248,11 @@
          {
            exec (sprintf ('sparql ask where { graph <%S> { <%s#this> ?p ?o . }}', _G, _S), null, null, vector (), 0, meta, data);
            if (length (data))
-             _S := _S || '#this';
-           else 
+	     _S := _S || '#this';
+           else
 	     {
 	       _S := DB.DBA.RDF_PROXY_ENTITY_IRI (_G);
-	     } 
+	     }
          }
      }
 
@@ -227,19 +274,19 @@
    iri_type := rdfdesc_type (_G, _S, iri_uri);
 
    exec (sprintf ('sparql prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/>
-	select ?o where { graph <%S> { <%S> rdfs:comment ?o } }', _G, _S), null, null, vector (), 0, meta, data);
-   if (length (data)) _subject := data[0][0];
+	select ?o lang(?o) where { graph <%S> { <%S> rdfs:comment ?o } }', _G, _S), null, null, vector (), 0, meta, data);
+   if (length (data)) _subject := rdfdesc_label_get (data, http_request_header_full (lines, 'Accept-Language', 'en'));
 
    rdf_link := sprintf ('/sparql?default-graph-uri=%U&query=%U', _G, sprintf ('DESCRIBE <%s>',_S));
    rdfdesc_links_hdr (_S, rdf_link);
 
    links := '';
-   for select HS_EXPIRATION from SYS_HTTP_SPONGE where HS_ORIGIN_URI = _G do 
+   for select HS_EXPIRATION from SYS_HTTP_SPONGE where HS_ORIGIN_URI = _G do
      {
        if (HS_EXPIRATION is not null)
          links := links||sprintf ('Expires: %s\r\n', date_rfc1123 (HS_EXPIRATION));
      }
-   commit work;  
+   commit work;
    http_header (http_header_get () || links);
    errors:
    if (not length (label))
@@ -247,13 +294,13 @@
    if (label like 'http%://%')
      label := rdfdesc_uri_curie (label);
    set isolation = 'uncommitted';
-   dsn := (SPARQL prefix h: <http://www.w3.org/2006/http#> prefix hh: <http://www.w3.org/2006/http-header#> 
+   dsn := (SPARQL prefix h: <http://www.w3.org/2006/http#> prefix hh: <http://www.w3.org/2006/http-header#>
    	     select ?vo { graph `iri(?:_G)` { ?s ?p hh:content-location ; h:fieldValue ?v . ?v h:elementName ?vo } } LIMIT 1);
    if (dsn is null)
      {
-       if (strchr (_G, '#') is null)
-	 dsn := _G || '#';
-       else
+       --if (strchr (_G, '#') is null)
+       --  dsn := _G || '#';
+       --else
 	 dsn := _G;
      }
    else
@@ -275,6 +322,11 @@
     <link rel="stylesheet" type="text/css" href="statics/style_w.css" />
     <link href="statics/highlighter.css" type="text/css" rel="stylesheet" charset="utf-8" />
     <meta http-equiv="Content-type" content="text/html;charset=utf-8" />
+    <script type="text/javascript">
+    /*<![CDATA[*/
+    var uri	= "<?U dsn ?>";
+    /*]]>*/
+    </script>
     <script type="text/javascript" src="statics/script.js"></script>
     <script type="text/javascript" src="oat/loader.js"></script>
 </head>
@@ -282,8 +334,7 @@
 <body onload="init();" about="<?V _S ?>">
 -->
 <body about="<?V _S ?>">
-
-    <div id="slb">
+  <div id="slb">
     <div id="sidebar">
       <h1>What Is This?</h1>
       <p>This is an HTML+RDFa representation of <b><i>metadata</i></b> describing this Web-addressable resource.</p>
@@ -319,21 +370,21 @@
     <div id="header">
       <div id="hd_l">
         <div id="opl_logo">
-          <a href="http://www.openlinksw.com" 
+          <a href="http://www.openlinksw.com"
              title="OpenLink Software">
-            <img src="statics/openlinklogo_wstrap_2008.png" 
+            <img src="statics/openlinklogo_wstrap_2008.png"
                  alt="[OpenLink Software]" />
           </a>
         </div>
 	<div id="entity_info">
-	  <h1 id="title">About: <a href="<?= case when _S like 'nodeID://%' then rdfdesc_http_url (_S) else _S end ?>"><?vsp http (label); ?></a></h1>
-        <div id="homelink">
-        </div>
-        <div class="page-resource-uri">
-	    An Entity of Type : <a href="<?V iri_uri ?>"><?V iri_type ?></a>, 
-	    from Data Source : <a href="<?V dsn ?>"><?V dsn ?></a>, 
+          <h1 id="title">About: <a href="<?= case when _S like 'nodeID://%' then rdfdesc_http_url (_S) else replace (_S, '#', '%01') end ?>"><?vsp http (label); ?></a></h1>
+          <div id="homelink">
+          </div>
+          <div class="page-resource-uri">
+	    An Entity of Type : <a href="<?V iri_uri ?>"><?V iri_type ?></a>,
+	    from Data Source : <a href="<?V dsn ?>"><?V dsn ?></a>,
 	    within Data Space : <a href="http://<?V dspace ?>"><?V host ?></a>
-        </div>
+          </div>
         </div> <!-- #entity_info -->
       </div> <!-- hd_l -->
       <div id="hd_r">
@@ -341,7 +392,7 @@
   declare qrimg any;
   qrimg := rdfdesc_make_qr_code (rdfdesc_make_curie (case when _S like 'nodeID://%' then rdfdesc_http_url (_S) else _S end, lines));
   if (qrimg is not null and strcasestr (ua, 'Mobile') is null) {
-    
+
 ?>
 	<img id="qrcode" alt="QRcode image" src="data:image/jpg;base64,<?V qrimg ?>"/>
 <?vsp } ?>
@@ -447,33 +498,62 @@
 
 <!-- footer -->
     <div id="footer">
+<?vsp if (_addthis_key <> '0') { ?>
+  <div id="FT_share">
+    <!-- AddThis Button BEGIN -->
+	<div class="addthis_toolbox addthis_default_style ">
+	<a class="addthis_button_facebook_like" id="fb_like_id"></a>
+	<a class="addthis_button_tweet"></a>
+	<a class="addthis_button_google_plusone" id="g_plusone_id"></a>
+	<a class="addthis_counter addthis_pill_style"></a>
+	</div>
+    <script type="text/javascript"> 
+    /*<![CDATA[*/
+	var addthis_config = {"data_track_clickback":true; ui_cobrand:"Virtuoso"};
+	var addthis_share = { url_transforms : { clean: true, remove: ['sid'] } };
+    /*]]>*/
+    </script>
+    <script type="text/javascript"> 
+	var fb_like_id = document.getElementById('fb_like_id');
+	if (fb_like_id) fb_like_id.setAttribute('fb:like:layout', 'button_count');
+	var g_plusone_id = document.getElementById('g_plusone_id');
+	if (g_plusone_id) g_plusone_id.setAttribute('g:plusone:size', 'medium');
+    </script>
+    <script type="text/javascript" src="http://s7.addthis.com/js/250/addthis_widget.js#pubid=<?=_addthis_key?>"></script>
+    <!-- AddThis Button END -->
+  </div><!-- ft_s -->
+<?vsp } ?>
       <?vsp if (error_message is null) { ?>
       <div id="ft_t">
         Alternative Linked Data Views:
 
-	<?vsp if (VAD_CHECK_VERSION ('fct') is not null) { ?>	
-	<a href="/describe/?uri=<?vsp http_url (_S); ?>" title="Faceted Browing using Follow-Your-Nose pattern across links" target="_blank">Facets</a> 
+	<?vsp if (VAD_CHECK_VERSION ('fct') is not null) { ?>
+	<a href="/describe/?uri=<?vsp http_url (_S); ?>" title="Faceted Browing using Follow-Your-Nose pattern across links" target="_blank">Facets</a>
 	|
 	<?vsp } ?>
-	<?vsp if (VAD_CHECK_VERSION ('PivotViewer') is not null) { ?>	
-	<a href="/PivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>"  title="PivotViewer page for exploring results and generating new queries" target="_blank">PivotViewer</a> 
+	<?vsp if (VAD_CHECK_VERSION ('PivotViewer') is not null) { ?>
+	<a href="/PivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>"  title="PivotViewer page for exploring results and generating new queries" target="_blank">PivotViewer</a>
 	|
 	<?vsp } ?>
-	<?vsp if (VAD_CHECK_VERSION ('iSPARQL') is not null) { ?>	
-	<a href="/isparql/view/?query=<?vsp http_url (desc_qr); ?>&amp;resultview=browser" title="Interactive Query By Example oriented SPARQL UI" target="_blank">iSPARQL</a> 
+	<?vsp if (VAD_CHECK_VERSION ('iSPARQL') is not null) { ?>
+	<a href="/isparql/view/?query=<?vsp http_url (desc_qr); ?>&amp;resultview=browser" title="Interactive Query By Example oriented SPARQL UI" target="_blank">iSPARQL</a>
 	|
 	<?vsp } ?>
-	<a href="/ode/?uri=<?vsp http_url (_S); ?>" title="Basic navigation and exploration" target="_blank">ODE</a> 
-	
+	<a href="/ode/?uri=<?vsp http_url (_S); ?>" title="Basic navigation and exploration" target="_blank">ODE</a>
+
        &nbsp; &nbsp; Raw Linked Data formats:
         <a href="<?=rdf_link || sprintf ('&output=%U', 'text/cxml')?>">CXML</a> |
         <a href="<?=rdf_link || sprintf ('&output=%U', 'text/csv')?>">CSV</a> | RDF (
         <a href="<?=rdf_link || sprintf ('&output=%U', 'text/plain') ?>">N-Triples</a>
         <a href="<?=rdf_link || sprintf ('&output=%U', 'text/rdf+n3') ?>">N3/Turtle</a>
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+json')?>">JSON</a> 
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+json')?>">JSON</a>
         <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+xml') ?>">XML</a> ) | OData (
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/atom+xml')?>">Atom</a> 
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/odata+json')?>">JSON</a> )
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/atom+xml')?>">Atom</a>
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/odata+json')?>">JSON</a> ) | Microdata (
+	<a href="<?=rdf_link || sprintf ('&output=%U', 'application/microdata+json') ?>">JSON</a>
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/html') ?>">HTML</a>) |
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'application/ld+json')?>">JSON-LD</a> 
+
       </div> <!-- #ft_t -->
       <?vsp } ?>
       <div id="ft_b">
@@ -489,7 +569,7 @@
 	    alt="Valid XHTML + RDFa" height="27" /></a>
 	</span>
 	<br />
-	This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-Share Alike 3.0 Unported License</a>. 
+	This work is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-Share Alike 3.0 Unported License</a>.
 	<br />
 	<?vsp rdfdesc_virt_info (); ?>
       </div> <!-- #ft_b -->
@@ -499,17 +579,18 @@
 	     http ('Trace ID: ' || sid);
 	?>
     </div>
+    <div id="status"></div>
     </div> <!-- #footer -->
 
     <?vsp if (isstring (registry_get ('urchinTracker'))) { ?>
     <script type="text/javascript">
-     var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
-     document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
-   </script>
- <script type="text/javascript">
+	var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+	document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+    </script>
+    <script type="text/javascript">
 	try {
 	var pageTracker = _gat._getTracker("<?V registry_get ('urchinTracker')  ?>");
-     pageTracker._trackPageview();
+	pageTracker._trackPageview();
 	} catch(err) {}</script>
     <?vsp } ?>
 

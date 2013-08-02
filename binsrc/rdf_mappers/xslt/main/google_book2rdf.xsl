@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2010 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -26,6 +26,7 @@
 <!ENTITY video "http://purl.org/media/video#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 ]>
 
@@ -33,6 +34,7 @@
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
   xmlns:dc="http://purl.org/dc/elements/1.1/"
+  xmlns:opl="&opl;"
   xmlns:wfw="http://wellformedweb.org/CommentAPI/"
   xmlns:slash="http://purl.org/rss/1.0/modules/slash/"
   xmlns:content="http://purl.org/rss/1.0/modules/content/"
@@ -57,7 +59,7 @@
   xmlns:owl="http://www.w3.org/2002/07/owl#"
   xmlns:bibo="&bibo;"
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
-  xmlns:dcterms="http://purl.org/dc/terms"
+  xmlns:dcterms="http://purl.org/dc/terms/"
   version="1.0">
 
 <xsl:output indent="yes" />
@@ -104,6 +106,13 @@
 
 <xsl:template match="a:entry">
     <rdf:Description rdf:about="{$resourceURL}">
+          	<opl:providedBy>
+          		<foaf:Organization rdf:about="http://books.google.com#this">
+          			<foaf:name>Google Books</foaf:name>
+          			<foaf:homepage rdf:resource="http://books.google.com"/>
+          		</foaf:Organization>
+          	</opl:providedBy>
+
       <rdf:type rdf:resource="&bibo;Book"/>
           <xsl:apply-templates/>
     </rdf:Description>

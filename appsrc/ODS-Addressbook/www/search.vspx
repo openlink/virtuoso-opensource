@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2007 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -91,7 +91,7 @@
 
       state := '00000';
       sqlParams := vector();
-      sql := AB.WA.search_sql (self.domain_id, self.account_id, self.account_rights, data, self.v_max);
+      sql := AB.WA.search_sql (self.domain_id, self.account_id, self.person_rights, data, self.v_max);
       sql := concat (sql, ' order by ', self.v_order, ' ', self.v_direction);
       exec(sql, state, msg, sqlParams, 0, meta, result);
       if (state = '00000')

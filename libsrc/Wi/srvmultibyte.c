@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -260,6 +260,13 @@ box_narrow_string_as_wide (unsigned char *str, caddr_t wide, long max_len, wchar
   long i, len = (long)(isbox ? (box_length ((box_t) str) - 1) : strlen((const char *) str));
   wchar_t *box;
   size_t wide_len;
+
+  if (isbox && strlen((const char *) str) < len)
+    {
+      if (err_ret)
+        *err_ret = srv_make_new_error ("22024", "SR578", "Wide string can't contain '\\0' character.");
+      return NULL;
+    }
   if (!charset)
     {
       client_connection_t *cli = GET_IMMEDIATE_CLIENT_OR_NULL;
@@ -373,12 +380,9 @@ bh_string_list_w (/* this was before 3.0: index_space_t * isp,*/ lock_trx_t * lt
   long chars_filled = 0, chars_on_page;
   virt_mbstate_t state;
   wchar_t wpage[PAGE_SZ];
-#if 0 /* this was */
-  it_cursor_t *tmp_itc = itc_create (isp, lt);
-#else
-  it_cursor_t *tmp_itc = itc_create (NULL, lt);
+  it_cursor_t *tmp_itc;
+  tmp_itc = itc_create (NULL, lt);
   itc_from_it (tmp_itc, bh->bh_it);
-#endif
 
   while (start)
     {
@@ -836,7 +840,6 @@ compare_wide_to_narrow (wchar_t *wbox1, long n1, unsigned char *box2, long n2)
 {
   wchar_t temp;
   long inx = 0;
-
   while (1)
     {
       if (inx == n1)	/* box1 in end? */
@@ -846,20 +849,15 @@ compare_wide_to_narrow (wchar_t *wbox1, long n1, unsigned char *box2, long n2)
 	  else
 	    return DVC_LESS;   /* otherwise box1 is shorter than box2 */
 	}
-
       if (inx == n2)
 	return DVC_GREATER;	/* box2 in end (but not box1) */
-
       temp = CHAR_TO_WCHAR (box2[inx], NULL);
       if (wbox1[inx] < temp)
 	return DVC_LESS;
-
       if (wbox1[inx] > temp)
 	return DVC_GREATER;
-
       inx++;
     }
-
   /*NOTREACHED*/
   return DVC_LESS;
 }
@@ -907,6 +905,7 @@ box_utf8_string_as_narrow (ccaddr_t _str, caddr_t narrow, long max_len, wcharset
   return box;
 }
 
+/* this function take a string not a box as _str argument */
 caddr_t
 t_box_utf8_string_as_narrow (ccaddr_t _str, caddr_t narrow, long max_len, wcharset_t *charset)
 {
@@ -924,7 +923,7 @@ t_box_utf8_string_as_narrow (ccaddr_t _str, caddr_t narrow, long max_len, wchars
     charset = default_charset;
 
   memset (&state, 0, sizeof (virt_mbstate_t));
-  len = (long) virt_mbsnrtowcs (NULL, (unsigned char **) &src, box_length (str), 0, &state);
+  len = (long) virt_mbsnrtowcs (NULL, (unsigned char **) &src, strlen ((char *) str), 0, &state);
   if (max_len > 0 && len > max_len)
     len = max_len;
   if (len < 0) /* there was <= 0 - bug */
@@ -933,7 +932,7 @@ t_box_utf8_string_as_narrow (ccaddr_t _str, caddr_t narrow, long max_len, wchars
   for (inx = 0, src = str, memset (&state, 0, sizeof (virt_mbstate_t)); inx < len; inx++)
     {
       wchar_t wc;
-      long char_len = (long) virt_mbrtowc (&wc, src, (box_length (str)) - (long)((src - str)), &state);
+      long char_len = (long) virt_mbrtowc (&wc, src, (strlen ((char *) str)) - (long)((src - str)), &state);
       if (char_len <= 0)
 	{
 	  box[inx] = '?';

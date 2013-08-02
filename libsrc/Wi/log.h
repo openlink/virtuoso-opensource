@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -77,11 +77,22 @@
 #define LOGC_NEW_FILE		1
 #define LOGC_LENGTH		2
 
+typedef struct {
+  dk_mutex_t *	lre_mtx;
+  dk_hash_t *	lre_aqs; /** key_id_t => lre_queue_t */
+  stmt_options_t * lre_opts;
+  int lre_aqr_count;   /** number of running requests */
+  caddr_t lre_err;   /** the first reported error */
+  int lre_stopped; /** after first error */
+  char	lre_need_sync;
+  dk_session_t * lre_in;
+} lr_executor_t;
+
 
 #ifdef SQL_SUCCESS  /* If included in the DBMS code */
 void logh_set_level (lock_trx_t * lt, caddr_t * logh);
 
-int log_replay_trx (dk_session_t * in, client_connection_t * cli,
+int log_replay_trx (lr_executor_t * lr_executor, dk_session_t * in, client_connection_t * cli,
 		    caddr_t repl_head, int is_repl, int is_pushback, OFF_T log_rec_start);
 int log_replay_time (caddr_t * header);
 int log_write_replication (caddr_t * header, char * string, long bytes);

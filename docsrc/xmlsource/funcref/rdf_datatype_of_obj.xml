@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_rdf_datatype_of_obj">
+  <refmeta>
+    <refentrytitle>DB.DBA.RDF_DATATYPE_OF_OBJ</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>DB.DBA.RDF_DATATYPE_OF_OBJ</refname>
+    <refpurpose>Returns the datatype of a given argument.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_rdf_datatype_of_obj">
+      <funcprototype id="fproto_rdf_datatype_of_obj">
+        <funcdef><function>DB.DBA.RDF_DATATYPE_OF_OBJ</function></funcdef>
+	<paramdef>in <parameter>arg</parameter> any</paramdef>
+	<paramdef><optional>in <parameter>type_val</parameter> any</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_rdf_datatype_of_obj">
+    <title>Description</title>
+    <para>Returns the datatype of a given argument.</para>
+  </refsect1>
+  <refsect1 id="params_rdf_datatype_of_obj">
+    <title>Parameters</title>
+    <refsect2><title>arg</title>
+      <para>The argument which datatype should be returned.</para>
+    </refsect2>
+    <refsect2><title>type_val</title>
+      <para>The value to be returned for untyped literal arguments. When omitted, its default value 
+      	http://www.w3.org/2001/XMLSchema#string is used.
+      </para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_rdf_datatype_of_obj"><title>Return Types</title>
+    <para>any</para>
+  </refsect1>
+  <refsect1 id="examples_rdf_datatype_of_obj">
+   <title>Examples</title>
+    <example id="ex_rdf_datatype_of_obj"><title></title>
+<programlisting><![CDATA[
+# Explicit typecast (insert) 
+SQL> sparql insert into <test_datatype> { <a> <string> "string 1"^^xsd:string . };
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Insert into <test_datatype>, 1 (or less) triples -- done
+
+1 Rows. -- 94 msec.
+
+
+#Not explicit typecast (insert)
+SQL> sparql insert into <test_datatype> { <a> <string> "string 2". };
+callret-0
+VARCHAR
+_______________________________________________________________________________
+
+Insert into <test_datatype>, 1 (or less) triples -- done
+
+1 Rows. -- 16 msec.
+
+SQL> SPARQL 
+SELECT ?o (iri(sql:RDF_DATATYPE_OF_OBJ(?o, 'untyped!'))) 
+FROM <test_datatype> { <a> <string> ?o} ;
+o                       callret-1
+VARCHAR                 VARCHAR
+_______________________________________________________________________________
+
+string 1                http://www.w3.org/2001/XMLSchema#string 
+string 2                untyped!
+
+2 Rows. -- 16 msec.
+SQL>	
+]]></programlisting>
+    </example>
+  </refsect1>
+</refentry>

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -103,7 +103,30 @@ typedef struct shcompo_s
 #ifdef DEBUG
     int		shcompo_watchdog;	/*!< Last moment when the shcompo is in shcompo_global_hashtable. */
 #endif
+#ifndef NDEBUG
+    thread_t *  shcompo_owner;
+#endif
   } shcompo_t;
+
+#ifdef NDEBUG
+#define SHC_ENTER(s) mutex_enter ((s)->shcompo_comp_mutex)
+#define SHC_LEAVE(s) mutex_leave ((s)->shcompo_comp_mutex)
+#define SHC_COMP_MTX_CHECK(s)
+#else
+#define SHC_ENTER(s) \
+    do { \
+      if (THREAD_CURRENT_THREAD == (s)->shcompo_owner) GPF_T1 ("entering mtx twice"); \
+      mutex_enter ((s)->shcompo_comp_mutex); \
+      (s)->shcompo_owner = THREAD_CURRENT_THREAD; \
+    } while (0)
+#define SHC_LEAVE(s) \
+    do { \
+      (s)->shcompo_owner = NULL; \
+      mutex_leave ((s)->shcompo_comp_mutex); \
+    } while (0)
+#define SHC_COMP_MTX_CHECK(s) \
+    if ((s)->shcompo_comp_mutex && (s)->shcompo_owner != NULL) GPF_T
+#endif
 
 /*! Tries to get a thing or create it by compiling a (copy of) key.
 If \c key_is_const then \c key is not changed (cache will store a copy if needed, otherwise \c key can be freed or placed into cache).

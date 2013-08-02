@@ -23,10 +23,14 @@
  *
  */
 
+#ifndef MHASH_M
 #define MHASH_M  ((uint64) 0xc6a4a7935bd1e995)
 #define MHASH_R 47
+#endif
 
 
+
+#ifndef MHASH_STEP
 #define MHASH_STEP(h, data) \
 { \
   uint64 __k = data; \
@@ -53,6 +57,9 @@
 
 
 
+#ifdef VALGRIND
+#define MHASH_VAR(init, ptr, len) BYTE_BUFFER_HASH (init, ptr, len)
+#else
 #define MHASH_VAR(init, ptr, len)		\
 { \
     uint64 __h = init; \
@@ -79,4 +86,5 @@
     }\
   init = __h; \
 }
-
+#endif
+#endif

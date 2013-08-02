@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -58,6 +58,7 @@ extern "C" {
 #include "xpathp.h"
 #include "date.h" /* for DT_DT_TYPE */
 #include "rdf_core.h" /* for rdf_type_twobyte_to_iri */
+#include "uname_const_decl.h"
 
 #define REF_REL_URI(xte,head) \
  ((BOX_ELEMENTS (head) > 4) ? \
@@ -487,6 +488,7 @@ xqi_value (xp_instance_t * xqi, XT * tree, dtp_t target_dtp)
 	return xqi_cast (xqi, (int) tree->_.literal.res, target_dtp);
       }
     case XP_VARIABLE:
+    case XP_FAKE_VAR:
       state = (int) XQI_GET_INT (xqi, tree->_.var.state);
       if (state == XI_AT_END)
 	return NULL;
@@ -601,6 +603,7 @@ xqi_raw_value (xp_instance_t * xqi, XT * tree)
     case XP_LITERAL:
 	return tree->_.literal.val;
     case XP_VARIABLE:
+    case XP_FAKE_VAR:
       state = (int) XQI_GET_INT (xqi, tree->_.var.state);
       if (state == XI_AT_END)
 	return NULL;
@@ -773,6 +776,7 @@ xqi_is_value (xp_instance_t * xqi, XT * tree)
       return (XI_RESULT == state);
     }
     case XP_VARIABLE:
+    case XP_FAKE_VAR:
     {
       int state = (int) XQI_GET_INT (xqi, tree->_.var.state);
       if (XI_INITIAL == state)
@@ -839,6 +843,7 @@ xt_is_ret_node_set (XT * tree)
   case XQ_QUERY_MODULE:
     return xt_is_ret_node_set (tree->_.module.body);
   case XP_VARIABLE:
+  case XP_FAKE_VAR:
     return 1;
 #if 0
     {
@@ -898,6 +903,7 @@ int xt_predict_returned_type (XT * tree)
     case XP_STEP: case XP_FILTER: case XP_UNION:
       return XPDV_NODESET;
     case XP_VARIABLE:
+    case XP_FAKE_VAR:
       return DV_UNKNOWN;
     case XP_LITERAL:
       return DV_TYPE_OF (tree->_.literal.val);
@@ -918,6 +924,7 @@ xqi_is_next_value (xp_instance_t * xqi, XT * tree)
       xqi_next (xqi, tree);
       return (XI_RESULT == XQI_GET_INT (xqi, tree->_.step.state));
     case XP_VARIABLE:
+    case XP_FAKE_VAR:
       xqi_next (xqi, tree);
       return (XI_RESULT == XQI_GET_INT (xqi, tree->_.var.state));
     case XP_FILTER:
@@ -1902,6 +1909,36 @@ xqi_eval_var (xp_instance_t * xqi, XT * tree)
 
 
 void
+xqi_eval_fake_var (xp_instance_t * xqi, XT * tree)
+{
+  dtp_t dtp;
+  caddr_t val;
+  val = XQI_GET (xqi, tree->_.var.init);
+#ifdef XPATH_DEBUG
+  if (xqi_set_odometer >= xqi_set_debug_start)
+    dk_check_tree (val);
+#endif
+  dtp = DV_TYPE_OF (val);
+  XQI_SET (xqi, tree->_.var.res, NULL);
+#ifdef XPATH_DEBUG
+  if (xqi_set_odometer >= xqi_set_debug_start)
+    dk_check_tree (val);
+#endif
+  if (!val)
+    {
+      XQI_SET_INT (xqi, tree->_.var.state, XI_AT_END);
+      return;
+    }
+#ifdef XPATH_DEBUG
+  if (xqi_set_odometer >= xqi_set_debug_start)
+    dk_check_tree (val);
+#endif
+  XQI_SET_INT (xqi, tree->_.var.state, XI_INITIAL);
+  XQI_SET_INT (xqi, tree->_.var.inx, 0);
+}
+
+
+void
 xqi_eval (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
   int rc;
@@ -1917,6 +1954,9 @@ xqi_eval (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
       return;
     case XP_VARIABLE:
       xqi_eval_var (xqi, tree);
+      return;
+    case XP_FAKE_VAR:
+      xqi_eval_fake_var (xqi, tree);
       return;
     case XP_STEP:
       {
@@ -2917,6 +2957,7 @@ xqi_current (xp_instance_t * xqi, XT * tree)
     case XP_UNION:
       return ((xml_entity_t *) XQI_GET (xqi, tree->_.xp_union.res));
     case XP_VARIABLE:
+    case XP_FAKE_VAR:
       {
 	int state = (int) XQI_GET_INT (xqi, tree->_.var.state);
 	caddr_t init = XQI_GET (xqi, tree->_.var.init);
@@ -2967,6 +3008,7 @@ xqi_next (xp_instance_t * xqi, XT * tree)
   switch (tree->type)
     {
     case XP_VARIABLE:
+    case XP_FAKE_VAR:
       {
 	int state = (int) XQI_GET_INT (xqi, tree->_.var.state);
 	caddr_t * set = (caddr_t *) XQI_GET (xqi, tree->_.var.init);
@@ -3590,18 +3632,26 @@ snprint_xdl (char *buffer, size_t buflength, xp_debug_location_t *xdl)
 }
 
 
-void bif_xquery_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func, caddr_t *str_ret, int *str_is_temp_ret, xml_entity_t **ent_ret, xp_query_t **xqr_ret)
+void
+bif_xquery_arg (caddr_t * qst, state_slot_t ** args, int main_arg_inx, int cache_ssl_inx, int key2, const char *func, const char *keyname, caddr_t *str_ret, int *str_is_temp_ret, xml_entity_t **ent_ret, xp_query_t **xqr_ret)
 {
-  caddr_t arg = bif_arg (qst, args, nth, func);
+  caddr_t arg = bif_arg (qst, args, main_arg_inx, func);
   dtp_t dtp = DV_TYPE_OF (arg);
+  xml_entity_t *xe;
   str_ret[0] = NULL;
   str_is_temp_ret[0] = 0;
   ent_ret[0] = NULL;
   xqr_ret[0] = NULL;
-  if (DV_XML_ENTITY == dtp)
+  switch (dtp)
     {
-      xml_entity_t *xe = (xml_entity_t *)arg;
-      ent_ret[0] = xe;
+    case DV_XPATH_QUERY:
+      xqr_ret[0] = (xp_query_t *)arg;
+      return;
+    case DV_STRING:
+      str_ret[0] = arg;
+      break;
+    case DV_XML_ENTITY:
+      ent_ret[0] = xe = (xml_entity_t *)arg;
       if (NULL != xe->xe_attr_name)
         {
           caddr_t attrvalue = xe->_->xe_currattrvalue (xe);
@@ -3617,26 +3667,50 @@ void bif_xquery_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *f
               return;
             }
 	  sqlr_new_error ("22023", "SR014",
-	    "Function %s needs an expression as argument %d, not a special attribute XML entity '%s'", func, nth + 1, xe->xe_attr_name);
+            "Function %.200s needs %.200s as argument %d, not a special attribute XML entity '%s'", func, keyname, main_arg_inx + 1, xe->xe_attr_name);
         }
       xe->_->xe_string_value (xe, str_ret, DV_STRING);
       str_is_temp_ret[0] = 1;
-      return;
+      break;
+    default:
+      sqlr_new_error ("22023", "SR014",
+        "Function %.200s needs %.200s (either source or compiled, string or an XML entity) as argument %d, not an arg of type %s (%d)",
+        func, keyname, main_arg_inx + 1, dv_type_title (dtp), dtp);
     }
-  if (DV_XPATH_QUERY == dtp)
+  if (cache_ssl_inx)
     {
-      xqr_ret[0] = (xp_query_t *)arg;
+      caddr_t *cached_pair = (caddr_t *)(qst[cache_ssl_inx]);
+      xp_query_t *cached_xqr;
+      if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (cached_pair))
+        return;
+      if (key2 >= 0)
+        {
+          if (3 != BOX_ELEMENTS (cached_pair))
+            return;
+          if (DV_LONG_INT != DV_TYPE_OF (cached_pair[2]))
+            return;
+          if (key2 != unbox (cached_pair[2]))
       return;
     }
-  if (dtp == DV_STRING)
+      else
     {
-      str_ret[0] = arg;
+          if (2 != BOX_ELEMENTS (cached_pair))
+            return;
+        }
+      if (DV_XPATH_QUERY != DV_TYPE_OF (cached_pair[0]))
+        return;
+      if (DV_STRING != DV_TYPE_OF (cached_pair[1]))
+        return;
+      if (strcmp (str_ret[0], cached_pair[1]))
+        return;
+      cached_xqr = (xp_query_t *)(cached_pair[0]);
+      if ((NULL != cached_xqr->xqr_shuric) && cached_xqr->xqr_shuric->shuric_is_stale)
+        return;
+      str_ret[0] = NULL;
+      str_is_temp_ret[0] = 0;
+      xqr_ret[0] = cached_xqr;
       return;
     }
-  if (dtp != DV_SHORT_STRING && dtp != DV_LONG_STRING)
-    sqlr_new_error ("22023", "SR014",
-  "Function %s needs an expression (either source or compiled, string or an XML entity) as argument %d, not an arg of type %s (%d)",
-  func, nth + 1, dv_type_title (dtp), dtp);
 }
 
 
@@ -3652,6 +3726,17 @@ void bif_xquery_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *f
 	  } \
       } while (0)
 
+long
+bif_var_ssl_idx_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *funname)
+{
+  query_instance_t *qi = (query_instance_t *)qst;
+  long ssl_idx = bif_long_arg (qst, args, nth, funname);
+  if (((ssl_idx * sizeof (caddr_t)) >= qi->qi_query->qr_instance_length) ||
+    (ssl_idx < (sizeof (query_instance_t) / sizeof (caddr_t))) )
+    sqlr_new_error ("22023", "SR643", "Incorrect state slot number argument, probably internal SQL compiler error");
+  return ssl_idx;
+}
+
 caddr_t
 xpath_or_xquery_eval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char *funname, ptrlong predicate_type, int with_cache)
 {
@@ -3661,37 +3746,25 @@ xpath_or_xquery_eval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, co
   volatile caddr_t val = NULL;
   caddr_t str;
   int str_is_temp;
-  xml_entity_t *xqr_ent;
+  xml_entity_t *xqr_text_ent;
   shuric_cache_t *shu_cache;
   xp_query_env_t xqre;
   xp_query_t * xqr, *xqr_to_release = NULL;
   query_instance_t * qi = (query_instance_t *) qst;
   xml_entity_t * ent = bif_entity_arg (qst, args, 1, funname);
   size_t argcount = BOX_ELEMENTS (args);
-  long cache_ssl_idx = (with_cache ? bif_long_arg (qst, args, --argcount, funname) : 0);
+  long cache_ssl_idx = (with_cache ? bif_var_ssl_idx_arg (qst, args, --argcount, funname) : 0);
   volatile long nth_res = (argcount > 2) ? (long) bif_long_arg (qst, args, 2, funname) : 1;
   caddr_t * params = (argcount > 3) ? (caddr_t *) bif_array_or_null_arg (qst, args, 3, funname) : NULL;
   caddr_t err = NULL;
   xp_instance_t * xqi;
-  bif_xquery_arg (qst, args, 0, funname, &str, &str_is_temp, &xqr_ent, &xqr);
+  bif_xquery_arg (qst, args, 0, cache_ssl_idx, -1, funname, "an expression", &str, &str_is_temp, &xqr_text_ent, &xqr);
   if (xqr)
     goto xqr_ready; /* see below */
-  if (NULL != xqr_ent)
+  if (NULL != xqr_text_ent)
     cache_ssl_idx = 0; /* Can't use cache for query that is specified by an entity */
-  if (0 != cache_ssl_idx)
-    {
-      caddr_t *arg_cache = (caddr_t *)(qst[cache_ssl_idx]);
-      if ((DV_ARRAY_OF_POINTER == DV_TYPE_OF (arg_cache)) && !strcmp (str, arg_cache[0]))
-        {
-          xqr = (xp_query_t *) arg_cache[1];
-	  if (xqr->xqr_shuric->shuric_is_stale)
-	    xqr = NULL;
-	  else
-	    goto xqr_ready;
-	}
-    }
   shu_cache = (('q' == predicate_type) ? xquery_eval_cache : xpath_eval_cache);
-  if (NULL == xqr_ent)
+  if (NULL == xqr_text_ent)
     {
       encoding_handler_t *eh;
       caddr_t key;
@@ -3719,9 +3792,9 @@ xpath_or_xquery_eval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, co
     }
   memset (&xqre, 0, sizeof (xp_query_env_t));
   xqre.xqre_key_gen = 2;
-  if (NULL != xqr_ent)
+  if (NULL != xqr_text_ent)
     {
-      xqre.xqre_nsctx_xe = xqr_ent;
+      xqre.xqre_nsctx_xe = xqr_text_ent;
       xqre.xqre_query_charset = CHARSET_UTF8;
     }
   xqr_to_release = xqr = xp_query_parse (qi, str, predicate_type, &err, &xqre);
@@ -3730,7 +3803,7 @@ xpath_or_xquery_eval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, co
       if (str_is_temp) dk_free_box (str);
       sqlr_resignal (err);
     }
-  if (NULL == xqr_ent)
+  if (NULL == xqr_text_ent)
     {
       shu_cache->_->shuric_cache_put (shu_cache, xqr->xqr_shuric);
     }
@@ -3739,7 +3812,7 @@ xqr_put_to_arg_cache:
   if (0 != cache_ssl_idx)
     {
       dk_free_tree ((box_t) (qst[cache_ssl_idx]));
-      qst[cache_ssl_idx] = list (2, box_copy (str), xqr);
+      qst[cache_ssl_idx] = list (2, xqr, box_copy (str));
       xqr_to_release = NULL;
     }
 
@@ -3892,6 +3965,7 @@ const char *xt_dump_opname (ptrlong opname, int is_op)
     case XP_LITERAL: return "input from constant value";
     case XP_ELT: return "element() test";
     case XP_ELT_OR_ROOT: return "element() or document-node() test";
+    case XP_FAKE_VAR: return "input from a special or fake variable";
 /*
     case XP_HTTP: return "__http option";
     case XP_SHALLOW: return "__shallow option";
@@ -4054,6 +4128,13 @@ xt_dump (void *tree_arg, dk_session_t *ses, int indent, const char *title, int h
 	  case XP_VARIABLE:
 	    {
 	      sprintf (buf, "VARIABLE:");
+	      SES_PRINT (ses, buf);
+	      xt_dump (tree->_.var.name, ses, indent+2, "NAME", 0);
+	      break;
+	    }
+	  case XP_FAKE_VAR:
+	    {
+	      sprintf (buf, "FAKE VARIABLE:");
 	      SES_PRINT (ses, buf);
 	      xt_dump (tree->_.var.name, ses, indent+2, "NAME", 0);
 	      break;
@@ -4361,14 +4442,14 @@ bif_xquery_eval_w_cache (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_xpath_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  return xpath_or_xquery_explain (qst, err_ret, args, "xpath_eval", 'p');
+  return xpath_or_xquery_explain (qst, err_ret, args, "xpath_explain", 'p');
 }
 
 
 caddr_t
 bif_xquery_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  return xpath_or_xquery_explain (qst, err_ret, args, "xquery_eval", 'q');
+  return xpath_or_xquery_explain (qst, err_ret, args, "xquery_explain", 'q');
 }
 
 
@@ -4383,9 +4464,206 @@ bif_xpath_lex_analyze (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_xquery_lex_analyze (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t str = bif_string_arg (qst, args, 0, "xpath_lex_analyze");
+  caddr_t str = bif_string_arg (qst, args, 0, "xquery_lex_analyze");
   return xp_query_lex_analyze (str, 'q' /* like xquery */, NULL, QST_CHARSET(qst));
 }
+
+
+caddr_t
+xpath_funcall_or_apply (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char *funname, ptrlong predicate_type, int with_cache)
+{
+  int first;
+  dk_set_t set = NULL;
+  volatile caddr_t val = NULL;
+  caddr_t str;
+  int str_is_temp;
+  xml_entity_t *xqr_text_ent;
+  xp_query_t * xqr, *xqr_to_release = NULL;
+  query_instance_t * qi = (query_instance_t *) qst;
+/*
+  xml_entity_t * ent = bif_entity_arg (qst, args, 1, funname);
+*/
+  caddr_t ent = bif_arg (qst, args, 1, funname);
+  size_t argcount = BOX_ELEMENTS (args);
+  long cache_ssl_idx = (with_cache ? bif_var_ssl_idx_arg (qst, args, --argcount, funname) : 0);
+  caddr_t * params = (('f' == predicate_type) ? NULL : (caddr_t *)bif_array_or_null_arg (qst, args, 2, funname));
+  int param_count = ('f' == predicate_type) ? argcount - 2 : BOX_ELEMENTS (params);
+  /*caddr_t err = NULL;*/
+  xp_instance_t * xqi;
+  XT *funcall;
+  xp_func_t fn;
+  bif_xquery_arg (qst, args, 0, cache_ssl_idx, param_count, funname, "function name", &str, &str_is_temp, &xqr_text_ent, &xqr);
+  if (NULL == xqr)
+    {
+      xpf_metadata_t *metas = NULL;
+      xpf_metadata_t ** metas_ptr = (xpf_metadata_t **)id_hash_get (xpf_metas, (caddr_t)(&str));
+      if (NULL == metas_ptr)
+        sqlr_new_error ("22023", "XI039", "Unknown XPath function name %.200s is used as first argument of %.200s function", str, funname);
+      metas = metas_ptr[0];
+      if (metas->xpfm_min_arg_no > param_count)
+        sqlr_new_error ("22023", "XI040", "The XPATH function %.200s() mentioned in %.200s() requires %d arguments but the call contains only %d",
+          str, funname, (int)(metas->xpfm_min_arg_no), param_count );
+      if (metas->xpfm_main_arg_no < param_count)
+        {
+          if (0 == metas->xpfm_tail_arg_no)
+            sqlr_new_error ("22023", "XI041", "The XPATH function %.200s() mentioned in %.200s() can handle only %d arguments but the call provides %d",
+              str, funname, (int)(metas->xpfm_main_arg_no), param_count );
+          else
+            {
+              int tail_mod = (param_count - metas->xpfm_main_arg_no) % metas->xpfm_tail_arg_no;
+              if (tail_mod)
+                sqlr_new_error ("22023", "XI042", "The XPATH function %.200s() mentioned in %.200s() can handle %d, %d, %d etc. arguments but the call provides %d",
+                  str, funname, (int)(metas->xpfm_main_arg_no), (int)(metas->xpfm_main_arg_no + metas->xpfm_tail_arg_no), (int)(metas->xpfm_main_arg_no + 2 * metas->xpfm_tail_arg_no),
+                  param_count );
+            }
+        }
+      xqr = xqr_stub_for_funcall (metas, param_count);
+      if (0 != cache_ssl_idx)
+        {
+          dk_free_tree ((box_t) (qst[cache_ssl_idx]));
+          qst[cache_ssl_idx] = list (3, xqr, box_copy (str), box_num (param_count));
+        }
+      else
+        xqr_to_release = xqr;
+    }
+  xqi = xqr_instance (xqr, qi);
+  QR_RESET_CTX
+    {
+      int inx, param_ofs, param_step;
+      funcall = xqr->xqr_tree;
+      fn = (void *)unbox (funcall->_.xp_func.executable);
+      param_ofs = ((xpf_cartesian_product_loop == fn) ? 1 : 0);
+      param_step = ((xpf_cartesian_product_loop == fn) ? 2 : 1);
+      for (inx = 0; inx < param_count; inx ++)
+        {
+          XT *fake_var = funcall->_.xp_func.argtrees[inx * param_step + param_ofs];
+          caddr_t param_val = (('f' == predicate_type) ? bif_arg (qst, args, 2+inx, funname) : params[inx]);
+          XQI_SET (xqi, fake_var->_.var.res, NULL);
+#ifdef XPATH_DEBUG
+          if (xqi_set_odometer >= xqi_set_debug_start)
+            dk_check_fake_var (param_val);
+#endif
+          XQI_SET (xqi, fake_var->_.var.init, NULL);
+#ifdef XPATH_DEBUG
+          if (xqi_set_odometer >= xqi_set_debug_start)
+            dk_check_fake_var (param_val);
+#endif
+          if ((DV_DB_NULL == DV_TYPE_OF (param_val)) || (DV_ARRAY_OF_XQVAL == DV_TYPE_OF (param_val) && 0 == BOX_ELEMENTS (param_val)))
+            {
+              XQI_SET (xqi, fake_var->_.var.init, dk_alloc_box (0, DV_ARRAY_OF_XQVAL));
+              XQI_SET_INT (xqi, fake_var->_.var.state, XI_AT_END);
+            }
+          else
+            {
+#ifdef XPATH_DEBUG
+              if (xqi_set_odometer >= xqi_set_debug_start)
+                dk_check_fake_var (param_val);
+#endif
+              caddr_t converted_copy;
+              switch (DV_TYPE_OF (param_val))
+                {
+                case DV_LONG_INT: converted_copy = box_num_nonull (unbox (param_val)); break;
+                case DV_ARRAY_OF_POINTER:
+                  {
+                    int ctr;
+                    converted_copy = box_copy_tree (param_val);
+                    box_tag_modify (param_val, DV_ARRAY_OF_XQVAL);
+                    DO_BOX_FAST (caddr_t, v, ctr, converted_copy)
+                      {
+                        if (NULL == v) converted_copy = box_num_nonull (0);
+                      }
+                    END_DO_BOX_FAST;
+                    break;
+                  }
+                default: converted_copy = box_copy_tree (param_val); break;
+                }
+              XQI_SET (xqi, fake_var->_.var.init, converted_copy);
+              XQI_SET_INT (xqi, fake_var->_.var.state, XI_INITIAL);
+              XQI_SET_INT (xqi, fake_var->_.var.inx, 0);
+            }
+        }
+      xqi->xqi_return_attrs_as_nodes = 1;
+      xqi->xqi_xpath2_compare_rules = 0;
+      xqi_eval (xqi, xqr->xqr_tree, (xml_entity_t *)ent); /* At this point the actual type of ent is nto known, we just hope that if it's not an entity it will not be used */
+      first = xqi_is_value (xqi, xqr->xqr_tree);
+      while (first || xqi_is_next_value (xqi, xqr->xqr_tree))
+        {
+          first = 0;
+          val = xqi_raw_value (xqi, xqr->xqr_tree);
+          dk_set_push (&set, box_copy_tree (val));
+        }
+    }
+  QR_RESET_CODE
+    {
+      du_thread_t *self = THREAD_CURRENT_THREAD;
+      caddr_t err = thr_get_error_code (self);
+      XQI_FREE_XP_GLOBALS (xqi);
+      xqi_free (xqi);
+      POP_QR_RESET;
+      dk_free_box ((caddr_t)xqr_to_release);
+      if (str_is_temp) dk_free_box (str);
+      if (err)
+        sqlr_resignal (err);
+      return NULL;  /* not supposed to */
+    }
+  END_QR_RESET;
+  XQI_FREE_XP_GLOBALS (xqi);
+  xqi_free (xqi);
+  dk_free_box ((caddr_t)xqr_to_release);
+  if (str_is_temp) dk_free_box (str);
+  if (NULL == set)
+    val = NEW_DB_NULL;
+  else if (NULL == set->next)
+    val = dk_set_pop (&set);
+  else
+    val = list_to_array (dk_set_nreverse (set));
+#ifdef XPATH_DEBUG
+  if (xqi_set_odometer >= xqi_set_debug_start)
+    dk_check_tree (val);
+#endif
+  if ((xpf_cartesian_product_loop == fn) && (DV_ARRAY_OF_XQVAL == DV_TYPE_OF (val)))
+    {
+      caddr_t val0;
+      if (0 == BOX_ELEMENTS (val))
+        {
+          dk_free_tree (val); return NEW_DB_NULL;
+        }
+      val0 = ((caddr_t *)val)[0];
+      ((caddr_t *)val)[0] = NULL;
+      dk_free_tree (val);
+      return val0;
+    }
+  return val;
+}
+
+
+caddr_t
+bif_xpath_funcall (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return xpath_funcall_or_apply (qst, err_ret, args, "xpath_funcall", 'f', 0);
+}
+
+
+caddr_t
+bif_xpath_apply (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return xpath_funcall_or_apply (qst, err_ret, args, "xpath_apply", 'a', 0);
+}
+
+
+caddr_t
+bif_xpath_funcall_w_cache (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return xpath_funcall_or_apply (qst, err_ret, args, "xpath_funcall", 'f', 1);
+}
+
+
+caddr_t
+bif_xpath_apply_w_cache (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return xpath_funcall_or_apply (qst, err_ret, args, "xpath_apply", 'a', 1);
+}
+
 
 #ifdef XPATHP_DEBUG
 
@@ -4612,7 +4890,9 @@ xte_reference (query_instance_t * qi, caddr_t base, caddr_t ref,
   caddr_t tree;
   caddr_t err = NULL;
   xml_doc_t * top_doc = from_doc->xd_top_doc;
-  caddr_t path_utf8 = xml_uri_resolve (qi, &err, base, ref, "UTF-8");
+  caddr_t path_utf8;
+  lt_check_error (qi->qi_trx);
+  path_utf8 = xml_uri_resolve (qi, &err, base, ref, "UTF-8");
 /*  dbg_printf (("Resolving %s (base %s)\n", ref, base); */
   if (NULL != err)
     {
@@ -5630,6 +5910,11 @@ DBG_NAME (xte_string_value_from_tree) (DBG_PARAMS caddr_t * current, caddr_t * r
     }
   if (ses)
     {
+      if (strses_length (ses) >= MAX_BOX_LENGTH)
+	{
+	  strses_free (ses);
+	  sqlr_new_error ("HT002", "XI038", "Text entity too long");
+	}
       str = strses_string (ses);
       strses_free (ses);
     }
@@ -6288,6 +6573,7 @@ xte_serialization_len (db_buf_t str)
   ses.dks_in_buffer = (char *) str;
   ses.dks_in_fill = INT32_MAX;
   SESSION_SCH_DATA ((&ses)) = &iod;
+  ses.dks_cluster_flags = DKS_LEN_ONLY;
   x = (caddr_t) read_object (&ses);
   dk_free_tree (x);
   return ses.dks_in_read;
@@ -6597,7 +6883,6 @@ xte_word_range (xml_entity_t * xe, wpos_t * start, wpos_t * end)
   caddr_t * ent = xte->xte_current;
   xml_tree_doc_t * xtd = xte->xe_doc.xtd;
   xe_word_ranges_t *locals;
-  dbg_printf(("xte_word_range (%p)", (void *)xe));
   if (NULL == xtd->xtd_wrs)
     {
       char hider = '\0';
@@ -6614,7 +6899,12 @@ xte_word_range (xml_entity_t * xe, wpos_t * start, wpos_t * end)
       start[0] = locals->xewr_main_beg;
       end[0] = locals->xewr_main_end;
     }
-  dbg_printf(("=>(%lu,%lu)", (unsigned long)(start[0]), (unsigned long)(end[0])));
+  dbg_printf(("xte_word_range (%p:%s) => (%lu,%lu)\n",
+      (void *)xe,
+      ((DV_ARRAY_OF_POINTER == DV_TYPE_OF (ent)) ?
+        XTE_HEAD_NAME (XTE_HEAD (ent)) :
+        ((DV_STRING == DV_TYPE_OF (ent)) ? (caddr_t)ent : "<weird>") ),
+      (unsigned long)(start[0]), (unsigned long)(end[0]) ));
 }
 
 
@@ -7209,14 +7499,6 @@ dk_set_t xte_namespace_scope (xml_entity_t *xe, int use_default)
   return (dk_set_nreverse (res));
 }
 
-caddr_t
-bif_is_entity (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  caddr_t x = bif_arg (qst, args, 0, "is_entity");
-  return (box_num (DV_XML_ENTITY == DV_TYPE_OF (x)));
-}
-
-
 void
 xte_replace_strings_with_unames (caddr_t **tree)
 {
@@ -7713,7 +7995,7 @@ xe_deserialize (dk_session_t * ses)
   long len = read_long (ses);
   query_instance_t * qi = DKS_QI_DATA (ses);
 
-  if (!qi && !ses->dks_cluster_data)
+  if (!qi && !ses->dks_cluster_data && !(DKS_LEN_ONLY & ses->dks_cluster_flags))
     return NEW_DB_NULL;
 
   SAVE_READ_FAIL(ses)
@@ -7913,7 +8195,7 @@ val_is_xpack_serialization:
 	return NULL;
       else if (IS_BLOB_HANDLE (val))
 	{
-	  if (DV_BLOB_WIDE_HANDLE == dtp)
+	  if (1 || DV_BLOB_WIDE_HANDLE == dtp)
 	    ses = blob_to_string_output (qi->qi_trx, val);
 	}
       else
@@ -9545,10 +9827,10 @@ caddr_t bif_XMLAddAttribute (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
       break;
     default:
       attr_name = box_dv_uname_string (box_cast_to_UTF8 (qst, raw_attr_name));
-      attr_value = bif_arg (qst, args, 3, "XMLAddAttribute");
-      if (DV_DB_NULL == DV_TYPE_OF (attr_value))
-        return box_num (0);
-      attr_value = box_cast_to_UTF8 (qst, attr_value);
+	  attr_value = bif_arg (qst, args, 3, "XMLAddAttribute");
+	  if (DV_DB_NULL == DV_TYPE_OF (attr_value))
+	    return box_num (0);
+	  attr_value = box_cast_to_UTF8 (qst, attr_value);
       break;
     }
   if (('\0' == attr_name[0]) || (' ' == attr_name[0]) || !strncmp (attr_name, "xmlns", 5))
@@ -9774,8 +10056,8 @@ caddr_t bif_xtree_tridgell32 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
 #endif
 
 #define SUM64(data,lo,med,hi) \
-      end = data + box_length_inline (data) - 1; \
-      for (tail = data; tail < end; tail++) \
+      end = (data) + box_length_inline ((data)) - 1; \
+      for (tail = (data); tail < end; tail++) \
         { lo += tail[0]; med += lo; hi += med; }
 
 static void
@@ -9804,13 +10086,13 @@ xte_sum64_iter (caddr_t *tree, unsigned *lo_ptr, unsigned *med_ptr, unsigned *hi
               caddr_t *items = (caddr_t *)data;
               DO_BOX_FAST (caddr_t, item, item_ctr, items)
                 {
-                  SUM64(item,lon,medn,hin)
+                  SUM64((unsigned char *)(item),lon,medn,hin)
                 }
               END_DO_BOX_FAST;
             }
           else
             {
-          SUM64(data,lon,medn,hin)
+              SUM64(data,lon,medn,hin)
             }
           loxor ^= lon; medxor ^= medn; hixor ^= hin;
         }
@@ -9858,8 +10140,8 @@ caddr_t bif_xtree_sum64 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return xte_sum64 (src->xte_current);
 }
 
-/*! \returns NULL for string, (ccaddr_t)((ptrlong)1) for unsupported, 2 for NULL, UNAME for others */
-ccaddr_t
+/*! \returns NULL for string, (caddr_t)((ptrlong)1) for unsupported, 2 for NULL, UNAME for others */
+caddr_t
 xsd_type_of_box (caddr_t arg)
 {
   dtp_t dtp = DV_TYPE_OF (arg);
@@ -9876,28 +10158,31 @@ again:
     case DV_STRING: case DV_BLOB_HANDLE: case DV_WIDE: case DV_LONG_WIDE:
       return NULL;
     case DV_LONG_INT: return uname_xmlschema_ns_uri_hash_integer;
-    case DV_NUMERIC: case DV_DOUBLE_FLOAT: return uname_xmlschema_ns_uri_hash_double;
+    case DV_NUMERIC: return uname_xmlschema_ns_uri_hash_decimal;
+    case DV_DOUBLE_FLOAT: return uname_xmlschema_ns_uri_hash_double;
     case DV_SINGLE_FLOAT: return uname_xmlschema_ns_uri_hash_float;
     case DV_DB_NULL:
-      return (ccaddr_t)((ptrlong)2);
+      return (caddr_t)((ptrlong)2);
     case DV_RDF:
       {
         rdf_box_t *rb = (rdf_box_t *)arg;
         if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
           {
-            ccaddr_t res = rdf_type_twobyte_to_iri (rb->rb_type);
+            caddr_t res = rdf_type_twobyte_to_iri (rb->rb_type);
             if (NULL == res)
-              return (ccaddr_t)((ptrlong)2);
+              return (caddr_t)((ptrlong)2);
             box_flags (res) |= BF_IRI;
-            return box_copy (res);
+            return res;
           }
         dtp = ((rb->rb_is_outlined) ? ((rdf_bigbox_t *)rb)->rbb_box_dtp : DV_TYPE_OF (rb->rb_box));
         goto again; /* see above */
       }
     case DV_XML_ENTITY:
       return uname_rdf_ns_uri_XMLLiteral;
+    case DV_GEO:
+      return uname_virtrdf_ns_uri_Geometry;
     default:
-      return (ccaddr_t)((ptrlong)1);
+      return (caddr_t)((ptrlong)1);
     }
 }
 
@@ -9906,7 +10191,7 @@ caddr_t
 bif_xsd_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t arg = bif_arg (qst, args, 0, "__xsd_type");
-  caddr_t res = (caddr_t) xsd_type_of_box (arg);
+  caddr_t res = xsd_type_of_box (arg);
   if (IS_BOX_POINTER (res))
     return res;
   switch ((ptrlong)(res))
@@ -9928,7 +10213,7 @@ bif_xsd_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           dtp_t dtp = DV_TYPE_OF (arg);
           sqlr_new_error ("22023", "SR544",
             "Function __xsd_type() can not find XML Schema datatype that matches SQL datatype %s (%d)",
-            dv_type_title (dtp), dtp );
+            dv_type_title (dtp), (int)dtp );
         }
       return box_copy_tree (bif_arg (qst, args, 2, "__xsd_type"));
     }
@@ -9998,7 +10283,7 @@ xml_ent_hash (caddr_t box)
   xml_entity_t *xe = (xml_entity_t *)box;
   int32 chld_hash = 0;
   if (XE_IS_TREE (xe))
-    chld_hash = (int32)(((xml_tree_ent_t *)(xe))->xte_stack_top->xteb_current);
+    chld_hash = (int32)((ptrlong)(((xml_tree_ent_t *)(xe))->xte_stack_top->xteb_current));
   else if (XE_IS_PERSISTENT (xe))
     chld_hash = (int32)(((xper_entity_t *)(xe))->xper_pos);
 /* No need in "if (XE_IS_LAZY (xe))", because there's no position in not-yet-loaded doc */
@@ -10174,6 +10459,55 @@ bif_xml_get_ns_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
+bif_xml_ns_uname (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t pref = bif_string_or_uname_arg (qst, args, 0, "__xml_ns_uname");
+  caddr_t local = bif_string_or_uname_arg (qst, args, 1, "__xml_ns_uname");
+  caddr_t ns_uri = xml_get_ns_uri (((query_instance_t *)qst)->qi_client, pref, 0xffff, 0);
+  caddr_t res;
+  if (NULL == ns_uri)
+    sqlr_new_error ("22023", "SR648", "Unknown XML namespace prefix \"%.50s\"", pref);
+  BOX_DV_UNAME_CONCAT (res, ns_uri, local);
+  dk_free_box (ns_uri);
+  return res;
+}
+
+caddr_t
+bif_xml_ns_iristr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t pref = bif_string_or_uname_arg (qst, args, 0, "__xml_ns_iristr");
+  caddr_t local = bif_string_or_uname_arg (qst, args, 1, "__xml_ns_iristr");
+  caddr_t ns_uri = xml_get_ns_uri (((query_instance_t *)qst)->qi_client, pref, 0xffff, 0);
+  caddr_t res;
+  if (NULL == ns_uri)
+    sqlr_new_error ("22023", "SR648", "Unknown XML namespace prefix \"%.50s\"", pref);
+  res = box_dv_short_concat (ns_uri, local);
+  dk_free_box (ns_uri);
+  box_flags (res) = BF_IRI;
+  return res;
+}
+
+caddr_t
+bif_xml_nsexpand_iristr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t src = bif_string_or_uname_arg (qst, args, 0, "__xml_nsexpand_iristr");
+  const char *colon = strchr (src, ':');
+  caddr_t ns_pref, ns_uri;
+  caddr_t res;
+  if (NULL == colon)
+    sqlr_new_error ("22023", "SR649", "No XML namespace prefix in string \"%.200s\"", src);
+  ns_pref = box_dv_short_nchars (src, colon - src);
+  ns_uri = xml_get_ns_uri (((query_instance_t *)qst)->qi_client, ns_pref, 0xffff, 0);
+  dk_free_box (ns_pref);
+  if (NULL == ns_uri)
+    sqlr_new_error ("22023", "SR648", "Unknown XML namespace prefix in IRI \"%.200s\"", src);
+  res = box_dv_short_strconcat (ns_uri, colon+1);
+  dk_free_box (ns_uri);
+  box_flags (res) = BF_IRI;
+  return res;
+}
+
+caddr_t
 bif_xml_get_all_ns_decls (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   ptrlong persistent = bif_long_arg (qst, args, 0, "__xml_get_all_ns_decls");
@@ -10341,7 +10675,7 @@ void
 xml_tree_init (void)
 {
   macro_char_func *rt;
-  dk_dtp_register_hash (DV_XML_ENTITY, xml_ent_hash, xml_ent_hash_cmp);
+  dk_dtp_register_hash (DV_XML_ENTITY, xml_ent_hash, xml_ent_hash_cmp, xml_ent_hash_cmp);
 #ifdef MALLOC_DEBUG
   xec_tree_xe.dbg_xe_copy = dbg_xte_copy;
   xec_tree_xe.dbg_xe_cut = dbg_xte_cut;
@@ -10411,23 +10745,30 @@ xml_tree_init (void)
   bif_define ("xml_tree_doc_set_ns_output", bif_xml_tree_doc_set_ns_output);
   bif_define ("xml_namespace_scope", bif_xml_namespace_scope);
   bif_define ("xtree_doc_get_dtd", bif_xtree_doc_get_dtd);
-  bif_define_typed ("xpath_eval", bif_xpath_eval, &bt_xml_entity);
+  bif_define ("xpath_eval", bif_xpath_eval); /* not bif_define_typed ("xpath_eval", bif_xpath_eval, &bt_xml_entity); */
   bif_set_uses_index (bif_xpath_eval);
   bif_define ("xquery_eval", bif_xquery_eval);
   bif_set_uses_index (bif_xquery_eval);
-  bif_define ("xpath_eval (w/cache)", bif_xpath_eval_w_cache);
+  bif_define ("xpath_eval__w_cache", bif_xpath_eval_w_cache);
   bif_set_uses_index (bif_xpath_eval_w_cache);
-  bif_define ("xquery_eval (w/cache)", bif_xquery_eval_w_cache);
+  bif_define ("xquery_eval__w_cache", bif_xquery_eval_w_cache);
   bif_set_uses_index (bif_xquery_eval_w_cache);
   bif_define ("xpath_explain", bif_xpath_explain);
   bif_define ("xquery_explain", bif_xquery_explain);
   bif_define ("xpath_text", bif_xpath_text);
   bif_define ("xpath_lex_analyze", bif_xpath_lex_analyze);
   bif_define ("xquery_lex_analyze", bif_xquery_lex_analyze);
+  bif_define ("xpath_funcall", bif_xpath_funcall);
+  bif_set_uses_index (bif_xpath_funcall);
+  bif_define ("xpath_apply", bif_xpath_apply);
+  bif_set_uses_index (bif_xpath_apply);
+  bif_define ("xpath_funcall__w_cache", bif_xpath_funcall_w_cache);
+  bif_set_uses_index (bif_xpath_funcall_w_cache);
+  bif_define ("xpath_apply__w_cache", bif_xpath_apply_w_cache);
+  bif_set_uses_index (bif_xpath_apply_w_cache);
 #ifdef XPATHP_DEBUG
   bif_define ("xpathp_test", bif_xpathp_test);
 #endif
-  bif_define_typed ("isentity", bif_is_entity, &bt_integer);
   bif_define_typed ("xslt_format_number", bif_xslt_format_number, &bt_varchar);
   bif_define ("updateXML", bif_updateXML);
   bif_define ("updateXML_ent", bif_updateXML_ent);
@@ -10450,13 +10791,16 @@ xml_tree_init (void)
   bif_define ("__xml_set_ns_decl", bif_xml_set_ns_decl);
   bif_define ("__xml_get_ns_prefix", bif_xml_get_ns_prefix);
   bif_define ("__xml_get_ns_uri", bif_xml_get_ns_uri);
+  bif_define ("__xml_ns_uname", bif_xml_ns_uname);
+  bif_define ("__xml_ns_iristr", bif_xml_ns_iristr);
+  bif_define ("__xml_nsexpand_iristr", bif_xml_nsexpand_iristr);
   bif_define ("__xml_get_all_ns_decls", bif_xml_get_all_ns_decls);
   bif_define ("__xml_remove_ns_by_prefix", bif_xml_remove_ns_by_prefix);
   bif_define ("__xml_clear_all_ns_decls", bif_xml_clear_all_ns_decls);
   dk_mem_hooks (DV_XML_ENTITY, xe_make_copy, xe_destroy, 0);
   box_tmp_copier[DV_XML_ENTITY] = xe_mp_copy;
   dk_mem_hooks (DV_XQI, box_non_copiable, xqi_destroy, 0);
-  dk_mem_hooks (DV_XPATH_QUERY, xqr_addref, xqr_release, 0);
+  dk_mem_hooks (DV_XPATH_QUERY, xqr_addref, xqr_release, 1);
   PrpcSetWriter (DV_XML_ENTITY, (ses_write_func) xe_serialize);
   PrpcSetWriter (DV_XPATH_QUERY, (ses_write_func) xqr_serialize);
   rt = get_readtable ();

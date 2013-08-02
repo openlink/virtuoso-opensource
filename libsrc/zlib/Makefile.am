@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2011 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -86,7 +86,7 @@ EXTRA_DIST = \
 	amiga/Makefile.sas \
 	contrib/ada/*.txt \
 	contrib/ada/*.adb \
-	contrib/ada/zlib.ads \
+	contrib/ada/*.ads \
 	contrib/ada/zlib.gpr \
 	contrib/amd64/*.S \
 	contrib/asm686/*.S \
@@ -184,6 +184,7 @@ EXTRA_DIST = \
 	contrib/vstudio/vc9/zlibvc.sln \
 	contrib/vstudio/vc9/zlibvc.vcproj \
 	doc/*.txt \
+	example.c \
 	examples/*.c \
 	examples/*.h \
 	examples/*.html \

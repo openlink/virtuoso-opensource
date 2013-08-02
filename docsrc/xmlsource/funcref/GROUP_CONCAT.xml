@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_GROUP_CONCAT">
+  <refmeta>
+    <refentrytitle>GROUP_CONCAT</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>GROUP_CONCAT</refname>
+    <refpurpose>returns an arbitrary value from the multiset passed to it.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_GROUP_CONCAT">
+      <funcprototype id="fproto_GROUP_CONCAT">
+        <funcdef><function>GROUP_CONCAT</function></funcdef>
+	        <paramdef>in <parameter>token</parameter> varchar</paramdef>
+	        <paramdef>in <parameter>delim</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_GROUP_CONCAT">
+    <title>Description</title>
+    <para>GROUP_CONCAT is aggregate function that performs a string concatenation across 
+    	the values of an expression with a group. The order of the strings is not specified. 
+    	The separator character used in the concatenation may be given with the scalar 
+    	argument delimiter.</para>
+    <para>Note: the "sql:" prefix is mandatory when this aggregate is used in SPARQL queries. 
+    	In SQL queries the prefix is "DB.DBA".
+    </para>
+  </refsect1>
+  <refsect1 id="params_GROUP_CONCAT">
+    <title>Parameters</title>
+    <refsect2><title>token</title>
+      <para>An item that should be added to a delimited list.</para>
+    </refsect2>
+    <refsect2><title>delim</title>
+      <para>The delimeter character to be used in the concatenation.</para>
+    </refsect2>
+    
+  </refsect1>
+  <refsect1 id="ret_GROUP_CONCAT"><title>Return Types</title>
+    <para>any</para>
+  </refsect1>
+  <refsect1 id="examples_GROUP_CONCAT">
+    <title>Examples</title>
+    <example id="ex_GROUP_CONCAT"><title></title>
+<programlisting><![CDATA[
+SQL>SPARQL 
+SELECT ?name, (sql:GROUP_CONCAT(?near, ' , '))
+WHERE 
+  { 
+    GRAPH ?g 
+      { 
+        [] a foaf:Person ; 
+        foaf:name ?name ; 
+        foaf:based_near ?near 
+      } 
+  }
+LIMIT 10 
+
+name callret-1
+ANY  ANY
+________________________________________________
+Jonas Smedegaard	 nodeID://b6190457 , nodeID://b6190507
+Dimitar Dimitrov	 http://mitko.dnsalias.net:8005/dataspace/person/dav#based_near , http://ods-qa.openlinksw.com/dataspace/person/dav1#based_near , http://ods-qa.openlinksw.com/dataspace/person/dav2#based_near
+Adam Harvey	       nodeID://b780751
+John Breslin	     nodeID://b56694
+John Breslin	     nodeID://b56694
+Chris Bizer	       http://sws.geonames.org/2950159/ , http://dbpedia.org/resource/Berlin
+Leo Sauermann	     nodeID://b53598
+Andreas Harth	     http://dbpedia.org/resource/Karlsruhe , nodeID://b53559 , nodeID://b53569
+Alexandre Passant	 http://dbpedia.org/resource/Galway
+Leon Lord	         http://ods-qa.openlinksw.com/dataspace/person/t1#based_near
+No. of rows in result: 10 
+
+]]></programlisting>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_GROUP_CONCAT">
+    <title>See Also</title>
+    <para><link linkend="fn_SAMPLE"><function>SAMPLE</function></link></para>
+    <para><link linkend="fn_GROUP_DIGEST"><function>GROUP_DIGEST</function></link></para>
+    <para><link linkend="samplegroupconcatdigest">Differences between SAMPLE, GROUP_CONCAT and GROUP_DIGEST functions usage.</link></para>        
+  </refsect1>
+</refentry>
+

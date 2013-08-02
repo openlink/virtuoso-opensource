@@ -1,14 +1,14 @@
 --
 --  rtest5.sql
 --
---  $Id$
+--  $Id: rtest5.sql,v 1.4.10.1 2013/01/02 16:14:55 source Exp $
 --
 --  Remote database testing part 5
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the

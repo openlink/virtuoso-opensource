@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2010 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -21,10 +21,11 @@
  */
 
 //{{NO_DEPENDENCIES}}
-// Microsoft Developer Studio generated include file.
-// Used by VirtDSN.rc
+// Microsoft Visual C++ generated include file.
+// Used by virtodbc.rc
 //
 #define IDS_FINISH                      1
+#define VS_VERSION_INFO                 1
 #define IDS_NEXT                        3
 #define IDS_AUTHMETHOD1                 4
 #define IDS_AUTHMETHOD2                 5

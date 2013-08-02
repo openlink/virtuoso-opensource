@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -278,7 +278,7 @@ create method wa_new_inst (in login varchar) for wa_wikiv {
   --  SIOC service
   declare  graph_iri, iri, w_iri varchar;
   graph_iri := SIOC..get_graph ();
-  iri := sprintf ('http://%s/dataspace/%s/wiki/%s/atom-pub/', SIOC..get_cname(), login, inst_name);
+  iri := sprintf ('http://%s/dataspace/doc/%s/wiki/%s/atom-pub/', SIOC..get_cname(), login, inst_name);
   w_iri := SIOC..wiki_iri (inst_name);
   SIOC..ods_sioc_service (graph_iri, iri, w_iri, null, null, null, iri, 'Atom');
 

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -64,7 +64,7 @@ HEX             ([0-9A-Fa-f])
 
 <STRLIT>[^\\\"\n\r\t]*"\"" 	{
 		   BEGIN(INITIAL);
-                   jsonyylval.box = spar_strliteral (NULL /* no sparp for JSON_LITERAL */, jsonyytext, 0, 1);
+		   jsonyylval.box = spar_strliteral (NULL /* no sparp for JSON_LITERAL */, jsonyytext, 0, 1);
 		   return STRING;
 		}
 

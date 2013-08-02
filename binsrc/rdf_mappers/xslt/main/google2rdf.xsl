@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -54,6 +54,7 @@
 	xmlns:m="&m;"
     xmlns:d="&d;"
     xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
+    xmlns:opl="http://www.openlinksw.com/schema/attribution#"
     version="1.0">
 
     <xsl:output method="xml" encoding="utf-8" indent="yes"/>
@@ -147,6 +148,7 @@
 		<rdf:type rdf:resource="&foaf;Agent"/>
 		<foaf:name><xsl:value-of select="name"/></foaf:name>
 		<foaf:mbox rdf:resource="mailto:{email}"/>
+				<opl:email_address_digest rdf:resource="{vi:di-uri (email)}"/>
 	    </rdf:Description>
 	</sioc:has_creator>
 		</xsl:if>

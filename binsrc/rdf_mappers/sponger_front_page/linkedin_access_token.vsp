@@ -4,18 +4,25 @@
     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <?vsp
-  declare skinpfx, banner_txt, strapline varchar;
+  declare skinpfx, banner_txt, strapline, banner_logo, fp_title, fp_favicon varchar;
   skinpfx := registry_get ('_sponger_fp_SkinPrefix');
   banner_txt := registry_get ('_sponger_fp_Banner');
+  banner_logo := registry_get ('_sponger_fp_Logo');
   strapline := registry_get ('_sponger_fp_Strapline');
+  fp_title := registry_get ('_sponger_fp_Title');
+  fp_favicon := registry_get ('_sponger_fp_Favicon');
   if (skinpfx = 0) skinpfx := 'skin';
   if (banner_txt = 0) banner_txt := 'Virtuoso Linked Data Middleware';
   if (strapline = 0) strapline := '';
+  if (fp_title = 0) fp_title := 'Virtuoso Sponger';
 ?>
 <head>
   <link rel="stylesheet" href="<?=skinpfx?>/ss/sponger_frontpage.css" type="text/css"/>
+  <?vsp if (fp_favicon <> 0) { ?>
+  <link rel="shortcut icon" href="<?=skinpfx?>/i/<?=fp_favicon?>" />
+  <?vsp } ?>
   <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
-  <title>Sponger-LinkedIn Binding</title>
+  <title><?=fp_title?> - LinkedIn Binding</title>
 <?vsp
   declare li_app_name, li_app_secret, oauth_redirect_url, li_login_dialog_url varchar;
   declare li_user_id, li_user_first_name, li_user_last_name, li_user_public_profile_url varchar;
@@ -145,12 +152,19 @@ cartridge_options_err:
          src="<?=skinpfx?>/i/openlinklogo_wstrap_2008_100h.png" /></a> 
     </div>
     <div id="header_text">
-      <h1><?=banner_txt?></h1><?=strapline?>
+      <?vsp if (banner_logo <> 0) { ?>
+        <img id="banner_logo" alt="[Sponger instance logo]"
+             src="<?=skinpfx?>/i/<?=banner_logo?>" /><br/>
+      <?vsp } else { ?>
+        <h1><?=banner_txt?></h1>
+      <?vsp } ?>
+      <?=strapline?>
     </div>
   </div>
 
   <div id="navbar">
     <a href="index.vsp">Home</a> | 
+    <a href="sponger_architecture.vsp#how_it_works">How It Works</a> | 
     <a href="sponger_architecture.vsp">Architecture</a> | 
     <a href="sponger_setup.vsp">Sponger Setup</a> | 
     <a href="examples.vsp">Live Sponger Examples</a> | 
@@ -196,9 +210,9 @@ cartridge_options_err:
     declare profile_proxy_url varchar;
 
     profile_proxy_url := replace (li_user_public_profile_url, 'http://', 'http/');
-    about_sponge_uri := sprintf ('http://%s/about/html/http/%s/about/id/entity/%s?@Lookup@=&refresh=0', _host, _host, profile_proxy_url);
+    about_sponge_uri := sprintf ('http://%s/about/html/http/%s/about/id/entity/%s?sponger:get=add&refresh=0', _host, _host, profile_proxy_url);
     entity_uri := sprintf ('http://%s/about/id/entity/%s', _host, profile_proxy_url);
-    describe_sponge_uri := sprintf ('http://%s/describe/?url=%U&sp=1', _host, entity_uri);
+    describe_sponge_uri := sprintf ('http://%s/describe/?url=%U&sponger:get=add&sr=0', _host, entity_uri);
 ?>
 
     <p>An OAuth access token has been generated. The Linked Data Generator hosted by application <em><?=li_app_name ?></em> now has access to your LinkedIn-hosted Data Space.</p>
@@ -257,7 +271,7 @@ cartridge_options_err:
 
       <div class="reset">
         <div id="footer">
-          Copyright (C) OpenLink Software 2011. All rights reserved.
+          Copyright (C) 1998-2013 OpenLink Software. All rights reserved.
         </div>
       </div>
 </div><!-- outer -->

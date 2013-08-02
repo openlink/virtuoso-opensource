@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -82,6 +82,12 @@
 		<xsl:if test="$type='plan'">
 			<rdf:Description rdf:about="{$resourceURL}">
 				<rdf:type rdf:resource="&c;Vevent"/>
+				<opl:providedBy>
+					<foaf:Organization rdf:about="http://www.plancast.com#this">
+						<foaf:name>The Plancast</foaf:name>
+						<foaf:homepage rdf:resource="http://www.plancast.com"/>
+					</foaf:Organization>
+				</opl:providedBy>
 				<xsl:if test="string-length(what) &gt; 0">
 					<c:summary>
 						<xsl:value-of select="what"/>

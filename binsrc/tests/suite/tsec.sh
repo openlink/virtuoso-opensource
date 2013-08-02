@@ -1,13 +1,13 @@
 #!/bin/sh
 #
-#  $Id$
+#  $Id: tsec.sh,v 1.12.6.2.4.5 2013/01/02 16:15:23 source Exp $
 #
 #  Security tests
 #  
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -27,7 +27,7 @@
 
 LOGFILE=tsec.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 
 BANNER "STARTED SECURITY TEST (tsec.sh)"
@@ -49,7 +49,22 @@ then
   LOG "***ABORTED: tsecini.sql -- Initialization"
   exit 1
 fi
-
+RUN $ISQL $DSN 'U1RUS' 'Абракадабра2' '"EXEC=ECHO BOTH 'Logging in as U1RUS with UTF-8 password set as wide before';"' PROMPT=OFF ERRORS=STDOUT 2> /dev/null
+if test $STATUS -eq 0
+then
+  LOG "PASSED: Lets U1RUS in with an UTF-8 password"
+else
+  LOG "***FAILED: Does not let U1RUS in with an UTF-8 password"
+  exit 1
+fi
+RUN $ISQL $DSN 'U1RUS' 'Абракадабра1' '"EXEC=ECHO BOTH 'Trying to get in as U1RUS with the wrong password';"' PROMPT=OFF ERRORS=STDOUT 2> /dev/null
+if test $STATUS -eq 0
+then
+  LOG "***ABORTED: Lets the U1RUS in with a wrong password"
+  exit 1
+else
+  LOG "PASSED: Does not let U1RUS in with a wrong password"
+fi
 RUN $ISQL $DSN U1 U1 tsecu1-1.sql PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT
 if test $STATUS -ne 0
 then
@@ -472,11 +487,11 @@ fi
 
 # XXX
 #The following test should be the last before the shutdown, to prevent side effects on tests that may use SPARQL.
-#cat ../wb/SparqlSec.sql | grep -v "set echo on;" > ../wb/SparqlSec_noecho.sql
-#RUN $ISQL $DSN dba dba ../wb/SparqlSec_noecho.sql PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT
+#cat $VIRTUOSO_TEST/../wb/SparqlSec.sql | grep -v "set echo on;" > $VIRTUOSO_TEST/../wb/SparqlSec_noecho.sql
+#RUN $ISQL $DSN dba dba $VIRTUOSO_TEST/../wb/SparqlSec_noecho.sql PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT
 #if test $STATUS -ne 0
 #then
-#  LOG "***ABORTED: ../wb/SparqlSec.sql Sparql graph level security tests"
+#  LOG "***ABORTED: $VIRTUOSO_TEST/../wb/SparqlSec.sql Sparql graph level security tests"
 #  exit 1
 #fi
 

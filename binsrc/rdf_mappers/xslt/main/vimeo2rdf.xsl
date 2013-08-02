@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -31,6 +31,7 @@
 <!ENTITY video "http://purl.org/media/video#">
 <!ENTITY oplustream "http://www.openlinksw.com/schemas/ustream#">
 <!ENTITY media "http://purl.org/media#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY vimeo "http://vimeo.com/">
 ]>
 
@@ -41,6 +42,7 @@
     xmlns:foaf="&foaf;"
     xmlns:bibo="&bibo;"
     xmlns:sioc="&sioc;"
+    xmlns:opl="&opl;"
     xmlns:dcterms="&dcterms;"
     xmlns:media="&media;"
     xmlns:oplustream="&oplustream;"
@@ -76,6 +78,13 @@
 
     <xsl:template match="videos/video">
 		<rdf:Description rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.vimeo.com#this">
+                                 			<foaf:name>Vimeo</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.vimeo.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
 			<rdf:type rdf:resource="&video;Recording"/>
             <vimeo:id><xsl:value-of select="id"/></vimeo:id>
 			<dc:title><xsl:value-of select="title"/></dc:title>
@@ -99,6 +108,12 @@
         
     <xsl:template match="users/user">
 		<rdf:Description rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.vimeo.com#this">
+                                 			<foaf:name>Vimeo</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.vimeo.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
             <rdf:type rdf:resource="&foaf;Person" />
             <sioc:has_container rdf:resource="{$docproxyIRI}"/>
             <rdfs:label><xsl:value-of select="display_name"/></rdfs:label>

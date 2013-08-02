@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2010 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -83,7 +83,7 @@ doc:
 #
 #  Run testsuite if WITH_JDK was found
 #
-if WITH_JDK3
+if WITH_JDK4
 run-tests: virt_jena.jar
 	$(JAVAC) $(JDK_FLAGS) \
 		-classpath "$(JENA_CLASSPATH):./virt_jena.jar" \

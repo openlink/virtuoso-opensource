@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -328,12 +328,13 @@ sqlo_ip_leading_text (df_elt_t * tb_dfe, dbe_key_t * key, index_choice_t * ic, d
       if (prev_col == id_col)
 	break;
       eq_pred = sqlo_key_part_best (prev_col, tb_dfe->_.table.col_preds, 0);
-      if (!dfe_is_eq_pred (eq_pred))
+      if (!dfe_is_eq_pred (eq_pred)
+	  || !pred_const_rhs (eq_pred))
 	return 0;
     }
   END_DO_SET();
   text_pred->dfe_is_placed = DFE_PLACED;
-  text_card = dbe_key_count (key->key_table->tb_primary_key);
+  text_card = dfe_scan_card (tb_dfe);
   ic->ic_key = key;
   ic->ic_text_pred = text_pred;
   ic->ic_text_order = 1;
@@ -356,7 +357,7 @@ sqlo_ip_trailing_text (df_elt_t * tb_dfe, index_choice_t * ic)
     return 0;
   dfe_text_cost (tb_dfe, &text_cost, &text_card, 0);
   ic->ic_unit += text_cost;
-  ic->ic_arity *= text_card;
+  ic->ic_arity /= MAX (1, text_card);
   ic->ic_text_pred = text_pred;
   return 1;
 }
@@ -750,10 +751,7 @@ sqlo_index_path (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t path, int pk_given)
       index_choice_t ic;
       if (opt_inx_name && !path)
 	{
-	  if (!strcmp (opt_inx_name, "PRIMARY KEY")
-	      && key->key_is_primary)
-	    ;
-	  else if (CASEMODESTRCMP (opt_inx_name, key->key_name))
+	  if (!key_matches_index_opt (key, opt_inx_name))
 	    continue;
 	}
       if (pk_given && !key->key_is_primary)
@@ -979,6 +977,9 @@ sqlg_in_iter_add_after_test (sqlo_t * so, dk_set_t prev_in_iters, key_source_t *
 	      sp->sp_min_op = CMP_EQ;
 	      sp->sp_next = ks->ks_row_spec;
 	      ks->ks_row_spec = sp;
+	      if (ks->ks_key->key_is_col)
+		sp->sp_cl = *cl_list_find (ks->ks_key->key_row_var, col->col_id);
+	      else
 	      sp->sp_cl = *key_find_cl (ks->ks_key, col->col_id);
 	    }
 	}
@@ -1098,6 +1099,7 @@ sqlg_make_1_ts (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic, df_elt_t **
     }
   ts->ts_cardinality = ic->ic_arity;
   ts->ts_inx_cardinality = ic->ic_inx_card;
+  ts->ts_cost = ic->ic_unit;
   ts->ts_card_measured = 0 != ic->ic_leading_constants;
   so->so_sc->sc_order = ord;
   if (ic->ic_key->key_distinct || ic->ic_key->key_no_pk_ref)
@@ -1124,7 +1126,11 @@ sqlg_make_path_ts (sqlo_t * so, df_elt_t * tb_dfe)
       if (!ret_ts)
 	ret_ts = ts;
       else
+	{
 	sql_node_append (&ret_ts, ts);
+	  if (IS_TS (ts))
+	    ((table_source_t*)ts)->ts_in_index_path = 1;
+	}
     }
   END_DO_SET();
   if (tb_dfe->_.table.after_join_test)

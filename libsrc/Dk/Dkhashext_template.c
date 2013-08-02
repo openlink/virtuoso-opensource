@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -62,7 +62,7 @@ DBG_HASHEXT_NAME (id_hash_allocate) (DBG_PARAMS id_hashed_key_t buckets, int key
 
 
 #define ID_HASH_FREE_INTERNALS(hash) \
-  DBG_HASHEXT_FREE ((char *) ((hash)->ht_array), -1)
+  DBG_HASHEXT_FREE ((char *) ((hash)->ht_array), (hash)->ht_buckets * (hash)->ht_bucket_length)
 
 
 void
@@ -183,9 +183,12 @@ DBG_HASHEXT_NAME (id_hash_add_new) (DBG_PARAMS id_hash_t * ht, caddr_t key, cadd
   caddr_t res;
   id_hashed_key_t inx = ht->ht_hash_func (key);
 #ifndef NDEBUG
+  if (!ht->ht_allow_dups)
+    {
   caddr_t place = id_hash_get_with_hash_number (ht, key, inx);
   if (place)
     GPF_T1 ("id_hash_add_new with an existing key");
+    }
 #endif
   ID_HASHED_KEY_CHECK (inx);
   ID_CHECK_REHASH (ht);

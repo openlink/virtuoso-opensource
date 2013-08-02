@@ -2,7 +2,7 @@
 //  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 //  project.
 //  
-//  Copyright (C) 1998-2006 OpenLink Software
+//  Copyright (C) 1998-2013 OpenLink Software
 //  
 //  This project is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the
@@ -815,6 +815,17 @@ namespace OpenLink.Data.Virtuoso
 				CloseCursor ();
 			}
 			*/
+			Future future = new Future (Service.FreeStmt, GetId (), (int) CLI.FreeStmtOption.SQL_DROP);
+			try
+			{
+			        connection.futures.Add (future);
+			        future.SendRequest (connection.Session);
+			        future.GetResult (connection.Session, connection.futures);
+			}
+			finally
+			{
+			        connection.futures.Remove (future);
+			}
 		}
 	}
 }

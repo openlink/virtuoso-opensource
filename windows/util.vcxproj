@@ -1,0 +1,269 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGuid>{031DB868-5294-4738-90BA-F80BB2CEA9DC}</ProjectGuid>
+    <RootNamespace>util</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>StaticLibrary</ConfigurationType>
+    <UseOfMfc>false</UseOfMfc>
+    <CharacterSet>MultiByte</CharacterSet>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <ImportGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+    <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros">
+    <ShortPlatform Condition="'$(Platform)' == 'Win32'">x86</ShortPlatform>
+    <ShortPlatform Condition="'$(Platform)' == 'x64'">x64</ShortPlatform>
+  </PropertyGroup>
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ShortPlatform)\$(Configuration)\</OutDir>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ShortPlatform)\$(Configuration)\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ShortPlatform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ShortPlatform)\$(Configuration)\$(ProjectName)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Full</Optimization>
+      <OmitFramePointers>false</OmitFramePointers>
+      <AdditionalIncludeDirectories>..\libsrc\Xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\langfunc;..\libsrc\plugin;..\SDK\$(ShortPlatform)\sslsdk\inc32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>DLDAPI_WINDOWS;_SSL;YYTOKENTYPE;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;NDEBUG;IN_LIBUTIL;_LIBC;_GNU_SOURCE;SUPPORT_UTF8;GLOBALREF=extern;__WITH_LIBDK;PCRE_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <BrowseInformation>
+      </BrowseInformation>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
+    </ClCompile>
+    <ResourceCompile>
+      <Culture>0x0419</Culture>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(OutDir)util.lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <Midl />
+    <ClCompile>
+      <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
+      <Optimization>Full</Optimization>
+      <OmitFramePointers>false</OmitFramePointers>
+      <AdditionalIncludeDirectories>..\libsrc\Xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\langfunc;..\libsrc\plugin;..\SDK\$(ShortPlatform)\sslsdk\inc32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>DLDAPI_WINDOWS;_SSL;YYTOKENTYPE;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;NDEBUG;IN_LIBUTIL;_LIBC;_GNU_SOURCE;SUPPORT_UTF8;GLOBALREF=extern;__WITH_LIBDK;PCRE_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <MinimalRebuild>false</MinimalRebuild>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <BasicRuntimeChecks>Default</BasicRuntimeChecks>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <BufferSecurityCheck>false</BufferSecurityCheck>
+      <FunctionLevelLinking>false</FunctionLevelLinking>
+      <PrecompiledHeader>
+      </PrecompiledHeader>
+      <BrowseInformation>
+      </BrowseInformation>
+      <WarningLevel>Level3</WarningLevel>
+      <SuppressStartupBanner>true</SuppressStartupBanner>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <CompileAs>Default</CompileAs>
+    </ClCompile>
+    <ResourceCompile>
+      <Culture>0x0419</Culture>
+    </ResourceCompile>
+    <Lib>
+      <OutputFile>$(OutDir)util.lib</OutputFile>
+    </Lib>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\libsrc\util\buildarg.c" />
+    <ClCompile Include="..\libsrc\util\cfg2.c" />
+    <ClCompile Include="..\libsrc\util\cslentry.c" />
+    <ClCompile Include="..\libsrc\util\csllkup.c" />
+    <ClCompile Include="..\libsrc\util\cslnment.c" />
+    <ClCompile Include="..\libsrc\util\dbgmal.c" />
+    <ClCompile Include="..\libsrc\util\debug.c" />
+    <ClCompile Include="..\libsrc\util\dyntab.c" />
+    <ClCompile Include="..\libsrc\langfunc\encoding_ucm.c" />
+    <ClCompile Include="..\libsrc\util\expandav.c" />
+    <ClCompile Include="..\libsrc\util\fnmatch.c" />
+    <ClCompile Include="..\libsrc\util\fnqual.c" />
+    <ClCompile Include="..\libsrc\util\fnsearch.c" />
+    <ClCompile Include="..\libsrc\util\fntodos.c" />
+    <ClCompile Include="..\libsrc\util\fnundos.c" />
+    <ClCompile Include="..\libsrc\util\getopt.c" />
+    <ClCompile Include="..\libsrc\util\getopt1.c" />
+    <ClCompile Include="..\libsrc\langfunc\latin1ctype.c" />
+    <ClCompile Include="..\libsrc\util\login_digest.c" />
+    <ClCompile Include="..\libsrc\util\logmsg.c" />
+    <ClCompile Include="..\libsrc\util\ltrim.c" />
+    <ClCompile Include="..\libsrc\util\make_env.c" />
+    <ClCompile Include="..\libsrc\util\mpl.c" />
+    <ClCompile Include="..\libsrc\util\ncfg.c" />
+    <ClCompile Include="..\libsrc\util\ntapp.c" />
+    <ClCompile Include="..\libsrc\util\regerror.c" />
+    <ClCompile Include="..\libsrc\util\regexp.c" />
+    <ClCompile Include="..\libsrc\util\regsub.c" />
+    <ClCompile Include="..\libsrc\util\rtrim.c" />
+    <ClCompile Include="..\libsrc\util\setext.c" />
+    <ClCompile Include="..\libsrc\util\sslengine.c" />
+    <ClCompile Include="..\libsrc\util\startup.c" />
+    <ClCompile Include="..\libsrc\util\stpcpy.c" />
+    <ClCompile Include="..\libsrc\util\strcpyin.c" />
+    <ClCompile Include="..\libsrc\util\strerror.c" />
+    <ClCompile Include="..\libsrc\util\stricmp.c" />
+    <ClCompile Include="..\libsrc\util\strindex.c" />
+    <ClCompile Include="..\libsrc\util\strinsrt.c" />
+    <ClCompile Include="..\libsrc\util\strlwr.c" />
+    <ClCompile Include="..\libsrc\util\strnicmp.c" />
+    <ClCompile Include="..\libsrc\util\strquote.c" />
+    <ClCompile Include="..\libsrc\util\strtok_r.c" />
+    <ClCompile Include="..\libsrc\util\strupr.c" />
+    <ClCompile Include="..\libsrc\util\strxpect.c" />
+    <ClCompile Include="..\libsrc\util\virt_mbrlen.c" />
+    <ClCompile Include="..\libsrc\util\win32\syslog.c" />
+    <ClCompile Include="..\libsrc\util\terminat.c" />
+    <ClCompile Include="..\libsrc\langfunc\ucm2enc.c" />
+    <ClCompile Include="..\libsrc\util\usage.c" />
+    <ClCompile Include="..\libsrc\util\uuid.c" />
+    <ClCompile Include="..\libsrc\util\virt_mbrtowc.c" />
+    <ClCompile Include="..\libsrc\util\virt_mbsnrtowcs.c" />
+    <ClCompile Include="..\libsrc\util\virt_wcrtomb.c" />
+    <ClCompile Include="..\libsrc\util\virt_wcs_mask.c" />
+    <ClCompile Include="..\libsrc\util\virt_wcsnrtombs.c" />
+    <ClCompile Include="..\libsrc\util\pcrelib\pcre_chartables.c" />
+    <ClCompile Include="..\libsrc\util\pcrelib\pcre_compile.c" />
+    <ClCompile Include="..\libsrc\util\pcrelib\pcre_config.c" />
+    <ClCompile Include="..\libsrc\util\pcrelib\pcre_dfa_exec.c" />
+    <ClCompile Include="..\libsrc\util\pcrelib\pcre_exec.c" />
+    <ClCompile Include="..\libsrc\util\pcrelib\pcre_fullinfo.c" />
+    <ClCompile Include="..\libsrc\util\pcrelib\pcre_get.c" />
+    <ClCompile Include="..\libsrc\util\pcrelib\pcre_globals.c" />
+    <ClCompile Include="..\libsrc\util\pcrelib\pcre_newline.c" />
+    <ClCompile Include="..\libsrc\util\pcrelib\pcre_ord2utf8.c" />
+    <ClCompile Include="..\libsrc\util\pcrelib\pcre_study.c" />
+    <ClCompile Include="..\libsrc\util\pcrelib\pcre_tables.c" />
+    <ClCompile Include="..\libsrc\util\pcrelib\pcre_try_flipped.c" />
+    <ClCompile Include="..\libsrc\util\pcrelib\pcre_ucd.c" />
+    <ClCompile Include="..\libsrc\util\pcrelib\pcre_valid_utf8.c" />
+    <ClCompile Include="..\libsrc\util\pcrelib\pcre_version.c" />
+    <ClCompile Include="..\libsrc\util\pcrelib\pcre_xclass.c" />
+    <ClCompile Include="..\libsrc\langfunc\encoding_basic.c" />
+    <ClCompile Include="..\libsrc\langfunc\encoding_charsets.c" />
+    <ClCompile Include="..\libsrc\langfunc\encoding_html.c" />
+    <ClCompile Include="..\libsrc\langfunc\encoding_wide.c">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClCompile>
+    <ClCompile Include="..\libsrc\langfunc\langfunc.c" />
+    <ClCompile Include="..\libsrc\langfunc\langman.c" />
+    <ClCompile Include="..\libsrc\langfunc\language__en_US.c" />
+    <ClCompile Include="..\libsrc\langfunc\language__ru_RU.c" />
+    <ClCompile Include="..\libsrc\langfunc\language__x_ViAny.c" />
+    <ClCompile Include="..\libsrc\langfunc\language__x_ViDoc.c" />
+    <ClCompile Include="..\libsrc\langfunc\unicode3.c" />
+    <ClCompile Include="..\libsrc\plugin\dlf.c" />
+    <ClCompile Include="..\libsrc\plugin\export_gate_virtuoso.c" />
+    <ClCompile Include="..\libsrc\plugin\gate_virtuoso_stubs.c" />
+    <ClCompile Include="..\libsrc\plugin\plugin.c" />
+    <ClCompile Include="..\libsrc\plugin\plugin_win32.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\libsrc\libutil.h" />
+    <ClInclude Include="..\libsrc\util\uuid.h" />
+    <ClInclude Include="..\libsrc\util\uuidP.h" />
+    <ClInclude Include="..\libsrc\langfunc\langfunc.h" />
+    <ClInclude Include="..\libsrc\langfunc\unicode3_all_chars.h" />
+    <ClInclude Include="..\libsrc\langfunc\unicode3_lowers.h" />
+    <ClInclude Include="..\libsrc\langfunc\unicode3_spaces.h" />
+    <ClInclude Include="..\libsrc\langfunc\unicode3_uppers.h" />
+    <ClInclude Include="..\libsrc\plugin\exe_export.h" />
+    <ClInclude Include="..\libsrc\plugin\gate_virtuoso_stubs.h" />
+    <ClInclude Include="..\libsrc\plugin\plugin.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\libsrc\plugin\gen_all_gates.sh">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
+bash gen_all_gates.sh
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)\export_gate_virtuoso.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">cd %(RootDir)%(Directory)
+bash gen_all_gates.sh
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
+bash gen_all_gates.sh
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)\export_gate_virtuoso.c;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)\export_gate_virtuoso.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
+bash gen_all_gates.sh
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)\export_gate_virtuoso.c;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd %(RootDir)%(Directory)
+bash gen_all_gates.sh
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
+bash gen_all_gates.sh
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)\export_gate_virtuoso.c;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)\export_gate_virtuoso.c;%(Outputs)</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="wi.vcxproj">
+      <Project>{93051962-7797-49f0-8958-bb1ce60ffe6f}</Project>
+      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>

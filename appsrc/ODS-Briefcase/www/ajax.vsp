@@ -5,7 +5,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2007 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -71,7 +71,132 @@
     }
     http_rewrite ();
     http_header ('Content-Type: text/plain\r\n');
-    http (ODRIVE.WA.obj2json(returnData, 5));
+    http (ODS..obj2json (returnData, 5));
+    return;
+  }
+  if (action = 'cartridges')
+  {
+    http (ODS..obj2json (ODRIVE.WA.cartridges_get (), 5));
+    return;
+  }
+  if (action = 'metaCartridges')
+  {
+    http (ODS..obj2json (ODRIVE.WA.metaCartridges_get (), 5));
+    return;
+  }
+  if (action = 'mailVerify')
+  {
+    declare _error, _connection, _server, _port, _user, _password any;
+
+    _connection := trim (get_keyword ('connection', params, 'none'));
+    _server     := trim (get_keyword ('server', params, ''));
+    _port       := trim (get_keyword ('port', params, '143'));
+    _user       := trim (get_keyword ('user', params, ''));
+    _password   := trim (get_keyword ('password', params, ''));
+    _error      := DB.DBA.IMAP__verify (_connection, _server, _port, _user, _password);
+
+    if (_error <> '')
+      _error := '<i style="color: red;">' || _error || '</i>';
+
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http_header ('Content-Type: text/plain\r\n');
+    http (         '<div style="padding: 1em;">');
+    http (         '<table style="width: 100%;">');
+    http (         '  <tr>');
+    http (         '    <td align="right" width="50%">');
+    http (         '      <b>Connection type:</b>');
+    http (         '    </td>');
+    http (         '    <td>');
+    http (sprintf ('      %s', _connection));
+    http (         '    </td>');
+    http (         '  </tr>');
+    http (         '  <tr>');
+    http (         '    <td align="right" width="50%">');
+    http (         '      <b>Mail server:</b>');
+    http (         '    </td>');
+    http (         '    <td>');
+    http (sprintf ('      %s:%s', _server, _port));
+    http (         '    </td>');
+    http (         '  </tr>');
+    http (         '  <tr>');
+    http (         '    <td align="right" width="50%">');
+    http (         '      <b>User:</b>');
+    http (         '    </td>');
+    http (         '    <td>');
+    http (sprintf ('      %s', _user));
+    http (         '    </td>');
+    http (         '  </tr>');
+    http (         '  <tr><td align="center" colspan="2"><hr /><td></tr>');
+    http (         '  <tr>');
+    http (         '    <td align="right">');
+    http (         '      <b>Verification:</b>');
+    http (         '    </td>');
+    http (         '    <td>');
+    http (sprintf ('      %s', case when _error = '' then 'Successful' else _error end));
+    http (         '    </td>');
+    http (         '  </tr>');
+    http (         '  <tr><td align="center" colspan="2"><hr /><td></tr>');
+    http (         '  <tr>');
+    http (         '    <td align="center" colspan="2">');
+    http (         '      <input type="button" value="OK" onclick="javascript: verifyDialog.hide(); return false;" />');
+    http (         '    <td>');
+    http (         '  </tr>');
+    http (         '</table>');
+    http (         '</div>');
+  }
+  if (action = 'mailFolders')
+  {
+    declare _error, _connection, _server, _port, _user, _password varchar;
+    declare _folders, _folderParts, _folderPath, _list any;
+
+    _list := vector ();
+    _connection := trim (get_keyword ('connection', params));
+    _server := trim (get_keyword ('server', params));
+    if (is_empty_or_null (_server))
+      goto _exit;
+
+    _port := trim (get_keyword ('port', params));
+    if (is_empty_or_null (_port))
+      goto _exit;
+
+    _user := trim (get_keyword ('user', params));
+    if (is_empty_or_null (_user))
+      goto _exit;
+
+    _password := trim (get_keyword ('password', params));
+    if (is_empty_or_null (_password))
+      goto _exit;
+
+    _connection := case when (_connection = 'ssl') then 1 else 0 end;
+    if (isnull (_port))
+    {
+      _port := '143';
+      if (_connection)
+        _port := '993';
+    }
+    {
+      declare exit handler for SQLSTATE '*'
+      {
+        -- dbg_obj_print ('', __SQL_MESSAGE);
+        goto _exit;
+      };
+      _folders := imap_get (sprintf ('%s:%s', _server, _port), _user, _password, 'list', '*', null, _connection);
+      foreach (any _folder in _folders) do
+      {
+        _folderParts := regexp_parse('\\((.*)\\)\\s\\"(.*)\\"\\s\\"?(.*)((\\r\\n)|\\")', _folder, 0);
+        if (length (_folderParts) > 7)
+        {
+          _folderPath := subseq (_folder, _folderParts[6], _folderParts[7]);
+          _folderPath := rtrim (rtrim (rtrim (_folderPath, '\n'), '\r'), '"');
+          _list := vector_concat (_list , vector (_folderPath));
+        }
+      }
+    }
+  _exit:;
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http (ODS..obj2json (_list, 5));
     return;
   }
   if (action = 'about')

@@ -1,0 +1,56 @@
+<?vsp
+  declare url, sid, token, ticket, auth_token, display_name varchar;
+  declare result, resultHeader any;
+
+  auth_token := null;
+  token := ODS.ODS_API.get_oauth_tok ('Box Net API');
+  if ({?'auth_token'} is not null)
+  {
+    auth_token := get_keyword ('auth_token', params);
+    ticket := get_keyword ('ticket', params);
+    url := sprintf ('https://www.box.com/api/1.0/rest?action=get_auth_token&api_key=%s&ticket=%s', token, ticket);
+    result := http_client_ext (url=>url, http_method=>'GET', headers=>resultHeader, n_redirects=>15);
+    result := xtree_doc (result);
+    if (cast (xpath_eval ('string (/response/status)', result, 1) as varchar) <> 'get_auth_token_ok')
+      return;
+
+    auth_token := xpath_eval ('string (/response/auth_token)', result, 1);
+    display_name := xpath_eval ('string (/response/user/login)', result, 1);;
+    -- person := http_get (url);
+  }
+  else
+  {
+    url := sprintf ('https://www.box.com/api/1.0/rest?action=get_ticket&api_key=%s', token);
+    result := http_client_ext (url=>url, http_method=>'GET', headers=>resultHeader, n_redirects=>15);
+    result := xtree_doc (result);
+    if (cast (xpath_eval ('string (/response/status)', result, 1) as varchar) <> 'get_ticket_ok')
+      return;
+
+    ticket := xpath_eval ('string (/response/ticket)', result, 1);
+    url := sprintf ('https://www.box.com/api/1.0/auth/%s', ticket);
+    http_status_set (302);
+    http_header (sprintf ('Location: %s\r\n', url));
+    return;
+  }
+?>
+<html>
+  <head>
+  </head>
+  <body>
+    <?vsp
+    if (auth_token is not null)
+    {
+    ?>
+    <script type="text/javascript">
+      if (window.opener && window.opener.open && !window.opener.closed) {
+        window.opener.ODRIVE.boxParams('<?V auth_token ?>', '<?V display_name ?>');
+      } else {
+        alert ('Opener not found');
+      }
+      window.close();
+    </script>
+    <?vsp
+    }
+    ?>
+  </body>
+</html>

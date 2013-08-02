@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2013 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<refentry id="fn_vad_load_sql_file">
+  <refmeta>
+    <refentrytitle>VAD_LOAD_SQL_FILE</refentrytitle>
+    <refmiscinfo>vad</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>VAD_LOAD_SQL_FILE</refname>
+    <refpurpose>Loads SQL file and executes its content's statements.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_vad_load_sql_file">
+      <funcprototype id="fproto_vad_load_sql_file">
+        <funcdef>DB.DBA.<function>VAD_LOAD_SQL_FILE</function></funcdef>
+	      <paramdef>in <parameter>sql_file_name</parameter> varchar</paramdef>
+	      <paramdef>in <parameter>grouping</parameter> integer</paramdef>	      
+	      <paramdef>in <parameter>report_errors</parameter> varchar</paramdef>	      	      
+	      <paramdef>in <parameter>is_dav</parameter> integer</paramdef>	      	      	      
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc"><title>Description</title>
+    <para>Loads SQL file ( can be regular file or DAV resource ) and then splits its content 
+    	into single statements and executes them one by one. Along the process, the function 
+    	makes needed reports and changes 'VAD_errcount' registry variable.</para>
+  </refsect1>
+  <refsect1 id="params"><title>Parameters</title>
+    <refsect2><title>sql_file_name</title>
+      <para>For files, this parameter is either absolute or relative to server's working directory. 
+      The directory should be readable according to the virtuoso.ini settings. For DAV resources, 
+      the sql_file_name is always absolute: ('/DAV/&lt;folder-name&gt;...').
+      </para>
+    </refsect2>
+    <refsect2><title>grouping</title>
+      <para>Always set this parameter to 1.</para>
+    </refsect2>
+    <refsect2><title>report_errors</title>
+      <para>The supported values for this parameter are:</para>
+      <itemizedlist mark="bullet">
+        <listitem><emphasis>'report'</emphasis> - to log errors and continue or:</listitem>
+        <listitem><emphasis>'signal'</emphasis> - at the very first error, break the loading 
+        and resignal it.</listitem>
+      </itemizedlist>      
+    </refsect2>    
+    <refsect2><title>is_dav</title>
+      <para>This parameter is 0 for plain file and 1 for resource loaded in DAV.
+      </para>
+    </refsect2>    
+  </refsect1>
+  
+  <refsect1 id="examples_vad_load_sql_file"><title>Examples</title>
+    <example id="ex_vad_load_sql_file_1"><title></title>
+      <para></para>
+<programlisting><![CDATA[
+DB.DBA.VAD_LOAD_SQL_FILE ('./conductor/vdir_helper.sql', 1, 'report', 0);
+]]></programlisting>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso"><title>See Also</title>
+    <para><link linkend="fn_vad_load_file">vad_load_file()</link></para>
+    <para><link linkend="fn_vad_check_uninstallability">vad_check_uninstallability()</link></para>
+    <para><link linkend="fn_vad_check_installability">vad_check_installability()</link></para>
+    <para><link linkend="fn_vad_install">vad_install()</link></para>
+    <para><link linkend="fn_vad_pack">vad_pack()</link></para>
+    <para><link linkend="fn_vad_safe_exec">vad_safe_exec()</link></para>
+    <para><link linkend="fn_vad_uninstall">vad_uninstall()</link></para>
+    <para><link linkend="fn_vad_fail_check">vad_fail_check()</link></para>
+    <para><link linkend="fn_vad_check">vad_check()</link></para>
+  </refsect1>
+</refentry>
+

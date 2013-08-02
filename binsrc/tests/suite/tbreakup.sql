@@ -27,3 +27,7 @@ echo both $if $equ $rowcnt 30 "PASSED" "***FAILED";
 echo both ": union remote join breakup true cond\n";
 
 
+select * from (select breakup (a.row_no, b.fi2) (b.row_no, a.fi3 where a.fi3 is null) from r1..t1 a, r1..t1 b where a.row_no <10 and b.row_no = a.row_no union all select breakup (a.row_no, b.fi2) (b.row_no, a.fi3 where a.fi3 is null) from r1..t1 a, r1..t1 b where a.row_no <15 and b.row_no = a.row_no)f;
+echo both $if $equ $rowcnt 50 "PASSED" "***FAILED";
+echo both ": union all remote join breakup true cond\n";
+

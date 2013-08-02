@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -48,6 +48,7 @@ typedef struct cut_match_s
   size_t cm_pattern_len;
   int cm_flags;
   int cm_score;
+  int cm_end_is_included;
   const char *cm_replace;
   size_t cm_replace_len;
 } cut_match_t;
@@ -59,6 +60,7 @@ typedef struct cut_config_s
   int cc_min_labels_score;
   int cc_strip_trailing_whitespaces;
   int cc_isql_norm;
+  int cc_keep_pragmas;
   cut_match_t *cc_block_starts;
   int cc_block_starts_count;
   int cc_min_block_starts_score;
@@ -238,6 +240,10 @@ get_cut_name:
 	frag_end++;
 	goto get_cut_name;
       }
+    if (env->ce_cfg.cc_keep_pragmas)
+      {
+	(tgt_lineidx_list_tail++)[0] = line_no-1;
+      }
     continue;
 plain_line:
     if (cur_score >= env->ce_cfg.cc_min_labels_score)
@@ -372,6 +378,9 @@ search_for_hits:
 	  ptrdiff_t hit_pos = cut_find_hit_position (curr_cm, line);
 	  if (0 <= hit_pos)
 	    {
+              if (curr_cm->cm_end_is_included)
+                block_end_lineidx_ptr = src_lineidx_list_tail;
+              else
 	      block_end_lineidx_ptr = src_lineidx_list_tail-1;
 	      goto block_done;
 	    }
@@ -405,6 +414,40 @@ int strends (const char * haystack, const char * needle)
   return (hlen >= nlen) && !strcmp (haystack+hlen-nlen, needle);
 }
 
+void isql_norm_line_with_xxx (char *line)
+{
+  char *frag;
+  if (NULL != (frag = strstr (line, "parse error")))
+    {
+      strcpy (frag, "parse error");
+    }
+  else if (NULL != (frag = strstr (line, "syntax error")))
+    {
+      strcpy (frag, "parse error"); /* The string "parse error" is shorter than the string "syntax error" so the source is shortened safely */
+    }                             /* 012345678 */
+  if (NULL != (frag = strstr (line, "at line ")))
+    {
+      char *tail = frag + 8;
+      while (isdigit (tail[0])) tail++;
+      while (' ' == (tail[0])) tail++;
+      strcpy (frag, "at XXX ");
+      memmove (frag+7, tail, strlen (tail)+1);
+    }                             /* 0123456789 */
+  if (NULL != (frag = strstr (line, "at lines ")))
+    {
+      char *tail = frag + 9;
+      while (isdigit (tail[0])) tail++;
+      if ('-' == tail[0])
+        {
+          tail++;
+          while (isdigit (tail[0])) tail++;
+        }
+      while (' ' == (tail[0])) tail++;
+      strcpy (frag, "at XXX ");
+      memmove (frag+7, tail, strlen (tail)+1);
+    }
+}
+
 void isql_norm (cut_env_t *env, int *src_lineidx_list, int *tgt_lineidx_list)
 {
   char **lines = env->ce_src.cb_lines;
@@ -415,35 +458,27 @@ again:
     {
       char *line = lines [src_lineidx_list_tail[0]];
       char *frag;
-#if 0
-      if (strbegins (line, "*** Error"))
-        {
-          char *line_scan;
-          int *li_scan = src_lineidx_list_tail + 1;
-          if (li_scan[0] < 0)
-            goto errmsg_ok;
-          line_scan = lines [(li_scan++)[0]];
-          if (strcmp (line_scan, "in"))
-            goto errmsg_ok;
-          while (li_scan[0] >= 0)
-            {
-              line_scan = lines [li_scan[0]];
-              if (strbegins (line_scan, "at line "))
-                {
-                  (tgt_lineidx_list_tail++)[0] = (src_lineidx_list_tail++)[0];
-                  (tgt_lineidx_list_tail++)[0] = li_scan[0];
-                  src_lineidx_list_tail = li_scan + 1;
-                  goto again;
-                }
-              li_scan++;
-            }
-        }
-#else
+      isql_norm_line_with_xxx (line);
       if (strbegins (line, "*** Error"))
         {
           char *line_scan;
           int *li_scan_in, ctr;
           int *li_scan = src_lineidx_list_tail + 1;
+                                          /* 012345678901234567 */
+          if (NULL != (frag = strstr (line, "[Virtuoso Server]")))
+            {
+              char *tail = frag + 17;
+              while (' ' == (tail[0])) tail++;
+              strcpy (frag, "VS ");
+              memmove (frag+3, tail, strlen (tail)+1);
+            }                             /* 012345678901234567 */
+          if (NULL != (frag = strstr (line, "[Virtuoso Driver]")))
+            {
+              char *tail = frag + 17;
+              while (' ' == (tail[0])) tail++;
+              strcpy (frag, "VD ");
+              memmove (frag+3, tail, strlen (tail)+1);
+            }
           ctr = 0;
           for (;;)
             {
@@ -461,18 +496,45 @@ again:
               line_scan = lines [li_scan[0]];
               if (strbegins (line_scan, "at line ") || strbegins (line_scan, "in lines"))
                 {
+                  char *err_detail_line;
                   while (src_lineidx_list_tail < li_scan_in)
+                    {
+                      err_detail_line = lines [src_lineidx_list_tail[0]];
+                      isql_norm_line_with_xxx (err_detail_line);
                     (tgt_lineidx_list_tail++)[0] = (src_lineidx_list_tail++)[0];
+                    }
+#if 0
+                  err_detail_line = lines [li_scan[0]];
+                  isql_norm_line_with_xxx (err_detail_line);
                   (tgt_lineidx_list_tail++)[0] = li_scan[0];
                   src_lineidx_list_tail = li_scan + 1;
+#else
+                  src_lineidx_list_tail = li_scan;
+#endif
                   goto again;
                 }
               li_scan++;
             }
         }
-#endif
 errmsg_ok:
-
+      if (strbegins (line, "Warning "))
+        {
+                                          /* 012345678901234567 */
+          if (NULL != (frag = strstr (line, "[Virtuoso Server]")))
+            {
+              char *tail = frag + 17;
+              while (' ' == (tail[0])) tail++;
+              strcpy (frag, "VS ");
+              memmove (frag+3, tail, strlen (tail)+1);
+            }                             /* 012345678901234567 */
+          if (NULL != (frag = strstr (line, "[Virtuoso Driver]")))
+            {
+              char *tail = frag + 17;
+              while (' ' == (tail[0])) tail++;
+              strcpy (frag, "VD ");
+              memmove (frag+3, tail, strlen (tail)+1);
+            }
+        }
       if (!strcmp (line, "Type HELP; for help and EXIT; to exit.") ||
 	strbegins (line, "--#") ||
 	strbegins (line, "--src ") ||
@@ -481,15 +543,22 @@ errmsg_ok:
         {
           src_lineidx_list_tail++;
           goto again;
-        }
-      if (NULL != (frag = strstr (line, "parse error")))
+        }                /* 012345678 */
+      if (strbegins (line, "-- Line "))
         {
-          strcpy (frag, "parse error");
-        }
-      else if (NULL != (frag = strstr (line, "syntax error")))
+          char *tail = line + 8;
+          while (isdigit (tail[0])) tail++;
+          while (' ' == (tail[0])) tail++;
+          if (':' == tail[0])
         {
-          strcpy (frag, "parse error");
+              tail++;
+              while (' ' == tail[0]) tail++;
         }
+          if ('\0' == tail[0])
+            line[2] = '\0';
+          else
+            memmove (line+3, tail, strlen (tail)+1);
+        }                             /* 012345678 */
       else if (strends (line, " msec."))
         {
           char *lineend = line + strlen (line) - strlen (" msec.");
@@ -568,11 +637,17 @@ nextline: ;
   fclose (f);
 }
 
+void *malloc_zero (size_t sz)
+{
+  void *res = malloc (sz);
+  memset (res, sz, 0);
+  return res;
+}
 
 int main (int argc, const char *argv[])
 {
   char *err = NULL;
-  cut_env_t *env = malloc (sizeof (cut_env_t));
+  cut_env_t *env = malloc_zero (sizeof (cut_env_t));
   int argctr = 1;
   int score = 1;
   int default_min_labels_score = 0;
@@ -588,17 +663,17 @@ int main (int argc, const char *argv[])
   env->ce_tgt.cb_buf = NULL;
   env->ce_src.cb_len = 0;
   env->ce_tgt.cb_len = 0;
-  env->ce_cfg.cc_labels = malloc (sizeof (cut_label_t) * argc);
+  env->ce_cfg.cc_labels = malloc_zero (sizeof (cut_label_t) * argc);
   env->ce_cfg.cc_labels_count = 0;
-  env->ce_cfg.cc_block_starts = malloc (sizeof (cut_match_t) * argc);
+  env->ce_cfg.cc_block_starts = malloc_zero (sizeof (cut_match_t) * argc);
   env->ce_cfg.cc_block_starts_count = 0;
-  env->ce_cfg.cc_block_hits = malloc (sizeof (cut_match_t) * argc);
+  env->ce_cfg.cc_block_hits = malloc_zero (sizeof (cut_match_t) * argc);
   env->ce_cfg.cc_block_hits_count = 0;
-  env->ce_cfg.cc_block_ends = malloc (sizeof (cut_match_t) * argc);
+  env->ce_cfg.cc_block_ends = malloc_zero (sizeof (cut_match_t) * argc);
   env->ce_cfg.cc_block_ends_count = 0;
-  env->ce_cfg.cc_repls = malloc (sizeof (cut_match_t) * argc);
+  env->ce_cfg.cc_repls = malloc_zero (sizeof (cut_match_t) * argc);
   env->ce_cfg.cc_repls_count = 0;
-  env->ce_cfg.cc_rlines = malloc (sizeof (cut_match_t) * argc);
+  env->ce_cfg.cc_rlines = malloc_zero (sizeof (cut_match_t) * argc);
   env->ce_cfg.cc_rlines_count = 0;
 
   while (argctr < argc)
@@ -659,6 +734,17 @@ int main (int argc, const char *argv[])
 	  argctr += 2;
 	  continue;
 	}
+      if (!strncmp ("-BE", argv[argctr],3) && (argctr < (argc-1)))
+	{
+	  cut_match_t *new_cm = env->ce_cfg.cc_block_ends + env->ce_cfg.cc_block_ends_count++;
+	  new_cm->cm_pattern = argv [argctr+1];
+	  new_cm->cm_pattern_len = strlen (new_cm->cm_pattern);
+	  new_cm->cm_flags = atoi (argv[argctr]+3);
+          new_cm->cm_end_is_included = 1;
+	  new_cm->cm_score = 1;
+	  argctr += 2;
+	  continue;
+	}
       if (!strcmp ("-N", argv[argctr]) && (argctr < (argc-1)))
 	{
 	  env->ce_cfg.cc_min_labels_score = atoi (argv[argctr+1]);
@@ -705,6 +791,12 @@ int main (int argc, const char *argv[])
       if (!strcmp ("-ISQL", argv[argctr]))
 	{
           env->ce_cfg.cc_isql_norm = 1;
+	  argctr += 1;
+	  continue;
+	}
+      if (!strcmp ("-KP", argv[argctr]))
+	{
+          env->ce_cfg.cc_keep_pragmas = 1;
 	  argctr += 1;
 	  continue;
 	}
@@ -807,10 +899,12 @@ usage:
 "-N  <integer>\tMinimal score of tags that makes the line valid\n"
 "\n"
 "-ISQL\tEdit the text to wipe out minor details of ISQL log\n"
+"-KP\tKeep #pragma begin/end lines (the default is to filter them out)\n"
 "\n"
 "-BS<flag>  <pattern>\tAdd <pattern> with <flags> to scoring as block start\n"
 "-BH<flag>  <pattern>\tAdd <pattern> with <flags> to scoring as block hit\n"
-"-BT<flag>  <pattern>\tAdd <pattern> with <flags> to scoring as block end\n"
+"-BE<flag>  <pattern>\tAdd <pattern> with <flags> to scoring as block end\n"
+"-BT<flag>  <pattern>\tSame as -BE but for first line past the end of block\n"
 "-NBS  <integer>\tMinimal score of block starts that makes the block valid\n"
 "-NBH  <integer>\tMinimal score of block hits that makes the block valid\n"
 "\n"
@@ -833,7 +927,7 @@ usage:
 "\n"
 "Groups of lines may start with lines that match 'begin' patterns and end with\n"
 "lines that match 'end' patterns; all lines of a group pass the 'block test' if\n"
-"the group contains sufficient number of likes that match 'hit' patterns.\n"
+"the group contains sufficient number of lines that match 'hit' patterns.\n"
 "This let you extract blocks of program code.\n"
 "\n"
 "Lines with substrings like '#pragma begin <tag1>, <tag2>,... ,<tagN>'\n"
@@ -865,7 +959,7 @@ usage:
 "filtered according to block rules.\n"
 "\n"
 "-ISQL normalizes the text if it's an output of ISQL client. The normalization\n"
-"\ntakes place after processing 'by pragmas' but before processing 'by blocks'.\n"
+"takes place after processing 'by pragmas' but before processing 'by blocks'.\n"
 "\n"
 "Search and replace is the last operation before writing the result.\n"
 "First of all, whole lines are repalced (-RL options). Lines that are not\n"

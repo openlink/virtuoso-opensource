@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -19,6 +19,8 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
+
+use DB;
 
 wa_exec_no_error('drop type DB.DBA.FacebookRestClient');
 wa_exec_no_error('drop type Facebook');
@@ -186,8 +188,9 @@ create method post_request(
     post_string:=string_output_string(aResult);
 
      declare ret_header, rq_header any;
-  rq_header := 'Content-type: application/x-www-form-urlencoded \r\nUser-Agent: Facebook API VSP Client 1.1';
 
+  commit work;
+  rq_header := 'Content-type: application/x-www-form-urlencoded \r\nUser-Agent: Facebook API VSP Client 1.1';
     _result:=http_get ('http://api.facebook.com/restserver.php', ret_header, 'POST', rq_header, post_string); --'127.0.0.1:8888'
      return _result;
 }

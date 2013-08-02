@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -45,6 +45,7 @@ typedef struct
 
 extern const wchar_t virt_utf8_encoding_mask[];
 extern const unsigned char virt_utf8_encoding_byte[];
+size_t virt_mbrlen (const char *s, size_t n, virt_mbstate_t *ps);
 size_t virt_mbrtowc (wchar_t *pwc, const unsigned char *s, size_t n, virt_mbstate_t *ps);
 size_t virt_mbsnrtowcs (wchar_t *dst, unsigned char **src, size_t nmc, size_t len, virt_mbstate_t *ps);
 size_t virt_wcsnrtombs (unsigned char *dst, wchar_t **src, size_t nwc, size_t len, virt_mbstate_t *ps);

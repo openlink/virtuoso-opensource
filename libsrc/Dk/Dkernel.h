@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -750,6 +750,7 @@ extern timeout_t time_now;
 
 EXE_EXPORT (dk_session_t *, strses_allocate, (void));
 EXE_EXPORT (caddr_t, strses_string, (dk_session_t * ses));
+EXE_EXPORT (caddr_t, strses_wide_string, (dk_session_t * ses));
 extern caddr_t t_strses_string (dk_session_t * ses);
 void strses_set_utf8 (dk_session_t * ses, int is_utf8);
 int strses_is_utf8 (dk_session_t * ses);
@@ -757,10 +758,12 @@ int strses_is_utf8 (dk_session_t * ses);
 #ifdef MALLOC_DEBUG
 dk_session_t *dbg_strses_allocate (DBG_PARAMS_0);
 caddr_t dbg_strses_string (DBG_PARAMS dk_session_t * ses);
+caddr_t dbg_strses_wide_string (DBG_PARAMS dk_session_t * ses);
 #ifndef _USRDLL
 #ifndef EXPORT_GATE
 #define strses_allocate() 		dbg_strses_allocate (__FILE__, __LINE__)
 #define strses_string(S) 		dbg_strses_string (__FILE__, __LINE__, (S))
+#define strses_wide_string(S) 		dbg_strses_wide_string (__FILE__, __LINE__, (S))
 #endif
 #endif
 #endif
@@ -994,7 +997,7 @@ void *dk_alloc_reserve_malloc (size_t size, int gpf_if_not);
 
 #ifndef NO_THREAD
 #define BURST_STOP_TIMEOUT 		1000		   /* 1 sec to switch off burst mode */
-extern long time_now_msec;
+extern uint32 time_now_msec;
 void dks_stop_burst_mode (dk_session_t * ses);
 #endif
 

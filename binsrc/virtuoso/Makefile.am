@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -158,4 +158,13 @@ CLEANFILES = virtuoso
 #  Additional files to distribute
 #
 # ----------------------------------------------------------------------
-EXTRA_DIST = libviwin32.def virtuoso_key.pem virtuoso_cert.pem viwin32.bmp viwin32.ico viwin32.c virtuoso.ini
+EXTRA_DIST = \
+	libviwin32.def \
+	resource.h  \
+	virtuoso.ini \
+	virtuoso_cert.pem \
+	virtuoso_key.pem \
+	virtuoso_t.rc \
+	viwin32.bmp \
+	viwin32.c \
+	viwin32.ico

@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2010 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -46,6 +46,19 @@ caddr_t uname__srcfile;
 caddr_t uname__srcline;
 caddr_t uname__txt;
 caddr_t uname__xslt;
+caddr_t uname_SPECIAL_cc_bif_c_AVG;
+caddr_t uname_SPECIAL_cc_bif_c_COUNT;
+caddr_t uname_SPECIAL_cc_bif_c_MAX;
+caddr_t uname_SPECIAL_cc_bif_c_MIN;
+caddr_t uname_SPECIAL_cc_bif_c_SUM;
+caddr_t uname_bif_c_contains;
+caddr_t uname_bif_c_spatial_contains;
+caddr_t uname_bif_c_spatial_intersects;
+caddr_t uname_bif_c_sp_contains;
+caddr_t uname_bif_c_sp_intersects;
+caddr_t uname_bif_c_xcontains;
+caddr_t uname_bif_c_xpath_contains;
+caddr_t uname_bif_c_xquery_contains;
 caddr_t uname_lang;
 caddr_t uname_nil;
 caddr_t uname_nodeID_ns;
@@ -70,6 +83,11 @@ caddr_t uname_rdf_ns_uri_type;
 caddr_t uname_rdf_ns_uri_datatype;
 caddr_t uname_rdf_ns_uri_parseType;
 caddr_t uname_rdf_ns_uri_value;
+caddr_t uname_rdfdf_ns_uri;
+caddr_t uname_rdfdf_ns_uri_default;
+caddr_t uname_rdfdf_ns_uri_default_nullable;
+caddr_t uname_rdfdf_ns_uri_default_iid;
+caddr_t uname_rdfdf_ns_uri_default_iid_nullable;
 caddr_t uname_space;
 caddr_t uname_swap_reify_ns_uri;
 caddr_t uname_swap_reify_ns_uri_statement;
@@ -77,6 +95,8 @@ caddr_t uname_virtrdf_ns_uri;
 caddr_t uname_virtrdf_ns_uri_DefaultQuadMap;
 caddr_t uname_virtrdf_ns_uri_DefaultQuadStorage;
 caddr_t uname_virtrdf_ns_uri_DefaultServiceStorage;
+caddr_t uname_virtrdf_ns_uri_DefaultSparul11Target;
+caddr_t uname_virtrdf_ns_uri_Geometry;
 caddr_t uname_virtrdf_ns_uri_PrivateGraphs;
 caddr_t uname_virtrdf_ns_uri_QuadMap;
 caddr_t uname_virtrdf_ns_uri_QuadMapFormat;
@@ -86,6 +106,10 @@ caddr_t uname_virtrdf_ns_uri_SyncToQuads;
 caddr_t uname_virtrdf_ns_uri_array_of_any;
 caddr_t uname_virtrdf_ns_uri_array_of_string;
 caddr_t uname_virtrdf_ns_uri_bitmask;
+caddr_t uname_virtrdf_ns_uri_bnode_base;
+caddr_t uname_virtrdf_ns_uri_bnode_label;
+caddr_t uname_virtrdf_ns_uri_bnode_row;
+caddr_t uname_virtrdf_ns_uri_dialect;
 caddr_t uname_virtrdf_ns_uri_isSpecialPredicate;
 caddr_t uname_virtrdf_ns_uri_isSubclassOf;
 caddr_t uname_virtrdf_ns_uri_loadAs;
@@ -161,7 +185,7 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname__bang_name				, " !name"			},
   { &uname__bang_ns				, " !ns"			},
   { &uname__bang_uri				, " !uri"			},
-  { &uname__bang_use_attribute_sets		, " !use-attribute-sets"	},
+  { &uname__bang_use_attribute_sets		, " !use-attribute-sets"		},
   { &uname__bang_xmlns				, " !xmlns"			},
   { &uname__attr				, " attr"			},
   { &uname__comment				, " comment"			},
@@ -173,6 +197,19 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname__srcline				, " srcline"			},
   { &uname__txt					, " txt"			},
   { &uname__xslt				, " xslt"			},
+  { &uname_SPECIAL_cc_bif_c_AVG			, "SPECIAL::bif:AVG"		},
+  { &uname_SPECIAL_cc_bif_c_COUNT		, "SPECIAL::bif:COUNT"		},
+  { &uname_SPECIAL_cc_bif_c_MAX			, "SPECIAL::bif:MAX"		},
+  { &uname_SPECIAL_cc_bif_c_MIN			, "SPECIAL::bif:MIN"		},
+  { &uname_SPECIAL_cc_bif_c_SUM			, "SPECIAL::bif:SUM"		},
+  { &uname_bif_c_contains			, "bif:contains"		},
+  { &uname_bif_c_spatial_contains		, "bif:spatial_contains"	},
+  { &uname_bif_c_spatial_intersects		, "bif:spatial_intersects"	},
+  { &uname_bif_c_sp_contains			, "bif:sp_contains"		},
+  { &uname_bif_c_sp_intersects			, "bif:sp_intersects"		},
+  { &uname_bif_c_xcontains			, "bif:xcontains"		},
+  { &uname_bif_c_xpath_contains			, "bif:xpath_contains"		},
+  { &uname_bif_c_xquery_contains		, "bif:xquery_contains"		},
   { &uname_lang					, "lang"			},
   { &uname_nil					, "nil"				},
   { &uname_nodeID_ns				, "nodeID://"			},
@@ -197,6 +234,11 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_rdf_ns_uri_datatype			, RDF_NS_URI "datatype"		},
   { &uname_rdf_ns_uri_parseType			, RDF_NS_URI "parseType"	},
   { &uname_rdf_ns_uri_value			, RDF_NS_URI "value"		},
+  { &uname_rdfdf_ns_uri				, RDFDF_NS_URI			},
+  { &uname_rdfdf_ns_uri_default			, RDFDF_NS_URI "default"	},
+  { &uname_rdfdf_ns_uri_default_nullable	, RDFDF_NS_URI "default-nullable"	},
+  { &uname_rdfdf_ns_uri_default_iid		, RDFDF_NS_URI "default-iid"	},
+  { &uname_rdfdf_ns_uri_default_iid_nullable	, RDFDF_NS_URI "default-iid-nullable"	},
   { &uname_space				, "space"			},
   { &uname_swap_reify_ns_uri			, SWAP_REIFY_NS_URI		},
   { &uname_swap_reify_ns_uri_statement		, SWAP_REIFY_NS_URI "statement"	},
@@ -204,6 +246,8 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_virtrdf_ns_uri_DefaultQuadMap	, VIRTRDF_NS_URI "DefaultQuadMap"	},
   { &uname_virtrdf_ns_uri_DefaultQuadStorage	, VIRTRDF_NS_URI "DefaultQuadStorage"	},
   { &uname_virtrdf_ns_uri_DefaultServiceStorage	, VIRTRDF_NS_URI "DefaultServiceStorage"	},
+  { &uname_virtrdf_ns_uri_DefaultSparul11Target	, VIRTRDF_NS_URI "DefaultSparul11Target"	},
+  { &uname_virtrdf_ns_uri_Geometry		, VIRTRDF_NS_URI "Geometry"	},
   { &uname_virtrdf_ns_uri_PrivateGraphs		, VIRTRDF_NS_URI "PrivateGraphs"	},
   { &uname_virtrdf_ns_uri_QuadMap		, VIRTRDF_NS_URI "QuadMap"	},
   { &uname_virtrdf_ns_uri_QuadMapFormat		, VIRTRDF_NS_URI "QuadMapFormat"	},
@@ -213,6 +257,10 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_virtrdf_ns_uri_array_of_any		, VIRTRDF_NS_URI "array-of-any"	},
   { &uname_virtrdf_ns_uri_array_of_string	, VIRTRDF_NS_URI "array-of-string"	},
   { &uname_virtrdf_ns_uri_bitmask		, VIRTRDF_NS_URI "bitmask"	},
+  { &uname_virtrdf_ns_uri_bnode_base		, VIRTRDF_NS_URI "bnode-base"	},
+  { &uname_virtrdf_ns_uri_bnode_label		, VIRTRDF_NS_URI "bnode-label"	},
+  { &uname_virtrdf_ns_uri_bnode_row		, VIRTRDF_NS_URI "bnode-row"	},
+  { &uname_virtrdf_ns_uri_dialect		, VIRTRDF_NS_URI "dialect"	},
   { &uname_virtrdf_ns_uri_isSpecialPredicate	, VIRTRDF_NS_URI "isSpecialPredicate"	},
   { &uname_virtrdf_ns_uri_isSubclassOf		, VIRTRDF_NS_URI "isSubclassOf"	},
   { &uname_virtrdf_ns_uri_loadAs		, VIRTRDF_NS_URI "loadAs"	},

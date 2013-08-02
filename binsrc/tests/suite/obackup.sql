@@ -1,14 +1,14 @@
 --
 --  tconcur2.sql
 --
---  $Id$
+--  $Id: obackup.sql,v 1.7.6.1.4.2 2013/01/02 16:14:49 source Exp $
 --
 --  Concurrency test #2
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -73,7 +73,7 @@ ECHO BOTH " Orders table has " $LAST[1] " entries\n";
 
 select count (*) from "Demo.demo.Order_Details";
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
-ECHO BOTH " Ordre_Details table has " $LAST[1] " entries\n";
+ECHO BOTH " Order_Details table has " $LAST[1] " entries\n";
 
 
 

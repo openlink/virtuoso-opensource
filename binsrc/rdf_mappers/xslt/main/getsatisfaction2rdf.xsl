@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -27,7 +27,9 @@
 <!ENTITY xml 'http://www.w3.org/XML/1998/namespace#'>
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -41,7 +43,9 @@
     xmlns:opl-gs="http://www.openlinksw.com/schemas/getsatisfaction/"
     xmlns:gr="&gr;"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:opl="&opl;"
     xmlns:bibo="&bibo;"
+    xmlns:sioc="&sioc;"
     version="1.0">
 	<xsl:variable name="ns">http://getsatisfaction.com</xsl:variable>
 	<xsl:output method="xml" indent="yes" omit-xml-declaration="yes" />
@@ -66,6 +70,13 @@
 	<xsl:template match="results">
 		<xsl:if test="$what = 'product'">
 			<rdf:Description rdf:about="{$resourceURL}">
+          	<opl:providedBy>
+          		<foaf:Organization rdf:about="http://www.getsatisfaction.com#this">
+          			<foaf:name>GetSatisfaction</foaf:name>
+          			<foaf:homepage rdf:resource="http://www.getsatisfaction.com"/>
+          		</foaf:Organization>
+          	</opl:providedBy>
+
 				<rdf:type rdf:resource="&foaf;Project" />
 				<foaf:name>
 					<xsl:value-of select="name" />
@@ -80,6 +91,12 @@
 		<xsl:if test="$what = 'products'">
 			<xsl:for-each select="data">
 				<rdf:Description rdf:about="{url}">
+          	<opl:providedBy>
+          		<foaf:Organization rdf:about="http://www.getsatisfaction.com#this">
+          			<foaf:name>GetSatisfaction</foaf:name>
+          			<foaf:homepage rdf:resource="http://www.getsatisfaction.com"/>
+          		</foaf:Organization>
+          	</opl:providedBy>
 					<rdf:type rdf:resource="&foaf;Project" />
 					<foaf:name>
 						<xsl:value-of select="name" />
@@ -94,6 +111,12 @@
 		</xsl:if>
 		<xsl:if test="$what = 'company'">
 			<foaf:Organization rdf:about="{$resourceURL}">
+          	<opl:providedBy>
+          		<foaf:Organization rdf:about="http://www.getsatisfaction.com#this">
+          			<foaf:name>GetSatisfaction</foaf:name>
+          			<foaf:homepage rdf:resource="http://www.getsatisfaction.com"/>
+          		</foaf:Organization>
+          	</opl:providedBy>
 				<foaf:name>
 					<xsl:value-of select="name" />
 				</foaf:name>

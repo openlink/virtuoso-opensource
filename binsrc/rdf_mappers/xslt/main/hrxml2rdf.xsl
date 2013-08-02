@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -31,6 +31,10 @@
 <!ENTITY xbrli 'http://rhizomik.net/ontologies/2007/11/xbrl-instance-2003-12-31.owl#'>
 <!ENTITY xlink 'http://rhizomik.net/ontologies/2007/11/xlink-2003-12-31.owl#'>
 <!ENTITY xml 'http://www.w3.org/XML/1998/namespace#'>
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY owl "http://www.w3.org/2002/07/owl#">
 ]>
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -43,6 +47,9 @@
   xmlns:cv="http://purl.org/captsolo/resume-rdf/0.2/cv#"
   xmlns:cvbase="http://purl.org/captsolo/resume-rdf/0.2/base#"
   xmlns:v="http://www.w3.org/2006/vcard/ns#"
+  xmlns:sioc="&sioc;"
+  xmlns:dcterms="&dcterms;"
+  xmlns:owl="&owl;"	
   version="1.0">
 
   <xsl:output method="xml" indent="yes" omit-xml-declaration="yes"/>

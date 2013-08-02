@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -136,8 +136,10 @@ CR-escape=yes;
   <para><link linkend="virtdir">Virtual Directories</link></para></tip>
 
   <para>For example, here are the basic steps to be performed, in order to mount FS folder to DAV:</para>
-  <para>Suppose there is a folder with name "test" in your FS and it is under the root of the ServerRoot defined in your virtuoso ini file.</para>
-  <para>Also suppose in the folder "test" there is a file index.html with simple content:</para>
+  <orderedlist>
+  <listitem>Suppose there is a folder with name "test" in your FS and it is under the root of the 
+  	ServerRoot defined in your virtuoso ini file.</listitem>
+  <listitem>Also suppose in the folder "test" there is a file index.html with simple content:
   <programlisting><![CDATA[
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
 <html>
@@ -156,25 +158,30 @@ CR-escape=yes;
   </body>
 </html>
   ]]></programlisting>
-  <para>Install the Conductor package</para>
-  <para>Go to http://host:port/conductor and login as dba user.</para>
-  <para>Go to Web Application Server -> Virtual Domains &amp; Directories.</para>
+  </listitem>
+  <listitem>Install the Conductor package</listitem>
+  <listitem>Go to http://host:port/conductor and login as dba user.</listitem>
+  <listitem>Go to Web Application Server -> Virtual Domains &amp; Directories.
   <figure float="1"><title>Mount FS to DAV</title>
       <graphic fileref="ui/admvirtdir011.png"/></figure>
-  <para>For your {Default Web Site} click the link "New Directory".</para>
-  <para>Check the check-box "Type" and select from the drop-down list "Filesystem".</para>
+  </listitem>    
+  <listitem>For your {Default Web Site} click the link "New Directory".</listitem>
+  <listitem>Check the check-box "Type" and select from the drop-down list "Filesystem".
   <figure float="1"><title>Mount FS to DAV</title>
       <graphic fileref="ui/admvirtdir012.png"/></figure>
-  <para>Click "Next"</para>
-  <para>In the shown form: Enter for the field "Path": mytest; Enter for the field "Physical path": /test;
-Enter for the field "Default page": index.html; Check the check-box "Allow Directory Browsing"; Leave the rest of the fields with their default values.</para>
-  <para>Click "Save Changes"</para>
+  </listitem>    
+  <listitem>Click "Next"</listitem>
+  <listitem>In the shown form: Enter for the field "Path": mytest; Enter for the field "Physical path": /test;
+Enter for the field "Default page": index.html; Check the check-box "Allow Directory Browsing"; Leave the rest of the fields with their default values.</listitem>
+  <listitem>Click "Save Changes"
   <figure float="1"><title>Mount FS to DAV</title>
       <graphic fileref="ui/admvirtdir013.png"/></figure>
-  <para>From your browser access the url: http://host:port/mytest/</para>
-  <para>As result the content of the index.html file will be shown:</para>
+  </listitem>    
+  <listitem>From your browser access the url: http://host:port/mytest/</listitem>
+  <listitem>As result the content of the index.html file will be shown:
   <figure float="1"><title>Mount FS to DAV</title>
       <graphic fileref="ui/admvirtdir014.png"/></figure>
-
+  </listitem>
+  </orderedlist>
 </sect3>
 </sect2>

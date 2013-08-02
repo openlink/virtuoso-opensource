@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -48,8 +48,8 @@ typedef uint32 dp_addr_t;	/* must be exactly 32 bits wide */
 
 typedef unsigned char * db_buf_t;
 
-
 #define PAGE_SZ			8192
+#define KILOS_PER_PAGE (PAGE_SZ/1024)
 #define PAGE_DATA_SZ		(PAGE_SZ - DP_DATA)
 
 #define ROW_ALIGN(s) ALIGN_2(s)
@@ -330,6 +330,7 @@ typedef struct log_segment_s	log_segment_t;
 typedef struct io_queue_s io_queue_t;
 
 #define BACKUP_PREFIX_SZ	32
+#define DBS_NAME_MAX_LEN 32
 
 struct wi_database_s
   {
@@ -359,7 +360,15 @@ struct wi_database_s
     int32	db_extent_size;
     int32	db_initial_gen;
     char	db_cpt_dt[10]; /* DT_LENGTH bytes for datetime of checkpoint */
+    int32	db_slice;
+    int32	db_nth_replica;
+    int32	db_slice_status;
+    char	db_dbs_name[DBS_NAME_MAX_LEN];
+    char 	db_id[16];
   };
+
+#define DBS_INCOMPLETE 1 /*being copied or being created by split, can't open */
+
 
 struct disk_stripe_s
   {

@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2009 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -27,14 +27,14 @@
 <xsl:output method="text"/>
 <xsl:template match="facets">
 <xsl:for-each select="result/row">
-  <xsl:for-each select="column"> 
-    <xsl:value-of select="." />  
+  <xsl:for-each select="column">
+    <xsl:value-of select="." />
     <xsl:text></xsl:text>
   </xsl:for-each>
   <xsl:text>
-  </xsl:text> 
+  </xsl:text>
 </xsl:for-each>
-<xsl:text> Complete = </xsl:text> <xsl:value-of select="complete"/> 
+<xsl:text> Complete = </xsl:text> <xsl:value-of select="complete"/>
 <xsl:text> Activity = </xsl:text> <xsl:value-of select="db-activity"/>
 </xsl:template>
 </xsl:stylesheet>

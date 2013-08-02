@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2009 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -124,6 +124,89 @@ create procedure ODS.ODS_API.inheritance2string (
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief Get items list
+--
+-- Retrieve a list of items in a path.
+--
+-- \param path The path to the WebDAV folder to list.
+--
+-- \return An XML representation of the contents of the path. FIXME: link to the schema or a documentation of
+-- the XML format.
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/briefcase.list?path=/DAV/home/demo/Public&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 10 May 2011 11:32:52 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 322
+-- <items>
+--   <item path="/DAV/home/demo/Public/demo.xml">
+--     <name>demo.xml</name>
+--     <mimeType>text/xml</mimeType>
+--     <size>2277</size>
+--     <owner>demo</owner>
+--     <group>demo</group>
+--     <permissions>rw-r-----</permissions>
+--     <modification>2010-12-30</modification>
+--   </item>
+-- <items>
+-- \endverbatim
+--/
+create procedure ODS.ODS_API."briefcase.list" (
+  in path varchar) __soap_http 'text/xml'
+{
+  declare uname, upassword, instance_iri varchar;
+  declare inst_id, id integer;
+  declare N integer;
+  declare sql, params, state, msg, meta, items any;
+
+  path := ODRIVE.WA.path_normalize (path, 'C');
+
+  inst_id := ODS.ODS_API.briefcase_instance (path);
+  if (not ods_check_auth (uname, inst_id))
+    return ods_auth_failed ();
+
+  instance_iri := SIOC..briefcase_iri (ODRIVE.WA.domain_name (inst_id));
+  upassword := ODRIVE.WA.account_password (ODRIVE.WA.account_id (uname));
+
+  sql := 'select TOP 100 rs.* from ODRIVE.WA.odrive_proc (rs0, rs1, rs2, rs3, rs4, rs5)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ? and rs5 = ? order by c9, c3, c1';
+  params := vector (path, 0, null, null, uname, upassword);
+
+  set_user_id('dba');
+  state := '00000';
+  exec (sql, state, msg, params, 0, meta, items);
+  if (state <> '00000')
+    signal (state, msg);
+
+  http ('<?xml version="1.0"?>\n');
+  http ('<items>\n');
+  foreach (any item in items) do
+  {
+    http (sprintf ('<item path="%V">\n', ODRIVE.WA.utf2wide(item[8])));
+      http (sprintf ('<uri>%V</uri>\n', SIOC..post_iri_ex (instance_iri, DB.DBA.DAV_SEARCH_ID (item[8], item[1]))));
+      http (sprintf ('<name>%V</name>\n', ODRIVE.WA.utf2wide (item[0])));
+      http (sprintf ('<mimeType>%V</mimeType>\n', item[4]));
+      http (sprintf ('<size>%V</size>\n', cast(item[2] as varchar)));
+      http (sprintf ('<owner>%V</owner>\n', item[5]));
+      http (sprintf ('<group>%V</group>\n', item[6]));
+      http (sprintf ('<permissions>%V</permissions>\n', item[7]));
+      http (sprintf ('<modification>%V</modification>\n', item[3]));
+    http ('</item>\n');
+  }
+  http ('</items>\n');
+
+  return '';
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure ODS.ODS_API."briefcase.info" (
   in path varchar,
   in "type" varchar) __soap_http 'text/xml'
@@ -179,6 +262,41 @@ create procedure ODS.ODS_API."briefcase.info" (
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief Get information about a resource.
+--
+-- Retrieve detailed information about a WebDAV resource.
+--
+-- \param path The path to the resource in question.
+--
+-- \return An XML document detailing the resource in question. FIXME: document schema.
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/briefcase.resource.info?path=/DAV/home/demo/demo.xml&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 10 May 2011 11:32:52 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 322
+--
+-- <item path="/DAV/home/demo/demo.xml">
+--   <name>demo.xml</name>
+--   <mimeType>text/xml</mimeType>
+--   <size>2277</size>
+--   <owner>demo</owner>
+--   <group>demo</group>
+--   <permissions>rw-r-----</permissions>
+--   <modification>2010-12-30</modification>
+--   <creation>2010-12-30</creation>
+--   <properties></properties>
+--   <shares></shares>
+-- </item>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.resource.info" (
   in path varchar) __soap_http 'text/xml'
 {
@@ -188,6 +306,35 @@ create procedure ODS.ODS_API."briefcase.resource.info" (
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief Change the state of version control on a resource.
+--
+-- ODS supports version control for files as discussed in \ref ods_briefcase_version_control. This
+-- method allows to enable or disable version control on single resources.
+--
+-- \param path The path to the resource in question.
+-- \param state Value indicating whether version control should be enabled ("on") or disabled ("off").
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \b Example:
+-- \verbatim
+-- $  curl -i "http://demo.openlinksw.com/ods/api/briefcase.resource.vc.set?path=/DAV/home/demo/demo.xml&state=on&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 10 May 2011 11:51:49 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 57
+--
+-- <result>
+--   <code>1</code>
+--   <message>Success</message>
+-- </result>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.resource.vc.set" (
   in path varchar,
   in state varchar := 'on') __soap_http 'text/xml'
@@ -231,6 +378,56 @@ create procedure ODS.ODS_API."briefcase.resource.vc.set" (
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief Get a specific version of a version controlled resource.
+--
+-- If a resource has version control enabled this method allows to retrieve all versions that have
+-- been checked in.
+--
+-- \param path The path of the resource to get.
+-- \param version The version to get. This can either be an exact numerical version to get or the special version 'last'
+--                which will fetch the last version that has been checked in. FIXME: is this correct?
+--
+-- \return The content of the resource at the time it was checked in with the requested version.
+--
+-- \sa briefcase.resource.vc.set, briefcase.resource.vc.checkin
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/briefcase.resource.vc.get?path=/DAV/home/demo/demo.xml&version=last&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 10 May 2011 12:01:38 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml
+-- Content-Length: 2277
+--
+-- <?xml version="1.0" ?>
+-- <?xml-stylesheet type="text/xsl" href="/DAV/JS/xslt/formview.xsl"?>
+-- <form showajax="1" >
+--         <ds name="new datasource" type="1" pagesize="30">
+--                 <connection type="1" endpoint="/XMLA" dsn="DSN=ora10ma-hr" nocred="0" uid="0"/>
+--                 <options table="" limit="30" cursortype="0"/>
+--                 <query><![CDATA[]]></query>
+--                 <outputFields>
+--                 </outputFields>
+--                 <inputFields>
+--                 </inputFields>
+--                 <selfFields>
+--                 </selfFields>
+--                 <masterFields>
+--                 </masterFields>
+--                 <masterDSs>
+--                 </masterDSs>
+--                 <types>
+--                 </types>
+--         </ds>
+-- [...]
+-- </form>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.resource.vc.get" (
   in path varchar,
   in version varchar := 'last') __soap_http 'text/xml'
@@ -267,6 +464,33 @@ create procedure ODS.ODS_API."briefcase.resource.vc.get" (
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief Check-in resource.
+--
+-- FIXME: what does this do?
+--
+-- \param path The path to the resource to check in.
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/briefcase.resource.vc.checkin?path=/DAV/home/demo/demo.xml&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 10 May 2011 11:57:47 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 57
+--
+-- <result>
+--   <code>1</code>
+--   <message>Success</message>
+-- </result>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.resource.vc.checkin" (
   in path varchar) __soap_http 'text/xml'
 {
@@ -299,6 +523,33 @@ create procedure ODS.ODS_API."briefcase.resource.vc.checkin" (
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief Check-out a resource.
+--
+-- FIXME: What does this do?
+--
+-- \param path The path to the resource to check out.
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/briefcase.resource.vc.checkout?path=/DAV/home/demo/demo.xml&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 10 May 2011 11:56:28 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 57
+--
+-- <result>
+--   <code>1</code>
+--   <message>Success</message>
+-- </result>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.resource.vc.checkout" (
   in path varchar) __soap_http 'text/xml'
 {
@@ -331,6 +582,33 @@ create procedure ODS.ODS_API."briefcase.resource.vc.checkout" (
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief Lock a resource.
+--
+-- FIXME: explain what locking is.
+--
+-- \param path The path to the resource to lock or unlock.
+-- \param state Can be 'on' or 'off' to either lock or unlock the resource.
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/briefcase.resource.vc.lock?path=/DAV/home/demo/demo.xml&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 10 May 2011 11:58:44 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 57
+--
+-- <result>
+--   <code>1</code>
+--   <message>Success</message>
+-- </result>\endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.resource.vc.lock" (
   in path varchar,
   in state varchar := 'on') __soap_http 'text/xml'
@@ -402,6 +680,38 @@ create procedure ODS.ODS_API."briefcase.resource.vc.info.internal" (
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief Get resource version control details
+--
+-- ODS supports version control for files as discussed in \ref ods_briefcase_version_control. This method
+-- allows to retrieve information about the version control status of a resource.
+--
+-- \param path Path to the resource in question.
+--
+-- \return The state of version control for the given file. FIXME: document the XML schema that is used.
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/briefcase.resource.vc.info?path=/DAV/home/demo/demo.xml&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 10 May 2011 11:53:56 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 173
+--
+-- <item path="/DAV/home/demo/demo.xml">
+--   <versionControl>
+--     <enabled>ON</enabled>
+--     <autoVersioning>OFF</autoVersioning>
+--     <state>Check-In</state>
+--     <lock>OFF</lock>
+--   </versionControl>
+-- </item>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.resource.vc.info" (
   in path varchar) __soap_http 'text/xml'
 {
@@ -470,6 +780,38 @@ create procedure ODS.ODS_API."briefcase.resource.vc.versions.internal" (
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief Get information on the available versions of a resource.
+--
+-- Retrieve details on the available versions of a resource in the WebDAV. The resource
+-- must be version controlled.
+--
+-- \param path The path to the versioned resource.
+--
+-- \return A listing of all available versions encoded as XML. FIXME: describe the scheme
+--
+-- \sa briefcase.resource.vc.set
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/briefcase.resource.vc.versions?path=/DAV/home/demo/demo.xml&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 10 May 2011 11:59:49 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 259
+--
+-- <item path="/DAV/home/demo/demo.xml">
+--   <versions>
+--     <version path="/DAV/home/demo/VVC/demo.xml/1" number="1" size="2277" modification="2011-05-10" />
+--     <version path="/DAV/home/demo/VVC/demo.xml/2" number="2" size="2277" modification="2011-05-10" />
+--   </versions>
+-- </item>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.resource.vc.versions" (
   in path varchar) __soap_http 'text/xml'
 {
@@ -503,6 +845,42 @@ create procedure ODS.ODS_API."briefcase.resource.vc.versions" (
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief Get the contents of a resource.
+--
+-- Retrieve the actual resource from WebDAV, ie. download the file.
+--
+-- \param path The path to the resource to retrieve.
+--
+-- \return The contents of the file.
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/briefcase.resource.get?path=/DAV/home/demo/demo.xml&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 10 May 2011 11:45:08 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml
+-- Content-Length: 2277
+--
+-- <?xml version="1.0" ?>
+-- <?xml-stylesheet type="text/xsl" href="/DAV/JS/xslt/formview.xsl"?>
+-- <form showajax="1" >
+--         <ds name="new datasource" type="1" pagesize="30">
+--                 <connection type="1" endpoint="/XMLA" dsn="DSN=ora10ma-hr" nocred="0" uid="0"/>
+--                 <options table="" limit="30" cursortype="0"/>
+--                 <query><![CDATA[]]></query>
+--                 <outputFields>
+--                 </outputFields>
+--
+-- [...]
+--
+-- </form>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.resource.get" (
   in path varchar) __soap_http 'text/xml'
 {
@@ -536,6 +914,38 @@ create procedure ODS.ODS_API."briefcase.resource.get" (
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief Store/upload a resource.
+--
+-- Store a resource/file in the WebDAV system.
+--
+-- FIXME: I suppose using magic folders we can also upload RDF content and maybe more. This should be detailed here.
+--
+-- \param path The target path of the newly created resource.
+-- \param content The content of the resource. FIXME: byte64 encoded for binary files?
+-- \param type The type of the resource. FIXME: what does this mean? mimetype?
+-- \param permissions The permissions of the newly created resource as detailed in \ref ods_briefcase_resource_permissions.
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/briefcase.resource.store?path=/DAV/home/demo/mysimpletext.xml&content=test&type=xml&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 10 May 2011 11:47:16 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 61
+--
+-- <result>
+--   <code>16795</code>
+--   <message>Success</message>
+-- </result>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.resource.store" (
 	in path varchar,
 	in content varchar,
@@ -568,6 +978,31 @@ ret:
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief Delete a WebDAV resource.
+--
+-- \param path The path to the resource to be deleted.
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/briefcase.resource.delete?path=/DAV/home/demo/mysimpletext.xml&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 10 May 2011 11:48:52 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 57
+--
+-- <result>
+--   <code>1</code>
+--   <message>Success</message>
+-- </result>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.resource.delete" (
   in path varchar) __soap_http 'text/xml'
 {
@@ -594,6 +1029,38 @@ create procedure ODS.ODS_API."briefcase.resource.delete" (
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief Get details about a WebDAV collection.
+--
+-- \param path The path to the collection.
+--
+-- \return The details of the collection encoded as XML.
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/briefcase.collection.info?path=/DAV/home/demo/mytest&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 10 May 2011 12:08:13 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 309
+--
+-- <item path="/DAV/home/demo/mytest/">
+--   <name>mytest</name>
+--   <mimeType>dav/unix-directory</mimeType>
+--   <owner>demo</owner>
+--   <group>demo</group>
+--   <permissions>rw-r--r--</permissions>
+--   <modification>2011-05-10</modification>
+--   <creation>2011-05-10</creation>
+--   <properties></properties>
+--   <shares></shares>
+-- </item>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.collection.info" (
   in path varchar) __soap_http 'text/xml'
 {
@@ -603,6 +1070,33 @@ create procedure ODS.ODS_API."briefcase.collection.info" (
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief Create a new WebDAV collection/folder.
+--
+-- \param path The path of the collection to create.
+-- \param permissions The permissions of the newly created collection as detailed in \ref ods_briefcase_resource_permissions
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \sa briefcase.collection.delete
+--
+-- \b Example:
+-- \verbatim
+-- $  curl -i "http://demo.openlinksw.com/ods/api/briefcase.collection.create?path=/DAV/home/demo/mytest&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 10 May 2011 12:07:07 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 60
+--
+-- <result>
+--   <code>1317</code>
+--   <message>Success</message>
+-- </result>\endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.collection.create" (
   in path varchar,
   in permissions varchar := '110100100RM') __soap_http 'text/xml'
@@ -633,6 +1127,33 @@ ret:
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief Delete a WebDAV collection.
+--
+-- \param path The path to the collection to be deleted.
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \sa briefcase.collection.create
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/briefcase.collection.delete?path=/DAV/home/demo/mytest&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 10 May 2011 12:09:31 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 57
+--
+-- <result>
+--   <code>1</code>
+--   <message>Success</message>
+-- </result>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.collection.delete" (
   in path varchar) __soap_http 'text/xml'
 {
@@ -659,6 +1180,37 @@ create procedure ODS.ODS_API."briefcase.collection.delete" (
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief Copy a WebDAV resource.
+--
+-- Copies a resource or a collection to a new path. Collections are copied recursively.
+--
+-- \param from_path The resource path.
+-- \param to_path The target path. FIXME: is this like in UNIX shells or is this the new full path of the resource?
+-- \param overwrite Flag to indicate if an already existing resource at \p to_path should be overwritten. If 0 then then
+--                  call will fail in case that a resource exists.
+-- \param permissions The permissions of the newly created resource as detailed in \ref ods_briefcase_resource_permissions.
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/briefcase.copy?from_path=/DAV/home/demo/t1/&to_path=/DAV/home/demo/t2/&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 10 May 2011 12:13:41 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 57
+--
+-- <result>
+--   <code>1</code>
+--   <message>Success</message>
+-- </result>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.copy" (
   in from_path varchar,
   in to_path varchar,
@@ -708,6 +1260,36 @@ ret:
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief Move a WebDAV resource.
+--
+-- Move a resource or collection within the WebDAV tree.
+--
+-- \param from_path The resource path.
+-- \param to_path The target path. FIXME: is this like in UNIX shells or is this the new full path of the resource?
+-- \param overwrite Flag to indicate if an already existing resource at \p to_path should be overwritten. If 0 then then
+--                  call will fail in case that a resource exists.
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/briefcase.move?from_path=/DAV/home/demo/t1/&to_path=/DAV/home/demo/t2/&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 10 May 2011 12:15:33 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 57
+--
+-- <result>
+--   <code>1</code>
+--   <message>Success</message>
+-- </result>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.move" (
   in from_path varchar,
   in to_path varchar,
@@ -779,6 +1361,34 @@ create procedure ODS.ODS_API."briefcase.property.list.internal" (
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief List all WebDAV properties of a resource.
+--
+-- \param path The path of the resource to list properties for.
+-- \param mask FIXME: what is he mask?
+--
+-- \return All properties for the given resource path encoded as XML. FIXME: explain the schema
+--
+-- \sa briefcase.property.set, briefcase.property.get, briefcase.property.remove
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/briefcase.property.list?path=/DAV/home/demo/tmp1/&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 10 May 2011 12:44:46 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 100
+--
+-- <item path="/DAV/home/demo/tmp1/">
+--   <properties>
+--     <property name="test">1</property>
+--   </prop
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.property.list" (
   in path varchar,
   in mask varchar := '%') __soap_http 'text/xml'
@@ -813,6 +1423,35 @@ create procedure ODS.ODS_API."briefcase.property.list" (
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief Create a new WebDAV property or update an existing one.
+--
+-- \param path The path of the resource which should be modified.
+-- \param name The name of the property to change.
+-- \param value The value of the property to change.
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \sa briefcase.property.list, briefcase.property.get, briefcase.property.remove
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/briefcase.property.set?path=/DAV/home/demo/tmp1/&name=test&value=1&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 10 May 2011 12:42:46 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 57
+--
+-- <result>
+--   <code>1</code>
+--   <message>Success</message>
+-- </result>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.property.set" (
   in path varchar,
   in "name" varchar,
@@ -843,6 +1482,34 @@ create procedure ODS.ODS_API."briefcase.property.set" (
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief Remove a WebDAV property.
+--
+-- \param path The path of the resource.
+-- \param name The name of the property to remove.
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \sa briefcase.property.list, briefcase.property.get, briefcase.property.set
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/briefcase.property.remove?path=/DAV/home/demo/tmp1/&name=test&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 10 May 2011 12:54:12 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 57
+--
+-- <result>
+--   <code>1</code>
+--   <message>Success</message>
+-- </result>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.property.remove" (
   in path varchar,
   in "name" varchar) __soap_http 'text/xml'
@@ -872,6 +1539,31 @@ create procedure ODS.ODS_API."briefcase.property.remove" (
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief Get the value of a WebDAV property
+--
+-- \param path The path of the resource.
+-- \param name The name of the property to return.
+--
+-- \return The value of the requested property.
+--
+-- \sa briefcase.property.list
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/briefcase.property.get?path=/DAV/home/demo/tmp1/&name=test&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 10 May 2011 12:51:20 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 1
+--
+-- 1
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.property.get" (
   in path varchar,
   in name varchar := null) __soap_http 'text/xml'
@@ -901,6 +1593,45 @@ create procedure ODS.ODS_API."briefcase.property.get" (
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief Share a WebDAV resource with a user.
+--
+-- \param path The path to the resource to share.
+-- \param user The user to share the resource with.
+-- \param inheritance The way the given rights should be propagated to children of the given path (in case of a collection).
+--                    - \p 'object' will only change the permissions on the resource itself
+--                    - \p 'all' will recursively update permissions on all children
+--                    - \p 'children' will only update permissions on direct children. FIXME: is this correct?
+-- \param allow The actions the \p user should be allowed to perform. This is a UNIX style permission mask string consisting
+--              of three chars \p "rwx", referring to read, write, and execute permissions respectively. Each of these
+--              permissions can be granted by writing the character or not granted by writing a dash \p - instead. Example:
+--              \p "r--" would grant only read rights while it does not make any changes to the write and execute rights.
+-- \param deny The permissions to deny the user. The value is the same as with \p allow except that the given rights are
+--             revoked instead of granted. Thus, specifying \p "r--" would revoke read rights while leaving the write and
+--             execute rights untouched.
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \sa briefcase.share.remove, briefcase.share.list
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/briefcase.share.add?path=/DAV/home/demo/tmp1/&user=test1&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 17 May 2011 11:49:52 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 57
+--
+-- <result>
+--   <code>1</code>
+--   <message>Success</message>
+-- </result>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.share.add" (
   in path varchar,
   in "user" varchar,
@@ -969,6 +1700,40 @@ create procedure ODS.ODS_API."briefcase.share.add" (
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief Remove a share from a resource.
+--
+-- Remove a previously created share for a specific resource and user.
+--
+-- \param path The path to the resource to remove the share from.
+-- \param user The user to revoke the share from.
+-- \param inheritance The way the given rights should be propagated to children of the given path (in case of a collection).
+--                    - \p 'object' will only change the permissions on the resource itself
+--                    - \p 'all' will recursively update permissions on all children
+--                    - \p 'children' will only update permissions on direct children. FIXME: is this correct?
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \sa briefcase.share.add, briefcase.share.list
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/briefcase.share.remove?path=/DAV/home/demo/tmp1/&user=demo&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 10 May 2011 13:07:45 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 57
+--
+-- <result>
+--   <code>1</code>
+--   <message>Success</message>
+-- </result>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.share.remove" (
   in path varchar,
   in "user" varchar,
@@ -1045,6 +1810,34 @@ create procedure ODS.ODS_API."briefcase.share.list.internal" (
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief List all the shares on a resource.
+--
+-- \param path The path to the resource for which shares should be listed.
+--
+-- \return The list of all shares created on the given resource encoded as XML.
+--
+-- \sa briefcase.share.add
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/briefcase.share.list?path=/DAV/home/demo/tmp1/&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 17 May 2011 11:50:55 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 121
+--
+-- <item path="/DAV/home/demo/tmp1/">
+--   <shares>
+--     <share user="test1" inheritance="all" allow="rw-" deny="---" />
+--   </shares>
+-- </item>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.share.list" (
   in path varchar) __soap_http 'text/xml'
 {
@@ -1078,6 +1871,40 @@ create procedure ODS.ODS_API."briefcase.share.list" (
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief Set an option of an ODS Briefcase instance.
+--
+-- \param inst_id The id of the Briefcase instance. See \ref ods_instance_id for details.
+-- \param options A comma-separated list of \p "key=value" pairs. Supported keys are:
+-- - chars
+-- - rows
+-- - tbLabels
+-- - hiddens
+-- - atomVersion
+-- FIXME: what are these options?
+--
+-- \return An error code stating the success of the command execution as detailed in \ref ods_response_format_result_code.
+--
+-- \sa briefcase.options.get
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/briefcase.options.set?inst_id=6&options=rows%3D5&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 10 May 2011 13:14:10 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 57
+--
+-- <result>
+--   <code>1</code>
+--   <message>Success</message>
+-- </result>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.options.set" (
 	in inst_id integer := null,
 	in options any) __soap_http 'text/xml'
@@ -1121,6 +1948,36 @@ create procedure ODS.ODS_API."briefcase.options.set" (
 
 -------------------------------------------------------------------------------
 --
+--!
+-- \brief Get The option values of a ODS Briefcase instance.
+--
+-- \param inst_id The id of the Briefcase instance. See \ref ods_instance_id for details.
+--
+-- \return A list of the option values encoded as XML.
+--
+-- \sa briefcase.options.set
+--
+-- \b Example:
+-- \verbatim
+-- $ curl -i "http://demo.openlinksw.com/ods/api/briefcase.options.get?inst_id=6&user_name=demo&password_hash=921q783d9e4cbdf5cvs343dafdfvrf6a4fh"
+--
+-- HTTP/1.1 200 OK
+-- Server: Virtuoso/06.02.3129 (Solaris) x86_64-pc-solaris2.10-64  VDB
+-- Connection: Keep-Alive
+-- Date: Tue, 10 May 2011 13:11:48 GMT
+-- Accept-Ranges: bytes
+-- Content-Type: text/xml; charset="UTF-8"
+-- Content-Length: 125
+--
+-- <settings>
+--   <chars>60</chars>
+--   <rows>10</rows>
+--   <tbLabels>1</tbLabels>
+--   <hiddens>.</hiddens>
+--   <atomVersion>1.0</atomVersion>
+-- </settings>
+-- \endverbatim
+--/
 create procedure ODS.ODS_API."briefcase.options.get" (
 	in inst_id integer := null) __soap_http 'text/xml'
 {
@@ -1158,6 +2015,7 @@ create procedure ODS.ODS_API."briefcase.options.get" (
 
 grant select on WS.WS.SYS_DAV_RES to ODS_API;
 
+grant execute on ODS.ODS_API."briefcase.list" to ODS_API;
 grant execute on ODS.ODS_API."briefcase.resource.info" to ODS_API;
 grant execute on ODS.ODS_API."briefcase.resource.get" to ODS_API;
 grant execute on ODS.ODS_API."briefcase.resource.store" to ODS_API;

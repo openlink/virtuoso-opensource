@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -74,6 +74,13 @@
 	    <dc:title><xsl:value-of select="$baseUri"/></dc:title>
 	</rdf:Description>
         <rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://revyu.com#this">
+                        			<foaf:name>Revyu.com</foaf:name>
+                        			<foaf:homepage rdf:resource="http://revyu.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 	    <rdf:type rdf:resource="&foaf;Person" />
             <sioc:has_container rdf:resource="{$docproxyIRI}"/>
 	    <xsl:for-each select="foaf:made">

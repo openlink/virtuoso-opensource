@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -57,11 +57,6 @@ TEMPFILE=/tmp/isql.$$
 LN="ln -fs"
 RM="rm -f"
 fi
-VOS=0
-if [ -f ../../autogen.sh ]
-then
-    VOS=1
-fi
 
 if [ "z$SERVER" = "z" ]  
 then
@@ -83,8 +78,13 @@ else
   myrm=rm
 fi
 
+VOS=0
+if [ -f ../../autogen.sh ]
+then
+    VOS=1
+fi
 
-VERSION_INIT() 
+version_init() 
 {
     if [ $VOS -eq 1 ]
     then
@@ -239,7 +239,7 @@ sticker_init() {
   echo "  <name package=\"Discussion\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"ODS Discussion\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2011 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2013 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -407,15 +407,13 @@ vad_create() {
 
 STOP_SERVER
 directory_clean
-VERSION_INIT
+version_init
 directory_init
 virtuoso_init
 sticker_init
 vad_create
 virtuoso_shutdown
 chmod 644 ods_discussion_dav.vad
-directory_clean
-
 
 CHECK_LOG
 RUN egrep  '"\*\*.*FAILED:|\*\*.*ABORTED:"' "$LOGFILE"
@@ -424,6 +422,8 @@ then
 	$myrm -f *.vad
 	exit 1
 fi
+
+directory_clean
 
 BANNER "COMPLETED VAD PACKAGING"
 exit 0

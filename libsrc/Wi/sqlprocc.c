@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -206,7 +206,7 @@ sqlc_decl_variable_list_1 (sql_comp_t * sc, ST ** params, int is_arg_list, dk_se
     else if (decl->_.var.mode == OUT_MODE)
       {
 	if (SSL_VEC == var->ssl_type)
-	  var->ssl_vec_param == SSL_VP_OUT;
+	  var->ssl_vec_param = SSL_VP_OUT;
 	else
       var->ssl_type = SSL_REF_PARAMETER_OUT;
       }
@@ -319,7 +319,7 @@ sqlc_cursor_def (sql_comp_t * sc, ST * stmt)
 	!SEL_IS_DISTINCT (stmt->_.cr_def.spec) &&
 	!sqlp_tree_has_fun_ref (stmt->_.cr_def.spec))
     {
-    remote_co = NULL;
+    remote_co = sqlc_expand_remote_cursor (sc, stmt->_.cr_def.spec);
     }
   else
     remote_co = NULL;
@@ -658,7 +658,7 @@ sqlc_compound_stmt (sql_comp_t * sc, ST * tree, dk_set_t ret_exps)
     }
   END_DO_SET();
   if (rets)
-    return (state_slot_t **)list_to_array (rets);
+    return (state_slot_t **)revlist_to_array (rets);
   return NULL;
 }
 
@@ -779,7 +779,7 @@ sqlc_asg_stmt (sql_comp_t * sc, ST * stmt, dk_set_t * code)
   else
     {
       right = scalar_exp_generate (sc, (ST *) stmt->_.op.arg_2, code);
-      cv_artm (code, box_identity, left, right, NULL);
+      cv_artm (code, (ao_func_t)box_identity, left, right, NULL);
     }
   return left;
 }
@@ -866,10 +866,12 @@ sqlc_for_vectored_decl (sql_comp_t * sc, ST ** params, state_slot_t *** init_ret
 			MAX_NAME_LEN, decl->_.vect_decl.name->_.col_ref.name);
 	}
       {
+	sql_type_t sqt;
 	t_NEW_VARZ (col_ref_rec_t, crr);
+	ddl_type_to_sqt (&sqt, (caddr_t *) decl->_.vect_decl.type);
 	var = ssl_new_vec (sc->sc_cc,
-			   decl->_.vect_decl.name->_.col_ref.name, DV_SHORT_STRING);
-	ddl_type_to_sqt (&(var->ssl_sqt), (caddr_t *) decl->_.vect_decl.type);
+			   decl->_.vect_decl.name->_.col_ref.name, sqt.sqt_dtp);
+	var->ssl_sqt = sqt;
 	ssl_set_dc_type (var);
 	dk_set_push (&res, (void*)var);
 	dk_set_push (&inits, (void*)scalar_exp_generate (sc, decl->_.vect_decl.exp, &sc->sc_routine_code));
@@ -883,6 +885,16 @@ sqlc_for_vectored_decl (sql_comp_t * sc, ST ** params, state_slot_t *** init_ret
   return (state_slot_t **)list_to_array (dk_set_nreverse (res));
 }
 
+void
+sqlc_code_dpipe (sql_comp_t * sc, dk_set_t * code)
+{
+  sqlo_t so;
+  if (!sc->sc_cc->cc_query->qr_proc_vectored)
+    return;
+  memzero (&so, sizeof (so));
+  so.so_sc = sc;
+  sqlg_pre_code_dpipe (&so, code, NULL);
+}
 
 
 void
@@ -901,7 +913,7 @@ sqlc_for_vectored_stmt (sql_comp_t * sc, ST * stmt)
     sqlc_new_error (sc->sc_cc, "37000", ".....", "for_vectored is notr allowed inside vectored code");
   ins->_.for_vect.modify = stmt->_.for_vec.modify;
   ins->_.for_vect.in_vars = sqlc_for_vectored_decl (sc, stmt->_.for_vec.decl, &ins->_.for_vect.in_values);
-  DO_BOX (ST *, decl, inx, stmt->_.for_vec.decl)
+  DO_BOX_FAST (ST *, decl, inx, stmt->_.for_vec.decl)
     {
       dk_set_t ign = NULL;
       if (OUT_MODE != decl->_.vect_decl.mode)
@@ -909,13 +921,17 @@ sqlc_for_vectored_stmt (sql_comp_t * sc, ST * stmt)
       t_set_push (&out_exps, (void*)decl->_.vect_decl.exp);
       dk_set_push (&out_ssls, (void*)scalar_exp_generate (sc, decl->_.vect_decl.name, &ign));
     }
-  END_DO_BOX;
+  END_DO_BOX_FAST;
   save = sc->sc_routine_code;
   sc->sc_routine_code = NULL;
   sc->sc_cc->cc_query->qr_proc_vectored = QR_VEC_STMT;
-  out = sqlc_compound_stmt (sc, stmt->_.for_vec.body, out_exps);
-  ins->_.for_vect.out_vars = (state_slot_t**)list_to_array (out_ssls);
+  out = sqlc_compound_stmt (sc, stmt->_.for_vec.body, dk_set_nreverse (out_exps));
+  ins->_.for_vect.out_vars = (state_slot_t**)revlist_to_array (out_ssls);
   ins->_.for_vect.out_values = out;
+
+  sqlc_code_dpipe (sc, &sc->sc_routine_code);
+
+
   ins->_.for_vect.code = code_to_cv (sc, sc->sc_routine_code);
   memset (&en, 0, sizeof (en));
   en.src_gen.src_pre_code = ins->_.for_vect.code;
@@ -930,11 +946,33 @@ sqlc_for_vectored_stmt (sql_comp_t * sc, ST * stmt)
 
 
 void
+sqlc_vec_qnode (sql_comp_t * sc, data_source_t ** qn_ret)
+{
+  data_source_t * qn = *qn_ret;
+  query_t * qr = sc->sc_cc->cc_query;
+  dk_set_t crr_save = sc->sc_col_ref_recs;
+  data_source_t * save_qn;
+  dk_set_t save;
+  save = sc->sc_routine_code;
+  sc->sc_routine_code = NULL;
+  qr->qr_proc_vectored = QR_VEC_STMT;
+  save_qn = qr->qr_head_node;
+  qr->qr_head_node = qn;
+  sqlg_vector_subq (sc);
+  qn = qr->qr_head_node;
+  qr->qr_proc_vectored = 0;
+  sc->sc_routine_code = save;
+  qr->qr_head_node = save_qn;
+  sc->sc_col_ref_recs = crr_save;
+  *qn_ret = qn;
+}
+
+void
 sqlc_proc_stmt (sql_comp_t * sc, ST ** pstmt)
 {
   ST *stmt = *pstmt;
   subq_compilation_t *cursor_sqc;
-
+  ST * src_stmt = NULL;
   switch (stmt->type)
     {
 
@@ -1001,7 +1039,16 @@ sqlc_proc_stmt (sql_comp_t * sc, ST ** pstmt)
 	}
       else
 	{
+	  dbe_table_t * tb = sch_name_to_table (wi_inst.wi_schema, stmt->_.insert.table->_.table.name);
+	  int vec_this = tb && !sc->sc_cc->cc_query->qr_proc_vectored && (tb->tb_primary_key->key_partition || INS_REPLACING == stmt->_.insert.mode);
+	    if (vec_this)
+	      sc->sc_cc->cc_query->qr_proc_vectored = QR_VEC_STMT;
 	  sqlc_insert (sc, stmt);
+	  if (vec_this)
+	    {
+	      sqlc_vec_qnode (sc, &sc->sc_cc->cc_query->qr_head_node);
+	      sc->sc_cc->cc_query->qr_proc_vectored = 0;
+	    }
 	  sqlc_qnode_stmt (sc);
 	}
       break;
@@ -1009,14 +1056,20 @@ sqlc_proc_stmt (sql_comp_t * sc, ST ** pstmt)
     case UPDATE_POS:
       cursor_sqc = sqlc_subq_compilation (sc, NULL, stmt->_.update_pos.cursor);
       cursor_sqc->sqc_is_current_of = 1;
-      sqlc_update_pos (sc, stmt, cursor_sqc);
+      sqlc_update_pos (sc, stmt, cursor_sqc, &src_stmt);
+      if (src_stmt)
+	sqlc_subq_stmt (sc, &src_stmt);
+      else
       sqlc_qnode_stmt (sc);
       break;
 
     case DELETE_POS:
       cursor_sqc = sqlc_subq_compilation (sc, NULL, stmt->_.delete_pos.cursor);
       cursor_sqc->sqc_is_current_of = 1;
-      sqlc_delete_pos (sc, stmt, cursor_sqc);
+      sqlc_delete_pos (sc, stmt, cursor_sqc, &src_stmt);
+      if (src_stmt)
+	sqlc_subq_stmt (sc, &src_stmt);
+      else
       sqlc_qnode_stmt (sc);
       break;
 
@@ -1086,7 +1139,7 @@ sqlo_add_opts (caddr_t ** opts_ret, long opt, void* val)
 void
 sqlc_cursor_no_vec (ST * tree, caddr_t cr)
 {
-  /* find cursor decl and set it to be non-vectored */
+  /* find cursor decl and set it to be non-vectored.  If cluster, do it only if table is local only or is dec;decl no cluster in cr  */
   ST * sel;
   int inx;
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
@@ -1096,6 +1149,18 @@ sqlc_cursor_no_vec (ST * tree, caddr_t cr)
   if (ST_P (tree, CURSOR_DEF) && BOX_ELEMENTS (tree) == 5 && SYMBOLP (tree->_.cr_def.name)
       && ST_P ((sel = tree->_.cr_def.spec), SELECT_STMT) && 0 == CASEMODESTRCMP (tree->_.cr_def.name, cr))
     {
+      ST ** from = sel->_.select_stmt.table_exp->_.table_exp.from;
+      dbe_table_t * tb;
+      if (BOX_ELEMENTS (from) > 1 || !ST_P (from[0], TABLE_REF) || !ST_P (from[0]->_.table_ref.table, TABLE_DOTTED))
+	return;
+      tb = sch_name_to_table (wi_inst.wi_schema, from[0]->_.table_ref.table->_.table.name);
+      if (!tb)
+	return;
+      if (tb->tb_primary_key->key_is_col)
+	return;
+      if (find_remote_table (tb->tb_name, 0))
+	return;
+      if (!tb->tb_primary_key->key_partition || sqlo_opt_value (from[0]->_.table_ref.table->_.table.opts, OPT_NO_CLUSTER))
       sqlo_add_opts (&sel->_.select_stmt.table_exp->_.table_exp.opts, OPT_NOT_VECTORED, (void*) 1);
     }
   else
@@ -1524,6 +1589,7 @@ sqlc_trigger_decl (sql_comp_t * sc, ST * tree)
   sqlc_proc_stmt (sc, &(tree->_.trigger.body));
   sc->sc_is_trigger_decl = o_sc_trig_decl;
   sqlc_routine_qr (sc);
+  sqlc_opt_fetches (sc);
 
   sqlc_table_used (sc, qr->qr_trig_dbe_table);
   if (!has_similar)

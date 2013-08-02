@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2010 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -56,7 +56,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
       super();
     }
 
-    public VirtDataSource(String _graphName, VirtuosoDataSource _ds)
+    public VirtDataSource(String _graphName, javax.sql.DataSource _ds)
     {
       super(_graphName, _ds);
     }
@@ -133,6 +133,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
           ps.executeBatch();
           ps.clearBatch();
         }
+        ps.close();
       } catch (Exception e) {
         throw new JenaException(e);
       }
@@ -148,6 +149,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
       try {
         java.sql.Statement stmt = createStatement();
         stmt.executeQuery(exec_text);
+        stmt.close();
       } catch (Exception e) {
 	throw new JenaException(e);
       }
@@ -185,7 +187,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
     public Model getNamedModel(String name) 
     {
       try {
-        VirtuosoDataSource _ds = getDataSource();
+        javax.sql.DataSource _ds = getDataSource();
         if (_ds != null) 
 	    return new VirtModel(new VirtGraph(name, _ds));
         else
@@ -234,6 +236,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
         rs = stmt.executeQuery(exec_text);
         while(rs.next())
           names.add(rs.getString(1));
+        rs.close();
         return names.iterator();
       } catch (Exception e) {
         throw new JenaException(e);
@@ -300,6 +303,7 @@ public class VirtDataSource extends VirtGraph implements DataSource {
 	  rs = stmt.executeQuery(exec_text);
 	  while(rs.next())
 	    names.add(Node.createURI(rs.getString(1)));
+	  rs.close();
 	  return names.iterator();
 	} catch (Exception e) {
 	  throw new JenaException(e);

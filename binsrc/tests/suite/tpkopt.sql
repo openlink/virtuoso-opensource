@@ -1,14 +1,14 @@
 --
 --  tpkopt.sql
 --
---  $Id$
+--  $Id: tpkopt.sql,v 1.11.6.1.4.2 2013/01/02 16:15:17 source Exp $
 --
 --  Test primary keys
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -136,6 +136,7 @@ alter table IDT modify primary key (K1, K2);
 primarykeys IDT;
 echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
 echo both ": " $rowcnt " pk parts after alter pk.\n";
+
 
 alter table IDT modify primary key (K1);
 echo both $if $equ $state 23000 "PASSED" "***FAILED";

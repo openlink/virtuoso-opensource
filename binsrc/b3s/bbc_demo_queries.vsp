@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE html PUBLIC
-  "-//W3C//DTD XHTML 1.0 Strict//EN"	
+  "-//W3C//DTD XHTML 1.0 Strict//EN"
   "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
@@ -33,7 +33,7 @@ function get_and_encode_query (q_elm)
 
 </script>
 </head>
-<body>  
+<body>
   <div id="PG">
     <div id="HD">
       <a class="logo" href="/fct/facet.vsp">
@@ -43,7 +43,7 @@ function get_and_encode_query (q_elm)
     <div id="MD">
       <div id="demo_queries_ctr">
         <h1>BBC Dataset Sample Queries</h1>
-        <p>These queries demonstrate some of the types of queries that can be done over the BBC dataset</p> 
+        <p>These queries demonstrate some of the types of queries that can be done over the BBC dataset</p>
         <ul class="demo_qry_list">
           <li>
             <h2>EastEnders episodes</h2>
@@ -52,18 +52,18 @@ function get_and_encode_query (q_elm)
               <pre id="q1">
 PREFIX po: &#60;http://purl.org/ontology/po/&#62;
 PREFIX dc: &#60;http://purl.org/dc/elements/1.1/&#62;
-              
-select distinct ?title ?short_syn 
-where { 
-  &#60;http://www.bbc.co.uk/programmes/b006m86d#programme&#62; po:episode ?e .  
-  ?e a po:Episode .  
+
+select distinct ?title ?short_syn
+where {
+  &#60;http://www.bbc.co.uk/programmes/b006m86d#programme&#62; po:episode ?e .
+  ?e a po:Episode .
   ?e po:short_synopsis ?short_syn .
   ?e dc:title ?title
 }
               </pre>
             </div>
             <div class="actions">
-              <a onclick="javascript:sparql_qry('q1');" href="#">Run in SPARQL endpoint</a> 
+              <a onclick="javascript:sparql_qry('q1');" href="#">Run in SPARQL endpoint</a>
               <a onclick="javascript:isparql_qry('q1');" href="#">Open in iSPARQL</a>
             </div>
           </li>
@@ -92,7 +92,7 @@ where {
               </pre>
             </div>
             <div class="actions">
-              <a onclick="javascript:sparql_qry('q2');" href="#">Run in SPARQL endpoint</a> 
+              <a onclick="javascript:sparql_qry('q2');" href="#">Run in SPARQL endpoint</a>
               <a onclick="javascript:isparql_qry('q2');" href="#">Open in iSPARQL</a>
             </div>
           </li>
@@ -108,8 +108,8 @@ PREFIX rev:  &#60;http://purl.org/stuff/rev#&#62;
 PREFIX po:   &#60;http://purl.org/ontology/po/&#62;
 
 select distinct ?r_name, ?rev
-where {  
-        {    
+where {
+        {
           &#60;http://www.bbc.co.uk/music/artists/4490113a-3880-4f5b-a39b-105bfceaed04#artist&#62; foaf:made ?r1 .
           ?r1 a mo:Record .
           ?r1 dc:title ?r_name .
@@ -121,11 +121,11 @@ where {
           ?r1 dc:title ?r_name .
           ?r1 rev:hasReview ?rev
         }
-      }  
+      }
               </pre>
             </div>
             <div class="actions">
-              <a onclick="javascript:sparql_qry('q3');" href="#">Run in SPARQL endpoint</a> 
+              <a onclick="javascript:sparql_qry('q3');" href="#">Run in SPARQL endpoint</a>
               <a onclick="javascript:isparql_qry('q3');" href="#">Open in iSPARQL</a>
             </div>
           </li>
@@ -140,7 +140,7 @@ where {
         <img alt="Linked Data" src="/fct/images/LoDLogo.gif"/>
       </a>
       <br/>
-      <span class="copyright">Copyright © 2009-2011 OpenLink Software</span>
+      <span class="copyright">Copyright © 2009-2013 OpenLink Software</span>
       <div id="FT_L"/>
       <div id="FT_R"/>
     </div> <!-- #FT -->

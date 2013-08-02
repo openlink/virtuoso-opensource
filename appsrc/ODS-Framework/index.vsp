@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -90,7 +90,7 @@
     else
       _country_code:=null;
 
-    https := ODS..getDefaultHttps ();
+    https := ODS.ODS_API.getDefaultHttps ();
     if (exists (select 1 from WA_SETTINGS where WS_HTTPS = 1) and https is not null)
       _openid_server := 'https://' || https;
     else
@@ -158,11 +158,11 @@ skip_meta:
   declare html_content, links varchar;
   declare exts any;
 
-  exts := 
+  exts :=
   vector (
-      	vector ('rdf',  'RDF/XML', 'application/rdf+xml'), 
-      	vector ('nt',   'N3/Turtle', 'text/n3'), 
-      	vector ('n3',   'N3/Turtle', 'text/rdf+n3'), 
+      	vector ('rdf',  'RDF/XML', 'application/rdf+xml'),
+      	vector ('nt',   'N3/Turtle', 'text/n3'),
+      	vector ('n3',   'N3/Turtle', 'text/rdf+n3'),
 	vector ('json', 'RDF/JSON', 'application/json')
 	);
 
@@ -185,7 +185,7 @@ skip_meta:
   links := links || sprintf (' <%s/sparql?default-graph-uri=%s/dataspace>; title="Public SPARQL Service"; rel="http://ontologi.es/sparql#fingerpoint", ', server_root, server_root);
   foreach (any ss in exts) do
     {
-       links := links || sprintf (' <%s%s%s/about.%s>; rel="alternate"; type="%s"; title="Structured Descriptor Document (%s format)",', 
+       links := links || sprintf (' <%s%s%s/about.%s>; rel="alternate"; type="%s"; title="Structured Descriptor Document (%s format)",',
        server_dataspace, utype, uname, ss[0], ss[2], ss[1]);
     }
   for select U_E_MAIL from DB.DBA.SYS_USERS where U_NAME = uname do

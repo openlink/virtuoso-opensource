@@ -2,7 +2,7 @@
 //  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 //  project.
 //  
-//  Copyright (C) 1998-2006 OpenLink Software
+//  Copyright (C) 1998-2013 OpenLink Software
 //  
 //  This project is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the
@@ -132,7 +132,7 @@ namespace OpenLink.Data.Virtuoso
 					hour = dt.Hour;
 					minute = dt.Minute;
 					second = dt.Second;
-					fraction = dt.Millisecond * Values.MicrosPerMilliSec;
+					fraction = (int)(dt.Ticks % TimeSpan.TicksPerSecond / 10L);// dt.Millisecond * Values.MicrosPerMilliSec;
 				}
 				else if (type == DateTimeType.DT_TYPE_DATE)
 				{
@@ -153,8 +153,83 @@ namespace OpenLink.Data.Virtuoso
 				hour = ts.Hours;
 				minute = ts.Minutes;
 				second = ts.Seconds;
-				fraction = ts.Milliseconds * Values.MicrosPerMilliSec;
+				fraction = (int)(ts.Ticks % TimeSpan.TicksPerSecond / 10L); //ts.Milliseconds * Values.MicrosPerMilliSec;
 			}
+			else if (value is VirtuosoDateTime)
+			{
+				VirtuosoDateTime dt = (VirtuosoDateTime) value;
+
+				TimeZone tz = TimeZone.CurrentTimeZone;
+				TimeSpan tz_offset = tz.GetUtcOffset (dt.Value);
+				tz_offset_minutes = (int) (tz_offset.Hours * 60) + tz_offset.Minutes;
+
+                long ticks = dt.Ticks - tz_offset.Ticks;
+                dt = new VirtuosoDateTime(ticks);
+
+				int year = dt.Year;
+				int month = dt.Month;
+				int day_of_month = dt.Day;
+				days = GetDays (year, month, day_of_month);
+
+				if (type == DateTimeType.DT_TYPE_DATETIME)
+				{
+					hour = dt.Hour;
+					minute = dt.Minute;
+					second = dt.Second;
+                    fraction = (int)dt.Microsecond;
+				}
+				else if (type == DateTimeType.DT_TYPE_DATE)
+				{
+					hour = minute = second = fraction = 0;
+				}
+				else
+					throw new InvalidCastException ();
+			}
+#if ADONET3
+            else if (value is VirtuosoDateTimeOffset)
+            {
+                VirtuosoDateTimeOffset dt = (VirtuosoDateTimeOffset)value;
+
+                TimeSpan tz_offset = dt.Offset;
+                tz_offset_minutes = (int)(tz_offset.Hours * 60) + tz_offset.Minutes;
+
+                long ticks = dt.Ticks - tz_offset.Ticks;
+                dt = new VirtuosoDateTimeOffset(ticks, new TimeSpan(0));
+
+                int year = dt.Year;
+                int month = dt.Month;
+                int day_of_month = dt.Day;
+                days = GetDays(year, month, day_of_month);
+
+                if (type == DateTimeType.DT_TYPE_DATETIME)
+                {
+                    hour = dt.Hour;
+                    minute = dt.Minute;
+                    second = dt.Second;
+                    fraction = (int)dt.Microsecond;
+                }
+                else if (type == DateTimeType.DT_TYPE_DATE)
+                {
+                    hour = minute = second = fraction = 0;
+                }
+                else
+                    throw new InvalidCastException();
+            }
+#endif
+            else if (value is VirtuosoTimeSpan)
+            {
+                if (type != DateTimeType.DT_TYPE_TIME)
+                    throw new InvalidCastException();
+
+                days = Values.DAY_ZERO;
+                tz_offset_minutes = 0;
+
+                VirtuosoTimeSpan ts = (VirtuosoTimeSpan)value;
+                hour = ts.Hours;
+                minute = ts.Minutes;
+                second = ts.Seconds;
+                fraction = (int)ts.Microseconds;
+            }
 			else
 				throw new InvalidCastException ();
 
@@ -181,7 +256,7 @@ namespace OpenLink.Data.Virtuoso
 			int hour = bytes[3];
 			int minute = bytes[4] >> 2;
 			int second = ((bytes[4] & 0x03) << 4) | (bytes[5] >> 4);
-			int fraction = ((bytes[5] & 0x0f) << 16) | (bytes[6] << 8) | bytes[7];
+			long fraction = ((bytes[5] & 0x0f) << 16) | (bytes[6] << 8) | bytes[7];
 			DateTimeType type = (DateTimeType) (bytes[8] >> 5);
 			int tz_offset_minutes = ((bytes[8] & 0x03) << 8) | bytes[9];
 			if ((bytes[8] & 0x04) != 0)
@@ -191,21 +266,43 @@ namespace OpenLink.Data.Virtuoso
 
 			if (type == DateTimeType.DT_TYPE_TIME)
 			{
-				TimeSpan ts = new TimeSpan (0, hour, minute, second, fraction / Values.MicrosPerMilliSec);
+				VirtuosoTimeSpan ts = new VirtuosoTimeSpan (0, hour, minute, second, fraction);
 				Debug.WriteLineIf (Marshaler.marshalSwitch.Enabled, "TimeSpan: " + ts);
 				return ts;
 			}
-			else if (type == DateTimeType.DT_TYPE_DATETIME || type == DateTimeType.DT_TYPE_DATE)
-			{
+#if ADONET3
+			else if (type == DateTimeType.DT_TYPE_DATETIME)
+                        {
 				int year, month, day_of_month;
 				GetDate (days, out year, out month, out day_of_month);
 				TimeSpan tz_offset = new TimeSpan (0, tz_offset_minutes, 0);
 
-				DateTime dt = new DateTime (year, month, day_of_month, hour, minute, second, fraction / Values.MicrosPerMilliSec);
-				dt += tz_offset;
+				VirtuosoDateTimeOffset dt = new VirtuosoDateTimeOffset (year, month, day_of_month, hour, minute, second, fraction, tz_offset);
+				dt = dt.AddMinutes(tz_offset_minutes);
 				Debug.WriteLineIf (Marshaler.marshalSwitch.Enabled, "DateTime: " + dt);
 				return dt;
 			}
+                        else if (type == DateTimeType.DT_TYPE_DATE)
+			{
+				int year, month, day_of_month;
+				GetDate (days, out year, out month, out day_of_month);
+
+				VirtuosoDateTime dt = new VirtuosoDateTime (year, month, day_of_month, hour, minute, second, fraction);
+				Debug.WriteLineIf (Marshaler.marshalSwitch.Enabled, "DateTime: " + dt);
+				return dt;
+			}
+#else
+                        else if (type == DateTimeType.DT_TYPE_DATETIME || type == DateTimeType.DT_TYPE_DATE)
+			{
+				int year, month, day_of_month;
+				GetDate (days, out year, out month, out day_of_month);
+
+				VirtuosoDateTime dt = new VirtuosoDateTime (year, month, day_of_month, hour, minute, second, fraction);
+				dt = dt.AddMinutes(tz_offset_minutes);
+				Debug.WriteLineIf (Marshaler.marshalSwitch.Enabled, "DateTime: " + dt);
+				return dt;
+			}
+#endif
 			else
 				throw new InvalidCastException ();
 		}

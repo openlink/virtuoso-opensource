@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -364,7 +364,7 @@ void mime_c_compose (soap_call_ctx_t ctx, caddr_t * input)
 
    arg = box_copy_tree ((box_t) input);
 
-   err = qr_quick_exec (mime_call, bootstrap_cli, NULL, &lc, 1,
+   err = qr_quick_exec (mime_call, ctx.sc_client, NULL, &lc, 1,
        ":0", arg, QRP_RAW);
 
    if (err)
@@ -3866,12 +3866,17 @@ ws_http_error_header (int code)
       case 415: ret = "Unsupported Media Type"; break;
       case 416: ret = "Requested Range Not Satisfiable"; break;
       case 417: ret = "Expectation Failed"; break;
+      case 428: ret = "Precondition Required"; break;
+      case 429: ret = "Too Many Requests"; break;
+      case 431: ret = "Request Header Fields Too Large"; break;
       case 500: ret = "Internal Server Error"; break;
       case 501: ret = "Not Implemented"; break;
       case 502: ret = "Bad Gateway"; break;
       case 503: ret = "Service Unavailable"; break;
       case 504: ret = "Gateway Timeout"; break;
       case 505: ret = "HTTP Version Not Supported"; break;
+      case 509: ret = "Bandwidth Limit Exceeded"; break;
+      case 511: ret = "Network Authentication Required"; break;
       default:
 		code = 500;
 		ret = "Internal Server Error";
@@ -11356,7 +11361,8 @@ ws_soap_http (ws_connection_t * ws)
   /* Set context for SOAP serialization */
   memset (&ctx, 0, sizeof (soap_ctx_t));
   ctx.soap_version = atoi (ws_soap_get_opt (opts, "HttpSOAPVersion", "11"));
-  ctx.dks_esc_compat = ((soap_escapes && tolower (soap_escapes[0]) == 'y') ? DKS_ESC_COMPAT_SOAP : 0);
+  ctx.dks_esc_compat = ((soap_escapes && tolower (soap_escapes[0]) == 'y') ?
+      DKS_ESC_COMPAT_SOAP: 0);
   ctx.def_enc = SOAP_DEF_ENC (opts);
   ctx.opts = opts;
   ctx.role_url = ws_soap_get_opt (opts, SOAP_ROLE, NULL);
@@ -11432,7 +11438,8 @@ ws_soap_http (ws_connection_t * ws)
       if (!is_http)
 	{
 	  caddr_t err1;
-	  err1 = ws_soap_error (ses, "320", ERR_STATE (err), ERR_MESSAGE (err), ctx.soap_version, 0, &http_resp_code, &ctx);
+	  err1 = ws_soap_error (ses, "320", ERR_STATE (err), ERR_MESSAGE (err), ctx.soap_version, 0,
+	      &http_resp_code, &ctx);
 	  dk_free_tree (err);
 	  err = err1;
 	}
@@ -11451,7 +11458,8 @@ ws_soap_http (ws_connection_t * ws)
 	dk_free_tree ((box_t) pars);
 	goto end;
       }
-    err = qr_exec (cli, call_qry, CALLER_LOCAL, NULL, NULL, &lc, pars, NULL, 1);
+      err = qr_exec (cli, call_qry, CALLER_LOCAL, NULL, NULL,
+	  &lc, pars, NULL, 1);
     dk_free_box ((box_t) pars);
     while (lc_next (lc));
     if (err)
@@ -11463,7 +11471,8 @@ ws_soap_http (ws_connection_t * ws)
 	if (!is_http)
 	  {
 	    caddr_t err1;
-	    err1 = ws_soap_error (ses, "400", ERR_STATE (err), ERR_MESSAGE (err), ctx.soap_version, 0, &http_resp_code, &ctx);
+	      err1 = ws_soap_error (ses, "400", ERR_STATE (err), ERR_MESSAGE (err), ctx.soap_version, 0,
+		  &http_resp_code, &ctx);
 	    dk_free_tree (err);
 	    err = err1;
 	  }

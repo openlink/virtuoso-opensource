@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 -- 
---  Copyright (C) 1998-2009 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -34,16 +34,17 @@
 
   if (0 = sname)
     {
-      if (length (uriqa_str) > 16) 
+      if (length (uriqa_str) > 16)
         {
           log_message ('facets: ShortName from URIQA too long. Please set ''fct_opensearch_shortname'' in registry');
+          sname := 'OpenLink FCT';
         }
       else
         sname := uriqa_str;
     }
 
   sname := "LEFT" (sname, 16);
-  
+
   descr := registry_get ('fct_opensearch_desc');
 
   if (0 = descr)
@@ -61,17 +62,17 @@
 
   if (0 = url_reg)
     {
-      url_reg := 'http://' || uriqa_str || '/fct/facet.vsp';		
+      url_reg := 'http://' || uriqa_str || '/fct/facet.vsp';
     }
 
   url := sprintf ('%s?q={searchTerms}', url_reg);
-  
+
   favicon_path := registry_get ('fct_opensearch_favicon_url');
   search_image_path := registry_get ('fct_opensearch_image_url');
 
   http_rewrite ();
   http_header ('Content-Type: application/opensearchdescription+xml\r\n');
-  
+
   http ('<?xml version="1.0" encoding="UTF-8"?>');
   http ('<OpenSearchDescription xmlns="http://a9.com/-/spec/opensearch/1.1/">');
   http (sprintf ('<ShortName>%s</ShortName>', sname));

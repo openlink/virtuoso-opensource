@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -575,7 +575,7 @@ public class VirtuosoConnectionPoolDataSource
     }
 
     public void run() {
-      if (connPool.cacheSize >= count || (maxPoolSize != 0 && connPool.cacheSize > maxPoolSize))
+      if (connPool.cacheSize >= count || (maxPoolSize != 0 && connPool.cacheSize >= maxPoolSize))
         return;
 
       for(int i = 0; i < count; i++)
@@ -746,10 +746,12 @@ public class VirtuosoConnectionPoolDataSource
           pooledConn = (VirtuosoPooledConnection)iterator.next();
           if (pooledConn.hashConnURL == _hashKey && pooledConn.connURL.equals(_Key)) {
             iterator.remove();
-	    if (pooledConn.isConnectionLost()) {
-              if (cacheSize > 1) 
-                --cacheSize;
-              closeTmp.add(pooledConn);
+	    if (pooledConn.isConnectionLost(1)) {
+	      synchronized(this) {              
+                if (cacheSize > 1) 
+                  --cacheSize;
+                closeTmp.add(pooledConn);
+              }
 	    } else {
               return pooledConn;
 	    }
@@ -786,48 +788,49 @@ public class VirtuosoConnectionPoolDataSource
         }
       }
     // if couldn't found an unused Connection
-      if (maxPoolSize == 0 || cacheSize < maxPoolSize) {
-       // establish a new Connection
-        synchronized(this) {
+      synchronized(this) { 
+        if (maxPoolSize == 0 || cacheSize < maxPoolSize) {
+         // establish a new Connection
           conn = new VirtuosoConnection (conn_url, "localhost", 1111, info);
           cacheSize++;
           pconn = new VirtuosoPooledConnection(conn, connKey, cpds);
           in_Use.put(pconn, pconn);
+          return pconn;
         }
-        return pconn;
 
-      } else {
+      } 
+
       // wait a free Connection
-        long start = System.currentTimeMillis();
-        long _timeout = loginTimeout * 1000L;
-        Thread thr = Thread.currentThread();
-        while (pconn == null) {
-//      System.out.println("Thread "+thr+" begin a waiting...");
-          synchronized(this) {
-            if (!unUsed.isEmpty() && (pconn = lookup(connKey)) != null) {
-//            System.out.println("Thread "+thr+" has found a free connection");
-              pconn.init(cpds);
-              in_Use.put(pconn, pconn);
-              return pconn;
-            }
+      long start = System.currentTimeMillis();
+      long _timeout = loginTimeout * 1000L;
+      Thread thr = Thread.currentThread();
+      while (pconn == null) {
+//    System.out.println("Thread "+thr+" begin a waiting...");
+        synchronized(this) {
+          if (!unUsed.isEmpty() && (pconn = lookup(connKey)) != null) {
+//          System.out.println("Thread "+thr+" has found a free connection");
+            pconn.init(cpds);
+            in_Use.put(pconn, pconn);
+            return pconn;
+          }
 
-            try {
-              if (loginTimeout > 0) {
-                wait(_timeout);
-                _timeout -= (System.currentTimeMillis() - start);
-                if (_timeout < 0) {
-//                System.out.println("Thread "+thr+" : loginTimeout has expired");
-                  throw new VirtuosoException("Connection failed loginTimeout has expired", VirtuosoException.TIMEOUT);
-                }
-              } else {
-                wait();
+          try {
+            if (loginTimeout > 0) {
+              wait(_timeout);
+              _timeout -= (System.currentTimeMillis() - start);
+              if (_timeout < 0) {
+//              System.out.println("Thread "+thr+" : loginTimeout has expired");
+                throw new VirtuosoException("Connection failed loginTimeout has expired", VirtuosoException.TIMEOUT);
               }
-//            System.out.println("Thread "+thr+" has woken ");
-            } catch (InterruptedException e) {
+            } else {
+              wait();
             }
+//          System.out.println("Thread "+thr+" has woken ");
+          } catch (InterruptedException e) {
           }
         }
       }
+
       return null;
     }
 
@@ -857,9 +860,9 @@ public class VirtuosoConnectionPoolDataSource
         }
       }
 
-      if (maxPoolSize != 0 && cacheSize > maxPoolSize) {
-       //remove connections
-        synchronized(this) {
+      synchronized(this) {
+        if (maxPoolSize != 0 && cacheSize > maxPoolSize) {
+         //remove connections
           int count = cacheSize - maxPoolSize;
           for(l_iter = unUsed.listIterator(); l_iter.hasNext() && count > 0; count--) {
             closeTmp.add(l_iter.next());
@@ -875,12 +878,14 @@ public class VirtuosoConnectionPoolDataSource
         helpThread.start();
       }
 
-      if (minPoolSize != 0 && cacheSize < minPoolSize) {
-       //add connections
-        Properties info = createConnProperties();
-        int count = minPoolSize - cacheSize;
-        OpenHelper helpThread = new OpenHelper(count, info);
-        helpThread.start();
+      synchronized(this) {
+        if (minPoolSize != 0 && cacheSize < minPoolSize) {
+         //add connections
+          Properties info = createConnProperties();
+          int count = minPoolSize - cacheSize;
+          OpenHelper helpThread = new OpenHelper(count, info);
+          helpThread.start();
+        }
       }
     }
 

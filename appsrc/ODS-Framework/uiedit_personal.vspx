@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -120,12 +120,23 @@
     <br />
     <div id="p" class="c1">
       <div class="tabs">
+      <div id="pf_tabs_0_row_0" style="margin-top: 6px;">
       <v:url name="p_url_0" xhtml_id="p_url_0" value="Profile Import" url="--sprintf('uiedit.vspx?page=1&tabNo=0')" xhtml_class="--case when self.tabNo = 0 then 'tabX activeTabX' else 'tabX' end"/>
       <v:url name="p_url_1" xhtml_id="p_url_1" value="Main" url="--sprintf('uiedit.vspx?page=1&tabNo=1')" xhtml_class="--case when self.tabNo = 1 then 'tabX activeTabX' else 'tabX' end"/>
       <v:url name="p_url_2" xhtml_id="p_url_2" value="Address" url="--sprintf('uiedit.vspx?page=1&tabNo=2')" xhtml_class="--case when self.tabNo = 2 then 'tabX activeTabX' else 'tabX' end"/>
       <v:url name="p_url_3" xhtml_id="p_url_3" value="Online Accounts" url="--sprintf('uiedit.vspx?page=1&tabNo=3')" xhtml_class="--case when self.tabNo = 3 then 'tabX activeTabX' else 'tabX' end"/>
       <v:url name="p_url_4" xhtml_id="p_url_4" value="Messaging Services" url="--sprintf('uiedit.vspx?page=1&tabNo=4')" xhtml_class="--case when self.tabNo = 4 then 'tabX activeTabX' else 'tabX' end"/>
-      <v:url name="p_url_5" xhtml_id="p_url_5" value="Others"             url="--sprintf('uiedit.vspx?page=1&tabNo=5&tabSubNo=0')" xhtml_class="--case when self.tabNo = 5 then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="p_url_5"  xhtml_id="p_url_5"  value="Biographical Events" url="--sprintf('uiedit.vspx?page=1&tabNo=5')"  xhtml_class="--case when self.tabNo = 5  then 'tabX activeTabX' else 'tabX' end"/>
+      </div>
+      <div id="pf_tabs_0_row_1" style="margin-top: 6px;">
+      <v:url name="p_url_6"  xhtml_id="p_url_6"  value="Owns"                url="--sprintf('uiedit.vspx?page=1&tabNo=6')"  xhtml_class="--case when self.tabNo = 6  then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="p_url_7"  xhtml_id="p_url_7"  value="Favorite Things"     url="--sprintf('uiedit.vspx?page=1&tabNo=7')"  xhtml_class="--case when self.tabNo = 7  then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="p_url_8"  xhtml_id="p_url_8"  value="Creator Of"          url="--sprintf('uiedit.vspx?page=1&tabNo=8')"  xhtml_class="--case when self.tabNo = 8  then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="p_url_9"  xhtml_id="p_url_9"  value="My Offers"           url="--sprintf('uiedit.vspx?page=1&tabNo=9')"  xhtml_class="--case when self.tabNo = 9  then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="p_url_10" xhtml_id="p_url_10" value="Offers I Seek"       url="--sprintf('uiedit.vspx?page=1&tabNo=10')" xhtml_class="--case when self.tabNo = 10 then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="p_url_11" xhtml_id="p_url_11" value="Likes & DisLikes"    url="--sprintf('uiedit.vspx?page=1&tabNo=11')" xhtml_class="--case when self.tabNo = 11 then 'tabX activeTabX' else 'tabX' end"/>
+      <v:url name="p_url_12" xhtml_id="p_url_12" value="Social Network"      url="--sprintf('uiedit.vspx?page=1&tabNo=12')" xhtml_class="--case when self.tabNo = 12 then 'tabX activeTabX' else 'tabX' end"/>
+      </div>
       </div>
       <div class="contents">
       <v:template name="personal_template_0" type="simple" enabled="-- equ (self.tabNo, 0)">
@@ -144,8 +155,34 @@
         <v:include url="uiedit_personal_4.vspx"/>
               </v:template>
       <v:template name="personal_template_5" type="simple" enabled="-- equ (self.tabNo, 5)">
-        <v:include url="uiedit_others.vspx"/>
+        <v:include url="uiedit_personal_5.vspx"/>
+      </v:template>
+      <v:template name="personal_template_6" type="simple" enabled="-- equ (self.tabNo, 6)">
+        <v:include url="uiedit_owns.vspx"/>
+      </v:template>
+      <v:template name="personal_template_7" type="simple" enabled="-- equ (self.tabNo, 7)">
+        <v:include url="uiedit_personal_6.vspx"/>
+      </v:template>
+      <v:template name="personal_template_8" type="simple" enabled="-- equ (self.tabNo, 8)">
+        <v:include url="uiedit_prj.vspx"/>
+      </v:template>
+      <v:template name="personal_template_9" type="simple" enabled="-- equ (self.tabNo, 9)">
+        <v:include url="uiedit_offerlist.vspx"/>
+      </v:template>
+      <v:template name="personal_template_10" type="simple" enabled="-- equ (self.tabNo, 10)">
+        <v:include url="uiedit_wishlist.vspx"/>
+      </v:template>
+      <v:template name="personal_template_11" type="simple" enabled="-- equ (self.tabNo, 11)">
+        <v:include url="uiedit_likes.vspx"/>
+      </v:template>
+      <v:template name="personal_template_12" type="simple" enabled="-- equ (self.tabNo, 12)">
+        <v:include url="uiedit_knows.vspx"/>
       </v:template>
         </div>
+    <script type="text/javascript">
+      <![CDATA[
+        swapRows(<?V self.tabNo ?>);
+      ]]>
+    </script>
     </div>
 </v:page>

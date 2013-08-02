@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -30,6 +30,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY rss "http://purl.org/rss/1.0/">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
@@ -44,6 +45,7 @@
     xmlns:a="http://www.w3.org/2005/Atom"
     xmlns:sioc="&sioc;"
     xmlns:foaf="&foaf;"
+    xmlns:opl="&opl;"
     xmlns:g="http://base.google.com/ns/1.0"
     xmlns:gb="http://www.openlinksw.com/schemas/google-base#"
     xmlns:virtrdf="http://www.openlinksw.com/schemas/virtrdf#"
@@ -80,6 +82,13 @@
 
     <xsl:template match="osm">
 		<geo:Feature rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.openstreetmap.com#this">
+                        			<foaf:name>Openstreetmap</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.openstreetmap.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<wgs84_pos:lat>
 				<xsl:value-of select="$lat"/>
 			</wgs84_pos:lat>

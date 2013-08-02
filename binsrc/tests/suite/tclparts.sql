@@ -7,6 +7,9 @@ echo both "Cluster partitioned oby and gby/oby\n";
 
 
 __dbf_set ('enable_setp_partition', 1);
+cl_exec ('__dbf_set (''dc_batch_sz'', 7)');
+
+
 explain ('select row_no, string2 from t1 table option (index str2) where row_no < 100 order by row_no + 1');
 
 
@@ -14,7 +17,7 @@ cl_exec ('__dbf_set (''cl_req_batch_size'', 3)');
 cl_exec ('__dbf_set (''cl_res_buffer_bytes'', 100)');
 __dbf_set ('enable_setp_partition', 1);
 
-select row_no, string2 from t1 table option (index str2) where row_no < 1100 order by row_no + 1;
+select row_no, string1 from t1 table option (index str1) where row_no < 1100 and string1 > ''order by row_no + 1;
 echo both $if $equ $last[1] 121 "PASSED" "***FAILED";
 echo both ": single partitioned oby\n";
 
@@ -45,7 +48,7 @@ select a.fi2, b.fi2, dfi2 from t1 a, (select top 4 c.fi2, d.fi2 as dfi2 from t1 
 
 create procedure brk (in n int)
 {
-  id_to_iri (#i1);
+  cl_idn (#i1);
   return n;
 }
 
@@ -95,12 +98,12 @@ create procedure uc_init (inout env any)
   env := 0;
 }
 
-create procedure uc_acc (inout env any, in s varchar)
+create procedure uc_acc (inout env any, in s any array)
 {
   env := env + 1;
 }
 
-create procedure uc_fin (inout env any)
+create procedure uc_fin (inout env any) returns int
 {
   return env;
 }
@@ -120,14 +123,9 @@ select a.string2, b.string1, sm from t1 a,
   (select string1, sum (row_no) as sm from t1 group by string1 order by 2) b
 where b.string1  = a.string2;
 
-
-
-
 select a.fi2, b.fi2, sm from t1 a, 
   (select c.fi2, sum (c.row_no) as sm from t1 c  group by fi2 order by 2) b 
 where b.fi2 between a.fi2 - 2 and a.fi2 + 2 and a.fi2 < 30 option (order);
-
-
 
 
 
@@ -165,9 +163,8 @@ echo both $if $equ $last[1] 292 "PASSED" "***FAILED";
 echo both ": 292 for fi6 x distinct fi6 range\n";
 
 
-
 select a.fi6, b.fi6, ff 
-from t1 a, (select fi6, strconc (fs4) as ff from t1 table option (index str1) group by fi6 order by (strconc (fs4)) || ' ' desc) b
+from t1 a, (select fi6, strconc (fs4) as ff from t1 table option (index str1) where string1 > ''group by fi6 order by (strconc (fs4)) || ' ' desc) b
 where b.fi6 between a.fi6 - 1 and a.fi6 + 1 option (order);
 
 echo both $if $equ $rowcnt 292 "PASSED" "***FAILED";
@@ -175,7 +172,7 @@ echo both ": part ua,multistate dfg dt with gb/oby\n";
 
 update t1 set fi6 = row_no;
 select a.fi6, b.fi6, ff 
-from t1 a, (select fi6, strconc (fs4) as ff from t1 table option (index str1) group by fi6 order by  (strconc (fs4)) || ' '  desc) b
+from t1 a, (select fi6, strconc (fs4) as ff from t1 table option (index str1) where string1 > ''group by fi6 order by  (strconc (fs4)) || ' '  desc) b
 where b.fi6 between a.fi6 - 1 and a.fi6 + 1 option (order);
 
 echo both $if $equ $rowcnt 299 "PASSED" "***FAILED";
@@ -198,3 +195,20 @@ select top 20 a.fi2, u_count (b.fi2) from t1 a, t1 b where b.fi2 > a.fi2 and 0 =
 
 
 select top 100 a.fi2, u_count (b.fi2) from t1 a, t1 b where b.fi2 = a.fi2 and 0 = delay (b.fi2 - b.fi2 + 0.02)group by a.fi2 order by u_count (b.fi2) desc  ;
+
+
+select top 100 a.fi2, b.fi2, u_count (b.fi2) from t1 a, t1 b where b.fi2 = a.fi2 and 0 = delay (b.fi2 - b.fi2 + 0.02)group by a.fi2 order by u_count (b.fi2) desc, b.fi2;
+
+set result_timeout = 0;
+
+
+-- error below, b.fi2 not in select or gby but is in oby.
+select top 100 a.fi2, u_count (b.fi2) from t1 a, t1 b where b.fi2 = a.fi2 and 0 = delay (b.fi2 - b.fi2 + 0.02)group by a.fi2 order by u_count (b.fi2), b.fi2 desc  ;
+
+
+select top 100 a.fi2, b.fi2, u_count (b.fi2) from t1 a, t1 b where b.fi2 = a.fi2 and 0 = delay (b.fi2 - b.fi2 + 0.02)group by a.fi2 order by u_count (b.fi2) desc, b.fi2;
+echo both $if $equ $last[2] 119 "PASSED" "***FAILED";
+echo both ": gby/obby on user aggr\n";
+
+
+select  a.fi2, (select s from (select top 1 strconc (cast (b.fi2 as varchar) || ' ') as s, b.fi2 from t1 b table option (loop) where b.fi2 = a.fi2 + 1 group by b.fi2 order by s)  dt) from  t1 a;

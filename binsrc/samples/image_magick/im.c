@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -696,6 +696,7 @@ caddr_t bif_im_DeepZoom4to1 (caddr_t * qst, caddr_t * err, state_slot_t ** args)
   im_env_t env;
   caddr_t res;
   int fmt_is_set = 0;
+  int image_ctr;
   im_init (&env, qst, args, "IM DeepZoom4to1");
   im_set_background (&env, "#000000");
   env.ime_target_magick_wand = NewMagickWand ();
@@ -709,7 +710,7 @@ caddr_t bif_im_DeepZoom4to1 (caddr_t * qst, caddr_t * err, state_slot_t ** args)
     im_leave_with_error (&env, "22023", "IM001", "Can not set image extent");
   if (MagickFalse == MagickSetImageBackgroundColor (env.ime_target_magick_wand, env.ime_background))
     im_leave_with_error (&env, "22023", "IM001", "Can not set image background");
-  int image_ctr = BOX_ELEMENTS (args) / 2;
+  image_ctr = BOX_ELEMENTS (args) / 2;
   if (image_ctr > 4)
     image_ctr = 4;
   while (0 < image_ctr--)
@@ -764,6 +765,7 @@ bif_im_AnnotateImageBlob (caddr_t * qst, caddr_t * err, state_slot_t ** args)
   long f_size = n_args > 5 ? bif_long_arg (qst, args, 5, szMe) : 12;
   char *text_color = n_args > 6 ? bif_string_arg (qst, args, 6, szMe) : "black" ;
   dtp_t dtp = DV_TYPE_OF (blob);
+  im_env_t env;
   im_init (&env, qst, args, "IM AnnotateImageBlob");
   if (IS_STRING_DTP (dtp))
     blob_size = box_length (blob) - 1;

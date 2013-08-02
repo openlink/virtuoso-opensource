@@ -1,6 +1,6 @@
 /*
  *  clnode.c
- * 
+ *
  *  $Id$
  *
  *  Cluster versions of SQL nodes
@@ -34,6 +34,7 @@
 #include "sqlpfn.h"
 #include "sqlcmps.h"
 #include "sqlintrp.h"
+#include "aqueue.h"
 
 
 #if 0
@@ -208,839 +209,339 @@ again:
       if (wi_inst.wi_master->dbs_initial_gen >= 3120)
 	return cp_string_hash (cp, (char *) val + 1, DT_COMPARE_LENGTH, rem_ret);
       /* Pre 3120 uses the dt's non comparing bits hor partition, logically equal vals would get different hashes */
+    case DV_BOX_FLAGS:
+      val += 5;
+      goto again;
     default:
       return cp_string_hash (cp, (char *) val, known_len != -1 ? known_len : box_length (val) - 1, rem_ret);
     }
 }
 
 
-int
-clo_row_compare (cl_op_t * clo1, cl_op_t * clo2, clo_comp_t ** order)
-{
-  int inx;
-  DO_BOX (clo_comp_t *, clo, inx, order)
-  {
-    caddr_t d1 = clo1->_.row.cols[clo->nth];
-    caddr_t d2 = clo2->_.row.cols[clo->nth];
-    dtp_t dtp1 = DV_TYPE_OF (d1);
-    dtp_t dtp2 = DV_TYPE_OF (d2);
-    int rc;
-    if (DV_DB_NULL == dtp1 || DV_DB_NULL == dtp2)
-      {
-	if (DV_DB_NULL == dtp1 && DV_DB_NULL == dtp2)
-	  continue;
-	if (DV_DB_NULL == dtp1)
-	  return DVC_LESS;
-	return DVC_GREATER;
-      }
-    rc = cmp_boxes (d1, d2, clo->col->col_sqt.sqt_collation, clo->col->col_sqt.sqt_collation);
-    if (DVC_MATCH != rc)
-      return !clo->is_desc ? rc : (DVC_LESS == rc ? DVC_GREATER : DVC_LESS);
-  }
-  END_DO_BOX;
-  return DVC_MATCH;
-}
-
 caddr_t
-clo_detach_error (cl_op_t * clo)
+col_part_cast_rdf (caddr_t val, sql_type_t * sqt, caddr_t * err)
 {
-  caddr_t err = clo->_.error.err;
-  clo->_.error.err = NULL;
-  return err;
-}
-
-void
-clrg_check_trx_error (cl_req_group_t * clrg, caddr_t * err)
-{
-  if (!clrg->clrg_lt)
-    return;
-  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (err) && 3 <= BOX_ELEMENTS (err) && DV_STRINGP (err[1]))
-    {
-      if (SQLSTATE_IS_TXN (err[1]))
-	{
-	  lock_trx_t *lt = clrg->clrg_lt;
-	  at_printf (("host %d mark lt busted because of err recd from cl\n", local_cll.cll_this_host));
-	  IN_TXN;
-	  ctrx_printf (("txn owner of %d:%d got a transaction aborting error %s, rb now\n", QFID_HOST (lt->lt_w_id),
-		  (int) lt->lt_w_id, err[1]));
-	  lt_rollback (lt, TRX_CONT);
-	  LEAVE_TXN;
-	}
-    }
-}
-
-
-int n_local_rows;
-
-cl_op_t *
-clo_make_row (cll_in_box_t * clib, it_cursor_t * itc, buffer_desc_t * buf, cl_op_t * clo, int *len_ret)
-{
-  int inx, bytes = 11;
-  cl_op_t *row = mp_clo_allocate (clib->clib_local_pool, CLO_ROW);
-  int n_cols = itc->itc_out_map ? box_length (itc->itc_out_map) / sizeof (out_map_t) : 0;
-  db_buf_t r = BUF_ROW (buf, itc->itc_map_pos);
-  key_ver_t kv = IE_KEY_VERSION (r);
-  caddr_t *cols = (caddr_t *) mp_alloc_box_ni (clib->clib_local_pool, n_cols * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
-  n_local_rows++;
-  for (inx = 0; inx < n_cols; inx++)
-    {
-      out_map_t *om = &itc->itc_out_map[inx];
-      if (OM_BM_COL == om->om_is_null)
-	{
-	  dtp_t dtp = itc->itc_insert_key->key_bit_cl->cl_sqt.sqt_dtp;
-	  if (DV_IRI_ID == dtp || DV_IRI_ID_8 == dtp)
-	    {
-	      cols[inx] = mp_alloc_box (clib->clib_local_pool, sizeof (iri_id_t), DV_IRI_ID);
-	      *(iri_id_t *) (cols[inx]) = itc->itc_bp.bp_value;
-	    }
-	  else
-	    cols[inx] = mp_box_num (clib->clib_local_pool, itc->itc_bp.bp_value);
-	}
-      else if (OM_ROW == om->om_is_null)
-	{
-	  caddr_t _row = itc_box_row (itc, buf);
-	  cols[inx] = mp_full_box_copy_tree (clib->clib_local_pool, _row);
-	  dk_free_tree (_row);
-	}
-      else if (kv == itc->itc_insert_key->key_version)
-	cols[inx] = itc_mp_box_column (itc, clib->clib_local_pool, buf, 0, &om->om_cl);
-      else
-	cols[inx] = itc_mp_box_column (itc, clib->clib_local_pool, buf, om->om_cl.cl_col_id, NULL);
-      bytes += box_serial_length (cols[inx], 0);
-    }
-  row->_.row.cols = cols;
-  row->clo_nth_param_row = clo->clo_nth_param_row;
-  *len_ret = bytes;
-  return row;
-}
-
-#define itc_cl_is_local_direct(itc) \
-  (itc->itc_ks && (itc->itc_ks->ks_is_last || itc->itc_ks->ks_next_clb))
-
-int
-itc_cl_others_ready (it_cursor_t * itc)
-{
-  /* if reading a local itc of a cluster query, check now and then to see if should go get remote results */
-  cll_in_box_t *clib = (cll_in_box_t *) itc->itc_search_params[itc->itc_search_par_fill];
-  if (itc_cl_is_local_direct (itc))
-    return 0;
-  DO_SET (cll_in_box_t *, other, &clib->clib_group->clrg_clibs)
-  {
-    if (other != clib && clib_has_data (other))
-      {
-	itc->itc_cl_batch_done = 1;
-	return 1;
-      }
-  }
-  END_DO_SET ();
+  /* An incomplete text or geo box can join to an int id in geo inx.  So a geo box casts to int as its ro id, else error */
+  QNCAST (rdf_box_t, rb, val);
+  if (RDF_BOX_GEO == rb->rb_type || (rb->rb_serialize_id_only || rdf_no_string_inline))
+    return box_num (rb->rb_ro_id);
+  *err = srv_make_new_error ("22023", "CL...", "an rdf box is not joinable to an int partition key, except for geo boxes");
   return 0;
 }
 
 
-
-
-void
-clo_unlink_clib (cl_op_t * clo, cll_in_box_t * clib, int is_allocd)
-{
-  dk_set_t *prev = &clo->clo_clibs;
-  dk_set_t list = clo->clo_clibs;
-  while (list)
+uint32
+col_part_hash (col_partition_t * cp, caddr_t val, int is_already_cast, int *cast_ret, int32 * rem_ret)
     {
-      if (list->data == (void *) clib)
+  uint32 hash = 0;
+  dtp_t dtp = DV_TYPE_OF (val);
+  sql_type_t *sqt = &cp->cp_sqt;
+  caddr_t cast_val = NULL;
+  if (DV_DB_NULL == dtp)
 	{
-	  *prev = list->next;
-	  if (is_allocd)
+      if (cast_ret)
+	*cast_ret = KS_CAST_NULL;
+      return 0;
+}
+  if (cast_ret)
+    *cast_ret = KS_CAST_OK;
+  if (CP_NO_CAST != is_already_cast)
+{
+      if (dtp != sqt->sqt_dtp)
+    {
+	  caddr_t err = NULL;
+	  if (IS_BLOB_DTP (dtp))
+	{
+	      if (cast_ret && CP_CAST_NO_ERROR == is_already_cast)
 	    {
-	      list->next = NULL;
-	      dk_set_free (list);
-	    }
-	  return;
+		  *cast_ret = KS_CAST_NULL;
+		  return 0;
 	}
-      prev = &list->next;
-      list = list->next;
-    }
-  log_error ("got the same end of set one too many times: set %d seq %d from host %d", clo->clo_nth_param_row, clo->clo_seq_no,
-      clib->clib_host->ch_id);
-}
-
-int cn_ks_sets;
-
-void
-qf_select_node_input (qf_select_node_t * qfs, caddr_t * inst, caddr_t * state)
+	      sqlr_new_error ("42000", "CL...", "A lob value cannot be used as a value compared to a partitioning column.");
+	}
+	  if (DV_ANY == sqt->sqt_dtp)
+	    val = cast_val = box_to_any (val, &err);
+	  else if (DV_IRI_ID_8 == sqt->sqt_dtp && DV_IRI_ID == dtp)
+	    ;
+	  else if (DV_INT64 == sqt->sqt_dtp && DV_LONG_INT == dtp)
+	    ;
+	  else if (DV_RDF == dtp)
+	    val = cast_val = col_part_cast_rdf (val, sqt, &err);
+      else
+	    val = cast_val = box_cast_to (NULL, val, dtp, sqt->sqt_dtp, sqt->sqt_precision, sqt->sqt_scale, &err);
+	  if (err)
 {
-  /* sends a row of ssls when a qf does not end in a ts or setp */
-  query_instance_t *qi = (query_instance_t *) inst;
-  int batch_end = 0, inx, set_end;
-  cl_op_t *qf_clo;
-  cll_in_box_t *dbg_clib = NULL;
-  cl_thread_t *clt = qi->qi_client->cli_clt;
-  {
-    /* add a local row to the local clib, if remote results ready, break the batch */
-    cl_op_t *itcl_clo = (cl_op_t *) qst_get (inst, qfs->qfs_itcl);
-    itc_cluster_t *itcl = itcl_clo->_.itcl.itcl;
-    cll_in_box_t *clib = itcl->itcl_local_when_idle;
-    int n = BOX_ELEMENTS (qfs->qfs_out_slots);
-    caddr_t *row = (caddr_t *) mp_alloc_box_ni (clib->clib_local_pool, sizeof (caddr_t) * n, DV_ARRAY_OF_POINTER);
-    cl_op_t *clo;
-    int bytes = 11;
-    dbg_clib = clib;
-    for (inx = 0; inx < n; inx++)
+	      if (cast_ret && CP_CAST_NO_ERROR == is_already_cast)
       {
-	row[inx] = mp_full_box_copy_tree (clib->clib_local_pool, qst_get (inst, qfs->qfs_out_slots[inx]));
-	bytes += box_serial_length (row[inx], 0);
-      }
-    clo = mp_clo_allocate (clib->clib_local_pool, CLO_ROW);
-    clo->_.row.cols = row;
-    qf_clo = (cl_op_t *) basket_first (&clib->clib_local_clo);
-    clo->clo_nth_param_row = qf_clo->clo_nth_param_row;
-    clo->clo_seq_no = qf_clo->clo_seq_no;
-    basket_add (&clib->clib_in_parsed, (void *) clo);
-    clib->clib_local_bytes += bytes;
-    clib->clib_local_bytes_cum += bytes;
-    if (clib->clib_local_bytes_cum > 50000)
-      {
-	batch_end = 1;
-	clib->clib_local_bytes = clib->clib_local_bytes_cum = 0;
-      }
-  }
-  if (qf_clo->_.frag.max_rows)
-    cn_ks_sets++;
-  set_end = IS_MAX_ROWS (qf_clo->_.frag.max_rows);
-  if (batch_end)
-    {
-      /* The qf batch is completed.  Throw with RST_ENOUGH.  Must also leave page and register itc if ts not unq */
-      if (dbg_clib)
-	/*cl_printf (("local batch at end %d rows\n", (int)dbg_clib->clib_in_parsed.bsk_count)) */ ;
-      longjmp_splice (qi->qi_thread->thr_reset_ctx, set_end ? RST_AT_END : RST_ENOUGH);
+		  *cast_ret = KS_CAST_NULL;
+		  dk_free_tree (err);
+  return 0;
+}
+	      sqlr_resignal (err);
+	}
     }
 }
-
-
-void
-qf_resume_pending_nodes (query_frag_t * qf, caddr_t * inst, int *any_done, cl_op_t * clo)
+  switch (cp->cp_type)
 {
-  dk_set_t nodes = qf->qf_nodes;
-cont_innermost_loop:
-  DO_SET (data_source_t *, src, &nodes)
-  {
-    if (inst[src->src_in_state])
-      {
-	*any_done = 1;
-	if (src->src_continue_reset)
-	  dc_reset_array (inst, src, src->src_continue_reset, -1);
-	src->src_input (src, inst, NULL);
-	goto cont_innermost_loop;
-      }
-  }
-  END_DO_SET ();
+    case CP_INT:
+{
+	boxint i = unbox_iri_int64 (val);
+	hash = cp_int_hash (cp, i, rem_ret);
+	if (cast_val)
+	  dk_free_box (cast_val);
+	return hash;
 }
-
-
-void
-qf_set_local_save (query_frag_t * qf, caddr_t * inst)
+    case CP_WORD:
 {
-  int n, inx;
-  if (!qf->qf_local_save)
-    return;
-  n = BOX_ELEMENTS (qf->qf_local_save);
-  for (inx = 0; inx < n; inx += 2)
-    qst_set_over (inst, qf->qf_local_save[inx + 1], qst_get (inst, qf->qf_local_save[inx]));
+	int len = box_length (val) - 1;
+	if (DV_ANY == cp->cp_sqt.sqt_dtp)
+{
+	    uint32 res = cp_any_hash (cp, (dtp_t *) val, rem_ret);
+	    if (cast_val)
+	      dk_free_box (cast_val);
+	    return res;
 }
-
-
-void
-qf_restore_local_save (query_frag_t * qf, caddr_t * inst)
+	if (DV_DATETIME == cp->cp_sqt.sqt_dtp || DV_DATE == cp->cp_sqt.sqt_dtp)
 {
-  int n, inx;
-  if (!qf->qf_local_save)
-    return;
-  n = BOX_ELEMENTS (qf->qf_local_save);
-  for (inx = 0; inx < n; inx += 2)
-    qst_set_over (inst, qf->qf_local_save[inx], qst_get (inst, qf->qf_local_save[inx + 1]));
+	    uint32 ret = cp_string_hash (cp, cast_val ? cast_val : val, DT_COMPARE_LENGTH, rem_ret);
+	    if (cast_val)
+	      dk_free_box (cast_val);
+	    return ret;
 }
-
-void
-qf_anytime (cl_op_t * clo, cll_in_box_t * clib, caddr_t err)
+	if (cp->cp_n_first < 0)
 {
-  /* when anytime interrupt, add an error at the end or a agg end if non-dfg aggregate */
-  query_frag_t *qf = clo->_.frag.qf;
-  caddr_t *inst = clo->_.frag.qst;
-  QNCAST (query_instance_t, qi, inst);
-  qi->qi_client->cli_activity.da_anytime_result = 1;
-  if (qf->qf_is_agg && !qf->qf_n_stages)
+	    if (len > -cp->cp_n_first)
     {
-      cl_op_t *end = mp_clo_allocate (clib->clib_local_pool, CLO_AGG_END);
-      dk_free_tree (err);
-      end->clo_nth_param_row = clo->clo_nth_param_row;
-      basket_add (&clib->clib_in_parsed, (void *) end);
+		*rem_ret = ((-cp->cp_n_first * 8) << 24) | (SHORT_REF_NA (val + len - 2) & N_ONES (8 * -cp->cp_n_first));
+		len += cp->cp_n_first;
     }
   else
     {
-      cl_op_t *end = mp_clo_allocate (clib->clib_local_pool, CLO_ERROR);
-      end->clo_nth_param_row = clo->clo_nth_param_row;
-      end->_.error.err = err;
-      basket_add (&clib->clib_in_parsed, (void *) end);
+		*rem_ret = -1;
     }
 }
-
-
-void
-qf_handle_reset (cl_op_t * clo, query_instance_t * qi, cll_in_box_t * clib, int reset_code)
-{
-  caddr_t err;
-  QI_CHECK_ANYTIME_RST (qi, reset_code);
-  switch (reset_code)
-    {
-    case RST_ENOUGH:
-    case RST_AT_END:
-      {
-	query_frag_t *qf = clo->_.frag.qf;
-	qf_set_local_save (qf, (caddr_t *) qi);
-	return;
-      }
-    case RST_ERROR:
-      err = thr_get_error_code (qi->qi_thread);
-      if (err_is_anytime (err))
-	{
-	  qf_anytime (clo, clib, err);
-	  return;
-	}
-      sqlr_resignal (err);
-    case RST_KILLED:
-      err = srv_make_new_error ("HY008", "SR189", "Async statement killed by SQLCancel.");
-      sqlr_resignal (err);
-    case RST_DEADLOCK:
-      {
-	int trx_code = qi->qi_trx->lt_error;
-	SEND_TRX_ERROR_CALLER (err, qi->qi_caller, trx_code, LT_ERROR_DETAIL (qi->qi_trx));
-	sqlr_resignal (err);
-      }
-    }
-}
-
-
-void
-clib_local_qf_next (cll_in_box_t * clib)
-{
-}
-
-void
-clib_local_next (cll_in_box_t * clib)
-{
-  /* read some from the local itc or qf  and put results in the clib out box */
-  int rc, batch_end = 0;
-  cl_op_t *clo;
-  buffer_desc_t *buf;
-  it_cursor_t *itc;
-  clib->clib_local_bytes = 0;
-  if (clib->clib_in_parsed.bsk_count)
-    GPF_T1 ("do not get next local batch before the prev is out");
-  if (clib->clib_local_pool)
-    mp_free (clib->clib_local_pool);
-  clib->clib_local_pool = mem_pool_alloc ();
-next_set:
-  clo = (cl_op_t *) basket_first (&clib->clib_local_clo);
-  if (CLO_QF_EXEC == clo->clo_op)
-    {
-      clib_local_qf_next (clib);
-      return;
-    }
-  if (clo->_.select.is_null_join)
-    goto end_of_set;
-  itc = clo->_.select.itc;
-  ITC_FAIL (itc)
-  {
-    if (clo->_.select.is_started)
-      buf = page_reenter_excl (itc);
-    else
-      {
-	itc->itc_search_par_fill = BOX_ELEMENTS ((caddr_t) clo->_.select.local_params);
-	memcpy (&itc->itc_search_params, clo->_.select.local_params, itc->itc_search_par_fill * sizeof (caddr_t));
-	itc->itc_key_spec = itc->itc_ks->ks_spec;	/* set here every time, bm inx select will change itc_key_spec */
-	itc->itc_desc_order = itc->itc_ks->ks_descending;
-	itc->itc_search_params[itc->itc_search_par_fill] = (caddr_t) clib;
-	itc->itc_search_params[itc->itc_search_par_fill + 1] = (caddr_t) clo;
-	buf = itc_reset (itc);
-	clo->_.select.is_started = 1;
-      }
-    itc->itc_cl_batch_done = 0;
-    while (DVC_MATCH == (rc = itc_next (itc, &buf)))
-      {
-	if (itc->itc_ks->ks_ts->ts_is_unique || itc->itc_cl_set_done)
-	  break;
-	if (itc->itc_cl_batch_done)
-	  {
-	    itc_register (itc, buf);
-	    batch_end = 1;
-	    break;
-	  }
-      }
-    itc_page_leave (itc, buf);
-    if (!batch_end)
-      {
-      end_of_set:
-	if (itc_cl_is_local_direct (itc))
-	  {
-	    clo_unlink_clib (clo, clib, 0);
-	    if (!clo->clo_clibs)
-	      {
-		itc_cluster_t *itcl = ((cl_op_t *) QST_GET_V (itc->itc_out_state, itc->itc_ks->ks_itcl))->_.itcl.itcl;
-		itcl->itcl_nth_set++;
-	      }
-	  }
 	else
-	  {
-	    cl_op_t *end = mp_clo_allocate (clib->clib_local_pool, CLO_SET_END);
-	    end->clo_nth_param_row = clo->clo_nth_param_row;
-	    basket_add (&clib->clib_in_parsed, (void *) end);
-	    clo->_.select.itc = NULL;
-	  }
-	itc->itc_cl_set_done = 0;
-	clib->clib_n_selects_received++;
-	basket_get (&clib->clib_local_clo);	/* gets freed with the params of the ts */
-	clo = (cl_op_t *) basket_first (&clib->clib_local_clo);
-	if (clo)
-	  goto next_set;
-	return;			/* no end fail, itc freed */
+	{
+	    *rem_ret = -1;
+	    if (cp->cp_n_first > 0)
+	      len = MIN (len, cp->cp_n_first);
+	}
+	BYTE_BUFFER_HASH (hash, val, len);
+	if (cast_val)
+	  dk_free_box (cast_val);
+	return hash & cp->cp_mask;
       }
-    else
-      {
-	if (!itc_cl_is_local_direct (itc))
-	  {
-	    cl_op_t *end = mp_clo_allocate (clib->clib_local_pool, CLO_BATCH_END);
-	    end->clo_nth_param_row = clo->clo_nth_param_row;
-	    basket_add (&clib->clib_in_parsed, (void *) end);
-	  }
-	return;
-      }
-  }
-  ITC_FAILED
-  {
-  }
-  END_FAIL (itc);
+    }
+  return 0;
 }
 
-void
-cl_row_set_out_cols (dk_set_t slots, caddr_t * inst, cl_op_t * clo)
+
+caddr_t
+ins_value_by_cl (dbe_col_loc_t * cl, dbe_column_t * col_1, char **names, caddr_t * values, int *found)
 {
-  int inx = 0;
-  DO_SET (state_slot_t *, ssl, &slots)
+  /* fidn the name by the col id and the value by the name */
+  int inx;
+  static caddr_t null_box = NULL;
+  dbe_column_t *col = col_1 ? col_1 : sch_id_to_column (wi_inst.wi_schema, cl->cl_col_id);
+  for (inx = 0; names[inx]; inx++)
+    if (!stricmp (col->col_name, names[inx]))
+      {
+	if (found)
+	  *found = 1;
+	return values[inx];
+      }
+  if (!null_box)
+    null_box = dk_alloc_box (0, DV_DB_NULL);
+  if (found)
+    *found = 0;
+  return null_box;
+}
+
+cl_op_t *
+clrg_dml_clo (cl_req_group_t * clrg, dbe_key_t * key, int op)
+{
+  cl_op_t *clo;
+  DO_SET (cl_op_t *, clo, &clrg->clrg_vec_clos)
   {
-    qst_set_over (inst, ssl, clo->_.row.cols[inx]);
-    inx++;
+    if (op == clo->clo_op && key == clo->_.insert.rd->rd_key)
+      return clo;
   }
   END_DO_SET ();
+  clo = mp_clo_allocate (clrg->clrg_pool, op);
+  mp_set_push (clrg->clrg_pool, &clrg->clrg_vec_clos, (void *) clo);
+  clo->_.insert.rd = (row_delta_t *) mp_alloc_box (clrg->clrg_pool, sizeof (row_delta_t), DV_BIN);
+  clo->_.insert.rd->rd_key = key;
+  return clo;
 }
 
+#define CL_IS_COL_KEY_REF(cl, key) \
+  (key->key_is_col && cl >= key->key_row_var && cl < &key->key_row_var[key->key_n_significant])
 
 
 cl_op_t *
-itcl_next (itc_cluster_t * itcl)
-{
-  cl_op_t *first = NULL;
-  cll_in_box_t *first_clib = NULL;
-
-  int less = itcl->itcl_desc_order ? DVC_GREATER : DVC_LESS;
-  if (itcl->itcl_last_returned)
+cl_key_insert_op_vec (caddr_t * qst, dbe_key_t * key, int ins_mode,
+    char **col_names, caddr_t * values, cl_req_group_t * clrg, int seq, int nth_set)
     {
-      cll_in_box_t *last_clib = itcl->itcl_last_returned;
-      clib_read_next (last_clib, NULL, NULL);
-      last_clib->clib_rows_done++;
-      if (last_clib->clib_host->ch_id != local_cll.cll_this_host
-	  && last_clib->clib_row_low_water > 0
-	  && last_clib->clib_rows_done > last_clib->clib_row_low_water
-	  && last_clib->clib_batches_requested - last_clib->clib_batches_received < 2 && last_clib->clib_res_type != CM_RES_FINAL)
-	{
-	  cl_printf (("Low water on %d, %d rows done\n", last_clib->clib_host->ch_id, last_clib->clib_rows_done));
-	  clib_more (last_clib);
-	}
-    }
-  itcl->itcl_last_returned = NULL;
+  cl_op_t *clo = clrg_dml_clo (clrg, key, CLO_INSERT);
+  int is_first = 0, fill = 0;
+  row_delta_t *rd = clo->_.insert.rd;
+  if (!clo->_.insert.rd->rd_values)
+    {
+      state_slot_t col_ssl;
+      memzero (&col_ssl, sizeof (col_ssl));
+      col_ssl.ssl_type = SSL_VEC;
+      rd->rd_n_values = dk_set_length (key->key_parts);
+      rd->rd_key = key;
+      rd->rd_values = (caddr_t *) mp_alloc_box (clrg->clrg_pool, rd->rd_n_values * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+      rd->rd_op = RD_INSERT;
+      rd->rd_make_ins_rbe = 1;
+      rd->rd_non_comp_len = key->key_row_var_start[0];
+      rd->rd_non_comp_max = MAX_ROW_BYTES;
+      if (!key->key_parts)
+	sqlr_new_error ("42S11", "SR119", "Key %s has 0 parts. Create index probably failed", key->key_name);
 
-  DO_SET (cll_in_box_t *, clib, &itcl->itcl_clrg->clrg_clibs)
-  {
-    cl_op_t *clo;
-    if (!clib->clib_waiting)
+      clo->_.insert.ins_mode = ins_mode;
+      clo->clo_seq_no = seq;
+      clo->clo_nth_param_row = nth_set;
+      clo->_.insert.is_autocommit = clrg->clrg_no_txn;
+      DO_ALL_CL (cl, key)
+	{
+	if (cl == key->key_bm_cl || CL_IS_COL_KEY_REF (cl, key))
       continue;
-    for (;;)
+	col_ssl.ssl_sqt = cl->cl_sqt;
+	col_ssl.ssl_sqt.sqt_dtp = dtp_canonical[col_ssl.ssl_sqt.sqt_col_dtp];
+	col_ssl.ssl_dc_dtp = 0;
+	ssl_set_dc_type (&col_ssl);
+	rd->rd_values[fill++] = (caddr_t) mp_data_col (clo->clo_pool, &col_ssl, 1000);
+      }
+      END_DO_ALL_CL;
+      clo->_.insert.non_txn = clrg->clrg_no_txn;
+      is_first = 1;
+    }
+  rd = clo->_.insert.rd;
+  fill = 0;
+  DO_ALL_CL (cl, key)
       {
-	clo = clib_first (clib);
-	if (clo)
+    caddr_t data;
+    if (cl == key->key_bm_cl || CL_IS_COL_KEY_REF (cl, key))
+      continue;
+    data = ins_value_by_cl (cl, NULL, col_names, values, NULL);
+    if (DV_RDF == DV_TYPE_OF (data))
+      dc_append_dv_rdf_box ((data_col_t *) rd->rd_values[fill], data);
+    else
+      dc_append_box ((data_col_t *) rd->rd_values[fill], data);
+    fill++;
+  }
+  END_DO_ALL_CL;
+  return is_first ? clo : NULL;
+}
+
+
+cl_op_t *
+cl_key_delete_op_vec (caddr_t * qst, dbe_key_t * key,
+    char **col_names, caddr_t * values, cl_req_group_t * clrg, int seq, int nth_set)
+      {
+  cl_op_t *clo = clrg_dml_clo (clrg, key, CLO_DELETE);
+  int is_first = 0, fill = 0;
+  row_delta_t *rd = clo->_.delete.rd;
+  if (!clo->_.delete.rd->rd_values)
+    {
+      state_slot_t col_ssl;
+      memzero (&col_ssl, sizeof (col_ssl));
+      col_ssl.ssl_type = SSL_VEC;
+      rd->rd_n_values = key->key_n_significant;
+      rd->rd_key = key;
+      rd->rd_values = (caddr_t *) mp_alloc_box (clrg->clrg_pool, rd->rd_n_values * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+      rd->rd_op = RD_DELETE;
+      rd->rd_non_comp_len = key->key_row_var_start[0];
+      rd->rd_non_comp_max = MAX_ROW_BYTES;
+      if (!key->key_parts)
+	sqlr_new_error ("42S11", "SR119", "Key %s has 0 parts. Create index probably failed", key->key_name);
+
+      clo->clo_seq_no = seq;
+      clo->clo_nth_param_row = nth_set;
+      DO_SET (dbe_column_t *, col, &key->key_parts)
+      {
+	col_ssl.ssl_sqt = col->col_sqt;
+	col_ssl.ssl_sqt.sqt_dtp = dtp_canonical[col_ssl.ssl_sqt.sqt_col_dtp];
+	col_ssl.ssl_dc_dtp = 0;
+	ssl_set_dc_type (&col_ssl);
+	rd->rd_values[fill++] = (caddr_t) mp_data_col (clo->clo_pool, &col_ssl, 1000);
+	if (fill == key->key_n_significant)
 	  break;
       }
-    if (CLO_ERROR == clo->clo_op)
-      sqlr_resignal (clo_detach_error (clo));
-    if (CLO_ROW != clo->clo_op)
-      continue;
-    if (!first || less == clo_row_compare (clo, first, itcl->itcl_order))
-      {
-	first = clo;
-	first_clib = clib;
-      }
-  }
-  END_DO_SET ();
-  itcl->itcl_last_returned = first_clib;
-  return first;
-}
-
-cll_in_box_t *
-itcl_local_start (itc_cluster_t * itcl)
-{
-  /* when a clrg has started for queries remote queries, run local ones for a similar batch worth./
-   * Also set the dks_qi_data needed for receiving xml from any of the clibs, so run through them all */
-  cl_req_group_t *clrg = itcl->itcl_clrg;
-  cll_in_box_t *ret = NULL;
-  QNCAST (query_instance_t, qi, itcl->itcl_qst);
-  qi = qi_top_qi (qi);
-  DO_SET (cll_in_box_t *, clib, &clrg->clrg_clibs)
-  {
-    DKS_QI_DATA (&clib->clib_in_strses) = qi;
-    if (clib->clib_host->ch_id == local_cll.cll_this_host)
-      {
-	if (itcl)
-	  itcl->itcl_local_when_idle = clib;
-	clib_more (clib);
-	ret = clib;
-      }
-  }
-  END_DO_SET ();
-  return ret;
-}
-
-int set_ctr;
-
-
-
-void
-cl_node_init (table_source_t * ts, caddr_t * inst)
-{
-  if (!IS_CL_NODE (ts))
-    return;
-  SRC_IN_STATE ((data_source_t *) ts, inst) = NULL;
-  if (IS_TS (ts) && !ts->clb.clb_fill)
-    return;
-  if (ts->clb.clb_itcl && !ts->clb.clb_keep_itcl_after_end)
-    qst_set (inst, ts->clb.clb_itcl, NULL);
-  if (ts->clb.clb_clrg)
-    qst_set (inst, ts->clb.clb_clrg, NULL);
-  if ((qn_input_fn) fun_ref_node_input == ts->src_gen.src_input)
-    {
-      QNCAST (fun_ref_node_t, fref, ts);
-      if (fref->fnr_cl_state)
-	{
-	  QST_INT (inst, fref->fnr_cl_state) = FNR_NONE;
-	  qst_set (inst, fref->fnr_ssa.ssa_array, NULL);
-	  qst_set_long (inst, fref->fnr_ssa.ssa_current_set, 0);
-	}
-    }
-  if ((qn_input_fn) code_node_input == ts->src_gen.src_input)
-    {
-      QNCAST (code_node_t, cn, ts);
-      DO_SET (instruction_t *, ins, &cn->cn_continuable)
-      {
-	query_t *qr = INS_QUERY (ins);
-	subq_init (qr, inst);
-      }
       END_DO_SET ();
+      is_first = 1;
     }
-  if ((qn_input_fn) query_frag_input == ts->src_gen.src_input)
-    {
-      QNCAST (query_frag_t, qf, ts);
-      if (qf->qf_n_stages || qf->qf_is_agg)
-	{
-	  DO_SET (stage_node_t *, stn, &qf->qf_nodes)
-	  {
-	    if (IS_STN (stn))
-	      cl_node_init ((table_source_t *) stn, inst);
-	    else if (IS_QN (stn, ssa_iter_input))
-	      {
-		QNCAST (ssa_iter_node_t, ssi, stn);
-		QST_INT (inst, ssi->ssi_state) = 0;
-		qst_set (inst, ssi->ssi_setp->setp_ssa.ssa_array, NULL);
-		qst_set (inst, ssi->ssi_setp->setp_ssa.ssa_current_set, 0);
-	      }
-	    else if (IS_QN (stn, setp_node_input))
-	      {
-		QNCAST (setp_node_t, setp, stn);
-		setp_temp_clear (setp, setp->setp_ha, inst);
-	      }
-	    else if (IS_TS (stn))
-	      {
-		QNCAST (table_source_t, ts, stn);
-		if (ts->ts_order_ks && ts->ts_order_ks->ks_setp)
-		  setp_temp_clear (ts->ts_order_ks->ks_setp, ts->ts_order_ks->ks_setp->setp_ha, inst);
-	      }
+  rd = clo->_.delete.rd;
+  fill = 0;
+  DO_SET (dbe_column_t *, col, &key->key_parts)
+  {
+    caddr_t data;
+    data = ins_value_by_cl (NULL, col, col_names, values, NULL);
+    if (DV_RDF == DV_TYPE_OF (data))
+      dc_append_dv_rdf_box ((data_col_t *) rd->rd_values[fill], data);
+    else
+      dc_append_box ((data_col_t *) rd->rd_values[fill], data);
+    fill++;
+    if (fill == key->key_n_significant)
+      break;
 	  }
 	  END_DO_SET ();
-	}
-    }
-}
-
-int
-itc_rd_cluster_blobs (it_cursor_t * itc, row_delta_t * rd)
-{
-  /* if there is a blob handle to be had from cluster, get it here  and make the blob */
-  DO_CL (cl, itc->itc_insert_key->key_row_var)
-  {
-    if (IS_BLOB_DTP (cl->cl_sqt.sqt_dtp))
-      {
-	caddr_t data = rd->rd_values[cl->cl_nth];
-	blob_handle_t *bh = (blob_handle_t *) data;
-	/* if this is a blob handle or if blobs were not made when reading the rd, make the blob now */
-	if (IS_BLOB_HANDLE_DTP (DV_TYPE_OF (data)))
-	  {
-	    char str[DV_BLOB_LEN + 1];
-	    int rc = itc_set_blob_col (itc, (db_buf_t) str, (caddr_t) bh, NULL, BLOB_IN_INSERT, &cl->cl_sqt);
-	    if (LTE_OK != rc)
-	      {
-		return rc;
-	      }
-	    dk_free_box (data);
-	    data = dk_alloc_box (DV_BLOB_LEN + 1, DV_STRING);
-	    memcpy (data, &str[0], DV_BLOB_LEN);
-	    str[DV_BLOB_LEN] = 0;
-	    rd->rd_values[cl->cl_nth] = data;
-	  }
-      }
-  }
-  END_DO_CL;
-  return LTE_OK;
-  return LTE_OK;
-}
-
-
-int
-itc_insert_rd (it_cursor_t * itc, row_delta_t * rd, buffer_desc_t ** unq_buf)
-{
-  int inx;
-  dbe_key_t *key = itc->itc_insert_key;
-  itc_from (itc, itc->itc_insert_key);
-  for (inx = 0; inx < key->key_n_significant; inx++)
-    ITC_SEARCH_PARAM (itc, rd->rd_values[key->key_part_in_layout_order[inx]]);
-  if (key->key_is_bitmap)
-    {
-      ITC_SAVE_FAIL (itc);
-      key_bm_insert (itc, rd);
-      ITC_RESTORE_FAIL (itc);
-      return DVC_LESS;
-    }
-  else
-    {
-      itc->itc_key_spec = itc->itc_insert_key->key_insert_spec;
-      if (itc->itc_insert_key->key_table->tb_any_blobs)
-	itc_rd_cluster_blobs (itc, rd);
-      return itc_insert_unq_ck (itc, rd, unq_buf);
-    }
-}
-
-void
-itc_delete_rd (it_cursor_t * itc, row_delta_t * rd)
-{
-  buffer_desc_t *buf;
-  int inx, rc;
-  dbe_key_t *key = itc->itc_insert_key;
-  itc_from (itc, itc->itc_insert_key);
-  for (inx = 0; inx < key->key_n_significant; inx++)
-    ITC_SEARCH_PARAM (itc, rd->rd_values[key->key_part_in_layout_order[inx]]);
-  itc->itc_search_mode = SM_INSERT;
-  itc->itc_key_spec = key->key_insert_spec;
-  itc->itc_lock_mode = PL_EXCLUSIVE;
-  buf = itc_reset (itc);
-  rc = itc_search (itc, &buf);
-  if (rc == DVC_MATCH)
-    {
-      itc->itc_is_on_row = 1;
-      itc_set_lock_on_row (itc, &buf);
-      if (!itc->itc_is_on_row)
-	{
-	  if (itc->itc_ltrx)
-	    itc->itc_ltrx->lt_error = LTE_DEADLOCK;
-	  /* not really, but just put something there. */
-	  itc_bust_this_trx (itc, &buf, ITC_BUST_THROW);
-	}
-      itc->itc_is_on_row = 1;	/* flag not set in SM_INSERT search */
-      itc_delete (itc, &buf, NO_BLOBS);
-      itc_page_leave (itc, buf);
-      log_delete (itc->itc_ltrx, rd, LOG_KEY_ONLY);
-    }
-  else
-    itc_page_leave (itc, buf);
-}
-
-void
-rd_free_temp_blobs (row_delta_t * rd, lock_trx_t * lt, int is_local)
-{
-  /* an rd gets made here wit blobs but does not get stored here.  Blobs away after the clo is sent to recipients.  Also not logged here.  Set the send flag to deflt for cluster blobs.  */
-  it_cursor_t itc_auto;
-  it_cursor_t *itc = &itc_auto;
-  int inx;
-  for (inx = 0; inx < rd->rd_n_values; inx++)
-    {
-      if (rd_is_blob (rd, inx))
-	{
-	  caddr_t str = rd->rd_values[inx];
-	  dtp_t dtp = DV_TYPE_OF (str);
-	  if (IS_BLOB_HANDLE_DTP (dtp))
-	    ((blob_handle_t *) str)->bh_send_as_bh = 0;
-	  else if (DV_STRING == dtp && IS_BLOB_DTP ((dtp_t) (str[0])) && !is_local)
-	    {
-	      blob_layout_t *bl = bl_from_dv_it ((db_buf_t) str, rd->rd_key->key_fragments[0]->kf_it);
-	      blob_log_set_delete (&lt->lt_blob_log, LONG_REF_NA (str + BL_DP));
-	      ITC_INIT (itc, NULL, lt);
-	      itc_from (itc, rd->rd_key);
-	      blob_schedule_delayed_delete (itc, bl, BL_DELETE_AT_COMMIT | BL_DELETE_AT_ROLLBACK);
-	    }
-	}
-    }
-}
-
-#define INS_DUP 2
-
-void
-cl_local_insert (caddr_t * inst, cl_op_t * clo)
-{
-  query_instance_t *qi = (query_instance_t *) inst;
-  buffer_desc_t *buf = NULL, **unq_buf = NULL;
-  row_delta_t *volatile rd = clo->_.insert.rd;
-  it_cursor_t itc_auto;
-  it_cursor_t *itc = &itc_auto;
-  ITC_INIT (itc, NULL, qi->qi_trx);
-  itc_from (itc, rd->rd_key);
-  if (INS_NORMAL != clo->_.insert.ins_mode)
-    unq_buf = &buf;
-  log_insert (itc->itc_ltrx, rd, LOG_KEY_ONLY | clo->_.insert.ins_mode);
-  ITC_FAIL (itc)
-  {
-    int rc = itc_insert_rd (itc, rd, unq_buf);
-    itc_free_owned_params (itc);
-    rd->rd_itc = NULL;
-    clo->_.insert.ins_result = rc;
-    if (DVC_MATCH == rc)
-      {
-	if (INS_REPLACING == clo->_.insert.ins_mode)
-	  {
-	    cl_op_t *decoy = clo_allocate (CLO_INSERT);
-	    NEW_VARZ (row_delta_t, prev_rd);
-	    prev_rd->rd_allocated = RD_ALLOCATED;
-	    page_row (buf, itc->itc_map_pos, prev_rd, RO_ROW);
-	    itc_set_lock_on_row (itc, &buf);
-	    if (!itc->itc_is_on_row)
-	      GPF_T1 ("in insert replacing, setting the lock is supposed to be possible since insert already checked the lock");
-	    lt_rb_update (itc->itc_ltrx, buf, BUF_ROW (buf, itc->itc_map_pos));
-	    itc_delete_blobs (itc, buf);
-	    upd_refit_row (itc, &buf, rd, RD_UPDATE);
-	    clo->_.insert.prev_rd = prev_rd;
-	    decoy->_.insert.rd = prev_rd;
-	    mp_trash (clo->clo_pool, (caddr_t) decoy);
-	  }
-	else
-	  {
-	    clo->_.insert.is_local = INS_DUP;
-	    itc_page_leave (itc, buf);
-	  }
-      }
-  }
-  ITC_FAILED
-  {
-    rd->rd_itc = NULL;
-    itc_free_owned_params (itc);
-    return;			/* no resignal */
-  }
-  END_FAIL (itc);
-}
-
-
-void
-cl_local_delete (caddr_t * inst, cl_op_t * clo)
-{
-  query_instance_t *qi = (query_instance_t *) inst;
-  it_cursor_t itc_auto;
-  it_cursor_t *itc = &itc_auto;
-  ITC_INIT (itc, NULL, qi->qi_trx);
-  itc->itc_insert_key = clo->_.delete.rd->rd_key;
-  ITC_FAIL (itc)
-  {
-    itc_delete_rd (itc, clo->_.delete.rd);
-  }
-  ITC_FAILED
-  {
-    itc_free (itc);
-  }
-  END_FAIL (itc);
-}
-
-
-void
-cl_qi_count_affected (query_instance_t * qi, cl_req_group_t * clrg)
-{
-  DO_SET (cll_in_box_t *, clib, &clrg->clrg_clibs)
-  {
-    if (!clib->clib_is_update_replica)
-      qi->qi_n_affected += clib->clib_n_affected;
-  }
-  END_DO_SET ();
-}
-
-void
-dpipe_node_input (dpipe_node_t * dp, caddr_t * inst, caddr_t * state)
-{
-  if (dp->dp_is_colocated)
-    {
-      dpipe_node_local_input (dp, inst, state);
-      return;
-    }
+  return is_first ? clo : NULL;
 }
 
 caddr_t
 cl_ddl (query_instance_t * qi, lock_trx_t * lt, caddr_t name, int type, caddr_t trig_table)
-{
+	    {
   return NULL;
 }
 
 
 void
-query_frag_input (query_frag_t * qf, caddr_t * inst, caddr_t * state)
-{
-  GPF_T;
-}
-
-void
 lt_expedite_1pc (lock_trx_t * lt)
-{
+  {
   GPF_T;
 }
 
-void
-cl_ts_set_context (table_source_t * ts, itc_cluster_t * itcl, caddr_t * inst, int nth_set)
-{
-  int inx;
-  caddr_t *row = ((caddr_t **) itcl->itcl_param_rows)[nth_set];
-  DO_BOX (state_slot_t *, ssl, inx, ts->clb.clb_save)
-  {
-    qst_set_over (inst, ssl, row[inx + 1]);
-  }
-  END_DO_BOX;
-  if (ts->clb.clb_nth_context)
-    QST_INT (inst, ts->clb.clb_nth_context) = nth_set;
-}
 
 itc_cluster_t *
 itcl_allocate (lock_trx_t * lt, caddr_t * inst)
-{
+  {
   NEW_VARZ (itc_cluster_t, itcl);
   itcl->itcl_qst = inst;
   itcl->itcl_pool = mem_pool_alloc ();
   return itcl;
 }
 
-#define CL_INIT_BATCH_SIZE 100
+
+void
+dpipe_node_input (dpipe_node_t * dp, caddr_t * inst, caddr_t * state)
+{
+  NO_CL;
+}
+
+
+void
+query_frag_input (query_frag_t * qf, caddr_t * inst, caddr_t * state)
+{
+  NO_CL;
+}
+
+void
+qf_select_node_input (qf_select_node_t * qfs, caddr_t * inst, caddr_t * state)
+{
+  NO_CL;
+}
+
+#define CL_INIT_BATCH_SIZE 1
 
 void
 cl_select_save_env (table_source_t * ts, itc_cluster_t * itcl, caddr_t * inst, cl_op_t * clo, int nth)
 {
   caddr_t **array = (caddr_t **) itcl->itcl_param_rows;
   caddr_t *row;
-  int inx, n_save;
+  int n_save;
   if (!array)
     {
       itcl->itcl_param_rows = (cl_op_t ***) (array =
@@ -1048,22 +549,23 @@ cl_select_save_env (table_source_t * ts, itc_cluster_t * itcl, caddr_t * inst, c
     }
   else if (BOX_ELEMENTS (array) <= nth)
     {
-      caddr_t new_array = mp_alloc_box_ni (itcl->itcl_pool, ts->clb.clb_batch_size * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+      if (!IS_QN (ts, trans_node_input))
+	GPF_T1 ("vectored cl does not pass through here");
+      else
+	{
+	  caddr_t new_array =
+	      mp_alloc_box_ni (itcl->itcl_pool, MAX ((ts->clb.clb_batch_size), (nth + 1)) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
       memcpy (new_array, array, box_length (array));
       itcl->itcl_param_rows = (cl_op_t ***) (array = (caddr_t **) new_array);
     }
-  n_save = ts->clb.clb_save ? BOX_ELEMENTS (ts->clb.clb_save) : 0;
+    }
+  n_save = 0;
   row = (caddr_t *) mp_alloc_box_ni (itcl->itcl_pool, sizeof (caddr_t) * (1 + n_save), DV_ARRAY_OF_POINTER);
   row[0] = (caddr_t) clo;
-  if (n_save)
-    {
-      DO_BOX (state_slot_t *, ssl, inx, ts->clb.clb_save)
-      {
-	row[inx + 1] = mp_full_box_copy_tree (itcl->itcl_pool, qst_get (inst, ssl));
-      }
-      END_DO_BOX;
-    }
   array[nth] = row;
-  if (ts->clb.clb_nth_context)
-    QST_INT (inst, ts->clb.clb_nth_context) = -1;
 }
+
+void
+cl_node_init (table_source_t * ts, caddr_t * inst)
+{
+};

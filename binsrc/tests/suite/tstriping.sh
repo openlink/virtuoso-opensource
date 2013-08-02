@@ -1,30 +1,28 @@
 #!/bin/sh
-#
-#  $Id$
-#
+#  
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
-#
-#  Copyright (C) 1998-2009 OpenLink Software
-#
+#  
+#  Copyright (C) 1998-2013 OpenLink Software
+#  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#
+#  
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#
+#  
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#
-
+#  
+#  
 TEST_DIR=`pwd`
 LOGFILE=$TEST_DIR/tstriping.output
 export LOGFILE RESULT_FILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 case $SERVER in
       *[Mm2]*)
@@ -58,7 +56,7 @@ MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 
 START_SERVER $DS1 1000
 
-RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF < toutdsk.sql 
+RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF < $VIRTUOSO_TEST/toutdsk.sql 
 if test $STATUS -ne 0
 then
   LOG "***ABORTED: toutdsk.sql out of disk tests"
@@ -68,7 +66,7 @@ fi
 SHUTDOWN_SERVER
 
 START_SERVER $DS1 1000
-RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF < toutdskck.sql 
+RUN $ISQL $DS1 ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF < $VIRTUOSO_TEST/toutdskck.sql 
 if test $STATUS -ne 0
 then
   LOG "***ABORTED: toutdskck.sql out of disk tests"

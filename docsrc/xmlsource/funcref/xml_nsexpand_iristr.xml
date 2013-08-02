@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2013 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<refentry id="fn___xml_nsexpand_iristr">
+  <refmeta>
+    <refentrytitle>__xml_nsexpand_iristr</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>__xml_nsexpand_iristr</refname>
+    <refpurpose>Checks if the string is QName and if it is so then replaces namespace prefix to the 
+    	full namespace IRI.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn___xml_nsexpand_iristr">
+      <funcprototype id="fproto___xml_nsexpand_iristr">
+        <funcdef>
+        	<function>__xml_nsexpand_iristr</function>
+        </funcdef>
+	      <paramdef>in <parameter>str</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc___xml_nsexpand_iristr">
+    <title>Description</title>
+    <para>Checks if the string is QName and if it is so then replaces namespace prefix to the 
+    	full namespace IRI. Otherwise signals error if the argument is local IRI without a prefix.</para>
+  </refsect1>
+  <refsect1 id="params___xml_nsexpand_iristr">
+    <title>Parameters</title>
+    <refsect2><title>str</title>
+      <para>QName. For ex. if QName is "prefix:local", then conveniently is replaced "prefix:" with 
+      	the namespace IRI</para>
+    </refsect2>
+  </refsect1>
+ <refsect1 id="examples__xml_nsexpand_iristr"><title>Examples</title>
+    <example id="ex_xml_nsexpand_iristr_1"><title>Example with FOAF namespace prefix</title>
+      <para></para>
+<programlisting><![CDATA[
+SQL> SELECT __xml_nsexpand_iristr ('foaf:knows');
+__xml_nsexpand_iristr
+VARCHAR
+_______________________________________________________________________________
+
+http://xmlns.com/foaf/0.1/knows
+
+1 Rows. -- 0 msec.
+]]></programlisting>
+    </example>
+    <example id="ex_xml_nsexpand_iristr_2"><title>Example with no namespace prefix</title>
+      <para></para>
+<programlisting><![CDATA[
+SQL> SELECT __xml_nsexpand_iristr ('no-namespace-prefix-iri');
+
+*** Error 22023: [Virtuoso Driver][Virtuoso Server]SR649: 
+No XML namespace prefix in string "no-namespace-prefix-iri"
+in
+__xml_nsexpand_iristr:(BIF),
+        __01 => 'no-namespace-prefix-iri',
+<Top Level>
+at line 5 of Top-Level:
+SELECT __xml_nsexpand_iristr ('no-namespace-prefix-iri')
+]]></programlisting>
+    </example>  
+    <example id="ex_xml_nsexpand_iristr_3"><title>Example with namespace prefix "local"</title>
+      <para></para>
+<programlisting><![CDATA[
+SQL> SELECT __xml_nsexpand_iristr ('no-such-prefix:local');
+
+*** Error 22023: [Virtuoso Driver][Virtuoso Server]SR648: 
+Unknown XML namespace prefix in IRI "no-such-prefix:local"
+in
+__xml_nsexpand_iristr:(BIF),
+        __01 => 'no-such-prefix:local',
+<Top Level>
+at line 6 of Top-Level:
+SELECT __xml_nsexpand_iristr ('no-such-prefix:local')
+]]></programlisting>
+    </example> 
+    <example id="ex_xml_nsexpand_iristr_4"><title>Example with namespace prefix ""no-such-prefix""</title>
+      <para></para>
+<programlisting><![CDATA[
+SQL> SELECT __xml_ns_iristr ('no-such-prefix', 'knows');
+
+*** Error 22023: [Virtuoso Driver][Virtuoso Server]SR648: Unknown XML namespace prefix "no-such-prefix"
+in
+__xml_ns_iristr:(BIF),
+        __01 => 'no-such-prefix',
+        __02 => 'knows',
+<Top Level>
+at line 7 of Top-Level:
+SELECT __xml_ns_iristr ('no-such-prefix', 'knows')
+]]></programlisting>
+    </example>            
+  </refsect1>
+  <refsect1 id="seealso__xml_nsexpand_iristr"><title>See Also</title>
+    <para><link linkend="fn_xml_ns_uname"><function>xml_ns_uname</function></link></para>                  
+    <para><link linkend="fn_xml_ns_iristr"><function>xml_ns_iristr</function></link></para>      
+    <para><link linkend="fn_xml_get_ns_prefix"><function>xml_get_ns_prefix</function></link></para>
+    <para><link linkend="fn_xml_get_ns_uri"><function>xml_get_ns_uri</function></link></para>
+  </refsect1>
+</refentry>

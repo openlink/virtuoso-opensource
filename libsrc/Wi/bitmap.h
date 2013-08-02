@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -35,7 +35,7 @@ typedef struct bm_pos_s
   short		bp_ce_offset; /* the ce offset from the start of bitmap */
   short		bp_pos_in_ce; /* if array ce, index in the array of bit numbers */
   char		bp_ce_type;
-  bitf_t        bp_is_pos_valid:1; /* true if bitmap col  was not touched since last time. Offsets inside bm string stay valud.  */
+  bitf_t        bp_is_pos_valid:1; /* true if bitmap col  was not touched since last time. Offsets inside bm string stay valid.  */
   bitf_t        bp_at_end:1; /* true if itc on a row whose bm has no matches. Next seek must get next row in search order */
   bitf_t        bp_below_start:1; /* itc found a ce with the right range but the search ended up below the first set bit */
   bitf_t        bp_new_on_row:1; /* mecy time in toc_row_check, set the out cols for leading key parts.  Need not set on every iteration */

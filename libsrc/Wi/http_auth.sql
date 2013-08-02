@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -58,9 +58,9 @@ DB.DBA.HP_AUTH_SQL_USER (in realm varchar)
 
       select U_NAME, U_PASSWORD, U_GROUP, U_ID
 	into _u_name, _u_password, _u_group, _u_id from DB.DBA.SYS_USERS
-	where U_NAME = _user;
+	where U_NAME = _user and U_ACCOUNT_DISABLED = 0 and U_SQL_ENABLE = 1 and U_IS_ROLE = 0;
 
-      if (0 = _u_group and 1 = DB.DBA.vsp_auth_verify_pass (auth, _u_name,
+      if (1 = DB.DBA.vsp_auth_verify_pass (auth, _u_name,
 					       get_keyword ('realm', auth, ''),
 					       get_keyword ('uri', auth, ''),
 					       get_keyword ('nonce', auth, ''),
@@ -69,6 +69,7 @@ DB.DBA.HP_AUTH_SQL_USER (in realm varchar)
 					       get_keyword ('qop', auth, ''),
 					       _u_password))
 	{
+	  connection_set ('SPARQLUserId', _u_name);
 	  if (http_map_get ('persist_ses_vars'))
 	    {
 	      declare vars any;

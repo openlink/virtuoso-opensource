@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -162,9 +162,6 @@ ws_dav_put (ws_connection_t * ws, query_t * http_call)
   int inx = 0;
   blob_handle_t *bh = NULL;
   caddr_t content_transfer_encoding = ws_mime_header_field (ws->ws_lines, "Transfer-Encoding", NULL, 0);
-
-  log_dav (ws, 0);
-
   pmethod = strchr (ws->ws_req_line, '\x20');
   if (pmethod)
     {
@@ -278,8 +275,6 @@ err_ret:
 
   ws->ws_try_pipeline = 0;
 
-  dk_free_tree ((box_t) ws->ws_path);
-  ws->ws_path = NULL;
   ws->ws_params = NULL;
   dk_free_tree (content_transfer_encoding);
   return err;
@@ -299,12 +294,7 @@ ws_dav (ws_connection_t * ws, query_t * http_call)
   char method_name[100];
   int inx = 0;
   char *szContentType = ws_header_field (ws->ws_lines, "Content-type:", "application/octet-stream");
-
-  if (!strcmp (ws->ws_method_name, "PUT"))
-    return ws_dav_put (ws, http_call);
-
   log_dav (ws, 0);
-
   pmethod = strchr (ws->ws_req_line, '\x20');
   if (pmethod)
     {
@@ -314,10 +304,26 @@ ws_dav (ws_connection_t * ws, query_t * http_call)
       strncpy (method_name, ws->ws_req_line, method_len);
       method_name[method_len] = 0;
       snprintf (p_name, sizeof (p_name), "WS.WS.%s", method_name);
+/* The processing of request body does not depend on config or content of our server because the client forms it according to the HTTP specs, not according to our data or bugs */
+      if (ws->ws_req_body && strcmp (p_name, "WS.WS.POST") && strcmp (p_name, "WS.WS.MPUT") && strcmp (p_name, "WS.WS.MDELETE"))
+        {
+          ses = ws->ws_req_body;
+          ws->ws_req_body = NULL;
     }
   else
+        ses = strses_allocate ();
+      dk_set_push (&parts, box_dv_short_string ("Content"));
+      dk_set_push (&parts, ses);
+    }
+  if (ws->ws_map->hm_exec_as_get)
+    {
+      strcpy_ck (p_name, "WS.WS.GET");
+      goto p_name_is_set;
+    }
+  if (!strcmp (ws->ws_method_name, "PUT"))
+    return ws_dav_put (ws, http_call);
+  else if (NULL == pmethod)
     strcpy_ck (p_name, "WS.WS.DEFAULT");
-
   if (!sch_proc_def (/*isp_schema (db_main_tree->it_commit_space)*/ wi_inst.wi_schema, p_name))
     strcpy_ck (p_name, "WS.WS.DEFAULT");
   else
@@ -345,17 +351,8 @@ ws_dav (ws_connection_t * ws, query_t * http_call)
       if (ts1)
 	dk_free_box (ts1);
     }
-  if (ws->ws_req_body && strcmp (p_name, "WS.WS.POST") && strcmp (p_name, "WS.WS.MPUT") && strcmp (p_name, "WS.WS.MDELETE"))
-    {
-      ses = ws->ws_req_body;
-      ws->ws_req_body = NULL;
-    }
-  else
-    ses = strses_allocate ();
 
-  dk_set_push (&parts, box_dv_short_string ("Content"));
-  dk_set_push (&parts, ses);
-
+p_name_is_set:
   while (*szContentType && *szContentType <= '\x20')
     szContentType++;
   if (!strnicmp (szContentType, "multipart", 9))
@@ -444,14 +441,10 @@ ws_dav (ws_connection_t * ws, query_t * http_call)
 
   log_dav(ws, 1);
 
-  dk_free_tree ((box_t) ws->ws_path);
   dk_free_tree ((box_t) ws->ws_params);
- /*XXX: freed in ws_request dk_free_tree (ws->ws_lines);*/
+  ws->ws_params = NULL;
   strses_flush (ses);
   dk_free_box ((box_t) ses);
-  ws->ws_path = NULL;
-/*XXX: freed in ws_request ws->ws_lines = NULL;*/
-  ws->ws_params = NULL;
   return err;
 }
 

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -89,8 +89,8 @@ cpt_write_registry (dbe_storage_t * dbs, dk_session_t *ses)
   if (!reg_buf)
     {
       reg_buf = buffer_allocate (DPF_BLOB);
-      reg_buf->bd_storage = dbs;
     }
+  reg_buf->bd_storage = dbs;
   CATCH_READ_FAIL (ses)
     {
       while (bytes_left)
@@ -164,6 +164,8 @@ dbs_read_registry (dbe_storage_t * dbs, client_connection_t * cli)
   if (f_backup_dump)
     db_dbg_account_init_hash ();
 #endif
+  if (!cli)
+    cli = GET_IMMEDIATE_CLIENT_OR_NULL;
   if (!cli)
     {
       cli_bootstrap_cli ();
@@ -424,6 +426,8 @@ dbs_init_registry (dbe_storage_t * dbs)
   ENSURE_REGISTRY;
   if (DBS_PRIMARY == dbs->dbs_type && !dbs->dbs_registry_hash)
     dbs->dbs_registry_hash = registry;
+  else
+    dbs->dbs_registry_hash = id_str_hash_create (101);
   if (!ses)
     return;
 
@@ -578,7 +582,7 @@ log_registry_set (lock_trx_t * lt, char * k, const char * d)
     || 0 == strncmp (k, "__EM:__key__", 12) )
     return;
   log_array = (caddr_t*)list (4, box_string ("registry_set (?, ?, ?)"), k, d, (caddr_t)1);
-      log_text_array (lt, log_array);
+  log_text_array (lt, (caddr_t)log_array);
       log_array[1] = NULL;
       log_array[2] = NULL;
       dk_free_tree ((caddr_t)log_array);
@@ -605,7 +609,8 @@ db_log_registry (dk_session_t * log)
 	  continue;
 	}
       if (0 == strncmp (*k, "__key__", 7)
-	  || 0 == strncmp (*k, "__EM:__key__", 12))
+	  || 0 == strncmp (*k, "__EM:__key__", 12)
+	  || 0 == strncmp (*k, "__EMC:", 6))
 	{
 	  dk_free_box (the_id);
 	  continue;
@@ -693,6 +698,19 @@ dbs_registry_set (dbe_storage_t * dbs, const char *name, const char *value, int 
       copy_value = is_boxed ? box_copy (value) : box_dv_short_string (value);
       id_hash_set (dbs->dbs_registry_hash, (caddr_t) & copy_name, (caddr_t) & copy_value);
     }
+}
+
+
+caddr_t
+dbs_registry_get (dbe_storage_t * dbs, const char *name)
+{
+  caddr_t *place;
+  ASSERT_IN_TXN;
+  place = (caddr_t *) id_hash_get (dbs->dbs_registry_hash, (caddr_t) & name);
+  if (place)
+    return (box_copy (*place));
+  else
+    return NULL;
 }
 
 

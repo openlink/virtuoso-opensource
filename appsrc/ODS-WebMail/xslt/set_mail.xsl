@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -83,12 +83,30 @@
     <xsl:apply-templates select="spam"/>
     <tr>
       <th style="background-color: #EAEAEE;" />
-      <th style="background-color: #EAEAEE; text-align: left;">Security</th>
+      <th style="background-color: #EAEAEE; text-align: left;">Digitaly Signing</th>
     </tr>
+    <xsl:choose>
+      <xsl:when test="count(//certificates/certificate) > 0">
     <xsl:apply-templates select="security_sign"/>
     <xsl:apply-templates select="security_sign_mode"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:call-template name="noCertificates" />
+      </xsl:otherwise>
+    </xsl:choose>
+    <tr>
+      <th style="background-color: #EAEAEE;" />
+      <th style="background-color: #EAEAEE; text-align: left;">Encryption</th>
+    </tr>
+    <xsl:choose>
+      <xsl:when test="count(//certificates/certificate) > 0">
     <xsl:apply-templates select="security_encrypt"/>
     <xsl:apply-templates select="security_encrypt_mode"/>
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:call-template name="noCertificates" />
+      </xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
   <!-- ====================================================================================== -->
   <xsl:template match="msg_name">
@@ -326,9 +344,9 @@
   <!-- ====================================================================================== -->
   <xsl:template match="security_sign">
     <tr>
-      <th>Digitally signing (with certificate)</th>
+      <th nowrap="nowrap">Use this certificate to digitally sign messages you send</th>
       <td>
-        <select name="security_sign">
+        <select name="security_sign" onchange="toggleDisabled(this, ['security_sign_mode']);">
           <option></option>
           <xsl:apply-templates select="certificates/certificate" />
         </select>
@@ -343,8 +361,10 @@
         <label>
           <xsl:call-template name="make_checkbox">
             <xsl:with-param name="name">security_sign_mode</xsl:with-param>
+            <xsl:with-param name="id">security_sign_mode</xsl:with-param>
             <xsl:with-param name="value">1</xsl:with-param>
             <xsl:with-param name="checked"><xsl:if test=". = 1">1</xsl:if></xsl:with-param>
+            <xsl:with-param name="disabled"><xsl:if test="count(../security_sign/certificates/certificate[@selected]) = 0">1</xsl:if></xsl:with-param>
           </xsl:call-template>
           Digitally sign messages (by default)
         </label>
@@ -354,9 +374,9 @@
   <!-- ====================================================================================== -->
   <xsl:template match="security_encrypt">
     <tr>
-      <th>Encryption (with certificate)</th>
+      <th nowrap="nowrap">Use this certificate to encrypt/decript messages sent to you</th>
       <td>
-        <select name="security_encrypt">
+        <select name="security_encrypt" onchange="toggleDisabled(this, ['security_encrypt_mode_0', 'security_encrypt_mode_1']);">
           <option></option>
           <xsl:apply-templates select="certificates/certificate" />
         </select>
@@ -366,21 +386,31 @@
   <!-- ====================================================================================== -->
   <xsl:template match="security_encrypt_mode">
     <tr>
-      <th></th>
+      <th nowrap="nowrap">Default encryption setting when sending messages</th>
       <td>
         <label>
-          <input type="radio" name="security_encrypt_mode" value="0">
+          <input type="radio" id="security_encrypt_mode_0" name="security_encrypt_mode" value="0">
             <xsl:if test="../security_encrypt_mode = 0">
               <xsl:attribute name="checked"/>
+            </xsl:if>
+            <xsl:if test="count(../security_encrypt/certificates/certificate[@selected]) = 0">
+              <xsl:attribute name="disabled" />
             </xsl:if>
           </input>
   			  Never (do not use encryption)
   	    </label>
-  	    <br />
+      </td>
+    </tr>
+    <tr>
+      <th></th>
+      <td>
         <label>
-          <input type="radio" name="security_encrypt_mode" value="1">
+          <input type="radio" id="security_encrypt_mode_1" name="security_encrypt_mode" value="1">
             <xsl:if test="../security_encrypt_mode = 1">
               <xsl:attribute name="checked"/>
+            </xsl:if>
+            <xsl:if test="count(../security_encrypt/certificates/certificate[@selected]) = 0">
+              <xsl:attribute name="disabled" />
             </xsl:if>
           </input>
   			  Required (can't send message unless all recipients have certificates)
@@ -397,6 +427,15 @@
       </xsl:if>
     </option>
     <xsl:apply-templates select="certificates/certificate" />
+  </xsl:template>
+  <!-- ====================================================================================== -->
+  <xsl:template name="noCertificates">
+    <tr>
+      <th></th>
+      <td class="error_text">
+        Please import/create first your private certificate(s) with user's profile to use this feature.
+      </td>
+    </tr>
   </xsl:template>
   <!-- ====================================================================================== -->
 </xsl:stylesheet>

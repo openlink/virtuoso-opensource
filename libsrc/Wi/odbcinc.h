@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -73,7 +73,7 @@
 # include <sqlext.h>
 # include <iodbcext.h>
 # ifndef NO_UDBC_SDK
-//typedef SQLCHAR SQLTCHAR;
+typedef SQLCHAR SQLTCHAR;
 #  if !defined (__ODBC3_DEFINES) && (ODBCVER < 0x0300)
 #   define __ODBC3_DEFINES 1
 typedef void * SQLHANDLE;
@@ -138,7 +138,8 @@ typedef void * SQLHANDLE;
 		   strstr (rds_get_info (rds, SQL_DBMS_NAME), "S Q L   S e r v e r") \
 		  ) && \
 		  !(strstr (rds_get_info (rds, SQL_DBMS_NAME), "Microsoft") || \
-		   strstr (rds_get_info (rds, SQL_DBMS_NAME), "M i c r o s o f t") \
+		   strstr (rds_get_info (rds, SQL_DBMS_NAME), "M i c r o s o f t") || \
+		   strstr (rds_get_info (rds, SQL_DBMS_NAME), "MS SQL Server") \
 		  ) \
 		)
 #define IS_VIRTUOSO_RDS(rds) (strstr (rds_get_info (rds, SQL_DBMS_NAME), "Virtuoso") != NULL)

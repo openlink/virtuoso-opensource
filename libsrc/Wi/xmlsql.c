@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -4563,7 +4563,7 @@ xs_stmts_exec (query_instance_t * qi, caddr_t *err_ret, xmlsql_ugram_t * xs,
 #ifndef XS_DEBUG
 	  /*    qr = sql_compile (stmt, qi->qi_client, &err, SQLC_DEFAULT);  */
 	  stmt_id = box_dv_short_string ("xmlsql-updg");
-	  sst = cli_get_stmt_access (qi->qi_client, stmt_id, GET_EXCLUSIVE);
+	  sst = cli_get_stmt_access (qi->qi_client, stmt_id, GET_EXCLUSIVE, NULL);
 	  /* get the old value of is_cli_log */
 	  old_log_val = qi->qi_client->cli_is_log;
 	  /*  set the cli_is_log to tru this will avoid PrpcAddAnswer and set_query will return a error */

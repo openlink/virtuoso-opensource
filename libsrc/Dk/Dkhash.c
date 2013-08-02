@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -182,8 +182,9 @@ static PRIME primetable[] =
     8011, 8017, 8039, 8053, 8059, 8069, 8081, 8087,
     8089, 8093, 8101, 8111, 8117, 8123, 8147, 8161,
     8167, 8171, 8179, */ 8191,
-
-  32003, 65521, 131071, 262139, 300007, 400009, 524287, ht_max_sz
+  10079, 16091, 21031, 27031,  
+  32003, 41039, 65521, 90001, 131071, 262139, 300007, 400009, 
+  524287, 790003,  ht_max_sz
 };
 
 /*
@@ -398,7 +399,7 @@ DBG_NAME (sethash) (DBG_PARAMS const void *key, dk_hash_t * ht, void *data)
     }
 #endif
   {
-    hash_elt_t *new_elt = (hash_elt_t *) DK_ALLOC (sizeof (hash_elt_t));
+    hash_elt_t *new_elt = (hash_elt_t *) ht_alloc (ht, sizeof (hash_elt_t));
     new_elt->key = key;
     new_elt->data = data;
     new_elt->next = ht->ht_elements[inx].next;
@@ -586,6 +587,48 @@ maphash3 (maphash3_func func, dk_hash_t * table, void *env)
   HQ_CYCLE3 (0, 0, func, env);
 }
 
+#define HQ_CYCLE_L(k, d) \
+  __k = (void *) k; \
+  __d = (void *) d; \
+  if (data_in_store) \
+    res[ctr++] = key_store; \
+  else \
+    data_in_store = 1; \
+  key_store = __k; \
+  data_store = __d;
+
+void **hash_list_keys (dk_hash_t * table)
+{
+  void **res = (void **)dk_alloc_box (sizeof (void *) * table->ht_count, DV_LONG_INT);
+  int ctr = 0;
+  void *key_store = NULL, *data_store = NULL, *__k, *__d;
+  int data_in_store = 0;
+  uint32 len = table->ht_actual_size;
+  uint32 inx;
+  uint32 init_count = table->ht_count;
+  /* int n_done =0; */
+  if (init_count == 0)
+    return res;
+  for (inx = 0; inx < len; inx++)
+    {
+      hash_elt_t *elt = &table->ht_elements[inx];
+      hash_elt_t *next_elt = elt->next;
+      if (HASH_EMPTY == next_elt)
+	continue;
+      HQ_CYCLE_L (elt->key, elt->data);
+      /* n_done++;  if (n_done >= init_count) goto all_done; */
+      elt = next_elt;
+      while (elt)
+	{
+	  next_elt = elt->next;
+	  HQ_CYCLE_L (elt->key, elt->data);
+	  /* n_done++; if (n_done >= init_count) goto all_done; */
+	  elt = next_elt;
+	}
+    }
+  HQ_CYCLE_L (0, 0);
+  return res;
+}
 
 void
 maphash_no_remhash (maphash_func func, dk_hash_t * table)
@@ -687,7 +730,7 @@ DBG_NAME (dk_rehash) (DBG_PARAMS dk_hash_t * ht, uint32 new_sz)
   memset (&new_ht, 0, sizeof (new_ht));
   new_ht.ht_rehash_threshold = ht->ht_rehash_threshold;
   new_ht.ht_actual_size = new_sz;
-  new_ht.ht_elements = (hash_elt_t *) DK_ALLOC (sizeof (hash_elt_t) * new_sz);
+  new_ht.ht_elements = (hash_elt_t *) ht_alloc (ht, sizeof (hash_elt_t) * new_sz);
   memset (new_ht.ht_elements, 0xff, sizeof (hash_elt_t) * new_sz);
 #ifdef MTX_DEBUG
   new_ht.ht_required_mtx = ht->ht_required_mtx;

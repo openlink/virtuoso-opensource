@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -543,7 +543,7 @@ rb_id_deserialize (dk_session_t * ses, dtp_t dtp)
     n = read_long (ses);
   return (void*)rbb_from_id (n);
 }
- 
+
 
 static void *
 rb_ext_deserialize (dk_session_t * ses, dtp_t flags)
@@ -561,6 +561,7 @@ rb_ext_deserialize (dk_session_t * ses, dtp_t flags)
       rb->rb_type = read_short (ses);
       rb->rb_lang = RDF_BOX_DEFAULT_LANG;
     }
+  rb_dt_lang_check(rb);
   if (flags & RBS_64)
     rb->rb_ro_id = read_int64 (ses);
   else
@@ -572,7 +573,7 @@ rb_ext_deserialize (dk_session_t * ses, dtp_t flags)
     }
   return (void*)rb;
 }
- 
+
 
 static void *
 rb_deserialize (dk_session_t * ses, dtp_t dtp)
@@ -626,6 +627,7 @@ rb_deserialize (dk_session_t * ses, dtp_t dtp)
     rb->rb_lang = read_short (ses);
   else
     rb->rb_lang = RDF_BOX_DEFAULT_LANG;
+  rb_dt_lang_check(rb);
   if (flags & RBS_CHKSUM)
     ((rdf_bigbox_t *) rb)->rbb_box_dtp = session_buffered_read_char (ses);
   if ((RDF_BOX_DEFAULT_TYPE != rb->rb_type) && (RDF_BOX_DEFAULT_LANG != rb->rb_lang))
@@ -891,7 +893,7 @@ double_to_buf (double d, char *buf)
   unsigned char buf2[8];
   XDR x;
 
-  xdrmem_create (&x, (char *) buf, sizeof (buf2), XDR_ENCODE);
+  xdrmem_create (&x, (char *) buf2, sizeof (buf2), XDR_ENCODE);
   xdr_double (&x, &d);
   memcpy (buf, buf2, sizeof (double));
 #endif

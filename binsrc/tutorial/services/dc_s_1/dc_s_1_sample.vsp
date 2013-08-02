@@ -1,0 +1,232 @@
+<?vsp
+declare domain_name, user_name, api_key, status, service, years, 
+firstName, lastName, addr1, zip, country, province, phone, email, org, city varchar;
+
+service := 'internetbs';
+domain_name := 'test.com';
+user_name := 'testpass';
+api_key := 'testapi';	
+years := '2';
+firstName := 'Vladimir';
+lastName := 'Putin';
+addr1 := 'Lenin street, 1, app. 1';
+zip := '630090';
+province := 'Moscow oblast';
+country := 'ru';
+phone := '+880.1913949283';
+email := 'putin@kremlin.ru';
+org := 'Russia Kremlin';
+city := 'Moscow';
+status := '';
+
+if ({?'chk'} is not null)
+{
+    service := get_keyword ('service', params, '');
+    domain_name := get_keyword ('domain_name', params, '');
+    user_name := get_keyword ('user_name', params, '');
+    api_key := get_keyword ('api_key', params, '');	
+    dbg_obj_princ('===============================================================');	
+    dbg_obj_princ(domain_name, user_name, api_key, service);	
+    dbg_obj_princ('===============================================================');	
+    if (service = 'internetbs')
+    {
+        if (DB.DBA.SEARCH_DOMAIN_INTERNETBS(domain_name, user_name, api_key) = 1)
+        	status := 'The domain is free';
+        else
+        	status := 'The domain is already created';
+    }
+    else if (service = 'namecheap')
+    {
+        if (DB.DBA.SEARCH_DOMAIN_NAMECHEAP(domain_name, user_name, api_key, '127.0.0.1') = 1)
+        	status := 'The domain is free';
+        else
+        	status := 'The domain is already created';
+    }
+}
+
+if ({?'crt'} is not null)
+{
+    service := get_keyword ('service', params, '');
+    domain_name := get_keyword ('domain_name', params, '');
+    user_name := get_keyword ('user_name', params, '');
+    api_key := get_keyword ('api_key', params, '');	
+
+
+    years := get_keyword ('years', params, '');
+    firstName := get_keyword ('firstName', params, '');
+    lastName := get_keyword ('lastName', params, '');
+    addr1 := get_keyword ('addr1', params, '');	
+    zip := get_keyword ('zip', params, '');
+    province := get_keyword ('province', params, '');
+    country := get_keyword ('country', params, '');
+    phone := get_keyword ('phone', params, '');
+    email := get_keyword ('email', params, '');	
+    org := get_keyword ('org', params, '');
+    city := get_keyword ('city', params, '');
+    dbg_obj_princ('===============================================================');	
+    dbg_obj_princ(domain_name, user_name, api_key, service, years, 
+        firstName,
+        lastName,
+        addr1,
+        zip,
+        country,
+        phone,
+        email,
+        org,
+        city);	
+    dbg_obj_princ('===============================================================');	
+
+    if (service = 'internetbs')
+    {
+        if (DB.DBA.CREATE_DOMAIN_INTERNETBS (domain_name, user_name,  api_key,
+        atoi(years), 
+        firstName,
+        lastName,
+        addr1,
+        zip,
+        country,
+        phone,
+        email,
+        org,
+        city) = 1)
+        	status := 'The domain is created';
+        else
+        	status := 'The domain could not be created';
+    }
+    else if (service = 'namecheap')
+    {
+        if (DB.DBA.CREATE_DOMAIN_NAMECHEAP (domain_name, user_name, api_key, '127.0.0.1',
+        atoi(years), 
+        firstName,
+        lastName,
+        addr1,
+        province,
+        zip,
+        country,
+        phone,
+        email,
+        org,
+        city) = 1)
+        	status := 'The domain is created';
+        else
+        	status := 'The domain could not be created';
+    }
+}
+
+
+?>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<title>Virtuoso Domain Registration Test Form</title>
+		<style type="text/css">
+label
+{ display: inline; margin-top: 10pt; }
+body { font-family: arial, helvetica, sans-serif; font-size: 9pt; color: #234; }
+fieldset { border: 2px solid #86b9d9; }
+legend { font-size: 12pt; color: #86b9d9; }
+label { font-weight: bold; }
+h1 { width: 100%; background-color: #86b9d9; font-size: 18pt; font-weight: normal; color: #fff; height: 4ex; text-align: right; vertical-align: middle; padding-right:  8px; }
+		</style>
+	</head>
+	<body>
+		<div id="header">
+			<h1>Virtuoso Domain Registration Test Form</h1>
+		</div>
+		<div id="main">
+			<form action="" method="GET">
+			<fieldset>
+			<legend>Query</legend>
+			  <label for="domain_name">Domain Name</label>
+			  <br />
+			  <input type="text" name="domain_name" id="domain_name" value="<?V domain_name ?>" size="80"/>
+			  <br /><br />
+
+			  <label for="user_name">User Name</label>
+			  <br />
+			  <input type="text" name="user_name" id="user_name" value="<?V user_name ?>" size="80"/>
+			  <br /><br />
+
+			  <label for="api_key">API Key</label>
+			  <br />
+			  <input type="text" name="api_key" id="api_key" value="<?V api_key ?>" size="80"/>
+			  <br /><br />
+
+			  <label for="service" class="n">Service:</label>
+			  <select name="service">
+			    <option value="namecheap" <?V case (service) when 'namecheap' then 'selected' else ' ' end ?> >Namecheap.com</option>
+			    <option value="internetbs" <?V case (service) when 'internetbs' then 'selected' else ' ' end ?> >Internet.bs</option>
+			  </select>
+			  <br /><br />
+
+			  <br /><br />
+
+			  <label for="years">Duration (Years)</label>
+			  <br />
+			  <input type="text" name="years" id="years" value="<?V years ?>" size="80"/>
+			  <br /><br />
+
+			  <label for="firstName">First Name</label>
+			  <br />
+			  <input type="text" name="firstName" id="firstName" value="<?V firstName ?>" size="80"/>
+			  <br /><br />
+
+			  <label for="lastName">Last Name</label>
+			  <br />
+			  <input type="text" name="lastName" id="lastName" value="<?V lastName ?>" size="80"/>
+			  <br /><br />
+
+			  <label for="addr1">Address</label>
+			  <br />
+			  <input type="text" name="addr1" id="addr1" value="<?V addr1 ?>" size="80"/>
+			  <br /><br />
+
+			  <label for="city">City</label>
+			  <br />
+			  <input type="text" name="city" id="city" value="<?V city ?>" size="80"/>
+			  <br /><br />
+
+			  <label for="province">Province</label>
+			  <br />
+			  <input type="text" name="province" id="province" value="<?V province ?>" size="80"/>
+			  <br /><br />
+
+			  <label for="country">Country</label>
+			  <br />
+			  <input type="text" name="country" id="country" value="<?V country ?>" size="80"/>
+			  <br /><br />
+
+			  <label for="zip">ZIP</label>
+			  <br />
+			  <input type="text" name="zip" id="zip" value="<?V zip ?>" size="80"/>
+			  <br /><br />
+
+			  <label for="phone">Phone</label>
+			  <br />
+			  <input type="text" name="phone" id="phone" value="<?V phone ?>" size="80"/>
+			  <br /><br />
+
+			  <label for="email">Email</label>
+			  <br />
+			  <input type="text" name="email" id="email" value="<?V email ?>" size="80"/>
+			  <br /><br />
+
+			  <label for="org">Organization</label>
+			  <br />
+			  <input type="text" name="org" id="org" value="<?V org ?>" size="80"/>
+			  <br /><br />
+
+	
+			  <input type="submit" value="Check Domain" name="chk"/>
+        		  <input type="submit" value="Create Domain" name="crt"/>
+			  <input type="reset" value="Reset"/>
+
+			  <br /><br />
+				<?V status ?>
+			  <br /><br />
+
+			</fieldset>
+			</form>
+		</div>
+	</body>
+</html>

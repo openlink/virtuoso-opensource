@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -339,7 +339,9 @@ setp_node_run (setp_node_t * setp, caddr_t * inst, caddr_t * state, int print_bl
       itc_ha_feed (&ihfr, setp->setp_ha, inst, 0);
       else
 	{
-	  int set, n_sets = QST_INT (inst, setp->src_gen.src_prev->src_out_fill);
+	  int set, n_sets;
+	  /* can be first in a qf, so no prev if filling replicated hash */
+	  n_sets = setp->src_gen.src_prev ? QST_INT (inst, setp->src_gen.src_prev->src_out_fill) : qi->qi_n_sets;
 	  if (enable_chash_join)
 	    {
 	      setp_chash_fill (setp, inst);
@@ -362,10 +364,13 @@ setp_node_run (setp_node_t * setp, caddr_t * inst, caddr_t * state, int print_bl
 	{
 	  int set, n_sets = QST_INT (inst, setp->src_gen.src_prev->src_out_fill);
 	  QST_INT (inst, setp->src_gen.src_out_fill) = 0;
+	  if (setp_chash_distinct (setp, inst))
+	    return QST_INT (inst, setp->src_gen.src_out_fill);
 	  for (set = 0; set < n_sets; set++)
 	    {
-	      int match;
+	      int match = 0;
 	      qi->qi_set = set;
+	      if (SETP_DISTINCT_NO_OP != setp->setp_distinct)
 	      match = DVC_MATCH == itc_ha_feed (&ihfr, setp->setp_ha, inst, 0);
 	      if (setp->setp_set_op == INTERSECT_ST || setp->setp_set_op == INTERSECT_ALL_ST)
 		match = !match;
@@ -400,8 +405,10 @@ setp_node_run (setp_node_t * setp, caddr_t * inst, caddr_t * state, int print_bl
       int set, n_sets;
       if (setp->src_gen.src_prev)
 	n_sets = QST_INT (inst, setp->src_gen.src_prev->src_out_fill);
+      else  if (!setp->setp_is_cl_gb_result)
+	n_sets = 1; /* in cluster adding up of partitions the qi_n_sets gives the row count */
       else
-	n_sets = 1;
+	n_sets = qi->qi_n_sets;
       qi->qi_n_sets = n_sets;
       if (vals)
 	{
@@ -476,6 +483,16 @@ setp_filled (setp_node_t * setp, caddr_t * qst)
 
 
 void
+qst_clr (caddr_t * inst, state_slot_t * ssl)
+{
+  if (SSL_IS_VEC_OR_REF (ssl))
+    dc_reset (QST_BOX (data_col_t*, inst, ssl->ssl_index));
+  else
+    qst_set (inst, ssl, NULL);
+}
+
+
+void
 setp_temp_clear (setp_node_t * setp, hash_area_t * ha, caddr_t * qst)
 {
   it_cursor_t * ins_itc = (it_cursor_t*) QST_GET_V (qst, ha->ha_insert_itc);
@@ -512,14 +529,9 @@ setp_temp_clear (setp_node_t * setp, hash_area_t * ha, caddr_t * qst)
   if (!setp)
     return;
   if (setp->setp_sorted)
-    qst_set (qst, setp->setp_sorted, NULL);
+    qst_clr (qst, setp->setp_sorted);
   if (setp->setp_row_ctr)
-    qst_set (qst, setp->setp_row_ctr, NULL);
-  if (setp->setp_ssa.ssa_array)
-    {
-      qst_set_long (qst, setp->setp_ssa.ssa_current_set, 0);
-      qst_set (qst, setp->setp_ssa.ssa_array, NULL);
-    }
+    qst_clr (qst, setp->setp_row_ctr);
 }
 
 
@@ -578,6 +590,29 @@ setp_node_input (setp_node_t * setp, caddr_t * inst, caddr_t * state)
 
 
 void
+qr_union_reset (query_t * qr, dk_set_t nodes, caddr_t * inst)
+{
+  if (!nodes)
+    nodes = qr->qr_nodes;
+  DO_SET (data_source_t *, qn, &nodes)
+    {
+      if (IS_QN (qn, subq_node_input))
+	{
+	    QNCAST (subq_source_t, sqs, qn);
+	    qr_union_reset (sqs->sqs_query, NULL, inst);
+	}
+    }
+  END_DO_SET ();
+
+  DO_SET (query_t *, subq, &qr->qr_subq_queries)
+    {
+      qr_union_reset (subq, NULL, inst);
+    }
+  END_DO_SET ();
+}
+
+
+void
 union_node_input (union_node_t * un, caddr_t * inst, caddr_t * state)
 {
   int inx;
@@ -604,11 +639,13 @@ union_node_input (union_node_t * un, caddr_t * inst, caddr_t * state)
 	}
       if (!out_list)
 	{
+	  qr_union_reset (un->src_gen.src_query, NULL, inst);
 	  qn_record_in_state ((data_source_t *) un, inst, NULL);
 	  qst_set (inst, un->uni_nth_output, box_num (0));
 	  return;
 	}
       qst_set (inst, un->uni_nth_output, box_num (nth + 1));
+      qr_union_reset (un->src_gen.src_query, NULL, inst);
       qn_record_in_state ((data_source_t *) un, inst, inst);
       qn_input (((query_t *) out_list->data)->qr_head_node, inst, inst);
       if (!un->src_gen.src_query->qr_cl_run_started || CL_RUN_LOCAL == cl_run_local_only
@@ -732,7 +769,7 @@ breakup_node_input (breakup_node_t * brk, caddr_t * inst, caddr_t * state)
     }
       if (QST_INT (inst, brk->src_gen.src_out_fill))
 	qn_send_output ((data_source_t*) brk, inst);
-    }
+}
 }
 
 
@@ -749,12 +786,12 @@ iter_node_vec_input (data_source_t * qn, iter_node_t * in, caddr_t * inst, caddr
 {
   /* start or continue generic vectored iter. Calls continue when full. After all calls done, may have unsent outputs */
   QNCAST (query_instance_t, qi, inst);
-  data_col_t * in_dc = QST_BOX (data_col_t*, inst, in->in_vec_array->ssl_index);
-  int all_same = 0 == in_dc->dc_n_values;
-  int nth_set, nth_val;
+  int all_same = QST_INT (inst, in->in_is_const);
+  int nth_set, nth_val, batch;
   data_col_t * out_dc = QST_BOX (data_col_t *, inst, in->in_output->ssl_index);
   int n_sets = QST_INT (inst, qn->src_prev->src_out_fill);
  again:
+  batch = QST_INT (inst, qn->src_batch_size);
   dc_reset (out_dc);
   QST_INT (inst, qn->src_out_fill) = 0;
   if (state)
@@ -783,7 +820,7 @@ iter_node_vec_input (data_source_t * qn, iter_node_t * in, caddr_t * inst, caddr
 	{
 	  for (nth_set = nth_set; nth_set < n_sets; nth_set++)
 	    {
-	      if (QST_INT (inst, qn->src_out_fill) >= dc_batch_sz)
+	      if (QST_INT (inst, qn->src_out_fill) >= batch)
 		{
 		  SRC_IN_STATE (qn, inst) = inst;
 		  QST_INT (inst, in->in_current_value) = nth_val;
@@ -807,7 +844,7 @@ iter_node_vec_input (data_source_t * qn, iter_node_t * in, caddr_t * inst, caddr
 	  array = (caddr_t*)qst_get (inst, in->in_vec_array);
 	  for (nth_val = nth_val; nth_val < BOX_ELEMENTS (array); nth_val++)
 	    {
-	      if (QST_INT (inst, qn->src_out_fill) >= dc_batch_sz)
+	      if (QST_INT (inst, qn->src_out_fill) >= batch)
 		{
 		  SRC_IN_STATE (qn, inst) = inst;
 		  QST_INT (inst, in->in_current_value) = nth_val;
@@ -873,7 +910,8 @@ in_iter_vec_input (in_iter_node_t * ii, caddr_t * inst, caddr_t * state)
 		}
 	    }
 	  END_DO_BOX;
-	  if (!members)
+	  QST_INT (inst, ii->ii_iter.in_is_const) = all_same;
+	  if (!members && all_same)
 	    {
 	      SRC_IN_STATE (ii, inst) = NULL;
 	      qi->qi_set = set;
@@ -984,7 +1022,7 @@ sort_read_vec_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
   QNCAST (query_instance_t, qi, inst);
   key_source_t * ks = ts->ts_order_ks;
   setp_node_t * setp = ts->ts_order_ks->ks_from_setp;
-  int n_results = 0, last_set;
+  int n_results = 0, last_set, batch;
   caddr_t ** arr;
   ptrlong top = unbox (qst_get (inst, setp->setp_top));
   ptrlong skip = setp->setp_top_skip ? unbox (qst_get (inst, setp->setp_top_skip)) : 0;
@@ -1001,79 +1039,83 @@ sort_read_vec_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
       last_set = QST_INT (inst, ts->clb.clb_nth_set) = 0;
     }
  next_batch:
+  batch = QST_INT (inst, ts->src_gen.src_batch_size);
   n_results = 0;
   ks_vec_new_results (ks, inst, NULL);
   last_set = QST_INT (inst, ts->clb.clb_nth_set);
   for (set = last_set; set < n_sets; set++)
     {
       qi->qi_set = qst_vec_get_int64 (inst, ks->ks_set_no, set);
+      if (qi->qi_set < 0 || qi->qi_set >= n_sets)
+	{
+	  qi->qi_set = 0;
+	  sqlr_new_error ("MISCI", "SORTI",  "set no in reading top order by out of range..  Reprt the query to support");
+	}
       fill = unbox (qst_get (inst, setp->setp_row_ctr));
       arr = (caddr_t **) qst_get (inst, setp->setp_sorted);
       QST_INT (inst, ts->clb.clb_nth_set) = set;
       if (!arr)
 	continue;
-      if (state)
-	QST_INT (inst, ks->ks_pos_in_temp) = skip;
-      for (;;)
-	{
-	  int nth = QST_INT (inst, ks->ks_pos_in_temp);
-	  int k_inx = 0, inx;
-	  if (nth >= fill)
+  if (state)
+    QST_INT (inst, ks->ks_pos_in_temp) = skip;
+  for (;;)
+    {
+      int nth = QST_INT (inst, ks->ks_pos_in_temp);
+      int k_inx = 0, inx;
+      if (nth >= fill)
 	    goto next_set;
 	  DO_BOX (state_slot_t *, ssl, inx, setp->setp_keys_box )
-	    {
+	{
 	      if (!ts->ts_sort_read_mask[k_inx])
 		{ /* not all sort temp cols may be output cols */
 		  k_inx++;
 		  continue;
-		}
-	      if (SSL_REF == ssl->ssl_type)
-		ssl = ((state_slot_ref_t*)ssl)->sslr_ssl;
-	      if (SSL_VEC == ssl->ssl_type)
+	}
+	      if (SSL_IS_VEC_OR_REF (ssl))
 		dc_append_box (QST_BOX (data_col_t*, inst, ssl->ssl_index), arr[nth][k_inx]);
 	      else
-		{
-		  qst_set (inst, ssl, arr[nth][k_inx]);
-		  arr[nth][k_inx] = NULL;
+	{
+	  qst_set (inst, ssl, arr[nth][k_inx]);
+	  arr[nth][k_inx] = NULL;
 		}
-	      k_inx++;
-	    }
-	  END_DO_BOX;
-	  DO_BOX (state_slot_t *, ssl, inx, setp->setp_dependent_box)
-	    {
+	  k_inx++;
+	}
+      END_DO_BOX;
+      DO_BOX (state_slot_t *, ssl, inx, setp->setp_dependent_box)
+	{
 	      if (!ts->ts_sort_read_mask[k_inx])
 		{
 		  k_inx++;
 		  continue;
 		}
-	      if (SSL_REF == ssl->ssl_type)
-		ssl = ((state_slot_ref_t*)ssl)->sslr_ssl;
-	      if (SSL_VEC == ssl->ssl_type)
+	      if (SSL_IS_VEC_OR_REF (ssl))
 		dc_append_box (QST_BOX (data_col_t*, inst, ssl->ssl_index), arr[nth][k_inx]);
 	      else
 		{
-		  qst_set (inst, ssl, arr[nth][k_inx]);
-		  arr[nth][k_inx] = NULL;
+	  qst_set (inst, ssl, arr[nth][k_inx]);
+	  arr[nth][k_inx] = NULL;
 		}
-	      k_inx++;
-	    }
-	  END_DO_BOX;
+	  k_inx++;
+	}
+      END_DO_BOX;
 	  qn_result ((data_source_t*)ts, inst, set);
-	  QST_INT (inst, ks->ks_pos_in_temp) = nth + 1;
-	  if (++n_results == dc_batch_sz)
+      QST_INT (inst, ks->ks_pos_in_temp) = nth + 1;
+	  if (++n_results == batch)
 	    {
 	      SRC_IN_STATE (ts, inst) = inst;
 	      QST_INT (inst, ts->clb.clb_nth_set) = set;
+	      ts_always_null (ts, inst);
 	      qn_send_output ((data_source_t*)ts, inst);
 	      state = NULL;
 	      dc_reset_array (inst, (data_source_t*)ts, ts->src_gen.src_continue_reset, -1);
 	      goto next_batch;
 	    }
-	}
+    }
     next_set:
       QST_INT (inst, ks->ks_pos_in_temp) = 0;
     }
   SRC_IN_STATE ((data_source_t*)ts, inst) = NULL;
+  ts_always_null (ts, inst);
   if (QST_INT (inst, ts->src_gen.src_out_fill))
     qn_ts_send_output ((data_source_t *)ts, inst, ts->ts_after_join_test);
 }
@@ -1082,22 +1124,25 @@ sort_read_vec_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
 void
 sort_read_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
 {
+  ptrlong fill, skip, top;
   key_source_t * ks = ts->ts_order_ks;
   setp_node_t * setp = ts->ts_order_ks->ks_from_setp;
-  caddr_t ** arr = (caddr_t **) qst_get (inst, setp->setp_sorted);
-  ptrlong top = unbox (qst_get (inst, setp->setp_top));
-  ptrlong skip = setp->setp_top_skip ? unbox (qst_get (inst, setp->setp_top_skip)) : 0;
-  ptrlong fill = unbox (qst_get (inst, setp->setp_row_ctr));
+  caddr_t ** arr;
   if (ts->src_gen.src_out_fill)
     {
       sort_read_vec_input (ts, inst, state);
       return;
     }
+  /* below never done, do not init the vars because the read of a dc might read past end and gpf */
+  arr = (caddr_t **) qst_get (inst, setp->setp_sorted);
+  top = unbox (qst_get (inst, setp->setp_top));
+  skip = setp->setp_top_skip ? unbox (qst_get (inst, setp->setp_top_skip)) : 0;
+  fill = unbox (qst_get (inst, setp->setp_row_ctr));
   if (setp->setp_partitioned)
-    {
+	{
       top += skip;
       skip = 0;
-    }
+	}
   if (!arr)
     {
       SRC_IN_STATE (ts, inst) = NULL;
@@ -1138,43 +1183,7 @@ sort_read_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
 void
 ose_send_rows (outer_seq_end_node_t * ose, caddr_t * inst)
 {
-  /* send as many null rows as ose_n_nulls says then the buffered non outer row if any */
-  int inx;
-  int set_no = unbox (QST_GET_V (inst, ose->ose_prev_set_no)) + 1;
-  caddr_t * buffered_row = (caddr_t *)QST_GET_V (inst, ose->ose_buffered_row);
-  int last_null_set = QST_INT (inst, ose->ose_last_outer_set);
-  cl_op_t * itcl_clo = (cl_op_t *)qst_get (inst, ose->ose_sctr->sctr_itcl);
-  itc_cluster_t * itcl = itcl_clo->_.itcl.itcl;
-  while (set_no <= last_null_set)
-    {
-      DO_BOX (state_slot_t *, out, inx, ose->ose_out_slots)
-	{
-	  qst_set_bin_string (inst, out, (db_buf_t) "", 0, DV_DB_NULL);
-	}
-      END_DO_BOX;
-      cl_ts_set_context ((table_source_t*)ose->ose_sctr, itcl, inst, set_no);
-      SRC_IN_STATE ((data_source_t *)ose, inst) = set_no < last_null_set || buffered_row ? inst : NULL;
-      /* if now at  end of flushing trailing rows, having used last stored ctx, can reset the set ctr's itcl and free the ctxs */
-      if (!SRC_IN_STATE ((data_source_t *)ose, inst))
-	qst_set (inst, ose->ose_sctr->sctr_itcl, NULL);
-      qst_set_long (inst, ose->ose_prev_set_no, set_no);
-      qn_send_output ((data_source_t*)ose, inst);
-      set_no++;
-    }
-  if (buffered_row)
-    {
-      SRC_IN_STATE ((data_source_t *)ose, inst) = NULL;
-      DO_BOX (state_slot_t *, out, inx, ose->ose_out_slots)
-	{
-	  qst_set (inst, out, buffered_row[inx]);
-	  buffered_row[inx] = NULL;
-	}
-      END_DO_BOX;
-      qst_set_long (inst, ose->ose_prev_set_no, set_no);
-      cl_ts_set_context ((table_source_t*)ose->ose_sctr, itcl, inst, set_no);
-      qst_set (inst, ose->ose_buffered_row, NULL);
-      qn_send_output ((data_source_t *)ose, inst);
-    }
+  GPF_T1 ("ose non vectored");
 }
 
 
@@ -1364,7 +1373,7 @@ ts_split_input (ts_split_node_t * tssp, caddr_t * inst, caddr_t * state)
     {
       if (QST_INT (inst, tssp->src_gen.src_out_fill))
 	qn_input ((data_source_t*)tssp->tssp_alt_ts, inst, inst);
-    }
+}
   else
     {
       if (QST_INT (inst, tssp->src_gen.src_out_fill))

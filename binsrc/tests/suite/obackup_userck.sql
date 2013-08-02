@@ -1,25 +1,25 @@
---
---  $Id$
---
+--  
+--  $Id: obackup_userck.sql,v 1.15.10.1 2013/01/02 16:14:50 source Exp $
+--  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---
---  Copyright (C) 1998-2006 OpenLink Software
---
+--  
+--  Copyright (C) 1998-2013 OpenLink Software
+--  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---
+--  
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---
+--  
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---
---
+--  
+--  
 backup_context_clear();
 
 DELETE USER IMPOSTER;
@@ -51,7 +51,7 @@ succ:
 }
 ;
 
-SELECT CHECK_UNAUTH_BACKUP_SEC();
+SELECT CHECK_UNAUTH_BACKUP_SEC(); 
 ECHO BOTH "Invoking BACKUP_ONLINE procedure from unauthtorized user test is " $LAST[1] "\n";
 
 RECONNECT dba;
@@ -97,12 +97,12 @@ create procedure create_seqs (in pr varchar, in imax integer)
  idx := 0;
  while (idx < imax)
   {
-    sequence_next (sprintf ('%s%ld', pr, idx));
+    sequence_next (sprintf ('%s%ld', pr, idx));  
     idx := idx + 1;
   }
 }
 ;
-
+ 
 create procedure check_seqs (in pr varchar, in imax integer, in val integer)
 {
  declare idx integer;
@@ -112,7 +112,7 @@ create procedure check_seqs (in pr varchar, in imax integer, in val integer)
     if (val <> sequence_next (sprintf ('%s%ld',pr, idx)))
 	{
 	  return 'NOTEQUAL';
-	}
+	}  
     idx := idx + 1;
   }
  return 'EQUAL';
@@ -121,7 +121,7 @@ create procedure check_seqs (in pr varchar, in imax integer, in val integer)
 
 
 create_seqs ('h', 10000);
-
+ 
  
 checkpoint;
  
@@ -129,7 +129,7 @@ checkpoint;
 create_seqs ('ax', 10000);
 create_seqs ('bx', 10000);
 create_seqs ('x', 10000);
-
+ 
 backup_online ('vvv', 150);
 
 

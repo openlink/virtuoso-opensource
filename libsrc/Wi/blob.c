@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1233,7 +1233,7 @@ blob_delete_via_dir (it_cursor_t * it, blob_layout_t * bl)
       for (i = 0; i < n; i++)
 	{
 	  ITC_IN_KNOWN_MAP (it, bl->bl_pages[i]);
-	  it_free_dp_no_read (it->itc_tree, bl->bl_pages[i], DPF_BLOB);
+	  it_free_dp_no_read (it->itc_tree, bl->bl_pages[i], DPF_BLOB, 0);
 	  blob_releases_noread++;
 	  blob_releases_dir++;
 	  blob_releases++;
@@ -1247,11 +1247,14 @@ blob_delete_via_dir (it_cursor_t * it, blob_layout_t * bl)
 static void
 __blob_chain_delete (it_cursor_t * it, dp_addr_t start, dp_addr_t first, int npages /* unused */, blob_handle_t * bh)
 {
+  dbe_storage_t * dbs = it->itc_tree->it_storage;
+  if (!dbs)
+    dbs = wi_inst.wi_master;
   npages = 0; /* unused */
   while (start)
     {
       buffer_desc_t *buf;
-      if (!DBS_PAGE_IN_RANGE (wi_inst.wi_master, start))
+      if (!DBS_PAGE_IN_RANGE (dbs, start))
 	{
 	  log_error ("Blob next link out of range %ld", (long) start);
 	  break;
@@ -1489,7 +1492,8 @@ blob_layout_t *
 bl_from_dv_it (dtp_t * col, index_tree_t * it)
 {
   key_id_t key_id;
-  int frag_no = 0;
+  uint32 frag_no = 0;
+  slice_id_t slice;
   int inx, n_pages;
   blob_layout_t * bl = (blob_layout_t *) blob_layout_ctor (
 	DV_BLOB_HANDLE_DTP_FOR_BLOB_DTP(*col),	/* bl_blob_handle_dtp */
@@ -1512,6 +1516,8 @@ bl_from_dv_it (dtp_t * col, index_tree_t * it)
     }
   key_id = (key_id_t)LONG_REF_NA (col + BL_KEY_ID);
   frag_no = LONG_REF_NA (col + BL_FRAG_NO);
+  slice = frag_no >> 16;
+  frag_no &= 0xffff;
   if (KI_TEMP == key_id)
     bl->bl_it = it;
   else
@@ -1520,13 +1526,15 @@ bl_from_dv_it (dtp_t * col, index_tree_t * it)
       dbe_key_frag_t ** frags;
       if (!key)
 	bl->bl_it = it;
+      else if (key->key_is_elastic)
+	bl->bl_it = it;
       else
 	{
 	  int n_frags;
 	  frags = key->key_fragments;
 	  n_frags = BOX_ELEMENTS (frags);
-	  if (frag_no < n_frags)
-	    bl->bl_it = frags[frag_no]->kf_it;
+	  if (slice < n_frags && frags[slice])
+	    bl->bl_it = frags[slice]->kf_it;
 	  else
 	    bl->bl_it = it;
 	}
@@ -1540,11 +1548,17 @@ bh_from_dv (dtp_t * col, it_cursor_t * itc)
 {
   dbe_key_t * key;
   key_id_t key_id;
-  int32 frag_no;
+  uint32 frag_no;
+  slice_id_t slice;
   int inx, n_pages;
-  blob_handle_t * bh = (blob_handle_t *)
+  dtp_t dtp = *col;
+  blob_handle_t * bh;
+  index_tree_t * it = itc->itc_tree;
+  if (DV_COL_BLOB_SERIAL == dtp)
+    dtp = DV_BLOB;
+  bh = (blob_handle_t *)
     dk_alloc_box_zero (sizeof (blob_handle_t),
-		       DV_BLOB_HANDLE_DTP_FOR_BLOB_DTP(*col));
+		       DV_BLOB_HANDLE_DTP_FOR_BLOB_DTP(dtp));
   bh->bh_length = INT64_REF_NA (col + BL_CHAR_LEN);
   bh->bh_diskbytes = INT64_REF_NA (col + BL_BYTE_LEN);
   bh->bh_page = LONG_REF_NA (col + BL_DP);
@@ -1564,14 +1578,34 @@ bh_from_dv (dtp_t * col, it_cursor_t * itc)
     }
   key_id = (key_id_t)LONG_REF_NA (col + BL_KEY_ID);
   frag_no = LONG_REF_NA (col + BL_FRAG_NO);
+  slice = frag_no >> 16;
+  frag_no &= 0xffff;
   bh->bh_key_id = key_id;
+  bh->bh_slice = slice;
   key = sch_id_to_key (wi_inst.wi_schema, key_id);
   if (key)
-    bh->bh_it = key->key_fragments[0]->kf_it;
+    {
+      if (it->it_key && it->it_key->key_id != KI_TEMP)
+	{
+	  bh->bh_it = key->key_fragments[it->it_slice]->kf_it;
+	  bh->bh_slice = bh->bh_it->it_slice;
+	}
+      else
+	{
+	  /* reading from temp but blob is from a table */
+	  if (key->key_fragments[slice])
+	    bh->bh_it = key->key_fragments[slice]->kf_it;
+	}
+    }
   else if (itc)
+    {
+      /* the bh is in temp tree */
     bh->bh_it = itc->itc_tree;
+    }
   if (CL_RUN_LOCAL != cl_run_local_only && key && KI_TEMP != key->key_id)
+    {
     bh->bh_frag_no = local_cll.cll_this_host;
+    }
   else
     bh->bh_frag_no = frag_no;
   return bh;
@@ -1631,11 +1665,15 @@ bh_to_dv (blob_handle_t * bh, dtp_t * col, dtp_t dtp)
 {
   int inx;
   int n_pages;
+  uint32 fragslice = bh->bh_frag_no + (bh->bh_slice << 16);
+  if (bh->bh_it->it_key->key_is_col)
+    col[0] = DV_COL_BLOB_SERIAL;
+  else
   col[0] = dtp;
   INT64_SET_NA (col + BL_CHAR_LEN, bh->bh_length);
   INT64_SET_NA (col + BL_BYTE_LEN, bh->bh_diskbytes);
   LONG_SET_NA (col + BL_KEY_ID, bh->bh_it->it_key->key_id);
-  LONG_SET_NA (col + BL_FRAG_NO, bh->bh_frag_no);
+  LONG_SET_NA (col + BL_FRAG_NO, fragslice);
   n_pages = box_length ((caddr_t) bh->bh_pages) / sizeof (dp_addr_t);
   n_pages = MIN (n_pages, BL_DPS_ON_ROW);
   for (inx = 0; inx < BL_DPS_ON_ROW; inx++)
@@ -1675,7 +1713,7 @@ itc_set_xper_col (it_cursor_t * row_itc, db_buf_t col, xper_entity_t *data, dp_a
       else
         {
           dbe_key_t* xper_key = sch_id_to_key (wi_inst.wi_schema, KI_COLS);
-          itc_from (tmp_itc, xper_key);
+          itc_from (tmp_itc, xper_key, row_itc->itc_ltrx->lt_client->cli_slice);
         }
       for (migr_ctr = 0; migr_ctr < migr_no; migr_ctr++)
         {
@@ -1768,13 +1806,69 @@ blob_str_head_len (int32 str_head_len, buffer_desc_t * first, blob_handle_t * ta
 }
 
 
+blob_handle_t *
+cli_ready_dae (client_connection_t  * cli, blob_handle_t * bh)
+{
+  DO_SET (blob_handle_t *, ready_bh, &cli->cli_dae_blobs)
+    {
+      if (bh->bh_param_index == ready_bh->bh_param_index)
+	{
+	  blob_handle_t * ret = (blob_handle_t *)box_copy ((caddr_t)ready_bh);
+	  ret->bh_ask_from_client = 0;
+	  ret->bh_current_page = ret->bh_page;
+	  ret->bh_position = 0;
+	  return ret;
+	}
+    }
+  END_DO_SET();
+  return NULL;
+}
+
+
+void
+cli_remember_dae (client_connection_t * cli, blob_handle_t * bh)
+{
+  blob_handle_t * copy = (blob_handle_t *)box_copy ((caddr_t)bh);
+  if (cli->cli_cl_dae_blob)
+    copy->bh_ask_from_client = BH_CLUSTER_DAE;
+  dk_set_push (&cli->cli_dae_blobs, (void*)copy);
+}
+
+void
+cli_free_dae (client_connection_t * cli)
+{
+  it_cursor_t itc_auto;
+  it_cursor_t * itc = &itc_auto;
+  ITC_INIT (itc, NULL, NULL);
+  DO_SET (blob_handle_t *, bh, &cli->cli_dae_blobs)
+    {
+      dtp_t tmp[DV_BLOB_LEN];
+      blob_layout_t * old_bl;
+      if (BH_CLUSTER_DAE != bh->bh_ask_from_client)
+	{
+	  dk_free_box ((caddr_t)bh);
+	  continue;}
+      bh_to_dv ((blob_handle_t*)bh, tmp, DV_BLOB_DTP_FOR_BLOB_HANDLE_DTP (box_tag (bh)));
+      old_bl = bl_from_dv_it  (tmp, itc->itc_tree);
+      old_bl->bl_it = bh->bh_it;
+      blob_chain_delete (itc, old_bl);
+      dk_free_box ((caddr_t)bh);
+    }
+  END_DO_SET();
+  itc_free (itc);
+  dk_set_free (cli->cli_dae_blobs);
+  cli->cli_dae_blobs = NULL;
+}
+
+
 int
 itc_set_blob_col (it_cursor_t * row_itc, db_buf_t col,
     caddr_t data, blob_layout_t * replaced_version,
     int log_as_insert, sql_type_t * col_sqt)
 {
-  dtp_t col_dtp = col_sqt->sqt_dtp;
+  dtp_t col_dtp = col_sqt->sqt_col_dtp;
   int32 str_head_len = -1;
+  int remember_dae = 0;
   blob_handle_t *volatile target_bh = NULL, * volatile source_bh = NULL;
   dk_set_t volatile pages = NULL;
   int n_pages = 0, page_inx;
@@ -1789,7 +1883,7 @@ itc_set_blob_col (it_cursor_t * row_itc, db_buf_t col,
   size_t data_len = 0;
   dtp_t volatile dtp = (dtp_t)DV_TYPE_OF (data);
   buffer_desc_t *blob_buf = NULL, *next_blob_buf = NULL, *volatile first_buf = NULL;
-  int row_is_temporary;
+  int row_is_temporary = 0;
 
   int rc;
   ASSERT_OUTSIDE_MAPS (row_itc);
@@ -1867,7 +1961,20 @@ itc_set_blob_col (it_cursor_t * row_itc, db_buf_t col,
       source_bh = (blob_handle_t *) data;
       source_bh->bh_current_page = source_bh->bh_page;
       if (source_bh->bh_ask_from_client)
+	{
+	  blob_handle_t * ready_dae = cli_ready_dae (row_itc->itc_ltrx->lt_client, source_bh);
+	  if (!ready_dae)
+	    {
 	target_bh = source_bh;
+	      if (!row_itc->itc_ltrx->lt_client->cli_is_log)
+		remember_dae = 1;
+	    }
+	  else
+	    {
+	      source_bh = ready_dae;
+	      target_bh = bh_alloc ((dtp_t)DV_BLOB_HANDLE_DTP_FOR_BLOB_DTP (col_dtp));
+	    }
+	}
       else
 	target_bh = bh_alloc ((dtp_t)DV_BLOB_HANDLE_DTP_FOR_BLOB_DTP (col_dtp));
       bh_tag_modify (source_bh, col_dtp, dtp);
@@ -2025,7 +2132,7 @@ bh_is_ready:
 	  blob_log_write (row_itc, first_page, DV_BLOB_DTP_FOR_BLOB_HANDLE_DTP (box_tag (target_bh)), 0, 0, 0, 0);
       }
     bh_to_dv (target_bh, col, DV_BLOB_DTP_FOR_BLOB_HANDLE_DTP (box_tag (target_bh)));
-    if (!row_is_temporary)
+    if (!row_is_temporary && row_itc->itc_ltrx->lt_client->cli_cl_dae_blob)
     blob_schedule_delayed_delete (row_itc, bl_from_dv (col, row_itc),
 				  BL_DELETE_AT_ROLLBACK );
     if (BLOB_NULL_RECEIVED != read_status)
@@ -2050,6 +2157,8 @@ bh_is_ready:
     page_leave_outside_map (first_buf);
   rc = row_itc->itc_ltrx->lt_error;
 resource_cleanup:
+  if (LTE_OK == rc && remember_dae)
+    cli_remember_dae (row_itc->itc_ltrx->lt_client, source_bh);
 #ifdef BIF_XML
   if (NULL != strses)
     dk_free_box ((box_t) strses);
@@ -2070,7 +2179,7 @@ void
 rd_fixup_blob_refs (it_cursor_t * itc, row_delta_t* rd)
 {
   dbe_key_t * key = rd->rd_key;
-  itc_from_it (itc, key->key_fragments[0]->kf_it);
+  itc_from_it (itc, itc->itc_tree);
   if (key && key->key_row_var)
     {
       DO_CL (cl, key->key_row_var)
@@ -2453,7 +2562,7 @@ blob_write_log (lock_trx_t * lt, dk_session_t * log, blob_log_t * bl)
 	{
 	  ASSERT_IN_MTX (log_write_mtx);
 	}
-      if (!bl->bl_it)
+      if (is_crash_dump /*!bl->bl_it*/)
 	{ /* only if crash dump */
 	  return blob_write_crash_log (lt, log, bl);
 	}
@@ -2468,6 +2577,8 @@ blob_write_log (lock_trx_t * lt, dk_session_t * log, blob_log_t * bl)
 	  ITC_IN_KNOWN_MAP (tmp_itc, start);
 	  page_wait_access (tmp_itc, start, NULL, &buf, PA_READ, RWG_WAIT_ANY);
 	  ITC_LEAVE_MAPS (tmp_itc);
+	  if (PF_OF_DELETED == buf)
+	    break;
 	  if (DPF_BLOB != SHORT_REF (buf->bd_buffer + DP_FLAGS))
 	    {
 	      log_error ("Non-blob page %ld remap %ld in logging blob",
@@ -2682,10 +2793,10 @@ bh_string_list_n (/* this was before 3.0: index_space_t * isp, */ lock_trx_t * l
 		  SET_DK_MEM_RESERVE_STATE (lt);
 		  itc_bust_this_trx (tmp_itc, &buf, ITC_BUST_THROW);
 		}
-	      page_string = dk_alloc_box (bytes_on_page + 1, DV_LONG_STRING);
+		page_string = dk_alloc_box (bytes_on_page + 1, DV_LONG_STRING);
 	      memcpy (page_string, buf->bd_buffer + DP_DATA + from_byte,
 		  bytes_on_page);
-	      page_string[bytes_on_page] = 0;
+		page_string[bytes_on_page] = 0;
 	      dk_set_push (&string_list, page_string);
 	    }
 	  bytes_filled += bytes_on_page;
@@ -2882,7 +2993,6 @@ blob_read_dir (it_cursor_t * tmp_itc, dp_addr_t ** pages, int * is_complete, dp_
       dk_set_free (pages_list);
       return BLOB_FREE;
       }
-  dk_free_box ((box_t) *pages);
   n = dk_set_length (pages_list);
   *is_complete = 1;
   if (n > 0)
@@ -2890,8 +3000,11 @@ blob_read_dir (it_cursor_t * tmp_itc, dp_addr_t ** pages, int * is_complete, dp_
       int i;
       dp_addr_t pt;
       pages_list = dk_set_nreverse (pages_list);
-/*???      dk_free_box ((caddr_t)(pages[0]));*/
+      if (sizeof (dp_addr_t) * n != box_length (*pages))
+	{
+	  dk_free_box ((box_t) *pages);
       *pages = (dp_addr_t *) dk_alloc_box (sizeof (dp_addr_t) * n, DV_BIN);
+	}
       for (i = 0; (pt = (dp_addr_t) (ptrlong) dk_set_pop (&pages_list)) != 0 && i < n; i++)
 	{
 	  (*pages)[i] = pt;
@@ -3509,7 +3622,7 @@ rd_outline_1 (query_instance_t * qi, row_delta_t * rd, dbe_col_loc_t * cl)
   caddr_t str, outlined;
   db_buf_t inlined = (db_buf_t) rd->rd_values[cl->cl_nth];
   ITC_INIT (itc, NULL, qi->qi_trx);
-  itc_from_it (itc, rd->rd_key->key_fragments[0]->kf_it);
+  itc_from (itc, rd->rd_key, qi->qi_client->cli_slice);
   len = box_col_len ((caddr_t)inlined);
   str = dk_alloc_box (len, DV_STRING);
   memcpy (str, inlined + 1, len - 1);
@@ -3585,7 +3698,7 @@ rd_inline_1 (query_instance_t * qi, row_delta_t * rd, dbe_col_loc_t * cl, int lo
   dp_addr_t dp;
   db_buf_t outlined = (db_buf_t) rd->rd_values[cl->cl_nth];
   ITC_INIT (itc, NULL, qi->qi_trx);
-  itc_from_it (itc, rd->rd_key->key_fragments[0]->kf_it);
+  itc_from (itc, rd->rd_key, qi->qi_client->cli_slice);
   dp = LONG_REF_NA (outlined + BL_DP);
   page_wait_blob_access (itc, dp, &buf, PA_WRITE, NULL, 1);
   len = LONG_REF (buf->bd_buffer + DP_BLOB_LEN);
@@ -3605,7 +3718,7 @@ rd_inline_1 (query_instance_t * qi, row_delta_t * rd, dbe_col_loc_t * cl, int lo
       if (was_ask_from_cli)
 	{
 	  page_leave_outside_map (buf);
-	  bl = bl_from_dv_it  (outlined, rd->rd_key->key_fragments[0]->kf_it);
+	  bl = bl_from_dv_it  (outlined, itc->itc_tree);
 	  blob_schedule_delayed_delete (itc, bl, BL_DELETE_AT_COMMIT);
 	}
       else
@@ -3619,7 +3732,7 @@ rd_inline_1 (query_instance_t * qi, row_delta_t * rd, dbe_col_loc_t * cl, int lo
   else
     {
       page_leave_outside_map (buf);
-      bl = bl_from_dv_it  (outlined, rd->rd_key->key_fragments[0]->kf_it);
+      bl = bl_from_dv_it  (outlined, itc->itc_tree);
       blob_schedule_delayed_delete (itc, bl, BL_DELETE_AT_COMMIT);
     }
   rd->rd_values[cl->cl_nth] = str;

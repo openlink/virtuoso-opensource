@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -27,16 +27,20 @@
 <!ENTITY xsd  "http://www.w3.org/2001/XMLSchema#">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#">
+<!ENTITY owl "http://www.w3.org/2002/07/owl#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:rdf="&rdf;"
     xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
     xmlns:geo="http://www.w3.org/2003/01/geo/wgs84_pos#"
+    xmlns:opl="&opl;"
     xmlns:foaf="&foaf;"
     xmlns:sioc="&sioc;"
     xmlns:bibo="&bibo;"
+    xmlns:owl="&owl;"
     xmlns:dcterms = "http://purl.org/dc/terms/"
     xmlns:dc="http://purl.org/dc/elements/1.1/"
     xmlns:y="urn:yahoo:maps">

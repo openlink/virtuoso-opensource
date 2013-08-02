@@ -1,4 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE xsl:stylesheet [
+<!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
+]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns="http://purl.org/ontology/mo/"
 	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -8,6 +12,8 @@
 	xmlns:foaf="http://xmlns.com/foaf/0.1/"
 	xmlns:time="http://www.w3.org/2006/time#"
 	xmlns:tl="http://purl.org/NET/c4dm/timeline.owl#"
+	xmlns:dcterms="&dcterms;"
+	xmlns:opl="&opl;"
 	exclude-result-prefixes="xhtml"
   version="1.0">
 

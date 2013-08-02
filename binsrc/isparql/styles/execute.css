@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2009 OpenLink Software
+ *  Copyright (C) 2009-2013 OpenLink Software
  *
  *  See LICENSE file for details.
  *
@@ -149,8 +149,22 @@ body {
   margin:0px;
 }
 
-.result_plnk_ctr { width: 20em; float: left; }
-.anchor_pref_ctr { width: 20%; float: right;}
+.result_c { background-color: #fff}
+
+.ep_query,.ep_response,.ep_request, .ep_result {
+  margin: 0;
+  background-color: white;
+  padding-top: 5px;
+  padding-bottom: 5px;
+}
+
+.ep_request pre { margin: 0; padding: 0 } 
+.ep_query pre { margin: 0; padding: 0 } 
+.ep_response pre { margin: 0; padding: 0 } 
+
+.result_opts_c { background-color: white}
+.result_plnk_c { padding-top: 3px;width: 20em; float: left; }
+.anchor_pref_c { width: 35em; float: right;}
 
 p.copyright {
 font-size: 8pt;
@@ -158,12 +172,11 @@ text-align: right;
 margin-right: 10px}
 
 #mini_rdf_ctr { width: 100% }
-/*div.rdf_mini { width: 100%; height: 70%; }*/
-div.rdf_tab { width: 100%; height: 100%; }
+.rdf_mini_c { margin: 5px;}
 
-table.grid {
-  clear: both;
-}
+/*div.rdf_mini { width: 100%; height: 70%; }*/
+
+div.rdf_tab { width: 100%; height: 100%; }
 
 div.rdf_data div.pager {
   background-color: #ddd;
@@ -179,9 +192,10 @@ div.pager div {
   text-align: right;
   float: left;
   clear: both;
-  background: -webkit-gradient(linear,left top,left bottom,from(#ccdde0),to(#577));
+/*  background: -webkit-gradient(linear,left top,left bottom,from(#ccdde0),to(#577));
   background: -moz-linear-gradient(top,#ccdde0,#577);
-  background-color: #FFFFFF;
+*/
+  background-color: #fdfdfd;
   height: 30px;
   padding-top: 10px;
   padding-bottom:30px;
@@ -195,3 +209,21 @@ div.foot_r { text-align: right; float: right; width: 45%; margin-right: 10px;}
 #data_links {
   margin: 10px;
 }
+
+.notify_bar_ctr {
+  background-color: #577;
+  color: #eef;
+  z-index: 5000;
+}
+
+.notify_bar_inner {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.notify_content {
+  margin-left: 8px;
+  margin-right: 8px;
+}
+
+.clearfix { clear:both }

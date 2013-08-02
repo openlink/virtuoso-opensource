@@ -2,7 +2,7 @@
 //  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 //  project.
 //  
-//  Copyright (C) 1998-2006 OpenLink Software
+//  Copyright (C) 1998-2013 OpenLink Software
 //  
 //  This project is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the
@@ -195,6 +195,20 @@ namespace OpenLink.Data.Virtuoso
 				{
 					DateTimeMarshaler.MarshalDate (stream, value, DateTimeType.DT_TYPE_TIME);
 				}
+				else if (type == typeof (VirtuosoTimeSpan))
+				{
+					DateTimeMarshaler.MarshalDate (stream, value, DateTimeType.DT_TYPE_TIME);
+				}
+				else if (type == typeof(VirtuosoDateTime))
+				{
+					DateTimeMarshaler.MarshalDate (stream, value, DateTimeType.DT_TYPE_DATETIME);
+				}
+#if ADONET3
+				else if (type == typeof(VirtuosoDateTimeOffset))
+				{
+					DateTimeMarshaler.MarshalDate (stream, value, DateTimeType.DT_TYPE_DATETIME);
+				}
+#endif
 				else if (type == typeof (int[]))
 				{
 					stream.WriteByte ((byte) BoxTag.DV_ARRAY_OF_LONG);

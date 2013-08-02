@@ -3,9 +3,11 @@
 -- int state is ../ins 1111 100 20
 
 
-__dbf_set ('cl_req_batch_size', 7);
-__dbf_set ('cl_res_buffer_bytes', 100);
-__dbf_set ('cl_batches_per_rpc', 2);
+cl_exec ('__dbf_set (''dc_batch_sz'', 7)');
+cl_exec ('__dbf_set (''enable_dyn_batch_sz'', 0)');
+cl_exec ('__dbf_set (''cl_res_buffer_bytes'', 100)');
+cl_exec ('__dbf_set (''qp_thread_min_usec'', 0)');
+cl_exec ('__dbf_set (''enable_qp'', 8)');
 
 
 explain ('select a.fi2, b.fi2 from t1 a, t1 b where a.fi3 = b.fi3 order by a.fi3 option (loop)');
@@ -65,7 +67,7 @@ explain ('select count (*) from t1 a table option (index fi2) where exists (sele
 explain ('select count (*) from t1 a table option (index fi2) where exists (select 1 from t1 b table option (loop) where a.fi3 = b.fi2 and b.fi2 + 2 > 0) option (do not loop exists)');
 
 
-set autocommmit on;
+set autocommit on;
 -- dfg has a for update part, must enlist from the start.
 select count (*) from t1 a where exists (select 1 from t1 b where b.fi2 = 1 + a.fi2 for update);
 
@@ -83,3 +85,13 @@ create procedure dfgp ()
 		     }
     }
 }
+
+create procedure iso_qf ()
+{
+  update t1 set fi2 = row_no where row_no in (100, 1024 + 100);
+  select count (*) from t1 where row_no  in (100, 1024 + 100);
+}
+
+
+
+

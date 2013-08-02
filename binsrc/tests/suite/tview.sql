@@ -1,14 +1,14 @@
 --
 --  tview.sql
 --
---  $Id$
+--  $Id: tview.sql,v 1.14.10.2 2013/01/02 16:15:33 source Exp $
 --
 --  UNION and VIEW tests
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -48,6 +48,11 @@ ECHO BOTH ": UNION ALL derived table ORDER BY " $ROWCNT " rows\n";
 select V1.R, V2.R from T1_LOW V1 left outer join T1_LOW V2 on (V2.R = V1.R + 5);
 ECHO BOTH $IF $EQU $ROWCNT 20 "PASSED" "***FAILED";
 ECHO BOTH ": Outer join of view " $ROWCNT " rows\n";
+
+select a.r,  b.r from t1_low a left join (select distinct c.r from t1_low c table option (hash)) b on b.r = a.r + 5 option (hash, order);
+ECHO BOTH $IF $EQU $ROWCNT 20 "PASSED" "***FAILED";
+ECHO BOTH ": Outer join of view in distinct dt " $ROWCNT " rows\n";
+
 
 select V1.R, V2.R from T1_LOW V1 left outer join T1_LOW V2 on (V2.R = V1.R + 5) where V2.R is NULL;
 ECHO BOTH $IF $EQU $ROWCNT 5 "PASSED" "***FAILED";

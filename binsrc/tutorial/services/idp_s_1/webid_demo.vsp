@@ -1,0 +1,105 @@
+<?vsp
+  declare webid, error, action, hostUrl, url, callback, certificate any;
+
+	webid := get_keyword ('webid', params);
+	error := get_keyword ('error', params);
+	action := get_keyword ('go', params);
+  if (length (webid) or length (error))
+    goto html;
+
+  if (not length (action))
+    goto html;
+
+  if (not is_http_ctx ())
+  {
+    error := 'No certificate';
+    goto html;
+  }
+
+  hostUrl := http_request_header (http_request_header () , 'Host' , null , sys_connected_server_address ());
+  if (isstring (hostUrl) and strchr (hostUrl , ':') is null)
+  {
+    declare hp varchar;
+    declare hpa any;
+
+    hp := sys_connected_server_address ();
+    hpa := split_and_decode (hp , 0 , '\0\0:');
+    if (hpa [1] <> '80')
+      hostUrl := hostUrl || ':' || hpa [1];
+  }
+  if (hostUrl not like 'https://%')
+    hostUrl := 'https://' || hostUrl;
+
+  certificate := client_attr ('client_certificate');
+  callback := hostUrl || '/tutorial/webid/webid_demo.vsp';
+  url := sprintf ('http://id.myopenlink.net/ods/webid_verify.vsp?callback=%U&certificate=%U', callback, certificate);
+  http_status_set (302);
+  http_header (sprintf ('Location: %s\r\n', url));
+  return;
+
+html:
+?>
+<html>
+  <head>
+    <title>WebID Verification Demo - VSP</title>
+    <style type="text/css">
+      body {
+      	background-color: white;
+      	color: black;
+      	font-size: 10pt;
+      	font-family: Verdana, Helvetica, sans-serif;
+      }
+      ul {
+        font-family: Verdana, Helvetica, sans-serif;
+        list-style-type: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>WebID Verification Demo - VSP</h1>
+    <div>
+      This will check the WebID watermark in your X.509 Certificate.<br/><br/>
+      This service supports WebIDs based on the following URI schemes (more to come):
+      <ul>
+      	<li>* <b>acct</b>, e.g: <span style="font-size: 80%; color: #1DA237;">acct:ExampleUser@id.example.com</span></li>
+      	<li>* <b>http</b>, e.g: <span style="font-size: 80%; color: #1DA237;">http://id.example.com/person/ExampleUser#this</span></li>
+      	<li>* <b>ldap</b>, e.g: <span style="font-size: 80%; color: #1DA237;">ldap://ldap.example.com/o=An%20Example%5C2C%20Inc.,c=US</span></li>
+      	<li>* <b>mailto</b>, e.g: <span style="font-size: 80%; color: #1DA237;">mailto:ExampleUser@id.example.com</span></li>
+      </ul>
+    </div>
+    <br/>
+    <br/>
+    <div>
+      <form method="get">
+        <input type="submit" name="go" value="Check"/>
+      </form>
+    </div>
+    <?vsp
+      if (length (webid) or length (error))
+      {
+    ?>
+      <div>
+      	The return values are:
+  	    <ul>
+          <?vsp
+            if (length (webid))
+            {
+          ?>
+  	      <li>WebID -  <?V webid ?></li>
+  	      <li>Timestamp in ISO 8601 format - <?V get_keyword ('ts', params) ?></li>
+          <?vsp
+            }
+            if (length (error))
+            {
+          ?>
+  	      <li>Error - <?V error ?></li>
+          <?vsp
+            }
+          ?>
+  	    </ul>
+      </div>
+    <?vsp
+      }
+    ?>
+  </body>
+</html>

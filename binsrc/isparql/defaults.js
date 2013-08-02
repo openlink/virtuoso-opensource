@@ -9,9 +9,10 @@ iSPARQL.Defaults = {
 		 "http://dbpedia.org/sparql",
                  "http://loc.openlinksw.com/sparql",
 		 "http://lod.openlinksw.com/sparql",
+                 "http://sparql.sindice.com/sparql",
 		 "http://bbc.openlinksw.com/sparql",
 		 "http://demo.openlinksw.com/sparql",
-		 "http://myopenlink.net:8890/sparql/",
+		 "http://myopenlink.net:8890/sparql",
 		 "http://linkedgeodata.org/sparql",
 		 "http://sparql.reegle.info/",
 //		 "http://www.govtrack.us/sparql",
@@ -40,15 +41,16 @@ iSPARQL.Defaults = {
     grabDepth:    2,
     grabAll:      false,
     graph:        "",
-    queryTimeout: 2000, // ms
+    timeout:      false, // ms
     auth:         {user:'dav',password:'dav'},
     tab:          0,
-    anchorMode:   0, /* 0:describe, 1:get data items,2:Open in new window */
+    anchorMode:   0, /* 0:Exec SPARQL describe, 1:get data items,2:Open in new window,3:Open "describe" page */
     maxrows:      50,
     view:         1,
     endpoint:     '/sparql',
     pivotInstalled: false,
     addthis_key: false,
+    raw_iris: true,
     locOpts: {             /* XXX all except minAcc not implemented yet */
 	cacheLocTO:  2000, /* Milliseconds timeout to improve non-expired cached location accuracy */
 	coarseLocTO: 2000, /* Milliseconds to wait for coarse loc in last cached location validation attempt */
@@ -81,6 +83,10 @@ iSPARQL.Defaults = {
 	    iSPARQL.Settings.query  = p['query']; 
 	    qp = true; 
 	}
+	if (p['qtxt']) { 
+	    iSPARQL.Settings.query  = p['qtxt']; 
+	    qp = true; 
+	}
 	if (p['sponge'])            { iSPARQL.Settings.sponge = p['sponge']; qp = true; }
 	if (p['should_sponge'])     { iSPARQL.Settings.sponge = p['should_sponge']; qp = true; }
 	if (p['view']) {
@@ -96,6 +102,9 @@ iSPARQL.Defaults = {
 	if (qp) iSPARQL.Settings.qp_override = qp;
 	if (p['__DEBUG']) iSPARQL.Settings.debug = true;
 	if (p['maxrows']) iSPARQL.Settings.maxrows = parseInt(p['maxrows']);
+	if (p['timeout']) iSPARQL.Settings.timeout = parseInt(p['timeout']);
+	if (p['amode']) iSPARQL.Settings.anchorMode = parseInt(p['amode']);
+	if (p['raw_iris']) iSPARQL.Settings.raw_iris = ((p['raw_iris'] == 'true')?true:false);
     },
 
     //
@@ -159,6 +168,7 @@ iSPARQL.Defaults = {
 	    iSPARQL.Defaults.map_type = OAT.Map.TYPE_OL;
 	    break;
 	}
+	this.handlePageParams();
     }
 };
 

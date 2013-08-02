@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -23,7 +23,7 @@
 
 html {}
 
-body { 
+body {
   margin: 0; padding: 0;
   font-family: Gill Sans, Verdana, Helvetica, sans-serif;
   font-size: 9pt; text-align: center}
@@ -34,40 +34,51 @@ a.describe {margin-right: 6px}
 tr:hover {
   background-color: #ddd;}
 
-#PG { width: 100%; 
+pre {
+  white-space: pre-wrap;       /* css-3 */
+  white-space: -moz-pre-wrap !important;  /* Mozilla, since 1999 */
+  white-space: -pre-wrap;      /* Opera 4-6 */
+  white-space: -o-pre-wrap;    /* Opera 7 */
+  word-wrap: break-word;       /* Internet Explorer 5.5+ */
+}
+
+
+#PG { width: 100%;
       text-align: left;
       background-color: #fff;}
 
-#HD { 
-  width: 100%; 
-  float: left; 
+#HD {
+  width: 100%;
+  float: left;
   height: 70px;
-  text-align: center; 
+  text-align: center;
   background-image: url(/fct/images/bg_header.png);
   border-bottom: 1px solid #226;}
 
 #HD img { margin: 2px 0 0 0; padding: 0; vertical-align: middle; border: 0;}
 
-#HD h1 { 
-  font-size: 14pt; 
-  float:left; 
-  margin: 0 0 0 20px; 
-  vertical-align: top; 
-  color: #fff; 
+#HD h1 {
+  font-size: 14pt;
+  float:left;
+  margin: 0 0 0 20px;
+  vertical-align: top;
+  color: #fff;
   padding: 0}
 
 #HD h1 a { color: #fff}
 
+#HD h2 { font-size: 14pt; float: left; margin: 20px 0 0 20px; color: #fff; padding: 0;}
+
 #main_menu {
-  margin: 0; padding: 0;
+  margin: 40px 0; padding: 0;
   float: right;
-  clear: right;
+/*  clear: right;*/
   list-style-type: none;
   list-style-image: none;
   list-style-position: outside;
   list-style-type: none;
   margin-right: 12px;
-  min-width: 500px;
+/*  min-width: 500px; */
 }
 
 #main_menu li { float: left }
@@ -92,7 +103,7 @@ tr:hover {
   -moz-border-radius-topright:3px;
   background:#E4F2FD none repeat scroll 0 0;
   color:#555555;
-  text-shadow:1px 1px 1px #C6D9E9;	
+  text-shadow:1px 1px 1px #C6D9E9;
 }
 
 li#mnu_settings a {
@@ -116,23 +127,23 @@ li#mnu_settings ul li { }
 
 #hd_r { float: right; clear: right}
 
-#hd_r img { margin: 15px 10px 0 0; 
-            vertical-align: middle; 
-            padding-bottom: 3px; 
+#hd_r img { margin: 15px 10px 0 0;
+            vertical-align: middle;
+            padding-bottom: 3px;
             background-color: white; }
 
 a.logo { margin-left: 10px; float: left;}
 
 #opl_logo { border: 0; float: left;}
 
-#MD { width: 100%; 
-      float: left; 
-      margin-top: 0; 
-      background-color: #e9f2f7; 
-      padding-bottom: 10px; 
+#MD { width: 100%;
+      float: left;
+      margin-top: 0;
+      background-color: #e9f2f7;
+      padding-bottom: 10px;
       margin-left: auto; margin-right: auto;}
 
-#MD div#settings { 
+#MD div#settings {
   margin: 10px;
 }
 
@@ -143,7 +154,7 @@ a.logo { margin-left: 10px; float: left;}
 #MD div#settings ul li { padding: 0;}
 #MD div#settings td:hover {background: inherited}
 #MD div#settings tr:hover {background: inherited}
-#FT { width: 100%; float: left; 
+#FT { width: 100%; float: left;
       border-top: 1px solid #335;
       text-align: center;
       padding-top: 10px; }
@@ -155,7 +166,7 @@ span.copyright { font-size: 8pt; color: #888}
 div.page_resource_info {
   float: left; clear: left;
   text-align: left;
-  margin: 15px; 
+  margin: 15px;
 }
 
 div.page_resource_info h2 { display: inline; padding: 0;}
@@ -181,8 +192,8 @@ div.main_expln { float: left; clear: left; text-align: center; width: 100%;}
 
 #user_map { position: relative;width: 100%; height:650px; }
 
-input.thr { background-image: url(/fct/images/thrb.gif); 
-            background-repeat: no-repeat; 
+input.thr { background-image: url(/fct/images/thrb.gif);
+            background-repeat: no-repeat;
             background-position: right;}
 
 table.result { clear:left; width: 100%; margin: 3px; font-size: 9pt;}
@@ -199,10 +210,10 @@ p.subj_desc {
   float: left;
   clear: left;
   width: 750px;
-  text-align: left; 
-  font-style: italic; 
-  font-size: 12pt; 
-  margin: 10px; 
+  text-align: left;
+  font-style: italic;
+  font-size: 12pt;
+  margin: 10px;
   padding: 10px;
   background-color: #fff;
   border: 1px solid black;}
@@ -210,17 +221,17 @@ p.subj_desc {
 p.subj_delim {
   float: left;
   clear: left;
-  margin-left: 10px; 
+  margin-left: 10px;
   width: 750px;
   border-bottom: 1px solid black;}
 
-div.subj_nav div.nav { 
-  float: right; 
+div.subj_nav div.nav {
+  float: right;
   clear: right;
-  text-align: left; 
+  text-align: left;
   width: 200px;
-  margin-top: 10px; 
-  border-left: 1px solid #ddd; 
+  margin-top: 10px;
+  border-left: 1px solid #ddd;
 }
 
 div.subj_nav div.nav ul { list-style-type: none; padding: 0; margin-left: 10px;}
@@ -229,28 +240,28 @@ div.subj_nav div.nav h3 { text-align: left; margin-left: 10px; }
 table.description { text-align: left; margin: 10px; float: left;clear: left;}
 table.description td { vertical-align: top;}
 table.description td.property { white-space: nowrap;}
-table.description ul.obj { 
-  padding: 0; 
-  margin-top: 0; 
-  margin-left; 10px; 
+table.description ul.obj {
+  padding: 0;
+  margin-top: 0;
+  margin-left; 10px;
   list-style-type: none } /* list-style-type: none} */
 
-#main_srch { 
-  margin-top: 15px; 
+#main_srch {
+  margin-top: 15px;
   margin-left: auto;
   margin-right: auto}
 
 #TAB_ROW { width: 780px; margin-left: auto; margin-right: auto;}
 
 
-div.tab { 
+div.tab {
   float: left;
   min-width: 12em;
   padding-top: 10px;
   padding-left: 10px;
   padding-bottom: 4px;
-  cursor: pointer; 
-  background-image: url(/fct/images/tablv1default.png); 
+  cursor: pointer;
+  background-image: url(/fct/images/tablv1default.png);
   margin-right: 4px;
 }
 
@@ -258,15 +269,15 @@ div.tab a { text-decoration: none; white-space: nowrap; margin-right: 5px; }
 
 div.tab:first-child { clear: left; }
 
-div.tab_selected { 
-  background-image: url(/fct/images/tablv1sel.png); 
+div.tab_selected {
+  background-image: url(/fct/images/tablv1sel.png);
   font-weight: bold;
   padding-top: 10px;
   padding-bottom: 5px;
   border-top: 1px solid #ddd;
   border-right: 1px solid #ddd;
   border-left: 1px solid #ddd;
-  border-bottom: 2px solid #fff; 
+  border-bottom: 2px solid #fff;
 }
 
 #TAB_ROW div.tab_act { float: right; padding-top: 10px;}
@@ -286,7 +297,7 @@ div.tab_page {
   width: 100%;
   min-height: 150px;
   background-color: #ffffff;
-  background-image: url(/fct/images/tab_page_back1.png); 
+  background-image: url(/fct/images/tab_page_back1.png);
   background-repeat: repeat-x;
   background-position: bottom left;
   border-left: 1px solid #ddd;
@@ -302,7 +313,7 @@ div.pg_b_nav { float: left; clear: left; width: 100%; margin-left: 10px;}
 div.ac_info { margin-top: 20px;}
 div.ac_info img.txt_i { vertical-align: middle; margin: 4px;}
 
-div.autocomplete_list { 
+div.autocomplete_list {
   padding: 0;
   margin: 0;
   max-height: 500px;
@@ -310,13 +321,13 @@ div.autocomplete_list {
   overflow-x: auto;
   list-style-type: none;
   text-align: left;
-  background: #fff; 
+  background: #fff;
   border: 1px solid #888; }
 
-div.ac_list_option { 
-  text-align: left; 
-  margin: 2px 5px 2px 5px; 
-  cursor: pointer; 
+div.ac_list_option {
+  text-align: left;
+  margin: 2px 5px 2px 5px;
+  cursor: pointer;
   color: #888;
   border-top: 1px solid #ddd }
 
@@ -336,15 +347,15 @@ span.descr { font-size: 9pt; color: #557; margin-top: 0;}
 
 #result_nfo { float: left; clear: both; width: 100%; margin-top: 8px; margin-left: 5px; color: #446;}
 
-#fct_nav { 
-  float: right; 
+#fct_nav {
+  float: right;
   margin-left: 10px;
-  margin-top: 4px; 
-  padding-left: 3px; 
-  width: 200px; 
+  margin-top: 4px;
+  padding-left: 3px;
+  width: 200px;
   border-left: 1px solid #335;}
 
-#fct_nav h3 { margin: 0; padding: 0;}
+#fct_nav h3 { margin: 0; padding: 0; color: #445; }
 
 #fct_nav ul { list-style-type: none; padding: 0; margin: 0;}
 #fct_nav ul li { list-style-type: none;}
@@ -363,16 +374,16 @@ div.thr_ctr { display: inline; width: 16px; border: 0; padding: 0;margin: 0;}
        border: 1px outset;
        margin: 10px auto 10px auto;
        width: 90%;}
-.dlg .title { margin: 0; 
-              text-align: center; 
-              background-image: url(/fct/images/dlg_title_bkg.png); 
+.dlg .title { margin: 0;
+              text-align: center;
+              background-image: url(/fct/images/dlg_title_bkg.png);
               border-bottom: 1px inset;
               padding: 2px 0 2px 0;}
 .dlg .title h2 { color: #333}
 .dlg form { margin: 0; width: 100%;}
-.dlg .btn_bar { margin: 0; 
-                padding-top: 2ex; 
-                width: 100%; height: 6ex; 
+.dlg .btn_bar { margin: 0;
+                padding-top: 2ex;
+                width: 100%; height: 6ex;
                 border-top: 1px solid #333; background-color: #ddd; text-align: right; }
 .dlg .btn_bar button { margin-right: 4px; }
 .dlg .btn_bar input[type="submit"] { margin-right: 6px; }
@@ -383,11 +394,11 @@ div.thr_ctr { display: inline; width: 16px; border: 0; padding: 0;margin: 0;}
 .dlg .fm_sect h3 { font-size: 9pt; margin: 0}
 .dlg label.left_txt { float: left; clear: left; width: 120px;}
 .dlg .ctl_expln { margin-left: 120px; font-size: 8pt; font-style: oblique}
- 
+
 #opts_ctr {
   width: 100%;
   text-align: center;
-  background-color: white; 
+  background-color: white;
 }
 
 #opts {
@@ -398,6 +409,18 @@ div.thr_ctr { display: inline; width: 16px; border: 0; padding: 0;margin: 0;}
   width: 650px;
 }
 
+#cond_form {
+  width: 100%;
+  border-top: 1px solid #ddd;
+  margin-top: 15px;
+  margin-left: 5px;
+}
+
+button.in_set_cond_b {
+  margin-left: 10px;
+}
+
+a.in_del:hover { cursor: pointer; }
 
 #opts input[type="checkbox"] { margin-left: 120px; }
 
@@ -409,25 +432,52 @@ div.thr_ctr { display: inline; width: 16px; border: 0; padding: 0;margin: 0;}
   font-style: italic;
 }
 
+#res .pager button {
+  background-color: #e5e5e5;
+  background-image: -webkit-gradient(linear, left top, left bottom, from(#eeeeee), to(#cccccc));
+  background-image: -webkit-linear-gradient(top, #e5e5e5, #d5d5d5);
+  background-image: -ms-linear-gradient(top, #e5e5e5, #d5d5d5);
+  background-image: -moz-linear-gradient(top, #e5e5e5, #d5d5d5);
+  background-image: -o-linear-gradient(top, #e5e5e5, #d5d5d5);
+  background-image: linear-gradient(top, #e5e5e5, #d5d5d5);
+  border: 1px solid #c2c2c2;
+  border-bottom: 1px solid #b2b2b2;
+  -ms-border-radius: 3px;
+  -moz-border-radius: 3px;
+  -webkit-border-radius: 3px;
+  -o-border-radius: 3px;
+  border-radius: 3px;
+  color: #333;
+  font: bold 11px Geneva, Verdana, sans-serif;
+  line-height: 1;
+  padding: 3px 3px;
+  text-align: center;
+  text-shadow: 0 1px 0 #EEE;
+}
+
+#res .pager button:disabled {
+  color: #666;
+}
+
 div.empty_result {
-  font-weight: bold; 
+  font-weight: bold;
   font-size: 12pt;
   margin: 20px;
 }
 
-div.dbg { 
+div.dbg {
   display: none; }
 
 /*div.dbg { padding: 10px; background-color: yellow; border: 1px solid black}*/
 
 div#pager { margin-top: 10px; float: right;}
 
-div#pager a { background-color: #ddd; 
-              padding: 2px; 
-              border: 1px solid #335; 
-              padding: 3px 5px 3px 5px; 
-              width: auto; 
-              text-decoration: none; 
+div#pager a { background-color: #ddd;
+              padding: 2px;
+              border: 1px solid #335;
+              padding: 3px 5px 3px 5px;
+              width: auto;
+              text-decoration: none;
               text-align: center;}
 
 h3#view_info {
@@ -436,11 +486,20 @@ h3#view_info {
   font-size: 10pt;
 }
 
-div#top_ctr { 
+div#top_ctr {
   font-size: 10pt;
   background-color: #ccc;
   margin-top: 0px; padding-top: 4px;
   padding-left: 5px; padding-right: -4px;
+}
+
+#top_ctr ul {
+  list-style-type: none;
+}
+
+#top_ctr ul .focus {
+  font-weight: bold;
+  color: #393;
 }
 
 div.error_msg { margin: 5px; }
@@ -457,8 +516,8 @@ div.facet_ctr {
 
 div.facet_ctr:first-child { margin-left: 0;}
 
-.facet_hd { 
-  margin: 0; 
+.facet_hd {
+  margin: 0;
   text-align: center;
   border-top: 1px solid #333;
   border-left: 1px solid #333;
@@ -466,24 +525,26 @@ div.facet_ctr:first-child { margin-left: 0;}
   background-color: #aaa;
   background-image: url(/images/dlg_title_bkg.png);}
 
-div.facet { 
-  float:left; 
-  height: 20em;  
-  width: 394px; 
-  overflow-y: auto; 
-  overflow-x: hidden; 
+div.facet {
+  float:left;
+  height: 20em;
+  width: 394px;
+  overflow-y: auto;
+  overflow-x: hidden;
   background-color: #fff;
   border: 1px inset;
 }
 
+.plink_a {margin-left: 1em}
+
 div#sparql_link { margin-top: 10px; float: right;}
-div#sparql_link a { 
-  background-color: #ddd; 
-  padding: 2px; 
-  border: 1px solid #335; 
-  padding: 3px 5px 3px 5px; 
-  width: auto; 
-  text-decoration: none; 
+div#sparql_link a {
+  background-color: #ddd;
+  padding: 2px;
+  border: 1px solid #335;
+  padding: 3px 5px 3px 5px;
+  width: auto;
+  text-decoration: none;
   text-align: center;}
 
 div.featured { margin: 5px; }
@@ -492,10 +553,10 @@ div.featured .expln { text-align: left;}
 #featured_list td { font-size: 9pt;}
 
 table.sparql_qry_list { width: 78%; margin-left: auto; margin-right: auto}
-table.sparql_qry_list td.title { font-weight: bold; }  
-table.sparql_qry_list td.expln { width: 50%; }  
+table.sparql_qry_list td.title { font-weight: bold; }
+table.sparql_qry_list td.expln { width: 50%; }
 
-#demo_queries_ctr { margin: 10px; }
+#demo_queries_ctr { margin: 10px; min-height: 200px}
 
 ul.demo_qry_list {
   list-style-type: none;
@@ -507,12 +568,14 @@ ul.demo_qry_list div.expln { margin: 10px; }
 ul.demo_qry_list pre { margin: 10px; }
 
 div#dbg_output {
-  float: left; 
+  float: left;
   clear:left;
   font-size: 8pt;
 }
 
-span.pivot_pg a, 
+span.advisory { font-weight: bold; }
+
+span.pivot_pg a,
 span.pivot_qrcode_opts a,
 span.pivot_link_opts a { text-decoration: none; }
 
@@ -527,8 +590,16 @@ div#nav {
     margin-left: 50px;
 }
 
-a#sp_link { font-size: 11pt; font-weight:normal; }
+a#sp_link { font-size: 9pt; font-weight:normal; }
+a.desc_permalink { font-size: 9pt; font-weight: normal }
 
-#qrcode { position:fixed; top:100px; right: 30px; z-index: 0; } 
+#qrcode { position:fixed; top:100px; right: 30px; z-index: 0; }
 
-#FT_share { float: right; clear: right; vertical-align: top; margin-right: 4px; }
+#FT_share { margin: auto; width: 400px}
+
+#fct_form { margin-top: 1ex }
+
+.addthis_toolbox { margin: 20px 10px auto; }
+
+#FT_share .addthis_toolbox { margin: 0 }
+

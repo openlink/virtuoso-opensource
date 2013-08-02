@@ -1,13 +1,13 @@
 #!/bin/sh
 #
-#  $Id$
+#  $Id: tupgrade_recov.sh,v 1.9.10.3 2013/01/02 16:15:32 source Exp $
 #
 #  Database recovery tests afer database upgrade
 #  
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -26,7 +26,7 @@
 
 LOGFILE=tupgrade_recov.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 BANNER "STARTED UPGRADE & RECOVERY TEST (tupgrade_recov.sh)"
 
@@ -38,9 +38,9 @@ MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 SHUTDOWN_SERVER
 START_SERVER $PORT 1000
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < treg1.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/treg1.sql
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tblob.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tblob.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tupgrade_recov.sh: Inline Blobs "
@@ -48,7 +48,7 @@ then
 fi
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tconcur2.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tconcur2.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tupgrade_recov.sh: Concurrent inserts with timestamp key"
@@ -66,7 +66,7 @@ else
     exit 3
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < blobs.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/blobs.sql
 if test $STATUS -eq 0
 then
     LOG "PASSED: tupgrade_recov.sh: blobs 1st round"
@@ -76,7 +76,7 @@ else
 fi
 
 RUN $BLOBS $DSN
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < blobs.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/blobs.sql
 if test $STATUS -eq 0
 then
     LOG "PASSED: tupgrade_recov.sh: blobs 2nd round"
@@ -86,7 +86,7 @@ else
 fi
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tschema1.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tschema1.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tupgrade_recov.sh: Schema test"
@@ -103,7 +103,7 @@ sleep 5
 START_SERVER $PORT 2000
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < recovck1.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/recovck1.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tupgrade_recov.sh: Connect failed after log roll forward"
@@ -152,7 +152,7 @@ fi
 rm -f $DBFILE
 START_SERVER $PORT 3000 -R
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < recovck1.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/recovck1.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tupgrade_recov.sh: Connect failed after -d roll forward"
@@ -160,7 +160,7 @@ then
 fi
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < backup.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/backup.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tupgrade_recov.sh: Connect failed for backup"
@@ -177,7 +177,7 @@ mv backup.log $DBLOGFILE
 rm -f $DBFILE
 
 START_SERVER $PORT 3000 -R
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < recovck1.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/recovck1.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tupgrade_recov.sh: Connect failed after backup restore"
@@ -205,14 +205,14 @@ fi
 rm -f $DBFILE
 START_SERVER $PORT 3000 -R
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < recovck1.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/recovck1.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tupgrade_recov.sh: Connect failed after backup restore"
     exit 3
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tbfree.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tbfree.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tupgrade_recov.sh: doing tbfree.sql"

@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2890,7 +2890,7 @@ void dsig_dsa_sha1_sign_test()
   in->dks_in_fill = sizeof (msg) - 1;
   in->dks_in_read = 0;
 
-  __xenc_key_dsa_init ("virtdev4@localhost", 1);
+  __xenc_key_dsa_init ("virtdev4@localhost", 1, 512);
 
   xenc_assert (dsig_dsa_sha1_digest (in, sizeof (msg) -1, xenc_get_key_by_name ("virtdev4@localhost", 1), &digest));
 
@@ -2987,7 +2987,7 @@ dsig_##type##_f dsig_##type##_f_get (const char * xmln, xenc_try_block_t * t) \
     id_hash_get (select_store( store_name )->dat_hash, (caddr_t) & xmln); \
   if (!algo) \
      xenc_report_error (t, 300 + strlen (xmln), XENC_UNKNOWN_ALGO_ERR, "Unknown algorithm %s", xmln); \
-  return algo[0]->f; \
+  return algo ? algo[0]->f : NULL; \
 }
 
 generate_algo_accessor (sign, "dsig")
@@ -3039,6 +3039,8 @@ void dsig_sec_init ()
   dsig_sign_algo_create (DSIG_DSA_SHA1_ALGO, dsig_dsa_sha1_digest);
   dsig_sign_algo_create (DSIG_RSA_SHA1_ALGO, dsig_rsa_sha1_digest);
   dsig_sign_algo_create (DSIG_HMAC_SHA1_ALGO, dsig_hmac_sha1_digest);
+  dsig_sign_algo_create ("hmac-sha1", dsig_hmac_sha1_digest); /* alias */
+
   dsig_verify_algo_create (DSIG_DSA_SHA1_ALGO, dsig_dsa_sha1_verify);
   dsig_verify_algo_create (DSIG_RSA_SHA1_ALGO, dsig_rsa_sha1_verify);
   dsig_verify_algo_create (DSIG_HMAC_SHA1_ALGO, dsig_hmac_sha1_verify);
@@ -3048,6 +3050,7 @@ void dsig_sec_init ()
   dsig_verify_algo_create (DSIG_RSA_SHA256_ALGO, dsig_rsa_sha256_verify);
   dsig_digest_algo_create (DSIG_SHA256_ALGO, dsig_sha256_digest);
   dsig_sign_algo_create (DSIG_HMAC_SHA256_ALGO, dsig_hmac_sha256_digest);
+  dsig_sign_algo_create ("hmac-sha256", dsig_hmac_sha256_digest); /* alias */
   dsig_verify_algo_create (DSIG_HMAC_SHA256_ALGO, dsig_hmac_sha256_verify);
 #endif
 

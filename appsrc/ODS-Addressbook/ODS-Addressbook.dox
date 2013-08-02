@@ -1,0 +1,30 @@
+/**
+\defgroup ods_module_addressbook ODS Addressbook API
+
+ODS-Addressbook offers features to add, manage, and organize contacts for every ODS user.
+
+\section oids_addressbook_features Feature Highlights
+
+- Create/Update/Delete Contact.
+- Organize information in four main tabs: Personal, Contact, Home and Business
+- Tag Contacts. One or more contacts can be selected in order to add (n) tags to them. An additional option is to add tags from the user's tags list, so-called "My Tags".
+- Import Contacts: User can import contacts from:
+  - The following file types, found in the local file system or WebDAV?:
+    - vCard
+    - FOAF
+    - CSV (the user will be given the opportunity to map fields from the file to Addressbook properties)
+  - LDAP Servers: depends on what servers the user has defined at his User Profile Page->Tab "LDAP Servers"
+- Export contact(s) to vCard, FOAF, or CSV files
+- Share contact(s) with other users
+- View contact(s) others have shared with the user
+- Simple/Advanced Search
+  - Advanced search adds options to:
+    - search among own and/or shared contact(s)
+    - set max rows
+    - order by Name, Link, or Folder
+    - Set Direction of the search results: Desc or Asc
+    - Show a Tag Cloud within search results
+- RSS, Atom, and RDF support
+- SIOC(RDF/XML), SIOC(N3/Turtle) support
+- SyncML? support
+*/

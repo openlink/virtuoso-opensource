@@ -1,0 +1,278 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html 
+     PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<?vsp
+  declare skinpfx, banner_txt, strapline, banner_logo, fp_title, fp_favicon varchar;
+  skinpfx := registry_get ('_sponger_fp_SkinPrefix');
+  banner_txt := registry_get ('_sponger_fp_Banner');
+  banner_logo := registry_get ('_sponger_fp_Logo');
+  strapline := registry_get ('_sponger_fp_Strapline');
+  fp_title := registry_get ('_sponger_fp_Title');
+  fp_favicon := registry_get ('_sponger_fp_Favicon');
+  if (skinpfx = 0) skinpfx := 'skin';
+  if (banner_txt = 0) banner_txt := 'Virtuoso Linked Data Middleware';
+  if (strapline = 0) strapline := '';
+  if (fp_title = 0) fp_title := 'Virtuoso Sponger';
+?>
+<head>
+  <link rel="stylesheet" href="<?=skinpfx?>/ss/sponger_frontpage.css" type="text/css"/>
+  <?vsp if (fp_favicon <> 0) { ?>
+  <link rel="shortcut icon" href="<?=skinpfx?>/i/<?=fp_favicon?>" />
+  <?vsp } ?>
+  <meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+  <title><?=fp_title?> - Twitter Binding</title>
+<?vsp
+  declare twit_app_name, li_app_secret, oauth_redirect_url, twit_login_dialog_url varchar;
+  declare twit_user_id, twit_user_name, twit_user_public_profile_url varchar;
+  declare request_token, request_token_secret, oauth_verifier varchar;
+  declare consumer_key, consumer_secret varchar;
+  declare twitter_api_host, access_token_path varchar;
+  declare oauth_token, oauth_token_secret, oauth_expires_in, oauth_problem, oauth_denied varchar;
+  declare oauth_token_expiry int;
+  declare rm_options any;
+  declare _host, required_profile_fields varchar;
+
+  twitter_api_host := 'https://api.twitter.com';
+  access_token_path := '/oauth/access_token';
+
+  consumer_key := null;
+  consumer_secret := null;
+  twit_app_name := null;
+  oauth_token := null;
+  oauth_problem := null;
+  oauth_denied := null;
+
+  rm_options := (select RM_OPTIONS from DB.DBA.SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_TWITTER_V2');
+  if (rm_options is not null)
+  {
+    consumer_key := get_keyword ('consumer_key', rm_options);
+    consumer_secret := get_keyword ('consumer_secret', rm_options);
+    twit_app_name := get_keyword ('consumer_name', rm_options);
+  }
+
+  if (consumer_key is null or consumer_secret is null)
+    goto cartridge_options_err;
+
+  _host := registry_get ('URIQADefaultHost');
+  if (is_http_ctx ()) _host := http_request_header(http_request_header (), 'Host', null, _host);
+
+  -- TO DO: 
+  -- oauth_redirect_url isn't used. It's configured instead in the Twitter application details via the Twitter Developer UI
+  if (_host is not null)
+  {
+    twit_app_name := coalesce (twit_app_name, sprintf ('Sponger (%s)', _host));
+    oauth_redirect_url := sprintf('http://%s/twitter_oauth/', _host);
+  }
+
+   -- Returned request token matches the one used to make the request
+  request_token := cast (http_param ('oauth_token') as varchar);
+  oauth_verifier := cast (http_param ('oauth_verifier') as varchar);
+  oauth_denied := cast (http_param ('denied') as varchar);
+
+  -- TO DO: oauth_problem currently not used.
+  -- oauth_problem is used by LinkedIn. How does Twitter report OAuth problems? Is request_token returned on error?
+  oauth_problem := cast (http_param ('oauth_problem') as varchar);
+
+  if (oauth_denied <> '0')
+  {
+    delete from DB.DBA.OAUTH_TOKEN_REQUESTS where OAUTH_REQ_TOKEN = oauth_denied;
+    commit work;
+  }
+  else if (oauth_problem <> '0')
+  {
+    delete from DB.DBA.OAUTH_TOKEN_REQUESTS where OAUTH_REQ_TOKEN = request_token;
+    commit work;
+  }
+  else if (oauth_verifier = '0')
+  {
+    -- Authorization hasn't yet been requested
+    -- Re-direct to Twitter OAuth server, ask the user to authorize Sponger access to their Twitter profile
+    twit_login_dialog_url := DB.DBA.RDF_LOAD_TWITTER_REQUEST_ACCESS_TOKEN (consumer_key, consumer_secret);
+    http ('<script>');
+    http (sprintf ('top.location.href=\'%s\';', twit_login_dialog_url));
+    http ('</script>');
+  }
+  else
+  {
+    -- Process the user response to our request for authorization
+    declare url, api_url, response, response_params any;
+    declare oauth_params varchar;
+    declare tw_tree any;
+
+    -- Retrieve request_token_secret returned in response to request-token request
+    request_token_secret := (select OAUTH_REQ_SECRET from DB.DBA.OAUTH_TOKEN_REQUESTS where OAUTH_REQ_TOKEN = request_token);
+    oauth_params := sprintf ('oauth_token=%U&oauth_verifier=%U', request_token, oauth_verifier);
+
+    delete from DB.DBA.OAUTH_TOKEN_REQUESTS where OAUTH_REQ_TOKEN = request_token;
+    commit work;
+
+    -- Exchange the request token for an access token
+    url := DB.DBA.sign_request ('GET', twitter_api_host || access_token_path, oauth_params, consumer_key, consumer_secret, request_token, request_token_secret, 1);
+    response := http_get (url);
+
+    -- Sample response
+    -- oauth_token=161341203xxx&oauth_token_secret=AxErlxxx&user_id=161341203&screen_name=cmsblakeley
+    -- Twitter doesn't support expiring OAuth tokens, only long-lived tokens
+    response_params := split_and_decode (response);
+    oauth_token := get_keyword ('oauth_token', response_params);
+    oauth_token_secret := get_keyword ('oauth_token_secret', response_params);
+    oauth_expires_in := get_keyword ('oauth_expires_in', response_params);
+    twit_user_id := get_keyword ('user_id', response_params);
+    twit_user_name := get_keyword ('screen_name', response_params);
+
+    if (oauth_token is not null)
+    {
+      oauth_token_expiry := null;
+      if (oauth_expires_in is not null)
+      {
+        oauth_token_expiry := atoi (oauth_expires_in);
+        if (oauth_token_expiry = 0)
+          oauth_token_expiry := null;
+      }
+
+      twit_user_public_profile_url := 'http://twitter.com/' || twit_user_name;
+      DB.DBA.TWITTER_SAVE_ACCESS_TOKEN (twit_user_id, twit_user_name, twit_user_public_profile_url, NULL, NULL, 
+        oauth_token, oauth_token_secret, oauth_token_expiry);
+    }
+  }
+cartridge_options_err:
+ ;
+?>
+</head>
+<body onload="page_load_hndlr()">
+<div id="outer">
+  <div id="header">
+    <div id="header_logo">
+      <a href="http://www.openlinksw.com/"><img id="openlink_logo"
+         title="OpenLink Software" alt="[OpenLink Software logo]"
+         src="<?=skinpfx?>/i/openlinklogo_wstrap_2008_100h.png" /></a> 
+    </div>
+    <div id="header_text">
+      <?vsp if (banner_logo <> 0) { ?>
+        <img id="banner_logo" alt="[Sponger instance logo]"
+             src="<?=skinpfx?>/i/<?=banner_logo?>" /><br/>
+      <?vsp } else { ?>
+        <h1><?=banner_txt?></h1>
+      <?vsp } ?>
+      <?=strapline?>
+    </div>
+  </div>
+
+  <div id="navbar">
+    <a href="index.vsp">Home</a> | 
+    <a href="sponger_architecture.vsp#how_it_works">How It Works</a> | 
+    <a href="sponger_architecture.vsp">Architecture</a> | 
+    <a href="sponger_setup.vsp">Sponger Setup</a> | 
+    <a href="examples.vsp">Live Sponger Examples</a> | 
+    <a href="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtSpongerCartridgeProgrammersGuide"> Developer API Guide</a>  |
+    <a href="http://virtuoso.openlinksw.com/">Virtuoso</a>
+  </div>
+
+  <div id="content">
+    <div class="topic-text">
+      <div id="lmargin">
+        <div id="token_confirmation">
+          <h2>Sponger-Twitter Binding</h2>
+	        <h3>Access Token Generation</h3>
+
+<?vsp 
+  if (oauth_token is null)
+  {
+    http ('<div class="error">');
+    if (oauth_denied <> '0')
+    {
+      http ('<p>Authorization to access your Twitter profile was refused. An OAuth access token could not be granted.</p>');
+    }
+    else if (oauth_problem <> '0')
+    {
+      http ('<p>An error occurred. An OAuth access token could not be granted.</p>');
+      http (sprintf ('<p>OAuth error: %s</p>', oauth_problem));
+    }
+    else
+    {
+      if (consumer_key is null or consumer_secret is null)
+        http ('<p>The Twitter cartridge is not configured correctly.');
+      if (consumer_key is null)
+        http ('<p>The API Key for the Twitter application associated with this host could not be determined. 
+                  Please ensure the Twitter cartridge options include an entry like consumer_key=Bb1Fia-1i...</p>'); 
+      if (consumer_secret is null)
+        http ('<p>The Secret Key for the Twitter application associated with this host could not be determined. 
+                  Please ensure the Twitter cartridge options include an entry like consumer_secret=WqeW7p5L...</p>'); 
+    }
+    http ('</div>');
+  }
+  else
+  {
+    declare entity_uri, about_sponge_uri, describe_sponge_uri varchar;
+    declare profile_proxy_url varchar;
+
+    profile_proxy_url := replace (twit_user_public_profile_url, 'http://', 'http/');
+    about_sponge_uri := sprintf ('http://%s/about/html/http/%s/about/id/entity/%s?sponger:get=add&refresh=0', _host, _host, profile_proxy_url);
+    entity_uri := sprintf ('http://%s/about/id/entity/%s', _host, profile_proxy_url);
+    describe_sponge_uri := sprintf ('http://%s/describe/?url=%U&sponger:get=add&sr=0', _host, entity_uri);
+?>
+
+    <p>An OAuth access token has been generated. The Linked Data Generator hosted by application <em><?=twit_app_name ?></em> now has access to your Twitter-hosted Data Space.</p>
+    <!--
+    <p><?vsp http (oauth_token); ?></p>
+    <?vsp if (oauth_token_expiry is not null) { ?>
+      <p>This token expires in <?vsp http (sprintf('%d', oauth_token_expiry)); ?> seconds.</p>
+    <?vsp } else { ?>
+      <p>This is a non-expiring token.</p>
+    <?vsp } ?>
+    -->
+	  <h3>View Your Twitter Linked Data Space</h3>
+      <p>Here are a variety of Linked Data oriented views derived from your Twitter profile:</p> 
+      <ul>
+        <li>
+          <a href="<?=about_sponge_uri?>">
+              <?vsp http (twit_user_name || ' (Twitter ID: ' || twit_user_id || ')'); ?>
+          </a><br/>A simple page for follow-your-nose exploration
+        </li>
+        <li>
+          <a href="<?=describe_sponge_uri?>">
+              <?vsp http (twit_user_name || ' (Twitter ID: ' || twit_user_id || ')'); ?>
+          </a><br/>A powerful faceted navigation and exploration page
+        </li>
+      </ul>
+      <h3>Revoking Your Access Token</h3>
+      <p>
+      You have authorised the Sponger to interact with your Twitter account. You can revoke access to your profile at any time by removing this application 
+      (<em><?=twit_app_name ?></em>) from the list of authorised applications shown in your Twitter profile. To remove an application, 
+      <a href="http://twitter.com/settings/applications">access your Twitter settings</a>, view the <strong>Applications</strong> tab
+      displayed by the <strong>Settings</strong> menu, then select the application you wish to deny access to.
+      </p> 
+<?vsp 
+  } 
+?>
+
+        </div><!-- token confirmation-->
+      </div><!-- lmargin -->
+
+      <div id="rmargin">
+        <h2>Other OpenLink Tools &amp; Services</h2>
+        <div>
+          <ul>
+            <li><a href="http://linkeddata.uriburner.com/">URIBurner.com</a>
+                <br/>A service that delivers RDF-based structured descriptions of Web addressable resources (documents or real world objects)</li>
+            <li><a href="http://ode.openlinksw.com/">OpenLink Data Explorer (ODE)</a>
+                <br/>A browser extension for viewing Linked Data Sources</li>
+            <li><a href="http://oat.openlinksw.com/">OpenLink AJAX Toolkit (OAT)</a>
+                <br/>A JavaScript-based toolkit for browser-independent Rich Internet Application development</li>
+          </ul>
+        </div>
+      </div> <!--rmargin -->
+
+    </div><!-- topic-text -->
+  </div><!-- content -->
+
+      <div class="reset">
+        <div id="footer">
+          Copyright (C) 1998-2013 OpenLink Software. All rights reserved.
+        </div>
+      </div>
+</div><!-- outer -->
+</body>
+</html>

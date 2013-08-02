@@ -1,27 +1,27 @@
 #!/bin/sh
-#
-#  $Id$
+#  
+#  $Id: tvspx.sh,v 1.6.4.3.4.3 2013/01/02 16:15:33 source Exp $
 #
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
-#
-#  Copyright (C) 1998-2009 OpenLink Software
-#
+#  
+#  Copyright (C) 1998-2013 OpenLink Software
+#  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#
+#  
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#
+#  
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#
+#  
 
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 DSN=$PORT
 
@@ -37,7 +37,7 @@ HTTPPORT2=`expr $HTTPPORT + 2`
 
 LOGFILE=`pwd`/thttp.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 DSN=$PORT
 GenURIall () 
@@ -63,7 +63,7 @@ httpGet ()
     fi
   user=${3-dba}
   pass=${4-dba}
-  ../urlsimu $file $pipeline -u $user -p $pass 
+  $VIRTUOSO_TEST/../urlsimu $file $pipeline -u $user -p $pass 
 }
 
 waitAll ()
@@ -225,7 +225,7 @@ esac
 
 MakeIni ()
 {
-   MAKECFG_FILE ../$TESTCFGFILE $PORT $CFGFILE
+   MAKECFG_FILE $VIRTUOSO_TEST/../$TESTCFGFILE $PORT $CFGFILE
    case $SERVER in
    *[Mm]2*)
    cat >> $CFGFILE <<END_HTTP
@@ -240,7 +240,7 @@ http_proxy_connection_cache_timeout: 15
 END_HTTP
    ;;
    *virtuoso*)
-   MAKECFG_FILE ../$TESTCFGFILE $PORT $CFGFILE
+   MAKECFG_FILE $VIRTUOSO_TEST/../$TESTCFGFILE $PORT $CFGFILE
    cat >> $CFGFILE <<END_HTTP1
 [HTTPServer]
 HTTPLogFile = http.log
@@ -308,14 +308,14 @@ sleep 1
 cd ..
 DoCommand $DSN "DB.DBA.VHOST_DEFINE ('*ini*', '*ini*', '/', '/', 0, 0, NULL,  NULL, NULL, NULL, 'dba', NULL, NULL, 0);"
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < nwdemo.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/nwdemo.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tvspx.sh: loading northwind data"
     exit 3
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < vspx/vspx_demo_init.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/vspx/vspx_demo_init.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tvspx.sh: loading vspx_demo_init.sql"

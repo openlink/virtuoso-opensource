@@ -1,14 +1,14 @@
 #!/bin/sh
 #  large_db.sh
 #
-#  $Id$
+#  $Id: large_db.sh,v 1.3.10.3 2013/01/02 16:14:40 source Exp $
 #
 #  Large (>2Gb) database file support tests
 #  
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -27,7 +27,7 @@
 
 LOGFILE=large_db.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 
 skip_5g=0
@@ -46,9 +46,9 @@ then
 MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 START_SERVER $PORT 1000
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < large_db_5g.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/large_db_5g.sql
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < large_db_check.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/large_db_check.sql
 
 rm *.bp
 
@@ -70,7 +70,7 @@ LOG "Staring server with  $OBACKUP_REP_OPTION large_"
 RUN $SERVER $FOREGROUND_OPTION $OBACKUP_REP_OPTION "large_"
 
 START_SERVER $PORT 1000
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < large_db_check.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/large_db_check.sql
 
 SHUTDOWN_SERVER
 
@@ -106,9 +106,9 @@ MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 
 START_SERVER $PORT 1000
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < large_db_3g.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/large_db_3g.sql
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < large_db_3g_check.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/large_db_3g_check.sql
 
 rm *.bp
 
@@ -127,7 +127,7 @@ LOG "Staring server with  $OBACKUP_REP_OPTION large_"
 RUN $SERVER $FOREGROUND_OPTION $OBACKUP_REP_OPTION "large_"
 
 START_SERVER $PORT 1000
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < large_db_3g_check.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/large_db_3g_check.sql
 
 SHUTDOWN_SERVER
 
@@ -164,9 +164,9 @@ MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 
 START_SERVER $PORT 1000
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < large_db_5g.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/large_db_5g.sql
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < large_db_check.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/large_db_check.sql
 
 SHUTDOWN_SERVER
 

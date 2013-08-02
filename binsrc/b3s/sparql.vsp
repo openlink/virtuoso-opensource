@@ -1,11 +1,11 @@
 <?vsp
--- 
+--
 --  $Id$
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2009 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -48,7 +48,7 @@ h1 { width: 100%; background-color: #86b9d9; font-size: 18pt; font-weight: norma
 var last_format = 1;
 function format_select(query_obg)
 {
-  var query = query_obg.value; 
+  var query = query_obg.value;
   var format = query_obg.form.format;
 
   if (query.match(/construct/i) && last_format == 1) {
@@ -79,9 +79,9 @@ function format_select(query_obg)
 		</div>
 		<div id="main">
 			<p>This query page is designed to help you test OpenLink Virtuoso SPARQL protocol endpoint. <br/>
-			Consult the <a href="http://virtuoso.openlinksw.com/wiki/main/Main/VOSSparqlProtocol">Virtuoso Wiki page</a> describing the service 
+			Consult the <a href="http://virtuoso.openlinksw.com/wiki/main/Main/VOSSparqlProtocol">Virtuoso Wiki page</a> describing the service
 			or the <a href="http://docs.openlinksw.com/virtuoso/">Online Virtuoso Documentation</a> section <a href="http://docs.openlinksw.com/virtuoso/rdfandsparql.html">RDF Database and SPARQL</a>.</p>
-			<p>There is also a rich Web based user interface with sample queries. 
+			<p>There is also a rich Web based user interface with sample queries.
 <?vsp if (DB.DBA.VAD_CHECK_VERSION('iSPARQL') is null) { ?>
   			In order to use it you must install the iSPARQL package (isparql_dav.vad).</p>
 <?vsp } else { ?>
@@ -117,7 +117,7 @@ declare host_ur varchar;
 DBA may wish to grant "SPARQL_SPONGE" privilege to "SPARQL" account to remove the restriction.
 In order to do this, please perform the following steps:</i>
 <br />
-1. Go to the Virtuoso Administration Conductor i.e. 
+1. Go to the Virtuoso Administration Conductor i.e.
 <?vsp
 if (not isstring (host_ur))
   {
@@ -144,7 +144,7 @@ else
 <?vsp  } ?>
 			  <label for="query">Query text</label>
 			  <br />
-			  <textarea rows="10" cols="60" name="query" id="query" onchange="format_select(this)" 
+			  <textarea rows="10" cols="60" name="query" id="query" onchange="format_select(this)"
 				onkeyup="format_select(this)"><?V coalesce (get_keyword ('q', params), def_qry, '') ?></textarea>
 			  <br /><br />
 			  <label for="format" class="n">Display Results As:</label>

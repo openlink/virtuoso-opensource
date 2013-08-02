@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_SAMPLE">
+  <refmeta>
+    <refentrytitle>SAMPLE</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>SAMPLE</refname>
+    <refpurpose>returns an arbitrary value from the multiset passed to it.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_sample">
+      <funcprototype id="fproto_sample">
+        <funcdef><function>SAMPLE</function></funcdef>
+	        <paramdef>in <parameter>token</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_sample">
+    <title>Description</title>
+    <para>SAMPLE is aggregate function that returns an arbitrary value from the multiset passed to it.</para>
+    <para>Note: Using the "sql:" prefix is mandatory for this aggregate.</para>
+  </refsect1>
+  <refsect1 id="params_sample">
+    <title>Parameters</title>
+    <refsect2><title>strg</title>
+      <para>An item from multiset.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_sample"><title>Return Types</title>
+    <para>any</para>
+  </refsect1>
+  <refsect1 id="examples_sample">
+    <title>Examples</title>
+    <example id="ex_sample"><title></title>
+<programlisting><![CDATA[
+SQL>SPARQL 
+SELECT  (sql:SAMPLE(?nick)), (sql:SAMPLE(?interest))
+WHERE 
+  { 
+    ?p a foaf:Person .
+    ?p foaf:nick ?nick.
+    ?p foaf:interest ?interest.
+  }
+  
+callret-0   callret-1
+VARCHAR 	  VARCHAR
+________________________________________________
+dr. Jones	  http://purl.org/rss/1.0/
+
+No. of rows in result: 1   
+]]></programlisting>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_sample">
+    <title>See Also</title>
+    <para><link linkend="fn_GROUP_CONCAT"><function>GROUP_CONCAT</function></link></para>
+    <para><link linkend="fn_GROUP_DIGEST"><function>GROUP_DIGEST</function></link></para>    
+    <para><link linkend="samplegroupconcatdigest">Differences between SAMPLE, GROUP_CONCAT and GROUP_DIGEST functions usage.</link></para>        
+  </refsect1>
+</refentry>

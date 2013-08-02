@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -153,6 +153,8 @@ sqlo_find_inx_intersect (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, flo
   float a1, cost, best_arity = 0;
   dbe_table_t * tb = tb_dfe->_.table.ot->ot_table;
   int n_eqs;
+  return;
+#if 0
   if (so->so_sc->sc_cc->cc_query && so->so_sc->sc_cc->cc_query->qr_proc_vectored)
     return;
   if (LOC_LOCAL != tb_dfe->dfe_locus)
@@ -203,6 +205,7 @@ sqlo_find_inx_intersect (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, flo
       tb_dfe->dfe_unit = best;
       tb_dfe->dfe_arity = best_arity;
     }
+#endif
 }
 
 

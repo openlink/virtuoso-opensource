@@ -4,7 +4,7 @@
   This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
   project.
   
-  Copyright (C) 1998-2006 OpenLink Software
+  Copyright (C) 1998-2013 OpenLink Software
   
   This project is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -72,7 +72,7 @@
   <refsect1 id="examples_xenc_pkcs12_export">
     <title>Examples</title>
     <example id="ex_xenc_pkcs12_export"><title>Persisting a key &amp; certificate</title>
-      <para>The example bellow persists a key named 'id_rsa' and certificate created for it into user's key space. Thus after server restart the key will be available again.</para>
+      <para>The example below persists a key named 'id_rsa' and certificate created for it into user's key space. Thus after server restart the key will be available again.</para>
       <screen><![CDATA[
        USER_KEY_STORE (user, 'id_rsa', 'X.509', 2, '', xenc_pkcs12_export ('id_rsa', 'CA Certificate', ''));
 ]]>

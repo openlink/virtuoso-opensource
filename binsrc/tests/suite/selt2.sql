@@ -1,7 +1,7 @@
 --
 --  selt2.sql
 --
---  $Id$
+--  $Id: selt2.sql,v 1.3.10.1 2013/01/02 16:14:56 source Exp $
 --
 --  checkpoint errors #2.
 
@@ -9,7 +9,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -26,6 +26,17 @@
 --  
 --  
 
+--  (C)Copyright 2005 OpenLink Software.
+--  All Rights Reserved.
+--
+--  The copyright above and this notice must be preserved in all
+--  copies of this source code.  The copyright above does not
+--  evidence any actual or intended publication of this source code.
+--
+--  This is unpublished proprietary trade secret of OpenLink Software.
+--  This source code may not be copied, disclosed, distributed, demonstrated
+--  or licensed except as authorized by OpenLink Software.
+--
 set autocommit manual;
 update t1 set fi2 = 222 where row_no = 1000;
 select fi2, count (*), avg (fi2), sum (fi2)  from t1 group  by fi2;

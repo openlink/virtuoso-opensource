@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -70,6 +70,9 @@
 #else
 #include <dirent.h>
 #endif
+#ifdef _SSL
+#include "util/sslengine.h"
+#endif
 
 #define XML_VERSION		"1.0"
 
@@ -82,6 +85,7 @@
 char *http_methods[] = { "NONE", "GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS", /* HTTP/1.1 */
   			 "PROPFIND", "PROPPATCH", "COPY", "MOVE", "LOCK", "UNLOCK", "MKCOL",  /* WebDAV */
 			 "MGET", "MPUT", "MDELETE", 	/* URIQA */
+			 "REPORT", /* CalDAV */
 			 "TRACE", NULL };
 resource_t *ws_dbcs;
 basket_t ws_queue;
@@ -105,7 +109,7 @@ static id_hash_t * http_url_cache = NULL; /* WS cached URLs */
 long http_ses_trap = 0;
 int www_maintenance = 0;
 
-#define MAINTENANCE (NULL != www_maintenance_page && (wi_inst.wi_is_checkpoint_pending || www_maintenance))
+#define MAINTENANCE (NULL != www_maintenance_page && (wi_inst.wi_is_checkpoint_pending || www_maintenance || cpt_is_global_lock (NULL)))
 
 caddr_t
 temp_aspx_dir_get (void)
@@ -397,7 +401,7 @@ static int http_acl_check_rate (ws_acl_t * elm, caddr_t name, int check_rate, in
 }
 
 static int
-http_acl_match (caddr_t *alist, caddr_t name, caddr_t dst, int obj_id, int rw_flag, int check_rate, acl_hit_t ** hit, ws_connection_t * ws)
+http_acl_match (caddr_t *alist, caddr_t name, ccaddr_t dst, int obj_id, int rw_flag, int check_rate, acl_hit_t ** hit, ws_connection_t * ws)
 {
   int inx;
   DO_BOX (ws_acl_t *, elm, inx, alist)
@@ -408,7 +412,7 @@ http_acl_match (caddr_t *alist, caddr_t name, caddr_t dst, int obj_id, int rw_fl
 	    ws->ws_body_limit = elm->ha_limit;
 	  if (dst == NULL && obj_id < 0 && rw_flag < 0)
 	    return http_acl_check_rate (elm, name, check_rate, rw_flag, hit);
-	  else if (dst != NULL && DVC_MATCH == cmp_like (dst, elm->ha_dest, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR))
+	  else if (dst != NULL && DVC_MATCH == cmp_like (dst, elm->ha_dest ? elm->ha_dest : "*", NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR))
 	    return http_acl_check_rate (elm, name, check_rate, rw_flag, hit);
 	  else if (dst == NULL && elm->ha_obj == obj_id && rw_flag == elm->ha_rw)
 	    return http_acl_check_rate (elm, name, check_rate, rw_flag, hit);
@@ -430,7 +434,10 @@ ws_check_acl (ws_connection_t * ws, acl_hit_t ** hit)
 
   if (list)
     {
-      if (http_acl_match (list, ws->ws_client_ip, NULL, -1, -1, ACL_CHECK_HITS, hit, ws) > 0) /* 1:deny */
+      char * vd = ws->ws_req_line ? strchr (ws->ws_req_line, '\x20') : NULL;
+      while (vd && isspace (*vd))
+	vd++;
+      if (http_acl_match (list, ws->ws_client_ip, vd, -1, -1, ACL_CHECK_HITS, hit, ws) > 0) /* 1:deny */
 	rc = 0;
     }
   return rc;
@@ -642,7 +649,7 @@ ws_read_post_1 (ws_connection_t *ws, int max, dk_session_t * str)
     }
   FAILED
     {
-      if(http_ses_trap)
+      if (http_ses_trap)
 	{
 	  if (ws->ws_ses_trap)
 	    strses_write_out (cont, ws->ws_req_log);
@@ -1182,6 +1189,24 @@ ws_write_failed (ws_connection_t * ws)
   mutex_leave (ws_queue_mtx);
 }
 
+/* check request against server capabilities, e.g. expect header */
+static int
+ws_check_caps (ws_connection_t * ws)
+{
+  char *expect, *end;
+  expect = ws_header_field (ws->ws_lines, "Expect:", NULL);
+  if (!expect || !strlen (expect))
+    return 1;
+  end = expect + strlen (expect) - 1;
+  while (isspace (*expect)) expect++;
+  while (isspace (*end)) end--; end ++;
+  /* 100 continue is supported */
+  if ((end - expect) == 12 && 0 == strnicmp (expect, "100-continue", 12))
+    return 1;
+  ws_strses_reply (ws, "HTTP/1.1 417 Expectation Failed");
+  return 0;
+}
+
 static void
 ws_req_expect100 (ws_connection_t * ws)
 {
@@ -1250,6 +1275,7 @@ ws_url_rewrite (ws_connection_t *ws)
   ws->ws_cli->cli_ws = ws;
 
   IN_TXN;
+  lt_wait_checkpoint ();
   lt_threads_set_inner (cli->cli_trx, 1);
   LEAVE_TXN;
 
@@ -1511,6 +1537,7 @@ ws_path_and_params (ws_connection_t * ws)
 	      memcpy (new_params, ws->ws_params, box_length (ws->ws_params));
 	      memcpy (new_params + box_length (ws->ws_params), params, box_length (params));
 	      dk_free_box ((caddr_t)(ws->ws_params));
+	      dk_free_box ((caddr_t) params);
 	      ws->ws_params = (caddr_t *)(new_params);
 	    }
 	}
@@ -1533,7 +1560,7 @@ ws_path_and_params (ws_connection_t * ws)
   else if (ws->ws_method == WM_UNKNOWN)
     ws->ws_method = WM_ERROR;
 #endif
-  if (strcmp (ws->ws_method_name, "PUT"))
+  if (strcmp (ws->ws_method_name, "PUT") || !IS_DAV_DOMAIN(ws, path1))
     ws_http_body_read (ws, &ws->ws_req_body);
   return rc;
 }
@@ -1653,7 +1680,7 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
   if (ws->ws_cli)
     {
       memset (&ws->ws_cli->cli_activity, 0, sizeof (db_activity_t));
-      ws->ws_cli->cli_anytime_timeout = 0;
+      ws->ws_cli->cli_anytime_timeout_orig = ws->ws_cli->cli_anytime_timeout = 0;
     }
   if (!http_keep_hosting)
     hosting_clear_cli_attachments (ws->ws_cli, 0);
@@ -1670,6 +1697,9 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
   dk_free_tree (ws->ws_store_in_cache);
   ws->ws_store_in_cache = NULL;
   ws->ws_proxy_request = 0;
+  IN_TXN;
+  ws->ws_limited = 0;
+  LEAVE_TXN;
   http_set_default_options (ws);
 #ifdef _SSL
   ws->ws_ssl_ctx = NULL;
@@ -1885,7 +1915,7 @@ ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
 #ifdef VIRTUAL_DIR
   caddr_t origin = ws_mime_header_field (ws->ws_lines, "Origin", NULL, 1);
   int rc = 0;
-  if (origin && ws->ws_status_code < 400 && ws->ws_map && ws->ws_map->hm_cors)
+  if (origin && ws->ws_status_code < 500 && ws->ws_map && ws->ws_map->hm_cors)
     {
       caddr_t * orgs = ws_split_cors (origin), * place = NULL;
       int inx;
@@ -1951,6 +1981,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	  exec_params[8] = box_string ("MEDIATYPE"); exec_params[9] = (caddr_t) &media_type;
 	  exec_params[10] = box_string ("ENC"); exec_params[11] = (caddr_t) &xsl_encoding;
 	  err = qr_exec (ws->ws_cli, http_xslt_qr, CALLER_LOCAL, NULL, NULL, NULL, exec_params, NULL, 1);
+	  cli_set_slice (ws->ws_cli, NULL, QI_NO_SLICE, NULL);
 	  dk_free_box ((box_t) exec_params);
 	}
       if (err)
@@ -2046,19 +2077,21 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 
   if (0 != strncmp (code, "HTTP/1.1 2", 10) && 0 != strncmp (code, "HTTP/1.1 3", 10) && ws->ws_proto_no < 11)
     ws->ws_try_pipeline = 0;
-  snprintf (tmp, sizeof (tmp), "%.1000s\r\nServer: %.1000s\r\nConnection: %s\r\n",
-	   code,
-	   http_server_id_string,
-	   ws->ws_try_pipeline ? "Keep-Alive" : "close");
 
   memset (&gzctx, 0, sizeof (strses_chunked_out_t));
 
   CATCH_WRITE_FAIL (ws->ws_session)
     {
+      snprintf (tmp, sizeof (tmp), "%.1000s\r\nServer: %.1000s\r\n", code, http_server_id_string);
       SES_PRINT (ws->ws_session, tmp); /* server signature */
+      if (ws->ws_status_code != 101)
+	{
+	  snprintf (tmp, sizeof (tmp), "Connection: %s\r\n", ws->ws_try_pipeline ? "Keep-Alive" : "close");
+	  SES_PRINT (ws->ws_session, tmp);
+	}
 /*      fprintf (stdout, "\nREPLY-----\n%s", tmp); */
       /* mime type */
-      if (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Type:")))
+      if (ws->ws_status_code != 101 && (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Type:"))))
 	{
 #ifdef BIF_XML
 	  if (media_type)
@@ -2125,6 +2158,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	    SES_PRINT (ws->ws_session, tmp);
 	}
 
+      if (ws->ws_status_code != 101)
       SES_PRINT (ws->ws_session, "Accept-Ranges: bytes\r\n");
 
       if (ws->ws_header) /* user-defined headers */
@@ -2140,7 +2174,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	  snprintf (tmp, sizeof (tmp), "Transfer-Encoding: chunked\r\nContent-Encoding: gzip\r\n");
 	  SES_PRINT (ws->ws_session, tmp);
 	}
-      else if (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Length:"))) /* plain body */
+      else if (ws->ws_status_code != 101 && (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Length:")))) /* plain body */
 	{
 	  snprintf (tmp, sizeof (tmp), "Content-Length: %ld\r\n", len);
 	  SES_PRINT (ws->ws_session, tmp);
@@ -2910,6 +2944,7 @@ ws_post_process (ws_connection_t * ws)
   p_proc = proc->qr_proc_name;
 
   IN_TXN;
+  lt_wait_checkpoint ();
   lt_threads_set_inner (cli->cli_trx, 1);
   LEAVE_TXN;
 
@@ -3030,6 +3065,7 @@ ws_auth_check (ws_connection_t * ws)
   client_connection_t * cli = ws->ws_cli;
   int rc = LTE_OK, retc = 0;
   query_t * proc;
+  user_t * saved_user = NULL;
 
   if (MAINTENANCE)
     return 1;
@@ -3075,9 +3111,12 @@ ws_auth_check (ws_connection_t * ws)
     }
 
   IN_TXN;
+  lt_wait_checkpoint ();
   lt_threads_set_inner (cli->cli_trx, 1);
   LEAVE_TXN;
 
+  saved_user = cli->cli_user;
+  cli->cli_user = sec_name_to_user ("dba");
   err = qr_quick_exec (http_auth_qr, cli, NULL, &lc, 2,
       ":0", auth_proc, QRP_STR,
       ":1", auth_realm, QRP_STR);
@@ -3100,6 +3139,7 @@ ws_auth_check (ws_connection_t * ws)
     }
 
 error_end:
+  cli->cli_user = saved_user;
   if (err && err != (caddr_t)SQL_NO_DATA_FOUND)
     {
       /*log_info ("SQL ERROR in HTTP authentication : State=[%s] Message=[%s]", ERR_STATE(err), ERR_MESSAGE(err));*/
@@ -3198,7 +3238,7 @@ ws_check_rdf_accept (ws_connection_t *ws)
   accept = ws_header_field (ws->ws_lines, "Accept:", NULL);
   if (!ws || !ws->ws_map || !accept)
     return 0;
-  if (NULL == strstr (accept, "application/rdf+xml") && NULL == strstr (accept, "text/rdf+n3"))
+  if (NULL == strstr (accept, "application/rdf+xml") && NULL == strstr (accept, "text/rdf+n3") && NULL == strstr (accept, "text/turtle"))
     return 0;
 
   if (!(proc = (query_t *)sch_name_to_object (wi_inst.wi_schema, sc_to_proc, "DB.DBA.HTTP_RDF_ACCEPT", NULL, "dba", 0)))
@@ -3221,6 +3261,7 @@ ws_check_rdf_accept (ws_connection_t *ws)
     qr = sql_compile_static ("DB.DBA.HTTP_RDF_ACCEPT (?, ?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
 
   IN_TXN;
+  lt_wait_checkpoint ();
   lt_threads_set_inner (cli->cli_trx, 1);
   LEAVE_TXN;
 
@@ -3257,6 +3298,8 @@ error_end:
   return retc;
 #endif
 }
+
+#define IS_DAV_METHOD(ws) (IS_DAV_DOMAIN(ws, "")  && 0 != strstr ("PROPFIND PROPPATCH LOCK UNLOCK COPY MOVE MKCOL", ws->ws_method_name))
 
 int soap_get_opt_flag (caddr_t * opts, char *opt_name);
 
@@ -3298,7 +3341,7 @@ request_do_again:
   is_vsmx = 0;
   is_http_binding = 0;
   is_physical_soap = 0;
-  cli->cli_start_time = time_now_msec;
+  cli_set_start_times (cli);
   cli->cli_terminate_requested = 0;
 
   p_name[0] = 0;
@@ -3314,7 +3357,7 @@ request_do_again:
       size_t alen;
       caddr_t apage;
 #ifdef _IMSG
-      if (ws->ws_port > 0) /* if POP3, NNTP or FTP just return */
+      if (ws->ws_port > 0) /* if POP3, IMAP, NNTP or FTP just return */
 	goto do_file;
 #endif
       print_slash = (www_maintenance_page[0] != '/');
@@ -3335,6 +3378,8 @@ request_do_again:
     }
   strses_flush (ws->ws_strses);
   IN_TXN;
+  if (!cli->cli_trx->lt_threads)
+    lt_wait_checkpoint ();
   lt_threads_set_inner (cli->cli_trx, 1);
   LEAVE_TXN;
 
@@ -3348,75 +3393,76 @@ request_do_again:
   if (http_ses_trap)
 #endif
     {
-    /* --ches-- */
-    char *uri_begin;
-    char *last_slash;
-    caddr_t save_history_name;
-    caddr_t vdir = NULL;
-    caddr_t err = NULL;
-    /* Detect virtual dir directory */
-    /* Assume first word is method name */
-    if (!ws->ws_req_line)
-      {
-        err = srv_make_new_error ("42000", "HTL01", "The request line is empty.");
-        goto end_hack_block;
-      }
-    uri_begin = strchr(ws->ws_req_line, ' ');
-    if (NULL == uri_begin)
-      {
-        err = srv_make_new_error ("42000", "HTL01", "The request line does not contain method name: %.1000s", ws->ws_req_line);
-        goto end_hack_block;
-      }
-    while (('\0' != uri_begin[0]) && strchr (" \t", uri_begin[0]))
-      uri_begin++;
-    vdir = box_dv_short_string (uri_begin);
-    last_slash = strrchr(vdir, '/');
-    if (NULL == last_slash)
-      {
-        err = srv_make_new_error ("42000", "HTL01", "No virtual directory name found in the request line %.1000s", ws->ws_req_line);
-        dk_free_box (vdir);
-        goto end_hack_block;
-      }
-    /* Get special registry item value */
-    IN_TXN;
-    save_history_name = registry_get("__save_http_history");
-    LEAVE_TXN;
-    if ((DV_STRING == DV_TYPE_OF(save_history_name)) &&
-        ((0 == strncmp(vdir, save_history_name, (box_length (save_history_name) - 1)) &&
-          '/' == vdir[box_length(save_history_name) - 1]) || !strcmp (save_history_name, "/")))
-      {
-	caddr_t sql_text = dk_alloc_box (50 + box_length (vdir), DV_STRING);
-        query_t *stmt;
-        snprintf(sql_text, box_length (sql_text), "DB.DBA.sys_save_http_history('%s', '%s')", save_history_name, last_slash);
-        dk_free_box (save_history_name);
-        dk_free_box (vdir);
-        stmt = sql_compile(sql_text, ws->ws_cli, &err, SQLC_DEFAULT);
-	dk_free_box (sql_text);
-        if(err)
-          goto end_hack_block;
-        err = qr_quick_exec(stmt, ws->ws_cli, NULL, NULL, 0);
-	IN_TXN;
-	if (err && (err != (caddr_t) SQL_NO_DATA_FOUND))
-	  lt_rollback (cli->cli_trx, TRX_CONT);
-	else
-	  rc = lt_commit (cli->cli_trx, TRX_CONT);
-	lt_threads_set_inner (cli->cli_trx, 1);
-	LEAVE_TXN;
-	if (rc != LTE_OK)
-	  {
-	    MAKE_TRX_ERROR (rc, err, LT_ERROR_DETAIL (cli->cli_trx));
-	  }
-        qr_free(stmt);
-      }
-    else
+      /* --ches-- */
+      char *uri_begin;
+      char *last_slash;
+      caddr_t save_history_name;
+      caddr_t vdir = NULL;
+      caddr_t err = NULL;
+      /* Detect virtual dir directory */
+      /* Assume first word is method name */
+      if (!ws->ws_req_line)
+	{
+	  err = srv_make_new_error ("42000", "HTL01", "The request line is empty.");
+	  goto rec_err_end;
+	}
+      uri_begin = strchr(ws->ws_req_line, ' ');
+      if (NULL == uri_begin)
+	{
+	  err = srv_make_new_error ("42000", "HTL01", "The request line does not contain method name: %.1000s", ws->ws_req_line);
+	  goto rec_err_end;
+	}
+      while (('\0' != uri_begin[0]) && strchr (" \t", uri_begin[0]))
+	uri_begin++;
+      vdir = box_dv_short_string (uri_begin);
+      last_slash = strrchr(vdir, '/');
+      if (NULL == last_slash)
+	{
+	  err = srv_make_new_error ("42000", "HTL01", "No virtual directory name found in the request line %.1000s", ws->ws_req_line);
+	  dk_free_box (vdir);
+	  goto rec_err_end;
+	}
+      /* Get special registry item value */
+      IN_TXN;
+      save_history_name = registry_get("__save_http_history");
+      LEAVE_TXN;
+      if ((DV_STRING == DV_TYPE_OF (save_history_name)) &&
+	  ((0 == strncmp(vdir, save_history_name, (box_length (save_history_name) - 1)) &&
+	    '/' == vdir[box_length(save_history_name) - 1]) || !strcmp (save_history_name, "/")))
+	{
+	  static query_t *stmt = NULL;
+	  if (!stmt)
+	    {
+	      stmt = sql_compile ("DB.DBA.sys_save_http_history (?, ?)", ws->ws_cli, &err, SQLC_DEFAULT);
+	      if (err)
+		goto rec_err_end;
+	    }
+
+	  err = qr_quick_exec (stmt, ws->ws_cli, NULL, NULL, 2,
+	      ":0", save_history_name, QRP_STR,
+	      ":1", last_slash, QRP_STR);
+
+	  IN_TXN;
+	  if (err && (err != (caddr_t) SQL_NO_DATA_FOUND))
+	    lt_rollback (cli->cli_trx, TRX_CONT);
+	  else
+	    rc = lt_commit (cli->cli_trx, TRX_CONT);
+	  lt_threads_set_inner (cli->cli_trx, 1);
+	  LEAVE_TXN;
+	  if (rc != LTE_OK)
+	    {
+	      MAKE_TRX_ERROR (rc, err, LT_ERROR_DETAIL (cli->cli_trx));
+	    }
+	}
+      dk_free_box (save_history_name);
       dk_free_box (vdir);
-end_hack_block:
-    if (err && err != (caddr_t) SQL_NO_DATA_FOUND)
-      {
-        log_warning("Error [%s] : %s", ERR_STATE(err), ERR_MESSAGE(err));
-        dk_free_tree(err);
-      }
-  }
+rec_err_end:
+      if (err && err != (caddr_t) SQL_NO_DATA_FOUND)
+	{
+	  log_warning("Error [%s] : %s", ERR_STATE(err), ERR_MESSAGE(err));
+	  dk_free_tree(err);
+	}
+    }
 
 #ifdef VIRTUAL_DIR
   path1 = (ws->ws_p_path && BOX_ELEMENTS (ws->ws_p_path) )? ws->ws_p_path[0] : NULL;
@@ -3739,11 +3785,10 @@ vsmx_start:
 
       err = qr_quick_exec (http_call, ws->ws_cli, NULL, NULL, 4,
 			   ":0", p_name, QRP_STR,
-			   ":1", ws->ws_path, QRP_RAW,
+			   ":1", box_copy_tree ((box_t) ws->ws_path), QRP_RAW,
 			   ":2", ws->ws_params, QRP_RAW,
 			   ":3", box_copy_tree ((box_t) ws->ws_lines), QRP_RAW);
 
-      ws->ws_path = NULL;
       ws->ws_params = NULL;
     }
 error_in_procedure:
@@ -3809,7 +3854,7 @@ do_file:
 	}
       THR_DBG_PAGE_CHECK;
 
-      if (!ws_check_rdf_accept (ws))
+      if (!ws_check_rdf_accept (ws) && !IS_DAV_METHOD (ws)) /* check if WebDAV */
 	{
 	  snprintf (page_opt_name, sizeof (page_opt_name), "%3d_page", ws->ws_status_code);
 	  if (NULL != (text = ws_get_opt (ws->ws_map->hm_opts, page_opt_name, NULL)))
@@ -3831,7 +3876,7 @@ do_file:
 	      dk_free_tree ((box_t) ws->ws_p_path); ws->ws_p_path = NULL; path1 = "";
 	      ws_set_phy_path (ws, 0, ws->ws_path_string);
 
-	      ws_connection_vars_clear (cli);
+	      /*ws_connection_vars_clear (cli);*/
 	      if (err && err != (caddr_t)SQL_NO_DATA_FOUND)
 		{
 		  ws->ws_params = (caddr_t *) list (4,
@@ -3906,10 +3951,13 @@ do_file:
   /* instead of connection_set (cli, con_dav_v_name, NULL);
    * we'll clear all connection settings if connection is dirty */
   ws_connection_vars_clear (cli);
+  cli_free_dae (cli);
 
   dk_free_tree ((caddr_t) err);
   dk_free_tree ((box_t) ws->ws_lines);
   ws->ws_lines = NULL;
+  dk_free_tree ((box_t) ws->ws_path);
+  ws->ws_path = NULL;
   dk_free_box (soap_method);
 }
 
@@ -3922,6 +3970,7 @@ http_client_ip (session_t * ses)
   return (box_dv_short_string (buf));
 }
 
+extern db_activity_t http_activity;
 #define IS_GATEWAY_PROXY(ws) (ws->ws_forward || \
     (http_proxy_address && (ws) && (ws)->ws_client_ip && !strcmp ((ws)->ws_client_ip, http_proxy_address)))
 
@@ -4022,15 +4071,25 @@ ws_read_req (ws_connection_t * ws)
 	      ws_strses_reply (ws, hit ? "HTTP/1.1 509 Bandwidth Limit Exceeded" : "HTTP/1.1 403 Forbidden");
 	      goto end_req;
 	    }
+	  if (0 == ws_check_caps (ws))
+	    {
+	      ws->ws_try_pipeline = 0;
+	      goto end_req;
+	    }
 	  if (ws_path_and_params (ws))
 	    goto end_req;
 #ifdef _IMSG
 	}
 #endif
       if (ws_auth_check (ws))
+	{
+	  memset (&ws->ws_cli->cli_activity, 0, sizeof (db_activity_t));
 	ws_request (ws);
+	  cli_set_slice (ws->ws_cli, NULL, QI_NO_SLICE, NULL);
+	  da_add (&http_activity, &ws->ws_cli->cli_activity);
+	}
 #ifdef _IMSG
-      /* clear POP3, NNTP & FTP port after work is done */
+      /* clear POP3, IMAP, NNTP & FTP port after work is done */
       ws->ws_port = 0;
 #endif
     }
@@ -4103,7 +4162,7 @@ ws_serve_connection (ws_connection_t * ws)
       SSL * new_ssl = NULL;
 
       if (NULL != tcpses_get_ssl (ses->dks_session))
-	SSL_free ((SSL *) tcpses_get_ssl (ses->dks_session));
+	sslses_to_tcpses (ses->dks_session);
       to = ses->dks_read_block_timeout;
       session_set_control (ses->dks_session, SC_TIMEOUT, (char *)(&to), sizeof (timeout_t));
       dst = tcpses_get_fd (ses->dks_session);
@@ -4290,6 +4349,7 @@ ws_init_func (ws_connection_t * ws)
   semaphore_enter (ws->ws_thread->thr_sem);
   SET_THR_ATTR (ws->ws_thread, TA_IMMEDIATE_CLIENT, ws->ws_cli);
   sqlc_set_client (ws->ws_cli);
+  ws->ws_cli->cli_trx->lt_thr = ws->ws_thread;
   for (;;)
     {
       dk_session_t * ses;
@@ -4316,7 +4376,7 @@ ws_init_func (ws_connection_t * ws)
 	  session_accept (ses->dks_session, ws->ws_session->dks_session);
 	  ws->ws_session->dks_ws_status = DKS_WS_ACCEPTED;
 #if defined (_SSL) || defined (_IMSG)
-	  /* initialize ws stricture for ssl, pop3, nntp & ftp service */
+	  /* initialize ws stricture for ssl, pop3, imap, nntp & ftp service */
 	  ws_inet_session_init (ses, ws);
 #endif
 	  http_trace (("connect from queue accept ws %p ses %p\n", ws, ws->ws_session));
@@ -4371,7 +4431,7 @@ ws_ready (dk_session_t * accept)
       rc = session_accept (accept->dks_session, ws->ws_session->dks_session);
       ws->ws_session->dks_ws_status = DKS_WS_ACCEPTED;
 #if defined (_SSL) || defined (_IMSG)
-      /* initialize ws stricture for ssl, pop3, nntp & ftp service */
+      /* initialize ws stricture for ssl, pop3, imap, nntp & ftp service */
       ws_inet_session_init (accept, ws);
 #endif
       http_trace (("accept ws %p ses %p\n", ws, ws->ws_session));
@@ -4613,7 +4673,7 @@ http_session_arg (caddr_t * qst, state_slot_t ** args, int nth,
       query_instance_t * qi = (query_instance_t *) qst;
       if (!qi->qi_client->cli_http_ses)
 	sqlr_new_error ("37000", "HT006", "http output function outside of http context and no stream specified: %s.", func);
-      res = qi->qi_client->cli_http_ses;
+      res = qi->qi_client->cli_ws->ws_session;
     }
   return res;
 }
@@ -4705,6 +4765,8 @@ bif_http_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   /* potentially long time when session is flushed or chunked, then should use io sect
      for now as almost we using to go to string session we keep it w/o io sect */
   /* IO_SECT (qst); */
+  if (DV_DB_NULL == dtp)
+    return NULL;
   if (dtp == DV_SHORT_STRING || dtp == DV_LONG_STRING || dtp == DV_C_STRING || dtp == DV_BIN)
     session_buffered_write (out, string, box_length (string) - (IS_STRING_DTP (DV_TYPE_OF (string)) ? 1 : 0));
   else if (dtp == DV_BLOB_HANDLE)
@@ -4776,6 +4838,8 @@ dks_sqlval_esc_write (caddr_t *qst, dk_session_t *out, caddr_t val, wcharset_t *
   dtp_t dtp = DV_TYPE_OF (val);
   if (DV_STRINGP (val))
     {
+      if (box_flags (val) & BF_UTF8) /* if string is in UTF-8 do not even try to use some default */
+	src_charset = CHARSET_UTF8;
       dks_esc_write (out, val, box_length (val) - 1, tgt_charset, src_charset, dks_esc_mode);
     }
   else if (IS_WIDE_STRING_DTP (dtp))
@@ -5192,6 +5256,34 @@ again:
   dk_set_free (killed);
   LEAVE_TXN;
   return NULL;
+}
+
+int32 http_limited;
+
+caddr_t
+bif_http_limited (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  ws_connection_t * ws;
+  volatile long limited = 0;
+
+  if (!qi->qi_client->cli_ws)
+    sqlr_new_error ("42000", "HT010", "This function is only allowed processing a HTTP request");
+  ws = qi->qi_client->cli_ws;
+  IN_TXN;
+  DO_SET (lock_trx_t *, lt, &all_trxs)
+    {
+      if ((lt->lt_threads > 0 || lt_has_locks (lt)) && lt->lt_client && lt->lt_client->cli_ws && lt->lt_client->cli_ws->ws_limited)
+	limited ++;
+    }
+  END_DO_SET ();
+  if (limited < http_limited)
+    ws->ws_limited = 1; /* must be set inside txn mtx */
+  LEAVE_TXN;
+
+  if (limited >= http_limited)
+    sqlr_new_error ("42000", "HTLIM", "The use of restricted HTTP threads is over the limit");
+  return box_num (limited);
 }
 
 caddr_t
@@ -5802,7 +5894,7 @@ http_proxy (ws_connection_t * ws, char * host, caddr_t * req, caddr_t * body, dk
 	  session_buffered_write (ws->ws_session, "0\r\n\r\n", 5); /* Write last zero chunk */
 	  session_flush_1 (ws->ws_session);
 	}
-      else if (len != -1 || close) /* If have content length or connection should be closed by peer */
+      else if (len > 0 || (close && len == -1)) /* If have content length or connection should be closed by peer */
 	{
 	  char tmp [4096], c;
 	  int to_read = len, to_read_len = sizeof (tmp), readed = 0;
@@ -5862,11 +5954,11 @@ http_proxy (ws_connection_t * ws, char * host, caddr_t * req, caddr_t * body, dk
 #define ENC_B64_NAME "encode_base64"
 #define DEC_B64_NAME "decode_base64"
 
-static char base64_vec[] =
-	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+char base64_vec[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+char base64url_vec[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_\0";
 
 size_t
-encode_base64(char * input, char * output, size_t len)
+encode_base64_impl (char * input, char * output, size_t len, char * table)
 {
   unsigned char	c;
   int  n = 0,
@@ -5894,7 +5986,7 @@ encode_base64(char * input, char * output, size_t len)
 	}
 
       for (i = 3; i >= 0; i--)
-	output[x++] = base64_vec[enc[i]];
+	output[x++] = table[enc[i]];
       n = 1;
       count += 4;
       val = c;
@@ -5934,7 +6026,7 @@ encode_base64(char * input, char * output, size_t len)
   if (n)
     {
       for (i = 3; i >= 0; i--)
-	output[x++] = base64_vec[enc[i]];
+	output[x++] = table[enc[i]];
     }
 
   return x;
@@ -5965,6 +6057,30 @@ bif_encode_base64(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return(res);
 }
 
+caddr_t
+bif_encode_base64url(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t dest;
+  caddr_t res;
+  caddr_t src = bif_string_arg (qst, args, 0, ENC_B64_NAME);
+  dtp_t dtp = DV_TYPE_OF (src);
+  size_t len = box_length(src);
+
+  if (IS_STRING_DTP(dtp) || dtp == DV_C_STRING)
+    len--;
+
+  if ((len * 2 + 1) > MAX_BOX_LENGTH)
+    sqlr_new_error ("22023", "HT081", "The input string is too large");
+
+  dest = dk_alloc_box(len * 2 + 1, DV_SHORT_STRING);
+  len = encode_base64_impl ((char *)src, (char *)dest, len, B64_URL);
+  *(dest+len) = 0;
+
+  res = box_dv_short_string(dest);
+  dk_free_box(dest);
+  return(res);
+}
+
 static void
 base64_store24(char ** d, char * c)
 {
@@ -5974,7 +6090,7 @@ base64_store24(char ** d, char * c)
 }
 
 size_t
-decode_base64(char * src, char * end)
+decode_base64_impl (char * src, char * end, char * table)
 {
     char * start = src;
     char c0, c[4], *p;
@@ -5985,8 +6101,8 @@ decode_base64(char * src, char * end)
     while ((c0 = *src++) && src < end) {
 	if (c0=='=')
 	  break; /* a = symbol is end padding */
-	if ((p=strchr(base64_vec, c0))) {
-	  c[i++]=(char) (p-base64_vec);
+	if ((p=strchr(table, c0))) {
+	  c[i++]=(char) (p-table);
 	  if (i==4) {
 	    base64_store24(&d, c);
 	    i=0;
@@ -6019,6 +6135,26 @@ bif_decode_base64(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   memcpy (buf, src, blen);
 
   len = decode_base64(buf, buf + blen);
+  res = dk_alloc_box (len + 1, DV_SHORT_STRING);
+  memcpy (res, buf, len);
+  res[len] = 0;
+  dk_free_box(buf);
+
+  return (res);
+}
+
+caddr_t
+bif_decode_base64url (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t src = bif_string_arg (qst, args, 0, DEC_B64_NAME);
+  caddr_t res, buf;
+  size_t len, blen;
+
+  blen = box_length(src);
+  buf = dk_alloc_box(blen, DV_SHORT_STRING);
+  memcpy (buf, src, blen);
+
+  len = decode_base64_impl (buf, buf + blen, B64_URL);
   res = dk_alloc_box (len + 1, DV_SHORT_STRING);
   memcpy (res, buf, len);
   res[len] = 0;
@@ -7137,6 +7273,8 @@ bif_http_request_header_full (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
 	  dk_session_t *ses = NULL;
 	  DO_BOX (caddr_t, line, inx, lines)
 	    {
+	      if (!DV_STRINGP (line))
+		continue;
 	      p = strchr (line, ':');
 	      len = p - line;
 	      if (p && !strncasecmp (line, name, len) && !name[len])
@@ -7305,7 +7443,7 @@ bif_http_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       if (ws->ws_xslt_url)
 	sqlr_new_error ("42000", "HT071", "Direct output and http_xslt() not compatible");
-      if (ws->ws_header &&
+      if (ws->ws_header && ws->ws_status_code != 101 &&
 	  NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Length:"))
 	sqlr_new_error ("42000", "HT072", "Direct output requires Content-Length specified by http_header()");
     }
@@ -8034,6 +8172,8 @@ bif_http_map_table (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		map->hm_xml_template = 1;
 	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"executable"))
 		map->hm_executable = 1;
+	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"exec_as_get"))
+		map->hm_exec_as_get = 1;
 	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"url_rewrite"))
 		map->hm_url_rewrite_rule = box_copy_tree (opts[i+1]);
 	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"url_rewrite_keep_lpath"))
@@ -8062,6 +8202,8 @@ bif_http_map_table (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		    }
 		  map->hm_cors = ht;
 		}
+	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"expiration_function"))
+		map->hm_expiration_fn = box_copy_tree (opts[i+1]);
 	    }
 	  map->hm_opts = (caddr_t *) box_copy_tree ((box_t) opts);
 	}
@@ -8124,17 +8266,72 @@ https_cert_verify_callback (int ok, void *_ctx)
   X509_STORE_CTX *ctx;
   SSL *ssl;
   X509 *xs;
-  int errnum, verify;
+  int errnum, verify, depth;
   int errdepth;
   char *cp, cp_buf[1024];
   char *cp2, cp2_buf[1024];
   SSL_CTX *ssl_ctx;
-  https_ctx_info_t *app_ctx;
+  uptrlong ap;
+
+  ctx = (X509_STORE_CTX *) _ctx;
+  ssl = (SSL *) X509_STORE_CTX_get_app_data (ctx);
+  ssl_ctx = SSL_get_SSL_CTX (ssl);
+  ap = (uptrlong) SSL_CTX_get_app_data (ssl_ctx);
+
+  xs = X509_STORE_CTX_get_current_cert (ctx);
+  errnum = X509_STORE_CTX_get_error (ctx);
+  errdepth = X509_STORE_CTX_get_error_depth (ctx);
+
+  cp = X509_NAME_oneline (X509_get_subject_name (xs), cp_buf, sizeof (cp_buf));
+  cp2 = X509_NAME_oneline (X509_get_issuer_name (xs), cp2_buf, sizeof (cp2_buf));
+
+  verify = (int) ((0xff000000 & ap) >> 24);
+  depth = (int) (0xffffff & ap);
+
+  if ((errnum == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
+	|| errnum == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
+	|| errnum == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
+#if OPENSSL_VERSION_NUMBER >= 0x00905000
+	  || errnum == X509_V_ERR_CERT_UNTRUSTED
+#endif
+	|| errnum == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE)
+      && verify == HTTPS_VERIFY_OPTIONAL_NO_CA )
+    {
+      SSL_set_verify_result (ssl, X509_V_OK);
+      ok = 1;
+    }
+
+  if (!ok)
+    {
+      log_error ("HTTPS Certificate Verification: Error (%d): %s",
+	  errnum, X509_verify_cert_error_string(errnum));
+    }
+
+  if (errdepth > depth)
+    {
+      log_error ("HTTPS Certificate Verification: Certificate Chain too long "
+	  "(chain has %d certificates, but maximum allowed are only %ld)",
+	  errdepth, depth);
+      ok = 0;
+    }
+  return (ok);
+}
+
+int
+https_ssl_verify_callback (int ok, void *_ctx)
+{
+  X509_STORE_CTX *ctx;
+  SSL *ssl;
+  X509 *xs;
+  int errnum, verify, depth;
+  int errdepth;
+  char *cp, cp_buf[1024];
+  char *cp2, cp2_buf[1024];
+  uptrlong ap;
 
   ctx = (X509_STORE_CTX *)_ctx;
   ssl  = (SSL *)X509_STORE_CTX_get_app_data(ctx);
-  ssl_ctx = SSL_get_SSL_CTX (ssl);
-  app_ctx = (https_ctx_info_t *) SSL_CTX_get_app_data (ssl_ctx);
+  ap = (uptrlong) SSL_get_app_data (ssl);
 
   xs       = X509_STORE_CTX_get_current_cert(ctx);
   errnum   = X509_STORE_CTX_get_error(ctx);
@@ -8143,7 +8340,8 @@ https_cert_verify_callback (int ok, void *_ctx)
   cp  = X509_NAME_oneline(X509_get_subject_name(xs), cp_buf, sizeof (cp_buf));
   cp2 = X509_NAME_oneline(X509_get_issuer_name(xs),  cp2_buf, sizeof (cp2_buf));
 
-  verify = app_ctx->hci_verify;
+  verify = (int) ((0xff000000 & ap) >> 24);
+  depth =  (int) (0xffffff & ap);
 
   if (( errnum == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
 	|| errnum == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
@@ -8160,39 +8358,41 @@ https_cert_verify_callback (int ok, void *_ctx)
 
   if (!ok)
     {
-      log_error ("%s Certificate Verification: Error (%d): %s",
-	  app_ctx->hci_name,
+      log_error ("HTTPS Certificate Verification: Error (%d): %s",
 	  errnum, X509_verify_cert_error_string(errnum));
     }
 
-  if (errdepth > app_ctx->hci_depth)
+  if (errdepth > depth)
     {
-      log_error ("%s Certificate Verification: Certificate Chain too long "
+      log_error ("HTTPS Certificate Verification: Certificate Chain too long "
 	  "(chain has %d certificates, but maximum allowed are only %ld)",
-	  app_ctx->hci_name,
-	  errdepth, app_ctx->hci_depth);
+	  errdepth, depth);
       ok = 0;
     }
   return (ok);
 }
 
 int
-ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name)
+ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name, char * extra)
 {
-  char err_buf [1024];
+  char err_buf[1024];
+  EVP_PKEY *pkey;
+  X509 *x509;
+
+  /* TODO create internal OpenSSL engine for this */
   if (strstr (cert_name, "db:") == cert_name || strstr (key_name, "db:") == key_name)
     {
-      xenc_key_t * k;
-      client_connection_t * cli = GET_IMMEDIATE_CLIENT_OR_NULL;
-      user_t * saved_user;
+      xenc_key_t *k;
+      client_connection_t *cli = GET_IMMEDIATE_CLIENT_OR_NULL;
+      user_t *saved_user;
       if (!cli)
 	{
-	  log_error ("The certificate & key stored in database cannot be accessed.");
+	  log_error ("SSL: The certificate and private key stored in the database cannot be accessed");
 	  return 0;
 	}
       if (strcmp (cert_name, key_name))
 	{
-	  log_error ("The certificate & key stored in database must have same name");
+	  log_error ("SSL: The certificate and private key stored in the database must have the same name");
 	  return 0;
 	}
       saved_user = cli->cli_user;
@@ -8202,42 +8402,91 @@ ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name)
       cli->cli_user = saved_user;
       if (!k || !k->xek_x509 || !k->xek_evp_private_key)
 	{
-	  log_error ("Invalid stored key %s", key_name);
+	  log_error ("SSL: The stored key '%s' is invalid", key_name);
 	  return 0;
 	}
-      if (SSL_CTX_use_certificate (ssl_ctx, k->xek_x509) <= 0)
-	{
-	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-	  log_error ("Invalid X509 certificate file %s : %s", cert_name, err_buf);
-	  return 0;
-	}
-      if (SSL_CTX_use_PrivateKey (ssl_ctx, k->xek_evp_private_key) <= 0)
-	{
-	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-	  log_error ("Invalid X509 private key file %s : %s", key_name, err_buf);
-	  return 0;
-	}
+      x509 = k->xek_x509;
+      pkey = k->xek_evp_private_key;
     }
   else
     {
-      if (SSL_CTX_use_certificate_file (ssl_ctx, cert_name, SSL_FILETYPE_PEM) <= 0)
+      if ((x509 = ssl_load_x509 (cert_name)) == NULL)
 	{
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-	  log_error ("Invalid X509 certificate file %s : %s", cert_name, err_buf);
+	  log_error ("SSL: Unable to load certificate '%s': %s", cert_name, err_buf);
 	  return 0;
 	}
-      if (SSL_CTX_use_PrivateKey_file (ssl_ctx, key_name, SSL_FILETYPE_PEM) <= 0)
+      if ((pkey = ssl_load_privkey (key_name, NULL)) == NULL)
 	{
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-	  log_error ("Invalid X509 private key file %s : %s", key_name, err_buf);
+	  log_error ("SSL: Unable to load private key '%s': %s", key_name, err_buf);
 	  return 0;
 	}
     }
-  if (!SSL_CTX_check_private_key (ssl_ctx))
+  if (SSL_CTX_use_certificate (ssl_ctx, x509) <= 0)
     {
       cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-      log_error ("X509 Private key %s does not match the X509 certificate public key %s : %s",
-	  key_name, cert_name, err_buf);
+	  log_error ("SSL: Unable to use certificate '%s': %s", cert_name, err_buf);
+      return 0;
+    }
+  if (extra)
+    {
+      if (strstr (extra, "db:") == extra)
+	{
+	  client_connection_t * cli = GET_IMMEDIATE_CLIENT_OR_NULL;
+	  char *tok_s = NULL, *tok;
+	  caddr_t str = box_dv_short_string (extra + 3);
+	  /* list of key from DB */
+	  user_t * saved_user = cli->cli_user;
+	  if (!cli->cli_user) cli->cli_user = sec_name_to_user ("dba");
+	  tok = strtok_r (str, ",", &tok_s);
+	  while (tok)
+	    {
+	      int r;
+	      xenc_key_t * k;
+	      k = xenc_get_key_by_name (tok, 1);
+	      if (!k || !k->xek_x509)
+		{
+		  log_error ("SSL: The stored key '%s' can not be used as extra chain certificate", tok);
+		  break;
+		}
+	      r = SSL_CTX_add_extra_chain_cert(ssl_ctx, k->xek_x509);
+	      if (!r)
+		{
+		  log_error ("SSL: The stored certificate '%s' can not be used as extra chain certificate", tok);
+		  break;
+		}
+	      CRYPTO_add(&k->xek_x509->references, 1, CRYPTO_LOCK_X509);
+              tok = strtok_r (NULL, ",", &tok_s);
+	    }
+	  dk_free_box (str);
+	  cli->cli_user = saved_user;
+	}
+      else /* single file */
+	{
+	  X509 *x = NULL;
+	  BIO *in;
+	  if ((in = BIO_new_file (extra, "r")) != NULL)
+	    {
+	      while ((x = PEM_read_bio_X509 (in, NULL, NULL, NULL)))
+		{
+		  int r;
+		  r = SSL_CTX_add_extra_chain_cert(ssl_ctx, x);
+		  if (!r)
+		    {
+		      log_error ("SSL: The certificate(s) from file '%s' can not be used as extra chain certificate(s)", extra);
+		      X509_free (x);
+		      break;
+		    }
+		}
+	      BIO_free (in);
+	    }
+	}
+    }
+  if (SSL_CTX_use_PrivateKey (ssl_ctx, pkey) <= 0)
+    {
+      cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+      log_error ("SSL: Unable to use private key '%s': %s", key_name, err_buf);
       return 0;
     }
   return 1;
@@ -8246,16 +8495,16 @@ ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name)
 int
 http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
 {
-  char err_buf [1024];
-  SSL_CTX* ssl_ctx = NULL;
+  char err_buf[1024];
+  SSL_CTX *ssl_ctx = NULL;
   const SSL_METHOD *ssl_meth = NULL;
-  char * https_cvfile = NULL;
-  char *cert = NULL;
+  char *https_cvfile = NULL;
+  char *cert = NULL, *extra = NULL;
   char *skey = NULL;
   long https_cvdepth = -1;
   int i, len, https_client_verify = -1;
-  ssl_meth = SSLv23_server_method();
-  ssl_ctx = SSL_CTX_new (ssl_meth);
+  ssl_meth = SSLv23_server_method ();
+  ssl_ctx = SSL_CTX_new ((SSL_METHOD *) ssl_meth);
 
   /* Initialize the parameters */
   len = BOX_ELEMENTS (https_opts);
@@ -8267,22 +8516,28 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
 
   for (i = 0; i < len; i += 2)
     {
-      if (https_opts [i] && DV_STRINGP (https_opts [i]))
+      if (https_opts[i] && DV_STRINGP (https_opts[i]))
 	{
-	  if (!stricmp (https_opts [i], "https_cv") && DV_STRINGP (https_opts [i + 1])) /* CA file */
-	    https_cvfile = https_opts [i + 1];
-	  else if (!stricmp (https_opts [i], "https_cert") && DV_STRINGP (https_opts [i + 1])) /* x509 cert */
+	  if (!stricmp (https_opts[i], "https_cv") && DV_STRINGP (https_opts[i + 1]))	/* CA file */
+	    https_cvfile = https_opts[i + 1];
+	  else if (!stricmp (https_opts[i], "https_cert") && DV_STRINGP (https_opts[i + 1]))	/* x509 cert */
+	    cert = https_opts[i + 1];
+	  else if (!stricmp (https_opts [i], "https_certificate") && DV_STRINGP (https_opts [i + 1])) /* ALIAS x509 cert */
 	    cert = https_opts [i + 1];
-	  else if (!stricmp (https_opts [i], "https_key") && DV_STRINGP (https_opts [i + 1]))  /* private key */
+	  else if (!stricmp (https_opts[i], "https_key") && DV_STRINGP (https_opts[i + 1]))	/* private key */
+	    skey = https_opts[i + 1];
+	  else if (!stricmp (https_opts [i], "https_private_key") && DV_STRINGP (https_opts [i + 1]))  /* ALIAS private key */
 	    skey = https_opts [i + 1];
-	  else if (!stricmp (https_opts [i], "https_cv_depth")) /* verification depth */
-	    https_cvdepth = unbox(https_opts [i + 1]);
-	  else if (!stricmp (https_opts [i], "https_verify"))   /* verify mode */
-	    https_client_verify = unbox(https_opts [i + 1]);
+	  else if (!stricmp (https_opts[i], "https_cv_depth"))	/* verification depth */
+	    https_cvdepth = unbox (https_opts[i + 1]);
+	  else if (!stricmp (https_opts[i], "https_verify"))	/* verify mode */
+	    https_client_verify = unbox (https_opts[i + 1]);
+	  else if (!stricmp (https_opts [i], "https_extra_chain_certificates") && DV_STRINGP (https_opts [i + 1]))  /* private key */
+	    extra = https_opts [i + 1];
 	}
     }
 
-  if (https_client_verify < 0 && NULL != https_cvfile) /* compatibility with existing definitions */
+  if (https_client_verify < 0 && NULL != https_cvfile)	/* compatibility with existing definitions */
     https_client_verify = 1;
 
   if (!ssl_ctx)
@@ -8291,6 +8546,9 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
       log_error ("HTTPS: Error allocating SSL context: %s", err_buf);
       goto err_exit;
     }
+
+  if (!ssl_server_set_certificate (ssl_ctx, cert, skey, extra))
+    goto err_exit;
 
   if (https_cvfile)
     {
@@ -8301,50 +8559,43 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
 	  goto err_exit;
 	}
     }
-  if (ssl_server_set_certificate (ssl_ctx, cert, skey) <= 0)
-    goto err_exit;
 
   if (https_client_verify > 0)
     {
       int verify = SSL_VERIFY_NONE, session_id_context = srv_pid;
-      https_ctx_info_t * https_callback_info = (https_ctx_info_t *) dk_alloc (sizeof (https_ctx_info_t));
+      uptrlong ap;
 
       if (HTTPS_VERIFY_REQUIRED == https_client_verify)
 	verify |= SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE;
       if (HTTPS_VERIFY_OPTIONAL == https_client_verify || HTTPS_VERIFY_OPTIONAL_NO_CA == https_client_verify)
 	verify |= SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
-
       SSL_CTX_set_verify (ssl_ctx, verify, (int (*)(int, X509_STORE_CTX *)) https_cert_verify_callback);
       SSL_CTX_set_verify_depth (ssl_ctx, https_cvdepth);
-
-      https_callback_info->hci_depth = https_cvdepth;
-      https_callback_info->hci_verify = https_client_verify;
-      https_callback_info->hci_name  = "HTTPS";
-
-      SSL_CTX_set_app_data (ssl_ctx, https_callback_info);
-      SSL_CTX_set_session_id_context(ssl_ctx, (unsigned char *)&session_id_context, sizeof session_id_context);
+      ap = ((0xff & https_client_verify) << 24) | (0xffffff & https_cvdepth);
+      SSL_CTX_set_app_data (ssl_ctx, ap);
+      SSL_CTX_set_session_id_context (ssl_ctx, (unsigned char *) &session_id_context, sizeof session_id_context);
     }
 
   if (https_cvfile)
     {
       int i = 0;
-      STACK_OF(X509_NAME) *skCAList = SSL_load_client_CA_file (https_cvfile);
+      STACK_OF (X509_NAME) * skCAList = SSL_load_client_CA_file (https_cvfile);
 
       SSL_CTX_set_client_CA_list (ssl_ctx, skCAList);
-      skCAList = SSL_CTX_get_client_CA_list(ssl_ctx);
+      skCAList = SSL_CTX_get_client_CA_list (ssl_ctx);
 
-      if (sk_X509_NAME_num(skCAList) == 0)
-	log_warning ("HTTPS Client authentication requested but no CA known for verification");
+      if (sk_X509_NAME_num (skCAList) == 0)
+	log_warning ("HTTPS: Client authentication requested but no CA known for verification");
 
-      for (i = 0; i < sk_X509_NAME_num(skCAList); i++)
+      for (i = 0; i < sk_X509_NAME_num (skCAList); i++)
 	{
 	  char ca_buf[1024];
 	  X509_NAME *ca_name = (X509_NAME *) sk_X509_NAME_value (skCAList, i);
 	  if (X509_NAME_oneline (ca_name, ca_buf, sizeof (ca_buf)))
-	    log_debug ("HTTPS Using X509 Client CA %s", ca_buf);
+	    log_debug ("HTTPS: Using X509 Client CA %s", ca_buf);
 	}
     }
-  tcpses_set_sslctx (listening->dks_session, (void *)ssl_ctx);
+  tcpses_set_sslctx (listening->dks_session, (void *) ssl_ctx);
   return 1;
 err_exit:
   SSL_CTX_free (ssl_ctx);
@@ -8870,12 +9121,16 @@ bif_http_map_get (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
     res = box_num (map->hm_is_dav);
   else if (!strcmp (member, "executable"))
     res = box_num (map->hm_executable);
+  else if (!strcmp (member, "exec_as_get"))
+    res = box_num (map->hm_exec_as_get);
   else if (!strcmp (member, "url_rewrite"))
     res = box_copy_tree ((box_t) map->hm_url_rewrite_rule);
   else if (!strcmp (member, "url_rewrite_keep_lpath"))
     res = box_num (map->hm_url_rewrite_keep_lpath);
   else if (!strcmp (member, "noinherit"))
     res = box_num (map->hm_no_inherit);
+  else if (!strcmp (member, "expiration_function"))
+    res = box_copy_tree ((box_t) map->hm_expiration_fn);
   return res;
 }
 
@@ -9102,13 +9357,16 @@ static caddr_t
 bif_http_body_read (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 {
   query_instance_t *qi = (query_instance_t *)qst;
-  ws_connection_t *ws = NULL;
+  ws_connection_t *ws = qi->qi_client->cli_ws;
   dk_session_t *ses;
-
-  if (!qi->qi_client->cli_ws)
-    sqlr_new_error ("42000", "HT053", "Function http_body_read not allowed outside http context");
-  ws = qi->qi_client->cli_ws;
-  if (ws->ws_req_body)
+  if (!ws)
+    sqlr_new_error ("42000", "HT053", "Function http_body_read() not allowed outside http context");
+  if ((0 < BOX_ELEMENTS (args)) && bif_long_arg (qst, args, 0, "http_body_read"))
+    {
+      ses = strses_allocate ();
+      ws_http_body_read (ws, &ses);
+    }
+  else if (ws->ws_req_body)
     {
       ses = ws->ws_req_body;
       ws->ws_req_body = NULL;
@@ -9174,6 +9432,58 @@ bif_http_is_flushed (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
   if (qi->qi_client->cli_ws)
     return box_num(qi->qi_client->cli_ws->ws_flushed);
   return box_num(1);
+}
+
+static caddr_t
+bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
+{
+  char * me = "https_renegotiate";
+  query_instance_t *qi = (query_instance_t *)qst;
+  ws_connection_t *ws = qi->qi_client->cli_ws;
+#ifdef _SSL
+  SSL *ssl = NULL;
+#endif
+
+  if (!ws)
+    return box_num (0);
+#ifdef _SSL
+  ssl = (SSL *) tcpses_get_ssl (ws->ws_session->dks_session);
+  if (ssl)
+    {
+      int i, verify = SSL_VERIFY_NONE;
+      uptrlong ap;
+      static int s_server_auth_session_id_context;
+      int https_client_verify = BOX_ELEMENTS (args) > 0 ? bif_long_arg (qst, args, 0, me) : HTTPS_VERIFY_OPTIONAL_NO_CA;
+      int https_client_verify_depth = BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, me) : 15;
+      s_server_auth_session_id_context ++;
+
+      if (https_client_verify < 0 || https_client_verify > HTTPS_VERIFY_OPTIONAL_NO_CA)
+	sqlr_new_error ("22023", ".....", "The verify flag must be between 0 and 3");
+      if (https_client_verify_depth <= 0)
+	sqlr_new_error ("22023", ".....", "The verify depth must be greater than zero");
+
+      ap = ((0xff & https_client_verify) << 24) | (0xffffff & https_client_verify_depth);
+
+      if (HTTPS_VERIFY_REQUIRED == https_client_verify)
+	verify |= SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+      if (HTTPS_VERIFY_OPTIONAL == https_client_verify || HTTPS_VERIFY_OPTIONAL_NO_CA == https_client_verify)
+	verify |= SSL_VERIFY_PEER;
+
+      SSL_set_verify (ssl, verify, (int (*)(int, X509_STORE_CTX *)) https_ssl_verify_callback);
+      SSL_set_app_data (ssl, ap);
+      SSL_set_session_id_context (ssl, (void*)&s_server_auth_session_id_context, sizeof(s_server_auth_session_id_context));
+      i = SSL_renegotiate (ssl);
+      if (i <= 0) sqlr_new_error ("42000", ".....", "SSL_renegotiate failed");
+      i = SSL_do_handshake (ssl);
+      if (i <= 0) sqlr_new_error ("42000", ".....", "SSL_do_handshake failed");
+      ssl->state = SSL_ST_ACCEPT;
+      i = SSL_do_handshake (ssl);
+      if (i <= 0) sqlr_new_error ("42000", ".....", "SSL_do_handshake failed");
+      if (SSL_get_peer_certificate (ssl))
+	return box_num (1);
+    }
+#endif
+  return box_num (0);
 }
 
 FILE *debug_log = NULL;
@@ -9479,6 +9789,311 @@ bif_http_acl_stats (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   http_acl_stats ();
   trset_end ();
   return NULL;
+}
+
+static caddr_t
+bif_sysacl_compose (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t *src = bif_array_of_pointer_arg (qst, args, 0, "sysacl_compose");
+  ptrlong maxperm = bif_long_range_arg (qst, args, 1, "sysacl_compose", 0, 0xff);
+  caddr_t res;
+  uint16 *gids;
+  unsigned char *perms;
+  int src_len, gid_ctr, ctr2, gid_count;
+  src_len = BOX_ELEMENTS (src);
+  if (src_len % 2)
+    sqlr_new_error ("22023", "SA001", "The function sysacl_compose() expects get_keyword - style array of roles and permission bits as its argument)");
+  gid_count = src_len/2;
+  res = dk_alloc_box (gid_count * (sizeof (uint16) + 1) + 1, DV_STRING);
+  gids = (uint16 *)res;
+  perms = (unsigned char *)(res + gid_count * sizeof (uint16));
+  for (gid_ctr = 0; gid_ctr < gid_count; gid_ctr++)
+    {
+      caddr_t src_grp = src [gid_ctr*2];
+      dtp_t src_grp_dtp = DV_TYPE_OF (src_grp);
+      caddr_t src_perm = src [gid_ctr*2 + 1];
+      user_t *grp;
+      boxint gid;
+      boxint perm;
+      if (DV_LONG_INT == src_grp_dtp)
+        {
+          grp = sec_id_to_user (unbox (src_grp));
+          if (NULL == grp)
+            {
+              dk_free_box (res);
+              sqlr_new_error ("22023", "SA002", "Unknown user or group id %ld", (long)unbox (src_grp));
+            }
+        }
+      else if (DV_STRING == src_grp_dtp)
+        {
+          grp = sec_name_to_user (src_grp);
+          if (NULL == grp)
+            {
+              dk_free_box (res);
+              sqlr_new_error ("22023", "SA003", "Unknown user or group name \"%.200s\"", src_grp);
+            }
+        }
+      else
+        {
+          dk_free_box (res);
+          sqlr_new_error ("22023", "SA004", "User or group should be identified by name or integer id (U_NAME or U_ID from DB.DBA.SYS_USERS)");
+        }
+      gid = grp->usr_id;
+      if (DV_LONG_INT != DV_TYPE_OF (src_perm))
+        {
+          dk_free_box (res);
+          sqlr_new_error ("22023", "SA005", "Permissions for user or group should be integer");
+        }
+      perm = unbox (src_perm);
+      if ((perm < 0) || (perm > maxperm))
+        {
+          dk_free_box (res);
+          sqlr_new_error ("22023", "SA006", "Permission %ld is out of range of valid permisions (from 0 to %ld)", (long)perm, (long)maxperm);
+        }
+      for (ctr2 = 0; ctr2 < gid_ctr; ctr2++)
+        {
+          if (gids[ctr2] != gid)
+            continue;
+          dk_free_box (res);
+          sqlr_new_error ("22023", "SA007", "User or group with id %ld is listed twice, in indicies %ld and %ld of the source vector", (long)gid, (long)(ctr2*2), (long)(gid_ctr*2));
+        }
+      gids[gid_ctr] = gid;
+      perms[gid_ctr] = perm;
+    }
+/* Now bubble sort of the result */
+  for (gid_ctr = gid_count; gid_ctr--; /* no step */)
+    {
+      for (ctr2 = 0; ctr2 < gid_ctr; ctr2++)
+        {
+          uint16 swap_gid;
+          unsigned char swap_perm;
+          if (gids[ctr2] < gids[ctr2+1])
+            continue;
+          swap_gid = gids[ctr2]; gids[ctr2] = gids[ctr2+1]; gids[ctr2+1] = swap_gid;
+          swap_perm = perms[ctr2]; perms[ctr2] = perms[ctr2+1]; perms[ctr2+1] = swap_perm;
+        }
+    }
+  perms[gid_count] = '\0'; /* Trailing zero of the string */
+  return res;
+}
+
+static caddr_t
+bif_sysacl_direct_bits_of_user (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t sysacl = bif_string_or_null_arg (qst, args, 0, "sysacl_direct_bits_of_user");
+  user_t *user;
+  oid_t uid;
+  int gids_count;
+  uint16 *gids_tail, *gids_end;
+  if (NULL == sysacl)
+    return box_num (0); /* to stay on safe side */
+  if (1 < BOX_ELEMENTS (args))
+    user = bif_user_t_arg (qst, args, 1, "sysacl_direct_bits_of_user", (USER_SHOULD_EXIST | USER_NOBODY_IS_PERMITTED | USER_SPARQL_IS_PERMITTED), 1);
+  else
+    user = ((query_instance_t *)qst)->qi_client->cli_user;
+  uid = user->usr_id;
+  gids_count = box_length (sysacl) - 1;
+  if (gids_count % (sizeof (uint16) + 1))
+    sqlr_new_error ("22023", "SA008", "Invalid sysacl string is passed to function sysacl_direct_bits_of_user()");
+  gids_count = gids_count / (sizeof (uint16) + 1);
+  gids_tail = (uint16 *)sysacl;
+  gids_end = gids_tail + gids_count;
+  while (gids_tail < gids_end)
+    {
+      if (gids_tail[0] < uid)
+        gids_tail++;
+      else if (gids_tail[0] > uid)
+        break;
+      else
+        return box_num (((unsigned char *)gids_end)[gids_tail - (uint16 *)sysacl]);
+    }
+  return box_num (0);
+}
+
+static caddr_t
+bif_sysacl_all_bits_of_tree (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t sysacl = bif_string_or_null_arg (qst, args, 0, "sysacl_all_bits_of_tree");
+  user_t *user;
+  int res = 0, gids_count;
+  uint16 *gids_tail, *gids_end;
+  oid_t *flat_tail, *flat_end;
+  if (NULL == sysacl)
+    return box_num (0); /* to stay on safe side */
+  if (1 < BOX_ELEMENTS (args))
+    user = bif_user_t_arg (qst, args, 1, "sysacl_all_bits_of_tree", (USER_SHOULD_EXIST | USER_NOBODY_IS_PERMITTED | USER_SPARQL_IS_PERMITTED), 1);
+  else
+    user = ((query_instance_t *)qst)->qi_client->cli_user;
+  if (0 == user->usr_flatten_g_ids_len)
+    sec_usr_flatten_g_ids_refill (user);
+  gids_count = box_length (sysacl) - 1;
+  if (gids_count % (sizeof (uint16) + 1))
+    sqlr_new_error ("22023", "SA008", "Invalid sysacl string is passed to function sysacl_all_bits_of_tree()");
+  gids_count = gids_count / (sizeof (uint16) + 1);
+  gids_tail = (uint16 *)sysacl;
+  gids_end = gids_tail + gids_count;
+  flat_tail = user->usr_flatten_g_ids;
+  flat_end = flat_tail + user->usr_flatten_g_ids_len;
+  while ((gids_tail < gids_end) && (flat_tail < flat_end))
+    {
+      if (gids_tail[0] < flat_tail[0])
+        gids_tail++;
+      else if (gids_tail[0] > flat_tail[0])
+        flat_tail++;
+      else
+        {
+          res |= ((unsigned char *)gids_end)[gids_tail - (uint16 *)sysacl];
+          gids_tail++;
+          flat_tail++;
+        }
+    }
+  return box_num (res);
+}
+
+static int
+sec_sysacl_bit1_of_tree (caddr_t sysacl, user_t *user)
+{
+  int gids_count;
+  uint16 *gids_tail, *gids_end;
+  oid_t *flat_tail, *flat_end;
+  if (0 == user->usr_flatten_g_ids_len)
+    sec_usr_flatten_g_ids_refill (user);
+  gids_count = box_length (sysacl) - 1;
+  if (gids_count % (sizeof (uint16) + 1))
+    sqlr_new_error ("22023", "SA008", "Invalid sysacl string is passed to function sysacl_bit1_of_tree()");
+  gids_count = gids_count / (sizeof (uint16) + 1);
+  gids_tail = (uint16 *)sysacl;
+  gids_end = gids_tail + gids_count;
+  flat_tail = user->usr_flatten_g_ids;
+  flat_end = flat_tail + user->usr_flatten_g_ids_len;
+  while ((gids_tail < gids_end) && (flat_tail < flat_end))
+    {
+      if (gids_tail[0] < flat_tail[0])
+        gids_tail++;
+      else if (gids_tail[0] > flat_tail[0])
+        flat_tail++;
+      else
+        {
+          if (0x1 & ((unsigned char *)gids_end)[gids_tail - (uint16 *)sysacl])
+            return 1;
+          gids_tail++;
+          flat_tail++;
+        }
+    }
+  return 0;
+}
+
+static caddr_t
+bif_sysacl_bit1_of_tree (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t sysacl = bif_string_or_null_arg (qst, args, 0, "sysacl_bit1_of_tree");
+  user_t *user;
+  if (NULL == sysacl)
+    return box_num (0); /* to stay on safe side */
+  if (1 < BOX_ELEMENTS (args))
+    user = bif_user_t_arg (qst, args, 1, "sysacl_bit1_of_tree", (USER_SHOULD_EXIST | USER_NOBODY_IS_PERMITTED | USER_SPARQL_IS_PERMITTED), 1);
+  else
+    user = ((query_instance_t *)qst)->qi_client->cli_user;
+  return box_num (sec_sysacl_bit1_of_tree (sysacl, user));
+}
+
+void
+bif_sysacl_bit1_of_tree_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret)
+{
+  data_col_t * dc, *sysacl_arg, *user_arg = NULL;
+  QNCAST (query_instance_t, qi, qst);
+  db_buf_t set_mask = qi->qi_set_mask;
+  int argcount, set, n_sets = qi->qi_n_sets, first_set = 0;
+  state_slot_t * sysacl_ssl, *user_ssl;
+  user_t *curr_user = NULL;
+
+  if (!ret)
+    return;
+  dc = QST_BOX (data_col_t *, qst, ret->ssl_index);
+  argcount = BOX_ELEMENTS (args);
+  if (argcount < 1)
+    sqlr_new_error ("42001", "VEC..", "Not enough arguments for sysacl_bit1_of_tree()");
+  sysacl_ssl = args[0];
+  sysacl_arg = QST_BOX (data_col_t *, qst, sysacl_ssl->ssl_index);
+  if (argcount < 2)
+    curr_user = ((query_instance_t *)qst)->qi_client->cli_user;
+  else
+    {
+      user_ssl = args[1];
+      if (SSL_VEC == user_ssl->ssl_type)
+        user_arg = QST_BOX (data_col_t *, qst, user_ssl->ssl_index);
+      else
+        curr_user = bif_user_t_arg (qst, args, 1, "sysacl_bit1_of_tree", (USER_SHOULD_EXIST | USER_NOBODY_IS_PERMITTED | USER_SPARQL_IS_PERMITTED), 1);
+    }
+  DC_CHECK_LEN (dc, qi->qi_n_sets - 1);
+  SET_LOOP
+    {
+      caddr_t sysacl, user_name_or_id;
+      int sysacl_row_no, user_row_no;
+      int bit1;
+      if (SSL_REF == sysacl_ssl->ssl_type)
+        sysacl_row_no = sslr_set_no (qst, sysacl_ssl, set);
+      else
+        sysacl_row_no = set;
+      if (DCT_BOXES & sysacl_arg->dc_type)
+        sysacl = ((caddr_t*)(sysacl_arg->dc_values))[sysacl_row_no];
+      else if (DV_ANY == sysacl_arg->dc_dtp)
+        {
+          db_buf_t ser = ((db_buf_t*)(sysacl_arg->dc_values))[sysacl_row_no];
+          if (DV_DB_NULL == ser[0])
+            { bit1 = 0; goto ans_done; }
+          sysacl = box_deserialize_string ((caddr_t)ser, 0, 0);
+        }
+      else
+        {
+          if (DC_IS_NULL (sysacl_arg, sysacl_row_no))
+            { bit1 = 0; goto ans_done; }
+        }
+      if (DV_STRING != DV_TYPE_OF (sysacl))
+        {
+          if (DV_DB_NULL == DV_TYPE_OF (sysacl))
+            { bit1 = 0; goto ans_done; }
+          sqlr_new_error ("42001", "VEC..", "Wrong dadatype of sysacl");
+        }
+      if (NULL != user_arg)
+        {
+          if (SSL_REF == user_ssl->ssl_type)
+            user_row_no = sslr_set_no (qst, user_ssl, set);
+          else
+            user_row_no = set;
+          if (DCT_BOXES & user_arg->dc_type)
+            user_name_or_id = ((caddr_t*)(user_arg->dc_values))[user_row_no];
+          else if (DV_ANY == user_arg->dc_dtp)
+            {
+              db_buf_t ser = ((db_buf_t*)(user_arg->dc_values))[user_row_no];
+              if (DV_DB_NULL == ser[0])
+                { bit1 = 0; goto ans_done; }
+              user_name_or_id = box_deserialize_string ((caddr_t)ser, 0, 0);
+            }
+          else
+            {
+              if (DC_IS_NULL (user_arg, user_row_no))
+                { bit1 = 0; goto ans_done; }
+              if (DV_LONG_INT == user_arg->dc_dtp)
+                {
+                  int64 i = ((int64*)(user_arg->dc_values))[user_row_no];
+                  curr_user = sec_id_to_user (i);
+                  bit1 = ((NULL == curr_user) ? 0 : sec_sysacl_bit1_of_tree (sysacl, curr_user));
+                  goto ans_done;
+                }
+            }
+          switch (DV_TYPE_OF (user_name_or_id))
+            {
+            case DV_LONG_INT: curr_user = sec_id_to_user (unbox (user_name_or_id)); break;
+            case DV_STRING: curr_user = sec_name_to_user (user_name_or_id); break;
+            default: bit1 = 0; goto ans_done;
+            }
+        }
+      bit1 = sec_sysacl_bit1_of_tree (sysacl, curr_user);
+ans_done:
+      dc_set_long (dc, set, bit1);
+    }
+  END_SET_LOOP;
 }
 
 /*
@@ -9854,6 +10469,8 @@ ws_serve_client_connection (ws_connection_t * ws)
   conn[0] = (caddr_t) ses;
 
   IN_TXN;
+  if (!cli->cli_trx->lt_threads)
+    lt_wait_checkpoint ();
   lt_threads_set_inner (cli->cli_trx, 1);
   LEAVE_TXN;
 
@@ -9924,10 +10541,12 @@ http_on_message_ses_dropped (dk_session_t * ses)
 static caddr_t
 bif_http_on_message (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  query_instance_t *qi = (query_instance_t *)qst;
   caddr_t *conn = (caddr_t *) bif_arg (qst, args, 0, "http_on_message");
   caddr_t func = bif_string_arg (qst, args, 1, "http_on_message");
   caddr_t cd = bif_arg (qst, args, 2, "http_on_message");
   dk_session_t * ses = NULL;
+  ws_connection_t * ws = qi->qi_client->cli_ws;
 
   if (DV_CONNECTION == DV_TYPE_OF (conn))
     {
@@ -9936,6 +10555,24 @@ bif_http_on_message (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         conn[0] = NULL;
       else
 	ses = NULL;
+      mutex_enter (thread_mtx);
+      if (ws && ses && ses == ws->ws_session)
+	{
+	  ws->ws_session->dks_ws_status = DKS_WS_CACHED;
+	  ws->ws_session->dks_n_threads++;
+	}
+      mutex_leave (thread_mtx);
+    }
+  else if (ws && ws->ws_session)
+    {
+      /* We should mark the session so it will not be disconnected nor freed */
+      if (ws->ws_flushed)
+	sqlr_new_error ("42000", "HT000", "The client session is already flushed");
+      mutex_enter (thread_mtx);
+      ses = qi->qi_client->cli_ws->ws_session;
+      ws->ws_session->dks_ws_status = DKS_WS_CACHED;
+      ws->ws_session->dks_n_threads++;
+      mutex_leave (thread_mtx);
     }
 
   if (ses == NULL)
@@ -10199,6 +10836,8 @@ http_init_part_one ()
   bif_define_typed ("http_request_status_get", bif_http_request_status_get, &bt_varchar);
   bif_define_typed (ENC_B64_NAME, bif_encode_base64, &bt_varchar);
   bif_define_typed (DEC_B64_NAME, bif_decode_base64, &bt_varchar);
+  bif_define_typed ("encode_base64url", bif_encode_base64url, &bt_varchar);
+  bif_define_typed ("decode_base64url", bif_decode_base64url, &bt_varchar);
   bif_define_typed ("http_root", bif_http_root, &bt_varchar);
   bif_define_typed ("dav_root", bif_dav_root, &bt_varchar);
   bif_define_typed ("http_path", bif_http_path, &bt_varchar);
@@ -10220,6 +10859,7 @@ http_init_part_one ()
   bif_define("http_flush", bif_http_flush);
   bif_define ("http_pending_req", bif_http_pending_req);
   bif_define ("http_kill", bif_http_kill);
+  bif_define ("http_limited", bif_http_limited);
   bif_define ("http_lock", bif_http_lock);
   bif_define ("http_unlock", bif_http_unlock);
   bif_define ("http_request_header", bif_http_request_header);
@@ -10231,6 +10871,7 @@ http_init_part_one ()
   bif_define_typed ("is_http_ctx", bif_is_http_ctx, &bt_any);
   bif_define_typed ("is_https_ctx", bif_is_https_ctx, &bt_any);
   bif_define_typed ("http_is_flushed", bif_http_is_flushed, &bt_any);
+  bif_define ("https_renegotiate", bif_https_renegotiate);
   bif_define_typed ("http_debug_log", bif_http_debug_log, &bt_any);
   bif_define("http_login_failed", bif_http_login_failed);
 #ifdef VIRTUAL_DIR
@@ -10251,6 +10892,12 @@ http_init_part_one ()
   bif_define_typed ("http_acl_get", bif_http_acl_get, &bt_any);
   bif_define_typed ("http_acl_remove", bif_http_acl_remove, &bt_any);
   bif_define_typed ("http_acl_stats", bif_http_acl_stats, &bt_any);
+
+  bif_define_typed ("sysacl_compose", bif_sysacl_compose, &bt_varchar);
+  bif_define_typed ("sysacl_direct_bits_of_user", bif_sysacl_direct_bits_of_user, &bt_integer);
+  bif_define_typed ("sysacl_all_bits_of_tree", bif_sysacl_all_bits_of_tree, &bt_integer);
+  bif_define_typed ("sysacl_bit1_of_tree", bif_sysacl_bit1_of_tree, &bt_integer);
+  bif_set_vectored (bif_sysacl_bit1_of_tree, bif_sysacl_bit1_of_tree_vec);
 
   bif_define ("http_url_cache_set", bif_http_url_cache_set);
   bif_define ("http_url_cache_get", bif_http_url_cache_get);
@@ -10349,6 +10996,8 @@ http_threads_allocate (int n_threads)
     }
 }
 
+extern int cl_no_init;
+
 int
 http_init_part_two ()
 {
@@ -10361,6 +11010,8 @@ http_init_part_two ()
   dk_session_t *nntp_listen = NULL;
   dk_session_t *ftp_listen = NULL;
 #endif
+  if (cluster_enable && cl_no_init)
+    return 1;
 
   if (lite_mode)
     return 1;
@@ -10390,8 +11041,8 @@ http_init_part_two ()
   ddl_sel_for_effect ("select count (*) from DB.DBA.HTTP_PATH where http_map_table (HP_LPATH, HP_PPATH, HP_HOST, HP_LISTEN_HOST, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE, HP_DEFAULT, HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS, HP_RUN_SOAP_AS, HP_PERSIST_SES_VARS, deserialize (HP_SOAP_OPTIONS), deserialize (HP_AUTH_OPTIONS), deserialize (HP_OPTIONS), HP_IS_DEFAULT_HOST)");
 #endif
   ddl_sel_for_effect ("SELECT count (*) FROM DB.DBA.SYS_SOAP_DATATYPES where "
-      "__soap_dt_define(SDT_NAME, xslt ('http://local.virt/soap_sch', xml_tree_doc(xml_tree(SDT_SCH)), vector ('udt_struct', case when isstring(SDT_UDT) then 1 else 0 end)), "
-      "xml_tree_doc(xml_tree(SDT_SCH)), SDT_TYPE, SDT_UDT)");
+      "__soap_dt_define(SDT_NAME, xslt ('http://local.virt/soap_sch', xtree_doc(SDT_SCH), vector ('udt_struct', case when isstring(SDT_UDT) then 1 else 0 end)), "
+      "xtree_doc(SDT_SCH), SDT_TYPE, SDT_UDT)");
 
   ddl_sel_for_effect ("SELECT count (*) FROM DB.DBA.SYS_SOAP_UDT_PUB where "
       "__soap_udt_publish (SUP_HOST, SUP_LHOST, SUP_END_POINT, SUP_CLASS)");
@@ -10425,54 +11076,52 @@ http_init_part_two ()
   /*    CRYPTO_malloc_init();*/
   SSL_load_error_strings();
   SSLeay_add_ssl_algorithms();
+  if (!https_key) /* when key & certificate are in same file */
+    https_key = https_cert;
   if (https_port && https_cert && https_key)
     {
       char err_buf [1024];
       SSL_CTX* ssl_ctx = NULL;
       const SSL_METHOD *ssl_meth = NULL;
       ssl_meth = SSLv23_server_method();
-      ssl_ctx = SSL_CTX_new (ssl_meth);
+      ssl_ctx = SSL_CTX_new ((SSL_METHOD *) ssl_meth);
       if (!ssl_ctx)
 	{
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
 	  log_error ("HTTPS: Error allocating SSL context: %s", err_buf);
-	  call_exit(-1);
+	  goto init_ssl_exit;
 	}
 
+      if (!ssl_server_set_certificate (ssl_ctx, https_cert, https_key, https_extra))
+	goto init_ssl_exit;
+
       if (https_client_verify_file)
+	{
 	if (!SSL_CTX_load_verify_locations (ssl_ctx, https_client_verify_file, NULL))
 	  {
 	    cli_ssl_get_error_string (err_buf, sizeof (err_buf));
 	    log_error ("HTTPS: Invalid X509 client CA file %s : %s", https_client_verify_file, err_buf);
-	    call_exit(-1);
+	      goto init_ssl_exit;
 	  }
-
-      if (ssl_server_set_certificate (ssl_ctx, https_cert, https_key) <= 0)
-	{
-	  call_exit(-1);
 	}
 
       if (https_client_verify > 0)
 	{
 	  int verify = SSL_VERIFY_NONE, session_id_context = srv_pid;
-	  https_ctx_info_t * https_callback_info = (https_ctx_info_t *) dk_alloc (sizeof (https_ctx_info_t));
+	  uptrlong ap;
 
 	  if (HTTPS_VERIFY_REQUIRED == https_client_verify)
 	    verify |= SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE;
 	  if (HTTPS_VERIFY_OPTIONAL == https_client_verify || HTTPS_VERIFY_OPTIONAL_NO_CA == https_client_verify)
 	    verify |= SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
-
 	  SSL_CTX_set_verify (ssl_ctx, verify , (int (*)(int, X509_STORE_CTX *)) https_cert_verify_callback);
 	  SSL_CTX_set_verify_depth (ssl_ctx, https_client_verify_depth);
-
-	  https_callback_info->hci_depth = https_client_verify_depth;
-	  https_callback_info->hci_verify = https_client_verify;
-	  https_callback_info->hci_name = "HTTPS";
-	  SSL_CTX_set_app_data (ssl_ctx, https_callback_info);
+	  ap = ((0xff & https_client_verify) << 24) | (0xffffff & https_client_verify_depth);
+	  SSL_CTX_set_app_data (ssl_ctx, ap);
 	  SSL_CTX_set_session_id_context(ssl_ctx, (unsigned char  *)&session_id_context, sizeof session_id_context);
 	}
 
-      if (NULL != https_client_verify_file)
+      if (https_client_verify_file)
 	{
 	  int i;
 	  STACK_OF(X509_NAME) *skCAList = SSL_load_client_CA_file (https_client_verify_file);
@@ -10480,45 +11129,44 @@ http_init_part_two ()
 	  SSL_CTX_set_client_CA_list (ssl_ctx, skCAList);
 	  skCAList = SSL_CTX_get_client_CA_list (ssl_ctx);
 	  if (sk_X509_NAME_num(skCAList) == 0)
-	    log_warning ("HTTPS Client authentication requested but no CA known for verification");
+	    log_warning ("HTTPS: Client authentication requested but no CA known for verification");
 
 	  for (i = 0; i < sk_X509_NAME_num(skCAList); i++)
 	    {
 	      char ca_buf[1024];
 	      X509_NAME *ca_name = (X509_NAME *) sk_X509_NAME_value (skCAList, i);
               if (X509_NAME_oneline (ca_name, ca_buf, sizeof (ca_buf)))
-		log_debug ("HTTPS Using X509 Client CA %s", ca_buf);
+		log_debug ("HTTPS: Using X509 Client CA %s", ca_buf);
 	    }
 	}
 
       ssl_port = atoi (https_port);
       if (ssl_port <= 0)
 	{
-	  log_error ("SSL port is not valid port number");
-	  call_exit(-1);
+	  log_error ("HTTPS: SSL port is invalid");
+	  goto init_ssl_exit;
 	}
       ssl_listen = dk_session_allocate (SESCLASS_TCPIP);
       tcpses_set_sslctx (ssl_listen->dks_session, (void *)ssl_ctx);
-      SESSION_SCH_DATA (ssl_listen)->sio_default_read_ready_action
-	  = (io_action_func) ws_ready;
+      SESSION_SCH_DATA (ssl_listen)->sio_default_read_ready_action = (io_action_func) ws_ready;
 
       if (SER_SUCC != session_set_address (ssl_listen->dks_session, https_port))
 	{
-	  log_error ("Failed setting the HTTPS listen address at %s.", https_port);
-	  call_exit (-1);
+	  log_error ("HTTPS: Failed setting listen address at %s", https_port);
+	  goto init_ssl_exit;
 	}
 
       session_listen (ssl_listen->dks_session);
-
       if (!SESSTAT_ISSET (ssl_listen->dks_session, SST_LISTENING))
 	{
-	  log_error ("Failed HTTPS listen at %s.", https_port);
-	  call_exit (-1);
-	};
-      log_info ((char *) (https_client_verify ?
-	  "HTTPS/X509 server online at %s" :
-	  "HTTPS server online at %s"),
-	  https_port);
+	  log_error ("HTTPS: Failed listen at %s", https_port);
+	  goto init_ssl_exit;
+	}
+
+      log_info ("HTTPS server online at %s", https_port);
+
+    init_ssl_exit:
+      ;
     }
 #endif
 
@@ -10624,12 +11272,14 @@ http_init_part_two ()
 #endif
 
   http_threads_allocate (http_threads);
+  if (!http_limited)
+    http_limited = http_threads;
 
   PrpcCheckIn (listening);
   dks_housekeeping_session_count_change (1);
   /* SSL support */
 #ifdef _SSL
-  if (https_port && https_cert && https_key)
+  if (https_port && https_cert && https_key && ssl_listen)
     {
       PrpcCheckIn (ssl_listen);
       dks_housekeeping_session_count_change (1);

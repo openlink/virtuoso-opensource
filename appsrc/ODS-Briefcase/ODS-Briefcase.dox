@@ -1,0 +1,74 @@
+/**
+\defgroup ods_module_briefcase ODS Briefcase (WebDAV File Management) API
+
+The ODS Briefcase is a WebDAV-compliant platform that offers file-sharing functionality via a "Briefcase Data Space".
+Its standards-compliance enables the exploitation of File Server functionality via the following methods:
+
+- Web Browser-based interactions
+- Web Services - direct use of the HTTP based WebDAV protocol
+- Semantic Web's SPARQL Query Language - all WebDAV resources are exposed as SIOC Ontology instance data (RDF Data Sets)
+
+\section ods_briefcase_features Key Features
+
+- Automatic Metadata Management - ODS automatically extracts file metadata from a wide array of file formats at file
+  upload time. The metadata is available in two forms:
+  - Pure WebDAV and
+  - RDF-XML or N3/Turtle, optionally synchronized with the underlying Virtuoso Triple Store.
+- Automatic metadata-extraction from many known file types - MS Office, Open Office, Open Document Format, Content
+  Syndication Formats (RSS 1.0, RSS 2.0, Atom, OPML, OCS), (X)HTML, Web Services Contract Files (BPEL, WSDL), XBRL,
+  XBEL, FOAF, iCalendar, hCalendar, vCARD, Google Base Items, and other formats.
+- Powerful Full-Text Search - including WebDAV metadata, physical properties such as path, filename, content words,
+  individual and group ownership, mime type, date range, and tags
+- Flexible Data Access - all Briefcase data is accessible via SPARQL, GData, and Briefcase Service-specific Web Services
+- Open Data Access - transparent integration with any WebDAV-compliant environment, e.g., Mac OS X Finder, Windows
+  Network Places, Linux DAV Mount, and others
+- Security - UNIX-like file-permission system or Access Control Lists (ACLs)
+- Unified Storage - a central storage and access point for all ODS application data
+- Virtual WebDAV Resources - even when the actual data in question isn't a physical WebDAV resource it can still be
+  viewed in the Briefcase via Virtual WebDAV VIEWs
+- Smart Folders for custom association of resource types with virtual folders. For example, you can navigate to, or
+  enter, the path DAV/home/[username]/Items/Graphics/Type/JPEG to list all the graphic images that are of type JPEG for
+  a given user.
+- Resource tagging - enabling the categorization of content by user-defined tags. These tags are also usable within
+  Free Text Searches of Briefcase content
+- Shared Folders View - shows all collections and resources to which the user has been granted access
+- Version Control - Versioning can be enabled for any resource using any client supporting the DeltaV core feature set.
+  Historical versions of resources will appear in a separate virtual folder. DeltaV core WebDAV methods are supported
+  for resources for which versioning has been enabled.
+
+
+\section ods_briefcase_version_control File Version Control in ODS Briefcase
+
+FIXME: document how that works from a RESTful point of view.
+
+\section ods_briefcase_resource_permissions Resource Permissions
+
+Several Briefcase methods such as briefcase.resource.store() or briefcase.collection.create() allow to specify permissions.
+The permissions are encoded as a string which consists of a 9-bit-mask mapping to standard UNIX file permissions
+
+- read, write, and execute for the owner
+- read, write, and execute for the group
+- read, write, and execute for everyone else
+
+and two additional flags indicating that indicate whether resources should be indexed for free-text search and whether
+they should be parsed to extract metadata:
+
+- Free-Text indexing:
+  - \p 'N' will disable free-text indexing.
+  - \p 'T' will enable free-text indexing for a resource or a collection's direct children.
+  - \p 'R' will enable free-text indexing recursively.
+- Metadata extraction:
+  - \p 'N' will disable metadata extraction.
+  - \p 'M' will enable metadata extraction for a resource or a collection's direct children.
+  - \p 'R' will enable metadata extraction recursively.
+
+Thus, a permissions string \p '111110100RM' maps to UNIX permissions \p 'rwxrw-r--' and enables recursive full-text indexing
+and non-recursive metadata extraction.
+
+For more details see <a href="http://docs.openlinksw.com/virtuoso/webdavserver.html#accesspermofwebres">Access Right
+Permissions of Web Resources</a> in the Virtuoso server documentation.
+
+\subsection ods_permissions_acl ODS Access Control Lists (ACL)
+
+FIXME: explain how that works in ODS including WebID and so on.
+*/

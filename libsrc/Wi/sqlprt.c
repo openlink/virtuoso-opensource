@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -75,8 +75,13 @@ trset_printf (const char *str, ...)
   report_ptr = (char *) THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_PTR);
 
   va_start (ap, str);
+  if (!report_ptr)
+    vprintf (str, ap);
+  else
   vsnprintf (report_ptr, REPORT_BUF_MAX - (report_linebuf - report_ptr), str, ap);
   va_end (ap);
+  if (!report_ptr)
+    return;
 
   for (line = eol = report_linebuf; *line; line = eol)
     {

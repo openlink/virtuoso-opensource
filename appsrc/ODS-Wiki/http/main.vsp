@@ -5,7 +5,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -27,6 +27,7 @@
   declare _sid, _realm, _user varchar;
   declare cookie_vec any;
   declare _parent varchar;
+  declare _filename varchar;
 
   _parent := get_keyword ('parent', params, '');
   if (_parent <> '')
@@ -315,11 +316,12 @@ cont:
         return;
       };
 
-      declare _filename, _retval any;
+      declare _retval any;
+
       _text := coalesce(_text, '');
-      if (length (_text) > 0)
-        if (_text[length (_text)-1] = ascii('\n'))
+      if ((length (_text) > 0) and (_text[length (_text)-1] = ascii('\n')))
           _text := subseq(_text, 0, length (_text)- 2);
+
       _text := WV.WIKI.DELETE_SYSINFO_FOR (_text, NULL);      
       _topic.ti_text := _text;
       _filename := coalesce ((select RES_NAME from WS.WS.SYS_DAV_RES where RES_ID = _topic.ti_res_id), concat (_topic.ti_local_name,'.txt'));
@@ -408,7 +410,9 @@ content:
   if (_attachment is not null)
     {
       if (_cmd = 'manage')
+        {
         WV.WIKI.VSPATTACHMENTMANAGE (path, lines, _topic,_attachment, WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust));
+        }
       else if (_cmd = 'delete')
 	{
 	  if ({?'submit'} = 'Yes')
@@ -459,17 +463,17 @@ content:
 --        http_header (http_header_get() || sprintf('Location: %s/login.vspx?URL=%U\r\n',  WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=edit&' || _parent));
         return;
       };
-      declare _filename varchar;
       _topic.ti_text := _text;
       _filename := coalesce ((select RES_NAME from WS.WS.SYS_DAV_RES where RES_ID = _topic.ti_res_id), concat (_topic.ti_local_name,'.txt'));
       WV.WIKI.CHECKWRITEACCESS (_uid, _topic.ti_res_id, _topic.ti_cluster_id, _topic.ti_col_id, 'Edit is not allowed by owner of this cluster.');
 
-      declare _lock_uid int;
       if (_topic.ti_id = 0)
+        {
         WV.WIKI.VSPTOPICCREATE (path, lines, _cluster, _topic.ti_raw_title, WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust));
+        }
       else
 	{
-	  if (0 = (_lock_uid := WV.WIKI.GETLOCK (WS.WS.COL_PATH(_topic.ti_col_id) || _filename, _user)))
+          if (0 = WV.WIKI.GETLOCK (WS.WS.COL_PATH(_topic.ti_col_id) || _filename, _user))
             WV.WIKI.VSPTOPICEDIT (path, lines, _topic, WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust));
 	  else
 		WV.WIKI.APPSIGNAL (11001, 'The resource &path; is locked', vector ('path', WS.WS.COL_PATH(_topic.ti_col_id) || _filename));
@@ -488,25 +492,27 @@ content:
       WV.WIKI.redirect (sprintf('%s/login.vspx?URL=%U', WV..ODS_LINK(lines), 'http://' || DB.DBA.WA_GET_HOST() || http_path() || '?command=upstream_now&' || _parent));
       return;
     };
-    declare _filename varchar;
-
     _filename := coalesce ((select RES_NAME from WS.WS.SYS_DAV_RES where RES_ID = _topic.ti_res_id), concat (_topic.ti_local_name,'.txt'));
     WV.WIKI.CHECKWRITEACCESS (_uid, _topic.ti_res_id, _topic.ti_cluster_id, _topic.ti_col_id, 'Upstream is not allowed by owner of this cluster.');
-    declare _lock_uid int;
     if (_topic.ti_id <> 0)
       {
-        if (0 = (_lock_uid := WV.WIKI.GETLOCK (WS.WS.COL_PATH(_topic.ti_col_id) || _filename, _user)))
+          if (0 = WV.WIKI.GETLOCK (WS.WS.COL_PATH(_topic.ti_col_id) || _filename, _user))
         {
           if (WV.WIKI.VSPTOPICVIEW (path, lines, _topic, WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust)))
             WV.WIKI.VSPFOOTER (path, params, lines);
+
           http_flush();
+              commit work;
+
           WV.WIKI.UPSTREAM_TOPIC_NOW (_topic.ti_id);
           WV.WIKI.RELEASELOCK (WS.WS.COL_PATH(_topic.ti_col_id) || _filename, _user);
           return;
         }
         else
+            {
           WV.WIKI.APPSIGNAL (11001, 'The resource &path; is locked', vector ('path', WS.WS.COL_PATH(_topic.ti_col_id) || _filename));
       }
+        }
       goto make_footer;
     }
 
@@ -608,7 +614,8 @@ create_or_view:
   else
    {
      if (WV.WIKI.VSPTOPICVIEW (path, lines, _topic, WV.WIKI.MAKE_PARAMS (_user, _uid, params, _base_adjust)))
-	   WV.WIKI.VSPFOOTER (path, params, lines);
+        goto make_footer;
+
 	 return;
    }
 make_footer:    

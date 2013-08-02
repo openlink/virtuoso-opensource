@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1478,17 +1478,15 @@ __xqf_compare  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe, int do_wh
       break;
     case XQ_STARTSWITH:
       {
-	utf8char *tail, c;
-	int len = 0;
+	int len = 0, wide_len;
+	caddr_t wide_box = box_utf8_as_wide_char (str1, NULL, strlen (str1), 0, DV_WIDE), utf8_box;
+
+	wide_len = box_length (wide_box) / sizeof (wchar_t) - 1;
 	n = utf8_strlen ((utf8char *)str2);
-	for (tail = (utf8char *)str1; '\0' != tail[0]; tail++)
-	  {
-	    if (len == n)
-	      break;
-	    c = tail[0];
-	    if (UTF8_IS_HEADCHAR(c))
-	      len++;
-	  }
+	utf8_box = box_wide_as_utf8_char (wide_box, MIN (n, wide_len), DV_SHORT_STRING);
+	len = strlen (utf8_box);
+	dk_free_box (wide_box);
+	dk_free_box (utf8_box);
 	if (DVC_MATCH == compare_utf8_with_collation (str1, len, str2, (long) strlen (str2), coll))
 	  XQI_SET (xqi, tree->_.xp_func.res, (caddr_t) 1L);
 	else
@@ -3300,23 +3298,7 @@ xqf_current_dateTime  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   xpf_current_date_impl (xqi, tree, DV_DATETIME);
 }
 
-static void
-xqf_define_builtin_with_ns (
-  const char *xpfm_name,
-  xp_func_t xpfm_executable,
-  ptrlong xpfm_res_dtp,
-  ptrlong xpfm_min_arg_no,
-  xpfm_arg_descr_t **xpfm_main_args,
-  xpfm_arg_descr_t **xpfm_tail_args,
-  const char* namespace)
-{
-  caddr_t n2 = box_sprintf (100, "%s:%s", namespace, xpfm_name);
-  xpf_define_builtin (
-    n2, xpfm_executable, xpfm_res_dtp, xpfm_min_arg_no, xpfm_main_args, xpfm_tail_args);
-  dk_free_box (n2);
-}
-
-static void
+void
 xqf_define_builtin (
   const char *xpfm_name,
   xp_func_t xpfm_executable,
@@ -3325,13 +3307,61 @@ xqf_define_builtin (
   xpfm_arg_descr_t **xpfm_main_args,
   xpfm_arg_descr_t **xpfm_tail_args )
 {
-  xqf_define_builtin_with_ns (xpfm_name,
-		      xpfm_executable,
-		      xpfm_res_dtp,
-		      xpfm_min_arg_no,
-		      xpfm_main_args,
-		      xpfm_tail_args,
-		      XFN_NS_URI);
+/* The order of these declarations is important because the first one is used for reverse searches */
+  xpfm_create_and_store_builtin (xpfm_name, xpfm_executable, xpfm_res_dtp, xpfm_min_arg_no, xpfm_main_args, xpfm_tail_args, XFN_NS_URI "/#");
+  xpfm_store_alias (xpfm_name, XFN_NS_URI, xpfm_name, XFN_NS_URI "/#", "#", 0);
+  xpfm_store_alias (xpfm_name, XFN_NS_URI, xpfm_name, XFN_NS_URI "/#", "", 0);
+}
+
+void
+xsd_define_builtin (
+  const char *xpfm_name,
+  xp_func_t xpfm_executable,
+  ptrlong xpfm_res_dtp,
+  ptrlong xpfm_min_arg_no,
+  xpfm_arg_descr_t **xpfm_main_args,
+  xpfm_arg_descr_t **xpfm_tail_args )
+{
+/* The order of these declarations is important because the first one is used for reverse searches */
+  xpfm_create_and_store_builtin (xpfm_name, xpfm_executable, xpfm_res_dtp, xpfm_min_arg_no, xpfm_main_args, xpfm_tail_args, XS_NS_URI "/#");
+  xpfm_store_alias (xpfm_name, XS_NS_URI, xpfm_name, XS_NS_URI "/#", "#", 0);
+  xpfm_store_alias (xpfm_name, XS_NS_URI, xpfm_name, XS_NS_URI "/#", "", 0);
+  xpfm_store_alias (xpfm_name, XFN_NS_URI, xpfm_name, XS_NS_URI "/#", "/#", 1);
+  xpfm_store_alias (xpfm_name, XFN_NS_URI, xpfm_name, XS_NS_URI "/#", "#", 1);
+  xpfm_store_alias (xpfm_name, XFN_NS_URI, xpfm_name, XS_NS_URI "/#", "", 1);
+  xpfm_store_alias (xpfm_name, XXF_NS_URI, xpfm_name, XS_NS_URI "/#", "/#", 1);
+  xpfm_store_alias (xpfm_name, XXF_NS_URI, xpfm_name, XS_NS_URI "/#", "#", 1);
+  xpfm_store_alias (xpfm_name, XXF_NS_URI, xpfm_name, XS_NS_URI "/#", "", 1);
+}
+
+void
+xop_define_builtin (
+  const char *xpfm_name,
+  xp_func_t xpfm_executable,
+  ptrlong xpfm_res_dtp,
+  ptrlong xpfm_min_arg_no,
+  xpfm_arg_descr_t **xpfm_main_args,
+  xpfm_arg_descr_t **xpfm_tail_args )
+{
+/* The order of these declarations is important because the first one is used for reverse searches */
+  xpfm_create_and_store_builtin (xpfm_name, xpfm_executable, xpfm_res_dtp, xpfm_min_arg_no, xpfm_main_args, xpfm_tail_args, XOP_NS_URI "/#");
+  xpfm_store_alias (xpfm_name, XOP_NS_URI, xpfm_name, XOP_NS_URI "/#", "#", 0);
+  xpfm_store_alias (xpfm_name, XOP_NS_URI, xpfm_name, XOP_NS_URI "/#", "", 0);
+}
+
+void
+xdt_define_builtin (
+  const char *xpfm_name,
+  xp_func_t xpfm_executable,
+  ptrlong xpfm_res_dtp,
+  ptrlong xpfm_min_arg_no,
+  xpfm_arg_descr_t **xpfm_main_args,
+  xpfm_arg_descr_t **xpfm_tail_args )
+{
+/* The order of these declarations is important because the first one is used for reverse searches */
+  xpfm_create_and_store_builtin (xpfm_name, xpfm_executable, xpfm_res_dtp, xpfm_min_arg_no, xpfm_main_args, xpfm_tail_args, XDT_NS_URI "/#");
+  xpfm_store_alias (xpfm_name, XDT_NS_URI, xpfm_name, XDT_NS_URI "/#", "#", 0);
+  xpfm_store_alias (xpfm_name, XDT_NS_URI, xpfm_name, XDT_NS_URI "/#", "", 0);
 }
 
 static xqf_str_parser_desc_t xqf_str_parser_descs[] = {
@@ -3497,7 +3527,11 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
           dtd_t *dtd = NULL;
           id_hash_t *id_cache = NULL;
           xml_tree_ent_t *xte;
-          caddr_t tree = xml_make_mod_tree ((query_instance_t *)qst, arg, &err, FINE_XML | GE_XML, NULL /* no uri! */, "UTF-8", NULL, NULL, &dtd, &id_cache, &ns_2dict);
+	  caddr_t tree;
+
+	  if (arg_dtp == DV_XML_ENTITY)
+	    return box_copy_tree (arg);
+          tree = xml_make_mod_tree ((query_instance_t *)qst, arg, &err, FINE_XML | GE_XML, NULL /* no uri! */, "UTF-8", NULL, NULL, &dtd, &id_cache, &ns_2dict);
           if (NULL == tree)
             sqlr_resignal (err);
           xte = xte_from_tree (tree, (query_instance_t*) qst);
@@ -3510,6 +3544,23 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
           /* test only : xte_word_range(xte,&l1,&l2); */
           return ((caddr_t) xte);
         }
+      if (!strcmp (type_iri, "http://www.openlinksw.com/schemas/virtrdf#Geometry")
+	  && DV_STRING == arg_dtp)
+	{
+	  caddr_t err = NULL;
+	  caddr_t g = geo_parse_wkt (arg, &err);
+	  if (err && !suppress_error)
+	    sqlr_resignal (err);
+	  if (!err)
+	    {
+	      rdf_box_t * rb = rb_allocate ();
+	      rb->rb_type = RDF_BOX_GEO;
+	      rb->rb_lang = RDF_BOX_DEFAULT_LANG;
+	      rb->rb_box = g;
+	      rb->rb_is_complete = 1;
+	      return (caddr_t) rb;
+	    }
+	}
       return NEW_DB_NULL;
     }
   p_name = type_iri + XMLSCHEMA_NS_URI_LEN + 1; /* +1 is to skip '#' */
@@ -3520,6 +3571,12 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
   desc = xqf_str_parser_descs + desc_idx;
   if (DV_DB_NULL == arg_dtp)
     return NEW_DB_NULL;
+  /* if we have wide and we want typed string we do utf8, cast do to default charset so we do not do it */
+  if (DV_WIDE == arg_dtp && desc->p_dest_dtp == DV_STRING)
+    {
+      res = box_wide_as_utf8_char (arg, box_length (arg) / sizeof (wchar_t) - 1, DV_STRING);
+      goto res_ready;
+    }
   if (DV_STRING != arg_dtp)
     {
       caddr_t err = NULL;
@@ -3581,80 +3638,81 @@ void xqf_init(void)
   bif_define_typed ("__xqf_str_parse_time"	, bif_xqf_str_parse	, &bt_time	);
 
   /* Functions */
-  xqf_define_builtin ("ENTITY"					, NULL /*xqf_entity*/		/* ??? */	, DV_SHORT_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("ID"					, NULL /*xqf_id*/		/* ??? */	, DV_SHORT_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("IDREF"					, NULL /*xqf_idref*/		/* ??? */	, DV_SHORT_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("NCName"					, NULL /*xqf_ncname*/		/* ??? */	, DV_SHORT_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("NMTOKEN"					, NULL /*xqf_nmtoken*/		/* ??? */	, DV_SHORT_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("add-days"				, xqf_add_days			/* ??? */	, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
-  xqf_define_builtin ("add-gMonth"				, xqf_add_gmonth		/* ??? */	, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
-  xqf_define_builtin ("add-gYear"				, xqf_add_gyear			/* ??? */	, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
-  xqf_define_builtin ("add-months"				, xqf_add_months		/* ??? */	, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
-  xqf_define_builtin ("add-years"				, xqf_add_years			/* ??? */	, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
-  xqf_define_builtin ("boolean-from-string"			, NULL /*xqf_boolean_from_string */	/* ??? */	, XPDV_BOOL	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("byte"					, xqf_byte			/* ??? */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xpf_define_alias ("ceiling", XFN_NS_URI, "ceiling", NULL);
-  xqf_define_builtin ("codepoint-compare"			, xqf_codepoint_compare		/* ??? */	, DV_LONG_INT	, 2	, xpfmalist(2, xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("codepoint-contains"			, NULL /*xqf_codepoint_contains*/ /* ??? */	, XPDV_BOOL	, 2	, xpfmalist(2, xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("codepoint-substring-after"		, NULL /*xqf_codepoint_substring_after*/ /* ??? */	, DV_SHORT_STRING	, 2	, xpfmalist(2, xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("codepoint-substring-before"		, NULL /*xqf_codepoint_substring_before*/ /* ??? */	, DV_SHORT_STRING	, 2	, xpfmalist(2, xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("codepoints-to-string"			, xqf_codepoints_to_string	/* XQuery 1.0 */, DV_STRING	, 0	, xpfmalist(1, xpfma(NULL,DV_LONG_INT,1))	,  xpfmalist(1, xpfma(NULL,DV_LONG_INT,1)));
-  xqf_define_builtin ("compare"					, xqf_compare			/* XQuery 1.0 */, DV_LONG_INT	, 2	, xpfmalist(3, xpfma(NULL,DV_STRING,1), xpfma(NULL,DV_STRING,1), xpfma(NULL,DV_STRING,1))	, NULL);
-  xpf_define_alias ("concat", XFN_NS_URI, "concat", NULL);
+  x2f_define_builtin ("ENTITY"					, NULL /*xqf_entity*/		/* ??? */	, DV_SHORT_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  x2f_define_builtin ("ID"					, NULL /*xqf_id*/		/* ??? */	, DV_SHORT_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  x2f_define_builtin ("IDREF"					, NULL /*xqf_idref*/		/* ??? */	, DV_SHORT_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  x2f_define_builtin ("NCName"					, NULL /*xqf_ncname*/		/* ??? */	, DV_SHORT_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  x2f_define_builtin ("NMTOKEN"					, NULL /*xqf_nmtoken*/		/* ??? */	, DV_SHORT_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  x2f_define_builtin ("add-days"				, xqf_add_days			/* ??? */	, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
+  x2f_define_builtin ("add-gMonth"				, xqf_add_gmonth		/* ??? */	, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
+  x2f_define_builtin ("add-gYear"				, xqf_add_gyear			/* ??? */	, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
+  x2f_define_builtin ("add-months"				, xqf_add_months		/* ??? */	, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
+  x2f_define_builtin ("add-years"				, xqf_add_years			/* ??? */	, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
+  xsd_define_builtin ("boolean"					, xqf_boolean			/* XQuery 1.0 */, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,XPDV_BOOL,1))	, NULL);
+  x2f_define_builtin ("boolean-from-string"			, NULL /*xqf_boolean_from_string */	/* ??? */	, XPDV_BOOL	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  xsd_define_builtin ("byte"					, xqf_byte			/* ??? */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  /*xpf_define_alias ("ceiling", XFN_NS_URI, "ceiling", NULL);*/
+  x2f_define_builtin ("codepoint-compare"			, xqf_codepoint_compare		/* ??? */	, DV_LONG_INT	, 2	, xpfmalist(2, xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  x2f_define_builtin ("codepoint-contains"			, NULL /*xqf_codepoint_contains*/ /* ??? */	, XPDV_BOOL	, 2	, xpfmalist(2, xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  x2f_define_builtin ("codepoint-substring-after"		, NULL /*xqf_codepoint_substring_after*/ /* ??? */	, DV_SHORT_STRING	, 2	, xpfmalist(2, xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  x2f_define_builtin ("codepoint-substring-before"		, NULL /*xqf_codepoint_substring_before*/ /* ??? */	, DV_SHORT_STRING	, 2	, xpfmalist(2, xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  x2f_define_builtin ("codepoints-to-string"			, xqf_codepoints_to_string	/* XQuery 1.0 */, DV_STRING	, 0	, xpfmalist(1, xpfma(NULL,DV_LONG_INT,1))	,  xpfmalist(1, xpfma(NULL,DV_LONG_INT,1)));
+  x2f_define_builtin ("compare"					, xqf_compare			/* XQuery 1.0 */, DV_LONG_INT	, 2	, xpfmalist(3, xpfma(NULL,DV_STRING,1), xpfma(NULL,DV_STRING,1), xpfma(NULL,DV_STRING,1))	, NULL);
+  /*xpf_define_alias ("concat", XFN_NS_URI, "concat", NULL);*/
   xqf_define_builtin ("contains"				,xqf_contains			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(3, xpfma(NULL,DV_STRING,1), xpfma(NULL,DV_STRING,1), xpfma(NULL,DV_STRING,1))	, NULL);
-  xpf_define_alias   ("count", XFN_NS_URI, "count", NULL);
-  xpf_define_alias   ("avg", XFN_NS_URI, "avg", NULL);
-  xpf_define_alias   ("sum", XFN_NS_URI, "sum", NULL);
-  xpf_define_alias   ("max", XFN_NS_URI, "max", NULL);
-  xpf_define_alias   ("min", XFN_NS_URI, "min", NULL);
-  xqf_define_builtin ("currentDateTime"				, xqf_currentDateTime		/* ??? */	, DV_DATETIME	, 0	, NULL	, NULL);
-  xqf_define_builtin_with_ns ("date"				, xqf_date			/* XQuery 1.0 */, DV_DATE	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL, XS_NS_URI);
-  xpf_define_alias   ("date", XFN_NS_URI, "date", XS_NS_URI);
-  xqf_define_builtin_with_ns ("dateTime"			, xqf_datetime			/* XQuery 1.0 */, DV_DATETIME	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL, XS_NS_URI);
-    xpf_define_alias   ("dateTime", XFN_NS_URI, "dateTime", XS_NS_URI);
-xqf_define_builtin ("decimal"					, xqf_decimal			/* ??? */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("double"					, xqf_double			/* ??? */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("duration"				, xqf_duration			/* ??? */	, XPDV_DURATION	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1)), NULL	);
+  /*xpf_define_alias   ("count", XFN_NS_URI, "count", NULL);*/
+  /*xpf_define_alias   ("avg", XFN_NS_URI, "avg", NULL);*/
+  /*xpf_define_alias   ("sum", XFN_NS_URI, "sum", NULL);*/
+  /*xpf_define_alias   ("max", XFN_NS_URI, "max", NULL);*/
+  /*xpf_define_alias   ("min", XFN_NS_URI, "min", NULL);*/
+  x2f_define_builtin ("currentDateTime"				, xqf_currentDateTime		/* ??? */	, DV_DATETIME	, 0	, NULL	, NULL);
+  xsd_define_builtin ("date"				, xqf_date			/* XQuery 1.0 */, DV_DATE	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  /*xpf_define_alias   ("date", XFN_NS_URI, "date", XS_NS_URI);*/
+  xsd_define_builtin ("dateTime"			, xqf_datetime			/* XQuery 1.0 */, DV_DATETIME	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  /*xpf_define_alias   ("dateTime", XFN_NS_URI, "dateTime", XS_NS_URI);*/
+  xsd_define_builtin ("decimal"					, xqf_decimal			/* ??? */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  xsd_define_builtin ("double"					, xqf_double			/* ??? */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  xsd_define_builtin ("duration"				, xqf_duration			/* ??? */	, XPDV_DURATION	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
   xqf_define_builtin ("ends-with"				, xqf_ends_with			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(3, xpfma(NULL,DV_STRING,1), xpfma(NULL,DV_STRING,1), xpfma(NULL,DV_STRING,1))	, NULL);
-  xqf_define_builtin ("escape-uri"				, xqf_escape_uri		/* XQuery 1.0 */, DV_STRING	, 2	, xpfmalist(2, xpfma(NULL,DV_STRING,1), xpfma(NULL,DV_LONG_INT,1))	, NULL);
-  xpf_define_alias   ("false", XFN_NS_URI, "false", NULL);
-  xqf_define_builtin ("float"					, xqf_float			/* ??? */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xpf_define_alias   ("floor", XFN_NS_URI, "floor", NULL);
-  xqf_define_builtin ("gDay"					, xqf_gDay			/* ??? */	, DV_DATETIME	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("gMonth"					, xqf_gMonth			/* ??? */	, DV_DATETIME	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("gMonthDay"				, xqf_gMonthDay			/* ??? */	, DV_DATETIME	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("gYear"					, xqf_gYear			/* ??? */	, DV_DATETIME	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("gYearMonth"				, xqf_gYearMonth		/* ??? */	, DV_DATETIME	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("get-Century-from-date"			, xqf_get_Century_from_dateTime	/* ??? */	, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,DV_DATE,1))	, NULL);
+  x2f_define_builtin ("escape-uri"				, xqf_escape_uri		/* XQuery 1.0 */, DV_STRING	, 2	, xpfmalist(2, xpfma(NULL,DV_STRING,1), xpfma(NULL,DV_LONG_INT,1))	, NULL);
+  /*xpf_define_alias   ("false", XFN_NS_URI, "false", NULL);*/
+  xsd_define_builtin ("float"					, xqf_float			/* ??? */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  /*xpf_define_alias   ("floor", XFN_NS_URI, "floor", NULL);*/
+  xsd_define_builtin ("gDay"					, xqf_gDay			/* XQuery 1.0 */, DV_DATETIME	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  xsd_define_builtin ("gMonth"					, xqf_gMonth			/* XQuery 1.0 */, DV_DATETIME	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  xsd_define_builtin ("gMonthDay"				, xqf_gMonthDay			/* XQuery 1.0 */, DV_DATETIME	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  xsd_define_builtin ("gYear"					, xqf_gYear			/* XQuery 1.0 */, DV_DATETIME	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  xsd_define_builtin ("gYearMonth"				, xqf_gYearMonth		/* XQuery 1.0 */, DV_DATETIME	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  x2f_define_builtin ("get-Century-from-date"			, xqf_get_Century_from_dateTime	/* ??? */	, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,DV_DATE,1))	, NULL);
   xpf_define_alias   ("get-Century-from-dateTime", XFN_NS_URI, "get-Century-from-date", XFN_NS_URI);
   xpf_define_alias   ("get-Century-from-gYear", XFN_NS_URI, "get-Century-from-date", XFN_NS_URI);
   xpf_define_alias   ("get-Century-from-gYearMonth", XFN_NS_URI, "get-Century-from-date", XFN_NS_URI);
-  xqf_define_builtin ("get-days"				, xqf_get_Day_from_dateTime	/* ??? */	, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,XPDV_DURATION,1))	, NULL);
-  xqf_define_builtin ("get-duration"				, xqf_get_duration		/* ??? */	, XPDV_DURATION	, 2	, xpfmalist(2, xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_DATETIME,1))	, NULL);
-  xqf_define_builtin ("get-end"					, xqf_get_end			/* ??? */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("get-days"				, xqf_get_Day_from_dateTime	/* ??? */	, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,XPDV_DURATION,1))	, NULL);
+  x2f_define_builtin ("get-duration"				, xqf_get_duration		/* ??? */	, XPDV_DURATION	, 2	, xpfmalist(2, xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_DATETIME,1))	, NULL);
+  x2f_define_builtin ("get-end"					, xqf_get_end			/* ??? */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   xpf_define_alias   ("get-gDay-from-date", XFN_NS_URI, "get-days", XFN_NS_URI);
   xpf_define_alias   ("get-gDay-from-dateTime", XFN_NS_URI, "get-days", XFN_NS_URI);
   xpf_define_alias   ("get-gDay-from-gMonthDay", XFN_NS_URI, "get-days", XFN_NS_URI);
-  xqf_define_builtin ("get-gMonth-from-date"			, xqf_get_Month_from_dateTime	/* ??? */	, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,DV_DATE,1))	, NULL);
+  x2f_define_builtin ("get-gMonth-from-date"			, xqf_get_Month_from_dateTime	/* ??? */	, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,DV_DATE,1))	, NULL);
   xpf_define_alias   ("get-gMonth-from-dateTime", XFN_NS_URI, "get-gMonth-from-date", XFN_NS_URI);
   xpf_define_alias   ("get-gMonth-from-gMonthDay", XFN_NS_URI, "get-gMonth-from-date", XFN_NS_URI);
   xpf_define_alias   ("get-gMonth-from-gYearMonth", XFN_NS_URI, "get-gMonth-from-date", XFN_NS_URI);
-  xqf_define_builtin ("get-gYear-from-date"			, xqf_get_Year_from_dateTime	/* ??? */	, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,DV_DATE,1))	, NULL);
+  x2f_define_builtin ("get-gYear-from-date"			, xqf_get_Year_from_dateTime	/* ??? */	, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,DV_DATE,1))	, NULL);
   xpf_define_alias   ("get-gYear-from-dateTime", XFN_NS_URI, "get-gYear-from-date", XFN_NS_URI);
   xpf_define_alias   ("get-gYear-from-gYear", XFN_NS_URI, "get-gYear-from-date", XFN_NS_URI);
   xpf_define_alias   ("get-gYear-from-gYearMonth", XFN_NS_URI, "get-gYear-from-date", XFN_NS_URI);
-  xqf_define_builtin ("get-hour-from-dateTime"			, xqf_get_hour_from_dateTime	/* ??? */	, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,DV_DATETIME,1))	, NULL);
+  x2f_define_builtin ("get-hour-from-dateTime"			, xqf_get_hour_from_dateTime	/* ??? */	, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,DV_DATETIME,1))	, NULL);
   xpf_define_alias   ("get-hour-from-time", XFN_NS_URI, "get-hour-from-dateTime", XFN_NS_URI);
   xpf_define_alias   ("get-hours", XFN_NS_URI, "get-hour-from-dateTime", XFN_NS_URI);
-  xqf_define_builtin ("get-minutes-from-dateTime"		, xqf_get_minutes_from_dateTime	/* ??? */	, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,DV_DATETIME,1))	, NULL);
+  x2f_define_builtin ("get-minutes-from-dateTime"		, xqf_get_minutes_from_dateTime	/* ??? */	, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,DV_DATETIME,1))	, NULL);
   xpf_define_alias   ("get-minutes-from-time", XFN_NS_URI, "get-minutes-from-dateTime", XFN_NS_URI);
   xpf_define_alias   ("get-minutes", XFN_NS_URI, "get-minutes-from-dateTime", XFN_NS_URI);
   xpf_define_alias   ("get-months", XFN_NS_URI, "get-gMonth-from-date", XFN_NS_URI);
-  xqf_define_builtin ("get-seconds-from-dateTime"		, xqf_get_seconds_from_dateTime	/* ??? */	, DV_NUMERIC	, 1	, xpfmalist(1, xpfma(NULL,DV_DATETIME,1))	, NULL);
+  x2f_define_builtin ("get-seconds-from-dateTime"		, xqf_get_seconds_from_dateTime	/* ??? */	, DV_NUMERIC	, 1	, xpfmalist(1, xpfma(NULL,DV_DATETIME,1))	, NULL);
   xpf_define_alias   ("get-seconds-from-time", XFN_NS_URI, "get-seconds-from-dateTime", XFN_NS_URI);
   xpf_define_alias   ("get-seconds", XFN_NS_URI, "get-seconds-from-dateTime", XFN_NS_URI);
-  xqf_define_builtin ("get-start"				, xqf_get_start			/* ??? */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xqf_define_builtin ("get-timezone-from-date"			, xqf_get_TZ_from_dateTime	/* ??? */	, DV_SHORT_STRING	, 1	, xpfmalist(1, xpfma(NULL,DV_DATE,1))	, NULL);
+  x2f_define_builtin ("get-start"				, xqf_get_start			/* ??? */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("get-timezone-from-date"			, xqf_get_TZ_from_dateTime	/* ??? */	, DV_SHORT_STRING	, 1	, xpfmalist(1, xpfma(NULL,DV_DATE,1))	, NULL);
   xpf_define_alias   ("get-timezone-from-dateTime", XFN_NS_URI, "get-timezone-from-date", XFN_NS_URI);
   xpf_define_alias   ("get-timezone-from-gDay", XFN_NS_URI, "get-timezone-from-date", XFN_NS_URI);
   xpf_define_alias   ("get-timezone-from-gMonth", XFN_NS_URI, "get-timezone-from-date", XFN_NS_URI);
@@ -3663,95 +3721,94 @@ xqf_define_builtin ("decimal"					, xqf_decimal			/* ??? */	, DV_UNKNOWN	, 1	, x
   xpf_define_alias   ("get-timezone-from-gYearMonth", XFN_NS_URI, "get-timezone-from-date", XFN_NS_URI);
   xpf_define_alias   ("get-timezone-from-time", XFN_NS_URI, "get-timezone-from-date", XFN_NS_URI);
   xpf_define_alias   ("get-years", XFN_NS_URI, "get-gYear-from-date", XFN_NS_URI);
-  xqf_define_builtin ("int"					, xqf_int			/* ??? */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("integer"					, xqf_integer			/* ??? */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("language"				, NULL /*xqf_language*/		/* ??? */	, DV_SHORT_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xpf_define_alias   ("local-name", XFN_NS_URI, "local-name", NULL);
-  xqf_define_builtin ("long"					, xqf_long			/* ??? */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("lower-case"				, xqf_lower_case	/* XQuery 1.0 */	, DV_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_STRING,1))	, NULL);
-  xqf_define_builtin ("match"					, NULL /*xqf_match*/		/* ??? */	, DV_ARRAY_OF_XQVAL , 2	, xpfmalist(3, xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("matches"					, xqf_matches			/* ??? */	, XPDV_BOOL, 2	, xpfmalist(3, xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xpf_define_alias   ("name", XFN_NS_URI, "name", NULL);
-  xpf_define_alias   ("namespace-uri", XFN_NS_URI, "namespace-uri", NULL);
-  xpf_define_alias   ("not", XFN_NS_URI, "not", NULL);
-  xqf_define_builtin ("normalizedString"			, xqf_normalized_string		/* ??? */	, DV_SHORT_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xpf_define_alias   ("normalize-space", XFN_NS_URI, "normalize-space", NULL);
-  xqf_define_builtin ("normalize-unicode"			, NULL /*xqf_normalize_unicode*/		, DV_SHORT_STRING , 2	, xpfmalist(2, xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xpf_define_alias   ("number", XFN_NS_URI, "number", NULL);
+  xsd_define_builtin ("int"					, xqf_int			/* ??? */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  xsd_define_builtin ("integer"					, xqf_integer			/* ??? */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  x2f_define_builtin ("language"				, NULL /*xqf_language*/		/* ??? */	, DV_SHORT_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  /*xpf_define_alias   ("local-name", XFN_NS_URI, "local-name", NULL);*/
+  xsd_define_builtin ("long"					, xqf_long			/* ??? */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  x2f_define_builtin ("lower-case"				, xqf_lower_case	/* XQuery 1.0 */	, DV_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_STRING,1))	, NULL);
+  x2f_define_builtin ("match"					, NULL /*xqf_match*/		/* ??? */	, DV_ARRAY_OF_XQVAL , 2	, xpfmalist(3, xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  x2f_define_builtin ("matches"					, xqf_matches			/* ??? */	, XPDV_BOOL, 2	, xpfmalist(3, xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  /*xpf_define_alias   ("name", XFN_NS_URI, "name", NULL);*/
+  /*xpf_define_alias   ("namespace-uri", XFN_NS_URI, "namespace-uri", NULL);*/
+  /*xpf_define_alias   ("not", XFN_NS_URI, "not", NULL);*/
+  x2f_define_builtin ("normalizedString"			, xqf_normalized_string		/* ??? */	, DV_SHORT_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  /*xpf_define_alias   ("normalize-space", XFN_NS_URI, "normalize-space", NULL);*/
+  x2f_define_builtin ("normalize-unicode"			, NULL /*xqf_normalize_unicode*/		, DV_SHORT_STRING , 2	, xpfmalist(2, xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  /*xpf_define_alias   ("number", XFN_NS_URI, "number", NULL);*/
   xpf_define_alias   ("processXQuery", VIRT_BPM_XPATH_EXTENSION_NS_URI, "processXQuery", NULL);
   xpf_define_alias   ("processXSLT", VIRT_BPM_XPATH_EXTENSION_NS_URI, "processXSLT", NULL);
   xqf_define_builtin ("replace"					, xqf_replace			/* XQuery 1.0 */, DV_STRING	, 3 , xpfmalist(4, xpfma(NULL,DV_STRING,1), xpfma(NULL,DV_STRING,1), xpfma(NULL,DV_STRING,1),  xpfma(NULL,DV_STRING,1))	, NULL);
   xpf_define_alias   ("round", XFN_NS_URI, "round-number", NULL);
-  xqf_define_builtin ("root"					, xqf_root			/* XQuery 1.0 */, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,1))	, NULL);
-  xqf_define_builtin ("short"					, xqf_short			/* ??? */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  x2f_define_builtin ("root"					, xqf_root			/* XQuery 1.0 */, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,1))	, NULL);
+  xsd_define_builtin ("short"					, xqf_short			/* ??? */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
   xqf_define_builtin ("starts-with"				, xqf_starts_with		/* ??? */	, XPDV_BOOL	, 2	, xpfmalist(3, xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
   xqf_define_builtin ("string-length"				, xqf_string_length		/* XQuery 1.0 */	, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,DV_STRING,1))	, NULL);
-  xqf_define_builtin ("string"					, xqf_string			/* ??? */	, DV_SHORT_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("string-join"				, xqf_string_join		/* XQuery 1.0 */, DV_STRING , 2	, xpfmalist(2, xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_STRING,1))	, NULL);
-  xqf_define_builtin ("string-pad-beginning"			, NULL /*xqf_string_pad_beginning*/ /* ??? */	, DV_SHORT_STRING , 3	, xpfmalist(3, xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_NUMERIC,1), xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("string-pad-end"				, NULL /*xqf_string_pad_end*/	/* ??? */	, DV_SHORT_STRING , 3	, xpfmalist(3, xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_NUMERIC,1), xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("string-to-codepoints"			, xqf_string_to_codepoints	/* XQuery 1.0 */, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,DV_STRING,1))	,  NULL);
+  xsd_define_builtin ("string"					, xqf_string			/* ??? */	, DV_SHORT_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  x2f_define_builtin ("string-join"				, xqf_string_join		/* XQuery 1.0 */, DV_STRING , 2	, xpfmalist(2, xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_STRING,1))	, NULL);
+  x2f_define_builtin ("string-pad-beginning"			, NULL /*xqf_string_pad_beginning*/ /* ??? */	, DV_SHORT_STRING , 3	, xpfmalist(3, xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_NUMERIC,1), xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  x2f_define_builtin ("string-pad-end"				, NULL /*xqf_string_pad_end*/	/* ??? */	, DV_SHORT_STRING , 3	, xpfmalist(3, xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_NUMERIC,1), xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  x2f_define_builtin ("string-to-codepoints"			, xqf_string_to_codepoints	/* XQuery 1.0 */, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,DV_STRING,1))	,  NULL);
   xqf_define_builtin ("substring"				, xqf_substring			/* XQuery 1.0 */, DV_STRING , 2	, xpfmalist(3, xpfma(NULL,DV_STRING,1), xpfma(NULL,DV_NUMERIC,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
   xqf_define_builtin ("substring-after"				, xqf_substring_after		/* XQUery 1.0 */, DV_STRING , 2	, xpfmalist(3, xpfma(NULL,DV_STRING,1), xpfma(NULL,DV_STRING,1), xpfma(NULL,DV_STRING,1))	, NULL);
   xqf_define_builtin ("substring-before"			, xqf_substring_before		/* XQuery 1.0 */, DV_STRING , 2	, xpfmalist(3, xpfma(NULL,DV_STRING,1), xpfma(NULL,DV_STRING,1), xpfma(NULL,DV_STRING,1))	, NULL);
-  xqf_define_builtin ("temporal-dateTimeDuration-contains"	, xqf_dateTimeDuration_contains	/* ??? */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xqf_define_builtin ("temporal-dateTimes-contains"		, xqf_dateTimes_contains	/* ??? */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xqf_define_builtin ("temporal-durationDateTime-contains"	, xqf_durationDateTime_contains	/* ??? */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xqf_define_builtin_with_ns ("time"				, xqf_time			/* XQuery 1.0 */, DV_TIME	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL, XS_NS_URI);
-  xqf_define_builtin ("token"					, xqf_token			/* ??? */	, DV_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xqf_define_builtin ("tokenize"				, xqf_tokenize			/* ??? */	, DV_UNKNOWN, 2	, xpfmalist(3, xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  x2f_define_builtin ("temporal-dateTimeDuration-contains"	, xqf_dateTimeDuration_contains	/* ??? */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("temporal-dateTimes-contains"		, xqf_dateTimes_contains	/* ??? */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("temporal-durationDateTime-contains"	, xqf_durationDateTime_contains	/* ??? */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  xsd_define_builtin ("time"					, xqf_time			/* XQuery 1.0 */, DV_TIME	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  x2f_define_builtin ("token"					, xqf_token			/* ??? */	, DV_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  x2f_define_builtin ("tokenize"				, xqf_tokenize			/* ??? */	, DV_UNKNOWN, 2	, xpfmalist(3, xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
   xpf_define_alias   ("translate", XFN_NS_URI, "translate", NULL);
   xpf_define_alias   ("true", XFN_NS_URI, "true", NULL);
-  xqf_define_builtin ("upper-case"				, xqf_upper_case	/* XQuery 1.0 */	, DV_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_STRING,1))	, NULL);
+  x2f_define_builtin ("upper-case"				, xqf_upper_case	/* XQuery 1.0 */	, DV_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_STRING,1))	, NULL);
 
 
   /* Operators */
-  xqf_define_builtin_with_ns ("numeric-abs"			, xqf_numeric_abs				, DV_NUMERIC , 1	, xpfmalist(1, xpfma(NULL,DV_NUMERIC,1))	, NULL, XOP_NS_URI);
+  xop_define_builtin ("numeric-abs"			, xqf_numeric_abs				, DV_NUMERIC , 1	, xpfmalist(1, xpfma(NULL,DV_NUMERIC,1))	, NULL);
   xpf_define_alias ("numeric-add", XOP_NS_URI, "sum", NULL);
-  xqf_define_builtin_with_ns ("numeric-equal"			, xqf_numeric_equal				, XPDV_BOOL  , 2	, xpfmalist(2, xpfma(NULL,DV_NUMERIC,1), xpfma(NULL,DV_NUMERIC,1))	, NULL, XOP_NS_URI);
-  xqf_define_builtin_with_ns ("numeric-greater-than"		, xqf_numeric_gt				, XPDV_BOOL  , 2	, xpfmalist(2, xpfma(NULL,DV_NUMERIC,1), xpfma(NULL,DV_NUMERIC,1))	, NULL, XOP_NS_URI);
-  xqf_define_builtin_with_ns ("numeric-integer-divide"		, xqf_numeric_idivide				, DV_NUMERIC , 2	, xpfmalist(2, xpfma(NULL,DV_NUMERIC,1), xpfma(NULL,DV_NUMERIC,1))	, NULL, XOP_NS_URI);
-  xqf_define_builtin_with_ns ("numeric-less-than"		, xqf_numeric_lt				, XPDV_BOOL  , 2	, xpfmalist(2, xpfma(NULL,DV_NUMERIC,1), xpfma(NULL,DV_NUMERIC,1))	, NULL, XOP_NS_URI);
-  xqf_define_builtin_with_ns ("numeric-mod"			, xqf_numeric_mod				, DV_NUMERIC , 2	, xpfmalist(2, xpfma(NULL,DV_NUMERIC,1), xpfma(NULL,DV_NUMERIC,1))	, NULL, XOP_NS_URI);
-  xqf_define_builtin_with_ns ("numeric-multiply"		, xqf_numeric_multiply				, DV_NUMERIC , 2	, xpfmalist(2, xpfma(NULL,DV_NUMERIC,1), xpfma(NULL,DV_NUMERIC,1))	, NULL, XOP_NS_URI);
-  xqf_define_builtin_with_ns ("numeric-subtract"		, xqf_numeric_subtract	/* ??? */		, DV_NUMERIC , 2	, xpfmalist(2, xpfma(NULL,DV_NUMERIC,1), xpfma(NULL,DV_NUMERIC,1))	, NULL, XOP_NS_URI);
-  xqf_define_builtin_with_ns ("numeric-divide"			, xqf_numeric_divide				, DV_NUMERIC , 2	, xpfmalist(2, xpfma(NULL,DV_NUMERIC,1), xpfma(NULL,DV_NUMERIC,1))	, NULL, XOP_NS_URI);
-  xqf_define_builtin_with_ns ("numeric-unary-minus"		, xqf_numeric_uminus				, DV_NUMERIC , 1	, xpfmalist(1, xpfma(NULL,DV_NUMERIC,1))	, NULL, XOP_NS_URI);
+  xop_define_builtin ("numeric-equal"			, xqf_numeric_equal				, XPDV_BOOL  , 2	, xpfmalist(2, xpfma(NULL,DV_NUMERIC,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
+  xop_define_builtin ("numeric-greater-than"		, xqf_numeric_gt				, XPDV_BOOL  , 2	, xpfmalist(2, xpfma(NULL,DV_NUMERIC,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
+  xop_define_builtin ("numeric-integer-divide"		, xqf_numeric_idivide				, DV_NUMERIC , 2	, xpfmalist(2, xpfma(NULL,DV_NUMERIC,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
+  xop_define_builtin ("numeric-less-than"		, xqf_numeric_lt				, XPDV_BOOL  , 2	, xpfmalist(2, xpfma(NULL,DV_NUMERIC,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
+  xop_define_builtin ("numeric-mod"			, xqf_numeric_mod				, DV_NUMERIC , 2	, xpfmalist(2, xpfma(NULL,DV_NUMERIC,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
+  xop_define_builtin ("numeric-multiply"			, xqf_numeric_multiply				, DV_NUMERIC , 2	, xpfmalist(2, xpfma(NULL,DV_NUMERIC,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
+  xop_define_builtin ("numeric-subtract"			, xqf_numeric_subtract	/* ??? */		, DV_NUMERIC , 2	, xpfmalist(2, xpfma(NULL,DV_NUMERIC,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
+  xop_define_builtin ("numeric-divide"			, xqf_numeric_divide				, DV_NUMERIC , 2	, xpfmalist(2, xpfma(NULL,DV_NUMERIC,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
+  xop_define_builtin ("numeric-unary-minus"		, xqf_numeric_uminus				, DV_NUMERIC , 1	, xpfmalist(1, xpfma(NULL,DV_NUMERIC,1))				, NULL);
 
 
 
-  xqf_define_builtin ("zero-or-one"			, xqf_zero_or_one			/* XQuery 1.0 */, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xqf_define_builtin ("one-or-more"			, xqf_one_or_more			/* XQuery 1.0 */, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xqf_define_builtin ("exactly-one"		, xqf_exactly_one				/* XQuery 1.0 */, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xqf_define_builtin ("boolean"				, xqf_boolean				/* XQuery 1.0 */, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,XPDV_BOOL,1))	, NULL);
-  xqf_define_builtin ("index-of"			, xqf_index_of				/* XQuery 1.0 */, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_alias   ("empty", XFN_NS_URI, "empty", NULL);
-  xpf_define_alias   ("exists", XFN_NS_URI, "exists", NULL);
+  x2f_define_builtin ("zero-or-one"			, xqf_zero_or_one			/* XQuery 1.0 */, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("one-or-more"			, xqf_one_or_more			/* XQuery 1.0 */, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("exactly-one"			, xqf_exactly_one				/* XQuery 1.0 */, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("index-of"				, xqf_index_of				/* XQuery 1.0 */, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  /*xpf_define_alias   ("empty", XFN_NS_URI, "empty", NULL);*/
+  /*xpf_define_alias   ("exists", XFN_NS_URI, "exists", NULL);*/
   xqf_define_builtin ("distinct-values"			, xqf_distinct_values			/* XQuery 1.0 */, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xqf_define_builtin ("insert-before"			, xqf_insert_before			/* XQuery 1.0 */, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xqf_define_builtin ("remove"				, xqf_remove				/* XQuery 1.0 */, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xqf_define_builtin ("reverse"				, xqf_reverse				/* XQuery 1.0 */, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xqf_define_builtin ("subsequence"			, xqf_subsequence			/* XQuery 1.0 */, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_alias   ("unordered", XFN_NS_URI, "unordered", NULL);
-  xpf_define_alias   ("union", XFN_NS_URI, "union", NULL);
+  x2f_define_builtin ("insert-before"			, xqf_insert_before			/* XQuery 1.0 */, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("remove"				, xqf_remove				/* XQuery 1.0 */, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("reverse"				, xqf_reverse				/* XQuery 1.0 */, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  x2f_define_builtin ("subsequence"			, xqf_subsequence			/* XQuery 1.0 */, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
+  /*xpf_define_alias   ("unordered", XFN_NS_URI, "unordered", NULL);*/
+  /*xpf_define_alias   ("union", XFN_NS_URI, "union", NULL);*/
   xpf_define_alias   ("union", XOP_NS_URI, "union", NULL);
-  xpf_define_alias   ("intersect", XFN_NS_URI, "intersect", NULL);
+  /*xpf_define_alias   ("intersect", XFN_NS_URI, "intersect", NULL);*/
   xpf_define_alias   ("intersect", XOP_NS_URI, "intersect", NULL);
-  xpf_define_alias   ("except", XFN_NS_URI, "except", NULL);
+  /*xpf_define_alias   ("except", XFN_NS_URI, "except", NULL);*/
   xpf_define_alias   ("except", XOP_NS_URI, "except", NULL);
 
   xpf_define_alias   ("is-same-node", XOP_NS_URI, "is-same", NULL);
   xpf_define_alias   ("node-before", XOP_NS_URI, "is-before", NULL);
   xpf_define_alias   ("node-after", XOP_NS_URI, "is-after", NULL);
   xpf_define_alias   ("to", XOP_NS_URI, "TO operator", NULL);
-  xpf_define_alias   ("id", XFN_NS_URI, "id", NULL);
-  xpf_define_alias   ("doc", XFN_NS_URI, "doc", NULL);
-  xpf_define_alias   ("position", XFN_NS_URI, "position", NULL);
-  xpf_define_alias   ("last", XFN_NS_URI, "last", NULL);
+  /*xpf_define_alias   ("id", XFN_NS_URI, "id", NULL);*/
+  /*xpf_define_alias   ("doc", XFN_NS_URI, "doc", NULL);*/
+  /*xpf_define_alias   ("position", XFN_NS_URI, "position", NULL);*/
+  /*xpf_define_alias   ("last", XFN_NS_URI, "last", NULL);*/
 
-  xqf_define_builtin_with_ns ("boolean-equal"		       , xqf_boolean_equal			/* XQuery 1.0 */, XPDV_BOOL     , 2	, xpfmalist(2, xpfma(NULL,XPDV_BOOL,0),  xpfma(NULL,XPDV_BOOL,0)), NULL, XOP_NS_URI);
-  xqf_define_builtin_with_ns ("boolean-less-than"	       , xqf_boolean_lt				/* XQuery 1.0 */, XPDV_BOOL     , 2	, xpfmalist(2, xpfma(NULL,XPDV_BOOL,0),  xpfma(NULL,XPDV_BOOL,0)), NULL, XOP_NS_URI);
-  xqf_define_builtin_with_ns ("boolean-greater-than"	       , xqf_boolean_gt				/* XQuery 1.0 */, XPDV_BOOL     , 2	, xpfmalist(2, xpfma(NULL,XPDV_BOOL,0),  xpfma(NULL,XPDV_BOOL,0)), NULL, XOP_NS_URI);
+  xop_define_builtin ("boolean-equal"		       , xqf_boolean_equal			/* XQuery 1.0 */, XPDV_BOOL     , 2	, xpfmalist(2, xpfma(NULL,XPDV_BOOL,0),  xpfma(NULL,XPDV_BOOL,0)), NULL);
+  xop_define_builtin ("boolean-less-than"	       , xqf_boolean_lt				/* XQuery 1.0 */, XPDV_BOOL     , 2	, xpfmalist(2, xpfma(NULL,XPDV_BOOL,0),  xpfma(NULL,XPDV_BOOL,0)), NULL);
+  xop_define_builtin ("boolean-greater-than"	       , xqf_boolean_gt				/* XQuery 1.0 */, XPDV_BOOL     , 2	, xpfmalist(2, xpfma(NULL,XPDV_BOOL,0),  xpfma(NULL,XPDV_BOOL,0)), NULL);
 
 
   /* datetime functions */
@@ -3774,88 +3831,107 @@ xqf_define_builtin ("decimal"					, xqf_decimal			/* ??? */	, DV_UNKNOWN	, 1	, x
   xpf_define_alias   ("seconds-from-time", XFN_NS_URI, "get-seconds-from-dateTime", XFN_NS_URI);
 
   /* duration functions */
-  xqf_define_builtin_with_ns ("yearMonthDuration"		, xqf_duration			/* XQuery 1.0 */, XPDV_DURATION	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1)), NULL,XDT_NS_URI);
-  xqf_define_builtin_with_ns ("dayTimeDuration"			, xqf_duration			/* XQuery 1.0 */, XPDV_DURATION	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1)), NULL,XDT_NS_URI);
-  xqf_define_builtin ("year-from-duration"			, xqf_get_Year_from_duration	/* XQuery 1.0 */, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,XPDV_DURATION,1))	, NULL);
-  xqf_define_builtin ("day-from-duration"			, xqf_get_Day_from_duration	/* XQuery 1.0 */, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,XPDV_DURATION,1))	, NULL);
-  xqf_define_builtin ("month-from-duration"			, xqf_get_Month_from_duration	/* XQuery 1.0 */, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,XPDV_DURATION,1))	, NULL);
-  xqf_define_builtin ("minutes-from-duration"			, xqf_get_minutes_from_duration	/* XQuery 1.0 */, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,XPDV_DURATION,1))	, NULL);
-  xqf_define_builtin ("hours-from-duration"			, xqf_get_hour_from_duration	/* XQuery 1.0 */, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,XPDV_DURATION,1))	, NULL);
-  xqf_define_builtin ("seconds-from-duration"			, xqf_get_seconds_from_duration	/* XQuery 1.0 */, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,XPDV_DURATION,1))	, NULL);
+#if 1
+  xpf_define_alias   ("yearMonthDuration", XDT_NS_URI, "duration", XFN_NS_URI); /* XQuery 1.0 */
+  xpf_define_alias   ("dayTimeDuration", XDT_NS_URI, "duration", XFN_NS_URI); /* XQuery 1.0 */
+#else
+  xdt_define_builtin ("yearMonthDuration"			, xqf_duration			/* XQuery 1.0 */, XPDV_DURATION	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  xdt_define_builtin ("dayTimeDuration"				, xqf_duration			/* XQuery 1.0 */, XPDV_DURATION	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+#endif
+  x2f_define_builtin ("year-from-duration"			, xqf_get_Year_from_duration	/* XQuery 1.0 */, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,XPDV_DURATION,1))	, NULL);
+  x2f_define_builtin ("day-from-duration"			, xqf_get_Day_from_duration	/* XQuery 1.0 */, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,XPDV_DURATION,1))	, NULL);
+  x2f_define_builtin ("month-from-duration"			, xqf_get_Month_from_duration	/* XQuery 1.0 */, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,XPDV_DURATION,1))	, NULL);
+  x2f_define_builtin ("minutes-from-duration"			, xqf_get_minutes_from_duration	/* XQuery 1.0 */, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,XPDV_DURATION,1))	, NULL);
+  x2f_define_builtin ("hours-from-duration"			, xqf_get_hour_from_duration	/* XQuery 1.0 */, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,XPDV_DURATION,1))	, NULL);
+  x2f_define_builtin ("seconds-from-duration"			, xqf_get_seconds_from_duration	/* XQuery 1.0 */, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,XPDV_DURATION,1))	, NULL);
 
   /* duration operations */
-  xqf_define_builtin_with_ns ("yearMonthDuration-equal"		, xqf_YM_eq			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("yearMonthDuration-less-than"	, xqf_YM_lt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("yearMonthDuration-greater-than"	, xqf_YM_gt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL,XOP_NS_URI);
-
-  xqf_define_builtin_with_ns ("dayTimeDuration-equal"		, xqf_DT_eq			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("dayTimeDuration-less-than"	, xqf_DT_lt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("dayTimeDuration-greater-than"	, xqf_DT_gt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL,XOP_NS_URI);
+  xop_define_builtin ("yearMonthDuration-equal"		, xqf_YM_eq			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
+  xop_define_builtin ("yearMonthDuration-less-than"	, xqf_YM_lt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
+  xop_define_builtin ("yearMonthDuration-greater-than"	, xqf_YM_gt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
+  xop_define_builtin ("dayTimeDuration-equal"		, xqf_DT_eq			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
+  xop_define_builtin ("dayTimeDuration-less-than"	, xqf_DT_lt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
+  xop_define_builtin ("dayTimeDuration-greater-than"	, xqf_DT_gt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
 
   /* arithmetic operations over durations */
-  xqf_define_builtin_with_ns ("add-yearMonthDurations"		, xqf_yMd_add			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("subtract-yearMonthDurations"	, xqf_yMd_sub			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("multiply-yearMonthDuration"	, xqf_yMd_mult			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_NUMERIC,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("divide-yearMonthDuration"	, xqf_yMd_div			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_NUMERIC,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("divide-yearMonthDuration-by-yearMonthDuration"	,xqf_yMd_div_yMd/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL,XOP_NS_URI);
-
-  xqf_define_builtin_with_ns ("add-dayTimeDurations"		, xqf_dT_add			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("subtract-dayTimeDurations"	, xqf_dT_sub			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("multiply-dayTimeDuration"	, xqf_dT_mult			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_NUMERIC,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("divide-dayTimeDuration"	, xqf_dT_div				/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_NUMERIC,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("divide-dayTimeDuration-by-dayTimeDuration"	,xqf_dT_div_dT	/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL,XOP_NS_URI);
+  xop_define_builtin ("add-yearMonthDurations"		, xqf_yMd_add			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
+  xop_define_builtin ("subtract-yearMonthDurations"	, xqf_yMd_sub			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
+  xop_define_builtin ("multiply-yearMonthDuration"	, xqf_yMd_mult			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
+  xop_define_builtin ("divide-yearMonthDuration"		, xqf_yMd_div			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
+  xop_define_builtin ("divide-yearMonthDuration-by-yearMonthDuration"	,xqf_yMd_div_yMd/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
+  xop_define_builtin ("add-dayTimeDurations"		, xqf_dT_add			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
+  xop_define_builtin ("subtract-dayTimeDurations"	, xqf_dT_sub			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
+  xop_define_builtin ("multiply-dayTimeDuration"		, xqf_dT_mult			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
+  xop_define_builtin ("divide-dayTimeDuration"		, xqf_dT_div			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
+  xop_define_builtin ("divide-dayTimeDuration-by-dayTimeDuration"	,xqf_dT_div_dT	/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
 
 
   /* dateTime operations */
-  xqf_define_builtin_with_ns ("dateTime-equal"			, xqf_dT_eq			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_DATETIME,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("dateTime-less-than"		, xqf_dT_lt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_DATETIME,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("dateTime-greater-than"		, xqf_dT_gt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_DATETIME,1)), NULL,XOP_NS_URI);
+  xop_define_builtin ("dateTime-equal"			, xqf_dT_eq			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_DATETIME,1)), NULL);
+  xop_define_builtin ("dateTime-less-than"		, xqf_dT_lt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_DATETIME,1)), NULL);
+  xop_define_builtin ("dateTime-greater-than"		, xqf_dT_gt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_DATETIME,1)), NULL);
   /* Date operations */
-  xqf_define_builtin_with_ns ("date-equal"			, xqf_date_eq			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_DATETIME,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("date-less-than"			, xqf_date_lt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_DATETIME,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("date-greater-than"		, xqf_date_gt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_DATETIME,1)), NULL,XOP_NS_URI);
+  xop_define_builtin ("date-equal"			, xqf_date_eq			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_DATETIME,1)), NULL);
+  xop_define_builtin ("date-less-than"			, xqf_date_lt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_DATETIME,1)), NULL);
+  xop_define_builtin ("date-greater-than"		, xqf_date_gt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_DATETIME,1)), NULL);
   /* time operations */
-  xqf_define_builtin_with_ns ("time-equal"			, xqf_time_eq			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_DATETIME,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("time-less-than"			, xqf_time_lt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_DATETIME,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("time-greater-than"		, xqf_time_gt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_DATETIME,1)), NULL,XOP_NS_URI);
-  /* constructors for date types */
-  xqf_define_builtin_with_ns ("gDay"				, xqf_gDay			/* XQuery 1.0 */, DV_DATETIME	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL, XS_NS_URI);
-  xqf_define_builtin_with_ns ("gMonth"				, xqf_gMonth			/* XQuery 1.0 */, DV_DATETIME	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL, XS_NS_URI);
-  xqf_define_builtin_with_ns ("gMonthDay"			, xqf_gMonthDay			/* XQuery 1.0 */, DV_DATETIME	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL, XS_NS_URI);
-  xqf_define_builtin_with_ns ("gYear"				, xqf_gYear			/* XQuery 1.0 */, DV_DATETIME	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL, XS_NS_URI);
-  xqf_define_builtin_with_ns ("gYearMonth"			, xqf_gYearMonth		/* XQuery 1.0 */, DV_DATETIME	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL, XS_NS_URI);
+  xop_define_builtin ("time-equal"			, xqf_time_eq			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_DATETIME,1)), NULL);
+  xop_define_builtin ("time-less-than"			, xqf_time_lt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_DATETIME,1)), NULL);
+  xop_define_builtin ("time-greater-than"		, xqf_time_gt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_DATETIME,1)), NULL);
 
-  xqf_define_builtin ("adjust-dateTime-to-timezone"	, xqf_adj_tz			/* XQuery 1.0 */, DV_DATETIME	, 1	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
-  xqf_define_builtin ("adjust-date-to-timezone"	,	 xqf_adj_tz			/* XQuery 1.0 */, DV_DATETIME	, 1	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
-  xqf_define_builtin ("adjust-time-to-timezone"	,	xqf_adj_tz			/* XQuery 1.0 */, DV_DATETIME	, 1	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
+  x2f_define_builtin ("adjust-dateTime-to-timezone"	, xqf_adj_tz			/* XQuery 1.0 */, DV_DATETIME	, 1	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
+#if 1
+  xpf_define_alias ("adjust-date-to-timezone", XFN_NS_URI, "adjust-dateTime-to-timezone", XFN_NS_URI);
+  xpf_define_alias ("adjust-date-to-timezone", XXF_NS_URI, "adjust-dateTime-to-timezone", XFN_NS_URI);
+  xpf_define_alias ("adjust-time-to-timezone", XFN_NS_URI, "adjust-dateTime-to-timezone", XFN_NS_URI);
+  xpf_define_alias ("adjust-time-to-timezone", XXF_NS_URI, "adjust-dateTime-to-timezone", XFN_NS_URI);
+#else
+  x2f_define_builtin ("adjust-date-to-timezone"	,	 xqf_adj_tz			/* XQuery 1.0 */, DV_DATETIME	, 1	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
+  x2f_define_builtin ("adjust-time-to-timezone"	,	xqf_adj_tz			/* XQuery 1.0 */, DV_DATETIME	, 1	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
+#endif
 
   /* Arithmetic functions on Durations, Dates and Times */
-  xqf_define_builtin ("subtract-dateTimes-yielding-yearMonthDuration",xqf_dT_sub_yMD		/* XQuery 1.0 */, DV_NUMERIC, 1	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
-  xqf_define_builtin ("subtract-dateTimes-yielding-dayTimeDuration",xqf_dT_sub_dTD		/* XQuery 1.0 */, DV_NUMERIC, 1	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
-  xqf_define_builtin ("subtract-dates-yielding-yearMonthDuration",xqf_dT_sub_yMD		/* XQuery 1.0 */, DV_NUMERIC, 1	, xpfmalist(2,  xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
-  xqf_define_builtin ("subtract-dates-yielding-dayTimeDuration",xqf_dT_sub_dTD			/* XQuery 1.0 */, DV_NUMERIC, 1	, xpfmalist(2,  xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
-  xqf_define_builtin ("subtract-times",xqf_dT_sub_dTD						/* XQuery 1.0 */, DV_NUMERIC, 1	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
+  x2f_define_builtin ("subtract-dateTimes-yielding-yearMonthDuration",xqf_dT_sub_yMD		/* XQuery 1.0 */, DV_NUMERIC, 1	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
+  x2f_define_builtin ("subtract-dateTimes-yielding-dayTimeDuration",xqf_dT_sub_dTD		/* XQuery 1.0 */, DV_NUMERIC, 1	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
+#if 1
+  xpf_define_alias ("subtract-dates-yielding-yearMonthDuration", XFN_NS_URI, "subtract-dateTimes-yielding-yearMonthDuration", XFN_NS_URI);
+  xpf_define_alias ("subtract-dates-yielding-yearMonthDuration", XXF_NS_URI, "subtract-dateTimes-yielding-yearMonthDuration", XFN_NS_URI);
+  xpf_define_alias ("subtract-dates-yielding-dayTimeDuration", XFN_NS_URI, "subtract-dateTimes-yielding-dayTimeDuration", XFN_NS_URI);
+  xpf_define_alias ("subtract-dates-yielding-dayTimeDuration", XXF_NS_URI, "subtract-dateTimes-yielding-dayTimeDuration", XFN_NS_URI);
+  xpf_define_alias ("subtract-times", XFN_NS_URI, "subtract-dateTimes-yielding-dayTimeDuration", XFN_NS_URI);
+  xpf_define_alias ("subtract-times", XXF_NS_URI, "subtract-dateTimes-yielding-dayTimeDuration", XFN_NS_URI);
+#else
+  x2f_define_builtin ("subtract-dates-yielding-yearMonthDuration",xqf_dT_sub_yMD		/* XQuery 1.0 */, DV_NUMERIC, 1	, xpfmalist(2,  xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
+  x2f_define_builtin ("subtract-dates-yielding-dayTimeDuration",xqf_dT_sub_dTD			/* XQuery 1.0 */, DV_NUMERIC, 1	, xpfmalist(2,  xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
+  x2f_define_builtin ("subtract-times",xqf_dT_sub_dTD						/* XQuery 1.0 */, DV_NUMERIC, 1	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
+#endif
 
-  xqf_define_builtin_with_ns ("add-yearMonthDuration-to-dateTime", xqf_add_yMD_to_dT		/* XQuery 1.0 */, DV_DATETIME	, 2	, xpfmalist(2, xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("add-dayTimeDuration-to-dateTime", xqf_add_dTD_to_dT		/* XQuery 1.0 */, DV_DATETIME	, 2	, xpfmalist(2, xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("subtract-yearMonthDuration-from-dateTime", xqf_sub_yMD_to_dT	/* XQuery 1.0 */, DV_DATETIME	, 2	, xpfmalist(2, xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("subtract-dayTimeDuration-from-dateTime", xqf_sub_dTD_to_dT	/* XQuery 1.0 */, DV_DATETIME	, 2	, xpfmalist(2, xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1)), NULL,XOP_NS_URI);
-
-  xqf_define_builtin_with_ns ("add-yearMonthDuration-to-date", xqf_add_yMD_to_dT		/* XQuery 1.0 */, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("add-dayTimeDuration-to-date", xqf_add_dTD_to_dT			/* XQuery 1.0 */, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("subtract-yearMonthDuration-from-date", xqf_sub_yMD_to_dT		/* XQuery 1.0 */, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("subtract-dayTimeDuration-from-date", xqf_sub_dTD_to_dT		/* XQuery 1.0 */, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1)), NULL,XOP_NS_URI);
-
-  xqf_define_builtin_with_ns ("add-dayTimeDuration-to-time", xqf_add_dTD_to_dT			/* XQuery 1.0 */, DV_TIME	, 2	, xpfmalist(2, xpfma(NULL,DV_TIME,1), xpfma(NULL,DV_NUMERIC,1)), NULL,XOP_NS_URI);
-  xqf_define_builtin_with_ns ("subtract-dayTimeDuration-from-time", xqf_sub_dTD_to_dT		/* XQuery 1.0 */, DV_TIME	, 2	, xpfmalist(2, xpfma(NULL,DV_TIME,1), xpfma(NULL,DV_NUMERIC,1)), NULL,XOP_NS_URI);
+  xop_define_builtin ("add-yearMonthDuration-to-dateTime", xqf_add_yMD_to_dT		/* XQuery 1.0 */, DV_DATETIME	, 2	, xpfmalist(2, xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
+  xop_define_builtin ("add-dayTimeDuration-to-dateTime", xqf_add_dTD_to_dT		/* XQuery 1.0 */, DV_DATETIME	, 2	, xpfmalist(2, xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
+  xop_define_builtin ("subtract-yearMonthDuration-from-dateTime", xqf_sub_yMD_to_dT	/* XQuery 1.0 */, DV_DATETIME	, 2	, xpfmalist(2, xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
+  xop_define_builtin ("subtract-dayTimeDuration-from-dateTime", xqf_sub_dTD_to_dT	/* XQuery 1.0 */, DV_DATETIME	, 2	, xpfmalist(2, xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
+#if 1
+  xpf_define_alias ("add-yearMonthDuration-to-date"		, XOP_NS_URI  ,"add-yearMonthDuration-to-dateTime"		, XOP_NS_URI);
+  xpf_define_alias ("add-dayTimeDuration-to-date"		, XOP_NS_URI  ,"add-dayTimeDuration-to-dateTime"			, XOP_NS_URI);
+  xpf_define_alias ("subtract-yearMonthDuration-from-date"	, XOP_NS_URI  ,"subtract-yearMonthDuration-from-dateTime"	, XOP_NS_URI);
+  xpf_define_alias ("subtract-dayTimeDuration-from-date"		, XOP_NS_URI  ,"subtract-dayTimeDuration-from-dateTime"		, XOP_NS_URI);
+  xpf_define_alias ("add-dayTimeDuration-to-time"		, XOP_NS_URI  ,"add-dayTimeDuration-to-dateTime"			, XOP_NS_URI);
+  xpf_define_alias ("subtract-dayTimeDuration-from-time"		, XOP_NS_URI  ,"subtract-dayTimeDuration-from-dateTime"		, XOP_NS_URI);
+#else
+  xop_define_builtin ("add-yearMonthDuration-to-date", xqf_add_yMD_to_dT		/* XQuery 1.0 */, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1))		, NULL);
+  xop_define_builtin ("add-dayTimeDuration-to-date", xqf_add_dTD_to_dT			/* XQuery 1.0 */, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1))		, NULL);
+  xop_define_builtin ("subtract-yearMonthDuration-from-date", xqf_sub_yMD_to_dT		/* XQuery 1.0 */, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1))		, NULL);
+  xop_define_builtin ("subtract-dayTimeDuration-from-date", xqf_sub_dTD_to_dT		/* XQuery 1.0 */, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1))		, NULL);
+  xop_define_builtin ("add-dayTimeDuration-to-time", xqf_add_dTD_to_dT			/* XQuery 1.0 */, DV_TIME	, 2	, xpfmalist(2, xpfma(NULL,DV_TIME,1), xpfma(NULL,DV_NUMERIC,1))		, NULL);
+  xop_define_builtin ("subtract-dayTimeDuration-from-time", xqf_sub_dTD_to_dT		/* XQuery 1.0 */, DV_TIME	, 2	, xpfmalist(2, xpfma(NULL,DV_TIME,1), xpfma(NULL,DV_NUMERIC,1))		, NULL);
+#endif
 
   /* QNames */
-  xqf_define_builtin_with_ns ("QName-equal",		xqf_qname_eq				/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2, xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL,XOP_NS_URI);
+  xop_define_builtin ("QName-equal",		xqf_qname_eq				/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2, xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
 
   xpf_define_builtin ("current-date", xpf_current_date						/* XQuery 1.0 */, DV_DATE	, 0	, xpfmalist(0), NULL);
-  xpf_define_alias   ("current-date", XFN_NS_URI, "current-date", NULL);
-  xqf_define_builtin ("current-time", xqf_current_time						/* XQuery 1.0 */, DV_TIME	, 0	, xpfmalist(0), NULL);
-  xqf_define_builtin ("current-dateTime", xqf_current_dateTime					/* XQuery 1.0 */, DV_DATETIME	, 0	, xpfmalist(0), NULL);
-  xpf_define_alias   ("deep-equal", XFN_NS_URI, "deep-equal", NULL);
+  xpf_define_builtin ("current-time", xqf_current_time						/* XQuery 1.0 */, DV_TIME	, 0	, xpfmalist(0), NULL);
+  xpf_define_builtin ("current-dateTime", xqf_current_dateTime					/* XQuery 1.0 */, DV_DATETIME	, 0	, xpfmalist(0), NULL);
+  /*xpf_define_alias   ("deep-equal", XFN_NS_URI, "deep-equal", NULL);*/
 }
 

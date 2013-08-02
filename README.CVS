@@ -1,7 +1,21 @@
 Using Virtuoso Open Source Edition CVS Tree
 ===========================================
 
-Copyright (C) 1998-2010 by OpenLink Software <vos.admin@openlinksw.com>
+Copyright (C) 1998-2013 OpenLink Software <vos.admin@openlinksw.com>
+
+
+NOTICE
+======
+
+The Virtuoso Open Source development team has decided to stop using
+CVS in favour of GIT. The VOS 6.1.5 version will be the last version
+in CVS tree on sourceforge.net. Users who are tracking the Virtuoso
+Open Source project or want to aid in it's development are encouraged
+to move with us to github via:
+
+  https://github.com/openlink/virtuoso-opensource
+
+For information about GIT see also README.GIT
 
 
 Introduction

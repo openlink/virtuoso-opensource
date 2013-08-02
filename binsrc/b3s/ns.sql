@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2009 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -44,7 +44,9 @@ ttlp ('
 rdfs:label rdfs:subPropertyOf b3s:label .
 dc:title rdfs:subPropertyOf b3s:label .
 foaf:name rdfs:subPropertyOf b3s:label .
-foaf:nick rdfs:subPropertyOf b3s:label .', 'xx', 'b3sonto');
+foaf:nick rdfs:subPropertyOf b3s:label .
+<http://purl.uniprot.org/core/scientificName> rdfs:subPropertyOf b3s:label .
+', 'xx', 'b3sonto');
 
 
 
@@ -59,10 +61,10 @@ ttlp ('
 
 foaf:mbox_sha1sum a owl:InverseFunctionalProperty .
 foaf:mbox_sha1sum rdfs:subPropertyOf lod:ifp_like .
-foaf:name a owl:InverseFunctionalProperty .
-foaf:name rdfs:subPropertyOf lod:ifp_like .
-rdfs:label a owl:InverseFunctionalProperty .
-rdfs:label rdfs:subPropertyOf lod:ifp_like .
+foaf:mbox a owl:InverseFunctionalProperty .
+foaf:mbox rdfs:subPropertyOf lod:ifp_like .
+# rdfs:label a owl:InverseFunctionalProperty .
+# rdfs:label rdfs:subPropertyOf lod:ifp_like .
 <http://linkedopencommerce.com/schemas/icecat/v1/hasProductId> a owl:InverseFunctionalProperty .
 <http://linkedopencommerce.com/schemas/icecat/v1/hasProductId> rdfs:subPropertyOf lod:ifp_like .
 
@@ -77,3 +79,15 @@ INSERT INTO GRAPH <urn:rules.skos> { skos:broader rdfs:subPropertyOf skos:broade
 ;
 
 rdfs_rule_set ('skos-trans', 'urn:rules.skos');
+
+create procedure fct_load_oplweb ()
+{
+  for select RES_CONTENT as cnt from WS.WS.SYS_DAV_RES where RES_FULL_PATH = '/DAV/VAD/fct/oplweb.owl' do
+    {
+      DB.DBA.RDF_LOAD_RDFXML (cast (cnt as varchar), 'http://www.openlinksw.com/schemas/oplweb#', 'http://www.openlinksw.com/schemas/oplweb#');
+    }
+}
+;
+
+fct_load_oplweb ();
+rdfs_rule_set ('oplweb', 'http://www.openlinksw.com/schemas/oplweb#');

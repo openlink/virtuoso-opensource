@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -41,7 +41,8 @@ create procedure get_graph ()
   return sprintf ('http://%s%s', get_cname (), get_base_path ());
 };
 
-create procedure get_graph_ext (in access_mode integer)
+create procedure get_graph_ext (
+  in access_mode integer)
 {
   declare graph varchar;
 
@@ -53,32 +54,18 @@ create procedure get_graph_ext (in access_mode integer)
 };
 
 create procedure get_graph_new (
-  in instance_id integer := null,
   in access_mode integer := null,
   in object_iri varchar := null)
 {
-  declare arr any;
-  declare exit handler for not found { return null; };
-
-  if (isnull (access_mode))
-    access_mode := coalesce((select WAI_IS_PUBLIC from DB.DBA.WA_INSTANCE where WAI_ID = instance_id), 0);
-
-  if (access_mode = 0)
-    return null;
+  declare V any;
 
   if (access_mode = 1)
     return get_graph ();
 
-  if (access_mode = 2)
-  {
-    if (isnull (object_iri))
-      object_iri := get_graph ();
-    arr := sprintf_inverse (object_iri, 'http://%s/dataspace/%s', 1);
-    if (length (arr) <> 2)
-      return null;
-    return sprintf ('http://%s/dataspace/protected/%s',arr[0],arr[1]);
-  }
-  return null;
+  V := sprintf_inverse (object_iri, 'http://%s/dataspace/%s', 1);
+  if (length (V) <> 2)
+    return null;
+  return sprintf ('http://%s/dataspace/protected/%s', V[0], V[1]);
 };
 
 create procedure get_ods_link ()
@@ -224,9 +211,24 @@ create procedure opl_iri (in s varchar)
 };
 
 
+create procedure oplmail_iri (in s varchar)
+{
+  return concat ('http://www.openlinksw.com/schemas/mail#', s);
+};
+
+create procedure oplflt_iri (in s varchar)
+{
+  return concat ('http://www.openlinksw.com/schemas/acl/filter#', s);
+};
+
 create procedure cert_iri (in s varchar)
 {
   return concat ('http://www.w3.org/ns/auth/cert#', s);
+};
+
+create procedure xsd_iri (in s varchar)
+{
+  return concat ('http://www.w3.org/2001/XMLSchema#', s);
 };
 
 create procedure rev_iri (in s varchar)
@@ -612,6 +614,9 @@ create procedure person_iri (in iri varchar, in suff varchar := '#this', in tp i
   if (length (arr) <> 2)
     signal ('22023', sprintf ('Non-user IRI [%s] can\'t be transformed to person IRI', iri));
 
+  if ((arr[1] like 'person/%') or (arr[1] like 'organization/%'))
+    return sprintf ('http://%s/dataspace/%s%s',arr[0],arr[1], suff);
+
   if (tp is null and
       exists (select 1 from DB.DBA.SYS_USERS, DB.DBA.WA_USER_INFO where WAUI_U_ID = U_ID and U_NAME = arr[1] and WAUI_IS_ORG = 1))
     return sprintf ('http://%s/dataspace/organization/%s%s',arr[0],arr[1], suff);
@@ -632,13 +637,28 @@ create procedure group_iri (in iri varchar, in suff varchar := '#this')
 }
 ;
 
-create procedure person_ola_iri (in iri varchar, in suff varchar)
+-- Update all existing user online accounts to write a fixed URI. Otherwise it will be impossible to remove them after
+-- the update of person_ola_iri which introduces the 3rd parameter.
+DB.DBA.wa_exec_no_error_log(
+  'update DB.DBA.WA_USER_OL_ACCOUNTS set WUO_URI = sioc.DBA.person_ola_iri (sioc.DBA.user_iri (WUO_U_ID), WUO_NAME) where WUO_URI is null;'
+)
+;
+
+create procedure person_ola_iri (in iri varchar, in suff varchar, in accountUid varchar)
 {
   declare arr any;
+
   arr := sprintf_inverse (iri, 'http://%s/dataspace/%s#this', 1);
   if (length (arr) <> 2)
     signal ('22023', sprintf ('Non-user IRI [%s] can\'t be transformed to person IRI', iri));
+
+  if (arr[1] like 'person/%')
+    arr[1] := subseq (arr[1], length ('person/'));
+
+  if (accountUid is null)
   return sprintf ('http://%s/dataspace/person/%s/online_account/%U',arr[0],arr[1], suff);
+  else
+    return sprintf ('http://%s/dataspace/person/%U/online_account/%U/%U',arr[0],arr[1], suff, accountUid);
 };
 
 create procedure person_prj_iri (in iri varchar, in suff varchar)
@@ -737,7 +757,7 @@ create procedure sioc_user (in graph_iri varchar, in iri varchar, in u_name varc
   --!!! ACL   }
 
   DB.DBA.ODS_QUAD_URI (graph_iri, iri, sioc_iri ('account_of'), person_iri);
-  DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, foaf_iri ('holdsAccount'), iri);
+  DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, foaf_iri ('account'), iri);
   -- OpenID (new)
   DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, foaf_iri ('openid'), link);
 
@@ -820,15 +840,29 @@ create procedure sioc_user_cert (in graph_iri varchar, in person_iri varchar, in
       modulus := info[2];
       exponent := info[1];
       crt_iri := replace (person_iri, '#this', sprintf ('#cert%d', cert_id));
-      DB.DBA.ODS_QUAD_URI (graph_iri, crt_iri, cert_iri ('identity'), person_iri);
-      DB.DBA.ODS_QUAD_URI (graph_iri, crt_iri, rdf_iri ('type'), rsa_iri ('RSAPublicKey'));
+      DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, cert_iri ('key'), crt_iri);
+      DB.DBA.ODS_QUAD_URI (graph_iri, crt_iri, rdf_iri ('type'), cert_iri ('RSAPublicKey'));
 
-      DB.DBA.ODS_QUAD_URI_L_TYPED (graph_iri,crt_iri, rsa_iri ('modulus'), bin2hex (modulus), cert_iri ('hex'), null);
-      DB.DBA.ODS_QUAD_URI_L_TYPED (graph_iri,crt_iri, rsa_iri ('public_exponent'), cast (exponent as varchar), cert_iri ('int'), null);
+      DB.DBA.ODS_QUAD_URI_L_TYPED (graph_iri,crt_iri, cert_iri ('modulus'), bin2hex (modulus), xsd_iri ('hexBinary'), null);
+      DB.DBA.ODS_QUAD_URI_L_TYPED (graph_iri,crt_iri, cert_iri ('exponent'), cast (exponent as varchar), xsd_iri ('int'), null);
     }
   return;
 }
 ;
+
+create procedure sioc_user_graph2 (
+  in graph_iri varchar,
+  in iri varchar,
+  in visible integer := 1)
+{
+  declare V any;
+
+  if (visible <= 1)
+    return graph_iri;
+
+  V := sprintf_inverse (iri, 'http://%s/dataspace/%s#this', 1);
+  return graph_iri || '/protected/' || V[1];
+};
 
 create procedure sioc_user_info (
     in public_graph_iri varchar,
@@ -866,7 +900,6 @@ create procedure sioc_user_info (
     in hcity varchar := null,
     in hstate varchar := null,
     in hcountry varchar := null,
-    in ext_urls any := null,
     in cert any := null
     )
 {
@@ -910,6 +943,9 @@ create procedure sioc_user_info (
       DB.DBA.ODS_QUAD_URI (work_graph_iri, iri, owl_iri ('sameAs'), 'acct:' || mail);
     }
 
+  if (is_person and wa_user_check (title, flags, 0))
+    DB.DBA.ODS_QUAD_URI_L (wa_user_graph (flags, 0, public_graph_iri, protected_graph_iri), iri, foaf_iri ('title'), title);
+
   if (is_person and wa_user_check (gender, flags, 5))
     DB.DBA.ODS_QUAD_URI_L (wa_user_graph (flags, 5, public_graph_iri, protected_graph_iri), iri, foaf_iri ('gender'), gender);
 
@@ -926,7 +962,7 @@ create procedure sioc_user_info (
     DB.DBA.ODS_QUAD_URI_L (wa_user_graph (flags, 13, public_graph_iri, protected_graph_iri), iri, foaf_iri ('yahooChatID'), yahoo);
 
   if (wa_user_check (skype, flags, 11))
-    sioc_user_account (wa_user_graph (flags, 11, public_graph_iri, protected_graph_iri), iri, skype, 'skype:' || skype || '?chat');
+    sioc_user_account (public_graph_iri, iri, skype, case when (atoi (chr (flags[11])) <= 1) then 1 else 3 end, 'skype:' || skype || '?chat');
 
   if (wa_user_check (birthday, flags, 6))
     {
@@ -1054,17 +1090,6 @@ create procedure sioc_user_info (
   if (wa_user_check (webpage, flags, 7))
     DB.DBA.ODS_QUAD_URI (wa_user_graph (flags, 7, public_graph_iri, protected_graph_iri), iri, foaf_iri ('homepage'), webpage);
 
-  --  external IRIs
-  for (select u, flag from DB.DBA.WA_USER_INTERESTS (txt) (u varchar, flag varchar) P where txt = ext_urls) do
-    {
-      if (length (u))
-	{
-          if (length (flag) = 0)
-            flag := '1';
-          DB.DBA.ODS_QUAD_URI (wa_user_graph (flag, 0, public_graph_iri, protected_graph_iri), iri, owl_iri ('sameAs'), u);
-	}
-    }
-
   protected := null;
   if (server_https_port () is not null)
     {
@@ -1108,26 +1133,6 @@ create procedure sioc_user_info (
   if (protected is not null)
     DB.DBA.ODS_QUAD_URI (public_graph_iri, iri, rdfs_iri ('seeAlso'), protected);
 
-  -- disabled, see above function
-  if (0 and length (cert))
-	{
-	  declare info, modulus, exponent any;
-
-	  info := get_certificate_info (9, cast (cert as varchar), 0);
-	  if (info is not null and isarray (info) and cast (info[0] as varchar) = 'RSAPublicKey')
-	    {
-    	  DB.DBA.ODS_QUAD_URI (public_graph_iri, crt_iri, cert_iri ('identity'), iri);
-	      modulus := info[2];
-	      exponent := info[1];
-    	  DB.DBA.ODS_QUAD_URI (public_graph_iri, crt_iri, rdf_iri ('type'), rsa_iri ('RSAPublicKey'));
-    	  DB.DBA.ODS_QUAD_URI_L_TYPED (public_graph_iri, crt_iri, rsa_iri ('modulus'), bin2hex (modulus), cert_iri ('hex'), null);
-    	  DB.DBA.ODS_QUAD_URI_L_TYPED (public_graph_iri, crt_iri, rsa_iri ('public_exponent'), cast (exponent as varchar), cert_iri ('int'), null);
-    	  --DB.DBA.ODS_QUAD_URI (graph_iri, crt_iri, rsa_iri ('modulus'), crt_mod);
-    	  --DB.DBA.ODS_QUAD_URI (graph_iri, crt_iri, rsa_iri ('public_exponent'), crt_exp);
-    	  --DB.DBA.ODS_QUAD_URI_L (graph_iri, crt_mod, cert_iri ('hex'), bin2hex (modulus));
-    	  --DB.DBA.ODS_QUAD_URI_L (graph_iri, crt_exp, cert_iri ('decimal'), cast (exponent as varchar));
-	    }
-	}
   -- contact services
   SIOC..ods_object_services_attach (public_graph_iri, iri, 'user');
 };
@@ -1135,8 +1140,7 @@ create procedure sioc_user_info (
 create procedure sioc_user_info_delete (
     in graphs varchar,
     in in_iri varchar,
-    in is_org integer
-  )
+  in is_org integer)
 {
   declare ev_iri, addr_iri, org_iri, iri, giri, crt_iri, crt_exp, crt_mod varchar;
 
@@ -1158,11 +1162,12 @@ create procedure sioc_user_info_delete (
 
   declare N integer;
   foreach (varchar graph_iri in graphs) do
-  		    {
+  	    {
     delete_quad_sp (graph_iri, iri, foaf_iri ('firstName'));
     delete_quad_sp (graph_iri, iri, foaf_iri ('family_name'));
     delete_quad_sp (graph_iri, iri, foaf_iri ('name'));
     delete_quad_sp (graph_iri, iri, foaf_iri ('mbox'));
+    delete_quad_sp (graph_iri, iri, foaf_iri ('title'));
     delete_quad_sp (graph_iri, iri, foaf_iri ('gender'));
     delete_quad_sp (graph_iri, iri, foaf_iri ('icqChatID'));
     delete_quad_sp (graph_iri, iri, foaf_iri ('msnChatID'));
@@ -1178,7 +1183,6 @@ create procedure sioc_user_info_delete (
     delete_quad_sp (graph_iri, iri, foaf_iri ('topic_interest'));
     delete_quad_sp (graph_iri, iri, foaf_iri ('workplaceHomepage'));
     delete_quad_sp (graph_iri, iri, bio_iri ('olb'));
-    delete_quad_sp (graph_iri, iri, owl_iri ('sameAs'));
     delete_quad_s_or_o (graph_iri, ev_iri, ev_iri);
     delete_quad_s_or_o (graph_iri, org_iri, org_iri);
     delete_quad_s_or_o (graph_iri, addr_iri, addr_iri);
@@ -1242,7 +1246,7 @@ create procedure sioc_app_related (in graph_iri varchar, in iri varchar, in  nam
 };
 
 create procedure sioc_user_bioevent (in graph_iri varchar, in user_iri varchar, in bioID integer, in bioEvent varchar, in bioDate varchar, in bioPlace varchar)
-  {
+{
   declare bio_iri, person_iri any;
 
   person_iri := person_iri (user_iri);
@@ -1262,11 +1266,11 @@ create procedure sioc_user_offerlist (in user_id integer, in ol_id integer, in o
   declare user_name, forum_type any;
   declare graph_iri, forum_iri, user_iri, iri, obj any;
   declare exit handler for sqlstate '*'
-{
+  {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  user_iri := user_iri (user_id);
+  user_iri := person_iri (user_iri (user_id));
   user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
   graph_iri := sioc_user_graph (user_name, ol_flag);
   if (isnull (graph_iri))
@@ -1291,7 +1295,7 @@ create procedure sioc_user_offerlist (in user_id integer, in ol_id integer, in o
 };
 
 create procedure sioc_user_offerlist_delete (in user_id integer, in ol_id integer, in ol_type varchar, in ol_flag varchar, in ol_offer varchar, in ol_comment varchar, in ol_properties varchar)
-  {
+{
   declare N, M integer;
   declare user_name any;
   declare graph_iri, forum_iri, iri, obj, ontologies, products any;
@@ -1347,7 +1351,7 @@ create procedure sioc_user_likes (in user_id integer, in l_id integer, in l_flag
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  user_iri := user_iri (user_id);
+  user_iri := person_iri (user_iri (user_id));
   user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
   graph_iri := sioc_user_graph (user_name, l_flag);
   if (isnull (graph_iri))
@@ -1409,7 +1413,7 @@ create procedure sioc_user_knows (in user_id integer, in k_id integer, in k_flag
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  user_iri := user_iri (user_id);
+  user_iri := person_iri (user_iri (user_id));
   user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
   graph_iri := sioc_user_graph (user_name, k_flag);
   if (isnull (graph_iri))
@@ -1428,7 +1432,7 @@ create procedure sioc_user_knows_delete (in user_id integer, in k_id integer, in
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  user_iri := user_iri (user_id);
+  user_iri := person_iri (user_iri (user_id));
   user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
   graph_iri := sioc_user_graph (user_name, k_flag);
   if (isnull (graph_iri))
@@ -1448,7 +1452,7 @@ create procedure sioc_user_favorite (in user_id integer, in f_id integer, in f_f
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  user_iri := user_iri (user_id);
+  user_iri := person_iri (user_iri (user_id));
   user_name := (select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id);
 
   forum_name := forum_name (user_name, 'FavoriteThings');
@@ -1590,44 +1594,78 @@ create procedure sioc_user_items_delete (in graph_iri varchar, in forum_iri varc
 }
 ;
 
-create procedure sioc_user_account (in graph_iri varchar, in iri varchar, in name varchar, in url varchar, in uri varchar := null)
+create procedure sioc_user_account (
+  in graph_iri varchar,
+  in iri varchar,
+  in name varchar,
+  in visible integer,
+  in url varchar,
+  in uri varchar := null)
 {
-  declare pers_iri any;
+  declare person_iri any;
 
-  pers_iri := person_iri (iri);
+  person_iri := person_iri (iri);
+  graph_iri := sioc_user_graph2 (graph_iri, person_iri, visible);
+  if (name = 'webid' and uri is not null)
+  {
+    -- external IRIs
+    DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, owl_iri ('sameAs'), uri);
+  }
+  else
+  {
   if (not length (uri))
-    uri := person_ola_iri (iri, name);
-  -- XXX, have to know if this is URL
+      uri := person_ola_iri (iri, name, url);
+
   DB.DBA.ODS_QUAD_URI (graph_iri, uri, rdf_iri ('type'), foaf_iri ('OnlineAccount'));
   DB.DBA.ODS_QUAD_URI (graph_iri, uri, foaf_iri ('accountServiceHomepage'), url);
   DB.DBA.ODS_QUAD_URI_L (graph_iri, uri, foaf_iri ('accountName'), name);
-  DB.DBA.ODS_QUAD_URI (graph_iri, pers_iri, foaf_iri ('holdsAccount'), uri);
+    DB.DBA.ODS_QUAD_URI (graph_iri, person_iri, foaf_iri ('account'), uri);
+  }
 };
 
-create procedure sioc_user_account_delete (in graph_iri varchar, in iri varchar, in name varchar, in uri varchar := null)
+create procedure sioc_user_account_delete (
+  in graph_iri varchar,
+  in iri varchar,
+  in name varchar,
+  in url varchar,
+  in visible integer := 1,
+  in uri varchar := null)
 {
-  declare pers_iri any;
+  declare person_iri any;
 
-  pers_iri := person_iri (iri);
+  person_iri := person_iri (iri);
+  graph_iri := sioc_user_graph2 (graph_iri, person_iri, visible);
+  if (name = 'webid')
+  {
+    -- external IRIs
+    delete_quad_s_p_o (graph_iri, person_iri, owl_iri ('sameAs'), uri);
+  }
+  else
+  {
   if (isnull (uri))
-    uri := person_ola_iri (iri, name);
+      uri := person_ola_iri (iri, name, url);
+
   delete_quad_s_or_o (graph_iri, uri, uri);
+  }
 };
 
 -- Group
 create procedure sioc_group (in graph_iri varchar, in iri varchar, in u_name varchar)
 {
-  if (iri is not null)
-    {
+  if (iri is null)
+    return;
+
       ods_sioc_result (iri);
       DB.DBA.ODS_QUAD_URI (graph_iri, iri, rdf_iri ('type'), sioc_iri ('Usergroup'));
       DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, sioc_iri ('id'), u_name);
-    }
 };
 
 -- Knows
 
-create procedure sioc_knows (in graph_iri varchar, in _from_iri varchar, in _to_iri varchar)
+create procedure sioc_knows (
+  in graph_iri varchar,
+  in _from_iri varchar,
+  in _to_iri varchar)
 {
   --DB.DBA.ODS_QUAD_URI (graph_iri, _from_iri, sioc_iri ('knows'), _to_iri);
   --DB.DBA.ODS_QUAD_URI (graph_iri, _to_iri, sioc_iri ('knows'), _from_iri);
@@ -1971,11 +2009,11 @@ create procedure ods_sioc_post (
       if (__tag (content) = __tag of XML)
 	content := serialize_to_UTF8_xml (content);
       content := subseq (content, 0, 10000000);
-      content := regexp_replace (content, '<[^>]+>', '', 1, null);
-	  ses := string_output ();
-	  http_value (content, null, ses);
-	  ses := string_output_string (ses);
-	  DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, sioc_iri ('content'), ses);
+      --content := regexp_replace (content, '<[^>]+>', '', 1, null);
+      --ses := string_output ();
+      --http_value (content, null, ses);
+      --ses := string_output_string (ses);
+      DB.DBA.ODS_QUAD_URI_L (graph_iri, iri, sioc_iri ('content'), content);
 	}
       if (do_ann)
 	{
@@ -2271,7 +2309,7 @@ create procedure fill_ods_sioc_online (in doall int := 0, in iri_result int := 1
 
 create procedure fill_ods_sioc (in doall int := 0)
 {
-  declare iri, site_iri, graph_iri, sioc_version varchar;
+  declare iri, site_iri, graph_iri, tmp_graph_iri, forum_iri, sioc_version varchar;
   declare fCreate, cpt, deadl, cnt int;
 
   declare exit handler for sqlstate '*', not found
@@ -2303,6 +2341,30 @@ create procedure fill_ods_sioc (in doall int := 0)
     
     l0:
     delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (fix_graph (graph_iri));
+
+    -- clean private graphs
+	  for select WAI_ID,
+	             WAI_TYPE_NAME,
+	             WAI_NAME,
+               WAI_IS_PUBLIC
+		      from DB.DBA.WA_INSTANCE
+		     where WAI_IS_PUBLIC = 0 do
+		{
+      forum_iri := forum_iri (WAI_TYPE_NAME, WAI_NAME);
+      tmp_graph_iri := get_graph_new (WAI_IS_PUBLIC, forum_iri);
+      if (length (tmp_graph_iri))
+      {
+        delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_IID_OF_QNAME (tmp_graph_iri);
+
+        -- remove user's rights for private graphs
+    	  for select WAM_USER
+    		      from DB.DBA.WA_MEMBER
+  		     where WAM_INST = WAI_NAME do
+    		{
+          SIOC..private_user_remove (tmp_graph_iri, WAM_USER);
+        }
+      }
+		}
     commit work;
     set isolation='committed';
     ods_graph_init ();
@@ -2340,7 +2402,7 @@ create procedure fill_ods_sioc (in doall int := 0)
       else -- sioc:User
 	{
 	  declare u_site_iri, person_iri any;
-	  declare forum_name, forum_iri any;
+    	  declare forum_name any;
 
 	  iri := user_iri (u_id);
 	  if (iri is not null)
@@ -2378,7 +2440,6 @@ create procedure fill_ods_sioc (in doall int := 0)
             		   WAUI_HCITY,
             		   WAUI_HSTATE,
             		   WAUI_HCOUNTRY,
-            		   WAUI_FOAF,
             		   WAUI_BLAT,
             		   WAUI_BLNG,
             		   WAUI_LATLNG_HBDEF,
@@ -2428,7 +2489,6 @@ create procedure fill_ods_sioc (in doall int := 0)
 			WAUI_HCITY,
 			WAUI_HSTATE,
 			WAUI_HCOUNTRY,
-			WAUI_FOAF,
 					WAUI_CERT
 			);
 
@@ -2449,9 +2509,9 @@ create procedure fill_ods_sioc (in doall int := 0)
 		    {
 		      sioc_user_project (graph_iri, iri, WUP_NAME, WUP_URL, WUP_DESC, WUP_IRI);
 		    }
-		  for select WUO_NAME, WUO_URL, WUO_URI from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_U_ID = U_ID do
+		  for select WUO_NAME, WUO_PUBLIC, WUO_URL, WUO_URI from DB.DBA.WA_USER_OL_ACCOUNTS where WUO_U_ID = U_ID do
 		    {
-		      sioc_user_account (graph_iri, iri, WUO_NAME, WUO_URL, WUO_URI);
+		      sioc_user_account (graph_iri, iri, WUO_NAME, WUO_PUBLIC, WUO_URL, WUO_URI);
 		    }
 		  for select WUR_LABEL, WUR_SEEALSO_IRI, WUR_P_IRI from DB.DBA.WA_USER_RELATED_RES where WUR_U_ID = U_ID do
 		    {
@@ -2499,7 +2559,7 @@ create procedure fill_ods_sioc (in doall int := 0)
 		           DB.DBA.WA_INSTANCE
 		     where WAM_USER = U_ID 
 		       and WAM_INST = WAI_NAME 
-		       and ((WAI_IS_PUBLIC = 1) or (WAI_TYPE_NAME = 'oDrive')) do
+		       and SIOC..instance_sioc_check (WAI_IS_PUBLIC, WAI_TYPE_NAME) = 1 do
 		{
 		  instance_sioc_data (
                           WAM_INST,
@@ -2537,11 +2597,14 @@ create procedure fill_ods_sioc (in doall int := 0)
     commit work;
   }
 
-  declare ep varchar;
+  declare ep, ep2 varchar;
   ep := sprintf ('http://%s/semping', sioc..get_cname ());
+  ep2 := ep || '/rest';
   for select * from SEMPING.DBA.PING_RULES where PR_GRAPH = graph_iri do
     {
-      sparql insert into graph iri(?:PR_GRAPH) { `iri(?:PR_IRI)` <http://purl.org/net/pingback/to> `iri(?:ep)` . };
+      sparql insert into graph iri(?:PR_GRAPH) { `iri(?:PR_IRI)` <http://purl.org/net/pingback/to> `iri(?:ep2)` . };
+      -- XXX: obsolete
+      --sparql insert into graph iri(?:PR_GRAPH) { `iri(?:PR_IRI)` <http://purl.org/net/pingback/service> `iri(?:ep)` . };
     }
 
   {
@@ -3149,7 +3212,7 @@ create trigger WA_USER_INFO_SIOC_U after update on DB.DBA.WA_USER_INFO referenci
 	}
     }
   if (length (O.WAUI_SKYPE))
-    sioc_user_account_delete (graph_iri, iri, O.WAUI_SKYPE);
+    sioc_user_account_delete (graph_iri, iri, null, O.WAUI_SKYPE);
 
   sioc_user_info (graph_iri,
                   iri,
@@ -3186,7 +3249,6 @@ create trigger WA_USER_INFO_SIOC_U after update on DB.DBA.WA_USER_INFO referenci
 			N.WAUI_HCITY,
 			N.WAUI_HSTATE,
 			N.WAUI_HCOUNTRY,
-			N.WAUI_FOAF,
 				N.WAUI_CERT
 			);
   for select US_IRI, US_KEY from DB.DBA.WA_USER_SVC where US_U_ID = N.WAUI_U_ID and length (US_IRI) do
@@ -3319,7 +3381,7 @@ create trigger WA_USER_OL_ACCOUNTS_SIOC_I after insert on DB.DBA.WA_USER_OL_ACCO
 
   graph_iri := get_graph ();
   iri := user_iri (N.WUO_U_ID);
-  sioc_user_account (graph_iri, iri, N.WUO_NAME, N.WUO_URL, N.WUO_URI);
+  sioc_user_account (graph_iri, iri, N.WUO_NAME, N.WUO_PUBLIC, N.WUO_URL, N.WUO_URI);
 };
 
 create trigger WA_USER_OL_ACCOUNTS_SIOC_U after update on DB.DBA.WA_USER_OL_ACCOUNTS referencing old as O, new as N
@@ -3332,8 +3394,8 @@ create trigger WA_USER_OL_ACCOUNTS_SIOC_U after update on DB.DBA.WA_USER_OL_ACCO
 
   graph_iri := get_graph ();
   iri := user_iri (N.WUO_U_ID);
-  sioc_user_account_delete (graph_iri, iri, N.WUO_NAME, N.WUO_URI);
-  sioc_user_account (graph_iri, iri, N.WUO_NAME, N.WUO_URL, N.WUO_URI);
+  sioc_user_account_delete (graph_iri, iri, O.WUO_NAME, O.WUO_URL, O.WUO_PUBLIC, O.WUO_URI);
+  sioc_user_account (graph_iri, iri, N.WUO_NAME, N.WUO_PUBLIC, N.WUO_URL, N.WUO_URI);
 };
 
 create trigger WA_USER_OL_ACCOUNTS_SIOC_D after delete on DB.DBA.WA_USER_OL_ACCOUNTS referencing old as O
@@ -3342,7 +3404,7 @@ create trigger WA_USER_OL_ACCOUNTS_SIOC_D after delete on DB.DBA.WA_USER_OL_ACCO
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
-  sioc_user_account_delete (get_graph (), user_iri (O.WUO_U_ID), O.WUO_NAME, O.WUO_URI);
+  sioc_user_account_delete (get_graph (), user_iri (O.WUO_U_ID), O.WUO_NAME, O.WUO_URL, O.WUO_PUBLIC, O.WUO_URI);
 };
 
 -- Bioevents
@@ -3625,14 +3687,24 @@ create trigger WA_RELATED_APPS_SIOC_D after delete on DB.DBA.WA_RELATED_APPS ref
 };
 
 
+create procedure instance_sioc_check (
+  in _WA_IS_PUBLIC integer,
+  in _WA_TYPE varchar)
+{
+  if ((_WA_IS_PUBLIC > 0) or (_WA_TYPE in ('oDrive', 'oMail')))
+    return 1;
+
+  return 0;
+};
+
 create procedure instance_sioc_data (
-  in N_WAM_INST varchar,
-  in N_WAM_APP_TYPE varchar,
-  in N_WAM_USER integer,
-  in N_WAM_MEMBER_TYPE integer,
-  in N_WAM_IS_PUBLIC integer,
-  in N_WAM_DESCRIPTION varchar := null,
-  in N_WAM_LICENSE varchar := null)
+  in _WAM_INST varchar,
+  in _WAM_APP_TYPE varchar,
+  in _WAM_USER integer,
+  in _WAM_MEMBER_TYPE integer,
+  in _WAM_IS_PUBLIC integer,
+  in _WAM_DESCRIPTION varchar := null,
+  in _WAM_LICENSE varchar := null)
 {
   declare graph_iri, user_iri, role_iri, forum_iri, site_iri, svc_proc_name varchar;
   declare exit handler for sqlstate '*'
@@ -3641,28 +3713,43 @@ create procedure instance_sioc_data (
     return;
   };
 
-  if ((N_WAM_MEMBER_TYPE = 1) and ((N_WAM_IS_PUBLIC > 0) or (N_WAM_APP_TYPE = 'oDrive')))
-    {
-    site_iri := get_graph ();
-    forum_iri := forum_iri (N_WAM_APP_TYPE, N_WAM_INST);
-    graph_iri := get_graph_new (null, N_WAM_IS_PUBLIC, forum_iri);
-    sioc_forum (graph_iri, site_iri, forum_iri, N_WAM_INST, N_WAM_APP_TYPE, N_WAM_DESCRIPTION);
-    if (not isnull (N_WAM_LICENSE))
-      cc_work_lic (graph_iri, forum_iri, N_WAM_LICENSE);
+  if (not SIOC..instance_sioc_check (_WAM_IS_PUBLIC, _WAM_APP_TYPE))
+    return;
 
-      -- add services here
-    svc_proc_name := sprintf ('SIOC.DBA.ods_%s_services', DB.DBA.wa_type_to_app (N_WAM_APP_TYPE));
-    if (__proc_exists (svc_proc_name))
-	    call (svc_proc_name) (graph_iri, forum_iri, N_WAM_USER, N_WAM_INST);
+  forum_iri := forum_iri (_WAM_APP_TYPE, _WAM_INST);
+  graph_iri := get_graph_new (_WAM_IS_PUBLIC, forum_iri);
+  if (_WAM_MEMBER_TYPE = 1)
+    {
+    if (not _WAM_IS_PUBLIC)
+    {
+      SIOC..private_init ();
+      SIOC..private_graph_add (graph_iri, _WAM_INST);
+      if (not SIOC..private_graph_check (graph_iri))
+        return;
     }
 
-  user_iri := user_iri (N_WAM_USER);
-  role_iri := role_iri_by_name (N_WAM_INST, N_WAM_USER);
+    site_iri := get_graph ();
+    sioc_forum (graph_iri, site_iri, forum_iri, _WAM_INST, _WAM_APP_TYPE, _WAM_DESCRIPTION);
+    if (not isnull (_WAM_LICENSE))
+      cc_work_lic (graph_iri, forum_iri, _WAM_LICENSE);
 
-  do_social:
-  forum_iri := forum_iri (N_WAM_APP_TYPE, N_WAM_INST);
-  graph_iri := get_graph_new (null, N_WAM_IS_PUBLIC, forum_iri);
-  if (user_iri is not null and role_iri is not null and forum_iri is not null and ((N_WAM_IS_PUBLIC > 0) or (N_WAM_APP_TYPE = 'oDrive')))
+      -- add services here
+    svc_proc_name := sprintf ('SIOC.DBA.ods_%s_services', DB.DBA.wa_type_to_app (_WAM_APP_TYPE));
+    if (__proc_exists (svc_proc_name))
+	    call (svc_proc_name) (graph_iri, forum_iri, _WAM_USER, _WAM_INST);
+    }
+  if (not _WAM_IS_PUBLIC)
+  {
+    SIOC..private_user_add (graph_iri, _WAM_USER);
+    if (not SIOC..private_graph_check (graph_iri))
+      return;
+  }
+
+  user_iri := user_iri (_WAM_USER);
+  role_iri := role_iri_by_name (_WAM_INST, _WAM_USER);
+
+_social:
+  if ((user_iri is not null) and (role_iri is not null) and (forum_iri is not null))
   {
     DB.DBA.ODS_QUAD_URI (graph_iri, user_iri, sioc_iri ('has_function'), role_iri);
     DB.DBA.ODS_QUAD_URI (graph_iri, role_iri, sioc_iri ('function_of'), user_iri);
@@ -3673,20 +3760,67 @@ create procedure instance_sioc_data (
 	    DB.DBA.ODS_QUAD_URI (graph_iri, forum_iri, sioc_iri ('has_owner'), user_iri);
 	    DB.DBA.ODS_QUAD_URI (graph_iri, user_iri, sioc_iri ('owner_of'), forum_iri);
 	}
-    if (N_WAM_APP_TYPE = 'Community')
-	{
-	  declare person_iri any;
+    if (_WAM_APP_TYPE = 'Community')
+	    DB.DBA.ODS_QUAD_URI (graph_iri, group_iri (forum_iri), foaf_iri ('member'), person_iri (user_iri));
 
-	    person_iri := person_iri (user_iri);
-	    DB.DBA.ODS_QUAD_URI (graph_iri, group_iri (forum_iri), foaf_iri ('member'), person_iri);
-    }
-    if (N_WAM_APP_TYPE = 'AddressBook')
+    if (_WAM_APP_TYPE = 'AddressBook')
     {
-      N_WAM_APP_TYPE := 'SocialNetwork';
-      goto do_social;
+      _WAM_APP_TYPE := 'SocialNetwork';
+      forum_iri := forum_iri ('SocialNetwork', _WAM_INST);
+      graph_iri := get_graph_new (_WAM_IS_PUBLIC, forum_iri);
+      goto _social;
     }
   }
-};
+}
+;
+
+create procedure instance_sioc_data_delete (
+  in _WAM_INST varchar,
+  in _WAM_APP_TYPE varchar,
+  in _WAM_USER integer,
+  in _WAM_MEMBER_TYPE integer,
+  in _WAM_IS_PUBLIC integer)
+{
+  declare p_name varchar;
+  declare user_iri, graph_iri, role_iri, forum_iri varchar;
+  declare exit handler for sqlstate '*'
+  {
+    sioc_log_message (__SQL_MESSAGE);
+    return;
+  };
+
+  if (not SIOC..instance_sioc_check (_WAM_IS_PUBLIC, _WAM_APP_TYPE))
+    return;
+
+  forum_iri := SIOC..forum_iri (_WAM_APP_TYPE, _WAM_INST);
+  graph_iri := SIOC..get_graph_new (_WAM_IS_PUBLIC, forum_iri);
+  if (_WAM_MEMBER_TYPE = 1)
+    {
+    if (not _WAM_IS_PUBLIC)
+      SIOC..private_graph_remove (graph_iri, _WAM_INST);
+
+    -- instance drop
+    SIOC..delete_quad_s_or_o (graph_iri, forum_iri, forum_iri);
+    p_name := sprintf ('SIOC.DBA.clean_ods_%s_sioc', DB.DBA.wa_type_to_app (_WAM_APP_TYPE));
+    if (__proc_exists (p_name))
+	    call (p_name) (_WAM_INST, _WAM_IS_PUBLIC);
+
+    SIOC..ods_object_services_dettach (graph_iri, forum_iri, 'instance');
+    SIOC..ods_object_services_dettach (graph_iri, forum_iri, DB.DBA.wa_type_to_app (_WAM_APP_TYPE));
+    }
+
+  if (not _WAM_IS_PUBLIC)
+    SIOC..private_user_remove (graph_iri, _WAM_USER);
+
+  user_iri := user_iri (_WAM_USER);
+  role_iri := role_iri_by_name (_WAM_INST, _WAM_USER);
+  if (user_iri is not null and role_iri is not null)
+    delete_quad_s_or_o (graph_iri, role_iri, role_iri);
+
+  if (_WAM_APP_TYPE = 'Community')
+    delete_quad_po (graph_iri, foaf_iri ('member'), person_iri (user_iri));
+}
+;
 
 -- DB.DBA.WA_MEMBER
 create trigger WA_MEMBER_SIOC_I after insert on DB.DBA.WA_MEMBER referencing new as N
@@ -3697,144 +3831,363 @@ create trigger WA_MEMBER_SIOC_I after insert on DB.DBA.WA_MEMBER referencing new
     N.WAM_USER,
     N.WAM_MEMBER_TYPE,
     N.WAM_IS_PUBLIC);
-};
+}
+;
 
 create trigger WA_MEMBER_SIOC_D before delete on DB.DBA.WA_MEMBER referencing old as O
 {
-  declare p_name varchar;
-  declare user_iri, graph_iri, role_iri, forum_iri varchar;
-  declare exit handler for sqlstate '*'
-  {
-    sioc_log_message (__SQL_MESSAGE);
-    return;
-  };
-
-  forum_iri := SIOC..forum_iri (O.WAM_APP_TYPE, O.WAM_INST);
-  graph_iri := SIOC..get_graph_new (null, O.WAM_IS_PUBLIC, forum_iri);
-  if ((O.WAM_MEMBER_TYPE = 1) and (O.WAM_IS_PUBLIC > 0)) -- instance drop
-    {
-    SIOC..delete_quad_s_or_o (graph_iri, forum_iri, forum_iri);
-    p_name := sprintf ('SIOC.DBA.clean_ods_%s_sioc2', DB.DBA.wa_type_to_app (O.WAM_APP_TYPE));
-    if (__proc_exists (p_name))
-	    call (p_name) (O.WAM_INST, O.WAM_IS_PUBLIC);
-
-    SIOC..ods_object_services_dettach (graph_iri, forum_iri, 'instance');
-    SIOC..ods_object_services_dettach (graph_iri, forum_iri, DB.DBA.wa_type_to_app (O.WAM_APP_TYPE));
-    }
-
-  user_iri := user_iri (O.WAM_USER);
-  role_iri := role_iri_by_name (O.WAM_INST, O.WAM_USER);
-  if (user_iri is not null and role_iri is not null)
-    {
-    delete_quad_s_or_o (graph_iri, role_iri, role_iri);
-    }
-  if (O.WAM_APP_TYPE = 'Community')
-    {
-      declare person_iri any;
-
-    person_iri := person_iri (user_iri);
-      delete_quad_po (graph_iri, foaf_iri ('member'), person_iri);
-    }
-};
+  SIOC..instance_sioc_data_delete (
+    O.WAM_INST,
+    O.WAM_APP_TYPE,
+    O.WAM_USER,
+    O.WAM_MEMBER_TYPE,
+    O.WAM_IS_PUBLIC);
+}
+;
 
 -- DB.DBA.WA_INSTANCE
 -- INSERT and delete are DONE IN THE WA_MEMBER WHEN INSERT THE OWNER
 create trigger WA_INSTANCE_SIOC_U before update on DB.DBA.WA_INSTANCE referencing old as O, new as N
 {
-  declare p_name varchar;
-  declare o_graph_iri, n_graph_iri, site_iri, o_forum_iri, n_forum_iri, role_iri, o_role_iri varchar;
+  declare _wam_user integer;
+  declare p_name, site_iri, o_graph_iri, n_graph_iri, o_forum_iri, n_forum_iri, n_role_iri, o_role_iri varchar;
   declare exit handler for sqlstate '*'
   {
     sioc_log_message (__SQL_MESSAGE);
     return;
   };
 
-  if ((N.WAI_IS_PUBLIC = 0) and (O.WAI_IS_PUBLIC = 0))
-    return;
-
   n_forum_iri := SIOC..forum_iri_n (O.WAI_TYPE_NAME, O.WAI_NAME, N.WAI_NAME);
-  n_graph_iri := SIOC..get_graph_new (null, N.WAI_IS_PUBLIC, n_forum_iri);
+  n_graph_iri := SIOC..get_graph_new (N.WAI_IS_PUBLIC, n_forum_iri);
   o_forum_iri := SIOC..forum_iri (O.WAI_TYPE_NAME, O.WAI_NAME);
-  o_graph_iri := SIOC..get_graph_new (null, O.WAI_IS_PUBLIC, o_forum_iri);
-  if (N.WAI_TYPE_NAME = 'Community')
-    {
-    declare group_iri any;
+  o_graph_iri := SIOC..get_graph_new (O.WAI_IS_PUBLIC, o_forum_iri);
 
-    group_iri := group_iri (o_forum_iri);
-    delete_quad_sp (o_graph_iri, group_iri, foaf_iri ('name'));
-    }
-
-  -- new: private data
-  if (N.WAI_IS_PUBLIC = 0)
-    {
-    for select O as post
-          from DB.DBA.RDF_QUAD
-         where G = DB.DBA.RDF_IID_OF_QNAME (o_graph_iri)
-           and S = DB.DBA.RDF_IID_OF_QNAME (o_forum_iri)
-           and P = DB.DBA.RDF_IID_OF_QNAME (sioc_iri ('container_of')) do
-	  {
-	    SIOC..delete_quad_s_or_o (o_graph_iri, post, post);
-	  }
-    SIOC..delete_quad_s_or_o (o_graph_iri, o_forum_iri, o_forum_iri);
-    p_name := sprintf ('sioc.DBA.clean_ods_%s_sioc', DB.DBA.wa_type_to_app (N.WAI_TYPE_NAME));
-    if (__proc_exists (p_name))
-	    call (p_name) (O.WAI_NAME, O.WAI_IS_PUBLIC);
-
-    SIOC..ods_object_services_dettach (o_graph_iri, o_forum_iri, 'instance');
-    SIOC..ods_object_services_dettach (o_graph_iri, o_forum_iri, DB.DBA.wa_type_to_app (O.WAI_TYPE_NAME));
+  -- no SIOC related changes
+  if ((n_graph_iri = o_graph_iri) and (n_forum_iri = o_forum_iri))
     return;
-    }
 
-  -- old: private data - must be created forum
-  if (O.WAI_IS_PUBLIC = 0)
-  {
-    SIOC..instance_sioc_data (
-      N.WAI_NAME,
-      N.WAI_TYPE_NAME,
-      (select WAM_USER from DB.DBA.WA_MEMBER where WAM_INST = O.WAI_NAME and WAM_MEMBER_TYPE = 1),
+  -- delete old
+  _wam_user := (select TOP 1 WAM_USER from DB.DBA.WA_MEMBER where WAM_INST = O.WAI_NAME and WAM_MEMBER_TYPE = 1);
+  SIOC..instance_sioc_data_delete (
+      O.WAI_NAME,
+      O.WAI_TYPE_NAME,
+      _wam_user,
       1,
-      N.WAI_IS_PUBLIC,
-      N.WAI_DESCRIPTION,
-      N.WAI_LICENSE);
-    }
-  else if (N.WAI_IS_PUBLIC <> O.WAI_IS_PUBLIC)
-    {
-    delete_quad_sp (o_graph_iri, o_forum_iri, sioc_iri ('id'));
-    delete_quad_sp (o_graph_iri, o_forum_iri, sioc_iri ('link'));
-    update_quad_g_s_o (o_graph_iri, n_graph_iri, o_forum_iri, n_forum_iri);
-    delete_quad_sp (o_graph_iri, o_forum_iri, cc_iri ('license'));
-    cc_work_lic (n_graph_iri, n_forum_iri, N.WAI_LICENSE);
+      O.WAI_IS_PUBLIC);
 
-    for select distinct WAM_MEMBER_TYPE as tp from DB.DBA.WA_MEMBER where WAM_INST = O.WAI_NAME and ((WAM_IS_PUBLIC > 0) or (WAM_APP_TYPE = 'oDrive')) do
-	{
-	  declare _role varchar;
+  if (not SIOC..instance_sioc_check (N.WAI_IS_PUBLIC, N.WAI_TYPE_NAME))
+    return;
 
-	    _role := (select WMT_NAME from DB.DBA.WA_MEMBER_TYPE where WMT_APP = O.WAI_NAME and WMT_ID = tp);
-	  if (_role is null and tp = 1)
-	    _role := 'owner';
+  -- create new
+  SIOC..instance_sioc_data (
+    N.WAI_NAME,
+    N.WAI_TYPE_NAME,
+    _wam_user,
+    1,
+    N.WAI_IS_PUBLIC,
+    N.WAI_DESCRIPTION,
+    N.WAI_LICENSE);
 
-	    role_iri := n_forum_iri || '#' || _role;
-	    o_role_iri := o_forum_iri || '#' || _role;
-	    update_quad_g_s_o (o_graph_iri, n_graph_iri, o_role_iri, role_iri);
-	  }
-    DB.DBA.ODS_QUAD_URI_L (n_graph_iri, n_forum_iri, sioc_iri ('id'), N.WAI_NAME);
-    DB.DBA.ODS_QUAD_URI (n_graph_iri, n_forum_iri, sioc_iri ('link'), n_forum_iri);
-	}
+  delete_quad_sp (o_graph_iri, o_forum_iri, sioc_iri ('id'));
+  delete_quad_sp (o_graph_iri, o_forum_iri, sioc_iri ('link'));
+  DB.DBA.ODS_QUAD_URI_L (n_graph_iri, n_forum_iri, sioc_iri ('id'), N.WAI_NAME);
+  DB.DBA.ODS_QUAD_URI (n_graph_iri, n_forum_iri, sioc_iri ('link'), n_forum_iri);
+  update_quad_g_s_o (o_graph_iri, n_graph_iri, o_forum_iri, n_forum_iri);
 
-  -- refresh be created forum
-  if (N.WAI_IS_PUBLIC <> O.WAI_IS_PUBLIC)
+  delete_quad_sp (o_graph_iri, o_forum_iri, cc_iri ('license'));
+  cc_work_lic (n_graph_iri, n_forum_iri, N.WAI_LICENSE);
+
+  if (o_graph_iri <> n_graph_iri)
   {
-    p_name := sprintf ('sioc.DBA.clean_ods_%s_sioc', DB.DBA.wa_type_to_app (N.WAI_TYPE_NAME));
-    if (__proc_exists (p_name))
-	    call (p_name) (O.WAI_NAME, O.WAI_IS_PUBLIC);
-    p_name := sprintf ('sioc.DBA.fill_ods_%s_sioc', DB.DBA.wa_type_to_app (N.WAI_TYPE_NAME));
-    if (__proc_exists (p_name))
-	    call (p_name) (n_graph_iri, site_iri, N.WAI_NAME);
-    p_name := sprintf ('sioc.DBA.fill_ods_%s_sioc2', DB.DBA.wa_type_to_app (N.WAI_TYPE_NAME));
-    if (__proc_exists (p_name))
-	    call (p_name) (N.WAI_NAME, N.WAI_IS_PUBLIC);
+    for select distinct WAM_MEMBER_TYPE as tp from DB.DBA.WA_MEMBER where WAM_INST = O.WAI_NAME and SIOC..instance_sioc_check (WAM_IS_PUBLIC, WAM_APP_TYPE) = 1 do
+    {
+      declare _role varchar;
+
+      _role := (select WMT_NAME from DB.DBA.WA_MEMBER_TYPE where WMT_APP = O.WAI_NAME and WMT_ID = tp);
+      if (_role is null and tp = 1)
+        _role := 'owner';
+
+      n_role_iri := n_forum_iri || '#' || _role;
+      o_role_iri := o_forum_iri || '#' || _role;
+      update_quad_g_s_o (o_graph_iri, n_graph_iri, o_role_iri, n_role_iri);
     }
-};
+    }
+
+  -- update instanse item's data
+  p_name := sprintf ('sioc.DBA.clean_ods_%s_sioc', DB.DBA.wa_type_to_app (N.WAI_TYPE_NAME));
+  if (__proc_exists (p_name))
+    call (p_name) (O.WAI_NAME, O.WAI_IS_PUBLIC);
+  p_name := sprintf ('sioc.DBA.fill_ods_%s_sioc', DB.DBA.wa_type_to_app (N.WAI_TYPE_NAME));
+  if (__proc_exists (p_name))
+    call (p_name) (n_graph_iri, site_iri, N.WAI_NAME);
+  p_name := sprintf ('sioc.DBA.fill_ods_%s_sioc2', DB.DBA.wa_type_to_app (N.WAI_TYPE_NAME));
+  if (__proc_exists (p_name))
+    call (p_name) (N.WAI_NAME, N.WAI_IS_PUBLIC);
+}
+;
+
+--
+-- Private graphs
+--
+create procedure SIOC..private_graph ()
+{
+  return 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs';
+}
+;
+
+create procedure SIOC..private_graph_id ()
+{
+  return iri_to_id (SIOC..private_graph ());
+}
+;
+
+create procedure SIOC..private_init ()
+{
+  declare _disabled any;
+  declare exit handler for sqlstate '*' {return 0;};
+
+  -- create private graph group (if not exists)
+  DB.DBA.RDF_GRAPH_GROUP_CREATE (SIOC..private_graph (), 1);
+
+  DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('nobody', 0, 1);
+  DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('dba', 1023, 1);
+
+  _disabled := (select U_ACCOUNT_DISABLED from DB.DBA.SYS_USERS where U_NAME = 'SPARQL');
+  update DB.DBA.SYS_USERS set U_ACCOUNT_DISABLED = 0 where U_NAME = 'SPARQL';
+  DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('SPARQL', 1023, 1);
+  update DB.DBA.SYS_USERS set U_ACCOUNT_DISABLED = _disabled where U_NAME = 'SPARQL';
+
+  delete
+     from DB.DBA.SYS_SPARQL_HOST
+    where cast (SH_DEFINES as varchar) = 'define sql:gs-app-callback "ODS"';
+
+  insert into DB.DBA.SYS_SPARQL_HOST (SH_HOST, SH_DEFINES)
+    values ('*', 'define sql:gs-app-callback "ODS"');
+
+  return 1;
+}
+;
+
+create procedure SIOC..private_hasReplication ()
+{
+  if (repl_this_server () is null)
+    return 0;
+
+  return isstring (registry_get ('DB.DBA.RDF_REPL'));
+}
+;
+
+create procedure DB.DBA.tmp_update ()
+{
+  if (registry_get ('ods_private_init') = '3')
+    return;
+
+  SIOC..private_init ();
+  registry_set ('ods_private_init', '3');
+}
+;
+
+DB.DBA.tmp_update ()
+;
+
+--!
+-- \brief Make an RDF graph private.
+--
+-- \param graph_iri The IRI of the graph to make private. The graph will be private afterwards.
+-- Without subsequent calls to SIOC..private_user_add nobody can read or write the graph.
+--
+-- \return \p 1 on success, \p 0 otherwise.
+--
+-- \sa SIOC..private_graph_remove, SIOC..private_user_add
+--/
+create procedure SIOC..private_graph_add (
+  in graph_iri varchar,
+  in instance_name varchar := null)
+{
+  declare exit handler for sqlstate '*' {return 0;};
+
+  DB.DBA.RDF_GRAPH_GROUP_INS (SIOC..private_graph (), graph_iri);
+  if (not isnull (instance_name))
+  {
+    for (select WAI_ID, WAI_TYPE_NAME from DB.DBA.WA_INSTANCE where WAI_NAME = instance_name) do
+      DB.DBA.wa_private_graph_add (graph_iri, DB.DBA.wa_get_app_name (WAI_TYPE_NAME), WAI_ID);
+  }
+  return 1;
+}
+;
+
+--!
+-- \brief Make an RDF graph public.
+--
+-- \param The IRI of the graph to make public.
+--
+-- \sa SIOC..private_graph_remove, SIOC..private_user_add
+--/
+create procedure SIOC..private_graph_remove (
+  in graph_iri varchar,
+  in instance_name varchar := null)
+{
+  declare exit handler for sqlstate '*' {return 0;};
+
+  DB.DBA.RDF_GRAPH_GROUP_DEL (SIOC..private_graph (), graph_iri);
+  if (not isnull (instance_name))
+  {
+    for (select WAI_ID, WAI_TYPE_NAME from DB.DBA.WA_INSTANCE where WAI_NAME = instance_name) do
+      DB.DBA.wa_private_graph_remove (graph_iri, DB.DBA.wa_get_app_name (WAI_TYPE_NAME), WAI_ID);
+  }
+  return 1;
+}
+;
+
+--!
+-- \brief Check if an RDF graph is private or not.
+--
+-- Private graphs can still be readable or even writable by certain users,
+-- depending on the configured rights.
+--
+-- \param graph_iri The IRI of the graph to check.
+--
+-- \return \p 1 if the given graph is private, \p 0 otherwise.
+--
+-- \sa SIOC..private_graph_add, SIOC..private_user_add
+--/
+create procedure SIOC..private_graph_check (
+  in graph_iri varchar)
+{
+  declare private_graph varchar;
+  declare private_graph_id any;
+
+  private_graph := SIOC..private_graph ();
+  if (not exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = private_graph))
+    return 0;
+
+  private_graph_id := SIOC..private_graph_id ();
+  if (not exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = private_graph_id and RGGM_MEMBER_IID = iri_to_id (graph_iri)))
+    return 0;
+
+  if (not exists (select top 1 1 from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i8192 and RGU_USER_ID = http_nobody_uid ()))
+    return 0;
+
+  return 1;
+}
+;
+
+--!
+-- \brief Grant access to a private RDF graph.
+--
+-- Grants access to a certain RDF graph. There is no need to call SIOC..private_graph_add before.
+-- The given graph is made private automatically.
+--
+-- \param graph_iri The IRI of the graph to grant access to.
+-- \param uid The numerical or string ID of the SQL user to grant access to \p graph_iri.
+-- \param rights The rights to grant to \p uid:
+-- - \p 1 - Read
+-- - \p 2 - Write
+-- - \p 3 - Read/Write
+--
+-- \return \p 1 on success, \p 0 otherwise.
+--
+-- \sa SIOC..private_graph_add, SIOC..private_user_add
+--/
+create procedure SIOC..private_user_add (
+  in graph_iri varchar,
+  in uid any,
+  in rights integer := 1023)
+{
+  declare exit handler for sqlstate '*' {return 0;};
+
+  if (isinteger (uid))
+    uid := (select U_NAME from DB.DBA.SYS_USERS where U_ID = uid);
+  DB.DBA.RDF_GRAPH_GROUP_INS (SIOC..private_graph (), graph_iri);
+  DB.DBA.RDF_GRAPH_USER_PERMS_SET (graph_iri, uid, rights);
+  return 1;
+}
+;
+
+--!
+-- \brief Revoke access to a private RDF graph.
+--
+-- \param graph_iri The IRI of the private graph to revoke access to,
+-- \param uid The numerical or string ID of the SQL user to revoke access from.
+--
+-- \sa SIOC..private_user_add
+--/
+create procedure SIOC..private_user_remove (
+  in graph_iri varchar,
+  in uid any)
+{
+  declare exit handler for sqlstate '*' {return 0;};
+
+  if (isinteger (uid))
+    uid := (select U_NAME from DB.DBA.SYS_USERS where U_ID = uid);
+
+  DB.DBA.RDF_GRAPH_USER_PERMS_DEL (graph_iri, uid);
+  return 1;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create function DB.DBA.SPARQL_GS_APP_CALLBACK_ODS (
+  in g_iid IRI_ID,
+  in app_uid varchar := null) returns integer
+{
+  -- dbg_obj_princ ('DB.DBA.SPARQL_GS_APP_CALLBACK_ODS (', id_to_iri (g_iid), ')');
+  declare _user varchar;
+  declare rc any;
+  declare _graph, _type, _id, _id2 any;
+  declare exit handler for sqlstate '*' goto _exit;
+  declare exit handler for NOT FOUND goto _exit;
+
+  _user := get_user ();
+  if (_user <> 'SPARQL')
+    return 255;
+
+  _graph := id_to_iri (g_iid);
+  if (_graph not like get_graph () || '/%')
+    return 255;
+  select WAPG_TYPE, WAPG_ID, WAPG_ID2
+    into _type, _id, _id2
+    from DB.DBA.WA_PRIVATE_GRAPHS
+   where WAPG_GRAPH = _graph;
+
+  if (_type = 'WebDAV')
+    {
+    declare _dav_id any;
+
+    _dav_id := DB.DBA.DAV_SEARCH_ID (_id, _id2);
+    if (DB.DBA.DAV_HIDE_ERROR (_dav_id) is null)
+      return 0;
+
+    rc := DB.DBA.DAV_AUTHENTICATE (_dav_id, _id2, '1__', app_uid, null, null);
+    if (rc > 0)
+      return 255;
+  }
+  else
+{
+    declare _user_id any;
+
+    _user_id := (select U_ID from DB.DBA.SYS_USERS where U_ACCOUNT_DISABLED = 0 and U_NAME = app_uid);
+    if (_type = 'Mail')
+  {
+      rc := MAIL.WA.access_rights (_id, _user_id);
+      if (not isnull (rc))
+    {
+        if (rc = 'R')
+          return 1;
+
+        if (rc = 'W')
+          return 3;
+    }
+    }
+  }
+
+_exit:;
+  return 0;
+}
+;
+
+grant execute on DB.DBA.SPARQL_GS_APP_CALLBACK_ODS to public;
 
 --
 -- ACL
@@ -3882,8 +4235,9 @@ create procedure SIOC..acl_insert (
   inout iri varchar,
   inout acl any)
 {
-  declare acl_iri, clean_iri varchar;
-  declare N, aclArray any;
+  -- dbg_obj_princ ('SIOC..acl_insert (', graph_iri, iri, ')');
+  declare acl_iri, clean_iri, filter_iri, criteria_iri varchar;
+  declare N, M, aclArray any;
   declare exit handler for sqlstate '*'
   {
     sioc_log_message (__SQL_MESSAGE);
@@ -3894,7 +4248,7 @@ create procedure SIOC..acl_insert (
   aclArray := deserialize (acl);
   for (N := 0; N < length (aclArray); N := N + 1)
   {
-    acl_iri := clean_iri || sprintf('#acl%d', N);
+    acl_iri := clean_iri || sprintf('#acl_%d', N);
 
     DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, rdf_iri ('type'), acl_iri ('Authorization'));
     DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, acl_iri ('accessTo'), iri);
@@ -3909,6 +4263,21 @@ create procedure SIOC..acl_insert (
     else if (aclArray[N][2] = 'public')
     {
       DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, acl_iri ('agentClass'), foaf_iri('Agent'));
+    }
+    else if (aclArray[N][2] = 'advanced')
+    {
+      filter_iri := clean_iri || sprintf('#filter_%d', N);
+      DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, oplflt_iri ('hasFilter'), filter_iri);
+      for (M := 0; M < length (aclArray[N][1]); M := M + 1)
+      {
+        criteria_iri := clean_iri || sprintf('#criteria_%d_%d', N, M);
+        DB.DBA.ODS_QUAD_URI (graph_iri, filter_iri, oplflt_iri ('hasCriteria'), criteria_iri);
+        DB.DBA.ODS_QUAD_URI (graph_iri, criteria_iri, oplflt_iri ('operand'), oplflt_iri (aclArray[N][1][M][1]));
+        DB.DBA.ODS_QUAD_URI (graph_iri, criteria_iri, oplflt_iri ('condition'), oplflt_iri (aclArray[N][1][M][2]));
+        DB.DBA.ODS_QUAD_URI_L (graph_iri, criteria_iri, oplflt_iri ('value'), aclArray[N][1][M][3]);
+        if ((length (aclArray[N][1][M]) > 3) and not DB.DBA.is_empty_or_null (aclArray[N][1][M][4]))
+          DB.DBA.ODS_QUAD_URI_L (graph_iri, criteria_iri, oplflt_iri ('statement'), aclArray[N][1][M][4]);
+      }
     }
     if (aclArray[N][3])
       DB.DBA.ODS_QUAD_URI (graph_iri, acl_iri, acl_iri ('mode'), acl_iri('Read'));
@@ -3925,8 +4294,8 @@ create procedure SIOC..acl_delete (
   inout iri varchar,
   inout acl any)
 {
-  declare acl_iri, clean_iri varchar;
-  declare N, aclArray any;
+  declare acl_iri, clean_iri, filter_iri, criteria_iri varchar;
+  declare N, M, aclArray any;
   declare exit handler for sqlstate '*'
   {
     sioc_log_message (__SQL_MESSAGE);
@@ -3939,122 +4308,95 @@ create procedure SIOC..acl_delete (
   {
     acl_iri := clean_iri || sprintf('#acl%d', N);
     delete_quad_s_or_o (graph_iri, acl_iri, acl_iri);
-  }
-}
-;
-
-create procedure SIOC..acl_webID ()
-{
-  declare retIRI varchar;
-  declare foafIRI, foafGraph, loadIRI, localIRI any;
-  declare S, V, info, st, msg, data, meta any;
-
-  if (not is_https_ctx ())
-  {
-    retIRI := null;
-    goto _exit;
-  }
-
-  retIRI := connection_get ('vspx_vebid');
-  if (not isnull (retIRI))
-  {
-    if (retIRI = '')
-      retIRI := null;
-    goto _exit;
-  }
-
-  foafIRI := trim (get_certificate_info (7, null, null, null, '2.5.29.17'));
-  V := regexp_replace (foafIRI, ',[ ]*', ',', 1, null);
-  V := split_and_decode (V, 0, '\0\0,:');
-  if (V is null)
-    V := vector ();
-  foafIRI := get_keyword ('URI', V);
-  if (isnull (foafIRI))
-  {
-    retIRI := DB.DBA.FOAF_SSL_WEBFINGER ();
-    if (not isnull (retIRI))
-      goto _set;
-    retIRI := ODS.DBA.FINGERPOINT_WEBID_GET ();
-    goto _set;
-  }
-
-  foafGraph := 'http://local.virt/FOAF/' || cast (rnd (1000) as varchar);
-  localIRI := foafIRI;
-  V := rfc1808_parse_uri (localIRI);
-  if (cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DynamicLocal') = '1' and V[1] = registry_get ('URIQADefaultHost'))
-  {
-    V [0] := 'local';
-    V [1] := '';
-    localIRI := db.dba.vspx_uri_compose (V);
-  }
-  V := rfc1808_parse_uri (foafIRI);
-  V[5] := '';
-  loadIRI := DB.DBA.vspx_uri_compose (V);
-
-  S := sprintf ('sparql load <%s> into graph <%s>', loadIRI, foafGraph);
-  st := '00000';
-  exec (S, st, msg, vector (), 0);
-  if (st = '00000')
-  {
-  S := sprintf (' sparql define input:storage "" ' ||
-                ' prefix cert: <http://www.w3.org/ns/auth/cert#> ' ||
-                ' prefix rsa: <http://www.w3.org/ns/auth/rsa#> ' ||
-                ' select (str (bif:coalesce (?exp_val, ?exp))) ' ||
-                '        (str (bif:coalesce (?mod_val, ?mod))) ' ||
-                '   from <%s> ' ||
-                '  where { ' ||
-                '          ?id cert:identity <%s> ; ' ||
-                '              rsa:public_exponent ?exp ; ' ||
-                '              rsa:modulus ?mod . ' ||
-                '          optional { ?exp cert:decimal ?exp_val . ' ||
-                '          ?mod cert:hex ?mod_val . } ' ||
-                '        }',
-                foafGraph,
-                localIRI);
-  exec (S, st, msg, vector (), 0, meta, data);
-    if (st = '00000')
+    acl_iri := clean_iri || sprintf('#acl_%d', N);
+    delete_quad_s_or_o (graph_iri, acl_iri, acl_iri);
+    if (aclArray[N][2] = 'advanced')
     {
-      info := get_certificate_info (9);
-  foreach (any _row in data) do
-  {
-    if (_row[0] = cast (info[1] as varchar) and lower (regexp_replace (_row[1], '[^A-Z0-9a-f]', '', 1, null)) = bin2hex (info[2]))
-    {
-          retIRI := foafIRI;
-          goto _break;
-        }
+      filter_iri := clean_iri || sprintf('#filter_%d', N);
+      delete_quad_s_or_o (graph_iri, filter_iri, filter_iri);
+      for (M := 0; M < length (aclArray[N][1]); M := M + 1)
+      {
+        criteria_iri := clean_iri || sprintf('#criteria_%d_%d', N, M);
+        delete_quad_s_or_o (graph_iri, criteria_iri, criteria_iri);
       }
     }
   }
-_break:;
-  exec (sprintf ('SPARQL clear graph <%s>', foafGraph), st, msg, vector (), 0);
-
-_set:;
-  connection_set ('vspx_vebid', coalesce (retIRI, ''));
-
-_exit:;
-  return retIRI;
 }
 ;
 
-create procedure SIOC..acl_check (
+create procedure SIOC..acl_webid (
+  inout webid varchar,
+  inout graph varchar := null)
+{
+  declare cert, vtype any;
+
+  if (not is_https_ctx ())
+    return null;
+
+  webid := connection_get ('vspx_vebid');
+  if (not isnull (webid))
+  {
+    if (webid = '')
+      webid := null;
+    goto _exit;
+  }
+
+  set_user_id ('dba');
+  cert := client_attr ('client_certificate');
+  if (not DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 0, webid, graph, 0, vtype))
+    webid := null;
+  connection_set ('vspx_vebid', coalesce (webid, ''));
+
+_exit:;
+  return webid;
+}
+;
+
+create procedure SIOC..acl_prepare_sql (
+  inout _sql varchar,
+  inout _sqlParams any,
+  in _params any)
+{
+  declare _name, _value, _pattern, _char varchar;
+  declare V any;
+
+  _char := '?';
+  if (_sql like 'sparql%')
+    _char := '??';
+
+  _pattern := '\\^\\{([a-zA-Z0-9])+\\}\\^';
+  while (1)
+  {
+    V := regexp_parse (_pattern, _sql, 0);
+    if (isnull (V))
+      goto _exit;
+
+    _name := subseq (_sql, V[0]+2, V[1]-2);
+    _value := get_keyword (_name, _params);
+    _sqlParams := vector_concat (_sqlParams, vector (_value));
+    _sql := regexp_replace (_sql, _pattern, _char);
+  }
+_exit:;
+  return;
+}
+;
+
+create procedure SIOC..acl_check_internal (
+  in webid varchar,
+  in webidGraph varchar,
   in acl_graph_iri varchar,
   in acl_groups_iri varchar,
   in acl_iris any)
 {
-  declare N, M, I integer;
-  declare tmp, rc, foafIRI, acl_iri varchar;
-  declare IRIs any;
+  declare M, I integer;
+  declare rc varchar;
+  declare _cert, _commands, _command any;
+  declare _filterMode, _filterValue, _mode, _filter, _criteria, _operand, _condition, _pattern, _statement, _params any;
+  declare _sql, _state, _msg, _sqlParams, _meta, _rows any;
 
   rc := '';
-  foafIRI := SIOC..acl_webID ();
-  if (isnull (foafIRI))
-    goto _exit;
-
-  IRIs := vector (vector(), vector(), vector());
-      for (N := 0; N < length (acl_iris); N := N + 1)
+  foreach (any acl_iri in acl_iris) do
       {
-    tmp := '';
-    acl_iri := acl_iris[N];
     for ( sparql
           define input:storage ""
           prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -4067,7 +4409,7 @@ create procedure SIOC..acl_check (
                      {
                        ?rule rdf:type acl:Authorization ;
                              acl:accessTo `iri(?:acl_iri)` ;
-                             acl:agent `iri(?:foafIRI)` ;
+                             acl:agent `iri(?:webid)` ;
                              acl:agent ?p1 .
                        OPTIONAL {?rule acl:mode ?mode .} .
                      }
@@ -4095,7 +4437,7 @@ create procedure SIOC..acl_check (
                      graph `iri(?:acl_groups_iri)`
                      {
                        ?p3 rdf:type foaf:Group ;
-                           foaf:member `iri(?:foafIRI)` .
+                           foaf:member `iri(?:webid)` .
                      }
             }
           }
@@ -4110,12 +4452,6 @@ create procedure SIOC..acl_check (
       else
         goto _skip;
 
-      tmp := coalesce ("p1", coalesce ("p2", "p3"));
-      for (M := 0; M < length (IRIs[I]); M := M + 1)
-      {
-        if (tmp = IRIs[I][M])
-          goto _skip;
-        }
       if ("mode" like '%#Write')
       {
         rc := 'W';
@@ -4124,13 +4460,203 @@ create procedure SIOC..acl_check (
       if ("mode" like '%#Read')
         rc := 'R';
 
-      IRIs[I] := vector_concat (IRIs[I], vector (tmp));
-
     _skip:;
     }
+
+    _cert := client_attr ('client_certificate');
+    _commands := ODS.ODS_API.commands ();
+    _filterMode := '';
+    _filterValue := 1;
+    _filter := '';
+    _criteria := '';
+    for (
+      sparql
+          define input:storage ""
+          prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+          prefix foaf: <http://xmlns.com/foaf/0.1/>
+          prefix acl: <http://www.w3.org/ns/auth/acl#>
+      prefix flt: <http://www.openlinksw.com/schemas/acl/filter#>
+      select ?filter ?criteria ?mode ?operand ?condition ?pattern ?statement
+           where {
+               {
+                   graph `iri(?:acl_graph_iri)`
+                   {
+                     ?rule rdf:type acl:Authorization ;
+                           acl:accessTo `iri(?:acl_iri)` ;
+                         acl:mode ?mode ;
+                         flt:hasFilter ?filter .
+                         ?filter flt:hasCriteria ?criteria .
+                         ?criteria flt:operand ?operand ;
+                                   flt:condition ?condition ;
+                                   flt:value ?pattern .
+                         OPTIONAL { ?criteria flt:statement ?statement . }
+                   }
+                 }
+             }
+       order by ?filter ?criteria) do
+    {
+      _mode := "mode";
+      _operand := replace ("operand", 'http://www.openlinksw.com/schemas/acl/filter#', '');
+      _condition := replace ("condition", 'http://www.openlinksw.com/schemas/acl/filter#', '');;
+      _pattern := cast ("pattern" as varchar);
+      _statement := cast ("statement" as varchar);
+      if (_filter <> "filter")
+  	  {
+        if (_filterValue and (_filter <> ''))
+	      {
+          if (_filterMode <> '')
+            rc := _filterMode;
+          if (rc = 'W')
+            goto _exit;
+        }
+        _filterMode := '';
+        _filterValue := 1;
+        _filter := "filter";
+        _criteria := '';
+      }
+      if (_filterValue and (_criteria <> "criteria"))
+      {
+        _command := get_keyword (_condition, _commands);
+        if (isnull (_command))
+          goto _skip2;
+
+        if (_operand <> 'certSparqlTriplet')
+           _command := replace (_command, 'bif:', '');
+
+        _sql := 'select case when ' || _command || ' then 1 else 0 end';
+        _sqlParams := vector ();
+        _params := vector ('pattern', _pattern);
+        if      (_operand = 'webIDVerified')
+        {
+          ODS.ODS_API.set_keyword ('value', _params, '1');
+    }
+        else if (_operand = 'webID')
+                   {
+          ODS.ODS_API.set_keyword ('value', _params, webid);
+                   }
+        else if (_operand = 'certExpiration')
+                   {
+          declare _from, _to any;
+
+          _from := DB.DBA.X509_STRING_DATE (get_certificate_info (4, _cert));
+          _to := DB.DBA.X509_STRING_DATE (get_certificate_info (5, _cert));
+          ODS.ODS_API.set_keyword ('value', _params, case when (_to < now () or _from > now ()) then '1' else '0' end);
+                   }
+        else if (_operand = 'certSerial')
+        {
+          ODS.ODS_API.set_keyword ('value', _params, get_certificate_info (1, _cert));
+                 }
+        else if (_operand = 'certMail')
+    {
+          ODS.ODS_API.set_keyword ('value', _params, get_certificate_info (10, _cert, 0, '', 'emailAddress'));
+        }
+        else if (_operand = 'certSubject')
+  	  {
+          ODS.ODS_API.set_keyword ('value', _params, get_certificate_info (2, _cert));
+        }
+        else if (_operand = 'certIssuer')
+        {
+          ODS.ODS_API.set_keyword ('value', _params, get_certificate_info (3, _cert));
+        }
+        else if (_operand = 'certStartDate')
+        {
+          ODS.ODS_API.set_keyword ('value', _params, DB.DBA.X509_STRING_DATE (get_certificate_info (4, _cert)));
+          ODS.ODS_API.set_keyword ('pattern', _params, DB.DBA.DAV_AUTHENTICATE_SSL_DATE (_pattern));
+        }
+        else if (_operand = 'certEndDate')
+        {
+          ODS.ODS_API.set_keyword ('value', _params, DB.DBA.X509_STRING_DATE (get_certificate_info (5, _cert)));
+          ODS.ODS_API.set_keyword ('pattern', _params, DB.DBA.DAV_AUTHENTICATE_SSL_DATE (_pattern));
+        }
+        else if (_operand = 'certDigest')
+        {
+          ODS.ODS_API.set_keyword ('value', _params, _cert);
+          _sql := 'select case when ' || sprintf ('(DB.DBA.DAV_AUTHENTICATE_SSL_DIGEST_CHECK (^{value}^, ''%s'', ^{pattern}^) = 1)', _condition) || ' then 1 else 0 end';
+        }
+        else if (_operand = 'certSparqlTriplet')
+        {
+          _command := replace (_command, ' <> ', ' != ');
+          _command := replace (_command, '^{value}^', 'str (?v)');
+          _sql := sprintf (
+            'sparql \n' ||
+            'prefix sioc: <http://rdfs.org/sioc/ns#> \n' ||
+            'prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n' ||
+            'prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
+            'ASK \n' ||
+            'WHERE \n' ||
+            '  { \n' ||
+            '    <%s> %s ?v. \n' ||
+            '    FILTER (%s). \n' ||
+            '  }',
+            webid,
+            _statement,
+            _command);
+          ODS.ODS_API.set_keyword ('pattern', _params, _pattern);
+        }
+        else if (_operand = 'certSparqlASK')
+        {
+          ODS.ODS_API.set_keyword ('webid', _params, webid);
+          ODS.ODS_API.set_keyword ('value', _params, webid);
+          ODS.ODS_API.set_keyword ('graph', _params, webidGraph);
+          _sql := 'sparql ' || _statement;
+        }
+
+        _state := '00000';
+        SIOC..acl_prepare_sql (_sql, _sqlParams, _params);
+        exec (_sql, _state, _msg, _sqlParams, 0, _meta, _rows);
+        if (_state <> '00000')
+        {
+          _filterValue := 0;
+        }
+        else if (isvector (_rows) and length (_rows) and isvector (_rows[0]) and length (_rows[0]) and _rows[0][0] = 0)
+        {
+          _filterValue := 0;
+        }
+        else if ((_operand = 'certSparqlTriplet') and isvector (_rows) and (length (_rows) = 0))
+        {
+          _filterValue := 0;
+        }
+      }
+      if (_filterMode <> 'W')
+      {
+        if (_mode like '%#Write')
+          _filterMode := 'W';
+        else if (_mode like '%#Read')
+          _filterMode := 'R';
+      }
+
+    _skip2:;
+      _criteria := "criteria";
+    }
+    if (_filterValue and (_filter <> '') and (_filterMode <> ''))
+      rc := _filterMode;
+
+  _continue:;
   }
 
 _exit:;
+  return rc;
+}
+;
+
+create procedure SIOC..acl_check (
+  in acl_graph_iri varchar,
+  in acl_groups_iri varchar,
+  in acl_iris any)
+{
+  -- dbg_obj_print ('SIOC..acl_check (', acl_graph_iri, acl_groups_iri, acl_iris, ')');
+  declare rc, webid, webidGraph varchar;
+
+  rc := '';
+  webidGraph := ODS.ODS_API.graph_create ();
+  SIOC..acl_webid (webid, webidGraph);
+  if (isnull (webid))
+    goto _exit;
+
+  rc := SIOC..acl_check_internal (webid, webidGraph, acl_graph_iri, acl_groups_iri, acl_iris);
+
+_exit:;
+  ODS.ODS_API.graph_clear (webidGraph);
   return rc;
 }
 ;
@@ -4140,14 +4666,17 @@ create procedure SIOC..acl_list (
   in acl_groups_iri varchar,
   in acl_iri varchar)
 {
-  declare rc, foafIRI varchar;
+  declare rc, webid, webidGraph varchar;
+  declare cert, diArray, finger, digest, digestHash any;
 
   result_names (rc);
 
-  foafIRI := SIOC..acl_webID ();
-  if (isnull (foafIRI))
+  webidGraph := null;
+  SIOC..acl_webid (webid, webidGraph);
+  if (isnull (webid))
     return;
 
+  cert := client_attr ('client_certificate');
   for ( sparql
         define input:storage ""
         prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
@@ -4160,7 +4689,7 @@ create procedure SIOC..acl_list (
                    {
                      ?rule rdf:type acl:Authorization ;
                            acl:accessTo ?iri ;
-                           acl:agent `iri(?:foafIRI)` .
+                           acl:agent `iri(?:webid)` .
                      filter (?iri != ?:acl_iri).
                    }
                  }
@@ -4186,7 +4715,7 @@ create procedure SIOC..acl_list (
                    graph `iri(?:acl_groups_iri)`
                    {
                      ?group rdf:type foaf:Group ;
-                         foaf:member `iri(?:foafIRI)` .
+                            foaf:member `iri(?:webid)` .
                    }
                  }
                }
@@ -4256,6 +4785,7 @@ create procedure SIOC..acl_ping2 (
 ;
 
 create procedure SIOC..wa_instance_acl_insert (
+  inout is_public integer,
   inout type_name varchar,
   inout name varchar,
   inout acl any)
@@ -4274,6 +4804,7 @@ create procedure SIOC..wa_instance_acl_insert (
 ;
 
 create procedure SIOC..wa_instance_acl_delete (
+  inout is_public integer,
   inout type_name varchar,
   inout name varchar,
   inout acl any)
@@ -4294,24 +4825,20 @@ create procedure SIOC..wa_instance_acl_delete (
 
 create trigger WA_INSTANCE_ACL_I after insert on DB.DBA.WA_INSTANCE order 100 referencing new as N
 {
-  if (coalesce (N.WAI_ACL, '') <> '')
-    SIOC..wa_instance_acl_insert (N.WAI_TYPE_NAME, N.WAI_NAME, N.WAI_ACL);
+    SIOC..wa_instance_acl_insert (N.WAI_IS_PUBLIC, N.WAI_TYPE_NAME, N.WAI_NAME, N.WAI_ACL);
 }
 ;
 
 create trigger WA_INSTANCE_ACL_U after update on DB.DBA.WA_INSTANCE order 100 referencing old as O, new as N
 {
-  if ((coalesce (O.WAI_ACL, '') <> '') and (coalesce (O.WAI_ACL, '') <> coalesce (N.WAI_ACL, '')))
-    SIOC..wa_instance_acl_delete (O.WAI_TYPE_NAME, O.WAI_NAME, O.WAI_ACL);
-  if ((coalesce (N.WAI_ACL, '') <> '') and (coalesce (O.WAI_ACL, '') <> coalesce (N.WAI_ACL, '')))
-    SIOC..wa_instance_acl_insert (N.WAI_TYPE_NAME, N.WAI_NAME, N.WAI_ACL);
+    SIOC..wa_instance_acl_delete (O.WAI_IS_PUBLIC, O.WAI_TYPE_NAME, O.WAI_NAME, O.WAI_ACL);
+    SIOC..wa_instance_acl_insert (N.WAI_IS_PUBLIC, N.WAI_TYPE_NAME, N.WAI_NAME, N.WAI_ACL);
 }
 ;
 
 create trigger WA_INSTANCE_ACL_D before delete on DB.DBA.WA_INSTANCE order 100 referencing old as O
 {
-  if (coalesce (O.WAI_ACL, '') <> '')
-    SIOC..wa_instance_acl_delete (O.WAI_TYPE_NAME, O.WAI_NAME, O.WAI_ACL);
+    SIOC..wa_instance_acl_delete (O.WAI_IS_PUBLIC, O.WAI_TYPE_NAME, O.WAI_NAME, O.WAI_ACL);
 }
 ;
 
@@ -4966,50 +5493,25 @@ create procedure foaf_check_friend (in iri varchar, in agent varchar)
 }
 ;
 
-create procedure foaf_check_ssl_int (in iri varchar, out graph varchar)
-{
-  declare stat, msg, meta, data, info, qr, hf, gr any;
-  declare agent varchar;
-  declare rc int;
-  declare groups_iri, arr any;
-
-  graph := null;
-  rc := 0;
-  declare exit handler for sqlstate '*'
+create procedure foaf_check_ssl (
+  in iri varchar)
     {
-      rollback work;
-      return 0;
-  };
+  declare webid varchar;
+  return foaf_check_ssl_2(iri, webid);
+}
+;
+
+/**
+The only reason to introduce this function was to expose the webid out parameter
+without needing to change any calls to foaf_check_ssl.
+*/
+create procedure foaf_check_ssl_2 (
+  in iri varchar,
+  out webid varchar)
+{
+  declare arr, groups_iri, msg, webidGraph varchar;
 
   set_user_id ('dba');
-  info := get_certificate_info (9);
-  agent := ODS.ODS_API.SSL_WEBID_GET (); 
-
-  if (agent is not null and agent like 'ldap://%')
-    {
-      return DB.DBA.FOAF_SSL_LDAP_CHECK (agent);
-    }
-  if (agent is null)
-    {
-      agent := DB.DBA.FOAF_SSL_WEBFINGER ();
-      -- when no webid asked the webfinder already did check for certitificate
-      if (agent is not null and iri is null)
-	{
-	  graph := uuid ();
-	  return 1;
-	}
-    }
-  if (agent is null)
-    agent := ODS..FINGERPOINT_WEBID_GET ();
-
---  dbg_obj_print (info, agent);
-  if (not isarray (info) or agent is null)
-    return 0;
-
-  -- old check
-  -- if (iri is not null and not foaf_check_friend (iri, agent))
-  --  return 0;
-
   if (iri is not null)
   {
   -- ACL check
@@ -5021,45 +5523,15 @@ create procedure foaf_check_ssl_int (in iri varchar, out graph varchar)
   if (SIOC..acl_check (SIOC..acl_clean_iri (iri) || '/webaccess', groups_iri, vector (iri)) = '')
     return 0;
   }
-
-  -- agent := fix_uri (agent);
-  hf := rfc1808_parse_uri (agent);
-  hf[5] := '';
-  gr := DB.DBA.vspx_uri_compose (hf);
-  graph := uuid ();
-  qr := sprintf ('sparql load <%S> into graph <%S>', gr, graph);
-  stat := '00000';
-  exec (qr, stat, msg);
+  webidGraph := null;
+  SIOC..acl_webid (webid, webidGraph);
   commit work;
-  qr := DB.DBA.FOAF_SSL_QR (graph, agent);      
-  stat := '00000';
---  dbg_printf ('%s', qr);
-  exec (qr, stat, msg, vector (), 0, meta, data);
---  dbg_obj_print (data);
-  if (stat = '00000' and length (data))
-    {
-      foreach (any _row in data) do
-	{
-	  if (_row[0] = cast (info[1] as varchar) and DB.DBA.FOAF_MOD (_row[1]) = bin2hex (info[2]))
-    rc := 1;
-	}
-    }
-  return rc;
+  if (isnull (webid))
+    return 0;
+  return 1;
 }
 ;
 
-create procedure foaf_check_ssl (in iri varchar)
-{
-  declare rc int;
-  declare graph, stat, msg varchar;
-
-  set_user_id ('dba');
-  rc := foaf_check_ssl_int (iri, graph);
-  exec (sprintf ('sparql clear graph <%S>', graph), stat, msg);
-  commit work;
-  return rc;
-}
-;
 
 create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p int := 0)
 {
@@ -5140,12 +5612,13 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?person foaf:mbox ?mbox .
 	    ?person foaf:mbox_sha1sum ?sha1 .
 	    ?person foaf:name ?full_name .
-	    ?person foaf:holdsAccount ?sioc_user .
+	    ?person foaf:account ?sioc_user .
 	    ?person rdfs:seeAlso ?pers_see_also .
 	    ?sioc_user rdfs:seeAlso ?see_also .
 	    ?sioc_user a sioc:User .
 	    ?person foaf:firstName ?fn .
 	    ?person foaf:family_name ?ln .
+	    ?person foaf:title ?title .
 	    ?person foaf:gender ?gender .
 	    ?person foaf:icqChatID ?icq .
 	    ?person foaf:msnChatID ?msn .
@@ -5179,10 +5652,10 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    graph <%s>
 	    {
 	      {
-	      ?person foaf:holdsAccount <%s/%s#this> ;
+	      ?person foaf:account <%s/%s#this> ;
 	      rdf:type ?type ;
 	      foaf:nick ?nick ;
-	      foaf:holdsAccount ?sioc_user .
+	      foaf:account ?sioc_user .
 	      optional { ?person rdfs:seeAlso ?pers_see_also . } .
 	      optional { ?sioc_user rdfs:seeAlso ?see_also . } .
 	      optional { ?person foaf:mbox ?mbox ; foaf:mbox_sha1sum ?sha1 . } .
@@ -5196,6 +5669,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      optional { ?person foaf:name ?full_name } .
 	      optional { ?person foaf:firstName ?fn } .
 	      optional { ?person foaf:family_name ?ln } .
+	      optional { ?person foaf:title ?title } .
 	      optional { ?person foaf:gender ?gender } .
 	      optional { ?person foaf:icqChatID ?icq } .
 	      optional { ?person foaf:msnChatID ?msn } .
@@ -5250,7 +5724,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?event dc:date ?bdate .
 	    ?person bio:keywords ?keywords .
 	    ?person owl:sameAs ?same_as .
-	    ?person foaf:holdsAccount ?oa .
+	    ?person foaf:account ?oa .
 	    ?oa a foaf:OnlineAccount .
 	    ?oa foaf:accountServiceHomepage ?ashp .
 	    ?oa foaf:accountName ?an .
@@ -5266,7 +5740,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    graph <%s>
 	    {
 	      {
-	      ?person foaf:holdsAccount <%s/%s#this> ;
+  	      ?person foaf:account <%s/%s#this> ;
 	      foaf:openid ?oid .
 	      optional { ?person bio:olb ?bio  } .
               optional { ?person bio:event ?event . ?event a bio:Birth ; dc:date ?bdate } .
@@ -5280,7 +5754,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	      	       } .
               optional { ?person bio:keywords ?keywords } .
 	      optional { ?person owl:sameAs ?same_as } .
-			 ?person foaf:holdsAccount ?oa .
+  	      ?person foaf:account ?oa .
 	      optional {
 		         ?oa foaf:accountServiceHomepage ?ashp ; foaf:accountName ?an
 	      	       } .
@@ -5306,31 +5780,35 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	    ?interest rdfs:label ?interest_label .
 	    ?person foaf:topic_interest ?topic_interest .
 	    ?topic_interest rdfs:label ?topic_interest_label .
-	    ?idn cert:identity ?person .
-	    ?idn rdf:type rsa:RSAPublicKey .
-	    ?idn rsa:public_exponent ?exp .
-	    ?idn rsa:modulus ?mod .
+	    ?person cert:key ?key .
+	    ?key rdf:type cert:RSAPublicKey .
+	    ?key cert:exponent ?exp .
+	    ?key cert:modulus ?mod .
 	    ?event_iri rdf:type ?bioEvent .
 	    ?event_iri bio:date ?bioDate .
 	    ?event_iri bio:place ?bioPlace .
 	    ?person pingback:to ?pb .
+	    ?person pingback:service ?psvc .
 	    ?person foaf:made `iri (bif:sprintf (''http://%%{WSHost}s/ods/describe?uri=%%U'', ?mbox))` .
+	    ?person <http://vocab.deri.ie/void#inDataset> <http://%{URIQADefaultHost}s/dataspace> .
+	    <http://%{URIQADefaultHost}s/dataspace> <http://rdfs.org/ns/void#sparqlEndpoint> <http://%{URIQADefaultHost}s/sparql-auth/> .
 	  }
 	  WHERE
 	  {
 	    graph <%s>
 	    {
 	      {
-	      ?person foaf:holdsAccount <%s/%s#this> .
+	        ?person foaf:account <%s/%s#this> .
 		optional { ?person foaf:mbox ?mbox . } .  
 	      optional { ?person foaf:made ?made . ?made dc:identifier ?ident . ?made dc:title ?made_title . optional { ?made a ?made_type . } } .
 	      optional { ?person foaf:interest ?interest } .
 	      optional { ?interest rdfs:label ?interest_label  } .
 	      optional { ?person foaf:topic_interest ?topic_interest } .
 	      optional { ?topic_interest rdfs:label ?topic_interest_label  } .
-	        optional { ?idn cert:identity ?person ; rsa:public_exponent ?exp ; rsa:modulus ?mod . } .
+	        optional { ?person cert:key ?key . ?key cert:exponent ?exp ; cert:modulus ?mod . } .
 	      optional { ?person bio:event ?event_iri . ?event_iri rdf:type ?bioEvent . ?event_iri bio:date ?bioDate . ?event_iri bio:place ?bioPlace } .
 		optional { ?person pingback:to ?pb } .
+		optional { ?person pingback:service ?psvc } .
 	      }
 	    }
 	  }', graph, iri_pref, u_name);
@@ -5352,7 +5830,7 @@ create procedure compose_foaf (in u_name varchar, in fmt varchar := 'n3', in p i
 	  {
 	    graph <%s>
 	    {
-	        ?person foaf:holdsAccount <%s/%s#this> .
+        ?person foaf:account <%s/%s#this> .
         {
           {
             ?container foaf:maker ?person;
@@ -5572,6 +6050,7 @@ execute_qr:
 }
 ;
 
+-- XXX: obsolete : see ods_obj_describe
 create procedure ods_sioc_obj_describe (in u_name varchar, in fmt varchar := 'n3', in p int := 0)
 {
   declare iri, graph, ses any;
@@ -5623,6 +6102,7 @@ create procedure ods_sioc_obj_describe (in u_name varchar, in fmt varchar := 'n3
 }
 ;
 
+-- XXX: obsolete : see ods_obj_describe
 create procedure ods_sioc_print_rset (in iri any, inout rset any, inout ses any, inout fmt any, inout maybe_more int)
 {
   declare triples any;
@@ -5676,6 +6156,8 @@ create procedure ods_sioc_print_rset (in iri any, inout rset any, inout ses any,
     }
 };
 
+
+-- XXX: obsolete : see ods_obj_describe
 create procedure ods_sioc_container_obj_describe (in iri varchar, in fmt varchar := 'n3', in p int := 0)
 {
   declare graph, ses any;
@@ -5684,7 +6166,6 @@ create procedure ods_sioc_container_obj_describe (in iri varchar, in fmt varchar
   declare triples any;
   declare lim, offs, maybe_more int;
 
---  dbg_obj_print (u_name, fmt);
   set http_charset='utf-8';
   maybe_more := 1;
   if (fmt = 'text/rdf+n3' or fmt = 'text/n3')
@@ -5790,6 +6271,127 @@ create procedure ods_sioc_container_obj_describe (in iri varchar, in fmt varchar
 }
 ;
 
+create procedure ods_dict_merge (inout dict any, inout rset_dict any)
+{
+  declare triples any;
+  triples := dict_list_keys (rset_dict, 1);
+  foreach (any tr in triples) do
+    {
+      dict_put (dict, tr, 0);
+    }
+}
+;
+
+create procedure ods_obj_describe (in iri varchar, in fmt varchar := 'n3', in p int := 0)
+{
+  declare graph, ses any;
+  declare qrs, stat, msg, accept, pref any;
+  declare rset, metas any;
+  declare triples, path, dict any;
+  declare lim, offs, maybe_more int;
+  declare ss, sa_dict any;
+
+  path := http_path ();
+  dict := dict_new ();
+--  dbg_obj_print_vars (iri, fmt, path, http_header_get ());
+  set http_charset='utf-8';
+  maybe_more := 1;
+
+  if (path like '%.rdf')
+    accept := 'application/rdf+xml';
+  if (path like '%.nt')
+     accept := 'text/n3';
+  if (path like '%.n3')
+     accept := 'text/rdf+n3';
+  if (path like '%.ttl')
+     accept := 'text/rdf+ttl';
+  if (path like '%.txt')
+     accept := 'text/plain';
+  if (path like '%.json')
+     accept := 'application/json';
+  if (path like '%.jmd')
+     accept := 'application/microdata+json';
+  if (path like '%.jld')
+     accept := 'application/x-json+ld';
+  if (path like '%.turtle')
+     accept := 'text/turtle';
+
+
+  graph := fix_graph (get_graph ());
+  iri := fix_uri (iri);
+  ses := string_output ();
+  lim := 20;
+  offs := coalesce (p, 0) * lim;
+  qrs := vector (0,0,0);
+  pref := 'sparql prefix sioc: <http://rdfs.org/sioc/ns#> prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dct: <http://purl.org/dc/terms/> prefix atom: <http://atomowl.org/ontologies/atomrdf#> ';
+  if (offs = 0)
+    {
+      qrs[0] := sprintf ('CONSTRUCT { <%s> ?p ?o . } '||
+      ' FROM <%s> WHERE { <%s> ?p ?o . filter (?p != sioc:container_of && ?p != atom:entry && ?p != atom:contains) }',
+      iri, graph, iri);
+      qrs[1] := sprintf ('CONSTRUCT { ?s ?p <%s> . } '||
+      ' FROM <%s> WHERE { ?s ?p <%s> . filter (?p != sioc:has_container && ?p != atom:source ) }',
+      iri, graph, iri);
+    }
+  qrs[2] := sprintf (
+    'CONSTRUCT { <%s> sioc:container_of ?o . ?o sioc:has_container <%s> . ?o a ?t . ?o rdfs:label ?l . ?o rdfs:seeAlso ?sa . } '||
+    ' FROM <%s> WHERE { <%s> sioc:container_of ?o . optional { ?o a ?t } . optional { ?o rdfs:label ?l } . '||
+    ' optional { ?o rdfs:seeAlso ?sa } . optional { ?o dct:created ?cr } } order by desc (?cr) LIMIT %d OFFSET %d',
+    iri, iri, graph, iri, lim, offs);
+
+  set_user_id ('dba');
+
+  metas := null;
+  foreach (any qr in qrs) do
+    {
+      if (qr <> 0)
+    	{
+    	  qr := pref || qr;
+        -- dbg_printf ('%s', qr);
+    	  stat := '00000';
+    	  exec (qr, stat, msg, vector (), 0, metas, rset);
+    	  if (stat <> '00000')
+    	    signal (stat, msg);
+	  ods_dict_merge (dict, rset[0][0]);
+    	}
+    }
+  if (p > 0)
+    {
+      ss := string_output ();
+      rdf_head (ss);
+      http (sprintf ('<rdf:Description rdf:about="%s/page/%d">', iri, coalesce (p, 0)), ss);
+      http (sprintf ('<foaf:primaryTopic xmlns:foaf="http://xmlns.com/foaf/0.1/" rdf:resource="%s" />', iri), ss);
+      http ('</rdf:Description>', ss);
+      rdf_tail (ss);
+      ss := string_output_string (ss);
+      sa_dict := DB.DBA.RDF_RDFXML_TO_DICT (ss, iri, graph);
+      ods_dict_merge (dict, sa_dict);
+    }
+  if (maybe_more)
+    {
+      ss := string_output ();
+      rdf_head (ss);
+      http (sprintf ('<rdf:Description rdf:about="%s">', iri), ss);
+      http (sprintf ('<rdfs:seeAlso xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" rdf:resource="%s/page/%d" />', iri, coalesce (p, 0) + 1), ss);
+      http ('</rdf:Description>', ss);
+      http (sprintf ('<rdf:Description rdf:about="%s/page/%d">', iri, coalesce (p, 0) + 1), ss);
+      http (sprintf ('<rdfs:label>page %d</rdfs:label>', coalesce (p, 0) + 1), ss);
+      http ('</rdf:Description>', ss);
+
+      rdf_tail (ss);
+      ss := string_output_string (ss);
+      sa_dict := DB.DBA.RDF_RDFXML_TO_DICT (ss, iri, graph);
+      ods_dict_merge (dict, sa_dict);
+    }
+  if (metas is not null)
+    {
+      rset := vector (vector (dict));
+      DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 1);
+    }
+  return ses;
+}
+;
+
 create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in inst_type varchar, in postid varchar := null,
 				   in p int := null, in fmt varchar := 'RDF/XML', in kind int := 0)
 {
@@ -5853,14 +6455,14 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
       if (kind = 0)
 	{
 	  part := sprintf (
-	     ' CONSTRUCT { ?s ?p ?o . ?f foaf:holdsAccount ?ha . ?f rdfs:seeAlso ?sa . '||
+  	     ' CONSTRUCT { ?s ?p ?o . ?f foaf:account ?ha . ?f rdfs:seeAlso ?sa . '||
 	     '  ?frm sioc:scope_of ?role. ?role sioc:function_of ?member. ?frm sioc:type ?ft. ?frm sioc:id ?fid . '||
 	     '  ?frm rdfs:seeAlso ?fsa . ?frm sioc:has_space ?fh .  ?role sioc:has_scope ?frm . ' ||
 	     '  ?frm sioc:has_owner ?member . ?member sioc:owner_of ?frm . } \n' ||
 	     ' FROM <%s> WHERE { \n' ||
 	     '   { ?s ?p ?o . ?s sioc:id "%s" FILTER (?p != "http://www.w3.org/2000/01/rdf-schema#seeAlso" && ' ||
 	     ' 					  ?p != "http://rdfs.org/sioc/ns#creator_of") } union  \n' ||
-	     '   { ?f foaf:nick "%s" ; foaf:holdsAccount ?ha ; rdfs:seeAlso ?sa  } union  \n' ||
+  	     '   { ?f foaf:nick "%s" ; foaf:account ?ha ; rdfs:seeAlso ?sa  } union  \n' ||
 	     '   { ?frm sioc:scope_of ?role . ?role sioc:function_of ?member . '||
 	     '     ?member sioc:id "%s". ?frm sioc:type ?ft; sioc:id ?fid; rdfs:seeAlso ?fsa; sioc:has_space ?fh. '||
              '     OPTIONAL { ?frm sioc:has_owner ?member . } '||
@@ -5876,7 +6478,7 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 	    ?person foaf:mbox ?mbox .
 	    ?person foaf:mbox_sha1sum ?sha1 .
 	    ?person foaf:name ?full_name .
-	    ?person foaf:holdsAccount ?sioc_user .
+  	    ?person foaf:account ?sioc_user .
 	    ?sioc_user rdfs:seeAlso ?see_also .
 	    ?sioc_user a sioc:User .
 	    ?person foaf:firstName ?fn .
@@ -5925,7 +6527,7 @@ create procedure sioc_compose_xml (in u_name varchar, in wai_name varchar, in in
 	    {
 	      {
 	      ?person foaf:nick "%s" ;
-	      foaf:holdsAccount ?sioc_user .
+    	      foaf:account ?sioc_user .
 	      ?sioc_user rdfs:seeAlso ?see_also .
 	      optional { ?person foaf:mbox ?mbox ; foaf:mbox_sha1sum ?sha1 . } .
 	      optional {
@@ -6334,12 +6936,12 @@ create procedure SIOC..rdf_links_header (in iri any)
 
 -----------------------------------------------------------------------------------------
 --
-create procedure SIOC..rdf_links_head (in iri any)
+create procedure SIOC..rdf_links_head_internal (in iri any)
 {
   declare links, blank, desc_link varchar;
 
   if (iri is null)
-    return;
+    return '';
 
   blank := repeat (' ', 4);
   desc_link := sprintf ('http://%{WSHost}s/sparql?default-graph-uri=%U&query=%U', SIOC..get_graph (), sprintf ('DESCRIBE <%s>', iri));
@@ -6372,8 +6974,30 @@ create procedure SIOC..rdf_links_head (in iri any)
     blank ||
     sprintf ('<link href="%V" rev="describedby" />\n', iri);
 
-  http (links);
+  return links;
 }
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure SIOC..rdf_links_head (in iri any)
+{
+  if (iri is null)
+    return;
+
+  http (SIOC..rdf_links_head_internal(iri));
+}
+;
+
+create procedure ods_account_update ()
+{
+  if (registry_get ('ods_account_update') = '1') return;
+  update_quad_p (get_graph (), foaf_iri ('holdsAccount'), foaf_iri ('account'));
+  registry_set ('ods_account_update', '1');
+}
+;
+
+ods_account_update ()
 ;
 
 use DB;
@@ -6388,8 +7012,11 @@ create procedure WA_INTEREST_UPGRADE ()
   for (select WAUI_U_ID, WAUI_INTERESTS as F1, WAUI_INTEREST_TOPICS as F2 from DB.DBA.WA_USER_INFO) do
   {
   	 uname := (select U_NAME from DB.DBA.SYS_USERS where U_ID = WAUI_U_ID);
-     WA_USER_EDIT (uname, 'WAUI_INTERESTS', F2);
-     WA_USER_EDIT (uname, 'WAUI_INTEREST_TOPICS', F1);
+  	 if (not isnull (uname))
+  	 {
+       WA_USER_EDIT (uname, 'WAUI_INTERESTS', F2);
+       WA_USER_EDIT (uname, 'WAUI_INTEREST_TOPICS', F1);
+     }
   }
 
   registry_set ('WA_INTEREST_UPGRADE', 'done');
@@ -6400,9 +7027,7 @@ WA_INTEREST_UPGRADE ()
 
 create procedure ods_object_services_update ()
 {
-  if (registry_get ('ods_services_update') = '1')
-    return;
-
+  if (registry_get ('ods_services_update') = '1') return;
   SIOC..fill_ods_services ();
   registry_set ('ods_services_update', '1');
 }

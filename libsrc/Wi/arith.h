@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -74,6 +74,8 @@ extern  artm_vec_f vec_divs[3];
 
 int artm_vec (caddr_t * inst, instruction_t * ins, artm_vec_f * ops);
 
+int cmp_vec (caddr_t * inst, instruction_t * ins, dtp_t * set_mask, dtp_t * res_bits);
 
+#define CMP_VEC_NA 3 /* vec cmp not applicable, do items one by one */
 
 #endif /* _WI_ARITH_H */

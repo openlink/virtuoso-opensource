@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -630,8 +630,6 @@ xp_free (xparse_ctx_t * xp)
 {
   dk_hash_iterator_t hit;
   caddr_t it, k;
-  xp_rdfxml_locals_t *xrl;
-  xp_rdfa_locals_t *xrdfal;
   xp_node_t * xn;
   dk_free_box (xp->xp_id);
   dk_free_box (xp->xp_error_msg);
@@ -647,7 +645,7 @@ xp_free (xparse_ctx_t * xp)
   while (xn)
     {
       xp_node_t * next = xn->xn_parent;
-#ifdef MALLOC_DEBUG
+#ifdef XTREE_DEBUG
       dk_check_tree ((caddr_t) xn->xn_attrs);
 #endif
       dk_free_tree ((caddr_t) xn->xn_attrs);
@@ -709,33 +707,8 @@ xp_free (xparse_ctx_t * xp)
   if ((NULL != xp->xp_doc_cache) && (&(xp->xp_doc_cache) == xp->xp_doc_cache->xdc_owner))
     xml_doc_cache_free (xp->xp_doc_cache);
   dk_free_box (xp->xp_top_excl_res_prefx);
-  while (NULL != xp->xp_rdfxml_locals)
-    xp_pop_rdf_locals (xp);
-  while (NULL != xp->xp_rdfa_locals)
-    {
-#ifndef NDEBUG
-      dk_free_tree (xp->xp_rdfa_locals->xrdfal_ict_buffer);
-      xp->xp_rdfa_locals->xrdfal_ict_buffer = NULL;
-#endif
-      xp_pop_rdfa_locals (xp);
-    }
-  xrl = xp->xp_rdfxml_free_list;
-  while (NULL != xrl)
-    {
-      xp_rdfxml_locals_t *next_xrl = xrl->xrl_parent;
-      dk_free (xrl, sizeof (xp_rdfxml_locals_t));
-      xrl = next_xrl;
-    }
-  xrdfal = xp->xp_rdfa_free_list;
-  while (NULL != xrdfal)
-    {
-      xp_rdfa_locals_t *next_xrdfal = xrdfal->xrdfal_parent;
-      dk_free_tree (xrdfal->xrdfal_ict_buffer);
-      dk_free (xrdfal, sizeof (xp_rdfa_locals_t));
-      xrdfal = next_xrdfal;
-    }
-  dk_free_tree (xp->xp_tmp);
-  /* Note that xp_xf is intentionally left untouched. */
+  if (NULL != xp->xp_tf)
+    xp_free_rdf_parser_fields (xp);
 }
 
 
@@ -3797,6 +3770,40 @@ DBG_NAME(box_cast_to_UTF8) (DBG_PARAMS caddr_t * qst, caddr_t data)
 
 
 caddr_t
+box_cast_to_UTF8_xsd (caddr_t *qst, caddr_t data)
+{
+  char tmpbuf[50];
+  int buffill;
+  double boxdbl;
+  switch (DV_TYPE_OF (data))
+    {
+    case DV_SINGLE_FLOAT: boxdbl = (double)(unbox_float (data)); goto make_double; /* see below */
+    case DV_DOUBLE_FLOAT: boxdbl = unbox_double (data); goto make_double; /* see below */
+    default: return box_cast_to_UTF8 (qst, data);
+    }
+make_double:
+  buffill = sprintf (tmpbuf, "%lg", boxdbl);
+  if ((NULL == strchr (tmpbuf, '.')) && (NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
+    {
+      if (isalpha(tmpbuf[1+1]))
+        {
+	  double myZERO = 0.0;
+          double myPOSINF_d = 1.0/myZERO;
+          double myNEGINF_d = -1.0/myZERO;
+          if (myPOSINF_d == boxdbl) return box_dv_short_string ("INF");
+          else if (myNEGINF_d == boxdbl) return box_dv_short_string ("-INF");
+          else return box_dv_short_string ("NAN");
+        }
+      else
+        {
+          strcpy (tmpbuf+buffill, ".0");
+          buffill += 2;
+        }
+    }
+  return box_dv_short_nchars (tmpbuf, buffill);
+}
+
+caddr_t
 box_cast_to_UTF8_uname (caddr_t *qst, caddr_t raw_name)
 {
   switch (DV_TYPE_OF (raw_name))
@@ -3814,6 +3821,7 @@ box_cast_to_UTF8_uname (caddr_t *qst, caddr_t raw_name)
     }
   return NULL; /* never reached */
 }
+
 
 caddr_t
 bif_xte_head (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -4278,6 +4286,92 @@ caddr_t
 bif_xte_nodebld_xmlagg_final (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   return bif_xte_nodebld_final_impl (qst, args, 1);
+}
+
+
+caddr_t
+bif_int_vectorbld_init (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t *acc = (caddr_t *) dk_alloc_box_zero (sizeof (caddr_t) * 15 /*  2^n - 1 */ , DV_ARRAY_OF_LONG);
+  if (1 > BOX_ELEMENTS (args))
+    sqlr_new_error ("22003", "SR344", "Too few arguments for vectorbld_init");
+  qst_set (qst, args[0], (caddr_t) acc);
+  return NULL;
+}
+
+
+caddr_t
+bif_int_vectorbld_acc (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int acc_length, new_acc_length;
+  int filled_count;		/* number of non-null elements in the first argument, excluding the counter */
+  int argcount;			/* number of arguments in the call */
+  int arg_inx;			/* index of current argument */
+  int new_filled_count;		/* value of filled_count at the end of the procedure */
+  int64 *acc = bif_array_arg (qst, args, 0, "int_vector_agg");
+  caddr_t *dst;
+  qi_signal_if_trx_error ((query_instance_t *) qst);
+  if (1 > BOX_ELEMENTS (args))
+    sqlr_new_error ("22003", "SR345", "Too few arguments for vectorbld_acc");
+  argcount = BOX_ELEMENTS (args);
+/* The following 'if' must not appear here, but this is a workaround for a weird error in aggr in nested select. */
+  if (NULL == acc)
+    {
+      acc = (int64 *) dk_alloc_box_zero (sizeof (int64) * 15 /*  2^n - 1 */ , DV_ARRAY_OF_LONG);
+      qst_set (qst, args[0], acc);
+    }
+  filled_count = acc[0];
+  acc_length = BOX_ELEMENTS (acc);
+  new_filled_count = filled_count;
+  for (arg_inx = 1; arg_inx < argcount; arg_inx++)
+    {
+      if (DV_DB_NULL != DV_TYPE_OF (QST_GET (qst, args[arg_inx])))
+	new_filled_count++;
+    }
+
+  for (new_acc_length = acc_length; (new_filled_count) >= new_acc_length; new_acc_length += (new_acc_length + 1));
+      /* do nothing */ ;
+  if (new_acc_length > MAX_BOX_ELEMENTS)
+    sqlr_new_error ("22003", "SR346", "Out of memory allocation limits: the composed vector contains too many items");
+  if (acc_length != new_acc_length)
+    {
+      caddr_t new_acc;
+      if (NULL == (new_acc = dk_try_alloc_box (sizeof (int64) * new_acc_length, DV_ARRAY_OF_LONG)))
+	qi_signal_if_trx_error ((query_instance_t *) qst);
+      memset (new_acc, 0, sizeof (int64) * new_acc_length);
+      memcpy (new_acc, acc, sizeof (int64) * acc_length);
+      qst_set (qst, args[0], new_acc);
+      acc = new_acc;
+      acc_length = new_acc_length;
+    }
+  dst = acc + filled_count + 1;
+  for (arg_inx = 1; arg_inx < argcount; arg_inx++)
+    {
+      caddr_t arg = QST_GET (qst, args[arg_inx]);
+      if (DV_DB_NULL == DV_TYPE_OF (arg))
+	continue;
+      dst[0] = unbox_iri_int64 (arg);
+      dst++;
+    }
+  /* Now we know what's the precise value of new_filled_count */
+  acc[0] = new_filled_count;
+  return NULL;
+}
+
+
+caddr_t
+bif_int_vectorbld_final (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int64 *acc = NULL, new_box;
+  size_t filled_size;
+  int arg_ctr = BOX_ELEMENTS (args);
+  if (1 > arg_ctr)
+    sqlr_new_error ("22003", "SR444", "Too few arguments for vectorbld_final");
+  qst_swap_or_get_copy (qst, args[0], (int64 *) (&acc));
+  filled_size = sizeof (int64) * acc[0];
+  new_box = dk_alloc_box (filled_size, DV_ARRAY_OF_LONG);
+  memcpy (new_box, acc + 1, filled_size);
+  return new_box;
 }
 
 
@@ -5185,6 +5279,9 @@ bif_to_xml_array_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *
 	elem_is_writeable = 0;
         to_be_deleted = NULL;
 #endif
+	if (BOX_ELEMENTS (elem) < 1)
+	  sqlr_new_error ("37000", "XI027", "Argument of %s must be valid xml entity.", func);
+
 	  if ((((caddr_t *) elem)[0]) == XMLATTRIBUTE_FLAG)
 	    { /* XMLATTRIBUTES */
 	      int inx, attr_length = BOX_ELEMENTS (elem);
@@ -5204,6 +5301,8 @@ bif_to_xml_array_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *
 		}
               goto array_arg_done;
 	    }
+	if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (((caddr_t *)elem)[0]) || BOX_ELEMENTS (((caddr_t *)elem)[0]) < 1)
+	  sqlr_new_error ("37000", "XI027", "Argument of %s must be valid xml entity.", func);
         if (DV_UNAME != DV_TYPE_OF (XTE_HEAD_NAME (XTE_HEAD (elem))))
           {
             if (!elem_is_writeable)
@@ -5867,6 +5966,10 @@ bif_xml_init (void)
   bif_define ("xte_nodebld_final", bif_xte_nodebld_final);
   bif_define ("xte_nodebld_xmlagg_final", bif_xte_nodebld_xmlagg_final);
   bif_define ("xte_node_from_nodebld", bif_xte_node_from_nodebld);
+
+  bif_define ("int_vectorbld_init", bif_int_vectorbld_init);
+  bif_define ("int_vectorbld_acc", bif_int_vectorbld_acc);
+  bif_define ("int_vectorbld_final", bif_int_vectorbld_final);
 
   bif_define ("vectorbld_init", bif_vectorbld_init);
   bif_define ("vectorbld_acc", bif_vectorbld_acc);

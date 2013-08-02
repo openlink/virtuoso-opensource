@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -44,6 +44,11 @@
       params := self.vc_page.vc_event.ve_params;
         domain_id := ODRIVE.WA.session_domain (params);
       path := rtrim (case when (domain_id <> -1) then ODRIVE.WA.iri_fix (ODRIVE.WA.forum_iri (domain_id)) else HTTP_REQUESTED_URL() end, '/');
+      if ((page_name = 'home.vspx') and (get_keyword ('id', params, '') <> '') and (lcase (get_keyword ('what', params)) = 'c') and (domain_id <> -1))
+      {
+        self.vc_redirect (sprintf ('%s/home.vspx?dir=%U', path, DB.DBA.DAV_SEARCH_PATH (atoi(get_keyword ('id', params)), 'C')));
+        return;
+      }
       if ((page_name = 'home.vspx') and (get_keyword ('id', params, '') <> '') and (domain_id <> -1))
       {
         self.vc_redirect (sprintf ('%s/view.vsp?file=%U&mode=download', path, DB.DBA.DAV_SEARCH_PATH (atoi(get_keyword ('id', params)), 'R')));

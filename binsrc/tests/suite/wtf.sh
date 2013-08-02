@@ -1,0 +1,1 @@
+egrep "^\\*\\*\\*.*(FAILED|ABORTED)" *.output

@@ -10,7 +10,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -39,6 +39,7 @@ char * http_port;
 char * https_port;
 char * https_cert;
 char * https_key;
+char * https_extra;
 int32 https_client_verify = 0;
 int32 https_client_verify_depth = 0;
 char * https_client_verify_file = NULL;
@@ -70,7 +71,7 @@ char * pl_debug_cov_file = NULL;
 int lite_mode = 0;
 extern int it_n_maps;
 extern int rdf_obj_ft_rules_size;
-
+int wi_is_cl_listener_affinity;
 int cp_unremap_quota;
 int correct_parent_links;
 int main_bufs;
@@ -87,6 +88,8 @@ int atomic_dive = 0;
 int dive_pa_mode = PA_READ;
 int c_compress_mode = 0;
 int default_txn_isolation = ISO_COMMITTED;
+int c_col_by_default = 0;
+int c_query_log = 0;
 int prefix_in_result_col_names;
 int disk_no_mt_write;
 char *db_name;
@@ -127,6 +130,7 @@ int c_stripe_unit = 256;
 extern int32 sqlo_compiler_exceeds_run_factor;
 
 int32 c_dense_page_allocation = 0;
+int32 log_proc_overwrite = 1;
 
 void _db_read_cfg (dbe_storage_t * dbs, char *mode);
 dk_set_t _cfg_read_storages (caddr_t **temp_storage);
@@ -137,6 +141,21 @@ void (*cfg_set_checkpoint_interval)(int32) = _cfg_set_checkpoint_interval;
 void (*db_read_cfg) (caddr_t *it, char *mode) = (void (*) (caddr_t *it, char *mode))_db_read_cfg;
 void (*dbs_read_cfg) (caddr_t *it, char *mode) = (void (*) (caddr_t *it, char *mode)) _dbs_read_cfg;
 dk_set_t (*dbs_read_storages) (caddr_t **temp_file) = _cfg_read_storages;
+
+
+int
+cfg2_getstring (PCONFIG pconfig,  char * sect, char * item, char ** ret)
+{
+  return cfg_getstring (pconfig, sect, item, ret);
+}
+
+
+int
+cfg2_getlong (PCONFIG pconfig, char * sect, char * item, int32 * ret)
+{
+  return cfg_getlong (pconfig, sect, item, ret);
+}
+
 
 void
 srv_set_cfg(
@@ -490,8 +509,8 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
     file_extend = DP_INSERT_RESERVE + 5;
 
   main_bufs = (int) (ptrlong) cfg_get_parm (wholefile, "\nnumber_of_buffers:", 0);
-  if (main_bufs < 256)
-    main_bufs = 256;
+  if (main_bufs < 25600)
+    main_bufs = 25600;
   cf_lock_in_mem = (int) (ptrlong) cfg_get_parm (wholefile, "\nlock_in_mem:", 0);
   atomic_dive = (int) (ptrlong) cfg_get_parm (wholefile, "\natomic_dive:", 0);
   if (2 == atomic_dive)
@@ -500,7 +519,7 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
     }
   atomic_dive = 0;
 
-  max_dirty = (int) (ptrlong) cfg_get_parm (wholefile, "\nmax_dirty_buffers:", 0);
+    max_dirty = (int) (ptrlong) cfg_get_parm (wholefile, "\nmax_dirty_buffers:", 0);
   wi_inst.wi_max_dirty = max_dirty;
   if (cfg_get_parm (wholefile, "\nautocorrect_links:", 0))
     correct_parent_links = 1;
@@ -693,6 +712,7 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
     wi_inst.wi_temp_allocation_pct = 30;
 
   COND_PARAM_WITH_DEFAULT("\ndefault_txn_isolation:", default_txn_isolation, ISO_COMMITTED);
+  COND_PARAM_WITH_DEFAULT("\ncolumn_store:", c_col_by_default, 0);
   COND_PARAM_WITH_DEFAULT("\nsql_compile_on_startup:", sql_proc_use_recompile, 1);
   COND_PARAM_WITH_DEFAULT("\nreqursive_ft_usage:", recursive_ft_usage, 1);
   COND_PARAM_WITH_DEFAULT("\nreqursive_trigger_calls:", recursive_trigger_calls, 1);

@@ -1,0 +1,66 @@
+<?vsp
+   declare sid, mbox, digest, id, mu, rc, webid, accept, fmt, cb, ep, gr, vtype any;
+   rc := 0;
+   accept := http_request_header_full (lines, 'Accept', '*/*');
+   fmt := DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (accept); 
+   if (fmt = 'application/json')
+     http_header ('Content-Type: application/json\r\n');
+   if (not is_https_ctx ())
+     goto failed;
+   sid := {?'confirm'};
+   gr := null;
+   rc := WEBID_AUTH_GEN_2 (null, 0, null, 1, 0, webid, gr, 0, vtype);
+   mbox := (select VS_UID from VSPX_SESSION where VS_SID = sid and VS_REALM = 'mv');
+   cb := (select VS_STATE from VSPX_SESSION where VS_SID = sid and VS_REALM = 'mv');
+   if (cb is not null)
+     cb := get_keyword ('callback', deserialize (cb));
+   else
+     cb := null;
+   if (rc and mbox is not null)
+     {
+       digest := sha1_digest (mbox);
+       id := sprintf ('http://%{URIQADefaultHost}s/mv/data/') || bin2hex (cast (decode_base64 (digest) as varbinary));
+       mu := 'mailto:' || mbox;
+       ep := sprintf ('http://%{URIQADefaultHost}s/sparql-auth/');
+       sparql insert into graph iri ('http://localhost/mv') 
+	  { 
+             `iri (?:id)` <http://vocab.deri.ie/void#inDataset> <http://localhost/mv> .
+             <http://localhost/mv> <http://rdfs.org/ns/void#sparqlEndpoint> `iri(?:ep)` .
+	     `iri (?:id)` foaf:primaryTopic `iri(?:webid)` . 
+             `iri(?:webid)` foaf:mbox_sha1sum ?:digest . 
+          };
+       if (length (cb))
+	 {
+	   declare c any;
+	   c := case when strchr (cb, '?') is null then '?' else '&' end;
+	   http_status_set (302);
+           http_header (sprintf ('Location: %s%sid=%U\r\n', cb, c, id));
+	   return;
+	 }	
+       if (fmt = 'application/json')
+	 {
+	   http (sprintf ('{"status":"verified", "document_url":"%s"}', id));
+           return;
+	 }
+     }
+failed:
+   if (fmt = 'application/json') -- failure
+     {
+        http_status_set (400);
+        http ('{"status":"failed"}');
+        return;
+     } 	
+?>
+<html>
+    <head>
+	<title>Mail confirmation service</title>
+    </head>
+    <body>
+	<?vsp if (rc and mbox is not null) { ?>
+	<h1>Your e-mail is confirmed</h1><div>The document descriptor can be seen at <a href="<?V id ?>"><?V id ?></a></div>
+	<?vsp } else { ?>
+	<h1>You are not authenticated.</h1>
+	<?vsp }?>
+    </body>
+</html>
+

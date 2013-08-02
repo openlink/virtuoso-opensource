@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -844,7 +844,7 @@ xp_make_pred (xpp_t *xpp, XT * expr)
 
 XT * xp_make_flwr (xpp_t *xpp, dk_set_t forlets, XT *where_expn, dk_set_t ordering, XT *return_expn)
 {
-#ifdef DEBUG
+#ifdef XPATH_DEBUG
   XT *raw_return_expn = return_expn;
 #endif
   XT **ordering_array = NULL;
@@ -928,7 +928,7 @@ XT * xp_make_flwr (xpp_t *xpp, dk_set_t forlets, XT *where_expn, dk_set_t orderi
 	default: xp_error (xpp, "internal XQuery error in compilation of FLWR expression");
 	}
     }
-#ifdef DEBUG
+#ifdef XPATH_DEBUG
   dk_check_tree (raw_return_expn);
   dk_check_tree (return_expn);
 #endif
@@ -2992,8 +2992,8 @@ void xp_reject_option_if_not_allowed (xpp_t *xpp, int type)
 
 void xp_register_default_namespace_prefixes (xpp_t *xpp)
 {
-  xp_register_namespace_prefix (xpp, XFN_NS_PREFIX1	, XFN_NS_URI	);
-  xp_register_namespace_prefix (xpp, XFN_NS_PREFIX2	, XFN_NS_URI	);
+  xp_register_namespace_prefix (xpp, XFN_NS_PREFIX	, XFN_NS_URI	);
+  xp_register_namespace_prefix (xpp, XXF_NS_PREFIX	, XXF_NS_URI	);
   xp_register_namespace_prefix (xpp, XLOCAL_NS_PREFIX	, XLOCAL_NS_URI	);
   xp_register_namespace_prefix (xpp, XOP_NS_PREFIX	, XOP_NS_URI	);
   xp_register_namespace_prefix (xpp, XDT_NS_PREFIX	, XDT_NS_URI	);
@@ -3057,7 +3057,7 @@ void xp_set_encoding_option (xpp_t *xpp, caddr_t enc_name)
 }
 
 
-void xpyyparse (xpp_t *xpp);
+int xpyyparse (xpp_t *xpp);
 void xpyyrestart (FILE *input_file);
 
 
@@ -3924,7 +3924,7 @@ XT *xp_make_module (xpp_t *xpp, caddr_t ns_prefix, caddr_t ns_uri, XT * expn)
   XT **fundefs = (XT **)list_to_array (xpp->xpp_local_fundefs);
   XT **defglobals = (XT **)list_to_array (NCONC (xpp->xpp_global_vars_external, dk_set_nreverse (xpp->xpp_global_vars_preset)));
   XT *res;
-#ifdef MALLOC_DEBUG
+#ifdef XPATH_DEBUG
   dk_check_tree (fundefs);
 #endif
   xpp->xpp_local_fundefs = NULL;
@@ -4410,7 +4410,9 @@ substitute_with_undefined:
   metas = metas_ptr[0];
   if (NULL == metas->xpfm_executable)
     {
-      if (!strcmp ("collection", metas->xpfm_name) || !strcmp (XFN_NS_URI ":collection", metas->xpfm_name))
+      if (!strcmp ("collection", metas->xpfm_name)
+        || !strcmp (XFN_NS_URI ":collection", metas->xpfm_name)
+        || !strcmp (XXF_NS_URI ":collection", metas->xpfm_name) )
 	{
 	  dk_set_t dirlist_args = NULL, doc_args = NULL;
 	  int ctr = BOX_ELEMENTS (arg_array);
@@ -4526,7 +4528,9 @@ substitute_with_undefined:
 	  res = cart;
 	}
     }
+#ifdef XPATH_DEBUG
   dk_check_tree (res);
+#endif
   return res;
 }
 
@@ -4865,14 +4869,15 @@ shuric_t *xqr_shuric_retrieve (query_instance_t *qi, caddr_t uri, caddr_t *err_r
 xp_query_t *
 xqr_stub_for_funcall (xpf_metadata_t *metas, int argcount)
 {
-  int argctr;
+  int argctr, allctr, iterctr, itercount;
   xp_env_t l_xe;
   xpp_t l_xpp;
   xp_query_t *xqr = (xp_query_t *) dk_alloc_box_zero (sizeof (xp_query_t), DV_XPATH_QUERY);
   int n_slots, fill = 0;
   ptrlong *map;
-  XT **arg_array = dk_alloc_box (argcount * sizeof (XT *), DV_ARRAY_OF_POINTER);
+  XT **arg_array = (XT **)dk_alloc_box (argcount * sizeof (XT *), DV_ARRAY_OF_POINTER);
   XT *var = NULL;
+  XT *call;
   memset (&l_xe, 0, sizeof (xp_env_t));
   memset (&l_xpp, 0, sizeof (xpp_t));
   l_xpp.xpp_xp_env = &l_xe;
@@ -4887,15 +4892,63 @@ xqr_stub_for_funcall (xpf_metadata_t *metas, int argcount)
       arg_array[argctr] = xp_make_variable_ref (&l_xpp, buf);
       arg_array[argctr]->type = XP_FAKE_VAR;
     }
-  xqr->xqr_tree = xtlist_with_tail (&l_xpp, 8, (caddr_t)arg_array, CALL_STMT,
+  call = xtlist_with_tail (&l_xpp, 8, (caddr_t)arg_array, CALL_STMT,
     box_dv_uname_string (metas->xpfm_name),
     box_num((ptrlong)(metas->xpfm_executable)),
     (ptrlong)(metas->xpfm_res_dtp),
     xe_new_xqst (&l_xpp, XQST_REF),
     xe_new_xqst (&l_xpp, XQST_REF),
     var );
+  for (itercount = allctr = 0; allctr < argcount; allctr++)
+    {
+      int descr_idx = allctr;
+      xpfm_arg_descr_t *descr;
+      if (descr_idx > metas->xpfm_main_arg_no)
+        descr_idx = (int) (metas->xpfm_main_arg_no + ((descr_idx-metas->xpfm_main_arg_no) % metas->xpfm_tail_arg_no));
+      descr = metas->xpfm_args+descr_idx;
+      if (descr->xpfma_is_iter)
+        itercount++;
+    }
+  if (itercount != 0)
+    {
+      XT **iter_vars = (XT **) dk_alloc_box_zero ((itercount * 2 + 1) * sizeof (XT *), DV_ARRAY_OF_POINTER);
+      XT *cart_var = NULL;
+      XT *cart;
+      if (NULL != var)
+        {
+          cart_var = xp_make_variable_ref (&l_xpp, "Cartesian product");
+        }
+      cart = xtlist_with_tail (&l_xpp, 8, (caddr_t)iter_vars, CALL_STMT,
+        box_dv_uname_string ("(internal) Cartesian product loop"),
+        box_num((ptrlong)(xpf_cartesian_product_loop)),
+        DV_ARRAY_OF_XQVAL,
+        xe_new_xqst (&l_xpp, XQST_REF),
+        xe_new_xqst (&l_xpp, XQST_REF),
+        cart_var );
+      for (iterctr = allctr = 0; allctr < argcount; allctr++)
+        {
+          int descr_idx = allctr;
+          xpfm_arg_descr_t *descr;
+          if (descr_idx > metas->xpfm_main_arg_no)
+            descr_idx = (int) (metas->xpfm_main_arg_no + ((descr_idx-metas->xpfm_main_arg_no) % metas->xpfm_tail_arg_no));
+          descr = metas->xpfm_args+descr_idx;
+          if (descr->xpfma_is_iter)
+            {
+              char buf[30];
+              sprintf (buf, " %d", l_xe.xe_xqst_ctr);
+              cart->_.xp_func.argtrees[iterctr*2] =
+                xtlist (&l_xpp, 4, XP_LITERAL, NULL, box_dv_uname_string(buf), xe_new_xqst (&l_xpp, XQST_REF));
+              cart->_.xp_func.argtrees[iterctr*2+1] =
+                call->_.xp_func.argtrees[allctr];
+              call->_.xp_func.argtrees[allctr] = xp_make_variable_ref(&l_xpp, buf);
+              iterctr++;
+            }
+        }
+      cart->_.xp_func.argtrees[itercount*2] = call;
+      call = cart;
+    }
+  xqr->xqr_tree = call;
   xqr->xqr_instance_length = sizeof (caddr_t) * l_xe.xe_xqst_ctr;
-
   n_slots = dk_set_length (xqr->xqr_state_map);
   map = (ptrlong *) dk_alloc_box (sizeof (ptrlong) * n_slots, DV_SHORT_STRING);
   DO_SET (ptrlong, pos, &xqr->xqr_state_map)

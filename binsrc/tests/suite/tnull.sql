@@ -1,14 +1,14 @@
 --
 --  tnull.sql
 --
---  $Id$
+--  $Id: tnull.sql,v 1.9.10.4 2013/01/02 16:15:14 source Exp $
 --
 --  Test NULL handling
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -25,8 +25,6 @@
 --  
 --  
 
-echo both "schema integrity \n";
-
 select * from sys_key_parts;
 select * from sys_cols;
 select * from sys_keys;
@@ -34,9 +32,7 @@ select * from sys_keys;
 select * from sys_key_parts where not exists (select 1 from sys_keys where key_id = kp_key_id);
 select * from sys_key_parts where not exists (select 1 from sys_cols where col_id = kp_col);
 
-
-
-drop table nt;
+EXEC_STMT(drop table nt,0);
 create table nt (a integer, b varchar (10));
 
 insert into nt values (null, null);
@@ -114,13 +110,14 @@ select count (*) from (select distinct a from nt) f;
 echo both $if $equ $last[1] 5 "PASSED" "***FAILED";
 echo both ": " $last[1] " count (*) of distinct derived table\n";
 
-select min (a), max (a), count (a), '--' from nt group by 4;
-echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
-echo both ": " $last[1] " min in group \n";
-echo both $if $equ $last[2] 5 "PASSED" "***FAILED";
-echo both ": " $last[1] " max in group \n";
-echo both $if $equ $last[3] 4 "PASSED" "***FAILED";
-echo both ": " $last[1] " count in group \n";
+-- XXX
+--select min (a), max (a), count (a), '--' from nt group by 4;
+--echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
+--echo both ": " $last[1] " min in group \n";
+--echo both $if $equ $last[2] 5 "PASSED" "***FAILED";
+--echo both ": " $last[1] " max in group \n";
+--echo both $if $equ $last[3] 4 "PASSED" "***FAILED";
+--echo both ": " $last[1] " count in group \n";
 
 
 

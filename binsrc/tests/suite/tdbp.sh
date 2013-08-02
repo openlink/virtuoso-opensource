@@ -1,13 +1,13 @@
 #!/bin/sh 
 #
-#  $Id$
+#  $Id: tdbp.sh,v 1.13.10.5 2013/01/02 16:15:04 source Exp $
 #
 #  DBPUMP tests
 #  
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -27,10 +27,10 @@
 LOGFILE=tdbp.output
 export LOGFILE
 
-#echo $HTTPPORT
-. ./test_fn.sh
-#echo $HTTPPORT
-
+. $VIRTUOSO_TEST/testlib.sh
+. $VIRTUOSO_TEST/tpc-d/LOAD.sh
+SQLPATH=$SQLPATH:$VIRTUOSO_TEST/tpc-d
+cp $VIRTUOSO_TEST/pdd_txt.gz .
 
 DBPUMP=${DBPUMP-dbpump}
 SAVDSN=${SAVDSN-xxx}
@@ -187,17 +187,17 @@ START_SERVER $PORT 1000
 
 gunzip -c pdd_txt.gz >pdd.txt
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < pddin.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/pddin.sql
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tdavmigr1.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tdavmigr1.sql
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tsec_role1.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tsec_role1.sql
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tunder1.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tunder1.sql
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tmulgrp1.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tmulgrp1.sql
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < nwdemo.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/nwdemo.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tdbp.sh: nwdemo.sql functions "
@@ -212,12 +212,10 @@ LOG
 
 __LOGFILE=${LOGFILE}
 
-cd tpc-d
-./LOAD.sh $DSN dba dba tables
-./LOAD.sh $DSN dba dba procedures
-./LOAD.sh $DSN dba dba load 1
-./LOAD.sh $DSN dba dba indexes
-cd ..
+LOAD_TPCD $DSN dba dba tables
+LOAD_TPCD $DSN dba dba procedures
+LOAD_TPCD $DSN dba dba load 1
+LOAD_TPCD $DSN dba dba indexes
 
 LOGFILE=${__LOGFILE}
 
@@ -247,35 +245,35 @@ DoCommand  $SAVDSN 'select U_NAME, U_PASSWORD, U_GROUP, U_ID, U_DATA, U_IS_ROLE,
 STOP_SERVER
 START_SERVER $PORT 1000 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tmulgrp2.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tmulgrp2.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tdbp.sh: tmulgrp2.sql functions "
     exit 3
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tsec_role2.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tsec_role2.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tdbp.sh: tsec_role2.sql functions "
     exit 3
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tunder2.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tunder2.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tdbp.sh: tunder2.sql functions "
     exit 3
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< tdavmigr2.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/tdavmigr2.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tdbp.sh: tdavmigr2.sql functions "
     exit 3
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < nwxml.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/nwxml.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tdbp.sh: nwxml.sql functions "
@@ -287,7 +285,7 @@ LOG "Running a subset of TPC-D queries against $DS1"
 LOG
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tpc-d/Q.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tpc-d/Q.sql
 
 
 DoCommand  $DSN "string_to_file('pddcmp.txt', charset_recode(file_to_string ('pdd.txt'),'IBM866','UTF-8'), -2);" "Preparing the ethalon data"

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -36,6 +36,7 @@ typedef struct
   uint32 		rc_fill;
   uint32 		rc_size;
   void **		rc_items;
+  uint32 *		rc_item_time;
   void *		rc_client_data;
   rc_constr_t 		rc_constructor;
   rc_destr_t 		rc_destructor;
@@ -58,6 +59,8 @@ void resource_no_sem (resource_t * rc);
 void *resource_get (resource_t * rc);
 void *resource_get_1 (resource_t * rc, int make_new);
 int resource_store (resource_t * rc, void *item);
+int resource_store_fifo (resource_t * rc, void *item, int n_fifo);
+int resource_store_timed (resource_t * rc, void *item);
 unsigned long resource_clear (resource_t * rc, rc_destr_t destruct);
 void _resource_adjust (resource_t * rc);
 #endif

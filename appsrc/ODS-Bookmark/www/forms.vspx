@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2007 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -39,7 +39,7 @@
     ]]>
   </v:method>
 
-  <v:method name="shareSelect" arglist="in node varchar">
+  <v:method name="shareSelect" arglist="in node any">
     <![CDATA[
       declare grants any;
 
@@ -55,7 +55,7 @@
       if (lcase (BMK.WA.node_type (node)) <> 'b')
         return 'visited';
 
-      if (self.account_rights <> 'W')
+      if (self.person_rights <> 'W')
         return 'unvisited';
 
       return either (isnull (BMK.WA.bookmark_visited (self.domain_id, BMK.WA.node_id (node))), 'unvisited', 'visited');
@@ -155,7 +155,7 @@
       <v:variable name="v_tags" type="varchar" default="''"/>
       <v:variable name="v_folder_name" type="varchar" default="''"/>
       <v:variable name="v_own" type="integer" default="0"/>
-      <v:variable name="v_folder_id" type="varchar" default="'0'"/>
+      <v:variable name="v_folder_id" type="integer" default="0"/>
       <v:variable name="v_shared" type="integer" default="0"/>
       <v:variable name="v_grants" type="any" default="null"/>
       <v:variable name="v_acl" type="any" default="null"/>
@@ -234,7 +234,7 @@
 
           mt := '';
           st := '';
-          if ((self.account_rights = 'W') and (not (((node_type = 's') and (node_id = -1)) or (node_type = 'u') or (node_type = 'F'))))
+          if ((self.person_rights = 'W') and (not (((node_type = 's') and (node_id = -1)) or (node_type = 'u') or (node_type = 'F'))))
           {
             mt := sprintf('Selected as <select name="mark" onchange="javascript: if (anySelected(this.form, \'cb_item\', \'No posts were selected to mark as \'+this.options[this.selectedIndex].text+\'.\')) {this.form.submit();} else {this.selectedIndex = 0}"><option/><option>visited</option><option>unvisited</option></select>');
             st := sprintf('View <select name="show" onchange="javascript: this.form.submit();"><option value="">all</option><option value="visited">visited</option><option value="unvisited">unvisited</option></select>');
@@ -330,7 +330,7 @@
                                  ) x
                                       where 1 = 1';
                   BMK.WA.xml_set('folderID', data, BMK.WA.node_suffix(self.bNode));
-                  tmp := BMK.WA.sfolder_sql (self.domain_id, self.account_id, self.account_rights, data);
+                  tmp := BMK.WA.sfolder_sql (self.domain_id, self.account_id, self.person_rights, data);
                   sql := replace(sql, '<BOOKMARKS>', tmp);
                   sql := replace(sql, '<ID>', BMK.WA.node_suffix(self.bNode));
                 }
@@ -379,14 +379,14 @@
                 sql := 'select distinct rs.* from BMK.WA.shared_sql (rs0, rs1, rs2, rs3)(_TYPE integer, _ID integer, _NODE varchar, _NAME varchar, _URI varchar, _VISITED datetime, _UPDATED datetime, _CREATED datetime, _FOLDER_ID integer, _FOLDER_NAME varchar, _GRANT_ID integer) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ?';
                 control.add_parameter (self.domain_id);
                 control.add_parameter (self.account_id);
-                control.add_parameter (self.account_rights);
+                control.add_parameter (self.person_rights);
                 control.add_parameter (data);
 
               }
               else if ((node_type = 't') and not is_empty_or_null (BMK.WA.node_suffix (self.bNode)))
               {
                 BMK.WA.xml_set('tags', data, BMK.WA.node_suffix(self.bNode));
-                sql := BMK.WA.sfolder_sql (self.domain_id, self.account_id, self.account_rights, data);
+                sql := BMK.WA.sfolder_sql (self.domain_id, self.account_id, self.person_rights, data);
               }
               else if ((node_type = 'u') and (node_id = -1))
               {
@@ -533,9 +533,9 @@
                     node := (control as vspx_row_template).te_column_value('_NODE');
                       node_type := BMK.WA.node_type (node);
                     node_id := BMK.WA.node_id (node);
-                    permissions := self.account_rights;
+                    permissions := self.person_rights;
                     if (node_type = 'b')
-                      permissions := BMK.WA.bookmark_rights (self.domain_id, node_id, self.account_rights);
+                      permissions := BMK.WA.bookmark_rights (self.domain_id, node_id, self.person_rights, self.account_rights);
 
                   ?>
                   <td class="checkbox">
@@ -1044,7 +1044,7 @@
               <v:on-post>
                 <![CDATA[
                   -- check / create folder
-                  self.v_folder_id := self.i_folder_id.ufl_value;
+                  self.v_folder_id := cast (self.i_folder_id.ufl_value as integer);
                   self.v_folder_name := trim (self.i_folder_name.ufl_value);
                   if ((self.v_folder_name <> '') and (not BMK.WA.folder_check_name(self.v_folder_name, 1)))
                   {
@@ -1184,12 +1184,12 @@
                 <v:label for="e_format" value="Format"/>
               </th>
               <td>
-                <input type="radio" name="e_format" id="e_format_0" value="Netscape" checked="checked" onclick="changeExportName('e_file', '.xbel', '.html');"/><xsl:call-template name="nbsp"/><label for="e_format_0">Netscape</label>
+                <input type="radio" name="e_format" id="e_format_0" value="Netscape" checked="checked" onclick="changeExportName('e_file', '.xbel', '.html');"/>&nbsp;<label for="e_format_0">Netscape</label>
               </td>
             </tr>
             <tr>
               <td>
-                <input type="radio" name="e_format" id="e_format_1" value="XBEL" onclick="changeExportName('e_file', '.html', '.xbel');"/><xsl:call-template name="nbsp"/><label for="e_format_1">XBEL</label>
+                <input type="radio" name="e_format" id="e_format_1" value="XBEL" onclick="changeExportName('e_file', '.html', '.xbel');"/>&nbsp;<label for="e_format_1">XBEL</label>
               </td>
             </tr>
             <tr>
@@ -1406,35 +1406,23 @@
                             <th class="action">Action</th>
                         </tr>
                       </thead>
+                        <tbody id="s_tbody">
+                          <tr id="s_tr_no"><td colspan="4"><b>No Shares</b></td></tr>
                 		  <![CDATA[
                 		    <script type="text/javascript">
                       <?vsp
-                          declare N, L integer;
-                          declare acl, aType, aAccess any;
+                              declare acl any;
 
-                        L := 0;
                         acl := (select WAI_ACL from DB.DBA.WA_INSTANCE where WAI_ID = self.domain_id);
                         acl := case when isnull (acl) then vector () else deserialize (acl) end;
-                          for (N := 0; N < length (acl); N := N + 1)
-                        {
-                          L := L + 1;
-                            http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: "Inherited"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
-                        }
+                              DB.DBA.wa_aci_lines (acl);
+
                         acl := deserialize (self.v_acl);
-                          for (N := 0; N < length (acl); N := N + 1)
-                        {
-                          L := L + 1;
-                            if (self.v_form <> 'Bookmark/View')
-                            {
-                              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', acl[N][2], acl[N][1], case when acl[N][2] = 'public' then 'true' else 'false' end, case when acl[N][2] = 'public' then 'display: none;' else '' end, acl[N][3], acl[N][4], acl[N][5]));
-                            } else {
-                              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
-                            }
-                          }
+                              DB.DBA.wa_aci_lines (acl, case when self.v_form = 'Bookmark/View' then 'view' else '' end);
                      		    ?>
                      		    </script>
                      		  ]]>
-                      <tr id="s_tr_no" style="display: <?V case when L=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.v_form='Bookmark/View' then 3 else 4 end ?>"><b>No Shares</b></td></tr>
+                        </tbody>
                     </table>
                   </td>
                   <vm:if test="self.v_form <> 'Bookmark/View'">

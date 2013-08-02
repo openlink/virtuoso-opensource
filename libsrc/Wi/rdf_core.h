@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -34,6 +34,7 @@
 #define IRI_TO_ID_IF_KNOWN	0 /*!< Return IRI_ID if known, integer zero (NULL) if not known or error is not NULL */
 #define IRI_TO_ID_WITH_CREATE	1 /*!< Return IRI_ID if known or created on the fly, integer zero (NULL) if error is not NULL */
 #define IRI_TO_ID_IF_CACHED	2 /*!< Return IRI_ID if known and is in cache, integer zero (NULL) if not known or known but not cached or error is not NULL */
+#define IRI_TO_ID_GPF		3 /*!< The conversion must be avoided at all, GPF is signalled if the value is tried */
 
 /*!< returns 0 for NULL or non-cached rdf box or error, 1 for ready to use iri_id, 2 for URI string */
 extern int iri_canonicalize (query_instance_t *qi, caddr_t name, int mode, caddr_t *res_ret, caddr_t *err_ret);
@@ -44,27 +45,33 @@ extern int key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, ca
 #define rdf_type_twobyte_to_iri(twobyte) nic_id_name (rdf_type_cache, (twobyte))
 #define rdf_lang_twobyte_to_string(twobyte) nic_id_name (rdf_lang_cache, (twobyte))
 /*! \returns NULL for string, (ccaddr_t)((ptrlong)1) for unsupported, 2 for NULL, UNAME for others */
-extern ccaddr_t xsd_type_of_box (caddr_t arg);
+extern caddr_t xsd_type_of_box (caddr_t arg);
 /*! Casts \c new_val to some datatype appropriate for XPATH/XSLT and stores in an XSLT variable value or XQI slot passed as an address to free and set */
 extern void rb_cast_to_xpath_safe (query_instance_t *qi, caddr_t new_val, caddr_t *retval_ptr);
-#define BNODE_IID_TO_LABEL_BUFFER(buf,iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
-  sprintf (buf, "nodeID://b" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
-  sprintf (buf, "nodeID://" BOXINT_FMT, (boxint)(iid)) )
-#define BNODE_IID_TO_LABEL(iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
-  box_sprintf (30, "nodeID://b" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
-  box_sprintf (30, "nodeID://" BOXINT_FMT, (boxint)(iid)) )
-#define BNODE_IID_TO_LABEL_LOCAL(iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
-  box_sprintf (30, "b" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
-  box_sprintf (30, BOXINT_FMT, (boxint)(iid)) )
-#define BNODE_IID_TO_TTL_LABEL_LOCAL(iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
-  box_sprintf (30, "vb" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
-  box_sprintf (30, "v" BOXINT_FMT, (boxint)(iid)) )
-#define BNODE_IID_TO_TALIS_JSON_LABEL(iid) (((iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
-  box_sprintf (30, "_:vb" BOXINT_FMT, (boxint)((iid)-MIN_64BIT_BNODE_IRI_ID)) : \
-  box_sprintf (30, "_:v" BOXINT_FMT, (boxint)(iid)) )
+extern iri_id_t bnode_t_treshold;
+#ifndef NDEBUG
+#define BNODE_FMT_IMPL(fn,arg1,pfx,iid) (((iri_id_t)(iid) >= bnode_t_treshold) ? \
+  (fn) ((arg1), pfx "t" IIDBOXINT_FMT, (boxint)((iri_id_t)(iid) - bnode_t_treshold)) : \
+  (((iri_id_t)(iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
+    (fn) ((arg1), pfx "b" IIDBOXINT_FMT, (boxint)((iri_id_t)(iid)-MIN_64BIT_BNODE_IRI_ID)) : \
+    (fn) ((arg1), pfx IIDBOXINT_FMT, (boxint)((iri_id_t)(iid))) ) )
+#else
+#define BNODE_FMT_IMPL(fn,arg1,pfx,iid) (((iri_id_t)(iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
+  (fn) ((arg1), pfx "b" IIDBOXINT_FMT, (boxint)((iri_id_t)(iid)-MIN_64BIT_BNODE_IRI_ID)) : \
+  (fn) ((arg1), pfx IIDBOXINT_FMT, (boxint)((iri_id_t)(iid))) )
+#endif
 
+
+#define BNODE_IID_TO_LABEL_BUFFER(buf,iid) BNODE_FMT_IMPL(sprintf,buf,"nodeID://",iid)
+#define BNODE_IID_TO_LABEL(iid) BNODE_FMT_IMPL(box_sprintf,30,"nodeID://",iid)
+#define BNODE_IID_TO_LABEL_LOCAL(iid) BNODE_FMT_IMPL(box_sprintf,30,"",iid)
+#define BNODE_IID_TO_TTL_LABEL_LOCAL(iid) BNODE_FMT_IMPL(box_sprintf,30,"v",iid)
+#define BNODE_IID_TO_TALIS_JSON_LABEL(iid) BNODE_FMT_IMPL(box_sprintf,30,"_:v",iid)
 
 /* Set of callback to accept the stream of RDF quads that are grouped by graph and share blank node IDs */
+
+EXE_EXPORT (void, sqlr_set_cbk_name_and_proc, (client_connection_t *cli, const char *cbk_name, const char* cbk_param_types, const char *funname,
+  char **full_name_ret, query_t **proc_ret, caddr_t *err_ret ));
 
 #define TRIPLE_FEED_NEW_GRAPH	0
 #define TRIPLE_FEED_NEW_BLANK	1
@@ -81,10 +88,10 @@ typedef struct triple_feed_s {
   query_instance_t *tf_qi;
   id_hash_t *tf_blank_node_ids;
   caddr_t *tf_app_env;		/*!< Environment for use by callbacks, owned by caller. It's "caddr_t *" instead of plain "caddr_t" because it's vector in most cases. */
-  const char *tf_input_name;	/*!< URI or file name or other name of source, can be NULL, owned by caller */
-  caddr_t tf_default_graph_uri;	/*!< Default graph uri, owned by caller */
-  caddr_t tf_current_graph_uri;	/*!< Currently active graph uri, owned by caller if equal to tf_default_graph_uri, local otherwise */
-  caddr_t tf_base_uri;		/*!< Base URI to resolve relative URIs, owned by caller  */
+  caddr_t tf_boxed_input_name;	/*!< URI or file name or other name of source, can be NULL, local */
+  caddr_t tf_default_graph_uri;	/*!< Default graph uri, local */
+  caddr_t tf_current_graph_uri;	/*!< Currently active graph uri, can be equal to tf_default_graph_uri, local */
+  caddr_t tf_base_uri;		/*!< Base URI to resolve relative URIs, local */
   caddr_t tf_default_graph_iid;	/*!< Default graph iri ID, local */
   caddr_t tf_current_graph_iid;	/*!< Current graph iri ID, local */
   const char *tf_creator;	/*!< Name of BIF that created the feed (this name is printed in diagnostics) */
@@ -157,6 +164,8 @@ extern void tf_new_base (triple_feed_t *tf, caddr_t new_base);
 #define TTLP_ERROR_RECOVERY		0x0080	/*!< Try to recover from lexical errors as much as it is possible. */
 #define TTLP_ALLOW_TRIG			0x0100	/*!< Allows TriG syntax, thus loading data in more than one graph. */
 #define TTLP_ALLOW_NQUAD		0x0200	/*!< Enables NQuads syntax but disables TURTLE and TriG */
+#define TTLP_DEBUG_BNODES		0x1000	/*!< Add virtrdf:bnode-base, virtrdf:bnode-row and virtrdf:bnode-label triples for every created blank node. */
+#define TTLP_SNIFFER			0x2000	/*!< Sniffer mode: scan for Turtle fragments in non-Turtle texts. */
 
 #define TTLP_ALLOW_QNAME_A		0x01
 #define TTLP_ALLOW_QNAME_HAS		0x02
@@ -174,7 +183,7 @@ typedef struct ttlp_s
   xml_read_abend_func_t ttlp_iter_abend;
   void *ttlp_iter_data;
   encoding_handler_t *ttlp_enc;	/*!< Encoding of the source */
-  long ttlp_flags;		/*!< Flags for dirty load */
+  long ttlp_flags;		/*!< TTLP_xxx Flags for dirty load, enabling TriG or NQuad, debugging */
   /* lexer */
   int ttlp_lexlineno;		/*!< Current line number */
   int ttlp_lexdepth;		/*!< Current number of not-yet-closed parenthesis */
@@ -196,12 +205,19 @@ typedef struct ttlp_s
   caddr_t ttlp_obj_lang;	/*!< Current object language mark */
   int ttlp_pred_is_reverse;	/*!< Flag if ttlp_pred_uri is used as reverse, e.g. in 'O is P of S' syntax */
   caddr_t ttlp_formula_iid;	/*!< IRI ID of the blank node of the formula ( '{ ... }' notation of N3 */
+  int ttlp_in_trig_graph;	/*!< The parser is inside TriG graph so \c ttlp_inner_namespaces_prefix2iri is in use etc. */
+  id_hash_t *ttlp_inner_namespaces_prefix2iri;	/*!< An equivalent of \c ttlp_namespaces_prefix2iri for prefixes defined inside TriG block */
+  caddr_t ttlp_default_ns_uri_saved;	/*!< In TriG, @prefix can be used inside the graph block, in that case global \c ttlp_default_ns_uri is temporarily saved here */
+  caddr_t ttlp_base_uri_saved;	/*!< In TriG, @base can be used inside the graph block, in that case global \c ttlp_base_uri is temporarily saved here */
   /* feeder */
   triple_feed_t *ttlp_tf;
 } ttlp_t;
 
 
 extern ttlp_t *ttlp_alloc (void);
+extern void ttlp_enter_trig_group (ttlp_t *ttlp);
+extern void ttlp_leave_trig_group (ttlp_t *ttlp);
+extern void ttlp_reset_stacks (ttlp_t *ttlp);
 extern void ttlp_free (ttlp_t *ttlp);
 
 extern caddr_t rdf_load_turtle (
@@ -214,12 +230,18 @@ extern caddr_t rdf_load_turtle (
 typedef void* yyscan_t;
 #endif
 
+#define TTL_MAX_IRI_LEN 8000
+#define TTL_MAX_KEYWORD_LEN 100
+#define TTL_MAX_LANGNAME_LEN 64
+#define TTL_MAX_LITERAL_LEN 10000000
+
 extern int ttlyyparse (ttlp_t *ttlp_arg, yyscan_t scanner);
 extern int nqyyparse (ttlp_t *ttlp_arg, yyscan_t scanner);
 extern void ttlyyerror_impl (ttlp_t *ttlp_arg, const char *raw_text, const char *strg);
 extern void ttlyyerror_impl_1 (ttlp_t *ttlp_arg, const char *raw_text, int yystate, short *yyssa, short *yyssp, const char *strg);
 
 extern ptrlong ttlp_bit_of_special_qname (caddr_t qname);
+extern int ttlp_qname_prefix_is_explicit_and_valid (ttlp_t *ttlp_arg, caddr_t qname);
 extern caddr_t DBG_NAME (ttlp_expand_qname_prefix) (DBG_PARAMS ttlp_t *ttlp_arg, caddr_t qname);
 extern caddr_t DBG_NAME (tf_bnode_iid) (DBG_PARAMS triple_feed_t *tf, caddr_t boxed_sparyytext);
 extern caddr_t DBG_NAME (tf_formula_bnode_iid) (DBG_PARAMS ttlp_t *ttlp_arg, caddr_t boxed_sparyytext);
@@ -241,10 +263,12 @@ extern caddr_t ttl_lex_analyze (caddr_t str, int mode_bits, wcharset_t *query_ch
 
 extern void ttlp_triple_and_inf (ttlp_t *ttlp_arg, caddr_t o_uri);
 extern void ttlp_triple_l_and_inf (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang);
+extern void ttlp_triples_for_bnodes_debug (ttlp_t *ttlp_arg, caddr_t bnode_iid, int lineno, caddr_t label);
 
 #define RDFXML_COMPLETE		0
 #define RDFXML_OMIT_TOP_RDF	1
 #define RDFXML_IN_ATTRIBUTES	2
+#define RDFXML_IN_MDATA		4
 
 extern void
 rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
@@ -274,7 +298,7 @@ extern id_hash_t *rdf_graph_iri2id_dict_htable;		/*!< Dictionary of IRI_IDs of I
 extern id_hash_iterator_t *rdf_graph_iri2id_dict_hit;	/*!< Hash iterator for \c rdf_graph_iri2id_dict_hit */
 extern id_hash_t *rdf_graph_id2iri_dict_htable;		/*!< Dictionary of IRIs of IRI_IDs of graphs mentioned in graph-level security config, boxed IRI_IDs are keys, IRI UNAMEs are values */
 extern id_hash_iterator_t *rdf_graph_id2iri_dict_hit;	/*!< Hash iterator for \c rdf_graph_id2irid_dict_hit */
-extern id_hash_t *rdf_graph_group_dict_htable;		/*!< Dictionary of graph group members: group IID is key, vector of member IIDs is value */
+extern id_hash_t *rdf_graph_group_dict_htable;		/*!< Dictionary of graph group members: group IID is key, vector or hashtable of member IIDs is value */
 extern id_hash_iterator_t *rdf_graph_group_dict_hit;	/*!< Hash iterator for \c rdf_graph_group_dict_htable */
 extern id_hash_t *rdf_graph_public_perms_dict_htable;		/*!< Dictionary of public permissions for graphs: graph/group IID is key, copy of DB.DBA.RDF_GRAPH_USER.RGU_PERMISSIONS is a value */
 extern id_hash_iterator_t *rdf_graph_public_perms_dict_hit;	/*!< Hash iterator for \c rdf_graph_group_dict_htable */
@@ -301,5 +325,6 @@ extern caddr_t uriqa_dynamic_local_replace_nocheck (caddr_t name, client_connect
 #define RB_BOX_HASH_MIN_LEN 50
 caddr_t mdigest5 (caddr_t str);
 boxint rdf_new_iri_id (lock_trx_t * lt, char ** value_seq_ret, int nth, query_instance_t * qi);
+int rdf_graph_is_in_enabled_repl (caddr_t * qst, iri_id_t q_iid, int *answer_is_one_for_all_ret);
 
 #endif

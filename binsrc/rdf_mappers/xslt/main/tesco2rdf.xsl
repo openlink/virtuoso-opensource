@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -28,6 +28,7 @@
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
 <!ENTITY oplbb "http://www.openlinksw.com/schemas/bestbuy#">
@@ -42,6 +43,7 @@
     xmlns:bibo="&bibo;"
     xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
     xmlns:sioc="&sioc;"
+    xmlns:opl="&opl;"
     xmlns:dcterms="&dcterms;"
     xmlns:gr="&gr;"
     xmlns:oplbb="&oplbb;"
@@ -76,6 +78,13 @@
 				<owl:sameAs rdf:resource="{$docIRI}"/>
 			</rdf:Description>
 				<gr:Offering rdf:about="{$resourceURL}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.tesco.com#this">
+                                 			<foaf:name>Tesco</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.tesco.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
 					<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 					<gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 					<rdfs:label><xsl:value-of select="//Name"/></rdfs:label>
@@ -85,6 +94,13 @@
 					<xsl:apply-templates mode="offering"/>
 				</gr:Offering>
 				<rdf:Description rdf:about="{vi:proxyIRI ($baseUri, '', 'Product')}">
+                                 	<opl:providedBy>
+                                 		<foaf:Organization rdf:about="http://www.tesco.com#this">
+                                 			<foaf:name>Tesco</foaf:name>
+                                 			<foaf:homepage rdf:resource="http://www.tesco.com"/>
+                                 		</foaf:Organization>
+                                 	</opl:providedBy>
+
 					<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 					<rdf:type rdf:resource="&oplbb;Product" />
 				<sioc:has_container rdf:resource="{$docproxyIRI}"/>

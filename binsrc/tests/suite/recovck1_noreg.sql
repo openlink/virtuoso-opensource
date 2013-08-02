@@ -1,29 +1,29 @@
 --
 --  recovck1_noreg.sql
 --
---  $Id$
+--  $Id: recovck1_noreg.sql,v 1.10.6.6.4.5 2013/01/02 16:14:52 source Exp $
 --
 --  Recovery check test
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2006 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2013 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 select count(*) from iutest;
 
@@ -115,8 +115,13 @@ select count (*), sum (length (b.b1)) from tb_stat c, tblob b where c.k = b.k
 select k, length (b1), length (b2), length (b3), length (b4), * from tblob b where not exists (select 1 from tb_stat c where c.k = b.k                                                       and length (b1) = b1_l and length (b2) = b2_l and length (b3) = b3_l                                                       and length (b4) = b4_l and b. e1 = c. e1 and b. e2 = c. e2);
 
 tb_check (1);
---echo both $if $equ $state OK "PASSED" "***FAILED";
---echo both ": blobs rollback / roll forward consistency " $state "\n";
+echo both $if $equ $state OK "PASSED" "***FAILED";
+echo both ": blobs rollback / roll forward consistency " $state "\n";
+
+check_twide ();
+echo both $if $equ $state OK "PASSED" "***FAILED";
+echo both ": twide consistency " $state "\n";
+
 
 select * from tblob where length (blob_to_string (b4)) <> length (b4);
 echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
@@ -253,4 +258,16 @@ ECHO BOTH ": B6978-10 table with data copied does have data. ROWCNT=" $ROWCNT "\
 select length (b) from rep_blob;
 echo both $if $equ $last[1] 20000000 "PASSED"  "***FAILED";
 echo both ": replicated ins replacing of large blob\n";
+
+select * from tainc natural join tainc_ck;
+echo both $if $equ $rowcnt 3  "PASSED" "***FAILED";
+echo both ":  autoinc/ts rfwd\n";
+
+sparql select * from <g1> where { ?s <only1> ?o . };
+echo both $if $equ $rowcnt 0  "PASSED" "***FAILED";
+echo both ": rdf not only1\n";
+
+sparql select * from <g1> where { ?s <only2> ?o . };
+echo both $if $equ $last[2] only2  "PASSED" "***FAILED";
+echo both ": rdf only2\n";
 

@@ -7,7 +7,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2009 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -26,7 +26,7 @@
 
   label := 'Drill-down queries';
   puri := get_keyword('p', params,'');
-  puri := replace (puri, '\'', '%27');  
+  puri := replace (puri, '\'', '%27');
 ?>
   <head>
     <link rel="stylesheet" type="text/css" href="style.css">
@@ -97,7 +97,7 @@
                         http('<td>');
 			if (__tag of rdf_box = __tag (tmp) and not rdf_box_is_complete (tmp))
 			  http ('Incomplete box');
-			else  
+			else
 			  {
 			    http_value(tmp);
 			  }

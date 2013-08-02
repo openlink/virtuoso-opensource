@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2009 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -242,10 +242,10 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_fctabout_http_proxy_rule_5', 1,
     '/describe/\\?uri=([^\&]*)\&graph=([^\&]*)', vector ('g', 'graph'), 2,
     '/fct/rdfdesc/description.vsp?g=%s&graph=%s', vector ('g', 'graph'), null, null, 2);
 
-DB.DBA.URLREWRITE_CREATE_RULELIST ('ext_fctabout_http_proxy_rule_list1', 1, 
-    vector ('ext_fctabout_http_proxy_rule_1', 
-      	    'ext_fctabout_http_proxy_rule_2', 
-	    'ext_fctabout_http_proxy_rule_3', 
+DB.DBA.URLREWRITE_CREATE_RULELIST ('ext_fctabout_http_proxy_rule_list1', 1,
+    vector ('ext_fctabout_http_proxy_rule_1',
+      	    'ext_fctabout_http_proxy_rule_2',
+	    'ext_fctabout_http_proxy_rule_3',
 	    'ext_fctabout_http_proxy_rule_4',
 	    'ext_fctabout_http_proxy_rule_5'
 	    ));

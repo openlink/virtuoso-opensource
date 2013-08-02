@@ -1,10 +1,10 @@
 --  
---  $Id$
+--  $Id: stat.sql,v 1.4.10.3 2013/01/02 16:14:58 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the

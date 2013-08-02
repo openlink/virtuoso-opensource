@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -640,7 +640,7 @@ self.vc_data_bind (e);
                 </tr>
                 <v:template name="dav_template001" type="simple" enabled="-- equ(self.crfolder_mode, 1)">
                   <tr>
-                    <td>Folder name</td>
+                    <th>Folder name</th>
                     <td>
                       <v:text name="t_newfolder" value="--get_keyword('t_newfolder', self.vc_page.vc_event.ve_params, '')" format="%s"/>
                     </td>
@@ -661,7 +661,7 @@ self.vc_data_bind (e);
             		    <td>
             		      <v:select-list name="dst_sel" value="" default_value="dav" auto-submit="1">
                   			<v:item name="WebDAV" value="dav"/>
-                  			<v:item name="RDF Store" value="rdf"/>
+                    			<v:item name="Quad Store Store" value="rdf"/>
             		      </v:select-list>
             		    </td>
               		  </tr-->
@@ -713,13 +713,13 @@ self.vc_data_bind (e);
                     </v:template>
 		              </v:template>
                   <tr id="fi2">
-                    <td nowrap="nowrap">DAV Resource Name<span class="redstar">*</span></td>
+                    <th nowrap="nowrap">DAV Resource Name<span class="redstar">*</span></th>
                     <td>
                       <v:text name="resname" value="--get_keyword('resname', self.vc_page.vc_event.ve_params, '')"/>
                     </td>
                   </tr>
                   <tr id="fi3">
-                    <td nowrap="nowrap">MIME Type (blank for extension default)</td>
+                    <th nowrap="nowrap">MIME Type (blank for extension default)</th>
                     <td>
                       <div id="mime_cl"></div>
                       <script language="javascript">
@@ -739,7 +739,7 @@ self.vc_data_bind (e);
 		              </v:template>
                 <v:template name="dav_template00299" type="simple" enabled="-- equ(self.crfolder_mode, 299)">
                   <tr>
-                    <td>File Content</td>
+                    <th>File Content</th>
                     <td>
  			                <textarea id="dav_content" name="dav_content" style="width: 500px; height: 170px"><?vsp http (get_keyword ('dav_content', self.vc_page.vc_event.ve_params, '')); ?></textarea>
                     </td>
@@ -747,7 +747,7 @@ self.vc_data_bind (e);
                 </v:template>
 		            <v:template type="simple" name="sw3" condition="self.dst_sel.ufl_value <> 'rdf' or self.dst_sel.ufl_value is null">
                 <tr id="fi4">
-                  <td>Owner</td>
+                  <th>Owner</th>
                   <td>
                     <v:data-list name="t_folder_own"
                                  sql="select -1 as U_ID, '&amp;lt;none&amp;gt;' as U_NAME from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select U_ID, U_NAME from WS.WS.SYS_DAV_USER" key-column="U_ID" value-column="U_NAME">
@@ -770,7 +770,7 @@ self.vc_data_bind (e);
                   </td>
                 </tr>
                 <tr id="fi5">
-                  <td>Group</td>
+                  <th>Group</th>
                   <td>
                     <v:data-list name="t_folder_grp" sql="select -1 as G_ID, '&amp;lt;none&amp;gt;' as G_NAME from WS.WS.SYS_DAV_GROUP where G_NAME = 'administrators' union all select G_ID, G_NAME from WS.WS.SYS_DAV_GROUP" key-column="G_ID" value-column="G_NAME">
                       <v:before-data-bind>
@@ -797,7 +797,7 @@ self.vc_data_bind (e);
                   <td>&nbsp;</td>
                 </tr>
                 <tr id="fi6">
-                  <td>Permissions</td>
+                  <th>Permissions</th>
                   <td>
                     <table class="ctl_grp">
                       <tr>
@@ -855,7 +855,7 @@ self.vc_data_bind (e);
                                 }
                                 for (i := 0; i < 9; i := i + 1)
                                 {
-                                  http(sprintf('<td CLASS="SubAction" align="center"><input type="checkbox" name="perm%i" %s></td>', i, aref(_perm_box, i)));
+                                  http(sprintf('<td class="SubAction" align="center"><input type="checkbox" name="perm%i" %s></td>', i, aref(_perm_box, i)));
                                 }
                               ?>
                             </tr>
@@ -866,20 +866,17 @@ self.vc_data_bind (e);
                   </td>
                 </tr>
                 <tr id="fi7">
-                  <td>Free Text Indexing</td>
+                  <th>Free Text Indexing</th>
                   <td>
                     <select name="idx">
                       <?vsp
                         declare _fidx, idx any;
                         declare i integer;
+
                         idx := get_keyword('idx', self.vc_page.vc_event.ve_params, 'N');
                         _fidx := vector('N', 'Off', 'T', 'Direct members', 'R', 'Recursively');
-                        i := 0;
-                        while (i < length(_fidx))
-                        {
+                        for (i := 0; i < length(_fidx); i := i + 2)
                           http(sprintf('<option value="%s" %s>%s</option>', _fidx[i], select_if(idx, _fidx[i]), _fidx[i+1]));
-                          i := i + 2;
-                        }
                       ?>
                     </select>
                   </td>
@@ -909,7 +906,7 @@ self.vc_data_bind (e);
                 <tr>
                   <th>Folder type</th>
                   <td>
-                    <select name="fdet">
+                    <select name="fdet" id="fdet" onchange="javascript: detChanged()">
                       <?vsp
 		                    {
                           declare _fidx any;
@@ -930,28 +927,29 @@ self.vc_data_bind (e);
                             'S3',               'Amazon S3',                     
 			    'DynaRes',          'Dynamic Resources'
 			    );
+                          if (isstring (DB.DBA.vad_check_version ('SyncML')))
+                            _fidx := vector_concat (_fidx, vector ('SyncML', 'SyncML Folder'));
+
                           for (i := 0; i < length (_fidx); i := i + 2)
-                          {
                             http (sprintf ('<option value="%s" %s>%s</option>', _fidx[i], select_if (_idx, _fidx[i]), _fidx[i+1]));
                           }
-	                      }
                       ?>
                     </select>
                   </td>
                 </tr>
 		            <?vsp } ?>
-                <v:template name="dav_template003" type="simple" enabled="-- equ(isstring (vad_check_version ('SyncML')), 1)">
-                  <tr id="fi8">
-                    <td>SyncML version</td>
+                <v:template name="dav_template003" type="simple" enabled="-- equ (isstring (DB.DBA.vad_check_version ('SyncML')), 1)">
+                  <tr id="fi8" style="display: none;">
+                    <th>SyncML version</th>
                     <td>
                     <select name="s_v">
                       <?vsp
                         declare _fidx, idx any;
                         declare i integer;
 
-                        idx := get_keyword('idx', self.vc_page.vc_event.ve_params, 'N');
-                        _fidx := yac_syncml_version ();
-                        for (i := 0; i < length(_fidx); i := i + 2)
+                        idx := get_keyword ('s_v', self.vc_page.vc_event.ve_params, 'N');
+                        _fidx := Y_SYNCML_VERSIONS ();
+                        for (i := 2; i < length(_fidx); i := i + 2)
                         {
                           http(sprintf('<option value="%s" %s>%s</option>', _fidx[i], select_if(idx, _fidx[i]), _fidx[i+1]));
                         }
@@ -959,17 +957,17 @@ self.vc_data_bind (e);
                     </select>
                     </td>
                   </tr>
-                  <tr id="fi9">
-                    <td>SyncML type</td>
+                  <tr id="fi9" style="display: none;">
+                    <th>SyncML type</th>
                     <td>
                     <select name="s_t">
                       <?vsp
                         declare _fidx, idx any;
                         declare i integer;
 
-                        idx := get_keyword('idx', self.vc_page.vc_event.ve_params, 'N');
-                        _fidx := yac_syncml_type ();
-                        for (i := 0; i < length(_fidx); i := i + 2)
+                        idx := get_keyword ('s_t', self.vc_page.vc_event.ve_params, 'N');
+                        _fidx := Y_SYNCML_TYPES ();
+                        for (i := 2; i < length(_fidx); i := i + 2)
                         {
                           http(sprintf('<option value="%s" %s>%s</option>', _fidx[i], select_if(idx, _fidx[i]), _fidx[i+1]));
                         }
@@ -999,11 +997,12 @@ self.vc_data_bind (e);
                           declare usr, grp vspx_select_list;
                           declare i, _uid, ownern, groupn integer;
                           declare cname, _perms, _p, _idx, mimetype, owner_name, group_name, _inh, _fdet varchar;
-                  			  declare _file, _graph, is_ttl, is_xml any;
+                  			  declare params, _file, _graph, is_ttl, is_xml any;
 
+                          params := e.ve_params;
                   			  if (self.dst_sel.ufl_value = 'rdf')
                   			  {
-                  			    _file := get_keyword ('t_rdf_file', e.ve_params);
+                  			    _file := get_keyword ('t_rdf_file', params);
                   			    _graph := trim (self.rdf_graph_name.ufl_value);
                   		      if (not length (_graph))
                   	        {
@@ -1021,7 +1020,7 @@ self.vc_data_bind (e);
                     				    self.vc_error_message := regexp_match ('[^\r\n]*', __SQL_MESSAGE);
                     				    return;
                     				  };
-                    				  uri := get_keyword ('t_rdf_url', e.ve_params);
+                    				  uri := get_keyword ('t_rdf_url', params);
                     				  exec (sprintf ('sparql load "%s" into <%s>', uri, _graph));
                   		        goto end_post;
                   				  }
@@ -1054,15 +1053,15 @@ self.vc_data_bind (e);
                   			    goto end_post;
                   			  }
                           if (self.crfolder_mode = 1)
-                            cname := get_keyword('t_newfolder', self.vc_page.vc_event.ve_params, '');
+                            cname := get_keyword ('t_newfolder', params, '');
                           if ((self.crfolder_mode = 2) or (self.crfolder_mode = 299))
                           {
                             if (self.crfolder_mode = 2)
-                            _file := get_keyword_ucase('t_newfolder', self.vc_page.vc_event.ve_params, null);
+                              _file := get_keyword_ucase('t_newfolder', params, null);
                             else
-                              _file := get_keyword_ucase('dav_content', self.vc_page.vc_event.ve_params, null);
-                            cname := get_keyword('resname', self.vc_page.vc_event.ve_params, '');
-                            mimetype := get_keyword('mime_type', self.vc_page.vc_event.ve_params, '');
+                              _file := get_keyword_ucase('dav_content', params, null);
+                            cname := get_keyword ('resname', params, '');
+                            mimetype := get_keyword ('mime_type', params, '');
                           }
                           usr := self.t_folder_own;
                           grp := self.t_folder_grp;
@@ -1090,12 +1089,12 @@ self.vc_data_bind (e);
                             self.vc_is_valid := 0;
                             return;
                           }
-                          _uid := coalesce(atoi(get_keyword('own', self.vc_page.vc_event.ve_params, null)), (select min(U_ID) from WS.WS.SYS_DAV_USER));
+                          _uid := coalesce(atoi(get_keyword ('own', params, null)), (select min(U_ID) from WS.WS.SYS_DAV_USER));
                           i := 0;
                           _perms := '';
                           while (i < 9)
                           {
-                            _p := get_keyword(sprintf('perm%i', i), self.vc_page.vc_event.ve_params, '');
+                            _p := get_keyword (sprintf('perm%i', i), params, '');
                             if (_p <> '')
                               _perms := concat(_perms, '1');
                             else
@@ -1104,9 +1103,10 @@ self.vc_data_bind (e);
                           }
                           if (_perms = '000000000')
                             _perms := (select U_DEF_PERMS from WS.WS.SYS_DAV_USER where U_ID = _uid);
-                          _idx := get_keyword('idx', self.vc_page.vc_event.ve_params, 'N');
-                          _inh := get_keyword('inh', self.vc_page.vc_event.ve_params, 'N');
-                          _fdet := get_keyword('fdet', self.vc_page.vc_event.ve_params, '');
+
+                          _idx := get_keyword ('idx', params, 'N');
+                          _inh := get_keyword ('inh', params, 'N');
+                          _fdet := get_keyword ('fdet', params, '');
                           _perms := concat(_perms, _idx);
                           declare ret int;
                           declare full_path varchar;
@@ -1130,15 +1130,21 @@ self.vc_data_bind (e);
                                 self.vc_is_valid := 0;
                                 return;
                               }
+                  		        set triggers off;
+			                        if (_fdet = 'SyncML')
+			                        {
                   			      if (__proc_exists ('DB.DBA.SYNC_MAKE_DAV_DIR'))
                   			      {
-                    				    declare sync_ver any;
-                    				    sync_ver := get_keyword ('s_v', self.vc_page.vc_event.ve_params, 'N');
-                    				    call ('DB.DBA.SYNC_MAKE_DAV_DIR') (get_keyword ('s_t', self.vc_page.vc_event.ve_params, 'N'),
-                    				    ret, cname, full_path, sync_ver);
+                      				    declare sync_ver, sync_type any;
+
+                      				    sync_ver := get_keyword ('s_v', params, 'N');
+                      				    sync_type := get_keyword ('s_t', params, 'N');
+                      				    call ('DB.DBA.SYNC_MAKE_DAV_DIR') (sync_type, ret, cname, full_path, sync_ver);
                       				}
-                  		        set triggers off;
-			                        if (_fdet = '' or _fdet = 'rdfSink') _fdet := null;
+                        			}
+			                        if (_fdet = '' or _fdet = 'rdfSink' or _fdet = 'SyncML')
+			                          _fdet := null;
+
                               update WS.WS.SYS_DAV_COL set COL_INHERIT = _inh, COL_DET = _fdet where COL_ID = ret;
 			                        set triggers on;
                             }
@@ -1267,8 +1273,9 @@ self.vc_data_bind (e);
                             {
                               declare res_owner1, res_group1 integer;
                               declare resname, res_perms1, res_owner2, res_group2 varchar;
-                              resname := aref(self.megavec, 0);
                               whenever not found goto nfr;
+
+                              resname := aref(self.megavec, 0);
                               select res_owner, res_group, res_perms into res_owner1, res_group1, res_perms1 from WS.WS.SYS_DAV_RES where res_full_path = resname;
                               if (res_owner1 is not null)
                                 res_owner2 := (select U_NAME from DB.DBA.SYS_USERS where U_ID = res_owner1);
@@ -1280,9 +1287,9 @@ self.vc_data_bind (e);
                                 res_group2 := 'none';
                               ret := DB.DBA.YACUTIA_DAV_RES_UPLOAD(aref(self.megavec, 0), aref(self.megavec, 1), aref(self.megavec, 2), res_perms1, res_owner1, res_group1, now(), now(), null);
                               nfr:;
-                            }
-                            else
+                            } else {
                             ret := DB.DBA.YACUTIA_DAV_RES_UPLOAD(aref(self.megavec, 0), aref(self.megavec, 1), aref(self.megavec, 2), aref(self.megavec, 3), aref(self.megavec, 4), aref(self.megavec, 5), now(), now(), null);
+                            }
                             if (ret < 0)
                             {
                               self.vc_error_message := YACUTIA_DAV_STATUS(ret);
@@ -1356,8 +1363,10 @@ self.vc_data_bind (e);
                       {
                         if (DB.DBA.Y_DAV_PROP_GET (self.source_dir, 'virt:rdf_graph', '') <> '')
                           _fdet := 'rdfSink';
-                        if (DB.DBA.Y_DAV_PROP_GET (self.source_dir, 'virt:Versioning-History', '') <> '')
+                        else if (DB.DBA.Y_DAV_PROP_GET (self.source_dir, 'virt:Versioning-History', '') <> '')
                           _fdet := 'UnderVersioning';
+                        else if (DB.DBA.Y_SYNCML_DETECT (self.source_dir))
+                          _fdet := 'SyncML';
                       }
                     }
                     else
@@ -1533,7 +1542,7 @@ self.vc_data_bind (e);
                 <tr>
                   <th>Folder type</th>
                   <td>
-                    <select name="fdet">
+                    <select name="fdet" id="fdet" onchange="javascript: detChanged()">
                       <?vsp
 		                    {
                           declare _fidx any;
@@ -1554,6 +1563,9 @@ self.vc_data_bind (e);
                             'S3',               'Amazon S3',                     
 			    'DynaRes',          'Dynamic Resources'
 			    );
+                          if (isstring (DB.DBA.vad_check_version ('SyncML')))
+                            _fidx := vector_concat (_fidx, vector ('SyncML', 'SyncML Folder'));
+
                           for (i := 0; i < length (_fidx); i := i + 2)
                           {
                             http (sprintf ('<option value="%s" %s>%s</option>', _fidx[i], select_if (_idx, _fidx[i]), _fidx[i+1]));
@@ -1564,8 +1576,8 @@ self.vc_data_bind (e);
                   </td>
                 </tr>
 		            <?vsp } ?>
-                <v:template name="dav_template011" type="simple" enabled="-- equ(yac_syncml_detect (self.source_dir), 1)">
-                  <tr>
+                <v:template name="dav_template011" type="simple" enabled="-- equ (isstring (DB.DBA.vad_check_version ('SyncML')), 1)">
+                  <tr id="fi8" style="display: none;">
                     <th>SyncML version</th>
                     <td>
                     <select name="s_v">
@@ -1573,9 +1585,9 @@ self.vc_data_bind (e);
                         declare _fidx, idx any;
                         declare i integer;
 
-                        idx := yac_syncml_version_get (self.source_dir);
-                        _fidx := yac_syncml_version ();
-                        for (i := 0; i < length(_fidx); i := i + 2)
+                          idx := get_keyword ('s_v', self.vc_page.vc_event.ve_params, Y_SYNCML_VERSION (self.source_dir));
+                          _fidx := Y_SYNCML_VERSIONS ();
+                          for (i := 2; i < length(_fidx); i := i + 2)
                         {
                           http(sprintf('<option value="%s" %s>%s</option>', _fidx[i], select_if(idx, _fidx[i]), _fidx[i+1]));
                         }
@@ -1583,7 +1595,7 @@ self.vc_data_bind (e);
                     </select>
                     </td>
                   </tr>
-                  <tr>
+                  <tr id="fi9" style="display: none;">
                     <th>SyncML type</th>
                     <td>
                     <select name="s_t">
@@ -1591,9 +1603,9 @@ self.vc_data_bind (e);
                         declare _fidx, idx any;
                         declare i integer;
 
-                        idx := yac_syncml_type_get (self.source_dir);
-                        _fidx := yac_syncml_type ();
-                        for (i := 0; i < length(_fidx); i := i + 2)
+                          idx := get_keyword ('s_t', self.vc_page.vc_event.ve_params, Y_SYNCML_TYPE (self.source_dir));
+                          _fidx := Y_SYNCML_TYPES ();
+                          for (i := 2; i < length(_fidx); i := i + 2)
                         {
                           http(sprintf('<option value="%s" %s>%s</option>', _fidx[i], select_if(idx, _fidx[i]), _fidx[i+1]));
                         }
@@ -1677,7 +1689,7 @@ self.vc_data_bind (e);
                             <tr>
                               <th width="1%" nowrap="nowrap">Access Type</th>
                               <th nowrap="nowrap">WebID</th>
-                              <th width="1%" align="center" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
+                              <th width="1%" align="center" nowrap="nowrap">Allow<br />(R)ead, (W)rite, e(X)ecute</th>
                               <th width="1%">Action</th>
                             </tr>
                             <tr id="f_tr_no"><td colspan="4"><b>No WebID Security</b></td></tr>
@@ -1921,25 +1933,25 @@ self.vc_data_bind (e);
                           </td>
                           <td valign="center">
                             <v:button style="url" action="simple" value="--DB.DBA.Y_DAV_GET_VERSION_ROOT(self.source_dir)" format="%s">
-                                          <v:on-post>
-                                            <![CDATA[
-                                    			    if (e.ve_initiator <> control)
-                                    			      return;
+                              <v:on-post>
+                                <![CDATA[
+                        			    if (e.ve_initiator <> control)
+                        			      return;
 
                                   if (self.browse_type = 2)
-                                              {
+                                  {
                                     declare path, mimeType varchar;
 
                                     path := DB.DBA.Y_DAV_GET_VERSION_ROOT(self.source_dir);
                                     mimeType := DB.DBA.Y_DAV_PROP_GET (path, ':getcontenttype', '');
                                     http_request_status ('HTTP/1.1 302 Found');
                                     http_header (sprintf ('Content-type: %s\t\nLocation: %s\r\n', mimeType, path));
-                                              }
-                                            ]]>
-                                          </v:on-post>
-                                        </v:button>
-                                      </td>
-                                    </tr>
+                                  }
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                          </td>
+                        </tr>
                         <tr>
                           <td valign="top">Versions</td>
                           <td>
@@ -1955,8 +1967,8 @@ self.vc_data_bind (e);
                                     <th style="text-align: center;">Modified</th>
                                     <th style="text-align: center;">Action</th>
                                   </tr>
-                                  </table>
-                                </v:template>
+                                </table>
+                              </v:template>
 
                               <v:template name="ds_versions_repeat" type="repeat">
 
@@ -2084,7 +2096,9 @@ self.vc_data_bind (e);
                           declare _perms, _p, _idx varchar;
                           declare _res_id, is_dir, _inh, _is_sink integer;
                           declare cur_usr varchar;
+                          declare params any;
 
+                          params := e.ve_params;
                           cur_usr := connection_get ('vspx_user');
                           if (cur_usr not in ('dba', 'dav'))
                           {
@@ -2108,17 +2122,17 @@ self.vc_data_bind (e);
                             self.vc_is_valid := 0;
                             return;
                           }
-                          _res_name := trim (get_keyword ('res_name', self.vc_page.vc_event.ve_params, ''));
+                          _res_name := trim (get_keyword ('res_name', params, ''));
                           if (_res_name is null  or _res_name = '')
                           {
                             self.vc_error_message := 'Resource name can be empty';
                             self.vc_is_valid := 0;
                             return;
                           }
-                          own_id := atoi (get_keyword ('res_own', self.vc_page.vc_event.ve_params, ''));
-                          own_grp := atoi (get_keyword ('res_grp', self.vc_page.vc_event.ve_params, ''));
+                          own_id := atoi (get_keyword ('res_own', params, ''));
+                          own_grp := atoi (get_keyword ('res_grp', params, ''));
                           if (is_dir = 0)
-                            mimetype := get_keyword ('mime_type1', self.vc_page.vc_event.ve_params, '');
+                            mimetype := get_keyword ('mime_type1', params, '');
 
                           if (own_id < 0)
                             own_id := NULL;
@@ -2126,28 +2140,38 @@ self.vc_data_bind (e);
                           if (own_grp < 0)
                             own_grp := NULL;
 
+                  			  _perms := '';
+                  			  _is_sink := 0;
+                          _fidx := vector ('N', 'Off', 'T', 'Direct members', 'R', 'Recursively');
+                          _idx := get_keyword ('idx', params, _fidx[0]);
+                          _inh := get_keyword ('inh', params, _fidx[0]);
+                  			  _fdet := get_keyword ('fdet', params, '');
+	                        if (_fdet = 'SyncML')
+	                        {
                           if (__proc_exists ('DB.DBA.SYNC_MAKE_DAV_DIR'))
                           {
                              declare sync_ver, sync_type any;
-                             sync_ver := get_keyword ('s_v', self.vc_page.vc_event.ve_params, 'N');
-                             sync_type := get_keyword ('s_t', self.vc_page.vc_event.ve_params, 'N');
 
-                             yac_syncml_update_type (sync_ver, sync_type, self.source_dir);
+                  				    sync_ver := get_keyword ('s_v', params, 'N');
+                  				    sync_type := get_keyword ('s_t', params, 'N');
+                  				    call ('DB.DBA.SYNC_MAKE_DAV_DIR') (sync_type, _res_id, _res_name, self.source_dir, sync_ver);
+                    				}
+                    			}
+                    			else if ((is_dir = 1) and isstring (DB.DBA.vad_check_version ('SyncML')))
+                    			{
+                    			  declare state, msg any;
+                            exec ('delete from DB.DBA.SYNC_COLS_TYPES where CT_PATH = ?', state, msg, vector (self.source_dir));
                           }
 
-                          _perms := '';
-			  _is_sink := 0;
-                          _fidx := vector ('N', 'Off', 'T', 'Direct members', 'R', 'Recursively');
-                          _idx := get_keyword ('idx', self.vc_page.vc_event.ve_params, _fidx[0]);
-                          _inh := get_keyword ('inh', self.vc_page.vc_event.ve_params, _fidx[0]);
-			  _fdet := get_keyword ('fdet', self.vc_page.vc_event.ve_params, '');
-			  if (_fdet = 'rdfSink') _is_sink := 1;
-			  if (_fdet = '' or _fdet = 'rdfSink')
+                  			  if (_fdet = 'rdfSink')
+                  			    _is_sink := 1;
+
+                  			  if (_fdet = '' or _fdet = 'rdfSink' or _fdet = 'SyncML')
                   			    _fdet := null;
 
                           for (i := 0; i < 9; i := i + 1)
                           {
-                            _p := get_keyword(sprintf('perm%i', i), self.vc_page.vc_event.ve_params, '');
+                            _p := get_keyword (sprintf('perm%i', i), params, '');
                             if (_p <> '')
                               _perms := concat(_perms, '1');
                             else
@@ -4179,5 +4203,18 @@ self.vc_data_bind (e);
         </v:template>
       </xsl:otherwise>
     </xsl:choose>
+    <script type="text/javascript">
+      function detChanged()
+      {
+        var det = $('fdet');
+        if (det.value == 'SyncML') {
+          OAT.Dom.show('fi8');
+          OAT.Dom.show('fi9');
+        } else {
+          OAT.Dom.hide('fi8');
+          OAT.Dom.hide('fi9');
+        }
+      }
+    </script>
   </xsl:template>
 </xsl:stylesheet>

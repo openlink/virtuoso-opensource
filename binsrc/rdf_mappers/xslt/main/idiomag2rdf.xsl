@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -29,12 +29,15 @@
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY mo "http://purl.org/ontology/mo/">
 <!ENTITY mmd "http://musicbrainz.org/ns/mmd-1.0#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
+<!ENTITY bibo "http://purl.org/ontology/bibo/">
 ]>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
 	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
 	xmlns:dc="http://purl.org/dc/elements/1.1/"
 	xmlns:dcterms="http://purl.org/dc/terms/"
+	xmlns:bibo="&bibo;"
 	xmlns:foaf="&foaf;"
 	xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
 	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
@@ -43,6 +46,7 @@
 	xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#"
 	xmlns:radio="http://www.radiopop.co.uk/"
 	xmlns:owl="http://www.w3.org/2002/07/owl#"
+	xmlns:opl="&opl;"
     xmlns:mo="&mo;"
     xmlns:mmd="&mmd;"	
 	version="1.0">
@@ -74,6 +78,13 @@
 
 	<xsl:template match="artist">
 		<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.idiomag.com#this">
+                        			<foaf:name>Idiomag</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.idiomag.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&mo;MusicGroup"/>
 			<foaf:name>
 				<xsl:value-of select="name"/>
@@ -89,6 +100,13 @@
 
 	<xsl:template match="tracks">
 		<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.idiomag.com#this">
+                        			<foaf:name>Idiomag</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.idiomag.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&mo;MusicGroup"/>
 			<xsl:for-each select="track">
 				<xsl:choose>
@@ -107,6 +125,13 @@
 
 	<xsl:template match="photos">
 		<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.idiomag.com#this">
+                        			<foaf:name>Idiomag</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.idiomag.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&mo;MusicGroup"/>
 			<xsl:for-each select="photo">
 				<foaf:img rdf:resource="{url}"/>
@@ -116,6 +141,13 @@
 	
 	<xsl:template match="articles">
 		<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.idiomag.com#this">
+                        			<foaf:name>Idiomag</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.idiomag.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&mo;MusicGroup"/>
 			<xsl:for-each select="article">
 				<rdfs:seeAlso rdf:resource="{sourceUrl}"/>
@@ -125,6 +157,13 @@
 
 	<xsl:template match="profile">
 		<foaf:Person rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.idiomag.com#this">
+                        			<foaf:name>Idiomag</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.idiomag.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<foaf:nick>
 				<xsl:value-of select="username" />
 			</foaf:nick>

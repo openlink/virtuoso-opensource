@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -33,7 +33,7 @@
 
 #define VAJRA
 #define VEC
-/*#undef CL6*/
+#define NO_CL GPF_T1 ("not available without cluster support")
 #define KEYCOMP GPF_T1 ("not done with key comp");
 #define O12 GPF_T1("Database engine does not support this deprecated function. Please contact OpenLink Support.")
 /*#define PAGE_TRACE 1 */
@@ -174,12 +174,12 @@ struct buffer_pool_s
   bp_ts_t	bp_stat_ts; /* bp_ts as of when the pool age stats were last computed */
   char		bp_stat_pending; /* flag for autocompact/stats gathering in progress */
 
-  unsigned char * bp_storage;	/* pointer to storage area */
+  //unsigned char * bp_storage;	/* pointer to storage area */
 
-  /* Each pool is divided into BP_N_BUCKETS, each holding a approx
-   * * equal no f buffers.  They are divided by bp_ts, with the 1st bucket
+  /* Each pool is divided into BP_N_BUCKETS, each holding approximately
+   * equal no of buffers. They are divided by bp_ts(bd_timestamp?), with the 1st bucket
    * holding the oldest 1/BP_N_BUCKETS and so on.  Used for scheduling
-   * relatively old dirty buffers for flush to disk.  Each */
+   * relatively old dirty buffers for flush to disk. */
 
   int32		bp_bucket_limit[BP_N_BUCKETS];
   int		bp_n_clean[BP_N_BUCKETS]; /* bp_ts at the boundary between buckets */
@@ -241,7 +241,8 @@ EXE_EXPORT (struct wi_inst_s *, wi_instance_get, (void));
 
 struct wi_db_s
 {
-  /* Logical database.  Can in principle have multiple file groups , although now only one is supported */  caddr_t		wd_qualifier;
+  /* Logical database. Can in principle have multiple file groups, although now only one is supported */
+  caddr_t		wd_qualifier;
   dbe_storage_t *	wd_primary_dbs;
   dk_set_t 		wd_storage;
   dbe_schema_t *	wd_schema;
@@ -262,16 +263,33 @@ struct ext_ref_s
   struct ext_ref_s *	er_next_waiting;
 };
 
+#define FILEN_BUFSIZ		256
+
+
+typedef struct ol_backup_ctx_s
+{
+  char		db_bp_prfx[FILEN_BUFSIZ];
+  dp_addr_t	db_bp_ts;
+  dp_addr_t	db_bp_num;
+  dp_addr_t	db_bp_pages;
+  dp_addr_t	db_bp_date;
+  dp_addr_t	db_bp_index;
+  dp_addr_t	db_bp_wr_bytes;
+} ol_backup_ctx_t;
+
 
 struct dbe_storage_s
 {
   /* database file group */
   char		dbs_type;
+  slice_id_t	dbs_slice;
+  short		dbs_nth_replica;
   int		dbs_stripe_unit;
   caddr_t	dbs_name;
   caddr_t	dbs_cfg_file;
   dk_set_t		dbs_disks; /* list of disk_segment_t for multifile dbs */
   disk_segment_t *	dbs_last_segment;
+  dbe_storage_t **	dbs_slices; /* indexed by dbs_slice, up to highest slid on this host */
   dk_set_t 	dbs_trees;
   dk_set_t 	dbs_deleted_trees; /*  dropped indices between now and last checkpoint.  Checkpoint finalizes the drop */
   dk_set_t	dbs_deleted_ems; /*ibid for column extent maps */
@@ -301,12 +319,14 @@ struct dbe_storage_s
   id_hash_t *		dbs_registry_hash; /* em start dp's and treeroots here if many dbs's */
   dp_addr_t		dbs_registry; /* first page of registry */
   dp_addr_t	dbs_pages_changed;	/* bit map of changes since last backup.  Linked list like free set */
+  dk_hash_t *	dbs_dp_compact_checked;
   dk_hash_t *	dbs_cpt_remap; /* checkpoint remaps in this storage unit.  Accessed with no mtx since changes only at checkpoint. */
   index_tree_t *	dbs_cpt_tree;  /* dummy tree for use during checkpoint */
   wi_db_t *		dbs_db;
   dp_addr_t		dbs_dp_sort_offset; /* when sorting buffers for flush, offset by this so as not to mix file groups */
   int			dbs_extend; /* size extend increment in pages */
   dk_hash_t *		dbs_unfreeable_dps;
+  dk_hash_t *		dbs_uc_blob_dps;
   char * 		dbs_cpt_file_name;
   dk_session_t *	dbs_cpt_recov_ses; /* during cpt recov write or recov, the file ses with recov data */
   extent_map_t *	dbs_extent_map; /* system shared general purpose disk extents, housekeeping and small tables */
@@ -314,6 +334,7 @@ struct dbe_storage_s
   buffer_desc_t *	dbs_extent_set;
   dp_addr_t		dbs_n_pages_in_extent_set;
   int32			dbs_initial_gen; /* generic no of exe tat inited the db */
+  char 			dbs_id[16]; /*!< Version ID of the server that made the database file */
 
   /* extent read stats and extent cache for adaptively migrating extents to faster persistent storage */
   dp_addr_t		dbs_exts_inext_ts;
@@ -326,6 +347,8 @@ struct dbe_storage_s
   dp_addr_t *	dbs_ec_to_dp;  /* at location corresponding to ext cache entry, the cached ext no. -1 means vacant */
   db_buf_t *		dbs_cache_dirty; /* bit set per extent in cache if this is different from copy in slower storage */
   char 			dbs_cfg_page_dt[DT_LENGTH];
+
+  ol_backup_ctx_t	dbs_bp;
 } ;
 
 #define DBS_EC_ENTER(dbs, ext)  mutex_enter (dbs->dbs_ext_cache_mtx[ext % DBS_EC_N_SETS])
@@ -338,6 +361,7 @@ struct dbe_storage_s
 #define DBS_SECONDARY 1
 #define DBS_TEMP 2
 #define DBS_RECOVER 3
+#define DBS_ELASTIC 4
 
 
 #define IN_DBS(dbs) \
@@ -410,7 +434,7 @@ typedef struct chash_s
   sql_type_t *		cha_new_sqt;
   char			cha_n_keys;
   char		cha_n_dependent;
-  short		cha_null_flags;
+  short		cha_null_flags;		/*!< offset of null in entry (dependance may have nulls, keys too) */
   char		cha_unique; /* guaranteed unique/happens to be unique/nott unique.  If not unique, entries have a next pointer at end. */
   char			cha_is_1_int; /* key is 1 int or iri and no dependent and no duplicates, all data is in the chash array, no separate rows  */
   char			cha_is_1_int_key; /* key is single int or iri */
@@ -427,11 +451,13 @@ typedef struct chash_s
   int64			cha_size;
   int64			cha_count;
   int64			cha_distinct_count;
+  int64		cha_n_in; /* for gby, no of sets processed */
   struct chash_s *	cha_partitions;
   int64 **		cha_array;
   int64 ** 		cha_exceptions;
   int			cha_exception_fill;
-  dk_mutex_t		cha_mtx;
+  uint32		cha_n_bloom;
+  uint64 *		cha_bloom;
   chash_page_t *	cha_current;
   chash_page_t *		cha_current_data;
   mem_pool_t *		cha_pool;
@@ -443,6 +469,7 @@ typedef struct chash_s
   chash_page_t *	cha_init_data;
   du_thread_t *		cha_wait_excl;	/* exclusive owner of the chash */
   dk_set_t 		cha_waiting;    /* thread waiting on this */
+  char 			cha_oversized;
 } chash_t;
 
 /* cha_unique */
@@ -456,7 +483,7 @@ typedef struct chash_s
 #define CHA_RETYPE 2
 
 
-typedef int (*cha_cmp_t) (chash_t * cha, int64 * ent, db_buf_t ** key_vecs, int row_no);
+typedef int (*cha_cmp_t) (chash_t * cha, int64 * ent, db_buf_t ** key_vecs, int row_no, dtp_t * nulls);
 typedef int (*cha_ent_cmp_t) (chash_t * cha, int64 * ent1, int64 * ent2);
 
 
@@ -465,6 +492,7 @@ struct hash_index_s
   mem_pool_t *		hi_pool;
   id_hash_t *		hi_memcache;
   chash_t *		hi_chash;
+  uint64		hi_cl_id; /* if cluster hash join temp, id for reference */
   dk_hash_t *	hi_thread_cha; /* when filling hash join chash, maps from thread to cha */
   int			hi_size;
   char			hi_is_unique;
@@ -483,6 +511,7 @@ struct hash_index_s
   index_tree_t  *hi_source_tree;
   char		hi_lock_mode;
   char		hi_isolation;
+  char 		hi_memcache_from_mp;
 };
 
 
@@ -510,6 +539,7 @@ struct index_tree_s
     dbe_storage_t *	it_storage; /* file group used for storage */
     dbe_key_t *		it_key; /* if index, this is the key */
     volatile dp_addr_t	it_root;
+    slice_id_t		it_slice; /* for elastic, where a key has a  tree in every slice, this identifies the slice this belongs to */
     buffer_desc_t * volatile	it_root_image;
     int volatile		it_root_image_version;
     unsigned short		it_root_version_ctr;
@@ -521,6 +551,7 @@ struct index_tree_s
     char		it_shared;
     char		it_hi_isolation; /* if hash index, isolation used for filling this */
     int		it_ref_count; /* if hash inx, count of qi's using this */
+    dk_set_t 	it_geo_registered; /* a geo inx needs itc list for extra invalidate */
     hi_signature_t *	it_hi_signature;
     dk_set_t 		it_waiting_hi_fill; /* if thi is a hash inx being filled, list of threads waiting for the fill to finish */
     index_tree_t *	it_hic_next; /* links for LRU queue of hash indices */
@@ -637,10 +668,23 @@ typedef struct hash_range_spec_s
 {
   /* if hash partitioning, test that hash no in range.  Occurs as sp_min_ssl in search_spec_t  */
   struct state_slot_s **	hrng_ssls;
+  struct state_slot_s *		hrng_part_ssl;
   ssl_index_t	hrng_min;
   ssl_index_t	hrng_max;
+  char		hrng_flags; /* range filter only, use bloom, not in, not exists in invisible hash join */
   struct hash_source_s *	hrng_hs;
+  struct state_slot_s *	hrng_ht;
+  struct state_slot_s *	hrng_ht_id;
+  struct state_slot_s *	hrng_dc; /* temp dc for decoding a ce */
 } hash_range_spec_t;
+
+
+/* hrng_flags */
+#define HR_NOT 1 /* true if not found */
+#define HR_NO_BLOOM 2 /* bloom not selective, do not check */
+#define HR_RANGE_ONLY 4
+
+
 
 struct row_range_s
 {
@@ -743,6 +787,16 @@ RANDOM_SEARCH_COND = 3} random_search_mode;
 
 typedef int (*read_hook_t)(it_cursor_t * itc, buffer_desc_t * buf_from, dp_addr_t dp);
 
+typedef struct sp_stat_s
+{
+  search_spec_t *	spst_sp;
+  int			spst_in;
+  int			spst_out;
+  int64		spst_time;
+
+} sp_stat_t;
+
+
 struct it_cursor_s
   {
     PLACEHOLDER_MEMBERS;
@@ -763,13 +817,13 @@ struct it_cursor_s
     bitf_t		itc_bm_insert:1; /* in bm insert, do not consider delete flag on rows encountered */
     bitf_t		itc_desc_serial_landed:1; /* if set, failure to get first lock (right above the selected range) resets search */
     bitf_t		itc_desc_serial_reset:1;
-#ifdef VEC
     bitf_t		itc_is_outer:1; /* in vectored exec, put a row of nulls into the output if not found */
     bitf_t		itc_is_pure:1; /* if repeated search pars, can just copy the results, no side effects or deps on non-search par ssls */
     bitf_t		itc_asc_eq:1; /* params are asc sorted and condition is eq, use previous hit as start pos for finding next */
-#endif
     bitf_t		itc_is_vacuum:1;
     bitf_t		itc_ac_parent_deld:1; /* set by autocompact to indicate that the parent page was popped off because of having only one leaf left */
+    bitf_t		itc_is_geo_registered:1; /* in list of itcs in the geo index of itc_tree.  itc_tree can be a temp deld at time of itc free, so can't look in the tree*/
+    bitf_t		itc_geo_op:2;
     bitf_t		itc_cl_results:1; /* in cluster server, send stuff in out map to the client node */
     bitf_t		itc_cl_local:1; /* if cluster but running local */
     bitf_t		itc_cl_batch_done:1; /* set if reset due ti batch done */
@@ -787,12 +841,14 @@ struct it_cursor_s
     bitf_t		itc_multistate_row_specs:1;
     bitf_t		itc_col_need_preimage:1; /* whether need to fetch any pre-image of uncommitted updated in col filter/decode */
     bitf_t		itc_hash_row_spec:2;
+    bitf_t		itc_value_ret_hash_spec:1; /* set if last hash spec sets result columns.  Must always be last row spec, no reordering */
     bitf_t		itc_local_key_spec:1; /* set if key spec extended to represent range partitioned scan partitions */
     bitf_t		itc_col_prefetch:1; /* set if must preread next page's cols.  Off if all so far in memory */
     bitf_t		itc_must_kill_trx:1;
     bitf_t		itc_col_right_ins:1; /* set if col key ins should split at right of page, i.e.. asc insert */
     bitf_t		itc_is_ac:1;
     bitf_t		itc_col_ac_redo:1; /* should retry col autocompact of last page */
+    bitf_t		itc_log_actual_ins:1; /* if log ins soft, fetch  or distinct key, log only if actual insert */
     char		itc_split_search_res;
     char		itc_prev_split_search_res; /* if exact params repeat, store how it was with the previous set */
     unsigned char 	itc_n_vec_sort_cols; /* how many first params to use for sorting the param rows */
@@ -811,7 +867,6 @@ struct it_cursor_s
     /* dp_addr_t		itc_parent_page; */
     dp_addr_t		itc_siblings_parent; /* the pages in itc siblings are children of this.  Use for checking that the siblings list has the right content */
     int			itc_n_pages_on_hold; /* if inserting, amount provisionally reserved for deltas made by tree split */
-#ifdef VEC
     int			itc_set;
     int			itc_n_sets;
     int		itc_n_results;
@@ -822,7 +877,6 @@ struct it_cursor_s
     int		itc_first_set; /* if split into threads by sets, 1st set on this itc */
     int64		itc_rows_selected; /* count of rows selected based on index criteria.  A col seg counts for all the rows in it */
     int64		itc_rows_on_leaves; /* Cumulative row count on distinct leaf pages visited so far.  A col seg counts as a row here */
-#endif
     it_map_t *		itc_itm1;  /* points to the iot_map_t if this itc holds the it_map_t's itm_mtx */
     it_map_t *		itc_itm2;
     jmp_buf_splice *	itc_fail_context; /* throw when deadlock or other exception inside index operation */
@@ -851,10 +905,8 @@ struct it_cursor_s
     struct word_stream_s *	itc_wst; /* for SM_TEXT search mode */
     caddr_t *		itc_out_state;  /* place out cols here. If null copy from itc_in_state */
     struct key_source_s *	itc_ks;
-#ifdef VEC
     int *			itc_param_order;
     v_out_map_t *		itc_vec_out_map;
-#endif
     read_hook_t			itc_read_hook;
     dp_addr_t *			itc_siblings; /* sibling pages to the right of the present leaf */
     db_buf_t		itc_temp;
@@ -876,6 +928,7 @@ struct it_cursor_s
     row_no_t		itc_rows_in_seg;
     row_range_t *	itc_ranges;
     col_data_ref_t **	itc_col_refs;
+    dtp_t *		itc_set_eqs;
     ce_ins_ctx_t *	itc_top_ceic;
     row_no_t *		itc_matches; /* row number in seg of rows matching row specs */
     struct row_lock_s *	itc_rl;
@@ -887,11 +940,17 @@ struct it_cursor_s
     int		itc_n_matches;
     int			itc_match_in;
     int			itc_match_out;
+    sp_stat_t *	itc_sp_stat;
     db_buf_t		itc_last_cmp_ce;
     int64		itc_last_cmp_value;
     int			itc_last_cmp_row;
+    char		itc_is_last_col_spec;
+    short		itc_n_row_specs;
+    dp_addr_t		itc_last_checked_page;
     /* end of column related */
     caddr_t		itc_owned_search_params[MAX_SEARCH_PARAMS];
+    lock_trx_t *	itc_lock_lt; /* the lt that is the owner of a new lock being made.  May be different from itc_ltrx if that is a branch of a mt write txn.  If main branch is no longer going, this will be itc_ltrx and the locking will not finish but will bust. */
+    sp_stat_t		itc_pre_sp_stat[3];
     extent_map_t *	itc_hold_em; /* if pages on hold, record where so they can be returned if the em changes */
     row_delta_t **	itc_vec_rds;
     row_delta_t *	itc_right_leaf_key; /* if itc_keep_right_bound, put the key values here */
@@ -902,6 +961,7 @@ struct it_cursor_s
     int			itc_vec_ins_misses;
     placeholder_t *	itc_bm_split_right_side;
     int			itc_root_image_version;
+    short		itc_ins_flags;
     char		itc_bm_spec_replaced; /* true if bm inx dive set the key_spec */
     char		itc_cl_org_desc;
     dp_addr_t		itc_ra_root[RA_MAX_ROOTS];
@@ -976,6 +1036,26 @@ struct it_cursor_s
     }\
   else \
     ptr = row + (cl).cl_pos[rv];\
+}
+
+#define ITC_FREE_SP_STAT(itc) \
+  { if (itc->itc_is_col && itc->itc_sp_stat  && itc->itc_sp_stat != &itc->itc_pre_sp_stat[0]) {itc_free_box (itc, (caddr_t)itc->itc_sp_stat); itc->itc_sp_stat = NULL; }}
+
+#define ITC_SAVE_ROW_SPECS(itc) \
+  { search_spec_t * __save_sp = itc->itc_row_specs; \
+    sp_stat_t * __save_sps = itc->itc_sp_stat; \
+    short __save_n_sps = itc->itc_n_row_specs;  \
+    sp_stat_t __save_pre[3]; \
+    memcpy_16 (&__save_pre, &itc->itc_pre_sp_stat, sizeof (itc->itc_pre_sp_stat));
+
+#define ITC_NO_ROW_SPECS(itc) {itc->itc_row_specs = NULL; itc->itc_sp_stat = NULL; itc->itc_n_row_specs =  0;}
+
+#define ITC_RESTORE_ROW_SPECS(itc) \
+  ITC_FREE_SP_STAT (itc); \
+  itc->itc_row_specs = __save_sp; \
+  itc->itc_sp_stat = __save_sps; \
+  itc->itc_n_row_specs = __save_n_sps; \
+  memcpy_16 (&itc->itc_pre_sp_stat, &__save_pre, sizeof (itc->itc_pre_sp_stat)); \
 }
 
 
@@ -1056,7 +1136,7 @@ len = row_length (row, key)
 
 
 #define ITC_INIT(itc, isp, trx) \
-  memset ((ITC) itc, 0, ((ptrlong) &(itc)->itc_search_params) - ((ptrlong) itc)); \
+  memzero ((ITC) itc, ((ptrlong) &(itc)->itc_search_params) - ((ptrlong) itc)); \
   itc->itc_type = ITC_CURSOR; \
   itc->itc_ltrx = trx; \
   itc->itc_lock_mode = PL_SHARED; \
@@ -1334,10 +1414,15 @@ struct buffer_desc_s
 {
   /* Descriptor of a page buffer.  Read/write gate and other fields */
   union {
-    int64	flags; /* allow testing for all 0's with a single compare.  All zeros mens candidate for reuse. */
+    int64	flags; /* allow testing for all 0's with a single compare.  All zeros means candidate for reuse. */
     struct {
       short readers; /* count of threads with read access */
-      /* the below flagss are chars and not bit fields.  If bit fields, there is a read+write for setting and cache coherence will not protect against a change of a bit between the read and the write.  So for cache coherency the flags must be individually settable so that you do not end up setting neighbor flags to their former values.  The write will hit an obsolete cache line and will reload the line but the other bits will still come from the read that was done before the change.  */
+      /* the below flags are chars and not bit fields.
+       * If bit fields, there is a read+write for setting and cache coherence will not protect against
+       * a change of a bit between the read and the write.  So for cache coherence the flags must be
+       * individually stable so that you do not end up setting neighbor flags to their former values.
+       * The write will hit an obsolete cache line and will reload the line but the other bits will
+       * still come from the read that was done before the change.  */
       char	is_write;  /* if any thread the exclusive owner of this */
       char	being_read; /* is the buffer allocated for a page and awaiting the data coming from disk */
       char	is_dirty; /* Content changed since last written to disk */
@@ -1367,15 +1452,18 @@ struct buffer_desc_s
   io_queue_t *	 bd_iq; /* iq, if buffer in queue for read(write */
   buffer_desc_t *	bd_iq_prev; /* next and prev in double linked list of io queue */
   buffer_desc_t *	bd_iq_next;
-#ifdef PAGE_DEBUG
+#if defined (PAGE_DEBUG) | defined (MTX_DEBUG)
   du_thread_t *	bd_writer; /* for debugging, the thread which has write access, if any */
   char * 		bd_enter_file;
-  long 			bd_enter_line;
   char * 		bd_leave_file;
-  long 			bd_leave_line;
+  short 			bd_enter_line;
+  short 			bd_leave_line;
+  short                  bd_set_wr_line;
+  short		bd_delta_line;
   char 			bd_el_flag;	/* what operation was last: 1-enter, 2-leave */
+  int		bd_ck_ts;
+  int		bd_delta_ts;
   char *                bd_set_wr_file;
-  long                  bd_set_wr_line;
   thread_t *		bd_thr_el;
 #endif
 #ifdef PAGE_TRACE
@@ -1465,13 +1553,14 @@ struct buffer_desc_s
 #define BUF_NONE_WAITING(buf) \
 (!buf->bd_write_waiting && !buf->bd_read_waiting && !buf->bd_being_read)
 
-#ifdef PAGE_DEBUG
+#if defined (PAGE_DEBUG) | defined (MTX_DEBUG)
 #define BD_SET_IS_WRITE(bd, f) \
 do { \
   (bd)->bd_is_write = f;			    \
   (bd)->bd_set_wr_file = __FILE__; \
   (bd)->bd_set_wr_line = __LINE__; \
-  (bd)->bd_writer = f ? THREAD_CURRENT_THREAD : NULL;	\
+ if (f) { (bd)->bd_writer = THREAD_CURRENT_THREAD; BUF_PW (bd); }	\
+ else { (bd)->bd_writer = NULL; BUF_PR (bd); };				\
 } while (0)
 #else
 #define BD_SET_IS_WRITE(bd, f) \
@@ -1499,6 +1588,31 @@ extern buffer_desc_t * bounds_check_buf;
 #define BUF_SET_END_MARK(buf)
 #endif
 
+/*#define BUF_ALLOC_CK*/
+
+#ifdef BUF_ALLOC_CK
+#undef BUF_ALLOC_SZ
+#define BUF_ALLOC_SZ (PAGE_SZ + sizeof (int32))
+
+int adler32_of_buffer (unsigned char *data, size_t len);
+int32 sqlbif_rnd (int32* seed);
+#define BUF_SET_CK(buf) do { \
+	  int32 chk; \
+  	  RAND_pseudo_bytes (buf->bd_buffer, PAGE_SZ); \
+	  chk = adler32_of_buffer (buf->bd_buffer, PAGE_SZ); \
+	  LONG_SET (buf->bd_buffer + PAGE_SZ, chk); \
+} while (0)
+
+#define BUF_CK(buf) do { \
+	  int32 chk; \
+	  chk = adler32_of_buffer (buf->bd_buffer, PAGE_SZ); \
+	  if (chk != LONG_REF (buf->bd_buffer + PAGE_SZ)) GPF_T1 ("bad buffer checksum"); \
+} while (0)
+
+#else
+#define BUF_SET_CK(buf)
+#define BUF_CK(buf)
+#endif
 
 
 
@@ -1520,6 +1634,14 @@ struct pf_hash_s
   page_fill_t *	pfh_pf;
 };
 
+
+typedef struct pf_var_s
+{
+  short		pfv_place;
+  short		pfv_irow;
+  short		pfv_next;
+  short		pfv_len;
+} pfe_var_t;
 
 
 struct row_fill_s
@@ -1590,11 +1712,11 @@ struct row_delta_s
   char		rd_copy_of_deleted; /* when writing a page with uncommitted deletes */
   char		rd_raw_comp_row; /* when copying and it is known that compression stays the same, rd_values is the row string */
   key_ver_t	rd_key_version; /* use this to see if left dummy or such */
-  int		rd_map_pos;
+  short		rd_map_pos;
   row_size_t	rd_non_comp_len;
-  char		rd_is_double_lp; /* is 1st of a double leaf pointer in split? Special case with reg'd itcs on parent */
+  slice_id_t	rd_slice;
   char		rd_any_ser_flags;
-  int		rd_non_comp_max;
+  short		rd_non_comp_max;
   dp_addr_t		rd_leaf; /* if lp, if upd or ins concerns leaf ptr */
   dbe_col_loc_t **	rd_upd_change;
   dbe_key_t *		rd_key;
@@ -1611,8 +1733,8 @@ struct row_delta_s
   it_cursor_t *		rd_keep_together_itcs;
   db_buf_t 		rd_whole_row; /* if no compression anywhere, this is the row as it is on the page, self-contained,, insertable as is */
   short			rd_whole_row_len;
-  dp_addr_t		rd_keep_together_dp;
   short			rd_keep_together_pos;
+  dp_addr_t		rd_keep_together_dp;
 };
 
 /* rd_allocated */
@@ -1689,7 +1811,9 @@ typedef struct ra_req_s
 
 extern int64 bdf_is_avail_mask; /* all bits on except read aside flag which does not affect reusability */
 
-#ifdef MTX_DEBUG
+#ifdef PAGE_DEBUG
+#define BUF_NEEDS_DELTA(b) ((b)->bd_delta_ts = (b)->bd_timestamp, (b)->bd_delta_line = __LINE__, 1)
+#elif defined (MTX_DEBUG)
 #define BUF_NEEDS_DELTA(b) 1
 #else
 #define BUF_NEEDS_DELTA(b) (!(b)->bd_is_dirty)
@@ -1706,11 +1830,11 @@ extern int64 bdf_is_avail_mask; /* all bits on except read aside flag which does
    && buf->bd_is_write == 0 \
    && buf->bd_being_read == 0 \
    && buf->bd_is_dirty == 0  \
-   && !buf->bd_read_waiting && !buf->bd_write_waiting)
+   && !buf->bd_read_waiting && !buf->bd_write_waiting && !buf->bd_iq)
 #else
 #define BUF_AVAIL(buf) \
   ((buf->bdf.flags & bdf_is_avail_mask) == 0		\
-   && !buf->bd_read_waiting && !buf->bd_write_waiting)
+   && !buf->bd_read_waiting && !buf->bd_write_waiting && !buf->bd_iq)
 #endif
 
 
@@ -1735,8 +1859,6 @@ extern int64 bdf_is_avail_mask; /* all bits on except read aside flag which does
 #define DVC_CMP_MASK 15 /* or of bits for eq, lt, gt */
 #define DVC_UNKNOWN	64  /* comparison of SQL NULL */
 #define DVC_QUEUED 128  /* in cluster, not known yet, added to batch */
-#define DVC_AFTER_WAIT 256  /* In row check returning to page search, indicates that the buffer may have changed */
-
 #define DVC_INVERT_CMP(res) do { \
   switch (res & (DVC_LESS | DVC_GREATER)) \
     { \
@@ -1816,8 +1938,11 @@ extern int64 bdf_is_avail_mask; /* all bits on except read aside flag which does
 #define RST_AT_END 6 /*  reached top or max rows in a select */
 #define RST_GB_ENOUGH 7  /* streaming group by has full batch of groups */
 
+#ifndef DEBUG
+#define NO_ITC_DEBUG
+#endif
 
-#ifdef DEBUG
+#ifndef NO_ITC_DEBUG
 # define FAILCK(it) if (! it -> itc_fail_context) GPF_T1("No fail context.");
 #else
 # define FAILCK(it)
@@ -1856,13 +1981,16 @@ extern int64 bdf_is_avail_mask; /* all bits on except read aside flag which does
       CHECK_DK_MEM_RESERVE (__lt); \
       CHECK_SESSION_DEAD (__lt, it, buf);		   \
       if ((__lt && __lt->lt_status != LT_PENDING)  \
-|| (wi_inst.wi_is_checkpoint_pending && cpt_is_global_lock ())) \
+|| (wi_inst.wi_is_checkpoint_pending && cpt_is_global_lock (__lt))) \
 	{ \
-	  if (!wi_inst.wi_checkpoint_atomic) \
+	  if (__lt && !wi_inst.wi_checkpoint_atomic) \
 	itc_bust_this_trx (it, buf, may_ret); \
 }\
  }								\
 
+#define LT_NEED_WAIT_CPT(lt) \
+  (wi_inst.wi_is_checkpoint_pending  && \
+   wi_inst.wi_cpt_lt != lt && cpt_is_global_lock (lt))
 
 
 /* reset catch context around itc operations */
@@ -1936,9 +2064,6 @@ extern int assertion_on_read_fail;
 
 extern char *run_as_os_uname;
 extern long dbe_auto_sql_stats; /* from search.c */
-#ifdef CL6
-extern char *rdf_label_inf_name;
-#endif
 
 extern int in_crash_dump;
 
@@ -1949,9 +2074,21 @@ extern int in_crash_dump;
 #define mutex_leave(m)  pthread_mutex_unlock (&((m)->mtx_mtx))
 #endif
 
-#ifdef WIN32
-#define __builtin_prefetch(p) 0
+#if defined (SOLARIS) || defined (WIN32)
+#define __builtin_prefetch(m) 0
 #endif
+
+#define SD_INT32 ((char **)-1)
+#define SD_INT64 ((char **)-2)
+
+typedef struct stat_desc_s
+  {
+    const char *   sd_name;
+    long *   sd_value;
+    char **   sd_str_value;
+  } stat_desc_t;
+
+extern stat_desc_t dbf_descs[];
 
 #endif /* _WI_H */
 

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -549,12 +549,15 @@ float compiler_unit_msecs = 0;
 
 #define COL_COUNT "select count (*) from SYS_COLS a table option (index primary key) where  exists (select 1 from SYS_COLS b table option (loop) where a.\"TABLE\" = b.\"TABLE\" and a.\"COLUMN\" = b.\"COLUMN\")"
 
+extern int enable_vec_cost;
 void
-srv_calculate_sqlo_unit_msec (void)
+srv_calculate_sqlo_unit_msec (char* stmt)
 {
   caddr_t err = NULL;
+  int deflt_stmt = 0;
   caddr_t score_box;
   float score;
+  int save_qp = enable_qp;
   float start_time, end_time;
   local_cursor_t *lc_tim = NULL;
   query_t *qr = NULL;
@@ -566,8 +569,14 @@ srv_calculate_sqlo_unit_msec (void)
   old_tb_count = sys_cols_tb->tb_count;
   sys_cols_tb->tb_count = wi_inst.wi_schema->sc_id_to_col->ht_count;
 
-  qr = sql_compile (COL_COUNT, cli, &err, SQLC_DEFAULT);
+  if (!stmt)
+    {
+      deflt_stmt = 1;
+      stmt = COL_COUNT;
+    }
+  qr = sql_compile (stmt, cli, &err, SQLC_DEFAULT);
   start_time = (float) get_msec_real_time ();
+  enable_qp = 1;
   for (inx = 0; inx < SQLO_NITERS; inx++)
     { /* repeat enough times as sys_cols is usually not very big */
       err = qr_quick_exec (qr, cli, NULL, &lc_tim, 0);
@@ -582,14 +591,16 @@ srv_calculate_sqlo_unit_msec (void)
         }
     }
   end_time = (float) get_msec_real_time ();
+  enable_qp = save_qp;
   qr_free (qr);
 
-  score_box = (caddr_t) sql_compile (COL_COUNT, cli, &err, SQLC_SQLO_SCORE);
+  score_box = (caddr_t) sql_compile (stmt, cli, &err, SQLC_SQLO_SCORE);
   score = unbox_float (score_box);
   /*printf ("cu score = %f\n", score);*/
   dk_free_tree (score_box);
   compiler_unit_msecs = (end_time - start_time) / (score * inx);
-
+  if (deflt_stmt && enable_vec_cost)
+    compiler_unit_msecs /= 4.339062;
   sys_cols_tb->tb_count = old_tb_count;
   local_commit (bootstrap_cli);
   log_info ("Compiler unit is timed at %f msec", (double) compiler_unit_msecs);
@@ -716,6 +727,9 @@ bif_client_attr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       else
 	return NULL;
 
+      if (!cert)
+	return NULL;
+
       in = BIO_new (BIO_s_mem());
 
       if (!in)
@@ -765,6 +779,16 @@ bif_client_attr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+static caddr_t
+bif_query_instance_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  long depth = bif_long_range_arg (qst, args, 0, "query_instance_id", 0, 0xffff);
+  while ((depth-- > 0) && (NULL != qi)) qi = qi->qi_caller;
+  if (NULL == qi)
+    return NEW_DB_NULL;
+  return box_num ((ptrlong)qi);
+}
 
 static caddr_t
 bif_sql_warnings_resignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -831,7 +855,7 @@ bif_current_proc_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       frames --;
       qi = qi->qi_caller;
-    } 
+    }
   if (IS_POINTER (qi) && qi->qi_query && qi->qi_query->qr_proc_name)
     return box_string (qi->qi_query->qr_proc_name);
   return NEW_DB_NULL;
@@ -1361,6 +1385,8 @@ buffer_ready:
     }
 
 res_complete:
+  if (!res_is_new)
+    res = box_copy (res);
   dk_free_box (output_cs_upcase);
   if (base_uri_is_temp)
     dk_free_box ((caddr_t) base_uri);
@@ -1611,6 +1637,106 @@ bif_format_number (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return res;
 }
 
+static caddr_t
+soundex (caddr_t name)
+{
+#define raw_toupper(C) ((C) & (255-32))
+  char tmp[5] = {'0','0','0','0',0} , current_code = '\0', previous_code = '\0';
+  int inx = 0, i = 0;
+  if (box_length (name) > 1)
+    {
+      while (name[inx] && !isalpha (name[inx])) inx ++;
+      if (name[inx]) tmp[i++] = raw_toupper (name[inx++]);
+      for (; inx < box_length (name) - 1; inx ++)
+	{
+	  char c;
+	  c = raw_toupper (name[inx]);
+	  if (!isalpha (c)) continue;
+	  current_code = '\0';
+	  if (strchr ("BFPV", c))
+	    current_code = '1';
+	  else if (strchr ("CSKGJQXZ", c))
+	    current_code = '2';
+	  else if (strchr ("DT", c))
+	    current_code = '3';
+	  else if (strchr ("L", c))
+	    current_code = '4';
+	  else if (strchr ("MN", c))
+	    current_code = '5';
+	  else if (strchr ("R", c))
+	    current_code = '6';
+	  if (current_code != previous_code && current_code != '\0')
+	    tmp [i++] = current_code;
+	  if (i >= 4) break;
+	  /*if (current_code != '\0')*/
+	  previous_code = current_code;
+	}
+      for (;i < 4; i ++)
+	tmp[i] = '0';
+    }
+  return box_dv_short_string (tmp);
+}
+
+static caddr_t
+bif_soundex (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t name = bif_string_arg (qst, args, 0, "soundex");
+  return soundex (name);
+}
+
+static caddr_t
+bif_difference (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t name1 = bif_string_arg (qst, args, 0, "difference");
+  caddr_t name2 = bif_string_arg (qst, args, 1, "difference");
+  caddr_t soundex1, soundex2;
+  int result = 0;
+  char tmp[3] = {0,0,0};
+  if (box_length (name1) <= 1 || box_length (name2) <= 1)
+    return box_num (0);
+  soundex1 = soundex (name1);
+  soundex2 = soundex (name2);
+  if (!strcmp (soundex1, soundex2))
+    {
+      result = 4;
+      goto ret;
+    }
+  if (soundex1[0] == soundex2[0])
+    result = 1;
+  if (strstr (soundex2, soundex1 + 1)) /* 2,3,4 */
+    {
+      result += 3;
+      goto ret;
+    }
+  if (strstr (soundex2, soundex1 + 2)) /* 3,4 */
+    {
+      result += 2;
+      goto ret;
+    }
+  memcpy (&tmp[0], soundex1 + 1, 2);
+  if (strstr (soundex2, tmp)) /* 2,3 */
+    {
+      result += 2;
+      goto ret;
+    }
+  if (strchr (soundex2, soundex1[1]))
+    result ++;
+  if (strchr (soundex2, soundex1[2]))
+    result ++;
+  if (strchr (soundex2, soundex1[3]))
+    result ++;
+ret:
+  dk_free_box (soundex1);
+  dk_free_box (soundex2);
+  return box_num (result);
+}
+
+static caddr_t
+bif_this_server (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return NEW_DB_NULL;
+}
+
 void
 sqlbif2_init (void)
 {
@@ -1629,6 +1755,7 @@ sqlbif2_init (void)
   bif_define_typed ("user_has_role", bif_user_has_role, &bt_integer);
   bif_define_typed ("user_is_dba", bif_user_is_dba, &bt_integer);
   bif_define_typed ("client_attr", bif_client_attr, &bt_integer);
+  bif_define_typed ("query_instance_id", bif_query_instance_id, &bt_integer);
   bif_define ("sql_warning", bif_sql_warning);
   bif_define ("sql_warnings_resignal", bif_sql_warnings_resignal);
   bif_define_typed ("__sec_uid_to_user", bif_sec_uid_to_user, &bt_varchar);
@@ -1639,6 +1766,9 @@ sqlbif2_init (void)
   bif_define ("patch_restricted_xml_chars", bif_patch_restricted_xml_chars);
   bif_define_typed ("format_number", bif_format_number, &bt_varchar);
   bif_define ("__stop_cpt", bif_stop_cpt);
+  bif_define ("soundex", bif_soundex);
+  bif_define ("difference", bif_difference);
+  /*bif_define ("repl_this_server", bif_this_server);*/
   /*sqls_bif_init ();*/
   sqls_bif_init ();
   sqlo_inv_bif_int ();

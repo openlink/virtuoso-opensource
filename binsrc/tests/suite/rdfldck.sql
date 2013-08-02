@@ -2,6 +2,47 @@
 
 -- check and stats statements for rdf
 
+wait_for_children;
+
+select count (*) from rdf_quad a table option (index rdf_quad) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_pogs) where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s);
+select count (*) from rdf_quad a table option (index rdf_quad_pogs) where not exists (select 1 from rdf_quad b table option (loop, index primary key) where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s);
+
+select count (*) from rdf_quad a table option (index rdf_quad_pogs) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_op) where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s);
+select count (*) from rdf_quad a table option (index rdf_quad_pogs) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_sp) where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s);
+select count (*) from rdf_quad a table option (index rdf_quad_pogs) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_gs) where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s);
+
+
+-- 
+select count (s), count (p), count (o), count (g) from rdf_quad table option (index rdf_quad);
+
+
+-- op oow
+select count (*)  from rdf_quad a table option (index rdf_quad_op, index_only) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_op, index_only) where  a.p = b.p and a.o = b.o );
+
+create table rq_psog (p iri_id_8, s iri_id_8, o any, g iri_id_8, primary key (p,s,o,g));
+create table rq_pogs (p iri_id_8, s iri_id_8, o any, g iri_id_8, primary key (p,o,g,s));
+
+log_enable (2);
+insert into rq_psog (p,s,o,g) select p, s,o,g from rdf_quad table option (index rdf_quad);
+insert into rq_pogs (p,s,o,g) select p, s,o,g from rdf_quad table option (index rdf_quad_pogs);
+
+
+-- partial key only
+select count (*) from rdf_quad a table option (index rdf_quad_pogs) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_op, index_only) where  a.p = b.p and a.o = b.o );
+
+select count (*) from rdf_iri a where not  exists (select 1 from rdf_iri b table option (loop) where  a.ri_id = b.ri_id);
+select count (*) from rdf_iri a where not  exists (select 1 from rdf_iri b table option (loop) where  a.ri_name = b.ri_name);
+
+select count (*) from rdf_iri a where not  exists (select 1 from rdf_iri b table option (loop) where  a.ri_id = b.ri_id);
+select count (*) from rdf_prefix a where not  exists (select 1 from rdf_prefix b table option (loop) where  a.rp_name = b.rp_name);
+select count (*) from rdf_prefix a where not  exists (select 1 from rdf_prefix b table option (loop) where  a.rp_id = b.rp_id);
+
+select count (*) from rdf_obj a table option (index rdf_obj) where not exists (select 1 from rdf_obj b table option (index ro_val, loop) where b.ro_id = a.ro_id and b.ro_val = a.ro_val and b.ro_dt_and_lang = a.ro_dt_and_lang);
+select count (*) from rdf_obj a table option (index ro_val) where not exists (select 1 from rdf_obj b table option (index rdf_obj, loop) where b.ro_id = a.ro_id and b.ro_val = a.ro_val and b.ro_dt_and_lang = a.ro_dt_and_lang);
+
+
+select count (*) from rdf_quad where not exists (select 1 from rdf_obj where ro_id = rdf_box_ro_id (o)) and is_rdf_box (o);
+
 select count (*) from rdf_quad a table option (index primary key) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_ogps) where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s);
 
 select count (*) from rdf_quad a table option (index rdf_quad_ogps) where not exists (select 1 from rdf_quad b table option (loop, index primary key) where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s);
@@ -69,13 +110,13 @@ insert into RDF_IRI index DB_DBA_RDF_IRI_UNQC_RI_ID (RI_ID, RI_NAME) select id, 
 
 
 
-create procedure DEL_IRI_PK_DP (in n varcjar, in id iri_id)
+create procedure DEL_IRI_PK_DP (in n varchar, in id iri_id)
 {
   delete from rdf_iri table option (no cluster, index rdf_iri) where ri_id = id and ri_name = n option (index rdf_iri, no cluster);
   return vector (row_count (), 1);
 }
 
-create procedure DEL_IRI_ID_DP (in id iri_id, in n varcjar)
+create procedure DEL_IRI_ID_DP (in id iri_id, in n varchar)
 {
   delete from rdf_iri table option (no cluster, index DB_DBA_RDF_IRI_UNQC_RI_ID) where ri_id = id and ri_name = n option (index DB_DBA_RDF_IRI_UNQC_RI_ID, no cluster);
   return vector (row_count (), 1);
@@ -193,3 +234,167 @@ create table berlin (ro_id bigint primary key);
 
 insert into berlin select ro_id from rdf_obj where ro_val like '**berlin' or blob_to_string (ro_long) like '**berlin';
 
+
+
+
+-- test 2+3 inx
+
+select top 10 * from rdf_quad a table option ( index rdf_quad_pogs) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_pogs) where b.o = a.o and b.p = a.p and b.s = a.s and b.g = a.g);
+select top 10 * from rdf_quad a table option ( index rdf_quad_pogs) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad) where b.o = a.o and b.p = a.p and b.s = a.s and b.g = a.g);
+
+select top 10 * from rdf_quad a table option ( index rdf_quad_pogs) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_pogs) where b.o = a.o and b.p = a.p and b.s = a.s and b.g = a.g) option (any order);
+select top 10 * from rdf_quad a table option ( index rdf_quad_pogs) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad) where b.o = a.o and b.p = a.p and b.s = a.s and b.g = a.g) option (any order);
+
+
+select top 10 * from rdf_quad a table option ( index rdf_quad_op, index_only) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_pogs) where b.o = a.o and b.p = a.p );
+
+select distinct top 100 o, rdf_box_ro_id (o) from rdf_quad where is_rdf_box (o) and rdf_box_ro_id (o) and not exists (select 1 from rdf_obj table option (loop) where ro_id = rdf_box_ro_id (o)) option (any order);
+
+
+create procedure rdf_order_ck ()
+{
+  declare first int;
+  declare g1, s1, p1, o1 any;
+  first := 1;
+  for select g, s, p, o from rdf_quad table option (index rdf_quad_pogs) do
+    {
+      if (first = 0)
+	{
+	  if (not ( p >= p1)
+	      or (p = p1 and o < o1)
+	      or (p = p1 and o = o1 and g < g1)
+	      or (p = p1 and o = o1 and g = g1 and s <= s1))
+	    {
+		dbg_obj_print ('err', p1, o1, g1, s1);
+	      dbg_obj_print (p, o, g, s);
+		--signal ('42000', 'out of order');
+	    }
+	}
+    first := 0;
+    p1 := p; o1 := o; g1 := g; s1 := s;
+    }
+}
+
+select count (*) from c..rdf_quad a table option (index c_rdf_quad_pogs) where not exists (select 1 from c..rdf_quad b table option (loop, index c_rdf_quad_pogs) where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s);
+
+
+
+
+create table rq_psog (
+  G IRI_ID_8,
+  S IRI_ID_8,
+  P IRI_ID_8,
+  O any,
+  primary key (P, S, O, G) column
+  )
+alter index rq_pogs on rq_pogs partition (S int (0hexffff00))
+
+
+
+create procedure  ckpogs ()
+{
+  declare p1, g1, s1 iri_id;
+  declare o1 any;
+  p1 := null;
+  o1 := null;
+  g1 := null;
+  s1 := null;
+  for select p, o, g, s from rdf_quad table option (index rdf_quad_pogs) do 
+    {
+      
+      if (p < p1) goto oow;
+      if (p = p1 and o < o1) goto oow;
+      if (p = p1 and o = o1 and g < g1) goto oow;
+      if (p = p1 and o = o1 and g = g1 and s <= s1) goto oow;
+    p1 := p; s1 := s; o1 := o; p1 := p;
+      goto loop;
+    oow:
+      dbg_obj_princ ('oow ', p, o, g, s,  ' after ', p1, o1, g1, s1);
+      return;
+    loop: ;
+    }
+}
+
+
+create procedure  ckop ()
+{
+  declare p1, g1, s1 iri_id;
+  declare o1 any;
+  p1 := null;
+  o1 := null;
+  g1 := null;
+  s1 := null;
+  cl_set_slice ('DB.DBA.RDF_QUAD',  'RDF_QUAD_OP', 31);
+  for select o, p from rdf_quad table option (index rdf_quad_op, index_only, no cluster) do 
+    {
+      
+      if (o < o1) goto oow;
+      if (o = o1 and p < p1) goto oow;
+    p1 := p; o1 := o;
+      goto next;
+    oow:
+      dbg_obj_princ ('oow ', o, p,  ' after ', o1, p1);
+      signal ('oowop', 'in loop asc  ck');
+      return;
+    next: ;
+    }
+}
+
+
+
+create procedure SLICE_CK_SLICE (in slid int)
+{
+	declare cnt int;
+	cl_detach_thread ();
+	cl_set_slice ('DB.DBA.RDF_QUAD',  'RDF_QUAD', slid);
+	cnt := (select count (*) from rdf_quad a table option (index rdf_quad_pogs, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_pogs, no cluster)  where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s));
+	if (0 <> cnt)
+	log_message (sprintf ('pogs Slice %d out of whack by %d', slid, cnt));
+	cnt := (select count (*) from rdf_quad a table option (index rdf_quad, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad, no cluster)  where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s));
+	if (0 <> cnt)
+	log_message (sprintf ('pk Slice %d out of whack by %d', slid, cnt));
+	cnt := (select count (*) from rdf_quad a table option (index rdf_quad_op, index_only, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_op, index_only, no cluster)  where  a.p = b.p and a.o = b.o ));
+	if (0 <> cnt)
+	log_message (sprintf ('op Slice %d out of whack by %d', slid, cnt));
+	cnt := (select count (*) from rdf_quad a table option (index rdf_quad_sp, index_only, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_sp, index_only, no cluster)  where  a.p = b.p  and a.s = b.s));
+	if (0 <> cnt)
+	log_message (sprintf ('sp Slice %d out of whack by %d', slid, cnt));
+	cnt := (select count (*) from rdf_quad a table option (index rdf_quad_gs, index_only, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_gs, index_only, no cluster)  where a.g = b.g and a.s = b.s));
+	if (0 <> cnt)
+	log_message (sprintf ('pogs Slice %d out of whack by %d', slid, cnt));
+}
+
+create procedure slice_ck ()
+{
+  cl_detach_thread ();
+  cl_exec ('cl_call_local_slices (''DB.DBA.RDF_QUAD'',  ''RDF_QUAD'', ''slice_ck_slice'',  vector ())');
+}
+
+
+
+
+create procedure rq_slice_cnt (in slid int)
+{
+  cl_set_slice ('DB.DBA.RDF_QUAD',  'RDF_QUAD', slid);
+  dbg_obj_print ('psog dist ', (select count (*) from (select distinct g,s,o,p from rdf_quad table option (index rdf_quad, no cluster)) f));
+  dbg_obj_print ('psog ', (select count (*) from rdf_quad table option (index rdf_quad, no cluster)), 'pogs ', (select count (*) from rdf_quad table option (index rdf_quad_pogs, no cluster)));
+}
+
+
+cl_exec ('__dbf_set (''dbf_col_ins_dbg_log'', 1002)');
+
+sequence_set ('__NEXT__RDF_URL_IID_NAMED', 2147483648 - 500000, 0);
+sequence_set ('__NEXT__RDF_RO_ID', 2147483648 - 500000, 0);
+
+sequence_set ('__NEXT__RDF_URL_IID_NAMED', bit_shift (1, 32) - 300000, 0);
+sequence_set ('__NEXT__RDF_RO_ID', bit_shift (1, 32) + 100, 0);
+
+select top 1 iri_id_num (ri_id) - bit_shift (1, 32) from rdf_iri order by ri_id desc;
+
+select top 1 ro_id - bit_shift (1, 32) from rdf_obj order by ro_id desc;
+
+
+--- reset iri ranges:
+
+cl_exec ('rdf_seq_init_srv ()');
+sequence_set ('RDF_URL_IID_NAMED', 4200000000, 0);

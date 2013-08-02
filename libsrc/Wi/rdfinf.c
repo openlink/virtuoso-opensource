@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -322,14 +322,14 @@ iri_ensure (caddr_t * qst, caddr_t name, int flag, caddr_t * err_ret)
 
 char * sas_1_text = "select S from DB.DBA.RDF_QUAD where G = ? and O = ? and P = ? option (quietcast)";
 char * sas_2_text = "select O from DB.DBA.RDF_QUAD where G = ? and S = ? and P = ? option (quietcast)";
-char * sas_tn_text = "select O from DB.DBA.RDF_QUAD where S = :0 and P = rdf_sas_iri () and G = :1 and isiri_id (O) union all select S from DB.DBA.RDF_QUAD where O = :0 and P = rdf_sas_iri () and G = :1 option (quietcast, array)";
+char * sas_tn_text = "select O from DB.DBA.RDF_QUAD where S = :0 and P = rdf_sas_iri () and G in (:1) and isiri_id (O) union all select S from DB.DBA.RDF_QUAD where O = :0 and P = rdf_sas_iri () and G in (:1) option (quietcast, array)";
 char * sas_tn_no_graph_text = "select O from DB.DBA.RDF_QUAD where S = :0 and P = rdf_sas_iri () union all select S from DB.DBA.RDF_QUAD where O = :0 and P = rdf_sas_iri () option (quietcast, array)";
 char * tn_ifp_text =
-  " select S from DB.DBA.RDF_QUAD "
+  " select S from DB.DBA.RDF_QUAD table option (index RDF_QUAD_POGS)"
   " where P in (rdf_inf_ifp_list (:1)) and O = :0 and not isiri_id (:0) and G in (:2) and not rdf_inf_ifp_is_excluded (:1, P, :0) "
-  " union all select syn.S from DB.DBA.RDF_QUAD org, DB.DBA.RDF_QUAD syn "
+  " union all select syn.S from DB.DBA.RDF_QUAD org table option (index RDF_QUAD), DB.DBA.RDF_QUAD syn table option (index RDF_QUAD_POGS)"
   " where org.P in (rdf_inf_ifp_list (:1)) and syn.P = org.P and org.S = :0 and isiri_id (:0) and syn.O = org.O and org.G in (:2) and syn.G in (:2) and not rdf_inf_ifp_is_excluded (:1, org.P, org.O)"
-  " union all select rsyn.S from DB.DBA.RDF_QUAD rorg, DB.DBA.RDF_QUAD rsyn "
+  " union all select rsyn.S from DB.DBA.RDF_QUAD rorg table option (index RDF_QUAD), DB.DBA.RDF_QUAD rsyn table option (index RDF_QUAD_POGS)"
   " where rorg.P in (rdf_inf_ifp_rel_list (:1)) and rsyn.P in (rdf_inf_ifp_rel_list (:1, rorg.P)) and rorg.S = :0 and isiri_id (:0) and rsyn.O = rorg.O and rorg.G in (:2) and rsyn.G in (:2) and not rdf_inf_ifp_is_excluded (:1, rorg.P, rorg.O) "
   " option (any order)";
 char * tn_ifp_no_graph_text =
@@ -337,7 +337,7 @@ char * tn_ifp_no_graph_text =
   " where P in (rdf_inf_ifp_list (:1)) and o = :0 and not isiri_id (:0) and not rdf_inf_ifp_is_excluded (:1, P, :0) "
   " union all select syn.s from DB.DBA.RDF_QUAD org, DB.DBA.RDF_QUAD syn "
   " where org.P in (rdf_inf_ifp_list (:1)) and syn.P = org.P and org.S = :0 and isiri_id (:0) and syn.o = org.O and not rdf_inf_ifp_is_excluded (:1, org.P, org.O) "
-  " union all select rsyn.s from DB.DBA.RDF_QUAD rorg, DB.DBA.RDF_QUAD rsyn "
+  " union all select rsyn.s from DB.DBA.RDF_QUAD rorg table option (index RDF_QUAD), DB.DBA.RDF_QUAD rsyn table option (index RDF_QUAD_POGS)"
   " where rorg.P in (rdf_inf_ifp_rel_list (:1)) and rsyn.P in (rdf_inf_ifp_rel_list (:1, rorg.P)) and rorg.S = :0 and isiri_id (:0) and rsyn.o = rorg.O and not rdf_inf_ifp_is_excluded (:1, rorg.P, rorg.O) "
   " option (any order)";
 char * tn_ifp_dist_text =
@@ -347,7 +347,7 @@ char * tn_ifp_dist_text =
   " where rorg.P in (rdf_inf_ifp_rel_list (:1)) and rsyn.P in (rdf_inf_ifp_rel_list (:1, rorg.P)) and rorg.S = :0 and isiri_id (:0) and rsyn.O = rorg.O and rorg.G in (:2) and rsyn.G in (:2) and not rdf_inf_ifp_is_excluded (:1, rorg.P, rorg.O) "
   " option (any order)";
 char * tn_ifp_dist_no_graph_text =
-  " select syn.s from rdf_quad org, rdf_quad syn where org.p in (rdf_inf_ifp_list (:1)) and syn.p = org.p and org.s = :0 and isiri_id (:0) and syn.o = org.o and not rdf_inf_ifp_is_excluded (:1, org.P, org.O) "
+  " select syn.s from DB.DBA.RDF_QUAD org, DB.DBA.RDF_QUAD syn where org.p in (rdf_inf_ifp_list (:1)) and syn.p = org.p and org.s = :0 and isiri_id (:0) and syn.o = org.o and not rdf_inf_ifp_is_excluded (:1, org.P, org.O) "
   " union all select rsyn.s from DB.DBA.RDF_QUAD rorg, DB.DBA.RDF_QUAD rsyn "
   " where rorg.P in (rdf_inf_ifp_rel_list (:1)) and rsyn.P in (rdf_inf_ifp_rel_list (:1, rorg.P)) and rorg.S = :0 and isiri_id (:0) and rsyn.o = rorg.O and not rdf_inf_ifp_is_excluded (:1, rorg.P, rorg.O) "
   " option (any order)";
@@ -387,6 +387,14 @@ sas_ensure ()
       tn_ifp_ht = id_hash_allocate (31, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
       tn_ifp_no_graph_ht = id_hash_allocate (31, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
       tn_cache_mtx = mutex_allocate ();
+      cl_dcf_id ((col_ref_t)sas_1_qr);
+      cl_dcf_id ((col_ref_t)sas_2_qr);
+      cl_dcf_id ((col_ref_t)sas_tn_qr);
+      cl_dcf_id ((col_ref_t)sas_tn_no_graph_qr);
+      cl_dcf_id ((col_ref_t)tn_ifp_qr);
+      cl_dcf_id ((col_ref_t)tn_ifp_no_graph_qr);
+      cl_dcf_id ((col_ref_t)tn_ifp_dist_qr);
+      cl_dcf_id ((col_ref_t)tn_ifp_dist_no_graph_qr);
     }
 }
 
@@ -599,7 +607,7 @@ again:
     {
       qi->qi_set = nth_set;
       out_dc = QST_BOX (data_col_t *, inst, ri->ri_output->ssl_index);
-      if (state)
+      if (!nth_val)
 	{
 	  rdf_sub_t *x, *sub = NULL;
 	  dk_set_t res = NULL;
@@ -642,6 +650,22 @@ again:
 		  dc_append_box (out_dc, qst_get (inst, ri->ri_p));
 		  qn_result (qn, inst, nth_set);
 		}
+	      if (QST_INT (inst, qn->src_out_fill) >= batch_sz)
+		{
+		  QST_INT (inst, ri->ri_current_value) = 0;
+		  nth_set++;
+		  QST_INT (inst, ri->ri_current_set) = nth_set;
+		  if (nth_set < n_sets)
+		    SRC_IN_STATE (qn, inst) = inst;
+		  else
+		    		    SRC_IN_STATE (qn, inst) = NULL;
+
+
+		  qn_send_output (qn, inst);
+		  state = NULL;
+		  nth_val = 0;
+		  goto again;
+		}
 	      continue;
 	    }
 	  rit = ri_iterator (sub, ri->ri_mode, 1);
@@ -658,17 +682,18 @@ again:
 	}
       for (;nth_val < BOX_ELEMENTS (array); nth_val++)
 	{
+	  dc_append_box (out_dc, array[nth_val]);
+	  qn_result (qn, inst, nth_set);
 	  if (QST_INT (inst, qn->src_out_fill) >= batch_sz)
 	    {
 	      SRC_IN_STATE (qn, inst) = inst;
+	      nth_val++;
 	      QST_INT (inst, ri->ri_current_value) = nth_val;
 	      QST_INT (inst, ri->ri_current_set) = nth_set;
 	      qn_send_output (qn, inst);
 	      state = NULL;
 	      goto again;
 	    }
-	  dc_append_box (out_dc, array[nth_val]);
-	  qn_result (qn, inst, nth_set);
 	}
       nth_val = 0;
     }
@@ -879,7 +904,7 @@ ric_allocate (caddr_t n2)
       ctx->ric_iri_to_subclass = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
       ctx->ric_iri_to_subproperty = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
       ctx->ric_iid_to_rel_ifp = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
-  ctx->ric_samples = id_hash_allocate (61, sizeof (caddr_t), sizeof (tb_sample_t), treehash, treehashcmp);
+      ctx->ric_samples = id_hash_allocate (601, sizeof (caddr_t), sizeof (tb_sample_t), treehash, treehashcmp);
       /*ctx->ric_prop_props = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);*/
       ctx->ric_ifp_exclude = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
       id_hash_set_rehash_pct (ctx->ric_iri_to_subclass, 200);
@@ -889,7 +914,7 @@ ric_allocate (caddr_t n2)
       id_hash_set_rehash_pct (ctx->ric_ifp_exclude, 200);
   ctx->ric_ifp_exclude = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);;
       ctx->ric_mtx = mutex_allocate ();
-  ctx->ric_samples = id_hash_allocate (61, sizeof (caddr_t), sizeof (tb_sample_t), treehash, treehashcmp);
+      ctx->ric_samples = id_hash_allocate (601, sizeof (caddr_t), sizeof (tb_sample_t), treehash, treehashcmp);
   id_hash_set_rehash_pct (ctx->ric_samples, 200);
       return ctx;
     }
@@ -1076,6 +1101,7 @@ caddr_t
 bif_rdf_inf_ifp_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   rdf_inf_ctx_t * ctx;
+  RI_INIT_NEEDED_REC (qst);
   ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_ifp_list", 0);
   if (NULL == ctx->ric_ifp_list)
   return list (0);
@@ -1126,9 +1152,12 @@ bif_rdf_inf_set_ifp_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   int ifp_count, ifp_ctr;
   rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_set_ifp_list", 1);
   caddr_t * arr = bif_array_of_pointer_arg (qst, args, 1, "rdf_inf_set_ifp_list");
-  caddr_t * grps = box_copy /*_tree*/ (arr);
   int dirt;
+  caddr_t * grps;
   dk_set_t ifp_rel_acc = NULL;
+
+  sec_check_dba ((query_instance_t *)qst, "rdf_inf_set_ifp_list");
+  grps = box_copy /*_tree*/ (arr);
   ctx->ric_ifp_list = box_copy_tree ((caddr_t)arr);
   ifp_count = BOX_ELEMENTS_0 (arr);
   if (ctx->ric_iid_to_rel_ifp->ht_inserts != ctx->ric_iid_to_rel_ifp->ht_deletes)
@@ -1149,7 +1178,6 @@ bif_rdf_inf_set_ifp_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
         {
           rdf_sub_t **rsub_ptr;
           caddr_t ifp_boxed_iid = arr[ifp_ctr];
-          iri_id_t ifp_iid = unbox_iri_int64 (ifp_boxed_iid);
           iri_id_t grp_iid = unbox_iri_int64 (grps[ifp_ctr]);
           dk_set_t subs;
           rsub_ptr = (rdf_sub_t **)id_hash_get (ctx->ric_iri_to_subproperty, (char *)(&ifp_boxed_iid));
@@ -1262,8 +1290,10 @@ bif_rdf_inf_set_ifp_exclude_list (caddr_t * qst, caddr_t * err_ret, state_slot_t
   rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_set_ifp_exclude_list", 1);
   iri_id_t ifp = bif_iri_id_arg (qst, args, 1, "rdf_inf_set_ifp_exclude_list");
   caddr_t * arr = bif_array_of_pointer_arg (qst, args, 2, "rdf_inf_set_ifp_exclude_list");
-  caddr_t box = box_iri_id (ifp);
-  caddr_t copy = box_copy_tree (arr);
+  caddr_t box, copy;
+  sec_check_dba ((query_instance_t *)qst, "rdf_inf_set_ifp_exclude_list");
+  box = box_iri_id (ifp);
+  copy = box_copy_tree (arr);
   id_hash_set (ctx->ric_ifp_exclude, (caddr_t)&box, (caddr_t)&copy);
   return NULL;
 }
@@ -1296,8 +1326,14 @@ bif_rdf_inf_set_inverses (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 {
   caddr_t *lst = bif_array_of_pointer_arg (qst, args, 1, "rdf_inf_set_inverses");
   rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_set_inverses", 1);
-  dk_free_tree (ctx->ric_inverse_prop_pair_sortedalist);
-  ctx->ric_inverse_prop_pair_sortedalist = box_copy_tree (lst);
+  int ctr, len = BOX_ELEMENTS_0 (lst);
+  caddr_t *uname_lst;
+  sec_check_dba ((query_instance_t *)qst, "rdf_inf_set_inverses");
+  uname_lst = dk_alloc_list (len);
+  for (ctr = len; ctr--; /* no step */)
+    uname_lst[ctr] = box_dv_uname_string (lst[ctr]);
+  dk_free_tree ((caddr_t)(ctx->ric_inverse_prop_pair_sortedalist));
+  ctx->ric_inverse_prop_pair_sortedalist = uname_lst;
   return NULL;
 }
 
@@ -1306,8 +1342,17 @@ bif_rdf_inf_set_prop_props (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
 {
   caddr_t *lst = bif_array_of_pointer_arg (qst, args, 1, "rdf_inf_set_prop_props");
   rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_set_prop_props", 1);
-  dk_free_tree (ctx->ric_prop_props);
-  ctx->ric_prop_props = box_copy_tree (lst);
+  int ctr, len = BOX_ELEMENTS_0 (lst);
+  caddr_t *uname_flags_lst;
+  sec_check_dba ((query_instance_t *)qst, "rdf_inf_set_prop_props");
+  uname_flags_lst = dk_alloc_list (len);
+  for (ctr = len - 2; ctr >= 0; ctr -= 2)
+    {
+      uname_flags_lst[ctr] = box_dv_uname_string (lst[ctr]);
+      uname_flags_lst[ctr+1] = (caddr_t)((ptrlong)(unbox (lst[ctr+1])));
+    }
+  dk_free_tree ((caddr_t)(ctx->ric_prop_props));
+  ctx->ric_prop_props = uname_flags_lst;
   return NULL;
 }
 
@@ -1315,6 +1360,7 @@ caddr_t
 bif_rdf_inf_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t ctx_name = bif_string_arg (qst, args, 0, "rdf_inf_clear");
+  sec_check_dba ((query_instance_t *)qst, "rdf_inf_clear");
   id_hash_remove (rdf_name_to_ric, (caddr_t)&ctx_name);
   return 0;
 }
@@ -1340,7 +1386,7 @@ bif_rdf_inf_const_init (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
-bif_rdf_owl_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+bif_rdf_owl_iri_2 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int flag = bif_long_arg (qst, args, 0, "rdf_owl_iri");
   caddr_t err = NULL;
@@ -1351,17 +1397,17 @@ bif_rdf_owl_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       name = box_dv_short_string ("http://www.w3.org/2000/01/rdf-schema#subClassOf");
       owl_sub_class_iri = iri_ensure (qst, name, IRI_TO_ID_WITH_CREATE, &err);
       dk_free_box (name);
-      if (err) sqlr_resignal (err);
+      if (err) goto err;
       /* owl:subProperty */
       name = box_dv_short_string ("http://www.w3.org/2000/01/rdf-schema#subPropertyOf");
       owl_sub_property_iri = iri_ensure (qst, name, IRI_TO_ID_WITH_CREATE, &err);
       dk_free_box (name);
-      if (err) sqlr_resignal (err);
+      if (err) goto err;
       /* owl:equivalentClass */
       name = box_dv_short_string ("http://www.w3.org/2002/07/owl#equivalentClass");
       owl_equiv_class_iri = iri_ensure (qst, name, IRI_TO_ID_WITH_CREATE, &err);
       dk_free_box (name);
-      if (err) sqlr_resignal (err);
+      if (err) goto err;
       /* owl:equivalentProperty */
       name = box_dv_short_string ("http://www.w3.org/2002/07/owl#equivalentProperty");
       owl_equiv_property_iri = iri_ensure (qst, name, IRI_TO_ID_WITH_CREATE, &err);
@@ -1378,6 +1424,24 @@ bif_rdf_owl_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return box_copy_tree (owl_equiv_class_iri);
   sqlr_new_error ("22023", "OWL01",  "The function rdf_owl_iri supports 0-3 as argument.");
   return NULL;
+ err:
+  owl_sub_class_iri = NULL;
+  sqlr_resignal (err);
+  return NULL;
+}
+
+
+caddr_t
+bif_rdf_owl_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  /* if null try to reinit */
+  caddr_t res = bif_rdf_owl_iri_2 (qst, err_ret, args);
+  if (!res)
+    {
+      owl_sub_class_iri = NULL;
+      return bif_rdf_owl_iri_2 (qst, err_ret, args);
+    }
+  return res;
 }
 
 
@@ -1390,6 +1454,8 @@ rdf_sas_ensure (caddr_t * qst, caddr_t * err_ret)
 caddr_t
 bif_rdf_sas_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  /* if from sas node, do the init on other thread so no locks in this txn ctx.  If inside rdf inf init then init the fucking iri here */
+  RI_INIT_NEEDED(qst);
   rdf_sas_ensure (qst, err_ret);
   return box_copy_tree (same_as_iri);
 }
@@ -1431,30 +1497,40 @@ bif_rdf_init_thread (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_rdf_check_init (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  RI_INIT_NEEDED (qst);
+  if (1 != cl_rdf_inf_inited)
+    cl_rdf_inf_init_1 (qst);
   return 0;
 }
 
 
 char * cl_rdf_init_proc =
 "create procedure DB.DBA.CL_RDF_INF_INIT ()\n"
-"{ declare aq any; aq := async_queue (1); aq_request (aq, 'DB.DBA.CL_RDF_INF_INIT_SRV', vector ()); aq_wait_all (aq, 1); }";
+"{ declare aq any; aq := async_queue (1, 4); aq_request (aq, 'DB.DBA.CL_RDF_INF_INIT_SRV', vector ()); aq_wait_all (aq, 1); }";
 
 char * cl_rdf_init_srv =
 "create procedure DB.DBA.CL_RDF_INF_INIT_SRV ()\n"
 " { \n"
 "   declare c int;\n"
 "   set isolation = 'committed'; \n"
+"   set result_timeout = 0; \n"
+"   set transaction_timeout = 0; \n"
+"  cl_detach_thread ();\n"
 "   rdf_init_thread (1); \n"
 "   rdf_sas_iri (); \n"
 "   if (1 <> sys_stat ('cl_run_local_only')) { \n"
-"   DB.DBA.II_I_LOOK (null, 0); \n"
-"   DB.DBA.II_P_LOOK ('unknown prefix', null, 0); \n"
+"  { -- ensure that the procs are compiled.  Ignore errors since elastic will signal errors since the calling context does not specify the slice  \n"
+"    declare	exit handler for sqlstate '*'{;}; "
+"    DB.DBA     .II_P_LOOK ('unknown prefix', null, 0); "
+"  } "
+"  { "
+"    declare	exit handler for sqlstate '*'{;}; "
+"    DB.DBA.II_I_LOOK (null, 0); 	   "
+"  } "
 "   } \n"
 "   DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (null); \n"
 "   DB.DBA.RDF_QNAME_OF_IID (null); \n"
 "   rdf_inf_const_init (); \n"
-"   select  count (*) into c from sys_rdf_schema where 0 = rdfs_load_schema (rs_name, rs_uri); \n"
+"   select count (*) into c from (select distinct s.RS_NAME from sys_rdf_schema s) sub where 0 = rdfs_load_schema (sub.RS_NAME); \n"
 "   JSO_LOAD_AND_PIN_SYS_GRAPH_RO  (); \n"
 "   commit work; \n"
 "   rdf_init_thread (0); \n"
@@ -1495,11 +1571,14 @@ cl_rdf_inf_init (client_connection_t * cli, caddr_t * err_ret)
     }
   if (2 == cl_rdf_inf_inited)
     {
+      int is_in = cli->cli_trx->lt_threads && !cli->cli_trx->lt_vdb_threads;
       du_thread_t * self = THREAD_CURRENT_THREAD;
       dk_set_push (&rdf_inf_init_queue, (void*)self);
       LEAVE_TXN;
+      if (is_in)
       vdb_enter_lt (cli->cli_trx);
       semaphore_enter (self->thr_sem);
+      if (is_in)
       vdb_leave_lt (cli->cli_trx, err_ret);
       if (1 != cl_rdf_inf_inited)
 	*err_ret = srv_make_new_error ("42000", "CLRI1", "Rdf inf init failed while waiting for other thread to do the rdf inf init");
@@ -1512,7 +1591,7 @@ cl_rdf_inf_init (client_connection_t * cli, caddr_t * err_ret)
   ddl_std_proc (cl_rdf_init_proc, 0);
   ddl_std_proc (cl_rdf_init_srv, 0);
   if (!qr)
-    qr = sql_compile ("DB.DBA.cl_rdf_inf_init ()", bootstrap_cli, err_ret, SQLC_DEFAULT);
+    qr = sql_compile ("DB.DBA.CL_RDF_INF_INIT ()", bootstrap_cli, err_ret, SQLC_DEFAULT);
   if (*err_ret)
     goto init_error;
   if (!lt_threads)
@@ -1549,6 +1628,11 @@ cl_rdf_inf_init_1 (caddr_t * qst)
 {
   QNCAST (query_instance_t, qi, qst);
   caddr_t err = NULL;
+  if (CL_RUN_LOCAL == cl_run_local_only)
+    {
+      cl_rdf_inf_inited = 1;
+      return;
+    }
   cl_rdf_inf_init (qi->qi_client, &err);
   if (err)
     sqlr_resignal (err);
@@ -1624,8 +1708,8 @@ rdf_inf_init ()
   bif_define ("rdf_inf_dump", bif_rdf_inf_dump);
   bif_define ("tn_cache_clear", bif_tn_cache_clear);
   dk_mem_hooks (DV_RI_ITERATOR, box_non_copiable, rit_free, 0);
-  sas_init ();
   empty_ric = ric_allocate (box_dv_short_string ("__ empty"));
+  sas_init ();
 }
 
 
@@ -1793,7 +1877,7 @@ sqlg_ri_post_filter (table_source_t * ts, df_elt_t * tb_dfe, rdf_inf_pre_node_t 
     }
   if (ri->ri_outer_any_passed)
     {
-      cv_artm (&code, box_identity, ri->ri_outer_any_passed,  ssl_new_constant (sc->sc_cc, box_num (1)), NULL);
+      cv_artm (&code, (ao_func_t)box_identity, ri->ri_outer_any_passed,  ssl_new_constant (sc->sc_cc, box_num (1)), NULL);
     }
   cv_bret (&code, 1);
   en->src_gen.src_after_test = code_to_cv (sc, code);
@@ -1840,7 +1924,7 @@ sqlg_outer_post_filter (table_source_t * ts, df_elt_t * tb_dfe, state_slot_t * a
   data_source_t * last_post_node = qn_last_post_iter ((data_source_t*) ts);
   SQL_NODE_INIT (end_node_t, en, end_node_input, NULL);
   sql_node_append ((data_source_t**)&last_post_node, (data_source_t*) en);
-  cv_artm (&code, box_identity, any_flag,  ssl_new_constant (sc->sc_cc, box_num (1)), NULL);
+  cv_artm (&code, (ao_func_t)box_identity, any_flag,  ssl_new_constant (sc->sc_cc, box_num (1)), NULL);
   cv_bret (&code, 1);
   en->src_gen.src_after_test = code_to_cv (sc, code);
   if ((ajt = IS_TS (ts) ? ts->ts_after_join_test : ((hash_source_t *)ts)->hs_after_join_test))
@@ -2364,7 +2448,7 @@ sqlc_asg_mark (state_slot_t * ssl)
     sethash ((void*)ssl, ht, (void*)(ptrlong) 1);
 }
 
-code_vec_t *
+code_vec_t
 qn_after_join_test (data_source_t * qn)
 {
   if (IS_TS (qn))
@@ -2377,7 +2461,7 @@ qn_after_join_test (data_source_t * qn)
 }
 
 void
-qn_set_after_join_test (data_source_t * qn, code_vec_t * tst)
+qn_set_after_join_test (data_source_t * qn, code_vec_t tst)
 {
   if (IS_TS (qn))
     ((table_source_t*)qn)->ts_after_join_test = tst;
@@ -2397,7 +2481,7 @@ sqlg_cl_bracket_outer (sqlo_t * so, data_source_t * first)
   sql_comp_t * sc = so->so_sc;
   outer_seq_end_node_t * ose;
   dk_hash_t * res = hash_table_allocate (11);
-  data_source_t * first1 = qn_next (first);
+  data_source_t * first1 = first ? qn_next (first) : NULL;
   data_source_t * org_first = first1;
   void * dp;
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_ASG_SET, res);
@@ -2414,9 +2498,15 @@ sqlg_cl_bracket_outer (sqlo_t * so, data_source_t * first)
     }
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_ASG_SET, NULL);
   {
+    int inx;
     SQL_NODE_INIT (outer_seq_end_node_t, ose2, outer_seq_end_input, ose_free);
     ose = ose2;
     ose->ose_out_slots = (state_slot_t **) ht_keys_to_array (res);
+    DO_BOX (state_slot_t *, ssl, inx, ose->ose_out_slots)
+      {
+	ssl->ssl_always_vec = 1;
+      }
+    END_DO_BOX;
     ose->ose_set_no = ssl_new_inst_variable (so->so_sc->sc_cc, "set_ctr", DV_LONG_INT);
     ose->ose_prev_set_no = ssl_new_inst_variable (so->so_sc->sc_cc, "prev_set_ctr", DV_LONG_INT);
     ose->ose_buffered_row = ssl_new_inst_variable (so->so_sc->sc_cc, "buf_row", DV_ARRAY_OF_POINTER);
@@ -2487,9 +2577,6 @@ sqlg_cl_outer_with_iters (df_elt_t * tb_dfe, data_source_t * ts, data_source_t *
 		      ts2->ts_after_join_test = NULL;
 		    }
 		  ts2->ts_is_outer = 0;
-		  /* if not ordered, still keep sets in order */
-		  if (ts2->ts_order_ks && !ts2->ts_order_ks->ks_cl_order)
-		    ts2->ts_order_ks->ks_cl_order = (clo_comp_t**) list (0);
 		}
 	      else if (IS_HS (ts))
 		{

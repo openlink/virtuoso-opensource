@@ -60,7 +60,7 @@ void
 select_node_input_subq_vec (select_node_t * sel, caddr_t * inst, caddr_t * state)
 {
   QNCAST (query_instance_t, qi, inst);
-  db_buf_t bits;
+  db_buf_t bits = NULL;
   int n_rows, prev_set, row, top = 0, top_ctr, skip = 0;
   int bits_max;
   if (sel->src_gen.src_prev)
@@ -114,16 +114,18 @@ select_node_input_subq_vec (select_node_t * sel, caddr_t * inst, caddr_t * state
     }
   else if (SEL_VEC_SCALAR == sel->sel_vec_role && sel->sel_scalar_ret)
     {
+      int64 * ext_sets = (int64*)QST_BOX (data_col_t *, inst, sel->sel_ext_set_no->ssl_index)->dc_values;
       db_buf_t bits = QST_BOX (db_buf_t, inst, sel->sel_vec_set_mask);
       for (row = 0; row < n_rows; row++)
 	{
-	  int set_no = qst_vec_get_int64 (inst, sel->sel_set_no, row);
-	  if (set_no > bits_max)
-	    bits = sel_extend_bits (sel, inst, set_no, &bits_max);
-	  if (!(bits[set_no >> 3] & (1 << (set_no & 7))))
+	  int set_no = sslr_set_no (inst, sel->sel_set_no, row);
+	  int ext_set_no = ext_sets[set_no];
+	  if (ext_set_no > bits_max)
+	    bits = sel_extend_bits (sel, inst, ext_set_no, &bits_max);
+	  if (!(bits[ext_set_no >> 3] & (1 << (ext_set_no & 7))))
 	    {
-	      bits[set_no >> 3] |= 1 << (set_no & 7);
-	      dc_assign (inst, sel->sel_scalar_ret, set_no, sel->sel_out_slots[0], sel->sel_is_scalar_agg ? set_no : row);
+	      bits[ext_set_no >> 3] |= 1 << (ext_set_no & 7);
+	      dc_assign (inst, sel->sel_scalar_ret, ext_set_no, sel->sel_out_slots[0], row);
 	    }
 	}
     }
@@ -270,7 +272,7 @@ int bits_print_limit = 20;
 void
 bits_print (db_buf_t bits, int n, int ones)
 {
-  int inx, ctr, n_out = 0;;
+  int inx, ctr = 0, n_out = 0;
   for (inx = 0; inx < n; inx++)
     {
       int bit = bits[inx >> 3] & 1 << (inx & 7);
@@ -388,7 +390,8 @@ ins_vec_subq (instruction_t * ins, caddr_t * inst)
   QNCAST (query_instance_t, qi, inst);
   query_t *qr = ins->_.subq.query;
   int n_sets = qi->qi_n_sets;
-  db_buf_t set_mask = qi->qi_set_mask, bits;
+  db_buf_t set_mask = qi->qi_set_mask, bits = NULL;
+  char save_lock = qi->qi_lock_mode;
   int n_bytes = ALIGN_8 (n_sets) / 8;
   select_node_t *sel = qr->qr_select_node;
   if (sel)
@@ -412,9 +415,13 @@ ins_vec_subq (instruction_t * ins, caddr_t * inst)
       err = subq_next (qr, inst, st);
       st = CR_OPEN;
       if (IS_BOX_POINTER (err))
+	{
+	  qi->qi_lock_mode = save_lock;
 	sqlr_resignal (err);
     }
+    }
   while ((caddr_t) SQL_SUCCESS == err);
+  qi->qi_lock_mode = save_lock;
   if (sel)
     {
       int set;
@@ -477,32 +484,52 @@ void
 set_ctr_vec_input (set_ctr_node_t * sctr, caddr_t * inst, caddr_t * state)
 {
   int fill = 0;
+  outer_seq_end_node_t * ose = sctr->sctr_ose;
   QNCAST (query_instance_t, qi, inst);
-  int n_sets, inx;
+  int n_sets = 0, inx;
   data_col_t *dc = QST_BOX (data_col_t *, inst, sctr->sctr_set_no->ssl_index);
+  data_col_t * ext_dc = sctr->sctr_ext_set_no ? QST_BOX (data_col_t *, inst, sctr->sctr_ext_set_no->ssl_index) : NULL;
   /* XXX: test the sctr_trans_recursive and get n_sets from qi_n_sets */
   if (sctr->src_gen.src_prev)
     n_sets = QST_INT (inst, sctr->src_gen.src_prev->src_out_fill);
   else
     {
       if (!qi->qi_n_sets)
-	qi->qi_n_sets = 1;
-      n_sets = qi->qi_n_sets;
+	{
+	  n_sets = qi->qi_n_sets = 1;
       SRC_N_IN (((data_source_t *) sctr), inst, n_sets);
+    }
+      n_sets = qi->qi_n_sets;
     }
   if (!state)
     {
       SRC_IN_STATE (sctr, inst) = NULL;
-      ose_vec_outer_rows (sctr->sctr_ose, inst);
+      ose_vec_outer_rows (ose, inst);
       return;
+    }
+  if (ose)
+    {
+      db_buf_t bits = (db_buf_t)QST_GET_V (inst, ose->ose_bits);
+      if (!bits || box_length (bits) < ALIGN_8 (n_sets) / 8)
+	{
+	  if (n_sets > dc_max_batch_sz) GPF_T1 ("over max batch sz in oj");
+	  bits = (db_buf_t)dk_alloc_box (ALIGN_8 (MIN (n_sets * 2, dc_max_batch_sz)) / 8, DV_BIN);
+	  qst_set (inst, ose->ose_bits, (caddr_t)bits);
+	}
+      memzero (bits, box_length (bits));
+      SRC_IN_STATE (sctr, inst) = inst;
     }
   QST_INT (inst, sctr->src_gen.src_out_fill) = 0;
   DC_CHECK_LEN (dc, n_sets - 1);
+  if (ext_dc)
+    DC_CHECK_LEN (ext_dc, n_sets - 1);
   QN_CHECK_SETS (sctr, inst, n_sets);
   if (sctr->sctr_hash_spec)
     {
       for (inx = 0; inx < n_sets; inx++)
 	{
+	  if (!QI_IS_SET (qi, inx))
+	    continue;
 	  qi->qi_set = inx;
 	  DO_SET (search_spec_t *, sp, &sctr->sctr_hash_spec)
 	  {
@@ -510,7 +537,15 @@ set_ctr_vec_input (set_ctr_node_t * sctr, caddr_t * inst, caddr_t * state)
 	      goto next_hash_set;
 	  }
 	  END_DO_SET ();
-	  ((int64 *) dc->dc_values)[fill++] = inx;
+	  if (ext_dc)
+	    {
+	      ((int64*)ext_dc->dc_values)[fill] = inx;
+	      ((int64*)dc->dc_values)[fill] = fill;
+	    }
+	  else
+	    ((int64*)dc->dc_values)[fill] = inx;
+
+	  fill++;
 	  qn_result ((data_source_t *) sctr, inst, inx);
 	next_hash_set:;
 	}
@@ -521,23 +556,26 @@ set_ctr_vec_input (set_ctr_node_t * sctr, caddr_t * inst, caddr_t * state)
 	{
 	  if (QI_IS_SET (qi, inx))
 	    {
-	      ((int64 *) dc->dc_values)[fill++] = inx;
+	      if (ext_dc)
+		{
+		  ((int64*)ext_dc->dc_values)[fill] = inx;
+		  ((int64*)dc->dc_values)[fill] = fill;
+		}
+	      else
+		((int64*)dc->dc_values)[fill] = inx;
+
+	      fill++;
 	      qn_result ((data_source_t *) sctr, inst, inx);
 	    }
 	}
     }
   QST_INT (inst, sctr->src_gen.src_out_fill) = fill;
+  if (ext_dc)
+    ext_dc->dc_n_values = fill;
   dc->dc_n_values = fill;
   qi->qi_set_mask = NULL;
   if (fill)
     {
-      if (sctr->sctr_ose)
-	{
-	  caddr_t bits = QST_GET_V (inst, sctr->sctr_ose->ose_bits);
-	  if (bits)
-	    memzero (bits, box_length (bits));
-	  SRC_IN_STATE (sctr, inst) = inst;
-	}
       qn_send_output ((data_source_t *) sctr, inst);
       if (sctr->sctr_ose)
 	set_ctr_vec_input (sctr, inst, NULL);
@@ -580,7 +618,7 @@ subq_node_vec_input (subq_source_t * sqs, caddr_t * inst, caddr_t * state)
   int flag, inx;
   data_col_t *set_nos = QST_BOX (data_col_t *, inst, sqs->sqs_set_no->ssl_index);
   select_node_t *sel = qr->qr_select_node;
-  int n_sets = sqs->src_gen.src_prev ? QST_INT (inst, sqs->src_gen.src_prev->src_out_fill) : 1;
+  int n_sets = sqs->src_gen.src_prev ? QST_INT (inst, sqs->src_gen.src_prev->src_out_fill) : qi->qi_n_sets;
 
   for (;;)
     {
@@ -607,6 +645,7 @@ subq_node_vec_input (subq_source_t * sqs, caddr_t * inst, caddr_t * state)
 	  END_DO_SET ();
 	}
       qi->qi_set_mask = NULL;
+      qi->qi_n_sets = set_nos->dc_n_values;
       err = subq_next (sqs->sqs_query, inst, flag);
       flag = CR_OPEN;
       if (IS_BOX_POINTER (err))
@@ -649,10 +688,7 @@ outer_seq_end_vec_input (outer_seq_end_node_t * ose, caddr_t * inst, caddr_t * s
   set_ctr_node_t *sctr = ose->ose_sctr;
   n_in_sctr = QST_INT (inst, sctr->src_gen.src_out_fill);
   if (!bits || box_length (bits) < ALIGN_8 (n_in_sctr) / 8)
-    {
-      bits = (db_buf_t) dk_alloc_box_zero (ALIGN_8 (MAX (n_sets, dc_batch_sz)) / 8, DV_BIN);
-      qst_set (inst, ose->ose_bits, (caddr_t) bits);
-    }
+    GPF_T1 ("in outer seq end, inner bit mask  too short");
   QST_INT (inst, ose->src_gen.src_out_fill) = 0;
   nos_dc = QST_BOX (data_col_t *, inst, ose->ose_set_no->ssl_index);
   for (set = 0; set < n_sets; set += 64)
@@ -680,7 +716,7 @@ outer_seq_end_vec_input (outer_seq_end_node_t * ose, caddr_t * inst, caddr_t * s
     dc_reset (shadow_dc);
     if (DV_ANY == shadow_dc->dc_dtp && DV_ANY != out_dc->dc_dtp)
       dc_convert_empty (shadow_dc, out_dc->dc_dtp);
-    else if (DV_ANY != shadow_dc->dc_dtp && DV_ANY == out_dc->dc_dtp)
+      else if (DV_ANY != shadow_dc->dc_dtp && shadow_dc->dc_dtp != out_dc->dc_dtp)
       dc_heterogenous (shadow_dc);
     DC_CHECK_LEN (shadow_dc, n_sets - 1);
     shadow_dc->dc_n_values = n_sets;
@@ -711,6 +747,7 @@ outer_seq_end_vec_input (outer_seq_end_node_t * ose, caddr_t * inst, caddr_t * s
 void
 del_vec_log (delete_node_t * del, ins_key_t * ik, it_cursor_t * itc)
 {
+  caddr_t * inst = itc->itc_out_state;
   int nth = 0, inx, save_set = ((query_instance_t *) (itc->itc_out_state))->qi_set;
   dbe_key_t *key = ik->ik_key;
   LOCAL_RD (rd);
@@ -722,11 +759,18 @@ del_vec_log (delete_node_t * del, ins_key_t * ik, it_cursor_t * itc)
       for (nth = 0; nth < key->key_n_significant; nth++)
 	{
 	  state_slot_t *ssl = ik->ik_del_cast[nth] ? ik->ik_del_cast[nth] : ik->ik_del_slots[nth];
-	  ((query_instance_t *) (itc->itc_out_state))->qi_set = inx;
+	    if (ik->ik_del_cast[nth])
+	      {
+		/* it can happen that the cast ssl is not used if the source is not a ref and types already match */
+		data_col_t * cast_dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
+		if (!cast_dc->dc_n_values)
+		  ssl = ik->ik_del_slots[nth];
+	      }
+	    ((query_instance_t*)(itc->itc_out_state))->qi_set = itc->itc_param_order[inx];
 	  rd.rd_values[key->key_part_cls[nth]->cl_nth] = QST_GET (itc->itc_out_state, ssl);
 	}
       rd.rd_n_values = nth;
-      log_delete (itc->itc_ltrx, &rd, 0);
+	log_delete (itc->itc_ltrx, &rd, ik->ik_key->key_partition ? LOG_KEY_ONLY : 0);
     }
   ((query_instance_t *) (itc->itc_out_state))->qi_set = save_set;
 }
@@ -768,23 +812,18 @@ ord_check (query_instance_t * qi)
 #endif
 
 void
-delete_node_vec_run (delete_node_t * del, caddr_t * inst, caddr_t * state)
+cl_local_deletes (delete_node_t * del, caddr_t * inst, caddr_t * part_inst)
 {
   it_cursor_t itc_auto;
   it_cursor_t *itc = &itc_auto;
-  int inx, inx2, row;
+  int inx, inx2;
   key_source_t ks;
   QNCAST (query_instance_t, qi, inst);
-  v_out_map_t *om;
+  cl_slice_t * prev_csl = qi->qi_client->cli_csl;
+  v_out_map_t * om, *empty_om;
   caddr_t *omx[(sizeof (v_out_map_t) / sizeof (caddr_t)) + 4];
+  caddr_t e_omx[4];
   int n_sets = QST_INT (inst, del->src_gen.src_prev->src_out_fill);
-  if (del->del_is_view)
-    {
-      qi->qi_n_affected += n_sets;
-      return;
-    }
-  if (-1 == (ptrlong) del->del_keys)
-    return;
   memset (&ks, 0, sizeof (ks));
   ITC_INIT (itc, NULL, qi->qi_trx);
   itc->itc_out_state = inst;
@@ -796,39 +835,141 @@ delete_node_vec_run (delete_node_t * del, caddr_t * inst, caddr_t * state)
   ks.ks_v_out_map = om;
   memset (om, 0, sizeof (v_out_map_t));
   om->om_ref = dc_itc_delete;
-  itc->itc_v_out_map = om;
-
+  BOX_AUTO_TYPED (v_out_map_t *, empty_om, e_omx, 0, DV_BIN);
   ks.ks_vec_asc_eq = 1;
   itc->itc_lock_mode = PL_EXCLUSIVE;
-  itc->itc_isolation = ISO_SERIALIZABLE;
   DO_BOX (ins_key_t *, ik, inx, del->del_keys)
   {
     if (!ik)
       continue;
+      itc->itc_isolation = ISO_SERIALIZABLE == qi->qi_isolation ? ISO_SERIALIZABLE : ISO_REPEATABLE;
     itc_free_owned_params (itc);
-    itc_from (itc, ik->ik_key);
+      itc->itc_insert_key = ik->ik_key;
+      ks.ks_v_out_map = itc->itc_v_out_map = ik->ik_key->key_is_col ? empty_om : om;
+      ITC_START_SEARCH_PARS (itc);
+      DO_BOX (state_slot_t *, ssl, inx2, ik->ik_del_slots)
+	{
+	  data_col_t * source_dc = QST_BOX (data_col_t *, inst, ik->ik_del_slots[inx2]->ssl_index);
+	  dc_val_cast_t f = ik->ik_del_cast_func[inx2];
+	  char is_vec = SSL_IS_VEC_OR_REF (ssl);
+	  if (!f && is_vec && DV_ANY != source_dc->dc_dtp && ik->ik_del_cast[inx2] && DV_ANY == ik->ik_del_cast[inx2]->ssl_sqt.sqt_dtp)
+	    f = vc_to_any (source_dc->dc_dtp);
+
+	  if (SSL_VEC != ssl->ssl_type || f)
+	    {
+	      data_col_t * target_dc = QST_BOX (data_col_t *, inst, ik->ik_del_cast[inx2]->ssl_index);
+	      ITC_P_VEC (itc, inx2) = target_dc;
+	      itc_vec_box (itc, target_dc->dc_dtp, inx2, target_dc);
+	    }
+	  else
+	    {
+	      ITC_P_VEC (itc, inx2) = source_dc;
+	      itc_vec_box (itc, source_dc->dc_dtp, inx2, source_dc);
+	    }
+	}
+      END_DO_BOX;
     itc->itc_search_mode = (ik->ik_key->key_is_bitmap || ik->ik_key->key_is_col) ? SM_READ : SM_READ_EXACT;
     itc->itc_insert_key = ik->ik_key;
     ks.ks_key = ik->ik_key;
-    ks.ks_row_check = ks.ks_key->key_is_col ? itc_col_row_check
+      ks.ks_row_check = ks.ks_key->key_is_col ? itc_col_row_check_dummy
 	: ks.ks_key->key_is_bitmap ? itc_bm_vec_row_check : itc_vec_row_check;
-    itc->itc_v_out_map = ks.ks_v_out_map = om;
     ks.ks_n_vec_sort_cols = BOX_ELEMENTS (ik->ik_del_slots);
+      itc->itc_n_sets = n_sets;
+      itc->itc_n_results = 0;
+      itc->itc_set = 0;
+      itc->itc_key_spec = ks.ks_spec = ik->ik_key->key_insert_spec;
+      if (ks.ks_key->key_is_col)
+	itc->itc_v_out_map = NULL;
+	{
+	  itc_from_keep_params (itc, itc->itc_insert_key, qi->qi_client->cli_slice);
+	  itc_param_sort (&ks, itc, ik->ik_key->key_not_null);
+	  if (!itc->itc_n_sets)
+	    continue;
+	  itc_set_param_row (itc, 0);
+	  ITC_FAIL (itc)
+	  {
+	    buffer_desc_t * buf = itc_reset (itc);
+	    if (ks.ks_key->key_is_col)
+	      itc->itc_v_out_map = NULL;
+	    itc_vec_next (itc, &buf);
+	    itc_page_leave (itc, buf);
+	    if (itc->itc_is_col)
+	      itc_col_free (itc);
+	    if (REPL_NO_LOG != qi->qi_trx->lt_replicate && (ik->ik_key->key_is_primary || ik->ik_key->key_partition))
+	      del_vec_log (del, ik, itc);
+	  }
+	  ITC_FAILED
+	    {
+	    }
+	  END_FAIL (itc);
+
+	}
+    }
+  END_DO_BOX;
+  itc_free_owned_params (itc);
+  qi->qi_n_affected += n_sets;
+  if (qi->qi_client->cli_row_autocommit)
+    qi->qi_client->cli_n_to_autocommit += n_sets;
+}
+
+
+void
+dbg_del_check (data_col_t * source_dc, int source_row)
+{
+  caddr_t box = dc_box (source_dc, source_row);
+  if (DV_IRI_ID == DV_TYPE_OF (box) && 7000064 == *(long*)box)
+    bing ();
+  dk_free_tree (box);
+}
+
+#define   CL_AC_RESET_CK(is_reset, del, qi) \
+{ \
+  if (del->cms.cms_clrg && qi->qi_client->cli_n_to_autocommit > dc_batch_sz) \
+    { \
+      qi->qi_client->cli_n_to_autocommit = 0; \
+      is_reset = 1; \
+    } \
+}
+
+void
+delete_node_vec_run (delete_node_t * del, caddr_t * inst, caddr_t * state, int in_update)
+{
+  int inx, inx2, row;
+  cl_req_group_t * clrg = NULL;
+  QNCAST (query_instance_t, qi, inst);
+  int n_sets = QST_INT (inst, del->src_gen.src_prev->src_out_fill), is_reset = 0, any_cl = 0;
+  int is_replica = 0;
+  if (del->del_is_view)
+    {
+      qi->qi_n_affected+= n_sets;
+      return;
+    }
+  if (-1 == (ptrlong)del->del_keys || is_replica)
+    return;
+  DO_BOX (ins_key_t *, ik, inx, del->del_keys)
+    {
+      if (!ik)
+	continue;
     DO_BOX (state_slot_t *, ssl, inx2, ik->ik_del_slots)
     {
-      data_col_t *source_dc = QST_BOX (data_col_t *, inst, ik->ik_del_slots[inx2]->ssl_index);
-      int elt_sz = dc_elt_size (source_dc);
+	  data_col_t * source_dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
+	  char is_vec = SSL_IS_VEC_OR_REF (ssl);
+	  int elt_sz = is_vec ? dc_elt_size (source_dc) : -1;
       dc_val_cast_t f = ik->ik_del_cast_func[inx2];
-      if (!f && DV_ANY != source_dc->dc_dtp && ik->ik_del_cast[inx2] && DV_ANY == ik->ik_del_cast[inx2]->ssl_sqt.sqt_dtp)
+	  data_col_t * target_dc = NULL;
+	  if (ik->ik_del_cast[inx2])
+	    {
+	      /* there can be a target dc for value cast but it may not get used if the source has the right type and is not a ref.  Anyway must reset it even if not using because logging checks this */
+	      target_dc = QST_BOX (data_col_t *, inst, ik->ik_del_cast[inx2]->ssl_index);
+	      dc_reset (target_dc);
+	    }
+	  if (!f && is_vec && DV_ANY != source_dc->dc_dtp && ik->ik_del_cast[inx2] && DV_ANY == ik->ik_del_cast[inx2]->ssl_sqt.sqt_dtp)
 	f = vc_to_any (source_dc->dc_dtp);
 
-      if (SSL_REF == ssl->ssl_type || f)
+	  if (SSL_VEC != ssl->ssl_type || f)
 	{
 	  caddr_t err = NULL;
-	  data_col_t *target_dc = QST_BOX (data_col_t *, inst, ik->ik_del_cast[inx2]->ssl_index);
-	  dc_reset (target_dc);
 	  DC_CHECK_LEN (target_dc, n_sets - 1);
-	  ITC_P_VEC (itc, inx2) = target_dc;
 	  for (row = 0; row < n_sets; row++)
 	    {
 	      int source_row = row;
@@ -842,11 +983,18 @@ delete_node_vec_run (delete_node_t * del, caddr_t * inst, caddr_t * state)
 		      source_row = set_nos[source_row];
 		    }
 		}
+		  else if (SSL_VEC != ssl->ssl_type)
+		    {
+		      qi->qi_set = row;
+		      dc_append_box (target_dc, qst_get (inst, ssl));
+		      continue;
+		    }
 	      n_values = target_dc->dc_n_values;
 	      if (dc_is_null (source_dc, source_row))
 		dc_append_null (target_dc);
 	      else
 		{
+		      /*dbg_del_check (source_dc, source_row);*/
 		  if (f)
 		    {
 		      f (target_dc, source_dc, source_row, &err);
@@ -854,48 +1002,142 @@ delete_node_vec_run (delete_node_t * del, caddr_t * inst, caddr_t * state)
 			sqlr_resignal (err);
 		    }
 		  else
+			{
+			  if (target_dc->dc_type & DCT_BOXES)
+			    ((caddr_t*)target_dc->dc_values)[target_dc->dc_n_values] = box_copy_tree (((caddr_t*)source_dc->dc_values)[source_row]);
+			  else
 			memcpy_16 (target_dc->dc_values + elt_sz * target_dc->dc_n_values, source_dc->dc_values + source_row * elt_sz, elt_sz);
+			}
 		  target_dc->dc_n_values = n_values + 1;
 		}
 	    }
 	}
-      else
-	{
-	  ITC_P_VEC (itc, inx2) = source_dc;
 	}
-      itc_vec_box (itc, source_dc->dc_dtp, inx2, source_dc);
+      END_DO_BOX;
     }
     END_DO_BOX;
-    itc->itc_n_sets = n_sets;
-    itc->itc_n_results = 0;
-    itc->itc_set = 0;
-    itc->itc_key_spec = ks.ks_spec = ik->ik_key->key_insert_spec;
-    itc_param_sort (&ks, itc);
-    itc_set_param_row (itc, 0);
+  cl_local_deletes (del, inst, clrg ? clrg->clrg_inst : inst);
+  if (!in_update && qi->qi_client->cli_row_autocommit)
+    qi->qi_client->cli_n_to_autocommit += n_sets;
+  if (!in_update)
+    CL_AC_RESET_CK (is_reset, del, qi);
+  if (is_reset)
+    longjmp_splice (qi->qi_thread->thr_reset_ctx, RST_ENOUGH);
+}
 
-    ITC_FAIL (itc)
+
+void update_node_run_1 (update_node_t * upd, caddr_t * inst, caddr_t * state);
+
+void
+update_node_vec_run (update_node_t * upd, caddr_t * inst, caddr_t * state)
     {
-      buffer_desc_t *buf = itc_reset (itc);
-      if (ks.ks_key->key_is_col)
-	itc->itc_v_out_map = NULL;
-      itc_vec_next (itc, &buf);
-      itc_page_leave (itc, buf);
-	  if (itc->itc_is_col)
-	    itc_col_free (itc);
-      if (REPL_NO_LOG != qi->qi_trx->lt_replicate && (ik->ik_key->key_is_primary || ik->ik_key->key_partition))
-	del_vec_log (del, ik, itc);
-    }
-    ITC_FAILED
+  db_buf_t sets_save;
+  cl_req_group_t * clrg = NULL;
+  QNCAST (query_instance_t, qi, inst);
+  cl_slice_t * prev_csl = qi->qi_client->cli_csl;
+  int k, set, is_reset = 0;
+  dbe_table_t *tb = upd->upd_table;
+  insert_node_t insd;
+  delete_node_t deld;
+  delete_node_t * del = &deld;
+  insert_node_t * ins = &insd;
+  it_cursor_t auto_itc;
+  it_cursor_t *itc;
+  int inx;
+  int n_sets = upd->src_gen.src_prev ? QST_INT (inst, upd->src_gen.src_prev->src_out_fill) : qi->qi_n_sets, is_replica = 0;
+  caddr_t err = NULL;
+  int64 n_aff = qi->qi_n_affected;
+  LOCAL_RD (rd);
+  if (upd->upd_is_view)
+    return;
+  LT_CHECK_RW (((query_instance_t *) inst)->qi_trx);
+  itc = &auto_itc;
+  memzero (ins, sizeof (insert_node_t));
+  memzero (del, sizeof (delete_node_t));
+  ins->src_gen = upd->src_gen;
+  ins->ins_vec_source = upd->upd_vec_source;
+  ins->ins_vec_cast = upd->upd_vec_cast;
+  ins->ins_vec_cast_cl = upd->upd_vec_cast_cl;
+  ins->ins_mode = INS_NORMAL;
+  ITC_INIT (itc, QI_SPACE (inst), QI_TRX (inst));
+  rd.rd_itc = itc;
+  rd.rd_non_comp_max = PAGE_DATA_SZ;
+  rd.rd_key = tb->tb_primary_key;
+  itc->itc_insert_key = tb->tb_primary_key;
+  DO_BOX (state_slot_t *, ssl, inx, ins->ins_vec_cast)
     {
+      data_col_t * dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
+      DC_CHECK_LEN (dc, n_sets - 1);
     }
-    END_FAIL (itc);
+  END_DO_BOX;
+
+  if (qi->qi_set_mask)
+    sqlr_new_error ("VECUP", "VECUP",  "vectored update node expects no set masks");
+  DO_BOX (state_slot_ref_t *, ref, inx, upd->upd_vec_source)
+    {
+      ssl_insert_cast (ins, inst, inx, &err, &rd, 0, n_sets, 1);
+      if (err)
+	sqlr_resignal (err);
+    }
+  END_DO_BOX;
+  del->del_keys = upd->upd_keys;
+  del->del_table = upd->upd_table;
+  del->cms = upd->cms;
+  del->del_param_nos = upd->upd_param_nos;
+  del->src_gen = upd->src_gen;
+#if 0
+  DO_BOX (ins_key_t *, ik, inx, del->del_keys)
+    {
+      if (!ik)
+	continue;
+      ik->ik_del_slots = box_copy (ik->ik_slots);
   }
   END_DO_BOX;
-  if (qi->qi_client->cli_row_autocommit)
+#endif
+  delete_node_vec_run (del, inst, inst, 1);
+  qi->qi_n_affected = n_aff; /* do not count del of keys */
+  for (k = 0; k < BOX_ELEMENTS_INT (upd->upd_keys); k++)
     {
-      qi->qi_client->cli_n_to_autocommit += n_sets;
-      if (ROW_AUTOCOMMIT_DUE (qi, del->del_table, dc_batch_sz))
-	ROW_AUTOCOMMIT (qi);
-      /*ord_check (qi);*/
+      ins_key_t * ik = upd->upd_keys[k];
+      if (!upd->upd_keys[k])
+	continue;
+	{
+	  key_vec_insert (ins, state, itc, upd->upd_keys[k]);
+	  qi->qi_n_affected = n_aff;
+	  itc_free_owned_params (itc);
+	  itc_col_free (itc);
+	}
+    }
+  qi->qi_n_affected = n_aff;
+ skip_2nd:
+  if (upd->upd_pk_change)
+    {
+      qi->qi_n_affected += n_sets;
+      return;
+    }
+  upd->upd_row_only = 1;
+  if (upd->upd_table->tb_primary_key->key_is_col)
+    {
+      upd_col_pk (upd, inst);
+    }
+  else
+    {
+      for (set = 0; set < n_sets; set++)
+	{
+	  qi->qi_set = set;
+	  update_node_run_1 (upd, inst, inst);
     }
 }
+  if (is_replica)
+    qi->qi_n_affected = n_aff;
+  if (qi->qi_client->cli_row_autocommit)
+    qi->qi_client->cli_n_to_autocommit += n_sets;
+  CL_AC_RESET_CK (is_reset, upd, qi);
+
+  if (is_reset)
+    longjmp_splice (qi->qi_thread->thr_reset_ctx, RST_ENOUGH);
+}
+
+
+
+

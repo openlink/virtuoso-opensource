@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2010 OpenLink Software
+ *  Copyright (C) 2005-2013 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -200,17 +200,37 @@ h3.rdf_nav_title {clear: both; font-weight: bold;margin-bottom: 0;}
 	display: inline;
 }
 
+.marker_ctr {
+  overflow: hidden;
+}
+
 .marker_ctr .abstract { 
     font-style: italic;
     margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #666;
 }
 
 .marker_ctr .pred_title {
     font-weight: bold;
     width: 100px;
     margin-right: 1.5em;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 .marker_ctr .pred_value img {
     max-width: 100%
+}
+
+.marker_ctr .props_ctr {
+    overflow-y: auto;
+    overflow-x: hidden;
+    max-height: 200px;
+    padding-bottom: 5px;
+    margin-bottom: 5px;
+}
+
+.marker_cte .props_ctr table {
+    width: 100%;
 }

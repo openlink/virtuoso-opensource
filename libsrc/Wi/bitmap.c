@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -725,7 +725,8 @@ itc_bm_insert_in_row (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd)
   if (!buf->bd_is_write || buf->bd_readers)
     GPF_T1 ("should have excl buffer in bm ins in row");
   itc_bm_ends (itc, buf, &bm_start, &last, &is_single);
-  if (is_single)
+  row = buf->bd_buffer + buf->bd_content_map->pm_entries[itc->itc_map_pos];
+  if (is_single && !IE_ISSET (row, IEF_DELETE))
     {
       GPF_T1 ("singleton bm not in use");
 #if 0
@@ -765,7 +766,6 @@ itc_bm_insert_in_row (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd)
 #endif
     }
   /* now the row is a collection of ce's. Insert in there.  If the new value would make a new ce in front, make a singleton row so as not to have to reset the offsets of the c's and maybe splitting just because the start bit no changes.  */
-  row = buf->bd_buffer + buf->bd_content_map->pm_entries[itc->itc_map_pos];
   if (!BITS_IN_RANGE (bm_start, value)
       || value < bm_start
       || IE_ISSET (row, IEF_DELETE))
@@ -1198,7 +1198,7 @@ itc_bm_delete (it_cursor_t * itc, buffer_desc_t ** buf_ret)
   BIT_COL (bm_start, (*buf_ret), itc->itc_row_data, itc->itc_insert_key);
   rc = bm_delete (bm_start, itc->itc_row_data + off, &bm_len, itc->itc_bp.bp_value);
   if (DVC_MATCH != rc)
-    return BM_DEL_DONE; /* the bit was not found, no change */
+      return BM_DEL_DONE; /* the bit was not found, no change */
   upd_truncate_row (itc, *buf_ret, off + bm_len);
   CL_SET_LEN (key, key->key_bm_cl, itc->itc_row_data, bm_len);
   itc->itc_bp.bp_is_pos_valid = 1;
@@ -2305,7 +2305,7 @@ itc_bm_vec_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 		{
 		  QST_INT (inst, ts->src_gen.src_out_fill)--;
 		  itc->itc_n_results--;
-		  itc_pop_last_out (itc, inst, ks->ks_v_out_map);
+		  itc_pop_last_out (itc, inst, ks->ks_v_out_map, buf);
 		  goto next_bit;
 		}
 	    }
@@ -2363,6 +2363,8 @@ itc_bm_land_lock (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 {
   /* the idea is that the itc can land on a bm row that is locked amd while waiting the row can split.  If so, the itc has to restart the search cause it can't know which side it wants unless it is already landed
    * the itc_to_reset is set by itc_keep_together when inserting the right hand half of the split. */
+  if (itc->itc_is_col)
+    return RWG_NO_WAIT;
   itc->itc_to_reset = RWG_NO_WAIT;
   if (itc->itc_isolation < min_iso_that_waits && PL_EXCLUSIVE != itc->itc_lock_mode)
     return RWG_NO_WAIT;

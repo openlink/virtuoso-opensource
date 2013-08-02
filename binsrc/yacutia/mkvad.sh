@@ -9,7 +9,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -276,7 +276,7 @@ VERSION_INIT()
   done
   LANG=POSIX
   export LANG
-      VERSION=`cat version.tmp | awk ' BEGIN { cnt=450 } { cnt = cnt + $1 } END { printf "1.0%01.04f", cnt/10000 }'`
+      VERSION=`cat version.tmp | awk ' BEGIN { cnt=812 } { cnt = cnt + $1 } END { printf "1.0%01.04f", cnt/10000 }'`
   rm -f version.tmp
       echo "$VERSION" > vad_version
   fi
@@ -304,7 +304,7 @@ echo "  <caption>" >> $STICKER
 echo "    <name package=\"conductor\">" >> $STICKER
 echo "      <prop name=\"Title\" value=\"Virtuoso Conductor\"/>" >> $STICKER
 echo "      <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-echo "      <prop name=\"Copyright\" value=\"(C) 1998-2011 OpenLink Software\"/>" >> $STICKER
+echo "      <prop name=\"Copyright\" value=\"(C) 1998-2013 OpenLink Software\"/>" >> $STICKER
 echo "      <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso/conductor/download\"/>" >> $STICKER
 echo "      <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso/conductor/download\"/>" >> $STICKER
 echo "    </name>" >> $STICKER
@@ -322,9 +322,11 @@ echo "  <ddls>" >> $STICKER
 echo "    <sql purpose=\"pre-install\">if (lt (sys_stat ('st_dbms_ver'), '$NEED_VERSION')) { result ('ERROR', 'The conductor package requires server version $NEED_VERSION or greater'); signal ('FATAL', 'The conductor package requires server version $NEED_VERSION or greater'); } </sql>" >> $STICKER
 echo "    <sql purpose=\"post-install\">" >> $STICKER
 echo "      registry_set('__no_vspx_temp', '1');" >> $STICKER
-echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/admin_dav_browser.sql', 1, 'report', $ISDAV);" >> $STICKER
+#echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/admin_dav_browser.sql', 1, 'report', $ISDAV);" >> $STICKER
 echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/vdir_helper.sql', 1, 'report', $ISDAV);" >> $STICKER
 echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/yacutia.sql', 1, 'report', $ISDAV);" >> $STICKER
+echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/dav/dav_browser.sql', 1, 'report', $ISDAV);" >> $STICKER
+echo "      \"WEBDAV\".\"DBA\".\"xsl_upload\"($ISDAV);" >> $STICKER
 echo "      vhost_remove (lpath=>'/conductor');" >> $STICKER
 echo "      vhost_remove (lpath=>'/vspx');" >> $STICKER
 echo "      vhost_remove (lhost=>'*sslini*', vhost=>'*sslini*', lpath=>'/conductor');" >> $STICKER
@@ -402,13 +404,17 @@ mkdir vad/vsp/vspx/browser/images
 mkdir vad/vsp/vspx/browser/images/16x16
 mkdir vad/code/conductor
 mkdir vad/vsp/conductor
+mkdir vad/vsp/conductor/dav
+mkdir vad/vsp/conductor/dav/image
+mkdir vad/vsp/conductor/dav/image/dav
 mkdir vad/vsp/conductor/help
 mkdir vad/vsp/conductor/images
-mkdir vad/vsp/conductor/images/dav_browser
 mkdir vad/vsp/conductor/images/icons
 mkdir vad/vsp/conductor/syntax
 mkdir vad/vsp/conductor/toolkit
 mkdir vad/vsp/conductor/toolkit/images
+mkdir vad/vsp/conductor/toolkit/styles
+
 cp -f $HOME/binsrc/xddl/xddl.xsd .
 cp -f $HOME/binsrc/xddl/xddl_diff.xsl .
 cp -f $HOME/binsrc/xddl/xddl_exec.xsl .
@@ -418,15 +424,17 @@ cp -f $HOME/binsrc/xddl/xddl_tables.xsd .
 cp -f $HOME/binsrc/xddl/xddl.sql vad/vsp/conductor
 cp -f $HOME/binsrc/xddl/xddl_dav.sql vad/vsp/conductor
 cp -f $HOME/binsrc/xddl/xddl_filesystem.sql vad/vsp/conductor
-cp -f images/* vad/vsp/conductor/images
-cp -f images/dav_browser/* vad/vsp/conductor/images/dav_browser
-cp -f images/icons/* vad/vsp/conductor/images/icons
+
 cp -f * vad/vsp/conductor
+cp -f dav/* vad/vsp/conductor/dav
+cp -f dav/image/* vad/vsp/conductor/dav/image
+cp -f dav/image/dav/* vad/vsp/conductor/dav/image/dav
+cp -f images/* vad/vsp/conductor/images
+cp -f images/icons/* vad/vsp/conductor/images/icons
 cp -f syntax/* vad/vsp/conductor/syntax
 cp -f $HOME/binsrc/oat/toolkit/*.js vad/vsp/conductor/toolkit/.
-cp -f $HOME/binsrc/oat/toolkit/images/* vad/vsp/conductor/toolkit/images
-cp -f yacutia.sql vad/vsp/conductor
-cp -f $HOME/binsrc/vspx/browser/admin_dav_browser.sql vad/vsp/conductor
+cp -f $HOME/binsrc/oat/images/* vad/vsp/conductor/toolkit/images
+cp -f $HOME/binsrc/oat/styles/* vad/vsp/conductor/toolkit/styles
 cp -f $HOME/binsrc/vspx/vdir_helper.sql vad/vsp/conductor
 cp -f help/*.xml vad/vsp/conductor/help
 
@@ -454,13 +462,6 @@ DO_COMMAND "DB.DBA.VAD_PACK('$STICKER_FS', '.', 'conductor_filesystem.vad')" dba
 DO_COMMAND checkpoint
 DO_COMMAND shutdown
 
-#
-#  Clean ups
-#
-rm -f vad.db vad.trx vad.log virtuoso.ini virtuoso.tdb
-rm -f xddl.xsd xddl_diff.xsl xddl_exec.xsl xddl_procs.xsd xddl_views.xsd xddl_tables.xsd
-rm -rf vad
-
 chmod 644 conductor_dav.vad
 chmod 644 conductor_filesystem.vad
 
@@ -474,6 +475,14 @@ then
 	rm -f *.vad
 	exit 1
 fi
+
+#
+#  Clean ups
+#
+rm -f vad.db vad.trx vad.log virtuoso.ini virtuoso.tdb
+rm -f xddl.xsd xddl_diff.xsl xddl_exec.xsl xddl_procs.xsd xddl_views.xsd xddl_tables.xsd
+rm -rf vad
+
 
 BANNER "COMPLETED VAD PACKAGING"
 exit 0

@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -288,11 +288,11 @@ atom_req_headers (in req "blogRequest", in what int := 0)
     if (req.user_name is not null)
       {
   b := encode_base64 (req.user_name||':'||req.passwd);
-  return sprintf ('%s: application/x.atom+xml\r\nAuthorization: Basic %s', case when what = 0 then 'Content-Type' else 'Accept' end, b);
+	return sprintf ('%s: application/atom+xml\r\nAuthorization: Basic %s', case when what = 0 then 'Content-Type' else 'Accept' end, b);
       }
     else
       {
-  return sprintf ('%s: application/x.atom+xml', case when what = 0 then 'Content-Type' else 'Accept' end);
+	return sprintf ('%s: application/atom+xml', case when what = 0 then 'Content-Type' else 'Accept' end);
       }
   }
 ;

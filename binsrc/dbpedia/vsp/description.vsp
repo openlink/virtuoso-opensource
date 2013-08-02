@@ -1,0 +1,393 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" 
+    xmlns:dbpprop="http://dbpedia.org/property/" 
+    xmlns:foaf="http://xmlns.com/foaf/0.1/" 
+    version="XHTML+RDFa 1.0" xml:lang="en">
+<?vsp
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2013 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
+
+   declare _G, _S, _P, _O, odd_position any;
+   declare _resource_, project_name, project_home_page any;
+   declare page_resource_uri, rdf_link, rdf_link2, rdf_link3, rdf_link4, atom_link, jsod, ntriples, label, true_label, _subject, csv_link, cxml_link, gen_rdf_link any;
+   declare iri_type, iri_uri, white_page, pkgs, txt, host, links, langs, dset, tmp_lines any;
+
+   -- INIT VALLUES
+
+   set http_charset='utf-8';
+   set isolation = 'uncomitted';
+   _resource_ := get_keyword ('res', params, '');
+   dset := get_keyword ('lang', params, '');
+   langs := dbp_ldd_get_lang_acc (lines);
+   tmp_lines := lines;
+   iri_type := 'unknown';
+   if (length (dset))
+     { 
+       langs := vector (dset, 1.0);
+       tmp_lines := vector ('Accept-Language: ' || dset);
+     }
+   else 
+     {
+       declare tmp any;
+       tmp := sprintf_inverse (registry_get ('dbp_graph'), 'http://%s.dbpedia.org', 0);
+       if (length (tmp))
+         tmp_lines := vector ('Accept-Language: ' || tmp[0]); 
+     }
+   pkgs := VAD..VAD_GET_PACKAGES ();
+   foreach (any p in pkgs) do
+     {
+       if (p[1] = 'rdf_mappers')
+         connection_set ('mappers_installed', 1);
+     }
+   nxt:
+
+   white_page := 0;
+   if (strstr (_resource_, '/resource') = 0)
+     white_page := 1;
+
+   -- add domain prefix
+   _resource_ := replace (_resource_, '/resource_vsp/', '', 1);
+   if (_resource_ not like 'nodeID:%') 
+     {
+       -- if rousource use custom domain, else use http://dbpedia.org
+       if (_resource_ like '/page/%')
+         _resource_ := registry_get('dbp_domain') || _resource_;
+       else
+         _resource_ := 'http://dbpedia.org' || _resource_;
+     }
+
+   host := http_request_header (http_request_header (), 'Host');  
+   project_name := 'dbpedia.org';
+
+   -- setup default graph (project_home_page)
+   project_home_page := registry_get ('dbp_graph');
+
+   if (_resource_ like '%dbpedia.org/void/%')
+     project_home_page := registry_get('dbp_graph') || '/void/';
+   else if (_resource_ like '%dbpedia.org/meta/%')
+     project_home_page := registry_get('dbp_graph') || '/meta';
+
+   page_resource_uri := replace (_resource_, '\'', '%27');
+   page_resource_uri := replace (page_resource_uri, registry_get('dbp_domain')||'/page', registry_get('dbp_domain')||'/resource');
+
+   -- HACK properties !!!
+
+   if (strstr (page_resource_uri, registry_get('dbp_domain') || '/resource/property') = 0)
+     {	   
+       page_resource_uri := replace (page_resource_uri,
+       registry_get('dbp_domain') || '/resource/property', registry_get('dbp_domain') || '/property');
+     }
+
+   -- setup rdf alternative links
+
+   rdf_link := 'http://'|| http_request_header (http_request_header (), 'Host') 
+   		||'/sparql?default-graph-uri=http%3A%2F%2F'||replace(registry_get('dbp_graph'),'http://','')||'&query=DESCRIBE+<' ||
+		replace (page_resource_uri, '%', '%25') || '>';
+   gen_rdf_link := rdf_link;
+   csv_link := rdf_link||'&format=text%2Fcsv'; 
+   cxml_link := rdf_link||'&format=text%2Fcxml'; 
+   if (page_resource_uri like 'http://%/resource/%')
+     rdf_link2 := dbp_ldd_get_proxy (replace (page_resource_uri, '/resource/', '/data/'));
+   else if (page_resource_uri like 'http://%/class/%')
+     rdf_link2 := dbp_ldd_get_proxy (replace (page_resource_uri, '/class/', '/data2/'));
+   else if (page_resource_uri like 'http://%/ontology/%')
+     {
+       project_home_page := registry_get('dbp_graph') || '/resource/classes#';
+     rdf_link2 := dbp_ldd_get_proxy (replace (page_resource_uri, '/ontology/', '/data3/'));
+       rdf_link := 'http://'|| http_request_header (http_request_header (), 'Host') 
+		||'/sparql?default-graph-uri=http%3A%2F%2F'||replace(registry_get('dbp_graph'),'http://','')||'%2Fresource%2Fclasses%23&query=DESCRIBE+<' ||
+		replace (page_resource_uri, '%', '%25') || '>';
+       gen_rdf_link := rdf_link;
+     }
+   else if (page_resource_uri like 'http://%/property/%')
+     rdf_link2 := dbp_ldd_get_proxy (replace (page_resource_uri, '/property/', '/data4/'));
+   else if (page_resource_uri like 'http://%/meta/%')
+     rdf_link2 := dbp_ldd_get_proxy (replace (page_resource_uri, '/meta/', '/data5/'));
+   else  
+     rdf_link2 := rdf_link;
+   if (rdf_link2 not like '%/data%/%')
+     {
+       rdf_link2 := rdf_link||'&format=rdf'; 
+       rdf_link3 := rdf_link || '&output=application%2Frdf%2Bjson';
+       rdf_link4 := rdf_link || '&output=application%2Frdf%2Bjson';
+       rdf_link := rdf_link || '&format=n3';
+       atom_link := rdf_link || '&output=application%2Fatom%2Bxml';
+       jsod := rdf_link || '&output=application%2Fodata%2Bjson';
+       ntriples := rdf_link || '&output=text%2Fplain';
+     }  
+   else
+     {
+       rdf_link := rdf_link2 || '.n3';
+       rdf_link3 := rdf_link2 || '.json';
+       rdf_link4 := rdf_link2 || '.jrdf';
+       atom_link := rdf_link2 || '.atom';
+       jsod := rdf_link2 || '.jsod';
+       ntriples := rdf_link2 || '.ntriples';
+       rdf_link2 := rdf_link2 || '.rdf';
+     }
+
+   links := sprintf ('Link: <%s>; rel="alternate"; type="application/rdf+xml"; title="Structured Descriptor Document (RDF/XML format)", ', rdf_link2); 
+   links := links || sprintf ('<%s>; rel="alternate"; type="text/n3"; title="Structured Descriptor Document (N3/Turtle format)", ',rdf_link); 
+   links := links || sprintf ('<%s>; rel="alternate"; type="application/json"; title="Structured Descriptor Document (RDF/JSON format)", ', rdf_link3); 
+   links := links || sprintf ('<%s>; rel="alternate"; type="application/atom+xml"; title="OData (Atom+Feed format)", ', atom_link); 
+   links := links || sprintf ('<%s>; rel="alternate"; type="text/csv"; title="Structured Descriptor Document (CSV format)", ', csv_link); 
+   if (__proc_exists ('DB.DBA.RDF_TRIPLES_TO_CXML') is not null) 
+     {
+       links := links || sprintf ('<%s>; rel="alternate"; type="text/cxml"; title="Structured Descriptor Document (CXML format)", ', cxml_link); 
+     }
+   links := links || sprintf ('<%s>; rel="alternate"; type="text/plain"; title="Structured Descriptor Document (N-Triples format)", ', ntriples); 
+
+   links := links || sprintf ('<%s>; rel="alternate"; type="application/microdata+json"; title="Structured Descriptor Document (Microdata/JSON format)", ', gen_rdf_link || sprintf ('&output=%U', 'application/microdata+json') ); 
+   links := links || sprintf ('<%s>; rel="alternate"; type="text/html"; title="Structured Descriptor Document (Microdata/HTML format)", ', gen_rdf_link || sprintf ('&output=%U', 'text/html') ); 
+   links := links || sprintf ('<%s>; rel="alternate"; type="application/ld+json"; title="Structured Descriptor Document (JSON-LD format)", ', gen_rdf_link || sprintf ('&output=%U', 'application/ld+json') ); 
+
+   links := links || sprintf ('<%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic", ', page_resource_uri); 
+   links := links || sprintf ('<%s>; rev="describedby", ', page_resource_uri); 
+   links := links || sprintf ('<http://mementoarchive.lanl.gov/dbpedia/timegate/%s>; rel="timegate"\r\n', _resource_);
+
+   -- set for white page
+   if (lower (host) <> 'dbpedia.org')
+     txt := sprintf ('at <a href="http://%s/">%s</a>', host, host);
+   else
+     txt := sprintf ('at <a href="%s">DBpedia.org</a>', registry_get ('dbp_graph'));
+
+   -- check weather to decode the iri's
+   if (registry_get ('dbp_decode_iri') = 'on')
+     {
+       page_resource_uri := split_and_decode (page_resource_uri)[0];
+--     _resource_:= split_and_decode (_resource_)[0];
+     }
+   if (dbp_check_if_modified (lines, project_home_page))
+     return;
+   -- create iid's
+   _G := DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (project_home_page);
+   _S := DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (page_resource_uri);
+   _P := DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (page_resource_uri);
+   _O := DB.DBA.RDF_MAKE_IID_OF_QNAME_SAFE (page_resource_uri);
+   odd_position := 0;
+
+   -- set up label
+   label := dbp_ldd_label (_S, _G, tmp_lines);
+   true_label := label;
+   if (not length (label))
+     label := page_resource_uri;
+
+   -- abstract
+   _subject := dbp_ldd_subject (_S, _G, tmp_lines);
+   -- class type
+   iri_type := dbp_ldd_type (_G, _S, iri_uri, lines);
+
+   -- set up http
+   -- http_header ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\n');
+   http_header (sprintf ('Expires: %s\r\n', date_rfc1123 (dateadd ('day', 7, now ()))) || links);
+?>
+
+<!-- header -->
+<head profile="http://www.w3.org/1999/xhtml/vocab">
+    <title>About: <?vsp http (sprintf ('%V', charset_recode (label, 'UTF-8', '_WIDE_'))); ?></title>
+    <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link2?>" title="Structured Descriptor Document (RDF/XML format)" />
+    <link rel="alternate" type="text/rdf+n3" href="<?=rdf_link?>" title="Structured Descriptor Document (N3/Turtle format)" />
+    <link rel="alternate" type="application/json+rdf" href="<?=rdf_link4?>" title="Structured Descriptor Document (RDF/JSON format)" />
+    <link rel="alternate" type="application/json" href="<?=rdf_link3?>" title="Structured Descriptor Document (RDF/JSON format)" />
+    <link rel="alternate" type="application/atom+xml" href="<?= atom_link ?>" title="OData (Atom+Feed format)" />
+    <link rel="alternate" type="text/plain" href="<?= ntriples ?>" title="Structured Descriptor Document (N-Triples format)" />
+    <link rel="alternate" href="<?V csv_link ?>" type="text/csv" title="Structured Descriptor Document (CSV format)" />
+    <?vsp if (__proc_exists ('DB.DBA.RDF_TRIPLES_TO_CXML') is not null) { ?>
+    <link rel="alternate" href="<?V cxml_link ?>" type="text/cxml" title="Structured Descriptor Document (CXML format)" />
+    <?vsp } ?>
+    <link rel="alternate" href="<?V gen_rdf_link || sprintf ('&output=%U', 'application/microdata+json') ?>" type="application/microdata+json" 	title="Structured Descriptor Document (Microdata/JSON format)" />
+    <link rel="alternate" href="<?V gen_rdf_link || sprintf ('&output=%U', 'text/html') ?>" 		     type="text/html" 			title="Structured Descriptor Document (Microdata/HTML format)" />
+    <link rel="alternate" href="<?V gen_rdf_link || sprintf ('&output=%U', 'application/ld+json') ?>"      type="application/ld+json" 	title="Structured Descriptor Document (JSON-LD format)" />
+    <link rel="timegate" type="text/html" href="http://mementoarchive.lanl.gov/dbpedia/timegate/<?= _resource_ ?>" title="Time Machine" />
+    <link rel="stylesheet" type="text/css" href="/statics/<?=either (white_page, 'style_w.css', 'style.css')?>" />
+    <link href="/statics/highlighter.css" type="text/css" rel="stylesheet" charset="utf-8" />
+    <link rel="foaf:primarytopic" href="<?= page_resource_uri ?>"/>
+    <link rev="describedby" href="<?= page_resource_uri ?>"/>
+    <script type="text/javascript" src="/statics/script.js"></script>
+</head>
+<body onload="init();" about="<?V charset_recode(page_resource_uri, 'UTF-8', '_WIDE_') ?>">
+    <div id="header">
+      <div id="hd_l">
+	  <h1 id="title">About: <a href="<?V dbp_ldd_get_proxy (page_resource_uri) ?>"><?V charset_recode(label, 'UTF-8', '_WIDE_') ?></a></h1>
+        <div id="homelink">
+          <!--?vsp if (white_page = 0) http (txt); ?-->
+        </div>
+	<div class="page-resource-uri">
+	    An Entity of Type : <a href="<?= iri_uri ?>"><?= iri_type ?></a>, 
+	    from Named Graph : <a href="<?V project_home_page ?>"><?V project_home_page ?></a>, 
+	    within Data Space : <a href="http://<?V host ?>"><?V host ?></a>
+        </div>
+      </div> <!-- hd_l -->
+      <div id="hd_r">
+	  <a href="<?=registry_get('dbp_imprint') ?>" title="About DBpedia">
+	      <img src="/statics/dbpedia_logo.png" height="64" alt="About DBpedia"/>
+        </a>
+      </div> <!-- hd_r -->
+    </div> <!-- header -->
+    <div id="content">
+
+      <p><?vsp http (sprintf ('%s', _subject)); ?></p>
+<!-- proptable -->
+      <table class="description"><tr><th>Property</th><th>Value</th></tr>
+
+<?vsp
+      declare sas, printed, vis int;
+      declare all_lang any;
+      all_lang := vector ('*', 1.0);
+
+      -- check resource domain and graph in order to print  owl:sameAs
+      if (page_resource_uri <> dbp_ldd_get_proxy (page_resource_uri) and registry_get ('dbp_graph') = registry_get('dbp_domain'))
+        sas := 1;
+      else
+        sas := 0;
+
+      --select predicates for resource
+      for (select distinct P as PRED from DB.DBA.RDF_QUAD where S = _S and G = _G order by id_to_iri (P)) do
+	{
+	   dbp_ldd_http_print_l (id_to_iri (PRED), odd_position);
+           printed := 0;
+           -- select values for each predicate
+	   for (select top 300 O as OBJECT from DB.DBA.RDF_QUAD where S = _S and G = _G and P = PRED) do
+              {
+		if (id_to_iri (PRED) in (registry_get('dbp_domain') || '/property/redirect', registry_get('dbp_domain') || '/ontology/wikiPageRedirects') and isiri_id (OBJECT))
+                  {
+		    http_rewrite ();
+		    http_status_set (301);	
+		    http_header (sprintf ('Location: %s\n', dbp_ldd_get_proxy (id_to_iri (OBJECT))));
+		    return;
+		  } 
+		vis := dbp_ldd_http_print_r (OBJECT, 0, true_label, PRED, 1, langs);
+                printed := printed + vis;
+              }
+	   if (not printed)
+             {
+               for (select top 100 O as OBJECT from DB.DBA.RDF_QUAD where S = _S and G = _G and P = PRED) do
+		 dbp_ldd_http_print_r (OBJECT, 0, true_label, PRED, 1, all_lang);
+             }
+          
+           if (sas and PRED = rdf_sas_iri ())
+	     { 	 
+	       dbp_ldd_http_print_r (iri_to_id (page_resource_uri), 1, true_label, PRED, 1, langs); 
+	       sas := 0; 
+	     }  
+
+	   http ('</ul></td></tr>');
+	}
+      -- print owl:sameAs
+      if (sas)
+        {
+	   dbp_ldd_http_print_l (id_to_iri (rdf_sas_iri ()), odd_position);
+	   dbp_ldd_http_print_r (iri_to_id (page_resource_uri), 1, null, rdf_sas_iri (), 1, langs); 
+	   http ('</ul></td></tr>');
+	}	
+      -- check for reverse triples
+      for (select distinct P as PRED from DB.DBA.RDF_QUAD where O = _O and G = _G order by id_to_iri (P)) do
+	{
+	   dbp_ldd_http_print_l (id_to_iri (PRED), odd_position, 1);
+           printed := 0;
+	   for (select top 300 S as OBJECT from DB.DBA.RDF_QUAD where O = _O and G = _G and P = PRED) do
+              {
+		vis := dbp_ldd_http_print_r (OBJECT, 0, true_label, PRED, 0, langs);
+                printed := printed + vis;
+              }
+	   if (not printed)
+             {
+	       for (select top 100 S as OBJECT from DB.DBA.RDF_QUAD where O = _O and G = _G and P = PRED) do
+		 dbp_ldd_http_print_r (OBJECT, 0, true_label, PRED, 0, all_lang);
+             }
+	   http ('</ul></td></tr>');
+	}
+
+       if  (odd_position = 0)
+	 {
+	    http_request_status ('HTTP/1.1 404 Not found');
+	    http ('<tr><td colspan="2"><p>No further information is available. (The requested entity is unknown)</p></td></tr>');
+	 }
+?>
+      </table>
+    </div> <!--  #content -->
+<!-- footer -->
+    <div id="footer">
+      <div id="ft_t">
+        Browse using:
+	<a href="http://linkeddata.uriburner.com/ode/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Data Explorer</a> |
+	<a href="/describe/?uri=<?vsp http_url (page_resource_uri); ?>">OpenLink Faceted Browser</a>
+        <!--a href="http://dataviewer.zitgist.com/?uri=<?vsp http_url (page_resource_uri); ?>">Zitgist Data Viewer</a> |
+        <a href="http://beckr.org/marbles?uri=<?vsp http_url (page_resource_uri); ?>">Marbles</a> |
+        <a href="http://www4.wiwiss.fu-berlin.de/rdf_browser/?browse_uri=<?vsp http_url (page_resource_uri); ?>">DISCO</a> |
+        <a href="http://dig.csail.mit.edu/2005/ajar/release/tabulator/0.8/tab.html?uri=<?vsp http_url (page_resource_uri); ?>" >Tabulator</a-->
+        &nbsp; &nbsp; Raw Data in:
+	<?vsp if (__proc_exists ('DB.DBA.RDF_TRIPLES_TO_CXML') is not null) { ?>
+	<a href="<?= cxml_link ?>">CXML</a> |
+	<?vsp } ?>
+        <a href="<?= csv_link ?>">CSV</a> | RDF (
+        <a href="<?= ntriples ?>">N-Triples</a> 
+        <a href="<?= rdf_link ?>">N3/Turtle</a> 
+	<a href="<?= rdf_link3 ?>">JSON</a> 
+        <a href="<?= rdf_link2 ?>">XML</a> ) | OData (
+	<a href="<?= atom_link ?>">Atom</a> 
+	<a href="<?= jsod ?>">JSON</a> )| Microdata (
+	<a href="<?= gen_rdf_link || sprintf ('&output=%U', 'application/microdata+json') ?>">JSON</a>
+        <a href="<?= gen_rdf_link || sprintf ('&output=%U', 'text/html') ?>">HTML</a>) |  
+        <a href="<?= gen_rdf_link || sprintf ('&output=%U', 'application/ld+json')?>">JSON-LD</a> 
+
+        &nbsp; &nbsp;<a href="<?=registry_get('dbp_imprint') ?>">About</a>&nbsp; &nbsp;
+      </div> <!-- #ft_t -->
+      <div id="ft_b">
+        <a href="http://virtuoso.openlinksw.com" title="OpenLink Virtuoso"><img class="powered_by" src="/statics/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/></a>
+        <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="/statics/LoDLogo.gif"/></a> &nbsp;
+        <a href="<?= project_home_page ?>/sparql"><img alt="W3C Semantic Web Technology" src="/statics/sw-sparql-blue.png"/></a> &nbsp;  &nbsp;
+        <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="/statics/od_80x15_red_green.png"/></a>
+	<span about=""
+	resource="http://www.w3.org/TR/rdfa-syntax"
+	rel="dc:conformsTo" xmlns:dc="http://purl.org/dc/terms/">
+	<a href="http://validator.w3.org/check?uri=referer"><img
+	    src="http://www.w3.org/Icons/valid-xhtml-rdfa"
+	    alt="Valid XHTML + RDFa" height="27" /></a>
+	</span>
+      </div> <!-- #ft_b -->
+      <div id="ft_ccbysa">
+	<?vsp dbp_wikipedia_cc_by_sa(_S, _G); ?>
+	<br /><?vsp dbp_virt_info (); ?>
+      </div> <!-- #ft_ccbysa -->
+    </div> <!-- #footer -->
+    <!--script type="text/javascript">
+     Place any Javascript code e.g. Google Analytics scripts 
+    </script-->
+    <?vsp if (isstring (registry_get ('dbpedia_urchinTracker'))) { ?>
+	<script type="text/javascript">
+	  var _gaq = _gaq || [];
+	  _gaq.push(['_setAccount', '<?V registry_get ('dbpedia_urchinTracker')  ?>']);
+	  _gaq.push(['_trackPageview']);
+
+	  (function() {
+	    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+	    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+	    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	  })();
+	</script>
+    <?vsp } ?>
+ </body>
+</html>
+

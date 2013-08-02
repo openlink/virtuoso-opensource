@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -33,6 +33,8 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY audio "http://purl.org/media/audio#">
 <!ENTITY media "http://purl.org/media#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
+<!ENTITY v "http://www.w3.org/2006/vcard/ns#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -49,6 +51,8 @@
     xmlns:audio="&audio;"
     xmlns:media="&media;"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:v="&v;"
+    xmlns:opl="&opl;"
     >
 
     <xsl:output method="xml" indent="yes" />
@@ -78,6 +82,13 @@
 			<owl:sameAs rdf:resource="{$docIRI}"/>
 		</rdf:Description>
 		<mo:MusicArtist rdf:about="{vi:proxyIRI (concat($base,'artist/',translate(name, ' ', '+')))}">
+                	<opl:providedBy>
+                		<foaf:Organization rdf:about="http://www.discogs.com#this">
+                			<foaf:name>Discogs</foaf:name>
+                			<foaf:homepage rdf:resource="http://www.discogs.com"/>
+                		</foaf:Organization>
+                	</opl:providedBy>
+
 			<xsl:variable name="sas-iri" select="vi:dbpIRI ('', translate (name, ' ', '_'))"/>
 			<xsl:if test="not starts-with ($sas-iri, '#')">
 				<owl:sameAs rdf:resource="{$sas-iri}"/>
@@ -108,6 +119,13 @@
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI (concat($base,'release/',@id))}"/>
 		</rdf:Description>
 		<rdf:Description rdf:about="{vi:proxyIRI (concat($base,'release/',@id))}">
+                	<opl:providedBy>
+                		<foaf:Organization rdf:about="http://www.discogs.com#this">
+                			<foaf:name>Discogs</foaf:name>
+                			<foaf:homepage rdf:resource="http://www.discogs.com"/>
+                		</foaf:Organization>
+                	</opl:providedBy>
+
 			<rdf:type rdf:resource="&mo;Record"/>
 			<rdf:type rdf:resource="&audio;Album"/>
 			<sioc:has_container rdf:resource="{concat($base,'release/',@id)}"/>
@@ -133,6 +151,13 @@
 
     <xsl:template match="track">
 		<rdf:Description rdf:about="{vi:proxyIRI (concat ($base, 'release/', ../../@id), '', position)}">
+                	<opl:providedBy>
+                		<foaf:Organization rdf:about="http://www.discogs.com#this">
+                			<foaf:name>Discogs</foaf:name>
+                			<foaf:homepage rdf:resource="http://www.discogs.com"/>
+                		</foaf:Organization>
+                	</opl:providedBy>
+
 			<rdf:type rdf:resource="&mo;Track"/>
 			<rdf:type rdf:resource="&audio;Recording"/>
 			<mo:track rdf:resource="{vi:proxyIRI (concat ($base, 'release/', ../../@id), '', position)}"/>
@@ -163,6 +188,13 @@
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI (concat($base,'label/', name))}"/>
 		</rdf:Description>
 		<mo:Label rdf:about="{vi:proxyIRI (concat($base,'label/', name))}">
+                	<opl:providedBy>
+                		<foaf:Organization rdf:about="http://www.discogs.com#this">
+                			<foaf:name>Discogs</foaf:name>
+                			<foaf:homepage rdf:resource="http://www.discogs.com"/>
+                		</foaf:Organization>
+                	</opl:providedBy>
+
 			<sioc:has_container rdf:resource="{concat($base,'label/', name)}"/>
 			<v:adr>
 				<xsl:value-of select="contactinfo"/>

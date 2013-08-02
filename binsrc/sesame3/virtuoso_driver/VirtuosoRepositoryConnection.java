@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2007 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -171,8 +171,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	private static Resource nilContext;
 	private Connection quadStoreConnection;
 	protected VirtuosoRepository repository;
-	static final String S_INSERT = "sparql define output:format '_JAVA_'  insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
-        static final String S_DELETE = "sparql define output:format '_JAVA_' delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
+	static final String S_INSERT = "sparql insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
+        static final String S_DELETE = "sparql delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
 	static final int BATCH_SIZE = 5000;
 	private PreparedStatement psInsert;
 	private int psInsertCount = 0;
@@ -1335,15 +1335,22 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			parser.setVerifyData(true);
 			parser.setStopAtFirstError(true);
 			parser.setDatatypeHandling(RDFParser.DatatypeHandling.IGNORE);
-			final PreparedStatement ps = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
-			final Resource[] _contexts = checkDMLContext(contexts);
 
                         RDFHandlerBase rdfInserter = new RDFHandlerBase() {
 				
 				int count = 0;
+				PreparedStatement ps = null;
+				Resource[] _contexts = checkDMLContext(contexts);
 
-				public void startRDF() {
+				public void startRDF() throws RDFHandlerException {
+					if (ps == null) 
+						try {
+				        		ps = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
+				        	} catch (java.sql.SQLException e) {
+							throw new RDFHandlerException("Problem PrepareStatement: ", e);
+				        	}
 				}
+
 
 				public void endRDF() throws RDFHandlerException {
 					try {
@@ -1351,6 +1358,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 							ps.executeBatch();
 							ps.clearBatch();
 							count = 0;
+						}
+						if (ps != null) {
+							ps.close();
+							ps = null;
 						}
 					}
 					catch (SQLException e) {
@@ -1365,6 +1376,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 						psn.setString(1, prefix);
 						psn.setString(2, name);
 						psn.execute();
+						psn.close();
 					}
 					catch (SQLException e) {
 						throw new RDFHandlerException("Problem executing query: " + query, e);
@@ -1637,6 +1649,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				ps.executeBatch();
 				ps.clearBatch();
 			}
+			ps.close();
 			if (autoCommit) {
 				commit();
 			}
@@ -1729,6 +1742,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				ps.executeBatch();
 				ps.clearBatch();
 			}
+			ps.close();
 
 			if (autoCommit) {
 				commit();
@@ -2162,6 +2176,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			ps.setString(1, prefix);
 			ps.setString(2, name);
 			ps.execute();
+			ps.close();
 		}
 		catch (SQLException e) {
 			throw new StoreException("Problem executing query: " + query, e);
@@ -2192,6 +2207,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			PreparedStatement ps = prepareStatement(query);
 			ps.setString(1, prefix);
 			ps.execute(query);
+			ps.close();
 		}
 		catch (SQLException e) {
 			throw new StoreException("Problem executing query: " + query, e);
@@ -2218,6 +2234,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		try {
 			java.sql.Statement stmt = createStatement();
 			stmt.execute(query);
+			stmt.close();
 		}
 		catch (SQLException e) {
 			throw new StoreException("Problem executing query: " + query, e);
@@ -2300,6 +2317,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 */
 	public int executeSPARUL(String query) throws StoreException 
 	{
+		java.sql.Statement stmt = null;
 		verifyIsOpen();
 		verifyNotReadOnly();
 
@@ -2309,12 +2327,18 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		try {
 			flushDelayAdd();
-			java.sql.Statement stmt = createStatement();
-			stmt.execute("sparql\n define output:format '_JAVA_'\n " + query);
+			stmt = createStatement();
+			stmt.execute("sparql\n " + query);
 			return stmt.getUpdateCount();
 		}
 		catch (SQLException e) {
 			throw new StoreException(e);
+		}
+		finally {
+			try {
+			  if (stmt != null)
+				stmt.close();
+			} catch (Exception e) {}
 		}
 	}
 
@@ -2409,24 +2433,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 	private String fixQuery(String query, Dataset dataset, boolean includeInferred, BindingSet bindings) 
 	{
-		StringTokenizer tok = new StringTokenizer(query);
-		String s = "";
 		StringBuffer ret = new StringBuffer("sparql\n ");
-
-		while(tok.hasMoreTokens()) {
-		    s = tok.nextToken().toLowerCase();
-		    if (s.equals("describe") || s.equals("construct") || s.equals("ask")) 
-			break;
-		}
-
-		if (s.equals("describe") || s.equals("construct") || s.equals("ask")) 
-		    ret.append("define output:format '_JAVA_'\n ");
-
 
 		if (includeInferred && repository.ruleSet!=null && repository.ruleSet.length() > 0)
 		  ret.append("define input:inference '"+repository.ruleSet+"'\n ");
-
-		ret.append("define output:format '_JAVA_'\n ");
 
 		if (dataset != null)
 		{
@@ -2469,8 +2479,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		try {
 			boolean isAutoCommit = getQuadStoreConnection().getAutoCommit();
-		        if (!isAutoCommit && useLazyAdd) {
-		        	synchronized(this) {
+		        synchronized(this) {
+		        	if (!isAutoCommit && useLazyAdd) {
 		        		if (psInsert == null)
 						psInsert = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
 
@@ -2488,20 +2498,21 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 						psInsert.clearBatch();
 						psInsertCount = 0;
 					}
-				}
-		        } else {
-				PreparedStatement ps = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
+		        	} else {
+		        		if (psInsert == null)
+						psInsert = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
 
-				for (int i = 0; i < contexts.length; i++) {
-					ps.setString(1, contexts[i].stringValue());
-					bindResource(ps, 2, subject);
-					bindURI(ps, 3, predicate);
-					bindValue(ps, 4, object);
+					for (int i = 0; i < contexts.length; i++) {
+						psInsert.setString(1, contexts[i].stringValue());
+						bindResource(psInsert, 2, subject);
+						bindURI(psInsert, 3, predicate);
+						bindValue(psInsert, 4, object);
 
-					ps.addBatch();
-				}
-				ps.executeBatch();
-				ps.clearBatch();
+						psInsert.addBatch();
+					}
+					psInsert.executeBatch();
+					psInsert.clearBatch();
+		        	}
 		        }
 		}
 		catch (SQLException e) {
@@ -2562,6 +2573,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				ps.setString(1, contexts[i].stringValue());
 				ps.execute();
 			}
+			ps.close();
 		  }
 		  catch (SQLException e) {
 			throw new StoreException(e);
@@ -2672,8 +2684,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	private void removeContext(Resource subject, URI predicate, Value object, Resource context) 
 		throws StoreException 
 	{
-		PreparedStatement ps = null;
-
 		String S = "?s";
 		String P = "?p";
 		String O = "?o";
@@ -2683,19 +2693,21 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		    if (subject == null && predicate == null && object == null && context != null) {
 			String  query = "sparql clear graph iri(??)";
 
-			ps = prepareStatement(query);
+			PreparedStatement ps = prepareStatement(query);
 			ps.setString(1, context.stringValue());
 			ps.execute();
+			ps.close();
 
 		    } else if (subject != null && predicate != null && object != null && context != null) {
 
-		    	ps = prepareStatement(VirtuosoRepositoryConnection.S_DELETE);
+		    	PreparedStatement ps = prepareStatement(VirtuosoRepositoryConnection.S_DELETE);
 
 			ps.setString(1, context.stringValue());
 			bindResource(ps, 2, subject);
 			bindURI(ps, 3, predicate);
 			bindValue(ps, 4, object);
 			ps.execute();
+			ps.close();
 
 		    } else {
 
@@ -2719,6 +2731,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		    	java.sql.Statement stmt = createStatement();
 		    	stmt.execute(query);
+		    	stmt.close();
 		    }
 		}
 		catch (SQLException e) {

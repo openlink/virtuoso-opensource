@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2007 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -34,14 +34,16 @@
 #undef XML_DTD
 
 #ifdef _WIN32
-#define HAVE_STRTOK_R
-#define HAVE_SOCKLEN_T
+#define HAVE_STRTOK_R 1
+#define HAVE_SOCKLEN_T 1
 #define C_BEGIN()
 #define C_END()
 #define _HSREGEX_H
 #undef ssize_t
 #undef strcasecmp
 #undef strncasecmp
+#else
+#define strnicmp strncasecmp
 #endif
 
 #include "php.h"
@@ -206,7 +208,6 @@ virtm_http_handler (void *cli, char *err, int max_len,
     int compile_only)
 {
   zend_file_handle file_handle;
-  char *ret_str;
   box_t *hret;
   vreq_t req;
 
@@ -252,12 +253,10 @@ virtm_http_handler (void *cli, char *err, int max_len,
   hret[1] = (box_t) strses_string (req.r_hdr_session);
   *head_ret = (char *) hret;
 
-  ret_str = req.ret_session;
-
   strses_free (req.s_hdr_session);
   strses_free (req.r_hdr_session);
 
-  return ret_str;
+  return (char *) req.ret_session;
 }
 
 
@@ -360,6 +359,9 @@ static void sapi_virtuoso_flush (void *server_context);
 static char *sapi_virtuoso_getenv (char *name, size_t name_len TSRMLS_DC);
 static int sapi_virtuoso_header_handler (
     sapi_header_struct *sapi_header,
+#if PHP_VERSION_ID >= 50300
+    sapi_header_op_enum op,
+#endif
     sapi_headers_struct *sapi_headers TSRMLS_DC);
 static int sapi_virtuoso_send_headers (
     sapi_headers_struct *sapi_headers TSRMLS_DC);
@@ -371,7 +373,7 @@ static void sapi_virtuoso_log_message (char *message);
 static sapi_module_struct virtuoso_sapi_module =
   {
     "Virtuoso",				/* name */
-    "Virtuoso Hosting Plugin",		/* pretty name */
+    "Virtuoso Universal Server",	/* pretty name */
 
     sapi_virtuoso_startup,		/* startup */
     php_module_shutdown_wrapper,	/* shutdown */
@@ -474,12 +476,30 @@ sapi_virtuoso_getenv (char *name, size_t name_len TSRMLS_DC)
 static int
 sapi_virtuoso_header_handler (
     sapi_header_struct *sapi_header,
+#if PHP_VERSION_ID >= 50300
+    sapi_header_op_enum op,
+#endif
     sapi_headers_struct *sapi_headers TSRMLS_DC)
 {
   vreq_t *r = ((vreq_t *) SG (server_context));
 
+#if PHP_VERSION_ID >= 50300
+  if (op != SAPI_HEADER_ADD && op != SAPI_HEADER_REPLACE)
+    return SAPI_HEADER_ADD;
+#endif
+
   if (sapi_header && sapi_header->header_len && sapi_header->header && r->r_hdr_session)
     {
+      /* Custom Content-length headers seem to confuse Virtuoso...
+       * Bad idea anyway. Use the correct calculated value instead.
+       */
+      static const char content_length[] = "content-length: ";
+      if (sapi_header->header_len > sizeof(content_length) - 1 &&
+	  !strnicmp (sapi_header->header, content_length, sizeof (content_length) - 1))
+	{
+	  return SAPI_HEADER_ADD;
+	}
+
       session_buffered_write (r->r_hdr_session, sapi_header->header,
 	  sapi_header->header_len);
       session_buffered_write (r->r_hdr_session, "\r\n", 2);
@@ -561,7 +581,7 @@ sapi_virtuoso_register_server_variables (zval *track_vars_array TSRMLS_DC)
       php_register_variable ("PHP_SELF", val, track_vars_array TSRMLS_CC);
 #else
       if (sapi_module.input_filter (PARSE_SERVER, "PHP_SELF", &val,
-	    strlen (val), &new_val_len TSRMLS_CC))
+	    (uint) strlen (val), &new_val_len TSRMLS_CC))
 	{
 	  php_register_variable ("PHP_SELF", val, track_vars_array TSRMLS_CC);
 	}
@@ -641,7 +661,7 @@ PHP_MINFO_FUNCTION (virtuoso)
   int i;
 
   php_info_print_table_start ();
-  php_info_print_table_row (2, "Plugin Version", DBMS_SRV_VER);
+  php_info_print_table_row (2, "Server Version", DBMS_SRV_VER);
   php_info_print_table_row (2, "Build Date", __DATE__);
   php_info_print_table_row (2, "Revision", "$Revision$");
   php_info_print_table_end ();
@@ -717,31 +737,19 @@ static
 PHP_FUNCTION (__virt_internal_dsn)
 {
   client_connection_t *cli;
-  zval **pv_dsn;
   user_t *usr;
-  char *dsn;
+  char *dsn = NULL;
+  int dsn_len;
   char *connstr;
-  int argc;
 
-  argc = ZEND_NUM_ARGS ();
-  if (argc == 0)
-    {
-      dsn = VG (local_dsn);
-    }
-  else if (argc == 1)
-    {
-      if (zend_get_parameters_ex (1, &pv_dsn) == FAILURE)
-	{
-	  WRONG_PARAM_COUNT;
-	}
-      convert_to_string_ex (pv_dsn);
-      dsn = Z_STRVAL_PP (pv_dsn);
-    }
-  else
-    {
-      WRONG_PARAM_COUNT;
-    }
+  /* get the dsn argument, or use the default ('Local Virtuoso') if not given */
+  if (zend_parse_parameters (ZEND_NUM_ARGS () TSRMLS_CC, "|s", &dsn, &dsn_len) == FAILURE)
+    RETURN_FALSE;
 
+  if (dsn == NULL && (dsn = VG (local_dsn)) == NULL)
+    RETURN_FALSE;
+
+  /* get the user account associated with this endpoint */
   cli = GET_IMMEDIATE_CLIENT_OR_NULL;
   if (cli == NULL || (usr = cli->cli_user) == NULL || !usr->usr_name)
     {
@@ -758,7 +766,8 @@ PHP_FUNCTION (__virt_internal_dsn)
 	  usr->usr_name);
       RETURN_FALSE;
     }
-  /* disallow 'dba', 'dav' and other system privileged users? */
+
+  /* disallow 'dba', 'dav' and other system privileged users */
   if (usr->usr_id < (oid_t) 100 && !VG (allow_dba))
     {
       php_error_docref (NULL TSRMLS_CC, E_WARNING,
@@ -766,8 +775,8 @@ PHP_FUNCTION (__virt_internal_dsn)
 	  usr->usr_name);
       RETURN_FALSE;
     }
-  spprintf (&connstr, 0, "DSN=%s;UID=%s;PWD=%s",
-      dsn, usr->usr_name, usr->usr_pass);
+
+  spprintf (&connstr, 0, "DSN=%s;UID=%s;PWD=%s", dsn, usr->usr_name, usr->usr_pass);
   RETURN_STRING (connstr, 0);
 }
 

@@ -1,13 +1,13 @@
 #!/bin/sh
 #
-#  $Id$
+#  $Id: msdtc.sh,v 1.13.8.4 2013/01/02 16:14:42 source Exp $
 #
 #  MS DTC tests
 #  
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -27,7 +27,7 @@
 LOGFILE=msdtc.output
 export LOGFILE
 rm -f $LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 HOST_OS=`uname -s | grep WIN`
 
 if [ "x$HOST_OS" = "x" ]
@@ -47,8 +47,8 @@ fi
 
 DSN_FILE=virt.odbc
 MTSTEST=${MTSTEST-mtstest.exe}
-MTSTCONF="-f $DSN_FILE -d ../mts/"
-VOLEDBT=${VOLEDBTEST-../mts/voledbtest.exe}
+MTSTCONF="-f $DSN_FILE -d $VIRTUOSO_TEST/../mts/"
+VOLEDBT=${VOLEDBTEST-$VIRTUOSO_TEST/../mts/voledbtest.exe}
 
 PLUGIN=../msdtc_sample.dll
 
@@ -145,7 +145,7 @@ cd msdtc1
 mkINI "virtuoso.ini" $DS1
 
 LOGFILE=../msdtc.output
-cp -r ../plugins ./
+cp -r $VIRTUOSO_TEST/plugins ./
 START_SERVER $DS1 1000
 cd ..
 
@@ -155,14 +155,14 @@ cd msdtc2
 
 mkINI "virtuoso.ini" $DS2
 
-cp -r ../plugins ./
+cp -r $VIRTUOSO_TEST/plugins ./
 START_SERVER $DS2 1000
 cd ..
 
 LOGFILE=msdtc.output
 
-RUN $ISQL $DS1 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < msdtc_conn_check.sql
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < msdtc_conn_check.sql
+RUN $ISQL $DS1 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/msdtc_conn_check.sql
+RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/msdtc_conn_check.sql
 
 RUN $MTSTEST $MTSTCONF +load
 if test $STATUS -eq 0
@@ -221,7 +221,7 @@ sleep 10
 START_SERVER $DS2 1000
 cd ..
 
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < msdtc_conn_check.sql
+RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/msdtc_conn_check.sql
 
 RUN $MTSTEST $MTSTCONF +exec 0
 if test $STATUS -eq 0
@@ -243,13 +243,13 @@ cd msdtc3
 mkINI "virtuoso.ini" $DS3
 
 LOGFILE=../msdtc.output
-cp -r ../plugins ./
+cp -r $VIRTUOSO_TEST/plugins ./
 START_SERVER $DS3 1000
 cd ..
 
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < msdtc_conn_check.sql
+RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/msdtc_conn_check.sql
 
-RUN $ISQL $DS1 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ../virttp/SQL/00common/00ddl.sql
+RUN $ISQL $DS1 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/../virttp/SQL/00common/00ddl.sql
 if test $STATUS -eq 0
 then
         LOG "PASSED: msdtc.sh: DDL 1"
@@ -257,7 +257,7 @@ else
         LOG "***FAILED: msdtc.sh: DDL 1 STATUS=$STATUS"
 fi
 
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ../virttp/SQL/00common/00ddl.sql
+RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/../virttp/SQL/00common/00ddl.sql
 if test $STATUS -eq 0
 then
         LOG "PASSED: msdtc.sh: DDL 2"
@@ -265,7 +265,7 @@ else
         LOG "***FAILED: msdtc.sh: DDL 2 STATUS=$STATUS"
 fi
 
-RUN $ISQL $DS3 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ../virttp/SQL/00common/00ddl.sql
+RUN $ISQL $DS3 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/../virttp/SQL/00common/00ddl.sql
 if test $STATUS -eq 0
 then
         LOG "PASSED: msdtc.sh: DDL 3"
@@ -274,7 +274,7 @@ else
 fi
 
 
-RUN $ISQL $DS1 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ../virttp/SQL/00common/05utils.sql
+RUN $ISQL $DS1 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/../virttp/SQL/00common/05utils.sql
 if test $STATUS -eq 0
 then
         LOG "PASSED: msdtc.sh: UTILS 1"
@@ -282,7 +282,7 @@ else
         LOG "***FAILED: msdtc.sh: UTILS 1 STATUS=$STATUS"
 fi
 
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ../virttp/SQL/00common/05utils.sql
+RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/../virttp/SQL/00common/05utils.sql
 if test $STATUS -eq 0
 then
         LOG "PASSED: msdtc.sh: UTILS 2"
@@ -290,7 +290,7 @@ else
         LOG "***FAILED: msdtc.sh: UTILS 2 STATUS=$STATUS"
 fi
 
-RUN $ISQL $DS3 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ../virttp/SQL/00common/05utils.sql
+RUN $ISQL $DS3 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/../virttp/SQL/00common/05utils.sql
 if test $STATUS -eq 0
 then
         LOG "PASSED: msdtc.sh: UTILS 3"
@@ -300,7 +300,7 @@ fi
 
 
 
-RUN $ISQL $DS1 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ../virttp/SQL/00common/10tran.sql
+RUN $ISQL $DS1 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/../virttp/SQL/00common/10tran.sql
 if test $STATUS -eq 0
 then
         LOG "PASSED: msdtc.sh: TRAN 1"
@@ -308,7 +308,7 @@ else
         LOG "***FAILED: msdtc.sh: TRAN 1 STATUS=$STATUS"
 fi
 
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ../virttp/SQL/00common/10tran.sql
+RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/../virttp/SQL/00common/10tran.sql
 if test $STATUS -eq 0
 then
         LOG "PASSED: msdtc.sh: TRAN 2"
@@ -316,7 +316,7 @@ else
         LOG "***FAILED: msdtc.sh: TRAN 2 STATUS=$STATUS"
 fi
 
-RUN $ISQL $DS3 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ../virttp/SQL/00common/10tran.sql
+RUN $ISQL $DS3 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/../virttp/SQL/00common/10tran.sql
 if test $STATUS -eq 0
 then
         LOG "PASSED: msdtc.sh: TRAN 3"
@@ -326,7 +326,7 @@ fi
 
 
 
-RUN $ISQL $DS1 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ../virttp/SQL/00common/20fill.sql
+RUN $ISQL $DS1 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/../virttp/SQL/00common/20fill.sql
 if test $STATUS -eq 0
 then
         LOG "PASSED: msdtc.sh: FILL 1"
@@ -334,7 +334,7 @@ else
         LOG "***FAILED: msdtc.sh: FILL 1 STATUS=$STATUS"
 fi
 
-RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ../virttp/SQL/00common/20fill.sql
+RUN $ISQL $DS2 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/../virttp/SQL/00common/20fill.sql
 if test $STATUS -eq 0
 then
         LOG "PASSED: msdtc.sh: FILL 2"
@@ -342,7 +342,7 @@ else
         LOG "***FAILED: msdtc.sh: FILL 2 STATUS=$STATUS"
 fi
 
-RUN $ISQL $DS3 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ../virttp/SQL/00common/20fill.sql
+RUN $ISQL $DS3 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/../virttp/SQL/00common/20fill.sql
 if test $STATUS -eq 0
 then
         LOG "PASSED: msdtc.sh: FILL 3"
@@ -351,7 +351,7 @@ else
 fi
 
 
-RUN $ISQL $DS1 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "DS3=$DS3" "DS2=$DS2" < ../virttp/SQL/r1/remotes.sql
+RUN $ISQL $DS1 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "DS3=$DS3" "DS2=$DS2" < $VIRTUOSO_TEST/../virttp/SQL/r1/remotes.sql
 if test $STATUS -eq 0
 then
         LOG "PASSED: msdtc.sh: REMOTES 1"
@@ -359,7 +359,7 @@ else
         LOG "***FAILED: msdtc.sh: REMOTES 1 STATUS=$STATUS"
 fi
 
-RUN $ISQL $DS1 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ../virttp/TEST/00test.sql
+RUN $ISQL $DS1 PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/../virttp/TEST/00test.sql
 if test $STATUS -eq 0
 then
         LOG "PASSED: msdtc.sh: TEST 1"
@@ -399,9 +399,9 @@ fi
 
 # LOG "virt TP test"
 # LOGFILE=../msdtc.output
-# cd ../virttp
+# cd $VIRTUOSO_TEST/../virttp
 # . ./virttp.sh
-# cd ../suite
+# cd $VIRTUOSO_TEST/../suite
 
 LOGFILE=msdtc.output
 

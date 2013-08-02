@@ -1,0 +1,834 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2013 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="acl_edit_page"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Virtuoso Web Services Authentication Service</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="acl_vec" type="any" default="null" persist="1"/>
+      <v:variable name="changed" type="integer" default="0" persist="1"/>
+      <v:variable name="error_str33" type="varchar" default="''" persist="1"/>
+      <v:variable name="is_deny" type="integer" default="0" persist="1"/>
+      <v:variable persist="temp" name="r_count" type="integer" default="0"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem name="HTTP" value="Access Control List Management"/>
+    </vm:menu>
+    <vm:rawheader>
+      <td class="page_title">
+        <?vsp
+          if (get_keyword('mode', self.vc_page.vc_event.ve_params) = 'edit' or get_keyword('mode', self.vc_page.vc_event.ve_params) = 'edit1')
+            http('Modify Access Control List');
+          else
+            http('Create HTTP Access Control List');
+        ?>
+    <v:before-data-bind>
+      <v:script>
+        <![CDATA[
+
+          if (get_keyword('mode', self.vc_page.vc_event.ve_params) = 'edit')
+            self.is_deny := 0;
+        ]]>
+      </v:script>
+    </v:before-data-bind>
+      </td>
+    </vm:rawheader>
+    <vm:pagebody>
+      <v:form name="acl_form" type="simple" method="POST" action="sec_acl_edit_sp.vspx">
+        <v:template name="crtab1_tem" type="simple" enabled="-- equ(self.is_deny, 0)">
+          <?vsp
+            declare alist varchar;
+	    declare _rate double precision;
+            declare _have, _u_id, _access, ord integer;
+	    declare filt, dest, obj, mod varchar;
+	    declare _limit int;
+            declare _vec, _vec_o, _vec4 any;
+            filt := get_keyword('filt', self.vc_page.vc_event.ve_params, '*');
+            dest := get_keyword('dest', self.vc_page.vc_event.ve_params, '*');
+            obj := atoi(get_keyword('obj', self.vc_page.vc_event.ve_params, '-1'));
+            mod := atoi(get_keyword('mod', self.vc_page.vc_event.ve_params, '-1'));
+	    _rate := cast (get_keyword('rate', self.vc_page.vc_event.ve_params, '1') as double precision);
+	    _limit := cast (get_keyword('limit', self.vc_page.vc_event.ve_params, '0') as int);
+            alist := upper(get_keyword('edit', self.vc_page.vc_event.ve_params));
+            -- self.alist := alist;
+            if (get_keyword('mode', self.vc_page.vc_event.ve_params) = 'edit')
+            {
+              self.acl_vec := vector();
+              self.changed := 0;
+              for (select * from DB.DBA.HTTP_ACL where upper(HA_LIST) = alist order by HA_ORDER) do
+              {
+                declare _gr_name varchar;
+                declare _vec1 any;
+                _vec1 := encode_base64(serialize(vector(HA_LIST, HA_ORDER, HA_OBJECT, HA_CLIENT_IP, HA_FLAG, HA_RW, HA_DEST_IP, HA_RATE, HA_LIMIT, 1)));
+                self.acl_vec := vector_concat(self.acl_vec, vector(_vec1));
+              }
+            }
+            if (alist = '' or get_keyword('cnc2', self.vc_page.vc_event.ve_params, '') = 'Cancel')
+            {
+              http_rewrite ();
+              http_request_status ('HTTP/1.1 302 Found');
+              http_header (sprintf('Location: sec_auth_serv_sp.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+            }
+            _access := get_keyword('access', self.vc_page.vc_event.ve_params, '');
+            if (_access = '_a')
+              _access := 0;
+            else
+              _access := 1;
+            if (get_keyword ('add_f', self.vc_page.vc_event.ve_params, '') = '1' and get_keyword ('_add', self.vc_page.vc_event.ve_params, '') <> '')
+            {
+              if (obj = -1 and alist = 'NEWS')
+          signal ('22023', 'Please specify a list of newsgroups to which this ACL applies');
+              ord := coalesce ((select max (HA_ORDER) from DB.DBA.HTTP_ACL where upper(HA_LIST) = upper(alist)), 0);
+              ord := ord + 1;
+              self.acl_vec := vector_concat(self.acl_vec, vector(encode_base64(serialize(vector(alist, ord, obj, filt, _access, mod, dest, _rate, _limit, 0)))));
+              self.changed := 1;
+            }
+            if (get_keyword ('_upd', self.vc_page.vc_event.ve_params, '') <> '')
+            {
+              _vec_o := get_keyword('vec_o', self.vc_page.vc_event.ve_params, '');
+              _vec_o := replace(_vec_o, ' ', '+');
+              _vec_o :=  deserialize(decode_base64(_vec_o));
+              declare vec_len, _idx integer;
+              declare _vec2, _vec3 any;
+              vec_len := length(self.acl_vec);
+              _idx := 0;
+              _vec4 := vector();
+              while (_idx < vec_len)
+              {
+                _vec2 := aref(self.acl_vec, _idx);
+                _vec3 := deserialize(decode_base64(_vec2));
+                if (_vec3[0] = _vec_o[0] and _vec3[3] = _vec_o[3] and _vec3[1] = _vec_o[1] and _vec3[4] = _vec_o[4])
+                {
+                  _vec2 := encode_base64(serialize(vector(alist, _vec3[1], obj, filt, _access, mod, dest, _rate, _limit, 0)));
+                  _vec4 := vector_concat(_vec4, vector(_vec2));
+                }
+                else
+                  _vec4 := vector_concat(_vec4, vector(_vec2));
+                _idx := _idx + 1;
+              }
+              self.acl_vec := _vec4;
+              self.changed := 1;
+            }
+            if (get_keyword ('DEL', self.vc_page.vc_event.ve_params, '') <> '')
+            {
+              _vec_o := get_keyword('DEL', self.vc_page.vc_event.ve_params, '');
+              _vec_o := replace(_vec_o, ' ', '+');
+              _vec := deserialize(decode_base64(_vec_o));
+              declare vec_len, _idx integer;
+              declare _vec2, _vec3 any;
+              vec_len := length(self.acl_vec);
+              _idx := 0;
+              _vec4 := vector();
+              while (_idx < vec_len)
+              {
+                _vec2 := aref(self.acl_vec, _idx);
+                _vec3 := deserialize(decode_base64(_vec2));
+                if (_vec3[0] <> _vec[0] or _vec3[3] <> _vec[3] or _vec3[1] <> _vec[1] or _vec3[4] <> _vec[4])
+                {
+                  _vec4 := vector_concat(_vec4, vector(_vec2));
+                }
+                _idx := _idx + 1;
+              }
+              self.acl_vec := _vec4;
+              self.changed := 1;
+            }
+            if (get_keyword('EDIT', self.vc_page.vc_event.ve_params, '') <> '')
+            {
+              _vec_o := get_keyword('EDIT', self.vc_page.vc_event.ve_params, '');
+              _vec_o := replace(_vec_o, ' ', '+');
+              _vec :=  deserialize(decode_base64(_vec_o));
+              if (alist <> _vec[0])
+                signal('22023', 'Invalid ACL name supplied');
+              ord := _vec[1];
+              obj := _vec [2];
+              filt := _vec[3];
+              _access := _vec[4];
+              mod := _vec [5];
+              dest := _vec[6];
+	      _rate := _vec[7];
+	      _limit := _vec[8];
+            }
+            if (get_keyword('move', self.vc_page.vc_event.ve_params, '') in ('top', 'up', 'bottom', 'down'))
+            {
+              declare action varchar;
+              declare point, pos int;
+              declare upd, upd1, fla, acc any;
+              action := lower(get_keyword('move', self.vc_page.vc_event.ve_params));
+              _vec_o := get_keyword('vec', self.vc_page.vc_event.ve_params, '');
+              _vec_o := replace(_vec_o, ' ', '+');
+              _vec :=  deserialize(decode_base64(_vec_o));
+              alist := _vec[0];
+              ord := _vec[1];
+              filt := _vec[3];
+              _access := _vec[4];
+              declare vec_len, _idx, min_val integer;
+              declare _vec2, _vec3 any;
+              if (action = 'top')
+              {
+                declare max_value integer;
+                declare top_vl any;
+                vec_len := length(self.acl_vec);
+                _vec4 := vector();
+                _idx := 0;
+                while (_idx < vec_len)
+                {
+                  _vec2 := aref(self.acl_vec, _idx);
+                  _vec3 := deserialize(decode_base64(_vec2));
+                  if (_vec3[1] = ord)
+                  {
+                    if (_idx = 0)
+                      goto endscroll;
+                    max_value := _idx;
+		    top_vl := vector(_vec3[0], 1, _vec3[2], _vec3[3], _vec3[4], _vec3[5], _vec3[6], _vec3[7], _vec3[8], 0);
+                    goto s1;
+                  }
+                  _idx := _idx + 1;
+                }
+                s1:;
+                _vec4 := vector_concat(_vec4, vector(encode_base64(serialize(top_vl))));
+                _idx := 0;
+                while (_idx < vec_len)
+                {
+                  _vec2 := aref(self.acl_vec, _idx);
+                  _vec3 := deserialize(decode_base64(_vec2));
+                  _vec3 := vector(_vec3[0], _vec3[1] + 1, _vec3[2], _vec3[3], _vec3[4], _vec3[5], _vec3[6], _vec3[7], _vec3[8], 0);
+                  if (_idx <> max_value)
+                    _vec4 := vector_concat(_vec4, vector(encode_base64(serialize(_vec3))));
+                  _idx := _idx + 1;
+                }
+                self.acl_vec := _vec4;
+                self.changed := 1;
+              }
+              else if (action = 'up')
+              {
+                declare max_value integer;
+                declare prev, next any;
+                vec_len := length(self.acl_vec);
+                _vec4 := vector();
+                _idx := 0;
+                while (_idx < vec_len)
+                {
+                  _vec2 := aref(self.acl_vec, _idx);
+                  _vec3 := deserialize(decode_base64(_vec2));
+                  if (_vec3[1] = ord)
+                  {
+                    if (_idx = 0)
+                      goto endscroll;
+                    max_value := _idx - 1;
+                    prev := vector(_vec3[0], ord - 1, _vec3[2], _vec3[3], _vec3[4], _vec3[5], _vec3[6], _vec3[7], _vec3[8], 0);
+                    _vec2 := aref(self.acl_vec, _idx - 1);
+                    _vec3 := deserialize(decode_base64(_vec2));
+                    next := vector(_vec3[0], ord, _vec3[2], _vec3[3], _vec3[4], _vec3[5], _vec3[6], _vec3[7], _vec3[8], 0);
+                  }
+                  _idx := _idx + 1;
+                }
+                _idx := 0;
+                while (_idx < max_value)
+                {
+                  _vec2 := aref(self.acl_vec, _idx);
+                  _vec4 := vector_concat(_vec4, vector(_vec2));
+                  _idx := _idx + 1;
+                }
+                _vec4 := vector_concat(_vec4, vector(encode_base64(serialize(prev))));
+                _vec4 := vector_concat(_vec4, vector(encode_base64(serialize(next))));
+                _idx := _idx + 2;
+                while (_idx < vec_len)
+                {
+                  _vec2 := aref(self.acl_vec, _idx);
+                  _vec4 := vector_concat(_vec4, vector(_vec2));
+                  _idx := _idx + 1;
+                }
+                self.acl_vec := _vec4;
+                self.changed := 1;
+              }
+              else if (action = 'down')
+              {
+                declare max_value integer;
+                declare prev, next any;
+                vec_len := length(self.acl_vec);
+                _vec4 := vector();
+                _idx := 0;
+                while (_idx < vec_len)
+                {
+                  _vec2 := aref(self.acl_vec, _idx);
+                  _vec3 := deserialize(decode_base64(_vec2));
+                  if (_vec3[1] = ord)
+                  {
+                    max_value := _idx;
+                    if (_idx >= vec_len - 1)
+                      goto endscroll;
+                    next := vector(_vec3[0], ord + 1, _vec3[2], _vec3[3], _vec3[4], _vec3[5], _vec3[6], _vec3[7], _vec3[8], 0);
+                    _vec2 := aref(self.acl_vec, _idx + 1);
+                    _vec3 := deserialize(decode_base64(_vec2));
+                    prev := vector(_vec3[0], ord, _vec3[2], _vec3[3], _vec3[4], _vec3[5], _vec3[6], _vec3[7], _vec3[8], 0);
+                  }
+                  _idx := _idx + 1;
+                }
+                _idx := 0;
+                while (_idx < max_value)
+                {
+                  _vec2 := aref(self.acl_vec, _idx);
+                  _vec4 := vector_concat(_vec4, vector(_vec2));
+                  _idx := _idx + 1;
+                }
+                _vec4 := vector_concat(_vec4, vector(encode_base64(serialize(prev))));
+                _vec4 := vector_concat(_vec4, vector(encode_base64(serialize(next))));
+                _idx := _idx + 2;
+                while (_idx < vec_len)
+                {
+                  _vec2 := aref(self.acl_vec, _idx);
+                  _vec4 := vector_concat(_vec4, vector(_vec2));
+                  _idx := _idx + 1;
+                }
+                self.acl_vec := _vec4;
+                self.changed := 1;
+              }
+              else if (action = 'bottom')
+              {
+                declare max_value integer;
+                declare bot_vl any;
+                vec_len := length(self.acl_vec);
+                _vec4 := vector();
+                _idx := 0;
+                while (_idx < vec_len)
+                {
+                  _vec2 := aref(self.acl_vec, _idx);
+                  _vec3 := deserialize(decode_base64(_vec2));
+                  if (_vec3[1] = ord)
+                  {
+                    if (_idx = vec_len - 1)
+                      goto endscroll;
+                    declare _vec22, _vec32 any;
+                    _vec22 := aref(self.acl_vec, vec_len - 1);
+                    _vec32 := deserialize(decode_base64(_vec22));
+                    max_value := _idx;
+                    bot_vl := vector(_vec3[0], _vec32[1] + 1, _vec3[2], _vec3[3], _vec3[4], _vec3[5], _vec3[6], _vec3[7], _vec3[8], 0);
+                    goto s2;
+                  }
+                  _idx := _idx + 1;
+                }
+                s2:;
+                _idx := 0;
+                while (_idx < vec_len)
+                {
+                  _vec2 := aref(self.acl_vec, _idx);
+                  if (_idx <> max_value)
+                    _vec4 := vector_concat(_vec4, vector(_vec2));
+                  _idx := _idx + 1;
+                }
+                _vec4 := vector_concat(_vec4, vector(encode_base64(serialize(bot_vl))));
+                self.acl_vec := _vec4;
+                self.changed := 1;
+              }
+              endscroll:;
+            }
+          ?>
+          <h3 class="page_section_head">Service: <?V upper(alist) ?></h3>
+          <table class="listing">
+            <input type="hidden" name="edit" value="<?V alist ?>" />
+            <input type="hidden" name="mode" value="edit1" />
+            <tr class="listing_header_row">
+              <th>Filter</th>
+            <?vsp
+
+              if (alist <> 'NEWS')
+                http ('<th>Access</th>');
+
+              if (alist <> 'NEWS' and alist <> 'HTTP')
+              {
+            ?>
+              <th>Destination</th>
+            <?vsp
+              }
+            ?>
+            <?vsp
+              if (alist <> 'HTTP' and alist <> 'PROXY')
+              {
+            ?>
+              <th>Newsgroup</th>
+              <th>Rate</th>
+              <th>Mode</th>
+            <?vsp
+              }
+            ?>
+              <th>Action</th>
+              <th>Move</th>
+            </tr>
+            <?vsp
+              _have := 0;
+              declare vec_len, _idx integer;
+              declare _vec2, _vec3 any;
+              vec_len := length(self.acl_vec);
+              _idx := 0;
+              while (_idx < vec_len)
+              {
+                _vec2 := aref(self.acl_vec, _idx);
+                _vec3 := deserialize(decode_base64(_vec2));
+                _idx := _idx + 1;
+                declare _gr_name varchar;
+                if (_vec3[0] = 'NEWS')
+                  select NG_NAME into _gr_name from DB.DBA.NEWS_GROUPS where NG_GROUP = _vec3[2];
+                _have := _have + 1;
+            ?>
+<?vsp
+              self.r_count := self.r_count + 1;
+              http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
+?>
+            <!-- tr -->
+              <td class="listing_col">
+                <?V _vec3[3] ?>
+              </td>
+              <?vsp
+          if (_vec3[0] <> 'NEWS')
+      {
+        http ('<td class="listing_col">');
+        if (_vec3[4] and _vec3[0] <> 'NEWS')
+          http ('<span class="acl_deny">deny</span>');
+        else
+          http ('<span class="acl_allow">allow</span>');
+
+        http ('</td>');
+      }
+
+                if (_vec3[0] <> 'NEWS' and _vec3[0] <> 'HTTP')
+                  {
+              ?>
+              <td class="listing_col">
+                <?V _vec3[6] ?>
+              </td>
+              <?vsp
+                  }
+                if (_vec3[0] <> 'HTTP' and _vec3[0] <> 'PROXY')
+                  {
+              ?>
+              <td class="listing_col">
+                <?V _gr_name ?>
+              </td>
+              <td class="listing_col">
+<?vsp
+--              if (_vec3[4] = 0 and _vec3[5] = 1)
+--                {
+         if ( floor (_vec3[7]) = _vec3[7])
+           http (sprintf ('%i', _vec3[7]));
+         else
+           http (sprintf ('%f', _vec3[7]));
+--      }
+--    else
+--      http ('n/a');
+?>
+              </td>
+              <td class="listing_col">
+                <?V case _vec3[5] when 1 then 'post' else 'read' end ?>
+              </td>
+              <?vsp
+                }
+              ?>
+              <td class="listing_col_action">
+                <a href="sec_acl_edit_sp.vspx?DEL=<?V _vec2 ?>&edit=<?V alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">remove</a>
+                <a href="sec_acl_edit_sp.vspx?EDIT=<?V _vec2 ?>&edit=<?V alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">edit</a>
+              </td>
+              <td class="listing_col_action">
+                <a href="sec_acl_edit_sp.vspx?move=top&vec=<?V _vec2 ?>&edit=<?/ alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">top</a>
+                <a href="sec_acl_edit_sp.vspx?move=up&vec=<?V _vec2 ?>&edit=<?/ alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">up</a>
+                <a href="sec_acl_edit_sp.vspx?move=down&vec=<?V _vec2 ?>&edit=<?/ alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">down</a>
+                <a href="sec_acl_edit_sp.vspx?move=bottom&vec=<?V _vec2 ?>&edit=<?/ alist ?>&sid=<?V self.sid ?>&realm=<?V self.realm ?>">bottom</a>
+              </td>
+<?vsp
+              http ('</tr>');
+?>
+            <!-- /tr -->
+            <?vsp
+              }
+              if (_have = 0)
+                http('<tr><td class="listing_count" colspan="8">This access list is empty</td></tr>');
+            ?>
+          </table>
+          <v:button action="simple" name="cnc2" value="Cancel"/>
+<?vsp
+    declare have_news_group integer;
+
+    select count (*) into have_news_group from DB.DBA.NEWS_GROUPS;
+
+    if (have_news_group = 0 and alist = 'NEWS')
+      {
+?>
+<tr><td class="listing_count" colspan="8">News groups are not defined</td></tr>
+<?vsp
+   } else {
+?>
+          <v:button action="simple" name="_add1" value="Add new entry"/>
+<?vsp
+      }
+?>
+          <?vsp
+            if (self.changed <> 0)
+            {
+          ?>
+          <v:button action="simple" name="save" value="Activate changes">
+            <v:on-post>
+              <![CDATA[
+                declare ip varchar;
+                declare vec_len, is_deny, _idx, _ix1 integer;
+                declare bot_vl any;
+                declare _vec2, _vec3 any;
+                declare ip_vec any;
+                ip := http_client_ip();
+                if (ip)
+                  ip_vec := split_and_decode(ip, 0, '\0\0.');
+                else
+                  goto begin_proc;
+                vec_len := length(self.acl_vec);
+                _idx := 0;
+                is_deny := 0;
+                vec_len := length(self.acl_vec);
+                while (_idx < vec_len)
+                {
+                  _vec2 := aref(self.acl_vec, _idx);
+                  _vec3 := deserialize(decode_base64(_vec2));
+                  if (_vec3[4])
+                  {
+                    declare tmpstr, curstr varchar;
+                    declare pos, curpos integer;
+                    tmpstr := _vec3[3];
+                    _ix1 := 0;
+                    while (length(tmpstr) > 0)
+                    {
+                      pos := strchr(tmpstr, '.');
+                      if (pos)
+                        curstr := substring(tmpstr, 1, pos);
+                      else
+                        curstr := tmpstr;
+                      if ((ip_vec[_ix1] = curstr) or (curstr = '*'))
+                      {
+                        _ix1 := _ix1 +1;
+                        is_deny := 1;
+                        if (_ix1 > 4)
+                          goto begin_proc;
+                      }
+                      else
+                      {
+                        _ix1 := _ix1 +1;
+                        is_deny := 0;
+                        if (_ix1 > 4)
+                          goto begin_proc;
+                      }
+                      if (pos)
+                        tmpstr := substring(tmpstr, pos + 2, length(tmpstr) - pos);
+                      else
+                        goto aaa;
+                    }
+                    aaa:;
+                    if (is_deny = 1)
+                      goto begin_proc;
+                  }
+                  _idx := _idx + 1;
+                }
+                begin_proc:;
+                if (is_deny = 1)
+                  self.is_deny := 1;
+                else
+                {
+                  self.is_deny := 0;
+                  declare _stat, _msg, m_dta, res varchar;
+                  _stat := '00000';
+                  declare loc_alist varchar;
+                  loc_alist := upper(get_keyword('edit', self.vc_page.vc_event.ve_params));
+                  exec(sprintf('delete from DB.DBA.HTTP_ACL where HA_LIST = \'%s\'', loc_alist), _stat, _msg);
+                  if (_stat <> '00000')
+                  {
+                    self.error_str33 := 'Error during SQL processing';
+                    self.vc_data_bind(e);
+                    return;
+                  }
+                  _idx := 0;
+                  while (_idx < vec_len)
+      {
+        declare _temp any;
+
+        if (_vec3[2] = -1)
+          _temp := _vec3[4];
+        else
+          {
+       _temp := 1;
+       if (_vec3[7] <> 0)
+        _temp := 0;
+          }
+
+                    _vec2 := aref(self.acl_vec, _idx);
+                    _vec3 := deserialize(decode_base64(_vec2));
+                    _stat := '00000';
+
+                    exec('insert into HTTP_ACL (HA_LIST, HA_ORDER, HA_OBJECT, HA_CLIENT_IP, HA_FLAG, HA_RW, HA_DEST_IP, HA_RATE, HA_LIMIT) values (?, ?, ?, ?, ?, ?, ?, ?, ?)', _stat, _msg,
+                      vector(_vec3[0], _vec3[1], _vec3[2], trim (_vec3[3]), _temp, _vec3[5], _vec3[6], _vec3[7], _vec3[8]), m_dta, res);
+                    if (_stat <> '00000')
+                    {
+                      self.error_str33 := 'Error during SQL processing';
+                      self.vc_data_bind(e);
+                      return;
+                    }
+                    _idx := _idx + 1;
+                  }
+                }
+                self.changed := 0;
+                self.vc_data_bind(e);
+              ]]>
+            </v:on-post>
+          </v:button>
+          <?vsp
+            }
+          ?>
+          <?vsp
+            if (get_keyword('_add1', self.vc_page.vc_event.ve_params, '') <> '' or get_keyword ('EDIT', self.vc_page.vc_event.ve_params, '') <> '')
+            {
+          ?>
+          <br/>
+          <table class="MainData" border="1" cellpadding="3" cellspacing="0">
+            <tr>
+              <td>
+                <table class="MainData" border="0" cellpadding="3" cellspacing="0">
+                  <tr>
+                    <td colspan="7">
+                      <input type="hidden" name="add_f" value="1" />
+                      <table class="MainData" border="0" WIDTH="100%">
+                        <tr>
+                          <td>Filter (IP mask)</td>
+                          <td>
+                            <input type="text" name="filt" value="<?V filt ?>" size="15"/>
+                          </td>
+                        </tr>
+                        <?vsp
+                          if (alist not in ('NEWS'))
+                            {
+                        ?>
+                        <tr>
+                          <td>Access</td>
+                          <td>
+                            <select name="access">
+                              <?vsp
+                                if (_access)
+                                {
+                                  http('<option value="_d" selected="selected">Deny</option>');
+                                  http('<option value="_a">Allow</option>');
+                                }
+                                else
+                                {
+                                  http('<option value="_d" >Deny</option>');
+                                  http('<option value="_a" selected="selected">Allow</option>');
+                                }
+                              ?>
+                            </select>
+                          </td>
+                        </tr>
+                        <?vsp
+          }
+                          if (alist not in ('HTTP', 'NEWS'))
+                            {
+                        ?>
+                        <tr>
+                          <td>Destination (IP mask)</td>
+                          <td>
+                            <INPUT type="text" name="dest" value="<?=dest?>" size="15"/>
+                          </td>
+                        </tr>
+                        <?vsp
+                            }
+                          if (alist not in ('HTTP', 'PROXY', 'NEWS'))
+                            {
+                        ?>
+                        <tr>
+                          <td class="genlisthead">Object</td>
+                          <td>
+                            <input type="text" name="obj" value="<?=obj?>" size="15"/>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td class="genlisthead">Mode</td>
+                          <td>
+                            <input type="text" name="mod" value="<?=mod?>" size="15"/>
+                          </td>
+                        </tr>
+                        <?vsp
+                          }
+                          if (alist in ('NEWS'))
+                          {
+                        ?>
+                        <tr>
+                          <td class="genlisthead">Newsgroup</td>
+                          <td>
+                            <select name="obj" >
+                              <?vsp
+                                for (select NG_NAME, NG_GROUP from NEWS_GROUPS) do
+                                {
+                                  if (obj = NG_GROUP)
+                                    http (sprintf ('<option value="%i" selected="selected">%s</option>', NG_GROUP, NG_NAME));
+                                  else
+                                    http (sprintf ('<option value="%i">%s</option>', NG_GROUP, NG_NAME));
+                                }
+                              ?>
+                            </select>
+                          </td>
+                        </tr>
+                        <tr>
+			    <td class="genlisthead">Rate</td>
+                          <td>
+                            <input type="text" name="rate" value="<?=_rate?>" size="15"/>
+                          </td>
+                        </tr>
+                        <tr>
+			    <td class="genlisthead">Limit</td>
+                          <td>
+                            <input type="text" name="limit" value="<?=_limit?>" size="15"/>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td class="genlisthead">Mode</td>
+                          <td>
+                            <select name="mod">
+                              <?vsp
+                                if (mod)
+                                {
+                                  http('<option value="1" selected="selected">Post</option>');
+                                  http('<option value="0">Read</option>');
+                                }
+                                else
+                                {
+                                  http('<option value="1">Post</OPTION>');
+                                  http('<option value="0" selected="selected">Read</option>');
+                                }
+                              ?>
+                            </select>
+                          </td>
+                        </tr>
+                        <?vsp
+                          }
+                        ?>
+                      </table>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td align="center" colspan="8">
+                      <input type="submit" name="cncl" value="Cancel"/>
+                      <?vsp
+                        if (get_keyword ('EDIT', self.vc_page.vc_event.ve_params, '') <> '')
+                        {
+                          http('<input type="submit" name="_upd" value="Update">');
+                          http(sprintf ('<input type="hidden" name="vec_o" value="%s">', _vec_o));
+                        }
+                        else
+                          http('<input type="submit" name="_add" value="Add">');
+                      ?>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+          <?vsp
+            }
+          ?>
+        </v:template>
+        <v:template name="crtab_tem" type="simple" enabled="-- equ(self.is_deny, 1)">
+          <?vsp
+            declare alist varchar;
+            alist := upper(get_keyword('edit', self.vc_page.vc_event.ve_params));
+          ?>
+          <table class="SubAction" border="0" cellpadding="3" cellspacing="0">
+            <input type="hidden" name="edit" value="<?V alist ?>" />
+            <input type="hidden" name="mode" value="edit1" />
+            <tr>
+              <td>
+                Some of new entries will deny your IP. Do you really want to activate changes?
+              </td>
+              <td>
+              </td>
+            </tr>
+            <tr>
+              <td align="center">
+                <v:button action="simple" name="no_1" value="No">
+                  <v:on-post>
+                    <![CDATA[
+                       self.is_deny := 0;
+                       self.changed := 1;
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" name="yes_1" value="Yes">
+                  <v:on-post>
+                    <![CDATA[
+                      self.is_deny := 0;
+                      declare _stat, _msg, m_dta, res varchar;
+                      declare vec_len, _idx integer;
+                      _stat := '00000';
+                      declare loc_alist varchar;
+                      loc_alist := upper(get_keyword('edit', self.vc_page.vc_event.ve_params));
+                      exec(sprintf('delete from DB.DBA.HTTP_ACL where HA_LIST = \'%s\'', loc_alist), _stat, _msg);
+                      if (_stat <> '00000')
+                      {
+                        self.error_str33 := 'Error during SQL processing';
+                        return;
+                      }
+                      _idx := 0;
+                      vec_len := length(self.acl_vec);
+                      declare _vec2, _vec3 any;
+                      while (_idx < vec_len)
+                      {
+            declare _temp any;
+                        _vec2 := aref(self.acl_vec, _idx);
+                        _vec3 := deserialize(decode_base64(_vec2));
+                        _stat := '00000';
+
+           if (_vec3[2] = -1)
+       _temp := _vec3[4];
+           else
+       {
+          _temp := 1;
+          if (_vec3[7] <> 0)
+           _temp := 0;
+       }
+
+                        exec('insert into HTTP_ACL (HA_LIST, HA_ORDER, HA_OBJECT, HA_CLIENT_IP, HA_FLAG, HA_RW, HA_DEST_IP, HA_RATE, HA_LIMIT) values (?, ?, ?, ?, ?, ?, ?, ?, ?)', _stat, _msg,
+                          vector(_vec3[0], _vec3[1], _vec3[2], trim (_vec3[3]), _temp, _vec3[5], _vec3[6], _vec3[7], _vec3[8]), m_dta, res);
+                        if (_stat <> '00000')
+                        {
+                          self.error_str33 := 'Error during SQL processing';
+                          return;
+                        }
+                        _idx := _idx + 1;
+                      }
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+        </v:template>
+      </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

@@ -106,17 +106,20 @@ next_set:
   n_pars = itc->itc_search_par_fill;
   for (inx = 0; inx < n_pars; inx++)
     {
+      char nnf, onf;
       data_col_t *dc = ITC_P_VEC (itc, inx);
       int ninx = itc->itc_param_order[itc->itc_set + 1];
       int64 new_v;
       if (!dc)
 	goto next;
-      new_v = dc_any_value (dc, ninx);
+      new_v = dc_any_value_n (dc, ninx, &nnf);
       if (all_eq)
 	{
 	  int oinx = itc->itc_param_order[itc->itc_set];
-	  int64 old_v = dc_any_value (dc, oinx);
-	  if (!(new_v == old_v || (DV_ANY == dc->dc_dtp && DVC_MATCH == dc_cmp (dc, old_v, new_v))))
+	  int64 old_v = dc_any_value_n (dc, oinx, &onf);
+	  if (nnf && onf)
+	    ;
+	  else if (onf || nnf || !(new_v == old_v || (DV_ANY == dc->dc_dtp && DVC_MATCH == dc_cmp (dc, old_v, new_v))))
 	    all_eq = 0;
 	}
       if (DCT_NUM_INLINE & dc->dc_type)
@@ -128,7 +131,7 @@ next_set:
 	itc->itc_search_params[inx] = (caddr_t) (ptrlong) new_v;
       else if (DV_ANY == dc->dc_dtp && sp->sp_cl.cl_sqt.sqt_dtp != DV_ANY)
 	itc->itc_search_params[inx] = itc_temp_any_box (itc, inx, (db_buf_t) new_v);
-      else if (!itc_vec_sp_copy (itc, inx, new_v))
+      else if (!itc_vec_sp_copy (itc, inx, new_v, ninx))
 	itc->itc_search_params[inx] = (caddr_t) (ptrlong) new_v;
     next:
       sp = sp->sp_next;
@@ -188,6 +191,8 @@ itc_insert_rd_range (it_cursor_t * itc, buffer_desc_t * buf, int first_set)
       if (-1 == rd->rd_map_pos)
 	continue;
       rds[fill++] = rd;
+      if (itc->itc_log_actual_ins)
+	log_insert (itc->itc_ltrx, rd, itc->itc_ins_flags);
     }
   itc->itc_app_stay_in_buf = ITC_APP_LEAVE;
   page_apply (itc, buf, fill, rds, PA_MODIFY);
@@ -203,10 +208,43 @@ itc_ins_fetch_duplicate (it_cursor_t * itc, insert_node_t * ins)
   caddr_t *inst = itc->itc_out_state;
   data_col_t *flag_dc = QST_BOX (data_col_t *, inst, ins->ins_fetch_flag->ssl_index);
   data_col_t *val_dc = QST_BOX (data_col_t *, inst, ins->ins_seq_val->ssl_index);
-  int64 prev_flag = dc_any_value (flag_dc, itc->itc_param_order[set - 1]);
   int64 prev_val = dc_any_value (val_dc, itc->itc_param_order[set - 1]);
-  dc_set_long (flag_dc, itc->itc_param_order[set], prev_flag);
+  dc_set_long (flag_dc, itc->itc_param_order[set], 1);	/* the 2nd occurrence of the id counts as fetched, not as assigned */
   dc_set_long (val_dc, itc->itc_param_order[set], prev_val);
+}
+
+
+int64
+itc_new_seq_col (it_cursor_t * itc, buffer_desc_t * buf, caddr_t seq_box)
+{
+  caddr_t value_seq_name = NULL;
+  int64 res;
+  QNCAST (query_instance_t, qi, itc->itc_out_state);
+  QR_RESET_CTX
+  {
+    if (0 == strcmp ("RDF_URL_IID_NAMED", seq_box))
+      {
+	res = rdf_new_iri_id (itc->itc_ltrx, &value_seq_name, itc->itc_ltrx->lt_trx_no, qi);
+	log_sequence (itc->itc_ltrx, value_seq_name, res + 1);
+      }
+    else
+      {
+	caddr_t err = NULL;
+	if (CL_RUN_LOCAL == cl_run_local_only)
+	  res = sequence_next_inc (seq_box, OUTSIDE_MAP, 1);
+	if (err)
+	  sqlr_resignal (err);
+	log_sequence (itc->itc_ltrx, seq_box, res + 1);
+      }
+  }
+  QR_RESET_CODE
+  {
+    POP_QR_RESET;
+    qi->qi_trx->lt_error = LTE_CLUSTER;
+    itc_bust_this_trx (itc, &buf, ITC_BUST_THROW);
+  }
+  END_QR_RESET;
+  return res;
 }
 
 
@@ -241,13 +279,10 @@ itc_ins_fetch (it_cursor_t * itc, buffer_desc_t * buf, insert_node_t * ins, int 
     {
       int icol;
       int64 res;
-      caddr_t value_seq_name = NULL;
-      lock_trx_t *lt = itc->itc_ltrx;
       caddr_t seq_box = qst_get (inst, ins->ins_seq_name);
       if (!DV_STRINGP (seq_box))
 	goto seq_err;
-      res = 0 == strcmp ("RDF_URL_IID_NAMED", seq_box)
-	  ? rdf_new_iri_id (lt, &value_seq_name, lt->lt_trx_no, NULL) : sequence_next_inc (seq_box, OUTSIDE_MAP, 1);
+      res = itc_new_seq_col (itc, buf, seq_box);
       dc->dc_n_values = itc->itc_param_order[itc->itc_set];
       dc_append_int64 (dc, res);
       dc->dc_n_values = MAX (dc_save, dc->dc_n_values);
@@ -272,6 +307,8 @@ seq_err:
 }
 
 
+#define MAX_SETS_FOR_PAGE (0x7fff - (PAGE_DATA_SZ / 4))	/* this + max no of rows on page to fit in signed short */
+
 void
 itc_vec_insert (it_cursor_t * itc, insert_node_t * ins)
 {
@@ -279,7 +316,7 @@ itc_vec_insert (it_cursor_t * itc, insert_node_t * ins)
   row_delta_t *rd;
   int res, ins_offset, first_set, pos, prev_pos, is_ins_del = 0;
   buffer_desc_t *buf;
-  FAILCK (it);
+  FAILCK (itc);
   if (itc->itc_insert_key->key_table && itc->itc_insert_key->key_is_primary)
     itc->itc_insert_key->key_table->tb_count_delta += itc->itc_n_sets;
   itc->itc_row_key = itc->itc_insert_key;
@@ -392,7 +429,7 @@ searched:
     }
 next_on_page:
   res = itc_ins_next_set (itc, &buf, ins);
-  if (DVC_INDEX_END == res)
+  if (DVC_INDEX_END == res || itc->itc_set - first_set >= MAX_SETS_FOR_PAGE)
     {
       if (ins_offset || is_ins_del)
 	itc_insert_rd_range (itc, buf, first_set);
@@ -430,7 +467,8 @@ itc_bm_vec_insert (it_cursor_t * itc, insert_node_t * ins)
   int rc, rc2, n_waits = 0;
   buffer_desc_t *buf;
   int org_owned = itc->itc_owned_search_par_fill, inx;
-  FAILCK (it);
+  int first_set = itc->itc_set;
+  FAILCK (itc);
   itc->itc_row_key = itc->itc_insert_key;
   itc->itc_lock_mode = PL_EXCLUSIVE;
 reset_search:
@@ -444,6 +482,7 @@ reset_search:
   itc->itc_split_search_res = 0;
   itc->itc_write_waits = itc->itc_read_waits = 0;
   buf = itc_reset (itc);
+  itc->itc_bm_insert = 1;
   rc = itc_next (itc, &buf);
   if (itc->itc_non_txn_insert && (itc->itc_write_waits || itc->itc_read_waits))
     {
@@ -505,7 +544,7 @@ next_set_on_page:
   itc->itc_desc_order = 1;
   rc = itc_ins_next_set (itc, &buf, ins);
   itc->itc_split_search_res = 0;
-  if (DVC_INDEX_END == rc)
+  if (DVC_INDEX_END == rc || itc->itc_set - first_set >= MAX_SETS_FOR_PAGE)
     {
       itc_page_leave (itc, buf);
       if (itc->itc_set >= itc->itc_n_sets)
@@ -536,7 +575,7 @@ next_set_reset:
 
 
 caddr_t
-dc_mp_insert_copy_any (mem_pool_t * mp, data_col_t * dc, int inx)
+dc_mp_insert_copy_any (mem_pool_t * mp, data_col_t * dc, int inx, dbe_column_t * col)
 {
   caddr_t b;
   db_buf_t dv = (db_buf_t) (ptrlong) dc_any_value (dc, inx);
@@ -545,6 +584,14 @@ dc_mp_insert_copy_any (mem_pool_t * mp, data_col_t * dc, int inx)
     {
       db_buf_t rdf_id = mp_dv_rdf_to_db_serial (mp, dv);
       return (caddr_t) rdf_id;
+    }
+  if ((DV_STRING == dv[0] || DV_SHORT_STRING_SERIAL == dv[0] || DV_DB_NULL == dv[0]) && col && 'O' == col->col_name[0]
+      && tb_is_rdf_quad (col->col_defined_in) && !f_read_from_rebuilt_database)
+    {
+      if (THR_TMP_POOL == mp)
+	SET_THR_TMP_POOL (NULL);
+      mp_free (mp);
+      sqlr_new_error ("42000", "RDFST", "Inserting a string into O in RDF_QUAD.  RDF box is expected");
     }
   DB_BUF_TLEN (l, dv[0], dv);
   b = mp_alloc_box (mp, l + 1, DV_STRING);
@@ -559,6 +606,14 @@ void
 rd_vec_blob (it_cursor_t * itc, row_delta_t * rd, dbe_column_t * col, int icol, mem_pool_t * ins_mp)
 {
   caddr_t data = rd->rd_values[icol];
+  if (itc->itc_insert_key->key_is_col)
+    {
+      if (blob_col_inlined (&data, col->col_sqt.sqt_dtp, ins_mp))
+	{
+	  rd->rd_values[icol] = data;
+	  return;
+	}
+    }
   if (DV_DB_NULL != DV_TYPE_OF (data))
     {
       caddr_t bl = mp_alloc_box (ins_mp, DV_BLOB_LEN + 1, DV_STRING);
@@ -631,11 +686,14 @@ rd_vec_cast (it_cursor_t * itc, row_delta_t * rd, dbe_column_t * col, int icol, 
 
 int cmpf_strn_intn (buffer_desc_t * buf, int irow, it_cursor_t * itc);
 
+#define IS_RO_VAL(key) \
+  (0 == strcmp (key->key_name, "RO_VAL"))
+
 void
 itc_ro_val_special_case (it_cursor_t * itc)
 {
   /* for fetching insert of ro_val of rdf_obj, compare with 2 parts out of 3.  The inx is not declared unique on 2 leading but will be considered such */
-  if (0 == strcmp (itc->itc_insert_key->key_name, "RO_VAL"))
+  if (IS_RO_VAL (itc->itc_insert_key))
     itc->itc_key_spec.ksp_key_cmp = cmpf_strn_intn;
 }
 
@@ -680,8 +738,9 @@ ins_unq_hash (char *strp)
   row_delta_t *rd = *(row_delta_t **) strp;
   dbe_key_t *key = rd->rd_key;
   int nth = 0;
-  uint32 hno, ign;
-  DO_CL (cl, key->key_key_fixed)
+  uint32 hno;
+  int ign;
+  DO_CL_0 (cl, key->key_key_fixed)
   {
     hno = box_hash (rd->rd_values[nth++]);
     MHASH_STEP (h, hno);
@@ -709,7 +768,7 @@ ins_unq_hashcmp (char *x, char *y)
   row_delta_t *rd2 = *(row_delta_t **) y;
   dbe_key_t *key = rd1->rd_key;
   int nth = 0;
-  DO_CL (cl, key->key_key_fixed)
+  DO_CL_0 (cl, key->key_key_fixed)
   {
     if (!box_equal (rd1->rd_values[nth], rd2->rd_values[nth]))
       return 0;
@@ -734,6 +793,37 @@ ins_unq_hashcmp (char *x, char *y)
   return 1;
 }
 
+extern int enable_p_stat;
+
+int
+tb_is_rdf_quad (dbe_table_t * tb)
+{
+  int is_q;
+  if (!tb)
+    return 0;
+  if (1 == tb->tb_is_rdf_quad)
+    return 1;
+  if (2 == tb->tb_is_rdf_quad)
+    return 0;
+  is_q = 0 == stricmp (tb->tb_name, "DB.DBA.RDF_QUAD");
+  tb->tb_is_rdf_quad = is_q ? 1 : 2;
+  if (is_q)
+    {
+      enable_p_stat = 1;
+      DO_SET (dbe_key_t *, key, &tb->tb_keys)
+	{
+	  if (!stricmp (key->key_name, "RDF_QUAD_POGS") && key->key_decl_parts == 4)
+	    {
+	      dbe_column_t *c1 = dk_set_nth (key->key_parts, 0), *c2 = dk_set_nth (key->key_parts, 1), *c3 = dk_set_nth (key->key_parts, 2), *c4 = dk_set_nth (key->key_parts, 3);
+	      if (!stricmp (c1->col_name, "P") && !stricmp (c2->col_name, "O") && !stricmp (c3->col_name, "S") && !stricmp (c4->col_name, "G"))
+		enable_p_stat = 2;
+	    }
+	}
+      END_DO_SET();
+    }
+  return is_q;
+}
+
 
 int dbf_ko_pk;
 int dbf_ko_key;
@@ -746,7 +836,8 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
   dtp_t right_temp[2000];
   caddr_t err = NULL;
   dk_set_t parts;
-  int n_rows;
+  int null_skipped = 0;
+  int n_rows, log_needed;
   mem_pool_t *ins_mp = mem_pool_alloc ();
   row_delta_t rd;
   row_delta_t **rds;
@@ -777,7 +868,7 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
   if (KI_TEMP != key->key_id && !qi->qi_non_txn_insert)
     rd.rd_make_ins_rbe = 1;
   itc->itc_non_txn_insert = qi->qi_non_txn_insert;
-  itc->itc_tree = key->key_fragments[0]->kf_it;
+  itc_from_keep_params (itc, key, qi->qi_client->cli_slice);	/* fragment needs to be known before setting blobs */
   itc->itc_key_spec = key->key_insert_spec;
   itc->itc_out_state = qst;
   if (ins->src_gen.src_prev)
@@ -812,32 +903,46 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
 	  if (SSL_IS_VEC (ik->ik_slots[icol]))
 	    {
 	      data_col_t *dc = QST_BOX (data_col_t *, qst, ik->ik_slots[icol]->ssl_index);
-	      if (DV_ANY == dc->dc_dtp && DV_ANY == col->col_sqt.sqt_dtp)
+	      if (DV_ANY == dc->dc_dtp && (DV_ANY == col->col_sqt.sqt_dtp || DV_OBJECT == col->col_sqt.sqt_dtp))
 		{
-		  rd1->rd_values[icol] = dc_mp_insert_copy_any (ins_mp, dc, inx);
+		  rd1->rd_values[icol] = dc_mp_insert_copy_any (ins_mp, dc, inx, col);
 		  goto len_ck;
 		}
 	      else if (col == ins->ins_seq_col)
 		rd1->rd_values[icol] = NULL;	/* is assigned in insert. For valgrind init to null so as not to read uninited  */
 	      else
-		rd1->rd_values[icol] = dc_mp_box_for_rd (ins_mp, dc, inx);
+		{
+		  caddr_t val = dc_mp_box_for_rd (ins_mp, dc, inx);
+		  if (DV_WIDE == col->col_sqt.sqt_col_dtp && DV_WIDE == DV_TYPE_OF (val))
+		    val = mp_box_wide_as_utf8_char (ins_mp, val, (box_length (val) / sizeof (wchar_t)) - 1, DV_STRING);
+		  rd1->rd_values[icol] = val;
+		}
 	    }
 	  else
 	    rd1->rd_values[icol] = qst_get (qst, ik->ik_slots[icol]);
-#if 0
-	  /* casts are done before the keys in the ins node. Blobs also.  */
-	  col_dtp = col->col_sqt.sqt_dtp;
-	  DTP_NORMALIZE (col_dtp);
-	  vdtp = DV_TYPE_OF (rd1->rd_values[icol]);
-	  if (vdtp != col_dtp || DV_WIDE == col_dtp)
-	    rd_vec_cast (itc, rd1, col, icol, ins_mp);
-	  else if (IS_BLOB_DTP (col->col_sqt.sqt_dtp))
+	  if (IS_BLOB_DTP (col->col_sqt.sqt_dtp))
 	    rd_vec_blob (itc, rd1, col, icol, ins_mp);
-#endif
+
 	len_ck:
+	  if (key->key_not_null && !col->col_sqt.sqt_non_null && icol < key->key_n_significant
+	      && DV_DB_NULL == DV_TYPE_OF (rd1->rd_values[icol]))
+	    {
+	      rds[inx] = (row_delta_t *) - 1;
+	      null_skipped = 1;
+	      goto next_rd;
+	    }
 	  if (dtp_is_var (col->col_sqt.sqt_dtp))
 	    {
 	      int l = box_col_len (rd1->rd_values[icol]);
+	      if (key->key_is_col && l > COL_MAX_STR_LEN)
+		{
+		  SET_THR_TMP_POOL (NULL);
+		  mp_free (ins_mp);
+		  itc->itc_ltrx->lt_status = LT_BLOWN_OFF;
+		  itc->itc_ltrx->lt_error = LTE_SQL_ERROR;
+		  sqlr_new_error ("22026", "COL..", "Non blob column %s too long, key %s, %d bytes",
+		      col->col_name, key->key_name, l);
+		}
 	      if (icol < key->key_n_significant)
 		var_key += l;
 	      else
@@ -853,12 +958,15 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
 	      key->key_name, (var_key + rd.rd_non_comp_len - key->key_row_var_start[0] + key->key_key_var_start[0]),
 	      MAX_RULING_PART_BYTES);
 	}
-      if (rd1->rd_non_comp_len > MAX_ROW_BYTES)
+      if (!key->key_is_col && rd1->rd_non_comp_len > MAX_ROW_BYTES)
 	{
 	  SET_THR_TMP_POOL (NULL);
 	  mp_free (ins_mp);
-	  sqlr_new_error ("42000", "COL..", "Row too long");
+	  itc->itc_ltrx->lt_status = LT_BLOWN_OFF;
+	  itc->itc_ltrx->lt_error = LTE_SQL_ERROR;
+	  sqlr_new_error ("42000", "COL..", "Row too long len=%d max=%d", rd1->rd_non_comp_len, (int) MAX_ROW_BYTES);
 	}
+      if (!key->key_is_col)
       rd_inline (qi, rd1, &err, BLOB_IN_INSERT);
       if (err)
 	{
@@ -869,32 +977,47 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
       if (dups)
 	{
 	  caddr_t *place;
-	  id_hashed_key_t hash = ins_unq_hash (&rd1);
+	  id_hashed_key_t hash = ins_unq_hash ((caddr_t) & rd1);
 	  place = (caddr_t *) id_hash_get_with_hash_number (dups, (caddr_t) & rd1, hash);
 	  if (place)
+	    {
+	      if (key->key_distinct || INS_SOFT == ins->ins_mode)
 	    rds[inx] = (row_delta_t *) * place;
+	  else
+	    {
+		  SET_THR_TMP_POOL (NULL);
+		  mp_free (ins_mp);
+		  itc->itc_ltrx->lt_status = LT_BLOWN_OFF;
+		  itc->itc_ltrx->lt_error = LTE_UNIQ;
+		  sqlr_new_error ("23000", "COL..", "Non unique insert, detected in sorting insert batchj on key %s",
+		      itc->itc_insert_key->key_name);
+		}
+	    }
 	  else
 	    {
 	      ptrlong tmp = (inx * 2) + 1;
 	      t_id_hash_set_with_hash_number (dups, (caddr_t) & rd1, (caddr_t) & tmp, hash);
 	    }
 	}
+    next_rd:;
     }
   SET_THR_TMP_POOL (NULL);
-  if (REPL_NO_LOG != itc->itc_ltrx->lt_replicate && (key->key_is_primary || ins->ins_key_only))
+  log_needed = REPL_NO_LOG != itc->itc_ltrx->lt_replicate && (key->key_is_primary || ins->ins_key_only || key->key_partition);
+  itc->itc_ins_flags = (ins->ins_key_only || key->key_partition ? LOG_KEY_ONLY : 0) | (ins->ins_mode ? INS_SOFT : 0)
+      | (qi->qi_non_txn_insert ? LOG_SYNC : 0);
+  itc->itc_log_actual_ins = log_needed && !key->key_is_bitmap && (key->key_distinct || ins->ins_seq_col
+      || (INS_SOFT == ins->ins_mode && !itc->itc_ltrx->lt_blob_log));
+  if (!itc->itc_log_actual_ins && log_needed)
     {
       for (inx = 0; inx < n_rows; inx++)
 	{
 	  if (!(1 & (ptrlong) rds[inx]))
-	    log_insert (itc->itc_ltrx, rds[inx], (ins->ins_key_only ? LOG_KEY_ONLY : 0) | ins->ins_mode
-		| (qi->qi_non_txn_insert ? LOG_SYNC : 0));
+	    log_insert (itc->itc_ltrx, rds[inx], itc->itc_ins_flags);
 	}
     }
   itc_free_owned_params (itc);
   ITC_START_SEARCH_PARS (itc);
   itc->itc_search_par_fill = key->key_n_significant;
-
-  itc_from_keep_params (itc, key);	/* fragment needs to be known before setting blobs */
   /* now the cols are in layout order, kf kv rf rv.  Put them now at the head in key order */
   memset (itc->itc_search_params, 0, sizeof (caddr_t) * key->key_n_significant);
   parts = key->key_parts;
@@ -916,7 +1039,6 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
       parts = parts->next;
     }
 
-  itc->itc_insert_key = key;
   itc->itc_vec_rds = rds;
   if (n_rows > 1)
     {
@@ -929,16 +1051,22 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
   itc->itc_batch_size = dc_batch_sz;
   itc->itc_search_par_fill = itc->itc_n_vec_sort_cols = key->key_n_significant;
   itc->itc_param_order = (int *) mp_alloc_box (ins_mp, sizeof (int) * n_rows, DV_BIN);
-  if (dups)
+  if (dups || null_skipped)
     itc_vec_ins_param_order (itc, rds);
   else
     itc_make_param_order (itc, qi, n_rows);
+  if (!itc->itc_n_sets)
+    goto done;
   if (!itc_vec_digit_sort (itc))
     {
+      int save = itc->itc_n_vec_sort_cols;
       other = QST_BOX (int *, qst, ins->src_gen.src_sets);
       if (box_length (other) < n_rows * sizeof (int))
 	other = (int *) mp_alloc_box_ni (ins_mp, sizeof (int) * n_rows, DV_BIN);
+      if (ins->ins_seq_col && IS_RO_VAL (itc->itc_insert_key))
+	itc->itc_n_vec_sort_cols--;	/* if insert-fetch of ro_val, the 3rd dc (ro_id) is uninited, do not count this */
       gen_qsort (itc->itc_param_order, other, itc->itc_n_sets, 0, itc_param_cmp_func (itc), (void *) itc);
+      itc->itc_n_vec_sort_cols = save;
     }
   /*itc_ins_order_ck (itc); */
   itc->itc_v_out_map = ins->ins_v_out_map;
@@ -949,6 +1077,9 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
   ITC_SAVE_FAIL (itc);
   ITC_FAIL (itc)
   {
+    if (!itc->itc_non_txn_insert)
+      cl_enlist_ck (itc, NULL);
+
     if (key->key_is_bitmap)
       itc_bm_vec_insert (itc, ins);
     else if (key->key_is_col)
@@ -967,8 +1098,8 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
     itc_free_owned_params (itc);
   }
   END_FAIL (itc);
-
   ITC_RESTORE_FAIL (itc);
+done:
   rd_free (&right_rd);
   mp_free (ins_mp);
   itc_free_owned_params (itc);

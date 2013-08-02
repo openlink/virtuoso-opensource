@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -42,6 +42,16 @@ DB.DBA.EXEC_STMT(
 DB.DBA.EXEC_STMT(
   'create unique index APP_REG_K1 on OAUTH..APP_REG (a_key)'
 , 0);
+
+create procedure APP_REG_UPDATE ()
+{
+  update OAUTH..APP_REG
+     set A_NAME = 'Box Net API'
+   where A_NAME = 'Box API';
+}
+;
+
+APP_REG_UPDATE ();
 
 -- OAuth sessions
 DB.DBA.EXEC_STMT(
@@ -96,6 +106,9 @@ create procedure OAUTH..OAUTH_INIT ()
 
 DB.DBA.VHOST_REMOVE (lpath=>'/OAuth');
 DB.DBA.VHOST_DEFINE (lpath=>'/OAuth', ppath=>'/SOAP/Http', soap_user=>'OAuth');
+
+DB.DBA.VHOST_REMOVE (lpath=>'/sparql-oauth');
+DB.DBA.VHOST_DEFINE (lpath=>'/sparql-oauth', ppath=>'/DAV/VAD/wa/oauth/', vsp_user=>'dba', is_dav=>1, is_brws=>0, def_page=>'sparql.vsp');
 
 OAUTH..OAUTH_INIT ();
 
@@ -236,7 +249,7 @@ create procedure OAUTH..request_token (
 
   declare exit handler for not found {
     http_header ('Content-Type: text/plain\r\n');
-    return 'Can\'t verify request, missing oauth_consumer_key or oauth_token\n';
+    return 'Cannot verify request, missing oauth_consumer_key or oauth_token\n';
   };
 
   declare exit handler for sqlstate '*' {
@@ -323,7 +336,7 @@ create procedure OAUTH..access_token (
 
   declare exit handler for not found {
     http_header ('Content-Type: text/plain\r\n');
-    return 'Can\'t verify request, missing oauth_consumer_key or oauth_token\n';
+    return 'Cannot verify request, missing oauth_consumer_key or oauth_token\n';
   };
 
   declare exit handler for sqlstate '*' {
@@ -487,7 +500,7 @@ create procedure OAUTH..check_authentication_by_name (in inparams any, in lines 
   oauth_client_ip := get_keyword ('oauth_client_ip', params, http_client_ip ());
 
   declare exit handler for not found {
-    signal ('22023', 'Can\'t verify request, missing oauth_consumer_key or oauth_token');
+    signal ('22023', 'Cannot verify request, missing oauth_consumer_key or oauth_token');
   };
 
   declare exit handler for sqlstate '*' {
@@ -605,7 +618,7 @@ create procedure OAUTH..sign_request (in meth varchar := 'GET', in url varchar, 
                  		 nonce);
   oauth_token := get_auth_token (sid);
   if (length (oauth_token))
-    params := params || sprintf ('&oauth_token=%s', oauth_token);
+    params := params || sprintf ('&oauth_token=%U', oauth_token);
   url := OAUTH..normalize_url (url, vector ());
   params := OAUTH..normalize_params (params);
 
@@ -723,33 +736,43 @@ web_user_password_check (in name varchar, in pass varchar)
 }
 ;
 
-use DB;
-
-create procedure WA_USER_OAUTH_UPGRADE ()
+--!
+-- Step 1 for each OAuth 1.0 workflow: get the URL to direct the user to for login.
+-- \param clientKey The client key as stored in OAUTH..APP_REG
+-- \param reqTokenUrl The URL to get a request token as provided by the service documentation.
+-- \param authorizeUrl The URL to direct the user to for login as provided by the service documentation.
+-- \param callbackUrl The callbackUrl to send to the service.
+--/
+create procedure
+OAUTH.DBA.ods_oauth_one_authentication_url (
+  in clientKey varchar,
+  in reqTokenUrl varchar,
+  in authorizeUrl varchar,
+  in callbackUrl varchar,
+  in method varchar := 'GET')
 {
-  declare params any;
+  declare result, url, sid, oauth_token, return_url, body any;
+  declare header any;
+  body := null;
 
-  if (registry_get ('__WA_USER_OAUTH_UPGRADE') = 'done')
-    return;
-
-  declare exit handler for sqlstate '*' {return; };
-
-  params := (select US_KEY from WA_USER_SVC where US_U_ID = 2 and US_SVC = 'FBKey');
-  if (length (params))
+  sid := md5 (datestring (now ()));
+  return_url := sprintf ('%s&sid=%U', callbackUrl, sid);
+  url := OAUTH.DBA.sign_request (method, reqTokenUrl, sprintf ('oauth_callback=%U', return_url), clientKey, null, 1);
+  if (method = 'POST')
   {
-    params := replace (params, '\r\n', '&');
-    params := replace (params, '\n', '&');
-    params := split_and_decode (params);
-    if (params is not null and length (trim (get_keyword ('key', params))) > 4 and length (trim (get_keyword ('secret', params))) > 4)
-    {
-      insert into OAUTH..APP_REG (A_OWNER, A_NAME, A_KEY, A_SECRET)
-        values (0, 'Facebook API', trim(get_keyword('key', params)), trim (get_keyword ('secret', params)));
-
-      delete from WA_USER_SVC where US_SVC = 'FBKey';
-    }
+    body := url;
+    url := reqTokenUrl;
   }
-  registry_set ('__WA_USER_OAUTH_UPGRADE', 'done');
+
+  result := http_get (url, header, method, null, body);
+  sid := OAUTH.DBA.parse_response (sid, clientKey, result);
+
+  OAUTH.DBA.set_session_data (sid, vector());
+  oauth_token := OAUTH.DBA.get_auth_token (sid);
+
+  return sprintf ('%s?oauth_token=%U&oauth_callback=%U', authorizeUrl, oauth_token, return_url);
 }
 ;
-WA_USER_OAUTH_UPGRADE ();
+
+use DB;
 

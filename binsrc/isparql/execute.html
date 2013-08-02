@@ -7,7 +7,7 @@
 
   This file is part of the OpenLink Ajax Toolkit (OAT) project
 
-  Copyright (C) 2009 OpenLink Software
+  Copyright (C) 2009-2013 OpenLink Software
 
   This project is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -39,9 +39,6 @@ function init() {
   OAT.Event.attach("throbber","click",OAT.AJAX.cancelAll);
   OAT.Preferences.imagePath = "/isparql/toolkit/images/";
 
-  var qe = new QueryExec({div:"result"});
-  OAT.MSG.attach(qe, "iSPARQL_QE_DONE", function (m,s,l) { iSPARQL.StatusUI.hide(); OAT.Dom.show("result") });
-
   iSPARQL.Defaults.init();
 
   for (i in iSPARQL.Defaults)
@@ -50,6 +47,10 @@ function init() {
   iSPARQL.Defaults.handlePageParams();
 
   iSPARQL.StatusUI.init();
+
+  var qe = new QueryExec({div:"result"});
+
+  OAT.MSG.attach(qe, "iSPARQL_QE_DONE", function (m,s,l) { iSPARQL.StatusUI.hide(); OAT.Dom.show("result"); OAT.Dom.show("foot"); });
 
   var opts = OAT.Dom.uriParams();
 
@@ -82,7 +83,7 @@ function init() {
   } else {
       iSPARQL.StatusUI.statMsg ("Executing query&#8230;")
       qe.execute(iSPARQL.Settings);
-      OAT.Dom.show('foot');
+
   }   
 }
   </script>
@@ -133,7 +134,7 @@ function init() {
       <img src="/isparql/images/stop_32.png" alt="error" id="splashErrorImg" style="display:none"/>
       <div class="error" id="statMsgErr"></div>
       <div id="splash_ver"></div>
-      <div id="splash_copyr">Copyright &copy; 2006-2011 OpenLink Software</div>
+      <div id="splash_copyr">Copyright &copy; 2006-2013 OpenLink Software</div>
       <div id="splash_foot" class="opl_motto">Making Technology Work For You &trade;</div>
     </div> <!-- #splash_inner -->
   </div> <!-- #splash -->
@@ -184,12 +185,12 @@ function init() {
   <div id="result"></div>
   <div id="foot" style="display:none">
     <div id="data_links" style="display:none">Raw Linked Data formats: 
-      <a id="cxml_raw_lnk">CXML</a>|<a id="csv_raw_lnk">CSV</a> |
+      <a id="cxml_raw_lnk">CXML</a> | <a id="csv_raw_lnk">CSV</a> |
       RDF (<a id="nt_raw_lnk">N-Triples</a> <a id="n3_raw_lnk">N3/Turtle</a> <a id="json_raw_lnk">JSON</a> <a id="rdfxml_raw_lnk">XML</a>) |
       ODATA (<a id="odata_atom_lnk">Atom</a> | <a id="odata_json_lnk">JSON</a>)
     </div>
     <div class="foot_r" id="foot_r">
-      Copyright &copy; 2006-2011 OpenLink Software<br/><span id="ft_loc"></span><br/>
+      Copyright &copy; 2006-2013 OpenLink Software<br/><span id="ft_loc"></span><br/>
   </div>
     <div id="stats"></div> <!-- stats -->
   </div> <!-- #foot -->

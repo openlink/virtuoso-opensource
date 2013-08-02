@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -35,6 +35,7 @@
 <!ENTITY atomowl "http://atomowl.org/ontologies/atomrdf#">
 <!ENTITY content "http://purl.org/rss/1.0/modules/content/">
 <!ENTITY ff "http://api.friendfeed.com/2008/03">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY exif "http://www.w3.org/2003/12/exif/ns/">
 <!ENTITY picasa "http://schemas.google.com/photos/2007#">
@@ -50,6 +51,7 @@
   xmlns:r="http://backend.userland.com/rss2"
   xmlns="http://purl.org/rss/1.0/"
   xmlns:rss="http://purl.org/rss/1.0/"
+  xmlns:opl="&opl;"
   xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/"
   xmlns:itunes="http://www.itunes.com/DTDs/Podcast-1.0.dtd"
   xmlns:a="http://www.w3.org/2005/Atom"
@@ -61,7 +63,6 @@
   xmlns:gb="http://www.openlinksw.com/schemas/google-base#"
   xmlns:media="http://search.yahoo.com/mrss/"
   xmlns:georss="http://www.georss.org/georss"
-  xmlns:sioc="http://rdfs.org/sioc/ns#"
   xmlns:ff="&ff;"
   xmlns:foaf="&foaf;"
   xmlns:bibo="&bibo;"
@@ -119,6 +120,13 @@
 	      </xsl:otherwise>
 	  </xsl:choose>
 	  <rdf:type rdf:resource="{$tp}"/>
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://picasaweb.google.com#this">
+                        			<foaf:name>Google Picasa</foaf:name>
+                        			<foaf:homepage rdf:resource="http://picasaweb.google.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 	  <xsl:apply-templates select="a:title|a:content|a:published|a:author|media:*"/>
 	  <xsl:for-each select="a:entry">
 	      <xsl:choose>

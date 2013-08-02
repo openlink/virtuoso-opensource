@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -36,6 +36,8 @@
 #include "sqltype.h"
 #include "xmltree.h"
 #include "xml.h"
+#include "sqlbif.h"
+#include "security.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -149,10 +151,13 @@ itc_box_row (it_cursor_t * itc, buffer_desc_t * buf)
 caddr_t
 blob_ref_check (db_buf_t xx, int len, it_cursor_t * itc, dtp_t col_dtp)
 {
-  if (IS_BLOB_DTP (*xx))
+  int is_col_blob = DV_COL_BLOB_SERIAL == xx[0];
+  if (IS_BLOB_DTP (*xx) || is_col_blob)
     {
       blob_handle_t * bh;
       bh = bh_from_dv (xx, itc);
+      if (is_col_blob)
+	box_tag_modify (bh, DV_BLOB_HANDLE_DTP_FOR_BLOB_DTP (col_dtp));
       blob_check (bh);
       return ((caddr_t) bh);
     }
@@ -362,6 +367,7 @@ page_box_col (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t row, dbe_col_loc_
       VL;
       str = dk_alloc_box ((int) len + vl2 + 1, DV_LONG_STRING);
       memcpy (str, xx, len);
+      if (vl2)
       memcpy (str + len, xx2, vl2);
       str[len + vl2 - 1] += offset;
       str[len + vl2] = 0;
@@ -728,6 +734,7 @@ page_copy_col (buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl, row_delta_
 	VL;
 	str = rd_alloc_box (rd, (int) len + vl2, DV_BIN);
 	memcpy (str, xx, (int) len);
+	if (vl2)
 	memcpy (str + len, xx2, (int) vl2);
 	str[len + vl2 - 1] += offset;
 	return str;
@@ -1469,6 +1476,33 @@ box_to_double (caddr_t data, dtp_t dtp, oid_t col_id, caddr_t * err_ret, dbe_key
 }
 
 
+void box2anyerr ()
+{}
+
+
+caddr_t
+box_to_any_long (caddr_t data, caddr_t * err_ret, int ser_flags)
+	  {
+  caddr_t str;
+  dk_session_t * ses = (dk_session_t*)resource_get (cl_strses_rc);
+  ses->dks_cluster_flags = ser_flags;
+  CATCH_WRITE_FAIL (ses)
+    {
+      print_object (data, ses, NULL, NULL);
+    }
+  FAILED
+    {
+      resource_store (cl_strses_rc, (void*)ses);
+      box2anyerr ();
+      *err_ret = srv_make_new_error ("22026", "SR477", "Error serializing the value into an ANY column");
+      return NULL;
+    }
+  END_WRITE_FAIL (ses);
+  str = strses_string (ses);
+  resource_store (cl_strses_rc, (void*)ses);
+  return str;
+}
+
 #define BOX_OR_AUTO(n, t) \
   ((ap && n + 16 < ap->ap_size - ap->ap_fill) ? ap_alloc_box (ap, n, t)	\
     : dk_alloc_box (n, t))
@@ -1514,23 +1548,11 @@ box_to_shorten_any (caddr_t data, caddr_t * err_ret)
   if (((DV_STRING == data_dtp) || (DV_WIDE == data_dtp) || (DV_BIN == data_dtp)) &&
     (BOX_SHORT_ANY_LIMIT < (data_len = box_length (data))) )
     {
-      boxint tmp_buf [1+(BOX_SHORT_ANY_LIMIT + BOX_AUTO_OVERHEAD)/sizeof (boxint)];
-      caddr_t tmp;
-      char *data_tail = data + data_len - 1;
-      boxint hi = 0, lo = data_len;
-#ifdef DOUBLE_ALIGN
-      while (((ptrlong)data_tail) & (sizeof(boxint)-1)) { lo += data_tail[0]; hi += lo; data_tail--; }
-      while (data_tail > data) { lo += ((boxint *)data_tail)[0]; hi += lo; data_tail -= sizeof(boxint); }
-#else
-      while (((ptrlong)data_tail) & 3) { lo += data_tail[0]; hi += lo; data_tail--; }
-      while (data_tail > data) { lo += ((uint32 *)data_tail)[0]; hi += lo; data_tail -= 4; }
-#endif
-      BOX_AUTO (tmp, tmp_buf, BOX_SHORT_ANY_LIMIT, data_dtp);
-      memcpy (tmp, data, BOX_SHORT_ANY_LIMIT-17);
-      ((boxint *)(tmp + BOX_SHORT_ANY_LIMIT-17))[0] = hi;
-      ((boxint *)(tmp + BOX_SHORT_ANY_LIMIT-9))[0] = lo;
-      tmp[BOX_SHORT_ANY_LIMIT-1] = '\0';
-      return box_to_any_1 (tmp, err_ret, NULL, 0);
+      caddr_t h = box_md5 (data);
+      caddr_t err = NULL;
+      caddr_t any = box_to_any (h, &err);
+      dk_free_box (h);
+      return any;
     }
   return box_to_any_1 (data, err_ret, NULL, 0);
 }
@@ -1688,6 +1710,15 @@ row_insert_cast (row_delta_t * rd, dbe_col_loc_t * cl, caddr_t data,
 	    }
 	  return;
 	}
+      if (key->key_is_col && (DV_ANY == cl->cl_sqt.sqt_col_dtp || IS_BLOB_DTP (cl->cl_sqt.sqt_col_dtp)))
+	{
+	  caddr_t b = dk_alloc_box (2, DV_STRING);
+	  b[0] = DV_DB_NULL;
+	  b[1] = 0;
+	  ITC_SEARCH_PARAM (ins_itc, b);
+	  ITC_OWNS_PARAM (ins_itc, b);
+	}
+      else
       ITC_SEARCH_PARAM (ins_itc, data);
       if (old_blob && IS_BLOB_DTP (*old_blob))
 	{
@@ -1809,6 +1840,15 @@ row_insert_cast (row_delta_t * rd, dbe_col_loc_t * cl, caddr_t data,
       if (err_ret && *err_ret)
 	return;
       ITC_OWNS_PARAM (ins_itc, str);
+      if ((DV_STRING == (dtp_t)str[0] || DV_SHORT_STRING_SERIAL == (dtp_t)str[0]) && tb_is_rdf_quad (key->key_table))
+	{
+	  caddr_t err = srv_make_new_error ("42000",  "RDFST", "Inserting a string into O in RDF_QUAD.  RDF box is expected");
+	  if (err_ret)
+	    *err_ret = err;
+	  else
+	    sqlr_resignal (err);
+	  return;
+	}
       goto assign_str;
 
     case DV_OBJECT:
@@ -2459,6 +2499,7 @@ key_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * it, ins_key_t * ik
   dbe_key_t * key = ik->ik_key;
   query_instance_t * qi = (query_instance_t *) qst;
   QI_CHECK_STACK (qi, &qst, INS_STACK_MARGIN);
+  cl_enlist_ck (it, NULL);
   memset (&rd, 0, sizeof (row_delta_t));
   rd.rd_allocated = RD_AUTO;
   rd.rd_key = key;
@@ -2470,6 +2511,7 @@ key_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * it, ins_key_t * ik
   it->itc_tree = key->key_fragments[0]->kf_it;
   it->itc_key_spec = key->key_insert_spec;
   it->itc_out_state = qst;
+  it->itc_non_txn_insert = qi->qi_non_txn_insert;
   itc_free_owned_params (it);
   ITC_START_SEARCH_PARS (it);
   it->itc_search_par_fill = key->key_n_significant;
@@ -2552,7 +2594,7 @@ key_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * it, ins_key_t * ik
       itc_free_owned_params (it);
       sqlr_resignal (err);
     }
-  itc_from_keep_params (it, key);  /* fragment needs to be known before setting blobs */
+      itc_from_keep_params (it, key, qi->qi_client->cli_slice);  /* fragment needs to be known before setting blobs */
   for (inx = 0; key->key_row_var[inx].cl_col_id; inx++)
     {
       caddr_t data;
@@ -2573,7 +2615,14 @@ key_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * it, ins_key_t * ik
   rd.rd_n_values = it->itc_search_par_fill - key->key_n_significant;
   /* now the cols are in layout order, kf kv rf rv.  Put them now at the head in key order */
   for (inx = 0; inx < key->key_n_significant; inx++)
+    {
     it->itc_search_params[inx] = it->itc_search_params[key->key_n_significant + key->key_part_in_layout_order[inx]];
+      if (key->key_not_null && DV_DB_NULL == DV_TYPE_OF (it->itc_search_params[inx]))
+	{
+	  itc_free_owned_params (it);
+	  return DVC_LESS;
+	}
+    }
   if (key->key_is_primary)
     {
       rd_inline (qi, &rd, &err, BLOB_IN_INSERT);
@@ -2651,13 +2700,16 @@ key_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * it, ins_key_t * ik
 #undef image
 
 
+
 void
-itc_drop_index (it_cursor_t * itc, dbe_key_t * key)
+itc_drop_index_slice (it_cursor_t * itc, dbe_key_t * key, slice_id_t slice)
 {
   /* this is locally autocommitting, sometimes run in atomic mode.  Preserve the lt_w_id */
+  dp_addr_t prev_dp = 0;
   int ctr = 0, rc;
   buffer_desc_t *del_buf;
-  itc_from (itc, key);
+  int was_col = key->key_is_col;
+  itc_from (itc, key, slice);
   itc->itc_lock_mode = PL_EXCLUSIVE;
   itc->itc_isolation = ISO_SERIALIZABLE;
   itc->itc_n_lock_escalations = 100; /* lock pages from the start */
@@ -2665,14 +2717,20 @@ itc_drop_index (it_cursor_t * itc, dbe_key_t * key)
   ITC_FAIL (itc)
   {
     del_buf = itc_reset (itc);
+    itc->itc_is_col = 0;
+    key->key_is_col = 0; /* the col pages are freed here, the commits will go as for row-wise deleting the entries on leaf pages, all the rest is as for row-wise */
     FAILCK (itc);
     while (DVC_MATCH == itc_next (itc, &del_buf))
       {
-	itc_delete (itc, &del_buf, MAYBE_BLOBS);
+	if (key->key_is_col && prev_dp != itc->itc_page)
+	  {
+	    itc_col_page_free (itc, del_buf, -1);
+	  }
+	itc_delete (itc, &del_buf, key->key_is_col ? 0 : MAYBE_BLOBS);
 	itc->itc_is_on_row = 0;
 	ITC_LEAVE_MAPS (itc);
 	ctr++;
-	if (0 == ctr % 10000)
+	if (ctr > 10000 && itc->itc_page != prev_dp)
 	  {
 	    itc_register (itc, del_buf);
 	    itc_page_leave (itc, del_buf);
@@ -2686,15 +2744,270 @@ itc_drop_index (it_cursor_t * itc, dbe_key_t * key)
 	      }
 	    del_buf = page_reenter_excl (itc);
 	  }
+	prev_dp = itc->itc_page;
       }
     dbg_printf (("Deleted %d keys.\n", ctr));
     itc_page_leave (itc, del_buf);
   }
   ITC_FAILED
   {
+    itc->itc_is_col = was_col;
     itc_free (itc);
   }
   END_FAIL (itc);
+  itc->itc_is_col = was_col;
+}
+
+void
+itc_drop_index (it_cursor_t * itc, dbe_key_t * key)
+{
+    itc_drop_index_slice (itc, key, QI_NO_SLICE);
+}
+
+
+int
+key_col_ref_pos (dbe_key_t * key, dbe_column_t * col)
+{
+  int nth;
+  for (nth = 0; key->key_row_var[nth].cl_col_id; nth++)
+    {
+      if (col->col_id == key->key_row_var[nth].cl_col_id)
+	return nth;
+    }
+  return -1;
+}
+
+
+
+
+void
+rd_col_change (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd, dbe_column_t * col, int is_drop, buffer_desc_t ** col_buf_ret, caddr_t deflt)
+{
+  caddr_t * values;
+  if (is_drop)
+    {
+      int nth = key_col_ref_pos (rd->rd_key, col) + rd->rd_key->key_n_significant;
+      values = (caddr_t*)dk_alloc_box (box_length (rd->rd_values) - sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+      memcpy (values, rd->rd_values, nth * sizeof (caddr_t));
+      memcpy (values + nth, rd->rd_values + (1 + nth), box_length (rd->rd_values) - (1 + nth) * sizeof (caddr_t));
+      dk_free_box (rd->rd_values);
+      rd->rd_values = values;
+      rd->rd_n_values--;
+    }
+  else
+    {
+      caddr_t ref_str;
+      page_map_t * pm;
+      int n_rows = itc_rows_in_seg (itc, buf);
+      buffer_desc_t * col_buf = *col_buf_ret;
+      int len = box_length (deflt) - 1 + 3, fill, nth;
+      itc_col_leave (itc, 0);
+      if (col_buf && col_buf->bd_content_map->pm_bytes_free < len)
+	{
+	  page_leave_outside_map (col_buf);;
+	  col_buf = NULL;
+	}
+      if (!col_buf)
+	*col_buf_ret = col_buf = it_new_col_page (itc->itc_tree, 0, 0, col);
+      pm = col_buf->bd_content_map;
+      fill = pm->pm_filled_to;
+      map_append (&col_buf->bd_content_map, fill);
+      map_append (&col_buf->bd_content_map, n_rows);
+      pm = col_buf->bd_content_map;
+      pm->pm_bytes_free -= len;
+      col_buf->bd_buffer[fill] = CET_ANY | CE_RL;
+      SHORT_SET_CA (col_buf->bd_buffer + fill + 1, n_rows);
+      memcpy (col_buf->bd_buffer + fill + 3, deflt, box_length (deflt) - 1);
+      cs_write_gap (col_buf->bd_buffer + fill + len, PAGE_SZ - (fill + len));
+      pm->pm_filled_to += len;
+      ref_str = dk_alloc_box (1 + sizeof (dp_addr_t) + CPP_DP, DV_STRING);
+      ref_str[0] = DV_BLOB;
+      SHORT_SET_NA (ref_str + CPP_FIRST_CE, (pm->pm_count - 2) / 2);
+      SHORT_SET_NA (ref_str + CPP_N_CES, 1);
+      LONG_SET_NA (ref_str + CPP_DP, col_buf->bd_page);
+      nth = key_col_ref_pos (itc->itc_insert_key, col) + rd->rd_key->key_n_significant;
+      values = (caddr_t*)dk_alloc_box (box_length (rd->rd_values) + sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+      memcpy (values , rd->rd_values, nth * sizeof (caddr_t));
+      values[nth] = ref_str;
+      if (BOX_ELEMENTS (rd->rd_values) > nth)
+	memcpy (values + nth + 1, rd->rd_values + nth, box_length (rd->rd_values) - nth * sizeof (caddr_t));
+      dk_free_box ((caddr_t)rd->rd_values);
+      rd->rd_values = values;
+      rd->rd_n_values = BOX_ELEMENTS (values);
+    }
+}
+
+
+dbe_column_t *
+key_find_col (dbe_key_t * key, caddr_t find_name, int is_dropped)
+{
+  DO_SET (dbe_column_t *, col, &key->key_parts)
+    {
+      char name[MAX_NAME_LEN + 20];
+      char num[30];
+      if (is_dropped)
+	{
+	  int num_len, len = strlen (col->col_name);
+	  snprintf (num, sizeof (num), "__%d", (int)col->col_id);
+	  num_len = strlen (num);
+	  if (num_len > len)
+	    continue;
+	  if (0 == strncmp (col->col_name + len -
+	  num_len, num, num_len))
+	    {
+	      strncpy (name, col->col_name, sizeof (name));
+	      name[len - num_len] = 0;
+	      if (0 == CASEMODESTRCMP (name, find_name))
+		return col;
+	    }
+	}
+      else if (0 == CASEMODESTRCMP (col->col_name, find_name))
+	  return col;
+    }
+  END_DO_SET();
+  return NULL;
+}
+
+
+void
+it_key_col_ddl (index_tree_t *it, dbe_key_t * key, dbe_column_t * col, int is_drop)
+{
+  ce_ins_ctx_t ceic;
+  placeholder_t * pl;
+  it_cursor_t itc_auto;
+  it_cursor_t * itc = &itc_auto;
+  buffer_desc_t * col_buf = NULL;
+  buffer_desc_t * buf;
+  dp_addr_t prev_dropped = 0;
+  caddr_t err = NULL;
+  caddr_t deflt = is_drop ? NULL : box_to_any (col->col_default, &err);
+  ITC_INIT (itc, NULL, NULL);
+  itc_from_it (itc, it);
+  itc->itc_insert_key = key;
+  itc_col_init (itc);
+  ITC_FAIL (itc)
+  {
+    buf = itc_reset (itc);
+    itc->itc_is_col = 0;
+    while (DVC_MATCH == itc_next (itc, &buf))
+      {
+	int r;
+	for (;;)
+	  {
+	    dk_set_t rds = NULL;
+	    row_delta_t ** rd_array;
+	    page_map_t * pm = buf->bd_content_map;
+	    for (r = 0; r < pm->pm_count; r++)
+	      {
+		db_buf_t row = BUF_ROW (buf, r);
+		key_ver_t kv = IE_KEY_VERSION (row);
+		if (kv != KV_LEAF_PTR && kv != KV_LEFT_DUMMY && kv != key->key_version)
+		  {
+		    dbe_key_t * row_key = key->key_versions[kv];
+		    NEW_VARZ (row_delta_t, rd);
+		    rd->rd_allocated = RD_ALLOCATED;
+		    rd->rd_values = (caddr_t*)dk_alloc_box_zero (row_key->key_n_parts * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+		    page_row_bm (buf, r, rd, RO_ROW, NULL);
+		    rd->rd_op = RD_UPDATE;
+		    rd->rd_map_pos = r;
+		    rd->rd_keep_together_pos = r;
+		    rd->rd_keep_together_dp = buf->bd_page;
+		    itc->itc_map_pos = r;
+		    rd_col_change (itc, buf, rd, col, is_drop, &col_buf, deflt);
+		    rd->rd_key = key;
+		    dk_set_push (&rds, (void*)rd);
+		    if (is_drop && buf->bd_page != prev_dropped)
+		      {
+			int nth = key_col_ref_pos (row_key, col);
+			if (-1 == nth)
+			  continue;
+			itc_col_page_free (itc, buf, nth);
+			prev_dropped = buf->bd_page;
+		      }
+		  }
+	      }
+	    if (!rds)
+	      {
+		itc->itc_map_pos = pm->pm_count - 1;
+		itc->itc_is_on_row = 1;
+		break;
+	      }
+	    itc->itc_map_pos = pm->pm_count - 1;
+	    itc->itc_is_on_row = 1;
+	    if (col_buf)
+	      page_leave_outside_map (col_buf);
+	    col_buf = NULL;
+	    pl = plh_landed_copy ((placeholder_t*)itc, buf);
+	    rd_array = (row_delta_t**)list_to_array (dk_set_nreverse (rds));
+	    ITC_DELTA (itc, buf);
+	    memzero (&ceic, sizeof (ceic));
+	    itc->itc_top_ceic = &ceic;
+	    page_apply (itc, buf, BOX_ELEMENTS (rd_array), rd_array, PA_MODIFY | (is_drop ? PA_SPLIT_UNLIKELY : 0));
+	    rd_list_free (rd_array);
+	    if (ceic.ceic_mp)
+	      mp_free (ceic.ceic_mp);
+	    buf = itc_set_by_placeholder (itc, pl);
+	    itc_unregister_inner ((it_cursor_t*)pl, buf, 0);
+	    plh_free (pl);
+	  }
+      }
+    itc_page_leave (itc, buf);
+  }
+  ITC_FAILED
+    {
+    }
+  END_FAIL (itc);
+  itc->itc_is_col = 1;
+  itc_free (itc);
+  dk_free_box (deflt);
+}
+
+
+caddr_t
+bif_key_col_ddl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  dbe_key_t * key = bif_key_arg (qst, args, 0, "key_col_ddl");
+  caddr_t col_name = bif_string_arg (qst, args, 2, "key_col_ddl");
+  int is_drop = bif_long_arg (qst, args, 3, "key_col_ddl");
+  QNCAST (QI, qi, qst);
+  caddr_t err;
+  dbe_column_t * col = NULL;
+  caddr_t log_array;
+  if (!key->key_is_col)
+    return NULL;
+  if (qi->qi_u_id != U_ID_DBA)
+    sec_check_dba (qi, "__key_col_ddl");
+  if (is_drop)
+    {
+      int kv;
+      for (kv = 0; kv < KEY_MAX_VERSIONS; kv++)
+	{
+	  dbe_key_t * old = key->key_versions[kv];
+	  if (old && (col = key_find_col (old, col_name, 1)))
+	    break;
+	}
+    }
+  else
+    col = key_find_col (key, col_name, 0);
+  if (!col)
+    sqlr_new_error ("42000",  "CODDL",  "No col %s in %s", col_name, key->key_name);
+  if (key->key_storage->dbs_slices)
+    {
+      DO_LOCAL_CSL (csl, key->key_partition->kpd_map)
+	{
+	  cli_set_slice (qi->qi_client, key->key_partition->kpd_map, csl->csl_id,&err);
+	  it_key_col_ddl (key->key_fragments[csl->csl_id]->kf_it, key, col, is_drop);
+	}
+      END_DO_LOCAL_CSL;
+      cli_set_slice (qi->qi_client, NULL, QI_NO_SLICE, NULL);
+    }
+  else
+    it_key_col_ddl (key->key_fragments[0]->kf_it, key, col, is_drop);
+  log_array = list (5, box_string ("__key_col_ddl (?, ?, ?, ?)"),
+			    box_string (key->key_table->tb_name), box_dv_short_string (key->key_name), box_dv_short_string (col_name), box_num (is_drop));
+  log_text_array (qi->qi_trx, log_array);
+  dk_free_tree (log_array);
+  return NULL;
 }
 
 

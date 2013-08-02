@@ -68,4 +68,3 @@ key_nth_cl (dbe_key_t * key, int nth)
   END_DO_CL;
   return NULL;
 }
-

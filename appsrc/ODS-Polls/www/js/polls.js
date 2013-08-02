@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -754,14 +754,10 @@ POLLS.trim = function(sString, sChar) {
 
 POLLS.aboutDialog = function() {
   var aboutDiv = $('aboutDiv');
-	if (aboutDiv) {
+  if (aboutDiv)
 		OAT.Dom.unlink(aboutDiv);
-	}
-  aboutDiv = OAT.Dom.create('div', {
-    width:'430px',
-    height: '170px',
-    overflow: 'hidden'
-  });
+
+  aboutDiv = OAT.Dom.create('div', {height: '160px', overflow: 'hidden'});
   aboutDiv.id = 'aboutDiv';
 	aboutDialog = new OAT.Dialog('About ODS Polls', aboutDiv, {width: 445, buttons: 0, resize: 0, modal: 1});
 	aboutDialog.cancel = aboutDialog.hide;

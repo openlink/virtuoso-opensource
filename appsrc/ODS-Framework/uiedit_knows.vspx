@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2010 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -90,7 +90,7 @@
 	                sql="select WUK_ID, WUK_URI, WUK_LABEL from DB.DBA.WA_USER_KNOWS where WUK_U_ID = :self.u_id"
 		              scrollable="1"
 		              editable="1"
-		              nrows="10">
+		              nrows="0">
 
         <v:template name="k_ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
       	  <table class="listing" rules="groups">
@@ -197,7 +197,7 @@
 		        </th>
             <td>
               <input type="text" name="k_import" id="k_import" value="" size="100" class="_validate_ _uri_" />
-              <input type="button" value="Download" onclick="javascript: knowsData(); return false;" class="button" />
+              <input type="button" value="Retrieve" onclick="javascript: knowsData(); return false;" class="button" />
               <img id="k_import_image" alt="Import knows URIs" src="/ods/images/oat/Ajax_throbber.gif" style="display: none" />
             </td>
           </tr>
@@ -221,7 +221,7 @@
                     </th>
                   </tr>
                 </thead>
-                <tr id="k_tr_no"><td colspan="3"><b>No downloaded items</b></td></tr>
+                <tr id="k_tr_no"><td colspan="3"><b>No retrieved items</b></td></tr>
               </table>
             </td>
           </tr>

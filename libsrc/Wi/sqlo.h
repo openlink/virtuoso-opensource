@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -75,18 +75,18 @@ typedef struct op_table_s
   df_elt_t *	ot_dfe;
   df_elt_t *	ot_work_dfe;
   char 	ot_is_contradiction;
-  char	ot_is_group_dummy;	/* fictive table corresponding to a group by's results. fun refs depend alone on this and this depends on all other tables */
-  dk_set_t	ot_oby_ots;	/* for a dt, the component ots in the oby order */
-  dk_set_t 	ot_order_cols; /* for a table in an ordered from, the subset of the oby pertaining to this table */
+  char	ot_is_group_dummy;	/*!< Fictive table corresponding to a group by's results. fun refs depend alone on this and this depends on all other tables */
+  dk_set_t	ot_oby_ots;	/*!< For a dt, the component ots in the oby order */
+  dk_set_t 	ot_order_cols;	/*!< for a table in an ordered from, the subset of the oby pertaining to this table */
   char 	ot_order_dir;
-  df_elt_t *	ot_oby_dfe;	/* for a dt, the dfe for the sorted oby */
+  df_elt_t *	ot_oby_dfe;	/*!< For a dt, the dfe for the sorted oby */
   df_elt_t *	ot_group_dfe;
   locus_t *	ot_locus;
 
   dk_set_t	ot_virtual_cols;
   /* XPATH & FT members */
-  op_virt_col_t *ot_main_range_out;	/* Only ranges in main text, e.g. for compatibility with existing applications. */
-  op_virt_col_t *ot_attr_range_out;	/* Only ranges in attributes */
+  op_virt_col_t *ot_main_range_out;	/*!< Only ranges in main text, e.g. for compatibility with existing applications. */
+  op_virt_col_t *ot_attr_range_out;	/*!< Only ranges in attributes */
   int 		ot_text_desc;
   ST           *ot_text_start;
   ST           *ot_text_end;
@@ -97,7 +97,10 @@ typedef struct op_table_s
   ST           *ot_base_uri;
   op_virt_col_t *ot_xpath_value;
   ST *		ot_contains_exp;
-
+  ST *		ot_ext_fti;		/*!< Provider of external free-text index, such as SOLR, used instead of local index */
+  ST *		ot_geo;
+  ST *		ot_geo_rdf;
+  ST *		ot_geo_prec;
   /* hash join */
   setp_node_t * 	ot_hash_filler;
   int		ot_fixed_order;
@@ -110,6 +113,9 @@ typedef struct op_table_s
   dk_set_t 	ot_invariant_preds;
   id_hash_t * 	ot_eq_hash; /* eq group of things, use for eq transitivity */
   ST *		ot_trans; /* if transitive dt, trans opts */
+  df_elt_t *	ot_first_dfe; /* first dfe in current plan, one of ot from dfes */
+  float		ot_initial_cost; /* cost of initial plan with this ot in first position */
+  char		ot_any_plan; /* true if there is at least one full plan with this ot in first position */
 } op_table_t;
 
 typedef struct jt_mark_s
@@ -171,6 +177,7 @@ typedef struct df_inx_op_s
 
 #define DFE_PLACED 1	/* placed in a scenario */
 #define DFE_GEN 2	/* placed in the executable graph */
+#define DFE_JP_PLACED 3 /* placed for join plan */
 
 #define TN_FWD 1
 #define TN_BWD 2
@@ -194,6 +201,7 @@ struct df_elt_s
 {
   short	dfe_type;
   char	dfe_is_placed;
+  bitf_t	dfe_double_placed:1; /* can be a dfe is placed in many copies for restricting more than one hash build */
   bitf_t	dfe_unit_includes_vdb:1;
   bitf_t	dfe_is_joined:1; /* in planning next op, true if there is join to any previously placed dfe */
   bitf_t	dfe_is_planned:1; /* true if included in a multi-dfe next step in planning next dfe */
@@ -238,6 +246,8 @@ struct df_elt_s
       bitf_t is_xcontains:1;
       bitf_t is_locus_first:1;
       bitf_t is_leaf:1;
+      bitf_t is_cl_part_first:1;
+      bitf_t in_order:1;
       bitf_t is_inf_col_given:1; /* if rdf inferred subclass/prop given and checked as after test, no itre over supers */
       bitf_t hash_role:3;
       bitf_t is_hash_filler_unique:1; /* if this is a hash filler and the key of the hash is unique, so guaranteed no dups in hash */
@@ -255,6 +265,7 @@ struct df_elt_s
       df_elt_t *	hash_filler_of; /* ref from filler to hash source dfe */
       float	in_arity;
       float	inx_card;
+      float	hit_spacing; /* 1 if consec rows, 2 if every 2nd, 0.5 if each repeats twice before mext */
     } table;
     struct {
       /* dt select body, pred body, value subq */
@@ -280,6 +291,8 @@ struct df_elt_s
       bitf_t	is_complete:1; /* false if join order is being decided, true after fixed */
       bitf_t 	is_being_placed:1;
       bitf_t	to_be_trans:1; /* if will be transitive even though ot_trans is not set during placing */
+      bitf_t	is_control:1; /* if set, do not place things inside into supers evenn if could by  dependency. */
+    bitf_t	not_in_top_and:1; /* existence in a not or or, scalar subq. if hash probe outside of this subq, must not prefilter on bloom when fetching the probe col */
     } sub;
     struct {
       /* union dt head, or union coming from a table + or */
@@ -320,6 +333,7 @@ struct df_elt_s
       dk_set_t 		having_preds;
       op_table_t *ot;
       ptrlong   top_cnt;
+      dk_set_t	gb_dependent;
     } setp;
     struct {
       df_elt_t *	table;
@@ -339,6 +353,7 @@ struct df_elt_s
       op_table_t *ot;
       df_elt_t **	after_test;
       dk_set_t		after_preds;
+      dbe_table_t *	inx_table; /* geo pred can specify different rtree tables for the same indexed col */
     } text;
     struct {
       df_elt_t ***	terms;
@@ -414,6 +429,8 @@ struct sqlo_s
   char	so_is_top_and;
   char	so_in_cond_exp;
   char	so_no_text_preds;
+  char	so_any_with_this_first;  /* is there any plan that starts with the dfe this plan starts with  */
+  char	so_plan_mode;
   dk_set_t	so_placed; /*accumulate new prospective placements here */
   short	so_label_ctr;
   float		so_best_score;
@@ -433,6 +450,7 @@ struct sqlo_s
   df_elt_t *		so_vdb_top;  /* dummy top dfe for an all pas through top select. Used to reference the selection to bring outside of remote  */
   char 		so_is_rescope; /* if labeling generated subtree leave unresolved col refs as is */
   char		so_place_code_forr_cond;  /* inside cond exp, do not precalculate */
+  char		so_inside_control_exp; /* if set, do not place things outside of the innermost enclosing control exp */
   dk_set_t 	so_hash_fillers;
   char		so_bin_op_is_negate;
   char		so_is_select;
@@ -446,6 +464,7 @@ struct sqlo_s
   id_hash_t *	so_subscore;
   id_hash_t *	so_subq_cache;
   df_elt_t *	so_crossed_oby; /* If placing exp and there is an oby that is crossed, then set this to be the oby so that the exp can be added to its deps */
+  df_elt_t *	so_context_dt;
   uint32	so_last_sample_time; /* used for stopping compilation if longer is elapsed since last sample than the best plan's time */
   int32		so_max_layouts;
   int32		so_max_memory;
@@ -453,8 +472,16 @@ struct sqlo_s
   char		so_identity_joins;
   char		so_cache_subqs;
   char		so_any_placed;
+  char		so_mark_gb_dep;
+  char		so_placed_outside_dt;
+  char		so_no_dt_cache;
 };
 
+
+/* so_plan_mode */
+#define SO_ALL_PLANS 0
+#define SO_INITIAL_PLAN 1
+#define SO_REFINE_PLAN 2
 
 #define L2_APPEND(first, last, elt, pref) \
 { \
@@ -509,6 +536,7 @@ typedef struct tb_sample_s
   float		smp_card;
   float		smp_inx_card;
   int		smp_time;
+  float *	smp_dep_sel; /* if contains samples on dependent cols, selectivity in order of dep conditions */
 } tb_sample_t;
 
 
@@ -530,14 +558,19 @@ typedef struct index_choice_s
   float	ic_arity;
   float	ic_unit;
   float	ic_overhead;
+  float	ic_spacing; /* this many rows between consecutive rows fetched on vectored index lookup. 1 means consecutive */
+  char	ic_in_order; /* vectored index lookup in order with the previous index lookup */
+  char	ic_is_cl_part_first; /* preceded by a cluster partitioning step, qf or dfg stage */ 
   char	ic_leading_constants; /* this many leading constants used for sampling */
   char	ic_is_unique;
+  char	ic_not_applicable;
   int	ic_op;
   int	ic_n_lookups;
   dk_set_t	ic_altered_col_pred;
   dk_set_t	ic_after_test;
   float 	ic_after_test_arity;
   float		ic_inx_card;
+  float		ic_col_card_corr; /* if ic samples dependent cols, this is the correction factor to the for the  cols sampled to the dependent col card est */
   struct rdf_inf_ctx_s *	ic_ric;
   df_elt_t *	ic_inf_dfe;
   int		ic_inf_type;
@@ -582,13 +615,24 @@ typedef struct join_plan_s
   float		jp_cost;
   float		jp_best_cost;
   float		jp_best_card;
+  float		jp_fill_selectivity; /* for selective hash join, seeing if more joins should go in the build, this is the fraction selected by the first dfe on build side */
   char		jp_not_for_hash_fill; /* set if jp_tb_dfe not suited for use in hash fill join */
+  char		jp_hash_fill_non_unq;
   dk_set_t	jp_best_jp;
+  dk_set_t	jp_extra_preds; /* if hash filler dt, preds that are redundant, covered by the join of the first to the probe */
   struct join_plan_s *	jp_prev;
   dk_set_t		jp_hash_fill_dfes; /* other dfes that compose a join on the  fill side of hash join */
   dk_set_t		jp_hash_fill_preds;
   float			jp_reached; /* how many joined dfes in so many steps, recognize a star join, closer counts for more  */
 } join_plan_t;
+
+
+typedef struct linint_s
+{
+  int	li_n_points;
+  float *	li_x;
+  float *	li_y;
+} lin_int_t;
 
 
 #define IC_OPT_ITERS 0 /* can change in or rdf inf iters into after test */
@@ -610,6 +654,9 @@ df_elt_t * sqlo_layout_copy_1 (sqlo_t * so, df_elt_t * dfe, df_elt_t * parent);
 void sqlo_dt_unplace (sqlo_t * so, df_elt_t * tb_dfe);
 void sqlo_dfe_unplace (sqlo_t * so, df_elt_t * dfe);
 float sqlo_score (df_elt_t * dfe, float in_arity);
+int dfe_try_ordered_key (df_elt_t * prev_tb, df_elt_t * dfe);
+df_elt_t * dfe_prev_tb (df_elt_t * dfe, float * card_between_ret, int stop_on_new_order);
+void dfe_revert_scan_order (df_elt_t * dfe, df_elt_t * prev_tb, dbe_key_t * prev_key);
 void sqlo_dfe_print (df_elt_t * dfe, int offset);
 #define OFS_INCR 4
 df_elt_t * sqlo_layout (sqlo_t * so, op_table_t * ot, int is_top, df_elt_t * super);
@@ -787,22 +834,31 @@ void qn_ins_before (sql_comp_t * sc, data_source_t ** head, data_source_t * ins_
 
 /* cost model constants */
 
-#define COL_PRED_COST 0.02 /* itc_col_check */
-#define ROW_SKIP_COST 0.035 /* itc_row_check and 1 iteration of itc_page_search */
-#define INX_INIT_COST 1  /* fixed overhead of starting an index lookup */
-#define INX_CMP_COST 0.25 /* one compare in random access lookup. Multiple by log2 of inx count to get cost of 1 random access */
-#define ROW_COST_PER_BYTE (COL_PRED_COST / 200) /* 200 b of row cost 1 itc_col_check */
-#define NEXT_PAGE_COST 5
-#define INX_ROW_INS_COST 1 /* cost of itc_insert_dv into inx */
-#define HASH_ROW_INS_COST 1.6 /* cost of adding a row to hash */
-#define HASH_MEM_INS_COST 0.7
-#define HASH_LOOKUP_COST 0.9
-#define HASH_ROW_COST 0.3
-#define CV_INSTR_COST 0.1   /* avg cost of instruction in code_vec_run */
+#define COL_PRED_COST col_pred_cost
+#define ROW_SKIP_COST row_skip_cost 
+#define INX_INIT_COST inx_init_cost 
+#define INX_CMP_COST inx_cmp_cost
+#define ROW_COST_PER_BYTE row_cost_per_byte 
+#define NEXT_PAGE_COST next_page_cost 
+#define INX_ROW_INS_COST inx_row_ins_cost
+#define HASH_ROW_INS_COST hash_row_ins_cost  /* cost of adding a row to hash */
+#define HASH_MEM_INS_COST hash_mem_ins_cost
+#define HASH_LOOKUP_COST hash_lookup_cost 
+#define HASH_ROW_COST hash_row_cost
+#define CV_INSTR_COST cv_instr_cost
+extern float hash_log_multiplier;
 
 #define HASH_COUNT_FACTOR(n)\
-  (0.05 * log(n) / log (2))
+  (hash_log_multiplier * log(n) / log (2))
 
+
+extern float hash_row_ins_cost;
+extern float hash_lookup_cost;
+extern float hash_row_cost;
+extern float hash_log_multiplier;
+
+
+char  sqlg_geo_op (sql_comp_t * sc, ST * op);
 
 /* cluster compiler funcs */
 int key_is_local_copy (dbe_key_t * key);
@@ -859,17 +915,20 @@ void sqlo_rdf_col_card (sqlo_t * so, df_elt_t * td_dfe, df_elt_t * dfe);
 
 int64 sqlo_inx_sample (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int n_parts, index_choice_t * ic);
 float arity_scale (float ar);
+caddr_t sqlo_rdf_lit_const (ST * tree);
 caddr_t sqlo_rdf_obj_const_value (ST * tree, caddr_t * val_ret, caddr_t *lang_ret);
 
 float dfe_join_score_jp (sqlo_t * so, op_table_t * ot,  df_elt_t *tb_dfe, dk_set_t * res,
 			 join_plan_t * prev_jp);
 int  dfe_is_quad (df_elt_t * tb_dfe);
 char * dfe_p_const_abbrev (df_elt_t * tb_dfe);
-int sqlo_hash_fill_join (sqlo_t * so, df_elt_t * hash_ref_tb, df_elt_t ** fill_ret, dk_set_t org_preds, dk_set_t hash_keys);
+int sqlo_hash_fill_join (sqlo_t * so, df_elt_t * hash_ref_tb, df_elt_t ** fill_ret, dk_set_t org_preds, dk_set_t hash_keys, float ref_card);
 void dfe_unplace_fill_join (df_elt_t * fill_dt, df_elt_t * tb_dfe, dk_set_t org_preds);
 int st_is_call (ST * tree, char * f, int n_args);
 df_elt_t * dfe_container (sqlo_t * so, int type, df_elt_t * super);
 float dfe_hash_fill_cond_card (df_elt_t * tb_dfe);
+float sqlo_hash_ins_cost (df_elt_t * dfe, float card, dk_set_t cols);
+float sqlo_hash_ref_cost (df_elt_t * dfe, float hash_card);
 
 #define SQK_MAX_CHARS 2000
 void dfe_cc_list_key (dk_set_t list, char * str, int * fill, int space);
@@ -879,5 +938,14 @@ df_elt_t * sqlo_dt_cache_lookup (sqlo_t * so, op_table_t * ot, dk_set_t imp_pred
 void sqlo_dt_cache_add (sqlo_t * so, caddr_t cc_key, df_elt_t * copy);
 
 #define RQ_IS_COL(col, n)  (n == toupper (((dbe_column_t*)col)->col_name[0]))
+int sqlg_is_multistate_gb (sqlo_t * so);
+
+#ifdef DEBUG
+void dbg_qi_print_row( query_instance_t *qi, dk_set_t slots, int nthset );
+void dbg_qi_print_slots( query_instance_t *qi, state_slot_t** slots, int nthset );
+#endif // DEBUG
+dbe_key_t * tb_px_key (dbe_table_t * tb, dbe_column_t * col);
+float dfe_scan_card (df_elt_t * dfe);
+int sqlo_parse_tree_count_node (ST *tree, long *nodes, int n_nodes);
 
 #endif /* _SQLO_H */

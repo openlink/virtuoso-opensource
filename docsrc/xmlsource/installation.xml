@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -24,41 +24,115 @@
 <chapter label="installation.xml" id="installation">
 	<title>Installation Guide</title>
 	<abstract>
-<para>This chapter applies exclusively to the various commercial releases of Virtuoso.  If you are working with the open source version, please refer to the instructions on the web site where you obtained it.  
+		<para>This chapter applies exclusively to the various commercial releases of Virtuoso.  If you are working with the open source version, please refer to the instructions on the web site where you obtained it.  
 </para>
-<para>
+		<para>
 This chapter describes how to install OpenLink Virtuoso VDBMS.  It 
 contains both a quick start install guide and full walk through install guides 
 for major platforms.</para>
-
-  <para>Virtuoso has been designed from the ground-up to be easy to implement.</para>
-	<para>The installation generally runs without problems, run the setup program or script and follow
+		<para>Virtuoso has been designed from the ground-up to be easy to implement.</para>
+		<para>The installation generally runs without problems, run the setup program or script and follow
 	the on screen instruction prompts.  You will be asked some questions, if in any doubt please follow
 	the instructions in this guide in order to install and configure your Virtuoso components correctly. </para>
-
-	<para>Once installed, each instance of Virtuoso is controlled by an
+		<para>Once installed, each instance of Virtuoso is controlled by an
 INI (initialization) file.  This file links the Virtuoso Server
 process with an actual database file or device.  For example, the demo
 instance of Virtuoso on all platforms is controlled by the demo.ini
 file that is found in the demo directory along with the demo.db and
 related files.  There is a one-to-one relationship between server
 processes and database files.</para>
-
-<para>The INI file is a text file consisting of keys and key values.
+		<para>The INI file is a text file consisting of keys and key values.
 You will set several of these values during installation.  At any time
 thereafter, their values can be changed by editing the INI file with a
 standard text editor.</para>
 
-<para>The details of the INI file sections, keys, and the meanings of
+		<para>The details of the INI file sections, keys, and the meanings of
 the key values are described in the <link
 linkend="configsrvstupfiles">Configuring Server Startup Files</link>
 section.
 </para>
 
-</abstract>
+	</abstract>
 
-
-
+	<sect1 id="installallplatforms">
+		<title>Virtuoso on All platforms Commmon Specifics</title>
+    <sect2 id="srvadminstallreqt"><title>Installation Requirements</title>
+			<para>A typical installation will require a minimum of 400Mb of hard disk space to install the code, 
+      samples, documentation and sample database. The database will need additional space for data inserted, 
+      backups, logs and reports, web pages, etc.</para>
+			<para>The size of the database .db file will not reduce when data is removed. The spare space will 
+      however be reclaimed for later use.</para>
+		</sect2>
+    
+    <sect2 id="srvadmopreq"><title>Operational Requirements</title>
+			<para>The Virtuoso database requires a minimum of 64Mb of system memory for each instance to operate 
+      in. Each connection will take between 70kb and 130kb of memory.</para>
+			<para>The memory usage is affected by the following parameters in the
+    <link linkend="VIRTINI">Virtuoso configuration file</link>.</para>
+			<simplelist>
+				<member>ServerThreads</member>
+				<member>ServerThreadSize</member>
+				<member>MainThreadSize</member>
+				<member>FutureThreadSize</member>
+				<member>NumberOfBuffers</member>
+			</simplelist>
+			<para>See the following <link linkend="parameters">Parameter section</link> for more details.</para>
+		</sect2>
+    
+    <sect2 id="srvadmossupport"><title>Operating System Support</title>
+			<para>Virtuoso runs on the following operating systems:</para>
+			<simplelist>
+				<member>Windows</member>
+				<member>Linux</member>
+				<member>Unix: AIX, HP-UX, Solaris, etc.</member>
+				<member>Mac OS X</member>
+			</simplelist>
+		</sect2>
+    
+		<sect2 id="limitsandparameters">
+			<title>Limits</title>
+			<para>The below table lists the most important parameters and limits for a database or a Virtuoso 
+      server instance. For space consumption of individual data types, see 
+      <link linkend="SpaceConsump">Space Consumption</link>.</para>
+			<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
+				<title>Limits</title>
+				<tgroup align="char" charoff="50" char="." cols="2">
+					<colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
+					<thead>
+						<row>
+							<entry>Limit Description</entry>
+							<entry>Value</entry>
+						</row>
+					</thead>
+					<tbody>
+            <row><entry>Identifier length</entry><entry>100</entry></row>
+            <row><entry>User name and password length</entry><entry>100</entry></row>
+            <row><entry>SQLstmt and proc text</entry><entry>100K+</entry></row>
+            <row><entry>varchar length</entry><entry>Constrained by max row length when stored into non-LOB column, 10MB inside procedure code.</entry></row>
+            <row><entry>Numeric precision</entry><entry>Max 40 digits</entry></row>
+            <row><entry>LOB column length</entry><entry>2GB</entry></row>
+            <row><entry>row length</entry><entry>4086</entry></row>
+            <row><entry>Columns per row</entry><entry>200</entry></row>
+            <row><entry>Database size</entry><entry>32TB for data, 32TB for temp data </entry></row>
+            <row><entry>Page size</entry><entry>8K</entry></row>
+            <row><entry>File size</entry><entry>64 bit file offsets on supporting OS's</entry></row>
+            <row><entry>Files per database</entry><entry>unlimited</entry></row>
+            <row><entry>Table size</entry><entry>Up to database size </entry></row>
+            <row><entry>Tables per database</entry><entry>64K keys, a table takes 1 key for primary key, 1 key per index and 1 key for each obsolete primary key layout  resulting from adding or dropping columns.</entry></row>
+            <row><entry>Indexes per table</entry><entry>Unlimited, subject to global cap on keys.</entry></row>
+            <row><entry>Row in sorting/distinct temp</entry><entry>4078b, as in tables </entry></row>
+            <row><entry>Locks per transaction</entry><entry>Depends on memory, 16b per row lock, 60b per page with at least one row lock.</entry></row>
+            <row><entry>Changes per transaction</entry><entry>Depends on memory, ini parameter allows cap on  rollback before image.</entry></row>
+            <row><entry>Virtual memory></entry><entry>Depends on OS, 64 bit pointers on 64 bit platforms</entry></row>
+            <row><entry>Threads</entry><entry>Depends on OS, ini files specifies cap for pool for SQL client and web server worker thread pools.</entry></row>
+            <row><entry>Max connections</entry><entry>Depends on OS fdset size, at least 2048, license can set a limit</entry></row>
+            <row><entry>Memory per connection</entry><entry>22K plus up to 100 cached SQL statement compilations</entry></row>
+          </tbody>
+       </tgroup>
+      </table>
+    </sect2>
+  </sect1>
+  
 	<sect1 id="installwin32">
 		<title>Virtuoso for Windows</title>
 		<sect2 id="b4ustart">
@@ -68,7 +142,7 @@ section.
 			<sect3 id="haveudld">
 				<title>Have you downloaded the software?</title>
 				<para>If you have not already done so, please download your copy of OpenLink
-    Virtuoso from the OpenLink web site.  The URL is 
+    Virtuoso from the OpenLink web site.  The URL is
     <ulink url="http://www.openlinksw.com">http://www.openlinksw.com</ulink>.
     When you visit the site, select &quot;Download &amp; Evaluation&quot;. </para>
                                 <orderedlist>
@@ -107,113 +181,28 @@ section.
 				as part of the download process. It is therefore important to supply a valid email
 				address. The installer will prompt for the license file location.</para>
 			</sect3>
-			
-			  <sect3 id="srvadminstallreqt"><title>Installation Requirements</title>
-    <para>A typical installation will require a minimum of 400Mb of hard disk
-    space to install the code, samples, documentation and sample database.
-The database will need additional space for data inserted, backups, logs and reports, web pages, etc.
-</para>
-    <para>The size of the database .db file will not reduce when data is
-    removed. The spare space will however be reclaimed for later use.</para>
-  </sect3>
-    
-  <sect3 id="srvadmopreq"><title>Operational Requirements</title>
-    <para>The Virtuoso database requires a minimum of 64Mb of system memory
-    for each instance to operate in. Each connection will take between 70kb
-    and 130kb of memory.</para>
-    <para>The memory usage is affected by the following parameters in the
-    <link linkend="VIRTINI">Virtuoso configuration file</link>.</para>
-    <simplelist>
-      <member>ServerThreads</member>
-      <member>ServerThreadSize</member>
-      <member>MainThreadSize</member>
-      <member>FutureThreadSize</member>
-      <member>NumberOfBuffers</member>
-    </simplelist>
-    <para>See the following <link linkend="parameters">Parameter section</link>
-    for more details.</para>
-  </sect3>
-
-  <sect3 id="srvadmossupport"><title>Operating System Support</title>
-    <para>Virtuoso runs on the following operating systems:</para>
-    <simplelist>
-      <member>Windows</member>
-      <member>Linux</member>
-      <member>Unix: AIX, HP-UX, Solaris, etc.</member>
-      <member>Mac OS X</member>
-    </simplelist>
-  </sect3>
-
-
-<sect3 id="limitsandparameters">
-<title>Limits</title>
-
-<para>
-The below table lists the most important parameters and limits for a database or a Virtuoso server instance.  For space consumption of individual data types, see <link linkend="SpaceConsump">Space Consumption</link>.
-</para>
-
-
-<table colsep="1" frame="all" rowsep="0" shortentry="0" tocentry="1" tabstyle="decimalstyle" orient="land" pgwide="0">
-  <title>Limits</title>
-  <tgroup align="char" charoff="50" char="." cols="2">
-  <colspec align="left" colnum="1" colsep="0" colwidth="20pc"/>
-    <thead>
-      <row>
-        <entry>Limit Description</entry>
-        <entry>Value</entry>
-      </row>
-    </thead>
-    <tbody>	
-<row><entry>Identifier length</entry><entry>100</entry></row>
-<row><entry>User name and password length</entry><entry>100</entry></row>
-<row><entry>SQLstmt and proc text</entry><entry>100K+</entry></row>
-<row><entry>varchar length</entry><entry>Constrained by max row length when stored into non-LOB column, 10MB inside procedure code.</entry></row>
-<row><entry>Numeric precision</entry><entry>Max 40 digits</entry></row>
-<row><entry>LOB column length</entry><entry>2GB</entry></row>
-<row><entry>row length</entry><entry>4086</entry></row>
-<row><entry>Columns per row</entry><entry>200</entry></row>
-<row><entry>Database size</entry><entry>32TB for data, 32TB for temp data </entry></row>
-<row><entry>Page size</entry><entry>8K</entry></row>
-<row><entry>File size</entry><entry>64 bit file offsets on supporting OS's</entry></row>
-<row><entry>Files per database</entry><entry>unlimited</entry></row>
-<row><entry>Table size</entry><entry>Up to database size </entry></row>
-<row><entry>Tables per database</entry><entry>64K keys, a table takes 1 key for primary key, 1 key per index and 1 key for each obsolete primary key layout  resulting from adding or dropping columns.</entry></row>
-<row><entry>Indexes per table</entry><entry>Unlimited, subject to global cap on keys.</entry></row>
-<row><entry>Row in sorting/distinct temp</entry><entry>4078b, as in tables </entry></row>
-<row><entry>Locks per transaction</entry><entry>Depends on memory, 16b per row lock, 60b per page with at least one row lock.</entry></row>
-<row><entry>Changes per transaction</entry><entry>Depends on memory, ini parameter allows cap on  rollback before image.</entry></row>
-<row><entry>Virtual memory></entry><entry>Depends on OS, 64 bit pointers on 64 bit platforms</entry></row>
-<row><entry>Threads</entry><entry>Depends on OS, ini files specifies cap for pool for SQL client and web server worker thread pools.</entry></row>
-<row><entry>Max connections</entry><entry>Depends on OS fdset size, at least 2048, license can set a limit</entry></row>
-<row><entry>Memory per connection</entry><entry>22K plus up to 100 cached SQL statement compilations</entry></row>
-</tbody>
- </tgroup>
-</table>
-
-  </sect3>
-
 
 			<sect3 id="reinstvirt">
 				<title>Reinstalling Virtuoso?</title>
 				<para>If you are reinstalling Virtuoso, you must first shutdown any
     additional database servers you have configured on non default ports.
     The databases on port 1111 and 1112 will automatically be stopped during the install process.
-    On Windows NT/2000/XP, go to the services applet in the Control Panel.  There 
-    you can stop services that appear with names of the form &quot;OpenLink 
+    On Windows NT/2000/XP, go to the services applet in the Control Panel.  There
+    you can stop services that appear with names of the form &quot;OpenLink
     Virtuoso DBMS Server [instance name]&quot;.</para>
 				<para>On Windows NT/2000/XP you can also shut them down with the following
     commands in the Virtuoso\bin directory:</para>
-				<programlisting>
+			<programlisting>
 virtuoso-odbc-t.exe +service stop
 virtuoso-odbc-t.exe +instance myinstance +service stop
 virtuoso-odbc-t.exe +instance anotherinstance +service stop
 </programlisting>
 
 <note><title>Note:</title>
-<para>There is an alternative executable available for Virtuoso 
-called: virtuoso-odbc-f.exe, which you may have installed.  This version is 
-designed for versions of Windows that offer no native threading support 
-such as Windows 98, and offers no advantages over virtuoso-odbc-t.exe 
+<para>There is an alternative executable available for Virtuoso
+called: virtuoso-odbc-f.exe, which you may have installed.  This version is
+designed for versions of Windows that offer no native threading support
+such as Windows 98, and offers no advantages over virtuoso-odbc-t.exe
 for Windows NT/2000/XP.</para></note>
 
 				<para>You can list the services with their status using:</para>
@@ -226,15 +215,15 @@ for Windows NT/2000/XP.</para></note>
   <tgroup cols="2">
  <thead><row><entry>Port</entry><entry>Used by</entry></row></thead>
  <tbody>
-<row>
+						<row>
   <entry>1111</entry>
   <entry>Default Virtuoso Server port</entry></row>
-<row>
+						<row>
   <entry>8889</entry>
   <entry>Default Virtuoso Visual Server Administration Interface HTTP port</entry></row>
-    </tbody>
-  </tgroup>
-</table>
+					</tbody>
+				</tgroup>
+			</table>
 				<para>By default, the Virtuoso DBMS listens on port 1111.
     This port number is not selectable at install time.
     If the port is currently in use by another server then after the installation completes
@@ -329,7 +318,7 @@ netstat -an | more
 							<graphic fileref="inst/v50pex8603.png" width="504" depth="386"/>
 						</figure>
 					</listitem>
-					<listitem>
+                                        <listitem>
 						<para>If a license file already exists the installer can place this in the correct
 location for use. Browse to the location of your installer file and the installer will use this for the
 Virtuoso Server. Alternatively the &quot;Try &amp; Buy&quot; feature of the installer can be used to enable
@@ -339,7 +328,7 @@ a trial or full license file to be obtained online:</para>
 							<graphic fileref="inst/v50pex8604.png" width="504" depth="386"/>
 						</figure>
 					</listitem>
-					<listitem>
+                                        <listitem>
 						<para>Choose to obtain a Trial license for an evaluation or enter the shop
             site to purchase a full license.</para>
 						<figure id="winpersinst005" float="1">
@@ -347,7 +336,7 @@ a trial or full license file to be obtained online:</para>
 							<graphic fileref="inst/v50pex8605.png" width="976" depth="682"/>
 						</figure>
 					</listitem>
-					<listitem>
+                                        <listitem>
 						<para>Click on the &quot;Download License&quot; button on the right to obtain the
             license file immediately. An e-mail will also be sent with details of the license and the location on the ODS account
             of the registered user where in can be obtained from at a later date. Once a license file is available on the machine
@@ -413,8 +402,8 @@ Service Manager" which gets added to the Windows "Icons Tray" in the status bar.
                                            <figure id="winpinst14" float="1">
                                              <title>Post installation</title>
                                              <graphic fileref="ui/winpinst14.png"/>
-						</figure>
-					</listitem>
+                                          </figure>
+                                        </listitem>
                                         <listitem>Double click on the "Virtuoso Service Manager" icon in the "Icons Tray" to load
 the application, select the "OpenLink Virtuoso Server" instance and press the "Start" button to run
 the Service.
@@ -436,9 +425,9 @@ online. This Web based page can be used for general configuration and usage of t
                                             <figure id="winpinst17" float="1">
                                               <title>Virtuoso Server Welcome page</title>
                                               <graphic fileref="ui/winpinst17.png"/>
-						</figure>
-					</listitem>
-				</orderedlist>
+                                            </figure>
+                                          </listitem>
+                                        </orderedlist>
                                         <para>The installation Virtuoso Universal Server is complete.</para>
 			</sect3>
 			<sect3 id="TwoTierConfigInst">
@@ -580,6 +569,8 @@ binaries and databases (defaults) for issues if install fails.</para>
    <para>Delete the .lck file and repeat the steps from above.</para>
    <para><emphasis>.trx incompatiblity issue</emphasis></para>   
    <para>Check .log in case of .trx incompatiblity issue</para>
+   <para><emphasis>oplmgr issue</emphasis></para>     
+   <para>See <link linkend="oplmngrdlptl">Troubleshooting License Problems</link></para> 
   </sect3> 
   </sect2>
   
@@ -668,7 +659,7 @@ virtuoso-odbc-f +instance demo +service start
 			<note>
 				<title>Note:</title>
 				<para>This functionality is only available on Windows NT/2000/XP.</para>
-        <para>Ensure that the services applet from the control panel is closed while 
+        <para>Ensure that the services applet from the control panel is closed while
         issuing the above commands to prevent locking.</para>
 			</note>
 		</sect2>
@@ -713,7 +704,7 @@ virtuoso-odbc-f +instance demo +service start
     Driver for any number of different database types that have been linked into Virtuoso.</para>
 
     <tip><title>See Also:</title>
-    <para>The <link linkend="VirtuosoDriverJDBC">JDBC Driver</link> section in 
+    <para>The <link linkend="VirtuosoDriverJDBC">JDBC Driver</link> section in
     the Access Interfaces chapter.</para></tip>
 
     </sect3>
@@ -806,9 +797,9 @@ isqlo &lt;enter a valid ODBC Data Source Name&gt;</programlisting>
 		<title>Virtuoso for Linux (Enterprise Edition)</title>
 			<!--sect2 id="lindoyouwannamigrate">
 				<title>Existing Virtuoso 2.7 Users</title>
-				<para>You can migrate your existing Virtuoso servers to 3.0 using 
-        the migration utility.  The Virtuoso database file structure has been considerably 
-        altered between versions.  Please consult the 
+				<para>You can migrate your existing Virtuoso servers to 3.0 using
+        the migration utility.  The Virtuoso database file structure has been considerably
+        altered between versions.  Please consult the
         <link linkend="migrate27to30">Migration of Virtuoso from Version 2.7 to Version 3.0</link>
         section for more details.</para>
 			</sect2-->
@@ -913,7 +904,7 @@ ready to commence the Virtuoso installation process. </para>
 installation and then you can place the installation tar file into that users home
 directory.</para>
 <orderedlist>
-  <listitem><para>First step is to un-tar the file to obtain the install script 
+  <listitem><para>First step is to un-tar the file to obtain the install script
   and archive file.  Use the following command:</para>
   <programlisting>tar xvf &lt;tar file&gt;.tar</programlisting>
   <para>replacing &lt;tar file&gt; with the relevant name of the file you downloaded.</para></listitem>
@@ -923,9 +914,9 @@ directory.</para>
 </listitem>
 
 <listitem>
-<para>The install script will first try and detect running Virtuoso server instances.  
-In cases where an old Virtuoso server is being upgraded you must ensure that 
-the old Virtuoso is first shutdown.  It is advisable that you backup up your 
+<para>The install script will first try and detect running Virtuoso server instances.
+In cases where an old Virtuoso server is being upgraded you must ensure that
+the old Virtuoso is first shutdown.  It is advisable that you backup up your
 systems before continuing.</para>
 <programlisting><![CDATA[
 Checking requested components
@@ -936,7 +927,7 @@ Checking for existing installations and/or instances of Virtuoso...
 ** Alert: [running processes; ]
 
 ** Warning: You have Virtuoso previously installed on this machine.
-** 
+**
 ** To avoid existing data being overwritten or lost, you may press ^C to
 ** exit this installer, terminate and remove the existing installation,
 ** or proceed taking care to enter non-conflicting data below, by pressing
@@ -945,7 +936,7 @@ Checking for existing installations and/or instances of Virtuoso...
 </listitem>
 
 <listitem>
-<para>If you are upgrading a server then the installer will save copies of 
+<para>If you are upgrading a server then the installer will save copies of
 old configuration data for later use.</para>
 <programlisting><![CDATA[
 Preserving any existing configurations...
@@ -957,9 +948,9 @@ find: bin: No such file or directory
 </listitem>
 
 <listitem>
-<para>You should have received a license file via email.  This file should be 
-copied to the server installation directory prior to installation.  The installer 
-will ask you for its location if none is found.  If you do not have the license 
+<para>You should have received a license file via email.  This file should be
+copied to the server installation directory prior to installation.  The installer
+will ask you for its location if none is found.  If you do not have the license
 file at this time the installer will still continue.</para>
 <programlisting><![CDATA[
 Checking licensing...
@@ -971,7 +962,7 @@ license file [./virtuoso.lic]:
 </listitem>
 
 <listitem>
-<para>Now the installer will continue to install files from the package.  Every 
+<para>Now the installer will continue to install files from the package.  Every
 file installed will be echoed to the screen.  </para>
 <programlisting><![CDATA[
 Unpacking enterprise.tar.Z
@@ -988,23 +979,23 @@ vsp/vsp_auth.sql
 </listitem>
 
 <listitem>
-<para>When the files have been installed from the package the location 
-supplied for the license file will be checked.  If one is not found then you will 
+<para>When the files have been installed from the package the location
+supplied for the license file will be checked.  If one is not found then you will
 receive the following warning:</para>
 <programlisting><![CDATA[
 **
 **  WARNING: The license file entered is not valid or does not exist.
-**           You will need to copy a valid license file manually 
+**           You will need to copy a valid license file manually
 **           to the demo and db directories after the Virtuoso installation completes.
 ]]></programlisting>
 </listitem>
 
 <listitem>
-<para>The Virtuoso server installation has a few variations.  The next question 
-from the installer asks which one you want to make default.  Even though each 
-variation is installed, a convenient symbolic link will be made to 
-<computeroutput>bin/virtuoso</computeroutput> from the selected type.  
-Running <computeroutput>ls -l</computeroutput> in the bin directory after 
+<para>The Virtuoso server installation has a few variations.  The next question
+from the installer asks which one you want to make default.  Even though each
+variation is installed, a convenient symbolic link will be made to
+<computeroutput>bin/virtuoso</computeroutput> from the selected type.
+Running <computeroutput>ls -l</computeroutput> in the bin directory after
 installation will reveal all.</para>
 <programlisting><![CDATA[
 Checking for installed optional components...
@@ -1023,15 +1014,15 @@ Please choose which Virtuoso server you wish to install:
 </listitem>
 
 <listitem>
-<para>The installer will search for required third-party components 
-depending on which option is selected in the previous step.  For example, choosing 
-the Virtuoso with Java support will require a Java runtime.  Results of the 
-search are listed as suggestions from which you can confirm or type 
+<para>The installer will search for required third-party components
+depending on which option is selected in the previous step.  For example, choosing
+the Virtuoso with Java support will require a Java runtime.  Results of the
+search are listed as suggestions from which you can confirm or type
 the actual location.</para>
 <programlisting><![CDATA[
 Attempting to locate the java runtime library (libjvm.so)...
 
-Suggested file locations: 
+Suggested file locations:
 /usr/local/lib
 /usr/local/jdk1.3/jre/lib/i386/classic
 /usr/local/jdk1.3/jre/lib/i386/server
@@ -1049,8 +1040,8 @@ the default (/usr/local/jdk1.3/jre/lib/i386/client):
 </listitem>
 
 <listitem>
-<para>The Virtuoso installer includes a Mono runtime distribution, since 
-Mono is a developing platform you may have your own installation that you 
+<para>The Virtuoso installer includes a Mono runtime distribution, since
+Mono is a developing platform you may have your own installation that you
 can supply the path to here.</para>
 <programlisting><![CDATA[
 Please enter the full path to the Mono installation directory or
@@ -1059,7 +1050,7 @@ Enter to use the default (/home/openlink/virtuoso/mono)
 </listitem>
 
 <listitem>
-<para>Virtuoso now has enough information to configure its environment and 
+<para>Virtuoso now has enough information to configure its environment and
 startup scripts.</para>
 <programlisting><![CDATA[
 Setting up initial values in scripts and config files
@@ -1080,9 +1071,9 @@ Setting up file initd_startup_demo.template
 </listitem>
 
 <listitem>
-<para>The installer will now ask a series of questions for configuring the 
-Virtuoso .INI files.  First confirm or alter the default database SQL listener 
-port number.  This is the port number that this database will be available for 
+<para>The installer will now ask a series of questions for configuring the
+Virtuoso .INI files.  First confirm or alter the default database SQL listener
+port number.  This is the port number that this database will be available for
 ODBC connections and iSQL sessions.</para>
 <programlisting><![CDATA[
 Configuring port numbers for default and demo databases
@@ -1093,11 +1084,11 @@ SQL listener (default 1111):
 </listitem>
 
 <listitem>
-<para>Now you must specify the port number of the default database HTTP 
-listener.  This is the HTTP port that Virtuoso will listen on by default, you web-based 
-administration interface for Virtuoso will be found here.  If you confirm the 
-default of 8889, then your Virtuoso will be available from: 
-<computeroutput>http://server:8889/</computeroutput>, changing 
+<para>Now you must specify the port number of the default database HTTP
+listener.  This is the HTTP port that Virtuoso will listen on by default, you web-based
+administration interface for Virtuoso will be found here.  If you confirm the
+default of 8889, then your Virtuoso will be available from:
+<computeroutput>http://server:8889/</computeroutput>, changing
 server to the name of your machine appropriately.</para>
 <programlisting><![CDATA[
 Please enter a port on which to run the default database
@@ -1106,7 +1097,7 @@ HTTP listener (default 8889):
 </listitem>
 
 <listitem>
-<para>Now you must supply a friendly name that you wish to identify 
+<para>Now you must supply a friendly name that you wish to identify
 your Virtuoso server by on the network using Zero Configuration.  </para>
 <tip><title>See Also:</title>
 <para>The <link linkend="rendezvous">Zero Configuration</link> section.</para></tip>
@@ -1125,7 +1116,7 @@ Please enter a user name for default database Zero Configuration
 </listitem>
 
 <listitem>
-<para>Now we have all of the above details to supply again for the Demo Virtuoso 
+<para>Now we have all of the above details to supply again for the Demo Virtuoso
 database.  The port number supplied here must be different to those supplied previously.</para>
 <programlisting><![CDATA[
 Please enter a port on which to run the demo database
@@ -1143,29 +1134,29 @@ Please enter a user name for demonstration database Zero Configuration
 </listitem>
 
 <listitem>
-<para>The Virtuoso servers have default administrator usernames of "dba".  
-The "dba" accounts have the default password of "dba".  It is recommended that 
-you alter this as soon as possibly for security.  The installer now provides the 
+<para>The Virtuoso servers have default administrator usernames of "dba".
+The "dba" accounts have the default password of "dba".  It is recommended that
+you alter this as soon as possibly for security.  The installer now provides the
 opportunity to do this the first time the server is started.</para>
 <programlisting><![CDATA[
 Changing passwords for the Database Universal Server
 
 Please enter a replacement for the Default Database Server's
 SQL Administrative (dba) account password (twice) :
-Confirm Password : 
+Confirm Password :
 ]]></programlisting>
 </listitem>
 
 <listitem>
-<para>The Virtuoso servers have default WebDAV administrator usernames 
-of "dav".   The "dav" accounts have the default password of "dav".  It is 
-recommended that you alter this as soon as possibly for security.  
+<para>The Virtuoso servers have default WebDAV administrator usernames
+of "dav".   The "dav" accounts have the default password of "dav".  It is
+recommended that you alter this as soon as possibly for security.
 The installer now provides the opportunity to do this the first time
 the server is started.</para>
 <programlisting><![CDATA[
 Please enter a replacement for the Default Database's
 WebDAV administrative (dav) account password (twice) :
-Confirm Password : 
+Confirm Password :
 
 Please wait while the passwords are changed:
 
@@ -1178,11 +1169,11 @@ Changing passwords for the Demo Universal Server
 <programlisting><![CDATA[
 Please enter a replacement for the Demonstration Database Server's
 SQL Administrative (dba) account password (twice) :
-Confirm Password : 
+Confirm Password :
 
 Please enter a replacement for the Demonstration Database Server's
 WebDAV Administrative (dav) account password (twice) :
-Confirm Password : 
+Confirm Password :
 
 Please wait while the passwords are changed:
 done.
@@ -1190,22 +1181,22 @@ done.
 </listitem>
 
 <listitem>
-<para>The file owner and group is changed at the end of the installation.  You 
+<para>The file owner and group is changed at the end of the installation.  You
 can choose what these shall be set to.  By default the current user is selected.</para>
 <programlisting><![CDATA[
 Please enter the username:group for the user and group who should own
 files in this installation (default: openlink:openlink) :
-Setting owners:  
+Setting owners:
 ]]></programlisting>
 </listitem>
 
 <listitem>
-<para>Finally the installer can start Virtuoso servers installed for you, but 
+<para>Finally the installer can start Virtuoso servers installed for you, but
 only if a valid license key has been supplied.</para>
 <programlisting><![CDATA[
 The Virtuoso Installer has not offered to start a database as
 no license key was found. Evaluation users should receive
-one via e-mail; in case of difficulties please contact 
+one via e-mail; in case of difficulties please contact
 <Technical.Support@openlinksw.com>.
 ]]></programlisting>
 </listitem>
@@ -1235,12 +1226,14 @@ $<Directory where Virtuoso is installed>/bin/virtuoso.log
    <para>Delete the .lck file and repeat the steps from above.</para>
    <para><emphasis>.trx incompatiblity issue</emphasis></para>   
    <para>Check .log in case of .trx incompatiblity issue</para>
+    <para><emphasis>oplmgr issue</emphasis></para>     
+   <para>See <link linkend="oplmngrlfla">OpenLink License Management for Linux</link></para>
   </sect3>
-		</sect2>
+  </sect2>
   
     <sect2 id="linautovirt"><title>Starting Virtuoso Automatically on Reboot</title>
 
-    <para>Two files, named initd_startup.template and 
+    <para>Two files, named initd_startup.template and
     initd_startup_demo.template, are placed in the top level of the
     Virtuoso installation directory.  On systems using SysVinit (most Linux
     distributions, Solaris) the appropriate one should be copied into
@@ -1285,9 +1278,9 @@ bash# cd /etc/rc5.d ; ln -s ../init.d/virtuoso S99virtuoso
 		<title>Virtuoso for Unix (Enterprise Edition)</title>
 			<!--sect2 id="unixdoyouwannamigrate">
 				<title>Existing Virtuoso 2.7 Users</title>
-				<para>You can migrate your existing Virtuoso servers to 3.0 using 
-        the migration utility.  The Virtuoso database file structure has been considerably 
-        altered between versions.  Please consult the 
+				<para>You can migrate your existing Virtuoso servers to 3.0 using
+        the migration utility.  The Virtuoso database file structure has been considerably
+        altered between versions.  Please consult the
         <link linkend="migrate27to30">Migration of Virtuoso from Version 2.7 to Version 3.0</link>
         section for more details.</para>
 			</sect2-->
@@ -1374,7 +1367,7 @@ ready to commence the Virtuoso installation process. </para>
 installation and then you can place the installation tar file into that users home
 directory.</para>
 <orderedlist>
-  <listitem><para>First step is to un-tar the file to obtain the install script 
+  <listitem><para>First step is to un-tar the file to obtain the install script
   and archive file.  Use the following command:</para>
   <programlisting>tar xvf &lt;tar file&gt;.tar</programlisting>
   <para>replacing &lt;tar file&gt; with the relevant name of the file you downloaded.</para></listitem>
@@ -1384,9 +1377,9 @@ directory.</para>
 </listitem>
 
 <listitem>
-<para>The install script will first try and detect running Virtuoso server instances.  
-In cases where an old Virtuoso server is being upgraded you must ensure that 
-the old Virtuoso is first shutdown.  It is advisable that you backup up your 
+<para>The install script will first try and detect running Virtuoso server instances.
+In cases where an old Virtuoso server is being upgraded you must ensure that
+the old Virtuoso is first shutdown.  It is advisable that you backup up your
 systems before continuing.</para>
 <programlisting><![CDATA[
 Checking requested components
@@ -1397,7 +1390,7 @@ Checking for existing installations and/or instances of Virtuoso...
 ** Alert: [running processes; ]
 
 ** Warning: You have Virtuoso previously installed on this machine.
-** 
+**
 ** To avoid existing data being overwritten or lost, you may press ^C to
 ** exit this installer, terminate and remove the existing installation,
 ** or proceed taking care to enter non-conflicting data below, by pressing
@@ -1406,7 +1399,7 @@ Checking for existing installations and/or instances of Virtuoso...
 </listitem>
 
 <listitem>
-<para>If you are upgrading a server then the installer will save copies of 
+<para>If you are upgrading a server then the installer will save copies of
 old configuration data for later use.</para>
 <programlisting><![CDATA[
 Preserving any existing configurations...
@@ -1418,9 +1411,9 @@ find: bin: No such file or directory
 </listitem>
 
 <listitem>
-<para>You should have received a license file via email.  This file should be 
-copied to the server installation directory prior to installation.  The installer 
-will ask you for its location if none is found.  If you do not have the license 
+<para>You should have received a license file via email.  This file should be
+copied to the server installation directory prior to installation.  The installer
+will ask you for its location if none is found.  If you do not have the license
 file at this time the installer will still continue.</para>
 <programlisting><![CDATA[
 Checking licensing...
@@ -1432,7 +1425,7 @@ license file [./virtuoso.lic]:
 </listitem>
 
 <listitem>
-<para>Now the installer will continue to install files from the package.  Every 
+<para>Now the installer will continue to install files from the package.  Every
 file installed will be echoed to the screen.  </para>
 <programlisting><![CDATA[
 Unpacking enterprise.tar.Z
@@ -1449,23 +1442,23 @@ vsp/vsp_auth.sql
 </listitem>
 
 <listitem>
-<para>When the files have been installed from the package the location 
-supplied for the license file will be checked.  If one is not found then you will 
+<para>When the files have been installed from the package the location
+supplied for the license file will be checked.  If one is not found then you will
 receive the following warning:</para>
 <programlisting><![CDATA[
 **
 **  WARNING: The license file entered is not valid or does not exist.
-**           You will need to copy a valid license file manually 
+**           You will need to copy a valid license file manually
 **           to the demo and db directories after the Virtuoso installation completes.
 ]]></programlisting>
 </listitem>
 
 <listitem>
-<para>The Virtuoso server installation has a few variations.  The next question 
-from the installer asks which one you want to make default.  Even though each 
-variation is installed, a convenient symbolic link will be made to 
-<computeroutput>bin/virtuoso</computeroutput> from the selected type.  
-Running <computeroutput>ls -l</computeroutput> in the bin directory after 
+<para>The Virtuoso server installation has a few variations.  The next question
+from the installer asks which one you want to make default.  Even though each
+variation is installed, a convenient symbolic link will be made to
+<computeroutput>bin/virtuoso</computeroutput> from the selected type.
+Running <computeroutput>ls -l</computeroutput> in the bin directory after
 installation will reveal all.</para>
 <programlisting><![CDATA[
 Checking for installed optional components...
@@ -1484,15 +1477,15 @@ Please choose which Virtuoso server you wish to install:
 </listitem>
 
 <listitem>
-<para>The installer will search for required third-party components 
-depending on which option is selected in the previous step.  For example, choosing 
-the Virtuoso with Java support will require a Java runtime.  Results of the 
-search are listed as suggestions from which you can confirm or type 
+<para>The installer will search for required third-party components
+depending on which option is selected in the previous step.  For example, choosing
+the Virtuoso with Java support will require a Java runtime.  Results of the
+search are listed as suggestions from which you can confirm or type
 the actual location.</para>
 <programlisting><![CDATA[
 Attempting to locate the java runtime library (libjvm.so)...
 
-Suggested file locations: 
+Suggested file locations:
 /usr/local/lib
 /usr/local/jdk1.3/jre/lib/i386/classic
 /usr/local/jdk1.3/jre/lib/i386/server
@@ -1510,8 +1503,8 @@ the default (/usr/local/jdk1.3/jre/lib/i386/client):
 </listitem>
 
 <listitem>
-<para>The Virtuoso installer includes a Mono runtime distribution, since 
-Mono is a developing platform you may have your own installation that you 
+<para>The Virtuoso installer includes a Mono runtime distribution, since
+Mono is a developing platform you may have your own installation that you
 can supply the path to here.</para>
 <programlisting><![CDATA[
 Please enter the full path to the Mono installation directory or
@@ -1520,7 +1513,7 @@ Enter to use the default (/home/openlink/virtuoso/mono)
 </listitem>
 
 <listitem>
-<para>Virtuoso now has enough information to configure its environment and 
+<para>Virtuoso now has enough information to configure its environment and
 startup scripts.</para>
 <programlisting><![CDATA[
 Setting up initial values in scripts and config files
@@ -1541,9 +1534,9 @@ Setting up file initd_startup_demo.template
 </listitem>
 
 <listitem>
-<para>The installer will now ask a series of questions for configuring the 
-Virtuoso .INI files.  First confirm or alter the default database SQL listener 
-port number.  This is the port number that this database will be available for 
+<para>The installer will now ask a series of questions for configuring the
+Virtuoso .INI files.  First confirm or alter the default database SQL listener
+port number.  This is the port number that this database will be available for
 ODBC connections and iSQL sessions.</para>
 <programlisting><![CDATA[
 Configuring port numbers for default and demo databases
@@ -1554,11 +1547,11 @@ SQL listener (default 1111):
 </listitem>
 
 <listitem>
-<para>Now you must specify the port number of the default database HTTP 
-listener.  This is the HTTP port that Virtuoso will listen on by default, you web-based 
-administration interface for Virtuoso will be found here.  If you confirm the 
-default of 8889, then your Virtuoso will be available from: 
-<computeroutput>http://server:8889/</computeroutput>, changing 
+<para>Now you must specify the port number of the default database HTTP
+listener.  This is the HTTP port that Virtuoso will listen on by default, you web-based
+administration interface for Virtuoso will be found here.  If you confirm the
+default of 8889, then your Virtuoso will be available from:
+<computeroutput>http://server:8889/</computeroutput>, changing
 server to the name of your machine appropriately.</para>
 <programlisting><![CDATA[
 Please enter a port on which to run the default database
@@ -1567,7 +1560,7 @@ HTTP listener (default 8889):
 </listitem>
 
 <listitem>
-<para>Now you must supply a friendly name that you wish to identify 
+<para>Now you must supply a friendly name that you wish to identify
 your Virtuoso server by on the network using Zero Configuration.  </para>
 <tip><title>See Also:</title>
 <para>The <link linkend="rendezvous">Zero Configuration</link> section.</para></tip>
@@ -1586,7 +1579,7 @@ Please enter a user name for default database Zero Configuration
 </listitem>
 
 <listitem>
-<para>Now we have all of the above details to supply again for the Demo Virtuoso 
+<para>Now we have all of the above details to supply again for the Demo Virtuoso
 database.  The port number supplied here must be different to those supplied previously.</para>
 <programlisting><![CDATA[
 Please enter a port on which to run the demo database
@@ -1604,29 +1597,29 @@ Please enter a user name for demonstration database Zero Configuration
 </listitem>
 
 <listitem>
-<para>The Virtuoso servers have default administrator usernames of "dba".  
-The "dba" accounts have the default password of "dba".  It is recommended that 
-you alter this as soon as possibly for security.  The installer now provides the 
+<para>The Virtuoso servers have default administrator usernames of "dba".
+The "dba" accounts have the default password of "dba".  It is recommended that
+you alter this as soon as possibly for security.  The installer now provides the
 opportunity to do this the first time the server is started.</para>
 <programlisting><![CDATA[
 Changing passwords for the Database Universal Server
 
 Please enter a replacement for the Default Database Server's
 SQL Administrative (dba) account password (twice) :
-Confirm Password : 
+Confirm Password :
 ]]></programlisting>
 </listitem>
 
 <listitem>
-<para>The Virtuoso servers have default WebDAV administrator usernames 
-of "dav".   The "dav" accounts have the default password of "dav".  It is 
-recommended that you alter this as soon as possibly for security.  
+<para>The Virtuoso servers have default WebDAV administrator usernames
+of "dav".   The "dav" accounts have the default password of "dav".  It is
+recommended that you alter this as soon as possibly for security.
 The installer now provides the opportunity to do this the first time
 the server is started.</para>
 <programlisting><![CDATA[
 Please enter a replacement for the Default Database's
 WebDAV administrative (dav) account password (twice) :
-Confirm Password : 
+Confirm Password :
 
 Please wait while the passwords are changed:
 
@@ -1639,11 +1632,11 @@ Changing passwords for the Demo Universal Server
 <programlisting><![CDATA[
 Please enter a replacement for the Demonstration Database Server's
 SQL Administrative (dba) account password (twice) :
-Confirm Password : 
+Confirm Password :
 
 Please enter a replacement for the Demonstration Database Server's
 WebDAV Administrative (dav) account password (twice) :
-Confirm Password : 
+Confirm Password :
 
 Please wait while the passwords are changed:
 done.
@@ -1651,22 +1644,22 @@ done.
 </listitem>
 
 <listitem>
-<para>The file owner and group is changed at the end of the installation.  You 
+<para>The file owner and group is changed at the end of the installation.  You
 can choose what these shall be set to.  By default the current user is selected.</para>
 <programlisting><![CDATA[
 Please enter the username:group for the user and group who should own
 files in this installation (default: openlink:openlink) :
-Setting owners:  
+Setting owners:
 ]]></programlisting>
 </listitem>
 
 <listitem>
-<para>Finally the installer can start Virtuoso servers installed for you, but 
+<para>Finally the installer can start Virtuoso servers installed for you, but
 only if a valid license key has been supplied.</para>
 <programlisting><![CDATA[
 The Virtuoso Installer has not offered to start a database as
 no license key was found. Evaluation users should receive
-one via e-mail; in case of difficulties please contact 
+one via e-mail; in case of difficulties please contact
 <Technical.Support@openlinksw.com>.
 ]]></programlisting>
 </listitem>
@@ -1696,12 +1689,14 @@ $<Directory where Virtuoso is installed>/bin/virtuoso.log
    <para>Delete the .lck file and repeat the steps from above.</para>
    <para><emphasis>.trx incompatiblity issue</emphasis></para>   
    <para>Check .log in case of .trx incompatiblity issue</para>
+    <para><emphasis>oplmgr issue</emphasis></para>     
+   <para>See <link linkend="oplmngrlfla">OpenLink License Management for Linux</link></para>
   </sect3>
-		</sect2>
+  </sect2>
 
     <sect2 id="unxautovirt"><title>Starting Virtuoso Automatically on Reboot</title>
 
-    <para>Two files, named initd_startup.template and 
+    <para>Two files, named initd_startup.template and
     initd_startup_demo.template, are placed in the top level of the
     Virtuoso installation directory.  On systems using SysVinit (most Linux
     distributions, Solaris) the appropriate one should be copied into
@@ -1832,6 +1827,8 @@ $<Directory where Virtuoso is installed>/bin/virtuoso.log
    <para>Delete the .lck file and repeat the steps from above.</para>
    <para><emphasis>.trx incompatiblity issue</emphasis></para>   
    <para>Check .log in case of .trx incompatiblity issue</para>
+    <para><emphasis>oplmgr issue</emphasis></para>     
+   <para>See <link linkend="oplmngrlfla">OpenLink License Management for Linux</link></para>
   </sect3>
   </sect2>
 <sect2 id="unixpersonainstallconfg">
@@ -1873,9 +1870,9 @@ page is presented:
 
 			<!--sect2 id="macxdoyouwannamigrate">
 				<title>Existing Virtuoso 2.7 Users</title>
-				<para>You can migrate your existing Virtuoso servers to 3.0 using 
-        the migration utility.  The Virtuoso database file structure has been considerably 
-        altered between versions.  Please consult the 
+				<para>You can migrate your existing Virtuoso servers to 3.0 using
+        the migration utility.  The Virtuoso database file structure has been considerably
+        altered between versions.  Please consult the
         <link linkend="migrate27to30">Migration of Virtuoso from Version 2.7 to Version 3.0</link>
         section for more details.</para>
 			</sect2-->
@@ -1948,7 +1945,7 @@ page is presented:
   <para>The Virtuoso Server is started at the end of this process and a Web page loaded enabling you
         to obtain a trial or full license from the company order processing site online.
   </para>
-
+  
   <figure id="v50pe09" float="1"><title>Admin Assistant</title>
     <graphic fileref="mac/v50pe09.png" width="737" depth="361"/></figure>
 
@@ -2014,7 +2011,7 @@ page is presented:
   <figure id="v50pe17" float="1"><title>Location of apple scripts</title>
     <graphic fileref="mac/v50pe17.png" width="377" depth="438"/></figure>
 
-	</sect2>
+        </sect2>
 
    <sect2 id="macosxinstpost"><title>Post Installation</title>  
   <sect3 id="macosxinstpostsan">
@@ -2028,8 +2025,10 @@ http://a_virtuoso_server.org:8890</programlisting>
 	</sect3> 
   <sect3 id="macosxinstposttrb"><title>Troubleshooting DB Startup Failures</title>  
   <para><emphasis>Install failure</emphasis></para> 
-  <para>Check the .log files for the database etc. in order to review the installed files binaries and databases (defaults) 
+  <para>Check the .log file in oplmgr (License Manager) location: <code>/Library/Application Support/openlink/bin/</code>, which is for the database 
+  and log files etc. in order to review the installed files binaries and databases (defaults) 
   for issues if install fails.</para>
+  
       <figure id="instmac" float="1">
        <title>The .log file</title>
        <graphic fileref="ui/instmac.png"/>
@@ -2039,10 +2038,18 @@ http://a_virtuoso_server.org:8890</programlisting>
    <para>Delete the .lck file and repeat the steps from above.</para>
    <para><emphasis>.trx incompatiblity issue</emphasis></para>   
    <para>Check .log in case of .trx incompatiblity issue</para>
+    <para><emphasis>oplmgr issue</emphasis></para>     
+   <para>To stop, start, or reload (which updates licenses) use the following commands: </para>
+<programlisting><![CDATA[
+/Library/Application Support/openlink/bin/oplmgr +start | +stop | +reload	
+]]></programlisting>
       <figure id="instmac2" float="1">
        <title>The .log file</title>
        <graphic fileref="ui/instmac2.png"/>
      </figure>
+     <tip><title>See Also:</title>
+     <para><link linkend="oplmgr">OpenLink License Management</link></para>
+     </tip>
   </sect3>
   </sect2>
   
@@ -2151,6 +2158,373 @@ http://a_virtuoso_server.org:8890</programlisting>
 
 </sect1>
 
+
+<sect1 id="oplmgr">
+  <title>OpenLink License Management</title>
+  <sect2 id="oplmngrlf"><title>License Files</title>
+    <sect3 id="oplmngrlfla"><title>License Activation</title>
+      <sect4 id="oplmngrlfla"><title>Mac OS X</title>
+        <orderedlist>
+          <listitem>Launch <computeroutput>Terminal.app (/Applications/Utilities/)</computeroutput></listitem>
+          <listitem>Execute the command <computeroutput>cd "/Library/Application Support/openlink/bin/"</computeroutput></listitem>
+          <listitem>Execute the command <computeroutput>oplmgr +stop</computeroutput></listitem>
+          <listitem>Retrieve your new Virtuoso license file from an email or <link linkend="oplmngrlflb">ODS Briefcase</link>.</listitem>
+          <listitem>Replace the old license file with the new license file. (You may delete the old file, or safely retain it in this location by changing the <computeroutput>.lic</computeroutput> file extension to <computeroutput>.lic-old</computeroutput>.)</listitem>
+          <listitem>Execute the command <computeroutput>oplmgr +start</computeroutput></listitem>
+        </orderedlist>
+      </sect4>
+      <sect4 id="oplmngrlfla"><title>Windows</title>
+        <orderedlist>
+          <listitem>Launch the <emphasis>Services</emphasis> Control Panel (may be in the <emphasis>Administrative Tools</emphasis> sub-folder).</listitem>
+          <listitem>Locate and select the <emphasis>OpenLink License Manager service</emphasis>.</listitem>
+          <listitem>Click the <emphasis>Stop</emphasis> icon.</listitem>
+          <listitem>Retrieve your new Virtuoso license file from an email or <link linkend="oplmngrlflb">ODS Briefcase</link>.</listitem>
+          <listitem>Replace the old license file with the new license file. (You may delete the old file, or safely retain it in this location by changing the <computeroutput>.lic</computeroutput> file extension to <computeroutput>.lic-old</computeroutput>.)</listitem>
+          <listitem>Go back to the <emphasis>Services</emphasis> Control Panel.</listitem>
+          <listitem>Locate and select the <emphasis>OpenLink License Manager</emphasis> service.</listitem>
+          <listitem>Click the <emphasis>Start</emphasis> icon.</listitem>
+        </orderedlist>
+      </sect4>
+      <sect4 id="oplmngrlfla"><title>Unix-like OS (AIX, HP-UX, Linux, Solaris, etc.)</title>
+        <orderedlist>
+          <listitem>Open a Unix terminal.</listitem>
+          <listitem><computeroutput>cd</computeroutput> into the root of your Virtuoso installation.</listitem>
+          <listitem>Use one of the following commands to set Virtuoso-related environment variables. (Note that they do, and must, begin with dot-space-dot-slash.)
+            <itemizedlist>
+              <listitem><computeroutput>. ./virtuoso-enterprise.sh</computeroutput> - bash, bsh, ksh, and related shells</listitem>
+              <listitem><computeroutput>. ./virtuoso-enterprise.csh</computeroutput> - csh, tcsh, and related shells</listitem>
+            </itemizedlist>
+          </listitem>
+          <listitem>Execute the command:  oplmgr +stop</listitem>
+          <listitem>Retrieve your new Virtuoso license file from an email or <link linkend="oplmngrlflb">ODS Briefcase</link>. Use binary-mode ftp to transfer the new license to the Unix box, if required.</listitem>
+          <listitem>Place the new license in the bin sub-directory of the Virtuoso installation.</listitem>
+          <listitem>Set and export an <computeroutput>OPL_LICENSE_DIR</computeroutput> environment variable that passes the path to the directory that contains your Virtuoso license file, e.g
+            <itemizedlist>
+              <listitem><computeroutput>export OPL_LICENSE_DIR="/opt/virtuoso/bin/"</computeroutput></listitem>
+              <listitem><computeroutput>OPL_LICENSE_DIR="/opt/virtuoso/bin/" ; export OPL_LICENSE_DIR</computeroutput></listitem>
+            </itemizedlist>
+          </listitem>
+          <listitem>Execute the command: <computeroutput>oplmgr +start</computeroutput></listitem>
+        </orderedlist>
+      </sect4>
+      <sect4 id="oplmngrlflb"><title>Retrieve OpenLink Licenses from Your <link linkend="oplmngrlflb">ODS Briefcase</link></title>
+        <para>OpenLink's registered users receive an automatic OpenLink Data Spaces (ODS) account on
+the My OpenLink home page. This account allows registered users to experience and explore OpenLink's
+Virtuoso Universal Cilent applications.It also provides a convenient storage mechanism for OpenLink
+commercial and evaluation license keys.
+        </para>
+        <para>This page shows you how to access licenses that reside in your <link linkend="oplmngrlflb">ODS Briefcase</link>. A second
+15 Day evaluation license is automatically copied to the Briefcase, when you download our software and
+receive your first 15 Day key. You may access the Briefcase by clicking on the link that appears in the
+email that contains the first license. Alternatively, you may identify the ODS url by logging into the
+OpenLink site.
+        </para>
+        <para>The following instructions will allow you to access your <link linkend="oplmngrlflb">ODS Briefcase</link> via the OpenLink
+Web site.
+        </para>
+        <orderedlist>
+          <listitem>Click the Login link that appears on the OpenLink Web page.
+            <figure id="rdfinsertwebdav1" float="1">
+	      <title>ODS Briefcase</title>
+	      <graphic fileref="ui/ODSA.png"/>
+            </figure>
+          </listitem>
+          <listitem>Click the "Login Here" button that appears in the Registered Users box.
+            <figure id="rdfinsertwebdav1" float="1">
+	      <title>ODS Briefcase</title>
+	      <graphic fileref="ui/ODSB.png"/>
+            </figure>
+          </listitem>
+          <listitem>Click the "Check my profile" link that appears in the Welcome box.
+            <figure id="rdfinsertwebdav1" float="1">
+	      <title>ODS Briefcase</title>
+	      <graphic fileref="ui/ODSC.png"/>
+            </figure>
+          </listitem>
+          <listitem>Click the ODS Service URL that appears in the lower right hand corner of the My Details dialog.
+            <figure id="rdfinsertwebdav1" float="1">
+	      <title>ODS Briefcase</title>
+	      <graphic fileref="ui/ODS3.png"/>
+            </figure>
+          </listitem>
+          <listitem>Allow the My OpenLink Web page to load in a Web browser.
+            <figure id="rdfinsertwebdav1" float="1">
+	      <title>ODS Briefcase</title>
+	      <graphic fileref="ui/ODS4.png"/>
+            </figure>
+          </listitem>
+          <listitem>Login to your OpenLink Data Space using your OpenLink login.
+            <figure id="rdfinsertwebdav1" float="1">
+	      <title>ODS Briefcase</title>
+	      <graphic fileref="ui/ODS5.png"/>
+            </figure>
+          </listitem>
+          <listitem>Click the Briefcase link that appears in the ODS menu bar at the top of the page.
+            <figure id="rdfinsertwebdav1" float="1">
+	      <title>ODS Briefcase</title>
+	      <graphic fileref="ui/ODS6.png"/>
+            </figure>
+          </listitem>
+          <listitem>Your license will appear as a Resource Item under the Briefcase Summary.
+            <figure id="rdfinsertwebdav1" float="1">
+	      <title>ODS Briefcase</title>
+	      <graphic fileref="ui/ODS7.png"/>
+            </figure>
+          </listitem>
+        </orderedlist>
+        <para>Click the license link to download your license. Provide your OpenLink username and
+password if prompted for a DAV login.
+        </para>
+      </sect4>
+    </sect3>
+    <sect3 id="oplmngrlflp"><title>License Preservation</title>
+     <para>Users may choose to preserve the existing license file when applying a new license file. This facilitates a rollback to the original file, if the replacement file is problematic.</para>
+      <sect4 id="oplmngrlflp"><title>Mac OS X</title>
+        <itemizedlist>
+          <listitem>Use StuffIt or a similar utility to store the file in a compressed archive.</listitem>
+          <listitem>Rename the file, e.g., from <computeroutput>virtuoso.lic</computeroutput> to <computeroutput>virtuoso.lic-old</computeroutput></listitem>
+        </itemizedlist>
+      </sect4>
+      <sect4 id="oplmngrlflp"><title>Windows</title>
+        <para>Use WinZip or a similar utility to copy your license file to a .zip archive.</para>
+      </sect4>
+      <sect4 id="oplmngrlflp"><title>Unix-like OS (AIX, HP-UX, Linux, Solaris, etc.)</title>
+        <para>Use tar or gzip to copy your license file into an archive. For example: <computeroutput>tar cvzf virtuoso-lic.tgz virtuoso.lic</computeroutput></para>
+      </sect4>
+    </sect3>
+    <sect3 id="oplmngrlflr"><title>License Removal</title>
+      <para>Users may choose to remove expired or deprecated license files altogether to ensure the uptake of a new license file.</para>
+      <sect4 id="oplmngrlflr"><title>Mac OS X</title>
+        <orderedlist>
+          <listitem>Shutdown your OpenLink License Manager</listitem>
+          <listitem>Click the Search icon.</listitem>
+          <listitem>Type your license name into the search box. For example: virtuoso.lic</listitem>
+          <listitem>Drag the license from the search results onto the trash icon.</listitem>
+          <listitem>Expand the Finder menu.</listitem>
+          <listitem>Click Empty Trash.</listitem>
+        </orderedlist>
+      </sect4>
+      <sect4 id="oplmngrlflr"><title>Windows</title>
+        <orderedlist>
+          <listitem>Launch the <emphasis>Services</emphasis> Control Panel (may be in the <emphasis>Administrative Tools</emphasis> sub-folder).</listitem>
+          <listitem>Locate and select the <emphasis>OpenLink Virtuoso</emphasis> service.</listitem>
+          <listitem>Click the <emphasis>Stop</emphasis> icon.</listitem>
+          <listitem>Locate and select the <emphasis>OpenLink License Manager</emphasis> service.</listitem>
+          <listitem>Click the <emphasis>Stop</emphasis> icon.</listitem>
+          <listitem>Launch the Windows Search utility, from the Start menu.</listitem>
+          <listitem>Search for all files with the name <computeroutput>virtuoso.lic.</computeroutput></listitem>
+          <listitem>Drag all found licenses to the Recycle Bin.</listitem>
+          <listitem>Empty the Recycle Bin</listitem>
+        </orderedlist>
+      </sect4>
+      <sect4 id="oplmngrlflr"><title>Unix-like OS (AIX, HP-UX, Linux, Solaris, etc.)</title>
+        <orderedlist>
+          <listitem>Login to the Unix or Linux operating system.</listitem>
+          <listitem>Use the find command to locate relevant license files, and check their permissions and ownership.
+<programlisting><![CDATA[
+bash-2.03$ find / -name virtuoso.lic -exec ls -l {} \;
+-rw-r--r--   1 virtuoso other        645 Mar 11 08:06 /usr/virtuoso/bin/virtuoso.lic
+bash-2.03$
+]]></programlisting>
+          </listitem>
+          <listitem>Use the rm command to remove the license file(s).
+<programlisting><![CDATA[
+bash-2.03$ rm /usr/virtuoso/bin/virtuoso.lic
+]]></programlisting>
+          </listitem>
+          <listitem>
+            <para>If the file permissions and ownership require, you can use sudo - </para>
+<programlisting><![CDATA[
+bash-2.03$ sudo rm /usr/virtuoso/bin/virtuoso.lic
+Password:
+bash-2.03$ ls /usr/virtuoso/bin/virtuoso.lic
+bash-2.03$
+]]></programlisting>
+            <para> - or su to the appropriate user or group - </para>
+<programlisting><![CDATA[
+bash-2.03$ su virtuoso
+Password:
+bash-2.03$ rm /usr/virtuoso/bin/virtuoso.lic
+bash-2.03$ ls /usr/virtuoso/bin/virtuoso.lic
+bash-2.03$
+]]></programlisting>
+          </listitem>
+        </orderedlist>
+      </sect4>
+    </sect3>
+  </sect2>
+  <sect2 id="oplmngrlm"><title>License Manager</title>
+    <sect3 id="oplmngrlmml"><title>Monitor License Consumption</title>
+      <para>OpenLink's License Manager technology provides a sophisticated and easy to use License
+statistics and monitoring facility. This page introduces you to that facility and provides alternative
+techniques for versions of the software that do not contain it.
+      </para>
+      <orderedlist>
+        <listitem>Launch the Virtuoso Web interface.</listitem>
+        <listitem>Click the <emphasis>Conductor</emphasis> link.</listitem>
+        <listitem>Login with your Virtuoso dba account.</listitem>
+        <listitem>Click the <emphasis>System Admin</emphasis> tab.</listitem>
+        <listitem>Locate the <emphasis>License</emphasis> section to review the terms of your Virtuoso license.</listitem>
+        <listitem>Locate the <emphasis>Clients</emphasis> section to review open connections that consume Virtuoso license points.</listitem>
+      </orderedlist>
+    </sect3>
+    <sect3 id="oplmngrlmsl"><title>Start the License Manager Process</title>
+       <sect4 id="oplmngrlmslm"><title>Mac OS X</title>
+          <orderedlist>
+            <listitem>Launch <computeroutput> Terminal.app  (/Applications/Utilities/) </computeroutput></listitem>
+            <listitem>Execute the command <computeroutput>cd "/Library/Application Support/openlink/bin/"</computeroutput></listitem>
+            <listitem>Execute the command <computeroutput>oplmgr +start</computeroutput></listitem>
+          </orderedlist>
+       </sect4>
+       <sect4 id="oplmngrlmslw"><title>Windows</title>
+          <orderedlist>
+            <listitem>Launch the <emphasis>Services</emphasis> Control Panel (may be in the <emphasis>Administrative Tools</emphasis> sub-folder).</listitem>
+            <listitem>Locate and select the <emphasis>OpenLink Virtuoso</emphasis> service.</listitem>
+            <listitem>Click the <emphasis>Start</emphasis> icon.</listitem>
+          </orderedlist>
+       </sect4>
+       <sect4 id="oplmngrlmslu"><title>Unix-like OS (AIX, HP-UX, Linux, Solaris, etc.)</title>
+        <orderedlist>
+          <listitem>Open a Unix terminal.</listitem>
+          <listitem><computeroutput>cd</computeroutput> into the root of your Virtuoso installation.</listitem>
+          <listitem>Use one of the following commands to set Virtuoso-related environment variables. (Note that they do, and must, begin with dot-space-dot-slash.)
+            <itemizedlist>
+              <listitem><computeroutput>. ./virtuoso-enterprise.sh</computeroutput> - bash, bsh, ksh, and related shells</listitem>
+              <listitem><computeroutput>. ./virtuoso-enterprise.csh</computeroutput> - csh, tcsh, and related shells</listitem>
+            </itemizedlist>
+          </listitem>
+          <listitem>Execute the command: <computeroutput>oplmgr +start</computeroutput></listitem>
+        </orderedlist>
+       </sect4>
+       <para><emphasis>Note</emphasis>: OpenLink recommends that you create an <computeroutput>/etc/init.d/</computeroutput>
+script that sets the environment and runs <computeroutput>oplmgr +start</computeroutput> at boot time.
+       </para>
+    </sect3>
+    <sect3 id="oplmngrlmlp"><title>Stop the License Manager Process</title>
+       <sect4 id="oplmngrlmlpm"><title>Mac OS X</title>
+          <orderedlist>
+            <listitem>Launch <computeroutput> Terminal.app  (/Applications/Utilities/) </computeroutput></listitem>
+            <listitem>Execute the command <computeroutput>cd "/Library/Application Support/openlink/bin/"</computeroutput></listitem>
+            <listitem>Execute the command <computeroutput>oplmgr +stop</computeroutput></listitem>
+          </orderedlist>
+       </sect4>
+       <sect4 id="oplmngrlmlpw"><title>Windows</title>
+          <orderedlist>
+            <listitem>Launch the <emphasis>Services</emphasis> Control Panel (may be in the <emphasis>Administrative Tools</emphasis> sub-folder).</listitem>
+            <listitem>Locate and select the <emphasis>OpenLink License Manager service</emphasis>.</listitem>
+            <listitem>Click the <emphasis>Stop</emphasis> icon.</listitem>
+          </orderedlist>
+       </sect4>
+       <sect4 id="oplmngrlmlpu"><title>Unix-like OS (AIX, HP-UX, Linux, Solaris, etc.)</title>
+          <orderedlist>
+            <listitem>Open a Unix terminal.</listitem>
+            <listitem><computeroutput>cd</computeroutput> into the root of your Virtuoso installation.</listitem>
+            <listitem>Use one of the following commands to set Virtuoso-related environment variables. (Note that they do, and must, begin with dot-space-dot-slash.)
+              <itemizedlist>
+                <listitem><computeroutput>. ./virtuoso-enterprise.sh</computeroutput> - bash, bsh, ksh, and related shells</listitem>
+                <listitem><computeroutput>. ./virtuoso-enterprise.csh</computeroutput> - csh, tcsh, and related shells</listitem>
+              </itemizedlist>
+            </listitem>
+            <listitem>Execute the command:  oplmgr +stop</listitem>
+          </orderedlist>
+       </sect4>
+    </sect3>
+    <sect3 id="oplmngrlmrl"><title>Reinitialize the License Manager Process</title>
+       <sect4 id="oplmngrlmrlm"><title>Mac OS X</title>
+          <orderedlist>
+            <listitem>Launch <computeroutput> Terminal.app  (/Applications/Utilities/) </computeroutput></listitem>
+            <listitem>Execute the command <computeroutput>cd "/Library/Application Support/openlink/bin/"</computeroutput></listitem>
+            <listitem>Execute the command <computeroutput>oplmgr +reload</computeroutput></listitem>
+          </orderedlist>
+       </sect4>
+       <sect4 id="oplmngrlmrlw"><title>Windows</title>
+          <orderedlist>
+            <listitem>Launch the <emphasis>Services</emphasis> Control Panel (may be in the <emphasis>Administrative Tools</emphasis> sub-folder).</listitem>
+            <listitem>Locate and select the <emphasis>OpenLink License Manager service</emphasis>.</listitem>
+            <listitem>Click the <emphasis>Restart</emphasis> icon.</listitem>
+          </orderedlist>
+       </sect4>
+       <sect4 id="oplmngrlmrlu"><title>Unix-like OS (AIX, HP-UX, Linux, Solaris, etc.)</title>
+          <orderedlist>
+            <listitem>Open a Unix terminal.</listitem>
+            <listitem><computeroutput>cd</computeroutput> into the root of your Virtuoso installation.</listitem>
+            <listitem>Use one of the following commands to set Virtuoso-related environment variables. (Note that they do, and must, begin with dot-space-dot-slash.)
+              <itemizedlist>
+                <listitem><computeroutput>. ./virtuoso-enterprise.sh</computeroutput> - bash, bsh, ksh, and related shells</listitem>
+                <listitem><computeroutput>. ./virtuoso-enterprise.csh</computeroutput> - csh, tcsh, and related shells</listitem>
+              </itemizedlist>
+            </listitem>
+            <listitem>Execute the command: oplmgr +reload</listitem>
+          </orderedlist>
+       </sect4>
+    </sect3>
+    <sect3 id="oplmngrlmau"><title>Additional Usage Notes</title>
+       <para>The license manager takes several command-line arguments, as revealed by its "usage" output (produced by any unrecognized argument) -- </para>
+<programlisting><![CDATA[
+
+      bash$ oplmgr --help
+      OpenLink License Manager
+      Version 1.2.2 as of Thu Feb 15 2007 (Release 6.0 cvsid 00084).
+      Compiled for Linux 2.4.20-46.9.legacysmp (i686-generic-linux-glibc23-32)
+      Copyright (C) OpenLink Software.
+
+      Usage:
+      oplmgr [-shrutp] [+start] [+stop] [+reload] [+user arg] [+chroot arg]
+      [+pidfile arg]
+      +start     start the license manager
+      +stop      stop the license manager
+      +reload    force a configuration reload
+      +user      run as the specified user
+      +chroot    perform a chroot to the specified directory
+      +pidfile   pid file to use for server operation
+
+]]></programlisting>
+    </sect3>
+  </sect2>
+  <sect2 id="oplmngrdlp"><title>Debugging License Problems</title>
+       <para>Virtuoso license problems are easy to debug. The following information provides a
+conceptual framework and troubleshooting tips suitable for all licensing problems.
+       </para>
+    <sect3 id="oplmngrdlpil"><title>Identifying License Problems</title>
+       <para>License problems occur when users attempt to apply them to products or when they hit a
+ceiling associated with concurrent usage. Most license errors are explicit and include text that
+states that a license is invalid, expired, or exceeded. Problems associated with performance or
+stability problems that do not produce license related errors are not likely to be caused by licenses.
+There is no scenario in which use of an evaluation key would contribute to limited functionality.
+OpenLink's products are fully functional regardless of the license key applied. The license key simply
+dictates the length of time for which a product may be used.
+       </para>
+    </sect3>
+    <sect3 id="oplmngrdlpsl"><title>Source of License Problems</title>
+       <para>Licenses problems appear under the following circumstances:</para>
+       <itemizedlist>
+         <listitem>A license file is ftp'd in ASCII.</listitem>
+         <listitem>The license covers a different OpenLink product.</listitem>
+         <listitem>The license covers a different OpenLink release.</listitem>
+         <listitem>A machine has more physical Processor cores than allotted for by the license.</listitem>
+         <listitem>The license can not be found.</listitem>
+         <listitem>The wrong license is being found.</listitem>
+         <listitem>You did not perform the appropriate steps to register the license.</listitem>
+         <listitem>The License Manager process needs to be restarted.</listitem>
+         <listitem>The license is inadequate for your level of concurrent activity</listitem>
+       </itemizedlist>
+    </sect3>
+    <sect3 id="oplmngrdlptl"><title>Troubleshooting License Problems</title>
+       <para>Use the following tips to resolve your licensing tips or supply OpenLink Technical Services with your findings:</para>
+       <itemizedlist>
+         <listitem>FTP all licenses (virtuoso.lic) in binary mode.</listitem>
+         <listitem>Review the terms of the email that contained the license.</listitem>
+         <listitem>Ensure that the license that you have received is for Virtuoso Universal Server and not a data access provider or driver.</listitem>
+         <listitem>Compare the Virtuoso version on your machine with the version covered by the license key.</listitem>
+         <listitem>Identify the number of physical Processor cores on the box that hosts the license and ensure those cores are covered by the license key.</listitem>
+         <listitem>Use OpenLink's licensing guidelines to ensure that the license is placed in the appropriate location on the target machine.</listitem>
+         <listitem>Use the host machine's search utilities to ensure that expired or deprecated license files are removed from the host machine and deleted from the trash.</listitem>
+         <listitem>Use OpenLink's licensing guidelines to ensure that you have performed the license application procedure using the correct steps in the appropriate order.</listitem>
+         <listitem>Use the host monitoring utilities to ensure that applicable processes have been restarted as detailed in OpenLink's licensing guidelines.</listitem>
+       </itemizedlist>
+    </sect3>
+  </sect2>
+</sect1>
   <sect1 id="installvsgrid"><title>Virtuoso ADO.Net Data Grid Form Application</title>
   <para>This section details the steps required to create a simple Visual Studio 2008 Windows Form
 application with associated DataGridView control for displaying data in selected tables from a Virtuoso
@@ -2991,7 +3365,7 @@ on dereferenceable <link linkend="rdfiriidtype">IRIs</link>.</para>
   <listitem>The example assumes that you have a local Virtuoso server with the Northwind demo database
 installed. If the demo database is not already installed then download the <ulink url="http://download.openlinksw.com/packages/5.0/virtuoso/demo_dav.vad">demo database VAD package</ulink>
 (demo_dav.vad) and install it. The VAD package will create a new database in Virtuoso called demo
-containing the familiar Northwind tables. It will also creates <ulink url="http://docs.openlinksw.com/virtuoso/rdfsparqlintegrationmiddleware.html#rdfviews">RDF views</ulink> of the Northwind tables.
+containing the familiar Northwind tables. It will also creates <link linkend="rdfviewsrdbms">Linked Data Views</link> of the Northwind tables.
 In the example we assume the database is accessible on a hostname of "demo.openlinksw.com" on the
 default port 80, where an actually live instance of the Virtuoso Demo database is hosted. Users would
 use the appropriate hostname and port number of their Virtuoso installation to create the sample
@@ -4308,7 +4682,7 @@ explore the RDF data by clicking on dereferenceable <link linkend="rdfiriidtype"
   <listitem>The example assumes that you have a local Virtuoso server with the Northwind demo database
 installed. If the demo database is not already installed then download the <ulink url="http://download.openlinksw.com/packages/5.0/virtuoso/demo_dav.vad">demo database VAD package</ulink>
 (demo_dav.vad) and install it. The VAD package will create a new database in Virtuoso called demo
-containing the familiar Northwind tables. It will also creates <ulink url="http://docs.openlinksw.com/virtuoso/rdfsparqlintegrationmiddleware.html#rdfviews">RDF views</ulink> of the Northwind tables.
+containing the familiar Northwind tables. It will also creates <link linkend="rdfviewsrdbms">Linked Data Views</link> of the Northwind tables.
 In the example we assume the database is accessible on a hostname of "demo.openlinksw.com" on the
 default port 80, where an actually live instance of the Virtuoso Demo database is hosted. Users would
 use the appropriate hostname and port number of their Virtuoso installation to create the sample
@@ -4317,7 +4691,7 @@ Virtuoso configuration parameter is set to when the demo database VAD package is
   </listitem>
   <listitem>The Virtuoso ADO.Net provider for .Net 3.5 and the Entity Framework.</listitem>
   <listitem>Microsoft Visual Studio 2008</listitem>
-  <listitem>The Virtuoso <link linkend="http://download.openlinksw.com/packages/5.0/virtuoso/rdf_mappers_dav.vad">RDF Mappers VAD package</link>.</listitem>
+  <listitem>The Virtuoso <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.3/virtuoso/cartridges_dav.vad">Cartridges VAD package</ulink>.</listitem>
 </orderedlist>
     </sect2>
     <sect2 id="installcrwebcrserv">
@@ -4492,7 +4866,7 @@ launch a browser and display the IRIs from sparqlview as a list of hyperlinks.
       <title>list of hyperlinks</title>
       <graphic fileref="ui/sparqlwinf29.png"/>
     </figure>
-<para>With the <ulink url="http://download.openlinksw.com/packages/5.0/virtuoso/rdf_mappers_dav.vad">RDF Mappers VAD package</ulink> installed in Virtuoso, clicking on these
+<para>With the <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.3/virtuoso/cartridges_dav.vad">Cartridges VAD package</ulink> installed in Virtuoso, clicking on these
 links will take you to a description page of the referenced resource. The description page is created
 using <ulink url="http://virtuoso.openlinksw.com/Whitepapers/html/vdld_html/VirtDeployingLinkedDataGuide_Glossary.html#mozTocId13075">description.vsp</ulink>.
 </para>
@@ -4691,7 +5065,7 @@ access layer. In these examples a combination of Silverlight 3 and .NET RIA Serv
 presentation layer and application layer while the data will reside in Virtuoso and be accessed using
 the Virtuoso ADO.NET provider. The first example demonstrates how to display data from the Employee
 table in the Demo database in a grid on a web page. The second example shows how to display IRIs from
-the RDF views of the demo data. The IRIs are used to create hyperlinks that are the starting point
+the Linked Data Views of the demo data. The IRIs are used to create hyperlinks that are the starting point
 for exploring the linked data.
 </para>
       <sect2 id="installnetriaddpreq">
@@ -4700,7 +5074,7 @@ for exploring the linked data.
   <listitem>The example assumes that you have a local Virtuoso server with the Northwind demo database
 installed. If the demo database is not already installed then download the demo database VAD package
 (demo_dav.vad) and install it. The VAD package will create a new database in Virtuoso called demo
-containing the familiar Northwind tables. It will also creates RDF views of the Northwind tables.
+containing the familiar Northwind tables. It will also creates Linked Data Views of the Northwind tables.
 In the example we assume the database is accessible on a hostname of "demo.openlinksw.com" on the
 default port 80, where an actually live instance of the Virtuoso Demo database is hosted. Users
 would use the appropriate hostname and port number of their Virtuoso installation to create the
@@ -4709,7 +5083,7 @@ the URIQA DefaultHost Virtuoso configuration parameter is set to when the demo d
 is installed.</listitem>
   <listitem>The Virtuoso ADO.Net provider for .Net 3.5 and the Entity Framework.</listitem>
   <listitem>Microsoft Visual Studio 2008</listitem>
-  <listitem>The Virtuoso RDF Mappers VAD package.</listitem>
+  <listitem>The Virtuoso <ulink url="http://s3.amazonaws.com/opldownload/uda/vad-packages/6.3/virtuoso/cartridges_dav.vad">Cartridges VAD package</ulink>.</listitem>
   <listitem><ulink url="http://www.microsoft.com/downloads/details.aspx?familyid=9442b0f2-7465-417a-88f3-5e7b5409e9dd&amp;displaylang=en">Silverlight 3 Tools for Visual Studio 2008 SP1</ulink>.</listitem>
   <listitem><ulink url="http://www.microsoft.com/downloads/details.aspx?FamilyID=76bb3a07-3846-4564-b0c3-27972bcaabce&amp;displaylang=en">Microsoft .NET RIA Services July 2009 Preview</ulink>.</listitem>
 </orderedlist>
@@ -5162,580 +5536,336 @@ the data in Virtuoso will be updated.
 
 <sect1 id="clusterstcnf"><title>Cluster Installation and Config</title>
     <sect2 id="clusterstcnfsetup"><title>Creating New Cluster Setup</title>
-      <para>After the installation of V6 is done, in order to setup a Cluster you need to perform the
-following steps (working on Unix and MacOsX):</para>
 <orderedlist>
-  <listitem>Determine how many nodes you want to start the cluster with: 2, 4, 6, 8
-<itemizedlist mark="bullet">
-  <listitem>Note: the number of the nodes should be &gt;= 2 </listitem>
-</itemizedlist>
-</listitem>
-  <listitem>Place the following files respectively to your Virtuoso installation folders:
-<itemizedlist mark="bullet">
-  <listitem>bin folder: the virtuoso-restore.sh file:
+	<listitem>Run the Virtuoso 6 Unix ( MacOsX) installer to perform a default installation:
 <programlisting><![CDATA[
-#!/bin/sh
-#
-#  $Id$
-#
-#  (C) 2007 OpenLink Software
-#
-#  The copyright above and this notice must be preserved in all
-#  copies of this source code.  The copyright above does not
-#  evidence any actual or intended publication of this source code.
-#
-#  This is unpublished proprietary trade secret of OpenLink Software.
-#  This source code may not be copied, disclosed, distributed, demonstrated
-#  or licensed except as authorized by OpenLink Software.
-#
-#  To learn more about this product, or any other product in our
-#  portfolio, please check out our web site at:
-#
-#      http://www.openlinksw.com
-#
-#  or contact us at:
-#
-#      general.information@openlinksw.com
-#
-#  If you have any technical questions, please contact our support
-#  staff at:
-#
-#      technical.support@openlinksw.com
-#
+$ tar xvf virtuoso-universal-server-6.1.tar 
+x install.sh
+x universal-server.taz
+$ sh install.sh
+
+- Extracting Virtuoso Universal Server v6.1
+
+- Creating default environment settings
+
+- Creating default database settings
+Configuring: database
+Creating directory $VIRTUOSO_HOME/database/backup
+Installing new virtuoso.ini in $VIRTUOSO_HOME/database
+Installing new php.ini in $VIRTUOSO_HOME/database
+Creating symlink to $VIRTUOSO_HOME/bin/virtuoso-iodbc-t
+
+- Registering ODBC drivers
+
+- Registering .NET provider for Mono
+
+- Installing VAD packages in database (this can take some time)
+
+- Checking where license should be stored
+
+- Starting OpenLink License Manager
+
+- Checking for initial Virtuoso license
+
+- Starting Virtuoso server instance
+
+- Finalizing installation
 
 
-#
-#  Set up the script
-#
-umask 022
-
-#
-#  Optional argument which database to start/stop
-#
-DBDIR=${1-all}
-BPREF=${2-bkp}
+This concludes the first part of the installation.
 
 
-#
-#  Check if we need to be silent
-#
-SILENT=${SILENT-"0"}
-if test "$SILENT" = "0"
-then
-    ECHO=echo
-else
-    ECHO=:
-fi
+- Attempting to start browser
+
+Please start a browser manually and open the following URL to finalize 
+the installation process:
+
+     http://cname:8890/install/
 
 
-#
-#  Script information
-#
-SCRIPT_NAME=`basename $0`
-SCRIPT_VERSION="1.0"
-SCRIPT_DATE="Wed Apr 18 2007"
-
-
-#
-#  Where to look
-#
-if test "x$VIRTUOSO_HOME" = "x"
-then
-    VIRTUOSO_HOME="`dirname $0`/.."
-    VIRTUOSO_HOME=`cd $VIRTUOSO_HOME >/dev/null && pwd`
-fi
-if test "x$VIRTUOSO_HOME" = "x"
-then
-    echo ""
-    echo "***"
-    echo "*** ERROR: Unable to determine value for \$VIRTUOSO_HOME"
-    echo "***"
-
-    exit 1
-fi
-if test \! -f "$VIRTUOSO_HOME/bin/virtuoso-iodbc-t"
-then
-    echo ""
-    echo "***"
-    echo "*** ERROR: \$VIRTUOSO_HOME does not appear to contain standard virtuoso binary"
-    echo "***"
-
-    exit 1
-fi
-export VIRTUOSO_HOME SCRIPT_NAME
-
-#
-#  Read local environment
-#
-if test -f "$VIRTUOSO_HOME/virtuoso-environment.sh"
-then
-    . "$VIRTUOSO_HOME/virtuoso-environment.sh"
-fi
-
-
-#
-#  Try to start the oplmgr if available
-#
-cd "$VIRTUOSO_HOME/bin"
-if test -x oplmgr
-then
-    ./oplmgr +start 2>/dev/null
-fi
-
-
-#
-#  Check which database(s) to start
-#
-cd "$VIRTUOSO_HOME"
-if test "$DBDIR" = "all"
-then
-    DBDIR=""
-    for f in `ls -1 */virtuoso.ini 2>/dev/null`
-    do
-	d=`dirname $f`
-
-        if test -d "$d"
-	then
-  	    DBDIR="$DBDIR $d"
-	fi
-    done
-fi
-
-
-#
-#  Perform the start/stop command
-#
-for d in $DBDIR
-do
-   $ECHO "Starting Virtuoso instance in [$d]"
-   $VIRTUOSO_HOME/install/command-restore.sh $d $BPREF
-done
-
-exit 0
-
-]]></programlisting>
-</listitem>
-  <listitem>folder install: the files command-restore.sh and mk_cluster.sh:
-<para>command-restore.sh</para>
+Installation completed
+$
+]]></programlisting>		
+	</listitem>
+  <listitem>Determine how many nodes you want to start the cluster with: 2, 3, 4, 5, 6, 7, 8 etc. <emphasis>Note</emphasis>: the number of the nodes should be &gt;= 2</listitem>
+  <listitem>Setup Virtuoso environment and stop default database: 
 <programlisting><![CDATA[
-#!/bin/sh
-#
-#  $Id$
-#
-#  (C) 2007 OpenLink Software
-#
-#  The copyright above and this notice must be preserved in all
-#  copies of this source code.  The copyright above does not
-#  evidence any actual or intended publication of this source code.
-#
-#  This is unpublished proprietary trade secret of OpenLink Software.
-#  This source code may not be copied, disclosed, distributed, demonstrated
-#  or licensed except as authorized by OpenLink Software.
-#
-#  To learn more about this product, or any other product in our
-#  portfolio, please check out our web site at:
-#
-#      http://www.openlinksw.com
-#
-#  or contact us at:
-#
-#      general.information@openlinksw.com
-#
-#  If you have any technical questions, please contact our support
-#  staff at:
-#
-#      technical.support@openlinksw.com
-#
-
-
-#
-#  Set up the script
-#
-umask 022
-
-
-#
-#  Optional argument which database to startup
-#
-DBDIR=${1-database}
-BPREF=${2-bkp}
-
-#
-#  Script information
-#
-SCRIPT_NAME=`basename $0`
-SCRIPT_VERSION="1.0"
-SCRIPT_DATE="Wed Apr 18 2007"
-
-
-#
-#  Where to look
-#
-if test "x$VIRTUOSO_HOME" = "x"
-then
-    VIRTUOSO_HOME="`dirname $0`/.."
-    VIRTUOSO_HOME=`cd $VIRTUOSO_HOME >/dev/null && pwd`
-fi
-if test "x$VIRTUOSO_HOME" = "x"
-then
-    echo ""
-    echo "***"
-    echo "*** ERROR: Unable to determine value for \$VIRTUOSO_HOME"
-    echo "***"
-
-    exit 1
-fi
-if test \! -f "$VIRTUOSO_HOME/bin/virtuoso-iodbc-t"
-then
-    echo ""
-    echo "***"
-    echo "*** ERROR: \$VIRTUOSO_HOME does not appear to contain standard virtuoso binary"
-    echo "***"
-
-    exit 1
-fi
-export VIRTUOSO_HOME SCRIPT_NAME
-
-
-#
-#  Settings
-#
-SLEEP=5
-INIFILE="$VIRTUOSO_HOME/bin/inifile"
-INIFLAGS="+inifile virtuoso.ini"
-
-
-#
-#  Read local environment
-#
-if test -f "$VIRTUOSO_HOME/virtuoso-environment.sh"
-then
-    . "$VIRTUOSO_HOME/virtuoso-environment.sh"
-fi
-
-
-#
-#  Check if database directory exists
-#
-if test \! -d "$VIRTUOSO_HOME/$DBDIR"
-then
-    echo ""
-    echo "***"
-    echo "***  WARNING: \$VIRTUOSO_HOME/$DBDIR does not exist"
-    echo "***"
-
-    exit 1
-fi
-
-
-#
-#  Check if we are allowed to startup the database at all
-#
-
-if test \! -w "$VIRTUOSO_HOME/$DBDIR"
-then
-    echo ""
-    echo "***"
-    echo "*** ERROR: You do not have permission to startup this virtuoso instance"
-    echo "***"
-
-    exit 1
-fi
-
-
-#
-#  Check if there is any lock file in this directory
-#
-cd "$VIRTUOSO_HOME/$DBDIR"
-LCK=virtuoso.lck
-for i in *.lck
-do
-    if test -f "$i"
-    then
-	LCK="$i"
-    fi
-done
-
-
-#
-#  If there is a lock file present, consider the database running
-#
-if test -f "$LCK"
-then
-    echo ""
-    echo "***"
-    echo "***  WARNING: Lock file already exists."
-    echo "***"
-    echo "***  This Virtuoso instance is probably already running."
-    echo "***"
-
-    exit 0
-fi
-
-DBFILE=`$INIFILE $INIFLAGS +section Database +key DatabaseFile`
-TRXFILE=`$INIFILE $INIFLAGS +section Database +key TransactionFile`
-
-if test -f "$DBFILE"
-then
-    echo ""
-    echo "***"
-    echo "***  WARNING: DataBase file already exists."
-    echo "***"
-    echo "***  This Virtuoso instance cannot be restored."
-    echo "***"
-
-    exit 0
-fi
-
-if test -f "$TRXFILE"
-then
-    echo ""
-    echo "***"
-    echo "***  WARNING: TransactionFile file already exists."
-    echo "***"
-    echo "***  This Virtuoso instance cannot be restored."
-    echo "***"
-
-    exit 0
-fi
-
-#
-#  Start the engine
-#
-./virtuoso +restore-backup "$BPREF" +backup-dirs backup
-if test $? -ne 0
-then
-    echo ""
-    echo "***"
-    echo "*** ERROR: Could not start this Virtuoso Instance."
-    echo "***"
-
-    LOG=`$INIFILE $INIFLAGS +section Database +key ErrorLogFile`
-    tail "$LOG"
-
-    echo "***"
-    echo "*** Please fix the above issue(s) before trying again."
-    echo "***"
-
-    exit 1
-fi
-
-
-#  All done
-exit 0
-
+$ . ./virtuoso-environment.sh
+$ virtuoso-stop.sh
+Shutting down Virtuoso instance in [database]
+$
 ]]></programlisting>
-<para>mk_cluster.sh</para>
+  </listitem>
+  <listitem>Optionally remove the default database such that is does not get started with the cluster: 
 <programlisting><![CDATA[
-#!/bin/bash
-
-export NUM_NODES=${1-8}
-export NUM_DISKS=4
-
-SPACE=256
-echo diskspace per NODE = ${SPACE}M
-
-#
-#  Goto TOP
-#
-
-if test "x$VIRTUOSO_HOME" = "x"
-then
-    VIRTUOSO_HOME="`dirname $0`/.."
-    VIRTUOSO_HOME=`cd $VIRTUOSO_HOME >/dev/null && pwd`
-fi
-if test "x$VIRTUOSO_HOME" = "x"
-then
-    echo ""
-    echo "***"
-    echo "*** ERROR: Unable to determine value for \$VIRTUOSO_HOME"
-    echo "***"
-
-    exit 1
-fi
-
-cd $VIRTUOSO_HOME
-
-#cd /opt/virtuoso
-#mkdir -p /dbs1/lod_database
-#mkdir -p /dbs2/lod_database
-#mkdir -p /dbs3/lod_database
-#mkdir -p /dbs4/lod_database
-
-#
-#  Create various directories
-#
-i=1
-while true
-do
-    PORT=`expr 12200 + $i`
-    CLUSTER=`printf "cluster_%02d" $i`
-    HOST=`printf "Host%d" $i`
-    LOD=`printf "lod-%02d" $i`
-
-    echo "Creating $CLUSTER on Host $HOST port $PORT"
-
-    mkdir -p "$CLUSTER"
-    mkdir -p "$CLUSTER"/logs
-    mkdir -p "$CLUSTER"/backup
-
-    cat > "$CLUSTER"/virtuoso.ini <<-EOF_VIRTUOSO
-	;  virtuoso.ini
-	;
-	;  Configuration file for the OpenLink Virtuoso VDBMS Server
-	;
-	;
-	;  Database setup
-	;
-	[Database]
-	DatabaseFile       = virtuoso.db
-	TransactionFile    = virtuoso.trx
-	ErrorLogFile       = virtuoso.log
-	ErrorLogLevel      = 7
-	Syslog             = 0
-	TempStorage        = TempDatabase
-	FileExtend         = 200
-	MaxCheckpointRemap = 2500000
-	Striping           = 0
-
-	[TempDatabase]
-	DatabaseFile    = virtuoso.tdb
-	TransactionFile = virtuoso.ttr
-	FileExtend      = 200
-
-	;
-	;  Server parameters
-	;
-	[Parameters]
-	ServerPort                 = $PORT
-	ServerThreads              = 100
-	CheckpointInterval         = 600
-	NumberOfBuffers            = 20000
-	MaxDirtyBuffers            = 130000
-	DefaultIsolation           = 2
-	UnremapQuota               = 0
-	AtomicDive                 = 1
-	PrefixResultNames          = 0
-	CaseMode                   = 2
-	DisableMtWrite             = 0
-	;MinAutoCheckpointSize	= 4000000
-	;CheckpointAuditTrail	= 1
-	DirsAllowed                = /
-	PLDebug                    = 0
-	TestCoverage               = cov.xml
-	;Charset=ISO-8859-1
-	ResourcesCleanupInterval   = 1
-	ThreadCleanupInterval      = 1
-	TransactionAfterImageLimit = 1500000000
-	FDsPerFile                 = 4
-	MaxMemPoolSize             = 40000000
-	IndexTreeMaps              = 64
-
-	[VDB]
-	VDBDisconnectTimeout = 1000
-	ArrayOptimization    = 2
-	NumArrayParameters   = 10
-
-	[Client]
-	SQL_QUERY_TIMEOUT  = 0
-	SQL_TXN_TIMEOUT    = 0
-	SQL_ROWSET_SIZE    = 10
-	SQL_PREFETCH_BYTES = 12000
-
-	[AutoRepair]
-	BadParentLinks = 0
-	BadDTP         = 0
-
-	;[Striping]
-	;Segment1 = ${SPACE}M, /dbs1/lod_database/${LOD}-sl1.db = q1, /dbs2/lod_database/${LOD}-sl2.db = q2, /dbs3/lod_database/${LOD}-sl3.db = q3, /dbs4/lod_database/${LOD}-sl4.db = q4
-
-	[Replication]
-	ServerName   = $LOD
-	ServerEnable = 1
-
-	[!URIQA]
-	DefaultHost = localhost:8890
-EOF_VIRTUOSO
-
-if test $i -eq 1
-then
-    cat >> "$CLUSTER"/virtuoso.ini <<-EOF_VIRTUOSO_HTTP
-
-	[HTTPServer]
-	ServerPort                  = 8890
-	ServerRoot                  = $VIRTUOSO_HOME/vsp
-	ServerThreads               = 15
-	MaxKeepAlives               = 10
-	KeepAliveTimeout            = 10
-	MaxCachedProxyConnections   = 10
-	ProxyConnectionCacheTimeout = 10
-	DavRoot                     = DAV
-	HTTPLogFile                 = logs/http.log
-EOF_VIRTUOSO_HTTP
-fi
-    # Create cluster control
-    cat > "$CLUSTER"/cluster.ini <<-EOF_CLUSTER
-	[Cluster]
-	Threads = 50
-	ThisHost = $HOST
-	Master = Host1
-	ReqBatchSize = 10000
-	BatchesPerRPC = 4
-	BatchBufferBytes = 20000
-	LocalOnly = 2
-	MaxKeepAlivesMissed = 1000
-	MaxHosts = 100
-
-EOF_CLUSTER
-    let n=0
-    while true
-    do
-	let n+=1
-	CLPORT="`expr 22200 + $n`"
-	echo "Host$n = $CLPORT" >> "$CLUSTER"/cluster.ini
-	if test $n -ge $NUM_NODES
-	then
-	    break
-	fi
-    done
-
-    # Linking virtuoso executable in place
-    cd "$CLUSTER"
-    ln -sf "$VIRTUOSO_HOME"/bin/virtuoso-iodbc-t virtuoso
-    cd ..
-
-    let i+=1
-    if test $i -gt $NUM_NODES
-    then
-	break
-    fi
-done
-
-exit 0
-
-]]></programlisting>
-</listitem>
-</itemizedlist>
-</listitem>
-  <listitem>If you are using EC2 instance, make sure you set the environment by running:
+rm  -rf database	
+]]></programlisting>  	
+  </listitem>
+  <listitem>Full list of supported options for the script <emphasis>"virtuoso-mkcluster.sh"</emphasis>:
 <programlisting><![CDATA[
-. ./virtuoso-environment.sh
-]]></programlisting>
- </listitem>
-  <listitem>Run the mk_cluster.sh file from the .\install folder with option number of the desired nodes:
+  -cluster-size       Number of nodes in cluster
+  -cluster-node       Node number in a cluster
+  -cluster-port       Base portnumer for cluster
+  -cluster-ipc-port   Base portnumer for cluster IPC	
+  -cluster_size       Size of the cluster
+  -virtuoso_home      Virtuoso home path
+]]></programlisting>  
+  </listitem>
+  <listitem>Run the virtuoso-mkcluster.sh script to create the cluster, note the default number of 
+  	nodes is 4, but this can be changed by setting the environment variable CLUSTER_SIZE to the 
+  	required number of nodes to be created before running the script: 
 <programlisting><![CDATA[
-..# bash
-..# . ./mk_cluster.sh  4
-....
-Creating cluster_01 on Host Host1 port 12201
-Creating cluster_02 on Host Host2 port 12202
-Creating cluster_03 on Host Host3 port 12203
-Creating cluster_04 on Host Host4 port 12204
+$ virtuoso-mkcluster.sh 
+Configuring cluster node: 1/4
 
+Creating directory $VIRTUOSO_HOME/cluster_01
+Creating directory $VIRTUOSO_HOME/cluster_01/backup
+Creating directory $VIRTUOSO_HOME/cluster_01/logs
+Installing new virtuoso.ini in $VIRTUOSO_HOME/cluster_01
+Installing new php.ini in $VIRTUOSO_HOME/cluster_01
+Creating symlink to $VIRTUOSO_HOME/bin/virtuoso-iodbc-t
+Configuring cluster node: 2/4
+
+Creating directory $VIRTUOSO_HOME/cluster_02
+Creating directory $VIRTUOSO_HOME/cluster_02/backup
+Installing new virtuoso.ini in $VIRTUOSO_HOME/cluster_02
+Removing unneeded sections from virtuoso.ini
+Creating symlink to $VIRTUOSO_HOME/bin/virtuoso-iodbc-t
+Configuring cluster node: 3/4
+
+Creating directory $VIRTUOSO_HOME/cluster_03
+Creating directory $VIRTUOSO_HOME/cluster_03/backup
+Installing new virtuoso.ini in $VIRTUOSO_HOME/cluster_03
+Removing unneeded sections from virtuoso.ini
+Creating symlink to $VIRTUOSO_HOME/bin/virtuoso-iodbc-t
+Configuring cluster node: 4/4
+
+Creating directory $VIRTUOSO_HOME/cluster_04
+Creating directory $VIRTUOSO_HOME/cluster_04/backup
+Installing new virtuoso.ini in $VIRTUOSO_HOME/cluster_04
+Removing unneeded sections from virtuoso.ini
+Creating symlink to $VIRTUOSO_HOME/bin/virtuoso-iodbc-t
+$
 ]]></programlisting>
-</listitem>
+  </listitem>
+  <listitem>For each of the cluster_XX directories created edit the cluster.ini file and set the 
+  	HostXX parameter to the hostname:portno to be used by the cluster nodes for internal communication. 
+<programlisting><![CDATA[
+$ more cluster_01/cluster.ini
+[Cluster]
+Threads             = 20
+Master              = Host1
+ThisHost            = Host1
+ReqBatchSize        = 10000
+BatchesPerRPC       = 4
+BatchBufferBytes    = 20000
+LocalOnly           = 2
+MaxKeepAlivesMissed = 1000
+Host1               = hostname:22201
+Host2               = hostname:22202
+Host3               = hostname:22203
+Host4               = hostname:22204
+MaxHosts            = 5
+$ more cluster_02/cluster.ini
+[Cluster]
+Threads             = 20
+Master              = Host1
+ThisHost            = Host2
+ReqBatchSize        = 10000
+BatchesPerRPC       = 4
+BatchBufferBytes    = 20000
+LocalOnly           = 2
+MaxKeepAlivesMissed = 1000
+Host1               = hostname:22201
+Host2               = hostname:22202
+Host3               = hostname:22203
+Host4               = hostname:22204
+MaxHosts            = 5
+$ more cluster_03/cluster.ini
+[Cluster]
+Threads             = 20
+Master              = Host1
+ThisHost            = Host3
+ReqBatchSize        = 10000
+BatchesPerRPC       = 4
+BatchBufferBytes    = 20000
+LocalOnly           = 2
+MaxKeepAlivesMissed = 1000
+Host1               = hostname:22201
+Host2               = hostname:22202
+Host3               = hostname:22203
+Host4               = hostname:22204
+MaxHosts            = 5
+$ more cluster_04/cluster.ini
+[Cluster]
+Threads             = 20
+Master              = Host1
+ThisHost            = Host4
+ReqBatchSize        = 10000
+BatchesPerRPC       = 4
+BatchBufferBytes    = 20000
+LocalOnly           = 2
+MaxKeepAlivesMissed = 1000
+Host1               = hostname:22201
+Host2               = hostname:22202
+Host3               = hostname:22203
+Host4               = hostname:22204
+MaxHosts            = 5
+$	
+]]></programlisting>  	
+  </listitem>
+  <listitem>Start the cluster using the standard virtuoso-start.sh script which automatically detects 
+  	the number for nodes to be started: 
+<programlisting><![CDATA[
+$ virtuoso-start.sh
+Starting Virtuoso instance in [cluster_01]
+Starting Virtuoso instance in [cluster_02]
+Starting Virtuoso instance in [cluster_03]
+Starting Virtuoso instance in [cluster_04]
+$	
+]]></programlisting>  	
+  </listitem> 	
+  <listitem>The default SQL port of the master node is 12201, as indicated in the virtuoso.ini file 
+  	of the cluster_01 directory, and can then be used for connecting to the newly created cluster 
+  	and check its status to ensure all nodes are online: 
+<programlisting><![CDATA[
+$ isql 12201
+Connected to OpenLink Virtuoso
+Driver: 06.01.3127 OpenLink Virtuoso ODBC Driver
+OpenLink Interactive SQL (Virtuoso), version 0.9849b.
+Type HELP; for help and EXIT; to exit.
+SQL> status ('cluster');
+REPORT
+VARCHAR
+_______________________________________________________________________________
+
+Cluster 4 nodes, 4 s. 1 m/s 0 KB/s  0% cpu 0%  read 0% clw threads 1r 0w 0i buffers 2981 0 d 0 w 0 pfs
+
+1 Rows. -- 7 msec.
+SQL> cl_ping(1,500, 1000);
+
+Done. -- 7 msec.
+SQL> cl_ping(2,500, 1000);
+
+Done. -- 52 msec.
+SQL> cl_ping(3,500, 1000);
+
+Done. -- 60 msec.
+SQL> cl_ping(4,500, 1000);
+
+Done. -- 51 msec.
+SQL>	
+]]></programlisting>  	
+  </listitem> 	
+  <listitem>To split the node across across physical machines for better performance and scalability, 
+  	simply perform a parallel Virtuoso installation on the additional physical machines and move the 
+  	cluster nodes required to the designated machine. Example, for the default 4 node cluster to be 
+  	split across two identical machines it would make sense to split 2 nodes across each machine, 
+  	thus you would move say the cluster_03 and cluster_04 directory nodes to the new machine (removing 
+  	them from the original). The cluster.ini file on each node would then need to be updated to set the 
+  	HostXX parameters to point to the new locations for nodes 03 and 04: 
+<programlisting><![CDATA[
+Machine 1 (hostname1)
+
+$ more cluster_01/cluster.ini
+[Cluster]
+Threads             = 20
+Master              = Host1
+ThisHost            = Host1
+ReqBatchSize        = 10000
+BatchesPerRPC       = 4
+BatchBufferBytes    = 20000
+LocalOnly           = 2
+MaxKeepAlivesMissed = 1000
+Host1               = hostname1:22201
+Host2               = hostname1:22202
+Host3               = hostname2:22203
+Host4               = hostname2:22204
+MaxHosts            = 5
+$ more cluster_02/cluster.ini
+[Cluster]
+Threads             = 20
+Master              = Host1
+ThisHost            = Host2
+ReqBatchSize        = 10000
+BatchesPerRPC       = 4
+BatchBufferBytes    = 20000
+LocalOnly           = 2
+MaxKeepAlivesMissed = 1000
+Host1               = hostname1:22201
+Host2               = hostname1:22202
+Host3               = hostname2:22203
+Host4               = hostname2:22204
+MaxHosts            = 5
+$
+
+Machine 2 (hostname2)
+
+$ more cluster_03/cluster.ini
+[Cluster]
+Threads             = 20
+Master              = Host1
+ThisHost            = Host3
+ReqBatchSize        = 10000
+BatchesPerRPC       = 4
+BatchBufferBytes    = 20000
+LocalOnly           = 2
+MaxKeepAlivesMissed = 1000
+Host1               = hostname1:22201
+Host2               = hostname1:22202
+Host3               = hostname2:22203
+Host4               = hostname2:22204
+MaxHosts            = 5
+$ more cluster_04/cluster.ini
+[Cluster]
+Threads             = 20
+Master              = Host1
+ThisHost            = Host4
+ReqBatchSize        = 10000
+BatchesPerRPC       = 4
+BatchBufferBytes    = 20000
+LocalOnly           = 2
+MaxKeepAlivesMissed = 1000
+Host1               = hostname1:22201
+Host2               = hostname1:22202
+Host3               = hostname2:22203
+Host4               = hostname2:22204
+MaxHosts            = 5
+$	
+]]></programlisting>  	
+  </listitem> 	
+  <listitem>The nodes can then be started on each machine, with 2 nodes being started on each in this 
+  	case to form the cluster:  
+<programlisting><![CDATA[
+
+Machine 1 (hostname1)
+
+$ virtuoso-start.sh
+Starting Virtuoso instance in [cluster_01]
+Starting Virtuoso instance in [cluster_02]
+$
+
+Machine 2 (hostname2)
+
+$ virtuoso-start.sh
+Starting Virtuoso instance in [cluster_03]
+Starting Virtuoso instance in [cluster_04]
+$
+]]></programlisting>  	
+  </listitem> 	
+  <listitem>To stop the cluster use the standard virtuoso-stop.sh script which automatically detects the number for nodes to be stopped:  
+<programlisting><![CDATA[
+$ virtuoso-stop.sh
+Stopping Virtuoso instance in [cluster_01]
+Stopping Virtuoso instance in [cluster_02]
+Stopping Virtuoso instance in [cluster_03]
+Stopping Virtuoso instance in [cluster_04]
+$
+]]></programlisting>  	
+  </listitem> 	
 </orderedlist>
-<sect3 id="clusterstcnfbackuprestore">
+</sect2>
+<sect2 id="clusterstcnfbackuprestore">
 <title>Backup and Restore</title>
     <para><emphasis>Backup</emphasis></para>
 <para>There are 2 ways to backup Virtuoso Cluster DB:</para>
@@ -5743,13 +5873,17 @@ Creating cluster_04 on Host Host4 port 12204
   <listitem>Backup every node using <link linkend="fn_backup_online"><function>back_online</function></link>
     <para><emphasis>For example, for every cluster in its backup folder execute:</emphasis></para>
 <programlisting><![CDATA[
-backup_online ('dbp', 10000000, 0, 'backup');
+SQL> backup_online('dbp',10000000,0,vector('backup')); 
+
+Done. -- 272 msec.
 ]]></programlisting>
 </listitem>
   <listitem>Make backup of all nodes at once using
 <link linkend="clusteroperationadmclexec"><function>cl_exec</function></link>. For example, execute:
 <programlisting><![CDATA[
-cl_exec ('backup_online ('dbp', 10000000, 0, 'backup')', vector ('dbp', 0, 10000000, './backup'));
+SQL> cl_exec ('backup_online (''dbp'', 10000000, 0,  vector (''backup''))');
+
+Done. -- 573 msec.
 ]]></programlisting>
 </listitem>
 </orderedlist>
@@ -5760,9 +5894,8 @@ execute from the ..\bin folder the virtuoso-restore.sh:</para>
 # . ./virtuoso-restore.sh all dbp
 ]]></programlisting>
 <para>where the second parameter is the restore prefix.</para>
-</sect3>
     </sect2>
-    <sect2 id="clusterstcnfconfig"><title>Cluster Config</title>
+    <sect2 id="clusterstcnfconfig"><title>Cluster Configuration</title>
 <orderedlist>
   <listitem>Set "FAST_START=1" in the viruoso-start.sh file and then run:
 <programlisting><![CDATA[
@@ -5795,11 +5928,49 @@ Cluster 4 nodes, 293 s. 0 m/s 0 KB/s  0% cpu 0%  read 0% clw threads 1r 0w 0i bu
 </listitem>
 </orderedlist>
     </sect2>
+    <sect2 id="clusterstcnftrsh"><title>Troubleshooting Tips</title>
+    <para>If an operation seems to hang, see the output of:</para>
+<programlisting><![CDATA[
+status ()	
+]]></programlisting>    	
+    <para>Check for the presence of the following conditions:</para>
+<itemizedlist>
+  <listitem>The cluster line shows 0% CPU, no message traffic and an unchanging number of buffers
+wired, this is probably a bug. To reset, restart the cluster or the offending process if found.
+Restart is done by executing:
+<programlisting><![CDATA[
+raw_exit (); 	
+]]></programlisting>
+<para>over an SQL connection to the process in question.</para>
+  </listitem>
+  <listitem>The cluster line shows many threads waiting compared to total threads. If CPU is 0 and
+this does not change there could be a transaction that holds locks indefinitely. To clear, execute:
+<programlisting><![CDATA[
+txn_killall (1);	
+]]></programlisting>
+<para>Do this at a node that has local threads waiting. This is seen in the Lock Status
+paragraph of status ('') when connected to the node in question.</para>
+  </listitem>
+  <listitem>The cluster line shows a changing number in the pfs field. The system is swapping
+and slowed down.</listitem>
+  <listitem>If the status () itself hangs, try another process of the cluster. See that there is
+no temporary atomic activity like a long checkpoint. If the situation persists there is a bug.
+The checkpoint can be seen by the presence of the <emphasis>checkpinmt_in_progress</emphasis> file 
+in each server's working directory.</listitem>
+  <listitem>To check the integrity of database files, do:
+<programlisting><![CDATA[
+cl_exec ('backup ''/dev/null''');
+]]></programlisting>  	
+<para>If this returns, the databases are OK. If one is found to be corrupt the corresponding server exits.</para>
+</listitem>
+</itemizedlist>
+		</sect2>
    <tip><title>See Also:</title>
         <para><link linkend="clusteroperation">Setting up and operating Virtuoso on a cluster.</link></para>
         <para><link linkend="clusterprogramming">Virtuoso Cluster Programming</link></para>
         <para><link linkend="fault">Virtuoso Cluster Fault Tolerance.</link></para>
    </tip>
-</sect1>
+   
+	</sect1>
 
 </chapter>

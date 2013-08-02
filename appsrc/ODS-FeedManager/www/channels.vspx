@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -445,44 +445,32 @@
               <table class="form-body" cellspacing="0">
                 <tr>
                   <td style="width: 90%; background-color: white;">
-                    <table id="s_tbl" width="100%" cellspacing="0">
-                      <thead class="sortHeader">
+                      <table id="s_tbl" class="ODS_grid">
+                        <thead>
                         <tr>
                           <th width="15%">Type</th>
                           <th>Value</th>
                           <th width="1%" nowrap="nowrap">ACL: (R)ead, (W)rite</th>
-                          <th width="50px">Action</th>
+                            <th class="action">Action</th>
                         </tr>
                       </thead>
+                        <tbody id="s_tbody">
+                          <tr id="s_tr_no"><td colspan="4"><b>No Shares</b></td></tr>
                 		  <![CDATA[
                 		    <script type="text/javascript">
                         <?vsp
-                          declare N, L integer;
-                          declare acl, aType, aAccess any;
+                              declare acl any;
 
-                          L := 0;
                           acl := (select WAI_ACL from DB.DBA.WA_INSTANCE where WAI_ID = self.domain_id);
                           acl := case when isnull (acl) then vector () else deserialize (acl) end;
-                          for (N := 0; N < length (acl); N := N + 1)
-                          {
-                            L := L + 1;
-                            http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: "Inherited"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
-                          }
+                              DB.DBA.wa_aci_lines (acl);
+
                           acl := deserialize (self.v_acl);
-                          for (N := 0; N < length (acl); N := N + 1)
-                          {
-                            L := L + 1;
-                            if (self.v_mode <> 'view')
-                            {
-                              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 50, value: "%s", onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", value: "%s", readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; text-align: center;"}});});', acl[N][2], acl[N][1], case when acl[N][2] = 'public' then 'true' else 'false' end, case when acl[N][2] = 'public' then 'display: none;' else '' end, acl[N][3], acl[N][4], acl[N][5]));
-                            } else {
-                              http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("s", {fld_1: {mode: 50, value: "%s"}, fld_2: {value: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}});});', acl[N][2], acl[N][1], acl[N][3], acl[N][4], acl[N][5]));
-                            }
-                          }
+                              DB.DBA.wa_aci_lines (acl, self.v_mode);
                         ?>
                 		    </script>
                 		  ]]>
-                      <tr id="s_tr_no" style="display: <?V case when L=0 then '' else 'none' end ?>;"><td colspan="<?V case when self.v_mode='view' then 3 else 4 end ?>"><b>No Shares</b></td></tr>
+                        </tbody>
                 		</table>
                 	</td>
                   <vm:if test="self.v_mode <> 'view'">
@@ -559,6 +547,8 @@
                     return;
                   }
                 }
+                -- validate ACL rules
+                DB.DBA.wa_aci_validate (DB.DBA.wa_aci_params (params));
 
                 -- feed
                 if (isAdmin)
@@ -579,7 +569,7 @@
 
                 -- domain
                 ENEWS.WA.channel_domain (self.v_id, self.domain_id, self.v_feed_id, self.f_title.ufl_value, self.v_tags, self.v_folder_name, trim (self.f_folder_id.ufl_value), self.f_graph.ufl_value);
-                self.v_acl := serialize (DB.DBA.wa_acl_params (params));
+                self.v_acl := serialize (DB.DBA.wa_aci_params (params));
                 ENEWS.WA.channel_acl (self.v_id, self.v_acl);
 
                 -- directory

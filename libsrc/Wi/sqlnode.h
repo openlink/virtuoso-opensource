@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -53,7 +53,7 @@ typedef struct _src_stat_s
   unsigned int64	srs_n_out;
 } src_stat_t;
 
-#define SRC_STAT(qn, inst)  ((src_stat_t*)&((caddr_t*)inst)[qn->src_stat])
+#define SRC_STAT(qn, inst)  ((src_stat_t*)&((caddr_t*)inst)[((data_source_t*)(qn))->src_stat])
 
 
 struct data_source_s
@@ -73,6 +73,7 @@ struct data_source_s
     struct state_slot_s **	src_pre_reset;
     struct state_slot_s **	src_continue_reset;
     data_source_t *		src_prev;
+    ssl_index_t *		src_vec_reuse; /* at last ref, can drop a big dc if none continuable between asg and last ref */
   };
 
 
@@ -80,7 +81,7 @@ struct data_source_s
   * ((state_entry_t **) & inst [src->src_out_state])
 
 #define SRC_IN_STATE(src, inst) \
-  * ((caddr_t **) & inst [((data_source_t*)(src))->src_in_state])
+  * ((caddr_t **) & ((caddr_t*)inst) [((data_source_t*)(src))->src_in_state])
 
 
 #define SSL_PARAMETER		0
@@ -117,6 +118,7 @@ struct data_source_s
     bitf_t		ssl_is_callret:1; \
     bitf_t		ssl_not_freeable:1; \
     bitf_t		ssl_qr_global:1; /* value either aggregating or invariant across qr */ \
+  bitf_t	ssl_always_vec:1; \
   bitf_t	ssl_vec_param:2; /* in vectored proc in/inout/out */ \
   ssl_index_t	ssl_index; \
   ssl_index_t		ssl_box_index; /*if vectored and needs box for single state ops, place in qst for this */ \
@@ -159,7 +161,7 @@ struct state_slot_ref_s
 #define ssl_non_null ssl_sqt.sqt_non_null
 
 
-typedef state_slot_t state_const_slot_t; ;
+typedef state_slot_t state_const_slot_t;
 
 #define ssl_next_const ssl_alias_of
 #define ssl_const_val ssl_constant
@@ -232,6 +234,8 @@ typedef struct ssa_iter_node_s
   data_source_t 	src_gen;
   int		ssi_state;
   struct setp_node_s *	ssi_setp;
+  state_slot_t *	ssi_set_no_shadow;
+  state_slot_t *	ssi_org_set_no;
 } ssa_iter_node_t;
 
 #define IS_QN(qn, in) ((qn_input_fn)in == ((data_source_t*)qn)->src_input)
@@ -241,8 +245,10 @@ typedef struct cl_fref_red_node_s
 {
   /* on coordinator, node reading the sets from a partitioned gby/oby qf */
   data_source_t 	src_gen;
+  cl_buffer_t		clb;
   struct fun_ref_node_s *	clf_fref;
   int			clf_status;
+  char			clf_no_order;
   struct clo_comp_s **		clf_order;
   struct setp_node_s *		clf_setp;
   int			clf_set_no;
@@ -259,8 +265,7 @@ struct proc_name_s
   char		pn_name[1];
 };
 
-
-
+#define QI query_instance_t
 
 struct query_s
   {
@@ -291,6 +296,8 @@ struct query_s
     bitf_t		qr_last_qi_may_free:1; /* if freed but still around because of pending local qi's */
     bitf_t		qr_proc_vectored:2;
     bitf_t		qr_vec_opt_done:1;
+    bitf_t		qr_need_enlist:1; /* in cluster, if run in read committed, still need enlist because of unknown function calls  which may update */
+    bitf_t		qr_is_mt_insert:1;
     char			qr_hidden_columns;
     char			qr_n_stages; /* if represents distr frag */
     /* The query state array's description */
@@ -367,10 +374,9 @@ struct query_s
     float *		qr_proc_cost; /* box of floats: 0. unit cost 1. result set rows 2...n+2 multiplier if param 0...n is not given */
     int64		qr_qf_id; /* if this is a frag qr, the id as in cll_id_to_qf */
     state_slot_t **	qr_qf_params;
-    int			qr_qf_agg_is_any;
-    caddr_t		qr_qf_agg_defaults;
     state_slot_t **	qr_qf_agg_res;
     state_slot_t **	qr_qf_multistate_agg_params;
+    struct stage_node_s **	qr_stages;
 #if defined (MALLOC_DEBUG) || defined (VALGRIND)
     const char *	qr_static_source_file;
     int			qr_static_source_line;
@@ -381,6 +387,7 @@ struct query_s
   };
 #define QF_AGG_MERGE 1 /* it is group by with std aggregates to be merged on  coordinator */
 #define QF_AGG_PARTITIONED 2 /* the aggregations are distinct, no adding up */
+#define QF_AGG_PARTITIONED_GBY 3 /* the aggregations are distinct, no adding up */
 
 #if defined (MALLOC_DEBUG) || defined (VALGRIND)
 #define DK_ALLOC_QUERY(qr) { \
@@ -423,7 +430,9 @@ typedef void (*row_callback_t) (caddr_t * state);
 #define CALLER_LOCAL	((query_instance_t *) 1L)
 #define CALLER_CLIENT	((query_instance_t *) 2L)
 
+
 #define qi_space qi_thread  /* temp schemas etc are in function of this, not something else */
+#define QI_NO_SLICE 0xffff /* indicates qi is not scoped to any slice in elastic cluster */
 
 
 typedef struct query_instance_s
@@ -437,6 +446,7 @@ typedef struct query_instance_s
     du_thread_t *	qi_thread;
     struct client_connection_s *qi_client;
     int			qi_ref_count;
+    slice_id_t		qi_slice; /* if slice-specific qi in a dfg, this is the slice */
     char		qi_threads;
     char		qi_isolation;
     bitf_t              qi_lock_mode:3;
@@ -451,6 +461,13 @@ typedef struct query_instance_s
     bitf_t		qi_dfg_anytimed:1;
     bitf_t		qi_vec_from_scalar:1;
     bitf_t		qi_is_branch:1;
+    bitf_t		qi_is_dfg_slice:1;
+    bitf_t		qi_slice_needs_init:1; /* if just created empty while reading dfg feed, init after processing the input, not in cll mtx */
+    bitf_t		qi_slice_merits_thread:1;
+    bitf_t		qi_is_cl_root; /* top level qi invoking cluster ops.  When freed, free the recursive cluster calls queue */
+    bitf_t		qi_has_dfgs:1;
+    bitf_t		qi_log_stats:1; /* log cli activity after this qi completes */
+    char		qi_dfg_running;
     uint32		qi_root_id;
     int32		qi_rpc_timeout;
     int32		qi_prefetch_bytes;
@@ -512,6 +529,7 @@ typedef struct hash_area_s
   dbe_col_loc_t *	ha_key_cols; /* the col locs of the hash temp, key fix, key var, dep fix, dep var */
   dbe_col_loc_t *	ha_cols;	/* cols of feeding table, correspond to ha_key_cols */
   state_slot_t **	ha_slots;	/* slots where values to feed come from if they do not come from columns direct */
+  struct hash_area_s *	ha_org_ha; /* can be a temp ha on stack for merge of gby or such, must ref the originnal allocated ha in the ht */
   int			ha_n_keys;
   int			ha_n_deps;
   char 			ha_op;
@@ -525,7 +543,7 @@ typedef struct hash_area_s
   char	ha_ch_unique;
 } hash_area_t;
 
-#define CHASH_GB_MAX_KEYS 10
+#define CHASH_GB_MAX_KEYS 20
 
 
 #define HA_DISTINCT 1
@@ -568,6 +586,11 @@ struct key_source_s
     state_slot_t **	ks_vec_cast;
     dc_val_cast_t *	ks_dc_val_cast;
     state_slot_t *	ks_last_vec_param; /* used for getting the count of param rows after casts */
+    state_slot_t **	ks_cl_local_cast; /* can be a ssl in a qf or dfg is refd many times with different expected types, e.g. iri cast to any for a ks and used as typed iri in a gby.  If so, pass without cast in qf/dfg message and cast only at the receiving end.  This is pairs of source/target ssls.  Can only occur in 1st ks of qf or dfg since its ks_vec_cast is taken over by the cast and partitioning of the qf/dfg */
+    char *		ks_cast_null; /* flags about what to do for a null (drop row of params, pass it or error  */
+    state_slot_t **	ks_scalar_partition; /* non-vector ssls that go into partition hash if this is a loc ks of a partitioned op */
+    col_partition_t **	ks_vec_cp;
+    col_partition_t **	ks_scalar_cp;
     state_slot_t *	ks_first_row_vec_ssl;
     struct setp_node_s *	ks_from_setp;
     state_slot_t *		ks_set_no; /* if ks reading a gby/oby temp, this is ssl ref to the set no from the set ctr at the start of the qr */
@@ -575,20 +598,22 @@ struct key_source_s
     ssl_index_t		ks_nth_cha_part;  /* when reading chash, nth partition */
     ssl_index_t		ks_cha_chp; /* when reading chash, the chash_page_t */
 
-    query_frag_t *	ks_from_temp_qf; /* if reading cluster aggregates, this is the qf holding the stuff */
     code_vec_t		ks_local_test;
     code_vec_t		ks_local_code;
     char		ks_descending;	/* if reading from end to start */
     char		ks_is_vacuum;
+    char		ks_isolation;
+    char		ks_check;
     char		ks_is_last;	/* if last ks in join and no select or
 					   postprocess follows.
 					   True if fun ref query */
     bitf_t		ks_is_loc_of_txs:1; /* if dummy cluster location ks for a txs then ks_ts is the text_source_t */
     bitf_t		ks_is_qf_first:1; /* the first in a cluster partition has its ks vec params set by the partitioning node so the cast dcs are ready to be set as search params */
-    bitf_t		ks_is_flood:1; /* partitioning ks of qf does not have eq on all partitioning columns, goes to all partitions */
+    bitf_t		ks_is_flood:2; /* partitioning ks of qf does not have eq on all partitioning columns, goes to all partitions.  If 2 is fill of replicated hash join temp, goes round tobin to any slice of recipient host */
     bitf_t		ks_vec_asc_eq:1;
     bitf_t		ks_oby_order:1;
     bitf_t		ks_is_deleting:1;
+    bitf_t		ks_is_vec_plh:1;
     bitf_t		ks_is_proc_view:1;
     state_slot_t *	ks_proc_set_ctr;
 /*    char 			ks_local_op; */
@@ -600,12 +625,14 @@ struct key_source_s
     dk_set_t	ks_always_null; /* cols which are always forced to be null */
     state_slot_t *  ks_grouping; /* ssl with grouping bitmap */
     /* cluster */
-    data_source_t *	ks_next_clb; /* if cluster and no order and the next node has a cl buffer, feed the data direct in there if no intervening steps */
     state_slot_t **		ks_qf_output; /* if last ks of value producing qf, then send these as result row. */
     struct table_source_s *	ks_ts;
     dk_set_t	ks_hash_spec; /* hash fill frefs that cause this ts to filter out rows either as hash filler or as hash probe */
     ssl_index_t *	ks_hs_partition_spec;
 };
+
+/*ks_is_flood */
+#define KS_FLOOD_HASH_FILL 2
 
 #define ks_itcl ks_ts->clb.clb_itcl
 
@@ -673,6 +700,7 @@ typedef struct table_source_s
     float		ts_cardinality; /* cardinality estimate from compiler */
     float		ts_inx_cardinality; /* card est with only indexed preds counted, use for splitting a scan where some keading keys are given */
     float		ts_cost_after; /* cost of nodes after this, per row of output from this */
+    float		ts_cost;
     key_source_t *	ts_order_ks;
     key_source_t *	ts_main_ks;
     state_slot_t *	ts_order_cursor;
@@ -687,6 +715,8 @@ typedef struct table_source_s
     bitf_t		ts_order:2;
     bitf_t		ts_card_measured:1; /* is cardinality baesd on sample, i.e. reliable */
     bitf_t		ts_branch_by_value:1; /* if parallelizing scan, divide at value boundaries so that if order col is group col groups are guaranteed distinct */
+    bitf_t 		ts_no_mt_in_row_ac:1; /* set if mt ts before upd/del, must not commit while mt branches are pending */
+    bitf_t		ts_in_index_path:1;
     caddr_t		ts_rnd_pcnt;
     code_vec_t		ts_after_join_test;
     struct inx_op_s *	ts_inx_op;
@@ -697,6 +727,7 @@ typedef struct table_source_s
     dbe_column_t *	ts_branch_col; /* if scan partitioned by range, this is the col */
     data_source_t *	ts_agg_node; /* if parallelizable in fref, this is the fref, if in scalar/exists subq, this is the select */
     ssl_index_t		ts_aq_state;
+    ssl_index_t		ts_nth_slice; /* if group by reader with many known to be disjoint qi's, this is the inx of the branch being read */
     inx_locality_t	ts_il;
     hash_area_t *	ts_proc_ha; /* ha for temp of prov view res.  Keep here to free later */
     ts_alt_func_t 	ts_alternate_test;
@@ -734,6 +765,7 @@ typedef struct ts_alt_split_s
 
 
 typedef table_source_t sort_read_node_t;
+typedef table_source_t chash_read_node_t;
 
 typedef struct rdf_inf_node_s rdf_inf_pre_node_t;
 typedef struct trans_node_s trans_node_t;
@@ -783,11 +815,12 @@ typedef struct set_ctr_node_s
   data_source_t	src_gen;
   cl_buffer_t	clb;
   state_slot_t *	sctr_set_no;
+  state_slot_t *	sctr_ext_set_no; /* if run in a subq in a cond branch with qi set mask set, this is the external set no for each of the consecutive internal set nos in sctr_set_no */
   outer_seq_end_node_t *	sctr_ose;
   dk_set_t 			sctr_continuable; /* continuable nodes between the sctr and the ose */
   dk_set_t 			sctr_hash_spec; /* if before partitioned outer hash join, these sp's are the hash filler frefs that determine the partition */
   char				sctr_role;
-  ssl_index_t 			sctr_is_trans_recursive;
+  char				sctr_not_in_top_and;
 } set_ctr_node_t;
 
 
@@ -806,9 +839,11 @@ typedef struct stage_sum_s
 {
   int		ssm_n_empty_mores;
   char		ssm_state_recd;
+  unsigned int64	ssm_n_states_recd;
   unsigned int64	ssm_in_sets; /* total input sets received by this stage of this node */
   unsigned int64	ssm_out_sets; /* total input sets processed to completion by this stage of this node */
   unsigned int64	ssm_produced_sets; /*total sent forward by this stage of this node */
+  int64			ssm_recd_sets; /* sets reported as received by this stage of this host,  ssm_in_sets is the sets reported by senders as sent to this */
 } stage_sum_t;
 
 
@@ -818,18 +853,25 @@ typedef struct stage_node_s
   cl_buffer_t	clb;
   query_frag_t *	stn_qf;
   int		stn_nth; /* the stage number in the dfg */
-  int	stn_coordinator; /* the host number owning the query */
+  int	stn_coordinator_id; /* Host no of coordinator, slot in the inst, the node compiling the query will not always coordinate it */
   int		stn_state;
+  float		stn_cost; /* cost per row of input from here to next stage */
   table_source_t *	stn_loc_ts; /* the ts that decides partition of next */
   state_slot_t *	stn_coordinator_req_no; /* the cm_req_no on coordinator which receives all coordinator targeted traffic. All cm's go out with this req no but this is used only by coordinator */
   state_slot_t * 	stn_dfg_state; /* dfg_stat clo with counts of locally done and forward sent */
   state_slot_t **	stn_params; /* the params to send to the next stage */
+  state_slot_t **	stn_inner_params; /* ssls where the compact dc of the received params are, shadowing ssls in stn_params */
+  state_slot_t *	stn_slice_qis;  /* array of per slice qis */
+  state_slot_t *	stn_aq; /* aq for running the per slice qis */
+  state_slot_t *	stn_bulk_input; /* array of arrays of cms, nned to be divided among the stn inputs before use */
   state_slot_t *	stn_input; /* array of cm clos that represent input from remote nodes for this stn */
-  int		stn_input_fill; /* qst int for last added in stn input array */
-  int		stn_input_used;
+  state_slot_t *	stn_dre; /* array of dres marking place in input dcsin the current param cm */
+  ssl_index_t		stn_n_ins_in_out; /* count of fully consumed in batches in present out batch */
+  ssl_index_t		stn_input_fill; /* qst int for last added in stn input array */
+  ssl_index_t		stn_input_used;
   state_slot_t *	stn_current_input;
   int			stn_read_to; /* qst int, position in current input for the next clo of input */
-  int			stn_out_bytes; /* qst int, bytes send to others by all non-first stn's of the dfg.  Cap on intm res size  */
+  ssl_index_t			stn_out_bytes; /* qst int, bytes send to others by all non-first stn's of the dfg.  Cap on intm res size  */
   int			stn_reset_ctr;
   dk_set_t		stn_in_slots; /* same as stn params but now used to read rows in input into */
   char			stn_need_enlist; /* excl parts later in the chain, enlist from start */
@@ -845,20 +887,27 @@ struct query_frag_s
 {
   data_source_t		src_gen;
   cl_buffer_t		clb;
+  state_slot_t *	qf_agg_org_itcl;
   state_slot_t * 	qf_set_no; /* if this is a dfg this is for keeping track of the set at the output */
+  state_slot_t * 	qf_set_no_result; /* shadow of set no in return rows, correlate result to input row */
   dk_set_t		qf_nodes;
   data_source_t *	qf_head_node;
   table_source_t *	qf_loc_ts;
   state_slot_t **	qf_params;
+  state_slot_t **	qf_inner_params; /* shadows of qf_params for use inside the qf.  Assign these from the clo params at exec */
+  float			qf_cost;
+  ssl_index_t		qf_wait_clocks;
   clo_comp_t **		qf_order;
   state_slot_t **	qf_inner_out_slots; /* the out slots of the qf before the shadow used for ref after qf - This is what running the qf sets */
   state_slot_t **	qf_result;
   dk_set_t 		qf_out_slots; /* set to itcl_out_slots */
+  state_slot_t *	qf_slice_qis;
+  state_slot_t *	qf_aq;
   int 			qf_dfg_state;
   state_slot_t *	qf_dfg_req_no; /* for the batch, the req no for getting results from all nodes */
   data_source_t *	qf_dml_node; /* if this is a wrapper on cluster upd/del, then this is the node that holds the clrg for the 2nd keys */
   state_slot_t *	qf_dfg_agg_map; /* in distr frag aggregation, string that gets a 1 at the place of every host with data */
-  uint32		qf_id;
+  uint64		qf_id;
   short			qf_max_rows;
   char			qf_n_stages;
   char			qf_lock_mode;
@@ -868,7 +917,6 @@ struct query_frag_s
   char			qf_nth; /* ordinal no of qf in qr, for debug */
   state_slot_t **	qf_agg_res;
   int			qf_agg_is_any;
-  caddr_t		qf_agg_defaults;
   state_slot_t **	qf_trigger_args;
   int			qf_trigger_event; /* if this is i/d/u */
   dbe_table_t *	qf_trigger_table;
@@ -877,11 +925,9 @@ struct query_frag_s
   state_slot_t **	qf_const_ssl; /* when ends in a group by, some slots must be inited.  If set, odd is value, next even is ssl to init to value */
   state_slot_t **		qf_local_save; /* for a result set making qf, (non agg, non upd), the save state that must be saved and restored between interrupting and continuing generating  a single result set from the qf */
   state_slot_t *		qf_keyset_state;
+  stage_node_t **		qf_stages;
 
   /* during sql vec */
-  dk_hash_t *	qf_ssl_def;
-  dk_hash_t *	qf_ssl_shadow;
-  dk_set_t	qf_vec_pred;
 };
 
 #define qf_itcl clb.clb_itcl
@@ -891,6 +937,7 @@ typedef struct qf_select_node_s
   data_source_t  	src_gen;
   state_slot_t *	qfs_itcl;
   state_slot_t **	qfs_out_slots;
+  char			qfs_in_dfg;
 } qf_select_node_t;
 
 
@@ -900,12 +947,14 @@ typedef struct dpipe_node_s
   cl_buffer_t		clb;
   char			dp_is_order;
   char			dp_is_colocated; /* already in the right partition, just call the func locally */
+  char			dp_is_read_only;
   struct cu_func_s **	dp_funcs;
   state_slot_t **	dp_inputs;
   state_slot_t **	dp_outputs;
   table_source_t *	dp_loc_ts;
   state_slot_t ***	dp_input_args;
   state_slot_t *	dp_local_cache; /* if this is colocated and has no dpipe, use this for remembering some results */
+  state_slot_t *	dp_set_nos; /* if set mask is set, record which set no in dp corresponds to which in qi */
 } dpipe_node_t;
 
 #define dp_itcl clb.clb_itcl
@@ -919,30 +968,39 @@ typedef struct hash_source_s
   ssl_index_t		hs_pos_in_set; /* If interrupted in mid resullt set, this is the position in the set */
   ssl_index_t 		hs_done_in_probe; /* set in inst if hash was unique on hash key and operation was merged into the node that produced the probe input */
   key_source_t *	hs_ks; /* for vectored casts, near same functionality so use ks */
+  table_source_t *	hs_loc_ts;
   state_slot_t *	hs_hash_no;
-  state_slot_t *	hs_tree;
   state_slot_t **	hs_ref_slots;
   hash_area_t *	hs_ha; /* shared with the filler setp */
   state_slot_t **	hs_out_slots;
-  state_slot_t *	hs_prehash; /* work area with the hashes of input rows, state etc. */
+  state_slot_t *	hs_cl_id;
   col_ref_t *		hs_col_ref;
   dbe_col_loc_t *	hs_out_cols;
+  dk_set_t		hs_out_aliases;
   ptrlong *		hs_out_cols_indexes;
-  code_vec_t 		hs_local_test;
+  char			hs_cl_part_opt; /* if explicit cluster partitioning option */
   char			hs_is_unique;
   char			hs_is_outer;
-  char			hs_range_partition; /* if hash filler in order of single hash join key */
   char			hs_no_partition; /* if probe from inside exists/value subq/dt as outer then can't distinguish between not exists and out of partition so must not partition */
+  char			hs_cl_partition; /* in cluster, is hash table replicated or partitioned on key or partitioned on key and colocated with probe */
   code_vec_t		hs_after_join_test;
   table_source_t *	hs_probe; /* the last ts in join order that binds a col that is input to here */
-  search_spec_t *	hs_probe_partition;  /* if the hash is partitioned, this sp is to filter out out of partition values from the probe */
   ssl_index_t 		hs_is_partitioned; /* set by hash filler, indicates whether the probe must filter based on hash partitioning */
   struct fun_ref_node_s *	hs_filler;
   table_source_t *	hs_merged_into_ts;
+  state_slot_t *	hs_part_ssl;
   float			hs_cardinality;
+  ssl_index_t 	hs_part_min;
+  ssl_index_t	hs_part_max;
   char 			hs_partition_filter_self; /* means that this hs will evaluate probe partition for each input because the place where the input is produced does not support filter in situ */
 } hash_source_t;
 
+
+/* hs_cl_partitioned */
+#define HS_CL_REPLICATED 1 /* identical hash table is built on all hosts */
+#define HS_CL_COLOCATED 2 /* hash table partitioned, same part key as probe */
+#define HS_CL_PART 3 /* partitioned and not colocated, add a dfg stage or a new qf, split input on part key of hash */
+#define HS_CL_COORD_ONLY 4 /* hash table exissts on coordinator only */
 typedef struct hi_memcache_key_s {
   id_hashed_key_t hmk_hash;
   int hmk_var_len;
@@ -957,7 +1015,7 @@ typedef struct remote_table_source_s
     char *		rts_text;
     id_hashed_key_t	rts_text_hash_no;
     struct remote_ds_s *rts_rds;
-    dk_set_t		rts_out_slots;
+    state_slot_t **     rts_out_slots;
     dk_set_t		rts_params;
     state_slot_t *	rts_remote_stmt;
     char		rts_is_outer;
@@ -967,13 +1025,11 @@ typedef struct remote_table_source_s
     dbe_table_t *	rts_trigger_table;
     oid_t *		rts_trigger_cols;
     state_slot_t *	rts_af_state;
-    state_slot_t **	rts_save_env;
     state_slot_t *	rts_param_rows;
-    state_slot_t *	rts_environments;
     state_slot_t *	 rts_param_fill;
     state_slot_t *	rts_i_param;
     state_slot_t *	 rts_single_pending;
-    state_slot_t *	 rts_single_env;
+    int			rts_nth_set;
     caddr_t		 rts_remote_proc;
     int			rts_is_unique;
     query_t *		rts_policy_qr;
@@ -997,6 +1053,7 @@ typedef struct subq_source_s
     state_slot_t **	sqs_out_slots;
     query_t *		sqs_query;
     char		sqs_is_outer;
+    char		sqs_leading_of_qf;
     state_slot_t *	sqs_set_no;
     code_vec_t		sqs_after_join_test;
     int			sqs_batch_size;
@@ -1032,6 +1089,8 @@ typedef struct ins_key_s
   state_slot_t **	ik_del_slots;
   state_slot_t **	ik_del_cast;
   dc_val_cast_t *	ik_del_cast_func;
+  ssl_index_t	ik_ins_slices;
+  ssl_index_t	ik_del_slices;
 } ins_key_t;
 
 
@@ -1058,6 +1117,8 @@ typedef struct insert_node_s
     state_slot_t *	ins_fetch_flag; /* set to 1 for the rows where there was insert */
     dbe_column_t *	ins_seq_col;
     v_out_map_t *	ins_v_out_map; /* output cols if fetching insert */
+    ssl_index_t		ins_set_mask; /* in cluster local branch, indicates which rows in the cast in the iks are for delete, i.e. local */
+    data_source_t *	ins_del_node; /* for replacing vectored */
   } insert_node_t;
 
 
@@ -1088,6 +1149,11 @@ typedef struct update_node_s
     state_slot_t *	upd_place;
     oid_t *		upd_col_ids;
     state_slot_t **	upd_values;
+    state_slot_ref_t **	upd_vec_source;
+    state_slot_t **	upd_vec_cast;
+    dbe_col_loc_t **	upd_vec_cast_cl;
+    state_slot_t **	upd_pk_values; /* use for pk in txn log in col wise upd */
+    state_slot_t **	upd_old_blobs; /* corresponds to upd_values , if blob col, uld value here */
     state_slot_t *	upd_cols_param;
     state_slot_t *	upd_values_param;
     char 		upd_no_keys;	/* if no key parts changed */
@@ -1103,6 +1169,13 @@ typedef struct update_node_s
     int 		upd_keyset; /* upd_cols intersects with the key cols of the
     				     ts_order_ks->ks_key of the  table_source_t before the update */
     state_slot_t *	upd_keyset_state; /* keeps an array of current pos, last pos and ht */
+    ssl_index_t		upd_param_nos;
+    char		upd_is_view;
+    char		upd_pk_change;
+    char		upd_row_only;
+    char		upd_any_blob;
+    ins_key_t **	upd_keys;
+    ssl_index_t		upd_set_mask;
   } update_node_t;
 
 
@@ -1117,7 +1190,9 @@ typedef struct delete_node_s
     state_slot_t **	del_trigger_args;
     query_t *		del_policy_qr;
     ins_key_t **	del_keys;
+    state_slot_t **	del_key_vals; /* the select before a searched delete gets values for all 2nd key parts.  Keep them here for cluster qf param passing */
     ssl_index_t		del_param_nos;
+    ssl_index_t		del_set_mask; /* in cluster local branch, indicates which rows in the cast in the iks are for delete, i.e. local */
     char		del_is_view;
   } delete_node_t;
 
@@ -1210,7 +1285,9 @@ typedef struct select_node_s
     state_slot_t *	sel_row_ctr;
     state_slot_t *	sel_row_ctr_array;
     state_slot_t **	sel_tie_oby;
-    state_slot_t *	sel_set_no; /* in array exec'd dt no if set this row belongs to */
+    state_slot_t *	sel_set_no;
+    state_slot_t *	sel_subq_org_set_no; /* if in cluster subq, the set no in the select node is shadowed by output of cl fref read or similar.  This is the unshadowed one for direct ref to subq start to know how many sets of input */
+    state_slot_t *	sel_ext_set_no; /* if value subq in cond branch, local sets are consecutive but the set to assign the result is here, not consecutive */
     state_slot_t *	sel_prev_set_no; /* set no of prev row.  when changes, reset the top ctr */
     state_slot_t *	sel_cn_set_no; /* if in multistate exists or value subq, this is set no of containing code node.  As soon as one result is produced, advance the multistate qr to the next set as per this set no */
     state_slot_t *	sel_scalar_ret;
@@ -1282,6 +1359,7 @@ typedef struct setp_node_s
     dk_set_t		setp_key_is_desc;
     dk_set_t		setp_dependent;
     dk_set_t		setp_gb_ops;	/* AMMSC for group by */
+    state_slot_t **	setp_merge_temps; /* temp ssls for adding up gnby/obys.  Same as the ssls where the result is read */
     char		setp_distinct;
     char		setp_set_op;
     char		setp_top_sort_distinct; /* when merging branches of top k obys, remove duplicates */
@@ -1305,24 +1383,36 @@ typedef struct setp_node_s
     char	                setp_any_distinct_gos;
     char			setp_any_user_aggregate_gos;
     char		setp_partitioned; /* oby or gby in needing no merge in cluster */
+    char		setp_part_opt; /* 0 do what is best, 1 never partition, 2 partition always */
+    char		setp_nth; /* ordinal number inside a set of grouping sets */
+    char		setp_ignore_ua; /* when merging partitioned user aggregates, just copy */
     dk_set_t		setp_const_gb_args;
     dk_set_t		setp_const_gb_values;
-
+    table_source_t *	setp_reader; /* node for sending the gby state in vectored cluster */
     setp_save_t	setp_ssa;
     table_source_t *	setp_loc_ts;
     float		setp_card;  /* for a group by, guess of how many distinct values of grouping cols */
+    ssl_index_t 	setp_qfs_state;
     char		setp_is_qf_last; /* if set, the next can be a read node of partitioned setp but do not call it from the setp. */
     char		setp_is_streaming; /* a group by with ordering cols as grouping cols, results available in mid-grouping */
+    char		setp_is_cl_gb_result;
     state_slot_t *	setp_streaming_ssl; /* if grouping cols are ordering cols but have duplicates, this is the col to check for distinguishing known complete groups from possible incomplete groups */
 
     /* partitioned hash fill */
+    state_slot_t *	setp_ht_id; /* id of ht for cluster hash fill */
     dk_set_t 	setp_hash_sources; /* hs nodes that ref the hash filled here */
     data_source_t *	setp_hash_part_filter; /* this filters out the rows that are not in partition.  Most often ts, sometimes the setp itself */
     search_spec_t *	setp_hash_part_spec; /* if hash join filler must make many partitions because too large, then this sp is applied to limit the probes si only stuff potentially in the hash is probed */
+    state_slot_t *	setp_chash_clrg;
+    state_slot_t *	setp_hash_part_ssl;
     ssl_index_t	setp_hash_fill_partitioned;
     ssl_index_t	setp_fill_cha; /* for chash join fill, the cha where the filler thread puts its rows */
+    char	setp_no_bloom;
+    char	setp_cl_partition;
 } setp_node_t;
 
+#define SETP_DISTINCT_MAX_KEYS 100
+#define SETP_DISTINCT_NO_OP 2
 #define IS_SETP(qn) IS_QN (qn, setp_node_input)
 
 /* setp_set_op */
@@ -1348,25 +1438,25 @@ typedef struct fun_ref_node_s
     dk_set_t		fnr_select_nodes; /* continuable nodes in the fnr_select branch */
     int			fnr_is_any;
     char		fnr_is_top_level; /* true if at start of top level qr, false if inside loops.  Affects what anytime timeout does */
+    char		fnr_is_cl_local_fake;
     dk_set_t		fnr_default_values;
     dk_set_t		fnr_default_ssls;
     dk_set_t		fnr_temp_slots;
     setp_node_t *	fnr_setp;
     dk_set_t	    fnr_setps;
-    dk_set_t	    fnr_group_set_read;
     dk_set_t 		fnr_distinct_ha;
     hi_signature_t *	fnr_hi_signature;
     query_frag_t *	fnr_cl_qf; /* if the aggregation is done in remotes, this is the qf that holds the state */
+    dk_set_t		fnr_cl_merge_temps; /* for adding up aggs in cluster */
     setp_save_t		fnr_ssa; /* save for multiple set aggregation */
-    struct cl_fref_read_node_s *	fnr_cl_reader;
-    int			fnr_cl_state;
     char		fnr_partitioned;
     char		fnr_is_order; /* if partitioned setp, must read in order?*/
     char		fnr_is_set_ctr; /* if outermost multistate fref, double as a set ctr if no other set ctr */
-    state_slot_t *	fnr_branch_qis;
     char		fnr_parallel_hash_fill;
     char		fnr_no_hash_partition;
     dk_set_t		fnr_prev_hash_fillers; /* This fun ref can produce output only when these hash fillers have gone through all partitions */
+    state_slot_t *	fnr_cl_hash_id; /* id of the hash table filled by this fnr for ref in cluster hash join  */
+    state_slot_t *	fnr_hash_part_ssl;
     ssl_index_t	fnr_n_part;
     ssl_index_t	fnr_nth_part;
     ssl_index_t fnr_hash_part_min;
@@ -1392,10 +1482,6 @@ typedef struct fun_ref_node_s
 
 #define FNR_NONE 0
 
-/* in qst at the place of fnr_cl_state for multistate aggregate */
-#define FNR_INIT 1
-#define FNR_RUNNING 2
-#define FNR_RESULTS 3
 
 
 typedef struct breakup_node_s
@@ -1440,7 +1526,7 @@ typedef struct comp_context_s
 
 
 #define QR_POST_COMPILE(qr, cc) \
-  qr->qr_instance_length = cc->cc_instance_fill * sizeof (caddr_t); \
+  qr->qr_instance_length = cc->cc_super_cc->cc_instance_fill * sizeof (caddr_t); \
   dk_free_box (qr->qr_qualifier); \
   qr->qr_qualifier = box_dv_short_string (sqlc_client ()->cli_qualifier); \
   qr_set_freeable (cc, qr);
@@ -1483,13 +1569,14 @@ typedef struct srv_stmt_s
     caddr_t *		sst_param_array;
     int			sst_parms_processed;
     struct cursor_state_s * sst_cursor_state;
-    long		  sst_start_msec;
+    uint32		  sst_start_msec;
 
 /* PL scrollable */
     int			sst_is_pl_cursor;
     caddr_t		sst_pl_error;
     /* multistate */
     caddr_t *		sst_qst; /* same as sst_inst */
+    struct cl_call_stack_s *	sst_cl_stack; /* keep the top cluster req no between batches of a cursor */
     int		sst_vec_n_rows;
     char	sst_is_started;
   } srv_stmt_t;
@@ -1497,22 +1584,25 @@ typedef struct srv_stmt_s
 
 typedef struct user_s
   {
-    caddr_t		usr_name;
-    caddr_t		usr_pass;
-    oid_t		usr_id;
-    oid_t		usr_g_id;
-    dk_hash_t *		usr_grants;
-    caddr_t		usr_data;
-    caddr_t *		usr_g_ids;
-    caddr_t		log_usr_name;
-    int 		usr_is_role;
-    int 		usr_disabled;
-    int 		usr_is_sql;
+    caddr_t		usr_name;		/*!< User's login name. */
+    caddr_t		usr_pass;		/*!< User's password, non encrypted. The U_PASSWORD field is filled via xx_encrypt_passwd() of this password and user's name. */
+    oid_t		usr_id;			/*!< The internal ID, stored as U_ID. */
+    oid_t		usr_g_id;		/*!< The ID of the default group of the user. User belongs to his default group same style as to any other group. */
+    dk_hash_t *		usr_grants;		/*!< Unused and set to NULL in the server, plugings may use for their internal data. The hashtable under the pointer is not freed or otherwise altered by the server if user is dropped. */
+    caddr_t		usr_data;		/*!< Values of U_DATA field, typically of sort "Q DB" */
+    ptrlong *		usr_g_ids;		/*!< Sorted vector of groups that contain the given user */
+    ptrlong *		usr_member_ids;		/*!< Sorted vector of users and groups that are members of this group */
+    oid_t *		usr_flatten_g_ids;	/*!< Sorted list of sources of permissions, transitively, including self. The vector can be longer than \c usr_flatten_g_ids_len, with spare place at the end. The vector is fileld on demand and its length is reset to zero in case of changes in related roles */
+    int			usr_flatten_g_ids_len;	/*!< The length of used beginning of \c usr_flatten_g_ids. Zero means obsolete or missing data. */
+    caddr_t		log_usr_name;		/*!< Username as it appears in log files. I don't know why, but some users are supposed to exist without the name set */
+    int 		usr_is_role;		/*!< Flags if the record is about group, not a plain user */
+    int 		usr_disabled;		/*!< Flags if the user is (temporarily) disabled */
+    int 		usr_is_sql;		/*!< Flags if the user can log in from a client */
     id_hash_t *		usr_xenc_keys;
     id_hash_t *		usr_xenc_certificates;
     dk_set_t 		usr_xenc_temp_keys;
     dk_set_t 		usr_certs;
-    dk_hash_64_t *	usr_rdf_graph_perms;
+    dk_hash_64_t *	usr_rdf_graph_perms;	/*!< Permission on RDF Graphs (default permissions, as a value for #i0, permissions for private graphs and permissions for any individual graphs */
 #ifdef WIN32
     caddr_t		usr_sys_name;
     caddr_t		usr_sys_pass;
@@ -1584,9 +1674,17 @@ caddr_t _br_cstm (caddr_t stmt);
 #define U_ID_WS		4 	/* the WS user is needed to define compatibile WebDAV views */
 #define U_ID_NOBODY	5
 #define U_ID_NOGROUP	6
+#define U_ID_RDF_REPL	7
 #define U_ID_FIRST	100 	/* first free U_ID, let reserve space for a future system accounts */
 
 struct tp_data_s;
+
+
+typedef struct da_enlist_s
+{
+  int 	dae_host;
+  int	dae_change;
+} da_enlist_t;
 
 
 typedef struct db_activity_s
@@ -1596,17 +1694,73 @@ typedef struct db_activity_s
   int64	da_same_seg;
   int64	da_same_page;
   int64	da_same_parent;
+  int64	da_thread_time;
+  int64	da_thread_disk_wait;
+  int64	da_thread_cl_wait;
+  int64	da_thread_pg_wait;
   int64	da_cl_bytes;
+  int64	da_memory;
+  int64	da_max_memory;
+  int64	da_trans_rows; /* no of sets from non initial step of trans ops */
+  int64 *	da_nodes; /* array of src_sets, n_in, n_out, clocks */
+  da_enlist_t * 	da_fwd_enlist; /* string with host no and rw flag for each extra enlisted, when rec'd by coor lt makes sure these have a branch, else passed forward  */
+  int		da_nodes_fill;
   int	da_cl_messages;
   int	da_qp_thread;
   int	da_disk_reads;
   int	da_spec_disk_reads;
   int	da_lock_waits;
   int	da_lock_wait_msec;
+  int	da_batch_size_request;
   char		da_anytime_result; /* if set, this means the recipient has run out of time and should return an answer */
+  char	da_trans_partial; /* if transitive ops incomplete due to time or mem limit */
 } db_activity_t;
 
+
+struct cl_slice_s
+{
+  /* unit of movable storage, several per server if elastic, else 1:1 to host groups */
+  int	csl_id;
+  short	csl_threads; /* count of running threads scoped to this */
+  char	csl_is_local; /* copy of this slice hosted in this process */
+  char	csl_status;
+  cl_host_group_t *csl_chg;
+  cl_host_t *csl_primary; /* the host in the host group that gets primary upd/del and resolves locks and gets queries */
+  dbe_storage_t *csl_storage;
+  cluster_map_t *csl_clm;
+  db_activity_t csl_activity;
+};
+
+
+/* csl_status */
+#define CSL_OK 0
+#define CSL_NO_ENTRY 1
+
+
+typedef struct cl_call_stack_s
+{
+  uint32	clst_host;
+  uint32	clst_req_no;
+} cl_call_stack_t;
+
 #define SQL_ANYTIME "S1TAT"
+
+
+typedef struct _cl_aq_ctx
+{
+  /* in cluster when aq is used to do slices of a qf or dfg, this is the state that links the aq to the main context */
+  struct cll_in_box_s *	claq_result_clib;
+  struct cl_thread_s *	claq_main_clt;
+  struct cl_thread_s *	claq_reply_clt;
+  caddr_t *		claq_main_inst;
+  query_t *		claq_qr;
+  int64			claq_rc_w_id;
+  int64			claq_main_trx_no;
+  du_thread_t *	claq_rec_thread; /* if a claq becomes claq of parent due to wait interrupted by rec cm, this is the thread.  Use for debug to detect access to same claq from many threads */
+  char			claq_enlist; /* If parallel read over uncommitted state, set this to make all branch threads forward enlist */
+  char			claq_of_parent; /* if a qf runs on a dfg and a rec dfg comes inside a wait in the qf, there must be a claw in scope to know which clt queue.  So the former claq is left in scope for when the qf or dfg waits.  But this flag is set to mark that this is of the parent and does not determine where the response of a rec qf goes.  The innermost clt determines this */
+  char			claq_is_allocated; /* if copy by dfg thread starting another */
+} cl_aq_ctx_t;
 
 typedef struct client_connection_s
   {
@@ -1617,13 +1771,31 @@ typedef struct client_connection_s
     bitf_t			cli_is_log:1;
     bitf_t		cli_in_daq:2; /* running invoked by daq on local? autcommitting? For cluster, data in cli_clt */
     bitf_t 		cli_non_txn_insert:1;
+    bitf_t		cli_log_qi_stats:1;
+    bitf_t		cli_keep_csl:1;
+    bitf_t		cli_cl_dae_blob;
     char		cli_row_autocommit;
+    slice_id_t 		cli_slice;
     int			cli_n_to_autocommit;
+    cl_slice_t *	cli_csl;
+    cl_call_stack_t *	cli_cl_stack;
+    cl_aq_ctx_t *	cli_claq;
+    //caddr_t *		cli_main_inst; /* if the cli is a dfg slice branch, this is the main qi of the dfg on this host.  The main qi waits for all branches, so ref secure */
+    //struct cll_in_box_s *	cli_result_clib; /* for any thread of local qf or dfg, results go here */
     lock_trx_t *	cli_trx;
+    int64		cli_cl_start_ts;
+    int64		cli_run_clocks;
+    int64		cli_csl_start_ts;
     db_activity_t	cli_activity;
+    db_activity_t	cli_slice_activity;
     int			cli_anytime_started;
     int			cli_anytime_timeout;
     int			cli_anytime_checked;
+    int			cli_anytime_qf_started; /* inside qf/dfg, start time of the slice thread, know when to finish */
+    int 		cli_anytime_timeout_orig;
+    uint32		cli_compile_msec;
+    db_activity_t	cli_compile_activity;
+    dk_session_t *	cli_ql_strses;
     user_t *		cli_user;
     caddr_t 		cli_user_info;
     char *		cli_password;
@@ -1646,6 +1818,7 @@ typedef struct client_connection_s
 
     char			cli_support_row_count;
     char		cli_no_triggers;
+    int			cli_rpc_timeout;
     int			cli_version;
     caddr_t		cli_identity_value; /* last assigned identity col */
 
@@ -1676,7 +1849,7 @@ typedef struct client_connection_s
 #ifdef PLDBG
     pldbg_t *		cli_pldbg; /* debug session */
 #endif
-    long		cli_started_msec;
+    dtp_t	cli_start_dt[DT_LENGTH];
     struct icc_lock_s	*cli_icc_lock;	/* Pointer to an InterConnectionCommunication lock to be released at exit */
     dk_session_t	*cli_outp_worker; /* used by mono out-of-process hosting */
     dk_hash_t		*cli_module_attachments; /* used to enlist the hosted modules */
@@ -1687,9 +1860,16 @@ typedef struct client_connection_s
     uint32		cli_start_time;
     caddr_t *		cli_info;
     cl_thread_t *	cli_clt; /* if cli of a cluster server thread, this is the clt */
+    struct aq_request_s *	cli_aqr; /* if the cli is running an aq func, this is the aqr */
     dk_session_t *	cli_blob_ses_save; /* save the cli_session here for the time of reading b.blobs from cluster as if they were from client */
     struct xml_ns_2dict_s      *cli_ns_2dict;
+    dk_set_t		cli_dae_blobs;
   } client_connection_t;
+
+
+#define CLI_CLAQ_CK(cli)
+#define CLAQ_UNWIND_CK
+
 #define CLI_IN_DAQ 1 /* inside transactional daq.  Must resignal txn errors */
 #define CLI_IN_DAQ_AC 2 /* inside autocommitting daq.  May handle txn erros */
 
@@ -1859,7 +2039,7 @@ extern void cache_resources(void);
 void sqls_bif_init (void);
 
 extern float compiler_unit_msecs;
-void srv_calculate_sqlo_unit_msec (void);
+void srv_calculate_sqlo_unit_msec (char * stmt);
 
 
 
@@ -1890,4 +2070,11 @@ extern client_connection_t *autocheckpoint_cli;
 #define EXPLAIN_LINE_MAX_STR_FORMAT "%.200s"
 
 extern int enable_vec;
+
+#ifndef ITC_DFG_CK
+#define ks_set_dfg_queue(ks, inst, itc)
+#define ITC_DFG_CK(itc)
+#endif
+
+
 #endif /* _SQLNODE_H */

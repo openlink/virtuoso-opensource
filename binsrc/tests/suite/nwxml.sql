@@ -1,10 +1,10 @@
 --  
---  $Id$
+--  $Id: nwxml.sql,v 1.35.6.3.4.1 2013/01/02 16:14:45 source Exp $
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -151,6 +151,7 @@ select n from XML_TEXT where xpath_contains (XT_TEXT, '/*/category', n) and XT_F
 select count (*) from (XPATH '[__key __view "cat"] //*') n;
 echo both $if $equ $last[1] 85  "PASSED" "*** FAILED";
 echo both ": " $last[1] " in //* in view cat \n";
+
 
 select count (*) from (XPATH '[ __view "ord"] //*') n;
 echo both $if $equ $last[1] 5231  "PASSED" "*** FAILED";

@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -81,6 +81,13 @@
 			<owl:sameAs rdf:resource="{$docIRI}"/>
 		</rdf:Description>
 		<rdf:Description rdf:about="{$resourceURL}">
+                       	<opl:providedBy>
+                       		<foaf:Organization rdf:about="http://www.eventbrite.com#this">
+                       			<foaf:name>Eventbrite</foaf:name>
+                       			<foaf:homepage rdf:resource="http://www.eventbrite.com"/>
+                       		</foaf:Organization>
+                       	</opl:providedBy>
+
 			<rdf:type rdf:resource="&c;Vevent"/>
 			<xsl:if test="string-length(title) &gt; 0">
 				<c:summary>
@@ -138,6 +145,13 @@
    				<xsl:value-of select="vi:proxyIRI ($baseUri,'', $pos)"/>
    			</xsl:variable>
    			<rdf:Description rdf:about="{$res}">
+                         	<opl:providedBy>
+                         		<foaf:Organization rdf:about="http://www.eventbrite.com#this">
+                         			<foaf:name>Eventbrite</foaf:name>
+                         			<foaf:homepage rdf:resource="http://www.eventbrite.com"/>
+                         		</foaf:Organization>
+                         	</opl:providedBy>
+
 				<rdf:type rdf:resource="&tio;Ticket" />
    				<rdfs:label><xsl:value-of select="name"/></rdfs:label>
 				<dc:title><xsl:value-of select="name"/></dc:title>

@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -27,6 +27,7 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY sioct "http://rdfs.org/sioc/types#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -43,6 +44,7 @@
     xmlns:foaf="http://xmlns.com/foaf/0.1/"
     xmlns:vcard="http://www.w3.org/2001/vcard-rdf/3.0#"
     xmlns:c   ="http://www.w3.org/2002/12/cal/icaltzd#"
+    xmlns:rdfs="&rdfs;"
     xmlns:owl="http://www.w3.org/2002/07/owl#"
     xmlns:bibo="&bibo;"
     >

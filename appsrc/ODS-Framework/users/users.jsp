@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2007 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -48,27 +48,6 @@
 <%@ page import="org.apache.commons.fileupload.*" %>
 <%@ page import="org.apache.commons.fileupload.disk.*" %>
 <%@ page import="org.apache.commons.fileupload.servlet.*" %>
-<html>
-  <head>
-    <title>Virtuoso Web Applications</title>
-    <link rel="stylesheet" type="text/css" href="/ods/users/css/users.css" />
-    <link rel="stylesheet" type="text/css" href="/ods/default.css" />
-    <link rel="stylesheet" type="text/css" href="/ods/nav_framework.css" />
-    <link rel="stylesheet" type="text/css" href="/ods/typeahead.css" />
-    <link rel="stylesheet" type="text/css" href="/ods/ods-bar.css" />
-    <link rel="stylesheet" type="text/css" href="/ods/rdfm.css" />
-    <script type="text/javascript" src="/ods/users/js/users.js"></script>
-    <script type="text/javascript" src="/ods/common.js"></script>
-    <script type="text/javascript" src="/ods/typeahead.js"></script>
-    <script type="text/javascript" src="/ods/tbl.js"></script>
-    <script type="text/javascript" src="/ods/validate.js"></script>
-    <script type="text/javascript">
-      // OAT
-      var toolkitPath="/ods/oat";
-      var featureList = ["ajax", "json", "tab", "combolist", "calendar", "rdfmini", "grid", "graphsvg", "tagcloud", "map", "timeline", "anchor"];
-    </script>
-    <script type="text/javascript" src="/ods/oat/loader.js"></script>
-  </head>
   <%!
     XPathFactory factory = XPathFactory.newInstance();
     XPath xpath = factory.newXPath();
@@ -329,11 +308,13 @@
     String $_oidForm = getParameter(items, request, "oid-form");
     if ($_oidForm == null) {
       $_form = getParameter(items, request, "form");
+    if ($_form == null) {
       if ($_userName != null) {
         $_form = "user";
       } else {
         $_form = "login";
       }
+    }
     } else {
       if ($_oidForm.equals("lf"))
         $_form = "login";
@@ -347,12 +328,12 @@
     int $_formTab2 = 0;
     if (getParameter(items, request, "formTab2") != null)
       $_formTab2 = Integer.parseInt(getParameter(items, request, "formTab2"));
-    int $_formTab3 = 0;
-    if (getParameter(items, request, "formTab3") != null)
-      $_formTab3 = Integer.parseInt(getParameter(items, request, "formTab3"));
     String $_formMode = "";
     if (getParameter(items, request, "formMode") != null)
       $_formMode = getParameter(items, request, "formMode");
+  String $_host;
+  String $_hostLinks = "";
+  String $_userLinks = "";
 
     try
     {
@@ -461,10 +442,10 @@
                    httpParam("&", "properties", getParameter(items, request, "items"));
           $_retValue = httpRequest ("POST", "user.likes."+$_formMode, params);
           if ($_retValue.indexOf("<failed>") == 0)
-              {
-    		        $_document = createDocument($_retValue);
-                throw new Exception(xpathEvaluate($_document, "/failed/message"));
-              }
+          {
+		        $_document = createDocument($_retValue);
+            throw new Exception(xpathEvaluate($_document, "/failed/message"));
+          }
           $_formMode = "";
         }
         else if (getParameter(items, request, "pf_update057") != null)
@@ -516,11 +497,20 @@
         }
         else if (getParameter(items, request, "pf_update26") != null)
         {
+        String tmp = "";
+        if ("1".equals(getParameterDefault(items, request, "pf26_importFile", "0")))
+        {
+          tmp = getParameter(items, request, "pf26_file");
+        }
+        else
+        {
+          tmp = getParameter(items, request, "pf26_certificate");
+        }
           params = httpParam( "", "sid", $_sid) +
                    httpParam("&", "realm", $_realm) +
                    httpParam("&", "id", getParameter(items, request, "pf26_id")) +
-                   httpParam("&", "certificate", getParameter(items, request, "pf26_certificate")) +
-                   httpParam("&", "enableLogin", getParameter(items, request, "pf26_enableLogin"));
+                 httpParam("&", "certificate", tmp) +
+                 httpParam("&", "enableLogin", getParameterDefault(items, request, "pf26_enableLogin", "0"));
           $_retValue = httpRequest ("POST", "user.certificates."+$_formMode, params);
           if ($_retValue.indexOf("<failed>") == 0)
           {
@@ -542,7 +532,7 @@
           Enumeration keys;
           try {
             if ((($_formTab == 0) && ($_formTab2 == 3)) || (($_formTab == 1) && ($_formTab2 == 2)))
-                    {
+            {
               String accountType = "P";
               prefix = "x4";
               if (($_formTab == 1) && ($_formTab2 == 2))
@@ -553,7 +543,7 @@
               params = httpParam("", "sid", $_sid) + httpParam ("&", "realm", $_realm) + httpParam ("&", "type", accountType);
               $_retValue = httpRequest ("POST", "user.onlineAccounts.delete", params);
               if ($_retValue.indexOf("<failed>") == 0)
-                    {
+              {
     		        $_document = createDocument($_retValue);
                 throw new Exception(xpathEvaluate($_document, "/failed/message"));
               }
@@ -568,7 +558,8 @@
                            httpParam("&", "realm", $_realm) +
                            httpParam("&", "type", accountType) +
                            httpParam("&", "name", getParameter(items, request, key)) +
-                           httpParam("&", "url", getParameter(items, request, prefix+"_fld_2_"+suffix));
+                         httpParam("&", "url", getParameter(items, request, prefix+"_fld_2_"+suffix)) +
+                         httpParam("&", "uri", getParameter(items, request, prefix+"_fld_3_"+suffix));
                   $_retValue = httpRequest ("POST", "user.onlineAccounts.new", params);
                   if ($_retValue.indexOf("<failed>") == 0)
                   {
@@ -584,10 +575,10 @@
               params = httpParam( "", "sid", $_sid) + httpParam ("&", "realm", $_realm);
               $_retValue = httpRequest ("POST", "user.bioEvents.delete", params);
               if ($_retValue.indexOf("<failed>") == 0)
-          {
-  		        $_document = createDocument($_retValue);
-              throw new Exception(xpathEvaluate($_document, "/failed/message"));
-          }
+              {
+    		        $_document = createDocument($_retValue);
+                throw new Exception(xpathEvaluate($_document, "/failed/message"));
+              }
               keys = request.getParameterNames();
       		    while (keys.hasMoreElements() )
       		    {
@@ -610,7 +601,7 @@
       		    }
             }
             else if (($_formTab == 2) && ($_formTab2 == 0))
-              {
+            {
               params = httpParam( "", "sid", $_sid) +
                        httpParam("&", "realm", $_realm) +
                        httpParam("&", "new_password", getParameter(items, request, "pf_newPassword"));
@@ -635,6 +626,8 @@
                 if ($_formTab2 == 0)
                 {
                   // Import
+                  if ("1".equals(getParameter(items, request, "cb_item_i_photo")))
+                    params += httpParam ("&", "photo", getParameter(items, request, "i_photo"));
                   if ("1".equals(getParameter(items, request, "cb_item_i_name")))
                     params += httpParam ("&", "nickName", getParameter(items, request, "i_nickName"));
                   if ("1".equals(getParameter(items, request, "cb_item_i_title")))
@@ -667,6 +660,18 @@
                     params += httpParam ("&", "homeLatitude", getParameter(items, request, "i_homelat"));
                   if ("1".equals(getParameter(items, request, "cb_item_i_homelng")))
                     params += httpParam ("&", "homeLongitude", getParameter(items, request, "i_homelng"));
+                if ("1".equals(getParameter(items, request, "cb_item_i_homeCountry")))
+                  params += httpParam ("&", "homeCountry", getParameter(items, request, "i_homeCountry"));
+                if ("1".equals(getParameter(items, request, "cb_item_i_homeState")))
+                  params += httpParam ("&", "homeState", getParameter(items, request, "i_homeState"));
+                if ("1".equals(getParameter(items, request, "cb_item_i_homeCity")))
+                  params += httpParam ("&", "homeCity", getParameter(items, request, "i_homeCity"));
+                if ("1".equals(getParameter(items, request, "cb_item_i_homeCode")))
+                  params += httpParam ("&", "homeCode", getParameter(items, request, "i_homeCode"));
+                if ("1".equals(getParameter(items, request, "cb_item_i_homeAddress1")))
+                  params += httpParam ("&", "homeAddress1", getParameter(items, request, "i_homeAddress1"));
+                if ("1".equals(getParameter(items, request, "cb_item_i_homeAddress2")))
+                  params += httpParam ("&", "homeAddress2", getParameter(items, request, "i_homeAddress2"));
                   if ("1".equals(getParameter(items, request, "cb_item_i_homePhone")))
                     params += httpParam ("&", "homePhone", getParameter(items, request, "i_homePhone"));
                   if ("1".equals(getParameter(items, request, "cb_item_i_businessOrganization")))
@@ -888,19 +893,7 @@
                   params +=
                        httpParam ("&", "securityOpenID", getParameter(items, request, "pf_securityOpenID"));
 
-                if ($_formTab2 == 3)
-                {
-                  if (getParameter(items, request, "pf_clear") != null)
-                  {
-                    params +=
-                         httpParam ("&", "securityFacebookID", "");
-                  } else {
-                  params +=
-                       httpParam ("&", "securityFacebookID", getParameter(items, request, "pf_securityFacebookID"));
-                  }
-                }
-
-                if ($_formTab2 == 4)
+              if ($_formTab2 == 3)
                   params +=
                        httpParam ("&", "securitySiocLimit", getParameter(items, request, "pf_securitySiocLimit"));
               }
@@ -1019,21 +1012,73 @@
       {
         $_sid = "";
       }
+
+    $_host = (new URL(request.getScheme(), request.getServerName(), request.getServerPort(), "")).toString();
+    $_hostLinks =
+      "    <link rel=\"openid.server\" title=\"OpenID Server\" href=\"[HOST]/openid\" />\n" +
+      "    <link rel=\"openid2.provider\" title=\"OpenID v2 Server\" href=\"[HOST]/openid\" />";
+    $_hostLinks = $_hostLinks.replace ("[HOST]", $_host);
+
+    if ($_userName != null) {
+      $_userLinks =
+        "    <link rel=\"meta\" type=\"application/rdf+xml\" title=\"SIOC\" href=\"[HOST]/dataspace/[USER]/sioc.rdf\" />\n" +
+        "    <link rel=\"meta\" type=\"application/rdf+xml\" title=\"FOAF\" href=\"[HOST]/dataspace/person/[USER]/foaf.rdf\" />\n" +
+        "    <link rel=\"meta\" type=\"text/rdf+n3\" title=\"FOAF\" href=\"[HOST]/dataspace/person/[USER]/foaf.n3\" />\n" +
+        "    <link rel=\"meta\" type=\"application/json\" title=\"FOAF\" href=\"[HOST]/dataspace/person/[USER]/foaf.json\" />\n" +
+        "    <link rel=\"http://xmlns.com/foaf/0.1/primaryTopic\"  title=\"About\" href=\"[HOST]/dataspace/person/[USER]#this\" />\n" +
+        "    <link rel=\"schema.dc\" href=\"http://purl.org/dc/elements/1.1/\" />\n" +
+        "    <meta name=\"dc.language\" content=\"en\" scheme=\"rfc1766\" />\n" +
+        "    <meta name=\"dc.creator\" content=\"[USER]\" />\n" +
+        "    <meta name=\"dc.description\" content=\"ODS HTML [USER]'s page\" />\n" +
+        "    <meta name=\"dc.title\" content=\"ODS HTML [USER]'s page\" />\n" +
+        "    <link rev=\"describedby\" title=\"About\" href=\"[HOST]/dataspace/person/[USER]#this\" />\n" +
+        "    <link rel=\"schema.geo\" href=\"http://www.w3.org/2003/01/geo/wgs84_pos#\" />\n" +
+        "    <meta http-equiv=\"X-XRDS-Location\" content=\"[HOST]/dataspace/[USER]/yadis.xrds\" />\n" +
+        "    <meta http-equiv=\"X-YADIS-Location\" content=\"[HOST]/dataspace/[USER]/yadis.xrds\" />\n" +
+        "    <link rel=\"meta\" type=\"application/xml+apml\" title=\"APML 0.6\" href=\"[HOST]/dataspace/[USER]/apml.xml\" />\n" +
+        "    <link rel=\"alternate\" type=\"application/atom+xml\" title=\"OpenSocial Friends\" href=\"[HOST]/feeds/people/[USER]/friends\" />";
+      $_userLinks = $_userLinks.replace ("[HOST]", $_host);
+      $_userLinks = $_userLinks.replace ("[USER]", $_userName);
+    }
     }
     catch (Exception e)
     {
       $_error = "Failure: " + e.getMessage();
     }
   %>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>ODS user's pages</title>
+<% out.print($_hostLinks); %>
+<% out.print($_userLinks); %>
+    <link rel="stylesheet" type="text/css" href="/ods/users/css/users.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/default.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/typeahead.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/ods-bar.css" />
+    <link rel="stylesheet" type="text/css" href="/ods/rdfm.css" />
+    <script type="text/javascript" src="/ods/users/js/users.js"></script>
+    <script type="text/javascript" src="/ods/common.js"></script>
+    <script type="text/javascript" src="/ods/facebook.js"></script>
+    <script type="text/javascript" src="/ods/typeahead.js"></script>
+    <script type="text/javascript" src="/ods/tbl.js"></script>
+    <script type="text/javascript" src="/ods/validate.js"></script>
+    <script type="text/javascript">
+      // OAT
+      var toolkitPath="/ods/oat";
+      var featureList = ["ajax", "json", "tab", "combolist", "calendar", "rdfmini", "grid", "graphsvg", "tagcloud", "map", "timeline", "anchor"];
+    </script>
+    <script type="text/javascript" src="/ods/oat/loader.js"></script>
+  </head>
   <body>
-    <form name="page_form" id="page_form" method="post" enctype="<% out.print(($_form.equals("profile") && ($_formTab == 0) && ($_formTab2 == 1))? "multipart/form-data": "application/x-www-form-urlencoded"); %>">
+    <div id="fb-root"></div>
+    <form name="page_form" id="page_form" method="post" enctype="<% out.print(($_form.equals("profile") && ((($_formTab == 0) && ($_formTab2 == 1)) || (($_formTab == 2) && ($_formTab2 == 5))))? "multipart/form-data": "application/x-www-form-urlencoded"); %>">
       <input type="hidden" name="mode" id="mode" value="jsp" />
       <input type="hidden" name="sid" id="sid" value="<% out.print($_sid); %>" />
       <input type="hidden" name="realm" id="realm" value="<% out.print($_realm); %>" />
       <input type="hidden" name="form" id="form" value="<% out.print($_form); %>" />
       <input type="hidden" name="formTab" id="formTab" value="<% out.print($_formTab); %>" />
       <input type="hidden" name="formTab2" id="formTab2" value="<% out.print($_formTab2); %>" />
-      <input type="hidden" name="formTab3" id="formTab3" value="<% out.print($_formTab3); %>" />
       <input type="hidden" name="formMode" id="formMode" value="<% out.print($_formMode); %>" />
       <input type="hidden" name="items" id="items" value="" />
       <input type="hidden" name="securityNo" id="securityNo" value="" />
@@ -1088,19 +1133,20 @@
                   Please identify yourself
                 </div>
                 <ul id="lf_tabs" class="tabs">
-                  <li id="lf_tab_0" title="Digest">Digest</li>
+                  <li id="lf_tab_0" title="Digest" style="display: none;">Digest</li>
+                  <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
                   <li id="lf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="lf_tab_2" title="Facebook" style="display: none;">Facebook</li>
-                  <li id="lf_tab_3" title="WebID" style="display: none;">WebID</li>
                   <li id="lf_tab_4" title="Twitter" style="display: none;">Twitter</li>
                   <li id="lf_tab_5" title="LinkedIn" style="display: none;">LinkedIn</li>
+                  <li id="lf_tab_6" style="display: none;"></li>
                 </ul>
                 <div style="min-height: 120px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="lf_content"></div>
-                  <div id="lf_page_0" class="tabContent" >
+                  <div id="lf_page_0" class="tabContent" style="display: none;">
                 <table class="form" cellspacing="5">
                   <tr>
-                    <th width="30%">
+                        <th width="20%">
                           <label for="lf_uid">User ID</label>
                     </th>
                         <td>
@@ -1117,10 +1163,10 @@
                   </tr>
                     </table>
                   </div>
-                  <div id="lf_page_1" class="tabContent" style="display: none">
+                  <div id="lf_page_1" class="tabContent" style="display: none;">
                     <table class="form" cellspacing="5">
                   <tr>
-                        <th width="30%">
+                        <th width="20%">
                           <label for="lf_openId">OpenID URL</label>
                     </th>
                         <td>
@@ -1129,28 +1175,34 @@
                   </tr>
                     </table>
                   </div>
-                  <div id="lf_page_2" class="tabContent" style="display: none">
+                  <div id="lf_page_2" class="tabContent" style="display: none;">
                     <table class="form" cellspacing="5">
                   <tr>
-                        <th width="30%">
+                        <th width="20%">
                     </th>
                         <td>
                           <span id="lf_facebookData" style="min-height: 20px;"></span>
                           <br />
-                          <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
-                          <fb:login-button autologoutlink="true"></fb:login-button>
+                          <fb:login-button autologoutlink="true" xmlns:fb="http://www.facebook.com/2008/fbml"></fb:login-button>
                     </td>
                   </tr>
                 </table>
                   </div>
-                  <div id="lf_page_3" class="tabContent" style="display: none">
+                  <div id="lf_page_3" class="tabContent" style="display: none;">
                     <table id="lf_table_3" class="form" cellspacing="5">
+                      <tr id="lf_table_3_throbber">
+                        <th width="20%">
+                        </th>
+                        <td>
+                          <img alt="Import WebID Data" src="/ods/images/oat/Ajax_throbber.gif" />
+                        </td>
+                      </tr>
                     </table>
                   </div>
-                  <div id="lf_page_4" class="tabContent" style="display: none">
+                  <div id="lf_page_4" class="tabContent" style="display: none;">
                     <table id="lf_table_4" class="form" cellspacing="5">
                       <tr>
-                        <th width="30%">
+                        <th width="20%">
                         </th>
                         <td>
                           <span id="lf_twitter" style="min-height: 20px;"></span>
@@ -1173,6 +1225,15 @@
                       </tr>
                     </table>
                   </div>
+                  <div id="lf_page_6" class="tabContent" style="display: none;">
+                    <table id="lf_table_6" class="form" cellspacing="5" width="100%">
+                      <tr>
+                        <td style="text-align: center;">
+                          <b>The login is not allowed!</b>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
                 </div>
                 <div class="footer">
                   <input type="submit" name="lf_login" value="Login" id="lf_login" onclick="javascript: return lfLoginSubmit();" />
@@ -1189,31 +1250,32 @@
                   User Registration
                 </div>
                 <ul id="rf_tabs" class="tabs">
-                  <li id="rf_tab_0" title="Digest">Digest</li>
+                  <li id="rf_tab_0" title="Digest" style="display: none;">Digest</li>
+                  <li id="rf_tab_3" title="WebID" style="display: none;">WebID</li>
                   <li id="rf_tab_1" title="OpenID" style="display: none;">OpenID</li>
                   <li id="rf_tab_2" title="Facebook" style="display: none;">Facebook</li>
-                  <li id="rf_tab_3" title="WebID" style="display: none;">WebID</li>
                   <li id="rf_tab_4" title="Twitter" style="display: none;">Twitter</li>
                   <li id="rf_tab_5" title="LinkedIn" style="display: none;">LinkedIn</li>
+                  <li id="rf_tab_6" style="display: none;"></li>
                 </ul>
                 <div style="min-height: 135px; border: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                   <div id="rf_content"></div>
-                  <div id="rf_page_0" class="tabContent" >
+                  <div id="rf_page_0" class="tabContent" style="display: none;">
                     <table id="rf_table_0" class="form" cellspacing="5">
                       <tr>
-                        <th width="30%">
-                          <label for="rf_uid">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                        <th width="20%">
+                          <label for="rf_uid_0">Login Name<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
                         <td>
-                          <input type="text" name="rf_uid" value="" id="rf_uid" style="width: 150px;" />
+                          <input type="text" name="rf_uid_0" value="" id="rf_uid_0" style="width: 150px;" />
                         </td>
                       </tr>
                       <tr>
                         <th>
-                          <label for="rf_email">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
+                          <label for="rf_email_0">E-mail<div style="font-weight: normal; display:inline; color:red;"> *</div></label>
                         </th>
                         <td>
-                          <input type="text" name="rf_email" value="" id="rf_email" size="40"/>
+                          <input type="text" name="rf_email_0" value="" id="rf_email_0" style="width: 300px;" />
                         </td>
                       </tr>
                       <tr>
@@ -1234,10 +1296,10 @@
                       </tr>
                     </table>
                   </div>
-                  <div id="rf_page_1" class="tabContent" style="display: none">
+                  <div id="rf_page_1" class="tabContent" style="display: none;">
                     <table id="rf_table_1" class="form" cellspacing="5">
                       <tr>
-                        <th width="30%">
+                        <th width="20%">
                           <label for="rf_openId">OpenID</label>
                         </th>
                         <td>
@@ -1246,28 +1308,34 @@
                       </tr>
                     </table>
                   </div>
-                  <div id="rf_page_2" class="tabContent" style="display: none">
+                  <div id="rf_page_2" class="tabContent" style="display: none;">
                     <table id="rf_table_2" class="form" cellspacing="5">
                       <tr>
-                        <th width="30%">
+                        <th width="20%">
                         </th>
                         <td>
                           <span id="rf_facebookData" style="min-height: 20px;"></span>
                           <br />
-                          <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
-                          <fb:login-button autologoutlink="true"></fb:login-button>
+                          <fb:login-button autologoutlink="true" xmlns:fb="http://www.facebook.com/2008/fbml"></fb:login-button>
                         </td>
                       </tr>
                     </table>
                   </div>
-                  <div id="rf_page_3" class="tabContent" style="display: none">
+                  <div id="rf_page_3" class="tabContent" style="display: none;">
                     <table id="rf_table_3" class="form" cellspacing="5">
+                      <tr id="rf_table_3_throbber">
+                        <th width="20%">
+                        </th>
+                        <td>
+                          <img alt="Import WebID Data" src="/ods/images/oat/Ajax_throbber.gif" />
+                        </td>
+                      </tr>
                     </table>
                   </div>
-                  <div id="rf_page_4" class="tabContent" style="display: none">
+                  <div id="rf_page_4" class="tabContent" style="display: none;">
                     <table id="rf_table_4" class="form" cellspacing="5">
                       <tr>
-                        <th width="30%">
+                        <th width="20%">
                         </th>
                         <td>
                           <span id="rf_twitter" style="min-height: 20px;"></span>
@@ -1290,11 +1358,20 @@
                       </tr>
                     </table>
                   </div>
+                  <div id="rf_page_6" class="tabContent" style="display: none;">
+                    <table id="rf_table_6" class="form" cellspacing="5" width="100%">
+                      <tr>
+                        <td style="text-align: center;">
+                          <b>The registration is not allowed!</b>
+                        </td>
+                      </tr>
+                    </table>
+                  </div>
                 </div>
                 <div>
                   <table class="form" cellspacing="5">
                     <tr>
-                      <th width="30%">
+                      <th width="20%">
                       </th>
                       <td>
                         <input type="checkbox" name="rf_is_agreed" value="1" id="rf_is_agreed"/><label for="rf_is_agreed">I agree to the <a href="/ods/terms.html" target="_blank">Terms of Service</a>.</label>
@@ -1303,6 +1380,7 @@
                   </table>
                 </div>
                 <div class="footer" id="rf_login_5">
+                  <input type="button" id="rf_check" name="rf_check" value="Check Availabilty" onclick="javascript: return rfCheckAvalability();" />
                   <input type="button" id="rf_signup" name="rf_signup" value="Sign Up" onclick="javascript: return rfSignupSubmit();" />
                 </div>
               </div>
@@ -1350,12 +1428,23 @@
                   %>
                   <div id="pf_page_0" class="tabContent" style="display:none;">
                     <ul id="pf_tabs_0" class="tabs">
+                      <div id="pf_tabs_0_row_0" style="margin-top: 4px;">
                       <li id="pf_tab_0_0">Profile Import</li>
                       <li id="pf_tab_0_1">Main</li>
                       <li id="pf_tab_0_2">Address</li>
                       <li id="pf_tab_0_3">Online Accounts</li>
                       <li id="pf_tab_0_4">Messaging Services</li>
-                      <li id="pf_tab_0_5">Others</li>
+                      <li id="pf_tab_0_5">Biographical Events</li>
+                      </div>
+                      <div id="pf_tabs_0_row_1" style="margin-top: 4px;">
+                      <li id="pf_tab_0_6">Owns</li>
+                      <li id="pf_tab_0_7">Favorite Things</li>
+                      <li id="pf_tab_0_8">Creator Of</li>
+                      <li id="pf_tab_0_9">My Offers</li>
+                      <li id="pf_tab_0_10">Offers I Seek</li>
+                      <li id="pf_tab_0_11">Likes & DisLikes</li>
+                      <li id="pf_tab_0_12">Social Network</li>
+                      </div>
                     </ul>
                     <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                       <%
@@ -1363,15 +1452,15 @@
                       {
                       %>
                       <div id="pf_page_0_0" class="tabContent" style="display:none;">
-                        <table class="form" cellspacing="5">
-                          <tr>
-                            <th>
+                    <table class="form" cellspacing="5">
+                      <tr>
+                        <th>
                               <label for="pf_foaf">Profile Document URL</label>
                             </th>
                             <td>
                               <input type="text" name="pf_foaf" value="" id="pf_foaf" style="width: 400px;" />
                               <input type="button" value="Import" onclick="javascript: pfGetFOAFData($v('pf_foaf')); return false;" class="button" />
-                              <img id="pf_import_image" alt="Import FOAF Data" src="/ods/images/oat/Ajax_throbber.gif" style="display: none" />
+                              <img id="pf_import_image" alt="Import FOAF Data" src="/ods/images/oat/Ajax_throbber.gif" style="display: none;" />
                             </td>
                           </tr>
                         </table>
@@ -1394,6 +1483,12 @@
                       %>
                       <div id="pf_page_0_1" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
+                          <tr>
+                            <th>Account deactivation</th>
+                            <td>
+                              <input type="button" value="Deactivate" onclick="return userDisable('pf_loginName');" />
+                            </td>
+                          </tr>
                           <tr>
                             <th>
                               <label for="pf_loginName">Login Name</label>
@@ -1666,16 +1761,16 @@
                                   <td valign="top" nowrap="nowrap">
                                     <span class="button pointer" onclick="TBL.createRow('x3', null, {fld_1: {className: '_validate_ _url_ _canEmpty_'}, fld_2: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                                     <select name="pf_acl_interests" id="pf_acl_interests">
-                                <%
-                                  {
+                                      <%
+                                        {
                                           String S = xpathEvaluate($_acl, "/acl/interests");
                                           for (int N = 0; N < $_ACL.length; N += 2)
                                             out.print("<option value=\"" + $_ACL[N+1] + "\" " + (($_ACL[N+1].equals(S)) ? (" selected=\"selected\""): ("")) + ">" + $_ACL[N] + "</option>");
-                                  }
-                                %>
-                              </select>
-                            </td>
-                          </tr>
+                                        }
+                                      %>
+                                    </select>
+                                  </td>
+                                </tr>
                               </table>
                         </td>
                       </tr>
@@ -1969,9 +2064,9 @@
                       %>
                       <div id="pf_page_0_3" class="tabContent" style="display:none;">
                         <input type="hidden" name="c_nick" value="<% out.print(xpathEvaluate($_document, "/user/nickName")); %>" id="c_nick" />
-                        <table class="form" cellspacing="5">
+                    <table class="form" cellspacing="5">
                       <tr>
-                            <td width="600px">
+                            <td width="800px">
                               <table id="x4_tbl" class="listing">
                                 <thead>
                                   <tr class="listing_header_row">
@@ -1981,6 +2076,9 @@
                                     <th>
                                       Member Home Page URI
                                     </th>
+                                    <th>
+                                      Account URI
+                                    </th>
                                     <th width="65px">
                                       Action
                                     </th>
@@ -1988,12 +2086,12 @@
                                 </thead>
                                 <tr id="x4_tr_no" style="display: none;"><td colspan="3"><b>No Services</b></td></tr>
                                 <script type="text/javascript">
-                                  OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowOnlineAccounts("x4", "P", function(prefix, val0, val1, val2){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 10, value: val1}, fld_2: {value: val2, className: '_validate_ _uri_ _canEmpty_'}});});});
+                                  OAT.MSG.attach(OAT, "PAGE_LOADED", function (){pfShowOnlineAccounts("x4", "P", function(prefix, val0, val1, val2, val3){TBL.createRow(prefix, null, {id: val0, fld_1: {mode: 10, value: val1}, fld_2: {value: val2, className: '_validate_ _uri_ _canEmpty_'}, fld_3: {value: val3}});});});
                                 </script>
                               </table>
                             </td>
                             <td valign="top" nowrap="1">
-                              <span class="button pointer" onclick="TBL.createRow('x4', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _uri_ _canEmpty_'}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
+                              <span class="button pointer" onclick="TBL.createRow('x4', null, {fld_1: {mode: 10}, fld_2: {className: '_validate_ _uri_ _canEmpty_'}, fld_3: {}});"><img class="button" src="/ods/images/icons/add_16.png" border="0" alt="Add Row" title="Add Row" /> Add</span>
                         </td>
                       </tr>
                         </table>
@@ -2102,22 +2200,6 @@
                       {
                       %>
                       <div id="pf_page_0_5" class="tabContent" style="display:none;">
-                        <ul id="pf_tabs_0_5" class="tabs">
-                          <li id="pf_tab_0_5_0">Biographical Events</li>
-                          <li id="pf_tab_0_5_1">Owns</li>
-                          <li id="pf_tab_0_5_2">Favorite Things</li>
-                          <li id="pf_tab_0_5_3">Creator Of</li>
-                          <li id="pf_tab_0_5_4">My Offers</li>
-                          <li id="pf_tab_0_5_5">Offers I Seek</li>
-                          <li id="pf_tab_0_5_6">Likes & DisLikes</li>
-                          <li id="pf_tab_0_5_7">Social Network</li>
-                        </ul>
-                        <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
-                          <%
-                          if ($_formTab3 == 0)
-                          {
-                          %>
-                          <div id="pf_page_0_5_0" class="tabContent" style="display:none;">
                         <table class="form" cellspacing="5">
                           <tr>
                             <td width="600px">
@@ -2152,10 +2234,10 @@
                       </div>
                       <%
                           }
-                          if ($_formTab3 == 1)
+                      if ($_formTab2 == 6)
                           {
                           %>
-                          <div id="pf_page_0_5_1" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_6" class="tabContent" style="display:none;">
                             <h3>Owns</h3>
                             <%
                               if ($_formMode == "")
@@ -2248,10 +2330,10 @@
                           </div>
                           <%
                           }
-                          if ($_formTab3 == 2)
+                      if ($_formTab2 == 7)
                         {
                       %>
-                          <div id="pf_page_0_5_2" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_7" class="tabContent" style="display:none;">
                         <h3>Favorites</h3>
                         <%
                           if ($_formMode == "")
@@ -2338,10 +2420,10 @@
                       </div>
                       <%
                         }
-                          if ($_formTab3 == 3)
+                      if ($_formTab2 == 8)
                         {
                       %>
-                          <div id="pf_page_0_5_3" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_8" class="tabContent" style="display:none;">
                         <h3>Creator Of</h3>
                         <%
                           if ($_formMode == "")
@@ -2432,10 +2514,10 @@
                       </div>
                       <%
                         }
-                          if ($_formTab3 == 4)
+                      if ($_formTab2 == 9)
                         {
                       %>
-                          <div id="pf_page_0_5_4" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_9" class="tabContent" style="display:none;">
                         <h3>My Offers</h3>
                         <%
                           if ($_formMode == "")
@@ -2546,10 +2628,10 @@
                       </div>
                       <%
                         }
-                          if ($_formTab3 == 5)
+                      if ($_formTab2 == 10)
                         {
                       %>
-                          <div id="pf_page_0_5_5" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_10" class="tabContent" style="display:none;">
                         <h3>Offers I Seek</h3>
                         <%
                           if ($_formMode == "")
@@ -2660,10 +2742,10 @@
                       </div>
                       <%
                         }
-                          if ($_formTab3 == 6)
+                      if ($_formTab2 == 11)
                         {
                       %>
-                          <div id="pf_page_0_5_6" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_11" class="tabContent" style="display:none;">
                         <h3>Likes &amp; DisLikes</h3>
                         <%
                           if ($_formMode == "")
@@ -2794,10 +2876,10 @@
                           </div>
                           <%
                           }
-                          if ($_formTab3 == 7)
+                      if ($_formTab2 == 12)
                           {
                           %>
-                          <div id="pf_page_0_5_7" class="tabContent" style="display:none;">
+                      <div id="pf_page_0_12" class="tabContent" style="display:none;">
                             <h3>Knows</h3>
                             <%
                               if ($_formMode.equals(""))
@@ -2836,7 +2918,7 @@
                       		        </th>
                                   <td>
                                     <input type="text" class="_validate_ _uri_" size="100" value="" id="k_import" name="k_import">
-                                    <input type="button" class="button" onclick="javascript: knowsData(); return false;" value="Download">
+                                    <input type="button" class="button" onclick="javascript: knowsData(); return false;" value="Retrieve">
                                     <img style="display: none;" src="/ods/images/oat/Ajax_throbber.gif" alt="Import knows URIs" id="k_import_image">
                                   </td>
                                 </tr>
@@ -2863,7 +2945,7 @@
                                       <tbody>
                                         <tr id="k_tr_no">
                                            <td colspan="3">
-                                             <b>No downloaded items</b>
+                                             <b>No retrieved items</b>
                                            </td>
                                         </tr>
                                       </tbody>
@@ -2927,11 +3009,6 @@
                           </div>
                           <%
                           }
-                          %>
-                        </div>
-                      </div>
-                      <%
-                      }
                       if ($_formTab2 < 5)
                       {
                       %>
@@ -3036,8 +3113,8 @@
                         <td>
                           <select name="pf_businessCareer" id="pf_businessCareer" style="width: 220px;">
                                 <option></option>
-                                <%
-                                  {
+                            <%
+                              {
                                 String[] V = {"Job seeker-Permanent", "Job seeker-Temporary", "Job seeker-Temp/perm", "Employed-Unavailable", "Employer", "Agency", "Resourcing supplier"};
                                 String S = xpathEvaluate($_document, "/user/businessCareer");
                                 for (int N = 0; N < V.length; N++)
@@ -3050,12 +3127,12 @@
                                   outACLOptions (out, "/acl/businessCareer");
                                 %>
                               </select>
-                            </td>
-                          </tr>
-                          <tr>
+                        </td>
+                      </tr>
+                      <tr>
                         <th>
                           <label for="pf_businessEmployees">No. of Employees</label>
-                            </th>
+                        </th>
                         <td>
                           <select name="pf_businessEmployees" id="pf_businessEmployees" style="width: 220px;">
                                 <option></option>
@@ -3073,12 +3150,12 @@
                                   outACLOptions (out, "/acl/businessEmployees");
                                 %>
                               </select>
-                            </td>
-                          </tr>
-                          <tr>
-                            <th>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
                           <label for="pf_businessVendor">Are you a technology vendor</label>
-                            </th>
+                        </th>
                         <td>
                           <select name="pf_businessVendor" id="pf_businessVendor" style="width: 220px;">
                                 <option></option>
@@ -3096,12 +3173,12 @@
                                   outACLOptions (out, "/acl/businessVendor");
                                 %>
                               </select>
-                            </td>
-                          </tr>
-                          <tr>
-                            <th>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
                           <label for="pf_businessService">If so, what technology and/or service do you provide?</label>
-                            </th>
+                        </th>
                         <td>
                           <select name="pf_businessService" id="pf_businessService" style="width: 220px;">
                                 <option></option>
@@ -3119,12 +3196,12 @@
                                   outACLOptions (out, "/acl/businessService");
                                 %>
                               </select>
-                            </td>
-                          </tr>
-                          <tr>
-                            <th>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
                           <label for="pf_businessOther">Other Technology service</label>
-                            </th>
+                        </th>
                         <td>
                               <input type="text" name="pf_businessOther" value="<% out.print(xpathEvaluate($_document, "/user/businessOther")); %>" id="pf_businessOther" style="width: 216px;" />
                               <select name="pf_acl_businessOther" id="pf_acl_businessOther">
@@ -3132,12 +3209,12 @@
                                   outACLOptions (out, "/acl/businessOther");
                                 %>
                               </select>
-                            </td>
-                          </tr>
-                          <tr>
-                            <th>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>
                           <label for="pf_businessNetwork">Importance of OpenLink Network for you</label>
-                            </th>
+                        </th>
                         <td>
                               <input type="text" name="pf_businessNetwork" value="<% out.print(xpathEvaluate($_document, "/user/businessNetwork")); %>" id="pf_businessNetwork" style="width: 216px;" />
                               <select name="pf_acl_businessNetwork" id="pf_acl_businessNetwork">
@@ -3145,13 +3222,13 @@
                                   outACLOptions (out, "/acl/businessNetwork");
                                 %>
                               </select>
-                            </td>
-                          </tr>
-                          <tr>
+                        </td>
+                      </tr>
+                      <tr>
                         <th>
                           <label for="pf_businessResume">Resume</label>
                         </th>
-                            <td>
+                        <td>
                           <textarea name="pf_businessResume" id="pf_businessResume" style="width: 400px;"><% out.print(xpathEvaluate($_document, "/user/businessResume")); %></textarea>
                               <select name="pf_acl_businessResume" id="pf_acl_businessResume">
                                 <%
@@ -3504,10 +3581,9 @@
                       <li id="pf_tab_2_0" title="Password">Password</li>
                       <li id="pf_tab_2_1" title="Password Recovery">Password Recovery</li>
                       <li id="pf_tab_2_2" title="OpenID">OpenID</li>
-                      <li id="pf_tab_2_3" title="Facebook" style="display:none;">Facebook</li>
-                      <li id="pf_tab_2_4" title="Limits">Limits</li>
-                      <li id="pf_tab_2_5" title="Certificate Generator" style="display:none;">Certificate Generator</li>
-                      <li id="pf_tab_2_6" title="X.509 Certificates">X.509 Certificates</li>
+                      <li id="pf_tab_2_3" title="Limits">Limits</li>
+                      <li id="pf_tab_2_4" title="Certificate Generator" style="display:none;">Certificate Generator</li>
+                      <li id="pf_tab_2_5" title="X.509 Certificates">X.509 Certificates</li>
                     </ul>
                     <div style="min-height: 180px; min-width: 650px; border-top: 1px solid #aaa; margin: -13px 5px 5px 5px;">
                       <%
@@ -3628,40 +3704,6 @@
                         <table class="form" cellspacing="5">
                       <tr>
                             <th>
-                              Saved Facebook ID
-                        </th>
-                            <td>
-                              <%
-                                if ((xpathEvaluate($_document, "/user/securityFacebookID") != null) && (xpathEvaluate($_document, "/user/securityFacebookID") != ""))
-                                {
-                                  out.print(xpathEvaluate($_document, "/user/securityFacebookName"));
-                                } else {
-                                  out.print("not yet");
-                                }
-                              %>
-                            </td>
-                      </tr>
-                      <tr>
-                        <th>
-                        </th>
-                        <td>
-                              <span id="pf_facebookData" style="min-height: 20px;"></span>
-                              <br />
-                              <script src="http://static.ak.connect.facebook.com/js/api_lib/v0.4/FeatureLoader.js.php" type="text/javascript"></script>
-                              <fb:login-button autologoutlink="true"></fb:login-button>
-                        </td>
-                      </tr>
-                        </table>
-                      </div>
-                      <%
-                      }
-                      if ($_formTab2 == 4)
-                      {
-                      %>
-                      <div id="pf_page_2_4" class="tabContent" style="display:none;">
-                        <table class="form" cellspacing="5">
-                      <tr>
-                            <th>
                               <label for="pf_securitySiocLimit">SIOC Query Result Limit</label>
                         </th>
                             <td>
@@ -3672,20 +3714,20 @@
                       </div>
                       <%
                       }
-                      if ($_formTab2 == 5)
+                      if ($_formTab2 == 4)
                       {
                       %>
-                      <div id="pf_page_2_5" class="tabContent" style="display:none;">
+                      <div id="pf_page_2_4" class="tabContent" style="display:none;">
             	          <iframe id="cert" src="/ods/cert.vsp?sid=<% out.print($_sid); %>" width="650" height="270" frameborder="0" scrolling="no">
             	            <p>Your browser does not support iframes.</p>
             	          </iframe>
                       </div>
                       <%
                       }
-                      if ($_formTab2 == 6)
+                      if ($_formTab2 == 5)
                       {
                       %>
-                      <div id="pf_page_2_6" class="tabContent" style="display:none;">
+                      <div id="pf_page_2_5" class="tabContent" style="display:none;">
                         <h3>X.509 Certificates</h3>
               	      <%
                           if ($_formMode == "")
@@ -3752,6 +3794,23 @@
             	          }
             	        %>
                       <tr>
+                              <th width="15%"></th>
+                              <td>
+                                <label>
+                                  <input type="checkbox" name="pf26_importFile" id="pf26_importFile" value="1" onclick="destinationChange(this, {checked: {show: ['pf26_form_3'], hide: ['pf26_form_4']}, unchecked: {hide: ['pf26_form_3'], show: ['pf26_form_4']}});" />
+                                  <b>Import from local file</b>
+                                </label>
+                              </td>
+                            </tr>
+                            <tr id="pf26_form_3" style="display: none;">
+                              <th width="15%">
+                                <label for="pf26_file">File to import</label>
+                              </th>
+                              <td align="left">
+                                <input type="file" name="pf26_file" id="pf26_file" />
+                              </td>
+                            </tr>
+                            <tr id="pf26_form_4">
                         <th valign="top">
                                 <label for="pf26_certificate">Certificate</label>
                         </th>
@@ -3783,19 +3842,11 @@
                       </div>
                       <%
                         }
-                      if ($_formTab2 < 5)
+                      if ($_formTab2 < 4)
                         {
                       %>
                     <div class="footer">
                       <input type="submit" name="pf_cancel" value="Cancel" onclick="needToConfirm = false;"/>
-                        <%
-                        if (($_formTab2 == 3) && (xpathEvaluate($_document, "/user/securityFacebookID") != null))
-                          {
-                        %>
-                        <input type="submit" name="pf_clear" value="Clear" onclick="myBeforeSubmit(); return myValidateInputs(this);"/>
-                        <%
-                          }
-                        %>
                         <input type="submit" name="pf_update" value="Save" onclick="myBeforeSubmit(); return myValidateInputs(this);"/>
                         <input type="submit" name="pf_next" value="Save & Next" onclick="myBeforeSubmit(); return myValidateInputs(this);"/>
                       </div>
@@ -3819,12 +3870,12 @@
     </form>
     <div id="FT">
       <div id="FT_L">
-        <a href="http://www.openlinksw.com/virtuoso"><img alt="Powered by OpenLink Virtuoso Universal Server" src="/ods/images/virt_power_no_border.png" border="0" /></a>
+        <a href="http://www.openlinksw.com/virtuoso"><img border="0" alt="Powered by OpenLink Virtuoso Universal Server" src="/ods/images/virt_power_no_border.png" border="0" /></a>
       </div>
       <div id="FT_R">
         <a href="/ods/faq.html">FAQ</a> | <a href="/ods/privacy.html">Privacy</a> | <a href="/ods/rabuse.vspx">Report Abuse</a>
         <div>
-          Copyright &copy; 1999-2011 OpenLink Software
+          Copyright &copy; 1999-2013 OpenLink Software
         </div>
       </div>
      </div>

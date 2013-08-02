@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -74,11 +74,13 @@ typedef struct ws_http_map_s
     int 	hm_no_inherit;
     int		hm_xml_template;
     int		hm_executable;
+    int		hm_exec_as_get;
     caddr_t 	hm_htkey;
     caddr_t     hm_url_rewrite_rule;
     int		hm_url_rewrite_keep_lpath;
     id_hash_t *	hm_cors;
     int 	hm_cors_restricted;
+    caddr_t     hm_expiration_fn;
   } ws_http_map_t;
 #endif
 
@@ -134,6 +136,7 @@ typedef struct ws_connection_s
     SSL_CTX *		ws_ssl_ctx;
 #endif
     char  		ws_options[HTTP_MAX_METHOD];
+    char		ws_limited;
   } ws_connection_t;
 
 #define WS_CHARSET(ws, qst) \
@@ -220,6 +223,7 @@ extern char * http_port;
 extern char * https_port;
 extern char * https_cert;
 extern char * https_key;
+extern char * https_extra;
 extern int32 https_client_verify;
 extern int32 https_client_verify_depth;
 extern char * https_client_verify_file;
@@ -329,8 +333,13 @@ the order of columns in dks_charclasses, file dks_esc.c */
 
 extern unsigned char dks_esc_char_props[0x100];
 typedef unsigned char dks_charclass_props_t[COUNTOF__DKS_ESC];
-extern dks_charclass_props_t dks_charclasses['Q'+1-'>'];
+extern dks_charclass_props_t dks_charclasses['R'+1-'>'];
 #define DKS_ESC_CHARCLASS_ACTION(wc,mode) (dks_charclasses[((wc & ~0xff) ? 0 : (dks_esc_char_props[wc] - '>'))][mode])
+
+#define isdatechar(c) (('\0' != (c)) && (NULL != strchr ("0123456789 GMTZ:-", (c))))
+#define isfloatchar(c) (('\0' != (c)) && (NULL != strchr ("0123456789eE+-.", (c))))
+/* This was: #define isplainURIchar(c) (('\0' != (c)) && ('/' != (c)) && ('?' != (c)) && ('=' != (c)) && ('#' != (c))) */
+#define isplainURIchar(c) ('\0' == DKS_ESC_CHARCLASS_ACTION((unsigned)(c), DKS_ESC_URI))
 
 extern void
 dks_esc_write (dk_session_t * ses, const char * str, size_t len,
@@ -344,8 +353,15 @@ caddr_t ws_get_opt (caddr_t * opts, char *opt_name, char * def);
 
 void session_buffered_read_n (dk_session_t * ses, char *buf, int max, int *inx);
 
-size_t decode_base64(char * src, char * end);
-size_t encode_base64(char * input, char * output, size_t len);
+extern char base64_vec[];
+extern char base64url_vec[];
+#define B64_CANON base64_vec
+#define B64_URL base64url_vec
+
+size_t decode_base64_impl (char * src, char * end, char * table);
+size_t encode_base64_impl (char * input, char * output, size_t len, char * table);
+#define decode_base64(src,end) decode_base64_impl ((src), (end), B64_CANON)
+#define encode_base64(input,output,len) encode_base64_impl ((input), (output), (len), B64_CANON)
 
 void ws_strses_reply (ws_connection_t * ws, const char * volatile code);
 void ws_write_failed (ws_connection_t * ws);
@@ -376,12 +392,6 @@ typedef enum {
 	HTTPS_VERIFY_OPTIONAL_NO_CA = 3
 } https_verify_t;
 
-typedef struct https_ctx_info_s
-{
-  int32 hci_depth;
-  int32 hci_verify;
-  char *hci_name;
-} https_ctx_info_t;
 #endif
 extern char * http_cli_proxy_server;
 int http_cli_target_is_proxy_exception (char *);

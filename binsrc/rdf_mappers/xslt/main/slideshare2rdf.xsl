@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -31,16 +31,27 @@
 <!ENTITY dc "http://purl.org/dc/elements/1.1/">
 <!ENTITY dcterms "http://purl.org/dc/terms/">
 ]>
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
-	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:dc="http://purl.org/dc/elements/1.1/"
-	xmlns:skos="http://www.w3.org/2004/02/skos/core#" xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
-	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/" xmlns:wf="http://www.w3.org/2005/01/wf/flow#"
-	xmlns:dcterms="http://purl.org/dc/terms/" xmlns:foaf="&foaf;" xmlns:sioc="&sioc;" xmlns:bibo="&bibo;"
+<xsl:stylesheet 
+	xmlns:xsl="http://www.w3.org/1999/XSL/Transform" 
+	xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+	xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" 
+	xmlns:dc="http://purl.org/dc/elements/1.1/"
+	xmlns:skos="http://www.w3.org/2004/02/skos/core#" 
+	xmlns:virtrdf="http://www.openlinksw.com/schemas/XHTML#"
+	xmlns:vi="http://www.openlinksw.com/virtuoso/xslt/" 
+	xmlns:wf="http://www.w3.org/2005/01/wf/flow#"
+	xmlns:foaf="&foaf;" 
+	xmlns:sioc="&sioc;" 
+	xmlns:bibo="&bibo;"
 	xmlns:dcterms="&dcterms;"
+    xmlns:opl="http://www.openlinksw.com/schema/attribution#"	
 	xmlns:owl="http://www.w3.org/2002/07/owl#"
 	version="1.0">
+
 	<xsl:output method="xml" indent="yes" />
+
 	<xsl:param name="baseUri" />
+
 	<xsl:variable name="resourceURL" select="vi:proxyIRI ($baseUri)"/>
 	<xsl:variable  name="docIRI" select="vi:docIRI($baseUri)"/>
 	<xsl:variable  name="docproxyIRI" select="vi:docproxyIRI($baseUri)"/>
@@ -57,6 +68,13 @@
 
 	<xsl:template match="Slideshows|Tag|User|Group">
 		<bibo:Collection rdf:about="{$docproxyIRI}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.slideshare.net#this">
+                        			<foaf:name>Slideshare</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.slideshare.net"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<bibo:uri rdf:resource="{$docIRI}" />
 			<foaf:primaryTopic rdf:resource="{vi:proxyIRI($baseUri)}"/>
 			<xsl:if test="Meta/Query">
@@ -124,9 +142,16 @@
  	  </rdf:Description>
 
 		<bibo:Slideshow rdf:about="{vi:proxyIRI($res)}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.slideshare.net#this">
+                        			<foaf:name>Slideshare</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.slideshare.net"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<xsl:choose>
 				<xsl:when test="Embed">
-					<xsl:variable name="owner" select="vi:proxyIRI(concat('http://www.slideshare.net/', Owner))" />
+					<xsl:variable name="owner" select="vi:proxyIRI(concat('http://www.slideshare.net/', Username))" />
 				</xsl:when>
 				<xsl:otherwise>
 					<xsl:variable name="owner" select="vi:proxyIRI(concat('http://www.slideshare.net/', UserLogin))" />
@@ -134,7 +159,7 @@
 			</xsl:choose>
 			<xsl:choose>
 				<xsl:when test="Embed">
-					<xsl:variable name="thumbnail" select="Thumbnail" />
+					<xsl:variable name="thumbnail" select="ThumbnailURL" />
 				</xsl:when>
 				<xsl:otherwise>
 					<xsl:variable name="thumbnail" select="ThumbnailURL" />
@@ -170,30 +195,12 @@
 					</xsl:otherwise>
 				</xsl:choose>
 			</bibo:content>
-			<!--dc:content>
-				<xsl:choose>
-					<xsl:when test="Embed">
-						<xsl:value-of select="Embed" />
-					</xsl:when>
-					<xsl:otherwise>
-						<xsl:value-of select="EmbedCode" />
-					</xsl:otherwise>
-				</xsl:choose>
-			</dc:content-->
-			<!--sioc:content>
-				<xsl:choose>
-					<xsl:when test="Embed">
-						<xsl:value-of select="Embed" />
-					</xsl:when>
-					<xsl:otherwise>
-						<xsl:value-of select="EmbedCode" />
-					</xsl:otherwise>
-				</xsl:choose>
-			</sioc:content-->
-
 			<dcterms:created rdf:datatype="&xsd;dateTime">
-				<xsl:value-of select="Created" />
+				<xsl:value-of select="vi:string2date(Created)" />
 			</dcterms:created>
+			<dcterms:modified rdf:datatype="&xsd;dateTime">
+				<xsl:value-of select="vi:string2date(Updated)" />
+			</dcterms:modified>
 			<bibo:pageStart>1</bibo:pageStart>
 			<bibo:pageEnd>
 				<xsl:choose>
@@ -201,14 +208,21 @@
 						<xsl:value-of select="NumSlides" />
 					</xsl:when>
 					<xsl:otherwise>
-						<xsl:value-of select="TotalSlides" />
+						<xsl:value-of select="1" />
 					</xsl:otherwise>
 				</xsl:choose>
 			</bibo:pageEnd>
-			<!--xsl:for-each select="Tags/Tag">
-				<xsl:variable name="res" select="vi:proxyIRI(concat('http://www.slideshare.net/tag/', .))" />
-				<rdfs:seeAlso rdf:resource="{$res}" />
-			</xsl:for-each-->
+			<xsl:variable name="tags" select="vi:split-and-decode(Tags, 0, ' ')"/>
+			<xsl:for-each select="$tags/results/result">
+				<sioc:topic>
+					<skos:Concept rdf:about="{vi:dbpIRI ($baseUri, .)}" >
+						<skos:prefLabel>
+							<xsl:value-of select="."/>
+						</skos:prefLabel>
+					</skos:Concept>
+				</sioc:topic>
+				<rdfs:seeAlso rdf:resource="{vi:proxyIRI(concat('http://www.slideshare.net/tag/', .))}" />
+			</xsl:for-each>
 		</bibo:Slideshow>
 	</xsl:template>
 	<xsl:template match="*|text()" />

@@ -10,6 +10,7 @@
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
 <!ENTITY foaf "http://xmlns.com/foaf/0.1/">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY owl "http://www.w3.org/2002/07/owl#">
 <!ENTITY content "http://purl.org/rss/1.0/modules/content/">
 <!ENTITY cp "http://schemas.openxmlformats.org/package/2006/metadata/core-properties">
 <!ENTITY ep "http://schemas.openxmlformats.org/officeDocument/2006/extended-properties">
@@ -36,6 +37,7 @@
     xmlns:ep="&ep;"
     xmlns:vt="&vt;"
     xmlns:a="&a;"
+    xmlns:owl="&owl;"	
     xmlns:p="&p;"
     xmlns:r="&r;"
     >

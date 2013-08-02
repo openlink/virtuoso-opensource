@@ -9,7 +9,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -157,7 +157,7 @@ extern int ob_just_report;
 /*
  *  Globals for virtuoso
  */
-PCONFIG	pconfig;			/* configuration file */
+PCONFIG	pconfig = NULL;			/* configuration file */
 
 /*
  *  Module locals
@@ -1256,7 +1256,7 @@ usage (void)
       PACKAGE_VERSION, DBMS_SRV_GEN_MAJOR, DBMS_SRV_GEN_MINOR, build_thread_model, build_date);
   p = stpcpy (p, line);
 
-  sprintf (line, "Compiled for 32 Bit Windows Operating Environments\n");
+  sprintf (line, "Compiled for %s (%s)\n", build_opsys_id, build_host_id);
   p = stpcpy (p, line);
 
   if (build_special_server_model && strlen(build_special_server_model) > 1)
@@ -1631,4 +1631,15 @@ ApplicationMain (int argc, char **argv)
   call_exit (0);
 
   return NO_ERROR;
+}
+
+
+/* This is here so that OpenSSL can determine if this instance is running
+ * as a windows service. OpenSSL tries to avoid UI when this returns TRUE.
+ * It also affects the random generator which reads the screen at startup.
+ */
+__declspec(dllexport) BOOL __cdecl
+_OPENSSL_isservice (void)
+{
+  return serviceFlag;
 }

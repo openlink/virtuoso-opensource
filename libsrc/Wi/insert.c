@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -582,7 +582,7 @@ ins_leaves_check (buffer_desc_t * buf)
 	  printf ("non leaf\n");
 	  break;
 	}
-	}
+    }
 }
 #endif
 
@@ -643,7 +643,7 @@ itc_insert_unq_ck (it_cursor_t * it, row_delta_t * rd, buffer_desc_t ** unq_buf)
   if (it->itc_insert_key->key_distinct && DVC_MATCH == res)
     {
       /* if key is distinct values only hitting a duplicate does nothing and returns success */
-      page_leave_outside_map (buf);
+        page_leave_outside_map (buf);
       return DVC_LESS;
     }
 
@@ -908,6 +908,12 @@ int dp_is_compact_checked (dbe_storage_t * dbs, dp_addr_t dp, int set_checked);
 #define cmp_printf(a)
 #endif
 
+/* 0 age limit means all, neg age limit means age over the -nth bucket limit positive means age over the limit */
+int ac_age_limit;
+
+#define BUF_AC_AGE(buf) \
+  (0 == ac_age_limit ? 1 : ac_age_limit < 0 ? (buf->bd_pool->bp_ts - buf->bd_timestamp > buf->bd_pool->bp_bucket_limit[-1 - ac_age_limit]) :  (buf->bd_pool->bp_ts - buf->bd_timestamp >= ac_age_limit))
+
 
 void
 pr_free (page_rel_t * pr, int pr_fill, int leave_bufs)
@@ -1006,6 +1012,7 @@ acs_leaf_stat (ac_col_stat_t * acs, int n_rows, int * first_dirty, int * last_di
   int inx;
   int cum_dirty = 0, cum_absent = 0, cum_pages = 0, absent_at_first_dirty = 0, absent_at_last_dirty = 0;
   *first_dirty = -1;
+  *last_dirty = -1;
   for (inx = 0; inx < n_rows; inx++)
     {
       if (!acs[inx].acs_n_pages)
@@ -1067,6 +1074,7 @@ itc_col_ac_leaf (it_cursor_t * itc, buffer_desc_t * parent, buffer_desc_t * buf,
   /*itc->itc_app_stay_in_buf = ITC_APP_STAY; */
   itc->itc_buf = buf;
   ceic_split (&ceic, buf);
+  mp_free (ceic.ceic_mp);
   itc->itc_buf = NULL;
   if (ITC_APP_STAYED == itc->itc_app_stay_in_buf)
     {
@@ -1174,6 +1182,14 @@ itc_ac_stat (it_cursor_t * itc, page_rel_t * pr, int pr_fill, int get_all,   ac_
       itc->itc_col_refs[col]->cr_n_pages = 0;
     }
   itc->itc_dive_mode = PA_WRITE;
+  if (get_all)
+    {
+      for (inx = 0; inx < pr_fill; inx++)
+	{
+	  buffer_desc_t * buf = pr[inx].pr_buf;
+	  itc_prefetch_col_leaf_page (itc, buf);
+	}
+    }
   for (inx = 0; inx < pr_fill; inx++)
     {
       buffer_desc_t * buf = pr[inx].pr_buf;
@@ -1342,7 +1358,8 @@ itc_compact (it_cursor_t * itc, buffer_desc_t * parent, page_rel_t * pr, int pr_
   *pos_ret = pr[inx - 1].pr_lp_pos + 1;
   ac_pages_in += pr_fill;
   ac_pages_out += inx;
-
+  itc->itc_insert_key->key_ac_in += pr_fill;
+  itc->itc_insert_key->key_ac_out += inx;
   for (inx = inx; inx < old_pr_fill; inx++)
     {
       buffer_desc_t * buf = pr[inx].pr_buf;
@@ -1529,7 +1546,11 @@ itc_cp_check_node (it_cursor_t * itc, buffer_desc_t *parent, int mode)
 	      && !buf_has_leaves (buf))
 	    {
 	      if (mode == COMPACT_DIRTY && !gethash ((void*)(void*)(ptrlong)leaf, &itm->itm_remap))
-		GPF_T1 ("In compact, no remap dp for a dirty buffer");
+		{
+		  dbg_page_map_to_file (buf);
+		  log_error ("dirty buffer flags: can reuse logical: %d, dp=%d, physical dp=%d", it_can_reuse_logical (it, buf->bd_page), buf->bd_page, buf->bd_physical_page);
+		  GPF_T1 ("In compact, no remap dp for a dirty buffer");
+		}
 	      BD_SET_IS_WRITE (buf, 1);
 	      mutex_leave (&itm->itm_mtx);
 	      pg_check_map (buf);
@@ -1568,7 +1589,6 @@ uint32 ac_cpu_time;
 uint32 ac_real_time;
 int ac_n_times;
 dk_mutex_t * dp_compact_mtx;
-dk_hash_t * dp_compact_checked;
 
 caddr_t
 ac_aq_func (caddr_t av, caddr_t * err_ret)
@@ -1633,6 +1653,7 @@ itc_col_vacuum_compact (it_cursor_t * itc, buffer_desc_t * parent)
   static uint32 bp_ctr;
   int first = dbf_leaf_ac ? 5 : 0;
   int n_last = dbf_leaf_ac ? 10 : 0;
+  dp_may_compact (itc->itc_tree->it_storage, parent->bd_page);
   if (!buf_has_leaves (parent))
     itc->itc_nth_seq_page += col_ac_set_dirty (NULL, NULL, itc, parent, first, n_last);
   ITC_IN_KNOWN_MAP (itc, parent->bd_page);
@@ -1684,7 +1705,7 @@ void
 dp_may_compact (dbe_storage_t *dbs, dp_addr_t dp)
 {
   mutex_enter (dp_compact_mtx);
-  remhash ((void*)(ptrlong)dp, dp_compact_checked);
+  remhash ((void*)(ptrlong)dp, dbs->dbs_dp_compact_checked);
   mutex_leave (dp_compact_mtx);
 }
 
@@ -1694,9 +1715,9 @@ dp_is_compact_checked (dbe_storage_t * dbs, dp_addr_t dp, int set_checked)
 {
   int rc;
   mutex_enter (dp_compact_mtx);
-  rc = (int)(ptrlong) gethash ((void*)(ptrlong)dp, dp_compact_checked);
+  rc = (int)(ptrlong) gethash ((void*)(ptrlong)dp, dbs->dbs_dp_compact_checked);
   if (!rc && set_checked)
-    sethash ((void*)(ptrlong) dp, dp_compact_checked, (void*) 1);
+    sethash ((void*)(ptrlong) dp, dbs->dbs_dp_compact_checked, (void*) 1);
   mutex_leave (dp_compact_mtx);
   return rc;
 }
@@ -1717,7 +1738,8 @@ it_check_compact (index_tree_t * it, int age_limit)
       mutex_enter (&itm->itm_mtx);
       DO_HT (void *, ignore, buffer_desc_t *, buf, &itm->itm_dp_to_buf)
     {
-      if (buf->bd_pool && buf->bd_pool->bp_ts - buf->bd_timestamp >= age_limit)
+	  if (buf->bd_pool && BUF_AC_AGE (buf)
+	      && !buf->bd_being_read && !buf->bd_is_write && !buf->bd_readers)
 	{
 	      short flags = SHORT_REF (buf->bd_buffer + DP_FLAGS);
 	  dp_addr_t parent_dp = LONG_REF (buf->bd_buffer + DP_PARENT);
@@ -1760,7 +1782,18 @@ it_check_compact (index_tree_t * it, int age_limit)
 
 dk_mutex_t * dbs_autocompact_mtx;
 int dbs_autocompact_in_progress;
+int enable_ac = 1;
 int enable_col_ac = 1;
+uint32 col_ac_last_time;
+uint32 col_ac_last_duration;
+int col_ac_max_pct = 10; /* max this % of real time with col ac on */
+
+int
+col_ac_is_due (uint32 now)
+{
+  /* enough time elapsed so col ac is not more than max pct of real time */
+  return now  - col_ac_last_time > ((100 * col_ac_last_duration) / col_ac_max_pct) - col_ac_last_duration;
+}
 
 
 void
@@ -1769,15 +1802,17 @@ wi_check_all_compact (int age_limit)
   /*  call before writing old dirty out. Also before pre-checkpoint flush of all things.
    * do not do many at the same time.  Also have in progress flag for background action which can autocompact and need a buffer, which can then recursively trigger autocompact which is not wanted */
   uint32 ac_start;
+  int any_col = 0;
   caddr_t err = NULL;
   du_thread_t * self;
+  uint32 now, col_ac_due;
   dbe_storage_t * dbs = wi_inst.wi_master;
   /*return;*/
 #ifndef AUTO_COMPACT
   return;
 #endif
   if (!dbs || wi_inst.wi_checkpoint_atomic
-      || dbs_autocompact_in_progress)
+      || dbs_autocompact_in_progress || !enable_ac)
     return; /* at the very start of init */
   self = THREAD_CURRENT_THREAD;
   if (THR_IS_STACK_OVERFLOW (self, &dbs, AC_STACK_MARGIN))
@@ -1785,18 +1820,30 @@ wi_check_all_compact (int age_limit)
   mutex_enter (dbs_autocompact_mtx);
   dbs_autocompact_in_progress = 1;
   ac_start = get_msec_real_time ();
+  ac_age_limit = age_limit;
   ac_n_times++;
+  col_ac_due = col_ac_is_due (ac_start);
   ac_aq = NULL;
+  DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
+    {
+      if (DBS_TEMP == dbs->dbs_type)
+	continue;
   DO_SET (index_tree_t *, it, &dbs->dbs_trees)
     {
       if (it->it_key && it->it_key->key_is_col)
 	{
-	  if (!enable_col_ac)
+	      if (!enable_col_ac || 2 == (enable_col_ac && age_limit))
 	    continue;
+	      if (col_ac_last_duration && age_limit && !col_ac_due)
+		continue; /* col ac may be going for max 10% of real time */
+	      any_col = 1;
 	}
       if (it->it_key
+	      && !it->it_key->key_is_geo
 	  )
 	it_check_compact (it, age_limit);
+    }
+  END_DO_SET();
     }
   END_DO_SET();
   if (ac_aq)
@@ -1804,8 +1851,14 @@ wi_check_all_compact (int age_limit)
       aq_wait_all (ac_aq, &err);
       dk_free_box ((caddr_t)ac_aq);
     }
+  now = get_msec_real_time ();
+  if (any_col)
+    {
+      col_ac_last_duration = now - ac_start;
+      col_ac_last_time = now;
+    }
   dbs_autocompact_in_progress = 0;
-  ac_real_time += get_msec_real_time () - ac_start;
+  ac_real_time += now - ac_start;
   mutex_leave (dbs_autocompact_mtx);
 }
 

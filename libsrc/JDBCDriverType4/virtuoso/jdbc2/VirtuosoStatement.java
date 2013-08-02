@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -86,7 +86,7 @@ public class VirtuosoStatement implements Statement
    protected String statid, cursorName;
 
    // The true when the statement is closed
-   protected boolean close_flag = false;
+   protected volatile boolean close_flag = false;
 
    // The request number
    protected static int req_no;
@@ -101,6 +101,8 @@ public class VirtuosoStatement implements Statement
    protected VirtuosoResultSetMetaData metaData;
 
    protected boolean isCached = false;
+
+   protected boolean closeOnCompletion;
 
 #if JDK_VER >= 14
    // Its params data
@@ -191,7 +193,7 @@ public class VirtuosoStatement implements Statement
        arrLong[4] = new Long(prefetch);
        // Set the autocommit
        arrLong[5] = new Long((connection.getAutoCommit()) ? 1 : 0);
-       arrLong[6] = new Long (rpc_timeout * 1000);
+       arrLong[6] = new Long (rpc_timeout);
        // Set the cursor type
        switch(type)
 	 {
@@ -330,9 +332,12 @@ public class VirtuosoStatement implements Statement
     */
    public void close() throws VirtuosoException
    {
+     if(close_flag)
+       return;
+      
      synchronized (connection)
        {
-	 //System.out.println("Close statement : "+this);
+	 // System.out.println("Close statement : "+this);
 	 try
 	   {
 	     // Check if a statement is treat
@@ -510,7 +515,7 @@ public class VirtuosoStatement implements Statement
     */
    public int getQueryTimeout() throws VirtuosoException
    {
-      return rpc_timeout;
+      return rpc_timeout/1000;
    }
 
    /**
@@ -622,7 +627,7 @@ public class VirtuosoStatement implements Statement
       // Check and get parameters
       if(seconds < 0)
          throw new VirtuosoException("Bad parameters.",VirtuosoException.BADPARAM);
-      rpc_timeout = seconds;
+      rpc_timeout = seconds*1000;
    }
 
    // --------------------------- JDBC 2.0 ------------------------------
@@ -1078,5 +1083,47 @@ public class VirtuosoStatement implements Statement
   }
 
 
+#if JDK_VER >= 17
+    //--------------------------JDBC 4.1 -----------------------------
+
+    /**
+     * Specifies that this {@code Statement} will be closed when all its
+     * dependent result sets are closed. If execution of the {@code Statement}
+     * does not produce any result sets, this method has no effect.
+     * <p>
+     * <strong>Note:</strong> Multiple calls to {@code closeOnCompletion} do
+     * not toggle the effect on this {@code Statement}. However, a call to
+     * {@code closeOnCompletion} does effect both the subsequent execution of
+     * statements, and statements that currently have open, dependent,
+     * result sets.
+     *
+     * @throws SQLException if this method is called on a closed
+     * {@code Statement}
+     * @since 1.7
+     */
+  public void closeOnCompletion() throws SQLException
+  {
+    synchronized (this) {
+      closeOnCompletion = true;
+    }
+  }
+
+    /**
+     * Returns a value indicating whether this {@code Statement} will be
+     * closed when all its dependent result sets are closed.
+     * @return {@code true} if the {@code Statement} will be closed when all
+     * of its dependent result sets are closed; {@code false} otherwise
+     * @throws SQLException if this method is called on a closed
+     * {@code Statement}
+     * @since 1.7
+     */
+  public boolean isCloseOnCompletion() throws SQLException
+  {
+    synchronized (this) {
+      return closeOnCompletion;
+    }
+  }
+
+#endif
 #endif
 }

@@ -1,13 +1,13 @@
 #!/bin/sh 
 #
-#  $Id$
+#  $Id: tvad2.sh,v 1.3.10.4 2013/01/02 16:15:32 source Exp $
 #
 #  VAD tests
 #  
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -26,7 +26,7 @@
 
 LOGFILE=tvad.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 
 DoCommand()
@@ -48,7 +48,7 @@ END_SQL
   echo $comment >> $file 
 
   echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $*   >> $LOGFILE 
-  RUN $ISQL $DSN dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tvadtest.sql 
+  RUN $ISQL $DSN dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tvadtest.sql 
 }
 
 DoBadCommand()
@@ -74,7 +74,7 @@ END_SQL
   SHUTDOWN_SERVER
   START_SERVER $PORT 1000 
 
-  RUN $ISQL $DSN dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tvadbtest.sql 
+  RUN $ISQL $DSN dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tvadbtest.sql 
 
   STOP_SERVER
   rm -f $DBLOGFILE
@@ -85,12 +85,13 @@ END_SQL
 
 BANNER "STARTED VAD TEST2 (tvad2.sh)"
 
-mkdir vad
-mkdir vad/vsp
-mkdir vad/vsp/vad_test1
-mkdir vad/vsp/vad_test2
-cp -f $HOME/binsrc/tests/suite/vad_test/vsp/vad_test2/* vad/vsp/vad_test2
-cp -f $HOME/binsrc/tests/suite/vad_test/vsp/vad_test1/* vad/vsp/vad_test1
+mkdir vsp
+mkdir vsp/vad_test1
+mkdir vsp/vad_test2
+cp -f $HOME/binsrc/tests/suite/vad_test/vsp/vad_test2/* vsp/vad_test2
+cp -f $HOME/binsrc/tests/suite/vad_test/vsp/vad_test1/* vsp/vad_test1
+
+MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 
 SHUTDOWN_SERVER
 rm -f $DBLOGFILE $DBFILE
@@ -116,7 +117,6 @@ rm -f $DBLOGFILE $DBFILE
 
 rm -f t1.xml vad_test1.vad
 rm -f t2.xml vad_test2.vad
-rm -rf vad
 
 CHECK_LOG
 BANNER "COMPLETED VAD TEST2 (tvad2.sh)"

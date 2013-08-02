@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -67,6 +67,7 @@ xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:TextFormattingR
 xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:UserByEmail', 'WV.WIKI.USER_BY_EMAIL');
 xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:atom_pub_uri', 'WV.WIKI.ATOM_PUB_URI');
 xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:collect_pairs', 'WV.WIKI.COLLECT_PAIRS');
+xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:rdfLinksHead', 'WV.WIKI.RDF_LINKS_HEAD');
 xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:email_obfuscate', 'WV.WIKI.EMAIL_OBFUSCATE');
 xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:expandWikiText', 'WV.WIKI.EXPAND_WIKI_TEXT');
 xpf_extension_remove ('http://www.openlinksw.com/Virtuoso/WikiV/:funcall0', 'WV.WIKI.FUNCALL0');

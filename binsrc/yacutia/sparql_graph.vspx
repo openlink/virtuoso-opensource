@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -65,7 +65,16 @@
           <v:script><![CDATA[
 	        if ( get_keyword ('remove', params, '') <> '' )
 		   {
-		      delete from DB.DBA.RDF_QUAD where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (self.graph_name);
+                     declare _graph any;
+		     _graph := self.graph_name;
+		     SPARQL DEFINE sql:log-enable 3 CLEAR GRAPH (?:_graph) ;
+                     SPARQL DROP SILENT GRAPH iri (?:_graph) ; 
+		     for select "s" from (sparql 
+		        define input:storage "" 
+			select ?s from virtrdf: { ?s virtrdf:qmGraphRange-rvrFixedValue `iri(?:_graph)` ; virtrdf:qmUserSubMaps ?t }) x do
+		       {
+			 exec (sprintf ('SPARQL drop silent quad map <%s> . ', "s"));	
+		       }
 		   }
 		self.mode := '';
           ]]></v:script>

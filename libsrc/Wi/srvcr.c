@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2274,9 +2274,14 @@ bif_cursors_init (void)
   bif_define_typed ("__burst_mode_set", bif_burst_mode_set, &bt_integer);
 }
 
+
+caddr_t bif_iri_to_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
+caddr_t bif_iri_to_id_nosignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
+
 int
 bif_is_relocatable (bif_t bif)
 {
+  bif_metadata_t * bmd;
   if (
       /* scrollable cursors */
       bif_sql_set_pos == bif
@@ -2294,6 +2299,13 @@ bif_is_relocatable (bif_t bif)
       || bif_convert == bif
       )
     return 0;
+
+  bmd = find_bif_metadata_by_bif (bif);
+  if (bmd && bmd->bmd_ret_type && DV_IRI_ID ==  bmd->bmd_ret_type->bt_dtp)
+    return 0;
+  if (bif_iri_to_id == bif || bif_iri_to_id_nosignal == bif)
+    return 0;
+
   return 1;
 }
 

@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2009 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -22,34 +22,29 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 -->
-<xsl:stylesheet version="1.0" 
+<xsl:stylesheet version="1.0"
 		xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 
-<xsl:param name="pos"/>
-<xsl:param name="op"/>
-<xsl:param name="type"/>
-<xsl:param name="limit"/>
-<xsl:param name="offset"/>
-<xsl:param name="iri"/>
-<xsl:param name="name"/>
-<xsl:param name="timeout"/>
 <xsl:param name="cno"/>
 
-
-<xsl:template match = "class | value | value-range">
-
-  <xsl:if test="$cno != count (./ancestor::*[name () = 'class' or
-	                                     name () = 'value' or
-                                             name () = 'value-range']) +
-                      count (./preceding::*[name () = 'class' or 
-                                            name () = 'value' or
-                                            name () = 'value-range'])">
+<xsl:template match="class | value | value-range | cond-range | cond">
+  <xsl:if test="$cno != (count (./ancestor::*[name () = 'class' or
+                                             name () = 'value' or
+                                             name () = 'value-range' or
+                                             name () = 'cond-range' or
+                                             name () = 'cond']) +
+                         count (./ancestor-or-self::*/preceding-sibling::*/descendant-or-self::*[name () = 'class' or
+                                              name () = 'value' or
+                                              name () = 'value-range' or
+                                              name () = 'cond-range' or
+                                              name () = 'cond']))">
     <xsl:copy>
       <xsl:apply-templates select="@* | node()"/>
     </xsl:copy>
   </xsl:if>
+
 </xsl:template>
- 
+
 <xsl:template match="@* | node()">
   <xsl:copy>
     <xsl:apply-templates select="@* | node()"/>

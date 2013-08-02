@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -233,7 +233,9 @@ create function DB.DBA."RDFData_DAV_DIR_SINGLE" (in id any, in what char(0), in 
     {
       declare lpath varchar;
       lpath := http_path ();
-      if (lpath like '%.ttl' or lpath like '%.n3')
+      if (lpath like '%.ttl')
+        mime := 'text/turtle';
+      else if (lpath like '%.n3')
         mime := 'text/rdf+n3';
     }
   return vector (DAV_CONCAT_PATH (path, ''), 'R', 0, now (), id, access, ownergid, owner_uid, now (), mime, path_parts [len - 1]);
@@ -612,7 +614,7 @@ create function DB.DBA."RDFData_DAV_RES_CONTENT" (in id any, inout content any, 
       else if (lpath like '%.json')
 	type := 'application/json';
       else
-        type := 'text/rdf+n3';
+        type := 'text/turtle';
     }
   iri := id_to_iri (id [4]);
 --  dbg_obj_print (iri);
@@ -639,6 +641,11 @@ create function DB.DBA."RDFData_DAV_RES_CONTENT" (in id any, inout content any, 
           else
 	    uname := tmp;
           ses := sioc..compose_foaf (uname, type, pg);
+	  goto ret_place2;
+	}
+      else if (__proc_exists ('sioc.DBA.ods_obj_describe') is not null)
+	{
+	  ses := sioc..ods_obj_describe (iri, type, pg);
 	  goto ret_place2;
 	}
       else if (regexp_match ('https?://([^/]*)/dataspace/([^/]*)(#this|/sioc.rdf|/sioc.n3)?\x24', iri) is not null

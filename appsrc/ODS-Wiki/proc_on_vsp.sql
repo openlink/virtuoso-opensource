@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -110,7 +110,9 @@ create function WV.WIKI.VSPTOPICVIEW (
 --  dbg_obj_print ('ot WV.WIKI.VSPTOPICVIEW, uid: ', get_keyword ('uid', params));
 --  dbg_obj_print (_topic);
   declare _uid int;
-  declare _base_adjust, _command varchar;
+  declare _iri, _base_adjust, _command varchar;
+
+  _iri := SIOC..wiki_post_iri_2 (_topic.ti_id);
   _uid := get_keyword ('uid', params);
   _base_adjust := get_keyword ('baseadjust', params);
   _command := WV.WIKI.GET_COMMAND(params);
@@ -162,7 +164,8 @@ create function WV.WIKI.VSPTOPICVIEW (
   whenever not found goto ins;
   open cr (prefetch 1);
   fetch cr into _cnt;
-  update WV.WIKI.HITCOUNTER set Cnt = _cnt + 1
+  update WV.WIKI.HITCOUNTER
+     set Cnt = _cnt + 1
   	where current of cr;
   close cr;
   if (0)
@@ -185,17 +188,6 @@ ins:
 
   _tree := 'hide';
   _ext_params := vector_concat (_ext_params, vector ('tree', _tree));
-  _xhtml := _topic.ti_get_entity(null, 1);
-  if (_command not in ('docbook'))
-  {
-   _xhtml := WV.WIKI.VSPXSLT ( 'VspTopicView.xslt', _xhtml, _ext_params);
-  }
-  if (_command = 'xmlraw')
-    {
-      http_rewrite ();
-      http_value (_xhtml); 
-      return 0;
-    }
   if (_command = 'docbook')
 	{
     _xhtml :=
@@ -212,25 +204,35 @@ ins:
 	  return 0;
     }
 
+  _xhtml := _topic.ti_get_entity(null, 1);
+  _xhtml := WV.WIKI.VSPXSLT ( 'VspTopicView.xslt', _xhtml, _ext_params);
+  if (_command = 'xmlraw')
+  {
+    http_rewrite ();
+    http_value (_xhtml);
+    return 0;
+  }
   declare _creator varchar;
+  declare _ods_bar, _app_js any;
+
   _creator := WV.WIKI.CLUSTERPARAM (_topic.ti_cluster_id, 'creator', 'dav');  
   _ext_params := WV.WIKI.USER_PARAMS (_ext_params, _creator, _topic); 
-
-
   http_rewrite ();
   if (get_keyword  ('skin2', params) is not null)
     ODS.BAR._EXEC(null,vector_concat (params, vector ('explicit-host', 1)), lines);
   else
     ODS.BAR._EXEC(null,params, lines);
-  declare _ods_bar, _app_js any;
+
   _ods_bar := http_get_string_output();
   _ods_bar := xtree_doc(_ods_bar);
   _app_js := xtree_doc (WV.Wiki.WIKI_APLUSLINK (_uid), 0);
   _ext_params := vector_concat (_ext_params, vector ('ods-bar', _ods_bar, 'ods-app', _app_js));
   http_rewrite ();
   http_header ('Content-Type: text/html; charset=UTF-8\r\n');
+
   _xhtml := WV.WIKI.VSPXSLT ( 'PostProcess.xslt', _xhtml, vector_concat (_ext_params), WV.WIKI.SKIN_PARAMS (_topic.ti_cluster_id, params));
   http_header ('Content-Type: text/html; charset=UTF-8\r\n');
+  SIOC..rdf_links_header (_iri);
   if (WV.WIKI.CLUSTERPARAM (_topic.ti_cluster_id, 'email-obfuscate') is not null)
   {
   http_value (_xhtml);
@@ -327,7 +329,7 @@ create function WV.WIKI.VSPTOPICEDIT (
 {
   declare _text varchar;
   declare _uid int;
-  declare _base_adjust varchar;
+  declare _iri, _base_adjust varchar;
   _uid := get_keyword ('uid', params);
   _base_adjust := get_keyword ('baseadjust', params);
        
@@ -348,6 +350,8 @@ create function WV.WIKI.VSPTOPICEDIT (
 	WV.WIKI.DELETE_SYSINFO_FOR (coalesce (get_keyword ('temp-text', params), _topic.ti_text), NULL),
 	params);
 
+  _iri := SIOC..wiki_post_iri_2 (_topic.ti_id);
+  SIOC..rdf_links_header (_iri);
   _xhtml := WV.WIKI.VSPXSLT ( 'VspTopicEdit.xslt', _topic.ti_get_entity (null,1), _ext_params);
   http_value (_xhtml);
 }
@@ -364,7 +368,8 @@ create function WV.WIKI.VSPTOPICPREVIEW (
   returns varchar
 {
   declare _uid integer;
-  declare _base_adjust varchar;
+  declare _iri, _base_adjust varchar;
+
   _uid := get_keyword ('uid', params);
   _base_adjust := get_keyword ('baseadjust', params);
   declare _topic WV.WIKI.TOPICINFO;
@@ -397,8 +402,10 @@ create function WV.WIKI.VSPTOPICPREVIEW (
   WV.WIKI.CHECKWRITEACCESS (_uid, _topic.ti_res_id, _topic.ti_cluster_id, _topic.ti_col_id);
   WV.WIKI.CHECKREADACCESS (_uid, _topic.ti_res_id, _topic.ti_cluster_id, _topic.ti_col_id);
   declare _ext_params any;
-  _ext_params := _topic.ti_xslt_vector(
-	vector_concat(params, vector ('preview_mode', 1)));
+  _ext_params := _topic.ti_xslt_vector (vector_concat (params, vector ('preview_mode', 1)));
+
+  _iri := SIOC..wiki_post_iri_2 (_topic.ti_id);
+  SIOC..rdf_links_header (_iri);
   http_value (WV.WIKI.VSPXSLT ( 'VspTopicView.xslt', _topic.ti_get_entity (null,1), _ext_params));
 }
 ;
@@ -409,7 +416,7 @@ create function WV.WIKI.VSPTOPICREFERERS (
   in params any )
 {
   declare _uid integer;
-  declare _base_adjust varchar;
+  declare _iri, _base_adjust varchar;
   declare _report any;
   declare _text varchar;
   declare _ext_params any;
@@ -465,6 +472,8 @@ create function WV.WIKI.VSPTOPICREFERERS (
                         inner join DB.DBA.SYS_USERS as u2 on (u2.U_ID = r.RES_OWNER)
                  order by c.ClusterName desc, n.LocalName desc);
     }
+  _iri := SIOC..wiki_post_iri_2 (_topic.ti_id);
+  SIOC..rdf_links_header (_iri);
   _ext_params := vector_concat (_topic.ti_xslt_vector(params), vector ('donotresolve', 1));
   http_value (
     WV.WIKI.VSPXSLT (
@@ -2641,6 +2650,26 @@ create function WV.WIKI.COLLECT_PAIRS (in _value varchar, in _rest varchar)
 }
 ;
 
+create function WV.WIKI.RDF_LINKS_HEAD (in _clusterName varchar, in _topicName varchar)
+{
+  declare _iri varchar;
+  declare _topic WV.WIKI.TOPICINFO;
+
+  _topic := WV.WIKI.TOPICINFO();
+  _topic.ti_default_cluster := _clusterName;
+  _topic.ti_raw_name := _topicName;
+  _topic.ti_parse_raw_name ();
+  _topic.ti_fill_cluster_by_name ();
+  _topic.ti_find_id_by_local_name ();
+  if (_topic.ti_id)
+  {
+    _iri := SIOC..wiki_post_iri_2 (_topic.ti_id);
+    return SIOC..rdf_links_head_internal (_iri);
+  }
+
+  return '';
+}
+;
 
 grant execute on WV.WIKI.RESOURCEHREF to public
 ;
@@ -2656,6 +2685,8 @@ grant execute on WV.WIKI.PAIR to public
 ;
 grant execute on WV.WIKI.COLLECT_PAIRS to public
 ;
+grant execute on WV.WIKI.RDF_LINKS_HEAD to public
+;
 
 xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:ResourceHREF', 'WV.WIKI.RESOURCEHREF')
 ;
@@ -2670,6 +2701,8 @@ xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:AuthorName', 'WV.WIKI.
 xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:pair', 'WV.WIKI.PAIR')
 ;
 xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:collect_pairs', 'WV.WIKI.COLLECT_PAIRS')
+;
+xpf_extension ('http://www.openlinksw.com/Virtuoso/WikiV/:rdfLinksHead', 'WV.WIKI.RDF_LINKS_HEAD')
 ;
 
 

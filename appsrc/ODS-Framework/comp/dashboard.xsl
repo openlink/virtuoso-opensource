@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -1399,7 +1399,7 @@
 
   			function generateDSLinks()
         {
-          OAT.Preferences.stylePath = '/ods/';
+          OAT.Preferences.stylePath = '/ods/oat/styles/';
           OAT.Anchor.imagePath = '/ods/images/oat/';
           OAT.Anchor.zIndex = 1001;
 
@@ -2405,16 +2405,10 @@
         </div>
         <div class="w_pane content_pane">
 <?vsp
-
   declare q_str, rc, dta, h any;
 
-  q_str := sprintf('select COUNT(*) as ALL_CNT,
-                           SUM(either(MSTATUS,0,1)) as NEW_CNT
-                      from OMAIL.WA.MESSAGES
-                      where USER_ID = %d',
-                   self.u_id);
-
-  rc := exec (q_str, null, null, vector (), 0, null, null, h);
+  q_str := 'select count (*) as ALL_CNT, sum (mod (MM_IS_READED+1,2)) as NEW_CNT from DB.DBA.MAIL_MESSAGE where MM_OWN = ?';
+  rc := exec (q_str, null, null, vector (self.u_name), 0, null, null, h);
   while (0 = exec_next (h, null, null, dta))
     {
       exec_result (dta);

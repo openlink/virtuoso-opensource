@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2008 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -23,7 +23,7 @@
 if WITH_JDK4
 TARGETS		= lib virt_sesame2.jar
 JDK		= @ac_jdk4_path@
-JDK_FLAGS	= -Xlint -O -g:none -source 1.5 -target 1.5
+JDK_FLAGS	= -Xlint -O -g:none 
 JAVA		= $(JDK)/java
 JAVAC		= $(JDK)/javac
 JAVAH		= $(JDK)/javah
@@ -36,13 +36,15 @@ SESAME_SRC= \
 	virtuoso_driver/Version.java \
 	virtuoso_driver/VirtuosoBooleanQuery.java \
 	virtuoso_driver/VirtuosoGraphQuery.java \
+	virtuoso_driver/VirtuosoOperation.java \
 	virtuoso_driver/VirtuosoQuery.java \
 	virtuoso_driver/VirtuosoRepositoryConfig.java \
 	virtuoso_driver/VirtuosoRepositoryConnection.java \
 	virtuoso_driver/VirtuosoRepositoryFactory.java \
 	virtuoso_driver/VirtuosoRepository.java \
 	virtuoso_driver/VirtuosoRepositorySchema.java \
-	virtuoso_driver/VirtuosoTupleQuery.java
+	virtuoso_driver/VirtuosoTupleQuery.java \
+	virtuoso_driver/VirtuosoUpdate.java
 
 SESAME_XSL = \
 	create.xsl \
@@ -51,7 +53,8 @@ SESAME_XSL = \
 SAMPLES_SOURCE= \
 	virtuoso_driver/VirtuosoTest.java
 
-SESAME_CLASSPATH=lib/slf4j-api-1.5.11.jar:lib/slf4j-simple-1.5.11.jar:lib/openrdf-sesame-2.3.1-onejar.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
+
+SESAME_CLASSPATH= lib/slf4j-api-1.6.1.jar:lib/slf4j-simple-1.6.1.jar:lib/openrdf-sesame-2.7.3-onejar.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc4.jar
 
 all-am:	$(TARGETS)
 

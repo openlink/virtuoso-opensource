@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -33,6 +33,7 @@
 <!ENTITY audio "http://purl.org/media/audio#">
 <!ENTITY media "http://purl.org/media#">
 <!ENTITY bibo "http://purl.org/ontology/bibo/">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -46,6 +47,7 @@
     xmlns:foaf="&foaf;"
     xmlns:mo="&mo;"
     xmlns:mmd="&mmd;"
+    xmlns:opl="&opl;"
     xmlns:dc="&dc;"
     xmlns:bibo="&bibo;"
     xmlns:audio="&audio;"
@@ -86,6 +88,13 @@
 			</xsl:choose>
 		</rdf:Description>
 		<mo:MusicGroup rdf:about="{vi:proxyIRI (concat($base,'artist/',@id, '.html'))}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.musicbrainz.org#this">
+                        			<foaf:name>Musicbrainz</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.musicbrainz.org"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<xsl:variable name="sas-iri" select="vi:dbpIRI ('', translate (mmd:name, ' ', '_'))"/>
 			<xsl:if test="not starts-with ($sas-iri, '#')">
 				<owl:sameAs rdf:resource="{$sas-iri}"/>
@@ -122,6 +131,13 @@
 			</xsl:choose>
 		</rdf:Description>
 		<mo:MusicArtist rdf:about="{vi:proxyIRI (concat($base,'artist/',@id, '.html'))}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.musicbrainz.org#this">
+                        			<foaf:name>Musicbrainz</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.musicbrainz.org"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<foaf:name>
 				<xsl:value-of select="mmd:name"/>
 			</foaf:name>
@@ -153,6 +169,13 @@
 			</xsl:choose>
 		</rdf:Description>
 		<rdf:Description rdf:about="{vi:proxyIRI (concat($base,'release/',@id, '.html'))}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.musicbrainz.org#this">
+                        			<foaf:name>Musicbrainz</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.musicbrainz.org"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&mo;Record"/>
 			<rdf:type rdf:resource="&audio;Album"/>
 			<dc:title>
@@ -212,6 +235,13 @@
 			</xsl:choose>
 		</rdf:Description>
 		<rdf:Description rdf:about="{vi:proxyIRI (concat($base,'track/',@id, '.html'))}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.musicbrainz.org#this">
+                        			<foaf:name>Musicbrainz</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.musicbrainz.org"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 			<rdf:type rdf:resource="&mo;Track"/>
 			<rdf:type rdf:resource="&audio;Recording"/>
 			<dc:title>

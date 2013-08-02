@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2009 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -37,7 +37,7 @@ create procedure f_s (in f double precision)
   declare i double precision;
   i := log (f) * 1000 + 0hex7fff;
   if (i > 0hexffff)
-	return 0hexffff;
+    return 0hexffff;
   return cast (i as int);
 }
 ;
@@ -56,7 +56,7 @@ create procedure rnk_scale (in i int)
 
   ret := exp ((i - 0hex7fff) / 1e3);
 
-  if (ret < 1) 
+  if (ret < 1)
     {
       return (2 * atan (ret*5));
     }
@@ -66,7 +66,7 @@ create procedure rnk_scale (in i int)
       return 3 + ((atan (ret-1) * 4) / 3.14e0);
     }
 
-  else 
+  else
     {
       return 7 + (atan ((ret-10)/50) * 2);
     }
@@ -105,7 +105,7 @@ create procedure DB.DBA.IRI_RANK (in iri iri_id_8)
     return 0;
   ni := iri_id_num (iri);
   n := bit_and (0hexffffffffffffff00, ni);
- nth := 2 * bit_and (ni, 0hexff);
+  nth := 2 * bit_and (ni, 0hexff);
   str := (select rnk_string from rdf_iri_rank where rnk_iri = iri_id_from_num (n));
   if (nth >= length (str))
     return 0;
@@ -119,7 +119,7 @@ grant execute on IRI_RANK to "SPARQL";
 create procedure rnk_store_w (inout first int, inout str varchar, inout fill int)
 {
   if (fill < 1000)
-  str := subseq (str, 0, fill);
+    str := subseq (str, 0, fill);
   insert replacing rdf_iri_stat option (no cluster)  values (iri_id_from_num (first), str);
   commit  work;
 }
@@ -154,27 +154,27 @@ create procedure rnk_count_refs_srv ()
       sn := iri_id_num (s);
       if (s_first is null)
 	{
-	s_first := bit_and (sn, 0hexffffffffffffff00);
-	s_prev := sn;
-	cnt := 0;
+	  s_first := bit_and (sn, 0hexffffffffffffff00);
+	  s_prev := sn;
+	  cnt := 0;
 	}
       if (sn = s_prev)
 	{
-	cnt := cnt + 1;
+	  cnt := cnt + 1;
 	}
       else
 	{
 	  if (not isstring (str))
 	    str := make_string (1536);
-	    nth := 6 * (s_prev - s_first);
-	    str[nth] := bit_shift (cnt, -8);
-	    str[nth + 1] := cnt;
-	    fill := nth + 6;
-	    cnt := 1;
-	    s_prev := sn;
+	  nth := 6 * (s_prev - s_first);
+	  str[nth] := bit_shift (cnt, -8);
+	  str[nth + 1] := cnt;
+	  fill := nth + 6;
+	  cnt := 1;
+	  s_prev := sn;
 	  if (sn - s_first > 255 or s_first > sn)
-	      {
-		rnk_store_w (s_first, str, fill);
+	    {
+	      rnk_store_w (s_first, str, fill);
 	      s_first := bit_and (sn, 0hexffffffffffffff00);
 	      --str := make_string (1536);
 	      str := rnk_get_stat (s_first);
@@ -182,14 +182,14 @@ create procedure rnk_count_refs_srv ()
 	    }
 	}
     }
- last:
+  last:
   if (not isstring (str))
-  str := make_string (1536);
- nth := 6 * (s_prev - s_first);
+    str := make_string (1536);
+  nth := 6 * (s_prev - s_first);
   str[nth] := bit_shift (cnt, -8);
-    str[nth + 1] := cnt;
- fill := nth + 6;
-    rnk_store_w (s_first, str, fill);
+  str[nth + 1] := cnt;
+  fill := nth + 6;
+  rnk_store_w (s_first, str, fill);
 }
 ;
 
@@ -201,8 +201,8 @@ create procedure DB.DBA.IST_SRV (in iri iri_id_8)
   declare n, nth, ni int;
   ni := iri_id_num (iri);
   n := bit_and (0hexffffffffffffff00, ni);
- nth := 6 * bit_and (ni, 0hexff);
- str := (select rst_string from rdf_iri_stat table option (no cluster) where rst_iri = iri_id_from_num (n));
+  nth := 6 * bit_and (ni, 0hexff);
+  str := (select rst_string from rdf_iri_stat table option (no cluster) where rst_iri = iri_id_from_num (n));
   if (str is null)
     return vector (0, 1);
   if (nth > length (str) - 6)
@@ -230,7 +230,7 @@ create procedure DB.DBA.IRI_STAT (in iri iri_id_8)
   declare n, nth, ni int;
   ni := iri_id_num (iri);
   n := bit_and (0hexffffffffffffff00, ni);
- nth := 6 * bit_and (ni, 0hexff);
+  nth := 6 * bit_and (ni, 0hexff);
   str := (select rst_string from rdf_iri_stat where rst_iri = iri_id_from_num (n));
   if (str is null)
     return 0;
@@ -275,7 +275,7 @@ create procedure rnk_store_sc (inout first int, inout str varchar, inout fill in
 create procedure rnk_get_ranks (in s_first int)
 {
   declare  str varchar;
- str := (select rnk_string  from rdf_iri_rank where rnk_iri = iri_id_from_num (s_first));
+  str := (select rnk_string  from rdf_iri_rank where rnk_iri = iri_id_from_num (s_first));
   if (str is null)
     return make_string (512);
   if (length (str) < 512)
@@ -286,9 +286,9 @@ create procedure rnk_get_ranks (in s_first int)
 
 create procedure rnk_score (in nth_iter int)
 {
-  -- use the POGS instead of OP index and check for lower value 
-  declare cr cursor for select o, p, iri_stat (s) 
-  	from rdf_quad table option (no cluster, index rdf_quad_pogs) 
+  -- use the POGS instead of OP index and check for lower value
+  declare cr cursor for select o, p, iri_stat (s)
+  	from rdf_quad table option (no cluster, index rdf_quad_pogs)
   	where o > #i0 and o < iri_id_from_num (0hexffffffffffffff00);
   declare s_first, s_prev, nth, sn, rnk, ssc, fill, n_iters int;
   declare sc double precision;
@@ -306,17 +306,17 @@ create procedure rnk_score (in nth_iter int)
       sn := iri_id_num (s);
       if (s_first is null)
 	{
-	s_first := bit_and (sn, 0hexffffffffffffff00);
+	  s_first := bit_and (sn, 0hexffffffffffffff00);
 	  if (nth_iter > 1)
 	    str := rnk_get_ranks (s_first);
 	  else
-	  str := make_string (512);
-	s_prev := sn;
-	sc := 0;
+	    str := make_string (512);
+	  s_prev := sn;
+	  sc := 0;
 	}
       if (sn = s_prev)
 	{
-	sc := sc + rnk_inc (rnk, nth_iter);
+	  sc := sc + rnk_inc (rnk, nth_iter);
 	  --dbg_obj_princ ('> sc of ', s, ' ', sc , ' rnk:', rnk, ' nth_iter:', nth_iter);
 	}
       else
@@ -324,32 +324,32 @@ create procedure rnk_score (in nth_iter int)
 	  declare dst int;
 	  if (not isstring (str))
 	    str := make_string (512);
-	    nth := 2 * (s_prev - s_first);
-	ssc := f_s (sc + s_f (str[nth] * 256 + str[nth + 1]));
-	    str[nth] := bit_shift (ssc, -8);
-	    str[nth + 1] := ssc;
-	    fill := nth + 2;
-	sc := rnk_inc (rnk, nth_iter);
-	    s_prev := sn;
+	  nth := 2 * (s_prev - s_first);
+	  ssc := f_s (sc + s_f (str[nth] * 256 + str[nth + 1]));
+	  str[nth] := bit_shift (ssc, -8);
+	  str[nth + 1] := ssc;
+	  fill := nth + 2;
+	  sc := rnk_inc (rnk, nth_iter);
+	  s_prev := sn;
 	  dst := sn - s_first;
 	  if (dst > 255 or dst < 0)
-	      {
-		rnk_store_sc (s_first, str, fill);
+	    {
+	      rnk_store_sc (s_first, str, fill);
 	      s_first := bit_and (sn, 0hexffffffffffffff00);
-		str := rnk_get_ranks (s_first);
+	      str := rnk_get_ranks (s_first);
 	      fill := 0;
 	    }
 	}
     }
  last:
   if (not isstring (str))
-  str := make_string (512);
- nth := 2 * (s_prev - s_first);
- ssc := f_s (sc);
+    str := make_string (512);
+  nth := 2 * (s_prev - s_first);
+  ssc := f_s (sc);
   str[nth] := bit_shift (ssc, -8);
-    str[nth + 1] := ssc;
- fill := nth + 2;
-    rnk_store_sc (s_first, str, fill);
+  str[nth + 1] := ssc;
+  fill := nth + 2;
+  rnk_store_sc (s_first, str, fill);
 }
 ;
 
@@ -375,21 +375,21 @@ create procedure rnk_next_cycle ()
   for (;;)
     {
       fetch cr into iri, stat;
-    rank := (select rnk_string from rdf_iri_rank where rnk_iri = iri);
+      rank := (select rnk_string from rdf_iri_rank where rnk_iri = iri);
       if (isstring (rank) and isstring (stat))
 	{
 	  declare nr, ns, inx, rnth, snth int;
-	nr := length (rank) /2;
-	ns := length (stat) /6;
+	  nr := length (rank) / 2;
+	  ns := length (stat) / 6;
 	  if (nr < ns)
-	  ns := nr;
+	    ns := nr;
 	  for (inx := 0; inx < ns; inx := inx + 1)
 	    {
-	    n_done := n_done + 1;
-	    rnth := inx * 2;
-	    snth := inx * 6;
-		stat[snth + 2] := rank [rnth];
-		stat[snth + 3] := rank[rnth + 1];
+	      n_done := n_done + 1;
+	      rnth := inx * 2;
+	      snth := inx * 6;
+	      stat[snth + 2] := rank[rnth];
+	      stat[snth + 3] := rank[rnth + 1];
 	      stat[snth + 4] := stat[snth + 2];
 	      stat[snth + 5] := stat[snth + 3];
 	    }
@@ -410,8 +410,8 @@ create procedure s_rank ()
 	cl_exec('__dbf_set(''cl_max_keep_alives_missed'',3000)');
     }
   log_enable (2);
-  delete from rdf_iri_stat;  
-  delete from rdf_iri_rank;  
+  delete from rdf_iri_stat;
+  delete from rdf_iri_rank;
   log_enable (1);
   cl_exec ('rnk_count_refs_srv ()');
   cl_exec ('rnk_score_srv (1)');

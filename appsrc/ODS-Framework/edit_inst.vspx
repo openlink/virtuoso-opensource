@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -231,7 +231,7 @@
                           };
 
                           update WA_INSTANCE
-                             set WAI_MEMBER_MODEL = self.imodel1.ufl_value,
+                             set WAI_MEMBER_MODEL = atoi (self.imodel1.ufl_value),
                                  WAI_IS_PUBLIC = self.is_public,
                                  WAI_MEMBERS_VISIBLE = self.is_visible,
                                  WAI_INST = inst,

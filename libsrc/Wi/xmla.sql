@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -304,6 +304,12 @@ create procedure
   uname := xmla_get_property ("Properties", 'UserName', null);
   passwd := xmla_get_property ("Properties", 'Password', null);
 
+  if (uname is null and is_https_ctx ())
+    {
+      uname := connection_get ('SPARQLUserId'); -- if WebID ACL is checked
+      passwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = uname);
+    }
+
   -- XMLA command, no statement
   if (stmt is null and ("BeginSession" is not null or "EndSession" is not null))
     return xml_tree_doc ('<root xmlns="urn:schemas-microsoft-com:xml-analysis:empty" />');
@@ -342,7 +348,7 @@ create procedure
 	    stmt := sprintf ('SELECT CAST (%s as VARCHAR)', stmt);
 	    tree := sql_parse (stmt);
 	  }
-	if (tree [0] <> 100)
+	if (tree [0] <> 100 and tree[0] <> 113)
 	  {
 	    if (registry_get ('XMLA-DML') = '1')
 	      {
@@ -350,11 +356,27 @@ create procedure
 		stmt_is_ddl := 1;
 	      }
 	    else
-	   signal ('00004', 'Only select statements are supported via XML for Analysis provider');
+	      signal ('00004', 'Only select statements are supported via XML for Analysis provider');
 	  }
-	   res := exec (stmt, state, msg, vector (), 0, mdta, dta);
+	res := exec (stmt, state, msg, vector (), 0, mdta, dta);
 	if (isinteger (dta))
 	  dta := vector (vector (dta));
+        if ((1 = length (dta)) and (1 = length (dta[0])) and (214 = __tag (dta[0][0])))
+	  {
+	    declare triples, inx any;
+	    triples := dict_list_keys (dta[0][0], 1);
+	    for (inx := 0; inx < length (triples); inx := inx + 1)
+	      {
+		declare trip any;
+		trip := triples [inx];
+		trip [0] := __ro2sq (trip[0]);
+		trip [1] := __ro2sq (trip[1]);
+		trip [2] := __ro2sq (trip[2]);
+		triples [inx] := trip;
+	      }
+	    dta := triples;
+	    exec_metadata ('select \'\' as S, \'\' as P, \'\' as O any', state, msg, mdta);
+	  }
 --  	if (strstr (stmt, 'FROM DB.DBA.SYS_FOREIGN_KEYS'))
 --    	   xmla_add_quot_to_table (dta);
 	blob_limit := atoi (xmla_get_property ("Properties", 'BLOBLimit', '0'));
@@ -657,6 +679,8 @@ xmla_dbschema_catalogs () for xmla_discover
   dsn := self.xmla_get_property ('DataSourceInfo', xmla_service_name ());
   dsn := xmla_get_dsn_name (dsn);
   cat := self.xmla_get_restriction ('CATALOG_NAME', '%');
+  if (cat is null)
+    cat := '%';
 
   if (not xmla_not_local_dsn (dsn))
     {
@@ -790,6 +814,8 @@ xmla_make_element (in mdta any, in dta any)
       aset (res, i1, mdta[i][0]);
       if (mdta[i][1] = 131 and not isblob(dta[i]))
 	 aset (res, i2, cast (dta[i] as varbinary));
+      else if (mdta[i][1] = 219 and 219 <> __tag (dta[i]))
+	 aset (res, i2, cast (dta[i] as decimal));
       else
          aset (res, i2, dta[i]);
       i := i + 1;
@@ -812,6 +838,15 @@ create method xmla_dbschema_columns () for xmla_discover
   sch := self.xmla_get_restriction ('TABLE_SCHEMA', '%');
   tb := self.xmla_get_restriction ('TABLE_NAME', '%');
   col := self.xmla_get_restriction ('COLUMN_NAME', '%');
+  if (cat is null)
+    cat := '%';
+  if (sch is null)
+    sch := '%';
+  if (tb is null)
+    tb := '%';
+  if (col is null)
+    col := '%';
+
   if (not xmla_not_local_dsn (dsn))
     {
       declare uname, passwd varchar;
@@ -820,49 +855,49 @@ create method xmla_dbschema_columns () for xmla_discover
       if (uname is null or passwd is null)
 	signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
       set_user_id (uname, 1, passwd);
-      exec ('select
-	         name_part(KEY_TABLE, 0) as TABLE_CATALOG,
-	         name_part(KEY_TABLE, 1) as TABLE_SCHEMA,
-	         name_part(KEY_TABLE, 2) as TABLE_NAME,
-	         "COLUMN" as COLUMN_NAME,'
-		 || ' NULL as COLUMN_GUID,'
-		 || ' NULL as COLUMN_PROPID INTEGER,'
-		 || ' (select count(*) from DB.DBA.SYS_COLS where "TABLE" = KEY_TABLE and COL_ID <= c.COL_ID and "COLUMN" <> ''_IDN'') as ORDINAL_POSITION INTEGER,'
-		 || ' case when deserialize(COL_DEFAULT) is null then 0 else -1 end as COLUMN_HASDEFAULT SMALLINT,'
-		 || ' cast (deserialize(COL_DEFAULT) as NVARCHAR) as COLUMN_DEFAULT NVARCHAR(254),'
-		 || ' cast (DB.DBA.oledb_dbflags(COL_DTP, COL_NULLABLE) as integer) as COLUMN_FLAGS INTEGER,'
-		 || ' case COL_NULLABLE when 1 then -1 else 0 end as IS_NULLABLE SMALLINT,'
-		 || ' cast (DB.DBA.oledb_dbtype(COL_DTP) as integer) as DATA_TYPE SMALLINT,'
-		 || ' NULL as TYPE_GUID,'
-		 || ' cast (DB.DBA.oledb_char_max_len(COL_DTP, COL_PREC) as integer) as CHARACTER_MAXIMUM_LENGTH INTEGER,'
-		 || ' cast (DB.DBA.oledb_char_oct_len(COL_DTP, COL_PREC) as integer) as CHARACTER_OCTET_LENGTH INTEGER,'
-		 || ' cast (DB.DBA.oledb_num_prec(COL_DTP, COL_PREC) as smallint) as NUMERIC_PRECISION SMALLINT,'
-		 || ' cast (DB.DBA.oledb_num_scale(COL_DTP, COL_SCALE) as smallint) as NUMERIC_SCALE SMALLINT,'
-		 || ' cast (DB.DBA.oledb_datetime_prec(COL_DTP, COL_PREC) as integer) as DATETIME_PRECISION INTEGER,'
-		 || ' NULL as CHARACTER_SET_CATALOG NVARCHAR(1),'
-		 || ' NULL as CHARACTER_SET_SCHEMA NVARCHAR(1),'
-		 || ' NULL as CHARACTER_SET_NAME NVARCHAR(1),'
-		 || ' NULL as COLLATION_CATALOG NVARCHAR(1),'
-		 || ' NULL as COLLATION_SCHEMA NVARCHAR(1),'
-		 || ' NULL as COLLATION_NAME NVARCHAR(1),'
-		 || ' NULL as DOMAIN_CATALOG NVARCHAR(1),'
-		 || ' NULL as DOMAIN_SCHEMA NVARCHAR(1),'
-		 || ' NULL as DOMAIN_NAME NVARCHAR(1),'
-		 || ' NULL as DESCRIPTION NVARCHAR(1) ' ||
-	       'from DB.DBA.SYS_KEYS, DB.DBA.SYS_KEY_PARTS, DB.DBA.SYS_COLS c
-	       where
-	          __any_grants(KEY_TABLE) and
-		  name_part(KEY_TABLE, 0) = ? and
-		  name_part(KEY_TABLE, 1) like ? and
-		  name_part(KEY_TABLE, 2) like ? and
-		  "COLUMN" like ? and
-		  "COLUMN" <> ''_IDN'' and
-		  KEY_IS_MAIN = 1 and
-		  KEY_MIGRATE_TO is null and
-		  KP_KEY_ID = KEY_ID and
-		  COL_ID = KP_COL order by KEY_TABLE, 7'
-		  , null, null,
-	  vector (cat, sch, tb, col), 0, mdta, dta);
+      exec('select
+	 name_part(KEY_TABLE, 0) as TABLE_CATALOG,
+	 name_part(KEY_TABLE, 1) as TABLE_SCHEMA,
+	 name_part(KEY_TABLE, 2) as TABLE_NAME,
+	 "COLUMN" as COLUMN_NAME,
+	 NULL as COLUMN_GUID,
+	 NULL as COLUMN_PROPID INTEGER,
+	 (select count(*) from DB.DBA.SYS_COLS where "TABLE" = KEY_TABLE and COL_ID <= c.COL_ID and "COLUMN" <> ''_IDN'') as ORDINAL_POSITION INTEGER,
+	 case when deserialize(COL_DEFAULT) is null then 0 else -1 end as COLUMN_HASDEFAULT SMALLINT,
+         cast (deserialize(COL_DEFAULT) as NVARCHAR) as COLUMN_DEFAULT NVARCHAR(254),
+         cast (DB.DBA.oledb_dbflags(COL_DTP, COL_NULLABLE) as integer) as COLUMN_FLAGS INTEGER,
+	 case COL_NULLABLE when 1 then -1 else 0 end as IS_NULLABLE SMALLINT,
+	 cast (DB.DBA.oledb_dbtype(COL_DTP) as integer) as DATA_TYPE SMALLINT,
+	 NULL as TYPE_GUID,
+	 cast (DB.DBA.oledb_char_max_len(COL_DTP, COL_PREC) as integer) as CHARACTER_MAXIMUM_LENGTH INTEGER,
+	 cast (DB.DBA.oledb_char_oct_len(COL_DTP, COL_PREC) as integer) as CHARACTER_OCTET_LENGTH INTEGER,
+	 cast (DB.DBA.oledb_num_prec(COL_DTP, COL_PREC) as smallint) as NUMERIC_PRECISION SMALLINT,
+	 cast (DB.DBA.oledb_num_scale(COL_DTP, COL_SCALE) as smallint) as NUMERIC_SCALE SMALLINT,
+	 cast (DB.DBA.oledb_datetime_prec(COL_DTP, COL_PREC) as integer) as DATETIME_PRECISION INTEGER,
+	 NULL as CHARACTER_SET_CATALOG NVARCHAR(1),
+	 NULL as CHARACTER_SET_SCHEMA NVARCHAR(1),
+	 NULL as CHARACTER_SET_NAME NVARCHAR(1),
+	 NULL as COLLATION_CATALOG NVARCHAR(1),
+	 NULL as COLLATION_SCHEMA NVARCHAR(1),
+	 NULL as COLLATION_NAME NVARCHAR(1),
+	 NULL as DOMAIN_CATALOG NVARCHAR(1),
+	 NULL as DOMAIN_SCHEMA NVARCHAR(1),
+	 NULL as DOMAIN_NAME NVARCHAR(1),
+	 NULL as DESCRIPTION NVARCHAR(1)
+    	from DB.DBA.SYS_KEYS, DB.DBA.SYS_KEY_PARTS, DB.DBA.SYS_COLS c
+    	where
+	 __any_grants(KEY_TABLE) and
+	 name_part(KEY_TABLE, 0) = ? and
+	 name_part(KEY_TABLE, 1) like ? and
+	 name_part(KEY_TABLE, 2) like ? and
+	 "COLUMN" like ? and
+	 "COLUMN" <> ''_IDN'' and
+	 KEY_IS_MAIN = 1 and
+	 KEY_MIGRATE_TO is null and
+	 KP_KEY_ID = KEY_ID and
+	 COL_ID = KP_COL order by KEY_TABLE, 7 option (order)'
+       , null, null,
+      vector (cat, sch, tb, col), 0, mdta, dta);
     }
   else
     {
@@ -888,53 +923,102 @@ create method xmla_dbschema_columns () for xmla_discover
 create method xmla_dbschema_foreign_keys () for xmla_discover
 {
   declare dta, mdta, stmt, state, msg any;
-  declare dsn, cat, tb, col, sch any;
-  declare uname, passwd, _tbl varchar;
+  declare dsn any;
+  declare p_cat, p_tbl, p_sch any;
+  declare f_cat, f_tbl, f_sch any;
+  declare _ptbl, _ftbl varchar;
 
   dsn := self.xmla_get_property ('DataSourceInfo', xmla_service_name ());
   dsn := xmla_get_dsn_name (dsn);
-  cat := self.xmla_get_restriction ('PK_TABLE_CATALOG', '%');
-  sch := self.xmla_get_restriction ('TABLE_SCHEMA', '%');
-  tb := self.xmla_get_restriction ('TABLE_NAME', '%');
-  cat := trim (cat, '"');
-  sch := trim (sch, '"');
-  tb := trim (tb, '"');
-  uname := self.xmla_get_property ('UserName', null);
-  passwd := self.xmla_get_property ('Password', null);
-  _tbl := cat || '.' || sch || '.' || tb;
 
-  if (uname is null or passwd is null)
-     signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
+  p_cat := self.xmla_get_restriction ('PK_TABLE_CATALOG', '%');
+  p_sch := self.xmla_get_restriction ('PK_TABLE_SCHEMA', '%');
+  p_tbl := self.xmla_get_restriction ('PK_TABLE_NAME', '%');
+  f_cat := self.xmla_get_restriction ('FK_TABLE_CATALOG', '%');
+  f_sch := self.xmla_get_restriction ('FK_TABLE_SCHEMA', '%');
+  f_tbl := self.xmla_get_restriction ('FK_TABLE_NAME', '%');
+
+  if (p_cat is null)
+  {
+    if (f_cat is not null)
+      p_cat := f_cat;
+    else
+      p_cat := '%';
+  }
+
+  if (f_cat is null)
+  {
+    if (p_cat is not null)
+      f_cat := p_cat;
+    else
+      f_cat := '%';
+  }
+
+  if (p_sch is null)
+    p_sch := '%';
+  if (p_tbl is null)
+    p_tbl := '%';
+  if (f_sch is null)
+    f_sch := '%';
+  if (f_tbl is null)
+    f_tbl := '%';
+
+  p_cat := trim (p_cat, '"');
+  p_sch := trim (p_sch, '"');
+  p_tbl := trim (p_tbl, '"');
+  f_cat := trim (f_cat, '"');
+  f_sch := trim (f_sch, '"');
+  f_tbl := trim (f_tbl, '"');
+  _ptbl := p_cat || '.' || p_sch || '.' || p_tbl;
+  _ftbl := f_cat || '.' || f_sch || '.' || f_tbl;
 
   if (not xmla_not_local_dsn (dsn))
     {
+      declare uname, passwd varchar;
+      uname := self.xmla_get_property ('UserName', null);
+      passwd := self.xmla_get_property ('Password', null);
+      if (uname is null or passwd is null)
+	signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
       set_user_id (uname, 1, passwd);
-      if (exists (select 1 from DB.DBA.SYS_REMOTE_TABLE where RT_NAME like _tbl))
-	{
-	    declare _dsn, r_name, _rt_name any;
-	    select RT_DSN, RT_REMOTE_NAME, RT_NAME into _dsn, r_name, _rt_name
-		from DB.DBA.SYS_REMOTE_TABLE where RT_NAME like _tbl;
-	    r_name := '%.' || r_name;
-       	    stmt := 'SELECT * FROM DB.DBA.SYS_FOREIGN_KEYS_VIEW WHERE PK_TABLE = ''' || r_name ||
-			''' AND FK_TABLE = ''' || _rt_name
-	       			|| ''' AND DSN = ''' || xmla_get_dsn_name (_dsn) || '''';
-	}
-      else
-        stmt := 'SELECT name_part (PK_TABLE, 1) as PK_TABLE_SCHEMA,
-		 name_part (PK_TABLE, 2) as PK_TABLE_NAME, PKCOLUMN_NAME as PK_COLUMN_NAME,
-		 name_part (FK_TABLE, 1) as FK_TABLE_SCHEMA,
-		 name_part (FK_TABLE, 2) as FK_TABLE_NAME, FKCOLUMN_NAME AS FK_COLUMN_NAME,
-		 KEY_SEQ, UPDATE_RULE, DELETE_RULE, FK_NAME
-		 FROM DB.DBA.SYS_FOREIGN_KEYS WHERE PK_TABLE like ''' || _tbl || ''' OR FK_TABLE like ''' || _tbl || '''';
+      exec('select
+    	 name_part (PK_TABLE, 0) as PK_TABLE_CATALOG varchar (128),
+    	 name_part (PK_TABLE, 1) as PK_TABLE_SCHEMA varchar (128),
+    	 name_part (PK_TABLE, 2) as PK_TABLE_NAME varchar (128),
+    	 PKCOLUMN_NAME as PK_COLUMN_NAME,
+    	 NULL as PK_COLUMN_GUID,
+    	 NULL as PK_COLUMN_PROPID INTEGER,
+    	 name_part (FK_TABLE, 0) as FK_TABLE_CATALOG varchar (128),
+	 name_part (FK_TABLE, 1) as FK_TABLE_SCHEMA varchar (128),
+    	 name_part (FK_TABLE, 2) as FK_TABLE_NAME varchar (128),
+    	 FKCOLUMN_NAME as FK_COLUMN_NAME,
+    	 NULL as FK_COLUMN_GUID,
+    	 NULL as FK_COLUMN_PROPID INTEGER,
+    	 (KEY_SEQ + 1) as ORDINAL INTEGER,
+    	 (case UPDATE_RULE when 0 then ''NO ACTION'' when 1 then ''CASCADE'' when 2 then ''SET NULL'' when 3 then ''SET DEFAULT'' else NULL end) as UPDATE_RULE varchar(20),
+    	 (case DELETE_RULE when 0 then ''NO ACTION'' when 1 then ''CASCADE'' when 2 then ''SET NULL'' when 3 then ''SET DEFAULT'' else NULL end) as DELETE_RULE varchar(20),
+	 PK_NAME,
+	 FK_NAME,
+    	 3 as DEFERRABILITY SMALLINT
+    	from DB.DBA.SYS_FOREIGN_KEYS SYS_FOREIGN_KEYS
+    	where name_part (PK_TABLE, 0) like ?
+    	 and name_part (PK_TABLE, 1) like ?
+    	 and name_part (PK_TABLE, 2) like ?
+    	 and name_part (FK_TABLE, 0) like ?
+    	 and name_part (FK_TABLE, 1) like ?
+    	 and name_part (FK_TABLE, 2) like ?
+    	order by 1, 2, 3, 7, 8, 9, 13 '
+    	, null, null,
+      	vector(p_cat, p_sch, p_tbl, f_cat, f_sch, f_tbl), 0, mdta, dta);
     }
   else
     {
        dsn := xmla_get_dsn_name (dsn);
-       stmt := 'SELECT * FROM DB.DBA.SYS_FOREIGN_KEYS_VIEW WHERE PK_TABLE = ''' || _tbl || ''' AND FK_TABLE = ''' || _tbl
-	       || ''' AND DSN = ''' || dsn || '''';
+       stmt := 'SELECT * FROM DB.DBA.SYS_FOREIGN_KEYS_VIEW WHERE PK_TABLE = '''
+       		|| _ptbl || ''' AND FK_TABLE = ''' || _ftbl
+	       	|| ''' AND DSN = ''' || dsn || '''';
+       exec (stmt, state, msg, vector (), 0, mdta, dta);
     }
 
-  exec (stmt, state, msg, vector (), 0, mdta, dta);
   xmla_make_struct (mdta, dta);
   self.metadata := mdta;
   return dta;
@@ -946,35 +1030,66 @@ create method xmla_dbschema_primary_keys () for xmla_discover
 {
   declare state, msg, dta, mdta, stmt any;
   declare dsn, cat, tb, col, sch any;
-  declare uname, passwd, _tbl varchar;
+  declare _tbl varchar;
 
   dsn := self.xmla_get_property ('DataSourceInfo', xmla_service_name ());
   dsn := xmla_get_dsn_name (dsn);
   cat := self.xmla_get_restriction ('TABLE_CATALOG', '%');
   sch := self.xmla_get_restriction ('TABLE_SCHEMA', '%');
   tb := self.xmla_get_restriction ('TABLE_NAME', '%');
-  uname := self.xmla_get_property ('UserName', null);
-  passwd := self.xmla_get_property ('Password', null);
+
+  if (cat is null)
+    cat := '%';
+  if (sch is null)
+    sch := '%';
+  if (tb is null)
+    tb := '%';
+
   cat := trim (cat, '"');
   sch := trim (sch, '"');
   tb := trim (tb, '"');
   _tbl := cat || '.' || sch || '.' || tb;
 
-  if (uname is null or passwd is null)
-     signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
-
   if (not xmla_not_local_dsn (dsn))
     {
+      declare uname, passwd varchar;
+      uname := self.xmla_get_property ('UserName', null);
+      passwd := self.xmla_get_property ('Password', null);
+      if (uname is null or passwd is null)
+	signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
       set_user_id (uname, 1, passwd);
-      stmt := sprintf ('SELECT COLUMN_NAME FROM %s.INFORMATION_SCHEMA.TABLE_CONSTRAINTS LEFT JOIN %s.INFORMATION_SCHEMA.KEY_COLUMN_USAGE ON %s.INFORMATION_SCHEMA.TABLE_CONSTRAINTS.CONSTRAINT_NAME = %s.INFORMATION_SCHEMA.KEY_COLUMN_USAGE.CONSTRAINT_NAME WHERE  CONSTRAINT_TYPE = ''PRIMARY KEY'' AND %s.INFORMATION_SCHEMA.TABLE_CONSTRAINTS.TABLE_NAME=''%s'' AND %s.INFORMATION_SCHEMA.TABLE_CONSTRAINTS.TABLE_SCHEMA=''%s'' AND %s.INFORMATION_SCHEMA.TABLE_CONSTRAINTS.CONSTRAINT_SCHEMA=''%s'' AND %s.INFORMATION_SCHEMA.KEY_COLUMN_USAGE.TABLE_SCHEMA=''%s'' AND %s.INFORMATION_SCHEMA.KEY_COLUMN_USAGE.CONSTRAINT_SCHEMA=''%s''', cat, cat, cat, cat, cat, tb, cat, sch, cat, sch, cat, sch, cat, sch);
+      exec('select
+    	 name_part(KEY_TABLE, 0) AS TABLE_CATALOG NVARCHAR(128),
+    	 name_part(KEY_TABLE, 1) AS TABLE_SCHEMA NVARCHAR(128),
+    	 name_part(KEY_TABLE, 2) AS TABLE_NAME NVARCHAR(128),
+    	 "COLUMN" as COLUMN_NAME NVARCHAR(128),
+    	 NULL as COLUMN_GUID,
+    	 NULL as COLUMN_POPID INTEGER,
+    	 (KP_NTH + 1) as ORDINAL,
+    	 name_part(KEY_NAME, 2) as PK_NAME
+    	from DB.DBA.SYS_KEYS, DB.DBA.SYS_KEY_PARTS, DB.DBA.SYS_COLS
+    	where
+    	 __any_grants(KEY_TABLE) and
+    	 name_part(KEY_TABLE, 0) LIKE ? and
+    	 name_part(KEY_TABLE, 1) LIKE ? and
+    	 name_part(KEY_TABLE, 2) LIKE ? and
+    	 KEY_IS_MAIN = 1 and
+    	 KEY_MIGRATE_TO is null and
+    	 KP_KEY_ID = KEY_ID and
+    	 KP_NTH < KEY_DECL_PARTS and
+    	 COL_ID = KP_COL and
+    	 "COLUMN" <> ''_IDN''
+    	order by KEY_TABLE'
+       	, null, null,
+      vector(cat, sch, tb), 0, mdta, dta);
     }
   else
     {
         dsn := xmla_get_dsn_name (dsn);
 	stmt := 'SELECT * FROM DB.DBA.SYS_PRIMARY_KEYS_VIEW WHERE PK_TABLE = ''' || _tbl || ''' AND DSN = ''' || dsn || '''';
+        exec (stmt, state, msg, vector (), 0, mdta, dta);
     }
 
-  exec (stmt, state, msg, vector (), 0, mdta, dta);
   xmla_make_struct (mdta, dta);
   self.metadata := mdta;
   return dta;
@@ -1066,13 +1181,21 @@ create method xmla_dbschema_provider_types () for xmla_discover
 create method xmla_dbschema_tables () for xmla_discover
 {
   declare dta, mdta any;
-  declare dsn, cat, tb any;
+  declare dsn, cat, sch, tb any;
 
   dsn := self.xmla_get_property ('DataSourceInfo', xmla_service_name ());
   dsn := xmla_get_dsn_name (dsn);
-  --cat := self.xmla_get_property ('Catalog', 'DB');
-  tb := self.xmla_get_restriction ('TABLE_NAME', '%');
   cat := self.xmla_get_restriction ('TABLE_CATALOG', 'DB');
+  sch := self.xmla_get_restriction ('TABLE_SCHEMA', '%');
+  tb := self.xmla_get_restriction ('TABLE_NAME', '%');
+
+  if (cat is null)
+    cat := 'DB';
+  if (sch is null)
+    sch := '%';
+  if (tb is null)
+    tb := '%';
+
   if (not xmla_not_local_dsn (dsn))
     {
       declare uname, passwd varchar;
@@ -1092,9 +1215,12 @@ create method xmla_dbschema_tables () for xmla_discover
 		    NULL as DATE_MODIFIED DATE
 		    from DB.DBA.SYS_KEYS where
 		    __any_grants(KEY_TABLE) and
-		    name_part(KEY_TABLE, 0) = ? and name_part(KEY_TABLE, 2) like ?
-		    and KEY_IS_MAIN = 1 and KEY_MIGRATE_TO is null', null, null,
-	  vector (cat, tb), 0, mdta, dta);
+		    name_part(KEY_TABLE, 0) like ? and
+		    name_part(KEY_TABLE, 1) like ? and
+		    name_part(KEY_TABLE, 2) like ?
+		    and KEY_IS_MAIN = 1 and
+		    KEY_MIGRATE_TO is null', null, null,
+	  vector (cat, sch, tb), 0, mdta, dta);
     }
   else
     {
@@ -1132,12 +1258,11 @@ xmla_get_schs ()
 	 soap_box_structure ('TABLE_CATALOG', '', 'TABLE_SCHEMA', '', 'TABLE_NAME', '', 'TABLE_TYPE', '', 'COLUMN_NAME', '')
 	,''),
       vector ('DBSCHEMA_PRIMARY_KEYS',
-	 soap_box_structure ('TABLE_CATALOG', '', 'TABLE_SCHEMA', '', 'TABLE_NAME', '', 'TABLE_TYPE', '', 'COLUMN_NAME', '')
+	 soap_box_structure ('TABLE_CATALOG', '', 'TABLE_SCHEMA', '', 'TABLE_NAME', '')
 	,''),
       vector ('DBSCHEMA_FOREIGN_KEYS',
-	 soap_box_structure ('PK_TABLE_SCHEMA', '', 'PK_TABLE_NAME', '', 'PK_COLUMN_NAME', '',
-	   		     'FK_TABLE_SCHEMA', '', 'FK_TABLE_NAME', '', 'FK_COLUMN_NAME', '',
-			     'KEY_SEQ', '', 'UPDATE_RULE', '', 'DELETE_RULE', '', 'FK_NAME', '')
+	 soap_box_structure ('PK_TABLE_CATALOG', '', 'PK_TABLE_SCHEMA', '', 'PK_TABLE_NAME', '',
+	   		     'FK_TABLE_CATALOG', '', 'FK_TABLE_SCHEMA', '', 'FK_TABLE_NAME', '')
 	,''),
       vector ('DBSCHEMA_PROVIDER_TYPES',
 	 soap_box_structure ('DATA_TYPE', '', 'BEST_MATCH', '')
@@ -1777,7 +1902,9 @@ xmla_cursor_stmt_change (in _props any, inout _stmt varchar)
   _left_str_u := ucase (_left_str, 6);
 
   if (_left_str_u = 'SELECT')
-    _stmt := replace (_stmt, _left_str, new_stmpt, 1);
+    _stmt := new_stmpt || ' * FROM (' || _stmt || ') __xml_dt0' ;
+
+    --_stmt := replace (_stmt, _left_str, new_stmpt, 1);
 
 }
 ;
@@ -1956,10 +2083,11 @@ xmla_sparql_result (inout mdta any, inout dta any, in stmt any)
 {
   declare idx, idx2, tmdta any;
 
-  stmt := ucase (trim (stmt));
-
-  if ("LEFT" (stmt, 6) <> 'SPARQL')
-     return;
+  -- XXX: we always must check data in columns mentioned as DV_ANY
+  -- because sparql query can be executed from inside a SQL view
+  -- stmt := ucase (trim (stmt));
+  -- if ("LEFT" (stmt, 6) <> 'SPARQL')
+  --   return;
 
   tmdta := mdta[0];
 

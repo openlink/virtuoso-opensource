@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -41,6 +41,7 @@
 #include "list2.h"
 #include "date.h"
 #include "xmltree.h"
+#include "mhash.h"
 
 #if !defined (NEW_HASH) && !defined (USE_OLD_HASH)
 #define USE_OLD_HASH
@@ -79,6 +80,8 @@
 #endif
 long hi_end_memcache_size = 1100000;
 int enable_mem_hash_join = 1;
+long tc_slow_temp_insert;
+long tc_slow_temp_lookup;
 
 #define HA_MEMCACHE(ha) \
   (HA_PROC_FILL == ha->ha_op ? 0 : HA_FILL == ha->ha_op ? enable_mem_hash_join : \
@@ -234,18 +237,18 @@ hi_allocate (unsigned int32 sz, int use_memcache, hash_area_t * ha)
   if (HA_DISTINCT == ha->ha_op || (use_memcache && sz < hi_end_memcache_size)
       || ha->ha_memcache_only)
     {
-      if (HA_FILL == ha->ha_op)
+      if (HA_FILL == ha->ha_op || HI_CHASH == use_memcache)
 	{
 	  hi->hi_pool = mem_pool_alloc ();
-	  SET_THR_TMP_POOL (hi->hi_pool);
-	  hi->hi_memcache = t_id_hash_allocate (MAX (sz, HI_INIT_SIZE),
-					       sizeof (hi_memcache_key_t), sizeof (caddr_t *), hi_memcache_hash, hi_memcache_cmp);
-	  SET_THR_TMP_POOL (NULL);
 	}
       else
+	{
 	hi->hi_memcache = id_hash_allocate (509,
 	    sizeof (hi_memcache_key_t), sizeof (caddr_t *), hi_memcache_hash, hi_memcache_cmp);
-      id_hash_set_rehash_pct (hi->hi_memcache, 120);
+	  hi->hi_memcache_from_mp = 0;
+	}
+      if (hi->hi_memcache)
+	id_hash_set_rehash_pct (hi->hi_memcache, 120);
     }
   else
     hi_alloc_elements (hi);
@@ -260,17 +263,18 @@ hi_free (hash_index_t * hi)
   if (hi->hi_chash)
     {
       cha_free (hi->hi_chash);
+      hi->hi_pool = NULL;
       if (hi->hi_thread_cha)
 	hash_table_free (hi->hi_thread_cha);
     }
-  else if (hi->hi_memcache)
+  if (hi->hi_memcache)
     {
       if (hi->hi_pool)
 	{
 	  mp_free (hi->hi_pool);
 	  hi->hi_pool = NULL;
 	}
-      else
+      else if (!hi->hi_memcache_from_mp)
 	{
 	  hi_memcache_key_t *key;
 	  caddr_t **val;
@@ -295,6 +299,7 @@ hi_free (hash_index_t * hi)
 	    }
 	  id_hash_clear (hi->hi_memcache);
 	  id_hash_free (hi->hi_memcache);
+	  hi->hi_memcache = NULL;
 	}
     }
   DO_SET (caddr_t, elt, &hi->hi_pages)
@@ -578,7 +583,7 @@ key_hash_box (caddr_t box, dtp_t dtp, uint32 code, int * var_len, collation_t * 
       if (allow_shorten_any)
         any_ser = box_to_shorten_any (box, &err);
       else
-        any_ser = box_to_any (box, &err);
+        any_ser = box_to_any_1 (box, &err, NULL, DKS_TO_HA_DISK_ROW);
       if (err)
 	sqlr_resignal (err);
       if (DV_TYPE_OF (any_ser) != DV_STRING)
@@ -673,11 +678,7 @@ key_hash_box (caddr_t box, dtp_t dtp, uint32 code, int * var_len, collation_t * 
 	  code = (code * (c + 3 + inx2)) ^ (code >> 24);
 	}
     }
-  for (inx2 = 0; inx2 < len; inx2++)
-    {
-      uint32 b = box[inx2];
-      code = (code * (b + 3 + inx2)) ^ (code >> 24);
-    }
+  MHASH_VAR (code, box, len);
   return code;
 }
 
@@ -728,6 +729,7 @@ hash_row_set_col (row_delta_t * rd, row_fill_t * rf, dbe_col_loc_t *cl, caddr_t 
   caddr_t err = NULL;
   rd->rd_itc->itc_search_par_fill = 0;
   rd->rd_non_comp_max = rf->rf_space;
+  rd->rd_any_ser_flags = DKS_TO_HA_DISK_ROW ;
   if (!feed_temp_blobs)
     row_insert_cast_temp (rd, cl, value, &err, NULL);
   else
@@ -772,6 +774,7 @@ itc_ha_disk_row (it_cursor_t * itc, buffer_desc_t * buf, hash_area_t * ha, caddr
   rd.rd_key = ha->ha_key;
   if (HA_PROC_FILL == ha->ha_op || HA_GROUP == ha->ha_op)
     rd.rd_any_ser_flags = DKS_TO_HA_DISK_ROW;
+  TC (tc_slow_temp_insert);
   if (!bp_ref_itc)
     {
       bp_ref_itc = itc_create (NULL, qi->qi_trx);
@@ -837,7 +840,7 @@ itc_ha_disk_row (it_cursor_t * itc, buffer_desc_t * buf, hash_area_t * ha, caddr
 	    }
 	  if ((feed_temp_blobs || !IS_INLINEABLE_DTP (cl->cl_sqt.sqt_dtp))
 	      && IS_BLOB_DTP (cl->cl_sqt.sqt_dtp) && !cl->cl_sqt.sqt_is_xml
-	      && ! IS_BLOB_HANDLE_DTP (dtp))
+	      && ! IS_BLOB_HANDLE_DTP (dtp) && DV_DB_NULL != dtp)
 	    dtp = DV_BLOB_HANDLE_DTP_FOR_BLOB_DTP (DV_BLOB_DTP_FOR_INLINE_DTP (dtp));
 
 	  if (dtp != DV_DB_NULL &&
@@ -1102,7 +1105,7 @@ itc_ha_equal (it_cursor_t * itc, hash_area_t * ha, caddr_t * qst, db_buf_t hash_
 	    {
 	      if (DVC_MATCH == compare_wide_to_utf8 ((caddr_t) (hash_row + h_off),
 		    h_len, value, box_length(value) - sizeof (wchar_t),
-		    ssl->ssl_sqt.sqt_collation))
+                  ssl->ssl_sqt.sqt_collation ) )
 		continue;
 	      return DVC_LESS;
 	    }
@@ -1231,6 +1234,7 @@ itc_ha_disk_find_new (it_cursor_t * itc, buffer_desc_t ** ret_buf, int * ret_pos
 	    {
 	      ret_buf[0] = h_buf;
 	      ret_pos[0] = he_pos;
+	      TC (tc_slow_temp_lookup);
 	      return 1;
 	    }
 	}
@@ -1250,10 +1254,31 @@ itc_ha_disk_find_new (it_cursor_t * itc, buffer_desc_t ** ret_buf, int * ret_pos
 
 
 void
+mc_print (id_hash_t * memcache)
+{
+  hi_memcache_key_t *key;
+  caddr_t **val;
+  id_hash_iterator_t hit;
+  if (!memcache)
+    {
+      printf ("no memcache\n");
+      return;
+    }
+  id_hash_iterator (&hit, memcache);
+  while (hit_next (&hit, (caddr_t *)(&key), (caddr_t *)(&val)))
+    {
+      sqlo_box_print ((caddr_t)key->hmk_data);
+      printf (" -> ");
+      sqlo_box_print ((caddr_t)val[0]);
+    }
+}
+
+
+void
 itc_ha_flush_memcache (hash_area_t * ha, caddr_t * qst, int is_in_fill)
 {
   it_cursor_t * itc = (it_cursor_t *) QST_GET_V (qst, ha->ha_insert_itc);
-  index_tree_t * tree = is_in_fill ? qst_tree (qst, ha->ha_tree, ha->ha_set_no) : (index_tree_t*)qst_get (qst, ha->ha_tree);
+  index_tree_t * tree = SETP_HASH_FILL == is_in_fill ? qst_tree (qst, ha->ha_tree, ha->ha_set_no) : (index_tree_t*)qst_get (qst, ha->ha_tree);
   hash_index_t *hi;
   hi_memcache_key_t *key;
   caddr_t **val;
@@ -1263,6 +1288,8 @@ itc_ha_flush_memcache (hash_area_t * ha, caddr_t * qst, int is_in_fill)
   hi = tree->it_hi;
   if (hi && hi->hi_chash)
     {
+      if (SETP_NO_CHASH_FLUSH == is_in_fill)
+	return;
       chash_to_memcache (qst, tree, ha);
       if (!itc)
 	{
@@ -1276,7 +1303,13 @@ itc_ha_flush_memcache (hash_area_t * ha, caddr_t * qst, int is_in_fill)
   if (hi->hi_memcache->ht_count >= hi_end_memcache_size)
     hi->hi_size = MAX (hi->hi_size, 4 * hi_end_memcache_size); /* overflowed, more coming */
   else
-    hi->hi_size = hi->hi_memcache->ht_count; /* this is all, flushing at end of query */
+    hi->hi_size = MAX (1, hi->hi_memcache->ht_count); /* this is all, flushing at end of query */
+  if (!itc)
+    {
+      itc = itc_create (NULL, ((QI*)qst)->qi_trx);
+      qst_set (qst, ha->ha_insert_itc, (caddr_t) itc);
+      itc_from_it_ha (itc, tree, ha);
+    }
   hi_alloc_elements (hi);
   id_hash_iterator (&hit, hi->hi_memcache);
   while (hit_next (&hit, (caddr_t *)(&key), (caddr_t *)(&val)))
@@ -1320,6 +1353,113 @@ For procedures, we have no memcache. */
     }
   hi->hi_memcache = NULL;
 }
+
+
+void
+memcache_read_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
+{
+  QNCAST (query_instance_t, qi, inst);
+  key_source_t * ks = ts->ts_order_ks;
+  setp_node_t * setp = ts->ts_order_ks->ks_from_setp;
+  int n_results = 0, last_set, batch;
+  caddr_t * branch = chash_reader_current_branch (ts, inst, 0);
+  index_tree_t * tree = (index_tree_t*)qst_get (branch, setp->setp_ha->ha_tree);
+  id_hash_iterator_t * hit;
+  hash_index_t * hi = tree->it_hi;
+  state_slot_t * ssl;
+  int set;
+  int n_sets = ts->src_gen.src_prev ? QST_INT (inst, ts->src_gen.src_prev->src_out_fill) : qi->qi_n_sets;
+  hi_memcache_key_t *key;
+  caddr_t **val;
+  data_col_t * set_no_dc = NULL;
+  if (ks->ks_set_no_col_ssl || SSL_VEC != setp->setp_ha->ha_tree->ssl_type)
+    n_sets = 1;
+  if (state)
+    {
+      QST_INT (inst, ts->clb.clb_nth_set) = 0;
+      last_set = QST_INT (inst, ts->clb.clb_nth_set) = 0;
+      hit = dk_alloc_box (sizeof (id_hash_iterator_t), DV_BIN);
+      qst_set (inst, ks->ks_proc_set_ctr, (caddr_t)hit);
+      id_hash_iterator (hit, hi->hi_memcache);
+    }
+  else
+    hit = (id_hash_iterator_t*)qst_get (inst, ks->ks_proc_set_ctr);
+  if (ks->ks_set_no_col_ssl)
+    set_no_dc = QST_BOX (data_col_t *, inst, ks->ks_set_no_col_ssl->ssl_index);
+ next_batch:
+  batch = QST_INT (inst, ts->src_gen.src_batch_size);
+  n_results = 0;
+  ks_vec_new_results (ks, inst, NULL);
+
+  while (hit_next (hit, (caddr_t *)(&key), (caddr_t *)(&val)))
+    {
+      int inx;
+      dk_set_t out_slots = ks->ks_out_slots;
+      qi->qi_set = n_results;
+      DO_BOX_0 (state_slot_t *, ssl1, inx, setp->setp_keys_box )
+	{
+	  ssl = (state_slot_t*)out_slots->data;
+	  out_slots = out_slots->next;
+	  if (hi->hi_pool)
+	    qst_set_copy (inst, ssl, key->hmk_data[inx]);
+	  else
+	    qst_set (inst, ssl, key->hmk_data[inx]);
+	  key->hmk_data[inx] = NULL;
+	}
+      END_DO_BOX;
+      DO_BOX_0 (state_slot_t *, ssl1, inx, setp->setp_dependent_box)
+	{
+	  ssl = (state_slot_t*)out_slots->data;
+	  out_slots = out_slots->next;
+	  if (hi->hi_pool)
+	    qst_set_copy (inst, ssl, val[0][inx]);
+	  else
+	    qst_set (inst, ssl, val[0][inx]);
+	  val[0][inx] = NULL;
+	}
+      END_DO_BOX;
+      if (!hi->hi_pool)
+	{
+	  dk_free_tree ((caddr_t)(key->hmk_data));
+	  dk_free_tree ((box_t) val[0]);
+	  key->hmk_data = NULL;
+	  val[0] = NULL;
+	}
+
+      if (set_no_dc)
+	set = ((int64*)set_no_dc->dc_values)[n_results];
+      else
+	set = 0;
+      qn_result ((data_source_t*)ts, inst, set);
+      if (++n_results == batch)
+	{
+	  SRC_IN_STATE (ts, inst) = inst;
+	  ts_always_null (ts, inst);				\
+	  qn_send_output ((data_source_t*)ts, inst);
+	  state = NULL;
+	  dc_reset_array (inst, (data_source_t*)ts, ts->src_gen.src_continue_reset, -1);
+	  goto next_batch;
+	}
+    }
+  if (!hi->hi_pool)
+    {
+      id_hash_free (hi->hi_memcache);
+      hi->hi_memcache = NULL;
+      qst_set (branch, setp->setp_ha->ha_tree, NULL);
+    }
+  else
+    {
+      hi->hi_memcache = NULL;
+      mp_free (hi->hi_pool);
+      hi->hi_pool = NULL;
+    }
+  SRC_IN_STATE ((data_source_t*)ts, inst) = NULL;
+  ts_always_null (ts, inst);
+  if (QST_INT (inst, ts->src_gen.src_out_fill))
+    qn_ts_send_output ((data_source_t *)ts, inst, ts->ts_after_join_test);
+}
+
+
 
 extern int32 ha_rehash_pct;
 
@@ -1397,7 +1537,7 @@ void
 ha_rehash (caddr_t * inst, hash_area_t * ha, index_tree_t * it)
 {
   buffer_desc_t * buf;
-  state_slot_t tmp_ssl[10];
+  state_slot_t tmp_ssl[SETP_DISTINCT_MAX_KEYS];
   it_cursor_t itc_auto;
   it_cursor_t * itc = &itc_auto;
   it_cursor_t * ref_itc = (it_cursor_t*)QST_GET_V (inst, ha->ha_ref_itc);
@@ -1425,7 +1565,7 @@ ha_rehash (caddr_t * inst, hash_area_t * ha, index_tree_t * it)
       if (dp)
 	{
 	  ITC_IN_KNOWN_MAP (itc, dp);
-	  it_free_dp_no_read (it, dp, DPF_HASH);
+	  it_free_dp_no_read (it, dp, DPF_HASH, 0);
 	  ITC_LEAVE_MAPS (itc);
 	}
     }
@@ -1455,6 +1595,7 @@ ha_rehash (caddr_t * inst, hash_area_t * ha, index_tree_t * it)
       itc->itc_out_map[inx].om_cl = *key_find_cl (ha->ha_key, inx + 1);
     }
   ks.ks_out_map = itc->itc_out_map;
+  ks.ks_row_check = itc_row_check;
   itc->itc_ks = &ks;
   buf = itc_reset (itc);
   ITC_FAIL (itc)
@@ -1474,7 +1615,7 @@ ha_rehash (caddr_t * inst, hash_area_t * ha, index_tree_t * it)
     {
       if (inx >= ha->ha_n_keys)
 	break;
-      if (SSL_VEC != ssl->ssl_type && SSL_REF != ssl->ssl_type)
+      if (SSL_VEC != ssl->ssl_type && SSL_REF != ssl->ssl_type && SSL_IS_REFERENCEABLE (ssl))
       qst_set (inst, ssl, save[inx]);
     }
   END_DO_BOX;
@@ -1573,7 +1714,7 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
       caddr_t *deps;
       ret->ihfr_memcached = 1;
       hmk.hmk_hash = code;
-      hmk.hmk_ha = ha;
+      hmk.hmk_ha = ha->ha_org_ha ? ha->ha_org_ha : ha;
       deps = (caddr_t *)id_hash_get (hi->hi_memcache, (caddr_t)(&hmk));
       if (NULL != deps)
 	{
@@ -1596,7 +1737,7 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
 	}
       next_link = HA_FILL == ha->ha_op ? 1 : 0;
       hmk.hmk_var_len = var_len;
-      hmk.hmk_ha = ha; /* after the store is done, the hash can be retained and these will be refs to free mem */
+      hmk.hmk_ha = ha->ha_org_ha ? ha->ha_org_ha : ha; /* after the store is done, the hash can be retained and these will be refs to free mem */
       if (hi->hi_pool)
 	{
 	  hmk.hmk_data = (caddr_t *) mp_full_box_copy_tree (hi->hi_pool, (caddr_t) hmk.hmk_data);
@@ -1638,7 +1779,7 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
   itc = (it_cursor_t *) QST_GET_V (qst, ha->ha_insert_itc);
   if (do_flush)
     {
-      itc_ha_flush_memcache (ha, qst, 1);
+      itc_ha_flush_memcache (ha, qst, SETP_HASH_FILL);
       /* if it is quietcast and len overflows, then maybe the hash is even empty */
       /* if (HA_FILL == ha->ha_op)
 	 GPF_T; */
@@ -1678,7 +1819,7 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
   END_FAIL (itc);
 
   if (ha_rehash_pct &&  hi->hi_count > (hi->hi_size / 100) * ha_rehash_pct
-      && HI_NEXT_SIZE (hi) < HI_MAX_SIZE)
+      && HI_NEXT_SIZE (hi) < (int64)HI_MAX_SIZE)
     ha_rehash (qst, ha, tree);
 #endif
   ret->ihfr_disk_buf = itc->itc_hash_buf;
@@ -1716,7 +1857,9 @@ box_num_always (boxint n)
 }
 
 #define AGG_C(dt, op) (((int)dt << 3) + op)
+#define code_vec_run_this_set(cv, qst) code_vec_run_1 (cv, qst, CV_THIS_SET_ONLY)
 
+/*code_vec_run_v (cv, qst, 0, -1, -2 - ((QI*)qst)->qi_set, NULL, NULL, 0)*/
 void
 setp_group_row (setp_node_t * setp, caddr_t * qst)
 {
@@ -1746,11 +1889,14 @@ setp_group_row (setp_node_t * setp, caddr_t * qst)
 	    case AMMSC_USER:
 	      {
 		caddr_t *dep_ptr = ihfr.ihfr_deps + dep_box_inx;
+		if (setp->setp_ignore_ua)
+		  break;
 		qst_set (qst, op->go_old_val, NEW_DB_NULL);
-		code_vec_run (op->go_ua_init_setp_call, qst);
-		code_vec_run (op->go_ua_acc_setp_call, qst);
+		code_vec_run_this_set (op->go_ua_init_setp_call, qst);
+		code_vec_run_this_set (op->go_ua_acc_setp_call, qst);
 	        dk_free_tree (dep_ptr[0]);
-	        dep_ptr[0] = box_copy_tree (QST_GET_V (qst, op->go_old_val));
+	        dep_ptr[0] = QST_GET_V (qst, op->go_old_val);
+		QST_GET_V (qst, op->go_old_val) = NULL;
 		break;
 	      }
 	    }
@@ -1783,8 +1929,8 @@ setp_group_row (setp_node_t * setp, caddr_t * qst)
 		if (cl->cl_fixed_len < 0)
 		  goto run1_next_disk_col;
 		qst_set (qst, op->go_old_val, NEW_DB_NULL);
-		code_vec_run (op->go_ua_init_setp_call, qst);
-		code_vec_run (op->go_ua_acc_setp_call, qst);
+		code_vec_run_this_set (op->go_ua_init_setp_call, qst);
+		code_vec_run_this_set (op->go_ua_acc_setp_call, qst);
 		rf.rf_row = ihfr.ihfr_disk_buf->bd_buffer + itc->itc_map_pos;
 		row_set_col (&rf, cl, QST_GET_V (qst, op->go_old_val));
 		break;
@@ -1917,24 +2063,24 @@ runX_begin: ;
 	      }
 	    case AMMSC_USER:
 	      {
-		caddr_t old_val;
-		qst_set (qst, op->go_old_val, box_copy_tree (dep_ptr[0]));
-		old_val = QST_GET_V (qst, op->go_old_val);
+		caddr_t old_val, new_val;
+		old_val = QST_GET_V (qst, op->go_old_val) = dep_ptr[0];
+		dep_ptr[0] = NULL;
 		if (NULL == old_val)
 		  {
 		    qst_set (qst, op->go_old_val, NEW_DB_NULL);
-		    code_vec_run (op->go_ua_init_setp_call, qst);
+		    code_vec_run_this_set (op->go_ua_init_setp_call, qst);
 		  }
 		else if (DV_DB_NULL == DV_TYPE_OF (old_val))
 		  {
-		    code_vec_run (op->go_ua_init_setp_call, qst);
+		    code_vec_run_this_set (op->go_ua_init_setp_call, qst);
 		  }
-		code_vec_run (op->go_ua_acc_setp_call, qst);
-		old_val = QST_GET_V (qst, op->go_old_val);
-		if (NULL == old_val)
-		  old_val = box_num_nonull (0);
-	        dk_free_tree (dep_ptr[0]);
-	        dep_ptr[0] = box_copy_tree (old_val);
+		code_vec_run_this_set (op->go_ua_acc_setp_call, qst);
+		new_val = QST_GET_V (qst, op->go_old_val);
+		if (NULL == new_val)
+		  new_val = box_num_nonull (0);
+		dep_ptr[0] = new_val;
+		QST_GET_V (qst, op->go_old_val) = NULL;
 		break;
 	      }
 	    }
@@ -2014,8 +2160,8 @@ runX_begin: ;
 	    case AMMSC_USER:
 	      {
 		if (DV_DB_NULL == DV_TYPE_OF (QST_GET_V (qst, op->go_old_val)))
-		  code_vec_run (op->go_ua_init_setp_call, qst);
-		code_vec_run (op->go_ua_acc_setp_call, qst);
+		  code_vec_run_this_set (op->go_ua_init_setp_call, qst);
+		code_vec_run_this_set (op->go_ua_acc_setp_call, qst);
 		rf.rf_row = ihfr.ihfr_disk_buf->bd_buffer + itc->itc_map_pos;
 		row_set_col (&rf, cl, QST_GET_V (qst, op->go_old_val));
 		break;
@@ -2075,6 +2221,7 @@ setp_order_row (setp_node_t * setp, caddr_t * qst)
       qst_set (qst, ha->ha_ref_itc, (caddr_t) ins_itc);
       ins_itc->itc_out_state = qst;
     }
+  ins_itc->itc_ltrx = qi->qi_trx; /* can vary, qi can run on different aq threads */
   itc_from_it_ha (ins_itc, tree, ha);
   rd.rd_itc = ins_itc;
   rd.rd_non_comp_max = MAX_ROW_BYTES;

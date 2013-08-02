@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2007 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -120,6 +120,7 @@ create procedure fill_ods_addressbook_sioc2 (
     fill_ods_addressbook_services ();
 
     for (select WAI_ID,
+                WAI_IS_PUBLIC,
                 WAI_TYPE_NAME,
                 WAI_NAME,
                 WAI_ACL
@@ -129,7 +130,7 @@ create procedure fill_ods_addressbook_sioc2 (
     {
       graph_iri := SIOC..acl_graph (WAI_TYPE_NAME, WAI_NAME);
       exec (sprintf ('sparql clear graph <%s>', graph_iri));
-      SIOC..wa_instance_acl_insert (WAI_TYPE_NAME, WAI_NAME, WAI_ACL);
+      SIOC..wa_instance_acl_insert (WAI_IS_PUBLIC, WAI_TYPE_NAME, WAI_NAME, WAI_ACL);
       for (select P_DOMAIN_ID, P_ID, P_ACL
              from AB.WA.PERSONS
             where P_DOMAIN_ID = WAI_ID and P_ACL is not null) do
@@ -203,7 +204,8 @@ create procedure fill_ods_addressbook_sioc2 (
 								P_TAGS,
 	              P_FOAF,
                 P_IRI,
-                P_ACL
+                P_ACL,
+                P_CERTIFICATE
            from DB.DBA.WA_INSTANCE,
                 DB.DBA.WA_MEMBER,
                 AB.WA.PERSONS
@@ -215,7 +217,7 @@ create procedure fill_ods_addressbook_sioc2 (
           order by P_ID) do
   {
       contact_iri := SIOC..addressbook_contact_iri (P_DOMAIN_ID, P_ID);
-      graph_iri := SIOC..get_graph_new (null, coalesce (_access_mode, WAI_IS_PUBLIC), contact_iri);
+      graph_iri := SIOC..get_graph_new (coalesce (_access_mode, WAI_IS_PUBLIC), contact_iri);
       addressbook_iri := addressbook_iri (WAI_NAME);
       socialnetwork_iri := socialnetwork_iri (WAI_NAME);
     creator_iri := user_iri (WAM_USER);
@@ -273,7 +275,8 @@ create procedure fill_ods_addressbook_sioc2 (
                     P_UPDATED,
 											P_TAGS,
 		                  P_FOAF,
-				  P_IRI);
+                      P_IRI,
+                      P_CERTIFICATE);
 
       cnt := cnt + 1;
 		   if (mod (cnt, 500) = 0)
@@ -316,7 +319,7 @@ create procedure fill_ods_addressbook_services ()
 
 -------------------------------------------------------------------------------
 --
-create procedure clean_ods_addressbook_sioc2 (
+create procedure clean_ods_addressbook_sioc (
   in _wai_name varchar := null,
   in _access_mode integer := null)
 {
@@ -353,7 +356,7 @@ create procedure clean_ods_addressbook_sioc2 (
           order by P_ID) do
     {
       contact_iri := SIOC..addressbook_contact_iri (P_DOMAIN_ID, P_ID);
-      graph_iri := SIOC..get_graph_new (null, coalesce (_access_mode, WAI_IS_PUBLIC), contact_iri);
+      graph_iri := SIOC..get_graph_new (coalesce (_access_mode, WAI_IS_PUBLIC), contact_iri);
 
       contact_delete (graph_iri,
                       P_DOMAIN_ID,
@@ -428,10 +431,12 @@ create procedure contact_insert (
   inout updated datetime,
 	inout tags varchar,
 	inout foaf varchar,
-	inout ext_iri varchar)
+  inout ext_iri varchar,
+  inout certificate varchar)
 {
   declare iri, iri2, temp_iri varchar;
 	declare person_iri varchar;
+  declare info, modulus, exponent, certificate_iri any;
 
 	declare exit handler for sqlstate '*'
 	{
@@ -452,7 +457,7 @@ create procedure contact_insert (
             and WAI_IS_PUBLIC > 0) do
   {
       iri := addressbook_contact_iri (domain_id, contact_id);
-      graph_iri := SIOC..get_graph_new (domain_id, WAI_IS_PUBLIC, iri);
+      graph_iri := SIOC..get_graph_new (WAI_IS_PUBLIC, iri);
       addressbook_iri := addressbook_iri (WAI_NAME);
       socialnetwork_iri := socialnetwork_iri (WAI_NAME);
     creator_iri := user_iri (WAM_USER);
@@ -663,6 +668,20 @@ create procedure contact_insert (
     }
   }
 
+  -- certificate
+  info := get_certificate_info (9, cast (certificate as varchar), 0);
+  if (info is not null and isarray (info) and cast (info[0] as varchar) = 'RSAPublicKey')
+  {
+    modulus := info[2];
+    exponent := info[1];
+    certificate_iri := iri || '#cert';
+    DB.DBA.ODS_QUAD_URI (graph_iri, certificate_iri, cert_iri ('identity'), iri);
+    DB.DBA.ODS_QUAD_URI (graph_iri, certificate_iri, rdf_iri ('type'), rsa_iri ('RSAPublicKey'));
+
+    DB.DBA.ODS_QUAD_URI_L_TYPED (graph_iri, certificate_iri, rsa_iri ('modulus'), bin2hex (modulus), cert_iri ('hex'), null);
+    DB.DBA.ODS_QUAD_URI_L_TYPED (graph_iri, certificate_iri, rsa_iri ('public_exponent'), cast (exponent as varchar), cert_iri ('int'), null);
+  }
+
   -- contact services
   SIOC..ods_object_services_attach (graph_iri, iri2, 'addressbook/contact');
 
@@ -688,7 +707,7 @@ create procedure contact_delete (
   iri := SIOC..addressbook_contact_iri (domain_id, contact_id);
   if (isnull (graph_iri))
   {
-    graph_iri := SIOC..get_graph_new (domain_id, null, iri);
+    graph_iri := SIOC..get_graph_new (AB.WA.domain_is_public (domain_id), iri);
     if (isnull (graph_iri))
       return;
   }
@@ -765,7 +784,8 @@ create trigger PERSONS_SIOC_I after insert on AB.WA.PERSONS referencing new as N
                   N.P_UPDATED,
 									N.P_TAGS,
 									N.P_FOAF,
-									N.P_IRI);
+                  N.P_IRI,
+                  N.P_CERTIFICATE);
 }
 ;
 
@@ -829,7 +849,8 @@ create trigger PERSONS_SIOC_U after update on AB.WA.PERSONS referencing old as O
                   N.P_UPDATED,
 									N.P_TAGS,
 									N.P_FOAF,
-									N.P_IRI);
+                  N.P_IRI,
+                  N.P_CERTIFICATE);
 }
 ;
 
@@ -1023,7 +1044,7 @@ create procedure contact_comment_insert (
   master_id := cast (master_id as integer);
   master_iri := SIOC..addressbook_contact_iri (domain_id, master_id);
 	if (isnull (graph_iri))
-    graph_iri := get_graph_new (domain_id, null, master_iri);
+    graph_iri := get_graph_new (AB.WA.domain_is_public (domain_id), master_iri);
 
     if (isnull (graph_iri))
       return;
@@ -1063,7 +1084,7 @@ create procedure contact_comment_delete (
   master_id := cast (master_id as integer);
   master_iri := SIOC..addressbook_contact_iri (domain_id, master_id);
   if (isnull (graph_iri))
-    graph_iri := SIOC..get_graph_new (domain_id, null, master_iri);
+    graph_iri := SIOC..get_graph_new (AB.WA.domain_is_public (domain_id), master_iri);
 
     if (isnull (graph_iri))
       return;
@@ -1211,7 +1232,7 @@ create procedure contact_annotation_insert (
   master_iri := SIOC..addressbook_contact_iri (domain_id, master_id);
 	if (isnull (graph_iri))
 		{
-    graph_iri := get_graph_new (domain_id, null, master_iri);
+    graph_iri := get_graph_new (AB.WA.domain_is_public (domain_id), master_iri);
     if (isnull (graph_iri))
       return;
 		}
@@ -1248,7 +1269,7 @@ create procedure contact_annotation_delete (
   master_iri := SIOC..addressbook_contact_iri (domain_id, master_id);
   if (isnull (graph_iri))
   {
-    graph_iri := SIOC..get_graph_new (domain_id, null, master_iri);
+    graph_iri := SIOC..get_graph_new (AB.WA.domain_is_public (domain_id), master_iri);
     if (isnull (graph_iri))
       return;
   }

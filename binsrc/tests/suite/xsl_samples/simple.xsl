@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <!--
  -  
- -  $Id$
+ -  $Id: simple.xsl,v 1.3.10.1 2013/01/02 16:16:12 source Exp $
  -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the

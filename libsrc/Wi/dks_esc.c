@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -43,7 +43,7 @@ unsigned char dks_esc_char_props[0x100] = {
 /* `   a   b   c   d   e   f   g   h   i   j   k   l   m   n   o  */
   '@','@','@','@','@','@','@','@','@','@','@','@','@','@','@','@',
 /* p   q   r   s   t   u   v   w   x   y   z   {   |   }   ~      */
-  '@','@','@','@','@','@','@','@','@','@','@','O','@','O','@','@',
+  '@','@','@','@','@','@','@','@','@','@','@','O','R','O','@','R',
 /* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
   'A','A','A','A','A','A','A','A','A','A','A','A','A','A','A','A',
 /* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
@@ -84,7 +84,7 @@ unsigned char dks_esc_char_props[0x100] = {
 #define REPEAT  'R'
 
 
-dks_charclass_props_t dks_charclasses['Q'+1-'>'] = {
+dks_charclass_props_t dks_charclasses['R'+1-'>'] = {
 /*		|0	|1	|2	|3	|4	|5	|6	|7	|8	|9	|10	|11	|12	|13	|13	*/
 /*		|NONE	|PTEXT	|SQATTR	|DQATTR	|COMMENT|CDATA	|URI	|DAV	|URI_R	|URI_NR	|TTL_SQ	|TTL_DQ	|TTLIRI	|JS_SQ	|JS_DQ	*/
 /* > wide    */ {0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU,BSLASHU,BSLASHU},
@@ -94,7 +94,7 @@ dks_charclass_props_t dks_charclasses['Q'+1-'>'] = {
 /* B < 0x20  */	{BAD	,LATTICE,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU,BSLASHU,BSLASHU},
 /* C !       */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,PCT	,0	,0	,0	,0	,0	},
 /* D 0x09    */	{0	,0	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLASHU,BSLASHC,BSLASHC},
-/* E 0x0A    */	{0	,0	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLASHU,DOCWRI ,DOCWRI },
+/* E 0x0A    */	{0	,0	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLASHU,BSLASHC,BSLASHC},
 /* F 0x0D    */	{0	,SOAPCR	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLASHU,BSLASHC,BSLASHC},
 /* G "       */	{0	,QUOT	,0	,QUOT	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,BSLASHC,BSLASHU,0	,BSLASHC},
 /* H &       */	{0	,AMP	,AMPATTR,AMPATTR,0	,0	,PCT	,PCT	,PCT	,0	,0	,0	,0	,0	,0	},
@@ -106,7 +106,8 @@ dks_charclass_props_t dks_charclasses['Q'+1-'>'] = {
 /* N /	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,0	,0	,0	,0	,0	,0	},
 /* O *	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	},
 /* P punct-! */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,0	,0	,0	,0	,0	,0	},
-/* Q \	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,BSLASHC,BSLASHC,BSLASHU,BSLASHC,BSLASHC} };
+/* Q \	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,BSLASHC,BSLASHC,BSLASHU,BSLASHC,BSLASHC},
+/* R |, 0x7f */	{0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,0	,0	,0	,0	} };
 
 unsigned char dks_esc_bslashc[0x80] = {
 /* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */

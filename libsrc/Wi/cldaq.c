@@ -1,6 +1,4 @@
 /*
- *  cldaq.c
- *
  *  $Id$
  *
  *  Cluster RPC for PL
@@ -28,7 +26,7 @@
 #include "sqlnode.h"
 #include "sqlbif.h"
 #include "security.h"
-
+#include "sqlparext.h"
 
 
 #if 0
@@ -38,6 +36,18 @@
 #define daq_printf(a)
 #define daq_print_box(a)
 #endif
+
+
+#define DAQ_CALL_UPD_MASK 3
+#define DAQ_CALL_COPY_FUNC 4
+#define DAQ_CALL_COPY_PARAMS 8
+#define DAQ_CALL_COPY_IF_LOCAL 16
+#define DAQ_CALL_BEST_EFFORT 32
+#define DAQ_CALL_CONTROL 64
+#define DAQ_CALL_CLI_PERMS 128
+#define DAQ_CALL_VEC 256
+#define DAQ_CALL_U_OPT_MASK (DAQ_CALL_UPD_MASK | DAQ_CALL_BEST_EFFORT | DAQ_CALL_CONTROL | DAQ_CALL_CLI_PERMS)
+
 
 void
 array_add (caddr_t ** ap, int *fill, caddr_t elt)
@@ -110,10 +120,12 @@ int
 clib_local_autocommit (cll_in_box_t * clib, query_instance_t * qi, cl_op_t * clo, caddr_t err)
 {
   client_connection_t *cli;
+  int64 main_trx_no;
   caddr_t detail = NULL;
   if (!qi)
     return LTE_OK;		/* if run inside compiler */
   cli = qi->qi_client;
+  main_trx_no = cli->cli_trx->lt_main_trx_no;
   if (err)
     {
       IN_TXN;
@@ -123,6 +135,9 @@ clib_local_autocommit (cll_in_box_t * clib, query_instance_t * qi, cl_op_t * clo
   else
     {
       int rc;
+      if (LT_PENDING == cli->cli_trx->lt_status && (cli->cli_trx->lt_cl_branches || cli->cli_trx->lt_cl_enlisted
+	      || cli->cli_trx->lt_cl_main_enlisted))
+	return LTE_OK;		/* if for other reasons this has enlisted contenty do not commit the enclosing txn.  makes half transactions and really fucks over remote branches */
       IN_TXN;
       detail = cli->cli_trx->lt_error_detail;
       cli->cli_trx->lt_error_detail = NULL;
@@ -136,368 +151,191 @@ clib_local_autocommit (cll_in_box_t * clib, query_instance_t * qi, cl_op_t * clo
 	  return rc;
 	}
     }
+  cli->cli_trx->lt_main_trx_no = main_trx_no;
   return LTE_OK;
 }
 
+extern state_slot_t ssl_set_no_dummy;
 
-void
-cl_local_call (query_instance_t * qi, cll_in_box_t * clib, cl_op_t * clo)
-{
-  int old_ac;
-  cl_op_t *row;
-  caddr_t err;
-  du_thread_t *self = THREAD_CURRENT_THREAD;
-  caddr_t val = NULL;
-  caddr_t *params = clo->_.call.params, *params_copy;
-  caddr_t fn = clo->_.call.func;
-  client_connection_t *cli = qi ? qi->qi_client : sqlc_client ();
-  user_t *usr, *old_usr;
-  caddr_t full_name = sch_full_proc_name (wi_inst.wi_schema, fn,
-      cli_qual (cli), CLI_OWNER (cli));
-  query_t *proc = full_name ? sch_proc_def (wi_inst.wi_schema, full_name) : NULL;
-  if (!proc)
-    {
-      err = srv_make_new_error ("42000", "CL...", "Undefined proc %s in cluster call", fn);
-      clib_local_call_error (clib, clo, err);
-      return;
-    }
-  if (proc->qr_to_recompile)
-    {
-      err = NULL;
-      proc = qr_recompile (proc, &err);
-      if (err)
-	{
-	  clib_local_call_error (clib, clo, err);
-	  return;
-	}
-    }
-  /* if no cli_user this means internal call so do as dba */
-  usr = sec_id_to_user (clo->_.call.u_id);
-  if (cli->cli_user && !sec_proc_check (proc, usr->usr_id, usr->usr_g_id))
-    {
-      err =
-	  srv_make_new_error ("42000", "CL...", "Exec permission denied in daq proc %s user %s", proc->qr_proc_name, usr->usr_name);
-      clib_local_call_error (clib, clo, err);
-      return;
-    }
-  DO_SET (state_slot_t *, ssl, &proc->qr_parms)
-  {
-    if (SSL_REF_PARAMETER == ssl->ssl_type)
-      {
-	err = srv_make_new_error ("42000", "AQ002", "Reference parameters not allowed in aq_request");
-	clib_local_call_error (clib, clo, err);
-	return;
-      }
-  }
-  END_DO_SET ();
-  self->thr_func_value = NULL;
-  /* make a copy of params for local call since the original is in a pool */
-  params_copy = box_copy_tree ((caddr_t) params);
-  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (params_copy))
-    params_copy = (caddr_t *) list (1, params_copy);
-  cli->cli_in_daq = clo->_.call.is_txn ? CLI_IN_DAQ : CLI_IN_DAQ_AC;
-  old_ac = cli->cli_row_autocommit;
-  cli->cli_row_autocommit = 0;
-  old_usr = cli->cli_user;
-  cli->cli_user = usr;
-  err = qr_exec (cli, proc, CALLER_LOCAL, NULL, NULL, NULL, params_copy, NULL, 0);
-  cli->cli_user = old_usr;
-  cli->cli_in_daq = 0;
-  cli->cli_row_autocommit = old_ac;
-  dk_free_box ((caddr_t) params_copy);
-  val = self->thr_func_value;
-  self->thr_func_value = NULL;
-  if (LT_PENDING != cli->cli_trx->lt_status && LT_FREEZE != cli->cli_trx->lt_status)
-    {
-      caddr_t lt_err = srv_make_trx_error (cli->cli_trx->lt_error, cli->cli_trx->lt_error_detail);
-      if (clo->_.call.is_txn)
-	{
-	  dk_free_tree (val);
-	  dk_free_tree (err);
-	  sqlr_resignal (lt_err);
-	  return;
-	}
-      IN_TXN;
-      lt_rollback (cli->cli_trx, TRX_CONT);
-      LEAVE_TXN;
-      clib_local_call_error (clib, clo, lt_err);
-      return;
-    }
-
-  if (!clo->_.call.is_txn)
-    {
-      /* not transactional, autocommit or rb */
-      clib_local_autocommit (clib, qi, clo, err);
-    }
-  if (err)
-    {
-      dk_free_tree (val);
-      if (clo->_.call.is_txn && SQLSTATE_IS_TXN (ERR_STATE (err)))
-	sqlr_resignal (err);
-      clib_local_call_error (clib, clo, err);
-      return;
-    }
-  row = clo_allocate_2 (CLO_ROW);
-  row->clo_seq_no = clo->clo_seq_no;
-  row->clo_nth_param_row = clo->clo_nth_param_row;
-  row->_.row.cols = (caddr_t *) list (2, box_num (CLO_CALL_RESULT), val);
-  basket_add (&clib->clib_in_parsed, (void *) row);
-}
-
-
-void
-dpipe_node_local_input (dpipe_node_t * dp, caddr_t * inst, caddr_t * stat)
-{
-  /* this is a dpipe colocated with the previous node inside a qf.  Call the func */
-
-  caddr_t err;
-  du_thread_t *self = THREAD_CURRENT_THREAD;
-  QNCAST (query_instance_t, qi, inst);
-  caddr_t val = NULL;
-  caddr_t *params = (caddr_t *) qst_get (inst, dp->dp_inputs[0]), *params_copy;
-  caddr_t fn = dp->dp_funcs[0]->cf_proc;
-  client_connection_t *cli = qi ? qi->qi_client : sqlc_client ();
-  caddr_t full_name = sch_full_proc_name (wi_inst.wi_schema, fn,
-      cli_qual (cli), CLI_OWNER (cli));
-  query_t *proc = full_name ? sch_proc_def (wi_inst.wi_schema, full_name) : NULL;
-  if (!proc)
-    sqlr_new_error ("42000", "CL...", "Undefined proc %s in colocated cluster dpipe call", fn);
-  if (proc->qr_to_recompile)
-    {
-      err = NULL;
-      proc = qr_recompile (proc, &err);
-      if (err)
-	sqlr_resignal (err);
-    }
-  /* if no cli_user this means internal call so do as dba */
-  if (cli->cli_user && !sec_proc_check (proc, cli->cli_user->usr_id, cli->cli_user->usr_g_id))
-    sqlr_new_error ("42000", "CL...", "Exec permission denied in daq proc %s user %s", proc->qr_proc_name, cli->cli_user->usr_name);
-
-  DO_SET (state_slot_t *, ssl, &proc->qr_parms)
-  {
-    if (SSL_REF_PARAMETER == ssl->ssl_type)
-      sqlr_new_error ("42000", "AQ002", "Reference parameters not allowed in colocated dpipe");
-  }
-  END_DO_SET ();
-  self->thr_func_value = NULL;
-  params_copy = box_copy_tree ((caddr_t) params);
-  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (params_copy))
-    params_copy = (caddr_t *) list (1, params_copy);
-  err = qr_exec (cli, proc, CALLER_LOCAL, NULL, NULL, NULL, params_copy, NULL, 0);
-  cli->cli_in_daq = 0;
-  dk_free_box ((caddr_t) params_copy);
-  val = self->thr_func_value;
-  self->thr_func_value = NULL;
-
-
-  if (err)
-    {
-      dk_free_tree (val);
-      sqlr_resignal (err);
-    }
-  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (val) || BOX_ELEMENTS (val) < 2 || !unbox (((caddr_t *) val)[1]))
-    sqlr_new_error ("42000", "CL...",
-	"A cpipe function with the single action bit (128) must return a result and no follow up actions on the first call");
-  qst_set (inst, dp->dp_outputs[0], ((caddr_t *) val)[0]);
-  ((caddr_t *) val)[0] = NULL;
-  dk_free_tree (val);
-  qn_send_output ((data_source_t *) dp, inst);
-}
-
-int
-clrg_check_local_calls (cl_req_group_t * clrg, query_instance_t * qi)
-{
-  DO_SET (cll_in_box_t *, clib, &clrg->clrg_clibs)
-  {
-    if (clib->clib_host->ch_id == local_cll.cll_this_host && clib->clib_local_clo.bsk_count)
-      {
-	cl_op_t *clo = (cl_op_t *) basket_get (&clib->clib_local_clo);
-	switch (clo->clo_op)
-	  {
-	  case CLO_CALL:
-	    cl_local_call (qi, clib, clo);
-	    break;
-	  case CLO_INSERT:
-	    {
-	      cl_op_t *row;
-	      if (!clo->_.insert.rd->rd_values)
-		GPF_T1 ("supposed to have values in local insert in daq");
-	      cl_local_insert ((caddr_t *) qi, clo);
-	      if (clo->_.insert.is_autocommit)
-		if (LTE_OK != clib_local_autocommit (clib, qi, clo, NULL))
-		  return 1;	/* if error, result added, go on */
-	      row = clo_allocate_2 (CLO_SET_END);
-	      row->clo_seq_no = clo->clo_seq_no;
-	      row->clo_nth_param_row = clo->clo_nth_param_row;
-	      basket_add (&clib->clib_in_parsed, (void *) row);
-	      break;
-	    }
-	  case CLO_DELETE:
-	    {
-	      cl_op_t *row;
-	      if (!clo->_.delete.rd->rd_values)
-		GPF_T1 ("supposed to have values in local delete in daq");
-	      cl_local_delete ((caddr_t *) qi, clo);
-	      row = clo_allocate_2 (CLO_SET_END);
-	      row->clo_seq_no = clo->clo_seq_no;
-	      row->clo_nth_param_row = clo->clo_nth_param_row;
-	      basket_add (&clib->clib_in_parsed, (void *) row);
-	      break;
-	    }
-	  }
-	return 1;
-      }
-  }
-  END_DO_SET ();
-  return 0;
-}
-
-
-void
-clrg_mark_best_effort (cl_req_group_t * clrg)
-{
-  /* mark the clibs for which send failed as realized */
-  int inx;
-  DO_SET (cll_in_box_t *, clib, &clrg->clrg_clibs)
-  {
-    if (!clib->clib_is_error)
-      continue;
-    for (inx = 0; inx < clrg->clrg_nth_param_row; inx++)
-      {
-	cl_op_t *set_clo = (cl_op_t *) clrg->clrg_param_rows[inx];
-	dk_set_t clibs = set_clo->clo_clibs;
-	clo_unlink_clib (set_clo, clib, 0);
-	if (clibs && !set_clo->clo_clibs)
-	  clrg->clrg_nth_set++;
-      }
-  }
-  END_DO_SET ();
-  dk_free_tree (clrg->clrg_error);
-  clrg->clrg_error = NULL;
-  clrg->clrg_is_error = CLE_OK;
-}
-
-
-void
-clrg_call_flush_if_due (cl_req_group_t * clrg)
-{
-
-  if (clrg->clrg_nth_set == clrg->clrg_n_sets_requested && clrg->clrg_nth_param_row > clrg->clrg_nth_set)
-    {
-      clrg->clrg_n_sets_requested = clrg->clrg_nth_param_row;
-      if (clrg->clrg_is_error && clrg->clrg_best_effort)
-	clrg_mark_best_effort (clrg);
-    }
-}
 
 cl_op_t *
-clrg_call_next (cl_req_group_t * clrg, query_instance_t * qi, cll_in_box_t ** clib_ret)
-{
-  int n_checked = 0;
-  dk_set_t iter;
-  cl_op_t *clo;
-  if (clrg->clrg_error_end)
-    return NULL;
-  clrg_call_flush_if_due (clrg);
-  if (!clrg->clrg_last)
-    clrg->clrg_last = clrg->clrg_clibs;
-  for (iter = clrg->clrg_last; iter; iter = iter->next ? iter->next : clrg->clrg_clibs)
-    {
-      cll_in_box_t *clib = (cll_in_box_t *) iter->data;
-      if (clib_has_data (clib))
+clrg_vec_call_clo (cl_req_group_t * clrg, caddr_t full_name, int add_set_no, dbe_key_t * key, int flags, int make_new)
 	{
-	  n_checked = 0;
-	  dk_free_tree ((caddr_t) clib->clib_first_row);
-	  clib->clib_first_row = NULL;
-	  *clib_ret = clib;
-	  if (clib->clib_host->ch_id == local_cll.cll_this_host)
-	    {
-	      clo = (cl_op_t *) basket_get (&clib->clib_in_parsed);
-	    }
-	  else
-	    {
-	      clib_read_next (clib, NULL, NULL);
-	      clo = &clib->clib_first;
-	    }
-	  if (clo->clo_nth_param_row >= clrg->clrg_nth_param_row)
-	    GPF_T1 ("param row no too high");
-	  switch (clo->clo_op)
-	    {
-	    case CLO_ROW:
-	      clrg->clrg_last = iter->next;
-	      if (CLO_CALL_ROW != unbox (clo->_.row.cols[0]))
-		{
-		  cl_op_t *set_clo;
-		  if (CLO_CALL_ERROR == unbox (clo->_.row.cols[0]))
-		    {
-		      if (enable_daq_trace)
-			{
-			  printf ("daq error from %d recd %d ", clib->clib_host->ch_id, clo->clo_nth_param_row);
-			  sqlo_box_print ((caddr_t) clo->_.row.cols);
-			}
-		    }
+  /* make a call clo with dcs corresponding to proc params.  if add set no, add an extra int dc at the end to correlate result rows with daq/dp set nos */
+  if (!make_new)
+  {
+      DO_SET (cl_op_t *, clo, &clrg->clrg_vec_clos)
+      {
+	if (CLO_CALL == clo->clo_op && !stricmp (full_name, clo->_.call.func))
+	  return clo;
+  }
+  END_DO_SET ();
+    }
+{
+    mem_pool_t *mp = clrg->clrg_pool;
+    query_t *qr = sch_proc_def (wi_inst.wi_schema, full_name);
+    int n;
+    cl_op_t *clo = mp_clo_allocate (mp, CLO_CALL);
+    int fill = 0;
+    if (!qr)
+      sqlr_new_error ("42001", "CLVEC", "Undefd proc in vectored daq call %s", full_name);
+    if (qr->qr_to_recompile)
+    {
+	caddr_t err = NULL;
+	qr = qr_recompile (qr, &err);
+      if (err)
+	sqlr_resignal (err);
+    }
+    mp_set_push (mp, &clrg->clrg_vec_clos, (void *) clo);
+    n = dk_set_length (qr->qr_parms) + add_set_no;
+    clo->_.call.func = mp_full_box_copy_tree (mp, qr->qr_proc_name);
+    clo->_.call.params = (caddr_t *) mp_alloc_box (mp, n * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+    clo->_.call.is_update = flags & DAQ_CALL_UPD_MASK;
+    clo->_.call.non_txn_insert = clrg->clrg_no_txn;
+    DO_SET (state_slot_t *, par, &qr->qr_parms)
+  {
+      clo->_.call.params[fill++] = (caddr_t) mp_data_col (mp, par, 1000);
+  }
+  END_DO_SET ();
+    if (add_set_no)
+      clo->_.call.params[fill] = (caddr_t) mp_data_col (mp, &ssl_set_no_dummy, 1000);
+    clo->_.call.key = key;
+    clo->_.call.is_txn = !clrg->clrg_no_txn;
+    clo->_.call.u_id = clrg->clrg_u_id;
+    clo->_.call.is_update = flags & DAQ_CALL_UPD_MASK;
+    clo->clo_nth_param_row = clrg->clrg_nth_param_row;
+    mp_array_add (clrg->clrg_pool, &clrg->clrg_param_rows, &clrg->clrg_nth_param_row, (caddr_t) clo);
+    return clo;
+    }
+}
 
-		  /* this is error or ret val and counts for the end of this clo_call */
-		  set_clo = (cl_op_t *) clrg->clrg_param_rows[clo->clo_nth_param_row];
-		  clo_unlink_clib (set_clo, clib, 0);
-		  if (!set_clo->clo_clibs)
-		    {
-		      clrg->clrg_nth_set++;
-		      return clo;
-		    }
-		}
-	      return clo;
-	    case CLO_SET_END:
-	      {
-		/* this is success of insert and counts towards end of a set */
-		cl_op_t *set_clo = (cl_op_t *) clrg->clrg_param_rows[clo->clo_nth_param_row];
-		clo_unlink_clib (set_clo, clib, 0);
-		if (!set_clo->clo_clibs)
-		  {
-		    clrg->clrg_nth_set++;
-		    return clo;
-		  }
-		if (clib->clib_host->ch_id == local_cll.cll_this_host)
-		  /* local clo's are allocated, so if one is popped off the must free.  Else the caller frees if the lco is local */
-		  dk_free_box ((caddr_t) clo);
-	      }
-	      break;
-	    case CLO_ERROR:
-	      {
-		caddr_t err = clo->_.error.err;
-		clo->_.error.err = NULL;
-		if (clib->clib_host->ch_id == local_cll.cll_this_host)
-		  dk_free_box ((caddr_t) clo);
-		clrg->clrg_error_end = 1;
-		clrg_check_trx_error (clrg, (caddr_t *) err);
-		sqlr_resignal (err);
-	      }
-	    default:
-	      GPF_T1 ("bad clo type returned for a daq");
+void
+ssl_from_dc (state_slot_t * ssl, data_col_t * dc, ssl_index_t * ctr)
+	  {
+  memzero (ssl, sizeof (state_slot_t));
+  ssl->ssl_type = SSL_VEC;
+  ssl->ssl_sqt.sqt_dtp = dc->dc_dtp;
+  ssl->ssl_index = (*ctr)++;
+  ssl->ssl_box_index = (*ctr)++;
+}
+
+
+#define CL_NONE_IN_SLICE ((caddr_t)0x11)
+#define CL_MAX_PARAMS 16
+
+caddr_t
+cl_vec_exec (query_t * qr, client_connection_t * cli, mem_pool_t * mp, caddr_t * params, slice_id_t * slices, slice_id_t slid,
+    db_buf_t * set_mask_ret, data_col_t ** dc_ret, int set_no_in_params)
+  {
+  char temp[sizeof (query_instance_t) + 2 * CL_MAX_PARAMS * sizeof (caddr_t)];
+  state_slot_t ssls[CL_MAX_PARAMS];
+  query_instance_t *qi = (query_instance_t *) & temp;
+  db_buf_t set_mask = NULL;
+  caddr_t *inst = (caddr_t *) qi, err = NULL;
+  ssl_index_t ssl_inx = sizeof (query_instance_t) / sizeof (caddr_t);
+  int n = BOX_ELEMENTS (params) - set_no_in_params;
+  state_slot_t **ssl_pars;
+  state_slot_t *ret_ssl = NULL;
+  int n_sets = ((data_col_t **) params)[0]->dc_n_values, inx, any = 0;
+  AUTO_POOL (sizeof (caddr_t) * 2 * CL_MAX_PARAMS);
+  if (slices)
+    {
+      int set_bytes = ALIGN_8 (n_sets) / 8, set;
+      set_mask = *set_mask_ret;
+      if (!set_mask || box_length (set_mask) < set_bytes)
+	*set_mask_ret = set_mask = (db_buf_t) mp_alloc_box (mp, set_bytes, DV_BIN);
+      memzero (set_mask, set_bytes);
+      for (set = 0; set < n_sets; set++)
+	{
+	  if (slid == slices[set])
+	    {
+	      any = 1;
+	      BIT_SET (set_mask, set);
 	    }
 	}
-      else
-	{
-	  n_checked++;
-	  if (n_checked == dk_set_length (clrg->clrg_clibs))
-	    {
-	      if (clrg->clrg_nth_set == clrg->clrg_nth_param_row)
+      if (!any)
+	return CL_NONE_IN_SLICE;
+    }
+  if (n > CL_MAX_PARAMS - 4)
+    return srv_make_new_error ("42000", "CLVEC", "Too many params/cols in cluster daq exec");
+  if (dc_ret)
+    n--;			/* if ret dc, the last param is an array of set nos that is not passed to the func */
+  ssl_pars = (state_slot_t **) ap_alloc_box (&ap, n * sizeof (caddr_t), DV_BIN);
+  memzero (inst, sizeof (query_instance_t) + (n * 2 + 2) * sizeof (caddr_t));
+  qi->qi_set_mask = set_mask;
+  qi->qi_isolation = default_txn_isolation;
+  for (inx = 0; inx < n; inx++)
+    {
+      data_col_t *dc = (data_col_t *) params[inx];
+      ssl_pars[inx] = &ssls[inx];
+      ssl_from_dc (&ssls[inx], dc, &ssl_inx);
+      n_sets = dc->dc_n_values;
+      QST_BOX (data_col_t *, inst, ssls[inx].ssl_index) = dc;
+    }
+  if (dc_ret)
+    {
+      caddr_t *proc_ret = (caddr_t *) qr->qr_proc_ret_type;
+      if (!proc_ret)
+	return srv_make_new_error ("42000", "CLVEC", "daq/dpipe func does not specify a return type");
+      ret_ssl = &ssls[n + 1];
+      memzero (ret_ssl, sizeof (state_slot_t));
+      ret_ssl->ssl_index = ssl_inx++;
+      ret_ssl->ssl_box_index = ssl_inx++;
+      ret_ssl->ssl_type = SSL_VEC;
+      ret_ssl->ssl_sqt.sqt_dtp = unbox (((caddr_t *) proc_ret)[0]);
+      ssl_set_dc_type (ret_ssl);
+      inst[ret_ssl->ssl_index] = (caddr_t) (*dc_ret = mp_data_col (mp, ret_ssl, n_sets));
+    }
+  qi->qi_n_sets = n_sets;
+  qi->qi_thread = THREAD_CURRENT_THREAD;
+  qi->qi_trx = cli->cli_trx;
+  qi->qi_non_txn_insert = cli->cli_non_txn_insert;
+  qi->qi_client = cli;
+  err = qr_subq_exec_vec (cli, qr, qi, NULL, 0, ssl_pars, ret_ssl, NULL, NULL);
+  cli_set_slice (cli, NULL, QI_NO_SLICE, NULL);
+  DO_BOX (state_slot_t *, ssl, inx, ssl_pars) dk_free_tree (inst[ssl->ssl_box_index]);
+  END_DO_BOX;
+  return err;
+}
+
+
+cll_in_box_t *clrg_ensure_single_clib (cl_req_group_t * clrg);
+
+
+void
+clrg_local_ins_del_single (cl_req_group_t * clrg)
+			{
+  cll_in_box_t *deflt_clib = clrg_ensure_single_clib (clrg);
+  QNCAST (query_instance_t, qi, clrg->clrg_inst);
+  db_buf_t set_mask = NULL;
+  DO_SET (cl_op_t *, clo, &clrg->clrg_vec_clos)
+		    {
+    if (CLO_INSERT == clo->clo_op || CLO_DELETE == clo->clo_op)
+	      {
+	row_delta_t *rd = clo->_.insert.rd;
+	caddr_t err = NULL;
+	query_t *qr = cl_ins_del_qr (rd->rd_key, clo->clo_op, clo->_.insert.ins_mode, &err);
+	if (err)
+		  {
+	    clrg_dml_free (clrg);
+		sqlr_resignal (err);
+	      }
+	if (CLO_DELETE == clo->clo_op)
+	  cls_vec_del_rd_layout (clo->_.delete.rd);
+	err = NULL;
+	qi->qi_client->cli_non_txn_insert = CLO_INSERT == clo->clo_op && clo->_.insert.non_txn;
+	err = cl_vec_exec (qr, qi->qi_client, clrg->clrg_pool, clo->_.insert.rd->rd_values, NULL, QI_NO_SLICE, &set_mask, NULL, 0);
+	qi->qi_client->cli_non_txn_insert = 0;
+	if (err)
 		{
-		  return NULL;	/* done, as many sets as ordered */
-		}
-	      /* before waiting, see if there is local calls to do */
-	      clrg_call_flush_if_due (clrg);
-	      if (clrg_check_local_calls (clrg, qi))
-		{
-		  n_checked = 0;
-		  continue;
-		}
-	      n_checked = 0;
-	      continue;
+	    clrg_dml_free (clrg);
+	    return;
+	    sqlr_resignal (err);
 	    }
 	}
     }
-  return NULL;
+  END_DO_SET ();
+  clrg_dml_free (clrg);
 }
 
 
@@ -513,8 +351,9 @@ cl_part_hosts (cluster_map_t * map, cl_host_t ** group, uint32 hash, int32 rem, 
 }
 
 
+
 caddr_t *
-cl_key_locate (dbe_key_t * key, caddr_t * values, int is_upd)
+cl_key_locate (dbe_key_t * key, caddr_t * values, int is_upd, slice_id_t * slid_ret)
 {
   return NULL;
 }
@@ -532,6 +371,30 @@ bif_clrg_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 }
 
 
+caddr_t
+bif_cl_set_slice (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  /* key, slice no, opt keep setting  */
+  QNCAST (query_instance_t, qi, qst);
+  dbe_key_t *key = bif_key_arg (qst, args, 0, "cl_set_slice");
+  caddr_t slid = bif_arg (qst, args, 2, "cl_set_slice");
+  int keep = BOX_ELEMENTS (args) > 3 ? bif_long_arg (qst, args, 3, "cl_set_slice") : 0;
+  if (!key->key_partition || !key->key_partition->kpd_map->clm_is_elastic)
+    return NULL;
+  if (DV_LONG_INT == DV_TYPE_OF (slid))
+    {
+      cli_set_slice (qi->qi_client, key->key_partition->kpd_map, unbox (slid), NULL);
+      if (keep)
+	qi->qi_client->cli_keep_csl = 1;
+    }
+  else
+    {
+      cli_set_slice (qi->qi_client, NULL, QI_NO_SLICE, NULL);
+      qi->qi_client->cli_keep_csl = 0;
+    }
+  return NULL;
+}
+
 
 caddr_t
 bif_partition (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -540,7 +403,11 @@ bif_partition (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dbe_key_t *key = bif_key_arg (qst, args, 0, "partition");
   caddr_t *vec = bif_array_of_pointer_arg (qst, args, 2, "partition");
   int is_upd = bif_long_arg (qst, args, 3, "partition");
-  return (caddr_t) cl_key_locate (key, vec, is_upd);
+  slice_id_t slid;
+  caddr_t *hosts = cl_key_locate (key, vec, is_upd, &slid);
+  if (BOX_ELEMENTS (args) > 4 && ssl_is_settable (args[4]))
+    qst_set (qst, args[4], box_num (slid));
+  return (caddr_t) hosts;
 }
 
 
@@ -550,28 +417,20 @@ bif_partition_group (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   /* key, part col values, returns the zero based host group handling the partition */
   dbe_key_t *key = bif_key_arg (qst, args, 0, "partition");
   caddr_t *vec = bif_array_of_pointer_arg (qst, args, 2, "partition");
-  caddr_t *hosts = cl_key_locate (key, vec, PART_UPD_FIRST);
-  int no, inx, inx2;
-  if (!hosts || !key->key_partition || !BOX_ELEMENTS (hosts))
+  slice_id_t slid;
+  caddr_t *hosts = NULL;
+  int no;
+  if (!key->key_partition)
+    return dk_alloc_box (0, DV_DB_NULL);
+  hosts = cl_key_locate (key, vec, PART_UPD_FIRST, &slid);
+  if (!hosts || !BOX_ELEMENTS (hosts))
     {
       dk_free_box (hosts);
       return dk_alloc_box (0, DV_DB_NULL);
     }
   no = unbox (hosts[0]);
   dk_free_tree (hosts);
-  DO_BOX (cl_host_group_t *, chg, inx, key->key_partition->kpd_map->clm_hosts)
-  {
-    DO_BOX (cl_host_t *, ch, inx2, chg->chg_hosts)
-    {
-      if (ch->ch_id == no)
-	return box_num (inx);
-    }
-    END_DO_BOX;
-  }
-  END_DO_BOX;
-  sqlr_new_error ("42000", "CLBAL",
-      "partition_group func gets a host number that is not in the groups of the cluster map of the key.");
-  return NULL;
+  return box_num (slid);
 }
 
 
@@ -594,6 +453,7 @@ bif_daq (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   clrg->clrg_timeout = qi->qi_rpc_timeout;
   clrg->clrg_pool = mem_pool_alloc ();
   clrg->clrg_keep_local_clo = 1;
+  clrg_top_check (clrg, qi_top_qi ((QI *) qst));
   if (qi->qi_client->cli_row_autocommit)
     is_txn = 0;
   if (qi->qi_trx->lt_is_excl)
@@ -602,16 +462,6 @@ bif_daq (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (caddr_t) clrg;
 }
 
-
-#define DAQ_CALL_UPD_MASK 3
-#define DAQ_CALL_COPY_FUNC 4
-#define DAQ_CALL_COPY_PARAMS 8
-#define DAQ_CALL_COPY_IF_LOCAL 16
-#define DAQ_CALL_BEST_EFFORT 32
-#define DAQ_CALL_CONTROL 64
-#define DAQ_CALL_CLI_PERMS 128
-
-#define DAQ_CALL_U_OPT_MASK (DAQ_CALL_UPD_MASK | DAQ_CALL_BEST_EFFORT | DAQ_CALL_CONTROL | DAQ_CALL_CLI_PERMS)
 
 oid_t
 qst_effective_u_id (caddr_t * qst)
@@ -624,152 +474,6 @@ qst_effective_u_id (caddr_t * qst)
 }
 
 
-caddr_t
-daq_call_1 (cl_req_group_t * clrg, dbe_key_t * key, caddr_t fn, caddr_t * vec, int flags, int *first_seq_ret, caddr_t * host_nos)
-{
-  int is_set = 0;
-  dk_set_t res = NULL;
-  int inx;
-  caddr_t *hosts;
-  cl_op_t *clo = mp_clo_allocate (clrg->clrg_pool, CLO_CALL);
-  if ((DAQ_CALL_BEST_EFFORT & flags))
-    clrg->clrg_best_effort = 1;
-  if ((DAQ_CALL_CONTROL & flags))
-    clrg->clrg_cm_control = CM_CONTROL;
-  if (!host_nos)
-    hosts = cl_key_locate (key, vec, DAQ_CALL_UPD_MASK & flags);
-  else
-    hosts = host_nos;
-  if (!BOX_ELEMENTS (hosts))
-    {
-      if (!host_nos)
-	dk_free_box ((caddr_t) hosts);
-      return NULL;
-    }
-  if (!host_nos && !key->key_partition)
-    sqlr_new_error ("42000", "CL...", "Key %s must be partition for use with daq", key->key_name);
-  if (DAQ_CALL_COPY_FUNC & flags)
-    clo->_.call.func = mp_full_box_copy_tree (clrg->clrg_pool, fn);
-  else
-    clo->_.call.func = fn;
-  clo->_.call.is_txn = !clrg->clrg_no_txn;
-  clo->_.call.u_id = clrg->clrg_u_id;
-  if (DAQ_CALL_COPY_PARAMS & flags)
-    clo->_.call.params = (caddr_t *) mp_full_box_copy_tree (clrg->clrg_pool, (caddr_t) vec);
-  else
-    clo->_.call.params = vec;
-  clo->_.call.is_update = flags & DAQ_CALL_UPD_MASK;
-  clo->clo_nth_param_row = clrg->clrg_nth_param_row;
-  mp_array_add (clrg->clrg_pool, &clrg->clrg_param_rows, &clrg->clrg_nth_param_row, (caddr_t) clo);
-  DO_BOX (ptrlong, host, inx, hosts)
-  {
-    cl_host_t *ch;
-    host = unbox ((caddr_t) host);
-    if (DAQ_CALL_COPY_IF_LOCAL & flags && host == local_cll.cll_this_host)
-      clo->_.call.params = (caddr_t *) mp_full_box_copy_tree (clrg->clrg_pool, (caddr_t) (caddr_t) clo->_.call.params);
-    ch = cl_id_to_host (host);
-    if (!ch)
-      sqlr_new_error ("42000", "CL...", "Bad host no %d in daq_call", (int) host);
-    clrg_add (clrg, ch, clo);
-    if (first_seq_ret)
-      {
-	if (!is_set)
-	  {
-	    *first_seq_ret = clo->clo_seq_no;
-	    is_set = 1;
-	  }
-      }
-    else
-      dk_set_push (&res, (void *) list (3, box_num (clo->clo_nth_param_row), box_num (host), box_num (clo->clo_seq_no)));
-  }
-  END_DO_BOX;
-  if (!host_nos)
-    dk_free_tree (hosts);
-  if (res)
-    return list_to_array (res);
-  return NULL;
-}
-
-
-caddr_t
-bif_daq_call (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  /* clrg, func, args, key */
-  caddr_t *host_nos = NULL;
-  cl_req_group_t *clrg = bif_clrg_arg (qst, args, 0, "daq_call");
-  caddr_t hno = bif_arg (qst, args, 2, "daq_call");
-  caddr_t cl_name;
-  dbe_key_t *key;
-  caddr_t fn = bif_string_arg (qst, args, 3, "daq_call");
-  caddr_t *vec = bif_array_of_pointer_arg (qst, args, 4, "daq_call");
-  QNCAST (query_instance_t, qi, qst);
-  int is_upd = bif_long_arg (qst, args, 5, "daq_call");
-
-  if (CL_RUN_CLUSTER != cl_run_local_only)
-    sqlr_new_error ("42000", "CL...", "Cluster operation is not allowed when running as single mode");
-
-  if ((DAQ_CALL_CONTROL & is_upd))
-    sec_check_dba (qi, "daq_call with cm_control option");
-  else
-    CL_ONLINE_CK;
-  if (DV_STRINGP (hno))
-    key = bif_key_arg (qst, args, 1, "daq_call");
-  else
-    {
-      key = NULL;
-      cl_name = bif_string_arg (qst, args, 1, "daq_call");
-      host_nos = (caddr_t *) bif_array_of_pointer_arg (qst, args, 2, "daq_call");
-    }
-  clrg->clrg_u_id = DAQ_CALL_CLI_PERMS & is_upd ? qi->qi_client->cli_user->usr_id : qst_effective_u_id (qst);
-  return daq_call_1 (clrg, key, fn, vec, DAQ_CALL_COPY_PARAMS | DAQ_CALL_COPY_FUNC | (is_upd & DAQ_CALL_U_OPT_MASK), NULL,
-      host_nos);
-}
-
-
-caddr_t
-bif_daq_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  cl_req_group_t *clrg = bif_clrg_arg (qst, args, 0, "daq_next");
-  query_instance_t *qi = (query_instance_t *) qst;
-  cll_in_box_t *clib;
-  caddr_t ret = NULL;
-  cl_op_t *clo;
-
-  if (CL_RUN_CLUSTER != cl_run_local_only)
-    sqlr_new_error ("42000", "CL...", "Cluster operation is not allowed when running as single mode");
-
-  if (clrg->clrg_no_txn && qi->qi_trx->lt_cl_branches)
-    sqlr_new_error ("42000", "CL...",
-	"Daq call in non-transactional daq not allowed when the transaction has uncommitted cluster branches");
-
-  clo = clrg_call_next (clrg, qi, &clib);
-  if (!clo)
-    return NULL;
-  switch (clo->clo_op)
-    {
-    case CLO_ROW:
-      ret = list (3, box_num (clo->clo_nth_param_row), box_num (clib->clib_host->ch_id), clo->_.row.cols);
-      clo->_.row.cols = NULL;
-      clib->clib_first_row = NULL;
-      break;
-    case CLO_SET_END:
-      ret = list (2, box_num (clo->clo_nth_param_row), box_num (clib->clib_host->ch_id));
-      break;
-    }
-  if (clib->clib_host->ch_id == local_cll.cll_this_host)
-    dk_free_box ((caddr_t) clo);
-  return ret;
-}
-
-
-caddr_t
-bif_daq_send (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  cl_req_group_t *clrg = bif_clrg_arg (qst, args, 0, "daq_next");
-  clrg_call_flush_if_due (clrg);
-  return NULL;
-}
-
 
 caddr_t
 bif_daq_buffered_bytes (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -781,42 +485,10 @@ bif_daq_buffered_bytes (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_num (clrg->clrg_send_buffered + bytes);
 }
 
-caddr_t
-daq_call_next_1 (cl_req_group_t * clrg, query_instance_t * qi)
-{
-  cll_in_box_t *clib;
-  cl_op_t *clo;
-  for (;;)
-    {
-      caddr_t ret = NULL;
-      clo = clrg_call_next (clrg, qi, &clib);
-      if (!clo)
-	return NULL;
-      switch (clo->clo_op)
-	{
-	case CLO_ROW:
-	  ret = list (3, box_num (clo->clo_seq_no), box_num (clib->clib_host->ch_id), clo->_.row.cols);
-	  clo->_.row.cols = NULL;
-	  clib->clib_first_row = NULL;
-	  if (clib->clib_host->ch_id == local_cll.cll_this_host)
-	    dk_free_box ((caddr_t) clo);
-	  return ret;
-	case CLO_SET_END:
-	  {
-	    if (clib->clib_host->ch_id == local_cll.cll_this_host)
-	      dk_free_box ((caddr_t) clo);
-	    return (caddr_t) CLO_SET_END;
-	  }
-	default:
-	  GPF_T1 ("got bad clo op from daq");
-	}
-    }
-}
-
 
 
 id_hash_t *name_to_cu_func;
-id_hash_t *func_name_to_cu_func;
+//id_hash_t * func_name_to_cu_func;
 
 cu_func_t *
 cu_func (caddr_t name, int must_find)
@@ -852,6 +524,7 @@ cu_line (cucurbit_t * cu, cu_func_t * func)
     dk_set_push (&cu->cu_lines, (void *) cul);
     cul->cul_func = func;
     cul->cul_values = id_hash_allocate (141, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+    cul->cul_values->ht_allow_dups = 1;
     id_hash_set_rehash_pct (cul->cul_values, 150);
     return cul;
   }
@@ -859,6 +532,24 @@ cu_line (cucurbit_t * cu, cu_func_t * func)
 
 
 void cu_process_return (cucurbit_t * cu, cu_return_t * cur, value_state_t * vs, int seq_no);
+
+
+void
+cf_set_vec (cu_func_t * cf)
+{
+  query_t *proc = sch_proc_def (wi_inst.wi_schema, cf->cf_proc);
+  if (!proc)
+    sqlr_new_error ("42000", "CL...", "Undefined proc %s in dpipe call", cf->cf_proc);
+  if (proc->qr_to_recompile)
+    {
+      caddr_t err = NULL;
+      proc = qr_recompile (proc, &err);
+      if (err)
+	sqlr_resignal (err);
+    }
+  cf->cf_vec_checked = 1;
+  cf->cf_is_vec = 0 != proc->qr_proc_vectored;
+}
 
 
 void
@@ -871,21 +562,14 @@ cu_dispatch (cucurbit_t * cu, value_state_t * vs, cu_func_t * cf, caddr_t val)
       cu_process_return (cu, disp_ret, vs, 0);
       return;
     }
-  /* add a clo_call to the clrg.  Mark that the vs depends on the reply seq nos. */
-  if (!cf->cf_1_arg && DV_ARRAY_OF_POINTER != DV_TYPE_OF (val))
-    sqlr_new_error ("23023", "CLDPI", "dpipe call of %s needs a vector for argument", cf->cf_name);
-  daq_call_1 (cu->cu_clrg, cf->cf_part_key, cf->cf_proc, (caddr_t *) val,
-      DAQ_CALL_COPY_IF_LOCAL | cf->cf_is_upd, &first_seq_no, NULL);
-  vs->vs_n_steps++;
-  if (-1 != first_seq_no)
-    sethash ((void *) (ptrlong) first_seq_no, cu->cu_seq_no_to_vs, (void *) vs);
+  NO_CL;
 }
 
 
 void cu_value_known (cucurbit_t * cu, int irow, caddr_t * row, caddr_t * val_ret, caddr_t val);
 
 
-#if 4 == SIZEOF_CHAR_P
+#if (SIZEOF_VOID_P == 4)
 
 #define VPLACE(cu, ret, irow) \
   ((irow << 12) | ((caddr_t*) ret - (caddr_t*)(cu->cu_rows[irow])))
@@ -971,80 +655,6 @@ cu_process_return (cucurbit_t * cu, cu_return_t * cur, value_state_t * vs, int s
 
 
 void cu_clear (cucurbit_t * cu);
-
-
-caddr_t *
-cu_next (cucurbit_t * cu, query_instance_t * qi, int is_flush)
-{
-  int seq;
-  caddr_t *list, val, *daq_ret;
-  cl_req_group_t *clrg = cu->cu_clrg;
-  for (;;)
-    {
-      if (!is_flush)
-	{
-	  if (cu->cu_nth_set == cu->cu_fill)
-	    return NULL;	/* all values returned, can still be side effects to process */
-	  if (cu->cu_is_ordered)
-	    {
-	      caddr_t *next = (caddr_t *) cu->cu_rows[cu->cu_nth_set];
-	      if (0 == ((ptrlong *) next)[0])
-		{
-		  if (!cu->cu_allow_redo)
-		    cu->cu_rows[cu->cu_nth_set] = NULL;
-		  cu->cu_nth_set++;
-		  return next;
-		}
-	    }
-	  else
-	    {
-	      if (cu->cu_ready.bsk_count)
-		{
-		  caddr_t next = (caddr_t) basket_get (&cu->cu_ready);
-		  cu->cu_nth_set++;
-		  return (caddr_t *) next;
-		}
-	    }
-	}
-      else
-	{
-	  if (clrg->clrg_nth_param_row == clrg->clrg_nth_set)
-	    {
-	      return NULL;
-	    }
-	}
-      daq_ret = (caddr_t *) daq_call_next_1 (cu->cu_clrg, qi);
-      /*printf ("daq_ret = "); sqlo_box_print (daq_ret); printf ("\n"); */
-      if (!daq_ret)
-	{
-	  /* all responses to sent stuff received.  Send  rest.  If nothing to send, we are fully at end */
-	  if (clrg->clrg_all_sent)
-	    {
-	      sqlr_new_error ("42000", "CL...",
-		  "A dpipe has run out of actions but not all rows are realized.  Some action must have terminated without producing a value");
-	    }
-	  continue;
-	}
-      if (CLO_SET_END == (ptrlong) daq_ret)
-	continue;
-      list = (caddr_t *) daq_ret[2];
-      if (CLO_CALL_ERROR == unbox (list[0]))
-	{
-	  val = list[1];
-	  list[1] = NULL;
-	  dk_free_tree ((caddr_t) daq_ret);
-	  if (NULL == val)
-	    val = srv_make_new_error ("42000", "CL...", "Unspecified error during dpipe operation");
-	  sqlr_resignal (val);
-	}
-      val = list[1];
-      list[1] = NULL;
-      seq = unbox (daq_ret[0]);
-      dk_free_tree ((caddr_t) daq_ret);
-      cu_process_return (cu, (cu_return_t *) val, NULL, seq);
-    }
-}
-
 
 void
 cu_row_ready (cucurbit_t * cu, int irow)
@@ -1145,6 +755,8 @@ cu_free (cucurbit_t * cu)
     dk_free_box ((caddr_t) cu->cu_input_funcs);
   if (cu->cu_key_dup)
     hash_table_free (cu->cu_key_dup);
+  if (cu->cu_rdf_last_g)
+    dk_free_tree (cu->cu_rdf_last_g);
   dk_free ((caddr_t) cu, sizeof (cucurbit_t));
 }
 
@@ -1153,6 +765,7 @@ void
 cu_clear (cucurbit_t * cu)
 {
   /* going to reuse with different values */
+  mem_pool_t *new_pool;
   cl_req_group_t *clrg = cu->cu_clrg;
   caddr_t x;
   DO_SET (cu_line_t *, cul, &cu->cu_lines)
@@ -1181,18 +794,29 @@ cu_clear (cucurbit_t * cu)
   clrg->clrg_nth_set = 0;
   clrg->clrg_n_sets_requested = 0;
   clrg->clrg_clo_seq_no = 0;
+  clrg->clrg_vec_clos = NULL;
+  DO_SET (cll_in_box_t *, clib, &clrg->clrg_clibs)
+  {
+    clib->clib_dc_read = NULL;
+    clib->clib_vec_clos = NULL;
+  }
+  END_DO_SET ();
+  new_pool = mem_pool_alloc ();
+  clrg->clrg_slice_clibs = (cll_in_box_t **) mp_box_copy (new_pool, (caddr_t) clrg->clrg_slice_clibs);
   mp_free (clrg->clrg_pool);
-  clrg->clrg_pool = mem_pool_alloc ();
+  clrg->clrg_pool = new_pool;
+  clrg->clrg_host_clibs = NULL;
   if (cu->cu_key_dup)
     clrhash (cu->cu_key_dup);
+  cu->cu_qst = NULL;
+  cu->cu_clrg->clrg_inst = NULL;
 }
 
 
 caddr_t
-bif_dpipe_redo (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+dpipe_redo (cl_req_group_t * clrg, caddr_t * qst)
 {
   QNCAST (query_instance_t, qi, qst);
-  cl_req_group_t *clrg = bif_clrg_arg (qst, args, 0, "dpipe_redo");
   cucurbit_t *cu = clrg->clrg_cu;
   caddr_t *val;
   value_state_t **vsp, *vs;
@@ -1274,11 +898,18 @@ bif_dpipe_redo (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+caddr_t
+bif_dpipe_redo (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  cl_req_group_t *clrg = bif_clrg_arg (qst, args, 0, "dpipe_redo");
+  return dpipe_redo (clrg, qst);
+}
+
 
 caddr_t
 bif_dpipe (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  int inx, flags;
+  int inx, flags, is_upd = 0;
   query_instance_t *qi = (query_instance_t *) qst;
   cl_req_group_t *clrg = cl_req_group (qi->qi_trx);
   NEW_VARZ (cucurbit_t, cu);
@@ -1286,6 +917,7 @@ bif_dpipe (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   clrg->clrg_pool = mem_pool_alloc ();
   clrg->clrg_keep_local_clo = 1;
   clrg->clrg_u_id = qst_effective_u_id (qst);
+  clrg_top_check (clrg, qi_top_qi (qi));
   cu->cu_clrg = clrg;
   clrg->clrg_cu = cu;
   flags = bif_long_arg (qst, args, 0, "dpipe");
@@ -1301,7 +933,11 @@ bif_dpipe (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       caddr_t func_name = bif_string_arg (qst, args, inx, "dpipe");
       cu_func_t *cf = cu_func (func_name, 1);
       cu->cu_input_funcs[inx - 1] = cf;
+      if (cf->cf_is_upd)
+	is_upd = 1;
     }
+  if (!is_upd)
+    cu->cu_clrg->clrg_no_txn = 1;
   cu->cu_seq_no_to_vs = hash_table_allocate (101);
   return (caddr_t) clrg;
 }
@@ -1346,6 +982,8 @@ dpipe_allocate (query_instance_t * qi, int flags, int n_ops, char **ops)
   clrg->clrg_keep_local_clo = 1;
   cu->cu_clrg = clrg;
   clrg->clrg_cu = cu;
+  if (qi)
+    clrg_top_check (clrg, qi);
   if (!qi || qi->qi_client->cli_row_autocommit)
     flags |= CU_NO_TXN;
   cu->cu_is_ordered = 0 != (flags & CU_ORDERED);
@@ -1391,6 +1029,8 @@ cu_ssl_row (cucurbit_t * cu, caddr_t * qst, state_slot_t ** args, int first_ssl)
 	}
       else
 	{
+	  if ((cu->cu_fill - 1) > DPIPE_MAX_ROWS)
+	    sqlr_new_error ("42000", "CL...", "Dpipe cannot have more than %d rows", DPIPE_MAX_ROWS);
 	  cu_value (cu, cu->cu_input_funcs[inx - first_ssl], arg, cu->cu_fill - 1, row, &row[vinx]);
 	}
     }
@@ -1401,6 +1041,114 @@ cu_ssl_row (cucurbit_t * cu, caddr_t * qst, state_slot_t ** args, int first_ssl)
   daq_print_box ((row));
 }
 
+void cl_rdf_call_insert_cb (cucurbit_t * cu, caddr_t * qst, caddr_t * err_ret);
+caddr_t bif_rollback (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
+void rb_id_serialize (rdf_box_t * rb, dk_session_t * ses);
+void cu_rl_local_exec (cucurbit_t * cu);
+
+/* deserialize GSPO string into an array */
+caddr_t *
+cu_ld_row (caddr_t str)
+{
+  int i;
+  dk_session_t ses;
+  scheduler_io_data_t sio;
+  dk_set_t set = NULL;
+  ROW_IN_SES_2 (ses, sio, str, box_length (str) - 1);
+  for (i = 0; i < 4; i++)
+    dk_set_push (&set, read_object (&ses));
+  return (caddr_t *) list_to_array (dk_set_nreverse (set));
+}
+
+/* serialize GSPO as a string */
+caddr_t
+cu_ld_str (caddr_t * row, int tmp)
+{
+  char buf[64];
+  dk_session_t ses;
+  caddr_t ret;
+  ROW_OUT_SES (ses, buf);
+  ses.dks_out_fill = 0;
+  iri_id_write ((iri_id_t *) (row[0]), &ses);
+  iri_id_write ((iri_id_t *) (row[1]), &ses);
+  iri_id_write ((iri_id_t *) (row[2]), &ses);
+  if (DV_TYPE_OF (row[3]) == DV_RDF)
+    rb_id_serialize ((rdf_box_t *) (row[3]), &ses);
+  else
+    print_object (row[3], &ses, NULL, NULL);
+  if (!tmp)
+    ret = box_dv_short_nchars (buf, ses.dks_out_fill);
+  else
+    ret = t_box_dv_short_nchars (buf, ses.dks_out_fill);
+  return ret;
+}
+
+void
+cu_ld_store_rows (cucurbit_t * cu, caddr_t * qst, caddr_t * err_ret)
+{
+  ptrlong one = 1;
+  caddr_t tmp[64];
+  caddr_t *row;
+  int inx;
+  QNCAST (query_instance_t, qi, qst);
+  BOX_AUTO_TYPED (caddr_t *, row, tmp, 4 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+
+  cu->cu_clrg->clrg_inst = cu->cu_qst = qst;
+fetch_again:
+  QR_RESET_CTX
+  {
+    if (CL_RUN_LOCAL == cl_run_local_only)
+      cu_rl_local_exec (cu);
+  }
+  QR_RESET_CODE
+  {
+    caddr_t err = subq_handle_reset (qi, reset_code);
+    POP_QR_RESET;
+    /*log_error ("RDF CB COMPLETE: %s %s", ERR_STATE (err), ERR_MESSAGE (err)); */
+    if (ARRAYP (err) && !strcmp (ERR_STATE (err), "40001"))
+      {
+	dk_free_tree (err);
+	err = NULL;
+	bif_rollback (qst, &err, NULL);
+	if (CLI_IN_DAQ_AC == qi->qi_client->cli_in_daq)
+	  goto fetch_again;
+	dpipe_redo (cu->cu_clrg, qst);
+	goto fetch_again;
+      }
+    sqlr_resignal (err);
+  }
+  END_QR_RESET;
+  bif_commit (qst, err_ret, NULL);
+  if (*err_ret)
+    {
+      log_error ("CL RDF: %s %s", ERR_STATE (*err_ret), ERR_MESSAGE (*err_ret));
+      dk_free_tree (*err_ret);
+      *err_ret = NULL;
+    }
+  for (inx = 0; inx < cu->cu_fill; inx++)
+    {
+      caddr_t *cu_row = (caddr_t *) cu->cu_rows[inx];
+      row[1] = cu_row[2];
+      row[2] = cu_row[3];
+      if (DV_DB_NULL == DV_TYPE_OF (cu_row[5]))
+	row[3] = cu_row[4];
+      else
+	row[3] = cu_row[5];
+      row[0] = cu_row[6];
+      if (!cu->cu_ld_graphs)
+	{
+	  cu->cu_ld_graphs = id_hash_allocate (100, sizeof (caddr_t), sizeof (caddr_t), boxint_hash, boxint_hashcmp);
+	  id_hash_set_rehash_pct (cu->cu_ld_graphs, 200);
+	}
+      if (!id_hash_get (cu->cu_ld_graphs, (caddr_t) (row[0])))
+	id_hash_set (cu->cu_ld_graphs, (caddr_t) (row[0]), (caddr_t) & one);
+      /* push dv string */
+      dk_set_push (&cu->cu_ld_rows, cu_ld_str (row, 0));
+    }
+  cu_clear (cu);
+}
+
+extern int32 rdf_ld_batch_sz;
 
 caddr_t
 bif_dpipe_input (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -1410,7 +1158,22 @@ bif_dpipe_input (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   CL_ONLINE_CK;
   if (!cu)
     sqlr_new_error ("42000", "CL...", "Not a dpipe daq");
-  cu->cu_qst = qst;
+  cu->cu_clrg->clrg_inst = cu->cu_qst = qst;
+  if ((cu->cu_rdf_load_mode & RDF_LD_DEL_INS) && BOX_ELEMENTS (args) == 6)
+    {
+      caddr_t g = bif_arg (qst, args, 5, "dpipe_input");
+      if (cu->cu_rdf_last_g && cu->cu_fill >= (1.5 * rdf_ld_batch_sz))
+	{
+	  cu_ld_store_rows (cu, qst, err_ret);
+	  if (strcmp (cu->cu_rdf_last_g, g))
+	    cl_rdf_call_insert_cb (cu, qst, err_ret);
+	}
+      if (!cu->cu_rdf_last_g || strcmp (cu->cu_rdf_last_g, g))
+	{
+	  dk_free_tree (cu->cu_rdf_last_g);
+	  cu->cu_rdf_last_g = box_copy_tree (g);
+	}
+    }
   cu_ssl_row (cu, qst, args, 1);
   return NULL;
 }
@@ -1419,22 +1182,6 @@ bif_dpipe_input (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_dpipe_next (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t *row;
-  cl_req_group_t *clrg = bif_clrg_arg (qst, args, 0, "dpipe_next");
-  cucurbit_t *cu = clrg->clrg_cu;
-  int is_flush = bif_long_arg (qst, args, 1, "dpipe_next");
-  if (!cu)
-    sqlr_new_error ("42000", "CL...", "Not a dpipe daq");
-  cu->cu_qst = qst;
-  row = cu_next (cu, (query_instance_t *) qst, is_flush);
-  if (row)
-    {
-      int len = BOX_ELEMENTS (row) - 2, inx;
-      caddr_t *copy = (caddr_t *) dk_alloc_box (sizeof (caddr_t) * len, DV_ARRAY_OF_POINTER);
-      for (inx = 0; inx < len; inx++)
-	copy[inx] = box_copy_tree (row[inx + 2]);
-      return (caddr_t) copy;
-    }
   return NULL;
 }
 
@@ -1469,27 +1216,14 @@ bif_dpipe_reuse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_dpipe_define (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t name = bif_string_arg (qst, args, 0, "dpipe_define");
-  dbe_key_t *key = bif_key_arg (qst, args, 1, "dpipe_define");
-  caddr_t fn = bif_string_arg (qst, args, 3, "dpipe_define");
-  int l = bif_long_arg (qst, args, 4, "dpipe_define");
-  NEW_VARZ (cu_func_t, cf);
-  cf->cf_name = box_copy (name);
-  cf->cf_part_key = key;
-  cf->cf_proc = box_copy (fn);
-  cf->cf_is_upd = CF_UPD_FLAGS (l);
-  if (CF_SINGLE_ACTION & l)
-    cf->cf_single_action = 1;
-  if (BOX_ELEMENTS (args) > 5)
-    {
-      cf->cf_call_proc = box_copy (bif_string_or_null_arg (qst, args, 5, "dpipe_define"));
-      cf->cf_call_bif = box_copy (bif_string_or_null_arg (qst, args, 6, "dpipe_define"));
-      cf->cf_extra = box_copy_tree (bif_arg (qst, args, 7, "dpipe_define"));
-    }
-  id_hash_set (name_to_cu_func, (caddr_t) & cf->cf_name, (caddr_t) & cf);
   return NULL;
 }
 
+caddr_t
+bif_dpipe_drop (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return NULL;
+}
 
 caddr_t
 bif_cl_is_autocommit (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -1520,6 +1254,19 @@ bif_cl_daq_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
+caddr_t
+bif_cl_detach_thread (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  QNCAST (QI, qi, qst);
+  client_connection_t *cli = qi->qi_client;
+  if (!cli->cli_cl_stack || box_length (cli->cli_cl_stack) == sizeof (cl_call_stack_t))
+    return NULL;
+  dk_free_box (cli->cli_cl_stack);
+  cli->cli_cl_stack = NULL;
+  return box_num (1);
+}
+
+
 void
 dpipe_refresh_schema ()
 {
@@ -1539,7 +1286,15 @@ dpipe_refresh_schema ()
 void
 dpipe_define (caddr_t name, dbe_key_t * key, caddr_t fn, cu_op_func_t fn_disp, int l)
 {
-  NEW_VARZ (cu_func_t, cf);
+  cu_func_t *cf, *prev_cf = NULL;
+  prev_cf = cu_func (name, 0);
+  if (prev_cf)
+    cf = prev_cf;
+  else
+    {
+      NEW_VARZ (cu_func_t, cf2);
+      cf = cf2;
+    }
   cf->cf_name = box_dv_short_string (name);
   cf->cf_dispatch = fn_disp;
   cf->cf_part_key = key;
@@ -1549,6 +1304,15 @@ dpipe_define (caddr_t name, dbe_key_t * key, caddr_t fn, cu_op_func_t fn_disp, i
   id_hash_set (name_to_cu_func, (caddr_t) & cf->cf_name, (caddr_t) & cf);
 }
 
+void
+dpipe_drop (caddr_t name)
+{
+  cu_func_t *oldfn = NULL;
+  caddr_t oldkey = NULL;
+  id_hash_get_and_remove (name_to_cu_func, (caddr_t) & name, (caddr_t) & oldkey, (caddr_t) & oldfn);
+  if (oldfn)
+    dk_free (oldfn, sizeof (cu_func_t));
+}
 
 void
 dpipe_signature (caddr_t name, int n_args, ...)
@@ -1587,34 +1351,55 @@ cl_read_dpipes ()
       "select count (*) from SYS_DPIPE where 0 = dpipe_define_no_err (DP_NAME, DP_PART_TABLE, DP_PART_KEY, DP_SRV_PROC, DP_IS_UPD, DP_CALL_PROC, DP_CALL_BIF, DP_EXTRA)");
 }
 
+void
+dpipe_define_1_bif_define (void)
+{
+  bif_define ("dpipe_define_1", bif_dpipe_define);
+}
+
+
+caddr_t
+bif_cl_current_slice (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  QNCAST (QI, qi, qst);
+  if (CL_RUN_LOCAL == cl_run_local_only)
+    return box_num (QI_NO_SLICE);
+  return box_num (qi->qi_client->cli_slice);
+}
+
 
 void
 bif_daq_init ()
 {
-  bif_define ("daq", bif_daq);
-  bif_define ("daq_call", bif_daq_call);
-  bif_define ("daq_next", bif_daq_next);
-  bif_define ("daq_send", bif_daq_send);
+  static int bif_daq_init_done = 0;
+  if (bif_daq_init_done)
+    return;
+  bif_daq_init_done = 1;
   bif_define ("daq_buffered_bytes", bif_daq_buffered_bytes);
+  bif_define ("cl_set_slice", bif_cl_set_slice);
   name_to_cu_func = id_casemode_hash_create (11);
-  func_name_to_cu_func = id_casemode_hash_create (11);
+//  func_name_to_cu_func = id_casemode_hash_create (11);
   bif_define ("dpipe", bif_dpipe);
-  bif_set_no_cluster ("dpipe");
+  bif_set_cluster_rec ("dpipe");
   bif_define ("dpipe_input", bif_dpipe_input);
-  bif_set_no_cluster ("dpipe_input");
+  bif_set_cluster_rec ("dpipe_input");
   bif_define ("dpipe_next", bif_dpipe_next);
-  bif_set_no_cluster ("dpipe_next");
-  bif_define ("dpipe_define_1", bif_dpipe_define);
+  dpipe_define_1_bif_define ();
+  bif_set_cluster_rec ("dpipe_next");
+  bif_define ("dpipe_drop_1", bif_dpipe_drop);
   bif_define ("dpipe_count", bif_dpipe_count);
   bif_define ("dpipe_reuse", bif_dpipe_reuse);
   bif_define ("dpipe_redo", bif_dpipe_redo);
-  bif_set_no_cluster ("dpipe_redo");
+  bif_set_cluster_rec ("dpipe_redo");
   bif_define ("cl_is_autocommit", bif_cl_is_autocommit);
   bif_define ("cl_daq_client", bif_cl_daq_client);
+  bif_define_typed ("cl_current_slice", bif_cl_current_slice, &bt_integer);
+  bif_define ("cl_detach_thread", bif_cl_detach_thread);
   {
     /* define identity as identity op for dpipe */
     caddr_t es = box_dv_short_string ("identity");
     caddr_t n = NULL;
     id_hash_set (name_to_cu_func, (caddr_t) & es, (caddr_t) & n);
   }
+  cl_rdf_init ();
 }

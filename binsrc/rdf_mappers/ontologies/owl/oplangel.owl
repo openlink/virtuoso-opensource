@@ -1,0 +1,244 @@
+<!--
+
+  $Id$
+
+  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+  project.
+
+  Copyright (C) 1998-2013 OpenLink Software
+
+  This project is free software; you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published by the
+  Free Software Foundation; only version 2 of the License, dated June 1991.
+
+  This program is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+
+  You should have received a copy of the GNU General Public License along
+  with this program; if not, write to the Free Software Foundation, Inc.,
+  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+
+
+  Generated from oplangel.n3 by on-line N3-RDF/XML converter at http://www.mindswap.org/2002/rdfconvert/ 
+
+  An OpenLink ontology for Angel List (http://angel.co/)
+
+-->
+
+
+<rdf:RDF xmlns="http://www.openlinksw.com/schemas/angel#"
+    xmlns:angel="http://www.openlinksw.com/schemas/angel#"
+    xmlns:dc="http://purl.org/dc/elements/1.1/"
+    xmlns:foaf="http://xmlns.com/foaf/0.1/"
+    xmlns:gn="http://www.geonames.org/ontology#"
+    xmlns:gr="http://purl.org/goodrelations/v1#"
+    xmlns:log="http://www.w3.org/2000/10/swap/log#"
+    xmlns:opl="http://www.openlinksw.com/schema/attribution#"
+    xmlns:owl="http://www.w3.org/2002/07/owl#"
+    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+    xmlns:sioc="http://rdfs.org/sioc/ns#"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
+
+    <owl:Ontology rdf:about="http://www.openlinksw.com/schemas/angel#">
+        <dc:creator rdf:datatype="http://www.w3.org/2001/XMLSchema#string">OpenLink Software, http://www.openlinksw.com</dc:creator>
+    </owl:Ontology>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/angel#Agent">
+        <rdfs:comment>An AngelList Entity</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/dbpedia-spotlight#"/>
+        <rdfs:label>Angel Agent</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/angel#Location">
+        <rdfs:comment>An Angel-List Entity Location</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/dbpedia-spotlight#"/>
+        <rdfs:label>Angel Location</rdfs:label>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/angel#Market">
+        <rdfs:comment>An Angel-List Marketplace</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/dbpedia-spotlight#"/>
+        <rdfs:label>Angel Market</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/angel#Agent"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/angel#Startup">
+        <rdfs:comment>An Angel-List startup (company)</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/dbpedia-spotlight#"/>
+        <rdfs:label>Startup</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/angel#Agent"/>
+        <rdfs:subClassOf rdf:resource="http://xmlns.com/foaf/0.1/Organization"/>
+    </owl:Class>
+
+    <owl:Class rdf:about="http://www.openlinksw.com/schemas/angel#User">
+        <rdfs:comment>An Angel-List user (investor or other)</rdfs:comment>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/dbpedia-spotlight#"/>
+        <rdfs:label>Person</rdfs:label>
+        <rdfs:subClassOf rdf:resource="http://www.openlinksw.com/schemas/angel#Agent"/>
+        <rdfs:subClassOf rdf:resource="http://xmlns.com/foaf/0.1/Person"/>
+    </owl:Class>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/angel#bio">
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/angel#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/angel#"/>
+        <rdfs:label>Biography</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/dc/elements/1.1/description"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/angel#company_url">
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/angel#Startup"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/angel#"/>
+        <rdfs:label>Company URL</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+        <rdfs:subPropertyOf rdf:resource="http://www.openlinksw.com/schemas/angel#url"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/angel#followers">
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/angel#Agent"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/angel#"/>
+        <rdfs:label>Followers</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/angel#has_location">
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/angel#Agent"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/angel#"/>
+        <rdfs:label>Location</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/angel#Location"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/angel#has_market">
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/angel#Startup"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/angel#"/>
+        <rdfs:label>Market</rdfs:label>
+        <rdfs:range rdf:resource="http://www.openlinksw.com/schemas/angel#Market"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/angel#high_concept">
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/angel#Startup"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/angel#"/>
+        <rdfs:label>High-level Concept</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/dc/elements/1.1/description"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/angel#id">
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/angel#Agent"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/angel#"/>
+        <rdfs:label>Angel ID</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/angel#image">
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/angel#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/angel#"/>
+        <rdfs:label>Image</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/angel#location_id">
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/angel#Location"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/angel#"/>
+        <rdfs:label>Location ID</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#integer"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/angel#location_name">
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/angel#Location"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/angel#"/>
+        <rdfs:label>Location ID</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://www.geonames.org/ontology#name"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/angel#location_url">
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/angel#Location"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/angel#"/>
+        <rdfs:label>Location ID</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/angel#logo_url">
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/angel#Startup"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/angel#"/>
+        <rdfs:label>Logo URL</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/angel#market_name">
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/angel#Market"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/angel#"/>
+        <rdfs:label>Market Name</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://www.openlinksw.com/schemas/angel#name"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/angel#market_url">
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/angel#Market"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/angel#"/>
+        <rdfs:label>Market Name</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+        <rdfs:subPropertyOf rdf:resource="http://www.openlinksw.com/schemas/angel#url"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/angel#name">
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/angel#Agent"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/angel#"/>
+        <rdfs:label>Angel Agent Name</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://www.w3.org/2000/01/rdf-schema#label"/>
+        <owl:sameAs rdf:resource="http://xmlns.com/foaf/0.1/name"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/angel#product_desc">
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/angel#Startup"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/angel#"/>
+        <rdfs:label>Product Description</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+        <rdfs:subPropertyOf rdf:resource="http://purl.org/dc/elements/1.1/description"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/angel#role">
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/angel#User"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/angel#"/>
+        <rdfs:label>Role</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/angel#status">
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/angel#Startup"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/angel#"/>
+        <rdfs:label>Current Status</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/angel#thumb_url">
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/angel#Startup"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/angel#"/>
+        <rdfs:label>Thumbnail</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/angel#url">
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/angel#Agent"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/angel#"/>
+        <rdfs:label>Angel URL</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+        <rdfs:subPropertyOf rdf:resource="http://www.w3.org/2000/01/rdf-schema#seeAlso"/>
+        <rdfs:subPropertyOf rdf:resource="http://xmlns.com/foaf/0.1/homepage"/>
+    </owl:DatatypeProperty>
+
+    <owl:DatatypeProperty rdf:about="http://www.openlinksw.com/schemas/angel#video_url">
+        <rdfs:domain rdf:resource="http://www.openlinksw.com/schemas/angel#Startup"/>
+        <rdfs:isDefinedBy rdf:resource="http://www.openlinksw.com/schemas/angel#"/>
+        <rdfs:label>Corporate Video</rdfs:label>
+        <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#anyURI"/>
+        <rdfs:subPropertyOf rdf:resource="http://www.openlinksw.com/schemas/angel#url"/>
+    </owl:DatatypeProperty>
+</rdf:RDF>
+
+

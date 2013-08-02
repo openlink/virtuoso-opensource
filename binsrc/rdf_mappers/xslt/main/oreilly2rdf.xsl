@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2009 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -34,6 +34,7 @@
 <!ENTITY rdf "http://www.w3.org/1999/02/22-rdf-syntax-ns#">
 <!ENTITY rdfs "http://www.w3.org/2000/01/rdf-schema#">
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
+<!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
 ]>
 <xsl:stylesheet
@@ -46,6 +47,7 @@
     xmlns:sioc="&sioc;"
     xmlns:gr="&gr;"
     xmlns:pto="&pto;" 
+    xmlns:opl="&opl;"
     xmlns:dc="&dc;"
     xmlns:dcterms="&dcterms;"
     xmlns:owl="&owl;"
@@ -114,6 +116,13 @@
 	<gr:Offering rdf:about="{concat ($baseUri, '#', 'Offering')}">
 	-->
 	<gr:Offering rdf:about="{vi:proxyIRI ($baseUri, '', 'Offering')}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.oreilly.com#this">
+                        			<foaf:name>Oreilly</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.oreilly.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 		<sioc:has_container rdf:resource="{$docproxyIRI}"/>
 		<gr:hasBusinessFunction rdf:resource="&gr;Sell"/>
 		<rdfs:label><xsl:value-of select="concat($title, ' - ', $subtitle)"/></rdfs:label>
@@ -147,6 +156,13 @@
     </gr:BusinessEntity>
 
 	<rdf:Description rdf:about="{$resourceURL}">
+                        	<opl:providedBy>
+                        		<foaf:Organization rdf:about="http://www.oreilly.com#this">
+                        			<foaf:name>Oreilly</foaf:name>
+                        			<foaf:homepage rdf:resource="http://www.oreilly.com"/>
+                        		</foaf:Organization>
+                        	</opl:providedBy>
+
 		<rdf:type rdf:resource="&gr;ProductOrServicesSomeInstancesPlaceholder" />
 		<xsl:choose>
 			<xsl:when test="$category='video'">

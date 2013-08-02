@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -117,10 +117,10 @@ create view DB.DBA.SYS_INDEX_SPACE_STATS as
   from
     DB.DBA.SYS_INDEX_SPACE_STATS_PROC () (
     ISS_KEY_ID integer,
-    ISS_NROWS integer,
-    ISS_ROW_BYTES integer,
-    ISS_BLOB_PAGES integer,
-    ISS_ROW_PAGES integer) _tmp,
+    ISS_NROWS bigint,
+    ISS_ROW_BYTES bigint,
+    ISS_BLOB_PAGES bigint,
+    ISS_ROW_PAGES bigint) _tmp,
     DB.DBA.SYS_KEYS table option (order)
   where
     ISS_KEY_ID = KEY_ID
@@ -208,7 +208,7 @@ create procedure DB.DBA.VD_STATISTICS (in _dsn varchar := '%', in vd_table_mask 
 		CS_AVG_LEN,
 		CS_N_VALUES, CS_N_ROWS)
 		select
-		  KEY_TABLE, "COLUMN", stat_cardinality, NULL, NULL,
+		  "TABLE", "COLUMN", stat_cardinality, NULL, NULL,
 		  (case when COL_PREC = 0 then 30
 			when dv_type_title (COL_DTP) like 'LONG %' then 30 else COL_PREC end),
 		  stat_cardinality, stat_cardinality
@@ -896,3 +896,92 @@ create procedure X509_ROOT_CA_CERTS ()
   return ret;
 }
 ;
+
+create procedure uptime ()
+{
+  declare y,m,d,h,mn int;
+  declare y1,m1,d1,h1,mn1, delta int;
+  declare y2,m2,d2,h2,mn2 int;
+  declare s, dt, meta, data any;
+  declare uptime varchar;
+  result_names (uptime);
+  if (sys_stat ('st_started_since_year') = 0)
+    exec ('status ()', null, null, vector (), 0, meta, data);
+
+  y := sys_stat ('st_started_since_year');
+  m := sys_stat ('st_started_since_month');
+  d := sys_stat ('st_started_since_day');
+  h := sys_stat ('st_started_since_hour');
+  mn := sys_stat ('st_started_since_minute');
+
+  dt := stringdate (sprintf ('%d-%d-%d %d:%d', y,m,d,h,mn));
+  delta := datediff ('minute', dt, now ());
+
+  mn2 := mod (delta, 60);
+  h2 := mod (delta / 60, 24);
+  d2 := delta / 60 / 24;
+
+  s := '';
+  if (d2) s := s || cast (d2 as varchar) || ' day(s), ';
+  if (h2 or d2) s := s || cast (h2 as varchar) || ' hour(s), ';
+  s := s || cast (mn2 as varchar) || ' minute(s)';
+  result (s);
+}
+;
+
+create procedure DB.DBA.CL_MEM_SRV ()
+{
+  return vector (sys_stat ('st_sys_ram'), sys_stat ('st_host_name'));
+}
+;
+
+create procedure mem_info_cl ()
+{
+  declare daq, r, dict, vec any;
+  declare s int;
+  if (1 = sys_stat ('cl_run_local_only'))
+    {
+      return sys_stat ('st_sys_ram');
+    }
+  commit work;
+  daq := daq (0);
+  daq_call (daq, 'DB.DBA.SYS_COLS', 'SYS_COLS_BY_NAME', 'DB.DBA.CL_MEM_SRV', vector (), 1);
+  dict := dict_new (10);
+  while (r:= daq_next (daq))
+    {
+      if (length (r) > 2 and isarray (r[2]) and r[2][0] = 3)
+	{
+	  declare err any;
+	  err := r[2][1];
+	  if (isarray (err))
+	    signal (err[1], err[2]);
+	}
+      if (dict_get (dict, r[2][1][1]) is null)
+	{
+	  dict_put (dict, r[2][1][1], 1);
+	  s := s + r[2][1][0];
+	}
+    }
+  return s;
+}
+;
+
+create procedure
+mem_hum_size (in sz integer) returns varchar
+{
+  if (sz = 0)
+    return ('unknown');
+  if (sz < 1024)
+    return (sprintf ('%d B', cast (sz as integer)));
+  if (sz < 102400)
+    return (sprintf ('%d kB', sz/1024));
+  if (sz < 1048576)
+    return (sprintf ('%d kB', cast (sz/1024 as integer)));
+  if (sz < 104857600)
+    return (sprintf ('%d MB', sz/1048576));
+  if (sz < 1073741824)
+    return (sprintf ('%d MB', cast (sz/1048576 as integer)));
+  return (sprintf ('%d GB', sz/1073741824));
+}
+;
+

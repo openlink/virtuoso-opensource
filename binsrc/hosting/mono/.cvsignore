@@ -1,9 +1,0 @@
-.deps
-.libs
-Makefile
-Makefile.in
-sql_code_clr.c
-sql_code_xslt.c
-virtuoso-iodbc-mono-cli-t
-virtuoso-mono-cli-t
-virtclr.dll

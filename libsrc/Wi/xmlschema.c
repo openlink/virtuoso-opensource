@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -412,7 +412,6 @@ xmls_element_table (char * elt)
 caddr_t
 bif_xmls_element_table (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  query_instance_t *qi = (query_instance_t *) qst;
   caddr_t e_name = bif_string_arg (qst, args, 0, "xmls_element_table");
   caddr_t tb_name = bif_string_arg (qst, args, 1, "xmls_element_table");
   caddr_t e_copy = box_copy (e_name);
@@ -428,7 +427,6 @@ bif_xmls_element_table (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_xmls_element_col (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  query_instance_t *qi = (query_instance_t *) qst;
   caddr_t tb_name = bif_string_arg (qst, args, 0, "xmld_element_col");
   ptrlong cid = bif_long_arg (qst, args, 1, "xmls_element_col");
   ptrlong aid = bif_long_arg (qst, args, 2, "xmls_element_col");
@@ -465,7 +463,8 @@ bif_vt_index (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t enc = NULL;
   caddr_t * offb_data = NULL;
   caddr_t * constr_data = NULL;
-
+  caddr_t opts = BOX_ELEMENTS (args) > 9 ? bif_arg (qst, args, 9, "__vt_index") : NULL;
+  int is_geo = DV_STRING == DV_TYPE_OF (opts) && 'G'== opts[0];
   if (pending_sc)
     tb  = sch_name_to_table (pending_sc, tb_name);
   if (!tb)
@@ -502,6 +501,13 @@ bif_vt_index (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   if (!id_col || !text_col)
     sqlr_error ("S0002", "No column in vt_index");
+  if (is_geo)
+    {
+      id_key->key_geo_table = inx_tb;
+      inx_tb->tb_primary_key->key_is_geo = 1;
+      text_col->col_is_geo_index = 1;
+    }
+  else
     {
     id_key->key_text_table = inx_tb;
     id_key->key_text_col = text_col;

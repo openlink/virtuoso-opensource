@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2010 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -26,10 +26,10 @@ package virtuoso.sesame2.driver;
 
 public class Version {
 
-   protected static final String DRV_VER = "2.3.1";
+   protected static final String DRV_VER = "2.7.3";
 
    // The major and minor version number
-   protected static final String build_id = "1.4";
+   protected static final String build_id = "1.12";
 
    public static void main(String args[])
    {

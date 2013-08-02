@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -45,8 +45,12 @@
 #include "sqlbif.h"
 #include "libutil.h"
 #include "sqlcstate.h"
-
-
+#include "sqlo.h"
+#include "list2.h"
+#include "xmlnode.h"
+#include "xmltree.h"
+#include "arith.h"
+#include "rdfinf.h"
 #include "ssl.c"
 
 /* #define USE_SYS_CONSTANT */
@@ -92,7 +96,11 @@ sp_list_free (dk_set_t sps)
   DO_SET (search_spec_t *, sp, &sps)
     {
       if (CMP_HASH_RANGE == sp->sp_min_op)
-	dk_free ((caddr_t)sp->sp_min_ssl, sizeof (hash_range_spec_t));
+	{
+	  QNCAST (hash_range_spec_t, hrng, sp->sp_min_ssl);
+	  dk_free_box ((caddr_t)hrng->hrng_ssls);
+	  dk_free ((caddr_t)sp->sp_min_ssl, sizeof (hash_range_spec_t));
+	}
       dk_free ((caddr_t)sp, sizeof (search_spec_t));
     }
   END_DO_SET();
@@ -279,6 +287,62 @@ udt_is_qr_used (char *name)
   return object_is_qr_used (name, udt_name_to_qr_dep);
 }
 
+
+#define QNSZ(f, t) if (IS_QN (qn, f)) return sizeof (t);
+
+
+int
+qn_size (data_source_t * qn)
+{
+  QNSZ (table_source_input, table_source_t);
+  QNSZ (table_source_input_unique, table_source_t);
+  QNSZ (chash_read_input, table_source_t);
+  QNSZ (sort_read_input, table_source_t);
+  QNSZ (set_ctr_input, set_ctr_node_t);
+  QNSZ (setp_node_input, setp_node_t);
+  QNSZ (fun_ref_node_input, fun_ref_node_t);
+  QNSZ (hash_fill_node_input, fun_ref_node_t);
+  QNSZ (end_node_input, end_node_t);
+  QNSZ (select_node_input, select_node_t);
+  QNSZ (table_source_input, table_source_t);
+  QNSZ (table_source_input_unique, table_source_t);
+  QNSZ (chash_read_input, table_source_t);
+  QNSZ (sort_read_input, table_source_t);
+  QNSZ (set_ctr_input, set_ctr_node_t);
+  QNSZ (setp_node_input, setp_node_t);
+  QNSZ (fun_ref_node_input, fun_ref_node_t);
+  QNSZ (hash_fill_node_input, fun_ref_node_t);
+  QNSZ (end_node_input, end_node_t);
+  QNSZ (select_node_input, select_node_t);
+  QNSZ (select_node_input_subq, select_node_t);
+  QNSZ (table_source_input, table_source_t);
+  QNSZ (table_source_input_unique, table_source_t);
+  QNSZ (chash_read_input, table_source_t);
+  QNSZ (sort_read_input, table_source_t);
+  QNSZ (set_ctr_input, set_ctr_node_t);
+  QNSZ (outer_seq_end_input, outer_seq_end_node_t);
+  QNSZ (setp_node_input, setp_node_t);
+  QNSZ (fun_ref_node_input, fun_ref_node_t);
+  QNSZ (hash_fill_node_input, fun_ref_node_t);
+  QNSZ (end_node_input, end_node_t);
+  QNSZ (hash_source_input, hash_source_t);
+  QNSZ (subq_node_input, subq_source_t);
+  QNSZ (union_node_input, union_node_t);
+  QNSZ (gs_union_node_input, gs_union_node_t);
+  QNSZ (insert_node_input, insert_node_t);
+  QNSZ (delete_node_input, delete_node_t);
+  QNSZ (update_node_input, update_node_t);
+  QNSZ (trans_node_input, trans_node_t);
+  QNSZ (in_iter_input, in_iter_node_t);
+  QNSZ (rdf_inf_pre_input , rdf_inf_pre_node_t);
+  QNSZ (skip_node_input, skip_node_t);
+  QNSZ (ddl_node_input, ddl_node_t);
+  QNSZ (op_node_input, op_node_t);
+  QNSZ (breakup_node_input, breakup_node_t);
+  return -1;
+}
+
+
 void
 dsr_free (data_source_t * x)
 {
@@ -288,7 +352,8 @@ dsr_free (data_source_t * x)
   dk_set_free (x->src_continuations);
   dk_free_box ((caddr_t)x->src_pre_reset);
   dk_free_box ((caddr_t)x->src_continue_reset);
-  dk_free ((caddr_t) x, -1);
+  dk_free_box ((caddr_t)x->src_vec_reuse);
+  dk_free ((caddr_t) x, qn_size (x));
 }
 
 void
@@ -334,7 +399,7 @@ qr_free (query_t * qr)
 {
   if (!qr)
     return;
-  if (!qr->qr_qf_id)
+  if (!qr->qr_qf_id && !qr->qr_super)
     {
       /* a local qr has parallel branches.  If going, let the last of them free the qr */
       IN_CLL;
@@ -350,8 +415,6 @@ qr_free (query_t * qr)
   while (NULL != qr->qr_used_tables) dk_free_tree (dk_set_pop (&(qr->qr_used_tables)));
   while (NULL != qr->qr_used_udts) dk_free_tree (dk_set_pop (&(qr->qr_used_udts)));
   while (NULL != qr->qr_used_jsos) dk_free_tree (dk_set_pop (&(qr->qr_used_jsos)));
-  if (!qr->qr_text_is_constant)
-    dk_free_box (qr->qr_text);
   dk_free_tree (qr->qr_parse_tree);
   DO_SET (data_source_t *, sr, &qr->qr_nodes)
   {
@@ -439,13 +502,14 @@ qr_free (query_t * qr)
       dk_free_tree (qr->qr_proc_ret_type);
       dk_free_box (qr->qr_trig_table);
       dk_free_box ((box_t) qr->qr_trig_upd_cols);
+      if (qr->qr_pn) qr->qr_pn->pn_query = NULL;
       proc_name_free (qr->qr_pn);
     }
   dk_free_box ((caddr_t) qr->qr_proc_cost);
   dk_free_box ((caddr_t)qr->qr_qf_params);
   dk_free_box ((caddr_t)qr->qr_qf_agg_res);
-  dk_free_box ((caddr_t)qr->qr_qf_agg_defaults);
   dk_free_box ((caddr_t)qr->qr_vec_ssls);
+  dk_free_box ((caddr_t)qr->qr_stages);
 #ifdef PLDBG
   dk_free_box (qr->qr_source);
   if (qr->qr_line_counts)
@@ -468,6 +532,9 @@ qr_free (query_t * qr)
   if ((NULL != qr->qr_static_prev) || (NULL != qr->qr_static_next) || (qr == static_qr_dllist))
     static_qr_dllist_remove (qr);
 #endif
+  if (!qr->qr_text_is_constant)
+    dk_free_box (qr->qr_text);
+  qr->qr_nodes = (dk_set_t)-1;
   dk_free ((caddr_t) qr, sizeof (query_t));
 }
 
@@ -526,11 +593,6 @@ ssl_state (int type, dtp_t dtp)
 {
   return (NULL);
 }
-
-#define SSL_ADD_TO_QR(sl) \
-  dk_set_push (&cc->cc_super_cc->cc_query->qr_state_map, (void *) sl);
-
-
 
 state_slot_t *
 ssl_copy (comp_context_t * cc, state_slot_t * org)
@@ -665,6 +727,7 @@ ssl_new_constant (comp_context_t * cc, caddr_t val)
   DO_SET (state_const_slot_t *, ssl, &cc->cc_query->qr_state_map)
     {
       if (SSL_CONSTANT == ssl->ssl_type
+        && (DV_TYPE_OF (val) == DV_TYPE_OF (ssl->ssl_const_val)) /* This check is added due to bug 14773 */
 	  && box_equal (val, ssl->ssl_const_val))
 	return (state_slot_t *)ssl;
     }
@@ -1232,12 +1295,16 @@ ks_free (key_source_t * ks)
   dk_set_free (ks->ks_out_slots);
   cv_free (ks->ks_local_test);
   cv_free (ks->ks_local_code);
-  if (ks->ks_out_map)
+  if (ks->ks_out_map || ks->ks_v_out_map)
     dk_free_box ((caddr_t) ks->ks_out_map);
     dk_free_box ((caddr_t) ks->ks_v_out_map);
     dk_free_box ((caddr_t) ks->ks_vec_source);
     dk_free_box ((caddr_t) ks->ks_vec_cast);
     dk_free_box ((caddr_t) ks->ks_dc_val_cast);
+    dk_free_box (ks->ks_cast_null);
+    dk_free_box ((caddr_t) ks->ks_scalar_partition);
+    dk_free_box ((caddr_t) ks->ks_scalar_cp);
+    dk_free_box ((caddr_t) ks->ks_vec_cp);
 
   dk_set_free (ks->ks_always_null);
   dk_free_box ((caddr_t)ks->ks_qf_output);
@@ -1507,6 +1574,20 @@ qr_no_copy_ssls (query_t * qr, dk_hash_t * no_copy)
 }
 
 
+unsigned int
+ssl_sort_key (state_slot_t * ssl)
+{
+  return (unsigned int)ssl->ssl_index;
+}
+
+
+void
+ssl_sort_by_index (state_slot_t ** ssls)
+{
+  buf_sort ((buffer_desc_t**)ssls, BOX_ELEMENTS (ssls), (sort_key_func_t)ssl_sort_key);
+}
+
+
 void
 qr_set_freeable (comp_context_t *cc, query_t * qr)
 {
@@ -1544,6 +1625,7 @@ qr_set_freeable (comp_context_t *cc, query_t * qr)
     }
   dk_free_box ((box_t) qr->qr_freeable_slots);
   qr->qr_freeable_slots = (state_slot_t **) list_to_array (res);
+  ssl_sort_by_index (qr->qr_freeable_slots);
   qr->qr_qp_copy_ssls = (state_slot_t **) list_to_array (copy);
   hash_table_free (no_copy);
   if (cc->cc_keep_ssl)
@@ -1616,9 +1698,30 @@ table_source_create (
 
 
 void
-ins_free (insert_node_t * ins)
+ik_array_free (ins_key_t ** iks)
 {
   int inx;
+  if (!iks)
+    return;
+  DO_BOX (ins_key_t *, ik, inx, iks)
+    {
+      if (!ik)
+	continue;
+      dk_free_box ((caddr_t) ik->ik_slots);
+      dk_free_box ((caddr_t) ik->ik_cols);
+      dk_free_box ((caddr_t) ik->ik_del_slots);
+      dk_free_box ((caddr_t) ik->ik_del_cast);
+      dk_free_box ((caddr_t) ik->ik_del_cast_func);
+      dk_free ((caddr_t) ik, sizeof (ins_key_t));
+    }
+  END_DO_BOX;
+  dk_free_box ((caddr_t)iks);
+}
+
+
+void
+ins_free (insert_node_t * ins)
+{
   dk_free_box ((caddr_t) ins->ins_col_ids);
   dk_set_free (ins->ins_values);
   dk_free_box ((caddr_t) ins->ins_trigger_args);
@@ -1626,15 +1729,9 @@ ins_free (insert_node_t * ins)
   dk_free_box ((caddr_t)ins->ins_vec_source);
   dk_free_box ((caddr_t)ins->ins_vec_cast);
   dk_free_box ((caddr_t)ins->ins_vec_cast_cl);
-  DO_BOX (ins_key_t *, ik, inx, ins->ins_keys)
-    {
-      dk_free_box ((caddr_t) ik->ik_slots);
-      dk_free_box ((caddr_t) ik->ik_cols);
-      dk_free ((caddr_t) ik, -1);
-    }
-  END_DO_BOX;
-  dk_free_box ((caddr_t) ins->ins_keys);
+  ik_array_free (ins->ins_keys);
   dk_free_box (ins->ins_key_only);
+  qr_free (ins->ins_policy_qr);
 }
 
 
@@ -2041,10 +2138,14 @@ upd_free (update_node_t * upd)
 {
   dk_free_box ((caddr_t) upd->upd_col_ids);
   dk_free_box ((caddr_t) upd->upd_values);
+  dk_free_box ((caddr_t) upd->upd_pk_values);
+  dk_free_box ((caddr_t) upd->upd_old_blobs);
   dk_free_box ((caddr_t) upd->upd_quick_values);
   dk_free_box ((caddr_t) upd->upd_var_cl);
   dk_free_box ((caddr_t) upd->upd_trigger_args);
   dk_free_box ((caddr_t) upd->upd_fixed_cl);
+  ik_array_free (upd->upd_keys);
+  qr_free (upd->upd_policy_qr);
 }
 
 
@@ -2531,6 +2632,8 @@ retry_dupe_check:
 	      dtp = DV_BLOB_WIDE;
 	      desc->cd_flags = box_num (CDF_XMLTYPE);
 	    }
+	  if (sl->ssl_dtp == DV_ARRAY_OF_POINTER && sl->ssl_type == SSL_VEC)
+	    dtp = DV_ANY;
 	  if (cli && DV_INT64 == dtp && cli->cli_version < 3016)
 	    dtp = DV_NUMERIC;
 	  desc->cd_dtp = dtp;

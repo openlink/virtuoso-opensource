@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -39,7 +39,7 @@
 #define ALIGN_STR(len)		ALIGN_16(len)
 #define ALIGN_VOIDP(len)	_RNDUP_PWR2((len), sizeof (void *))
 
-
+#define AV_FREE_MARK 0x00deadbeeffeedba00LL	 /* in 2nd word of free of over 8 b */
 
 #define NEW_VAR(type,var) \
 	type *var = (type *) dk_alloc (sizeof (type))

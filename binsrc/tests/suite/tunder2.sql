@@ -1,14 +1,14 @@
 --
 --  tschema1.sql
 --
---  $Id$
+--  $Id: tunder2.sql,v 1.9.10.1 2013/01/02 16:15:31 source Exp $
 --
 --  Test DDL functionality #1
 --  
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -158,7 +158,6 @@ ECHO BOTH ": BUG 4678: drop of an inherited key STATE=" $STATE " MESSAGE=" $MESS
 DROP INDEX B4678_SK01;
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": BUG 4678_2: drop index STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
-
 CREATE INDEX B4678_SK01 ON B4678(ID,NAME);
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": BUG 4678_3: drop of a key from a table w/ subtable STATE=" $STATE " MESSAGE=" $MESSAGE "\n";

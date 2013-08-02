@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -112,12 +112,16 @@ struct encoding_handler_s;	/* see below */
 struct lang_handler_s;		/* see below */
 struct encodedlang_handler_s;	/* see below */
 
+#ifndef UTF8CHAR_DEFINED
+#define UTF8CHAR_DEFINED
+typedef unsigned char utf8char;			/*!< 8-bit chars of UTF-8 strings */
+#endif
+
 #ifndef UNICHAR_DEFINED
 #define UNICHAR_DEFINED
 typedef int unichar;				/*!< 31-bit unicode values, negative ones are invalid */
 #endif
 
-typedef unsigned char utf8char;			/*!< 8-bit chars of UTF-8 strings */
 #define UNICHAR_EOD		((unichar)(-2))	/*!< End of source buffer reached, no data to convert */
 #define UNICHAR_NO_DATA		((unichar)(-3))	/*!< Source buffer is too short, but nonempty (contains part of a char) */
 #define UNICHAR_NO_ROOM		((unichar)(-4))	/*!< Target buffer is too short */

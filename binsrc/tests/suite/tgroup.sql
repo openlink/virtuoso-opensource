@@ -1,14 +1,14 @@
 --
 --  tgroup.sql
 --
---  $Id$
+--  $Id: tgroup.sql,v 1.13.6.2.4.3 2013/01/02 16:15:10 source Exp $
 --
 --  Group By test
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2006 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -155,3 +155,9 @@ ECHO BOTH ": BUG2094-3: GROUP BY in select STATE=" $STATE " MESSAGE=" $MESSAGE "
 ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": BUG2094-4: GROUP BY in select STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+
+SELECT TOP 10 ROW_NO, COUNT(ROW_NO) FROM T1 GROUP BY ROW_NO;
+ECHO BOTH $IF $EQU $ROWCNT 10 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": GROUP BY switch from chash to memcache in select COUNT=" $ROWCNT "\n";

@@ -9,7 +9,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -31,7 +31,13 @@
 #include <stdio.h>
 
 void mp_free (mem_pool_t * mp);
-
+void mp_free_large (mem_pool_t * mp, void * ptr);
+void mp_cache_large (size_t sz, int n);
+extern size_t mp_large_in_use;
+extern size_t mp_max_large_in_use;
+extern size_t mp_large_reserved;
+extern size_t mp_max_large_reserved;
+extern size_t mp_large_reserve_limit;
 #ifdef VALGRIND
 #define LACERATED_POOL
 #endif
@@ -47,16 +53,22 @@ struct mem_pool_s
   int 			mp_block_size;
   caddr_t *		mp_allocs;
   size_t 		mp_bytes;
+  dk_hash_t		mp_large;
+  resource_t **		mp_large_reuse;
   dk_hash_t *		mp_unames;
   dk_set_t 		mp_trash;		/* dk_alloc_box boxes that must be freed with the mp */
+  size_t		mp_reserved;
+  size_t		mp_max_bytes;
 #if defined (DEBUG) || defined (MALLOC_DEBUG)
   const char *		mp_alloc_file;
   int 			mp_alloc_line;
 #endif
-#ifdef MALLOC_DEBUG
+#if defined (MALLOC_DEBUG) | defined (VALGRIND)
+  dk_hash_t *		mp_box_to_dc; /* debug to map a copied box to its owner dc in this mp */
   const char *		mp_list_alloc_file;
   int 			mp_list_alloc_line;
 #endif
+  caddr_t	mp_comment;
 };
 #else
 struct mem_block_s
@@ -73,22 +85,40 @@ struct mem_pool_s
   mem_block_t *		mp_first;
   int 			mp_block_size;
   size_t 		mp_bytes;
+  size_t		mp_max_bytes;
+  size_t		mp_reserved;
+  dk_hash_t		mp_large;
+  resource_t **		mp_large_reuse;
   dk_hash_t *		mp_unames;
   dk_set_t 		mp_trash;
 #if defined (DEBUG) || defined (MALLOC_DEBUG)
   const char *		mp_alloc_file;
   int 			mp_alloc_line;
 #endif
+  caddr_t	mp_comment;
 };
 #endif
 
-
+EXE_EXPORT (mem_pool_t *, mem_pool_alloc, (void));
 #if defined (DEBUG) || defined (MALLOC_DEBUG)
 extern mem_pool_t *dbg_mem_pool_alloc (const char *file, int line);
 #define mem_pool_alloc() dbg_mem_pool_alloc (__FILE__, __LINE__)
-#else
-extern mem_pool_t *mem_pool_alloc (void);
 #endif
+
+EXE_EXPORT (caddr_t, mp_alloc_box, (mem_pool_t * mp, size_t len, dtp_t dtp));
+EXE_EXPORT (caddr_t, mp_box_string, (mem_pool_t * mp, const char *str));
+EXE_EXPORT (caddr_t, mp_box_substr, (mem_pool_t * mp, ccaddr_t str, int n1, int n2));
+EXE_EXPORT (box_t, mp_box_dv_short_nchars, (mem_pool_t * mp, const char *str, size_t len));
+EXE_EXPORT (caddr_t, mp_box_dv_uname_string, (mem_pool_t * mp, const char *str));
+EXE_EXPORT (box_t, mp_box_dv_uname_nchars, (mem_pool_t * mp, const char *str, size_t len));
+EXE_EXPORT (caddr_t, mp_box_copy, (mem_pool_t * mp, caddr_t box));
+EXE_EXPORT (caddr_t, mp_box_copy_tree, (mem_pool_t * mp, caddr_t box));
+EXE_EXPORT (caddr_t, mp_full_box_copy_tree, (mem_pool_t * mp, caddr_t box));
+EXE_EXPORT (caddr_t, mp_box_num, (mem_pool_t * mp, boxint num));
+EXE_EXPORT (caddr_t, mp_box_iri_id, (mem_pool_t * mp, iri_id_t num));
+EXE_EXPORT (caddr_t, mp_box_double, (mem_pool_t * mp, double num));
+EXE_EXPORT (caddr_t, mp_box_float, (mem_pool_t * mp, float num));
+void * mp_large_alloc (mem_pool_t * mp, size_t sz);
 
 #ifdef MALLOC_DEBUG
 extern caddr_t dbg_mp_alloc_box (const char *file, int line, mem_pool_t * mp, size_t len, dtp_t dtp);
@@ -104,6 +134,8 @@ extern caddr_t dbg_mp_box_num (const char *file, int line, mem_pool_t * mp, boxi
 extern caddr_t dbg_mp_box_iri_id (const char *file, int line, mem_pool_t * mp, iri_id_t num);
 extern caddr_t dbg_mp_box_double (const char *file, int line, mem_pool_t * mp, double num);
 extern caddr_t dbg_mp_box_float (const char *file, int line, mem_pool_t * mp, float num);
+#ifndef _USRDLL
+#ifndef EXPORT_GATE
 #define mp_alloc_box(mp,len,dtp) dbg_mp_alloc_box (__FILE__, __LINE__, (mp), (len), (dtp))
 #define mp_box_string(mp, str) dbg_mp_box_string (__FILE__, __LINE__, (mp), (str))
 #define mp_box_substr(mp, str, n1, n2) dbg_mp_box_substr (__FILE__, __LINE__, (mp), (str), (n1), (n2))
@@ -117,20 +149,8 @@ extern caddr_t dbg_mp_box_float (const char *file, int line, mem_pool_t * mp, fl
 #define mp_box_iri_id(mp, num) dbg_mp_box_iri_id (__FILE__, __LINE__, (mp), (num))
 #define mp_box_double(mp, num) dbg_mp_box_double (__FILE__, __LINE__, (mp), (num))
 #define mp_box_float(mp, num) dbg_mp_box_float (__FILE__, __LINE__, (mp), (num))
-#else
-extern caddr_t mp_alloc_box (mem_pool_t * mp, size_t len, dtp_t dtp);
-extern caddr_t mp_box_string (mem_pool_t * mp, const char *str);
-extern caddr_t mp_box_substr (mem_pool_t * mp, ccaddr_t str, int n1, int n2);
-extern box_t mp_box_dv_short_nchars (mem_pool_t * mp, const char *str, size_t len);
-extern caddr_t mp_box_dv_uname_string (mem_pool_t * mp, const char *str);
-extern box_t mp_box_dv_uname_nchars (mem_pool_t * mp, const char *str, size_t len);
-extern caddr_t mp_box_copy (mem_pool_t * mp, caddr_t box);
-extern caddr_t mp_box_copy_tree (mem_pool_t * mp, caddr_t box);
-extern caddr_t mp_full_box_copy_tree (mem_pool_t * mp, caddr_t box);
-extern caddr_t mp_box_num (mem_pool_t * mp, boxint num);
-extern caddr_t mp_box_iri_id (mem_pool_t * mp, iri_id_t num);
-extern caddr_t mp_box_double (mem_pool_t * mp, double num);
-extern caddr_t mp_box_float (mem_pool_t * mp, float num);
+#endif
+#endif
 #endif
 
 #ifdef LACERATED_POOL
@@ -276,7 +296,7 @@ void dbg_mp_set_push (const char *file, int line, mem_pool_t * mp, dk_set_t * se
 dk_set_t dbg_t_cons (const char *file, int line, void *car, dk_set_t cdr);
 void dbg_t_set_push (const char *file, int line, dk_set_t * set, void *elt);
 int dbg_t_set_pushnew (const char *file, int line, s_node_t ** set, void *item);
-int dbg_t_set_push_new_string (const char *file, int line, s_node_t ** set, void *item);
+int dbg_t_set_push_new_string (const char *file, int line, s_node_t ** set, char *item);
 void *dbg_t_set_pop (const char *file, int line, dk_set_t * set);
 dk_set_t dbg_t_set_union (const char *file, int line, dk_set_t s1, dk_set_t s2);
 dk_set_t dbg_t_set_intersect (const char *file, int line, dk_set_t s1, dk_set_t s2);
@@ -303,7 +323,7 @@ void mp_set_push (mem_pool_t * mp, dk_set_t * set, void *elt);
 dk_set_t t_cons (void *car, dk_set_t cdr);
 void t_set_push (dk_set_t * set, void *elt);
 int t_set_pushnew (s_node_t ** set, void *item);
-int t_set_push_new_string (s_node_t ** set, void *item);
+int t_set_push_new_string (s_node_t ** set, char *item);
 void *t_set_pop (dk_set_t * set);
 dk_set_t t_set_union (dk_set_t s1, dk_set_t s2);
 dk_set_t t_set_intersect (dk_set_t s1, dk_set_t s2);
@@ -313,6 +333,10 @@ caddr_t *t_revlist_to_array (dk_set_t list);
 int t_set_delete (dk_set_t * set, void *item);
 dk_set_t t_set_copy (dk_set_t s);
 #endif
+#define mp_set_nreverse(mp,s) dk_set_nreverse((s))
+#define t_set_nreverse(s) dk_set_nreverse((s))
+#define t_revlist_to_array_or_null(list)	((NULL != (list)) ? t_revlist_to_array ((list)) : NULL)
+
 
 #ifdef MALLOC_DEBUG
 void mp_check (mem_pool_t * mp);
@@ -329,11 +353,14 @@ caddr_t t_box_sprintf (size_t buflen_eval, const char *format, ...);
 #endif
 
 void mp_trash (mem_pool_t * mp, caddr_t box);
+#define mp_trash_push(mp,box) dk_set_push (&((mp)->mp_trash), (void *)(box))
+#define t_trash_push(box) mp_trash_push(THR_TMP_POOL,box)
+
 caddr_t mp_alloc_box_ni (mem_pool_t * mp, int len, dtp_t dtp);
 extern box_tmp_copy_f box_tmp_copier[256];
 
 #ifdef LACERATED_POOL
-#define MP_BYTES(x, mp, len)  			x = mp_alloc_box (mp, len, DV_NON_BOX)
+#define MP_BYTES(x, mp, len)  			{ (x) = (void *)mp_alloc_box (mp, len, DV_NON_BOX); }
 #else
 #define MP_BYTES(x, mp, len2) \
   { \
@@ -341,11 +368,11 @@ extern box_tmp_copy_f box_tmp_copier[256];
     mem_block_t * f = mp->mp_first; \
     if (f && f->mb_fill + __len <= f->mb_size) \
       { \
-	x = ((char*)f) + f->mb_fill; \
+	(x) = (void *)(((char*)f) + f->mb_fill); \
 	f->mb_fill += __len; \
       } \
     else \
-      x = mp_alloc_box (mp, len2, DV_NON_BOX); \
+      (x) = (void *)mp_alloc_box (mp, len2, DV_NON_BOX); \
   }
 #endif
 
@@ -408,5 +435,44 @@ extern caddr_t *t_list_nc (long n, ...);
 
 #define NO_TMP_POOL \
   if (THR_TMP_POOL) GPF_T1 ("not supposed to have a tmp pool in effect here");
+
+#ifdef linux
+#define  HAVE_SYS_MMAN_H 1
+#endif
+
+void mm_cache_init (size_t sz, size_t min, size_t max, int steps, float step);
+void* mm_large_alloc (size_t sz);
+void mm_free_sized (void* ptr, size_t sz);
+size_t mm_next_size (size_t n, int * nth);
+size_t mm_cache_trim (size_t target_sz, int age_limit, int old_only);
+extern size_t mp_block_size;
+
+#if !defined (NDEBUG) /*&& !defined (MALLOC_DEBUG)*/
+
+#define MP_MAP_CHECK
+
+typedef struct dk_pool_4g {
+  unsigned char 	bits[128 * 1024];
+} dk_pool_4g_t;
+
+extern dk_pool_4g_t * dk_pool_map[256 * 256];
+
+void mp_check_not_in_pool (int64 ptr);
+
+#define ASSERT_NOT_IN_POOL(ptr)			\
+{ \
+  int64 __ptr = (int64)ptr; \
+  dk_pool_4g_t * map = dk_pool_map[__ptr >> 32]; \
+if (map && map->bits[((uint32)__ptr) >> 15] & (1 << (((((uint32)__ptr) >> 12) & 0x7)))) \
+  mp_check_not_in_pool (__ptr);						\
+}
+
+#else
+#define ASSERT_NOT_IN_POOL(ptr)
+#endif
+
+int mp_reuse_large (mem_pool_t * mp, void * ptr);
+int mp_reserve (mem_pool_t * mp, size_t inc);
+void mp_comment (mem_pool_t * mp, char * str1, char * str2);
 
 #endif /* ifdef __DKPOOL_H */

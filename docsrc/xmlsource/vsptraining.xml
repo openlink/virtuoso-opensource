@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -373,8 +373,8 @@ CREATE TABLE DB.DBA.DEMO_PEOPLE (
 </sect3>
 
 <sect3 id="insertingvalues"><title>Basic Form Input Page</title>
-<para>After the table has been created &mdash; for example via Virtuoso's
-iSQL utility &mdash; it will need some data.
+<para>After the table has been created; for example via Virtuoso's
+iSQL utility; it will need some data.
 For this we create a &quot;New Person&quot; page.  This page uses form
 inputs and some VSP code to determine whether
 an insert button was pressed.  If the insert button is pressed then the
@@ -1006,4 +1006,189 @@ a:hover{color:#a2a2a2}
 </sect3>
 </sect2>
 
+<sect2 id="corsshare">
+	  <title>Setting up server-side Cross-Origin Resource Sharing (CORS) with Virtuoso</title>
+	  <para>User agents (e.g., Web browsers) have traditionally restricted scripts within web pages by a Same Origin Policy, which allowed scripts to make requests only to resources within the same domain from which the scripts themselves originated. This restriction is meant to protect the user and their computer from "Trojan horse websites" which may appear to be safe, but which then make unsafe HTTP requests to other, invisible sites. This restriction also protects the second website from potential "Denial of Service" and other attacks, whether accidental or intentional.</para>
+	  <para>This policy has the unfortunate side-effect of also preventing client-side Web applications served from one website ("Origin") from retrieving data from another website ("Origin").</para>
+	  <para><ulink url="http://www.w3.org/TR/cors/">Cross-Origin Resource Sharing (CORS)</ulink> is a mechanism intended to enable safer client-side cross-origin requests, primarily focused on data.</para>
+	  <sect3 id="corssharewk">  
+	  	 <title>How does CORS work?</title>
+	  	 <para>Authentication and session-management information methods are extended in several ways:</para>
+	  	 <itemizedlist mark="bullet">
+	  	 	 <listitem>Enforcement by User Agent
+           <itemizedlist mark="bullet">
+             <listitem>A server providing a resource can include an <emphasis>Access-Control-Allow-Origin</emphasis> HTTP response header, with a value of the 
+         	request's triggering script's site of origin (that is, the site which provided the script which 
+         	made the request for the resource), to indicate whether access to the resource's contents may be 
+         	allowed. The user agent validates that the value in this header matches the actual origin of the 
+         	script which made the request.
+         	   </listitem>
+             <listitem>User agents can use a "pre-flight request" to discover whether a cross-origin resource 
+         	is prepared to accept requests from a given script origin, using a complex method (which we will 
+         	not detail here). Again, the response is validated by the user agent.
+         	    </listitem>
+           </itemizedlist>	  	 	 	
+	  	 	 </listitem>
+         <listitem>Enforcement by Server-side Application
+           <itemizedlist mark="bullet">
+             <listitem>Server-side applications can refer to the <emphasis>Origin</emphasis> HTTP request header 
+         to discover whether the user agent deemed it a cross-origin request. Here, the server-side 
+         application enforces limitations (e.g., returning nothing, partial results, or full results) on 
+         the cross-origin requests that they are willing to service at all.
+             </listitem>       
+           </itemizedlist>	
+         </listitem>	
+       </itemizedlist>
+	  </sect3> 
+	  <sect3 id="corssharesetup">  
+	  	 <title>CORS Setup for Virtuoso servers</title>
+	  	 <para>With Virtuoso 6 and later (specific earliest versions as noted below), CORS support may be configured at the server-level or enabled through application logic (scripting, PL, etc.).</para>
+	  	 <para>When working with older versions of Virtuoso, CORS support cannot be configured at the server-level, but it may be enabled within application logic (scripting, PL, etc.).</para>
+	  	 <sect4 id="corssharesetupapplv">  
+	  	   <title>Application-level CORS Setup</title>
+	  	   <para>Any Virtuoso PL (VSP)-based application can implement CORS checking through well-known 
+	  	   	HTTP functions <link linkend="fn_http_request_header"><function>http_request_header()</function></link> and 
+	  	 	<link linkend="fn_http_header"><function>http_header()</function></link>. This method will 
+	  	 	  work with any version of Virtuoso. For instance:</para>
+<programlisting><![CDATA[
+<?vsp 
+    IF (http_request_header (lines, 'Origin', NULL) = 'http://host.org')
+      {
+          http_header ('Access-Control-Allow-Origin: http://host.org\r\n');
+      }
+   ELSE 
+      {
+         RETURN;
+      }
+-- Additional code here ---
+
+?>
+]]></programlisting>	  	 	  
+         <para>Applications running in other hosted environments (Perl, Python, PHP, ASP.NET, etc.) may also use their specific scripting options to add and/or check relevent headers.</para>
+	     </sect4> 	  	   
+	  	 <sect4 id="corssharesetupsrvlv">  
+	  	   <title>Server-level CORS Setup</title>
+	  	   <para>Note: These instance/server-level configuration instructions require 
+	  	   	 <ulink url="http://edit-wiki.usnet.private/dataspace/dav/wiki/VOS/VOSNews">Virtuoso Open Source (VOS) 6.1.3 or later</ulink>, 
+	  	   	 or <ulink url="http://download.openlinksw.com/virtwiz/">Virtuoso Commercial Edition 6.2.3129 or later</ulink>.</para>
+	  	   <orderedlist>
+           <listitem>In the Virtuoso Conductor, go to <emphasis>Web Application Server -> Virtual Directories &amp; Directories</emphasis>.
+             <figure id="oc1" float="1">
+               <title>Server-side Cross-Origin Resource Sharing (CORS) Example Setup</title>
+               <graphic fileref="ui/oc1.png"/>
+             </figure>	
+           </listitem>
+           <listitem>Expand the <emphasis>Interface</emphasis> store. 
+             <figure id="oc2" float="1">
+               <title>Server-side Cross-Origin Resource Sharing (CORS) Example Setup</title>
+               <graphic fileref="ui/oc2.png"/>
+             </figure>	
+           </listitem>
+           <listitem>Click <emphasis>New Directory</emphasis>.</listitem>
+           <listitem>Specify the desired <emphasis>Virtual Directory Type</emphasis>, or choose an existing virtual directory to use as a template.
+             <figure id="oc3" float="1">
+               <title>Server-side Cross-Origin Resource Sharing (CORS) Example Setup</title>
+               <graphic fileref="ui/oc3.png"/>
+             </figure>	
+           </listitem>
+           <listitem>Click <emphasis>Next</emphasis>.</listitem>
+           <listitem>Specify the <emphasis>Directory Path</emphasis> value.
+             <figure id="oc4" float="1">
+               <title>Server-side Cross-Origin Resource Sharing (CORS) Example Setup</title>
+               <graphic fileref="ui/oc4.png"/>
+             </figure>	
+           </listitem>
+           <listitem>Set the <emphasis>CORS</emphasis> options.
+             <figure id="oc5" float="1">
+               <title>Server-side Cross-Origin Resource Sharing (CORS) Example Setup</title>
+               <graphic fileref="ui/oc5.png"/>
+             </figure>	
+             <itemizedlist mark="bullet">
+               <listitem><emphasis>Cross-Origin Resource Sharing</emphasis>: Contains a single wildcard 
+                asterisk, i.e., "<emphasis>*</emphasis>", or a space-delimited list of HTTP server URIs, 
+                e.g., "<emphasis>http://example.com:8080 http://blah.example.com http://foo.example.com</emphasis>". 
+                Scripts originating on the listed HTTP servers are authorized to retrieve the specified 
+                resource(s); the wildcard means scripts from any HTTP server will be authorized. For this 
+                example, enter the following single URI:
+<programlisting><![CDATA[
+http://demo.openlinksw.com	
+]]></programlisting>             	
+               </listitem>
+               <listitem><emphasis>Reject Unintended CORs</emphasis> checkbox: When ticked (and the application does not overwrite headers), unmatched Origins will be rejected by sending an empty response. For this example, tick this box.</listitem>
+             </itemizedlist>
+           </listitem>
+           <listitem>Click Save changes.</listitem>
+         </orderedlist>
+       </sect4>  
+	    <sect4 id="corssharewkspcurlexmp">  
+	    	 <title>Example Usage with cURL</title>
+	    	 <sect5 id="corssharewkspcurlexmp1">  
+	    	 	 <title>Example 1</title>
+           <orderedlist>
+             <listitem>Suppose the example setup above is performed, and http://demo.openlinksw.com/ is in the CORS list.</listitem>
+             <listitem>In this case, the request below will return an empty response:
+<programlisting><![CDATA[
+$ curl -i  http://demo.openlinksw.com/mytest/test.vsp
+HTTP/1.1 200 OK
+Server: Virtuoso/06.02.3128 (Win32) i686-generic-win-32  VDB
+Connection: Keep-Alive
+Content-Type: text/html; charset=ISO-8859-1
+Date: Thu, 28 Oct 2010 09:27:54 GMT
+Accept-Ranges: bytes
+Content-Length: 0
+]]></programlisting>           	
+            </listitem>
+          </orderedlist>	  	 	
+	      </sect5> 	  	 	
+	  	  <sect5 id="corssharewkspcurlexmp2">  
+	  	  	<title>Example 2</title>
+          <orderedlist>
+            <listitem>Suppose the example Setup above is performed, and http://demo.openlinksw.com/ is in the CORS list.</listitem>
+            <listitem>Also, suppose the curl command includes a proper Origin value, e.g.:
+<programlisting><![CDATA[
+-H "Origin: http://demo.openlinksw.com"
+]]></programlisting>
+           </listitem>
+           <listitem>In this case, the request below will return a response including the retrieved content, etc.
+<programlisting><![CDATA[
+$ curl -i -H "Origin: http://demo.openlinksw.com"  http://demo.openlinksw.com/mytest/test.vsp
+HTTP/1.1 200 OK
+Server: Virtuoso/06.02.3128 (Win32) i686-generic-win-32  VDB
+Connection: Keep-Alive
+Content-Type: text/html; charset=ISO-8859-1
+Date: Thu, 28 Oct 2010 09:40:21 GMT
+Access-Control-Allow-Origin: http://demo.openlinksw.com
+Accept-Ranges: bytes
+Content-Length: 7
+]]></programlisting>           	
+           </listitem>
+         </orderedlist>	  	 	
+	     </sect5> 	  	 	
+	  	 <sect5 id="corssharewkspcurlexmp3">  
+	  	 	 <title>Example 3</title>
+         <orderedlist>
+           <listitem>Suppose the Example Setup above is performed, but reject is off (i.e., "Reject Unintended CORs" check-box is not ticked).</listitem>
+           <listitem>In this case, the request below will return a response that lacks Access-Control-Allow-Origin:
+<programlisting><![CDATA[
+$ curl -i  http://demo.openlinksw.com/mytest/test.vsp
+HTTP/1.1 200 OK
+Server: Virtuoso/06.02.3128 (Win32) i686-generic-win-32  VDB
+Connection: Keep-Alive
+Content-Type: text/html; charset=ISO-8859-1
+Date: Thu, 28 Oct 2010 09:45:01 GMT
+Accept-Ranges: bytes
+Content-Length: 7
+]]></programlisting>           	
+           </listitem>
+         </orderedlist>	  	 	
+	     </sect5> 	  
+	   </sect4>	 	
+	  </sect3> 
+	  <tip><title>See Also:</title>
+      <para><ulink url="https://wiki.mozilla.org/Security/Origin">Origin header proposal for CSRF and click-jacking mitigation</ulink></para>
+      <para><ulink url="http://arunranga.com/examples/access-control/">CORS In Action</ulink></para>
+      <para><ulink url="http://www.nczonline.net/blog/2010/05/25/cross-domain-ajax-with-cross-origin-resource-sharing/">Cross-domain Ajax with Cross-Origin Resource Sharing</ulink></para>
+      <para><ulink url="http://code.google.com/p/html5security/wiki/CrossOriginRequestSecurity">Guide to Secure Implementation of Cross Origin Requests in HTML5</ulink></para>
+    </tip>
+  </sect2>		
 </sect1>

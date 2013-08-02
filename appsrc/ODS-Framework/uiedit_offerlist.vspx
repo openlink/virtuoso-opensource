@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -81,7 +81,7 @@
 	                sql="select WUOL_ID, WUOL_OFFER, WUOL_COMMENT from DB.DBA.WA_USER_OFFERLIST where WUOL_U_ID = :self.u_id and WUOL_TYPE = :self.ol_type"
 		              scrollable="1"
 		              editable="1"
-		              nrows="10">
+		              nrows="0">
 
         <v:template name="ol_ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
 	  <table class="listing" rules="groups">
@@ -263,7 +263,7 @@
                 self.getItems ('ol', 'gr', ontologies, IDs);
                   self.ol_properties := vector_concat (ODS..jsonObject (), vector ('version', '2.0', 'ontologies', ontologies));
                 if (self.ol_mode = 'OL/add')
-                    {
+              {
                     if (exists (select 1 from DB.DBA.WA_USER_OFFERLIST where WUOL_U_ID = self.u_id and WUOL_TYPE = self.ol_type and WUOL_OFFER = self.ol_offer.ufl_value))
                     {
                       self.vc_error_message := 'An offer with same name already exists, please specify unique name.';

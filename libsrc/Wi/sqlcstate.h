@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -28,7 +28,6 @@
 
 typedef struct sql_compile_state_s /* serialized in parse_sem */
 {
-  sql_comp_t *scs_top_sc;
   oid_t scs_v_u_id;
   oid_t scs_v_g_id;
   char scs_sql_line_loc_text[1000];
@@ -53,6 +52,8 @@ typedef struct sql_compile_state_s /* serialized in parse_sem */
   char * scs_inside_view;
   char	scs_count_qr_global_refs; /*   qr global ssl's will be counted as refs in cv_refd_slots etc. */
   char	scs_inside_sem;
+  sql_comp_t *	scs_current_sc;
+  sql_comp_t *	scs_top_sc;
 } sql_compile_state_t;
 
 
@@ -81,6 +82,7 @@ typedef struct sql_compile_state_s /* serialized in parse_sem */
 #define inside_view global_scs->scs_inside_view
 #define sqlg_count_qr_global_refs global_scs->scs_count_qr_global_refs
 #define sqlc_inside_sem global_scs->scs_inside_sem
+#define sqlc_current_sc global_scs->scs_current_sc
 
 #define SET_SCS(scs) \
   THREAD_CURRENT_THREAD->thr_sql_scs = (void*)scs

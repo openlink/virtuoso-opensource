@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2006 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -85,7 +85,7 @@ the resident size is normally less than the buffer pool's size.
 To see the count of major page faults. i.e. ones that read the disk, do:
     </para>
 <programlisting><![CDATA[
-select getrusage ()[]4];
+getrusage ()[]4];
 ]]></programlisting>
     <para>through interactive SQL. The result is the count of major faults since
 starting the process. The count should not vary between samples, at least not more

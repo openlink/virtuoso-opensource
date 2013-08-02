@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2006 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -36,6 +36,7 @@
 #include "sqlpar.h"
 #include "srvmultibyte.h"
 #include "sqlpfn.h"
+#include "security.h"
 
 
 static client_connection_t *sched_cli;
@@ -55,17 +56,19 @@ sched_do_round_1 (const char * text)
   client_connection_t * save_cli = THR_ATTR (THREAD_CURRENT_THREAD, TA_IMMEDIATE_CLIENT);
   caddr_t org_qual = sched_cli->cli_qualifier; /* store the original qualifier */
 
-  if (cpt_is_global_lock ())
+  if (cpt_is_global_lock (NULL))
     return;
-
+  if (!sched_cli->cli_user)
+    sched_cli->cli_user = sec_id_to_user (U_ID_DBA);
   sched_cli->cli_qualifier = box_string (org_qual);
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_IMMEDIATE_CLIENT, sched_cli);
   local_start_trx (sched_cli);
+  cli_set_start_times (sched_cli);
   qr = sql_compile (text, sched_cli, &err, SQLC_DEFAULT);
   if (!err)
     err = qr_quick_exec (qr, sched_cli, "", NULL, 0);
   qr_free (qr);
-  if (err && err != SQL_NO_DATA_FOUND)
+  if (err && err != (caddr_t) SQL_NO_DATA_FOUND)
     {
       if (strcmp ("40001", ERR_STATE (err)))
 	log_info ("Scheduler error %s : %s", ERR_STATE (err), ERR_MESSAGE (err));

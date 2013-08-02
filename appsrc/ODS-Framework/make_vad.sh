@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2006 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -60,11 +60,6 @@ else
     LN="ln -fs"
     RM="rm -f"
 fi
-VOS=0
-if [ -f ../../autogen.sh ]
-then
-    VOS=1
-fi
 
 if [ "z$SERVER" = "z" ]
 then
@@ -85,7 +80,14 @@ else
   myrm=$RM
 fi
 
-VERSION_INIT()
+
+VOS=0
+if [ -f ../../autogen.sh ]
+then
+    VOS=1
+fi
+
+version_init()
 {
   if [ $VOS -eq 1 ]
   then
@@ -256,6 +258,7 @@ directory_init() {
   mkdir vad/data/wa/users
   mkdir vad/data/wa/users/css
   mkdir vad/data/wa/users/js
+  mkdir vad/data/wa/webid
   for dir in `find ckeditor -type d -print | LC_ALL=C sort | grep -v CVS`
   do
     mkdir vad/data/wa/$dir
@@ -274,7 +277,7 @@ directory_init() {
   cp *.css vad/data/wa
   cp *.html vad/data/wa
   cp *.sql vad/data/wa
-  cp $HOME/binsrc/dav/DET_RDFData.sql vad/data/wa
+  #cp $HOME/binsrc/dav/DET_RDFData.sql vad/data/wa
   cp *.js vad/data/wa
   cp comp/*.xsl vad/data/wa/comp
   cp comp/*.js vad/data/wa/comp
@@ -318,6 +321,10 @@ directory_init() {
   do
     cp $file vad/data/wa/$file
   done
+  cp webid_demo.php vad/data/wa/webid
+  cp vad/data/wa/webid_demo.* vad/data/wa/webid
+  cp vad/data/wa/webid_check.* vad/data/wa/webid
+  cp vad/data/wa/webid_verify.* vad/data/wa/webid
   cp oauth/* vad/data/wa/oauth
   cp oauth/images/* vad/data/wa/oauth/images
 }
@@ -337,7 +344,7 @@ sticker_init() {
   echo "  <name package=\"Framework\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"ODS Framework\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2011 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2013 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -421,7 +428,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/sql_rdf.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/user_rdf.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/sioc_priv.sql', 1, 'report', 1);" >> $STICKER
-  echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/DET_RDFData.sql', 1, 'report', 1);" >> $STICKER
+  #echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/DET_RDFData.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.\"RDFData_MAKE_DET_COL\" ('/DAV/VAD/wa/RDFData/', sioc..get_graph (), NULL);" >> $STICKER
   echo "      DB.DBA.wa_users_rdf_data_det_upgrade ();" >> $STICKER
   echo "      DB.DBA.VHOST_REMOVE (lpath=>'/ods/data/rdf');" >> $STICKER
@@ -434,7 +441,7 @@ sticker_init() {
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/wa/ods_upstream.sql', 1, 'report', 1);" >> $STICKER
   echo "      DB.DBA.VHOST_REMOVE (lpath=>'/oauth');" >> $STICKER
   echo "      DB.DBA.VHOST_DEFINE (lpath=>'/oauth', ppath=>'/DAV/VAD/wa/oauth/', vsp_user=>'dba', is_dav=>1, is_brws=>0, def_page=>'index.vsp');" >> $STICKER
-  echo "      if (server_https_port () is not null) " >> $STICKER
+  echo "      if (ODS.ODS_API.getDefaultHttps () is not null) " >> $STICKER
   echo "	DB.DBA.wa_redefine_vhosts (); " >> $STICKER
   echo "	    DB.DBA.WA_USER_OL_ACCOUNTS_SET_UP (); " >> $STICKER
   echo "    ]]>" >> $STICKER
@@ -462,8 +469,19 @@ sticker_init() {
      else
 	 perms="111101101NN"
      fi
+     if echo "$file" | grep -v "/users/" > /dev/null
+     then
+       if echo "$file" | grep -v "/webid/" > /dev/null
+       then
+   	     TYPE="dav"
+       else
+  	     TYPE="http"
+       fi
+     else
+	     TYPE="http"
+     fi
      name=`echo "$file" | cut -b10-`
-     echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+     echo "  <file overwrite=\"yes\" type=\"$TYPE\" source=\"data\" target_uri=\"$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
 
   echo "</resources>" >> $STICKER
@@ -547,7 +565,7 @@ vad_create() {
 STOP_SERVER
 $myrm $LOGFILE 2>/dev/null
 directory_clean
-VERSION_INIT
+version_init
 directory_init
 virtuoso_init
 sticker_init
@@ -555,7 +573,6 @@ vad_create
 virtuoso_shutdown
 chmod 644 ods_framework_dav.vad
 #chmod 644 virtuoso.trx
-directory_clean
 
 CHECK_LOG
 RUN egrep  '"\*\*.*FAILED:|\*\*.*ABORTED:"' "$LOGFILE"
@@ -564,6 +581,8 @@ then
 	$myrm -f *.vad
 	exit 1
 fi
+
+directory_clean
 
 BANNER "COMPLETED VAD PACKAGING"
 exit 0

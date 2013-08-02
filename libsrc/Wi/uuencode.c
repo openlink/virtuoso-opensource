@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2009 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -192,7 +192,7 @@ uu_encode_string_session_plaintext (caddr_t * out_sections, dk_session_t * input
 start_next_elt:
   if (0 == remaining_input_length)
     goto input_finished;
-  input_len = session_buffered_read (input, input_buf,
+  input_len = session_buffered_read (input, (char *) input_buf,
     ((sizeof (input_buf) < remaining_input_length) ? sizeof (input_buf) : remaining_input_length) );
   remaining_input_length -= input_len;
   for (input_pos = 0; input_pos < input_len; input_pos++)
@@ -249,7 +249,7 @@ uu_encode_string_session_mime_qp (caddr_t * out_sections, dk_session_t * input,
 start_next_elt:
   if (0 == remaining_input_length)
     goto input_finished;
-  input_len = session_buffered_read (input, input_buf,
+  input_len = session_buffered_read (input, (char *)input_buf,
     ((sizeof (input_buf) < remaining_input_length) ? sizeof (input_buf) : remaining_input_length) );
   remaining_input_length -= input_len;
 
@@ -419,7 +419,7 @@ uu_encode_string_session (caddr_t * out_sections, dk_session_t * input,
 	  unsigned char line_buf[60];
 	  unsigned char *line_tail;
 	  int bytes_count;
-          bytes_count = session_buffered_read (input, line_buf,
+          bytes_count = session_buffered_read (input, (char *) line_buf,
             ((input_bytes_per_line < remaining_input_length) ? input_bytes_per_line : remaining_input_length) );
           remaining_input_length -= bytes_count;
           line_tail = line_buf + bytes_count;
