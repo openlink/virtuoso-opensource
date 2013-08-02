@@ -201,6 +201,7 @@
     <ClCompile Include="..\libsrc\Wi\log.c" />
     <ClCompile Include="..\libsrc\Wi\map_schema.c" />
     <ClCompile Include="..\libsrc\Wi\meta.c" />
+    <ClCompile Include="..\libsrc\Wi\monitor.c" />
     <ClCompile Include="..\libsrc\Wi\mtwrite.c" />
     <ClCompile Include="..\libsrc\Wi\multibyte.c" />
     <ClCompile Include="..\libsrc\Wi\neodisk.c" />
