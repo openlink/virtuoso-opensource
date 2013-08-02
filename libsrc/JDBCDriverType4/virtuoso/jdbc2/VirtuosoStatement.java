@@ -86,7 +86,7 @@ public class VirtuosoStatement implements Statement
    protected String statid, cursorName;
 
    // The true when the statement is closed
-   protected boolean close_flag = false;
+   protected volatile boolean close_flag = false;
 
    // The request number
    protected static int req_no;
@@ -332,6 +332,9 @@ public class VirtuosoStatement implements Statement
     */
    public void close() throws VirtuosoException
    {
+     if(close_flag)
+       return;
+      
      synchronized (connection)
        {
 	 // System.out.println("Close statement : "+this);
