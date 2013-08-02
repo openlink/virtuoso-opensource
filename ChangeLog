@@ -1,5 +1,13 @@
 2013-08-02  VOS Maintainer  <vos.admin@openlinksw.com>
 
+	Updated version to 7.0.0 for final release
+
+	Fixed error in make install when virt_html has not been generated
+
+	Fixed use Dkalloc_nc.c for driver
+
+	Updated NEWS and ChangeLog
+
 	Fixed whitespace
 
 	Removed file
