@@ -65,7 +65,7 @@ SERVER=virtuoso
 TEST_DIR_MASK=""
 APPENDMODE=0
 
-set -- -cs
+set -- -csV
 
 while getopts ":smrcvwV" optname
   do
