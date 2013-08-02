@@ -114,7 +114,7 @@
     <ClInclude Include="..\libsrc\Dk\Dkstubs.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\libsrc\Dk\Dkalloc.c" />
+    <ClCompile Include="..\libsrc\Dk\Dkalloc_nc.c" />
     <ClCompile Include="..\libsrc\Dk\Dkbasket.c" />
     <ClCompile Include="..\libsrc\Dk\Dkbox.c" />
     <ClCompile Include="..\libsrc\Dk\Dkdevice.c" />
