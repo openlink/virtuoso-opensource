@@ -1708,6 +1708,25 @@ create procedure DAV_GET_UID_BY_SERVICE_ID (in serviceId any, out a_uid int, out
 }
 ;
 
+create procedure DAV_GET_UID_BY_WEBID (out a_uid int, out a_gid int)
+{
+  declare cert, st, msg, meta, rows any;
+
+  cert := client_attr ('client_certificate');
+  a_uid := null;
+  a_gid := null;
+  st := '00000';
+  exec ('select U_ID, U_GROUP from DB.DBA.SYS_USERS, DB.DBA.WA_USER_CERTS where UC_FINGERPRINT = ? and UC_U_ID = U_ID', st, msg, vector (get_certificate_info (6, cert)), 0, meta, rows);
+  if (('00000' <> st) or (length (rows) = 0))
+    return 0;
+
+  a_uid := rows[0][0];
+  a_gid := rows[0][1];
+
+  return 1;
+}
+;
+
 create function
 DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_http integer, inout a_lines any, inout a_uname varchar, inout a_pwd varchar, inout a_uid integer, inout a_gid integer, inout _perms varchar) returns integer
 {
@@ -2153,8 +2172,19 @@ DAV_CHECK_ACLS (
 _exit:;
   if ((reqMode[0] <= realMode[0]) and (reqMode[1] <= realMode[1]) and (reqMode[2] <= realMode[2]))
   {
-    a_uid := http_nobody_uid ();
-    a_gid := http_nogroup_gid ();
+    if (not DB.DBA.DAV_GET_UID_BY_WEBID (a_uid, a_gid))
+    {
+      a_uid := DB.DBA.DAV_GET_OWNER (id, what);
+      if (DAV_HIDE_ERROR (a_uid) is null)
+      {
+        a_uid := http_nobody_uid ();
+        a_gid := http_nogroup_gid ();
+      }
+      else
+      {
+        a_gid := coalesce ((select U_GROUP from WS.WS.SYS_DAV_USER where U_ID = a_uid), http_nogroup_gid ());
+      }
+    }
     rc := 1;
   }
   _perms := replace (sprintf ('%d%d%d', realMode[0], realMode[1], realMode[2]), '0', '_');
