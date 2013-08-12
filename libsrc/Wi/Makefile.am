@@ -753,7 +753,7 @@ turtle_p.c turtle_p.h: turtle_p.y Makefile.am
 turtle_lex_props.c: list_lex_props.sh turtle_p.y Makefile.am
 	list_lex_props.sh turtle_p.y turtle_lex_props.c
 
-turtle_l.c: turtle_l.l turtle_p.h Makefile.am
+turtle_l.c: turtle_l.l turtle_p.h Makefile.am turtle_lex_props.c
 	@$(GEN) $(LEX) -o turtle_l.c -Pttlyy $(srcdir)/turtle_l.l
 
 

@@ -26,7 +26,7 @@
 %parse-param {yyscan_t yyscanner}
 %lex-param {ttlp_t * ttlp_arg}
 %lex-param {yyscan_t yyscanner}
-%expect 2
+%expect 5
 
 %{
 
@@ -52,6 +52,7 @@
       tf_report (ttlp_arg->ttlp_tf, 'W', NULL, NULL, (strg)); \
   } while (0)
 
+#define YY_FATAL_ERROR(err) ttlyyerror_action(err)
 
 extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 
@@ -160,6 +161,8 @@ turtledoc
 
 clause
 	: _AT_keywords_L { ttlp_arg->ttlp_special_qnames = ~0; } keyword_list dot_opt
+	| _AT_keywords_L { ttlp_arg->ttlp_special_qnames = ~0; } _DOT_WS
+	| _AT_keywords_L error { ttlyyerror_action ("Comma-delimited list of names expected after @keywords"); }
 	| base_clause dot_opt
 	| prefix_clause dot_opt
 	| q_complete { dk_free_tree (ttlp_arg->ttlp_subj_uri);
@@ -171,7 +174,7 @@ clause
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		ttlp_enter_trig_group (ttlp_arg);
 		TF_CHANGE_GRAPH_TO_DEFAULT (tf); }
-	    base_or_prefix_or_inner_triple_clauses trig_group_end dot_opt {
+	    base_or_prefix_or_inner_triple_clauses _RBRA dot_opt {
 		ttlp_leave_trig_group (ttlp_arg); }
 	| error { ttlyyerror_action ("Only a triple or a special clause (like prefix declaration) is allowed here"); }
 	;
@@ -182,6 +185,7 @@ base_clause
 		    dk_free_box (ttlp_arg->ttlp_base_uri);
 		  ttlp_arg->ttlp_base_uri = $2;
 		  TF_CHANGE_BASE_AND_DEFAULT_GRAPH(ttlp_arg->ttlp_tf, box_copy ($2)); }
+	| base_kwd error { ttlyyerror_action ("Only an IRI reference is allowed after @base keyword"); }
 	;
 
 base_kwd
@@ -212,10 +216,13 @@ prefix_clause
 		  }
 		else
 		  id_hash_set (local_hash_ptr[0], (caddr_t)(&($2)), (caddr_t)(&($3))); }
+	| prefix_kwd QNAME_NS error { dk_free_box ($2); ttlyyerror_action ("A namespace IRI is expected after prefix in namepace declaration"); }
 	| prefix_kwd _COLON Q_IRI_REF	{
 		if (ttlp_arg->ttlp_default_ns_uri != ttlp_arg->ttlp_default_ns_uri_saved)
 		  dk_free_box (ttlp_arg->ttlp_default_ns_uri);
 		ttlp_arg->ttlp_default_ns_uri = $3; }
+	| prefix_kwd _COLON error { ttlyyerror_action ("A namespace IRI is expected in declaration of default namespace"); }
+	| prefix_kwd error { ttlyyerror_action ("A namespace prefix or ':' is expected after prefix keyword in namepace declaration"); }
 	;
 
 prefix_kwd
@@ -228,11 +235,6 @@ dot_opt
 	| _DOT_WS
 	;
 
-trig_group_end
-	: _DOT_WS _RBRA
-	| _RBRA
-	;
-
 trig_block_or_predicate_object_list
 	: predicate_object_list_or_garbage _DOT_WS
 	| opt_eq_lbra {
@@ -240,7 +242,7 @@ trig_block_or_predicate_object_list
 		TTLYYERROR_ACTION_COND (TTLP_ALLOW_TRIG, "Left curly brace can appear here only if the source text is TriG");
 		ttlp_enter_trig_group (ttlp_arg);
 		TF_CHANGE_GRAPH (tf, ttlp_arg->ttlp_subj_uri); }
-	    base_or_prefix_or_inner_triple_clauses trig_group_end dot_opt {
+	    base_or_prefix_or_inner_triple_clauses _RBRA dot_opt {
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		ttlp_leave_trig_group (ttlp_arg);
 		TF_CHANGE_GRAPH_TO_DEFAULT (tf); }
@@ -253,8 +255,21 @@ opt_eq_lbra
 	;
 
 base_or_prefix_or_inner_triple_clauses
+	: base_or_prefix_or_inner_triple_clauses_nodot
+	| base_or_prefix_or_inner_triple_clauses_dot
+	| base_or_prefix_or_inner_triple_clauses_nodot error { ttlyyerror_action ("A clause of a TriG graph should be ended with '.' or '}'"); }
+	| base_or_prefix_or_inner_triple_clauses_dot error { ttlyyerror_action ("Syntax error after '.' in a TriG graph"); }
+	| error		{ ttlyyerror_action ("@base, @prefix or triple clauses are expected after opening '{' of a TriG graph"); }
+	;
+
+base_or_prefix_or_inner_triple_clauses_nodot
 	: base_or_prefix_or_inner_triple_clause
-	| base_or_prefix_or_inner_triple_clauses _DOT_WS base_or_prefix_or_inner_triple_clause
+	| base_or_prefix_or_inner_triple_clauses_dot base_or_prefix_or_inner_triple_clause
+	;
+
+base_or_prefix_or_inner_triple_clauses_dot
+	: base_or_prefix_or_inner_triple_clause _DOT_WS
+	| base_or_prefix_or_inner_triple_clauses_dot base_or_prefix_or_inner_triple_clause _DOT_WS
 	;
 
 base_or_prefix_or_inner_triple_clause
@@ -264,15 +279,25 @@ base_or_prefix_or_inner_triple_clause
 	;
 
 inner_triple_clauses
+	: inner_triple_clauses_nodot
+	| inner_triple_clauses_dot
+	;
+
+inner_triple_clauses_nodot
 	: inner_triple_clause
-	| inner_triple_clauses _DOT_WS inner_triple_clause
+	| inner_triple_clauses_dot inner_triple_clause
+	;
+
+inner_triple_clauses_dot
+	: inner_triple_clause _DOT_WS
+	| inner_triple_clauses_dot inner_triple_clause _DOT_WS
 	;
 
 inner_triple_clause
 	: q_complete { dk_free_tree (ttlp_arg->ttlp_subj_uri);
 		ttlp_arg->ttlp_subj_uri = ttlp_arg->ttlp_last_complete_uri;
 		ttlp_arg->ttlp_last_complete_uri = NULL; }
-	    inner_predicate_object_list semicolon_opt
+	    inner_predicate_object_list
 	| triple_clause_with_nonq_subj
 	;
 
@@ -282,7 +307,7 @@ triple_clause_with_nonq_subj
 	    predicate_object_list_or_garbage
 	| blank { dk_free_tree (ttlp_arg->ttlp_subj_uri);
 		ttlp_arg->ttlp_subj_uri = $1; }
-	    predicate_object_list_or_garbage
+	    predicate_object_list_or_garbage_opt
 	| literal_subject {
 		TTLYYERROR_ACTION_COND (TTLP_SKIP_LITERAL_SUBJECTS, "Virtuoso does not support literal subjects");
 		dk_free_tree (ttlp_arg->ttlp_subj_uri); ttlp_arg->ttlp_subj_uri = NULL; }
@@ -313,6 +338,7 @@ top_triple_clause_with_nonq_subj
 keyword_list
 	: keyword	{ ttlp_arg->ttlp_special_qnames &= ~($1); }
 	| keyword_list _COMMA keyword	{ ttlp_arg->ttlp_special_qnames &= ~($3); }
+	| keyword_list _COMMA	{ ttlyyerror_action ("Keyword expected after comma in keyword list"); }
 	;
 
 keyword
@@ -324,11 +350,6 @@ keyword
 	| _AT_this_L	{ $$ = TTLP_ALLOW_QNAME_THIS; }
 	;
 
-semicolon_opt
-	: /*empty*/
-	| _SEMI
-	;
-
 inner_predicate_object_list
 	: predicate_object_list
 	| _LBRA
@@ -338,39 +359,60 @@ inner_predicate_object_list
 	;
 
 top_blank_predicate_object_list_or_garbage_with_dot
-	: top_blank_predicate_object_list semicolon_opt _DOT_WS
-	| top_blank_predicate_object_list semicolon_opt _GARBAGE_BEFORE_DOT_WS _DOT_WS
+	: top_blank_predicate_object_list _DOT_WS
+	| top_blank_predicate_object_list _GARBAGE_BEFORE_DOT_WS _DOT_WS
 	| _DOT_WS { TTLYYERROR_ACTION_COND (TTLP_ACCEPT_DIRTY_SYNTAX, "Missing predicate and object between top-level blank node subject and a dot"); }
 	| _GARBAGE_BEFORE_DOT_WS _DOT_WS
+	| _LBRA_TOP_TRIG { ttlyyerror_action ("Virtuoso does not support blank nodes as graph identifiers inTriG, graphs are identified only by IRIs"); }
+	;
+
+predicate_object_list_or_garbage_opt
+	: /* empty */
+	| predicate_object_list_nosemi
+	| predicate_object_list_semi
+	| predicate_object_list_nosemi _GARBAGE_BEFORE_DOT_WS
+	| predicate_object_list_semi _GARBAGE_BEFORE_DOT_WS
+	| _GARBAGE_BEFORE_DOT_WS
 	;
 
 predicate_object_list_or_garbage
-	: predicate_object_list semicolon_opt
-	| predicate_object_list semicolon_opt _GARBAGE_BEFORE_DOT_WS
+	: predicate_object_list_nosemi
+	| predicate_object_list_semi
+	| predicate_object_list_nosemi _GARBAGE_BEFORE_DOT_WS
+	| predicate_object_list_semi _GARBAGE_BEFORE_DOT_WS
 	| _GARBAGE_BEFORE_DOT_WS
 	;
 
 top_blank_predicate_object_list
-	: verb_and_object_list
-	| top_blank_predicate_object_list _SEMI verb_and_object_list_or_garbage
-	| _COMMA { ttlyyerror_action ("Missing object between top-level blank node and a comma"); }
+	: predicate_object_list_nosemi
+	| predicate_object_list_semi
+	| _COMMA { ttlyyerror_action ("Missing predicate and object object between top-level blank node and a comma"); }
 	| _SEMI { ttlyyerror_action ("Missing predicate and object between top-level blank node and a semicolon"); }
 	| error { ttlyyerror_action ("Predicate expected after top-level blank node"); }
 	;
 
 predicate_object_list
-	: verb_and_object_list
-	| predicate_object_list _SEMI verb_and_object_list_or_garbage
+	: predicate_object_list_nosemi
+	| predicate_object_list_semi
 	| _COMMA { ttlyyerror_action ("Missing object before comma"); }
 	| _SEMI { ttlyyerror_action ("Missing predicate and object before semicolon"); }
 	| _DOT_WS { ttlyyerror_action ("Missing predicate and object before dot"); }
 	| error { ttlyyerror_action ("Predicate expected"); }
 	;
 
+predicate_object_list_nosemi
+	: verb_and_object_list
+	| predicate_object_list_semi verb_and_object_list_or_garbage
+	;
+
+predicate_object_list_semi
+	: verb_and_object_list _SEMI
+	| predicate_object_list_semi verb_and_object_list_or_garbage _SEMI
+	;
+
 verb_and_object_list_or_garbage
 	: verb_and_object_list
 	| verb_and_object_list _GARBAGE_BEFORE_DOT_WS
-	| _GARBAGE_BEFORE_DOT_WS
 	;
 
 verb_and_object_list
@@ -393,18 +435,33 @@ object_list_or_garbage
 	;
 
 object_list
-	: object	{; /* triple is made by object */ }
+	: object_list_nocomma
+	| object_list_comma
 	| object_list _COMMA object_or_garbage	{; /* triple is made by object */ }
 	| _COMMA { ttlyyerror_action ("Missing object before comma"); }
 	| _SEMI { ttlyyerror_action ("Missing object before semicolon"); }
 	| _DOT_WS { ttlyyerror_action ("Missing object before dot"); }
-	| error { ttlyyerror_action ("Object expected"); }
+	| error { ttlyyerror_action ("Object expected after predicate"); }
+	;
+
+object_list_nocomma
+	: object
+	| object_list_comma object
+	| object_list_comma error { ttlyyerror_action ("Object expected after comma"); }
+	;
+
+object_list_comma
+	: object _COMMA
+	| object_list_comma object _COMMA
 	;
 
 verb
 	: q_complete	{ $$ = ttlp_arg->ttlp_last_complete_uri; ttlp_arg->ttlp_last_complete_uri = NULL; }
 	| VARIABLE	{ $$ = $1; }
-	| _AT_a_L	{ $$ = uname_rdf_ns_uri_type; }
+	| _AT_a_L	{
+		  if (TTLP_ALLOW_QNAME_A & ttlp_arg->ttlp_special_qnames)
+		    ttlyyerror_action ("@a keyword is used but not specified in @keywords");
+		  $$ = uname_rdf_ns_uri_type; }
 	| _EQ		{ $$ = box_dv_uname_string ("http://www.w3.org/2002/07/owl#sameAs"); }
 	| _EQ_GT	{ $$ = box_dv_uname_string ("http://www.w3.org/2000/10/swap/log#implies"); }
 	| _AT_has_L q_complete	{ $$ = ttlp_arg->ttlp_last_complete_uri; ttlp_arg->ttlp_last_complete_uri = NULL; }
@@ -457,8 +514,10 @@ verb
 	;
 
 rev_verb
-	: _AT_is_L q_complete _AT_of_L 	{ $$ = ttlp_arg->ttlp_last_complete_uri; ttlp_arg->ttlp_last_complete_uri = NULL; }
-	| _AT_is_L VARIABLE _AT_of_L 	{ $$ = $2; }
+	: _AT_is_L q_complete _AT_of_L	{ $$ = ttlp_arg->ttlp_last_complete_uri; ttlp_arg->ttlp_last_complete_uri = NULL; }
+	| _AT_is_L q_complete error	{ ttlyyerror_action ("Keyword @of is expected after @is and QName of a reverse predicate notation"); }
+	| _AT_is_L VARIABLE _AT_of_L	{ $$ = $2; }
+	| _AT_is_L VARIABLE error	{ ttlyyerror_action ("Keyword @of is expected after @is and variable name of a reverse predicate notation"); }
 	| _LT_EQ	{ $$ = box_dv_uname_string ("http://www.w3.org/2000/10/swap/log#implies"); /* Note this 'double reversed' meaning :) */ }
 	;
 
@@ -470,14 +529,17 @@ literal_subject
 	| TURTLE_DOUBLE		{ dk_free_tree ($1); }
 	| TURTLE_STRING		{ dk_free_tree ($1); }
 	| TURTLE_STRING LANGTAG	{ dk_free_tree ($1); dk_free_tree ($2); }
-	| TURTLE_STRING { dk_free_tree ($1); } _CARET_CARET q_complete	{
+	| TURTLE_STRING _CARET_CARET q_complete	{
+			dk_free_tree ($1);
 			dk_free_tree (ttlp_arg->ttlp_last_complete_uri);
 			ttlp_arg->ttlp_last_complete_uri = NULL; }
+	| TURTLE_STRING _CARET_CARET error	{ dk_free_tree ($1); ttlyyerror_action ("Syntax error in datatype of a subject literal"); }
 	;
 
 object_or_garbage
 	: object
 	| _GARBAGE_BEFORE_DOT_WS
+	| error { ttlyyerror_action ("Object is expected"); }
 	;
 
 object
@@ -553,6 +615,10 @@ object
 		dk_free_tree (ttlp_arg->ttlp_last_complete_uri);
 		ttlp_arg->ttlp_last_complete_uri = NULL; }
 	| TTL_RECOVERABLE_ERROR _CARET_CARET TTL_RECOVERABLE_ERROR { }
+	| TURTLE_STRING	_CARET_CARET error {
+		dk_free_tree (ttlp_arg->ttlp_obj);
+		ttlp_arg->ttlp_obj = $1;
+		ttlyyerror_action ("Syntax error in datatype of a subject literal"); }
 	;
 
 blank
@@ -621,7 +687,7 @@ blank_block_subj
 	;
 
 blank_block_subj_tail
-	: predicate_object_list semicolon_opt _RSQBRA
+	: predicate_object_list bad_dot_opt_rsqbra
 		{ $$ = ttlp_arg->ttlp_subj_uri;
 		  dk_free_tree (ttlp_arg->ttlp_pred_uri);
 		  ttlp_arg->ttlp_pred_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
@@ -633,6 +699,12 @@ blank_block_subj_tail
 		  ttlp_arg->ttlp_pred_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
 		  ttlp_arg->ttlp_subj_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
 		  ttlp_arg->ttlp_pred_is_reverse = (ptrlong)dk_set_pop (&(ttlp_arg->ttlp_saved_uris)); }
+	;
+
+bad_dot_opt_rsqbra
+	:	_RSQBRA
+	|	_DOT_WS _RSQBRA	{ TTLYYERROR_ACTION_COND (TTLP_ACCEPT_DIRTY_SYNTAX, "The blank node block should contain only predicate-object between square brackets, trailing dot is not allowed"); }
+	|	_DOT_WS error	{ ttlyyerror_action ("The blank node block should contain only predicate-object between square brackets, no dots are allowed"); }
 	;
 
 blank_block_seq
