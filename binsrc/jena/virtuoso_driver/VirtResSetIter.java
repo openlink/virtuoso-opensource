@@ -35,21 +35,23 @@ import com.hp.hpl.jena.rdf.model.*;
 
 public class VirtResSetIter extends NiceIterator<Triple>
 {
-    protected ResultSet 	v_resultSet;
-    protected Triple 		v_row;
-    protected TripleMatch 	v_in;
-    protected boolean 		v_finished = false;
-    protected boolean 		v_prefetched = false;
-    protected VirtGraph         v_graph = null;
+    protected ResultSet 	 v_resultSet;
+    protected java.sql.Statement v_statement;
+    protected Triple 		 v_row;
+    protected TripleMatch 	 v_in;
+    protected boolean 		 v_finished = false;
+    protected boolean 		 v_prefetched = false;
+    protected VirtGraph          v_graph = null;
 
     public VirtResSetIter()
     {
         v_finished = true;
     }
 
-    public VirtResSetIter(VirtGraph graph, ResultSet resultSet, TripleMatch in)
+    public VirtResSetIter(VirtGraph graph, java.sql.Statement statement, ResultSet resultSet, TripleMatch in)
     {
         v_resultSet = resultSet;
+        v_statement = statement;
 	v_in = in;
 	v_graph = graph;
     }
@@ -153,6 +155,8 @@ public class VirtResSetIter extends NiceIterator<Triple>
 		{
 		    v_resultSet.close();
 		    v_resultSet = null;
+                    v_statement.close();
+                    v_statement = null;
 		}
 		catch (SQLException e)
 		{

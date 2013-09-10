@@ -678,7 +678,7 @@ public class VirtGraph extends GraphBase
       {
         java.sql.PreparedStatement stmt;
         stmt = prepareStatement(sb.toString());
-	return new VirtResSetIter(this, stmt.executeQuery(), tm);
+	return new VirtResSetIter(this, stmt, stmt.executeQuery(), tm);
       } catch (Exception e) {
         throw new JenaException(e);
       }
