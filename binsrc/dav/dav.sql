@@ -2477,7 +2477,7 @@ again:
   }
   else
   {
-    declare _server_etag, _xslt_sheet, _document_q, _xml_t varchar;
+    declare _accept, _server_etag, _xslt_sheet, _document_q, _xml_t varchar;
     declare _sse, _sse_cont_type, _sse_mime_encrypt, _sse_email, _sse_certificate any;
     declare fext, hdl_mode varchar;
     declare dot integer;
@@ -2491,8 +2491,6 @@ again:
 
     content := string_output (http_strses_memory_size ());
     rc := DAV_RES_CONTENT_INT (_res_id, content, cont_type, 1, 0);
-    _sse_cont_type := cont_type;
-    cont_type := case when not _sse_mime_encrypt then cont_type else 'message/rfc822' end;
 
     -- dbg_obj_princ ('DAV_RES_CONTENT_INT (', _res_id, ', [content], ', cont_type, 1, 0, ' returns ', rc);
     if (DAV_HIDE_ERROR (rc) is null)
@@ -2507,6 +2505,21 @@ again:
       sprintf ('%V', http_path ()), '.</BODY></HTML>'));
       return;
     }
+
+	  _accept := DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (http_request_header_full (lines, 'Accept', '*/*'));
+	  if ((_accept <> '*/*') and (_accept <> 'text/turtle') and (cont_type = 'text/turtle'))
+	  {
+	    http_rewrite ();
+      http_status_set (406);
+      --http_header (http_header_get () || 'Accept-Ranges: bytes\r\n');
+      -- http_header (http_header_get () || 'Alternates: xxx\r\n');
+      http_header (http_header_get () || sprintf ('Alternates: {"http://%{WSHost}s%s" 1 {type text/turtle} {charset UTF-8} {length %d}}\r\n', full_path, length (content)));
+
+      return;
+    }
+
+    _sse_cont_type := cont_type;
+    cont_type := case when not _sse_mime_encrypt then cont_type else 'message/rfc822' end;
 
     -- HTTP handlers are going here
     _name := path [length(path)-1];
