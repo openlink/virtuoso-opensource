@@ -102,6 +102,7 @@ in3files = \
 	VirtuosoParameterMetaData.java \
 	VirtuosoPooledConnection.java \
 	VirtuosoPoolManager.java \
+	VirtuosoPoolStatistic.java \
 	VirtuosoXAConnection.java \
 	VirtuosoXADataSource.java \
 	VirtuosoXAResource.java \

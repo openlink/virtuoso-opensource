@@ -72,7 +72,7 @@ public class ConnectionWrapper implements java.sql.Connection {
 
   private int maxStatements;
 
-  private Connection rconn;       // physical connection
+  private volatile Connection rconn;       // physical connection
   private VirtuosoPooledConnection pconn; // pooled connection
 
 #if JDK_VER >= 16
@@ -98,18 +98,20 @@ public class ConnectionWrapper implements java.sql.Connection {
     pStmtPool = new StmtCache(this, pStmtsPool);
   }
 
-  public synchronized void finalize () throws Throwable {
+  public void finalize () throws Throwable {
     close();
   }
 
   // reuse the physical connection
-  public synchronized void close() throws java.sql.SQLException {
+  public void close() throws java.sql.SQLException {
     if (rconn == null)
       return;
-    if (pconn != null)
-      pconn.sendCloseEvent();
-    rconn = null;
-    pconn = null;
+    synchronized(this) {
+      if (pconn != null)
+        pconn.sendCloseEvent();
+      rconn = null;
+      pconn = null;
+    }
   }
 
   // close the physical connection & clear the statement's cache
