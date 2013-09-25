@@ -38,6 +38,7 @@ class VirtuosoPoolManager {
   private static Thread poolChecker = null;
   private static Thread propertyChecker = null;
 
+
   protected static VirtuosoPoolManager getInstance() {
     synchronized(lock) {
       if (poolMgr == null) {
@@ -97,10 +98,21 @@ class VirtuosoPoolManager {
     return poolMgr;
   }
 
+
   protected void addPool(VirtuosoConnectionPoolDataSource pool) {
     synchronized(lock) {
      connPools.put(pool, null);
     }
   }
 
+
+  protected VirtuosoPoolStatistic[] getAll_statistics() {
+   VirtuosoConnectionPoolDataSource[] poolTmp = (VirtuosoConnectionPoolDataSource[])(connPools.keySet().toArray(new VirtuosoConnectionPoolDataSource[0]));
+   VirtuosoPoolStatistic[] retVal = new VirtuosoPoolStatistic[poolTmp.length];
+   for(int i = 0; i < poolTmp.length; i++) {
+      retVal[i] = poolTmp[i].get_statistics();
+      poolTmp[i] = null;
+    }
+    return retVal;
+  }
 }
