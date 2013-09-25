@@ -86,57 +86,40 @@ public class VirtDataSource extends VirtGraph implements DataSource {
       defaultModel = model;
     }
 
-    /** Set a named graph. */
-    public void addNamedModel(String name, Model model)	throws LabelExistsException 
+
+    public void addNamedModel(String name, Model model, boolean checkExists) throws LabelExistsException 
     {
       String query = "select count(*) from (sparql select * where { graph `iri(??)` { ?s ?p ?o }})f";
       ResultSet rs = null;
       int ret = 0;
 
       checkOpen();
-      try {
-        java.sql.PreparedStatement ps = prepareStatement(query);
-        ps.setString(1, name);
-        rs = ps.executeQuery();
-        if (rs.next())
-          ret = rs.getInt(1);
-        rs.close();
-      } catch (Exception e) {
-        throw new JenaException(e);
-      }
+      if (checkExists) {
+        try {
+          java.sql.PreparedStatement ps = prepareStatement(query);
+          ps.setString(1, name);
+          rs = ps.executeQuery();
+          if (rs.next())
+            ret = rs.getInt(1);
+          rs.close();
+        } catch (Exception e) {
+          throw new JenaException(e);
+        }
 
-      try {
         if (ret != 0)
           throw new LabelExistsException("A model with ID '" + name
 					+ "' already exists.");
-        Graph g = model.getGraph();
-        int count = 0;
-        java.sql.PreparedStatement ps = prepareStatement(sinsert);
-
-        for (Iterator i = g.find(Node.ANY, Node.ANY, Node.ANY); i.hasNext();) 
-        {
-          Triple t = (Triple)i.next();
-
-          ps.setString(1, name);
-          bindSubject(ps, 2, t.getSubject());
-          bindPredicate(ps, 3, t.getPredicate());
-          bindObject(ps, 4, t.getObject());
-          ps.addBatch();
-          count++;
-          if (count > BATCH_SIZE) {
-            ps.executeBatch();
-            ps.clearBatch();
-            count = 0;
-          }
-        }
-        if (count > 0) {
-          ps.executeBatch();
-          ps.clearBatch();
-        }
-        ps.close();
-      } catch (Exception e) {
-        throw new JenaException(e);
       }
+
+      Graph g = model.getGraph();
+      add(name, g.find(Node.ANY, Node.ANY, Node.ANY), null);
+    }
+
+
+    /** Set a named graph. */
+    public void addNamedModel(String name, Model model)	throws LabelExistsException 
+    {
+      addNamedModel(name, model, true);
     }
 
 
@@ -160,19 +143,10 @@ public class VirtDataSource extends VirtGraph implements DataSource {
     public void replaceNamedModel(String name, Model model) 
     {
       try {
-        getConnection().setAutoCommit(false);
         removeNamedModel(name);
-        addNamedModel(name, model);
-        getConnection().commit();
-        getConnection().setAutoCommit(true);
+        addNamedModel(name, model, false);
       } catch (Exception e) {
-         try {
-           getConnection().rollback();
-         } catch (Exception e2) {
-           throw new JenaException(
-                  "Could not replace model, and could not rollback!", e2);
-         }
-           throw new JenaException("Could not replace model:", e);
+        throw new JenaException("Could not replace model:", e);
       }
     }
 

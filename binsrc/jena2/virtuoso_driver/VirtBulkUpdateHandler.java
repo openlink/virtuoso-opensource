@@ -59,25 +59,9 @@ public class VirtBulkUpdateHandler extends SimpleBulkUpdateHandler {
     public void addIterator(Iterator<Triple> it, boolean notify) {
 	VirtGraph _graph=(VirtGraph)this.graph;
 	List list = notify ? new ArrayList() : null;
-	boolean autoCommit = false;
-	try {
-		autoCommit = _graph.getConnection().getAutoCommit();
-	        if (autoCommit)
-		    _graph.getConnection().setAutoCommit(false);
-		_graph.add(null, it, list);
-	} catch (Exception e) {
-	        try {
-		  _graph.getConnection().rollback();
-		}catch(Exception e1) {}
-		throw new JenaException("Error in addIterator:"+e);
-	} finally {
-	        if (autoCommit)  {
-	          try {
-		    _graph.getConnection().commit();
-		    _graph.getConnection().setAutoCommit(true);
-		  }catch(Exception e) {}
-		}
-	}
+
+	_graph.add(null, it, list);
+
 	if (notify)
 		manager.notifyAddIterator( graph, list);
     }
@@ -101,24 +85,8 @@ public class VirtBulkUpdateHandler extends SimpleBulkUpdateHandler {
 	List list = notify ? new ArrayList() : null;
 	boolean autoCommit = false;
 
-	try {
-		autoCommit = _graph.getConnection().getAutoCommit();
-		if (autoCommit) 
-		    _graph.getConnection().setAutoCommit(false);
-		_graph.delete(it, list);
-	} catch (Exception e) {
-	        try {
-		  _graph.getConnection().rollback();
-		}catch(Exception e1) {}
-		throw new JenaException("Error in deleteIterator:"+e);
-	} finally {
-	        if (autoCommit)  {
-	          try {
-		    _graph.getConnection().commit();
-		    _graph.getConnection().setAutoCommit(true);
-		  }catch(Exception e) {}
-		}
-	}
+	_graph.delete(it, list);
+
         if (notify) 
         	manager.notifyDeleteIterator( graph, list);
     }
