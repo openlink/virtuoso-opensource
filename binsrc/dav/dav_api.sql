@@ -5229,14 +5229,9 @@ create procedure WS.WS.WAC_GRAPH (
 ;
 
 
-create procedure WS.WS.DAV_IRI (
-  in path varchar)
+create procedure WS.WS.DAV_HOST ()
 {
-  declare S, host any;
-
-  S := string_output ();
-  http_dav_url (path, null, S);
-  S := string_output_string (S);
+  declare host any;
 
   host := virtuoso_ini_item_value ('URIQA', 'DefaultHost');
   if (host is null)
@@ -5245,7 +5240,20 @@ create procedure WS.WS.DAV_IRI (
     if (server_http_port () <> '80')
       host := host ||':'|| server_http_port ();
   }
-  return sprintf ('http://%s%s', host, S);
+  return sprintf ('http://%s', host);
+}
+;
+
+create procedure WS.WS.DAV_IRI (
+  in path varchar)
+{
+  declare S any;
+
+  S := string_output ();
+  http_dav_url (path, null, S);
+  S := string_output_string (S);
+
+  return WS.WS.DAV_HOST () || S;
 }
 ;
 
