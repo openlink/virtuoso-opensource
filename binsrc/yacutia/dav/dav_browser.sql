@@ -4764,7 +4764,7 @@ create procedure WEBDAV.DBA.aci_load (
           V[2] := 'advanced';
           if (aclCriteria <> row[4])
           {
-            F := vector_concat (F, vector (vector (1, replace (row[5], 'flt:', ''), replace (row[6], 'flt:', ''), cast (row[7] as varchar), cast (row[8] as varchar))));
+            F := vector_concat (F, vector (vector (1, replace (row[5], 'http://www.openlinksw.com/schemas/acl/filter#', ''), replace (row[6], 'http://www.openlinksw.com/schemas/acl/filter#', ''), cast (row[7] as varchar), cast (row[8] as varchar))));
             aclCriteria := row[4];
             V[1] := F;
           }
