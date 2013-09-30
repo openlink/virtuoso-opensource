@@ -1730,7 +1730,7 @@ create procedure DAV_GET_UID_BY_WEBID (out a_uid int, out a_gid int)
 create function
 DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_http integer, inout a_lines any, inout a_uname varchar, inout a_pwd varchar, inout a_uid integer, inout a_gid integer, inout _perms varchar) returns integer
 {
-  --dbg_printf('DAV_AUTHENTICATE_HTTP(%d, %s, %s, %d, ...)', id, what, req, can_write_http);
+  -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP (', id, what, req, can_write_http, a_lines, a_uname, a_pwd, a_uid, a_gid, _perms, ')');
   declare rc integer;
   declare puid, pgid integer;
   declare u_password, pperms, resName, resPath varchar;
@@ -1743,8 +1743,6 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
   serviceId := null;
 
   what := upper (what);
-  -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP (', id, what, req, can_write_http, a_lines, a_uname, a_pwd, a_uid, a_gid, _perms, ')');
-
   if (length (req) <> 3)
     return -15;
 
@@ -1793,16 +1791,14 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
       rc := WS.WS.GET_DAV_AUTH (a_lines, allow_anon, can_write_http, a_uname, u_password, a_uid, a_gid, _perms);
       if (rc < 0)
       {
-        check_more_auth:
+      check_more_auth:
 
         if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms, webid))
         {
-          http_rewrite ();
           return a_uid;
         }
         if (DAV_AUTHENTICATE_WITH_SESSION_ID (id, what, null, req, a_uid, a_gid, _perms, serviceId))
         {
-          http_rewrite ();
           return a_uid;
         }
 
@@ -1891,6 +1887,7 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
   }
 
   -- in case we had HTTP AUTH credentials without access in addition to SSL or VAL credentials (TODO: gotos are bad)
+  rc := -13;
   goto check_more_auth;
 
   -- dbg_obj_princ ('DAV_AUTHENTICATE_HTTP returns -13 due to failed DAV_CHECK_PERM (', pperms, req, a_uid, a_gid, pgid, puid, ')');
