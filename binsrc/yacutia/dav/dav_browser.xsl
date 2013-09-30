@@ -1223,7 +1223,7 @@
                       }
                       if (self.mode = 'webdav')
                       {
-                        self.webdav_redirect ('/' || self.dir_path || '/', '');
+                        self.webdav_redirect (WEBDAV.DBA.dav_lpath ('/' || self.dir_path || '/'), '');
                         return;
                       }
                       self.vc_is_valid := 1;
