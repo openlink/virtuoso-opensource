@@ -2115,7 +2115,7 @@
                               </v:after-data-bind>
                             </v:text>
                             <vm:if test="self.editField ('owner') and self.dav_enable and WEBDAV.DBA.check_admin (self.account_id)">
-                              <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u&amp;params=dav_owner:s1;&nrows=<?V WEBDAV.DBA.settings_rows (self.settings) ?>')" disabled="disabled" class="button" />
+                              <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u_set&amp;params=dav_owner:s1;&nrows=<?V WEBDAV.DBA.settings_rows (self.settings) ?>')" disabled="disabled" class="button" />
                             </vm:if>
                           </vm:if>
                           <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
@@ -2160,7 +2160,7 @@
                               </v:before-render>
                             </v:text>
                             <vm:if test="self.editField ('group') and self.dav_enable">
-                              <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=g&amp;params=dav_group:s1;&nrows=<?V WEBDAV.DBA.settings_rows (self.settings) ?>')" disabled="disabled" class="button" />
+                              <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=g_set&amp;params=dav_group:s1;&nrows=<?V WEBDAV.DBA.settings_rows (self.settings) ?>')" disabled="disabled" class="button" />
                             </vm:if>
                           </vm:if>
                           <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
@@ -3661,7 +3661,7 @@
                       <td>
                         <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
                           <v:text name="prop_owner" xhtml_id="prop_owner" value="--'Do not change'" format="%s" xhtml_class="field-short" />&amp;nbsp;
-                          <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u&amp;params=prop_owner:s1;&nrows=<?V WEBDAV.DBA.settings_rows (self.settings) ?>')" class="button" />
+                          <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u_set&amp;params=prop_owner:s1;&nrows=<?V WEBDAV.DBA.settings_rows (self.settings) ?>')" class="button" />
                         </vm:if>
                         <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
                           <v:data-list name="prop_owner2" xhtml_id="prop_owner2" sql="select -1 as U_ID, 'Do not change' as U_NAME from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select TOP 100 U_ID, U_NAME from WS.WS.SYS_DAV_USER" key-column="U_NAME" value-column="U_NAME" xhtml_class="field-short" instantiate="--case when WEBDAV.DBA.VAD_CHECK ('Framework') then 0 else 1 end">
@@ -3683,7 +3683,7 @@
                       <td>
                         <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
                           <v:text name="prop_group" xhtml_id="prop_group" value="--'Do not change'" format="%s" xhtml_class="field-short" />&amp;nbsp;
-                          <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=g&amp;params=prop_group:s1;')" class="button" />
+                          <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=g_set&amp;params=prop_group:s1;')" class="button" />
                         </vm:if>
                         <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
                           <v:data-list name="prop_group2" xhtml_id="prop_group2" sql="select -1 as G_ID, 'Do not change' as G_NAME from WS.WS.SYS_DAV_GROUP where G_NAME = 'administrators' union all select G_ID, G_NAME from WS.WS.SYS_DAV_GROUP" key-column="G_NAME" value-column="G_NAME" xhtml_class="field-short">
@@ -3882,20 +3882,19 @@
                     declare old_dav_acl, dav_acl, acl_value, aci_value any;
                     declare itemList any;
 
-                    if ((not WEBDAV.DBA.check_admin (self.account_id)) and (get_keyword ('prop_group', params, '') <> 'Do not change'))
-                      if (not WEBDAV.DBA.group_own (trim (get_keyword ('prop_group', params, ''))))
-                      {
-                        self.vc_error_message := 'Only own groups or ''dba'' group are allowed!';
-                        self.vc_is_valid := 0;
-                        return;
-                      }
-
-                    -- validate ACL rules
-                    WEBDAV.DBA.aci_validate (WEBDAV.DBA.aci_params (params));
-
                     prop_mime  := trim (get_keyword ('prop_mime', params, get_keyword ('prop_mime2', params, '')));
                     prop_owner := WEBDAV.DBA.user_id (trim (get_keyword ('prop_owner', params, get_keyword ('prop_owner2', params, ''))));
                     prop_group := WEBDAV.DBA.user_id (trim (get_keyword ('prop_group', params, get_keyword ('prop_group2', params, ''))));
+
+                    -- validate group
+                    if (not WEBDAV.DBA.check_admin (self.account_id) and not WEBDAV.DBA.group_own (prop_group))
+                    {
+                      self.vc_error_message := 'Only own groups or ''dba'' group are allowed!';
+                      self.vc_is_valid := 0;
+                      return;
+                    }
+                    -- validate ACL rules
+                    WEBDAV.DBA.aci_validate (WEBDAV.DBA.aci_params (params));
 
                     one := ascii('1');
                     zero := ascii('0');
@@ -3930,11 +3929,11 @@
                         {
                           WEBDAV.DBA.DAV_SET (self.items[I], 'mimeType', prop_mime);
                         }
-                        if ((prop_owner <> -1) and (WEBDAV.DBA.DAV_GET (item, 'ownerID') <> prop_owner))
+                        if ((prop_owner <> -1) and (isnull (WEBDAV.DBA.DAV_GET (item, 'ownerID')) or (WEBDAV.DBA.DAV_GET (item, 'ownerID') <> prop_owner)))
                         {
                           WEBDAV.DBA.DAV_SET (self.items[I], 'ownerID', prop_owner);
                         }
-                        if ((prop_group <> -1) and (WEBDAV.DBA.DAV_GET (item, 'groupID') <> prop_group))
+                        if ((prop_group <> -1) and (isnull (WEBDAV.DBA.DAV_GET (item, 'groupID')) or (WEBDAV.DBA.DAV_GET (item, 'groupID') <> prop_group)))
                         {
                           WEBDAV.DBA.DAV_SET (self.items[I], 'groupID', prop_group);
                         }

@@ -1802,22 +1802,31 @@ create procedure WEBDAV.DBA.user_name (
 
 -----------------------------------------------------------------------------
 --
-create procedure WEBDAV.DBA.group_own(
-  in group_name varchar,
-  in user_name varchar := null) returns integer
+create procedure WEBDAV.DBA.group_own (
+  in group_name any,
+  in user_name any := null) returns integer
 {
+  declare retValue any;
+
+  if (isinteger (group_name))
+    group_name := WEBDAV.DBA.account_name (group_name);
+
   if (is_empty_or_null (group_name))
     return 1;
 
   if (group_name = 'dav')
     return 1;
 
+  if (group_name = 'dba')
+    return 1;
+
   if (isnull (user_name))
     user_name := WEBDAV.DBA.account ();
 
-  --!!!
-  --if (exists(select 1 from DB.DBA.SYS_USERS u1, DB.DBA.WA_GROUPS g, DB.DBA.SYS_USERS u2 where u1.U_NAME=group_name and u1.U_ID=g.WAG_GROUP_ID and u1.U_IS_ROLE=1 and g.WAG_USER_ID=u2.U_ID and u2.U_NAME=user_name))
-  --  return 1;
+  retValue := WEBDAV.DBA.exec ('select 1 from DB.DBA.SYS_USERS u1, DB.DBA.WA_GROUPS g, DB.DBA.SYS_USERS u2 where u1.U_NAME=? and u1.U_ID=g.WAG_GROUP_ID and u1.U_IS_ROLE=1 and g.WAG_USER_ID=u2.U_ID and u2.U_NAME=?', vector (group_name, user_name));
+
+  if (WEBDAV.DBA.isVector (retValue) and (length (retValue) = 1))
+    return 1;
 
   return 0;
 }
