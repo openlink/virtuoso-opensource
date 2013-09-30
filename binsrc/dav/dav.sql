@@ -89,6 +89,8 @@ create procedure WS.WS."OPTIONS" (in path varchar, inout params varchar, in line
   http_header (concat (sprintf ('Content-Type: %s\r\n', ctype),
 		'DAV: 1,2,<http://www.openlinksw.com/virtuoso/webdav/1.0>\r\n',
 		'Link: <http://www.w3.org/ns/ldp/profile>;rel="profile"\r\n',
+		'Accept-Patch: */*\r\n',
+		'Accept-Post: */*\r\n',
 		sprintf ('MS-Author-Via: %s\r\n', msauthor)));
 }
 ;
@@ -2839,15 +2841,30 @@ err_end:
 -- LDP extension for GET (http://www.w3.org/TR/ldp/#http-get)
 create procedure WS.WS.GET_EXT_LDP(in lines any, in client_etag varchar, in full_path varchar, in _res_id int, in _col_id int)
 {
-	declare accept, _name, cont_type, uname, urihost, full_req varchar;
-	declare _col, resource_owner, non_member int;
+	declare accept, _name, cont_type, uname, urihost varchar;
+	declare arr any;
+	declare l, i, resource_owner, non_member, page, _col, file_size int;
 	declare mod_time, cr_time datetime;
 	-- LDPR request
 	urihost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
-	full_req := http_request_get('REQUEST_URI');
+	arr := split_and_decode(http_request_get ('QUERY_STRING'));
 	non_member := 0;
-	if (right(full_req, 22)  = '?non-member-properties')
+	l := length (arr);
+	page := 1;
+	for (i := 0; i < l; i := i + 2)
+    {
+		if (arr[i] = 'non-member-properties')
 		non_member := 1;
+		if (arr[i] = 'p')
+		{
+			if (i < l - 1)
+				page := atoi(arr[i+1]);
+			else
+				page := 1;
+		}
+	}
+	if (page = 0)
+		page := 1;
 	accept := http_request_header_full (lines, 'Accept', '*/*');
 	accept := HTTP_RDF_GET_ACCEPT_BY_Q (accept);
 	if (accept = 'text/turtle')
@@ -2862,33 +2879,114 @@ create procedure WS.WS.GET_EXT_LDP(in lines any, in client_etag varchar, in full
 				cr_time := COL_CR_TIME;
 				select U_NAME into uname from WS.WS.SYS_DAV_USER where U_ID = resource_owner;
 			}
-			declare _len int;
+			declare _len, cur int;
 			declare ses any;
 			ses := string_output ();
-			http ('@prefix dcterms: <http://purl.org/dc/terms/>.\n@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.\n@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.\n@prefix ldp: <http://www.w3.org/ns/ldp#>.\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.\n', ses);
-			http (sprintf('<%s>\n', 'http://' || urihost || full_path), ses);
-			http ('a ldp:Container;\n', ses);
+			http ('@prefix dcterms: <http://purl.org/dc/terms/> .\n@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n@prefix ldp: <http://www.w3.org/ns/ldp#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\n', ses);
+			http ('<>\n', ses);
+			http ('  a ldp:Container, <http://www.w3.org/ns/posix/stat#Directory> ;\n', ses);
+			http ('  ldp:membershipSubject <> ;\n', ses);
+			http ('  ldp:membershipPredicate rdfs:member ;\n', ses);
+			http ('  ldp:membershipObject ldp:MemberSubject ;\n', ses);
+			http (sprintf('  <http://www.w3.org/ns/posix/stat#mtime> %d ;\n', datediff('second', dt_set_tz (stringdate ('1970-01-01'), 0), mod_time)), ses);
+			http ('  <http://www.w3.org/ns/posix/stat#size> 0 ;\n', ses);
 			http (sprintf('dcterms:title "%s";\n', _name), ses);
 			http (sprintf('dcterms:creator "%s";\n', uname), ses);
 			http (sprintf('dcterms:created "%s";\n', datestring(cr_time)), ses);
 			http (sprintf('dcterms:modified "%s";\n', datestring(mod_time)), ses);
-			http ('ldp:membershipPredicate rdfs:member;\n', ses);
+
+			declare num, num_pre_page, prefix_added, next_page int;
+			num := 0;
+			num_pre_page := 10;
+			prefix_added := 0;
+			next_page := 0;
 			if (non_member = 0)
 			{
-				for select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = _col_id do
-					http (sprintf('rdfs:member <%s>;\n', concat('http://' || urihost || full_path, COL_NAME || '/')), ses);
-				for select RES_NAME from WS.WS.SYS_DAV_RES where RES_COL = _col_id do
-					http (sprintf('rdfs:member <%s>;\n', concat('http://' || urihost || full_path, RES_NAME)), ses);
+				for select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = _col_id order by COL_NAME do
+				{
+					if (num >= num_pre_page * (page - 1) and num < num_pre_page * page)
+					{
+						if (prefix_added = 0)
+						{
+							http ('  rdfs:member ', ses);
+							prefix_added := 1;
+						}
+						else
+							http (', ', ses);
+						http (sprintf('<%s>', COL_NAME || '/'), ses);
+					}
+					if (num >= num_pre_page * page)
+					{
+						next_page := 1;
+					}
+					num := num + 1;
+				}
+				for select RES_NAME from WS.WS.SYS_DAV_RES where RES_COL = _col_id order by RES_NAME  do
+				{
+					if (num >= num_pre_page * (page - 1) and num < num_pre_page * page)
+					{
+						if (prefix_added = 0)
+						{
+							http ('  rdfs:member ', ses);
+							prefix_added := 1;
+						}
+						else
+							http (', ', ses);
+						http (sprintf('<%s>', RES_NAME), ses);
+					}
+					if (num >= num_pre_page * page)
+					{
+						next_page := 1;
+					}
+					num := num + 1;
+				}
+				if (num >= 1)
+					http (' ;\n', ses);
 			}
-			http (sprintf('rdfs:label "%s".\n', _name), ses);
+			http (sprintf('  rdfs:label "%s" .\n\n', _name), ses);
+			
+			num := 0;
+			if (non_member = 0)
+			{
+				http (sprintf('<?p=%d>\n', page), ses);
+				http ('  a ldp:Page ;\n', ses);
+				if (next_page = 0)
+					http ('  ldp:nextPage rdf:nil ;\n', ses);
+				else
+					http (sprintf('  ldp:nextPage <?p=%d> ;\n', page + 1), ses);
+				http ('  ldp:pageOf <> .\n\n', ses);
+				
+				for select COL_NAME, COL_MOD_TIME from WS.WS.SYS_DAV_COL where COL_PARENT = _col_id order by COL_NAME do
+				{
+					if (num >= num_pre_page * (page - 1) and num < num_pre_page * page)
+					{
+						http (sprintf('<%s>\n', COL_NAME || '/'), ses);
+						http ('  a <http://www.w3.org/ns/posix/stat#Directory> ;\n', ses);
+						http (sprintf('  <http://www.w3.org/ns/posix/stat#mtime> %d ;\n', datediff('second', dt_set_tz (stringdate ('1970-01-01'), 0), COL_MOD_TIME)), ses);
+						http ('  <http://www.w3.org/ns/posix/stat#size> 0 .\n\n', ses);
+					}
+					num := num + 1;
+				}
+				for select RES_NAME, RES_MOD_TIME, length(RES_CONTENT) as res_size from WS.WS.SYS_DAV_RES where RES_COL = _col_id order by RES_NAME  do
+				{
+					if (num >= num_pre_page * (page - 1) and num < num_pre_page * page)
+					{
+						http (sprintf('<%s>\n', RES_NAME), ses);
+						http ('  a <http://www.w3.org/2000/01/rdf-schema#Resource> ;\n', ses);
+						http (sprintf('  <http://www.w3.org/ns/posix/stat#mtime> %d ;\n', datediff('second', dt_set_tz (stringdate ('1970-01-01'), 0), RES_MOD_TIME)), ses);
+						http (sprintf('  <http://www.w3.org/ns/posix/stat#size> %d .\n\n', res_size), ses);
+					}
+					num := num + 1;
+				}
+			}
 			ses := string_output_string (ses);
 			_len := length(ses);
-			http_header('Content-Type: text/turtle; chartset=UTF-8\r\n');
+			http_header('Link: <?p=1>; rel="first"\r\nContent-Type: text/turtle; chartset=UTF-8\r\n');
 			http(ses);
 		}
 		if (isinteger (_res_id))
 		{
-			for select RES_OWNER, RES_COL, RES_NAME, RES_TYPE, RES_MOD_TIME, RES_CR_TIME from WS.WS.SYS_DAV_RES where RES_ID = _res_id do
+			for select RES_OWNER, RES_COL, RES_NAME, RES_TYPE, RES_MOD_TIME, RES_CR_TIME, length(RES_CONTENT) as res_size from WS.WS.SYS_DAV_RES where RES_ID = _res_id do
 			{
 				_col := RES_COL;
 				_name := RES_NAME;
@@ -2896,6 +2994,7 @@ create procedure WS.WS.GET_EXT_LDP(in lines any, in client_etag varchar, in full
 				cont_type := RES_TYPE;
 				mod_time := RES_MOD_TIME;
 				cr_time := RES_CR_TIME;
+				file_size := res_size;
 				select U_NAME into uname from WS.WS.SYS_DAV_USER where U_ID = resource_owner;
 			}
 			declare s_etag, _s_etag varchar;
@@ -2907,20 +3006,16 @@ create procedure WS.WS.GET_EXT_LDP(in lines any, in client_etag varchar, in full
 				declare _len int;
 				declare ses any;
 				ses := string_output ();
-				http ('@prefix dcterms: <http://purl.org/dc/terms/>.\n@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>.\n@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>.\n@prefix ldp: <http://www.w3.org/ns/ldp#>.\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#>.\n', ses);
+				http ('@prefix dcterms: <http://purl.org/dc/terms/> .\n@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n@prefix ldp: <http://www.w3.org/ns/ldp#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\n', ses);
 				http (sprintf('<%s>\n', 'http://' || urihost || full_path), ses);
-				http ('a dcterms:PhysicalResource;\n', ses);
+				http ('  a dcterms:PhysicalResource, <http://www.w3.org/2000/01/rdf-schema#Resource> ;\n', ses);
 				http (sprintf('dcterms:title "%s";\n', _name), ses);
 				http (sprintf('dcterms:creator "%s";\n', uname), ses);
 				http (sprintf('dcterms:created "%s";\n', datestring(cr_time)), ses);
 				http (sprintf('dcterms:modified "%s";\n', datestring(mod_time)), ses);
+				http (sprintf('  <http://www.w3.org/ns/posix/stat#mtime> %d ;\n', datediff('second', dt_set_tz (stringdate ('1970-01-01'), 0), mod_time)), ses);
+				http (sprintf('  <http://www.w3.org/ns/posix/stat#size> %d ;\n', file_size), ses);
 				http (sprintf('rdfs:label "%s".\n', _name), ses);
-				--http (sprintf('dcterms:description "%s";\n', _name), ses);
-				--http (sprintf('dcterms:identifier "%s";\n', _name), ses);
-				--http (sprintf('dcterms:relation "%s";\n', _name), ses);
-				--http (sprintf('dcterms:subject "%s";\n', _name), ses);
-				--http (sprintf('rdfs:member "%s";\n', _name), ses);
-				--http (sprintf('dcterms:contributor "%s";\n', _name), ses);
 				ses := string_output_string (ses);
 				_len := length(ses);
 				http_header('Content-Type: text/turtle; charset=UTF-8\r\n');
