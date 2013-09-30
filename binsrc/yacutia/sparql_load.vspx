@@ -176,11 +176,11 @@
                                                </td>
                                                <td  class="listing_col_action">
                                                <?vsp
-					       http (sprintf ('<a class="" href="sparql_input.vspx?mode=query&edit=%U&sid=%s&realm=%s"><img src="images/icons/edit_16.png" border="0" />&#160;Edit</a>', RES_FULL_PATH, self.sid ,self.realm));
+					       http (sprintf ('<a class="" href="sparql_input.vspx?mode=query&edit=%U&sid=%s&realm=%s"><img src="images/icons/edit_16.png" border="0" />&nbsp;Edit</a>', RES_FULL_PATH, self.sid ,self.realm));
 					       ?>
 
 					       <?vsp
-						 http (sprintf ('<a class="" href="sparql_load.vspx?delete=%U&sid=%s&realm=%s"><img src="images/icons/trash_16.png" border="0" />&#160;Delete</a>', RES_FULL_PATH, self.sid ,self.realm ));
+						 http (sprintf ('<a class="" href="sparql_load.vspx?delete=%U&sid=%s&realm=%s"><img src="images/icons/trash_16.png" border="0" />&nbsp;Delete</a>', RES_FULL_PATH, self.sid ,self.realm ));
                                                ?>
                                              </td>
                                          <?vsp

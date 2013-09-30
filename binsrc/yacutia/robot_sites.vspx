@@ -136,7 +136,7 @@
                 <?vsp
                   http(concat('<a href="robot_urls_list.vspx?host=', VS_HOST, '&sid=', self.sid, '&realm=', self.realm, '&root='));
 		  http_url (VS_ROOT);
-		  http('"><img src="images/icons/edit_16.png" border="0" />&#160;Edit</a>');
+		  http('"><img src="images/icons/edit_16.png" border="0" />&nbsp;Edit</a>');
                 ?>
 	        <v:url name="exp1" value="Export" url="--sprintf ('robot_export.vspx?host=%U&url=%U&root=%U', VS_HOST,VS_URL,VS_ROOT)" />
               </td>

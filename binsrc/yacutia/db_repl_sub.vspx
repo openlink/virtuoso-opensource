@@ -98,7 +98,7 @@
 		      value="images/icons/del_16.png"
 		      xhtml_alt="Drop"
 		      xhtml_title="Drop"
-		      text="&#160;Drop"
+		      text="&nbsp;Drop"
 		      >
                     <v:on-post>
                       <![CDATA[
@@ -132,7 +132,7 @@
 		      value="images/icons/trash_16.png"
 		      xhtml_alt="Unsubscribe"
 		      xhtml_title="Unsubscribe"
-		      text="&#160;Unsubscribe"
+		      text="&nbsp;Unsubscribe"
 		      >
                     <v:on-post>
                       <![CDATA[
@@ -164,7 +164,7 @@
 		      value="images/icons/ref_16.png"
 		      xhtml_alt="Sync"
 		      xhtml_title="Sync"
-		      text="&#160;Sync"
+		      text="&nbsp;Sync"
 		      >
                     <v:on-post>
                       <![CDATA[
@@ -193,7 +193,7 @@
 		      value="images/icons/edit_16.png"
 		      xhtml_alt="Edit"
 		      xhtml_title="Edit"
-		      text="&#160;Edit"
+		      text="&nbsp;Edit"
 		      enabled="--case when (control.vc_parent as vspx_row_template).te_rowset[1] = '__repl_pub' then 0 else 1 end"
 		      url="--concat('db_repl_sub_edit.vspx?acct=', (control.vc_parent as vspx_row_template).te_rowset[1], '&srv=', (control.vc_parent as vspx_row_template).te_rowset[0], '&sid=', self.sid, '&realm=', self.realm)"/>
                 </td>

@@ -164,7 +164,7 @@ if (not e.ve_is_post and control.te_rowset[0] = self.edit_item)
 				  ?>
 			      </td>
 			      <td>
-				  &#160;
+				  &nbsp;
 				  <v:url name="ur2" value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
 				      format="%s"
 				      url="--sprintf (

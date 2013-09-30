@@ -117,7 +117,7 @@
 		      url=""
 		      xhtml_alt="New"
 		      xhtml_title="New"
-		      text="&#160;New Web Service Endpoint"
+		      text="&nbsp;New Web Service Endpoint"
 		      >
 		     <v:after-data-bind><![CDATA[
 		      declare xt, xp1 any;
@@ -235,7 +235,7 @@
 		      url="soap_services_edit.vspx"
 		      xhtml_alt="Edit"
 		      xhtml_title="Edit"
-		      text="&#160;Edit"
+		      text="&nbsp;Edit"
 		      >
 		    <v:after-data-bind><![CDATA[
 		      declare xt, pxt, tp any;
@@ -264,7 +264,7 @@
 		      url="soap_del_path.vspx"
 		      xhtml_alt="Delete"
 		      xhtml_title="Delete"
-		      text="&#160;Delete"
+		      text="&nbsp;Delete"
 		      >
 		    <v:after-data-bind><![CDATA[
 		      declare xt, pxt, tp any;

@@ -173,12 +173,12 @@
                                                </td>
                                                <td  class="listing_col_action">
                                                <?vsp
-					       http (sprintf ('<a class="" href="%s?mode=query&edit=%U&sid=%s&realm=%s"><img src="images/icons/edit_16.png" border="0" />&#160;Edit</a>', self.pg, RES_FULL_PATH, self.sid ,self.realm));
+					       http (sprintf ('<a class="" href="%s?mode=query&edit=%U&sid=%s&realm=%s"><img src="images/icons/edit_16.png" border="0" />&nbsp;Edit</a>', self.pg, RES_FULL_PATH, self.sid ,self.realm));
 					       ?>
 
 					       <?vsp
 					         if (self.pg = 'xquery3.vspx') {
-						 http (sprintf ('<a class="" href="xquery_templates.vspx?delete=%U&sid=%s&realm=%s"><img src="images/icons/trash_16.png" border="0" />&#160;Delete</a>', RES_FULL_PATH, self.sid ,self.realm ));
+						 http (sprintf ('<a class="" href="xquery_templates.vspx?delete=%U&sid=%s&realm=%s"><img src="images/icons/trash_16.png" border="0" />&nbsp;Delete</a>', RES_FULL_PATH, self.sid ,self.realm ));
 						 }
                                                ?>
                                              </td>

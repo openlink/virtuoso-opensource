@@ -187,7 +187,7 @@
                 </td>
                 <td class="listing_col_action">
                         <v:button action="simple" style="image" name="url1"
-                         text="&#160;Edit"
+                         text="&nbsp;Edit"
 			 value="images/icons/edit_16.png"
                          url="--concat ('sys_queues_edit.vspx?mode=edit&name=', encode_base64 (serialize ((control.vc_parent as vspx_row_template).te_rowset[0])))"
 			 xhtml_alt="Edit"
@@ -197,7 +197,7 @@
 			       url="--concat('sys_queues_remove.vspx?name=', encode_base64 (serialize ((control.vc_parent as vspx_row_template).te_rowset[0])))"
 			       xhtml_alt="Delete"
 			       xhtml_title="Delete"
-			       text="&#160;Delete"
+			       text="&nbsp;Delete"
                                />
                 </td>
 <?vsp

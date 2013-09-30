@@ -163,7 +163,7 @@
             		      style="image"
             		      xhtml_alt="Drop Selected"
 			      xhtml_title="Drop Selected"
-			      text="&#160;Drop Selected"
+			      text="&nbsp;Drop Selected"
             		      value="images/icons/del_16.png">
             		      <v:on-post>
             			      self.drop_sel (self."ds_foreign_keys", 'foreign_key', e);
@@ -236,7 +236,7 @@
             		      style="image"
             		      xhtml_alt="Drop Selected"
             		      xhtml_title="Drop Selected"
-			      text="&#160;Drop Selected"
+			      text="&nbsp;Drop Selected"
             		      value="images/icons/del_16.png">
             		      <v:on-post>
             			      self.drop_sel (self."ds_check", 'check', e);

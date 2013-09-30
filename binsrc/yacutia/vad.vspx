@@ -191,7 +191,7 @@
 		      url="--concat('vad_remove.vspx?name=', encode_base64 (serialize (concat((control.vc_parent as vspx_row_template).te_rowset[0], '/', (control.vc_parent as vspx_row_template).te_rowset[2]))))"
 		      xhtml_alt="Uninstall"
 		      xhtml_title="Uninstall"
-		      text="&#160;Uninstall"
+		      text="&nbsp;Uninstall"
 		      >
                       <v:before-render>
                         <![CDATA[
@@ -209,7 +209,7 @@
 		      value="images/icons/confg_16.png"
 		      xhtml_alt="Configure"
 		      xhtml_title="Configure"
-		      text="&#160;Configure"
+		      text="&nbsp;Configure"
 		      >
                       <!--v:on-init>
                         <![CDATA[
@@ -238,7 +238,7 @@
 		      value="images/icons/add_16.png"
 		      xhtml_alt="Install"
 		      xhtml_title="Install"
-		      text="&#160;Install"
+		      text="&nbsp;Install"
 		      url="--sprintf ('vad_install.vspx?path=%U&mode=%d',
 			  self.src_folder || (control.vc_parent as vspx_row_template).te_rowset[7],
 			  self.src_folder_type)"
@@ -254,7 +254,7 @@
 		      value="images/icons/edit_16.png"
 		      xhtml_alt="Upgrade"
 		      xhtml_title="Upgrade"
-		      text="&#160;Upgrade"
+		      text="&nbsp;Upgrade"
 		      url="--sprintf ('vad_install.vspx?path=%U&mode=%d',
 			  self.src_folder || (control.vc_parent as vspx_row_template).te_rowset[7],
 			  self.src_folder_type)"
@@ -273,7 +273,7 @@
 		      value="images/icons/edit_16.png"
 		      xhtml_alt="Re-install"
 		      xhtml_title="Re-install"
-		      text="&#160;Re-install"
+		      text="&nbsp;Re-install"
 		      url="--sprintf ('vad_install.vspx?path=%U&mode=%d',
 			  self.src_folder || (control.vc_parent as vspx_row_template).te_rowset[7],
 			  self.src_folder_type)"

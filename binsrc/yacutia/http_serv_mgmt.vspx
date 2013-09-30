@@ -190,7 +190,7 @@
 		      url=""
 		      xhtml_alt="New"
 		      xhtml_title="New"
-		      text="&#160;New Directory"
+		      text="&nbsp;New Directory"
 		      >
 		     <v:after-data-bind><![CDATA[
 		      declare xt, xp1 any;
@@ -404,7 +404,7 @@
 		      value="images/icons/edit_16.png"
 		      xhtml_alt="Edit"
 		      xhtml_title="Edit"
-		      text="&#160;Edit"
+		      text="&nbsp;Edit"
 		      >
 		    <v:after-data-bind><![CDATA[
 		      declare xt, pxt, tp any;
@@ -437,7 +437,7 @@
 		      value="images/icons/trash_16.png"
 		      xhtml_alt="Delete"
 		      xhtml_title="Delete"
-		      text="&#160;Delete"
+		      text="&nbsp;Delete"
 		      >
 		    <v:after-data-bind><![CDATA[
 		      declare xt, pxt, tp any;
@@ -461,7 +461,7 @@
 		      value="images/icons/add_script_16.png"
 		      xhtml_alt="URL-rewrite"
 		      xhtml_title="URL-rewrite"
-		      text="&#160;URL-rewrite"
+		      text="&nbsp;URL-rewrite"
 		      >
 		    <v:after-data-bind><![CDATA[
 		      declare xt, pxt, tp, urw any;
@@ -497,7 +497,7 @@
 		      value="images/icons/go_16.png"
 		      xhtml_alt="Export"
 		      xhtml_title="Export"
-		      text="&#160;Export"
+		      text="&nbsp;Export"
 		      >
 		    <v:after-data-bind><![CDATA[
 		      declare xt, pxt, tp, urw any;
