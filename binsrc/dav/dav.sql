@@ -2126,9 +2126,9 @@ create procedure WS.WS.GET (in path any, inout params any, in lines any)
   declare _cont_len integer;
   declare full_path varchar;
   declare parent_path varchar;
-  declare cont_type varchar;
+  declare cont_type, perms varchar;
   declare server_etag, client_etag, rdf_graph varchar;
-  declare uid, maxres integer;
+  declare uid, gid, maxres integer;
   declare p_comm, stat, msg, xpr, sxtag, rxtag, resource_content, str varchar;
   declare resource_owner, exec_safety_level integer;
   declare _res_id , _col_id, is_admin_owned_res integer;
@@ -2153,6 +2153,31 @@ again:
 
   if (_res_id is null and _col_id is null)
   {
+    declare meta_path varchar;
+    declare meta_id any;
+    declare content, type any;
+
+    meta_path := DAV_CONCAT_PATH ('/', full_path);
+    if (meta_path like '%,meta')
+    {
+      meta_path := subseq (meta_path, 0, length (meta_path) - length (',meta'));
+      meta_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (meta_path, 'R'));
+      if (meta_id is null)
+        goto _404;
+
+      rc := DAV_AUTHENTICATE_HTTP (meta_id, 'R', '1__', 1, lines, uname, upwd, uid, gid, perms);
+      if ((rc < 0) and (rc <> -1))
+        goto _403;
+
+      rc := DAV_RES_CONTENT_META (meta_path, content, type, 0, 0);
+      if (DAV_HIDE_ERROR (rc) is null)
+        goto _500;
+
+      http_request_status ('HTTP/1.1 200 OK');
+      http (content);
+    }
+    else
+    {
     declare procname varchar;
     -- dbg_obj_princ ('full_path=', full_path);
     procname := sprintf ('%s.%s.%s',
@@ -2168,17 +2193,22 @@ again:
      __pop_user_id ();
      return;
    }
+    _404:
    http_request_status ('HTTP/1.1 404 Not Found');
-   http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
-     '<HTML><HEAD>',
-     '<TITLE>404 Not Found</TITLE>',
-     '</HEAD><BODY>', '<H1>Not Found</H1>',
-     'Resource ', sprintf ('%V', http_path ()), ' not found.</BODY></HTML>'));
+      http (
+        '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">' ||
+        '<HTML><HEAD>' ||
+        '<TITLE>404 Not Found</TITLE>' ||
+        '</HEAD><BODY>' ||
+        '<H1>Not Found</H1>' ||
+        sprintf ('Resource %V not found.', http_path ()) ||
+        '</BODY></HTML>'
+      );
+    }
     return;
   }
   if (_col_id is not null)
   {
-    declare fpath any;
     if (http_path () not like '%/') -- This is for default pages that refer to css in same directory and the like.
     {
       declare url_pars varchar;
@@ -2208,8 +2238,8 @@ again:
            --and WS.WS.IS_ACTIVE_CONTENT (http_path ())
      ))
   {
-    declare tgt_type, tgt_perms, perms varchar;
-    declare tgt_id, gid integer;
+    declare tgt_type, tgt_perms varchar;
+    declare tgt_id integer;
     -- dbg_obj_princ ('this is not executable');
     uname := null;
     upwd := null;
@@ -2235,6 +2265,7 @@ again:
       if (-24 = rc)
         return 0;
 
+    _403:
       http_rewrite (0);
       http_request_status ('HTTP/1.1 403 Prohibited');
       http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
@@ -2496,6 +2527,7 @@ again:
     -- dbg_obj_princ ('DAV_RES_CONTENT_INT (', _res_id, ', [content], ', cont_type, 1, 0, ' returns ', rc);
     if (DAV_HIDE_ERROR (rc) is null)
     {
+    _500:;
       http_rewrite (0);
       http_request_status ('HTTP/1.1 500 Internal server error');
       http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
@@ -2596,18 +2628,22 @@ again:
       {
         if (cont_type <> 'xml/view' and cont_type <> 'xml/persistent-view')
         {
-          declare hdr_str any;
+          declare hdr_str, hdr_path, hdr_uri any;
+
           hdr_str := http_header_get ();
           hdr_str := hdr_str || 'ETag: "' || server_etag || '"\r\n';
           if (strcasestr (hdr_str, 'Content-Type:') is null)
             hdr_str := hdr_str || 'Content-Type: ' || cont_type || '\r\n';
 
-          if (isinteger (_res_id) and
-              exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_NAME = 'virt:aci_meta_n3' and PROP_TYPE = 'R' and PROP_PARENT_ID = _res_id))
+          hdr_path := DAV_CONCAT_PATH ('/', full_path);
+          if (hdr_path not like '%,meta')
           {
-            hdr_str := hdr_str || sprintf ('Link: <%s://%s%s,acl>; rel="http://www.w3.org/ns/auth/acl#"; title="Access Control File"\r\n',
-            case when is_https_ctx () then 'https' else 'http' end,
-            http_request_header (lines, 'Host', NULL, NULL), http_path ());
+            hdr_uri := sprintf ('%s://%s%s', case when is_https_ctx () then 'https' else 'http' end, http_request_header (lines, 'Host', NULL, NULL), hdr_path);
+          }
+          hdr_str := hdr_str || sprintf ('Link: <%s,meta>; rel="meta"; title="Metadata File"\r\n', hdr_uri);
+          if (DAV_HIDE_ERROR (DAV_SEARCH_ID (hdr_path || ',acl', 'R')) is not null)
+          {
+            hdr_str := hdr_str || sprintf ('Link: <%s,acl>; rel="http://www.w3.org/ns/auth/acl#accessControl"; title="Access Control File"\r\n', hdr_uri);
           }
           rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = _col and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-graph');
           if (rdf_graph is not null)
@@ -5211,8 +5247,7 @@ create function WS.WS.DAV_DIR_LIST (in full_path varchar, in logical_root_path v
     _col := _dir [_dir_ctr];
     if (_col [1] = 'C')
     {
-      _name := _col[0];
-      _name := subseq (_name, 0, length (_name)-1);
+      _name := rtrim (_col[0], '/');
       _name := subseq (_name, strrchr (_name, '/') + 1);
       if (_user_id <> coalesce (_col[7], -1))
       {
@@ -5225,7 +5260,7 @@ create function WS.WS.DAV_DIR_LIST (in full_path varchar, in logical_root_path v
         _group_name := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _group_id), '');
       }
 	    http (sprintf ('<SUBDIR modify="%s" owner="%s" group="%s" permissions="%s" name="', left (cast (_col[3] as varchar), 19), _user_name, _group_name, DB.DBA.DAV_PERM_D2U (_col[5]), _col[9]), _xml );
-	    http_value (charset_recode (_name, null, 'UTF-8'), null, _xml );
+	    http_value (_name, null, _xml );
 	    http ('" />\n', _xml );
 	  }
     _dir_ctr := _dir_ctr + 1;
@@ -5267,8 +5302,8 @@ create function WS.WS.DAV_DIR_LIST (in full_path varchar, in logical_root_path v
         _group_name := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _group_id), '');
       }
       http (sprintf ('<FILE modify="%s" owner="%s" group="%s" permissions="%s" mimeType="%s" rs="%i" lenght="%d" hs="%d %s" name="', left (cast (_res[3] as varchar), 19), _user_name, _group_name, DB.DBA.DAV_PERM_D2U (_res[5]), _res[9], _res_len, _res[2], flen, aref (fsize, mult)), _xml);
-      http_value (charset_recode (_name, null, 'UTF-8'), null, _xml );
-      http ('" />\n', _xml);
+	    http_value (_name, null, _xml );
+	    http ('" />\n', _xml );
 	  }
     _dir_ctr := _dir_ctr + 1;
   }
@@ -5294,6 +5329,7 @@ create function WS.WS.DAV_DIR_LIST (in full_path varchar, in logical_root_path v
     }
   _exit:;
   }
+	http_header ('Content-type: text/html; charset="UTF-8"\r\n');
   if (not isnull (xslt_file))
   {
     select blob_to_string (RES_CONTENT) into _xml_sheet from WS.WS.SYS_DAV_RES where RES_FULL_PATH = xslt_file;

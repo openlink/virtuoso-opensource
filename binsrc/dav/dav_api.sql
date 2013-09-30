@@ -2393,41 +2393,45 @@ create procedure DB.DBA.IS_REDIRECT_REF (inout path any)
 
 
 --!AWK PUBLIC
-create procedure
-DAV_RES_UPLOAD (
+create procedure DAV_RES_UPLOAD (
     in path varchar,
     in content any,
     in type varchar := '',
     in permissions varchar := '110100000RR',
     in uid varchar := 'dav',
     in gid varchar := 'administrators',
-    in auth_uid varchar := null, in auth_pwd varchar := null, in check_locks any := 1)
+  in auth_uid varchar := null,
+  in auth_pwd varchar := null,
+  in check_locks any := 1)
 {
   if (not (isstring (check_locks)))
     check_locks := 1;
-  return (DAV_RES_UPLOAD_STRSES_INT (path, content, type, permissions, uid, gid, auth_uid, auth_pwd, 1, null, null, null, null, null, check_locks));
+
+  return DAV_RES_UPLOAD_STRSES_INT (path, content, type, permissions, uid, gid, auth_uid, auth_pwd, 1, null, null, null, null, null, check_locks);
 }
 ;
 
 --!AWK PUBLIC
-create procedure
-DAV_RES_UPLOAD_STRSES (
+create procedure DAV_RES_UPLOAD_STRSES (
     in path varchar,
     inout content any,
     in type varchar := '',
     in permissions varchar := '110100000RR',
     in uid varchar := 'dav',
     in gid varchar := 'administrators',
-    in auth_uid varchar := null, in auth_pwd varchar := null, in check_locks any := 1)
+  in auth_uid varchar := null,
+  in auth_pwd varchar := null,
+  in check_locks any := 1
+)
 {
   if (not (isstring (check_locks)))
     check_locks := 1;
-  return (DAV_RES_UPLOAD_STRSES_INT (path, content, type, permissions, uid, gid, auth_uid, auth_pwd, 1, null, null, null, null, null, check_locks));
+
+  return DAV_RES_UPLOAD_STRSES_INT (path, content, type, permissions, uid, gid, auth_uid, auth_pwd, 1, null, null, null, null, null, check_locks);
 }
 ;
 
-create procedure
-DAV_RES_UPLOAD_STRSES_INT (
+create procedure DAV_RES_UPLOAD_STRSES_INT (
     in path varchar,
     inout content any,
     in type varchar := '',
@@ -2456,8 +2460,7 @@ DAV_RES_UPLOAD_STRSES_INT (
 }
 ;
 
-create procedure
-DAV_RES_UPLOAD_STRSES_INT_INNER (
+create procedure DAV_RES_UPLOAD_STRSES_INT_INNER (
     in path varchar,
     inout content any,
     in type varchar := '',
@@ -2475,6 +2478,7 @@ DAV_RES_UPLOAD_STRSES_INT_INNER (
     in check_locks any := 1 -- must be here to match arg order for DAV replication.
     )
 {
+  -- dbg_obj_princ ('DAV_RES_UPLOAD_STRSES_INT_INNER (', path, content, type, permissions, uid, gid, auth_uname, auth_pwd, extern, cr_time, mod_time, _rowguid, ouid, ogid, check_locks, ')');
   declare auth_uid, pid, puid, pgid, rc, id integer;
   declare pperms, name varchar;
   declare par any;
@@ -2485,31 +2489,31 @@ DAV_RES_UPLOAD_STRSES_INT_INNER (
   declare res_cr cursor for select RES_ID+1 from WS.WS.SYS_DAV_RES where RES_ID = id for update;
   declare auto_version varchar;
   declare locked int;
---  declare col_cr cursor for select COL_ID+1 from WS.WS.SYS_DAV_COL where COL_ID = pid;
-  -- dbg_obj_princ ('DAV_RES_UPLOAD_STRSES_INT (', path, content, type, permissions, uid, gid, auth_uname, auth_pwd, extern, cr_time, mod_time, _rowguid, ouid, ogid, check_locks, ')');
+
   if (IS_REDIRECT_REF (path)) -- This is called mostly for side effect on path.
     {
-      -- dbg_obj_princ ('DAV_RES_UPLOAD_STRSES_INT redirects to ', path);
       ; -- do nothing.
+    }
+  if (path like '%,meta')
+    {
+      return -1;
+    }
+  if ((connection_get ('dav_acl_sync') <> 1) and (path like '%,acl'))
+    {
+      return -1;
+    }
+  par := split_and_decode (path, 0, '\0\0/');
+  if (aref (par, 0) <> '' or aref (par, length (par) - 1) = '')
+    {
+      return -1;
     }
   locked := 0;
   op := 'i';
   rc := 0;
-  par := split_and_decode (path, 0, '\0\0/');
-  -- dbg_obj_princ ('split gives ', par);
-  if (aref (par, 0) <> '' or aref (par, length (par) - 1) = '')
-    {
-      -- dbg_obj_princ ('bad par, DAV_RES_UPLOAD_STRSES_INT returns -1');
-      return -1;
-    }
   if (ouid is null)
+    {
     DAV_OWNER_ID (uid, gid, ouid, ogid);
-  -- dbg_obj_princ ('DAV_OWNER_ID fills in ', ouid, ogid);
-  --if (ouid < 0 or ogid < 0)
-  --  {
-  --    signal ('.....', sprintf ('DAV_RES_UPLOAD_STRSES_INT has ouid=%d ogid=%d', ouid, ogid));
-  --    return -100;
-  --  }
+    }
   id := DAV_SEARCH_ID (path, 'R');
   -- dbg_obj_princ ('existing id is ', id);
   if (isarray (id))
@@ -2522,7 +2526,9 @@ DAV_RES_UPLOAD_STRSES_INT_INNER (
             return auth_uid;
         }
       else
+        {
         auth_uid := ouid;
+        }
       if (check_locks)
         {
           rc := DAV_IS_LOCKED (id , 'R', check_locks);
@@ -4769,32 +4775,45 @@ create procedure DAV_CHECK_USER (in uname varchar, in pwd any := null)
 
 
 --!AWK PUBLIC
-create procedure
-DAV_RES_CONTENT (
+create procedure DAV_RES_CONTENT (
     in path varchar,
     inout content any,
     out type varchar,
-    in auth_uname varchar := null, in auth_pwd varchar := null)
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null)
 {
-  return DAV_RES_CONTENT_INT (DAV_SEARCH_ID (path, 'R'), content, type, 0, 1, auth_uname, auth_pwd);
+  declare id any;
+
+  id := DAV_SEARCH_ID (path, 'R');
+  if ((DAV_HIDE_ERROR (id) is null) and (path like '%,meta'))
+  {
+    return DAV_RES_CONTENT_META (path, content, type, 0, 1, auth_uname, auth_pwd);
+  }
+  return DAV_RES_CONTENT_INT (id, content, type, 0, 1, auth_uname, auth_pwd);
 }
 ;
 
 
 --!AWK PUBLIC
-create procedure
-DAV_RES_CONTENT_STRSES (
+create procedure DAV_RES_CONTENT_STRSES (
     in path varchar,
     inout content any,
     out type varchar,
-    in auth_uname varchar := null, in auth_pwd varchar := null)
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null)
 {
-  return DAV_RES_CONTENT_INT (DAV_SEARCH_ID (path, 'R'), content, type, 1, 1, auth_uname, auth_pwd);
+  declare id any;
+
+  id := DAV_SEARCH_ID (path, 'R');
+  if ((DAV_HIDE_ERROR (id) is null) and (path like '%,meta'))
+  {
+    return DAV_RES_CONTENT_META (path, content, type, 1, 1, auth_uname, auth_pwd);
+  }
+  return DAV_RES_CONTENT_INT (id, content, type, 1, 1, auth_uname, auth_pwd);
 }
 ;
 
-create procedure
-DAV_RES_CONTENT_INT (
+create procedure DAV_RES_CONTENT_INT (
     in id any,
     inout content any,
     out type varchar,
@@ -4841,6 +4860,106 @@ DAV_RES_CONTENT_INT (
     http (cont);
   }
   return rc;
+}
+;
+
+create procedure DAV_RES_CONTENT_META (
+  in path varchar,
+  inout content any,
+  out type varchar,
+  in content_mode integer,
+  in extern integer := 1,
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null )
+{
+  -- dbg_obj_princ ('DAV_RES_CONTENT_META (', path, ', [content], [type], ', content_mode, extern, auth_uname, auth_pwd, ')');
+  declare rc, auth_uid integer;
+  declare id, cont any;
+
+  if (path like '%,meta')
+    path := subseq (path, 0, length (path) - length (',meta'));
+
+  id := DAV_SEARCH_ID (path, 'R');
+  if (DAV_HIDE_ERROR (id) is null)
+    return id;
+
+  if (extern)
+  {
+    auth_uid := DAV_AUTHENTICATE (id, 'R', '1__', auth_uname, auth_pwd);
+    if (auth_uid < 0)
+      return auth_uid;
+  }
+  else
+  {
+    auth_uid := null;
+  }
+
+  rc := id;
+  cont := DAV_RES_CONTENT_META_N3 (path);
+  if (DAV_HIDE_ERROR (cont) is null)
+    return cont;
+
+  if ((content_mode = 0) or (content_mode = 2))
+  {
+    content := cont;
+  }
+  else if (content_mode = 1)
+  {
+    if (cont is not null)
+      http (cont, content);
+  }
+  else if (content_mode = 3)
+  {
+    http (cont);
+  }
+  return rc;
+}
+;
+
+create procedure DAV_RES_CONTENT_META_N3 (
+  in path varchar)
+{
+  declare item any;
+  declare iri, creator_iri varchar;
+  declare stream, dict, triples any;
+
+  if (__proc_exists ('SIOC.DBA.get_graph') is null)
+    return -1;
+
+  dict := dict_new();
+  item := DAV_DIR_LIST_INT (path, -1, '%', null, null, http_dav_uid ());
+  if (DAV_HIDE_ERROR (item) is null)
+    return -1;
+
+  item := item[0];
+  iri := iri_to_id (WS.WS.DAV_HOST () || path);
+
+  -- creator
+  creator_iri := SIOC..user_iri (item[7]);
+	dict_put (dict, vector (iri, iri_to_id (SIOC..sioc_iri ('has_creator')), iri_to_id (creator_iri)), 0);
+	dict_put (dict, vector (iri_to_id (creator_iri), iri_to_id (SIOC..sioc_iri ('creator_of')), iri), 0);
+  dict_put (dict, vector (iri, SIOC..foaf_iri ('maker'), SIOC..person_iri (creator_iri)), 0);
+  dict_put (dict, vector (iri_to_id (SIOC..person_iri (creator_iri)), SIOC..foaf_iri ('made'), iri), 0);
+
+  -- name
+  dict_put (dict, vector (iri, iri_to_id (SIOC..dc_iri ('title')), item[10]), 0);
+  dict_put (dict, vector (iri, iri_to_id (SIOC..rdfs_iri ('label')), item[10]), 0);
+
+  -- created
+  dict_put (dict, vector (iri, iri_to_id (SIOC..dcterms_iri ('created')), item[8]), 0);
+
+  -- modified
+  dict_put (dict, vector (iri, iri_to_id (SIOC..dcterms_iri ('modified')), item[3]), 0);
+
+  -- content type
+  dict_put (dict, vector (iri, iri_to_id (SIOC..dc_iri ('format')), item[9]), 0);
+
+  stream := string_output ();
+ 	triples := dict_list_keys (dict, 0);
+  if (length (triples))
+	  DB.DBA.RDF_TRIPLES_TO_NICE_TTL (triples, stream);
+
+  return string_output_string (stream);
 }
 ;
 
@@ -7058,11 +7177,11 @@ create procedure DAV_EXTRACT_AND_SAVE_RDF_INT (inout resid integer, inout resnam
 -- /* extracting metadata */
 create procedure DAV_EXTRACT_AND_SAVE_RDF_INT2 (in resid integer, in resname varchar, in restype varchar, in rescontent any)
 {
+  -- dbg_obj_princ ('DAV_EXTRACT_AND_SAVE_RDF_INT (', resid, resname, restype, rescontent, ')');
   declare resttype, res_type_uri, full_name varchar;
   declare old_prop_id integer;
   declare html_start, full_xml, type_tree any;
   declare old_n3, addon_n3, spotlight_addon_n3 any;
-  -- dbg_obj_princ ('DAV_EXTRACT_AND_SAVE_RDF_INT (', resid, resname, restype, rescontent, ')');
   html_start := null;
   full_xml := null;
   spotlight_addon_n3 := null;
@@ -7107,7 +7226,7 @@ addon_n3_set: ;
   from WS.WS.SYS_DAV_PROP
   where PROP_NAME = 'http://local.virt/DAV-RDF' and PROP_TYPE = 'R' and PROP_PARENT_ID = resid;
   old_n3 := xslt ('http://local.virt/davxml2n3xml', old_n3);
-  -- dbg_obj_princ ('old_n3 is', old_n3);
+  --dbg_obj_princ ('old_n3 is', old_n3);
   if (addon_n3 is not null)
     old_n3 := DAV_RDF_MERGE (old_n3, addon_n3, null, 0);
   if (spotlight_addon_n3 is not null)
