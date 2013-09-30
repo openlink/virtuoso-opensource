@@ -1929,10 +1929,23 @@ _exit:;
 
 -------------------------------------------------------------------------------
 --
+create procedure WEBDAV.DBA.dav_lpath (in path any)
+{
+  declare pref, ppref, lpath any;
+  pref := http_map_get ('domain') || '/';
+  ppref := http_map_get ('mounted');
+  lpath := subseq (path, length (ppref));
+  lpath := pref || lpath;
+  return lpath;
+}
+;
+
 create procedure WEBDAV.DBA.dav_url (
   in path varchar)
 {
-  return WEBDAV.DBA.host_url() || WEBDAV.DBA.path_escape (path);;
+  declare lpath any;
+  lpath := WEBDAV.DBA.dav_lpath (path);
+  return WEBDAV.DBA.host_url() || WEBDAV.DBA.path_escape (lpath);
 }
 ;
 
