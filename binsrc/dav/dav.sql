@@ -2581,7 +2581,7 @@ again:
     _server_etag := server_etag;
     server_etag := concat ('"', server_etag, '"');
 
-    if ((client_etag <> server_etag) or (1 = 0))
+    if (client_etag <> server_etag)
     {
       http_request_status ('HTTP/1.1 200 OK');
       xpr := get_keyword ('XPATH', params, '/*');
@@ -2949,6 +2949,8 @@ create procedure WS.WS.GET_EXT_LDP(in lines any, in client_etag varchar, in full
 				file_size := res_size;
 				select U_NAME into uname from WS.WS.SYS_DAV_USER where U_ID = resource_owner;
 			}
+			if (accept = cont_type) -- the content is already turtle so exit
+			  return 0;
 			declare s_etag, _s_etag varchar;
 			s_etag := WS.WS.ETAG (_name, _col, mod_time);
 			_s_etag := s_etag;
