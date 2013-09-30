@@ -219,7 +219,7 @@ TBL.createCell51 = function (td, prefix, fldName, No, fldOptions) {
   var srcFld = $(fld.name.replace('fld_2', 'fld_1'));
 
   td.appendChild(OAT.Dom.text(' '));
-  var img = OAT.Dom.image('dav/image/select.gif');
+  var img = OAT.Dom.image(WEBDAV.Preferences.imagePath + 'select.gif');
   img.id = fldName+'_img';
   img.className = "pointer";
   img.onclick = function (){TBL.webidShow(fld, fldOptions)};
@@ -282,7 +282,7 @@ TBL.showCell51TblInternal = function (td, fldName, fldOptions, disabled) {
       var td2 = OAT.Dom.create('td');
       td2.style.cssText = 'white-space: nowrap; vertical-align: top;';
       tr.appendChild(td2);
-      S = '<img src="/ods/images/icons/add_16.png" border="0" class="button pointer" onclick="javascript: TBL.createRow(\'-TBL-\', null, {fld_1: {mode: 55, tdCssText: \'width: 33%; vertical-align: top;\', className: \'_validate_\'}, fld_2: {mode: 56, tdCssText: \'width: 33%; vertical-align: top;\', cssText: \'display: none;\', className: \'_validate_\'}, fld_3: {mode: 57, tdCssText: \'width: 33%; vertical-align: top;\', cssText: \'display: none;\', className: \'_validate_\'}, btn_1: {mode: 55}});" alt="Add Condition" title="Add Condition" />';
+      S = '<img src="'+WEBDAV.Preferences.imagePath+'add_16.png" border="0" class="button pointer" onclick="javascript: TBL.createRow(\'-TBL-\', null, {fld_1: {mode: 55, tdCssText: \'width: 33%; vertical-align: top;\', className: \'_validate_\'}, fld_2: {mode: 56, tdCssText: \'width: 33%; vertical-align: top;\', cssText: \'display: none;\', className: \'_validate_\'}, fld_3: {mode: 57, tdCssText: \'width: 33%; vertical-align: top;\', cssText: \'display: none;\', className: \'_validate_\'}, btn_1: {mode: 55}});" alt="Add Condition" title="Add Condition" />';
       td2.innerHTML = S.replace(/-TBL-/g, fldName);
     }
     if (fldOptions && fldOptions.value) {

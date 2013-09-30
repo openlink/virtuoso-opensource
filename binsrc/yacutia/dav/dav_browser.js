@@ -410,6 +410,10 @@ showRow = (navigator.appName.indexOf("Internet Explorer") != -1) ? "block" : "ta
 
 var WEBDAV = new Object();
 
+WEBDAV.Preferences = {
+  imagePath: "dav/image/"
+}
+
 WEBDAV.toggleDavRows = function ()
 {
   function showTableRow(cell)
