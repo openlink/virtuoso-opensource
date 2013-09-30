@@ -2220,7 +2220,7 @@
                                     '"';
                                   cbClass :=
                                     'class="' ||
-                                    case when self.dav_enable and not self.editField ('permissions') then 'disabled' else '' end ||
+                                    case when (self.dav_enable and not self.editField ('permissions')) or ((mod (i+1, 3) = 0) and not WEBDAV.DBA.check_admin (self.account_id)) then 'disabled' else '' end ||
                                     '"';
                                   http (sprintf ('<td %s><input type="checkbox" name="dav_perm%i" %s %s disabled="disabled" /></td>', tdClass, i, cbClass, checked));
                                 }
@@ -2899,15 +2899,23 @@
                         goto _test_9;
 
                       dav_perms := '';
+                      tmp := WEBDAV.DBA.DAV_GET (self.dav_item, 'permissions');
                       for (N := 0; N < 9; N := N + 1)
                       {
+                        if ((mod (N+1, 3) = 0) and not WEBDAV.DBA.check_admin (self.account_id))
+                        {
+                          dav_perms := dav_perms || chr (tmp[N]);
+                        }
+                        else
+                      {
                         dav_perms := dav_perms || case when get_keyword (sprintf ('dav_perm%i', N), params, '') = '' then '0' else '1' end;
+                      }
                       }
                       if (dav_perms = '000000000')
                       {
                         declare own_id integer;
 
-                        own_id := coalesce(dav_owner, (select min(U_ID) from WS.WS.SYS_DAV_USER));
+                        own_id := coalesce (dav_owner, (select min(U_ID) from WS.WS.SYS_DAV_USER));
                         dav_perms := (select U_DEF_PERMS from WS.WS.SYS_DAV_USER where U_ID = own_id);
                       }
                       dav_perms := concat (dav_perms, get_keyword ('dav_index', params, 'N'), get_keyword ('dav_metagrab', params, 'N'));
@@ -3710,11 +3718,12 @@
                             <td>Add</td>
                             <?vsp
                               declare i integer;
-                              declare S varchar;
+                              declare S, D varchar;
                               for (i := 0; i < 9; i := i + 1)
                               {
                                 S := case when (i = 8) then 'class="right"' else '' end;
-                                http (sprintf ('<td %s><input type="checkbox" name="prop_add_perm%i" onclick="chkbx(this,prop_rem_perm%i);" /></td>', S, i, i));
+                                D := case when (mod (i+1, 3) = 0) and not WEBDAV.DBA.check_admin (self.account_id) then 'disabled="disabled"' else '' end;
+                                http (sprintf ('<td %s><input type="checkbox" name="prop_add_perm%i" onclick="chkbx(this,prop_rem_perm%i);" %s /></td>', S, i, i, D));
                               }
                             ?>
                           </tr>
@@ -3724,7 +3733,8 @@
                               for (i := 0; i < 9; i := i + 1)
                               {
                                 S := case when (i = 8) then 'class="right bottom"' else 'class="bottom"' end;
-                                http (sprintf ('<td %s><input type="checkbox" name="prop_rem_perm%i" onclick="chkbx(this,prop_add_perm%i);" /></td>', S, i, i));
+                                D := case when (mod (i+1, 3) = 0) and not WEBDAV.DBA.check_admin (self.account_id) then 'disabled="disabled"' else '' end;
+                                http (sprintf ('<td %s><input type="checkbox" name="prop_rem_perm%i" onclick="chkbx(this,prop_add_perm%i);" %s /></td>', S, i, i, D));
                               }
                             ?>
                           </tr>
