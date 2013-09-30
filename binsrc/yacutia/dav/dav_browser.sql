@@ -4781,6 +4781,7 @@ create procedure WEBDAV.DBA.aci_load (
         retValue := vector_concat (retValue, vector (V));
     }
   }
+
   return retValue;
 }
 ;
@@ -5030,73 +5031,6 @@ create procedure WEBDAV.DBA.aci_params (
     }
   }
   return retValue;
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure WEBDAV.DBA.aci_validate (
-  in aci any,
-  in silent integer := 0)
-{
-  declare N, M integer;
-  declare sqlStatement varchar;
-  declare retValue, criteria, sqlTree any;
-
-  retValue := vector ();
-  for (N := 0; N < length (aci); N := N + 1)
-  {
-    if (aci[N][2] = 'advanced')
-    {
-      criteria := aci[N][1];
-      for (M := 0; M < length (criteria); M := M + 1)
-      {
-        if (criteria[M][1] = 'certSparqlASK')
-        {
-          declare exit handler for sqlstate '*' {
-            if (not silent)
-              signal('TEST', WA_CLEAR ('Bad criteria: ' || __SQL_MESSAGE));
-
-            return 0;
-          };
-
-          sqlStatement := criteria[M][4];
-          sqlStatement := regexp_replace (sqlStatement, '\\^\\{([a-zA-Z0-9])+\\}\\^', '??');
-          sqlTree := sql_parse ('sparql ' || sqlStatement);
-        }
-        else if (criteria[M][1] = 'certSparqlTriplet')
-        {
-          declare command, commands any;
-          declare exit handler for sqlstate '*' {
-            if (not silent)
-              signal('TEST', WA_CLEAR ('Bad criteria: ' || __SQL_MESSAGE));
-
-            return 0;
-          };
-
-          commands := ODS.ODS_API.commands ();
-          command := get_keyword (criteria[M][2], commands);
-          command := replace (command, ' <> ', ' != ');
-          command := replace (command, '^{value}^', 'str (?v)');
-          sqlStatement := sprintf (
-            'prefix sioc: <http://rdfs.org/sioc/ns#> \n' ||
-            'prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n' ||
-            'prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
-            'ASK \n' ||
-            'WHERE \n' ||
-            '  { \n' ||
-            '    <urn:demo> %s ?v. \n' ||
-            '    FILTER (%s). \n' ||
-            '  }',
-            criteria[M][4],
-            command);
-          sqlStatement := regexp_replace (sqlStatement, '\\^\\{([a-zA-Z0-9])+\\}\\^', '??');
-          sqlTree := sql_parse ('sparql ' || sqlStatement);
-        }
-      }
-    }
-  }
-  return 1;
 }
 ;
 

@@ -2941,7 +2941,7 @@
 
                         -- ACI (Web Access)
                       dav_aci := WEBDAV.DBA.aci_params (params);
-                      WEBDAV.DBA.aci_validate (dav_aci);
+                      DB.DBA.ACL_VALIDATE (dav_aci);
 
                     _test_13:;
 
@@ -3894,7 +3894,7 @@
                       return;
                     }
                     -- validate ACL rules
-                    WEBDAV.DBA.aci_validate (WEBDAV.DBA.aci_params (params));
+                    DB.DBA.ACL_VALIDATE (WEBDAV.DBA.aci_params (params));
 
                     one := ascii('1');
                     zero := ascii('0');
