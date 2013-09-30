@@ -689,8 +689,11 @@ if (_subject <> '') {
 <?vsp } ?>
       <div id="ft_t">
         Alternative Linked Data Views:
-	<?vsp if (VAD_CHECK_VERSION ('PivotViewer') is not null) { ?>
-	<a href="/PivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>" title="PivotViewer page for exploring results and generating new queries" target="_blank">PivotViewer</a>
+	<?vsp if (VAD_CHECK_VERSION ('html5pivotviewer') is not null) { ?>	
+	<a href="/HtmlPivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>" title="PivotViewer page for exploring results and generating new queries (HTML5)" target="_blank">PivotViewer</a> 
+	|
+	<?vsp } else if (VAD_CHECK_VERSION ('PivotViewer') is not null) { ?>	
+	<a href="/PivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>" title="PivotViewer page for exploring results and generating new queries (Silverlight)" target="_blank">PivotViewer</a> 
 	|
 	<?vsp } ?>
 	<?vsp if (VAD_CHECK_VERSION ('rdf_mappers') is not null) { ?>

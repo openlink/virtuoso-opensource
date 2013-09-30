@@ -389,10 +389,13 @@
         <?vsp if (squery <> '' and squery is not null) { ?>
          Alternative Linked Data Views:
 
-	       <?vsp if (VAD_CHECK_VERSION ('PivotViewer') is not null) { ?>
-	         <a href="/PivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>" title="PivotViewer page for exploring results and generating new queries" target="_blank">PivotViewer</a>
-	       <?vsp } ?>
+		<?vsp if (VAD_CHECK_VERSION ('html5pivotviewer') is not null) { ?>	
+		<a href="/HtmlPivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>" title="PivotViewer page for exploring results and generating new queries (HTML5)" target="_blank">PivotViewer</a> 
+		|
+		<?vsp } else if (VAD_CHECK_VERSION ('PivotViewer') is not null) { ?>	
+		<a href="/PivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>" title="PivotViewer page for exploring results and generating new queries (Silverlight)" target="_blank">PivotViewer</a> 
 	        |
+		<?vsp } ?>
 	       <?vsp if (VAD_CHECK_VERSION ('iSPARQL') is not null) {
 	         squery := ltrim(squery, 'sparql ');
            http (sprintf('&nbsp;<a href="/isparql/view/?query=%U&endpoint=/sparql&maxrows=50&default-graph-uri=&amp;resultview=browser" title="Interactive Query By Example oriented SPARQL UI" target="_blank">iSPARQL</a>',squery));
