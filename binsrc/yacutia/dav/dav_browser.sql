@@ -1944,6 +1944,9 @@ create procedure WEBDAV.DBA.dav_lpath (
   declare pref, ppref, lpath varchar;
 
   ppref := http_map_get ('mounted');
+  if (ppref = '/DAV/VAD/conductor/')
+    return path;
+
   if (path not like ppref || '%')
     return path;
 
