@@ -208,8 +208,6 @@
 
               declare params any;
 
-              self.settings := vector ();
-              WEBDAV.DBA.settings_init (self.settings);
               params := self.vc_page.vc_event.ve_params;
               self.search_dc := null;
               WEBDAV.DBA.dc_set_base (self.search_dc, 'path', get_keyword ('ts_path', params));
@@ -992,16 +990,18 @@
               _params := self.vc_page.vc_event.ve_params;
 
               self.chars := WEBDAV.DBA.settings_chars (self.settings);
-              self.dir_columns := vector ();
-              self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#1', 'c0', 'Name',          1, 0, vector (WEBDAV.DBA.settings_column (self.settings, 1), 1), 'width="50%"')));
-              self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#2',   '', 'Tags',          0, 0, vector (WEBDAV.DBA.settings_column (self.settings, 2), 0), '')));
-              self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#3', 'c2', 'Size',          1, 1, vector (WEBDAV.DBA.settings_column (self.settings, 3), 0), '')));
-              self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#4', 'c3', 'Date Modified', 1, 1, vector (WEBDAV.DBA.settings_column (self.settings, 4), 0), '')));
-              self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#5', 'c4', 'Content Type',  1, 1, vector (WEBDAV.DBA.settings_column (self.settings, 5), 0), '')));
-              self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#6', 'c9', 'Kind',          1, 1, vector (WEBDAV.DBA.settings_column (self.settings, 6), 0), '')));
-              self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#7', 'c5', 'Owner',         1, 1, vector (WEBDAV.DBA.settings_column (self.settings, 7), 0), '')));
-              self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#8', 'c6', 'Group',         1, 1, vector (WEBDAV.DBA.settings_column (self.settings, 8), 0), '')));
-              self.dir_columns := vector_concat(self.dir_columns, vector (vector ('column_#9', 'c7', 'Permissions',   0, 0, vector (WEBDAV.DBA.settings_column (self.settings, 9), 0), '')));
+              self.dir_columns := vector (
+                vector ('column_#1', 'c0', 'Name',          1, 0, vector (WEBDAV.DBA.settings_column (self.settings, 1), 1), 'width="50%"'),
+                vector ('column_#2',   '', 'Tags',          0, 0, vector (WEBDAV.DBA.settings_column (self.settings, 2), 0), ''),
+                vector ('column_#3', 'c2', 'Size',          1, 1, vector (WEBDAV.DBA.settings_column (self.settings, 3), 0), ''),
+                vector ('column_#4', 'c3', 'Date Modified', 1, 1, vector (WEBDAV.DBA.settings_column (self.settings, 4), 0), ''),
+                vector ('column_#5', 'c4', 'Content Type',  1, 1, vector (WEBDAV.DBA.settings_column (self.settings, 5), 0), ''),
+                vector ('column_#6', 'c9', 'Kind',          1, 1, vector (WEBDAV.DBA.settings_column (self.settings, 6), 0), ''),
+                vector ('column_#7', 'c5', 'Owner',         1, 1, vector (WEBDAV.DBA.settings_column (self.settings, 7), 0), ''),
+                vector ('column_#8', 'c6', 'Group',         1, 1, vector (WEBDAV.DBA.settings_column (self.settings, 8), 0), ''),
+                vector ('column_#9', 'c7', 'Permissions',   0, 0, vector (WEBDAV.DBA.settings_column (self.settings, 9), 0), ''),
+                vector ('column_#10','c10','Date Created',  1, 1, vector (WEBDAV.DBA.settings_column (self.settings,10), 0), '')
+              );
 
               self.dir_path := get_keyword ('dir', _params, self.dir_path);
               if (self.dir_path = '__root__')
@@ -4251,7 +4251,7 @@
                     }
                     control.add_parameter (WEBDAV.DBA.settings_hiddens (self.settings));
 
-                    control.ds_sql := 'select rs.* from WEBDAV.DBA.proc (rs0, rs1, rs2, rs3)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ?';
+                    control.ds_sql := 'select rs.* from WEBDAV.DBA.proc (rs0, rs1, rs2, rs3)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar, c10 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ?';
                     control.ds_sql := concat(control.ds_sql, ' order by c1');
 
                     if (self.dir_details = 0)
@@ -4373,6 +4373,7 @@
                                 <vm:if test="self.dir_details = 0">
                                   <?vsp self.showColumnHeader('column_#2'); ?>
                                   <?vsp self.showColumnHeader('column_#3'); ?>
+                                  <?vsp self.showColumnHeader('column_#10'); ?>
                                   <?vsp self.showColumnHeader('column_#4'); ?>
                                   <?vsp self.showColumnHeader('column_#5'); ?>
                                   <?vsp self.showColumnHeader('column_#6'); ?>
@@ -4493,6 +4494,14 @@
                                         ]]>
                                       </v:before-data-bind>
                                     </v:label>
+                                  </td>
+                                </v:template>
+                                <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#10')) then 1 else 0 end;">
+                                  <td nowrap="nowrap">
+                                    <v:label value="--left ((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[10], 10)" format="%s" />
+                                    <font size="1">
+                                      <v:label value="--right ((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[10], 8)" />
+                                    </font>
                                   </td>
                                 </v:template>
                                 <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#4')) then 1 else 0 end;">

@@ -1430,7 +1430,7 @@ create procedure WEBDAV.DBA.proc(
   declare vspx_user, user_name, group_name varchar;
   declare user_id, group_id integer;
   declare c2 any;
-  declare c0, c1, c3, c4, c5, c6, c7, c8, c9 varchar;
+  declare c0, c1, c3, c4, c5, c6, c7, c8, c9, c10 varchar;
   declare exit handler for SQLSTATE '*'
   {
     -- dbg_obj_print ('', __SQL_STATE, __SQL_MESSAGE);
@@ -1438,7 +1438,7 @@ create procedure WEBDAV.DBA.proc(
     return;
   };
 
-  result_names(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9);
+  result_names(c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10);
   if (is_empty_or_null (path))
     return;
 
@@ -2427,6 +2427,7 @@ create procedure WEBDAV.DBA.settings_init (
   WEBDAV.DBA.set_keyword ('column_#7', settings, WEBDAV.DBA.settings_column (settings, 7));
   WEBDAV.DBA.set_keyword ('column_#8', settings, WEBDAV.DBA.settings_column (settings, 8));
   WEBDAV.DBA.set_keyword ('column_#9', settings, WEBDAV.DBA.settings_column (settings, 9));
+  WEBDAV.DBA.set_keyword ('column_#10',settings, WEBDAV.DBA.settings_column (settings,10));
   WEBDAV.DBA.set_keyword ('mailShare', settings, WEBDAV.DBA.settings_mailShare (settings));
   WEBDAV.DBA.set_keyword ('mailUnshare', settings, WEBDAV.DBA.settings_mailUnshare (settings));
 
@@ -2485,7 +2486,7 @@ create procedure WEBDAV.DBA.settings_column (
   inout settings any,
   in N integer)
 {
-  return cast (get_keyword ('column_#' || cast (N as varchar), settings, '1') as integer);
+return cast (get_keyword ('column_#' || cast (N as varchar), settings, case when (N = 10) then '0' else '1' end) as integer);
 }
 ;
 
