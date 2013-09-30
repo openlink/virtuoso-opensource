@@ -1246,7 +1246,6 @@ create procedure WS.WS.PROPPATCH (in path varchar, inout params varchar, in line
 
   xtd := xml_tree_doc (xtree);
 
-
   prop_set := xpath_eval('//set/prop/*',xtd,0);
   l := length (prop_set);
   if (l > 0)
@@ -1255,6 +1254,7 @@ create procedure WS.WS.PROPPATCH (in path varchar, inout params varchar, in line
       while (i < l)
 	{
 	   declare pa, pn, pns, pv, ps, _prop_name any;
+
            pa := prop_set[i];
            -- dbg_obj_princ ('set prop_set [', i, '] = ', pa);
            pn := cast (xpath_eval ('local-name(.)', pa) as varchar);
@@ -1264,7 +1264,6 @@ create procedure WS.WS.PROPPATCH (in path varchar, inout params varchar, in line
            ps := string_output ();
 	   http_value (pa, null, ps);
            pv := xml_tree (string_output_string (ps));
-
            if (length (pns) > 0)
              pn := concat (pns, ':', pn);
 
@@ -1289,23 +1288,23 @@ create procedure WS.WS.PROPPATCH (in path varchar, inout params varchar, in line
 		   if (regexp_match (DB.DBA.DAV_REGEXP_PATTERN_FOR_PERM (), tmp) is null)
 		     goto skip_perm_update;
 
-          DAV_PROP_SET_INT (prop_path, ':' || _prop_name, tmp, null, null, 0, 0, 1);
+                  DAV_PROP_SET_INT (prop_path, ':' || _prop_name, tmp, null, null, 0, 0, 1, _u_id);
 		   skip_perm_update:;
 		 }
 	       else if (_prop_name = 'virtowneruid')
 		 {
                    tmp_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = tmp);
-          DAV_PROP_SET_INT (prop_path, ':' || _prop_name, tmp_id, null, null, 0, 0, 1);
+                  DAV_PROP_SET_INT (prop_path, ':' || _prop_name, tmp_id, null, null, 0, 0, 1, _u_id);
 		 }
 	       else if (_prop_name = 'virtownergid')
 		 {
                    tmp_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = tmp);
-          DAV_PROP_SET_INT (prop_path, ':' || _prop_name, tmp_id, null, null, 0, 0, 1);
+                  DAV_PROP_SET_INT (prop_path, ':' || _prop_name, tmp_id, null, null, 0, 0, 1, _u_id);
 		 }
 	     }
 	  else
 	    {
-        DAV_PROP_SET_INT (path, pn, serialize(pv[1]), null, null, 0, 0, 1);
+              DAV_PROP_SET_INT (path, pn, serialize(pv[1]), null, null, 0, 0, 1, _u_id);
 	    }
            i := i + 1;
 	}
@@ -1320,11 +1319,11 @@ create procedure WS.WS.PROPPATCH (in path varchar, inout params varchar, in line
       while (i < l)
 	{
 	   declare pa, pn, pns any;
+
            pa := prop_set[i];
            -- dbg_obj_princ ('remove prop_set [', i, '] = ', pa);
            pn := cast (xpath_eval ('local-name(.)', pa) as varchar);
            pns := cast(xpath_eval ('namespace-uri(.)', pa) as varchar);
-
 
            if (length (pns) > 0)
              pn := concat (pns, ':', pn);
