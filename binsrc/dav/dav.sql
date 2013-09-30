@@ -2458,15 +2458,13 @@ again:
       return;
     }
 
-	  _accept := DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (http_request_header_full (lines, 'Accept', '*/*'));
-	  if ((_accept <> '*/*') and (_accept <> 'text/turtle') and (cont_type = 'text/turtle'))
-	  {
-	    http_rewrite ();
-      http_status_set (406);
-      --http_header (http_header_get () || 'Accept-Ranges: bytes\r\n');
-      -- http_header (http_header_get () || 'Alternates: xxx\r\n');
-      http_header (http_header_get () || sprintf ('Alternates: {"http://%{WSHost}s%s" 1 {type text/turtle} {charset UTF-8} {length %d}}\r\n', full_path, length (content)));
-
+    _accept := HTTP_RDF_GET_ACCEPT_BY_Q (http_request_header_full (lines, 'Accept', '*/*'));
+    if (isinteger (_res_id) and (_accept = 'text/html') and (cont_type = 'text/turtle') and not isnull (DB.DBA.VAD_CHECK_VERSION ('fct')))
+    {
+      http_rewrite ();
+      http_status_set (303);
+      http_header (http_header_get () || sprintf ('Location: %s/describe/?url=%U&sponger:get=add\r\n',
+      WS.WS.DAV_HOST (), WS.WS.DAV_HOST () || replace (full_path, ' ', '%20')));
       return;
     }
 
