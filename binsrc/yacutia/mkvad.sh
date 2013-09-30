@@ -319,7 +319,18 @@ echo "    <sql purpose=\"pre-install\"></sql>" >> $STICKER
 echo "    <sql purpose=\"post-install\"></sql>" >> $STICKER
 echo "  </procedures>" >> $STICKER
 echo "  <ddls>" >> $STICKER
-echo "    <sql purpose=\"pre-install\">if (lt (sys_stat ('st_dbms_ver'), '$NEED_VERSION')) { result ('ERROR', 'The conductor package requires server version $NEED_VERSION or greater'); signal ('FATAL', 'The conductor package requires server version $NEED_VERSION or greater'); } </sql>" >> $STICKER
+echo "    <sql purpose=\"pre-install\">" >> $STICKER
+echo "      if (lt (sys_stat ('st_dbms_ver'), '$NEED_VERSION'))" >> $STICKER
+echo "        {" >> $STICKER
+echo "          result ('ERROR', 'The conductor package requires server version $NEED_VERSION or greater');" >> $STICKER
+echo "          signal ('FATAL', 'The conductor package requires server version $NEED_VERSION or greater');" >> $STICKER
+echo "        }" >> $STICKER
+echo "      if (equ ($ISDAV, 0) and isinteger (file_stat (http_root ())))" >> $STICKER
+echo "        {" >> $STICKER
+echo "          result ('ERROR', 'Please setup [HTTPServer] ServerRoot INI setting properly');" >> $STICKER
+echo "          signal ('FATAL', 'Please setup [HTTPServer] ServerRoot INI setting properly');" >> $STICKER
+echo "        }" >> $STICKER
+echo "    </sql>" >> $STICKER
 echo "    <sql purpose=\"post-install\">" >> $STICKER
 echo "      registry_set('__no_vspx_temp', '1');" >> $STICKER
 #echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/admin_dav_browser.sql', 1, 'report', $ISDAV);" >> $STICKER
