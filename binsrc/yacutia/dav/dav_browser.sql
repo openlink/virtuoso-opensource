@@ -1549,7 +1549,7 @@ create procedure WEBDAV.DBA.effective_permissions (
   name := 'nobody';
   uid := http_nobody_uid ();
   gid := http_nobody_uid ();
-  what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
+  what := WEBDAV.DBA.path_type (path);
   id := DB.DBA.DAV_SEARCH_ID (path, what);
   for (N := 0; N < length (permission); N := N + 1)
   {
@@ -1715,7 +1715,7 @@ create procedure WEBDAV.DBA.account_fullName (
 
 -------------------------------------------------------------------------------
 --
-create procedure WEBDAV.DBA.account_mail(
+create procedure WEBDAV.DBA.account_mail (
   in account_id integer)
 {
   return coalesce ((select U_E_MAIL from DB.DBA.SYS_USERS where U_ID = account_id), '');
@@ -2611,7 +2611,7 @@ create procedure WEBDAV.DBA.det_class (
   declare retValue varchar;
 
   if (isnull (what))
-    what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
+    what := WEBDAV.DBA.path_type (path);
 
   id := DB.DBA.DAV_SEARCH_ID (path, what);
   if (not WEBDAV.DBA.DAV_ERROR (id) and isarray (id))
@@ -2943,6 +2943,15 @@ create procedure WEBDAV.DBA.path_name (
     return path;
 
   return right (path, length (path)-strrchr (path, '/')-1);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.path_type (
+  in path varchar)
+{
+  return case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
 }
 ;
 
@@ -4265,115 +4274,319 @@ create procedure WEBDAV.DBA.ui_date (
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.send_mail (
-  in _instance integer,
+  in _path varchar,
   in _from integer,
   in _to any,
   in _subject varchar,
   in _body varchar,
-  in _path varchar,
-  in _mode integer := 1)
+  in _mode integer := 1,
+  in _encryption_state integer := 0)
 {
-  -- dbg_obj_princ ('WEBDAV.DBA.send_mail (', _instance, _from, _to, _path, ')');
-  declare _id, _what, _iri, _data, _tmp any;
-  declare _smtp_server, _from_address, _to_address, _message any;
+  -- dbg_obj_princ ('WEBDAV.DBA.send_mail (', _path, _from, _to, _mode, _encryption_state, ')');
+  declare _data any;
+  declare _certificate, _encrypt any;
+  declare _from_address, _to_address varchar;
 
-  _tmp := WEBDAV.DBA.exec ('select 1 from DB.DBA.WA_INSTANCE where WAI_ID = ? and WAI_TYPE_NAME = ?', vector (_instance, 'oDrive'));
-  if (not length (_tmp))
-    return;
+  _body := replace (_body, '%resource_path%', _path);
+  _body := replace (_body, '%resource_uri%', WEBDAV.DBA.dav_url (_path));
+  _body := replace (_body, '%owner_uri%', SIOC..person_iri (SIOC..user_iri (_from)));
+  _body := replace (_body, '%owner_name%', WEBDAV.DBA.account_name (_from));
 
-  _smtp_server := cfg_item_value (virtuoso_ini_path (), 'HTTPServer', 'DefaultMailServer');
-  if (_smtp_server <> 0)
+  _encrypt := 0;
+  _certificate := null;
+  _from_address := WEBDAV.DBA.account_mail (_from);
+
+  if (_mode)
   {
-    _iri := SIOC..briefcase_iri (ODRIVE.WA.domain_name (_instance));
-    if (_mode = 0)
-      _iri := WEBDAV.DBA.iri2ssl (_iri);
+    if (_encryption_state)
+      WS.WS.SSE_MAIL_CHECK (_to, _certificate, _encrypt, _to_address);
 
-    _what := case when (_path[length (_path)-1] <> ascii('/')) then 'R' else 'C' end;
-    if (_what = 'C')
-      _iri := _iri || '/folder';
+    if (not _encrypt)
+      _to_address := WEBDAV.DBA.account_mail (_to);
 
-    _id := DB.DBA.DAV_SEARCH_ID (_path, _what);
-    _body := replace (_body, '%resource_path%', _path);
-    if (isarray (_id) and (cast (_id[0] as varchar) in ('DynaRes', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE')))
-      _id := _id[2];
+    WEBDAV.DBA.send_mail_internal (_path, SIOC..person_iri (SIOC..user_iri (_to)), WEBDAV.DBA.account_name (_to), _from_address, _to_address, _certificate, _subject, _body, _encrypt, _encryption_state);
+  }
+  else
+  {
+    _data := WEBDAV.DBA.send_mail_extract (_to, _encryption_state);
+    _to_address := get_keyword ('mbox', _data);
+    if (_encryption_state)
+      _certificate := get_keyword ('certificate', _data);
 
-    if (not isarray (_id))
-      _body := replace (_body, '%resource_uri%', SIOC..post_iri_ex (_iri, _id));
+    WEBDAV.DBA.send_mail_internal (_path, _to, get_keyword ('name', _data, get_keyword ('nick', _data)), _from_address, _to_address, _certificate, _subject, _body, _encrypt, _encryption_state);
+  }
+}
+;
 
-    _body := replace (_body, '%owner_uri%', SIOC..person_iri (SIOC..user_iri (_from)));
-    _body := replace (_body, '%owner_name%', WEBDAV.DBA.account_name (_from));
-    _from_address := (select U_E_MAIL from SYS_USERS where U_ID = _from);
-    if (_mode)
+-------------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.send_mail_extract (
+  in _uri varchar,
+  in _encryption integer := 0)
+{
+  -- dbg_obj_princ ('WEBDAV.DBA.send_mail_extract (', _uri, ')');
+  declare N, P integer;
+  declare V, U any;
+  declare S, st, msg, meta, rows, rows2, rows3 any;
+  declare _graph, _getUri, _key, _publicKey, _digestURI varchar;
+  declare _url, _header, _content any;
+  declare retValue any;
+
+  set_user_id ('dba');
+  retValue := vector ();
+  V := rfc1808_parse_uri (trim (_uri));
+  V[5] := '';
+  _getUri := DB.DBA.vspx_uri_compose (V);
+  _graph := 'http://local.virt/dav/' || cast (rnd (1000) as varchar);
+
+  S := sprintf (
+       ' sparql ' ||
+       ' define get:soft "soft" ' ||
+       ' define get:uri <%s> ' ||
+       ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
+       ' prefix foaf: <http://xmlns.com/foaf/0.1/> ' ||
+       ' prefix cert: <http://www.w3.org/ns/auth/cert#> ' ||
+       ' prefix oplcert: <http://www.openlinksw.com/schemas/cert#> ' ||
+       ' select ?name ?nick ?mbox ?key ' ||
+       '   from <%s> ' ||
+       '  where ' ||
+       '   { ' ||
+       '     ?iri rdf:type foaf:Person . ' ||
+       '     optional { ?iri foaf:name ?name } . ' ||
+       '     optional { ?iri foaf:nick ?nick } . ' ||
+       '     optional { ?iri foaf:mbox ?mbox } . ' ||
+       '     optional { ?iri cert:key ?key } . ' ||
+       '     optional { ?key rdf:type cert:RSAPublicKey } . ' ||
+       '     filter (?iri = <%s>). ' ||
+       '   } ',
+       _getUri,
+       _graph,
+       _uri);
+
+  st := '00000';
+  exec (S, st, msg, vector (), 0, meta, rows);
+  if ((st <> '00000') or (length (rows) = 0))
+    goto _exit;
+
+  SPARQL clear graph ?:_graph;
+  retValue := vector ('name', cast (rows[0][0] as varchar), 'nick', cast (rows[0][1] as varchar), 'mbox', replace (cast (rows[0][2] as varchar), 'mailto:', ''));
+  if (not _encryption)
+    goto _exit;
+
+  for (N := 0; N < length (rows); N := N + 1)
+  {
+    _key := cast (rows[N][3] as varchar);
+    if (not isnull (_key))
     {
-      _body := replace (_body, '%user_uri%', SIOC..person_iri (SIOC..user_iri (_to)));
-      _body := replace (_body, '%user_name%', WEBDAV.DBA.account_name (_to));
-      _to_address := (select U_E_MAIL from SYS_USERS where U_ID = _to);
-    }
-    else
-    {
-      _data := ODS.ODS_API.getFOAFDataArray (_to);
-      _to_address := get_keyword ('mbox', _data);
-      _body := replace (_body, '%user_uri%', _to);
-      _body := replace (_body, '%user_name%', get_keyword ('name', _data, get_keyword ('nick', _data)));
-    }
-    _message := _subject || '\r\nContent-Type: text/plain\r\n' || _body;
-    {
-      declare exit handler for sqlstate '*'
-      {
-        return;
-      };
-      -- dbg_obj_print (_from_address, _to_address);
-      smtp_send (_smtp_server, _from_address, _to_address, _message);
+      S := sprintf (
+           ' sparql ' ||
+           ' define get:soft "soft" ' ||
+           ' define get:uri <%s> ' ||
+           ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
+           ' prefix foaf: <http://xmlns.com/foaf/0.1/> ' ||
+           ' prefix cert: <http://www.w3.org/ns/auth/cert#> ' ||
+           ' prefix oplcert: <http://www.openlinksw.com/schemas/cert#> ' ||
+           ' select ?publicKey ' ||
+           '   from <%s> ' ||
+           '  where ' ||
+           '  { ' ||
+           '    ?publicKey oplcert:hasPublicKey ?key. ' ||
+           '    filter (?key = <%s>). ' ||
+           '  } ',
+           _key,
+           _graph,
+           _key);
+
+      st := '00000';
+      exec (S, st, msg, vector (), 0, meta, rows2);
+      SPARQL clear graph ?:_graph;
+      if ((st <> '00000') or (length (rows2) = 0))
+        goto _skip;
+
+      _publicKey := cast (rows2[0][0] as varchar);
+      U := V;
+      U[2] := '';
+      U[3] := '';
+      U[4] := '';
+      U[5] := '';
+      _url := DB.DBA.vspx_uri_compose (U);
+      _url := _url || sprintf ('/sparql/?query=%U&output=%U', sprintf ('define sql:describe-mode "LOD" DESCRIBE <%s>', _publicKey), 'text/plain');
+      _header := null;
+      _content := http_client_ext (url=>_url, http_method=>'GET', headers =>_header, n_redirects=>15);
+      if ((_header[0] like 'HTTP/1._ 4__ %') or (_header[0] like 'HTTP/1._ 5__ %'))
+        goto _skip;
+
+      DB.DBA.TTLP (_content, _graph, _graph);
+      S := sprintf (
+           ' sparql ' ||
+           ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> ' ||
+           ' prefix foaf: <http://xmlns.com/foaf/0.1/> ' ||
+           ' prefix cert: <http://www.w3.org/ns/auth/cert#> ' ||
+           ' prefix oplcert: <http://www.openlinksw.com/schemas/cert#> ' ||
+           ' select ?digestURI ' ||
+           '   from <%s> ' ||
+           '  where ' ||
+           '  { ' ||
+           '    <%s> oplcert:digestURI ?digestURI. ' ||
+           '  } ',
+           _graph,
+           _publicKey);
+
+      st := '00000';
+      exec (S, st, msg, vector (), 0, meta, rows3);
+      SPARQL clear graph ?:_graph;
+      if ((st <> '00000') or (length (rows3) = 0))
+        goto _skip;
+
+      _digestURI := rows3[0][0];
+      P := strstr (_digestURI, '&http=');
+      if (isnull (P))
+        goto _skip;
+
+      _url := 'http://' || subseq (_digestURI, P + 6) || '/.well-known/' || replace (replace (subseq (_digestURI, 0, P), ':', '/'), ';', '/');
+      _header := null;
+      _content := http_client_ext (url=>_url, http_method=>'GET', headers =>_header, n_redirects=>15);
+      if ((_header[0] like 'HTTP/1._ 4__ %') or (_header[0] like 'HTTP/1._ 5__ %'))
+        goto _skip;
+
+      retValue := vector_concat (retValue, vector ('certificate', _content));
+      goto _exit;
+
+    _skip:;
+      SPARQL clear graph ?:_graph;
     }
   }
+
+_exit:;
+  SPARQL clear graph ?:_graph;
+  return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.send_mail_internal (
+  in _path varchar,
+  in _user_uri varchar,
+  in _user_name varchar,
+  in _from_address varchar,
+  in _to_address varchar,
+  in _certificate any,
+  in _subject varchar,
+  in _body varchar,
+  in _encrypt integer := 0,
+  in _encryption_state integer := 0)
+{
+  -- dbg_obj_princ ('WEBDAV.DBA.send_mail_internal (', _from_address, _to_address, _encrypt, _encryption_state, ')');
+  declare _message varchar;
+  declare _smtp_server any;
+
+  _smtp_server := cfg_item_value (virtuoso_ini_path (), 'HTTPServer', 'DefaultMailServer');
+  if (_smtp_server = 0)
+    return;
+
+  if (is_empty_or_null (_from_address))
+    return;
+
+  if (is_empty_or_null (_to_address))
+    return;
+
+  _body := replace (_body, '%user_uri%', _user_uri);
+  _body := replace (_body, '%user_name%', _user_name);
+  if (_encrypt and not isnull (_certificate))
+  {
+    declare _what, _password varchar;
+
+    _what := WEBDAV.DBA.path_type (_path);
+    _password := WS.WS.SSE_PASSWORD_GET (DB.DBA.DAV_SEARCH_ID (_path, _what), _what);
+    _body := _body || sprintf ('\r\n\r\nP.S. The file is encrypted with AES-256 encryption. The password is %s.', _password);
+    _message := WEBDAV.DBA.send_mail_prepare (_subject, _body);
+    _message := smime_encrypt (_message, vector (_certificate), 'AES256');
+  }
+  else if (_encryption_state)
+  {
+    _body := _body || '\r\n\r\nP.S. The file is encrypted with AES-256 encryption. Please, find secure way to get encryption password.';
+    _message := WEBDAV.DBA.send_mail_prepare (_subject, _body);
+  }
+  else
+  {
+    _message := WEBDAV.DBA.send_mail_prepare (_subject, _body);
+  }
+
+  {
+    declare exit handler for sqlstate '*' { return;};
+
+    --dbg_obj_print (_from_address, _to_address, _body);
+    --string_to_file ('test.eml', sprintf ('From: %s\r\nTo: %s\r\n', _from_address, _to_address) || _message, 2);
+    smtp_send (_smtp_server, _from_address, _to_address, _message);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.send_mail_prepare (
+  in _subject varchar,
+  in _body varchar)
+{
+  declare _stream any;
+
+  _stream := string_output ();
+
+  WS.WS.SSE_MAIL_LINE ('Content-Type: %s; charset=UTF-8;', 'text/plain', _stream);
+  WS.WS.SSE_MAIL_LINE ('Subject: %s', _subject, _stream);
+  http ('\r\n', _stream);
+  http (_body, _stream);
+
+  return string_output_string (_stream);
 }
 ;
 
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.acl_send_mail (
-  in _instance integer,
   in _from integer,
   in _path varchar,
   in _old_acl any,
-  in _new_acl any)
+  in _new_acl any,
+  in _encryption_state integer := 0)
 {
   declare aq any;
 
   _old_acl := WEBDAV.DBA.acl_vector_unique (WEBDAV.DBA.acl_vector (_old_acl));
   _new_acl := WEBDAV.DBA.acl_vector_unique (WEBDAV.DBA.acl_vector (_new_acl));
   aq := async_queue (1);
-  aq_request (aq, 'WEBDAV.DBA.acl_send_mail_aq', vector (_instance, _from, _path, _old_acl, _new_acl));
+  aq_request (aq, 'WEBDAV.DBA.acl_send_mail_aq', vector (_from, _path, _old_acl, _new_acl, _encryption_state));
 }
 ;
 
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.acl_send_mail_aq (
-  in _instance integer,
   in _from integer,
   in _path varchar,
   in _old_acl any,
-  in _new_acl any)
+  in _new_acl any,
+  in _encryption_state integer := 0)
 {
-  -- dbg_obj_princ ('WEBDAV.DBA.acl_send_mail_aq (', _path, _old_acl, _new_acl, ')');
+  -- dbg_obj_princ ('WEBDAV.DBA.acl_send_mail_aq (', _path, _old_acl, _new_acl, _encryption_state, ')');
   declare N integer;
   declare settings, subject, text any;
 
   settings := WEBDAV.DBA.settings (_from);
-  subject := 'Subject: Sharing notification';
+  subject := 'Sharing notification';
   text := WEBDAV.DBA.settings_mailShare (settings);
   for (N := 0; N < length (_new_acl); N := N + 1)
   {
-    if (not WEBDAV.DBA.vector_contains (_old_acl, _new_acl[N]))
-      WEBDAV.DBA.send_mail (_instance, _from, _new_acl[N], subject, text, _path);
+    if (not WEBDAV.DBA.vector_contains (_old_acl, _new_acl[N]) or (_encryption_state = 2))
+      WEBDAV.DBA.send_mail (_path, _from, _new_acl[N], subject, text, 1, _encryption_state);
   }
-  subject := 'Subject: Unsharing notification';
+  subject := 'Unsharing notification';
   text := WEBDAV.DBA.settings_mailUnshare (settings);
   for (N := 0; N < length (_old_acl); N := N + 1)
   {
     if (not WEBDAV.DBA.vector_contains (_new_acl, _old_acl[N]))
-      WEBDAV.DBA.send_mail (_instance, _from, _old_acl[N], subject, text, _path);
+      WEBDAV.DBA.send_mail (_path, _from, _old_acl[N], subject, text, 1, 0);
   }
 }
 ;
@@ -4441,7 +4654,7 @@ create procedure WEBDAV.DBA.aci_load (
   declare S, st, msg, meta, rows any;
 
   --return vector ();
-  what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
+  what := WEBDAV.DBA.path_type (path);
   id := DB.DBA.DAV_SEARCH_ID (path, what);
   DB.DBA.DAV_AUTHENTICATE_SSL_ITEM (id, what, path);
   if (isarray (id) and (cast (id[0] as varchar) not in ('DynaRes', 'IMAP', 'Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE')))
@@ -4562,7 +4775,7 @@ create procedure WEBDAV.DBA.aci_save (
 {
   declare id, what, retValue, tmp any;
 
-  what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
+  what := WEBDAV.DBA.path_type (path);
   id := DB.DBA.DAV_SEARCH_ID (path, what);
   if (isarray (id) and (cast (id[0] as varchar) not in ('DynaRes', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE')))
   {
@@ -4615,115 +4828,124 @@ create procedure WEBDAV.DBA.aci_compare (
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.aci_n3 (
-  in aciArray any)
+  in aci any)
 {
   declare N, M integer;
-  declare stream any;
+  declare aci_iri, filter_iri, criteria_iri any;
+  declare stream, dict, triples any;
 
-  if (length (aciArray) = 0)
+  if (length (aci) = 0)
     return null;
 
-  stream := string_output ();
-  http ('@prefix acl: <http://www.w3.org/ns/auth/acl#> . \n', stream);
-  http ('@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> . \n', stream);
-  http ('@prefix foaf: <http://xmlns.com/foaf/0.1/> . \n', stream);
-  http ('@prefix flt: <http://www.openlinksw.com/schemas/acl/filter#> . ', stream);
-  for (N := 0; N < length (aciArray); N := N + 1)
+  dict := dict_new();
+  for (N := 0; N < length (aci); N := N + 1)
   {
-    if (length (aciArray[N][1]))
-    {
-      http (sprintf ('\n<aci_%d> rdf:type acl:Authorization ;\n        acl:accessTo <>', aciArray[N][0]), stream);
-      if      (aciArray[N][2] = 'person')
-      {
-        http (sprintf ('; \n        acl:agent <%s>', aciArray[N][1]), stream);
-      }
-      else if (aciArray[N][2] = 'group')
-      {
-        http (sprintf ('; \n        acl:agentClass <%s>', aciArray[N][1]), stream);
-      }
-      else if (aciArray[N][2] = 'public')
-      {
-        http (         '; \n        acl:agentClass foaf:Agent', stream);
-      }
-      else if (aciArray[N][2] = 'advanced')
-      {
-        http (sprintf ('; \n        flt:hasFilter <filter_%d>', aciArray[N][0]), stream);
-      }
-      if (aciArray[N][3])
-        http ('; \n        acl:mode acl:Read', stream);
-      if (aciArray[N][4])
-        http ('; \n        acl:mode acl:Write', stream);
-      if (aciArray[N][5])
-        http ('; \n        acl:mode acl:Execute', stream);
+    if (not length (aci[N][1]))
+      goto _continue;
 
-      http ('. ', stream);
-      if (aciArray[N][2] = 'advanced')
+    aci_iri := iri_to_id (sprintf ('aci_%d', aci[N][0]));
+    filter_iri := iri_to_id (sprintf ('filter_%d', aci[N][0]));
+    dict_put (dict, vector (aci_iri, iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), iri_to_id ('http://www.w3.org/ns/auth/acl#Authorization')), 0);
+    dict_put (dict, vector (aci_iri, iri_to_id ('http://www.w3.org/ns/auth/acl#accessTo'), iri_to_id ('xxx')), 0);
+    if      (aci[N][2] = 'person')
+    {
+      dict_put (dict, vector (aci_iri, iri_to_id ('http://www.w3.org/ns/auth/acl#agent'), iri_to_id (aci[N][1])), 0);
+    }
+    else if (aci[N][2] = 'group')
+    {
+      dict_put (dict, vector (aci_iri, iri_to_id ('http://www.w3.org/ns/auth/acl#agentClass'), iri_to_id (aci[N][1])), 0);
+    }
+    else if (aci[N][2] = 'public')
+    {
+      dict_put (dict, vector (aci_iri, iri_to_id ('http://www.w3.org/ns/auth/acl#agentClass'), iri_to_id ('http://xmlns.com/foaf/0.1/Agent')), 0);
+    }
+    else if (aci[N][2] = 'advanced')
+    {
+      dict_put (dict, vector (aci_iri, iri_to_id ('http://www.openlinksw.com/schemas/acl/filter#hasFilter'), filter_iri), 0);
+    }
+    if (aci[N][3])
+      dict_put (dict, vector (aci_iri, iri_to_id ('http://www.w3.org/ns/auth/acl#mode'), iri_to_id ('http://www.w3.org/ns/auth/acl#Read')), 0);
+
+    if (aci[N][4])
+      dict_put (dict, vector (aci_iri, iri_to_id ('http://www.w3.org/ns/auth/acl#mode'), iri_to_id ('http://www.w3.org/ns/auth/acl#Write')), 0);
+
+    if (aci[N][5])
+      dict_put (dict, vector (aci_iri, iri_to_id ('http://www.w3.org/ns/auth/acl#mode'), iri_to_id ('http://www.w3.org/ns/auth/acl#Execute')), 0);
+
+    if (aci[N][2] <> 'advanced')
+      goto _continue;
+
+    dict_put (dict, vector (filter_iri, iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), iri_to_id ('http://www.openlinksw.com/schemas/acl/filter#Filter')), 0);
+    for (M := 0; M < length (aci[N][1]); M := M + 1)
+    {
+      criteria_iri := iri_to_id (sprintf ('criteria_%d_%d', aci[N][0], aci[N][1][M][0]));
+      dict_put (dict, vector (filter_iri, iri_to_id ('http://www.openlinksw.com/schemas/acl/filter#hasCriteria'), criteria_iri), 0);
+      dict_put (dict, vector (criteria_iri, iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'), iri_to_id ('http://www.openlinksw.com/schemas/acl/filter#Criteria')), 0);
+      dict_put (dict, vector (criteria_iri, iri_to_id ('http://www.openlinksw.com/schemas/acl/filter#operand'), iri_to_id ('http://www.openlinksw.com/schemas/acl/filter#' || aci[N][1][M][1])), 0);
+      dict_put (dict, vector (criteria_iri, iri_to_id ('http://www.openlinksw.com/schemas/acl/filter#condition'), iri_to_id ('http://www.openlinksw.com/schemas/acl/filter#' || aci[N][1][M][2])), 0);
+      dict_put (dict, vector (criteria_iri, iri_to_id ('http://www.openlinksw.com/schemas/acl/filter#value'), aci[N][1][M][3]), 0);
+      if ((length (aci[N][1][M]) > 3) and not DB.DBA.is_empty_or_null (aci[N][1][M][4]))
       {
-        http (sprintf ('\n<filter_%d> rdf:type flt:Filter .', aciArray[N][0]), stream);
-        for (M := 0; M < length (aciArray[N][1]); M := M + 1)
-        {
-          http (sprintf ('\n<filter_%d> flt:hasCriteria <criteria_%d_%d> .', aciArray[N][0], aciArray[N][0], aciArray[N][1][M][0]), stream);
-          http (sprintf ('\n<criteria_%d_%d> flt:operand <flt:%s> ;', aciArray[N][0], aciArray[N][1][M][0], aciArray[N][1][M][1]), stream);
-          http (sprintf ('\n               flt:condition <flt:%s> ;', aciArray[N][1][M][2]), stream);
-          http (         '\n               flt:value ', stream); http_nt_object (aciArray[N][1][M][3], stream);
-          if ((length (aciArray[N][1][M]) > 3) and not DB.DBA.is_empty_or_null (aciArray[N][1][M][4]))
-          {
-          http (         '; \n             flt:statement ', stream); http_nt_object (aciArray[N][1][M][4], stream);
-          }
-          http ('. \n', stream);
-        }
+        dict_put (dict, vector (criteria_iri, iri_to_id ('http://www.openlinksw.com/schemas/acl/filter#statement'), aci[N][1][M][4]), 0);
       }
     }
+
+  _continue:;
   }
-  return string_output_string (stream);
+  stream := string_output ();
+ 	triples := dict_list_keys (dict, 0);
+  if (length (triples))
+	  DB.DBA.RDF_TRIPLES_TO_NICE_TTL (triples, stream);
+
+  return replace (string_output_string (stream), '<xxx>', '<>');
 }
 ;
 
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.aci_send_mail (
-  in _instance integer,
   in _from integer,
   in _path varchar,
   in _old_acl any,
-  in _new_acl any)
+  in _new_acl any,
+  in _encryption_state integer := 0)
 {
   declare aq any;
 
   _old_acl := WEBDAV.DBA.aci_vector (_old_acl);
   _new_acl := WEBDAV.DBA.aci_vector (_new_acl);
   aq := async_queue (1);
-  aq_request (aq, 'WEBDAV.DBA.aci_send_mail_aq', vector (_instance, _from, _path, _old_acl, _new_acl));
+  aq_request (aq, 'WEBDAV.DBA.aci_send_mail_aq', vector (_from, _path, _old_acl, _new_acl, _encryption_state));
 }
 ;
 
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.aci_send_mail_aq (
-  in _instance integer,
   in _from integer,
   in _path varchar,
   in _old_acl any,
-  in _new_acl any)
+  in _new_acl any,
+  in _encryption_state integer := 0)
 {
   -- dbg_obj_princ ('WEBDAV.DBA.aci_send_mail_aq (', _path, _old_acl, _new_acl, ')');
   declare N integer;
   declare settings, subject, text any;
 
   settings := WEBDAV.DBA.settings (_from);
-  subject := 'Subject: Sharing notification';
+  subject := 'Sharing notification';
   text := WEBDAV.DBA.settings_mailShare (settings);
   for (N := 0; N < length (_new_acl); N := N + 1)
   {
-    if (not WEBDAV.DBA.vector_contains (_old_acl, _new_acl[N]))
-      WEBDAV.DBA.send_mail (_instance, _from, _new_acl[N], subject, text, _path, 0);
+    if (not WEBDAV.DBA.vector_contains (_old_acl, _new_acl[N]) or (_encryption_state = 2))
+      WEBDAV.DBA.send_mail (_path, _from, _new_acl[N], subject, text, 0, _encryption_state);
   }
-  subject := 'Subject: Unsharing notification';
+  subject := 'Unsharing notification';
   text := WEBDAV.DBA.settings_mailUnshare (settings);
   for (N := 0; N < length (_old_acl); N := N + 1)
   {
     if (not WEBDAV.DBA.vector_contains (_new_acl, _old_acl[N]))
-      WEBDAV.DBA.send_mail (_instance, _from, _old_acl[N], subject, text, _path, 0);
+      WEBDAV.DBA.send_mail (_path, _from, _old_acl[N], subject, text, 0, 0);
   }
 }
 ;
