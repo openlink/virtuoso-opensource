@@ -1714,6 +1714,9 @@ create procedure DAV_GET_UID_BY_WEBID (out a_uid int, out a_gid int)
 {
   declare cert, st, msg, meta, rows any;
 
+  if (not is_https_ctx ())
+    return 0;
+
   cert := client_attr ('client_certificate');
   a_uid := null;
   a_gid := null;
@@ -2186,7 +2189,7 @@ _exit:;
     }
     rc := 1;
   }
-  _perms := replace (sprintf ('%d%d%d', realMode[0], realMode[1], realMode[2]), '0', '_');
+  _perms := sprintf ('%d%d%d', realMode[0], realMode[1], realMode[2]);
   return rc;
 }
 ;
