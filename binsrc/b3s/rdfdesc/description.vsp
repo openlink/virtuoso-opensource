@@ -95,6 +95,8 @@ again:
 
   sp_mode := 'add';
 
+  if (__proc_exists ('DB.DBA.lp_score_ck') is not null)
+    DB.DBA.lp_score_ck (lines);
   b3s_handle_ses (path, lines, params);
   sid := connection_get ('sid');
 
