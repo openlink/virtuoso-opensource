@@ -55,7 +55,9 @@ create function DAV_PERROR (in x any)
     return NULL;
   if (x >= 0)
     return NULL;
-  if (x < -43) -- When you add a new error, change the limit value here!
+  if (x = -44) -- __SQL_ERROR
+    return sprintf ('(%d) %s', x, connection_get ('__sql_message'));
+  if (x < -44) -- When you add a new error, change the limit value here!
     return sprintf ('(%d) Unspecified error', x);
   errlist := vector (
     '(-01) The path (target of operation) is not valid',
@@ -71,7 +73,7 @@ create function DAV_PERROR (in x any)
     '(-11) Property does not exist',
     '(-12) Authentication failed',
     '(-13) Operation is forbidden (the authenticated user do not have a permissions for the action)',
-    '(-14) the target type is not valid',
+    '(-14) The target type is not valid',
     '(-15) The umask is not valid',
     '(-16) The property already exists',
     '(-17) Invalid property value',
