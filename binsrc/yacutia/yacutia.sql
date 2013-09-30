@@ -6001,29 +6001,6 @@ create procedure DI_TAG (in fp any, in w any, in dgst any := 'MD5', in fmt any :
 }
 ;
 
-create procedure X509_STRING_DATE (in val varchar)
-{
-  declare ret, tmp any;
-  ret := NULL;
-  declare exit handler for sqlstate '*'
-    {
-      return null;
-    };
-  val := regexp_replace (val, '[ ]+', ' ', 1, null);
-  -- Jan 11 14:36:33 2012 GMT
-  if (val is not null and regexp_match ('[[:upper:]][[:lower:]]{2} [0-9]{1,} [0-9]{2}:[0-9]{2}:[0-9]{2} [0-9]{4,} GMT', val) is not null)
-    {
-      tmp := sprintf_inverse (val, '%s %s %s %s GMT', 0);
-      if (tmp is not null and length (tmp) > 3)
-	{
-	  ret := http_string_date (sprintf ('Wee, %s %s %s %s GMT', tmp[1], tmp[0], tmp[3], tmp[2]));
-	  ret := dt_set_tz (ret, 0);
-	}
-    }
-  return ret;
-}
-;
-
 create procedure URL_REMOVE_FRAG (in uri any)
 {
   declare h any;
