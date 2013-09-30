@@ -915,7 +915,11 @@ again:
      {
        declare vlbl any;
        http (sprintf ('<span %s>', rdfa));
-       _object := regexp_replace (_object, ' (http://[^ ]+) ', ' <a href="\\1">\\1</a> ', 1, null);
+       if (strstr (_object, 'http://') is not null)
+	 {
+	   declare continue handler for sqlstate '*';
+           _object := regexp_replace (_object, ' (http://[^ ]+) ', ' <a href="\\1">\\1</a> ', 1, null);
+	 }
        vlbl := charset_recode (_object, 'UTF-8', '_WIDE_');
        if (vlbl = 0)
          vlbl := charset_recode (_object, current_charset (), '_WIDE_');
