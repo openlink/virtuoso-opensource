@@ -1934,6 +1934,8 @@ create procedure WEBDAV.DBA.dav_lpath (in path any)
   declare pref, ppref, lpath any;
   pref := http_map_get ('domain') || '/';
   ppref := http_map_get ('mounted');
+  if (path not like ppref || '%')
+    return path;
   lpath := subseq (path, length (ppref));
   lpath := pref || lpath;
   return lpath;
