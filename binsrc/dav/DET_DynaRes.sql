@@ -132,20 +132,52 @@ create function "DynaRes_DAV_AUTHENTICATE" (
 
   set isolation='serializable';
 
+  if (a_uid >= 0)
+  {
   if (DAV_CHECK_PERM (pperms, req, a_uid, http_nogroup_gid(), pgid, puid))
     return a_uid;
 
   pacl := "DynaRes__acl" (id[1]);
   if (not isnull (pacl) and WS.WS.ACL_IS_GRANTED (pacl, a_uid, DAV_REQ_CHARS_TO_BITMASK (req)))
     return a_uid;
-
-  if (DAV_AUTHENTICATE_SSL_CONDITION ())
-  {
-    declare _perms, a_gid any;
-
-    if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms))
-      return a_uid;
   }
+
+    declare _perms, a_gid any;
+  declare webid, serviceId varchar;
+
+  if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms, webid))
+      return a_uid;
+
+  if (DAV_AUTHENTICATE_WITH_SESSION_ID (id, what, null, req, a_uid, a_gid, _perms, serviceId))
+    return a_uid;
+
+  -- Both DAV_AUTHENTICATE_SSL and DAV_AUTHENTICATE_WITH_SESSION_ID only check IRI ACLs
+  -- However, service ids may map to ODS user accounts. This is what we check here
+  a_uid := -1;
+
+  -- A session ID might be connected to a normal user account, that is what we check first
+  for (select top 1 U_ID from DB.DBA.SYS_USERS where U_NAME=serviceId and U_ACCOUNT_DISABLED=0) do
+    a_uid := U_ID;
+
+  if (a_uid = -1 and exists (select 1 from DB.DBA.SYS_KEYS where KEY_NAME='DB.DBA.WA_USER_OL_ACCOUNTS')) -- this check is only valid if table is accessed in a separate SP which is not precompiled
+  {
+    if (not DAV_GET_UID_BY_SERVICE_ID (serviceId, a_uid, a_gid))
+      a_uid := -1;
+  }
+
+  -- If we were able to map the session or WebID to an existing user account, then check its permissions on the resource
+  if (a_uid > 0)
+  {
+    if (DAV_CHECK_PERM (pperms, req, a_uid, a_gid, pgid, puid))
+    {
+      return a_uid;
+    }
+    if (WS.WS.ACL_IS_GRANTED (pacl, a_uid, DAV_REQ_CHARS_TO_BITMASK (req)))
+    {
+      return a_uid;
+    }
+  }
+
   return -13;
 
 _exit:
@@ -176,14 +208,21 @@ create function "DynaRes_DAV_AUTHENTICATE_HTTP" (
   declare pacl any;
   declare u_password, pperms varchar;
   declare allow_anon integer;
+
+  -- used for error reporting in case of NetID or OAuth login
+  declare webid, serviceId varchar;
   whenever not found goto _exit;
+
+  webid := null;
+  serviceId := null;
+
+  what := upper (what);
+  if ((what <> 'R') and (what <> 'C'))
+    return -14;
 
   select DR_PERMS, DR_OWNER_UID, DR_OWNER_GID into pperms, puid, pgid from WS.WS.DYNA_RES where DR_DETCOL_ID = id[1] and DR_RES_ID = id[3];
   if (pperms is null)
     return -1;
-
-  if ((what <> 'R') and (what <> 'C'))
-    return -14;
 
   allow_anon := WS.WS.PERM_COMP (substring (cast (pperms as varchar), 7, 3), req);
   if (a_uid is null)
@@ -193,8 +232,52 @@ create function "DynaRes_DAV_AUTHENTICATE_HTTP" (
 
     if (rc < 0)
     {
-      if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms))
+      if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms, webid))
         return a_uid;
+
+      if (DAV_AUTHENTICATE_WITH_SESSION_ID (id, what, null, req, a_uid, a_gid, _perms, serviceId))
+      {
+        http_rewrite ();
+        return a_uid;
+      }
+
+      -- Normalize the service variables for error handling in VAL
+      if (not webid is null and serviceId is null)
+      {
+        serviceId := webid;
+      }
+
+      a_uid := -1;
+
+      -- A session ID might be connected to a normal user account, that is what we check first
+      for (select top 1 U_ID from DB.DBA.SYS_USERS where U_NAME=serviceId and U_ACCOUNT_DISABLED=0) do
+        a_uid := U_ID;
+
+      if (a_uid = -1 and exists (select 1 from DB.DBA.SYS_KEYS where KEY_NAME='DB.DBA.WA_USER_OL_ACCOUNTS')) -- this check is only valid if table is accessed in a separate SP which is not precompiled
+      {
+        if (not DAV_GET_UID_BY_SERVICE_ID (serviceId, a_uid, a_gid))
+          a_uid := -1;
+      }
+
+      -- If we were able to map the session or WebID to an existing user account, then check its permissions on the resource
+      if (a_uid > 0)
+      {
+        if (DAV_CHECK_PERM (pperms, req, a_uid, a_gid, pgid, puid))
+        {
+          return a_uid;
+        }
+        if (WS.WS.ACL_IS_GRANTED (pacl, a_uid, DAV_REQ_CHARS_TO_BITMASK (req)))
+        {
+        return a_uid;
+        }
+      }
+
+      -- If the user already provided some kind of credentials we return a 403 code
+      if (not serviceId is null)
+      {
+        connection_set ('deniedServiceId', serviceId);
+        rc := -13;
+      }
 
       return rc;
     }
@@ -206,9 +289,19 @@ create function "DynaRes_DAV_AUTHENTICATE_HTTP" (
 
     if (a_uid = 1) -- Anonymous FTP
     {
-      a_uid := 0;
-      a_gid := 0;
+      a_uid := http_nobody_uid ();
+      a_gid := http_nogroup_gid ();
     }
+    else if (a_uid = http_dav_uid())
+    {
+      return a_uid;
+    }
+  }
+  else
+  {
+    a_uid := http_nobody_uid ();
+    a_gid := http_nogroup_gid ();
+    _perms := '110110110--';
   }
   if (DAV_CHECK_PERM (pperms, req, a_uid, a_gid, pgid, puid))
     return a_uid;
@@ -360,16 +453,45 @@ create function "DynaRes_DAV_PROP_SET" (
   in auth_uid integer) returns any
 {
   -- dbg_obj_princ ('DynaRes_DAV_PROP_SET (', id, what, propname, propvalue, overwrite, auth_uid, ')');
-  if (('R' = what) and (propname = 'virt:aci_meta_n3'))
+  if ('R' = what)
   {
-    if (length (id) = 5)
-      return 1;
+    if (':getcontenttype' = propname)
+    {
+      update WS.WS.DYNA_RES set DR_MIME = propvalue where DR_RES_ID = id[3];
+      return 0;
+    }
+    if (':virtowneruid' = propname)
+    {
+      if (not exists (select top 1 1 from WS.WS.SYS_DAV_USER where U_ID = propvalue))
+        propvalue := 0;
 
-    update WS.WS.DYNA_RES
-       set DR_ACL = propvalue
-     where DR_RES_ID = id[3];
+      update WS.WS.DYNA_RES set DR_OWNER_UID = propvalue where DR_RES_ID = id[3];
+      return 0;
+    }
+    if (':virtownergid' = propname)
+    {
+      if (not exists (select top 1 1 from WS.WS.SYS_DAV_GROUP where G_ID = propvalue))
+        propvalue := 0;
 
-    return 1;
+      update WS.WS.DYNA_RES set DR_OWNER_GID = propvalue where DR_RES_ID = id[3];
+      return 0;
+    }
+    if (':virtpermissions' = propname)
+    {
+      if (regexp_match (DAV_REGEXP_PATTERN_FOR_PERM (), propvalue) is null)
+        return -17;
+
+      update WS.WS.DYNA_RES set DR_PERMS = propvalue where DR_RES_ID = id[3];
+      return 0;
+    }
+    if (propname = 'virt:aci_meta_n3')
+    {
+      if (length (id) = 5)
+        return 0;
+
+      update WS.WS.DYNA_RES set DR_ACL = propvalue where DR_RES_ID = id[3];
+      return 0;
+    }
   }
   if (propname[0] = 58)
     return -16;
@@ -386,12 +508,28 @@ create function "DynaRes_DAV_PROP_GET" (
   in auth_uid integer)
 {
   -- dbg_obj_princ ('DynaRes_DAV_PROP_GET (', id, what, propname, auth_uid, ')');
-  if (('R' = what) and ('virt:aci_meta_n3' = propname))
+  if ('R' = what)
   {
-    if (length (id) = 5)
-      return null;
-
+    if (':getcontenttype' = propname)
+    {
+      return (select DR_MIME from WS.WS.DYNA_RES where DR_RES_ID = id[3]);
+    }
+    if (':virtowneruid' = propname)
+    {
+      return (select DR_OWNER_UID from WS.WS.DYNA_RES where DR_RES_ID = id[3]);
+    }
+    if (':virtownergid' = propname)
+    {
+      return (select DR_OWNER_GID from WS.WS.DYNA_RES where DR_RES_ID = id[3]);
+    }
+    if (':virtpermissions' = propname)
+    {
+      return (select DR_PERMS from WS.WS.DYNA_RES where DR_RES_ID = id[3]);
+    }
+    if ('virt:aci_meta_n3' = propname)
+  {
     return (select DR_ACL from WS.WS.DYNA_RES where DR_RES_ID = id[3]);
+  }
   }
   return -11;
 }
