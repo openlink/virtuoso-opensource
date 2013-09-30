@@ -2446,10 +2446,23 @@ create procedure DAV_RES_UPLOAD_STRSES_INT (
     in _rowguid varchar := null,
     in ouid integer := null,
     in ogid integer := null,
-    in check_locks any := 1 -- must be here to match arg order for DAV replication.
+  in check_locks any := 1, -- must be here to match arg order for DAV replication.
+  in dav_call integer := 0
     )
 {
   declare rc, old_log_mode, new_log_mode any;
+
+  if (type = 'application/sparql-query')
+  {
+    WS.WS.SPARQL_QUERY_POST (path, content, uid, dav_call);
+  }
+  else if (type = 'text/turtle')
+  {
+    rc := WS.WS.TTL_QUERY_POST (path, content, uid, dav_call);
+    if (DAV_HIDE_ERROR (rc) is null)
+      return rc;
+  }
+
   old_log_mode := log_enable (null);
   -- we disable row auto commit since there are triggers reading blobs, we do that even in atomic mode since this is vital for dav uploads
   new_log_mode := bit_and (old_log_mode, 1);
@@ -2818,13 +2831,7 @@ create procedure RDF_SINK_FUNC (
     if (isnull (DAV_HIDE_ERROR (DAV_SEARCH_ID (rdf_graph_resource_path, 'R'))))
     {
       -- RDF content
-      host := virtuoso_ini_item_value ('URIQA', 'DefaultHost');
-      if (host is null)
-      {
-        host := sys_stat ('st_host_name');
-        if (server_http_port () <> '80')
-          host := host ||':'|| server_http_port ();
-      }
+      host := WS.WS.DAV_HOST ();
       rdf_graph_resource_id := WS.WS.GETID ('R');
       insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_OWNER, RES_GROUP, RES_PERMS, RES_CR_TIME, RES_MOD_TIME, RES_TYPE, RES_CONTENT)
       values (rdf_graph_resource_id, rdf_graph_resource_name, c_id, ouid, ogid, '111101101NN', now (), now (), 'text/xml', '');
@@ -2908,15 +2915,7 @@ create procedure RDF_SINK_UPLOAD (
   rdf_graph2 := 'http://local.virt' || path;
   if (is_empty_or_null (rdf_base))
   {
-    declare host varchar;
-
-    host := virtuoso_ini_item_value ('URIQA', 'DefaultHost');
-    if (host is null) {
-      host := sys_stat ('st_host_name');
-      if (server_http_port () <> '80')
-        host := host ||':'|| server_http_port ();
-    }
-    rdf_base2 := 'http://' || host || path;
+    rdf_base2 := WS.WS.DAV_HOST () || path;
   }
   else
   {
@@ -3118,29 +3117,28 @@ create procedure RDF_SINK_CLEAR (
 ;
 
 --!AWK PUBLIC
-create procedure
-DAV_DELETE (
-    in path varchar,
-    in silent integer := 0,
-    in auth_uname varchar,
-    in auth_pwd varchar
-    )
+create procedure DAV_DELETE (
+  in path varchar,
+  in silent integer := 0,
+  in auth_uname varchar,
+  in auth_pwd varchar
+)
 {
   return DAV_DELETE_INT (path, silent, auth_uname, auth_pwd);
 }
 ;
 
-create procedure
-DAV_DELETE_INT (
-    in path varchar,
-    in silent integer := 0,
-    in auth_uname varchar,
-    in auth_pwd varchar,
-    in extern integer := 1,
-    in check_locks any := 1 )
+create procedure DAV_DELETE_INT (
+  in path varchar,
+  in silent integer := 0,
+  in auth_uname varchar,
+  in auth_pwd varchar,
+  in extern integer := 1,
+  in check_locks any := 1
+)
 {
   declare id, rc integer;
-  declare ty char;
+  declare what char;
   declare auth_uid integer;
   declare par any;
   whenever sqlstate 'HT508' goto disabled_owner;
@@ -3149,103 +3147,114 @@ DAV_DELETE_INT (
   par := split_and_decode (path, 0, '\0\0/');
   if (aref (par, 0) <> '')
     return -1;
-  if (aref (par, length (par) - 1) = '')
-    ty := 'C';
-  else
-    ty := 'R';
-  id := DAV_SEARCH_ID (par, ty);
+
+  what := case when (aref (par, length (par) - 1) = '') then 'C' else 'R' end;
+  id := DAV_SEARCH_ID (par, what);
   if (isinteger (id) and (0 > id))
     return (case when silent then 1 else id end);
 
   if (extern)
-    {
-      auth_uid := DAV_AUTHENTICATE (id, ty, '11_', auth_uname, auth_pwd);
-      if (auth_uid < 0)
-        return (case when silent then 1 else auth_uid end);
-    }
+  {
+    auth_uid := DAV_AUTHENTICATE (id, what, '11_', auth_uname, auth_pwd);
+    if (auth_uid < 0)
+      return (case when silent then 1 else auth_uid end);
+  }
   else
     auth_uid := http_nobody_uid ();
-  if (check_locks and (0 <> (rc := DAV_IS_LOCKED (id, ty, check_locks))))
+
+  if (check_locks and (0 <> (rc := DAV_IS_LOCKED (id, what, check_locks))))
     return rc;
 
   if (isarray (id))
+  {
+    declare det varchar;
+    declare detcol_id, detcol_path, unreached_path any;
+    DAV_SEARCH_ID_OR_DET (par, what, det, detcol_id, detcol_path, unreached_path);
+    return call (cast (det as varchar) || '_DAV_DELETE') (detcol_id, unreached_path, what, silent, auth_uid);
+  }
+
+  if (what = 'R')
+  {
+    declare type, graph varchar;
+
+    type := (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = id);
+    if (type = 'text/turtle')
     {
-      declare det varchar;
-      declare detcol_id, detcol_path, unreached_path any;
-      DAV_SEARCH_ID_OR_DET (par, ty, det, detcol_id, detcol_path, unreached_path);
-      return call (cast (det as varchar) || '_DAV_DELETE') (detcol_id, unreached_path, ty, silent, auth_uid);
+      graph := WS.WS.DAV_HOST () || path;
+      SPARQL clear graph ?:graph;
     }
 
-  if (ty = 'R')
-    {
-      delete from WS.WS.SYS_DAV_RES where RES_ID = id;
-      RDF_SINK_DELETE (path);
-    }
-  else if (ty = 'C')
-    {
-      declare rrc integer;
-      declare items any;
-      declare det, proc, graph varchar;
+    delete from WS.WS.SYS_DAV_RES where RES_ID = id;
+    RDF_SINK_DELETE (path);
+  }
+  else if (what = 'C')
+  {
+    declare rrc integer;
+    declare items any;
+    declare det, proc, graph varchar;
 
-      det := cast (coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = id), '') as varchar);
-      if (det in ('', 'IMAP', 'S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
+    det := cast (coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = id), '') as varchar);
+    if (det in ('', 'IMAP', 'S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV'))
+    {
+      if (det = 'IMAP')
+      {
+        items := call (det || '_DAV_DIR_LIST') (id, vector (), path, 0, '%', http_dav_uid ());
+        connection_set ('dav_store', 1);
+        foreach (any item in items) do
         {
-          if (det = 'IMAP')
-            {
-              items := call (det || '_DAV_DIR_LIST') (id, vector (), path, 0, '%', http_dav_uid ());
-              connection_set ('dav_store', 1);
-              foreach (any item in items) do
-                {
-                  rrc := call (det || '_DAV_DELETE') (id, split_and_decode (item[10] || case when (item[1] = 'C') then '/' else '' end, 0, '\0\0/'), item[1], silent, auth_uid);
-                  if (rrc <> 1)
-                    {
-                      connection_set ('dav_store', null);
-                      rollback work;
-                      return rrc;
-                    }
-                }
-              connection_set ('dav_store', null);
-            }
-          else
-            {
-              if (det <> '')
-                connection_set ('dav_store', 1);
-
-              for select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id do
-                {
-                  rrc := DAV_DELETE_INT (RES_FULL_PATH, silent, auth_uname, auth_pwd, extern);
-                  if ((rrc <> 1) and (RES_FULL_PATH not like '%,acl'))
-                    {
-                      connection_set ('dav_store', null);
-                      rollback work;
-                      return rrc;
-                    }
-                }
-              for select COL_ID, COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = id do
-                {
-                  rrc := DAV_DELETE_INT (WS.WS.COL_PATH(COL_ID), silent, auth_uname, auth_pwd, extern);
-                  if ((rrc <> 1) and (COL_NAME not like '%,acl'))
-                    {
-                      connection_set ('dav_store', null);
-                      rollback work;
-                      return rrc;
-                    }
-                }
-              if (det <> '')
-                connection_set ('dav_store', null);
-            }
-
-          graph := DB.DBA.DAV_PROP_GET_INT (id, 'C', sprintf ('virt:%s-graph', det), 0);
-          if (not isnull (DB.DBA.DAV_HIDE_ERROR (graph)) and (graph <> ''))
+          rrc := call (det || '_DAV_DELETE') (id, split_and_decode (item[10] || case when (item[1] = 'C') then '/' else '' end, 0, '\0\0/'), item[1], silent, auth_uid);
+          if (rrc <> 1)
           {
-            declare exit handler for sqlstate '*' {;};
-            DB.DBA.RDF_GRAPH_GROUP_DEL ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', graph);
+            connection_set ('dav_store', null);
+            rollback work;
+            return rrc;
           }
         }
-      delete from WS.WS.SYS_DAV_COL where COL_ID = id;
+        connection_set ('dav_store', null);
+      }
+      else
+      {
+        if (det <> '')
+          connection_set ('dav_store', 1);
+
+        for select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id do
+        {
+          rrc := DAV_DELETE_INT (RES_FULL_PATH, silent, auth_uname, auth_pwd, extern);
+          if ((rrc <> 1) and (RES_FULL_PATH not like '%,acl'))
+          {
+            connection_set ('dav_store', null);
+            rollback work;
+            return rrc;
+          }
+        }
+        for select COL_ID, COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = id do
+        {
+          rrc := DAV_DELETE_INT (WS.WS.COL_PATH(COL_ID), silent, auth_uname, auth_pwd, extern);
+          if ((rrc <> 1) and (COL_NAME not like '%,acl'))
+          {
+            connection_set ('dav_store', null);
+            rollback work;
+            return rrc;
+          }
+        }
+        if (det <> '')
+          connection_set ('dav_store', null);
+      }
+
+      graph := DB.DBA.DAV_PROP_GET_INT (id, 'C', sprintf ('virt:%s-graph', det), 0);
+      if (not isnull (DB.DBA.DAV_HIDE_ERROR (graph)) and (graph <> ''))
+      {
+        declare exit handler for sqlstate '*' {;};
+        DB.DBA.RDF_GRAPH_GROUP_DEL ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', graph);
+      }
     }
+    delete from WS.WS.SYS_DAV_COL where COL_ID = id;
+  }
   else if (not silent)
+  {
     return -1;
+  }
+
   return 1;
 
 disabled_owner:

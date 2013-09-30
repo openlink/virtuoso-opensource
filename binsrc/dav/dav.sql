@@ -1573,13 +1573,14 @@ del_col_end:
 
 create procedure WS.WS."DELETE" (in path varchar, inout params varchar, in lines varchar)
 {
-  declare depth,len integer;
+  declare depth, len integer;
   declare src_id any;
   declare uname, upwd, _perms varchar;
-  declare rc, err integer;
+  declare rc integer;
   declare res integer;
   declare u_id, g_id integer;
-  declare p_comm, msg, stat,st varchar;
+  declare what varchar;
+
   uname := null;
   upwd := null;
   u_id := null;
@@ -1587,54 +1588,54 @@ create procedure WS.WS."DELETE" (in path varchar, inout params varchar, in lines
 
   set isolation = 'serializable';
   if ((length(path) > 1) and ('' = path[length(path)-1]))
-    {
-      st := 'C';
-      src_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'C'));
-    }
+  {
+    what := 'C';
+    src_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'C'));
+  }
   else
+  {
+    src_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'C'));
+    if (src_id is not null)
     {
-      src_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'C'));
-      if (src_id is not null)
-        {
-          st := 'C';
-	  path := vector_concat (path, vector (''));
-	}
-      else
-        {
-          st := 'R';
-          src_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path), 'R'));
-        }
+      what := 'C';
+      path := vector_concat (path, vector (''));
     }
-  -- dbg_obj_princ ('WS.WS."DELETE" with path ', path, ' is of type ', st, ' http_path() is ', http_path());
+    else
+    {
+      what := 'R';
+      src_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path), 'R'));
+    }
+  }
+  -- dbg_obj_princ ('WS.WS."DELETE" with path ', path, ' is of type ', what, ' http_path() is ', http_path());
   if (src_id is null)
-    {
-      http_request_status ('HTTP/1.1 404 Not Found');
-      return;
-    }
-  rc := DAV_AUTHENTICATE_HTTP (src_id, st, '11_', 1, lines, uname, upwd, u_id, g_id, _perms);
+  {
+    DB.DBA.DAV_SET_HTTP_STATUS (404);
+    return;
+  }
+  rc := DAV_AUTHENTICATE_HTTP (src_id, what, '11_', 1, lines, uname, upwd, u_id, g_id, _perms);
   -- dbg_obj_princ ('Authentication in WS.WS."DELETE" gives ', rc, uname, upwd, u_id, g_id, _perms);
   if (rc < 0)
-    {
-      return;
-    }
+	{
+    DB.DBA.DAV_SET_AUTHENTICATE_HTTP_STATUS (rc);
+    return;
+	}
 
   rc := DAV_DELETE_INT (DAV_CONCAT_PATH ('/', path), 1, null, null, 0);
-  -- dbg_obj_princ ('DAV_DELETE_INT returns %d', rc);
   if (rc >= 0)
-    {
-      http_request_status ('HTTP/1.1 204 No Content');
-      return;
-    }
-  if (rc = -8)
-    {
-      http_request_status ('HTTP/1.1 423 Locked');
-      return;
-    }
-  http_request_status ('HTTP/1.1 500 Internal Server Error');
+  {
+    DB.DBA.DAV_SET_HTTP_STATUS (204);
+  }
+  else if (rc = -8)
+  {
+    DB.DBA.DAV_SET_HTTP_STATUS (423);
+  }
+  else
+  {
+    DB.DBA.DAV_SET_HTTP_STATUS (500);
+  }
   return;
 }
 ;
-
 
 -- return 1 if it is a collection
 create procedure WS.WS.ISCOL (in path varchar)
@@ -1697,20 +1698,18 @@ create procedure WS.WS.HEAD (in path varchar, inout params varchar, in lines var
 --#ENDIF
 create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varchar)
 {
-  declare _col_parent_id integer;
+  declare rc, _col_parent_id integer;
   declare id integer;
-  declare content varchar;
   declare content_type varchar;
-  declare rc, err, inc, end_inc, inc_col, inc_id integer;
   declare _col integer;
   declare _name varchar;
   declare _cont_len integer;
-  declare temp varchar;
-  declare full_path, _perms, _vsp, uname, upwd varchar;
-  declare _u_id, _g_id, _is_xper, is_sparql integer;
-  declare p_name, p_text, p_comm, stat, msg, p_inc, p_root, inc_name, inc_cont, str, location, inh varchar;
+  declare full_path, _perms, uname, upwd varchar;
+  declare _u_id, _g_id integer;
+  declare location varchar;
   declare ses any;
   --set isolation = 'serializable';
+
   ses := aref_set_0 (params, 1);
 
   whenever sqlstate '*' goto error_ret;
@@ -1721,10 +1720,8 @@ create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varc
   WS.WS.IS_REDIRECT_REF (path, lines, location);
   path := WS.WS.FIXPATH (path);
   full_path := DAV_CONCAT_PATH ('/', path);
-  _vsp := aref (path, length (path) - 1);
   _u_id := null;
   _g_id := null;
-  is_sparql := 0;
   _col_parent_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'P'));
   if (_col_parent_id is not null)
     {
@@ -1746,45 +1743,34 @@ create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varc
     }
   content_type := WS.WS.FINDPARAM (lines, 'Content-Type:');
   if (content_type = '')
+  {
     content_type := http_mime_type (full_path);
-  temp :=  WS.WS.FINDPARAM (lines, 'Content-Length:');
-  _cont_len := atoi (temp);
+  }
+  _cont_len := atoi (WS.WS.FINDPARAM (lines, 'Content-Length:'));
   if ((full_path like '%.vsp' or full_path like '%.vspx') and _cont_len > 0)
     {
       content_type := 'text/html';
     }
    --dbg_obj_princ ('content_type=', content_type, ',  _cont_len=', _cont_len);
 
-  if (content_type = 'application/sparql-query')
-    {
-      WS.WS.SPARQL_QUERY_POST (full_path, ses, uname);
-      is_sparql := 1;
-    }
-  if (content_type = 'text/turtle')
-  {
-      WS.WS.TTL_QUERY_POST (full_path, ses, uname);
-	  is_sparql := 0;
-  }
   rc := -28;
-  rc := DAV_RES_UPLOAD_STRSES_INT (
-    full_path, ses, content_type, _perms,
-    uname, null, uname, upwd, 0,
-    now(), now(), null,
-    _u_id, _g_id, 0 );
+  rc := DAV_RES_UPLOAD_STRSES_INT (full_path, ses, content_type, _perms, uname, null, uname, upwd, 0, now(), now(), null, _u_id, _g_id, 0, 1);
   --dbg_obj_princ ('DAV_RES_UPLOAD_STRSES_INT returned ', rc, ' of type ', __tag (rc));
-  if ((not isinteger (rc)) or (rc > 0))
+  if (DAV_HIDE_ERROR (rc) is not null)
     {
       commit work;
       http_request_status ('HTTP/1.1 201 Created');
       http_header (sprintf('Content-Type: %s\r\nLink: <>;rel=<http://www.w3.org/ns/ldp/Resource>\r\n', content_type));
-      if (is_sparql = 1)
+    if (content_type = 'application/sparql-query')
 	http_header ('MS-Author-Via: SPARQL\r\n');
       else
 	http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
 	    '<HTML><HEAD>',
 	    '<TITLE>201 Created</TITLE>',
 	    '</HEAD><BODY>', '<H1>Created</H1>',
-	    'Resource ', sprintf ('%V', full_path),' has been created.</BODY></HTML>'));
+        'Resource ', sprintf ('%V', full_path),' has been created.</BODY></HTML>')
+      );
+
       return;
     }
 error_ret:
@@ -1806,19 +1792,17 @@ error_ret:
 -- PATCH METHOD
 create procedure WS.WS.PATCH (in path any, inout params any, in lines any)
 {
-  declare _col_parent_id integer;
+  declare rc, _col_parent_id integer;
   declare id integer;
-  declare content varchar;
   declare content_type varchar;
-  declare rc, err, inc, end_inc, inc_col, inc_id integer;
   declare _col integer;
   declare _name varchar;
   declare _cont_len integer;
-  declare temp varchar;
-  declare full_path, _perms, _vsp, uname, upwd varchar;
-  declare _u_id, _g_id, _is_xper integer;
-  declare p_name, p_text, p_comm, stat, msg, p_inc, p_root, inc_name, inc_cont, str, location, inh varchar;
+  declare full_path, _perms, uname, upwd varchar;
+  declare _u_id, _g_id integer;
+  declare location varchar;
   declare ses any;
+
   ses := aref_set_0 (params, 1);
 
   whenever sqlstate '*' goto error_ret;
@@ -1828,7 +1812,6 @@ create procedure WS.WS.PATCH (in path any, inout params any, in lines any)
   WS.WS.IS_REDIRECT_REF (path, lines, location);
   path := WS.WS.FIXPATH (path);
   full_path := DAV_CONCAT_PATH ('/', path);
-  _vsp := aref (path, length (path) - 1);
   _u_id := null;
   _g_id := null;
   _col_parent_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'P'));
@@ -1851,35 +1834,27 @@ create procedure WS.WS.PATCH (in path any, inout params any, in lines any)
   content_type := WS.WS.FINDPARAM (lines, 'Content-Type:');
   if (content_type = '')
     content_type := http_mime_type (full_path);
-  temp :=  WS.WS.FINDPARAM (lines, 'Content-Length:');
-  _cont_len := atoi (temp);
+
+  _cont_len := atoi (WS.WS.FINDPARAM (lines, 'Content-Length:'));
   if ((full_path like '%.vsp' or full_path like '%.vspx') and _cont_len > 0)
     {
       content_type := 'text/html';
     }
    --dbg_obj_princ ('content_type=', content_type, ',  _cont_len=', _cont_len);
 
-  if (content_type = 'application/sparql-query')
-      WS.WS.SPARQL_QUERY_POST (full_path, ses, uname);
-  if (content_type = 'text/turtle')
-      WS.WS.TTL_QUERY_POST (full_path, ses, uname);
   rc := -28;
-  rc := DAV_RES_UPLOAD_STRSES_INT (
-    full_path, ses, content_type, _perms,
-    uname, null, uname, upwd, 0,
-    now(), now(), null,
-    _u_id, _g_id, 0 );
-
+  rc := DAV_RES_UPLOAD_STRSES_INT (full_path, ses, content_type, _perms, uname, null, uname, upwd, 0, now(), now(), null, _u_id, _g_id, 0, 1);
   --dbg_obj_princ ('DAV_RES_UPLOAD_STRSES_INT returned ', rc, ' of type ', __tag (rc));
-  if ((not isinteger (rc)) or (rc > 0))
+  if (DAV_HIDE_ERROR (rc) is not null)
     {
       commit work;
-      http_request_status ('HTTP/1.1 204 No Content');
+    DB.DBA.DAV_SET_HTTP_STATUS (204);
+
       return;
     }
+
 error_ret:
    --dbg_obj_princ ('PUT get error: ', __SQL_STATE, __SQL_MESSAGE);
-
   if (__SQL_STATE = '40001')
     {
       rollback work;
@@ -3034,22 +3009,25 @@ create procedure WS.WS.POST (in path varchar, inout params varchar, in lines var
 }
 ;
 
-create procedure WS.WS.SPARQL_QUERY_POST (in path varchar, inout ses varchar, in uname varchar)
+create procedure WS.WS.SPARQL_QUERY_POST (
+  in path varchar,
+  inout ses varchar,
+  in uname varchar,
+  in dav_call integer := 0)
 {
-  declare def_gr, full_qr, qr, cname any;
+  declare def_gr, full_qr, qr any;
   declare stat, msg, meta, data any;
+
+  if (dav_call)
+  {
   ses := http_body_read ();
-  qr := string_output_string (ses);
-  cname := virtuoso_ini_item_value ('URIQA', 'DefaultHost');
-  if (cname is null)
+  }
+  qr := ses;
+  if (not isstring (ses))
     {
-      declare tmp any;
-      tmp := sys_stat ('st_host_name');
-      if (server_http_port () <> '80')
-	tmp := tmp || ':'|| server_http_port ();
-      cname := tmp;
+    qr := string_output_string (ses);
     }
-  def_gr := sprintf ('http://%s%U', cname, path);
+  def_gr := WS.WS.DAV_HOST () || sprintf ('%U', path);
   if (lower (qr) not like 'construct %' and lower (qr) not like 'describe %')
     full_qr := sprintf ('SPARQL define input:default-graph-uri <%s> ', def_gr);
   else
@@ -3075,31 +3053,36 @@ create procedure WS.WS.SPARQL_QUERY_POST (in path varchar, inout ses varchar, in
 }
 ;
 
-create procedure WS.WS.TTL_QUERY_POST (in path varchar, inout ses varchar, in uname varchar)
+create procedure WS.WS.TTL_QUERY_POST (
+  in path varchar,
+  inout ses varchar,
+  in uname varchar,
+  in dav_call integer := 0)
 {
-  declare def_gr, full_qr, qr, cname any;
-  declare stat, msg, meta, data any;
-  ses := http_body_read ();
-  if (__tag (ses) = 185)
+  declare def_gr any;
+	declare exit handler for sqlstate '*'
 	{
-	  declare real_content any;
-	  real_content := http_body_read (1);
-      ses := string_output_string (real_content);
+	  connection_set ('__sql_state', __SQL_STATE);
+	  connection_set ('__sql_message', __SQL_MESSAGE);
+	  return -44;
+	};
+
+  if (dav_call)
+{
+  ses := http_body_read ();
+    if (__tag (ses) = 185) -- string output
+	{
+  	  ses := http_body_read (1);
 	 }
-  cname := virtuoso_ini_item_value ('URIQA', 'DefaultHost');
-  if (cname is null)
-    {
-      declare tmp any;
-      tmp := sys_stat ('st_host_name');
-      if (server_http_port () <> '80')
-	tmp := tmp || ':'|| server_http_port ();
-      cname := tmp;
     }
-  def_gr := sprintf ('http://%s%s', cname, path);
+  def_gr := WS.WS.DAV_HOST () || path;
   if (exists (select 1 from DB.DBA.SYS_USERS where U_NAME = uname and U_SQL_ENABLE = 1))
     set_user_id (uname);
 
-  DB.DBA.TTLP (ses, HTTP_REQUESTED_URL (), def_gr);
+  log_enable (3);
+  DB.DBA.TTLP (ses, def_gr, def_gr);
+
+  return 0;
 }
 ;
 
