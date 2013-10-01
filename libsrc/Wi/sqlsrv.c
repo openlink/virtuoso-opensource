@@ -3446,7 +3446,6 @@ sql_code_global_init ()
   sqls_define_1 ();
   cache_resources();
   NO_LITE (sqls_define_2pc);
-  NO_LITE (sqls_define_blog);
   NO_LITE (sqls_define_pldbg);
   NO_LITE (sqls_define_adm);
 #ifdef VAD
@@ -3477,7 +3476,6 @@ sql_code_arfw_global_init ()
   sqls_arfw_define_sys ();
   sqls_arfw_define_sparql ();
   sqls_arfw_define ();
-  NO_LITE (sqls_arfw_define_blog);
   sqls_arfw_define_1 ();
   NO_LITE (sqls_arfw_define_ddk);
   NO_LITE (sqls_arfw_define_repl);
