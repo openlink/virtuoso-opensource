@@ -1845,7 +1845,7 @@ create procedure WEBDAV.DBA.user_initialize (
   if (isinteger (user_home))
     signal ('BRF01', sprintf ('Home folder can not be created for user "%s".', user_name));
 
-  DB.DBA.DAV_OWNER_ID (user_name, null, uid, gid);
+  WEBDAV.DBA.DAV_OWNER_ID (user_name, null, uid, gid);
   cid := DB.DBA.DAV_SEARCH_ID (user_home, 'C');
   if (not WEBDAV.DBA.DAV_ERROR (cid))
   {
@@ -3158,7 +3158,7 @@ create procedure WEBDAV.DBA.DAV_INIT_INT (
   declare uname, gname varchar;
   declare permissions any;
 
-  DB.DBA.DAV_OWNER_ID (WEBDAV.DBA.account (), null, uid, gid);
+  WEBDAV.DBA.DAV_OWNER_ID (WEBDAV.DBA.account (), null, uid, gid);
   WEBDAV.DBA.DAV_API_PARAMS (uid, gid, uname, gname, auth_name, auth_pwd);
   uname := coalesce (auth_name, 'nobody');
 
@@ -3463,6 +3463,21 @@ create procedure WEBDAV.DBA.DAV_API_PWD (
   if (auth_pwd[0] = 0)
     auth_pwd := pwd_magic_calc(auth_name, auth_pwd, 1);
   return auth_pwd;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.DAV_OWNER_ID (
+  in uid any,
+  in gid any,
+  out _uid integer,
+  out _gid integer)
+{
+  if (isstring (uid) and (uid = 'dba'))
+    uid := WEBDAV.DBA.account_id (uid);
+
+  DB.DBA.DAV_OWNER_ID (uid, gid, _uid, _gid);
 }
 ;
 
