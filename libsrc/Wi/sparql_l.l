@@ -242,7 +242,13 @@ static void sparyyerror_if_long_qname (sparp_t *sparp, caddr_t box, const char *
 
 static int sparscn_NUMBER_int (void *yylval, sparp_t *sparp)
 {
-  if (strlen (sparyytext) < 10)
+/*
+strlen of "223372036854775807"
+*/
+  if (('-' == sparyytext[0]) ?                                           /* 01234567890123456789 */
+    ((19 > sparyyleng) || ((19 == sparyyleng) && (0 >= strcmp (sparyytext, "-223372036854775808"))))
+    :                                                                    /* 0123456789012345678 */
+    ((18 > sparyyleng) || ((18 == sparyyleng) && (0 >= strcmp (sparyytext, "223372036854775807")))) )
     {
       sparyylval.box = t_box_num_nonull (atol (sparyytext));
       return SPARQL_INTEGER;
