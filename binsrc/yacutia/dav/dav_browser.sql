@@ -2740,6 +2740,10 @@ create procedure WEBDAV.DBA.det_category (
     {
       retValue := 'Access Control Lists';
     }
+    else if (type = 'text/turtle')
+    {
+      retValue := 'RDF Turtle';
+    }
     else
     {
       retValue := (select RS_CATNAME from WS.WS.SYS_RDF_SCHEMAS, WS.WS.SYS_MIME_RDFS where RS_URI = MR_RDF_URI and MR_MIME_IDENT = type);
