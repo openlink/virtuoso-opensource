@@ -78,7 +78,6 @@
                   <table cellpadding="0" cellspacing="0" border="0">
                     <tr>
 		      <!--td class="page_tab" align="center">
-			  	
 			<v:url xhtml_style="page_tab" url="sec_pki_1.vspx" value="Public Key Infrastructure" render-only="1"/>
 		      </td-->
 		      <td class="page_tab_selected" align="center">
@@ -117,12 +116,16 @@
                       <?vsp
 		          }
                       ?>
-		      <?vsp if (DB.DBA.VAD_CHECK_VERSION ('Framework') is not null or DB.DBA.VAD_CHECK_VERSION ('policy_manager') is not null) { ?>
+                                          <?vsp
+                                            if (DB.DBA.VAD_CHECK_VERSION ('Framework') is not null or DB.DBA.VAD_CHECK_VERSION ('policy_manager') is not null)
+                                            {
+                                          ?>
 		      <td class="<?V self.astyle ('NetID ACLs') ?>" align="center">
 			<v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="NetID ACLs" render-only="1"/>
 		      </td>
-		      <?vsp } ?>
-                        
+                                          <?vsp
+                                            }
+                                          ?>
 			<td class="page_tab_empty" align="right" width="100%">
                         </td>
                     </tr>
@@ -133,10 +136,18 @@
 			<!-- MAIN -->
 			<v:template name="list" type="simple" condition="self.addnew = 0 and self.edit is null">
 			<table class="listing">
-			    <tr class="listing_header_row"><th>NetID/Group URI</th><th><v:url value="Add New" name="uadd" url="sec_auth_sponger_2.vspx?add=1"  enabled="--(select 1 from FOAF_SSL_ACL where FS_REALM = 'Virtuoso Sponger')"/></th></tr>
+                                                <tr class="listing_header_row">
+                                                  <th>NetID/Group URI</th>
+                                                  <th>
+                                                    <v:url value="Add New" name="uadd" url="sec_auth_sponger_2.vspx?add=1" enabled="--(select 1 from FOAF_SSL_ACL where FS_REALM = 'Virtuoso Sponger')"/>
+                                                  </th>
+                                                </tr>
 			    <?vsp 
 			    	declare ctr int;
-			    	for select distinct RC_WEBID from RDF_CARTRIDGES_ACL do { ?>
+
+                                                  for select distinct RC_WEBID from RDF_CARTRIDGES_ACL do
+                                                  {
+                                                ?>
 			    <tr>
 				<td><?V RC_WEBID ?></td>
 				<td>
@@ -144,7 +155,9 @@
 				    <v:url value="Delete" name="udel" url="--sprintf ('sec_auth_sponger_2.vspx?del=%U', RC_WEBID)" render-only="1"/>
 				</td>
 			    </tr>  
-			    <?vsp ctr := ctr + 1; } 
+                                                <?vsp
+                                                    ctr := ctr + 1;
+                                                  }
 			    if (ctr = 0) 
 			      http ('<tr><td colspan="2">No permissions defined</td></tr>');	
 			    ?>
@@ -154,11 +167,13 @@
 			    <div>
 				<label for="gname">NetID/Group URI pattern</label>
 				      <!--v:text name="gname" value="-#-self.edit" xhtml_id="gname" xhtml_size="100"/--> 
-				      <v:data-list name="gname" 
+                                                <v:data-list
+                                                  name="gname"
 					  sql="select FS_URI from FOAF_SSL_ACL where FS_REALM = 'Virtuoso Sponger'" 
 					  key-column="FS_URI" 
 					  value-column="FS_URI" 
-					  value="--self.edit" />
+                                                  value="--self.edit"
+                                                />
 				      <br/>
                         	      <table class="listing" rules="groups">
                           	      <tr class="listing_header_row">
@@ -202,11 +217,14 @@
                                 </table>
 			    <v:button action="simple" name="cancel_new" value="Cancel">
 				<v:on-post>
+                                                    <![CDATA[
                                     self.vc_redirect ('sec_auth_sponger_2.vspx');
+                                                    ]]>
 				</v:on-post>
 			    </v:button>
 			    <v:button action="simple" name="save_new" value="Save">
-				<v:on-post><![CDATA[
+                                                  <v:on-post>
+                                                    <![CDATA[
 				    declare N int;
 				    self.gname.ufl_value := trim (self.gname.ufl_value);
 				    if (not length (self.gname.ufl_value))
@@ -227,7 +245,8 @@
                                       }
 				    commit work;
                                     self.vc_redirect ('sec_auth_sponger_2.vspx');
-				    ]]></v:on-post>
+                                                    ]]>
+                                                  </v:on-post>
 			    </v:button>
 			    </div>
 		        </v:template>

@@ -426,6 +426,7 @@
 		    self.vc_error_message := msg;
 		    return;
                   }
+		commit work;  
 	     }
 	    http_listen_host (lhost, 0, ssl_opts);
 	    self.stopit := 0;
