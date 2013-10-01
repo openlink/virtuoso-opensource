@@ -1527,6 +1527,13 @@ sparp_lit_native_valmode (SPART *tree)
             if (uname_xmlschema_ns_uri_hash_time == tree->_.lit.datatype)
               return SSG_VALMODE_NUM;
             break;
+#if 0
+          case DV_STRING:
+            if ((uname_xmlschema_ns_uri_hash_dayTimeDuration == tree->_.lit.datatype) &&
+              sparp_literal_is_xsd_valid (sparp, tree->_.lit.val, tree->_.lit.datatype, tree->_.lit.language) )
+              return SSG_VALMODE_NUM;
+            break;
+#endif
           }
         }
       return SSG_VALMODE_SQLVAL;
@@ -2460,7 +2467,9 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
   if ((NULL != type) && (NULL == lang))
     {
       caddr_t dflt_xsd_type_of_box = xsd_type_of_box (value);
-      int box_is_plain_num = ((type == dflt_xsd_type_of_box) || ((uname_xmlschema_ns_uri_hash_decimal == type) && (uname_xmlschema_ns_uri_hash_double == dflt_xsd_type_of_box)));
+      int box_is_plain_num = ((type == dflt_xsd_type_of_box)
+        || ((uname_xmlschema_ns_uri_hash_decimal == type) && (uname_xmlschema_ns_uri_hash_double == dflt_xsd_type_of_box))
+        || ((uname_xmlschema_ns_uri_hash_boolean == type) && (DV_LONG_INT == DV_TYPE_OF (value)) && ((0 == unbox(value)) || (1 == unbox(value)))) );
       dk_free_box (dflt_xsd_type_of_box);
       if (box_is_plain_num)
         {
@@ -4025,6 +4034,13 @@ expanded_sameterm_ready:
       END_DO_BOX_FAST;
       ssg_puts ("))");
       goto print_asname;
+    case SPAR_BIF_VALID:
+      ssg_puts (" rdf_valid_impl (");
+      ssg_print_scalar_expn (ssg, arg1, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+      ssg_puts (", (select __uname (RDT_QNAME) from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = rdf_box_type (");
+      ssg_print_scalar_expn (ssg, arg1, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+      ssg_puts (")))");
+      goto print_asname;
     default:
       {
         ssg_valmode_t prev_arg_valmode = SSG_VALMODE_AUTO, arg_valmode;
@@ -5004,6 +5020,38 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
               native = sparp_lit_native_valmode (tree);
             if (SSG_VALMODE_NUM == native)
               ssg_print_literal_as_sqlval (ssg, NULL, tree);
+            else if ((uname_xmlschema_ns_uri_hash_dayTimeDuration == tree->_.lit.datatype) &&
+              sparp_literal_is_xsd_valid (ssg->ssg_sparp, tree->_.lit.val, tree->_.lit.datatype, tree->_.lit.language) )
+              {
+                const char *p_name;
+                long desc_idx;
+                xqf_str_parser_desc_t *desc;
+                caddr_t parsed_value;
+                if (DV_STRING != DV_TYPE_OF (tree->_.lit.val))
+                  {
+                    ssg_print_box_as_sql_atom (ssg, tree->_.lit.val, SQL_ATOM_UNAME_ALLOWED);
+                    return;
+                  }
+                p_name = tree->_.lit.datatype + XMLSCHEMA_NS_URI_LEN + 1;
+                desc_idx = ecm_find_name (p_name, xqf_str_parser_descs_ptr, xqf_str_parser_desc_count, sizeof (xqf_str_parser_desc_t));
+                if (ECM_MEM_NOT_FOUND == desc_idx)
+                  spar_sqlprint_error ("ssg_" "print_literal_as_sqlval (): can't find parser for literal");
+                desc = xqf_str_parser_descs_ptr + desc_idx;
+                parsed_value = NULL;
+                QR_RESET_CTX
+                  {
+                    desc->p_proc (&parsed_value, tree->_.lit.val, desc->p_opcode);
+                  }
+                QR_RESET_CODE
+                  {
+                    POP_QR_RESET;
+                    spar_sqlprint_error ("ssg_" "print_literal_as_sqlval (): error signalled by literal type-specific parser");
+                  }
+                END_QR_RESET
+                ssg_print_box_as_sql_atom (ssg, parsed_value, SQL_ATOM_UNAME_ALLOWED);
+                dk_free_tree (parsed_value);
+                return;
+              }
             else
               ssg_puts_with_comment (" NULL", "non-NUM literal as num");
             goto print_asname;
@@ -7976,8 +8024,8 @@ from_printed:
       if (IS_BOX_POINTER (ft_type))
         {
           caddr_t var_name = tree->_.triple.tr_object->_.var.vname;
-          SPART *ft_pred = NULL, **args, *ft_arg1, *g;
-          int ft_type_is_geo = ((uname_bif_c_spatial_contains == ft_type) || (uname_bif_c_spatial_intersects == ft_type) || (uname_bif_c_sp_contains == ft_type) || (uname_bif_c_sp_intersects == ft_type));
+          SPART *ft_pred = NULL, **args, *ft_arg1;
+          int ft_type_is_geo = SPAR_FT_TYPE_IS_GEO(ft_type);
           qm_ftext_t *qmft = (ft_type_is_geo ? qm->qmObjectMap->qmvGeo : qm->qmObjectMap->qmvFText);
           caddr_t ft_alias;
           int ctr, argctr, argcount, contains_in_rdf_quad;
@@ -8006,8 +8054,11 @@ from_printed:
           argcount = BOX_ELEMENTS (args);
           contains_in_rdf_quad = (uname_bif_c_contains == tree->_.triple.ft_type) &&
             !strcmp ("DB.DBA.RDF_QUAD", tree->_.triple.tc_list[0]->tc_qm->qmTableName);
-          g = tree->_.triple.tr_graph;
-          ft_arg1 = ssg_patch_ft_arg1 (ssg, ft_arg1, g, contains_in_rdf_quad);
+          if (!ft_type_is_geo)
+            {
+              SPART *g = tree->_.triple.tr_graph;
+              ft_arg1 = ssg_patch_ft_arg1 (ssg, ft_arg1, g, contains_in_rdf_quad);
+            }
           ssg_print_where_or_and (ssg, (ft_type_is_geo ? "spatial predicate" : "freetext predicate"));
           ssg_putchar (' ');
           ssg_puts (((uname_bif_c_spatial_contains == ft_type) ? "contains" : (ft_pred->_.funcall.qname + 4)));

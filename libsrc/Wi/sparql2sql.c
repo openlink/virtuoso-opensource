@@ -1132,7 +1132,7 @@ typedef struct so_BOP_OR_filter_ctx_s
   sparp_t *bofc_sparp;				/*!< parser/compiler context, to not pass an extra argument */
   SPART *bofc_var_sample;			/*!< Common optimizable variable in question */
   dk_set_t bofc_strings;			/*!< Collected string values, they may be convert into sprintf format strings to tighten equiv of the common variable */
-  SPART *bofc_reason_for_union;			/*!< The filter has a call of contains() or sp_intersects() as members so the gp containing this OR should be converted to UNION */
+  SPART *bofc_reason_for_union;			/*!< The filter has a call of contains() or st_intersects() as members so the gp containing this OR should be converted to UNION */
   SPART **bofc_BOP_OR_of_reason_for_union;	/*!< When a { pattern FILTER ( ... OR ... ) } should be replaced with UNION, one OR should be edited */
   int bofc_not_optimizable;			/*!< The filter is of complicated form or the variable is not common or global */
   int bofc_can_be_iri;				/*!< Flag if there's at least equality to a IRI */
@@ -1343,7 +1343,7 @@ sparp_optimize_BOP_OR_filter (sparp_t *sparp, SPART *parent_gp, SPART *gp, int g
         spar_internal_error (sparp, "sparp_" "optimize_BOP_OR_filter(): weird NULL parent gp / WHERE_L gp subtype combination");
 #endif
       if (filt_idx >= BOX_ELEMENTS (gp->_.gp.filters) - gp->_.gp.glued_filters_count)
-        spar_error (sparp, "A special predicate, like bif:contains or bif:sp_intersects, can not be used as an argument of '||' operator in a \"joining\" FILTER at line %ld of query; please re-phrase the query", (long)unbox (filt_ptr[0]->srcline));
+        spar_error (sparp, "A special predicate, like bif:contains or bif:st_intersects, can not be used as an argument of '||' operator in a \"joining\" FILTER at line %ld of query; please re-phrase the query", (long)unbox (filt_ptr[0]->srcline));
       if (0 != gp->_.gp.subtype)
         {
           SPART **all_membs, *filt, *new_gp;

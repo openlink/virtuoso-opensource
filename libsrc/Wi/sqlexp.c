@@ -874,7 +874,35 @@ cv_artm_set_type (instruction_t * ins)
     {
       if (ins->_.artm.right)
 	{
+	  switch (ins->ins_type)
+            {
+            case IN_ARTM_PLUS:
+              if ((DV_DATETIME == ins->_.artm.left->ssl_dtp) || (DV_DATETIME == ins->_.artm.right->ssl_dtp))
+                {
+                  ins->_.artm.result->ssl_dtp = DV_DATETIME;
+                  goto result_dtp_is_set;
+                }
+              break;
+            case IN_ARTM_MINUS:
+              if (DV_DATETIME == ins->_.artm.left->ssl_dtp)
+                {
+                  if (DV_DATETIME == ins->_.artm.right->ssl_dtp)
+                    {
+                      ins->_.artm.result->ssl_dtp = DV_NUMERIC;
+                      goto result_dtp_is_set;
+                    }
+                  if ((DV_LONG_INT == ins->_.artm.right->ssl_dtp) || (DV_DOUBLE_FLOAT == ins->_.artm.right->ssl_dtp) || (DV_NUMERIC == ins->_.artm.right->ssl_dtp))
+                    {
+                      ins->_.artm.result->ssl_dtp = DV_DATETIME;
+                      goto result_dtp_is_set;
+                    }
+                  ins->_.artm.result->ssl_dtp = DV_ANY;
+                  goto result_dtp_is_set;
+                }
+              break;
+            }
 	  ins->_.artm.result->ssl_dtp = MAX (ins->_.artm.left->ssl_dtp, ins->_.artm.right->ssl_dtp);
+result_dtp_is_set:
 	  if (DV_NUMERIC == ins->_.artm.result->ssl_dtp)
 	    {
 	      ins->_.artm.result->ssl_sqt.sqt_precision = NUMERIC_MAX_PRECISION;

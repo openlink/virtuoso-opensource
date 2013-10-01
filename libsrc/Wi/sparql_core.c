@@ -1626,15 +1626,30 @@ spar_filter_is_freetext (sparp_t *sparp, SPART *filt, SPART *base_triple)
   if (SPAR_FUNCALL != SPART_TYPE (filt))
     return 0;
   fname = filt->_.funcall.qname;
-  if (!((fname == uname_bif_c_contains) ||
-    (fname == uname_bif_c_spatial_contains) ||
-    (fname == uname_bif_c_spatial_intersects) ||
-    (fname == uname_bif_c_sp_contains) ||
-    (fname == uname_bif_c_sp_intersects) ||
-    (fname == uname_bif_c_xcontains) ||
-    (fname == uname_bif_c_xpath_contains) ||
-    (fname == uname_bif_c_xquery_contains) ) )
-  return NULL;
+  if (SPAR_FT_TYPE_IS_GEO(fname))
+    {
+      if (2 < BOX_ELEMENTS (filt->_.funcall.argtrees))
+        return NULL;
+      if (SPAR_VARIABLE != SPART_TYPE (filt->_.funcall.argtrees[0]))
+        {
+          if ((  (uname_bif_c_spatial_intersects	== (fname))
+              || (uname_bif_c_st_intersects		== (fname))
+              || (uname_bif_c_st_may_intersect		== (fname)) )
+            && (SPAR_VARIABLE == SPART_TYPE (filt->_.funcall.argtrees[1])) )
+            {
+              SPART *swap = filt->_.funcall.argtrees[0]; filt->_.funcall.argtrees[0] = filt->_.funcall.argtrees[1]; filt->_.funcall.argtrees[1] = swap;
+            }
+          else
+            return NULL;
+        }
+    }
+  else if ((fname == uname_bif_c_contains)
+    || (fname == uname_bif_c_xcontains)
+    || (fname == uname_bif_c_xpath_contains)
+    || (fname == uname_bif_c_xquery_contains) )
+    { ; }
+  else
+    return NULL;
   if (NULL != base_triple)
     {
       caddr_t ft_var_name;

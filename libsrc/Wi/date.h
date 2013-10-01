@@ -28,6 +28,7 @@
 #ifndef _DATE_H
 #define _DATE_H
 
+#include "widv.h"
 #include "odbcinc.h"
 
 typedef unsigned char  datetime_t[DT_LENGTH];
@@ -180,5 +181,8 @@ extern void dt_audit_fields (char *dt);
 	 DT_TYPE_DATETIME \
 	) \
        ))
+
+#define SPERDAY (24*60*60)
+#define DT_CAST_TO_TOTAL_SECONDS(dt) ((boxint)DT_DAY (dt) * 24 * 60 * 60 + (boxint)DT_HOUR (dt) * 60 * 60 + (boxint)DT_MINUTE (dt) * 60 + DT_SECOND (dt))
 
 #endif /* _DATE_H */

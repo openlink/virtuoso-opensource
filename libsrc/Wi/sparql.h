@@ -914,10 +914,12 @@ extern SPART *spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subje
 \returns NULL if filter is not free-text, UNAME like "bif:contains" if it is a free-text predicate */
 extern caddr_t spar_filter_is_freetext (sparp_t *sparp, SPART *filt, SPART *base_triple);
 #define SPAR_FT_TYPE_IS_GEO(ft_type) ( \
-  (uname_bif_c_spatial_contains == ft_type) || \
-  (uname_bif_c_spatial_intersects == ft_type) || \
-  (uname_bif_c_sp_contains == ft_type) || \
-  (uname_bif_c_sp_intersects == ft_type) )
+  (uname_bif_c_spatial_contains		== (ft_type)) \
+  || (uname_bif_c_spatial_intersects	== (ft_type)) \
+  || (uname_bif_c_st_contains		== (ft_type)) \
+  || (uname_bif_c_st_intersects		== (ft_type)) \
+  || (uname_bif_c_st_may_intersect	== (ft_type)) \
+  || (uname_bif_c_st_within		== (ft_type)) )
 #define SPAR_TRIPLE_SHOULD_HAVE_FT_TYPE		0x01
 #define SPAR_TRIPLE_SHOULD_HAVE_NO_FT_TYPE	0x02
 #define SPAR_TRIPLE_FOR_FT_SHOULD_EXIST		0x04
