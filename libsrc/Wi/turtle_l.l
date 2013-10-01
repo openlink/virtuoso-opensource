@@ -590,10 +590,10 @@ ttlp_NUMBER_int (YYSTYPE *yylval_param, ttlp_t *ttlp_arg, struct yyguts_t * yyg)
   int l = strlen (yytext);
   int has_sign = ((('-' == yytext[0]) || ('+' == yytext[0])) ? 1 : 0);
   int is_negative = ('-' == yytext[0]);
-  if (((10+has_sign) > l) ||
-    (((10+has_sign) == l) &&
-      (0 >= strcmp (yytext + has_sign,
-          (is_negative ? "2147483648" : "2147483647") ) ) ) )
+  if (((18+has_sign) > l) ||
+    (((18+has_sign) == l) &&
+      (0 >= strcmp (yytext + has_sign,        /* 0123456789012345678 */
+          (is_negative ? "223372036854775808" : "223372036854775807") ) ) ) )
     {
       ttlyylval.box = box_num_nonull (atol (yytext));
       return TURTLE_INTEGER;
