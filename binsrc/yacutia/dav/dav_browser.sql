@@ -1515,7 +1515,7 @@ create procedure WEBDAV.DBA.proc(
             group_name := WEBDAV.DBA.user_name (group_id, '');
           }
           tmp := WEBDAV.DBA.det_category (item[4], item[0], item[1], item[9]);
-          result (item[either (gte (dir_mode, 2),0,10)], item[1], item[2], left (cast (item[3] as varchar), 19), item[9], user_name, group_name, adm_dav_format_perms(item[5]), item[0], tmp);
+          result (item[either (gte (dir_mode, 2),0,10)], item[1], item[2], left (cast (item[3] as varchar), 19), item[9], user_name, group_name, adm_dav_format_perms(item[5]), item[0], tmp, left (cast (item[8] as varchar), 19));
         }
       }
     }
