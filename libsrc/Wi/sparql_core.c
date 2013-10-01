@@ -4096,15 +4096,9 @@ bad_regex:
  return sparp_make_builtin_call (sparp, SPAR_BIF_REGEX, (SPART **)t_list (2, strg, regexpn));
 }
 
-void
-spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fname_ptr, SPART **args)
-{
-  ccaddr_t fname = fname_ptr[0];
-  int uid, need_check_for_sparql11_agg = 0, need_check_for_infection_chars = 0;
-  const char *tail;
-  const char *c;
-  char buf[30];
-  const char *unsafe_sql_names[] = {
+extern id_hash_t *name_to_pl_name;
+
+static const char *unsafe_sql_names[] = {
     "RDF_INSERT_TRIPLES",
     "RDF_INSERT_TRIPLES",
     "RDF_DELETE_TRIPLES",
@@ -4158,7 +4152,8 @@ spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fnam
     "TTLP_EV_TRIPLE_L_W",
     "TTLP_MT",
     "TTLP_MT_LOCAL_FILE" };
-  const char *unsafe_bif_names[] = {
+
+static const char *unsafe_bif_names[] = {
     "CONNECTION_SET",
     "FILE_TO_STRING",
     "FILE_TO_STRING_OUTPUT",
@@ -4167,7 +4162,8 @@ spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fnam
     "REGISTRY_SET_ALL",
     "STRING_TO_FILE",
     "SYSTEM" };
-  const char *sparql11_agg_names[] = {
+
+static const char *sparql11_agg_names[] = {
     "AVG",		"SPECIAL::bif:AVG",
     "COUNT",		"SPECIAL::bif:COUNT",
     "GROUP_CONCAT",	"sql:GROUP_CONCAT",
@@ -4175,6 +4171,15 @@ spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fnam
     "MIN",		"SPECIAL::bif:MIN",
     "SAMPLE",		"sql:SAMPLE",
     "SUM",		"SPECIAL::bif:SUM" };
+
+void
+spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fname_ptr, SPART **args)
+{
+  ccaddr_t fname = fname_ptr[0];
+  int uid, need_check_for_sparql11_agg = 0, need_check_for_infection_chars = 0;
+  const char *tail;
+  const char *c;
+  char buf[30];
   tail = strstr (fname, "::");
   if (NULL == tail)
     tail = fname;
@@ -4206,6 +4211,27 @@ spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fnam
       if ((U_ID_DBA != uid) && (ECM_MEM_NOT_FOUND != ecm_find_name (buf, unsafe_bif_names,
           sizeof (unsafe_bif_names)/sizeof(unsafe_bif_names[0]), sizeof (caddr_t) ) ) )
         goto restricted; /* see below */
+      if (NULL != name_to_pl_name)
+        {
+          const char *raw_name = tail+4;
+          caddr_t *full_sql_name_ptr = (caddr_t *) id_hash_get (name_to_pl_name, (caddr_t)(&raw_name));
+          if (NULL != full_sql_name_ptr)
+            {
+              if (strncmp (full_sql_name_ptr[0], "DB.DBA.", 7))
+                goto restricted; /* see below */
+              strncpy (buf, full_sql_name_ptr[0]+7, sizeof(buf)-1);
+              buf[sizeof(buf)-1] = '\0';
+              strupr (buf);
+              if ((U_ID_DBA != uid) && (ECM_MEM_NOT_FOUND != ecm_find_name (buf, unsafe_sql_names,
+                  sizeof (unsafe_sql_names)/sizeof(unsafe_sql_names[0]), sizeof (caddr_t) ) ) )
+                goto restricted; /* see below */
+              strcpy (buf, "sql:");
+              strncpy (buf+4, full_sql_name_ptr[0]+7, sizeof(buf)-5);
+              buf[sizeof(buf)-1] = '\0';
+              fname_ptr[0] = t_box_dv_uname_string (buf);
+              return;
+            }
+        }
       need_check_for_sparql11_agg = 1;
       need_check_for_infection_chars = 1;
     }
