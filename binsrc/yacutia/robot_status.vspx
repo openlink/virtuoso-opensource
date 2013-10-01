@@ -80,7 +80,7 @@
 		  <td align="left" class="listing_col_action">
 		  <v:button style="image" action="simple" value="images/icons/ref_16.png" url="--http_path ()"
                               xhtml_alt="Refresh page" xhtml_title="Refresh page"
-			       text="&#160;Refresh"
+			       text="&nbsp;Refresh"
 			       >
 			       <v:before-render><![CDATA[
 				 declare params any;
@@ -94,7 +94,7 @@
 		  </v:button>
 		  </td>
 		  <td>
-		    &#160;
+		    &nbsp;
 		  </td>
                   <td align="right">
 		      <v:url value="Back" name="robot_button25" url="robot_queues.vspx"/>  

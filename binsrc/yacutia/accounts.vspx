@@ -261,7 +261,7 @@
 			       (control.vc_parent as vspx_row_template).te_rowset[0])"
 			       xhtml_alt="Edit"
 			       xhtml_title="Edit"
-			       text="&#160;Edit"
+			       text="&nbsp;Edit"
                                />
                         <v:button action="simple" style="image" name="delete"
 			       value="images/icons/trash_16.png"
@@ -271,7 +271,7 @@
 			       xhtml_title="Delete"
 			       enabled="--case when (control.vc_parent as vspx_row_template).te_rowset[0]
 			       		in ('dba', 'dav') then 0 else 1 end"
-			       text="&#160;Delete"
+			       text="&nbsp;Delete"
                                />
                       </td>
 <?vsp

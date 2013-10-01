@@ -410,6 +410,10 @@ showRow = (navigator.appName.indexOf("Internet Explorer") != -1) ? "block" : "ta
 
 var WEBDAV = new Object();
 
+WEBDAV.Preferences = {
+  imagePath: "dav/image/"
+}
+
 WEBDAV.toggleDavRows = function ()
 {
   function showTableRow(cell)
@@ -813,7 +817,45 @@ WEBDAV.verifyDialog = function ()
   if (verifyDiv)
     OAT.Dom.unlink(verifyDiv);
 
-  verifyDiv = OAT.Dom.create('div', {height: '160px', overflow: 'hidden'});
+  var content =
+    '<div style="padding: 1em;">' +
+    '<table style="width: 100%;">' +
+    '  <tr>' +
+    '    <td align="right" width="50%">' +
+    '      <b>Connection type:</b>' +
+    '    </td>' +
+    '    <td>{connection}</td>' +
+    '  </tr>' +
+    '  <tr>' +
+    '    <td align="right" width="50%">' +
+    '      <b>Mail server:</b>' +
+    '    </td>' +
+    '    <td>{server}:{port}</td>' +
+    '  </tr>' +
+    '  <tr>' +
+    '    <td align="right" width="50%">' +
+    '      <b>User:</b>' +
+    '    </td>' +
+    '    <td>{user}</td>' +
+    '  </tr>' +
+    '  <tr><td align="center" colspan="2"><hr /><td></tr>' +
+    '  <tr>' +
+    '    <td align="right">' +
+    '      <b>Verification:</b>' +
+    '    </td>' +
+    '    <td>{text}</td>' +
+    '  </tr>' +
+    '  <tr><td align="center" colspan="2"><hr /><td></tr>' +
+    '  <tr>' +
+    '    <td align="center" colspan="2">' +
+    '      <input type="button" value="OK" onclick="javascript: verifyDialog.hide(); return false;" />' +
+    '    <td>' +
+    '  </tr>' +
+    '</table>' +
+    '</div>'
+  ;
+
+  verifyDiv = OAT.Dom.create('div', {height: '165px', overflow: 'hidden'});
   verifyDiv.id = 'verifyDiv';
   verifyDialog = new OAT.Dialog('Verify External Account', verifyDiv, {width:475, buttons: 0, resize:0, modal:1});
   verifyDialog.cancel = verifyDialog.hide;
@@ -821,18 +863,33 @@ WEBDAV.verifyDialog = function ()
   verifyDialog.show();
 
   var x = function (txt) {
-    if (txt != "") {
-      var verifyDiv = $("verifyDiv");
-      if (verifyDiv)
-        verifyDiv.innerHTML = txt;
+    var verifyDiv = $("verifyDiv");
+    if (verifyDiv) {
+      content = content.replace('{connection}', $v('dav_IMAP_connection'));
+      content = content.replace('{server}', $v('dav_IMAP_server'));
+      content = content.replace('{port}', $v('dav_IMAP_port'));
+      content = content.replace('{user}', $v('dav_IMAP_user'));
+      if (txt) {
+        if (txt.length > 30)
+          verifyDiv.style.height = '180px';
+
+        txt = '<i style="color: red;">' + txt + '</i>';
+      } else {
+        txt = '<i style="color: green;">Successful</i>';
+      }
+      content = content.replace('{text}', txt);
+      verifyDiv.innerHTML = content;
     }
   }
+  var t = function(){x('Timeout');};
+
+  OAT.MSG.attach(OAT.AJAX, 'AJAX_TIMEOUT', t);
   var params = '&connection=' + encodeURIComponent($v('dav_IMAP_connection'))
              + '&server='     + encodeURIComponent($v('dav_IMAP_server'))
              + '&port='       + encodeURIComponent($v('dav_IMAP_port'))
              + '&user='       + encodeURIComponent($v('dav_IMAP_user'))
              + '&password='   + encodeURIComponent($v('dav_IMAP_password'));
-  OAT.AJAX.GET(WEBDAV.httpsLink('dav/dav_browser_rest.vsp')+'?a=mailVerify'+params, '', x, {type:OAT.AJAX.TYPE_TEXT, timeout: 5000, onend:function(){x('<div style="padding: 1em;"><table style="width: 100%;"><tr><td align="right" width="50%"><b>Verification:</b></td><td>Timeout</td></tr><tr><td align="center" colspan="2"><hr /><td></tr><tr><td align="center" colspan="2"><input type="button" value="OK" onclick="javascript: verifyDialog.hide(); return false;" /><td></tr></table></div>');}});
+  OAT.AJAX.GET(WEBDAV.httpsLink('dav/dav_browser_rest.vsp')+'?a=mailVerify'+params, '', x, {type:OAT.AJAX.TYPE_TEXT, timeout: 5000, onend: function(){OAT.MSG.detach(OAT.AJAX, 'AJAX_TIMEOUT', t);}});
 }
 
 var dav_IMAP_connection;

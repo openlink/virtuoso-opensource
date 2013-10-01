@@ -184,7 +184,7 @@
 		  <v:button action="simple" style="image"  name="edit1" value="images/icons/edit_16.png"
 		    xhtml_alt="Edit Grants"
 		    xhtml_title="Edit Grants"
-		    text="&#160;Edit"
+		    text="&nbsp;Edit"
                     url="--concat('caps_browser.vspx?mode=edit&user_name=',(control.vc_parent as vspx_row_template).te_rowset[0])"/>
                 </td>
 <?vsp

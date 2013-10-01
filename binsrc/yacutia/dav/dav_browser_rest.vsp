@@ -1,7 +1,5 @@
 <?vsp
 --
---  $Id: dav_browser_rest.vsp,v 1.4 2013/05/28 13:42:21 ddimitrov Exp $
---
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
@@ -82,6 +80,11 @@
   if (action = 'mailVerify')
   {
     declare _error, _connection, _server, _port, _user, _password any;
+    declare exit handler for SQLSTATE '*'
+    {
+      _error := __SQL_MESSAGE;
+      goto _exit;
+    };
 
     _connection := trim (get_keyword ('connection', params, 'none'));
     _server     := trim (get_keyword ('server', params, ''));
@@ -90,10 +93,12 @@
     _password   := trim (get_keyword ('password', params, ''));
     _error      := DB.DBA.IMAP__verify (_connection, _server, _port, _user, _password);
 
+  _exit:;
     http_rewrite ();
     http_header ('Access-Control-Allow-Origin: *\r\n');
     http_header ('Content-Type: text/plain\r\n');
     http (_error);
+    return;
   }
   if (action = 'mailFolders')
   {
@@ -104,19 +109,19 @@
     _connection := trim (get_keyword ('connection', params));
     _server := trim (get_keyword ('server', params));
     if (is_empty_or_null (_server))
-      goto _exit;
+      goto _exit_1;
 
     _port := trim (get_keyword ('port', params));
     if (is_empty_or_null (_port))
-      goto _exit;
+      goto _exit_1;
 
     _user := trim (get_keyword ('user', params));
     if (is_empty_or_null (_user))
-      goto _exit;
+      goto _exit_1;
 
     _password := trim (get_keyword ('password', params));
     if (is_empty_or_null (_password))
-      goto _exit;
+      goto _exit_1;
 
     _connection := case when (_connection = 'ssl') then 1 else 0 end;
     if (isnull (_port))
@@ -128,8 +133,7 @@
     {
       declare exit handler for SQLSTATE '*'
       {
-        -- dbg_obj_print ('', __SQL_MESSAGE);
-        goto _exit;
+        goto _exit_1;
       };
       _folders := imap_get (sprintf ('%s:%s', _server, _port), _user, _password, 'list', '*', null, _connection);
       foreach (any _folder in _folders) do
@@ -143,7 +147,7 @@
         }
       }
     }
-  _exit:;
+  _exit_1:;
     http_rewrite ();
     http_header ('Access-Control-Allow-Origin: *\r\n');
     http (WEBDAV.DBA.obj2json (_list, 5));

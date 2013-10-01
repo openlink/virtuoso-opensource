@@ -260,8 +260,6 @@ LOAD_SQL()
 
 VERSION_INIT()
 {
-  if [ $VOS -eq 1 ]
-  then
       if [ -f vad_version ]
       then
 	  VERSION=`cat vad_version`
@@ -269,17 +267,6 @@ VERSION_INIT()
         LOG "The vad_version does not exist, please verify your checkout"
 	exit 1
       fi
-  else
-  rm -f version.tmp
-      for i in `find . -name 'Entries' | grep -v toolkit`; do
-        cat "$i" | grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
-  done
-  LANG=POSIX
-  export LANG
-      VERSION=`cat version.tmp | awk ' BEGIN { cnt=812 } { cnt = cnt + $1 } END { printf "1.0%01.04f", cnt/10000 }'`
-  rm -f version.tmp
-      echo "$VERSION" > vad_version
-  fi
 }
 
 CREATE_STICKER()
@@ -319,7 +306,18 @@ echo "    <sql purpose=\"pre-install\"></sql>" >> $STICKER
 echo "    <sql purpose=\"post-install\"></sql>" >> $STICKER
 echo "  </procedures>" >> $STICKER
 echo "  <ddls>" >> $STICKER
-echo "    <sql purpose=\"pre-install\">if (lt (sys_stat ('st_dbms_ver'), '$NEED_VERSION')) { result ('ERROR', 'The conductor package requires server version $NEED_VERSION or greater'); signal ('FATAL', 'The conductor package requires server version $NEED_VERSION or greater'); } </sql>" >> $STICKER
+echo "    <sql purpose=\"pre-install\">" >> $STICKER
+echo "      if (lt (sys_stat ('st_dbms_ver'), '$NEED_VERSION'))" >> $STICKER
+echo "        {" >> $STICKER
+echo "          result ('ERROR', 'The conductor package requires server version $NEED_VERSION or greater');" >> $STICKER
+echo "          signal ('FATAL', 'The conductor package requires server version $NEED_VERSION or greater');" >> $STICKER
+echo "        }" >> $STICKER
+echo "      if (equ ($ISDAV, 0) and isinteger (file_stat (http_root ())))" >> $STICKER
+echo "        {" >> $STICKER
+echo "          result ('ERROR', 'Please setup [HTTPServer] ServerRoot INI setting properly');" >> $STICKER
+echo "          signal ('FATAL', 'Please setup [HTTPServer] ServerRoot INI setting properly');" >> $STICKER
+echo "        }" >> $STICKER
+echo "    </sql>" >> $STICKER
 echo "    <sql purpose=\"post-install\">" >> $STICKER
 echo "      registry_set('__no_vspx_temp', '1');" >> $STICKER
 #echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/admin_dav_browser.sql', 1, 'report', $ISDAV);" >> $STICKER

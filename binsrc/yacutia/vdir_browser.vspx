@@ -38,7 +38,7 @@
       }
     </script>
     <link rel="stylesheet" href="yacutia_style.css" type="text/css"/>
-    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <title><?V self.caption ?></title>
   </head>
   <body>
@@ -128,7 +128,7 @@
         </td>
         <td class="vdir_headertd">
 	  <v:button name="b_up" style="image" value="images/dav_browser/up_16.png" xhtml_alt="Up one level" action="simple"
-	    text="&#160;Browse...">
+	    text="&nbsp;Browse...">
             <v:before-render>
               <v:script><![CDATA[ control.ufl_active := case when length(self.curpath) > 0 then 1 else 0 end; ]]></v:script>
             </v:before-render>

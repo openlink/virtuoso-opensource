@@ -95,6 +95,7 @@ conductor/dav/image/grey_tag_32.png
 conductor/dav/image/grey_up_32.png
 conductor/dav/image/grey_upld_32.png
 conductor/dav/image/home_32.png
+conductor/dav/image/logout_32.png
 conductor/dav/image/move_32.png
 conductor/dav/image/new_fldr_32.png
 conductor/dav/image/orderdown_16.png
@@ -111,7 +112,6 @@ conductor/dav/image/tag_32.png
 conductor/dav/image/trash_16.png
 conductor/dav/image/up_32.png
 conductor/dav/image/upld_32.png
-conductor/dav/image/logout_32.png
 conductor/dav_post.js
 conductor/dav/sorttable.js
 conductor/db_backup_clear.vspx
@@ -262,6 +262,7 @@ conductor/images/icons/first_16.png
 conductor/images/icons/foldr_16.png
 conductor/images/icons/go_16.png
 conductor/images/icons/group_16.png
+conductor/images/icons/help_16.png
 conductor/images/icons/help_24.png
 conductor/images/icons/home_16.png
 conductor/images/icons/key_16.png
@@ -275,6 +276,7 @@ conductor/images/icons/previous_16.png
 conductor/images/icons/ref_16.png
 conductor/images/icons/rewnd_16.png
 conductor/images/icons/script_16.png
+conductor/images/icons/security_16.png
 conductor/images/icons/select.gif
 conductor/images/icons/skipb_16.png
 conductor/images/icons/skipf_16.png

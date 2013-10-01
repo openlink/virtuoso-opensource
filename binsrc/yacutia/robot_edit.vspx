@@ -514,18 +514,18 @@
 			   <?vsp ix := ix + 1; } ?>
 		      </table>
 		  <!--v:check-box name="meta_foaf" value="1" initial-checked="-#-get_keyword (control.vc_name, self._udata, 1)" xhtml_id="meta_foaf" />
-		  <label for="meta_foaf">FOAF</label>&#160;
+		  <label for="meta_foaf">FOAF</label>&nbsp;
 
 
 		  <v:check-box name="meta_rdf" value="1" initial-checked="-#-get_keyword (control.vc_name, self._udata, 1)" xhtml_id="meta_rdf" />
-		  <label for="meta_rdf">RDF</label>&#160;
+		  <label for="meta_rdf">RDF</label>&nbsp;
 
 		  <v:check-box name="meta_rss" value="1" initial-checked="-#-get_keyword (control.vc_name, self._udata, 1)" xhtml_id="meta_rss" />
-		  <label for="meta_rss">RSS/RDF</label>&#160;
+		  <label for="meta_rss">RSS/RDF</label>&nbsp;
 
 		  <?vsp if (__proc_exists ('DB.DBA.RDF_LOAD_HTML_RESPONSE'))  { ?>
 		  <v:check-box name="meta_grddl" value="1" initial-checked="-#-get_keyword (control.vc_name, self._udata, 1)" xhtml_id="meta_grddl" />
-		  <label for="meta_grddl">GRDDL</label>&#160;
+		  <label for="meta_grddl">GRDDL</label>&nbsp;
 		  <?vsp } ?>
 		  -->
 

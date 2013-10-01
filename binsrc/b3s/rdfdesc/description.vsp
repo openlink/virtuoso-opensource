@@ -95,6 +95,8 @@ again:
 
   sp_mode := 'add';
 
+  if (__proc_exists ('DB.DBA.lp_score_ck') is not null)
+    DB.DBA.lp_score_ck (lines);
   b3s_handle_ses (path, lines, params);
   sid := connection_get ('sid');
 
@@ -214,12 +216,22 @@ again:
         http (sprintf ('<html><body>Use of this service is not allowed for your current WebID: %V</body></html>', connection_get ('WebID', '<none>')));
         return;  
       } 
-  if (get_keyword ('sp', params) = '1' and 0 = length (_F))
+
+  if (is_https_ctx ())
+  {
+    declare authenticated_user varchar;
+    authenticated_user := coalesce (connection_get ('SPARQLUserId'), 'SPARQL');
+    set_user_id (authenticated_user, 0);
+  }
+
+  -- if (get_keyword ('sp', params) = '1' and 0 = length (_F))
+  if (get_keyword ('sp', params) = '1')
     {
       EXEC (sprintf ('sparql define input:storage "" define get:soft "add" SELECT * from <%S> where { ?x ?y ?z . }', doc), state, msg);
       DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
     }
-  else if ((get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null) and 0 = length (_F))
+  -- else if ((get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null) and 0 = length (_F))
+  else if ((get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null))
     {
       declare refr varchar;
       if (get_keyword ('sr', params, '') = 'clean')
@@ -677,8 +689,11 @@ if (_subject <> '') {
 <?vsp } ?>
       <div id="ft_t">
         Alternative Linked Data Views:
-	<?vsp if (VAD_CHECK_VERSION ('PivotViewer') is not null) { ?>
-	<a href="/PivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>" title="PivotViewer page for exploring results and generating new queries" target="_blank">PivotViewer</a>
+	<?vsp if (VAD_CHECK_VERSION ('html5pivotviewer') is not null) { ?>	
+	<a href="/HtmlPivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>" title="PivotViewer page for exploring results and generating new queries (HTML5)" target="_blank">PivotViewer</a> 
+	|
+	<?vsp } else if (VAD_CHECK_VERSION ('PivotViewer') is not null) { ?>	
+	<a href="/PivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>" title="PivotViewer page for exploring results and generating new queries (Silverlight)" target="_blank">PivotViewer</a> 
 	|
 	<?vsp } ?>
 	<?vsp if (VAD_CHECK_VERSION ('rdf_mappers') is not null) { ?>

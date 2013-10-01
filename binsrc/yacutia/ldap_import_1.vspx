@@ -152,7 +152,7 @@ function checkRest (form, sel)
       <v:form name="map_ldap" type="simple" method="POST" action="ldap_import_2.vspx">
 	<v:text type="hidden" name="hres" value="--encode_base64(serialize (self.res))"/>
 	<v:text type="hidden" name="ldaps" value="--self.ldaps1"/>
-	<div>&#160;</div>
+	<div>&nbsp;</div>
 	<table  class="listing">
 <tr  class="listing_header_row">
 <th> LDAP property </th>

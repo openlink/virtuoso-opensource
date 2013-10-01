@@ -451,7 +451,7 @@ ORDER BY sch_name"
 		      style="image"
 		      xhtml_alt="Drop Selected"
 		      xhtml_title="Drop Selected"
-		      text="&#160;Drop Selected"
+		      text="&nbsp;Drop Selected"
 		      value="images/icons/del_16.png">
 		      <v:on-post>
 			self.drop_sel (self."ds_tables", 'table', e);
@@ -462,7 +462,7 @@ ORDER BY sch_name"
 		      style="image"
 		      xhtml_alt="Privileges On Selected"
 		      xhtml_title="Privileges On Selected"
-		      text="&#160;Privileges On Selected"
+		      text="&nbsp;Privileges On Selected"
 		      value="images/icons/key_16.png">
 		      <v:on-post>
 			self.grant_sel (self."ds_tables", 'table', e);
@@ -550,7 +550,7 @@ ORDER BY sch_name"
 			value="images/icons/edit_16.png"
 			xhtml_alt="Edit"
 			xhtml_title="Edit"
-			text="&#160;Edit"
+			text="&nbsp;Edit"
 			>
                         <v:on-post><v:script><![CDATA[
                            http_request_status ('HTTP/1.1 302 Found');
@@ -579,7 +579,7 @@ ORDER BY sch_name"
 		      style="image"
 		      xhtml_alt="Drop Selected"
 		      xhtml_title="Drop Selected"
-		      text="&#160;Drop Selected"
+		      text="&nbsp;Drop Selected"
 		      value="images/icons/del_16.png">
 		      <v:on-post>
 			self.drop_sel (self."ds_views", 'view', e);
@@ -590,7 +590,7 @@ ORDER BY sch_name"
 		      style="image"
 		      xhtml_alt="Privileges On Selected"
 		      xhtml_title="Privileges On Selected"
-		      text="&#160;Privileges On Selected"
+		      text="&nbsp;Privileges On Selected"
 		      value="images/icons/key_16.png">
 		      <v:on-post>
 			self.grant_sel (self."ds_views", 'view', e);
@@ -769,7 +769,7 @@ ORDER BY sch_name"
 			value="images/icons/edit_16.png"
 			xhtml_alt="Edit"
 			xhtml_title="Edit"
-			text="&#160;Edit"
+			text="&nbsp;Edit"
 			>
                         <v:on-post><v:script><![CDATA[
                            http_request_status ('HTTP/1.1 302 Found');
@@ -803,7 +803,7 @@ ORDER BY sch_name"
 		      style="image"
 		      xhtml_alt="Drop Selected"
 		      xhtml_title="Drop Selected"
-		      text="&#160;Drop Selected"
+		      text="&nbsp;Drop Selected"
 		      value="images/icons/del_16.png">
 		      <v:on-post>
 			self.drop_sel (self."ds_procs", 'procedure', e);
@@ -814,7 +814,7 @@ ORDER BY sch_name"
 		      style="image"
 		      xhtml_alt="Privileges On Selected"
 		      xhtml_title="Privileges On Selected"
-		      text="&#160;Privileges On Selected"
+		      text="&nbsp;Privileges On Selected"
 		      value="images/icons/key_16.png">
 		      <v:on-post>
 			self.grant_sel (self."ds_procs", 'procedure', e);
@@ -926,7 +926,7 @@ ORDER BY sch_name"
 		      style="image"
 		      xhtml_alt="Drop Selected"
 		      xhtml_title="Drop Selected"
-		      text="&#160;Drop Selected"
+		      text="&nbsp;Drop Selected"
 		      value="images/icons/del_16.png">
 		      <v:on-post>
 			self.drop_sel (self."ds_udt", 'type', e);
@@ -937,7 +937,7 @@ ORDER BY sch_name"
 		      style="image"
 		      xhtml_alt="Privileges On Selected"
 		      xhtml_title="Privileges On Selected"
-		      text="&#160;Privileges On Selected"
+		      text="&nbsp;Privileges On Selected"
 		      value="images/icons/key_16.png">
 		      <v:on-post>
 			self.grant_sel (self."ds_udt", 'type', e);
