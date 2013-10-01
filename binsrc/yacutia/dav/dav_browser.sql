@@ -3715,7 +3715,7 @@ create procedure WEBDAV.DBA.DAV_RDF_UPLOAD (
   declare graph2 varchar;
 
   graph2 := 'http://local.virt/temp';
-  retValue := DB.DBA.RDF_SINK_UPLOAD ('/temp', content, type, graph, 'on', '', '');
+  retValue := DB.DBA.RDF_SINK_UPLOAD ('/temp', content, type, graph, null, 'on', '', '');
   SPARQL clear graph ?:graph2;
 
   return retValue;

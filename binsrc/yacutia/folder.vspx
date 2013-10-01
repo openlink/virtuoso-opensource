@@ -46,6 +46,16 @@
         margin: 0;
         padding: 0;
       }
+
+      .error {
+          background-color: white;
+          border: 1pt solid red;
+          color: red;
+          font-weight: bold;
+          margin: 3px 0 3px 0;
+          padding: 5px;
+          text-align: center;
+      }
     </style>
     <title>WebDAV Repository</title>
   <![CDATA[
@@ -82,7 +92,7 @@
       xmlns:v="http://www.openlinksw.com/vspx/"
       xmlns:vm="http://www.openlinksw.com/vspx/macro">
       <v:template type="simple" condition="not self.vc_is_valid">
-        <div class="warning">
+        <div class="error">
           <v:error-summary/>
         </div>
       </v:template>
