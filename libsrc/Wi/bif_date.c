@@ -864,7 +864,7 @@ arithm_dt_add_num (ccaddr_t box1, ccaddr_t box2, int subtraction, caddr_t *err_r
       {
         double n = unbox_double (box2);
         double rest;
-        whole_seconds = roundl(n);
+        whole_seconds = (n >= 0.0) ? floor(n + 0.5) : ceil(n - 0.5);
         rest = n - whole_seconds;
         if (abs(rest/n) > (3 * DBL_EPSILON))
           nanoseconds = (n - whole_seconds) * 1000000000L;
