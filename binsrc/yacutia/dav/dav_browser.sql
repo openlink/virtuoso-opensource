@@ -1514,16 +1514,7 @@ create procedure WEBDAV.DBA.proc(
             group_id := coalesce (item[6], -1);
             group_name := WEBDAV.DBA.user_name (group_id, '');
           }
-          if (item[1] = 'C')
-          {
-            tmp := ' ';
-            if (isinteger (item[4]))
-              tmp := WEBDAV.DBA.det_type_name (WEBDAV.DBA.det_type (item[0], 'C'));
-          }
-          else
-          {
-            tmp := coalesce ((select RS_CATNAME from WS.WS.SYS_RDF_SCHEMAS, WS.WS.SYS_MIME_RDFS where RS_URI = MR_RDF_URI and MR_MIME_IDENT = item[9]), ' ');
-          }
+          tmp := WEBDAV.DBA.det_category (item[4], item[0], item[1], item[9]);
           result (item[either (gte (dir_mode, 2),0,10)], item[1], item[2], left (cast (item[3] as varchar), 19), item[9], user_name, group_name, adm_dav_format_perms(item[5]), item[0], tmp);
         }
       }
@@ -2605,7 +2596,7 @@ create procedure WEBDAV.DBA.det_type_name (
     'SkyDrive',   'SkyDrive',
     'Box',        'Box Net',
     'WebDAV',     'WebDAV',
-    'RACKSPACE',  'Rackspace Cloud Files',
+    'RACKSPACE',  'Rackspace Cloud',
     'nntp',       'Discussion',
     'CardDAV',    'CardDAV',
     'Blog',       'Blog',
@@ -2720,21 +2711,45 @@ create procedure WEBDAV.DBA.det_subClass (
 }
 ;
 
-
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.det_category (
+  in id any,
   in path varchar,
-  in type varchar := 'C')
+  in what varchar,
+  in type varchar)
 {
-  declare id any;
+  declare retValue varchar;
 
-  id := DB.DBA.DAV_SEARCH_ID (path, type);
-  if (WEBDAV.DBA.DAV_ERROR (id))
-    return '';
-  if (isarray(id))
-    return cast (id[0] as varchar);
-  return DB.DBA.DAV_PROP_GET_INT (id, type, ':virtdet', 0);
+  retValue := null;
+  if (isinteger (id) and (what = 'C'))
+  {
+    retValue := WEBDAV.DBA.det_type_name (WEBDAV.DBA.det_type (path, 'C'));
+  }
+  else if (what = 'R')
+  {
+    if ((type = 'text/plain') and (path like '%.txt'))
+    {
+      retValue := 'Text Document';
+    }
+    else if ((type = 'text/plain') and (path like '%.log'))
+    {
+      retValue := 'Activity Logs';
+    }
+    else if ((type = 'text/turtle') and (path like '%,acl'))
+    {
+      retValue := 'Access Control Lists';
+    }
+    else
+    {
+      retValue := (select RS_CATNAME from WS.WS.SYS_RDF_SCHEMAS, WS.WS.SYS_MIME_RDFS where RS_URI = MR_RDF_URI and MR_MIME_IDENT = type);
+    }
+  }
+  if (isnull (retValue))
+    retValue := ' ';
+
+  return retValue;
+
 }
 ;
 
