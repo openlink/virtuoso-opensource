@@ -110,6 +110,22 @@ lt_rb_check (lock_trx_t * lt)
   END_DO_HT;
 }
 
+int enable_cpt_rb_ck = 0;
+
+void
+cpt_rb_ck ()
+{
+  DO_SET (volatile lock_trx_t *, lt, &all_trxs)
+    {
+      if (lt->lt_threads && lt->lt_thr && !lt->lt_vdb_threads)
+	{
+	  du_thread_t * thr = lt->lt_thr;
+	  if (thr->thr_sem->sem_entry_count || !thr->thr_sem->sem_waiting.thq_count  || thr != thr->thr_sem->sem_waiting.thq_head.thr_prev)
+	    log_info ("thread %x may not be stopped for cpt rb lt %p", thr, lt);
+	}
+    }
+  END_DO_SET();
+}
 du_thread_t * cpt_thread;
 
 void
@@ -207,6 +223,8 @@ cpt_rollback (int may_freeze)
 #ifdef CHECKPOINT_TIMING
   all_trx_killed = get_msec_real_time();
 #endif
+  if (enable_cpt_rb_ck)
+    cpt_rb_ck ();
   ASSERT_IN_TXN;
 #ifdef CHECKPOINT_TIMING
   cp_is_attomic = get_msec_real_time();
