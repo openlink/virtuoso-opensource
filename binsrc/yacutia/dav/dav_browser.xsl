@@ -1769,7 +1769,7 @@
                 {
                   if (self.dav_enable)
                   {
-                    if (equ (self.dav_type, 'R') and (self.dav_path like '%,acl'))
+                    if ((self.dav_type = 'R') and ((self.dav_path like '%,acl') or (self.dav_path like '%,meta')))
                     {
                       self.dav_enable := 0;
                     } else {
@@ -1826,7 +1826,7 @@
                 <v:template name="tform_5" type="simple" enabled="-- case when (self.viewField ('acl') or self.viewField ('aci')) and (self.command_mode = 10) then 1 else 0 end">
                 <vm:tabCaption tab="2"   tabs="18" caption="Sharing" />
                 </v:template>
-                <v:template name="tform_7" type="simple" enabled="-- case when self.viewField ('version') and (self.command_mode = 10) and (self.dav_type = 'R') and not self.dav_is_redirect and (WEBDAV.DBA.DAV_GET (self.dav_item, 'name') not like '%,acl') then 1 else 0 end">
+                <v:template name="tform_7" type="simple" enabled="-- case when self.viewField ('version') and (self.command_mode = 10) and (self.dav_type = 'R') and not self.dav_is_redirect and (WEBDAV.DBA.DAV_GET (self.dav_item, 'name') not like '%,acl') and (WEBDAV.DBA.DAV_GET (self.dav_item, 'name') not like '%,meta') then 1 else 0 end">
                 <vm:tabCaption tab="9"   tabs="18" caption="Versions" />
                 </v:template>
                 <v:template name="tform_8" type="simple" enabled="-- equ (self.dav_type, 'C')">
@@ -2506,7 +2506,7 @@
                                         WEBDAV.DBA.aci_lines (aci_values);
                                       }
                                       aci_values := WEBDAV.DBA.aci_load (self.dav_path);
-                                      if (self.dav_enable and self.editField ('aci') and self.dav_path not like '%,acl')
+                                      if (self.dav_enable and self.editField ('aci') and (self.dav_path not like '%,acl') and (self.dav_path not like '%,meta'))
                                       {
                                         WEBDAV.DBA.aci_lines (aci_values, '', 'true');
                                       }
@@ -2520,7 +2520,7 @@
                                 </tbody>
                               </table>
                             </td>
-                            <vm:if test="self.dav_enable and self.editField ('aci') and not (self.dav_path like '%,acl')">
+                            <vm:if test="self.dav_enable and self.editField ('aci') and (self.dav_path not like '%,acl')and (self.dav_path not like '%,meta')">
                               <td valign="top" nowrap="nowrap">
                                 <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework') and (sys_stat('st_has_vdb') = 1)">
                                   <span class="button pointer">
@@ -4426,7 +4426,7 @@
                                   if (self.dir_path <> '')
                                   {
                                     http (         '<td class="checkbox">');
-                                    if (rowset[8] not like '%,acl')
+                                    if ((rowset[8] not like '%,acl') and (rowset[8] not like '%,meta'))
                                       http (sprintf ('  <input type="checkbox" name="cb_item" value="%V" onclick="selectCheck (this, \'cb_item\')"/>', rowset[8]));
                                     http (         '</td>');
                                   }
@@ -4436,7 +4436,7 @@
                                     declare id, rowset, click any;
 
                                     rowset := (control as vspx_row_template).te_rowset;
-                                    id := case when (rowset[1] = 'R') then sprintf ('id=%V', rowset[8]) else '' end;
+                                    id := case when (rowset[1] = 'R') then sprintf ('id="%V"', rowset[8]) else '' end;
                                     if ((self.returnName <> '') and (rowset[1] = 'R'))
                                     {
                                       http (sprintf ('<a %s href="%s" onclick="javascript: $(\'item_name\').value = \'%s\'; return false;" title="%s"><img src="%s" border="0" /> %V</a>', id, WEBDAV.DBA.dav_url (rowset[8]), replace (WEBDAV.DBA.dav_lpath (rowset[8]), '\'', '\\\''), WEBDAV.DBA.utf2wide (rowset[0]), self.image_src (WEBDAV.DBA.ui_image(rowset[8], rowset[1], rowset[4])), WEBDAV.DBA.utf2wide (WEBDAV.DBA.stringCut (rowset[0], self.chars))));
@@ -4557,6 +4557,8 @@
                                            (cast (id[0] as varchar) in ('Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
                                            or
                                            (rowset[0] like '%,acl')
+                                           or
+                                           (rowset[0] like '%,meta')
                                          )
                                          and
                                          (
@@ -4578,7 +4580,7 @@
                                        )
                                     {
                                       declare S varchar;
-                                      if ((rowset[0] like '%,acl') or ((permission = 'R') and (self.mode <> 'webdav')))
+                                      if ((rowset[0] like '%,acl') or (rowset[0] like '%,meta') or ((permission = 'R') and (self.mode <> 'webdav')))
                                       {
                                         http (sprintf( ' <img class="pointer" border="0" alt="View Content" title="View Content" src="%s" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'view\', \'_path\', \'%V\');" />', self.image_src ('dav/image/docs_16.png'), replace (path, '\'', '\\\'')));
                                       }
@@ -5445,7 +5447,7 @@
                 declare N integer;
 
                 aValue := self.get_fieldProperty ('dav_IMAP_connection', self.dav_path, 'virt:IMAP-connection', '');
-                aValues := vector ('none', 'None', 'ssl', 'SSL/TSL');
+                aValues := vector ('none', 'None', 'ssl', 'SSL/TLS');
                 for (N := 0; N < length (aValues); N := N + 2)
                   http (sprintf ('<option value="%s" %s>%s</option>', aValues[N], select_if(aValue, aValues[N]), aValues[N+1]));
               ?>

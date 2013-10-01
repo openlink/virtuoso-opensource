@@ -2740,6 +2740,10 @@ create procedure WEBDAV.DBA.det_category (
     {
       retValue := 'Access Control Lists';
     }
+    else if ((type = 'text/turtle') and (path like '%,meta'))
+    {
+      retValue := 'Metadata Files';
+    }
     else if (type = 'text/turtle')
     {
       retValue := 'RDF Turtle';
@@ -3278,6 +3282,9 @@ create procedure WEBDAV.DBA.DAV_GET (
 
     if (isstring (path) and path like '%,acl')
       path := regexp_replace (path, ',acl\x24', '');
+
+    if (isstring (path) and path like '%,meta')
+      path := regexp_replace (path, ',meta\x24', '');
 
     return cast (WEBDAV.DBA.DAV_PROP_GET (path, ':virtacl', WS.WS.ACL_CREATE()) as varbinary);
   }
