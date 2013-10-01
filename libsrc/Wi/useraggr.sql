@@ -998,13 +998,13 @@ create procedure DB.DBA.BIT_OR_AGG_INIT (inout _env integer) { _env := 0; }
 ;
 
 --!AWK PUBLIC
-create procedure DB.DBA.BIT_OR_AGG_ACC (inout _env integer, in v integer) { _env := __bit_or (_env, v); }
+create procedure DB.DBA.BIT_OR_AGG_ACC (inout _env integer, in v integer) { _env := bit_or (_env, v); }
 ;
 
 --!AWK PUBLIC
 create function DB.DBA.BIT_OR_AGG_FINAL (inout _env integer) returns integer { return _env; }
 ;
 
-create aggregate DB.DBA.BIT_OR_AGG (in _child any) returns any
+create aggregate DB.DBA.BIT_OR_AGG (in mask integer) returns any
   from DB.DBA.BIT_OR_AGG_INIT, DB.DBA.BIT_OR_AGG_ACC, DB.DBA.BIT_OR_AGG_FINAL
 ;
