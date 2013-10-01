@@ -1737,7 +1737,7 @@
 
                   V := WEBDAV.DBA.DAV_INIT_RESOURCE (self.dir_path);
                   if (self.command_mode = 6)
-                    aset (V, 9, 'text/html');
+                    aset (V, 9, 'text/plain');
 
                   self.dav_item := V;
                   self.dav_type := 'R';
