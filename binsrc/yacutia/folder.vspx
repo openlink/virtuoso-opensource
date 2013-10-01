@@ -91,6 +91,12 @@
       xmlns:xhtml="http://www.w3.org/1999/xhtml"
       xmlns:v="http://www.openlinksw.com/vspx/"
       xmlns:vm="http://www.openlinksw.com/vspx/macro">
+      <v:on-init>
+        <![CDATA[
+          set ISOLATION = 'Committed';
+          set http_charset = 'utf-8';
+        ]]>
+      </v:on-init>
       <v:template type="simple" condition="not self.vc_is_valid">
         <div class="error">
           <v:error-summary/>
