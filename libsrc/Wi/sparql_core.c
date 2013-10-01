@@ -49,6 +49,7 @@ extern "C" {
 #include "rdfinf.h"
 #include "rdf_mapping_jso.h"
 #include "xpf.h"
+#include "xqf.h"
 
 #ifdef MALLOC_DEBUG
 const char *spartlist_impl_file="???";
@@ -3696,6 +3697,7 @@ SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, cadd
   SPART *res;
   if (NULL != lang)
     return spartlist (sparp, 4, SPAR_LIT, strg, type, lang);
+/* Fast casts for xsd types taht match to SQL types without additional checks */
   if (uname_xmlschema_ns_uri_hash_boolean == type)
     {
       if (!strcmp ("true", strg))
@@ -3743,6 +3745,48 @@ SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, cadd
     {
       return spartlist (sparp, 4, SPAR_LIT, strg, type, NULL);
     }
+/* Casts using xqf converters */
+  if (!strncmp (type, XMLSCHEMA_NS_URI "#", XMLSCHEMA_NS_URI_LEN + 1 /* +1 is for '#' */))
+    {
+      const char *p_name = type + XMLSCHEMA_NS_URI_LEN + 1;
+      long desc_idx = ecm_find_name (p_name, xqf_str_parser_descs_ptr, xqf_str_parser_desc_count, sizeof (xqf_str_parser_desc_t));
+      xqf_str_parser_desc_t *desc;
+      dtp_t strg_dtp = DV_TYPE_OF (strg);
+      caddr_t cvt;
+      if (ECM_MEM_NOT_FOUND == desc_idx)
+        goto generic_literal; /* see below */
+      desc = xqf_str_parser_descs_ptr + desc_idx;
+      if (DV_STRING != strg_dtp)
+        {
+          if (desc->p_dest_dtp == strg_dtp)
+            parsed_value = box_copy_tree (strg);
+          else
+            {
+              tgt_dtp_tree = (sql_tree_tmp *)t_list (3, (ptrlong)(desc->p_dest_dtp), (ptrlong)NUMERIC_MAX_PRECISION, (ptrlong)NUMERIC_MAX_SCALE);
+              parsed_value = box_cast ((caddr_t *)(sparp->sparp_sparqre->sparqre_qi), strg, tgt_dtp_tree, strg_dtp);
+            }
+          if ((NULL != desc->p_rcheck) && !desc->p_rcheck (&parsed_value, desc->p_opcode))
+            goto cannot_cast;
+        }
+      else
+        {
+          QR_RESET_CTX
+            {
+              desc->p_proc (&parsed_value, strg, desc->p_opcode);
+            }
+          QR_RESET_CODE
+            {
+              POP_QR_RESET;
+              goto generic_literal; /* see below */
+            }
+          END_QR_RESET
+        }
+      res = spartlist (sparp, 4, SPAR_LIT, t_full_box_copy_tree (parsed_value), type, NULL);
+      dk_free_tree (parsed_value);
+      return res;
+    }
+
+generic_literal:
   return spartlist (sparp, 4, SPAR_LIT, strg, type, NULL);
 
 do_sql_cast:
@@ -3753,6 +3797,7 @@ do_sql_cast:
   return res;
 
 cannot_cast:
+  dk_free_tree (parsed_value);
   sparyyerror_impl (sparp, strg, "The string representation can not be converted to a valid typed value");
   return NULL;
 }
@@ -4382,6 +4427,7 @@ const sparp_bif_desc_t sparp_bif_descs[] = {
   { "ucase"		, SPAR_BIF_UCASE		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_LONG	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT	},
   { "uri"		, SPAR_BIF_URI			, '-'	, SSG_SD_BI_OR_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_IRI | SPART_VARR_IS_REF	},
   { "uuid"		, SPAR_BIF_UUID			, 'S'	, SSG_SD_SPARQL11_DRAFT	, 0	, 0	, SSG_VALMODE_LONG	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_IRI | SPART_VARR_NOT_NULL	},
+  { "valid"		, SPAR_BIF_VALID		, 'B'	, SSG_SD_VOS_6		, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "year"		, SPAR_BIF_YEAR			, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_NUM, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	}
 };
 

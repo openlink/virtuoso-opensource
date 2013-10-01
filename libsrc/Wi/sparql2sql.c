@@ -36,6 +36,7 @@ extern "C" {
 }
 #endif
 #include "xml_ecm.h"
+#include "xqf.h"
 #include "rdf_core.h"
 
 /* PART 1. EXPRESSION TERM REWRITING */
@@ -3260,6 +3261,46 @@ sparql_init_bif_optimizers (void)
   bif_define_ex ("sparql_only:arg_is_local_var"	, NULL, BMD_SPARQL_OPTIMIZER_IMPL, bifsparqlopt_arg_is_local_var	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_RET_TYPE, &bt_integer	, BMD_SPARQL_ONLY, BMD_DONE);
 }
 
+int
+sparp_literal_is_xsd_valid (sparp_t *sparp, caddr_t sqlval, caddr_t dt_iri, caddr_t lang)
+{
+  dtp_t sqlval_dtp = DV_TYPE_OF (sqlval);
+  if (DV_STRING != sqlval_dtp)
+    return 1; /* IRI or successfully parsed literal */
+  if (NULL == dt_iri)
+    return 1; /* no datatype --- no restrictions */
+  if (!strncmp (dt_iri, XMLSCHEMA_NS_URI "#", XMLSCHEMA_NS_URI_LEN + 1 /* +1 is for '#' */))
+    {
+      const char *p_name = dt_iri + XMLSCHEMA_NS_URI_LEN + 1;
+      long desc_idx = ecm_find_name (p_name, xqf_str_parser_descs_ptr, xqf_str_parser_desc_count, sizeof (xqf_str_parser_desc_t));
+      xqf_str_parser_desc_t *desc;
+      dtp_t sqlval_dtp = DV_TYPE_OF (sqlval);
+      caddr_t cvt;
+      if (ECM_MEM_NOT_FOUND == desc_idx)
+        return 1; /* an unknown type */
+      desc = xqf_str_parser_descs_ptr + desc_idx;
+      if (DV_STRING != sqlval_dtp)
+        return 1;
+      else
+        {
+          caddr_t parsed_value = NULL;
+          QR_RESET_CTX
+            {
+              desc->p_proc (&parsed_value, sqlval, desc->p_opcode);
+            }
+          QR_RESET_CODE
+            {
+              POP_QR_RESET;
+              return 0; /* see below */
+            }
+          END_QR_RESET
+          dk_free_tree (parsed_value);
+          return 1;
+        }
+    }
+  return 1;
+}
+
 void
 sparp_get_expn_rvr (sparp_t *sparp, SPART *tree, rdf_val_range_t *rvr_ret, int return_independent_copy)
 {
@@ -3610,6 +3651,37 @@ sparp_simplify_builtin (sparp_t *sparp, SPART *tree, int *trouble_ret)
     case SPAR_BIF_UCASE: break;
     case SPAR_BIF_URI: break;
     case SPAR_BIF_UUID: break;
+    case SPAR_BIF_VALID:
+      {
+        switch (SPART_TYPE (arg1))
+          {
+          case SPAR_QNAME: goto res_bool_true; /* see below */
+          case SPAR_LIT:
+            {
+              if (sparp_literal_is_xsd_valid (sparp, arg1->_.lit.val, arg1->_.lit.datatype, arg1->_.lit.language))
+                goto res_bool_true; /* see below */
+              else
+                goto res_bool_false; /* see below */
+            }
+          case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
+            if (arg1->_.var.rvr.rvrRestrictions & SPART_VARR_CONFLICT)
+              goto res_bool_true; /* see below */
+            if (arg1->_.var.rvr.rvrRestrictions & SPART_VARR_ALWAYS_NULL)
+              goto res_bool_true; /* see below */
+            if (arg1->_.var.rvr.rvrRestrictions & SPART_VARR_IS_REF)
+              goto res_bool_true; /* see below */
+            if (arg1->_.var.rvr.rvrRestrictions & SPART_VARR_FIXED)
+              {
+                if (sparp_literal_is_xsd_valid (sparp, arg1->_.var.rvr.rvrFixedValue, arg1->_.var.rvr.rvrDatatype, arg1->_.var.rvr.rvrLanguage))
+                  goto res_bool_true; /* see below */
+                else
+                  goto res_bool_false; /* see below */
+              }
+            break;
+          default: break;
+          }
+        goto trouble_now; /* see below */
+      }
     case SPAR_BIF_YEAR: break;
     default: break;
     }

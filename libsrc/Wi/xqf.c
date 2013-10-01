@@ -3433,7 +3433,7 @@ bif_xqf_str_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long desc_idx;
   int flags = 0;
   xqf_str_parser_desc_t *desc;
-  desc_idx = ecm_find_name (p_name, xqf_str_parser_descs,
+  desc_idx = ecm_find_name (p_name, xqf_str_parser_descs_ptr,
     xqf_str_parser_desc_count, sizeof (xqf_str_parser_desc_t) );
   if (ECM_MEM_NOT_FOUND == desc_idx)
     sqlr_new_error ("22023", "SR486", "Function xqf_str_parse() does not support XQuery library function '%.300s'", p_name);

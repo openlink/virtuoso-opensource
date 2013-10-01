@@ -142,8 +142,9 @@ extern void sparp_debug_weird (struct sparp_s *sparp, const char *file, int line
 #define SPAR_BIF_UCASE		(ptrlong)1147
 #define SPAR_BIF_URI		(ptrlong)1148
 #define SPAR_BIF_UUID		(ptrlong)1149
-#define SPAR_BIF_YEAR		(ptrlong)1150
-#define SPAR_BIF__ITEM_IN_VECTOR	(ptrlong)1151
+#define SPAR_BIF_VALID		(ptrlong)1150
+#define SPAR_BIF_YEAR		(ptrlong)1151
+#define SPAR_BIF__ITEM_IN_VECTOR	(ptrlong)1152
 
 #define SPAR_SML_CREATE		(ptrlong)1201
 #define SPAR_SML_DROP		(ptrlong)1202

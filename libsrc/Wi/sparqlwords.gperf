@@ -200,6 +200,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "URI",			SPARQL_BIF		, SPAR_BIF_URI
 "USING",		USING_L			, 0
 "UUID",			SPARQL_BIF		, SPAR_BIF_UUID
+"VALID",		SPARQL_BIF		, SPAR_BIF_VALID
 "VALUES",		VALUES_L		, 0
 "WHERE",		WHERE_L			, 0
 "WITH",			WITH_L			, 0
