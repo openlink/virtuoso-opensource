@@ -336,6 +336,9 @@
 
               if (cmd = 'up')
               {
+                if (WEBDAV.DBA.check_admin (self.account_id))
+                  return 1;
+
                 if (trim (self.dir_path, '/') = trim (WEBDAV.DBA.dav_home2 (self.owner_id, self.account_role), '/'))
                   return 0;
 
@@ -619,6 +622,9 @@
 
               else if (detClass in ('Blog', 'News3', 'bookmark', 'calendar'))
                 retValue := vector ('name', 'mime', 'owner', 'group', 'permissions', 'publicTags', 'acl', 'aci');
+
+              else if (detClass in ('oMail'))
+                retValue := vector ('name', 'mime', 'owner', 'group', 'permissions', 'publicTags');
 
               else
                 retValue := vector ();
@@ -2643,6 +2649,14 @@
                         if (self.dav_source = 0)
                         {
                           dav_filename := get_keyword ('filename', get_keyword_ucase('attr-dav_file', params));
+                        }
+                        else if (self.dav_source = 1)
+                        {
+                          dav_filename := get_keyword ('dav_url', params, '');
+                        }
+                        WEBDAV.DBA.test (dav_filename, vector ('name', 'Source', 'class', 'varchar', 'canEmpty', 0));
+                        if (self.dav_source = 0)
+                        {
                           if ((dav_filename like 'http://%') or (dav_filename like 'ftp://%'))
                           {
                             rdf_data := http_get (dav_filename);
@@ -2657,12 +2671,12 @@
                         }
                         else if (self.dav_source = 1)
                         {
-                          dav_filename := get_keyword ('dav_url', params, '');
                           rdf_data := http_get (dav_filename);
                         }
                         rdf_type := http_mime_type (dav_filename);
                       }
                       rdf_graph := trim (get_keyword ('dav_name_rdf', params));
+                      WEBDAV.DBA.test (rdf_graph, vector ('name', 'Graph', 'class', 'varchar', 'canEmpty', 0));
                       retValue := WEBDAV.DBA.DAV_RDF_UPLOAD (rdf_data, rdf_type, rdf_graph);
                       if (not retValue)
                       {
@@ -2841,21 +2855,26 @@
                         if (self.dav_source = 0)
                         {
                           dav_filename := get_keyword ('filename', get_keyword_ucase ('attr-dav_file', params));
-                          if ((dav_filename like 'http://%') or (dav_filename like 'ftp://%'))
-                          {
-                            dav_file := http_get (dav_filename);
-                          } else {
-                            dav_file := get_keyword ('dav_file', params);
-                          }
                         }
                         else if (self.dav_source = 1)
                         {
-                          dav_filename := get_keyword ('dav_url', params, '');
+                          dav_filename := get_keyword ('dav_url', params);
+                        }
+                        else if (self.dav_source = 2)
+                        {
+                          dav_filename := get_keyword ('dav_rdf', params);
+                        }
+                        WEBDAV.DBA.test (dav_filename, vector ('name', 'Source', 'class', 'varchar', 'canEmpty', 0));
+                        if (self.dav_source = 0)
+                        {
+                          dav_file := get_keyword ('dav_file', params);
+                        }
+                        else if (self.dav_source = 1)
+                        {
                           dav_file := http_get (dav_filename);
                         }
                         else if (self.dav_source = 2)
                         {
-                          dav_filename := get_keyword ('dav_rdf', params, '');
                           dav_file := WEBDAV.DBA.get_rdf (dav_filename);
                         }
                       }
