@@ -301,7 +301,8 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
     spar_internal_error (sparp, "sparp_" "expand_top_retvals () failed to process special result-set");
 }
 
-int sparp_gp_trav_wrap_vars_in_max (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+int
+sparp_gp_trav_wrap_vars_in_max (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   caddr_t varname;
   ssg_valmode_t native;
@@ -339,10 +340,15 @@ sparp_wpar_retvars_in_max (sparp_t *sparp, SPART *query)
   ssg_find_formatter_by_name_and_subtype (formatmode_name, query->_.req_top.subtype, &formatter, &agg_formatter, &agg_meta);
   if (((SELECT_L == query->_.req_top.subtype) ||
     (DISTINCT_L == query->_.req_top.subtype) ) &&
-    (NULL == formatter) && (NULL == agg_formatter) &&
-    ((NULL == retvalmode_name) ||
-    (SSG_VALMODE_SQLVAL == ssg_find_valmode_by_name (retvalmode_name)) ) )
-  return;
+    (NULL == formatter) && (NULL == agg_formatter) )
+    {
+      ssg_valmode_t retvalmode;
+      if (NULL == retvalmode_name)
+        return;
+      retvalmode = ssg_find_valmode_by_name (retvalmode_name);
+      if ((SSG_VALMODE_SQLVAL == retvalmode) || (SSG_VALMODE_AUTO == retvalmode))
+        return;
+    }
   sparp_gp_localtrav_treelist (sparp, retvals,
     NULL, NULL,
     NULL, NULL,
