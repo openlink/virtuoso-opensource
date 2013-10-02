@@ -403,6 +403,7 @@ void DBG_HASHEXT_NAME (id_hash_rehash) (DBG_PARAMS id_hash_t * ht, id_hashed_key
   ht_buffer.ht_dict_refctr = ht->ht_dict_refctr;
   ht_buffer.ht_dict_version = ht->ht_dict_version;
   ht_buffer.ht_rehash_threshold = ht->ht_rehash_threshold;
+  ht_buffer.ht_allow_dups = ht->ht_allow_dups;
 
 #if 0						 /* There's a faster way. Moreover it will works with context-sensitive cmp function */
   DBG_HASHEXT_NAME (id_hash_copy) (DBG_ARGS & ht_buffer, ht);
