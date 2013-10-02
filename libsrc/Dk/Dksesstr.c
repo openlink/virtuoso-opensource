@@ -726,7 +726,7 @@ void
 strses_write_out (dk_session_t * ses, dk_session_t * out)
 {
   buffer_elt_t *elt = ses->dks_buffer_chain;
-  strsestmpfile_t * ses_file = ses->dks_session->ses_file;
+  strsestmpfile_t * ses_file = ses->dks_session ? ses->dks_session->ses_file : NULL;
 
   while (elt)
     {
@@ -737,7 +737,7 @@ strses_write_out (dk_session_t * ses, dk_session_t * out)
       session_buffered_write (out, elt->data, elt->fill);	/* was: service_write, there was error when we have smth in buffer */
       elt = elt->next;
     }
-  if (ses_file->ses_file_descriptor)
+  if (ses_file && ses_file->ses_file_descriptor)
     {
       char buffer[DKSES_IN_BUFFER_LENGTH];
       size_t readed, to_read;
