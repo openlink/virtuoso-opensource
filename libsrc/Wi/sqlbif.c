@@ -13150,8 +13150,6 @@ done:
 }
 
 
-
-
 #define LC_BOX_ARRAY 1
 #define MAX_COLS 16
 
@@ -15687,6 +15685,63 @@ caddr_t
 bif_rdf_SHA512_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 { return bif_rdf_checksum_int (qst, args, SPAR_BIF_SHA512, "rdf_sha512_impl"); }
 
+caddr_t
+bif_rdf_valid_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  rdf_box_t *arg = (rdf_box_t *)bif_arg (qst, args, 0, "rdf_valid_impl");
+  if (DV_RDF != DV_TYPE_OF (arg))
+    return box_bool (1);
+  if (RDF_BOX_DEFAULT_TYPE == arg->rb_type)
+    return box_bool (1);
+  if (RDF_BOX_DEFAULT_LANG != arg->rb_lang)
+    return box_bool (0); /* Non-default datatype with non-default language? */
+  if (DV_STRING != DV_TYPE_OF (arg->rb_box))
+    return box_bool (1);
+  if (2 <= BOX_ELEMENTS (args))
+    {
+      caddr_t dt_uname = bif_string_or_uname_or_wide_or_null_arg (qst, args, 1, "rdf_valid_impl");
+      if (NULL == dt_uname) /* Invalid twobytes of a datatype? */
+        return box_bool (0);
+      /* Despite the use of bif_string_or_uname_or_wide_or_null_arg() we handle only UNAMEs here */
+      if ( (uname_xmlschema_ns_uri_hash_boolean			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_byte			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_date			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_dateTime		== dt_uname)
+      /*|| (uname_xmlschema_ns_uri_hash_dateTimeStamp		== dt_uname)*/
+        || (uname_xmlschema_ns_uri_hash_dayTimeDuration		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_decimal			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_double			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_duration		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_float			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_gDay			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_gMonth			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_gMonthDay		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_gYear			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_gYearMonth		== dt_uname)
+      /*|| (uname_xmlschema_ns_uri_hash_hexBinary		== dt_uname)*/
+        || (uname_xmlschema_ns_uri_hash_int			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_integer			== dt_uname)
+      /*|| (uname_xmlschema_ns_uri_hash_language		== dt_uname)*/
+        || (uname_xmlschema_ns_uri_hash_long			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_negativeInteger		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_nonNegativeInteger	== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_nonPositiveInteger	== dt_uname)
+      /*|| (uname_xmlschema_ns_uri_hash_normalizedString	== dt_uname)*/
+        || (uname_xmlschema_ns_uri_hash_positiveInteger		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_short			== dt_uname)
+      /*|| (uname_xmlschema_ns_uri_hash_string			== dt_uname)*/
+        || (uname_xmlschema_ns_uri_hash_time			== dt_uname)
+      /*|| (uname_xmlschema_ns_uri_hash_token			== dt_uname)*/
+        || (uname_xmlschema_ns_uri_hash_unsignedByte		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_unsignedInt		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_unsignedLong		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_unsignedShort		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_yearMonthDuration	== dt_uname) )
+        return box_bool (0);
+    }
+  return box_bool (1);
+}
+
 void
 bif_sparql_init (void)
 {
@@ -15714,6 +15769,7 @@ bif_sparql_init (void)
   bif_define_typed ("rdf_sha256_impl", bif_rdf_SHA256_impl, &bt_string);
   bif_define_typed ("rdf_sha384_impl", bif_rdf_SHA384_impl, &bt_string);
   bif_define_typed ("rdf_sha512_impl", bif_rdf_SHA512_impl, &bt_string);
+  bif_define_typed ("rdf_valid_impl", bif_rdf_valid_impl, &bt_integer);
 }
 
 extern caddr_t bif_search_excerpt (caddr_t *qst, caddr_t * err_ret, state_slot_t ** args);

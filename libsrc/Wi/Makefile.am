@@ -225,7 +225,6 @@ libwi_la_SOURCES = \
 	sql_code_2pc.c \
 	sql_code_adm.c \
 	sql_code_auto.c \
-	sql_code_blog.c \
 	sql_code_cache.c \
 	sql_code_dav.c \
 	sql_code_dbp.c \
@@ -375,7 +374,6 @@ libwi_odbc_la_SOURCES = \
 	sql_code_2pc.c \
 	sql_code_adm.c \
 	sql_code_auto.c \
-	sql_code_blog.c \
 	sql_code_cache.c \
 	sql_code_dav.c \
 	sql_code_dbp.c \
@@ -628,9 +626,6 @@ SQL_FILES_ADM		= \
 
 SQL_FILES_AUTO		= \
 	$(srcdir)/autoexec.sql
-
-SQL_FILES_BLOG		= \
-	$(top_srcdir)/binsrc/weblog2/widgets/rss2rdf.xsl
 
 SQL_FILES_DAV		= \
 	$(top_srcdir)/binsrc/dav/dav.sql \
@@ -916,10 +911,6 @@ sql_code_2pc.c: $(SQL_FILES_2PC) $(AWK_FILES) Makefile.am
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_2PC)
 
-#sql_code_blog.c: $(SQL_FILES_BLOG) $(AWK_FILES)
-#	@${GEN} ${GAWK} -o sql_code_2pc.c -f $(srcdir)/sql_to_c.awk \
-#		-v init_name=_blog -v pl_stats=$(PLSTATS) $(SQL_FILES_BLOG)
-
 sql_code_vdb.c: $(SQL_FILES_VDB) $(AWK_FILES) Makefile.am
 	@${GEN} ${GAWK} \
 		-o sql_code_vdb.c \
@@ -968,9 +959,6 @@ sql_code_pldbg.c: $(SQL_FILES_PLDBG) $(SQL_AWK_DEPS) Makefile.am
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_PLDBG)
 
-
-blog_pages.sql: FORCE
-	(cd $(top_srcdir)/binsrc/weblog ; $(MAKE))
 
 #
 # JSON

@@ -424,18 +424,21 @@ extern int sparp_tree_is_global_expn (sparp_t *sparp, SPART *tree);
 /*! Returns true if some variable from \c eq occurs in \c expn or one of its subexpressions. */
 extern int sparp_expn_reads_equiv (sparp_t *sparp, SPART *expn, sparp_equiv_t *eq);
 
-/*!< Adds variables to equivalence classes and set counters of usages */
+/*! Adds variables to equivalence classes and set counters of usages */
 extern void sparp_count_usages (sparp_t *sparp, SPART *req_top, dk_set_t *optvars_ret);
 
-/*!< Given set \c binds of \c SPAR_ALIAS expressions and a poitner to an expression to edit, replaces all bound variables with \c alias.arg expressions from alias expressions */
+/*! Given set \c binds of \c SPAR_ALIAS expressions and a poitner to an expression to edit, replaces all bound variables with \c alias.arg expressions from alias expressions */
 extern void sparp_expand_binds_like_macro (sparp_t *sparp, SPART **expr_ptr, dk_set_t binds, SPART *parent_gp);
 
-/*!< Changes and expands lists of return values to handle recursive graph traversal and DESCRIBE. */
+/*! Changes and expands lists of return values to handle recursive graph traversal and DESCRIBE. */
 void sparp_rewrite_retvals (sparp_t *sparp, SPART *req_top, int safely_copy_retvals);
 
 /*! Performs all basic term rewritings of the query tree, except simplification of all expressions, that can be made by sparp_simplify_expns().
 sparp_rewrite_basic() should not call sparp_simplify_expns() directly or indirectly due to the danger of infinite recursion. */
 extern void sparp_rewrite_basic (sparp_t *sparp, SPART *req_top);
+
+/*! Checks whether \c sqlval of a literal is a proper string represendation of an object value with type \c dt_iri and language \c lang */
+extern int sparp_literal_is_xsd_valid (sparp_t *sparp, caddr_t sqlval, caddr_t dt_iri, caddr_t lang);
 
 /*! Tries to calculate the range of values returned by a \c tree and fill in the structure under \c rvr_ret.
 if \c return_independent_copy is zero then the filled structure should remain static, otherwise it gets its own copy of list of formats and can be edited

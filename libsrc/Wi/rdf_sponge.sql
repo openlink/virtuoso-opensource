@@ -1807,9 +1807,6 @@ retry_after_deadlock:
       return 1;
     }
 
-  if (get_soft = 'no-sponge')
-    goto no_cart;
-
   --if (dest is null)
   --  {
   --    DB.DBA.SPARUL_CLEAR (graph_iri, 1);
@@ -1817,6 +1814,10 @@ retry_after_deadlock:
   --  }
 
 load_grddl:;
+
+  if (get_soft = 'no-sponge')
+    goto no_cart;
+
   if (('40001' = __SQL_STATE) and (retr_count < 10))
     {
       rollback work;

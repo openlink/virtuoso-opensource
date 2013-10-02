@@ -36,6 +36,7 @@ extern "C" {
 }
 #endif
 #include "xml_ecm.h"
+#include "xqf.h"
 #include "rdf_core.h"
 
 /* PART 1. EXPRESSION TERM REWRITING */
@@ -300,7 +301,8 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
     spar_internal_error (sparp, "sparp_" "expand_top_retvals () failed to process special result-set");
 }
 
-int sparp_gp_trav_wrap_vars_in_max (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+int
+sparp_gp_trav_wrap_vars_in_max (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   caddr_t varname;
   ssg_valmode_t native;
@@ -338,10 +340,15 @@ sparp_wpar_retvars_in_max (sparp_t *sparp, SPART *query)
   ssg_find_formatter_by_name_and_subtype (formatmode_name, query->_.req_top.subtype, &formatter, &agg_formatter, &agg_meta);
   if (((SELECT_L == query->_.req_top.subtype) ||
     (DISTINCT_L == query->_.req_top.subtype) ) &&
-    (NULL == formatter) && (NULL == agg_formatter) &&
-    ((NULL == retvalmode_name) ||
-    (SSG_VALMODE_SQLVAL == ssg_find_valmode_by_name (retvalmode_name)) ) )
-  return;
+    (NULL == formatter) && (NULL == agg_formatter) )
+    {
+      ssg_valmode_t retvalmode;
+      if (NULL == retvalmode_name)
+        return;
+      retvalmode = ssg_find_valmode_by_name (retvalmode_name);
+      if ((SSG_VALMODE_SQLVAL == retvalmode) || (SSG_VALMODE_AUTO == retvalmode))
+        return;
+    }
   sparp_gp_localtrav_treelist (sparp, retvals,
     NULL, NULL,
     NULL, NULL,
@@ -1132,7 +1139,7 @@ typedef struct so_BOP_OR_filter_ctx_s
   sparp_t *bofc_sparp;				/*!< parser/compiler context, to not pass an extra argument */
   SPART *bofc_var_sample;			/*!< Common optimizable variable in question */
   dk_set_t bofc_strings;			/*!< Collected string values, they may be convert into sprintf format strings to tighten equiv of the common variable */
-  SPART *bofc_reason_for_union;			/*!< The filter has a call of contains() or sp_intersects() as members so the gp containing this OR should be converted to UNION */
+  SPART *bofc_reason_for_union;			/*!< The filter has a call of contains() or st_intersects() as members so the gp containing this OR should be converted to UNION */
   SPART **bofc_BOP_OR_of_reason_for_union;	/*!< When a { pattern FILTER ( ... OR ... ) } should be replaced with UNION, one OR should be edited */
   int bofc_not_optimizable;			/*!< The filter is of complicated form or the variable is not common or global */
   int bofc_can_be_iri;				/*!< Flag if there's at least equality to a IRI */
@@ -1343,7 +1350,7 @@ sparp_optimize_BOP_OR_filter (sparp_t *sparp, SPART *parent_gp, SPART *gp, int g
         spar_internal_error (sparp, "sparp_" "optimize_BOP_OR_filter(): weird NULL parent gp / WHERE_L gp subtype combination");
 #endif
       if (filt_idx >= BOX_ELEMENTS (gp->_.gp.filters) - gp->_.gp.glued_filters_count)
-        spar_error (sparp, "A special predicate, like bif:contains or bif:sp_intersects, can not be used as an argument of '||' operator in a \"joining\" FILTER at line %ld of query; please re-phrase the query", (long)unbox (filt_ptr[0]->srcline));
+        spar_error (sparp, "A special predicate, like bif:contains or bif:st_intersects, can not be used as an argument of '||' operator in a \"joining\" FILTER at line %ld of query; please re-phrase the query", (long)unbox (filt_ptr[0]->srcline));
       if (0 != gp->_.gp.subtype)
         {
           SPART **all_membs, *filt, *new_gp;
@@ -3261,6 +3268,46 @@ sparql_init_bif_optimizers (void)
   bif_define_ex ("sparql_only:arg_is_local_var"	, NULL, BMD_SPARQL_OPTIMIZER_IMPL, bifsparqlopt_arg_is_local_var	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_RET_TYPE, &bt_integer	, BMD_SPARQL_ONLY, BMD_DONE);
 }
 
+int
+sparp_literal_is_xsd_valid (sparp_t *sparp, caddr_t sqlval, caddr_t dt_iri, caddr_t lang)
+{
+  dtp_t sqlval_dtp = DV_TYPE_OF (sqlval);
+  if (DV_STRING != sqlval_dtp)
+    return 1; /* IRI or successfully parsed literal */
+  if (NULL == dt_iri)
+    return 1; /* no datatype --- no restrictions */
+  if (!strncmp (dt_iri, XMLSCHEMA_NS_URI "#", XMLSCHEMA_NS_URI_LEN + 1 /* +1 is for '#' */))
+    {
+      const char *p_name = dt_iri + XMLSCHEMA_NS_URI_LEN + 1;
+      long desc_idx = ecm_find_name (p_name, xqf_str_parser_descs_ptr, xqf_str_parser_desc_count, sizeof (xqf_str_parser_desc_t));
+      xqf_str_parser_desc_t *desc;
+      dtp_t sqlval_dtp = DV_TYPE_OF (sqlval);
+      caddr_t cvt;
+      if (ECM_MEM_NOT_FOUND == desc_idx)
+        return 1; /* an unknown type */
+      desc = xqf_str_parser_descs_ptr + desc_idx;
+      if (DV_STRING != sqlval_dtp)
+        return 1;
+      else
+        {
+          caddr_t parsed_value = NULL;
+          QR_RESET_CTX
+            {
+              desc->p_proc (&parsed_value, sqlval, desc->p_opcode);
+            }
+          QR_RESET_CODE
+            {
+              POP_QR_RESET;
+              return 0; /* see below */
+            }
+          END_QR_RESET
+          dk_free_tree (parsed_value);
+          return 1;
+        }
+    }
+  return 1;
+}
+
 void
 sparp_get_expn_rvr (sparp_t *sparp, SPART *tree, rdf_val_range_t *rvr_ret, int return_independent_copy)
 {
@@ -3611,6 +3658,37 @@ sparp_simplify_builtin (sparp_t *sparp, SPART *tree, int *trouble_ret)
     case SPAR_BIF_UCASE: break;
     case SPAR_BIF_URI: break;
     case SPAR_BIF_UUID: break;
+    case SPAR_BIF_VALID:
+      {
+        switch (SPART_TYPE (arg1))
+          {
+          case SPAR_QNAME: goto res_bool_true; /* see below */
+          case SPAR_LIT:
+            {
+              if (sparp_literal_is_xsd_valid (sparp, arg1->_.lit.val, arg1->_.lit.datatype, arg1->_.lit.language))
+                goto res_bool_true; /* see below */
+              else
+                goto res_bool_false; /* see below */
+            }
+          case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
+            if (arg1->_.var.rvr.rvrRestrictions & SPART_VARR_CONFLICT)
+              goto res_bool_true; /* see below */
+            if (arg1->_.var.rvr.rvrRestrictions & SPART_VARR_ALWAYS_NULL)
+              goto res_bool_true; /* see below */
+            if (arg1->_.var.rvr.rvrRestrictions & SPART_VARR_IS_REF)
+              goto res_bool_true; /* see below */
+            if (arg1->_.var.rvr.rvrRestrictions & SPART_VARR_FIXED)
+              {
+                if (sparp_literal_is_xsd_valid (sparp, arg1->_.var.rvr.rvrFixedValue, arg1->_.var.rvr.rvrDatatype, arg1->_.var.rvr.rvrLanguage))
+                  goto res_bool_true; /* see below */
+                else
+                  goto res_bool_false; /* see below */
+              }
+            break;
+          default: break;
+          }
+        goto trouble_now; /* see below */
+      }
     case SPAR_BIF_YEAR: break;
     default: break;
     }

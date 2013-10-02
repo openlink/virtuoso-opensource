@@ -5940,7 +5940,7 @@ caddr_t bif_xenc_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (!xenc_key_create ("virtdev4@localhost", XENC_DSA_ALGO, DSIG_DSA_SHA1_ALGO, 1))
     log_info ("Unknown algo or duplicate key, %s", XENC_DSA_ALGO);
-  __xenc_key_dsa_init ("virtdev4@localhost", 1);
+  __xenc_key_dsa_init ("virtdev4@localhost", 1, 512);
 
 
   if (!xenc_key_create ("virtdev5@localhost", XENC_RSA_ALGO, DSIG_RSA_SHA1_ALGO, 1))
