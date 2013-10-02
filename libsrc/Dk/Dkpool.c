@@ -1383,6 +1383,7 @@ mm_cache_init (size_t sz, size_t min, size_t max, int steps, float step)
       mm_sizes[inx] = _RNDUP (((int64)(min * m)), 4096);
       m *= step;
       mm_rc[inx] = resource_allocate (20, NULL, NULL, NULL, NULL);
+      mutex_option (mm_rc[inx]->rc_mtx, "mm_rc", NULL, NULL);
       mm_rc[inx]->rc_item_time = (uint32*)malloc (sizeof (int32) * mm_rc[inx]->rc_size);
       memzero (mm_rc[inx]->rc_item_time, sizeof (int32) * mm_rc[inx]->rc_size);
       mm_rc[inx]->rc_max_size = MAX (2, sz / (mm_sizes[inx] * 2));
