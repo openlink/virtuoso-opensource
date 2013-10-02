@@ -1990,11 +1990,7 @@ extern int64 bdf_is_avail_mask; /* all bits on except read aside flag which does
 
 #define LT_NEED_WAIT_CPT(lt) \
   (wi_inst.wi_is_checkpoint_pending  && \
-   wi_inst.wi_cpt_lt != lt && cpt_is_global_lock (lt))
-
-#define LT_NEED_WAIT_CPT(lt) \
-  (wi_inst.wi_is_checkpoint_pending  && \
-   wi_inst.wi_cpt_lt != lt && !cpt_is_global_lock ())
+   wi_inst.wi_cpt_lt != lt && !cpt_is_global_lock (lt))
 
 
 /* reset catch context around itc operations */

@@ -278,13 +278,6 @@ lt_wait_checkpoint_lt (lock_trx_t * lt)
 }
 
 void
-lt_wait_checkpoint_lt (lock_trx_t * lt)
-{
-  if (LT_NEED_WAIT_CPT (lt))
-    lt_wait_checkpoint_1 (0);
-}
-
-void
 cpt_over (void)
 {
   ASSERT_IN_TXN;
