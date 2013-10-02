@@ -466,6 +466,7 @@ thr_free_alloc_cache (thread_t * thr)
 	  AV_CHECK_DOUBLE_FREE (blocks,thing, align_sz); \
 	  AV_PUT (blocks, thing, return, ;); \
 	}\
+      else { if (align_sz > 8) ((int64*)thing)[1] = AV_FREE_MARK; };	\
     } \
 }
 
