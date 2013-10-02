@@ -1378,7 +1378,7 @@ mm_cache_init (size_t sz, size_t min, size_t max, int steps, float step)
     dk_mutex_init (&mp_large_g_mtx, MUTEX_TYPE_SHORT);
   mutex_option (&mp_large_g_mtx, "mp_large_g_mtx", NULL, NULL);
   dk_mutex_init (&mp_reserve_mtx, MUTEX_TYPE_SHORT);
-  mutex_option (mp_reserve_mtx, "mp_reserve_mtx", NULL, NULL);
+  mutex_option (&mp_reserve_mtx, "mp_reserve_mtx", NULL, NULL);
   mm_n_large_sizes = steps;
   for (inx = 0; inx < steps; inx++)
     {
@@ -1391,7 +1391,7 @@ mm_cache_init (size_t sz, size_t min, size_t max, int steps, float step)
       mm_rc[inx]->rc_max_size = MAX (2, sz / (mm_sizes[inx] * 2));
     }
   dk_mutex_init (&map_fail_mtx, MUTEX_TYPE_SHORT);
-  mutex_option (&mmap_fail_mtx, "mmap_fail_mtx", NULL, NULL);
+  mutex_option (&map_fail_mtx, "mmap_fail_mtx", NULL, NULL);
   hash_table_init (&mm_failed_unmap, 23);
 }
 
