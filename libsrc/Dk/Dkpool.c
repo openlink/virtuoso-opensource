@@ -1610,7 +1610,6 @@ mp_munmap (void* ptr, size_t sz)
 	  mp_mmap_mark (ptr, sz, 1);
 	  if (ENOMEM == errno)
 	    {
-	      int nth = -1;
 	      *(long*)ptr = 0; /*verify it is still mapped */
 	      mutex_enter (&map_fail_mtx);
 	      log_error ("munmap failed with ENOMEM, should increase sysctl v,vm.max_map_count.  May also try lower VectorSize ini setting, e.g. 1000");
