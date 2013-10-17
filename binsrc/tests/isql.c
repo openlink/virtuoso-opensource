@@ -8626,7 +8626,7 @@ _T("                       new transaction log file.\n")
 _T("    CHECKPOINT [log];  Make a checkpoint.\n")
 _T("                       If [log] is given, preserve old log and make [log]\n")
 _T("                       new transaction log file.\n")
-_T("    status()           Display database server status.\n")
+_T("    status();           Display database server status.\n")
 #endif
 _T("\n")
 _T("Other commands:\n")
