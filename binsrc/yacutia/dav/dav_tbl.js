@@ -393,7 +393,9 @@ TBL.createCell62 = function (td, prefix, fldName, No, fldOptions)
 
         fld.onchange = function(){TBL.searchColumnChange(this)};
       }
-      OAT.AJAX.GET('dav/dav_browser_rest.vsp?a=search&sa=schemas', null, x, {async: false});
+      OAT.AJAX.GET(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp?a=search&sa=schemas', null, x, {async: false});
+
+      WEBDAV.Preferences.restPath
     }
   }
 }
@@ -428,7 +430,7 @@ TBL.createCell63 = function (td, prefix, fldName, No, fldOptions)
           if (fldOptions.value)
             fld.value = fldOptions.value;
         }
-        OAT.AJAX.GET('dav/dav_browser_rest.vsp?a=search&sa=schemaProperties&schema='+fldSchema, null, x, {async: false});
+        OAT.AJAX.GET(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp?a=search&sa=schemaProperties&schema='+fldSchema, null, x, {async: false});
       }
     }
   }
@@ -510,7 +512,7 @@ TBL.searchFilter = function ()
     TBL.searchPredicates = o[0];
     TBL.searchCompares = o[1];
   }
-  OAT.AJAX.GET('dav/dav_browser_rest.vsp?a=search&sa=metas', '', x, {async:false});
+  OAT.AJAX.GET(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp?a=search&sa=metas', '', x, {async:false});
 }
 
 TBL.searchColumnShow = function (prefix, column)

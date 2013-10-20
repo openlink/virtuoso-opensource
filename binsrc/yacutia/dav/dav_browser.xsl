@@ -83,6 +83,7 @@
           <script type="text/javascript">
             <![CDATA[
               WEBDAV.Preferences.imagePath = "<?V case when self.mode = 'briefcase' then 'dav/image/' else '/conductor/dav/image/' end ?>";
+              WEBDAV.Preferences.restPath = "<?V case when self.mode = 'webdav' then '/conductor/dav/' else 'dav/' end ?>";
             ]]>
           </script>
           <script type="text/javascript" src="<?V case when self.mode = 'briefcase' then 'dav/dav_state.js' else '/conductor/dav/dav_state.js' end ?>"><xsl:text> </xsl:text></script>
