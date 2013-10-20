@@ -4526,8 +4526,14 @@
                                     }
                                     else
                                     {
-                                      click := sprintf ('onclick="javascript: vspxPost(\'action\', \'_cmd\', \'select\', \'_path\', \'%V\'); return false;"', WEBDAV.DBA.utf2wide (replace (WEBDAV.DBA.dav_lpath (rowset[8]), '\'', '\\\'')));
-                                      http (sprintf ('<a %s href="%s" %s title="%V"><img src="%s" border="0" /> %V</a>', id, WEBDAV.DBA.utf2wide (WEBDAV.DBA.dav_url (rowset[8])), click, WEBDAV.DBA.utf2wide (rowset[0]), self.image_src (WEBDAV.DBA.ui_image (rowset[8], rowset[1], rowset[4])), WEBDAV.DBA.utf2wide (WEBDAV.DBA.stringCut (rowset[0], self.chars))));
+                                      declare path varchar;
+                                      declare permission varchar;
+
+                                      path := rowset[8];
+                                      permission := WEBDAV.DBA.permission (path);
+                                      click := case when (permission <> '') then sprintf ('ondblclick="javascript: vspxUpdate(\'%V\');" ', WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))) else '' end
+                                            || sprintf ('onclick="javascript: vspxSelect(\'%V\'); return false;"', WEBDAV.DBA.utf2wide (replace (WEBDAV.DBA.dav_lpath (rowset[8]), '\'', '\\\'')));
+                                      http (sprintf ('<a %s href="%s" %s title="%V" class="WEBDAV_a"><img src="%s" border="0" /> %V</a>', id, WEBDAV.DBA.utf2wide (WEBDAV.DBA.dav_url (rowset[8])), click, WEBDAV.DBA.utf2wide (rowset[0]), self.image_src (WEBDAV.DBA.ui_image (rowset[8], rowset[1], rowset[4])), WEBDAV.DBA.utf2wide (WEBDAV.DBA.stringCut (rowset[0], self.chars))));
                                     }
                                   ?>
                                   <v:template type="simple" enabled="-- case when (self.command_mode <> 3 or is_empty_or_null(WEBDAV.DBA.dc_get (self.search_dc, 'base', 'content'))) then 0 else 1 end">
@@ -4626,12 +4632,11 @@
                                     declare id any;
                                     declare permission varchar;
 
-
                                     path := rowset[8];
                                     permission := WEBDAV.DBA.permission (path);
                                     id := DB.DBA.DAV_SEARCH_ID (path, rowset[1]);
                                     if (permission <> '')
-                                      http (sprintf( ' <img class="pointer" border="0" alt="Update Properties" title="Update Properties"" src="%s" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'update\', \'_path\', \'%V\');" />', self.image_src ('dav/image/dav/item_prop.png'), replace (path, '\'', '\\\'')));
+                                      http (sprintf( ' <img class="pointer" border="0" alt="Update Properties" title="Update Properties"" src="%s" onclick="javascript: vspxUpdate(\'%V\');" />', self.image_src ('dav/image/dav/item_prop.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
 
                                     if (
                                          (
@@ -4665,11 +4670,11 @@
                                       declare S varchar;
                                       if ((rowset[0] like '%,acl') or (rowset[0] like '%,meta') or ((permission = 'R') and (self.mode <> 'webdav')))
                                       {
-                                        http (sprintf( ' <img class="pointer" border="0" alt="View Content" title="View Content" src="%s" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'view\', \'_path\', \'%V\');" />', self.image_src ('dav/image/docs_16.png'), replace (path, '\'', '\\\'')));
+                                        http (sprintf( ' <img class="pointer" border="0" alt="View Content" title="View Content" src="%s" onclick="javascript: vspxView(\'%V\');" />', self.image_src ('dav/image/docs_16.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
                                       }
                                       else if ((permission = 'W') or (self.mode = 'webdav'))
                                       {
-                                        http (sprintf( ' <img class="pointer" border="0" alt="Edit Content" title="Edit Content" src="%s" onclick="javascript: vspxPost(\'action\', \'_cmd\', \'edit\', \'_path\', \'%V\');" />', self.image_src ('dav/image/edit_16.png'), replace (path, '\'', '\\\'')));
+                                        http (sprintf( ' <img class="pointer" border="0" alt="Edit Content" title="Edit Content" src="%s" onclick="javascript: vspxEdit(\'%V\');" />', self.image_src ('dav/image/edit_16.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
                                       }
                                     }
                                   ?>
