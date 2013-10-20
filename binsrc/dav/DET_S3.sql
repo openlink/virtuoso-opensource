@@ -903,6 +903,22 @@ create function DB.DBA.S3__davId (
 
 -------------------------------------------------------------------------------
 --
+create function DB.DBA.S3__stringdate (
+  in dt varchar)
+{
+	declare rs any;
+  declare exit handler for sqlstate '*' { return now ();};
+
+  rs := dt;
+  if (isstring (rs))
+	  rs := stringdate (rs);
+
+	return dateadd ('minute', timezone (now()), rs);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create function DB.DBA.S3__user (
   in user_id integer,
   in default_id integer := null)
@@ -1389,7 +1405,8 @@ create function DB.DBA.S3__davList (
                       RES_OWNER,
                       RES_CR_TIME,
                       RES_TYPE,
-                      RES_NAME ) as I
+                      RES_NAME,
+                      coalesce (RES_ADD_TIME, RES_CR_TIME)) as I
          from WS.WS.SYS_DAV_RES
         where RES_COL = DB.DBA.S3__davId (colId)) do
   {
@@ -1406,7 +1423,8 @@ create function DB.DBA.S3__davList (
                       COL_OWNER,
                       COL_CR_TIME,
                       'dav/unix-directory',
-                      COL_NAME) as I
+                      COL_NAME,
+                      coalesce (COL_ADD_TIME, COL_CR_TIME)) as I
         from WS.WS.SYS_DAV_COL
        where COL_PARENT = DB.DBA.S3__davId (colId)) do
   {
@@ -1492,7 +1510,7 @@ create function DB.DBA.S3__load (
               if (DB.DBA.S3__entryXPath (davEntry, '/updated', 1) <> datestring (get_keyword ('updated', listItem)))
               {
                 set triggers off;
-                DB.DBA.S3__paramSet (davItem[4], davItem[1], ':getlastmodified', get_keyword ('updated', listItem), 0, 0);
+                DB.DBA.S3__paramSet (davItem[4], davItem[1], ':getlastmodified', DB.DBA.S3__stringdate (get_keyword ('updated', listItem)), 0, 0);
                 set triggers on;
 
                 if (davItem[1] = 'R')
@@ -1576,8 +1594,9 @@ create function DB.DBA.S3__load (
           if (DAV_HIDE_ERROR (_id) is not null)
           {
             set triggers off;
-            DB.DBA.S3__paramSet (_id, _what, ':creationdate', get_keyword ('updated', listItem), 0, 0);
-            DB.DBA.S3__paramSet (_id, _what, ':getlastmodified', get_keyword ('updated', listItem), 0, 0);
+            DB.DBA.S3__paramSet (_id, _what, ':addeddate', now (), 0, 0);
+            DB.DBA.S3__paramSet (_id, _what, ':creationdate', DB.DBA.S3__stringdate (get_keyword ('updated', listItem)), 0, 0);
+            DB.DBA.S3__paramSet (_id, _what, ':getlastmodified', DB.DBA.S3__stringdate (get_keyword ('updated', listItem)), 0, 0);
             set triggers on;
             DB.DBA.S3__paramSet (_id, _what, 'path', listID, 0);
             DB.DBA.S3__paramSet (_id, _what, 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
