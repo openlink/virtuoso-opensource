@@ -151,8 +151,12 @@ create procedure WS.WS.PROPFIND (in path varchar, inout params varchar, in lines
 	if (_temp <> '' and _temp <> 'infinity')
 		_depth := atoi (_temp);
 	else
-		_depth := -1;
-
+		_depth := 1;
+	if (_depth > 2)
+	{
+	      DB.DBA.DAV_SET_HTTP_STATUS (403);
+	      return;
+	}	
 	{
 		declare test_tree any;
 		declare exit handler for sqlstate '*'
