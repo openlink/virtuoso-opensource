@@ -715,7 +715,7 @@ xpathp.c xpathp.h : xpathp.y Makefile.am
 	@$(GEN) $(YACC) -o xpathp.c -vd -pxpyy $(srcdir)/xpathp.y
 
 xpathp_lex_props.c: list_lex_props.sh xpathp.y Makefile.am
-	list_lex_props.sh xpathp.y xpathp_lex_props.c
+	$(SHELL) $(srcdir)/list_lex_props.sh xpathp.y xpathp_lex_props.c
 
 xpscn.c: xpscn.l xpathp.h Makefile.am
 	@$(GEN) $(LEX) -o xpscn.c -Pxpyy $(srcdir)/xpscn.l
@@ -734,7 +734,7 @@ sparql_p.c sparql_p.h: sparql_p.y Makefile.am
 	@$(GEN) $(YACC) -o sparql_p.c -vd -psparyy $(srcdir)/sparql_p.y
 
 sparql_lex_props.c: list_lex_props.sh sparql_p.y Makefile.am
-	list_lex_props.sh sparql_p.y sparql_lex_props.c
+	$(SHELL) $(srcdir)/list_lex_props.sh sparql_p.y sparql_lex_props.c
 
 sparql_l.c: sparql_l.l sparql_p.h Makefile.am
 	@$(GEN) $(LEX) -o sparql_l.c -Psparyy $(srcdir)/sparql_l.l
@@ -746,7 +746,7 @@ turtle_p.c turtle_p.h: turtle_p.y Makefile.am
 	@$(GEN) $(YACC) -o turtle_p.c -vd -pttlyy $(srcdir)/turtle_p.y
 
 turtle_lex_props.c: list_lex_props.sh turtle_p.y Makefile.am
-	list_lex_props.sh turtle_p.y turtle_lex_props.c
+	$(SHELL) $(srcdir)/list_lex_props.sh turtle_p.y turtle_lex_props.c
 
 turtle_l.c: turtle_l.l turtle_p.h Makefile.am turtle_lex_props.c
 	@$(GEN) $(LEX) -o turtle_l.c -Pttlyy $(srcdir)/turtle_l.l
