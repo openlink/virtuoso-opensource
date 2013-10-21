@@ -173,6 +173,7 @@ conductor/fb_popup.vspx
 conductor/file_browser.xsl
 conductor/file_save.vsp
 conductor/folder.vspx
+conductor/folder_error.vspx
 conductor/form.xsl
 conductor/help/account_create.xml
 conductor/help/caps_browser.xml

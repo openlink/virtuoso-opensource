@@ -4041,7 +4041,6 @@ DAV_PROP_SET_INT (
 {
   declare id, rc, pid integer;
   declare st, det varchar;
-  declare resv any;
   declare locked integer;
   declare auto_version varchar;
   -- dbg_obj_princ ('DAV_PROP_SET_INT (', path, propname, propvalue, auth_uname, auth_pwd, extern, check_locks, overwrite, auth_uid, ')');
@@ -4094,7 +4093,6 @@ DAV_PROP_SET_RAW_INNER (
 ) returns integer
 {
   declare pid integer;
-  declare resv any;
   declare can_patch_access integer;
   if (58 = propname[0])
     { -- a special property, the first char is ':'
@@ -4112,6 +4110,14 @@ DAV_PROP_SET_RAW_INNER (
             update WS.WS.SYS_DAV_RES set RES_CR_TIME = propvalue where RES_ID = id;
           else
             update WS.WS.SYS_DAV_COL set COL_CR_TIME = propvalue where COL_ID = id;
+          return 0;
+        }
+      if (':addeddate' = propname)
+        {
+          if ('R' = st)
+            update WS.WS.SYS_DAV_RES set RES_ADD_TIME = propvalue where RES_ID = id;
+          else
+            update WS.WS.SYS_DAV_COL set COL_ADD_TIME = propvalue where COL_ID = id;
           return 0;
         }
       if (':getcontenttype' = propname)
@@ -4243,9 +4249,7 @@ DAV_PROP_SET_RAW_INNER (
   if ((not overwrite) and exists (select 1 from WS.WS.SYS_DAV_PROP where PROP_NAME = propname and PROP_PARENT_ID = id and PROP_TYPE = st))
     return -16;
 
-  resv := vector ('creationdate','y','getcontentlength','y','getcontenttype','y','getetag','y','getlastmodified','y','lockdiscovery','y','resourcetype','y','activelock','y','supportedlock','y');
-
-  if (not isstring (propname) or 'y' = get_keyword (propname, resv, 'n'))
+  if (not isstring (propname) or (propname in ('creationdate', 'getcontentlength', 'getcontenttype', 'getetag', 'getlastmodified', 'lockdiscovery', 'resourcetype', 'activelock', 'supportedlock')))
     return -10;
 
   if (__tag (propvalue) = 193)
@@ -4288,7 +4292,6 @@ DAV_PROP_SET_RAW_INNER (
 }
 ;
 
-
 --!AWK PUBLIC
 create procedure
 DAV_PROP_REMOVE (
@@ -4300,7 +4303,6 @@ DAV_PROP_REMOVE (
   return DAV_PROP_REMOVE_INT (path, propname, auth_uname, auth_pwd);
 }
 ;
-
 
 create function
 DAV_PROP_REMOVE_INT (
@@ -4315,7 +4317,6 @@ DAV_PROP_REMOVE_INT (
 {
   declare id, rc, pid integer;
   declare st, det varchar;
-  declare resv any;
   declare locked int;
   declare auto_version varchar;
   -- dbg_obj_princ ('DAV_PROP_REMOVE_INT (', path, propname, auth_uname, auth_pwd, extern, check_locks, ignore_if_missing, auth_uid, id, ')');
@@ -4345,11 +4346,10 @@ DAV_PROP_REMOVE_RAW (
 ) returns integer
 {
   declare pid integer;
-  declare resv any;
   declare can_patch_access integer;
   if (58 = propname[0])
     { -- a special property, the first char is ':'
-      if (propname in (':getlastmodified', ':creationdate', ':getcontenttype', ':virtowneruid', ':virtownergid', ':virtpermissions', ':virtdetmountable'))
+      if (propname in (':getlastmodified', ':creationdate', ':addeddate', ':getcontenttype', ':virtowneruid', ':virtownergid', ':virtpermissions', ':virtdetmountable'))
         return -10;
       if (auth_uid = http_dav_uid())
         can_patch_access := 2;
@@ -4476,6 +4476,7 @@ DAV_PROP_GET_INT (
           ':getlastmodified', 3,
           ':creationdate', 8,
           ':lastaccessed', 3,
+          ':addeddate', 10,
           ':getetag', -1,
           ':getcontenttype', 9,
           ':getcontentlength', 2,
@@ -4497,7 +4498,12 @@ DAV_PROP_GET_INT (
           declare dirsingle any;
           dirsingle := DAV_DIR_SINGLE_INT (id, what, 'fake', auth_uname, auth_pwd, auth_uid);
           if (isarray (dirsingle))
+          {
+            if ((propname = ':addeddate') and (length (dirsingle) <= 11))
+              idx := 8;
+
             return dirsingle[idx];
+          }
           return -1;
         }
       if (':getetag' = propname)

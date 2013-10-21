@@ -3389,13 +3389,13 @@ create procedure WEBDAV.DBA.DAV_SET (
   declare tmp varchar;
 
   if (property = 'permissions')
-    return DB.DBA.DAV_PROP_SET_INT (path, ':virtpermissions', value, null, null, 0, 0, 0, http_dav_uid ());
+    return WEBDAV.DBA.DAV_PROP_SET (path, ':virtpermissions', value, auth_name, auth_pwd, 0);
 
   if (property = 'groupID')
-    return DB.DBA.DAV_PROP_SET_INT (path, ':virtownergid', value, null, null, 0, 0, 0, http_dav_uid ());
+    return WEBDAV.DBA.DAV_PROP_SET (path, ':virtownergid', value, auth_name, auth_pwd, 0);
 
   if (property = 'ownerID')
-    return DB.DBA.DAV_PROP_SET_INT (path, ':virtowneruid', value, null, null, 0, 0, 0, http_dav_uid ());
+    return WEBDAV.DBA.DAV_PROP_SET (path, ':virtowneruid', value, auth_name, auth_pwd, 0);
 
   if (property = 'mimeType')
     return WEBDAV.DBA.DAV_PROP_SET (path, ':getcontenttype', value, auth_name, auth_pwd, 0);
@@ -3407,10 +3407,10 @@ create procedure WEBDAV.DBA.DAV_SET (
   }
 
   if (property = 'detType')
-    return DB.DBA.DAV_PROP_SET_INT (path, ':virtdet', value, null, null, 0, 0, 0, http_dav_uid ());
+    return WEBDAV.DBA.DAV_PROP_SET (path, ':virtdet', value, auth_name, auth_pwd, 0);
 
   if (property = 'acl')
-    return DB.DBA.DAV_PROP_SET_INT (path, ':virtacl', value, null, null, 0, 0, 0, http_dav_uid ());
+    return WEBDAV.DBA.DAV_PROP_SET (path, ':virtacl', value, auth_name, auth_pwd, 0);
 
   if (property = 'privatetags')
     return WEBDAV.DBA.DAV_PROP_TAGS_SET (path, ':virtprivatetags', value, auth_name, auth_pwd);

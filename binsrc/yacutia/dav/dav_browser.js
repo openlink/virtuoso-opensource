@@ -63,6 +63,38 @@ function vspxPost(fButton, fName, fValue, f2Name, f2Value, f3Name, f3Value) {
   doPost('F1', fButton);
 }
 
+var eventTimer;
+function vspxSelect(fValue) {
+  if (eventTimer)
+    clearTimeout(eventTimer);
+
+  eventTimer = setTimeout(
+    function() {
+      return vspxPost('action', '_cmd', 'select', '_path', fValue);
+    }, 500);
+}
+
+function vspxUpdate(fValue) {
+  if (eventTimer)
+    clearTimeout(eventTimer);
+
+  return vspxPost('action', '_cmd', 'update', '_path', fValue);
+}
+
+function vspxEdit(fValue) {
+  if (eventTimer)
+    clearTimeout(eventTimer);
+
+  return vspxPost('action', '_cmd', 'edit', '_path', fValue);
+}
+
+function vspxView(fValue) {
+  if (eventTimer)
+    clearTimeout(eventTimer);
+
+  return vspxPost('action', '_cmd', 'view', '_path', fValue);
+}
+
 function odsPost(obj, fields, button) {
   var form = getParent (obj, 'form');
   var formName = form.name;

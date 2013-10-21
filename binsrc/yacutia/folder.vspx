@@ -25,7 +25,7 @@
 -->
 <html>
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <style type="text/css">
       body {
         margin: 0;
@@ -74,7 +74,6 @@
           setTimeout(myInit, 100);
           return;
         }
-
         OAT.MSG.send(OAT, 'PAGE_LOADED');
       }
       OAT.MSG.attach(OAT, 'PAGE_LOADED2', myInit);
@@ -86,6 +85,7 @@
     <v:page
       name="dav_browser"
       style="yacutia_style.xsl"
+      on-error-redirect="/conductor/folder_error.vspx"
       fast-render="1"
       doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
       xmlns:xhtml="http://www.w3.org/1999/xhtml"
@@ -114,7 +114,6 @@
               declare vspx_user varchar;
 
               vspx_user := connection_get ('vspx_user');
-
               if (isnull (vspx_user) or (vspx_user = 'nobody'))
               {
                 self.account_id := http_nobody_uid ();
