@@ -25,7 +25,7 @@ if HAVE_MONO
 .PHONY:
 all: 
 	@echo "./mono-build.sh $(top_srcdir)/mono"
-	@TOP="$(TOP)" ./mono-build.sh $(top_srcdir)/mono  
+	@TOP="$(TOP)" $(SHELL) ./mono-build.sh $(top_srcdir)/mono  
 endif
 
 

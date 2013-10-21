@@ -49,7 +49,7 @@ liblangfunc_la_LDFLAGS = -static
 
 .PHONY: generate
 generate: 
-	$(SHELL) ./unicodetab2h.sh
+	$(SHELL) $(srcdir)/unicodetab2h.sh
 
 
 .PHONY: rclean
