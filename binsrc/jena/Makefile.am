@@ -88,7 +88,7 @@ run-tests: virt_jena.jar
 	$(JAVAC) $(JDK_FLAGS) \
 		-classpath "$(JENA_CLASSPATH):./virt_jena.jar" \
 		$(TESTSUITE_SRC)
-	cd testsuite && env JAVA="$(JAVA)" PORT="$(PORT)" $(SHELL) start.sh
+	cd testsuite && env JAVA="$(JAVA)" PORT="$(PORT)" $(SHELL) ./start.sh
 else
 run-tests:
 	@echo "***WARNING: Disabled Jena test suite"
