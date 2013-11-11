@@ -2001,6 +2001,7 @@
                               <![CDATA[
                                 <script type="text/javascript" src="/ods/ckeditor/ckeditor.js"></script>
                                 <script type="text/javascript">
+                                  CKEDITOR.config.startupMode = 'source';
                                   var oEditor = CKEDITOR.replace('dav_content_html');
                                 </script>
                               ]]>
@@ -3540,6 +3541,7 @@
                   <![CDATA[
                     <script type="text/javascript" src="/ods/ckeditor/ckeditor.js"></script>
                     <script type="text/javascript">
+                      CKEDITOR.config.startupMode = 'source';
                       var oEditor = CKEDITOR.replace('f_content_html');
                     </script>
                   ]]>
