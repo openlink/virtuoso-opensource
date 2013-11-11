@@ -4511,7 +4511,7 @@
                                   {
                                     http (         '<td class="checkbox">');
                                     if ((rowset[8] not like '%,acl') and (rowset[8] not like '%,meta'))
-                                      http (sprintf ('  <input type="checkbox" name="cb_item" value="%V" onclick="selectCheck (this, \'cb_item\')"/>', rowset[8]));
+                                      http (sprintf ('  <input type="checkbox" name="cb_item" value="%V" onclick="selectCheck (this, \'cb_item\')"/>', WEBDAV.DBA.utf2wide (rowset[8])));
                                     http (         '</td>');
                                   }
                                 ?>
