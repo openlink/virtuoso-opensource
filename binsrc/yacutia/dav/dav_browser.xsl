@@ -4176,16 +4176,16 @@
               <v:button action="simple" value="Rename">
                 <v:on-post>
                   <![CDATA[
-                     declare returnData, oldName, newName any;
+                    declare retValue, oldName, newName any;
 
                     oldName := trim (self.f_old.ufl_value);
                     newName := trim (self.f_new.ufl_value);
                     if (oldName <> newName)
                     {
                       WEBDAV.DBA.test (newName, vector('name', 'New Name', 'class', 'varchar', 'type', 'varchar', 'canEmpty', 0));
-                      returnData := WEBDAV.DBA.DAV_SET (self.v_path, 'name', newName);
-                      if (WEBDAV.DBA.DAV_ERROR (returnData))
-                        signal('TEST', WEBDAV.DBA.DAV_PERROR (returnData) || '<>');
+                      retValue := WEBDAV.DBA.DAV_SET (self.v_path, 'name', newName);
+                      if (WEBDAV.DBA.DAV_ERROR (retValue))
+                        signal('TEST', WEBDAV.DBA.DAV_PERROR (retValue) || '<>');
                     }
                     self.v_step := 'end';
                     self.command_pop (null);
