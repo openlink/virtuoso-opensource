@@ -3531,7 +3531,7 @@ static caddr_t
 sf_sql_cancel_hook (dk_session_t* session, caddr_t _request)
 {
   ptrlong *request  = (ptrlong *) _request;
-  if (session && request && request[DA_MESSAGE_TYPE] == DA_FUTURE_REQUEST &&
+  if (session && IS_FRQ (request) &&
       !strcmp ((char *) request[FRQ_SERVICE_NAME], "CANCEL"))
     {
       client_connection_t *cli = DKS_DB_DATA (session);
