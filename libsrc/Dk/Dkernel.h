@@ -523,6 +523,8 @@ typedef struct scheduler_io_data_s
 
 #define DA_FRQ_LENGTH			5
 
+#define IS_FRQ(r) ((r) && BOX_ELEMENTS_0 ((r)) >= DA_FRQ_LENGTH && (r)[DA_MESSAGE_TYPE] == DA_FUTURE_REQUEST && IS_STRING_DTP (DV_TYPE_OF ((r)[FRQ_SERVICE_NAME])))
+
 /*
  * RRC = remote realize condition = future answer.
  */
