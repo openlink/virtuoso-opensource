@@ -172,9 +172,13 @@ conductor/error.vspx
 conductor/fb_popup.vspx
 conductor/file_browser.xsl
 conductor/file_save.vsp
-conductor/folder.vspx
 conductor/folder_error.vspx
+conductor/folder.vspx
 conductor/form.xsl
+conductor/graphs_audit_security.vspx
+conductor/graphs_page.vspx
+conductor/graphs_roles_security.vspx
+conductor/graphs_users_security.vspx
 conductor/help/account_create.xml
 conductor/help/caps_browser.xml
 conductor/help/dav_browser_search.xml

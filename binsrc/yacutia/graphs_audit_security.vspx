@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2013 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page
+  name="graphs_audit_security"
+  decor="yacutia_decor.vspx"
+  style="yacutia_style.xsl"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  fast-render="1"
+  xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+
+  <v:on-init>
+    <![CDATA[
+      declare params any;
+
+      params := self.vc_page.vc_event.ve_params;
+      if (get_keyword ('execRecovery', params, '') <> '')
+        self.va_mode := 1;
+
+      else
+        self.va_mode := cast (get_keyword ('mode', params) as integer);
+    ]]>
+  </v:on-init>
+  <v:variable name="va_mode" type="integer" default="null" param-name="mode" />
+
+  <h2>Audit <?V case when self.va_mode then '& Error Recovery' end ?></h2>
+  <v:form name="a_page_form" type="simple" method="POST" action="graphs_page.vspx?page=4">
+    <?vsp
+      declare stat, msg varchar;
+      declare meta, rset any;
+      declare recovery integer;
+
+      stat := '00000';
+      exec ('DB.DBA.RDF_GRAPH_SECURITY_AUDIT (?)', stat, msg, vector (self.va_mode), 1000000, meta, rset);
+      if (stat <> '00000')
+      {
+        http ('<xmp>Audit has terminated with an error!\n' || stat || ': ' || msg || '</xmp>');
+        return;
+      }
+    ?>
+    <table class="listing">
+      <thead>
+        <tr class="listing_header_row">
+          <th>Message</th>
+          <th>Severity</th>
+          <th>Graph IRI (ID)</th>
+          <th>User Name (ID)</th>
+        </tr>
+      </thead>
+      <tbody>
+      <?vsp
+        foreach (any r in rset) do
+        {
+      ?>
+        <tr>
+          <td><?V r[5] ?></td>
+          <td><?V r[0] ?></td>
+          <td><?V r[2] ?><?V case when not DB.DBA.is_empty_or_null (r[1]) then '(' || r[1] || ')' end ?></td>
+          <td><?V r[4] ?><?V case when not DB.DBA.is_empty_or_null (r[3]) then '(' || r[3] || ')' end ?></td>
+        </tr>
+      <?vsp
+        }
+      ?>
+      </tbody>
+    </table>
+    <input type="submit" id="exec" name="exec" value="Exec" />
+    <input type="submit" id="execRecovery" name="execRecovery" value="Exec & Recovery" />
+  </v:form>
+</v:page>
