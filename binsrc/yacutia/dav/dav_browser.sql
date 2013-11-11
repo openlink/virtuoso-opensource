@@ -4639,7 +4639,10 @@ create procedure WEBDAV.DBA.acl_send_mail_aq (
   for (N := 0; N < length (_new_acl); N := N + 1)
   {
     if (not WEBDAV.DBA.vector_contains (_old_acl, _new_acl[N]) or (_encryption_state = 2))
+    {
+      WEBDAV.DBA.acl_share_create (_new_acl[N]);
       WEBDAV.DBA.send_mail (_path, _from, _new_acl[N], subject, text, 1, _encryption_state);
+    }
   }
   subject := 'Unsharing notification';
   text := WEBDAV.DBA.settings_mailUnshare (settings);
@@ -4647,6 +4650,36 @@ create procedure WEBDAV.DBA.acl_send_mail_aq (
   {
     if (not WEBDAV.DBA.vector_contains (_new_acl, _old_acl[N]))
       WEBDAV.DBA.send_mail (_path, _from, _old_acl[N], subject, text, 1, 0);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.acl_share_create (
+  in _user_id integer)
+{
+  declare _user_name, _permissions, _home varchar;
+  declare _col_id integer;
+
+  if (__proc_exists ('DB.DBA.Share_DAV_AUTHENTICATE') is null)
+    return;
+
+  _user_name := WEBDAV.DBA.account_name (_user_id);
+  if (isnull (_user_name))
+    return;
+
+  _home := '/DAV/home/' || _user_name || '/';
+  if (exists (select 1 from WS.WS.SYS_DAV_COL where COL_PARENT = DAV_SEARCH_ID (_home, 'C') and COL_DET = 'Share'))
+    return;
+
+  if (exists (select 1 from WS.WS.SYS_DAV_COL where WS.WS.COL_PATH (COL_ID) like (_home || '%') and COL_DET = 'Share'))
+    return;
+
+  for (select U_ID, U_PWD, U_GROUP, U_DEF_PERMS, U_HOME from WS.WS.SYS_DAV_USER where U_NAME = _user_name) do
+  {
+    DB.DBA.DAV_MAKE_DIR (_home || 'Shared Resources/', U_ID, U_GROUP, U_DEF_PERMS);
+    WEBDAV.DBA.DAV_SET (_home || 'Shared Resources/', 'detType', 'Share');
   }
 }
 ;
