@@ -131,7 +131,7 @@ struct dbe_table_s
     int64                tb_count;
     int64	tb_count_estimate;
     double	tb_geo_area;
-    int			tb_count_delta;
+    int64		tb_count_delta;
 
     /* row level security functions */
     caddr_t		tb_rls_procs[TB_RLS_LAST + 1];
