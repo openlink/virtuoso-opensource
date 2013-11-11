@@ -949,12 +949,12 @@
                 if (not WEBDAV.DBA.DAV_ERROR (item))
                 {
                   http ('    <tr>');
-                  http (sprintf ('<td nowrap="nowrap"><img src="%s" alt="%s">&nbsp;&nbsp;%s</td>', WEBDAV.DBA.ui_image (WEBDAV.DBA.DAV_GET (item, 'fullPath'), WEBDAV.DBA.DAV_GET (item, 'type'), WEBDAV.DBA.DAV_GET (item, 'mimeType')), WEBDAV.DBA.ui_alt (WEBDAV.DBA.DAV_GET (item, 'name'), WEBDAV.DBA.DAV_GET (item, 'type')), self.items[i]));
-                  http (sprintf ('<td class="number" nowrap="nowrap">%s</td>', WEBDAV.DBA.ui_size (WEBDAV.DBA.DAV_GET (item, 'length'), WEBDAV.DBA.DAV_GET (item, 'type'))));
-                  http (sprintf ('<td nowrap="nowrap">%s</td>', WEBDAV.DBA.ui_date (WEBDAV.DBA.DAV_GET (item, 'modificationTime'))));
-                  http (sprintf ('<td>%s</td>', WEBDAV.DBA.DAV_GET (item, 'ownerName')));
-                  http (sprintf ('<td>%s</td>', WEBDAV.DBA.DAV_GET (item, 'groupName')));
-                  http (sprintf ('<td>%s</td>', WEBDAV.DBA.DAV_GET (item, 'permissionsName')));
+                  http (sprintf ('<td nowrap="nowrap" valign="top"><img src="%s" alt="%s">&nbsp;&nbsp;%s</td>', WEBDAV.DBA.ui_image (WEBDAV.DBA.DAV_GET (item, 'fullPath'), WEBDAV.DBA.DAV_GET (item, 'type'), WEBDAV.DBA.DAV_GET (item, 'mimeType')), WEBDAV.DBA.ui_alt (WEBDAV.DBA.DAV_GET (item, 'name'), WEBDAV.DBA.DAV_GET (item, 'type')), self.items[i]));
+                  http (sprintf ('<td class="number" nowrap="nowrap" valign="top">%s</td>', WEBDAV.DBA.ui_size (WEBDAV.DBA.DAV_GET (item, 'length'), WEBDAV.DBA.DAV_GET (item, 'type'))));
+                  http (sprintf ('<td nowrap="nowrap" valign="top">%s</td>', WEBDAV.DBA.ui_date (WEBDAV.DBA.DAV_GET (item, 'modificationTime'))));
+                  http (sprintf ('<td valign="top">%s</td>', WEBDAV.DBA.DAV_GET (item, 'ownerName')));
+                  http (sprintf ('<td valign="top">%s</td>', WEBDAV.DBA.DAV_GET (item, 'groupName')));
+                  http (sprintf ('<td valign="top">%s</td>', WEBDAV.DBA.DAV_GET (item, 'permissionsName')));
                   if (self.v_step <> 'start')
                   {
                   http (sprintf ('<td style="color: red;">%s</td>', self.items[i+1]));
