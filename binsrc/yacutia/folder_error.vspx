@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2013 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link rel="stylesheet" href="yacutia_style.css" type="text/css"/>
+    <link rel="stylesheet" href="dav/dav_browser.css" type="text/css"/>
+    <style type="text/css">
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: Verdana, Arial, Helvetica, Sans-Serif;
+        font-size: 9pt;
+        background-color: white;
+      }
+
+      pre {
+        white-space: pre-wrap;       /* css-3 */
+        white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+        white-space: -pre-wrap;      /* Opera 4-6 */
+        white-space: -o-pre-wrap;    /* Opera 7 */
+        word-wrap: break-word;       /* Internet Explorer 5.5+ */
+      }
+
+      form {
+        margin: 0;
+        padding: 0;
+      }
+
+      .error {
+          background-color: white;
+          border: 1pt solid red;
+          color: red;
+          font-weight: bold;
+          margin: 3px 0 3px 0;
+          padding: 5px;
+          text-align: center;
+      }
+    </style>
+    <title>WebDAV Repository Error</title>
+  </head>
+  <body>
+    <v:page name="folder_error"
+          style="yacutia_style.xsl"
+          fast-render="1"
+          xmlns:v="http://www.openlinksw.com/vspx/"
+          xmlns:vm="http://www.openlinksw.com/vspx/macro"
+          doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+      <vm:popup_page_wrapper>
+        <v:variable name="page_name" type="varchar" default="''" param-name="__PAGE" persist="0"/>
+        <v:variable name="code" type="varchar" default="''" param-name="__SQL_STATE" persist="temp"/>
+        <v:variable name="mesg" type="varchar" default="''" param-name="__SQL_MESSAGE" persist="0"/>
+        <div class="WEBDAV_formHeader">
+          An error has occurred when processing <b>"<?V self.page_name ?>"</b> page.
+        </div>
+        <table class="WEBDAV_formBody">
+          <tr>
+            <th>SQL State</th>
+            <td><?V self.code ?></td>
+          </tr>
+          <tr>
+            <th>SQL Message</th>
+            <td><pre><?V self.mesg ?></pre></td>
+          </tr>
+        </table>
+        <div class="WEBDAV_formFooter">
+          <v:button action="simple" name="cancel" value="Go back" xhtml_onclick="javascript:history.back();return false;" />
+        </div>
+      </vm:popup_page_wrapper>
+    </v:page>
+  </body>
+</html>
