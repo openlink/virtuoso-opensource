@@ -3407,7 +3407,7 @@ create procedure WEBDAV.DBA.DAV_SET (
   }
 
   if (property = 'detType')
-    return WEBDAV.DBA.DAV_PROP_SET (path, ':virtdet', value, auth_name, auth_pwd, 0);
+    return DB.DBA.DAV_PROP_SET_INT (path, ':virtdet', value, null, null, 0, 0, 0, http_dav_uid ());
 
   if (property = 'acl')
     return WEBDAV.DBA.DAV_PROP_SET (path, ':virtacl', value, auth_name, auth_pwd, 0);
