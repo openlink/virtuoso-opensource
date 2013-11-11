@@ -1787,7 +1787,6 @@ caddr_t bif_xenc_key_rsa_create (caddr_t * qst, caddr_t * err_r, state_slot_t **
   caddr_t name = bif_string_arg (qst, args, 0, "xenc_key_RSA_create");
   int num = (int) bif_long_arg (qst, args, 1, "xenc_key_RSA_create");
   RSA *rsa = NULL;
-  EVP_PKEY *pk = NULL;
 
   mutex_enter (xenc_keys_mtx);
   if (NULL == (k = xenc_key_create (name, XENC_RSA_ALGO , DSIG_RSA_SHA1_ALGO, 0)))
@@ -3593,7 +3592,7 @@ bif_xml_sign (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       *local = 0;
       local++;
-      elem = xml_find_child (top, elem, elem_copy, 0, NULL);
+      elem = xml_find_child (top, (char *) elem, elem_copy, 0, NULL);
     }
   if (elem)
     {
@@ -3601,7 +3600,7 @@ bif_xml_sign (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       caddr_t * new_elem = (caddr_t *) dk_alloc_box (box_length (elem) + sizeof (caddr_t), DV_ARRAY_OF_POINTER);
       memcpy (new_elem, elem, box_length (elem));
       memcpy (new_elem + BOX_ELEMENTS (elem), &signature, sizeof (caddr_t));
-      curr_nss = xenc_get_namespaces (elem, _nss);
+      curr_nss = (caddr_t) xenc_get_namespaces (elem, _nss);
       DO_BOX (caddr_t *, child, inx, top)
 	{
 	  if (child == elem)
@@ -7339,7 +7338,6 @@ bif_xenc_x509_verify (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   xenc_key_t * cert = xenc_get_key_by_name (cert_name, 1);
   xenc_key_t * key = xenc_get_key_by_name (key_name, 1);
   int rc = 0;
-  EVP_PKEY * k;
 
   if (!key)
     SQLR_NEW_KEY_ERROR (key_name);
