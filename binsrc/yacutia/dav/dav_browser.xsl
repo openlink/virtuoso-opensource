@@ -1989,11 +1989,15 @@
                         </th>
                         <td>
                           <div id="dav_plain" style="display: <?V case when WEBDAV.DBA.VAD_CHECK ('Framework') and get_keyword ('dav_mime', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'mimeType')) = 'text/html' then 'none' else '' end ?>;">
-                            <textarea id="dav_content_plain" name="dav_content_plain" style="width: 100%; height: 170px"><?vsp http (get_keyword ('dav_content_plain', self.vc_page.vc_event.ve_params, '')); ?></textarea>
+                            <?vsp
+                              http (sprintf ('<textarea id="dav_content_plain" name="dav_content_plain" style="width: 100%%; height: 170px">%V</textarea>', get_keyword ('dav_content_plain', self.vc_page.vc_event.ve_params, '')));
+                            ?>
                           </div>
                           <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
                             <div id="dav_html" style="display: <?V case when get_keyword ('dav_mime', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'mimeType')) = 'text/html' then '' else 'none' end ?>;">
-                              <textarea id="dav_content_html" name="dav_content_html" style="width: 400px; height: 170px;"><?vsp http (get_keyword ('dav_content_html', self.vc_page.vc_event.ve_params, '')); ?></textarea>
+                              <?vsp
+                                http (sprintf ('<textarea id="dav_content_html" name="dav_content_html" style="width: 400px; height: 170px;">%V</textarea>', get_keyword ('dav_content_html', self.vc_page.vc_event.ve_params, '')));
+                              ?>
                               <![CDATA[
                                 <script type="text/javascript" src="/ods/ckeditor/ckeditor.js"></script>
                                 <script type="text/javascript">
