@@ -986,14 +986,15 @@ ddl_col_set_identity_start (char *table, char *check, caddr_t *col_options, char
       char temp[6*MAX_NAME_LEN + 6];
       char q[MAX_NAME_LEN], o[MAX_NAME_LEN], n[MAX_NAME_LEN];
       int start = 1;
-      caddr_t id_start;
+      caddr_t id_start, unknown = box_num(1);
 
-      if (NULL != (id_start = col_options ? get_keyword_int (col_options, "identity_start", NULL) : NULL))
+      if (unknown != (id_start = col_options ? get_keyword_ucase_int (col_options, "identity_start", unknown) : unknown))
 	{
 	  if (DV_TYPE_OF (id_start) == DV_LONG_INT)
 	    start = (int) unbox (id_start);
 	  dk_free_tree (id_start);
 	}
+      dk_free_tree(unknown);
 
       sch_split_name ("DB", table, q, o, n);
       snprintf (temp, sizeof (temp), "%s.%s.%s.%s", q, o, table, name);
