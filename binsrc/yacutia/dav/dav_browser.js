@@ -817,6 +817,7 @@ WEBDAV.oauthParams = function (drive, oauth)
     fld.value = '';
   } else {
     var d = new Date();
+    d = new Date(d.valueOf() + d.getTimezoneOffset() * 60000)
     params.access_timestamp = d.format('Y-m-d H:i');
     fld.value = OAT.JSON.serialize(params);
 

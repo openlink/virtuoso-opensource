@@ -1426,7 +1426,7 @@ create procedure WEBDAV.DBA.proc(
 {
   -- dbg_obj_princ ('WEBDAV.DBA.proc (', path, ')');
   declare i, pos integer;
-  declare tmp, dirFilter, dirHiddens, dirList any;
+  declare detCategory, dateAdded, dirFilter, dirHiddens, dirList any;
   declare vspx_user, user_name, group_name varchar;
   declare user_id, group_id integer;
   declare c2 any;
@@ -1514,8 +1514,9 @@ create procedure WEBDAV.DBA.proc(
             group_id := coalesce (item[6], -1);
             group_name := WEBDAV.DBA.user_name (group_id, '');
           }
-          tmp := WEBDAV.DBA.det_category (item[4], item[0], item[1], item[9]);
-          result (item[either (gte (dir_mode, 2),0,10)], item[1], item[2], left (cast (item[3] as varchar), 19), item[9], user_name, group_name, adm_dav_format_perms(item[5]), item[0], tmp, left (cast (item[8] as varchar), 19));
+          detCategory := WEBDAV.DBA.det_category (item[4], item[0], item[1], item[9]);
+          dateAdded := case when length (item) <= 11 then item[8] else item[11] end;
+          result (item[either (gte (dir_mode, 2),0,10)], item[1], item[2], left (cast (item[3] as varchar), 19), item[9], user_name, group_name, adm_dav_format_perms(item[5]), item[0], detCategory, left (cast (item[8] as varchar), 19), left (cast (dateAdded as varchar), 19));
         }
       }
     }
@@ -2419,6 +2420,7 @@ create procedure WEBDAV.DBA.settings_init (
   WEBDAV.DBA.set_keyword ('column_#8', settings, WEBDAV.DBA.settings_column (settings, 8));
   WEBDAV.DBA.set_keyword ('column_#9', settings, WEBDAV.DBA.settings_column (settings, 9));
   WEBDAV.DBA.set_keyword ('column_#10',settings, WEBDAV.DBA.settings_column (settings,10));
+  WEBDAV.DBA.set_keyword ('column_#11',settings, WEBDAV.DBA.settings_column (settings,11));
   WEBDAV.DBA.set_keyword ('mailShare', settings, WEBDAV.DBA.settings_mailShare (settings));
   WEBDAV.DBA.set_keyword ('mailUnshare', settings, WEBDAV.DBA.settings_mailUnshare (settings));
 
@@ -2477,7 +2479,7 @@ create procedure WEBDAV.DBA.settings_column (
   inout settings any,
   in N integer)
 {
-return cast (get_keyword ('column_#' || cast (N as varchar), settings, case when (N = 10) then '0' else '1' end) as integer);
+return cast (get_keyword ('column_#' || cast (N as varchar), settings, case when (N = 10) or (N = 11) then '0' else '1' end) as integer);
 }
 ;
 

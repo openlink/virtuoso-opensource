@@ -911,6 +911,20 @@
             ]]>
           </v:method>
 
+          <v:method name="detAccessTimestamp" arglist="in params any">
+            <![CDATA[
+              declare gmt any;
+              declare exit handler for SQLSTATE '*' {goto _exit;};
+
+              gmt := get_keyword ('access_timestamp', params);
+              if (not isnull (gmt))
+                return datestring (dateadd ('minute', timezone (now()), stringdate (gmt)));
+
+            _exit:;
+              return datestring (now ());
+            ]]>
+          </v:method>
+
           <v:method name="virtPropertiesRestore" arglist="in _properties any, in _pattern varchar">
             <![CDATA[
               foreach (any _property in _properties) do
@@ -1035,7 +1049,8 @@
                 vector ('column_#7', 'c5', 'Owner',         1, 1, vector (WEBDAV.DBA.settings_column (self.settings, 7), 0), ''),
                 vector ('column_#8', 'c6', 'Group',         1, 1, vector (WEBDAV.DBA.settings_column (self.settings, 8), 0), ''),
                 vector ('column_#9', 'c7', 'Permissions',   0, 0, vector (WEBDAV.DBA.settings_column (self.settings, 9), 0), ''),
-                vector ('column_#10','c10','Date Created',  1, 1, vector (WEBDAV.DBA.settings_column (self.settings,10), 0), '')
+                vector ('column_#10','c10','Date Created',  1, 1, vector (WEBDAV.DBA.settings_column (self.settings,10), 0), ''),
+                vector ('column_#11','c11','Date Added',    1, 1, vector (WEBDAV.DBA.settings_column (self.settings,11), 0), '')
               );
 
               self.dir_path := get_keyword ('dir', _params, self.dir_path);
@@ -3246,7 +3261,7 @@
                             {
                               tmp := subseq (WEBDAV.DBA.json2obj (tmp), 2);
                               WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-Authentication', 'Yes');
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-access_timestamp', get_keyword ('access_timestamp', tmp, ''));
+                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-access_timestamp', self.detAccessTimestamp(tmp));
                               WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-access_token', get_keyword ('access_token', tmp, ''));
                               WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-token_type', get_keyword ('token_type', tmp, 'Bearer'));
                               WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-expires_in', cast (get_keyword ('expires_in', tmp, '3600') as varchar));
@@ -3291,7 +3306,7 @@
                             {
                               tmp := subseq (WEBDAV.DBA.json2obj (tmp), 2);
                               WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-Authentication', 'Yes');
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-access_timestamp', get_keyword ('access_timestamp', tmp, ''));
+                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-access_timestamp', self.detAccessTimestamp(tmp));
                               WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-scope', get_keyword ('scope', tmp, ''));
                               WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-access_token', pwd_magic_calc ('skydrive', get_keyword ('access_token', tmp, '')));
                               WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-token_type', get_keyword ('token_type', tmp, 'Bearer'));
@@ -3299,6 +3314,7 @@
                               WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-refresh_token', pwd_magic_calc ('skydrive', get_keyword ('refresh_token', tmp, '')));
                               WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-authentication_token', pwd_magic_calc ('skydrive', get_keyword ('authentication_token', tmp, '')));
                               WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-display_name', get_keyword ('dav_SkyDrive_display_name', params, ''));
+                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-email', get_keyword ('dav_SkyDrive_email', params, ''));
                             }
                             else
                             {
@@ -3316,7 +3332,7 @@
                             {
                               tmp := subseq (WEBDAV.DBA.json2obj (tmp), 2);
                               WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:Box-Authentication', 'Yes');
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:Box-access_timestamp', get_keyword ('access_timestamp', tmp, ''));
+                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:Box-access_timestamp', self.detAccessTimestamp(tmp));
                               WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:Box-scope', get_keyword ('scope', tmp, ''));
                               WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:Box-access_token', pwd_magic_calc ('box', get_keyword ('access_token', tmp, '')));
                               WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:Box-token_type', get_keyword ('token_type', tmp, 'Bearer'));
@@ -4358,7 +4374,7 @@
                     }
                     control.add_parameter (WEBDAV.DBA.settings_hiddens (self.settings));
 
-                    control.ds_sql := 'select rs.* from WEBDAV.DBA.proc (rs0, rs1, rs2, rs3)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar, c10 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ?';
+                    control.ds_sql := 'select rs.* from WEBDAV.DBA.proc (rs0, rs1, rs2, rs3)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar, c10 varchar, c11 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ?';
                     control.ds_sql := concat(control.ds_sql, ' order by c1');
 
                     if (self.dir_details = 0)
@@ -4482,6 +4498,7 @@
                                   <?vsp self.showColumnHeader('column_#3'); ?>
                                   <?vsp self.showColumnHeader('column_#10'); ?>
                                   <?vsp self.showColumnHeader('column_#4'); ?>
+                                  <?vsp self.showColumnHeader('column_#11'); ?>
                                   <?vsp self.showColumnHeader('column_#5'); ?>
                                   <?vsp self.showColumnHeader('column_#6'); ?>
                                   <?vsp self.showColumnHeader('column_#7'); ?>
@@ -4622,6 +4639,14 @@
                                     <v:label value="--left ((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[3], 10)" format="%s" />
                                     <font size="1">
                                       <v:label value="--right ((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[3], 8)" />
+                                    </font>
+                                  </td>
+                                </v:template>
+                                <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#11')) then 1 else 0 end;">
+                                  <td nowrap="nowrap">
+                                    <v:label value="--left ((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[11], 10)" format="%s" />
+                                    <font size="1">
+                                      <v:label value="--right ((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[11], 8)" />
                                     </font>
                                   </td>
                                 </v:template>
