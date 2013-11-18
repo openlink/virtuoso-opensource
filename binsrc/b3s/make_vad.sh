@@ -182,7 +182,7 @@ directory_init() {
   # components which are not in their place
   cp -Rf $HOME/binsrc/oat vad/vsp/fct
   cp -Rf $HOME/binsrc/samples/dbpedia/vsp/statics vad/vsp/fct/rdfdesc
-  cp -Rf $HOME/binsrc/rdf_mappers/virt_rdf_label.sql vad/vsp/fct
+  #cp -Rf $HOME/binsrc/rdf_mappers/virt_rdf_label.sql vad/vsp/fct
   cp -Rf styles vad/vsp/fct/rdfdesc
   cp -Rf s vad/vsp/fct/rdfdesc
 
