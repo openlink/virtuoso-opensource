@@ -511,7 +511,7 @@ if (_subject <> '') {
   <p class="subj_delim"></p>
 <?vsp
 }
-       if (state <> '00000')
+      if (state <> '00000' and dbg_enable = '1')
          http_value (msg, 'div');
 ?>
 <!--            <li><a href="/fct/facet.vsp?sid=<?V sid ?>&amp;cmd=set_class&amp;iri=<?V gr ?>">Choose <?V ''?> as Type</a></li>
