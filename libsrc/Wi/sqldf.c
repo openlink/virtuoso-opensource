@@ -2750,7 +2750,7 @@ sqlo_trans_preds (dk_set_t * cols, dk_set_t preds, dk_set_t * pred_rhs_ret, dk_s
 	      t_set_push (&rhs_list, pred->_.bin.right->dfe_tree);
 	      if (!importable_pred)
 		{
-		  importable_pred = t_listst (3, BOP_EQ, pred->_.bin.left->dfe_tree, t_list (3, CALL_STMT, t_box_dv_short_string ("__TN_IN"), t_list (1, t_box_num (nth_col))));
+		  importable_pred = t_listst (3, BOP_EQ, pred->_.bin.left->dfe_tree, t_list (3, CALL_STMT, t_box_dv_short_string ("__TN_IN"), t_list (1, t_box_num (1+nth_col))));
 		  nth_col++;
 		}
 	      t_set_push (&used_preds, (void*)pred);
@@ -2761,7 +2761,7 @@ sqlo_trans_preds (dk_set_t * cols, dk_set_t preds, dk_set_t * pred_rhs_ret, dk_s
 	      t_set_push (&rhs_list, pred->_.bin.left->dfe_tree);
 	      if (!importable_pred)
 		{
-		  importable_pred = t_listst (3, BOP_EQ, pred->_.bin.right->dfe_tree, list (3, CALL_STMT, t_box_dv_short_string ("__TN_IN"), t_list (1, t_box_num (nth_col))));
+		  importable_pred = t_listst (3, BOP_EQ, pred->_.bin.right->dfe_tree, list (3, CALL_STMT, t_box_dv_short_string ("__TN_IN"), t_list (1, t_box_num (1+nth_col))));
 		  nth_col++;
 		}
 	      t_set_push (&used_preds, (void*)pred);

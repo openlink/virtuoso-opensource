@@ -72,7 +72,7 @@ create function DAV_PERROR (in x any)
     '(-10) Property name is reserved (protected or private)',
     '(-11) Property does not exist',
     '(-12) Authentication failed',
-    '(-13) Operation is forbidden (the authenticated user do not have a permissions for the action)',
+    '(-13) Operation is forbidden (the authenticated user does not have permissions for the action)',
     '(-14) The target type is not valid',
     '(-15) The umask is not valid',
     '(-16) The property already exists',

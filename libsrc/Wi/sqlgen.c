@@ -1954,13 +1954,20 @@ sqlg_make_trans_dt  (sqlo_t * so, df_elt_t * dt_dfe, ST **target_names, dk_set_t
       END_DO_SET();
     }
   sc->sc_trans = tn;
+  tn->tn_distinct = trans->_.trans.distinct;
+  tn->tn_direction = tl->tl_direction;
+  tn->tn_no_cycles = trans->_.trans.no_cycles;
+  tn->tn_cycles_only = trans->_.trans.cycles_only;
+  tn->tn_exists = trans->_.trans.exists;
+  tn->tn_ordered = !trans->_.trans.no_order;
+  tn->tn_shortest_only = trans->_.trans.shortest_only;
   tn->tn_step_set_no = ssl_new_variable (sc->sc_cc, "step_set", DV_LONG_INT);
-  tn->tn_inlined_step = sqlg_dt_subquery (so, dt_dfe, NULL, target_names, tn->tn_step_set_no);
-  dk_set_push (&sc->sc_cc->cc_query->qr_subq_queries, tn->tn_inlined_step);
-  tn->tn_inlined_step->qr_select_node->src_gen.src_input = (qn_input_fn) select_node_input_subq;
   tn->tn_input_pos = (caddr_t*)box_copy_tree ((caddr_t) (TRANS_LR == tl->tl_direction ? trans->_.trans.in : trans->_.trans.out));
   tn->tn_output_pos = (caddr_t*)box_copy_tree ((caddr_t) (TRANS_LR == tl->tl_direction ? trans->_.trans.out : trans->_.trans.in));
   tn->tn_output = (state_slot_t **) box_copy ((caddr_t)(trans->_.trans.out));
+  tn->tn_inlined_step = sqlg_dt_subquery (so, dt_dfe, NULL, target_names, tn->tn_step_set_no);
+  dk_set_push (&sc->sc_cc->cc_query->qr_subq_queries, tn->tn_inlined_step);
+  tn->tn_inlined_step->qr_select_node->src_gen.src_input = (qn_input_fn) select_node_input_subq;
   tn->tn_current_set = cc_new_instance_slot (sc->sc_cc);
   DO_BOX (caddr_t, n, inx, tn->tn_output_pos)
     {
@@ -1988,13 +1995,6 @@ sqlg_make_trans_dt  (sqlo_t * so, df_elt_t * dt_dfe, ST **target_names, dk_set_t
       tn->tn_path_ctr = cc_new_instance_slot (sc->sc_cc);
       tn->tn_keep_path = 1;
     }
-  tn->tn_distinct = trans->_.trans.distinct;
-  tn->tn_direction = tl->tl_direction;
-  tn->tn_no_cycles = trans->_.trans.no_cycles;
-  tn->tn_cycles_only = trans->_.trans.cycles_only;
-  tn->tn_exists = trans->_.trans.exists;
-  tn->tn_ordered = !trans->_.trans.no_order;
-  tn->tn_shortest_only = trans->_.trans.shortest_only;
   tn->tn_after_join_test = sqlg_pred_body (so, dt_dfe->_.sub.after_join_test);
   if (trans->_.trans.min)
     tn->tn_min_depth = scalar_exp_generate (sc, trans->_.trans.min, pre_code);
@@ -4981,6 +4981,8 @@ sqlg_agg_needs_order (ST * st)
   if (st->_.fn_ref.user_aggr_addr)
     {
       user_aggregate_t * ua = (user_aggregate_t *)((ptrlong) unbox (st->_.fn_ref.user_aggr_addr));
+      if (ua->ua_need_order)
+        return 1;
       if (0 == stricmp (ua->ua_name, "db.dba.vector_agg")
 	  || 0 == stricmp (ua->ua_name, "db.dba.xmlagg"))
 	return 1;

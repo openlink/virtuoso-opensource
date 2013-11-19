@@ -345,7 +345,8 @@ box_read_flags (dk_session_t * session, dtp_t dtp)
 {
   uint32 flags = (uint32) read_long (session);
   char *string = scan_session_boxing (session);
-  box_flags (string) = flags;
+  if (IS_BOX_POINTER (string))
+    box_flags (string) = flags;
   return (void *) string;
 }
 
@@ -799,6 +800,15 @@ scan_session_boxing (dk_session_t * session)
 	return (void *) (ptrlong) result;
       MARSH_CHECK_BOX (box = (boxint *) dk_try_alloc_box (sizeof (boxint), DV_LONG_INT));
       *box = (boxint) (ptrlong) result;
+      result = box;
+    }
+  else if (next_char == DV_CHARACTER)
+    {
+      char * box;
+      if (!IS_POINTER (result))
+	return (void *) (ptrlong) result;
+      MARSH_CHECK_BOX (box = (char *) dk_try_alloc_box (sizeof (char), DV_CHARACTER));
+      *box = (char) (ptrlong) result;
       result = box;
     }
 

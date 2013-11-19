@@ -985,3 +985,202 @@ mem_hum_size (in sz integer) returns varchar
 }
 ;
 
+--
+-- Object 2 JSON functions
+--
+create procedure DB.DBA.jsonObject ()
+{
+  return subseq (soap_box_structure ('x', 1), 0, 2);
+}
+;
+
+create procedure DB.DBA.isJsonObject (
+  inout o any)
+{
+  if (isarray (o) and (length (o) > 1) and (__tag (o[0]) = 255))
+    return 1;
+  return 0;
+}
+;
+
+create procedure DB.DBA.array2obj (
+  in V any)
+{
+  return vector_concat (jsonObject (), V);
+}
+;
+
+create procedure DB.DBA.obj2json (
+  in o any,
+  in d integer := 10,
+  in nsArray any := null,
+  in attributePrefix varchar := null)
+{
+  declare N, M integer;
+  declare R, T any;
+  declare S, retValue any;
+
+  if (d = 0)
+    return '[maximum depth achieved]';
+
+  T := vector ('\b', '\\b', '\t', '\\t', '\n', '\\n', '\f', '\\f', '\r', '\\r', '"', '\\"', '\\', '\\\\');
+  retValue := '';
+  if (isnull (o))
+  {
+    retValue := 'null';
+  }
+  else if (isnumeric (o))
+  {
+    retValue := cast (o as varchar);
+  }
+  else if (isstring (o))
+  {
+    for (N := 0; N < length(o); N := N + 1)
+    {
+      R := chr (o[N]);
+      for (M := 0; M < length(T); M := M + 2)
+      {
+        if (R = T[M])
+          R := T[M+1];
+      }
+      retValue := retValue || R;
+    }
+    retValue := '"' || retValue || '"';
+  }
+  else if (isarray (o) and (length (o) > 1) and ((__tag (o[0]) = 255) or (o[0] is null and (o[1] = '<soap_box_structure>' or o[1] = 'structure'))))
+  {
+    retValue := '{';
+    for (N := 2; N < length (o); N := N + 2)
+    {
+      S := o[N];
+      if (chr (S[0]) = attributePrefix)
+        S := subseq (S, length (attributePrefix));
+      if (not isnull (nsArray))
+      {
+        for (M := 0; M < length (nsArray); M := M + 1)
+        {
+          if (S like nsArray[M]||':%')
+            S := subseq (S, length (nsArray[M])+1);
+        }
+      }
+      retValue := retValue || '"' || S || '":' || obj2json (o[N+1], d-1, nsArray, attributePrefix);
+      if (N <> length(o)-2)
+        retValue := retValue || ', ';
+    }
+    retValue := retValue || '}';
+  }
+  else if (isarray (o))
+  {
+    retValue := '[';
+    for (N := 0; N < length(o); N := N + 1)
+    {
+      retValue := retValue || obj2json (o[N], d-1, nsArray, attributePrefix);
+      if (N <> length(o)-1)
+        retValue := retValue || ',\n';
+    }
+    retValue := retValue || ']';
+  }
+  return retValue;
+}
+;
+
+create procedure DB.DBA.params2json (
+  in o any)
+{
+  return obj2json (array2obj(o));
+}
+;
+
+create procedure DB.DBA.json2obj (
+  in o any)
+{
+  return json_parse (o);
+}
+;
+
+--
+-- Object 2 XML functions
+--
+create procedure DB.DBA.obj2xml (
+  in o any,
+  in d integer := 10,
+  in tag varchar := null,
+  in nsArray any := null,
+  in attributePrefix varchar := '')
+{
+  declare N, M integer;
+  declare R, T any;
+  declare S, nsValue, retValue any;
+
+  if (d = 0)
+    return '[maximum depth achieved]';
+
+  nsValue := '';
+  if (not isnull (nsArray))
+  {
+    for (N := 0; N < length(nsArray); N := N + 2)
+      nsValue := sprintf ('%s xmlns%s="%s"', nsValue, case when nsArray[N]='' then '' else ':'||nsArray[N] end, nsArray[N+1]);
+  }
+  retValue := '';
+  if (isnumeric (o))
+  {
+    retValue := cast (o as varchar);
+  }
+  else if (isstring (o))
+  {
+    retValue := sprintf ('%V', o);
+  }
+  else if (__tag (o) = 211)
+  {
+    retValue := datestring (o);
+  }
+  else if (isJsonObject (o))
+  {
+    for (N := 2; N < length(o); N := N + 2)
+    {
+      if (not isJsonObject (o[N+1]) and isarray (o[N+1]) and not isstring (o[N+1]))
+      {
+        retValue := retValue || obj2xml (o[N+1], d-1, o[N], nsArray, attributePrefix);
+      } else {
+        if (chr (o[N][0]) <> attributePrefix)
+        {
+          nsArray := null;
+          S := '';
+          if ((attributePrefix <> '') and isJsonObject (o[N+1]))
+          {
+            for (M := 2; M < length(o[N+1]); M := M + 2)
+            {
+              if (chr (o[N+1][M][0]) = attributePrefix)
+                S := sprintf ('%s %s="%s"', S, subseq (o[N+1][M], length (attributePrefix)), obj2xml (o[N+1][M+1]));
+            }
+          }
+          retValue := retValue || sprintf ('<%s%s%s>%s</%s>\n', o[N], S, nsValue, obj2xml (o[N+1], d-1, null, nsArray, attributePrefix), o[N]);
+        }
+      }
+    }
+  }
+  else if (isarray (o))
+  {
+    for (N := 0; N < length(o); N := N + 1)
+    {
+      if (isnull (tag))
+      {
+        retValue := retValue || obj2xml (o[N], d-1, tag, nsArray, attributePrefix);
+      } else {
+        nsArray := null;
+        S := '';
+        if (not isnull (attributePrefix) and isJsonObject (o[N]))
+        {
+          for (M := 2; M < length(o[N]); M := M + 2)
+          {
+            if (chr (o[N][M][0]) = attributePrefix)
+              S := sprintf ('%s %s="%s"', S, subseq (o[N][M], length (attributePrefix)), obj2xml (o[N][M+1]));
+          }
+        }
+        retValue := retValue || sprintf ('<%s%s%s>%s</%s>\n', tag, S, nsValue, obj2xml (o[N], d-1, null, nsArray, attributePrefix), tag);
+      }
+    }
+  }
+  return retValue;
+}
+;

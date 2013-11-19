@@ -742,19 +742,12 @@ WEBDAV.toggleEditor = function ()
   if (!window.oEditor)
     return;
 
-  var davMime = $v('dav_mime');
-  if (davMime && (!WEBDAV.davMime || (WEBDAV.davMime != davMime))) {
-    WEBDAV.davMime = davMime;
-    if (davMime == 'text/html') {
-      OAT.Dom.hide('dav_plain');
-      OAT.Dom.show('dav_html');
-      oEditor.setData($v('dav_content_plain'));
-    } else {
-      OAT.Dom.show('dav_plain');
-      OAT.Dom.hide('dav_html');
-      oEditor.updateElement();
-      $('dav_content_plain').value = $v('dav_content_html');
-    }
+  if ($v('dav_mime') == 'text/html') {
+    OAT.Dom.hide('dav_plain');
+    OAT.Dom.show('dav_html');
+  } else {
+    OAT.Dom.show('dav_plain');
+    OAT.Dom.hide('dav_html');
   }
 }
 
@@ -824,6 +817,7 @@ WEBDAV.oauthParams = function (drive, oauth)
     fld.value = '';
   } else {
     var d = new Date();
+    d = new Date(d.valueOf() + d.getTimezoneOffset() * 60000)
     params.access_timestamp = d.format('Y-m-d H:i');
     fld.value = OAT.JSON.serialize(params);
 

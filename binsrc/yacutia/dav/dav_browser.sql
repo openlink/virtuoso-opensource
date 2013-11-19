@@ -1426,7 +1426,7 @@ create procedure WEBDAV.DBA.proc(
 {
   -- dbg_obj_princ ('WEBDAV.DBA.proc (', path, ')');
   declare i, pos integer;
-  declare tmp, dirFilter, dirHiddens, dirList any;
+  declare detCategory, dateAdded, dirFilter, dirHiddens, dirList any;
   declare vspx_user, user_name, group_name varchar;
   declare user_id, group_id integer;
   declare c2 any;
@@ -1514,8 +1514,9 @@ create procedure WEBDAV.DBA.proc(
             group_id := coalesce (item[6], -1);
             group_name := WEBDAV.DBA.user_name (group_id, '');
           }
-          tmp := WEBDAV.DBA.det_category (item[4], item[0], item[1], item[9]);
-          result (item[either (gte (dir_mode, 2),0,10)], item[1], item[2], left (cast (item[3] as varchar), 19), item[9], user_name, group_name, adm_dav_format_perms(item[5]), item[0], tmp, left (cast (item[8] as varchar), 19));
+          detCategory := WEBDAV.DBA.det_category (item[4], item[0], item[1], item[9]);
+          dateAdded := case when length (item) <= 11 then item[8] else item[11] end;
+          result (item[either (gte (dir_mode, 2),0,10)], item[1], item[2], left (cast (item[3] as varchar), 19), item[9], user_name, group_name, adm_dav_format_perms(item[5]), item[0], detCategory, left (cast (item[8] as varchar), 19), left (cast (dateAdded as varchar), 19));
         }
       }
     }
@@ -2419,6 +2420,7 @@ create procedure WEBDAV.DBA.settings_init (
   WEBDAV.DBA.set_keyword ('column_#8', settings, WEBDAV.DBA.settings_column (settings, 8));
   WEBDAV.DBA.set_keyword ('column_#9', settings, WEBDAV.DBA.settings_column (settings, 9));
   WEBDAV.DBA.set_keyword ('column_#10',settings, WEBDAV.DBA.settings_column (settings,10));
+  WEBDAV.DBA.set_keyword ('column_#11',settings, WEBDAV.DBA.settings_column (settings,11));
   WEBDAV.DBA.set_keyword ('mailShare', settings, WEBDAV.DBA.settings_mailShare (settings));
   WEBDAV.DBA.set_keyword ('mailUnshare', settings, WEBDAV.DBA.settings_mailUnshare (settings));
 
@@ -2477,7 +2479,7 @@ create procedure WEBDAV.DBA.settings_column (
   inout settings any,
   in N integer)
 {
-return cast (get_keyword ('column_#' || cast (N as varchar), settings, case when (N = 10) then '0' else '1' end) as integer);
+return cast (get_keyword ('column_#' || cast (N as varchar), settings, case when (N = 10) or (N = 11) then '0' else '1' end) as integer);
 }
 ;
 
@@ -3407,7 +3409,7 @@ create procedure WEBDAV.DBA.DAV_SET (
   }
 
   if (property = 'detType')
-    return WEBDAV.DBA.DAV_PROP_SET (path, ':virtdet', value, auth_name, auth_pwd, 0);
+    return DB.DBA.DAV_PROP_SET_INT (path, ':virtdet', value, null, null, 0, 0, 0, http_dav_uid ());
 
   if (property = 'acl')
     return WEBDAV.DBA.DAV_PROP_SET (path, ':virtacl', value, auth_name, auth_pwd, 0);
@@ -4639,7 +4641,10 @@ create procedure WEBDAV.DBA.acl_send_mail_aq (
   for (N := 0; N < length (_new_acl); N := N + 1)
   {
     if (not WEBDAV.DBA.vector_contains (_old_acl, _new_acl[N]) or (_encryption_state = 2))
+    {
+      WEBDAV.DBA.acl_share_create (_new_acl[N]);
       WEBDAV.DBA.send_mail (_path, _from, _new_acl[N], subject, text, 1, _encryption_state);
+    }
   }
   subject := 'Unsharing notification';
   text := WEBDAV.DBA.settings_mailUnshare (settings);
@@ -4647,6 +4652,36 @@ create procedure WEBDAV.DBA.acl_send_mail_aq (
   {
     if (not WEBDAV.DBA.vector_contains (_new_acl, _old_acl[N]))
       WEBDAV.DBA.send_mail (_path, _from, _old_acl[N], subject, text, 1, 0);
+  }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.acl_share_create (
+  in _user_id integer)
+{
+  declare _user_name, _permissions, _home varchar;
+  declare _col_id integer;
+
+  if (__proc_exists ('DB.DBA.Share_DAV_AUTHENTICATE') is null)
+    return;
+
+  _user_name := WEBDAV.DBA.account_name (_user_id);
+  if (isnull (_user_name))
+    return;
+
+  _home := '/DAV/home/' || _user_name || '/';
+  if (exists (select 1 from WS.WS.SYS_DAV_COL where COL_PARENT = DAV_SEARCH_ID (_home, 'C') and COL_DET = 'Share'))
+    return;
+
+  if (exists (select 1 from WS.WS.SYS_DAV_COL where WS.WS.COL_PATH (COL_ID) like (_home || '%') and COL_DET = 'Share'))
+    return;
+
+  for (select U_ID, U_PWD, U_GROUP, U_DEF_PERMS, U_HOME from WS.WS.SYS_DAV_USER where U_NAME = _user_name) do
+  {
+    DB.DBA.DAV_MAKE_DIR (_home || 'Shared Resources/', U_ID, U_GROUP, U_DEF_PERMS);
+    WEBDAV.DBA.DAV_SET (_home || 'Shared Resources/', 'detType', 'Share');
   }
 }
 ;

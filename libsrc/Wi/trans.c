@@ -1047,7 +1047,10 @@ tn_result_row (trans_node_t * tn, caddr_t * inst, trans_state_t * tst, trans_sta
 	{
 	  DO_BOX (state_slot_t *, out, inx, tn->tn_step_out)
 	    {
-	      data_col_t * dc = QST_BOX (data_col_t *, inst, out->ssl_index);
+	      data_col_t * dc;
+	      if (NULL == out)
+	        continue;
+	      dc = QST_BOX (data_col_t *, inst, out->ssl_index);
 	      dc_append_box (dc, ((caddr_t*)tst->tst_value)[inx]);
 	    }
 	  END_DO_BOX;

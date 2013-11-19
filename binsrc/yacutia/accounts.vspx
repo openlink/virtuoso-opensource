@@ -21,25 +21,25 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="db_repl_pub"
-  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-  fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
-  xmlns:xhtml="http://www.w3.org/1999/xhtml"
-  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <v:after-data-bind>
     <v:script>
       <![CDATA[
-  if (check_grants (connection_get ('vspx_user'), '') <> 1 )
-    {
-      http_request_status ('HTTP/1.1 302 Found');
-      http_header (sprintf ('Location: account_create.vspx?mode=edit&user_name=%s&sid=%s&realm=%s\r\n',
-                            connection_get ('vspx_user'),
-                            self.sid,
-                            self.realm));
-      return;
-    }
+        if (check_grants (connection_get ('vspx_user'), '') <> 1 )
+        {
+          http_request_status ('HTTP/1.1 302 Found');
+          http_header (sprintf ('Location: account_create.vspx?mode=edit&user_name=%s&sid=%s&realm=%s\r\n',
+                                connection_get ('vspx_user'),
+                                self.sid,
+                                self.realm));
+          return;
+        }
       ]]>
     </v:script>
   </v:after-data-bind>
@@ -50,253 +50,221 @@
   <v:variable persist="temp" name="r_count" type="integer" default="0"/>
   <v:variable name="ord" type="varchar" default="null" />
   <v:variable name="ordseq" type="varchar" default="'asc'" />
-	  <v:method name="set_ord" arglist="in x any, inout e vspx_event, inout ds vspx_control"><![CDATA[
-		if (self.ord = x)
-		  {
-		    if (self.ordseq = 'asc')
-		      self.ordseq := 'desc';
-		    else
-		      self.ordseq := 'asc';
-		  }
-		else
-		  {
-		    self.ord := x;
-		    self.ordseq := 'asc';
-		  }
-		if (ds is not null)
-		  ds.vc_data_bind (e);
-	      ]]></v:method>
-    <table class="listing_ctr">
-      <tr>
-        <td>
-          <v:form name="sf" type="simple" action="" method="POST">
-            <table class="ctl_grp">
-              <tr>
-                <td><img src="images/icons/filter_32.png"/></td>
-                <td>Show users
-                  <v:select-list name="howto" value="--self.pattern_where">
-                    <v:item name="Starting with" value="1" />
-                    <v:item name="Containing" value="2" />
-                    <v:item name="Ending with" value="3" />
-                    <v:item name="Exact match" value="4" />
-                  </v:select-list>
-                </td>
-                <td>
-                  <v:text name="pattern_text" value="--self.pattern_value"/>
-                </td>
-                <td valign="center">
-                  <v:button name="submit" action="simple" value="Filter">
-                    <v:on-post>
-                      <v:script>
-                        <![CDATA[
-
-  self.pattern_where := self.howto.ufl_value;
-  self.pattern_value := self.pattern_text.ufl_value;
-  self.search_mask := case self.pattern_where
+  <v:method name="set_ord" arglist="in x any, inout e vspx_event, inout ds vspx_control">
+    <![CDATA[
+      if (self.ord = x)
+      {
+        if (self.ordseq = 'asc')
+          self.ordseq := 'desc';
+        else
+          self.ordseq := 'asc';
+      }
+      else
+      {
+        self.ord := x;
+        self.ordseq := 'asc';
+      }
+      if (ds is not null)
+        ds.vc_data_bind (e);
+    ]]>
+  </v:method>
+  <table class="listing_ctr">
+    <tr>
+      <td>
+        <v:form name="sf" type="simple" action="" method="POST">
+          <table class="ctl_grp">
+            <tr>
+              <td><img src="images/icons/filter_32.png"/></td>
+              <td>Show users
+                <v:select-list name="howto" value="--self.pattern_where">
+                  <v:item name="Starting with" value="1" />
+                  <v:item name="Containing" value="2" />
+                  <v:item name="Ending with" value="3" />
+                  <v:item name="Exact match" value="4" />
+                </v:select-list>
+              </td>
+              <td>
+                <v:text name="pattern_text" value="--self.pattern_value"/>
+              </td>
+              <td valign="center">
+                <v:button name="submit" action="simple" value="Filter">
+                  <v:on-post>
+                    <![CDATA[
+                      self.pattern_where := self.howto.ufl_value;
+                      self.pattern_value := self.pattern_text.ufl_value;
+                      self.search_mask := case self.pattern_where
                         when '1' then self.pattern_value || '%'
                         when '2' then '%' || self.pattern_value || '%'
                         when '3' then '%' || self.pattern_value
                         else self.pattern_value end;
 
-  if (self.search_mask = '')
-    self.search_mask := '%';
-  self.ds.vc_reset ();
-  self.ds.vc_data_bind (e);
+                      if (self.search_mask = '')
+                        self.search_mask := '%';
+                      self.ds.vc_reset ();
+                      self.ds.vc_data_bind (e);
+                    ]]>
+                   </v:on-post>
+                 </v:button>
+              </td>
+              <td valign="center">
+                <v:button name="reset" action="simple" value="Clear">
+                  <v:on-post>
+                    <![CDATA[
+                      self.pattern_where := '1';
+                      self.pattern_value := '%';
+                      self.search_mask := '%';
+                      --self.howto.ufl_value := '1';
+                      self.howto.vc_data_bind (e);
+                      self.pattern_text.ufl_value := '';
+                      self.ds.vc_reset ();
+                      self.ds.vc_data_bind (e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+        </v:form>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <div class="scroll_area">
+          <table class="listing">
+            <v:data-set name="ds"
+                        sql="select U_NAME, U_FULL_NAME, U_LOGIN_TIME, U_EDIT_TIME from Y_SYS_USERS_USERS where mask = :self.search_mask and ord = :self.ord and seq = :self.ordseq"
+                        nrows="10"
+                        scrollable="1"
+                        cursor-type="static"
+                        edit="0"
+                        width="80"
+                        initial-enable="1">
+              <v:column name="U_FULL_NAME"/>
+              <v:column name="U_NAME"/>
+              <v:column name="U_LOGIN_TIME"/>
+              <v:column name="U_EDIT_TIME"/>
 
-                         ]]>
-                       </v:script>
-                     </v:on-post>
-                   </v:button>
-                 </td>
-                 <td valign="center">
-                   <v:button name="reset" action="simple" value="Clear">
-                     <v:on-post>
-                       <v:script>
-                         <![CDATA[
+              <v:template name="u_lst_head_tmpl" type="simple">
+                <thead>
+                  <tr class="listing_header_row">
+                    <th>
+                      <v:button action="simple" name="name_ord1" value="Login name" style="url">
+                        <v:on-post>
+                          <![CDATA[
+                            self.set_ord ('name', e, self.ds);
+                          ]]>
+                        </v:on-post>
+                      </v:button>
+                    </th>
+                    <th>
+                      <v:button action="simple" name="name_ord2" value="Description" style="url">
+                        <v:on-post>
+                          <![CDATA[
+                            self.set_ord ('fullname', e, self.ds);
+                          ]]>
+                        </v:on-post>
+                      </v:button>
+                    </th>
+                    <th>
+                      <v:button action="simple" name="name_ord3" value="Last Login" style="url">
+                        <v:on-post>
+                          <![CDATA[
+                            self.set_ord ('login', e, self.ds);
+                          ]]>
+                        </v:on-post>
+                      </v:button>
+                    </th>
+                    <th>
+                      <v:button action="simple" name="name_ord4" value="Last Edit" style="url">
+                        <v:on-post>
+                          <![CDATA[
+                            self.set_ord ('edit', e, self.ds);
+                          ]]>
+                        </v:on-post>
+                      </v:button>
+                    </th>
+                    <th width="1%" nowrap="nowrap" class="new_item">
+                      <v:url name="account_create_ref" format="%s" value="--'Create New Account'" url="--'account_create.vspx?mode=create'" />
+                    </th>
+                  </tr>
+                </thead>
+              </v:template>
 
-  self.pattern_where := '1';
-  self.pattern_value := '%';
-  self.search_mask := '%';
-  --self.howto.ufl_value := '1';
-  self.howto.vc_data_bind (e);
-  self.pattern_text.ufl_value := '';
-  self.ds.vc_reset ();
-  self.ds.vc_data_bind (e);
+              <tbody>
+                <v:template name="u_lst_no_match_tmpl" type="repeat">
+                  <v:template name="template7" type="if-not-exists">
+                    <tr>
+                      <td class="listing_count" colspan="5">
+                        No user names match given pattern
+                      </td>
+                    </tr>
+                  </v:template>
 
-                         ]]>
-                       </v:script>
-                     </v:on-post>
-                   </v:button>
-                 </td>
-               </tr>
-             </table>
-           </v:form>
-         </td>
-       </tr>
-       <tr>
-	 <td>
-	   <div class="scroll_area">
-           <v:data-set name="ds"
-	     sql="select U_NAME, U_FULL_NAME, U_LOGIN_TIME, U_EDIT_TIME from Y_SYS_USERS_USERS where mask = :self.search_mask
-	     and ord = :self.ord and seq = :self.ordseq"
-                       nrows="10"
-                       scrollable="1"
-                       cursor-type="static"
-                       edit="0"
-                       width="80"
-                       initial-enable="1">
-             <v:column name="U_FULL_NAME"/>
-             <v:column name="U_NAME"/>
-             <v:column name="U_LOGIN_TIME"/>
-             <v:column name="U_EDIT_TIME"/>
-             <v:template name="u_lst_head_tmpl"
-                         type="simple"
-                         name-to-remove="table"
-                         set-to-remove="bottom">
-               <table class="listing">
-                 <tr class="listing_header_row">
-		   <th>
-			      <v:button action="simple" name="name_ord1" value="Login name" style="url">
-				  <v:on-post><![CDATA[
-				      self.set_ord ('name', e, self.ds);
-				      ]]></v:on-post>
-			      </v:button>
-		   </th>
-		   <th>
-			      <v:button action="simple" name="name_ord2" value="Description" style="url">
-				  <v:on-post><![CDATA[
-				      self.set_ord ('fullname', e, self.ds);
-				      ]]></v:on-post>
-			      </v:button>
-		   </th>
-		   <th>
-			      <v:button action="simple" name="name_ord3" value="Last Login" style="url">
-				  <v:on-post><![CDATA[
-				      self.set_ord ('login', e, self.ds);
-				      ]]></v:on-post>
-			      </v:button>
-		   </th>
-		   <th>
-			      <v:button action="simple" name="name_ord4" value="Last Edit" style="url">
-				  <v:on-post><![CDATA[
-				      self.set_ord ('edit', e, self.ds);
-				      ]]></v:on-post>
-			      </v:button>
-		   </th>
-                   <th class="new_item">
-                     <v:url name="account_create_ref"
-                            format="%s"
-                            value="--'Create New Account'"
-                            url="--'account_create.vspx?mode=create'">
-                     </v:url>
-                   </th>
-                 </tr>
-               </table>
-             </v:template>
-             <v:template name="u_lst_no_match_tmpl"
-                         type="repeat"
-                         name-to-remove=""
-                         set-to-remove="">
-               <v:template name="template7"
-                           type="if-not-exists"
-                           name-to-remove="table"
-                           set-to-remove="both">
-                 <table>
-                   <tr>
-                     <td class="listing_count" colspan="5">
-                       No user names match given pattern
+                  <v:template name="u_lst_body_tmpl" type="browse">
+                    <tr>
+                      <td nowrap="1">
+                        <img src="images/icons/user_16.png" alt="User" title="User"/>
+                        <v:label name="label6" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
                      </td>
-                   </tr>
-                 </table>
-               </v:template>
-
-               <v:template name="u_lst_body_tmpl"
-                           type="browse"
-                           name-to-remove="table"
-                           set-to-remove="both">
-                 <table class="listing">
-<?vsp
-  self.r_count := self.r_count + 1;
-  http (sprintf ('<tr class="%s">',
-                 case when mod (self.r_count, 2) then 'listing_row_odd'
-                      else 'listing_row_even'
-                      end));
-?>
-                   <!-- tr -->
-                     <td class="listing_col" nowrap="1">
-                       <img src="images/icons/user_16.png"
-                            alt="User"
-                            title="User"/>
+                     <td nowrap="1">
+                       <v:label name="label5"
+                                value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
+                                format="%s"
+                                width="80"/>
+                     </td>
+                     <td nowrap="1">
                        <v:label name="label6"
-                                value="--(control.vc_parent as vspx_row_template).te_rowset[0]"
-                                format="%s"/>
+                                value="--date_fmt ((control.vc_parent as vspx_row_template).te_rowset[2])"
+                                format="%s"
+                       />
+                     </td>
+                     <td nowrap="1">
+                       <v:label name="label6" value="">
+                         <v:after-data-bind>
+                           declare tmp any;
+                           tmp := USER_GET_OPTION ((control.vc_parent as vspx_row_template).te_rowset[0], 'ConductorEdit');
+                           control.ufl_value := date_fmt (tmp);
+                         </v:after-data-bind>
+                       </v:label>
+                     </td>
+                     <td nowrap="1">
+                       <v:button action="simple"
+                                 style="image"
+                                 name="edit"
+                                 value="images/icons/edit_16.png"
+                                 url="--concat ('account_create.vspx?mode=edit&user_name=', (control.vc_parent as vspx_row_template).te_rowset[0])"
+                                 xhtml_alt="Edit"
+                                 xhtml_title="Edit"
+                                 text="&nbsp;Edit"
+                       />
+                       <v:button action="simple"
+                                 style="image"
+                                 name="delete"
+                                 value="images/icons/trash_16.png"
+                                 url="--concat('account_remove.vspx?user_name=', (control.vc_parent as vspx_row_template).te_rowset[0])"
+                                 xhtml_alt="Delete"
+                                 xhtml_title="Delete"
+                                 enabled="--case when (control.vc_parent as vspx_row_template).te_rowset[0] in ('dba', 'dav') then 0 else 1 end"
+                                 text="&nbsp;Delete"
+                       />
                       </td>
-                      <td class="listing_col" nowrap="1">
-                        <v:label name="label5"
-                                 value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
-                                 format="%s"
-                                 width="80"/>
-                      </td>
-                      <td class="listing_col" nowrap="1">
-                        <v:label name="label6"
-                                 value="--date_fmt ((control.vc_parent as vspx_row_template).te_rowset[2])"
-                                 format="%s"
-                                 />
-                      </td>
-                      <td class="listing_col" nowrap="1">
-                        <v:label name="label6"
-                                 value=""
-				 >
-			       <v:after-data-bind>
-				 declare tmp any;
-				 tmp := USER_GET_OPTION ((control.vc_parent as vspx_row_template).te_rowset[0], 'ConductorEdit');
-				 control.ufl_value := date_fmt (tmp);
-			       </v:after-data-bind>
-			     </v:label>
-                      </td>
-                      <td class="listing_col_action">
-                        <v:button action="simple" style="image" name="edit"
-			       value="images/icons/edit_16.png"
-                               url="--concat ('account_create.vspx?mode=edit&user_name=',
-			       (control.vc_parent as vspx_row_template).te_rowset[0])"
-			       xhtml_alt="Edit"
-			       xhtml_title="Edit"
-			       text="&nbsp;Edit"
-                               />
-                        <v:button action="simple" style="image" name="delete"
-			       value="images/icons/trash_16.png"
-                               url="--concat('account_remove.vspx?user_name=',
-                                             (control.vc_parent as vspx_row_template).te_rowset[0])"
-			       xhtml_alt="Delete"
-			       xhtml_title="Delete"
-			       enabled="--case when (control.vc_parent as vspx_row_template).te_rowset[0]
-			       		in ('dba', 'dav') then 0 else 1 end"
-			       text="&nbsp;Delete"
-                               />
-                      </td>
-<?vsp
-              http('</tr>');
-?>
-                  </table>
+                    </tr>
+                  </v:template>
                 </v:template>
 
-              </v:template>
-
-              <v:template name="template3111"
-                          type="simple"
-                          name-to-remove="table"
-                          set-to-remove="top">
-                <table class="ds_browse_ctls">
+                <v:template name="template3111" type="simple" name-to-remove="table" set-to-remove="top">
                   <tr>
-                    <td colspan="4" align="center" class="listing_col_action">
-			<vm:ds-navigation data-set="ds"/>
+                    <td colspan="5" align="center" class="listing_col_action">
+                      <vm:ds-navigation data-set="ds"/>
                     </td>
                   </tr>
-                </table>
-              </v:template>
-	    </v:data-set>
-	  </div>
-          </td>
-        </tr>
-      </table>
+                </v:template>
+
+              </tbody>
+            </v:data-set>
+          </table>
+        </div>
+      </td>
+    </tr>
+  </table>
 </v:page>
