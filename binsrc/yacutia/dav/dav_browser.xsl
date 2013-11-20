@@ -3547,12 +3547,12 @@
               <?V case when self.command = 20 then 'Edit' else 'View' end ?> resource <?V WEBDAV.DBA.utf2wide (self.source) ?>
             </div>
             <div style="padding-right: 6px;">
-              <div id="f_plain" style="display: <?V case when WEBDAV.DBA.VAD_CHECK ('Framework') and self.mimeType = 'text/html' then 'none' else '' end ?>;">
+              <div id="f_plain" style="display: <?V case when WEBDAV.DBA.VAD_CHECK ('Framework') and self.mimeType = 'text/html' then '' else '' end ?>;">
                 <?vsp
                   http (sprintf ('<textarea id="f_content_plain" name="f_content_plain" style="width: 100%%; height: 360px" %s>%V</textarea>', case when self.command = 30 then 'disabled="disabled"' else '' end, WEBDAV.DBA.utf2wide (cast (WEBDAV.DBA.DAV_RES_CONTENT (self.source) as varchar))));
                 ?>
               </div>
-              <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
+              <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework') and (1 = 0)">
                 <div id="f_html" style="display: <?V case when self.mimeType = 'text/html' then '' else 'none' end ?>;">
                   <?vsp
                     http (sprintf ('<textarea id="f_content_html" name="f_content_html" style="width: 100%%; height: 360px" %s>%V</textarea>', case when self.command = 30 then 'disabled="disabled"' else '' end, WEBDAV.DBA.utf2wide (cast (WEBDAV.DBA.DAV_RES_CONTENT (self.source) as varchar))));
