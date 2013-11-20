@@ -467,20 +467,21 @@
                     self.dir_direction := get_keyword ('direction', state, 'asc');
                   }
                 }
-                if (columnName = '')
-                  return;
-
-                goto _exit;
+                columnName := self.dir_order;
               }
-
-              if (self.dir_order = columnName)
+              else
               {
-                self.dir_direction := either (equ (self.dir_direction, 'asc'), 'desc', 'asc');
-              } else {
-                self.dir_direction := 'asc';
+                if (self.dir_order = columnName)
+                {
+                  self.dir_direction := either (equ (self.dir_direction, 'asc'), 'desc', 'asc');
+                } else {
+                  self.dir_direction := 'asc';
+                }
               }
-            _exit:;
               self.dir_order := columnName;
+              self.settings := WEBDAV.DBA.set_keyword ('orderBy', self.settings, self.dir_order);
+              self.settings := WEBDAV.DBA.set_keyword ('orderDirection', self.settings, self.dir_direction);
+              WEBDAV.DBA.settings_save (self.account_id, self.settings);
               self.ds_items.vc_reset();
             ]]>
           </v:method>
@@ -1052,6 +1053,8 @@
                 vector ('column_#10','c10','Date Created',  1, 1, vector (WEBDAV.DBA.settings_column (self.settings,10), 0), ''),
                 vector ('column_#11','c11','Date Added',    1, 1, vector (WEBDAV.DBA.settings_column (self.settings,11), 0), '')
               );
+              self.dir_order := get_keyword ('ts_order', params, WEBDAV.DBA.settings_orderBy (self.settings));
+              self.dir_direction := get_keyword ('ts_direction', params, WEBDAV.DBA.settings_orderDirection (self.settings));
 
               self.dir_path := get_keyword ('dir', _params, self.dir_path);
               if (self.dir_path = '__root__')
@@ -1556,8 +1559,8 @@
                         return;
                       }
                       self.search_advanced := self.search_dc;
-                      self.dir_order := get_keyword ('ts_order', params, '');
-                      self.dir_direction := get_keyword ('ts_direction', params, '');
+                      self.dir_order := get_keyword ('ts_order', params, self.dir_order);
+                      self.dir_direction := get_keyword ('ts_direction', params, self.dir_direction);
                       self.dir_grouping := get_keyword ('ts_grouping', params, '');
                       self.dir_cloud := cast(get_keyword ('ts_cloud', params, '0') as integer);
                       self.vc_data_bind (self.vc_page.vc_event);
@@ -3544,12 +3547,12 @@
               <?V case when self.command = 20 then 'Edit' else 'View' end ?> resource <?V WEBDAV.DBA.utf2wide (self.source) ?>
             </div>
             <div style="padding-right: 6px;">
-              <div id="f_plain" style="display: <?V case when WEBDAV.DBA.VAD_CHECK ('Framework') and self.mimeType = 'text/html' then 'none' else '' end ?>;">
+              <div id="f_plain" style="display: <?V case when WEBDAV.DBA.VAD_CHECK ('Framework') and self.mimeType = 'text/html' then '' else '' end ?>;">
                 <?vsp
                   http (sprintf ('<textarea id="f_content_plain" name="f_content_plain" style="width: 100%%; height: 360px" %s>%V</textarea>', case when self.command = 30 then 'disabled="disabled"' else '' end, WEBDAV.DBA.utf2wide (cast (WEBDAV.DBA.DAV_RES_CONTENT (self.source) as varchar))));
                 ?>
               </div>
-              <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
+              <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework') and (1 = 0)">
                 <div id="f_html" style="display: <?V case when self.mimeType = 'text/html' then '' else 'none' end ?>;">
                   <?vsp
                     http (sprintf ('<textarea id="f_content_html" name="f_content_html" style="width: 100%%; height: 360px" %s>%V</textarea>', case when self.command = 30 then 'disabled="disabled"' else '' end, WEBDAV.DBA.utf2wide (cast (WEBDAV.DBA.DAV_RES_CONTENT (self.source) as varchar))));

@@ -2402,6 +2402,16 @@ create procedure WEBDAV.DBA.settings (
 
 -------------------------------------------------------------------------------
 --
+create procedure WEBDAV.DBA.settings_save (
+  in account_id integer,
+  in settings any)
+{
+  WEBDAV.DBA.exec ('insert replacing ODRIVE.WA.SETTINGS (USER_ID, USER_SETTINGS) values (?, serialize (?))', vector (account_id, settings));
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure WEBDAV.DBA.settings_init (
   inout settings any)
 {
@@ -2421,6 +2431,8 @@ create procedure WEBDAV.DBA.settings_init (
   WEBDAV.DBA.set_keyword ('column_#9', settings, WEBDAV.DBA.settings_column (settings, 9));
   WEBDAV.DBA.set_keyword ('column_#10',settings, WEBDAV.DBA.settings_column (settings,10));
   WEBDAV.DBA.set_keyword ('column_#11',settings, WEBDAV.DBA.settings_column (settings,11));
+  WEBDAV.DBA.set_keyword ('orderBy', settings, WEBDAV.DBA.settings_orderBy (settings));
+  WEBDAV.DBA.set_keyword ('orderDirection', settings, WEBDAV.DBA.settings_orderDirection (settings));
   WEBDAV.DBA.set_keyword ('mailShare', settings, WEBDAV.DBA.settings_mailShare (settings));
   WEBDAV.DBA.set_keyword ('mailUnshare', settings, WEBDAV.DBA.settings_mailUnshare (settings));
 
@@ -2480,6 +2492,24 @@ create procedure WEBDAV.DBA.settings_column (
   in N integer)
 {
 return cast (get_keyword ('column_#' || cast (N as varchar), settings, case when (N = 10) or (N = 11) then '0' else '1' end) as integer);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.settings_orderBy (
+  inout settings any)
+{
+  return get_keyword ('orderBy', settings, 'column_#1');
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.settings_orderDirection (
+  inout settings any)
+{
+  return get_keyword ('orderDirection', settings, 'asc');
 }
 ;
 
@@ -3412,7 +3442,7 @@ create procedure WEBDAV.DBA.DAV_SET (
     return DB.DBA.DAV_PROP_SET_INT (path, ':virtdet', value, null, null, 0, 0, 0, http_dav_uid ());
 
   if (property = 'acl')
-    return WEBDAV.DBA.DAV_PROP_SET (path, ':virtacl', value, auth_name, auth_pwd, 0);
+    return DB.DBA.DAV_PROP_SET_INT (path, ':virtacl', value, null, null, 0, 0, 0, http_dav_uid ());
 
   if (property = 'privatetags')
     return WEBDAV.DBA.DAV_PROP_TAGS_SET (path, ':virtprivatetags', value, auth_name, auth_pwd);

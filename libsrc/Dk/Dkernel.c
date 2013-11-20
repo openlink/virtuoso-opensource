@@ -1017,8 +1017,6 @@ sr_check_and_set_args (future_request_t * future, caddr_t * arguments, int argco
 error:
   sr_report_future_error (future->rq_client, future->rq_service->sr_name, reason);
   DKST_RPC_DONE (future->rq_client);
-  PrpcDisconnect (future->rq_client);
-  future->rq_client->dks_to_close = 1;
   return 1;
 }
 
