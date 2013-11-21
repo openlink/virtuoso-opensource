@@ -156,7 +156,7 @@ create procedure WS.WS.PROPFIND (in path varchar, inout params varchar, in lines
 	{
 	      DB.DBA.DAV_SET_HTTP_STATUS (403);
 	      return;
-	}	
+	}
 	{
 		declare test_tree any;
 		declare exit handler for sqlstate '*'
@@ -2319,10 +2319,21 @@ again:
       resource_owner := RES_OWNER;
       cont_type := RES_TYPE;
       modt := RES_MOD_TIME;
-      if (resource_owner = http_dav_uid ())
-        is_admin_owned_res := 1;
     }
   }
+  else
+  {
+    declare _entry any;
+
+    _entry := DAV_DIR_SINGLE_INT (_res_id, 'R', path, null, null, http_dav_uid ());
+    _col := _res_id[1];
+    _name := _entry[10];
+    resource_owner := _entry[7];
+    cont_type := _entry[9];
+    modt := _entry[3];
+  }
+  if (resource_owner = http_dav_uid ())
+    is_admin_owned_res := 1;
   if (WS.WS.GET_EXT_LDP(lines, client_etag, full_path, _res_id, _col_id))
     return;
 
