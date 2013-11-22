@@ -2200,7 +2200,8 @@ get_more:
           GPF_T;
 #endif
       }
-    page_leave_outside_map (buf);
+    if (NULL != buf)
+      page_leave_outside_map (buf);
     buf = NULL;
     ITC_LEAVE_MAPS (tmp_itc);
     if (bsize && (iter->bdfi_total_pos < iter->bdfi_bh->bh_diskbytes))
