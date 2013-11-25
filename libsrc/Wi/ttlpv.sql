@@ -94,7 +94,7 @@ create procedure DB.DBA.TTLP_RL_TRIPLE (
 {
   connection_set ('g_iid', g_iid);
   dpipe_input (app_env[1], s_uri, p_uri, o_uri, null);
-  if (daq_buffered_bytes (app_env[1]) > 30000000)
+  if (daq_buffered_bytes (app_env[1]) > 30000000 or dpipe_count (app_env[1]) >= sys_stat ('dc_batch_sz'))
     rl_send (app_env, g_iid);
 }
 ;
@@ -247,7 +247,7 @@ create procedure DB.DBA.TTLP_RL_TRIPLE_L (
       dpipe_input (app_env[1], s_uri, p_uri, null, o_val_2);
     }
 do_flush:
-  if (daq_buffered_bytes (app_env[1]) > 30000000)
+  if (daq_buffered_bytes (app_env[1]) > 30000000 or dpipe_count (app_env[1]) >= sys_stat ('dc_batch_sz'))
     rl_send (app_env, g_iid);
 }
 ;
@@ -345,7 +345,8 @@ create procedure DB.DBA.TTLP_RL_GS_TRIPLE (
   connection_set ('g_iid', g_iid);
  dp := app_env[1];
   dpipe_input (dp, s_uri, p_uri, o_uri, null, g_iid);
-  if (daq_buffered_bytes (dp) > 30000000 and 0 = bit_and (4, dpipe_rdf_load_mode (dp)))
+  if ((daq_buffered_bytes (dp) > 30000000 or dpipe_count (app_env[1]) >= sys_stat ('dc_batch_sz')) 
+      and 0 = bit_and (4, dpipe_rdf_load_mode (dp)))
     rl_send_gs (app_env, g_iid);
 }
 ;
@@ -416,7 +417,8 @@ create procedure DB.DBA.TTLP_RL_GS_TRIPLE_L (
       dpipe_input (dp, s_uri, p_uri, null, o_val_2, g_iid);
     }
 do_flush:
-  if (daq_buffered_bytes (dp) > 30000000 and 0 = bit_and (4, dpipe_rdf_load_mode (dp)))
+  if ((daq_buffered_bytes (dp) > 30000000 or dpipe_count (app_env[1]) >= sys_stat ('dc_batch_sz'))
+      and 0 = bit_and (4, dpipe_rdf_load_mode (dp)))
     rl_send_gs (app_env, g_iid);
 }
 ;
