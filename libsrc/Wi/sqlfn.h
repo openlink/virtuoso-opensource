@@ -586,6 +586,7 @@ void lt_hi_row_change (lock_trx_t * lt, key_id_t key, int log_op, db_buf_t log_e
 int  it_hi_done (index_tree_t * it);
 void cli_set_trx (client_connection_t * cli, lock_trx_t * trx);
 lock_trx_t * cli_set_new_trx (client_connection_t *cli);
+lock_trx_t * cli_set_new_trx_no_wait_cpt (client_connection_t *cli);
 
 
 void qr_free (query_t * qr);

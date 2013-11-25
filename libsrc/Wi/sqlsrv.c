@@ -530,6 +530,16 @@ cli_set_new_trx (client_connection_t *cli)
   return cli->cli_trx;
 }
 
+lock_trx_t *
+cli_set_new_trx_no_wait_cpt (client_connection_t *cli)
+{
+  if (!cli->cli_trx)
+    cli_set_trx (cli, lt_start_inner (0));
+  else
+    cli_set_trx (cli, cli->cli_trx);
+  return cli->cli_trx;
+}
+
 void
 cli_set_trx (client_connection_t * cli, lock_trx_t * trx)
 {
@@ -3011,6 +3021,7 @@ lt_enter_anyway (lock_trx_t * lt)
       LEAVE_TXN;
       return LTE_DEADLOCK;
     }
+  lt_wait_checkpoint_lt (lt);
   if (LT_PENDING == lt->lt_status)
     {
       rc = LTE_OK;

@@ -545,6 +545,7 @@ void lt_kill_other_trx (lock_trx_t * lt, it_cursor_t * itc, buffer_desc_t * buf,
 
 void lt_killall (lock_trx_t * lt, int lte);
 int lock_enter (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf);
+lock_trx_t * lt_start_inner (int cpt_wait);
 EXE_EXPORT (lock_trx_t *, lt_start, (void));
 lock_trx_t * lt_start_outside_map (void);
 EXE_EXPORT (int, lt_commit, (lock_trx_t * lt, int free_trx));

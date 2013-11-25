@@ -360,14 +360,20 @@ lt_start_outside_map ()
   return lt;
 }
 
-
 lock_trx_t *
 lt_start ()
+{
+  return lt_start_inner (1);
+}
+
+lock_trx_t *
+lt_start_inner (int cpt_wait)
 {
   lock_trx_t *lt = (lock_trx_t *) resource_get (trx_rc);
   ASSERT_IN_TXN;
   LT_THREADS_REPORT(lt, "LT_START");
-  lt_wait_checkpoint ();
+  if (cpt_wait)
+    lt_wait_checkpoint ();
   lt->lt_status = LT_PENDING;
   CHECK_DK_MEM_RESERVE (lt);
   lt->lt_started = 0;

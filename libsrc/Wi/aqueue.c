@@ -235,7 +235,7 @@ aqt_allocate ()
     aqt->aqt_cli->cli_session = ses;
     DKS_DB_DATA (ses) = cli;
     IN_TXN;
-    cli_set_new_trx (cli);
+    cli_set_new_trx_no_wait_cpt (cli);
     LEAVE_TXN;
     thr = PrpcThreadAllocate ((init_func) aq_thread_func, http_thread_sz, (void *) aqt);
     if (!thr)
@@ -317,7 +317,7 @@ aq_request (async_queue_t * aq, aq_func_t f, caddr_t args)
       return aqr->aqr_req_no;
     }
   aqt = (aq_thread_t *) resource_get (aq_threads);
-  if (!aqt && !(aq->aq_no_lt_enter && wi_inst.wi_is_checkpoint_pending))
+  if (!aqt)
     aqt = aqt_allocate ();
   if (!aqt && !aq->aq_do_self_if_would_wait && 2 != aq->aq_need_own_thread)
     {
