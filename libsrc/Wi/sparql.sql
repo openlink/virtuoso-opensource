@@ -1016,6 +1016,7 @@ create function rdf_geo_add (in v any)
     }
  id := sequence_next ('RDF_RO_ID');
   set triggers off;
+  -- dbg_obj_princ ('zero RO_FLAGS in sparql.sql:997 ', ro_val, ro_long);
   insert into rdf_obj (ro_id, ro_val, ro_long, ro_dt_and_lang)
     values (id, h, ser, 0hex1000101);
   if (1 = sys_stat ('cl_run_local_only'))
@@ -1055,12 +1056,19 @@ create function rdf_geo_set_id (inout v any)
 }
 ;
 
-create function DB.DBA.RDF_OBJ_ADD (in dt_twobyte integeR, in v varchar, in lang_twobyte integeR, in ro_id_dict any := null) returns varchar
+create function DB.DBA.RDF_OBJ_ADD (in dt_twobyte integeR, in v varchar, in lang_twobyte integeR, in ro_id_dict any := 0) returns varchar
 {
   declare llong, id, need_digest integer;
   declare digest any;
   declare old_flags, dt_and_lang integer;
   -- dbg_obj_princ ('DB.DBA.RDF_OBJ_ADD (', dt_twobyte, v, lang_twobyte, case (isnull (ro_id_dict)) when 1 then '/*no_ft*/' else '/*want_ft*/' end,')');
+  if (isinteger (ro_id_dict))
+    {
+      if (__rdf_obj_ft_rule_check (null, null))
+        ro_id_dict := dict_new ();
+      else
+        ro_id_dict := null;
+    }
   if (126 = __tag (v))
     v := blob_to_string (v);
   if (isstring (rdf_box_data (v)))
@@ -1141,6 +1149,11 @@ found_xtree:
 new_xtree:
       id := sequence_next ('RDF_RO_ID');
       digest := rdf_box (v, dt_twobyte, lang_twobyte, id, 1);
+      -- if (ro_id_dict is null)
+      --   {
+      --     dbg_obj_princ ('zero RO_FLAGS in sparql.sql:1124');
+      --     ;
+      --   }
       insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_LONG, RO_FLAGS, RO_DT_AND_LANG) values
         (id, sum64, __xml_serialize_packed (v), case (isnull (ro_id_dict)) when 0 then 3 else 2 end, dt_and_lang);
       --if (ro_id_dict is not null)
@@ -1238,6 +1251,7 @@ new_long:
       else
         {
           set triggers off;
+          -- dbg_obj_princ ('zero RO_FLAGS in sparql.sql:1225 ', chksm, v);
           insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_LONG, RO_DT_AND_LANG)
           values (id, chksm, v, dt_and_lang);
           set triggers on;
@@ -1290,6 +1304,7 @@ new_short:
         values (id, v, 1, dt_and_lang);
       else
         {
+          -- dbg_obj_princ ('zero RO_FLAGS in sparql.sql:1271 ', v);
           set triggers off;
           insert into DB.DBA.RDF_OBJ (RO_ID, RO_VAL, RO_FLAGS, RO_DT_AND_LANG)
           values (id, v, 0, dt_and_lang);
@@ -6620,12 +6635,14 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES_CL (inout graph_iri any, inout triple
           else
             {
               -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES_CL inserts text0 ', r[0], r[1], null, o_val, null);
+              -- dbg_obj_princ ('zero is_text in sparql.sql:6618 ', o_val);
               dpipe_input (dp, r[0], r[1], null, o_val, null);
             }
         }
       else
         {
           -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES_CL inserts ', r[0], r[1], null, o_val);
+          -- dbg_obj_princ ('unknown is_text in sparql.sql:6626 ', o_val);
           dpipe_input (dp, r[0], r[1], null, o_val, null);
         }
       if (mod (ctr + 1, 40000) = 0 and l > 60000)
@@ -6643,24 +6660,23 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES_CL (inout graph_iri any, inout triple
 ;
 
 /* insert */
-create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, inout triples any, in log_mode integer := null)
+create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iid any, inout triples any, in log_mode integer := null)
 {
   declare ctr, old_log_enable integer;
   declare ro_id_dict any;
   if (0 = sys_stat ('cl_run_local_only'))
-    return RDF_INSERT_TRIPLES_CL (graph_iri, triples, log_mode);
--- The rest is no longer in use:
-  if (not isiri_id (graph_iri))
-    graph_iri := iri_to_id (graph_iri);
-  if (__rdf_graph_is_in_enabled_repl (graph_iri))
-    DB.DBA.RDF_REPL_INSERT_TRIPLES (id_to_iri (graph_iri), triples);
+    return RDF_INSERT_TRIPLES_CL (graph_iid, triples, log_mode);
+  if (not isiri_id (graph_iid))
+    graph_iid := iri_to_id (graph_iid);
+  if (__rdf_graph_is_in_enabled_repl (graph_iid))
+    DB.DBA.RDF_REPL_INSERT_TRIPLES (id_to_iri (graph_iid), triples);
   old_log_enable := log_enable (log_mode, 1);
   declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
   if (0 = bit_and (old_log_enable, 2))
     {
       declare dp any;
       dp := rl_local_dpipe ();
-      connection_set ('g_iid', graph_iri);
+      connection_set ('g_iid', graph_iid);
       for (ctr := length (triples) - 1; ctr >= 0; ctr := ctr - 1)
 	{
 	  declare s_iid, p_iid, obj, o_type, o_lang any;
@@ -6670,16 +6686,20 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, inout triples any,
 	  if (isiri_id (obj))
 	    dpipe_input (dp, s_iid, p_iid, obj, null);
 	  else
+            {
+              __rdf_obj_set_is_text_if_ft_rule_check (obj, graph_iid, p_iid, null);
 	    dpipe_input (dp, s_iid, p_iid, null, obj);
 	}
-      rl_flush (dp, graph_iri);
+        }
+      rl_flush (dp, graph_iid);
       return;
     }
   if (not is_atomic ())
     {
       declare app_env any;
+      -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES, not atomic');
       app_env := vector (async_queue (0, 1), rl_local_dpipe (), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-      connection_set ('g_iid', graph_iri);
+      connection_set ('g_iid', graph_iid);
       for (ctr := length (triples) - 1; ctr >= 0; ctr := ctr - 1)
          {
 	   declare s_iid, p_iid, obj, o_type, o_lang any;
@@ -6689,11 +6709,14 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, inout triples any,
 	   if (isiri_id (obj))
 	     dpipe_input (app_env[1], s_iid, p_iid, obj, null);
 	   else
+             {
+               __rdf_obj_set_is_text_if_ft_rule_check (obj, graph_iid, p_iid, null);
 	     dpipe_input (app_env[1], s_iid, p_iid, null, obj);
+             }
 	   if (dpipe_count (app_env[1]) > dc_batch_sz ())
-	     rl_send (app_env, graph_iri);
+             rl_send (app_env, graph_iid);
          }
-      rl_send (app_env, graph_iri);
+      rl_send (app_env, graph_iid);
       commit work;
       aq_wait_all (app_env[0]);
       connection_set ('g_dict', null);
@@ -6709,13 +6732,13 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, inout triples any,
       o_final := o_orig := triples[ctr][2];
       if (isiri_id (o_final))
         goto do_insert;
-      if (ro_id_dict is null and __rdf_obj_ft_rule_check (graph_iri, p_iid))
+      if (ro_id_dict is null and __rdf_obj_ft_rule_check (graph_iid, p_iid))
         ro_id_dict := dict_new ();
-      -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES got ', graph_iri, triples[ctr][0], p_iid, o_final);
+      -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES got ', graph_iid, triples[ctr][0], p_iid, o_final);
       need_digest := rdf_box_needs_digest (o_final, ro_id_dict);
       if (1 < need_digest)
         {
-          o_final := DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (o_final, graph_iri, p_iid, ro_id_dict);
+          o_final := DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (o_final, graph_iid, p_iid, ro_id_dict);
           --if (not rdf_box_is_storeable (o_final))
           --  {
           --    -- dbg_obj_princ ('OBLOM', 'Bad O after DB.DBA.MAKE_OBJ_OF_SQLVAL_FT', o_orig, '=>', o_final);
@@ -6732,12 +6755,12 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iri any, inout triples any,
           --  }
         }
 do_insert:
-      -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES inserts ', graph_iri, triples[ctr][0], p_iid, o_final);
+      -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES inserts ', graph_iid, triples[ctr][0], p_iid, o_final);
       insert soft DB.DBA.RDF_QUAD (G,S,P,O)
-      values (graph_iri, triples[ctr][0], p_iid, o_final);
+      values (graph_iid, triples[ctr][0], p_iid, o_final);
     }
   if (ro_id_dict is not null)
-    DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (graph_iri, ro_id_dict);
+    DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (graph_iid, ro_id_dict);
   log_enable (old_log_enable, 1);
 }
 ;
@@ -14419,12 +14442,88 @@ retry_add:
 }
 ;
 
+create procedure DB.DBA.RDF_OBJ_FT_INS_ALL (in this_box_only integer := 0)
+{
+  declare id, f integer;
+  if (not this_box_only)
+    {
+      cl_exec ('DB.DBA.RDF_OBJ_FT_INS_ALL (1)');
+      return;
+    }
+  set triggers off;
+
+  declare c1 cursor for select RO_ID, RO_FLAGS from DB.DBA.RDF_OBJ where not (bit_and (RO_FLAGS, 1)) and RO_VAL > '' and RO_VAL < '\xFF\xFF\xFF\xFF\xFF\xFF' and isstring (RO_VAL) and RO_LONG is null for update option (no cluster);
+start_c1:
+  open c1;
+  whenever sqlstate '42000' goto deadl_c1;
+  whenever not found goto done_c1;
+again_c1:
+  fetch c1 into id, f;
+  update DB.DBA.RDF_OBJ set RO_FLAGS = bit_or (RO_FLAGS, 1) where current of c1;
+  insert into VTLOG_DB_DBA_RDF_OBJ option (no cluster) (VTLOG_RO_ID, SNAPTIME, DMLTYPE) values (id, curdatetime (), 'I');
+  commit work;
+  goto again_c1;
+done_c1:
+  close c1;
+
+  declare c2 cursor for select RO_ID, RO_FLAGS from DB.DBA.RDF_OBJ where not (bit_and (RO_FLAGS, 1)) and RO_LONG is not NULL for update option (no cluster);
+start_c2:
+  open c2;
+  whenever sqlstate '42000' goto deadl_c2;
+  whenever not found goto done_c2;
+again_c2:
+  fetch c2 into id, f;
+  update DB.DBA.RDF_OBJ set RO_FLAGS = bit_or (RO_FLAGS, 1) where current of c2;
+  insert into VTLOG_DB_DBA_RDF_OBJ option (no cluster) (VTLOG_RO_ID, SNAPTIME, DMLTYPE) values (id, curdatetime (), 'I');
+  commit work;
+  goto again_c2;
+done_c2:
+  close c2;
+
+start_g:
+  whenever sqlstate '42000' goto deadl_g;
+  for (select distinct G as curr_g FROm DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS, index_only) option (no cluster)) do
+    {
+      declare ro_id_dict any;
+      ro_id_dict := dict_new (100000);
+      for (select distinct rdf_box_ro_id (O) as o_id from DB.DBA.RDF_QUAD join DB.DBA.RDF_OBJ on (RO_ID = rdf_box_ro_id (O))
+        where G = curr_g
+        and 0 = bit_and (RO_FLAGS, 1) and __tag (coalesce (RO_LONG, RO_VAL)) in (__tag of varchar, __tag of XML) ) do
+        {
+          update DB.DBA.RDF_OBJ set RO_FLAGS = bit_or (RO_FLAGS, 1) where RO_ID = o_id;
+          insert soft DB.DBA.VTLOG_DB_DBA_RDF_OBJ option (no cluster) (VTLOG_RO_ID, SNAPTIME, DMLTYPE) values (o_id, curdatetime (), 'I');
+          --insert soft rdf_ft (rf_id, rf_o) values (id, obj);
+          dict_put (ro_id_dict, o_id, 1);
+          commit work;
+          if (dict_size (ro_id_dict) > 100000)
+            DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (curr_g, ro_id_dict);
+        }
+      DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (curr_g, ro_id_dict);
+      commit work;
+    }
+
+  return;
+deadl_c1:
+  rollback work;
+  close c1;
+  goto start_c1;
+deadl_c2:
+  rollback work;
+  close c2;
+  goto start_c2;
+deadl_g:
+  rollback work;
+  goto start_g;
+}
+;
+
 create function DB.DBA.RDF_OBJ_FT_RULE_ADD (in rule_g varchar, in rule_p varchar, in reason varchar) returns integer
 {
   declare rule_g_iid, rule_p_iid IRI_ID;
   declare ro_id_dict any;
   if (0 = sys_stat ('cl_run_local_only'))
-    signal ('42000', 'rdf_obj_ft_rule_add not available in cluster.  Do cl_text_index (1) to enable text index on all future rdf loads on cluster.');
+    signal ('42000', 'DB.DBA.RDF_OBJ_FT_RULE_ADD() is not available in cluster. Do DB.DBA.CL_TEXT_INDEX (1) to enable text index on all future RDF loads on cluster.');
+  set triggers off;
   if (rule_g is null)
     rule_g := '';
   if (rule_p is null)
@@ -14451,92 +14550,55 @@ create function DB.DBA.RDF_OBJ_FT_RULE_ADD (in rule_g varchar, in rule_p varchar
       if ((rule_g <> '') and (rule_p <> ''))
         {
           ro_id_dict := dict_new (100000);
-          for (select O as obj from DB.DBA.RDF_QUAD where G=rule_g_iid and P=rule_p_iid and not isiri_id (O)) do
-            {
-              if (isstring (obj))
-                {
-                  DB.DBA.RDF_OBJ_ADD (257, obj, 257, ro_id_dict);
-                  commit work;
-                }
-              else
-                {
-                  declare id integer;
-                  id := rdf_box_ro_id (obj);
-                  if (0 <> id)
+          for (select distinct rdf_box_ro_id (O) as id from DB.DBA.RDF_QUAD join DB.DBA.RDF_OBJ on (RO_ID = rdf_box_ro_id (O))
+            where G=rule_g_iid and P=rule_p_iid
+            and 0 = bit_and (RO_FLAGS, 1) and __tag(coalesce (RO_LONG, RO_VAL)) in (__tag of varchar, __tag of XML) ) do
                     {
-                      update DB.DBA.RDF_OBJ set RO_FLAGS = bit_or (RO_FLAGS, 1) where RO_ID = id and not (bit_and (RO_FLAGS, 1));
+              update DB.DBA.RDF_OBJ set RO_FLAGS = bit_or (RO_FLAGS, 1) where RO_ID = id;
+              insert soft DB.DBA.VTLOG_DB_DBA_RDF_OBJ option (no cluster) (VTLOG_RO_ID, SNAPTIME, DMLTYPE) values (id, curdatetime (), 'I');
 		      --insert soft rdf_ft (rf_id, rf_o) values (id, obj);
                       dict_put (ro_id_dict, id, 1);
-                    }
                   commit work;
-                }
               if (dict_size (ro_id_dict) > 100000)
-                DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (iri_to_id (rule_g), ro_id_dict);
+                DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (rule_g_iid, ro_id_dict);
             }
-          DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (iri_to_id (rule_g), ro_id_dict);
+          DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (rule_g_iid, ro_id_dict);
         }
       else if (rule_g <> '')
         {
           ro_id_dict := dict_new (100000);
-          for (select O as obj from DB.DBA.RDF_QUAD where G=rule_g_iid and not isiri_id (O)) do
+          for (select distinct rdf_box_ro_id (O) as id from DB.DBA.RDF_QUAD join DB.DBA.RDF_OBJ on (RO_ID = rdf_box_ro_id (O))
+            where G=rule_g_iid
+            and 0 = bit_and (RO_FLAGS, 1) and __tag(coalesce (RO_LONG, RO_VAL)) in (__tag of varchar, __tag of XML) ) do
             {
-              if (isstring (obj))
-                {
-                  DB.DBA.RDF_OBJ_ADD (257, obj, 257, ro_id_dict);
-                  commit work;
-                }
-              else
-                {
-                  declare id integer;
-                  id := rdf_box_ro_id (obj);
-                  if (0 <> id)
-                    {
-                      update DB.DBA.RDF_OBJ set RO_FLAGS = bit_or (RO_FLAGS, 1) where RO_ID = id and not (bit_and (RO_FLAGS, 1));
+              update DB.DBA.RDF_OBJ set RO_FLAGS = bit_or (RO_FLAGS, 1) where RO_ID = id;
+              insert soft DB.DBA.VTLOG_DB_DBA_RDF_OBJ option (no cluster) (VTLOG_RO_ID, SNAPTIME, DMLTYPE) values (id, curdatetime (), 'I');
 		      --insert soft rdf_ft (rf_id, rf_o) values (id, obj);
                       dict_put (ro_id_dict, id, 1);
-                    }
                   commit work;
-                }
               if (dict_size (ro_id_dict) > 100000)
-                DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (iri_to_id (rule_g), ro_id_dict);
+                DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (rule_g_iid, ro_id_dict);
             }
-          DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (iri_to_id (rule_g), ro_id_dict);
+          DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (rule_g_iid, ro_id_dict);
         }
-      else
+      else if (rule_p <> '')
         {
           declare old_g IRI_ID;
-          ro_id_dict := dict_new (100000);
           old_g := #i0;
-          for (select O as obj, G as curr_g from DB.DBA.RDF_QUAD where ((rule_p = '') or equ (P,rule_p_iid)) and not isiri_id (O) ) do
-            {
-              if (isstring (obj))
-                {
-                  if (curr_g <> old_g)
-                    {
-                      if (old_g <> #i0)
-                        DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (old_g, ro_id_dict);
                       ro_id_dict := dict_new (100000);
-                      old_g := curr_g;
-                    }
-                  DB.DBA.RDF_OBJ_ADD (257, obj, 257, ro_id_dict);
-                  commit work;
-                  if (dict_size (ro_id_dict) > 100000)
-                    DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (curr_g, ro_id_dict);
-                }
-              else
+          for (select G as curr_g, S as curr_s from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS, index_only)) do
                 {
-                  declare id integer;
-                  id := rdf_box_ro_id (obj);
-                  if (0 <> id)
+              for (select distinct rdf_box_ro_id (O) as id from DB.DBA.RDF_QUAD join DB.DBA.RDF_OBJ on (RO_ID = rdf_box_ro_id (O))
+                where G = curr_g and P = rule_p_iid
+                and 0 = bit_and (RO_FLAGS, 1) and __tag(coalesce (RO_LONG, RO_VAL)) in (__tag of varchar, __tag of XML) ) do
                     {
                       if (curr_g <> old_g)
                         {
-                          if (old_g <> #i0)
                             DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (old_g, ro_id_dict);
-                          ro_id_dict := dict_new (100000);
                           old_g := curr_g;
                         }
-                      update DB.DBA.RDF_OBJ set RO_FLAGS = bit_or (RO_FLAGS, 1) where RO_ID = id and not (bit_and (RO_FLAGS, 1));
+                  update DB.DBA.RDF_OBJ set RO_FLAGS = bit_or (RO_FLAGS, 1) where RO_ID = id;
+                  insert soft DB.DBA.VTLOG_DB_DBA_RDF_OBJ option (no cluster) (VTLOG_RO_ID, SNAPTIME, DMLTYPE) values (id, curdatetime (), 'I');
 		      --insert soft rdf_ft (rf_id, rf_o) values (id, obj);
                       dict_put (ro_id_dict, id, 1);
                       commit work;
@@ -14544,10 +14606,11 @@ create function DB.DBA.RDF_OBJ_FT_RULE_ADD (in rule_g varchar, in rule_p varchar
                         DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (curr_g, ro_id_dict);
                     }
                 }
-            }
           DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (old_g, ro_id_dict);
           commit work;
     }
+      else
+        DB.DBA.RDF_OBJ_FT_INS_ALL ();
   __atomic (0);
   exec ('checkpoint');
     }
@@ -14585,6 +14648,14 @@ create procedure DB.DBA.RDF_OBJ_FT_RECOVER ()
   declare stat, msg, STRG varchar;
   declare metas, rset any;
   result_names (STRG);
+  if (((0 = sys_stat ('cl_run_local_only')) and (1 = cast (registry_get ('cl_rdf_text_index') as integer)))
+    or exists (select 1 from DB.DBA.RDF_OBJ_FT_RULES where ROFR_G = '' and ROFR_P = '') )
+    {
+      result ('One of rules requires total indexing, so the rest of rules will not require any selective processing...');
+      DB.DBA.RDF_OBJ_FT_INS_ALL ();
+    }
+  else
+    {
   exec ('
     select ROFR_G, ROFR_P, MAX (ROFR_REASON), COUNT (1), MIN (ROFR_REASON)
     from DB.DBA.RDF_OBJ_FT_RULES
@@ -14605,6 +14676,7 @@ add_back:
 restored:
       if (ftrule[3] > 1)
         result (sprintf ('No need to re-apply additional %d rules for this graph and predicate, e.g., rule "%s"', ftrule[4]));
+    }
     }
   result ('Now starting incremental update of free-text index...');
   VT_INC_INDEX_DB_DBA_RDF_OBJ();

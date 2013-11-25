@@ -50,6 +50,7 @@ create procedure ro_id_only (in o any)
   if (is_rdf_box (o)
       and isstring (rdf_box_data (o)))
     {
+      -- dbg_obj_princ ('ro_id_only sets flag to 2');
       rdf_box_set_is_text (o, 2);
       return o;
     }

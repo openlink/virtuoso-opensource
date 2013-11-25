@@ -574,7 +574,7 @@ l_make_ro_disp (cucurbit_t * cu, caddr_t * args, value_state_t * vs)
       dk_free_box (trid);
       return NULL;
     }
-  cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, box, ap_box_num (&ap, dt_lang), l_null, NULL, NULL));
+  cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, box, ap_box_num (&ap, dt_lang), l_null, (caddr_t) 1, NULL));
   return NULL;
 }
 

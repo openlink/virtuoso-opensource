@@ -3782,45 +3782,22 @@ bif_rdf_obj_ft_rule_zap_all (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
   return 0;
 }
 
-caddr_t
-bif_rdf_obj_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+int
+rdf_obj_ft_rule_check_if_configured (caddr_t * qst, state_slot_t ** args, int g_arg_idx, const char *fname)
 {
   iri_id_t g_id;
   caddr_t p;
   rdf_obj_ft_rule_iid_hkey_t iid_hkey;
-  dtp_t g_dtp, p_dtp;
-  if (CL_RUN_LOCAL != cl_run_local_only)
-    {
-      caddr_t cl_text_set = registry_get ("cl_rdf_text_index");
-      char flag = cl_text_set ? cl_text_set[0] : '\0';
-      dk_free_tree (cl_text_set);
-      if ('1' == flag)
-        return box_num (2);
-    }
-
+  dtp_t p_dtp;
   if (!rdf_obj_ft_rules_by_iris->ht_count)
-    return NULL;
-  g_id = bif_arg (qst, args, 0, "__rdf_obj_ft_rule_check");
-  p = bif_arg (qst, args, 1, "__rdf_obj_ft_rule_check");
+    return 0;
   iid_hkey.hkey_g = 0;
   iid_hkey.hkey_iid_p = 0;
   mutex_enter (rdf_obj_ft_rules_mtx);
   if (NULL != id_hash_get (rdf_obj_ft_rules_by_iids, (caddr_t)(&iid_hkey)))
     goto hit; /* see_below */
-  g_dtp = DV_TYPE_OF (g_id);
-  switch (g_dtp)
-    {
-      case DV_IRI_ID: /* case DV_STRING: case DV_UNAME: */
-        break;
-      case DV_DB_NULL:
-        g_id = 0;
-        break;
-      default:
-        mutex_leave (rdf_obj_ft_rules_mtx);
-        sqlr_new_error ("22023", "SR008",
-          "Function __rdf_obj_ft_rule_check needs a IRI_ID as argument 1, "
-          "not an arg of type %s (%d)", dv_type_title (g_dtp), g_dtp );
-    }
+  g_id = bif_iri_id_or_null_arg (qst, args, g_arg_idx, fname);
+  p = bif_arg (qst, args, g_arg_idx + 1, fname);
   p_dtp = DV_TYPE_OF (p);
   switch (p_dtp)
     {
@@ -3853,7 +3830,7 @@ bif_rdf_obj_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
       if (NULL != id_hash_get (rdf_obj_ft_rules_by_iids, (caddr_t)(&iid_hkey)))
         goto hit; /* see_below */
       mutex_leave (rdf_obj_ft_rules_mtx);
-      return box_num (0);
+      return 0;
    }
   else
     {
@@ -3871,10 +3848,88 @@ bif_rdf_obj_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
       if (NULL != id_hash_get (rdf_obj_ft_rules_by_iris, (caddr_t)(&iri_hkey)))
         goto hit; /* see_below */
       mutex_leave (rdf_obj_ft_rules_mtx);
-      return box_num (0);
+      return 0;
    }
 hit:
   mutex_leave (rdf_obj_ft_rules_mtx);
+  return 1;
+}
+
+caddr_t
+bif_rdf_obj_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  if (CL_RUN_LOCAL != cl_run_local_only)
+    {
+      caddr_t cl_text_set = registry_get ("cl_rdf_text_index");
+      char flag = cl_text_set ? cl_text_set[0] : '\0';
+      dk_free_tree (cl_text_set);
+      if ('1' == flag)
+        return box_num (2);
+    }
+  return box_num (rdf_obj_ft_rule_check_if_configured (qst, args, 0, "__rdf_obj_ft_rule_check"));
+}
+
+caddr_t
+bif_rdf_obj_set_is_text_if_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t obj = bif_arg (qst, args, 0, "__rdf_obj_set_is_text_if_ft_rule_check");
+  caddr_t ro_dict;
+  int wrap_if_ft;
+  switch (DV_TYPE_OF (obj))
+    {
+    case DV_RDF:
+      {
+        rdf_box_t *obj_rb = (rdf_box_t *)obj;
+        if (obj_rb->rb_is_text_index
+          || (obj_rb->rb_is_outlined && (DV_STRING != ((rdf_bigbox_t *)obj_rb)->rbb_box_dtp) && (DV_XML_ENTITY != ((rdf_bigbox_t *)obj_rb)->rbb_box_dtp)) )
+          return box_num (1);
+        if (!obj_rb->rb_is_complete)
+          rb_complete (obj_rb, ((query_instance_t *)qst)->qi_trx, (query_instance_t *)qst);
+        if ((DV_STRING != DV_TYPE_OF (obj_rb->rb_box)) && (DV_XML_ENTITY != DV_TYPE_OF (obj_rb->rb_box)))
+          return box_num (1);
+        wrap_if_ft = 0;
+        break;
+      }
+    case DV_XML_ENTITY: case DV_STRING:
+      wrap_if_ft = 1;
+      break;
+    default:
+      return box_num (0);
+    }
+  ro_dict = bif_arg (qst, args, 3, "__rdf_obj_set_is_text_if_ft_rule_check");
+  if (DV_DB_NULL != DV_TYPE_OF (ro_dict))
+    goto need_ft; /* see below */
+  if (CL_RUN_LOCAL != cl_run_local_only)
+    {
+      caddr_t cl_text_set = registry_get ("cl_rdf_text_index");
+      char flag = cl_text_set ? cl_text_set[0] : '\0';
+      dk_free_tree (cl_text_set);
+      if ('1' == flag)
+        goto need_ft; /* see below */
+    }
+  if (rdf_obj_ft_rule_check_if_configured (qst, args, 1, "__rdf_obj_set_is_text_if_ft_rule_check"));
+    goto need_ft; /* see below */
+  return box_num (0);
+need_ft:
+  if (wrap_if_ft)
+    {
+      caddr_t swap;
+      rdf_box_t *rb = rb_allocate ();
+      rb->rb_box = obj;
+      rb->rb_is_complete = 1;
+      rb->rb_is_text_index = 1;
+      rb->rb_lang = RDF_BOX_DEFAULT_LANG;
+      rb->rb_type = RDF_BOX_DEFAULT_TYPE;
+      swap = (caddr_t)((void *)rb);
+      qst_swap (qst, args[0], &swap);
+      if (swap != obj)
+        GPF_T1 ("weird swap");
+    }
+  else
+    {
+      rdf_box_t *rb = (rdf_box_t *)((void *)obj);
+      rb->rb_is_text_index = 1;
+    }
   return box_num (1);
 }
 
@@ -4223,6 +4278,8 @@ rdf_core_init (void)
   bif_define ("__rdf_obj_ft_rule_del", bif_rdf_obj_ft_rule_del);
   bif_define ("__rdf_obj_ft_rule_zap_all", bif_rdf_obj_ft_rule_zap_all);
   bif_define ("__rdf_obj_ft_rule_check", bif_rdf_obj_ft_rule_check);
+  bif_define ("__rdf_obj_set_is_text_if_ft_rule_check", bif_rdf_obj_set_is_text_if_ft_rule_check);
+  bif_set_uses_index (bif_rdf_obj_set_is_text_if_ft_rule_check);
   bif_define ("__rdf_obj_ft_rule_count_in_graph", bif_rdf_obj_ft_rule_count_in_graph);
   /* Short aliases for use in generated SQL text: */
   bif_define ("__i2idn", bif_iri_to_id_nosignal);

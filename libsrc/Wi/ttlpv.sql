@@ -25,6 +25,7 @@
 create procedure L_O_LOOK (inout  val_str varchar, inout dt_lang int, inout lng varchar, inout is_text int, inout id int)
 {
   vectored;
+  -- dbg_obj_princ ('L_O_LOOK (', val_str, dt_lang, lng, is_text, id, ')');
   declare fetched int;
   set triggers off;
   insert into rdf_obj index ro_val option (fetch id by 'RDF_RO_ID' set fetched) (ro_val, ro_dt_and_lang, ro_id) values (val_str, dt_lang, id);
@@ -32,9 +33,14 @@ create procedure L_O_LOOK (inout  val_str varchar, inout dt_lang int, inout lng 
     {
       declare flags int;
       flags := case when is_text = 2 then 0 else is_text end;
+      -- if (0 = flags)
+      --   {
+      --     dbg_obj_princ ('zero ro_flags in ttlpv,sql:37 ', val_str, lng);
+      --     ;
+      --   }
       insert into rdf_obj index rdf_obj (ro_id, ro_val, ro_flags, ro_dt_and_lang, ro_long) values (id, val_str, flags, dt_lang, lng);
       if (1 = is_text)
-	insert into VTLOG_DB_DBA_RDF_OBJ option (no cluster) (vtlog_ro_id, SNAPTIME, DMLTYPE) values (id, curdatetime (), 'I');
+        insert soft VTLOG_DB_DBA_RDF_OBJ option (no cluster) (vtlog_ro_id, SNAPTIME, DMLTYPE) values (id, curdatetime (), 'I');
       if (2 = is_text)
 	{
 	  declare geo any;
@@ -51,6 +57,15 @@ create procedure L_O_LOOK (inout  val_str varchar, inout dt_lang int, inout lng 
       else
         pref := subseq (lng, 0, 10);
       insert into ro_start option (no cluster) (rs_start, rs_dt_and_lang, rs_ro_id) values (pref, dt_lang, rdf_box (0, 257, 257, id, 0));
+    }
+  else if ((1 = is_text) and not __rdf_obj_ft_rule_check (null, null))
+    {
+      declare flags int;
+      if (bit_and (is_text, 1) and exists (select 1 from DB.DBA.RDF_OBJ where RO_ID=id and not bit_and (RO_FLAGS, 1)))
+        {
+          update DB.DBA.RDF_OBJ set RO_FLAGS = bit_or (RO_FLAGS, 1) where RO_ID=id;
+          insert soft VTLOG_DB_DBA_RDF_OBJ option (no cluster) (vtlog_ro_id, SNAPTIME, DMLTYPE) values (id, curdatetime (), 'I');
+        }
     }
 }
 ;
@@ -222,6 +237,11 @@ create procedure DB.DBA.TTLP_RL_TRIPLE_L (
 		  parsed := rdf_box (parsed, 300, 257, 0, 1);
 		  rdf_box_set_type (parsed, 257);
 		}
+              -- if (not bit_and (is_text, 1))
+              --   {
+              --     dbg_obj_princ ('zero set_is_text in ttlpv.sql:231', parsed);
+              --     ;
+              --   }
 	      rdf_box_set_is_text (parsed, is_text);
               dpipe_input (app_env[1], s_uri, p_uri, null, parsed);
               goto do_flush; -- see below
@@ -233,6 +253,11 @@ create procedure DB.DBA.TTLP_RL_TRIPLE_L (
       else
         tid := 257;
       o_val_2 := rdf_box (o_val, tid, lid, 0, 1);
+      -- if (not bit_and (is_text, 1))
+      --   {
+      --     dbg_obj_princ ('zero set_is_text in ttlpv.sql:241', o_val_2);
+      --     ;
+      --   }
       rdf_box_set_is_text (o_val_2, is_text);
       dpipe_input (app_env[1], s_uri, p_uri, null, o_val_2);
     }
@@ -241,6 +266,11 @@ create procedure DB.DBA.TTLP_RL_TRIPLE_L (
       -- make first first non default type because if all is default it will make no box
       declare o_val_2 any;
       o_val_2 := rdf_box (o_val, 300, 257, 0, 1);
+      -- if (not is_text)
+      --   {
+      --     dbg_obj_princ ('zero set_is_text in ttlpv.sql:265', o_val_2);
+      --     ;
+      --   }
       if (is_text)
 	rdf_box_set_is_text (o_val_2, 1);
       rdf_box_set_type (o_val_2, 257);
@@ -298,6 +328,7 @@ create procedure rl_send (inout env any, in g_iid any)
 {
   declare req, n_reqs int;
   commit work;
+  -- dbg_obj_princ ('rl_send (', env, g_iid, ')');
   n_reqs := env[2];
   env[2] := n_reqs + 1;
   req := aq_request (env[0], 'DB.DBA.RL_FLUSH', vector (env[1], g_iid));
@@ -322,6 +353,7 @@ create procedure rl_send_gs (inout env any, in g_iid any)
   declare req, n_reqs int;
   if (bit_and (4, dpipe_rdf_load_mode (env[1])))
     return;
+  -- dbg_obj_princ ('rl_send_gs (', env, g_iid, ')');
   commit work;
   n_reqs := env[2];
   env[2] := n_reqs + 1;
@@ -392,6 +424,11 @@ create procedure DB.DBA.TTLP_RL_GS_TRIPLE_L (
 		  parsed := rdf_box (parsed, 300, 257, 0, 1);
 		  rdf_box_set_type (parsed, 257);
 		}
+              -- if (not bit_and (is_text, 1))
+              --   {
+              --     dbg_obj_princ ('zero set_is_text in ttlpv.sql:401', parsed, is_text);
+              --     ;
+              --   }
 	      rdf_box_set_is_text (parsed, is_text);
               dpipe_input (dp, s_uri, p_uri, null, parsed, g_iid);
               goto do_flush; -- see below
@@ -403,6 +440,11 @@ create procedure DB.DBA.TTLP_RL_GS_TRIPLE_L (
       else
         tid := 257;
       o_val_2 := rdf_box (o_val, tid, lid, 0, 1);
+      -- if (not bit_and (is_text, 1))
+      --   {
+      --     dbg_obj_princ ('zero set_is_text in ttlpv.sql:414', o_val_2, is_text);
+      --     ;
+      --   }
       rdf_box_set_is_text (o_val_2, is_text);
       dpipe_input (dp, s_uri, p_uri, null, o_val_2, g_iid);
     }
@@ -411,6 +453,11 @@ create procedure DB.DBA.TTLP_RL_GS_TRIPLE_L (
       -- make first first non default type because if all is default it will make no box
       declare o_val_2 any;
       o_val_2 := rdf_box (o_val, 300, 257, 0, 1);
+      -- if (not is_text)
+      --   {
+      --     dbg_obj_princ ('zero set_is_text in ttlpv.sql:451', o_val_2);
+      --     ;
+      --   }
       if (is_text)
 	rdf_box_set_is_text (o_val_2, 1);
       rdf_box_set_type (o_val_2, 257);

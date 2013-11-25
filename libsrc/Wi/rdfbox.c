@@ -583,7 +583,7 @@ bif_rdf_box_set_is_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (DV_RDF == DV_TYPE_OF (rb))
     {
       rdf_box_t * rb2 = (rdf_box_t *) rb;
-      rb2->rb_is_text_index = f;
+      rb2->rb_is_text_index = (f & 0x1);
       rb2->rb_serialize_id_only = f >> 1;
     }
   return box_num (1);
