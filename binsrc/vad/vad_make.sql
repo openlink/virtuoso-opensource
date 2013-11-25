@@ -1140,6 +1140,24 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
   declare qual varchar;
   declare SQL_STATE, SQL_MESSAGE varchar;
 
+  qual := dbname ();
+  parr := null;
+  SQL_STATE := '00000';
+  SQL_MESSAGE := '';
+  result_names (SQL_STATE, SQL_MESSAGE);
+
+  if ((is_dav = 0 and 0 = file_stat (fname)) 
+      or 
+      (is_dav <> 0 and (not exists (select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = fname))))
+    {
+      registry_set ('VAD_wet_run', '0');
+      registry_set ('VAD_errcount', '1');
+      result ('42VAD', concat ('Could not open ',
+      case when is_dav = 0 then 'filesystem' else 'DAV' end, 
+      ' resource ', fname, ' Reason: File not found'));
+      goto failure;
+    }
+
   commit work;
   if (sys_stat ('cl_run_local_only') = 1)
     exec ('checkpoint');
@@ -1149,11 +1167,6 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
     cl_exec ('checkpoint');
     }
 
-  qual := dbname ();
-  parr := null;
-  SQL_STATE := '00000';
-  SQL_MESSAGE := '';
-
   "VAD"."DBA"."VAD_ATOMIC" (1);
 
   registry_set ('VAD_msg', '');
@@ -1162,7 +1175,6 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
   registry_set ('VAD_is_run', '1');
   connection_set ('vad_pkg_fullname', null);
 
-  result_names (SQL_STATE, SQL_MESSAGE);
   {
     declare exit handler for sqlstate '*'
     {
