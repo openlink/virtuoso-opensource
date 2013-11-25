@@ -5191,7 +5191,7 @@ ret_sets:
 int
 ce_hash_sets_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_bytes)
 {
-  int rl = 1, last_v;
+  int rl = 1, last_v, max_values;
   db_buf_t ce = cpo->cpo_ce;
   dtp_t flags = ce[0];
   int dc_off = 0, inx;
@@ -5219,7 +5219,8 @@ ce_hash_sets_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_byt
   if (!enable_chash_bloom)
     return 0;
   dc_reset (dc);
-  DC_CHECK_LEN (dc, n_values);
+  max_values = (itc->itc_n_matches - itc->itc_match_in) + 1;
+  DC_CHECK_LEN (dc, max_values);
   if (DV_ANY == dc->dc_dtp)
     {
       dc->dc_n_values = 1;
