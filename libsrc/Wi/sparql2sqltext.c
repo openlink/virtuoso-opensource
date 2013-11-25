@@ -2741,12 +2741,16 @@ ssg_smallest_union_valmode (ssg_valmode_t m1, ssg_valmode_t m2)
   if (m2 < m1)
     return ssg_smallest_union_valmode (m2, m1);
   /* Now m1 is less than m2 */
-  if (SSG_VALMODE_BOOL == m2)
-    return SSG_VALMODE_BOOL;
   if (!IS_BOX_POINTER (m2))
     {
       if (SSG_VALMODE_AUTO == m2)
         return m1;
+      if (SSG_VALMODE_BOOL == m2)
+        return m1;
+      if ((SSG_VALMODE_SHORT_OR_LONG == m1) && (SSG_VALMODE_NUM == m2))
+        return m2;
+      if ((SSG_VALMODE_NUM == m1) && (SSG_VALMODE_SQLVAL == m2))
+        return m2;
       return SSG_VALMODE_LONG;
     }
   if (!IS_BOX_POINTER (m1))
@@ -3691,32 +3695,43 @@ expanded_sameterm_ready:
         if (IS_BOX_POINTER (union_valmode) && (1 != union_valmode->qmfColumnCount))
           union_valmode = SSG_VALMODE_LONG;
         if (union_valmode != needed)
-          ssg_print_valmoded_scalar_expn (ssg, tree, needed, union_valmode, NULL_ASNAME);
+          ssg_print_valmoded_scalar_expn (ssg, tree, needed, union_valmode, asname);
         else
           {
+            const char *nested_asname = (IS_BOX_POINTER (asname) ? NULL_ASNAME : asname);
             int argctr, argcount = BOX_ELEMENTS (tree->_.builtin.args);
             ssg_puts (" coalesce ("); ssg->ssg_indent++;
             for (argctr = 0; argctr < argcount; argctr++)
               {
                 if (argctr) ssg_putchar (',');
-                ssg_print_scalar_expn (ssg, tree->_.builtin.args[argctr], union_valmode, NULL_ASNAME);
+                ssg_print_scalar_expn (ssg, tree->_.builtin.args[argctr], union_valmode, nested_asname);
               }
             ssg_putchar (')'); ssg->ssg_indent--;
+            if (nested_asname != asname)
+              goto print_asname;
           }
-        goto print_asname;
+        return;
       }
     case SPAR_BIF_IF:
       {
-        const char *nested_asname = (IS_BOX_POINTER (asname) ? NULL_ASNAME : asname);
-        ssg_puts (" case ("); ssg->ssg_indent++;
-        ssg_print_valmoded_scalar_expn (ssg, arg1, SSG_VALMODE_BOOL, arg1_native, NULL_ASNAME);
-        ssg_puts (") when 0 then (");
-        ssg_print_scalar_expn (ssg, tree->_.builtin.args[2], needed, nested_asname);
-        ssg_puts (") else (");
-        ssg_print_scalar_expn (ssg, tree->_.builtin.args[1], needed, nested_asname);
-        ssg_puts (") end"); ssg->ssg_indent--;
-        if (nested_asname != asname)
-          goto print_asname;
+        ssg_valmode_t union_valmode = sparp_expn_native_valmode (ssg->ssg_sparp, tree);
+        if (IS_BOX_POINTER (union_valmode) && (1 != union_valmode->qmfColumnCount))
+          union_valmode = SSG_VALMODE_LONG;
+        if (union_valmode != needed)
+          ssg_print_valmoded_scalar_expn (ssg, tree, needed, union_valmode, asname);
+        else
+          {
+            const char *nested_asname = (IS_BOX_POINTER (asname) ? NULL_ASNAME : asname);
+            ssg_puts (" case ("); ssg->ssg_indent++;
+            ssg_print_valmoded_scalar_expn (ssg, arg1, SSG_VALMODE_BOOL, arg1_native, NULL_ASNAME);
+            ssg_puts (") when 0 then (");
+            ssg_print_scalar_expn (ssg, tree->_.builtin.args[2], needed, nested_asname);
+            ssg_puts (") else (");
+            ssg_print_scalar_expn (ssg, tree->_.builtin.args[1], needed, nested_asname);
+            ssg_puts (") end"); ssg->ssg_indent--;
+            if (nested_asname != asname)
+              goto print_asname;
+          }
         return;
       }
     case IN_L:
@@ -4049,8 +4064,14 @@ expanded_sameterm_ready:
       goto print_asname;
     default:
       {
+        ssg_valmode_t native = sbd->sbd_ret_valmode;
         ssg_valmode_t prev_arg_valmode = SSG_VALMODE_AUTO, arg_valmode;
         int argctr;
+        if (native != needed)
+          {
+            ssg_print_valmoded_scalar_expn (ssg, tree, needed, native, asname);
+            return;
+          }
         switch (sbd->sbd_implementation)
           {
           case 'B': ssg_puts (" rdf_"); break;
