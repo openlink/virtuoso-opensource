@@ -131,7 +131,7 @@ dbe_key_count (dbe_key_t * key)
       return MAX (1, tb->tb_count_estimate);
     }
   else
-    return MAX (1, ((long)(tb->tb_count_estimate + tb->tb_count_delta)));
+    return MAX (1, ((int64)(tb->tb_count_estimate + tb->tb_count_delta)));
 }
 
 
