@@ -5187,6 +5187,30 @@ ret_sets:
   return ce_row + org_n_values;
 }
 
+dbg_dc_ck (data_col_t * dc)
+{
+  int inx;
+  db_buf_t * any_arr = (db_buf_t*)dc->dc_values;
+  if (DV_ANY == dc->dc_dtp)
+    {
+      for (inx = 1; inx < dc->dc_n_values; inx++)
+	{
+	  int l1;
+	  DB_BUF_TLEN (l1, any_arr[inx][0], any_arr[inx]);
+	}
+    }
+}
+
+
+void
+dclck (data_col_t * dc)
+{
+  if ((long)dc->dc_values < (long)dc->dc_buffer )
+    {
+      if ((long)dc->dc_buffer - (long)dc->dc_values  < 8 * dc->dc_n_places) bing ();
+    }
+}
+
 
 int
 ce_hash_sets_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_bytes)
@@ -5290,6 +5314,7 @@ ce_hash_sets_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_byt
     n_values = cha_inline_1i (hrng->hrng_hs, cha, itc, matches, n_values, hash_no, 0, rl, dc);
   else
     n_values = cha_inline_any (hrng->hrng_hs, cha, itc, matches, n_values, hash_no, 0, rl, dc);
+  dc->dc_values -= dc_off;
   if (!n_values)
     return itc->itc_match_in >= itc->itc_n_matches ? CE_AT_END : itc->itc_matches[itc->itc_match_in];
 
