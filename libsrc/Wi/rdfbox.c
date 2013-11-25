@@ -2496,7 +2496,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
     {
       int ctr;
       caddr_t *tmp;
-      tmp = (caddr_t *)list (37*2,
+      tmp = (caddr_t *)list (38*2,
         "application/x-trig"			, "TRIG"		, /*  0 */
         "text/rdf+n3"				, "TTL"			, /*  1 */
         "text/rdf+ttl"				, "TTL"			, /*  2 */
@@ -2533,7 +2533,8 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "text/ntriples"				, "NT"			, /* 33 */
         "text/csv"				, "CSV"			, /* 34 */
         "text/tab-separated-values"		, "TSV"			, /* 35 */
-        "application/x-nice-turtle"		, "NICE_TTL"		/* 36 Increase count in this list() call when add more MIME types! */ );
+        "application/x-nice-turtle"		, "NICE_TTL"		, /* 36 */
+        "application/x-nice-microdata"		, "HTML;NICE_MICRODATA"		/* 37 Increase count in this list() call when add more MIME types! */ );
       for (ctr = BOX_ELEMENTS (tmp); ctr--; /* no step */)
         tmp[ctr] = box_dv_short_string (tmp[ctr]);
       supp_dict = tmp;
@@ -4808,28 +4809,52 @@ bif_sparql_iri_split_rdfa_qname (caddr_t * qst, caddr_t * err_ret, state_slot_t 
       if (!isalnum(c) && ('_' != c) && ('-' != c) && !(c & 0x80))
         break;
     }
-  if (tail == iri)
-    {
-      res = (flags & 0x2) ? list (3, NULL, box_dv_short_string (""), box_dv_short_nchars (iri, iri_strlen)) : NULL;
-      goto res_done; /* see below */
-    }
-  if (tail > iri && tail[-1] == '%' && (tail <= (iri + iri_strlen - 2)))
-    tail += 2;
-  to_free = ns_iri = box_dv_short_nchars (iri, tail-iri);
-  prefix_ptr = (caddr_t *)id_hash_get (ht, (caddr_t)(&ns_iri));
-  if (NULL != prefix_ptr)
-    prefix = prefix_ptr[0];
-  else if (flags & 0x1)
-    {
-      char buf[10];
-      sprintf (buf, "n%ld", (long)(ht->ht_count));
-      prefix = box_dv_short_string (buf);
-      id_hash_set (ht, (caddr_t)(&ns_iri), (caddr_t)(&prefix));
-      to_free = NULL; /* to be released when hash table is free */
-    }
-  else
-    prefix = NULL;
-    res = (flags & 0x2) ? list (3, box_copy (prefix), box_copy (ns_iri), box_dv_short_nchars (tail, iri + iri_strlen - tail)) : NULL;
+  do {
+      if (tail == iri)
+        {
+          res = (flags & 0x2) ? list (3, NULL, box_dv_short_string (""), box_dv_short_nchars (iri, iri_strlen)) : NULL;
+          break;
+        }
+      if (tail > iri && tail[-1] == '%' && (tail <= (iri + iri_strlen - 2)))
+        tail += 2;
+      to_free = ns_iri = box_dv_short_nchars (iri, tail-iri);
+      prefix_ptr = (caddr_t *)id_hash_get (ht, (caddr_t)(&ns_iri));
+      if (NULL != prefix_ptr)
+        {
+          res = (flags & 0x2) ? list (3, box_copy (prefix_ptr[0]), box_copy (ns_iri), box_dv_short_nchars (tail, iri + iri_strlen - tail)) : NULL;
+          break;
+        }
+      prefix = xml_get_cli_or_global_ns_prefix (qst, ns_iri, 0xff);
+      if (NULL != prefix)
+        {
+          if (('n' == prefix[0]) && isdigit (prefix[1]))
+            {
+              dk_free_box (prefix);
+              prefix = NULL;
+            }
+          else
+            {
+              if (flags & 0x1)
+                {
+                  id_hash_set (ht, (caddr_t)(&ns_iri), (caddr_t)(&prefix));
+                  to_free = NULL; /* to be released when hash table is free */
+                }
+              res = (flags & 0x2) ? list (3, box_copy (prefix), box_copy (ns_iri), box_dv_short_nchars (tail, iri + iri_strlen - tail)) : NULL;
+              break;
+            }
+        }
+      if (flags & 0x1)
+        {
+          char buf[10];
+          sprintf (buf, "n%ld", (long)(ht->ht_count));
+          prefix = box_dv_short_string (buf);
+          id_hash_set (ht, (caddr_t)(&ns_iri), (caddr_t)(&prefix));
+          to_free = NULL; /* to be released when hash table is free */
+          break;
+        }
+      res = (flags & 0x2) ? list (3, NULL, box_copy (ns_iri), box_dv_short_nchars (tail, iri + iri_strlen - tail)) : NULL;
+      break;
+    } while (0);
 res_done:
   if (iri != raw_iri)
     dk_free_tree (iri);

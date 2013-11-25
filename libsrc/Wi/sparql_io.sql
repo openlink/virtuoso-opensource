@@ -1731,6 +1731,11 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
           DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA (triples, ses);
 	  ret_mime := 'text/html';
 	}
+      else if (ret_format = 'HTML;NICE_MICRODATA')
+	{
+          DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA (triples, ses);
+	  ret_mime := 'text/html';
+	}
       else if (ret_format = 'JSON;MICRODATA')
         DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (triples, ses);
       else if (ret_format = 'ATOM;XML')
@@ -2325,27 +2330,28 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('			for(var i = format.options.length; i > 0; i--)\n');
     http('				format.options[i] = null;\n');
     http('			format.options[1] = new Option(\'Turtle\',\'text/turtle\');\n');
-    http('			format.options[2] = new Option(\'RDF/JSON\',\'application/rdf+json\');\n');
-    http('			format.options[3] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
-    http('			format.options[4] = new Option(\'N-Triples\',\'text/plain\');\n');
-    http('			format.options[5] = new Option(\'XHTML+RDFa\',\'application/xhtml+xml\');\n');
-    http('			format.options[6] = new Option(\'ATOM+XML\',\'application/atom+xml\');\n');
-    http('			format.options[7] = new Option(\'ODATA/JSON\',\'application/odata+json\');\n');
-    http('			format.options[8] = new Option(\'JSON-LD\',\'application/x-json+ld\');\n');
-    http('			format.options[9] = new Option(\'HTML (list)\',\'text/x-html+ul\');\n');
-    http('			format.options[10] = new Option(\'HTML (table)\',\'text/x-html+tr\');\n');
-    http('			format.options[11] = new Option(\'HTML+Microdata\',\'text/html\');\n');
-    http('			format.options[12] = new Option(\'Microdata/JSON\',\'application/microdata+json\');\n');
-    http('			format.options[13] = new Option(\'CSV\',\'text/csv\');\n');
-    http('			format.options[14] = new Option(\'TSV\',\'text/tab-separated-values\');\n');
-    http('			format.options[15] = new Option(\'TriG\',\'application/x-trig\');\n');
-    http('			format.options[16] = new Option(\'Pretty-printed Turtle (slow!)\',\'application/x-nice-turtle\');\n');
+    http('			format.options[2] = new Option(\'Pretty-printed Turtle (slow!)\',\'application/x-nice-turtle\');\n');
+    http('			format.options[3] = new Option(\'RDF/JSON\',\'application/rdf+json\');\n');
+    http('			format.options[4] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
+    http('			format.options[5] = new Option(\'N-Triples\',\'text/plain\');\n');
+    http('			format.options[6] = new Option(\'XHTML+RDFa\',\'application/xhtml+xml\');\n');
+    http('			format.options[7] = new Option(\'ATOM+XML\',\'application/atom+xml\');\n');
+    http('			format.options[8] = new Option(\'ODATA/JSON\',\'application/odata+json\');\n');
+    http('			format.options[9] = new Option(\'JSON-LD\',\'application/x-json+ld\');\n');
+    http('			format.options[10] = new Option(\'HTML (list)\',\'text/x-html+ul\');\n');
+    http('			format.options[11] = new Option(\'HTML (table)\',\'text/x-html+tr\');\n');
+    http('			format.options[12] = new Option(\'HTML+Microdata (inconvenient)\',\'text/html\');\n');
+    http('			format.options[13] = new Option(\'HTML+Microdata (pretty-printed table)\',\'application/x-nice-microdata\');\n');
+    http('			format.options[14] = new Option(\'Microdata/JSON\',\'application/microdata+json\');\n');
+    http('			format.options[15] = new Option(\'CSV\',\'text/csv\');\n');
+    http('			format.options[16] = new Option(\'TSV\',\'text/tab-separated-values\');\n');
+    http('			format.options[17] = new Option(\'TriG\',\'application/x-trig\');\n');
 
     if (can_cxml)
       {
-	http('			format.options[17] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
+	http('			format.options[18] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
 	if (can_qrcode)
-	  http('		format.options[18] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
+	  http('		format.options[19] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
       }
     http('			format.selectedIndex = 1;\n');
     http('			last_format = 2;\n');
@@ -2457,22 +2463,23 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
       )
     {
       opts := vector (
-        vector ('text/turtle'			, 'Turtle'				),
-	  vector ('application/rdf+json'		, 'RDF/JSON'		),
-	  vector ('application/rdf+xml'			, 'RDF/XML'		),
-	  vector ('text/plain'				, 'N-Triples'		),
-	  vector ('application/xhtml+xml'		, 'XHTML+RDFa'		),
-	  vector ('application/atom+xml'		, 'ATOM+XML'		),
-	  vector ('application/odata+json'		, 'ODATA/JSON'		),
-	  vector ('application/x-json+ld'		, 'JSON-LD'		),
-	  vector ('text/x-html+ul'			, 'HTML (list)'		),
-	  vector ('text/x-html+tr'			, 'HTML (table)'	),
-	  vector ('text/html'				, 'HTML+Microdata'	),
-	  vector ('application/microdata+json'		, 'Microdata/JSON'	),
-	  vector ('text/csv'				, 'CSV'			),
-        vector ('text/tab-separated-values'			, 'TSV'			),
-        vector ('application/x-trig'		, 'TriG'				),
-        vector ('application/x-nice-turtle'	, 'Pretty-printed Turtle (slow!)'	) );
+        vector ('text/turtle'			, 'Turtle'					),
+        vector ('application/x-nice-turtle'	, 'Pretty-printed Turtle (slow!)'		),
+        vector ('application/rdf+json'		, 'RDF/JSON'					),
+        vector ('application/rdf+xml'		, 'RDF/XML'					),
+        vector ('text/plain'			, 'N-Triples'					),
+        vector ('application/xhtml+xml'		, 'XHTML+RDFa'					),
+        vector ('application/atom+xml'		, 'ATOM+XML'					),
+        vector ('application/odata+json'	, 'ODATA/JSON'					),
+        vector ('application/x-json+ld'		, 'JSON-LD'					),
+        vector ('text/x-html+ul'			, 'HTML (list)'					),
+        vector ('text/x-html+tr'			, 'HTML (table)'				),
+        vector ('text/html'			, 'HTML+Microdata (inconvenient)'		),
+        vector ('application/x-nice-microdata'	, 'HTML+Microdata (pretty-printed table)'	),
+        vector ('application/microdata+json'	, 'Microdata/JSON'				),
+        vector ('text/csv'			, 'CSV'						),
+        vector ('text/tab-separated-values'	, 'TSV'						),
+        vector ('application/x-trig'		, 'TriG'					) );
     }
   else
     {
