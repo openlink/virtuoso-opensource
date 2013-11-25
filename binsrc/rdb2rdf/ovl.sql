@@ -146,7 +146,7 @@ next_round:
           goto no_more_rounds;
         }
     }
-  new_extras_count := (sparql select count (*) where { graph `iri(?:extras_g_iri)` { ?s ?p ?o }});
+  new_extras_count := (sparql define input:storage "" select count (*) where { graph `iri(?:extras_g_iri)` { ?s ?p ?o }});
   if (new_extras_count <= old_extras_count)
     goto no_more_rounds;
   old_extras_count := new_extras_count;
