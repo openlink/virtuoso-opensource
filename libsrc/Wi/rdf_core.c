@@ -3472,6 +3472,29 @@ bif_rdf_cache_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return box_num (nic_name_id (cache, pref));
 }
 
+void
+bif_rdf_cache_id_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret)
+{
+  QNCAST (QI, qi, qst);
+  caddr_t mode;
+  int is_txn = lt_has_delta (qi->qi_trx);
+  db_buf_t set_mask = qi->qi_set_mask;
+  int set, n_sets = qi->qi_n_sets, first_set = 0;
+  if (BOX_ELEMENTS (args) < 3 || SSL_CONSTANT != args[0]->ssl_type)
+    {
+      *err_ret = BIF_NOT_VECTORED;
+      return;
+    }
+  mode = bif_string_or_uname_arg (qst, args, 0, "rdf_cache_id");
+  SET_LOOP
+    {
+      boxint new_id = 'i' == mode[0] ? (boxint)bif_iri_id_arg (qst, args, 2, "rdf_cache_id")
+	: bif_long_arg (qst, args, 2, "rdf_cache_id");
+      rdf_cache_id (qi, mode, bif_string_or_uname_arg (qst, args, 1, "rdf_cache_id"), new_id, 1, is_txn);
+    }
+  END_SET_LOOP;
+}
+
 
 caddr_t
 bif_rdf_cache_id_to_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -3489,6 +3512,71 @@ bif_rdf_cache_id_to_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
     return lt_nic_id_name (qi->qi_trx, cache, id);
   else
     return nic_id_name (cache, id);
+}
+
+
+void
+bif_rdf_cache_id_to_name_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret)
+{
+  QNCAST (QI, qi, qst);
+  name_id_cache_t * cache;
+  boxint prev = -1;
+  caddr_t mode;
+  db_buf_t set_mask = qi->qi_set_mask;
+  int set, n_sets = qi->qi_n_sets, first_set = 0;
+  caddr_t box = NULL;
+  if (BOX_ELEMENTS (args) < 2 || SSL_CONSTANT != args[0]->ssl_type || !ret || SSL_VEC != ret->ssl_type)
+    {
+      *err_ret = BIF_NOT_VECTORED;
+      return;
+    }
+  mode = bif_string_or_uname_arg (qst, args, 0, "rdf_cache_id");
+  cache = mode[0] == 'p' ? iri_prefix_cache
+    : mode[0] == 'l' ? rdf_lang_cache
+    : mode[0] == 'i' ? iri_name_cache
+    : mode[0] == 't' ? rdf_type_cache : NULL;
+  if (!cache)
+    sqlr_new_error ("42000", "RDF..", "bad mode for rdf_cache_id_to_name");
+  SET_LOOP
+    {
+      boxint id = bif_long_arg (qst, args, 1, "rdf_cache_id_to_name");
+      if (id == prev)
+	{
+	  qst_set_copy (qst, ret, box);
+	  continue;
+	}
+      dk_free_tree (box);
+      if (cache == iri_name_cache || cache == iri_prefix_cache)
+	box = lt_nic_id_name (qi->qi_trx, cache, id);
+      else
+	box = nic_id_name (cache, id);
+      qst_set_copy (qst, ret, box);
+      prev = id;
+    }
+  END_SET_LOOP;
+  dk_free_tree (box);
+}
+
+
+caddr_t
+bif_iri_from_pref_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t pref = bif_string_arg (qst, args, 0, "ir_from_pref_name");
+  caddr_t name = bif_string_arg (qst, args, 1, "ir_from_pref_name");
+  int pref_len = box_length (pref) - 1;
+  int name_len = box_length (name) - 1;
+  caddr_t res;
+  if (name_len < 4)
+    res = box_dv_short_string ("no_prefix_in_iri");
+  else
+    {
+      res = dk_alloc_box (pref_len + name_len - 3, DV_STRING);
+      memcpy_16 (res, pref, pref_len);
+      memcpy_16 (res + pref_len, name + 4, name_len - 4);
+      res[pref_len + name_len - 4] = 0;
+    }
+  box_flags (res) = 1;
+  return res;
 }
 
 
