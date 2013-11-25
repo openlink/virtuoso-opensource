@@ -6417,6 +6417,8 @@ sqlo_try (sqlo_t * so, op_table_t * ot, dk_set_t dfes, df_elt_t ** in_loop_ret, 
     {
       if (dfe->dfe_is_placed)
 	continue; /* can be that a non-first was placed in try hash of first if we had a selective join made into hash with the join in the build */
+      if (DFE_TEXT_PRED == dfe->dfe_type)
+	continue;
       sqlo_place_table (so, dfe);
       dfe_ref_check (ot->ot_work_dfe);
 
