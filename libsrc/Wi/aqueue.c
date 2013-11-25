@@ -317,7 +317,7 @@ aq_request (async_queue_t * aq, aq_func_t f, caddr_t args)
       return aqr->aqr_req_no;
     }
   aqt = (aq_thread_t *) resource_get (aq_threads);
-  if (!aqt)
+  if (!aqt && !(aq->aq_no_lt_enter && wi_inst.wi_is_checkpoint_pending))
     aqt = aqt_allocate ();
   if (!aqt && !aq->aq_do_self_if_would_wait && 2 != aq->aq_need_own_thread)
     {
