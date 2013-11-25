@@ -3143,7 +3143,6 @@ char * c_query_log_file = "virtuoso.qrl";
 void
 qi_log_stats_1 (query_instance_t * qi, caddr_t err, caddr_t ext_text)
 {
-#ifndef WIN32    
   caddr_t * inst = (caddr_t*)qi;
   du_thread_t * self = THREAD_CURRENT_THREAD;
   query_t * qr = qi->qi_query;
@@ -3151,7 +3150,9 @@ qi_log_stats_1 (query_instance_t * qi, caddr_t err, caddr_t ext_text)
   void * rs_comp = NULL;
   int r_len = 0;
   dk_set_t res = NULL;
+#ifdef HAVE_GETRUSAGE
   struct rusage ru;
+#endif
   client_connection_t * cli = qi->qi_client;
   dk_session_t * ses;
   uint64 rt;
@@ -3207,6 +3208,7 @@ qi_log_stats_1 (query_instance_t * qi, caddr_t err, caddr_t ext_text)
       session_buffered_write_char (DV_DB_NULL, ses);
       session_buffered_write_char (DV_DB_NULL, ses);
     }
+#ifdef HAVE_GETRUSAGE
   getrusage (RUSAGE_SELF, &ru);
   /*7*/
   print_int (ru.ru_majflt, ses);
@@ -3214,6 +3216,11 @@ qi_log_stats_1 (query_instance_t * qi, caddr_t err, caddr_t ext_text)
   print_int (ru.ru_utime.tv_sec * 1000 +  ru.ru_utime.tv_usec / 1000, ses);
   /*9*/
   print_int (ru.ru_stime.tv_sec * 1000 +  ru.ru_stime.tv_usec / 1000, ses);
+#else
+  print_int (0, ses);
+  print_int (0, ses);
+  print_int (0, ses);
+#endif
 
   /*10*/
   if (ext_text)
@@ -3360,7 +3367,6 @@ mutex_enter (&ql_mtx);
   da_clear (&cli->cli_activity);
   da_clear (&cli->cli_compile_activity);
   qi->qi_log_stats = 0;
-#endif
 }
 
 
