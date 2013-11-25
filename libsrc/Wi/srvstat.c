@@ -4099,7 +4099,7 @@ bif_key_estimate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       prev_sp = &specs[inx].sp_next;
     }
   if (!key->key_is_elastic)
-    itc_from (itc, key, QI_NO_SLICE);
+    itc_from_keep_params (itc, key, QI_NO_SLICE);
   res = itc_sample (itc);
   return box_num (res);
 }
