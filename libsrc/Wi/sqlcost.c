@@ -3206,6 +3206,7 @@ sqlo_use_p_stat_2 (df_elt_t * dfe, float *inx_card, float * col_card, index_choi
       *inx_card = p_card;
       return 1;
     }
+  *col_card = 1;
   if (RQ_BOUND_EQ == col2->rqp_op && RQ_UNBOUND == col3->rqp_op)
     {
       df_elt_t * fk_col = col2->rqp_lower->_.bin.right;
@@ -3217,7 +3218,6 @@ sqlo_use_p_stat_2 (df_elt_t * dfe, float *inx_card, float * col_card, index_choi
       *inx_card = p_card / col2_card;
       return 1;
     }
-  *col_card = 1;
   if ((RQ_CONST_EQ == rq.rq_s.rqp_op && RQ_UNBOUND == rq.rq_o.rqp_op)
       || (RQ_CONST_EQ == rq.rq_o.rqp_op && RQ_UNBOUND == rq.rq_s.rqp_op))
     {
