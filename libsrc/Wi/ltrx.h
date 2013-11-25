@@ -42,6 +42,11 @@
 #define LT_FINAL_COMMIT_PENDING	7 /* when the commit came in, but there's a thread inside */
 #endif
 
+/* bit mask for lt_transact operation */
+#define LT_CPT_WAIT 		0
+#define LT_CPT_NO_WAIT 		0x8
+#define LT_CPT_FLAG_MASK 	0x7
+
 #define LT_CL_PREPARED 8 /* in cluster, first phase of commit started or finished.  Cancellable any time, during and after  */
 #define LT_1PC_PENDING 9 /* waiting for cluster 1pc reply */
 #define LT_2PC_PENDING 10 /* waiting for cluster 2pc replies */

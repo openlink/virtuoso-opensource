@@ -966,7 +966,7 @@ lt_rollback_other (lock_trx_t * lt)
   int thr = lt->lt_threads;
   if (!thr)
     lt->lt_close_ack_threads = lt->lt_threads = 1;
-  lt_transact (lt, SQL_ROLLBACK);
+  lt_transact (lt, SQL_ROLLBACK | LT_CPT_NO_WAIT);
   if (!thr)
     lt->lt_threads = 0;
 }

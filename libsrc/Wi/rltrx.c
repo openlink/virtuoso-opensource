@@ -1662,6 +1662,7 @@ int enable_mt_transact = 0;
 void
 lt_transact (lock_trx_t * lt, int op)
 {
+  int cpt_wait;
   it_cursor_t itc_auto;
   it_cursor_t *itc = &itc_auto;
   page_lock_t * pl_arr_auto[100];
@@ -1672,6 +1673,8 @@ lt_transact (lock_trx_t * lt, int op)
   for (binx = 0; binx < 4; binx++)
     lt_start_ts[binx] = wi_inst.wi_bps[binx]->bp_ts;
 #endif
+  cpt_wait = !(op & LT_CPT_NO_WAIT);
+  op = op & LT_CPT_FLAG_MASK;
   if (SQL_COMMIT == op && lt->lt_rc_w_id && lt->lt_rc_w_id != lt->lt_w_id)
     {
       /* non main branches may have some state if the main was gone by the time the state was acquired.  These will not commit */
@@ -1807,7 +1810,8 @@ lt_transact (lock_trx_t * lt, int op)
   LT_CLOSE_ACK_THREADS(lt);
   lt->lt_close_ack_threads = 0;
   lt_resume_waiting_end (lt);
-  lt_wait_checkpoint_lt (lt);
+  if (cpt_wait)
+    lt_wait_checkpoint_lt (lt);
 #ifdef VIRTTP
   if (lt->lt_2pc._2pc_info)
     {
