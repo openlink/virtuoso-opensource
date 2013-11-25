@@ -6955,6 +6955,8 @@ sparp_gp_trav_add_graph_perm_read_filters (sparp_t *sparp, SPART *curr, sparp_tr
       SPART *gp_of_cache;
       if (SPAR_TRIPLE != memb->type)
         continue;
+      if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (memb->_.triple.qm_iri_or_pair))
+        continue; /* New fix for reopened Bug 14737: No permission filters should be placed inside service invocations */
       g_expn = memb->_.triple.tr_graph;
       if (!spar_graph_needs_security_testing (sparp, g_expn, RDF_GRAPH_PERM_READ))
         continue;
