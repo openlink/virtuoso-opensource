@@ -1630,6 +1630,8 @@ spar_filter_is_freetext (sparp_t *sparp, SPART *filt, SPART *base_triple)
     {
       if (2 < BOX_ELEMENTS (filt->_.funcall.argtrees))
         return NULL;
+      if (2 > BOX_ELEMENTS (filt->_.funcall.argtrees))
+        spar_internal_error (sparp, "sparp_" "filter_is_freetext(): not enough arguments for spatial intersect function");
       if (SPAR_VARIABLE != SPART_TYPE (filt->_.funcall.argtrees[0]))
         {
           if ((  (uname_bif_c_spatial_intersects	== (fname))
