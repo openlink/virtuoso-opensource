@@ -235,6 +235,9 @@ sqlo_df_size (int type)
       case DFE_CALL:
 	  len += sizeof (df_elt_head.call);
 	  break;
+      case DFE_FILTER:
+	  len += sizeof (df_elt_head.filter);
+	  break;
       default:
 	  len = sizeof (df_elt_t);
     }
@@ -5712,6 +5715,13 @@ sqlo_dfe_unplace (sqlo_t * so, df_elt_t * dfe)
 	dfe->_.table.ot = ot;
 	break;
       }
+    case DFE_FILTER:
+      DO_SET (df_elt_t *, pred, &dfe->_.filter.preds)
+	{
+	  sqlo_dfe_unplace (so, pred);
+	}
+      END_DO_SET ();
+      break;
     case DFE_ORDER:
     case DFE_GROUP:
       {
@@ -7195,6 +7205,13 @@ sqlo_layout_copy_1 (sqlo_t * so, df_elt_t * dfe, df_elt_t * parent)
       {
 	df_elt_t * copy = dfe_copy (so, dfe);
 	copy->dfe_super = parent;
+	return copy;
+      }
+    case DFE_FILTER:
+      {
+	df_elt_t * copy = dfe_copy (so, dfe);
+	copy->dfe_super = parent;
+	copy->_.filter.body = dfe_pred_body_copy (so, copy->_.filter.body, copy);
 	return copy;
       }
     case DFE_GROUP:

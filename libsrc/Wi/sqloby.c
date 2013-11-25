@@ -687,6 +687,7 @@ sqlo_early_distinct (sqlo_t * so, op_table_t * ot)
   return 1;
 }
 
+int enable_dfe_filter = 1;
 
 void
 sqlo_fun_ref_epilogue (sqlo_t * so, op_table_t * from_ot)
@@ -813,10 +814,22 @@ sqlo_fun_ref_epilogue (sqlo_t * so, op_table_t * from_ot)
   END_DO_SET();
   if (having_preds)
     {
-      group_dfe->_.setp.after_test = sqlo_and_list_body (so,
-	  from_ot->ot_work_dfe ? from_ot->ot_work_dfe->dfe_locus : LOC_LOCAL,
-	  from_ot->ot_group_dfe, having_preds);
-      group_dfe->_.setp.having_preds = having_preds;
+      df_elt_t * filter;
+      df_elt_t ** after_test = sqlo_and_list_body (so,
+						   from_ot->ot_work_dfe ? from_ot->ot_work_dfe->dfe_locus : LOC_LOCAL,
+						   from_ot->ot_group_dfe, having_preds);
+      if (enable_dfe_filter)
+	{
+	  filter = sqlo_new_dfe (so, DFE_FILTER, NULL);
+	  filter->_.filter.body = after_test;
+	  filter->_.filter.preds = having_preds;
+	  sqlo_place_dfe_after  (so, group_dfe->dfe_locus, so->so_gen_pt,  filter);
+	}
+      else
+	{
+	  group_dfe->_.setp.after_test = after_test;
+	  group_dfe->_.setp.having_preds = having_preds;
+	}
     }
   if (group_dfe && all_cols_p)
     group_dfe->_.setp.is_linear = sqlo_is_group_linear (so, from_ot);

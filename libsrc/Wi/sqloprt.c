@@ -456,6 +456,10 @@ sqlo_dfe_print (df_elt_t * dfe, int offset)
 	}
       sqlo_print (("\n"));
       break;
+    case DFE_FILTER:
+      sqlo_print (("after test: "));
+      sqlo_dfe_print ((df_elt_t *) dfe->_.filter.body, offset + OFS_INCR);
+      sqlo_print (("\n"));
     default:
       sqlo_print (("node\n"));
       break;

@@ -4841,6 +4841,16 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query,
 		    sqlg_dfe_code (so, dfe, &pre_code, 0, 0, 0);
 		    break;
 		  }
+	    case DFE_FILTER:
+	      {
+		SQL_NODE_INIT (end_node_t, en, end_node_input, NULL);
+		sqlg_pre_code_dpipe (so, &pre_code, qn);
+		en->src_gen.src_pre_code = code_to_cv (so->so_sc, pre_code);
+		pre_code = NULL;
+		en->src_gen.src_after_test = sqlg_pred_body (so, dfe->_.filter.body);
+		sql_node_append (&head, (data_source_t*) en);
+		break;
+	      }
 	    case DFE_DT:
 	    case DFE_QEXP:
 	    case DFE_TABLE:

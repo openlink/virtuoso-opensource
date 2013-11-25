@@ -169,7 +169,9 @@ typedef struct df_inx_op_s
 #define DFE_FUN_REF 19
 #define DFE_EXISTS 20
 #define DFE_CONTROL_EXP 21	/* coalesce, case-when */
+#define DFE_FILTER 22
 #define DFE_HEAD 100
+
 #define DFE_TEXT_PRED 101
 
 
@@ -315,6 +317,10 @@ struct df_elt_s
       char 	escape;
       bitf_t	no_subq:2;
     } bin;
+    struct {
+      df_elt_t **	body;
+      dk_set_t		preds;
+    } filter;
     struct {
       int	op;
       caddr_t	func_name;

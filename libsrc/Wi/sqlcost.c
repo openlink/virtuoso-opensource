@@ -4227,6 +4227,9 @@ dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float 
     case DFE_CALL:
       sqlo_proc_cost (dfe, u1, a1);
       break;
+    case DFE_FILTER:
+      dfe_pred_body_cost (dfe->_.filter.body,  u1, a1,  overhead_ret);
+	break;
     default:
     deflt:
       *u1 = CV_INSTR_COST;
