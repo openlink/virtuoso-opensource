@@ -618,7 +618,7 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_V (in strg varchar, in base varchar, in 
 create procedure ID_TO_IRI_VEC (in id iri_id)
 {
   vectored;
-  declare name, pref varchar array;
+  declare name, pref varchar;
   declare idn int;
   if (id is null)
     return id;
@@ -640,13 +640,13 @@ create procedure ID_TO_IRI_VEC (in id iri_id)
     }
   pref := rdf_cache_id_to_name ('p', iri_name_id (name), 0);
   if (pref <> 0)
-    return __box_flags_tweak (pref || subseq (name, 4, length (name)), 1);
+    return iri_from_pref_name (pref, name);
   pref := (select rp_name from rdf_prefix where rp_id = iri_name_id (name));
   if (pref is null)
     pref := 'no prefix';
   else
     rdf_cache_id ('p', pref, iri_name_id (name));
-  return __box_flags_tweak (pref || subseq (name, 4, length (name)), 1);
+  return iri_from_pref_name (pref, name);
 }
 ;
 
@@ -655,7 +655,7 @@ create procedure ID_TO_IRI_VEC (in id iri_id)
 create procedure ID_TO_IRI_VEC_NS (in id any array)
 {
   vectored;
-  declare name, pref varchar array;
+  declare name, pref varchar;
   declare idn int;
   if (not isiri_id (id))
     return id;
@@ -677,13 +677,13 @@ create procedure ID_TO_IRI_VEC_NS (in id any array)
     }
   pref := rdf_cache_id_to_name ('p', iri_name_id (name), 0);
   if (pref <> 0)
-    return __box_flags_tweak (pref || subseq (name, 4, length (name)), 1);
+    return iri_from_pref_name (pref, name);
   pref := (select rp_name from rdf_prefix where rp_id = iri_name_id (name));
   if (pref is null)
     pref := 'no prefix';
   else
     rdf_cache_id ('p', pref, iri_name_id (name));
-  return __box_flags_tweak (pref || subseq (name, 4, length (name)), 1);
+  return iri_from_pref_name (pref, name);
 }
 ;
 
