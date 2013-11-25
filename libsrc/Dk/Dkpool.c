@@ -1317,6 +1317,7 @@ caddr_t mp_box_float (mem_pool_t * mp, float num) { return dbg_mp_box_float (__F
 size_t mp_large_in_use;
 size_t mp_max_large_in_use;
 size_t mp_max_cache = 10000000;
+int64 mp_mmap_clocks;
 size_t mp_large_warn_threshold;
 dk_mutex_t mp_large_g_mtx;
 size_t mp_mmap_min = 80000;
@@ -1412,6 +1413,7 @@ mp_mmap_mark (void * __ptr, size_t sz, int flag)
   if (!dk_pool_map_inited)
     {
       dk_mutex_init (&mp_mmap_mark_mtx, MUTEX_TYPE_SHORT);
+      mutex_option (&mp_mmap_mark_mtx, "mmap_mark", NULL, NULL);
       dk_pool_map_inited = 1;
     }
   mutex_enter (&mp_mmap_mark_mtx);
@@ -1573,7 +1575,9 @@ mp_mmap (size_t sz)
     return malloc (sz);
   for (;;)
     {
+      int64 tsc = rdtsc ();
   ptr = mmap (NULL, sz, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+      mp_mmap_clocks += rdtsc () - tsc;
   if (MAP_FAILED == ptr || !ptr)
     {
       log_error ("mmap failed with %d", errno);
@@ -1601,10 +1605,13 @@ mp_munmap (void* ptr, size_t sz)
     free (ptr);
   else
     {
+      int64 tsc;
       int rc;
       /* mark freeing before the free and if free fails remark as allocd.  Else concurrent alloc on different thread can get the just freed thing and it will see the allocd bits set */
       mp_mmap_mark (ptr, sz, 0);
+      tsc = rdtsc ();
       rc = munmap (ptr, sz);
+      mp_mmap_clocks += rdtsc () - tsc;
       if (-1 == rc)
 	{
 	  mp_mmap_mark (ptr, sz, 1);

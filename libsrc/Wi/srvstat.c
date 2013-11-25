@@ -331,6 +331,7 @@ extern int32 enable_qn_cache;
 extern int32 enable_mt_txn;
 extern int32 enable_mt_transact;
 extern int32 enable_lead_subq_colocate;
+extern int64 mp_mmap_clocks;
 extern int64 ql_ctr;
 extern int aq_max_threads;
 extern int qp_even_if_lock;
@@ -1454,6 +1455,7 @@ stat_desc_t stat_descs [] =
     {"tc_dc_extend_values", &tc_dc_extend_values, NULL},
     {"mp_large_in_use", (long *)&mp_large_in_use, NULL},
     {"mp_max_large_in_use", (long *)&mp_max_large_in_use, NULL},
+    {"mp_mmap_clocks", &mp_mmap_clocks, NULL},
     {"tc_read_aside", &tc_read_aside, NULL},
     {"tc_merge_reads", &tc_merge_reads, NULL},
     {"tc_merge_read_pages", &tc_merge_read_pages, NULL},
