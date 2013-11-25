@@ -48,6 +48,24 @@ bif_id2i_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot
     sqlr_resignal (err);
 }
 
+
+
+void
+bif_id2i_vec_ns (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret)
+{
+  caddr_t err = NULL;
+  QNCAST (query_instance_t, qi, qst);
+  query_t * id2i = sch_proc_exact_def (wi_inst.wi_schema, "DB.DBA.ID_TO_IRI_VEC_NS");
+  if (!id2i)
+    sqlr_new_error ("42001", "VEC..", "id to iri vectored is not defined");
+  if (id2i->qr_to_recompile)
+    id2i = qr_recompile (id2i, NULL);
+  err = qr_subq_exec_vec (qi->qi_client, id2i, qi, NULL, 0, args, ret, NULL, NULL);
+  if (IS_BOX_POINTER (err))
+    sqlr_resignal (err);
+}
+
+
 int
 rb_serial_complete_len (caddr_t x)
 {

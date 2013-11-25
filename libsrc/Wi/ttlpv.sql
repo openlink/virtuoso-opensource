@@ -651,6 +651,43 @@ create procedure ID_TO_IRI_VEC (in id iri_id)
 ;
 
 
+
+create procedure ID_TO_IRI_VEC_NS (in id any array)
+{
+  vectored;
+  declare name, pref varchar array;
+  declare idn int;
+  if (not isiri_id (id))
+    return id;
+  idn := iri_id_num (id);
+  if ((id >= #ib0) and (id < min_named_bnode_iri_id()))
+    {
+      if (idn >= 4611686018427387904)
+        return sprintf_iri ('nodeID://b%ld', idn-4611686018427387904);
+      return sprintf_iri ('nodeID://%ld', idn);
+    }
+  name := rdf_cache_id_to_name ('i', idn, 0);
+  if (0 = name)
+    {
+      name := (select ri_name from rdf_iri where ri_id = id);
+      if (name is null)
+        return sprintf_iri ('iri_id_%ld_with_no_name_entry', iri_id_num (id));
+      else
+        rdf_cache_id ('i', name, id);
+    }
+  pref := rdf_cache_id_to_name ('p', iri_name_id (name), 0);
+  if (pref <> 0)
+    return __box_flags_tweak (pref || subseq (name, 4, length (name)), 1);
+  pref := (select rp_name from rdf_prefix where rp_id = iri_name_id (name));
+  if (pref is null)
+    pref := 'no prefix';
+  else
+    rdf_cache_id ('p', pref, iri_name_id (name));
+  return __box_flags_tweak (pref || subseq (name, 4, length (name)), 1);
+}
+;
+
+
 create procedure DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (inout triples any)
 {
   declare tcount, tctr, vcount, vctr integer;

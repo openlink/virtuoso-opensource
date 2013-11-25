@@ -4120,6 +4120,9 @@ rdf_key_comp_init ()
 
 void bif_rld_init ();
 void bif_id2i_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
+void bif_id2i_vec_ns (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
+
+
 extern jso_class_descr_t jso__quad_map;
 
 void jso__rdf_val_range_inst_validation (rdf_val_range_t *rvr, const char *structname, jso_rtti_t *inst_rtti, dk_set_t *warnings_log_ptr)
@@ -4271,7 +4274,9 @@ rdf_core_init (void)
 
   bif_define ("iri_to_rdf_prefix_and_local", bif_iri_to_rdf_prefix_and_local);
   bif_define ("rdf_cache_id", bif_rdf_cache_id);
+  bif_set_vectored (bif_rdf_cache_id, bif_rdf_cache_id_vec);
   bif_define ("rdf_cache_id_to_name", bif_rdf_cache_id_to_name);
+  bif_set_vectored (bif_rdf_cache_id_to_name, bif_rdf_cache_id_to_name_vec);
   bif_define ("iri_id_cache_flush", bif_iri_id_cache_flush);
   bif_define ("iri_id_new", bif_iri_id_new);
   bif_define ("__rdf_obj_ft_rule_add", bif_rdf_obj_ft_rule_add);
@@ -4289,6 +4294,8 @@ rdf_core_init (void)
   bif_set_vectored (bif_id_to_iri, bif_id2i_vec);
   bif_set_uses_index (bif_id_to_iri);
   bif_define ("__id2in", bif_id_to_iri_nosignal);
+  bif_set_vectored (bif_id_to_iri_nosignal, bif_id2i_vec_ns);
+
   bif_define ("rdf_graph_keyword", bif_rdf_graph_keyword);
   bif_define ("iri_split", bif_iri_split);
   bif_define ("uriqa_dynamic_local_set", bif_uriqa_dynamic_local_set);
