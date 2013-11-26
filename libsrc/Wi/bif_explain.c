@@ -1117,6 +1117,18 @@ qn_print_reuse (data_source_t * qn)
     }
 }
 
+const char *
+predicate_name_of_gsop (int gsop)
+{
+  switch (gsop)
+    {
+    case GSOP_CONTAINS:		return "st_contains"		; break;
+    case GSOP_WITHIN:		return "st_within"		; break;
+    case GSOP_INTERSECTS:	return "st_intersects"		; break;
+    case GSOP_MAY_INTERSECT:	return "st_may_intersect"	; break;
+    default:			return "???"			; break;
+    }
+}
 
 
 void
