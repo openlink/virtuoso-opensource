@@ -2823,7 +2823,7 @@ log_replay_entry_async (lr_executor_t* executor, lock_trx_t * lt, dtp_t op, dk_s
 	      if (LOG_KEY_INSERT == op && enable_log_key_count)
 		log_key_count (key_id);
 	      key = sch_id_to_key (wi_inst.wi_schema, unbox (row[0]));
-	      if (key->key_is_geo /* || !strcmp (key->key_name, "RDF_GEO")*/)
+	      if ((NULL != key) && key->key_is_geo /* || !strcmp (key->key_name, "RDF_GEO")*/)
 		{
 		  key->key_is_geo = 1;
 		  log_geo_replay (key, lt, row);
