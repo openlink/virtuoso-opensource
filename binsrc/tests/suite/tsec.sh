@@ -495,6 +495,33 @@ fi
 #  exit 1
 #fi
 
+if test -d ../wb
+then
+    #The following test should be the last before the shutdown, to prevent side effects on tests that may use SPARQL.
+    cat ../wb/SparqlSec.sql | grep -v "set echo on;" > ../wb/SparqlSec_noecho.sql
+    RUN $ISQL $DSN dba dba ../wb/SparqlSec_noecho.sql PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT
+    if test $STATUS -ne 0
+    then
+      LOG "***ABORTED: ../wb/SparqlSec.sql Sparql graph level security tests"
+      exit 1
+    fi
+    #The following test should be the last before the shutdown, to prevent side effects on tests that may use SPARQL.
+    cat ../wb/Sparql11Sec.sql | grep -v "set echo on;" > ../wb/Sparql11Sec_noecho.sql
+    RUN $ISQL $DSN dba dba ../wb/Sparql11Sec_noecho.sql PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT
+    if test $STATUS -ne 0
+    then
+      LOG "***ABORTED: ../wb/Sparql11Sec.sql Sparql 1.1 graph level security tests"
+      exit 1
+    fi
+
+    cat ../wb/Sparql11Sec.sql | grep -v "set echo on;" > ../wb/Sparql11Sec_noecho.sql
+    RUN $ISQL $DSN dba dba ../wb/Sparql11Sec_noecho.sql PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT
+    if test $STATUS -ne 0
+    then
+      LOG "***ABORTED: ../wb/Sparql11Sec.sql Sparql 1.1 graph level security tests"
+      exit 1
+    fi
+fi
 
 SHUTDOWN_SERVER
 CHECK_LOG
