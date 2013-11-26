@@ -16005,7 +16005,7 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
   result ('', null, null, null, null, 'Check for mismatches between graph group IRIs and graph group IRI_IDs...');
   err_bad_count := 0;
   err_recoverable_count := 0;
-  for (select RGG_IID, id_to_iri_nosignal (RGG_IID) as actual_iri, RGG_IRI from DB.DBA.RDF_GRAPH_GROUP where id_to_iri_nosignal (RGG_IID) <> RGG_IRI) do
+  for (select RGG_IID, id_to_iri_nosignal (RGG_IID) as actual_iri, RGG_IRI from DB.DBA.RDF_GRAPH_GROUP where id_to_iri_nosignal (RGG_IID) <> __bft (RGG_IRI, 1)) do
     {
       if (actual_iri is not null)
         {
@@ -16016,7 +16016,7 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
         }
     }
   for (select RGG_IID, id_to_iri_nosignal (RGG_IID) as actual_iri, RGG_IRI from DB.DBA.RDF_GRAPH_GROUP
-    where (id_to_iri_nosignal (RGG_IID) <> RGG_IRI)
+    where (id_to_iri_nosignal (RGG_IID) <> __bft (RGG_IRI, 1))
     and (id_to_iri_nosignal (RGG_IID) = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs' or RGG_IRI = 'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs') ) do
     {
       result ('FATAL', RGG_IID, actual_iri, null, null,
