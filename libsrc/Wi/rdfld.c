@@ -255,8 +255,15 @@ rl_query_init (dbe_table_t * quad_tb)
   int nth_key = 0;
   char txt[200];
   char pars[20];
-  if (rl_query_inited == quad_tb->tb_primary_key->key_id)
+  if (rl_query_inited == quad_tb->tb_primary_key->key_id && !rl_queries[0]->qr_to_recompile)
     return;
+  if (rl_queries[0] && rl_queries[0]->qr_to_recompile)
+    {
+      int inx;
+      for (inx = 0; NULL != rl_queries[inx] && inx < sizeof (rl_queries) / sizeof (void*); inx ++)
+	qr_free (rl_queries[inx]);
+      memset (&rl_queries[0], 0, sizeof (rl_queries)); 
+    }
   pars[0] = 0;
   nth_key = 0;
   DO_SET (dbe_key_t *, key, &quad_tb->tb_keys)
