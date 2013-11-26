@@ -3445,22 +3445,17 @@ bif_iri_to_rdf_prefix_and_local (caddr_t * qst, caddr_t * err_ret, state_slot_t 
 
 
 caddr_t
-bif_rdf_cache_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+rdf_cache_id (query_instance_t * qi, caddr_t mode, caddr_t pref, boxint new_id, int is_set, int is_txn)
 {
-  QNCAST (query_instance_t, qi, qst);
-  caddr_t mode = bif_string_arg (qst, args, 0, "rdf_cache_id");
-  caddr_t pref = bif_string_or_uname_arg (qst, args, 1, "rdf_cache_id");
   name_id_cache_t * cache = mode[0] == 'p' ? iri_prefix_cache
     : mode[0] == 'l' ? rdf_lang_cache
     : mode[0] == 't' ? rdf_type_cache
     : mode[0] == 'i'? iri_name_cache : NULL;
   if (!cache)
     sqlr_new_error ("42000", "RDF..", "bad mode for rdf_cache_id");
-  if (BOX_ELEMENTS (args) > 2)
+  if (is_set)
     {
-      boxint new_id = 'i' == mode[0] ? (boxint)bif_iri_id_arg (qst, args, 2, "rdf_cache_id")
-	: bif_long_arg (qst, args, 2, "rdf_cache_id");
-      if (cache == iri_name_cache || cache == iri_prefix_cache)
+      if (is_txn && (cache == iri_name_cache || cache == iri_prefix_cache))
 	lt_nic_set (qi->qi_trx, cache, pref, new_id);
       else
 	nic_set (cache, pref, new_id);
@@ -3471,6 +3466,26 @@ bif_rdf_cache_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else
     return box_num (nic_name_id (cache, pref));
 }
+
+
+
+caddr_t
+bif_rdf_cache_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  QNCAST (query_instance_t, qi, qst);
+  int is_set = 0;
+  caddr_t mode = bif_string_arg (qst, args, 0, "rdf_cache_id");
+  caddr_t pref = bif_string_or_uname_arg (qst, args, 1, "rdf_cache_id");
+  boxint new_id = 0;
+  if (BOX_ELEMENTS (args) > 2)
+    {
+      new_id = 'i' == mode[0] ? (boxint)bif_iri_id_arg (qst, args, 2, "rdf_cache_id")
+	: bif_long_arg (qst, args, 2, "rdf_cache_id");
+      is_set = 1;
+    }
+  return  rdf_cache_id (qi, mode, pref, new_id, is_set, lt_has_delta (qi->qi_trx));
+}
+
 
 void
 bif_rdf_cache_id_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret)
