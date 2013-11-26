@@ -283,7 +283,7 @@ void soap_mime_tree_ctx (caddr_t ctype, caddr_t body, dk_set_t * set, caddr_t * 
 
 query_instance_t soap_fake_top_qi;
 
-static void
+void
 ses_sprintf (dk_session_t *ses, const char *fmt, ...)
 {
   char buf[PAGE_SZ];
