@@ -496,6 +496,8 @@ bif_ro2sq_vec_1 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_s
   DC_CHECK_LEN (dc, qi->qi_n_sets - 1);
   if (DCT_BOXES & dc->dc_type)
     DC_FILL_TO (dc, int64, qi->qi_n_sets);
+  if (DV_ANY == dc->dc_dtp)
+    DC_FILL_TO (dc, caddr_t, qi->qi_n_sets);
   SET_LOOP
   {
     db_buf_t dv;
@@ -517,6 +519,7 @@ bif_ro2sq_vec_1 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_s
 	rb_sets[rb_fill++] = set;
 	rb_bits[set >> 3] |= 1 << (set & 7);
 	((db_buf_t *) dc->dc_values)[set] = empty_mark;
+	  dc->dc_n_values = set + 1;
       }
     else if ((DV_IRI_ID == dtp || DV_IRI_ID_8 == dtp) && !no_iris)
       {
@@ -527,6 +530,7 @@ bif_ro2sq_vec_1 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_s
 	  }
 	iri_bits[set >> 3] |= 1 << (set & 7);
 	((db_buf_t *) dc->dc_values)[set] = empty_mark;
+	  dc->dc_n_values = set + 1;
       }
     else
       {
