@@ -2431,8 +2431,8 @@ the_grim_lock_reaper (void)
 #endif
   if (DK_ALLOC_ON_RESERVE)
     dk_alloc_set_reserve_mode (DK_ALLOC_RESERVE_PREPARED); /* IvAn/OutOfMem/040513 If idle then it must have memory reserve. */
-  mon_update();
-  mon_check();
+  mon_update (n_threads,  n_vdb_threads, n_lw_threads);
+  mon_check ();
 }
 
 

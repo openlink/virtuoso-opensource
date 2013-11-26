@@ -455,6 +455,8 @@ extern int c_query_log;
 extern char * c_query_log_file;
 extern int64 chash_space_avail;
 extern size_t c_max_large_vec;
+extern int32 mon_enable;
+
 
 /* for use in bif_servers */
 int
@@ -1319,6 +1321,8 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "FTPServerTimeout", &c_ftp_server_timeout) == -1)
     c_ftp_server_timeout = 600;
 #endif
+  if (cfg_getlong (pconfig, section, "EnableMonitor", &mon_enable) == -1)
+    mon_enable = 1;
 
 #ifdef _SSL
   if (cfg_getstring (pconfig, section, "SSLPort", &c_https_port) == -1)
