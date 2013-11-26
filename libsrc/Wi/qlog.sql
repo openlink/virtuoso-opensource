@@ -148,8 +148,8 @@ from sys_query_log where qrl_start_dt = sdate order by ql_start_dt;
     }
   result (plan);
  strses := string_output ();
-  result (sprintf ('\n %d msec %d%% cpu, %9.6g rnd %9.6g seq %9.6g same seg %9.6g same pg ',
-		   rt_msec, thread_clocks * 100.0 / e_clocks, rnd_rows, seq_rows, same_seg, same_page));
+  result (sprintf ('\n %d msec %d%% cpu, %9.6g rnd %9.6g seq %9.6g%% same seg %9.6g%% same pg ',
+		   rt_msec, thread_clocks * 100.0 / e_clocks, rnd_rows, seq_rows, (100.0 * same_seg) / (rnd_rows + 1), (100.0 * same_page) / (1 + rnd_rows)));
   if (disk_reads)
     result (sprintf ('%d disk reads, %d read ahead, %9.6g%% wait', disk_reads, spec_disk_reads, 100.0 * disk_wait_clocks / e_clocks));
   if (messages)
