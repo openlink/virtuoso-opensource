@@ -15758,7 +15758,9 @@ create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri any, in extra_grap
           ctr := ctr - 1;
           extra_graphs [ctr] := iri_to_id (extra_graphs[ctr]);
         }
-      return vector_concat (full_list, extra_graphs);
+      full_list := vector_concat (full_list, extra_graphs);
+      gvector_digit_sort (full_list, 1, 0, 1);
+      return full_list;
     }
   vectorbld_init (filtered_list);
   foreach (IRI_ID member_iid in full_list) do
@@ -15790,6 +15792,7 @@ create function DB.DBA.RDF_GRAPH_GROUP_LIST_GET (in group_iri any, in extra_grap
         vectorbld_acc (filtered_list, g_iid);
     }
   vectorbld_final (filtered_list);
+  gvector_digit_sort (filtered_list, 1, 0, 1);
   return filtered_list;
 }
 ;
@@ -16785,14 +16788,14 @@ create procedure DB.DBA.RDF_QUAD_LOAD_CACHE ()
       count (dict_put (__rdf_graph_iri2id_dict(), __uname (id_to_iri (RGU_GRAPH_IID)), RGU_GRAPH_IID)) +
       count (dict_put (__rdf_graph_id2iri_dict(), RGU_GRAPH_IID, __uname (id_to_iri (RGU_GRAPH_IID))))
       from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID <> #i8192 and RGU_GRAPH_IID <> #i0 );
-  for (select
-      g.RGG_IID as group_iid,
-      (select DB.DBA.VECTOR_AGG (RGGM_MEMBER_IID) from DB.DBA.RDF_GRAPH_GROUP_MEMBER as gm
-         where gm.RGGM_GROUP_IID = g.RGG_IID order by gm.RGGM_MEMBER_IID ) as membs
-      from DB.DBA.RDF_GRAPH_GROUP as g ) do
+  for (select RGGM_GROUP_IID as group_iid, DB.DBA.VECTOR_AGG (RGGM_MEMBER_IID) as membs
+         from DB.DBA.RDF_GRAPH_GROUP_MEMBER join DB.DBA.RDF_GRAPH_GROUP on (RGGM_GROUP_IID = RGG_IID) ) do
     {
       if (length (membs) < 1000)
-        dict_put (__rdf_graph_group_dict(), group_iid, membs);
+        {
+          gvector_digit_sort (membs, 1, 0, 1);
+          dict_put (__rdf_graph_group_dict(), group_iid, membs);
+        }
       else
         {
           declare new_membs any;
