@@ -86,11 +86,11 @@ extern int scn3_lexdepth;	/*!< Number of opened parenthesis */
 
 extern dk_set_t scn3_namespaces; /*!< List of namespace prefixes and URIs */
 
-#define MAXLEXDEPTH 80	/*!< Maximum allowed number of opened parenthesis */
-extern scn3_paren_t scn3_parens[MAXLEXDEPTH];
+#define SCN3_MAX_LEX_DEPTH 180	/*!< Maximum allowed number of any opened parenthesis in SQL text. SPARQL lexer has its own limit of the sort, \c SPARP_MAX_LEX_DEPTH */
+extern scn3_paren_t scn3_parens[SCN3_MAX_LEX_DEPTH];
 
-
-#define MAX_PRAGMALINE_DEPTH 4	/*!< Maximum nesting of line locations (i.e. 1 + (max no of nested '#pragma line push')) */
+#define SCN3_MAX_BRACE_DEPTH 80		/*!< Maximum allowed number of any opened parenthesis outside pair of curly braces in SQL text. SPARQL lexer has its own limit of the sort, \c SPARP_MAX_BRACE_DEPTH */
+#define SCN3_MAX_PRAGMALINE_DEPTH 4	/*!< Maximum nesting of line locations (i.e. 1 + (max no of nested '#pragma line push')) */
 
 /*! Logical line location as it is set by #pragma line statements.
 See the body of scn3_sprint_curr_line_loc() to find out how to use such data
@@ -110,7 +110,7 @@ opened in one file and pair '}' is closed in some other file. */
 } scn3_line_loc_t;
 
 /*! Stack of logical locations. */
-extern scn3_line_loc_t scn3_line_locs[MAX_PRAGMALINE_DEPTH];
+extern scn3_line_loc_t scn3_line_locs[SCN3_MAX_PRAGMALINE_DEPTH];
 /*! This is the number of not-yet-popped '#pragma line push' directives. */
 extern int scn3_pragmaline_depth;
 

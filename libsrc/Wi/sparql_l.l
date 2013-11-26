@@ -72,7 +72,7 @@ static const char *sparyyerror_msg_tooshallow = "Too many closing parentheses";
 #define BEGIN_INNER \
   do \
     { \
-      if (SPARP_MAX_LEXDEPTH <= yyextra->sparp_lexdepth) \
+      if (SPARP_MAX_LEX_DEPTH <= yyextra->sparp_lexdepth) \
 	sparyyerror (sparyyerror_msg_toodeep); \
       else \
 	{ \
@@ -105,6 +105,8 @@ static const char *sparyyerror_msg_tooshallow = "Too many closing parentheses";
 /* macros to save the text of opening parenthesis and return a token */
 #define TOKPAR_FAKE_OPEN(closing_char, state_i) \
     /*SV;*/ \
+    if (((closing_char) == '}') && (yyextra->sparp_lexdepth >= SPARP_MAX_BRACE_DEPTH)) \
+      sparyyerror ("Curly brace is nested too deep"); \
     SET_INNER_BEGIN (state_i); \
     BEGIN_INNER; \
     yyextra->sparp_lexpars[yyextra->sparp_lexdepth-1]=(closing_char)

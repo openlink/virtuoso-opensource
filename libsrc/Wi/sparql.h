@@ -151,8 +151,9 @@ extern void sparp_debug_weird (struct sparp_s *sparp, const char *file, int line
 #define SPAR_SML_ATTACH		(ptrlong)1203
 #define SPAR_SML_DETACH		(ptrlong)1204
 
-#define SPARP_MAX_LEXDEPTH 50
-#define SPARP_MAX_SYNTDEPTH SPARP_MAX_LEXDEPTH+10
+#define SPARP_MAX_LEX_DEPTH 150				/*!< Maximum allowed number of any opened parenthesis in SPARQL text. SQL lexer has its own limit of the sort, \c SCN3_MAX_LEX_DEPTH . Note that SCN3_MAX_LEX_DEPTH will stay in effect while SQL lexer is looking for end of SPARQL statement, deeper nesting of SPARQL subquery may mean smaller "remaining" limit on SPARQL. */
+#define SPARP_MAX_BRACE_DEPTH 80			/*!< Maximum allowed number of any opened parenthesis outside pair of curly braces in SQL text. SQL lexer has its own limit of the sort, \c SCN3_MAX_BRACE_DEPTH */
+#define SPARP_MAX_SYNTDEPTH SPARP_MAX_LEX_DEPTH+10
 
 #define SPARP_CALLARG	1 /*!< The parser reads the macro call */
 #define SPARP_DEFARG	2 /*!< The parser reads the arglist of a defmacro and remembers variable names as is in order to know what should be substituted in body */
@@ -391,8 +392,8 @@ typedef struct sparp_s {
   int sparp_lexlineno;			/*!< Source line number, starting from 1 */
   int sparp_lexdepth;			/*!< Lexical depth, it's equal to the current position in \c sparp_lexpars and \c sparp_lexstates */
   int sparp_rset_lexdepth_plus_1;	/*!< Lexical depth of current result set, increased by 1 (so when it's zero it means not in rset) */
-  int sparp_lexpars[SPARP_MAX_LEXDEPTH+2];	/*!< Stack of not-yet-closed parenthesis */
-  int sparp_lexstates[SPARP_MAX_LEXDEPTH+2];	/*!< Stack of lexical states */
+  int sparp_lexpars[SPARP_MAX_LEX_DEPTH+2];	/*!< Stack of not-yet-closed parenthesis */
+  int sparp_lexstates[SPARP_MAX_LEX_DEPTH+2];	/*!< Stack of lexical states */
   int sparp_string_literal_lexval;	/*!< Lexical value of string literal that is now in process. */
   dk_set_t sparp_output_lexem_bufs;	/*!< Reversed list of lexem buffers that are 100% filled by lexems */
   spar_lexem_t * sparp_curr_lexem_buf;	/*!< Lexem buffer that is filled now */
