@@ -802,6 +802,7 @@ box_reuse (caddr_t box, ccaddr_t data, size_t len, dtp_t dtp)
   ((dtp_t *) box)[-4] = (dtp_t) (len & 0xff);
   ((dtp_t *) box)[-3] = (dtp_t) (len >> 8);
   ((dtp_t *) box)[-2] = (dtp_t) (len >> 16);
+  if (DV_STRING == dtp) len --; /* the length of string box is always +1 but actual data is one char less */
   if (box != data)
   memcpy (box, data, len);
 }
