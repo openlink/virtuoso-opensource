@@ -15941,11 +15941,11 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
       if (id_to_iri_nosignal (RGG_IID) is null)
         result ('ERROR', RGG_IID, null, null, null,
           sprintf ('The IRI_ID %s of a graph group does not correspond to any IRI',
-            RGG_IID ) );
+            cast (RGG_IID as varchar) ) );
       else
         result ('ERROR', RGG_IID, id_to_iri_nosignal (RGG_IID), null, null,
           sprintf ('The IRI <%.300s> of graph group IRI_ID %s is not cached',
-            id_to_iri_nosignal (RGG_IID), RGG_IID ) );
+            id_to_iri_nosignal (RGG_IID), cast (RGG_IID as varchar) ) );
       err_recoverable_count := err_recoverable_count + 1;
     }
   if (err_recoverable_count and recovery)
@@ -15982,11 +15982,11 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
       if (id_to_iri_nosignal (RGGM_MEMBER_IID) is null)
         result ('ERROR', RGGM_MEMBER_IID, null, null, null,
           sprintf ('The IRI_ID %s of a member of a graph group <%.300s> does not correspond to any IRI',
-            RGGM_MEMBER_IID, id_to_iri_nosignal (SAMPLE_GROUP_IID) ) );
+            cast (RGGM_MEMBER_IID as varchar), id_to_iri_nosignal (SAMPLE_GROUP_IID) ) );
       else
         result ('ERROR', RGGM_MEMBER_IID, id_to_iri_nosignal (RGGM_MEMBER_IID), null, null,
           sprintf ('The IRI <%.300s> of IRI_ID %s of the member of a graph group <%.300s> is not cached',
-            id_to_iri_nosignal (RGGM_MEMBER_IID), RGGM_MEMBER_IID, id_to_iri_nosignal (SAMPLE_GROUP_IID) ) );
+            id_to_iri_nosignal (RGGM_MEMBER_IID), cast (RGGM_MEMBER_IID as varchar), id_to_iri_nosignal (SAMPLE_GROUP_IID) ) );
       err_recoverable_count := err_recoverable_count + 1;
     }
   if (err_recoverable_count and recovery)
@@ -16011,7 +16011,7 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
         {
           result ('ERROR', RGG_IID, actual_iri, null, null,
             sprintf ('The IRI_ID %s of a graph group is the IRI_ID of <%.300s> IRI whereas the group declaration states it is supposed to be <%.300s>',
-              RGG_IID, actual_iri, RGG_IRI ) );
+              cast (RGG_IID as varchar), actual_iri, RGG_IRI ) );
           err_recoverable_count := err_recoverable_count + 1;
         }
     }
@@ -16021,7 +16021,7 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
     {
       result ('FATAL', RGG_IID, actual_iri, null, null,
         sprintf ('The IRI_ID and IRI of a virtrdf:PrivateGraphs graph group does not match to each other, it means that some application has made a security hole. You may wish to disable any access to the database while the error is not fixed.',
-          RGG_IID, actual_iri, RGG_IRI ) );
+          cast (RGG_IID as varchar), actual_iri, RGG_IRI ) );
       return;
     }
   -- dbg_obj_princ ('Check for memberships in nonexisting graph groups...');
