@@ -914,10 +914,10 @@ node_stat (data_source_t * qn)
     {
       QNCAST (query_frag_t, qf, qn);
       int64 rt = ((QI*)ctx_inst)->qi_client->cli_run_clocks;
-      stmt_printf (("wait time %9.2g%% of exec real time, fanout %9.2g\n",  (float)QST_INT (ctx_inst, qf->qf_wait_clocks) * 100 / (float)rt, srs->srs_n_in ? srs->srs_n_out / (float)srs->srs_n_in : 0.0));
+      stmt_printf (("wait time %9.2g%% of exec real time, fanout %9.6g\n",  (float)QST_INT (ctx_inst, qf->qf_wait_clocks) * 100 / (float)rt, srs->srs_n_in ? srs->srs_n_out / (float)srs->srs_n_in : 0.0));
     }
   else
-    stmt_printf (("time %9.2g%% fanout %9.2g input %9.2g rows\n",  (float)srs->srs_cum_time * 100 / (float)total, srs->srs_n_in ? srs->srs_n_out / (float)srs->srs_n_in : 0.0, (float)srs->srs_n_in));
+    stmt_printf (("time %9.2g%% fanout %9.6g input %9.6g rows\n",  (float)srs->srs_cum_time * 100 / (float)total, srs->srs_n_in ? srs->srs_n_out / (float)srs->srs_n_in : 0.0, (float)srs->srs_n_in));
   if (IS_TS (qn) || IS_QN (qn, hash_source_input))
     {
   	  float guess = IS_TS (qn) ? ((table_source_t *)qn)->ts_cardinality : ((hash_source_t *)qn)->hs_cardinality;
