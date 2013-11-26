@@ -4771,7 +4771,7 @@ bif_sparql_iri_split_rdfa_qname (caddr_t * qst, caddr_t * err_ret, state_slot_t 
   int flags = bif_long_arg (qst, args, 2, "sparql_iri_split_rdfa_qname");
   const char *tail;
   int iri_strlen;
-  caddr_t ns_iri, prefix, *prefix_ptr, res, to_free = NULL;
+  caddr_t ns_iri, prefix, *prefix_ptr, res = NULL, to_free = NULL;
   switch (DV_TYPE_OF (raw_iri))
     {
       case DV_IRI_ID:
