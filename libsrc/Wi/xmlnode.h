@@ -84,11 +84,16 @@ typedef struct text_node_s
 #define GSOP_CONTAINS	0x01
 #define GSOP_WITHIN	0x02
 #define GSOP_INTERSECTS	0x03
+#define GSOP_MAY_INTERSECT	0x04
 
-#define GSOP_CORE_MASK	0x03
+#define GSOP_CORE_MASK		0x0F
 
-#define GSOP_NEGATION	0x08
-#define GSOP_PRECISION	0x10
+#define GSOP_NEGATION		0x10
+#define GSOP_PRECISION		0x20
+/* If more bits are occupied, change the size of txs_geo and itc_geo_op fields */
+
+
+extern const char *predicate_name_of_gsop (int gsop);
 
 
 typedef struct xpath_node_s
