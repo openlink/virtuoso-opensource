@@ -534,6 +534,28 @@ lt_main_lt (lock_trx_t * lt)
 
 
 int
+lt_has_delta (lock_trx_t * lt)
+{
+  int flag;
+  lock_trx_t * main_lt;
+  if (!lt->lt_rc_w_id || lt->lt_rc_w_id == lt->lt_w_id)
+    return LT_HAS_DELTA (lt);
+  IN_TXN;
+  main_lt = lt_main_lt (lt);
+  if (!main_lt)
+    {
+      LEAVE_TXN;
+      lt->lt_status = LT_BLOWN_OFF;
+      lt->lt_error = LTE_CANCEL;
+      sqlr_new_error ("4000X", "MTXNA",  "Main transaction branch has aborted.");
+    }
+  flag = LT_HAS_DELTA (main_lt);
+  LEAVE_TXN;
+  return flag;
+}
+
+
+int
 lt_set_checkpoint (lock_trx_t * lt)
 {
   return 1;

@@ -903,7 +903,7 @@ extern resource_t * rb_page_rc;
 
 lock_trx_t * itc_main_lt (it_cursor_t * itc, buffer_desc_t * buf);
 lock_trx_t * lt_main_lt (lock_trx_t * lt);
-
+int lt_has_delta (lock_trx_t * lt);
 int lt_set_is_branch (dk_set_t list, lock_trx_t * lt, lock_trx_t ** main_lt_ret);
 int lt_log_merge (lock_trx_t * lt, int in_txn);
 #define NO_LOCK_LT ((lock_trx_t*)-1L)
