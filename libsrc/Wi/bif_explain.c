@@ -233,11 +233,20 @@ dv_iri_short_name (caddr_t x)
     return NULL;
   if (iri_split (name, &pref, &local))
     {
+      int inx;
+      caddr_t r;
       dk_free_box (name);
       dk_free_box (pref);
-      r = box_dv_short_string (local + 4);
-      dk_free_box (local);
-      return r;
+      for (inx = box_length (local) - 1; inx > 3; inx--)
+	if (':'== local[inx] || '/' == local[inx] || '#'== local[inx])
+	  break;
+      if (inx > 4)
+	{
+	  r = box_dv_short_nchars (local + 4, inx - 4);
+	  dk_free_box (local);
+	  return r;
+	}
+      return local;
     }
   dk_free_box (name);
   return NULL;
