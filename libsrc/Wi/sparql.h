@@ -431,9 +431,6 @@ typedef struct sparp_s {
 
 #define sparp_env() sparp_arg->sparp_env
 
-#define YY_DECL int sparyylex (void *yylval, sparp_t *sparp)
-extern YY_DECL;
-
 /*extern void sparqr_free (spar_query_t *sparqr);*/
 
 extern void spar_error (sparp_t *sparp, const char *format, ...);

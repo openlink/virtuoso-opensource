@@ -25,6 +25,7 @@
 %option case-sensitive
 %option never-interactive
 %option noyywrap
+%option nounput
 %option reentrant
 %option bison-bridge
 %option stack
