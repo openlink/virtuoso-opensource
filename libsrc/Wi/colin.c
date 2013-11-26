@@ -55,7 +55,14 @@ cpo_iri_int64 (col_pos_t * cpo, caddr_t val, dtp_t dtp_wanted, char *dtp_match)
     {
       db_buf_t dv = (db_buf_t) val;
       if (dtp_wanted == dtp_canonical[dv[0]])
-	return INT64_REF_NA (dv + 1);
+	{
+	  dtp_t a_dtp = dv[0];
+	  if (DV_LONG_INT == a_dtp)
+	    return LONG_REF_NA (dv + 1);
+	  if (DV_IRI_ID == a_dtp)
+	    return (int64)(uint32)LONG_REF_NA (dv + 1);
+	  return INT64_REF_NA (dv + 1);
+	}
       *dtp_match = 0;
       return -1;
     }
