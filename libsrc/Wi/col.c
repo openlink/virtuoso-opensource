@@ -3788,6 +3788,8 @@ cs_dict (compress_state_t * cs, int from, int to)
     }
 }
 
+int enable_cs_reset_cnt_check = 1;
+
 void
 cs_reset_check (compress_state_t * cs)
 {
@@ -3795,16 +3797,19 @@ cs_reset_check (compress_state_t * cs)
   int n_values = 0;
   cs_buf_mark_check (cs->cs_asc_output);
   cs_buf_mark_check (cs->cs_dict_output);
-  while (ready)
+  if (enable_cs_reset_cnt_check )
     {
-      db_buf_t ce = ready->data;
-      if (ready == cs->cs_prev_ready_ces)
-	break;
-      n_values += ce_string_n_values (ce, box_length (ce) - 1);
+      while (ready)
+	{
+	  db_buf_t ce = ready->data;
+	  if (ready == cs->cs_prev_ready_ces)
+	    break;
+	  n_values += ce_string_n_values (ce, box_length (ce) - 1);
       ready = ready->next;
-    }
+	}
   if (n_values != cs->cs_n_values)
     GPF_T1 ("pre and post compress value counts do not match");
+    }
   cs->cs_prev_ready_ces = cs->cs_ready_ces;
 }
 
