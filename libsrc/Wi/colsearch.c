@@ -767,17 +767,16 @@ itc_fetch_col_vec (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, i
   dtp_t dtp;
   index_tree_t * tree = itc->itc_tree;
   it_map_t * maps = tree->it_maps;
-  cr->cr_n_pages = 0;
-  if (n_pages > sizeof (dps) / sizeof (dp_addr_t)) 
-    GPF_T1 ("over 1000 pages in col in segment");
   row = BUF_ROW (buf, itc->itc_map_pos);
-  ROW_STR_COL (buf->bd_tree->it_key->key_versions[IE_KEY_VERSION (row)], buf, row, cl, xx, vl1, xx2, vl2, offset); \
+  ROW_STR_COL (buf->bd_tree->it_key->key_versions[IE_KEY_VERSION (row)], buf, row, cl, xx, vl1, xx2, vl2, offset);
   if (vl2) GPF_T1 ("col ref string should nott be compressed");
   dtp = *xx;
   if (DV_STRING == dtp)
     GPF_T1 ("ces inlined on leaf page are not supported");
   cr->cr_n_access++;
   cr->cr_n_pages = n_pages = (vl1 - CPP_DP) / sizeof (dp_addr_t);
+  if (n_pages > sizeof (dps) / sizeof (dp_addr_t)) 
+    GPF_T1 ("over 1000 pages in col in segment");
   if (cr->cr_pages_sz < n_pages)
     {
       col_page_t * old_pages = cr->cr_pages;
