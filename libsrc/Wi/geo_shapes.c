@@ -75,6 +75,7 @@
       gcb_sz = 0; \
     } \
   full_sz = head_sz + gcb_sz + len_ * (cvecs * sizeof (geoc) + mvecs * sizeof (geo_measure_t)); \
+  if (ses && (full_sz & ~0xffffff)) box_read_error (ses, DV_GEO); \
   res = (geo_t *)dk_alloc_box (full_sz, DV_GEO); \
   res->_.pline.len = len_; \
   GEO_SET_CVECT(_.pline.Xs); \
@@ -108,9 +109,9 @@
   } while (0);
 
 geo_t *
-geo_alloc (geo_flags_t geo_flags_, int len_, int srcode_)
+geo_alloc_safe (geo_flags_t geo_flags_, int len_, int srcode_, dk_session_t * ses)
 {
-  geo_t *res;
+  geo_t *res = NULL;
   int head_sz, gcb_bcount, gcb_sz, full_sz;
   switch (GEO_TYPE (geo_flags_))
     {
@@ -157,11 +158,22 @@ geo_alloc (geo_flags_t geo_flags_, int len_, int srcode_)
     case GEO_CLOSEDCURVE:		GEO_ALLOC_PARTS(_.parts.items		,  0x10, 0x04, 0); break;
     case GEO_CURVEPOLYGON:		GEO_ALLOC_PARTS(_.parts.items		,  0x10, 0x04, 1); break;
     case GEO_MULTI_CURVE:		GEO_ALLOC_PARTS(_.parts.items		,  0x10, 0x04, 0); break;
-    default: GPF_T;
+    default:
+					{
+					  if (!ses)
+					    GPF_T;
+					  box_read_error (ses, DV_GEO);
+					}
     }
   res->geo_flags = geo_flags_;
   res->geo_srcode = srcode_;
   return res;
+}
+
+geo_t *
+geo_alloc (geo_flags_t geo_flags_, int len_, int srcode_)
+{
+  return geo_alloc_safe (geo_flags_, len_, srcode_, NULL);
 }
 
 #undef GEO_SET_CVECT
@@ -2450,12 +2462,12 @@ geo_deserialize_one (int srcode /* -1 for topmost */ , dk_session_t * ses)
     {
 /* Old types */
     case GEO_POINT:
-      g = geo_alloc (flags, 0, srcode);
+      g = geo_alloc_safe (flags, 0, srcode, ses);
       g->Xkey = read_v_double (ses);
       g->Ykey = read_v_double (ses);
       return g;
     case GEO_BOX:
-      g = geo_alloc (flags, 0, srcode);
+      g = geo_alloc_safe (flags, 0, srcode, ses);
       g->XYbox.Xmin = read_v_double (ses);
       g->XYbox.Ymin = read_v_double (ses);
       g->XYbox.Xmax = read_v_double (ses);
@@ -2464,7 +2476,7 @@ geo_deserialize_one (int srcode /* -1 for topmost */ , dk_session_t * ses)
     case GEO_LINESTRING:
       {
 	int inx, pointcount = (read_int (ses) - 1) / 2;
-	g = geo_alloc (flags, pointcount, srcode);
+	g = geo_alloc_safe (flags, pointcount, srcode, ses);
 	for (inx = 0; inx < pointcount; inx++)
 	  {
 	    g->_.pline.Xs[inx] = read_v_double (ses);
@@ -2485,7 +2497,7 @@ geo_deserialize_one (int srcode /* -1 for topmost */ , dk_session_t * ses)
       if (is_topmost)
 	serlen = read_int (ses);
       item_count = read_int (ses);
-      g = geo_alloc (flags, item_count, srcode);
+      g = geo_alloc_safe (flags, item_count, srcode, ses);
       g->_.parts.serialization_length = serlen;
       if (flags & GEO_IS_CHAINBOXED)
 	{
@@ -2508,10 +2520,10 @@ geo_deserialize_one (int srcode /* -1 for topmost */ , dk_session_t * ses)
   switch (GEO_TYPE_CORE (flags))
     {
     case GEO_NULL_SHAPE:
-      g = geo_alloc (flags, 0, srcode);
+        g = geo_alloc_safe (flags, 0, srcode, ses);
       return g;
     case GEO_POINT:
-      g = geo_alloc (flags, 0, srcode);
+        g = geo_alloc_safe (flags, 0, srcode, ses);
       g->XYbox.Xmin = g->XYbox.Xmax = read_v_double (ses);
       g->XYbox.Ymin = g->XYbox.Ymax = read_v_double (ses);
       print_v_double (g->XYbox.Ymin, ses);
@@ -2521,7 +2533,7 @@ geo_deserialize_one (int srcode /* -1 for topmost */ , dk_session_t * ses)
 	g->_.point.point_ZMbox.Mmin = g->_.point.point_ZMbox.Mmax = read_v_double (ses);
       return g;
     case GEO_BOX:
-      g = geo_alloc (flags, 0, srcode);
+        g = geo_alloc_safe (flags, 0, srcode, ses);
       read_bbox (g, g->_.point.point_ZMbox, ses);
       return g;
     case GEO_ARCSTRING:
@@ -2530,7 +2542,7 @@ geo_deserialize_one (int srcode /* -1 for topmost */ , dk_session_t * ses)
       {
 	int bbox_preserved = ((GEO_ARCSTRING == GEO_TYPE_CORE (flags)) || (flags & GEO_IS_CHAINBOXED));
 	int pointcount = read_int (ses);
-	g = geo_alloc (flags, pointcount, srcode);
+        g = geo_alloc_safe (flags, pointcount, srcode, ses);
 	if (flags & GEO_IS_CHAINBOXED)
 	  {
 	    geo_chainbox_t *gcb;
