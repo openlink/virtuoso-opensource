@@ -4477,6 +4477,7 @@ void
 sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
 {
   int ttype = SPART_TYPE (tree);
+  int has_tabid = 0;
   int has_ft = 0;
   int has_geo = 0;
   int has_inference = 0;
@@ -4498,6 +4499,10 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
       SPART *val = options [idx+1];
       switch (key)
         {
+        case TABID_L:
+          if (has_tabid)
+            spar_error (sparp, "More than one TABID is used for one triple pattern");
+          has_tabid = 1; continue;
         case INFERENCE_L: has_inference = 1; continue;
         case OFFBAND_L: case SCORE_L: case SCORE_LIMIT_L: has_ft = 1; continue;
         case GEO_L: case PRECISION_L: has_geo = 1; continue;

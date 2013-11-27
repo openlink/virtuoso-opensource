@@ -173,6 +173,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "SUBJECT",		SUBJECT_L		, 0
 "SUBSTR",		SPARQL_BIF		, SPAR_BIF_SUBSTR
 "SUM",			SUM_L			, 0
+"TABID",		TABID_L			, 0
 "TABLE_OPTION",		TABLE_OPTION_L		, 0
 "TEXT",			TEXT_L			, 0
 "TIMEZONE",		SPARQL_BIF		, SPAR_BIF_TIMEZONE

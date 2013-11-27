@@ -39,7 +39,7 @@ Whitespaces in all other places, including two whitespaces after "::=" in BNF co
 %pure_parser
 %parse-param {sparp_t * sparp_arg}
 %lex-param {sparp_t * sparp_arg}
-%expect 12
+%expect 14
 
 %{
 #include "libutil.h"
@@ -249,6 +249,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token SUBCLASS_L	/*:: PUNCT_SPAR_LAST("SUBCLASS") ::*/
 %token SUBJECT_L	/*:: PUNCT_SPAR_LAST("SUBJECT") ::*/
 %token SUM_L		/*:: PUNCT_SPAR_LAST("SUM") ::*/
+%token TABID_L		/*:: PUNCT_SPAR_LAST("TABID") ::*/
 %token TABLE_OPTION_L	/*:: PUNCT_SPAR_LAST("TABLE_OPTION") ::*/
 %token TEXT_L	/*:: PUNCT_SPAR_LAST("TEXT") ::*/
 %token T_CYCLES_ONLY_L	/*:: PUNCT_SPAR_LAST("T_CYCLES_ONLY") ::*/
@@ -1577,11 +1578,14 @@ spar_ograph_node	/* [Virt]	ObjGraphNode	 ::=  GraphNode TripleOptions?	*/
 
 spar_triple_optionlist_opt	/* [Virt]	TripleOptions	 ::=  'OPTION' '(' TripleOption ( ',' TripleOption )? ')'	*/
 	: /* empty */	{ $$ = NULL; }
+	| TABID_L SPARQL_PLAIN_ID { $$ = (SPART **)t_list (2, TABID_L, $2); }
 	| OPTION_L _LPAR {
 		if (CONSTRUCT_L == SPARP_ENV_CONTEXT_GP_SUBTYPE(sparp_arg))
 		  sparyyerror (sparp_arg, "Triple options are not allowed in constructor template");
 		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_OPTION, "OPTION () triple matching configuration"); }
-	    spar_triple_option_commalist _RPAR { $$ = (SPART **)t_revlist_to_array ($4); }
+	    spar_triple_option_commalist _RPAR {
+		SPART **opts = (SPART **)t_revlist_to_array ($4);
+		$$ = opts; }
 	;
 
 spar_triple_option_commalist
@@ -1593,6 +1597,9 @@ spar_triple_option	/* [Virt]	TripleOption	 ::=  'TABLE_OPTION' SPARQL_STRING	*/
 	: TABLE_OPTION_L SPARQL_STRING	{
 		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_VIRTSPECIFIC, "TABLE OPTION hint for SQL optimizer");
 		$$ = (SPART **)t_list (2, (ptrlong)TABLE_OPTION_L, $2); }
+	| TABID_L SPARQL_PLAIN_ID	{
+		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_VIRTSPECIFIC, "TABID OPTION hint for using in SQL code");
+		$$ = (SPART **)t_list (2, (ptrlong)TABID_L, $2); }
 	| spar_triple_inference_option	{
 		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_VIRTSPECIFIC, "inference option");
 		$$ = $1; }

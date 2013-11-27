@@ -1476,7 +1476,7 @@ SPART *
 spar_gp_finalize (sparp_t *sparp, SPART **options)
 {
   sparp_env_t *env = sparp->sparp_env;
-  caddr_t orig_selid;
+  caddr_t orig_selid = NULL;
   dk_set_t membs;
   int all_ctr, opt_ctr;
   dk_set_t movable_filts, local_filts;
@@ -1490,7 +1490,16 @@ spar_gp_finalize (sparp_t *sparp, SPART **options)
         orig_selid = spar_mkid (sparp, "@s");
     }
   else
-    orig_selid = spar_mkid (sparp, "s");
+    {
+      if (NULL != options)
+        {
+          caddr_t tabid_l = (caddr_t)sparp_get_option (sparp, options, TABID_L);
+          if (NULL != tabid_l)
+            orig_selid = t_box_sprintf (100, "%s_%d", tabid_l, sparp->sparp_key_gen++);
+        }
+      if (NULL == orig_selid)
+        orig_selid = spar_mkid (sparp, "s");
+    }
   spar_dbg_printf (("spar_gp_finalize (..., %ld), orig_selid %s\n", (long)subtype, orig_selid));
   sparp->sparp_sg->sg_invalidated_bnode_labels = dk_set_conc (
     (dk_set_t)t_set_pop (&(sparp->sparp_sg->sg_bnode_label_sets)),
@@ -1572,8 +1581,17 @@ check_optionals:
         }
       else if (SPAR_TRIPLE == SPART_TYPE (memb))
         {
+          caddr_t new_tabid = NULL;
           memb->_.triple.selid = orig_selid;
-          memb->_.triple.tabid = t_box_sprintf (100, "%s_t%d", orig_selid, sparp->sparp_key_gen++);
+          if (NULL != memb->_.triple.options)
+            {
+              caddr_t tabid_l = (caddr_t)sparp_get_option (sparp, memb->_.triple.options, TABID_L);
+              if (NULL != tabid_l)
+                new_tabid = t_box_sprintf (100, "%s_%d", tabid_l, sparp->sparp_key_gen++);
+            }
+          if (NULL == new_tabid)
+            new_tabid = t_box_sprintf (100, "%s_t%d", orig_selid, sparp->sparp_key_gen++);
+          memb->_.triple.tabid = new_tabid;
         }
       all_ctr++;
     }
