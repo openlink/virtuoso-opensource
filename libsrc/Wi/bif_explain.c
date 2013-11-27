@@ -1622,7 +1622,8 @@ node_print (data_source_t * node)
 {
   qn_input_fn in;
   query_instance_t * qi = (query_instance_t *) THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_QST);
-  QI_CHECK_STACK (qi, &node, 10000);
+  if (qi)
+    QI_CHECK_STACK (qi, &node, 10000);
   in = node->src_input;
   if (node->src_stat)
     node_stat (node);
@@ -1873,7 +1874,6 @@ node_print (data_source_t * node)
 	  stmt_printf ((" array "));
 	  ssl_print (fref->fnr_ssa.ssa_array);
 	  stmt_printf ((" save: "));
-	  ssl_array_print (fref->fnr_ssa.ssa_save);
 	  stmt_printf (("\n"));
 	}
       { 
@@ -2373,9 +2373,12 @@ qr_print (query_t * qr)
   du_thread_t * self = THREAD_CURRENT_THREAD;
   query_instance_t * qi = (query_instance_t *) THR_ATTR (self, TA_REPORT_QST);
   query_instance_t * stat_qi = (QI*)THR_ATTR (self, TA_STAT_INST);
-  if (!qi || (qi->qi_trx->lt_threads != 1&& qi != stat_qi))
-    GPF_T;
-  QI_CHECK_STACK (qi, &qr, 10000);
+  if (qi || stat_qi)
+    {
+      if (!qi || (qi->qi_trx->lt_threads != 1&& qi != stat_qi))
+	GPF_T;
+      QI_CHECK_STACK (qi, &qr, 10000);
+    }
   stmt_printf (("{ %s\n", qr->qr_lock_mode == PL_EXCLUSIVE ? "FOR UPDATE" : ""));
   qr_print_params (qr);
   node_print (qr->qr_head_node);
