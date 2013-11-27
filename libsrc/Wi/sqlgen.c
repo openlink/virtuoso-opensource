@@ -3585,6 +3585,13 @@ sqlg_union_fref (sql_comp_t * sc, fun_ref_node_t * fref, df_elt_t * dt_dfe, dk_s
 
 
 void
+sqlg_cl_colocate_union (sql_comp_t * sc, fun_ref_node_t * fref, dk_set_t terms)
+{
+  return;
+}
+
+
+void
 sqlg_fref_qp (sql_comp_t * sc, fun_ref_node_t * fref, df_elt_t * dt_dfe)
 {
   QNCAST (table_source_t, ts, fref->fnr_select);
