@@ -5790,7 +5790,7 @@ int
 is_prime (int n)
 {
   int try, sq = (int) sqrt ((float) n);
-  for (try = 3; try < sq; try += 2)
+  for (try = 3; try <= sq; try += 2)
     if (0 == (n % try))
       return 0;
   return 1;
