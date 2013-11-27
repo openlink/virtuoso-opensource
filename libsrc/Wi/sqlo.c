@@ -937,6 +937,7 @@ sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 		if (ST_P (view, PROC_TABLE))
 		  {
 		    sqlo_proc_table_cols (so, ot);
+		    ot->ot_opts = ST_OPT (tree, caddr_t *, _.table.opts);
 		    ot->ot_is_proc_view = 1;
 		  }
 		sco_add_table (so->so_scope, ot);

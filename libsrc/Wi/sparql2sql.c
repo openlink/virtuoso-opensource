@@ -2661,8 +2661,16 @@ sparp_gp_trav_eq_restr_from_connected_receivers_gp_in (sparp_t *sparp, SPART *cu
   if (VALUES_L == curr->_.gp.subtype)
     {
       SPART *binv = curr->_.gp.subquery;
+      SPART *parent_gp = (((NULL != sts_this->sts_parent) && (SPAR_GP == SPART_TYPE (sts_this->sts_parent))) ? sts_this->sts_parent : NULL);
       spar_shorten_binv_dataset (sparp, binv);
-      spar_refresh_binv_var_rvrs (sparp, binv);
+      if ((NULL != parent_gp) && (1 == BOX_ELEMENTS (binv->_.binv.vars)) && (0 == binv->_.binv.counters_of_unbound[0]) &&
+        spar_binv_is_convertible_to_filter (sparp, parent_gp, curr, binv) )
+        {
+          spar_refresh_binv_var_rvrs (sparp, binv);
+          spar_binv_to_filter (sparp, parent_gp, curr, binv);
+        }
+      else
+        spar_refresh_binv_var_rvrs (sparp, binv);
     }
   return SPAR_GPT_ENV_PUSH;
 }
@@ -2687,11 +2695,9 @@ sparp_eq_restr_from_connected (sparp_t *sparp, SPART *req_top)
         {
           SPART *var, *ret_expn = NULL;
           int retctr, ret_expn_type;
-          sparp_equiv_t *var_eq;
           if (binv->_.binv.counters_of_unbound[varctr])
             continue;
           var = binv->_.binv.vars[varctr];
-          var_eq = SPARP_EQUIV (sparp, var->_.var.equiv_idx);
           for (retctr = BOX_ELEMENTS (retlist); retctr--; /* no step */)
             {
               SPART *candidate = retlist[retctr];
@@ -2717,17 +2723,21 @@ sparp_eq_restr_from_connected (sparp_t *sparp, SPART *req_top)
               if (sparp->sparp_sg->sg_signal_void_variables)
                 spar_error (sparp, "Variable name '%.100s' is used in the BINDINGS clause but not in the query result set", var->_.var.vname);
               SPARP_DEBUG_WEIRD(sparp,"conflict");
-              var_eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
+              var->_.var.rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
             }
           else
             {
-              sparp_equiv_tighten (sparp, var_eq, &(var->_.var.rvr), ~0);
               if (SPAR_VARIABLE == ret_expn_type)
                 {
                   sparp_equiv_t *ret_orig_eq = SPARP_EQUIV (sparp, ret_expn->_.var.equiv_idx);
-                  sparp_equiv_tighten (sparp, var_eq, &(ret_orig_eq->e_rvr), ~(SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
+                  sparp_rvr_tighten (sparp, &(var->_.var.rvr), &(ret_orig_eq->e_rvr), ~(SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
                   if (!(sparp_req_top_has_limofs (req_top) && (NULL != req_top->_.req_top.order)))
-                    sparp_equiv_tighten (sparp, ret_orig_eq, &(var_eq->e_rvr), ~(SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
+                    sparp_equiv_tighten (sparp, ret_orig_eq, &(var->_.var.rvr), ~(SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
+                }
+              else
+                {
+                  ptrlong restr = sparp_restr_bits_of_expn (sparp, ret_expn);
+                  sparp_rvr_add_restrictions (sparp, &(var->_.var.rvr), restr & ~(SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
                 }
             }
         }
@@ -3992,8 +4002,9 @@ spar_shorten_binv_dataset (sparp_t *sparp, SPART *binv)
       sparp_equiv_t *eq = SPARP_EQUIV (sparp, var->_.var.equiv_idx);
       int eq_has_sffs_bit = (eq->e_rvr.rvrRestrictions & SPART_VARR_SPRINTFF);
       int eq_sff_count = eq->e_rvr.rvrSprintffCount;
-      if (!rvr_can_be_tightened (sparp, &(var->_.var.rvr), &(eq->e_rvr), 1))
+      if (!rvr_can_be_tightened (sparp, &(eq->e_rvr), &(var->_.var.rvr), 1))
         continue;
+      sparp_equiv_tighten (sparp, eq, &(var->_.var.rvr), ~0);
       if (eq->e_rvr.rvrSprintffCount)
         memset (fmt_use_counters, 0, eq->e_rvr.rvrSprintffCount * sizeof (int));
       for (rowctr = rowcount; rowctr--; /* no step */)
@@ -4061,6 +4072,104 @@ spar_shorten_binv_dataset (sparp_t *sparp, SPART *binv)
     }
 }
 
+#define BINV_CELL_HASH(hash,cell) do { \
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (cell)) \
+    hash = box_hash ((caddr_t)cell); \
+  else if (SPAR_LIT == cell->type) \
+    hash = 0x1 ^ box_hash (cell->_.lit.val) ^ box_hash (cell->_.lit.datatype) ^ box_hash (cell->_.lit.language); \
+  else if (SPAR_QNAME == cell->type) \
+    hash = 0x2 ^ box_hash (cell->_.qname.val); \
+  } while (0)
+
+int
+spar_binv_is_convertible_to_filter (sparp_t *sparp, SPART *parent_gp, SPART *member_gp, SPART *member_binv)
+{
+  sparp_equiv_t *eq;
+  SPART ***rows = member_binv->_.binv.data_rows;
+  char *mask = member_binv->_.binv.data_rows_mask;
+  int row_idx;
+  unsigned char hash_bits[1027];
+  unsigned int hash_mod;
+  eq = sparp_equiv_get_ro (sparp->sparp_sg->sg_equivs, sparp->sparp_sg->sg_equiv_count, parent_gp, (SPART *)(member_binv->_.binv.vars[0]->_.var.vname), SPARP_EQUIV_GET_NAMESAKES);
+  if (NULL == eq)
+    return 0;
+  if (!((eq->e_rvr.rvrRestrictions & SPART_VARR_GLOBAL) || (0 < eq->e_gspo_uses) || (1 < eq->e_nested_bindings)))
+    return 0;
+  /* The most boring thing is check for duplicate values. It should be as fast as possible and not memory-consuming, so we're cheating. */
+  hash_mod = member_binv->_.binv.rows_in_use;
+  hash_mod = ((hash_mod * hash_mod * 5) | 0xf) * 8;
+  if (hash_mod > sizeof (hash_bits) * 8)
+    hash_mod = sizeof (hash_bits) * 8;
+  memset (hash_bits, 0, hash_mod/8);
+  DO_BOX_FAST (SPART **, row, row_idx, rows)
+    {
+      SPART *cell;
+      id_hashed_key_t hash, hash_sml;
+      int row_idx2;
+      if ('/' != mask[row_idx])
+        continue;
+      cell = row[0];
+      BINV_CELL_HASH(hash,cell);
+      hash_sml = hash % hash_mod;
+      if (!(hash_bits[hash_sml >> 3] & (1 << (hash_sml & 0x7))))
+        {
+          hash_bits[hash_sml >> 3] |= (1 << (hash_sml & 0x7));
+          continue;
+        }
+      for (row_idx2 = row_idx; row_idx2--; /* no step */)
+        {
+          SPART *cell2;
+          id_hashed_key_t hash2;
+          if ('/' != mask[row_idx2])
+            continue;
+          cell2 = rows[row_idx2][0];
+          BINV_CELL_HASH(hash2,cell2);
+          if (hash2 == hash)
+            return 0;
+        }
+    }
+  END_DO_BOX_FAST;
+  return 1;
+}
+
+#undef BINV_CELL_HASH
+
+void 
+spar_binv_to_filter (sparp_t *sparp, SPART *parent_gp, SPART *member_gp, SPART *member_binv)
+{
+  SPART ***rows = member_binv->_.binv.data_rows;
+  char *mask = member_binv->_.binv.data_rows_mask;
+  ptrlong arg_ctr = 0, arg_count = member_binv->_.binv.rows_in_use + 1;
+  SPART **args = (SPART **)t_alloc_list (arg_count);
+  SPART *var_copy, *filt;
+  int row_idx, memb_pos;
+  var_copy = sparp_tree_full_copy (sparp, member_binv->_.binv.vars[0], parent_gp);
+/* Without equiv_idx reset we will get internal error in sparp_gp_attach_filter_cbk(): attempt to attach a filter with used variable */
+  var_copy->_.var.selid = parent_gp->_.gp.selid;
+  var_copy->_.var.equiv_idx = SPART_BAD_EQUIV_IDX;
+  args[arg_ctr++] = var_copy;
+  DO_BOX_FAST (SPART **, row, row_idx, rows)
+    {
+      SPART *cell;
+      id_hashed_key_t hash;
+      int row_idx2;
+      if ('/' != mask[row_idx])
+        continue;
+      cell = row[0];
+      if (arg_ctr >= arg_count)
+        spar_internal_error (sparp, "corrupted counter of rows in use in VALUES() clause (too small)");
+      args[arg_ctr++] = cell;
+    }
+  END_DO_BOX_FAST;
+  if (arg_ctr != arg_count)
+    spar_internal_error (sparp, "corrupted counter of rows in use in VALUES() clause (too big)");
+  filt = sparp_make_builtin_call (sparp, IN_L, args);
+  filt->srcline = member_binv->srcline;
+  memb_pos = box_position ((caddr_t *)(parent_gp->_.gp.members), (caddr_t)member_gp);
+  sparp_gp_detach_member (sparp, parent_gp, memb_pos, NULL);
+  sparp_gp_attach_filter (sparp, parent_gp, filt, 0, NULL);
+}
+
 void
 spar_refresh_binv_var_rvrs (sparp_t *sparp, SPART *binv)
 {
@@ -4096,7 +4205,7 @@ spar_refresh_binv_var_rvrs (sparp_t *sparp, SPART *binv)
   for (varctr = varcount; varctr--; /* no step */)
     {
       SPART *var;
-      int restr_set = SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK | SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL;
+      int restr_set = SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK | SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL;
       if (binv->_.binv.counters_of_unbound[varctr])
         continue;
       var = binv->_.binv.vars[varctr];
@@ -4111,7 +4220,7 @@ spar_refresh_binv_var_rvrs (sparp_t *sparp, SPART *binv)
           switch (SPART_TYPE (datum))
             {
             case SPAR_QNAME:
-              restr_set &= ~SPART_VARR_IS_LIT;
+              restr_set &= ~(SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL);
               /*                                 0123456789 */
               if (!strncmp (datum->_.qname.val, "nodeID://", 9))
                 restr_set &= ~SPART_VARR_IS_IRI;
@@ -4119,8 +4228,18 @@ spar_refresh_binv_var_rvrs (sparp_t *sparp, SPART *binv)
                 restr_set &= ~SPART_VARR_IS_BLANK;
               break;
             case SPAR_LIT:
-              restr_set &= ~(SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK);
-              break;
+              {
+                dtp_t datum_dtp = DV_TYPE_OF (datum);
+                restr_set &= ~(SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK);
+                if (restr_set & SPART_VARR_LONG_EQ_SQL)
+                  {
+                    if (DV_ARRAY_OF_POINTER == datum_dtp)
+                      datum_dtp = DV_TYPE_OF (datum->_.lit.val);
+                    if (!((DV_LONG_INT == datum_dtp) || (DV_DOUBLE_FLOAT == datum_dtp) || (DV_SINGLE_FLOAT == datum_dtp) || (DV_DATETIME == datum_dtp)))
+                      restr_set &= ~SPART_VARR_LONG_EQ_SQL;
+                  }
+                break;
+              }
             }
         }
       var->_.var.rvr.rvrRestrictions |= restr_set;

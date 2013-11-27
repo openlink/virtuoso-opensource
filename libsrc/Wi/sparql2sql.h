@@ -463,11 +463,17 @@ extern void sparp_simplify_expns (sparp_t *sparp, SPART *req_top);
 
 extern void spar_invalidate_binv_dataset_row (sparp_t *sparp, SPART *binv, int rowno, int reason_col);
 
-/*! Removes data rows from \c binv as soon as they conflict with equivs of variables in any single cell. As a side effect, unused sprintf formats are remvoed from equivs. */
+/*! Removes data rows from \c binv as soon as they conflict with equivs of variables in any single cell. As a side effect, unused sprintf formats are removed from equivs. */
 extern void spar_shorten_binv_dataset (sparp_t *sparp, SPART *binv);
 
 /*! Re-calculates common properties of \c binv variables by values in their data columns. Any UNBOUND in column disables the re-calculation. */
 extern void spar_refresh_binv_var_rvrs (sparp_t *sparp, SPART *binv);
+
+/*! Checks whether a single-column binv without UNSETs and duplicates can be replaced with FILTER (?var IN ( values )) on a gspo or otherwise set variable */
+extern int spar_binv_is_convertible_to_filter (sparp_t *sparp, SPART *parent_gp, SPART *member_gp, SPART *member_binv);
+
+/*! Replace binv with FILTER (?var IN ( values )) . No checks are made in this function, the check must be made before via \c spar_binv_is_convertible_to_filter () */
+extern void spar_binv_to_filter (sparp_t *sparp, SPART *parent_gp, SPART *member_gp, SPART *member_binv);
 
 /*! Returns triple that contains the given variable \c var as a field.
 If \c gp is not NULL the search is restricted by triples that

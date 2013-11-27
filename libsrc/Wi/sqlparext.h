@@ -341,6 +341,8 @@ Note: bitwise OR of all these masks should be less than SMALLEST_POSSIBLE_POINTE
 #define OPT_PART_GBY ((ptrlong)945)
 #define OPT_NO_PART_GBY ((ptrlong)946)
 
+#define OPT_EST_TIME ((ptrlong)950)
+#define OPT_EST_SIZE ((ptrlong)951)
 
 /* GROUPING SETS */
 #define GROUPING_FUNC	"__grouping"
@@ -553,10 +555,11 @@ typedef struct sql_tree_s
 	    ptrlong	fk_state;
 	  } fkey;
 	struct {
-	  caddr_t	proc;
-	  ST **	params;
-	  ST **	cols;
-	} proc_table;
+	    caddr_t	proc;
+	    ST **	params;
+	    ST **	cols;
+	    caddr_t *	opts;
+	  } proc_table;
 	struct
 	  {
 	    char *	name;

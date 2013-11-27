@@ -429,6 +429,7 @@ typedef struct sparp_s {
   int sparp_global_num_offset;		/*!< If \c sparp_globals_mode is set to \c SPARE_GLOBALS_ARE_COLONUMBERED then numbers of 'app-specific' global parameters starts from \c sparp_global_num_offset up, some number of first params are system-specific. */
 } sparp_t;
 
+#define SPAR_MAX_BINDINGS_VIEW_CN 4 /*!< There are two representations of a binding: DB.DBA.SPARQL_BINDINGS_VIEW_C1 to DB.DBA.SPARQL_BINDINGS_VIEW_C4 make result sets of widths 1 to 4, DB.DBA.SPARQL_BINDINGS_VIEW makes result set of vectors of values */
 
 #define sparp_env() sparp_arg->sparp_env
 
@@ -583,7 +584,7 @@ typedef struct spar_tree_s
         SPART **options;
       } gp;
     struct {
-	/* #define SPAR_GRAPH		(ptrlong)1018 */
+        /* #define SPAR_GRAPH		(ptrlong)1018 */
         ptrlong subtype;		/*!< One of SPART_GRAPH_FROM, SPART_GRAPH_GROUP, SPART_GRAPH_NAMED, SPART_GRAPH_NOT_FROM, SPART_GRAPH_NOT_GROUP, SPART_GRAPH_NOT_NAMED */
         caddr_t iri;			/*!< Constant IRI of a source */
         SPART *expn;			/*!< A QNAME with IRI of "plain" source or an expression that returns an IRI (or NULL) and makes some side effects such as sponging */
@@ -678,7 +679,7 @@ typedef struct spar_tree_s
         /* #define SPAR_QM_SQL_FUNCALL	(ptrlong)1015 */
         caddr_t fname;	/*!< Function to call (bif or Virtuoso/PL) */
         SPART **fixed;	/*!< Array of 'positional' arguments */
-	SPART **named;	/*!< Array of 'named' arguments that are passed as get-keyword style vector as a last arg */
+        SPART **named;	/*!< Array of 'named' arguments that are passed as get-keyword style vector as a last arg */
       } qm_sql_funcall;
     struct {
         /* #define SPAR_SQLCOL		(ptrlong)1012 */
@@ -717,7 +718,7 @@ typedef struct spar_tree_s
         SPART **defines;	/*!< List of defines to pass, as a get_keyword style list of qnames and values or arrays of values */
         SPART **sources;	/*!< List of sources, similar to one in req_top. If NULL then sources of parent req_top are used */
         caddr_t storage_uri;	/*!< Storage to use: JSO UNAME if specified explicitly for a service IRI, uname_virtrdf_ns_uri_DefaultServiceStorage if unknown service */
-	ptrlong silent;		/*!< nonzero if SERVICE SILENT syntax is used */
+        ptrlong silent;		/*!< nonzero if SERVICE SILENT syntax is used */
       } sinv;
     struct {
         /* define SPAR_BINDINGS_INV		(ptrlong)1021 */

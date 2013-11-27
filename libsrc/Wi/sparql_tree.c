@@ -2506,9 +2506,12 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
               dest->rvrLanguage = value->_.lit.language;
               if ((NULL == dest->rvrDatatype) && (NULL == dest->rvrLanguage) && (DV_STRING != valtype))
                 {
+                  valtype = DV_TYPE_OF (value->_.lit.val);
                   dest->rvrDatatype = xsd_type_of_box (value->_.lit.val);
                   if (uname_xmlschema_ns_uri_hash_string == dest->rvrDatatype)
                     dest->rvrDatatype = NULL;
+                  else if ((dest->rvrDatatype == value->_.lit.datatype) && ((DV_LONG_INT == valtype) || (DV_DOUBLE_FLOAT == valtype) || (DV_SINGLE_FLOAT == valtype) || (DV_DATETIME == valtype)))
+                    dest->rvrRestrictions &= ~SPART_VARR_LONG_EQ_SQL;
                 }
             }
           else
@@ -2516,6 +2519,8 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
               dest->rvrDatatype = xsd_type_of_box ((caddr_t)value);
               if (uname_xmlschema_ns_uri_hash_string == dest->rvrDatatype)
                 dest->rvrDatatype = NULL;
+              else if ((DV_LONG_INT == valtype) || (DV_DOUBLE_FLOAT == valtype) || (DV_SINGLE_FLOAT == valtype) || (DV_DATETIME == valtype))
+                dest->rvrRestrictions &= ~SPART_VARR_LONG_EQ_SQL;
               dest->rvrLanguage = NULL;
             }
           if (NULL == dest->rvrDatatype)
@@ -2924,7 +2929,7 @@ sparp_gp_detach_member_int (sparp_t *sparp, SPART *parent_gp, int member_idx, dk
 {
   SPART *memb;
   SPART **old_members = parent_gp->_.gp.members;
-#ifdef DEBUG
+#ifndef NDEBUG
   int old_len = BOX_ELEMENTS (old_members);
   if ((0 > member_idx) || (old_len <= member_idx))
     spar_internal_error (sparp, "sparp_" "gp_detach_member_int(): bad member_idx");

@@ -7872,6 +7872,79 @@ create procedure view DB.DBA.SPARQL_BINDINGS_VIEW as DB.DBA.SPARQL_BINDINGS_VIEW
 grant select on DB.DBA.SPARQL_BINDINGS_VIEW to public
 ;
 
+--!AWK PUBLIC
+create procedure DB.DBA.SPARQL_BINDINGS_VIEW_C1_IMP (in dta any)
+{
+  declare rcount, rctr integer;
+  declare BND0 any;
+  result_names (BND0);
+  rcount := length (dta);
+  for (rctr := 0; rctr < rcount; rctr := rctr+1)
+    result (dta[rctr][0]);
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.SPARQL_BINDINGS_VIEW_C2_IMP (in dta any)
+{
+  declare rcount, rctr integer;
+  declare BND0, BND1 any;
+  result_names (BND0, BND1);
+  rcount := length (dta);
+  for (rctr := 0; rctr < rcount; rctr := rctr+1)
+    result (dta[rctr][0], dta[rctr][1]);
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.SPARQL_BINDINGS_VIEW_C3_IMP (in dta any)
+{
+  declare rcount, rctr integer;
+  declare BND0, BND1, BND2 any;
+  result_names (BND0, BND1, BND2);
+  rcount := length (dta);
+  for (rctr := 0; rctr < rcount; rctr := rctr+1)
+    result (dta[rctr][0], dta[rctr][1], dta[rctr][2]);
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.SPARQL_BINDINGS_VIEW_C4_IMP (in dta any)
+{
+  declare rcount, rctr integer;
+  declare BND0, BND1, BND2, BND3 any;
+  result_names (BND0, BND1, BND2, BND3);
+  rcount := length (dta);
+  for (rctr := 0; rctr < rcount; rctr := rctr+1)
+    result (dta[rctr][0], dta[rctr][1], dta[rctr][2], dta[rctr][3]);
+}
+;
+
+create procedure view DB.DBA.SPARQL_BINDINGS_VIEW_C1 as DB.DBA.SPARQL_BINDINGS_VIEW_C1_IMP (dta) (BND0 any)
+;
+
+create procedure view DB.DBA.SPARQL_BINDINGS_VIEW_C2 as DB.DBA.SPARQL_BINDINGS_VIEW_C1_IMP (dta) (BND0 any, BND1 any)
+;
+
+create procedure view DB.DBA.SPARQL_BINDINGS_VIEW_C3 as DB.DBA.SPARQL_BINDINGS_VIEW_C1_IMP (dta) (BND0 any, BND1 any, BND2 any)
+;
+
+create procedure view DB.DBA.SPARQL_BINDINGS_VIEW_C4 as DB.DBA.SPARQL_BINDINGS_VIEW_C1_IMP (dta) (BND0 any, BND1 any, BND2 any, BND3 any)
+;
+
+grant select on DB.DBA.SPARQL_BINDINGS_VIEW_C1 to public
+;
+
+grant select on DB.DBA.SPARQL_BINDINGS_VIEW_C2 to public
+;
+
+grant select on DB.DBA.SPARQL_BINDINGS_VIEW_C3 to public
+;
+
+grant select on DB.DBA.SPARQL_BINDINGS_VIEW_C4 to public
+;
+
+
 -- SPARQL 1.1 UPDATE functions
 create procedure DB.DBA.RDF_INSERT_QUADS (in dflt_graph_iri any, inout quads any, in uid integer, in log_mode integer := null) returns any
 {

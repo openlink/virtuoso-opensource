@@ -3964,6 +3964,28 @@ sqlo_proc_table_cost (df_elt_t * dt_dfe, float * u1, float * a1)
   float * costs = proc ? proc->qr_proc_cost : NULL;
   int n_costs = costs ? (box_length ((caddr_t)costs) / sizeof (float )) - 2 : 0;
   int inx;
+  if (NULL != ot->ot_opts) /* Table options of a procedure view called via ref to a CREATE PROCEDURE VIEW */
+    {
+      caddr_t est_time = sqlo_opt_value (ot->ot_opts, OPT_EST_TIME);
+      caddr_t est_size = sqlo_opt_value (ot->ot_opts, OPT_EST_SIZE);
+      if ((NULL != est_time) && (NULL != est_size))
+        {
+          *u1 = unbox (est_time);
+          *a1 = unbox (est_size);
+          return;
+        }
+    }
+  if (NULL != ot->ot_dt->_.proc_table.opts) /* Table options of a procedure called via function call without CREATE PROCEDURE VIEW */
+    {
+      caddr_t est_time = sqlo_opt_value (ot->ot_dt->_.proc_table.opts, OPT_EST_TIME);
+      caddr_t est_size = sqlo_opt_value (ot->ot_dt->_.proc_table.opts, OPT_EST_SIZE);
+      if ((NULL != est_time) && (NULL != est_size))
+        {
+          *u1 = unbox (est_time);
+          *a1 = unbox (est_size);
+          return;
+        }
+    }
   if (costs)
     {
       *u1 = costs[0];

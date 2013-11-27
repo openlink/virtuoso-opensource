@@ -1163,8 +1163,9 @@ view_def
                 { $$ = $5; $$->_.view_def.name = $3; }
 	| CREATE PROCEDURE VIEW new_table_name AS q_table_name '(' column_commalist_or_empty ')' '(' proc_col_list ')'
 		{ $$ = (ST*) t_list (5, VIEW_DEF, $4,
-		    t_list (4, PROC_TABLE, $6, $8,
-		      t_list_to_array (sqlc_ensure_primary_key (sqlp_process_col_options ($4, $11)))),
+		    t_list (5, PROC_TABLE, $6, $8,
+		      t_list_to_array (sqlc_ensure_primary_key (sqlp_process_col_options ($4, $11))),
+		      NULL ),
 		    NULL, NULL); }
 	;
 
@@ -1725,6 +1726,10 @@ sql_option
 	    $$ = t_CONS (OPT_VACUUM, t_CONS ($2, NULL));
 	  else if (!stricmp ($1, "RANDOM"))
 	    $$ = t_CONS (OPT_RANDOM_FETCH, t_CONS ($2, NULL));
+	  else if (!stricmp ($1, "EST_TIME"))
+	    $$ = t_CONS (OPT_EST_TIME, t_CONS ($2, NULL));
+	  else if (!stricmp ($1, "EST_SIZE"))
+	    $$ = t_CONS (OPT_EST_SIZE, t_CONS ($2, NULL));
 	  else
 	    $$ = NULL;
 	}
@@ -2127,9 +2132,9 @@ table_ref
 		}
 	| joined_table
 		{ $$ = t_listbox (3, TABLE_REF,$1, (caddr_t) NULL); }
-        | q_table_name '(' column_commalist_or_empty ')' opt_proc_col_list identifier
+        | q_table_name '(' column_commalist_or_empty ')' opt_proc_col_list identifier opt_table_opt
 		{
-		  $$ =  t_listbox (3, DERIVED_TABLE, t_list (4, PROC_TABLE, $1, $3, $5), $6);
+		  $$ = t_listbox (3, DERIVED_TABLE, t_list (5, PROC_TABLE, $1, $3, $5, $7), $6);
 		}
 	;
 

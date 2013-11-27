@@ -1605,6 +1605,8 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
           if ((NULL != qmf_rtti) && JSO_STATUS_LOADED == qmf_rtti->jrtti_status)
             return (ssg_valmode_t)(qmf_rtti->jrtti_self);
         }
+      if (SPART_VARR_LONG_EQ_SQL & eq->e_rvr.rvrRestrictions)
+        return SSG_VALMODE_NUM;
       return SSG_VALMODE_LONG;
     }
   if ((UNION_L == gp->_.gp.subtype) || (SPAR_UNION_WO_ALL == gp->_.gp.subtype))
@@ -2532,6 +2534,11 @@ ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
   value_dtp = DV_TYPE_OF (value);
   if ((NULL != datatype) || (NULL != language))
     {
+      if ((NULL == language) && (datatype == xsd_type_of_box (value)))
+        {
+          ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_ABORT_ON_CAST);
+          return;
+        }
       ssg_puts (" DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (");
       ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
       ssg_putchar (',');
@@ -5245,7 +5252,7 @@ print_asname:
 }
 
 void
-ssg_print_procview_rset_item (spar_sqlgen_t *ssg, caddr_t selid, int pos, const char *colname, caddr_t e_varname)
+ssg_print_procview_rset_item (spar_sqlgen_t *ssg, caddr_t selid, int pos, const char *colname, int view_cn_trick, caddr_t e_varname)
 {
   char buf[50];
 #ifdef NDEBUG
@@ -5258,7 +5265,7 @@ ssg_print_procview_rset_item (spar_sqlgen_t *ssg, caddr_t selid, int pos, const 
   else
     {
       ssg_prin_id (ssg, selid);
-      sprintf (buf, ".%s[%d] ", colname, pos);
+      sprintf (buf, view_cn_trick ? ".%s%d " : ".%s[%d] ", colname, pos);
       ssg_puts (buf);
     }
 #ifndef NDEBUG
@@ -5300,13 +5307,14 @@ ssg_print_retval (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t vmode, const ch
       if (SERVICE_L == tree->_.retval.gp->_.gp.subtype)
         {
           int pos = sparp_find_sinv_rset_or_param_pos_of_varname (ssg->ssg_sparp, tree->_.retval.gp, e_varname, 0 /* search in result-set */);
-          ssg_print_procview_rset_item (ssg, tree->_.retval.selid, pos, "rset", e_varname);
+          ssg_print_procview_rset_item (ssg, tree->_.retval.selid, pos, "rset", 0, e_varname);
           goto print_asname; /* see below */
         }
       if (VALUES_L == tree->_.retval.gp->_.gp.subtype)
         {
-          int pos = sparp_find_binv_rset_pos_of_varname (ssg->ssg_sparp, tree->_.retval.gp, tree->_.retval.gp->_.gp.subquery, e_varname);
-          ssg_print_procview_rset_item (ssg, tree->_.retval.selid, pos, "BND", e_varname);
+          SPART *binv = tree->_.retval.gp->_.gp.subquery;
+          int pos = sparp_find_binv_rset_pos_of_varname (ssg->ssg_sparp, tree->_.retval.gp, binv, e_varname);
+          ssg_print_procview_rset_item (ssg, tree->_.retval.selid, pos, "BND", (SPAR_MAX_BINDINGS_VIEW_CN >= BOX_ELEMENTS (binv->_.binv.vars)), e_varname);
           goto print_asname; /* see below */
         }
     }
@@ -8452,14 +8460,16 @@ sparp_equiv_sort_subvalue_idxs_by_child_order (sparp_t *sparp, sparp_equiv_t *eq
 }
 
 void
-ssg_print_bindings (spar_sqlgen_t *ssg, SPART *binv, SPART ***rowset, ssg_valmode_t needed)
+ssg_print_bindings (spar_sqlgen_t *ssg, SPART *binv, ssg_valmode_t needed)
 {
+  SPART ***rowset = binv->_.binv.data_rows;
+  char *mask = binv->_.binv.data_rows_mask;
   int rowctr, row_needs_comma = 0, colctr;
   ssg_puts ("vector (");
   ssg->ssg_indent += 1;
   DO_BOX_FAST (SPART **, single_row, rowctr, rowset)
     {
-      if ((NULL != binv) && ('/' != binv->_.binv.data_rows_mask[rowctr]))
+      if ('/' != mask[rowctr])
         continue;
       if (row_needs_comma) ssg_putchar (',');
       else row_needs_comma = 1;
@@ -8496,9 +8506,19 @@ ssg_print_binv_table_exp (spar_sqlgen_t *ssg, SPART *wrapping_gp, int pass)
         }
       else
         {
+          char buf[100];
+          int width = BOX_ELEMENTS (binv->_.binv.vars);
           ssg_newline (0);
-          ssg_puts (" DB.DBA.SPARQL_BINDINGS_VIEW as ");
+          if (SPAR_MAX_BINDINGS_VIEW_CN >= width)
+            {
+              snprintf (buf, sizeof (buf), " DB.DBA.SPARQL_BINDINGS_VIEW_C%d as ", width);
+              ssg_puts (buf);
+            }
+          else
+            ssg_puts (" DB.DBA.SPARQL_BINDINGS_VIEW as ");
           ssg_prin_id (ssg, wrapping_gp->_.gp.selid);
+          snprintf (buf, sizeof (buf), " TABLE OPTION (EST_SIZE %d, EST_TIME %d)", binv->_.binv.rows_in_use, binv->_.binv.rows_in_use * 5);
+          ssg_puts (buf);
         }
     }
   else if (SSG_TABLE_WHERE_PASS == pass)
@@ -8514,7 +8534,7 @@ ssg_print_binv_table_exp (spar_sqlgen_t *ssg, SPART *wrapping_gp, int pass)
           ssg_newline (0);
           ssg_prin_id (ssg, wrapping_gp->_.gp.selid);
           ssg_puts (".DTA = ");
-          ssg_print_bindings (ssg, binv, binv->_.binv.data_rows, SSG_VALMODE_LONG);
+          ssg_print_bindings (ssg, binv, SSG_VALMODE_LONG);
           ssg_newline (0);
         }
     }
@@ -9614,7 +9634,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg, int some_top_retval_flags)
   caddr_t limofs_alias = NULL;
   SPART	*tree = ssg->ssg_tree;
   ptrlong subtype = tree->_.req_top.subtype;
-  SPART **bindings_vars = ssg->ssg_sparp->sparp_env->spare_bindings_vars;
+  SPART *final_binv = tree->_.req_top.binv;
   SPART **retvals;
   const char *formatter, *agg_formatter, *agg_meta;
   ssg_valmode_t retvalmode;
@@ -9722,7 +9742,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg, int some_top_retval_flags)
         }
       if ((NULL != tree->_.req_top.formatmode_name) && !strcmp ("_MSACCESS_", tree->_.req_top.formatmode_name))
         top_retval_flags |= SSG_RETVAL_STRICT_TYPES;
-      if (NULL != bindings_vars)
+      if (NULL != final_binv)
         {
           ssg_puts ("SELECT ");
           ssg_print_retval_cols (ssg, tree, retvals, t_box_dv_short_string ("bnd1"), NULL, 0);
@@ -9811,7 +9831,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg, int some_top_retval_flags)
           ssg->ssg_indent -= 1;
           ssg_newline (0);
         }
-      if (NULL != bindings_vars)
+      if (NULL != final_binv)
         spar_sqlprint_error ("BINDINGS is not supported at top level for queries other than SELECT");
       if (has_limofs || has_ctor_over_groups)
         {
@@ -9830,18 +9850,18 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg, int some_top_retval_flags)
           const char *fmname = tree->_.req_top.formatmode_name;
           ssg_puts ("SELECT "); ssg_puts (formatter); ssg_puts (" (");
           ssg_prin_id (ssg, top_selid);
-	  if ((NULL == fmname && ssg_is_odbc_cli ()) ||
-	      ((NULL != fmname) && (!strcmp ("_JAVA_", fmname) || !strcmp ("_UDBC_", fmname) || !strcmp ("_MSACCESS_", fmname))))
-	    {
-	      ssg_puts (".__ask_retval) AS __ask_retval INTEGER");
-	    }
-	  else
-	    {
-	      ssg_puts (".__ask_retval) AS \"fmtaggret-");
-	      if (NULL != fmname)
-		ssg_puts (fmname);
-	      ssg_puts ("\"");
-	    }
+          if ((NULL == fmname && ssg_is_odbc_cli ()) ||
+              ((NULL != fmname) && (!strcmp ("_JAVA_", fmname) || !strcmp ("_UDBC_", fmname) || !strcmp ("_MSACCESS_", fmname))))
+            {
+              ssg_puts (".__ask_retval) AS __ask_retval INTEGER");
+            }
+          else
+            {
+              ssg_puts (".__ask_retval) AS \"fmtaggret-");
+              if (NULL != fmname)
+                ssg_puts (fmname);
+              ssg_puts ("\"");
+            }
           ssg_puts (" LONG VARCHAR \nFROM (");
           ssg->ssg_indent += 1;
         }
@@ -9850,7 +9870,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg, int some_top_retval_flags)
     default: spar_sqlprint_error ("ssg_make_sql_query_text(): unsupported type of tree");
     }
 #if 0 /*!!! TBD */
-  if (NULL != bindings_vars)
+  if (NULL != final_binv)
     {
       dk_session_t *curr_ssg_out = ssg->ssg_out;
       ssg->ssg_out = strses_allocate ();
@@ -9948,28 +9968,36 @@ The fix is to avoid printing constant expressions at all, with only exception fo
       ssg->ssg_indent -= 1;
     }
   ssg_print_tail_query_options (ssg);
-  if (NULL != bindings_vars)
+  if (NULL != final_binv)
     {
       int bndctr;
-      SPART ***bindings_rowset = ssg->ssg_sparp->sparp_env->spare_bindings_rowset;
       ssg_puts (" ) AS ");
       ssg_prin_id (ssg, t_box_dv_short_string ("bnd1"));
       ssg->ssg_indent -= 1;
-      if (0 == BOX_ELEMENTS (bindings_rowset))
+      if (0 == final_binv->_.binv.rows_in_use)
         ssg_puts (" WHERE (1=0)");
       else
         {
+          int width = BOX_ELEMENTS (final_binv->_.binv.vars);
           ssg_newline (0);
-          ssg_puts (" JOIN DB.DBA.SPARQL_BINDINGS_VIEW as \"bnd2\" ON (");
+          if (SPAR_MAX_BINDINGS_VIEW_CN >= width)
+            ssg_puts (t_box_sprintf (100, " JOIN DB.DBA.SPARQL_BINDINGS_VIEW_C%d as \"bnd2\" ON (", width));
+          else
+            ssg_puts (" JOIN DB.DBA.SPARQL_BINDINGS_VIEW as \"bnd2\" ON (");
           ssg->ssg_indent += 1;
           ssg_newline (0);
           ssg_puts (" \"bnd2\".DTA = ");
-          ssg_print_bindings (ssg, NULL, bindings_rowset, retvalmode);
+          ssg_print_bindings (ssg, final_binv, retvalmode);
           ssg_newline (0);
-          DO_BOX_FAST (SPART *, bndvar, bndctr, bindings_vars)
+          DO_BOX_FAST (SPART *, bndvar, bndctr, final_binv->_.binv.vars)
             {
+              char colname_buf[40];
               char buf[200];
-              snprintf (buf, sizeof (buf), " AND (\"bnd2\".BND[%d] IS NULL OR (\"bnd2\".BND[%d] = \"%.100s\"))", bndctr, bndctr, bndvar->_.var.vname);
+              snprintf (colname_buf, sizeof (colname_buf), (SPAR_MAX_BINDINGS_VIEW_CN >= width) ? "\"bnd2\".BND%d" : "\"bnd2\".BND[%d]", bndctr);
+              if (final_binv->_.binv.counters_of_unbound[bndctr])
+                snprintf (buf, sizeof (buf), " AND (%s IS NULL OR (%s = \"%.100s\"))", colname_buf, colname_buf, bndvar->_.var.vname);
+              else
+                snprintf (buf, sizeof (buf), " AND (%s = \"%.100s\")", colname_buf, bndvar->_.var.vname);
               ssg_puts (buf);
             }
           END_DO_BOX_FAST;
