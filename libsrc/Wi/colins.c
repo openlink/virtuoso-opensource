@@ -2390,8 +2390,8 @@ cr_new_size (col_data_ref_t * cr, int *bytes_ret)
 
 
 
-int col_seg_max_bytes = 16 * PAGE_DATA_SZ;
-int col_seg_max_rows = 2 * 8192;
+int32 col_seg_max_bytes = 16 * PAGE_DATA_SZ;
+int32 col_seg_max_rows = 2 * 8192;
 extern long ac_col_pages_in;
 extern long ac_col_pages_out;
 

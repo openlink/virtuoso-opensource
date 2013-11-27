@@ -1345,6 +1345,8 @@ static long st_has_vdb =
 char st_os_user_name[512];
 static char *_st_os_user_name = &st_os_user_name[0];
 extern long srv_cpu_count;
+extern int32 col_seg_max_bytes;
+extern int32 col_seg_max_rows;
 
 
 
@@ -1748,6 +1750,8 @@ stat_desc_t dbf_descs [] =
     {"enable_ac", (long *)&enable_ac, SD_INT32},
     {"enable_col_ac", (long *)&enable_col_ac, SD_INT32},
     {"col_ins_error", (long *)&col_ins_error, SD_INT32},
+    {"col_seg_max_bytes", (long *)&col_seg_max_bytes, SD_INT32},
+    {"col_seg_max_rows", (long *)&col_seg_max_rows, SD_INT32},
     {"cl_ac_interval", (long *)&cl_ac_interval, SD_INT32},
     {"enable_buf_mprotect", (long *)&enable_buf_mprotect, SD_INT32},
     {"cl_no_disable_of_unavailable", (long *)&local_cll.cll_no_disable_of_unavailable, SD_INT32},
