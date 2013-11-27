@@ -123,4 +123,9 @@ extern void ldbg_longjmp (jmp_buf env, int value);
 
 #endif /* ENABLE_NLS */
 
+#if defined (MAC_OS_X_VERSION_10_9) && (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_9)
+#include <xmmintrin.h>
+#define __builtin_ia32_loadups(p) _mm_loadu_ps((p))
+#endif
+
 #endif /* _DK_H */
