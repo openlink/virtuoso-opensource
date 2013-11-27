@@ -1416,6 +1416,11 @@ sqlo_inline_jt (sqlo_t * so, ST * tree, ST * exp, op_table_t * ot)
 	  sqlo_expand_dt (so, tree, &exp->_.join.right, ot, 1, NULL);
 	  any++;
 	}
+      if (!any && J_INNER == exp->_.join.type && sqlo_dt_inlineable (so, tree, exp->_.join.right, ot, 0))
+	{
+	  sqlo_expand_dt (so, tree, &exp->_.join.right, ot, 1, NULL);
+	  any = 1;
+	}
       return any;
     }
   if (ST_P (exp, SELECT_STMT))
