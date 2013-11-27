@@ -243,6 +243,7 @@ typedef struct sql_comp_s
     char		sc_in_ins_replacing;
     char		sc_re_emit_code; /* in conditional expressions, repeating code must be generated for each branch even if overlap */
     char		sc_is_first_cond; /* true if doing 1st condition in a conditional exp, i.e. will always execute */
+    char		sc_delay_colocate; /* do not do cluster colocating qr by qr, the qrs may be modified and only then located */
     dk_set_t		sc_re_emitted_dfes;
     rdf_inf_slots_t *	sc_rdf_inf_slots;
     caddr_t * sc_big_ssl_consts;	/*!< Vector of saved values for SSL consts of unusual types (like vectors) or just too big to fit into SQL text in a plain way */
@@ -265,6 +266,7 @@ typedef struct sql_comp_s
     key_source_t *	sc_qf_ks;
     query_frag_t *	sc_in_qf;
     query_t *		sc_vec_qr;
+    dk_hash_t *	sc_qn_to_dfe; /* if dfes are made into executable plan for sampling of other, map to dfe */
   } sql_comp_t;
 
 

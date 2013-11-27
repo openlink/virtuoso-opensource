@@ -146,7 +146,6 @@ fun_ref_free (fun_ref_node_t * fref)
   dk_set_free (fref->fnr_distinct_ha);
   dk_set_free (fref->fnr_setps);
   clb_free (&fref->clb);
-  dk_free_box ((box_t)fref->fnr_ssa.ssa_save);
   dk_set_free (fref->fnr_select_nodes);
   dk_set_free (fref->fnr_prev_hash_fillers);
 }
@@ -1003,6 +1002,8 @@ sc_free (sql_comp_t * sc)
 #endif
       dk_free_tree (sc->sc_big_ssl_consts);
     }
+  if (sc->sc_qn_to_dfe)
+    hash_table_free (sc->sc_qn_to_dfe);
 }
 
 query_t *
