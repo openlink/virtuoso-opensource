@@ -755,6 +755,8 @@ int
 itc_geo_insert_lock (it_cursor_t * itc, buffer_desc_t * buf)
 {
   page_lock_t *pl = itc->itc_pl;
+  if (itc->itc_non_txn_insert)
+    return NO_WAIT;
   if (!pl)
     return NO_WAIT;
   if (PL_IS_PAGE (pl))
@@ -1059,7 +1061,6 @@ geo_insert (query_instance_t * qi, dbe_table_t * tb, caddr_t g, boxint id, int i
   rd.rd_op = RD_INSERT;
   rd.rd_rl = INS_NEW_RL;
   rd.rd_non_comp_len = DV_INT64 == id_dtp ? 10 : 6;
-  rd.rd_make_ins_rbe = 1;
   if (!is_geo_box)
     geo_get_bounding_XYbox ((geo_t *) g, &box, 0, 0);
   else
@@ -1083,6 +1084,10 @@ geo_insert (query_instance_t * qi, dbe_table_t * tb, caddr_t g, boxint id, int i
   rd.rd_values[RD_ID] = box_num (id);
   itc->itc_search_params[0] = (caddr_t) & box;
   itc->itc_insert_key = key;
+  if (!is_del && (qi->qi_non_txn_insert || qi->qi_client->cli_non_txn_insert))
+    itc->itc_non_txn_insert = 1;
+  else
+    rd.rd_make_ins_rbe = 1;
   key->key_table->tb_count_delta += is_del ? -1 : 1;
   itc_from (itc, key, qi->qi_client->cli_slice);
   itc->itc_search_mode = SM_INSERT;
