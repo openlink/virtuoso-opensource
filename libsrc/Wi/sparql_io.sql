@@ -297,7 +297,7 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
   -- dbg_obj_princ ('DB.DBA.SPARQL_REXEC_INT Request: ', req_method, req_uri);
   -- dbg_obj_princ ('DB.DBA.SPARQL_REXEC_INT Request: ', req_hdr);
   -- dbg_obj_princ ('DB.DBA.SPARQL_REXEC_INT Request: ', req_body);
-  ret_body := http_get (req_uri, ret_hdr, req_method, req_hdr, req_body);
+  ret_body := http_get (req_uri, ret_hdr, req_method, req_hdr, req_body, null, 15);
   -- dbg_obj_princ ('DB.DBA.SPARQL_REXEC_INT Returned header: ', ret_hdr);
   -- dbg_obj_princ ('DB.DBA.SPARQL_REXEC_INT Returned body: ', ret_body);
   ret_content_type := http_request_header (ret_hdr, 'Content-Type', null, null);
