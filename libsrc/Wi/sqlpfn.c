@@ -2276,6 +2276,8 @@ not_a_constant_pure: ;
 }
 
 
+extern caddr_t uname_one_of_these;
+
 ST *
 sqlp_in_exp (ST * left, dk_set_t  right, int is_not)
 {
@@ -2315,7 +2317,7 @@ sqlp_in_exp (ST * left, dk_set_t  right, int is_not)
   else
     {
       ST * res =
-	t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("one_of_these"),
+	t_listst (3, CALL_STMT, uname_one_of_these,
 		t_list_to_array (t_CONS (left, right)));
       if (is_not)
 	return (t_listst (3, BOP_EQ, t_box_num (0), res));

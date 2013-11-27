@@ -8828,6 +8828,9 @@ bif_position (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
    returns an index (zero-based if we think item as first argument)
    of a first argument that is equal to item, zero otherwise. */
+
+
+caddr_t uname_one_of_these;
 caddr_t
 bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -16045,6 +16048,7 @@ sql_bif_init (void)
   bif_define_typed ("tweak_by_keywords", bif_tweak_by_keywords, &bt_any_box);
   bif_define_typed ("position", bif_position, &bt_integer);
   bif_define_typed ("one_of_these", bif_one_of_these, &bt_integer);
+  uname_one_of_these = box_dv_uname_string  (sqlp_box_id_upcase ("one_of_these"));
 #if 0
   bif_define_typed ("row_table", bif_row_table, &bt_varchar);
   bif_define_typed ("row_column", bif_row_column, &bt_any);
