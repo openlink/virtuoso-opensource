@@ -468,7 +468,7 @@ cu_rl_cols (cucurbit_t * cu, caddr_t g_iid)
       aq_request  (aq, is_del ? aq_rl_del_key_func : aq_rl_key_func, list (2, box_copy ((caddr_t)clrg), box_num (nth_key++)));
   }
   END_DO_SET ();
-  cu_rl_graph_words (cu, g_iid);
+  /*cu_rl_graph_words (cu, g_iid);*/
   IO_SECT (inst);
   aq->aq_wait_qi = qi;
   aq_wait_all (aq, &err1);
