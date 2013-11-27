@@ -2309,7 +2309,7 @@ blob_write_crash_log_via_dir (dk_session_t * log, blob_log_t *  bl)
   int is_crash = 0;
   long fulllen = 0;
   dp_addr_t dir_start = bl->bl_dir_start;
-  if (!bl->bl_it)
+  if (is_crash_dump /*!bl->bl_it*/)
     is_crash = 1;
 
   if (!buf)
@@ -2429,7 +2429,7 @@ blob_write_crash_log (lock_trx_t * lt /* unused */, dk_session_t * log, blob_log
   static buffer_desc_t * buf = NULL;
   int is_crash = 0;
   long fulllen = 0;
-  if (!bl->bl_it)
+  if (is_crash_dump /*!bl->bl_it*/)
     is_crash = 1;
 
   if (is_crash && bl->bl_dir_start)
