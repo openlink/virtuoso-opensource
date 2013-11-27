@@ -449,6 +449,7 @@ int32 c_sparql_max_mem_in_use = 0;
 
 extern int32 enable_qp;
 extern int32 dc_max_batch_sz;
+extern int32 dc_max_q_batch_sz;
 extern int32 dc_batch_sz;
 extern int32 enable_dyn_batch_sz;
 extern int c_query_log;
@@ -1224,10 +1225,14 @@ cfg_setup (void)
       enable_qp = 8;
     }
 
-  if (cfg_getlong (pconfig, section, "MaxVectorSize", &dc_max_batch_sz) == -1)
-    dc_max_batch_sz = 1000000;
-  if (dc_max_batch_sz > (1024 * 1024 * 4) - 16)
-    dc_max_batch_sz = (1024 * 1024 * 4) - 16;
+  if (cfg_getlong (pconfig, section, "MaxVectorSize", &dc_max_q_batch_sz) == -1)
+    dc_max_q_batch_sz = 1000000;
+  /*
+  if (dc_max_q_batch_sz > (1024 * 1024 * 4)  - 16)
+    dc_max_q_batch_sz = (1024 * 1024 * 4)  - 16;
+  */
+  if (dc_max_q_batch_sz > dc_max_batch_sz)
+    dc_max_batch_sz = dc_max_q_batch_sz;
 
   if (cfg_getlong (pconfig, section, "VectorSize", &dc_batch_sz) == -1)
     dc_batch_sz = 10000;

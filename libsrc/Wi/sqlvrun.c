@@ -52,6 +52,7 @@ int32 dc_adjust_batch_sz_min_anytime = 12000;
 int dc_default_var_len = 8;
 int32 dc_batch_sz = 10000;
 int32 dc_max_batch_sz = 1000000 /*(1024 * 1024 * 4)  - 16 */ ;
+int32 dc_max_q_batch_sz = 1000000;
 int dc_str_buf_unit = 0x10000;
 size_t c_max_large_vec;
 size_t mp_qi_large_block;
@@ -2049,7 +2050,7 @@ ts_check_batch_sz (table_source_t * ts, caddr_t * inst, it_cursor_t * itc)
   int prev_sz;
   float min_density = 5;
   dbe_key_t *key;
-  if ((!prev && !ts->ts_order_ks->ks_is_qf_first) || !itc->itc_n_sets || !enable_dyn_batch_sz || dc_max_batch_sz == itc->itc_batch_size
+  if ((!prev && !ts->ts_order_ks->ks_is_qf_first) || !itc->itc_n_sets || !enable_dyn_batch_sz || dc_max_q_batch_sz == itc->itc_batch_size
       || qi->qi_mp->mp_bytes > qi_mp_max_bytes
       || (qi->qi_client->cli_anytime_started && (qi->qi_client->cli_anytime_started + qi->qi_client->cli_anytime_timeout < approx_msec_real_time () + dc_adjust_batch_sz_min_anytime)))
     return;
@@ -2069,7 +2070,7 @@ ts_check_batch_sz (table_source_t * ts, caddr_t * inst, it_cursor_t * itc)
   prev_sz = QST_INT (inst, prev->src_batch_size);
   else
     prev_sz = QST_INT (inst, ts->src_gen.src_batch_size);
-  if (prev_sz == dc_max_batch_sz)
+  if (prev_sz == dc_max_q_batch_sz)
     return;
   rows_to_expect = qn_rows_to_expect (prev, inst);
   if (rows_to_expect < prev_sz)
@@ -2084,7 +2085,7 @@ ts_check_batch_sz (table_source_t * ts, caddr_t * inst, it_cursor_t * itc)
     }
   if ((float) itc->itc_rows_on_leaves / MAX (itc->itc_n_sets, itc->itc_rows_selected) > min_density)
     {
-      int target_sz = MIN ((float) dc_max_batch_sz, rows_to_expect * 1.2);
+      int target_sz = MIN ((float)dc_max_q_batch_sz, rows_to_expect * 1.2);
       if (target_sz < prev_sz * 2)
 	return;
       if (enable_batch_sz_reserve)
