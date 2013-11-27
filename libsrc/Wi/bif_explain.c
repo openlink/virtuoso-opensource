@@ -2633,7 +2633,7 @@ artm_print:
 	    int op = in->_.agg.op;
 	    char * name = AMMSC_SUM == op ? "sum": AMMSC_COUNTSUM == op ? "countsum": AMMSC_COUNT == op ? "count": AMMSC_MIN == op ? "min": AMMSC_MAX == op ? "max" : AMMSC_ONE == op ? "subq_value": "unknown ";
 
-	    ses_sprintf (s, "<agg op='%d'/>", name);
+	    ses_sprintf (s, "<agg op='%s'>", name);
 	    SES_PRINT (s, "<res>");
 	    ssl_print_xml (in->_.agg.result, s);
 	    SES_PRINT (s, "</res>");
