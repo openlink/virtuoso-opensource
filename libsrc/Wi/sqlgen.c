@@ -3339,6 +3339,7 @@ go_copy (gb_op_t * org)
   return go;
 }
 
+
 setp_node_t *
 setp_copy (sql_comp_t * sc, setp_node_t * org)
 {
@@ -3364,9 +3365,11 @@ setp_copy (sql_comp_t * sc, setp_node_t * org)
     iter->data = (void*)go_copy ((gb_op_t*)iter->data);
 
   setp->setp_in_union = 1;
+  setp->setp_loc_ts = NULL;
+  setp->setp_hash_part_spec = NULL;
+  setp->setp_insert_spec.ksp_spec_array = sp_list_copy (setp->setp_insert_spec.ksp_spec_array);
   return setp;
 }
-
 
 
 int

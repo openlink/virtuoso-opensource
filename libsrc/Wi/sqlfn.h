@@ -1514,6 +1514,7 @@ extern int64 chash_space_avail;
 index_tree_t * qst_get_chash (caddr_t * inst, state_slot_t * ssl, state_slot_t * id_ssl, setp_node_t * setp);
 void cha_part_from_ssl (caddr_t * inst, state_slot_t * ssl, int min, int max);
 search_spec_t * sp_copy (search_spec_t * sp);
+search_spec_t * sp_list_copy (search_spec_t * sp);
 void qi_assign_root_id (query_instance_t * qi);
 void qi_root_done (query_instance_t * qi);
 int qi_inc_branch_count (query_instance_t * qi, int max, int n);
