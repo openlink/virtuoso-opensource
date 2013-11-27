@@ -183,6 +183,7 @@ bif_jso_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         sethash (jinstance, cd->jsocd_rttis, inst_rtti);
       sethash (inst, jso_rttis_of_structs, inst_rtti);
     }
+  box_flags (inst_rtti->jrtti_self) &= ~BF_VALID_JSO;
   inst_rtti->jrtti_status = JSO_STATUS_NEW;
   return box_copy (jinstance);
 }
@@ -273,6 +274,7 @@ end_delete_private_members:
     memset (inst_rtti->jrtti_self, 0, cd->_.sd.jsosd_sizeof);
   else
     memset (inst_rtti->jrtti_self, 0, box_length (inst_rtti->jrtti_self));
+  box_flags (inst_rtti->jrtti_self) &= ~BF_VALID_JSO;
   inst_rtti->jrtti_status = JSO_STATUS_DELETED;
   return jinstance;
 }
@@ -286,9 +288,15 @@ jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, in
     if (!change_status) \
       break; \
     if (JSO_STATUS_NEW == inst_rtti->jrtti_status) \
-      inst_rtti->jrtti_status = JSO_STATUS_FAILED; \
+      { \
+        box_flags (inst) &= ~BF_VALID_JSO; \
+        inst_rtti->jrtti_status = JSO_STATUS_FAILED; \
+      } \
     if (JSO_STATUS_NEW == root_rtti->jrtti_status) \
-      root_rtti->jrtti_status = JSO_STATUS_FAILED; \
+      { \
+        box_flags (root_rtti->jrtti_self) &= ~BF_VALID_JSO; \
+        root_rtti->jrtti_status = JSO_STATUS_FAILED; \
+      } \
     } while (0)
   jso_rtti_t *known_rtti;
   jso_class_descr_t *cd = inst_rtti->jrtti_class;
@@ -460,7 +468,10 @@ jso_validate (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known, in
       }
     }
   if (change_status && (JSO_STATUS_FAILED == inst_rtti->jrtti_status))
-    inst_rtti->jrtti_status = JSO_STATUS_NEW;
+    {
+      box_flags (inst_rtti->jrtti_self) &= ~BF_VALID_JSO;
+      inst_rtti->jrtti_status = JSO_STATUS_NEW;
+    }
   if (NULL != cd->jsocd_validation_cbk)
     cd->jsocd_validation_cbk (inst_rtti, warnings_log_ptr);
 }
@@ -619,6 +630,7 @@ jso_pin (jso_rtti_t *inst_rtti, jso_rtti_t *root_rtti, dk_hash_t *known)
         }
     }
   inst_rtti->jrtti_status = JSO_STATUS_LOADED;
+  box_flags (inst) |= BF_VALID_JSO;
 }
 
 

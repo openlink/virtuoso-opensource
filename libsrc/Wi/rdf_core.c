@@ -4130,9 +4130,10 @@ bif_uriqa_iri_is_local (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t 
 bif_uriqa_dynamic_local_replace (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t name = box_copy (bif_string_arg (qst, args, 0, "uriqa_dynamic_local_replace"));
+  caddr_t name = box_copy (bif_string_or_uname_arg (qst, args, 0, "uriqa_dynamic_local_replace"));
   name = uriqa_dynamic_local_replace (name, ((query_instance_t *) qst)->qi_client);
-  box_flags (name) = BF_IRI;
+  if (DV_STRING == DV_TYPE_OF (name))
+    box_flags (name) = BF_IRI;
   return name;
 }
 

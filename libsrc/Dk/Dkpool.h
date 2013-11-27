@@ -106,6 +106,7 @@ extern mem_pool_t *dbg_mem_pool_alloc (const char *file, int line);
 #endif
 
 EXE_EXPORT (caddr_t, mp_alloc_box, (mem_pool_t * mp, size_t len, dtp_t dtp));
+EXE_EXPORT (caddr_t, mp_alloc_box_ni, (mem_pool_t * mp, int len, dtp_t dtp));
 EXE_EXPORT (caddr_t, mp_box_string, (mem_pool_t * mp, const char *str));
 EXE_EXPORT (caddr_t, mp_box_substr, (mem_pool_t * mp, ccaddr_t str, int n1, int n2));
 EXE_EXPORT (box_t, mp_box_dv_short_nchars, (mem_pool_t * mp, const char *str, size_t len));
@@ -122,6 +123,7 @@ void * mp_large_alloc (mem_pool_t * mp, size_t sz);
 
 #ifdef MALLOC_DEBUG
 extern caddr_t dbg_mp_alloc_box (const char *file, int line, mem_pool_t * mp, size_t len, dtp_t dtp);
+extern caddr_t dbg_mp_alloc_box_ni (const char *file, int line, mem_pool_t * mp, int len, dtp_t dtp);
 extern caddr_t dbg_mp_box_string (const char *file, int line, mem_pool_t * mp, const char *str);
 extern caddr_t dbg_mp_box_substr (const char *file, int line, mem_pool_t * mp, ccaddr_t str, int n1, int n2);
 extern box_t dbg_mp_box_dv_short_nchars (const char *file, int line, mem_pool_t * mp, const char *str, size_t len);
@@ -137,6 +139,7 @@ extern caddr_t dbg_mp_box_float (const char *file, int line, mem_pool_t * mp, fl
 #ifndef _USRDLL
 #ifndef EXPORT_GATE
 #define mp_alloc_box(mp,len,dtp) dbg_mp_alloc_box (__FILE__, __LINE__, (mp), (len), (dtp))
+#define mp_alloc_box_ni(mp,len,dtp) dbg_mp_alloc_box_ni (__FILE__, __LINE__, (mp), (len), (dtp))
 #define mp_box_string(mp, str) dbg_mp_box_string (__FILE__, __LINE__, (mp), (str))
 #define mp_box_substr(mp, str, n1, n2) dbg_mp_box_substr (__FILE__, __LINE__, (mp), (str), (n1), (n2))
 #define mp_box_dv_short_nchars(mp, str, len) dbg_mp_box_dv_short_nchars (__FILE__, __LINE__, (mp), (str), (len))
@@ -356,7 +359,6 @@ void mp_trash (mem_pool_t * mp, caddr_t box);
 #define mp_trash_push(mp,box) dk_set_push (&((mp)->mp_trash), (void *)(box))
 #define t_trash_push(box) mp_trash_push(THR_TMP_POOL,box)
 
-caddr_t mp_alloc_box_ni (mem_pool_t * mp, int len, dtp_t dtp);
 extern box_tmp_copy_f box_tmp_copier[256];
 
 #ifdef LACERATED_POOL

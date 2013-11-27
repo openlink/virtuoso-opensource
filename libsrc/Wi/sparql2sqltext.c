@@ -71,12 +71,14 @@ void rdf_ds_load_all (void)
       qmcol = dk_alloc_box_zero (sizeof (qm_column_t), DV_ARRAY_OF_POINTER);
       qmcol->qmvcColumnName = box_dv_short_string (colnames[colctr]);
       qmval = qm_default_values[colctr] = (qm_value_t *)dk_alloc_box_zero (sizeof (qm_value_t), DV_ARRAY_OF_POINTER);
+      box_flags (qmval) |= BF_VALID_JSO;
       qmval->qmvTableName = box_dv_short_string ("DB.DBA.RDF_QUAD");
       qmval->qmvColumns = (qm_column_array_t)list (1, qmcol);
     }
 
 /* field for graph, subject and predicate */
   qmf = qm_format_default_iri_ref = (qm_format_t *)dk_alloc_box_zero (sizeof (qm_format_t), DV_ARRAY_OF_POINTER);
+  box_flags (qmf) |= BF_VALID_JSO;
   qmf->qmfName = box_dv_short_string ("default-iid-nonblank");
   qmf->qmfShortTmpl = box_dv_short_string (" ^{alias-dot}^^{column}^");
   qmf->qmfLongTmpl = box_dv_short_string (" /* LONG: */ ^{alias-dot}^^{column}^");
@@ -122,6 +124,7 @@ void rdf_ds_load_all (void)
   qmf->qmfUriIdOffset = 0;
 
   qmf = qm_format_default = (qm_format_t *)dk_alloc_box_zero (sizeof (qm_format_t), DV_ARRAY_OF_POINTER);
+  box_flags (qmf) |= BF_VALID_JSO;
   qmf->qmfName = box_dv_short_string ("default");
   qmf->qmfShortTmpl = box_dv_short_string (" ^{alias-dot}^^{column}^");
   qmf->qmfLongTmpl = box_dv_short_string (" __rdf_long_of_obj /*o*/ (^{alias-dot}^^{column}^)");
@@ -193,6 +196,7 @@ void rdf_ds_load_all (void)
   qm_default_values[SPART_TRIPLE_OBJECT_IDX]->qmvFormat = qm_format_default;
 
   qm_default = (quad_map_t *)dk_alloc_box_zero (sizeof (quad_map_t), DV_ARRAY_OF_POINTER);
+  box_flags (qm_default) |= BF_VALID_JSO;
   qm_default->qmGraphMap = qm_default_values[SPART_TRIPLE_GRAPH_IDX];
   qm_default->qmSubjectMap = qm_default_values[SPART_TRIPLE_SUBJECT_IDX];
   qm_default->qmPredicateMap = qm_default_values[SPART_TRIPLE_PREDICATE_IDX];
@@ -200,9 +204,11 @@ void rdf_ds_load_all (void)
   qm_default->qmTableName = box_dv_short_string ("DB.DBA.RDF_QUAD");
 
   tc_default = (triple_case_t *)dk_alloc_box_zero (sizeof (triple_case_t), DV_ARRAY_OF_POINTER);
+  box_flags (tc_default) |= BF_VALID_JSO;
   tc_default->tc_qm = qm_default;
 
   rdf_sys_storage = (quad_storage_t *)dk_alloc_box_zero (sizeof (quad_storage_t), DV_ARRAY_OF_POINTER);
+  box_flags (rdf_sys_storage) |= BF_VALID_JSO;
   rdf_sys_storage->qsDefaultMap = qm_default;
 
 #if 0

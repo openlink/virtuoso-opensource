@@ -2144,14 +2144,15 @@ spar_make_service_inv (sparp_t *sparp, SPART *endpoint, dk_set_t all_options, pt
             }
           else
             {
-              DO_SET (SPART *, var, (dk_set_t *)(&optvalue))
+              int varctr;
+              DO_BOX_FAST (SPART *, var, varctr, (SPART **)optvalue)
                 {
                   caddr_t vname = var->_.var.vname;
                   if (0 <= dk_set_position_of_string (param_varnames, vname))
                     spar_error (sparp, "Duplicate IN variable name \"%.100s\" in OPTIONs of SERVICE invocation", vname);
                   t_set_push (&param_varnames, vname);
                 }
-              END_DO_SET()
+              END_DO_BOX_FAST;
             }
           if (in_list_implicit && in_list_explicit)
             spar_error (sparp, "options of SERVICE invocation contain both 'IN *' and 'IN ?variable'");

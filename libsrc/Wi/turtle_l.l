@@ -24,6 +24,9 @@
 %option 8bit
 %option case-sensitive
 %option never-interactive
+%option noyyalloc
+%option noyyrealloc
+%option noyyfree
 %option noyywrap
 %option nounput
 %option reentrant
@@ -140,6 +143,27 @@ extern int ttlyylex (YYSTYPE *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner
 #define YY_DECL int ttlyylex (YYSTYPE *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner)
 
 extern int ttlyydebug;
+
+void *
+ttlyyalloc (yy_size_t  size, yyscan_t yyscanner)
+{
+  return (void *) malloc( size );
+}
+
+void *
+ttlyyrealloc  (void * ptr, yy_size_t  size , yyscan_t yyscanner)
+{
+  if (NULL == ptr)
+    return ttlyyalloc (size, yyscanner);
+  return (void *) realloc( (char *) ptr, size );
+}
+
+void
+ttlyyfree (void * ptr , yyscan_t yyscanner)
+{
+  if (NULL != ptr)
+    free( (char *) ptr );
+}
 
 %}
 

@@ -24,6 +24,9 @@
 %option 8bit
 %option case-sensitive
 %option never-interactive
+%option noyyalloc
+%option noyyrealloc
+%option noyyfree
 %option noyywrap
 %option nounput
 %option reentrant
@@ -205,6 +208,27 @@ int sparscn_NUMBER_double (YYSTYPE *yylval, struct yyguts_t * yyg);
 extern int sparyylex (YYSTYPE *yylval, yyscan_t yyscanner);
 #define YY_DECL int sparyylex (YYSTYPE *yylval, yyscan_t yyscanner)
 
+
+void *
+sparyyalloc (yy_size_t  size, yyscan_t yyscanner)
+{
+  return (void *) malloc( size );
+}
+
+void *
+sparyyrealloc  (void * ptr, yy_size_t  size , yyscan_t yyscanner)
+{
+  if (NULL == ptr)
+    return sparyyalloc (size, yyscanner);
+  return (void *) realloc( (char *) ptr, size );
+}
+
+void
+sparyyfree (void * ptr , yyscan_t yyscanner)
+{
+  if (NULL != ptr)
+    free( (char *) ptr );
+}
 
 %}
 

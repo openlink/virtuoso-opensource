@@ -939,9 +939,10 @@ extern void dkbox_terminate_module (void);
 #endif
 
 /* values for box_flags */
-#define BF_IRI 				0x1	/*!< This means that the box is an IRI. This implies that the string is UTF8 */
-#define BF_UTF8 			0x2	/*!< The string is supposed to be an UTF-8, a routine should signal an error if that is not a valid UTF-8 */
-#define BF_DEFAULT_SERVER_ENC 		0x4	/*!< The string is supposed to be in default server encoding. Not used if UTF-8 is default server encoding */
+#define BF_IRI 				0x01	/*!< This means that the box is an IRI. This implies that the string is UTF8 */
+#define BF_UTF8 			0x02	/*!< The string is supposed to be an UTF-8, a routine should signal an error if that is not a valid UTF-8 */
+#define BF_DEFAULT_SERVER_ENC 		0x04	/*!< The string is supposed to be in default server encoding. Not used if UTF-8 is default server encoding */
+#define BF_VALID_JSO			0x80	/*!< This means that the box is a valid JSO (say, it's in JSO_STATUS_LOADED state). MALLOC_DEBUG of memory pool stops here because it can be out of pool and circular refs are allowed. */
 
 double buf_to_double (char *buf);
 float buf_to_float (char *buf);

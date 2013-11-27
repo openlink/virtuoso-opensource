@@ -1186,6 +1186,7 @@ t_strses_string (dk_session_t * ses)
   box = t_alloc_box (len + 1, DV_LONG_STRING);
   strses_to_array (ses, box);
   box[len] = 0;
+  t_check_tree (box);
   return box;
 }
 
