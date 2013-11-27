@@ -54,6 +54,7 @@ int32 dc_batch_sz = 10000;
 int32 dc_max_batch_sz = 1000000 /*(1024 * 1024 * 4)  - 16 */ ;
 int dc_str_buf_unit = 0x10000;
 size_t c_max_large_vec;
+size_t mp_qi_large_block;
 
 search_spec_t *sp_list_copy (search_spec_t * sp);
 
@@ -470,17 +471,28 @@ qi_vec_init (query_instance_t * qi, int n_sets)
   int inx, n_dcs, not_inited = 0;
   query_t *qr = qi->qi_query;
   mem_pool_t *mp;
+  if (n_sets <= 0)
+    n_sets = dc_batch_sz;
   if (!(mp = qi->qi_mp))
     {
       not_inited = 1;
   mp = qi->qi_mp = mem_pool_alloc ();
+      if (qr->qr_vec_ssls)
+	{
+	  int ign;
+	  int sets_est = dc_batch_sz;
+	  int n_vec = BOX_ELEMENTS (qr->qr_vec_ssls);
+	  size_t est = (n_vec * sizeof (data_col_t) + 40) + (sets_est * qr->qr_dc_est);
+	  if (est > mp_qi_large_block)
+	    qi->qi_mp->mp_block_size = mp_qi_large_block;
+	  else if (est > qi->qi_mp->mp_block_size)
+	    qi->qi_mp->mp_block_size = mm_next_size (est, &ign);
+	}
 #if 0 /*ndef NDEBUG */
       if (qi->qi_query->qr_text)
 	qi->qi_mp->mp_comment = mp_box_string (qi->qi_mp, qi->qi_query->qr_text);
 #endif
     }
-  if (n_sets <= 0)
-    n_sets = dc_batch_sz;
   n_dcs = BOX_ELEMENTS (qi->qi_query->qr_vec_ssls);
   DO_BOX (state_slot_t *, ssl, inx, qi->qi_query->qr_vec_ssls)
   {

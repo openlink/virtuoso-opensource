@@ -4241,15 +4241,21 @@ sqlg_vector_params (sql_comp_t * sc, query_t * qr)
     }
 }
 
+extern int dc_default_var_len;
 
 void
 qr_set_vec_ssls (query_t * qr)
 {
+  int est = 0;
   dk_set_t ssls = NULL;
   DO_SET (state_slot_t *, ssl, &qr->qr_state_map)
   {
     if (SSL_VEC == ssl->ssl_type && !ssl->ssl_alias_of)
       dk_set_push (&ssls, (void *) ssl);
+      if (DV_ANY == ssl->ssl_dc_dtp)
+	est += dc_default_var_len + sizeof (caddr_t);
+      else
+	est += sizeof (int64);
   }
   END_DO_SET ();
   DO_SET (state_slot_t *, ssl, &qr->qr_temp_spaces)
@@ -4259,7 +4265,7 @@ qr_set_vec_ssls (query_t * qr)
   }
   END_DO_SET ();
   qr->qr_vec_ssls = (state_slot_t **) list_to_array (ssls);
-
+  qr->qr_dc_est = est;
 }
 
 void

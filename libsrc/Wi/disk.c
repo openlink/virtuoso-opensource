@@ -4506,6 +4506,7 @@ dbs_close (dbe_storage_t * dbs)
 
 extern int enable_malloc_cache;
 extern size_t mp_large_min;
+extern size_t mp_qi_large_block;
 
 void
 mem_cache_init (void)
@@ -4525,8 +4526,10 @@ mem_cache_init (void)
 	dk_cache_allocs (sz, 10);
     }
   {
+    int ign;
     size_t low = MAX (mp_large_min, sizeof (int64) * dc_batch_sz), high = sizeof (int64) * dc_max_batch_sz;
     mm_cache_init (c_max_large_vec, low, high, 21, pow (high / low, 1.0 / 20));
+    mp_qi_large_block = mm_next_size (2000000, &ign);
   }
 }
 

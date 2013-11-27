@@ -272,6 +272,7 @@ struct query_s
     int			qr_ref_count;
     int			qr_trig_order;
     int			qr_instance_length;
+    int		qr_dc_est;
     short		qr_cl_run_started; /*inx into qi, flag set when cl multistate qr running, no more input states allowed until outputs consumed */
     bitf_t		qr_is_ddl:1;
     bitf_t		qr_is_complete:1; /* false while trig being compiled */
