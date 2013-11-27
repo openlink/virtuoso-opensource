@@ -546,7 +546,7 @@ sparp_exec_Narg (sparp_t *sparp, const char *pl_call_text, query_t **cached_qr_p
   cli->cli_user = sec_name_to_user ("dba");
   if (NULL == cached_qr_ptr[0])
     {
-      if (parse_sem && parse_sem->sem_entry_count) /* This means that the call is made inside the SQL compiler, can't re-enter. */
+      if (0 /*parse_sem && parse_sem->sem_entry_count */) /* This means that the call is made inside the SQL compiler, can't re-enter. */
         spar_internal_error (sparp, "sparp_exec_Narg () tries to compile static inside the SQL compiler");
       cached_qr_ptr[0] = sql_compile_static (pl_call_text, cli, &err, SQLC_STATIC_PRESERVES_TREE);
       if (SQL_SUCCESS != err)

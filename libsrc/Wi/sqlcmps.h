@@ -692,12 +692,12 @@ void qr_no_copy_ssls (query_t * qr, dk_hash_t * no_copy);
   { \
       int is_sem = sqlc_inside_sem; \
       if (is_sem) \
-	semaphore_leave (parse_sem);
+	LEAVE_PARSE; 
 
 
 #define END_OUTSIDE_PARSE_SEM \
       if (is_sem) \
-	semaphore_enter (parse_sem); \
+	IN_PARSE; \
   }
 
 dk_hash_t * hash_table_copy (dk_hash_t * ht);

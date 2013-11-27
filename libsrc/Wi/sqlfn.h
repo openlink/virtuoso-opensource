@@ -1272,7 +1272,11 @@ extern int in_log_replay;
 extern int hash_join_enable;
 
 void list_wired_buffers (char *file, int line, char *format, ...);
-extern semaphore_t * parse_sem;
+extern dk_mutex_t * parse_mtx;
+extern du_thread_t * parse_mtx_owner;
+
+#define IN_PARSE { mutex_enter (parse_mtx); parse_mtx_owner = THREAD_CURRENT_THREAD; }
+#define LEAVE_PARSE { parse_mtx_owner = NULL; mutex_leave (parse_mtx); }
 
 extern void set_ini_trace_option (void);
 

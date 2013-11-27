@@ -2651,12 +2651,12 @@ dbe_table_t *
 qi_name_to_table (query_instance_t * qi, const char *name)
 {
   dbe_table_t *tb;
-  if (parse_sem)
-    semaphore_enter (parse_sem);
+  if (parse_mtx)
+    mutex_enter (parse_mtx);
   sqlc_set_client (qi->qi_client);
   tb = sch_name_to_table (isp_schema (NULL), name);
-  if (parse_sem)
-    semaphore_leave (parse_sem);
+  if (parse_mtx)
+    mutex_leave (parse_mtx);
   return tb;
 }
 

@@ -3965,11 +3965,11 @@ bif_complete_udt_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   sqlc_set_client (qi->qi_client);
   if (mode == DEFAULT_EXISTING)
     {
-      if (parse_sem)
-	semaphore_enter (parse_sem);
+      if (parse_mtx)
+	mutex_enter (parse_mtx);
       udt = sch_name_to_type (isp_schema (NULL), udt_name);
-      if (parse_sem)
-	semaphore_leave (parse_sem);
+      if (parse_mtx)
+	mutex_leave (parse_mtx);
     }
   if (udt)
     {

@@ -7600,10 +7600,10 @@ sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strva
       caddr_t str;
       memset (&sc, 0, sizeof (sc));
 
-      if (!parse_sem)
-	parse_sem = semaphore_allocate (1);
+      if (!parse_mtx)
+	parse_mtx = mutex_allocate ();
       MP_START ();
-      semaphore_enter (parse_sem);
+      mutex_enter (parse_mtx);
       SCS_STATE_PUSH;
       str = (caddr_t) t_alloc_box (20 + strlen (str2), DV_SHORT_STRING);
       snprintf (str, box_length (str), "EXEC SQL %s;", str2);
@@ -7653,7 +7653,7 @@ sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strva
     cleanup:
       sql_pop_all_buffers ();
       SCS_STATE_POP;
-      semaphore_leave (parse_sem);
+      mutex_leave (parse_mtx);
       MP_DONE ();
       sc_free (&sc);
       result_array = (caddr_t) (dk_set_to_array (lexems));
@@ -7766,10 +7766,10 @@ sql_split_text (const char * str2, caddr_t * qst, int flags)
   SCS_STATE_FRAME;
   memset (&sc, 0, sizeof (sc));
 
-  if (!parse_sem)
-    parse_sem = semaphore_allocate (1);
+  if (!parse_mtx)
+    parse_mtx = mutex_allocate ();
   MP_START();
-  semaphore_enter (parse_sem);
+  mutex_enter (parse_mtx);
   SCS_STATE_PUSH;
   str = (caddr_t) t_alloc_box (20 + strlen (str2), DV_SHORT_STRING);
   snprintf (str, box_length (str), "EXEC SQL %s", str2);
@@ -7852,7 +7852,7 @@ cleanup:
   SCS_STATE_POP;
   dk_free_box (scn3split_ses); /* must be released inside semaphore */
   scn3split_ses = NULL;
-  semaphore_leave (parse_sem);
+  mutex_leave (parse_mtx);
   sc_free (&sc);
   dk_free_box (start_filename);
   return revlist_to_array (res);
@@ -10837,10 +10837,10 @@ bif_set_qualifier (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       sqlr_new_error ("22023", "SR484", "The qualifier cannot be longer than %d characters nor empty string", MAX_NAME_LEN);
     }
   sch_normalize_new_table_case (isp_schema (qi->qi_space), q, box_length (q), NULL, 0);
-  semaphore_enter (parse_sem);
+  mutex_enter (parse_mtx);
   dk_free_box (qi->qi_client->cli_qualifier);
   qi->qi_client->cli_qualifier = q;
-  semaphore_leave (parse_sem);
+  mutex_leave (parse_mtx);
 
   if (!cli_ws && cli_is_interactive (cli))
   {

@@ -937,7 +937,8 @@ sql_stmt_comp (sql_comp_t * sc, ST ** ptree)
 }
 
 
-semaphore_t *parse_sem;
+dk_mutex_t *parse_mtx;
+du_thread_t * parse_mtx_owner;
 
 char *
 wrap_sql_string (const char *text)
@@ -1121,7 +1122,7 @@ sqlc_hook (client_connection_t * cli, caddr_t * real_tree_ret, caddr_t * err_ret
     {
       return;
     }
-  semaphore_leave (parse_sem);
+  mutex_leave (parse_mtx);
   if (proc->qr_to_recompile)
     proc = qr_recompile (proc, NULL);
   p1 = (state_slot_t *) (proc->qr_parms ? proc->qr_parms->data : NULL);
@@ -1129,7 +1130,7 @@ sqlc_hook (client_connection_t * cli, caddr_t * real_tree_ret, caddr_t * err_ret
     {
 
       log_error ("SQLPrepare hook must take at least 1 reference parameter");
-      semaphore_enter (parse_sem);
+      mutex_enter (parse_mtx);
       return;
     }
   tree = box_copy_tree (*real_tree_ret);
@@ -1139,7 +1140,7 @@ sqlc_hook (client_connection_t * cli, caddr_t * real_tree_ret, caddr_t * err_ret
 		 NULL, NULL, params, NULL, 0);
   dk_free_box ((caddr_t) params);
  SET_THR_TMP_POOL (saved_thr_mem_pool);
-  semaphore_enter (parse_sem);
+  mutex_enter (parse_mtx);
   sqlc_set_client (cli);
   if (err_ret)
     *err_ret = err;
@@ -1296,10 +1297,8 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   cc.cc_query = qr;
 
   sqlc_compile_hook (cli, string2, err);
-  if (!parse_sem)
-    parse_sem = semaphore_allocate (1);
-  if (parse_sem->sem_entry_count > 1)
-    GPF_T1 ("compiler parse sem entry count > 1");
+  if (!parse_mtx)
+    parse_mtx = mutex_allocate ();
   if (!nested_sql_comp)
     {
       sql_warnings_clear ();
@@ -1311,7 +1310,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
     cr_type = SQLC_PARSE_ONLY;
   else
     {
-      semaphore_enter (parse_sem);
+      mutex_enter (parse_mtx);
       inside_sem = 1;
     }
   SCS_STATE_PUSH;
@@ -1369,7 +1368,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	      sql_pop_all_buffers ();
 	      SCS_STATE_POP;
 	      if (inside_sem)
-	        semaphore_leave (parse_sem);
+		mutex_leave (parse_mtx);
 	      POP_CATCH;
 	      if (*err && strstr ((*(caddr_t**)err)[2], "RDFNI") )
 		{
@@ -1393,7 +1392,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	{
           if (inside_sem)
             {
-              semaphore_leave (parse_sem);
+              mutex_leave (parse_mtx);
               inside_sem = 0;
             }
 	}
@@ -1411,7 +1410,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	  qr_free (qr);
 	  POP_CATCH;
 	  if (inside_sem)
-	    semaphore_leave (parse_sem);
+	    mutex_leave (parse_mtx);
 	  return ((query_t*) tree1);
 	}
       if (cr_type == SQLC_TRY_SQLO)
@@ -1531,7 +1530,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   /* TREE_CHECK (tree); */
   SCS_STATE_POP;
   if (inside_sem)
-    semaphore_leave (parse_sem);
+    mutex_leave (parse_mtx);
   if (qr)
     {
       qr->qr_text = SET_QR_TEXT(qr,sc.sc_text);
@@ -1660,7 +1659,7 @@ dbg_sql_compile_static (const char *file, int line, const char *string2, client_
   sql_tree_t *tree = NULL;
   if (SQLC_STATIC_PRESERVES_TREE == cr_type)
     {
-      int cr_tree_type = ((NULL != parse_sem) && parse_sem->sem_entry_count) ? SQLC_PARSE_ONLY_REC : SQLC_PARSE_ONLY;
+      int cr_tree_type = ((NULL != parse_mtx) && global_scs && !sqlc_inside_sem) ? SQLC_PARSE_ONLY_REC : SQLC_PARSE_ONLY;
       tree = (sql_tree_t *)DBG_NAME(sql_compile_1) (DBG_ARGS string2, cli, err, cr_tree_type, NULL, NULL);
       if (NULL != err[0])
         return NULL;
@@ -1761,7 +1760,7 @@ sql_compile_static (const char *string2, client_connection_t * cli,
   sql_tree_t *tree = NULL;
   if (SQLC_STATIC_PRESERVES_TREE == cr_type)
     {
-      int cr_tree_type = ((NULL != parse_sem) && parse_sem->sem_entry_count) ? SQLC_PARSE_ONLY_REC : SQLC_PARSE_ONLY;
+      int cr_tree_type = ((NULL != parse_mtx) && global_scs && !sqlc_inside_sem) ? SQLC_PARSE_ONLY_REC : SQLC_PARSE_ONLY;
       tree = (sql_tree_t *)DBG_NAME(sql_compile_1) (DBG_ARGS string2, cli, err, cr_tree_type, NULL, NULL);
       if (NULL != err[0])
         return NULL;

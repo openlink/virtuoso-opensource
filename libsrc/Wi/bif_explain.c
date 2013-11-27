@@ -3684,7 +3684,7 @@ bif_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   sc.sc_exp_print_hook = xsql_print_stmt;
 
   MP_START();
-  semaphore_enter (parse_sem);
+  mutex_enter (parse_mtx);
   SCS_STATE_PUSH;
   sqlc_target_rds (local_rds);
 
@@ -3706,7 +3706,7 @@ bif_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   sqlc_set_client (old_cli);
   SCS_STATE_POP;
   MP_DONE();
-  semaphore_leave (parse_sem);
+  mutex_leave (parse_mtx);
   sc_free (&sc);
   qr_free (qr);
 

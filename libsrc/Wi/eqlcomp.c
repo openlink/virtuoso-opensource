@@ -2770,12 +2770,12 @@ eql_compile_2 (const char *string, client_connection_t * cli, caddr_t * err,
     {
       query_t *qr;
       client_connection_t *old_cli = sqlc_client ();
-      if (!parse_sem)
-	parse_sem = semaphore_allocate (1);
-      semaphore_enter (parse_sem);
+      if (!parse_mtx)
+	parse_mtx = mutex_allocate ();
+      mutex_enter (parse_mtx);
       sqlc_set_client (cli);
       qr = eql_compile_eql (string, cli, err);
-      semaphore_leave (parse_sem);
+      mutex_leave (parse_mtx);
       sqlc_set_client (old_cli);
       return qr;
     }
