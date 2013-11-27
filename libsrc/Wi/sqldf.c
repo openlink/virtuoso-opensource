@@ -5196,6 +5196,42 @@ sqlo_best_hash_filler (sqlo_t * so, df_elt_t * fill_dfe, int remote, dk_set_t * 
 
 
 void
+sqlo_hash_redundant_keys (sqlo_t * so, dk_set_t * hash_refs_ret, dk_set_t * hash_keys_ret)
+{
+  /* if two refs are known eq and the 2 keys corresponding are eq then drop the ref that is assigned later in the plan */
+  int inx1, inx2, n_refs, rminx;
+  dk_set_t hash_refs = *hash_refs_ret;
+  dk_set_t hash_keys = *hash_keys_ret;
+  if (!hash_refs->next)
+    return;
+  n_refs = dk_set_length (hash_refs);
+  for (inx1 = 0; inx1 < n_refs; inx1++)
+    {
+      df_elt_t * r1 = (df_elt_t*)dk_set_nth (hash_refs, inx1);
+      for (inx2 = inx1 + 1; inx2 < n_refs; inx2++)
+	{
+	  df_elt_t * r2 = (df_elt_t*)dk_set_nth (hash_refs, inx2);
+	  {if (sqlo_is_col_eq (so->so_this_dt, r1, r2)
+	       && sqlo_is_col_eq (so->so_this_dt, (df_elt_t*)dk_set_nth (hash_keys, inx1), (df_elt_t*)dk_set_nth (hash_keys, inx2)))
+	      {
+		df_elt_t * refs[2];
+		refs[0] = r1;
+		refs[1] = r2;
+		df_elt_t * def = dfe_latest (so, 2, refs, 0);
+		if (!def)
+		  return;
+		rminx =  dfe_defines (def, r1) ? inx1 : inx2;
+		t_set_delete (hash_refs_ret, dk_set_nth (hash_refs, rminx));
+		t_set_delete (hash_keys_ret, dk_set_nth (hash_keys, rminx));
+		return;
+	      }
+	  }
+	}
+    }
+}
+
+
+void
 sqlo_check_col_pred_placed (df_elt_t * tb_dfe)
 {
   return;
@@ -5304,6 +5340,7 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
   text_pred_save = dfe->_.table.text_pred;
   dfe->_.table.text_pred = NULL; /* if text pred on inner table of hash join, the filler will always do the text pred */
   sqlo_check_col_pred_placed (dfe);
+  sqlo_hash_redundant_keys (so, &hash_refs, &hash_keys);
   if (sqlo_hash_fill_join (so, dfe, &fill_dfe, org_preds, hash_keys, ref_arity))
     {
       sqlo_check_col_pred_placed (dfe);

@@ -218,6 +218,8 @@ int
 sqlo_is_col_eq (op_table_t * ot, df_elt_t * col, df_elt_t * val)
 {
   dk_set_t *place;
+  if (col == val)
+    return 1;
   if (!ot->ot_eq_hash)
     return 0;
   place = (dk_set_t *) id_hash_get (ot->ot_eq_hash, (caddr_t) &col->dfe_tree);
