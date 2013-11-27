@@ -1065,6 +1065,7 @@ typedef struct union_node_s
     data_source_t	src_gen;
     state_slot_t *	uni_nth_output;
     dk_set_t		uni_successors;
+    dk_hash_t *         un_refs_after;	/* in tracking ssl refs, do a union's continuation only once, remember the refd ssls here */
     char		uni_sequential; /* finish each branch before starting next.  Needed in except and intersect */
   } union_node_t;
 

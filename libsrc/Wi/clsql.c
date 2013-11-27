@@ -730,6 +730,16 @@ sqlg_part_fref_order (sql_comp_t * sc, fun_ref_node_t * fref)
 }
 
 
+void
+sqlg_un_refs (sql_comp_t * sc, union_node_t * un, dk_hash_t * refs)
+{
+  DO_HT (state_slot_t *, ssl, ptrlong, igm, un->un_refs_after)
+    {
+      REF_SSL (refs, ssl);
+    }
+  END_DO_HT;
+}
+
 
 void
 sqlg_qn_env (sql_comp_t * sc, data_source_t * qn, dk_set_t qn_stack, dk_hash_t * refs)
@@ -742,9 +752,25 @@ sqlg_qn_env (sql_comp_t * sc, data_source_t * qn, dk_set_t qn_stack, dk_hash_t *
 	  /* here we are at end of a subq and call the next of the caller.  The caller of the subq is either a sqs or a union node.  Mind the sqs's or union's after tests so that upon return, when the subq is processed, they are properly in the refs */
 	  int cl_flag = 0;
 	  QNCAST (data_source_t, sqs, qn_stack->data);
+	  if (IS_QN (sqs, union_node_input))
+	    {
+	      QNCAST (union_node_t, un, sqs);
+	      if (un->un_refs_after)
+		{
+		  /* the union's  continuation has been seen. Redo the same refs, no need to get them again  */
+		  sqlg_un_refs (sc, un, refs);
+		  return;
+		}
+	    }
 	  sqlg_qn_env (sc, qn_next (sqs), qn_stack->next, refs);
 	  cv_refd_slots (sc, sqs->src_after_code, refs, NULL, &cl_flag);
 	  cv_refd_slots (sc, sqs->src_after_test, refs, NULL, &cl_flag);
+	  if (IS_QN (sqs,  union_node_input))
+	    {
+	      QNCAST (union_node_t, un, sqs);
+	      if (!un->un_refs_after)
+		un->un_refs_after = hash_table_copy (refs); 
+	    }
 	}
       else
 	{
@@ -796,11 +822,15 @@ sqlg_qn_env (sql_comp_t * sc, data_source_t * qn, dk_set_t qn_stack, dk_hash_t *
   else if ((qn_input_fn) union_node_input == qn->src_input)
     {
       QNCAST (union_node_t, un, qn);
+      un->un_refs_after = NULL;
       DO_SET (query_t *, term, &un->uni_successors)
       {
 	sqlg_qn_env (sc, term->qr_head_node, t_cons ((void *) qn, qn_stack), refs);
       }
       END_DO_SET ();
+      if (un->un_refs_after)
+	hash_table_free (un->un_refs_after);
+      un->un_refs_after = NULL;
     }
   else
     {
