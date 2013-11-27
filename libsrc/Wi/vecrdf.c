@@ -273,7 +273,7 @@ dc_rb_id (data_col_t * dc, int inx)
     return INT64_REF_NA (place + 1);
   else if (DV_RDF == place[0])
     {
-      rdf_box_t * rb = (rdf_box_t*)box_deserialize_string (place, 0, 0);
+      rdf_box_t * rb = (rdf_box_t*)box_deserialize_string (place, INT32_MAX, 0);
       int64 id = rb->rb_ro_id;
       dk_free_box ((caddr_t)rb);
       return id;
