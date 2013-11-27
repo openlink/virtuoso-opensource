@@ -602,7 +602,7 @@ sqlo_df (sqlo_t * so, ST * tree)
   if (DK_MEM_RESERVE)
     sqlc_error (so->so_sc->sc_cc, "42000", "Out of memory");
   SQLO_MP_SAMPLE;
-  if (so->so_max_memory > 0 && (THR_TMP_POOL)->mp_bytes > so->so_max_memory * 1.4)
+  if (0 && so->so_max_memory > 0 && (THR_TMP_POOL)->mp_bytes > so->so_max_memory * 1.4)
     {
       sqlc_error (so->so_sc->sc_cc, "42000",
 	  "Query optimization temp memory   %d bytes reached the limit %d bytes, try to increase the MaxMemPoolSize ini setting",
@@ -3209,6 +3209,12 @@ sqlo_merge_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, dk_set
 
 #define dfe_is_upper(dfe) (dfe->_.bin.op == BOP_LT || dfe->_.bin.op == BOP_LTE)
 
+extern caddr_t uname_one_of_these;
+
+#define IS_ONE_OF_THESE(name)  (0 == stricmp (name, "one_of_these")) 
+#define IS_ONE_OF_THESE(n) (n == uname_one_of_these)
+
+
 int do_sqlo_in_list = 1;
 
 df_elt_t **
@@ -3216,10 +3222,16 @@ sqlo_in_list (df_elt_t * pred, df_elt_t *tb_dfe, caddr_t name)
 {
   if (!do_sqlo_in_list)
     return NULL;
-  if (DFE_BOP_PRED == pred->dfe_type && BOP_LT == pred->_.bin.op &&
+  if (DFE_BOP_PRED != pred->dfe_type || 2 == pred->_.bin.is_in_list)
+    return NULL;
+
+  if (0 == pred->_.bin.is_in_list
+      && BOP_LT == pred->_.bin.op &&
     DFE_CONST == pred->_.bin.left->dfe_type && !unbox ((ccaddr_t)(pred->_.bin.left->dfe_tree)) &&
     DFE_CALL == pred->_.bin.right->dfe_type && pred->_.bin.right->_.call.func_name &&
-    0 == stricmp (pred->_.bin.right->_.call.func_name, "one_of_these") )
+    IS_ONE_OF_THESE (pred->_.bin.right->_.call.func_name))
+    pred->_.bin.is_in_list = 1;
+  if (1 == pred->_.bin.is_in_list)
     {
       df_elt_t ** args = pred->_.bin.right->_.call.args;
       if (args[0] && DFE_COLUMN == args[0]->dfe_type
@@ -3237,10 +3249,13 @@ sqlo_in_list (df_elt_t * pred, df_elt_t *tb_dfe, caddr_t name)
 	    }
 	  /* it found something that look like as a col but it's not a column */
 	  if (NULL == args[0]->_.col.col)
-	    return NULL;
+	    goto no;
 	  return args;
 	}
+      return NULL;
     }
+ no:
+  pred->_.bin.is_in_list = 2;
   return NULL;
 }
 

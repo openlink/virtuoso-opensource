@@ -36,12 +36,17 @@
 #include "rdfinf.h"
 #include "strlike.h"
 
+dk_set_t dfe_tables (df_elt_t * dfe);
 
 df_elt_t *
 dfe_left_col (df_elt_t * tb_dfe, df_elt_t * pred)
 {
+  df_elt_t **in_list;
   if (DFE_BOP != pred->dfe_type && DFE_BOP_PRED != pred->dfe_type)
     return NULL;
+  in_list = sqlo_in_list (pred, tb_dfe, NULL);
+  if (in_list && dfe_tables (pred) && !pred->dfe_tables->next)
+    return in_list[0];
   if (DFE_COLUMN == pred->_.bin.left->dfe_type && tb_dfe->_.table.ot == (op_table_t *) pred->_.bin.left->dfe_tables->data)
     return pred->_.bin.left;
   if (DFE_COLUMN == pred->_.bin.right->dfe_type && tb_dfe->_.table.ot == (op_table_t *) pred->_.bin.right->dfe_tables->data)
@@ -52,8 +57,16 @@ dfe_left_col (df_elt_t * tb_dfe, df_elt_t * pred)
 df_elt_t *
 dfe_right (df_elt_t * tb_dfe, df_elt_t * pred)
 {
+  df_elt_t **in_list;
   if (DFE_BOP != pred->dfe_type && DFE_BOP_PRED != pred->dfe_type)
     return NULL;
+  in_list = sqlo_in_list (pred, tb_dfe, NULL);
+  if (in_list && dfe_tables (pred) && !pred->dfe_tables->next)
+    {
+      if (BOX_ELEMENTS (in_list) > 1)
+	return in_list[1];
+      return NULL;
+    }
   if (!dk_set_member (pred->_.bin.left->dfe_tables, (void *) tb_dfe->_.table.ot))
     return pred->_.bin.left;
   if (!dk_set_member (pred->_.bin.right->dfe_tables, (void *) tb_dfe->_.table.ot))
@@ -437,13 +450,13 @@ jp_add (join_plan_t * jp, df_elt_t * tb_dfe, df_elt_t * pred, int is_join)
 	}
     }
 
-  if (!right || !ps->ps_left_col || !PRED_IS_EQ (pred))
+  if (!right || !ps->ps_left_col || !PRED_IS_EQ_OR_IN (pred))
     {
       ps->ps_card = DFE_TEXT_PRED == pred->dfe_type ? 0.01 : 0.3;
       return;
     }
   ps->ps_right = right;
-  if (DFE_COLUMN == right->dfe_type && PRED_IS_EQ (pred))
+  if (DFE_COLUMN == right->dfe_type && PRED_IS_EQ_OR_IN (pred))
     {
       df_elt_t *right_tb = ((op_table_t *) right->dfe_tables->data)->ot_dfe;
       if (!right_tb->dfe_is_placed)
@@ -458,7 +471,9 @@ jp_add (join_plan_t * jp, df_elt_t * tb_dfe, df_elt_t * pred, int is_join)
       else
 	{
 	  if (-1 != ps->ps_left_col->col_n_distinct)
-	    ps->ps_card = 1.0 / ps->ps_left_col->col_n_distinct;
+	    {
+	      ps->ps_card = 1.0 / ps->ps_left_col->col_n_distinct;
+	    }
 	  else
 	    ps->ps_card = 0.5;
 	}
