@@ -4029,18 +4029,21 @@ retry_unrdf:
   if ((DV_STRING != str_dtp) && (DV_UNAME != str_dtp))
     {
       if (DV_RDF == str_dtp)
-	{
-	  str = ((rdf_box_t *) str)->rb_box;
-	  str_dtp = DV_TYPE_OF (str);
-	  goto retry_unrdf;	/* see above */
-	}
+        {
+          rdf_box_t *rb = (rdf_box_t *) str;
+          if (!rb->rb_is_complete)
+            rb_complete (rb, ((query_instance_t *)qst)->qi_trx, (query_instance_t *)qst);
+          str = rb->rb_box;
+          str_dtp = DV_TYPE_OF (str);
+          goto retry_unrdf;	/* see above */
+        }
       if ((0 == hide_errors) && (DV_DB_NULL != str_dtp))
-	{
+        {
           err_ret[0] = srv_make_new_error ("22023", "SR536",
-	      "Function sprintf_inverse needs a string as argument 0 if argument 2 is zero, not an arg of type %s (%d)",
-	      dv_type_title (str_dtp), str_dtp );
+            "Function sprintf_inverse needs a string as argument 0 if argument 2 is zero, not an arg of type %s (%d)",
+            dv_type_title (str_dtp), str_dtp );
           return NULL;
-	}
+        }
       goto format_mismatch;
     }
   QR_RESET_CTX
