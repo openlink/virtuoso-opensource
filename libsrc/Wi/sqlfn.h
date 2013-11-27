@@ -1616,6 +1616,8 @@ sort_cmp_func_t  itc_param_cmp_func (it_cursor_t * itc);
 void upd_col_pk (update_node_t * upd, caddr_t * inst);
 caddr_t cl_vec_exec (query_t * qr, client_connection_t * cli, mem_pool_t * mp, caddr_t * params, slice_id_t * slices, slice_id_t slid, db_buf_t * set_mask_ret, data_col_t ** dc_ret, int set_no_in_params);
 void sqlg_ks_col_alter  (key_source_t * ks);
+int sqlg_fref_n_grouping_sets (fun_ref_node_t * fref);
+setp_node_t * sqlg_qf_nth_setp (query_frag_t * qf, int nth);
 
 #define CAR(dt,x)	(x ? ((dt) ((x)->data)) : 0)
 #define CDR(x)		(x ? (x)->next : NULL)
