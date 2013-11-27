@@ -394,6 +394,7 @@ typedef struct server_lock_s
   lock_trx_t *	sl_owner_lt;
   dk_set_t	sl_waiting;
   int		sl_ac_save; /* for atomic mode, save the cli ac flag */
+  int 		sl_qp_save;
 } server_lock_t;
 
 extern server_lock_t server_lock;

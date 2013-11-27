@@ -2164,6 +2164,7 @@ srv_global_unlock_1 (client_connection_t *cli, lock_trx_t *lt, int was_error)
       server_lock.sl_owner = NULL;
       server_lock.sl_owner_lt = NULL;
       wi_inst.wi_atomic_ignore_2pc = 0;
+      enable_qp = server_lock.sl_qp_save;
       cpt_over ();
       LEAVE_TXN;
       lt->lt_is_excl = 0;
@@ -2224,6 +2225,8 @@ srv_global_lock (query_instance_t * qi, int flag)
       LEAVE_TXN;
       server_lock.sl_ac_save = lt->lt_client->cli_row_autocommit;
       lt->lt_client->cli_row_autocommit = 1;
+      server_lock.sl_qp_save = enable_qp;
+      enable_qp = 1;
       return;
     }
   else
