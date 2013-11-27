@@ -16808,11 +16808,6 @@ create procedure DB.DBA.RDF_QUAD_OUTLINE_ALL (in force integer := 0)
       registry_set ('__rb_id_only_for_plain_ro_obj', '1');
       return;
     }
-  if (0 = sys_stat ('db_exists'))
-    {
-      registry_set ('__rb_id_only_for_plain_ro_obj', '1');
-      return;
-    }
   log_message ('This database may contain RDF data that could cause indexing problems on previous versions of the server.');
   log_message ('The content of the DB.DBA.RDF_QUAD table will be checked and an update may automatically be performed if');
   log_message ('such data is found.');
