@@ -2577,6 +2577,7 @@ ts_thread (table_source_t * ts, caddr_t * inst, it_cursor_t * itc, int aq_state,
       lt_timestamp (qi->qi_trx, &aq->aq_lt_timestamp[0]);
       aq->aq_ts = get_msec_real_time ();
       aq->aq_row_autocommit = qi->qi_client->cli_row_autocommit;
+      aq->aq_non_txn_insert = qi->qi_non_txn_insert;
       qst_set (inst, ts->ts_aq, (caddr_t) aq);
     }
   if (!qis || BOX_ELEMENTS (qis) <= inx)
