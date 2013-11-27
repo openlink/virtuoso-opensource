@@ -1240,6 +1240,23 @@ sqlo_join_exp_inlineable (ST * exp)
 
 
 int
+sqlo_oj_has_const (ST * tree)
+{
+  /* if a rhs of left oj is a select with constant exps, this cannot be inlined because the constant must be a variable in order to be null. */ 
+  int inx;
+  if (!ST_P (tree, SELECT_STMT))
+    return 0;
+  DO_BOX (ST *, exp, inx, tree->_.select_stmt.selection)
+    {
+      if (!sqlo_has_node (exp, COL_DOTTED))
+	return 1;
+    }
+  END_DO_BOX;
+  return 0;
+}
+
+
+int
 sqlo_dt_inlineable (sqlo_t *so, ST *tree, ST * from, op_table_t *ot, int single_only)
 {
   ST *dtexp = from->_.table_ref.table;
@@ -1267,6 +1284,8 @@ sqlo_dt_inlineable (sqlo_t *so, ST *tree, ST * from, op_table_t *ot, int single_
 	    return 0;
 	  while (ST_P (dt_from, TABLE_REF))
 	    dt_from = dt_from->_.table_ref.table;
+	  if (single_only && sqlo_oj_has_const (dtexp))
+	    return 0;
 	  if (single_only && ST_P (dt_from, JOINED_TABLE))
 	    return 0;
 	  if (ST_P (dt_from, JOINED_TABLE)
