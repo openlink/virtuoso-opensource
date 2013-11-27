@@ -37,7 +37,7 @@
 int chash_max_count = 20000000;
 int chash_init_gb_size = 10000;
 int chash_max_key_len = (PAGE_DATA_SZ - 5);
-int chash_max_partitions = 1000000;
+int chash_max_partitions = 1045111;
 int chash_part_size = 7011;
 int chash_part_max_fill = 4000;
 int enable_chash_bloom = 1;
@@ -86,6 +86,19 @@ void hash_source_chash_input_1i_n (hash_source_t * hs, caddr_t * inst, caddr_t *
 #define GB_IS_NULL(ha, row, nth) \
   (!(((db_buf_t)row)[ ha->ha_ch_nn_flags + (nth / 8)] & (1 << (nth & 7))))
 
+
+
+uint64 
+th2 (int64 h1, int64 h2)
+{
+  uint64 h = 1;
+  MHASH_STEP (h, h1);
+  if (h2)
+    {
+      MHASH_STEP (h, h2);
+    }
+  return h;
+}
 
 
 int consec_sets[ARTM_VEC_LEN];
@@ -1713,6 +1726,7 @@ cha_alloc_int (chash_t * cha, setp_node_t * setp, sql_type_t * new_sqt, chash_t 
   if (n_rows <= 0)
     n_rows = 10000;
   n_part = _RNDUP (n_rows, chash_part_max_fill) / chash_part_max_fill;
+  n_part = hash_nextprime (n_part);
   n_part = MIN (n_part, chash_max_partitions);
   if (n_part)
     {
