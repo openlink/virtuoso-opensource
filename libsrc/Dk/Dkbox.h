@@ -768,6 +768,7 @@ EXE_EXPORT (box_t, box_dv_short_substr, (ccaddr_t box, int n1, int n2));
 EXE_EXPORT (box_t, box_dv_short_concat, (ccaddr_t box1, ccaddr_t box2));
 EXE_EXPORT (box_t, box_dv_short_strconcat, (const char *str1, const char *str2));
 EXE_EXPORT (char *, box_dv_ubuf, (size_t buf_strlen));
+EXE_EXPORT (char *, box_dv_ubuf_or_null, (size_t buf_strlen));
 EXE_EXPORT (box_t, box_dv_uname_from_ubuf, (char *ubuf));
 EXE_EXPORT (box_t, box_dv_uname_string, (const char *string));
 EXE_EXPORT (box_t, box_dv_uname_nchars, (const char *buf, size_t buf_len));
@@ -835,6 +836,7 @@ box_t dbg_box_num (const char *file, int line, boxint n);
 box_t dbg_box_num_nonull (const char *file, int line, boxint n);
 box_t dbg_box_iri_id (const char *file, int line, int64 n);
 char *dbg_box_dv_ubuf (const char *file, int line, size_t buf_strlen);
+char *dbg_box_dv_ubuf_or_null (const char *file, int line, size_t buf_strlen);
 box_t dbg_box_dv_uname_from_ubuf (const char *file, int line, char *ubuf);
 box_t dbg_box_dv_uname_string (const char *file, int line, const char *string);
 box_t dbg_box_dv_uname_nchars (const char *file, int line, const char *buf, size_t buf_len);
@@ -866,6 +868,7 @@ caddr_t dbg_box_vsprintf (const char *file, int line, size_t buflen_eval, const 
 #define box_num_nonull(S)			dbg_box_num_nonull (__FILE__, __LINE__, (S))
 #define box_iri_id(S)				dbg_box_iri_id (__FILE__, __LINE__, (S))
 #define box_dv_ubuf(B)				dbg_box_dv_ubuf (__FILE__, __LINE__, (B))
+#define box_dv_ubuf_or_null(B)			dbg_box_dv_ubuf_or_null (__FILE__, __LINE__, (B))
 #define box_dv_uname_from_ubuf(U)		dbg_box_dv_uname_from_ubuf (__FILE__, __LINE__, (U))
 #define box_dv_uname_string(S)			dbg_box_dv_uname_string (__FILE__, __LINE__, (S))
 #define box_dv_uname_nchars(B,SZ)		dbg_box_dv_uname_nchars (__FILE__, __LINE__, (B), (SZ))
@@ -942,6 +945,7 @@ extern void dkbox_terminate_module (void);
 #define BF_IRI 				0x01	/*!< This means that the box is an IRI. This implies that the string is UTF8 */
 #define BF_UTF8 			0x02	/*!< The string is supposed to be an UTF-8, a routine should signal an error if that is not a valid UTF-8 */
 #define BF_DEFAULT_SERVER_ENC 		0x04	/*!< The string is supposed to be in default server encoding. Not used if UTF-8 is default server encoding */
+#define BF_UNAME_AS_STRING		0x40	/*!< The string was UNAME before the serialization. It may become UNAME again if that's safe */
 #define BF_VALID_JSO			0x80	/*!< This means that the box is a valid JSO (say, it's in JSO_STATUS_LOADED state). MALLOC_DEBUG of memory pool stops here because it can be out of pool and circular refs are allowed. */
 
 double buf_to_double (char *buf);

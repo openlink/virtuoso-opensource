@@ -58,6 +58,7 @@ void print_raw_float (float f, dk_session_t * session);
 void print_raw_double (double f, dk_session_t * session);
 void dks_array_head (dk_session_t * session, long n_elements, dtp_t type);
 void print_string (char *string, dk_session_t * session);
+void print_uname (char *string, dk_session_t * session);
 void print_ref_box (char *string, dk_session_t * session);
 void print_object2 (void *object, dk_session_t * session);
 int srv_write_in_session (void *object, dk_session_t * session, int flush);

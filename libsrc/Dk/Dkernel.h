@@ -857,6 +857,7 @@ void print_raw_double (double n, dk_session_t * session);
 void print_int (long n, dk_session_t * session);
 void dks_array_head (dk_session_t * ses, int n_elements, dtp_t type);
 void print_string (char *string, dk_session_t * session);
+void print_uname (char *string, dk_session_t * session);
 void print_ref_box (char *string, dk_session_t * session);
 void PrpcSetWriter (dtp_t dtp, ses_write_func f);
 void print_object (caddr_t object, dk_session_t * session, printer_ext_func extension, caddr_t ea);

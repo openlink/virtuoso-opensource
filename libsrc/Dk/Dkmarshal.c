@@ -344,10 +344,34 @@ static void *
 box_read_flags (dk_session_t * session, dtp_t dtp)
 {
   uint32 flags = (uint32) read_long (session);
-  char *string = scan_session_boxing (session);
-  if (IS_BOX_POINTER (string))
-    box_flags (string) = flags;
-  return (void *) string;
+  if (flags & BF_UNAME_AS_STRING)
+    {
+      dtp_t next_char = session_buffered_read_char (session);
+      int length;
+      char *res;
+      switch (next_char)
+        {
+        case DV_SHORT_STRING_SERIAL: length = (int) session_buffered_read_char (session); break;
+        case DV_LONG_STRING: length = (size_t) read_long (session); break;
+        default: box_read_error (session, next_char); break;
+        }
+      MARSH_CHECK_LENGTH (length);
+      res = box_dv_ubuf_or_null (length);
+      MARSH_CHECK_BOX (res);
+      session_buffered_read (session, res, length);
+      res[length] = '\0';
+      /* box flags are not set. */
+      return box_dv_uname_from_ubuf (res);
+    }
+  else
+    {
+      char *string = scan_session_boxing (session);
+      if (IS_BOX_POINTER (string))
+        {
+          box_flags (string) = flags;
+        }
+      return (void *) string;
+    }
 }
 
 
@@ -1075,6 +1099,29 @@ print_string (char *string, dk_session_t * session)
   session_buffered_write (session, string, length);
 }
 
+void
+print_uname (char *string, dk_session_t * session)
+{
+  /* There will be a zero at the end. Do not send the zero. */
+  uint32 flags = box_flags (string) | BF_IRI | BF_UNAME_AS_STRING;
+  size_t length = box_length (string) - 1;
+  if (flags && (!box_flags_serial_test_hook || box_flags_serial_test_hook (session)))
+    {
+      session_buffered_write_char (DV_BOX_FLAGS, session);
+      print_long (flags, session);
+    }
+  if (length < 256)
+    {
+      session_buffered_write_char (DV_SHORT_STRING_SERIAL, session);
+      session_buffered_write_char ((char) length, session);
+    }
+  else
+    {
+      session_buffered_write_char (DV_STRING, session);
+      print_long ((long) length, session);
+    }
+  session_buffered_write (session, string, length);
+}
 
 void
 print_ref_box (char *string, dk_session_t * session)
@@ -1189,8 +1236,10 @@ print_object2 (void *object, dk_session_t * session)
 
 	case DV_STRING:
 	case DV_C_STRING:
-	case DV_UNAME:
 	  print_string ((char *) object, session);
+	  break;
+	case DV_UNAME:
+	  print_uname ((char *) object, session);
 	  break;
 	case DV_SINGLE_FLOAT:
 	  print_float (*(float *) object, session);
