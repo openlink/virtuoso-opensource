@@ -141,7 +141,7 @@ create procedure REPL_COLTYPE_PS (
   else if (_col_dtp = 219)
     {
       -- (prec, scale) for numeric
-      if (_col_prec < _col_scale)
+      if (_col_prec < _col_scale or _col_scale is null)
         _col_scale := 0;
       _coltype := concat (_coltype, sprintf('(%d, %d)', _col_prec, _col_scale));
     }
