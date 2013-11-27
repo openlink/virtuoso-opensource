@@ -1726,11 +1726,27 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID,
     {
       declare xsdt IRI_ID;
       if (lang is not null)
-        signal ('RDFXX', 'Language is set for typed literal in DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL()');
-      xsdt := cast (__xsd_type (v, UNAME'http://www.w3.org/2001/XMLSchema#string', NULL) as varchar);
-      if (dt_iid = case (isiri_id (dt_iid)) when 1 then iri_to_id (xsdt) else xsdt end)
-        return v;
-      -- dbg_obj_princ ('no opt -- ', dt_iid, case (isiri_id (dt_iid)) when 1 then iri_to_id (xsdt) else xsdt end);
+        {
+          if (is_rdf_box (v) and rdf_box_type (v) = 257)
+            {
+              v := rdf_box_data (v, 1);
+              if (__tag of varchar <> __tag (v))
+                signal ('RDFXX', 'Language is set and the argument is invalid RDF box in DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL()');
+            }
+          else
+            signal ('RDFXX', 'Language is specified for typed literal in DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL()');
+          if (dt_iid is not null)
+            signal ('RDFXX', 'Both language and type are specified in call of DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL()');
+        }
+      else
+        {
+          if (is_rdf_box (v))
+            v := rdf_box_data (v, 1);
+          xsdt := cast (__xsd_type (v, UNAME'http://www.w3.org/2001/XMLSchema#string', NULL) as varchar);
+          if (dt_iid = case (isiri_id (dt_iid)) when 1 then iri_to_id (xsdt) else xsdt end)
+            return v;
+          -- dbg_obj_princ ('no opt -- ', dt_iid, case (isiri_id (dt_iid)) when 1 then iri_to_id (xsdt) else xsdt end);
+        }
     }
   if (dt_iid is not null)
     dt_twobyte := DB.DBA.RDF_TWOBYTE_OF_DATATYPE (dt_iid);
@@ -2284,11 +2300,22 @@ create function DB.DBA.rdf_strdt_impl (in str varchar, in dt_iri any)
 
 create function DB.DBA.rdf_strlang_impl (in str varchar, in lang any)
 {
-
+  declare t integer;
   lang := cast (lang as varchar);
   if ((lang is null) or (regexp_match ('^(([a-z][a-z](-[A-Z][A-Z])?)|(x-[A-Za-z0-9]+))\044', lang) is null))
     signal ('22007', 'Function rdf_strlang_impl needs a valid language ID as its second argument');
-  return DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (str, null, cast (lang as varchar));
+  if (is_rdf_box (str))
+    str := rdf_box_data (str, 1);
+  t := __tag (str);
+  if (__tag of nvarchar = t)
+    str := charset_recode (str, '_WIDE_', 'UTF-8');
+  else if (__tag of varchar <> t)
+    {
+      if (str is null)
+        signal ('22007', 'Function rdf_strlang_impl needs a bound value as its first argument, not a NULL');
+      str := cast (str as varchar);
+    }
+  return rdf_box (str, 257, DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (lang), 0, 1);
 }
 ;
 

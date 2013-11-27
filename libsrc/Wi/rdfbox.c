@@ -199,7 +199,7 @@ bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   /* data, type, lamg, ro_id, is_complete */
   rdf_box_t * rb;
-  caddr_t box, chksum = NULL;
+  caddr_t box, bcopy, chksum = NULL;
   dtp_t box_dtp;
   long type, lang, ro_id, is_complete;
   box = bif_arg (qst, args, 0, "rdf_box");
@@ -231,6 +231,10 @@ bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     case DV_BLOB: case DV_BLOB_HANDLE: case DV_BLOB_BIN: case DV_BLOB_WIDE: case DV_BLOB_WIDE_HANDLE:
     case DV_BLOB_XPER: case DV_BLOB_XPER_HANDLE:
       sqlr_new_error ("22023", "SR559", "Large object (tag %d) is not a valid argument #1 in call of rdf_box()", box_dtp);
+    case DV_RDF:
+      sqlr_new_error ("22023", "SR559", "RDF box (tag %d) is not a valid argument #1 in call of rdf_box()", box_dtp);
+    case DV_IRI_ID:
+      sqlr_new_error ("22023", "SR559", "IRI_ID box (tag %d) is not a valid argument #1 in call of rdf_box()", box_dtp);
     }
   if (type == RDF_BOX_GEO && box_dtp != DV_GEO)
     sqlr_new_error ("22023", "SR559", "The RDF box of type geometry needs a spatial object as a value, not a value of type %s (%d)", dv_type_title (box_dtp), box_dtp);
@@ -270,11 +274,25 @@ bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       rdf_bigbox_audit(rbb);
       return (caddr_t) rbb;
     }
+  if (DV_STRING == DV_TYPE_OF (box))
+    {
   if (is_complete && (0 == ro_id) && (RDF_BOX_DEFAULT_TYPE == type) && (RDF_BOX_DEFAULT_LANG == lang) &&
-    (DV_STRING == DV_TYPE_OF (box)) && ((RB_MAX_INLINED_CHARS+1) >= box_length_inline (box)) )
-    return box_copy (box);
+        ((RB_MAX_INLINED_CHARS+1) >= box_length_inline (box)) )
+        {
+          bcopy = box_copy (box);
+          if (BF_IRI & box_flags(bcopy))
+            box_flags(bcopy) = BF_UTF8;
+          return bcopy;
+        }
+/* The following three rows are intentionally duplicated from above in order to get different location of memory leaks for two cases: a string lost after being returned "as is" and string lost in rb_box field */
+      bcopy = box_copy (box); 
+      if (BF_IRI & box_flags(bcopy))
+        box_flags(bcopy) = BF_UTF8;
+    }
+  else
+    bcopy = box_copy_tree (box);
   rb = rb_allocate ();
-  rb->rb_box = box_copy_tree (box);
+  rb->rb_box = bcopy;
   rb->rb_type = (short)type;
   rb->rb_lang = (short)lang;
   rb->rb_ro_id = ro_id;
