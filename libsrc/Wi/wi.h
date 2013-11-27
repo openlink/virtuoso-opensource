@@ -823,7 +823,6 @@ struct it_cursor_s
     bitf_t		itc_is_vacuum:1;
     bitf_t		itc_ac_parent_deld:1; /* set by autocompact to indicate that the parent page was popped off because of having only one leaf left */
     bitf_t		itc_is_geo_registered:1; /* in list of itcs in the geo index of itc_tree.  itc_tree can be a temp deld at time of itc free, so can't look in the tree*/
-    bitf_t		itc_geo_op:2;
     bitf_t		itc_cl_results:1; /* in cluster server, send stuff in out map to the client node */
     bitf_t		itc_cl_local:1; /* if cluster but running local */
     bitf_t		itc_cl_batch_done:1; /* set if reset due ti batch done */
@@ -863,6 +862,7 @@ struct it_cursor_s
     short			itc_temp_max;
     short			itc_n_siblings;
     short			itc_nth_sibling;
+    unsigned char	itc_geo_op;
 
     /* dp_addr_t		itc_parent_page; */
     dp_addr_t		itc_siblings_parent; /* the pages in itc siblings are children of this.  Use for checking that the siblings list has the right content */

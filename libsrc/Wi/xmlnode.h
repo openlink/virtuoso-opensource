@@ -56,7 +56,7 @@ typedef struct text_node_s
     ptrlong		txs_why_ranges;			/*!< Bits from TXS_RANGES4XXX */
     char		txs_is_driving;
     char		txs_order; /* if should give deterministic order in cluster */
-    char		txs_geo;
+    unsigned char 	txs_geo;
     char		txs_is_rdf;
     table_source_t *	txs_loc_ts; /* half filled ts to serve for partitioning in cluster if txs partitioned by d_id */
     state_slot_t *	txs_cached_string;		/*!< previous string, compiled by xp_text_parse() for this node, as caddr_t */
