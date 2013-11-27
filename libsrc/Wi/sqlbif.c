@@ -12089,7 +12089,7 @@ bif_ddl_change (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (tb_def && tb_def->tb_primary_key && tb_def->tb_primary_key->key_id <= KI_UDT)
     sqlr_new_error ("42000", ".....", "May not redef or reload def of system table");
   log_dd_change (qi -> qi_trx, tb);
-  qi_read_table_schema (qi, tb);
+  qi_read_table_schema (qi, tb_def ? tb_def->tb_name : tb);
   qi->qi_trx->lt_replicate = (caddr_t *)repl;
   return 0;
 }
