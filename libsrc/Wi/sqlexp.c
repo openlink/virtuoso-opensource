@@ -1817,7 +1817,7 @@ cv_is_local_1 (code_vec_t cv, int is_cluster)
 	      }
 	    else if (is_cluster)
 	      sqlc_need_enlist (sqlc_current_sc);
-	    return 0;
+	    return is_cluster ? 0 : enable_mt_txn ? 1 : 0;
 	  }
 	case INS_CALL_IND:
 	  sqlc_need_enlist (sqlc_current_sc);
