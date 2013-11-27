@@ -2894,8 +2894,8 @@ ssg_largest_intersect_valmode (ssg_valmode_t m1, ssg_valmode_t m2)
 ssg_valmode_t
 ssg_largest_eq_valmode (ssg_valmode_t m1, ssg_valmode_t m2)
 {
-/*  ssg_valmode_t best;*/
-  int ctr1, ctr2/*, largest_weight*/;
+  ssg_valmode_t best_common_super;
+  int ctr1, ctr2, largest_weight;
   if (m2 == m1)
     {
       if (!IS_BOX_POINTER (m1))
@@ -2954,8 +2954,7 @@ ssg_largest_eq_valmode (ssg_valmode_t m1, ssg_valmode_t m2)
         return m1;
     }
   END_DO_BOX_FAST;
-/* Ups...
-  best = NULL;
+  best_common_super = NULL;
   largest_weight = -1;
   DO_BOX_FAST (qm_format_t *, sup1, ctr1, m1->qmfSuperFormats)
     {
@@ -2963,23 +2962,22 @@ ssg_largest_eq_valmode (ssg_valmode_t m1, ssg_valmode_t m2)
       if (NULL == sup1)
         continue;
       sup1_weight = BOX_ELEMENTS_0 (sup1->qmfSuperFormats);
-      if (sup1_weight >= smallest_weight)
+      if (sup1_weight <= largest_weight)
         continue;
       DO_BOX_FAST (qm_format_t *, sup2, ctr2, m2->qmfSuperFormats)
         {
           if (sup1 == sup2)
             {
-              best = sup1;
-              smallest_weight = sup1_weight;
+              best_common_super = sup1;
+              largest_weight = sup1_weight;
               break;
             }
         }
       END_DO_BOX_FAST;
     }
   END_DO_BOX_FAST;
-  if (NULL != best)
-    return best;
-*/
+  if (NULL != best_common_super)
+    return best_common_super;
   return SSG_VALMODE_LONG;
 }
 
@@ -5604,9 +5602,9 @@ use_temporary_literal:
       SPART_buf lit_buf;
       SPART *lit = NULL;
       SPART_AUTO (lit, lit_buf, SPAR_LIT);
-      lit->_.lit.val = rvr->rvrFixedValue;
-      lit->_.lit.datatype = rvr->rvrDatatype;
-      lit->_.lit.language = rvr->rvrLanguage;
+      lit->_.lit.val = (caddr_t)(rvr->rvrFixedValue);
+      lit->_.lit.datatype = (caddr_t)(rvr->rvrDatatype);
+      lit->_.lit.language = (caddr_t)(rvr->rvrLanguage);
       ssg_print_scalar_expn (ssg, lit, needed, asname);
     }
 }
@@ -8517,7 +8515,7 @@ ssg_print_binv_table_exp (spar_sqlgen_t *ssg, SPART *wrapping_gp, int pass)
           else
             ssg_puts (" DB.DBA.SPARQL_BINDINGS_VIEW as ");
           ssg_prin_id (ssg, wrapping_gp->_.gp.selid);
-          snprintf (buf, sizeof (buf), " TABLE OPTION (EST_SIZE %d, EST_TIME %d)", binv->_.binv.rows_in_use, binv->_.binv.rows_in_use * 5);
+          snprintf (buf, sizeof (buf), " TABLE OPTION (EST_SIZE %ld, EST_TIME %ld)", (long)(binv->_.binv.rows_in_use), (long)(binv->_.binv.rows_in_use * 5));
           ssg_puts (buf);
         }
     }
