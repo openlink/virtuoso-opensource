@@ -1194,7 +1194,7 @@ cv_deduplicate_2 (comp_context_t * cc, state_slot_t ** left, state_slot_t ** rig
 {
   if (*left && *right && (*left)->ssl_index == (*right)->ssl_index)
     {
-      state_slot_t **arr = (state_slot_t **) t_list (2, *left, *right);
+      state_slot_t **arr = (state_slot_t **) t_sc_list (2, *left, *right);
       cv_deduplicate_param_ssls (cc, arr);
       *left = arr[0];
       *right = arr[1];
@@ -3979,16 +3979,51 @@ sqlg_fnr_prev_hash_fillers (sql_comp_t * sc, fun_ref_node_t * fref)
 }
 
 
-void
-sqlg_cl_setp_reader (sql_comp_t * sc, fun_ref_node_t * fref)
+int
+sqlg_fref_n_grouping_sets (fun_ref_node_t * fref)
 {
-  setp_node_t *setp = fref->fnr_setp;
-  table_source_t *reader = (table_source_t *) qn_next ((data_source_t *) fref);
-  if (!(IS_TS (reader) || IS_QN (reader, chash_read_input) || IS_QN (reader, sort_read_input)))
-    sqlc_new_error (sc->sc_cc, "CLVEC", "CLVEC", "grouping sets in cluster not supported");
-  setp->setp_reader = reader;
-  setp->setp_qfs_state = cc_new_instance_slot (sc->sc_cc);
+  data_source_t * next = qn_next ((data_source_t *)fref);
+  if (IS_QN (next, gs_union_node_input))
+    {
+      QNCAST (gs_union_node_t, gsu, next);
+      return dk_set_length (gsu->gsu_cont);
+    }
+  return 1;
 }
+
+table_source_t *
+sqlg_fref_nth_reader (fun_ref_node_t * fref, int nth)
+{
+  data_source_t * next = qn_next ((data_source_t*)fref);
+  if (IS_QN (next, gs_union_node_input))
+{
+      QNCAST (gs_union_node_t, gsu, next);
+      return (table_source_t*)dk_set_nth (gsu->gsu_cont, nth);
+    }
+  return (table_source_t*)next;
+}
+
+setp_node_t *
+sqlg_qf_nth_setp (query_frag_t * qf, int nth)
+{
+  setp_node_t *setp = NULL;
+  DO_SET (data_source_t *, qn, &qf->qf_nodes)
+    {
+      if (IS_QN (qn, setp_node_input) && !setp)
+	setp = (setp_node_t*)qn;
+      if (IS_QN (qn, gs_union_node_input))
+	{
+	  data_source_t * branch = dk_set_nth (((gs_union_node_t*)qn)->gsu_cont, nth);
+	  for (branch = branch; branch; branch = qn_next (branch))
+	    if (IS_QN (branch, setp_node_input))
+	      return (setp_node_t*)branch;
+	  return NULL;
+	}
+    }
+  END_DO_SET();
+  return setp;
+}
+
 
 
 void
@@ -4037,7 +4072,7 @@ sqlg_vec_qns (sql_comp_t * sc, data_source_t * qn, dk_set_t prev_nodes)
 	    }
 	  sqlg_vec_qns (sc, fref->fnr_select, prev_nodes);
 	  sc->sc_vec_current = qn;
-	  if (fref->fnr_cl_qf && fref->fnr_temp_slots)
+	  if ((fref->fnr_cl_qf || fref->fnr_cl_qfs) && fref->fnr_temp_slots)
 	    {
 	      dk_set_t mrg = NULL;
 	      DO_SET (state_slot_t *, ssl, &fref->fnr_temp_slots)
@@ -4045,8 +4080,6 @@ sqlg_vec_qns (sql_comp_t * sc, data_source_t * qn, dk_set_t prev_nodes)
 	      END_DO_SET ();
 	      fref->fnr_cl_merge_temps = dk_set_nreverse (mrg);
 	    }
-	  if (fref->fnr_cl_qf && !fref->fnr_temp_slots && fref->fnr_setp && !fref->fnr_setp->setp_partitioned)
-	    sqlg_cl_setp_reader (sc, fref);
 	  DO_SET (state_slot_t *, ssl, &fref->fnr_default_ssls)
 	  {
 	    state_slot_t *sh = SSL_SHADOW (ssl);
