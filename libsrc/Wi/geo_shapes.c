@@ -2424,7 +2424,7 @@ geo_serialize (geo_t * g, dk_session_t * ses)
   geo_serialize_one (g, 1, ses);
 }
 
-#define GEO_DESERIALIZE_ERROR(msg) GPF_T1(msg "in geo_deserialize_one()")
+#define GEO_DESERIALIZE_ERROR(msg) box_read_error (ses, 0)
 
 geo_t *
 geo_deserialize_one (int srcode /* -1 for topmost */ , dk_session_t * ses)
