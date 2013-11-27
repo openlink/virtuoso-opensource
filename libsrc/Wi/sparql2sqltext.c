@@ -2179,9 +2179,14 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
           return eq->e_rvr.rvrRestrictions;
         }
     case SPAR_GP:
-      if (tree->_.gp.subtype != SELECT_L)
-        spar_internal_error (sparp, "sparp_" "restr_bits_of_expn(): unsupported subtype of GP tree");
-      return sparp_restr_bits_of_expn (sparp, tree->_.gp.subquery->_.req_top.retvals[0]) & ~SPART_VARR_NOT_NULL;
+      {
+        if (tree->_.gp.subtype != SELECT_L)
+          spar_internal_error (sparp, "sparp_" "restr_bits_of_expn(): unsupported subtype of GP tree");
+        SPART *sub_req = tree->_.gp.subquery;
+        if (ASK_L == sub_req->_.req_top.subtype)
+          return SPART_VARR_NOT_NULL | SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL;
+        return sparp_restr_bits_of_expn (sparp, sub_req->_.req_top.retvals[0]) & ~SPART_VARR_NOT_NULL;
+      }
     default: spar_internal_error (sparp, "sparp_" "restr_bits_of_expn(): unsupported case");
     }
   return 0; /* Never reached, to keep compiler happy */
@@ -8700,9 +8705,15 @@ param_value_is_printed: ;
 void
 ssg_print_scalar_subquery_exp (spar_sqlgen_t *ssg, SPART *sub_req_top, SPART *wrapping_gp, ssg_valmode_t needed)
 {
+  int wrap_ask_to_coalesce = (ASK_L == wrapping_gp->_.gp.subquery->_.req_top.subtype);
   sparp_t *sub_sparp = (sparp_t *)t_box_copy ((caddr_t)(ssg->ssg_sparp));
   sql_comp_t subq_sc;
   t_NEW_VARZ (spar_sqlgen_t, subq_ssg);
+  if (wrap_ask_to_coalesce)
+    {
+      ssg_puts (" coalesce ( ");
+      ssg->ssg_indent++;
+    }
 #ifdef NDEBUG
   ssg_puts (" ( ");
 #else
@@ -8744,6 +8755,11 @@ ssg_print_scalar_subquery_exp (spar_sqlgen_t *ssg, SPART *sub_req_top, SPART *wr
   ssg_puts (" /* scalar subq end */ )");
 #endif
   ssg->ssg_indent--;
+  if (wrap_ask_to_coalesce)
+    {
+      ssg_puts (", 0)");
+      ssg->ssg_indent--;
+    }
 }
 
 void
