@@ -222,9 +222,7 @@ typedef struct setp_save_s
 {
   /* save state for cluster batch  execution of setp/fref pairs */
   state_slot_t *	ssa_array;
-  state_slot_t **	ssa_save;
   state_slot_t *	ssa_set_no; /* no of top level set that is on the qst */
-  state_slot_t *	ssa_current_set;
   int			ssa_batch_size;
 } setp_save_t;
 
@@ -1067,6 +1065,7 @@ typedef struct union_node_s
     state_slot_t *	uni_nth_output;
     dk_set_t		uni_successors;
     dk_hash_t *         un_refs_after;	/* in tracking ssl refs, do a union's continuation only once, remember the refd ssls here */
+    short 		uni_op;
     char		uni_sequential; /* finish each branch before starting next.  Needed in except and intersect */
   } union_node_t;
 
@@ -1202,7 +1201,6 @@ typedef struct delete_node_s
 typedef struct end_node_s
   {
     data_source_t	src_gen;
-    int			en_send_rc;
   } end_node_t;
 
 
@@ -1225,7 +1223,6 @@ typedef struct code_node_s
 typedef struct row_insert_node_s
   {
     data_source_t	src_gen;
-    int			en_send_rc;
     state_slot_t *	rins_row;
     int			rins_mode;	/* c.f. ins_node */
   } row_insert_node_t;
@@ -1234,7 +1231,6 @@ typedef struct row_insert_node_s
 typedef struct key_insert_node_s
   {
     data_source_t	src_gen;
-    int			en_send_rc;
     state_slot_t *	kins_row;
     dbe_key_t *		kins_key;
   } key_insert_node_t;
@@ -1398,6 +1394,7 @@ typedef struct setp_node_s
     char		setp_is_qf_last; /* if set, the next can be a read node of partitioned setp but do not call it from the setp. */
     char		setp_is_streaming; /* a group by with ordering cols as grouping cols, results available in mid-grouping */
     char		setp_is_cl_gb_result;
+    char		setp_in_union;
     state_slot_t *	setp_streaming_ssl; /* if grouping cols are ordering cols but have duplicates, this is the col to check for distinguishing known complete groups from possible incomplete groups */
 
     /* partitioned hash fill */
@@ -1449,6 +1446,7 @@ typedef struct fun_ref_node_s
     dk_set_t 		fnr_distinct_ha;
     hi_signature_t *	fnr_hi_signature;
     query_frag_t *	fnr_cl_qf; /* if the aggregation is done in remotes, this is the qf that holds the state */
+    dk_set_t		fnr_cl_qfs; /* if a union followed by aggregation */
     dk_set_t		fnr_cl_merge_temps; /* for adding up aggs in cluster */
     setp_save_t		fnr_ssa; /* save for multiple set aggregation */
     char		fnr_partitioned;

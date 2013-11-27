@@ -303,6 +303,7 @@ struct df_elt_s
       df_elt_t **	terms;
       caddr_t *	corresponding;
       char	is_best;
+      char	is_in_fref;
     } qexp;
     struct {
       dbe_column_t *	col;
