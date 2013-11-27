@@ -1387,8 +1387,6 @@ lt_blob_transact (it_cursor_t * itc, int op)
     {
       dk_hash_iterator_t current_blob;
       void *key, *data;
-      if (lt->lt_is_excl)
-	op = SQL_COMMIT; /* for an atomic mode txn, rollback is commit since no rb records kept.  So if blobs are del'd refs are not, so do as if commit no matter what and things will be consistent. */
       dk_hash_iterator (&current_blob, dirt);
       while (dk_hit_next (&current_blob, &key, &data))
 	{
