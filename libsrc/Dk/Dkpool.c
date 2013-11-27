@@ -298,7 +298,18 @@ DBG_NAME (mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t dtp)
   caddr_t new_alloc;
 #ifndef LACERATED_POOL
   mem_block_t *mb = NULL, *f;
-#endif
+  if (DV_NON_BOX  == dtp && len1 > mp_large_min && len1 > mp->mp_block_size / 2)
+    return mp_large_alloc (mp, len1);
+  else if (len1 > mp_large_min  && len1 > mp->mp_block_size / 2)
+    {
+      ptr =  mp_large_alloc (mp, len1 + 8);
+      ptr += 4;
+      WRITE_BOX_HEADER (ptr, len1, dtp);
+      memzero (ptr, len1);
+      return (caddr_t)ptr;
+    }
+
+#else
 
   if (DV_NON_BOX  == dtp && len1 > mp_large_min)
     return mp_large_alloc (mp, len1);
@@ -310,6 +321,7 @@ DBG_NAME (mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t dtp)
       memzero (ptr, len1);
       return (caddr_t)ptr;
     }
+#endif
 #ifdef LACERATED_POOL
 #ifdef DOUBLE_ALIGN
   len = ALIGN_8 (len1 + 8);
@@ -1758,10 +1770,10 @@ void *
 mp_large_alloc (mem_pool_t * mp, size_t sz)
 {
   void * ptr;
+  int nth = -1;
+  mm_next_size (sz, &nth);
   if (mp->mp_large_reuse)
     {
-      int nth = -1;
-      mm_next_size (sz, &nth);
       if (-1 != nth && nth < mm_n_large_sizes && mp->mp_large_reuse[nth])
 	{
 	  ptr = resource_get (mp->mp_large_reuse[nth]);
