@@ -5215,9 +5215,10 @@ sqlo_hash_redundant_keys (sqlo_t * so, dk_set_t * hash_refs_ret, dk_set_t * hash
 	       && sqlo_is_col_eq (so->so_this_dt, (df_elt_t*)dk_set_nth (hash_keys, inx1), (df_elt_t*)dk_set_nth (hash_keys, inx2)))
 	      {
 		df_elt_t * refs[2];
+		df_elt_t * def;
 		refs[0] = r1;
 		refs[1] = r2;
-		df_elt_t * def = dfe_latest (so, 2, refs, 0);
+		def = dfe_latest (so, 2, refs, 0);
 		if (!def)
 		  return;
 		rminx =  dfe_defines (def, r1) ? inx1 : inx2;

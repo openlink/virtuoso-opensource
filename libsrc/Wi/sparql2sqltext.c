@@ -2183,9 +2183,10 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
         }
     case SPAR_GP:
       {
+        SPART *sub_req;
         if (tree->_.gp.subtype != SELECT_L)
           spar_internal_error (sparp, "sparp_" "restr_bits_of_expn(): unsupported subtype of GP tree");
-        SPART *sub_req = tree->_.gp.subquery;
+	sub_req = tree->_.gp.subquery;
         if (ASK_L == sub_req->_.req_top.subtype)
           return SPART_VARR_NOT_NULL | SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL;
         return sparp_restr_bits_of_expn (sparp, sub_req->_.req_top.retvals[0]) & ~SPART_VARR_NOT_NULL;
