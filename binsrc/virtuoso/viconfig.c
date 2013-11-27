@@ -444,8 +444,13 @@ int32 c_dbev_enable = 1;
 
 extern long sparql_result_set_max_rows;
 extern long sparql_max_mem_in_use;
+extern int rdf_create_graph_keywords;
+extern int rdf_query_graph_keywords;
+
 int32 c_sparql_result_set_max_rows = 0;
 int32 c_sparql_max_mem_in_use = 0;
+int32 c_rdf_create_graph_keywords = 0;
+int32 c_rdf_query_graph_keywords = 0;
 
 extern int32 enable_qp;
 extern int32 dc_max_batch_sz;
@@ -1978,6 +1983,14 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   uriqa_dynamic_local = c_uriqa_dynamic_local;
   sparql_result_set_max_rows = c_sparql_result_set_max_rows;
   sparql_max_mem_in_use = c_sparql_max_mem_in_use;
+  rdf_create_graph_keywords = c_rdf_create_graph_keywords;
+  rdf_query_graph_keywords = c_rdf_query_graph_keywords;
+  if (c_rdf_query_graph_keywords && !c_rdf_create_graph_keywords)
+    {
+      log_error ("non-zero QueryGraphKeyword conflicts with zero CreateGraphKeywords, cannot query what is not created. Querying is disabled.");
+      rdf_query_graph_keywords = 0;
+    }
+
   cli_encryption_on_password = c_cli_encryption_on_password;
 
   lh_xany_normalization_flags = c_lh_xany_normalization_flags;

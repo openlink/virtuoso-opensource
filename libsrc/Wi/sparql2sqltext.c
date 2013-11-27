@@ -58,6 +58,9 @@ quad_map_t *qm_default;
 triple_case_t *tc_default;
 quad_storage_t *rdf_sys_storage;
 
+int rdf_create_graph_keywords = 0;
+int rdf_query_graph_keywords = 0;
+
 void rdf_ds_load_all (void)
 {
   int colctr;
@@ -7783,7 +7786,9 @@ ssg_patch_ft_arg1 (spar_sqlgen_t *ssg, SPART *ft_arg1, SPART *g, int contains_in
   ccaddr_t g_iri;
   int g_spart_type;
   if (!contains_in_rdf_quad)
-    goto default_modification_only;
+    goto default_modification_only; /* see below */
+  if (!rdf_query_graph_keywords)
+    goto default_modification_only; /* see below */
   g_iri = NULL;
   g_spart_type = spar_plain_const_value_of_tree (g, &g_iri);
   if ((SPAR_QNAME == g_spart_type) && (SPAR_LIT == ft_arg1_spart_type) &&
@@ -7796,7 +7801,7 @@ ssg_patch_ft_arg1 (spar_sqlgen_t *ssg, SPART *ft_arg1, SPART *g, int contains_in
       if (NULL != boxed_id)
         {
           char tmp[30], *tail;
-	  iri_id_t iid = unbox_iri_id (boxed_id);
+          iri_id_t iid = unbox_iri_id (boxed_id);
           int ft_arg1_strlen, idlen, len;
           rdf_graph_keyword (iid, tmp);
           idlen = strlen (tmp);

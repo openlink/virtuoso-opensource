@@ -443,6 +443,9 @@ long fe_replication_support = 0;
 long sparql_result_set_max_rows = 0;
 long sparql_max_mem_in_use = 0;
 
+extern int rdf_create_graph_keywords;
+extern int rdf_query_graph_keywords;
+
 static long thr_cli_running;
 static long thr_cli_waiting;
 static long thr_cli_vdb;
@@ -1673,6 +1676,8 @@ stat_desc_t stat_descs [] =
     /* sparql vars */
     {"sparql_result_set_max_rows", &sparql_result_set_max_rows, NULL},
     {"sparql_max_mem_in_use", &sparql_max_mem_in_use, NULL},
+    {"rdf_create_graph_keywords", &rdf_create_graph_keywords, SD_INT32},
+    {"rdf_query_graph_keywords", &rdf_query_graph_keywords, SD_INT32},
     {"enable_vec", (long *)&enable_vec, SD_INT32},
     {"srv_init", (long *)&in_srv_global_init, SD_INT32},
     {"ac_real_time", (long *)&ac_real_time, SD_INT32},

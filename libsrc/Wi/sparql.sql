@@ -7589,8 +7589,7 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iris any, in inside_sponge integer
       delete from DB.DBA.RDF_QUAD
       where G = __i2id (''%S'') ', g_iri));
       delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS, index_only) where G = iri_to_id (g_iri, 0)  option (index_only, index RDF_QUAD_GS);
-      delete from DB.DBA.RDF_OBJ_RO_FLAGS_WORDS
-      where VT_WORD = rdf_graph_keyword (g_iid);
+      delete from DB.DBA.RDF_OBJ_RO_FLAGS_WORDS where VT_WORD = rdf_graph_keyword (g_iid);
       if (not inside_sponge)
         {
           delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = g_iri;
@@ -14580,7 +14579,9 @@ create function DB.DBA.RDF_OBJ_PATCH_CONTAINS_BY_GRAPH (in phrase varchar, in gr
   graph_keyword := iri_to_id (graph_iri, 0, 0);
   if (isinteger (graph_keyword))
     goto err;
-  graph_keyword := WS.WS.STR_SQL_APOS (rdf_graph_keyword  (graph_keyword));
+  if (not sys_stat ('rdf_query_graph_keywords'))
+    return sprintf ('[__enc "UTF-8"] %s', phrase);
+  graph_keyword := WS.WS.STR_SQL_APOS (rdf_graph_keyword (graph_keyword));
   return sprintf ('[__enc "UTF-8"] ^%s AND (%s)', graph_keyword, phrase);
 err:
   return '^"#nosuch"';
@@ -14592,6 +14593,8 @@ create function DB.DBA.RDF_OBJ_PATCH_CONTAINS_BY_MANY_GRAPHS (in phrase varchar,
 {
   declare isfirst, gctr, gcount integer;
   declare ses, graph_keyword any;
+  if (not sys_stat ('rdf_query_graph_keywords'))
+    return sprintf ('[__enc "UTF-8"] %s', phrase);
   whenever sqlstate '*' goto err;
   gcount := length (graph_iris);
   ses := string_output ();
@@ -14624,6 +14627,11 @@ create procedure DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (in graph_iid IRI_ID, inou
   declare new_ro_ids, vtb any;
   declare gwordump varchar;
   declare n_w, n_ins, n_upd, n_next integer;
+  if (not sys_stat ('rdf_create_graph_keywords'))
+    {
+      dict_zap (ro_id_dict, 2);
+      return;
+    }
 next_batch:
   new_ro_ids := dict_destructive_list_rnd_keys (ro_id_dict, 500000);
   ro_ids_count := length (new_ro_ids);
