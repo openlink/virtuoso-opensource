@@ -16469,6 +16469,7 @@ virtrdf:SyncToQuads-UserMaps
         }
       DB.DBA.RDF_INSERT_TRIPLES (jso_sys_g_iid, sum_lst);
       commit work;
+      cl_exec ('checkpoint');
     }
   DB.DBA.JSO_LOAD_AND_PIN_SYS_GRAPH ();
   sequence_set ('RDF_URL_IID_NAMED', 1010000, 1);
