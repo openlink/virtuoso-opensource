@@ -188,7 +188,7 @@ typedef struct ttlp_s
   int ttlp_lexlineno;		/*!< Current line number */
   int ttlp_lexdepth;		/*!< Current number of not-yet-closed parenthesis */
   const char *ttlp_raw_text;	/*!< Raw text of the lexem */
-  ptrlong ttlp_special_qnames;	/*!< Bitmask where every bit means that the identifier in qname, not a keyword */
+  ptrlong ttlp_special_qnames;	/*!< Bitmask where every bit means that the identifier is qname, not a keyword */
   /* parser */
   const char *ttlp_err_hdr;	/*!< Human-readable phrase that gives a name to the parsing routine, e.g. "Turtle parser of web crawler" */
   caddr_t ttlp_catched_error;	/*!< The error that stopped the processing, as a three-element vector made by srv_make_new_error () */
