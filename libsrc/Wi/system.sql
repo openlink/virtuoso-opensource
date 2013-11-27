@@ -6291,7 +6291,19 @@ create procedure csv_vec_load (in s any, in _from int := 0, in _to int := null, 
     }
 
   log_enable (old_mode, 1);
-  exec (sprintf ('drop procedure %s', pname));
+  deadl := 0;
+  again2:
+  stat := '00000';
+  exec (sprintf ('drop procedure %s', pname), stat, msg);
+  if (stat <> '00000')
+    {
+      deadl := deadl + 1;
+      rollback work;
+      if (deadl > 5)
+	resignal;
+      delay (0.1 * deadl);
+      goto again2;
+    }
   if (log_error)
     return vector (nrows, log_ses);
   return nrows;
