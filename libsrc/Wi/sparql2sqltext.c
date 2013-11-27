@@ -5211,16 +5211,16 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
         (!IS_BOX_POINTER (needed) || needed->qmfIsSubformatOfLongWhenEqToSql) )
         {
           if (SSG_VALMODE_BOOL == needed)
-            {
-              ssg_puts (" EXISTS (");
-              ssg->ssg_indent++;
-            }
+            ssg_puts (" EXISTS (");
+          else
+            ssg_puts (" COALESCE (");
+          ssg->ssg_indent++;
           ssg_print_scalar_subquery_exp (ssg, tree->_.gp.subquery, tree, SSG_VALMODE_LONG);
           if (SSG_VALMODE_BOOL == needed)
-            {
-              ssg_putchar (')');
-              ssg->ssg_indent--;
-            }
+            ssg_putchar (')');
+          else
+            ssg_puts (", 0)");
+          ssg->ssg_indent--;
           goto print_asname;
         }
       /*if (NULL == native)
@@ -8710,15 +8710,9 @@ param_value_is_printed: ;
 void
 ssg_print_scalar_subquery_exp (spar_sqlgen_t *ssg, SPART *sub_req_top, SPART *wrapping_gp, ssg_valmode_t needed)
 {
-  int wrap_ask_to_coalesce = (ASK_L == wrapping_gp->_.gp.subquery->_.req_top.subtype);
   sparp_t *sub_sparp = (sparp_t *)t_box_copy ((caddr_t)(ssg->ssg_sparp));
   sql_comp_t subq_sc;
   t_NEW_VARZ (spar_sqlgen_t, subq_ssg);
-  if (wrap_ask_to_coalesce)
-    {
-      ssg_puts (" coalesce ( ");
-      ssg->ssg_indent++;
-    }
 #ifdef NDEBUG
   ssg_puts (" ( ");
 #else
@@ -8760,11 +8754,6 @@ ssg_print_scalar_subquery_exp (spar_sqlgen_t *ssg, SPART *sub_req_top, SPART *wr
   ssg_puts (" /* scalar subq end */ )");
 #endif
   ssg->ssg_indent--;
-  if (wrap_ask_to_coalesce)
-    {
-      ssg_puts (", 0)");
-      ssg->ssg_indent--;
-    }
 }
 
 void
