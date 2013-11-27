@@ -78,7 +78,6 @@ setp_node_free (setp_node_t * setp)
   dk_set_free (setp->setp_const_gb_values);
   dk_set_free (setp->setp_const_gb_args);
   dk_free_box ((box_t) setp->setp_last_vals);
-  dk_free_box ((box_t)setp->setp_ssa.ssa_save);
 }
 
 
