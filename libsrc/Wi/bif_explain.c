@@ -240,13 +240,9 @@ dv_iri_short_name (caddr_t x)
       for (inx = box_length (local) - 1; inx > 3; inx--)
 	if (':'== local[inx] || '/' == local[inx] || '#'== local[inx])
 	  break;
-      if (inx > 4)
-	{
-	  r = box_dv_short_nchars (local + 4, inx - 4);
-	  dk_free_box (local);
-	  return r;
-	}
-      return local;
+      r = box_dv_short_nchars (local + inx, box_length (local) - inx);
+      dk_free_box (local);
+      return r;
     }
   dk_free_box (name);
   return NULL;
