@@ -2199,7 +2199,7 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
       {
       case DV_STRING:
       case DV_UNAME:
-        len = box_len;-1;		/* Terminating zero byte '\0' is excluded. */
+        len = box_len-1;		/* Terminating zero byte '\0' is excluded. */
         str = ((char *) it);
         break;
       case DV_SHORT_CONT_STRING:
