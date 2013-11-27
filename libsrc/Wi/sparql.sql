@@ -4139,7 +4139,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TSV (inout triples any, inout ses any)
 
 create procedure DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML (inout triples any, inout ses any)
 {
-  declare env, prev_subj, nsdict, nslist any;
+  declare env, prev_subj, subj_text, pred_text, nsdict, nslist any;
   declare ctr, len, tcount, tctr, status integer;
   tcount := length (triples);
   -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
@@ -4177,8 +4177,19 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
     tcount), ses);
   http ('<p>A generic web browser may not display them but the document can be saved on disk and used by some appropriate program or sent to a third party.
 Use "Save As" or "Send To" menu item of the browser; choose "HTML" file type, not "text file" or "web archive".
-</p><p>The rest of the document may look like garbage for humans or not displayed by the browser.</p>\n<ul>', ses);
+</p>', ses);
+  http ('\n<table border="1">\n<thead><tr><th>Namespace Prefix</th><th>Namespace URI</th></tr></thead><tbody>', ses);
+  for (ctr := len - 2; ctr >= 0; ctr := ctr-2)
+    {
+      http (sprintf ('\n<tr><td>xmlns:%s</td><td>', nslist[ctr+1]), ses);
+      http_escape (nslist[ctr], 3, ses, 1, 1);
+      http ('</td></tr>', ses);
+    }
+  http ('\n</tbody></table>', ses);
+  http ('\n<p>The rest of the document may look like garbage for humans or not displayed by the browser.</p>', ses);
+  http ('\n<table border="1">\n<thead><tr><th>Subject</th><th>Predicate</th><th>Object</th></tr></thead>', ses);
   env := vector (0, 0, 0, null);
+  rowvector_subj_sort (triples, 1, 1);
   rowvector_subj_sort (triples, 0, 1);
   prev_subj := null;
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
@@ -4195,44 +4206,64 @@ Use "Save As" or "Send To" menu item of the browser; choose "HTML" file type, no
       if (prev_subj is null or (subj <> prev_subj))
         {
           if (prev_subj is not null)
-            http ('\n</ul></li>', ses);
-          http ('\n<li about="[', ses);
+            http ('\n</tbody>', ses);
+          http ('\n<tbody about="[', ses);
           split := sparql_iri_split_rdfa_qname (subj, nsdict, 2);
           -- dbg_obj_princ ('Split of ', subj, ' is ', split);
           if ('' = split[1])
             {
-              http_escape (split[2], 3, ses, 1, 1);
-              http (']">\n<ul>', ses);
+              subj_text := split[2];
+              http_escape (subj_text, 3, ses, 1, 1);
+              http (']">', ses);
             }
           else if (isstring (split[0]))
             {
-              http_escape (concat (split[0], ':', split[2]), 3, ses, 1, 1);
-              http (']">\n<ul>', ses);
+              subj_text := concat (split[0], ':', split[2]);
+              http_escape (subj_text, 3, ses, 1, 1);
+              http (']">', ses);
             }
           else
             {
+              subj_text := id_to_iri (subj);
               http_escape (concat ('s:', split[2]), 3, ses, 1, 1);
               http (']" xmlns:s="', ses);
               http_escape (split[1], 3, ses, 1, 1);
-              http ('">\n<ul>', ses);
+              http ('">', ses);
             }
+          subj_text := sprintf ('\n<tr><td>%V</td><td>', subj_text);
           prev_subj := subj;
         }
-      obj_iri_split := sparql_iri_split_rdfa_qname (obj, nsdict, 2);
-      http (case (isvector (obj_iri_split)) when 0 then '\n<li property="' else '\n<li rel="' end, ses);
+      http (subj_text, ses);
       split := sparql_iri_split_rdfa_qname (pred, nsdict, 2);
       if ('' = split[1])
         {
-          http_escape (split[2], 3, ses, 1, 1);
+          http_value (split[2], 0, ses);
+        }
+      else if (isstring (split[0]))
+        {
+          http_value (concat (split[0], ':', split[2]), 0, ses);
+        }
+      else
+        {
+          http_value (id_to_iri (pred), 0, ses);
+        }
+      obj_iri_split := sparql_iri_split_rdfa_qname (obj, nsdict, 2);
+      http (case (isvector (obj_iri_split)) when 0 then '</td><td property="' else '</td><td rel="' end, ses);
+      if ('' = split[1])
+        {
+          pred_text := split[2];
+          http_escape (pred_text, 3, ses, 1, 1);
           http ('"', ses);
         }
       else if (isstring (split[0]))
         {
-          http_escape (concat (split[0], ':', split[2]), 3, ses, 1, 1);
+          pred_text := concat (split[0], ':', split[2]);
+          http_escape (pred_text, 3, ses, 1, 1);
           http ('"', ses);
         }
       else
         {
+          pred_text := id_to_iri (pred);
           http_escape (concat ('p:', split[2]), 3, ses, 1, 1);
           http ('" xmlns:p="', ses);
           http_escape (split[1], 3, ses, 1, 1);
@@ -4247,12 +4278,16 @@ Use "Save As" or "Send To" menu item of the browser; choose "HTML" file type, no
             {
               http ('[', ses);
               http_escape (concat (obj_iri_split[0], ':', obj_iri_split[2]), 3, ses, 1, 1);
-              http (']" />', ses);
+              http (']" >', ses);
+              http_value (concat (obj_iri_split[0], ':', obj_iri_split[2]), 0, ses);
+              http ('</td></tr>', ses);
             }
           else
             {
               http_escape (concat (obj_iri_split[1], ':', obj_iri_split[2]), 3, ses, 1, 1);
-              http ('" />', ses);
+              http ('" >', ses);
+              http_value (concat (obj_iri_split[1], ':', obj_iri_split[2]), 0, ses);
+              http ('</td></tr>', ses);
             }
         }
       else
@@ -4322,12 +4357,12 @@ Use "Save As" or "Send To" menu item of the browser; choose "HTML" file type, no
                 sqlval := charset_recode (sqlval, 'UTF-8', '_WIDE_');
               http_value (sqlval, 0, ses);
             }
-          http ('</li>', ses);
+          http ('</td></tr>', ses);
         }
     }
   if (prev_subj is not null)
-    http ('\n</ul></li></ul>', ses);
-  http ('\n</body></html>\n', ses);
+    http ('\n</tbody>', ses);
+  http ('\n</table></body></html>\n', ses);
 }
 ;
 
@@ -16481,6 +16516,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TALIS_JSON to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_LD to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_MICRODATA to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_NICE_MICRODATA to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_MICRODATA to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_CSV to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TSV to SPARQL_SELECT',
