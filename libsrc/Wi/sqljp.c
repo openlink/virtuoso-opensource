@@ -561,6 +561,8 @@ dfe_join_score_jp (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, dk_set_t * r
       root_jp = prev_jp;
       level++;
     }
+  if (DFE_DT == tb_dfe->dfe_type && tb_dfe->_.sub.ot->ot_trans && level)
+    return; /* if trans dt joined and not first, do not go further, can get a case where neither end of trans is fully placed */
   tb_dfe->dfe_double_placed = tb_dfe->dfe_is_placed != 0;
   tb_dfe->dfe_is_placed = DFE_JP_PLACED;	/* to fool dfe_reqd_placed */
   dfe_jp_fill (so, ot, tb_dfe, &jp, JPF_TRY, 0);
