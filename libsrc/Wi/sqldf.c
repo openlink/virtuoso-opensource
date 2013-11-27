@@ -4107,7 +4107,7 @@ sqlo_is_constant_in_pred (sqlo_t *so, df_elt_t *pred)
       && DFE_IS_CONST (pred->_.bin.left)
       && pred->_.bin.right->dfe_type == DFE_CALL
       && pred->_.bin.right->dfe_tree->_.call.name
-      && !strcmp (pred->_.bin.right->dfe_tree->_.call.name, t_sqlp_box_id_upcase ("one_of_these")))
+      && IS_ONE_OF_THESE (pred->_.bin.right->dfe_tree->_.call.name))
     {
       unsigned inx;
       for (inx = 1; inx < BOX_ELEMENTS (pred->_.bin.right->_.call.args); inx++)
@@ -4488,7 +4488,7 @@ sqlo_is_invariant_in_pred (sqlo_t *so, df_elt_t *pred)
       && DFE_IS_CONST (pred->_.bin.left)
       && pred->_.bin.right->dfe_type == DFE_CALL
       && pred->_.bin.right->dfe_tree->_.call.name
-      && !strcmp (pred->_.bin.right->dfe_tree->_.call.name, t_sqlp_box_id_upcase ("one_of_these")))
+      && IS_ONE_OF_THESE (pred->_.bin.right->dfe_tree->_.call.name))
     {
       unsigned inx;
       for (inx = 1; inx < BOX_ELEMENTS (pred->_.bin.right->_.call.args); inx++)
@@ -4597,7 +4597,7 @@ sqlo_preds_make_invariant (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *pred1, df_elt
 		      {
 			ST *in_cond;
 			BIN_OP (in_cond, BOP_EQ, (ST *) t_box_num (0),
-			    t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("one_of_these"),
+			    t_listst (3, CALL_STMT, uname_one_of_these,
 			      t_box_copy_tree ((caddr_t) pred2->_.bin.right->dfe_tree->_.call.params)));
 			in_cond->_.bin_exp.right->_.call.params[0] =
 			    (ST *) t_box_copy_tree ((caddr_t) pred1->_.bin.right->_.call.args[inx]->dfe_tree);
@@ -4613,7 +4613,7 @@ sqlo_preds_make_invariant (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *pred1, df_elt
 		{
 		  ST *res;
 		  BIN_OP (res, BOP_EQ, (ST *) t_box_num (0),
-		      t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("one_of_these"),
+		      t_listst (3, CALL_STMT, uname_one_of_these,
 			t_box_copy_tree ((caddr_t) pred1->_.bin.right->dfe_tree->_.call.params)));
 		  tree = res;
 		  tree->_.bin_exp.right->_.call.params[0] =
@@ -4628,7 +4628,7 @@ sqlo_preds_make_invariant (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *pred1, df_elt
 		{
 		  ST *res;
 		  BIN_OP (res, BOP_EQ, (ST *) t_box_num (0),
-		      t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("one_of_these"),
+		      t_listst (3, CALL_STMT, uname_one_of_these,
 			t_box_copy_tree ((caddr_t) pred1->_.bin.right->dfe_tree->_.call.params)));
 		  tree = res;
 		  tree->_.bin_exp.right->_.call.params[0] =
@@ -4648,7 +4648,7 @@ sqlo_preds_make_invariant (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *pred1, df_elt
 	    {
 	      ST *res;
 	      BIN_OP (res, BOP_EQ, (ST *) t_box_num (0),
-		  t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("one_of_these"),
+		  t_listst (3, CALL_STMT, uname_one_of_these,
 		    t_box_copy_tree ((caddr_t) pred2->_.bin.right->dfe_tree->_.call.params)));
 	      tree = res;
 	      tree->_.bin_exp.right->_.call.params[0] =
@@ -4691,7 +4691,7 @@ sqlo_preds_make_invariant (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *pred1, df_elt
 	    {
 	      ST *res;
 	      BIN_OP (res, BOP_EQ, (ST *) t_box_num (0),
-		  t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("one_of_these"),
+		  t_listst (3, CALL_STMT, uname_one_of_these,
 		    t_box_copy_tree ((caddr_t) pred2->_.bin.right->dfe_tree->_.call.params)));
 	      tree = res;
 	      tree->_.bin_exp.right->_.call.params[0] =
