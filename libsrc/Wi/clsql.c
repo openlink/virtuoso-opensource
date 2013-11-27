@@ -38,7 +38,7 @@
 #include "xmlnode.h"
 
 
-int enable_hash_colocate = 0;
+int enable_hash_colocate = 1;
 int enable_dfg = 1;
 int enable_multistate_code = 1;
 int enable_last_qf_dml = 1;
@@ -1241,6 +1241,12 @@ qr_is_multistate (query_t * qr)
 }
 
 
+dk_set_t
+cv_multistate (code_vec_t cv)
+{
+}
+
+
 int
 qr_begins_with_iter_or_test (query_t * qr, data_source_t ** first_clb_ret)
 {
@@ -1406,7 +1412,6 @@ ssa_init (sql_comp_t * sc, setp_save_t * ssa, state_slot_t * set_no_ssl)
 {
   ssa->ssa_set_no = set_no_ssl;
   ssa->ssa_array = ssl_new_variable (sc->sc_cc, "multistate_save", DV_ARRAY_OF_POINTER);
-  ssa->ssa_current_set = ssl_new_variable (sc->sc_cc, "last_set_no", DV_LONG_INT);
   ssa->ssa_batch_size = cl_req_batch_size;
 }
 
