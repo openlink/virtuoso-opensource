@@ -182,6 +182,7 @@ mp_free (mem_pool_t * mp)
   if (mp->mp_box_to_dc)
     hash_table_free (mp->mp_box_to_dc);
 #endif
+  mp_unregister (mp);
   DO_SET (caddr_t, box, &mp->mp_trash)
   {
     dk_free_tree (box);
@@ -203,7 +204,6 @@ mp_free (mem_pool_t * mp)
   dk_free ((caddr_t) mp->mp_allocs, mp->mp_size * sizeof (caddr_t));
   mp_free_all_large (mp);
   mp_free_reuse (mp);
-  mp_unregister (mp);
   dk_free ((caddr_t) mp, sizeof (mem_pool_t));
 }
 
@@ -282,6 +282,7 @@ void
 mp_free (mem_pool_t * mp)
 {
   mem_block_t *mb = mp->mp_first, *next;
+  mp_unregister (mp);
   DO_SET (caddr_t, box, &mp->mp_trash)
   {
     dk_free_tree (box);
@@ -298,7 +299,6 @@ mp_free (mem_pool_t * mp)
   hash_table_free (mp->mp_unames);
   mp_free_reuse (mp);
   mp_free_all_large (mp);
-  mp_unregister (mp);
   dk_free ((caddr_t) mp, sizeof (mem_pool_t));
 }
 
