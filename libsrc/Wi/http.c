@@ -7536,6 +7536,14 @@ int_client_ip (query_instance_t * qi, long dns_name)
 {
   caddr_t iaddr, ret;
 
+  if (!qi->qi_client->cli_ws && !qi->qi_client->cli_session) /* via scheduler or some internal client */
+    {
+      if (dns_name)
+	return box_dv_short_string ("localhost");
+      else
+	return box_dv_short_string ("127.0.0.1");
+    }
+
   if (!qi->qi_client->cli_ws)
     iaddr = http_client_ip (qi->qi_client->cli_session->dks_session);
   else
