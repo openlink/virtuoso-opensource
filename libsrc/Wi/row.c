@@ -424,7 +424,8 @@ page_box_col (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t row, dbe_col_loc_
 #ifdef BIF_XML
 	if (DV_BLOB_XPER_HANDLE == DV_TYPE_OF (bh))
 	  {
-	    caddr_t val = (caddr_t) xper_entity (NULL, bh, NULL, 0, itc_box_base_uri_column (itc, buf->bd_buffer, cl->cl_col_id), NULL /* no enc */, &lh__xany, NULL /* DTD config */, 1);
+	    query_instance_t *qi = (query_instance_t *)(itc->itc_out_state);
+	    caddr_t val = (caddr_t) xper_entity (qi, bh, NULL, 0, itc_box_base_uri_column (itc, buf->bd_buffer, cl->cl_col_id), NULL /* no enc */, &lh__xany, NULL /* DTD config */, 1);
 	    dk_free_box (bh);
 	    return val;
 	  }
@@ -452,6 +453,7 @@ page_box_col (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t row, dbe_col_loc_
       VL;
       {
 	caddr_t bh = blob_ref_check (xx, len, itc, col_dtp);
+        query_instance_t *qi = (query_instance_t *)(itc->itc_out_state);
 	caddr_t val = (caddr_t) xper_entity (NULL, bh, NULL, 0, itc_box_base_uri_column (itc, buf->bd_buffer, cl->cl_col_id), NULL /* no enc */, &lh__xany, NULL /* DTD config */, 1);
 	dk_free_box (bh);
 	return val;

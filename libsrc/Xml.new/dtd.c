@@ -87,7 +87,7 @@ extern unsigned char ecm_utf8props[0x100];
     ((UCP_ALPHA | UCP_IDEO) & unichar_getprops((c))) )
 
 #define FREE_NAMEBUF(lenmem) \
-  dk_free((lenmem).lm_memblock,(lenmem).lm_length+1);
+  dk_free_box((lenmem).lm_memblock);
 
 
 int get_refentry (vxml_parser_t* parser, char* refname);

@@ -6686,7 +6686,7 @@ and the document will stay locked in that time */
 query_instance_t *
 qi_top_qi (query_instance_t * qi)
 {
-  if (-1 == (ptrlong)qi)
+  if ((-1 == (ptrlong)qi) || (NULL == qi))
     return NULL;
   while (IS_POINTER (qi->qi_caller))
     qi = qi->qi_caller;

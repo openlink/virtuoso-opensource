@@ -31,6 +31,13 @@
 long init_brk;
 #endif
 
+int64 dk_n_allocs;
+int64 dk_n_total;
+int64 dk_n_free;
+int64 dk_n_nosz_free;
+int64 dk_n_bytes;
+
+
 #ifndef MALLOC_DEBUG
 
 #ifdef dk_alloc
@@ -225,11 +232,6 @@ uint32 malloc_misses;
 uint32 thread_malloc_hits;
 uint32 thread_malloc_misses;
 
-int64 dk_n_allocs;
-int64 dk_n_total;
-int64 dk_n_free;
-int64 dk_n_nosz_free;
-int64 dk_n_bytes;
 dk_mutex_t * dk_cnt_mtx;
 #define CNT_ENTER if (dk_cnt_mtx) mutex_enter (dk_cnt_mtx)
 #define CNT_LEAVE if (dk_cnt_mtx) mutex_leave (dk_cnt_mtx)
@@ -509,71 +511,22 @@ malloc_cache_clear (void)
 {
 }
 
+void
+thr_free_alloc_cache (thread_t * thr)
+{
+}
+
+void
+thr_alloc_cache_clear (thread_t * thr)
+{
+}
 
 void
 thr_free_alloc_cache (thread_t * thr)
 {
 }
-#endif
 
-
-void
-dk_alloc_cache_status (resource_t ** cache)
-{
-  int inx;
-  size_t bs = 0;
-  printf ("\n--------- dk_alloc cache\n");
-#ifdef CACHE_MALLOC
-  for (inx = 0; inx < N_CACHED_SIZES; inx++)
-    {
-      int way;
-      int n = 0;
-      int sz = NTH_SIZE (inx);
-      for (way = 0; way < MEMBLOCKS_N_WAYS; way++)
-	n += memblock_set[inx][way].av_fill;
-      printf ("Size %d %d blocks\n", sz, n);
-      bs += n * inx * 8;
-    }
-  printf ("%Ld total\n", bs);
 #endif
-}
-
-size_t
-dk_alloc_global_cache_total ()
-{
-  int inx;
-  size_t bs = 0;
-#ifdef CACHE_MALLOC
-  for (inx = 0; inx < N_CACHED_SIZES; inx++)
-    {
-      int way;
-      int n = 0;
-      int sz = NTH_SIZE (inx);
-      for (way = 0; way < MEMBLOCKS_N_WAYS; way++)
-	n += memblock_set[inx][way].av_fill;
-      bs += n * inx * 8;
-    }
-#endif
-  return bs;
-}
-
-size_t
-dk_alloc_cache_total (void * cache)
-{
-  int inx;
-  size_t bs = 0;
-#ifdef CACHE_MALLOC
-  av_list_t * av = cache;
-  for (inx = 0; inx < N_CACHED_SIZES; inx++)
-    {
-      int n = 0;
-      int sz = NTH_SIZE (inx);
-      n += av[inx].av_fill;
-      bs += n * inx * 8;
-    }
-#endif
-  return bs;
-}
 
 
 #ifdef MEMDBG
@@ -964,12 +917,6 @@ malloc_cache_clear (void)
 
 
 void
-dk_alloc_cache_status (resource_t ** cache)
-{
-}
-
-
-void
 dk_mem_stat (char *out, int max)
 {
   strcpy_size_ck (out, "", max);
@@ -980,7 +927,73 @@ void
 thr_free_alloc_cache (thread_t * thr)
 {
 }
+
+void
+thr_alloc_cache_clear (thread_t * thr)
+{
+}
+
+
 #endif /* MALLOC_DEBUG */
+
+
+void
+dk_alloc_cache_status (resource_t ** cache)
+{
+  int inx;
+  size_t bs = 0;
+  printf ("\n--------- dk_alloc cache\n");
+#ifdef CACHE_MALLOC
+  for (inx = 0; inx < N_CACHED_SIZES; inx++)
+    {
+      int way;
+      int n = 0;
+      int sz = NTH_SIZE (inx);
+      for (way = 0; way < MEMBLOCKS_N_WAYS; way++)
+	n += memblock_set[inx][way].av_fill;
+      printf ("Size %d %d blocks\n", sz, n);
+      bs += n * inx * 8;
+    }
+  printf ("%Ld total\n", bs);
+#endif
+}
+
+size_t
+dk_alloc_global_cache_total ()
+{
+  int inx;
+  size_t bs = 0;
+#ifdef CACHE_MALLOC
+  for (inx = 0; inx < N_CACHED_SIZES; inx++)
+    {
+      int way;
+      int n = 0;
+      int sz = NTH_SIZE (inx);
+      for (way = 0; way < MEMBLOCKS_N_WAYS; way++)
+	n += memblock_set[inx][way].av_fill;
+      bs += n * inx * 8;
+    }
+#endif
+  return bs;
+}
+
+size_t
+dk_alloc_cache_total (void * cache)
+{
+  int inx;
+  size_t bs = 0;
+#ifdef CACHE_MALLOC
+  av_list_t * av = cache;
+  for (inx = 0; inx < N_CACHED_SIZES; inx++)
+    {
+      int n = 0;
+      int sz = NTH_SIZE (inx);
+      n += av[inx].av_fill;
+      bs += n * inx * 8;
+    }
+#endif
+  return bs;
+}
 
 
 #ifdef MALLOC_DEBUG

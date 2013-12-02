@@ -2550,13 +2550,14 @@ xs_set_error (vxml_parser_t * parser, ptrlong errlevel, size_t buflen_eval,
   dtd_astate_t *state =
       parser->validator.dv_stack + parser->validator.dv_depth;
   int ret = 0;
+  size_t buflen_used;
   char *buf = dk_alloc (buflen_eval);
   va_list va_tail;
   va_start (va_tail, format);
   /* see Dk/Dkstub.c */
-  buflen_eval = vsnprintf (buf, buflen_eval, format, va_tail);
+  buflen_used = vsnprintf (buf, buflen_eval, format, va_tail);
   va_end (va_tail);
-  ret = xmlparser_logprintf (parser, errlevel, buflen_eval, "%s", buf);
+  ret = xmlparser_logprintf (parser, errlevel, buflen_used, "%s", buf);
   dk_free (buf, buflen_eval);
   if (XCFG_ERROR >= errlevel)	/* Not '<=' ! zero errlevel is XCFG_FATAL ! */
     state->da_sstate = TAG_ST_ERROR;

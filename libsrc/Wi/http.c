@@ -11085,6 +11085,8 @@ ws_thr_cache_clear ()
     }
 }
 
+size_t dk_alloc_cache_total (void * cache);
+
 size_t
 http_threads_mem_report ()
 {
