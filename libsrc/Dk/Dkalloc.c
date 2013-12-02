@@ -971,7 +971,7 @@ dk_alloc_global_cache_total ()
       int sz = NTH_SIZE (inx);
       for (way = 0; way < MEMBLOCKS_N_WAYS; way++)
 	n += memblock_set[inx][way].av_fill;
-      bs += n * inx * 8;
+      bs += n;
     }
 #endif
   return bs;
@@ -989,7 +989,7 @@ dk_alloc_cache_total (void * cache)
       int n = 0;
       int sz = NTH_SIZE (inx);
       n += av[inx].av_fill;
-      bs += n * inx * 8;
+      bs += n;
     }
 #endif
   return bs;
