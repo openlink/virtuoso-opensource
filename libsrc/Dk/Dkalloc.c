@@ -220,6 +220,21 @@ int nth_memblock;
 }
 
 
+uint32 malloc_hits;
+uint32 malloc_misses;
+uint32 thread_malloc_hits;
+uint32 thread_malloc_misses;
+
+int64 dk_n_allocs;
+int64 dk_n_total;
+int64 dk_n_free;
+int64 dk_n_nosz_free;
+int64 dk_n_bytes;
+dk_mutex_t * dk_cnt_mtx;
+#define CNT_ENTER if (dk_cnt_mtx) mutex_enter (dk_cnt_mtx)
+#define CNT_LEAVE if (dk_cnt_mtx) mutex_leave (dk_cnt_mtx)
+
+
 void
 av_check (av_list_t * av, void *thing)
 {
@@ -264,6 +279,10 @@ av_clear (av_list_t * av)
     {
       next = *(caddr_t **) ptr;;
       free (ptr);
+      CNT_ENTER;
+      dk_n_total --;
+      CNT_LEAVE;
+      dk_n_nosz_free ++;
     }
   av->av_first = NULL;
   av->av_fill = 0;
@@ -532,8 +551,8 @@ dk_alloc_cache_total (void * cache)
 {
   int inx;
   size_t bs = 0;
-  av_list_t * av = cache;
 #ifdef CACHE_MALLOC
+  av_list_t * av = cache;
   for (inx = 0; inx < N_CACHED_SIZES; inx++)
     {
       int n = 0;
@@ -570,12 +589,6 @@ dk_mutex_t *mdbg_mtx;
 #endif
 
 
-uint32 malloc_hits;
-uint32 malloc_misses;
-uint32 thread_malloc_hits;
-uint32 thread_malloc_misses;
-
-
 void
 dk_memory_initialize (int do_malloc_cache)
 {
@@ -586,6 +599,7 @@ dk_memory_initialize (int do_malloc_cache)
   if (is_mem_init)
     return;
   is_mem_init = 1;
+  dk_cnt_mtx = mutex_allocate ();
 
 #ifdef UNIX
   init_brk = (long) sbrk (0);
@@ -689,11 +703,6 @@ dk_cache_allocs (size_t sz, size_t cache_sz)
 #endif
 }
 
-int64 dk_n_allocs;
-int64 dk_n_free;
-int64 dk_n_nosz_free;
-int64 dk_n_bytes;
-
 #define MC_MISS \
   HIT (malloc_misses++); \
   if (0 == av->av_n_empty % 1000) \
@@ -745,6 +754,9 @@ dk_alloc (size_t c)
 	    }
 
 	  thing = dk_alloc_reserve_malloc (ADD_END_MARK (align_sz), 1);
+	  CNT_ENTER;
+	  dk_n_total ++;
+	  CNT_LEAVE;
 	  dk_n_allocs++;
 	  dk_n_bytes += c;
 	}
@@ -755,6 +767,9 @@ dk_alloc (size_t c)
       align_sz = _RNDUP_PWR2 (c, 4096);
       thing = dk_alloc_reserve_malloc (ADD_END_MARK (align_sz), 1);
       AV_MARK_ALLOC (thing, align_sz);
+      CNT_ENTER;
+      dk_n_total ++;
+      CNT_LEAVE;
       dk_n_allocs++;
       dk_n_bytes += c;
     }
@@ -853,26 +868,27 @@ dk_free (void *ptr, size_t sz)
 	  mutex_leave (&av->av_mtx);
 	full:
 	  free (ptr);
+	  CNT_ENTER;
+	  dk_n_total --;
+	  CNT_LEAVE;
+	  dk_n_bytes -= sz;
 	  dk_n_free ++;
-          if (NO_SIZE != sz)
-	    dk_n_bytes -= sz;
-	  else
-	    {
-	      dk_n_allocs --;
-	      dk_n_nosz_free ++;
-	    }
 	  return;
 	}
     }
 #endif
 
   free (ptr);
-  dk_n_free ++;
+  CNT_ENTER;
+  dk_n_total --;
+  CNT_LEAVE;
   if (NO_SIZE != sz)
-    dk_n_bytes -= sz;
+    {
+      dk_n_free ++;
+      dk_n_bytes -= sz;
+    }
   else
     {
-      dk_n_allocs --;
       dk_n_nosz_free ++;
     }
 }
