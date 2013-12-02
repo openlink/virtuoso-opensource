@@ -233,8 +233,13 @@ uint32 thread_malloc_hits;
 uint32 thread_malloc_misses;
 
 dk_mutex_t * dk_cnt_mtx;
+#ifndef NDEBUG
 #define CNT_ENTER if (dk_cnt_mtx) mutex_enter (dk_cnt_mtx)
 #define CNT_LEAVE if (dk_cnt_mtx) mutex_leave (dk_cnt_mtx)
+#else
+#define CNT_ENTER
+#define CNT_LEAVE
+#endif
 
 
 void
