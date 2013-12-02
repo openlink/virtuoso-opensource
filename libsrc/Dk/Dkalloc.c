@@ -437,6 +437,17 @@ thr_init_alloc_cache (thread_t * thr)
 
 
 void
+thr_alloc_cache_clear (thread_t * thr)
+{
+  av_list_t *res = (av_list_t *) thr->thr_alloc_cache;
+  int inx;
+  if (!res)
+    return;
+  for (inx = 0; inx < N_CACHED_SIZES; inx++)
+    av_clear (&res[inx]);
+}
+
+void
 thr_free_alloc_cache (thread_t * thr)
 {
   av_list_t *res = (av_list_t *) thr->thr_alloc_cache;

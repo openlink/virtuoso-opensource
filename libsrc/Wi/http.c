@@ -111,6 +111,9 @@ int www_maintenance = 0;
 
 #define MAINTENANCE (NULL != www_maintenance_page && (wi_inst.wi_is_checkpoint_pending || www_maintenance || cpt_is_global_lock (NULL)))
 
+size_t dk_alloc_cache_total (void * cache);
+void thr_alloc_cache_clear (thread_t * thr);
+
 caddr_t
 temp_aspx_dir_get (void)
 {
@@ -4399,6 +4402,11 @@ ws_init_func (ws_connection_t * ws)
       if (!ses)
 	{
 	  http_trace (("ws %p to sleep\n", ws));
+	  if (ws->ws_thr_cache_clear)
+	    {
+	      ws->ws_thr_cache_clear = 0;
+	      thr_alloc_cache_clear (ws->ws_thread);
+	    }
 	  resource_store (ws_dbcs, (void*) ws);
 	  mutex_leave (ws_queue_mtx);
 	  semaphore_enter (ws->ws_thread->thr_sem);
@@ -6146,7 +6154,8 @@ decode_base64_impl (char * src, char * end, char * table)
        } /* unknown symbols are ignored */
     }
     if (i>0) {
-	for(;i<4;c[i++]=0); /* will leave padding nulls - does not matter here */
+	for(;i<4;c[i++]=0)
+	  ; /* will leave padding nulls - does not matter here */
        base64_store24(&d, c);
     }
     *d=0;
@@ -9856,7 +9865,7 @@ bif_sysacl_compose (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       caddr_t src_grp = src [gid_ctr*2];
       dtp_t src_grp_dtp = DV_TYPE_OF (src_grp);
       caddr_t src_perm = src [gid_ctr*2 + 1];
-      user_t *grp;
+      user_t *grp = NULL;
       boxint gid;
       boxint perm;
       if (DV_LONG_INT == src_grp_dtp)
@@ -10072,7 +10081,7 @@ bif_sysacl_bit1_of_tree_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
   DC_CHECK_LEN (dc, qi->qi_n_sets - 1);
   SET_LOOP
     {
-      caddr_t sysacl, user_name_or_id;
+      caddr_t sysacl = NULL, user_name_or_id = NULL;
       int sysacl_row_no, user_row_no;
       int bit1;
       if (SSL_REF == sysacl_ssl->ssl_type)
@@ -11043,7 +11052,38 @@ http_threads_allocate (int n_threads)
     }
 }
 
-size_t dk_alloc_cache_total (void * cache);
+void
+ws_thr_cache_clear ()
+{
+#define WS_MIN_RC 1
+  static void ** wst;
+  ws_connection_t * ws;
+  int i, n = 0;
+  if (!http_threads)
+    return;
+  if (!wst)
+    wst = (void **) malloc (http_threads * sizeof (void *));
+  DO_SET (ws_connection_t *, ws, &ws_threads)
+      ws->ws_thr_cache_clear = 1;
+  END_DO_SET();
+  if (ws_dbcs->rc_fill > WS_MIN_RC)
+    {
+      mutex_enter (ws_dbcs->rc_mtx);
+      n = ws_dbcs->rc_fill;
+      memcpy (wst, ws_dbcs->rc_items, n * sizeof (void*));
+      ws_dbcs->rc_fill = WS_MIN_RC;
+      mutex_leave (ws_dbcs->rc_mtx);
+    }
+  else
+    return;
+  for (i = WS_MIN_RC; i < n; i++)
+    {
+      ws = (ws_connection_t *) wst[i];
+      thr_alloc_cache_clear (ws->ws_thread);
+      ws->ws_thr_cache_clear = 0;
+      resource_store (ws_dbcs, ws);
+    }
+}
 
 size_t
 http_threads_mem_report ()

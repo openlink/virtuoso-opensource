@@ -1212,6 +1212,7 @@ extern int64 dk_n_nosz_free;
 extern int64 dk_n_bytes;
 size_t http_threads_mem_report ();
 size_t dk_alloc_global_cache_total ();
+size_t aq_thr_mem_cache_total ();
 
 void
 mem_status_report ()
@@ -1219,11 +1220,12 @@ mem_status_report ()
   char buf[1024];
   size_t wsc = http_threads_mem_report ();
   size_t gsz = dk_alloc_global_cache_total ();
+  size_t aqsz = aq_thr_mem_cache_total ();
   mp_map_count_print (buf, sizeof (buf));
   rep_printf ("Memory:\n");
   rep_printf ("%s", buf);
-  rep_printf ("n-alloc: %Ld n-free: %Ld delta: %Ld n-bytes: %Ld nosz-free: %Ld\n", dk_n_allocs, dk_n_free, dk_n_allocs - dk_n_free, dk_n_bytes, dk_n_nosz_free);
-  rep_printf ("ws mem cache: %Ld global cache: %Ld\n", wsc, gsz);
+  rep_printf ("%Ld alloc, %Ld free, %Ld bytes, %Ld no size free, %Ld outstanding\n", dk_n_allocs, dk_n_free, dk_n_bytes, dk_n_nosz_free, dk_n_total);
+  rep_printf ("%Ld WS, %Ld AQ, %Ld global\n", wsc, aqsz, gsz);
 }
 
 void

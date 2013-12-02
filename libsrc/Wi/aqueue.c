@@ -135,8 +135,7 @@ aq_thread_func (aq_thread_t * aqt)
 	  aqt->aqt_cli->cli_trx->lt_rc_w_id = aq->aq_rc_w_id;
 	  memcpy (aqt->aqt_cli->cli_trx->lt_timestamp, aq->aq_lt_timestamp, DT_LENGTH);
 	}
-      if (aqt->aqt_cli->cli_trx->lt_vdb_threads)
-	GPF_T1 ("at lt not supposed to in io sect");
+      if (aqt->aqt_cli->cli_trx->lt_vdb_threads) GPF_T1 ("at lt not supposed to in io sect");
       if (IS_BOX_POINTER (aqt->aqt_cli->cli_trx->lt_replicate))
 	dk_free_tree (aqt->aqt_cli->cli_trx->lt_replicate);
       aqt->aqt_cli->cli_trx->lt_replicate = (caddr_t *) aq->aq_replicate;
@@ -166,8 +165,7 @@ aq_thread_func (aq_thread_t * aqt)
 	aqr->aqr_value = aqr->aqr_func (aqr->aqr_args, &aqr->aqr_error);
       aqr->aqr_debug = NULL;
       assert (aqt->aqt_thread->thr_sem->sem_entry_count == 0);
-      if (aqt->aqt_cli->cli_clt)
-	GPF_T1 ("aq thread returning is not supposed to have a clt, not even if served rec dfg, would been clrd");
+      if (aqt->aqt_cli->cli_clt) GPF_T1 ("aq thread returning is not supposed to have a clt, not even if served rec dfg, would been clrd");
       aqr->aqr_args = NULL;
       dk_free_box (aqt->aqt_cli->cli_cl_stack);
       aqt->aqt_cli->cli_cl_stack = NULL;
@@ -1152,6 +1150,42 @@ aq_serialize (caddr_t x, dk_session_t * ses)
   print_int (0, ses);
 }
 
+size_t dk_alloc_cache_total (void * cache);
+void thr_alloc_cache_clear (thread_t * thr);
+
+size_t 
+aq_thr_mem_cache_total ()
+{
+  int i;
+  size_t n = 0;
+  resource_t * rc = aq_threads;
+  if (!rc->rc_fill)
+    return 0;
+  mutex_enter (rc->rc_mtx);
+  for (i = 0; i < rc->rc_fill; i++)
+    {
+      aq_thread_t * aqt = rc->rc_items[i];
+      n += dk_alloc_cache_total (aqt->aqt_thread->thr_alloc_cache);
+    }
+  mutex_leave (rc->rc_mtx);
+  return n;
+}
+
+void 
+aq_thr_mem_cache_clear ()
+{
+  int i;
+  resource_t * rc = aq_threads;
+  if (!rc->rc_fill)
+    return;
+  mutex_enter (rc->rc_mtx);
+  for (i = 0; i < rc->rc_fill; i++)
+    {
+      aq_thread_t * aqt = rc->rc_items[i];
+      thr_alloc_cache_clear (aqt->aqt_thread);
+    }
+  mutex_leave (rc->rc_mtx);
+}
 
 void
 bif_aq_init ()

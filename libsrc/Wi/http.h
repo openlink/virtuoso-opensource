@@ -137,6 +137,7 @@ typedef struct ws_connection_s
 #endif
     char  		ws_options[HTTP_MAX_METHOD];
     char		ws_limited;
+    char 		ws_thr_cache_clear;
   } ws_connection_t;
 
 #define WS_CHARSET(ws, qst) \

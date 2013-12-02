@@ -4900,6 +4900,9 @@ sch_save_roots (dbe_schema_t * sc)
 
 int enable_mm_cache_trim = 1;
 
+void aq_thr_mem_cache_clear ();
+void ws_thr_cache_clear ();
+
 void
 resources_reaper (void)
 {
@@ -4916,6 +4919,8 @@ resources_reaper (void)
   malloc_cache_clear ();
   if (enable_mm_cache_trim)
     mm_cache_trim (c_max_large_vec, 100000, 1);
+  ws_thr_cache_clear ();
+  aq_thr_mem_cache_clear ();
 }
 
 
