@@ -286,7 +286,8 @@ add_buf (vxml_parser_t * parser)
   buf->next->prev = buf;
   buf = buf->next;
   buf->next = NULL;
-  buf->beg = buf->data_begin = dk_alloc (BRICK_SIZE);
+  buf->beg = buf->data_begin = dk_alloc_box (BRICK_SIZE+1, DV_STRING);
+  buf->beg[BRICK_SIZE] = 0;
   buf->end = buf->beg + BRICK_SIZE;
   buf->data_owner = NULL;
   buf->data_refctr = 0;
@@ -345,7 +346,7 @@ DBG_NAME(brcpy) (DBG_PARAMS lenmem_t * to, buf_range_t * from)
     }
 
   to->lm_length = sz;
-  bp = to->lm_memblock = DK_ALLOC (to->lm_length + 1);
+  bp = to->lm_memblock = DBG_NAME(dk_alloc_box) (DBG_ARGS to->lm_length + 1, DV_STRING);
 
   for (ptr = from->beg;
        ptr.buf;
@@ -542,7 +543,7 @@ advance_ptr (vxml_parser_t * parser)
 	  continue;
 	}
       if (NULL != old->data_begin)
-	dk_free (old->data_begin, -1);
+	dk_free_box (old->data_begin);
       else if (NULL != old->data_owner)
 	old->data_owner->data_refctr -= 1;
 #ifdef UNIT_DEBUG
@@ -1405,10 +1406,10 @@ get_PI (vxml_parser_t * parser, int is_text_decl)
 	  encname_is_bad = (
 	    (encname_orig.lm_length != encname.lm_length) ||
 	    strcmp (encname_orig.lm_memblock, encname.lm_memblock) );
-	  dk_free (encname_orig.lm_memblock,-1);
+	  dk_free_box (encname_orig.lm_memblock);
 	  if (encname_is_bad)
 	    {
-	      dk_free (encname.lm_memblock,-1);
+	      dk_free_box (encname.lm_memblock);
 	      goto xml_invalid_encoding_name;
 	    }
 	  for (name_tail = encname.lm_memblock;
@@ -1417,7 +1418,7 @@ get_PI (vxml_parser_t * parser, int is_text_decl)
 	    {
 	      if (name_tail[0] & ~0x7F)
 		{
-		  dk_free (encname.lm_memblock, -1);
+		  dk_free_box (encname.lm_memblock);
 		  goto xml_invalid_encoding_name;
 		}
 	    }
@@ -1426,7 +1427,7 @@ get_PI (vxml_parser_t * parser, int is_text_decl)
 	  if (parser->enc_flag != XML_EF_FORCE)
 	    {
 	      eh = find_encoding (parser, encname.lm_memblock);
-	      dk_free (encname.lm_memblock, -1);
+	      dk_free_box (encname.lm_memblock);
 
 	      if (NULL != eh)
 		{
@@ -1478,7 +1479,7 @@ get_PI (vxml_parser_t * parser, int is_text_decl)
 		}
 	    }
 	  else
-	    dk_free (encname.lm_memblock, -1);
+	    dk_free_box (encname.lm_memblock);
 	}
 end_of_encoding:
 
@@ -1497,7 +1498,7 @@ end_of_encoding:
 /* We do not need the value of "standalone" property at all, but
 we have to ensure that it is correct */
 	  yn_is_bad = (strcmp (standalone.lm_memblock, "yes") && strcmp (standalone.lm_memblock, "no"));
-	  dk_free (standalone.lm_memblock, -1);
+	  dk_free_box (standalone.lm_memblock);
 	  if (yn_is_bad && (DEAD_HTML != parser->cfg.input_is_html))
 	    {
 	      RET_ERRMSG("Invalid <?xml ... ?> XML declaration");
@@ -1585,13 +1586,13 @@ xml_invalid_encoding_name:
     }
   if (parser->masters.pi_handler)
     parser->masters.pi_handler (parser->masters.user_data, target.lm_memblock, data.lm_memblock);
-  /* always true: if(NULL!=target.lm_memblock) */ dk_free (target.lm_memblock, -1);
-  if (NULL != data.lm_memblock) dk_free (data.lm_memblock, -1);
+  /* always true: if(NULL!=target.lm_memblock) */ dk_free_box (target.lm_memblock);
+  if (NULL != data.lm_memblock) dk_free_box (data.lm_memblock);
   return 1;
 
 synterror_cleanup:
-  if (NULL!=target.lm_memblock) dk_free(target.lm_memblock,-1);
-  if (NULL!=data.lm_memblock) dk_free(data.lm_memblock,-1);
+  if (NULL!=target.lm_memblock) dk_free_box (target.lm_memblock);
+  if (NULL!=data.lm_memblock) dk_free_box (data.lm_memblock);
   if (DEAD_HTML == parser->cfg.input_is_html)
     return 1;
   RET_ERRMSG("Only part of processing instruction <?...?> has found");
@@ -1623,7 +1624,7 @@ get_comment (vxml_parser_t * parser, int call_handler)
       if(NULL==parser->masters.comment_handler) return 1;
       brcpy (&text, &parser->tmp.string);
       parser->masters.comment_handler(parser->masters.user_data,text.lm_memblock);
-      dk_free(text.lm_memblock,-1);
+      dk_free_box (text.lm_memblock);
     };
   return 1;
 }
@@ -2000,8 +2001,8 @@ get_notation_decl (vxml_parser_t * parser)
     goto synterror;
 
   newdef = dk_alloc(sizeof(xml_def_4_notation_t));
-  newdef->xd4n_publicId=publit.lm_memblock;
-  newdef->xd4n_systemId=syslit.lm_memblock;
+  newdef->xd4n_publicId = publit.lm_memblock;
+  newdef->xd4n_systemId = syslit.lm_memblock;
 
   dictptr = &(parser->validator.dv_dtd->ed_notations);
   if (NULL == dictptr[0])
@@ -2012,9 +2013,9 @@ get_notation_decl (vxml_parser_t * parser)
   return 1;
 
 synterror:
-  if(name.lm_memblock) dk_free(name.lm_memblock,-1);
-  if(publit.lm_memblock) dk_free(publit.lm_memblock,-1);
-  if(syslit.lm_memblock) dk_free(syslit.lm_memblock,-1);
+  if (name.lm_memblock) dk_free_box (name.lm_memblock);
+  if (publit.lm_memblock) dk_free_box (publit.lm_memblock);
+  if (syslit.lm_memblock) dk_free_box (syslit.lm_memblock);
   return 0;
 }
 
@@ -2211,7 +2212,7 @@ if (is_dtd_ge)
 		      lenmem_t name_buf;
 		      brcpy (&name_buf, &parser->tmp.name);
 		      is_html_doctype = !stricmp (name_buf.lm_memblock, "HTML");
-		      dk_free (name_buf.lm_memblock, -1);
+		      dk_free_box (name_buf.lm_memblock);
 		      if (!is_html_doctype && (DEAD_HTML != parser->cfg.input_is_html))
 			RET_INVALID_SOFT("Missing URI of external DTD in <!DOCTYPE ... PUBLIC ...>");
 		    }
@@ -2578,7 +2579,7 @@ start_token_again:
 	        {
 		  char *expected, *actual;
 		  if (NULL != parser->tmp.flat_name.lm_memblock)
-		    dk_free (parser->tmp.flat_name.lm_memblock, -1);
+		    dk_free_box (parser->tmp.flat_name.lm_memblock);
 		  brcpy (&parser->tmp.flat_name, &parser->tmp.name);
 		  expected = parser->inner_tag->ot_name.lm_memblock;
 		  actual = parser->tmp.flat_name.lm_memblock;
@@ -2598,7 +2599,7 @@ start_token_again:
 	  /* At this point we know we are in HTML mode. */
 	  normalize_name (&parser->tmp.name);
 	  if (NULL != parser->tmp.flat_name.lm_memblock)
-	    dk_free (parser->tmp.flat_name.lm_memblock, -1);
+	    dk_free_box (parser->tmp.flat_name.lm_memblock);
 	  brcpy (&parser->tmp.flat_name, &parser->tmp.name);
 	  end_tag_descr = (html_tag_descr_t *)id_hash_get (html_tag_hash, (caddr_t)(&parser->tmp.flat_name.lm_memblock));
 	  if ((NULL != end_tag_descr) && end_tag_descr->htmltd_is_empty)
@@ -2727,7 +2728,7 @@ start_token_again:
 		  const char *htmlname;
 		  normalize_name (&parser->tmp.name);
 		  if (NULL != parser->tmp.flat_name.lm_memblock)
-		    dk_free (parser->tmp.flat_name.lm_memblock, -1);
+		    dk_free_box (parser->tmp.flat_name.lm_memblock);
 		  brcpy (&parser->tmp.flat_name, &parser->tmp.name);
 		  htmlname = parser->tmp.flat_name.lm_memblock;
 		  start_tag_descr = (html_tag_descr_t *)id_hash_get (html_tag_hash, (caddr_t)(&htmlname));
@@ -2764,7 +2765,7 @@ start_token_again:
 	      else
 		{
 		  if (NULL != parser->tmp.flat_name.lm_memblock)
-		    dk_free (parser->tmp.flat_name.lm_memblock, -1);
+		    dk_free_box (parser->tmp.flat_name.lm_memblock);
 		  brcpy (&parser->tmp.flat_name, &parser->tmp.name);
 		}
 	      if (parser->inner_tag >= (parser->tag_stack_holder + (XML_PARSER_MAX_DEPTH-1)))
@@ -2881,8 +2882,8 @@ start_token_again:
 			      nsdecl_t *ns = parser->nsdecl_array + parser->attrdata.all_nsdecls_count;
 			      if (parser->attrdata.all_nsdecls_count >= XML_PARSER_MAX_NSDECLS)
 				{
-				  dk_free (raw_name.lm_memblock, -1);
-				  dk_free (raw_value.lm_memblock, -1);
+				  dk_free_box (raw_name.lm_memblock);
+				  dk_free_box (raw_value.lm_memblock);
 				  rem = parser->pptr;
 				  RET_INVALID_SOFT ("Too many namespace declarations");
 				}
@@ -2898,8 +2899,8 @@ start_token_again:
 				{
 				  if (DEAD_HTML == parser->cfg.input_is_html)
 				    goto attribute_plain; /* see below */
-				  dk_free (raw_name.lm_memblock, -1);
-				  dk_free (raw_value.lm_memblock, -1);
+				  dk_free_box (raw_name.lm_memblock);
+				  dk_free_box (raw_value.lm_memblock);
 				  RET_INVALID ("Invalid namespace declaration");
 				}
 			      ns->nsd_uri = dtd_normalize_attr_val (parser, raw_value.lm_memblock, 0);
@@ -2919,7 +2920,7 @@ start_token_again:
 /* In nice interface, xmlns attributes should not appear in the list of all attributes at all.
 so there must be #if 1 here, not #if 0. But it will be #if 0 for next few months :) */
 #if 1
-			      dk_free (raw_name.lm_memblock, -1);
+			      dk_free_box (raw_name.lm_memblock);
 			      goto attribute_completed; /* see below */
 #endif
 			    }
@@ -2931,17 +2932,17 @@ attribute_plain:
 			      if (LM_EQUAL (&attr->ta_raw_name, &raw_name))
 				{
 				  attr_dupe_found = 1;
-				  dk_free (raw_name.lm_memblock, -1);
+				  dk_free_box (raw_name.lm_memblock);
 				  dk_free_box (attr->ta_value);
 				  goto attribute_found; /* see below */
 				}
 			    }
 			  if (parser->attrdata.local_attrs_count >= XML_PARSER_MAX_ATTRS)
 			    {
-			      dk_free (raw_name.lm_memblock, -1);
+			      dk_free_box (raw_name.lm_memblock);
 			      if (DEAD_HTML == parser->cfg.input_is_html)
 				goto attribute_completed; /* see below */
-			      dk_free (raw_value.lm_memblock, -1);
+			      dk_free_box (raw_value.lm_memblock);
 			      RET_INVALID ("Too many attributes");
 			    }
 			  attr = parser->tmp.attr_array + (parser->attrdata.local_attrs_count++);
@@ -2949,7 +2950,7 @@ attribute_plain:
 attribute_found:
 			  attr->ta_value = dtd_normalize_attr_val (parser, raw_value.lm_memblock, 0);
 attribute_completed:
-			  dk_free (raw_value.lm_memblock, -1);
+			  dk_free_box (raw_value.lm_memblock);
 			}
 		    }
 		  else
@@ -3021,7 +3022,7 @@ attribute_completed:
 				ename.lm_length,
 				0, /* = not parameter entity ref */
 				ent);
-		          dk_free(ename.lm_memblock,-1);
+		          dk_free_box (ename.lm_memblock);
 			}
 		      else
 			{
@@ -3029,12 +3030,12 @@ attribute_completed:
 			  if (replace_entity_common (parser, 1 /* = GE */, ent, rem, 1))
 			    {
 			      parser->pptr=rem;
-			      dk_free(ename.lm_memblock,-1);
+			      dk_free_box (ename.lm_memblock);
 			      goto start_token_again;
 			    }
 			  if (parser->cfg.input_is_html)
 			    {
-			      dk_free(ename.lm_memblock,-1);
+			      dk_free_box (ename.lm_memblock);
 			      xmlparser_logprintf (parser, parser->validator.dv_curr_config.dc_ge_unknown, 100, "Undefined generic entity reference");
 			      handle_char_data(parser, parser->bptr, parser->pptr);
 			      return XML_TOK_CHAR_DATA;
@@ -3046,7 +3047,7 @@ attribute_completed:
 				ename.lm_length,
 				0, /* = not parameter entity ref */
 				ent);
-		              dk_free(ename.lm_memblock,-1);
+		              dk_free_box (ename.lm_memblock);
 			      xmlparser_logprintf (parser, parser->validator.dv_curr_config.dc_ge_unknown, 100, "Undefined generic entity reference");
 			    }
 			}
@@ -3130,7 +3131,7 @@ character_data_without_backstep:
 		  lenmem_t char_buffer;
 		  char *encode_end;
 		  brick_t *char_brick;
-		  char_buffer.lm_memblock = dk_alloc (MAX_UTF8_CHAR);
+		  char_buffer.lm_memblock = dk_alloc_box (MAX_UTF8_CHAR+1, DV_STRING);
 		  encode_end = eh_encode_char__UTF8 (c, char_buffer.lm_memblock, char_buffer.lm_memblock+eh__UTF8.eh_maxsize);
 		  char_buffer.lm_length = encode_end - char_buffer.lm_memblock;
 		  insert_buffer (parser, &tmp, &parser->pptr, &char_buffer, &parser->curr_pos, &parser->curr_pos);

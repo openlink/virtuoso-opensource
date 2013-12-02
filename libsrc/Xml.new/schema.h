@@ -828,7 +828,6 @@ extern int xs_set_error (vxml_parser_t * parser, ptrlong errlevel, size_t buflen
 int xmlparser_log_cm_location (struct vxml_parser_s *parser, xs_component_t *comp, int mode);
 extern caddr_t xml_add_system_path (caddr_t uri);
 extern void xs_add_predefined_types(vxml_parser_t* parser);
-extern void xs_clear_tag(ptrlong tag, int is_free);
 extern void xs_clear_processor(schema_processor_t* processor);
 
 extern void grp_print_tree(grp_tree_elem_t* tree, int level, const char* comment);

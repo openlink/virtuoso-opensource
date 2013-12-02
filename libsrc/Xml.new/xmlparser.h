@@ -74,8 +74,8 @@ extern int dtd_release (dtd_t *dtd);
 #define LENMEM_T_DEFINED
 typedef struct struct lenmem_s
 {
-  size_t lm_length;
-  char *lm_memblock;
+  size_t		lm_length;
+  char *		lm_memblock;
 } lenmem_t;
 #endif
 

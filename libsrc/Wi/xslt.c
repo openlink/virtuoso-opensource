@@ -2488,9 +2488,9 @@ xslt_number (xparse_ctx_t * xp, caddr_t * xstree)
     tail_max_fill = (strlen (format)  + 1) * 18 * res_len;
     tmp_buf = (caddr_t) dk_alloc (tail_max_fill);
     tmp_buf_tail = xslt_fmt_print_numbers (tmp_buf, tail_max_fill, nums, res_len, format);
-    dk_free (nums, -1);
+    dk_free (nums, sizeof (unsigned) * res_len);
     session_buffered_write (xp->xp_strses, tmp_buf, tmp_buf_tail - tmp_buf);
-    dk_free (tmp_buf, -1);
+    dk_free (tmp_buf, tail_max_fill);
   }
 }
 

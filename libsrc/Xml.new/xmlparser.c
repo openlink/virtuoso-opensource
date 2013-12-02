@@ -202,7 +202,8 @@ VXmlParserCreate (vxml_parser_config_t *config)
     parser->state |= XML_A_CHAR | XML_A_MISC;
 
   buf = dk_alloc (sizeof(brick_t));
-  buf->beg = buf->data_begin = dk_alloc (BRICK_SIZE);
+  buf->beg = buf->data_begin = dk_alloc_box (BRICK_SIZE+1, DV_STRING);
+  buf->beg[BRICK_SIZE] = 0;
   buf->end = buf->beg + BRICK_SIZE;
   buf->data_owner = NULL;
   buf->data_refctr = 0;
@@ -277,7 +278,7 @@ VXmlParserDestroy (vxml_parser_t * parser)
       brick_t *old = parser->eptr.buf;
       parser->eptr.buf = old->prev;
       if (NULL != old->data_begin)
-	dk_free (old->data_begin, -1);
+	dk_free_box (old->data_begin);
 #ifdef UNIT_DEBUG
       printf ("Releasing a buffer element. %x\n", old);
 #endif
@@ -285,12 +286,12 @@ VXmlParserDestroy (vxml_parser_t * parser)
     }
 
   if (parser->feed_buf)
-    dk_free (parser->feed_buf, -1);
+    dk_free (parser->feed_buf, parser->feed_buf_size);
   if (parser->uni_buf)
-    dk_free (parser->uni_buf, -1);
+    dk_free (parser->uni_buf, 6 * (BRICK_SIZE + parser->feed_buf_size));
 
   if (NULL != parser->tmp.flat_name.lm_memblock)
-    dk_free (parser->tmp.flat_name.lm_memblock, -1);
+    dk_free_box (parser->tmp.flat_name.lm_memblock);
 
   while (pop_tag(parser)) {}
 
@@ -330,29 +331,14 @@ VXmlParserDestroy (vxml_parser_t * parser)
       dk_free_box(parser->tmp.dtd_sysuri);
 
   if (NULL != parser->validator.dv_root)
-    dk_free (parser->validator.dv_root, -1);
+    dk_free_box (parser->validator.dv_root);
   dtd_release(parser->validator.dv_dtd);
 
-#if 0
-  if (parser->tmp.tag_index)
-    {
-      long l = box_length (parser->tmp.tag_index);
-      ptrlong *p = parser->tmp.tag_index;
-      while (l)
-	{
-	  if (*p)
-	    xs_clear_tag (*p, 1);
-	  p++;
-	  l-=sizeof (ptrlong);
-	}
-      dk_free_box (parser->tmp.tag_index);
-    }
-#endif
   xml_ns_2dict_clean (&(parser->ns_2dict));
   while (NULL != parser->msglog)
     dk_free_box (dk_set_pop (&(parser->msglog)));
   xs_clear_processor (&parser->processor);
-  dk_free (parser, -1);
+  dk_free (parser, sizeof (vxml_parser_t));
   xml_dbg_printf(("}\n"));
 
 }

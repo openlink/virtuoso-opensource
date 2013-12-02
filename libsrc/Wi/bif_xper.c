@@ -1352,7 +1352,7 @@ xper_destroy_ctx (xper_ctx_t * ctx)
     {
       xper_ns_t *curr_ns = (xper_ns_t *) (dk_set_pop (&(ctx->xpc_cut_namespaces)));
       dk_free_box (curr_ns->xpns_uri);
-      dk_free (curr_ns, -1);
+      dk_free (curr_ns, sizeof (xper_ns_t));
     }
   if ((NULL != ctx->xpc_itc) && (NULL != ctx->xpc_buf))
     {
@@ -5349,7 +5349,7 @@ cbk_for_start_tag_done:
 	  xper_vtbf_env_t *outer = env_stack->xve_outer;
 	  vtb_name = env_stack->xve_vtb_name;
 	  active_lang = env_stack->xve_outer_lh;
-	  dk_free (env_stack, -1);
+	  dk_free (env_stack, sizeof (xper_vtbf_env_t));
 	  env_stack = outer;
 	}
       if (NULL != vtb_name)
@@ -5737,9 +5737,7 @@ void dtd_load_from_buffer (dtd_t *res, caddr_t dtd_string)
 
 #define DIG_NAME(name) do {\
   len = skip_string_length (&tail); \
-  name = (char *) dk_alloc (len+1); \
-  memcpy (name, tail, len); \
-  name[len] = '\0'; \
+  name = box_dv_short_nchars ((char *)tail, len); \
   tail += len; } while (0)
 
 #define DIG_URI(name) do {\
@@ -5816,11 +5814,7 @@ int dtd_insert_soft (dtd_t *tgt, dtd_t *src)
   id_hash_t *src_dict;
   int id_attrs_changed = 0;
 
-#define COPY_NAME(to,from) do { \
-  len = strlen((from)); \
-  (to) = (char *) dk_alloc (len+1); \
-  memcpy ((to), (from), len); \
-  (to)[len] = '\0'; } while (0)
+#define COPY_NAME(to,from) do { (to) = box_dv_short_string (from); } while (0)
 
   if ((NULL == src) || (NULL == tgt))
     return 0;
@@ -6394,7 +6388,7 @@ xper_entity_t *
 	  sqlr_new_error ("XE000", "XP9B4", "Error while cutting XML: internal error in namespace handler");
 	xper_blob_append_box (&context, curr_ns->xpns_uri);
 	dk_free_box (curr_ns->xpns_uri);
-	dk_free (curr_ns, -1);
+	dk_free (curr_ns, sizeof (xper_ns_t));
       }
 /* Now we put dtd into blob, if there's something to put */
     ITC_FAIL (context.xpc_itc)
@@ -6906,11 +6900,11 @@ dtd_serialize (dtd_t * dtd, dk_session_t * ses)
 	  session_buffered_write (ses, attrtype, strlen (attrtype));
 #if 000
 	  for (ctr = attr->da_values_no; ctr--; /* no step */ )
-	    dk_free (attr->da_values[ctr], -1);
+	    dk_free_box (attr->da_values[ctr]);
 	  if (NULL == attr->da_values)
 	    {
 	      if (NULL != attr->da_default.ptr)
-		dk_free (attr->da_default.ptr, -1);
+		dk_free_box (attr->da_default.ptr);
 	    }
 	  else
 	    dk_free_box (attr->da_values);

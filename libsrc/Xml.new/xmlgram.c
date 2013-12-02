@@ -54,7 +54,7 @@ pop_tag (vxml_parser_t * parser)
       dk_free_box (ns->nsd_uri);
     }
   parser->attrdata.all_nsdecls_count = ns_ctr + 1;
-  dk_free (tag->ot_name.lm_memblock, -1);
+  dk_free_box (tag->ot_name.lm_memblock);
   parser->inner_tag--;
   if (tag == parser->tag_stack_holder)
     CLR_STATE(XML_A_CHAR);
@@ -69,7 +69,7 @@ free_attr_array (vxml_parser_t * parser)
   while (ctr--)
     {
       tag_attr_t * att = parser->tmp.attr_array+ctr;
-      dk_free (att->ta_raw_name.lm_memblock, -1);
+      dk_free_box (att->ta_raw_name.lm_memblock);
       dk_free_box (att->ta_value);
     }
   parser->attrdata.local_attrs_count = 0;

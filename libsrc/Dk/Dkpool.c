@@ -2041,6 +2041,7 @@ void
 mm_cache_clear ()
 {
   int inx;
+  size_t maps_sz;
   ptr_and_size_t * maps;
   int n_maps;
   int max_maps, map_fill = 0;
@@ -2052,7 +2053,8 @@ mm_cache_clear ()
       n_maps += rc->rc_fill;
     }
   max_maps = n_maps + 1000;
-  maps = (ptr_and_size_t*)dk_alloc (sizeof (ptr_and_size_t) * max_maps);
+  maps_sz = sizeof (ptr_and_size_t) * max_maps;
+  maps = (ptr_and_size_t *)dk_alloc (maps_sz);
   DO_HT (uptrlong, ptr, size_t, sz, &mm_failed_unmap)
     {
       maps[map_fill].ps_ptr = ptr;
@@ -2088,7 +2090,7 @@ mm_cache_clear ()
  all_filled:
   qsort (maps, map_fill, sizeof (ptr_and_size_t), ps_compare);
   mm_unmap_contiguous (maps, map_fill);
-  dk_free ((caddr_t)maps, -1);
+  dk_free ((caddr_t)maps, maps_sz);
   mutex_leave (&map_fail_mtx);
 }
 
