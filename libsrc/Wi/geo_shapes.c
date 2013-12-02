@@ -1733,21 +1733,6 @@ ewkt_get_nested_poinstrings (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas, i
   return res;
 }
 
-void
-ewkt_destroy_input (ewkt_input_t *in)
-{
-  int dctr;
-  for (dctr = 0; dctr < 4; dctr++)
-    {
-      if (NULL != in->ekwt_Cs[dctr])
-        dk_free ((void *)(in->ekwt_Cs[dctr]), in->ekwt_point_max * sizeof (geoc));
-    }
-  while (NULL != in->ekwt_cuts) dk_free_box ((box_t)dk_set_pop (&(in->ekwt_cuts)));
-  while (NULL != in->ekwt_rings) dk_free_box ((box_t)dk_set_pop (&(in->ekwt_rings)));
-  while (NULL != in->ekwt_childs) dk_free_box ((box_t)dk_set_pop (&(in->ekwt_childs)));
-  while (NULL != in->ekwt_members) dk_free_box ((box_t)dk_set_pop (&(in->ekwt_members)));
-}
-
 geo_t *
 ewkt_get_one (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas)
 {
@@ -1907,6 +1892,25 @@ ewkt_get_one (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas)
     }
   ewkt_signal (in, "Internal error");
   return NULL;			/* never happens */
+}
+
+void
+ewkt_destroy_input (ewkt_input_t * in)
+{
+  int dctr;
+  for (dctr = 0; dctr < 4; dctr++)
+    {
+      if (NULL != in->ekwt_Cs[dctr])
+	dk_free ((void *) (in->ekwt_Cs[dctr]), in->ekwt_point_max * sizeof (geoc));
+    }
+  while (NULL != in->ekwt_cuts)
+    dk_free_box ((box_t) dk_set_pop (&(in->ekwt_cuts)));
+  while (NULL != in->ekwt_rings)
+    dk_free_box ((box_t) dk_set_pop (&(in->ekwt_rings)));
+  while (NULL != in->ekwt_childs)
+    dk_free_box ((box_t) dk_set_pop (&(in->ekwt_childs)));
+  while (NULL != in->ekwt_members)
+    dk_free_box ((box_t) dk_set_pop (&(in->ekwt_members)));
 }
 
 geo_t *
