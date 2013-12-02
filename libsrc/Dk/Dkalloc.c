@@ -272,19 +272,20 @@ av_check_double_free (av_list_t * av1, void *thing, int len)
 int enable_no_free = 0;
 
 void
-av_clear (av_list_t * av)
+av_clear (av_list_t * av, size_t sz)
 {
   caddr_t *ptr, *next;
   if (enable_no_free)
     return;
   for (ptr = av->av_first; ptr; ptr = next)
     {
-      next = *(caddr_t **) ptr;;
+      next = *(caddr_t **) ptr;
       free (ptr);
       CNT_ENTER;
       dk_n_total --;
       CNT_LEAVE;
-      dk_n_nosz_free ++;
+      dk_n_free ++;
+      dk_n_bytes -= sz;
     }
   av->av_first = NULL;
   av->av_fill = 0;
@@ -404,7 +405,7 @@ malloc_cache_clear (void)
     {
       av_list_t *blocks = (av_list_t *) thr->thr_alloc_cache;
       for (inx = 0; inx < N_CACHED_SIZES; inx++)
-	av_clear (&blocks[inx]);
+	av_clear (&blocks[inx], NTH_SIZE (inx));
     }
   for (way = 0; way < MEMBLOCKS_N_WAYS; way++)
     {
@@ -414,7 +415,7 @@ malloc_cache_clear (void)
 	    {
 	      av_s_list_t *av = &memblock_set[inx][way];
 	      mutex_enter (&av->av_mtx);
-	      av_clear ((av_list_t *) av);
+	      av_clear ((av_list_t *) av, NTH_SIZE (inx));
 	      mutex_leave (&av->av_mtx);
 	    }
 	}
@@ -446,7 +447,7 @@ thr_alloc_cache_clear (thread_t * thr)
   if (!res)
     return;
   for (inx = 0; inx < N_CACHED_SIZES; inx++)
-    av_clear (&res[inx]);
+    av_clear (&res[inx], NTH_SIZE (inx));
 }
 
 void
@@ -457,7 +458,7 @@ thr_free_alloc_cache (thread_t * thr)
   if (!res)
     return;
   for (inx = 0; inx < N_CACHED_SIZES; inx++)
-    av_clear (&res[inx]);
+    av_clear (&res[inx], NTH_SIZE (inx));
   free (thr->thr_alloc_cache);
   thr->thr_alloc_cache = NULL;
 }
@@ -506,13 +507,10 @@ thr_free_alloc_cache (thread_t * thr)
 #else
 #define THREAD_ALLOC_LOOKUP(thr, thing, align_sz)
 #define THREAD_ALLOC_FREE(thr, thing, align_sz)
+#define CNT_ENTER
+#define CNT_LEAVE
 void
 malloc_cache_clear (void)
-{
-}
-
-void
-thr_free_alloc_cache (thread_t * thr)
 {
 }
 
@@ -563,7 +561,6 @@ dk_memory_initialize (int do_malloc_cache)
   if (is_mem_init)
     return;
   is_mem_init = 1;
-  dk_cnt_mtx = mutex_allocate ();
 
 #ifdef UNIX
   init_brk = (long) sbrk (0);
@@ -575,6 +572,7 @@ dk_memory_initialize (int do_malloc_cache)
 #endif
 
 #ifdef CACHE_MALLOC
+  dk_cnt_mtx = mutex_allocate ();
   if (do_malloc_cache)
     {						 /* GK: it's not a good idea to cache things on a thread from a library */
       int way;
@@ -722,7 +720,7 @@ dk_alloc (size_t c)
 	  dk_n_total ++;
 	  CNT_LEAVE;
 	  dk_n_allocs++;
-	  dk_n_bytes += c;
+	  dk_n_bytes += align_sz;
 	}
       AV_MARK_ALLOC (thing, align_sz);
     }
@@ -735,7 +733,7 @@ dk_alloc (size_t c)
       dk_n_total ++;
       CNT_LEAVE;
       dk_n_allocs++;
-      dk_n_bytes += c;
+      dk_n_bytes += align_sz;
     }
 #endif
 
