@@ -1226,20 +1226,22 @@ caddr_t
 geo_wkt (caddr_t x)
 {
   QNCAST (geo_t, g, x);
-  char xx[100];
-  switch (GEO_TYPE (g->geo_flags))
+  if ((GEO_POINT == GEO_TYPE (g->geo_flags)) && (GEO_SRCODE_DEFAULT == g->geo_srcode))
     {
-    case GEO_POINT:
+      char xx[100];
       snprintf (xx, sizeof (xx), "POINT(%g %g)", g->Xkey, g->Ykey);
       return box_dv_short_string (xx);
-    case GEO_LINESTRING:
-      return box_dv_short_string ("LINESTRING");
-    default:
-      snprintf (xx, sizeof (xx), "geometry (%d)", g->geo_flags);
-      return box_dv_short_string (xx);
+    }
+  else
+    {
+      dk_session_t *ses = strses_allocate ();
+      caddr_t res;
+      ewkt_print_sf12 (g, ses);
+      res = strses_string (ses);
+      strses_free (ses);
+      return res;
     }
 }
-
 
 caddr_t
 bif_st_point (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -1360,14 +1362,6 @@ bif_geo_pred (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, char *f, i
   return box_num (geo_pred (g1, g2, op, prec));
 }
 
-
-caddr_t
-bif_st_intersects (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  return bif_geo_pred (qst, err_ret, args, "st_intersects", GSOP_INTERSECTS);
-}
-
-
 caddr_t
 bif_st_contains (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -1381,6 +1375,17 @@ bif_st_within (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return bif_geo_pred (qst, err_ret, args, "st_within", GSOP_WITHIN);
 }
 
+caddr_t
+bif_st_intersects (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_geo_pred (qst, err_ret, args, "st_intersects", GSOP_INTERSECTS);
+}
+
+caddr_t
+bif_st_may_intersect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_geo_pred (qst, err_ret, args, "st_may_intersect", GSOP_MAY_INTERSECT);
+}
 
 caddr_t
 bif_st_astext (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -1392,32 +1397,30 @@ bif_st_astext (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 geo_parse_wkt (char *text, caddr_t * err_ret)
 {
-  if (!(0 == strncmp (text, "point", 5) || 0 == strncmp (text, "POINT", 5)))
-    goto err;
-  else
+  geo_t *g;
+  do
     {
-      char *par = strchr (text, '(');
-      char ns1[30];
-      char ns2[30];
+      char *par, ns1[30], ns2[30];
       double x, y;
-      geo_t *g;
+      if (strncmp (text, "point", 5) && strncmp (text, "POINT", 5))
+	break;
+      par = strchr (text, '(');
       if (!par)
-	goto err;
+	break;
       if (2 != sscanf (par + 1, "%20s %20s", ns1, ns2))
-	goto err;
+	break;
       if (2 != sscanf (par + 1, "%lg %lg", &x, &y))
-	goto err;
+	break;
       g = geo_point (x, y);
       if (!(strlen (ns1) > 8 && strlen (ns2) > 8))
 	g->geo_flags |= GEO_IS_FLOAT;
       *err_ret = NULL;
       return (caddr_t) g;
     }
-err:
-  *err_ret = srv_make_new_error ("37000", "GEO..", "Bad geometry syntax %20s, only formats like point(12 23) are allowed.", text);
-  return NULL;
+  while (0);
+  g = ewkt_parse (text, err_ret);
+  return g;
 }
-
 
 caddr_t
 bif_st_geomfromtext (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -1455,20 +1458,69 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
 {
   if (GSOP_WITHIN == op)
     {
-      geo_t *tmp;
+      geo_t * swap;
+      swap = g1; g1 = g2; g2 = swap;
       op = GSOP_CONTAINS;
-      tmp = g1;
-      g1 = g2;
-      g2 = tmp;
     }
-  if (GEO_POINT == GEO_TYPE (g1->geo_flags) && GEO_POINT == GEO_TYPE (g2->geo_flags) && GSOP_INTERSECTS == op)
+  switch (op)
+    {
+    case GSOP_INTERSECTS:
+      {
+        if (GEO_TYPE_NO_ZM (g1->geo_flags) > GEO_TYPE_NO_ZM (g2->geo_flags))
+          { geo_t * swap; swap = g1; g1 = g2; g2 = swap; }
+        if (GEO_POINT == GEO_TYPE_NO_ZM (g1->geo_flags))
+          {
+            if (GEO_POINT == GEO_TYPE_NO_ZM (g2->geo_flags))
     {
       if (prec >= geo_distance (g1->geo_srcode, g1->Xkey, g1->Ykey, g2->Xkey, g2->Ykey))
         return 1;
       return 0;
     }
-  else
-    sqlr_new_error ("42000", "GEO..", "for after check of geo contains, only intersects of points with precision is supported");
+            if (GEO_BOX == GEO_TYPE_NO_ZM (g2->geo_flags))
+              {
+                geoc boxproximaX = ((g1->Xkey > g2->XYbox.Xmax) ? g2->XYbox.Xmax : ((g1->Xkey < g2->XYbox.Xmin) ? g2->XYbox.Xmin : g1->Xkey));
+                geoc boxproximaY = ((g1->Ykey > g2->XYbox.Ymax) ? g2->XYbox.Ymax : ((g1->Ykey < g2->XYbox.Ymin) ? g2->XYbox.Ymin : g1->Ykey));
+                if (prec >= geo_distance (g1->geo_srcode, g1->Xkey, g1->Ykey, boxproximaX, boxproximaY))
+                  return 1;
+                return 0;
+              }
+            goto unsupported;
+          }
+        if (GEO_BOX == GEO_TYPE_NO_ZM (g1->geo_flags))
+          {
+            if ( (g1->XYbox.Xmax < g2->XYbox.Xmin - prec)
+              || (g1->XYbox.Xmin > g2->XYbox.Xmax + prec)
+              || (g1->XYbox.Ymax < g2->XYbox.Ymin - prec)
+              || (g1->XYbox.Ymin > g2->XYbox.Ymax + prec) )
+              return 0;
+            if (GEO_BOX == GEO_TYPE_NO_ZM (g2->geo_flags))
+              {
+                if (0 < prec)
+                  {
+                    if ( (g1->XYbox.Xmax < g2->XYbox.Xmin)
+                      || (g1->XYbox.Xmin > g2->XYbox.Xmax)
+                      || (g1->XYbox.Ymax < g2->XYbox.Ymin)
+                      || (g1->XYbox.Ymin > g2->XYbox.Ymax) )
+                      { /* corners/sides at close distance are possible */
+                        return 1; /* rough estimation */
+                      }
+                  }
+                return 1;
+              }
+            goto unsupported;
+          }
+        goto unsupported;
+      }
+    case GSOP_MAY_INTERSECT:
+      if ( (g1->XYbox.Xmax < g2->XYbox.Xmin - prec)
+        || (g1->XYbox.Xmin > g2->XYbox.Xmax + prec)
+        || (g1->XYbox.Ymax < g2->XYbox.Ymin - prec)
+        || (g1->XYbox.Ymin > g2->XYbox.Ymax + prec) )
+        return 0;
+      return 1;
+    }
+unsupported:
+  sqlr_new_error ("42000", "GEO..", "for after check of geo contains, only may_intersect and intersects of points with precision is supported");
   return 0;
 }
 
@@ -1494,10 +1546,7 @@ geo_rdf_check (text_node_t * txs, caddr_t * inst)
   SRC_IN_STATE (txs, inst) = NULL;
   if (!geo_ck_qr)
     {
-      geo_ck_qr =
-	  sql_compile_static
-	  ("select coalesce (blob_to_string (ro_long), ro_val)  from rdf_obj table option (no cluster) where ro_id = ?",
-	  bootstrap_cli, &err, SQLC_DEFAULT);
+      geo_ck_qr = sql_compile_static ("select coalesce (blob_to_string (ro_long), ro_val)  from rdf_obj table option (no cluster) where ro_id = ?", qi->qi_client, &err, SQLC_DEFAULT);
       if (err)
 	sqlr_resignal (err);
     }
@@ -1603,8 +1652,7 @@ again:
 		{
 		  QNCAST (rdf_box_t, rb, geo);
 		  if (!rb->rb_is_complete)
-		    sqlr_new_error ("22023", "GEO..", "An incomplete rdf box is not accepted as 2nd arg of st_intersect ro id=%Ld",
-			rb->rb_ro_id);
+		    sqlr_new_error ("22023", "GEO..", "An incomplete rdf box is not accepted as 2nd arg of st_intersect ro id=%Ld", rb->rb_ro_id);
 		  geo = (geo_t *) rb->rb_box;
 		}
 	      if (DV_GEO != DV_TYPE_OF ((caddr_t) geo))
@@ -1740,8 +1788,6 @@ dbg_geo_to_text (caddr_t x)
 
 dk_mutex_t *geo_reg_mtx;
 
-extern geo_t *ewkt_parse (const char *strg, caddr_t * err_ret);
-
 caddr_t
 bif_st_ewkt_read (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -1754,8 +1800,6 @@ bif_st_ewkt_read (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   geo_calc_bounding (res, GEO_CALC_BOUNDING_DO_ALL);
   return (caddr_t) res;
 }
-
-extern void ewkt_print_sf12 (geo_t * g, dk_session_t * ses);
 
 caddr_t
 bif_http_st_ewkt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -1773,10 +1817,8 @@ bif_st_get_bounding_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   double prec_x = 0, prec_y = 0;
   int argcount = BOX_ELEMENTS (args);
   geo_t *res, xy;
-  if (2 <= argcount)
-    prec_y = prec_x = bif_double_arg (qst, args, 1, "st_get_bounding_box");
-  if (3 <= argcount)
-    prec_y = bif_double_arg (qst, args, 2, "st_get_bounding_box");
+  if (2 <= argcount) prec_y = prec_x = bif_double_arg (qst, args, 1, "st_get_bounding_box");
+  if (3 <= argcount) prec_y = bif_double_arg (qst, args, 2, "st_get_bounding_box");
   geo_get_bounding_XYbox (g, &xy, prec_x, prec_y);
   res = geo_alloc (GEO_BOX | (g->geo_flags & (GEO_A_Z | GEO_A_M)), 0, g->geo_srcode);
   res->XYbox = xy.XYbox;
@@ -1828,6 +1870,7 @@ geo_init ()
   bif_define ("geo_estimate", bif_geo_estimate);
   bif_set_uses_index (bif_geo_estimate);
   bif_define_typed ("st_intersects", bif_st_intersects, &bt_integer);
+  bif_define_typed ("st_may_intersect", bif_st_may_intersect, &bt_integer);
   bif_define_typed ("st_contains", bif_st_contains, &bt_integer);
   bif_define_typed ("st_within", bif_st_within, &bt_integer);
   bif_define ("st_distance", bif_st_distance);

@@ -1803,20 +1803,17 @@ ewkt_get_one (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas)
 	  res = geo_alloc (geo_type, 0, in->ewkt_srcode);
 	  if (2 != in->ekwt_point_count)
 	    ewkt_signal (in, "BOX should have only two sets of coordinates");
-	  res->XYbox.Xmin = in->ekwt_Cs[dim_ctr][0];
-	  res->XYbox.Xmax = in->ekwt_Cs[dim_ctr++][0];
-	  res->XYbox.Ymin = in->ekwt_Cs[dim_ctr][0];
-	  res->XYbox.Ymax = in->ekwt_Cs[dim_ctr++][0];
+#define SET_MINMAX(Cmin,Cmax) do { \
+  res->Cmin = in->ekwt_Cs[dim_ctr][0]; \
+  res->Cmax = in->ekwt_Cs[dim_ctr++][1]; \
+  if (res->Cmax < res->Cmin) { geoc Cswap = res->Cmin ; res->Cmin = res->Cmax; res->Cmax = Cswap; } \
+  } while (0)
+          SET_MINMAX(XYbox.Xmin,XYbox.Xmax);
+          SET_MINMAX(XYbox.Ymin,XYbox.Ymax);
 	  if (GEO_A_Z & geo_type)
-	    {
-	      res->_.point.point_ZMbox.Zmin = in->ekwt_Cs[dim_ctr][0];
-	      res->_.point.point_ZMbox.Zmax = in->ekwt_Cs[dim_ctr++][0];
-	    }
+            SET_MINMAX(_.point.point_ZMbox.Zmin,_.point.point_ZMbox.Zmax);
 	  if (GEO_A_M & geo_type)
-	    {
-	      res->_.point.point_ZMbox.Mmin = in->ekwt_Cs[dim_ctr][0];
-	      res->_.point.point_ZMbox.Mmax = in->ekwt_Cs[dim_ctr++][0];
-	    }
+            SET_MINMAX(_.point.point_ZMbox.Mmin,_.point.point_ZMbox.Mmax);
 	  return res;
 	}
       res = geo_alloc (geo_type, in->ekwt_point_count, in->ewkt_srcode);

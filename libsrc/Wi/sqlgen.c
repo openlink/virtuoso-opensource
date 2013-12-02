@@ -663,14 +663,12 @@ sqlc_geo_op (sql_comp_t * sc, ST * op)
   char * str = (char *) op;
   if (DV_STRING == DV_TYPE_OF (op))
     {
-      if (0 == stricmp (str, "intersects"))
-	return GSOP_INTERSECTS;
-      if (0 == stricmp (str, "within"))
-	return GSOP_WITHIN;
-      if (0 == stricmp (str, "contains"))
-	return GSOP_CONTAINS;
+      if (0 == stricmp (str, "intersects"))	return GSOP_INTERSECTS;
+      if (0 == stricmp (str, "within"))		return GSOP_WITHIN;
+      if (0 == stricmp (str, "contains"))	return GSOP_CONTAINS;
+      if (0 == stricmp (str, "may_intersects"))	return GSOP_MAY_INTERSECT;
     }
-  sqlc_new_error (sc->sc_cc, "37000", "GEO..", "Geo operation is one of intersects, contains or contained");
+  sqlc_new_error (sc->sc_cc, "37000", "GEO..", "Geo operation is one of intersects, within, contains or may_intersect");
   return 0;
 }
 

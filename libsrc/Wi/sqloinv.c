@@ -650,7 +650,7 @@ sqlo_geo_f_solve (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * cond, dk_set_t * co
 	sqlo_place_exp (so, tb_dfe, sqlo_df (so, args[2]));
       tb_dfe->_.table.text_pred = sqlo_df (so, copy);
       if (GSOP_INTERSECTS != ctype)
-	call->_.call.name = t_box_string (GSOP_CONTAINS == ctype ? "st_within" : "st_contains");
+	call->_.call.name = t_box_string (predicate_name_of_gsop (ctype));
       tb_dfe->_.table.text_pred->dfe_is_placed = DFE_PLACED;
       //t_set_push (cond_ret, (void*)tb_dfe->_.table.text_pred);
       return 1;

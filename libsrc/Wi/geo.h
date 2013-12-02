@@ -246,14 +246,17 @@ extern int64 geo_estimate (struct dbe_table_s * tb, geo_t * g, int op, double pr
 #define KM_TO_DEG (360 / (EARTH_RADIUS_GEOM_MEAN_KM * 2 * M_PI))
 
 EXE_EXPORT (geo_t *, geo_alloc, (geo_flags_t geo_flags, int geo_len, int srid));
-extern geo_t *geo_point (geoc x, geoc y);
+EXE_EXPORT (geo_t *, geo_point, (geoc x, geoc y));
 
-extern geo_t *geo_copy (geo_t *g);
-extern geo_t *mp_geo_copy (mem_pool_t * mp, geo_t *g);
-extern int geo_destroy (geo_t *g);
+EXE_EXPORT (geo_t *, geo_copy, (geo_t *g));
+EXE_EXPORT (geo_t *, mp_geo_copy, (mem_pool_t * mp, geo_t *g));
+EXE_EXPORT (int, geo_destroy, (geo_t *g));
 
-extern void geo_serialize (geo_t * g, dk_session_t * ses);
-extern caddr_t geo_deserialize (dk_session_t * ses);
+EXE_EXPORT (void, geo_serialize, (geo_t * g, dk_session_t * ses));
+EXE_EXPORT (caddr_t, geo_deserialize, (dk_session_t * ses));
+
+EXE_EXPORT (geo_t *, ewkt_parse, (const char *strg, caddr_t *err_ret));
+EXE_EXPORT (void, ewkt_print_sf12, (geo_t *g, dk_session_t *ses));
 
 EXE_EXPORT (geo_t *, bif_geo_arg, (caddr_t * qst, struct state_slot_s ** args, int inx, const char *fname, int geotype));
 

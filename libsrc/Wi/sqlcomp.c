@@ -627,6 +627,8 @@ sqlc_geo_fn_to_char (const char *name)
     return GSOP_INTERSECTS;
   else if (0 == stricmp (name, "st_within"))
     return GSOP_WITHIN;
+  else if (0 == stricmp (name, "st_may_intersect"))
+    return GSOP_MAY_INTERSECT;
   else
   return 0;
 }

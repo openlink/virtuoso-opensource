@@ -1542,7 +1542,7 @@ node_print_0 (data_source_t * node)
     {
       text_node_t *txs = (text_node_t *) node;
       if (txs->txs_geo)
-	stmt_printf (("geo %s (", GSOP_INTERSECTS == txs->txs_geo ? "intersects": GSOP_CONTAINS == txs->txs_geo ? "contains": "within"));
+        stmt_printf (("geo %x %s (", txs->txs_geo, predicate_name_of_gsop (txs->txs_geo)));
       else
 	if (txs->txs_xpath_text_exp)
 	stmt_printf (("XCONTAINS ("));
@@ -2237,7 +2237,7 @@ node_print (data_source_t * node)
     {
       text_node_t *txs = (text_node_t *) node;
       if (txs->txs_geo)
-	stmt_printf (("geo %s ", GSOP_INTERSECTS == txs->txs_geo ? "intersects": GSOP_CONTAINS == txs->txs_geo ? "contains": "within"));
+	stmt_printf (("geo %x %s ", txs->txs_geo, predicate_name_of_gsop (txs->txs_geo)));
       else
 	if (txs->txs_xpath_text_exp)
 	stmt_printf (("XCONTAINS ("));
