@@ -508,6 +508,43 @@ dk_alloc_cache_status (resource_t ** cache)
 #endif
 }
 
+size_t
+dk_alloc_global_cache_total ()
+{
+  int inx;
+  size_t bs = 0;
+#ifdef CACHE_MALLOC
+  for (inx = 0; inx < N_CACHED_SIZES; inx++)
+    {
+      int way;
+      int n = 0;
+      int sz = NTH_SIZE (inx);
+      for (way = 0; way < MEMBLOCKS_N_WAYS; way++)
+	n += memblock_set[inx][way].av_fill;
+      bs += n * inx * 8;
+    }
+#endif
+  return bs;
+}
+
+size_t
+dk_alloc_cache_total (void * cache)
+{
+  int inx;
+  size_t bs = 0;
+  av_list_t * av = cache;
+#ifdef CACHE_MALLOC
+  for (inx = 0; inx < N_CACHED_SIZES; inx++)
+    {
+      int n = 0;
+      int sz = NTH_SIZE (inx);
+      n += av[inx].av_fill;
+      bs += n * inx * 8;
+    }
+#endif
+  return bs;
+}
+
 
 #ifdef MEMDBG
 uint32 alloc_count;

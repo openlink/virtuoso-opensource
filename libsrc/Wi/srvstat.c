@@ -1206,6 +1206,26 @@ get_total_sys_mem ()
 
 extern int process_is_swapping;
 
+extern int64 dk_n_allocs;
+extern int64 dk_n_free;
+extern int64 dk_n_nosz_free;
+extern int64 dk_n_bytes;
+size_t http_threads_mem_report ();
+size_t dk_alloc_global_cache_total ();
+
+void
+mem_status_report ()
+{
+  char buf[1024];
+  size_t wsc = http_threads_mem_report ();
+  size_t gsz = dk_alloc_global_cache_total ();
+  mp_map_count_print (buf, sizeof (buf));
+  rep_printf ("Memory:\n");
+  rep_printf ("%s", buf);
+  rep_printf ("n-alloc: %Ld n-free: %Ld delta: %Ld n-bytes: %Ld nosz-free: %Ld\n", dk_n_allocs, dk_n_free, dk_n_allocs - dk_n_free, dk_n_bytes, dk_n_nosz_free);
+  rep_printf ("ws mem cache: %Ld global cache: %Ld\n", wsc, gsz);
+}
+
 void
 status_report (const char * mode, query_instance_t * qi)
 {
@@ -1216,15 +1236,20 @@ status_report (const char * mode, query_instance_t * qi)
       cl_srv_status ();
       return;
     }
-  if (!stricmp (mode, "exec"))
+  else if (!stricmp (mode, "exec"))
     {
       bif_exec_status ();
       return;
     }
-  if (!stricmp (mode, "cluster_d"))
+  else if (!stricmp (mode, "cluster_d"))
     {
       gen_info = 0;
       cl_mode = CLST_DETAILS;
+    }
+  else if (!stricmp (mode, "memory"))
+    {
+      mem_status_report ();
+      return;
     }
   else   if (!stricmp (mode, "cluster"))
     gen_info = 0;

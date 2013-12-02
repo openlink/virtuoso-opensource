@@ -171,6 +171,7 @@ extern void dk_hash_set_rehash (dk_hash_t * ht, uint32 ov_per_bucket);
 typedef int32 (*box_hash_func_t) (caddr_t);
 typedef int (*box_hash_cmp_func_t) (ccaddr_t, ccaddr_t);
 void dk_dtp_register_hash (dtp_t dtp, box_hash_func_t hf, box_hash_cmp_func_t cmp, box_hash_cmp_func_t strong_cmp);
+void mp_map_count_print (char * buf, size_t max);
 #ifdef DK_ALLOC_BOX_DEBUG						   /* These definitions are here because they need dk_hash_t, otherwise they would be placed into Dkbox.h */
 extern void dk_check_tree_iter (box_t box, box_t parent, dk_hash_t * known);
 extern void dk_check_domain_of_connectivity_iter (box_t box, box_t parent, dk_hash_t * known);

@@ -98,10 +98,31 @@ mp_map_count ()
   return ctr;
 }
 
+void
+mp_map_count_print (char * buf, size_t max)
+{
+  int ctr = 0;
+  size_t sz = 0;
+  DO_HT (mem_pool_t *, mp, ptrlong,  ign, mp_registered)
+    {
+      ctr += mp->mp_large.ht_count;
+      DO_HT (void*, ptr, size_t, b_sz, &mp->mp_large)
+	sz += b_sz;
+      END_DO_HT;
+    }
+  END_DO_HT;
+  snprintf (buf, max, "%d maps in mps, %ld bytes, %Ld in use, %Ld max in use\n", ctr, sz, mp_large_in_use, mp_max_large_in_use);
+}
 
 #else
 #define mp_register(mp)
 #define mp_unregister(mp)
+
+void
+mp_map_count_print (char * buf, size_t max)
+{
+  buf[0] = '\0';
+}
 #endif
 
 void mp_free_all_large (mem_pool_t * mp);
