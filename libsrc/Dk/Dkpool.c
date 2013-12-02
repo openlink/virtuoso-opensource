@@ -103,6 +103,7 @@ mp_map_count_print (char * buf, size_t max)
 {
   int ctr = 0;
   size_t sz = 0;
+  mutex_enter (&mp_reg_mtx);
   DO_HT (mem_pool_t *, mp, ptrlong,  ign, mp_registered)
     {
       ctr += mp->mp_large.ht_count;
@@ -111,6 +112,7 @@ mp_map_count_print (char * buf, size_t max)
       END_DO_HT;
     }
   END_DO_HT;
+  mutex_leave (&mp_reg_mtx);
   snprintf (buf, max, "%d maps in mps, %ld bytes, %Ld in use, %Ld max in use\n", ctr, sz, mp_large_in_use, mp_max_large_in_use);
 }
 
