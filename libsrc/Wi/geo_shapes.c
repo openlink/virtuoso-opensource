@@ -1446,7 +1446,7 @@ ewkt_get_token (ewkt_input_t * in, ewkt_token_val_t * val)
 	    {
 	      (buf_tail++)[0] = (in->ewkt_tail++)[0];
 	    }
-	  while (isalpha (in->ewkt_tail[0]) && buf_tail < buf + sizeof (buf) - 1);
+	  while (isalnum (in->ewkt_tail[0]) && buf_tail < buf + sizeof (buf) - 1);
 	  buf_tail[0] = '\0';
 	  metas_inx =
 	      ecm_find_name (buf, ewkt_keyword_metas, sizeof (ewkt_keyword_metas) / sizeof (ewkt_kwd_metas_t),
