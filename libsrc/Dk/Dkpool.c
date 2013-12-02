@@ -1330,6 +1330,8 @@ size_t mp_large_reserved;
 size_t mp_max_large_reserved;
 size_t mp_large_reserve_limit;
 dk_mutex_t mp_reserve_mtx;
+size_t mp_large_soft_cap;
+size_t mp_large_hard_cap;
 
 
 size_t
@@ -1774,6 +1776,8 @@ mp_large_alloc (mem_pool_t * mp, size_t sz)
       mp_max_large_in_use = mp_large_in_use;
       if (mp_large_in_use > mp_large_warn_threshold)
 	mp_warn (mp);
+      if (mp_large_hard_cap && mp_large_in_use > mp_large_hard_cap)
+	GPF_T1 ("mp_large_in_use > mp_large_hard_cap");
     }
   mutex_leave (&mp_large_g_mtx);
   ptr = mm_large_alloc (sz);

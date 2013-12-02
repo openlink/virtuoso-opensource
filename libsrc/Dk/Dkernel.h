@@ -989,7 +989,7 @@ extern dk_mutex_t *dk_alloc_reserve_mutex;
 extern volatile void *dk_alloc_reserve;	/* Don't access it directly. */
 extern int dk_alloc_reserve_maxthreads;
 extern volatile int dk_alloc_reserve_mode;
-#define DK_ALLOC_ON_RESERVE 		(dk_alloc_reserve_mode != DK_ALLOC_RESERVE_DISABLED && NULL == dk_alloc_reserve)
+#define DK_ALLOC_ON_RESERVE 		((dk_alloc_reserve_mode != DK_ALLOC_RESERVE_DISABLED && NULL == dk_alloc_reserve) || MP_LARGE_SOFT_CK)
 void dk_alloc_set_reserve_mode (int mode);
 #else
 #define DK_ALLOC_ON_RESERVE 		0

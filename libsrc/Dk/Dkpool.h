@@ -38,12 +38,16 @@ extern size_t mp_max_large_in_use;
 extern size_t mp_large_reserved;
 extern size_t mp_max_large_reserved;
 extern size_t mp_large_reserve_limit;
+extern size_t mp_large_soft_cap;
+extern size_t mp_large_hard_cap;
 #ifdef VALGRIND
 #define LACERATED_POOL
 #endif
 #ifdef MALLOC_DEBUG
 #define LACERATED_POOL
 #endif
+
+#define MP_LARGE_SOFT_CK (mp_large_soft_cap && mp_large_in_use > mp_large_soft_cap)
 
 #ifdef LACERATED_POOL
 struct mem_pool_s
