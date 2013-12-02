@@ -5937,7 +5937,7 @@ sqlo_set_select_mode (sqlo_t * so, op_table_t * ot, df_elt_t * sel_dfe, ST * top
 
 
 int sqlo_max_layouts = 1000;
-int32 sqlo_max_mp_size = 10485760;
+size_t sqlo_max_mp_size = 10485760;
 
 
 

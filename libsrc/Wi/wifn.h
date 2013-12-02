@@ -818,7 +818,7 @@ extern char * pl_debug_cov_file;
 extern long vt_batch_size_limit;
 extern long sqlc_add_views_qualifiers;
 extern int sqlo_max_layouts;
-extern int32 sqlo_max_mp_size;
+extern size_t sqlo_max_mp_size;
 extern long txn_after_image_limit;
 extern long stripe_growth_ratio;
 extern int disable_listen_on_unix_sock;
