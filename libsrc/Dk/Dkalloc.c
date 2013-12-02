@@ -689,6 +689,10 @@ dk_cache_allocs (size_t sz, size_t cache_sz)
 #endif
 }
 
+int64 dk_n_allocs;
+int64 dk_n_free;
+int64 dk_n_nosz_free;
+int64 dk_n_bytes;
 
 #define MC_MISS \
   HIT (malloc_misses++); \
@@ -741,6 +745,8 @@ dk_alloc (size_t c)
 	    }
 
 	  thing = dk_alloc_reserve_malloc (ADD_END_MARK (align_sz), 1);
+	  dk_n_allocs++;
+	  dk_n_bytes += c;
 	}
       AV_MARK_ALLOC (thing, align_sz);
     }
@@ -749,6 +755,8 @@ dk_alloc (size_t c)
       align_sz = _RNDUP_PWR2 (c, 4096);
       thing = dk_alloc_reserve_malloc (ADD_END_MARK (align_sz), 1);
       AV_MARK_ALLOC (thing, align_sz);
+      dk_n_allocs++;
+      dk_n_bytes += c;
     }
 #endif
 
@@ -845,12 +853,28 @@ dk_free (void *ptr, size_t sz)
 	  mutex_leave (&av->av_mtx);
 	full:
 	  free (ptr);
+	  dk_n_free ++;
+          if (NO_SIZE != sz)
+	    dk_n_bytes -= sz;
+	  else
+	    {
+	      dk_n_allocs --;
+	      dk_n_nosz_free ++;
+	    }
 	  return;
 	}
     }
 #endif
 
   free (ptr);
+  dk_n_free ++;
+  if (NO_SIZE != sz)
+    dk_n_bytes -= sz;
+  else
+    {
+      dk_n_allocs --;
+      dk_n_nosz_free ++;
+    }
 }
 
 
