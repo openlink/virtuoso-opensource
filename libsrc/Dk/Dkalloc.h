@@ -51,6 +51,13 @@
 	NEW_VAR(type,var); \
 	memset (var, 0, sizeof (type))
 
+#define NEW_BOX_VAR(type,var) \
+	type *var = (type *) dk_alloc_box (sizeof (type), DV_BIN)
+
+#define NEW_BOX_VARZ(type, var) \
+	NEW_BOX_VAR(type,var); \
+	memset (var, 0, sizeof (type))
+
 
 /* Dkalloc.c */
 void dk_memory_initialize (int do_malloc_cache);

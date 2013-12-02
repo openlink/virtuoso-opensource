@@ -241,7 +241,7 @@ static long xper_entity_free_ctr = 0;
 	dtd_release ((xpd)->xd_dtd); \
       dk_free_box ((caddr_t)(xpd->xd_id_dict)); \
       dk_free_box (xpd->xd_id_scan); \
-      dk_free ((xpd), -1 /* not sizeof (xper_doc_t) because it may be doc made by lazy loader */); \
+      dk_free_box ((xpd)); \
     } while (0)
 
 
@@ -2373,7 +2373,6 @@ xper_entity_t *
   xml_read_func_t iter = NULL;
   xml_read_abend_func_t iter_abend = NULL;
   void *iter_data = NULL;
-  xper_doc_t *xpd;
   buffer_desc_t *buf;
   xper_entity_t *xpe;
   volatile int rc = 1;
@@ -2387,9 +2386,7 @@ xper_entity_t *
   xper_stag_t root_data;
   vxml_parser_attrdata_t root_attrdata;
   long pos;
-
-  xpd = (xper_doc_t *) DK_ALLOC (sizeof (xper_doc_t));
-  memset (xpd, 0, sizeof (xper_doc_t));
+  NEW_BOX_VARZ (xper_doc_t, xpd);
 #ifdef MALLOC_DEBUG
   xpd->xd_dbg_file = (char *) file;
   xpd->xd_dbg_line = line;

@@ -6678,7 +6678,7 @@ and the document will stay locked in that time */
 	}
       dk_free_tree (xtd->xout_media_type);
       xml_ns_2dict_clean (&(xtd->xd_ns_2dict));
-      dk_free ((caddr_t) xtd, -1 /* not sizeof (xml_tree_doc_t) because it may be doc made by lazy loader */);
+      dk_free_box ((caddr_t) xtd);
     }
 }
 
@@ -6701,7 +6701,7 @@ DBG_NAME(xte_from_tree) (DBG_PARAMS caddr_t tree, query_instance_t * qi)
   size_t stack_sz = stack_elems * sizeof (xte_bmk_t);
   xte_bmk_t * newstack = (xte_bmk_t *) dk_alloc (stack_sz);
   xml_tree_ent_t * xte = (xml_tree_ent_t*) dk_alloc_box_zero (sizeof (xml_entity_un_t), DV_XML_ENTITY);
-  NEW_VARZ (xml_tree_doc_t, xtd);
+  NEW_BOX_VARZ (xml_tree_doc_t, xtd);
   xte->_ = &xec_tree_xe;
 #ifdef MALLOC_DEBUG
   xtd->xd_dbg_file = (char *) file;
@@ -7140,7 +7140,7 @@ DBG_NAME(xte_cut) (DBG_PARAMS xml_entity_t * xe, query_instance_t *qi)
   xml_tree_ent_t * tgt_xte = (xml_tree_ent_t*) dk_alloc_box_zero (sizeof (xml_entity_un_t), DV_XML_ENTITY);
   caddr_t *tree_copy;
   int add_new_root;
-  NEW_VARZ (xml_tree_doc_t, tgt_xtd);
+  NEW_BOX_VARZ (xml_tree_doc_t, tgt_xtd);
   tree_copy = (caddr_t *) (box_copy_tree ((caddr_t)(src_xte->xte_current)));
   add_new_root = ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree_copy)) ||
     (uname__root != ((caddr_t *)(tree_copy[0]))[0]) );
