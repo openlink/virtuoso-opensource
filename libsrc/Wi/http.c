@@ -11019,6 +11019,8 @@ http_init_part_one ()
   return 1;
 }
 
+dk_set_t ws_threads;
+
 void
 http_threads_allocate (int n_threads)
 {
@@ -11037,7 +11039,22 @@ http_threads_allocate (int n_threads)
 
       ws->ws_thread = thr->dkt_process;
       resource_store (ws_dbcs, (void*) ws);
+      dk_set_push (&ws_threads, ws);
     }
+}
+
+size_t dk_alloc_cache_total (void * cache);
+
+size_t
+http_threads_mem_report ()
+{
+  size_t cache_fill = 0;
+  DO_SET (ws_connection_t *, ws, &ws_threads)
+    {
+      cache_fill += dk_alloc_cache_total (ws->ws_thread->thr_alloc_cache);  
+    }
+  END_DO_SET();
+  return cache_fill;
 }
 
 extern int cl_no_init;
