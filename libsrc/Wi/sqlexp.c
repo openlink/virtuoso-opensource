@@ -952,18 +952,20 @@ cv_artm_set_type (instruction_t * ins)
               if ((DV_DATETIME == ins->_.artm.left->ssl_dtp) || (DV_DATETIME == ins->_.artm.right->ssl_dtp))
                 {
                   ins->_.artm.result->ssl_dtp = DV_DATETIME;
+                  ins->_.artm.result->ssl_sqt.sqt_non_null = 0;
                   goto result_dtp_is_set;
                 }
               break;
             case IN_ARTM_MINUS:
               if (DV_DATETIME == ins->_.artm.left->ssl_dtp)
                 {
+                  ins->_.artm.result->ssl_sqt.sqt_non_null = 0;
                   if (DV_DATETIME == ins->_.artm.right->ssl_dtp)
                     {
                       ins->_.artm.result->ssl_dtp = DV_NUMERIC;
                       goto result_dtp_is_set;
                     }
-                  if ((DV_LONG_INT == ins->_.artm.right->ssl_dtp) || (DV_DOUBLE_FLOAT == ins->_.artm.right->ssl_dtp) || (DV_NUMERIC == ins->_.artm.right->ssl_dtp))
+                  if ((DV_LONG_INT == ins->_.artm.right->ssl_dtp) || (DV_INT64 == ins->_.artm.right->ssl_dtp) || (DV_DOUBLE_FLOAT == ins->_.artm.right->ssl_dtp))
                     {
                       ins->_.artm.result->ssl_dtp = DV_DATETIME;
                       goto result_dtp_is_set;
@@ -973,7 +975,10 @@ cv_artm_set_type (instruction_t * ins)
                 }
               break;
             }
-	  ins->_.artm.result->ssl_dtp = MAX (ins->_.artm.left->ssl_dtp, ins->_.artm.right->ssl_dtp);
+	  ins->_.artm.result->ssl_dtp = MAX (dtp_canonical[ins->_.artm.left->ssl_dtp], dtp_canonical[ins->_.artm.right->ssl_dtp]);
+	  if (DV_LONG_INT == ins->_.artm.result->ssl_sqt.sqt_dtp && (DV_INT64 == ins->_.artm.left->ssl_sqt.sqt_dtp || DV_INT64 == ins->_.artm.right->ssl_sqt.sqt_dtp))
+	    ins->_.artm.result->ssl_sqt.sqt_dtp = DV_INT64;
+	  ins->_.artm.result->ssl_sqt.sqt_non_null = ins->_.artm.left->ssl_sqt.sqt_non_null && ins->_.artm.right->ssl_sqt.sqt_non_null;
 result_dtp_is_set:
 	  if (DV_NUMERIC == ins->_.artm.result->ssl_dtp)
 	    {
@@ -2057,6 +2062,7 @@ cv_refd_slots (sql_comp_t * sc, code_vec_t cv, dk_hash_t * res, dk_hash_t * all_
 	  if (non_cl_local)
 	    *non_cl_local = 1;
 	    sc->sc_sel_out = NULL;
+	  if (res)
 	  sqlg_qn_env (sc, ins->_.subq.query->qr_head_node, NULL, res);
 	    sc->sc_sel_out = out_save;
 	    if (ins->_.subq.query->qr_select_node)
@@ -2552,7 +2558,7 @@ cv_free (code_vec_t cv)
 	  dk_free_box (ins->_.for_vect.in_vars);
 	  dk_free_box (ins->_.for_vect.out_values);
 	  dk_free_box (ins->_.for_vect.out_vars);
-	  cv_free (ins->_.for_vect.code);
+	/*cv_free (ins->_.for_vect.code); */
 	}
       else if (ins->ins_type == INS_COMPOUND_START)
 	{
