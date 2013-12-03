@@ -2505,7 +2505,7 @@ aq_qr_func (caddr_t av, caddr_t * err_ret)
       }
     if (RST_ERROR == reset_code)
       {
-	*err_ret = thr_get_error_code (qi->qi_thread);
+	*err_ret = thr_get_error_code (prev_qi_thread);
 	return (caddr_t) qi;
       }
   }
