@@ -667,6 +667,7 @@ update_node_run_1 (update_node_t * upd, caddr_t * inst,
 	    new_rd.rd_make_ins_rbe = 1;
 	    if (!is_cluster)
 	      {
+	      itc_free_owned_params (main_itc);
 		ITC_START_SEARCH_PARS (main_itc);
 		for (inx = 0; inx < main_itc->itc_insert_key->key_n_significant; inx++)
 		  ITC_SEARCH_PARAM (main_itc, new_rd.rd_values[main_itc->itc_insert_key->key_part_in_layout_order[inx]]);
@@ -686,6 +687,7 @@ update_node_run_1 (update_node_t * upd, caddr_t * inst,
 	    if (ALL_KEYS != keys)
 	      dk_set_free (keys);
 	    rd_free (&rd);
+	  itc_free (main_itc);
 	    return;
 	  }
       }
