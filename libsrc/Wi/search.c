@@ -3448,7 +3448,17 @@ itc_page_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
       static  int32 col_seed;
       if (!itc->itc_search_par_fill)
     {
+	  key_ver_t kv;
+	  db_buf_t row;
 	  r = (sqlbif_rnd (&col_seed) & 0x7ffff) % buf->bd_content_map->pm_count;
+	  row = BUF_ROW (buf, r);
+	  kv= IE_KEY_VERSION (row);
+	  if (KV_LEFT_DUMMY == kv)
+	    {
+	      if (r == buf->bd_content_map->pm_count - 1)
+		return;
+	      r++;
+	    }
 	  itc->itc_map_pos = r; /* randomize after first found, else might never hit */
 #ifdef MALLOC_DEBUG
 	  if (itc->itc_st.n_sample_rows < 100)
@@ -4051,10 +4061,6 @@ key_count_estimate_slice  (dbe_key_t * key, int n_samples, int upd_col_stats, sl
   it_cursor_t itc_auto;
   it_cursor_t * itc = &itc_auto;
   ITC_INIT (itc, key->key_fragments[0]->kf_it, NULL);
-#ifdef CL6
-  if (QI_NO_SLICE == slice && key->key_is_elastic)
-    max_samples = MAX (2, max_samples / (key_n_partitions (key) / local_cll.cll_id_to_host->ht_count)); 
-#endif
   itc_clear_stats (itc);
   QR_RESET_CTX
     {
@@ -4088,7 +4094,7 @@ key_count_estimate_slice  (dbe_key_t * key, int n_samples, int upd_col_stats, sl
 	}
       if (upd_col_stats)
 	{
-	  if (sample == itc->itc_st.n_sample_rows)
+	  if (0 == n && sample == itc->itc_st.n_sample_rows)
 	    {
 	      /* short table, all seen on one go */
 	      n_samples = 1;
