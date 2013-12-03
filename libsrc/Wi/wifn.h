@@ -459,7 +459,6 @@ extern int neodisk;
 void dbs_write_page_set (dbe_storage_t * dbs, buffer_desc_t * buf);
 void dbs_write_cfg_page (dbe_storage_t * dbs, int is_first);
 void lt_wait_checkpoint (void);
-void lt_wait_checkpoint_lt (lock_trx_t * lt);
 void lt_wait_checkpoint_1 (int cl_listener_also);
 void lt_wait_checkpoint_lt (lock_trx_t * lt);
 
