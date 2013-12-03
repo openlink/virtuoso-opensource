@@ -1400,7 +1400,7 @@ cha_cmp (chash_t * cha, int64 * ent, db_buf_t ** key_vecs, int row_no, dtp_t * n
 	  if (memcmp (k1, k2, l1))
 	    return 0;
 #endif
-	  return 1;
+	  continue;
 	}
       else if (!cha->cha_sqt[inx].sqt_non_null)
 	{
@@ -1408,7 +1408,7 @@ cha_cmp (chash_t * cha, int64 * ent, db_buf_t ** key_vecs, int row_no, dtp_t * n
 	  if (is_null != nulls[inx * ARTM_VEC_LEN + row_no])
 	    return 0;
 	}
-      if (DV_DATETIME == cha->cha_sqt[inx].sqt_dtp)
+      else if (DV_DATETIME == cha->cha_sqt[inx].sqt_dtp)
 	{
 	  k2 = ((db_buf_t *) key_vecs)[inx] + DT_LENGTH * row_no;
 	  if (INT64_REF_CA (k1) != INT64_REF_CA (k2))
