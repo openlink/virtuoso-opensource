@@ -2115,6 +2115,7 @@ sqlp_xpath_funcall_or_apply (ST * funcall_tree)
             }
         }
       xqr = xqr_stub_for_funcall (metas, fn_argcount);
+      xqr->xqr_key = box_copy (old_params[0]);
       /*t_trash_push (xqr);*/
       old_params[0] = (ST *)xqr;
     }
