@@ -2485,6 +2485,10 @@ aq_qr_func (caddr_t av, caddr_t * err_ret)
   {
       if (csl)
 	cli_set_slice (cli, csl->csl_clm, csl->csl_id, NULL);
+      while (qr && !qr->qr_nodes)
+	qr = qr->qr_super;
+      if (!qr)
+	sqlr_new_error ("42000", "QPNQR", "In qp branch, qr or its supers have no nodes");
     qr_resume_pending_nodes (qr, inst);
   }
   QR_RESET_CODE
@@ -2850,6 +2854,7 @@ tsp_next_col (ts_split_state_t * tsp, it_cursor_t * itc, buffer_desc_t ** buf_re
   jmp_buf_splice *save = itc->itc_fail_context;
   int sets_save = itc->itc_n_sets;
   int lm_save = itc->itc_lock_mode;
+  int sets_save = itc->itc_n_sets, is_last = 0;;
   int iso_save = itc->itc_isolation;
   int rows_per_seg = key->key_segs_sampled ? key->key_rows_in_sampled_segs / key->key_segs_sampled : 3000;
   int n_parts = tsp->tsp_n_parts;
@@ -2877,6 +2882,8 @@ tsp_next_col (ts_split_state_t * tsp, it_cursor_t * itc, buffer_desc_t ** buf_re
       {
 	qi_inc_branch_count ((query_instance_t *) itc->itc_out_state, INT32_MAX, 1);
 	tsp->tsp_n_parts++;
+	if (tsp->tsp_n_parts > 90)
+	  is_last = 1;
       }
     rows_per_part = (tsp->tsp_card_est / rows_per_seg) / tsp->tsp_org_n_parts;
     rows_to_go = MAX (1 + tsp->tsp_n_parts - tsp->tsp_org_n_parts, rows_per_part);
@@ -2897,7 +2904,7 @@ tsp_next_col (ts_split_state_t * tsp, it_cursor_t * itc, buffer_desc_t ** buf_re
 		  }
 	      }
 	    itc->itc_fail_context = save;
-	    return TSS_NEXT;
+	    return is_last ? TSS_LAST : TSS_NEXT;
 	  }
 	rows_to_go -= n_rows - itc->itc_map_pos;
 	itc->itc_is_on_row = 1;
