@@ -1299,7 +1299,10 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 
   sqlc_compile_hook (cli, string2, err);
   if (!parse_mtx)
-    parse_mtx = mutex_allocate ();
+    {
+      parse_mtx = mutex_allocate ();
+      mutex_option (parse_mtx, "parse_mtx", NULL, NULL);
+    }
   if (!nested_sql_comp)
     {
       sql_warnings_clear ();

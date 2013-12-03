@@ -4725,6 +4725,7 @@ wi_init_globals (void)
   qi_ref_mtx = mutex_allocate ();
   qi_branch_count = hash_table_allocate (61);
   alt_ts_mtx = mutex_allocate ();
+  mutex_option (alt_ts_mtx, "alt_ts_and_p_stat", NULL, NULL);
 }
 
 
