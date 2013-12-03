@@ -3271,8 +3271,9 @@ sqlo_use_p_stat_2 (df_elt_t * dfe, float *inx_card, float * col_card, index_choi
     {
       df_elt_t * fk_col = col2->rqp_lower->_.bin.right;
       float col2_card = p_stat[1];
+      int o2s = col2 == &rq.rq_o;
       /* like in sql, if the referencing column has a lower card than the referenced then use the lower of the cards to estimate selectivity of the cond.  Else guessing too many distincts wil get cards out of whack */
-      if (DFE_COLUMN == fk_col->dfe_type && (fk_col->_.col.col == rq.rq_s_col || fk_col->_.col.col == rq.rq_o_col)
+      if (o2s && DFE_COLUMN == fk_col->dfe_type && (fk_col->_.col.col == rq.rq_s_col || fk_col->_.col.col == rq.rq_o_col)
 	  && fk_col->_.col.card && fk_col->_.col.card < col2_card)
 	col2_card = fk_col->_.col.card;
       *inx_card = p_card / col2_card;
