@@ -3281,6 +3281,14 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
       tgt->_.sinv.defines = sparp_treelist_full_copy (sparp, orig->_.sinv.defines, parent_gp);
       spar_add_service_inv_to_sg (sparp, tgt);
       return tgt;
+    case SPAR_BINDINGS_INV:
+      tgt = (SPART *)t_box_copy ((caddr_t) orig);
+      tgt->_.binv.own_idx = sparp->sparp_unictr++;
+      tgt->_.binv.vars = sparp_treelist_full_clone_int (sparp, orig->_.binv.vars, parent_gp);
+      /* No copying for SPART ***data_rows */
+      tgt->_.binv.data_rows_mask = t_box_copy (orig->_.binv.data_rows_mask);
+      tgt->_.binv.counters_of_unbound = (ptrlong *)t_box_copy ((caddr_t)(orig->_.binv.counters_of_unbound));
+      return tgt;
     case SPAR_DEFMACRO:
       spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): attempt of copying a macro definition");
       return NULL;
