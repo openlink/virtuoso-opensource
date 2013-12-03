@@ -1447,7 +1447,7 @@ txs_prec (text_node_t * txs, caddr_t * inst)
       state_slot_t *pp[3];
       BOX_AUTO_TYPED (state_slot_t **, prec_box, pp, 1 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
       prec_box[0] = txs->txs_precision;
-      return bif_double_arg (inst, prec_box, 0, "contains withe geo precision");
+      return bif_double_arg (inst, prec_box, 0, "contains with geo precision");
     }
   return 0;
 }
