@@ -208,11 +208,16 @@ prefix_clause
 		  }
 		if (NULL != old_uri_ptr)
 		  {
+		    /*
 		    int err = strcmp (old_uri_ptr[0], $3);
 		    dk_free_box ($2);
 		    dk_free_box ($3);
 		    if (err)
 		      ttlyyerror_action ("Namespace prefix is re-used for a different namespace IRI");
+		    */
+		    dk_free_box ($2);
+		    dk_free_box (old_uri_ptr[0]);
+		    old_uri_ptr[0] = $3;
 		  }
 		else
 		  id_hash_set (local_hash_ptr[0], (caddr_t)(&($2)), (caddr_t)(&($3))); }
