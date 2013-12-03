@@ -304,6 +304,22 @@ dfe_is_range_pred (df_elt_t * pred)
 	  && BOP_EQ != pred->_.bin.op);
 }
 
+int 
+key_serves_for_text_pred (df_elt_t * tb_dfe, dbe_key_t * key)
+{
+  /* for a distinct projection, see if the leading part is an id to be bound by a text/geo pred */
+  ST * tree;
+  caddr_t prefix;
+  df_elt_t * text_pred = tb_dfe->_.table.text_pred;
+  dbe_key_t * id_key = tb_text_key (tb_dfe->_.table.ot->ot_table);
+  dbe_column_t * id_col;
+  df_elt_t * eq_pred;
+  if (!text_pred || !id_key)
+    return 0;
+  id_col = (dbe_column_t*)id_key->key_parts->data;
+  return id_col == (dbe_column_t*)key->key_parts->data;
+}
+
 
 int
 sqlo_ip_leading_text (df_elt_t * tb_dfe, dbe_key_t * key, index_choice_t * ic, df_elt_t ** text_id_pred)
@@ -764,7 +780,7 @@ sqlo_index_path (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t path, int pk_given)
       ic.ic_key = key;
       sqlo_rdf_o_range (tb_dfe, key, path, &ic);
       if (key->key_no_pk_ref && !key_is_first_cond (tb_dfe, key)
-	  && !(tb_dfe->_.table.text_pred && !path) && !opt_inx_name)
+	  && !(tb_dfe->_.table.text_pred && key_serves_for_text_pred (tb_dfe, key) && !path) && !opt_inx_name)
 	{
 	  tb_dfe->_.table.col_preds = old_cp;
 	  continue;
