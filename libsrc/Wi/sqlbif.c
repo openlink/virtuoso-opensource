@@ -8120,7 +8120,7 @@ bif_split_and_decode (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     occurrences += occurrences;
   }
     /* And allocate a vector of once or twice of that many elements. */
-    arr = dk_alloc_box ((occurrences * sizeof (caddr_t)), DV_ARRAY_OF_POINTER);
+    arr = dk_alloc_box_zero ((occurrences * sizeof (caddr_t)), DV_ARRAY_OF_POINTER);
   }
 
 /*
