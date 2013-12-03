@@ -2855,9 +2855,8 @@ tsp_next_col (ts_split_state_t * tsp, it_cursor_t * itc, buffer_desc_t ** buf_re
 {
   dbe_key_t *key = itc->itc_insert_key;
   jmp_buf_splice *save = itc->itc_fail_context;
-  int sets_save = itc->itc_n_sets;
-  int lm_save = itc->itc_lock_mode;
   int sets_save = itc->itc_n_sets, is_last = 0;;
+  int lm_save = itc->itc_lock_mode;
   int iso_save = itc->itc_isolation;
   int rows_per_seg = key->key_segs_sampled ? key->key_rows_in_sampled_segs / key->key_segs_sampled : 3000;
   int n_parts = tsp->tsp_n_parts;
@@ -3450,13 +3449,14 @@ vec_top_merge (setp_node_t * setp, fun_ref_node_t * fref, caddr_t * inst, caddr_
   caddr_t **arr = (caddr_t **) qst_get (branch, setp->setp_sorted);
   ptrlong top = unbox (qst_get (inst, setp->setp_top));
   ptrlong skip = setp->setp_top_skip ? unbox (qst_get (inst, setp->setp_top_skip)) : 0;
-  ptrlong fill = unbox (qst_get (branch, setp->setp_row_ctr));
+  ptrlong fill;
   QNCAST (query_instance_t, qi, inst);
   setp_node_t tmp_setp;
   top += skip;
   skip = 0;
   if (!arr)
     return;
+  fill = unbox (qst_get (branch, setp->setp_row_ctr));
       if (BOX_ELEMENTS (setp->setp_keys_box) + BOX_ELEMENTS (setp->setp_dependent_box) > n_ssl)
 	sqlr_new_error ("42000", "VEC..", "Too many order by or group by columns in parallel query branch merge");
       vec_merge_setp (&setp, NULL, &tmp_setp, NULL, &tmp_ssl[0]);
@@ -3791,19 +3791,27 @@ fnr_skip_hash_fillers (fun_ref_node_t * fref)
 
 
 void
+qi_add_stats (QI * qi, QI ** qis, query_t * qr)
+{
+  int inx;
+  if (!qr)
+    qr = qi->qi_query;
+  DO_BOX (query_instance_t *, branch, inx, qis)
+    {
+      if (branch && qi != branch)
+	qi_branch_stats (qi, branch, qr);
+    }
+  END_DO_BOX;
+}
+
+
+void
 ts_aq_result (table_source_t * ts, caddr_t * inst)
 {
   /* a ts completed itts branches.  Add up the results.  Can be in a fref or a scalar/exists subq. */
   if (prof_on)
     {
-      int inx;
-      QNCAST (query_instance_t *, qis, qst_get (inst, ts->ts_aq_qis));
-      DO_BOX (query_instance_t *, branch, inx, qis)
-	{
-	  if (branch)
-	    qi_branch_stats ((QI*)inst, branch, ts->src_gen.src_query);
-	}
-      END_DO_BOX;
+      qi_add_stats ((QI*)inst, qst_get (inst, ts->ts_aq_qis), ts->src_gen.src_query);
     }
   if (!ts->ts_agg_node)
     return;
@@ -3895,6 +3903,8 @@ fun_ref_streaming_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * state)
 		}
 	      if (!aq->aq_requests->ht_count && FST_LOCAL_DONE == fs_state)
 		{
+		  if (prof_on)
+		    qi_add_stats ((QI*)inst, (QI**)QST_GET_V (inst, ts->ts_aq_qis), fref->src_gen.src_query);
 		  qst_set (inst, ts->ts_aq_qis, NULL);
 		  qst_set (inst, ts->ts_aq, NULL);
 		  SRC_IN_STATE (fref, inst) = NULL;
@@ -3928,8 +3938,11 @@ fun_ref_streaming_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * state)
 	else
 	  {
 	    if (qi_fref_continuable (inst, fref->fnr_select_nodes))
+		{
+		  QST_INT (inst, ts->ts_aq_state) = 0;
 	      cl_fref_resume (fref, inst);
 	  }
+	    }
 	/* the continue returned, meaning locaal at end.  Set the branching ts so it will not try to sync since the fref does that */
 	QST_INT (inst, fref->fnr_stream_state) = FST_LOCAL_DONE;
 	QST_BOX (caddr_t *, inst, fref->fnr_current_branch) = inst;
