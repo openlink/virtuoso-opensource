@@ -1989,7 +1989,7 @@ setp_chash_group (setp_node_t * setp, caddr_t * inst)
   if (setp->setp_is_streaming
       && cha->cha_distinct_count * 100 > (dc_batch_sz * cha_stream_gb_flush_pct) && setp_stream_breakable (setp, inst))
     longjmp_splice (THREAD_CURRENT_THREAD->thr_reset_ctx, RST_GB_ENOUGH);
-  if (cha->cha_pool->mp_bytes > cha_max_gb_bytes && (cha->cha_pool->mp_bytes + mp_large_in_use) > c_max_large_vec)
+  if (cha->cha_pool->mp_bytes > cha_max_gb_bytes && (cha->cha_pool->mp_bytes + mp_large_in_use) > c_max_large_vec && !setp->setp_is_streaming)
     cha->cha_oversized = 1;
   return 1;
 no:
@@ -2663,7 +2663,7 @@ next_batch:
 	  chash_t *cha_p = CHA_PARTITION (cha, part);
 	  if (!chp)
 	    {
-	      chp = cha_p->cha_current;
+	      chp = cha_p->cha_init_page ? cha_p->cha_init_page : cha_p->cha_current;
 	      row = 0;
 	    }
 	  for (chp = chp; chp; chp = chp->h.h.chp_next)
