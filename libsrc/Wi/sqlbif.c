@@ -10530,7 +10530,7 @@ boxint cl_sequence_next_no_refill (query_instance_t * qi, caddr_t seq, int step,
 
 
 caddr_t
-bif_sequence_next_bounded (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int sec_check)
+bif_sequence_next_bounded (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   *err_ret = srv_make_new_error ("42000", "SEQCL", "sequence_next_bounded not defined outside cluster support");
   return NULL;
@@ -13420,7 +13420,7 @@ qr_set:
     cli->cli_log_qi_stats = 1;
   k = bif_exec_start (cli, qr->qr_text);
   cli_set_start_times (cli);
-  err =qr_exec_vec_lc (qr, qst, params,  &rsets);
+  err = qr_exec_vec_lc (qr, qst, (caddr_t **) params,  &rsets);
   bif_exec_done (k);
   if (n_args > 6 && ssl_is_settable (args[6]))
     qst_set (qst, args[6], (caddr_t)rsets);
