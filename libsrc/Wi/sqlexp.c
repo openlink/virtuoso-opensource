@@ -187,7 +187,10 @@ sqlc_trans_funcs (sql_comp_t * sc, ST * tree, state_slot_t * ret, dk_set_t * cod
 	      memset (sc->sc_trans->tn_step_out, 0, box_length ((caddr_t)sc->sc_trans->tn_step_out));
 	    }
 	  wanted = sc->sc_trans->tn_out_slots[pos];
-	  wanted_pos = box_position ((caddr_t *)(sc->sc_trans->tn_input_pos), (caddr_t)pos);
+	  if (sc->sc_trans->tn_is_second_in_direction3)
+	    wanted_pos = box_position ((caddr_t *)(sc->sc_trans->tn_output_pos), (caddr_t)pos);
+          else
+	    wanted_pos = box_position ((caddr_t *)(sc->sc_trans->tn_input_pos), (caddr_t)pos);
 	  if (-1 == wanted_pos)
 	    sqlc_new_error (sc->sc_cc, "37000", "TR...", "T_STEP argument refers to an index %d of a column %.200s that is not in %s list (T_DIRECTION is set to %d)", pos+1, wanted->ssl_name, ((TRANS_LR == sc->sc_trans->tn_direction) ? "T_IN" : "T_OUT"), sc->sc_trans->tn_direction);
 	  sc->sc_trans->tn_step_out[wanted_pos] = ret;

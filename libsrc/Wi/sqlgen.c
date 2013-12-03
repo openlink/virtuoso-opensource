@@ -1977,6 +1977,7 @@ sqlg_make_trans_dt  (sqlo_t * so, df_elt_t * dt_dfe, ST **target_names, dk_set_t
   sc->sc_trans = tn;
   tn->tn_distinct = trans->_.trans.distinct;
   tn->tn_direction = tl->tl_direction;
+  tn->tn_is_second_in_direction3 = tl->tl_is_second_in_direction3;
   tn->tn_no_cycles = trans->_.trans.no_cycles;
   tn->tn_cycles_only = trans->_.trans.cycles_only;
   tn->tn_exists = trans->_.trans.exists;

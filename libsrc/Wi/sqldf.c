@@ -2919,6 +2919,7 @@ sqlo_trans_dt_2_way (sqlo_t * so, df_elt_t * dfe, dk_set_t preds, ptrlong * in_p
       gen2 = dfe->_.sub.generated_dfe;
       tl2 = gen2->_.sub.trans;
       tl2->tl_direction = TRANS_RL;
+      tl2->tl_is_second_in_direction3 = 1;
     }
   if (TRANS_ANY == dir)
     dir = sqlo_trans_direction (gen1, gen2);

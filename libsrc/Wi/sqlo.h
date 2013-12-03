@@ -191,6 +191,7 @@ typedef struct trans_layout_s
   dk_set_t	tl_target;
   df_elt_t *	tl_complement;
   char		tl_direction;
+  char		tl_is_second_in_direction3;
 }trans_layout_t;
 
 /* for setp. is_distinct */
