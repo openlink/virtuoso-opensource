@@ -6067,7 +6067,7 @@ bif_vector_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t in_vector, out_vector;
   int inx;
   in_vector = bif_strict_array_or_null_arg (qst, args, 0, "__vector_sort");
-  if (in_vector == NULL || in_vector == NEW_DB_NULL)
+  if (in_vector == NULL || DV_TYPE_OF (in_vector) == DV_DB_NULL)
     return NEW_DB_NULL;
   DO_BOX (caddr_t, line, inx, ((caddr_t *) in_vector))
     {

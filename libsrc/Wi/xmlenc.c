@@ -1190,6 +1190,10 @@ void xenc_key_remove (xenc_key_t * key, int lock)
       dk_free (key->ki.aes.k, key->ki.aes.bits / 8 /* number of bits in byte */);
     }
 #endif
+  if (key->xek_type == DSIG_KEY_RAW)
+    {
+      dk_free_box (key->ki.raw.k);
+    }
   if (key->xek_utok)
     {
       dk_free_box (key->xek_utok->uname);
