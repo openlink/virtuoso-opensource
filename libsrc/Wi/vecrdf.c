@@ -661,7 +661,11 @@ bif_str_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_
   data_col_t * dc;
   db_buf_t set_mask = qi->qi_set_mask;
   int set, n_sets = qi->qi_n_sets, first_set = 0;
-  bif_ro2sq_vec_1 (qst, err_ret, args, ret, 0);
+  state_slot_t ssl_tmp;
+  memcpy (&ssl_tmp, ret, sizeof (state_slot_t));
+  if (ret->ssl_dc_dtp == DV_ANY)
+    ssl_tmp.ssl_dtp = DV_ANY;
+  bif_ro2sq_vec_1 (qst, err_ret, args, &ssl_tmp, 0);
   dc = QST_BOX (data_col_t *, qst, ret->ssl_index);
   if (dc->dc_dtp != DV_ANY)
     dc_heterogenous (dc);
