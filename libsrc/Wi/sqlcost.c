@@ -575,6 +575,8 @@ dfe_vec_index_unit (df_elt_t * dfe, float spacing)
 }
 
 int enable_vec_cost = 1;
+extern int32 enable_dyn_batch_sz;
+#define dc_max_batch_sz_f (enable_dyn_batch_sz ? dc_max_batch_sz : dc_batch_sz)
 
 float 
 dfe_vec_inx_cost (df_elt_t * dfe, index_choice_t * ic, int64 sample)
@@ -605,8 +607,8 @@ dfe_vec_inx_cost (df_elt_t * dfe, index_choice_t * ic, int64 sample)
       else
 	t_card = key_card;
       slices = key->key_partition ? key->key_partition->kpd_map->clm_distinct_slices : 1;
-      max_vec = dc_max_batch_sz / slices;
-      if (1 == slices && ref_card < enable_qp * dc_max_batch_sz && ref_card > dc_batch_sz * enable_qp)
+      max_vec = dc_max_batch_sz_f / slices;
+      if (1 == slices && ref_card < enable_qp * dc_max_batch_sz_f && ref_card > dc_batch_sz * enable_qp)
 	max_vec = ref_card / enable_qp;
       vec_sz = MIN (max_vec, ref_card);
       vec_sz = MAX (1, vec_sz);
