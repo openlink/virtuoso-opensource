@@ -2390,6 +2390,22 @@ sqlg_qn_code_prev (sql_comp_t * sc, data_source_t * qn, data_source_t * prev_wit
 
 
 void
+qn_set_prev (data_source_t * qn, data_source_t * prev)
+{
+  /* when setting the orev of a qn, it can be that the qn is const card, meaning the next qn has the same prev, so keep setting them until the prev is different */
+  data_source_t * initial_prev = qn->src_prev;
+  qn->src_prev = prev;
+  while (qn = qn_next (qn))
+    {
+      if (qn->src_prev == initial_prev)
+	qn->src_prev = prev;
+      else
+	break;
+    }
+}
+
+
+void
 sqlg_sqs_qr_pred (sql_comp_t * sc, query_t * qr, data_source_t * prev_with_set_no)
 {
   /* go through any fref or sqs nodes to the first that is neither and set its prev to the prev of the sqs */
@@ -2414,7 +2430,7 @@ found:
 	qn = qn_next (qn);
       if (!qn)
 	return;
-      qn->src_prev = prev_with_set_no;
+      qn_set_prev (qn, prev_with_set_no);
       if (IS_QN (qn, subq_node_input))
 	{
 	  qn = ((subq_source_t *) qn)->sqs_query->qr_head_node;
@@ -3041,6 +3057,7 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
 	if (!term1)
 	  term1 = term;
 	term->qr_select_node->sel_set_no = sqs->sqs_set_no;
+	  term->qr_select_node->sel_subq_org_set_no = sqs->sqs_set_no;
 	sc->sc_vec_pred = save;
 	sc->sc_vec_current = (data_source_t *) sc->sc_vec_pred->data;
 	sqlg_subq_vec (sc, term, NULL, NULL);
