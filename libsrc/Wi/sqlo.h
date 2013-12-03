@@ -581,6 +581,7 @@ typedef struct index_choice_s
   dk_set_t	ic_after_test;
   float 	ic_after_test_arity;
   float		ic_inx_card;
+  float		ic_col_card;
   float		ic_col_card_corr; /* if ic samples dependent cols, this is the correction factor to the for the  cols sampled to the dependent col card est */
   struct rdf_inf_ctx_s *	ic_ric;
   df_elt_t *	ic_inf_dfe;

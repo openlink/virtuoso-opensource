@@ -3553,7 +3553,7 @@ dfe_table_ip_cost (df_elt_t * tb_dfe, index_choice_t * ic)
 
 
 int
-dfe_rq_col_pos (df_elt_t * dfe, char cn)
+dfe_rq_col_pos (df_elt_t * dfe, char cn, int must_have)
 {
   int nth = 0;
   DO_SET (dbe_column_t *, col, &dfe->_.table.key->key_parts)
@@ -3563,8 +3563,9 @@ dfe_rq_col_pos (df_elt_t * dfe, char cn)
       nth++;
     }
   END_DO_SET();
+  if (must_have)
   GPF_T1 ("bad col for rdf quad ni looking for col pos in cost model");
-  return 0;
+  return -1;
 }
 
 
@@ -3626,25 +3627,38 @@ dfe_rdfs_type_check_card (df_elt_t * dfe, index_choice_t * ic, df_elt_t ** eqs, 
   /* recognize p = rdfs:type and s and o given, s not constant. Favor use of pogs  */
   dbe_key_t * key;
   caddr_t name;
-  int s_pos, o_pos;
+  int s_pos, o_pos, p_pos;
   if (n_eqs < 3 || !dfe_is_quad (dfe))
     return 0;
   key = dfe->_.table.key;
-  if (!RQ_IS_COL (key->key_parts->data, 'P') || !eqs[0])
+  p_pos = dfe_rq_col_pos (dfe, 'P', 0);
+  if (-1 == p_pos || !eqs[p_pos])
     return 0;
-  name = sqlo_iri_constant_name (eqs[0]->_.bin.right->dfe_tree);
+  name = sqlo_iri_constant_name (eqs[p_pos]->_.bin.right->dfe_tree);
   if (!name)
     return 0;
-  if (strcmp (name, RDFS_TYPE_IRI))
+  if (!box_equal (name, rdfs_type) && strcmp (name, RDFS_TYPE_IRI))
     return 0;
-  s_pos = dfe_rq_col_pos (dfe, 'S');
-  o_pos = dfe_rq_col_pos (dfe, 'O');
-  if (o_pos >= n_eqs || s_pos >= n_eqs || !eqs[s_pos] || !eqs[o_pos])
+  s_pos = dfe_rq_col_pos (dfe, 'S', 0);
+  o_pos = dfe_rq_col_pos (dfe, 'O', 0);
+  if (o_pos < 0 || s_pos < 0 || o_pos >= n_eqs || s_pos >= n_eqs || !eqs[s_pos] || !eqs[o_pos])
     return 0;
-  if (!eqs[2])
-    return 0;
-  if (3 == s_pos)
-    *inx_cost_ret *= 0.8;
+  if (3 == s_pos || 3 == o_pos)
+    {
+      /* can be pos are given and specify a type but are not leading consecutive.  The card will be the same but inx card and col card will reflect  */
+      if (!eqs[0])
+	{
+	  ic->ic_col_card = 0.8 / ic->ic_inx_card;
+	  return 1;
+	}
+      if (!eqs[1] || !eqs[2])
+	{
+	  float key_card = dbe_key_count (dfe->_.table.key);
+	  ic->ic_inx_card = key_card / 100;
+	  ic->ic_col_card = 80 / key_card;
+	  return 1;
+	}
+    }
   ic->ic_inx_card = 0.8;
   dfe->_.table.is_arity_sure = 6; /* set this so that this will be believed rather than a sample with less parts */
   return 1;
@@ -3703,6 +3717,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
     }
   inx_cost = dbe_key_unit_cost (dfe->_.table.key);
   ic->ic_ric = rdf_name_to_ctx (sqlo_opt_value (dfe->_.table.ot->ot_opts, OPT_RDF_INFERENCE));
+  memzero (eq_preds, sizeof (eq_preds));
   DO_SET (dbe_column_t *, part, &dfe->_.table.key->key_parts)
     {
       int col_already_eq;
@@ -3710,7 +3725,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
       df_elt_t * upper = NULL;
       lower = sqlo_key_part_best (part, dfe->_.table.col_preds, 0);
       upper = sqlo_key_part_best (part, dfe->_.table.col_preds, 1);
-      if (is_indexed && eq_fill < sizeof (eq_preds) / sizeof (caddr_t))
+    if (eq_fill < sizeof (eq_preds) / sizeof (caddr_t))
 	eq_preds[eq_fill++] = (lower && PRED_IS_EQ (lower)) ? lower : NULL;
       if (lower || upper)
 	{
@@ -3792,9 +3807,12 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
   END_DO_SET();
   ic->ic_is_unique = unique;
   ic->ic_inx_card = inx_arity;
-
+  ic->ic_col_card = col_arity;
   if (dfe_rdfs_type_check_card (dfe, ic, eq_preds, eq_fill, &inx_cost))
-    inx_arity = ic->ic_inx_card;
+    {
+      inx_arity = ic->ic_inx_card;
+      col_arity = ic->ic_col_card;
+    }
   else if (2 == enable_p_stat && tb_is_rdf_quad (dfe->_.table.ot->ot_table) && sqlo_use_p_stat_2 (dfe, &inx_arity, &col_arity, ic, &inx_sample))
     {
       p_stat = 2;
