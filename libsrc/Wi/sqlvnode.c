@@ -744,10 +744,13 @@ outer_seq_end_vec_input (outer_seq_end_node_t * ose, caddr_t * inst, caddr_t * s
     shadow_dc = QST_BOX (data_col_t *, inst, ose->ose_out_shadow[inx]->ssl_index);
     len = dc_elt_size (out_dc);
     dc_reset (shadow_dc);
-    if (DV_ANY == shadow_dc->dc_dtp && DV_ANY != out_dc->dc_dtp)
-      dc_convert_empty (shadow_dc, out_dc->dc_dtp);
-      else if (DV_ANY != shadow_dc->dc_dtp && shadow_dc->dc_dtp != out_dc->dc_dtp)
-      dc_heterogenous (shadow_dc);
+      if (shadow_dc->dc_dtp != out_dc->dc_dtp)
+	{
+	  if (DV_ANY == out_dc->dc_dtp)
+	    dc_heterogenous (shadow_dc);
+	  else
+	    dc_convert_empty (shadow_dc, out_dc->dc_dtp);
+	}
     DC_CHECK_LEN (shadow_dc, n_sets - 1);
     shadow_dc->dc_n_values = n_sets;
     if (out_dc->dc_nulls)
