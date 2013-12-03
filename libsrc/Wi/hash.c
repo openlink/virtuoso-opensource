@@ -2457,7 +2457,7 @@ hash_source_input (hash_source_t * hs, caddr_t * qst, caddr_t * qst_cont)
   hash_area_t * ha = hs->hs_ha;
   if (hs->src_gen.src_sets)
     {
-      hash_source_vec_input (hs, qst, qst_cont);
+      hash_source_chash_input (hs, qst, qst_cont);
       return;
     }
   if (!qst_cont)

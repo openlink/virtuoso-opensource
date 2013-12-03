@@ -3065,10 +3065,17 @@ cha_hs_cmp (hash_source_t * hs, caddr_t * inst, chash_t * cha, int set, int64 * 
 
 long chash_cum_input;
 
+
+#define HS_N_SETS \
+  hs->src_gen.src_prev ? QST_INT (inst, hs->src_gen.src_prev->src_out_fill) : qi->qi_n_sets
+
+
+
 void
 hash_source_chash_input (hash_source_t * hs, caddr_t * inst, caddr_t * state)
 {
   int n_sets, set;
+  QNCAST (QI, qi, inst);
   key_source_t *ks = hs->hs_ks;
   int64 *deps;
   chash_t *cha;
@@ -3088,7 +3095,7 @@ hash_source_chash_input (hash_source_t * hs, caddr_t * inst, caddr_t * state)
   cha = hi->hi_chash;
   if (state)
     {
-      n_sets = QST_INT (inst, hs->src_gen.src_prev->src_out_fill);
+      n_sets = HS_N_SETS;
       if (hs->hs_merged_into_ts)
 	{
 	  QST_INT (inst, hs->src_gen.src_out_fill) = n_sets;
@@ -3117,7 +3124,7 @@ hash_source_chash_input (hash_source_t * hs, caddr_t * inst, caddr_t * state)
 	  if (ks->ks_last_vec_param)
 	    n_sets = QST_BOX (data_col_t *, inst, ks->ks_last_vec_param->ssl_index)->dc_n_values;
 	  else
-	    n_sets = QST_INT (inst, hs->src_gen.src_prev->src_out_fill);
+	    n_sets = HS_N_SETS;
 	}
       else
 	{
@@ -4241,6 +4248,7 @@ setp_chash_fill (setp_node_t * setp, caddr_t * inst)
 	}
     }
 }
+
 
 void
 hash_source_chash_input_1i (hash_source_t * hs, caddr_t * inst, caddr_t * state, int n_sets)

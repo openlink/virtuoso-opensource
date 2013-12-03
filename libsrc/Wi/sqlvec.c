@@ -2736,7 +2736,7 @@ sqlg_vec_hs (sql_comp_t * sc, hash_source_t * hs)
 		can_merge = MRG_NONE;
 	      }
 	  }
-	if (can_merge && cl_part_crossed && HS_CL_REPLICATED != hs->hs_cl_partition)
+	  if (can_merge && cl_part_crossed && HS_CL_REPLICATED != hs->hs_cl_partition && !no_bloom_in_probe)
 	  can_merge = MRG_PART_AND_BLOOM;
 	if (can_merge)
 	  {
