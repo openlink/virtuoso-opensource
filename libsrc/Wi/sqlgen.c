@@ -5788,7 +5788,6 @@ sqlg_top_1 (sqlo_t * so, df_elt_t * dfe, state_slot_t ***sel_out_ret)
   inner_cc.cc_query = outer_cc->cc_query;
   so->so_sc->sc_cc = &inner_cc;
   so->so_sc->sc_any_clb = 0;
-  thr_set_tlsf (THREAD_CURRENT_THREAD, sqlc_tlsf);
   dfe_unit_col_loci (dfe);
   DO_SET (df_elt_t *, filler, &so->so_hash_fillers)
     {
