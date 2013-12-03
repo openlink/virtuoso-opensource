@@ -597,6 +597,8 @@ sqlc_handler_decl (sql_comp_t * sc, ST * stmt)
 }
 
 
+#define SC_LEAVE_SCOPE ((dk_set_t)-1)  /* a compound stmt can declare vars and they stay visible after it */
+
 state_slot_t **
 sqlc_compound_stmt (sql_comp_t * sc, ST * tree, dk_set_t ret_exps)
 {
@@ -642,21 +644,27 @@ sqlc_compound_stmt (sql_comp_t * sc, ST * tree, dk_set_t ret_exps)
       }
   }
   END_DO_BOX;
-  DO_SET  (ST *, ret, &ret_exps)
+  if (SC_LEAVE_SCOPE != ret_exps)
     {
-      dk_set_push (&rets, (void*)scalar_exp_generate (sc, ret, &sc->sc_routine_code));
+      DO_SET  (ST *, ret, &ret_exps)
+	{
+	  dk_set_push (&rets, (void*)scalar_exp_generate (sc, ret, &sc->sc_routine_code));
+	}
+      END_DO_SET();
     }
-  END_DO_SET();
   {
     NEW_INSTR (proc_start, INS_COMPOUND_END, &sc->sc_routine_code);
     proc_start->_.compound_start.skip = skip;
   }
   t_set_pop (&sc->sc_compound_scopes);
-  DO_SET (col_ref_rec_t *, crr, &compound_recs)
+  if (SC_LEAVE_SCOPE != ret_exps)
     {
-      t_set_delete (&sc->sc_col_ref_recs, crr);
+      DO_SET (col_ref_rec_t *, crr, &compound_recs)
+	{
+	  t_set_delete (&sc->sc_col_ref_recs, crr);
+	}
+      END_DO_SET();
     }
-  END_DO_SET();
   if (rets)
     return (state_slot_t **)revlist_to_array (rets);
   return NULL;
@@ -942,6 +950,32 @@ sqlc_for_vectored_stmt (sql_comp_t * sc, ST * stmt)
   sc->sc_routine_code = save;
   sc->sc_cc->cc_query->qr_head_node = save_qn;
   sc->sc_col_ref_recs = crr_save;
+}
+
+
+void
+sqlc_not_vectored_stmt (sql_comp_t * sc, ST * stmt)
+{
+  end_node_t en;
+  data_source_t * save_qn;
+  dk_set_t save;
+  int inx;
+  NEW_INSTR (ins, INS_FOR_VECT, &sc->sc_routine_code);
+  if (!sc->sc_cc->cc_query->qr_proc_vectored)
+    sqlc_new_error (sc->sc_cc, "37000", ".....", "Not_vectored is not allowed outside vectored code");
+  ins->_.for_vect.modify = NO_VEC;
+  save = sc->sc_routine_code;
+  sc->sc_routine_code = NULL;
+  sc->sc_cc->cc_query->qr_proc_vectored = 0;
+  sqlc_compound_stmt (sc, stmt->_.for_vec.body, SC_LEAVE_SCOPE);
+  ins->_.for_vect.code = code_to_cv (sc, sc->sc_routine_code);
+  memset (&en, 0, sizeof (en));
+  en.src_gen.src_pre_code = ins->_.for_vect.code;
+  save_qn = sc->sc_cc->cc_query->qr_head_node;
+  sc->sc_cc->cc_query->qr_head_node = (data_source_t*)&en;
+  sc->sc_cc->cc_query->qr_proc_vectored = QR_VEC_STMT;
+  sc->sc_routine_code = save;
+  sc->sc_cc->cc_query->qr_head_node = save_qn;
 }
 
 

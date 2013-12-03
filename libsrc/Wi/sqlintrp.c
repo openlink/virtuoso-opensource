@@ -3197,6 +3197,15 @@ int enable_cmp_vec = 1;
 
 
 void
+ins_not_vect (caddr_t * inst, instruction_t * ins)
+{
+  QNCAST (QI, qi, inst);
+  qi->qi_set = 0;
+  code_vec_run_1 (ins->_.for_vect.code, inst, 0);
+}
+
+
+void
 code_vec_run_v (code_vec_t code_vec, caddr_t * qst, int offset, int run_until, int n_sets, data_col_t * ret_dc, int * bool_ret, ssl_index_t bool_ret_fill)
 {
   volatile int nesting_level = 0;
@@ -3499,7 +3508,11 @@ code_vec_run_v (code_vec_t code_vec, caddr_t * qst, int offset, int run_until, i
 	  break;
 #endif
 	case INS_FOR_VECT:
-	  sqlr_new_error ("42000", "VEC..", "for_vectored not allowed inside vectored code");
+	  if (NO_VEC != ins->_.for_vect.modify)
+	    sqlr_new_error ("42000", "VEC..", "for_vectored not allowed inside vectored code");
+	  ins_not_vect (qst, ins);
+	  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.for_vect)));
+	  break;
 	}
 
     }

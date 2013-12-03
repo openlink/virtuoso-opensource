@@ -260,6 +260,9 @@ struct instruction_s {
 #define ins_type	_.artm.ins_type
 extern unsigned char ins_lengths[];
 
+/* for_vect.modify */
+#define NO_VEC 2
+
 #if 1
 #define INSTR_ALIGN_UNIT (sizeof (void *))
 #define ALIGN_INSTR(o) _RNDUP (o, INSTR_ALIGN_UNIT)

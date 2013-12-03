@@ -186,7 +186,7 @@
 #define USER_AGGREGATE_DECL	(ptrlong)632
 #define FOR_VEC_STMT (ptrlong)635
 #define VECT_DECL ((ptrlong)636)
-
+#define NOT_VEC_STMT ((ptrlong)637)
 #define SIMPLE_CASE		(ptrlong)622
 #define SEARCHED_CASE		(ptrlong)623
 #define WHEN_CLAUSE		(ptrlong)624

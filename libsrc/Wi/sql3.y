@@ -3720,6 +3720,7 @@ for_statement
 	| FOREACH '(' data_type_ref identifier IN_L scalar_exp ')' DO statement
 		{ $$ = sqlp_foreach_statement ($3, $4, $6, $9); }
 	| FOR VECTORED opt_modify '(' vectored_list ')' compound_statement { $$ = t_listst (4, FOR_VEC_STMT, t_list_to_array ($5), $7, (ptrlong) $3); }
+	| NOT VECTORED  compound_statement { $$ = t_listst (2, NOT_VEC_STMT, t_list_to_array ($3) ); }
 	;
 
 trigger_def
