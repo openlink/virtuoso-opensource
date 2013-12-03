@@ -1821,6 +1821,9 @@ cv_is_local_1 (code_vec_t cv, int is_cluster)
 	      }
 	    else if (is_cluster)
 	      sqlc_need_enlist (sqlc_current_sc);
+	    if (is_cluster != CV_IS_LOCAL_AGG
+		&& sch_ua_func_ua (ins->_.call.proc))
+	      return 0;
 	    return is_cluster ? 0 : enable_mt_txn ? 1 : 0;
 	  }
 	case INS_CALL_IND:
@@ -1831,7 +1834,8 @@ cv_is_local_1 (code_vec_t cv, int is_cluster)
 	    return 0;
 	  if (bif_need_enlist (ins->_.bif.bif))
 	    sqlc_need_enlist (sqlc_current_sc);
-	  if (CV_IS_LOCAL_CLUSTER == is_cluster && bif_is_aggregate (ins->_.bif.bif))
+	  if (is_cluster != CV_IS_LOCAL_AGG
+	      && bif_is_aggregate (ins->_.bif.bif))
 	    return 0;
 	  if (is_cluster && bif_is_no_cluster (ins->_.bif.bif))
 	    return 0;
