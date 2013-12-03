@@ -4210,9 +4210,9 @@ rdf_core_init (void)
   bif_define_typed ("__id2i", bif_id_to_iri, &bt_any /* Was &bt_varchar */);
   bif_set_vectored (bif_id_to_iri, bif_id2i_vec);
   bif_set_uses_index (bif_id_to_iri);
-  bif_define ("__id2in", bif_id_to_iri_nosignal);
+  bif_define_typed ("__id2in", bif_id_to_iri_nosignal, &bt_any);
   bif_set_vectored (bif_id_to_iri_nosignal, bif_id2i_vec_ns);
-
+  bif_define_typed ("iri_from_pref_name", bif_iri_from_pref_name, &bt_any);
   bif_define ("rdf_graph_keyword", bif_rdf_graph_keyword);
   bif_define ("iri_split", bif_iri_split);
   bif_define ("uriqa_dynamic_local_set", bif_uriqa_dynamic_local_set);
