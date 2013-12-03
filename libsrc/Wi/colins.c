@@ -4267,6 +4267,8 @@ key_col_insert (it_cursor_t * itc, row_delta_t * rd, insert_node_t * ins)
   itc->itc_vec_rds = (row_delta_t **) list (1, (caddr_t) rd);
   itc_col_vec_insert (itc, ins);
   dk_free_box ((caddr_t) itc->itc_vec_rds);
+  itc_free_box (itc, itc->itc_param_order);
+  itc->itc_param_order = 0;
 }
 #endif
 
