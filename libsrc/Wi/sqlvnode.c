@@ -68,6 +68,36 @@ select_node_input_subq_vec (select_node_t * sel, caddr_t * inst, caddr_t * state
   else
     n_rows = 1;
   QST_INT (inst, sel->src_gen.src_out_fill) = n_rows;
+  if (sel->sel_subq_inlined)
+    {
+      /* a select node after a group by reader, flattened into containing query.  Set the output sets according to the set no ssl  */
+      data_col_t * dc = sel->sel_set_no ? QST_BOX (data_col_t *, inst, sel->sel_set_no->ssl_index) : NULL;
+      int64 * nos = dc ? (int64*)dc->dc_values : NULL;
+      int * out_sets;
+      QN_CHECK_SETS (sel, inst, n_rows);
+      out_sets = QST_BOX (int *, inst, sel->src_gen.src_sets);
+      if (sel->sel_set_no && SSL_REF == sel->sel_set_no->ssl_type)
+	{
+	  int sets[ARTM_VEC_LEN];
+	  int inx, inx2;
+	  for (inx = 0; inx < n_rows; inx += ARTM_VEC_LEN)
+	    {
+	      int to = MIN (n_rows, inx + ARTM_VEC_LEN);
+	      sslr_n_consec_ref (inst, (state_slot_ref_t*)sel->sel_set_no, sets, inx, to - inx);
+	      to -= inx;
+	      for (inx2 = 0; inx2 < to; inx2++)
+		out_sets[inx + inx2] = nos[sets[inx2]];
+	    }
+	}
+      else
+	{
+	  int inx2;
+	  for (inx2 = 0; inx2 < n_rows; inx2++)
+	    out_sets[inx2] = nos ? nos[inx2] : 0;
+	}
+      qn_send_output ((data_source_t*)sel, inst);
+      return;
+    }
   if (sel->sel_top)
     {
       top = unbox (qst_get (inst, sel->sel_top));

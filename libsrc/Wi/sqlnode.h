@@ -1067,6 +1067,7 @@ typedef struct union_node_s
     dk_hash_t *         un_refs_after;	/* in tracking ssl refs, do a union's continuation only once, remember the refd ssls here */
     short 		uni_op;
     char		uni_sequential; /* finish each branch before starting next.  Needed in except and intersect */
+    char		uni_cl_colocate_delayed;
   } union_node_t;
 
 
@@ -1289,10 +1290,12 @@ typedef struct select_node_s
     state_slot_t *	sel_prev_set_no; /* set no of prev row.  when changes, reset the top ctr */
     state_slot_t *	sel_cn_set_no; /* if in multistate exists or value subq, this is set no of containing code node.  As soon as one result is produced, advance the multistate qr to the next set as per this set no */
     state_slot_t *	sel_scalar_ret;
+    set_ctr_node_t *	sel_set_ctr; /* if inlined subq ends here, this is the set ctr that marks the strat of the subq */
     ssl_index_t		sel_vec_set_mask; /* In vectored subq, if top = 1, bit mask where each exists marks a 1 at the set no.  If top > 1, array of ints with row count in the set in question. */
     ssl_index_t	sel_client_batch_start; /* set no of 1st result row in current batch of rows to sql client */
     char		sel_vec_role;
     char		sel_is_scalar_agg; /* scalar subq with aggregate and no group by */
+    char		sel_subq_inlined;
   } select_node_t;
 
 #define SEL_VEC_EXISTS 1

@@ -3109,6 +3109,27 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
       REF_SSL (res, sel->sel_top_skip);
       if (IS_QN (sel, select_node_input))
 	sel->sel_client_batch_start = cc_new_instance_slot (sc->sc_cc);
+      if (sel->sel_set_ctr)
+	{
+	  /* the select node belongs to an inlined subq.  The select node will set the set nos for the inlined sqs, so the predecessor of the sel is the predecessor of the set ctr that too the place of the inlined sqs */
+	  /* the result cols of the subq are assigned right before the select and are aligned. For purposes of subsequent qns, these are assigned by the elect node but not reset by it.  So mark the place of asignment but do not cause the clear to be added  */
+	  DO_BOX (state_slot_t *, out, inx, sel->sel_out_slots)
+	    {
+	      if (inx >= sel->sel_n_value_slots)
+		break;
+	      sethash ((void*)out, sc->sc_vec_ssl_def, (void*)sel);
+	    }
+	  END_DO_BOX;
+	  dk_set_t pred;
+	  for (pred = sc->sc_vec_pred; pred; pred = pred->next)
+	    {
+	      if ((set_ctr_node_t*)pred->data == sel->sel_set_ctr)
+		{
+		  sc->sc_vec_pred = pred->next;
+		  break;
+		}
+	    }
+	}
     }
   else if ((qn_input_fn) hash_source_input == qn->src_input)
     {
@@ -3361,18 +3382,6 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
 	  sqlg_vec_after_test (sc, qn);
 	}
     }
-}
-
-
-int
-qn_is_const_card (data_source_t * qn)
-{
-  /* true if always one row of output for one of input */
-  if (IS_QN (qn, dpipe_node_input))
-    return 1;
-  if (IS_QN (qn, hash_source_input) && ((hash_source_t*)qn)->hs_merged_into_ts)
-    return 1;
-  return 0;
 }
 
 
