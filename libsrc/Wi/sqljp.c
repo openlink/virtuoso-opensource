@@ -529,7 +529,7 @@ dfe_jp_fill (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, join_plan_t * jp, 
     else if (dk_set_member (pred->dfe_tables, (void *) tb_dfe->_.table.ot) && dfe_in_hash_set (tb_dfe, hash_set))
       {
 	jp_add (jp, tb_dfe, pred, 1 | mode);
-	if (jp->jp_preds[jp->jp_n_preds - 1].ps_is_placeable)
+	  if (jp->jp_n_preds && jp->jp_preds[jp->jp_n_preds - 1].ps_is_placeable)
 	  {
 	    if (!jp->jp_prev)
 	      tb_dfe->dfe_is_joined = 1;
