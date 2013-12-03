@@ -796,11 +796,11 @@ cli_status_report (dk_session_t * ses)
       cli->cli_statements->ht_inserts - cli->cli_statements->ht_deletes);
   if (ARRAYP(cli->cli_info) && BOX_ELEMENTS (cli->cli_info) > 5)
     {
-      caddr_t app_name = cli->cli_info[0];
+      caddr_t app_name = cli->cli_info[LGID_APP_NAME];
       tcpses_print_client_ip (ses->dks_session, from, sizeof (from));
       rep_printf ("PID: %ld, OS: %s, Application: %s, IP#: %s\n",
-	  	(long) (cli->cli_info[1]),
-		cli->cli_info[3],
+	  	unbox (cli->cli_info[LGID_PID]),
+		cli->cli_info[LGID_OS],
 		app_name[0] ? app_name : "unknown",
 		from);
     }
