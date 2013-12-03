@@ -1016,7 +1016,6 @@ in_iter_free (in_iter_node_t * ii)
   dk_free_box ((caddr_t) ii->ii_values);
 }
 
-
 void
 sort_read_vec_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
 {
@@ -1046,12 +1045,16 @@ sort_read_vec_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
   last_set = QST_INT (inst, ts->clb.clb_nth_set);
   for (set = last_set; set < n_sets; set++)
     {
+      data_col_t * dc;
       qi->qi_set = qst_vec_get_int64 (inst, ks->ks_set_no, set);
       if (qi->qi_set < 0 || qi->qi_set >= n_sets)
 	{
 	  qi->qi_set = 0;
 	  sqlr_new_error ("MISCI", "SORTI",  "set no in reading top order by out of range..  Reprt the query to support");
 	}
+      dc = QST_BOX (data_col_t *, inst, setp->setp_sorted->ssl_index);
+      if (dc->dc_n_values <= qi->qi_set)
+	break;
       fill = unbox (qst_get (inst, setp->setp_row_ctr));
       arr = (caddr_t **) qst_get (inst, setp->setp_sorted);
       QST_INT (inst, ts->clb.clb_nth_set) = set;
