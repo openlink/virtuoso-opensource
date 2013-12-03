@@ -3722,8 +3722,8 @@ rdf_obj_ft_rule_check_if_configured (caddr_t * qst, state_slot_t ** args, int g_
       default:
         mutex_leave (rdf_obj_ft_rules_mtx);
 	  sqlr_new_error ("22023", "SR008",
-		    "Function __rdf_obj_ft_rule_check needs a string or UNAME or IRI_ID as argument 2, "
-		    "not an arg of type %s (%d)", dv_type_title (p_dtp), p_dtp);
+	  "Function %s() needs a string or UNAME or IRI_ID as argument %d, "
+	  "not an arg of type %s (%d)", fname, g_arg_idx + 2, dv_type_title (p_dtp), p_dtp);
     }
   if (NULL != id_hash_get (rdf_obj_ft_rules_by_iids, (caddr_t)(&iid_hkey)))
     goto hit; /* see_below */
