@@ -126,8 +126,9 @@ dfe_p_const_abbrev (df_elt_t * tb_dfe)
 
 
 float *
-dfe_p_stat (df_elt_t * tb_dfe, iri_id_t pid, dk_set_t * parts_ret, dbe_column_t * o_col, float **o_stat_ret)
+dfe_p_stat (df_elt_t * tb_dfe, df_elt_t * pred, iri_id_t pid, dk_set_t * parts_ret, dbe_column_t * o_col, float **o_stat_ret)
 {
+  int tried = 0;
 #if 0
   caddr_t ctx_name = sqlo_opt_value (tb_dfe->_.table.ot->ot_opts, OPT_RDF_INFERENCE);
   rdf_inf_ctx_t **place = ctx_name ? (rdf_inf_ctx_t **) id_hash_get (rdf_name_to_ric, (caddr_t) & ctx_name) : NULL;
@@ -135,8 +136,15 @@ dfe_p_stat (df_elt_t * tb_dfe, iri_id_t pid, dk_set_t * parts_ret, dbe_column_t 
   dbe_key_t *pk = tb_dfe->_.table.ot->ot_table->tb_primary_key;
   dbe_key_t *o_key = NULL;
   float *p_stat;
+again:
   if (!pk->key_p_stat)
+    {
+      if (tried)
     return NULL;
+      tried = 1;
+      dfe_init_p_stat (tb_dfe, pred);
+      goto again;
+    }
   if (o_col)
     o_key = tb_px_key (tb_dfe->_.table.ot->ot_table, o_col);
   p_stat = (float *) id_hash_get (pk->key_p_stat, (caddr_t) & pid);
@@ -145,6 +153,14 @@ dfe_p_stat (df_elt_t * tb_dfe, iri_id_t pid, dk_set_t * parts_ret, dbe_column_t 
     *o_stat_ret = (float *) id_hash_get (o_key->key_p_stat, (caddr_t) & pid);
   else if (o_stat_ret)
     o_stat_ret = NULL;
+  if (!p_stat || (o_stat_ret && !o_stat_ret))
+    {
+      if (tried)
+	return p_stat;
+      tried = 1;
+      dfe_init_p_stat (tb_dfe, pred);
+      goto again;
+    }
   return p_stat;
 }
 
@@ -267,7 +283,7 @@ jp_fanout (join_plan_t * jp)
 	  if (is_o && o)
 	    return jp->jp_fanout = sqlo_rdfs_type_card (jp->jp_tb_dfe, is_p, is_o);
 	}
-      p_stat = dfe_p_stat (jp->jp_tb_dfe, p, &parts, o_col, &o_stat);
+      p_stat = dfe_p_stat (jp->jp_tb_dfe, is_p, p, &parts, o_col, &o_stat);
       if (!p_stat)
 	goto general;
 

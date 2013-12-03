@@ -1304,7 +1304,6 @@ return QI_NO_SLICE;
 float
 sqlo_geo_count (df_elt_t * tb_dfe, df_elt_t * pred)
 {
-  char * str;
   dbe_key_t * id_key = tb_text_key (tb_dfe->_.table.ot->ot_table);
   dbe_table_t * tb = id_key->key_geo_table;
   float card;
@@ -3086,9 +3085,13 @@ rq_sample (df_elt_t * dfe, rq_cols_t * rq, index_choice_t * ic)
   df_elt_t * lower[4];
   df_elt_t * upper[4];
   dbe_key_t * save_key = dfe->_.table.key;
-  dbe_key_t * best_key = rq_best_key (dfe, rq);
+  dbe_key_t * best_key;
   int fill = 0;
   int64 res;
+  if (ic->ic_set_sample_key)
+    best_key = ic->ic_key;
+  else
+    best_key  = rq_best_key (dfe, rq);
   DO_SET (dbe_column_t *, col, &best_key->key_parts)
     {
       rq_pred_t * rqp = rq_rqp (rq, col);
@@ -3185,6 +3188,32 @@ dfe_p_card (df_elt_t * dfe, rq_cols_t * rq, float * p_stat, index_choice_t * ic,
     }
   return p_stat[0];
 }
+
+
+int
+dfe_init_p_stat (df_elt_t * dfe, df_elt_t * lower)
+{
+  rq_cols_t rq;
+  index_choice_t ic;
+  df_elt_t c;
+  float p_stat[4];
+  memzero (&rq, sizeof (rq));
+  memzero (&ic, sizeof (ic));
+  rq.rq_table = dfe->_.table.ot->ot_table;
+  rq.rq_p_col = tb_name_to_column (rq.rq_table, "P");
+  rq.rq_s_col = tb_name_to_column (rq.rq_table, "S");
+  rq.rq_o_col = tb_name_to_column (rq.rq_table, "O");
+  rq.rq_g_col = tb_name_to_column (rq.rq_table, "G");
+  rq.rq_p.rqp_op = RQ_CONST_EQ;
+  rq.rq_p.rqp_lower = lower;
+  ic.ic_set_sample_key = 1;
+  ic.ic_key = tb_px_key (rq.rq_table, rq.rq_s_col);
+  dfe_p_card (dfe, &rq, &p_stat, &ic, SO_S);
+  ic.ic_key = tb_px_key (rq.rq_table, rq.rq_o_col);
+  dfe_p_card (dfe, &rq, &p_stat, &ic, SO_O);
+  return 1;
+}
+
 
 int
 sqlo_use_p_stat_2 (df_elt_t * dfe, float *inx_card, float * col_card, index_choice_t * ic, int64 * sample_ret)

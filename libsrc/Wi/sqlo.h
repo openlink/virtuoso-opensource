@@ -598,6 +598,7 @@ typedef struct index_choice_s
   char		ic_text_order;
   char		ic_geo_order;
   char		ic_o_string_range_lit; /* 1 if o is known to be a string 2 if literal strings */
+  char		ic_set_sample_key;
   dk_set_t	ic_inx_sample_cols;
 } index_choice_t;
 
@@ -960,5 +961,6 @@ void dbg_qi_print_slots( query_instance_t *qi, state_slot_t** slots, int nthset 
 dbe_key_t * tb_px_key (dbe_table_t * tb, dbe_column_t * col);
 float dfe_scan_card (df_elt_t * dfe);
 int sqlo_parse_tree_count_node (ST *tree, long *nodes, int n_nodes);
+int dfe_init_p_stat (df_elt_t * dfe, df_elt_t * lower);
 
 #endif /* _SQLO_H */
