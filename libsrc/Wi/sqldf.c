@@ -7711,6 +7711,8 @@ static int
 sqlp_convert_or_to_union (sqlo_t * so, ST **ptree)
 {
   ST *tree = *ptree;
+  if (sqlp_convert_or_to_inlist (so, ptree))
+    return 1;
   if (ST_P (tree, SELECT_STMT) && BOX_ELEMENTS (tree) >= 5 &&
       ST_P (tree->_.select_stmt.table_exp, TABLE_EXP) &&
       ST_P (tree->_.select_stmt.table_exp->_.table_exp.where, BOP_OR) &&
@@ -7826,7 +7828,7 @@ sqlo_top_1 (sqlo_t * so, sql_comp_t * sc, ST ** ptree)
       tree = *ptree;
       tree_copy = (ST *) t_box_copy_tree ((caddr_t) tree);
 
-      if (!inside_view && sqlp_convert_or_to_inlist (so, &tree_copy))
+      if (!inside_view && sqlp_convert_or_to_union (so, &tree_copy))
 	{
 	  memcpy (&sc_save_1, sc, sizeof (sql_comp_t));
 	  memcpy (&so_save_1, so, sizeof (sqlo_t));
