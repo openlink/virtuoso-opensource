@@ -748,28 +748,29 @@ breakup_node_input (breakup_node_t * brk, caddr_t * inst, caddr_t * state)
       current += n_per_set;
       inst[brk->brk_current_slot] = (caddr_t) current;
       if (current == n_total)
-	SRC_IN_STATE ((data_source_t*) brk, inst) = NULL;
+	SRC_IN_STATE ((data_source_t *) brk, inst) = NULL;
       if (current > n_total)
 	return;
-      DO_BOX (state_slot_t *, out, oinx, brk->brk_output)
-	dc_reset (QST_BOX (data_col_t*, inst, out->ssl_index));
+      DO_BOX (state_slot_t *, out, oinx, brk->brk_output) 
+	dc_reset (QST_BOX (data_col_t *, inst, out->ssl_index));
       END_DO_BOX;
       for (set = 0; set < n_sets; set++)
 	{
 	  qi->qi_set = set;
 	  if (unbox (qst_get (inst, brk->brk_all_output[current - 1])))
 	    {
-	      qn_result ((data_source_t*)brk, inst, set);
-	  for (inx = 0; inx < n_per_set; inx++)
-	    {
-	      if (ssl_is_settable (brk->brk_output[inx]))
+	      qn_result ((data_source_t *) brk, inst, set);
+	      for (inx = 0; inx < n_per_set; inx++)
+		{
+		  if (ssl_is_settable (brk->brk_output[inx]))
 		    qst_set (inst, brk->brk_output[inx], box_copy_tree (qst_get (inst, brk->brk_all_output[inx + current - n_per_set])));
+		}
 	    }
 	}
-    }
       if (QST_INT (inst, brk->src_gen.src_out_fill))
-	qn_send_output ((data_source_t*) brk, inst);
-}
+	qn_send_output ((data_source_t *) brk, inst);
+      state = NULL;
+    }
 }
 
 

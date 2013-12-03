@@ -2489,6 +2489,7 @@ aq_qr_func (caddr_t av, caddr_t * err_ret)
   }
   QR_RESET_CODE
   {
+      du_thread_t * prev_qi_thread = qi->qi_thread;
       cli_set_slice (cli, NULL, QI_NO_SLICE, NULL);
     if (RST_GB_ENOUGH == reset_code)
       {

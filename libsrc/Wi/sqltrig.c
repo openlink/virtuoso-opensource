@@ -350,7 +350,8 @@ trig_wrapper (caddr_t * qst, state_slot_t ** args, dbe_table_t * tb,
       || qi->qi_client->cli_no_triggers)
     {
       qn_run (qn, qst, qst);
-      ROW_AUTOCOMMIT (qi);
+      if (!(TRIG_INSERT == event && qi->qi_non_txn_insert))
+	ROW_AUTOCOMMIT (qi);
       return;
     }
 
