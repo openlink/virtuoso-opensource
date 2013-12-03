@@ -3964,6 +3964,12 @@ sqlg_vec_ts (sql_comp_t * sc, table_source_t * ts)
     ASG_SSL (NULL, NULL, ssl); /* when reading grouping sets with not all groupnig cols, some are filled in as null on all rows */
   END_DO_SET ();
   t_set_push (&sc->sc_vec_pred, (void *) ts);
+  DO_SET (search_spec_t *, sp, &ks->ks_hash_spec)
+  {
+    hash_range_spec_t *hrng = (hash_range_spec_t *) sp->sp_min_ssl;
+    REF_SSL (res, hrng->hrng_ht);
+  }
+  END_DO_SET ();
   cv_vec_slots (sc, ks->ks_local_test, NULL, NULL, &ign);
   if (ks->ks_local_code && !ks->ks_is_last)
     {
