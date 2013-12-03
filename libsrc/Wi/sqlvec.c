@@ -732,7 +732,8 @@ sqlg_vec_ssl_ref (sql_comp_t * sc, state_slot_t * ssl, int test_only)
   if (!ssl || !preds || ssl->ssl_qr_global
       || SSL_CONSTANT == ssl->ssl_type
       || SSL_PARAMETER == ssl->ssl_type
-      || SSL_REF_PARAMETER == ssl->ssl_type)
+      || SSL_REF_PARAMETER == ssl->ssl_type
+      || SSL_REF == ssl->ssl_type)
     {
       if (ssl && SSL_REF_PARAMETER == ssl->ssl_type)
 	{
