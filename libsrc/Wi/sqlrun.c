@@ -2283,8 +2283,9 @@ insert_node_input (insert_node_t * ins, caddr_t * inst, caddr_t * state)
 	(data_source_t *) ins, (qn_input_fn) insert_node_run);
   else
     {
+      QNCAST (QI, qi, inst);
       insert_node_run (ins, inst, state);
-      if (cl_run_local_only || !ins->clb.clb_fill)
+      if ((cl_run_local_only || !ins->clb.clb_fill) && !qi->qi_non_txn_insert)
 	{
 	  ROW_AUTOCOMMIT (inst);
 	}
