@@ -5047,6 +5047,7 @@ rdf_graph_app_cbk_perms (query_instance_t *qst, caddr_t graph_boxed_iid, user_t 
 {
   static query_t *app_cbk_qr = NULL;
   local_cursor_t * lc = NULL;
+  int rc = 0;
   client_connection_t *cli = qst->qi_client;
   if (NULL == app_cbk_qr)
     app_cbk_qr = sql_compile_static ("call (?)(?, ?)", bootstrap_cli, err_ret, SQLC_DEFAULT);
@@ -5056,8 +5057,9 @@ rdf_graph_app_cbk_perms (query_instance_t *qst, caddr_t graph_boxed_iid, user_t 
       ":2", app_uid, QRP_STR );
   if (lc && DV_ARRAY_OF_POINTER == DV_TYPE_OF (lc->lc_proc_ret)
       && BOX_ELEMENTS ((caddr_t *)lc->lc_proc_ret) > 1)
-    return unbox (((caddr_t *)lc->lc_proc_ret)[1]);
-  return 0;
+    rc = unbox (((caddr_t *)lc->lc_proc_ret)[1]);
+  if (lc) lc_free (lc);
+  return rc;
 }
 
 caddr_t
