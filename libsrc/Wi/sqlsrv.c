@@ -3772,7 +3772,6 @@ srv_global_init (char *mode)
 #endif
 
   db_read_cfg (NULL, mode);
-  dk_set_initial_mem (main_bufs * 200);
   PrpcInitialize1 (lite_mode ? DK_ALLOC_RESERVE_DISABLED : DK_ALLOC_RESERVE_PREPARED);
   background_sem = semaphore_allocate (0);
 
