@@ -217,6 +217,7 @@ create procedure DB.DBA.DAV_RDF_REPLICATE_INT (in res_id integer, in restype var
 {
   declare n3v, n3_list, dav_rdf_graph_iid any;
   declare dav_rdf_graph_uri varchar;
+  declare ro_id_dict any;
   dav_rdf_graph_uri := registry_get ('DB.DBA.DAV_RDF_GRAPH_URI');
   if (not isstring (dav_rdf_graph_uri) or dav_rdf_graph_uri = '')
     return;
@@ -228,6 +229,7 @@ create procedure DB.DBA.DAV_RDF_REPLICATE_INT (in res_id integer, in restype var
     where PROP_NAME = 'http://local.virt/DAV-RDF' and PROP_TYPE = 'R' and PROP_PARENT_ID = res_id;
   n3v := xslt ('http://local.virt/davxml2n3xml', n3v);
   n3_list := xpath_eval ('/N3', n3v, 0);
+  ro_id_dict := dict_new (1 + length (n3_list));
   foreach (any n3 in n3_list) do
     {
       declare s, p, o, dt, lang, v varchar;
@@ -246,9 +248,10 @@ create procedure DB.DBA.DAV_RDF_REPLICATE_INT (in res_id integer, in restype var
       if (o is not null)
         DB.DBA.RDF_QUAD_URI (dav_rdf_graph_uri, s, p, o);
       else
-        DB.DBA.RDF_QUAD_URI_L_TYPED (dav_rdf_graph_uri, s, p, v, dt, lang);
+        DB.DBA.RDF_QUAD_URI_L_TYPED (dav_rdf_graph_uri, s, p, v, dt, lang, ro_id_dict);
 --      dbg_obj_princ ('added quad:', s, p, o, v, dt, lang);
     }
+  DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (iri_to_id (dav_rdf_graph_uri), ro_id_dict);
   no_op:;
 }
 ;
