@@ -3161,6 +3161,11 @@ dfe_p_card (df_elt_t * dfe, rq_cols_t * rq, float * p_stat, index_choice_t * ic,
   if (!p)
     return -1;
   mutex_enter (alt_ts_mtx);
+  if (!key->key_p_stat)
+    {
+      key->key_p_stat = id_hash_allocate (201, sizeof (iri_id_t), 4 * sizeof (float), boxint_hash, boxint_hashcmp);
+      id_hash_set_rehash_pct (key->key_p_stat, 200);
+    }
   place = (float*)id_hash_get (key->key_p_stat, (caddr_t)&((iri_id_t*)p)[0]);
   if (place)
     memcpy_16 (p_stat, place, 4 * sizeof (float));
