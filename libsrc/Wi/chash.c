@@ -583,7 +583,7 @@ gb_values (chash_t * cha, uint64 * hash_no, caddr_t * inst, state_slot_t * ssl, 
       /* make the arr into an array of anies from an array of boxes, alloc in the dc pool */
       if (!temp)
 	{
-	  temp = (int64 *) & temp_space[nth * ARTM_VEC_LEN * sizeof (caddr_t)];
+	  temp = (int64 *) &temp_space[nth * ARTM_VEC_LEN * DT_LENGTH];
 	  memcpy_16 (temp, arr, (last_set - first_set) * sizeof (caddr_t));
 	  arr = temp;
 	}
@@ -1997,8 +1997,6 @@ no:
     chash_to_memcache (inst, tree, ha);
   return 0;
 }
-
-
 
 
 void
@@ -5209,6 +5207,8 @@ ret_sets:
   return ce_row + org_n_values;
 }
 
+
+void
 dbg_dc_ck (data_col_t * dc)
 {
   int inx;
