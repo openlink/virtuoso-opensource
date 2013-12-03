@@ -1830,7 +1830,7 @@ lt_transact (lock_trx_t * lt, int op)
 db_buf_t
 rbp_allocate (void)
 {
-  return ((db_buf_t) tlsf_base_alloc (PAGE_DATA_SZ));
+  return ((db_buf_t) dk_alloc (PAGE_DATA_SZ));
 }
 
 void
