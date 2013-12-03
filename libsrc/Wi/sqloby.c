@@ -650,6 +650,8 @@ sqlo_is_group_linear (sqlo_t * so, op_table_t * from_ot)
 	    return 0;
 	  prev_stat = stat;
 	}
+      if (DFE_DT == dfe->dfe_type)
+	return 0;
     }
   return 1;
 }
