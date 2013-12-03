@@ -2057,7 +2057,9 @@ bif_scroll_cr_init (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   stmt = (srv_stmt_t *) dk_alloc_box_zero (sizeof (srv_stmt_t), DV_PL_CURSOR);
   stmt->sst_is_pl_cursor = 1;
   stmt->sst_query = qr;
+  IN_CLL;
   qr->qr_ref_count++;
+  LEAVE_CLL;
 
   return (caddr_t) stmt;
 }
