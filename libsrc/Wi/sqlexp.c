@@ -902,6 +902,7 @@ cv_asg_broader_type (instruction_t *ins)
   /* the assignment target goes to any if two incompatible types are assigned.  If one of them is a boxed type in vectored then target is that also */
   state_slot_t * res = ins->_.artm.result;
   state_slot_t * l = ins->_.artm.left;
+  res->ssl_sqt.sqt_col_dtp = 0; /* will influence dc dtp, not a column, not set */
   if (dtp_canonical[res->ssl_dtp] == dtp_canonical[l->ssl_dtp]
       || DV_OBJECT == res->ssl_dtp || DV_REFERENCE == res->ssl_dtp)
     return;
