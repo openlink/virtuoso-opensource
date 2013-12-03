@@ -194,7 +194,7 @@ extern long  tws_bad_request;
 
 #define WM_IS_URIQA(opcode) ((WM_URIQA_FIRST <= (opcode)) && (WM_URIQA_LAST >= (opcode)))
 
-#define PATH_ELT_MAX_CHARS 255
+#define PATH_ELT_MAX_CHARS 512
 
 long ws_content_length (caddr_t * head);
 char * ws_header_field (caddr_t * head, const char * f, char * deflt);
