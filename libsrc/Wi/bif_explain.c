@@ -4288,7 +4288,7 @@ mutex_enter (&ql_mtx);
     {
       OFF_T off;
       int fd;
-      file_set_rw (QL_NAME);
+      file_set_rw (c_query_log_file);
       fd = fd_open (c_query_log_file, LOG_OPEN_FLAGS);
       off = LSEEK (fd, 0, SEEK_END);
       ql_file = dk_session_allocate (SESCLASS_TCPIP);
