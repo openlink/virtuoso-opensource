@@ -544,7 +544,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>("#"(.*))?{S_NL}		{ TTL_ONE_CR; }
 <INITIAL,TWO_CRS>"#"(.*)		{ }
 <INITIAL,TWO_CRS>[ \t]+			{ }
-<INITIAL>.		{
+<INITIAL,TWO_CRS>.		{
     char buf[100]; sprintf (buf, "Unexpected character '%c'", yytext[yyleng-1]);
     TTLYYERROR_OR_REPORT (buf);
     TTLYYBEGIN (TURTLE_SKIP_TO_DOT_WS); yymore(); }
@@ -555,6 +555,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
       { char buf[100]; sprintf (buf, "Failed to recover syntax error at \"%.50s...\"", yytext); ttlyyerror (buf); }
     yymore(); }
 
+<GARBAGE,GARBAGE_BOL><<EOF>>				{ return 0; }
 <GARBAGE>([^_<@# \t\:\r\n][^: \t\r\n]*[ \t]+)+		{ ttlyy_dbg_printf(("{Garbage 1 %s}", yytext)); }
 <GARBAGE>[^ \t\r\n]+					{ ttlyy_dbg_printf(("{Garbage 2 %s}", yytext)); }
 <GARBAGE>[ \t]+	{ }
@@ -562,6 +563,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <GARBAGE_BOL>[^ \t\r\n]+				{ ttlyy_dbg_printf(("{Garbage_BOL 2 %s}", yytext)); TTLYYBEGIN(GARBAGE); }
 <GARBAGE,GARBAGE_BOL>{S_NL}[ \t]*			{ TTLYYBEGIN(GARBAGE_BOL); TTL_ONE_CR; }
 <TWO_CRS>("#"(.*))?{S_NL}[ \t]*		{ TTL_ONE_CR; }
+<GARBAGE,GARBAGE_BOL>.					{ }
 
 %%
 
