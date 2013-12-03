@@ -635,6 +635,8 @@ lt_commit (lock_trx_t * lt, int free_trx)
       }
 #endif
 
+  if (lt->lt_log->dks_out_fill || lt->lt_log->dks_bytes_sent)
+    {
   LEAVE_TXN;
   mutex_enter (log_write_mtx);
   if (LTE_OK != log_commit (lt))
@@ -648,6 +650,7 @@ lt_commit (lock_trx_t * lt, int free_trx)
     }
   mutex_leave (log_write_mtx);
   IN_TXN;
+    }
   DBG_PT_COMMIT (lt);
       ASSERT_IN_TXN;
       LT_CLOSE_ACK_THREADS(lt);
