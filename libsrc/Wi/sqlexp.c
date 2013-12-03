@@ -171,7 +171,6 @@ sqlc_trans_funcs (sql_comp_t * sc, ST * tree, state_slot_t * ret, dk_set_t * cod
       dtp_t dtp;
       if (!sc->sc_trans || call_param_count < 1)
 	sqlc_new_error (sc->sc_cc, "37000", "TR...", "T_STEP is only allowed in transitive step dt and requires an argument");
-
       arg = (caddr_t)tree->_.call.params[0];
       dtp = DV_TYPE_OF (arg);
       if (DV_LONG_INT == dtp)
@@ -194,6 +193,7 @@ sqlc_trans_funcs (sql_comp_t * sc, ST * tree, state_slot_t * ret, dk_set_t * cod
 	  if (-1 == wanted_pos)
 	    sqlc_new_error (sc->sc_cc, "37000", "TR...", "T_STEP argument refers to an index %d of a column %.200s that is not in %s list (T_DIRECTION is set to %d)", pos+1, wanted->ssl_name, ((TRANS_LR == sc->sc_trans->tn_direction) ? "T_IN" : "T_OUT"), sc->sc_trans->tn_direction);
 	  sc->sc_trans->tn_step_out[wanted_pos] = ret;
+	  cv_artm (code, (ao_func_t)box_identity, ret, ssl_new_constant (sc->sc_cc, NULL), NULL);
 	  ret->ssl_sqt.sqt_dtp = DV_ARRAY_OF_POINTER;
 	}
       else if (DV_STRINGP (arg) && !stricmp (arg, "step_no"))
