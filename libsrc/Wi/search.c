@@ -690,6 +690,8 @@ itc_like_compare (it_cursor_t * itc, buffer_desc_t * buf, caddr_t pattern, searc
   db_buf_t dv1, dv3;
   collation_t *collation = spec->sp_collation;
   dbe_col_loc_t * cl = &spec->sp_cl;
+  if (dtp_is_fixed (cl->cl_sqt.sqt_dtp)) /* if by chance numeric column then no match */
+    return DVC_LESS;
   ROW_STR_COL (itc->itc_insert_key, buf, itc->itc_row_data, cl, dv1, len1, dv3, len3, offset);
   dtp1 = spec->sp_cl.cl_sqt.sqt_dtp;
   if (DV_BLOB == dtp1 || DV_BLOB_WIDE == dtp1)

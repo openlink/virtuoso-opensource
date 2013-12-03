@@ -3879,6 +3879,8 @@ sqlo_like_range (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * col_
   dbe_table_t * tb = tb_dfe->_.table.ot->ot_table;
   /* if there is a like of a key part of a local table, then add the range conds implied by the like */
   dbe_column_t * col = pred->_.bin.left->_.col.col;
+  if (dtp_is_fixed (col->col_sqt.sqt_dtp))
+    sqlc_new_error (so->so_sc->sc_cc, "HY105", "SR194", "LIKE must be between strings.");
   if (tb_dfe->_.table.ot->ot_rds
       || col->col_sqt.sqt_dtp != DV_LONG_STRING)
     return;
