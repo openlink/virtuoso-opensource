@@ -1315,6 +1315,11 @@ sqlo_geo_count (df_elt_t * tb_dfe, df_elt_t * pred)
   geo_t * geo = NULL;
   if (BOX_ELEMENTS (args) > 2)
     prec = sqlo_double_literal (args[2], &prec_literal);
+  else
+    {
+      prec = 0;
+      prec_literal = 1;
+    }
   if (DV_GEO == DV_TYPE_OF (args[0]))
     geo = (geo_t*) args[0];
   else if (DV_GEO == DV_TYPE_OF (args[1]))
