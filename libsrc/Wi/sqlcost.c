@@ -2244,8 +2244,9 @@ sqlo_inx_sample_1 (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_el
 	      /* push into a set inside ic so we know to exclude when calculate cost */
 	      t_set_push (&ic->ic_inx_sample_cols, cp);
 	      any_dep = 1;
-	      any_dep = 1;
 	      inx ++;
+	      if (inx >= (sizeof (row_specs)/sizeof (search_spec_t)))
+		break;
 	    }
 	}
       END_DO_SET ();
