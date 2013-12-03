@@ -2814,16 +2814,19 @@ buffer_desc_t *
 ts_split_sets (table_source_t * ts, caddr_t * inst, it_cursor_t * itc, int n_parts)
 {
   QNCAST (query_instance_t, qi, itc->itc_out_state);
-  float usecs;
+  double usecs, n_ways_d;
   int n_sets = itc->itc_n_sets, chunk;
-  int n_ways, ctr = 0, inx;
+  uint32 n_ways;
+  int ctr = 0, inx;
   qst_set (inst, ts->ts_aq, NULL);
   usecs = itc->itc_n_sets * ts->ts_cost_after * compiler_unit_msecs * 1000;
   if (!enable_split_sets || usecs < qp_thread_min_usec)
     return itc_reset (itc);
-  n_ways = 1 + (usecs / MAX (1.0, qp_thread_min_usec));
-  if (n_ways > enable_qp)
+  n_ways_d = 1 + (usecs / MAX (1.0, qp_thread_min_usec));
+  if (n_ways_d > enable_qp)
     n_ways = enable_qp;
+  else
+    n_ways = n_ways_d;
   if (n_ways > n_sets)
     n_ways = n_sets;
   n_ways = 1 + qi_inc_branch_count (qi, enable_qp, n_ways - 1);
