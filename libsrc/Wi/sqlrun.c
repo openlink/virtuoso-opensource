@@ -2235,6 +2235,11 @@ insert_node_run (insert_node_t * ins, caddr_t * inst, caddr_t * state)
 	}
       qi->qi_set_mask = save_sets;
       qi->qi_n_sets = n_sets;
+      if (itc->itc_siblings)
+	{
+	  itc_free_box (itc, (caddr_t) itc->itc_siblings);
+	  itc->itc_siblings = NULL;
+	}
       return;
     }
   ITC_FAIL (itc)

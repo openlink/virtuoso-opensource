@@ -1111,6 +1111,11 @@ update_node_vec_run (update_node_t * upd, caddr_t * inst, caddr_t * state)
 	}
     }
   qi->qi_n_affected = n_aff;
+  if (itc->itc_siblings)
+    {
+      itc_free_box (itc, (caddr_t)itc->itc_siblings);
+      itc->itc_siblings = NULL;
+    }
  skip_2nd:
   if (upd->upd_pk_change)
     {
