@@ -1586,7 +1586,7 @@ lt_locks_to_array (lock_trx_t * lt, page_lock_t ** arr, int max, int * fill_ret,
   if (n_locks > max)
     {
       max = MIN (n_locks, 1000000);
-      arr = dk_alloc (sizeof (caddr_t) * max );
+      arr = dk_alloc_box (sizeof (caddr_t) * max, DV_BIN);
     }
   dk_hash_iterator (&hit, locks);
   mutex_enter (pl_ref_count_mtx);
@@ -1771,7 +1771,7 @@ lt_transact (lock_trx_t * lt, int op)
 	}
 	}
       if (pl_arr != (page_lock_t**) &pl_arr_auto)
-	dk_free ((caddr_t)pl_arr, -1);
+	dk_free_box ((caddr_t) pl_arr);
       IN_LT_LOCKS (lt);
       if (0 == lt->lt_lock.ht_count)
 	break;
@@ -1830,7 +1830,7 @@ lt_transact (lock_trx_t * lt, int op)
 db_buf_t
 rbp_allocate (void)
 {
-  return ((db_buf_t) dk_alloc (PAGE_DATA_SZ));
+  return ((db_buf_t) tlsf_base_alloc (PAGE_DATA_SZ));
 }
 
 void
