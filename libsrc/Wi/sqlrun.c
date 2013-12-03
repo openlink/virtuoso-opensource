@@ -4632,13 +4632,17 @@ qr_subq_exec (client_connection_t * cli, query_t * qr,
 int
 qi_n_sets (query_instance_t * qi)
 {
-  int inx, n = 0;
+  int inx, n = 0, n_bytes;
+  uint32 mask;
   if (!qi->qi_n_sets)
     return 1;
   if (!qi->qi_set_mask)
     return qi->qi_n_sets;
-  for (inx = 0; inx < ALIGN_8 (qi->qi_n_sets) / 8; inx++)
-    n += byte_logcount[qi->qi_set_mask[inx]];
+  n_bytes = ALIGN_8 (qi->qi_n_sets) / 8;
+  for (inx = 0; inx < n_bytes - 1; inx++)
+      n += byte_logcount[qi->qi_set_mask[inx]];
+  mask = N_ONES (qi->qi_n_sets- ((n_bytes - 1) * 8));
+  n += byte_logcount[qi->qi_set_mask[n_bytes - 1] & mask];
   return n;
 }
 
