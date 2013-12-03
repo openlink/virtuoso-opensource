@@ -5162,8 +5162,8 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query,
 	}
       for (dfe = dt_dfe->_.sub.first; dfe; dfe = dfe->dfe_next)
 	{
-	  if (sc->sc_cc->cc_instance_fill >= 65000)
-	    sqlc_error (so->so_sc->sc_cc, ".....", "Query too large, more than 65000 variables in state");
+	  if (sc->sc_cc->cc_super_cc->cc_instance_fill >= STATE_SLOT_LIMIT)
+	    sqlc_error (so->so_sc->sc_cc, ".....", "Query too large, variables in state over the limit");
 
 	  if (IS_BOX_POINTER (dfe->dfe_locus))
 	    {

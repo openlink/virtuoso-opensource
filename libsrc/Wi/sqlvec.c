@@ -2935,8 +2935,8 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
   int inx, src_resets_done;
   sc->sc_ssl_prereset_only = NULL;
 
-  if (sc->sc_cc->cc_instance_fill >= 65000)
-    SQL_GPF_T1 (sc->sc_cc, "Query too large, more than 65000 variables in state");
+  if (sc->sc_cc->cc_super_cc->cc_instance_fill >= STATE_SLOT_LIMIT)
+    SQL_GPF_T1 (sc->sc_cc, "Query too large, variables in state over the limit");
 
   if (!IS_QN (qn, fun_ref_node_input) && !IS_QN (qn, hash_fill_node_input))
     {

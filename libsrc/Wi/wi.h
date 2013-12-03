@@ -83,13 +83,16 @@ typedef int (*key_cmp_t) (buffer_desc_t * buf, int pos, it_cursor_t * itc);
 typedef struct pf_hash_s pf_hash_t;
 typedef struct state_slot_s state_slot_t;
 typedef struct state_slot_ref_s state_slot_ref_t;
-typedef unsigned short ssl_index_t;
+typedef unsigned int ssl_index_t;
 typedef struct key_source_s key_source_t;
 typedef unsigned short row_no_t;
 typedef struct data_col_s data_col_t;
 typedef int ce_pos_t;
 typedef struct  row_range_s row_range_t;
 typedef struct ext_ref_s ext_ref_t;
+
+#define MAX_STATE_SLOTS 0xffffe
+#define STATE_SLOT_LIMIT (MAX_STATE_SLOTS-500)
 
 #define WI_OK		0
 #define WI_ERROR	-1
