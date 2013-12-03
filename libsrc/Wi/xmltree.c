@@ -3554,7 +3554,10 @@ xqr_serialize (xp_query_t * xqr, dk_session_t * ses)
   caddr_t text = xqr->xqr_key;
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (text)) /* If key is not a plain text but text plus namespace decls */
     text = ((caddr_t *)text)[0];
-  print_string (text, ses);
+  if (text)
+    print_string (text, ses);
+  else
+    print_int (0, ses);
 }
 
 
