@@ -63,6 +63,11 @@ sqlo_depends_on_locus (df_elt_t * dfe, locus_t * loc)
    subqueries & function calls.
  */
 
+int
+sqlo_rds_support_params_in_select (df_elt_t * dfe, locus_t * loc)
+{
+  return 1;
+}
 
 int
 sqlo_is_local (sql_comp_t * sc, remote_ds_t * rds, ST * tree, int only_eq_comps)
