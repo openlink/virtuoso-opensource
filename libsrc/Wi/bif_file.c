@@ -4850,11 +4850,11 @@ gz_s_free (gz_stream *s)
     }
 
   if (s->inbuf)
-    dk_free (s->inbuf, -1);
+    dk_free_box (s->inbuf);
   if (s->outbuf)
-    dk_free (s->outbuf, -1);
+    dk_free_box (s->outbuf);
   if (s)
-    dk_free (s, -1);
+    dk_free (s, sizeof (gz_stream));
   return err;
 }
 
@@ -4978,7 +4978,7 @@ gz_init_ses (dk_session_t * ses_out)
   err = deflateInit2 (&(s->stream), level,
       Z_DEFLATED, -MAX_WBITS, DEF_MEM_LEVEL, strategy);
 
-  s->stream.next_out = s->outbuf = (Byte *) dk_alloc (Z_BUFSIZE);
+  s->stream.next_out = s->outbuf = (Byte *) dk_alloc_box (Z_BUFSIZE, DV_BIN);
   if (err != Z_OK || s->outbuf == Z_NULL)
     {
       gz_s_free (s);
