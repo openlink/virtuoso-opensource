@@ -315,8 +315,10 @@ struct df_elt_s
       int 	op;
       df_elt_t *	left;
       df_elt_t* right;
+      dtp_t	eq_set;
       char 	escape;
       char      is_in_list;          /* top level lte of a x < one_of_these (...) */
+      bitf_t	eq_other_dt:1; /* if following this eq, the joined is in a different dt/subq, the join is existence, card can only be restricted */
       bitf_t	no_subq:2;
     } bin;
     struct {
@@ -572,6 +574,7 @@ typedef struct index_choice_s
   char	ic_leading_constants; /* this many leading constants used for sampling */
   char	ic_is_unique;
   char	ic_not_applicable;
+  char	ic_no_dep_sample;
   int	ic_op;
   int	ic_n_lookups;
   dk_set_t	ic_altered_col_pred;
@@ -604,7 +607,6 @@ typedef struct pred_score_s
   dbe_column_t *	ps_left_col;
   df_elt_t *		ps_right;
   caddr_t		ps_const;
-  df_elt_t *		ps_joins_to;
   float			ps_card;
   char			ps_is_placeable;
   char			ps_is_const;
@@ -615,23 +617,26 @@ typedef struct pred_score_s
 typedef struct join_plan_s
 {
   df_elt_t *	jp_tb_dfe;
-  pred_score_t	jp_preds[JP_MAX_PREDS];
-  df_elt_t *	jp_joined[JP_MAX_PREDS];
   int		jp_n_preds;
   int		jp_n_joined;
   float		jp_fanout;
   float		jp_cost;
   float		jp_best_cost;
   float		jp_best_card;
+  float			jp_reached; /* how many joined dfes in so many steps, recognize a star join, closer counts for more  */
   float		jp_fill_selectivity; /* for selective hash join, seeing if more joins should go in the build, this is the fraction selected by the first dfe on build side */
+  dtp_t		jp_eq_set; /* joined to previous via this eq set */
   char		jp_not_for_hash_fill; /* set if jp_tb_dfe not suited for use in hash fill join */
   char		jp_hash_fill_non_unq;
+  char		jp_is_exists;
+  char		jp_unique;
   dk_set_t	jp_best_jp;
   dk_set_t	jp_extra_preds; /* if hash filler dt, preds that are redundant, covered by the join of the first to the probe */
+  pred_score_t	jp_preds[JP_MAX_PREDS];
+  df_elt_t *	jp_joined[JP_MAX_PREDS];
   struct join_plan_s *	jp_prev;
   dk_set_t		jp_hash_fill_dfes; /* other dfes that compose a join on the  fill side of hash join */
   dk_set_t		jp_hash_fill_preds;
-  float			jp_reached; /* how many joined dfes in so many steps, recognize a star join, closer counts for more  */
 } join_plan_t;
 
 
@@ -935,7 +940,7 @@ void dfe_unplace_fill_join (df_elt_t * fill_dt, df_elt_t * tb_dfe, dk_set_t org_
 int st_is_call (ST * tree, char * f, int n_args);
 df_elt_t * dfe_container (sqlo_t * so, int type, df_elt_t * super);
 float dfe_hash_fill_cond_card (df_elt_t * tb_dfe);
-float sqlo_hash_ins_cost (df_elt_t * dfe, float card, dk_set_t cols);
+float sqlo_hash_ins_cost (df_elt_t * dfe, float card, dk_set_t cols, float * size_ret);
 float sqlo_hash_ref_cost (df_elt_t * dfe, float hash_card);
 
 #define SQK_MAX_CHARS 2000

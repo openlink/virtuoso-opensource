@@ -2181,7 +2181,7 @@ sqlo_inx_sample_1 (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_el
   it_cursor_t itc_auto;
   it_cursor_t * itc = &itc_auto;
   search_spec_t specs[10], row_specs[10];
-  int v_fill = 0, inx;
+  int v_fill = 0, inx, any_dep = 0;
   search_spec_t ** prev_sp;
   dk_set_t added_cols = NULL;
   float row_sel = 1;
@@ -2218,7 +2218,7 @@ sqlo_inx_sample_1 (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_el
       t_set_push (&added_cols, (void *) (*prev_sp)->sp_col);
       prev_sp = &specs[inx].sp_next;
     }
-  if (sqlo_sample_dep_cols)
+  if (sqlo_sample_dep_cols && !ic->ic_no_dep_sample)
     {
       /* make row specs */
       memset (&row_specs, 0, sizeof (row_specs));
@@ -2243,6 +2243,8 @@ sqlo_inx_sample_1 (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_el
 	      prev_sp = &row_specs[inx].sp_next;
 	      /* push into a set inside ic so we know to exclude when calculate cost */
 	      t_set_push (&ic->ic_inx_sample_cols, cp);
+	      any_dep = 1;
+	      any_dep = 1;
 	      inx ++;
 	    }
 	}
@@ -2252,7 +2254,15 @@ sqlo_inx_sample_1 (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_el
   if (sop && sop->sop_sc_key_ret)
     *sop->sop_sc_key_ret = box_copy_tree (sc_key);
   if (sop && sop->sop_cols)
-    itc->itc_st.cols = sop->sop_cols;
+    {
+      if (!any_dep)
+	itc->itc_st.cols = sop->sop_cols;
+      else
+	{
+	  hash_table_free (sop->sop_cols);
+	  sop->sop_cols = NULL;
+	}
+    }
   if (sop && sop->sop_ric)
     {
       tb_sample_t * place;
@@ -2457,7 +2467,9 @@ sqlo_record_rdf_p (sample_opt_t * sop, dbe_key_t * key, caddr_t p_const, int64 e
   iri_id_t p = unbox_iri_id (p_const);
   int fill = 1, completed = 0;
   col_stat_t * cs;
-  if (RDF_P_STAT_EXISTS == *is_rdf_p)
+
+  if (!sop->sop_cols)
+    return 0;if (RDF_P_STAT_EXISTS == *is_rdf_p)
     {
       float ratio = prev_est / ((float)est + 0.001);
       if (est < 3 && prev_est < 3)
@@ -3087,7 +3099,9 @@ rq_sample (df_elt_t * dfe, rq_cols_t * rq, index_choice_t * ic)
     }
   END_DO_SET();
   dfe->_.table.key = best_key;
+  ic->ic_no_dep_sample = 1;
   res = sqlo_inx_sample (dfe, best_key, lower, upper, fill, ic);
+  ic->ic_no_dep_sample = 0;
   dfe->_.table.key = save_key;
   return MAX (0.3, res);
 }
@@ -3424,13 +3438,34 @@ arity_scale (float ar)
   return  0.1 + (0.9 * (1 / l));
 }
 
+int
+col_dfe_list_size (dk_set_t * cols)
+{
+  int res = 0;
+  DO_SET (df_elt_t *, dfe, &cols)
+    {
+      if (DFE_COLUMN == dfe->dfe_type)
+	res += MAX (8, dfe->_.col.col->col_avg_len);
+      else
+	res += 8;
+    }
+  END_DO_SET();
+  return res;
+}
+
 
 float 
-sqlo_hash_ins_cost (df_elt_t * dfe, float card, dk_set_t cols)
+sqlo_hash_ins_cost (df_elt_t * dfe, float card, dk_set_t cols, float * size_ret)
 {
   float mem_cost = sqlo_hash_mem_cost (card);
   if (dfe->_.table.is_unique && !cols)
+    {
+      if (size_ret)
+	*size_ret = 20 * card;
     return 3 * mem_cost  * card;
+    }
+  if (size_ret)
+    *size_ret = card * (28 + col_dfe_list_size (cols));
   return card * (6 * mem_cost + (mem_cost * 0.2 * (1 + dk_set_length (cols))));
 }
  
@@ -3456,7 +3491,7 @@ dfe_hash_fill_cost (df_elt_t * dfe, float * unit, float * card, float * overhead
   float ov = 0;
   df_elt_t * fill_dfe = dfe->_.table.hash_filler;
   dfe_unit_cost (fill_dfe, 0, unit, card, &ov);
-  *unit += sqlo_hash_ins_cost (dfe, *card, dfe->_.table.out_cols);
+  *unit += sqlo_hash_ins_cost (dfe, *card, dfe->_.table.out_cols, NULL);
   *unit += ov;
 }
 

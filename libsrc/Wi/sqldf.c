@@ -5093,6 +5093,8 @@ dfe_is_tb_only (df_elt_t * dfe, op_table_t * ot)
 }
 
 
+int enable_dt_card = 1;
+
 float
 dfe_arity_with_supers (df_elt_t * dfe)
 {
@@ -5115,6 +5117,8 @@ dfe_arity_with_supers (df_elt_t * dfe)
 	    }
 	  sub_arity *= dfe->dfe_arity;
 	}
+      if (enable_dt_card && DFE_DT == dfe->dfe_type && !dfe->_.sub.is_being_placed && dfe->dfe_unit)
+	sub_arity *= dfe->dfe_arity;
       dfe = dfe->dfe_prev;
     }
   while (dfe->dfe_prev)
@@ -5243,13 +5247,15 @@ sqlo_check_col_pred_placed (df_elt_t * tb_dfe)
   END_DO_SET();
 }
 
+extern int chash_per_query_pct;
+
 
 int
 sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score_ret)
 {
   dk_set_t hash_pred_locus_refs = NULL;
   int remote = sqlo_try_remote_hash (so, dfe);
-  float ov = 0;
+  float ov = 0, size_est = 0;
   dk_set_t preds = dfe->_.table.ot->ot_is_outer ? dfe->_.table.ot->ot_join_preds :  dfe->_.table.all_preds;
   float fill_unit, fill_arity, ref_arity;
   dk_set_t hash_refs = NULL, hash_keys = NULL;
@@ -5349,9 +5355,8 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
       sqlo_check_col_pred_placed (dfe);
       fill_unit = fill_dfe->dfe_unit;
       fill_arity = fill_dfe->dfe_arity;
-      fill_unit += sqlo_hash_ins_cost (dfe, fill_arity, hash_keys);
+      fill_unit += sqlo_hash_ins_cost (dfe, fill_arity, hash_keys, &size_est);
       dfe->dfe_arity *= dfe_hash_fill_cond_card (dfe);
-
     }
   else
     {
@@ -5360,12 +5365,13 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
       fill_dfe->_.table.hash_role = HR_FILL;
       fill_dfe->_.table.is_hash_filler_unique = dfe->_.table.is_unique;
       sqlo_best_hash_filler (so, fill_dfe, remote, &org_preds, &post_preds, &fill_unit, &fill_arity, &ov);
-      fill_unit += sqlo_hash_ins_cost (dfe, fill_arity, hash_keys);
+      fill_unit += sqlo_hash_ins_cost (dfe, fill_arity, hash_keys, &size_est);
     }
 
   if (!mode)
     {
-      if (dfe->dfe_unit * ref_arity < fill_unit + ref_arity * sqlo_hash_ref_cost (dfe, fill_arity))
+      int is_large = dfe->dfe_unit < 1000 && size_est > chash_space_avail  * chash_per_query_pct / 100;
+      if (is_large || dfe->dfe_unit * ref_arity < fill_unit + ref_arity * sqlo_hash_ref_cost (dfe, fill_arity))
 	{
 	  /* hash us not better */
 	  {
