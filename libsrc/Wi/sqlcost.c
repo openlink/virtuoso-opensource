@@ -2360,7 +2360,7 @@ extern caddr_t rdfs_type;
 
 int64
 sqlo_inx_inf_sample (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int n_parts, rdf_inf_ctx_t * ctx, rdf_sub_t * sub,
-		     caddr_t * variable, index_choice_t * ic, dk_hash_t * cols)
+		     caddr_t * variable, index_choice_t * ic, sample_opt_t * super_sop)
 {
   sample_opt_t sop;
   int is_first = 1;
@@ -2372,7 +2372,7 @@ ri_iterator_t * rit = ri_iterator (sub, ic->ic_inf_type, 1);
   caddr_t sc_key = NULL;
   int n_subs = 0;
   memset (&sop, 0, sizeof (sop));
-  sop.sop_cols = cols;
+  sop.sop_cols = super_sop->sop_cols;
   sop.sop_is_cl = (!cl_run_local_only && key->key_partition && clm_replicated != key->key_partition->kpd_map) ? SMPL_QUEUE : 0;
   sop.sop_ric = ctx;
   sop.sop_sc_key_ret = &sc_key;
@@ -2380,6 +2380,8 @@ ri_iterator_t * rit = ri_iterator (sub, ic->ic_inf_type, 1);
     {
       *variable = sub_iri->rs_iri;
       s = sqlo_inx_sample_1 (tb_dfe, key, lowers, uppers, n_parts, &sop, ic);
+      if (!sop.sop_cols && super_sop)
+	super_sop->sop_cols = NULL;
       if (s >= 0)
 	{
 	  est += s;
@@ -2470,7 +2472,8 @@ sqlo_record_rdf_p (sample_opt_t * sop, dbe_key_t * key, caddr_t p_const, int64 e
   col_stat_t * cs;
 
   if (!sop->sop_cols)
-    return 0;if (RDF_P_STAT_EXISTS == *is_rdf_p)
+    return 0;
+  if (RDF_P_STAT_EXISTS == *is_rdf_p)
     {
       float ratio = prev_est / ((float)est + 0.001);
       if (est < 3 && prev_est < 3)
@@ -2745,7 +2748,7 @@ sqlo_inx_sample (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_
 	  /* the p is rdfstype and o given.  See about counts of subcs */
 	  ic->ic_inf_type = RI_SUBCLASS;
 	  ic->ic_inf_dfe = o_dfe;
-	      c = sqlo_inx_inf_sample (tb_dfe, key, lowers, uppers, n_parts, ctx, sub, (caddr_t*)&o_dfe->dfe_tree, ic, sop.sop_cols);
+	      c = sqlo_inx_inf_sample (tb_dfe, key, lowers, uppers, n_parts, ctx, sub, (caddr_t*)&o_dfe->dfe_tree, ic, &sop);
 	}
 	  else if (p_const && (sub = ric_iri_to_sub (ctx, p_const, RI_SUBPROPERTY, 0))
 	  && sub->rs_sub)
@@ -2753,7 +2756,7 @@ sqlo_inx_sample (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_
 	  /* the p is given and has subproperties */
 	  ic->ic_inf_dfe = p_dfe;
 	  ic->ic_inf_type = RI_SUBPROPERTY;
-	      c =  sqlo_inx_inf_sample (tb_dfe, key, lowers, uppers, n_parts, ctx, sub, (caddr_t*)&p_dfe->dfe_tree, ic, sop.sop_cols);
+	      c =  sqlo_inx_inf_sample (tb_dfe, key, lowers, uppers, n_parts, ctx, sub, (caddr_t*)&p_dfe->dfe_tree, ic, &sop);
 	    }
 	  else
 	    {
