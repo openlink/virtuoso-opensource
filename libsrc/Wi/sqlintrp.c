@@ -3201,7 +3201,7 @@ ins_not_vect (caddr_t * inst, instruction_t * ins)
 {
   QNCAST (QI, qi, inst);
   qi->qi_set = 0;
-  code_vec_run_1 (ins->_.for_vect.code, inst, 0);
+  code_vec_run_1 (ins->_.for_vect.code, inst, CV_THIS_SET_ONLY);
 }
 
 

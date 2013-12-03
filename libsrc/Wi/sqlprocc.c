@@ -1040,6 +1040,9 @@ sqlc_proc_stmt (sql_comp_t * sc, ST ** pstmt)
     case FOR_VEC_STMT:
       sqlc_for_vectored_stmt (sc, stmt);
       break;
+    case NOT_VEC_STMT:
+      sqlc_not_vectored_stmt (sc, stmt);
+      break;
     case OPEN_STMT:
       sqlc_open_stmt (sc, stmt);
       break;

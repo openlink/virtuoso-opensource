@@ -2546,6 +2546,14 @@ cv_free (code_vec_t cv)
 	{
 	  dk_free_tree ((box_t) ins->_.handler.states);
 	}
+      else if (INS_FOR_VECT == ins->ins_type)
+	{
+	  dk_free_box (ins->_.for_vect.in_values);
+	  dk_free_box (ins->_.for_vect.in_vars);
+	  dk_free_box (ins->_.for_vect.out_values);
+	  dk_free_box (ins->_.for_vect.out_vars);
+	  cv_free (ins->_.for_vect.code);
+	}
       else if (ins->ins_type == INS_COMPOUND_START)
 	{
 	  dk_free_box (ins->_.compound_start.file_name);
