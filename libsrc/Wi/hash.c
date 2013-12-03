@@ -2025,8 +2025,13 @@ runX_begin: ;
 		  || (rc == DVC_LESS && op->go_op == AMMSC_MIN)
 		  || (rc == DVC_GREATER && op->go_op == AMMSC_MAX))
 		  {
-		    dk_free_tree (dep_ptr[0]);
-		    dep_ptr[0] = box_copy_tree (new_val);
+		    if (!hi->hi_pool)
+		      {
+			dk_free_tree (dep_ptr[0]);
+			dep_ptr[0] = box_copy_tree (new_val);
+		      }
+		    else
+		      dep_ptr[0] = mp_full_box_copy_tree (hi->hi_pool, new_val);
 		  }
 		break;
 	      }
