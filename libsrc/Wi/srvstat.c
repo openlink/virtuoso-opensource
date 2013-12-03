@@ -1208,6 +1208,7 @@ extern int process_is_swapping;
 
 extern int64 dk_n_allocs;
 extern int64 dk_n_free;
+extern int64 dk_n_total;
 extern int64 dk_n_nosz_free;
 extern int64 dk_n_bytes;
 size_t http_threads_mem_report ();
@@ -1374,6 +1375,7 @@ static long st_has_vdb =
   0;
 char st_os_user_name[512];
 static char *_st_os_user_name = &st_os_user_name[0];
+extern long mp_sparql_cap;
 extern long srv_cpu_count;
 extern int32 col_seg_max_bytes;
 extern int32 col_seg_max_rows;
@@ -1803,6 +1805,9 @@ stat_desc_t dbf_descs [] =
     {"mp_large_reserved", &mp_large_reserved},
     {"mp_max_large_reserved", &mp_max_large_reserved},
     {"mp_large_reserve_limit", &mp_large_reserve_limit},
+    {"mp_large_soft_cap", &mp_large_soft_cap},
+    {"mp_large_hard_cap", &mp_large_hard_cap},
+    {"mp_sparql_cap", &mp_sparql_cap, NULL},
 
     {"iri_range_size", (long *)&iri_range_size, SD_INT32},
     { "tn_max_memory",  (long *)&tn_max_memory, NULL},

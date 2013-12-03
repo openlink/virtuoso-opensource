@@ -42,6 +42,7 @@ typedef struct scn3_include_frag_s {
 } scn3_include_frag_t;
 
 struct user_s;
+struct sparp_s;
 
 typedef struct spar_query_env_s
 {
@@ -68,6 +69,8 @@ typedef struct spar_query_env_s
   int			sparqre_key_gen;
   caddr_t		sparqre_compiled_text;
   caddr_t		sparqre_catched_error;
+  const char *		sparqre_dbg_query_text;	/*!< A source text as passed to the top-level sparql compilation. For debug purposes and for mem pool callback only. Can be NULL. */
+  struct sparp_s *	sparqre_dbg_sparp;  /*!< A top-level instance of sparql compiler. For debug purposes and for mem pool callback only. Can be NULL; when non-NULL then the structure under pointer may be half-full. */
 } spar_query_env_t;
 
 extern int national_char;

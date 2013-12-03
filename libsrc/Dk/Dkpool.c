@@ -149,6 +149,14 @@ mp_uname_free (const void *k, void *data)
   dk_free_box ((box_t) k);
 }
 
+#define MP_BYTES_INCREMENT(mp,sz) do {\
+  mp->mp_bytes += (sz); \
+  if ((NULL != mp->mp_size_cap.cbk) && (mp->mp_bytes >= mp->mp_size_cap.limit) && (mp->mp_size_cap.limit >= mp->mp_size_cap.last_cbk_limit)) \
+    { \
+      mp->mp_size_cap.cbk (mp, mp->mp_size_cap.cbk_env); \
+      mp->mp_size_cap.last_cbk_limit = mp->mp_size_cap.limit+1; \
+    } \
+  } while (0);
 
 #ifdef LACERATED_POOL
 
@@ -338,7 +346,7 @@ DBG_NAME (mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t dtp)
 #else
   new_alloc = DK_ALLOC (len);
 #endif
-  mp->mp_bytes += len;
+  MP_BYTES_INCREMENT(mp,len);
   if (mp->mp_fill >= mp->mp_size)
     {
       caddr_t *newallocs;
@@ -389,14 +397,14 @@ DBG_NAME (mp_alloc_box) (DBG_PARAMS mem_pool_t * mp, size_t len1, dtp_t dtp)
 	      mb->mb_next = NULL;
 	      mp->mp_first = mb;
 	    }
-	  mp->mp_bytes += mb->mb_size;
+	  MP_BYTES_INCREMENT(mp,mb->mb_size);
 	}
       else
 	{
 	  if (mp->mp_block_size < mp_large_min)
 	    {
 	  mb = (mem_block_t *) dk_alloc (mp->mp_block_size);
-	      mp->mp_bytes += mb->mb_size;
+	      MP_BYTES_INCREMENT(mp,mb->mb_size);
 	    }
 	  else
 	    mb = (mem_block_t *)mp_large_alloc (mp, mp->mp_block_size);
@@ -1768,7 +1776,7 @@ mp_large_alloc (mem_pool_t * mp, size_t sz)
 	    return ptr;
 	}
     }
-  mp->mp_bytes += sz;
+  MP_BYTES_INCREMENT(mp,sz);
   if (mp->mp_max_bytes && mp->mp_bytes > mp->mp_max_bytes)
     mp_warn (mp);
   mutex_enter (&mp_large_g_mtx);

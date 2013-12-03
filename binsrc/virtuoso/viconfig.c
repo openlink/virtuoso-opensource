@@ -395,6 +395,8 @@ int32 c_sqlo_max_layouts = 0;
 extern int sqlo_max_layouts; /* from sqldf.c */
 extern int32 sqlo_compiler_exceeds_run_factor;
 extern size_t sqlo_max_mp_size;
+extern long mp_sparql_cap;
+int32 c_mp_sparql_cap = -1;
 
 int32 c_sql_proc_use_recompile = 0;
 extern int sql_proc_use_recompile; /* from sqlcomp2.c */
@@ -1002,6 +1004,9 @@ cfg_setup (void)
 
   if (sqlo_max_mp_size != 0 && sqlo_max_mp_size < 5000000)
     sqlo_max_mp_size = 5000000;
+
+ if (cfg_getlong (pconfig, section, "MaxSparqlMemPoolSize", &c_mp_sparql_cap) == -1)
+   c_mp_sparql_cap = -1;
 
   if (cfg_getlong (pconfig, section, "SkipStartupCompilation", &c_sql_proc_use_recompile) == -1)
     c_sql_proc_use_recompile = 1;
@@ -1956,6 +1961,7 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   recursive_ft_usage = c_recursive_ft_usage;
   recursive_trigger_calls = c_recursive_trigger_calls;
 
+  mp_sparql_cap = ((c_mp_sparql_cap <= 0) ? ~0L : c_mp_sparql_cap);
   setp_top_row_limit = c_setp_top_row_limit;
   sql_max_tree_depth = c_sql_max_tree_depth;
   hi_end_memcache_size = c_hi_end_memcache_size;

@@ -51,6 +51,15 @@ extern "C" {
 #include "xpf.h"
 #include "xqf.h"
 
+#ifdef _SSL
+#include <openssl/md5.h>
+#define MD5Init   MD5_Init
+#define MD5Update MD5_Update
+#define MD5Final  MD5_Final
+#else
+#include "util/md5.h"
+#endif /* _SSL */
+
 #ifdef MALLOC_DEBUG
 const char *spartlist_impl_file="???";
 int spartlist_impl_line;
@@ -59,6 +68,82 @@ int spartlist_impl_line;
 #ifdef DEBUG
 #define SPAR_ERROR_DEBUG
 #endif
+
+long mp_sparql_cap = ~0L;
+
+#define SPARP_SAVED_MP_SIZE_CAP mem_pool_size_cap_t saved_mp_size_cap
+#define SPARP_TWEAK_MP_SIZE_CAP(mp,sparqre) do {\
+  saved_mp_size_cap = mp->mp_size_cap; \
+  if (mp_sparql_cap != ~0L) \
+    mp->mp_size_cap.cbk = sparp_mp_sparql_cap_cbk; \
+  mp->mp_size_cap.limit = mp_sparql_cap; \
+  mp->mp_size_cap.cbk_env = sparqre; \
+} while (0)
+
+#define SPARP_RESTORE_MP_SIZE_CAP(mp) mp->mp_size_cap = saved_mp_size_cap;
+
+const char *sparp_dump_weird_query_path = "virtuoso_sparql_weird_queries.log";
+
+void
+sparp_dump_weird_query (spar_query_env_t *sparqre, const char *reason, char *md5_ret_buf)
+{
+  char digest_hex[16*2+1];
+  FILE *dump_file;
+  const char *txt, *sqltxt;
+  static dk_mutex_t *sparp_dump_weird_query_mtx;
+  if (NULL == sparp_dump_weird_query_mtx);
+    sparp_dump_weird_query_mtx = mutex_allocate();
+  txt = sparqre->sparqre_dbg_query_text;
+  if (NULL == txt)
+    txt = "(SPARQL query text is not available at the moment of writing the dump)";
+  if (NULL != sparqre->sparqre_super_sc)
+    {
+      sqltxt = sparqre->sparqre_super_sc->sc_text;
+      if (NULL == sqltxt)
+        sqltxt = "(SQL text is not available at the moment of writing the dump)";
+    }
+  else
+    sqltxt = "(SPARQL compiler is called directly, not via SQL compiler, so SQL text is not available)";
+    {
+      MD5_CTX ctx;
+      unsigned char digest[16];
+      int inx;
+      long msec = get_msec_real_time ();
+      memset (&ctx, 0, sizeof (MD5_CTX));
+      MD5Init (&ctx);
+      MD5Update (&ctx, (unsigned char *) txt, strlen(txt));
+      MD5Update (&ctx, (unsigned char *) txt, strlen(sqltxt));
+      MD5Update (&ctx, (unsigned char *) (&msec), sizeof (msec));
+      MD5Final (digest, &ctx);
+      for (inx = 0; inx < sizeof (digest); inx++)
+        {
+          unsigned c = (unsigned) digest[inx];
+          digest_hex[inx * 2] = "0123456789abcdef"[0xf & (c >> 4)];
+          digest_hex[inx * 2 + 1] = "0123456789abcdef"[c & 0xf];
+        }
+      digest_hex[sizeof (digest) * 2] = '\0';
+      if (NULL != md5_ret_buf)
+        strcpy (md5_ret_buf, digest_hex);
+    }
+  mutex_enter (sparp_dump_weird_query_mtx);
+  dump_file = fopen (sparp_dump_weird_query_path, "a");
+  if (NULL != dump_file)
+    {
+      fprintf (dump_file, "\n\n-----8<-----\n\nProblem report ID: %s\nThe SPARQL query is dumped: %s\n\nSPARQL query text:\n%s\n\nSurrounding SQL query text:%s\n", digest_hex, reason, txt, sqltxt);
+      fclose (dump_file);
+    }
+  mutex_leave (sparp_dump_weird_query_mtx);
+}
+
+void
+sparp_mp_sparql_cap_cbk (mem_pool_t *mp, void *cbk_env)
+{
+  char digest_hex[16*2+1];
+  spar_query_env_t *sparqre = (spar_query_env_t *)(mp->mp_size_cap.cbk_env);
+  sparp_dump_weird_query (sparqre, "SPARQL compiler run out of temporary memory", digest_hex);
+  if (NULL != sparqre->sparqre_dbg_sparp)
+    spar_error (sparqre->sparqre_dbg_sparp, "SPARQL compiler run out of temporary memory, report saved in %s, report ID %s", sparp_dump_weird_query_path, digest_hex);
+}
 
 /*#define SPAR_ERROR_DEBUG*/
 
@@ -5130,6 +5215,8 @@ sparp_query_parse (const char * str, spar_query_env_t *sparqre, int rewrite_all)
 #ifdef DEBUG
   dbg_curr_sparp = sparp;
 #endif
+  sparqre->sparqre_dbg_query_text = str;
+  sparqre->sparqre_dbg_sparp = sparp;
   memset (sparp, 0, sizeof (sparp_t));
   sparp->sparp_sparqre = sparqre;
   if ((NULL == sparqre->sparqre_cli) && (CALLER_LOCAL != sparqre->sparqre_qi))
@@ -5316,6 +5403,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   spar_sqlgen_t ssg;
   comp_context_t cc;
   sql_comp_t sc;
+  SPARP_SAVED_MP_SIZE_CAP;
   caddr_t str = strses_string (sparqre->sparqre_src->sif_skipped_part);
   caddr_t res;
 #ifdef SPARQL_DEBUG
@@ -5325,6 +5413,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   sparqre->sparqre_src->sif_skipped_part = NULL;
   sparqre->sparqre_cli = sqlc_client();
   sparqre->sparqre_exec_user = sparqre->sparqre_cli->cli_user;
+  SPARP_TWEAK_MP_SIZE_CAP(THR_TMP_POOL,sparqre);
   sparp = sparp_query_parse (str, sparqre, 1);
   dk_free_box (str);
   if (NULL != sparp->sparp_sparqre->sparqre_catched_error)
@@ -5332,6 +5421,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
 #ifdef SPARQL_DEBUG
       printf ("\nsparp_compile_subselect() caught parse error: %s", ERR_MESSAGE(sparp->sparp_sparqre->sparqre_catched_error));
 #endif
+      SPARP_RESTORE_MP_SIZE_CAP(THR_TMP_POOL);
       return;
     }
   memset (&ssg, 0, sizeof (spar_sqlgen_t));
@@ -5350,6 +5440,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   ssg_make_whole_sql_text (&ssg);
   if (NULL != sparqre->sparqre_catched_error)
     {
+      SPARP_RESTORE_MP_SIZE_CAP(THR_TMP_POOL);
       ssg_free_internals (&ssg);
       return;
     }
@@ -5360,6 +5451,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
 #ifdef SPARQL_DEBUG
   printf ("\nsparp_compile_subselect() done: %s", res);
 #endif
+  SPARP_RESTORE_MP_SIZE_CAP(THR_TMP_POOL);
   ssg_free_internals (&ssg);
   sparqre->sparqre_compiled_text = res;
 }
@@ -5374,13 +5466,16 @@ bif_sparql_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t str = bif_string_arg (qst, args, 0, "sparql_explain");
   int rewrite_all = (0 != ((2 > BOX_ELEMENTS (args)) ? 1 : bif_long_arg (qst, args, 1, "sparql_explain")));
   dk_session_t *res;
+  SPARP_SAVED_MP_SIZE_CAP;
   MP_START ();
+  SPARP_TWEAK_MP_SIZE_CAP(THR_TMP_POOL,&sparqre);
   memset (&sparqre, 0, sizeof (spar_query_env_t));
   sparqre.sparqre_param_ctr = &param_ctr;
   sparqre.sparqre_qi = (query_instance_t *) qst;
   sparp = sparp_query_parse (str, &sparqre, rewrite_all);
   if (NULL != sparqre.sparqre_catched_error)
     {
+      SPARP_RESTORE_MP_SIZE_CAP(THR_TMP_POOL);
       MP_DONE ();
       sqlr_resignal (sparqre.sparqre_catched_error);
     }
@@ -5422,6 +5517,7 @@ bif_sparql_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       }
   }
 #endif
+  SPARP_RESTORE_MP_SIZE_CAP(THR_TMP_POOL);
   MP_DONE ();
   return (caddr_t)res;
 }
@@ -5438,15 +5534,18 @@ bif_sparql_detalize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   spar_sqlgen_t ssg;
   sql_comp_t sc;
   dk_session_t *res;
+  SPARP_SAVED_MP_SIZE_CAP;
   str = bif_string_arg (qst, args, 0, "sparql_detalize");
   flags = ((2 <= BOX_ELEMENTS (args)) ? bif_long_arg (qst, args, 1, "sparql_detalize") : SSG_SD_VOS_CURRENT);
   MP_START ();
   memset (&sparqre, 0, sizeof (spar_query_env_t));
   sparqre.sparqre_param_ctr = &param_ctr;
   sparqre.sparqre_qi = (query_instance_t *) qst;
+  SPARP_TWEAK_MP_SIZE_CAP(THR_TMP_POOL,&sparqre);
   sparp = sparp_query_parse (str, &sparqre, 1);
   if (NULL != sparqre.sparqre_catched_error)
     {
+      SPARP_RESTORE_MP_SIZE_CAP(THR_TMP_POOL);
       MP_DONE ();
       sqlr_resignal (sparqre.sparqre_catched_error);
     }
@@ -5472,12 +5571,14 @@ bif_sparql_detalize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   END_QR_RESET
   if (NULL != sparqre.sparqre_catched_error)
     {
+      SPARP_RESTORE_MP_SIZE_CAP(THR_TMP_POOL);
       ssg_free_internals (&ssg);
       MP_DONE ();
       sqlr_resignal (sparqre.sparqre_catched_error);
     }
   res = ssg.ssg_out;
   ssg.ssg_out = NULL;
+  SPARP_RESTORE_MP_SIZE_CAP(THR_TMP_POOL);
   ssg_free_internals (&ssg);
   MP_DONE ();
   return (caddr_t)(res);
@@ -5493,6 +5594,7 @@ bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   spar_sqlgen_t ssg;
   sql_comp_t sc;
   dk_session_t *res;
+  SPARP_SAVED_MP_SIZE_CAP;
   str = bif_string_arg (qst, args, 0, "sparql_to_sql_text");
   if (1 < BOX_ELEMENTS (args))
     uname = bif_string_arg (qst, args, 1, "sparql_to_sql_text"); /* set before MP_START () for case of argument of wrong type causing signal w/o MP_DONE() */
@@ -5500,11 +5602,13 @@ bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   memset (&sparqre, 0, sizeof (spar_query_env_t));
   sparqre.sparqre_param_ctr = &param_ctr;
   sparqre.sparqre_qi = (query_instance_t *) qst;
+  SPARP_TWEAK_MP_SIZE_CAP(THR_TMP_POOL,&sparqre);
   if (NULL != uname)
     sparqre.sparqre_exec_user = sec_name_to_user (uname);
   sparp = sparp_query_parse (str, &sparqre, 1);
   if (NULL != sparqre.sparqre_catched_error)
     {
+      SPARP_RESTORE_MP_SIZE_CAP(THR_TMP_POOL);
       MP_DONE ();
       sqlr_resignal (sparqre.sparqre_catched_error);
     }
@@ -5518,12 +5622,14 @@ bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ssg_make_whole_sql_text (&ssg);
   if (NULL != sparqre.sparqre_catched_error)
     {
+      SPARP_RESTORE_MP_SIZE_CAP(THR_TMP_POOL);
       ssg_free_internals (&ssg);
       MP_DONE ();
       sqlr_resignal (sparqre.sparqre_catched_error);
     }
   res = ssg.ssg_out;
   ssg.ssg_out = NULL;
+  SPARP_RESTORE_MP_SIZE_CAP(THR_TMP_POOL);
   ssg_free_internals (&ssg);
   MP_DONE ();
   return (caddr_t)(res);

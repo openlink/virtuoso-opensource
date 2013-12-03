@@ -49,6 +49,17 @@ extern size_t mp_large_hard_cap;
 
 #define MP_LARGE_SOFT_CK (mp_large_soft_cap && mp_large_in_use > mp_large_soft_cap)
 
+typedef struct mem_block_s mem_block_t;
+
+typedef void mem_pool_size_cap_cbk_t (mem_pool_t *mp, void *cbk_env);
+
+typedef struct mem_pool_size_cap_s {
+  mem_pool_size_cap_cbk_t *	cbk;
+  size_t			limit;
+  size_t			last_cbk_limit;
+  void *			cbk_env;
+} mem_pool_size_cap_t;
+
 #ifdef LACERATED_POOL
 struct mem_pool_s
 {
@@ -72,6 +83,7 @@ struct mem_pool_s
   const char *		mp_list_alloc_file;
   int 			mp_list_alloc_line;
 #endif
+  mem_pool_size_cap_t	mp_size_cap;
   caddr_t	mp_comment;
 };
 #else
@@ -81,8 +93,6 @@ struct mem_block_s
   size_t 		mb_fill;
   size_t 		mb_size;
 };
-
-typedef struct mem_block_s mem_block_t;
 
 struct mem_pool_s
 {
@@ -100,6 +110,7 @@ struct mem_pool_s
   int 			mp_alloc_line;
 #endif
   caddr_t	mp_comment;
+  mem_pool_size_cap_t	mp_size_cap;
 };
 #endif
 
