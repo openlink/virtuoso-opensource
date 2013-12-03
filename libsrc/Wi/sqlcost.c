@@ -3282,7 +3282,17 @@ sqlo_use_p_stat_2 (df_elt_t * dfe, float *inx_card, float * col_card, index_choi
   if ((RQ_CONST_EQ == rq.rq_s.rqp_op && RQ_UNBOUND == rq.rq_o.rqp_op)
       || (RQ_CONST_EQ == rq.rq_o.rqp_op && RQ_UNBOUND == rq.rq_s.rqp_op))
     {
-      *inx_card = rq_sample (dfe, &rq, ic);
+      float card = rq_sample (dfe, &rq, ic);
+      if (RQ_UNBOUND == col2->rqp_op)
+	{
+	  *inx_card = p_stat[0];
+	  *col_card = card / p_stat[0];
+	}
+      else
+	{
+	  *inx_card = card;
+	  *col_card = 1;
+	}
       return 1;
     }
   if (RQ_BOUND_EQ == rq.rq_s.rqp_op && (RQ_CONST_EQ == rq.rq_o.rqp_op || RQ_CONST_RANGE == rq.rq_o.rqp_op))
