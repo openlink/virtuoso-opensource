@@ -1021,7 +1021,6 @@ itc_dive_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t to)
 #ifndef NDEBUG
   if ((*buf_ret)->bd_readers <= 0 && !(*buf_ret)->bd_is_write)
     GPF_T1 ("dive transit ends in bd_readers <= 0 or is_write > 0");
-#endif
   if ((*buf_ret)->bd_is_dirty && (*buf_ret)->bd_physical_page != (*buf_ret)->bd_page)
     {
       it_map_t * itm = IT_DP_MAP (tree, to);
@@ -1030,6 +1029,7 @@ itc_dive_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t to)
 	GPF_T;
       mutex_leave (&itm->itm_mtx);
     }
+#endif
 }
 
 
