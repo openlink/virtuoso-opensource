@@ -2053,16 +2053,33 @@ runX_begin: ;
 		/* can be null on the row if 1st value was null. Replace w/ new val */
 		if (DV_DB_NULL == DV_TYPE_OF (dep_ptr[0]))
 		  {
-		    dk_free_tree (dep_ptr[0]);
-		    dep_ptr[0] = box_copy_tree (new_val);
+		    if (!hi->hi_pool)
+		      {
+			dk_free_tree (dep_ptr[0]);
+			dep_ptr[0] = box_copy_tree (new_val);
+		      }
+		    else
+		      dep_ptr[0] = mp_full_box_copy_tree (hi->hi_pool, new_val);
 		  }
 		else
 		  {
-		    QST_GET_V (qst, op->go_old_val) = dep_ptr[0];
-		    dep_ptr[0] = NULL;
-		    box_add (new_val, QST_GET_V (qst, op->go_old_val), qst, op->go_old_val);
-		    dep_ptr[0] = QST_GET_V (qst, op->go_old_val);
-		    QST_GET_V (qst, op->go_old_val) = NULL;
+		    caddr_t res;
+		    res = box_add (new_val, dep_ptr[0], qst, NULL);
+		    if (!hi->hi_pool)
+		      {
+			dk_free_tree (dep_ptr[0]);
+			dep_ptr[0] = res;
+		      }
+		    else
+		      {
+			int len1 = IS_BOX_POINTER (dep_ptr[0]) ? box_length (dep_ptr[0]) : 0; 
+			int len2 = IS_BOX_POINTER (res) ? box_length (res) : 0;
+			if (DV_TYPE_OF (dep_ptr[0]) == DV_TYPE_OF (res) && len1 == len2 && len1 > 0)
+			  memcpy (dep_ptr[0], res, len1);
+			else
+			  dep_ptr[0] = mp_full_box_copy_tree (hi->hi_pool, res);
+			dk_free_tree (res);
+		      }
 		  }
 		break;
 	      }
