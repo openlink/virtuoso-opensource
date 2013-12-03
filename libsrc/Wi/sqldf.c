@@ -7556,6 +7556,8 @@ sqlo_unor_replace_col_refs (sqlo_t *so, ST ** orig_sel, ST * new_sel, ST * left)
     }
 }
 
+int32 sqlo_max_union_nesting = 100; 
+
 static int
 sqlp_convert_or_to_union (sqlo_t * so, ST **ptree)
 {
@@ -7581,6 +7583,9 @@ sqlp_convert_or_to_union (sqlo_t * so, ST **ptree)
 	  	tree->_.select_stmt.table_exp->_.table_exp.from);
 
       sqlc_make_or_list (where, &or_list);
+
+      if (sqlo_max_union_nesting > 0 && dk_set_length (or_list) > sqlo_max_union_nesting)
+	return 0;
 
       DO_SET (ST *, clause, &or_list)
 	{
