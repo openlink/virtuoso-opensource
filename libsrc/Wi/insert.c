@@ -1541,33 +1541,10 @@ itc_cp_check_node (it_cursor_t * itc, buffer_desc_t *parent, int mode)
 	  buffer_desc_t * buf;
 	  mutex_enter (&itm->itm_mtx);
 	  buf = (buffer_desc_t*) gethash ((void*)(ptrlong) leaf, &itm->itm_dp_to_buf);
-	  if (BUF_COMPACT_ALL_READY (buf, leaf, itm)
-	       && (COMPACT_ALL == mode ? 1 : buf->bd_is_dirty)
-	      && !buf_has_leaves (buf))
+	  if (BUF_COMPACT_ALL_READY (buf, leaf, itm) && (COMPACT_ALL == mode ? 1 : buf->bd_is_dirty) && !buf_has_leaves (buf))
 	    {
 	      if (mode == COMPACT_DIRTY && !gethash ((void*)(void*)(ptrlong)leaf, &itm->itm_remap))
-		{
-		  dp_addr_t remap_to;
-#ifndef NDEBUG
-		  dbg_page_map_to_file (buf);
-		  log_error ("dirty buffer flags: can reuse logical: %d, dp=%d, physical dp=%d", 
-		      it_can_reuse_logical (it, buf->bd_page), buf->bd_page, buf->bd_physical_page);
-#endif
-#if 1
-		  /* repair on the go */
-		  if (it_can_reuse_logical (it, buf->bd_page))
-		    remap_to = buf->bd_page;
-		  else
-		    remap_to = em_new_dp (it->it_extent_map, EXT_REMAP, 0, NULL);
-		  if (!remap_to)
 		    GPF_T1 ("In compact, no remap dp for a dirty buffer");
-		  buf->bd_physical_page = remap_to;
-		  sethash (DP_ADDR2VOID (buf->bd_page), &itm->itm_remap, DP_ADDR2VOID (remap_to));
-		  log_info ("In compact, dp=%d remap dp = %d", buf->bd_page, buf->bd_physical_page);
-#else
-		  GPF_T1 ("In compact, no remap dp for a dirty buffer");
-#endif
-		}
 	      BD_SET_IS_WRITE (buf, 1);
 	      mutex_leave (&itm->itm_mtx);
 	      pg_check_map (buf);
