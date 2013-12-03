@@ -491,7 +491,7 @@ bif_ro2sq_vec_1 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_s
       vec_ssl_assign (qst, ret, args[0]);
       return;
     }
-  if (DV_ANY != dc->dc_dtp && DV_ARRAY_OF_POINTER != dc->dc_dtp)
+  if (DV_ANY != ret->ssl_sqt.sqt_dtp && DV_ARRAY_OF_POINTER != ret->ssl_sqt.sqt_dtp)
     {
       SET_LOOP
       {
@@ -500,6 +500,8 @@ bif_ro2sq_vec_1 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_s
       END_SET_LOOP;
       return;
     }
+  if (DV_ANY == ret->ssl_sqt.sqt_dtp && DV_ANY != dc->dc_dtp)
+    dc_heterogenous (dc);
   is_boxes = DCT_BOXES & arg->dc_type;
   empty_mark = (DCT_BOXES & dc->dc_type) ? NULL : &dv_null;
   DC_CHECK_LEN (dc, qi->qi_n_sets - 1);
