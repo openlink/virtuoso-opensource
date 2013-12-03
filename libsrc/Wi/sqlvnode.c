@@ -844,6 +844,7 @@ cl_local_deletes (delete_node_t * del, caddr_t * inst, caddr_t * part_inst)
       continue;
       itc->itc_isolation = ISO_SERIALIZABLE == qi->qi_isolation ? ISO_SERIALIZABLE : ISO_REPEATABLE;
     itc_free_owned_params (itc);
+      itc_col_free (itc);
       itc->itc_insert_key = ik->ik_key;
       ks.ks_v_out_map = itc->itc_v_out_map = ik->ik_key->key_is_col ? empty_om : om;
       ITC_START_SEARCH_PARS (itc);
@@ -907,6 +908,7 @@ cl_local_deletes (delete_node_t * del, caddr_t * inst, caddr_t * part_inst)
     }
   END_DO_BOX;
   itc_free_owned_params (itc);
+  itc_col_free (itc);
   qi->qi_n_affected += n_sets;
   if (qi->qi_client->cli_row_autocommit)
     qi->qi_client->cli_n_to_autocommit += n_sets;

@@ -1471,7 +1471,12 @@ void key_col_insert (it_cursor_t * itc, row_delta_t * rd, insert_node_t * ins);
 int ce_col_cmp (db_buf_t any, int64 offset, dtp_t ce_flags, dbe_col_loc_t * cl, caddr_t value);
 int itc_col_row_check (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t * leaf_ret);
 int itc_col_row_check_dummy (it_cursor_t * itc, buffer_desc_t * buf);
+#ifdef MALLOC_DEBUG
+caddr_t DBG_NAME (itc_alloc_box) (DBG_PARAMS it_cursor_t * itc, int len, dtp_t dtp);
+#define itc_alloc_box(itc, len, dtp) dbg_itc_alloc_box (__FILE__, __LINE__, (itc), (len), (dtp))
+#else
 caddr_t itc_alloc_box (it_cursor_t * itc, int len, dtp_t dtp);
+#endif
 
 #define itc_free_box(itc, b) \
   {if ((uptrlong)itc->itc_temp > (uptrlong)b || (uptrlong)itc->itc_temp + itc->itc_temp_max < (uptrlong)b) dk_free_box ((caddr_t)b);}

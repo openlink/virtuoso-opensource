@@ -216,6 +216,7 @@ itc_ce_check (it_cursor_t * itc, buffer_desc_t * buf, int leave)
 	itc_free_box (itc, cr);
       }
       END_DO_BOX;
+      itc_free_box (itc, itc->itc_col_refs);
       itc->itc_col_refs = old_cr;
     }
 #ifdef COL_CK_TS

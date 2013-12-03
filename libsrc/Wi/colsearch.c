@@ -33,7 +33,7 @@
 
 
 caddr_t
-itc_alloc_box (it_cursor_t * itc, int len, dtp_t dtp)
+DBG_NAME (itc_alloc_box) (DBG_PARAMS it_cursor_t * itc, int len, dtp_t dtp)
 {
   if (itc && itc->itc_temp_max)
     {
@@ -52,14 +52,14 @@ itc_alloc_box (it_cursor_t * itc, int len, dtp_t dtp)
 #endif
       if (fill + bytes > itc->itc_temp_max)
 	{
-	  return dk_alloc_box (len, dtp);
+	  return DBG_NAME (dk_alloc_box) (DBG_ARGS len, dtp);
 	}
       ptr = itc->itc_temp + fill + 4;
       WRITE_BOX_HEADER (ptr, len, dtp);
       itc->itc_temp_fill += bytes;
       return (caddr_t) itc->itc_temp + fill + 8;
     }
-  return dk_alloc_box (len, dtp);
+  return DBG_NAME (dk_alloc_box) (DBG_ARGS len, dtp);
 }
 
 col_data_ref_t *
@@ -2989,7 +2989,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
       for (nth = 0; nth < n_keys; nth++)
 	{
 	  if (!om[nth].om_ssl)
-	    dk_free_box (key_vals[nth]);
+	    dk_free_tree (key_vals[nth]);
 	}
     }
   if (!stop_in_mid_seg)

@@ -1778,6 +1778,7 @@ if (e - s < sizeof (b)) \
   { \
     strncpy (b, s, e - s); \
     *(b + (e - s)) = 0; \
+    if (p) dk_free_box (p); \
     p = box_string (b); \
   } \
 else \
