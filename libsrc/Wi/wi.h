@@ -687,6 +687,7 @@ typedef struct hash_range_spec_s
 #define HR_NOT 1 /* true if not found */
 #define HR_NO_BLOOM 2 /* bloom not selective, do not check */
 #define HR_RANGE_ONLY 4
+#define HRNG_IN 8 /* in pred with literals */
 
 
 
