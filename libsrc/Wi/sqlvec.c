@@ -624,6 +624,18 @@ qn_add_prof (sql_comp_t * sc, data_source_t * qn)
 }
 
 
+int 
+qn_is_const_card (data_source_t * qn)
+{
+  /* true if always one row of output for one of input */
+  if (IS_QN (qn, dpipe_node_input))
+    return 1;
+  if (IS_QN (qn, hash_source_input) && ((hash_source_t*)qn)->hs_merged_into_ts)
+    return 1;
+  return 0;
+}
+
+
 void
 sqlg_vec_after_test (sql_comp_t * sc, data_source_t * qn)
 {
@@ -2395,7 +2407,7 @@ qn_set_prev (data_source_t * qn, data_source_t * prev)
   /* when setting the orev of a qn, it can be that the qn is const card, meaning the next qn has the same prev, so keep setting them until the prev is different */
   data_source_t * initial_prev = qn->src_prev;
   qn->src_prev = prev;
-  while (qn = qn_next (qn))
+  while ((qn = qn_next (qn)))
     {
       if (qn->src_prev == initial_prev)
 	qn->src_prev = prev;
@@ -3423,11 +3435,10 @@ ks_vec_local_code (sql_comp_t * sc, key_source_t * ks)
 }
 
 
-int
-box_needs_cast (caddr_t box, sql_type_t * target_sqt)
+static int
+box_needs_cast (caddr_t box, dtp_t target_dtp)
 {
   dtp_t dtp = DV_TYPE_OF (box);
-  dtp_t target_dtp = target_sqt->sqt_dtp;
   if (IS_INT_DTP (dtp) && IS_INT_DTP (target_dtp))
     return 0;
   if (target_dtp == dtp)
@@ -3443,12 +3454,18 @@ sqlg_const_cast (sql_comp_t * sc, state_slot_t ** ssl_ret, sql_type_t * target_s
   caddr_t value;
   caddr_t err = NULL;
   dtp_t target_dtp = target_sqt->sqt_dtp;
+
+  if (DV_BLOB == target_dtp) 
+    target_dtp = DV_STRING;
+  else if (DV_BLOB_WIDE == target_dtp)
+    target_dtp = DV_LONG_WIDE;
+
   if (DV_ANY == target_dtp)
     {
       return;			/* any string make at run time */
       value = box_to_any (ssl->ssl_constant, &err);
     }
-  else if (box_needs_cast (ssl->ssl_constant, target_sqt))
+  else if (box_needs_cast (ssl->ssl_constant, target_dtp))
     value = box_cast_to (NULL, ssl->ssl_constant, DV_TYPE_OF (ssl->ssl_constant),
 	target_dtp, target_sqt->sqt_precision, target_sqt->sqt_scale, &err);
   else
