@@ -1544,7 +1544,6 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
     SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_META, NULL);
 
   sqlc_set_client (old_cli);
-  /* TREE_CHECK (tree); */
   SCS_STATE_POP;
   if (inside_sem)
     mutex_leave (parse_mtx);
@@ -1567,8 +1566,6 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
       da_sub (&cli->cli_activity, &tmp);
       cli->cli_compile_activity.da_memory = sqlc_mem;
     }
-/*  dk_free_tree ((caddr_t) tree);*/
-/*  dk_free (string, -1); */
   sc_free (&sc);
 
   if (qr)
@@ -1641,9 +1638,11 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 		  static char *ua_header = "--#pragma bootstrap user-aggregate\n";
 		  caddr_t string3 = dk_alloc_box (strlen (ua_header)+strlen(string2)+1, DV_STRING);
 		  snprintf (string3, box_length (string3), "%s%s", ua_header, string2);
-	          return (sqlc_make_proc_store_qr (cli, qr, string3));
+		  qr = sqlc_make_proc_store_qr (cli, qr, string3);
+	          return qr;
 		}
-	      return (sqlc_make_proc_store_qr (cli, qr, string2));
+	      qr = sqlc_make_proc_store_qr (cli, qr, string2);
+	      return qr;
 	    }
 	}
     }
