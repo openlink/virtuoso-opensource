@@ -3026,14 +3026,14 @@ typedef struct digit_sort_s
 digit_sort_t *
 ds_allocate ()
     {
-  return (digit_sort_t*)dk_alloc (sizeof (digit_sort_t));
+  return (digit_sort_t *) dk_alloc_box (sizeof (digit_sort_t), DV_BIN);
     }
 
 
 void
 ds_free (caddr_t ds)
 {
-  dk_free (ds, -1);
+  dk_free_box (ds);
 }
 
 
