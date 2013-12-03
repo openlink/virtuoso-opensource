@@ -252,6 +252,7 @@ typedef struct sql_comp_s
     dk_hash_t *		sc_vec_ssl_shadow;
     dk_hash_t *		sc_vec_prov_cast;
     dk_hash_t * 	sc_vec_last_ref;
+    dk_hash_t *         sc_vec_save_shadow;
     data_source_t *	sc_pre_code_of; /* when setting last ref ni vec, pre code does not set last ref to ts current */
     key_source_t * 	sc_ref_ks;
     dk_hash_t *		sc_vec_no_copy_ssls;

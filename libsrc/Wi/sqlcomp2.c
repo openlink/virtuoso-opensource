@@ -1004,6 +1004,19 @@ sc_free (sql_comp_t * sc)
     }
   if (sc->sc_qn_to_dfe)
     hash_table_free (sc->sc_qn_to_dfe);
+  /*if left due to error in vec */
+  if (sc->sc_vec_ssl_def)
+    hash_table_free (sc->sc_vec_ssl_def);
+  if (sc->sc_vec_ssl_shadow)
+    hash_table_free (sc->sc_vec_ssl_shadow);
+  if (sc->sc_vec_no_copy_ssls)
+    hash_table_free (sc->sc_vec_no_copy_ssls);
+  if (sc->sc_vec_cast_ssls)
+    hash_table_free (sc->sc_vec_cast_ssls);
+  if (sc->sc_vec_last_ref)
+    hash_table_free (sc->sc_vec_last_ref);
+  if (sc->sc_vec_save_shadow)
+    hash_table_free (sc->sc_vec_save_shadow);
 }
 
 query_t *

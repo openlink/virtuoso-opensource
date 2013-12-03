@@ -895,9 +895,11 @@ sqlg_qn_vec (sql_comp_t * sc, data_source_t * qn, dk_set_t qn_stack, dk_hash_t *
   dk_hash_t *save_shadow = hash_table_copy (sc->sc_vec_ssl_shadow);
   sc->sc_vec_in_outer = 0;
   sc->sc_vec_new_ssls = NULL;
+  sc->sc_vec_save_shadow = save_shadow;
   sqlg_vec_qns (sc, qn, sc->sc_vec_pred);
   hash_table_free (sc->sc_vec_ssl_shadow);
   sc->sc_vec_ssl_shadow = save_shadow;
+  sc->sc_vec_save_shadow = NULL;
   sc->sc_vec_in_outer = save_outer;
   sc->sc_vec_new_ssls = ssl_save;
   sc->sc_vec_current = cur;
