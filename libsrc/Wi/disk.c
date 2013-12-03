@@ -2304,6 +2304,48 @@ dbs_read_page_set (dbe_storage_t * dbs, dp_addr_t first_dp, int flag)
 }
 
 void
+dbs_set_free_set_arr (dbe_storage_t * dbs)
+{
+  int n_pages = 1, fill = 0;
+  buffer_desc_t ** arr;
+  buffer_desc_t * buf = dbs->dbs_free_set;
+  for (buf = buf->bd_next; buf; buf = buf->bd_next)
+    n_pages++;
+  arr = dbs->dbs_free_set_arr;
+  if (!arr || n_pages >= BOX_ELEMENTS (arr))
+    arr = (buffer_desc_t**)dk_alloc_box_zero (MAX (200, n_pages) * 2 * sizeof (caddr_t), DV_BIN);
+  for (buf = dbs->dbs_free_set; buf; buf = buf->bd_next)
+    arr[fill++] = buf;
+  /* previous is intentionally not freed, remain accessible with no mtx */
+  dbs->dbs_free_set_arr = arr;
+}
+
+
+int
+dbs_may_be_free (dbe_storage_t * dbs, dp_addr_t dp)
+{
+  /* when asserting that a page is allocated, can check without mtx.  The array of pages of free set is add-only and am apparent free can always be double checked inside the mtx. The read will in any case not take place inside the dbs mtx hence a page that is checked to be allocated can go free between the check and the actual read */
+  int nth = dp / BITS_ON_PAGE;
+  uint32 w;
+  buffer_desc_t * buf;
+  int word, bit, dp_in_page;
+  buffer_desc_t ** arr = dbs->dbs_free_set_arr;
+  if (!arr)
+    return 1;
+  if (nth >= BOX_ELEMENTS (arr))
+    return 1;
+  if (!arr[nth])
+    return 1;
+  dp_in_page = dp - (nth * BITS_ON_PAGE);
+  word = dp_in_page / BITS_IN_LONG;
+  bit = dp_in_page % BITS_IN_LONG;
+  buf = arr[nth];
+  w = ((uint32*)(buf->bd_buffer + DP_DATA))[word];
+  return 0 == (w & (1L << bit));
+}
+
+
+void
 dbs_write_page_set (dbe_storage_t * dbs, buffer_desc_t * buf)
 {
   while (buf)
@@ -4304,6 +4346,8 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
 
       dbs->dbs_n_pages_in_extent_set = EXTENT_SZ * BITS_ON_PAGE * page_set_length (dbs->dbs_extent_set);
       dbs->dbs_free_set = dbs_read_page_set (dbs, cfg_page.db_free_set, DPF_FREE_SET);
+      dbs_set_free_set_arr (dbs);
+      dbs_set_free_set_arr (dbs);
       dbs->dbs_n_pages_in_sets = BITS_ON_PAGE * page_set_length (dbs->dbs_free_set);
       dbs->dbs_incbackup_set = dbs_read_page_set (dbs, cfg_page.db_incbackup_set, DPF_INCBACKUP_SET);
       dbs_read_checkpoint_remap (dbs, cfg_page.db_checkpoint_map);

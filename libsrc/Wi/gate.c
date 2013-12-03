@@ -179,7 +179,7 @@ DBGP_NAME (page_wait_access) (DBGP_PARAMS it_cursor_t * itc, dp_addr_t dp,  buff
 	em_check_dp (itc->itc_tree->it_extent_map, dp);
 	}
 #endif
-      if ((DP_DELETED == phys_dp || dbs_is_free_page (itc->itc_tree->it_storage, phys_dp))
+      if ((DP_DELETED == phys_dp || dbs_may_be_free (itc->itc_tree->it_storage, phys_dp))
 	  && !strchr (wi_inst.wi_open_mode, 'a'))
 	{
 	  log_error ("Reference to page with free remap dp = %ld, remap = %ld",

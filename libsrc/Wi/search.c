@@ -2861,7 +2861,7 @@ itc_read_ahead_blob (it_cursor_t * itc, ra_req_t *ra, int flags)
       char btmp_not_decoy = 0;
       ITC_IN_KNOWN_MAP (itc, ra->ra_dp[inx]);
       if (!DBS_PAGE_IN_RANGE (itc->itc_tree->it_storage, ra->ra_dp[inx])
-	  ||dbs_is_free_page (itc->itc_tree->it_storage, ra->ra_dp[inx]) || 0 == ra->ra_dp[inx])
+	  ||dbs_may_be_free (itc->itc_tree->it_storage, ra->ra_dp[inx]) || 0 == ra->ra_dp[inx])
 	{
 	  log_error ("*** read-ahead of a free or out of range page dp L=%ld, database not necessarily corrupted.",
 	       ra->ra_dp[inx]);

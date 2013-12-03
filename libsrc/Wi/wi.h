@@ -302,6 +302,7 @@ struct dbe_storage_s
   dk_mutex_t *	dbs_page_mtx;  /* serializes page alloc/free */
   du_thread_t *	dbs_owner_thr;  /* thread owning this dbs, also owner of  dbs_page_mtx */
   buffer_desc_t *	dbs_free_set;  /* page allocation bitmap pages */
+  buffer_desc_t **	dbs_free_set_arr;
   buffer_desc_t *	dbs_incbackup_set; /* set of backuped pages for incremental backup */
   dp_addr_t		dbs_n_pages_in_sets; /* space for so many bits in free set and backup set */
   uint32		dbs_n_free_pages;

@@ -420,6 +420,8 @@ long dbs_count_pageset_items (dbe_storage_t * dbs, buffer_desc_t** ppage_set);
 long dbs_count_free_pages (dbe_storage_t * dbs);
 long dbs_count_incbackup_pages (dbe_storage_t * dbs);
 long dbs_is_free_page (dbe_storage_t * dbs, dp_addr_t n);
+void dbs_set_free_set_arr (dbe_storage_t * dbs);
+int dbs_may_be_free (dbe_storage_t * dbs, dp_addr_t dp);
 
 void it_page_allocated (index_tree_t * it, dp_addr_t n);
 
