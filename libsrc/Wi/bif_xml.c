@@ -4607,7 +4607,11 @@ bif_vectorbld_final_impl (caddr_t * qst, state_slot_t ** args, int return_bits)
   dk_check_vectorbld_acc (acc);
   dk_free_box (acc[0]);
   if ((0 == filled_size) && (2 & return_bits))
-    new_box = NEW_DB_NULL;
+    {
+      new_box = NEW_DB_NULL;
+      acc[0] = NULL;
+      dk_free_tree ((caddr_t)acc);
+    }
   else
     {
       new_box = dk_alloc_box (filled_size, DV_ARRAY_OF_POINTER);
