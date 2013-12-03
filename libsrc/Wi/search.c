@@ -3310,7 +3310,7 @@ itc_n_p_matches_in_col (it_cursor_t * itc, caddr_t * data_col, int * first, int 
 
 
 void
-itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
+itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf, int * is_leaf)
 {
   int n_data = 1;
   db_buf_t row = BUF_ROW (buf, itc->itc_map_pos);
@@ -3319,6 +3319,11 @@ itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
   int len_limit = -1, first_match = 0;
   if (!kv ||  KV_LEFT_DUMMY == kv)
     return;
+  if (!*is_leaf)
+    {
+      *is_leaf = 1;
+      cs_new_page (itc->itc_st.cols);
+    }
   itc->itc_row_data = row;
   itc->itc_row_key = itc->itc_insert_key->key_versions[kv];
   DO_SET (dbe_column_t *, col, &itc->itc_row_key->key_parts)
@@ -3436,7 +3441,7 @@ void
 itc_page_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
     {
   int pos = itc->itc_map_pos;
-  cs_new_page (itc->itc_st.cols);
+  int is_leaf = 0;
   if (itc->itc_insert_key->key_is_col)
 	{
       int r;
@@ -3447,9 +3452,9 @@ itc_page_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
 	  itc->itc_map_pos = r; /* randomize after first found, else might never hit */
 #ifdef MALLOC_DEBUG
 	  if (itc->itc_st.n_sample_rows < 100)
-	  itc_row_col_stat (itc, buf);
+	    itc_row_col_stat (itc, buf, &is_leaf);
 #else
-	  itc_row_col_stat (itc, buf);
+	  itc_row_col_stat (itc, buf, &is_leaf);
 #endif
     }
       else
@@ -3462,7 +3467,7 @@ itc_page_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
 	      if (itc->itc_st.n_sample_rows > 5)
 		break;
 #endif
-	      itc_row_col_stat (itc, buf);
+	      itc_row_col_stat (itc, buf, &is_leaf);
 	      if (itc->itc_st.n_sample_rows < 1000)
 		continue;
 	      if (itc->itc_st.n_sample_rows > 100000 / key_n_partitions (itc->itc_insert_key)
@@ -3476,7 +3481,7 @@ itc_page_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
   DO_ROWS (buf, map_pos, row, NULL)
     {
       itc->itc_map_pos = map_pos;
-      itc_row_col_stat (itc, buf);
+	  itc_row_col_stat (itc, buf, &is_leaf);
     }
   END_DO_ROWS;
     }
@@ -4042,9 +4047,14 @@ key_count_estimate_slice  (dbe_key_t * key, int n_samples, int upd_col_stats, sl
 {
   int64 res = 0, sample;
   int n;
+  int max_samples = (key->key_is_col ? 10 : 100);
   it_cursor_t itc_auto;
   it_cursor_t * itc = &itc_auto;
   ITC_INIT (itc, key->key_fragments[0]->kf_it, NULL);
+#ifdef CL6
+  if (QI_NO_SLICE == slice && key->key_is_elastic)
+    max_samples = MAX (2, max_samples / (key_n_partitions (key) / local_cll.cll_id_to_host->ht_count)); 
+#endif
   itc_clear_stats (itc);
   QR_RESET_CTX
     {
@@ -4085,7 +4095,7 @@ key_count_estimate_slice  (dbe_key_t * key, int n_samples, int upd_col_stats, sl
 	      break;
 	    }
 	  /* if doing cols also, adjust the sample to table size */
-	  if (n_samples < (key->key_is_col ? 10 : 100) && itc->itc_st.n_sample_rows < 0.01 * res / (n + 1))
+	  if (n_samples < max_samples && itc->itc_st.n_sample_rows < 0.01 * res / (n + 1))
 	    n_samples++;
 	}
     }
