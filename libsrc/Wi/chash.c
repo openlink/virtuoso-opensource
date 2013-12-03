@@ -5706,6 +5706,7 @@ void
 chash_fill_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * state)
 {
   QNCAST (query_instance_t, qi, inst);
+  int save_prev_sets = QST_INT (inst, fref->fnr_select->src_prev->src_out_fill);
   int p, n_part, nth_part;
   setp_node_t *setp = fref->fnr_setp;
   index_tree_t *tree = (index_tree_t *) qst_get (inst, setp->setp_ha->ha_tree);
@@ -5791,7 +5792,10 @@ chash_fill_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * state)
 	    uint64 now = rdtsc ();
 	    SRC_STOP_TIME (fref, inst);
 	  }
+	  QST_INT (inst, fref->fnr_select->src_prev->src_out_fill) = 1;
 	qn_input (fref->fnr_select, inst, inst);
+	  QST_INT (inst, fref->fnr_select->src_prev->src_out_fill) = save_prev_sets;
+
 	cl_fref_resume (fref, inst);
 	SRC_START_TIME (fref, inst);
 	n_filled = qi->qi_n_affected;
