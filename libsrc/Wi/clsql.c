@@ -1578,3 +1578,13 @@ sqlg_distinct_colocated (sql_comp_t * sc, state_slot_t ** ssls, int n_ssls)
 {
   return 0;
 }
+
+
+int enable_high_card_part = 0;
+float c_setp_partition_threshold = 100000;
+
+int
+setp_is_high_card (setp_node_t * setp)
+{
+  return enable_high_card_part && setp->setp_card > c_setp_partition_threshold && !setp->setp_in_union;
+}
