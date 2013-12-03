@@ -3453,6 +3453,10 @@ box_needs_cast (caddr_t box, dtp_t target_dtp)
     return 0;
   if (target_dtp == dtp)
     return 0;
+  if (DV_BLOB == target_dtp && IS_STRING_DTP (dtp))
+    return 0;
+  if (DV_WIDE_BLOB == target_dtp && IS_WIDE_STRING_DTP (dtp))
+    return 0;
   return 1;
 }
 
