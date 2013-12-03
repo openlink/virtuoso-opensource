@@ -3621,6 +3621,8 @@ dfe_table_unq_card (df_elt_t * dfe, index_choice_t * ic, float tb_card, float * 
 }
 
 
+extern caddr_t rdfs_type;
+
 int
 dfe_rdfs_type_check_card (df_elt_t * dfe, index_choice_t * ic, df_elt_t ** eqs, int n_eqs, float * inx_cost_ret)
 {
@@ -4178,7 +4180,7 @@ sqlo_proc_cost (df_elt_t * dfe, float * u1, float * a1)
       query_t * proc = full_name ? sch_proc_def (wi_inst.wi_schema, tree->_.call.name) : NULL;
       float * costs = proc ? proc->qr_proc_cost : NULL;
       if (bif_find (tree->_.call.name))
-	*u1 = 1;
+	*u1 = 0.1;
       else
 	*u1 = costs ? costs[0] : 20;
     }
@@ -4340,7 +4342,7 @@ dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float 
       /* assume 2 per group, for out arity of 0,5 */
       *a1 = 0.5;
       if (!dfe->_.setp.specs && dfe->_.setp.fun_refs)
-	{ /* pure fun ref node */
+	{ /* aggregate without grouping */
 	  *u1 = (float) dk_set_length (dfe->_.setp.fun_refs) * sqlo_agg_cost;
 	  *a1 = 1 / input_arity;
 	}
@@ -4348,12 +4350,15 @@ dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float 
 	{
 	  dfe->_.setp.gb_card = dfe_group_by_card (dfe);
 	  if (dfe->_.setp.is_linear)
-	*u1 = 1;
-	  else if (dfe->_.setp.gb_card < 1000000 || input_arity < 1000000)
-	    *u1 = HASH_MEM_INS_COST;
+	    *u1 = 0.2;
       else
-	    *u1 = (float) HASH_ROW_INS_COST;
-	  *a1 = input_arity < 1 ? 1
+	    {
+	      float n_ins = MIN (input_arity, dfe->_.setp.gb_card);
+	      float n_lookup = input_arity - n_ins;
+	      float mem_cost = sqlo_hash_mem_cost (n_ins);
+	      *u1 = (mem_cost * 1.2 * n_ins + mem_cost * n_lookup) / input_arity;
+	    }
+  	  *a1 = input_arity < 1 ? 1 
 	    : dfe->_.setp.gb_card > input_arity ? 0.5 : dfe->_.setp.gb_card / input_arity;
 	}
       break;
