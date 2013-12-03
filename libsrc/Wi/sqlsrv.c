@@ -4079,6 +4079,7 @@ srv_global_init (char *mode)
 	  local_commit (bootstrap_cli);
 	  sf_shutdown (sf_make_new_log_name (wi_inst.wi_master), bootstrap_cli->cli_trx);
     }
+  ddl_redo_undefined_triggers ();
   IN_TXN;
   lt_leave(bootstrap_cli->cli_trx);
   LEAVE_TXN;
