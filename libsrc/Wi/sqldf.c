@@ -7556,6 +7556,155 @@ sqlo_unor_replace_col_refs (sqlo_t *so, ST ** orig_sel, ST * new_sel, ST * left)
     }
 }
 
+static int 
+sqlp_col_is_same (ST ** pcol, ST * left, ST * right, dk_set_t * or_list)
+{
+  ST *col = *pcol;
+  ST *llcol = left->_.bin_exp.left; 
+  ST *lrcol = left->_.bin_exp.right; 
+  ST *rlcol = right ? right->_.bin_exp.left : NULL; 
+  ST *rrcol = right ? right->_.bin_exp.right : NULL; 
+
+  if (!col)
+    {
+      if (NULL == right)
+	{
+	  if (ST_COLUMN (llcol,0))
+	    {
+	      *pcol = llcol;
+	      t_set_push (or_list, lrcol);
+	      return 1;
+	    }
+	  else if (ST_COLUMN (lrcol,0))
+	    {
+	      *pcol = lrcol;
+	      t_set_push (or_list, llcol);
+	      return 1;
+	    }
+	  return 0;
+	}
+      else
+	{
+	  if (ST_COLUMN (llcol,0) && ST_COLUMN (rlcol, 0) && box_equal (llcol, rlcol))
+	    {
+	      *pcol = llcol;
+	      t_set_push (or_list, lrcol);
+	      t_set_push (or_list, rrcol);
+	      return 1;
+	    }
+	  else if (ST_COLUMN (llcol,0) && ST_COLUMN (rrcol, 0) && box_equal (llcol, rrcol))
+	    {
+	      *pcol = llcol;
+	      t_set_push (or_list, lrcol);
+	      t_set_push (or_list, rlcol);
+	      return 1;
+	    }
+	  else if (ST_COLUMN (lrcol,0) && ST_COLUMN (rlcol, 0) && box_equal (lrcol, rlcol))
+	    {
+	      *pcol = lrcol;
+	      t_set_push (or_list, llcol);
+	      t_set_push (or_list, rrcol);
+	      return 1;
+	    }
+	  else if (ST_COLUMN (lrcol,0) && ST_COLUMN (rrcol, 0) && box_equal (lrcol, rrcol))
+	    {
+	      *pcol = lrcol;
+	      t_set_push (or_list, llcol);
+	      t_set_push (or_list, rlcol);
+	      return 1;
+	    }
+	  return 0;
+	}
+    }
+  else
+    {
+      int l = 0, r = right ? 0 : 1;
+      if (ST_COLUMN (llcol,0) && box_equal (llcol, col))
+	{
+	  t_set_push (or_list, lrcol);
+	  l = 1;
+	}
+      else if (ST_COLUMN (lrcol,0) && box_equal (lrcol, col))
+	{
+	  t_set_push (or_list, llcol);
+	  l = 1;
+	}
+
+      if (ST_COLUMN (rlcol,0) && box_equal (rlcol, col))
+	{
+	  t_set_push (or_list, rrcol);
+	  r = 1;
+	}
+      else if (ST_COLUMN (rrcol,0) && box_equal (rrcol, col))
+	{
+	  t_set_push (or_list, rlcol);
+	  r = 1;
+	}
+      return (l && r);
+    }
+}
+
+static int
+sqlp_or_is_on_equalities (sqlo_t * so, ST * tree, ST ** col, dk_set_t * or_list)
+{
+  if (!tree)
+    return 0;
+  if (box_tag ((caddr_t) tree) != DV_ARRAY_OF_POINTER)
+    return 0;
+  if (tree->type != BOP_OR)
+    {
+      return 0;
+    }
+  else if (tree->_.bin_exp.right->type == BOP_EQ && tree->_.bin_exp.left->type == BOP_EQ && sqlp_col_is_same (col, tree->_.bin_exp.left, tree->_.bin_exp.right, or_list))
+    {
+      return 1;
+    }
+  else if (tree->_.bin_exp.right->type == BOP_EQ && sqlp_col_is_same (col, tree->_.bin_exp.right, NULL, or_list))
+    {
+      int l;
+      l = sqlp_or_is_on_equalities (so, tree->_.bin_exp.left, col, or_list);
+      return l;
+    }
+  else if (tree->_.bin_exp.left->type == BOP_EQ && sqlp_col_is_same (col, tree->_.bin_exp.left, NULL, or_list))
+    {
+      int l;
+      l = sqlp_or_is_on_equalities (so, tree->_.bin_exp.right, col, or_list);
+      return l;
+    }
+  else
+    {
+      int l, r;
+      l = sqlp_or_is_on_equalities (so, tree->_.bin_exp.right, col, or_list);
+      r = sqlp_or_is_on_equalities (so, tree->_.bin_exp.left, col, or_list);
+      return (l && r);
+    }
+  return 0;
+}
+
+static int
+sqlp_convert_or_to_inlist (sqlo_t * so, ST **ptree)
+{
+  ST *tree = *ptree;
+  ST *col = NULL;
+  dk_set_t or_list = NULL;
+  if (ST_P (tree, SELECT_STMT) && BOX_ELEMENTS (tree) >= 5 &&
+      ST_P (tree->_.select_stmt.table_exp, TABLE_EXP) &&
+      ST_P (tree->_.select_stmt.table_exp->_.table_exp.where, BOP_OR) &&
+      sqlp_or_is_on_equalities (so, tree->_.select_stmt.table_exp->_.table_exp.where, &col, &or_list) &&
+      !sqlp_tree_has_fun_ref (tree) &&
+      !tree->_.select_stmt.table_exp->_.table_exp.group_by &&
+      !tree->_.select_stmt.table_exp->_.table_exp.order_by)
+    {
+      /*ST *where = tree->_.select_stmt.table_exp->_.table_exp.where;*/
+      ST *new_where = NULL;
+      new_where = sqlp_in_exp (col, or_list, 0);
+      tree->_.select_stmt.table_exp->_.table_exp.where = new_where;
+      *ptree = tree;
+      return 1;
+    }
+  return 0;
+}
+
 int32 sqlo_max_union_nesting = 100; 
 
 static int
@@ -7677,7 +7826,7 @@ sqlo_top_1 (sqlo_t * so, sql_comp_t * sc, ST ** ptree)
       tree = *ptree;
       tree_copy = (ST *) t_box_copy_tree ((caddr_t) tree);
 
-      if (!inside_view && sqlp_convert_or_to_union (so, &tree_copy))
+      if (!inside_view && sqlp_convert_or_to_inlist (so, &tree_copy))
 	{
 	  memcpy (&sc_save_1, sc, sizeof (sql_comp_t));
 	  memcpy (&so_save_1, so, sizeof (sqlo_t));
