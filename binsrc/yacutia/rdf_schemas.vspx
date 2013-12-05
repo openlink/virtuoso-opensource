@@ -50,8 +50,10 @@
             </tr>
           </thead>
           <tbody>
-            <?vsp
-              if (get_keyword ('del', self.vc_event.ve_params) is not null)
+	      <?vsp
+	      declare to_del varchar;
+	      to_del := get_keyword ('del', self.vc_event.ve_params, null);
+	      if (to_del is not null)
                 RDF_GRAPH_GROUP_DEL ('http://www.openlinksw.com/schemas/virtrdf#schemas', to_del);
 
               for select id_to_iri (RGGM_MEMBER_IID) as url from RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#schemas') do
