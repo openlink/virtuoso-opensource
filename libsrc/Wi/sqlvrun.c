@@ -2855,7 +2855,7 @@ tsp_next_col (ts_split_state_t * tsp, it_cursor_t * itc, buffer_desc_t ** buf_re
 {
   dbe_key_t *key = itc->itc_insert_key;
   jmp_buf_splice *save = itc->itc_fail_context;
-  int sets_save = itc->itc_n_sets, is_last = 0;;
+  int sets_save = itc->itc_n_sets, is_last = 0;
   int lm_save = itc->itc_lock_mode;
   int iso_save = itc->itc_isolation;
   int rows_per_seg = key->key_segs_sampled ? key->key_rows_in_sampled_segs / key->key_segs_sampled : 3000;
