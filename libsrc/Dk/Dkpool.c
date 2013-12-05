@@ -1503,7 +1503,7 @@ mp_by_address (uint64 ptr)
       int fill = rc->rc_fill, inx2;
       for (inx2 = 0; inx2 < fill; inx2++)
 	{
-	  int64 start = rc->rc_items[inx2];
+	  int64 start = (int64) (rc->rc_items[inx2]);
 	  if (ptr >= start && ptr < start + mm_sizes[inx])
 	    {
 	      printf ("Address %x is %ld bytes indes arc cached block start %p size %ld\n", (void*)ptr, ptr - start, (void*)start, mm_sizes[inx]);
@@ -1545,7 +1545,7 @@ mp_list_marks (int first, int n_print)
 			  if (n_printed >= first && n_printed < n_print + first)
 			    {
 			      int64 last_addr = ((long)inx << 32) + ((long)inx << 15) + (bit << 12);
-			      printf ("0x%p - 0x%p - %ld pages\n", (last_addr - first_addr) >> 12);
+			      printf ("0x%p - 0x%p - %ld pages\n", last_addr, first_addr, (last_addr - first_addr) >> 12);
 			    }
 			  n_printed++;
 			  first_addr = 0;

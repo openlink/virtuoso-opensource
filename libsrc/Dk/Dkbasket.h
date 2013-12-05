@@ -315,7 +315,7 @@ rbuf_t * rbuf_allocate ();
 int  rbuf_free_cb (rbuf_t * rb);
 void  rbuf_append (rbuf_t * dest, rbuf_t * src);
 void rbuf_delete_all (rbuf_t *);
-void * rbuf_rewrite (rbuf_t * rb);
+void rbuf_rewrite (rbuf_t * rb);
 void rbuf_keep (rbuf_t * rb, void * elt);
 void rbuf_rewrite_done (rbuf_t * rb);
 void rb_ck_cnt (rbuf_t * rb);
