@@ -3547,25 +3547,11 @@
               <?V case when self.command = 20 then 'Edit' else 'View' end ?> resource <?V WEBDAV.DBA.utf2wide (self.source) ?>
             </div>
             <div style="padding-right: 6px;">
-              <div id="f_plain" style="display: <?V case when WEBDAV.DBA.VAD_CHECK ('Framework') and self.mimeType = 'text/html' then '' else '' end ?>;">
+              <div id="f_plain">
                 <?vsp
                   http (sprintf ('<textarea id="f_content_plain" name="f_content_plain" style="width: 100%%; height: 360px" %s>%V</textarea>', case when self.command = 30 then 'disabled="disabled"' else '' end, WEBDAV.DBA.utf2wide (cast (WEBDAV.DBA.DAV_RES_CONTENT (self.source) as varchar))));
                 ?>
               </div>
-              <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework') and (1 = 0)">
-                <div id="f_html" style="display: <?V case when self.mimeType = 'text/html' then '' else 'none' end ?>;">
-                  <?vsp
-                    http (sprintf ('<textarea id="f_content_html" name="f_content_html" style="width: 100%%; height: 360px" %s>%V</textarea>', case when self.command = 30 then 'disabled="disabled"' else '' end, WEBDAV.DBA.utf2wide (cast (WEBDAV.DBA.DAV_RES_CONTENT (self.source) as varchar))));
-                  ?>
-                  <![CDATA[
-                    <script type="text/javascript" src="/ods/ckeditor/ckeditor.js"></script>
-                    <script type="text/javascript">
-                      CKEDITOR.config.startupMode = 'source';
-                      var oEditor = CKEDITOR.replace('f_content_html');
-                    </script>
-                  ]]>
-                </div>
-              </vm:if>
             </div>
             <div class="WEBDAV_formFooter">
               <v:button action="simple" name="Save_20" value="Save" enabled="--case when (self.command = 20) then 1 else 0 end">
@@ -3586,7 +3572,7 @@
                     item := WEBDAV.DBA.DAV_INIT (self.source);
                     if (not WEBDAV.DBA.DAV_ERROR (item))
                     {
-                      content := get_keyword (case when WEBDAV.DBA.DAV_GET (item, 'mimeType') = 'text/html' then 'f_content_html' else 'f_content_plain' end, params, '');
+                      content := get_keyword ('f_content_plain', params, '');
                       retValue := WEBDAV.DBA.DAV_RES_UPLOAD (self.source, content, WEBDAV.DBA.DAV_GET (item, 'mimeType'), WEBDAV.DBA.DAV_GET (item, 'permissions'), WEBDAV.DBA.DAV_GET (item, 'ownerID'), WEBDAV.DBA.DAV_GET (item, 'groupID'));
                       if (WEBDAV.DBA.DAV_ERROR (retValue))
                         signal ('TEST', WEBDAV.DBA.DAV_PERROR (retValue) || '<>');
