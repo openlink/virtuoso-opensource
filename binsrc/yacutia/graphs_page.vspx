@@ -32,7 +32,7 @@
 
   <v:method name="tab_element" arglist="in label varchar, in ndx varchar">
     <![CDATA[
-      if (get_keyword ('page', self.vc_page.vc_event.ve_params, '1') = ndx)
+      if (get_keyword ('page', self.vc_page.vc_event.ve_params, '2') = ndx)
       {
         http (label);
       }
