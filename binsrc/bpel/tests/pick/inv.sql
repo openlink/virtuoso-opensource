@@ -63,7 +63,7 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": call /pick.bpel state: " $STATE "\n";
 
-delay (5);
+delay (10);
 
 select * from PICK..onResult;
 
@@ -118,7 +118,7 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": call /pick.bpel state: " $STATE "\n";
 
-delay (6);
+delay (10);
 
 select * from PICK..onResult;
 
