@@ -95,7 +95,7 @@ generated_code = \
 $(generated_code): .generated
 
 .generated: Makefile.am gen_all_gates.sh gen_gate.sh gate_virtuoso.h plugin_lang25.h plugin_msdtc.h
-	cd $(top_srcdir)/libsrc/plugin; ./gen_all_gates.sh
+	cd $(top_srcdir)/libsrc/plugin; $(SHELL) $(srcdir)/gen_all_gates.sh
 	-rm -rf tmp
 	touch .generated
 

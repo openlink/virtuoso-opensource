@@ -27,7 +27,7 @@
   <head>
     <link rel="stylesheet" href="yacutia_style.css" type="text/css"/>
     <link type="text/css" rel="stylesheet" href="syntax/SyntaxHighlighter.css"></link>
-    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <title>Interactive SQL</title>
   </head>
   <body>
@@ -90,19 +90,19 @@
 		       <td>
 			 <label for="t_login_usr">Account</label>
 		       </td>
-		       <td>&#160;</td>
+		       <td>&nbsp;</td>
 		     </tr>
 		     <tr>
 		       <td>
 			 <v:text name="username" value="" xhtml_id="t_login_usr"/>
 		       </td>
-		       <td>&#160;</td>
+		       <td>&nbsp;</td>
 		     </tr>
 		     <tr>
 		       <td>
 			 <label for="t_login_pwd">Password</label>
 		       </td>
-		       <td>&#160;</td>
+		       <td>&nbsp;</td>
 		     </tr>
 		     <tr>
 		       <td>

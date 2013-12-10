@@ -252,6 +252,7 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case SAME_AS_S_L: return "SAME_AS_S";
     case SAME_AS_S_O_L: return "SAME_AS_S_O";
     case UNION_L: return "UNION";
+    case SPAR_UNION_WO_ALL: return "UNION";
     /* case WHERE_L: return "WHERE"; */
 
 #if 0
@@ -431,19 +432,19 @@ ssg_sdprint_equiv_restrs (spar_sqlgen_t *ssg, sparp_equiv_t *eq)
   if (NULL != eq->e_subvalue_idxs)
     {
       ptrlong gp_subtype = eq->e_gp->_.gp.subtype;
-      ptrlong sub_restr = ((UNION_L == gp_subtype) ? ~0L : 0L);
+      ptrlong sub_restr = (((UNION_L == gp_subtype) || (SPAR_UNION_WO_ALL == gp_subtype)) ? ~0L : 0L);
       DO_BOX_FAST (ptrlong, sub_idx, ctr, eq->e_subvalue_idxs)
         {
           sparp_equiv_t *sub = SPARP_EQUIV (ssg->ssg_sparp, sub_idx);
           if (SPART_VARR_CONFLICT & sub->e_rvr.rvrRestrictions)
             {
-              if (UNION_L == gp_subtype)
+              if ((UNION_L == gp_subtype) || (SPAR_UNION_WO_ALL == gp_subtype))
                 continue;
               break;
             }
           if (!(SPART_VARR_NOT_NULL & sub->e_rvr.rvrRestrictions))
             continue;
-          if (UNION_L == gp_subtype)
+          if ((UNION_L == gp_subtype) || (SPAR_UNION_WO_ALL == gp_subtype))
             sub_restr &= sub->e_rvr.rvrRestrictions;
           else
             sub_restr |= sub->e_rvr.rvrRestrictions;
@@ -806,7 +807,7 @@ fname_printed:
               }
             t_set_pop (&(ssg->ssg_sd_outer_gps));
             return;
-          case UNION_L:
+          case UNION_L: case SPAR_UNION_WO_ALL:
             DO_BOX_FAST (SPART *, sub, ctr, tree->_.gp.members)
               {
                 if (0 != ctr)

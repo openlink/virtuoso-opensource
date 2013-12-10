@@ -769,7 +769,7 @@ TBL.initValues = function ()
     TBL.compares = o[1];
     TBL.triplets = o[2];
   }
-  OAT.AJAX.GET('/ods/api/filtersData', false, x, {async: false});
+  OAT.AJAX.GET('/webid/api/acl_filters', false, x, {async: false});
 }
 
 TBL.predicateGet = function (fldName)

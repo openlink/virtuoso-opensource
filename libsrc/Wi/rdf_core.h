@@ -184,7 +184,7 @@ typedef struct ttlp_s
   int ttlp_lexlineno;		/*!< Current line number */
   int ttlp_lexdepth;		/*!< Current number of not-yet-closed parenthesis */
   const char *ttlp_raw_text;	/*!< Raw text of the lexem */
-  ptrlong ttlp_special_qnames;	/*!< Bitmask where every bit means that the identifier in qname, not a keyword */
+  ptrlong ttlp_special_qnames;	/*!< Bitmask where every bit means that the identifier is qname, not a keyword */
   /* parser */
   const char *ttlp_err_hdr;	/*!< Human-readable phrase that gives a name to the parsing routine, e.g. "Turtle parser of web crawler" */
   caddr_t ttlp_catched_error;	/*!< The error that stopped the processing, as a three-element vector made by srv_make_new_error () */
@@ -237,6 +237,7 @@ extern void ttlyyerror_impl (ttlp_t *ttlp_arg, const char *raw_text, const char 
 extern void ttlyyerror_impl_1 (ttlp_t *ttlp_arg, const char *raw_text, int yystate, short *yyssa, short *yyssp, const char *strg);
 
 extern ptrlong ttlp_bit_of_special_qname (caddr_t qname);
+extern int ttlp_qname_prefix_is_explicit_and_valid (ttlp_t *ttlp_arg, caddr_t qname);
 extern caddr_t DBG_NAME (ttlp_expand_qname_prefix) (DBG_PARAMS ttlp_t *ttlp_arg, caddr_t qname);
 extern caddr_t DBG_NAME (tf_bnode_iid) (DBG_PARAMS triple_feed_t *tf, caddr_t boxed_sparyytext);
 extern caddr_t DBG_NAME (tf_formula_bnode_iid) (DBG_PARAMS ttlp_t *ttlp_arg, caddr_t boxed_sparyytext);

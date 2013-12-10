@@ -1867,6 +1867,11 @@ int xenc_aes_decryptor (dk_session_t * ses_in, long seslen, dk_session_t * ses_o
 
   len = xenc_decode_base64 (text, text + seslen + 1);
 
+  if (len < 16)
+    {
+      dk_free_box (text_beg);
+      xenc_report_error (t, 500, XENC_ENC_ERR, "AES decryption internal error #3");
+    }
   memcpy (ivec, text, 16);
   memcpy (&key->ki.aes.iv, &ivec, 16);
   text += 16;
@@ -2890,7 +2895,7 @@ void dsig_dsa_sha1_sign_test()
   in->dks_in_fill = sizeof (msg) - 1;
   in->dks_in_read = 0;
 
-  __xenc_key_dsa_init ("virtdev4@localhost", 1);
+  __xenc_key_dsa_init ("virtdev4@localhost", 1, 512);
 
   xenc_assert (dsig_dsa_sha1_digest (in, sizeof (msg) -1, xenc_get_key_by_name ("virtdev4@localhost", 1), &digest));
 
@@ -2987,7 +2992,7 @@ dsig_##type##_f dsig_##type##_f_get (const char * xmln, xenc_try_block_t * t) \
     id_hash_get (select_store( store_name )->dat_hash, (caddr_t) & xmln); \
   if (!algo) \
      xenc_report_error (t, 300 + strlen (xmln), XENC_UNKNOWN_ALGO_ERR, "Unknown algorithm %s", xmln); \
-  return algo[0]->f; \
+  return algo ? algo[0]->f : NULL; \
 }
 
 generate_algo_accessor (sign, "dsig")
@@ -3039,6 +3044,8 @@ void dsig_sec_init ()
   dsig_sign_algo_create (DSIG_DSA_SHA1_ALGO, dsig_dsa_sha1_digest);
   dsig_sign_algo_create (DSIG_RSA_SHA1_ALGO, dsig_rsa_sha1_digest);
   dsig_sign_algo_create (DSIG_HMAC_SHA1_ALGO, dsig_hmac_sha1_digest);
+  dsig_sign_algo_create ("hmac-sha1", dsig_hmac_sha1_digest); /* alias */
+
   dsig_verify_algo_create (DSIG_DSA_SHA1_ALGO, dsig_dsa_sha1_verify);
   dsig_verify_algo_create (DSIG_RSA_SHA1_ALGO, dsig_rsa_sha1_verify);
   dsig_verify_algo_create (DSIG_HMAC_SHA1_ALGO, dsig_hmac_sha1_verify);
@@ -3048,6 +3055,7 @@ void dsig_sec_init ()
   dsig_verify_algo_create (DSIG_RSA_SHA256_ALGO, dsig_rsa_sha256_verify);
   dsig_digest_algo_create (DSIG_SHA256_ALGO, dsig_sha256_digest);
   dsig_sign_algo_create (DSIG_HMAC_SHA256_ALGO, dsig_hmac_sha256_digest);
+  dsig_sign_algo_create ("hmac-sha256", dsig_hmac_sha256_digest); /* alias */
   dsig_verify_algo_create (DSIG_HMAC_SHA256_ALGO, dsig_hmac_sha256_verify);
 #endif
 

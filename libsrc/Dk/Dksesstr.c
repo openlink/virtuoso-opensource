@@ -30,6 +30,7 @@
 #include "Dksesstr.h"
 
 char *ses_tmp_dir;
+extern box_destr_f box_destr[256];
 
 /* The string session
 
@@ -936,7 +937,8 @@ strses_deserialize (dk_session_t * session, dtp_t macro)
 
       if (str && DV_TYPE_OF (str) != DV_STRING)
 	{					 /* being paranoid is a good thing */
-	  dk_free_tree (str);
+	  if (!box_destr [DV_TYPE_OF (str)])
+	    dk_free_tree (str);
 	  sr_report_future_error (session, "", "Invalid data type of the incoming session segment");
 	  str = NULL;
 	}

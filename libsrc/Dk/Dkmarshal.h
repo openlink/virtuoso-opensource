@@ -70,7 +70,7 @@ void *box_read_error (dk_session_t * session, dtp_t dtp);
 
 #define MAX_READ_STRING 10000000
 #define MARSH_CHECK_LENGTH(length) \
-  if ((length) > MAX_READ_STRING) \
+  if ((length) > MAX_READ_STRING || (length) < 0) \
     { \
       sr_report_future_error (session, "", "Box length too large"); \
       CHECK_READ_FAIL (session); \

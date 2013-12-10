@@ -25,7 +25,7 @@
 -->
 <html>
   <head>
-    <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <style type="text/css">
       body {
         margin: 0;
@@ -46,6 +46,16 @@
         margin: 0;
         padding: 0;
       }
+
+      .error {
+          background-color: white;
+          border: 1pt solid red;
+          color: red;
+          font-weight: bold;
+          margin: 3px 0 3px 0;
+          padding: 5px;
+          text-align: center;
+      }
     </style>
     <title>WebDAV Repository</title>
   <![CDATA[
@@ -64,7 +74,6 @@
           setTimeout(myInit, 100);
           return;
         }
-
         OAT.MSG.send(OAT, 'PAGE_LOADED');
       }
       OAT.MSG.attach(OAT, 'PAGE_LOADED2', myInit);
@@ -76,13 +85,20 @@
     <v:page
       name="dav_browser"
       style="yacutia_style.xsl"
+      on-error-redirect="/conductor/folder_error.vspx"
       fast-render="1"
       doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
       xmlns:xhtml="http://www.w3.org/1999/xhtml"
       xmlns:v="http://www.openlinksw.com/vspx/"
       xmlns:vm="http://www.openlinksw.com/vspx/macro">
+      <v:on-init>
+        <![CDATA[
+          set ISOLATION = 'Committed';
+          set http_charset = 'utf-8';
+        ]]>
+      </v:on-init>
       <v:template type="simple" condition="not self.vc_is_valid">
-        <div class="warning">
+        <div class="error">
           <v:error-summary/>
         </div>
       </v:template>
@@ -98,9 +114,18 @@
               declare vspx_user varchar;
 
               vspx_user := connection_get ('vspx_user');
-              if (isnull (vspx_user))
+              if (isnull (vspx_user) or (vspx_user = 'nobody'))
               {
                 self.account_id := http_nobody_uid ();
+                if (__proc_exists ('VAL.DBA.session_id_for_connection') is not null)
+                {
+                  declare val_sid, val_serviceId, val_realm varchar;
+                  if (VAL.DBA.session_id_for_connection (val_sid, val_serviceId, val_realm))
+                  {
+                    connection_set ('vspx_user', val_serviceId);
+                    self.account_id := WEBDAV.DBA.account_id (val_serviceId);
+                  }
+                }
               } else {
                 self.account_id := WEBDAV.DBA.account_id (vspx_user);
               }

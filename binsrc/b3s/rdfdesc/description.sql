@@ -699,7 +699,7 @@ b3s_trunc_uri (in s varchar, in maxlen int := 80)
 ;
 
 create procedure
-b3s_http_url (in url varchar, in sid varchar := null, in _from varchar := null)
+b3s_http_url (in url varchar, in sid varchar := null, in _from varchar := null, in with_graph int := 1)
 {
   declare host, pref, more, i, wurl varchar;
 
@@ -710,7 +710,7 @@ b3s_http_url (in url varchar, in sid varchar := null, in _from varchar := null)
 --  else
 --    more := '';
 
-  i := b3s_render_ses_params();
+  i := b3s_render_ses_params(with_graph);
   if (length (_from))
     i := sprintf ('%s&graph=%U', i, _from);
   wurl := charset_recode (url, 'UTF-8', '_WIDE_');
@@ -734,7 +734,7 @@ b3s_http_print_l (in p_text any, inout odd_position int, in r int := 0, in sid v
    p_prefix := b3s_label (p_text, langs);
    if (not length (p_prefix))
      p_prefix := b3s_uri_curie (p_text);
-   url := b3s_http_url (p_text, sid);
+   url := b3s_http_url (p_text, sid, null, 0);
 
    if (not length (p_text))
      return;
@@ -915,7 +915,11 @@ again:
      {
        declare vlbl any;
        http (sprintf ('<span %s>', rdfa));
-       _object := regexp_replace (_object, ' (http://[^ ]+) ', ' <a href="\\1">\\1</a> ', 1, null);
+       if (strstr (_object, 'http://') is not null)
+	 {
+	   declare continue handler for sqlstate '*';
+           _object := regexp_replace (_object, ' (http://[^ ]+) ', ' <a href="\\1">\\1</a> ', 1, null);
+	 }
        vlbl := charset_recode (_object, 'UTF-8', '_WIDE_');
        if (vlbl = 0)
          vlbl := charset_recode (_object, current_charset (), '_WIDE_');
@@ -1030,6 +1034,7 @@ create procedure fct_links_hdr (in subj any, in desc_link any)
       sprintf ('<%s&output=%U>; rel="alternate"; type="%s"; title="Structured Descriptor Document (%s format)",', desc_link, elm[0], elm[0], elm[1]);
     }
   links := links || sprintf ('<%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic",', subj);
+  links := links || ' <?first>; rel="first", <?last>; rel="last", <?next>; rel="next", <?prev>; rel="prev", ';
   links := links || sprintf ('<%s>; rev="describedby"\r\n', subj);
   http_header (http_header_get () || links);
 }

@@ -157,7 +157,7 @@
 		      key-column="xenc_key"
 		      value-column="xenc_key"
 		      />
-		  &#160;
+		  &nbsp;
 		  <v:button action="simple" name="gen_key" value="Generate New" enabled="--xenc_key_exists ('id_rsa')">
 		      <v:on-post><![CDATA[
 			  declare k varchar;

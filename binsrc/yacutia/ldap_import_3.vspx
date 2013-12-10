@@ -149,7 +149,7 @@
                     <tr>
                       <td valign="top">
 <v:form name="map_ldap" type="simple" method="POST" action="accounts_page.vspx?page=1">
-	<div>&#160;</div>
+	<div>&nbsp;</div>
 	<table  class="listing">
 <tr  class="listing_header_row">
   <th>

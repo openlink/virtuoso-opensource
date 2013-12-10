@@ -368,10 +368,9 @@ void
 lt_restart (lock_trx_t * lt, int leave_flag)
 {
   lt_threads_set_inner (lt, 0);
-
   if (TRX_CONT == leave_flag)
     {
-      lt_wait_checkpoint ();
+      lt_wait_checkpoint_lt (lt);
       lt_threads_set_inner (lt, 1);
     }
   lt->lt_w_id = 0;
@@ -424,6 +423,7 @@ lt_restart (lock_trx_t * lt, int leave_flag)
       }
   }
   IN_TXN;
+  lt_wait_checkpoint_lt (lt);
   if (TRX_CONT == leave_flag || TRX_CONT_LT_LEAVE == leave_flag)
     {
       lt->lt_status = LT_PENDING;

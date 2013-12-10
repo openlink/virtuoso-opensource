@@ -129,7 +129,7 @@ order by
 		      value="images/icons/trash_16.png"
 		      xhtml_alt="Delete"
 		      xhtml_title="Delete"
-		      text="&#160;Delete"
+		      text="&nbsp;Delete"
 		      >
               <v:on-post width="0" height="16">
                 <v:script><![CDATA[
@@ -159,7 +159,7 @@ order by
 		      style="image"
 		      xhtml_alt="Drop Selected"
 		      xhtml_title="Drop Selected"
-		      text="&#160;Drop Selected"
+		      text="&nbsp;Drop Selected"
 		      value="images/icons/del_16.png">
 		      <v:on-post>
 	declare i, arr any;

@@ -10387,6 +10387,17 @@ bif_get_user_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 static caddr_t
+bif_get_user_id_by_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *) QST_INSTANCE (qst);
+  caddr_t name = bif_string_arg (qst, args, 0, "get_user_id");
+  user_t * usr = sec_name_to_user (name);
+  if (usr) 
+    return box_num (usr->usr_id);
+  return box_num (-1);
+}
+
+static caddr_t
 bif_identity_value (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *) QST_INSTANCE (qst);
@@ -12534,7 +12545,7 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       caddr_t cache_b = get_keyword_ucase_int (options, "use_cache", NULL);
       if ((DV_LONG_INT == DV_TYPE_OF (cache_b)) && unbox (cache_b))
         {
-          shc = shcompo_get_or_compile (&shcompo_vtable__qr, list (3, box_copy_tree (text), qi->qi_u_id, qi->qi_g_id), 0, qi, NULL, &err);
+          shc = shcompo_get_or_compile (&shcompo_vtable__qr, list (3, box_copy_tree (text), box_num (qi->qi_u_id), box_num (qi->qi_g_id)), 0, qi, NULL, &err);
           if (NULL == err)
             {
               shcompo_recompile_if_needed (&shc);
@@ -12731,6 +12742,206 @@ done:
     qr_free (qr);
   return res ? res : box_num (0);
 }
+
+#if 0 /* It's buggy in weirtd ways so it's commented out before used in applications */
+caddr_t
+bif_exec2 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  /* in text, in params, in max_rows/options */
+  local_cursor_t *lc = NULL;
+  dk_set_t rlist = NULL, proc_resultset = NULL;
+  caddr_t **final_result = NULL;
+  int n_args = BOX_ELEMENTS (args), n_cols, named_pars = 0;
+  query_instance_t *qi = (query_instance_t *) qst;
+  caddr_t _text;
+  caddr_t text = NULL;
+  caddr_t *params = NULL;
+  caddr_t *new_params = NULL;
+  caddr_t err = NULL;
+  query_t *qr = NULL;
+  long max = 0;
+  client_connection_t *cli = qi->qi_client;
+  dk_set_t warnings = NULL;
+  ST *pt = NULL;
+  boxint max_rows = -1;
+  int max_rows_is_set = 0;
+  caddr_t *options = NULL;
+  shcompo_t *shc = NULL;
+  PROC_SAVE_VARS;
+
+  _text = bif_arg (qst, args, 0, "exec2");
+
+  if (DV_STRINGP (_text))
+    text = _text;
+  else if (DV_WIDESTRINGP (_text))
+    {
+      unsigned out_len, wide_len = box_length (_text) / sizeof (wchar_t) - 1;
+      text = dk_alloc_box (wide_len * 9 + 1, DV_LONG_STRING);
+      out_len = (unsigned) cli_wide_to_escaped (QST_CHARSET (qst), 0, (wchar_t *) _text, wide_len,
+	  (unsigned char *) text, wide_len * 9, NULL, NULL);
+      text[out_len] = 0;
+    }
+  else if (ARRAYP (_text))
+    {
+      pt = (ST *) _text;
+    }
+  else
+    sqlr_new_error ("22023", "SR308", "exec() called with an invalid text to execute");
+  if (n_args > 1)
+    params = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 1, "exec2");
+  if (n_args > 2)
+    {
+      dtp_t options_dtp;
+      options = (caddr_t *)bif_arg(qst, args, 2, "exec2");
+      options_dtp = DV_TYPE_OF (options);
+      if (DV_ARRAY_OF_POINTER != options_dtp)
+        {
+          if (DV_LONG_INT == options_dtp)
+            {
+              max_rows = unbox ((caddr_t)options);
+              max_rows_is_set = 1;
+              options = NULL;
+            }
+          else if (DV_DB_NULL == options_dtp)
+            options = NULL;
+          else
+            sqlr_new_error ("22023", "SR599", "Argument #3 of exec2() should be either integer (max no of rows) or array of options or NULL");
+        }
+      else
+        {
+          caddr_t b = get_keyword_ucase_int (options, "max_rows", NULL);
+          if (NULL != b)
+            {
+              max_rows = unbox (b);
+              max_rows_is_set = 1;
+              dk_free_tree (b);
+            }
+        }
+    }
+  PROC_SAVE_PARENT;
+  warnings = sql_warnings_save (NULL);
+  if (max_rows_is_set)
+    cli->cli_resultset_max_rows = max_rows ? max_rows : -1;
+  cli->cli_resultset_data_ptr = &proc_resultset;
+  if (NULL != options)
+    {
+      caddr_t cache_b = get_keyword_ucase_int (options, "use_cache", NULL);
+      if ((DV_LONG_INT == DV_TYPE_OF (cache_b)) && unbox (cache_b))
+        {
+          shc = shcompo_get_or_compile (&shcompo_vtable__qr, list (3, box_copy_tree (text), qi->qi_u_id, qi->qi_g_id), 0, qi, NULL, &err);
+          if (NULL == err)
+            {
+              shcompo_recompile_if_needed (&shc);
+              if (NULL != shc->shcompo_error)
+                err = box_copy_tree (shc->shcompo_error);
+            }
+          if (NULL == err)
+            qr = (query_t *)(shc->shcompo_data);
+	  dk_free_tree (cache_b);
+          goto qr_set;
+        }
+      dk_free_tree (cache_b);
+    }
+  if (pt)
+    qr = sql_compile_1 ("", qi->qi_client, &err, SQLC_DEFAULT, pt, NULL);
+  else
+    qr = sql_compile (text, qi->qi_client, &err, SQLC_DEFAULT);
+
+qr_set:
+  if (err)
+    {
+      PROC_RESTORE_SAVED;
+      if (text != _text)
+        dk_free_box (text);
+      dk_free_tree (list_to_array (proc_resultset));
+      goto done;
+    }
+  if (text != _text)
+    dk_free_box (text);
+  named_pars = IS_BOX_POINTER(params) && qr_have_named_params (qr);
+  new_params = make_qr_exec_params (params, named_pars);
+  err = qr_exec(qi->qi_client, qr, qi, NULL, NULL, &lc,
+      new_params, NULL, 1);
+  dk_free_box ((box_t) new_params);
+  if (err)
+    {
+      if (lc)
+        {
+          qi->qi_n_affected = (long)(lc->lc_row_count);
+          lc_free (lc);
+          lc = NULL;
+        }
+      PROC_RESTORE_SAVED;
+      dk_free_tree (list_to_array (proc_resultset));
+      goto done;
+    }
+
+  PROC_RESTORE_SAVED;
+  if (lc) /* set the row_count */
+    qi->qi_n_affected = (long)(lc->lc_row_count);
+
+  if (lc && qr->qr_select_node)
+    {
+      long curr_row = 0;
+      if (proc_resultset)
+        dk_free_tree (list_to_array (proc_resultset));
+      if (max_rows > 0)
+        max = max_rows;
+       while (lc_next (lc) && (max == 0 || (max > 0 && curr_row < max)))
+         {
+           int inx;
+               caddr_t *row = (caddr_t *)
+                   dk_alloc_box (n_cols * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+               for (inx = 0; inx < n_cols; inx++)
+                 row[inx] = box_copy_tree (lc_nth_col (lc, inx));
+               dk_set_push (&rlist, (void *) row);
+           curr_row += 1;
+           if (curr_row >= MAX_BOX_ELEMENTS)
+             {
+               dk_free_tree (list_to_array (rlist));
+               err = srv_make_new_error ("22023", "SR078", "The result set is too long, must limit result for at most %lu rows", (unsigned long) MAX_BOX_ELEMENTS);
+               goto done;
+             }
+         }
+      final_result = (caddr_t **)list_to_array (dk_set_nreverse (rlist));
+    }
+  else
+    { /* handle procedure resultsets */
+      if (proc_resultset)
+        final_result = ((caddr_t **)list_to_array (dk_set_nreverse (proc_resultset)));
+      else if (lc)
+        final_result = (caddr_t **)box_num (lc->lc_row_count);
+      else
+        final_result = (caddr_t **) NEW_DB_NULL;
+    }
+
+done:
+#ifdef MALLOC_DEBUG
+  dk_check_tree (final_result);
+#endif
+  if (lc)
+    {
+      if (lc->lc_error)
+        {
+          err = lc->lc_error;
+          lc->lc_error = NULL;
+        }
+      lc_free (lc);
+      lc = NULL;
+    }
+  dk_free_tree (list_to_array (sql_warnings_save (warnings)));
+  if (NULL != shc)
+    shcompo_release (shc);
+  else
+    qr_free (qr);
+  if (NULL != err)
+    {
+      dk_free_tree ((caddr_t)final_result);
+      sqlr_resignal (err);
+    }
+  return (caddr_t)final_result;
+}
+#endif
 
 /*##
      exec_metadata() , this is to retrieve the column metadata
@@ -14800,6 +15011,63 @@ caddr_t
 bif_rdf_SHA512_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 { return bif_rdf_checksum_int (qst, args, SPAR_BIF_SHA512, "rdf_sha512_impl"); }
 
+caddr_t
+bif_rdf_valid_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  rdf_box_t *arg = (rdf_box_t *)bif_arg (qst, args, 0, "rdf_valid_impl");
+  if (DV_RDF != DV_TYPE_OF (arg))
+    return box_bool (1);
+  if (RDF_BOX_DEFAULT_TYPE == arg->rb_type)
+    return box_bool (1);
+  if (RDF_BOX_DEFAULT_LANG != arg->rb_lang)
+    return box_bool (0); /* Non-default datatype with non-default language? */
+  if (DV_STRING != DV_TYPE_OF (arg->rb_box))
+    return box_bool (1);
+  if (2 <= BOX_ELEMENTS (args))
+    {
+      caddr_t dt_uname = bif_string_or_uname_or_wide_or_null_arg (qst, args, 1, "rdf_valid_impl");
+      if (NULL == dt_uname) /* Invalid twobytes of a datatype? */
+        return box_bool (0);
+      /* Despite the use of bif_string_or_uname_or_wide_or_null_arg() we handle only UNAMEs here */
+      if ( (uname_xmlschema_ns_uri_hash_boolean			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_byte			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_date			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_dateTime		== dt_uname)
+      /*|| (uname_xmlschema_ns_uri_hash_dateTimeStamp		== dt_uname)*/
+        || (uname_xmlschema_ns_uri_hash_dayTimeDuration		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_decimal			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_double			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_duration		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_float			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_gDay			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_gMonth			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_gMonthDay		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_gYear			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_gYearMonth		== dt_uname)
+      /*|| (uname_xmlschema_ns_uri_hash_hexBinary		== dt_uname)*/
+        || (uname_xmlschema_ns_uri_hash_int			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_integer			== dt_uname)
+      /*|| (uname_xmlschema_ns_uri_hash_language		== dt_uname)*/
+        || (uname_xmlschema_ns_uri_hash_long			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_negativeInteger		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_nonNegativeInteger	== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_nonPositiveInteger	== dt_uname)
+      /*|| (uname_xmlschema_ns_uri_hash_normalizedString	== dt_uname)*/
+        || (uname_xmlschema_ns_uri_hash_positiveInteger		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_short			== dt_uname)
+      /*|| (uname_xmlschema_ns_uri_hash_string			== dt_uname)*/
+        || (uname_xmlschema_ns_uri_hash_time			== dt_uname)
+      /*|| (uname_xmlschema_ns_uri_hash_token			== dt_uname)*/
+        || (uname_xmlschema_ns_uri_hash_unsignedByte		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_unsignedInt		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_unsignedLong		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_unsignedShort		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_yearMonthDuration	== dt_uname) )
+        return box_bool (0);
+    }
+  return box_bool (1);
+}
+
 void
 bif_sparql_init (void)
 {
@@ -14827,6 +15095,7 @@ bif_sparql_init (void)
   bif_define_typed ("rdf_sha256_impl", bif_rdf_SHA256_impl, &bt_string);
   bif_define_typed ("rdf_sha384_impl", bif_rdf_SHA384_impl, &bt_string);
   bif_define_typed ("rdf_sha512_impl", bif_rdf_SHA512_impl, &bt_string);
+  bif_define_typed ("rdf_valid_impl", bif_rdf_valid_impl, &bt_integer);
 }
 
 
@@ -15187,6 +15456,7 @@ sql_bif_init (void)
   bif_define ("__proc_params_num", bif_proc_params_num);
   bif_define_typed ("__copy", bif_copy, &bt_copy);
   bif_define_typed ("exec", bif_exec, &bt_integer);
+/*  bif_define ("exec2", bif_exec2);*/
   bif_define_typed ("exec_metadata", bif_exec_metadata, &bt_integer);
   bif_define ("exec_score", bif_exec_score);
   bif_set_uses_index (bif_exec);
@@ -15226,6 +15496,7 @@ sql_bif_init (void)
   bif_define ("__set_user_id", bif_set_user_id);
   bif_define ("set_user_id", bif_set_user_id);
   bif_define ("get_user_id", bif_get_user_id);
+  bif_define ("get_user_id_by_name", bif_get_user_id_by_name);
   bif_define ("__pop_user_id", bif_pop_user_id);
   bif_define ("identity_value", bif_identity_value);
   fcache_init ();

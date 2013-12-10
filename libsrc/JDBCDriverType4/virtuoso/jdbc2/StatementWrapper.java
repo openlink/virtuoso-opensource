@@ -46,7 +46,7 @@ public class StatementWrapper implements Statement, Closeable {
 #else
   protected HashMap objsToClose = new HashMap();
 #endif
-  protected boolean isClosed = false;
+  protected volatile boolean isClosed = false;
 
 
   protected StatementWrapper(ConnectionWrapper _wconn, Statement _stmt) {
@@ -61,7 +61,7 @@ public class StatementWrapper implements Statement, Closeable {
   }
 
 
-  public synchronized void finalize () throws Throwable {
+  public void finalize () throws Throwable {
     close();
   }
 
@@ -109,18 +109,20 @@ public class StatementWrapper implements Statement, Closeable {
       return;
     isClosed = true;
 
-    try {
-      removeLink();
-      if (stmt != null) {
-        stmt.close();
-        stmt = null;
+    synchronized(this) {
+      try {
+        removeLink();
+        if (stmt != null) {
+          stmt.close();
+          stmt = null;
+        }
+        wconn = null;
+        if (objsToClose != null)
+          objsToClose.clear();
+      } catch (SQLException ex) {
+        exceptionOccurred(ex);
+        throw ex;
       }
-      wconn = null;
-      if (objsToClose != null)
-        objsToClose.clear();
-    } catch (SQLException ex) {
-      exceptionOccurred(ex);
-      throw ex;
     }
   }
 

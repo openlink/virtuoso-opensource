@@ -37,7 +37,7 @@ CLEANFILES =  \
 	virtuoso.pxa
 
 conductor_filesystem.vad conductor_dav.vad: $(EXTRA_DIST)
-	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost sh ./mkvad.sh
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost $(SHELL) ./mkvad.sh
 
 clean-local:
 	-rm -rf vad

@@ -147,7 +147,7 @@ function selectAllCheckboxes (form, btn)
         }
       self.maps := maps;
       ]]></v:before-data-bind>
-	<div>&#160;</div>
+	<div>&nbsp;</div>
 	<table  class="listing">
 <tr  class="listing_header_row">
   <th>

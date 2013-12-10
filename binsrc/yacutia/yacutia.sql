@@ -203,18 +203,18 @@ create procedure adm_menu_tree ()
  <node name="Home" url="main_tabs.vspx" id="1" tip="Common Tasks" allowed="yacutia_admin">
  </node>
  <node name="System Admin" url="sys_info.vspx" id="2" tip="Administer the Virtuoso server" allowed="yacutia_admin">
-   <node name="Dashboard" url="sys_info.vspx"  id="171" allowed="yacutia_admin">
+   <node name="Dashboard" url="sys_info.vspx" id="171" allowed="yacutia_admin">
      <node name="Dashboard Properties" url="dashboard.vspx" id="167" place="1" allowed="yacutia_admin"/>
    </node>
-   <node name="Security" url="sec_pki_1.vspx"  id="23" allowed="yacutia_acl_page">
+   <node name="Security" url="sec_pki_1.vspx" id="23" allowed="yacutia_acl_page">
      <node name="Public Key Infrastructure" url="sec_pki_1.vspx" id="24" place="1" allowed="yacutia_acl_page">
       <node name="PKI Wizard" url="sec_pki_1.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
       <node name="PKI Wizard" url="sec_pki_2.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
       <node name="PKI Wizard" url="sec_pki_3.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
       <node name="PKI Wizard" url="sec_pki_4.vspx" id="26" place="1" allowed="yacutia_acl_page"/>',
-case when __proc_exists ('VAL.DBA.setup_val_host') is not null then
+     case when __proc_exists ('VAL.DBA.setup_val_host') is not null then
      '<node name="PKI Wizard" url="sec_pki_val.vspx" id="26" place="1" allowed="yacutia_acl_page"/>'
-else '' end,
+     end,
      '<node name="PKI Wizard" url="sec_pki_drop.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
       <node name="PKI Wizard" url="sec_pki_2_conf.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
      </node>
@@ -223,7 +223,7 @@ else '' end,
       <node name="ACL Edit" url="sec_acl_edit.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
      </node>
    </node>
-   <node name="User Accounts" url="accounts_page.vspx"  id="3" allowed="yacutia_accounts_page">
+   <node name="User Accounts" url="accounts_page.vspx" id="3" allowed="yacutia_accounts_page">
      <node name="Accounts" url="accounts.vspx" id="4" place="1" allowed="yacutia_accounts_page"/>
      <node name="Accounts" url="account_create.vspx" id="5" place="1" allowed="yacutia_accounts_page"/>
      <node name="Accounts" url="account_remove.vspx" id="6" place="1" allowed="yacutia_accounts_page"/>
@@ -245,37 +245,37 @@ else '' end,
        <node name="Scheduler" url="sys_queues_error.vspx" id="166" place="1" allowed="yacutia_queues_page"/>
      </node>
    </node>
-   <node name="Parameters" url="inifile.vspx?page=Database"  id="21" allowed="yacutia_params_page">
+   <node name="Parameters" url="inifile.vspx?page=Database" id="21" allowed="yacutia_params_page">
      <node name="Parameters" url="inifile.vspx" id="22" place="1" allowed="yacutia_params_page"/>
    </node>
-   <node name="Packages" url="vad.vspx"  id="27" allowed="yacutia_vad_page">
-     <node name="Packages" url="vad.vspx"  id="28" place="1" allowed="yacutia_vad_page"/>
-     <node name="Install packages" url="vad_install.vspx"  id="29" place="1" allowed="yacutia_vad_page"/>
-     <node name="Remove packages" url="vad_remove.vspx"  id="30" place="1" allowed="yacutia_vad_page"/>
-     <node name="Package status" url="vad_status.vspx"  id="31" place="1" allowed="yacutia_vad_page"/>
-     <node name="WA Package" url="vad_wa_config.vspx"  id="32" place="1" allowed="yacutia_vad_page"/>
-     <node name="WA Package" url="vad_wa_create.vspx"  id="312" place="1" allowed="yacutia_vad_page"/>
-     <node name="Install packages" url="vad_install_batch.vspx"  id="29" place="1" allowed="yacutia_vad_page"/>
-     <node name="Remove packages" url="vad_remove_batch.vspx"  id="30" place="1" allowed="yacutia_vad_page"/>
-     <node name="Select VAD source" url="vad_src.vspx"  id="30" place="1" allowed="yacutia_vad_page"/>
+   <node name="Packages" url="vad.vspx" id="27" allowed="yacutia_vad_page">
+     <node name="Packages" url="vad.vspx" id="28" place="1" allowed="yacutia_vad_page"/>
+     <node name="Install packages" url="vad_install.vspx" id="29" place="1" allowed="yacutia_vad_page"/>
+     <node name="Remove packages" url="vad_remove.vspx" id="30" place="1" allowed="yacutia_vad_page"/>
+     <node name="Package status" url="vad_status.vspx" id="31" place="1" allowed="yacutia_vad_page"/>
+     <node name="WA Package" url="vad_wa_config.vspx" id="32" place="1" allowed="yacutia_vad_page"/>
+     <node name="WA Package" url="vad_wa_create.vspx" id="312" place="1" allowed="yacutia_vad_page"/>
+     <node name="Install packages" url="vad_install_batch.vspx" id="29" place="1" allowed="yacutia_vad_page"/>
+     <node name="Remove packages" url="vad_remove_batch.vspx" id="30" place="1" allowed="yacutia_vad_page"/>
+     <node name="Select VAD source" url="vad_src.vspx" id="30" place="1" allowed="yacutia_vad_page"/>
    </node>
-   <node name="Backup" url="db_backup.vspx"  id="79" allowed="yacutia_backup_page">
+   <node name="Backup" url="db_backup.vspx" id="79" allowed="yacutia_backup_page">
      <node name="Backup" url="db_backup_clear.vspx" id="169" place="1" allowed="yacutia_backup_page"/>
    </node>
-   <node name="Monitor" url="logging_page.vspx"  id="33" allowed="yacutia_loging_page">
-     <node name="Version &amp; License Info" url="logging.vspx"  id="34" place="1" allowed="yacutia_loging_page"/>
-     <node name="DB Server Statistics" url="logging_db.vspx"  id="35" place="1"  allowed="yacutia_loging_page"/>
+   <node name="Monitor" url="logging_page.vspx" id="33" allowed="yacutia_loging_page">
+     <node name="Version &amp; License Info" url="logging.vspx" id="34" place="1" allowed="yacutia_loging_page"/>
+     <node name="DB Server Statistics" url="logging_db.vspx" id="35" place="1"  allowed="yacutia_loging_page"/>
      <node name="Disk Statistics" url="logging_disk.vspx"   id="36" place="1" allowed="yacutia_loging_page"/>
-     <node name="Index Statistics" url="logging_index.vspx"  id="37" place="1" allowed="yacutia_loging_page"/>
-     <node name="Lock Statistics" url="logging_lock.vspx"  id="38" place="1" allowed="yacutia_loging_page"/>
-     <node name="Space Statistics" url="logging_space.vspx"  id="39" place="1" allowed="yacutia_loging_page"/>
+     <node name="Index Statistics" url="logging_index.vspx" id="37" place="1" allowed="yacutia_loging_page"/>
+     <node name="Lock Statistics" url="logging_lock.vspx" id="38" place="1" allowed="yacutia_loging_page"/>
+     <node name="Space Statistics" url="logging_space.vspx" id="39" place="1" allowed="yacutia_loging_page"/>
      <node name="HTTP Server Statistics" url="logging_http.vspx"    id="40" place="1" allowed="yacutia_loging_page"/>
      <node name="Profiling" url="logging_prof.vspx"   id="41" place="1" allowed="yacutia_loging_page"/>
      <node name="Log Viewer" url="logging_view.vspx"   id="42" place="1" allowed="yacutia_loging_page"/>
    </node>
  </node>
- <node name="Database" url="databases.vspx"  id="43" tip="Database Server local and remote resource manipulation" allowed="yacutia_db">
-   <node name="SQL Database Objects" url="databases.vspx"  id="44" allowed="yacutia_databases_page">
+ <node name="Database" url="databases.vspx" id="43" tip="Database Server local and remote resource manipulation" allowed="yacutia_db">
+   <node name="SQL Database Objects" url="databases.vspx" id="44" allowed="yacutia_databases_page">
      <node name="Databases-drop" url="databases_drop.vspx" id="45" place="1" allowed="yacutia_databases_page"/>
      <node name="Databases-drop" url="db_drop_conf.vspx" id="46" place="1" allowed="yacutia_databases_page"/>
      <node name="Databases-drop" url="db_drop_errs.vspx" id="47" place="1" allowed="yacutia_databases_page"/>
@@ -292,11 +292,11 @@ else '' end,
      <node name="Databases-grants" url="db_grant_many.vspx" id="192" place="1" allowed="yacutia_databases_page"/>
      <node name="Databases-grants" url="db_grant_errs.vspx" id="193" place="1" allowed="yacutia_databases_page"/>
    </node>',
---   <node name="Schema Editor" url="xddl.vspx?init=xddl"  id="52" allowed="yacutia_xddl_page">
+--   <node name="Schema Editor" url="xddl.vspx?init=xddl" id="52" allowed="yacutia_xddl_page">
 --     <node name="edit" url="xddl.vspx" id="53" place="1" allowed="yacutia_xddl_page"/>
 --     <node name="edit" url="xddl2.vspx" id="54" place="1" allowed="yacutia_xddl_page"/>
 --   </node>
-  '<node name="External Data Sources" url="vdb_linked_obj.vspx"  id="55" allowed="yacutia_remote_data_access_page">
+  '<node name="External Data Sources" url="vdb_linked_obj.vspx" id="55" allowed="yacutia_remote_data_access_page">
      <node name="VDB Management" url="vdb_unlink_obj.vspx" id="56" place="1" allowed="yacutia_remote_data_access_page"/>
      <node name="VDB Management" url="vdb_conn_dsn.vspx" id="57" place="1" allowed="yacutia_remote_data_access_page"/>
      <node name="VDB Management" url="vdb_config_dsn.vspx" id="58" place="1" allowed="yacutia_remote_data_access_page"/>
@@ -315,8 +315,8 @@ else '' end,
      <node name="Link External Resources" url="vdb_link.vspx" id="69" place="1" allowed="yacutia_remote_data_access_page"/>
      <node name="Edit Datasource" url="vdb_dsn_edit.vspx" id="70" place="1" allowed="yacutia_remote_data_access_page"/>
    </node>
-   <node name="Interactive SQL" url="isql_main.vspx"  id="71" allowed="yacutia_isql_page"/>
-   <node name="User Defined Types" url="hosted_page.vspx"  id="72" allowed="yacutia_runtime">
+   <node name="Interactive SQL" url="isql_main.vspx" id="71" allowed="yacutia_isql_page"/>
+   <node name="User Defined Types" url="hosted_page.vspx" id="72" allowed="yacutia_runtime">
      <node name="Loaded Modules" url="hosted_modules.vspx" id="73" place="1" allowed="yacutia_runtime_loaded"/>
      <node name="Import Files" url="hosted_import.vspx" id="74" place="1" allowed="yacutia_runtime_import"/>
      <node name="Import Files Results" url="hosted_modules_load_results.vspx" id="75" place="1" allowed="yacutia_runtime_import_result"/>
@@ -324,19 +324,19 @@ else '' end,
      <node name="Load Modules" url="hosted_modules_select2.vspx" id="77" place="1" allowed="yacutia_runtime_loaded_select2"/>
      <node name="Modules Grant" url="hosted_grant.vspx" id="78" place="1" allowed="yacutia_runtime_hosted_grant"/>
    </node>
-   <node name="Import" url="import_csv_1.vspx"  id="271" allowed="cvs_import">
-   <node name="Import" url="import_csv_2.vspx"  id="271" place="1" />
-   <node name="Import" url="import_csv_3.vspx"  id="271" place="1" />
-   <node name="Import" url="import_csv_opts.vspx"  id="271" place="1" />
+   <node name="Import" url="import_csv_1.vspx" id="271" allowed="cvs_import">
+   <node name="Import" url="import_csv_2.vspx" id="271" place="1" />
+   <node name="Import" url="import_csv_3.vspx" id="271" place="1" />
+   <node name="Import" url="import_csv_opts.vspx" id="271" place="1" />
    </node>
  </node>
- <node name="Replication"  url="db_repl_basic.vspx" id="80" tip="Replications" allowed="yacutia_repl">
-   <node name="Basic" url="db_repl_basic.vspx"  id="8001" >
+ <node name="Replication" url="db_repl_basic.vspx" id="80" tip="Replications" allowed="yacutia_repl">
+   <node name="Basic" url="db_repl_basic.vspx" id="8001" >
     <node name="Basic" url="db_repl_basic_create.vspx" id="8002" place="1" />
     <node name="Basic" url="db_repl_basic_local.vspx" id="8011" place="1" />
     <node name="Basic" url="db_repl_basic_local_create.vspx" id="8012" place="1" />
    </node>
-   <node name="Incremental" url="db_repl_snap_pull.vspx"  id="81" >
+   <node name="Incremental" url="db_repl_snap_pull.vspx" id="81" >
     <node name="Incremental" url="db_repl_snap_pull_create.vspx" id="82" place="1" />
     <node name="Incremental" url="db_repl_snap.vspx" id="83" place="1"/>
     <node name="Incremental" url="db_repl_snap_create.vspx" id="84" place="1" />
@@ -353,7 +353,7 @@ else '' end,
     <node name="Bidirectional Snapshot" url="db_repl_bi_cr_edit.vspx" id="94" place="1" />
    </node>
    <node name="Transactional" url="db_repl_trans.vspx" id="95" >
-      <node name="Transactional (publish)" url="db_repl_pub.vspx"  id="96" place="1"/>
+      <node name="Transactional (publish)" url="db_repl_pub.vspx" id="96" place="1"/>
       <node name="Transactional (publish)" url="db_repl_pub_create.vspx" id="97" place="1" />
       <node name="Transactional (publish)" url="db_repl_pub_edit.vspx" id="98" place="1" />
       <node name="Transactional (publish)" url="db_repl_rdf_pub_edit.vspx" id="98" place="1" />
@@ -366,8 +366,8 @@ else '' end,
       <node name="Transactional (publish)" url="db_repl_sub_edit.vspx" id="105" place="1" />
    </node>
  </node>
- <node name="Web Application Server" url="cont_page.vspx"  id="138" tip="Web server DAV repository and Web site hosting control" allowed="yacutia_http">
-   <node name="Content Management" url="cont_page.vspx"  id="139" allowed="yacutia_http_content_page">
+ <node name="Web Application Server" url="cont_page.vspx" id="138" tip="Web server DAV repository and Web site hosting control" allowed="yacutia_http">
+   <node name="Content Management" url="cont_page.vspx" id="139" allowed="yacutia_http_content_page">
       <node name="Content Management" url="cont_page.vspx" id="140" place="1" allowed="yacutia_http_content_page"/>
       <node name="Content Management" url="cont_management.vspx" id="141" place="1" allowed="yacutia_http_content_page"/>
       <node name="Robot Control" url="robot_control.vspx" id="142" place="1" allowed="yacutia_http_content_page"/>
@@ -383,7 +383,7 @@ else '' end,
       <node name="Resource Types" url="cont_type_edit.vspx" id="151" place="1" allowed="yacutia_http_content_page"/>
       <node name="Resource Types" url="cont_type_remove.vspx" id="152" place="1" allowed="yacutia_http_content_page"/>
    </node>
-   <node name="Virtual Domains &amp; Directories" url="http_serv_mgmt.vspx"  id="153" allowed="yacutia_http_server_management_page">
+   <node name="Virtual Domains &amp; Directories" url="http_serv_mgmt.vspx" id="153" allowed="yacutia_http_server_management_page">
       <node name="Edit Paths" url="http_edit_paths.vspx" id="154" place="1" allowed="yacutia_http_server_management_page"/>
       <node name="Add Path" url="http_add_path.vspx" id="155" place="1" allowed="yacutia_http_server_management_page"/>
       <node name="Edit Host" url="http_host_edit.vspx" id="170" place="1" allowed="yacutia_http_server_management_page"/>
@@ -393,16 +393,16 @@ else '' end,
       <node name="Content Negotiation" url="http_tcn.vspx" id="194" place="1" allowed="yacutia_http_server_management_page"/>
    </node>
  </node>
- <node name="XML" url="xml_sql.vspx"  id="106" tip="XML Services permit manipulation of XML data from stored and SQL sources" allowed="yacutia_xml">
-   <node name="SQL-XML" url="xml_sql.vspx"  id="107" allowed="yacutia_sql_xml_page">
+ <node name="XML" url="xml_sql.vspx" id="106" tip="XML Services permit manipulation of XML data from stored and SQL sources" allowed="yacutia_xml">
+   <node name="SQL-XML" url="xml_sql.vspx" id="107" allowed="yacutia_sql_xml_page">
      <node name="SQL-XML" url="xml_sql2.vspx" id="108" place="1" allowed="yacutia_sql_xml_page">
      </node>
    </node>
-   <node name="XSL Transformation" url="xslt.vspx"  id="109" allowed="yacutia_xslt_page">
+   <node name="XSL Transformation" url="xslt.vspx" id="109" allowed="yacutia_xslt_page">
      <node name="XSLT" url="xslt_result.vspx" id="110" place="1" allowed="yacutia_xslt_page">
      </node>
    </node>
-   <node name="XQuery" url="xquery.vspx"  id="111" allowed="yacutia_xquery_page">
+   <node name="XQuery" url="xquery.vspx" id="111" allowed="yacutia_xquery_page">
      <node name="XQuery" url="xquery.vspx" id="112" place="1" allowed="yacutia_xquery_page" />
      <node name="XQuery" url="xquery2.vspx" id="113" place="1" allowed="yacutia_xquery_page"/>
      <node name="XQuery" url="xquery3.vspx" id="114" place="1" allowed="yacutia_xquery_page"/>
@@ -410,21 +410,21 @@ else '' end,
      <node name="XQuery" url="xquery_templates.vspx" id="173" place="1" allowed="yacutia_xquery_page"/>
      <node name="XQuery" url="xquery_adv.vspx" id="178" place="1" allowed="yacutia_xquery_page"/>
    </node>',
---   <node name="XML Schema" url="xml_xsd.vspx"  id="116" allowed="yacutia_xml_schema_check_page">
+--   <node name="XML Schema" url="xml_xsd.vspx" id="116" allowed="yacutia_xml_schema_check_page">
 --      <node name="XML Schema" url="xml_xsd.vspx" id="117" place="1" allowed="yacutia_xml_schema_check_page"/>
 --   </node>
---   <node name="Mapping Schema" url="mapped_schema_xml.vspx"  id="118" allowed="yacutia_mapped_schema_page">
+--   <node name="Mapping Schema" url="mapped_schema_xml.vspx" id="118" allowed="yacutia_mapped_schema_page">
 --      <node name="Mapping Schema" url="mapped_schema_xml.vspx" id="119" place="1" allowed="yacutia_mapped_schema_page"/>
 --   </node>
  '</node>
- <node name="Web Services" url="soap_services.vspx"  id="120" tip="Web Services permit the exposure and consumption of functions for distributed applications" allowed="yacutia_web">
-   <node name="Web Service Endpoints" url="soap_services.vspx"  id="121" allowed="yacutia_soap_page">
+ <node name="Web Services" url="soap_services.vspx" id="120" tip="Web Services permit the exposure and consumption of functions for distributed applications" allowed="yacutia_web">
+   <node name="Web Service Endpoints" url="soap_services.vspx" id="121" allowed="yacutia_soap_page">
      <node name="Web Service Endpoint Edit" url="soap_services_list.vspx" id="122" place="1" allowed="yacutia_soap_page"/>
      <node name="Web Service Endpoint List" url="soap_services_edit.vspx" id="123" place="1" allowed="yacutia_soap_page"/>
      <node name="Web Service Endpoint List" url="soap_options_edit.vspx" id="124" place="1" allowed="yacutia_soap_page"/>
      <node name="Delete Web Service Endpoint" url="soap_del_path.vspx" id="165" place="1" allowed="yacutia_soap_page"/>
    </node>
-   <node name="WSDL Import / Export" url="wsdl_services.vspx"  id="125" allowed="yacutia_wsdl_page">
+   <node name="WSDL Import / Export" url="wsdl_services.vspx" id="125" allowed="yacutia_wsdl_page">
      <node name="Import" url="wsdl_services.vspx" id="126" place="1" allowed="yacutia_wsdl_page">
        <node name="Import" url="wsdl_services.vspx" id="127" place="1" allowed="yacutia_wsdl_page"/>
      </node>
@@ -433,7 +433,7 @@ else '' end,
      </node>
    </node>
    <node name="BPEL" url="bpel_service.vspx" id="165" allowed="yacutia_bpel_page"/>',
---   <node name="UDDI Services" url="uddi_serv.vspx"  id="130" allowed="yacutia_uddi_page">
+--   <node name="UDDI Services" url="uddi_serv.vspx" id="130" allowed="yacutia_uddi_page">
 --     <node name="Server" url="uddi_serv.vspx" id="131" place="1" allowed="yacutia_uddi_page"/>
 --     <node name="Browse" url="uddi_serv_browse.vspx" id="132" place="1" allowed="yacutia_uddi_page"/>
 --     <node name="Create" url="uddi_serv_create.vspx" id="133" place="1" allowed="yacutia_uddi_page"/>
@@ -441,20 +441,20 @@ else '' end,
 --     <node name="Remove" url="uddi_remove.vspx" id="135" place="1" allowed="yacutia_uddi_page"/>
 --   </node>',
 --case wa_available
---when 1 then '<node name="Applications" url="site.vspx"  id="136" allowed="yacutia_app_page">
+--when 1 then '<node name="Applications" url="site.vspx" id="136" allowed="yacutia_app_page">
 --               <node name="edit" url="site.vspx" id="137" place="1" allowed="yacutia_app_page"/>
 --             </node>'
 --when 0 then '' end,
 '</node>
- <node name="Linked Data" url="sparql_input.vspx"  id="189" tip="Linked Data" allowed="yacutia_message">',
-  '<node name="SPARQL" url="sparql_input.vspx"  id="180" allowed="yacutia_sparql_page">
+ <node name="Linked Data" url="sparql_input.vspx" id="189" tip="Linked Data" allowed="yacutia_message">',
+  '<node name="SPARQL" url="sparql_input.vspx" id="180" allowed="yacutia_sparql_page">
      <node name="SPARQL" url="sparql_load.vspx" id="181" place="1" allowed="yacutia_sparql_page" />
    </node>',
-case when 0 and check_package('rdf_mappers') then
-  '<node name="Stylesheets" url="sparql_filters.vspx"  id="190" tip="GRDDL " allowed="yacutia_message">
+  case when 0 and check_package('rdf_mappers') then
+  '<node name="Stylesheets" url="sparql_filters.vspx" id="190" tip="GRDDL " allowed="yacutia_message">
      <node name="Stylesheets" url="sparql_filters.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
-   </node>' else '' end,
-   '<node name="Sponger" url="rdf_filters.vspx"  id="191" tip="Linked Data Cartridges " allowed="yacutia_message">
+   </node>' end,
+   '<node name="Sponger" url="rdf_filters.vspx" id="191" tip="Linked Data Cartridges " allowed="yacutia_message">
      <node name="Cartridges" url="rdf_filters.vspx" id="192" place="1" allowed="yacutia_sparql_page" />
      <node name="Meta Cartridges" url="rdf_filters_pp.vspx" id="193" place="1" allowed="yacutia_sparql_page" />
      <node name="Stylesheets" url="sparql_filters.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
@@ -462,50 +462,53 @@ case when 0 and check_package('rdf_mappers') then
      <node name="Configuration" url="rdf_conf.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
    </node>',
    '<node name="Statistics" url="rdf_void.vspx" id="194" tip="RDF Statistics" allowed="yacutia_sparql_page" />',
-   '<node name="Graphs"  url="sparql_graph.vspx"  id="183" allowed="yacutia_message">
+   '<node name="Graphs" url="graphs_page.vspx" id="183" allowed="yacutia_sparql_page">
      <node name="Graphs" url="sparql_graph.vspx" id="184" place="1" allowed="yacutia_sparql_page" />
+     <node name="User Security" url="graphs_users_security.vspx" id="185" place="1" allowed="yacutia_sparql_page" />
+     <node name="Roles Security" url="graphs_roles_security.vspx" id="186" place="1" allowed="yacutia_sparql_page" />
+     <node name="Audit Security" url="graphs_audit_security.vspx" id="187" place="1" allowed="yacutia_sparql_page" />
    </node>',
-   '<node name="Schemas"  url="rdf_schemas.vspx"  id="183" allowed="yacutia_message">
-     <node name="Schemas" url="rdf_schemas.vspx" id="184" place="1" allowed="yacutia_sparql_page" />
+   '<node name="Schemas"  url="rdf_schemas.vspx" id="188" allowed="yacutia_message">
+     <node name="Schemas" url="rdf_schemas.vspx" id="189" place="1" allowed="yacutia_sparql_page" />
    </node>
-   <node name="Namespaces"  url="persistent_xmlns.vspx"  id="183" allowed="yacutia_message" />',
-      case when ((wa_available > 0 or policy_vad is not null) and rdf_available > 0) then
-      ' <node name="Access Control" url="sparql_acl.vspx" id="274" allowed="yacutia_acls">
+   <node name="Namespaces"  url="persistent_xmlns.vspx" id="183" allowed="yacutia_message" />',
+     case when ((wa_available > 0 or policy_vad is not null) and rdf_available > 0) then
+     '<node name="Access Control" url="sparql_acl.vspx" id="274" allowed="yacutia_acls">
         <node name="ACL List" url="sec_auth_serv_sp.vspx" id="277" place="1" allowed="yacutia_acls"/>
         <node name="Sponger Groups" url="sec_auth_sponger_1.vspx" id="277" place="1" allowed="yacutia_acls"/>
         <node name="Sponger ACL" url="sec_auth_sponger_2.vspx" id="277" place="1" allowed="yacutia_acls"/>
         <node name="ACL Edit" url="sec_acl_edit_sp.vspx" id="276" place="1" allowed="yacutia_acls"/>
         <node name="SPARQL ACL" url="sparql_acl.vspx" id="277" place="1" allowed="yacutia_acls"/>
-       </node>'
-      else '' end,
-   '<node name="Views" url="db_rdf_objects.vspx"  id="271" allowed="yacutia_rdf_schema_objects_page"/>
-   <node name="Views" url="db_rdf_class.vspx"  id="272" place="1"/>
-   <node name="Views" url="db_rdf_owl.vspx"  id="273" place="1"/>
-   <node name="Views" url="db_rdf_view_1.vspx"  id="273" place="1"/>
-   <node name="Views" url="db_rdf_view_2.vspx"  id="273" place="1"/>
-   <node name="Views" url="db_rdf_view_3.vspx"  id="273" place="1"/>
-   <node name="Views" url="db_rdf_view_tb.vspx"  id="273" place="1"/>
-   <node name="Views" url="db_rdf_view_cols.vspx"  id="273" place="1"/>
-   <node name="Views" url="db_rdf_view_pk.vspx"  id="273" place="1"/>',
-case when check_package('VAL') then
-   '<node name="OAuth Service Binding" url="login_keys.vspx" id="281" allowed="yacutia_val">
+      </node>'
+     end,
+   '<node name="Views" url="db_rdf_objects.vspx" id="271" allowed="yacutia_rdf_schema_objects_page"/>
+   <node name="Views" url="db_rdf_class.vspx" id="272" place="1"/>
+   <node name="Views" url="db_rdf_owl.vspx" id="273" place="1"/>
+   <node name="Views" url="db_rdf_view_1.vspx" id="273" place="1"/>
+   <node name="Views" url="db_rdf_view_2.vspx" id="273" place="1"/>
+   <node name="Views" url="db_rdf_view_3.vspx" id="273" place="1"/>
+   <node name="Views" url="db_rdf_view_tb.vspx" id="273" place="1"/>
+   <node name="Views" url="db_rdf_view_cols.vspx" id="273" place="1"/>
+   <node name="Views" url="db_rdf_view_pk.vspx" id="273" place="1"/>',
+   case when check_package('VAL') then
+  '<node name="OAuth Service Binding" url="login_keys.vspx" id="281" allowed="yacutia_val">
       <node name="OAuth Service Binding" url="login_keys.vspx" id="282" place="1"  allowed="yacutia_val"/>
-   </node>' else '' end,
-case when check_package('rdb2rdf') then
-   '<node name="R2RML" url="r2rml_import.vspx"  id="273" />
-   <node name="R2RML" url="r2rml_validate.vspx"  id="273" place="1"/>
-   <node name="R2RML" url="r2rml_gen.vspx"  id="273" place="1"/>' else '' end,
-   '<node name="Quad Store Upload" url="rdf_import.vspx"  id="271" allowed="rdf_import_page"/>',
+   </node>'
+   end,
+   case when check_package('rdb2rdf') then
+  '<node name="R2RML" url="r2rml_import.vspx" id="273" />
+   <node name="R2RML" url="r2rml_validate.vspx" id="273" place="1"/>
+   <node name="R2RML" url="r2rml_gen.vspx" id="273" place="1"/>'
+   end,
+  '<node name="Quad Store Upload" url="rdf_import.vspx" id="271" allowed="rdf_import_page"/>',
    case when __proc_exists ('PSH.DBA.cli_subscribe') is not null then 
-   '<node name="Subscriptions (PHSB)" url="rdf_psh_subs.vspx"  id="271" allowed="rdf_psh_sub_page"/>'
-       else
-       '' 
-       end,
+  '<node name="Subscriptions (PHSB)" url="rdf_psh_subs.vspx" id="271" allowed="rdf_psh_sub_page"/>'
+   end,
 '</node>
- <node name="NNTP" url="msg_news_conf.vspx"  id="157" tip="Mail and news messaging" allowed="yacutia_message">',
-   --<node name="Mail Configuration" url="msg_mail_conf.vspx"  id="158" yacutia_mail_config_page"">
+ <node name="NNTP" url="msg_news_conf.vspx" id="157" tip="Mail and news messaging" allowed="yacutia_message">',
+   --<node name="Mail Configuration" url="msg_mail_conf.vspx" id="158" yacutia_mail_config_page"">
    --</node>
-   '<node name="News Servers" url="msg_news_conf.vspx"  id="159" allowed="yacutia_news_config_page">
+   '<node name="News Servers" url="msg_news_conf.vspx" id="159" allowed="yacutia_news_config_page">
      <node name="News Groups" url="msg_news_groups.vspx" id="160" place="1"  allowed="yacutia_news_config_page"/>
      <node name="News Group Subscripting" url="msg_news_group_subscribe.vspx" id="161" place="1"  allowed="yacutia_news_config_page"/>
      <node name="News Group Messages" url="msg_news_group_messages.vspx" id="162" place="1"  allowed="yacutia_news_config_page"/>
@@ -6001,29 +6004,6 @@ create procedure DI_TAG (in fp any, in w any, in dgst any := 'MD5', in fmt any :
 }
 ;
 
-create procedure X509_STRING_DATE (in val varchar)
-{
-  declare ret, tmp any;
-  ret := NULL;
-  declare exit handler for sqlstate '*'
-    {
-      return null;
-    };
-  val := regexp_replace (val, '[ ]+', ' ', 1, null);
-  -- Jan 11 14:36:33 2012 GMT
-  if (val is not null and regexp_match ('[[:upper:]][[:lower:]]{2} [0-9]{1,} [0-9]{2}:[0-9]{2}:[0-9]{2} [0-9]{4,} GMT', val) is not null)
-    {
-      tmp := sprintf_inverse (val, '%s %s %s %s GMT', 0);
-      if (tmp is not null and length (tmp) > 3)
-	{
-	  ret := http_string_date (sprintf ('Wee, %s %s %s %s GMT', tmp[1], tmp[0], tmp[3], tmp[2]));
-	  ret := dt_set_tz (ret, 0);
-	}
-    }
-  return ret;
-}
-;
-
 create procedure URL_REMOVE_FRAG (in uri any)
 {
   declare h any;
@@ -6184,3 +6164,33 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('pki_cert_rule1', 1,
     2);
 
 grant execute on PKI.DBA."key" to PKI;
+
+create procedure y_utf2wide (
+  in S any)
+{
+  declare retValue any;
+
+  if (isstring (S))
+  {
+    retValue := charset_recode (S, 'UTF-8', '_WIDE_');
+    if (iswidestring (retValue))
+      return retValue;
+  }
+  return S;
+}
+;
+
+create procedure y_wide2utf (
+  in S any)
+{
+  declare retValue any;
+
+  if (iswidestring (S))
+  {
+    retValue := charset_recode (S, '_WIDE_', 'UTF-8' );
+    if (isstring (retValue))
+      return retValue;
+  }
+  return charset_recode (S, null, 'UTF-8' );
+}
+;

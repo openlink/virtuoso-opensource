@@ -41,7 +41,7 @@ CLEANFILES =  \
         vad_fs.xml
 
 fct_dav.vad: $(EXTRA_DIST)
-	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost sh ./make_vad.sh
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost $(SHELL) ./make_vad.sh
 
 clean-local:
 	-rm -rf vad
@@ -54,14 +54,14 @@ clean-local:
 EXTRA_DIST = \
 	$(srcdir)/*.html \
 	$(srcdir)/*.js \
+	$(srcdir)/*.owl \
 	$(srcdir)/*.sql \
 	$(srcdir)/*.txt \
 	$(srcdir)/*.vsp \
 	$(srcdir)/*.xsl \
 	$(srcdir)/images/*.gif \
 	$(srcdir)/images/*.png \
-	$(srcdir)/images/rdf_w3c.svg \
-	$(srcdir)/images/sw-vert-v.svg \
+	$(srcdir)/images/*.svg \
 	$(srcdir)/make_vad.sh \
 	$(srcdir)/rdfdesc/*.sql \
 	$(srcdir)/rdfdesc/*.vsp \

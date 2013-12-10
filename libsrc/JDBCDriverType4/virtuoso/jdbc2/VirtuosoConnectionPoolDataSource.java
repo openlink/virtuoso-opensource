@@ -63,6 +63,7 @@ public class VirtuosoConnectionPoolDataSource
     private ConnCache connPool;
     private boolean isInitialized = false;
     private boolean isClosed = false;
+    private VirtuosoPoolStatistic stat;
     private Object  initLock ;
 #if JDK_VER >= 16
     private TreeSet<Object> propQueue;
@@ -80,6 +81,7 @@ public class VirtuosoConnectionPoolDataSource
   public VirtuosoConnectionPoolDataSource() {
     dataSourceName = "VirtuosoConnectionPoolDataSourceName";
     initLock = new Object();
+    stat = new VirtuosoPoolStatistic();
     connPool = new ConnCache(this);
 #if JDK_VER >= 16
     propQueue = new TreeSet<Object>( new Comparator<Object>() {
@@ -139,6 +141,29 @@ public class VirtuosoConnectionPoolDataSource
     }
   }
 
+
+  /**
+   * Return the cache statistics for the VirtuosoConnectionPoolDataSource
+   *
+   * @return  the cache statistics
+   *
+  **/
+  public synchronized VirtuosoPoolStatistic get_statistics() {
+    VirtuosoPoolStatistic v = (VirtuosoPoolStatistic)stat.clone();
+    v.setCacheParam(dataSourceName, connPool.cacheSize,
+        connPool.unUsed.size(), connPool.in_Use.size());
+    return v;
+  }
+
+  /**
+   * Return an array of the cache statistics for the all created VirtuosoConnectionPoolDataSources
+   *
+   * @return  the array of cache statistics
+   *
+  **/
+  public synchronized VirtuosoPoolStatistic[] getAll_statistics() {
+    return VirtuosoPoolManager.getInstance().getAll_statistics();
+  }
 
   /**
    * Physically close all the pooled connections in the cache and free all
@@ -784,6 +809,7 @@ public class VirtuosoConnectionPoolDataSource
         if (!unUsed.isEmpty() && (pconn = lookup(connKey)) != null) {
           pconn.init(cpds);
           in_Use.put(pconn, pconn);
+          stat._hits++;
           return pconn;
         }
       }
@@ -804,11 +830,13 @@ public class VirtuosoConnectionPoolDataSource
       long start = System.currentTimeMillis();
       long _timeout = loginTimeout * 1000L;
       Thread thr = Thread.currentThread();
+      stat._misses++;
       while (pconn == null) {
 //    System.out.println("Thread "+thr+" begin a waiting...");
         synchronized(this) {
           if (!unUsed.isEmpty() && (pconn = lookup(connKey)) != null) {
 //          System.out.println("Thread "+thr+" has found a free connection");
+            stat.setWaitingTime(System.currentTimeMillis() - start);
             pconn.init(cpds);
             in_Use.put(pconn, pconn);
             return pconn;

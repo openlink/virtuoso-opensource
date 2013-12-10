@@ -1781,6 +1781,24 @@ ws_header_line_to_array (caddr_t string)
   return headers;
 }
 
+static char *
+ws_get_mime_variant (char * mime, char ** found)
+{
+  static char * compat[] = {"text/plain", "text/*", NULL, NULL}; /* for now text/plain only, can be added more */
+  int inx;
+  *found = NULL;
+  for (inx = 0; NULL != compat[inx]; inx += 2)
+    {
+      if (!strcmp (compat[inx], mime))
+	{
+	  *found = compat[inx];
+	  return compat[inx+1];
+	}
+    }
+  return mime;
+}
+
+
 static const char *
 ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check_only, OFF_T clen, const char * charset)
 {
@@ -1800,7 +1818,7 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
   char buf [1000];
   caddr_t ctype = NULL, cenc = NULL;
   caddr_t * asked;
-  char * match = NULL;
+  char * match = NULL, * found = NULL;
   int inx;
   int ignore = (ws->ws_p_path_string ?
       ((0 == strnicmp (ws->ws_p_path_string, "http://", 7)) ||
@@ -1826,6 +1844,7 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
   asked = ws_split_ac_header (accept);
   DO_BOX (caddr_t, p, inx, asked)
     {
+      p = ws_get_mime_variant (p, &found);
       if (DVC_MATCH == cmp_like (mime, p, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR))
 	{
 	  match = p;
@@ -1852,6 +1871,23 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
 	  HTTP_SET_STATUS_LINE (ws, code, 1);
 	}
       check_only = 0;
+    }
+  if (NULL != found && ws->ws_header && nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Type:") != NULL)
+    {
+      caddr_t * headers = ws_header_line_to_array (ws->ws_header);
+      dk_session_t * ses = strses_allocate ();
+      DO_BOX (caddr_t, h, inx, headers)
+	{
+	  if (nc_strstr ((unsigned char *) h, (unsigned char *) "Content-Type:") != NULL)
+	    continue;
+	  SES_PRINT (ses, h);
+	}
+      END_DO_BOX;
+      SES_PRINT (ses, "Content-Type: "); SES_PRINT (ses, found); SES_PRINT (ses, "\r\n");
+      dk_free_tree (ws->ws_header);
+      ws->ws_header = strses_string (ses);
+      dk_free_tree (headers);
+      dk_free_box (ses);
     }
   dk_free_tree (ctype);
   dk_free_tree (cenc);

@@ -118,13 +118,13 @@
        <td colspan="3" class="listing_col_action">
 	 <v:button style="image" action="simple" value="images/icons/ref_16.png" url="--http_path ()"
                               xhtml_alt="Refresh page" xhtml_title="Refresh page"
-			      xmlns:v="http://www.openlinksw.com/vspx/" text="&#160;Refresh"
+			      xmlns:v="http://www.openlinksw.com/vspx/" text="&nbsp;Refresh"
 			      />
-			    <span style="font-weight: normal;">&#160;Page Refreshed</span> <?V _refr ?>
-         &#160;
+			    <span style="font-weight: normal;">&nbsp;Page Refreshed</span> <?V _refr ?>
+         &nbsp;
          <v:button style="image" action="simple" value="images/icons/prefs_16.png" url="dashboard.vspx"
 	   html_alt="Preferences" xhtml_title="Preferences"  xmlns:v="http://www.openlinksw.com/vspx/"
-	   text="&#160;Preferences"/>
+	   text="&nbsp;Preferences"/>
      </td>
     </tr>
     <tr>

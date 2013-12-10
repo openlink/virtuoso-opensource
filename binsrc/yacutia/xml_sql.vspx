@@ -908,7 +908,7 @@ will be removed permanently.
 			   <vm:row>
 			     <vm:raw>
 			     <td>
-			           Choose Query Type &#160;
+			           Choose Query Type &nbsp;
                                    <v:select-list name="apply_mapping_schema"
                                                 group-name="apply_mapping_schema"
 						xhtml_id="apply_mapping_schema"
@@ -1882,12 +1882,12 @@ will be removed permanently.
                                                </td>
                                                <td  class="listing_col_action">
                                                <?vsp
-					       http (sprintf ('<a class="" href="xml_sql.vspx?page=1&mode=edit&res=%s&sid=%s&realm=%s"><img src="images/icons/edit_16.png" border="0" />&#160;Edit</a>',
+					       http (sprintf ('<a class="" href="xml_sql.vspx?page=1&mode=edit&res=%s&sid=%s&realm=%s"><img src="images/icons/edit_16.png" border="0" />&nbsp;Edit</a>',
 						 RES_FULL_PATH, self.sid ,self.realm ));
 					       ?>
 
 				               <?vsp
-                                                 http (sprintf ('<a class="" href="xml_sql.vspx?page=0&mode=delete&res=%s&sid=%s&realm=%s"><img src="images/icons/trash_16.png" border="0" />&#160;Delete</a>',
+                                                 http (sprintf ('<a class="" href="xml_sql.vspx?page=0&mode=delete&res=%s&sid=%s&realm=%s"><img src="images/icons/trash_16.png" border="0" />&nbsp;Delete</a>',
                                                                 RES_FULL_PATH, self.sid ,self.realm ));
                                                ?>
                                              </td>

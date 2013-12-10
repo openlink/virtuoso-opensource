@@ -414,3 +414,11 @@ table.WEBDAV_formList tbody tr:nth-child(even) {
   border: solid #7f94a5;
   border-width: 1px 0px 0px 1px;
 }
+
+.WEBDAV_a:visited {
+  color:blue;
+}
+
+.WEBDAV_a:hover {
+  text-decoration: none;
+}

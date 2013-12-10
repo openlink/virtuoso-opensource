@@ -147,51 +147,64 @@ sqlc_call_ret_name (ST * tree, char * func_name, state_slot_t * ssl)
 state_slot_t *
 sqlc_trans_funcs (sql_comp_t * sc, ST * tree, state_slot_t * ret)
 {
+  int call_param_count;
   /* process the special functions that deal with transitive nodes */
   if (ARRAYP (tree->_.call.name))
     return NULL;
+  call_param_count = BOX_ELEMENTS (tree->_.call.params);
   if (!stricmp (tree->_.call.name, "__TN_IN"))
     {
-      if (!sc->sc_trans
-	  || BOX_ELEMENTS (tree->_.call.params) < 1 || BOX_ELEMENTS (sc->sc_trans->tn_input) < unbox ((caddr_t) tree->_.call.params[0]))
-	sqlc_new_error (sc->sc_cc, "37000", "TR...", "__TN_IN is only allowed in transitive step dt");
-      ssl_alias (ret, sc->sc_trans->tn_input [unbox ((caddr_t)tree->_.call.params[0])]);
+      caddr_t arg;
+      int pos;
+      if (!sc->sc_trans || call_param_count < 1)
+        sqlc_new_error (sc->sc_cc, "37000", "TR...", "__TN_IN is only allowed in transitive step dt and requires an argument");
+      arg = (caddr_t)tree->_.call.params[0];
+      pos = unbox ((caddr_t)arg) - 1;
+      if ((pos < 0) || (pos >= BOX_ELEMENTS (sc->sc_trans->tn_input)))
+        sqlc_new_error (sc->sc_cc, "37000", "TR...", "__TN_IN argument is not an 1 based index of a column in the selection");
+      ssl_alias (ret, sc->sc_trans->tn_input [pos]);
       return ret;
     }
   if (!stricmp (tree->_.call.name, "T_STEP"))
     {
       caddr_t arg;
       dtp_t dtp;
-      if (!sc->sc_trans
-	  || BOX_ELEMENTS (tree->_.call.params) < 1)
-	sqlc_new_error (sc->sc_cc, "37000", "TR...", "T_STEP is only allowed in transitive step dt");
+      if (!sc->sc_trans || call_param_count < 1)
+	sqlc_new_error (sc->sc_cc, "37000", "TR...", "T_STEP is only allowed in transitive step dt and requires an argument");
 
       arg = (caddr_t)tree->_.call.params[0];
       dtp = DV_TYPE_OF (arg);
       if (DV_LONG_INT == dtp)
 	{
-	  if (BOX_ELEMENTS (sc->sc_trans->tn_input) <= unbox ((caddr_t)arg) - 1 || unbox (arg) < 1)
-	    sqlc_new_error (sc->sc_cc, "37000", "TR...", "t_step argument not an index to a column in the selection");
+	  int pos = unbox ((caddr_t)arg) - 1;
+	  state_slot_t *wanted;
+	  int wanted_pos;
+	  if ((pos < 0) || (pos >= BOX_ELEMENTS (sc->sc_trans->tn_out_slots)))
+	    sqlc_new_error (sc->sc_cc, "37000", "TR...", "T_STEP argument not an 1 based index to a column in the selection");
 	  if (!sc->sc_trans->tn_step_out)
 	    {
 	      sc->sc_trans->tn_step_out = (state_slot_t **)box_copy ((caddr_t)sc->sc_trans->tn_input);
 	      memset (sc->sc_trans->tn_step_out, 0, box_length ((caddr_t)sc->sc_trans->tn_step_out));
 	    }
-	  sc->sc_trans->tn_step_out[unbox ((caddr_t)tree->_.call.params[0]) - 1] = ret;
+	  wanted = sc->sc_trans->tn_out_slots[pos];
+	  wanted_pos = box_position ((caddr_t *)(sc->sc_trans->tn_input_pos), (caddr_t)pos);
+	  if (-1 == wanted_pos)
+	    sqlc_new_error (sc->sc_cc, "37000", "TR...", "T_STEP argument refers to an index %d of a column %.200s that is not in %s list (T_DIRECTION is set to %d)", pos+1, wanted->ssl_name, ((TRANS_LR == sc->sc_trans->tn_direction) ? "T_IN" : "T_OUT"), sc->sc_trans->tn_direction);
+	  sc->sc_trans->tn_step_out[wanted_pos] = ret;
+	  ret->ssl_sqt.sqt_dtp = DV_ARRAY_OF_POINTER;
 	}
       else if (DV_STRINGP (arg) && !stricmp (arg, "step_no"))
 	sc->sc_trans->tn_step_no_ret = ret;
       else if (DV_STRINGP (arg) && !stricmp (arg, "path_id"))
 	sc->sc_trans->tn_path_no_ret = ret;
       else
-	sqlc_new_error (sc->sc_cc, "37000", "TR...", "the argument of t_step must be a 1 based column index in the selection of 'step_no' or 'path_id'");
+	sqlc_new_error (sc->sc_cc, "37000", "TR...", "the argument of T_STEP must be a 1 based column index in the selection or 'step_no' or 'path_id'");
       return ret;
     }
   if (!stricmp (tree->_.call.name, "T_STATE"))
     {
-      if (!sc->sc_trans
-	  || BOX_ELEMENTS (tree->_.call.params) < 1)
-	sqlc_new_error (sc->sc_cc, "37000", "TR...", "T_STEP is only allowed in transitive step dt");
+      if (!sc->sc_trans || call_param_count < 1)
+	sqlc_new_error (sc->sc_cc, "37000", "TR...", "T_STATE is only allowed in transitive step dt and requires an argument");
       if (!sc->sc_trans->tn_state_ssl)
 	sc->sc_trans->tn_state_ssl = ssl_new_variable (sc->sc_cc, "tn_state", DV_ANY);
       tree->_.call.params = (ST**)t_box_append_1 ((caddr_t)tree->_.call.params, t_box_num ((ptrlong)sc->sc_trans->tn_state_ssl));
@@ -874,7 +887,35 @@ cv_artm_set_type (instruction_t * ins)
     {
       if (ins->_.artm.right)
 	{
+	  switch (ins->ins_type)
+            {
+            case IN_ARTM_PLUS:
+              if ((DV_DATETIME == ins->_.artm.left->ssl_dtp) || (DV_DATETIME == ins->_.artm.right->ssl_dtp))
+                {
+                  ins->_.artm.result->ssl_dtp = DV_DATETIME;
+                  goto result_dtp_is_set;
+                }
+              break;
+            case IN_ARTM_MINUS:
+              if (DV_DATETIME == ins->_.artm.left->ssl_dtp)
+                {
+                  if (DV_DATETIME == ins->_.artm.right->ssl_dtp)
+                    {
+                      ins->_.artm.result->ssl_dtp = DV_NUMERIC;
+                      goto result_dtp_is_set;
+                    }
+                  if ((DV_LONG_INT == ins->_.artm.right->ssl_dtp) || (DV_DOUBLE_FLOAT == ins->_.artm.right->ssl_dtp) || (DV_NUMERIC == ins->_.artm.right->ssl_dtp))
+                    {
+                      ins->_.artm.result->ssl_dtp = DV_DATETIME;
+                      goto result_dtp_is_set;
+                    }
+                  ins->_.artm.result->ssl_dtp = DV_ANY;
+                  goto result_dtp_is_set;
+                }
+              break;
+            }
 	  ins->_.artm.result->ssl_dtp = MAX (ins->_.artm.left->ssl_dtp, ins->_.artm.right->ssl_dtp);
+result_dtp_is_set:
 	  if (DV_NUMERIC == ins->_.artm.result->ssl_dtp)
 	    {
 	      ins->_.artm.result->ssl_sqt.sqt_precision = NUMERIC_MAX_PRECISION;

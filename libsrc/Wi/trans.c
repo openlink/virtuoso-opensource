@@ -923,6 +923,8 @@ tn_result_row (trans_node_t * tn, caddr_t * inst, trans_state_t * tst, trans_sta
 	{
 	  DO_BOX (state_slot_t *, out, inx, tn->tn_step_out)
 	    {
+	      if (NULL == out)
+	        continue;
 	      qst_set_over (inst, out, ((caddr_t*)tst->tst_value)[inx]);
 	    }
 	  END_DO_BOX;

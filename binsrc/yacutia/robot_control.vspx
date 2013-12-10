@@ -21,13 +21,16 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="db_repl_pub"
-  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-  fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+<v:page
+  name="robot_control"
+  fast-render="1"
+  xmlns:v="http://www.openlinksw.com/vspx/"
   xmlns:xhtml="http://www.w3.org/1999/xhtml"
-  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  xmlns:vm="http://www.openlinksw.com/vspx/macro"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
   <v:variable name="error_str" persist="1" type="varchar" default="''"/>
       <script language="JavaScript" src="admin_utils.js">
       </script>
@@ -88,32 +91,32 @@
         <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="data_set2_header_template">
           <table class="listing">
             <tr class="listing_header_row">
-		<th style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask (this.form, this, 'cb_')"/></th>
+    <th style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask (this.form, this, 'cb_')"/></th>
               <th>Description</th>
               <th>URL</th>
-	      <th>
+        <th>
                     <v:button action="simple" value="Export" name="exprt" format="%s" style="url">
                       <v:on-post>
-			<![CDATA[
-			  	
-			declare item, inx, ids any;
-			ids := vector ();
-			while (item := adm_next_checkbox('cb_', params, inx))
-			  {
+      <![CDATA[
+
+      declare item, inx, ids any;
+      ids := vector ();
+      while (item := adm_next_checkbox('cb_', params, inx))
+        {
                             ids := vector_concat (ids, vector (atoi (item)));
-			  }
-			if (length (ids) = 0)
+        }
+      if (length (ids) = 0)
                           {
-			  self.vc_is_valid := 0;
-			  self.vc_error_message := 'No tasks selected for export';
-			  return;
-			  }
-		        self.vc_redirect (sprintf ('vfs_export.vspx?ids=%U', encode_base64 (serialize (ids))));
+        self.vc_is_valid := 0;
+        self.vc_error_message := 'No tasks selected for export';
+        return;
+        }
+            self.vc_redirect (sprintf ('vfs_export.vspx?ids=%U', encode_base64 (serialize (ids))));
                         return;
                         ]]>
                       </v:on-post>
                     </v:button>
-	      </th>
+        </th>
             </tr>
           </table>
         </v:template>
@@ -133,53 +136,53 @@
               self.r_count := self.r_count + 1;
               http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
 ?>
-                <td align="left">
-		   <input type="checkbox" name="cb_<?V control.te_rowset[4] ?>" value="on"/>
-		</td>
+    <td align="left">
+       <input type="checkbox" name="cb_<?V control.te_rowset[4] ?>" value="on"/>
+    </td>
                 <td align="left">
                   <v:label format="%s" name="data_set2_browse_label_1" value="--((control.vc_parent as vspx_row_template).te_rowset[0])" />
                 </td>
                 <td align="left">
-		    <v:label format="%s" name="data_set2_browse_label_2" value="--y_trunc_uri (concat ('http://', 
-				(control.vc_parent as vspx_row_template).te_rowset[1],
+        <v:label format="%s" name="data_set2_browse_label_2" value="--y_trunc_uri (concat ('http://',
+        (control.vc_parent as vspx_row_template).te_rowset[1],
                                 (control.vc_parent as vspx_row_template).te_rowset[2]
-				), 50)" />
+        ), 50)" />
                 </td>
                 <td nowrap="0"  class="listing_col_action">
-		    <v:button action="simple" style="image" name="url1"
-		      value="images/icons/edit_16.png"
-		      xhtml_alt="Edit"
-		      xhtml_title="Edit"
-		      text="&#160;Edit"
-		      url="--concat('robot_edit.vspx?mode=edit&EDIT=', (control.vc_parent as vspx_row_template).te_rowset[1], '&url=',  (control.vc_parent as vspx_row_template).te_rowset[2], '&root=', (control.vc_parent as vspx_row_template).te_rowset[3])"
-		      />
-		    <v:button action="simple" style="image" name="url3"
-		      value="images/icons/copy_16.png"
-		      xhtml_alt="Copy"
-		      xhtml_title="Copy"
-		      text="&#160;Copy"
-		      url="--concat('robot_edit.vspx?mode=copy&EDIT=', (control.vc_parent as vspx_row_template).te_rowset[1], '&url=',  (control.vc_parent as vspx_row_template).te_rowset[2], '&root=', (control.vc_parent as vspx_row_template).te_rowset[3])"
-		      />
-		    <v:button action="simple" style="image" name="data_set2_delete"
-		      value="images/icons/trash_16.png"
-		      xhtml_alt="Delete"
-		      xhtml_title="Delete"
-		      text="&#160;Delete"
-		      >
+        <v:button action="simple" style="image" name="url1"
+          value="images/icons/edit_16.png"
+          xhtml_alt="Edit"
+          xhtml_title="Edit"
+          text="&nbsp;Edit"
+          url="--concat('robot_edit.vspx?mode=edit&EDIT=', (control.vc_parent as vspx_row_template).te_rowset[1], '&url=',  (control.vc_parent as vspx_row_template).te_rowset[2], '&root=', (control.vc_parent as vspx_row_template).te_rowset[3])"
+          />
+        <v:button action="simple" style="image" name="url3"
+          value="images/icons/copy_16.png"
+          xhtml_alt="Copy"
+          xhtml_title="Copy"
+          text="&nbsp;Copy"
+          url="--concat('robot_edit.vspx?mode=copy&EDIT=', (control.vc_parent as vspx_row_template).te_rowset[1], '&url=',  (control.vc_parent as vspx_row_template).te_rowset[2], '&root=', (control.vc_parent as vspx_row_template).te_rowset[3])"
+          />
+        <v:button action="simple" style="image" name="data_set2_delete"
+          value="images/icons/trash_16.png"
+          xhtml_alt="Delete"
+          xhtml_title="Delete"
+          text="&nbsp;Delete"
+          >
                     <v:on-post width="0" height="16">
                       <v:script>
                       <![CDATA[
-                        declare _root, _host varchar;
+            declare _root, _host varchar;
                         declare old_mode int;
                         _root := (control.vc_parent as vspx_row_template).te_rowset[3];
-                        _host := (control.vc_parent as vspx_row_template).te_rowset[1];
-			declare exit handler for sqlstate '*'
-			{
+      _host := (control.vc_parent as vspx_row_template).te_rowset[1];
+      declare exit handler for sqlstate '*'
+      {
                           log_enable (old_mode, 1);
-			  self.vc_is_valid := 0;
-			  self.vc_error_message := sprintf ('The delete failed due to SQL error: %s. You must delete manually corresponding entries from WS.WS.VFS_QUEUE and WS.WS.VFS_URL table.', __SQL_MESSAGE);
-			  return;
-			};
+        self.vc_is_valid := 0;
+        self.vc_error_message := sprintf ('The delete failed due to SQL error: %s. You must delete manually corresponding entries from WS.WS.VFS_QUEUE and WS.WS.VFS_URL table.', __SQL_MESSAGE);
+        return;
+      };
                         old_mode := log_enable (3, 1);
                         delete from WS.WS.VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
                         delete from WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root;
@@ -202,7 +205,7 @@
           <table>
             <tr>
               <td colspan="3" align="center"  class="listing_col_action">
-		<vm:ds-navigation data-set="data_set2"/>
+    <vm:ds-navigation data-set="data_set2"/>
               </td>
             </tr>
           </table>
@@ -210,47 +213,47 @@
       </v:data-set>
     </div>
   <div>
-            		    <v:button name="drop_selected_bt"
-            		      action="simple"
-            		      value="Delete Selected"
-			      xhtml_title="Drop Selected"
-			      >
-            		      <v:on-post>
-			<![CDATA[
-			  	
-			declare item, inx, ids any;
-			ids := vector ();
-			while (item := adm_next_checkbox('cb_', params, inx))
-			  {
+                    <v:button name="drop_selected_bt"
+                      action="simple"
+                      value="Delete Selected"
+            xhtml_title="Drop Selected"
+            >
+                      <v:on-post>
+      <![CDATA[
+
+      declare item, inx, ids any;
+      ids := vector ();
+      while (item := adm_next_checkbox('cb_', params, inx))
+        {
                             ids := vector_concat (ids, vector (atoi (item)));
-			  }
-			if (length (ids) = 0)
+        }
+      if (length (ids) = 0)
                           {
-			  self.vc_is_valid := 0;
-			  self.vc_error_message := 'Nothing to delete';
-			  return;
-			  }
+        self.vc_is_valid := 0;
+        self.vc_error_message := 'Nothing to delete';
+        return;
+        }
                         declare old_mode int;
-			declare exit handler for sqlstate '*'
-			{
+      declare exit handler for sqlstate '*'
+      {
                           log_enable (old_mode, 1);
-			  self.vc_is_valid := 0;
-			  self.vc_error_message := sprintf ('The delete failed due to SQL error: %s. You must delete manually corresponding entries from WS.WS.VFS_QUEUE and WS.WS.VFS_URL table.', __SQL_MESSAGE);
-			  return;
-			};
-			old_mode := log_enable (3, 1);
-			for select VS_HOST as _host, VS_ROOT as _root from WS.WS.VFS_SITE where VS_ID in (ids) do
-			{
-			  delete from WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root;
-			  delete from WS.WS.VFS_URL where VU_HOST = _host and VU_ROOT = _root;
-			  delete from SYS_SCHEDULED_EVENT where SE_SQL = concat('WS.WS.SERV_QUEUE_TOP(\'',_host,'\',\'',_root,'\', 1, 0, null, null)');
-			}
-			delete from WS.WS.VFS_SITE where VS_ID in (ids);
+        self.vc_is_valid := 0;
+        self.vc_error_message := sprintf ('The delete failed due to SQL error: %s. You must delete manually corresponding entries from WS.WS.VFS_QUEUE and WS.WS.VFS_URL table.', __SQL_MESSAGE);
+        return;
+      };
+      old_mode := log_enable (3, 1);
+      for select VS_HOST as _host, VS_ROOT as _root from WS.WS.VFS_SITE where VS_ID in (ids) do
+      {
+        delete from WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root;
+        delete from WS.WS.VFS_URL where VU_HOST = _host and VU_ROOT = _root;
+        delete from SYS_SCHEDULED_EVENT where SE_SQL = concat('WS.WS.SERV_QUEUE_TOP(\'',_host,'\',\'',_root,'\', 1, 0, null, null)');
+      }
+      delete from WS.WS.VFS_SITE where VS_ID in (ids);
                         log_enable (old_mode, 1);
                         self.data_set2.vc_data_bind(e);
                         ]]>
-            		      </v:on-post>
-            		    </v:button>
+                      </v:on-post>
+                    </v:button>
   </div>
             </v:form>
 </v:page>

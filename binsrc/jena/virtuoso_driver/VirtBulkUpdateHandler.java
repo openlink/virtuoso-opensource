@@ -60,18 +60,8 @@ public class VirtBulkUpdateHandler extends SimpleBulkUpdateHandler {
 	VirtGraph _graph=(VirtGraph)this.graph;
 	List list = notify ? new ArrayList() : null;
 
-	try {
-		boolean autoCommit = _graph.getConnection().getAutoCommit();
-	        if (autoCommit)
-		    _graph.getConnection().setAutoCommit(false);
-		_graph.add(it, list);
-	        if (autoCommit)  {
-		    _graph.getConnection().commit();
-		    _graph.getConnection().setAutoCommit(true);
-		}
-	} catch (Exception e) {
-		throw new JenaException("Couldn't create transaction:"+e);
-	}
+	_graph.add(null, it, list);
+
 	if (notify)
 		manager.notifyAddIterator( graph, list);
     }
@@ -94,18 +84,8 @@ public class VirtBulkUpdateHandler extends SimpleBulkUpdateHandler {
 	VirtGraph _graph=(VirtGraph)this.graph;
 	List list = notify ? new ArrayList() : null;
 
-	try {
-		boolean autoCommit = _graph.getConnection().getAutoCommit();
-		if (autoCommit) 
-		    _graph.getConnection().setAutoCommit(false);
-		_graph.delete(it, list);
-		if (autoCommit) {
-		    _graph.getConnection().commit();
-		    _graph.getConnection().setAutoCommit(true);
-		}
-	} catch (Exception e) {
-		throw new JenaException("Couldn't create transaction:"+e);
-	}
+	_graph.delete(it, list);
+
         if (notify) 
         	manager.notifyDeleteIterator( graph, list);
     }

@@ -206,6 +206,13 @@ FCT_LABEL (in x any, in g_id iri_id_8, in ctx varchar)
   declare label_iri iri_id_8;
   if (not isiri_id (x))
     return null;
+  if (__proc_exists ('rdf_resolve_labels_s') is not null)
+    {
+      declare ret any;
+      ret := rdf_resolve_labels_s (adler32 ('en'), vector (x));
+      ret := coalesce (ret[0], '');
+      return __ro2sq (ret);
+    }
   rdf_check_init ();
   label_iri := iri_id_from_num (atoi (registry_get ('fct_label_iri')));
   best_str := null;
@@ -310,7 +317,7 @@ FCT_LABEL_NP (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar := 'en'
       declare ret any;
       ret := rdf_resolve_labels_s (adler32 (lng), vector (x));
       ret := coalesce (ret[0], '');
-      return __ro2sq (ret); 
+      return __ro2sq (ret);
     }
   rdf_check_init ();
   label_iri := iri_id_from_num (atoi (registry_get ('fct_label_iri')));
@@ -352,6 +359,13 @@ FCT_LABEL_S (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
 
   if (not isiri_id (x))
     return null;
+  if (__proc_exists ('rdf_resolve_labels_s') is not null)
+    {
+      declare ret any;
+      ret := rdf_resolve_labels_s (adler32 (lng), vector (x));
+      ret := coalesce (ret[0], '');
+      return __ro2sq (ret);
+    }
   rdf_check_init ();
   label_iri := iri_id_from_num (atoi (registry_get ('fct_label_iri')));
   best_str := null;

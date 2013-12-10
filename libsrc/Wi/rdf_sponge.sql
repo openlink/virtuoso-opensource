@@ -1622,7 +1622,7 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC (in contents varchar, in base
     }
     where { { select distinct ?s 
       where { graph `iri(?:graph)` { ?s ?p ?o .
-	filter (iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s)) != iri(?:graph) && !(regex (?s, '#this$') || regex (?s, '/about/id/http') || regex (?s, '/about/id/entity/http')))
+	filter (iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s)) != iri(?:graph) && !(regex (?s, '/about/id/http') || regex (?s, '/about/id/entity/http')))
 	}
       }
     }
@@ -1807,9 +1807,6 @@ retry_after_deadlock:
       return 1;
     }
 
-  if (get_soft = 'no-sponge')
-    goto no_cart;
-
   --if (dest is null)
   --  {
   --    DB.DBA.SPARUL_CLEAR (graph_iri, 1);
@@ -1817,6 +1814,10 @@ retry_after_deadlock:
   --  }
 
 load_grddl:;
+
+  if (get_soft = 'no-sponge')
+    goto no_cart;
+
   if (('40001' = __SQL_STATE) and (retr_count < 10))
     {
       rollback work;
@@ -2050,6 +2051,8 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
     log_enable (log_mode, 1);
   -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP_1 (', graph_iri, options, ') set local_iri=', local_iri);
   get_soft := get_keyword_ucase ('get:soft', options);
+  if (isstring  (uid))
+    uid := get_user_id_by_name (uid);
   if ('soft' = get_soft)
     {
       if ((dest = graph_iri) and exists (select 1 from DB.DBA.RDF_QUAD table option (index G) where G = iri_to_id (graph_iri, 0) ) and

@@ -49,6 +49,7 @@ extern "C" {
 #include "rdfinf.h"
 #include "rdf_mapping_jso.h"
 #include "xpf.h"
+#include "xqf.h"
 
 #ifdef MALLOC_DEBUG
 const char *spartlist_impl_file="???";
@@ -381,6 +382,14 @@ spar_internal_error (sparp_t *sparp, const char *msg)
     "%.400s: Internal error: %.1500s",
     ((NULL != sparp && sparp->sparp_err_hdr) ? sparp->sparp_err_hdr : "SPARQL"), msg);
 }
+
+#ifdef SPARQL_DEBUG
+void
+sparp_debug_weird (sparp_t *sparp, const char *file, int line, const char *msg)
+{
+  dbg_printf (("\n%s:%d weird: %s", file, line, msg));
+}
+#endif
 
 void
 spar_error_if_unsupported_syntax_imp (sparp_t *sparp, int feature_in_use, const char *feature_name)
@@ -838,17 +847,17 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
   if ((7 < strlen (param)) && !memcmp (param, "output:", 7))
     {
       if (!strcmp (param, "output:valmode")) {
-          sparp->sparp_env->spare_output_valmode_name = t_box_dv_uname_string (value); return; }
+          sparp->sparp_sg->sg_output_valmode_name = t_box_dv_uname_string (value); return; }
       if (!strcmp (param, "output:format")) {
-          sparp->sparp_env->spare_output_format_name = t_box_dv_uname_string (value); return; }
+          sparp->sparp_sg->sg_output_format_name = t_box_dv_uname_string (value); return; }
       if (!strcmp (param, "output:scalar-format")) {
-          sparp->sparp_env->spare_output_scalar_format_name = t_box_dv_uname_string (value); return; }
+          sparp->sparp_sg->sg_output_scalar_format_name = t_box_dv_uname_string (value); return; }
       if (!strcmp (param, "output:dict-format")) {
-          sparp->sparp_env->spare_output_dict_format_name = t_box_dv_uname_string (value); return; }
+          sparp->sparp_sg->sg_output_dict_format_name = t_box_dv_uname_string (value); return; }
       if (!strcmp (param, "output:route")) {
-          sparp->sparp_env->spare_output_route_name = t_box_dv_uname_string (value); return; }
+          sparp->sparp_sg->sg_output_route_name = t_box_dv_uname_string (value); return; }
       if (!strcmp (param, "output:maxrows")) {
-          sparp->sparp_env->spare_output_maxrows = t_box_num_nonull (unbox (value)); return; }
+          sparp->sparp_sg->sg_output_maxrows = t_box_num_nonull (unbox (value)); return; }
     }
   if ((6 < strlen (param)) && !memcmp (param, "input:", 6))
     {
@@ -1082,7 +1091,7 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           t_set_push (&(sparp->sparp_env->spare_protocol_params), t_box_dv_uname_string (value));
           return; }
       else if (!strcmp (param, "input:param-valmode")) {
-          sparp->sparp_env->spare_input_param_valmode_name = t_box_dv_uname_string (value); return; }
+          sparp->sparp_sg->sg_input_param_valmode_name = t_box_dv_uname_string (value); return; }
     }
   if ((4 < strlen (param)) && !memcmp (param, "get:", 4))
     {
@@ -1120,9 +1129,9 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           if (DV_STRING != DV_TYPE_OF (value))
             spar_error (sparp, "define sql:globals-mode should have string value");
           if (!strcmp (value, "XSLT"))
-            sparp->sparp_env->spare_globals_mode = SPARE_GLOBALS_ARE_COLONAMED;
+            sparp->sparp_globals_mode = SPARE_GLOBALS_ARE_COLONAMED;
           else if (!strcmp (value, "SQL"))
-            sparp->sparp_env->spare_globals_mode = SPARE_GLOBALS_ARE_PLAIN;
+            sparp->sparp_globals_mode = SPARE_GLOBALS_ARE_PLAIN;
           else
             spar_error (sparp, "define sql:globals-mode should have value \"XSLT\" or \"SQL\"");
           return; }
@@ -1130,7 +1139,7 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           ptrlong val = ((DV_LONG_INT == DV_TYPE_OF (value)) ? unbox_ptrlong (value) : -1);
           if (0 > val)
             spar_error (sparp, "define sql:log-enable should have nonnegative integer value");
-            sparp->sparp_env->spare_sparul_log_mode = t_box_num_and_zero (val);
+            sparp->sparp_sg->sg_sparul_log_mode = t_box_num_and_zero (val);
           return; }
       if (!strcmp (param, "sql:table-option")) {
           t_set_push (&(sparp->sparp_env->spare_common_sql_table_options), t_box_dv_uname_string (value));
@@ -1151,7 +1160,7 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           ptrlong val = ((DV_LONG_INT == DV_TYPE_OF (value)) ? unbox_ptrlong (value) : -1);
           if ((0 > val) || (1 < val))
             spar_error (sparp, "define sql:signal-void-variables should have value 0 or 1");
-            sparp->sparp_env->spare_signal_void_variables = val;
+            sparp->sparp_sg->sg_signal_void_variables = val;
           return; }
     }
   spar_error (sparp, "Unsupported parameter '%.30s' in 'define'", param);
@@ -1543,7 +1552,7 @@ check_optionals:
                     {
                       DO_SET (SPART *, filt, &local_filts)
                         {
-                          if (!spar_filter_is_freetext (sparp, filt, memb))
+                          if (NULL == spar_filter_is_freetext (sparp, filt, memb))
                             continue;
                           t_set_delete (&local_filts, filt);
                           t_set_push (&left_ft_filts, filt);
@@ -1610,26 +1619,37 @@ void spar_gp_add_member (sparp_t *sparp, SPART *memb)
   t_set_push (set_ptr, memb);
 }
 
-int
+caddr_t
 spar_filter_is_freetext (sparp_t *sparp, SPART *filt, SPART *base_triple)
 {
-  int res = 0;
   caddr_t fname;
   if (SPAR_FUNCALL != SPART_TYPE (filt))
     return 0;
   fname = filt->_.funcall.qname;
-  if (!strcmp (fname, "bif:contains"))
-    res = SPAR_FT_CONTAINS;
-  else if (!strcmp (fname, "bif:xcontains"))
-    res = SPAR_FT_XCONTAINS;
-  else if (!strcmp (fname, "bif:xpath_contains"))
-    res = SPAR_FT_XPATH_CONTAINS;
-  else if (!strcmp (fname, "bif:xquery_contains"))
-    res = SPAR_FT_XQUERY_CONTAINS;
-  else if (!strcmp (fname, "bif:spatial_contains"))
-    res = SPAR_GEO_CONTAINS;
+  if (SPAR_FT_TYPE_IS_GEO(fname))
+    {
+      if (2 < BOX_ELEMENTS (filt->_.funcall.argtrees))
+        return NULL;
+      if (SPAR_VARIABLE != SPART_TYPE (filt->_.funcall.argtrees[0]))
+        {
+          if ((  (uname_bif_c_spatial_intersects	== (fname))
+              || (uname_bif_c_st_intersects		== (fname))
+              || (uname_bif_c_st_may_intersect		== (fname)) )
+            && (SPAR_VARIABLE == SPART_TYPE (filt->_.funcall.argtrees[1])) )
+            {
+              SPART *swap = filt->_.funcall.argtrees[0]; filt->_.funcall.argtrees[0] = filt->_.funcall.argtrees[1]; filt->_.funcall.argtrees[1] = swap;
+            }
+          else
+            return NULL;
+        }
+    }
+  else if ((fname == uname_bif_c_contains)
+    || (fname == uname_bif_c_xcontains)
+    || (fname == uname_bif_c_xpath_contains)
+    || (fname == uname_bif_c_xquery_contains) )
+    { ; }
   else
-    return 0;
+    return NULL;
   if (NULL != base_triple)
     {
       caddr_t ft_var_name;
@@ -1641,7 +1661,7 @@ spar_filter_is_freetext (sparp_t *sparp, SPART *filt, SPART *base_triple)
         strcmp (filt->_.funcall.argtrees[0]->_.var.vname, ft_var_name) )
       return 0;
     }
-  return res;
+  return fname;
 }
 
 int
@@ -1688,7 +1708,7 @@ void
 spar_gp_add_filter (sparp_t *sparp, SPART *filt, int filt_is_movable)
 {
   int filt_type = SPART_TYPE (filt);
-  int ft_type;
+  caddr_t ft_type;
   dk_set_t filters_set_stack;
   if (BOP_AND == filt_type)
     {
@@ -1725,7 +1745,7 @@ spar_gp_add_filter (sparp_t *sparp, SPART *filt, int filt_is_movable)
           if (strcmp (obj->_.var.vname, var_name))
             continue;
           if (memb->_.triple.ft_type)
-            spar_error (sparp, "More than one %s() or similar predicate for '$%s' variable in a single group", ft_pred_name, var_name);
+            spar_error (sparp, "%s() predicate for '$%s' variable found with another %s() predicate found before for same variable in same basic group pattern", ft_pred_name, var_name, memb->_.triple.ft_type);
           if (NULL == triple_with_var_obj)
             triple_with_var_obj = memb;
         }
@@ -1758,6 +1778,7 @@ spar_gp_add_filter (sparp_t *sparp, SPART *filt, int filt_is_movable)
         ((boxint *)(sparp->sparp_env->spare_sql_refresh_free_text))[0] = 1;
       else
         sparp->sparp_env->spare_sql_refresh_free_text = t_box_num (1);
+      filt_is_movable = 0;
     }
   filters_set_stack = filt_is_movable ? sparp->sparp_env->spare_acc_movable_filters : sparp->sparp_env->spare_acc_local_filters;
   if (NULL == filters_set_stack)
@@ -2106,7 +2127,7 @@ spar_make_service_inv (sparp_t *sparp, SPART *endpoint, dk_set_t all_options, pt
                   int gp_subtype = (ptrlong)(gp_subtypes_iter->data);
                   if (SELECT_L == gp_subtype)
                     break;
-                  if (UNION_L == gp_subtype)
+                  if ((UNION_L == gp_subtype) || (SPAR_UNION_WO_ALL == gp_subtype))
                     continue;
                   members_before = (dk_set_t)(acc_triples_iter->data);
                   DO_SET (SPART *, member, &members_before)
@@ -2155,16 +2176,16 @@ spar_sinv_naming (sparp_t *sparp, SPART *sinv)
 {
   switch (SPART_TYPE (sinv->_.sinv.endpoint))
     {
-    case SPAR_VARIABLE: return t_box_sprintf (300, "SERVICE ?%.200s at line %d", sinv->_.sinv.endpoint->_.var.vname, (int)(unbox(sinv->_.sinv.endpoint->srcline)));
-    case SPAR_QNAME: return t_box_sprintf (300, "SERVICE <?%.200s> at line %d", sinv->_.sinv.endpoint->_.qname.val, (int)(unbox(sinv->_.sinv.endpoint->srcline)));
-    default: return t_box_sprintf (300, "SERVICE at line %d", (int)(unbox(sinv/*->_.sinv.endpoint*/->srcline)));
+    case SPAR_VARIABLE: return t_box_sprintf (300, "SERVICE ?%.200s at line %ld", sinv->_.sinv.endpoint->_.var.vname, (long)(unbox(sinv->_.sinv.endpoint->srcline)));
+    case SPAR_QNAME: return t_box_sprintf (300, "SERVICE <%.200s> at line %ld", sinv->_.sinv.endpoint->_.qname.val, (long)(unbox(sinv->_.sinv.endpoint->srcline)));
+    default: return t_box_sprintf (300, "SERVICE at line %d", (long)(unbox(sinv/*->_.sinv.endpoint*/->srcline)));
     }
 }
 
 int
-spar_describe_restricted_by_physical (sparp_t *sparp, SPART **retvals)
+spar_describe_restricted_by_physical (sparp_t *sparp, SPART *req_top, SPART **retvals)
 {
-  SPART **sources = sparp->sparp_expr->_.req_top.sources;
+  SPART **sources = req_top->_.req_top.sources;
   SPART *dflt_s = NULL;
   SPART *triple;
   int s_ctr;
@@ -2218,7 +2239,7 @@ spar_describe_restricted_by_physical (sparp_t *sparp, SPART **retvals)
 }
 
 SPART **
-spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, SPART *limit_expn, SPART *offset_expn)
+spar_retvals_of_describe (sparp_t *sparp, SPART *req_top, SPART **retvals, SPART *limit_expn, SPART *offset_expn)
 {
   int retval_ctr;
   dk_set_t vars = NULL;
@@ -2279,7 +2300,7 @@ spar_retvals_of_describe (sparp_t *sparp, SPART **retvals, SPART *limit_expn, SP
         {
           phys_only = ((NULL == sparp->sparp_env->spare_inference_name)
             && (NULL == sparp->sparp_env->spare_use_same_as)
-            && spar_describe_restricted_by_physical (sparp, retvals) );
+            && spar_describe_restricted_by_physical (sparp, req_top, retvals) );
           if (phys_only)
             descr_name = t_box_sprintf (100, "sql:SPARQL_DESC_DICT_%.50s_PHYSICAL", mode1);
           else
@@ -2365,7 +2386,7 @@ spar_add_rgc_vars_and_consts_from_retvals (sparp_t *sparp, SPART **retvals)
   int retctr;
   DO_BOX_FAST (SPART *, retval, retctr, retvals)
     {
-      sparp_gp_trav (sparp, retval, NULL,
+      sparp_gp_trav (sparp, NULL /*unused*/, retval, NULL,
         NULL, NULL,
         sparp_gp_trav_add_rgc_vars_and_consts_from_retvals, NULL, NULL,
         sparp_gp_trav_add_rgc_vars_and_consts_from_retvals );
@@ -2417,14 +2438,14 @@ spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **
   SPART *limit = wm->_.wm.lim;
   SPART *offset = wm->_.wm.ofs;
   SPART *binv = wm->_.wm.binv;
-  if ((NULL == sparp->sparp_env->spare_output_format_name)
+  if ((NULL == sparp->sparp_sg->sg_output_format_name)
     && (NULL == sparp->sparp_env->spare_parent_env)
     && ssg_is_odbc_cli () )
     {
       if (ssg_is_odbc_msaccess_cli ())
-        sparp->sparp_env->spare_output_format_name = t_box_dv_short_string ("_MSACCESS_");
+        sparp->sparp_sg->sg_output_format_name = t_box_dv_short_string ("_MSACCESS_");
       else
-        sparp->sparp_env->spare_output_format_name = t_box_dv_short_string ("_UDBC_");
+        sparp->sparp_sg->sg_output_format_name = t_box_dv_short_string ("_UDBC_");
     }
 #ifndef NDEBUG
   if (SPAR_WHERE_MODIFS != SPART_TYPE (wm))
@@ -2500,8 +2521,8 @@ spar_make_top_or_special_case_from_wm (sparp_t *sparp, ptrlong subtype, SPART **
     if (strcmp (gname, retvar->_.var.vname)) break;
     return spartlist (sparp, 8, SPAR_CODEGEN,
       t_box_num ((ptrlong)(ssg_select_known_graphs_codegen)),
-      sparp->sparp_env->spare_output_valmode_name,	/* #2 */
-      sparp->sparp_env->spare_output_format_name,	/* #3 */
+      sparp->sparp_sg->sg_output_valmode_name,	/* #2 */
+      sparp->sparp_sg->sg_output_format_name,	/* #3 */
       retname,					/* #4 */
       pattern->_.gp.selid,			/* #5 */
       limit,					/* #6 */
@@ -2593,24 +2614,28 @@ spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset, SPART *binv)
 {
   sparp_env_t *env = sparp->sparp_env;
+  sparp_globals_t *sg = sparp->sparp_sg;
   caddr_t final_output_format_name;
   caddr_t orig_selid;
   SPART **sources = spar_make_sources_like_top (sparp, subtype);
-  switch (subtype)
+  if ((NULL != env->spare_parent_env) || (sparp->sparp_env->spare_disable_output_formatting))
+    final_output_format_name = NULL;
+  else
+    switch (subtype)
+      {
+      case CONSTRUCT_L: case DESCRIBE_L:
+        final_output_format_name = ((NULL != sg->sg_output_dict_format_name) ? sg->sg_output_dict_format_name : sg->sg_output_format_name);
+        break;
+      case ASK_L:
+        final_output_format_name = ((NULL != sg->sg_output_scalar_format_name) ? sg->sg_output_scalar_format_name : sg->sg_output_format_name);
+        break;
+      default:
+        final_output_format_name = sg->sg_output_format_name;
+        break;
+      }
+  if (NULL != sparp->sparp_sg->sg_output_maxrows)
     {
-    case CONSTRUCT_L: case DESCRIBE_L:
-      final_output_format_name = ((NULL != env->spare_output_dict_format_name) ? env->spare_output_dict_format_name : env->spare_output_format_name);
-      break;
-    case ASK_L:
-      final_output_format_name = ((NULL != env->spare_output_scalar_format_name) ? env->spare_output_scalar_format_name : env->spare_output_format_name);
-      break;
-    default:
-      final_output_format_name = env->spare_output_format_name;
-      break;
-    }
-  if (NULL != sparp->sparp_env->spare_output_maxrows)
-    {
-      boxint hard_lim = unbox (sparp->sparp_env->spare_output_maxrows);
+      boxint hard_lim = unbox (sparp->sparp_sg->sg_output_maxrows);
       if (DV_LONG_INT == DV_TYPE_OF (limit))
         {
           if (unbox ((caddr_t)limit) > hard_lim)
@@ -2621,7 +2646,7 @@ spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
     }
   orig_selid = pattern->_.gp.selid;
   return spartlist (sparp, 17, SPAR_REQ_TOP, subtype,
-    env->spare_output_valmode_name,
+    ((NULL != env->spare_parent_env) ? t_box_dv_short_string ("AUTO") : sg->sg_output_valmode_name),
     final_output_format_name,
     t_box_copy (env->spare_storage_name),
     retvals, /* NULL, orig_retvals */ NULL /* expanded_orig_retvals */, orig_selid,
@@ -3081,6 +3106,7 @@ spar_gp_make_graph_field_from_context (sparp_t *sparp, SPART **ret_graph_eq_from
       if ((NULL == dflts) && (NULL != env->spare_src.ssrc_named_graphs))
         { /* Special case: if no FROM clauses specified but there are some FROM NAMED then default graph is totally empty */
           graph = spar_make_blank_node (sparp, spar_mkid (sparp, "_::default"), 2);
+          SPARP_DEBUG_WEIRD(sparp,"conflict");
           graph->_.var.rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
           return graph;
         }
@@ -3686,6 +3712,7 @@ SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, cadd
   SPART *res;
   if (NULL != lang)
     return spartlist (sparp, 4, SPAR_LIT, strg, type, lang);
+/* Fast casts for xsd types taht match to SQL types without additional checks */
   if (uname_xmlschema_ns_uri_hash_boolean == type)
     {
       if (!strcmp ("true", strg))
@@ -3733,6 +3760,48 @@ SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, cadd
     {
       return spartlist (sparp, 4, SPAR_LIT, strg, type, NULL);
     }
+/* Casts using xqf converters */
+  if (!strncmp (type, XMLSCHEMA_NS_URI "#", XMLSCHEMA_NS_URI_LEN + 1 /* +1 is for '#' */))
+    {
+      const char *p_name = type + XMLSCHEMA_NS_URI_LEN + 1;
+      long desc_idx = ecm_find_name (p_name, xqf_str_parser_descs_ptr, xqf_str_parser_desc_count, sizeof (xqf_str_parser_desc_t));
+      xqf_str_parser_desc_t *desc;
+      dtp_t strg_dtp = DV_TYPE_OF (strg);
+      caddr_t cvt;
+      if (ECM_MEM_NOT_FOUND == desc_idx)
+        goto generic_literal; /* see below */
+      desc = xqf_str_parser_descs_ptr + desc_idx;
+      if (DV_STRING != strg_dtp)
+        {
+          if (desc->p_dest_dtp == strg_dtp)
+            parsed_value = box_copy_tree (strg);
+          else
+            {
+              tgt_dtp_tree = (sql_tree_tmp *)t_list (3, (ptrlong)(desc->p_dest_dtp), (ptrlong)NUMERIC_MAX_PRECISION, (ptrlong)NUMERIC_MAX_SCALE);
+              parsed_value = box_cast ((caddr_t *)(sparp->sparp_sparqre->sparqre_qi), strg, tgt_dtp_tree, strg_dtp);
+            }
+          if ((NULL != desc->p_rcheck) && !desc->p_rcheck (&parsed_value, desc->p_opcode))
+            goto cannot_cast;
+        }
+      else
+        {
+          QR_RESET_CTX
+            {
+              desc->p_proc (&parsed_value, strg, desc->p_opcode);
+            }
+          QR_RESET_CODE
+            {
+              POP_QR_RESET;
+              goto generic_literal; /* see below */
+            }
+          END_QR_RESET
+        }
+      res = spartlist (sparp, 4, SPAR_LIT, t_full_box_copy_tree (parsed_value), type, NULL);
+      dk_free_tree (parsed_value);
+      return res;
+    }
+
+generic_literal:
   return spartlist (sparp, 4, SPAR_LIT, strg, type, NULL);
 
 do_sql_cast:
@@ -3743,6 +3812,7 @@ do_sql_cast:
   return res;
 
 cannot_cast:
+  dk_free_tree (parsed_value);
   sparyyerror_impl (sparp, strg, "The string representation can not be converted to a valid typed value");
   return NULL;
 }
@@ -3957,7 +4027,10 @@ spar_default_sparul_target (sparp_t *sparp, const char *reason_to_use)
     {
       SPART *fbk_graph = sparp->sparp_env->spare_src.ssrc_graph_set_by_fallback_with;
       if (NULL != fbk_graph)
-        return sparp_tree_full_copy (sparp, (SPART *)(fbk_graph), NULL);
+        {
+          sparp_make_and_push_new_graph_source (sparp, SPART_GRAPH_FROM, fbk_graph, NULL, SPARP_SSRC_FROZEN_BY_PROTOCOL);
+          return sparp_tree_full_copy (sparp, (SPART *)(fbk_graph), NULL);
+        }
       spar_error (sparp, "No default graph specified in the preamble, but it is needed for %.200s", reason_to_use);
     }
   if ((NULL != dflt_graphs->next) && (((SPART *)(dflt_graphs->next->data))->_.graph.subtype < SPART_GRAPH_MIN_NEGATION))
@@ -4023,15 +4096,9 @@ bad_regex:
  return sparp_make_builtin_call (sparp, SPAR_BIF_REGEX, (SPART **)t_list (2, strg, regexpn));
 }
 
-void
-spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fname_ptr, SPART **args)
-{
-  ccaddr_t fname = fname_ptr[0];
-  int uid, need_check_for_sparql11_agg = 0, need_check_for_infection_chars = 0;
-  const char *tail;
-  const char *c;
-  char buf[30];
-  const char *unsafe_sql_names[] = {
+extern id_hash_t *name_to_pl_name;
+
+static const char *unsafe_sql_names[] = {
     "RDF_INSERT_TRIPLES",
     "RDF_INSERT_TRIPLES",
     "RDF_DELETE_TRIPLES",
@@ -4085,7 +4152,8 @@ spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fnam
     "TTLP_EV_TRIPLE_L_W",
     "TTLP_MT",
     "TTLP_MT_LOCAL_FILE" };
-  const char *unsafe_bif_names[] = {
+
+static const char *unsafe_bif_names[] = {
     "CONNECTION_SET",
     "FILE_TO_STRING",
     "FILE_TO_STRING_OUTPUT",
@@ -4094,7 +4162,8 @@ spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fnam
     "REGISTRY_SET_ALL",
     "STRING_TO_FILE",
     "SYSTEM" };
-  const char *sparql11_agg_names[] = {
+
+static const char *sparql11_agg_names[] = {
     "AVG",		"SPECIAL::bif:AVG",
     "COUNT",		"SPECIAL::bif:COUNT",
     "GROUP_CONCAT",	"sql:GROUP_CONCAT",
@@ -4102,6 +4171,15 @@ spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fnam
     "MIN",		"SPECIAL::bif:MIN",
     "SAMPLE",		"sql:SAMPLE",
     "SUM",		"SPECIAL::bif:SUM" };
+
+void
+spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fname_ptr, SPART **args)
+{
+  ccaddr_t fname = fname_ptr[0];
+  int uid, need_check_for_sparql11_agg = 0, need_check_for_infection_chars = 0;
+  const char *tail;
+  const char *c;
+  char buf[30];
   tail = strstr (fname, "::");
   if (NULL == tail)
     tail = fname;
@@ -4133,6 +4211,27 @@ spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fnam
       if ((U_ID_DBA != uid) && (ECM_MEM_NOT_FOUND != ecm_find_name (buf, unsafe_bif_names,
           sizeof (unsafe_bif_names)/sizeof(unsafe_bif_names[0]), sizeof (caddr_t) ) ) )
         goto restricted; /* see below */
+      if (NULL != name_to_pl_name)
+        {
+          const char *raw_name = tail+4;
+          caddr_t *full_sql_name_ptr = (caddr_t *) id_hash_get (name_to_pl_name, (caddr_t)(&raw_name));
+          if (NULL != full_sql_name_ptr)
+            {
+              if (strncmp (full_sql_name_ptr[0], "DB.DBA.", 7))
+                goto restricted; /* see below */
+              strncpy (buf, full_sql_name_ptr[0]+7, sizeof(buf)-1);
+              buf[sizeof(buf)-1] = '\0';
+              strupr (buf);
+              if ((U_ID_DBA != uid) && (ECM_MEM_NOT_FOUND != ecm_find_name (buf, unsafe_sql_names,
+                  sizeof (unsafe_sql_names)/sizeof(unsafe_sql_names[0]), sizeof (caddr_t) ) ) )
+                goto restricted; /* see below */
+              strcpy (buf, "sql:");
+              strncpy (buf+4, full_sql_name_ptr[0]+7, sizeof(buf)-5);
+              buf[sizeof(buf)-1] = '\0';
+              fname_ptr[0] = t_box_dv_uname_string (buf);
+              return;
+            }
+        }
       need_check_for_sparql11_agg = 1;
       need_check_for_infection_chars = 1;
     }
@@ -4369,6 +4468,7 @@ const sparp_bif_desc_t sparp_bif_descs[] = {
   { "ucase"		, SPAR_BIF_UCASE		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_LONG	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT	},
   { "uri"		, SPAR_BIF_URI			, '-'	, SSG_SD_BI_OR_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_IRI | SPART_VARR_IS_REF	},
   { "uuid"		, SPAR_BIF_UUID			, 'S'	, SSG_SD_SPARQL11_DRAFT	, 0	, 0	, SSG_VALMODE_LONG	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_IRI | SPART_VARR_NOT_NULL	},
+  { "valid"		, SPAR_BIF_VALID		, 'B'	, SSG_SD_VOS_6		, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "year"		, SPAR_BIF_YEAR			, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_NUM, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	}
 };
 
@@ -4469,7 +4569,7 @@ spar_make_sparul_mdw (sparp_t *sparp, ptrlong subtype, const char *opname, SPART
 {
   SPART *fake_sol;
   SPART *call, *top, **options = NULL, *options_vector_call;
-  caddr_t log_mode = sparp->sparp_env->spare_sparul_log_mode;
+  caddr_t log_mode = sparp->sparp_sg->sg_sparul_log_mode;
   fake_sol = spar_make_fake_action_solution (sparp);
   if (NULL == log_mode)
     log_mode = t_NEW_DB_NULL;
@@ -4486,14 +4586,14 @@ spar_make_sparul_mdw (sparp_t *sparp, ptrlong subtype, const char *opname, SPART
     options_vector_call = (SPART *)t_NEW_DB_NULL;
   else
     options_vector_call = spar_make_funcall (sparp, 0, "bif:vector", options);
-  if (NULL != sparp->sparp_env->spare_output_route_name)
+  if (NULL != sparp->sparp_sg->sg_output_route_name)
     call = spar_make_funcall (sparp, 0,
-      t_box_sprintf (200, "sql:SPARQL_ROUTE_MDW_%.100s", sparp->sparp_env->spare_output_route_name),
+      t_box_sprintf (200, "sql:SPARQL_ROUTE_MDW_%.100s", sparp->sparp_sg->sg_output_route_name),
       (SPART **)t_list (13, graph_precode,
           t_box_dv_short_string (opname),
           ((NULL == sparp->sparp_env->spare_storage_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_storage_name),
-          ((NULL == sparp->sparp_env->spare_output_storage_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_output_storage_name),
-          ((NULL == sparp->sparp_env->spare_output_format_name) ? t_NEW_DB_NULL : sparp->sparp_env->spare_output_format_name),
+          ((NULL == sparp->sparp_sg->sg_output_storage_name) ? t_NEW_DB_NULL : sparp->sparp_sg->sg_output_storage_name),
+          ((sparp->sparp_env->spare_disable_output_formatting || (NULL == sparp->sparp_sg->sg_output_format_name)) ? t_NEW_DB_NULL : sparp->sparp_sg->sg_output_format_name),
           aux_op,
           t_NEW_DB_NULL,
           t_NEW_DB_NULL,
@@ -4616,8 +4716,8 @@ spar_make_sparul_copymoveadd (sparp_t *sparp, ptrlong opcode, SPART *from_graph_
 SPART *
 spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
 {
-  caddr_t saved_format_name = sparp->sparp_env->spare_output_format_name;
-  caddr_t saved_valmode_name = sparp->sparp_env->spare_output_valmode_name;
+  caddr_t saved_format_name = sparp->sparp_sg->sg_output_format_name;
+  caddr_t saved_valmode_name = sparp->sparp_sg->sg_output_valmode_name;
   SPART *fake_sol;
   SPART *top;
   SPART **action_sqls;
@@ -4627,19 +4727,18 @@ spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
     return actions[0]; /* No need to make grouping around single action. */
 /* First of all, every tree for every action is compiled into string literal containing SQL text. */
   action_sqls = (SPART **)t_alloc_box (action_count * sizeof (SPART *), DV_ARRAY_OF_POINTER);
-  sparp->sparp_env->spare_output_format_name = NULL;
-  sparp->sparp_env->spare_output_valmode_name = NULL;
-  if (NULL != sparp->sparp_expr)
+  sparp->sparp_sg->sg_output_format_name = NULL;
+  sparp->sparp_sg->sg_output_valmode_name = NULL;
+  if (NULL != sparp->sparp_entire_query)
     spar_internal_error (sparp, "spar_" "make_topmost_sparul_sql() is called after start of some tree rewrite");
   DO_BOX_FAST (SPART *, action, action_ctr, actions)
     {
       spar_sqlgen_t ssg;
       sql_comp_t sc;
       caddr_t action_sql;
-      sparp->sparp_expr = action;
-      sparp_rewrite_all (sparp, 0 /* no cloning -- no need in safely_copy_retvals */);
+      sparp->sparp_entire_query = action = sparp_rewrite_all (sparp, action, 0 /* no cloning -- no need in safely_copy_retvals */);
 #ifndef NDEBUG
-      t_check_tree (sparp->sparp_expr);
+      t_check_tree (action);
 #endif
       memset (&ssg, 0, sizeof (spar_sqlgen_t));
       memset (&sc, 0, sizeof (sql_comp_t));
@@ -4648,7 +4747,7 @@ spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
       ssg.ssg_out = strses_allocate ();
       ssg.ssg_sc = &sc;
       ssg.ssg_sparp = sparp;
-      ssg.ssg_tree = sparp->sparp_expr;
+      ssg.ssg_tree = action;
       ssg.ssg_sources = ssg.ssg_tree->_.req_top.sources; /*!!!TBD merge with environment */
       QR_RESET_CTX
         {
@@ -4666,11 +4765,11 @@ spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
       action_sql = t_strses_string (ssg.ssg_out);
       ssg_free_internals (&ssg);
       action_sqls [action_ctr] = spartlist (sparp, 4, SPAR_LIT, action_sql, NULL, NULL);
-      sparp->sparp_expr = NULL;
+      sparp->sparp_entire_query = NULL;
     }
   END_DO_BOX_FAST;
-  sparp->sparp_env->spare_output_format_name = saved_format_name;
-  sparp->sparp_env->spare_output_valmode_name = saved_valmode_name;
+  sparp->sparp_sg->sg_output_format_name = saved_format_name;
+  sparp->sparp_sg->sg_output_valmode_name = saved_valmode_name;
   fake_sol = spar_make_fake_action_solution (sparp);
   top = spar_make_top_or_special_case_from_wm (sparp, SPARUL_RUN_SUBTYPE,
     (SPART **)t_list (1, spar_make_funcall (sparp, 0, "sql:SPARUL_RUN", action_sqls)), fake_sol );
@@ -4995,6 +5094,7 @@ sparp_query_parse (const char * str, spar_query_env_t *sparqre, int rewrite_all)
 {
   wcharset_t *query_charset = sparqre->sparqre_query_charset;
   t_NEW_VAR (sparp_t, sparp);
+  t_NEW_VAR (sparp_e4qm_t, e4qm);
   t_NEW_VARZ (sparp_env_t, spare);
 #ifdef DEBUG
   dbg_curr_sparp = sparp;
@@ -5006,6 +5106,8 @@ sparp_query_parse (const char * str, spar_query_env_t *sparqre, int rewrite_all)
   if ((NULL == sparqre->sparqre_exec_user) && (NULL != sparqre->sparqre_cli))
     sparqre->sparqre_exec_user = sparqre->sparqre_cli->cli_user;
   sparp->sparp_env = spare;
+  memset (e4qm, 0, sizeof (sparp_e4qm_t));
+  sparp->sparp_e4qm = e4qm;
   sparp->sparp_permitted_syntax = ~0;
   sparp->sparp_err_hdr = t_box_dv_short_string ("SPARQL compiler");
   if ((NULL == query_charset) /*&& (!sparqre->xqre_query_charset_is_set)*/)
@@ -5039,7 +5141,8 @@ sparp_query_parse (const char * str, spar_query_env_t *sparqre, int rewrite_all)
       /* Bug 4566: sparpyyrestart (NULL); */
       sparyyparse (sparp);
       if (rewrite_all)
-        sparp_rewrite_all (sparp, 0 /* top is never cloned, hence zero safely_copy_retvals */);
+        sparp->sparp_entire_query = sparp_rewrite_all (sparp, sparp->sparp_entire_query, 0 /* top is never cloned, hence zero safely_copy_retvals */);
+        
     }
   QR_RESET_CODE
     {
@@ -5051,9 +5154,9 @@ sparp_query_parse (const char * str, spar_query_env_t *sparqre, int rewrite_all)
     }
   END_QR_RESET
   if (NULL != sparp->sparp_macrolib_to_create && !sparp->sparp_macrolib_ignore_create)
-    sparp->sparp_expr = spar_make_create_macro_lib (sparp);
-#if 0 /*ndef NDEBUG*/
-  t_check_tree (sparp->sparp_expr);
+    sparp->sparp_entire_query = spar_make_create_macro_lib (sparp);
+#if 0
+  t_check_tree (sparp->sparp_entire_query);
 #endif
   return sparp;
 }
@@ -5070,7 +5173,7 @@ sparp_query_parse (const char * str, spar_query_env_t *sparqre, int rewrite_all)
   END_DO_SET()
 
 sparp_t *
-sparp_clone_for_variant (sparp_t *sparp, int allow_output_formatting)
+sparp_clone_for_variant (sparp_t *sparp)
 {
   s_node_t *iter;
   sparp_env_t *env = sparp->sparp_env;
@@ -5078,14 +5181,6 @@ sparp_clone_for_variant (sparp_t *sparp, int allow_output_formatting)
   t_NEW_VARZ (sparp_env_t, env_copy);
   memcpy (sparp_copy, sparp, sizeof (sparp_t));
   sparp_copy->sparp_env = env_copy;
-  ENV_BOX_COPY (spare_input_param_valmode_name);
-  ENV_BOX_COPY (spare_output_valmode_name);
-  if (allow_output_formatting)
-    {
-      ENV_BOX_COPY (spare_output_format_name);
-      ENV_BOX_COPY (spare_output_scalar_format_name);
-      ENV_BOX_COPY (spare_output_dict_format_name);
-    }
   ENV_BOX_COPY (spare_storage_name);
   ENV_COPY(spare_parent_env);
 #if 0 /* These will be used when libraries of inference rules are introduced. */
@@ -5118,8 +5213,6 @@ spar_env_push (sparp_t *sparp)
   ENV_COPY (spare_namespace_prefixes);
   ENV_COPY (spare_namespace_prefixes_outer);
   ENV_COPY (spare_base_uri);
-  ENV_COPY (spare_input_param_valmode_name);
-  env_copy->spare_output_valmode_name = t_box_dv_short_string ("AUTO");
   ENV_COPY (spare_storage_name);
   ENV_COPY (spare_inference_name);
   ENV_COPY (spare_inference_ctx);
@@ -5158,22 +5251,7 @@ spar_env_push (sparp_t *sparp)
   ENV_COPY (spare_good_graph_varname_sets);
   ENV_COPY (spare_good_graph_bmk);
   ENV_COPY (spare_global_var_names);
-  ENV_COPY (spare_globals_mode);
-  ENV_COPY (spare_global_num_offset);
-  /* no copy for spare_acc_qm_sqls */
-  /* no copy for spare_qm_default_table */
-  /* no copy for spare_qm_current_table_alias */
-  /* no copy for spare_qm_parent_tables_of_aliases */
-  /* no copy for spare_qm_parent_aliases_of_aliases */
-  /* no copy for spare_qm_descendants_of_aliases */
-  /* no copy for spare_qm_ft_indexes_of_columns */
-  /* no copy for spare_qm_where_conditions */
-  /* no copy for spare_qm_locals */
-  /* no copy for spare_qm_affected_jso_iris */
-  /* no copy for spare_qm_deleted */
-  /* no copy for spare_sparul_log_mode */
-  ENV_COPY (spare_signal_void_variables);
-
+  /* no copy for spare_disable_output_formatting */
   env_copy->spare_parent_env = env;
   sparp->sparp_env = env_copy;
 }
@@ -5237,7 +5315,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   ssg.ssg_out = strses_allocate ();
   ssg.ssg_sc = &sc;
   ssg.ssg_sparp = sparp;
-  ssg.ssg_tree = sparp->sparp_expr;
+  ssg.ssg_tree = sparp->sparp_entire_query;
   ssg_make_whole_sql_text (&ssg);
   if (NULL != sparqre->sparqre_catched_error)
     {
@@ -5281,7 +5359,7 @@ bif_sparql_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       SPART *defm = sparp->sparp_macro_defs[ctr];
       spart_dump (defm, res, 0, "MACRO DEFINITION", -1);
     }
-  spart_dump (sparp->sparp_expr, res, 0, "QUERY", -1);
+  spart_dump (sparp->sparp_entire_query, res, 0, "QUERY", -1);
 #if 1
   {
     int eq_ctr, eq_count;
@@ -5347,7 +5425,7 @@ bif_sparql_detalize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ssg.ssg_out = strses_allocate ();
   ssg.ssg_sc = &sc;
   ssg.ssg_sparp = sparp;
-  ssg.ssg_tree = sparp->sparp_expr;
+  ssg.ssg_tree = sparp->sparp_entire_query;
   ssg.ssg_sd_flags = flags;
   ssg.ssg_sd_used_namespaces = id_str_hash_create (16);
   QR_RESET_CTX
@@ -5405,7 +5483,7 @@ bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ssg.ssg_out = strses_allocate ();
   ssg.ssg_sc = &sc;
   ssg.ssg_sparp = sparp;
-  ssg.ssg_tree = sparp->sparp_expr;
+  ssg.ssg_tree = sparp->sparp_entire_query;
   ssg_make_whole_sql_text (&ssg);
   if (NULL != sparqre.sparqre_catched_error)
     {

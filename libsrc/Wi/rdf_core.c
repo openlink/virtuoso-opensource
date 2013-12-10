@@ -745,44 +745,52 @@ ttlp_free (ttlp_t *ttlp)
 void
 ttlyyerror_impl (ttlp_t *ttlp_arg, const char *raw_text, const char *strg)
 {
-  int lineno = ttlp_arg[0].ttlp_lexlineno;
-  if (NULL == raw_text)
-    raw_text = ttlp_arg[0].ttlp_raw_text;
-  tf_report (ttlp_arg[0].ttlp_tf, 'F', "37000", "RDF29", strg);
-  sqlr_new_error ("37000", "SP029",
-      "%.400s, line %d: %.500s%.5s%.1000s",
-      ttlp_arg[0].ttlp_err_hdr,
-      lineno,
-      strg,
-      ((NULL == raw_text) ? "" : " at "),
-      ((NULL == raw_text) ? "" : raw_text));
+  if (NULL != ttlp_arg)
+    {
+      int lineno = ttlp_arg[0].ttlp_lexlineno;
+      if (NULL == raw_text)
+        raw_text = ttlp_arg[0].ttlp_raw_text;
+      tf_report (ttlp_arg[0].ttlp_tf, 'F', "37000", "RDF29", strg);
+      sqlr_new_error ("37000", "SP029",
+          "%.400s, line %d: %.500s%.5s%.1000s",
+          ttlp_arg[0].ttlp_err_hdr,
+          lineno,
+          strg,
+          ((NULL == raw_text) ? "" : " at "),
+          ((NULL == raw_text) ? "" : raw_text));
+    }
+  sqlr_new_error ("37000", "SP029", "Parser error: %s; please report the parsed document", strg);
 }
 
 
 void
 ttlyyerror_impl_1 (ttlp_t *ttlp_arg, const char *raw_text, int yystate, short *yyssa, short *yyssp, const char *strg)
 {
-  int sm2, sm1, sp1;
-  int lineno = ttlp_arg[0].ttlp_lexlineno;
-  if (NULL == raw_text)
-    raw_text = ttlp_arg[0].ttlp_raw_text;
-  tf_report (ttlp_arg[0].ttlp_tf, 'F', "37000", "RDF30", strg);
-  sp1 = yyssp[1];
-  sm1 = yyssp[-1];
-  sm2 = ((sm1 > 0) ? yyssp[-2] : 0);
-  sqlr_new_error ("37000", "RDF30",
-     /*errlen,*/ "%.400s, line %d: %.500s [%d-%d-(%d)-%d]%.5s%.1000s%.5s",
-      ttlp_arg[0].ttlp_err_hdr,
-      lineno,
-      strg,
-      sm2,
-      sm1,
-      yystate,
-      ((sp1 & ~0x7FF) ? -1 : sp1) /* stub to avoid printing random garbage in logs */ ,
-      ((NULL == raw_text) ? "" : " at '"),
-      ((NULL == raw_text) ? "" : raw_text),
-      ((NULL == raw_text) ? "" : "'")
-      );
+  if (NULL != ttlp_arg)
+    {
+      int sm2, sm1, sp1;
+      int lineno = ttlp_arg[0].ttlp_lexlineno;
+      if (NULL == raw_text)
+        raw_text = ttlp_arg[0].ttlp_raw_text;
+      tf_report (ttlp_arg[0].ttlp_tf, 'F', "37000", "RDF30", strg);
+      sp1 = yyssp[1];
+      sm1 = yyssp[-1];
+      sm2 = ((sm1 > 0) ? yyssp[-2] : 0);
+      sqlr_new_error ("37000", "RDF30",
+         /*errlen,*/ "%.400s, line %d: %.500s [%d-%d-(%d)-%d]%.5s%.1000s%.5s",
+          ttlp_arg[0].ttlp_err_hdr,
+          lineno,
+          strg,
+          sm2,
+          sm1,
+          yystate,
+          ((sp1 & ~0x7FF) ? -1 : sp1) /* stub to avoid printing random garbage in logs */ ,
+          ((NULL == raw_text) ? "" : " at '"),
+          ((NULL == raw_text) ? "" : raw_text),
+          ((NULL == raw_text) ? "" : "'")
+          );
+    }
+  sqlr_new_error ("37000", "SP029", "Parser error: %s; please report the parsed document", strg);
 }
 
 
@@ -882,6 +890,43 @@ ttlp_bit_of_special_qname (caddr_t qname)
   if (!strcmp (qname, "of"))	return TTLP_ALLOW_QNAME_OF;
   if (!strcmp (qname, "this"))	return TTLP_ALLOW_QNAME_THIS;
   return 0;
+}
+
+int
+ttlp_qname_prefix_is_explicit_and_valid (ttlp_t *ttlp_arg, caddr_t qname)
+{
+  char *lname = strchr (qname, ':');
+  caddr_t ns_pref;
+  id_hash_t *ns_dict;
+  caddr_t **ns_uri_ptr;
+  if (NULL == lname)
+    return 0;
+  if (qname == lname)
+    return ((NULL == ttlp_arg[0].ttlp_default_ns_uri) ? 0 : 1);
+  lname++;
+  ns_pref = box_dv_short_nchars (qname, lname - qname);
+  if (ttlp_arg[0].ttlp_in_trig_graph)
+    {
+      ns_dict = ttlp_arg[0].ttlp_inner_namespaces_prefix2iri;
+      ns_uri_ptr = ((NULL == ns_dict) ? NULL : (caddr_t *) id_hash_get (ns_dict, (caddr_t)(&ns_pref)));
+      if (NULL != ns_uri_ptr)
+        goto ns_found; /* see below */
+    }
+  ns_dict = ttlp_arg[0].ttlp_namespaces_prefix2iri;
+  ns_uri_ptr = ((NULL == ns_dict) ? NULL : (caddr_t *) id_hash_get (ns_dict, (caddr_t)(&ns_pref)));
+  if (NULL != ns_uri_ptr)
+    goto ns_found; /* see below */
+  if (!strcmp (ns_pref, "rdf:"))
+    goto ns_found; /* see below */
+  if (!strcmp (ns_pref, "xsd:"))
+    goto ns_found; /* see below */
+  if (!strcmp (ns_pref, "virtrdf:"))
+    goto ns_found; /* see below */
+  dk_free_box (ns_pref);
+  return 0;
+ns_found:
+  dk_free_box (ns_pref);
+  return 1;
 }
 
 #undef ttlp_expand_qname_prefix
@@ -1214,202 +1259,6 @@ bif_turtle_lex_analyze (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int mode_flags = ((1 < BOX_ELEMENTS(args)) ? bif_long_arg (qst, args, 1, "turtle_lex_analyze") : 0);
   return ttl_lex_analyze (str, mode_flags, QST_CHARSET(qst));
 }
-
-#ifdef DEBUG
-
-typedef struct ttl_lexem_descr_s
-{
-  int ld_val;
-  const char *ld_yname;
-  char ld_fmttype;
-  const char * ld_fmt;
-  caddr_t *ld_tests;
-} ttl_lexem_descr_t;
-
-ttl_lexem_descr_t ttl_lexem_descrs[__TTL_NONPUNCT_END+1];
-
-#define LEX_PROPS ttl_lex_props
-#define PUNCT(x) 'P', (x)
-#define LITERAL(x) 'L', (x)
-#define FAKE(x) 'F', (x)
-#define TTL "s"
-#define TRIG "t"
-
-#define LAST(x) "L", (x)
-#define LAST1(x) "K", (x)
-#define MISS(x) "M", (x)
-#define ERR(x)  "E", (x)
-
-#define PUNCT_TTL_LAST(x) PUNCT(x), TTL, LAST(x)
-#define PUNCT_TRIG_LAST(x) PUNCT(x), TRIG, LAST(x)
-
-
-static void ttl_lex_props (int val, const char *yname, char fmttype, const char *fmt, ...)
-{
-  va_list tail;
-  const char *cmd;
-  dk_set_t tests = NULL;
-  ttl_lexem_descr_t *ld = ttl_lexem_descrs + val;
-  if (0 != ld->ld_val)
-    GPF_T;
-  ld->ld_val = val;
-  ld->ld_yname = yname;
-  ld->ld_fmttype = fmttype;
-  ld->ld_fmt = fmt;
-  va_start (tail, fmt);
-  for (;;)
-    {
-      cmd = va_arg (tail, const char *);
-      if (NULL == cmd)
-	break;
-      dk_set_push (&tests, box_dv_short_string (cmd));
-    }
-  va_end (tail);
-  ld->ld_tests = (caddr_t *)revlist_to_array (tests);
-}
-
-static void ttl_lexem_descrs_fill (void)
-{
-  static int first_run = 1;
-  if (!first_run)
-    return;
-  first_run = 0;
-#include "turtle_lex_props.c"
-}
-
-caddr_t
-bif_turtle_lex_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  dk_set_t report = NULL;
-  int tested_lex_val = 0;
-  ttl_lexem_descrs_fill ();
-  for (tested_lex_val = 0; tested_lex_val < __TTL_NONPUNCT_END; tested_lex_val++)
-    {
-      char cmd;
-      caddr_t **lexems;
-      unsigned lex_count;
-      unsigned cmd_idx = 0;
-      int mode_bits = 0, last_lval, last1_lval;
-      ttl_lexem_descr_t *ld = ttl_lexem_descrs + tested_lex_val;
-      if (0 == ld->ld_val)
-	continue;
-      dk_set_push (&report, box_dv_short_string (""));
-      dk_set_push (&report,
-        box_sprintf (0x100, "#define % 25s %d /* '%s' (%c) */",
-	  ld->ld_yname, ld->ld_val, ld->ld_fmt, ld->ld_fmttype ) );
-      for (cmd_idx = 0; cmd_idx < BOX_ELEMENTS(ld->ld_tests); cmd_idx++)
-	{
-	  cmd = ld->ld_tests[cmd_idx][0];
-	  switch (cmd)
-	    {
-	    case 's': mode_bits = 0; break;
-	    case 't': mode_bits = TTLP_ALLOW_TRIG; break;
-	    case 'K': case 'L': case 'M': case 'E':
-	      cmd_idx++;
-	      lexems = (caddr_t **) ttl_lex_analyze (ld->ld_tests[cmd_idx], mode_bits, QST_CHARSET(qst));
-	      dk_set_push (&report, box_dv_short_string (ld->ld_tests[cmd_idx]));
-	      lex_count = BOX_ELEMENTS (lexems);
-	      if (0 == lex_count)
-		{
-		  dk_set_push (&report, box_dv_short_string ("FAILED: no lexems parsed and no error reported!"));
-		  goto end_of_test;
-		}
-	      { char buf[0x1000]; char *buf_tail = buf;
-	        unsigned lctr = 0;
-		for (lctr = 0; lctr < lex_count && (5 == BOX_ELEMENTS(lexems[lctr])); lctr++)
-		  {
-		    ptrlong *ldata = ((ptrlong *)(lexems[lctr]));
-		    int lval = ldata[3];
-		    ttl_lexem_descr_t *ld = ttl_lexem_descrs + lval;
-		    if (ld->ld_val)
-		      buf_tail += sprintf (buf_tail, " %s", ld->ld_yname);
-		    else if (lval < 0x100)
-		      buf_tail += sprintf (buf_tail, " '%c'", lval);
-		    else GPF_T;
-		    buf_tail += sprintf (buf_tail, " %ld ", (long)(ldata[4]));
-		  }
-	        buf_tail[0] = '\0';
-		dk_set_push (&report, box_dv_short_string (buf));
-	      }
-	      if (3 == BOX_ELEMENTS(lexems[lex_count-1])) /* lexical error */
-		{
-		  dk_set_push (&report,
-		    box_sprintf (0x1000, "%s: ERROR %s",
-		      ('E' == cmd) ? "PASSED": "FAILED", lexems[lex_count-1][2] ) );
-		  goto end_of_test;
-		}
-/*
-	      if (END_OF_TURTLE_TEXT != ((ptrlong *)(lexems[lex_count-1]))[3])
-		{
-		  dk_set_push (&report, box_dv_short_string ("FAILED: end of source is not reached and no error reported!"));
-		  goto end_of_test;
-		}
-*/
-	      if (0 /*1*/ == lex_count)
-		{
-		  dk_set_push (&report, box_dv_short_string ("FAILED: no lexems parsed and only end of source has found!"));
-		  goto end_of_test;
-		}
-	      last_lval = ((ptrlong *)(lexems[lex_count-/*2*/1]))[3];
-	      if ('E' == cmd)
-		{
-		  dk_set_push (&report,
-		    box_sprintf (0x1000, "FAILED: %d lexems found, last lexem is %d, must be error",
-		      lex_count, last_lval) );
-		  goto end_of_test;
-		}
-	      if ('K' == cmd)
-		{
-		  if (/*4*/2 > lex_count)
-		    {
-		      dk_set_push (&report,
-			box_sprintf (0x1000, "FAILED: %d lexems found, the number of actual lexems is less than two",
-			  lex_count ) );
-		      goto end_of_test;
-		    }
-		  last1_lval = ((ptrlong *)(lexems[lex_count-/*3*/2]))[3];
-		  dk_set_push (&report,
-		    box_sprintf (0x1000, "%s: %d lexems found, one-before-last lexem is %d, must be %d",
-		      (last1_lval == tested_lex_val) ? "PASSED": "FAILED", lex_count, last1_lval, tested_lex_val) );
-		  goto end_of_test;
-		}
-	      if ('L' == cmd)
-		{
-		  dk_set_push (&report,
-		    box_sprintf (0x1000, "%s: %d lexems found, last lexem is %d, must be %d",
-		      (last_lval == tested_lex_val) ? "PASSED": "FAILED", lex_count, last_lval, tested_lex_val) );
-		  goto end_of_test;
-		}
-	      if ('M' == cmd)
-		{
-		  unsigned lctr;
-		  for (lctr = 0; lctr < lex_count; lctr++)
-		    {
-		      int lval = ((ptrlong *)(lexems[lctr]))[3];
-		      if (lval == tested_lex_val)
-			{
-			  dk_set_push (&report,
-			    box_sprintf (0x1000, "FAILED: %d lexems found, lexem %d is found but it should not occur",
-			      lex_count, tested_lex_val) );
-			  goto end_of_test;
-			}
-		    }
-		  dk_set_push (&report,
-		    box_sprintf (0x1000, "PASSED: %d lexems found, lexem %d is not found and it should not occur",
-		      lex_count, tested_lex_val) );
-		  goto end_of_test;
-		}
-	      GPF_T;
-end_of_test:
-	      dk_free_tree (lexems);
-	      break;
-	    default: GPF_T;
-	    }
-	  }
-    }
-  return revlist_to_array (report);
-}
-#endif
 
 void
 nic_set (name_id_cache_t * nic, caddr_t name, boxint id)
@@ -3743,6 +3592,9 @@ void jso__qm_format_jsocd_validation_cbk (jso_rtti_t *inst_rtti, dk_set_t *warni
   jso__rdf_val_range_inst_validation (&(qmf->qmfValRange), "qmfValRange", inst_rtti, warnings_log_ptr);
 }
 
+#ifdef DEBUG
+extern caddr_t bif_turtle_lex_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
+#endif
 
 void
 rdf_core_init (void)
