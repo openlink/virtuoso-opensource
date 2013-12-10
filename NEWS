@@ -1,3 +1,77 @@
+Dec 10, 2013, V6.1.8:
+  * Engine
+    - Added new general-purpose HTTP auth procedure
+    - Added support for handling MIME type aliases
+    - Added support for the '-' operator for datetime data types
+    - Fixed compiler warnings
+    - Fixed checks to stop/wait for cpt
+    - Fixed issue with cpt rollback outside of txn
+    - Fixed issue with unsupported scalar expression type
+    - Fixed issue with using tabid outside its scope
+    - Fixed make remap if missing in compact
+    - Fixed memory leak in JDBC provider
+
+  * SPARQL
+    - Optimizations in SPARQL compiler
+    - Added support for PL-as-BIFs in SPARQL
+    - Added support for SPARQL VALID()
+    - Fixed embedded turtle parser
+    - Fixed generate foaf:topic links for subject URIs with #this suffix
+    - Fixed issue with OR and CONTAINS in same filter clause
+    - Fixed issue with t_step in transitive query
+    - Fixed lexer for TRIG
+
+  * Client RPC
+    - Added extra rpc error handlers
+    - Added more checks for array types
+    - Added check for neg values
+    - Fixed free regular boxes
+    - Fixed double free of client session
+
+  * Jena & Sesame
+    - Improved speed of batch deletes
+    - Removed unnessesary commits
+    - Removed unnessesary check that graph exists after remove
+
+  * Conductor and DAV
+    - Added automatic creation of shared DET folders
+    - Added checkbox to enable overwriting of ODS endpoints
+    - Added double click to open edit properties on item
+    - Added error page for WebDAV skin
+    - Added exception for the /conductor virtual path in WebDAV skin
+    - Added new columns Date Added and Date Created
+    - Added new pages for graph level security
+    - Added select option for realms and groups
+    - Added support to store order and direction between sessions
+    - Fixed default edit mode for HTML files to 'source'
+    - Fixed default isolation level and charset
+    - Fixed default mime type for created files to text/plain
+    - Fixed encoding bug for non-english user names
+    - Fixed encoding of selected items
+    - Fixed inactive subtab on Linked Data | Graphs page
+    - Fixed issues creating DET folders
+    - Fixed issues editing HTML files
+    - Fixed issues in 'Edit Properties'
+    - Fixed issues opening Linked Data | Schemas tab
+    - Fixed issues retrieving .TTL files from DynRes DET folders
+    - Fixed issues swith DAV QoS re-write rule for text/html
+    - Fixed issues uploading bad .TTL files
+    - Fixed issues with default user/group in uploads
+    - Fixed issues with editing resources using WebDAV skin
+    - Fixed issues with editing text/html files
+    - Fixed issues with owner and group for created items in WebDAV skin
+    - Fixed issues with timeouts on verification IMAP DET folders
+
+  * Faceted Browser
+    - Added more navigation links in header
+    - Fixed build issue running shell scripts
+    - Fixed do not display error messages unless query parameter dbg=1
+    - Fixed if bad encoding causes regexp to signal error, skip and do not alter text
+    - Fixed omit graph= parameter from /describe property URL query string
+    - Fixed sponging via /describe on https
+    - Fixed use html5 based pivot viewer if installed
+    - Fixed use the new fast label matching for lang pref if available
+
 Jul 22, 2013, V6.1.7:
   * Database engine
     - Added JDK 1.7 / JDBC 4.1 driver
