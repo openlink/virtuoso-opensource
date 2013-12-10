@@ -862,7 +862,7 @@ DAV_SEARCH_ID (in path any, in what char (1)) returns any
       {
         declare det, detcol_id any;
 
-        detcol_id := DAV_PROP_GET_INT (id, what, 'virt:DETCOL_ID', 0);
+        detcol_id := cast (DAV_PROP_GET_INT (id, what, 'virt:DETCOL_ID', 0) as integer);
         if (DAV_HIDE_ERROR (detcol_id) is not null)
         {
           det := cast (coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = detcol_id), '') as varchar);

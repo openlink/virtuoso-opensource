@@ -67,7 +67,7 @@ release:
 #
 .PHONY: changelog
 changelog:
-	cvs2cl -F V6_0_0-DEVEL --no-ancestors --no-wrap --utc --hide-filenames --prune --window 86400
+	git2cl --since=2009/10/17 --format='%s%n%n%b%n' --strip-tab --strip-cherry-pick > ChangeLog
 
 endif
 

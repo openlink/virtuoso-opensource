@@ -61,8 +61,7 @@ EXTRA_DIST = \
 	$(srcdir)/*.xsl \
 	$(srcdir)/images/*.gif \
 	$(srcdir)/images/*.png \
-	$(srcdir)/images/rdf_w3c.svg \
-	$(srcdir)/images/sw-vert-v.svg \
+	$(srcdir)/images/*.svg \
 	$(srcdir)/make_vad.sh \
 	$(srcdir)/rdfdesc/*.sql \
 	$(srcdir)/rdfdesc/*.vsp \
