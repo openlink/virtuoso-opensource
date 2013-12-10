@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -97,23 +97,23 @@
 	  ]]>
 	</v:method>
 
-  <v:method name="data2string" arglist="inout data any, inout labels any">
+  <v:method name="data2string" arglist="inout items any, inout labels any">
     <![CDATA[
-      declare N, M integer;
-      declare S, format varchar;
+      declare S, delimiter1, delimiter2 varchar;
       declare value any;
 
       S := '';
-      for (N := 0; N < length (data); N := N + 1)
+	    delimiter1 := '';
+      foreach (any item in items) do
   	  {
-  	    format := '';
-        for (M := 0; M < length (labels); M := M + 1)
+  	    delimiter2 := '';
+        foreach (any label in labels) do
     	  {
-    	    value := get_keyword (labels[M], data[N]);
+    	    value := get_keyword (label, item);
     	    if (length (value))
     	    {
-            S := S || value || format;
-    	      format := ';';
+            S := S || delimiter2 || value;
+    	      delimiter2 := ';';
     	    }
    	    }
         S := S || '\n';
@@ -147,6 +147,7 @@
           }
           self.iPhoto := get_keyword ('depiction', data);
           self.iTitle := get_keyword ('title', data);
+          self.iNick := get_keyword ('nick', data);
           self.iName := get_keyword ('name', data);
           self.iFirstName := coalesce (get_keyword ('firstName', data), get_keyword ('givenName', data));
           self.iFamily_name := get_keyword ('family_name', data);
@@ -156,6 +157,7 @@
           self.iLat := get_keyword ('lat', data);
           self.iLng := get_keyword ('lng', data);
           self.iIcqChatID := get_keyword ('icqChatID', data);
+          self.iSkypeChatID := get_keyword ('skypeChatID', data);
           self.iMsnChatID := get_keyword ('msnChatID', data);
           self.iAimChatID := get_keyword ('aimChatID', data);
           self.iYahooChatID := get_keyword ('yahooChatID', data);
@@ -169,6 +171,13 @@
           self.iSameAs := get_keyword ('sameAs', data);
           self.iKnows := get_keyword ('knows', data);
           self.iTags := get_keyword ('tags', data);
+
+          self.iHCounty := get_keyword ('country', data);
+          self.iHState := get_keyword ('region', data);
+          self.iHCyty := get_keyword ('locality', data);
+          self.iHCode := get_keyword ('pobox', data);
+          self.iHAddress1 := get_keyword ('street', data);
+          self.iHAddress2 := get_keyword ('extadd', data);
 
           self.iMode := 1;
           self.vc_data_bind (self.vc_page.vc_event);
@@ -213,6 +222,7 @@
       	        data := i_lData [N+1];
 
                 self.iTitle := self.check_title (self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_TITLE')));
+                self.iNick := null;
                 self.iName := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_FULL_NAME'));
                 self.iFirstName := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_FIRST_NAME'));;
                 self.iFamily_name := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_LAST_NAME'));;
@@ -221,6 +231,7 @@
                 self.iLat := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_H_LAT'));;
                 self.iLng := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_H_LNG'));;
                 self.iIcqChatID := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_ICQ'));;
+                self.iSkypeChatID := null;
                 self.iMsnChatID := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_MSN'));;
                 self.iAimChatID := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_AIM'));;
                 self.iYahooChatID := self.ldap2_data (data, self.ldap2_pattern (i_lMaps, 'P_YAHOO'));;
@@ -234,6 +245,13 @@
                 self.iSameAs := null;
                 self.iTags := null;
 
+                self.iHCounty := null;
+                self.iHState := null;
+                self.iHCyty := null;
+                self.iHCode := null;
+                self.iHAddress1 := null;
+                self.iHAddress2 := null;
+
                 self.iMode := 2;
                 goto _exit2;
               }
@@ -244,11 +262,21 @@
           {
             self.vc_is_valid := 0;
             self.vc_error_message := 'The specified LDAP server doesn\'t contains personal data.';
-          } else {
+          }
+          else
+          {
             self.vc_data_bind (self.vc_page.vc_event);
           }
         }
-      } else {
+        if (not isnull (self.iNick) and exists (select 1 from WA_USER_INFO where WAUI_U_ID <> self.u_id and WAUI_NICK = self.iNick))
+          self.iNick := null;
+
+        if (not isnull (self.iMbox) and exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 1) and exists (select 1 from SYS_USERS where U_E_MAIL = self.iMbox and U_ID <> self.u_id))
+          self.iMbox := null;
+
+      }
+      else
+      {
         if (
             (get_keyword ('cb_item_iMBox', params, '0') = '1') and
             exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 1) and
@@ -264,6 +292,8 @@
           ODS.ODS_API."user.update.field" (self.u_name, 'WAUI_PHOTO_URL', self.iPhoto);
         if (get_keyword ('cb_item_iTitle', params, '0') = '1')
           DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_TITLE', self.iTitle);
+        if (get_keyword ('cb_item_iNick', params, '0') = '1')
+          DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_NICK', self.iNick);
         if (get_keyword ('cb_item_iFirstName', params, '0') = '1')
           DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_FIRST_NAME', self.iFirstName);
         if (get_keyword ('cb_item_iFamily_name', params, '0') = '1')
@@ -279,12 +309,14 @@
 
         if (get_keyword ('cb_item_iIcqChatID', params, '0') = '1')
           DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_ICQ', self.iIcqChatID);
+        if (get_keyword ('cb_item_iSkypeChatID', params, '0') = '1')
+          DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_SKYPE', self.iSkypeChatID);
         if (get_keyword ('cb_item_iAimChatID', params, '0') = '1')
           DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_AIM', self.iAimChatID);
-        if (get_keyword ('cb_item_iYahooChatID', params, '0') = '1')
-          DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_YAHOO', self.iYahooChatID);
         if (get_keyword ('cb_item_iMsnChatID', params, '0') = '1')
           DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_MSN', self.iMsnChatID);
+        if (get_keyword ('cb_item_iYahooChatID', params, '0') = '1')
+          DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_YAHOO', self.iYahooChatID);
 
         if (get_keyword ('cb_item_iWorkplaceHomepage', params, '0') = '1')
           DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_BORG_HOMEPAGE', self.iWorkplaceHomepage);
@@ -352,6 +384,24 @@
         	  }
           }
         }
+        if (get_keyword ('cb_item_iHCounty', params, '0') = '1')
+          DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_HCOUNTRY', self.iHCounty);
+
+        if (get_keyword ('cb_item_iHState', params, '0') = '1')
+          DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_HSTATE', self.iHState);
+
+        if (get_keyword ('cb_item_iHCyty', params, '0') = '1')
+          DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_HCITY', self.iHCyty);
+
+        if (get_keyword ('cb_item_iHCode', params, '0') = '1')
+          DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_HCODE', self.iHCode);
+
+        if (get_keyword ('cb_item_iHAddress1', params, '0') = '1')
+          DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_HADDRESS1', self.iHAddress1);
+
+        if (get_keyword ('cb_item_iHAddress2', params, '0') = '1')
+          DB.DBA.WA_USER_EDIT (self.u_name, 'WAUI_HADDRESS2', self.iHAddress2);
+
         commit work;
         self.iMode := 0;
       }
@@ -363,6 +413,7 @@
 
   <v:variable name="iPhoto" type="varchar" default="null" />
   <v:variable name="iTitle" type="varchar" default="null" />
+  <v:variable name="iNick" type="varchar" default="null" />
   <v:variable name="iName" type="varchar" default="null" />
   <v:variable name="iFirstName" type="varchar" default="null" />
   <v:variable name="iFamily_name" type="varchar" default="null" />
@@ -371,7 +422,9 @@
   <v:variable name="iBirthday" type="varchar" default="null" />
   <v:variable name="iLat" type="varchar" default="null" />
   <v:variable name="iLng" type="varchar" default="null" />
+
   <v:variable name="iIcqChatID" type="varchar" default="null" />
+  <v:variable name="iSkypeChatID" type="varchar" default="null" />
   <v:variable name="iMsnChatID" type="varchar" default="null" />
   <v:variable name="iAimChatID" type="varchar" default="null" />
   <v:variable name="iYahooChatID" type="varchar" default="null" />
@@ -385,6 +438,13 @@
   <v:variable name="iSameAs" type="any" default="null" />
   <v:variable name="iKnows" type="any" default="null" />
   <v:variable name="iTags" type="varchar" default="null" />
+
+  <v:variable name="iHCounty" type="varchar" default="null" />
+  <v:variable name="iHState" type="varchar" default="null" />
+  <v:variable name="iHCyty" type="varchar" default="null" />
+  <v:variable name="iHCode" type="varchar" default="null" />
+  <v:variable name="iHAddress1" type="varchar" default="null" />
+  <v:variable name="iHAddress2" type="varchar" default="null" />
 
   <v:variable name="i_source" type="any" default="-1" />
   <v:variable name="i_lName" type="varchar" default="''" />
@@ -461,161 +521,217 @@
             <th>Field</th>
             <th>Value</th>
           </tr>
-          <v:template name="iTemplate_01_0" type="simple" condition="length (self.iPhoto)">
+          <v:template name="iTemplate_01" type="simple" condition="length (self.iPhoto)">
             <tr>
               <td valign="top"><input type="checkbox" name="cb_item_iPhoto" id="cb_item_iPhoto" value="1" /></td>
               <td valign="top">Photo</td>
               <td><img src="<?V self.iPhoto ?>"/></td>
             </tr>
           </v:template>
-          <v:template name="iTemplate_01" type="simple" condition="length (self.iTitle)">
+          <v:template name="iTemplate_02" type="simple" condition="length (self.iTitle)">
             <tr>
               <td><input type="checkbox" name="cb_item_iTitle" id="cb_item_iTitle" value="1" /></td>
               <td>Title</td>
               <td><?V self.iTitle ?></td>
             </tr>
           </v:template>
-          <v:template name="iTemplate_02" type="simple" condition="length (self.iFirstName)">
+          <v:template name="iTemplate_03" type="simple" condition="length (self.iNick)">
+            <tr>
+              <td><input type="checkbox" name="cb_item_iNick" id="cb_item_iNick" value="1" /></td>
+              <td>Nick</td>
+              <td><?V wa_utf8_to_wide (self.iNick) ?></td>
+            </tr>
+          </v:template>
+          <v:template name="iTemplate_04" type="simple" condition="length (self.iFirstName)">
             <tr>
               <td><input type="checkbox" name="cb_item_iFirstName" id="cb_item_iFirstName" value="1" /></td>
               <td>First Name</td>
               <td><?V wa_utf8_to_wide (self.iFirstName) ?></td>
             </tr>
           </v:template>
-          <v:template name="iTemplate_03" type="simple" condition="length (self.iFamily_name)">
+          <v:template name="iTemplate_05" type="simple" condition="length (self.iFamily_name)">
             <tr>
               <td><input type="checkbox" name="cb_item_iFamily_name" id="cb_item_iFamily_name" value="1" /></td>
               <td>Family Name</td>
               <td><?V wa_utf8_to_wide (self.iFamily_name) ?></td>
             </tr>
           </v:template>
-          <v:template name="iTemplate_030" type="simple" condition="length (self.iName)">
+          <v:template name="iTemplate_06" type="simple" condition="length (self.iName)">
             <tr>
               <td><input type="checkbox" name="cb_item_iName" id="cb_item_iName" value="1" /></td>
               <td>Full Name</td>
               <td><?V wa_utf8_to_wide (self.iName) ?></td>
             </tr>
           </v:template>
-          <v:template name="iTemplate_04" type="simple" condition="length (self.iMBox)">
+          <v:template name="iTemplate_07" type="simple" condition="length (self.iMBox)">
             <tr>
               <td><input type="checkbox" name="cb_item_iMBox" id="cb_item_iMBox" value="1" /></td>
               <td>E-mail</td>
               <td><?V self.iMBox ?></td>
             </tr>
           </v:template>
-          <v:template name="iTemplate_05" type="simple" condition="length (self.iGender)">
+          <v:template name="iTemplate_08" type="simple" condition="length (self.iGender)">
             <tr>
               <td><input type="checkbox" name="cb_item_iGender" id="cb_item_iGender" value="1" /></td>
               <td>Gender</td>
               <td><?V self.iGender ?></td>
             </tr>
           </v:template>
-          <v:template name="iTemplate_06" type="simple" condition="length (self.iBirthday)">
+          <v:template name="iTemplate_09" type="simple" condition="length (self.iBirthday)">
             <tr>
               <td><input type="checkbox" name="cb_item_iBirthday" id="cb_item_iBirthday" value="1" /></td>
               <td>Birthday</td>
               <td><?V self.iBirthday ?></td>
             </tr>
           </v:template>
-          <v:template name="iTemplate_07" type="simple" condition="length (self.iLng)">
+          <v:template name="iTemplate_10" type="simple" condition="length (self.iLng)">
             <tr>
               <td><input type="checkbox" name="cb_item_iLng" id="cb_item_iLng" value="1" /></td>
               <td>Geo position</td>
               <td><?V self.iLat ?>; <?V self.iLng ?></td>
             </tr>
           </v:template>
-          <v:template name="iTemplate_08" type="simple" condition="length (self.iIcqChatID)">
+          <v:template name="iTemplate_11" type="simple" condition="length (self.iIcqChatID)">
             <tr>
               <td><input type="checkbox" name="cb_item_iIcqChatID" id="cb_item_iIcqChatID" value="1" /></td>
               <td>ICQ</td>
               <td><?V wa_utf8_to_wide (self.iIcqChatID) ?></td>
             </tr>
           </v:template>
-          <v:template name="iTemplate_09" type="simple" condition="length (self.iMsnChatID)">
+          <v:template name="iTemplate_12" type="simple" condition="length (self.iSkypeChatID)">
+            <tr>
+              <td><input type="checkbox" name="cb_item_iSkypeChatID" id="cb_item_iSkypeChatID" value="1" /></td>
+              <td>Skype</td>
+              <td><?V wa_utf8_to_wide (self.iSkypeChatID) ?></td>
+            </tr>
+          </v:template>
+          <v:template name="iTemplate_13" type="simple" condition="length (self.iMsnChatID)">
             <tr>
               <td><input type="checkbox" name="cb_item_iMsnChatID" id="cb_item_iMsnChatID" value="1" /></td>
               <td>MSN</td>
               <td><?V wa_utf8_to_wide (self.iMsnChatID) ?></td>
             </tr>
           </v:template>
-          <v:template name="iTemplate_10" type="simple" condition="length (self.iAimChatID)">
+          <v:template name="iTemplate_14" type="simple" condition="length (self.iAimChatID)">
             <tr>
               <td><input type="checkbox" name="cb_item_iAimChatID" id="cb_item_iAimChatID" value="1" /></td>
               <td>AIM</td>
               <td><?V wa_utf8_to_wide (self.iAimChatID) ?></td>
             </tr>
           </v:template>
-          <v:template name="iTemplate_11" type="simple" condition="length (self.iYahooChatID)">
+          <v:template name="iTemplate_15" type="simple" condition="length (self.iYahooChatID)">
             <tr>
               <td><input type="checkbox" name="cb_item_iYahooChatID" id="cb_item_iYahooChatID" value="1" /></td>
               <td>Yahoo</td>
               <td><?V wa_utf8_to_wide (self.iYahooChatID) ?></td>
             </tr>
           </v:template>
-          <v:template name="iTemplate_12" type="simple" condition="length (self.iWorkplaceHomepage)">
+          <v:template name="iTemplate_16" type="simple" condition="length (self.iWorkplaceHomepage)">
             <tr>
               <td><input type="checkbox" name="cb_item_iWorkplaceHomepage" id="cb_item_iWorkplaceHomepage" value="1" /></td>
               <td>Workplace Homepage</td>
               <td><?V self.iWorkplaceHomepage ?></td>
             </tr>
           </v:template>
-          <v:template name="iTemplate_13" type="simple" condition="length (self.iHomepage)">
+          <v:template name="iTemplate_17" type="simple" condition="length (self.iHomepage)">
             <tr>
               <td><input type="checkbox" name="cb_item_iHomepage" id="cb_item_iHomepage" value="1" /></td>
               <td>Homepage</td>
               <td><?V self.iHomepage ?></td>
             </tr>
           </v:template>
-          <v:template name="iTemplate_14" type="simple" condition="length (self.iPhone)">
+          <v:template name="iTemplate_18" type="simple" condition="length (self.iPhone)">
             <tr>
               <td><input type="checkbox" name="cb_item_iPhone" id="cb_item_iPhone" value="1" /></td>
               <td>Phone</td>
               <td><?V self.iPhone ?></td>
             </tr>
           </v:template>
-          <v:template name="iTemplate_15" type="simple" condition="length (self.iResume)">
+          <v:template name="iTemplate_19" type="simple" condition="length (self.iHCounty)">
+            <tr>
+              <td><input type="checkbox" name="cb_item_iHCounty" id="cb_item_iHCounty" value="1" /></td>
+              <td>Address - Country</td>
+              <td><?V self.iHCounty ?></td>
+            </tr>
+          </v:template>
+          <v:template name="iTemplate_20" type="simple" condition="length (self.iHState)">
+            <tr>
+              <td><input type="checkbox" name="cb_item_iHState" id="cb_item_iHState" value="1" /></td>
+              <td>Address - State/Province</td>
+              <td><?V self.iHState ?></td>
+            </tr>
+          </v:template>
+          <v:template name="iTemplate_21" type="simple" condition="length (self.iHCyty)">
+            <tr>
+              <td><input type="checkbox" name="cb_item_iHCyty" id="cb_item_iHCyty" value="1" /></td>
+              <td>Address - City/Town</td>
+              <td><?V self.iHCyty ?></td>
+            </tr>
+          </v:template>
+          <v:template name="iTemplate_22" type="simple" condition="length (self.iHCode)">
+            <tr>
+              <td><input type="checkbox" name="cb_item_iHCode" id="cb_item_iHCode" value="1" /></td>
+              <td>Address - Zip/Postal Code</td>
+              <td><?V self.iHCode ?></td>
+            </tr>
+          </v:template>
+          <v:template name="iTemplate_23" type="simple" condition="length (self.iHAddress1)">
+            <tr>
+              <td><input type="checkbox" name="cb_item_iHAddress1" id="cb_item_iHAddress1" value="1" /></td>
+              <td>Address - Address 1</td>
+              <td><?V self.iHAddress1 ?></td>
+            </tr>
+          </v:template>
+          <v:template name="iTemplate_24" type="simple" condition="length (self.iHAddress2)">
+            <tr>
+              <td><input type="checkbox" name="cb_item_iHAddress2" id="cb_item_iHAddress2" value="1" /></td>
+              <td>Address - Address 2</td>
+              <td><?V self.iHAddress2 ?></td>
+            </tr>
+          </v:template>
+          <v:template name="iTemplate_25" type="simple" condition="length (self.iResume)">
             <tr>
               <td><input type="checkbox" name="cb_item_iResume" id="cb_item_iResume" value="1" /></td>
               <td>Resume</td>
               <td><?V self.iResume ?></td>
             </tr>
           </v:template>
-          <v:template name="iTemplate_165" type="simple" condition="length (self.iTags)">
+          <v:template name="iTemplate_26" type="simple" condition="length (self.iTags)">
             <tr>
               <td><input type="checkbox" name="cb_item_iTags" id="cb_item_iTags" value="1" /></td>
               <td>Tags</td>
               <td><?V self.iTags ?></td>
             </tr>
           </v:template>
-          <v:template name="iTemplate_20" type="simple" condition="length (self.iSameAs)">
+          <v:template name="iTemplate_27" type="simple" condition="length (self.iSameAs)">
             <tr>
               <td valign="top"><input type="checkbox" name="cb_item_iSameAs" id="cb_item_iSameAs" value="1" /></td>
               <td valign="top">Other Personal URIs (WebIDs)</td>
               <td><?vsp self.show_data (self.iSameAs, vector ('value')); ?></td>
             </tr>
           </v:template>
-          <v:template name="iTemplate_17" type="simple" condition="length (self.iInterests)">
+          <v:template name="iTemplate_28" type="simple" condition="length (self.iInterests)">
             <tr>
               <td valign="top"><input type="checkbox" name="cb_item_iInterests" id="cb_item_iInterests" value="1" /></td>
               <td valign="top">Resource URI indicating thing of interest</td>
               <td><?vsp self.show_data (self.iInterests, vector ('value', 'label')); ?></td>
             </tr>
           </v:template>
-          <v:template name="iTemplate_18" type="simple" condition="length (self.iTopicInterests)">
+          <v:template name="iTemplate_29" type="simple" condition="length (self.iTopicInterests)">
             <tr>
               <td valign="top"><input type="checkbox" name="cb_item_iTopicInterests" id="cb_item_iTopicInterests" value="1" /></td>
               <td valign="top">Web page URL indicating a topic of interest   </td>
               <td><?vsp self.show_data (self.iTopicInterests, vector ('value', 'label')); ?></td>
             </tr>
           </v:template>
-          <v:template name="iTemplate_19" type="simple" condition="length (self.iOnlineAccounts)">
+          <v:template name="iTemplate_30" type="simple" condition="length (self.iOnlineAccounts)">
             <tr>
               <td valign="top"><input type="checkbox" name="cb_item_iOnlineAccounts" id="cb_item_iOnlineAccounts" value="1" /></td>
               <td valign="top">Online Accounts</td>
               <td><?vsp self.show_data (self.iOnlineAccounts, vector ('value', 'url')); ?></td>
             </tr>
           </v:template>
-          <v:template name="iTemplate_21" type="simple" condition="length (self.iKnows)">
+          <v:template name="iTemplate_31" type="simple" condition="length (self.iKnows)">
             <tr>
               <td valign="top"><input type="checkbox" name="cb_item_iKnows" id="cb_item_iKnows" value="1" /></td>
               <td valign="top">Knows URIs</td>

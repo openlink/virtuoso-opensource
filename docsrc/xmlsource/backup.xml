@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -291,8 +291,7 @@ or shutdown statements while a backup is in progress.
 ascertained from the virtuoso.log event log file.
 </para>
 		</sect4>
-		</sect3>
-		<sect3 id="offlinebackups">
+		<sect4 id="offlinebackups">
 			<title>Off-Line Backups</title>
 			<para>
 When Virtuoso is not running a complete and clean backup can be taken by making
@@ -307,8 +306,8 @@ TransactionFile in the database&apos;s configuration file.  When started, the lo
 will roll forward and restore the database to the state following the
 last logged transaction.
 </para>
+	</sect4>
 	</sect3>
-
 	<!-- ======================================== -->
 	<sect3 id="vdbrecovery">
 		<title>Database Recovery</title>
@@ -333,7 +332,14 @@ in virtuoso.ini and exit when complete.</para></listitem>
     <listitem><para>Take a backup of the old database file.</para></listitem>
     <listitem><para>Change the DatabaseFile setting in virtuoso.ini to a
 non-existing database file or delete the old database file.</para></listitem>
-    <listitem><para>Start the server with the +restore-crash-dump option.  The option is essential.</para></listitem>
+    <listitem><para>Start the server with the +restore-crash-dump option. The option is essential.</para>
+              <para>Important: When restore on v6 you also must give it +log6 flag i.e.: +restore-crash-dump +log6 .</para>
+              <para>
+                <tip><title>See Also:</title>
+                  <para><ulink linkend="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtTipsAndTricksDBMSBackupCrashDump">How can I move a Virtuoso database from one hardware and/or software platform to another?</ulink></para>
+                </tip>	
+              </para>
+    </listitem>
     <listitem><para>The server will build a new database file from the log and
 once completed it will, by default, perform a checkpoint of the transactions to the
 database file and start listening at the specified port.  Virtuoso can be

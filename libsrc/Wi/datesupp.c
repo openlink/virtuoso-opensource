@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -25,9 +25,10 @@
  *
  */
 
+#include "datesupp.h"
 #include "CLI.h"
 #include "util/strfuns.h"
-#include "datesupp.h"
+#include "sqlfn.h"
 
 #ifdef NDEBUG
 #undef DATE2NUM_DEBUG
@@ -135,7 +136,7 @@ dt_day_ck (int day, int month, int year, int *err, const char **err_str)
  *    1 in case the `day_of_year' number is valid;
  *    0 otherwise
  */
-static int
+int
 yearday2date (int yday, const int is_leap_year, int *month, int *day)
 {
   int i;
@@ -287,8 +288,6 @@ num2date_old (int32 julian_days, int *year, int *month, int *day)
 void
 num2date (int32 julian_days, int *year, int *month, int *day)
 {
-  double x;
-  int i;
   int y_civ, m_civ, d_civ;
   long midhignt_jdn;
   int mj, g, dg, c, dc, b, db, a, da, y, m, d;
@@ -465,8 +464,6 @@ file_mtime_to_dt (const char *name, char *dt)
 }
 #endif
 
-#define SPERDAY (24*60*60)
-
 void
 sec2time (int sec, int *day, int *hour, int *min, int *tsec)
 {
@@ -484,10 +481,11 @@ time2sec (int day, int hour, int min, int sec)
 
 
 void
-ts_add (TIMESTAMP_STRUCT * ts, int n, const char *unit)
+ts_add (TIMESTAMP_STRUCT * ts, boxint n, const char *unit)
 {
   int dummy;
-  int32 day, sec, frac;
+  int day;
+  boxint sec, frac;
   int oyear, omonth, oday, ohour, ominute, osecond;
   if (0 == n)
     return;
@@ -840,8 +838,6 @@ dbg_dt_to_string (const char *dt, char *str, int len)
   else
     tail += snprintf (tail, (str + len) - tail, "Z}");
   return;
-short_buf:
-  snprintf (str, len, "??? short output buffer for dt_to_string()");
 }
 
 void
@@ -951,8 +947,9 @@ iso8601_or_odbc_string_to_dt_1 (const char *str, char *dt, int dtflags, int dt_t
 #endif
 {
   int tzsign = 0, res_flags = 0, tzmin = dt_local_tz;
-  int odbc_braces = 0, new_dtflags, new_dt_type = 0;
+  int new_dtflags, new_dt_type = 0;
   int us_mdy_format = 0;
+  int leading_minus = 0;
   const char *tail, *group_end;
   int fld_values[9];
   static int fld_min_values[9] =	{ 1	, 1	, 1	, 0	, 0	, 0	, 0		, 0	, 0	};
@@ -966,7 +963,6 @@ iso8601_or_odbc_string_to_dt_1 (const char *str, char *dt, int dtflags, int dt_t
   memcpy (fld_values, fld_min_values, 9 * sizeof (int));
   if ((DTFLAG_ALLOW_ODBC_SYNTAX & dtflags) && ('{' == tail[0]))
     {
-      odbc_braces = 1;
       if (('t' == tail[1]) && ('s' == tail[2]))
         {
           tail += 3;
@@ -1007,6 +1003,11 @@ iso8601_or_odbc_string_to_dt_1 (const char *str, char *dt, int dtflags, int dt_t
           err_msg_ret[0] = box_dv_short_string ("Syntax error in ODBC literal (single-quoted constant expected after literal type");
           return;
         }
+    }
+  if ('-' == tail[0])
+    {
+      leading_minus = 1;
+      tail++;
     }
   for (fld_idx = 0; fld_idx < 9; fld_idx++)
     {
@@ -1204,6 +1205,15 @@ field_delim_checked:
             }
         }
     }
+  if (leading_minus)
+    {
+      if (DTFLAG_DATE & dtflags)
+        fld_values[0] = -(fld_values[0]);
+      else
+        {
+          err_msg_ret[0] = box_sprintf (500, "Leading minus is allowed for year but not for time, the value is \"%.200s\"", str);
+        }
+    }
   tzmin += (60 * fld_values[7]) + fld_values[8];
   if (tzsign)
     tzmin *= -1;
@@ -1239,7 +1249,7 @@ http_date_to_dt (const char *http_date, char *dt)
 {
   char month[4] /*, weekday[10] */, tzstring[4];
   unsigned day, year, hour, minute, second;
-  int idx, fmt, month_number, tz_hr, tz_min;
+  int idx, /*fmt,*/ month_number, tz_hr, tz_min;
   GMTIMESTAMP_STRUCT ts_tmp, *ts = &ts_tmp;
   const char *http_end_of_weekday = http_date;
 
@@ -1257,7 +1267,7 @@ http_date_to_dt (const char *http_date, char *dt)
 	 &day, month, &year, &hour, &minute, &second, &tz_hr, &tz_min) &&
     (3 == (http_end_of_weekday - http_date)) )
     {
-      fmt = -1123;
+      /* fmt = -1123; */
       if (tz_hr > 0)
         tz_min = 60 * tz_hr + tz_min;
       else if (tz_hr < 0)
@@ -1268,7 +1278,7 @@ http_date_to_dt (const char *http_date, char *dt)
 	 &day, month, &year, &hour, &minute, &second, &tz_min) &&
     (3 == (http_end_of_weekday - http_date)) )
     {
-      fmt = -1123;
+      /* fmt = -1123; */
       if (tz_min > 100)
         tz_min = 60 * (tz_min/100) + tz_min%100;
       else if (tz_min < -100)
@@ -1279,7 +1289,7 @@ http_date_to_dt (const char *http_date, char *dt)
 	&day, month, &year, &hour, &minute, &second, tzstring) &&
     (3 == (http_end_of_weekday - http_date)) &&
     !strcmp (tzstring, "GMT") )
-    fmt = 1123;
+    { /* fmt = 1123; */ ; }
   /* rfc 850 */
   else if (7 == sscanf (http_end_of_weekday, ", %2u-%3s-%2u %2u:%2u:%u %3s",
 	&day, month, &year, &hour, &minute, &second, tzstring) &&
@@ -1288,13 +1298,13 @@ http_date_to_dt (const char *http_date, char *dt)
     {
       if (year > 0 && year < 100)
 	year = year + 1900;
-      fmt = 850;
+      /* fmt = 850; */
     }
   /* asctime */
   else if (6 == sscanf (http_end_of_weekday, " %3s %2u %2u:%2u:%u %4u",
 	 month, &day, &hour, &minute, &second, &year) &&
     (3 == (http_end_of_weekday - http_date)) )
-    fmt = -1;
+    { /* fmt = -1; */ ; }
   else
     return 0;
 
@@ -1456,4 +1466,3 @@ dt_audit_fields (char *dt)
   }
 }
 #endif
-

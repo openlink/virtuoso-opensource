@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -169,13 +169,10 @@ ODRIVE.WA.tmp_upgrade ();
 
 -------------------------------------------------------------------------------
 --
-create procedure ODRIVE.WA.tmp_upgrade (
+create procedure ODRIVE.WA.tmp_upgrade_internal (
   in det varchar)
 {
   declare path, graph, propName, permissions any;
-
-  if (registry_get ('odrive_graph_update') = '1')
-    return;
 
   propName := 'virt:' || det || '-graph';
   for (select * from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'C' and PROP_NAME = propName) do
@@ -184,15 +181,31 @@ create procedure ODRIVE.WA.tmp_upgrade (
     permissions := DB.DBA.DAV_PROP_GET_INT (PROP_PARENT_ID, PROP_TYPE, ':virtpermissions', 0, ODRIVE.WA.account_name (http_dav_uid ()), ODRIVE.WA.account_password (http_dav_uid ()), http_dav_uid ());
     ODRIVE.WA.graph_private_add (path, 'C', permissions, PROP_VALUE);
   }
-
-  registry_set ('odrive_graph_update', '1');
 }
 ;
 
-ODRIVE.WA.tmp_upgrade ('IMAP');
-ODRIVE.WA.tmp_upgrade ('GDrive');
-ODRIVE.WA.tmp_upgrade ('Dropbox');
-ODRIVE.WA.tmp_upgrade ('SkyDrive');
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.tmp_upgrade ()
+{
+  if (registry_get ('odrive_graph_update') = '2')
+    return;
+
+  ODRIVE.WA.tmp_upgrade_internal ('S3');
+  ODRIVE.WA.tmp_upgrade_internal ('IMAP');
+  ODRIVE.WA.tmp_upgrade_internal ('GDrive');
+  ODRIVE.WA.tmp_upgrade_internal ('Dropbox');
+  ODRIVE.WA.tmp_upgrade_internal ('SkyDrive');
+  ODRIVE.WA.tmp_upgrade_internal ('Box');
+  ODRIVE.WA.tmp_upgrade_internal ('WebDAV');
+  ODRIVE.WA.tmp_upgrade_internal ('Rackspace');
+
+  registry_set ('odrive_graph_update', '2');
+}
+;
+
+ODRIVE.WA.tmp_upgrade ()
+;
 
 -------------------------------------------------------------------------------
 --
@@ -221,7 +234,8 @@ create procedure ODRIVE.WA.tmp_upgrade ()
 }
 ;
 
-ODRIVE.WA.tmp_upgrade ();
+ODRIVE.WA.tmp_upgrade ()
+;
 
 -------------------------------------------------------------------------------
 --
@@ -248,6 +262,23 @@ create procedure ODRIVE.WA.tmp_upgrade ()
       DB.DBA.DAV_PROP_SET_RAW (COL_ID, 'C', property, propertyValue, 1, http_dav_uid ());
   }
   registry_set ('odrive_imap_update', '1');
+}
+;
+
+ODRIVE.WA.tmp_upgrade ();
+
+-------------------------------------------------------------------------------
+--
+create procedure ODRIVE.WA.tmp_upgrade ()
+{
+  if (registry_get ('odrive_acl_update') = '1')
+    return;
+
+  set triggers off;
+  delete from WS.WS.SYS_DAV_RES where RES_FULL_PATH is null;
+  set triggers on;
+
+  registry_set ('odrive_acl_update', '1');
 }
 ;
 

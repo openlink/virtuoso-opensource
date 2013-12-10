@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2012 OpenLink Software
+ *  Copyright (C) 2005-2013 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -480,7 +480,8 @@ OAT.WebDav = {
 		OAT.WebDav.updateOptions(o);
 
 		var ref = function(data) {
-			OAT.WebDav.parse(directory,data); /* add to cache */
+			if (!OAT.WebDav.parse(directory,data)) /* add to cache */
+				error();
 			OAT.WebDav.treeSyncDir(directory); /* sync with tree */
 			if (OAT.Browser.isIE) {
 				var x = $("dav_bottom");
@@ -494,8 +495,9 @@ OAT.WebDav = {
 	},
 
 	parse:function(directory,xml) { /* parse dav response: update tree, add data to cache */
-		var items = [];
 		var data = xml.documentElement;
+		if (OAT.Xml.localName(data) == 'parsererror') {return false;}
+		var items = [];
 		for (var i=0;i<data.childNodes.length;i++) {
 			var node = data.childNodes[i];
 			if (node.nodeType != 1) { continue; }
@@ -515,19 +517,23 @@ OAT.WebDav = {
 				this.treeSyncDir(item.fullName);
 			} /* dirs first */
 		}
-		if (!this.options.foldersOnly)
+		if (!this.options.foldersOnly) {
 			for (var i=0;i<items.length;i++){
 				var item = items[i];
 				if (!item.dir) { arr.push(item); } /* files next */
 			}
+		}
 		OAT.WebDav.cache[directory] = arr; /* add to cache */
+
+		return true;
 	},
 
 	redraw:function() { /* redraw view */
 		/* this.options.path MUST be in this.cache in this phase */
+		var list = this.cache[this.options.path];
+		if (!list) {return;}
 		this.dom.path.value = this.options.path;
 		this.treeOpenCurrent();
-		var list = this.cache[this.options.path];
 
 		OAT.Dom.clear(this.dom.content);
 		function attachClick(elm,item,arr) {

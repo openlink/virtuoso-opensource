@@ -1,0 +1,207 @@
+/**
+\mainpage OpenLink Data Spaces
+
+ODS, the OpenLink Data Spaces, your Web personal 3.0 cloud system provides a full-featured HTTP API. This API allows
+to control almost each aspect of ODS.
+
+\section ods_quickstart Quickstart
+
+This quickstart into the ODS API is meant to allow the client developer to quickly create new accounts, log users into
+the system and change aspects of the user profiles.
+
+ODS supports several ways of creating new user accounts, the most basic being user.register() which creates new accounts
+through classical user credentials. In addition to that user.authenticate.browserid() and user.authenticate.webid() allow
+to create new accounts by authorizing via a BrowserID or WebID respectively. Last but not least user.authenticate.authenticationUrl()
+allows to create new user accounts by authenticating via third-party services like Facebook or Google through OAuth.
+
+Once a user account has been created users can either authenticate single method calls via \ref ods_authentication_password_hash or
+WebID or they can create new user sessions which can be used to authenticate an arbitrary number of calls. User sessions are
+created in one of several ways: user.authenticate() provides classical password digest authentication and is, thus, the counterpart
+to user.register(). The multi-purpose methods user.authenticate.webid(), user.authenticate.browserid(), and user.authenticate.authenticationUrl()
+allow to create new user sessions via WebID, BrowserID, or third-party service authentication.
+
+Successful creation of a new user account or authentication with one of the methods described above results in a new
+user session which looks as follows:
+
+\verbatim
+<userSession>
+  <sid>1de236f5da2f32d92e8c0cce5053a96e</sid>
+  <user>
+    <uname>demo</uname>
+    <uid>127</uid>
+    <new>0</new>
+    <dba>0</dba>
+  </user>
+</userSession>
+\endverbatim
+
+For more details see the respective method documentation.
+
+
+\section ods_overview Overview
+
+ODS consists of the core framework and several apps. This API documentation is structured in a similar fashion.
+
+\b Framework \b Modules
+- \ref ods_module_user
+- \ref ods_module_ontology
+- \ref ods_module_instance
+
+\b ODS \b Applications
+- \ref ods_module_calendar
+- \ref ods_module_addressbook
+- \ref ods_module_bookmark
+- \ref ods_module_feeds
+- \ref ods_module_discussion
+- \ref ods_module_briefcase
+- \ref ods_module_weblog
+
+\section ods_access_point ODS Access Point
+
+The API described here can be accessed via the ODS HTTP API endpoint like \p http://host:port/ods/api/METHOD. (Examples are
+provided in the documentation of the specific methods.) Parameters specific to each
+method are given as URL parameters if using an \em HTTP \em GET, as www-url-encoded or multipart/form-data if using an \em HTTP \em POST.
+Many methods come with examples to make it easier to get started.
+*/
+
+/**
+\page ods_authentication ODS Authentication
+
+Most API calls which modify data, i.e., CRUD operations, need authentication; thus
+the requests need to be authenticated using OAuth, or session + password hashes. The
+user account used to authenticate in either case MUST have relevant privileges to a given
+ODS data space. This is done by granting owner or author level membership to the given data space.
+
+
+\section ods_authentication_password_hash Password Hash Authentication
+
+When authenticating via password hashes parameters \p user_name and \p password_hash need to be specified. The
+password hash uses the \em sha1 digest algorithm and includes both the user name and the password.
+
+\subsection ods_authentication_password_hash_examples Password Hash Authentication Example
+
+To authenticate user \p demo with password \p foobar the sha1 digest of the term \p demofoobar needs to be provided.
+This can be created via openssl or any sha1 tool:
+\code
+# echo -n "demofoobar" | openssl dgst -sha1
+# echo -n "demofoobar" | sha1sum
+\endcode
+
+
+\section ods_authentication_session_id Authentication via Session Id
+
+The typical authentication method for a UI client is to create an ODS session via user.authenticate(). Several methods
+are supported, among them password hash as explained above or OAuth. A session created via user.authenticate() is identified
+by its session id. This session id can then be used to authenticate in any method call by providing two parameters:
+
+- \p sid This is the session id returned by user.authenticate().
+- \p realm The realm needs to be set to \p wa. ("wa" is the former name of ODS which is still used to identify it internally
+to the Viruoso server.)
+
+\b Tip: user.info() can be used to get details about the user account accociated to a session ID. This is very useful when
+reusing a session id which has been stored in a cookie or something similar.
+
+\subsection ods_authentication_session_id_example Session Id Authentication Example
+
+If the session id created via user.authenticate() is for example \p 1de236f5da2f32d92e8c0cce5053a96e a call to calendar.get()
+could be authorized as follows:
+
+\verbatim
+http://demo.openlinksw.com/ods/api/calendar.get?sid=1de236f5da2f32d92e8c0cce5053a96e&realm=wa&event_id=102
+\endverbatim
+
+
+\section ods_authentication_oauth OAuth Support in ODS
+
+This section describes the OAuth client support in ODS which allows users to log into ODS through their third-party service
+credentials. ODS abstracts the whole process and, thus, acts as an OAuth proxy giving clients access to a wide variety of
+services through the same API.
+
+\subsection ods_authentication_oauth_precon OAuth Preconditions
+
+ODS supports authentication through the OAuth API of services like Twitter or LinkedIn. In order for this to work ODS requires corresponding
+OAuth consumer keys (or client app IDs) which need to be stored in ODS through admin.apikeys.new().
+Consumer keys can typically be obtained from the respective service's Web interface.
+
+\subsection ods_authentication_oauth OAuth Authentication
+
+Both registration and authentication through OAuth requires the user to log into the corresponding service (for example Twitter)
+and authenticate ODS for login. This involves the client navigating to the login page of the service which will then perform a
+redirect to the ODS client for further processing.
+
+ODS implements this process through two functions. Clients can initiate the process through user.authenticate.authenticationUrl() which will take
+a callback URL as parameter and will return the service's login page URL. The client will then have to open that page and let
+the user login. This will result in a redirection to the callback URL which will have the result encoded in query parameters. The parameters
+either describe a new session object, a confirmation request, or an error as described in \ref ods_authentication_url_workflow.
+A confirmation request can be completed via user.authenticate.confirm().
+*/
+
+
+/**
+\page ods_response_format Response format
+
+The following Response format is used by the ODS.
+
+\section ods_response_format_result_code ODS Error Result Codes
+
+CRUD operations typically return an error/result code serialized as XML. Such an error code typically looks as follows:
+
+\verbatim
+<result>
+  <code>NNN</code>
+  <message>human readable explanation if applicable</message>
+</result>
+\endverbatim
+
+It contains a numeric error code and a human-readable error message. On success this message is typically "Success".
+
+Many ODS functions return the numerical id of the current resource as the code. Typical examples are functions that create
+resource like calendar.event.create().
+
+The ODS API is slowly moving towards using HTTP error codes in addition to the respones codes above. Many methods still
+finish with a <em>200 OK</em> even in the error case. The individual method documentation reflects which methods have already
+been updated to use HTTP error codes.
+
+\section ods_response_format_search_result ODS Search Results
+
+The search methods return results in RDF format according to FOAF, SIOC and SIOC types module ontology. See ODS RDF model.
+*/
+
+
+/**
+\page ods_console ODS Console
+
+ODS has a comprehensive HTTP API. To easy testing and development ODS provides a graphical console which can be used to initiate calls
+to any of the API functions. The \em ODS \em Console can be installed on any system to access any ODS instance given that instance has
+enabled the CORS support for cross-domain AJAX calls.
+
+\section ods_console_try Try ODS Console
+
+ODS Console is a pure client-side JS application which can be run from any location including a local folder or
+<a href="http://web.ods.openlinksw.com/ods-console/">OpenLink's own test installation of ODS Console</a>. By default the console will
+access the ODS installation on the same domain. However, if the host of the Console installation has been added as a client to the ODS
+instance (admin.client.new()) it can be used to access the API of the ODS instance by simply setting the ODS host in the Console configuration:
+
+\image html ods-console-cfg.png
+
+The ODS API is always accessible at path \p ods/api/. This path should not be included in the configuration setting as ODS Console will
+add it automatically.
+
+\section ods_console_install Install ODS Console
+
+ODS Console can also be run locally or on one's own Virtuoso instance. In fact since the Console is a simply JS application it can be
+served from any web server, not restricted to Virtuoso.
+
+\subsection ods_console_install_vad ODS Console VAD Package
+
+The simplest way to install ODS-Console is to <a href="http://web.ods.openlinksw.com/~trueg/downloads/ods-console/">download the ods-console VAD package</a>
+and install it via Virtuoso's Conductor. Log into the Condictor with dba privileges and navigate to the System Admin -> Packages page. From there select
+the downloaded file in the section called "Upload package" and continue with the "Proceed" button. After the successful installation ODS Console will be
+available at the Virtuoso instance under the path \p ods-console/.
+
+\subsection ods_console_install_git Fork ODS Console on GitHub
+
+ODS Console is developed as an open-source project on GitHub. From here it can easily be downloaded or forked:
+
+<a href="http://github.com/opendataspaces/ods-console/">ODS Console on GitHub</a>
+*/

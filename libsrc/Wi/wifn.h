@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -352,6 +352,7 @@ void dbs_write_page_set (dbe_storage_t * dbs, buffer_desc_t * buf);
 void dbs_write_cfg_page (dbe_storage_t * dbs, int is_first);
 void lt_wait_checkpoint (void);
 void lt_wait_checkpoint_1 (int cl_listener_also);
+void lt_wait_checkpoint_lt (lock_trx_t * lt);
 
 /*
 void dbs_locate_free_bit (dbe_storage_t * dbs, dp_addr_t near_dp,

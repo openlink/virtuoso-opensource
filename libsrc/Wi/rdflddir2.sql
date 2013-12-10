@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -167,6 +167,7 @@ ld_file (in f varchar, in graph varchar)
     return;
   };
 
+  connection_set ('ld_file', f);
   if (graph like 'sql:%')
     {
       exec (subseq (graph, 4), null, null, vector (f), vector ('max_rows', 0, 'use_cache', 1));
@@ -215,31 +216,26 @@ rdf_load_dir (in path varchar,
 
 create procedure ld_array ()
 {
-  declare first, last, arr, fs, len, local any;
+  declare arr, fs, len, local any;
   declare cr cursor for
-      select top 200 LL_FILE, LL_GRAPH
+      select LL_FILE, LL_GRAPH
         from DB.DBA.LOAD_LIST table option (index ll_state)
         where LL_STATE = 0
 	for update;
-  declare fill, inx int;
+  declare fill int;
   declare f, g varchar;
   declare r any;
   whenever not found goto done;
-  first := 0;
-  last := 0;
  arr := make_array (100, 'any');
   fs  := make_array (100, 'any');
-  fill := 0; inx := 0;
-  open cr;
+  fill := 0;
   len := 0;
+  open cr;
   for (;;)
     {
       fetch cr into f, g;
-      inx := inx + 1;
       if (file_stat (f, 1) = 0)
 	goto next;
-      if (0 = first) first := f;
-      last := f;
       arr[fill] := vector (f, g);
       fs[fill] := f;
     len := len + cast (file_stat (f, 1) as int);
@@ -249,7 +245,7 @@ create procedure ld_array ()
       next:;
     }
  done:
-  if (0 = first)
+  if (0 = fill)
     return 0;
   if (1 <> sys_stat ('cl_run_local_only'))
     local := sys_stat ('cl_this_host');
@@ -321,6 +317,7 @@ rdf_loader_run (in max_files integer := null, in log_enable int := 2)
       if (0 = arr)
 	goto looks_empty;
       log_enable (ld_mode, 1);
+      set isolation = 'committed';
 
       for (inx := 0; inx < 100; inx := inx + 1)
 	{
@@ -328,12 +325,10 @@ rdf_loader_run (in max_files integer := null, in log_enable int := 2)
 	    goto arr_done;
 	  ld_file (arr[inx][0], arr[inx][1]);
 	  update DB.DBA.LOAD_LIST set LL_STATE = 2, LL_DONE = curdatetime () where LL_FILE = arr[inx][0];
+          if (max_files is not null) max_files := max_files - 1;
 	}
     arr_done:
       log_enable (tx_mode, 1);
-
-
-      if (max_files is not null) max_files := max_files - 100;
 
       commit work;
     }

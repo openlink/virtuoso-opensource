@@ -31,6 +31,7 @@
       function check() {
         var x = function (data) {
 	  var expiration = $('expiration').checked ? '&expiration=true' : '';
+	  var ian = $('ian').checked ? '&ian=true' : '';
           var callback = document.location.protocol + '//' + document.location.host + document.location.pathname;
           document.location = 'https://' + data + '/ods/webid_verify.vsp?callback=' + encodeURIComponent(callback) + expiration;
         }
@@ -94,6 +95,7 @@
     <div>
       <form method="get">
 	<input type="checkbox" value="true" name="expiration" id="expiration" />  <label for="expiration">Check Certificate Expiration</label><br /> 
+	<input type="checkbox" value="true" name="ian" id="ian" />  <label for="ian">Check Issuer Alternative Name</label><br /> 
         <input type="button" name="go" value="Check" id="go" onclick="javascript: return check();" />
       </form>
     </div>
@@ -107,9 +109,14 @@
 	      <li>MD5 - <span id="md5"></span></li>
 	      <li>SHA1 - <span id="sha1"></span></li>
 	      <li>Timestamp in ISO 8601 format - <span id="ts"></span></li>
+	      <li>Certificate WebID lookup (de-reference) completed in <span id="ela"></span> msec.</li>
 	    </ul>
 	    <ul id="result_error" style="display: none;">
 	      <li>Error - <span id="error"></span></li>
+	      <li>Subject - <span id="subje"></span></li>
+	      <li>MD5 - <span id="md5e"></span></li>
+	      <li>SHA1 - <span id="sha1e"></span></li>
+	      <li>Timestamp in ISO 8601 format - <span id="tse"></span></li>
 	    </ul>
     </div>
     <script type="text/javascript">
@@ -125,12 +132,17 @@
           getObject('md5').innerHTML = getParam('md5');
           getObject('sha1').innerHTML = getParam('sha1');
           getObject('subj').innerHTML = getParam('subj');
+          getObject('ela').innerHTML = getParam('elapsed');
         } else {
           hide('result_webid');
         }
         if (error != '') {
           show('result_error');
           getObject('error').innerHTML = getParam('error');;
+          getObject('tse').innerHTML = getParam('ts');
+          getObject('md5e').innerHTML = getParam('md5');
+          getObject('sha1e').innerHTML = getParam('sha1');
+          getObject('subje').innerHTML = getParam('subj');
         } else {
           hide('result_error');
         }

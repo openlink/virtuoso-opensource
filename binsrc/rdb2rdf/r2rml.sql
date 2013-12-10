@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -651,7 +651,9 @@ create method R2RML_MAKE_QM_IMPL_IOL_CLASSES () returns any for DB.DBA.R2RML_MAP
                 optional { ?fldmap rr:termType ?termtype . }
                 optional { ?fldmap rr:datatype ?dt . }
                 optional { ?fldmap rr:language ?lang . }
-              } } ) do
+              } }
+        order by asc(str(?template)) asc(str(?dt)) asc(str(?lang)) asc(str(?triplesmap)) asc(str(?fldmap))
+        ) do
         {
           self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, iri_to_id ("triplesmap"), "template", coalesce (cast ("termtype" as varchar), dflttt), iri_to_id ("dt"), "lang");
         }
@@ -745,10 +747,11 @@ create method R2RML_MAKE_QM_IMPL_REL_PO (in tmap IRI_ID, in tmap2 IRI_ID, in tma
           where_is_opened := 1;
         }
       if (where_is_opened)
+          http ('))', self.codegen_ses);
+      if (1)
         {
           declare all_aliases, where_aliases, extra_aliases any;
           declare fld_idx, alias_ctr, alias_count integer;
-          http ('))', self.codegen_ses);
           all_aliases := self.used_fld_tmap_aliases;
           where_aliases := all_aliases[4];
           extra_aliases := vector ();
@@ -888,7 +891,7 @@ create method R2RML_MAKE_QM_IMPL_CHILDS (in needs_inner_g_field integer) returns
             {
               if (prev_g_md5 is not null)
                 {
-                  http (' . }\n', self.codegen_ses);
+                  http (' . } .\n', self.codegen_ses);
                   prev_g_md5 := prev_s_md5:= null;
                   self.prev_p_md5 := null;
                   self.R2RML_RESET_USES_OF_TMAPS (1 /* S is reset */);
@@ -954,7 +957,6 @@ skip_the_quad_map: ;
           prev_s_md5 := self.prev_p_md5 := null;
         }
     }
-  else
     http (' }\n', self.codegen_ses);
 }
 ;
@@ -1050,7 +1052,7 @@ create method R2RML_MAKE_QM (in storage_iid IRI_ID := null, in rdfview_iid IRI_I
           if (constg is null)
             constg := self.default_constg;
           self.R2RML_GEN_FLD (0 /* for G */, constg, null, null, null, 'http://www.w3.org/ns/r2rml#IRI', null, null);
-          http (' option (soft exclusive)', self.codegen_ses);
+          http (' option (exclusive)', self.codegen_ses);
         }
       else
         {

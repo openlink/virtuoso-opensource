@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -299,6 +299,11 @@
       <script type="text/javascript" src="common.js"></script>
       <script type="text/javascript" src="validate.js"></script>
     ]]>
+    <xsl:if test="@vm_facebook">
+      <![CDATA[
+        <script type="text/javascript" src="facebook.js"></script>
+      ]]>
+    </xsl:if>
     <v:form name="page_form"
             type="simple"
             method="POST"
@@ -1367,58 +1372,184 @@
 </xsl:template>
 
 <xsl:template match="vm:site-member">
-  <table class="ctl_grp">
+  <v:variable name="rules" type="varchar" default="null" />
+  <v:variable name="acl_rule" type="varchar" default="'ODS_REGISTRATION_RULE'" />
+  <v:variable name="acl_realm" type="varchar" default="'ODS'" />
+  <v:method name="aci_params" arglist="in params any">
+    <![CDATA[
+      declare N, M integer;
+      declare aclNo, retValue, V, v1, v2 any;
+
+      M := 1;
+      retValue := vector ();
+      for (N := 0; N < length (params); N := N + 2)
+      {
+        if (params[N] like 's_fld_1_%')
+        {
+          aclNo := replace (params[N], 's_fld_1_', '');
+          v1 := trim (get_keyword ('s_fld_1_' || aclNo, params));
+          v2 := trim (get_keyword ('s_fld_2_' || aclNo, params));
+          if ((v1 <> '') and (v2 <> ''))
+          {
+            V := vector (M,
+                         trim (get_keyword ('s_fld_1_' || aclNo, params)),
+                         trim (get_keyword ('s_fld_2_' || aclNo, params)),
+                         trim (get_keyword ('s_fld_3_' || aclNo, params)),
+                         trim (get_keyword ('s_fld_0_' || aclNo, params, ''))
+                        );
+            retValue := vector_concat (retValue, vector (V));
+            M := M + 1;
+          }
+        }
+      }
+      return retValue;
+    ]]>
+  </v:method>
+  <v:method name="acl_lines" arglist="in _acl any">
+    <![CDATA[
+      declare N integer;
+      declare s, lo any;
+
+      s := string_output ();
+      for (N := 0; N < length (_acl); N := N + 1)
+      {
+        string_output_flush (s);
+	      http_escape (_acl[N][4], 13, s);
+	      lo := string_output_string (s);
+        http (sprintf ('ODSInitArray.push(function(){OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 55, value: "%s", valueExt: "%s", tdCssText: "width: 33%%;"}, fld_2: {mode: 56, value: "%s", tdCssText: "width: 33%%; vertical-align: top;"}, fld_3: {mode: 57, value: "%s", tdCssText: "width: 33%%; vertical-align: top;"}});});});', _acl[N][1], lo, _acl[N][2], _acl[N][3]));
+      }
+      http ('ODSInitArray.push(function(){OAT.Loader.load(["ajax", "json", "calendar", "combolist"], function(){OAT.MSG.send(OAT, "PAGE_LOADED");});});');
+    ]]>
+  </v:method>
+  <table class="ctl_grp" width="100%">
     <tr>
-      <th>Allow ODS Default-Site Registrations</th>
-      <td>
-        <v:check-box name="ssetc1" value="1" initial-checked="--(select top 1 WS_REGISTER from WA_SETTINGS)" />
+      <th nowrap="nowrap" width="10%">Allow Digest</th>
+      <td nowrap="nowrap" width="1%">
+        <label><v:check-box name="ss_login" xhtml_id="ss_login" value="1" initial-checked="--(select top 1 WS_LOGIN from WA_SETTINGS)" xhtml_onchange="javascript: loginChange(\'ss_login\', \'ss_register\');" /> Logins</label>
+      </td>
+      <td style="padding-left: 20px;">
+        <label><v:check-box name="ss_register" xhtml_id="ss_register" value="1" initial-checked="--(select top 1 WS_REGISTER from WA_SETTINGS)" xhtml_onchange="javascript: registerChange(\'ss_login\', \'ss_register\');" /> Registrations</label>
       </td>
     </tr>
     <tr>
-      <th>Allow OpenID Login/Registration</th>
-      <td>
-        <v:check-box name="ssetc2" value="1" initial-checked="--(select top 1 WS_REGISTER_OPENID from WA_SETTINGS)" />
+      <th nowrap="nowrap">Allow OpenID</th>
+      <td nowrap="nowrap">
+        <label><v:check-box name="ss_loginOpenID" xhtml_id="ss_loginOpenID" value="1" initial-checked="--(select top 1 WS_LOGIN_OPENID from WA_SETTINGS)" xhtml_onchange="javascript: loginChange(\'ss_loginOpenID\', \'ss_registerOpenID\');"/> Logins</label>
+      </td>
+      <td style="padding-left: 20px;">
+        <label><v:check-box name="ss_registerOpenID" xhtml_id="ss_registerOpenID" value="1" initial-checked="--(select top 1 WS_REGISTER_OPENID from WA_SETTINGS)" xhtml_onchange="javascript: registerChange(\'ss_loginOpenID\', \'ss_registerOpenID\');" /> Registrations</label>
       </td>
     </tr>
     <tr>
-      <th>Allow Facebook Login/Registration</th>
-      <td>
-        <v:check-box name="ssetc3" value="1" initial-checked="--(select top 1 WS_REGISTER_FACEBOOK from WA_SETTINGS)" />
+      <th nowrap="nowrap">Allow Facebook</th>
+      <td nowrap="nowrap">
+        <label><v:check-box name="ss_loginFacebook" xhtml_id="ss_loginFacebook" value="1" initial-checked="--(select top 1 WS_LOGIN_FACEBOOK from WA_SETTINGS)" xhtml_onchange="javascript: loginChange(\'ss_loginFacebook\', \'ss_registerFacebook\');" /> Logins</label>
+      </td>
+      <td style="padding-left: 20px;">
+        <label><v:check-box name="ss_registerFacebook" xhtml_id="ss_registerFacebook" value="1" initial-checked="--(select top 1 WS_REGISTER_FACEBOOK from WA_SETTINGS)" xhtml_onchange="javascript: registerChange(\'ss_loginFacebook\', \'ss_registerFacebook\');" /> Registrations</label>
       </td>
     </tr>
     <tr>
-      <th>Allow WebID (FOAF+SSL) Login/Registration</th>
-      <td>
-        <v:check-box name="ssetc4" value="1" initial-checked="--(select top 1 WS_REGISTER_SSL from WA_SETTINGS)" />
+      <th nowrap="nowrap">Allow Twitter</th>
+      <td nowrap="nowrap">
+        <label><v:check-box name="ss_loginTwitter" xhtml_id="ss_loginTwitter" value="1" initial-checked="--(select top 1 WS_LOGIN_TWITTER from WA_SETTINGS)" xhtml_onchange="javascript: loginChange(\'ss_loginTwitter\', \'ss_registerTwitter\');" /> Logins</label>
+      </td>
+      <td style="padding-left: 20px;">
+        <label><v:check-box name="ss_registerTwitter" xhtml_id="ss_registerTwitter" value="1" initial-checked="--(select top 1 WS_REGISTER_TWITTER from WA_SETTINGS)" xhtml_onchange="javascript: registerChange(\'ss_loginTwitter\', \'ss_registerTwitter\');" /> Registrations</label>
       </td>
     </tr>
     <tr>
-      <th>Allow Automatic WebID (FOAF+SSL) Registration</th>
+      <th nowrap="nowrap">Allow LinkedIn</th>
+      <td nowrap="nowrap">
+        <label><v:check-box name="ss_loginLinkedin" xhtml_id="ss_loginLinkedin" value="1" initial-checked="--(select top 1 WS_LOGIN_LINKEDIN from WA_SETTINGS)" xhtml_onchange="javascript: loginChange(\'ss_loginLinkedin\', \'ss_registerLinkedin\');" /> Logins</label>
+      </td>
+      <td style="padding-left: 20px;">
+        <label><v:check-box name="ss_registerLinkedin" xhtml_id="ss_registerLinkedin" value="1" initial-checked="--(select top 1 WS_REGISTER_LINKEDIN from WA_SETTINGS)" xhtml_onchange="javascript: registerChange(\'ss_loginLinkedin\', \'ss_registerLinkedin\');" /> Registrations</label>
+      </td>
+    </tr>
+    <tr>
+      <th nowrap="nowrap">Allow WebID Based</th>
+      <td nowrap="nowrap">
+        <label><v:check-box name="ss_loginSsl" xhtml_id="ss_loginSsl" value="1" initial-checked="--(select top 1 WS_LOGIN_SSL from WA_SETTINGS)" xhtml_onchange="javascript: loginChange(\'ss_loginSsl\', \'ss_registerSsl\');" /> Logins</label>
+      </td>
+      <td style="padding-left: 20px;">
+        <label><v:check-box name="ss_registerSsl" xhtml_id="ss_registerSsl" value="1" initial-checked="--(select top 1 WS_REGISTER_SSL from WA_SETTINGS)" xhtml_onchange="javascript: registerChange(\'ss_loginSsl\', \'ss_registerSsl\');" /> Registrations</label>
+      </td>
+    </tr>
+    <tr>
+      <th nowrap="nowrap" valign="top">WebID based Login &amp; Registration Rules</th>
+      <td colspan="2">
+        <v:check-box name="ssetc41" xhtml_id="ssetc41" value="1" initial-checked="--(select top 1 WS_REGISTER_SSL_FILTER from WA_SETTINGS)">
+          <v:after-data-bind>
+            <![CDATA[
+              control.vc_add_attribute ('onchange', 'destinationChange(this, {checked: {show: [\'tr_ssetc41\']}, unchecked: {hide: [\'tr_ssetc41\']}});');
+            ]]>
+          </v:after-data-bind>
+        </v:check-box>
+      </td>
+    </tr>
+    <tr id="tr_ssetc41" style="display: none;">
+      <th nowrap="nowrap" valign="top"></th>
+      <td colspan="2">
+        <?vsp
+          self.acl_rule := coalesce ((select top 1 WS_REGISTER_SSL_RULE from WA_SETTINGS), 'ODS_REGISTRATION_RULE');
+          self.acl_realm := coalesce ((select top 1 WS_REGISTER_SSL_REALM from WA_SETTINGS), 'ODS');
+       		self.rules := (select vector_agg (vector (SWA_ID, SWA_PROP, SWA_OP, SWA_VAL, SWA_QUERY))
+       		                 from SPARQL_WEBID_ACL
+  			                  where SWA_RULE = self.acl_rule and SWA_REALM = self.acl_realm);
+  		  ?>
+        <table id="s_tbl" style="width: 90%;">
+    <tr>
       <td>
+              <table class="listing" style="width: 100%;">
+                <thead>
+                  <tr class="listing_header_row">
+                    <th width="33%">Property</th>
+                    <th width="33%">Condition</th>
+                    <th width="33%">Value</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="s_tbody">
+                  <tr id="s_tr_no">
+                    <td colspan="4">
+                      <b>No Criteria</b>
+                    </td>
+                  </tr>
+            		  <![CDATA[
+            		    <script type="text/javascript">
+                    <?vsp
+                      self.acl_lines (self.rules);
+                    ?>
+            		    </script>
+            		  ]]>
+                </tbody>
+              </table>
+            </td>
+            <td style="white-space: nowrap; vertical-align: top;">
+              <img border="0" title="Add Condition" alt="Add Condition" class="button pointer" src="/ods/images/icons/add_16.png">
+                <xsl:attribute name="onclick">javascript: TBL.createRow('s', null, {fld_1: {mode: 55, tdCssText: 'width: 33%; vertical-align: top;', className: '_validate_'}, fld_2: {mode: 56, tdCssText: 'width: 33%; vertical-align: top;', cssText: 'display: none;', className: '_validate_'}, fld_3: {mode: 57, tdCssText: 'width: 33%; vertical-align: top;', cssText: 'display: none;', className: '_validate_'}});"</xsl:attribute>
+              </img>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+    <tr>
+      <th nowrap="nowrap">Automatic WebID Registration &amp; Login</th>
+      <td colspan="2">
         <v:check-box name="ssetc5" value="1" initial-checked="--(select top 1 WS_REGISTER_AUTOMATIC_SSL from WA_SETTINGS)" />
       </td>
     </tr>
     <tr>
-      <th>Allow Twitter Login/Registration</th>
-      <td>
-        <v:check-box name="ssetc6" value="1" initial-checked="--(select top 1 WS_REGISTER_TWITTER from WA_SETTINGS)" />
-      </td>
-    </tr>
-    <tr>
-      <th>Allow LinkedIn Login/Registration</th>
-      <td>
-        <v:check-box name="ssetc7" value="1" initial-checked="--(select top 1 WS_REGISTER_LINKEDIN from WA_SETTINGS)" />
-      </td>
-    </tr>
-    <tr>
-      <th>Verify registration by email</th>
-      <td>
+      <th nowrap="nowrap">Verify registration by email</th>
+      <td colspan="2">
         <v:check-box name="ssetc8" value="1" initial-checked="--(select top 1 WS_MAIL_VERIFY from WA_SETTINGS)" />
       </td>
     </tr>
     <tr>
       <th valign="top">Require unique email</th>
-      <td>
+      <td colspan="2">
         <table border="0" cellspacing="0" cellpadding="0">
         <tr>
         <td valign="top">
@@ -1444,29 +1575,29 @@
       </td>
     </tr>
     <tr>
-      <th>Verify registration with <?V case when self.im_enabled then 'image' else 'formula' end ?></th>
-      <td>
+      <th nowrap="nowrap">Verify registration with <?V case when self.im_enabled then 'image' else 'formula' end ?></th>
+      <td colspan="2">
         <v:check-box name="ssetc9" value="1" initial-checked="--(select top 1 WS_VERIFY_TIP from WA_SETTINGS)" />
       </td>
     </tr>
     <tr>
-      <th>Registration expiry time</th>
-      <td>
-        <v:text name="t_reg_expiry" xhtml_size="10" error-glyph="*" value="--(select top 1 WS_REGISTRATION_EMAIL_EXPIRY from WA_SETTINGS)">
+      <th nowrap="nowrap">Registration expiry time</th>
+      <td colspan="2">
+        <v:text name="t_reg_expiry" xhtml_size="5" error-glyph="*" value="--(select top 1 WS_REGISTRATION_EMAIL_EXPIRY from WA_SETTINGS)">
           <v:validator name="v_t_reg_expiry" test="regexp" regexp="^[0-9]+$" message="Only digits are allowed for setting &quot;Registration expiry time&quot;" runat="client"/>
         </v:text> (Hours)
       </td>
     </tr>
     <tr>
-      <th>Membership (Join) expiry time</th>
-      <td>
-        <v:text name="t_join_expiry" xhtml_size="10" error-glyph="*" value="--(select top 1 WS_JOIN_EXPIRY from WA_SETTINGS)">
+      <th nowrap="nowrap">Membership (Join) expiry time</th>
+      <td colspan="2">
+        <v:text name="t_join_expiry" xhtml_size="5" error-glyph="*" value="--(select top 1 WS_JOIN_EXPIRY from WA_SETTINGS)">
           <v:validator name="v_t_join_expiry" test="regexp" regexp="^[0-9]+$" message="Only digits are allowed for setting &quot;Membership (Join) expiry time&quot;" runat="client"/>
         </v:text> (Hours)
       </td>
     </tr>
     <tr>
-     <td colspan="2">
+      <td colspan="3">
       <span class="fm_ctl_btn">
         <v:button name="ssetb1" action="simple" value="Set">
           <v:on-post>
@@ -1478,7 +1609,8 @@
                   return;
                 }
 
-                declare _reg, _join integer;
+                declare _check, _reg, _join integer;
+                declare _acl any;
 
                 _reg := atoi(self.t_reg_expiry.ufl_value);
                 _join := atoi(self.t_join_expiry.ufl_value);
@@ -1492,6 +1624,28 @@
                 {
                   self.vc_is_valid := 0;
                   control.vc_parent.vc_error_message := 'Membership (Join) expiry time should be positive integer and greater then 0';
+                  return;
+                }
+					      if (self.ssetc41.ufl_selected)
+					      {
+  					      _acl := self.aci_params (self.vc_page.vc_event.ve_params);
+                  if (not length (_acl))
+                  {
+                    self.vc_is_valid := 0;
+                    control.vc_parent.vc_error_message := 'The WebID rules are empty. Please, add at least one rule.';
+                    return;
+                  }
+     					  }
+     					  if (not self.ss_login.ufl_selected and not self.ss_loginOpenID.ufl_selected and not self.ss_loginFacebook.ufl_selected and not self.ss_loginTwitter.ufl_selected and not self.ss_loginLinkedin.ufl_selected and not self.ss_loginSsl.ufl_selected)
+                {
+                  self.vc_is_valid := 0;
+                  control.vc_parent.vc_error_message := 'All Login types are disable. Please, enable at least one type.';
+                  return;
+                }
+     					  if (not self.ss_register.ufl_selected and not self.ss_registerOpenID.ufl_selected and not self.ss_registerFacebook.ufl_selected and not self.ss_registerTwitter.ufl_selected and not self.ss_registerLinkedin.ufl_selected and not self.ss_registerSsl.ufl_selected)
+                {
+                  self.vc_is_valid := 0;
+                  control.vc_parent.vc_error_message := 'All Registration types are disable. Please, enable at least one type.';
                   return;
                 }
                 if(self.unique_mail.ufl_selected and exists (select 1 from WA_SETTINGS where WS_UNIQUE_MAIL = 0))
@@ -1538,13 +1692,22 @@
                   }
                 }
                 update WA_SETTINGS
-                   set WS_REGISTER = self.ssetc1.ufl_selected,
-                       WS_REGISTER_OPENID = self.ssetc2.ufl_selected,
-                       WS_REGISTER_FACEBOOK = self.ssetc3.ufl_selected,
-                       WS_REGISTER_SSL = self.ssetc4.ufl_selected,
+                   set WS_LOGIN = self.ss_login.ufl_selected,
+                       WS_LOGIN_OPENID = self.ss_loginOpenID.ufl_selected,
+                       WS_LOGIN_FACEBOOK = self.ss_loginFacebook.ufl_selected,
+                       WS_LOGIN_TWITTER = self.ss_loginTwitter.ufl_selected,
+                       WS_LOGIN_LINKEDIN = self.ss_loginLinkedin.ufl_selected,
+                       WS_LOGIN_SSL = self.ss_loginSsl.ufl_selected,
+                       WS_REGISTER = self.ss_register.ufl_selected,
+                       WS_REGISTER_OPENID = self.ss_registerOpenID.ufl_selected,
+                       WS_REGISTER_FACEBOOK = self.ss_registerFacebook.ufl_selected,
+                       WS_REGISTER_TWITTER = self.ss_registerTwitter.ufl_selected,
+                       WS_REGISTER_LINKEDIN = self.ss_registerLinkedin.ufl_selected,
+                       WS_REGISTER_SSL = self.ss_registerSsl.ufl_selected,
+                       WS_REGISTER_SSL_FILTER = self.ssetc41.ufl_selected,
+                       WS_REGISTER_SSL_RULE = self.acl_rule,
+                       WS_REGISTER_SSL_REALM = self.acl_realm,
                        WS_REGISTER_AUTOMATIC_SSL = self.ssetc5.ufl_selected,
-                       WS_REGISTER_TWITTER = self.ssetc6.ufl_selected,
-                       WS_REGISTER_LINKEDIN = self.ssetc7.ufl_selected,
                        WS_MAIL_VERIFY = self.ssetc8.ufl_selected,
                   WS_UNIQUE_MAIL = self.unique_mail.ufl_selected,
                        WS_VERIFY_TIP = self.ssetc9.ufl_selected,
@@ -1552,8 +1715,21 @@
                   WS_JOIN_EXPIRY = _join;
                 if (row_count() = 0)
                 {
-                  insert into WA_SETTINGS (WS_REGISTER, WS_REGISTER_OPENID, WS_REGISTER_FACEBOOK, WS_REGISTER_SSL, WS_REGISTER_AUTOMATIC_SSL, WS_REGISTER_TWITTER, WS_REGISTER_LINKEDIN, WS_MAIL_VERIFY, WS_REGISTRATION_EMAIL_EXPIRY, WS_JOIN_EXPIRY, WS_VERIFY_TIP)
-  	                values (self.ssetc1.ufl_selected, self.ssetc2.ufl_selected, self.ssetc3.ufl_selected, self.ssetc4.ufl_selected, self.ssetc5.ufl_selected, self.ssetc6.ufl_selected, self.ssetc7.ufl_selected, self.ssetc8.ufl_selected, self.t_reg_expiry.ufl_value, self.t_join_expiry.ufl_value, self.ssetc9.ufl_selected);
+                  insert into WA_SETTINGS (WS_LOGIN,WS_LOGIN_OPENID, WS_LOGIN_FACEBOOK, WS_LOGIN_TWITTER, WS_LOGIN_LINKEDIN, WS_LOGIN_SSL, WS_REGISTER, WS_REGISTER_OPENID, WS_REGISTER_FACEBOOK, WS_REGISTER_TWITTER, WS_REGISTER_LINKEDIN, WS_REGISTER_SSL, WS_REGISTER_SSL_FILTER, WS_REGISTER_SSL_RULE, WS_REGISTER_AUTOMATIC_SSL, WS_REGISTER_AUTOMATIC_SSL, WS_MAIL_VERIFY, WS_REGISTRATION_EMAIL_EXPIRY, WS_JOIN_EXPIRY, WS_VERIFY_TIP)
+  	                values (self.ss_login.ufl_selected, self.ss_loginOpenID.ufl_selected, self.ss_loginFacebook.ufl_selected, self.ss_loginTwitter.ufl_selected, self.ss_loginLinkedin.ufl_selected, self.ss_loginSsl.ufl_selected, self.ss_register.ufl_selected, self.ss_registerOpenID.ufl_selected, self.ss_registerFacebook.ufl_selected, self.ss_registerTwitter.ufl_selected, self.ss_registerLinkedin.ufl_selected, self.ss_registerSsl.ufl_selected, self.ssetc41.ufl_selected, self.acl_rule, self.acl_realm, self.ssetc7.ufl_selected, self.ssetc8.ufl_selected, self.t_reg_expiry.ufl_value, self.t_join_expiry.ufl_value, self.ssetc9.ufl_selected);
+                }
+                -- store ACLs
+					      delete from SPARQL_WEBID_ACL where SWA_RULE = self.acl_rule and SWA_REALM = self.acl_realm;
+    					  if (__proc_exists (sprintf ('DB.DBA.WEBID_ACL_CHECK__%s_%s', self.acl_rule, self.acl_realm)) is not null)
+    					    exec (sprintf ('drop procedure DB.DBA."WEBID_ACL_CHECK__%s_%s"', self.acl_rule, self.acl_realm));
+					      if (self.ssetc41.ufl_selected)
+					      {
+     						  foreach (any x in _acl) do
+  						    {
+                    insert into SPARQL_WEBID_ACL (SWA_RULE, SWA_REALM, SWA_ID, SWA_PROP, SWA_OP, SWA_VAL, SWA_QUERY)
+  						   	    values (self.acl_rule, self.acl_realm, x[0], x[1], x[2], x[3], x[4]);
+  						    }
+   					      exec (WEBID_GEN_ACL_PROC (self.acl_rule, self.acl_realm));
                 }
               ]]>
           </v:on-post>
@@ -1562,6 +1738,11 @@
       </td>
     </tr>
   </table>
+  <![CDATA[
+    <script type="text/javascript">
+      OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('ssetc41'), {checked: {show: ['tr_ssetc41']}})});
+    </script>
+  ]]>
 </xsl:template>
 
 <xsl:template match="vm:web-header">
@@ -2079,10 +2260,32 @@
                 </v:before-data-bind>
               </v:text>
       <br />
+      <label>
+        Certificate expiration period (days)
+      </label>
+      <br />
+      <v:text name="s_period" xhtml_class="textbox" xhtml_size="5" value="">
+        <v:before-data-bind>
+          control.ufl_value := cast (coalesce ((select top 1 WS_CERT_EXPIRATION_PERIOD from WA_SETTINGS), '365') as varchar);
+        </v:before-data-bind>
+      </v:text>
+      <br />
+      <br />
       <v:button name="bt_kg" action="simple" value="Set">
         <v:on-post>
           <v:script>
             <![CDATA[
+              declare period integer;
+              declare exit handler for SQLSTATE '*'
+              {
+                if (__SQL_STATE = 'TEST')
+                {
+                  self.vc_error_message := wa_clear(__SQL_MESSAGE);
+                  self.vc_is_valid := 0;
+                  return;
+                }
+                resignal;
+              };
               if (not wa_user_is_dba (self.u_name, self.u_group))
               {
                 self.vc_is_valid := 0;
@@ -2092,6 +2295,11 @@
               update WA_SETTINGS set WS_CERT_GEN_URL = self.s_kg.ufl_value;
               if (row_count() = 0)
                 insert into WA_SETTINGS (WS_CERT_GEN_URL) values (self.s_kg.ufl_value);
+
+              period := wa_validate (self.s_period.ufl_value, vector ('name', 'Expiration period', 'class', 'integer', 'minValue', 1));
+              update WA_SETTINGS set WS_CERT_EXPIRATION_PERIOD = period;
+              if (row_count() = 0)
+                insert into WA_SETTINGS (WS_CERT_EXPIRATION_PERIOD) values (period);
             ]]>
           </v:script>
         </v:on-post>

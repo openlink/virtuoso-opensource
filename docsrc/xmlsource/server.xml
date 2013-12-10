@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -613,6 +613,14 @@ SQL> select cfg_item_value (virtuoso_ini_path (), 'Parameters',
 						<para>&lt;path&gt; := &lt;absolute_path&gt; or &lt;relative_path&gt;
 OS directories denied for file operations.  See <link linkend="acl">Virtuoso
 ACL's</link> for information on functions that are restricted.</para>
+					</formalpara>
+				</listitem>
+				<listitem id="ini_Parameters_VADInstallDir">
+					<formalpara>
+						<title>VADInstallDir=&lt;path&gt;</title>
+						<para>&lt;path&gt; := &lt;absolute_path&gt; or &lt;relative_path&gt; OS directory containig 
+						VADs files. When set, enables automatic update of vads on server startup. On Windows use in 
+						the path "\". </para>
 					</formalpara>
 				</listitem>
 				<listitem id="ini_Parameters_SSLServerPort">

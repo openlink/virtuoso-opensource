@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -48,7 +48,7 @@
 caddr_t
 bif_date_arg (caddr_t * qst, state_slot_t ** args, int nth, char *func)
 {
-  caddr_t arg = bif_arg (qst, args, nth, func);
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
   dtp_t dtp = DV_TYPE_OF (arg);
   if (dtp != DV_DATETIME && dtp != DV_BIN)
     sqlr_new_error ("22007", "DT001",
@@ -504,11 +504,11 @@ bif_merge_nasa_tjd_to_datetime (caddr_t * qst, caddr_t * err_ret, state_slot_t *
 }
 
 caddr_t
-bif_date_add (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+bif_dateadd (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t res;
   caddr_t part = bif_string_arg (qst, args, 0, "dateadd");
-  int n = (int) bif_long_arg (qst, args, 1, "dateadd");
+  boxint n = bif_long_arg (qst, args, 1, "dateadd");
   caddr_t dt = bif_date_arg (qst, args, 2, "dateadd");
   TIMESTAMP_STRUCT ts;
   int dt_type = DT_DT_TYPE (dt);
@@ -532,13 +532,13 @@ bif_date_add (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 caddr_t
-bif_date_diff (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+bif_datediff (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t unit = bif_string_arg (qst, args, 0, "datediff");
   caddr_t dt1 = bif_date_arg (qst, args, 1, "datediff");
   caddr_t dt2 = bif_date_arg (qst, args, 2, "datediff");
-  boxint s1 = (boxint)DT_DAY (dt1) * 24 * 60 * 60 + (boxint)DT_HOUR (dt1) * 60 * 60 + (boxint)DT_MINUTE (dt1) * 60 + DT_SECOND (dt1);
-  boxint s2 = (boxint)DT_DAY (dt2) * 24 * 60 * 60 + (boxint)DT_HOUR (dt2) * 60 * 60 + (boxint)DT_MINUTE (dt2) * 60 + DT_SECOND (dt2);
+  boxint s1 = DT_CAST_TO_TOTAL_SECONDS (dt1);
+  boxint s2 = DT_CAST_TO_TOTAL_SECONDS (dt2);
   int frac1, frac2;
   int diffyear, diffmonth;
   if (0 == stricmp (unit, "day"))
@@ -846,52 +846,176 @@ bif_curtime (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return res;
 }
 
+caddr_t
+arithm_dt_add_num (ccaddr_t box1, ccaddr_t box2, int subtraction, caddr_t *err_ret)
+{
+  int dt_type = DT_DT_TYPE (box1);
+  dtp_t dtp2 = DV_TYPE_OF (box2);
+  boxint whole_seconds = 0;
+  boxint nanoseconds = 0;
+  TIMESTAMP_STRUCT ts;
+  caddr_t res;
+  switch (dtp2)
+    {
+    case DV_LONG_INT:
+      whole_seconds = unbox (box2);
+      break;
+    case DV_DOUBLE_FLOAT:
+      {
+        double n = unbox_double (box2);
+        double rest;
+        whole_seconds = (n >= 0.0) ? floor(n + 0.5) : ceil(n - 0.5);
+        rest = n - whole_seconds;
+        if (abs(rest/n) > (3 * DBL_EPSILON))
+          nanoseconds = (n - whole_seconds) * 1000000000L;
+        break;
+      }
+    case DV_NUMERIC:
+      {
+        numeric_t n = (numeric_t)box2;
+        if (NUMERIC_STS_SUCCESS != numeric_to_int64 (n, &whole_seconds))
+          {
+            err_ret[0] = srv_make_new_error ("22003", "SR087", "Wrong arguments for datetime arithmetic: decimal is out of range.");
+            return NULL;
+          }
+        if (n->n_scale > 0)
+          {
+            char *nptr = n->n_value + n->n_len;
+            int ctr;
+            int mult = 1;
+            for (ctr = 9; ctr > n->n_scale; ctr--) mult *= 10;
+            while (ctr--)
+              {
+                nanoseconds += mult * nptr[ctr];
+                mult *= 10;
+              }
+          }
+        break;
+      }
+    default:
+      return NULL;
+    }
+  DT_AUDIT_FIELDS (dt);
+  dt_to_GMTimestamp_struct (box1, &ts);
+  ts_add (&ts, (subtraction ? -whole_seconds : whole_seconds), "second");
+  if (nanoseconds)
+    ts_add (&ts, (subtraction ? -nanoseconds : nanoseconds), "nanosecond");
+  res = dk_alloc_box (DT_LENGTH, DV_DATETIME);
+  GMTimestamp_struct_to_dt (&ts, res);
+  DT_SET_TZ (res, DT_TZ (box1));
+  if ((DT_TYPE_DATE == dt_type) && (0 == (((whole_seconds * 1000000000L) + nanoseconds) % (SPERDAY * 1000000000L))))
+    DT_SET_DT_TYPE (res, dt_type);
+  DT_AUDIT_FIELDS (dt);
+  return res;
+}
+
+caddr_t
+arithm_dt_add (ccaddr_t box1, ccaddr_t box2, caddr_t *err_ret)
+{
+  dtp_t dtp1 = DV_TYPE_OF (box1), dtp2 = DV_TYPE_OF (box2);
+  if ((DV_DATETIME == dtp1) && ((DV_LONG_INT == dtp2) || (DV_DOUBLE_FLOAT == dtp2) || (DV_NUMERIC == dtp2)))
+    {
+      caddr_t res = arithm_dt_add_num (box1, box2, 0, err_ret);
+      if (NULL != err_ret)
+        return res;
+      if (NULL == res)
+        goto generic_err;
+      return res;
+    }
+  if ((DV_DATETIME == dtp2) && ((DV_LONG_INT == dtp1) || (DV_DOUBLE_FLOAT == dtp1) || (DV_NUMERIC == dtp1)))
+    {
+      caddr_t res = arithm_dt_add_num (box2, box1, 0, err_ret);
+      if (NULL != err_ret)
+        return res;
+      if (NULL == res)
+        goto generic_err;
+      return res;
+    }
+generic_err:
+  err_ret[0] = srv_make_new_error ("22003", "SR087", "Wrong arguments for datetime arithmetic, can not add values of type %d (%s) and type %d (%s).",
+    dtp1, dv_type_title (dtp1), dtp2, dv_type_title (dtp2) );
+  return NULL;
+}
+
+caddr_t
+arithm_dt_subtract (ccaddr_t box1, ccaddr_t box2, caddr_t *err_ret)
+{
+  dtp_t dtp1 = DV_TYPE_OF (box1), dtp2 = DV_TYPE_OF (box2);
+  if ((DV_DATETIME == dtp1) && (DV_DATETIME == dtp2))
+    {
+      boxint s1 = DT_CAST_TO_TOTAL_SECONDS(box1);
+      boxint s2 = DT_CAST_TO_TOTAL_SECONDS(box2);
+      int frac1 = DT_FRACTION(box1);
+      int frac2 = DT_FRACTION(box2);
+      if (frac1 == frac2)
+        return box_num (s1 - s2);
+      else
+        {
+          numeric_t res = numeric_allocate ();
+          numeric_from_int64 (res, ((s1 - s2) * 1000000000L) + (frac1 - frac2));
+          res->n_len -= 9;
+          res->n_scale += 9;
+          return (caddr_t)res;
+        }
+    }
+  if ((DV_DATETIME == dtp1) && ((DV_LONG_INT == dtp2) || (DV_DOUBLE_FLOAT == dtp2) || (DV_NUMERIC == dtp2)))
+    {
+      caddr_t res = arithm_dt_add_num (box1, box2, 1, err_ret);
+      if (NULL != err_ret)
+        return res;
+      if (NULL == res)
+        goto generic_err;
+      return res;
+    }
+generic_err:
+  err_ret[0] = srv_make_new_error ("22003", "SR087", "Wrong arguments for datetime arithmetic, can not subtract value of type %d (%s) from value type %d (%s).",
+    dtp2, dv_type_title (dtp2), dtp1, dv_type_title (dtp1) );
+  return NULL;
+}
 
 void
 bif_date_init ()
 {
-  bif_define_typed ("dayname", bif_dayname, &bt_varchar);
-  bif_define_typed ("monthname", bif_monthname, &bt_varchar);
-  bif_define_typed ("dayofmonth", bif_day, &bt_integer);
-  bif_define_typed ("dayofweek", bif_dayofweek, &bt_integer);
-  bif_define_typed ("dayofyear", bif_dayofyear, &bt_integer);
-  bif_define_typed ("quarter", bif_quarter, &bt_integer);
-  bif_define_typed ("week", bif_week, &bt_integer);
-  bif_define_typed ("month", bif_month, &bt_integer);
-  bif_define_typed ("year", bif_year, &bt_integer);
-  bif_define_typed ("hour", bif_hour, &bt_integer);
-  bif_define_typed ("minute", bif_minute, &bt_integer);
-  bif_define_typed ("second", bif_second, &bt_integer);
-  bif_define_typed ("timezone", bif_timezone, &bt_integer);
-  bif_define_typed ("rdf_now_impl", bif_timestamp, &bt_timestamp);
-  bif_define_typed ("rdf_year_impl", bif_year, &bt_integer);
-  bif_define_typed ("rdf_month_impl", bif_month, &bt_integer);
-  bif_define_typed ("rdf_day_impl", bif_day, &bt_integer);
-  bif_define_typed ("rdf_hours_impl", bif_hour, &bt_integer);
-  bif_define_typed ("rdf_minutes_impl", bif_minute, &bt_integer);
-  bif_define_typed ("nasa_tjd_number", bif_nasa_tjd_number, &bt_integer);
-  bif_define_typed ("nasa_tjd_fraction", bif_nasa_tjd_fraction, &bt_double);
-  bif_define_typed ("merge_nasa_tjd_to_datetime", bif_merge_nasa_tjd_to_datetime, &bt_datetime);
-
-  bif_define_typed ("now", bif_timestamp, &bt_timestamp);	/* This is standard name */
-  bif_define_typed ("getdate", bif_timestamp, &bt_datetime);	/* This is standard name? */
-  bif_define_typed ("curdate", bif_curdate, &bt_date);	/* This is standard fun. */
-  bif_define_typed ("curtime", bif_curtime, &bt_time);	/* This is standard fun. */
-  bif_define_typed ("curdatetime", bif_curdatetime, &bt_timestamp);	/* This is our own. */
-  bif_define_typed ("datestring", bif_date_string, &bt_varchar);
-  bif_define_typed ("datestring_GMT", bif_date_string_GMT, &bt_varchar);
-  bif_define_typed ("stringdate", bif_string_timestamp, &bt_datetime);
-  bif_define_typed ("d", bif_string_date, &bt_date);	/* Two aliases for ODBC */
-  bif_define_typed ("ts", bif_string_timestamp, &bt_timestamp);	/* brace literals */
-  bif_define_typed ("stringtime", bif_string_time, &bt_time);	/* New one. */
-  bif_define_typed ("t", bif_string_time, &bt_time);	/* An alias for ODBC */
-
-  bif_define_typed ("get_timestamp", bif_timestamp, &bt_timestamp);
-  bif_define_typed ("dateadd", bif_date_add, &bt_timestamp);
-  bif_define_typed ("datediff", bif_date_diff, &bt_integer);
-  bif_define_typed ("timestampadd", bif_timestampadd, &bt_timestamp);
-  bif_define_typed ("timestampdiff", bif_timestampdiff, &bt_integer);
-  bif_define_typed ("dt_set_tz", bif_dt_set_tz, &bt_timestamp);
-  bif_define_typed ("__extract", bif_extract, &bt_integer);
+  bif_define_ex ("dayname"			, bif_dayname				, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("monthname"			, bif_monthname				, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("dayofmonth"			, bif_day				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("dayofweek"			, bif_dayofweek				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("dayofyear"			, bif_dayofyear				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("quarter"			, bif_quarter				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("week"				, bif_week				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("month"			, bif_month				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("year"				, bif_year				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("hour"				, bif_hour				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("minute"			, bif_minute				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("second"			, bif_second				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("timezone"			, bif_timezone				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("rdf_now_impl"			, bif_timestamp				, BMD_RET_TYPE, &bt_timestamp	, /*BMD_IS_PURE,*/ BMD_DONE);
+  bif_define_ex ("rdf_year_impl"		, bif_year				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("rdf_month_impl"		, bif_month				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("rdf_day_impl"			, bif_day				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("rdf_hours_impl"		, bif_hour				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("rdf_minutes_impl"		, bif_minute				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("nasa_tjd_number"		, bif_nasa_tjd_number			, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("nasa_tjd_fraction"		, bif_nasa_tjd_fraction			, BMD_RET_TYPE, &bt_double	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("merge_nasa_tjd_to_datetime"	, bif_merge_nasa_tjd_to_datetime	, BMD_RET_TYPE, &bt_datetime	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("now"				, bif_timestamp				, BMD_RET_TYPE, &bt_timestamp	, /*BMD_IS_PURE,*/ BMD_DONE);	/* This is standard name */
+  bif_define_ex ("getdate"			, bif_timestamp				, BMD_RET_TYPE, &bt_datetime	, /*BMD_IS_PURE,*/ BMD_DONE);	/* This is standard name? */
+  bif_define_ex ("curdate"			, bif_curdate				, BMD_RET_TYPE, &bt_date	, /*BMD_IS_PURE,*/ BMD_DONE);	/* This is standard fun. */
+  bif_define_ex ("curtime"			, bif_curtime				, BMD_RET_TYPE, &bt_time	, /*BMD_IS_PURE,*/ BMD_DONE);	/* This is standard fun. */
+  bif_define_ex ("curdatetime"			, bif_curdatetime			, BMD_RET_TYPE, &bt_timestamp	, /*BMD_IS_PURE,*/ BMD_DONE);	/* This is our own. */
+  bif_define_ex ("datestring"			, bif_date_string			, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("datestring_GMT"		, bif_date_string_GMT			, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("stringdate"			, bif_string_timestamp			, BMD_RET_TYPE, &bt_datetime	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("d"				, bif_string_date			, BMD_RET_TYPE, &bt_date	, BMD_IS_PURE, BMD_DONE);	/* Two aliases for ODBC */
+  bif_define_ex ("ts"				, bif_string_timestamp			, BMD_RET_TYPE, &bt_timestamp	, BMD_IS_PURE, BMD_DONE);	/* brace literals */
+  bif_define_ex ("stringtime"			, bif_string_time			, BMD_RET_TYPE, &bt_time	, BMD_IS_PURE, BMD_DONE);	/* New one. */
+  bif_define_ex ("t"				, bif_string_time			, BMD_RET_TYPE, &bt_time	, BMD_IS_PURE, BMD_DONE);	/* An alias for ODBC */
+  bif_define_ex ("get_timestamp"		, bif_timestamp				, BMD_RET_TYPE, &bt_timestamp	, /*BMD_IS_PURE,*/ BMD_DONE);
+  bif_define_ex ("dateadd"			, bif_dateadd				, BMD_RET_TYPE, &bt_timestamp	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("datediff"			, bif_datediff				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("timestampadd"			, bif_timestampadd			, BMD_RET_TYPE, &bt_timestamp	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("timestampdiff"		, bif_timestampdiff			, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("dt_set_tz"			, bif_dt_set_tz				, BMD_RET_TYPE, &bt_timestamp	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("__extract"			, bif_extract				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
   dt_init ();
 }

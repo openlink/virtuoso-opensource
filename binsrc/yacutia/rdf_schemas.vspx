@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,68 +21,83 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="sparql_graph" decor="yacutia_decor.vspx" style="yacutia_style.xsl" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+<v:page name="rdf_schemas"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <vm:pagetitle>Schemas</vm:pagetitle>
   <vm:pagewrapper>
- <vm:variables>
+    <vm:variables>
       <v:variable persist="0" name="mode" type="varchar" default="''"/>
       <v:variable persist="0" name="graph_name" type="varchar" default="''"/>
-  </vm:variables>
-  <vm:menu>
-    <vm:menuitem value="Schemas"/>
-  </vm:menu>
-  <vm:header caption="Schemas">
-  </vm:header>
-  <vm:pagebody>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="Schemas"/>
+    </vm:menu>
+    <vm:header caption="Schemas">
+    </vm:header>
+    <vm:pagebody>
       <v:form name="frm1" method="POST" type="simple">
         <table class="listing">
-	  <tr class="listing_header_row">
-	    <th>Schema IRI</th>
-	    <th>Action</th>
-	  </tr>
-	  <?vsp
-	  declare to_del varchar;
-	  to_del := get_keyword ('del', self.vc_event.ve_params, null);
-	  if (to_del is not null)
-	    RDF_GRAPH_GROUP_DEL ('http://www.openlinksw.com/schemas/virtrdf#schemas', to_del);
-	  for select id_to_iri (RGGM_MEMBER_IID) as url from RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#schemas') do
-	     {
-	  ?>
-	  <tr>
-	      <td><?V url ?></td>
-	      <td><v:url name="u1" value="Delete" url="--sprintf ('rdf_schemas.vspx?del=%U', url)" render-only="1"/></td>
-	  </tr>
-	  <?vsp
-	     }
-	  ?>
-         </table>
-         <br/>
-	 Schema IRI: <v:text name="imp" value="" xhtml_size="100" />
-	 <br/>
-	 <v:button action="simple" name="imp_bt" value="Import">
-	     <v:on-post><![CDATA[
-		 declare stat, msg any;
-		 self.imp.ufl_value := trim (self.imp.ufl_value);
-		 if (length (self.imp.ufl_value) = 0)
-		 {
-		    self.vc_is_valid := 0;
-		    self.vc_error_message := 'No URL entered';
-                    return;
-		 }
-                 stat := '00000';
-		 exec (sprintf ('sparql load <%S> into graph <%S>', self.imp.ufl_value, self.imp.ufl_value), stat, msg, vector ());
-		 if (stat <> '00000')
-		 {
-		    self.vc_is_valid := 0;
-		    self.vc_error_message := 'Cannot import the ontology, please check URL.';
-                    return;
-		 }
-		 RDF_GRAPH_GROUP_INS ('http://www.openlinksw.com/schemas/virtrdf#schemas', self.imp.ufl_value);
-		 ]]></v:on-post>
-	 </v:button>
+          <thead>
+            <tr class="listing_header_row">
+              <th>Schema IRI</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+	      <?vsp
+	      declare to_del varchar;
+	      to_del := get_keyword ('del', self.vc_event.ve_params, null);
+	      if (to_del is not null)
+                RDF_GRAPH_GROUP_DEL ('http://www.openlinksw.com/schemas/virtrdf#schemas', to_del);
+
+              for select id_to_iri (RGGM_MEMBER_IID) as url from RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#schemas') do
+              {
+            ?>
+            <tr>
+              <td><?V url ?></td>
+              <td>
+                <v:url name="u1" value="Delete" url="--sprintf ('rdf_schemas.vspx?del=%U', url)" render-only="1"/>
+              </td>
+            </tr>
+            <?vsp
+              }
+            ?>
+          </tbody>
+        </table>
+        <br />
+        Schema IRI: <v:text name="imp" value="" xhtml_size="100" />
+        <br />
+        <v:button action="simple" name="imp_bt" value="Import">
+          <v:on-post>
+            <![CDATA[
+              declare stat, msg any;
+
+              self.imp.ufl_value := trim (self.imp.ufl_value);
+              if (length (self.imp.ufl_value) = 0)
+              {
+                self.vc_is_valid := 0;
+                self.vc_error_message := 'No URL entered';
+                return;
+              }
+              stat := '00000';
+              exec (sprintf ('sparql load <%S> into graph <%S>', self.imp.ufl_value, self.imp.ufl_value), stat, msg, vector ());
+              if (stat <> '00000')
+              {
+                self.vc_is_valid := 0;
+                self.vc_error_message := 'Cannot import the ontology, please check URL.';
+                return;
+              }
+              RDF_GRAPH_GROUP_INS ('http://www.openlinksw.com/schemas/virtrdf#schemas', self.imp.ufl_value);
+            ]]>
+          </v:on-post>
+        </v:button>
       </v:form>
-  </vm:pagebody>
+    </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

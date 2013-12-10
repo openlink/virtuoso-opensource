@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -131,7 +131,7 @@ struct dbe_table_s
     int64                tb_count;
     int64	tb_count_estimate;
     double	tb_geo_area;
-    int			tb_count_delta;
+    int64		tb_count_delta;
 
     /* row level security functions */
     caddr_t		tb_rls_procs[TB_RLS_LAST + 1];
@@ -370,6 +370,7 @@ struct dbe_key_s
   char			key_is_bitmap;
   char			key_simple_compress;
   key_ver_t		key_version;
+  char			key_no_dependent;
   char			key_is_col; /* column-wise layout */
   char		key_no_pk_ref; /* the key does not ref the main row */
   char		key_distinct; /* if no pk ref, do not put duplicates */

@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -372,7 +372,7 @@ return;
       		      value="images/icons/link_16.png"
       		      xhtml_alt="Link objects"
       		      xhtml_title="Link objects"
-      		      text="&#160;Link objects"
+      		      text="&nbsp;Link objects"
       		      url="vdb_conn_dsn.vspx"/>
               <v:button action="simple" style="image" name="refr_btn1"
       		      value="images/icons/ref_16.png"
@@ -392,7 +392,7 @@ return;
       		      value="images/icons/link_16.png"
       		      xhtml_alt="Unlink selected"
       		      xhtml_title="Unlink selected"
-      		      text="&#160;Unlink selected"
+      		      text="&nbsp;Unlink selected"
               >
                 <v:before-render>
                  if (length (self.linked_objects))
@@ -405,7 +405,7 @@ return;
       		      value="images/icons/script_16.png"
       		      xhtml_alt="Export selected"
       		      xhtml_title="Export selected"
-      		      text="&#160;Export selected"
+      		      text="&nbsp;Export selected"
               >
                 <v:before-render>
                  if (length (self.linked_objects))
@@ -488,7 +488,7 @@ if (objects > 0)
             http (sprintf ('<td>%s</td>', l_dsn));
             http (sprintf ('<td>%s</td>',
                            rname));
-	    http (sprintf ('<td class="listing_col_action"><a href="vdb_unlink_obj.vspx?sid=%s&realm=%s&mode=unlink_table&rname=%s&lname=%s&dsn=%s"><img src="images/icons/link_16.png" border="0" />&#160;Unlink</a></td>',
+	    http (sprintf ('<td class="listing_col_action"><a href="vdb_unlink_obj.vspx?sid=%s&realm=%s&mode=unlink_table&rname=%s&lname=%s&dsn=%s"><img src="images/icons/link_16.png" border="0" />&nbsp;Unlink</a></td>',
                            self.sid ,self.realm, rname, lname, aref (linked_objects, obj)));
             http ('</tr>');
 
@@ -517,7 +517,7 @@ if (objects > 0)
                            self.sid ,self.realm , lname, lname));
             http (sprintf ('<td>%s</td>', l_dsn));
             http (sprintf ('<td>%s</td>', rname));
-            http (sprintf ('<td class="listing_col_action"><a href="vdb_unlink_obj.vspx?sid=%s&realm=%s&mode=unlink_proc&rname=%s&lname=%s&dsn=%s"><img src="images/icons/link_16.png" border="0" />&#160;Unlink</a></td>',
+            http (sprintf ('<td class="listing_col_action"><a href="vdb_unlink_obj.vspx?sid=%s&realm=%s&mode=unlink_proc&rname=%s&lname=%s&dsn=%s"><img src="images/icons/link_16.png" border="0" />&nbsp;Unlink</a></td>',
                            self.sid ,self.realm, rname, lname, aref (linked_objects, obj)));
             http('</tr>');
             n := n + 2;
@@ -544,7 +544,7 @@ if (objects > 0)
       		      value="images/icons/link_16.png"
       		      xhtml_alt="Link objects"
       		      xhtml_title="Link objects"
-      		      text="&#160;Link objects"
+      		      text="&nbsp;Link objects"
       		      url="vdb_conn_dsn.vspx"/>
               <v:button action="simple" style="image" name="refr_btn2"
       		      value="images/icons/ref_16.png"
@@ -564,7 +564,7 @@ if (objects > 0)
       		      value="images/icons/link_16.png"
       		      xhtml_alt="Unlink selected"
       		      xhtml_title="Unlink selected"
-      		      text="&#160;Unlink selected"
+      		      text="&nbsp;Unlink selected"
               >
                 <v:before-render>
 		if (length (self.linked_objects))
@@ -577,7 +577,7 @@ if (objects > 0)
       		      value="images/icons/script_16.png"
       		      xhtml_alt="Export selected"
       		      xhtml_title="Export selected"
-      		      text="&#160;Export selected"
+      		      text="&nbsp;Export selected"
               >
                 <v:before-render>
                  if (length (self.linked_objects))

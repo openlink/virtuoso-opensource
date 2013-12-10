@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -2720,6 +2720,7 @@
                       dt := stringdate (self.ab_birthday.ufl_value);
 			              }
                     }
+                      DB.DBA.wa_aci_validate (DB.DBA.wa_aci_params (params));
 
                 		self.v_hLat := null;
                 		self.v_hLng := null;
@@ -4171,6 +4172,8 @@
                         tmp  := DB.DBA.wa_aci_params (params);
                         if (length (tmp))
                           self.v_acl := serialize (tmp);
+
+                        DB.DBA.wa_aci_validate (tmp);
 
                         self.abStep := '6';
                         self.vc_data_bind(e);

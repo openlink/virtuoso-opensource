@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -69,25 +69,38 @@ beyond the one required digit after the decimal point there will be be as many, 
     <refsect2><title>obj</title><para>Value to be converted into the string</para></refsect2>
   </refsect1>
   <refsect1 id="xpf_ret_string"><title>Return Types</title><para>String</para></refsect1>
-  <refsect1 id="xpf_errors_string"><title>Errors</title>
-    <table><title>Errors signalled by</title>
-      <tgroup cols="4">
-       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
-	<tbody>
-	  <row>
-	    <entry><errorcode></errorcode></entry>
-	    <entry><errorcode></errorcode></entry>
-	    <entry><errorname></errorname></entry>
-	    <entry></entry>
-	  </row>
-	</tbody>
-      </tgroup>
-    </table>
-  </refsect1>
   <refsect1 id="xpf_examples_string"><title>Examples</title>
-    <example id="xpf_ex_string"><title></title>
-      <para></para>
-      <screen>string(//title)</screen>
+    <example id="xpf_ex_string"><title>Examples</title>
+<programlisting><![CDATA[
+SQL> select xpath_eval ('string (//*)', xtree_doc ('<a>abc</a>')) ;
+xpath_eval
+VARCHAR
+abc
+
+SQL> select xpath_eval ('string (//title)', xtree_doc ('<doc><title>Simple test</title></doc>')) ;
+xpath_eval
+VARCHAR
+Simple test
+
+SQL> select xpath_eval ('string(.) div 21', xtree_doc ('<a>100</a>'))
+xpath_eval
+VARCHAR
+4.761904761904762
+No. of rows in result: 1
+
+
+SQL> select xpath_eval ('string(//title) div 21', xtree_doc ('<a>100</a>'))
+xpath_eval
+VARCHAR
+ 0
+No. of rows in result: 1
+
+SQL> select xpath_eval ('string(//a) div 20', xtree_doc ('<a>100</a>'))
+Query result:
+xpath_eval
+VARCHAR
+ 5
+]]></programlisting>
     </example>
   </refsect1>
   <refsect1 id="xpf_seealso_string"><title>See Also</title>

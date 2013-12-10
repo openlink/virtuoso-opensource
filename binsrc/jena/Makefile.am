@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2012 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -88,7 +88,7 @@ run-tests: virt_jena.jar
 	$(JAVAC) $(JDK_FLAGS) \
 		-classpath "$(JENA_CLASSPATH):./virt_jena.jar" \
 		$(TESTSUITE_SRC)
-	cd testsuite && env JAVA="$(JAVA)" PORT="$(PORT)" $(SHELL) start.sh
+	cd testsuite && env JAVA="$(JAVA)" PORT="$(PORT)" $(SHELL) ./start.sh
 else
 run-tests:
 	@echo "***WARNING: Disabled Jena test suite"

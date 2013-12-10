@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1257,6 +1257,7 @@ ws_url_rewrite (ws_connection_t *ws)
   ws->ws_cli->cli_ws = ws;
 
   IN_TXN;
+  lt_wait_checkpoint ();
   lt_threads_set_inner (cli->cli_trx, 1);
   LEAVE_TXN;
 
@@ -1780,6 +1781,24 @@ ws_header_line_to_array (caddr_t string)
   return headers;
 }
 
+static char *
+ws_get_mime_variant (char * mime, char ** found)
+{
+  static char * compat[] = {"text/plain", "text/*", NULL, NULL}; /* for now text/plain only, can be added more */
+  int inx;
+  *found = NULL;
+  for (inx = 0; NULL != compat[inx]; inx += 2)
+    {
+      if (!strcmp (compat[inx], mime))
+	{
+	  *found = compat[inx];
+	  return compat[inx+1];
+	}
+    }
+  return mime;
+}
+
+
 static const char *
 ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check_only, OFF_T clen, const char * charset)
 {
@@ -1799,7 +1818,7 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
   char buf [1000];
   caddr_t ctype = NULL, cenc = NULL;
   caddr_t * asked;
-  char * match = NULL;
+  char * match = NULL, * found = NULL;
   int inx;
   int ignore = (ws->ws_p_path_string ?
       ((0 == strnicmp (ws->ws_p_path_string, "http://", 7)) ||
@@ -1825,6 +1844,7 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
   asked = ws_split_ac_header (accept);
   DO_BOX (caddr_t, p, inx, asked)
     {
+      p = ws_get_mime_variant (p, &found);
       if (DVC_MATCH == cmp_like (mime, p, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR))
 	{
 	  match = p;
@@ -1851,6 +1871,23 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
 	  HTTP_SET_STATUS_LINE (ws, code, 1);
 	}
       check_only = 0;
+    }
+  if (NULL != found && ws->ws_header && nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Type:") != NULL)
+    {
+      caddr_t * headers = ws_header_line_to_array (ws->ws_header);
+      dk_session_t * ses = strses_allocate ();
+      DO_BOX (caddr_t, h, inx, headers)
+	{
+	  if (nc_strstr ((unsigned char *) h, (unsigned char *) "Content-Type:") != NULL)
+	    continue;
+	  SES_PRINT (ses, h);
+	}
+      END_DO_BOX;
+      SES_PRINT (ses, "Content-Type: "); SES_PRINT (ses, found); SES_PRINT (ses, "\r\n");
+      dk_free_tree (ws->ws_header);
+      ws->ws_header = strses_string (ses);
+      dk_free_tree (headers);
+      dk_free_box (ses);
     }
   dk_free_tree (ctype);
   dk_free_tree (cenc);
@@ -1896,7 +1933,7 @@ ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
 #ifdef VIRTUAL_DIR
   caddr_t origin = ws_mime_header_field (ws->ws_lines, "Origin", NULL, 1);
   int rc = 0;
-  if (origin && ws->ws_status_code < 400 && ws->ws_map && ws->ws_map->hm_cors)
+  if (origin && ws->ws_status_code < 500 && ws->ws_map && ws->ws_map->hm_cors)
     {
       caddr_t * orgs = ws_split_cors (origin), * place = NULL;
       int inx;
@@ -2924,6 +2961,7 @@ ws_post_process (ws_connection_t * ws)
   p_proc = proc->qr_proc_name;
 
   IN_TXN;
+  lt_wait_checkpoint ();
   lt_threads_set_inner (cli->cli_trx, 1);
   LEAVE_TXN;
 
@@ -3090,6 +3128,7 @@ ws_auth_check (ws_connection_t * ws)
     }
 
   IN_TXN;
+  lt_wait_checkpoint ();
   lt_threads_set_inner (cli->cli_trx, 1);
   LEAVE_TXN;
 
@@ -3216,7 +3255,7 @@ ws_check_rdf_accept (ws_connection_t *ws)
   accept = ws_header_field (ws->ws_lines, "Accept:", NULL);
   if (!ws || !ws->ws_map || !accept)
     return 0;
-  if (NULL == strstr (accept, "application/rdf+xml") && NULL == strstr (accept, "text/rdf+n3"))
+  if (NULL == strstr (accept, "application/rdf+xml") && NULL == strstr (accept, "text/rdf+n3") && NULL == strstr (accept, "text/turtle"))
     return 0;
 
   if (!(proc = (query_t *)sch_name_to_object (wi_inst.wi_schema, sc_to_proc, "DB.DBA.HTTP_RDF_ACCEPT", NULL, "dba", 0)))
@@ -3239,6 +3278,7 @@ ws_check_rdf_accept (ws_connection_t *ws)
     qr = sql_compile_static ("DB.DBA.HTTP_RDF_ACCEPT (?, ?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
 
   IN_TXN;
+  lt_wait_checkpoint ();
   lt_threads_set_inner (cli->cli_trx, 1);
   LEAVE_TXN;
 
@@ -3275,6 +3315,8 @@ error_end:
   return retc;
 #endif
 }
+
+#define IS_DAV_METHOD(ws) (IS_DAV_DOMAIN(ws, "")  && 0 != strstr ("PROPFIND PROPPATCH LOCK UNLOCK COPY MOVE MKCOL", ws->ws_method_name))
 
 int soap_get_opt_flag (caddr_t * opts, char *opt_name);
 
@@ -3353,6 +3395,8 @@ request_do_again:
     }
   strses_flush (ws->ws_strses);
   IN_TXN;
+  if (!cli->cli_trx->lt_threads)
+    lt_wait_checkpoint ();
   lt_threads_set_inner (cli->cli_trx, 1);
   LEAVE_TXN;
 
@@ -3827,7 +3871,7 @@ do_file:
 	}
       THR_DBG_PAGE_CHECK;
 
-      if (!ws_check_rdf_accept (ws))
+      if (!ws_check_rdf_accept (ws) && !IS_DAV_METHOD (ws)) /* check if WebDAV */
 	{
 	  snprintf (page_opt_name, sizeof (page_opt_name), "%3d_page", ws->ws_status_code);
 	  if (NULL != (text = ws_get_opt (ws->ws_map->hm_opts, page_opt_name, NULL)))
@@ -3849,7 +3893,7 @@ do_file:
 	      dk_free_tree ((box_t) ws->ws_p_path); ws->ws_p_path = NULL; path1 = "";
 	      ws_set_phy_path (ws, 0, ws->ws_path_string);
 
-	      ws_connection_vars_clear (cli);
+	      /*ws_connection_vars_clear (cli);*/
 	      if (err && err != (caddr_t)SQL_NO_DATA_FOUND)
 		{
 		  ws->ws_params = (caddr_t *) list (4,
@@ -4796,6 +4840,8 @@ dks_sqlval_esc_write (caddr_t *qst, dk_session_t *out, caddr_t val, wcharset_t *
   dtp_t dtp = DV_TYPE_OF (val);
   if (DV_STRINGP (val))
     {
+      if (box_flags (val) & BF_UTF8) /* if string is in UTF-8 do not even try to use some default */
+	src_charset = CHARSET_UTF8;
       dks_esc_write (out, val, box_length (val) - 1, tgt_charset, src_charset, dks_esc_mode);
     }
   else if (IS_WIDE_STRING_DTP (dtp))
@@ -5850,7 +5896,7 @@ http_proxy (ws_connection_t * ws, char * host, caddr_t * req, caddr_t * body, dk
 	  session_buffered_write (ws->ws_session, "0\r\n\r\n", 5); /* Write last zero chunk */
 	  session_flush_1 (ws->ws_session);
 	}
-      else if (len != -1 || close) /* If have content length or connection should be closed by peer */
+      else if (len > 0 || (close && len == -1)) /* If have content length or connection should be closed by peer */
 	{
 	  char tmp [4096], c;
 	  int to_read = len, to_read_len = sizeof (tmp), readed = 0;
@@ -10012,6 +10058,8 @@ ws_serve_client_connection (ws_connection_t * ws)
   conn[0] = (caddr_t) ses;
 
   IN_TXN;
+  if (!cli->cli_trx->lt_threads)
+    lt_wait_checkpoint ();
   lt_threads_set_inner (cli->cli_trx, 1);
   LEAVE_TXN;
 

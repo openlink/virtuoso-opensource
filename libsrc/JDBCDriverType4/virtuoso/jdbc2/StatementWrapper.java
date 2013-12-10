@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -46,7 +46,7 @@ public class StatementWrapper implements Statement, Closeable {
 #else
   protected HashMap objsToClose = new HashMap();
 #endif
-  protected boolean isClosed = false;
+  protected volatile boolean isClosed = false;
 
 
   protected StatementWrapper(ConnectionWrapper _wconn, Statement _stmt) {
@@ -61,7 +61,7 @@ public class StatementWrapper implements Statement, Closeable {
   }
 
 
-  public synchronized void finalize () throws Throwable {
+  public void finalize () throws Throwable {
     close();
   }
 
@@ -109,18 +109,20 @@ public class StatementWrapper implements Statement, Closeable {
       return;
     isClosed = true;
 
-    try {
-      removeLink();
-      if (stmt != null) {
-        stmt.close();
-        stmt = null;
+    synchronized(this) {
+      try {
+        removeLink();
+        if (stmt != null) {
+          stmt.close();
+          stmt = null;
+        }
+        wconn = null;
+        if (objsToClose != null)
+          objsToClose.clear();
+      } catch (SQLException ex) {
+        exceptionOccurred(ex);
+        throw ex;
       }
-      wconn = null;
-      if (objsToClose != null)
-        objsToClose.clear();
-    } catch (SQLException ex) {
-      exceptionOccurred(ex);
-      throw ex;
     }
   }
 
@@ -565,6 +567,31 @@ public class StatementWrapper implements Statement, Closeable {
       throw ex;
     }
   }
+
+#if JDK_VER >= 17
+    //--------------------------JDBC 4.1 -----------------------------
+  public void closeOnCompletion() throws SQLException
+  {
+    check_close();
+    try {
+      stmt.closeOnCompletion();
+    } catch (SQLException ex) {
+      exceptionOccurred(ex);
+      throw ex;
+    }
+  }
+
+  public boolean isCloseOnCompletion() throws SQLException
+  {
+    check_close();
+    try {
+      return stmt.isCloseOnCompletion();
+    } catch (SQLException ex) {
+      exceptionOccurred(ex);
+      throw ex;
+    }
+  }
+#endif
 
 #endif
 #endif

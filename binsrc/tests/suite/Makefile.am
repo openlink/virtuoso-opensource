@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2012 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -83,7 +83,7 @@ check_SCRIPTS = \
 
 TESTS=test_server.sh
 TESTS_ENVIRONMENT=PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
-	PORT=$(PORT) HOME="$(TOP)" JDK2="@ac_jdk2_path@" JDK3="@ac_jdk3_path@" HOST=localhost SERVER=virtuoso-t
+	PORT=$(PORT) HOME="$(TOP)" JDK2="@ac_jdk2_path@" JDK3="@ac_jdk3_path@" HOST=localhost SERVER=virtuoso-t MAKE=$(MAKE)
 
 clean-local:
 	./clean.sh

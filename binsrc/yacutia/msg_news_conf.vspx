@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -241,13 +241,13 @@ self.vc_data_bind(e);
 		      value="images/icons/edit_16.png"
 		      xhtml_alt="Edit"
 		      xhtml_title="Edit"
-		      text="&#160;Edit"
+		      text="&nbsp;Edit"
 		      />
 		    <v:button action="simple" style="image" name="data_set_browse_delete"
 		      value="images/icons/trash_16.png"
 		      xhtml_alt="Delete"
 		      xhtml_title="Delete"
-		      text="&#160;Delete" >
+		      text="&nbsp;Delete" >
                     <v:on-post width="0" height="16">
                       <v:script><![CDATA[
           self.ns_id := self.data_set_browse.ds_current_row.te_rowset[0];
@@ -336,7 +336,7 @@ self.vc_data_bind(e);
                       <v:text default_value="" xhtml_style="width:100%" type="password" width="80" error-glyph="*" value="" name="data_set_browse_add_field_3" column="NS_PASS" />
                     </td>
                     <td align="left" nowrap="1" class="listing_col_action">
-		      <v:button style="image" action="submit" value="images/icons/add_16.png" text="&#160;Add" width="80" name="data_set_browse_add_btn" />
+		      <v:button style="image" action="submit" value="images/icons/add_16.png" text="&nbsp;Add" width="80" name="data_set_browse_add_btn" />
                     </td>
                   </tr>
                 </table>

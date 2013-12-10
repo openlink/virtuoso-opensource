@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -851,6 +851,7 @@ extern long sqlp_bin_op_serial;
    || DV_BIN == box_tag((caddr_t) a) \
    || DV_UNAME == box_tag((caddr_t) a) \
    || DV_IRI_ID == box_tag((caddr_t) a) \
+   || DV_DATETIME == box_tag((caddr_t) a) \
    || DV_XPATH_QUERY == box_tag((caddr_t) a) )
 
 #define ST_P(s, tp) \

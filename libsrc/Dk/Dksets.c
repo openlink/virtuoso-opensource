@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -36,6 +36,17 @@ DBG_NAME (dk_set_push) (DBG_PARAMS s_node_t ** set, void *item)
   *set = newn;
 }
 
+void
+DBG_NAME (dk_set_push_two) (DBG_PARAMS s_node_t ** set, void *car_item, void *cadr_item)
+{
+  s_node_t *cadr_newn = (s_node_t *) DK_ALLOC (sizeof (s_node_t));
+  s_node_t *car_newn = (s_node_t *) DK_ALLOC (sizeof (s_node_t));
+  cadr_newn->next = *set;
+  cadr_newn->data = cadr_item;
+  car_newn->next = cadr_newn;
+  car_newn->data = car_item;
+  *set = car_newn;
+}
 
 void
 DBG_NAME (dk_set_pushnew) (DBG_PARAMS s_node_t ** set, void *item)
@@ -448,6 +459,13 @@ void
 dk_set_push (s_node_t ** set, void *item)
 {
   dbg_dk_set_push (__FILE__, __LINE__, set, item);
+}
+
+#undef dk_set_push_two
+void
+dk_set_push_two (s_node_t ** set, void *car_item, void *cadr_item)
+{
+  dbg_dk_set_push_two (__FILE__, __LINE__, set, car_item, cadr_item);
 }
 
 #undef list_to_array

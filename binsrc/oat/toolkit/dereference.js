@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2012 OpenLink Software
+ *  Copyright (C) 2005-2013 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -70,7 +70,10 @@ OAT.Dereference = {
 
 		    if (user) { encoded = this.addParam(encoded, "login", encodeURIComponent(user)); }
 		    if (url.match(/\.n3$/)) { encoded = this.addParam(encoded, "output-format", "n3"); }
-		    if (url.match(/\.ttl$/)) { encoded = this.addParam(encoded, "output-format", "ttl"); }
+		    else if (url.match(/\.ttl$/)) { encoded = this.addParam(encoded, "output-format", "ttl"); }
+		    else 
+			encoded = this.addParam(encoded, "output-format","xml");
+
 		    for (var p in pragmas) { encoded = this.addParam(encoded, p, pragmas[p]); }
 		} else {
 		    var r = url.match(/^(http[s]?:\/\/)([^@\/]+@)?(.*)/);
@@ -86,7 +89,9 @@ OAT.Dereference = {
 		    var encoded = encodeURIComponent(url);
 		    encoded = this.addParam(endpoint + encoded, "force", "rdf");
 		    if (url.match(/\.n3$/)) { encoded = this.addParam(encoded, "output-format", "n3"); }
-		    if (url.match(/\.ttl$/)) { encoded = this.addParam(encoded, "output-format", "ttl"); }
+		    else if (url.match(/\.ttl$/)) { encoded = this.addParam(encoded, "output-format", "ttl"); }
+		    else 
+			encoded = this.addParam(encoded, "output-format","xml");
 		    for (var p in pragmas) { encoded = this.addParam(encoded, p, pragmas[p]); }
 		} else {
 		    var encoded = endpoint + url;

@@ -1,5 +1,5 @@
 /*
- *  nmarsh.h
+ *  Dkmarshal.h
  *
  *  $Id$
  *
@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -24,6 +24,9 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
+
+#ifndef _DKMARSHAL_H
+#define _DKMARSHAL_H
 
 typedef void *(*macro_char_func) (dk_session_t * session, dtp_t macro);
 typedef int (*ses_write_func) (void *obj, dk_session_t * session);
@@ -67,7 +70,7 @@ void *box_read_error (dk_session_t * session, dtp_t dtp);
 
 #define MAX_READ_STRING 10000000
 #define MARSH_CHECK_LENGTH(length) \
-  if ((length) > MAX_READ_STRING) \
+  if ((length) > MAX_READ_STRING || (length) < 0) \
     { \
       sr_report_future_error (session, "", "Box length too large"); \
       CHECK_READ_FAIL (session); \
@@ -94,3 +97,5 @@ void *box_read_error (dk_session_t * session, dtp_t dtp);
 
 
 extern int (*box_flags_serial_test_hook) (dk_session_t * ses);
+
+#endif

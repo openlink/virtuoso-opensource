@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -72,7 +72,7 @@ public class ConnectionWrapper implements java.sql.Connection {
 
   private int maxStatements;
 
-  private Connection rconn;       // physical connection
+  private volatile Connection rconn;       // physical connection
   private VirtuosoPooledConnection pconn; // pooled connection
 
 #if JDK_VER >= 16
@@ -98,18 +98,20 @@ public class ConnectionWrapper implements java.sql.Connection {
     pStmtPool = new StmtCache(this, pStmtsPool);
   }
 
-  public synchronized void finalize () throws Throwable {
+  public void finalize () throws Throwable {
     close();
   }
 
   // reuse the physical connection
-  public synchronized void close() throws java.sql.SQLException {
+  public void close() throws java.sql.SQLException {
     if (rconn == null)
       return;
-    if (pconn != null)
-      pconn.sendCloseEvent();
-    rconn = null;
-    pconn = null;
+    synchronized(this) {
+      if (pconn != null)
+        pconn.sendCloseEvent();
+      rconn = null;
+      pconn = null;
+    }
   }
 
   // close the physical connection & clear the statement's cache
@@ -753,6 +755,66 @@ public class ConnectionWrapper implements java.sql.Connection {
       throw ex;
     }
   }
+
+
+#if JDK_VER >= 17
+   //--------------------------JDBC 4.1 -----------------------------
+  public void setSchema(String schema) throws java.sql.SQLException 
+  {
+    try {
+      check_conn();
+      rconn.setSchema(schema);
+    } catch (SQLException ex) {
+      exceptionOccurred(ex);
+      throw ex;
+    }
+  }
+
+  public String getSchema() throws java.sql.SQLException
+  {
+    try {
+      check_conn();
+      return rconn.getSchema();
+    } catch (SQLException ex) {
+      exceptionOccurred(ex);
+      throw ex;
+    }
+  }
+
+  public void abort(java.util.concurrent.Executor executor) throws java.sql.SQLException
+  {
+    try {
+      check_conn();
+      rconn.abort(executor);
+    } catch (SQLException ex) {
+      exceptionOccurred(ex);
+      throw ex;
+    }
+  }
+
+  public void setNetworkTimeout(java.util.concurrent.Executor executor, 
+  			 final int milliseconds) throws java.sql.SQLException
+  {
+    try {
+      check_conn();
+      rconn.setNetworkTimeout(executor, milliseconds);
+    } catch (SQLException ex) {
+      exceptionOccurred(ex);
+      throw ex;
+    }
+  }
+
+  public int getNetworkTimeout() throws java.sql.SQLException
+  {
+    try {
+      check_conn();
+      return rconn.getNetworkTimeout();
+    } catch (SQLException ex) {
+      exceptionOccurred(ex);
+      throw ex;
+    }
+  }
+#endif
 
 #endif
 #endif

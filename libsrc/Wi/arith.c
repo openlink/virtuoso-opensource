@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -25,6 +25,7 @@
  *
  */
 
+#include "datesupp.h"
 #include "sqlnode.h"
 #include "sqlfn.h"
 #include "arith.h"
@@ -505,6 +506,11 @@ cmp_boxes_safe (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation
 	case DV_STRING:
 	  n1--;
 	  break;
+	case DV_UNAME:
+	  n1--;
+	  dtp1 = DV_STRING;
+	  collation1 = collation2 = NULL;
+	  break;
 	case DV_LONG_WIDE:
 	  dtp1 = DV_WIDE;
 	case DV_WIDE:
@@ -533,6 +539,11 @@ cmp_boxes_safe (ccaddr_t box1, ccaddr_t box2, collation_t *collation1, collation
 	    }
 	  else
 	    collation1 = collation2;
+	  break;
+	case DV_UNAME:
+	  n2--;
+	  dtp2 = DV_STRING;
+	  collation1 = NULL;
 	  break;
 	case DV_LONG_BIN:
 	  dtp2 = DV_BIN;
@@ -929,8 +940,7 @@ numeric_bin_op (numeric_bop_t num_op, numeric_t x, numeric_t y, caddr_t * qst,
   return res_box;
 }
 
-
-#define ARTM_BIN_FUNC(name, op, num_op, isdiv) \
+#define ARTM_BIN_FUNC(name, opsymbol, op, num_op, dt_op, isdiv) \
 caddr_t \
 name (ccaddr_t box1, ccaddr_t box2, caddr_t * qst, state_slot_t * target) \
 { \
@@ -984,9 +994,26 @@ retry_rdf_boxes: \
             box2 = ((rdf_box_t *)(box2))->rb_box; \
           goto retry_rdf_boxes; \
         } \
+      if ((NULL != dt_op) && ((DV_DATETIME == dtp1) || (DV_DATETIME == dtp2))) \
+        { \
+          caddr_t err = NULL; \
+          caddr_t res = ((arithm_dt_operation_t *)(dt_op)) (box1, box2, &err); \
+          if (NULL == err) \
+            { \
+              if (target) \
+                return (qst_set (qst, target, res), (caddr_t)0); \
+              return res; \
+            } \
+          if (((query_instance_t *)qst)->qi_query->qr_no_cast_error) \
+            { \
+              dk_free_tree (err); \
+              goto null_result; \
+            } \
+          sqlr_resignal (err); \
+        } \
       if (((query_instance_t *)qst)->qi_query->qr_no_cast_error) \
         goto null_result; \
-      sqlr_new_error ("22003", "SR087", "Non numeric argument(s) to arithmetic operation."); \
+      sqlr_new_error ("22003", "SR087", "Non numeric argument(s) to arithmetic operation '%s'.", opsymbol); \
     } \
 null_result: \
   if (target) \
@@ -1061,10 +1088,10 @@ null_result: \
   return (dk_alloc_box (0, DV_DB_NULL)); \
 }
 
-ARTM_BIN_FUNC (box_add, +, numeric_add, 0)
-ARTM_BIN_FUNC (box_sub, -, numeric_subtract, 0)
-ARTM_BIN_FUNC (box_mpy, *, numeric_multiply, 0)
-ARTM_BIN_FUNC (box_div, /, numeric_divide, 1)
+ARTM_BIN_FUNC (box_add, "+", +, numeric_add		, arithm_dt_add		, 0)
+ARTM_BIN_FUNC (box_sub, "-", -, numeric_subtract		, arithm_dt_subtract	, 0)
+ARTM_BIN_FUNC (box_mpy, "*", *, numeric_multiply	, NULL			, 0)
+ARTM_BIN_FUNC (box_div, "/", /, numeric_divide		, NULL			, 1)
 
 
 caddr_t

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3520,6 +3520,7 @@ rd_outline_1 (query_instance_t * qi, row_delta_t * rd, dbe_col_loc_t * cl)
   outlined = dk_alloc_box (DV_BLOB_LEN + 1, DV_STRING);
   ITC_OWNS_PARAM (rd->rd_itc, outlined);
   itc_set_blob_col (itc, (db_buf_t)outlined,  str, NULL, BLOB_IN_UPDATE, &cl->cl_sqt);
+  dk_free_box (str);
   rd->rd_values[cl->cl_nth] = outlined;
 }
 

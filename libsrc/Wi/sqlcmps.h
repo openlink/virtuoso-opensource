@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -324,6 +324,9 @@ typedef struct trig_cols_s
     int			tc_n_before_pk;
   } trig_cols_t;
 
+
+int key_matches_index_opt (dbe_key_t * key, caddr_t opt);
+dbe_key_t *  tb_key_by_index_opt (dbe_table_t * tb, caddr_t opt);
 
 state_slot_t * col_ref_col (sql_comp_t * sc, caddr_t ref);
 

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1333,7 +1333,7 @@ sqlc_del_key_only (sql_comp_t * sc, dbe_table_t * tb, ST * texp)
   caddr_t kn = sqlo_opt_value (texp->_.table_exp.opts, OPT_INDEX);
   if (kn)
     {
-      dbe_key_t * key = tb_name_to_key (tb, kn, 0);
+      dbe_key_t * key = tb_key_by_index_opt (tb, kn);
       if (!key)
 	sqlc_new_error (sc->sc_cc, "42000", "SR...", "No index %s for single key delete", kn);
       return key;

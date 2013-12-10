@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -63,6 +63,7 @@ create procedure dbp_ldd_set_ns_decl ()
     'http://sw.opencyc.org/2008/06/10/concept/', 'opencyc',
     'http://mpii.de/yago/resource/', 'yago-res',
     'http://rdf.freebase.com/ns/', 'freebase',
+    'http://www.w3.org/2007/05/powder-s#', 'wdrs',
     'http://dbpedia.org/ontology/', 'dbpedia-owl');
    l := length (arr);
    for (i := 0; i < l; i := i + 2)
@@ -145,8 +146,7 @@ again:
     {
       langs := http_request_header_full (lines, 'Accept-Language', 'en');
     }
-  exec (sprintf ('sparql  '||
-  'select ?o (lang(?o)) where { graph <%S> { <%S> rdfs:label ?o } }', _G, _S), null, null, vector (), 0, meta, data);
+  exec ('sparql select ?o (lang(?o)) where { graph `iri(??)` { `iri(??)` rdfs:label ?o } }', null, null, vector (_G, _S), vector ('use_cache', 1, 'max_rows', 0), meta, data);
   best_str := '';
   best_q := 0;
   if (length (data))
@@ -170,8 +170,7 @@ again:
     {
       return best_str;
     }
-  exec (sprintf ('sparql define input:inference "dbprdf-label" '||
-  'select ?o (lang(?o)) where { graph <%S> { <%S> virtrdf:label ?o } }', _G, _S), null, null, vector (), 0, meta, data);
+  exec ('sparql define input:inference "dbprdf-label" select ?o (lang(?o)) where { graph `iri(??)` { `iri(??)` virtrdf:label ?o } }', null, null, vector (_G, _S), vector ('use_cache', 1, 'max_rows', 0), meta, data);
   best_str := '';
   best_q := 0;
   if (length (data))
@@ -634,8 +633,9 @@ create procedure dbp_virt_info ()
   http (sys_stat ('st_dbms_ver')); 
   http (', on ');
   http (sys_stat ('st_build_opsys_id')); http (','); 
-  http (case when sys_stat ('cl_run_local_only') = 1 then 'Single' else 'Cluster' end); http (' Edition ');
-  http (case when sys_stat ('cl_run_local_only') = 0 then sprintf ('(%d nodes)', sys_stat ('cl_n_hosts')) else '' end); 
+  http (case when sys_stat ('cl_run_local_only') = 1 then 'Single-Server' else 'Cluster' end); http (' Edition ');
+  http (case when sys_stat ('cl_run_local_only') = 0 then sprintf ('(%d server processes, %s total memory)', sys_stat ('cl_n_hosts'), mem_hum_size (mem_info_cl ())) 
+      else sprintf ('(%s total memory)', mem_hum_size (mem_info_cl ())) end); 
 }
 ;
 

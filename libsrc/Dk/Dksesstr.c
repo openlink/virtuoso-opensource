@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -30,6 +30,7 @@
 #include "Dksesstr.h"
 
 char *ses_tmp_dir;
+extern box_destr_f box_destr[256];
 
 /* The string session
 
@@ -936,7 +937,8 @@ strses_deserialize (dk_session_t * session, dtp_t macro)
 
       if (str && DV_TYPE_OF (str) != DV_STRING)
 	{					 /* being paranoid is a good thing */
-	  dk_free_tree (str);
+	  if (!box_destr [DV_TYPE_OF (str)])
+	    dk_free_tree (str);
 	  sr_report_future_error (session, "", "Invalid data type of the incoming session segment");
 	  str = NULL;
 	}

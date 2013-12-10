@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1583,6 +1583,7 @@ struct user_aggregate_s
 /*! Merge function or NULL, that gets two inout box of environments, merges them and saves the result to the first one; returns nothing
     If the name is NULL, then the parallelization of grouping is prohibited. */
     user_aggregate_fun_t	ua_merge;
+/*! Flag whether the order of passing values to the aggregate is significant. */
     char		ua_need_order;
   };
 

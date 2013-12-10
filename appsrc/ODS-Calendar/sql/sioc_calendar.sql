@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -24,7 +24,7 @@ use SIOC;
 -------------------------------------------------------------------------------
 --
 create procedure calendar_event_iri_internal (
-  in domain_id varchar,
+  in domain_id integer,
   in event_id integer)
 {
   declare kind integer;
@@ -51,7 +51,7 @@ create procedure calendar_event_iri_internal (
 -------------------------------------------------------------------------------
 --
 create procedure calendar_event_iri (
-  in domain_id varchar,
+  in domain_id integer,
   in event_id integer)
 {
 	declare c_iri varchar;
@@ -67,7 +67,7 @@ create procedure calendar_event_iri (
 -------------------------------------------------------------------------------
 --
 create procedure calendar_comment_iri (
-  in domain_id varchar,
+  in domain_id integer,
   in event_id integer,
   in comment_id integer)
 {
@@ -84,7 +84,7 @@ create procedure calendar_comment_iri (
 -------------------------------------------------------------------------------
 --
 create procedure calendar_annotation_iri (
-  in domain_id varchar,
+  in domain_id integer,
   in event_id integer,
   in annotation_id integer)
 {

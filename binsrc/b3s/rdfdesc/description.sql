@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -220,7 +220,7 @@ create procedure b3s_find_class_type (in _s varchar, in _f varchar, inout types_
   st := '00000';
   msg:= '';
 
-  stmt := sprintf ('sparql select ?to %s where {?to a <%S>}', _f, _s);
+  stmt := sprintf ('sparql select ?to %s where { quad map virtrdf:DefaultQuadMap { ?to a <%S> }}', _f, _s);
 
   exec (stmt, st, msg, vector(), 1, meta, data);
 
@@ -252,6 +252,40 @@ create procedure b3s_uri_local_part (in uri varchar)
 
 create procedure
 b3s_get_types (in _s varchar,
+               in _from varchar,
+               in langs any) {
+  declare stat, msg, meta, data any;
+  declare t_a any;
+  declare i int;
+  declare stmt varchar;
+
+  stmt := sprintf ('sparql select distinct ?tp %s where { quad map virtrdf:DefaultQuadMap { <%S> a ?tp } }', _from, _s);
+  data := null;
+  t_a := vector();
+
+  if (length (_s))
+    {
+      data := null;
+      exec (stmt, stat, msg, vector (), 100, meta, data);
+
+      if (length(data)) 
+        {
+	  for (i := 0;i < length(data); i := i + 1) 
+            {
+--                dbg_printf ('data[%d][0]: %s', i,data[i][0]);
+		t_a := vector_concat (t_a, 
+                                      vector (vector (data[i][0], 
+                                      b3s_uri_curie (data[i][0]),
+                                      b3s_label (data[i][0], langs))));
+            }
+        }
+    }
+  return (t_a);
+}                 
+;
+
+create procedure
+b3s_get_all_types (in _s varchar,
                in _from varchar,
                in langs any) {
   declare stat, msg, meta, data any;
@@ -302,7 +336,7 @@ b3s_render_iri_select (inout types_a any,
           http (sprintf ('<option value="%s" title="%s" %s>%s</option>', 
                          types_a[i][0],
                          types_a[i][0],
-                         case when i = sel then 'selected="true"' else '' end,
+                         case when i = sel then 'selected="selected"' else '' end,
                          case when types_a[i][2] <> '' then types_a[i][2] else types_a[i][1] end));
         } 
       http ('</select>');
@@ -354,7 +388,7 @@ create procedure
 b3s_sas_selected ()
 {
   if (connection_get ('sas') = 'yes')
-    return ' checked="true" ';
+    return ' checked="selected" ';
   else
     return '';
 }
@@ -364,6 +398,7 @@ create procedure
 b3s_parse_inf (in sid varchar, inout params any)
 {
   declare _sas, _inf varchar;
+  declare grs any;
 
   _sas := _inf := null;
 
@@ -400,6 +435,14 @@ b3s_parse_inf (in sid varchar, inout params any)
       else
         connection_set ('sas', null);
     }
+  vectorbld_init (grs);
+  for (declare i int, i := 0; i < length (params); i := i + 2)
+    {
+      if (params[i] = 'graph' and not position (params[i+1], grs))
+	vectorbld_acc (grs, params[i+1]);
+    }
+  vectorbld_final (grs);
+  connection_set ('graphs', grs);
 }
 ;
 
@@ -426,17 +469,27 @@ b3s_render_inf_clause ()
 ;
 
 create procedure
-b3s_render_ses_params ()
+b3s_render_ses_params (in with_graph int := 1) 
 {
   declare i,s,ifp,sid varchar;
+  declare grs any;
 
   i := connection_get ('inf');
   s := connection_get ('sas');
   sid := connection_get ('sid');
+  grs := connection_get ('graphs', null);
 
   if (i is not null) i := '&inf=' || sprintf ('%U', i);
   if (s is not null) i := i || '&sas=' || sprintf ('%V', s);
   if (sid is not null) i := i || '&sid=' || sprintf ('%V', sid);
+
+  if (grs is not null and with_graph)
+    {
+      foreach (any x in grs) do
+	{
+	  i := i || sprintf ('&graph=%U', x);
+	}
+    }
 
   if (i is not null) return i;
   else return '';
@@ -646,9 +699,9 @@ b3s_trunc_uri (in s varchar, in maxlen int := 80)
 ;
 
 create procedure
-b3s_http_url (in url varchar, in sid varchar := null, in _from varchar := null)
+b3s_http_url (in url varchar, in sid varchar := null, in _from varchar := null, in with_graph int := 1)
 {
-  declare host, pref, more, i varchar;
+  declare host, pref, more, i, wurl varchar;
 
 --  more := '';
 
@@ -657,12 +710,20 @@ b3s_http_url (in url varchar, in sid varchar := null, in _from varchar := null)
 --  else
 --    more := '';
 
-  i := b3s_render_ses_params();
+  i := b3s_render_ses_params(with_graph);
   if (length (_from))
     i := sprintf ('%s&graph=%U', i, _from);
-
-  return sprintf ('/describe/?url=%U%s', url, i);
+  wurl := charset_recode (url, 'UTF-8', '_WIDE_');
+  return sprintf ('/describe/?url=%U%s', case when wurl <> 0 then wurl else url end, i);
 };
+
+create procedure b3s_u2w (in u any)
+{
+  declare w any;
+  w := charset_recode (u, 'UTF-8', '_WIDE_');
+  return case when w <> 0 then w else u end;
+}
+;
 
 create procedure
 b3s_http_print_l (in p_text any, inout odd_position int, in r int := 0, in sid varchar := null, in langs any := null)
@@ -673,7 +734,7 @@ b3s_http_print_l (in p_text any, inout odd_position int, in r int := 0, in sid v
    p_prefix := b3s_label (p_text, langs);
    if (not length (p_prefix))
      p_prefix := b3s_uri_curie (p_text);
-   url := b3s_http_url (p_text, sid);
+   url := b3s_http_url (p_text, sid, null, 0);
 
    if (not length (p_text))
      return;
@@ -699,11 +760,23 @@ create procedure b3s_label (in _S any, in langs any, in lbl_order_pref_id int :=
   declare best_q, q float;
   declare lang, stat, msg varchar;
 
+  if (__proc_exists ('rdf_resolve_labels_s') is not null)
+    {
+      declare ret any;
+      ret := rdf_resolve_labels_s (adler32 (langs), vector (__i2id (_S)));
+      ret := coalesce (ret[0], '');
+      ret := __ro2sq (ret); 
+      if (__tag (ret) = 246)
+	ret := __rdf_strsqlval (ret);
+      if (isnumeric (ret)) 
+        return (cast (ret as varchar));
+      return ret;	
+    }
   stat := '00000';
   --exec (sprintf ('sparql define input:inference "facets" '||
   --'select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S), stat, msg, vector (), 0, meta, data);
   exec (sprintf ('select __ro2sq (O), DB.DBA.RDF_LANGUAGE_OF_OBJ (__ro2sq (O)) , cast (b3s_lbl_order (P, %d) as int) from RDF_QUAD table option (with ''facets'')
-	where S = __i2id (?) and P = __i2id (''http://www.openlinksw.com/schemas/virtrdf#label'', 0) and not is_bnode_iri_id (O) order by 3', lbl_order_pref_id),
+	where S = __i2id (?) and P = __i2id (''http://www.openlinksw.com/schemas/virtrdf#label'', 0) and not is_bnode_iri_id (O) order by 3 option (same_as)', lbl_order_pref_id), 
 	stat, msg, vector (_S), 0, meta, data);
   if (stat <> '00000')
     return '';
@@ -793,7 +866,7 @@ again:
 	   whenever not found goto usual_iri;
 	   select id_to_iri (O) into src from DB.DBA.RDF_QUAD where
 	   	S = iri_to_id (_object, 0) and P = iri_to_id ('http://bblfish.net/work/atom-owl/2006-06-06/#src', 0);
-	   http (sprintf ('<div id="x_content"><iframe src="%s" width="100%%" height="100%% frameborder="0"><p>Your browser does not support iframes.</p></iframe></div><br/>', src));
+	   http (sprintf ('<div id="x_content"><iframe src="%s" width="100%%" height="100%%" frameborder="0"><p>Your browser does not support iframes.</p></iframe></div><br/>', src));
 	 }
        else if (http_mime_type (_url) like 'image/%' or http_mime_type (_url) = 'application/x-openlink-photo')
 	 http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" style="border-width:0" alt="External Image" /></a>', rdfa, b3s_http_url (_url, sid, _from), _url));
@@ -814,7 +887,7 @@ again:
 	   http (sprintf ('</a>'));
 	 }
        --if (registry_get ('fct_sponge') = '1' and _url like 'http://%' or _url like 'https://%')
-       --	 http (sprintf ('&nbsp;<a class="uri" href="%s&sp=1"><img src="/fct/images/goout.gif" title="Sponge" border="0"/></a>',
+       --	 http (sprintf ('&nbsp;<a class="uri" href="%s&sp=1"><img src="/fct/images/goout.gif" alt="Sponge" title="Sponge" border="0"/></a>', 
        --	       b3s_http_url (_url, sid)));
 
      }
@@ -842,12 +915,16 @@ again:
      {
        declare vlbl any;
        http (sprintf ('<span %s>', rdfa));
-       _object := regexp_replace (_object, ' (http://[^ ]+) ', ' <a href="\\1">\\1</a> ', 1, null);
+       if (strstr (_object, 'http://') is not null)
+	 {
+	   declare continue handler for sqlstate '*';
+           _object := regexp_replace (_object, ' (http://[^ ]+) ', ' <a href="\\1">\\1</a> ', 1, null);
+	 }
        vlbl := charset_recode (_object, 'UTF-8', '_WIDE_');
        if (vlbl = 0)
          vlbl := charset_recode (_object, current_charset (), '_WIDE_');
-       if (vlbl = 0)
-       http (_object);
+       if (vlbl = 0 or _object like '<object%')
+         http (_object);
        else
          http_value (vlbl);
        http ('</span>');
@@ -957,6 +1034,7 @@ create procedure fct_links_hdr (in subj any, in desc_link any)
       sprintf ('<%s&output=%U>; rel="alternate"; type="%s"; title="Structured Descriptor Document (%s format)",', desc_link, elm[0], elm[0], elm[1]);
     }
   links := links || sprintf ('<%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic",', subj);
+  links := links || ' <?first>; rel="first", <?last>; rel="last", <?next>; rel="next", <?prev>; rel="prev", ';
   links := links || sprintf ('<%s>; rev="describedby"\r\n', subj);
   http_header (http_header_get () || links);
 }
@@ -1136,3 +1214,26 @@ create procedure b3s_lbl_order (in p any, in lbl_order_pref_id int := 0)
   return r;
 }
 ;
+
+create procedure b3s_gs_check_needed ()
+{
+  declare gs_user_id integer;
+  gs_user_id := get_user_id (1);
+  if ( bit_and (1,
+      coalesce (
+        dict_get (__rdf_graph_default_perms_of_user_dict(0), gs_user_id, null),
+        dict_get (__rdf_graph_default_perms_of_user_dict(0), http_nobody_uid(), 1023) ) )
+    and bit_and (1,
+      coalesce (
+        dict_get (__rdf_graph_default_perms_of_user_dict(1), gs_user_id, null),
+        dict_get (__rdf_graph_default_perms_of_user_dict(1), http_nobody_uid(), 1023) ) ) )
+  {
+    -- dbg_obj_princ ('gs sec check not needed');
+    return 0;
+  }
+  -- dbg_obj_princ ('gs sec check is needed');
+  return 1;
+}
+;
+
+grant execute on b3s_gs_check_needed to public;

@@ -1,4 +1,5 @@
-DB.DBA.EXEC_STMT ('create table FOAF_SSL_ACL (FS_URI varchar primary key, FS_UID varchar not null, FS_TYPE int default 0)', 0)
+DB.DBA.EXEC_STMT ('create table FOAF_SSL_ACL (FS_URI varchar, FS_UID varchar not null,
+      FS_TYPE int default 0, FS_REALM varchar, FS_APP_DATA any, FS_PRIORITY int default 0, primary key (FS_REALM, FS_URI))', 0)
 ;
 
 create procedure webid_add_col (in tbl varchar, in col varchar, in coltype varchar)
@@ -10,10 +11,19 @@ create procedure webid_add_col (in tbl varchar, in col varchar, in coltype varch
 ;
 
 webid_add_col ('DB.DBA.FOAF_SSL_ACL', 'FS_TYPE', 'int default 0');
+webid_add_col ('DB.DBA.FOAF_SSL_ACL', 'FS_REALM', 'varchar');
+webid_add_col ('DB.DBA.FOAF_SSL_ACL', 'FS_APP_DATA', 'any');
+webid_add_col ('DB.DBA.FOAF_SSL_ACL', 'FS_PRIORITY', 'int default 0');
+update DB.DBA.FOAF_SSL_ACL set FS_REALM = 'GENERIC' where FS_REALM is null;
+DB.DBA.EXEC_STMT ('alter table SPARQL_WEBID_ACL drop foreign key (SWA_RULE) references DB.DBA.FOAF_SSL_ACL (FS_URI)', 0);
+DB.DBA.EXEC_STMT ('alter table DB.DBA.FOAF_SSL_ACL modify primary key (FS_REALM, FS_URI)', 0);
 
-exec_quiet ('create table SPARQL_WEBID_ACL (SWA_RULE varchar references FOAF_SSL_ACL (FS_URI) on delete cascade, 
+exec_quiet ('create table SPARQL_WEBID_ACL (SWA_RULE varchar, SWA_REALM varchar,
     SWA_ID int, SWA_PROP varchar, SWA_OP varchar, SWA_VAL varchar, SWA_QUERY varchar, 
-    primary key (SWA_RULE, SWA_ID))'); 
+    primary key (SWA_RULE, SWA_REALM, SWA_ID))');
+webid_add_col ('DB.DBA.SPARQL_WEBID_ACL', 'SWA_REALM', 'varchar');
+update DB.DBA.SPARQL_WEBID_ACL set SWA_REALM = 'GENERIC' where SWA_REALM is null;
+DB.DBA.EXEC_STMT ('alter table DB.DBA.SPARQL_WEBID_ACL modify primary key (SWA_RULE, SWA_REALM, SWA_ID)', 0);
 
 --!
 -- \ingroup ods_devel_api
@@ -78,9 +88,13 @@ create procedure WEBID_CERT_PROPS (in cert any)
    return x;
 };
 
-create procedure WEBID_GEN_ACL_PROC (in rule varchar)
+create procedure WEBID_GEN_ACL_PROC (in rule varchar, in realm varchar := null)
 {
   declare s, ops, op, exp any;
+
+  if (realm is null)
+    realm := 'GENERIC';
+
   ops := vector (
     'eq'           , '(^{value}^ = ^{pattern}^)',
     'neq'          , '(^{value}^ <> ^{pattern}^)',
@@ -88,17 +102,17 @@ create procedure WEBID_GEN_ACL_PROC (in rule varchar)
     'lte'          , '(^{value}^ <= ^{pattern}^)',
     'gt'           , '(^{value}^ > ^{pattern}^)',
     'gte'          , '(^{value}^ >= ^{pattern}^)',
-    'contains'     , '(strstr (ucase (^{value}^), ucase (^{pattern}^)) is not null)',
-    'notContains'  , '(strstr (ucase (^{value}^), ucase (^{pattern}^)) is null)',
-    'startsWith'   , '(starts_with (ucase (^{value}^), ucase (^{pattern}^)))',
-    'notStartsWith', '(not (starts_with (ucase (^{value}^), ucase (^{pattern}^))))',
-    'endsWith'     , '(ends_with (ucase (^{value}^), ucase (^{pattern}^)))',
-    'notEndsWith'  , '(not (ends_with (ucase (^{value}^), ucase (^{pattern}^))))',
+    'contains'     , '(bif:isnull (bif:strstr (bif:ucase (^{value}^), bif:ucase (^{pattern}^))) = 0)',
+    'notContains'  , '(bif:isnull (bif:strstr (bif:ucase (^{value}^), bif:ucase (^{pattern}^))) = 1)',
+    'startsWith'   , '(bif:starts_with (bif:ucase (^{value}^), bif:ucase (^{pattern}^)) = 1)',
+    'notStartsWith', '(bif:starts_with (bif:ucase (^{value}^), bif:ucase (^{pattern}^)) = 0)',
+    'endsWith'     , '(bif:ends_with (bif:ucase (^{value}^), bif:ucase (^{pattern}^)) = 1)',
+    'notEndsWith'  , '(bif:ends_with (bif:ucase (^{value}^), bif:ucase (^{pattern}^)) = 0)',
     'isNull'       , '(DB.DBA.is_empty_or_null (^{value}^) = 1)',
     'isNotNull'    , '(DB.DBA.is_empty_or_null (^{value}^) = 0)'
   );
   s := string_output ();
-  http (sprintf ('create procedure "WEBID_ACL_CHECK__%s" (in cert any, in graph any) { ', rule), s);
+  http (sprintf ('create procedure "WEBID_ACL_CHECK__%s_%s" (in cert any, in graph any) { ', rule, realm), s);
   http ('\n', s);
   http (sprintf (' declare val, vals, webid, rc any;'), s);
   http ('\n', s);
@@ -110,7 +124,7 @@ create procedure WEBID_GEN_ACL_PROC (in rule varchar)
 	{
 	  op := SWA_QUERY;
 	  http (sprintf ('\n-- rule %d\n', SWA_ID), s);
-	  http (sprintf (' val := get_keyword (%s, vals);', SYS_SQL_VAL_PRINT ('webID')), s);
+      http (sprintf (' val := get_keyword (%s, vals);\n', SYS_SQL_VAL_PRINT ('webID')), s);
 	  http ('\n', s);
 	  exp := replace (op,  '^{webid}^', '?:webid');
 	  exp := replace (exp, '^{graph}^', '?:graph');
@@ -119,7 +133,7 @@ create procedure WEBID_GEN_ACL_PROC (in rule varchar)
 	    {
 	      http (sprintf (' rc := 0;\n'), s);
 	      http (sprintf (' foreach (any w in val) do { \n'), s);
-	      http (sprintf ('  webid := w;'), s);
+        http (sprintf ('   webid := w;\n'), s);
 	      http (sprintf ('  if (exists (sparql %s)) rc := 1;\n', exp), s);
 	      http (sprintf (' } \n'), s);
 	      http (sprintf (' if (rc = 0) return 0;\n'), s);
@@ -130,12 +144,45 @@ create procedure WEBID_GEN_ACL_PROC (in rule varchar)
 	    }
 	  http ('\n', s);
 	}
+    else if (SWA_PROP = 'certSparqlTriplet')
+    {
+      op := sprintf (
+        ' prefix sioc: <http://rdfs.org/sioc/ns#> \n' ||
+        ' prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> \n' ||
+        ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
+        ' ASK \n' ||
+        ' WHERE \n' ||
+        '   { \n' ||
+        '     ^{webid}^ %s ?v. \n' ||
+        '     FILTER (%s). \n' ||
+        '   }',
+        SWA_QUERY,
+        replace (get_keyword (SWA_OP, ops), ' <> ', ' != '));
+      http (sprintf ('\n-- rule %d\n', SWA_ID), s);
+      http (sprintf ('  val := get_keyword (%s, vals);\n', SYS_SQL_VAL_PRINT ('webID')), s);
+      http ('\n', s);
+      exp := replace (op,  '^{webid}^', '?:webid');
+      exp := replace (exp, '^{graph}^', '?:graph');
+      exp := replace (exp, '^{value}^', 'str (?v)');
+      exp := replace (exp, '^{pattern}^', SYS_SQL_VAL_PRINT (SWA_VAL));
+      if (strstr (op, '^{webid}^') is not null)
+      {
+        http (sprintf ('  rc := 0;\n'), s);
+        http (sprintf ('  foreach (any w in val) do { \n'), s);
+        http (sprintf ('    webid := w;\n'), s);
+        http (sprintf ('    if (exists (\n sparql \n%s)) rc := 1;\n', exp), s);
+        http (sprintf ('  } \n'), s);
+        http (sprintf ('  if (rc = 0) return 0;\n'), s);
+      }
+      http ('\n', s);
+    }
       else if (SWA_PROP = 'webID')
 	{
 	  http (sprintf ('\n-- rule %d\n', SWA_ID), s);
-	  http (sprintf (' val := get_keyword (%s, vals);', SYS_SQL_VAL_PRINT (SWA_PROP)), s);
+      http (sprintf (' val := get_keyword (%s, vals);\n', SYS_SQL_VAL_PRINT (SWA_PROP)), s);
 	  http ('\n', s);
 	  op := get_keyword (SWA_OP, ops);
+      op := replace (op, 'bif:', '');
 	  exp := replace (op, '^{value}^', 'w');
 	  exp := replace (exp, '^{pattern}^', SYS_SQL_VAL_PRINT (SWA_VAL));
 	  http (sprintf (' rc := 0;\n'), s);
@@ -148,9 +195,10 @@ create procedure WEBID_GEN_ACL_PROC (in rule varchar)
       else
 	{
 	  http (sprintf ('\n-- rule %d\n', SWA_ID), s);
-	  http (sprintf (' val := get_keyword (%s, vals);', SYS_SQL_VAL_PRINT (SWA_PROP)), s);
+      http (sprintf (' val := cast (get_keyword (%s, vals) as varchar);', SYS_SQL_VAL_PRINT (SWA_PROP)), s);
 	  http ('\n', s);
 	  op := get_keyword (SWA_OP, ops);
+      op := replace (op, 'bif:', '');
 	  exp := replace (op, '^{value}^', 'val');
 	  if (SWA_PROP like '%Date')
 	    exp := replace (exp, '^{pattern}^', 'stringdate (' || SYS_SQL_VAL_PRINT (SWA_VAL) || ')');
@@ -284,6 +332,39 @@ create procedure FOAF_SSL_WEBID_GET_ALL (in cert any := null, in cert_type int :
 	}
     }
   return agents;
+}
+;
+
+--!
+-- \ingroup ods_devel_api
+--
+-- \brief Extract issuerAltName URIs from a X.509 certificate.
+--
+-- \param cert An optional certificate to extract the WebID from. By default the current client-provided
+--             certificate is uses.
+-- \param cert_type The optional format of the provided certificate.
+-- - 0 (default) - PEM
+-- - 1 - DER (raw)
+-- - 2 - PKCS#12
+--
+-- \return The IAN embedded in the corresponding extension or \p null in case there is no IAN
+-- extension found in the certificate or an error occurred.
+--/
+create procedure WEBID_GET_IAN (in cert any := null, in cert_type int := 0)
+{
+  declare agents, agent, tmp, alts any;
+  agent := get_certificate_info (7, cert, cert_type, '', '2.5.29.18');
+  if (agent is not null)
+    {
+      declare inx int;
+      alts := regexp_replace (agent, ',[ ]*', ',', 1, null);
+      alts := split_and_decode (alts, 0, '\0\0,:');
+      if (alts is null)
+	return null;
+      tmp := get_keyword ('URI', alts);
+      return tmp;
+    }
+  return NULL;
 }
 ;
 
@@ -466,217 +547,6 @@ create procedure WEBID_AUTH (in realm varchar)
 }
 ;
 
-
--- XXX: must delete, old code
-create procedure WEBID_AUTH_GEN (in cert any, in ctype int, in realm varchar, in allow_nobody int := 0, in use_session int := 1)
-{
-  declare stat, msg, meta, data, info, qr, hf, graph, fing, gr, modulus, alts, dummy any;
-  declare agent varchar;
-  declare acc int;
-  declare ret_code, done int;
-
-  ret_code := 0;
-  acc := 0;
-  done := 0;
-  declare exit handler for sqlstate '*'
-    {
-      rollback work;
-      goto err_ret;
-    }
-  ;
-
-  -- gr: temporary graph URI for the profile
-  gr := uuid ();
-  info := get_certificate_info (9, cert, ctype);
-  fing := get_certificate_info (6, cert, ctype);
-  agent := FOAF_SSL_WEBID_GET (cert, ctype);
-
-  if (not isarray (info))
-    return 0;
-  if (agent is null)
-    {
-      agent := FOAF_SSL_WEBFINGER (cert, 0, ctype);
-      if (agent is not null)
-	{
-	  goto authenticated;
-	}
-      else
-	{
-	  agent := ODS..FINGERPOINT_WEBID_GET (cert, null, ctype);
-	}
-    }
-  if (agent is null)
-    return 0;
-
-  -- If we already have a session for the given certificate (fingerprint) use it
-  -- FIXME: security risk: in theory a WebID certificate could have been compromised in between
-  -- calls. At that point a third party could login with the old certificate key/fingerprint even
-  -- if the actual owner of the WebID had changed their certificate key in the meantime.
-  for select VS_UID from VSPX_SESSION where VS_SID = fing and VS_REALM = 'FOAF+SSL' do
-    {
-      connection_set ('SPARQLUserId', VS_UID);
-      return 1;
-    }
-
-  -- additional LDAP URI check: no need to query certificate key if succesful
-  if (agent like 'ldap://%' and DB.DBA.FOAF_SSL_LDAP_CHECK_CERT_INT (agent, cert, ctype, dummy))
-    goto authenticated;
-
-  -- Resolve the agent URL and remove the SSL 's' from the protocol
-  hf := rfc1808_parse_uri (agent);
-  hf[5] := '';
-
-  graph := DB.DBA.vspx_uri_compose (hf);
-  qr := sprintf ('sparql load <%S> into graph <%S>', graph, gr);
-  stat := '00000';
-  exec (qr, stat, msg);
-  commit work;
-  qr := FOAF_SSL_QR (gr, agent);
-  stat := '00000';
---  dbg_printf ('%s', qr);
-  exec (qr, stat, msg, vector (), 0, meta, data);
-  again_check:;
-  if (stat = '00000' and length (data))
-    {
-      foreach (any _row in data) do
-	{
-	  if (_row[0] = cast (info[1] as varchar) and DB.DBA.FOAF_MOD (_row[1]) = bin2hex (info[2]))
-    {
-      declare arr, uid any;
-	      authenticated:
-              -- FIXME: Here we could allow any WebID that is set as owl:sameAs of a known ODS WebID
-	      uid := coalesce ((select FS_UID from FOAF_SSL_ACL where agent like FS_URI), 'nobody');
-      if ('nobody' = uid and allow_nobody = 0)
-	goto err_ret;
-      connection_set ('SPARQLUserId', uid);
-	      if (use_session)
-      insert into VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (fing, 'FOAF+SSL', uid, now ());
-      exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
-      commit work;
-      return 1;
-    }
-	}
-    }
-  else if (acc = 0)
-    {
-      qr := FOAF_SSL_QR_BY_ACCOUNT (gr, agent);
-      stat := '00000';
-      --  dbg_printf ('%s', qr);
-      exec (qr, stat, msg, vector (), 0, meta, data);
-      acc := 1;
-      goto again_check;
-    }
-
-  -- WebID and WebFinger authentication failed
-  err_ret:
---  dbg_obj_print (stat, data);
-  exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
-  commit work;
-
--- FIXME: why is the code below not in a different method? It has nothing to do with WebID!
-  {
-    declare page, xt, xp varchar;
-    declare exit handler for sqlstate '*'
-      {
-	goto ret;
-      };
-    page := http_client (url=>graph, n_redirects=>15);
-    verify:
-    xt := xtree_doc (page, 2);
-    xp := xpath_eval ('string (.)', xt);
-    xp := cast (xp as varchar);
-    -- try DI
-    if (strstr (xp, '#SHA1') is not null)
-      fing := get_certificate_info (6, cert, ctype, null, 'sha1');
-    fing := replace (fing, ':', '');
-    if (strstr (xp, sprintf ('Fingerprint:%s', fing)) is not null)
-      {
-	ret_code := 1;
-        goto ret;
-      }
-    if (graph like 'http://twitter.com/%')
-      {
-	declare acco, arr, json, res any;
-	arr := sprintf_inverse (graph, 'http://twitter.com/%s', 1);
-	acco := arr[0];
-        json := http_get (sprintf ('http://search.twitter.com/search.json?q=%%40Fingerprint%%3A%U%%20from%%3A%U', fing, acco));
-	arr := json_parse (json);
-        res := get_keyword ('results', arr);
-	if (length (res) > 0)
-	  {
-	    ret_code := 1;
-	    goto ret;
-	  }
-	fing := get_certificate_info (6, cert, ctype, null, 'sha1');
-	fing := replace (fing, ':', '');
-        json := http_get (sprintf ('http://search.twitter.com/search.json?q=%%40Fingerprint%%3A%U%%20from%%3A%U', fing, acco));
-	arr := json_parse (json);
-        res := get_keyword ('results', arr);
-	if (length (res) > 0)
-	  {
-	    ret_code := 1;
-	    goto ret;
-	  }
-      }
-    if (not done and graph like 'http://graph.facebook.com/%')
-      {
-	declare tok, og_id, tree, nick any;
-	tree := json_parse (page);
-	og_id := get_keyword ('id', tree);
-	nick := get_keyword ('username', tree);
-	tok := DB.DBA.OPENGRAPH_GET_ACCESS_TOKEN (og_id);
-	if (tok is null)
-	  goto ret;
-	page := http_get (sprintf ('https://graph.facebook.com/%U/feed?access_token=%U', nick, tok));
-	done := 1;
-	goto verify;
-      }
-    if (not done and graph like 'http://%.linkedin.com/in/%')
-      {
-	declare oauth_keys, arr, opts, url, api_url, cnt any;
-	declare consumer_key, consumer_secret, oauth_token, oauth_secret, person_id varchar;
-	opts := (select RM_OPTIONS from DB..SYS_RDF_MAPPERS where RM_HOOK = 'DB.DBA.RDF_LOAD_LINKEDIN');
-	oauth_keys := DB.DBA.LINKEDIN_GET_ACCESS_TOKEN (graph);
-	oauth_token := oauth_keys[0];
-	oauth_secret := oauth_keys[1];
-	consumer_key := get_keyword ('consumer_key', opts);
-	consumer_secret := get_keyword ('consumer_secret', opts);
-	api_url := sprintf ('https://api.linkedin.com/v1/people/url=%U:(id)', graph);
-	url := DB.DBA.sign_request ('GET', api_url, '', consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
-	cnt := http_get (url);
-	xt := xtree_doc (cnt);
-        person_id := cast (xpath_eval ('/person/id/text()', xt) as varchar);
-	url := DB.DBA.sign_request ('GET', sprintf ('http://api.linkedin.com/v1/people/%s/network', person_id), 'type=SHAR&scope=self', consumer_key, consumer_secret, oauth_token, oauth_secret, 1);
-	page := http_get (url);
-	done := 1;
-	goto verify;
-      }
-    exec (sprintf (
-    'sparql define get:soft "add" prefix opl: <http://www.openlinksw.com/schemas/cert#> select ?f ?dgst from <%S> { ?s opl:hasCertificate ?c . ?c opl:fingerprint ?f ; opl:fingerprint-digest ?dgst . }',
-    	graph), stat, msg, vector (), 0, meta, data);
-    if (length (data))
-     {
-       foreach (any x in data) do
-    	 {
-	   declare fng, fng2 any;
-	   fng := get_certificate_info (6, cert, ctype, null, x[1]);
-	   fng := replace (fng, ':', '');
-	   fng2 := x[0];
-	   fng2 := replace (fng2, ':', '');
-    	   if (lower (fng2) = lower (fng))
-    	     {
-    	       ret_code := 1;
-    	       goto ret;
-    	     }
-    	 }
-      }
-
-  }
-  ret:
-  return ret_code;
-}
-;
-
 create procedure WEBID_DI_SPLIT (in str varchar)
 {
   declare di, h, dgst varchar;
@@ -715,26 +585,52 @@ create procedure DB.DBA.X509_STRING_DATE (in val varchar)
 }
 ;
 
-create procedure WEBID_CHECK_ACL (in ag any, in gr any, in cert any)
+create procedure WEBID_CHECK_ACL (in ag any, in gr any, in cert any, in realm any, out env any)
 {
   declare uid varchar;
-  uid := coalesce (
-  	(select FS_UID from FOAF_SSL_ACL where ag like FS_URI and FS_TYPE < 2), 
-	(select FS_UID from FOAF_SSL_ACL, RDF_WEBID_ACL_GROUPS where AG_GROUP = FS_URI and FS_TYPE < 2 and AG_WEBID = ag), 
-	'nobody');
+  env := null;
+  for select FS_URI, FS_UID, FS_APP_DATA from FOAF_SSL_ACL where ag like FS_URI and FS_TYPE < 2 and FS_REALM = realm order by FS_PRIORITY do
+    {
+      connection_set ('WebID-rule-id', FS_URI);
+      env := FS_APP_DATA;
+      return FS_UID;
+    }
+  for select FS_URI, FS_UID, FS_APP_DATA from FOAF_SSL_ACL, RDF_WEBID_ACL_GROUPS where AG_GROUP = FS_URI and FS_TYPE < 2 and AG_WEBID = ag and FS_REALM = realm order by FS_PRIORITY do
+    {
+      connection_set ('WebID-rule-id', FS_URI);
+      env := FS_APP_DATA;
+      return FS_UID;
+    }
+  uid := 'nobody';
   if (uid = 'nobody')
     {
-      for select FS_URI, FS_UID from FOAF_SSL_ACL where FS_TYPE = 2 do
+      for select FS_URI, FS_UID, FS_APP_DATA from FOAF_SSL_ACL where FS_TYPE = 2 and FS_REALM = realm order by FS_PRIORITY do
 	{
 	  declare pname varchar;
-	  pname := sprintf ('DB.DBA.WEBID_ACL_CHECK__%s', FS_URI);
+	  pname := sprintf ('DB.DBA.WEBID_ACL_CHECK__%s_%s', FS_URI, realm);
 	  if (__proc_exists (pname) is null)
 	    log_text (sprintf ('Broken advanced WebID rule: %s', FS_URI));
 	  else if (call (pname) (cert, gr) > 0)
+	    {
+	      connection_set ('WebID-rule-id', FS_URI);
+	      env := FS_APP_DATA;
 	    return FS_UID;
 	}
     }    
+    }
   return uid;     
+}
+;
+
+create procedure WEBID_CTYPE_TO_XENC_TYPE (in ctype int)
+{
+  if (ctype = 0)
+    return 1;
+  if (ctype = 1)
+    return 3;
+  if (ctype = 2)
+    return 2;
+  return 1;
 }
 ;
 
@@ -757,12 +653,10 @@ create procedure WEBID_CHECK_ACL (in ag any, in gr any, in cert any)
 -- - 0 - WebID
 -- - 1 - WebFinger
 -- - 2 - DI digest
--- - 3 - Twitter
--- - 4 - FIXME: something with the OpenLink cert schema
+-- - 3 - search FIXME: what exactly does this do?
+-- - 4 - sponge FIXME: what exactly does this do?
 -- - 5 - LDAP
---
--- FIXME: there is no validation_type for Facebook or LinkedIn. Actually the name of the method suggests that only WebID authentication is supported. This is not the case.
--- FIXME: Apparently SPARQLUserId is not set for DI, Twitter, Facebook, LinkedIn authentication. So either there is no need to set it in general or there is a bug or bad design.
+-- \param validate_ian A flag to validate issuerAltName if exists
 --
 -- \return \p 1 on successful authentication, \p 0 otherwise. On success the connection's SPARQLUserId is set to the corresponding
 -- ODS user and an optional authentication session is created.
@@ -778,15 +672,19 @@ create procedure WEBID_AUTH_GEN_2 (
 	out ag any,   			-- detected webid URI
 	inout _gr any,			-- if non null data from webid URI will be loaded in the graph name in _gr
 	in check_expiration int := 0,
-	out validation_type int		-- if valid, the way it was done : 0 - rdf graph, 1 - webfinger, 2 - DI, 3 - search, 4 - sponge
+	out validation_type int,	-- if valid, the way it was done : 0 - rdf graph, 1 - webfinger, 2 - DI, 3 - search, 4 - sponge
+	in validate_ian int := 0
 	)			
 {
   declare stat, msg, meta, data, info, qr, hf, graph, fing, gr, modulus, alts, dummy any;
   declare agent varchar;
   declare acc int;
   declare ret_code, done, is_di, deadl int;
-  declare agents, di_arr, dgst, dhash, fing_b64u any;
+  declare agents, di_arr, dgst, dhash, fing_b64u, ian any;
   declare valid_from, valid_to datetime;
+
+  if (realm is null)
+    realm := 'GENERIC';
 
 again:  
   ret_code := 0;
@@ -829,28 +727,66 @@ again:
       -- FIXME: security risk: in theory a WebID certificate could have been compromised in between
       -- calls. At that point a third party could login with the old certificate key/fingerprint even
       -- if the actual owner of the WebID had changed their certificate key in the meantime.
-      for select VS_UID, VS_STATE from VSPX_SESSION where VS_SID = fing and VS_REALM = 'FOAF+SSL' do
+      for select VS_UID, VS_STATE from VSPX_SESSION where VS_SID = fing and VS_REALM = realm do
 	{
-	  declare st, uid any;
+	  declare st, uid, env any;
 	  st := deserialize (VS_STATE);
 	  ag := get_keyword ('agent', st);
-	  uid := WEBID_CHECK_ACL (ag, gr, cert);
+	  uid := WEBID_CHECK_ACL (ag, gr, cert, realm, env);
 	  if (exists (select 1 from SYS_USERS where U_NAME = VS_UID) and VS_UID = uid)
 	    {
 	  validation_type := get_keyword ('vtype', st);
 	  connection_set ('SPARQLUserId', VS_UID);
+	      connection_set ('WebID-app-data', env);
 	  return 1;
 	}
 	  else
 	    {
 	      uid := VS_UID;
-	      delete from VSPX_SESSION where VS_REALM = 'FOAF+SSL' and VS_UID = uid;
+	      delete from VSPX_SESSION x where x.VS_REALM = realm and x.VS_UID = uid;
 	    }
 	}
     }
 
   if (agents is null)
     goto verify_mails;
+
+  if (validate_ian)
+    {
+      declare certname varchar;
+      declare icx int;
+      icx := sequence_next ('webid_cert_key_inx');
+      certname := sprintf ('webid_key_%d', icx); 
+      xenc_key_create_cert (certname, cert, 'X.509', WEBID_CTYPE_TO_XENC_TYPE (ctype));
+      ian := WEBID_GET_IAN (cert, ctype);
+      if (ian is null) goto ian_ok;
+      hf := rfc1808_parse_uri (ian);
+      hf[5] := '';
+      graph := DB.DBA.vspx_uri_compose (hf);
+      qr := sprintf ('sparql define get:soft "add" select count(*) from <%S> { ?s ?p ?o }', graph);
+      stat := '00000';
+      exec (qr, stat, msg, vector (), 0, meta, data);
+      for select "m", "e" from 
+      (sparql prefix cert: <http://www.w3.org/ns/auth/cert#> select * { graph `iri(?:graph)` { [] cert:exponent ?e ; cert:modulus ?m }}) x do
+	{
+	  declare hexm, hexe, kname varchar;
+	  declare ix, rc any;
+	  hexm := cast (hex2bin ("m") as varchar);
+	  hexe := sprintf ('%x', "e");
+	  if (mod (length (hexe), 2)) hexe := '0' || hexe;
+	  hexe := cast (hex2bin (hexe) as varchar);
+	  ix := sequence_next ('webid_ian_key_inx');
+	  kname := sprintf ('ian_key_%d', ix);
+	  xenc_key_RSA_construct (kname, hexm, hexe);
+	  rc := x509_verify (certname, kname);
+	  xenc_key_remove (kname);
+	  if (rc) goto ian_ok;
+	}
+      xenc_key_remove (certname);
+      return 0;
+      ian_ok:;
+      xenc_key_remove (certname);
+    }
 
   foreach (any _agent in agents) do
     {
@@ -894,22 +830,21 @@ again:
 	{
 	  foreach (any _row in data) do
 	    {
-	      declare mod any;
-	      mod := bin2hex (info[2]);
 	      --dbg_obj_print (_row[0], cast (info[1] as varchar), DB.DBA.FOAF_MOD (_row[1]), bin2hex (info[2]));
 	      if (_row[0] = cast (info[1] as varchar) and DB.DBA.FOAF_MOD (_row[1]) = bin2hex (info[2]))
 		{
-		  declare arr, uid any;
+		  declare arr, uid, env any;
 		  authenticated:
 		  ag := agent;
 		  --_gr := graph;
-		  uid := WEBID_CHECK_ACL (ag, gr, cert);
+		  uid := WEBID_CHECK_ACL (ag, gr, cert, realm, env);
 		  if ('nobody' = uid and allow_nobody = 0)
 		    goto ret;
 		  connection_set ('SPARQLUserId', uid);
+		  connection_set ('WebID-app-data', env);
 		  if (use_session)
 		    insert replacing VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY, VS_STATE) 
-			values (fing, 'FOAF+SSL', uid, now (), serialize (vector ('agent', ag, 'vtype', validation_type)));
+			values (fing, realm, uid, now (), serialize (vector ('agent', ag, 'vtype', validation_type)));
 		  --if (_gr is null)
 		  --  exec (sprintf ('sparql clear graph <%S>', gr), stat, msg);
 		  commit work;
@@ -1061,6 +996,7 @@ again:
 	   fng := replace (fng, ':', '');  
 	   fng2 := x[0];
 	   fng2 := replace (fng2, ':', '');  
+	   fng2 := DB.DBA.FOAF_MOD (fng2);
     	   if (lower (fng2) = lower (fng))
     	     {
 	       validation_type := 4;

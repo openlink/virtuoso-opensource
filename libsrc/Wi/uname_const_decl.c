@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -46,6 +46,21 @@ caddr_t uname__srcfile;
 caddr_t uname__srcline;
 caddr_t uname__txt;
 caddr_t uname__xslt;
+caddr_t uname_SPECIAL_cc_bif_c_AVG;
+caddr_t uname_SPECIAL_cc_bif_c_COUNT;
+caddr_t uname_SPECIAL_cc_bif_c_MAX;
+caddr_t uname_SPECIAL_cc_bif_c_MIN;
+caddr_t uname_SPECIAL_cc_bif_c_SUM;
+caddr_t uname_bif_c_contains;
+caddr_t uname_bif_c_spatial_contains;
+caddr_t uname_bif_c_spatial_intersects;
+caddr_t uname_bif_c_st_contains;
+caddr_t uname_bif_c_st_intersects;
+caddr_t uname_bif_c_st_may_intersect;
+caddr_t uname_bif_c_st_within;
+caddr_t uname_bif_c_xcontains;
+caddr_t uname_bif_c_xpath_contains;
+caddr_t uname_bif_c_xquery_contains;
 caddr_t uname_lang;
 caddr_t uname_nil;
 caddr_t uname_nodeID_ns;
@@ -70,6 +85,11 @@ caddr_t uname_rdf_ns_uri_type;
 caddr_t uname_rdf_ns_uri_datatype;
 caddr_t uname_rdf_ns_uri_parseType;
 caddr_t uname_rdf_ns_uri_value;
+caddr_t uname_rdfdf_ns_uri;
+caddr_t uname_rdfdf_ns_uri_default;
+caddr_t uname_rdfdf_ns_uri_default_nullable;
+caddr_t uname_rdfdf_ns_uri_default_iid;
+caddr_t uname_rdfdf_ns_uri_default_iid_nullable;
 caddr_t uname_space;
 caddr_t uname_swap_reify_ns_uri;
 caddr_t uname_swap_reify_ns_uri_statement;
@@ -77,6 +97,7 @@ caddr_t uname_virtrdf_ns_uri;
 caddr_t uname_virtrdf_ns_uri_DefaultQuadMap;
 caddr_t uname_virtrdf_ns_uri_DefaultQuadStorage;
 caddr_t uname_virtrdf_ns_uri_DefaultServiceStorage;
+caddr_t uname_virtrdf_ns_uri_DefaultSparul11Target;
 caddr_t uname_virtrdf_ns_uri_PrivateGraphs;
 caddr_t uname_virtrdf_ns_uri_QuadMap;
 caddr_t uname_virtrdf_ns_uri_QuadMapFormat;
@@ -131,18 +152,58 @@ caddr_t uname_xml_ns_uri_colon_lang;
 caddr_t uname_xml_ns_uri_colon_space;
 caddr_t uname_xmlschema_ns_uri;
 caddr_t uname_xmlschema_ns_uri_hash;
+caddr_t uname_xmlschema_ns_uri_hash_ENTITY;
+caddr_t uname_xmlschema_ns_uri_hash_ENTITIES;
+caddr_t uname_xmlschema_ns_uri_hash_ID;
+caddr_t uname_xmlschema_ns_uri_hash_IDREF;
+caddr_t uname_xmlschema_ns_uri_hash_IDREFS;
+caddr_t uname_xmlschema_ns_uri_hash_NCName;
+caddr_t uname_xmlschema_ns_uri_hash_Name;
+caddr_t uname_xmlschema_ns_uri_hash_NMTOKEN;
+caddr_t uname_xmlschema_ns_uri_hash_NMTOKENS;
+caddr_t uname_xmlschema_ns_uri_hash_NOTATION;
+caddr_t uname_xmlschema_ns_uri_hash_QName;
 caddr_t uname_xmlschema_ns_uri_hash_any;
+caddr_t uname_xmlschema_ns_uri_hash_anyAtomicType;
+caddr_t uname_xmlschema_ns_uri_hash_anySimpleType;
+caddr_t uname_xmlschema_ns_uri_hash_anyType;
 caddr_t uname_xmlschema_ns_uri_hash_anyURI;
-caddr_t uname_xmlschema_ns_uri_hash_boolean;
+caddr_t uname_xmlschema_ns_uri_hash_base64Binary;
 caddr_t uname_xmlschema_ns_uri_hash_bitmask;
+caddr_t uname_xmlschema_ns_uri_hash_boolean;
+caddr_t uname_xmlschema_ns_uri_hash_byte;
 caddr_t uname_xmlschema_ns_uri_hash_date;
 caddr_t uname_xmlschema_ns_uri_hash_dateTime;
+caddr_t uname_xmlschema_ns_uri_hash_dateTimeStamp;
+caddr_t uname_xmlschema_ns_uri_hash_dayTimeDuration;
 caddr_t uname_xmlschema_ns_uri_hash_decimal;
 caddr_t uname_xmlschema_ns_uri_hash_double;
+caddr_t uname_xmlschema_ns_uri_hash_duration;
 caddr_t uname_xmlschema_ns_uri_hash_float;
+caddr_t uname_xmlschema_ns_uri_hash_gDay;
+caddr_t uname_xmlschema_ns_uri_hash_gMonth;
+caddr_t uname_xmlschema_ns_uri_hash_gMonthDay;
+caddr_t uname_xmlschema_ns_uri_hash_gYear;
+caddr_t uname_xmlschema_ns_uri_hash_gYearMonth;
+caddr_t uname_xmlschema_ns_uri_hash_hexBinary;
+caddr_t uname_xmlschema_ns_uri_hash_int;
 caddr_t uname_xmlschema_ns_uri_hash_integer;
+caddr_t uname_xmlschema_ns_uri_hash_language;
+caddr_t uname_xmlschema_ns_uri_hash_long;
+caddr_t uname_xmlschema_ns_uri_hash_negativeInteger;
+caddr_t uname_xmlschema_ns_uri_hash_nonNegativeInteger;
+caddr_t uname_xmlschema_ns_uri_hash_nonPositiveInteger;
+caddr_t uname_xmlschema_ns_uri_hash_normalizedString;
+caddr_t uname_xmlschema_ns_uri_hash_positiveInteger;
+caddr_t uname_xmlschema_ns_uri_hash_short;
 caddr_t uname_xmlschema_ns_uri_hash_string;
 caddr_t uname_xmlschema_ns_uri_hash_time;
+caddr_t uname_xmlschema_ns_uri_hash_token;
+caddr_t uname_xmlschema_ns_uri_hash_unsignedByte;
+caddr_t uname_xmlschema_ns_uri_hash_unsignedInt;
+caddr_t uname_xmlschema_ns_uri_hash_unsignedLong;
+caddr_t uname_xmlschema_ns_uri_hash_unsignedShort;
+caddr_t uname_xmlschema_ns_uri_hash_yearMonthDuration;
 caddr_t unames_colon_number[20];
 
 typedef struct uname_const_decl_s
@@ -165,7 +226,7 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname__bang_name				, " !name"			},
   { &uname__bang_ns				, " !ns"			},
   { &uname__bang_uri				, " !uri"			},
-  { &uname__bang_use_attribute_sets		, " !use-attribute-sets"	},
+  { &uname__bang_use_attribute_sets		, " !use-attribute-sets"		},
   { &uname__bang_xmlns				, " !xmlns"			},
   { &uname__attr				, " attr"			},
   { &uname__comment				, " comment"			},
@@ -177,6 +238,17 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname__srcline				, " srcline"			},
   { &uname__txt					, " txt"			},
   { &uname__xslt				, " xslt"			},
+  { &uname_SPECIAL_cc_bif_c_AVG			, "SPECIAL::bif:AVG"		},
+  { &uname_SPECIAL_cc_bif_c_COUNT		, "SPECIAL::bif:COUNT"		},
+  { &uname_SPECIAL_cc_bif_c_MAX			, "SPECIAL::bif:MAX"		},
+  { &uname_SPECIAL_cc_bif_c_MIN			, "SPECIAL::bif:MIN"		},
+  { &uname_SPECIAL_cc_bif_c_SUM			, "SPECIAL::bif:SUM"		},
+  { &uname_bif_c_contains			, "bif:contains"		},
+  { &uname_bif_c_spatial_contains		, "bif:spatial_contains"	},
+  { &uname_bif_c_spatial_intersects		, "bif:spatial_intersects"	},
+  { &uname_bif_c_xcontains			, "bif:xcontains"		},
+  { &uname_bif_c_xpath_contains			, "bif:xpath_contains"		},
+  { &uname_bif_c_xquery_contains		, "bif:xquery_contains"		},
   { &uname_lang					, "lang"			},
   { &uname_nil					, "nil"				},
   { &uname_nodeID_ns				, "nodeID://"			},
@@ -201,6 +273,11 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_rdf_ns_uri_datatype			, RDF_NS_URI "datatype"		},
   { &uname_rdf_ns_uri_parseType			, RDF_NS_URI "parseType"	},
   { &uname_rdf_ns_uri_value			, RDF_NS_URI "value"		},
+  { &uname_rdfdf_ns_uri				, RDFDF_NS_URI			},
+  { &uname_rdfdf_ns_uri_default			, RDFDF_NS_URI "default"	},
+  { &uname_rdfdf_ns_uri_default_nullable	, RDFDF_NS_URI "default-nullable"	},
+  { &uname_rdfdf_ns_uri_default_iid		, RDFDF_NS_URI "default-iid"	},
+  { &uname_rdfdf_ns_uri_default_iid_nullable	, RDFDF_NS_URI "default-iid-nullable"	},
   { &uname_space				, "space"			},
   { &uname_swap_reify_ns_uri			, SWAP_REIFY_NS_URI		},
   { &uname_swap_reify_ns_uri_statement		, SWAP_REIFY_NS_URI "statement"	},
@@ -208,6 +285,7 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_virtrdf_ns_uri_DefaultQuadMap	, VIRTRDF_NS_URI "DefaultQuadMap"	},
   { &uname_virtrdf_ns_uri_DefaultQuadStorage	, VIRTRDF_NS_URI "DefaultQuadStorage"	},
   { &uname_virtrdf_ns_uri_DefaultServiceStorage	, VIRTRDF_NS_URI "DefaultServiceStorage"	},
+  { &uname_virtrdf_ns_uri_DefaultSparul11Target	, VIRTRDF_NS_URI "DefaultSparul11Target"	},
   { &uname_virtrdf_ns_uri_PrivateGraphs		, VIRTRDF_NS_URI "PrivateGraphs"	},
   { &uname_virtrdf_ns_uri_QuadMap		, VIRTRDF_NS_URI "QuadMap"	},
   { &uname_virtrdf_ns_uri_QuadMapFormat		, VIRTRDF_NS_URI "QuadMapFormat"	},
@@ -262,17 +340,57 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_xml_ns_uri_colon_space		, XML_NS_URI ":space"		},
   { &uname_xmlschema_ns_uri			, XMLSCHEMA_NS_URI		},
   { &uname_xmlschema_ns_uri_hash		, XMLSCHEMA_NS_URI "#"		},
+  { &uname_xmlschema_ns_uri_hash_ENTITY			, XMLSCHEMA_NS_URI "#ENTITY"			},
+  { &uname_xmlschema_ns_uri_hash_ENTITIES		, XMLSCHEMA_NS_URI "#ENTITIES"			},
+  { &uname_xmlschema_ns_uri_hash_ID			, XMLSCHEMA_NS_URI "#ID"			},
+  { &uname_xmlschema_ns_uri_hash_IDREF			, XMLSCHEMA_NS_URI "#IDREF"			},
+  { &uname_xmlschema_ns_uri_hash_IDREFS			, XMLSCHEMA_NS_URI "#IDREFS"			},
+  { &uname_xmlschema_ns_uri_hash_NCName			, XMLSCHEMA_NS_URI "#NCName"			},
+  { &uname_xmlschema_ns_uri_hash_Name			, XMLSCHEMA_NS_URI "#Name"			},
+  { &uname_xmlschema_ns_uri_hash_NMTOKEN		, XMLSCHEMA_NS_URI "#NMTOKEN"			},
+  { &uname_xmlschema_ns_uri_hash_NMTOKENS		, XMLSCHEMA_NS_URI "#NMTOKENS"			},
+  { &uname_xmlschema_ns_uri_hash_NOTATION		, XMLSCHEMA_NS_URI "#NOTATION"			},
+  { &uname_xmlschema_ns_uri_hash_QName			, XMLSCHEMA_NS_URI "#QName"			},
   { &uname_xmlschema_ns_uri_hash_any		, XMLSCHEMA_NS_URI "#any"	},
+  { &uname_xmlschema_ns_uri_hash_anyAtomicType		, XMLSCHEMA_NS_URI "#anyAtomicType"		},
+  { &uname_xmlschema_ns_uri_hash_anySimpleType		, XMLSCHEMA_NS_URI "#anySimpleType"		},
+  { &uname_xmlschema_ns_uri_hash_anyType		, XMLSCHEMA_NS_URI "#anyType"			},
   { &uname_xmlschema_ns_uri_hash_anyURI		, XMLSCHEMA_NS_URI "#anyURI"	},
+  { &uname_xmlschema_ns_uri_hash_base64Binary		, XMLSCHEMA_NS_URI "#base64Binary"		},
   { &uname_xmlschema_ns_uri_hash_boolean	, XMLSCHEMA_NS_URI "#boolean"	},
+  { &uname_xmlschema_ns_uri_hash_byte			, XMLSCHEMA_NS_URI "#byte"			},
   { &uname_xmlschema_ns_uri_hash_date		, XMLSCHEMA_NS_URI "#date"	},
   { &uname_xmlschema_ns_uri_hash_dateTime	, XMLSCHEMA_NS_URI "#dateTime"	},
+  { &uname_xmlschema_ns_uri_hash_dateTimeStamp		, XMLSCHEMA_NS_URI "#dateTimeStamp"		},
+  { &uname_xmlschema_ns_uri_hash_dayTimeDuration	, XMLSCHEMA_NS_URI "#dayTimeDuration"		},
   { &uname_xmlschema_ns_uri_hash_decimal	, XMLSCHEMA_NS_URI "#decimal"	},
   { &uname_xmlschema_ns_uri_hash_double		, XMLSCHEMA_NS_URI "#double"	},
+  { &uname_xmlschema_ns_uri_hash_duration		, XMLSCHEMA_NS_URI "#duration"			},
   { &uname_xmlschema_ns_uri_hash_float		, XMLSCHEMA_NS_URI "#float"	},
+  { &uname_xmlschema_ns_uri_hash_gDay			, XMLSCHEMA_NS_URI "#gDay"			},
+  { &uname_xmlschema_ns_uri_hash_gMonth			, XMLSCHEMA_NS_URI "#gMonth"			},
+  { &uname_xmlschema_ns_uri_hash_gMonthDay		, XMLSCHEMA_NS_URI "#gMonthDay"			},
+  { &uname_xmlschema_ns_uri_hash_gYear			, XMLSCHEMA_NS_URI "#gYear"			},
+  { &uname_xmlschema_ns_uri_hash_gYearMonth		, XMLSCHEMA_NS_URI "#gYearMonth"		},
+  { &uname_xmlschema_ns_uri_hash_hexBinary		, XMLSCHEMA_NS_URI "#hexBinary"			},
+  { &uname_xmlschema_ns_uri_hash_int			, XMLSCHEMA_NS_URI "#int"			},
   { &uname_xmlschema_ns_uri_hash_integer	, XMLSCHEMA_NS_URI "#integer"	},
+  { &uname_xmlschema_ns_uri_hash_language		, XMLSCHEMA_NS_URI "#language"			},
+  { &uname_xmlschema_ns_uri_hash_long			, XMLSCHEMA_NS_URI "#long"			},
+  { &uname_xmlschema_ns_uri_hash_negativeInteger	, XMLSCHEMA_NS_URI "#negativeInteger"		},
+  { &uname_xmlschema_ns_uri_hash_nonNegativeInteger	, XMLSCHEMA_NS_URI "#nonNegativeInteger"	},
+  { &uname_xmlschema_ns_uri_hash_nonPositiveInteger	, XMLSCHEMA_NS_URI "#nonPositiveInteger"	},
+  { &uname_xmlschema_ns_uri_hash_normalizedString	, XMLSCHEMA_NS_URI "#normalizedString"		},
+  { &uname_xmlschema_ns_uri_hash_positiveInteger	, XMLSCHEMA_NS_URI "#positiveInteger"		},
+  { &uname_xmlschema_ns_uri_hash_short			, XMLSCHEMA_NS_URI "#short"			},
   { &uname_xmlschema_ns_uri_hash_string		, XMLSCHEMA_NS_URI "#string"	},
   { &uname_xmlschema_ns_uri_hash_time		, XMLSCHEMA_NS_URI "#time"	},
+  { &uname_xmlschema_ns_uri_hash_token			, XMLSCHEMA_NS_URI "#token"			},
+  { &uname_xmlschema_ns_uri_hash_unsignedByte		, XMLSCHEMA_NS_URI "#unsignedByte"		},
+  { &uname_xmlschema_ns_uri_hash_unsignedInt		, XMLSCHEMA_NS_URI "#unsignedInt"		},
+  { &uname_xmlschema_ns_uri_hash_unsignedLong		, XMLSCHEMA_NS_URI "#unsignedLong"		},
+  { &uname_xmlschema_ns_uri_hash_unsignedShort		, XMLSCHEMA_NS_URI "#unsignedShort"		},
+  { &uname_xmlschema_ns_uri_hash_yearMonthDuration	, XMLSCHEMA_NS_URI "#yearMonthDuration"		},
   { NULL, NULL } };
 
   uname_const_decl_t *tail = uname_const_decls;

@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2012 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -67,7 +67,7 @@ release:
 #
 .PHONY: changelog
 changelog:
-	cvs2cl -F V6_0_0-DEVEL --no-ancestors --no-wrap --utc --hide-filenames --prune --window 86400
+	git2cl --since=2009/10/17 --format='%s%n%n%b%n' --strip-tab --strip-cherry-pick > ChangeLog
 
 endif
 

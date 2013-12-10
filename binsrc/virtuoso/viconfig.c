@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -772,6 +772,7 @@ cfg_setup (void)
 #endif
 
   if (cfg_getlong (pconfig, section, "ServerThreads", &c_server_threads) == -1)
+    if (cfg_getlong (pconfig, section, "MaxClientConnections", &c_server_threads) == -1)
     c_server_threads = 10;
 
   if (cfg_getlong (pconfig, section, "CheckpointInterval", &c_checkpoint_interval) == -1)
@@ -859,7 +860,7 @@ cfg_setup (void)
   if (cfg_getstring (pconfig, section, "DirsDenied", &c_denied_dirs) == -1)
     c_denied_dirs = 0;
 
-  if (cfg_getstring (pconfig, section, "BackupDirs", &c_allowed_dirs) == -1)
+  if (cfg_getstring (pconfig, section, "BackupDirs", &c_backup_dirs) == -1)
     c_backup_dirs = 0;
 
   if (cfg_getstring (pconfig, section, "SafeExecutables", &c_safe_execs) == -1)
@@ -970,6 +971,9 @@ cfg_setup (void)
     sqlo_max_mp_size = 200000000;
 
 #ifdef POINTER_64
+  if (sqlo_max_mp_size >= 0x40000000)
+    sqlo_max_mp_size = INT32_MAX;
+  else
   sqlo_max_mp_size *= 2;
 #endif
 
@@ -1170,7 +1174,7 @@ cfg_setup (void)
     c_rdf_obj_ft_rules_size = 0;
 
   if (cfg_getlong (pconfig, section, "RdfInferenceSampleCacheSize", &ric_samples_sz) == -1)
-    ric_samples_sz = 0;
+    ric_samples_sz = 1000;
 
   if (cfg_getlong (pconfig, section, "IndexTreeMaps", &c_it_n_maps) == -1)
     c_it_n_maps = 0;
@@ -1297,6 +1301,7 @@ cfg_setup (void)
 #endif
 
   if (cfg_getlong (pconfig, section, "ServerThreads", &c_http_threads) == -1)
+    if (cfg_getlong (pconfig, section, "MaxClientConnections", &c_http_threads) == -1)
     c_http_threads = 0;
 
   if (c_http_threads < 1 && c_http_port)
@@ -1392,7 +1397,7 @@ cfg_setup (void)
    */
   section = "Client";
   if (cfg_getlong (pconfig, section, "SQL_PREFETCH_ROWS", &cli_prefetch) == -1)
-    cli_prefetch = 20;
+    cli_prefetch = 2000;
 
   if (cfg_getlong (pconfig, section, "SQL_PREFETCH_BYTES", &cli_prefetch_bytes) == -1)
     cli_prefetch_bytes = 0;
@@ -1468,7 +1473,7 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "TransitivityCacheEnabled", &tn_cache_enable) == -1)
     tn_cache_enable = 0;
   if (cfg_getlong (pconfig, section, "ShortenLongURIs", &rdf_shorten_long_iri) == -1)
-    rdf_shorten_long_iri = 0;
+    rdf_shorten_long_iri = 1;
   if (cfg_getlong (pconfig, section, "EnablePstats", &enable_p_stat) == -1)
     enable_p_stat = 1;
 
@@ -1670,7 +1675,6 @@ cfg_setup (void)
 
   /* Finalization */
 
-  /*free (savestr);*/
 
   PrpcSetThreadParams (c_server_thread_sz, c_main_thread_sz,
   c_future_thread_sz, c_server_threads);
@@ -1800,8 +1804,8 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   default_txn_isolation = c_default_txn_isolation;
   c_use_aio = c_c_use_aio; 
   aq_max_threads = c_aq_max_threads;
-  if (aq_max_threads > 100)
-    aq_max_threads = 100;
+  if (aq_max_threads > 1000)
+    aq_max_threads = 1000;
   if (aq_max_threads < 10 && aq_max_threads > 0)
     aq_max_threads = 10;
 #ifdef _SSL
@@ -1965,6 +1969,9 @@ cfg_parse_size_with_modifier (const char *valstr, unsigned long *size, char *mod
   return 0;
 }
 
+
+#define csl_free(f) free (f)
+
 void
 new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 {
@@ -2091,13 +2098,13 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 	  if (cfg_parse_size_with_modifier (segszstr, &segszvalue, &modifier, &n_pages))
 	    {
 	      log_error ("The size for strip segment %d is invalid", nsegs);
-	      free (segszstr);
+              csl_free (segszstr);
 	      return;
 	    }
 	  if (modifier == 'K' && segszvalue % KILOS_PER_PAGE)
 	    {
 	      log_error ("The size for stripe segment %d must be a multiple of %d", nsegs, PAGE_SZ);
-	      free (segszstr);
+              csl_free (segszstr);
 	      return;
 	    }
 	  if ((n_pages / n_stripes) > (LONG_MAX / PAGE_SZ))
@@ -2116,7 +2123,7 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 		  nsegs, old_pages, unit, n_pages);
 	    }
 
-	  free (segszstr);
+          csl_free (segszstr);
 
 	  seg = (disk_segment_t *) dk_alloc (sizeof (disk_segment_t));
 	  seg->ds_size = n_pages;
@@ -2137,7 +2144,11 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 		}
 
 	      /* Check for queue name */
-	      if ((sep = strrchr (value, '=')) != NULL || (sep = strrchr (value, ':')) != NULL)
+	      if ((sep = strrchr (value, '=')) != NULL
+#if ! defined (WIN32)
+		  || (sep = strrchr (value, ':')) != NULL
+#endif
+		  )
 		{
 		  s_ioq = (char *) ltrim ((const char *) (sep + 1));
 		  *sep = '\0';
@@ -2152,7 +2163,7 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 	      dst->dst_file = box_string (value);
 	      seg->ds_stripes[indx] = dst;
 
-	      free (value);
+	      csl_free (value);
 	    }
 	  c_stripes = dk_set_conc (c_stripes, dk_set_cons ((caddr_t) seg, NULL));
 	}
@@ -2165,7 +2176,7 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 
   dbs->dbs_file = box_string (c_database_file);
   dbs->dbs_log_name = box_string (c_txfile);
-  dbs->dbs_cpt_file_name = box_string (setext (c_txfile, "cpt", EXT_SET));
+  dbs->dbs_cpt_file_name = box_string (setext (s_strdup (c_database_file), "cpt", EXT_SET));
   dbs->dbs_extend = c_file_extend;
   dbs->dbs_max_cp_remaps = c_max_checkpoint_remap;
   dbs->dbs_log_segments = c_log_segments;
@@ -2222,6 +2233,7 @@ db_lck_lock_fd (int fd, char *name)
   fl.l_whence = SEEK_SET;
   fl.l_start = 0;
   fl.l_len = 0;
+  fl.l_pid = getpid ();
 
   if (fcntl (fd, F_SETLK, &fl) < 0)
     {
@@ -2255,6 +2267,7 @@ db_lck_unlock_fd (int fd, char *name)
   fl.l_whence = SEEK_SET;
   fl.l_start = 0;
   fl.l_len = 0;
+  fl.l_pid = getpid ();
 
   if (fcntl (fd, F_SETLK, &fl) < 0)
     log (L_WARNING, "Unable to unlock %s (%m)", name);
@@ -2269,10 +2282,10 @@ static void
 db_lck_write_pid (int fd)
 {
   char pid_arr[50];
-  size_t len;
+  int len;
 
   snprintf (pid_arr, sizeof (pid_arr), "VIRT_PID=%lu\n", (unsigned long) getpid ());
-  len = strlen (pid_arr);
+  len = (int) strlen (pid_arr);
   len = len > sizeof (pid_arr) ? sizeof (pid_arr) : len;
 
   if (len != write (fd, pid_arr, len))

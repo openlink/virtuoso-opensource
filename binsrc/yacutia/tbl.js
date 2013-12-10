@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -142,8 +142,7 @@ TBL.createViewRow = function (prefix, options)
   var tbl = $(prefix+'_tbody');
   if (!tbl)
     tbl = $(prefix+'_tbl');
-  if (tbl)
-  {
+  if (tbl) {
     var No = TBL.No(tbl, prefix, options);
     OAT.Dom.hide (prefix+'_tr_no');
 
@@ -152,10 +151,8 @@ TBL.createViewRow = function (prefix, options)
     tbl.appendChild(tr);
 
     // fields
-    for (var fld in options)
-    {
-      if (fld.indexOf('fld') == 0)
-      {
+    for (var fld in options) {
+      if (fld.indexOf('fld') == 0) {
         var fldOptions = options[fld];
         var td = OAT.Dom.create('td');
         if (fldOptions.tdCssText)
@@ -201,10 +198,25 @@ TBL.clean = function (prefix) {
   return true;
 }
 
-TBL.createCellSelect = function (fldName) {
+TBL.createCellOptions = function (fld, fldOptions) {
+  if (fldOptions) {
+    if (fldOptions.className)
+      fld.className = fldOptions.className;
+    if (fldOptions.onblur)
+      fld.onblur = fldOptions.onblur;
+    if (fldOptions.cssText)
+      fld.style.cssText = fldOptions.cssText;
+    if (fldOptions.readOnly)
+      fld.readOnly = fldOptions.readOnly;
+  }
+}
+
+TBL.createCellSelect = function (fldName, fldOptions) {
 	var fld = OAT.Dom.create("select");
   fld.name = fldName;
   fld.id = fldName;
+  TBL.createCellOptions(fld, fldOptions);
+
   return fld;
 }
 
@@ -243,35 +255,8 @@ TBL.createCell0 = function (td, prefix, fldName, No, fldOptions) {
   return fld;
 }
 
-TBL.createCell40 = function (td, prefix, fldName, No, fldOptions)
-{
-  var fld = new OAT.Combolist([], fldOptions.value, {name: fldName});
-  fld.input.name = fldName;
-  fld.input.id = fldName;
-  fld.input.style.width = "85%";
-  fld.addOption('xml-sql');
-  fld.addOption('xml-sql-root');
-  fld.addOption('xml-sql-dtd');
-  fld.addOption('xml-sql-schema');
-  fld.addOption('xml-sql-description');
-  fld.addOption('xml-sql-encoding');
-  fld.addOption('xml-stylesheet');
-  fld.addOption('xml-template');
-  fld.addOption('xper');
-
-  td.appendChild(fld.div);
-  return fld;
-}
-
-TBL.createCell41 = function (td, prefix, fldName, No, fldOptions) {
-	var fld = OAT.Dom.create("select");
-	fld.name = fldName;
-	fld.id = fldName;
-	TBL.selectOption(fld, fldOptions.value, "Set", "U");
-	TBL.selectOption(fld, fldOptions.value, "Remove", "R");
-
-  td.appendChild(fld);
-  return fld;
+TBL.viewCell0 = function (td, prefix, fldName, No, fldOptions) {
+  td.innerHTML = fldOptions.value;
 }
 
 TBL.changeCell50 = function (srcFld) {
@@ -279,6 +264,15 @@ TBL.changeCell50 = function (srcFld) {
   var dstName = srcFld.name.replace('fld_1', 'fld_2');
   var dstFld = $(dstName);
   var dstImg = $(dstName+'_img');
+  if (srcValue == 'advanced') {
+    OAT.Dom.hide(dstFld);
+    OAT.Dom.hide(dstImg);
+    OAT.Dom.removeClass(dstFld, '_validate_');
+    var td = TBL.parent(dstFld, 'td');
+    TBL.showCell51Tbl(td, dstName);
+  } else {
+    OAT.Dom.show(dstFld);
+    OAT.Dom.addClass(dstFld, '_validate_');
   if (srcValue == 'public') {
     dstFld.value = 'foaf:Agent';
     dstFld.readOnly = true;
@@ -292,47 +286,119 @@ TBL.changeCell50 = function (srcFld) {
   } else {
     OAT.Dom.show(dstImg);
   }
+    var dstTbl = $(dstName.replace('_fld', '_tbl'));
+    OAT.Dom.hide(dstTbl);
+  }
 }
 
 TBL.viewCell50 = function (td, prefix, fldName, No, fldOptions) {
-	if (fldOptions.value == "public") {
-	  td.innerHTML = "Public";
-	} else if (fldOptions.value == "group") {
-	  td.innerHTML = "Group";
-	} else {
-	  td.innerHTML = "Personal";
-	}
+  TBL.createCell50(td, prefix, fldName, No, fldOptions, true);
 }
 
-TBL.createCell50 = function (td, prefix, fldName, No, fldOptions) {
+TBL.createCell50 = function (td, prefix, fldName, No, fldOptions, disabled) {
 	var fld = OAT.Dom.create("select");
 	fld.name = fldName;
 	fld.id = fldName;
 	TBL.selectOption(fld, fldOptions.value, "Personal", "person");
 	TBL.selectOption(fld, fldOptions.value, "Group", "group");
 	TBL.selectOption(fld, fldOptions.value, "Public", "public");
+  if (!fldOptions.noAdvanced)
+    TBL.selectOption(fld, fldOptions.value, "Advanced", "advanced");
   if (fldOptions.onchange)
-    fld.onclick = fldOptions.onchange;
+    fld.onchange = fldOptions.onchange;
+
+  if (disabled)
+    fld.disabled = disabled;
 
   td.appendChild(fld);
+  td.style.verticalAlign = 'top';
   return fld;
 }
 
-TBL.createCell51 = function (td, prefix, fldName, No, fldOptions)
-{
+TBL.createCell51 = function (td, prefix, fldName, No, fldOptions) {
   var fld = TBL.createCell0 (td, prefix, fldName, No, fldOptions)
-  if (document.forms[0].elements['sid']) {
+  var srcFld = $(fld.name.replace('fld_2', 'fld_1'));
+
     td.appendChild(OAT.Dom.text(' '));
-    var img = OAT.Dom.image('/ods/images/select.gif');
+  var img = OAT.Dom.image('images/icons/select.gif');
     img.id = fldName+'_img';
     img.className = "pointer";
-    img.onclick = function (){TBL.webidShow(fld, fldOptions.form)};
+  img.onclick = function (){TBL.webidShow(fld, fldOptions)};
     if (fldOptions.imgCssText)
       img.style.cssText = fldOptions.imgCssText;
 
     td.appendChild(img);
+  td.style.verticalAlign = 'top';
+
+  if (srcFld.value == 'advanced') {
+    OAT.Dom.hide(fld);
+    OAT.Dom.hide(img);
+    OAT.Dom.removeClass(fld, '_validate_');
+    TBL.showCell51Tbl(td, fldName, fldOptions);
   }
+  if (srcFld.value == 'public')
+    OAT.Dom.hide(img);
+
   return fld;
+}
+
+TBL.showCell51Tbl = function (td, fldName, fldOptions, disabled) {
+  OAT.Loader.load(["ajax", "json"], function(){TBL.showCell51TblInternal (td, fldName, fldOptions, disabled);});
+}
+
+TBL.showCell51TblInternal = function (td, fldName, fldOptions, disabled) {
+  var tblName = fldName.replace ('_fld', '_tbl');
+  var tbl = $(tblName);
+  if ($(tbl)) {
+    OAT.Dom.show(tbl);
+  } else {
+    if (!disabled) {
+      tbl = OAT.Dom.create('table', {width: '100%', id: tblName});
+    } else {
+      tbl = OAT.Dom.create('table', {width: '95%', id: tblName});
+    }
+    td.appendChild(tbl);
+    var tr = OAT.Dom.create('tr');
+    tbl.appendChild(tr);
+    var td = OAT.Dom.create('td', {width: '95%', style: 'padding: 0'});
+    tr.appendChild(td);
+    var tbl2 = OAT.Dom.create('table', {width: '100%', className: 'ODS_formList'});
+    td.appendChild(tbl2);
+    var tbody2 = OAT.Dom.create('tbody', {id: fldName+'_tbody'});
+    tbl2.appendChild(tbody2);
+    var tr2 = OAT.Dom.create('tr', {id: fldName+'_tr_no'});
+    tbody2.appendChild(tr2);
+    var td2 = OAT.Dom.create('td', {colspan: '3'});
+    tr2.appendChild(td2);
+    var S = '<b>No Criteria</b>';
+    td2.innerHTML = S.replace(/-TBL-/g, fldName);
+    if (!disabled) {
+      var td2 = OAT.Dom.create('td');
+      td2.style.cssText = 'white-space: nowrap; vertical-align: top;';
+      tr.appendChild(td2);
+      S = '<img src="images/icons/add_16.png" border="0" class="button pointer" onclick="javascript: TBL.createRow(\'-TBL-\', null, {fld_1: {mode: 55, tdCssText: \'width: 33%; vertical-align: top;\', className: \'_validate_\'}, fld_2: {mode: 56, tdCssText: \'width: 33%; vertical-align: top;\', cssText: \'display: none;\', className: \'_validate_\'}, fld_3: {mode: 57, tdCssText: \'width: 33%; vertical-align: top;\', cssText: \'display: none;\', className: \'_validate_\'}, btn_1: {mode: 55}});" alt="Add Condition" title="Add Condition" />';
+      td2.innerHTML = S.replace(/-TBL-/g, fldName);
+    }
+    if (fldOptions && fldOptions.value) {
+      for (var i = 0; i < fldOptions.value.length; i = i + 1) {
+        if (disabled) {
+          TBL.createViewRow(fldName, {fld_1: {mode: 55, value: fldOptions.value[i][1], valueExt: fldOptions.value[i][4], tdCssText: 'width: 33%;'}, fld_2: {mode: 56, value: fldOptions.value[i][2], tdCssText: 'width: 33%; vertical-align: top;'}, fld_3: {mode: 57, value: fldOptions.value[i][3], tdCssText: 'width: 33%; vertical-align: top;'}});
+        } else {
+          TBL.createRow(fldName, null, {fld_1: {mode: 55, value: fldOptions.value[i][1], valueExt: fldOptions.value[i][4], tdCssText: 'width: 33%;', className: '_validate_'}, fld_2: {mode: 56, value: fldOptions.value[i][2], tdCssText: 'width: 33%; vertical-align: top;', className: '_validate_'}, fld_3: {mode: 57, value: fldOptions.value[i][3], tdCssText: 'width: 33%; vertical-align: top;', className: '_validate_'}, btn_1: {mode: 55}});
+        }
+      }
+    }
+  }
+  return tbl;
+}
+
+TBL.viewCell51 = function (td, prefix, fldName, No, fldOptions) {
+  var srcFld = $(fldName.replace('fld_2', 'fld_1'));
+  if (srcFld && (srcFld.value == 'advanced')) {
+    TBL.showCell51Tbl(td, fldName, fldOptions, true);
+  } else {
+    TBL.viewCell0(td, prefix, fldName, No, fldOptions);
+  }
 }
 
 TBL.createCell52 = function (td, prefix, fldName, No, fldOptions, disabled) {
@@ -355,7 +421,10 @@ TBL.createCell52 = function (td, prefix, fldName, No, fldOptions, disabled) {
     suffix = fldOptions.suffix;
   cb(td, prefix, fldName+'_r'+suffix, No, fldOptions, disabled, 0);
   cb(td, prefix, fldName+'_w'+suffix, No, fldOptions, disabled, 1);
+  if (fldOptions.execute)
   cb(td, prefix, fldName+'_x'+suffix, No, fldOptions, disabled, 2);
+
+  td.style.verticalAlign = 'top';
 }
 
 TBL.viewCell52 = function (td, prefix, fldName, No, fldOptions) {
@@ -374,21 +443,6 @@ TBL.clickCell52 = function (fld)
     fldName = fldName.replace('fld_3', 'fld_4');
   }
   $(fldName).checked = false;
-}
-
-TBL.createCell53 = function (td, prefix, fldName, No, fldOptions)
-{
-  var fld = TBL.createCell0 (td, prefix, fldName, No, fldOptions)
-  td.appendChild(OAT.Dom.text(' '));
-  var img = OAT.Dom.image('/ods/images/select.gif');
-  img.id = fldName+'_img';
-  img.className = "pointer";
-  img.onclick = function (){TBL.webidShow(fld)};
-  if (fldOptions.imgCssText)
-    img.style.cssText = fldOptions.imgCssText;
-
-  td.appendChild(img);
-  return fld;
 }
 
 TBL.changeCell55 = function (obj)
@@ -444,18 +498,17 @@ TBL.createCell55Ext = function (obj, fldOptions, disabled) {
     return;
 
   var fldName = prefix+'_fld_0_'+No;
-  if (predicate[1] != 'sparql') {
-    OAT.Dom.unlink(fldName);
-    return;
-  }
-
-  if ($(fldName))
+  OAT.Dom.unlink('span_' + fldName);
+  if ((predicate[1] != 'sparql') && (predicate[1] != 'triplet'))
     return;
 
+  var td = TBL.parent(obj, 'td');
+  var span = OAT.Dom.create('span');
+  span.id = 'span_' + fldName;
+  if (predicate[1] == 'sparql') {
   if (!fldOptions)
     fldOptions = {valueExt: 'prefix sioc: <http://rdfs.org/sioc/ns#>\nprefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nprefix foaf: <http://xmlns.com/foaf/0.1/>\nASK where {^{webid}^ rdf:type foaf:Person}'};
 
-  var td = TBL.parent(obj, 'td');
   var fld = OAT.Dom.create('textarea');
   fld.id = fldName;
   fld.name = fld.id;
@@ -467,7 +520,24 @@ TBL.createCell55Ext = function (obj, fldOptions, disabled) {
   if (disabled)
     fld.disabled = disabled;
 
-  td.appendChild(fld);
+    span.appendChild(fld);
+}
+  else if (predicate[1] == 'triplet') {
+    if (!fldOptions)
+      fldOptions = {valueExt: ''};
+
+    var fld = TBL.createCellCombolist(td, fldOptions.valueExt, {name: fldName});
+    fld.input.style.width = "95%";
+
+    if (!TBL.triplets)
+      TBL.initValues();
+
+    for (i = 0; i < TBL.triplets.length; i++)
+      fld.addOption(TBL.triplets[i]);
+
+    span.appendChild(fld.div);
+  }
+  td.appendChild(span);
 }
 
 TBL.changeCell56 = function (obj) {
@@ -586,13 +656,14 @@ TBL.createButton0 = function (td, prefix, fldName, No, fldOptions)
 {
   var fld = OAT.Dom.create('span');
   fld.id = fldName;
+  fld.title = 'Delete row';
   fld.onclick = function(){TBL.deleteRow(prefix, No);};
   OAT.Dom.addClass(fld, 'button pointer');
 
   var img = OAT.Dom.create('img');
-  img.src = 'images/icons/trash_16.png';
+  img.src = '/conductor/images/icons/trash_16.png';
   img.alt = 'Delete row';
-  img.title = fld.alt;
+  img.title = img.alt;
   OAT.Dom.addClass(img, 'button');
 
   fld.appendChild(img);
@@ -602,10 +673,45 @@ TBL.createButton0 = function (td, prefix, fldName, No, fldOptions)
   return fld;
 }
 
+TBL.createButton1 = function (td, prefix, fldName, No, fldOptions)
+{
+  var fld = OAT.Dom.create("input");
+  fld.id = fldName;
+  fld.type = 'button';
+  fld.value = 'Remove';
+  fld.onclick = function(){TBL.deleteRow(prefix, No);};
+
+  td.appendChild(fld);
+  return fld;
+}
+
+TBL.createButtonAdd = function (td, prefix, fldName, No, fldOptions)
+{
+  var fld = OAT.Dom.create('span');
+  fld.id = fldName;
+  fld.title = 'Add Element';
+  OAT.Dom.addClass(fld, 'button pointer');
+
+  var img = OAT.Dom.create('img');
+  img.src = 'images/icons/add_16.png';
+  img.alt = 'Add Element';
+  img.title = img.alt;
+  OAT.Dom.addClass(img, 'button');
+
+  fld.appendChild(img);
+  var titleText = fldOptions.title;
+  if (!titleText)
+    titleText = 'Add';
+  fld.appendChild(OAT.Dom.text(' '+titleText));
+
+  td.appendChild(fld);
+  return fld;
+}
+
 TBL.createButton55 = function (td, prefix, fldName, No, fldOptions)
 {
   var img = OAT.Dom.create('img');
-  img.src = '/ods/images/icons/trash_16.png';
+  img.src = '/conductor/images/icons/trash_16.png';
   img.alt = 'Delete row';
   img.title = img.alt;
   img.onclick = function(){TBL.deleteRow(prefix, No);};
@@ -615,17 +721,59 @@ TBL.createButton55 = function (td, prefix, fldName, No, fldOptions)
   return img;
 }
 
-TBL.initValues = function () {
+TBL.webidProperty = function(obj)
+{
+  var S = 'p';
+  if (obj.id.replace('fld_2', 'fld_1') != obj.id)
+    S = $v(obj.id.replace('fld_2', 'fld_1'))[0];
+
+  return S;
+}
+
+TBL.typeheadProperty = function(obj)
+{
+  return '&depend=' + TBL.webidProperty(obj);
+}
+
+TBL.webidShow = function(obj, fldOptions)
+{
+  var S = TBL.webidProperty(obj);
+  var frm = TBL.parent(obj, 'form');
+  var F = '&form='+frm.name;
+  var M = '&mode='+((fldOptions.formMode)? fldOptions.formMode: S);
+  var N = (fldOptions.nrows)? '&nrows='+fldOptions.nrows: '';
+
+  TBL.windowShow('/ods/webid_select.vspx?params='+obj.id+':s1;'+F+M+N, 'ods_select_webid');
+}
+
+TBL.windowShow = function(sPage, sPageName, width, height)
+{
+  if (!width)
+    width = 700;
+  if (!height)
+    height = 500;
+  if (document.forms[0].elements['sid'])
+    sPage += '&sid=' + document.forms[0].elements['sid'].value;
+  if (document.forms[0].elements['realm'])
+    sPage += '&realm=' + document.forms[0].elements['realm'].value;
+  win = window.open(sPage, sPageName, "width="+width+",height="+height+",top=100,left=100,status=yes,toolbar=no,menubar=no,scrollbars=yes,resizable=yes");
+  win.window.focus();
+}
+
+TBL.initValues = function ()
+{
   // load filters data
   var x = function(data) {
     var o = OAT.JSON.parse(data);
     TBL.predicates = o[0];
     TBL.compares = o[1];
+    TBL.triplets = o[2];
   }
-  OAT.AJAX.GET('/ods/api/filtersData', false, x, {async: false});
+  OAT.AJAX.GET('/webid/api/acl_filters', false, x, {async: false});
 }
 
-TBL.predicateGet = function (fldName) {
+TBL.predicateGet = function (fldName)
+{
   var fld = $(fldName)
   if (fld) {
     if (!TBL.predicates)

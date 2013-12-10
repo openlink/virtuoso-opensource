@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -83,8 +83,7 @@ bif_ddl_read_constraints (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   return NULL;
 }
 
-static id_hash_t *name_to_pl_name;
-
+id_hash_t *name_to_pl_name;
 
 void
 pl_bif_name_define (const char *name)
@@ -117,7 +116,7 @@ find_pl_bif_name (caddr_t name)
       full = (caddr_t *) id_hash_get (name_to_pl_name, (caddr_t) &name2);
       dk_free_box (name2);
       if (full)
-	return *full;
+        return *full;
     }
   return name;
 }

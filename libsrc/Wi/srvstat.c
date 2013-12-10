@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -51,8 +51,13 @@
 
 #ifndef WIN32
 # include <pwd.h>
+# include <unistd.h>
 #endif
 
+#ifdef __APPLE__
+#include <sys/types.h>
+#include <sys/sysctl.h>
+#endif
 
 
 
@@ -184,7 +189,7 @@ extern long tc_read_aside;
 extern int32 em_ra_window;
 extern int32 em_ra_threshold;
 extern int enable_mem_hash_join;
-extern int enable_dfg;
+extern int32 enable_dfg;
 extern int enable_setp_partition;
 extern int enable_min_card;
 extern int enable_dfg_print;
@@ -196,6 +201,7 @@ extern long strses_file_reads;
 extern long strses_file_seeks;
 extern long strses_file_writes;
 extern long strses_file_wait_msec;
+extern int enable_g_replace_log;
 
 long  tft_random_seek;
 long  tft_seq_seek;
@@ -254,6 +260,7 @@ long dbf_cpt_rb;
 long dbf_cl_blob_autosend_limit = 2000000;
 long dbf_no_sample_timeout = 0;
 extern int enable_hash_join;
+int32 dc_max_batch_sz = 1000000; /* this is stub before V7 really introdices this value in sqlvrun.c */
 extern int32 c_cluster_threads;
 extern int32 cl_msg_drop_rate;
 extern int32 cl_con_drop_rate;
@@ -262,7 +269,7 @@ extern int32 cl_max_keep_alives_missed;
 extern int32 cl_non_logged_write_mode;
 extern int32 cl_dead_w_interval;
 extern int32 cl_stage;
-
+extern int enable_distinct_key_dup_no_lock;
 void trset_start (caddr_t * qst);
 void trset_printf (const char *str, ...);
 void trset_end ();
@@ -310,6 +317,7 @@ long st_started_since_month;
 long st_started_since_day;
 long st_started_since_hour;
 long st_started_since_minute;
+long st_sys_ram;
 
 long st_chkp_remap_pages;
 long st_chkp_mapback_pages;
@@ -1016,6 +1024,33 @@ char *product_version_string ()
   return buf;
 }
 
+long
+get_total_sys_mem ()
+{
+#if defined (linux) || defined (SOLARIS)
+    long pages = sysconf(_SC_PHYS_PAGES);
+    long page_size = sysconf(_SC_PAGE_SIZE);
+    return pages * page_size;
+#elif defined (__APPLE__)
+    int mib[2];
+    long physical_memory;
+    long length;
+
+    mib[0] = CTL_HW;
+    mib[1] = HW_MEMSIZE;
+    length = sizeof(long);
+    sysctl(mib, 2, &physical_memory, &length, NULL, 0);
+    return physical_memory;
+#elif defined (WIN32)
+    MEMORYSTATUSEX status;
+    status.dwLength = sizeof (status);
+    GlobalMemoryStatusEx (&status);
+    return status.ullTotalPhys;
+#else
+    return 0;
+#endif
+}
+
 extern int process_is_swapping;
 
 void
@@ -1095,7 +1130,7 @@ status_report (const char * mode, query_instance_t * qi)
 	    {
 	      if (DV_TYPE_OF (data) == DV_C_STRING)
 
-		rep_printf ("%.80s\n", data);
+		rep_printf ("%s\n", data);
 	      else
 		rep_printf ("%12ld ", unbox (data));
 	      dk_free_box (data);
@@ -1387,6 +1422,8 @@ stat_desc_t stat_descs [] =
     {"st_started_since_hour", &st_started_since_hour, NULL},
     {"st_started_since_minute", &st_started_since_minute, NULL},
 
+    {"st_sys_ram", &st_sys_ram, NULL},
+
     {"prof_on", &prof_on, NULL},
     {"prof_start_time", &prof_start_time, NULL},
 
@@ -1494,16 +1531,20 @@ stat_desc_t dbf_descs [] =
     {"ha_rehash_pct", &ha_rehash_pct, SD_INT32},
     {"c_use_aio", &c_use_aio, SD_INT32},
     {"callstack_on_exception", &callstack_on_exception},
+    {"dc_max_batch_sz", &dc_max_batch_sz, SD_INT32},
     {"sqlo_sample_dep_cols", &sqlo_sample_dep_cols, SD_INT32},
+    {"lock_escalation_pct", &lock_escalation_pct, SD_INT32},
+    {"enable_distinct_key_dup_no_lock", &enable_distinct_key_dup_no_lock, SD_INT32},
+    {"enable_g_replace_log", &enable_g_replace_log, SD_INT32},
     {NULL, NULL, NULL}
   };
 
-
 caddr_t
-bif_sys_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+sys_stat_impl (const char *name)
 {
-  caddr_t name = bif_string_arg (qst, args, 0, "sys_stat");
-  stat_desc_t *sd = &stat_descs[0];
+  stat_desc_t *sd_arrays[] = {stat_descs, dbf_descs, NULL};
+  stat_desc_t **sd_arrays_tail;
+  stat_desc_t *sd;
   my_thread_num_total = _thread_num_total;
   my_thread_num_wait = _thread_num_wait;
   my_thread_num_dead = _thread_num_dead;
@@ -1515,30 +1556,42 @@ bif_sys_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  "%s %.500s Server", PRODUCT_DBMS, build_special_server_model);
 
   if (0 == strcmp ("backup_pages", name))
-    return (box_num (dbs_count_incbackup_pages (wi_inst.wi_master)));
+    return (box_num_nonull (dbs_count_incbackup_pages (wi_inst.wi_master)));
 
   if (0 == strcmp ("backup_time_stamp", name))
     return (bp_curr_timestamp ());
   if (0 == strcmp ("backup_last_date", name))
     return (bp_curr_date ());
 
-  while (sd->sd_name)
+  for (sd_arrays_tail = sd_arrays; NULL != sd_arrays_tail[0]; sd_arrays_tail++)
     {
-      if (0 == strcmp (sd->sd_name, name))
-	{
-	  if (SD_INT32 == sd->sd_str_value)
-	    return box_num (*(int32*)sd->sd_value);
-	  if (SD_INT64 == sd->sd_str_value)
-	    return box_num (*(int64*)sd->sd_value);
-	  else if (sd->sd_value)
-	    return (box_num (*(sd->sd_value)));
-	  else if (sd->sd_str_value)
-	    return (box_dv_short_string (*(sd->sd_str_value)));
-	}
-      sd++;
+      stat_desc_t *sd;
+      for (sd = sd_arrays_tail[0]; NULL != sd->sd_name; sd++)
+        {
+          if (0 == strcmp (sd->sd_name, name))
+            {
+              if (SD_INT32 == (char *) sd->sd_str_value)
+                return box_num_nonull (*(int32*)sd->sd_value);
+              if (SD_INT64 == (char *) sd->sd_str_value)
+                return box_num_nonull (*(int64*)sd->sd_value);
+              else if (sd->sd_value)
+                return (box_num_nonull (*(sd->sd_value)));
+              else if (sd->sd_str_value)
+                return (box_dv_short_string (*(sd->sd_str_value)));
+            }
+        }
     }
+  return NULL;
+}
+
+caddr_t
+bif_sys_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t name = bif_string_arg (qst, args, 0, "sys_stat");
+  caddr_t res = sys_stat_impl (name);
+  if (NULL == res)
   sqlr_new_error ("42S22", "SR242", "No system status variable %s", name);
-  return NULL; /*dummy*/
+  return res;
 }
 
 
@@ -2400,9 +2453,9 @@ dbg_print_box_aux (caddr_t object, FILE * out, dk_hash_t *known)
             {
               iri_id_t iid = unbox_iri_id (object);
 	      if (iid >= MIN_64BIT_BNODE_IRI_ID)
-	        fprintf (out, "#ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+	        fprintf (out, "#ib" IIDBOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
               else
-	        fprintf (out, "#i" BOXINT_FMT, (boxint)(iid));
+	        fprintf (out, "#i" IIDBOXINT_FMT, (boxint)(iid));
               break;
             }
         case DV_RDF:
@@ -2592,9 +2645,9 @@ row_map_fprint (FILE * out, buffer_desc_t * buf, db_buf_t row, dbe_key_t * key)
 	    ROW_INT_COL (buf, row, rv, (*cl), LONG_REF, iid);
 
             if (iid >= MIN_64BIT_BNODE_IRI_ID)
-	      fprintf (out, " #ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+	      fprintf (out, " #ib" IIDBOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
             else
-	      fprintf (out, " #i" BOXINT_FMT, (boxint)(iid));
+	      fprintf (out, " #i" IIDBOXINT_FMT, (boxint)(iid));
 	    col_comp_print (out, key, row, cl);
             break;
           }
@@ -2613,9 +2666,9 @@ row_map_fprint (FILE * out, buffer_desc_t * buf, db_buf_t row, dbe_key_t * key)
             iri_id_t iid;
 	    ROW_INT_COL (buf, row, rv, (*cl), INT64_REF, iid);
             if (iid >= MIN_64BIT_BNODE_IRI_ID)
-	      fprintf (out, " #ib" BOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+	      fprintf (out, " #ib" IIDBOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
             else
-	      fprintf (out, " #i" BOXINT_FMT, (boxint)(iid));
+	      fprintf (out, " #i" IIDBOXINT_FMT, (boxint)(iid));
 	    col_comp_print (out, key, row, cl);
             break;
           }

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -123,7 +123,7 @@ create function DAV_GUESS_MIME_TYPE_BY_NAME (in orig_res_name varchar) returns v
     return 'application/iso';
   if (position (orig_res_ext_upper,
     vector ('.TTL') ) )
-    return 'text/rdf+ttl';
+    return 'text/turtle';
   if (position (orig_res_ext_upper,
     vector ('.N3') ) )
     return 'text/rdf+n3';
@@ -293,11 +293,11 @@ create function "DAV_EXTRACT_RDF_application/x-openlink-license" (in orig_res_na
   con_num := cast(xpath_eval('//SEQUENCE/SEQUENCE/SEQUENCE/SEQUENCE[PRINTABLESTRING="NumberOfConnections"]/PRINTABLESTRING[position() > 1]/text()', xtree_doc(mydata)) as varchar);
   serial := cast(xpath_eval('//SEQUENCE/SEQUENCE/SEQUENCE/SEQUENCE[PRINTABLESTRING="SerialNumber"]/PRINTABLESTRING[position() > 1]/text()', xtree_doc(mydata)) as varchar);
   xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
-    UNAME'N3P', 'http://www.openlinksw.com/schemas/OplLic#RegisteredTo'), reg_to));
+    UNAME'N3P', 'http://www.openlinksw.com/schemas/opllic#registeredTo'), reg_to));
   xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
-    UNAME'N3P', 'http://www.openlinksw.com/schemas/OplLic#ConnectionNumber'), con_num));
+    UNAME'N3P', 'http://www.openlinksw.com/schemas/opllic#numberOfConnections'), con_num));
   xte_nodebld_acc(res, xte_node(xte_head(UNAME'N3', UNAME'N3S', 'http://local.virt/this',
-    UNAME'N3P', 'http://www.openlinksw.com/schemas/OplLic#SerialNumber'), serial));
+    UNAME'N3P', 'http://www.openlinksw.com/schemas/opllic#serialNumber'), serial));
   xte_nodebld_final(res, xte_head (UNAME' root'));
   return xml_tree_doc (res);
 errexit:
@@ -972,6 +972,18 @@ create function "DAV_EXTRACT_RDF_text/rdf+ttl" (in orig_res_name varchar, inout 
 {
   declare doc, metas, extras any;
   --dbg_obj_princ ('DAV_EXTRACT_RDF_text/rdf+ttl (', orig_res_name, content, html_start, ')');
+  doc := null;
+  metas := null;
+  extras := vector (
+        'http://www.openlinksw.com/schemas/RDF#format', 'TURTLE' );
+  return "DAV_EXTRACT_RDF_BY_METAS" (doc, metas, extras);
+}
+;
+
+create function "DAV_EXTRACT_RDF_text/turtle" (in orig_res_name varchar, inout content any, inout html_start any)
+{
+  declare doc, metas, extras any;
+  --dbg_obj_princ ('DAV_EXTRACT_RDF_text/turtle (', orig_res_name, content, html_start, ')');
   doc := null;
   metas := null;
   extras := vector (
@@ -2319,9 +2331,11 @@ create procedure DAV_EXTRACT_META_AS_RDF_XML (in resname varchar, in rescontent 
         };
       addon_n3 := call ('DB.DBA.DAV_EXTRACT_RDF_' || restype)(resname, rescontent, html_start);
       res_type_uri := DAV_GET_RES_TYPE_URI_BY_MIME_TYPE(restype);
-          type_tree := xtree_doc ('<N3 N3S="http://local.virt/this" N3P="http://www.w3.org/1999/02/22-rdf-syntax-ns#type" N3O="'
-          || res_type_uri || '"/>' );
-          addon_n3 := DAV_RDF_MERGE (addon_n3, type_tree, null, 0);
+      if (res_type_uri is not null)
+	{
+	  type_tree := xtree_doc ('<N3 N3S="http://local.virt/this" N3P="http://www.w3.org/1999/02/22-rdf-syntax-ns#type" N3O="' || res_type_uri || '"/>' );
+	  addon_n3 := DAV_RDF_MERGE (addon_n3, type_tree, null, 0);
+	}
 addon_n3_set: ;
     }
   if (__proc_exists ('SPOTLIGHT_METADATA', 2) is not null)

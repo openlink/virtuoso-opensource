@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -159,8 +159,8 @@
 		          }
                       ?>
 		      <?vsp if (DB.DBA.VAD_CHECK_VERSION ('Framework') is not null or DB.DBA.VAD_CHECK_VERSION ('policy_manager') is not null) { ?>
-		      <td class="<?V self.astyle ('WebID ACLs') ?>" align="center">
-			<v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="WebID ACLs" render-only="1"/>
+		      <td class="<?V self.astyle ('NetID ACLs') ?>" align="center">
+			<v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="NetID ACLs" render-only="1"/>
 		      </td>
 		      <?vsp } ?>
                         
@@ -195,7 +195,7 @@
 			  <td><v:label value="--self.fmt_rate((control.vc_parent as vspx_row_template).te_rowset[6])"/></td>
 			  <td  class="listing_col_action">
 			    <v:button name="edit_row" action="simple" value="images/icons/edit_16.png"
-			      style="image" xhtml_alt="Edit" xhtml_title="Edit" text="&#160;Edit">
+			      style="image" xhtml_alt="Edit" xhtml_title="Edit" text="&nbsp;Edit">
 				  <v:on-post>
 				    self.edit := 1;
 				    self.apply_changes.vc_enabled := 0;
@@ -211,7 +211,7 @@
 				  </v:on-post>
 			    </v:button>
 			    <v:button name="del_row" action="simple" value="images/icons/trash_16.png" style="image"
-			      xhtml_alt="Delete" xhtml_title="Delete" text="&#160;Delete">
+			      xhtml_alt="Delete" xhtml_title="Delete" text="&nbsp;Delete">
 			      <v:on-post><![CDATA[
 				declare arr, new_arr, to_del any;
 				declare l, i int;

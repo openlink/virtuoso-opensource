@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -46,11 +46,6 @@
 #define TN_RUN 2
 #define TN_RESULTS 3
 
-
-#define LC_INIT 0
-#define LC_ROW 1
-#define LC_AT_END 2
-#define LC_ERROR 3
 
 
 void
@@ -112,6 +107,8 @@ lc_exec (srv_stmt_t * lc, caddr_t * row, caddr_t last, int is_exec)
     {
       if (is_exec)
 	{
+	  if (lc->sst_query->qr_select_node)
+	    lc->sst_query->qr_select_node->src_gen.src_input = (qn_input_fn)select_node_input_subq;
 	  qn_input (lc->sst_query->qr_head_node, lc->sst_qst, lc->sst_qst);
 	  if (1 == lc->sst_batch_size)
 	    {
@@ -926,6 +923,8 @@ tn_result_row (trans_node_t * tn, caddr_t * inst, trans_state_t * tst, trans_sta
 	{
 	  DO_BOX (state_slot_t *, out, inx, tn->tn_step_out)
 	    {
+	      if (NULL == out)
+	        continue;
 	      qst_set_over (inst, out, ((caddr_t*)tst->tst_value)[inx]);
 	    }
 	  END_DO_BOX;
@@ -1195,7 +1194,7 @@ tn_reset (trans_node_t * tn, caddr_t * inst)
   query_instance_t * qi = (query_instance_t *)inst;
   cl_op_t * itcl_clo;
   itc_cluster_t * itcl;
-  id_hash_t * sets;
+  id_hash_t * sets, *rel;
 
   QST_INT (inst, tn->clb.clb_fill) = 0;
   itcl_clo = clo_allocate (CLO_ITCL);
@@ -1204,6 +1203,10 @@ tn_reset (trans_node_t * tn, caddr_t * inst)
   SET_THR_TMP_POOL (itcl->itcl_pool);
   sets = t_id_hash_allocate (tn->clb.clb_batch_size, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
   QST_BOX (id_hash_t *, inst, tn->tn_input_sets) = sets;
+  rel = (id_hash_t*)box_dv_dict_hashtable (61);
+  rel->ht_free_hook = ht_free_no_content;
+  id_hash_set_rehash_pct  (rel, 300);
+  qst_set (inst, tn->tn_relation, (caddr_t)rel);
   QST_INT (inst, tn->clb.clb_nth_set) = -1;
   QST_INT (inst, tn->tn_nth_cache_result) = 0;
 }

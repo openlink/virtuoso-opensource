@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -522,6 +522,8 @@ typedef struct scheduler_io_data_s
 #define FRQ_ARGUMENTS			4
 
 #define DA_FRQ_LENGTH			5
+
+#define IS_FRQ(r) ((r) && BOX_ELEMENTS_0 ((r)) >= DA_FRQ_LENGTH && (r)[DA_MESSAGE_TYPE] == DA_FUTURE_REQUEST && IS_STRING_DTP (DV_TYPE_OF ((r)[FRQ_SERVICE_NAME])))
 
 /*
  * RRC = remote realize condition = future answer.

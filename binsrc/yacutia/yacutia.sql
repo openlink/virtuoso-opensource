@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -196,23 +196,26 @@ create procedure adm_menu_tree ()
   declare wa_available, rdf_available, policy_vad integer;
   wa_available := VAD.DBA.VER_LT ('1.02.13', DB.DBA.VAD_CHECK_VERSION ('Framework'));
   policy_vad := DB.DBA.VAD_CHECK_VERSION ('policy_manager');
-  rdf_available := check_package ('rdf_mappers') + check_package ('cartridges');
+  rdf_available := check_package ('cartridges');
   return concat (
 '<?xml version="1.0" ?>
 <adm_menu_tree>
  <node name="Home" url="main_tabs.vspx" id="1" tip="Common Tasks" allowed="yacutia_admin">
  </node>
  <node name="System Admin" url="sys_info.vspx" id="2" tip="Administer the Virtuoso server" allowed="yacutia_admin">
-   <node name="Dashboard" url="sys_info.vspx"  id="171" allowed="yacutia_admin">
+   <node name="Dashboard" url="sys_info.vspx" id="171" allowed="yacutia_admin">
      <node name="Dashboard Properties" url="dashboard.vspx" id="167" place="1" allowed="yacutia_admin"/>
    </node>
-   <node name="Security" url="sec_pki_1.vspx"  id="23" allowed="yacutia_acl_page">
+   <node name="Security" url="sec_pki_1.vspx" id="23" allowed="yacutia_acl_page">
      <node name="Public Key Infrastructure" url="sec_pki_1.vspx" id="24" place="1" allowed="yacutia_acl_page">
       <node name="PKI Wizard" url="sec_pki_1.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
       <node name="PKI Wizard" url="sec_pki_2.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
       <node name="PKI Wizard" url="sec_pki_3.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
-      <node name="PKI Wizard" url="sec_pki_4.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
-      <node name="PKI Wizard" url="sec_pki_drop.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
+      <node name="PKI Wizard" url="sec_pki_4.vspx" id="26" place="1" allowed="yacutia_acl_page"/>',
+     case when __proc_exists ('VAL.DBA.setup_val_host') is not null then
+     '<node name="PKI Wizard" url="sec_pki_val.vspx" id="26" place="1" allowed="yacutia_acl_page"/>'
+     end,
+     '<node name="PKI Wizard" url="sec_pki_drop.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
       <node name="PKI Wizard" url="sec_pki_2_conf.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
      </node>
      <node name="Access Control" url="sec_auth_serv.vspx" id="24" place="1" allowed="yacutia_acl_page">
@@ -220,7 +223,7 @@ create procedure adm_menu_tree ()
       <node name="ACL Edit" url="sec_acl_edit.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
      </node>
    </node>
-   <node name="User Accounts" url="accounts_page.vspx"  id="3" allowed="yacutia_accounts_page">
+   <node name="User Accounts" url="accounts_page.vspx" id="3" allowed="yacutia_accounts_page">
      <node name="Accounts" url="accounts.vspx" id="4" place="1" allowed="yacutia_accounts_page"/>
      <node name="Accounts" url="account_create.vspx" id="5" place="1" allowed="yacutia_accounts_page"/>
      <node name="Accounts" url="account_remove.vspx" id="6" place="1" allowed="yacutia_accounts_page"/>
@@ -242,37 +245,37 @@ create procedure adm_menu_tree ()
        <node name="Scheduler" url="sys_queues_error.vspx" id="166" place="1" allowed="yacutia_queues_page"/>
      </node>
    </node>
-   <node name="Parameters" url="inifile.vspx?page=Database"  id="21" allowed="yacutia_params_page">
+   <node name="Parameters" url="inifile.vspx?page=Database" id="21" allowed="yacutia_params_page">
      <node name="Parameters" url="inifile.vspx" id="22" place="1" allowed="yacutia_params_page"/>
    </node>
-   <node name="Packages" url="vad.vspx"  id="27" allowed="yacutia_vad_page">
-     <node name="Packages" url="vad.vspx"  id="28" place="1" allowed="yacutia_vad_page"/>
-     <node name="Install packages" url="vad_install.vspx"  id="29" place="1" allowed="yacutia_vad_page"/>
-     <node name="Remove packages" url="vad_remove.vspx"  id="30" place="1" allowed="yacutia_vad_page"/>
-     <node name="Package status" url="vad_status.vspx"  id="31" place="1" allowed="yacutia_vad_page"/>
-     <node name="WA Package" url="vad_wa_config.vspx"  id="32" place="1" allowed="yacutia_vad_page"/>
-     <node name="WA Package" url="vad_wa_create.vspx"  id="312" place="1" allowed="yacutia_vad_page"/>
-     <node name="Install packages" url="vad_install_batch.vspx"  id="29" place="1" allowed="yacutia_vad_page"/>
-     <node name="Remove packages" url="vad_remove_batch.vspx"  id="30" place="1" allowed="yacutia_vad_page"/>
-     <node name="Select VAD source" url="vad_src.vspx"  id="30" place="1" allowed="yacutia_vad_page"/>
+   <node name="Packages" url="vad.vspx" id="27" allowed="yacutia_vad_page">
+     <node name="Packages" url="vad.vspx" id="28" place="1" allowed="yacutia_vad_page"/>
+     <node name="Install packages" url="vad_install.vspx" id="29" place="1" allowed="yacutia_vad_page"/>
+     <node name="Remove packages" url="vad_remove.vspx" id="30" place="1" allowed="yacutia_vad_page"/>
+     <node name="Package status" url="vad_status.vspx" id="31" place="1" allowed="yacutia_vad_page"/>
+     <node name="WA Package" url="vad_wa_config.vspx" id="32" place="1" allowed="yacutia_vad_page"/>
+     <node name="WA Package" url="vad_wa_create.vspx" id="312" place="1" allowed="yacutia_vad_page"/>
+     <node name="Install packages" url="vad_install_batch.vspx" id="29" place="1" allowed="yacutia_vad_page"/>
+     <node name="Remove packages" url="vad_remove_batch.vspx" id="30" place="1" allowed="yacutia_vad_page"/>
+     <node name="Select VAD source" url="vad_src.vspx" id="30" place="1" allowed="yacutia_vad_page"/>
    </node>
-   <node name="Backup" url="db_backup.vspx"  id="79" allowed="yacutia_backup_page">
+   <node name="Backup" url="db_backup.vspx" id="79" allowed="yacutia_backup_page">
      <node name="Backup" url="db_backup_clear.vspx" id="169" place="1" allowed="yacutia_backup_page"/>
    </node>
-   <node name="Monitor" url="logging_page.vspx"  id="33" allowed="yacutia_loging_page">
-     <node name="Version &amp; License Info" url="logging.vspx"  id="34" place="1" allowed="yacutia_loging_page"/>
-     <node name="DB Server Statistics" url="logging_db.vspx"  id="35" place="1"  allowed="yacutia_loging_page"/>
+   <node name="Monitor" url="logging_page.vspx" id="33" allowed="yacutia_loging_page">
+     <node name="Version &amp; License Info" url="logging.vspx" id="34" place="1" allowed="yacutia_loging_page"/>
+     <node name="DB Server Statistics" url="logging_db.vspx" id="35" place="1"  allowed="yacutia_loging_page"/>
      <node name="Disk Statistics" url="logging_disk.vspx"   id="36" place="1" allowed="yacutia_loging_page"/>
-     <node name="Index Statistics" url="logging_index.vspx"  id="37" place="1" allowed="yacutia_loging_page"/>
-     <node name="Lock Statistics" url="logging_lock.vspx"  id="38" place="1" allowed="yacutia_loging_page"/>
-     <node name="Space Statistics" url="logging_space.vspx"  id="39" place="1" allowed="yacutia_loging_page"/>
+     <node name="Index Statistics" url="logging_index.vspx" id="37" place="1" allowed="yacutia_loging_page"/>
+     <node name="Lock Statistics" url="logging_lock.vspx" id="38" place="1" allowed="yacutia_loging_page"/>
+     <node name="Space Statistics" url="logging_space.vspx" id="39" place="1" allowed="yacutia_loging_page"/>
      <node name="HTTP Server Statistics" url="logging_http.vspx"    id="40" place="1" allowed="yacutia_loging_page"/>
      <node name="Profiling" url="logging_prof.vspx"   id="41" place="1" allowed="yacutia_loging_page"/>
      <node name="Log Viewer" url="logging_view.vspx"   id="42" place="1" allowed="yacutia_loging_page"/>
    </node>
  </node>
- <node name="Database" url="databases.vspx"  id="43" tip="Database Server local and remote resource manipulation" allowed="yacutia_db">
-   <node name="SQL Database Objects" url="databases.vspx"  id="44" allowed="yacutia_databases_page">
+ <node name="Database" url="databases.vspx" id="43" tip="Database Server local and remote resource manipulation" allowed="yacutia_db">
+   <node name="SQL Database Objects" url="databases.vspx" id="44" allowed="yacutia_databases_page">
      <node name="Databases-drop" url="databases_drop.vspx" id="45" place="1" allowed="yacutia_databases_page"/>
      <node name="Databases-drop" url="db_drop_conf.vspx" id="46" place="1" allowed="yacutia_databases_page"/>
      <node name="Databases-drop" url="db_drop_errs.vspx" id="47" place="1" allowed="yacutia_databases_page"/>
@@ -289,11 +292,11 @@ create procedure adm_menu_tree ()
      <node name="Databases-grants" url="db_grant_many.vspx" id="192" place="1" allowed="yacutia_databases_page"/>
      <node name="Databases-grants" url="db_grant_errs.vspx" id="193" place="1" allowed="yacutia_databases_page"/>
    </node>',
---   <node name="Schema Editor" url="xddl.vspx?init=xddl"  id="52" allowed="yacutia_xddl_page">
+--   <node name="Schema Editor" url="xddl.vspx?init=xddl" id="52" allowed="yacutia_xddl_page">
 --     <node name="edit" url="xddl.vspx" id="53" place="1" allowed="yacutia_xddl_page"/>
 --     <node name="edit" url="xddl2.vspx" id="54" place="1" allowed="yacutia_xddl_page"/>
 --   </node>
-  '<node name="External Data Sources" url="vdb_linked_obj.vspx"  id="55" allowed="yacutia_remote_data_access_page">
+  '<node name="External Data Sources" url="vdb_linked_obj.vspx" id="55" allowed="yacutia_remote_data_access_page">
      <node name="VDB Management" url="vdb_unlink_obj.vspx" id="56" place="1" allowed="yacutia_remote_data_access_page"/>
      <node name="VDB Management" url="vdb_conn_dsn.vspx" id="57" place="1" allowed="yacutia_remote_data_access_page"/>
      <node name="VDB Management" url="vdb_config_dsn.vspx" id="58" place="1" allowed="yacutia_remote_data_access_page"/>
@@ -312,8 +315,8 @@ create procedure adm_menu_tree ()
      <node name="Link External Resources" url="vdb_link.vspx" id="69" place="1" allowed="yacutia_remote_data_access_page"/>
      <node name="Edit Datasource" url="vdb_dsn_edit.vspx" id="70" place="1" allowed="yacutia_remote_data_access_page"/>
    </node>
-   <node name="Interactive SQL" url="isql_main.vspx"  id="71" allowed="yacutia_isql_page"/>
-   <node name="User Defined Types" url="hosted_page.vspx"  id="72" allowed="yacutia_runtime">
+   <node name="Interactive SQL" url="isql_main.vspx" id="71" allowed="yacutia_isql_page"/>
+   <node name="User Defined Types" url="hosted_page.vspx" id="72" allowed="yacutia_runtime">
      <node name="Loaded Modules" url="hosted_modules.vspx" id="73" place="1" allowed="yacutia_runtime_loaded"/>
      <node name="Import Files" url="hosted_import.vspx" id="74" place="1" allowed="yacutia_runtime_import"/>
      <node name="Import Files Results" url="hosted_modules_load_results.vspx" id="75" place="1" allowed="yacutia_runtime_import_result"/>
@@ -321,19 +324,19 @@ create procedure adm_menu_tree ()
      <node name="Load Modules" url="hosted_modules_select2.vspx" id="77" place="1" allowed="yacutia_runtime_loaded_select2"/>
      <node name="Modules Grant" url="hosted_grant.vspx" id="78" place="1" allowed="yacutia_runtime_hosted_grant"/>
    </node>
-   <node name="Import" url="import_csv_1.vspx"  id="271" allowed="cvs_import">
-   <node name="Import" url="import_csv_2.vspx"  id="271" place="1" />
-   <node name="Import" url="import_csv_3.vspx"  id="271" place="1" />
-   <node name="Import" url="import_csv_opts.vspx"  id="271" place="1" />
+   <node name="Import" url="import_csv_1.vspx" id="271" allowed="cvs_import">
+   <node name="Import" url="import_csv_2.vspx" id="271" place="1" />
+   <node name="Import" url="import_csv_3.vspx" id="271" place="1" />
+   <node name="Import" url="import_csv_opts.vspx" id="271" place="1" />
    </node>
  </node>
- <node name="Replication"  url="db_repl_basic.vspx" id="80" tip="Replications" allowed="yacutia_repl">
-   <node name="Basic" url="db_repl_basic.vspx"  id="8001" >
+ <node name="Replication" url="db_repl_basic.vspx" id="80" tip="Replications" allowed="yacutia_repl">
+   <node name="Basic" url="db_repl_basic.vspx" id="8001" >
     <node name="Basic" url="db_repl_basic_create.vspx" id="8002" place="1" />
     <node name="Basic" url="db_repl_basic_local.vspx" id="8011" place="1" />
     <node name="Basic" url="db_repl_basic_local_create.vspx" id="8012" place="1" />
    </node>
-   <node name="Incremental" url="db_repl_snap_pull.vspx"  id="81" >
+   <node name="Incremental" url="db_repl_snap_pull.vspx" id="81" >
     <node name="Incremental" url="db_repl_snap_pull_create.vspx" id="82" place="1" />
     <node name="Incremental" url="db_repl_snap.vspx" id="83" place="1"/>
     <node name="Incremental" url="db_repl_snap_create.vspx" id="84" place="1" />
@@ -350,7 +353,7 @@ create procedure adm_menu_tree ()
     <node name="Bidirectional Snapshot" url="db_repl_bi_cr_edit.vspx" id="94" place="1" />
    </node>
    <node name="Transactional" url="db_repl_trans.vspx" id="95" >
-      <node name="Transactional (publish)" url="db_repl_pub.vspx"  id="96" place="1"/>
+      <node name="Transactional (publish)" url="db_repl_pub.vspx" id="96" place="1"/>
       <node name="Transactional (publish)" url="db_repl_pub_create.vspx" id="97" place="1" />
       <node name="Transactional (publish)" url="db_repl_pub_edit.vspx" id="98" place="1" />
       <node name="Transactional (publish)" url="db_repl_rdf_pub_edit.vspx" id="98" place="1" />
@@ -363,8 +366,8 @@ create procedure adm_menu_tree ()
       <node name="Transactional (publish)" url="db_repl_sub_edit.vspx" id="105" place="1" />
    </node>
  </node>
- <node name="Web Application Server" url="cont_page.vspx"  id="138" tip="Web server DAV repository and Web site hosting control" allowed="yacutia_http">
-   <node name="Content Management" url="cont_page.vspx"  id="139" allowed="yacutia_http_content_page">
+ <node name="Web Application Server" url="cont_page.vspx" id="138" tip="Web server DAV repository and Web site hosting control" allowed="yacutia_http">
+   <node name="Content Management" url="cont_page.vspx" id="139" allowed="yacutia_http_content_page">
       <node name="Content Management" url="cont_page.vspx" id="140" place="1" allowed="yacutia_http_content_page"/>
       <node name="Content Management" url="cont_management.vspx" id="141" place="1" allowed="yacutia_http_content_page"/>
       <node name="Robot Control" url="robot_control.vspx" id="142" place="1" allowed="yacutia_http_content_page"/>
@@ -380,7 +383,7 @@ create procedure adm_menu_tree ()
       <node name="Resource Types" url="cont_type_edit.vspx" id="151" place="1" allowed="yacutia_http_content_page"/>
       <node name="Resource Types" url="cont_type_remove.vspx" id="152" place="1" allowed="yacutia_http_content_page"/>
    </node>
-   <node name="Virtual Domains &amp; Directories" url="http_serv_mgmt.vspx"  id="153" allowed="yacutia_http_server_management_page">
+   <node name="Virtual Domains &amp; Directories" url="http_serv_mgmt.vspx" id="153" allowed="yacutia_http_server_management_page">
       <node name="Edit Paths" url="http_edit_paths.vspx" id="154" place="1" allowed="yacutia_http_server_management_page"/>
       <node name="Add Path" url="http_add_path.vspx" id="155" place="1" allowed="yacutia_http_server_management_page"/>
       <node name="Edit Host" url="http_host_edit.vspx" id="170" place="1" allowed="yacutia_http_server_management_page"/>
@@ -390,16 +393,16 @@ create procedure adm_menu_tree ()
       <node name="Content Negotiation" url="http_tcn.vspx" id="194" place="1" allowed="yacutia_http_server_management_page"/>
    </node>
  </node>
- <node name="XML" url="xml_sql.vspx"  id="106" tip="XML Services permit manipulation of XML data from stored and SQL sources" allowed="yacutia_xml">
-   <node name="SQL-XML" url="xml_sql.vspx"  id="107" allowed="yacutia_sql_xml_page">
+ <node name="XML" url="xml_sql.vspx" id="106" tip="XML Services permit manipulation of XML data from stored and SQL sources" allowed="yacutia_xml">
+   <node name="SQL-XML" url="xml_sql.vspx" id="107" allowed="yacutia_sql_xml_page">
      <node name="SQL-XML" url="xml_sql2.vspx" id="108" place="1" allowed="yacutia_sql_xml_page">
      </node>
    </node>
-   <node name="XSL Transformation" url="xslt.vspx"  id="109" allowed="yacutia_xslt_page">
+   <node name="XSL Transformation" url="xslt.vspx" id="109" allowed="yacutia_xslt_page">
      <node name="XSLT" url="xslt_result.vspx" id="110" place="1" allowed="yacutia_xslt_page">
      </node>
    </node>
-   <node name="XQuery" url="xquery.vspx"  id="111" allowed="yacutia_xquery_page">
+   <node name="XQuery" url="xquery.vspx" id="111" allowed="yacutia_xquery_page">
      <node name="XQuery" url="xquery.vspx" id="112" place="1" allowed="yacutia_xquery_page" />
      <node name="XQuery" url="xquery2.vspx" id="113" place="1" allowed="yacutia_xquery_page"/>
      <node name="XQuery" url="xquery3.vspx" id="114" place="1" allowed="yacutia_xquery_page"/>
@@ -407,21 +410,21 @@ create procedure adm_menu_tree ()
      <node name="XQuery" url="xquery_templates.vspx" id="173" place="1" allowed="yacutia_xquery_page"/>
      <node name="XQuery" url="xquery_adv.vspx" id="178" place="1" allowed="yacutia_xquery_page"/>
    </node>',
---   <node name="XML Schema" url="xml_xsd.vspx"  id="116" allowed="yacutia_xml_schema_check_page">
+--   <node name="XML Schema" url="xml_xsd.vspx" id="116" allowed="yacutia_xml_schema_check_page">
 --      <node name="XML Schema" url="xml_xsd.vspx" id="117" place="1" allowed="yacutia_xml_schema_check_page"/>
 --   </node>
---   <node name="Mapping Schema" url="mapped_schema_xml.vspx"  id="118" allowed="yacutia_mapped_schema_page">
+--   <node name="Mapping Schema" url="mapped_schema_xml.vspx" id="118" allowed="yacutia_mapped_schema_page">
 --      <node name="Mapping Schema" url="mapped_schema_xml.vspx" id="119" place="1" allowed="yacutia_mapped_schema_page"/>
 --   </node>
  '</node>
- <node name="Web Services" url="soap_services.vspx"  id="120" tip="Web Services permit the exposure and consumption of functions for distributed applications" allowed="yacutia_web">
-   <node name="Web Service Endpoints" url="soap_services.vspx"  id="121" allowed="yacutia_soap_page">
+ <node name="Web Services" url="soap_services.vspx" id="120" tip="Web Services permit the exposure and consumption of functions for distributed applications" allowed="yacutia_web">
+   <node name="Web Service Endpoints" url="soap_services.vspx" id="121" allowed="yacutia_soap_page">
      <node name="Web Service Endpoint Edit" url="soap_services_list.vspx" id="122" place="1" allowed="yacutia_soap_page"/>
      <node name="Web Service Endpoint List" url="soap_services_edit.vspx" id="123" place="1" allowed="yacutia_soap_page"/>
      <node name="Web Service Endpoint List" url="soap_options_edit.vspx" id="124" place="1" allowed="yacutia_soap_page"/>
      <node name="Delete Web Service Endpoint" url="soap_del_path.vspx" id="165" place="1" allowed="yacutia_soap_page"/>
    </node>
-   <node name="WSDL Import / Export" url="wsdl_services.vspx"  id="125" allowed="yacutia_wsdl_page">
+   <node name="WSDL Import / Export" url="wsdl_services.vspx" id="125" allowed="yacutia_wsdl_page">
      <node name="Import" url="wsdl_services.vspx" id="126" place="1" allowed="yacutia_wsdl_page">
        <node name="Import" url="wsdl_services.vspx" id="127" place="1" allowed="yacutia_wsdl_page"/>
      </node>
@@ -430,7 +433,7 @@ create procedure adm_menu_tree ()
      </node>
    </node>
    <node name="BPEL" url="bpel_service.vspx" id="165" allowed="yacutia_bpel_page"/>',
---   <node name="UDDI Services" url="uddi_serv.vspx"  id="130" allowed="yacutia_uddi_page">
+--   <node name="UDDI Services" url="uddi_serv.vspx" id="130" allowed="yacutia_uddi_page">
 --     <node name="Server" url="uddi_serv.vspx" id="131" place="1" allowed="yacutia_uddi_page"/>
 --     <node name="Browse" url="uddi_serv_browse.vspx" id="132" place="1" allowed="yacutia_uddi_page"/>
 --     <node name="Create" url="uddi_serv_create.vspx" id="133" place="1" allowed="yacutia_uddi_page"/>
@@ -438,20 +441,20 @@ create procedure adm_menu_tree ()
 --     <node name="Remove" url="uddi_remove.vspx" id="135" place="1" allowed="yacutia_uddi_page"/>
 --   </node>',
 --case wa_available
---when 1 then '<node name="Applications" url="site.vspx"  id="136" allowed="yacutia_app_page">
+--when 1 then '<node name="Applications" url="site.vspx" id="136" allowed="yacutia_app_page">
 --               <node name="edit" url="site.vspx" id="137" place="1" allowed="yacutia_app_page"/>
 --             </node>'
 --when 0 then '' end,
 '</node>
- <node name="Linked Data" url="sparql_input.vspx"  id="189" tip="Linked Data" allowed="yacutia_message">',
-  '<node name="SPARQL" url="sparql_input.vspx"  id="180" allowed="yacutia_sparql_page">
+ <node name="Linked Data" url="sparql_input.vspx" id="189" tip="Linked Data" allowed="yacutia_message">',
+  '<node name="SPARQL" url="sparql_input.vspx" id="180" allowed="yacutia_sparql_page">
      <node name="SPARQL" url="sparql_load.vspx" id="181" place="1" allowed="yacutia_sparql_page" />
    </node>',
-case when 0 and check_package('rdf_mappers') then
-  '<node name="Stylesheets" url="sparql_filters.vspx"  id="190" tip="GRDDL " allowed="yacutia_message">
+  case when 0 and check_package('rdf_mappers') then
+  '<node name="Stylesheets" url="sparql_filters.vspx" id="190" tip="GRDDL " allowed="yacutia_message">
      <node name="Stylesheets" url="sparql_filters.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
-   </node>' else '' end,
-   '<node name="Sponger" url="rdf_filters.vspx"  id="191" tip="Linked Data Cartridges " allowed="yacutia_message">
+   </node>' end,
+   '<node name="Sponger" url="rdf_filters.vspx" id="191" tip="Linked Data Cartridges " allowed="yacutia_message">
      <node name="Cartridges" url="rdf_filters.vspx" id="192" place="1" allowed="yacutia_sparql_page" />
      <node name="Meta Cartridges" url="rdf_filters_pp.vspx" id="193" place="1" allowed="yacutia_sparql_page" />
      <node name="Stylesheets" url="sparql_filters.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
@@ -459,52 +462,53 @@ case when 0 and check_package('rdf_mappers') then
      <node name="Configuration" url="rdf_conf.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
    </node>',
    '<node name="Statistics" url="rdf_void.vspx" id="194" tip="RDF Statistics" allowed="yacutia_sparql_page" />',
-   '<node name="Graphs"  url="sparql_graph.vspx"  id="183" allowed="yacutia_message">
+   '<node name="Graphs" url="graphs_page.vspx" id="183" allowed="yacutia_sparql_page">
      <node name="Graphs" url="sparql_graph.vspx" id="184" place="1" allowed="yacutia_sparql_page" />
+     <node name="User Security" url="graphs_users_security.vspx" id="185" place="1" allowed="yacutia_sparql_page" />
+     <node name="Roles Security" url="graphs_roles_security.vspx" id="186" place="1" allowed="yacutia_sparql_page" />
+     <node name="Audit Security" url="graphs_audit_security.vspx" id="187" place="1" allowed="yacutia_sparql_page" />
    </node>',
-   '<node name="Schemas"  url="rdf_schemas.vspx"  id="183" allowed="yacutia_message">
-     <node name="Schemas" url="rdf_schemas.vspx" id="184" place="1" allowed="yacutia_sparql_page" />
+   '<node name="Schemas"  url="rdf_schemas.vspx" id="188" allowed="yacutia_message">
+     <node name="Schemas" url="rdf_schemas.vspx" id="189" place="1" allowed="yacutia_sparql_page" />
    </node>
-   <node name="Namespaces"  url="persistent_xmlns.vspx"  id="183" allowed="yacutia_message" />',
-      case when ((wa_available > 0 or policy_vad is not null) and rdf_available > 0) then
-      ' <node name="Access Control" url="sparql_acl.vspx" id="274" allowed="yacutia_acls">
+   <node name="Namespaces"  url="persistent_xmlns.vspx" id="183" allowed="yacutia_message" />',
+     case when ((wa_available > 0 or policy_vad is not null) and rdf_available > 0) then
+     '<node name="Access Control" url="sparql_acl.vspx" id="274" allowed="yacutia_acls">
         <node name="ACL List" url="sec_auth_serv_sp.vspx" id="277" place="1" allowed="yacutia_acls"/>
         <node name="Sponger Groups" url="sec_auth_sponger_1.vspx" id="277" place="1" allowed="yacutia_acls"/>
         <node name="Sponger ACL" url="sec_auth_sponger_2.vspx" id="277" place="1" allowed="yacutia_acls"/>
-       '
-      else 
-      '<node name="Access Control" url="sec_auth_serv_sp.vspx" id="274" allowed="yacutia_acls">
-      <node name="ACL List" url="sec_auth_serv_sp.vspx" id="275" place="1" allowed="yacutia_acls"/>' 
-      end,      
-   ' <node name="ACL Edit" url="sec_acl_edit_sp.vspx" id="276" place="1" allowed="yacutia_acls"/>',
-      case when (wa_available > 0 or policy_vad is not null) then
-      '<node name="SPARQL ACL" url="sparql_acl.vspx" id="277" place="1" allowed="yacutia_acls"/>'
-      else '' end,
-   '</node>     
-   <node name="Views" url="db_rdf_objects.vspx"  id="271" allowed="yacutia_rdf_schema_objects_page"/>
-   <node name="Views" url="db_rdf_class.vspx"  id="272" place="1"/>
-   <node name="Views" url="db_rdf_owl.vspx"  id="273" place="1"/>
-   <node name="Views" url="db_rdf_view_1.vspx"  id="273" place="1"/>
-   <node name="Views" url="db_rdf_view_2.vspx"  id="273" place="1"/>
-   <node name="Views" url="db_rdf_view_3.vspx"  id="273" place="1"/>
-   <node name="Views" url="db_rdf_view_tb.vspx"  id="273" place="1"/>
-   <node name="Views" url="db_rdf_view_cols.vspx"  id="273" place="1"/>
-   <node name="Views" url="db_rdf_view_pk.vspx"  id="273" place="1"/>',
-case when check_package('rdb2rdf') then
-   '<node name="R2RML" url="r2rml_import.vspx"  id="273" />
-   <node name="R2RML" url="r2rml_validate.vspx"  id="273" place="1"/>
-   <node name="R2RML" url="r2rml_gen.vspx"  id="273" place="1"/>' else '' end,
-   '<node name="Quad Store Upload" url="rdf_import.vspx"  id="271" allowed="rdf_import_page"/>',
+        <node name="ACL Edit" url="sec_acl_edit_sp.vspx" id="276" place="1" allowed="yacutia_acls"/>
+        <node name="SPARQL ACL" url="sparql_acl.vspx" id="277" place="1" allowed="yacutia_acls"/>
+      </node>'
+     end,
+   '<node name="Views" url="db_rdf_objects.vspx" id="271" allowed="yacutia_rdf_schema_objects_page"/>
+   <node name="Views" url="db_rdf_class.vspx" id="272" place="1"/>
+   <node name="Views" url="db_rdf_owl.vspx" id="273" place="1"/>
+   <node name="Views" url="db_rdf_view_1.vspx" id="273" place="1"/>
+   <node name="Views" url="db_rdf_view_2.vspx" id="273" place="1"/>
+   <node name="Views" url="db_rdf_view_3.vspx" id="273" place="1"/>
+   <node name="Views" url="db_rdf_view_tb.vspx" id="273" place="1"/>
+   <node name="Views" url="db_rdf_view_cols.vspx" id="273" place="1"/>
+   <node name="Views" url="db_rdf_view_pk.vspx" id="273" place="1"/>',
+   case when check_package('VAL') then
+  '<node name="OAuth Service Binding" url="login_keys.vspx" id="281" allowed="yacutia_val">
+      <node name="OAuth Service Binding" url="login_keys.vspx" id="282" place="1"  allowed="yacutia_val"/>
+   </node>'
+   end,
+   case when check_package('rdb2rdf') then
+  '<node name="R2RML" url="r2rml_import.vspx" id="273" />
+   <node name="R2RML" url="r2rml_validate.vspx" id="273" place="1"/>
+   <node name="R2RML" url="r2rml_gen.vspx" id="273" place="1"/>'
+   end,
+  '<node name="Quad Store Upload" url="rdf_import.vspx" id="271" allowed="rdf_import_page"/>',
    case when __proc_exists ('PSH.DBA.cli_subscribe') is not null then 
-   '<node name="Subscriptions (PHSB)" url="rdf_psh_subs.vspx"  id="271" allowed="rdf_psh_sub_page"/>'
-       else
-       '' 
-       end,
+  '<node name="Subscriptions (PHSB)" url="rdf_psh_subs.vspx" id="271" allowed="rdf_psh_sub_page"/>'
+   end,
 '</node>
- <node name="NNTP" url="msg_news_conf.vspx"  id="157" tip="Mail and news messaging" allowed="yacutia_message">',
-   --<node name="Mail Configuration" url="msg_mail_conf.vspx"  id="158" yacutia_mail_config_page"">
+ <node name="NNTP" url="msg_news_conf.vspx" id="157" tip="Mail and news messaging" allowed="yacutia_message">',
+   --<node name="Mail Configuration" url="msg_mail_conf.vspx" id="158" yacutia_mail_config_page"">
    --</node>
-   '<node name="News Servers" url="msg_news_conf.vspx"  id="159" allowed="yacutia_news_config_page">
+   '<node name="News Servers" url="msg_news_conf.vspx" id="159" allowed="yacutia_news_config_page">
      <node name="News Groups" url="msg_news_groups.vspx" id="160" place="1"  allowed="yacutia_news_config_page"/>
      <node name="News Group Subscripting" url="msg_news_group_subscribe.vspx" id="161" place="1"  allowed="yacutia_news_config_page"/>
      <node name="News Group Messages" url="msg_news_group_messages.vspx" id="162" place="1"  allowed="yacutia_news_config_page"/>
@@ -1851,6 +1855,15 @@ create procedure db.dba.sql_table_indexes( in tablename varchar )
       group by TABLE_NAME, INDEX_NAME, NON_UNIQUE, INDEX_TYPE
       order by 1, 2 )
   do {
+       declare kopts any;
+       kopts := (select KEY_OPTIONS from SYS_KEYS where KEY_NAME = INDEX_N and KEY_TABLE = TABLE_N);
+       if (isvector (kopts))
+	 {
+	   if (position ('bitmap', kopts))
+	     INDEX_TYPE := 4;
+	   if (position ('column', kopts))
+	     INDEX_TYPE := 5;
+	 }
     cols := '';
     for ( select COLUMN_NAME from db.dba.sql_statistics as ss
           where ss.TABLE_NAME = TABLE_N and ss.INDEX_NAME = INDEX_N )
@@ -2534,637 +2547,6 @@ db.dba.dav_crfolder_proc (in path varchar,
 
   ret := DB.DBA.DAV_COL_CREATE (path || folder, '110100000R', 'dav', 'dav', 'dav', 'dav');
   return case when ret <> 0 then 0 else 1 end;
-}
-;
-
-create procedure DB.DBA.Y_UI_SIZE (
-  in itemSize integer,
-  in itemType varchar := 'R')
-{
-  declare S varchar;
-
-  if ((itemSize = 0) and (itemType = 'C'))
-    return '';
-
-  S := '<span class="filesize">%d<span class="filesizeunit">%s</span></span>';
-  if (itemSize < 1024)
-    return sprintf (S, itemSize, 'B&nbsp;');
-  if (itemSize < (1024 * 1024))
-    return sprintf (S, floor(itemSize / 1024), 'KB');
-  if (itemSize < (1024 * 1024 * 1024))
-    return sprintf (S, floor(itemSize / (1024 * 1024)), 'MB');
-  if (itemSize < (1024 * 1024 * 1024 * 1024))
-    return sprintf (S, floor(itemSize / (1024 * 1024 * 1024)), 'GB');
-  return sprintf (S, floor(itemSize / (1024 * 1024 * 1024 * 1024)), 'TB');
-}
-;
-
-create procedure DB.DBA.Y_UI_DATE (
-  in itemDate datetime)
-{
-	itemDate := left (cast (itemDate as varchar), 19);
-	return sprintf ('<span class="datetime"><span class="date">%s</span><span class="time">%s</span></span>', left(itemDate, 10), subseq (itemDate, 11, 16));
-}
-;
-
-create procedure DB.DBA.Y_DAV_PARAMS (
-  inout c_user any,
-  inout c_password any)
-{
-  c_user := connection_get ('vspx_user');
-  if (c_user = 'dba')
-    c_user := 'dav';
-  c_password := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from SYS_USERS where U_NAME = c_user);
-}
-;
-
-create procedure DB.DBA.Y_DAV_ERROR (in code any)
-{
-  if (isinteger(code) and (code < 0))
-    return 1;
-  return 0;
-}
-;
-
-create procedure DB.DBA.Y_PATH_PARENT (
-  in path value)
-{
-  path := trim(path, '/');
-  if (isnull (strrchr(path, '/')))
-    return '';
-  return left(trim(path, '/'), strrchr(trim(path, '/'), '/'));
-}
-;
-
-create procedure DB.DBA.Y_PATH_NAME (
-  in path value)
-{
-  path := trim (path, '/');
-  if (isnull (strrchr (path, '/')))
-    return path;
-  return right (path, length (path)-strrchr(path, '/')-1);
-}
-;
-
-create procedure DB.DBA.Y_DAV_PROP_PARAMS (
-  inout params any)
-{
-  declare N integer;
-  declare c_properties, c_seq, c_property, c_value, c_action any;
-
-  c_properties := vector ();
-  for (N := 0; N < length (params); N := N + 2)
-  {
-    if (params[N] like 'c_fld_1_%')
-    {
-      c_seq := replace (params[N], 'c_fld_1_', '');
-      c_property := trim (params[N+1]);
-      if (c_property <> '')
-      {
-        c_value := trim (get_keyword ('c_fld_2_' || c_seq, params, ''));
-        {
-          declare exit handler for sqlstate '*' { goto _error; };
-          if (isarray (xml_tree (c_value, 0)))
-            c_value := serialize (xml_tree (c_value));
-        }
-      _error:;
-        c_action := get_keyword ('c_fld_3_' || c_seq, params, '');
-        c_properties := vector_concat (c_properties, vector (vector (c_property, c_value, c_action)));
-      }
-    }
-  }
-  return c_properties;
-}
-;
-
-create procedure DB.DBA.Y_DAV_PROP_SET (
-  in path varchar,
-  in propName varchar,
-  in propValue any,
-  in auth_name varchar := null,
-  in auth_pwd varchar := null)
-{
-  DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
-  DB.DBA.DAV_PROP_REMOVE (path, propname, auth_name, auth_pwd);
-  return DB.DBA.DAV_PROP_SET (path, propname, propvalue, auth_name, auth_pwd);
-}
-;
-
-create procedure DB.DBA.Y_DAV_PROP_GET (
-  in path varchar,
-  in propName varchar,
-  in propValue varchar := null,
-  in auth_name varchar := null,
-  in auth_pwd varchar := null)
-{
-  declare retValue any;
-
-  DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
-  retValue := DB.DBA.DAV_PROP_GET (path, propName, auth_name, auth_pwd);
-  if (isinteger(retValue) and (retValue < 0) and (not isnull (propValue)))
-    return propValue;
-  return retValue;
-}
-;
-
-create procedure DB.DBA.Y_DAV_PROP_REMOVE (
-  in path varchar,
-  in propname varchar,
-  in auth_name varchar := null,
-  in auth_pwd varchar := null)
-{
-  DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
-  return DB.DBA.DAV_PROP_REMOVE(path, propname, auth_name, auth_pwd);
-}
-;
-
-create procedure DB.DBA.Y_DAV_PROP_LIST (
-  in path varchar,
-  in propmask varchar := '%',
-  in skips varchar := null,
-  in auth_name varchar := null,
-  in auth_pwd varchar := null)
-{
-  declare uname, gname varchar;
-  declare props any;
-
-  DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
-  props := DB.DBA.DAV_PROP_LIST(path, propmask, auth_name, auth_pwd);
-  if (isinteger(props) and (props < 0))
-    return vector ();
-
-  if (isnull (skips))
-    return props;
-
-  declare remains any;
-
-  remains := vector();
-  foreach(any prop in props) do
-  {
-    foreach(any skip in skips) do
-      if (prop[0] like skip)
-        goto _skip;
-    remains := vector_concat(remains, vector(prop));
-  _skip: ;
-  }
-  return remains;
-}
-;
-
-create procedure DB.DBA.Y_DAV_IS_LOCKED (
-  in path varchar,
-  in type varchar := 'R')
-{
-  declare id integer;
-
-  id := DB.DBA.DAV_SEARCH_ID (path, type);
-  return DB.DBA.DAV_IS_LOCKED (id, type);
-}
-;
-
-create procedure DB.DBA.Y_DAV_LOCK (
-  in path varchar,
-  in type varchar := 'R',
-  in auth_name varchar := null,
-  in auth_pwd varchar := null)
-{
-  declare retValue varchar;
-
-  DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
-  retValue := DB.DBA.DAV_LOCK (path, type, '', '', auth_name, null, null, null, auth_name, auth_pwd);
-  if (isstring (retValue))
-    return 1;
-  return retValue;
-}
-;
-
-create procedure DB.DBA.Y_DAV_UNLOCK (
-  in path varchar,
-  in type varchar := 'R',
-  in auth_name varchar := null,
-  in auth_pwd varchar := null)
-{
-  declare id integer;
-  declare locks, retValue any;
-
-  DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
-  id := DB.DBA.DAV_SEARCH_ID (path, type);
-  locks := DB.DBA.DAV_LIST_LOCKS_INT (id, type);
-  foreach (any lock in locks) do
-  {
-    retValue := DB.DBA.DAV_UNLOCK (path, lock[2], auth_name, auth_pwd);
-    if (DB.DBA.Y_DAV_ERROR (retValue))
-      return retValue;
-  }
-  return 1;
-}
-;
-
-create procedure DB.DBA.Y_DAV_RES_CONTENT (
-  in path varchar,
-  in auth_name varchar := null,
-  in auth_pwd varchar := null)
-{
-  declare content, contentType any;
-  declare retValue any;
-
-  DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
-  retValue := DB.DBA.DAV_RES_CONTENT (path, content, contentType, auth_name, auth_pwd);
-  if (retValue >= 0)
-    return content;
-  return retValue;
-}
-;
-
-create procedure DB.DBA.Y_AUTO_VERSION_FULL (
-  in value varchar)
-{
-  if (value = 'A')
-    return 'DAV:checkout-checkin';
-  if (value = 'B')
-    return 'DAV:checkout-unlocked-checkin';
-  if (value = 'C')
-    return 'DAV:checkout';
-  if (value = 'D')
-    return 'DAV:locked-checkout';
-  return '';
-}
-;
-
-create procedure DB.DBA.Y_AUTO_VERSION_SHORT (
-  in value varchar)
-{
-  if (value = 'DAV:checkout-checkin')
-    return 'A';
-  if (value = 'DAV:checkout-unlocked-checkin')
-    return 'B';
-  if (value = 'DAV:checkout')
-    return 'C';
-  if (value = 'DAV:locked-checkout')
-    return 'D';
-  return '';
-}
-;
-
-create procedure DB.DBA.Y_DAV_GET_VERSION_CONTROL (
-  in path varchar)
-{
-  if (DB.DBA.Y_DAV_ERROR (DB.DBA.DAV_SEARCH_ID (path, 'R')))
-    return 0;
-  if (DB.DBA.Y_DAV_PROP_GET (path, 'DAV:checked-in', '') <> '')
-    return 1;
-  if (DB.DBA.Y_DAV_PROP_GET (path, 'DAV:checked-out', '') <> '')
-    return 1;
-  return 0;
-}
-;
-
-create procedure DB.DBA.Y_DAV_GET_AUTOVERSION (
-  in path varchar,
-  in auth_name varchar := null,
-  in auth_pwd varchar := null)
-{
-  if (DB.DBA.Y_DAV_ERROR (DB.DBA.DAV_SEARCH_ID (path, 'R')))
-  {
-    declare id integer;
-
-    id := DAV_SEARCH_ID (path, 'C');
-    if (not isinteger(id))
-      return '';
-    return coalesce ((select COL_AUTO_VERSIONING from WS.WS.SYS_DAV_COL where COL_ID = DB.DBA.DAV_SEARCH_ID (path, 'C')), '');
-  }
-  return DB.DBA.Y_AUTO_VERSION_SHORT (DB.DBA.Y_DAV_PROP_GET (path, 'DAV:auto-version'));
-}
-;
-
-create procedure DB.DBA.Y_DAV_SET_AUTOVERSION (
-  in path varchar,
-  in value any)
-{
-  declare retValue any;
-
-  retValue := 0;
-  if (DB.DBA.Y_DAV_ERROR (DB.DBA.DAV_SEARCH_ID (path, 'R')))
-  {
-    retValue := DB.DBA.Y_DAV_SET_VERSIONING_CONTROL (path, value);
-  } else {
-    value := DB.DBA.Y_AUTO_VERSION_FULL (value);
-    if (value = '')
-    {
-      retValue := DB.DBA.Y_DAV_PROP_REMOVE (path, 'DAV:auto-version');
-    } else {
-      if (not DB.DBA.Y_DAV_GET_VERSION_CONTROL (path))
-        DB.DBA.Y_DAV_VERSION_CONTROL (path);
-      retValue := DB.DBA.Y_DAV_PROP_SET (path, 'DAV:auto-version', value);
-    }
-  }
-  return retValue;
-}
-;
-
-create procedure DB.DBA.Y_DAV_VERSION_CONTROL (
-  in path varchar,
-  in auth_name varchar := null,
-  in auth_pwd varchar := null)
-{
-  DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
-  return DB.DBA.DAV_VERSION_CONTROL (path, auth_name, auth_pwd);
-}
-;
-create procedure DB.DBA.Y_DAV_REMOVE_VERSION_CONTROL (
-  in path varchar,
-  in auth_name varchar := null,
-  in auth_pwd varchar := null)
-{
-  DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
-  return DB.DBA.DAV_REMOVE_VERSION_CONTROL (path, auth_name, auth_pwd);
-}
-;
-
-create procedure DB.DBA.Y_DAV_CHECKIN (
-  in path varchar,
-  in auth_name varchar := null,
-  in auth_pwd varchar := null)
-{
-  DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
-  return DB.DBA.DAV_CHECKIN (path, auth_name, auth_pwd);
-}
-;
-
-create procedure DB.DBA.Y_DAV_CHECKOUT (
-  in path varchar,
-  in auth_name varchar := null,
-  in auth_pwd varchar := null)
-{
-  DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
-  return DB.DBA.DAV_CHECKOUT (path, auth_name, auth_pwd);
-}
-;
-
-create procedure DB.DBA.Y_DAV_UNCHECKOUT (
-  in path varchar,
-  in auth_name varchar := null,
-  in auth_pwd varchar := null)
-{
-  DB.DBA.Y_DAV_PARAMS (auth_name, auth_pwd);
-  return DB.DBA.DAV_UNCHECKOUT (path, auth_name, auth_pwd);
-}
-;
-
-create procedure DB.DBA.Y_DAV_GET_VERSION_COUNT (
-  in path varchar)
-{
-  declare exit handler for SQLSTATE '*' {return 0;};
-
-  return xpath_eval ('count (//version)', xtree_doc (DB.DBA.Y_DAV_GET_VERSION_HISTORY (path)));
-}
-;
-
-create procedure DB.DBA.Y_DAV_GET_VERSION_ROOT (
-  in path varchar)
-{
-  declare exit handler for SQLSTATE '*' {return '';};
-  declare retValue any;
-
-  retValue := DB.DBA.Y_DAV_PROP_GET (DB.DBA.Y_DAV_GET_VERSION_HISTORY_PATH (path), 'DAV:root-version', '');
-  return case when DB.DBA.Y_DAV_ERROR (retValue) then '' else cast (xpath_eval ('/href', xml_tree_doc(retValue)) as varchar) end;
-}
-;
-
-create procedure DB.DBA.Y_DAV_GET_VERSION_HISTORY_PATH (
-  in path varchar)
-{
-  declare parent, name varchar;
-
-  name := DB.DBA.Y_PATH_NAME (path);
-  parent := DB.DBA.Y_PATH_PARENT (path);
-
-  return concat('/', parent, '/VVC/', name, '/history.xml');
-}
-;
-
-create procedure DB.DBA.Y_DAV_GET_VERSION_HISTORY (
-  in path varchar)
-{
-  declare exit handler for SQLSTATE '*' {return null;};
-
-  return DB.DBA.Y_DAV_RES_CONTENT (DB.DBA.Y_DAV_GET_VERSION_HISTORY_PATH(path));
-}
-;
-
-create procedure DB.DBA.Y_DAV_GET_VERSION_SET (
-  in path varchar)
-{
-  declare N integer;
-  declare c0 varchar;
-  declare c1 integer;
-  declare versionSet, hrefs any;
-
-  result_names(c0, c1);
-
-  declare exit handler for SQLSTATE '*' {return;};
-
-  versionSet := DB.DBA.Y_DAV_PROP_GET (DB.DBA.Y_DAV_GET_VERSION_HISTORY_PATH (path), 'DAV:version-set');
-  hrefs := xpath_eval ('/href', xtree_doc(versionSet), 0);
-  for (N := 0; N < length (hrefs); N := N + 1)
-    result(cast (hrefs[N] as varchar), either (equ (N+1,length (hrefs)),0,1));
-}
-;
-
-create procedure DB.DBA.Y_DAV_GET_INFO (
-  in path varchar,
-  in info varchar)
-{
-  declare tmp any;
-
-  if (info = 'vc')
-  {
-    if (DB.DBA.Y_DAV_GET_VERSION_CONTROL(path))
-      return 'ON';
-    return 'OFF';
-  }
-  else if (info = 'avcState')
-  {
-    tmp := DB.DBA.Y_DAV_GET_AUTOVERSION(path);
-    if (tmp <> '')
-      return replace (DB.DBA.Y_auto_version_full(tmp), 'DAV:', '');
-    return 'OFF';
-  }
-  else if (info = 'vcState')
-  {
-    if (not is_empty_or_null(DB.DBA.Y_DAV_PROP_GET (path, 'DAV:checked-in', '')))
-      return 'Check-In';
-    if (not is_empty_or_null(DB.DBA.Y_DAV_PROP_GET (path, 'DAV:checked-out', '')))
-      return 'Check-Out';
-    return 'Standard';
-  }
-  else if (info = 'lockState')
-  {
-    if (DB.DBA.Y_DAV_IS_LOCKED(path))
-      return 'ON';
-    return 'OFF';
-  }
-  else if (info = 'versionControl')
-  {
-    return DB.DBA.Y_DAV_GET_VERSION_CONTROL (path);
-  }
-  else if (info = 'autoversion')
-  {
-    return DB.DBA.Y_DAV_GET_AUTOVERSION (path);
-  }
-  else if (info = 'checked-in')
-  {
-    return DB.DBA.Y_DAV_PROP_GET (path, 'DAV:checked-in', '');
-  }
-  else if (info = 'checked-out')
-  {
-    return DB.DBA.Y_DAV_PROP_GET (path, 'DAV:checked-out', '');
-  }
-  return '';
-}
-;
-
-create procedure DB.DBA.Y_ACI_LOAD (
-  in path varchar)
-{
-  declare retValue, graph any;
-  declare S, st, msg, data, meta any;
-
-  retValue := vector ();
-
-  graph := SIOC..dav_res_iri (path);
-  S := sprintf (' sparql \n' ||
-                ' define input:storage "" \n' ||
-                ' prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> \n' ||
-                ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
-                ' prefix acl: <http://www.w3.org/ns/auth/acl#> \n' ||
-                ' select ?rule ?agent ?mode \n' ||
-                '   from <%s> \n' ||
-                '  where { \n' ||
-                '          { \n' ||
-                '            ?rule rdf:type acl:Authorization ; \n' ||
-                '            acl:accessTo <%s> ; \n' ||
-                '            acl:mode ?mode ; \n' ||
-                '            acl:agent ?agent. \n' ||
-                '          } \n' ||
-                '          union \n' ||
-                '          { \n' ||
-                '            ?rule rdf:type acl:Authorization ; \n' ||
-                '            acl:accessTo <%s> ; \n' ||
-                '            acl:mode ?mode ; \n' ||
-                '            acl:agentClass ?agent. \n' ||
-                '          } \n' ||
-                '        }\n' ||
-                '  order by ?rule\n',
-                graph,
-                graph,
-                graph);
-  commit work;
-  st := '00000';
-  exec (S, st, msg, vector (), 0, meta, data);
-  if (st = '00000' and length (data))
-  {
-    declare N, aclNo, aclRule, aclMode, V any;
-
-    V := null;
-    aclNo := 0;
-    aclRule := '';
-    for (N := 0; N < length (data); N := N + 1)
-    {
-      if (aclRule <> data[N][0])
-      {
-        if (not isnull (V))
-          retValue := vector_concat (retValue, vector (V));
-        aclNo := aclNo + 1;
-        aclRule := data[N][0];
-        V := vector (aclNo, ODS.ODS_API."ontology.normalize" (data[N][1]), 'person', 0, 0, 0);
-      }
-      if (ODS.ODS_API."ontology.normalize" (data[N][1]) = 'foaf:Agent')
-        V[2] := 'public';
-      if (data[N][1] like SIOC..waGraph() || '%')
-        V[2] := 'group';
-      aclMode := ODS.ODS_API."ontology.normalize" (data[N][2]);
-      if (aclMode = 'acl:Read')
-        V[3] := 1;
-      if (aclMode = 'acl:Write')
-        V[4] := 1;
-      if (aclMode = 'acl:Execute')
-        V[5] := 1;
-    }
-    if (not isnull (V))
-      retValue := vector_concat (retValue, vector (V));
-  }
-  return retValue;
-}
-;
-
-create procedure DB.DBA.Y_ACI_PARAMS (
-  in params any)
-{
-  declare N, M integer;
-  declare aclNo, retValue, V any;
-
-  M := 1;
-  retValue := vector ();
-  for (N := 0; N < length (params); N := N + 2)
-  {
-    if (params[N] like 'f_fld_2_%')
-    {
-      aclNo := replace (params[N], 'f_fld_2_', '');
-      V := vector (M,
-                   trim (params[N+1]),
-                   get_keyword ('f_fld_1_' || aclNo, params, 'person'),
-                   atoi (get_keyword ('f_fld_3_' || aclNo || '_r', params, '0')),
-                   atoi (get_keyword ('f_fld_3_' || aclNo || '_w', params, '0')),
-                   atoi (get_keyword ('f_fld_3_' || aclNo || '_x', params, '0'))
-                  );
-      retValue := vector_concat (retValue, vector (V));
-      M := M + 1;
-    }
-  }
-  return retValue;
-}
-;
-
-create procedure DB.DBA.Y_ACI_N3 (
-  in aciArray any)
-{
-  declare N integer;
-  declare retValue any;
-
-  if (length (aciArray) = 0)
-    return null;
-
-  retValue := ' @prefix acl: <http://www.w3.org/ns/auth/acl#> . \n' ||
-              ' @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> . \n' ||
-              ' @prefix foaf: <http://xmlns.com/foaf/0.1/> . \n';
-  for (N := 0; N < length (aciArray); N := N + 1)
-  {
-    if (length (aciArray[N][1]))
-    {
-      retValue := retValue || sprintf ('   <aci_%d> rdf:type acl:Authorization ;\n   acl:accessTo <>', aciArray[N][0]);
-      if (aciArray[N][2] = 'person')
-      {
-        retValue := retValue || sprintf (';\n   acl:agent <%s>', aciArray[N][1]);
-      }
-      else if (aciArray[N][2] = 'group')
-      {
-        retValue := retValue || sprintf (';\n   acl:agentClass <%s>', aciArray[N][1]);
-      }
-      else if (aciArray[N][2] = 'public')
-      {
-        retValue := retValue || ';\n   acl:agentClass foaf:Agent';
-      }
-      if (aciArray[N][3])
-        retValue := retValue || ';\n   acl:mode acl:Read';
-      if (aciArray[N][4])
-        retValue := retValue || ';\n   acl:mode acl:Write';
-      if (aciArray[N][5])
-        retValue := retValue || ';\n   acl:mode acl:Execute';
-      retValue := retValue || '.\n';
-    }
-  }
-  return retValue;
 }
 ;
 
@@ -6605,5 +5987,210 @@ create procedure text_opt_to_vector (in s varchar)
       inx := inx + 1;
     } 
   return arr; 
+}
+;
+
+create procedure DI_TAG (in fp any, in w any, in dgst any := 'MD5', in fmt any := 'json')
+{
+  declare x, u, pref any;
+  u := sprintf ('&http=%{WSHost}s');
+  x := hex2bin (lower (replace (fp, ':', '')));  
+  x := encode_base64url (cast (x as varchar));
+  if (fmt <> 'sparql')
+    pref := 'ID Claim: ';
+  else  
+    pref := ''; 
+  return sprintf ('%sdi:%s;%s?hashtag=webid%s', pref, lower (dgst), x, u);
+}
+;
+
+create procedure URL_REMOVE_FRAG (in uri any)
+{
+  declare h any;
+  h := WS.WS.PARSE_URI (uri);
+  h [5] := '';
+  uri := WS.WS.VFS_URI_COMPOSE (h);
+  return uri;
+}
+;
+
+create procedure 
+make_cert_iri (in key_name varchar)
+{
+  return sprintf ('http://%{WSHost}s/issuer/key/%s/%s#this', user, key_name); 
+}
+;
+
+create procedure
+make_cert_stmt (in key_name varchar, in digest_type varchar := 'sha1')
+{
+  declare key_iri, cer_iri, webid varchar;
+  declare cert_fingerprint, cert_modulus, cert_exponent varchar;
+  declare info any;
+  declare cert_serial, cert_subject, cert_issuer, cert_val_not_before, cert_val_not_after varchar;
+  declare tag, san, ian varchar;
+  declare stmt varchar;
+
+  cert_serial         := get_certificate_info (1, key_name, 3);
+  cert_subject        := get_certificate_info (2, key_name, 3);
+  cert_issuer         := get_certificate_info (3, key_name, 3);
+  cert_val_not_before := get_certificate_info (4, key_name, 3);
+  cert_val_not_after  := get_certificate_info (5, key_name, 3);
+  cert_fingerprint    := get_certificate_info (6, key_name, 3, null, digest_type);
+  info := get_certificate_info (9, key_name, 3);
+  san := get_certificate_info (7, key_name, 3, '', '2.5.29.17');
+  ian := get_certificate_info (7, key_name, 3, '', '2.5.29.18');
+  if (san is null) san := make_cert_iri (key_name);
+  if (ian is null) ian := make_cert_iri (key_name);
+
+  cert_exponent    := info[1];
+  cert_modulus     := bin2hex(info[2]);
+  cert_fingerprint := replace (cert_fingerprint, ':', '');
+
+  tag := DI_TAG (cert_fingerprint, webid, digest_type, 'sparql');
+
+  key_iri := sprintf ('http://%{WSHost}s/issuer/key/%s/%s', user, key_name); 
+  webid := make_cert_iri (key_name);
+  cer_iri := url_remove_frag (webid) || '#cert' || replace (cert_fingerprint, ':', '');
+
+  stmt := sprintf ('
+SPARQL  
+PREFIX rsa: <http://www.w3.org/ns/auth/rsa#>
+PREFIX cert: <http://www.w3.org/ns/auth/cert#>
+PREFIX oplcert: <http://www.openlinksw.com/schemas/cert#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+INSERT 
+INTO GRAPH <http://%{WSHost}s/pki>
+ {  
+    <%s>       cert:key <%s> ;
+    	       a foaf:Agent .		
+    <%s>       a cert:RSAPublicKey ;  
+               cert:modulus "%s"^^xsd:hexBinary ;    
+               cert:exponent "%d"^^xsd:int .   
+
+    <%s>       oplcert:hasCertificate <%s> .
+    <%s>       a oplcert:Certificate ;
+               oplcert:fingerprint "%s" ;
+               oplcert:fingerprint-digest "%s" ;
+               oplcert:subject "%s" ;
+       	       oplcert:issuer "%s" ; 	 
+               oplcert:notBefore "%s"^^xsd:dateTime ; 	 
+               oplcert:notAfter "%s"^^xsd:dateTime ; 	 
+               oplcert:serial "%s" ;
+	       oplcert:digestURI <%s> ;
+	       %s
+    	       %s		   
+	       oplcert:hasPublicKey <%s> .
+ }
+',  webid, key_iri,
+    key_iri, cert_modulus, cert_exponent,
+    webid, cer_iri,
+    cer_iri, cert_fingerprint, digest_type, cert_subject, cert_issuer, 
+    DB..date_iso8601 (DB..X509_STRING_DATE (cert_val_not_before)), DB..date_iso8601 (DB..X509_STRING_DATE (cert_val_not_after)), 
+    cert_serial, tag, 
+    case when san is not null then sprintf ('oplcert:subjectAltName <%s> ; ', san) else '' end,
+    case when ian is not null then sprintf ('oplcert:issuerAltName <%s> ;', ian) else '' end,
+    key_iri);
+
+--  dbg_printf ('%s', stmt);
+
+  return stmt;
+
+}
+;
+
+
+create procedure PKI.DBA."key" (in "key_name" varchar, in "username" varchar) __SOAP_HTTP 'text/plain'
+{
+  declare accept, pref_acc any;
+  accept := http_request_header_full (http_request_header (), 'Accept', 'text/plain');
+  pref_acc := DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (accept);
+  set_user_id ("username");
+  if (xenc_key_exists ("key_name"))
+    {
+      declare k any;
+      k := "key_name";
+      if (strstr (pref_acc, 'application/x-ssh-key') is not null)
+       http (xenc_pubkey_ssh_export (k));
+      else if (strstr (pref_acc, 'application/x-der-key') is not null)
+        http (xenc_pubkey_DER_export (k));
+      else if (strstr (pref_acc, 'text/x-der-key') is not null)
+        http (encode_base64 (cast (xenc_pubkey_DER_export (k) as varchar)));
+      else if (strstr (pref_acc, 'text/plain') is not null)
+        http (xenc_pubkey_PEM_export (k));
+      else if (strstr (pref_acc, 'text/html') is not null or strstr (pref_acc, '*/*') is not null)	
+	{
+	   http_status_set (303);
+	   http_header (http_header_get () || sprintf ('Location: /describe/?url=http://%{WSHost}s/issuer/key/%s/%s\r\n', "username", "key_name"));
+	   return '';
+	}	
+      else
+        {
+	  declare qr, path, params, lines any;
+	  qr := sprintf ('DESCRIBE <http://%{WSHost}s/issuer/key/%s/%s> FROM <http://%{WSHost}s/pki>', "username", "key_name");
+	  http_header ('');
+	  path := vector ('sparql');
+	  params := vector ('query', qr);
+	  lines := http_request_header ();
+	  WS.WS."/!sparql/" (path, params, lines);
+	  return '';
+	}  
+      http_header (sprintf ('Content-Type: %s\r\n', pref_acc));
+    }
+  return '';
+}
+;
+
+create procedure PKI_INIT ()
+{
+  if (exists (select 1 from DB.DBA.SYS_USERS where U_NAME = 'PKI')) 
+    return;
+  DB.DBA.USER_CREATE ('PKI', uuid(), vector ('DISABLED', 1, 'LOGIN_QUALIFIER', 'PKI'));
+};
+
+PKI_INIT ();
+
+DB.DBA.VHOST_REMOVE (lpath=>'/issuer/key');
+DB.DBA.VHOST_DEFINE (lpath=>'/issuer/key', ppath=>'/SOAP/Http/key', soap_user=>'PKI', opts=>vector ('url_rewrite', 'pki_certs_list1'));
+
+DB.DBA.URLREWRITE_CREATE_RULELIST ('pki_certs_list1', 1, vector ('pki_cert_rule1'));
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('pki_cert_rule1', 1,
+    '/issuer/([^/]*)/([^/]*)/([^/]*)\x24',
+    vector('m', 'uid', 'id'), 1,
+    '/issuer/%s?key_name=%s&username=%U', vector('m', 'id', 'uid'),
+    null,
+    null,
+    2);
+
+grant execute on PKI.DBA."key" to PKI;
+
+create procedure y_utf2wide (
+  in S any)
+{
+  declare retValue any;
+
+  if (isstring (S))
+  {
+    retValue := charset_recode (S, 'UTF-8', '_WIDE_');
+    if (iswidestring (retValue))
+      return retValue;
+  }
+  return S;
+}
+;
+
+create procedure y_wide2utf (
+  in S any)
+{
+  declare retValue any;
+
+  if (iswidestring (S))
+  {
+    retValue := charset_recode (S, '_WIDE_', 'UTF-8' );
+    if (isstring (retValue))
+      return retValue;
+  }
+  return charset_recode (S, null, 'UTF-8' );
 }
 ;

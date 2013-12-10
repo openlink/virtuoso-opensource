@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -79,10 +79,6 @@ typedef struct scn3_paren_s {
   char sp_close_paren;	/*!< The character that should be used to close it (e.g. '}' if '{' is opened */
 } scn3_paren_t;
 
-extern int scn3_lineno;	/*!< Throughout counter of lines in the source text */
-extern int scn3_plineno;	/*!< Physical counter of lines in the source text - used for the PL debugger */
-extern int scn3_lineno_increment;	/*!< This is zero for 'macroexpanded' fragments of SQL text, to prevent from confusing when a long text is inserted instead of a single line */
-extern int scn3_lexdepth;	/*!< Number of opened parenthesis */
 
 extern dk_set_t scn3_namespaces; /*!< List of namespace prefixes and URIs */
 
@@ -137,10 +133,6 @@ extern void scn3_pragma_line (char *text);
 extern void scn3_pragma_line_push (void);
 extern void scn3_pragma_line_pop (void);
 extern void scn3_pragma_line_reset (void);
-extern int scn3_sprint_curr_line_loc (char *buf, size_t max_buf);
-extern int scn3_get_lineno (void);
-extern char *scn3_get_file_name (void);
-extern void scn3_set_file_line (char *file, int file_nchars, int line_no);
 extern void scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_sql_text, scn3_include_fragment_t *outer);
 extern void sparp_compile_subselect (spar_query_env_t *sparqre);
 
@@ -358,14 +350,14 @@ void ddl_init_proc (void);
 
 void ddl_standard_procs (void);
 
-void ddl_commit (query_instance_t * qi);
+EXE_EXPORT (void, ddl_commit, (query_instance_t * qi));
 
 void sql_ddl_node_input (ddl_node_t * ddl, caddr_t * inst, caddr_t * state);
 
 void srv_global_init (char * mode);
 
-client_connection_t * client_connection_create (void);
-void client_connection_reset (client_connection_t * cli);
+EXE_EXPORT (client_connection_t *, client_connection_create, (void));
+EXE_EXPORT (void, client_connection_reset, (client_connection_t * cli));
 
 typedef dk_session_t * (*client_connection_reset_hook_type) (dk_session_t *);
 
@@ -393,9 +385,8 @@ EXE_EXPORT (caddr_t, srv_make_new_error, (const char *code, const char *virt_cod
 caddr_t srv_make_new_error (const char *code, const char *virt_code, const char *msg,...) __attribute__ ((format (printf, 3, 4)));
 #endif
 #endif
-void qi_enter (query_instance_t * qi);
-
-void qi_leave (query_instance_t * qi);
+EXE_EXPORT (void, qi_enter, (query_instance_t * qi));
+EXE_EXPORT (void, qi_leave, (query_instance_t * qi));
 
 int lt_close (lock_trx_t * lt, int fcommit);
 
@@ -448,8 +439,8 @@ int lt_leave_real (lock_trx_t * lt);
 #define lt_leave(lt) \
     (LT_THREADS_REPORT (lt, "LT_LEAVE"), lt_leave_real(lt))
 #else
-int lt_enter (lock_trx_t * lt);
-int lt_leave (lock_trx_t * lt);
+EXE_EXPORT (int, lt_enter, (lock_trx_t * lt));
+EXE_EXPORT (int, lt_leave, (lock_trx_t * lt));
 #endif
 int lt_enter_anyway (lock_trx_t * lt);
 
@@ -751,10 +742,10 @@ void pl_source_free (pl_source_t * pls);
 
 int err_is_state (caddr_t err, char * state);
 
-void local_commit (client_connection_t * cli);
-void local_start_trx (client_connection_t * cli);
-void local_commit_end_trx (client_connection_t * cli);
-void local_rollback_end_trx (client_connection_t * cli);
+EXE_EXPORT (void, local_commit, (client_connection_t * cli));
+EXE_EXPORT (void, local_start_trx, (client_connection_t * cli));
+EXE_EXPORT (void, local_commit_end_trx, (client_connection_t * cli));
+EXE_EXPORT (void, local_rollback_end_trx, (client_connection_t * cli));
 
 caddr_t code_vec_run_1 (code_vec_t code_vec, caddr_t * qst, int offset);
 #define code_vec_run(c, i) code_vec_run_1 (c, i, 0)
@@ -1103,6 +1094,7 @@ caddr_t box_to_any (caddr_t data, caddr_t * err_ret);
 caddr_t box_to_any_1 (caddr_t data, caddr_t * err_ret, auto_pool_t *ap, int ser_flags);
 #define DKS_TO_OBY_KEY 2 /*!< flag to indicate that an rdf box with text should be stored with the text, not just id */
 #define DKS_TO_HA_DISK_ROW 4 /*!< flag to indicate that the destination is a temp table with no sorting and box_to_any_1 serialization in a column */
+#define DKS_REPLICATION 8
 
 caddr_t box_to_shorten_any (caddr_t data, caddr_t * err_ret);
 char* __get_column_name (oid_t col_id, dbe_key_t *key);
@@ -1290,5 +1282,16 @@ void itc_assert_no_reg (it_cursor_t * itc);
 
 caddr_t * itc_bm_array (it_cursor_t * itc, buffer_desc_t * buf);
 extern int32 log_proc_overwrite;
+
+
+srv_stmt_t * qr_multistate_lc (query_t * qr, query_instance_t * caller);
+int lc_exec (srv_stmt_t * lc, caddr_t * row, caddr_t last, int is_exec);
+
+#define LC_INIT 0
+#define LC_ROW 1
+#define LC_AT_END 2
+#define LC_ERROR 3
+caddr_t * lc_t_row (srv_stmt_t * lc);
+
 
 #endif /* _SQLFN_H */

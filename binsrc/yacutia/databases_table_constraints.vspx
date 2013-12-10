@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -163,7 +163,7 @@
             		      style="image"
             		      xhtml_alt="Drop Selected"
 			      xhtml_title="Drop Selected"
-			      text="&#160;Drop Selected"
+			      text="&nbsp;Drop Selected"
             		      value="images/icons/del_16.png">
             		      <v:on-post>
             			      self.drop_sel (self."ds_foreign_keys", 'foreign_key', e);
@@ -236,7 +236,7 @@
             		      style="image"
             		      xhtml_alt="Drop Selected"
             		      xhtml_title="Drop Selected"
-			      text="&#160;Drop Selected"
+			      text="&nbsp;Drop Selected"
             		      value="images/icons/del_16.png">
             		      <v:on-post>
             			      self.drop_sel (self."ds_check", 'check', e);

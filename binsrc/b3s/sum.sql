@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -64,6 +64,8 @@ grant execute on DB.DBA.S_SUM to "SPARQL";
 
 create procedure sum_rank (inout arr any)
 {
+  if (not isvector (arr) or length (arr) < 3)
+    return 0; 
   return  rnk_scale (arr[0]) + cast (arr[2] as real) / (arr[1] / 3);
 }
 ;

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -476,9 +476,9 @@ void lt_killall (lock_trx_t * lt, int lte);
 int lock_enter (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf);
 EXE_EXPORT (lock_trx_t *, lt_start, (void));
 lock_trx_t * lt_start_outside_map (void);
-int lt_commit (lock_trx_t * lt, int free_trx);
-int lt_commit_cl_local_only (lock_trx_t * lt);
-void lt_rollback (lock_trx_t * lt, int free_trx);
+EXE_EXPORT (int, lt_commit, (lock_trx_t * lt, int free_trx));
+EXE_EXPORT (int, lt_commit_cl_local_only, (lock_trx_t * lt));
+EXE_EXPORT (void, lt_rollback, (lock_trx_t * lt, int free_trx));
 void lt_rollback_1 (lock_trx_t * lt, int free_trx);
 void lt_transact (lock_trx_t * lt, int op);
 void lt_hi_transact (lock_trx_t * lt, int op);

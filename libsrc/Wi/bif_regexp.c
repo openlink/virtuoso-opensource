@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -679,6 +679,10 @@ parse_replacing_template (caddr_t tmpl, int tmpl_syntax_is_xpf, int pos_count)
   return (ptrlong *)revlist_to_array (res);
 }
 
+/*! The value is 0 if PCRE omits trailing hits in top-level 'OR' cases like pattern '(ab)|(c)|(d)' on string 'abcd',
+1 if all hit lists have same length always. 0 is a safe default whereas 1 gives better error diagnostics. */
+int pcre_makes_full_length_lists = 0;
+
 static caddr_t
 bif_regexp_replace_hits_with_template (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -688,14 +692,15 @@ bif_regexp_replace_hits_with_template (caddr_t * qst, caddr_t * err_ret, state_s
   wcharset_t *src_cs, *tmpl_cs;
   int pos_count_in_hits;
   int prev_left_pos = 0;
-  dk_session_t *ses;
+  dk_session_t *ses = NULL;
   caddr_t src = bif_string_or_wide_or_uname_arg (qst, args, 0, "regexp_replace_hits_with_template");
   caddr_t orig_tmpl = bif_string_or_wide_or_uname_arg (qst, args, 1, "regexp_replace_hits_with_template");
   caddr_t *hit_list = bif_array_of_pointer_arg (qst, args, 2, "regexp_replace_hits_with_template");
   int tmpl_syntax_is_xpf = bif_long_arg (qst, args, 3, "regexp_replace_hits_with_template");
   caddr_t tmpl = NULL;
-  ptrlong *parsed_tmpl, *parsed_tmpl_end;
+  ptrlong *parsed_tmpl, *parsed_tmpl_end, *parsed_tmpl_tail;
   caddr_t res_strg;
+  caddr_t err = NULL;
   hit_count = BOX_ELEMENTS (hit_list);
   if (0 == hit_count)
     return box_copy (src);
@@ -719,9 +724,17 @@ bif_regexp_replace_hits_with_template (caddr_t * qst, caddr_t * err_ret, state_s
           "Function regexp_replace_hits_with_template() has invalid hit (index %d) in argument 2 (invalid length of position list)", hit_ctr );
       if (0 == hit_ctr)
         pos_count_in_hits = pos_count;
-      else if (pos_count_in_hits != pos_count)
-        sqlr_new_error ("22023", "SR647",
-          "Function regexp_replace_hits_with_template() has invalid hit (index %d) in argument 2 (the length of position list is %d, but it is %d for the first hit)", hit_ctr, pos_count, pos_count_in_hits );
+      else if (pcre_makes_full_length_lists)
+        {
+          if (pos_count_in_hits != pos_count)
+            sqlr_new_error ("22023", "SR647",
+              "Function regexp_replace_hits_with_template() has invalid hit (index %d) in argument 2 (the length of position list is %d, but it is %d for the first hit)", hit_ctr, pos_count, pos_count_in_hits );
+        }
+      else
+        {
+          if (pos_count_in_hits < pos_count)
+            pos_count_in_hits = pos_count;
+        }
       hit_b = HIT_NTH_POS(0);
       hit_e = HIT_NTH_POS(1);
       if ((hit_b < prev_left_pos) || (hit_e < hit_b) || (hit_e > src_charcount))
@@ -747,18 +760,34 @@ bif_regexp_replace_hits_with_template (caddr_t * qst, caddr_t * err_ret, state_s
   if (src_cs != tmpl_cs)
     {
       int res_is_new = 0;
-      caddr_t err = NULL;
       caddr_t tmpl_temp_copy = box_copy (orig_tmpl);
       tmpl = charset_recode_from_cs_or_eh_to_cs (orig_tmpl, 0, NULL, tmpl_cs, src_cs, &res_is_new, &err);
       if (res_is_new)
         dk_free_box (tmpl_temp_copy);
-      if (err)
+      if (NULL != err)
         sqlr_resignal (err);
     }
   else
     tmpl = orig_tmpl;
   parsed_tmpl = parse_replacing_template (tmpl, tmpl_syntax_is_xpf, pos_count_in_hits);
   parsed_tmpl_end = parsed_tmpl + BOX_ELEMENTS (parsed_tmpl);
+  if (pcre_makes_full_length_lists)
+    {
+      for (parsed_tmpl_tail = parsed_tmpl; parsed_tmpl_tail < parsed_tmpl_end; parsed_tmpl_tail += 2)
+        {
+          if (-1 == parsed_tmpl_tail[0])
+            {
+              int idx_in_hit = parsed_tmpl_tail[1];
+              if (((idx_in_hit * 2 + 1) >= pos_count_in_hits) || (idx_in_hit < 0))
+                {
+                  err = srv_make_new_error ("22023", "SR647",
+                    "Function regexp_replace_hits_with_template() refers to $%d, but valid placeholders for given search hits are $0 to $%d",
+                    idx_in_hit, (pos_count_in_hits / 2)-1 );
+                  goto err_at_replace;
+                }
+            }
+        }
+    }
   ses = strses_allocate ();
   prev_left_pos = 0;
 #define PASTE(strg,b,e) session_buffered_write (ses, (strg) + ((b) *src_charsize), ((e)-(b))*src_charsize)
@@ -766,7 +795,6 @@ bif_regexp_replace_hits_with_template (caddr_t * qst, caddr_t * err_ret, state_s
     {
       ptrlong *hit = (ptrlong *)(hit_list[hit_ctr]);
       dtp_t hit_dtp = DV_TYPE_OF (hit);
-      ptrlong *parsed_tmpl_tail;
       ptrlong hit_b = HIT_NTH_POS(0);
       ptrlong hit_e = HIT_NTH_POS(1);
       if (hit_b > prev_left_pos)
@@ -775,9 +803,23 @@ bif_regexp_replace_hits_with_template (caddr_t * qst, caddr_t * err_ret, state_s
         {
           if (-1 == parsed_tmpl_tail[0])
             {
-              ptrlong pos_b = HIT_NTH_POS (parsed_tmpl_tail[1] * 2);
-              ptrlong pos_e = HIT_NTH_POS (parsed_tmpl_tail[1] * 2 + 1);
-              PASTE (src, pos_b, pos_e);
+              if (pcre_makes_full_length_lists)
+                {
+                  ptrlong pos_b = HIT_NTH_POS (parsed_tmpl_tail[1] * 2);
+                  ptrlong pos_e = HIT_NTH_POS (parsed_tmpl_tail[1] * 2 + 1);
+                  PASTE (src, pos_b, pos_e);
+                }
+              else
+                {
+                  int pos_idx = parsed_tmpl_tail[1] * 2;
+                  int pos_count = BOX_ELEMENTS (hit);
+                  if ((0 <= pos_idx) && ((pos_idx + 1) < pos_count))
+                    {
+                      ptrlong pos_b = HIT_NTH_POS (pos_idx);
+                      ptrlong pos_e = HIT_NTH_POS (pos_idx + 1);
+                      PASTE (src, pos_b, pos_e);
+                    }
+                }
             }
           else
             {
@@ -791,9 +833,16 @@ bif_regexp_replace_hits_with_template (caddr_t * qst, caddr_t * err_ret, state_s
     }
   if (prev_left_pos < src_charcount)
     PASTE (src, prev_left_pos, src_charcount);
+err_at_replace:
   dk_free_box ((caddr_t)parsed_tmpl);
   if (tmpl != orig_tmpl)
     dk_free_box (tmpl);
+  if (NULL != err)
+    {
+      if (NULL != ses)
+        strses_free (ses);
+      sqlr_resignal (err);
+    }
   if (src_is_wide)
     res_strg = strses_wide_string (ses);
   else

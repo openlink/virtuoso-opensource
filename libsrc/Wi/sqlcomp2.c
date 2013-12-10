@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2133,8 +2133,17 @@ sqlc_test (void)
 #ifdef MALLOC_DEBUG
 #undef sql_compile
 query_t *
-sql_compile (char *string2, client_connection_t * cli, caddr_t * err, int store_procs)
+sql_compile (const char *string2, client_connection_t * cli, caddr_t * err, int store_procs)
 {
-  dbg_sql_compile (__FILE__, __LINE__, string2, cli, err, store_procs);
+  return dbg_sql_compile (__FILE__, __LINE__, string2, cli, err, store_procs);
 }
+
+#undef sql_proc_to_recompile
+query_t *
+sql_proc_to_recompile (const char *string2, client_connection_t * cli, caddr_t proc_name, int text_is_constant)
+{
+  return dbg_sql_proc_to_recompile (__FILE__, __LINE__, string2, cli, proc_name, text_is_constant);
+}
+
+
 #endif

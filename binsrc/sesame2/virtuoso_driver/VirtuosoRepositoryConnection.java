@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -43,6 +43,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Iterator;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -63,7 +64,7 @@ import org.openrdf.model.URI;
 import org.openrdf.model.Value;
 import org.openrdf.model.ValueFactory;
 import org.openrdf.model.impl.ContextStatementImpl;
-import org.openrdf.model.impl.GraphImpl;
+//import org.openrdf.model.impl.GraphImpl;
 import org.openrdf.model.impl.NamespaceImpl;
 import org.openrdf.model.impl.ValueFactoryImpl;
 import org.openrdf.query.Dataset;
@@ -89,6 +90,7 @@ import org.openrdf.repository.Repository;
 import org.openrdf.repository.RepositoryConnection;
 import org.openrdf.repository.RepositoryException;
 import org.openrdf.repository.RepositoryResult;
+import org.openrdf.repository.UnknownTransactionStateException;
 import org.openrdf.rio.ParserConfig;
 import org.openrdf.rio.RDFFormat;
 import org.openrdf.rio.RDFHandler;
@@ -158,11 +160,16 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	protected VirtuosoRepository repository;
 	static final String S_INSERT = "sparql insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
         static final String S_DELETE = "sparql delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
-	static final int BATCH_SIZE = 5000;
+        static final String S_TTLP_INSERT = "DB.DBA.TTLP(?,'',?,255)";
+        static final int MAX_CMD_SIZE = 36000;
+
+	private int BATCH_SIZE = 5000;
 	private PreparedStatement psInsert;
+	private HashMap<String, StringBuilder> batchData = new HashMap<String,StringBuilder>();
 	private int psInsertCount = 0;
 	private boolean useLazyAdd = false;
 	private int prefetchSize = 200;
+
 	private volatile ParserConfig parserConfig = new ParserConfig(true, true, false, DatatypeHandling.IGNORE);
 
 
@@ -171,6 +178,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		this.repository = repository;
 		this.useLazyAdd = repository.useLazyAdd;
 		this.prefetchSize = repository.prefetchSize;
+		this.BATCH_SIZE = repository.batchSize;
 		this.nilContext = new ValueFactoryImpl().createURI(repository.defGraph);
 		this.repository.initialize();
 
@@ -822,6 +830,56 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
+
+	/**
+	 * Indicates if a transaction is currently active on the connection. A
+	 * transaction is active if {@link #begin()} has been called, and becomes
+	 * inactive after {@link #commit()} or {@link #rollback()} has been called.
+	 * 
+	 * @since 2.7.0
+	 * @return <code>true</code> iff a transaction is active, <code>false</code>
+	 *         iff no transaction is active.
+	 * @throws UnknownTransactionStateException
+	 *         if the transaction state can not be determined. This can happen
+	 *         for instance when communication with a repository fails or times
+	 *         out.
+	 * @throws RepositoryException
+	 */
+	public boolean isActive()
+		throws UnknownTransactionStateException, RepositoryException
+	{
+		verifyIsOpen();
+		try {
+			return !getQuadStoreConnection().getAutoCommit();
+		}
+		catch (SQLException e) {
+			throw new RepositoryException(e);
+		}
+	}
+
+	/**
+	 * Begins a transaction requiring {@link #commit()} or {@link #rollback()} to
+	 * be called to end the transaction.
+	 * 
+	 * @throws RepositoryException
+	 *         If the connection could not start a transaction.
+	 * @see #isActive()
+	 * @see #commit()
+	 * @see #rollback()
+	 * @since 2.7.0
+	 */
+	public void begin() throws RepositoryException {
+		verifyIsOpen();
+		flushDelayAdd();
+		verifyNotTxnActive("Connection already has an active transaction");
+
+		try {
+			getQuadStoreConnection().setAutoCommit(false);
+		}
+		catch (SQLException e) {
+			throw new RepositoryException(e);
+		}
+	}
 	/**
 	 * Commits all updates that have been performed as part of this connection
 	 * sofar.
@@ -834,6 +892,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		flushDelayAdd();
 		try {
 			getQuadStoreConnection().commit();
+			getQuadStoreConnection().setAutoCommit(true);
 		}
 		catch (SQLException e) {
 			throw new RepositoryException(e);
@@ -851,7 +910,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		verifyIsOpen();
 		dropDelayAdd();
 		try {
-			this.getQuadStoreConnection().rollback();
+			getQuadStoreConnection().rollback();
+			getQuadStoreConnection().setAutoCommit(true);
 		}
 		catch (SQLException e) {
 			throw new RepositoryException("Problem with rollback", e);
@@ -921,10 +981,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	public void add(Reader reader, String baseURI, RDFFormat format, final Resource... contexts) throws IOException, RDFParseException, RepositoryException {
 		verifyIsOpen();
 		sendDelayAdd();
-
 		final boolean useStatementContext = (contexts != null && contexts.length == 0); // If no context are specified, each statement is added to statement context
-		boolean autoCommit = isAutoCommit();
-		setAutoCommit(false);
 
 		try {
 			RDFParser parser = Rio.createParser(format, getRepository().getValueFactory());
@@ -932,22 +989,33 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		        parser.setParseErrorListener(new ParseErrorLogger());
 
 			// set up a handler for parsing the data from reader
-			final PreparedStatement ps = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
-			final Resource[] _contexts = checkDMLContext(contexts);
 
 			parser.setRDFHandler(new RDFHandlerBase() {
 				
 				int count = 0;
+				PreparedStatement ps = null; 
+				HashMap<String, StringBuilder> map = new HashMap<String,StringBuilder>();
+			        Resource[] _contexts = checkDMLContext(contexts);
 
-				public void startRDF() {
+				public void startRDF() throws RDFHandlerException {
+					if (ps == null) 
+						try {
+				        		ps = prepareStatement(VirtuosoRepositoryConnection.S_TTLP_INSERT);
+				        	} catch (java.sql.SQLException e) {
+							throw new RDFHandlerException("Problem PrepareStatement: ", e);
+				        	}
 				}
 
 				public void endRDF() throws RDFHandlerException {
 					try {
 						if (count > 0) {
-							ps.executeBatch();
-							ps.clearBatch();
+							flushDelayAddMap(ps, map);
+							map.clear();
 							count = 0;
+						}
+						if (ps != null) {
+							ps.close();
+							ps = null;
 						}
 					}
 					catch (SQLException e) {
@@ -962,6 +1030,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 						psn.setString(1, prefix);
 						psn.setString(2, name);
 						psn.execute();
+						psn.close();
 					}
 					catch (SQLException e) {
 						throw new RDFHandlerException("Problem executing query: " + query, e);
@@ -976,17 +1045,26 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					} else {
 						hcontexts = _contexts;
 					}
-					for (int i = 0; i < contexts.length; i++) {
-						ps.setString(1, hcontexts[i].stringValue());
-						bindResource(ps, 2, st.getSubject());
-						bindURI(ps, 3, st.getPredicate());
-						bindValue(ps, 4, st.getObject());
-						ps.addBatch();
+					for (int i = 0; i < hcontexts.length; i++) {
+
+						String ctx = hcontexts[i].stringValue();
+						StringBuilder data = map.get(ctx);
+						if (data == null)
+							data = new StringBuilder(256);
+
+						append(st.getSubject(), data);
+						data.append(' ');
+						append(st.getPredicate(), data);
+						data.append(' ');
+						append(st.getObject(), data);
+						data.append(" .\n");
+
+						map.put(ctx, data);
 						count++;
 					}
 					if (count > BATCH_SIZE) {
-						ps.executeBatch();
-						ps.clearBatch();
+						flushDelayAddMap(ps, map);
+						map.clear();
 						count = 0;
 					}
 				   }	
@@ -995,18 +1073,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				   }
 				}
 			});
-
 			parser.parse(reader, baseURI); // parse out each tripled to be handled by the handler above
-
 		}
 		catch (Exception e) {
-			if (autoCommit)
-				rollback();
 			throw new RepositoryException("Problem parsing triples", e);
-		}
-		finally {
-                        commit();
-			setAutoCommit(autoCommit);
 		}
 	}
 
@@ -1167,15 +1237,12 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		sendDelayAdd();
 
 		Iterator it = statements.iterator();
-
 		boolean useStatementContext = (contexts != null && contexts.length == 0); // If no context are specified, each statement is added to statement context
 		Resource[] _contexts = checkDMLContext(contexts); // otherwise, either use all contexts, or do not specify a context
 
-		boolean autoCommit = isAutoCommit();
-		setAutoCommit(false);
-
 		try {
-			PreparedStatement ps = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
+			PreparedStatement ps = prepareStatement(VirtuosoRepositoryConnection.S_TTLP_INSERT);
+			HashMap<String, StringBuilder> map = new HashMap<String,StringBuilder>();
 			int count = 0;
 
 			while (it.hasNext()) {
@@ -1188,33 +1255,36 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				}
 
 				for (int i = 0; i < contexts.length; i++) {
-					ps.setString(1, contexts[i].stringValue());
-					bindResource(ps, 2, st.getSubject());
-					bindURI(ps, 3, st.getPredicate());
-					bindValue(ps, 4, st.getObject());
-					ps.addBatch();
+					String ctx = contexts[i].stringValue();
+					StringBuilder data = map.get(ctx);
+					if (data == null)
+						data = new StringBuilder(256);
+
+					append(st.getSubject(), data);
+					data.append(' ');
+					append(st.getPredicate(), data);
+					data.append(' ');
+					append(st.getObject(), data);
+					data.append(" .\n");
+
+					map.put(ctx, data);
 					count++;
 				}
 
 				if (count > BATCH_SIZE) {
-					ps.executeBatch();
-					ps.clearBatch();
+					flushDelayAddMap(ps, map);
+					map.clear();
 					count = 0;
 				}
 			}
 			if (count > 0) {
-				ps.executeBatch();
-				ps.clearBatch();
+				flushDelayAddMap(ps, map);
+				map.clear();
 			}
+			ps.close();
 		}	
 		catch(Exception e) {
-			if (autoCommit)
-				rollback();
 		   	throw new RepositoryException(e);
-		}
-		finally {
-                        commit();
-			setAutoCommit(autoCommit);
 		}
 	}
 
@@ -1245,11 +1315,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		boolean useStatementContext = (contexts != null && contexts.length == 0); // If no context are specified, each statement is added to statement context
 		Resource[] _contexts = checkDMLContext(contexts); // otherwise, either use all contexts, or do not specify a context
 
-		boolean autoCommit = isAutoCommit();
-		setAutoCommit(false);
-
 		try {
-			PreparedStatement ps = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
+			PreparedStatement ps = prepareStatement(VirtuosoRepositoryConnection.S_TTLP_INSERT);
+			HashMap<String, StringBuilder> map = new HashMap<String,StringBuilder>();
 			int count = 0;
 
 			while (statements.hasNext()) {
@@ -1262,33 +1330,36 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				}
 
 				for (int i = 0; i < contexts.length; i++) {
-					ps.setString(1, contexts[i].stringValue());
-					bindResource(ps, 2, st.getSubject());
-					bindURI(ps, 3, st.getPredicate());
-					bindValue(ps, 4, st.getObject());
-					ps.addBatch();
+					String ctx = contexts[i].stringValue();
+					StringBuilder data = map.get(ctx);
+					if (data == null)
+						data = new StringBuilder(256);
+
+					append(st.getSubject(), data);
+					data.append(' ');
+					append(st.getPredicate(), data);
+					data.append(' ');
+					append(st.getObject(), data);
+					data.append(" .\n");
+
+					map.put(ctx, data);
 					count++;
 				}
 
 				if (count > BATCH_SIZE) {
-					ps.executeBatch();
-					ps.clearBatch();
+					flushDelayAddMap(ps, map);
+					map.clear();
 					count = 0;
 				}
 			}
 			if (count > 0) {
-				ps.executeBatch();
-				ps.clearBatch();
+				flushDelayAddMap(ps, map);
+				map.clear();
 			}
+			ps.close();
 		}
 		catch(Exception e) {
-			if (autoCommit)
-				rollback();
 		   	throw new RepositoryException(e);
-		}
-		finally {
-                        commit();
-			setAutoCommit(autoCommit);
 		}
 	}
 
@@ -1316,21 +1387,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		flushDelayAdd();
 
 		contexts = checkDMLContext(contexts);
-		boolean autoCommit = isAutoCommit();
-		setAutoCommit(false);
 
 		try {
 			for (int i = 0; i < contexts.length; i++)
 		     		removeContext(subject, predicate, object, contexts[i]);
 		}
 		catch(RepositoryException e) {
-			if (autoCommit)
-				rollback();
 		   	throw e;
-		}
-		finally {
-                        commit();
-			setAutoCommit(autoCommit);
 		}
 	}
 
@@ -1362,7 +1425,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 * repository.
 	 * 
 	 * @param statements
-	 *        The statements that should be added.
+	 *        The statements that should be removed.
 	 * @param contexts
 	 *        The context(s) to remove the data from. Note that this parameter is
 	 *        a vararg and as such is optional. If no contexts are supplied the
@@ -1380,33 +1443,51 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		Resource[] _contexts;
 		Iterator<? extends Statement> it = statements.iterator();
-
-		boolean autoCommit = isAutoCommit();
-		setAutoCommit(false);
+		int count = 0;
+		HashMap<String, StringBuilder> map = new HashMap<String,StringBuilder>();
 
 		try {
 			while (it.hasNext()) {
 				Statement st = it.next();
 
-				if (contexts != null && contexts.length == 0 &&  st.getContext() != null) {
+				if (contexts != null && contexts.length == 0 &&  st.getContext() != null)
 					_contexts = new Resource[] { st.getContext() }; // try the context given by the statement
-				} else {
+				else
 					_contexts = contexts;
-				}
 				_contexts = checkDMLContext(_contexts);
 
-				for (int i = 0; i < _contexts.length; i++)
-		     			removeContext(st.getSubject(), st.getPredicate(), st.getObject(), _contexts[i]);
-		     	}
+				for (int i=0; i < _contexts.length; i++) {
+					String ctx = _contexts[i].stringValue();
+					StringBuilder row = new StringBuilder(256);
+
+					append(st.getSubject(), row);
+					row.append(' ');
+					append(st.getPredicate(), row);
+					row.append(' ');
+					append(st.getObject(), row);
+					row.append(" .\n");
+
+					StringBuilder data = map.get(ctx);
+					if (count > 0 && data!=null && data.length()+row.length()>MAX_CMD_SIZE) {
+     			            		removeData(map);
+     			            		map.clear();
+	     			    		count = 0;
+	     			    		data = null;
+					}
+
+					if (data == null)
+						data = new StringBuilder(256);
+					data.append(row);
+					map.put(ctx, data);
+					count++;
+				}
+			}
+			if (count > 0)
+	     		    removeData(map);
+	     		map.clear();
 		}
 		catch(RepositoryException e) {
-			if (autoCommit)
-				rollback();
 		   	throw e;
-		}
-		finally {
-                        commit();
-			setAutoCommit(autoCommit);
 		}
 	}
 
@@ -1435,32 +1516,51 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		flushDelayAdd();
 
 		Resource[] _contexts;
-		boolean autoCommit = isAutoCommit();
-		setAutoCommit(false);
+		int count = 0;
+		HashMap<String, StringBuilder> map = new HashMap<String,StringBuilder>();
 
 		try {
 			while (statements.hasNext()) {
 				Statement st = statements.next();
 
-				if (contexts != null && contexts.length == 0 &&  st.getContext() != null) {
+				if (contexts != null && contexts.length == 0 &&  st.getContext() != null)
 					_contexts = new Resource[] { st.getContext() }; // try the context given by the statement
-				} else {
+				else
 					_contexts = contexts;
-				}
 				_contexts = checkDMLContext(_contexts);
 
-				for (int i = 0; i < _contexts.length; i++)
-		     			removeContext(st.getSubject(), st.getPredicate(), st.getObject(), _contexts[i]);
+				for (int i=0; i < _contexts.length; i++) {
+					String ctx = _contexts[i].stringValue();
+					StringBuilder row = new StringBuilder(256);
+
+					append(st.getSubject(), row);
+					row.append(' ');
+					append(st.getPredicate(), row);
+					row.append(' ');
+					append(st.getObject(), row);
+					row.append(" .\n");
+
+					StringBuilder data = map.get(ctx);
+					if (count > 0 && data!=null && data.length()+row.length()>MAX_CMD_SIZE) {
+     			            		removeData(map);
+     			            		map.clear();
+	     			    		count = 0;
+	     			    		data = null;
+					}
+
+					if (data == null)
+						data = new StringBuilder(256);
+					data.append(row);
+					map.put(ctx, data);
+					count++;
+				}
 		     	}
+			if (count > 0)
+	     		    removeData(map);
+	     		map.clear();
 		}
 		catch(RepositoryException e) {
-			if (autoCommit)
-				rollback();
 		   	throw e;
-		}
-		finally {
-                        commit();
-			setAutoCommit(autoCommit);
 		}
 	}
 
@@ -1482,20 +1582,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		contexts = checkDMLContext(contexts);
 
-		boolean autoCommit = isAutoCommit();
-		setAutoCommit(false);
-
 		try {
 			clearQuadStore(contexts);
 		}
 		catch(RepositoryException e) {
-			if (autoCommit)
-				rollback();
 		   	throw e;
-		}
-		finally {
-                        commit();
-			setAutoCommit(autoCommit);
 		}
 	}
 
@@ -1587,6 +1678,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			ps.setString(1, prefix);
 			ps.setString(2, name);
 			ps.execute();
+			ps.close();
 		}
 		catch (SQLException e) {
 			throw new RepositoryException("Problem executing query: " + query, e);
@@ -1611,6 +1703,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			PreparedStatement ps = prepareStatement(query);
 			ps.setString(1, prefix);
 			ps.execute(query);
+			ps.close();
 		}
 		catch (SQLException e) {
 			throw new RepositoryException("Problem executing query: " + query, e);
@@ -1630,6 +1723,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		try {
 			java.sql.Statement stmt = createStatement();
 			stmt.execute(query);
+			stmt.close();
 		}
 		catch (SQLException e) {
 			throw new RepositoryException("Problem executing query: " + query, e);
@@ -1882,13 +1976,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	  java.sql.PreparedStatement stmt = quadStoreConnection.prepareStatement(sql);
 	  int timeout = repository.getQueryTimeout();
           if (timeout > 0)
-            stmt.setQueryTimeout(timeout);
+           	stmt.setQueryTimeout(timeout);
           stmt.setFetchSize(prefetchSize);
           return stmt;
 	}
 	
 	
-	private String substBindings(String query, BindingSet bindings) 
+	private String substBindings(String query, BindingSet bindings)  throws RepositoryException 
 	{
 		StringBuffer buf = new StringBuffer();
 		String delim = " ,)(;.";
@@ -1934,7 +2028,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		return buf.toString();
 	}
 	
-	private String fixQuery(boolean isSPARUL, String query, Dataset dataset, boolean includeInferred, BindingSet bindings) 
+	private String fixQuery(boolean isSPARUL, String query, Dataset dataset, boolean includeInferred, BindingSet bindings)  throws RepositoryException 
 	{
 		StringBuffer ret = new StringBuffer("sparql\n ");
 
@@ -1970,44 +2064,52 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	private void addToQuadStore(Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException {
+/*** can't rollback inserts, that was done via TTLP, so it is disable **
+	private synchronized void addToQuadStore(Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException {
 		verifyIsOpen();
 
 		try {
 			boolean isAutoCommit = getQuadStoreConnection().getAutoCommit();
-		        if (!isAutoCommit && useLazyAdd) {
-		        	synchronized(this) {
-		        		if (psInsert == null)
-						psInsert = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
 
-					for (int i = 0; i < contexts.length; i++) {
-						psInsert.setString(1, contexts[i].stringValue());
-						bindResource(psInsert, 2, subject);
-						bindURI(psInsert, 3, predicate);
-						bindValue(psInsert, 4, object);
-
-						psInsert.addBatch();
-						psInsertCount++;
-					}
-					if (psInsertCount >= BATCH_SIZE) {
-						psInsert.executeBatch();
-						psInsert.clearBatch();
-						psInsertCount = 0;
-					}
-				}
-		        } else {
-				PreparedStatement ps = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
-
+	        	if (!isAutoCommit && useLazyAdd) {
 				for (int i = 0; i < contexts.length; i++) {
-					ps.setString(1, contexts[i].stringValue());
-					bindResource(ps, 2, subject);
-					bindURI(ps, 3, predicate);
-					bindValue(ps, 4, object);
+					String ctx = contexts[i].stringValue();
+					StringBuilder data = batchData.get(ctx);
+					if (data == null)
+						data = new StringBuilder(256);
 
-					ps.addBatch();
+					append(subject, data);
+					data.append(' ');
+					append(predicate, data);
+					data.append(' ');
+					append(object, data);
+					data.append(" .\n");
+
+					batchData.put(ctx, data);
+					psInsertCount++;
 				}
-				ps.executeBatch();
-				ps.clearBatch();
+				if (psInsertCount >= BATCH_SIZE)
+					flushDelayAdd();
+		        } else {
+				HashMap<String, StringBuilder> map = new HashMap<String,StringBuilder>();
+					
+				for (int i = 0; i < contexts.length; i++) {
+					String ctx = contexts[i].stringValue();
+					StringBuilder data = map.get(ctx);
+					if (data == null)
+						data = new StringBuilder(256);
+
+					append(subject, data);
+					data.append(' ');
+					append(predicate, data);
+					data.append(' ');
+					append(object, data);
+					data.append(" .\n");
+
+					map.put(ctx, data);
+				}
+				flushDelayAddMap(null, map);
+				map.clear();
 		        }
 		}
 		catch (Exception e) {
@@ -2015,48 +2117,251 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
-	private void sendDelayAdd() throws RepositoryException 
+	private synchronized void flushDelayAdd() throws RepositoryException 
 	{
-		synchronized(this) {
-			try {
-				if (psInsertCount >= BATCH_SIZE && psInsert!=null) {
-					psInsert.executeBatch();
-					psInsert.clearBatch();
-					psInsertCount = 0;
-				}
+		try {
+			if (psInsertCount > 0) {
+				flushDelayAddMap(null, batchData);
+				batchData.clear();
+				psInsertCount = 0;
 			}
-			catch (Exception e) {
+		}
+		catch (Exception e) {
+			throw new RepositoryException(e);
+		}
+	}
+
+	private synchronized void dropDelayAdd() throws RepositoryException 
+	{
+		try {
+			if (psInsertCount > 0) {
+				batchData.clear();
+				psInsertCount = 0;
+			}
+		} catch (Exception e) {}
+	}
+***/
+
+	private synchronized void addToQuadStore(Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException {
+		verifyIsOpen();
+
+		try {
+			boolean isAutoCommit = getQuadStoreConnection().getAutoCommit();
+		        if (psInsert == null)
+				psInsert = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
+
+	        	if (!isAutoCommit && useLazyAdd) {
+				for (int i = 0; i < contexts.length; i++) {
+					psInsert.setString(1, contexts[i].stringValue());
+					bindResource(psInsert, 2, subject);
+					bindURI(psInsert, 3, predicate);
+					bindValue(psInsert, 4, object);
+
+					psInsert.addBatch();
+					psInsertCount++;
+				}
+			
+				if (psInsertCount >= BATCH_SIZE)
+					flushDelayAdd();
+		        } else {
+				for (int i = 0; i < contexts.length; i++) {
+					psInsert.setString(1, contexts[i].stringValue());
+					bindResource(psInsert, 2, subject);
+					bindURI(psInsert, 3, predicate);
+					bindValue(psInsert, 4, object);
+
+					psInsert.addBatch();
+					psInsertCount++;
+				}
+
+				flushDelayAdd();
+		        }
+		}
+		catch (Exception e) {
+			throw new RepositoryException(e);
+		}
+	}
+
+	private synchronized void flushDelayAdd() throws RepositoryException 
+	{
+		try {
+			if (psInsertCount > 0 && psInsert!=null) {
+				psInsert.executeBatch();
+				psInsert.clearBatch();
+				psInsertCount = 0;
+			}
+		}
+		catch (Exception e) {
+			throw new RepositoryException(e);
+		}
+	}
+
+	private synchronized void dropDelayAdd() throws RepositoryException 
+	{
+		try {
+			if (psInsertCount > 0 && psInsert!=null) {
+				psInsert.clearBatch();
+				psInsertCount = 0;
+			}
+		} catch (Exception e) {}
+	}
+
+
+	private synchronized void sendDelayAdd() throws RepositoryException 
+	{
+		try {
+			if (psInsertCount >= BATCH_SIZE)
+				flushDelayAdd();
+		}
+		catch (Exception e) {
+			throw new RepositoryException(e);
+		}
+	}
+
+
+	private void flushDelayAddMap(PreparedStatement ps, Map<String,StringBuilder> data) throws SQLException
+	{
+		PreparedStatement pstmp = null;
+		java.sql.Statement st = null;
+	        if (ps == null) 
+			ps = pstmp = prepareStatement(VirtuosoRepositoryConnection.S_TTLP_INSERT);
+
+		try {
+			for(Map.Entry<String,StringBuilder> e : data.entrySet()) {
+				ps.setString(1, e.getValue().toString());
+				ps.setString(2, e.getKey());
+				ps.executeUpdate();
+			}
+		} finally {
+			if (pstmp!=null)
+				pstmp.close();
+			if (st!=null)
+				st.close();
+		}
+	}
+
+
+
+	private void append(Value value, StringBuilder sb)
+		throws RepositoryException
+	{
+		if (value instanceof Resource) {
+			append((Resource)value, sb);
+		}
+		else if (value instanceof Literal) {
+			append((Literal)value, sb);
+		}
+		else {
+			throw new RepositoryException("Unknown value type: " + value.getClass());
+		}
+	}
+
+	private void append(Resource resource, StringBuilder sb)
+		throws RepositoryException
+	{
+		if (resource instanceof URI) {
+			append((URI)resource, sb);
+		}
+		else if (resource instanceof BNode) {
+			append((BNode)resource, sb);
+		}
+		else {
+			throw new RepositoryException("Unknown resource type: " + resource.getClass());
+		}
+	}
+
+	private void append(URI uri, StringBuilder sb)
+		throws RepositoryException
+	{
+		sb.append("<");
+		escapeString(uri.toString(), sb);
+		sb.append(">");
+	}
+
+	private void append(BNode bNode, StringBuilder sb)
+		throws RepositoryException
+	{
+		sb.append("_:");
+		sb.append(bNode.getID());
+	}
+
+
+	private void append(Literal lit, StringBuilder sb)
+		throws RepositoryException
+	{
+		sb.append("\"");
+		escapeString(lit.getLabel(), sb);
+		sb.append("\"");
+
+		if (lit.getDatatype() != null) {
+			// Append the literal's datatype
+			sb.append("^^");
+			append(lit.getDatatype(), sb);
+		}
+		else if (lit.getLanguage() != null) {
+			// Append the literal's language
+			sb.append("@");
+			sb.append(lit.getLanguage());
+		}
+	}
+
+	private void escapeString(String label, StringBuilder sb)
+		throws RepositoryException
+	{
+		int labelLength = label.length();
+
+		for (int i = 0; i < labelLength; i++) {
+			char c = label.charAt(i);
+			int cInt = c;
+
+			if (c == '\\') {
+				sb.append("\\\\");
+			}
+			else if (c == '"') {
+				sb.append("\\\"");
+			}
+			else if (c == '\n') {
+				sb.append("\\n");
+			}
+			else if (c == '\r') {
+				sb.append("\\r");
+			}
+			else if (c == '\t') {
+				sb.append("\\t");
+			}
+			else if (
+				cInt >= 0x0 && cInt <= 0x8 ||
+				cInt == 0xB || cInt == 0xC ||
+				cInt >= 0xE && cInt <= 0x1F ||
+				cInt >= 0x7F && cInt <= 0xFFFF)
+			{
+				sb.append("\\u");
+				sb.append(toHexString(cInt, 4));
+			}
+			else if (cInt >= 0x10000 && cInt <= 0x10FFFF) {
+				sb.append("\\U");
+				sb.append(toHexString(cInt, 8));
+			}
+			else {
+				sb.append(c);
 			}
 		}
 	}
 
-	private void flushDelayAdd() throws RepositoryException 
-	{
-		synchronized(this) {
-			try {
-				if (psInsertCount > 0 && psInsert!=null) {
-					psInsert.executeBatch();
-					psInsert.clearBatch();
-					psInsertCount = 0;
-				}
-			}
-			catch (Exception e) {
-			}
-		}
+	private String toHexString(int decimal, int stringLength) {
+		StringBuilder sb = new StringBuilder(stringLength);
+		String hexVal = Integer.toHexString(decimal).toUpperCase();
+
+		int nofZeros = stringLength - hexVal.length();
+		for (int i = 0; i < nofZeros; i++)
+			sb.append('0');
+
+		sb.append(hexVal);
+		return sb.toString();
 	}
 
-	private void dropDelayAdd() throws RepositoryException 
-	{
-		synchronized(this) {
-			try {
-				if (psInsertCount >= BATCH_SIZE && psInsert!=null) {
-					psInsert.clearBatch();
-					psInsertCount = 0;
-				}
-			} catch (Exception e) {}
-		}
-	}
 
+	
 	private void clearQuadStore(Resource[] contexts) throws RepositoryException {
 		String  query = "sparql clear graph iri(??)";
 
@@ -2067,6 +2372,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				ps.setString(1, contexts[i].stringValue());
 				ps.execute();
 			}
+			ps.close();
 		  }
 		  catch (Exception e) {
 			throw new RepositoryException(e);
@@ -2126,9 +2432,36 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	private void removeContext(Resource subject, URI predicate, Value object, Resource context) throws RepositoryException {
-		PreparedStatement ps = null;
 
+	private void removeData(Map<String,StringBuilder> data) throws RepositoryException {
+		java.sql.Statement stmt = null;
+		try {
+			stmt = createStatement();
+			for(Map.Entry<String,StringBuilder> e : data.entrySet()) {
+		            
+		            StringBuilder sb = new StringBuilder(256);
+		            sb.append("sparql define output:format '_JAVA_' DELETE FROM <");
+		            sb.append(e.getKey());
+		            sb.append("> { ");
+		            sb.append(e.getValue().toString());
+          		    sb.append(" }");
+
+			    stmt.execute(sb.toString());
+			}
+		}
+		catch (Exception e) {
+		    throw new RepositoryException(e);
+		}
+		finally {
+			try {
+			    if (stmt!=null)
+			        stmt.close();
+			} catch (Exception e) {}
+		}
+	}
+
+	
+	private void removeContext(Resource subject, URI predicate, Value object, Resource context) throws RepositoryException {
 		String S = "?s";
 		String P = "?p";
 		String O = "?o";
@@ -2138,21 +2471,26 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		    if (subject == null && predicate == null && object == null && context != null) {
 			String  query = "sparql clear graph iri(??)";
 
-			ps = prepareStatement(query);
+			PreparedStatement ps = prepareStatement(query);
 			ps.setString(1, context.stringValue());
 			ps.execute();
+			ps.close();
 
 		    } else if (subject != null && predicate != null && object != null && context != null) {
 
-		    	ps = prepareStatement(VirtuosoRepositoryConnection.S_DELETE);
+		    	PreparedStatement ps = prepareStatement(VirtuosoRepositoryConnection.S_DELETE);
 
 			ps.setString(1, context.stringValue());
 			bindResource(ps, 2, subject);
 			bindURI(ps, 3, predicate);
 			bindValue(ps, 4, object);
 			ps.execute();
+			ps.close();
 
 		    } else {
+
+		        if (context == null)
+		           throw new RepositoryException("Context can't be NULL");
 
 			if (subject != null)
 				S = stringForResource(subject);
@@ -2174,6 +2512,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		    	java.sql.Statement stmt = createStatement();
 		    	stmt.execute(query);
+		    	stmt.close();
 		    }
 		}
 		catch (Exception e) {
@@ -2240,53 +2579,24 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 	
 
-	private String escapeString(String s) {
-		StringBuffer buf = new StringBuffer(s.length());
-	  	int i = 0;
-	  	char ch;
-	  	while( i < s.length()) {
-	    		ch = s.charAt(i++);
-	    		if (ch == '\'') 
-				buf.append('\\');
-			buf.append(ch);
-	  	}
-		return buf.toString();
-	}
-
-
-	private String stringForResource(Resource n) {
-		if (n instanceof URI) 
-			return stringForURI((URI) n);
-		else if (n instanceof BNode) 
-			return stringForBNode((BNode) n);
-		else 
-			return "<" + n.stringValue() + ">";
+	private String stringForResource(Resource n)  throws RepositoryException {
+		StringBuilder sb = new StringBuilder(256);
+		append(n, sb);
+		return sb.toString();
 	}
 
 	
-	private String stringForURI(URI n) {
-		return "<" + n.stringValue() + ">";
+	private String stringForURI(URI n)  throws RepositoryException {
+		StringBuilder sb = new StringBuilder(256);
+		append(n, sb);
+		return sb.toString();
 	}
 
 	
-	private String stringForBNode(BNode n) {
-		return "<_:" + n.getID() + ">";
-	}
-
-	
-	private String stringForValue(Value n) {
-		if (n instanceof Resource) 
-			return stringForResource((Resource) n);
-		else if (n instanceof Literal) {
-			Literal lit = (Literal) n;
-			String o = "'" + escapeString(lit.stringValue()) + "'";
-			if (lit.getLanguage() != null) 
-				return o + "@" + lit.getLanguage();
-			else if (lit.getDatatype() != null) 
-				return o + "^^<" + lit.getDatatype() + ">";
-			return o;
-		}
-		else return "'" + escapeString(n.stringValue()) + "'";
+	private String stringForValue(Value n)  throws RepositoryException {
+		StringBuilder sb = new StringBuilder(256);
+		append(n, sb);
+		return sb.toString();
 	}
 
 	
@@ -2402,6 +2712,24 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
+
+	protected void verifyNotTxnActive(String msg)
+		throws RepositoryException
+	{
+		if (!isAutoCommit()) {
+			throw new RepositoryException(msg);
+		}
+	}
+
+/**
+	protected void verifyTxnActive()
+		throws StoreException
+	{
+		if (isAutoCommit()) {
+			throw new RepositoryException("Connection does not have an active transaction");
+		}
+	}
+**/
 
         public class CloseableIterationBase<E, X extends Exception> implements CloseableIteration<E, X> {
                                            
@@ -2753,8 +3081,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
       timestampBuf.append(minuteS);
       timestampBuf.append(":");
       timestampBuf.append(secondS);
-      timestampBuf.append(".");
-      timestampBuf.append(nanosS);
+      if (nanos!=0) {
+        timestampBuf.append(".");
+        timestampBuf.append(nanosS);
+      }
+      timestampBuf.append("Z");
 
       return (timestampBuf.toString());
     }

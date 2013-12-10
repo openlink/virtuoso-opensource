@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3433,7 +3433,7 @@ bif_xqf_str_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long desc_idx;
   int flags = 0;
   xqf_str_parser_desc_t *desc;
-  desc_idx = ecm_find_name (p_name, xqf_str_parser_descs,
+  desc_idx = ecm_find_name (p_name, xqf_str_parser_descs_ptr,
     xqf_str_parser_desc_count, sizeof (xqf_str_parser_desc_t) );
   if (ECM_MEM_NOT_FOUND == desc_idx)
     sqlr_new_error ("22023", "SR486", "Function xqf_str_parse() does not support XQuery library function '%.300s'", p_name);
@@ -3569,9 +3569,23 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
           res = box_copy_tree (arg);
           goto res_ready;
         }
-      res = box_cast_to (qst, arg, arg_dtp, desc->p_dest_dtp, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, &err);
-      if (NULL == err)
-        goto res_ready;
+      if (!strcmp (type_iri, uname_xmlschema_ns_uri_hash_dayTimeDuration))
+        {
+          caddr_t res1 = box_cast_to (qst, arg, arg_dtp, DV_STRING, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, &err);
+          if (NULL == err)
+            {
+              res = box_sprintf (100, "PT%.100sS", res1);
+              dk_free_box (res1);
+              goto res_ready;
+            }
+          dk_free_box (res1);
+        }
+      else
+        {
+          res = box_cast_to (qst, arg, arg_dtp, desc->p_dest_dtp, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, &err);
+          if (NULL == err)
+            goto res_ready;
+        }
       sqlr_new_error ("22023", "SR553",
         "Literal of type xsd:%s can not be created from SQL value of type %s (%d): %.1000s",
         p_name, dv_type_title (arg_dtp), arg_dtp, ERR_MESSAGE (err) );

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -344,9 +344,9 @@ DBG_NAME (sethash) (DBG_PARAMS const void *key, dk_hash_t * ht, void *data)
 
   if (HASH_EMPTY == next)
     {
-      elt->next = NULL;
-      elt->key = key;
       elt->data = data;
+      elt->key = key;
+      elt->next = NULL;
       ht->ht_count++;
 #ifdef HT_STATS
       ht->ht_stats[0]++;

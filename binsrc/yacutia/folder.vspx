@@ -1,0 +1,142 @@
+<?xml version="1.0"?>
+<!--
+ -
+ -  $Id: folder.vspx,v 1.4 2013/04/10 12:07:56 ddimitrov Exp $
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2013 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<html>
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <style type="text/css">
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: Verdana, Arial, Helvetica, Sans-Serif;
+        font-size: 9pt;
+      }
+
+      pre {
+        white-space: pre-wrap;       /* css-3 */
+        white-space: -moz-pre-wrap;  /* Mozilla, since 1999 */
+        white-space: -pre-wrap;      /* Opera 4-6 */
+        white-space: -o-pre-wrap;    /* Opera 7 */
+        word-wrap: break-word;       /* Internet Explorer 5.5+ */
+      }
+
+      form {
+        margin: 0;
+        padding: 0;
+      }
+
+      .error {
+          background-color: white;
+          border: 1pt solid red;
+          color: red;
+          font-weight: bold;
+          margin: 3px 0 3px 0;
+          padding: 5px;
+          text-align: center;
+      }
+    </style>
+    <title>WebDAV Repository</title>
+  <![CDATA[
+    <script type="text/javascript" src="/conductor/toolkit/loader.js"></script>
+    <script type="text/javascript">
+      OAT.Preferences.imagePath = '/conductor/toolkit/images/';
+      OAT.Preferences.stylePath = '/conductor/toolkit/styles/';
+      OAT.Preferences.showAjax = false;
+
+      var featureList = ["combolist", "ajax", "tab"];
+      OAT.Loader.load(featureList);
+    </script>
+    <script type="text/javascript">
+      function myInit() {
+        if (!OAT._loaded) {
+          setTimeout(myInit, 100);
+          return;
+        }
+        OAT.MSG.send(OAT, 'PAGE_LOADED');
+      }
+      OAT.MSG.attach(OAT, 'PAGE_LOADED2', myInit);
+      window.onload = function(){OAT.MSG.send(OAT, 'PAGE_LOADED2');};
+    </script>
+  ]]>
+  </head>
+  <body>
+    <v:page
+      name="dav_browser"
+      style="yacutia_style.xsl"
+      on-error-redirect="/conductor/folder_error.vspx"
+      fast-render="1"
+      doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+      xmlns:xhtml="http://www.w3.org/1999/xhtml"
+      xmlns:v="http://www.openlinksw.com/vspx/"
+      xmlns:vm="http://www.openlinksw.com/vspx/macro">
+      <v:on-init>
+        <![CDATA[
+          set ISOLATION = 'Committed';
+          set http_charset = 'utf-8';
+        ]]>
+      </v:on-init>
+      <v:template type="simple" condition="not self.vc_is_valid">
+        <div class="error">
+          <v:error-summary/>
+        </div>
+      </v:template>
+      <vm:popup_page_wrapper>
+        <v:form name="F1" type="simple" method="POST" xhtml_enctype="multipart/form-data">
+          <v:variable persist="0" name="settings" type="any" default="null" />
+          <v:variable persist="0" name="domain_id" type="integer" default="0" />
+          <v:variable persist="0" name="owner_id" type="integer" default="null" />
+          <v:variable persist="0" name="account_id" type="integer" default="null" />
+          <v:variable persist="0" name="account_role" type="varchar" default="'R'" />
+          <v:before-data-bind>
+            <![CDATA[
+              declare vspx_user varchar;
+
+              vspx_user := connection_get ('vspx_user');
+              if (isnull (vspx_user) or (vspx_user = 'nobody'))
+              {
+                self.account_id := http_nobody_uid ();
+                if (__proc_exists ('VAL.DBA.session_id_for_connection') is not null)
+                {
+                  declare val_sid, val_serviceId, val_realm varchar;
+                  if (VAL.DBA.session_id_for_connection (val_sid, val_serviceId, val_realm))
+                  {
+                    connection_set ('vspx_user', val_serviceId);
+                    self.account_id := WEBDAV.DBA.account_id (val_serviceId);
+                  }
+                }
+              } else {
+                self.account_id := WEBDAV.DBA.account_id (vspx_user);
+              }
+              self.owner_id := self.account_id;
+              self.settings := WEBDAV.DBA.settings (self.account_id);
+            ]]>
+          </v:before-data-bind>
+          <?vsp http (sprintf ('<input type="hidden" name="sid" id="sid" value="%s" />', get_keyword ('sid', self.vc_page.vc_event.ve_params, ''))); ?>
+          <vm:dav_browser mode="webdav" />
+        </v:form>
+      </vm:popup_page_wrapper>
+    </v:page>
+  </body>
+</html>

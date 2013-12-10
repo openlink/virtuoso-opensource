@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -837,5 +837,293 @@ create procedure X509_ROOT_CA_CERTS ()
   declare ret any;
   ret := (select vector_agg (C_DATA) from SYS_X509_CERTIFICATES where C_U_ID = 0 and C_KIND = 1);
   return ret;
+}
+;
+
+create procedure uptime ()
+{
+  declare y,m,d,h,mn int;
+  declare y1,m1,d1,h1,mn1, delta int;
+  declare y2,m2,d2,h2,mn2 int;
+  declare s, dt, meta, data any;
+  declare uptime varchar;
+  result_names (uptime);
+  if (sys_stat ('st_started_since_year') = 0)
+    exec ('status ()', null, null, vector (), 0, meta, data);
+
+  y := sys_stat ('st_started_since_year');
+  m := sys_stat ('st_started_since_month');
+  d := sys_stat ('st_started_since_day');
+  h := sys_stat ('st_started_since_hour');
+  mn := sys_stat ('st_started_since_minute');
+
+  dt := stringdate (sprintf ('%d-%d-%d %d:%d', y,m,d,h,mn));
+  delta := datediff ('minute', dt, now ());
+
+  mn2 := mod (delta, 60);
+  h2 := mod (delta / 60, 24);
+  d2 := delta / 60 / 24;
+
+  s := '';
+  if (d2) s := s || cast (d2 as varchar) || ' day(s), ';
+  if (h2 or d2) s := s || cast (h2 as varchar) || ' hour(s), ';
+  s := s || cast (mn2 as varchar) || ' minute(s)';
+  result (s);
+}
+;
+
+create procedure DB.DBA.CL_MEM_SRV ()
+{
+  return vector (sys_stat ('st_sys_ram'), sys_stat ('st_host_name'));
+}
+;
+
+create procedure mem_info_cl ()
+{
+  declare daq, r, dict, vec any;
+  declare s int;
+  if (1 = sys_stat ('cl_run_local_only'))
+    {
+      return sys_stat ('st_sys_ram');
+    }
+  commit work;
+  daq := daq (0);
+  daq_call (daq, 'DB.DBA.SYS_COLS', 'SYS_COLS_BY_NAME', 'DB.DBA.CL_MEM_SRV', vector (), 1);
+  dict := dict_new (10);
+  while (r:= daq_next (daq))
+    {
+      if (length (r) > 2 and isarray (r[2]) and r[2][0] = 3)
+	{
+	  declare err any;
+	  err := r[2][1];
+	  if (isarray (err))
+	    signal (err[1], err[2]);
+	}
+      if (dict_get (dict, r[2][1][1]) is null)
+	{
+	  dict_put (dict, r[2][1][1], 1);
+	  s := s + r[2][1][0];
+	}
+    }
+  return s;
+}
+;
+
+create procedure
+mem_hum_size (in sz integer) returns varchar
+{
+  if (sz = 0)
+    return ('unknown');
+  if (sz < 1024)
+    return (sprintf ('%d B', cast (sz as integer)));
+  if (sz < 102400)
+    return (sprintf ('%d kB', sz/1024));
+  if (sz < 1048576)
+    return (sprintf ('%d kB', cast (sz/1024 as integer)));
+  if (sz < 104857600)
+    return (sprintf ('%d MB', sz/1048576));
+  if (sz < 1073741824)
+    return (sprintf ('%d MB', cast (sz/1048576 as integer)));
+  return (sprintf ('%d GB', sz/1073741824));
+}
+;
+
+--
+-- Object 2 JSON functions
+--
+create procedure DB.DBA.jsonObject ()
+{
+  return subseq (soap_box_structure ('x', 1), 0, 2);
+}
+;
+
+create procedure DB.DBA.isJsonObject (
+  inout o any)
+{
+  if (isarray (o) and (length (o) > 1) and (__tag (o[0]) = 255))
+    return 1;
+  return 0;
+}
+;
+
+create procedure DB.DBA.array2obj (
+  in V any)
+{
+  return vector_concat (jsonObject (), V);
+}
+;
+
+create procedure DB.DBA.obj2json (
+  in o any,
+  in d integer := 10,
+  in nsArray any := null,
+  in attributePrefix varchar := null)
+{
+  declare N, M integer;
+  declare R, T any;
+  declare S, retValue any;
+
+  if (d = 0)
+    return '[maximum depth achieved]';
+
+  T := vector ('\b', '\\b', '\t', '\\t', '\n', '\\n', '\f', '\\f', '\r', '\\r', '"', '\\"', '\\', '\\\\');
+  retValue := '';
+  if (isnull (o))
+  {
+    retValue := 'null';
+  }
+  else if (isnumeric (o))
+  {
+    retValue := cast (o as varchar);
+  }
+  else if (isstring (o))
+  {
+    for (N := 0; N < length(o); N := N + 1)
+    {
+      R := chr (o[N]);
+      for (M := 0; M < length(T); M := M + 2)
+      {
+        if (R = T[M])
+          R := T[M+1];
+      }
+      retValue := retValue || R;
+    }
+    retValue := '"' || retValue || '"';
+  }
+  else if (isarray (o) and (length (o) > 1) and ((__tag (o[0]) = 255) or (o[0] is null and (o[1] = '<soap_box_structure>' or o[1] = 'structure'))))
+  {
+    retValue := '{';
+    for (N := 2; N < length (o); N := N + 2)
+    {
+      S := o[N];
+      if (chr (S[0]) = attributePrefix)
+        S := subseq (S, length (attributePrefix));
+      if (not isnull (nsArray))
+      {
+        for (M := 0; M < length (nsArray); M := M + 1)
+        {
+          if (S like nsArray[M]||':%')
+            S := subseq (S, length (nsArray[M])+1);
+        }
+      }
+      retValue := retValue || '"' || S || '":' || obj2json (o[N+1], d-1, nsArray, attributePrefix);
+      if (N <> length(o)-2)
+        retValue := retValue || ', ';
+    }
+    retValue := retValue || '}';
+  }
+  else if (isarray (o))
+  {
+    retValue := '[';
+    for (N := 0; N < length(o); N := N + 1)
+    {
+      retValue := retValue || obj2json (o[N], d-1, nsArray, attributePrefix);
+      if (N <> length(o)-1)
+        retValue := retValue || ',\n';
+    }
+    retValue := retValue || ']';
+  }
+  return retValue;
+}
+;
+
+create procedure DB.DBA.params2json (
+  in o any)
+{
+  return obj2json (array2obj(o));
+}
+;
+
+create procedure DB.DBA.json2obj (
+  in o any)
+{
+  return json_parse (o);
+}
+;
+
+--
+-- Object 2 XML functions
+--
+create procedure DB.DBA.obj2xml (
+  in o any,
+  in d integer := 10,
+  in tag varchar := null,
+  in nsArray any := null,
+  in attributePrefix varchar := '')
+{
+  declare N, M integer;
+  declare R, T any;
+  declare S, nsValue, retValue any;
+
+  if (d = 0)
+    return '[maximum depth achieved]';
+
+  nsValue := '';
+  if (not isnull (nsArray))
+  {
+    for (N := 0; N < length(nsArray); N := N + 2)
+      nsValue := sprintf ('%s xmlns%s="%s"', nsValue, case when nsArray[N]='' then '' else ':'||nsArray[N] end, nsArray[N+1]);
+  }
+  retValue := '';
+  if (isnumeric (o))
+  {
+    retValue := cast (o as varchar);
+  }
+  else if (isstring (o))
+  {
+    retValue := sprintf ('%V', o);
+  }
+  else if (__tag (o) = 211)
+  {
+    retValue := datestring (o);
+  }
+  else if (isJsonObject (o))
+  {
+    for (N := 2; N < length(o); N := N + 2)
+    {
+      if (not isJsonObject (o[N+1]) and isarray (o[N+1]) and not isstring (o[N+1]))
+      {
+        retValue := retValue || obj2xml (o[N+1], d-1, o[N], nsArray, attributePrefix);
+      } else {
+        if (chr (o[N][0]) <> attributePrefix)
+        {
+          nsArray := null;
+          S := '';
+          if ((attributePrefix <> '') and isJsonObject (o[N+1]))
+          {
+            for (M := 2; M < length(o[N+1]); M := M + 2)
+            {
+              if (chr (o[N+1][M][0]) = attributePrefix)
+                S := sprintf ('%s %s="%s"', S, subseq (o[N+1][M], length (attributePrefix)), obj2xml (o[N+1][M+1]));
+            }
+          }
+          retValue := retValue || sprintf ('<%s%s%s>%s</%s>\n', o[N], S, nsValue, obj2xml (o[N+1], d-1, null, nsArray, attributePrefix), o[N]);
+        }
+      }
+    }
+  }
+  else if (isarray (o))
+  {
+    for (N := 0; N < length(o); N := N + 1)
+    {
+      if (isnull (tag))
+      {
+        retValue := retValue || obj2xml (o[N], d-1, tag, nsArray, attributePrefix);
+      } else {
+        nsArray := null;
+        S := '';
+        if (not isnull (attributePrefix) and isJsonObject (o[N]))
+        {
+          for (M := 2; M < length(o[N]); M := M + 2)
+          {
+            if (chr (o[N][M][0]) = attributePrefix)
+              S := sprintf ('%s %s="%s"', S, subseq (o[N][M], length (attributePrefix)), obj2xml (o[N][M+1]));
+          }
+        }
+        retValue := retValue || sprintf ('<%s%s%s>%s</%s>\n', tag, S, nsValue, obj2xml (o[N], d-1, null, nsArray, attributePrefix), tag);
+      }
+    }
+  }
+  return retValue;
 }
 ;

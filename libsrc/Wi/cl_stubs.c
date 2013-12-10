@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -47,9 +47,10 @@ cluster_map_t *clm_replicated;
 
 int cluster_enable = 0;
 int enable_dfg_print = 0;
-int enable_dfg = 1;
+int32 enable_dfg = 1;
 int enable_setp_partition;
 int enable_multistate_code = 0;
+int enable_g_replace_log = 0;
 
 int32 c_cluster_threads;
 int32 cl_batches_per_rpc;
@@ -284,3 +285,15 @@ cluster_init ()
   dk_mem_hooks (DV_CLOP, box_non_copiable, (box_destr_f) clo_destroy, 0);
 }
 
+
+void
+dpipe_define_1_bif_define (void)
+{
+  return;
+}
+
+void
+partition_def_bif_define (void)
+{
+  return;
+}

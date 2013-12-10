@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1600,7 +1600,10 @@ sqlo_check_ft_offband (sqlo_t * so, op_table_t * ot, ST ** args, char type)
 	  inx + 1, sqlo_spec_predicate_name(type), arg );
     }
   if (off)
-    ot->ot_text_offband = (op_virt_col_t **) list_to_array (off);
+    {
+      ot->ot_text_offband = (op_virt_col_t **) t_list_to_array (off);
+      dk_set_free (off);
+    }
 }
 
 
@@ -2030,6 +2033,12 @@ sqlo_opt_value (caddr_t * opts, int opt)
 }
 
 
+dk_set_t
+t_set_diff_ordered (dk_set_t s, dk_set_t minus)
+{
+  return dk_set_nreverse (t_set_diff (s, minus));
+}
+
 int
 sqlo_expand_distinct_joins (sqlo_t * so, ST *tree, op_table_t *sel_ot, dk_set_t *res)
 {
@@ -2062,7 +2071,7 @@ sqlo_expand_distinct_joins (sqlo_t * so, ST *tree, op_table_t *sel_ot, dk_set_t 
 		}
 	      if (ot->ot_from_ots)
 		{
-		  so->so_tables = t_set_diff (so->so_tables, ot->ot_from_ots);
+		  so->so_tables = t_set_diff_ordered (so->so_tables, ot->ot_from_ots);
 		  so->so_scope->sco_tables = t_set_diff (so->so_tables, ot->ot_from_ots);
 		  sel_ot->ot_from_ots = t_set_diff (sel_ot->ot_from_ots, ot->ot_from_ots);
 		}

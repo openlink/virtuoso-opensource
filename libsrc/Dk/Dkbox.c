@@ -18,7 +18,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -490,6 +490,17 @@ dk_free_box (box_t box)
 
   switch (tag)
     {
+#ifdef MALLOC_DEBUG
+    case DV_WIDE:
+      if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
+        GPF_T1 ("Free of a damaged wide string");
+#ifdef DOUBLE_ALIGN
+      len = ALIGN_8 (len);
+#else
+      len = ALIGN_4 (len);
+#endif
+      break;
+#endif
     case DV_STRING:
     case DV_C_STRING:
     case DV_SHORT_STRING_SERIAL:
@@ -667,6 +678,17 @@ dk_free_tree (box_t box)
 
   switch (tag)
     {
+#ifdef MALLOC_DEBUG
+    case DV_WIDE:
+      if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
+        GPF_T1 ("Free of a tree with a damaged wide string");
+#ifdef DOUBLE_ALIGN
+      len = ALIGN_8 (len);
+#else
+      len = ALIGN_4 (len);
+#endif
+      break;
+#endif
     case DV_STRING:
     case DV_C_STRING:
     case DV_SHORT_STRING_SERIAL:
@@ -1055,6 +1077,13 @@ DBG_NAME (box_copy) (DBG_PARAMS cbox_t box)
   tag = box_tag (box);
   switch (tag)
     {
+    case DV_WIDE:
+#ifdef MALLOC_DEBUG
+      len = box_length (box);
+      if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
+        GPF_T1 ("Copy of a damaged wide string");
+      break;
+#endif
     case DV_STRING:
     case DV_ARRAY_OF_POINTER:
     case DV_LIST_OF_POINTER:
@@ -1180,6 +1209,13 @@ box_t DBG_NAME (box_copy_tree) (DBG_PARAMS cbox_t box)
   tag = box_tag (box);
   switch (tag)
     {
+#ifdef MALLOC_DEBUG
+    case DV_WIDE:
+      len = box_length (box);
+      if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
+        GPF_T1 ("Copy of a tree with a damaged wide string");
+      break;
+#endif
     case DV_ARRAY_OF_POINTER:
     case DV_LIST_OF_POINTER:
     case DV_ARRAY_OF_XQVAL:

@@ -6,7 +6,7 @@ AC_REVISION($Id$)
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2012 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -29,14 +29,14 @@ AC_REVISION($Id$)
 ##									##
 ##########################################################################
 
-AC_INIT([Virtuoso Open Source Edition],
-	[6.1.6],
+AC_INIT([Virtuoso Open Source Edition (Row Store)],
+	[6.1.8],
 	[vos.admin@openlinksw.com],
 	[virtuoso-opensource])
 AC_CONFIG_SRCDIR([libsrc/Dk.h])
 AC_CONFIG_AUX_DIR([binsrc/config])
 AC_CONFIG_MACRO_DIR([binsrc/config])
-AM_CONFIG_HEADER([libsrc/Dk/config.h])
+AC_CONFIG_HEADER([libsrc/Dk/config.h])
 
 dnl
 dnl You may need to change the next macro for older versions of automake:
@@ -49,7 +49,6 @@ dnl
 AM_INIT_AUTOMAKE([1.9 tar-ustar])
 
 AM_MAINTAINER_MODE
-
 
 ##########################################################################
 ##									##
@@ -546,6 +545,7 @@ AC_CHECK_FUNCS(strerror)
 AC_CHECK_FUNCS(strdup)
 AC_CHECK_FUNCS(getrusage)
 AC_CHECK_FUNCS(memmove memmem memcpy)
+AC_CHECK_FUNCS(strftime stpcpy)
 
 AC_MSG_CHECKING(for sys_errlist)
 AC_TRY_LINK([
@@ -2039,6 +2039,31 @@ AC_HELP_STRING([--with-jdk4=DIR], [use the Sun JDK 1.6.x at the specified locati
 AC_MSG_RESULT(done)
 
 
+ac_jdk4_1_path="none"
+AC_ARG_WITH(jdk4_1, [dnl
+AC_HELP_STRING([--with-jdk4_1=DIR], [use the Oracle JDK 1.7.x at the specified location])dnl
+], [
+    case "${withval}" in
+      yes)
+          AC_MSG_ERROR("You need to specify a directory")
+	  ;;
+
+      no)
+	  ac_jdk4_1_path="none"
+	  ;;
+
+      *)
+	  if test -d "${withval}" ; then
+	      ac_jdk4_1_path="${withval}"
+	  else
+	      AC_MSG_ERROR("Directory specified with --with-jdk4_1 does not exist")
+	  fi
+	  ;;
+    esac
+    ])
+AC_MSG_RESULT(done)
+
+
 #AC_PROG_JAVA_WORKS (jdk_path, min_acceptable_ver, max_acceptable_ver)
 
 AC_DEFUN([AC_PROG_JAVA_WORKS], [
@@ -2111,8 +2136,16 @@ ac_jdk4_path="$ac_jw_jdk"
 AM_CONDITIONAL(WITH_JDK4, test "x$ac_jdk4_works" = "xyes")
 AC_SUBST(ac_jdk4_path)
 
+AC_PROG_JAVA_WORKS($ac_jdk4_1_path, 7, 7)
+ac_jdk4_1_works="$ac_cv_prog_java_works"
+ac_jdk4_1_path="$ac_jw_jdk"
+AM_CONDITIONAL(WITH_JDK4_1, test "x$ac_jdk4_1_works" = "xyes")
+AC_SUBST(ac_jdk4_1_path)
+
 ac_integ_jdk=""
-if test "x$ac_jdk4_works" = "xyes" ; then
+if test "x$ac_jdk4_1_works" = "xyes" ; then
+  ac_integ_jdk="$ac_jdk4_1_path/.."
+elif test "x$ac_jdk4_works" = "xyes" ; then
   ac_integ_jdk="$ac_jdk4_path/.."
 elif test "x$ac_jdk3_works" = "xyes" ; then
   ac_integ_jdk="$ac_jdk3_path/.."
@@ -2648,6 +2681,7 @@ AC_CONFIG_FILES([
 	binsrc/hosting/ruby/Makefile
 	binsrc/isparql/Makefile
 	binsrc/jena/Makefile
+	binsrc/jena2/Makefile
 	binsrc/maildrop/Makefile
 	binsrc/mono/Makefile
 	binsrc/oat/Makefile

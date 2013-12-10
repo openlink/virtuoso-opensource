@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -918,7 +918,7 @@ TBL.showCell51TblInternal = function (td, fldName, fldOptions, disabled) {
     tbl.appendChild(tr);
     var td = OAT.Dom.create('td', {width: '95%', style: 'padding: 0'});
     tr.appendChild(td);
-    var tbl2 = OAT.Dom.create('table', {width: '100%', class: 'ODS_formList'});
+    var tbl2 = OAT.Dom.create('table', {width: '100%', className: 'ODS_formList'});
     td.appendChild(tbl2);
     var tbody2 = OAT.Dom.create('tbody', {id: fldName+'_tbody'});
     tbl2.appendChild(tbody2);
@@ -1054,18 +1054,17 @@ TBL.createCell55Ext = function (obj, fldOptions, disabled) {
     return;
 
   var fldName = prefix+'_fld_0_'+No;
-  if (predicate[1] != 'sparql') {
-    OAT.Dom.unlink(fldName);
-    return;
-  }
-
-  if ($(fldName))
+  OAT.Dom.unlink('span_' + fldName);
+  if ((predicate[1] != 'sparql') && (predicate[1] != 'triplet'))
     return;
 
+  var td = TBL.parent(obj, 'td');
+  var span = OAT.Dom.create('span');
+  span.id = 'span_' + fldName;
+  if (predicate[1] == 'sparql') {
   if (!fldOptions)
     fldOptions = {valueExt: 'prefix sioc: <http://rdfs.org/sioc/ns#>\nprefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nprefix foaf: <http://xmlns.com/foaf/0.1/>\nASK where {^{webid}^ rdf:type foaf:Person}'};
 
-  var td = TBL.parent(obj, 'td');
   var fld = OAT.Dom.create('textarea');
   fld.id = fldName;
   fld.name = fld.id;
@@ -1077,7 +1076,24 @@ TBL.createCell55Ext = function (obj, fldOptions, disabled) {
   if (disabled)
     fld.disabled = disabled;
 
-  td.appendChild(fld);
+    span.appendChild(fld);
+  }
+  else if (predicate[1] == 'triplet') {
+    if (!fldOptions)
+      fldOptions = {valueExt: ''};
+
+    var fld = TBL.createCellCombolist(td, fldOptions.valueExt, {name: fldName});
+    fld.input.style.width = "95%";
+
+    if (!TBL.triplets)
+      TBL.initValues();
+
+    for (i = 0; i < TBL.triplets.length; i++)
+      fld.addOption(TBL.triplets[i]);
+
+    span.appendChild(fld.div);
+  }
+  td.appendChild(span);
 }
 
 TBL.changeCell56 = function (obj) {
@@ -1420,6 +1436,7 @@ TBL.initValues = function () {
     var o = OAT.JSON.parse(data);
     TBL.predicates = o[0];
     TBL.compares = o[1];
+    TBL.triplets = o[2];
   }
   OAT.AJAX.GET('/ods/api/filtersData', false, x, {async: false});
 }

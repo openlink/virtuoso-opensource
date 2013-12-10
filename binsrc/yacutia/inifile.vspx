@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -169,7 +169,7 @@
                       {
                         http(sprintf('<tr><td><input type="hidden" name="n_%V" value="%V">%V</td>', item, item, item));
                         http(sprintf('<td><input type="text" size="40" name="_ini_%V" value="%V" /></td>', item, item_value));
-			http(sprintf('<td  class="listing_col_action"><a href="inifile.vspx?to_go=%s&delete=1&dd_sect=%i&update_ini=1&sid=%s&realm=%s"><img src="images/icons/del_16.png" border="0" alt="Remove" title="Remove"/>&#160;Remove</a></td></tr>', item, self.pos, self.sid , self.realm));
+			http(sprintf('<td  class="listing_col_action"><a href="inifile.vspx?to_go=%s&delete=1&dd_sect=%i&update_ini=1&sid=%s&realm=%s"><img src="images/icons/del_16.png" border="0" alt="Remove" title="Remove"/>&nbsp;Remove</a></td></tr>', item, self.pos, self.sid , self.realm));
                       }
                       else
                       {

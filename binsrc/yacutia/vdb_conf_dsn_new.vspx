@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -114,7 +114,7 @@
 			    <tr class="<?V case when mod (i, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
 				<td><?V elm ?></td>
 				<td class="listing_col_action">
-		      <a href="<?V sprintf ('vdb_conf_dsn_edit.vspx?driver=%U&type=%U&sid=%s&realm=%s', elm, self.dsn_type, self.sid, self.realm) ?>"><img src="images/icons/add_16.png" alt="Add" title="Add" border="0" />&#160;Add</a>
+		      <a href="<?V sprintf ('vdb_conf_dsn_edit.vspx?driver=%U&type=%U&sid=%s&realm=%s', elm, self.dsn_type, self.sid, self.realm) ?>"><img src="images/icons/add_16.png" alt="Add" title="Add" border="0" />&nbsp;Add</a>
 				</td>
 			      </tr>
 			    <?vsp

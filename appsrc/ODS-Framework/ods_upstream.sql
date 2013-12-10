@@ -41,7 +41,7 @@ create procedure ODS.ODS_API.oauth_connect_twitter (in uri varchar) __SOAP_HTTP 
       ret_url := sprintf ('http://%{WSHost}s%s?sid=%U&uri=%U', http_path(), sid, uri);
       url := OAUTH..sign_request ('GET', 'http://twitter.com/oauth/request_token', sprintf ('oauth_callback=%U', ret_url), tok, null, 1); 
       res := http_get (url);
-      dbg_obj_print (res);
+      -- dbg_obj_print (res);
       sid := OAUTH..parse_response (sid, tok, res);
 
       OAUTH..set_session_data (sid, params);
@@ -54,13 +54,13 @@ create procedure ODS.ODS_API.oauth_connect_twitter (in uri varchar) __SOAP_HTTP 
   else if ({?'oauth_verifier'} is not null)
     {
       declare header, auth any;
-      dbg_obj_print (params);
+      -- dbg_obj_print (params);
       url := OAUTH..sign_request ('GET', 'http://twitter.com/oauth/access_token', 
 		sprintf ('oauth_token=%U&oauth_verifier=%U', {?'oauth_token'}, {?'oauth_verifier'}), 
 			tok, sid, 1);
-      dbg_obj_print (url);
+      -- dbg_obj_print (url);
       res := http_get (url);
-      dbg_obj_print (res);
+      -- dbg_obj_print (res);
       sid := OAUTH..parse_response (sid, tok, res);
       tmp := split_and_decode (res, 0);
       screen_name := get_keyword ('screen_name', tmp);  
@@ -97,7 +97,7 @@ create procedure ODS.ODS_API.oauth_connect_linkedin (in uri varchar) __SOAP_HTTP
       ret_url := sprintf ('http://%{WSHost}s%s?sid=%U&uri=%U', http_path(), sid, uri);
       url := OAUTH..sign_request ('GET', 'https://api.linkedin.com/uas/oauth/requestToken', sprintf ('oauth_callback=%U', ret_url), tok, null, 1); 
       res := http_get (url);
-      dbg_obj_print_vars (url, res);
+      -- dbg_obj_print_vars (url, res);
       sid := OAUTH..parse_response (sid, tok, res);
 
       OAUTH..set_session_data (sid, params);
@@ -108,19 +108,19 @@ create procedure ODS.ODS_API.oauth_connect_linkedin (in uri varchar) __SOAP_HTTP
   else if ({?'oauth_verifier'} is not null)
     {
       declare header, auth any;
-      dbg_obj_print (params);
+      -- dbg_obj_print (params);
       url := OAUTH..sign_request ('GET', 'https://api.linkedin.com/uas/oauth/accessToken', 
 		sprintf ('oauth_token=%U&oauth_verifier=%U', {?'oauth_token'}, {?'oauth_verifier'}), 
 			tok, sid, 1);
-      dbg_obj_print (url);
+      -- dbg_obj_print (url);
       res := http_get (url);
-      dbg_obj_print (res);
+      -- dbg_obj_print (res);
       sid := OAUTH..parse_response (sid, tok, res);
 
       url := OAUTH..sign_request ('GET', 'https://api.linkedin.com/v1/people/~:(id,first-name,last-name,industry,public-profile-url,date-of-birth)', '', tok, sid, 1);
-      dbg_obj_print_vars (url);
+      -- dbg_obj_print_vars (url);
       res := http_get (url);
-      dbg_printf ('%s', res);
+      -- dbg_printf ('%s', res);
       update DB.DBA.WA_USER_OL_ACCOUNTS set WUO_OAUTH_SID = sid where WUO_URL = uri;
       commit work;
       http_header ('Content-Type: text/html\r\n');
@@ -155,7 +155,7 @@ create procedure ODS.ODS_API.twitter_status_update (in txt varchar, in sid varch
   tok := ODS.ODS_API.get_oauth_tok ('Twitter API');
   auth := OAUTH..signed_request_header ('POST', url, pars, tok, '', sid, 0);
   res := http_get (url, header, 'POST', auth, pars);
-  dbg_obj_print_vars (header);
+  -- dbg_obj_print_vars (header);
   return res;
 }
 ;
@@ -168,7 +168,7 @@ create procedure ODS.ODS_API.twitter_status_delete (in id varchar, in sid varcha
   tok := ODS.ODS_API.get_oauth_tok ('Twitter API');
   auth := OAUTH..signed_request_header ('POST', url, pars, tok, '', sid, 0);
   res := http_get (url, header, 'POST', auth, pars);
-  dbg_obj_print_vars (header);
+  -- dbg_obj_print_vars (header);
   return res;
 }
 ;

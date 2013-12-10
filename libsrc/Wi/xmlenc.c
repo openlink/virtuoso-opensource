@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1402,10 +1402,7 @@ xenc_key_t * xenc_key_create_from_x509_cert (char * name, char * certificate, ch
   if (b_priv)
     {
 #if OPENSSL_VERSION_NUMBER >= 0x00908000L
-      private_key = (EVP_PKEY*)PEM_ASN1_read_bio ((d2i_of_void *)d2i_PrivateKey,
-					     PEM_STRING_EVP_PKEY,
-					     b_priv,
-					     NULL, pass_cb, (void *) private_key_passwd);
+      private_key = PEM_read_bio_PrivateKey(b_priv, NULL, pass_cb, (void *) private_key_passwd);
 #else
       private_key = (EVP_PKEY*)PEM_ASN1_read_bio ((char *(*)())d2i_PrivateKey,
 					     PEM_STRING_EVP_PKEY,
@@ -1413,7 +1410,17 @@ xenc_key_t * xenc_key_create_from_x509_cert (char * name, char * certificate, ch
 					     NULL, pass_cb, (void *) private_key_passwd);
 #endif
       if (!private_key)
+	{
+#if 0
+	  unsigned long err;
+	  while ((err = ERR_peek_error()) != 0)
+	    {
+	      log_error ("%s", ERR_reason_error_string(err));
+	      ERR_get_error();
+	    }
+#endif
 	goto finish;
+    }
     }
 
   memset (tpass, 0, sizeof (tpass));
@@ -1496,13 +1503,14 @@ caddr_t bif_xenc_key_dsa_create (caddr_t * qst, caddr_t * err_r, state_slot_t **
 {
   xenc_key_t * key;
   caddr_t name = bif_string_arg (qst, args, 0, "xenc_key_DSA_create");
+  int num = BOX_ELEMENTS (args) > 1 ? (int) bif_long_arg (qst, args, 1, "xenc_key_DSA_create") : 512;
   mutex_enter (xenc_keys_mtx);
   if (NULL == (key = xenc_key_create (name, XENC_DSA_ALGO , DSIG_DSA_SHA1_ALGO, 0)))
     {
       mutex_leave (xenc_keys_mtx);
       SQLR_NEW_KEY_EXIST_ERROR (name);
     }
-  __xenc_key_dsa_init (name, 0);
+  __xenc_key_dsa_init (name, 0, num);
   /* xenc_store_key (key, 0); */
   mutex_leave (xenc_keys_mtx);
   return NULL;
@@ -1779,7 +1787,6 @@ caddr_t bif_xenc_key_rsa_create (caddr_t * qst, caddr_t * err_r, state_slot_t **
   caddr_t name = bif_string_arg (qst, args, 0, "xenc_key_RSA_create");
   int num = (int) bif_long_arg (qst, args, 1, "xenc_key_RSA_create");
   RSA *rsa = NULL;
-  EVP_PKEY *pk = NULL;
 
   mutex_enter (xenc_keys_mtx);
   if (NULL == (k = xenc_key_create (name, XENC_RSA_ALGO , DSIG_RSA_SHA1_ALGO, 0)))
@@ -1799,11 +1806,11 @@ caddr_t bif_xenc_key_rsa_create (caddr_t * qst, caddr_t * err_r, state_slot_t **
   k->xek_private_rsa = rsa;
   k->ki.rsa.pad = RSA_PKCS1_PADDING;
 
-  if ((pk=EVP_PKEY_new()) != NULL)
-    {
-      if (EVP_PKEY_assign_RSA (pk,rsa))
-	k->xek_evp_private_key =  pk;
-    }
+  k->xek_evp_private_key = EVP_PKEY_new();
+  if (k->xek_evp_private_key) EVP_PKEY_assign_RSA (k->xek_evp_private_key, k->xek_private_rsa);
+
+  k->xek_evp_key = EVP_PKEY_new();
+  if (k->xek_evp_key) EVP_PKEY_assign_RSA (k->xek_evp_key, k->xek_rsa);
 
   mutex_leave (xenc_keys_mtx);
   return NULL;
@@ -1993,10 +2000,10 @@ caddr_t bif_xenc_key_exists (caddr_t * qst, caddr_t * err_r, state_slot_t ** arg
   return box_num (key ? 1 : 0);
 }
 
-int __xenc_key_dsa_init (char *name, int lock)
+int __xenc_key_dsa_init (char *name, int lock, int num)
 {
   DSA *dsa;
-  int num=512;
+  /*int num=512;*/
   xenc_key_t * pkey = xenc_get_key_by_name (name, lock);
   if (NULL == pkey)
     SQLR_NEW_KEY_ERROR (name);
@@ -2267,6 +2274,13 @@ bif_xenc_key_rsa_read (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
   k->xek_private_rsa = r;
   k->xek_rsa = p;
   k->ki.rsa.pad = RSA_PKCS1_PADDING;
+  if (r)
+    {
+      k->xek_evp_private_key = EVP_PKEY_new();
+      if (k->xek_evp_private_key) EVP_PKEY_assign_RSA (k->xek_evp_private_key, k->xek_private_rsa);
+    }
+  k->xek_evp_key = EVP_PKEY_new();
+  if (k->xek_evp_key) EVP_PKEY_assign_RSA (k->xek_evp_key, k->xek_rsa);
   mutex_leave (xenc_keys_mtx);
   return box_dv_short_string (k->xek_name);
 }
@@ -2305,6 +2319,13 @@ bif_xenc_key_rsa_construct (caddr_t * qst, caddr_t * err_r, state_slot_t ** args
   k->xek_private_rsa = pk;
   k->xek_rsa = p;
   k->ki.rsa.pad = RSA_PKCS1_PADDING;
+  k->xek_evp_key = EVP_PKEY_new ();
+  EVP_PKEY_assign_RSA (k->xek_evp_key, k->xek_rsa);
+  if (pk)
+    {
+      k->xek_evp_private_key = EVP_PKEY_new ();
+      EVP_PKEY_assign_RSA (k->xek_evp_private_key, k->xek_private_rsa);
+    }
   mutex_leave (xenc_keys_mtx);
   return box_dv_short_string (k->xek_name);
 }
@@ -2557,6 +2578,10 @@ caddr_t bif_xenc_key_serialize (caddr_t * qst, caddr_t * err_r, state_slot_t ** 
     {
       len = k->ki.raw.bits / 8;
     }
+  else if (k->xek_type == DSIG_KEY_AES)
+    {
+      len = k->ki.aes.bits / 8;
+    }
   else
     return NEW_DB_NULL;
 
@@ -2590,6 +2615,10 @@ caddr_t bif_xenc_key_serialize (caddr_t * qst, caddr_t * err_r, state_slot_t ** 
   else if (k->xek_type == DSIG_KEY_RAW)
     {
       memcpy (in_buf, k->ki.raw.k, len);
+    }
+  else if (k->xek_type == DSIG_KEY_AES)
+    {
+      memcpy (in_buf, k->ki.aes.k, len);
     }
   else
     GPF_T;
@@ -2705,8 +2734,13 @@ caddr_t bif_xenc_key_aes_rand_create (caddr_t * qst, caddr_t * err_r, state_slot
   char * name = bif_key_name_arg (qst, args, 0, "xenc_key_aes_rnd_create");
   long bits = bif_long_arg (qst, args, 1, "xenc_key_aes_rnd_create");
   xenc_key_t * k;
+  int rc;
+  unsigned char buf[KEYSIZB];
 
-  k = xenc_key_aes_create (name, bits, "temppwd");
+  rc = RAND_bytes(buf, sizeof (buf));
+  if (rc <= 0)
+    sqlr_new_error ("42000", "XENC14", "Cannot generate key data");
+  k = xenc_key_aes_create (name, bits, buf);
   if (!k)
     SQLR_NEW_KEY_EXIST_ERROR (name);
 
@@ -3558,7 +3592,7 @@ bif_xml_sign (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       *local = 0;
       local++;
-      elem = xml_find_child (top, elem, elem_copy, 0, NULL);
+      elem = xml_find_child (top, (char *) elem, elem_copy, 0, NULL);
     }
   if (elem)
     {
@@ -3566,7 +3600,7 @@ bif_xml_sign (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       caddr_t * new_elem = (caddr_t *) dk_alloc_box (box_length (elem) + sizeof (caddr_t), DV_ARRAY_OF_POINTER);
       memcpy (new_elem, elem, box_length (elem));
       memcpy (new_elem + BOX_ELEMENTS (elem), &signature, sizeof (caddr_t));
-      curr_nss = xenc_get_namespaces (elem, _nss);
+      curr_nss = (caddr_t) xenc_get_namespaces (elem, _nss);
       DO_BOX (caddr_t *, child, inx, top)
 	{
 	  if (child == elem)
@@ -5906,7 +5940,7 @@ caddr_t bif_xenc_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (!xenc_key_create ("virtdev4@localhost", XENC_DSA_ALGO, DSIG_DSA_SHA1_ALGO, 1))
     log_info ("Unknown algo or duplicate key, %s", XENC_DSA_ALGO);
-  __xenc_key_dsa_init ("virtdev4@localhost", 1);
+  __xenc_key_dsa_init ("virtdev4@localhost", 1, 512);
 
 
   if (!xenc_key_create ("virtdev5@localhost", XENC_RSA_ALGO, DSIG_RSA_SHA1_ALGO, 1))
@@ -6200,6 +6234,21 @@ bif_xenc_hmac_sha256_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
 #endif
 
 static caddr_t
+bif_xenc_rsa_sha1_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char * me = "xenc_rsa_sha1_digest";
+  char * text = bif_string_arg (qst, args, 0, me);
+  caddr_t name = bif_string_arg (qst, args, 1, me);
+  xenc_key_t * key = xenc_get_key_by_name (name, 1);
+  dk_session_t * ses = strses_allocate ();
+  caddr_t res = NULL;
+  session_buffered_write (ses, text, box_length (text) - 1);
+  dsig_rsa_sha1_digest (ses, strses_length (ses), key, &res);
+  dk_free_box (ses);
+  return res;
+}
+
+static caddr_t
 bif_xenc_dsig_signature (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   char * me = "xenc_dsig_signature";
@@ -6273,6 +6322,15 @@ static int x509_add_ext (X509 *cert, int nid, char *value)
   X509_EXTENSION_free(ex);
   return 1;
 }
+
+static void
+x509_add_custom (X509 * x, ccaddr_t n, ccaddr_t v)
+{
+  int nid = OBJ_create (n, n, n);
+  X509V3_EXT_add_alias (nid, NID_netscape_comment);
+  x509_add_ext (x, nid, (char *) v);
+}
+
 
 static caddr_t
 bif_xenc_x509_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -6396,6 +6454,7 @@ bif_xenc_x509_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       nid = OBJ_sn2nid (exts[i]);
       if (nid == NID_undef)
 	{
+	  x509_add_custom (x, exts[i], exts[i+1]);
 	  sqlr_warning ("01V01", "QW001", "Unknown extension entry %s", exts[i]);
 	  continue;
 	}
@@ -6543,6 +6602,7 @@ bif_xenc_x509_ss_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
       nid = OBJ_sn2nid (exts[i]);
       if (nid == NID_undef)
 	{
+	  x509_add_custom (x, exts[i], exts[i+1]);
 	  sqlr_warning ("01V01", "QW001", "Unknown extension entry %s", exts[i]);
 	  continue;
 	}
@@ -6720,6 +6780,7 @@ bif_xenc_x509_from_csr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long serial = bif_long_arg (qst, args, 3, me);
   long days = bif_long_arg (qst, args, 4, me);
   float hours = BOX_ELEMENTS (args) > 5 ? (float) bif_float_arg (qst, args, 5, me) : 0;
+  caddr_t digest_name = BOX_ELEMENTS (args) > 6 ? bif_string_arg (qst, args, 6, me) : "sha1";
   xenc_key_t * ca_key = xenc_get_key_by_name (key_name, 1), * k = xenc_get_key_by_name (cli_name, 1);
   X509 *x = NULL;
   X509_REQ *req = NULL;
@@ -6732,6 +6793,10 @@ bif_xenc_x509_from_csr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   BIO *b;
   STACK_OF(X509_EXTENSION) *exts = NULL;
   X509_EXTENSION *ext;
+  const EVP_MD *digest = EVP_get_digestbyname (digest_name);
+
+  if (!digest)
+    sqlr_new_error ("42000", "XECXX", "Cannot find digest %s", digest_name);
 
   if (k)
     {
@@ -6811,7 +6876,7 @@ bif_xenc_x509_from_csr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	sqlr_warning ("01V01", "QW001", "Unknown extension entry");
     }
 
-  if (!X509_sign (x, pk, (pk->type == EVP_PKEY_RSA ? EVP_md5() : EVP_dss1()) ))
+  if (!X509_sign (x, pk, digest))
     {
       pk = NULL; /* keep one in the xenc_key */
       *err_ret = srv_make_new_error ("42000", "XECXX", "Can not sign certificate");
@@ -7264,6 +7329,27 @@ bif_xenc_SPKI_read (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_dv_short_string (k->xek_name);
 }
 
+static caddr_t
+bif_xenc_x509_verify (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char * me = "x509_verify";
+  caddr_t cert_name = bif_string_arg (qst, args, 0, me);
+  caddr_t key_name  = bif_string_arg (qst, args, 1, me);
+  xenc_key_t * cert = xenc_get_key_by_name (cert_name, 1);
+  xenc_key_t * key = xenc_get_key_by_name (key_name, 1);
+  int rc = 0;
+
+  if (!key)
+    SQLR_NEW_KEY_ERROR (key_name);
+  if (!cert)
+    SQLR_NEW_KEY_ERROR (cert_name);
+  if (!cert->xek_x509)
+    sqlr_new_error ("22023", ".....", "The certificate key does not have x509 assigned.");
+  if (!key->xek_evp_key)
+    sqlr_new_error ("22023", ".....", "The key is incomplete.");
+  rc = X509_verify (cert->xek_x509, key->xek_evp_key);
+  return box_num (rc);
+}
 
 void bif_xmlenc_init ()
 {
@@ -7408,6 +7494,7 @@ void bif_xmlenc_init ()
   bif_define ("xenc_sha256_digest", bif_xenc_sha256_digest);
   bif_define ("xenc_hmac_sha256_digest", bif_xenc_hmac_sha256_digest);
 #endif
+  bif_define ("xenc_rsa_sha1_digest", bif_xenc_rsa_sha1_digest);
   bif_define ("xenc_key_DH_create", bif_xenc_key_DH_create);
   bif_define ("xenc_DH_get_params", bif_xenc_DH_get_params);
   bif_define ("xenc_DH_compute_key", bif_xenc_DH_compute_key);
@@ -7415,6 +7502,7 @@ void bif_xmlenc_init ()
   bif_define ("xenc_bn2dec", bif_xenc_bn2dec);
   bif_define ("xenc_dsig_sign", bif_xenc_dsig_signature);
   bif_define ("xenc_dsig_verify", bif_xenc_dsig_verify);
+  bif_define ("x509_verify", bif_xenc_x509_verify);
 
   xenc_cert_X509_idx = ecm_find_name ("X.509", (void*)xenc_cert_types, xenc_cert_types_len,
 					 sizeof (xenc_cert_type_t));

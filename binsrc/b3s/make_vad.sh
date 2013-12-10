@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2012 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -48,7 +48,7 @@ VAD_NAME_RELEASE="$VAD_PKG_NAME"_dav.vad
 NEED_VERSION=06.00.3117
 DSN="$HOST:$PORT"
 SQLDEPS="ns.sql virt_rdf_label.sql facet.sql complete_ddl.sql"
-EXCEPT="b3sq.sql facet_test.sql fct_inx.sql srank.sql srank_1.sql srank23.sql complete_cl.sql complete_single.sql"
+EXCEPT="b3sq.sql facet_test.sql fct_inx.sql srank.sql srank_1.sql srank23.sql complete_cl.sql complete_single.sql grants.sql"
 
 HOST_OS=`uname -s | grep WIN`
 if [ "x$HOST_OS" != "x" ]
@@ -93,26 +93,16 @@ else
   myrm=rm
 fi
 
+
 version_init()
 {
-  if [ $VOS -eq 1 ]
-  then
-      if [ -f vad_version ]
-      then
-      VERSION=`cat vad_version`
-      else
-        LOG "The vad_version does not exist, please verify your checkout"
-    exit 1
-      fi
-  else
-      rm -f version.tmp
-      for i in `find . -name 'Entries' | grep -v "vad/"`; do
-      cat $i | grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
-      done
-      VERSION=`cat version.tmp | awk ' BEGIN { cnt=9 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
-      rm -f version.tmp
-      echo "$VERSION" > vad_version
-  fi
+    if [ -f vad_version ]
+    then
+	VERSION=`cat vad_version`
+    else
+	LOG "The vad_version does not exist, please verify your checkout"
+	exit 1
+    fi
 }
 
 do_command_safe () {
@@ -192,7 +182,7 @@ directory_init() {
   # components which are not in their place
   cp -Rf $HOME/binsrc/oat vad/vsp/fct
   cp -Rf $HOME/binsrc/samples/dbpedia/vsp/statics vad/vsp/fct/rdfdesc
-  cp -Rf $HOME/binsrc/rdf_mappers/virt_rdf_label.sql vad/vsp/fct
+  #cp -Rf $HOME/binsrc/rdf_mappers/virt_rdf_label.sql vad/vsp/fct
   cp -Rf styles vad/vsp/fct/rdfdesc
   cp -Rf s vad/vsp/fct/rdfdesc
 
@@ -268,7 +258,7 @@ sticker_init() {
   echo "  <name package=\"$VAD_NAME\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"$VAD_DESC\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2012 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2013 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -367,6 +357,7 @@ fi
 #  echo "        	vsp_user=>'dba', def_page=>'install.html'); " >> $STICKER
 #  echo "        result ('00000', 'Cannot complete installation, read instructions at http://host:port/fct');" >> $STICKER
 #  echo "    } " >> $STICKER
+  echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/grants.sql', 0, 'report', $ISDAV); " >> $STICKER
 
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
@@ -494,7 +485,6 @@ vad_create $STICKER_DAV $VAD_NAME_RELEASE
 virtuoso_shutdown
 #chmod 644 $VAD_NAME_DEVEL
 chmod 644 $VAD_NAME_RELEASE
-directory_clean
 
 CHECK_LOG
 RUN egrep  '"\*\*.*FAILED:|\*\*.*ABORTED:"' "$LOGFILE"
@@ -503,6 +493,8 @@ then
 	$myrm -f *.vad
 	exit 1
 fi
+
+directory_clean
 
 BANNER "COMPLETED VAD PACKAGING"
 exit 0

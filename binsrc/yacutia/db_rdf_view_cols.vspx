@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -193,7 +193,7 @@
 			      </select>
 			  </td>
 			  <td>
-			      <select name="sel_<?V COL_ID ?>" id="sel_<?V COL_ID ?>" onclick="javascript:hideshow(this, 'mime_<?V COL_ID ?>')">
+			      <select name="sel_<?V COL_ID ?>" id="sel_<?V COL_ID ?>" onchange="javascript:hideshow(this, 'mime_<?V COL_ID ?>')">
 				  <?vsp
 				  http (sprintf('<option value="0" %s>literal</option>', case when cols[i][0] in (0,4) then 'selected' else '' end));
 				  http (sprintf('<option value="1" %s>skip</option>', case when cols[i][0] = 1 then 'selected' else '' end));

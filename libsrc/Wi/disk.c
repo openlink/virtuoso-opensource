@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -550,6 +550,22 @@ it_temp_tree (index_tree_t * it)
 
 
 void
+buf_unregister_itcs (buffer_desc_t * buf)
+{
+  it_cursor_t * reg = buf->bd_registered;
+  while (reg)
+    {
+      it_cursor_t * next = reg->itc_next_on_page;
+      reg->itc_buf_registered = NULL;
+      reg->itc_is_registered = 0;
+      reg->itc_next_on_page = NULL;
+      reg = next;
+    }
+  buf->bd_registered = NULL;
+}
+
+
+void
 it_temp_free (index_tree_t * it)
 {
   /* free a temp tree */
@@ -616,6 +632,7 @@ it_temp_free (index_tree_t * it)
       buf->bd_is_dirty = 0;
       buf->bd_page = 0;
       buf->bd_physical_page = 0;
+      buf_unregister_itcs (buf);
     }
       clrhash (&itm->itm_dp_to_buf);
       ITC_LEAVE_MAPS (itc);
@@ -3442,6 +3459,9 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
       if (size)
 	*exists = 1;
     }
+
+  if (*exists && type == DBS_RECOVER)
+    return NULL;
 
   if (*exists && DBS_TEMP != type)
     dbs_read_cfg_page (dbs, &cfg_page);

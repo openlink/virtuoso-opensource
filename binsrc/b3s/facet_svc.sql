@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -23,7 +23,7 @@
 cl_exec ('registry_set (''fct_max_timeout'',''10000'')');
 
 DB.DBA.VHOST_REMOVE (lpath=>'/fct/service');
-DB.DBA.VHOST_DEFINE (lpath=>'/fct/service', ppath=>'/SOAP/Http/fct_svc', soap_user=>'dba');
+DB.DBA.VHOST_DEFINE (lpath=>'/fct/service', ppath=>'/SOAP/Http/fct_svc', soap_user=>'SPARQL');
 
 create procedure fct_init ()
 {
@@ -152,10 +152,10 @@ create procedure fct_svc () __soap_http 'text/xml'
 }
 ;
 
-grant execute on fct_svc to dba;
+grant execute on fct_svc to SPARQL_SELECT;
 
 DB.DBA.VHOST_REMOVE (lpath=>'/fct/soap');
-DB.DBA.VHOST_DEFINE (lpath=>'/fct/soap', ppath=>'/SOAP/', soap_user=>'dba');
+DB.DBA.VHOST_DEFINE (lpath=>'/fct/soap', ppath=>'/SOAP/', soap_user=>'SPARQL');
 
 select DB.DBA.soap_dt_define ('',
 '<element xmlns="http://www.w3.org/2001/XMLSchema" name="facets" targetNamespace="http://openlinksw.com/services/facets/1.0/">
@@ -202,4 +202,4 @@ __SOAP_DOC 'http://openlinksw.com/services/facets/1.0/:facets'
 }
 ;
 
-grant execute on fct.fct.query to dba;
+grant execute on fct.fct.query to SPARQL_SELECT;

@@ -16,7 +16,7 @@ FIXME: we need a method to list all instances with an optional type restriction.
  */
 
 /**
-\defgroup ods_module_user ODS User Management API
+\defgroup ods_module_user ODS User Profile Management API
 The user management API provides procedures for user lookup, creation, and manipulation.
 
 \attention User names in ODS are case-sensitive!
@@ -29,6 +29,153 @@ Most details of a user profile are subject to privacy settings. There are three 
 - ACL - Fine grained control over who is allowed to read or write the data.
 
 FIXME: add links to the important methods that deal with privacy.
+
+
+\section ods_resource_types ODS Resource Types
+
+\subsection ods_user_profile_resource ODS User Profile Resource
+
+In the ODS HTTP API a user profile is described as follows:
+
+\code
+{
+  "userName": {string},
+
+  "mail": {string},
+  "mail.share": {string},
+  "nickName": {string},
+  "nickName.share": {string},
+  "title": {string},
+  "title.share": {string},
+  "firstName": {string},
+  "firstName.share": {string},
+  "lastName": {string},
+  "lastName.share": {string},
+  "fullName": {string},
+  "fullName.share": {string},
+  "gender": {string},
+  "gender.share": {string},
+  "birthday": {date},
+  "birthday.share": {string},
+  "summary": {string},
+  "summary.share": {string},
+  "interests": [
+    {
+      "name": {string},
+      "url": {string},
+      "share": {string}
+    }
+  ],
+  "topicInterests":  [
+    {
+      "name": {string},
+      "url": {string},
+      "share": {string}
+    }
+  ],
+
+  "mailSignature": {string},
+  "webIDs": [ {string} ],
+  "openID": {string},
+  "secretQuestion": {string},
+  "secretAnswer": {string},
+
+  "personal": {contact},
+
+  "business": {contact},
+
+  "business.industry": {string},
+  "business.industry.share": {string},
+  "business.organization": {string},
+  "business.organization.share": {string},
+  "business.job": {string},
+  "business.job.share": {string},
+  "business.regNo": {string},
+  "business.regNo.share": {string},
+  "business.career": {string},
+  "business.career.share": {string},
+  "business.employees": {string},
+  "business.employees.share": {string},
+  "business.vendor": {string},
+  "business.vendor.share": {string},
+  "business.service": {string},
+  "business.service.share": {string},
+  "business.resume": {string},
+  "business.resume.share": {string},
+
+  "photo": {string},
+  "photo.share": {string},
+  "audio": {string}
+  "audio.share": {string},
+}
+\endcode
+
+\subsubsection ods_user_profile_contact_resource ODS User Profile Contact Resource
+
+\code
+{
+  "address": {address},
+  "phoneNumber": [
+    {
+      "name": {string},
+      "num": {string},
+      "ext": {string},
+      "share": {string}
+    }
+  ],
+  "homePage": {string},
+  "homePage.share": {string},
+  "messaging":  [
+    {
+      "name": {string},
+      "uid": {string},
+      "share": {string}
+    }
+  ],
+  "onlineAccount": [
+    {
+      "name": {string},
+      "url": {string},
+      "id": {string},
+      "share": {string}
+    }
+  ],
+}
+\endcode
+
+
+\subsubsection ods_user_profile_address_resource ODS User Profile Address Resource
+
+An address resource is defined as follows:
+
+\code
+{
+  "country": {string},
+  "country.share": {string},
+  "state": {string},
+  "state.share": {string},
+  "city": {string},
+  "city.share": {string},
+  "postalCode": {string},
+  "postalCode.share": {string},
+  "address1": {string},
+  "address1.share": {string},
+  "address2": {string},
+  "address2.share": {string},
+  "timezone": {string},
+  "timezone.share": {string},
+  "geo": {
+    "latitude": {int},
+    "longitude": {int},
+    "defaultMapLocation": {bool}
+  }
+  "geo.share": {string}
+}
+\endcode
+*/
+
+/**
+\defgroup ods_module_misc ODS Miscellaneous Functions
 */
 
 /**

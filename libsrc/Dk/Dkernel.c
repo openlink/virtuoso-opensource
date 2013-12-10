@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -982,6 +982,12 @@ sr_check_and_set_args (future_request_t * future, caddr_t * arguments, int argco
       goto error;
     }
 
+  if (DV_TYPE_OF (arguments) != DV_ARRAY_OF_POINTER)
+    {
+      reason = "malformed arguments array";
+      goto error;
+    }
+
   for (inx = 0; inx < argcount; inx++)
     {
       dtp_t arg_dtp = DV_TYPE_OF (arguments[inx]);
@@ -1006,7 +1012,7 @@ sr_check_and_set_args (future_request_t * future, caddr_t * arguments, int argco
   return 0;
 error:
   sr_report_future_error (future->rq_client, future->rq_service->sr_name, reason);
-  PrpcDisconnect (future->rq_client);
+  DKST_RPC_DONE (future->rq_client);
   return 1;
 }
 
@@ -1480,7 +1486,9 @@ frq_create (dk_session_t * ses, caddr_t * request)
   if (BOX_ELEMENTS (request) != DA_FRQ_LENGTH)
     {
       sr_report_future_error (ses, "", "invalid future request length");
+      dk_free_tree (request);
       PrpcDisconnect (ses);
+      PrpcSessionFree (ses);
       dk_free (future_request, sizeof (future_request_t));
       return NULL;
     }
@@ -2270,6 +2278,8 @@ dks_remove_pending (dk_session_t * ses)
  *
  * Globals used : session_request_hook services
  */
+extern box_destr_f box_destr[256];
+
 int
 read_service_request (dk_session_t * ses)
 {
@@ -2278,6 +2288,8 @@ read_service_request (dk_session_t * ses)
 
   if (!SESSTAT_ISSET (ses->dks_session, SST_TIMED_OUT) && !SESSTAT_ISSET (ses->dks_session, SST_BROKEN_CONNECTION) && (DV_TYPE_OF (request) != DV_ARRAY_OF_POINTER || BOX_ELEMENTS (request) < 1))
     {
+      if (!box_destr [DV_TYPE_OF (request)])
+	dk_free_tree (request);
       sr_report_future_error (ses, "", "invalid future box");
       SESSTAT_CLR (ses->dks_session, SST_OK);
       SESSTAT_SET (ses->dks_session, SST_BROKEN_CONNECTION);

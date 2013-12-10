@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1014,9 +1014,12 @@ bif_rdf_inf_set_ifp_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   int ifp_count, ifp_ctr;
   rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_set_ifp_list", 1);
   caddr_t * arr = bif_array_of_pointer_arg (qst, args, 1, "rdf_inf_set_ifp_list");
-  caddr_t * grps = box_copy /*_tree*/ (arr);
   int dirt;
+  caddr_t * grps;
   dk_set_t ifp_rel_acc = NULL;
+
+  sec_check_dba ((query_instance_t *)qst, "rdf_inf_set_ifp_list");
+  grps = box_copy /*_tree*/ (arr);
   ctx->ric_ifp_list = box_copy_tree ((caddr_t)arr);
   ifp_count = BOX_ELEMENTS_0 (arr);
   if (ctx->ric_iid_to_rel_ifp->ht_inserts != ctx->ric_iid_to_rel_ifp->ht_deletes)
@@ -1150,8 +1153,10 @@ bif_rdf_inf_set_ifp_exclude_list (caddr_t * qst, caddr_t * err_ret, state_slot_t
   rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_set_ifp_exclude_list", 1);
   iri_id_t ifp = bif_iri_id_arg (qst, args, 1, "rdf_inf_set_ifp_exclude_list");
   caddr_t * arr = bif_array_of_pointer_arg (qst, args, 2, "rdf_inf_set_ifp_exclude_list");
-  caddr_t box = box_iri_id (ifp);
-  caddr_t copy = box_copy_tree (arr);
+  caddr_t box, copy;
+  sec_check_dba ((query_instance_t *)qst, "rdf_inf_set_ifp_exclude_list");
+  box = box_iri_id (ifp);
+  copy = box_copy_tree (arr);
   id_hash_set (ctx->ric_ifp_exclude, (caddr_t)&box, (caddr_t)&copy);
   return NULL;
 }
@@ -1184,8 +1189,14 @@ bif_rdf_inf_set_inverses (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 {
   caddr_t *lst = bif_array_of_pointer_arg (qst, args, 1, "rdf_inf_set_inverses");
   rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_set_inverses", 1);
-  dk_free_tree (ctx->ric_inverse_prop_pair_sortedalist);
-  ctx->ric_inverse_prop_pair_sortedalist = box_copy_tree (lst);
+  int ctr, len = BOX_ELEMENTS_0 (lst);
+  caddr_t *uname_lst;
+  sec_check_dba ((query_instance_t *)qst, "rdf_inf_set_inverses");
+  uname_lst = dk_alloc_list (len);
+  for (ctr = len; ctr--; /* no step */)
+    uname_lst[ctr] = box_dv_uname_string (lst[ctr]);
+  dk_free_tree ((caddr_t)(ctx->ric_inverse_prop_pair_sortedalist));
+  ctx->ric_inverse_prop_pair_sortedalist = uname_lst;
   return NULL;
 }
 
@@ -1194,8 +1205,17 @@ bif_rdf_inf_set_prop_props (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
 {
   caddr_t *lst = bif_array_of_pointer_arg (qst, args, 1, "rdf_inf_set_prop_props");
   rdf_inf_ctx_t * ctx = bif_ctx_arg (qst, args, 0, "rdf_inf_set_prop_props", 1);
-  dk_free_tree (ctx->ric_prop_props);
-  ctx->ric_prop_props = box_copy_tree (lst);
+  int ctr, len = BOX_ELEMENTS_0 (lst);
+  caddr_t *uname_flags_lst;
+  sec_check_dba ((query_instance_t *)qst, "rdf_inf_set_prop_props");
+  uname_flags_lst = dk_alloc_list (len);
+  for (ctr = len - 2; ctr >= 0; ctr -= 2)
+    {
+      uname_flags_lst[ctr] = box_dv_uname_string (lst[ctr]);
+      uname_flags_lst[ctr+1] = (caddr_t)((ptrlong)(unbox (lst[ctr+1])));
+    }
+  dk_free_tree ((caddr_t)(ctx->ric_prop_props));
+  ctx->ric_prop_props = uname_flags_lst;
   return NULL;
 }
 
@@ -1203,6 +1223,7 @@ caddr_t
 bif_rdf_inf_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t ctx_name = bif_string_arg (qst, args, 0, "rdf_inf_clear");
+  sec_check_dba ((query_instance_t *)qst, "rdf_inf_clear");
   id_hash_remove (rdf_name_to_ric, (caddr_t)&ctx_name);
   return 0;
 }
@@ -1343,6 +1364,7 @@ char * cl_rdf_init_srv =
 "   DB.DBA.RDF_QNAME_OF_IID (null); \n"
 "   rdf_inf_const_init (); \n"
 "   select count (*) into c from (select distinct s.RS_NAME from sys_rdf_schema s) sub where 0 = rdfs_load_schema (sub.RS_NAME); \n"
+"   DB.DBA.RDF_QUAD_LOAD_CACHE (); \n"
 "   JSO_LOAD_AND_PIN_SYS_GRAPH_RO  (); \n"
 "   commit work; \n"
 "   rdf_init_thread (0); \n"
@@ -1512,8 +1534,8 @@ rdf_inf_init ()
   bif_define ("rdf_inf_dump", bif_rdf_inf_dump);
   bif_define ("tn_cache_clear", bif_tn_cache_clear);
   dk_mem_hooks (DV_RI_ITERATOR, box_non_copiable, rit_free, 0);
-  sas_init ();
   empty_ric = ric_allocate (box_dv_short_string ("__ empty"));
+  sas_init ();
 }
 
 

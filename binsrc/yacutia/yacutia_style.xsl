@@ -1,13 +1,10 @@
-<?xml version="1.0" encoding="ISO-8859-1" ?>
-<!-- <!DOCTYPE html  PUBLIC "" "ent.dtd"> -->
+<?xml version="1.0" encoding="UTF-8" ?>
 <!--
- -
- -  $Id$
  -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -26,19 +23,19 @@
 -->
 <!--
   Virtuoso Conductor XSL style-sheet for page macros
+  (C)Copyright 2005-2013 OpenLink Software
 -->
-<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-                version="1.0"
+<xsl:stylesheet version="1.0"
+                xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:v="http://www.openlinksw.com/vspx/"
                 xmlns:xhtml="http://www.w3.org/1999/xhtml"
                 xmlns:vm="http://www.openlinksw.com/vspx/macro">
 
-<xsl:include href="form.xsl"/>
-<xsl:include href="dav_browser.xsl"/>
-<!--xsl:include href="cond_help.xsl"/-->
-<xsl:include href="file_browser.xsl"/>
-
 <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes"/>
+
+<xsl:include href="form.xsl"/>
+<xsl:include href="dav/dav_browser.xsl"/>
+<xsl:include href="file_browser.xsl"/>
 
 <xsl:variable name="page_title" select="string (//vm:pagetitle)" />
 <xsl:variable name="pagebody_attrs" select="//vm:pagebody/@*"/>
@@ -127,7 +124,7 @@
 	      <?vsp } else { ?>
 	      not logged in
 	      <?vsp
-	      }?>&#160;|&#160;<img src="images/vglobe_16.png" alt="Start" title="Start Menu" hspace="2" /><a href="/">Home</a>
+	      }?>&amp;nbsp;|&amp;nbsp;<img src="images/vglobe_16.png" alt="Start" title="Start Menu" hspace="2" /><a href="/">Home</a>
 	       </div>
 	    </td>
 	  </tr>
@@ -138,7 +135,7 @@
      <td id="LC" style="white-space: nowrap;">
       <v:include name="loginp" url="adm_login.vspx"/>
       <!--div class="lmenu_ctr">
-        &nbsp;
+        &amp;nbsp;
         <xsl:apply-templates select="vm:menu"/>
       </div-->
       <ul class="left_toolbox">
@@ -274,7 +271,7 @@
 	<td id="copyright_ctr" colspan="2">
 	  <!-- Virtuoso Universal Server <?V sys_stat ('st_dbms_ver') ?> -->
 	  Copyright &amp;copy; 1998-<?V "LEFT" (datestring (now ()), 4)?> OpenLink Software
-	  &#160;
+	  &amp;nbsp;
 	</td>
       </tr>
   </table> <!-- MT -->
@@ -351,42 +348,42 @@
   <?vsp
     if (d_first)
     {
-      http ('<img src="images/icons/first_16.png" alt="First" title="First" border="0" />&#160;First');
+      http ('<img src="images/icons/first_16.png" alt="First" title="First" border="0" />&nbsp;First');
     }
   ?>
   <v:button name="{@data-set}_first" action="simple" style="image" value="images/icons/first_16.png"
-      xhtml_alt="First" xhtml_title="First" text="&#160;First">
+      xhtml_alt="First" xhtml_title="First" text="&amp;nbsp;First">
   </v:button>
-      &#160;
+      &amp;nbsp;
   </xsl:if>
   <?vsp
     if (d_prev)
     {
-      http ('<img src="images/icons/previous_16.png" alt="Previous" title="Previous" border="0" />&#160;Previous');
+      http ('<img src="images/icons/previous_16.png" alt="Previous" title="Previous" border="0" />&nbsp;Previous');
     }
   ?>
   <v:button name="{@data-set}_prev" action="simple" style="image" value="images/icons/previous_16.png"
-      xhtml_alt="Previous" xhtml_title="Previous" text="&#160;Previous">
+      xhtml_alt="Previous" xhtml_title="Previous" text="&amp;nbsp;Previous">
   </v:button>
-  &#160;
+  &amp;nbsp;
   <?vsp
     if (d_next)
     {
-      http ('<img src="images/icons/next_16.png" alt="Next" title="Next" border="0" />&#160;Next');
+      http ('<img src="images/icons/next_16.png" alt="Next" title="Next" border="0" />&nbsp;Next');
     }
   ?>
   <v:button name="{@data-set}_next" action="simple" style="image" value="images/icons/next_16.png"
-                                xhtml_alt="Next" xhtml_title="Next" text="&#160;Next">
+                                xhtml_alt="Next" xhtml_title="Next" text="&amp;nbsp;Next">
   </v:button>
-  <xsl:if test="not(@type) or @type = 'set'">&#160;
+  <xsl:if test="not(@type) or @type = 'set'">&amp;nbsp;
   <?vsp
     if (d_last)
     {
-      http ('<img src="images/icons/last_16.png" alt="Last" title="Last" border="0" />&#160;Last');
+      http ('<img src="images/icons/last_16.png" alt="Last" title="Last" border="0" />&nbsp;Last');
     }
   ?>
   <v:button name="{@data-set}_last" action="simple" style="image" value="images/icons/last_16.png"
-	  xhtml_alt="Last" xhtml_title="Last" text="&#160;Last">
+	  xhtml_alt="Last" xhtml_title="Last" text="&amp;nbsp;Last">
   </v:button>
   </xsl:if>
   <?vsp
@@ -628,6 +625,36 @@ http(sprintf('<xsl:for-each select="text">
 </xsl:choose>
 <xsl:if test="position() != last()">,</xsl:if></xsl:for-each>
 ));</xsl:if>
+</xsl:template>
+
+<xsl:template match="vm:label">
+  <label>
+    <xsl:attribute name="for"><xsl:value-of select="@for"/></xsl:attribute>
+    <v:label><xsl:attribute name="value"><xsl:value-of select="@value"/></xsl:attribute></v:label>
+  </label>
+</xsl:template>
+
+<xsl:template match="vm:tabCaption">
+  <div>
+    <xsl:if test="@hide">
+      <xsl:attribute name="style">display: none;</xsl:attribute>
+    </xsl:if>
+    <xsl:attribute name="id"><xsl:value-of select="concat('tab_', @tab)"/></xsl:attribute>
+    <xsl:attribute name="class">tab <xsl:if test="@activeTab = @tab">activeTab</xsl:if></xsl:attribute>
+    <xsl:attribute name="onclick">javascript:showTab(<xsl:value-of select="@tab"/>, <xsl:value-of select="@tabs"/>)</xsl:attribute>
+    <xsl:value-of select="@caption"/>
+  </div>
+</xsl:template>
+
+<xsl:template match="vm:if">
+  <xsl:processing-instruction name="vsp">
+    if (<xsl:value-of select="@test"/>)
+    {
+  </xsl:processing-instruction>
+      <xsl:apply-templates />
+  <xsl:processing-instruction name="vsp">
+    }
+  </xsl:processing-instruction>
 </xsl:template>
 
 <!-- dashboard status areas -->

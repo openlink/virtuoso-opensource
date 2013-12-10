@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -471,7 +471,7 @@ if(self.first = 0) {
 		      style="image"
 		      xhtml_alt="Subscribe Selected"
 		      xhtml_title="Subscribe Selected"
-		      text="&#160;Subscribe Selected"
+		      text="&nbsp;Subscribe Selected"
 		      value="images/icons/add_16.png">
 		      <v:on-post>
 	declare i, arr any;

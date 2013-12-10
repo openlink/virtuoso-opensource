@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -110,6 +110,22 @@ lt_rb_check (lock_trx_t * lt)
   END_DO_HT;
 }
 
+int enable_cpt_rb_ck = 0;
+
+void
+cpt_rb_ck ()
+{
+  DO_SET (volatile lock_trx_t *, lt, &all_trxs)
+    {
+      if (lt->lt_threads && lt->lt_thr && !lt->lt_vdb_threads)
+	{
+	  du_thread_t * thr = lt->lt_thr;
+	  if (thr->thr_sem->sem_entry_count || !thr->thr_sem->sem_waiting.thq_count  || thr != thr->thr_sem->sem_waiting.thq_head.thr_prev)
+	    log_info ("thread %x may not be stopped for cpt rb lt %p", thr, lt);
+	}
+    }
+  END_DO_SET();
+}
 du_thread_t * cpt_thread;
 
 void
@@ -207,6 +223,8 @@ cpt_rollback (int may_freeze)
 #ifdef CHECKPOINT_TIMING
   all_trx_killed = get_msec_real_time();
 #endif
+  if (enable_cpt_rb_ck)
+    cpt_rb_ck ();
   ASSERT_IN_TXN;
 #ifdef CHECKPOINT_TIMING
   cp_is_attomic = get_msec_real_time();
@@ -245,6 +263,13 @@ void
 lt_wait_checkpoint (void)
 {
   lt_wait_checkpoint_1 (0);
+}
+
+void
+lt_wait_checkpoint_lt (lock_trx_t * lt)
+{
+  if (LT_NEED_WAIT_CPT (lt))
+    lt_wait_checkpoint_1 (0);
 }
 
 void

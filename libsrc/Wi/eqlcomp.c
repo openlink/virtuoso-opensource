@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -315,8 +315,6 @@ qr_free (query_t * qr)
   while (NULL != qr->qr_used_tables) dk_free_tree (dk_set_pop (&(qr->qr_used_tables)));
   while (NULL != qr->qr_used_udts) dk_free_tree (dk_set_pop (&(qr->qr_used_udts)));
   while (NULL != qr->qr_used_jsos) dk_free_tree (dk_set_pop (&(qr->qr_used_jsos)));
-  if (!qr->qr_text_is_constant)
-    dk_free_box (qr->qr_text);
   dk_free_tree (qr->qr_parse_tree);
   DO_SET (data_source_t *, sr, &qr->qr_nodes)
   {
@@ -424,6 +422,8 @@ qr_free (query_t * qr)
   if ((NULL != qr->qr_static_prev) || (NULL != qr->qr_static_next) || (qr == static_qr_dllist))
     static_qr_dllist_remove (qr);
 #endif
+  if (!qr->qr_text_is_constant)
+    dk_free_box (qr->qr_text);
   dk_free ((caddr_t) qr, sizeof (query_t));
 }
 

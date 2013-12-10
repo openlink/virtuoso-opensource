@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -5899,7 +5899,7 @@ void xpf_init(void)
   x2f_define_builtin ("expand-qname"		, xpf_expand_qname		/* Virt 3.5 */	, DV_STRING	, 1	, xpfmalist(3, xpfma("use_default",XPDV_BOOL,0), xpfma("qname",DV_STRING,0), xpfma("context",DV_XML_ENTITY,0))	, NULL	);
   xpf_define_builtin ("false"			, xpf_false			/* XPath 1.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   x2f_define_builtin ("filter"			, xpf_filter			/* XQ 1.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
-  xpf_define_builtin ("floor"			, xpf_floor			/* XPath 1.0 */	, DV_NUMERIC	, 1	, xpfmalist(1, xpfma("num",DV_UNKNOWN,0))	, NULL	);
+  x2f_define_builtin ("floor"			, xpf_floor			/* XPath 1.0 */	, DV_NUMERIC	, 1	, xpfmalist(1, xpfma("num",DV_UNKNOWN,0))	, NULL	);
   x2f_define_builtin ("for"			, xpf_for			/* Virt 3.0 */	, XPDV_NODESET	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   x2f_define_builtin ("format-number"		, xpf_format_number		/* XPath 1.0 */	, DV_UNKNOWN	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));
   x2f_define_builtin ("function-available"	, xpf_function_available	/* XPath 1.0 */	, XPDV_BOOL	, 0	, NULL	, xpfmalist(1, xpfma(NULL,DV_UNKNOWN,0)));

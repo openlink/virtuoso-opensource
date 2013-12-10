@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -167,7 +167,7 @@
 		    <v:button action="simple" style="image" name="acc_cred_cmd_l"
 		      xhtml_alt="Edit"
 		      xhtml_title="Edit"
-		      text="&#160;Edit"
+		      text="&nbsp;Edit"
 		      value="images/icons/edit_16.png"
 		      url="--sprintf ('vdb_conf_dsn_edit.vspx?dsn=%U&driver=%U&type=%U',
 		      (control.vc_parent as vspx_row_template).te_rowset[0],
@@ -177,7 +177,7 @@
 		    <v:button name="label6D" value="images/icons/trash_16.png" action="simple" style="image"
 		      xhtml_alt="Remove"
 		      xhtml_title="Remove"
-		      text="&#160;Delete"
+		      text="&nbsp;Delete"
 		      url="--sprintf ('vdb_conf_dsn_remove.vspx?dsn=%U&driver=%U&type=%U',
 		      (control.vc_parent as vspx_row_template).te_rowset[0],
 		      (control.vc_parent as vspx_row_template).te_rowset[1],

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -603,6 +603,7 @@ itc_insert_dv (it_cursor_t * it, buffer_desc_t ** buf_ret, row_delta_t * rd,
   page_apply (it, *buf_ret, 1, &rd, PA_MODIFY);
 }
 
+int enable_distinct_key_dup_no_lock = 0;
 
 int
 itc_insert_unq_ck (it_cursor_t * it, row_delta_t * rd, buffer_desc_t ** unq_buf)
@@ -637,12 +638,20 @@ itc_insert_unq_ck (it_cursor_t * it, row_delta_t * rd, buffer_desc_t ** unq_buf)
   buf = itc_reset (it);
   res = itc_search (it, &buf);
  searched:
+  if (it->itc_insert_key->key_distinct && DVC_MATCH == res && enable_distinct_key_dup_no_lock)
+    {
+      /* if key is distinct values only hitting a duplicate does nothing and returns success */
+      page_leave_outside_map (buf);
+      return DVC_LESS;
+    }
+
   if (NO_WAIT != itc_insert_lock (it, buf, &res))
     goto reset_search;
   if (it->itc_insert_key->key_distinct && DVC_MATCH == res)
     {
       /* if key is distinct values only hitting a duplicate does nothing and returns success */
-      page_leave_outside_map (buf);
+      if (!itc_check_ins_deleted (it, buf, rd))
+        page_leave_outside_map (buf);
       return DVC_LESS;
     }
 
@@ -1169,7 +1178,28 @@ it_cp_check_node (index_tree_t *it, buffer_desc_t *parent, int mode)
 	       && (COMPACT_ALL == mode ? 1 : buf->bd_is_dirty))
 	    {
 	      if (mode == COMPACT_DIRTY && !gethash ((void*)(void*)(ptrlong)leaf, &itm->itm_remap))
-		GPF_T1 ("In compact, no remap dp for a dirty buffer");
+		{
+		  dp_addr_t remap_to;
+#ifndef NDEBUG
+		  dbg_page_map_to_file (buf);
+		  log_error ("dirty buffer flags: can reuse logical: %d, dp=%d, physical dp=%d", 
+		      it_can_reuse_logical (it, buf->bd_page), buf->bd_page, buf->bd_physical_page);
+#endif
+#if 1
+		  /* repair on the go */
+		  if (it_can_reuse_logical (it, buf->bd_page))
+		    remap_to = buf->bd_page;
+		  else
+		    remap_to = em_new_dp (it->it_extent_map, EXT_REMAP, 0, NULL);
+		  if (!remap_to)
+		    GPF_T1 ("In compact, no remap dp for a dirty buffer");
+		  buf->bd_physical_page = remap_to;
+		  sethash (DP_ADDR2VOID (buf->bd_page), &itm->itm_remap, DP_ADDR2VOID (remap_to));
+		  log_info ("In compact, dp=%d remap dp = %d", buf->bd_page, buf->bd_physical_page);
+#else
+		  GPF_T1 ("In compact, no remap dp for a dirty buffer");
+#endif
+		}
 	      BD_SET_IS_WRITE (buf, 1);
 	      mutex_leave (&itm->itm_mtx);
 	      pg_check_map (buf);

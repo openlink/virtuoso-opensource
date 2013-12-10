@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -207,6 +207,12 @@ ptr += 4
 	    for (inx = 0; inx < __max_##inx; inx ++) \
 	      {
 
+#define _DO_BOX_FAST_STEP2(inx, arr) \
+	do { \
+	    long __max_##inx = (long)((arr) ? BOX_ELEMENTS(arr) : 0); \
+	    for (inx = 0; inx < __max_##inx; inx += 2) \
+	      {
+
 #else
 
 #define _DO_BOX(inx, arr) \
@@ -217,6 +223,12 @@ ptr += 4
 	do { \
 	    uint32 __max_##inx = ((arr) ? BOX_ELEMENTS(arr) : 0); \
 	    for (inx = 0; inx < __max_##inx; inx ++) \
+	      {
+
+#define _DO_BOX_FAST_STEP2(inx, arr) \
+	do { \
+	    uint32 __max_##inx = ((arr) ? BOX_ELEMENTS(arr) : 0); \
+	    for (inx = 0; inx < __max_##inx; inx += 2) \
 	      {
 
 #endif
@@ -238,6 +250,14 @@ ptr += 4
 	    dtp v = (dtp) (((void **)(arr)) [inx]);
 
 #define END_DO_BOX_FAST \
+	  }} while (0)
+
+#define DO_BOX_FAST_STEP2(dtp1, v1, dtp2, v2, inx, arr) \
+	_DO_BOX_FAST_STEP2(inx, (arr)) \
+	    dtp1 v1 = (dtp1) (((void **)(arr)) [inx]); \
+	    dtp2 v2 = (dtp2) (((void **)(arr)) [inx+1]);
+
+#define END_DO_BOX_FAST_STEP2 \
 	  }} while (0)
 
 #define DO_BOX_FAST_REV(dtp, v, inx, arr) \
@@ -480,8 +500,10 @@ typedef int64 boxint;
 
 #ifdef WIN32
 #define BOXINT_FMT 			"%I64d"
+#define UBOXINT_FMT 			"%I64u"
 #else
 #define BOXINT_FMT 			"%lld"
+#define UBOXINT_FMT 			"%llu"
 #endif
 
 #define unbox_num(n) 			unbox(n)
@@ -491,12 +513,13 @@ typedef int64 boxint;
 #define unbox_string(s) 		((char *)s)
 
 typedef unsigned int64 iri_id_t;
+#define IIDBOXINT_FMT UBOXINT_FMT
 #define MIN_32BIT_BNODE_IRI_ID ((iri_id_t)1000000000)
 #define MAX_32BIT_BNODE_IRI_ID ((iri_id_t)1999999999)
 #define MIN_64BIT_BNODE_IRI_ID (((iri_id_t)1) << 62)
 #define MAX_64BIT_BNODE_IRI_ID ((((iri_id_t)1) << 63)-1)
 #define MIN_32BIT_NAMED_BNODE_IRI_ID ((iri_id_t)1800000000)
-#define MIN_64BIT_NAMED_BNODE_IRI_ID (((iri_id_t)3) << 62)
+#define MIN_64BIT_NAMED_BNODE_IRI_ID (((iri_id_t)7) << 60)
 #define unbox_iri_id(i) ((i)?(*(iri_id_t*)(i)):0)
 
 #define IS_NONLEAF_DTP(dtp) \

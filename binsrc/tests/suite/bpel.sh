@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2012 OpenLink Software
+#  Copyright (C) 1998-2013 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -215,7 +215,7 @@ SHUTDOWN_SERVER
 if [ "$MAKE_VAD" = "yes" ] ; then
 LOG "Create VAD BPEL4WS Package"
 
-(cd ../../bpel; ./make_vad.sh)
+(cd ../../bpel; $MAKE)
 fi
 
 cp ../../bpel/bpel_filesystem.vad ./

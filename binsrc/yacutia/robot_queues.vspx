@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -173,7 +173,7 @@
 		      value="images/icons/fastf_16.png"
 		      xhtml_alt="Run"
 		      xhtml_title="Run"
-		      text="&#160;Run"
+		      text="&nbsp;Run"
 		      >
                   <!--v:button action="simple" value="Run" width="64" height="24" name="data_set2_update" style="url"-->
                     <v:on-post width="0" height="16">
@@ -204,7 +204,7 @@
 		      value="images/icons/alarm_16.png"
 		      xhtml_alt="Schedule"
 		      xhtml_title="Schedule"
-		      text="&#160;Schedule"
+		      text="&nbsp;Schedule"
 		      url="--concat('robot_sched.vspx?mode=create&host=', (control.vc_parent as vspx_row_template).te_rowset[1], '&root=', (control.vc_parent as vspx_row_template).te_rowset[3])"
 		      />
                   <v:button action="simple" value="Reset" width="64" height="24" name="data_set2_reset" style="url" >
@@ -236,7 +236,7 @@
 		      value="images/icons/stop_16.png"
 		      xhtml_alt="Stop"
 		      xhtml_title="Stop"
-		      text="&#160;Stop"
+		      text="&nbsp;Stop"
 		      >
                     <v:on-post width="0" height="16">
                       <v:script>
@@ -332,13 +332,13 @@
 		      value="images/icons/edit_16.png"
 		      xhtml_alt="Edit"
 		      xhtml_title="Edit"
-		      text="&#160;Edit"
+		      text="&nbsp;Edit"
 		      url="--concat('robot_sched.vspx?mode=edt&ename=', encode_base64(serialize((control.vc_parent as vspx_row_template).te_rowset[0])))"  />
 		    <v:button action="simple" style="image" name="data_set3_delete"
 		      value="images/icons/trash_16.png"
 		      xhtml_alt="Delete"
 		      xhtml_title="Delete"
-		      text="&#160;Delete"
+		      text="&nbsp;Delete"
 		      >
                     <v:on-post width="0" height="16">
                       <v:script>

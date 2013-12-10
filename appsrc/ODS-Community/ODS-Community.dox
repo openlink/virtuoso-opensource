@@ -1,0 +1,5 @@
+/**
+\defgroup ods_module_community ODS Community API
+
+The Community application does not provide a REST API yet.
+*/

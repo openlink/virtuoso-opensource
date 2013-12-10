@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2206,7 +2206,8 @@ get_more:
           GPF_T;
 #endif
       }
-    page_leave_outside_map (buf);
+    if (NULL != buf)
+      page_leave_outside_map (buf);
     buf = NULL;
     ITC_LEAVE_MAPS (tmp_itc);
     if (bsize && (iter->bdfi_total_pos < iter->bdfi_bh->bh_diskbytes))

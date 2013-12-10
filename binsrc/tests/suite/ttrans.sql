@@ -59,11 +59,11 @@ select * from (select transitive t_in (1) t_out (2) t_direction 1 t_distinct  p1
 ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
 ECHO BOTH ": trans steps d1\n";
 
-select * from (select transitive t_in (1) t_out (2) t_direction 2 t_distinct  p1, p2, t_step (1) as via, t_step ('path_id') as path , t_step ('step_no') as step from knows) k where p1 = 1 and p2 = 4;
+select * from (select transitive t_in (1) t_out (2) t_direction 2 t_distinct  p1, p2, t_step (2) as via, t_step ('path_id') as path , t_step ('step_no') as step from knows) k where p1 = 1 and p2 = 4;
 ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
 ECHO BOTH ": trans steps d2\n";
 
-select * from (select transitive t_in (1) t_out (2) t_direction 3 t_distinct t_shortest_only  p1, p2, t_step (1) as via, t_step ('path_id') as path , t_step ('step_no') as step from knows) k where p1 = 1 and p2 = 4;
+select * from (select transitive t_in (1) t_out (2) t_direction 3 t_distinct t_shortest_only  p1, p2, t_step ('path_id') as path , t_step ('step_no') as step from knows) k where p1 = 1 and p2 = 4;
 ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
 ECHO BOTH ": trans steps d3\n";
 

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -51,7 +51,7 @@ import java.sql.NClob;
 public class ResultSetWrapper implements ResultSet, Closeable {
   private ConnectionWrapper wconn;
   private StatementWrapper wstmt;
-  private ResultSet rs;
+  private volatile ResultSet rs;
 
   protected ResultSetWrapper(ConnectionWrapper _wconn, StatementWrapper _wstmt, ResultSet _rs) {
     wconn = _wconn;
@@ -72,7 +72,7 @@ public class ResultSetWrapper implements ResultSet, Closeable {
       wconn.exceptionOccurred(sqlEx);
   }
 
-  public synchronized void finalize () throws Throwable {
+  public void finalize () throws Throwable {
     close();
   }
 
@@ -80,21 +80,23 @@ public class ResultSetWrapper implements ResultSet, Closeable {
     if (rs == null)
       return;
     check_close();
-    try {
-      rs.close();
-      if (wstmt == null) //DBMetaDataResultSet
-        wconn.removeObjFromClose(this);
-      else
-        {
-          wstmt.removeObjFromClose(this);
-          wstmt.close();
-        }
-      rs = null;
-      wstmt = null;
-      wconn = null;
-    } catch (SQLException ex) {
-      exceptionOccurred(ex);
-      throw ex;
+    synchronized(this) {
+      try {
+        rs.close();
+        if (wstmt == null) //DBMetaDataResultSet
+          wconn.removeObjFromClose(this);
+        else
+          {
+            wstmt.removeObjFromClose(this);
+            wstmt.close();
+          }
+        rs = null;
+        wstmt = null;
+        wconn = null;
+      } catch (SQLException ex) {
+        exceptionOccurred(ex);
+        throw ex;
+      }
     }
   }
 
@@ -2043,6 +2045,35 @@ public class ResultSetWrapper implements ResultSet, Closeable {
       throw ex;
     }
   }
+
+#if JDK_VER >= 17
+
+    //------------------------- JDBC 4.1 -----------------------------------
+  public <T> T getObject(int columnIndex, Class<T> type) throws SQLException
+  {
+    check_close();
+    try {
+      return rs.getObject(columnIndex, type);
+    } catch (SQLException ex) {
+      exceptionOccurred(ex);
+      throw ex;
+    }
+  }
+
+
+  public <T> T getObject(String columnLabel, Class<T> type) throws SQLException
+  {
+    check_close();
+    try {
+      return rs.getObject(columnLabel, type);
+    } catch (SQLException ex) {
+      exceptionOccurred(ex);
+      throw ex;
+    }
+  }
+#endif
+
+
 
 #endif
 #endif

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -206,6 +206,13 @@ FCT_LABEL (in x any, in g_id iri_id_8, in ctx varchar)
   declare label_iri iri_id_8;
   if (not isiri_id (x))
     return null;
+  if (__proc_exists ('rdf_resolve_labels_s') is not null)
+    {
+      declare ret any;
+      ret := rdf_resolve_labels_s (adler32 ('en'), vector (x));
+      ret := coalesce (ret[0], '');
+      return __ro2sq (ret);
+    }
   rdf_check_init ();
   label_iri := iri_id_from_num (atoi (registry_get ('fct_label_iri')));
   best_str := null;
@@ -305,6 +312,13 @@ FCT_LABEL_NP (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar := 'en'
 
   if (not isiri_id (x))
     return null;
+  if (__proc_exists ('rdf_resolve_labels_s') is not null)
+    {
+      declare ret any;
+      ret := rdf_resolve_labels_s (adler32 (lng), vector (x));
+      ret := coalesce (ret[0], '');
+      return __ro2sq (ret);
+    }
   rdf_check_init ();
   label_iri := iri_id_from_num (atoi (registry_get ('fct_label_iri')));
   best_str := '';
@@ -312,7 +326,7 @@ FCT_LABEL_NP (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar := 'en'
   best_q := 0;
   for select o
         from rdf_quad table option (index rdf_quad)
-        where s = x and p in (rdf_super_sub_list (ctx, label_iri, 3)) order by cast (b3s_lbl_order (P) as int) do
+        where s = x and p in (rdf_super_sub_list (ctx, label_iri, 3)) order by cast (b3s_lbl_order (P) as int) option (same_as) do
     {
       o := __ro2sq (o);
       lang_id := rdf_box_lang (o);
@@ -345,6 +359,13 @@ FCT_LABEL_S (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
 
   if (not isiri_id (x))
     return null;
+  if (__proc_exists ('rdf_resolve_labels_s') is not null)
+    {
+      declare ret any;
+      ret := rdf_resolve_labels_s (adler32 (lng), vector (x));
+      ret := coalesce (ret[0], '');
+      return __ro2sq (ret);
+    }
   rdf_check_init ();
   label_iri := iri_id_from_num (atoi (registry_get ('fct_label_iri')));
   best_str := null;
@@ -782,7 +803,7 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
 
   if ('list' = mode or 'propval-list' = mode)
     {
-      http (sprintf ('select distinct ?s%d as ?c1 ?g', this_s), pre);
+      http (sprintf ('select distinct ?s%d as ?c1 ', this_s), pre);
       http (sprintf (' order by desc (<LONG::IRI_RANK> (?s%d)) ', this_s), post);
     }
 
@@ -877,8 +898,9 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
       loc := xpath_eval ('@location-prop', tree);
 
       if (loc = 'any')
+	loc := '?anyloc';
+      if (length (loc) > 1)	
 	{
-	  loc := '?anyloc';
 	  http (sprintf ('select distinct ?location as ?c1 ?lat%d as ?c2 ?lng%d as ?c3 ', 
                          this_s, this_s, this_s), pre);
 	}
@@ -916,6 +938,14 @@ fct_literal (in tree any)
 
   if (dtp = 'http://www.openlinksw.com/schemas/facets/dtp/plainstring')
     return sprintf ('"""%s"""', val);
+
+  if (val like '"%"^^<uri>')
+    {
+      declare arr any;
+      arr := sprintf_inverse (val, '"%s"^^<uri>', 0);
+      if (length (arr) > 0)
+	return sprintf ('<%s>', arr[0]);
+    }
 
   if (dtp = '' or dtp is null or dtp like '%nteger' or dtp like '%ouble' or dtp like '%loat' or dtp like '%nt')
     return val;
@@ -1341,7 +1371,7 @@ fct_text (in tree any,
 create procedure
 fct_chk_any_prop (in tree any, inout this_s int, inout max_s int, in txt any)
 {
-  if (0 = xpath_eval ('count (./ancestor::*[name()=''property''])+ count(./ancestor::*[name()=''property-of''])', tree, 1))
+  if (0 = xpath_eval ('count (./ancestor::*[name()=''property''])+ count(./ancestor::*[name()=''property-of'']) + count(./preceding::*[name()=''class'']) ', tree, 1))
     {
       declare dtp varchar;
       dtp := xpath_eval ('./@dtp', tree, 1);

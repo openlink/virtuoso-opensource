@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2012 OpenLink Software
+--  Copyright (C) 1998-2013 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -192,9 +192,9 @@ create function "Box_DAV_DELETE" (
   in auth_uid integer) returns integer
 {
   -- dbg_obj_princ ('Box_DAV_DELETE (', detcol_id, path_parts, what, silent, auth_uid, ')');
-  declare path, listId varchar;
-  declare retValue, save any;
-  declare id, url, header, retHeader, params any;
+  declare path, listID varchar;
+  declare retValue, save, listEntry any;
+  declare id, id_acl, url, header, retHeader any;
   declare exit handler for sqlstate '*'
   {
     connection_set ('dav_store', save);
@@ -208,10 +208,38 @@ create function "Box_DAV_DELETE" (
   {
     listId := DB.DBA.Box__paramGet (id, what, 'id', 0);
     header := null;
-    url := sprintf ('https://api.box.com/2.0/%s/%s', case when what = 'R' then 'files' else 'folders' end, listId);
+    if (what = 'C')
+    {
+      url := sprintf ('https://api.box.com/2.0/folders/%s?force=true', listId);
+    }
+    else
+    {
+      url := sprintf ('https://api.box.com/2.0/files/%s', listId);
+      listEntry := DB.DBA.Box__paramGet (id, what, 'Entry', 0);
+      if (listEntry is not null)
+      {
+        listEntry := xtree_doc (listEntry);
+        header := sprintf ('If-Match: %s\r\n', DB.DBA.Box__entryXPath (listEntry, '/etag', 1));
+      }
+    }
     retValue := DB.DBA.Box__exec (detcol_id, retHeader, 'DELETE', url, header);
     if (DAV_HIDE_ERROR (retValue) is null)
       goto _exit;
+
+    id_acl := DB.DBA.DAV_SEARCH_ID (path || ',acl', 'R');
+    if (DAV_HIDE_ERROR (id_acl) is not null)
+    {
+      listID := DB.DBA.Box__paramGet (id_acl, 'R', 'id', 0);
+      header := null;
+      listEntry := DB.DBA.Box__paramGet (id_acl, what, 'Entry', 0);
+      if (listEntry is not null)
+      {
+        listEntry := xtree_doc (listEntry);
+        header := sprintf ('If-Match: %s\r\n', DB.DBA.Box__entryXPath (listEntry, '/etag', 1));
+      }
+      url := sprintf ('https://api.box.com/2.0/files/%s', listID);
+      DB.DBA.Box__exec (detcol_id, retHeader, 'DELETE', url, header);
+    }
   }
   connection_set ('dav_store', 1);
   if (what = 'R')
@@ -242,6 +270,7 @@ create function "Box_DAV_RES_UPLOAD" (
   -- dbg_obj_princ ('Box_DAV_RES_UPLOAD (', detcol_id, path_parts, ', [content], ', type, permissions, uid, gid, auth_uid, ')');
   declare ouid, ogid integer;
   declare name, path, parentListID, listID, listItem, rdf_graph varchar;
+  declare id any;
   declare url, header, body, params any;
   declare retValue, retHeader, result, save, parentID any;
   declare exit handler for sqlstate '*'
@@ -252,6 +281,7 @@ create function "Box_DAV_RES_UPLOAD" (
 
   save := connection_get ('dav_store');
   path := DB.DBA.Box__path (detcol_id, path_parts);
+  id := DB.DBA.DAV_SEARCH_ID (path, 'R');
   if (save is null)
   {
     if (__tag (content) = 126)
@@ -261,6 +291,30 @@ create function "Box_DAV_RES_UPLOAD" (
       real_content := http_body_read (1);
       content := string_output_string (real_content);  -- check if bellow code can work with string session and if so remove this line
     }
+    content := blob_to_string (content);
+    if (DAV_HIDE_ERROR (id) is not null)
+    {
+      listID := DB.DBA.Box__paramGet (id, 'R', 'id', 0);
+      if (DAV_HIDE_ERROR (retValue) is not null)
+      {
+        name := path_parts[length (path_parts)-1];
+        url := sprintf ('https://api.box.com/2.0/files/%s/content', listID);
+        header := 'Content-Type: multipart/form-data; boundary=A300x\r\n';
+        body := sprintf (
+          '--A300x\r\n' ||
+          'Content-Disposition: form-data; name="filename"; filename="%s"\r\n' ||
+          'Content-Type: application/octet-stream\r\n' ||
+          '\r\n' ||
+          '%s\r\n' ||
+          '--A300x--',
+          name,
+          content
+        );
+        result := DB.DBA.Box__exec (detcol_id, retHeader, 'POST', url, header, body);
+      }
+      if (DAV_HIDE_ERROR (result) is not null)
+        goto _create;
+    }
     name := path_parts[length (path_parts)-1];
     parentListID := DB.DBA.Box__root ();
     if (length (path_parts) > 1)
@@ -268,7 +322,7 @@ create function "Box_DAV_RES_UPLOAD" (
       parentID := DB.DBA.DAV_SEARCH_ID (DB.DBA.Box__path (detcol_id, path_parts), 'P');
       parentListID := DB.DBA.Box__paramGet (parentID, 'C', 'id', 0);
     }
-    url := 'https://api.box.com/2.0/files/data';
+    url := 'https://api.box.com/2.0/files/content';
     header := 'Content-Type: multipart/form-data; boundary=A300x\r\n';
     body := sprintf (
       '--A300x\r\n' ||
@@ -291,6 +345,8 @@ create function "Box_DAV_RES_UPLOAD" (
       retValue := result;
       goto _exit;
     }
+
+  _create:;
     listItem := ODS..json2obj (result);
     listID := get_keyword ('id', listItem);
     if (isnull (listID) and (get_keyword ('total_count', listItem) = 1))
@@ -299,7 +355,7 @@ create function "Box_DAV_RES_UPLOAD" (
       listID := get_keyword ('id', listItem);
       url := sprintf ('https://api.box.com/2.0/files/%s', listID);
       result := DB.DBA.Box__exec (detcol_id, retHeader, 'GET', url);
-      if (DAV_HIDE_ERROR (retValue) is null)
+      if (DAV_HIDE_ERROR (result) is null)
       {
         retValue := result;
         goto _exit;
@@ -441,17 +497,9 @@ create function "Box_DAV_DIR_LIST" (
 {
   -- dbg_obj_princ ('Box_DAV_DIR_LIST (', detcol_id, subPath_parts, detcol_parts, name_mask, recursive, auth_uid, ')');
   declare colId integer;
-  declare what, colPath, movePath varchar;
-  declare boxItem, boxEntry any;
-  declare retValue, save, downloads, listItems, davItems, colEntry, xmlItems, davEntry, listIds, listId any;
-  declare exit handler for sqlstate '*'
-  {
-    connection_set ('dav_store', save);
-    resignal;
-  };
+  declare what, colPath varchar;
+  declare retValue any;
 
-  save := connection_get ('dav_store');
-  connection_set ('dav_store', null);
   what := case when ((length (subPath_parts) = 0) or (subPath_parts[length (subPath_parts) - 1] = '')) then 'C' else 'R' end;
   if ((what = 'R') or (recursive = -1))
     return DB.DBA.Box_DAV_DIR_SINGLE (detcol_id, what, null, auth_uid);
@@ -459,134 +507,8 @@ create function "Box_DAV_DIR_LIST" (
   colPath := DB.DBA.DAV_CONCAT_PATH (detcol_parts, subPath_parts);
   colId := DB.DBA.DAV_SEARCH_ID (colPath, 'C');
 
-  downloads := vector ();
-  listItems := DB.DBA.Box__list (detcol_id, detcol_parts, subPath_parts);
-  if (DAV_HIDE_ERROR (listItems) is null)
-    goto _exit;
-
-  if (isinteger (listItems))
-    goto _exit;
-
-  DB.DBA.Box__activity (detcol_id, 'Sync started');
-  {
-    declare _id, _what, _type, _content any;
-    declare title varchar;
-    {
-      declare exit handler for sqlstate '*'
-      {
-        DB.DBA.Box__activity (detcol_id, 'Exec error: ' || __SQL_MESSAGE);
-        goto _exitSync;
-      };
-
-      connection_set ('dav_store', 1);
-      colEntry := DB.DBA.DAV_DIR_SINGLE_INT (colId, 'C', '', null, null, http_dav_uid ());
-      listItems := subseq (ODS..json2obj (listItems), 2);
-      boxItem := DB.DBA.Box__removeKeyword ('item_collection', listItems);
-      boxEntry := DB.DBA.Box__paramGet (colId, 'C', 'Entry', 0);
-      if (not isnull (boxEntry))
-        boxEntry := xtree_doc (boxEntry);
-
-      if (
-          isnull (boxEntry) or
-          isnull (get_keyword ('modified_at', boxItem)) or
-          (get_keyword ('modified_at', boxItem) <> DB.DBA.Box__entryXPath (boxEntry, '/modified_at', 1))
-         )
-      {
-        listItems := get_keyword ('item_collection', listItems, vector ());
-        listItems := get_keyword ('entries', listItems, vector ());
-        listIds := vector ();
-        davItems := DB.DBA.Box__davList (detcol_id, colId);
-        foreach (any davItem in davItems) do
-        {
-          connection_set ('dav_store', 1);
-          listID := DB.DBA.Box__paramGet (davItem[4], davItem[1], 'id', 0);
-          foreach (any listItem in listItems) do
-          {
-            listItem := subseq (listItem, 2);
-            title := get_keyword ('name', listItem);
-            if ((listID = get_keyword ('id', listItem)) and (title = davItem[10]))
-            {
-              listIds := vector_concat (listIds, vector (listID));
-              if (davItem[1] = 'R')
-              {
-                declare downloaded integer;
-
-                downloaded := DB.DBA.Box__paramGet (davItem[4], davItem[1], 'download', 0);
-                if (downloaded is not null)
-                {
-                  downloaded := cast (downloaded as integer);
-                  if (downloaded <= 5)
-                    downloads := vector_concat (downloads, vector (vector (davItem[4], davItem[1])));
-                }
-                else
-                {
-                  DB.DBA.Box__paramSet (davItem[4], davItem[1], 'download', '0', 0);
-                  downloads := vector_concat (downloads, vector (vector (davItem[4], davItem[1])));
-                }
-              }
-              goto _continue;
-            }
-          }
-          if (davItem[1] = 'R')
-            DB.DBA.Box__rdf_delete (detcol_id, davItem[4], davItem[1]);
-          DAV_DELETE_INT (davItem[0], 1, null, null, 0, 0);
-
-        _continue:;
-          commit work;
-        }
-        foreach (any listItem in listItems) do
-        {
-          connection_set ('dav_store', 1);
-          listItem := subseq (listItem, 2);
-          listID := get_keyword ('id', listItem);
-          if (not position (listID, listIDs))
-          {
-            title := get_keyword ('name', listItem);
-            connection_set ('dav_store', 1);
-            if (get_keyword ('type', listItem) = 'folder')
-            {
-              _id := DB.DBA.DAV_COL_CREATE (colPath || title || '/',  colEntry[5], colEntry[7], colEntry[6], DB.DBA.Box__user (http_dav_uid ()), DB.DBA.Box__password (http_dav_uid ()));
-              _what := 'C';
-            }
-            else
-            {
-              _content := '';
-              _type := http_mime_type (title);
-              _id := DB.DBA.DAV_RES_UPLOAD (colPath || title,  _content, _type, colEntry[5], colEntry[7], colEntry[6], DB.DBA.Box__user (http_dav_uid ()), DB.DBA.Box__password (http_dav_uid ()));
-              _what := 'R';
-            }
-            if (DAV_HIDE_ERROR (_id) is not null)
-            {
-              DB.DBA.Box__paramSet (_id, _what, 'id', listID, 0);
-              DB.DBA.Box__paramSet (_id, _what, 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
-              if (_what = 'R')
-              {
-                DB.DBA.Box__paramSet (_id, _what, 'download', '0', 0);
-                downloads := vector_concat (downloads, vector (vector (_id, _what)));
-              }
-            }
-            commit work;
-          }
-        }
-        -- save colItem
-        DB.DBA.Box__paramSet (colId, 'C', 'Entry', DB.DBA.Box__obj2xml (boxItem), 0);
-        if (not isinteger (colId))
-        {
-        set triggers off;
-        DB.DBA.Box__paramSet (colId, 'C', ':creationdate', DB.DBA.Box__stringdate (get_keyword ('created_at', boxItem)), 0, 0);
-        DB.DBA.Box__paramSet (colId, 'C', ':getlastmodified', DB.DBA.Box__stringdate (get_keyword ('modified_at', boxItem)), 0, 0);
-        set triggers on;
-      }
-    }
-    }
-  _exitSync:
-    connection_set ('dav_store', save);
-  }
-  DB.DBA.Box__activity (detcol_id, 'Sync ended');
-
-_exit:;
+  DB.DBA.Box__load (detcol_id, subPath_parts, detcol_parts);
   retValue := DB.DBA.Box__davList (detcol_id, colId);
-  DB.DBA.Box__downloads (detcol_id, downloads);
 
   return retValue;
 }
@@ -702,7 +624,61 @@ create function "Box_DAV_RES_UPLOAD_MOVE" (
   in auth_uid integer) returns any
 {
   -- dbg_obj_princ ('Box_DAV_RES_UPLOAD_MOVE (', detcol_id, path_parts, source_id, what, overwrite_flags, auth_uid, ')');
-  return -20;
+  declare listID, oldName, newName varchar;
+  declare url, header, body any;
+  declare srcEntry, listItem any;
+  declare retValue, retHeader, result, save any;
+
+  retValue := -20;
+  srcEntry := DB.DBA.DAV_DIR_SINGLE_INT (source_id, what, '', null, null, http_dav_uid ());
+  if (DB.DBA.DAV_HIDE_ERROR (srcEntry) is null)
+    return;
+
+  oldName := srcEntry[10];
+  newName := case when what = 'C' then path_parts[length (path_parts)-2] else path_parts[length (path_parts)-1] end;
+  if (oldName <> newName)
+  {
+    declare exit handler for sqlstate '*'
+    {
+      connection_set ('dav_store', save);
+      resignal;
+    };
+
+    save := connection_get ('dav_store');
+    if (save is null)
+    {
+      listID := DB.DBA.Box__paramGet (source_id, what, 'id', 0);
+      url := sprintf ('https://api.box.com/2.0/%s/%s', case when what = 'C' then 'folders' else 'files' end, listID);
+      body := sprintf ('{"name": "%U"}', newName);
+      result := DB.DBA.Box__exec (detcol_id, retHeader, 'PUT', url, null, body);
+      if (DAV_HIDE_ERROR (result) is null)
+      {
+        retValue := result;
+        goto _exit;
+      }
+      listItem := ODS..json2obj (result);
+    }
+    connection_set ('dav_store', 1);
+    if (what = 'C')
+    {
+      update WS.WS.SYS_DAV_COL set COL_NAME = newName, COL_MOD_TIME = now () where COL_ID = source_id[2];
+    } else {
+      update WS.WS.SYS_DAV_RES set RES_NAME = newName, RES_MOD_TIME = now () where RES_ID = source_id[2];
+    }
+    retValue := source_id;
+
+  _exit:;
+    connection_set ('dav_store', save);
+    if (DAV_HIDE_ERROR (retValue) is not null)
+    {
+      if (save is null)
+      {
+        DB.DBA.Box__paramSet (retValue, what, 'Entry', DB.DBA.Box__obj2xml (listItem), 0);
+        DB.DBA.Box__paramSet (retValue, what, 'id', listID, 0);
+      }
+    }
+  }
+  return retValue;
 }
 ;
 
@@ -869,6 +845,42 @@ create function "Box_DAV_LIST_LOCKS" (
   connection_set ('dav_store', save);
 
   return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create function "Box_DAV_SCHEDULER" (
+  in queue_id integer)
+{
+  -- dbg_obj_princ ('DB.DBA.Box_DAV_SCHEDULER (', queue_id, ')');
+  declare detcol_parts any;
+
+  for (select COL_ID from WS.WS.SYS_DAV_COL where COL_DET = cast (DB.DBA.Box__detName () as varchar)) do
+  {
+    detcol_parts := split_and_decode (WS.WS.COL_PATH (COL_ID), 0, '\0\0/');
+    DB.DBA.Box_DAV_SCHEDULER_FOLDER (queue_id, COL_ID, detcol_parts, COL_ID, vector (''));
+  }
+  DB.DBA.DAV_QUEUE_UPDATE_STATE (queue_id, 2);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create function "Box_DAV_SCHEDULER_FOLDER" (
+  in queue_id integer,
+  in detcol_id integer,
+  in detcol_parts any,
+  in cid integer,
+  in path_parts any)
+{
+  -- dbg_obj_princ ('DB.DBA.Box_DAV_SCHEDULER_FOLDER (', queue_id, detcol_id, detcol_parts, cid, path_parts, ')');
+  DB.DBA.Box__load (detcol_id, path_parts, detcol_parts);
+
+  for (select COL_ID, COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = cid) do
+  {
+    DB.DBA.Box_DAV_SCHEDULER_FOLDER (queue_id, detcol_id, detcol_parts, COL_ID, vector_concat (subseq (path_parts, 0, length (path_parts)-1), vector (COL_NAME, '')));
+  }
 }
 ;
 
@@ -1295,25 +1307,176 @@ create function DB.DBA.Box__davList (
 
 -------------------------------------------------------------------------------
 --
+create function DB.DBA.Box__load (
+  in detcol_id any,
+  in subPath_parts any,
+  in detcol_parts varchar) returns any
+{
+  -- dbg_obj_princ ('DB.DBA.Box__load (', detcol_id, subPath_parts, detcol_parts, ')');
+  declare colId integer;
+  declare colPath varchar;
+  declare boxItem, boxEntry any;
+  declare retValue, save, downloads, listItems, davItems, colEntry, xmlItems, davEntry, listIds, listId any;
+  declare syncTime datetime;
+  declare exit handler for sqlstate '*'
+  {
+    connection_set ('dav_store', save);
+    resignal;
+  };
+
+  save := connection_get ('dav_store');
+  downloads := vector ();
+  colPath := DB.DBA.DAV_CONCAT_PATH (detcol_parts, subPath_parts);
+  colId := DB.DBA.DAV_SEARCH_ID (colPath, 'C');
+  if (DAV_HIDE_ERROR (colId) is null)
+    goto _exit;
+
+  syncTime := DB.DBA.Box__paramGet (colId, 'C', 'syncTime');
+  if (not isnull (syncTime) and (datediff ('second', syncTime, now ()) < 300))
+    goto _exit;
+
+  listItems := DB.DBA.Box__list (detcol_id, detcol_parts, colId, subPath_parts);
+  if (DAV_HIDE_ERROR (listItems) is null)
+    goto _exit;
+
+  if (isinteger (listItems))
+    goto _exit;
+
+  DB.DBA.Box__activity (detcol_id, 'Sync started');
+  {
+    declare _id, _what, _type, _content any;
+    declare title varchar;
+    {
+      declare exit handler for sqlstate '*'
+      {
+        DB.DBA.Box__activity (detcol_id, 'Exec error: ' || __SQL_MESSAGE);
+        goto _exitSync;
+      };
+
+      connection_set ('dav_store', 1);
+      colEntry := DB.DBA.DAV_DIR_SINGLE_INT (colId, 'C', '', null, null, http_dav_uid ());
+      listItems := subseq (ODS..json2obj (listItems), 2);
+      boxItem := DB.DBA.Box__removeKeyword ('item_collection', listItems);
+      boxEntry := DB.DBA.Box__paramGet (colId, 'C', 'Entry', 0);
+      if (not isnull (boxEntry))
+        boxEntry := xtree_doc (boxEntry);
+
+      if (
+          isnull (boxEntry) or
+          isnull (get_keyword ('modified_at', boxItem)) or
+          (get_keyword ('modified_at', boxItem) <> DB.DBA.Box__entryXPath (boxEntry, '/modified_at', 1))
+         )
+      {
+        listItems := get_keyword ('item_collection', listItems, vector ());
+        listItems := get_keyword ('entries', listItems, vector ());
+        listIds := vector ();
+        davItems := DB.DBA.Box__davList (detcol_id, colId);
+        foreach (any davItem in davItems) do
+        {
+          connection_set ('dav_store', 1);
+          listID := DB.DBA.Box__paramGet (davItem[4], davItem[1], 'id', 0);
+          foreach (any listItem in listItems) do
+          {
+            listItem := subseq (listItem, 2);
+            title := get_keyword ('name', listItem);
+            if ((listID = get_keyword ('id', listItem)) and (title = davItem[10]))
+            {
+              listIds := vector_concat (listIds, vector (listID));
+              if (davItem[1] = 'R')
+              {
+                declare downloaded integer;
+
+                downloaded := DB.DBA.Box__paramGet (davItem[4], davItem[1], 'download', 0);
+                if (downloaded is not null)
+                {
+                  downloaded := cast (downloaded as integer);
+                  if (downloaded <= 5)
+                    downloads := vector_concat (downloads, vector (vector (davItem[4], davItem[1])));
+                }
+                else
+                {
+                  DB.DBA.Box__paramSet (davItem[4], davItem[1], 'download', '0', 0);
+                  downloads := vector_concat (downloads, vector (vector (davItem[4], davItem[1])));
+                }
+              }
+              goto _continue;
+            }
+          }
+          if (davItem[1] = 'R')
+            DB.DBA.Box__rdf_delete (detcol_id, davItem[4], davItem[1]);
+
+          connection_set ('dav_store', 1);
+          DAV_DELETE_INT (davItem[0], 1, null, null, 0, 0);
+
+        _continue:;
+          commit work;
+        }
+        foreach (any listItem in listItems) do
+        {
+          connection_set ('dav_store', 1);
+          listItem := subseq (listItem, 2);
+          listID := get_keyword ('id', listItem);
+          if (not position (listID, listIDs))
+          {
+            title := get_keyword ('name', listItem);
+            connection_set ('dav_store', 1);
+            if (get_keyword ('type', listItem) = 'folder')
+            {
+              _id := DB.DBA.DAV_COL_CREATE (colPath || title || '/',  colEntry[5], colEntry[7], colEntry[6], DB.DBA.Box__user (http_dav_uid ()), DB.DBA.Box__password (http_dav_uid ()));
+              _what := 'C';
+            }
+            else
+            {
+              _content := '';
+              _type := http_mime_type (title);
+              _id := DB.DBA.DAV_RES_UPLOAD (colPath || title,  _content, _type, colEntry[5], colEntry[7], colEntry[6], DB.DBA.Box__user (http_dav_uid ()), DB.DBA.Box__password (http_dav_uid ()));
+              _what := 'R';
+            }
+            if (DAV_HIDE_ERROR (_id) is not null)
+            {
+              DB.DBA.Box__paramSet (_id, _what, 'id', listID, 0);
+              DB.DBA.Box__paramSet (_id, _what, 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
+              if (_what = 'R')
+              {
+                DB.DBA.Box__paramSet (_id, _what, 'download', '0', 0);
+                downloads := vector_concat (downloads, vector (vector (_id, _what)));
+              }
+            }
+            commit work;
+          }
+        }
+        -- save colItem
+        DB.DBA.Box__paramSet (colId, 'C', 'Entry', DB.DBA.Box__obj2xml (boxItem), 0);
+        if (not isinteger (colId))
+        {
+          set triggers off;
+          DB.DBA.Box__paramSet (colId, 'C', ':creationdate', DB.DBA.Box__stringdate (get_keyword ('created_at', boxItem)), 0, 0);
+          DB.DBA.Box__paramSet (colId, 'C', ':getlastmodified', DB.DBA.Box__stringdate (get_keyword ('modified_at', boxItem)), 0, 0);
+          set triggers on;
+        }
+      }
+    }
+  _exitSync:
+    connection_set ('dav_store', save);
+  }
+  DB.DBA.Box__activity (detcol_id, 'Sync ended');
+
+_exit:;
+  DB.DBA.Box__downloads (detcol_id, downloads);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create function DB.DBA.Box__list (
   inout detcol_id any,
   inout detcol_parts varchar,
+  inout col_id any,
   inout subPath_parts varchar)
 {
-  -- dbg_obj_princ ('DB.DBA.Box__list (', detcol_id, detcol_parts, subPath_parts, ')');
-  declare colId integer;
-  declare colPath, listId varchar;
-  declare syncTime datetime;
-  declare retValue, retHeader, value, entry any;
-
-  colPath := DB.DBA.DAV_CONCAT_PATH (detcol_parts, subPath_parts);
-  colId := DB.DBA.Box__davId (DB.DBA.DAV_SEARCH_ID (colPath, 'C'));
-  if (DAV_HIDE_ERROR (colId) is null)
-    return -28;
-
-  syncTime := DB.DBA.Box__paramGet (colId, 'C', 'syncTime');
-  if (not isnull (syncTime) and (datediff ('second', syncTime, now ()) < 30))
-    return 0;
+  -- dbg_obj_princ ('DB.DBA.Box__list (', detcol_id, detcol_parts, col_id, subPath_parts, ')');
+  declare listId varchar;
+  declare retValue, retHeader any;
 
   if (length (subPath_parts) = 1)
   {
@@ -1321,14 +1484,14 @@ create function DB.DBA.Box__list (
   }
   else
   {
-    listId := DB.DBA.Box__paramGet (colId, 'C', 'id', 0);
+    listId := DB.DBA.Box__paramGet (col_id, 'C', 'id', 0);
     if (isnull (listId))
       return -28;
   }
   retValue := DB.DBA.Box__exec (detcol_id, retHeader, 'GET', sprintf ('https://api.box.com/2.0/folders/%s', listId));
   -- dbg_obj_print ('retValue', retValue);
   if (not isinteger (retValue))
-    DB.DBA.Box__paramSet (colId, 'C', 'syncTime', now ());
+    DB.DBA.Box__paramSet (col_id, 'C', 'syncTime', now ());
 
   return retValue;
 }
@@ -1473,7 +1636,7 @@ create function DB.DBA.Box__downloads_aq (
         DB.DBA.Box__paramSet (download[0], download[1], ':getlastmodified', DB.DBA.Box__stringdate (get_keyword ('modified_at', boxItem)), 0, 0);
         set triggers on;
 
-        url := sprintf ('https://api.box.com/2.0/files/%s/data', listID);
+        url := sprintf ('https://api.box.com/2.0/files/%s/content', listID);
         retValue := DB.DBA.Box__exec (detcol_id, retHeader, 'GET', url);
         if (DAV_HIDE_ERROR (retValue) is not null)
         {
@@ -1587,12 +1750,7 @@ create function DB.DBA.Box__rdf_delete (
     return;
 
   path := DB.DBA.DAV_SEARCH_PATH (id, what);
-  if (path like '%.gz')
-    path := regexp_replace (path, '\.gz\x24', '');
-
-  rdf_graph2 := 'http://local.virt' || path;
-  SPARQL delete from graph ?:rdf_graph { ?s ?p ?o } where { graph `iri(?:rdf_graph2)` { ?s ?p ?o } };
-  SPARQL clear graph ?:rdf_graph2;
+  DB.DBA.RDF_SINK_CLEAR (path, rdf_graph);
 }
 ;
 

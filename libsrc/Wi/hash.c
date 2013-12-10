@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1475,6 +1475,7 @@ ha_rehash (caddr_t * inst, hash_area_t * ha, index_tree_t * it)
   END_DO_BOX;
   dk_free_box ((caddr_t)save);
   dk_set_free (ks.ks_out_slots);
+  dk_free_box (ks.ks_out_map);
   ITC_IN_KNOWN_MAP (insert_itc, last_dp);
   page_wait_access (insert_itc, last_dp, NULL, &insert_itc->itc_hash_buf, PA_WRITE, RWG_WAIT_ANY);
   ITC_LEAVE_MAPS (insert_itc);
@@ -1674,7 +1675,7 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
   END_FAIL (itc);
 
   if (ha_rehash_pct &&  hi->hi_count > (hi->hi_size / 100) * ha_rehash_pct
-      && HI_NEXT_SIZE (hi) < HI_MAX_SIZE)
+      && HI_NEXT_SIZE (hi) < (int64)HI_MAX_SIZE)
     ha_rehash (qst, ha, tree);
 #endif
   ret->ihfr_disk_buf = itc->itc_hash_buf;

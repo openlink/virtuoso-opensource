@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <!--
  -
- -  $Id: sec_auth_sponger_1.vspx,v 1.1 2012/05/23 15:47:17 mitko Exp $
+ -  $Id$
  -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2012 OpenLink Software
+ -  Copyright (C) 1998-2013 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,13 +21,14 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="auth_serv"
         decor="yacutia_decor.vspx"
         style="yacutia_style.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <vm:pagetitle>Virtuoso Access Control Lists</vm:pagetitle>
   <vm:pagewrapper>
     <vm:variables>
@@ -39,225 +40,286 @@
       <v:variable persist="0" name="addnew" type="int" default="0" param-name="add"/>
       <v:variable persist="0" name="wdel" type="varchar" default="null" param-name="wdel"/>
       <v:variable persist="0" name="wdata" type="any" default="null" param-name="d"/>
-
     </vm:variables>
     <vm:menu>
       <vm:menuitem name="HTTP" value="Access Control Lists"/>
     </vm:menu>
     <vm:header caption="Access Control Lists">
+      <script type="text/javascript" src="tbl.js">;</script>
      <!--vm:help id="sec_auth_serv_sp" sect=""/-->
     </vm:header>
     <vm:pagebody>
-  <v:method name="astyle" arglist="in cmp varchar">
-    <![CDATA[
-    if ((self.acl_name = cmp))
-      return 'page_tab_selected';
-    return 'page_tab';
-    ]]>
-  </v:method>
-  <v:on-init>
-    <![CDATA[
-        if (self.edit is not null and self.vc_event.ve_is_post = 0)
-	  {
-	    self.data := (select vector_agg (AG_WEBID) from RDF_WEBID_ACL_GROUPS where AG_GROUP = self.edit);
-	  }
-      	if (self.wdata is not null)
-	  self.data := deserialize (decode_base64 (self.wdata));
-	else if (self.data is null) 
-	  self.data := vector ();
-	if (self.del is not null)
-          {
-	    delete from RDF_WEBID_ACL_GROUPS where AG_GROUP = self.del;
-	    self.del := null;
-	  }
-	if (self.wdel is not null)
-          {
-	    declare newd any;
-	    newd := vector ();
-	    foreach (any w in self.data) do
-	      {
-	        if (w <> self.wdel)
-		  newd := vector_concat (newd, vector (w));
-	      }
-	    self.data := newd;  
-	  }
-    ]]>
-  </v:on-init>
-    <v:form name="page_form" type="simple" method="POST">
-	<!-- top of security layout -->
-      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
-        <tr valign='top'>
-          <td>
-            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
-              <tr>
-                <td>
-                  <table cellpadding="0" cellspacing="0" border="0">
-                    <tr>
-		      <!--td class="page_tab" align="center">
-			  	
-			<v:url xhtml_style="page_tab" url="sec_pki_1.vspx" value="Public Key Infrastructure" render-only="1"/>
-		      </td-->
-		      <td class="page_tab_selected" align="center">
-			Access Control
-		      </td>
-			<td class="page_tab_empty" align="right" width="100%">
-                        </td>
-                    </tr>
-                  </table>
-                  <table class="tab_page">
-                    <tr>
-			<td valign="top">
-		   <!-- end of top security layout -->
-      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
-        <tr valign='top'>
-          <td>
-            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
-              <tr>
-                <td>
-                  <table cellpadding="0" cellspacing="0" border="0">
-                    <tr>
+      <v:method name="astyle" arglist="in cmp varchar">
+        <![CDATA[
+          if ((self.acl_name = cmp))
+            return 'page_tab_selected';
 
-		      <!--td class="<?V self.astyle ('Sponger') ?>" align="center">
-			<v:url xhtml_style="page_tab" url="sec_auth_serv_sp.vspx?acl=Sponger" value="Sponger" render-only="1"/>
-		      </td-->
-		      <td class="<?V self.astyle ('Groups') ?>" align="center">
-			<v:url xhtml_style="page_tab" url="sec_auth_sponger_1.vspx" value="Groups" render-only="1"/>
-		      </td>
-		      <?vsp
-		        if (vad_check_version ('rdf_mappers') is not null or check_package ('cartridges'))
-			  {
-		      ?>
-		      <td class="<?V self.astyle ('Cartridges') ?>" align="center">
-			<v:url xhtml_style="page_tab" url="sec_auth_sponger_2.vspx" value="Cartridges" render-only="1"/>
-		      </td>
-                      <?vsp
-		          }
-                      ?>
-		      <?vsp if (DB.DBA.VAD_CHECK_VERSION ('Framework') is not null or DB.DBA.VAD_CHECK_VERSION ('policy_manager') is not null) { ?>
-		      <td class="<?V self.astyle ('WebID ACLs') ?>" align="center">
-			<v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="WebID ACLs" render-only="1"/>
-		      </td>
-		      <?vsp } ?>
-                        
-			<td class="page_tab_empty" align="right" width="100%">
-                        </td>
+          return 'page_tab';
+        ]]>
+      </v:method>
+      <v:on-init>
+        <![CDATA[
+          if (self.edit is not null and self.vc_event.ve_is_post = 0)
+          {
+            self.data := (select vector_agg (AG_WEBID) from RDF_WEBID_ACL_GROUPS where AG_GROUP = self.edit);
+          }
+          if (self.wdata is not null)
+            self.data := deserialize (decode_base64 (self.wdata));
+          else if (self.data is null)
+            self.data := vector ();
+          if (self.del is not null)
+          {
+            delete from RDF_WEBID_ACL_GROUPS where AG_GROUP = self.del;
+            self.del := null;
+          }
+          if (self.wdel is not null)
+          {
+            declare newd any;
+            newd := vector ();
+            foreach (any w in self.data) do
+            {
+              if (w <> self.wdel)
+                newd := vector_concat (newd, vector (w));
+            }
+            self.data := newd;
+          }
+        ]]>
+      </v:on-init>
+      <v:form name="page_form" type="simple" method="POST">
+        <!-- top of security layout -->
+        <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+          <tr valign='top'>
+            <td>
+              <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+                <tr>
+                  <td>
+                    <table cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                      <!--td class="page_tab" align="center">
+                        <v:url xhtml_style="page_tab" url="sec_pki_1.vspx" value="Public Key Infrastructure" render-only="1"/>
+                      </td-->
+                      <td class="page_tab_selected" align="center">
+                        Access Control
+                      </td>
+                      <td class="page_tab_empty" align="right" width="100%">
+                      </td>
                     </tr>
                   </table>
                   <table class="tab_page">
                     <tr>
-		      <td valign="top">
-			<!-- MAIN -->
-			<v:template name="list" type="simple" condition="self.addnew = 0 and self.edit is null">
-			<table class="listing">
-			    <tr class="listing_header_row"><th>Group URI</th><th><v:url value="Add New" name="uadd" url="sec_auth_sponger_1.vspx?add=1" render-only="1"/></th></tr>
-			    <?vsp 
-			    	declare ctr int;
-			    	for select distinct AG_GROUP from RDF_WEBID_ACL_GROUPS do { ?>
-			    <tr>
-				<td><?V AG_GROUP ?></td>
-				<td>
-				    <v:url value="Edit" name="udel" url="--sprintf ('sec_auth_sponger_1.vspx?edit=%U', AG_GROUP)" render-only="1"/>
-				    <v:url value="Delete" name="udel" url="--sprintf ('sec_auth_sponger_1.vspx?del=%U', AG_GROUP)" render-only="1"/>
-				</td>
-			    </tr>  
-			    <?vsp ctr := ctr + 1; } 
-			    if (ctr = 0) 
-			      http ('<tr><td colspan="2">No groups defined</td></tr>');	
-			    ?>
-		        </table>
-		        </v:template>
-			<v:template name="tadd" type="simple" condition="self.addnew = 1 or self.edit is not null">
-			    <div>
-				<label for="gname">Group URI</label> <v:text name="gname" value="--self.edit" xhtml_id="gname" xhtml_size="100"/> <br/>
-				<!--label for="gdesc">Group Description</label> <v:text name="gdesc" value="" xhtml_id="gdesc"/> <br/-->
-				
-			    <table class="listing">
-				<tr class="listing_header_row"><th>WebID URI</th><th></th></tr>
-				<?vsp 
-				    declare ctr int;
-				    foreach (any w in self.data) do { ?>
-				<tr>
-				    <td><?V w ?></td>
-				    <td>
-					<v:url value="Delete" name="wdel" url="--sprintf ('sec_auth_sponger_1.vspx?%s&wdel=%U&d=%U', 
-					    	case when self.addnew = 1 then 'add=1' else sprintf ('edit=%U', self.edit) end,  w, encode_base64 (serialize (self.data)))" render-only="1"/>
-				    </td>
-				</tr>  
-				<?vsp ctr := ctr + 1; } 
-				if (ctr = 0) 
-				  http ('<tr><td colspan="2">No WebIDs present</td></tr>');	
-				?>
-			    </table> <br />
-			    <label for="wname">WebID</label> <v:text name="wname" value="" xhtml_id="wname" xhtml_size="100"/> 
-			    <v:button action="simple" name="add_new" value="Add New">
-				<v:on-post>
-				    self.wname.ufl_value := trim (self.wname.ufl_value);
-				    if (not length (self.wname.ufl_value))
-				      {
-				        self.vc_is_valid := 0;
-					self.vc_error_message := 'Can not have empty WebID URI';
-					return 0;
-				      }
-				    if (not position (self.wname.ufl_value, self.data))
-  				      self.data := vector_concat (self.data, vector (self.wname.ufl_value));
-				    self.wname.ufl_value := '';  
-				</v:on-post>
-			    </v:button>
-			    <br/>
-			    <v:button action="simple" name="cancel_new" value="Cancel">
-				<v:on-post>
-                                    self.vc_redirect ('sec_auth_sponger_1.vspx');
-				</v:on-post>
-			    </v:button>
-			    <v:button action="simple" name="save_new" value="Save">
-				<v:on-post>
-				    self.gname.ufl_value := trim (self.gname.ufl_value);
-				    if (not length (self.gname.ufl_value))
-				      {
-				        self.vc_is_valid := 0;
-					self.vc_error_message := 'Can not have empty Group URI';
-					return 0;
-				      }
-				    if (not length (self.data))
-				      {
-				        self.vc_is_valid := 0;
-					self.vc_error_message := 'Must have at least one WebID per group';
-					return 0;
-				      }
-				    delete from RDF_WEBID_ACL_GROUPS where AG_GROUP = self.gname.ufl_value;  
-				    foreach (any w in self.data) do
-				      {
-				        insert soft RDF_WEBID_ACL_GROUPS (AG_GROUP, AG_WEBID) values (self.gname.ufl_value, w);
-			      	      } 	      
-				    commit work;
-                                    self.vc_redirect ('sec_auth_sponger_1.vspx');
-				</v:on-post>
-			    </v:button>
-			    </div>
-		        </v:template>
-			<!-- END -->
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-		   <!-- bottom of security layout -->
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-	<!-- end of bottom security layout -->
-    </v:form>
+                      <td valign="top">
+                        <!-- end of top security layout -->
+                        <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+                          <tr valign='top'>
+                            <td>
+                              <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+                                <tr>
+                                  <td>
+                                    <table cellpadding="0" cellspacing="0" border="0">
+                                      <tr>
+                                        <!--td class="<?V self.astyle ('Sponger') ?>" align="center">
+                                          <v:url xhtml_style="page_tab" url="sec_auth_serv_sp.vspx?acl=Sponger" value="Sponger" render-only="1"/>
+                                        </td-->
+                                        <td class="<?V self.astyle ('Groups') ?>" align="center">
+                                          <v:url xhtml_style="page_tab" url="sec_auth_sponger_1.vspx" value="Groups" render-only="1"/>
+                                        </td>
+                                        <?vsp
+                                          if (vad_check_version ('rdf_mappers') is not null or check_package ('cartridges'))
+                                          {
+                                        ?>
+                                        <td class="<?V self.astyle ('Cartridges') ?>" align="center">
+                                          <v:url xhtml_style="page_tab" url="sec_auth_sponger_2.vspx" value="Cartridges" render-only="1"/>
+                                        </td>
+                                        <?vsp
+                                          }
+                                        ?>
+                                        <?vsp
+                                          if (DB.DBA.VAD_CHECK_VERSION ('Framework') is not null or DB.DBA.VAD_CHECK_VERSION ('policy_manager') is not null)
+                                          {
+                                        ?>
+                                        <td class="<?V self.astyle ('NetID ACLs') ?>" align="center">
+                                          <v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="NetID ACLs" render-only="1"/>
+                                        </td>
+                                        <?vsp
+                                          }
+                                        ?>
+                                        <td class="page_tab_empty" align="right" width="100%">
+                                        </td>
+                                      </tr>
+                                    </table>
+                                    <table class="tab_page">
+                                      <tr>
+                                        <td valign="top">
+                                          <!-- MAIN -->
+                                          <v:template name="list" type="simple" condition="self.addnew = 0 and self.edit is null">
+                                            <table class="listing">
+                                              <thead>
+                                                <tr class="listing_header_row">
+                                                  <th>
+                                                    Group URI
+                                                  </th>
+                                                  <th nowrap="nowrap" width="1%">
+                                                    <v:url value='<img src="images/icons/add_16.png" hspace="3" border="0"/>Add New'
+                                                           format="%s"
+                                                           name="uadd"
+                                                           url="sec_auth_sponger_1.vspx?add=1"
+                                                           render-only="1"
+                                                           xhtml_title="Add"
+                                                           xhtml_alt="Add"
+                                                    />
+                                                  </th>
+                                                </tr>
+                                              </thead>
+                                              <tbody>
+                                                <?vsp
+                                                  declare ctr int;
+                                                  for (select distinct AG_GROUP from RDF_WEBID_ACL_GROUPS) do
+                                                  {
+                                                ?>
+                                                <tr>
+                                                  <td>
+                                                    <?V AG_GROUP ?>
+                                                  </td>
+                                                  <td nowrap="nowrap">
+                                                    <v:url value='<img src="images/icons/edit_16.png" hspace="3" border="0"/>Edit'
+                                                           format="%s"
+                                                           name="uedit"
+                                                           url="--sprintf ('sec_auth_sponger_1.vspx?edit=%U', AG_GROUP)"
+                                                           render-only="1"
+                                                           xhtml_title="Edit"
+                                                           xhtml_alt="Edit"
+                                                    />
+                                                    <v:url value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
+                                                           format="%s"
+                                                           name="udel"
+                                                           url="--sprintf ('sec_auth_sponger_1.vspx?del=%U', AG_GROUP)"
+                                                           render-only="1"
+                                                           xhtml_title="Delete"
+                                                           xhtml_alt="Delete"
+                                                    />
+                                                  </td>
+                                                </tr>
+                                                <?vsp
+                                                    ctr := ctr + 1;
+                                                  }
+                                                  if (ctr = 0)
+                                                    http ('<tr><td colspan="2">No groups defined</td></tr>');
+                                                ?>
+                                              </tbody>
+                                            </table>
+                                            </v:template>
+                                            <v:template name="tadd" type="simple" condition="self.addnew = 1 or self.edit is not null">
+                                              <div class="fm">
+                                                <label for="gname">Group URI</label>
+                                                <v:text name="gname" xhtml_id="gname" value="--self.edit" xhtml_size="100" />
+                                                <br />
+
+                                                <table id="s_tbl" style="width: 100%;">
+                                                  <tr>
+                                                    <td>
+                                                      <table class="listing" style="width: 100%;">
+                                                        <thead>
+                                                          <tr class="listing_header_row">
+                                                            <th>NetID URI</th>
+                                                            <th width="1%">Action</th>
+                                                          </tr>
+                                                        </thead>
+                                                        <tbody id="s_tbody">
+                                                          <tr id="s_tr_no">
+                                                            <td colspan="2">
+                                                              <b>No NetIDs present</b>
+                                                            </td>
+                                                          </tr>
+                                                          <![CDATA[
+                                                            <script type="text/javascript">
+                                                              <?vsp
+                                                                foreach (any webid in self.data) do
+                                                                {
+                                                                  http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("s", null, {fld_1: {mode: 0, value: "%s"}});});', webid));
+                                                                }
+                                                              ?>
+                                                            </script>
+                                                          ]]>
+                                                        </tbody>
+                                                      </table>
+                                                    </td>
+                                                    <td style="white-space: nowrap; vertical-align: top;">
+                                                      <img border="0" title="Add NetID" alt="Add NetID" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 0}});" class="button pointer" src="images/icons/add_16.png" />
+                                                    </td>
+                                                  </tr>
+                                                </table>
+                                                <br />
+
+                                                <v:button action="simple" name="cancel_new" value="Cancel">
+                                                  <v:on-post>
+                                                    <![CDATA[
+                                                      self.vc_redirect ('sec_auth_sponger_1.vspx');
+                                                    ]]>
+                                                  </v:on-post>
+                                                </v:button>
+                                                <v:button action="simple" name="save_new" value="Save">
+                                                  <v:on-post>
+                                                    <![CDATA[
+                                                      declare N integer;
+                                                      declare params any;
+
+                                                      params := self.vc_page.vc_event.ve_params;
+                                                      self.gname.ufl_value := trim (self.gname.ufl_value);
+                                                      if (not length (self.gname.ufl_value))
+                                                      {
+                                                        self.vc_is_valid := 0;
+                                                        self.vc_error_message := 'Can not have empty Group URI';
+                                                        return 0;
+                                                      }
+
+                                                      self.data := vector ();
+                                                      for (N := 0; N < length (params); N := N + 2)
+                                                      {
+                                                        if (params[N] like 's_fld_1_%')
+                                                          self.data := vector_concat (self.data, vector (params[N+1]));
+                                                      }
+                                                      if (not length (self.data))
+                                                      {
+                                                        self.vc_is_valid := 0;
+                                                        self.vc_error_message := 'Must have at least one NetID per group';
+                                                        return 0;
+                                                      }
+
+                                                      delete from RDF_WEBID_ACL_GROUPS where AG_GROUP = self.gname.ufl_value;
+                                                      foreach (any webid in self.data) do
+                                                      {
+                                                        insert soft RDF_WEBID_ACL_GROUPS (AG_GROUP, AG_WEBID) values (self.gname.ufl_value, webid);
+                                                      }
+                                                      commit work;
+
+                                                      self.vc_redirect ('sec_auth_sponger_1.vspx');
+                                                    ]]>
+                                                  </v:on-post>
+                                                </v:button>
+                                              </div>
+                                            </v:template>
+                                            <!-- END -->
+                                          </td>
+                                        </tr>
+                                      </table>
+                                    </td>
+                                  </tr>
+                                </table>
+                              </td>
+                            </tr>
+                          </table>
+                          <!-- bottom of security layout -->
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+        <!-- end of bottom security layout -->
+      </v:form>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>
-

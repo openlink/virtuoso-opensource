@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -706,7 +706,7 @@ ttlp_leave_trig_group (ttlp_t *ttlp)
 }
 
 void
-ttlp_free (ttlp_t *ttlp)
+ttlp_reset_stacks (ttlp_t *ttlp)
 {
   if (ttlp->ttlp_in_trig_graph)
     {
@@ -715,20 +715,29 @@ ttlp_free (ttlp_t *ttlp)
         dk_free_box (ttlp->ttlp_default_ns_uri_saved);
       if (ttlp->ttlp_base_uri_saved != ttlp->ttlp_base_uri)
         dk_free_box (ttlp->ttlp_base_uri_saved);
+      ttlp->ttlp_in_trig_graph = 0;
     }
-  dk_free_box (ttlp->ttlp_default_ns_uri);
-  dk_free_box ((caddr_t)(ttlp->ttlp_namespaces_prefix2iri));
   while (NULL != ttlp->ttlp_saved_uris)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_saved_uris)));
   while (NULL != ttlp->ttlp_unused_seq_bnodes)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_unused_seq_bnodes)));
-  dk_free_tree (ttlp->ttlp_last_complete_uri);
-  dk_free_tree (ttlp->ttlp_subj_uri);
-  dk_free_tree (ttlp->ttlp_pred_uri);
-  dk_free_tree (ttlp->ttlp_obj);
-  dk_free_tree (ttlp->ttlp_obj_type);
-  dk_free_tree (ttlp->ttlp_obj_lang);
-  dk_free_tree (ttlp->ttlp_formula_iid);
+  dk_free_tree (ttlp->ttlp_last_complete_uri);	ttlp->ttlp_last_complete_uri = NULL;
+  dk_free_tree (ttlp->ttlp_subj_uri);		ttlp->ttlp_subj_uri = NULL;
+  dk_free_tree (ttlp->ttlp_pred_uri);		ttlp->ttlp_pred_uri = NULL;
+  dk_free_tree (ttlp->ttlp_obj);			ttlp->ttlp_obj = NULL;
+  dk_free_tree (ttlp->ttlp_obj_type);		ttlp->ttlp_obj_type = NULL;
+  dk_free_tree (ttlp->ttlp_obj_lang);		ttlp->ttlp_obj_lang = NULL;
+  dk_free_tree (ttlp->ttlp_formula_iid);		ttlp->ttlp_formula_iid = NULL;
+  ttlp->ttlp_lexdepth = 0;
+  ttlp->ttlp_pred_is_reverse = 0;
+}
+
+void
+ttlp_free (ttlp_t *ttlp)
+{
+  ttlp_reset_stacks (ttlp);
+  dk_free_box (ttlp->ttlp_default_ns_uri);
+  dk_free_box ((caddr_t)(ttlp->ttlp_namespaces_prefix2iri));
   tf_free (ttlp->ttlp_tf);
   dk_free (ttlp, sizeof (ttlp_t));
 }
@@ -736,44 +745,52 @@ ttlp_free (ttlp_t *ttlp)
 void
 ttlyyerror_impl (ttlp_t *ttlp_arg, const char *raw_text, const char *strg)
 {
-  int lineno = ttlp_arg[0].ttlp_lexlineno;
-  if (NULL == raw_text)
-    raw_text = ttlp_arg[0].ttlp_raw_text;
-  tf_report (ttlp_arg[0].ttlp_tf, 'F', "37000", "RDF29", strg);
-  sqlr_new_error ("37000", "SP029",
-      "%.400s, line %d: %.500s%.5s%.1000s",
-      ttlp_arg[0].ttlp_err_hdr,
-      lineno,
-      strg,
-      ((NULL == raw_text) ? "" : " at "),
-      ((NULL == raw_text) ? "" : raw_text));
+  if (NULL != ttlp_arg)
+    {
+      int lineno = ttlp_arg[0].ttlp_lexlineno;
+      if (NULL == raw_text)
+        raw_text = ttlp_arg[0].ttlp_raw_text;
+      tf_report (ttlp_arg[0].ttlp_tf, 'F', "37000", "RDF29", strg);
+      sqlr_new_error ("37000", "SP029",
+          "%.400s, line %d: %.500s%.5s%.1000s",
+          ttlp_arg[0].ttlp_err_hdr,
+          lineno,
+          strg,
+          ((NULL == raw_text) ? "" : " at "),
+          ((NULL == raw_text) ? "" : raw_text));
+    }
+  sqlr_new_error ("37000", "SP029", "Parser error: %s; please report the parsed document", strg);
 }
 
 
 void
 ttlyyerror_impl_1 (ttlp_t *ttlp_arg, const char *raw_text, int yystate, short *yyssa, short *yyssp, const char *strg)
 {
-  int sm2, sm1, sp1;
-  int lineno = ttlp_arg[0].ttlp_lexlineno;
-  if (NULL == raw_text)
-    raw_text = ttlp_arg[0].ttlp_raw_text;
-  tf_report (ttlp_arg[0].ttlp_tf, 'F', "37000", "RDF30", strg);
-  sp1 = yyssp[1];
-  sm1 = yyssp[-1];
-  sm2 = ((sm1 > 0) ? yyssp[-2] : 0);
-  sqlr_new_error ("37000", "RDF30",
-     /*errlen,*/ "%.400s, line %d: %.500s [%d-%d-(%d)-%d]%.5s%.1000s%.5s",
-      ttlp_arg[0].ttlp_err_hdr,
-      lineno,
-      strg,
-      sm2,
-      sm1,
-      yystate,
-      ((sp1 & ~0x7FF) ? -1 : sp1) /* stub to avoid printing random garbage in logs */ ,
-      ((NULL == raw_text) ? "" : " at '"),
-      ((NULL == raw_text) ? "" : raw_text),
-      ((NULL == raw_text) ? "" : "'")
-      );
+  if (NULL != ttlp_arg)
+    {
+      int sm2, sm1, sp1;
+      int lineno = ttlp_arg[0].ttlp_lexlineno;
+      if (NULL == raw_text)
+        raw_text = ttlp_arg[0].ttlp_raw_text;
+      tf_report (ttlp_arg[0].ttlp_tf, 'F', "37000", "RDF30", strg);
+      sp1 = yyssp[1];
+      sm1 = yyssp[-1];
+      sm2 = ((sm1 > 0) ? yyssp[-2] : 0);
+      sqlr_new_error ("37000", "RDF30",
+         /*errlen,*/ "%.400s, line %d: %.500s [%d-%d-(%d)-%d]%.5s%.1000s%.5s",
+          ttlp_arg[0].ttlp_err_hdr,
+          lineno,
+          strg,
+          sm2,
+          sm1,
+          yystate,
+          ((sp1 & ~0x7FF) ? -1 : sp1) /* stub to avoid printing random garbage in logs */ ,
+          ((NULL == raw_text) ? "" : " at '"),
+          ((NULL == raw_text) ? "" : raw_text),
+          ((NULL == raw_text) ? "" : "'")
+          );
+    }
+  sqlr_new_error ("37000", "SP029", "Parser error: %s; please report the parsed document", strg);
 }
 
 
@@ -875,6 +892,43 @@ ttlp_bit_of_special_qname (caddr_t qname)
   return 0;
 }
 
+int
+ttlp_qname_prefix_is_explicit_and_valid (ttlp_t *ttlp_arg, caddr_t qname)
+{
+  char *lname = strchr (qname, ':');
+  caddr_t ns_pref;
+  id_hash_t *ns_dict;
+  caddr_t **ns_uri_ptr;
+  if (NULL == lname)
+    return 0;
+  if (qname == lname)
+    return ((NULL == ttlp_arg[0].ttlp_default_ns_uri) ? 0 : 1);
+  lname++;
+  ns_pref = box_dv_short_nchars (qname, lname - qname);
+  if (ttlp_arg[0].ttlp_in_trig_graph)
+    {
+      ns_dict = ttlp_arg[0].ttlp_inner_namespaces_prefix2iri;
+      ns_uri_ptr = ((NULL == ns_dict) ? NULL : (caddr_t *) id_hash_get (ns_dict, (caddr_t)(&ns_pref)));
+      if (NULL != ns_uri_ptr)
+        goto ns_found; /* see below */
+    }
+  ns_dict = ttlp_arg[0].ttlp_namespaces_prefix2iri;
+  ns_uri_ptr = ((NULL == ns_dict) ? NULL : (caddr_t *) id_hash_get (ns_dict, (caddr_t)(&ns_pref)));
+  if (NULL != ns_uri_ptr)
+    goto ns_found; /* see below */
+  if (!strcmp (ns_pref, "rdf:"))
+    goto ns_found; /* see below */
+  if (!strcmp (ns_pref, "xsd:"))
+    goto ns_found; /* see below */
+  if (!strcmp (ns_pref, "virtrdf:"))
+    goto ns_found; /* see below */
+  dk_free_box (ns_pref);
+  return 0;
+ns_found:
+  dk_free_box (ns_pref);
+  return 1;
+}
+
 #undef ttlp_expand_qname_prefix
 caddr_t DBG_NAME (ttlp_expand_qname_prefix) (DBG_PARAMS ttlp_t *ttlp_arg, caddr_t qname)
 {
@@ -974,6 +1028,8 @@ ttlp_uri_resolve (ttlp_t *ttlp_arg, caddr_t qname)
 {
   /*query_instance_t *qi = ttlp_arg[0].ttlp_tf->tf_qi;*/
   caddr_t res, err = NULL;
+  if (('_' == qname[0]) && (':' == qname[1]))
+    return qname;
   res = rfc1808_expand_uri (/*qi,*/ ttlp_arg[0].ttlp_tf->tf_base_uri, qname, "UTF-8", 1 /* ??? */, "UTF-8", "UTF-8", &err);
   if (res != qname)
     dk_free_box (qname);
@@ -1203,202 +1259,6 @@ bif_turtle_lex_analyze (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int mode_flags = ((1 < BOX_ELEMENTS(args)) ? bif_long_arg (qst, args, 1, "turtle_lex_analyze") : 0);
   return ttl_lex_analyze (str, mode_flags, QST_CHARSET(qst));
 }
-
-#ifdef DEBUG
-
-typedef struct ttl_lexem_descr_s
-{
-  int ld_val;
-  const char *ld_yname;
-  char ld_fmttype;
-  const char * ld_fmt;
-  caddr_t *ld_tests;
-} ttl_lexem_descr_t;
-
-ttl_lexem_descr_t ttl_lexem_descrs[__TTL_NONPUNCT_END+1];
-
-#define LEX_PROPS ttl_lex_props
-#define PUNCT(x) 'P', (x)
-#define LITERAL(x) 'L', (x)
-#define FAKE(x) 'F', (x)
-#define TTL "s"
-#define TRIG "t"
-
-#define LAST(x) "L", (x)
-#define LAST1(x) "K", (x)
-#define MISS(x) "M", (x)
-#define ERR(x)  "E", (x)
-
-#define PUNCT_TTL_LAST(x) PUNCT(x), TTL, LAST(x)
-#define PUNCT_TRIG_LAST(x) PUNCT(x), TRIG, LAST(x)
-
-
-static void ttl_lex_props (int val, const char *yname, char fmttype, const char *fmt, ...)
-{
-  va_list tail;
-  const char *cmd;
-  dk_set_t tests = NULL;
-  ttl_lexem_descr_t *ld = ttl_lexem_descrs + val;
-  if (0 != ld->ld_val)
-    GPF_T;
-  ld->ld_val = val;
-  ld->ld_yname = yname;
-  ld->ld_fmttype = fmttype;
-  ld->ld_fmt = fmt;
-  va_start (tail, fmt);
-  for (;;)
-    {
-      cmd = va_arg (tail, const char *);
-      if (NULL == cmd)
-	break;
-      dk_set_push (&tests, box_dv_short_string (cmd));
-    }
-  va_end (tail);
-  ld->ld_tests = (caddr_t *)revlist_to_array (tests);
-}
-
-static void ttl_lexem_descrs_fill (void)
-{
-  static int first_run = 1;
-  if (!first_run)
-    return;
-  first_run = 0;
-#include "turtle_lex_props.c"
-}
-
-caddr_t
-bif_turtle_lex_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  dk_set_t report = NULL;
-  int tested_lex_val = 0;
-  ttl_lexem_descrs_fill ();
-  for (tested_lex_val = 0; tested_lex_val < __TTL_NONPUNCT_END; tested_lex_val++)
-    {
-      char cmd;
-      caddr_t **lexems;
-      unsigned lex_count;
-      unsigned cmd_idx = 0;
-      int mode_bits = 0, last_lval, last1_lval;
-      ttl_lexem_descr_t *ld = ttl_lexem_descrs + tested_lex_val;
-      if (0 == ld->ld_val)
-	continue;
-      dk_set_push (&report, box_dv_short_string (""));
-      dk_set_push (&report,
-        box_sprintf (0x100, "#define % 25s %d /* '%s' (%c) */",
-	  ld->ld_yname, ld->ld_val, ld->ld_fmt, ld->ld_fmttype ) );
-      for (cmd_idx = 0; cmd_idx < BOX_ELEMENTS(ld->ld_tests); cmd_idx++)
-	{
-	  cmd = ld->ld_tests[cmd_idx][0];
-	  switch (cmd)
-	    {
-	    case 's': mode_bits = 0; break;
-	    case 't': mode_bits = TTLP_ALLOW_TRIG; break;
-	    case 'K': case 'L': case 'M': case 'E':
-	      cmd_idx++;
-	      lexems = (caddr_t **) ttl_lex_analyze (ld->ld_tests[cmd_idx], mode_bits, QST_CHARSET(qst));
-	      dk_set_push (&report, box_dv_short_string (ld->ld_tests[cmd_idx]));
-	      lex_count = BOX_ELEMENTS (lexems);
-	      if (0 == lex_count)
-		{
-		  dk_set_push (&report, box_dv_short_string ("FAILED: no lexems parsed and no error reported!"));
-		  goto end_of_test;
-		}
-	      { char buf[0x1000]; char *buf_tail = buf;
-	        unsigned lctr = 0;
-		for (lctr = 0; lctr < lex_count && (5 == BOX_ELEMENTS(lexems[lctr])); lctr++)
-		  {
-		    ptrlong *ldata = ((ptrlong *)(lexems[lctr]));
-		    int lval = ldata[3];
-		    ttl_lexem_descr_t *ld = ttl_lexem_descrs + lval;
-		    if (ld->ld_val)
-		      buf_tail += sprintf (buf_tail, " %s", ld->ld_yname);
-		    else if (lval < 0x100)
-		      buf_tail += sprintf (buf_tail, " '%c'", lval);
-		    else GPF_T;
-		    buf_tail += sprintf (buf_tail, " %ld ", (long)(ldata[4]));
-		  }
-	        buf_tail[0] = '\0';
-		dk_set_push (&report, box_dv_short_string (buf));
-	      }
-	      if (3 == BOX_ELEMENTS(lexems[lex_count-1])) /* lexical error */
-		{
-		  dk_set_push (&report,
-		    box_sprintf (0x1000, "%s: ERROR %s",
-		      ('E' == cmd) ? "PASSED": "FAILED", lexems[lex_count-1][2] ) );
-		  goto end_of_test;
-		}
-/*
-	      if (END_OF_TURTLE_TEXT != ((ptrlong *)(lexems[lex_count-1]))[3])
-		{
-		  dk_set_push (&report, box_dv_short_string ("FAILED: end of source is not reached and no error reported!"));
-		  goto end_of_test;
-		}
-*/
-	      if (0 /*1*/ == lex_count)
-		{
-		  dk_set_push (&report, box_dv_short_string ("FAILED: no lexems parsed and only end of source has found!"));
-		  goto end_of_test;
-		}
-	      last_lval = ((ptrlong *)(lexems[lex_count-/*2*/1]))[3];
-	      if ('E' == cmd)
-		{
-		  dk_set_push (&report,
-		    box_sprintf (0x1000, "FAILED: %d lexems found, last lexem is %d, must be error",
-		      lex_count, last_lval) );
-		  goto end_of_test;
-		}
-	      if ('K' == cmd)
-		{
-		  if (/*4*/2 > lex_count)
-		    {
-		      dk_set_push (&report,
-			box_sprintf (0x1000, "FAILED: %d lexems found, the number of actual lexems is less than two",
-			  lex_count ) );
-		      goto end_of_test;
-		    }
-		  last1_lval = ((ptrlong *)(lexems[lex_count-/*3*/2]))[3];
-		  dk_set_push (&report,
-		    box_sprintf (0x1000, "%s: %d lexems found, one-before-last lexem is %d, must be %d",
-		      (last1_lval == tested_lex_val) ? "PASSED": "FAILED", lex_count, last1_lval, tested_lex_val) );
-		  goto end_of_test;
-		}
-	      if ('L' == cmd)
-		{
-		  dk_set_push (&report,
-		    box_sprintf (0x1000, "%s: %d lexems found, last lexem is %d, must be %d",
-		      (last_lval == tested_lex_val) ? "PASSED": "FAILED", lex_count, last_lval, tested_lex_val) );
-		  goto end_of_test;
-		}
-	      if ('M' == cmd)
-		{
-		  unsigned lctr;
-		  for (lctr = 0; lctr < lex_count; lctr++)
-		    {
-		      int lval = ((ptrlong *)(lexems[lctr]))[3];
-		      if (lval == tested_lex_val)
-			{
-			  dk_set_push (&report,
-			    box_sprintf (0x1000, "FAILED: %d lexems found, lexem %d is found but it should not occur",
-			      lex_count, tested_lex_val) );
-			  goto end_of_test;
-			}
-		    }
-		  dk_set_push (&report,
-		    box_sprintf (0x1000, "PASSED: %d lexems found, lexem %d is not found and it should not occur",
-		      lex_count, tested_lex_val) );
-		  goto end_of_test;
-		}
-	      GPF_T;
-end_of_test:
-	      dk_free_tree (lexems);
-	      break;
-	    default: GPF_T;
-	    }
-	  }
-    }
-  return revlist_to_array (report);
-}
-#endif
 
 void
 nic_set (name_id_cache_t * nic, caddr_t name, boxint id)
@@ -2316,6 +2176,8 @@ bif_iri_id_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_iri_id (id);
 }
 
+extern iri_id_t bnode_t_treshold;
+
 int
 iri_canonicalize (query_instance_t *qi, caddr_t name, int mode, caddr_t *res_ret, caddr_t *err_ret)
 {
@@ -2380,8 +2242,19 @@ again:
     {
       unsigned char *tail = (unsigned char *)(name + 9);
       int64 acc = 0;
-      int b_first = 0;
-      if ('b' == tail[0]) { b_first = 1; tail++; }
+      int64 prefix_base = 0;
+      if ('b' == tail[0]) { prefix_base = MIN_64BIT_BNODE_IRI_ID; tail++; }
+      else if ('t' == tail[0])
+        {
+          if (bnode_t_treshold == ~((boxint)0))
+            {
+              err_ret[0] = srv_make_new_error ("RDFXX", ".....",
+                "Bad argument to iri_to_id (), '%.100s' is not supported while __rdf_set_bnode_t_treshold() is not called", name );
+              goto return_error; /* see below */
+            }
+          prefix_base = bnode_t_treshold;
+          tail++;
+        }
       while (isdigit (tail[0]))
         acc = acc * 10 + ((tail++)[0] - '0');
       if ('\0' != tail[0])
@@ -2390,7 +2263,7 @@ again:
             "Bad argument to iri_to_id (), '%.100s' is not valid bnode IRI", name );
           goto return_error; /* see below */
         }
-      if (b_first) acc += MIN_64BIT_BNODE_IRI_ID;
+      acc += prefix_base;
       if ((acc > (2 * min_bnode_iri_id())) || (acc < min_bnode_iri_id()))
         {
           if ((bnode_iri_ids_are_huge) || (acc < 0))
@@ -2535,9 +2408,9 @@ bif_iri_to_id_repl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           sqlr_new_error ("22023", "SR626", "The argument of iri_to_id_repl() is an IRI_ID of URI");
 #if 0
         if (iid >= MIN_64BIT_BNODE_IRI_ID)
-          tmp_name = box_sprintf (40, "_:rr_b" BOXINT_FMT, (boxint)(iid - MIN_64BIT_BNODE_IRI_ID));
+          tmp_name = box_sprintf (40, "_:rr_b" IIDBOXINT_FMT, (boxint)(iid - MIN_64BIT_BNODE_IRI_ID));
         else
-          tmp_name = box_sprintf (40, "_:rr" BOXINT_FMT, (boxint)iid);
+          tmp_name = box_sprintf (40, "_:rr" IIDBOXINT_FMT, (boxint)iid);
         res = canon_iri_to_id ((query_instance_t *)qst, tmp_name, IRI_TO_ID_WITH_CREATE, &err);
         dk_free_box (tmp_name);
         if (NULL != err)
@@ -2583,7 +2456,7 @@ bif_iri_canonicalize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           if (canon_name != raw_name)
             dk_free_tree (canon_name);
           if (!iri)
-            sqlr_new_error ("22023", "SR626", "Can not canonicalize unknown IRI ID " BOXINT_FMT, (boxint)(iid));
+            sqlr_new_error ("22023", "SR626", "Can not canonicalize unknown IRI ID " IIDBOXINT_FMT, (boxint)(iid));
           return iri;
         }
     }
@@ -2867,44 +2740,113 @@ key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj
 caddr_t
 bif_id_to_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  query_instance_t * qi = (query_instance_t *) qst;
-  iri_id_t iid = bif_iri_id_or_null_arg (qst, args, 0, "id_to_iri");
-  caddr_t iri;
-  if (0L == iid)
-    return NEW_DB_NULL;
-  if ((min_bnode_iri_id () <= iid) && (min_named_bnode_iri_id () > iid))
-    iri = BNODE_IID_TO_LABEL(iid);
-  else
+  query_instance_t *qi = (query_instance_t *) qst;
+  caddr_t iid_box = bif_arg (qst, args, 0, "id_to_iri");
+  switch (DV_TYPE_OF (iid_box))
     {
-      iri = key_id_to_iri (qi, iid);
-      if (!iri)
-        return NEW_DB_NULL;
+    case DV_DB_NULL:
+      return NEW_DB_NULL;
+    case DV_IRI_ID:
+      {
+	iri_id_t iid = unbox_iri_id (iid_box);
+	caddr_t iri;
+	if (0L == iid)
+	  return NEW_DB_NULL;
+	if ((min_bnode_iri_id () <= iid) && (min_named_bnode_iri_id () > iid))
+	  iri = BNODE_IID_TO_LABEL (iid);
+	else
+	  {
+	    iri = key_id_to_iri (qi, iid);
+	    if (!iri)
+	      return NEW_DB_NULL;
+	  }
+	box_flags (iri) = BF_IRI;
+	return iri;
+      }
+    case DV_UNAME:
+      return box_copy (iid_box);
+    case DV_STRING:
+      if (BF_IRI == box_flags (iid_box))
+	return box_copy (iid_box);
+      break;
     }
-  box_flags (iri) = BF_IRI;
-  return iri;
+  sqlr_new_error ("22023", "SR008",
+      "Function id_to_iri needs a string or UNAME or IRI_ID or NULL as argument 1, "
+      "not an arg of type %s (%d)", dv_type_title (DV_TYPE_OF (iid_box)), DV_TYPE_OF (iid_box));
+  return NULL;			/* never reached */
+}
+
+caddr_t
+bif_id_to_canonicalized_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  caddr_t iid_box = bif_arg (qst, args, 0, "id_to_canonicalized_iri");
+  switch (DV_TYPE_OF (iid_box))
+    {
+    case DV_DB_NULL:
+      return NEW_DB_NULL;
+    case DV_IRI_ID:
+      {
+       iri_id_t iid = unbox_iri_id (iid_box);
+        caddr_t iri;
+        if (0L == iid)
+          return NEW_DB_NULL;
+        if ((min_bnode_iri_id () <= iid) && (min_named_bnode_iri_id () > iid))
+          iri = BNODE_IID_TO_LABEL(iid);
+        else
+          {
+            iri = key_id_to_canonicalized_iri (qi, iid);
+            if (!iri)
+              return NEW_DB_NULL;
+          }
+        box_flags (iri) = BF_IRI;
+        return iri;
+      }
+    case DV_UNAME:
+      return box_copy (iid_box);
+    case DV_STRING:
+      if (BF_IRI == box_flags (iid_box))
+        return box_copy (iid_box);
+      break;
+    }
+  sqlr_new_error ("22023", "SR008",
+    "Function id_to_canonicalized_iri needs a string or UNAME or IRI_ID or NULL as argument 1, "
+    "not an arg of type %s (%d)", dv_type_title (DV_TYPE_OF (iid_box)), DV_TYPE_OF (iid_box) );
+  return NULL; /* never reached */
 }
 
 caddr_t
 bif_id_to_iri_nosignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  query_instance_t * qi = (query_instance_t *) qst;
+  query_instance_t *qi = (query_instance_t *) qst;
   caddr_t iid_box;
-  iri_id_t iid;
-  caddr_t iri;
   iid_box = bif_arg (qst, args, 0, "id_to_iri_nosignal");
-  if (DV_IRI_ID != DV_TYPE_OF (iid_box))
-    return NEW_DB_NULL;
-  iid = unbox_iri_id (iid_box);
-  if (min_bnode_iri_id () <= iid)
-    iri = BNODE_IID_TO_LABEL(iid);
-  else
+  switch (DV_TYPE_OF (iid_box))
     {
-      iri = key_id_to_iri (qi, iid);
-      if (!iri)
-        return NEW_DB_NULL;
+    case DV_IRI_ID:
+      {
+	iri_id_t iid;
+	caddr_t iri;
+	iid = unbox_iri_id (iid_box);
+	if (min_bnode_iri_id () <= iid)
+	  iri = BNODE_IID_TO_LABEL (iid);
+	else
+	  {
+	    iri = key_id_to_iri (qi, iid);
+	    if (!iri)
+	      return NEW_DB_NULL;
+	  }
+	box_flags (iri) = BF_IRI;
+	return iri;
+      }
+    case DV_UNAME:
+      return box_copy (iid_box);
+    case DV_STRING:
+      if (BF_IRI == box_flags (iid_box))
+	return box_copy (iid_box);
+      break;
     }
-  box_flags (iri) = BF_IRI;
-  return iri;
+  return NEW_DB_NULL;
 }
 
 caddr_t
@@ -3374,8 +3316,12 @@ bif_rdf_obj_ft_rule_count_in_graph (caddr_t * qst, caddr_t * err_ret, state_slot
   boxint g_id_int;
   if (CL_RUN_LOCAL != cl_run_local_only)
     {
-      caddr_t cl_text_set = registry_get ("cl_rdf_text_index");
-      char flag = cl_text_set ? cl_text_set[0] : '\0';
+      char flag;
+      caddr_t cl_text_set;
+      IN_TXN;
+      cl_text_set = registry_get ("cl_rdf_text_index");
+      LEAVE_TXN;
+      flag = cl_text_set ? cl_text_set[0] : '\0';
       dk_free_tree (cl_text_set);
       if ('1' == flag)
         return box_num (-1);
@@ -3445,11 +3391,29 @@ bif_iri_ensure (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
+bif_uriqa_iri_is_local (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t name = bif_string_or_uname_arg (qst, args, 0, "uriqa_iri_is_local");
+  int tail = uriqa_iri_is_local ((query_instance_t *)qst, name);
+  return box_num (tail);
+}
+
+caddr_t 
 bif_uriqa_dynamic_local_replace (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t name = box_copy (bif_string_arg (qst, args, 0, "uriqa_dynamic_local_replace"));
   name = uriqa_dynamic_local_replace (name, ((query_instance_t *) qst)->qi_client);
   return name;
+}
+
+caddr_t 
+bif_uriqa_dynamic_local_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int val = bif_long_range_arg (qst, args, 0, "uriqa_dynamic_local_set", 0, 1);
+  sec_check_dba ((query_instance_t *)qst, "uriqa_dynamic_local_set");
+  if (val != uriqa_dynamic_local)
+    uriqa_dynamic_local = val;
+  return box_num (val);
 }
 
 
@@ -3527,12 +3491,119 @@ rdf_key_comp_init ()
   key_cl_by_name (ogps, "S")->cl_comp_asc = 1;
 }
 
+extern jso_class_descr_t jso__quad_map;
+
+void jso__rdf_val_range_inst_validation (rdf_val_range_t *rvr, const char *structname, jso_rtti_t *inst_rtti, dk_set_t *warnings_log_ptr)
+{
+  rdf_val_range_t saved_orig_rvr;
+  memcpy (&saved_orig_rvr, rvr, sizeof (rdf_val_range_t));
+  if (NULL != rvr->rvrFixedValue)
+    {
+      ccaddr_t value = rvr->rvrFixedValue;
+      ccaddr_t dt = rvr->rvrDatatype;
+      ccaddr_t lang = rvr->rvrLanguage;
+      memset (rvr, 0, sizeof (rdf_val_range_t));
+      if (DV_UNAME == DV_TYPE_OF (value))
+        {
+          rvr->rvrFixedValue = (ccaddr_t)value;
+          rvr->rvrRestrictions |= (SPART_VARR_IS_REF | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
+          /*                              0123456789 */
+          if (!strncmp ((ccaddr_t)value, "nodeID://", 9))
+            rvr->rvrRestrictions |= SPART_VARR_IS_BLANK;
+          else
+            rvr->rvrRestrictions |= SPART_VARR_IS_IRI;
+          rvr->rvrDatatype = NULL;
+          rvr->rvrLanguage = NULL;
+        }
+      else
+        {
+          dtp_t valtype = DV_TYPE_OF (value);
+          caddr_t box_dt = xsd_type_of_box ((caddr_t)value);
+          rvr->rvrFixedValue = (ccaddr_t)value;
+          rvr->rvrRestrictions |= (SPART_VARR_IS_LIT | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
+          if ((NULL == dt)
+            || (((box_dt == dt) || ((NULL == box_dt) && (uname_xmlschema_ns_uri_hash_string == dt)))
+              && !((SPART_VARR_IS_LIT & saved_orig_rvr.rvrRestrictions) && (SPART_VARR_FIXED & saved_orig_rvr.rvrRestrictions))) )
+            {
+              rvr->rvrDatatype = box_dt;
+              if (uname_xmlschema_ns_uri_hash_string == rvr->rvrDatatype)
+                rvr->rvrDatatype = NULL;
+              rvr->rvrLanguage = (NULL != rvr->rvrDatatype) ? NULL : lang;
+            }
+          else
+            {
+              rvr->rvrDatatype = dt;
+              rvr->rvrRestrictions |= SPART_VARR_TYPED;
+            }
+        }
+    }
+  else if ((NULL != rvr->rvrDatatype) && !(SPART_VARR_TYPED & rvr->rvrRestrictions))
+    {
+      dk_set_push (warnings_log_ptr, list (2, inst_rtti, box_sprintf (1000, "%s-rvrDatatype is set to <%.500s> whereas %s-rvrRestrictions has no SPART_VARR_TYPED bit set", structname, rvr->rvrDatatype, structname)));
+      rvr->rvrDatatype = NULL;
+    }
+  if (memcmp (&saved_orig_rvr, rvr, sizeof (rdf_val_range_t)))
+    {
+      caddr_t *tail;
+      for (tail = (caddr_t *)rvr; tail < (caddr_t *)rvr + sizeof (rdf_val_range_t) / sizeof (caddr_t); tail++)
+        {
+          jso_field_descr_t *fd = jso_get_fd_by_rtti_and_member (inst_rtti, tail);
+          caddr_t *old_val_tail = ((caddr_t *)(&saved_orig_rvr)) + (tail - (caddr_t *)rvr);
+          if ((NULL != fd) && (tail[0] != old_val_tail[0]))
+            {
+              caddr_t old_dbg_text = jso_dbg_text_fd_and_member_field (fd, old_val_tail[0]);
+              caddr_t new_dbg_text = jso_dbg_text_fd_and_member_field (fd, tail[0]);
+              if (NULL == old_dbg_text)
+                old_dbg_text = box_sprintf (1000, "/* %.500s is not set */", fd->jsofd_local_name);
+              if (NULL == new_dbg_text)
+                new_dbg_text = box_sprintf (1000, "/* %.500s is not set */", fd->jsofd_local_name);
+              dk_set_push (warnings_log_ptr, list (2, inst_rtti,
+                  box_sprintf (600 + box_length (old_dbg_text) + box_length (new_dbg_text),
+                    "A field is fixed:\nbefore validation:\n%s\nafter validation:\n%s", old_dbg_text, new_dbg_text ) ) );
+              dk_free_box (old_dbg_text);
+              dk_free_box (new_dbg_text);
+            }
+        }
+    }
+}
+
+void jso__quad_map_jsocd_validation_cbk (jso_rtti_t *inst_rtti, dk_set_t *warnings_log_ptr)
+{
+  quad_map_t *qm = (quad_map_t *)(inst_rtti->jrtti_self);
+  jso__rdf_val_range_inst_validation (&(qm->qmGraphRange), "qmGraphRange", inst_rtti, warnings_log_ptr);
+  jso__rdf_val_range_inst_validation (&(qm->qmSubjectRange), "qmSubjectRange", inst_rtti, warnings_log_ptr);
+  jso__rdf_val_range_inst_validation (&(qm->qmPredicateRange), "qmPredicateRange", inst_rtti, warnings_log_ptr);
+  jso__rdf_val_range_inst_validation (&(qm->qmObjectRange), "qmObjectRange", inst_rtti, warnings_log_ptr);
+}
+
+extern jso_class_descr_t jso__qm_value;
+
+void jso__qm_value_jsocd_validation_cbk (jso_rtti_t *inst_rtti, dk_set_t *warnings_log_ptr)
+{
+  qm_value_t *qmv = (qm_value_t *)(inst_rtti->jrtti_self);
+  jso__rdf_val_range_inst_validation (&(qmv->qmvRange), "qmVRange", inst_rtti, warnings_log_ptr);
+}
+
+extern jso_class_descr_t jso__qm_format;
+
+void jso__qm_format_jsocd_validation_cbk (jso_rtti_t *inst_rtti, dk_set_t *warnings_log_ptr)
+{
+  qm_format_t *qmf = (qm_format_t *)(inst_rtti->jrtti_self);
+  jso__rdf_val_range_inst_validation (&(qmf->qmfValRange), "qmfValRange", inst_rtti, warnings_log_ptr);
+}
+
+#ifdef DEBUG
+extern caddr_t bif_turtle_lex_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
+#endif
 
 void
 rdf_core_init (void)
 {
   jso_init ();
   rdf_mapping_jso_init ();
+  jso__quad_map.jsocd_validation_cbk = jso__quad_map_jsocd_validation_cbk;
+  jso__qm_value.jsocd_validation_cbk = jso__qm_value_jsocd_validation_cbk;
+  jso__qm_format.jsocd_validation_cbk = jso__qm_format_jsocd_validation_cbk;
   iri_nic_rc = resource_allocate (10, NULL, (rc_destr_t)nic_free, (rc_destr_t)nic_clear, 0);
   prefix_nic_rc = resource_allocate (10, NULL, (rc_destr_t)nic_free, (rc_destr_t)nic_clear, 0);
   bif_define_typed ("rdf_load_rdfxml", bif_rdf_load_rdfxml, &bt_xml_entity);
@@ -3562,15 +3633,22 @@ rdf_core_init (void)
   bif_define ("id_to_iri", bif_id_to_iri);
   bif_set_uses_index (bif_id_to_iri);
   bif_set_no_cluster ("id_to_iri");
+  bif_define_typed ("id_to_canonicalized_iri", bif_id_to_canonicalized_iri, &bt_varchar);
+  bif_set_uses_index (bif_id_to_canonicalized_iri);
+  bif_set_no_cluster ("id_to_canonicalized_iri");
   bif_define ("id_to_iri_nosignal", bif_id_to_iri_nosignal);
   bif_set_uses_index (bif_id_to_iri_nosignal);
   bif_set_no_cluster ("id_to_iri_nosignal");
 
   bif_define ("iri_to_rdf_prefix_and_local", bif_iri_to_rdf_prefix_and_local);
   bif_define ("rdf_cache_id", bif_rdf_cache_id);
+  bif_set_no_cluster ("rdf_cache_id");
   bif_define ("rdf_cache_id_to_name", bif_rdf_cache_id_to_name);
+  bif_set_no_cluster ("rdf_cache_id_to_name");
   bif_define ("iri_id_cache_flush", bif_iri_id_cache_flush);
+  bif_set_no_cluster ("iri_id_cache_flush");
   bif_define ("iri_id_new", bif_iri_id_new);
+  bif_set_no_cluster ("iri_id_new");
   bif_define ("__rdf_obj_ft_rule_add", bif_rdf_obj_ft_rule_add);
   bif_define ("__rdf_obj_ft_rule_del", bif_rdf_obj_ft_rule_del);
   bif_define ("__rdf_obj_ft_rule_zap_all", bif_rdf_obj_ft_rule_zap_all);
@@ -3578,12 +3656,19 @@ rdf_core_init (void)
   bif_define ("__rdf_obj_ft_rule_count_in_graph", bif_rdf_obj_ft_rule_count_in_graph);
   /* Short aliases for use in generated SQL text: */
   bif_define ("__i2idn", bif_iri_to_id_nosignal);
+  bif_set_no_cluster ("__i2idn");
   bif_define ("__i2id", bif_iri_to_id);
+  bif_set_no_cluster ("__i2id");
   bif_define ("__i2idc", bif_iri_to_id_if_cached);
+  bif_set_no_cluster ("__i2idc");
   bif_define ("__id2i", bif_id_to_iri);
+  bif_set_no_cluster ("__id2i");
   bif_define ("__id2in", bif_id_to_iri_nosignal);
+  bif_set_no_cluster ("__id2in");
   bif_define ("rdf_graph_keyword", bif_rdf_graph_keyword);
   bif_define ("iri_split", bif_iri_split);
+  bif_define ("uriqa_dynamic_local_set", bif_uriqa_dynamic_local_set);
+  bif_define ("uriqa_iri_is_local", bif_uriqa_iri_is_local);
   bif_define ("uriqa_dynamic_local_replace", bif_uriqa_dynamic_local_replace);
 #ifdef DEBUG
   bif_define ("turtle_lex_test", bif_turtle_lex_test);

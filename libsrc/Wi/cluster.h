@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -100,6 +100,7 @@ extern int32 cl_batches_per_rpc; /* no of rows to send before stopping to wait f
 extern int32  cl_res_buffer_bytes; /* no of bytes before sending to client */
 extern long dbf_branch_transact_wait;
 extern int32 cl_wait_query_delay;
+extern int32 enable_dfg;
 
 typedef void cu_func_t;
 

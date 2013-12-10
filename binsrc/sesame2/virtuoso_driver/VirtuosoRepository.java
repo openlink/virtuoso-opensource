@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2013 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -23,6 +23,7 @@
 
 package virtuoso.sesame2.driver;
 
+import javax.sql.*;
 import java.io.File;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -33,7 +34,7 @@ import org.openrdf.repository.Repository;
 import org.openrdf.repository.RepositoryConnection;
 import org.openrdf.repository.RepositoryException;
 
-import virtuoso.jdbc3.VirtuosoConnectionPoolDataSource;
+import virtuoso.jdbc4.VirtuosoConnectionPoolDataSource;
 
 /**
  * A Sesame repository that contains RDF data that can be queried and updated.
@@ -62,13 +63,31 @@ public class VirtuosoRepository implements Repository {
 	private String charset = "UTF-8";
         static final String utf8 = "charset=utf-8";
 	private boolean initialized = false;
+
+	private DataSource _ds;
+	private ConnectionPoolDataSource _pds;
     
 	boolean useLazyAdd = false;
 	String defGraph;
 	int prefetchSize = 200;
+	int batchSize = 5000;
 	int queryTimeout = 0;
 	String ruleSet;
 	
+	public VirtuosoRepository(ConnectionPoolDataSource ds, String defGraph, boolean useLazyAdd) {
+	        super();
+		this.defGraph = defGraph;
+		this.useLazyAdd = useLazyAdd;
+		this._pds = ds;
+	}
+
+	public VirtuosoRepository(DataSource ds, String defGraph, boolean useLazyAdd) {
+	        super();
+		this.defGraph = defGraph;
+		this.useLazyAdd = useLazyAdd;
+		this._ds = ds;
+	}
+
 	/**
 	 * Construct a VirtuosoRepository with a specified parameters
 	 * 
@@ -174,10 +193,6 @@ public class VirtuosoRepository implements Repository {
 	 *        the database user on whose behalf the connection is being made
 	 * @param password
 	 *        the user's password
-	 * @param defGraph
-	 *        a default Graph name, used for Sesame calls, when contexts list
-	 *        is empty, exclude <tt>exportStatements, hasStatement, getStatements</tt> methods 
-         *
 	 */
 	public VirtuosoRepository(String url_hostlist, String user, String password) {
 	        this(url_hostlist, user, password, false);
@@ -204,9 +219,30 @@ public class VirtuosoRepository implements Repository {
 	 *         If something went wrong during the creation of the Connection.
 	 */
 	public RepositoryConnection getConnection() throws RepositoryException {
-		if (url_hostlist.startsWith("jdbc:virtuoso://")) {
+	        if (_pds != null) {
+	           try {
+		     javax.sql.PooledConnection pconn = _pds.getPooledConnection();
+		     java.sql.Connection connection = pconn.getConnection();
+		     return new VirtuosoRepositoryConnection(this, connection);
+		   }
+		   catch (Exception e) {
+		     System.out.println("Connection to " + url_hostlist + " is FAILED.");
+		     throw new RepositoryException(e);
+		   }
+	        }
+	        else if (_ds != null) {
+	           try {
+		     java.sql.Connection connection = _ds.getConnection();
+		     return new VirtuosoRepositoryConnection(this, connection);
+		   }
+		   catch (Exception e) {
+		     System.out.println("Connection to " + url_hostlist + " is FAILED.");
+		     throw new RepositoryException(e);
+		   }
+	        }
+		else if (url_hostlist.startsWith("jdbc:virtuoso://")) {
 			try {
-				Class.forName("virtuoso.jdbc3.Driver");
+				Class.forName("virtuoso.jdbc4.Driver");
 				String url = url_hostlist;
 				if (url.toLowerCase().indexOf(utf8) == -1) {
 	   				if (url.charAt(url.length()-1) != '/')
@@ -263,6 +299,23 @@ public class VirtuosoRepository implements Repository {
 	 */
 	public int getFetchSize() {
 		return this.prefetchSize;
+	}
+
+	/**
+	 * Set the batch size for Inserts data(default 5000) 
+	 * 
+	 * @param sz
+	 *        batch size.
+	 */
+	public void setBatchSize(int sz) {
+		this.batchSize = sz;
+	}
+
+	/**
+	 * Get the batch size for Insert data
+	 */
+	public int getBatchSize() {
+		return this.batchSize;
 	}
 
 	/**
@@ -348,6 +401,17 @@ public class VirtuosoRepository implements Repository {
 	public void initialize() throws RepositoryException {
 		initialized = true;
 	}
+
+        /**
+         * Indicates if the Repository has been initialized. Note that the
+         * initialization status may change if the Repository is shut down.
+         * 
+         * @return true iff the repository has been initialized.
+         */
+        public boolean isInitialized() {
+                return initialized;
+        }
+    
 
 	/**
 	 * Checks whether this repository is writable, i.e. if the data contained in
