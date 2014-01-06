@@ -46,7 +46,13 @@
 #endif
 
 extern long tc_atomic_wait_2pc;
+extern int32 enable_flush_all;
+extern long tc_n_flush;
 long atomic_cp_msecs;
+long tc_dirty_at_cpt_start;
+sys_timer_t sti_cpt_atomic;
+sys_timer_t sti_cpt_sync;
+sys_timer_t sti_cpt_rollback;
 int auto_cpt_scheduled = 0;
 
 
@@ -1341,7 +1347,16 @@ cpt_unremap (dbe_storage_t * dbs, it_cursor_t * itc)
       sethash ((void*)phys, cpt_remap_reverse, (void*)log);
     }
   END_DO_HT;
-  target = MIN (dbs->dbs_max_cp_remaps, (dbs->dbs_cpt_remap->ht_count / 20) * 19);
+  if (cp_unremap_quota_is_set)
+    {
+      target = dbs->dbs_cpt_remap->ht_count - cp_unremap_quota;
+      if (target < 0)
+	target = 0;
+      if (target >  dbs->dbs_max_cp_remaps)
+	target = dbs->dbs_max_cp_remaps;
+    }
+  else
+    target = MIN (dbs->dbs_max_cp_remaps, (dbs->dbs_cpt_remap->ht_count / 20) * 19);
  again:
   bufs_done_total = 0;
   cpt_unremap_ram (target, &bufs_done_total);
@@ -1953,17 +1968,52 @@ int dbs_stop_cp = 0;
 void
 dbs_checkpoint (char *log_name, int shutdown)
 {
+  sys_timer_t _atm;
   char dt_start[DT_LENGTH];
   int mcp_delta_count, inx;
   long start_atomic;
+  uint32 start;
   FILE *checkpoint_flag_fd = NULL;
   if (!c_checkpoint_sync)
     dbf_fast_cpt = 1;
   mcp_delta_count = 0;
   LEAVE_TXN;
-  wi_check_all_compact (0);
-
-  bp_flush_all ();
+  if (enable_flush_all)
+    {
+      int ctr;
+      for (ctr = 0; ctr < 2; ctr++)
+	{
+	  float rate = 0;
+	  int n_dirty = dbs_dirty_count (), dirty_after;
+	  long n_flush = tc_n_flush;
+	  uint32 start = get_msec_real_time ();
+	  bp_flush (NULL, 1);
+	  start = get_msec_real_time () - start;
+	  dirty_after = dbs_dirty_count ();
+	  if (0 == ctr)
+	    rate = ((tc_n_flush - n_flush) / PAGES_PER_MB) / ((float)start / 1000);
+	  if (shutdown)
+	    break;
+	  if (dirty_after < 10000)
+	    break;
+	  if (0 == ctr && (float)dirty_after / (n_dirty + 1) > 0.7)
+	    {
+	      log_info ("Write load very high relative to disk write throughput.  Flushing at %9.2g MB/s while application is making dirty pages at %9.2g MB/s. To checkpoint the database, will now pause the workload with %d MB unflushed.",
+			(n_dirty / PAGES_PER_MB) / ((float)start / 1000), (dirty_after / PAGES_PER_MB) / ((float)start / 1000), dirty_after / PAGES_PER_MB);
+	      break;
+	    }
+	  if (0 == ctr && (float)dirty_after / (n_dirty + 1) > 0.2)
+	    {
+	      log_info ("Write load high relative to disk write throughput.  Flushing at %9.2g MB/s while application is making dirty pages at %9.2g MB/s. Doing a second flushing pass before checkpoint",
+			(n_dirty / PAGES_PER_MB) / ((float)start / 1000), (dirty_after / PAGES_PER_MB) / ((float)start / 1000));
+	    }
+	}
+    }
+  else
+    {
+      wi_check_all_compact (0);
+      bp_flush_all ();
+    }
   if (!shutdown)
     {
   iq_shutdown (IQ_SYNC);
@@ -1971,11 +2021,16 @@ dbs_checkpoint (char *log_name, int shutdown)
   iq_shutdown (IQ_SYNC);
     }
 
+  STI_START;
   IN_TXN;
   cpt_rollback (LT_KILL_FREEZE);
+  STI_END (sti_cpt_rollback);
   dt_now ((caddr_t)&dt_start);
+  tc_dirty_at_cpt_start += dbs_dirty_count ();
   start_atomic = get_msec_real_time ();
+  sti_init (&_atm);
   iq_shutdown (IQ_STOP);
+  sti_cum (&sti_cpt_sync, &_atm);
   wi_check_all_compact (0);
   wi_inst.wi_checkpoint_atomic = 1;
   iq_restart ();
@@ -1997,12 +2052,16 @@ dbs_checkpoint (char *log_name, int shutdown)
 	fclose(checkpoint_flag_fd);
       }
     bp_flush_all ();
+    STI_START;
     iq_shutdown (IQ_STOP);
+    STI_END (sti_cpt_sync);
     DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
       {
 	if (dbs->dbs_slices)
 	  continue;
+	STI_START;
 	dbs_sync_disks (dbs);
+	STI_END (sti_cpt_sync);
       }
     END_DO_SET();
   DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
@@ -2083,7 +2142,9 @@ dbs_checkpoint (char *log_name, int shutdown)
       {
       if (dbs->dbs_cpt_file_name && !dbs->dbs_slices)
 	{
+	  STI_START;
 	  dbs_sync_disks (dbs);
+	  STI_END (sti_cpt_sync);
 		unlink (dbs->dbs_cpt_file_name); /* remove cpt backup file */
 	}
       }
@@ -2119,6 +2180,7 @@ dbs_checkpoint (char *log_name, int shutdown)
   if (CPT_NORMAL == shutdown)
     cpt_over ();
   auto_cpt_scheduled = 0;
+  sti_cum (&sti_cpt_atomic, &_atm);
   atomic_cp_msecs += get_msec_real_time () - start_atomic;
 
   LEAVE_TXN;

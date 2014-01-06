@@ -91,6 +91,7 @@ struct extent_map_s
 }
 
 #define DP_ANY ((dp_addr_t)-1)
+#define DP_MAX ((dp_addr_t)0xffffffff)
 
 #define EXT_EXTENDS_NONE ((dp_addr_t) -1)
 

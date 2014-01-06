@@ -73,7 +73,6 @@ extern PCONFIG pconfig;     /* configuration file */
 /* Globals for libwi */
 void it_make_buffer_list (index_tree_t * it, int n);
 
-extern int cp_unremap_quota;
 extern int correct_parent_links;
 extern long repl_queue_max;
 extern int main_bufs;
@@ -208,7 +207,8 @@ int32 c_number_of_buffers;
 int32 c_lock_in_mem;
 int32 c_max_dirty_buffers;
 int32 c_max_checkpoint_remap;
-int32 c_unremap_quota;
+extern int32 cp_unremap_quota;
+extern int32 cp_unremap_quota_is_set;
 int32 c_file_extend;
 int32 c_case_mode;
 int32 c_isdts;
@@ -810,9 +810,10 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "MaxDirtyBuffers", &c_max_dirty_buffers) == -1)
     c_max_dirty_buffers = 0;
 
-  if (cfg_getlong (pconfig, section, "UnremapQuota", &c_unremap_quota) == -1)
-    c_unremap_quota = 0;
-
+  if (cfg_getlong (pconfig, section, "UnremapQuota", &cp_unremap_quota) == -1)
+    cp_unremap_quota = 0;
+  else 
+    cp_unremap_quota_is_set = 1;
 #if 0 /*GK: obosolete */
   if (cfg_getlong (pconfig, section, "AtomicDive", &c_atomic_dive) == -1)
     c_atomic_dive = 1;
@@ -1671,15 +1672,6 @@ cfg_setup (void)
   if (c_number_of_buffers - c_oldest_flushable > c_max_dirty_buffers)
     c_oldest_flushable = c_number_of_buffers - c_max_dirty_buffers / 2;
 
-  if (c_unremap_quota == 0)
-    c_unremap_quota = c_number_of_buffers / 3;
-  else if (c_unremap_quota < 500)
-    c_unremap_quota = 500;
-
-  if (c_server_threads > MAX_THREADS - 3)
-    c_server_threads = MAX_THREADS - 3;
-
-
   /* Initialization of UCMs */
 
   section = "Ucms";
@@ -1832,7 +1824,6 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
 {
   main_bufs = c_number_of_buffers;
   cf_lock_in_mem = c_lock_in_mem;
-  cp_unremap_quota = c_unremap_quota;
   correct_parent_links = c_bad_parent_links;
   disable_listen_on_unix_sock = c_disable_listen_on_unix_sock;
   disable_listen_on_tcp_sock = c_disable_listen_on_tcp_sock;

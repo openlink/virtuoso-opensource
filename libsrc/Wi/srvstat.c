@@ -323,6 +323,7 @@ extern int dbf_col_del_leaf;
 extern int enable_pogs_check;
 int key_seg_check[10];
 int dbf_fast_cpt = 0;
+extern int enable_flush_all;
 extern int enable_hash_join;
 extern int enable_hash_merge;
 extern int enable_hash_fill_join;
@@ -603,9 +604,12 @@ dbms_status_report (void)
   char mem[100];
   char rpc[200];
   char col_ac_str[100];
+  char w_rate[20];
   long read_percent = 0, write_percent = 0, interval_msec = 0;
   static long last_time;
   static long last_read_cum_time, last_write_cum_time;
+  extern sys_timer_t sti_sync;
+ extern long tc_n_flush;
   int n_dirty = 0, n_wired = 0, n_buffers = 0, n_used = 0, n_io = 0, n_crsr = 0;
   char * bp_curr_ts;
   dk_mem_stat (mem, sizeof (mem));
@@ -661,13 +665,17 @@ dbms_status_report (void)
       st_db_used_buffers = n_used;
       st_db_dirty_buffers = n_dirty;
       st_db_wired_buffers = n_wired;
+      if (sti_sync.sti_real && tc_n_flush)
+	snprintf (w_rate, sizeof (w_rate), "flush %9.2g MB/s", (tc_n_flush / PAGES_PER_MB) / ((float)sti_sync.sti_real / 1000));
+      else
+	w_rate[0] = 0;
       if (ac_col_pages_in)
 	snprintf (col_ac_str, sizeof (col_ac_str), " col ac: %ld in %ld%% saved", ac_col_pages_in, 100 * (ac_col_pages_in - ac_col_pages_out) / (1 + ac_col_pages_in));
       else
 	col_ac_str[0] = 0;
-      rep_printf ("  Disk Usage: %ld reads avg %ld msec, %d%% r %d%% w last  %ld s, %ld writes,\n    %ld read ahead, batch = %ld.  Autocompact %ld in %ld out, %ld%% saved%s.\n",
+      rep_printf ("  Disk Usage: %ld reads avg %ld msec, %d%% r %d%% w last  %ld s, %ld writes %s,\n    %ld read ahead, batch = %ld.  Autocompact %ld in %ld out, %ld%% saved%s.\n",
 	  disk_reads, read_cum_time / (disk_reads ? disk_reads : 1),
-		  read_percent, write_percent, interval_msec / 1000, disk_writes, ra_count, ra_pages / (ra_count + 1), ac_pages_in, ac_pages_out, 100 * (ac_pages_in - ac_pages_out) / (1 + ac_pages_in), col_ac_str);
+		  read_percent, write_percent, interval_msec / 1000, disk_writes, w_rate, ra_count, ra_pages / (ra_count + 1), ac_pages_in, ac_pages_out, 100 * (ac_pages_in - ac_pages_out) / (1 + ac_pages_in), col_ac_str);
 
       st_db_disk_read_avg = read_cum_time / (disk_reads ? disk_reads : 1);
       st_db_disk_read_pct = read_percent;
@@ -1734,6 +1742,7 @@ stat_desc_t dbf_descs [] =
     {"dbf_cl_blob_autosend_limit", &dbf_cl_blob_autosend_limit, NULL},
     {"dbf_no_sample_timeout", &dbf_no_sample_timeout, NULL},
     {"dbf_fast_cpt", (long *)&dbf_fast_cpt, SD_INT32},
+    {"enable_flush_all", &enable_flush_all, SD_INT32},
     {"cl_req_batch_size", (long *)&cl_req_batch_size, SD_INT32},
     {"cl_dfg_batch_bytes", (long *)&cl_dfg_batch_bytes, SD_INT32},
     {"cl_res_buffer_bytes", (long *)&cl_res_buffer_bytes, SD_INT32},
