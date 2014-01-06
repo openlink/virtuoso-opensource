@@ -363,6 +363,7 @@ get_free_thread (TAKE_G dk_session_t * for_ses)
     {
       if (for_ses)
 	for_ses->dks_n_threads++;
+      return dkt;
     }
   else
     {
@@ -370,7 +371,6 @@ get_free_thread (TAKE_G dk_session_t * for_ses)
 	{
 	  dkt = dk_thread_alloc ();
 	  future_thread_count++;
-
 	  if (for_ses)
 	    for_ses->dks_n_threads++;
 	}
@@ -1084,11 +1084,14 @@ future_wrapper (void *ignore)
 
   du_thread_t *this_thread = THREAD_CURRENT_THREAD;
 
+ again:
   {
 
     dbg_printf_2 (("future wrapper point 1 thread %p", this_thread));
     semaphore_enter (this_thread->thr_schedule_sem);	/* XXX: schedule_sem */
     dbg_printf_1 (("future wrapper activated thread %p", this_thread));
+    if ((void*)-1 == this_thread->thr_client_data)
+      return 0;
     c_thread = PROCESS_TO_DK_THREAD (this_thread);
   }
 
@@ -1199,8 +1202,19 @@ future_wrapper (void *ignore)
       if (this_thread->thr_reset_code)
 	thr_set_error_code (this_thread, NULL);
       dbg_printf_2 (("Done Future %ld on thread %p", future->rq_condition, this_thread));
-      mutex_enter (thread_mtx);
       F_RETURNED;
+      mutex_enter (thread_mtx);
+      if (DKST_FINISH == client->dks_thread_state && !client->dks_to_close && !client->dks_fixed_thread
+	  && 1 == client->dks_n_threads && !in_basket.bsk_count)
+	{
+	  c_thread->dkt_request_count = 0;
+	  client->dks_thread_state = DKST_IDLE;
+	  client->dks_n_threads = 0;
+	  resource_store (free_threads, (void*)c_thread);
+	  mutex_leave (thread_mtx);
+	  dk_free (future, sizeof (future_request_t));
+	  goto again;
+	}
       client->dks_n_threads--;
       if (client->dks_n_threads < 0 || client->dks_n_threads > MAX_THREADS)
 	{
@@ -1421,7 +1435,7 @@ future_wrapper (void *ignore)
       PROCESS_ALLOW_SCHEDULE ();
     }
   dbg_printf_2 (("future_wrapper exiting on thread %p", this_thread));
-  return 0;
+  goto again;
 }
 
 
@@ -1602,21 +1616,11 @@ schedule_future:
       return;
     }
   thread = get_free_thread (PASS_G ses);
-  /* If there is a thread for the request, put it underway right off
-     without queuing - oui 020693 */
   if (thread)
     {
-      ss_dprintf_4 (("found free thread %p", thread->dkt_process));
-      reqs_on_the_fly++;
       thread->dkt_requests[0] = future_request;
       thread->dkt_request_count = 1;
       future_request->rq_thread = thread;
-#if 1						 /*!!! */
-      ss_dprintf_2 (("Starting future %ld with thread %p", future_request->rq_condition,
-	      /*future_request->rq_service->sr_name, */ thread->dkt_process));
-#else
-      ss_dprintf_2 (("Starting future %ld %s with thread %p", future_request->rq_condition, future_request->rq_service->sr_name, thread->dkt_process));
-#endif
       if (ses->dks_thread_state != DKST_BURST)
 	{
 	  if (ses->dks_thread_state != DKST_IDLE)
@@ -1645,9 +1649,9 @@ schedule_future:
 	{
 	  thrs_printf ((thrs_fo, "ses %p thr:%p still burst (%s, to_close:%d)\n", ses, THREAD_CURRENT_THREAD, future_request->rq_service ? future_request->rq_service->sr_name : "<no-service>", future_request->rq_to_close));
 	}
-      mutex_leave (thread_mtx);
 
-      semaphore_leave (thread->dkt_process->thr_schedule_sem);	/* XXX: schedule_sem */
+      mutex_leave (thread_mtx);
+      semaphore_leave (thread->dkt_process->thr_schedule_sem);
       check_inputs_action_count++;
     }
   else
@@ -2769,7 +2773,10 @@ void
 dk_thread_free (void *data)
 {
   dk_thread_t *dkt = (dk_thread_t *) data;
+  du_thread_t  * thr = dkt->dkt_process;
   ASSERT_IN_MTX (thread_mtx);
+  thr->thr_client_data = (void*)-1;
+  semaphore_leave (thr->thr_schedule_sem);
   if (dkt && dkt->dkt_requests[0] && dkt->dkt_request_count)
     dk_free (dkt->dkt_requests[0], sizeof (future_request_t));
   dk_free (dkt, sizeof (dk_thread_t));
