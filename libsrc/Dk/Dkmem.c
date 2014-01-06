@@ -29,6 +29,7 @@
 #include "Dksimd.h"
 
 
+
 void
 memzero (void* ptr, int len)
 {
@@ -105,7 +106,41 @@ memmove_16 (void * t, const void * s, size_t len)
 
 
 
-unsigned  int64 rdtsc()
+uint64_t
+rdtsc()
 {
+#if defined(HAVE_GETHRTIME) || defined(SOLARIS)
+  return (uint64_t) gethrtime ();
+#elif defined (WIN32)
+  return __rdtsc ();
+#elif defined (__GNUC__) && defined (__x86_64__)
+  uint32 lo, hi;
+
+  /* Serialize */
+  __asm__ __volatile__ ("xorl %%eax,%%eax\n\tcpuid":::"%rax", "%rbx", "%rcx", "%rdx");
+
+  /* We cannot use "=A", since this would use %rax on x86_64 and return only the lower 32bits of the TSC */
+  __asm__ __volatile__ ("rdtsc":"=a" (lo), "=d" (hi));
+
+  return (uint64_t) hi << 32 | lo;
+#elif defined (__GNUC__) && defined (__i386__)
+  uint64_t result;
+  __asm__ __volatile__ ("rdtsc":"=A" (result));
+  return result;
+#elif defined(__GNUC__) && defined(__ia64__)
+  uint64_t result;
+  __asm__ __volatile__ ("mov %0=ar.itc":"=r" (result));
+  return result;
+#elif defined(__GNUC__) && (defined(__powerpc__) || defined(__POWERPC__)) && (defined(__64BIT__) || defined(_ARCH_PPC64))
+  uint64_t result;
+  __asm__ __volatile__ ("mftb %0":"=r" (result));
+  return result;
+#elif defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_REALTIME)
+  {
+    struct timespec t;
+    clock_gettime(CLOCK_REALTIME, &t);
+    return (uint64_t) t.tv_sec * 1000000000 + (uint64_t) t.tv_nsec;
+  }
   return 0;
+#endif
 }
