@@ -54,7 +54,7 @@ create procedure slevel (
       and ol_o_id >= last_o - 20
       and s_w_id = w_id
       and s_i_id = ol_i_id
-      and s_quantity < threshold;
+      and s_quantity < threshold option (loop, order);
 
   result_names (n_items);
   result (n_items);
@@ -380,7 +380,7 @@ create procedure ol_stock (
 
   whenever not found goto no_item;
   select i_price, i_name into amount, _i_name
-    from item
+    from item table option (isolation read committed)
     where i_id = _ol_i_id;
 
   declare s_cur cursor for
