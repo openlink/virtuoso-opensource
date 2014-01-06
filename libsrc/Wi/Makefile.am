@@ -196,7 +196,6 @@ libwi_la_SOURCES = \
 	monitor.c \
 	log.c \
 	map_schema.c \
-	mem.c \
 	meta.c \
 	mtwrite.c \
 	multibyte.c \
@@ -345,7 +344,6 @@ libwi_odbc_la_SOURCES = \
 	monitor.c \
 	log.c \
 	map_schema.c \
-	mem.c \
 	meta.c \
 	mtwrite.c \
 	multibyte.c \
