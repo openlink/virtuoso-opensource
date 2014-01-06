@@ -1462,6 +1462,8 @@ mutex_stat ()
   #ifdef MTX_METER
   DO_HT (dk_mutex_t *, mtx, void*, ign, all_mtxs)
     {
+      if (!mtx->mtx_enters)
+	continue;
 #ifdef APP_SPIN
       printf ("%s %p E: %ld W %ld  spinw: %ld spin: %d\n", mtx->mtx_name ? mtx->mtx_name : "<?>",  mtx,
 	      mtx->mtx_enters, mtx->mtx_waits, mtx->mtx_spin_waits, mtx->mtx_spins);
