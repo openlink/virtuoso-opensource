@@ -72,6 +72,7 @@
 #endif /* _SSL */
 
 
+
 #define CHECK_PG(pg,name) \
       if (cfg_page.pg < 1 || cfg_page.pg > dbs->dbs_n_pages) \
 	{ \
@@ -1064,15 +1065,45 @@ bp_found (buffer_desc_t * buf, int from_free_list)
 
 
 du_thread_t * bp_flush_thr;
+dk_mutex_t bp_flush_mtx;
+dk_set_t bp_waiting_flush;
 semaphore_t * bp_flush_sem;
 int bp_flush_pending = 0;
 
+
 void
-bp_flush (buffer_pool_t * bp)
+bp_flush (buffer_pool_t * bp, int wait)
 {
-  if (bp_flush_pending || !bp_flush_sem)
+  du_thread_t * self = THREAD_CURRENT_THREAD;
+  if (!bp_flush_sem)
     return;
-  semaphore_leave (bp_flush_sem);
+  mutex_enter (&bp_flush_mtx);
+  if (bp_flush_pending)
+    {
+      if (wait)
+	{
+	  dk_set_push (&bp_waiting_flush, (void*)self);
+	  mutex_leave (&bp_flush_mtx);
+	  semaphore_enter (self->thr_sem);
+	}
+      else 
+	{
+	  mutex_leave (&bp_flush_mtx);
+	  return;
+	}
+    }
+  else
+    {
+      bp_flush_pending = 1;
+      if (wait)
+	{
+	  dk_set_push (&bp_waiting_flush, (void*)self);
+	}
+      mutex_leave (&bp_flush_mtx);
+      semaphore_leave (bp_flush_sem);
+      if (wait)
+	semaphore_enter (self->thr_sem);
+    }
 }
 
 
@@ -1080,6 +1111,7 @@ int bp_stat_action (buffer_pool_t * bp, int stat_only);
 extern uint32 col_ac_last_time;
 extern uint32 col_ac_last_duration;
 int col_ac_is_due (uint32 now);
+int enable_flush_all = 1;
 
 void
 bp_flush_thread_func (void * arg)
@@ -1089,7 +1121,6 @@ bp_flush_thread_func (void * arg)
   for (;;)
     {
       semaphore_enter (bp_flush_sem);
-      bp_flush_pending = 1;
       DO_BOX (buffer_pool_t *, bp, inx, wi_inst.wi_bps)
 	{
 	  IN_BP (bp);
@@ -1099,7 +1130,14 @@ bp_flush_thread_func (void * arg)
 	  LEAVE_BP (bp);
 	}
       END_DO_BOX;
-      wi_check_all_compact (min_age - 1); /* -1 because 0 m,means do all */
+      if (enable_flush_all)
+	{
+	  wi_check_all_compact (0); /* -1 because 0 means do all */
+	  mt_flush_all ();
+	}
+      else
+	{
+	  wi_check_all_compact (min_age - 1); /* -1 because 0 means do all */
       DO_BOX (buffer_pool_t *, bp, inx, wi_inst.wi_bps)
 	{
 	  IN_BP (bp);
@@ -1107,7 +1145,17 @@ bp_flush_thread_func (void * arg)
 	  LEAVE_BP (bp);
 	}
       END_DO_BOX;
+	}
+      mutex_enter (&bp_flush_mtx);
+      DO_SET (du_thread_t *, waiting, &bp_waiting_flush)
+      {
+	semaphore_leave (waiting->thr_sem);
+      }
+      END_DO_SET ();
       bp_flush_pending = 0;
+      dk_set_free (bp_waiting_flush);
+      bp_waiting_flush = NULL;
+      mutex_leave (&bp_flush_mtx);
     }
   dk_free (age_limit, -1);
 }
@@ -1141,7 +1189,7 @@ bp_stat_action (buffer_pool_t * bp, int stat_only)
 	  /* not inside checkpoint. bp_get_buffer can happen inside, for reading uncommitted pages for cpt rb */
 	  bp->bp_stat_pending = 1;
 	  LEAVE_BP (bp);
-	  bp_flush (bp);
+	  bp_flush (bp, 0);
       IN_BP (bp);
       bp->bp_stat_pending = 0;
     }
@@ -2677,6 +2725,8 @@ buf_bsort (buffer_desc_t ** bs, int n_bufs, sort_key_func_t key)
 
 
 int32 qsort_seed;
+int buf_sort_dirty = 0;
+
 
 void
 buf_qsort (buffer_desc_t ** in, buffer_desc_t ** left,
@@ -2698,6 +2748,7 @@ buf_qsort (buffer_desc_t ** in, buffer_desc_t ** left,
       int split_point = 0 == (depth % 5) ? 	  ((sqlbif_rnd (&qsort_seed) & 0x7fffffff) % n_in) : n_in / 2;
       dp_addr_t split;
       buffer_desc_t *mid_buf = NULL;
+      int n_mids = 0;
       int n_left = 0, n_right = n_in - 1;
       int inx;
       if (depth > 60)
@@ -2711,9 +2762,13 @@ buf_qsort (buffer_desc_t ** in, buffer_desc_t ** left,
       for (inx = 0; inx < n_in; inx++)
 	{
 	  dp_addr_t this_pg = key (in[inx]);
-	  if (!mid_buf && this_pg == split)
+	  if (this_pg == split)
 	    {
-	      mid_buf = in[inx];
+	      n_mids++;
+	      if (1 == n_mids)
+		mid_buf = in[inx];
+	      else
+		left[n_left++] = in[inx];
 	      continue;
 	    }
 	  if (this_pg <= split)
@@ -2725,11 +2780,14 @@ buf_qsort (buffer_desc_t ** in, buffer_desc_t ** left,
 	      left[n_right--] = in[inx];
 	    }
 	}
-      if (!mid_buf)
+      if (!n_mids)
 	{
-	  log_error ("In buf_qsort, the items being sorted have moved, so results are not necessarily in order");
+	  if (!buf_sort_dirty)
+	    log_error ("In buf_qsort, the items being sorted have moved, so results are not necessarily in order");
 	  return;
 	}
+      if (n_mids == n_in)
+	return; /* all are equal */
       buf_qsort (left, in, n_left, depth + 1, key);
       buf_qsort (left + n_right + 1, in + n_right + 1,
 	  (n_in - n_right) - 1, depth + 1, key);
@@ -2745,7 +2803,6 @@ buf_qsort (buffer_desc_t ** in, buffer_desc_t ** left,
 dk_mutex_t *buf_sort_mtx;
 buffer_desc_t **left_bufs;
 size_t left_bufs_len;
-
 
 void
 buf_sort (buffer_desc_t ** bs, int n_bufs, sort_key_func_t key)
@@ -3609,9 +3666,40 @@ dbs_close_disks (dbe_storage_t * dbs, int delete)
 int32 bp_n_bps = 4;
 extern int dbf_fast_cpt;
 
+
+semaphore_t * dst_sync_sem;
+
+void
+dst_sync (caddr_t * xx)
+{
+  uint32 start, inx;
+  dbe_storage_t * dbs = (dbe_storage_t*)xx[0];
+  io_queue_t * iq = (io_queue_t*)xx[1];
+  DO_SET (disk_segment_t *, seg, &dbs->dbs_disks)
+    {
+      DO_BOX (disk_stripe_t *, dst, inx, seg->ds_stripes)
+	{
+	  int fd;
+	  if (dst->dst_iq != iq)
+	    continue;
+	  fd = dst_fd (dst);
+	  start = get_msec_real_time ();
+	  fd_fsync (fd);
+	  iq->iq_sync_delay += get_msec_real_time () - start;
+	  dst_fd_done (dst, fd, NULL);
+		}
+	      END_DO_BOX;
+	    }
+	  END_DO_SET ();
+	  semaphore_leave (dst_sync_sem);
+}
+
+
 void
 dbs_sync_disks (dbe_storage_t * dbs)
 {
+  if (!dst_sync_sem)
+    dst_sync_sem = semaphore_allocate (0);
 #ifdef HAVE_FSYNC
   int inx;
 
@@ -3633,15 +3721,39 @@ dbs_sync_disks (dbe_storage_t * dbs)
     default:
       if (dbs->dbs_disks)
 	{
+	  dk_set_t iqs = NULL;
+	  dk_set_t args = NULL;
 	  DO_SET (disk_segment_t *, seg, &dbs->dbs_disks)
 	    {
 	      DO_BOX (disk_stripe_t *, dst, inx, seg->ds_stripes)
 		{
-		  fd_fsync (dst->dst_fds[0]);
+		  dk_set_pushnew (&iqs, (void*)dst->dst_iq);
 		}
 	      END_DO_BOX;
 	    }
-	  END_DO_SET ();
+	  END_DO_SET();
+	  DO_SET (io_queue_t *, iq, &iqs)
+	    {
+	      caddr_t * xx = (caddr_t*) list (2, dbs, iq);
+	      dk_set_push (&args, (void*)xx);
+	    }
+	  END_DO_SET();
+	  DO_SET (caddr_t *, xx, &args->next)
+	    {
+	      thread_create ((thread_init_func)dst_sync, 20000, xx);
+	    }
+	  END_DO_SET();
+	  dst_sync ((caddr_t*)args->data);
+	  DO_SET (caddr_t *, xx, &args)
+	    {
+		semaphore_enter (dst_sync_sem);
+	    }
+	  END_DO_SET();
+	  DO_SET (caddr_t *, xx, &args)
+	    dk_free_box (xx);
+	  END_DO_SET();
+	  dk_set_free (iqs);
+	  dk_set_free (args);
 	}
       else
 	{
@@ -4347,7 +4459,6 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
       dbs->dbs_n_pages_in_extent_set = EXTENT_SZ * BITS_ON_PAGE * page_set_length (dbs->dbs_extent_set);
       dbs->dbs_free_set = dbs_read_page_set (dbs, cfg_page.db_free_set, DPF_FREE_SET);
       dbs_set_free_set_arr (dbs);
-      dbs_set_free_set_arr (dbs);
       dbs->dbs_n_pages_in_sets = BITS_ON_PAGE * page_set_length (dbs->dbs_free_set);
       dbs->dbs_incbackup_set = dbs_read_page_set (dbs, cfg_page.db_incbackup_set, DPF_INCBACKUP_SET);
       dbs_read_checkpoint_remap (dbs, cfg_page.db_checkpoint_map);
@@ -4704,6 +4815,8 @@ wi_init_globals (void)
   time_mtx = mutex_allocate ();
   checkpoint_mtx = mutex_allocate_typed (MUTEX_TYPE_LONG);
   mutex_option (checkpoint_mtx, "CPT", NULL, NULL);
+  dk_mutex_init (&bp_flush_mtx, MUTEX_TYPE_SHORT);
+  mutex_option (&bp_flush_mtx, "bp_flush", NULL, NULL);
   old_roots_mtx = mutex_allocate ();
   mutex_option (old_roots_mtx, "old_root_images", NULL, NULL);
 
@@ -4759,7 +4872,8 @@ dbe_key_open_dbs (dbe_key_t * key, dbe_storage_t * dbs)
       {
 	int inx;
 	char mtx_name[200];
-	snprintf (mtx_name, sizeof (mtx_name), "lock_rel_%100s", kf->kf_name);
+	snprintf (mtx_name, sizeof (mtx_name), "lock_rel_%s", kf->kf_name);
+	mtx_name[sizeof (mtx_name) - 1] = 0;
 	mutex_option (kf->kf_it->it_lock_release_mtx, mtx_name, NULL,  NULL);
 	for (inx = 0; inx < IT_N_MAPS; inx++)
 	  {

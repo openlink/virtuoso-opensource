@@ -14080,6 +14080,28 @@ bif_getrusage (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
+void 
+sti_init (sys_timer_t* sti)
+{
+  struct rusage ru;
+  getrusage (RUSAGE_SELF, &ru);
+  sti->sti_real = get_msec_real_time ();
+  sti->sti_cpu = ru.ru_utime.tv_sec * 1000 +  ru.ru_utime.tv_usec / 1000;
+  sti->sti_sys = ru.ru_stime.tv_sec * 1000 +  ru.ru_stime.tv_usec / 1000;
+}
+
+
+void 
+sti_cum (sys_timer_t * cum, sys_timer_t * start)
+{
+  sys_timer_t now;
+  sti_init (&now);
+  cum->sti_real += now.sti_real - start->sti_real;
+  cum->sti_cpu += now.sti_cpu - start->sti_cpu;
+  cum->sti_sys += now.sti_sys - start->sti_sys;
+}
+
+
 caddr_t
 bif_rdtsc (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -14789,10 +14811,18 @@ bif_autocompact (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       buffer_pool_t * bp = wi_inst.wi_bps[0];
       if (2 == flags)
 	col_ac_last_duration = 0; /* do col ac anyway, even if not due by local reckoning */
-      bp_flush (bp);
+      bp_flush (bp, 0);
 	}
       else
     wi_check_all_compact (0);
+  return NULL;
+}
+
+
+caddr_t
+bif_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  bp_flush (NULL, bif_long_arg (qst, args, 0, "__flush"));
   return NULL;
 }
 
@@ -15810,6 +15840,7 @@ sql_bif_init (void)
   bif_define ("dbg_user_dump", bif_dbg_user_dump);
   bif_define ("__cache_check", bif_cache_check);
   bif_define ("__autocompact", bif_autocompact);
+  bif_define ("__flush", bif_flush);
   bif_define_typed ("__qi_is_branch", bif_qi_is_branch, &bt_integer);
 #if 0
   /*partition_def_bif_define ();*/

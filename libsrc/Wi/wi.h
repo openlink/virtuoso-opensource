@@ -1792,7 +1792,9 @@ struct io_queue_s
     dk_mutex_t * 	iq_mtx; /* serializes access to the buffers list */
     dk_set_t	iq_waiting_shut; /* list of threads waiting for all activity on this iq to finish */
     int		iq_action_ctr; /* if a thread waits for sync, release ity anyway after so many increments of this &*/
-  };
+    int64	iq_n_writes;
+    int64	iq_sync_delay;
+};
 
 
 #define IN_IOQ(iq) \
@@ -2103,6 +2105,22 @@ typedef struct stat_desc_s
   } stat_desc_t;
 
 extern stat_desc_t dbf_descs[];
+
+typedef struct s_time_t
+{
+  uint32	sti_real;
+  uint32	sti_cpu;
+  uint32	sti_sys;
+} sys_timer_t;
+
+#define STI_START \
+  { sys_timer_t __sti; sti_init (&__sti);
+
+#define STI_END(total) \
+  sti_cum (&total, &__sti); } \
+
+void sti_init (sys_timer_t*);
+void sti_cum (sys_timer_t * cum, sys_timer_t * start);
 
 #endif /* _WI_H */
 

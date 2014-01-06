@@ -244,11 +244,10 @@ buffer_desc_t * page_fault_map_sem (it_cursor_t * it, dp_addr_t dp, int stay_ins
 #define PF_STAY_ATOMIC 1
 
 #if defined (MTX_DEBUG) && !defined (PAGE_DEBUG)
-#define PAGE_DEBUG
+//#define PAGE_DEBUG
 #endif
 
 #ifdef PAGE_DEBUG
-
 
 void buf_prot_read (buffer_desc_t * buf);
 void buf_prot_WRITE (buffer_desc_t * buf);
@@ -395,7 +394,8 @@ void gen_qsort (int * in, int * left,
 void gen_qmsort (int * in, int * left,
 	    int n_in, sort_cmp_func_t cmp, void* cd, int key_bytes);
 
-void bp_flush (buffer_pool_t * bp);
+void bp_flush (buffer_pool_t * bp, int wait);
+void mt_flush_all ();
 int page_set_length (buffer_desc_t * buf);
 int bp_buf_enter (buffer_desc_t * buf, it_map_t ** itm_ret);
 buffer_desc_t * bp_get_buffer_1  (buffer_pool_t * bp, buffer_pool_t ** pool_for_action, int mode);
@@ -918,7 +918,7 @@ extern int num_cont_pages;
 void mt_write_dirty (buffer_pool_t * bp, int n_oldest, int phys_eq_log_only);
 #define PHYS_EQ_LOG 1  /* only write pages that are not remapped. Used before checkpoint. */
 
-void iq_schedule (buffer_desc_t ** bufs, int n);
+dp_addr_t iq_schedule (buffer_desc_t ** bufs, int n);
 void iq_shutdown (int mode);
 #define IQ_SYNC 0
 #define IQ_STOP 1
@@ -1289,6 +1289,7 @@ extern int is_read_pending;
 extern int32 bp_n_bps;
 
 extern int cp_unremap_quota;
+					extern int cp_unremap_quota_is_set;
 extern dp_addr_t crashdump_start_dp;
 extern dp_addr_t crashdump_end_dp;
 extern int sqlc_hook_enable;
