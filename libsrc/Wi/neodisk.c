@@ -1328,6 +1328,8 @@ void
 cpt_unremap (dbe_storage_t * dbs, it_cursor_t * itc)
 {
   int bufs_done = 0, bufs_done_total, buf_quota = main_bufs / 4, target;
+  dp_addr_t initial_remaps = 0;
+  uint32 start_unremap, end_unremap;
   dk_set_t bufs_list = NULL;
   cpt_remap_reverse = hash_table_allocate (cpt_dbs->dbs_cpt_remap->ht_actual_size);
   cpt_remap_free_logical_pages = cpt_reamp_free_physical_pages = cpt_reamp_free_pages = 0;
@@ -1347,6 +1349,8 @@ cpt_unremap (dbe_storage_t * dbs, it_cursor_t * itc)
       sethash ((void*)phys, cpt_remap_reverse, (void*)log);
     }
   END_DO_HT;
+  initial_remaps = dbs->dbs_cpt_remap->ht_count;
+  start_unremap = get_msec_real_time ();
   if (cp_unremap_quota_is_set)
     {
       target = dbs->dbs_cpt_remap->ht_count - cp_unremap_quota;
@@ -1382,6 +1386,9 @@ cpt_unremap (dbe_storage_t * dbs, it_cursor_t * itc)
   if (bufs_done_total && cpt_dbs->dbs_cpt_remap->ht_count > target)
     goto again;
   iq_shutdown (IQ_STOP);
+  end_unremap = get_msec_real_time ();
+  if (end_unremap - start_unremap  > 5000)
+    log_info ("Checkpoint removed %d MB of remapped pages, leaving %d MB. Duration %9.4g s.  To save this time, increase MaxCheckpointRemap and/or set Unremap quota to 0 in ini file.", (initial_remaps - dbs->dbs_cpt_remap->ht_count) / PAGES_PER_MB, dbs->dbs_cpt_remap->ht_count / PAGES_PER_MB, (float)(end_unremap - start_unremap) / 1000);
   /* verify all unremaps are written.  shutdown exityy with bufs in iq will lose the pages, very corrupt, often visible as bad parent linkand sometimes as just lost updates.  */
   dbs_cache_check (dbs, IT_CHECK_FAST);
   iq_restart ();
