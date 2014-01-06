@@ -1320,8 +1320,10 @@ bp_get_buffer_1 (buffer_pool_t * bp, buffer_pool_t ** action_bp_ret, int mode)
 	    age_limit = 0;
 	  bp_write_dirty (bp, 0, 1, age_limit);
 	}
-      // computing age limit.
-  if (((int) (bp->bp_ts - bp->bp_stat_ts)) > (bp->bp_n_bufs / BP_N_BUCKETS) / 2)
+      /* computing age limit. */
+      if (dbs_autocompact_in_progress)
+	age_limit = 0;
+      else if (((int) (bp->bp_ts - bp->bp_stat_ts)) > (bp->bp_n_bufs / BP_N_BUCKETS) / 2)
     {
       if (!bp->bp_stat_pending)
 	{
@@ -1412,7 +1414,7 @@ bp_get_buffer_1 (buffer_pool_t * bp, buffer_pool_t ** action_bp_ret, int mode)
 	    return buf;
 	}
       tc_bp_get_buffer_loop++;
-      age_limit--;
+          age_limit = (age_limit * 2) / 3;
     }
 
   /* absolutely all were dirty */
