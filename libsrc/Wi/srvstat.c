@@ -666,7 +666,7 @@ dbms_status_report (void)
       st_db_dirty_buffers = n_dirty;
       st_db_wired_buffers = n_wired;
       if (sti_sync.sti_real && tc_n_flush)
-	snprintf (w_rate, sizeof (w_rate), "flush %9.2g MB/s", (tc_n_flush / ((1024 * 1024) / PAGE_SZ)) / ((float)sti_sync.sti_real / 1000));
+	snprintf (w_rate, sizeof (w_rate), "flush %9.2g MB/s", (tc_n_flush / PAGES_PER_MB) / ((float)sti_sync.sti_real / 1000));
       else
 	w_rate[0] = 0;
       if (ac_col_pages_in)

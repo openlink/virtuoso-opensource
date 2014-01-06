@@ -908,6 +908,7 @@ long sf_log (caddr_t * replicate);
 
 /* mtwrite.c */
 
+int dbs_dirty_count ();
 void buf_cancel_write (buffer_desc_t * buf);
 void buf_release_read_waits (buffer_desc_t * buf, int itc_state);
 void mt_write_start (int n_oldest);

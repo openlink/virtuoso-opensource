@@ -51,7 +51,7 @@ typedef unsigned char * db_buf_t;
 #define PAGE_SZ			8192
 #define KILOS_PER_PAGE (PAGE_SZ/1024)
 #define PAGE_DATA_SZ		(PAGE_SZ - DP_DATA)
-
+#define PAGES_PER_MB ((1024 * 1024) / PAGE_SZ)
 #define ROW_ALIGN(s) ALIGN_2(s)
 
 #define BITS_IN_LONG		(sizeof (dp_addr_t) * 8)

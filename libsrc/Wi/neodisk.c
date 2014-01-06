@@ -47,6 +47,7 @@
 
 extern long tc_atomic_wait_2pc;
 extern int32 enable_flush_all;
+extern long tc_n_flush;
 long atomic_cp_msecs;
 long tc_dirty_at_cpt_start;
 sys_timer_t sti_cpt_atomic;
@@ -1978,7 +1979,36 @@ dbs_checkpoint (char *log_name, int shutdown)
   mcp_delta_count = 0;
   LEAVE_TXN;
   if (enable_flush_all)
-    bp_flush (NULL, 1);
+    {
+      int ctr;
+      for (ctr = 0; ctr < 2; ctr++)
+	{
+	  float rate = 0;
+	  int n_dirty = dbs_dirty_count (), dirty_after;
+	  long n_flush = tc_n_flush;
+	  uint32 start = get_msec_real_time ();
+	  bp_flush (NULL, 1);
+	  start = get_msec_real_time () - start;
+	  dirty_after = dbs_dirty_count ();
+	  if (0 == ctr)
+	    rate = ((tc_n_flush - n_flush) / PAGES_PER_MB) / ((float)start / 1000);
+	  if (shutdown)
+	    break;
+	  if (dirty_after < 10000)
+	    break;
+	  if (0 == ctr && (float)dirty_after / (n_dirty + 1) > 0.7)
+	    {
+	      log_info ("Write load very high relative to disk write throughput.  Flushing at %9.2g MB/s while application is making dirty pages at %9.2g MB/s. To checkpoint the database, will now pause the workload with %d MB unflushed.",
+			(n_dirty / PAGES_PER_MB) / ((float)start / 1000), (dirty_after / PAGES_PER_MB) / ((float)start / 1000), dirty_after / PAGES_PER_MB);
+	      break;
+	    }
+	  if (0 == ctr && (float)dirty_after / (n_dirty + 1) > 0.2)
+	    {
+	      log_info ("Write load high relative to disk write throughput.  Flushing at %9.2g MB/s while application is making dirty pages at %9.2g MB/s. Doing a second flushing pass before checkpoint",
+			(n_dirty / PAGES_PER_MB) / ((float)start / 1000), (dirty_after / PAGES_PER_MB) / ((float)start / 1000));
+	    }
+	}
+    }
   else
     {
       wi_check_all_compact (0);
