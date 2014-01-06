@@ -489,6 +489,8 @@ qi_vec_init (query_instance_t * qi, int n_sets)
 	  else if (est > qi->qi_mp->mp_block_size)
 	    qi->qi_mp->mp_block_size = mm_next_size (est, &ign);
 	}
+      if (qi_mp_block_sz)
+	qi->qi_mp->mp_block_size = qi_mp_block_sz;
 #if 0 /*ndef NDEBUG */
       if (qi->qi_query->qr_text)
 	qi->qi_mp->mp_comment = mp_box_string (qi->qi_mp, qi->qi_query->qr_text);
