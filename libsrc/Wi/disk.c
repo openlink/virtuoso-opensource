@@ -885,6 +885,7 @@ buffer_set_free (buffer_desc_t* ps)
 
 
 int32 bp_flush_trig_pct = 50;
+int32 bp_flush_range;
 int64 bp_replace_age;
 int32 bp_replace_count;
 
@@ -1168,7 +1169,7 @@ bp_stat_action (buffer_pool_t * bp, int stat_only)
   /* schedule writes if appropriate.  If nothing free write synchronously */
   int n_dirty = 0, n_clean = 0;
   int bucket, age_limit;
-  int flushable_range = bp->bp_n_bufs / BP_N_BUCKETS;
+  int flushable_range = bp_flush_range ? bp_flush_range : bp->bp_n_bufs / BP_N_BUCKETS;
   for (bucket = 0; bucket < BP_N_BUCKETS; bucket++)
     {
       n_clean += bp->bp_n_clean[bucket];
@@ -1181,7 +1182,8 @@ bp_stat_action (buffer_pool_t * bp, int stat_only)
   age_limit = bp->bp_bucket_limit[bucket];
   if (stat_only)
     return -bucket;
-  if ((n_dirty * 100) / (n_clean + n_dirty) > bp_flush_trig_pct
+  if ((n_dirty * 100) / (n_clean + n_dirty) > bp_flush_trig_pct 
+      || n_dirty > wi_inst.wi_max_dirty / wi_inst.wi_n_bps
       /*|| action_ctr++ % 1000 == 0 */)
     {
       if (!wi_inst.wi_checkpoint_atomic)
@@ -4598,6 +4600,13 @@ wi_open (char *mode)
   mutex_option (transit_list_mtx, "transit_list", NULL, NULL);
   srv_client_defaults_init ();
   wi_inst.wi_bps = (buffer_pool_t **) dk_alloc_box (bp_n_bps * sizeof (caddr_t), DV_CUSTOM);
+  if (wi_inst.wi_max_dirty > main_bufs)
+    wi_inst.wi_max_dirty = main_bufs;
+  if (wi_inst.wi_max_dirty < main_bufs / 15)
+    wi_inst.wi_max_dirty = main_bufs / 15;
+  bp_flush_range = MAX (main_bufs - wi_inst.wi_max_dirty, main_bufs / 5)  / bp_n_bps;
+
+
   for (inx = 0; inx < bp_n_bps; inx++)
     {
       wi_inst.wi_bps[inx] = bp_make_buffer_list (main_bufs / bp_n_bps);
