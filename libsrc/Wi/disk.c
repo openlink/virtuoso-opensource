@@ -1174,7 +1174,7 @@ bp_stat_action (buffer_pool_t * bp, int stat_only)
     {
       n_clean += bp->bp_n_clean[bucket];
       n_dirty += bp->bp_n_dirty[bucket];
-      if (n_dirty + n_clean > bp->bp_n_bufs / flushable_range)
+      if (n_dirty + n_clean > flushable_range)
 	break;
     }
   if (bucket == BP_N_BUCKETS)
