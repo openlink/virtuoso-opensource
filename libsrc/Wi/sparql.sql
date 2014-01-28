@@ -8622,7 +8622,7 @@ create procedure DB.DBA.SPARQL_INSERT_DATA (in graph_iri any, in triple_ops any)
 {
   for vectored (in triple_op any := triple_ops)
     {
-      declare op, s, p, o;
+      declare op, s, p, o any;
 
       if (isiri_id (o_val))
         __rdf_repl_quad (84, graph_iri, s_iri, p_iri, iri_canonicalize (o_val));
@@ -9507,7 +9507,7 @@ next_iteration:
           http ('{\n', ses);
           http ('  declare subj_iri varchar;\n', ses);
           http ('  subj_iri := id_to_iri_nosignal (subj);\n', ses);
-          if (mas_len > 0)
+          if (maps_len > 0)
             {
               http ('  for (sparql define output:valmode "LONG" define input:storage <' || storage_name || '> ', ses);
               foreach (any g in sorted_bad_graphs) do

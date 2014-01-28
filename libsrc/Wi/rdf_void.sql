@@ -427,8 +427,9 @@ create procedure RDF_DCAT_GEN (in graph varchar,
   http (sprintf (' rdfs:seeAlso <%s> ; \n', graph), ses);
   if (gr_name is not null)
     http (sprintf (' rdfs:label "%s" ; \n', gr_name), ses);
-  if (ep)
-    http (sprintf (' void:sparqlEndpoint <http://%s/sparql> ; \n', host), ses);
+-- XXX: no endpoint  
+--  if (ep)
+--    http (sprintf (' void:sparqlEndpoint <http://%s/sparql> ; \n', host), ses);
 
   http (sprintf (' void:triples %ld ; \n', _cnt), ses);
   http (sprintf (' void:classes %ld ; \n', _n_classes), ses);
