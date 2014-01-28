@@ -827,7 +827,15 @@ struct rdf_ds_s;
 #define SSG_VALMODE_SPECIAL		((ssg_valmode_t)((ptrlong)(0x380)))
 /* typedef struct rdf_ds_field_s *ssg_valmode_t; -- moved to sparql.h */
 
-extern ssg_valmode_t ssg_smallest_union_valmode (ssg_valmode_t m1, ssg_valmode_t m2);
+/*! \c returns smallest valmode that can keep values from both \c m1 and \c m2.
+In addition to the returned value it can set \c sqlval_is_ok_and_cheap_ret[0] to zero if the sqlval of either \c m1 or \c m2 is not cheap.
+sqlval of SSG_VALMODE_AUTO is cheap because "auto" can become sqlval when needed and the conversion is not needed at all.
+sqlval SSG_VALMODE_SHORT_OR_LONG \c m1 or \c m2 is not cheap.
+SSG_VALMODE_LONG \c m1 is not cheap by default but can be treated as cheap if \c sqlval_is_ok_and_cheap_ret[0] has bit 0x2 set:
+this bit is convenient if \c m1 is a result of previous ssg_smallest_union_valmode() of other members of same union.
+Similarly, SSG_VALMODE_LONG \c m1 is not cheap by default but can be treated as cheap if \c sqlval_is_ok_and_cheap_ret[0] has bit 0x4 set:
+this is primarily for internal use when ssg_smallest_union_valmode() calls itself with swapped arguments. */
+extern ssg_valmode_t ssg_smallest_union_valmode (ssg_valmode_t m1, ssg_valmode_t m2, int *sqlval_is_ok_and_cheap_ret);
 extern ssg_valmode_t ssg_largest_intersect_valmode (ssg_valmode_t m1, ssg_valmode_t m2);
 extern ssg_valmode_t ssg_largest_eq_valmode (ssg_valmode_t m1, ssg_valmode_t m2);
 extern int ssg_valmode_is_subformat_of (ssg_valmode_t m1, ssg_valmode_t m2);

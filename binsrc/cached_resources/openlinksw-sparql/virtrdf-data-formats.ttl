@@ -47,7 +47,7 @@ virtrdf:QuadStorage virtrdf:isGcResistantType "2" .
 
 # Don't forget to change version, both here and in DB.DBA.SPARQL_RELOAD_QM_GRAPH, to force reload.
 <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-  virtrdf:version '2013-06-10 0001v6g' ;
+  virtrdf:version '2013-11-26 0001v6g' ;
   virtrdf:item
     rdfdf:default-iid ,				rdfdf:default-iid-nullable ,
     rdfdf:default-iid-nonblank ,		rdfdf:default-iid-nonblank-nullable ,
@@ -997,6 +997,7 @@ rdfdf:sql-varchar-uri
   virtrdf:qmfShortOfUriTmpl " __spfinv (^{tree}^, ^{custom-string-1}^, 2^{opt-comma-arg-dtps}^)[0]";	# STRING REQUIRED ... makes short by uri
 # Misc
   virtrdf:qmfIsBijection 1;							# INTEGER REQUIRED Nonzero if the format is bijection so long values are equal IFF short values of the type are equal
+  virtrdf:qmfHasCheapSqlval 1;							# BOOLEAN OPTIONAL Nonzero if conversions of short to sqlval and back are cheaper than to long and back
   virtrdf:qmfMapsOnlyNullToNull 1;						# INTEGER OPTIONAL Nonzero if the format gives NULL IFF short value is NULL
   virtrdf:qmfIsStable 1;							# INTEGER REQUIRED Nonzero if sql values are in order IFF of short values are in order
   virtrdf:qmfCmpFuncName "DB.DBA.RDF_OBJ_CMP";					# STRING REQUIRED Name of comparison function that acts like strcmp but args are of this type
@@ -1070,6 +1071,7 @@ rdfdf:sql-varchar-literal
   virtrdf:qmfShortOfUriTmpl " __spfinv (^{tree}^, ^{custom-string-1}^, 2^{opt-comma-arg-dtps}^)[0]";	# STRING REQUIRED ... makes short by uri
 # Misc
   virtrdf:qmfIsBijection 1;							# INTEGER REQUIRED Nonzero if the format is bijection so long values are equal IFF short values of the type are equal
+  virtrdf:qmfHasCheapSqlval 1;							# BOOLEAN OPTIONAL Nonzero if conversions of short to sqlval and back are cheaper than to long and back
   virtrdf:qmfMapsOnlyNullToNull 1;						# INTEGER OPTIONAL Nonzero if the format gives NULL IFF short value is NULL
   virtrdf:qmfIsStable 1;							# INTEGER REQUIRED Nonzero if sql values are in order IFF of short values are in order
   virtrdf:qmfCmpFuncName "DB.DBA.RDF_OBJ_CMP";					# STRING REQUIRED Name of comparison function that acts like strcmp but args are of this type
@@ -1188,6 +1190,7 @@ rdfdf:sql-integer
   virtrdf:qmfShortOfUriTmpl " NULL";						# STRING REQUIRED ... makes short by uri
 # Misc
   virtrdf:qmfIsBijection 1;							# INTEGER REQUIRED Nonzero if the format is bijection so long values are equal IFF short values of the type are equal
+  virtrdf:qmfHasCheapSqlval 1;							# BOOLEAN OPTIONAL Nonzero if conversions of short to sqlval and back are cheaper than to long and back
   virtrdf:qmfMapsOnlyNullToNull 1;						# INTEGER OPTIONAL Nonzero if the format gives NULL IFF short value is NULL
   virtrdf:qmfIsStable 1;							# INTEGER REQUIRED Nonzero if sql values are in order IFF of short values are in order
   virtrdf:qmfIsSubformatOfLong 1;						# INTEGER REQUIRED Nonzero if the format is subformat of LONG valmode
@@ -1415,6 +1418,7 @@ rdfdf:sql-numeric
   virtrdf:qmfShortOfUriTmpl " NULL";						# STRING REQUIRED ... makes short by uri
 # Misc
   virtrdf:qmfIsBijection 1;							# INTEGER REQUIRED Nonzero if the format is bijection so long values are equal IFF short values of the type are equal
+  virtrdf:qmfHasCheapSqlval 1;							# BOOLEAN OPTIONAL Nonzero if conversions of short to sqlval and back are cheaper than to long and back
   virtrdf:qmfMapsOnlyNullToNull 1;						# INTEGER OPTIONAL Nonzero if the format gives NULL IFF short value is NULL
   virtrdf:qmfIsStable 1;							# INTEGER REQUIRED Nonzero if sql values are in order IFF of short values are in order
   virtrdf:qmfIsSubformatOfLong 1;						# INTEGER REQUIRED Nonzero if the format is subformat of LONG valmode
@@ -1617,6 +1621,7 @@ rdfdf:sql-date
   virtrdf:qmfShortOfUriTmpl " NULL";						# STRING REQUIRED ... makes short by uri
 # Misc
   virtrdf:qmfIsBijection 1;							# INTEGER REQUIRED Nonzero if the format is bijection so long values are equal IFF short values of the type are equal
+  virtrdf:qmfHasCheapSqlval 1;							# BOOLEAN OPTIONAL Nonzero if conversions of short to sqlval and back are cheaper than to long and back
   virtrdf:qmfMapsOnlyNullToNull 1;						# INTEGER OPTIONAL Nonzero if the format gives NULL IFF short value is NULL
   virtrdf:qmfIsStable 1;							# INTEGER REQUIRED Nonzero if sql values are in order IFF of short values are in order
   virtrdf:qmfIsSubformatOfLong 1;						# INTEGER REQUIRED Nonzero if the format is subformat of LONG valmode
@@ -1734,6 +1739,7 @@ rdfdf:sql-time
   virtrdf:qmfShortOfUriTmpl " NULL";						# STRING REQUIRED ... makes short by uri
 # Misc
   virtrdf:qmfIsBijection 1;							# INTEGER REQUIRED Nonzero if the format is bijection so long values are equal IFF short values of the type are equal
+  virtrdf:qmfHasCheapSqlval 1;							# BOOLEAN OPTIONAL Nonzero if conversions of short to sqlval and back are cheaper than to long and back
   virtrdf:qmfMapsOnlyNullToNull 1;						# INTEGER OPTIONAL Nonzero if the format gives NULL IFF short value is NULL
   virtrdf:qmfIsStable 1;							# INTEGER REQUIRED Nonzero if sql values are in order IFF of short values are in order
   virtrdf:qmfIsSubformatOfLong 1;						# INTEGER REQUIRED Nonzero if the format is subformat of LONG valmode
@@ -1963,6 +1969,7 @@ rdfdf:multipart-uri
 #wrong:  virtrdf:qmfDtpOfNiceSqlval 217;						# The 'nice' DTP that is an acceptable type of qmfShortOfNiceSqlvalTmpl, zero or unset if no nice type
 # Misc
   virtrdf:qmfIsBijection 0;							# INTEGER REQUIRED Nonzero if the format is bijection so long values are equal IFF short values of the type are equal
+  virtrdf:qmfHasCheapSqlval 1;							# BOOLEAN OPTIONAL Nonzero if conversions of short to sqlval and back are cheaper than to long and back
   virtrdf:qmfMapsOnlyNullToNull 1;						# INTEGER OPTIONAL Nonzero if the format gives NULL IFF short value is NULL
   virtrdf:qmfIsStable 0;							# INTEGER REQUIRED Nonzero if sql values are in order IFF of short values are in order
   virtrdf:qmfCmpFuncName "DB.DBA.RDF_VECTOR_CMP";				# STRING REQUIRED Name of comparison function that acts like strcmp but args are of this type
@@ -2037,6 +2044,7 @@ rdfdf:multipart-literal
 #wrong:  virtrdf:qmfDtpOfNiceSqlval 217;						# The 'nice' DTP that is an acceptable type of qmfShortOfNiceSqlvalTmpl, zero or unset if no nice type
 # Misc
   virtrdf:qmfIsBijection 0;							# INTEGER REQUIRED Nonzero if the format is bijection so long values are equal IFF short values of the type are equal
+  virtrdf:qmfHasCheapSqlval 1;							# BOOLEAN OPTIONAL Nonzero if conversions of short to sqlval and back are cheaper than to long and back
   virtrdf:qmfMapsOnlyNullToNull 1;						# INTEGER OPTIONAL Nonzero if the format gives NULL IFF short value is NULL
   virtrdf:qmfIsStable 0;							# INTEGER REQUIRED Nonzero if sql values are in order IFF of short values are in order
   virtrdf:qmfCmpFuncName "DB.DBA.RDF_VECTOR_CMP";				# STRING REQUIRED Name of comparison function that acts like strcmp but args are of this type
@@ -2207,6 +2215,7 @@ rdfdf:zeropart-uri
   virtrdf:qmfShortOfUriTmpl "1 /*zeropart*/";					# STRING REQUIRED ... makes short by uri
 # Misc
   virtrdf:qmfIsBijection 0;							# INTEGER REQUIRED Nonzero if the format is bijection so long values are equal IFF short values of the type are equal
+  virtrdf:qmfHasCheapSqlval 1;							# BOOLEAN OPTIONAL Nonzero if conversions of short to sqlval and back are cheaper than to long and back
   virtrdf:qmfIsStable 0;							# INTEGER REQUIRED Nonzero if sql values are in order IFF of short values are in order
   virtrdf:qmfCmpFuncName "DB.DBA.RDF_VECTOR_CMP";				# STRING REQUIRED Name of comparison function that acts like strcmp but args are of this type
   virtrdf:qmfTypeminTmpl " NULL";						# STRING REQUIRED Template of expn that returns the smallest value of the type of value of arg
@@ -2278,6 +2287,7 @@ rdfdf:zeropart-literal
   virtrdf:qmfShortOfUriTmpl "1 /*zeropart*/";					# STRING REQUIRED ... makes short by uri
 # Misc
   virtrdf:qmfIsBijection 0;							# INTEGER REQUIRED Nonzero if the format is bijection so long values are equal IFF short values of the type are equal
+  virtrdf:qmfHasCheapSqlval 1;							# BOOLEAN OPTIONAL Nonzero if conversions of short to sqlval and back are cheaper than to long and back
   virtrdf:qmfIsStable 0;							# INTEGER REQUIRED Nonzero if sql values are in order IFF of short values are in order
   virtrdf:qmfCmpFuncName "DB.DBA.RDF_VECTOR_CMP";				# STRING REQUIRED Name of comparison function that acts like strcmp but args are of this type
   virtrdf:qmfTypeminTmpl " NULL";						# STRING REQUIRED Template of expn that returns the smallest value of the type of value of arg

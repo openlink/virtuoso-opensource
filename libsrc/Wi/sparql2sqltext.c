@@ -1623,6 +1623,7 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
       ssg_valmode_t smallest_union = SSG_VALMODE_AUTO;
       int var_miss_in_some_members = 0;
       int all_cases_make_only_refs = 1;
+      int sqlval_is_ok_and_cheap = 0x2;
       DO_BOX_FAST (SPART *, gp_member, gp_member_idx, gp->_.gp.members)
         {
           sparp_equiv_t *member_eq;
@@ -1652,7 +1653,7 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
             }
           if (NULL == member_valmode)
             continue;
-          smallest_union = ssg_smallest_union_valmode (smallest_union, member_valmode);
+          smallest_union = ssg_smallest_union_valmode (smallest_union, member_valmode, &sqlval_is_ok_and_cheap);
         }
       END_DO_BOX_FAST;
 #ifdef DEBUG
@@ -1667,7 +1668,7 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
           else if (SPART_VARR_NOT_NULL & smallest_union->qmfValRange.rvrRestrictions)
             smallest_union = ssg_find_nullable_superformat (smallest_union); /* ... format that does not support NULLs is not appropriate, too */
         }
-      if (all_cases_make_only_refs && (SSG_VALMODE_LONG == smallest_union))
+      if ((sqlval_is_ok_and_cheap || all_cases_make_only_refs) && (SSG_VALMODE_LONG == smallest_union))
         smallest_union = SSG_VALMODE_SQLVAL;
       return smallest_union;
     }
@@ -1753,20 +1754,27 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
         case IN_L: case LIKE_L: return SSG_VALMODE_BOOL;
         case SPAR_BIF_COALESCE:
           {
-            ssg_valmode_t union_valmode = sparp_expn_native_valmode (sparp, tree->_.builtin.args[0]);
+            ssg_valmode_t union_valmode = SSG_VALMODE_AUTO;;
+            int sqlval_is_ok_and_cheap = 0x2;
             int argctr;
-            for (argctr = BOX_ELEMENTS (tree->_.builtin.args); --argctr /* not argctr-- */; /* no step */)
+            for (argctr = BOX_ELEMENTS (tree->_.builtin.args); argctr--; /* no step */)
               {
                 ssg_valmode_t arg_valmode = sparp_expn_native_valmode (sparp, tree->_.builtin.args[argctr]);
-                union_valmode = ssg_smallest_union_valmode (union_valmode, arg_valmode);
+                union_valmode = ssg_smallest_union_valmode (union_valmode, arg_valmode, &sqlval_is_ok_and_cheap);
               }
+            if (sqlval_is_ok_and_cheap && (SSG_VALMODE_LONG == union_valmode))
+              union_valmode = SSG_VALMODE_SQLVAL;
             return union_valmode;
           }
         case SPAR_BIF_IF:
           {
             ssg_valmode_t t_branch_valmode = sparp_expn_native_valmode (sparp, tree->_.builtin.args[1]);
             ssg_valmode_t f_branch_valmode = sparp_expn_native_valmode (sparp, tree->_.builtin.args[2]);
-            return ssg_smallest_union_valmode (t_branch_valmode, f_branch_valmode);
+            int sqlval_is_ok_and_cheap = 1;
+            ssg_valmode_t union_valmode = ssg_smallest_union_valmode (t_branch_valmode, f_branch_valmode, &sqlval_is_ok_and_cheap);
+            if (sqlval_is_ok_and_cheap && (SSG_VALMODE_LONG == union_valmode))
+              union_valmode = SSG_VALMODE_SQLVAL;
+            return union_valmode;
           }
         default:
           {
@@ -1946,12 +1954,14 @@ sparp_set_valmodes_of_t_inouts (sparp_t *sparp, sparp_t *sub_sparp, SPART *wrapp
       caddr_t in_vname, out_vname;
       SPART *in_alias, *out_alias;
       ssg_valmode_t in_vmode, out_vmode, mixed_vmode;
+      int sqlval_is_ok_and_cheap;
       in_vname = t_in_vars [v_ctr]->_.var.vname;
       out_vname = t_out_vars [v_ctr]->_.var.vname;
       in_alias = sparp_find_subexpn_in_retlist (sparp, in_vname, retvals, 1);
       out_alias = sparp_find_subexpn_in_retlist (sparp, out_vname, retvals, 1);
       in_vmode = sparp_expn_native_valmode (sub_sparp, in_alias);
       out_vmode = sparp_expn_native_valmode (sub_sparp, out_alias);
+      sqlval_is_ok_and_cheap = 0x1;
       if (!IS_BOX_POINTER (in_vmode))
         spar_error (sparp, "Variable ?%.100s in T_IN list is not a value from some triple", in_vname);
       if (!in_vmode->qmfIsBijection)
@@ -1964,8 +1974,8 @@ sparp_set_valmodes_of_t_inouts (sparp_t *sparp, sparp_t *sub_sparp, SPART *wrapp
         spar_error (sparp, "Variable ?%.100s in T_IN list is not made by bijection", out_vname);
       if (1 != out_vmode->qmfColumnCount)
         spar_error (sparp, "Variable ?%.100s in T_IN list is made from %d database columns, should be made from exactly one", out_vname);
-      mixed_vmode = ssg_smallest_union_valmode (in_vmode, out_vmode);
-      if (!IS_BOX_POINTER (mixed_vmode))
+      mixed_vmode = ssg_smallest_union_valmode (in_vmode, out_vmode, &sqlval_is_ok_and_cheap);
+      if (!IS_BOX_POINTER (mixed_vmode)) /*!!! TBD better decision making, at least for SSG_VALMODE_LONG with and without sqlval_is_ok_and_cheap set and for SSG_VALMODE_SQLVAL */
         spar_error (sparp, "Variable ?%.100s in T_IN list and corresponding variable ?%.100s in T_OUT get values from columns that are too different", in_vmode, out_vname);
       in_alias->_.alias.native = out_alias->_.alias.native = mixed_vmode;
     }
@@ -2754,14 +2764,25 @@ ssg_print_tr_var_expn (spar_sqlgen_t *ssg, SPART *var, ssg_valmode_t needed, con
 }
 
 ssg_valmode_t
-ssg_smallest_union_valmode (ssg_valmode_t m1, ssg_valmode_t m2)
+ssg_smallest_union_valmode (ssg_valmode_t m1, ssg_valmode_t m2, int *cheap_ret)
 {
   ssg_valmode_t best;
   int ctr1, ctr2, largest_weight;
+  if (((SSG_VALMODE_LONG == m1) && !(cheap_ret[0] & 0x2))
+    || ((SSG_VALMODE_LONG == m2) && !(cheap_ret[0] & 0x4))
+    || (SSG_VALMODE_SHORT_OR_LONG == m1)
+    || (SSG_VALMODE_SHORT_OR_LONG == m2) )
+    cheap_ret[0] = 0;
   if (m2 == m1)
     return m1;
   if (m2 < m1)
-    return ssg_smallest_union_valmode (m2, m1);
+    {
+      int sub_cheap = (cheap_ret[0] & 0x4 >> 1) | (cheap_ret[0] & 0x2 << 1);
+      ssg_valmode_t res = ssg_smallest_union_valmode (m2, m1, &sub_cheap);
+      if (!sub_cheap)
+        cheap_ret[0] = 0;
+      return res;
+    }
   /* Now m1 is less than m2 */
   if (!IS_BOX_POINTER (m2))
     {
@@ -2773,8 +2794,11 @@ ssg_smallest_union_valmode (ssg_valmode_t m1, ssg_valmode_t m2)
         return m2;
       if ((SSG_VALMODE_NUM == m1) && (SSG_VALMODE_SQLVAL == m2))
         return m2;
+      cheap_ret[0] = 0;
       return SSG_VALMODE_LONG;
     }
+  if (! m2->qmfHasCheapSqlval)
+    cheap_ret[0] = 0;
   if (!IS_BOX_POINTER (m1))
     {
       if (SSG_VALMODE_SQLVAL == m1)
@@ -2784,11 +2808,12 @@ ssg_smallest_union_valmode (ssg_valmode_t m1, ssg_valmode_t m2)
           else
             return SSG_VALMODE_LONG;
         }
-      else if (SSG_VALMODE_AUTO == m1)
+      if (SSG_VALMODE_AUTO == m1)
         return m2;
-      else
-        return SSG_VALMODE_LONG;
+      return SSG_VALMODE_LONG;
     }
+  if (! m1->qmfHasCheapSqlval)
+    cheap_ret[0] = 0;
   DO_BOX_FAST (qm_format_t *, sup1, ctr1, m1->qmfSuperFormats)
     {
       if (sup1 == m2)
@@ -3506,10 +3531,11 @@ ssg_safe_op_valmode_for_bif_IN (sparp_t *sparp, SPART **args, ssg_valmode_t arg1
 {
   int argctr;
   ssg_valmode_t op_fmt;
+  int sqlval_is_ok_and_cheap = 0x1;
   if (SSG_VALMODE_LONG == arg1_native)
     return arg1_native;
   if (IS_BOX_POINTER (arg1_native) && !(arg1_native->qmfIsBijection))
-    return arg1_native;
+    return arg1_native; /* Let the expression work in native or results in compilation error but not produce wrong "true" after collision of listed and not listed native value into common converted value */
   op_fmt = sparp_expn_native_valmode (sparp, args[1]);
   for (argctr = BOX_ELEMENTS (args); argctr-- > 2; /* no step */)
     {
@@ -3517,11 +3543,16 @@ ssg_safe_op_valmode_for_bif_IN (sparp_t *sparp, SPART **args, ssg_valmode_t arg1
       ssg_valmode_t argN_native = sparp_expn_native_valmode (sparp, argN);
       if (argN_native != op_fmt)
         {
-          op_fmt = ssg_smallest_union_valmode (op_fmt, argN_native);
-          if (SSG_VALMODE_LONG == op_fmt)
+          op_fmt = ssg_smallest_union_valmode (op_fmt, argN_native, &sqlval_is_ok_and_cheap);
+          if ((SSG_VALMODE_LONG == op_fmt) && !sqlval_is_ok_and_cheap)
             break;
+          if (sqlval_is_ok_and_cheap)
+            sqlval_is_ok_and_cheap = 0x2;
         }
     }
+  if (sqlval_is_ok_and_cheap && (SSG_VALMODE_LONG == op_fmt)
+    && ((SSG_VALMODE_SQLVAL == arg1_native) || (SSG_VALMODE_NUM == arg1_native) || (IS_BOX_POINTER (arg1_native) && arg1_native->qmfHasCheapSqlval)) )
+    op_fmt = SSG_VALMODE_SQLVAL;
   op_fmt = ssg_largest_eq_valmode (op_fmt, arg1_native);
   if (SSG_VALMODE_LONG == op_fmt)
     {
