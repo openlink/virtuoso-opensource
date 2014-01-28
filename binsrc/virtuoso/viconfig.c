@@ -1665,8 +1665,10 @@ cfg_setup (void)
 
   if (c_max_dirty_buffers > (c_number_of_buffers * 9) / 10)
     c_max_dirty_buffers = (c_number_of_buffers * 9) / 10;
+  if (c_max_dirty_buffers < (c_number_of_buffers * 2) / 10)
+    c_max_dirty_buffers = (c_number_of_buffers * 2) / 10;
   if (c_max_dirty_buffers == 0)
-    c_max_dirty_buffers = (c_number_of_buffers * 2) / 3;
+    c_max_dirty_buffers = (c_number_of_buffers * 9) / 10;
 
   c_oldest_flushable = c_number_of_buffers / 2;
   if (c_number_of_buffers - c_oldest_flushable > c_max_dirty_buffers)
