@@ -3299,6 +3299,8 @@ fnr_max_set_no (fun_ref_node_t * fref, caddr_t * inst, state_slot_t ** ssl_ret)
   set_nos = QST_BOX (data_col_t*, inst, set_no_ssl->ssl_index);
   if (ssl_ret)
     *ssl_ret = set_no_ssl;
+  if (!set_nos->dc_n_values)
+    GPF_T1 ("musta forgotten branch copy of set no ssl for fref");
   return ((int64*)set_nos->dc_values)[set_nos->dc_n_values - 1];
 }
 
