@@ -5301,7 +5301,7 @@ ddl_store_proc (caddr_t * state, op_node_t * op)
 	  bootstrap_cli, NULL, SQLC_DEFAULT);
       proc_rm_duplicate_query = sql_compile_static ("delete from DB.DBA.SYS_PROCEDURES where P_NAME = ?",
 	      bootstrap_cli, NULL, SQLC_DEFAULT);
-      cl_proc_rm_duplicate_query = sql_compile_static ("cl_exec (\'delete from DB.DBA.SYS_PROCEDURES table option (no cluster) where P_NAME = ? option (no cluster)\', params => vector (?))",
+      cl_proc_rm_duplicate_query = sql_compile_static ("cl_exec (\'delete from DB.DBA.SYS_PROCEDURES table option (no cluster) where P_NAME = ? option (no cluster)\', params => vector (?), txn=> case when bit_and (log_enable (null, 1), 2) = 2 then 0 else 1 end)",
 	      bootstrap_cli, NULL, SQLC_DEFAULT);
       proc_revoke_query = sql_compile_static ("delete from DB.DBA.SYS_GRANTS where G_OBJECT = ? and G_OP = 32",
 	      bootstrap_cli, NULL, SQLC_DEFAULT);
