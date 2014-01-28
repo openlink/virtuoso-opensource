@@ -14440,7 +14440,7 @@ create function DB.DBA.RDF_LOAD_RDFXML_MT (in strg varchar, in base varchar, in 
 {
   declare ro_id_dict, app_env any;
   if (graph = '')
-    signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.RDFL_LOAD_RDFXML_MT()');
+    signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.RDF_LOAD_RDFXML_MT()');
   else if (graph is null)
     {
       graph := base;
