@@ -1403,8 +1403,9 @@ bp_get_buffer_1 (buffer_pool_t * bp, buffer_pool_t ** action_bp_ret, int mode)
 	    return buf;
 	}
       tc_bp_get_buffer_loop++;
-      age_limit--;
+          age_limit = (age_limit * 2) / 3;
     }
+
   for (buf = &bp->bp_bufs[0]; buf < &bp->bp_bufs[bp->bp_next_replace]; buf++)
     {
       if (!buf->bd_is_dirty
@@ -1414,7 +1415,7 @@ bp_get_buffer_1 (buffer_pool_t * bp, buffer_pool_t ** action_bp_ret, int mode)
 	    return buf;
 	}
       tc_bp_get_buffer_loop++;
-          age_limit = (age_limit * 2) / 3;
+          age_limit--;
     }
 
   /* absolutely all were dirty */
