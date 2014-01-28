@@ -138,6 +138,8 @@ clib_local_autocommit (cll_in_box_t * clib, query_instance_t * qi, cl_op_t * clo
       if (LT_PENDING == cli->cli_trx->lt_status && (cli->cli_trx->lt_cl_branches || cli->cli_trx->lt_cl_enlisted
 	      || cli->cli_trx->lt_cl_main_enlisted))
 	return LTE_OK;		/* if for other reasons this has enlisted contenty do not commit the enclosing txn.  makes half transactions and really fucks over remote branches */
+      if (cli->cli_trx->lt_remotes)
+	return LTE_OK; /* if local daq call, whether recursive or not there is an enclosing context hat will transact the remotes, transacting remote in mid qr w open cursor will kill the cursor */
       IN_TXN;
       detail = cli->cli_trx->lt_error_detail;
       cli->cli_trx->lt_error_detail = NULL;
