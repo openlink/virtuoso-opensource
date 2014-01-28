@@ -1794,6 +1794,41 @@ bif_signal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+caddr_t
+bif_vec_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  data_col_t * dc;
+  if (!BOX_ELEMENTS (args))
+    return NULL;
+  if (!SSL_IS_VEC_OR_REF (args[0]))
+    return (caddr_t)1;
+  dc = QST_BOX (data_col_t *, qst, args[0]->ssl_index);
+  return box_num (dc->dc_n_values);
+}
+
+
+caddr_t
+bif_vec_ref (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t ret;
+  QNCAST (QI, qi, qst);
+  int inx = bif_long_arg (qst, args, 1, "vec_ref"), sv;
+  data_col_t * dc;
+  if (!SSL_IS_VEC_OR_REF (args[0]))
+    return box_copy_tree (qst_get (qst, args[0]));
+  if (SSL_REF == args[0]->ssl_type)
+    sqlr_new_error ("42000",  "VVCREF", "vec_ref not allowed on a reference, must be straight vector or scalar");
+  if (inx < 0 || inx >= dc->dc_n_values)
+    return dk_alloc_box (0, DV_DB_NULL);
+  sv = qi->qi_set;
+  qi->qi_set = inx;
+  ret = qst_get (qst, args[0]);
+  qi->qi_set = sv;
+  return box_copy_tree (ret);
+}
+
+
+
 
 /* Now returns 0 for NULL, and also the lengths of the BLOBS.
    Modified by AK 30-JAN-1997.  */
@@ -15870,6 +15905,9 @@ sql_bif_init (void)
   bif_define_typed ("char_length", bif_length, &bt_integer);
   bif_define_typed ("character_length", bif_length, &bt_integer);
   bif_define_typed ("octet_length", bif_length, &bt_integer);
+
+  bif_define_typed ("vec_length", bif_vec_length, &bt_integer);
+  bif_define_typed ("vec_ref", bif_vec_ref, &bt_any_box);
 
   bif_define_typed ("aref", bif_aref, &bt_any_box);
   bif_define_typed ("aref_or_default", bif_aref_or_default, &bt_any_box);
