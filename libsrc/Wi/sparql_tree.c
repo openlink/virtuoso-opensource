@@ -4154,7 +4154,7 @@ sparp_find_language_dialect_by_service (sparp_t *sparp, SPART *service_expn)
     return 0;
   lang_strs = jso_triple_get_objs ((caddr_t *)(sparp->sparp_sparqre->sparqre_qi), service_iri, uname_virtrdf_ns_uri_dialect);
   if (1 != BOX_ELEMENTS_0 (lang_strs))
-    return 0;
+    return SSG_SD_NEED_LOAD_SERVICE_DATA;
   if (1 != sscanf (lang_strs[0], "%08x", &res))
     return 0;
   if (0 > res)

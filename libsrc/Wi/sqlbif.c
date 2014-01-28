@@ -7496,7 +7496,7 @@ bif_connection_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t * qi = (query_instance_t *)qst;
   client_connection_t * cli = qi->qi_client;
-  caddr_t name = bif_string_arg (qst, args, 0, "connection_set");
+  caddr_t name = bif_string_or_uname_arg (qst, args, 0, "connection_set");
   caddr_t val = bif_arg (qst, args, 1, "connection_set");
   if (!box_outlives_qi (val))
   sqlr_new_error ("22023", "SR049",
@@ -7512,7 +7512,7 @@ bif_connection_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   query_instance_t * qi = (query_instance_t *)qst;
   client_connection_t * cli = qi->qi_client;
   int n_args = BOX_ELEMENTS (args);
-  caddr_t name = bif_string_arg (qst, args, 0, "connection_get");
+  caddr_t name = bif_string_or_uname_arg (qst, args, 0, "connection_get");
   caddr_t * place = (caddr_t *) id_hash_get (cli->cli_globals, (caddr_t) &name);
   if (!place)
     {

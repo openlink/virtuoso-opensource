@@ -482,8 +482,16 @@ spar_error_if_unsupported_syntax_imp (sparp_t *sparp, int feature_in_use, const 
   if (NULL != sparp->sparp_env->spare_context_sinvs)
     {
       SPART *sinv = (SPART *)(sparp->sparp_env->spare_context_sinvs->data);
-      spar_error (sparp, "The support of %.200s syntax is not enabled for the %.300s (bit 0x%x is not set)",
-        feature_name, spar_sinv_naming (sparp, sinv), feature_in_use );
+      const char *msg_tail = "";
+      if ((SSG_SD_NEED_LOAD_SERVICE_DATA & sparp->sparp_permitted_syntax) && (SPAR_QNAME == SPART_TYPE (sinv->_.sinv.endpoint)))
+        {
+          client_connection_t *cli = sparp->sparp_sparqre->sparqre_cli;
+          if (NULL != cli)
+            connection_set (cli, box_dv_uname_string ("SPARQL_endpoint_to_load_service_metadata"), box_dv_short_string (sinv->_.sinv.endpoint->_.qname.val));
+          msg_tail = "; execute SPARQL LOAD SERVICE ... DATA and re-try";
+        }
+      spar_error (sparp, "The support of %.200s syntax is not enabled for the %.300s (bit 0x%x is not set)%.300s",
+        feature_name, spar_sinv_naming (sparp, sinv), feature_in_use, msg_tail );
     }
   spar_error (sparp, "The support of %.200s syntax is disabled for debugging or security purpose by disabling bit 0x%x of define lang:dialect",
     feature_name, feature_in_use );

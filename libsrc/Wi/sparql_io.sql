@@ -2842,6 +2842,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   declare ses, content any;
   declare def_max, add_http_headers, hard_timeout, timeout, client_supports_partial_res, sp_ini, soap_ver int;
   declare http_meth, content_type, ini_dflt_graph, get_user, jsonp_callback varchar;
+  declare reported_unknown_services any;
   declare state, msg varchar;
   declare metas, rset any;
   declare accept, soap_action, user_id varchar;
@@ -3440,6 +3441,7 @@ host_found:
     {
       declare dt int;
       rollback work;
+      -- dbg_obj_princ ('deadlock and http is not flushed, deadlock counter ', deadl);
       deadl := deadl + 1;
       dt := ((rnd (5) + 1) / 10.0) * (2 * deadl);
       delay (dt);
@@ -3452,6 +3454,31 @@ host_found:
       exec ('isnull (sparql_to_sql_text (''{ define sql:big-data-const 0 '' || ? || ''\\n}''))', state2, msg2, vector (full_query));
       if (state2 <> '00000')
         {
+          declare unknown_service varchar;
+          unknown_service := connection_get ('SPARQL_endpoint_to_load_service_metadata');
+          if (__tag (unknown_service) in (__tag of varchar, 217))
+            {
+              if (isinteger (reported_unknown_services))
+                reported_unknown_services := dict_new ();
+              if (not dict_get (reported_unknown_services, unknown_service, 0))
+                {
+                  declare state3, msg3 varchar;
+                  state3 := '00000';
+                  exec ('sparql load service ?? data', state3, msg3, vector (unknown_service));
+                  -- dbg_obj_princ ('exec state3=', state3, ', msg3=', msg3);
+                  if (state3 <> '00000')
+                    {
+                      DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+                        '500', 'SPARQL Request Failed',
+                        full_query, state3, msg3, format);
+                      return;
+                    }
+                  dict_put (reported_unknown_services, unknown_service, 1);
+                  connection_get ('SPARQL_endpoint_to_load_service_metadata', null);
+                  commit work;
+                  goto again;
+                }
+            }
           DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
             '400', 'Bad Request',
             full_query, state2, msg2, format);
@@ -3464,6 +3491,7 @@ host_found:
     }
 
 write_results:
+  -- dbg_obj_princ ('writing results');
   if (save_mode is not null)
     {
       declare status any;
