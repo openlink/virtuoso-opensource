@@ -6017,6 +6017,7 @@ rdf_box_init ()
   bif_set_uses_index (bif_sparql_rset_json_write_row);
   bif_define ("sparql_rset_xml_write_row", bif_sparql_rset_xml_write_row);
   bif_set_uses_index (bif_sparql_rset_xml_write_row);
+  bif_set_no_cluster ("sparql_rset_xml_write_row");
   bif_define ("sparql_iri_split_rdfa_qname", bif_sparql_iri_split_rdfa_qname);
   /* Short aliases for use in generated SQL text: */
   bif_define_typed ("__ro2lo", bif_rdf_long_of_obj, &bt_any_box);
