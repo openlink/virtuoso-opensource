@@ -5491,7 +5491,8 @@ dfe_union_dfe (df_elt_t * dt_dfe)
   /* true if dfe  is a dt with a single union inside */
   df_elt_t * dfe, *uni_cand = NULL;
   char not_alone = 0;
-  if (!dt_dfe || DFE_DT != dt_dfe->dfe_type)
+  if (!dt_dfe || DFE_DT != dt_dfe->dfe_type
+      || dt_dfe->_.sub.trans)
     return NULL;
   for (dfe = dt_dfe->_.sub.first->dfe_next; dfe; dfe = dfe->dfe_next)
     {
