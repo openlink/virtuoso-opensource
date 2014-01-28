@@ -48,6 +48,8 @@
 #define RD_Y2 0
 #define RD_ID 4
 
+#define IS_OV(f) (NAN == (f) || -NAN == (f) || INFINITY == (f) || -INFINITY == (f))
+
 
 double
 unbox_coord (caddr_t x)
@@ -403,6 +405,8 @@ itc_geo_write (it_cursor_t * itc, buffer_desc_t * buf, int irow, bbox_t * b)
   if (DV_SINGLE_FLOAT == dtp)
     {
       float f;
+      if (IS_OV (b->x) || IS_OV (b->y) || IS_OV (b->x2) || IS_OV (b->y2))
+	GPF_T1 ("writing nan into geo inx");
       ROW_FIXED_COL (buf, row, rv, key->key_key_fixed[RD_X], xx);
       f = b->x;
       FLOAT_TO_EXT (xx, &f);
@@ -461,6 +465,8 @@ itc_geo_leaf (it_cursor_t * itc, bbox_t * box, dp_addr_t dp, int pos)
   if (DV_SINGLE_FLOAT == dtp)
     {
       rd->rd_non_comp_len += 16;
+      if (IS_OV (box->x) || IS_OV (box->y) || IS_OV (box->x2) || IS_OV (box->y2)) 
+	GPF_T1 ("geo inx with nan or inf coord");
       rd->rd_values[RD_X] = box_float (box->x);
       rd->rd_values[RD_Y] = box_float (box->y);
       rd->rd_values[RD_X2] = box_float (box->x2);
@@ -1042,6 +1048,12 @@ geo_estimate (dbe_table_t * tb, geo_t * g, int op, double prec, slice_id_t slice
 }
 
 
+int
+float_is_ov (float f)
+{
+  return IS_OV (f);
+}
+
 void
 geo_insert (query_instance_t * qi, dbe_table_t * tb, caddr_t g, boxint id, int is_del, int is_geo_box)
 {
@@ -1067,6 +1079,8 @@ geo_insert (query_instance_t * qi, dbe_table_t * tb, caddr_t g, boxint id, int i
     memcpy (&box, g, sizeof (geo_t));
   if (DV_SINGLE_FLOAT == dtp)
     {
+      if (IS_OV ((float)box.XYbox.Xmin) || IS_OV ((float)box.XYbox.Xmax) || IS_OV ((float)box.XYbox.Ymin) || IS_OV ((float)box.XYbox.Ymax))
+	sqlr_new_error ("42000", "GEOOV", "insertingf geometry with bounding box with NAN or INF coordinates");
       rd.rd_non_comp_len += 16;
       rd.rd_values[RD_X] = box_float (box.XYbox.Xmin);
       rd.rd_values[RD_Y] = box_float (box.XYbox.Ymin);
