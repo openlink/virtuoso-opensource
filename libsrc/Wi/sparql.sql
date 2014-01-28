@@ -8822,53 +8822,59 @@ create procedure DB.DBA.SPARQL_DESC_DICT (in subj_dict any, in consts any, in go
           http ('{\n', ses);
           http ('  declare subj_iri varchar;\n', ses);
           http ('  subj_iri := id_to_iri_nosignal (subj);\n', ses);
-          http ('  for (sparql define output:valmode "LONG" define input:storage <' || storage_name || '> ', ses);
-          foreach (any g in sorted_bad_graphs) do
+          if (maps_s_len > 0)
             {
-              http ('  define input:named-graph-exclude <' || id_to_iri_nosignal (g) || '>\n', ses);
+              http ('  for (sparql define output:valmode "LONG" define input:storage <' || storage_name || '> ', ses);
+              foreach (any g in sorted_bad_graphs) do
+                {
+                  http ('  define input:named-graph-exclude <' || id_to_iri_nosignal (g) || '>\n', ses);
+                }
+              if (inf_ruleset is not null)
+                  http ('  define input:inference <' || inf_ruleset || '>\n', ses);
+              if (sameas is not null)
+                  http ('  define input:same-as <' || sameas || '>\n', ses);
+              http ('select ?g1 ?p1 ?o1\n', ses);
+              http ('      where { graph ?g1 {\n', ses);
+              for (map_ctr := 0; map_ctr < maps_s_len; map_ctr := map_ctr + 1)
+                {
+                  if (map_ctr > 0) http ('              union\n', ses);
+                  http ('              { quad map <' || maps_s[map_ctr][0] || '> { ?:subj_iri ?p1 ?o1 } }\n', ses);
+                }
+              http ('            } } ) do {\n', ses);
+              if (graphs_listed)
+                http ('      if (position (__i2idn ("g1"), sorted_good_graphs))\n', ses);
+              http ('      dict_bitor_or_put (res, vector (subj, "p1", "o1"), 1);\n    }\n', ses);
             }
-          if (inf_ruleset is not null)
-              http ('  define input:inference <' || inf_ruleset || '>\n', ses);
-          if (sameas is not null)
-              http ('  define input:same-as <' || sameas || '>\n', ses);
-          http ('select ?g1 ?p1 ?o1\n', ses);
-          http ('      where { graph ?g1 {\n', ses);
-          for (map_ctr := 0; map_ctr < maps_s_len; map_ctr := map_ctr + 1)
+          if (maps_o_len > 0)
             {
-              if (map_ctr > 0) http ('              union\n', ses);
-              http ('              { quad map <' || maps_s[map_ctr][0] || '> { ?:subj_iri ?p1 ?o1 } }\n', ses);
+              http ('  for (sparql define output:valmode "LONG" define input:storage <' || storage_name || '> ', ses);
+              foreach (any g in sorted_bad_graphs) do
+                {
+                  http ('  define input:named-graph-exclude <' || id_to_iri_nosignal (g) || '>\n', ses);
+                }
+              if (inf_ruleset is not null)
+                  http ('  define input:inference <' || inf_ruleset || '>\n', ses);
+              if (sameas is not null)
+                  http ('  define input:same-as <' || sameas || '>\n', ses);
+              http ('select ?g1 ?s1 ?p1\n', ses);
+              http ('      where { graph ?g1 {\n', ses);
+              for (map_ctr := 0; map_ctr < maps_o_len; map_ctr := map_ctr + 1)
+                {
+                  if (map_ctr > 0) http ('              union\n', ses);
+                  http ('              { quad map <' || maps_o[map_ctr][0] || '> { ?s1 ?p1 ?o1 . FILTER (?p1 != rdf:type) . FILTER(isREF (?o1)) . FILTER (?o1 = iri(?:subj_iri)) } }\n', ses);
+                }
+              http ('            } } ) do {\n', ses);
+              if (graphs_listed)
+                http ('      if (position (__i2idn ("g1"), sorted_good_graphs))\n', ses);
+              http ('      dict_bitor_or_put (res, vector ("s1", "p1", subj), 4);\n    }\n', ses);
             }
-          http ('            } } ) do {\n', ses);
-          if (graphs_listed)
-            http ('      if (position (__i2idn ("g1"), sorted_good_graphs))\n', ses);
-          http ('      dict_bitor_or_put (res, vector (subj, "p1", "o1"), 1); }\n', ses);
-          http ('  for (sparql define output:valmode "LONG" define input:storage <' || storage_name || '> ', ses);
-          foreach (any g in sorted_bad_graphs) do
-            {
-              http ('  define input:named-graph-exclude <' || id_to_iri_nosignal (g) || '>\n', ses);
-            }
-          if (inf_ruleset is not null)
-              http ('  define input:inference <' || inf_ruleset || '>\n', ses);
-          if (sameas is not null)
-              http ('  define input:same-as <' || sameas || '>\n', ses);
-          http ('select ?g1 ?s1 ?p1\n', ses);
-          http ('      where { graph ?g1 {\n', ses);
-          for (map_ctr := 0; map_ctr < maps_o_len; map_ctr := map_ctr + 1)
-            {
-              if (map_ctr > 0) http ('              union\n', ses);
-              http ('              { quad map <' || maps_o[map_ctr][0] || '> { ?s1 ?p1 ?o1 . FILTER (?p1 != rdf:type) . FILTER(isREF (?o1)) . FILTER (?o1 = iri(?:subj_iri)) } }\n', ses);
-            }
-          http ('            } } ) do {\n', ses);
-          if (graphs_listed)
-            http ('      if (position (__i2idn ("g1"), sorted_good_graphs))\n', ses);
-          http ('      dict_bitor_or_put (res, vector ("s1", "p1", subj), 4); }\n', ses);
-          http ('  }\n', ses);
+          http ('}\n', ses);
           txt := string_output_string (ses);
           -- dbg_obj_princ ('Procedure text: ', txt); string_to_file (fname || '.sql', txt || '\n;', -2);
-	  saved_user := user;
-	  set_user_id ('dba', 1);
+          saved_user := user;
+          set_user_id ('dba', 1);
           exec (txt);
-	  set_user_id (saved_user);
+          set_user_id (saved_user);
         }
       if (graphs_listed)
         {
@@ -8907,13 +8913,13 @@ describe_physical_subjects:
                   -- dbg_obj_princ ('found5 ', subj, p1, ' in ', graph);
                   dict_bitor_or_put (res, vector (subj, p1, __rdf_long_of_obj (obj1)), 1);
                 }
-	      for (select S as s1, P as p1 from DB.DBA.RDF_QUAD
-		  where G = graph and O = subj and P <> rdf_type_iid
-		  option (QUIETCAST)) do
-		{
-		  -- dbg_obj_princ ('found2 ', s1, p1, subj, ' in ', graph);
-		  dict_bitor_or_put (res, vector (s1, p1, subj), 4);
-		}
+              for (select S as s1, P as p1 from DB.DBA.RDF_QUAD
+                  where G = graph and O = subj and P <> rdf_type_iid
+                  option (QUIETCAST)) do
+                {
+                  -- dbg_obj_princ ('found2 ', s1, p1, subj, ' in ', graph);
+                  dict_bitor_or_put (res, vector (s1, p1, subj), 4);
+                }
             }
         }
       return res;
@@ -9116,32 +9122,36 @@ create procedure DB.DBA.SPARQL_DESC_DICT_SPO (in subj_dict any, in consts any, i
           http ('{\n', ses);
           http ('  declare subj_iri varchar;\n', ses);
           http ('  subj_iri := id_to_iri_nosignal (subj);\n', ses);
-          http ('  for (sparql define output:valmode "LONG" define input:storage <' || storage_name || '> ', ses);
-          foreach (any g in sorted_bad_graphs) do
+          if (maps_len > 0)
             {
-              http ('  define input:named-graph-exclude <' || id_to_iri_nosignal (g) || '>\n', ses);
+              http ('  for (sparql define output:valmode "LONG" define input:storage <' || storage_name || '> ', ses);
+              foreach (any g in sorted_bad_graphs) do
+                {
+                  http ('  define input:named-graph-exclude <' || id_to_iri_nosignal (g) || '>\n', ses);
+                }
+              if (inf_ruleset is not null)
+                  http ('  define input:inference <' || inf_ruleset || '>\n', ses);
+              if (sameas is not null)
+                  http ('  define input:same-as <' || sameas || '>\n', ses);
+              http ('select ?g1 ?p1 ?o1\n', ses);
+              http ('      where { graph ?g1 {\n', ses);
+              for (map_ctr := 0; map_ctr < maps_len; map_ctr := map_ctr + 1)
+                {
+                  if (map_ctr > 0) http ('              union\n', ses);
+                  http ('              { quad map <' || maps[map_ctr][0] || '> { ?:subj_iri ?p1 ?o1 } }\n', ses);
+                }
+              http ('            } } ) do {\n', ses);
+              if (graphs_listed)
+                http ('      if (position (__i2idn ("g1"), sorted_good_graphs))\n', ses);
+              http ('      dict_bitor_or_put (res, vector (subj, "p1", "o1"), 1);\n    }\n', ses);
             }
-          if (inf_ruleset is not null)
-              http ('  define input:inference <' || inf_ruleset || '>\n', ses);
-          if (sameas is not null)
-              http ('  define input:same-as <' || sameas || '>\n', ses);
-          http ('select ?g1 ?p1 ?o1\n', ses);
-          http ('      where { graph ?g1 {\n', ses);
-          for (map_ctr := 0; map_ctr < maps_len; map_ctr := map_ctr + 1)
-            {
-              if (map_ctr > 0) http ('              union\n', ses);
-              http ('              { quad map <' || maps[map_ctr][0] || '> { ?:subj_iri ?p1 ?o1 } }\n', ses);
-            }
-          http ('            } } ) do {\n', ses);
-          if (graphs_listed)
-            http ('      if (position (__i2idn ("g1"), sorted_good_graphs))\n', ses);
-          http ('      dict_bitor_or_put (res, vector (subj, "p1", "o1"), 1); } }\n', ses);
+          http ('}\n', ses);
           txt := string_output_string (ses);
           -- dbg_obj_princ ('Procedure text: ', txt);
-	  saved_user := user;
-	  set_user_id ('dba', 1);
+          saved_user := user;
+          set_user_id ('dba', 1);
           exec (txt);
-	  set_user_id (saved_user);
+          set_user_id (saved_user);
         }
       if (graphs_listed)
         {
@@ -9496,42 +9506,46 @@ next_iteration:
           http ('{\n', ses);
           http ('  declare subj_iri varchar;\n', ses);
           http ('  subj_iri := id_to_iri_nosignal (subj);\n', ses);
-          http ('  for (sparql define output:valmode "LONG" define input:storage <' || storage_name || '> ', ses);
-          foreach (any g in sorted_bad_graphs) do
+          if (mas_len > 0)
             {
-              http ('  define input:named-graph-exclude <' || id_to_iri_nosignal (g) || '>\n', ses);
+              http ('  for (sparql define output:valmode "LONG" define input:storage <' || storage_name || '> ', ses);
+              foreach (any g in sorted_bad_graphs) do
+                {
+                  http ('  define input:named-graph-exclude <' || id_to_iri_nosignal (g) || '>\n', ses);
+                }
+              if (inf_ruleset is not null)
+                  http ('  define input:inference <' || inf_ruleset || '>\n', ses);
+              http ('select ?g1 ?p1 ?o1 ?g2 ?st2\n', ses);
+              http ('      where { graph ?g1 {\n', ses);
+              for (map_ctr := 0; map_ctr < maps_len; map_ctr := map_ctr + 1)
+                {
+                  if (map_ctr > 0) http ('              union\n', ses);
+                  http ('              { quad map <' || maps[map_ctr][0] || '> { ?:subj_iri ?p1 ?o1 } }\n', ses);
+                }
+              http ('            }\n', ses);
+              http ('          optional { graph ?g2 {\n', ses);
+              http ('                  ?st2 a rdf:Statement ; rdf:subject ?:subj_iri ; rdf:predicate ?p1 ; rdf:object ?o1 } }\n', ses);
+              http ('            } ) do {\n', ses);
+              if (graphs_listed)
+                http ('      if (position (__i2idn ("g1"), sorted_good_graphs)) {\n', ses);
+              http ('      dict_bitor_or_put (res, vector (subj, "p1", "o1"), 1);\n', ses);
+              http ('      if (isiri_id ("o1") and "o1" > min_bnode_iri_id() and dict_get (subj_dict, "o1") is null)\n', ses);
+              http ('        dict_put (next_iter_subjs, "o1", 1);\n', ses);
+              if (graphs_listed)
+                http ('      if (position (__i2idn ("g2"), sorted_good_graphs)) {\n', ses);
+              http ('      if ("st2" is not null and dict_get (subj_dict, "st2") is null)\n', ses);
+              http ('        dict_put (next_iter_subjs, "o1", 1);\n', ses);
+              if (graphs_listed)
+                http ('        } }\n', ses);
+              http ('    }\n', ses);
             }
-          if (inf_ruleset is not null)
-              http ('  define input:inference <' || inf_ruleset || '>\n', ses);
-          http ('select ?g1 ?p1 ?o1 ?g2 ?st2\n', ses);
-          http ('      where { graph ?g1 {\n', ses);
-          for (map_ctr := 0; map_ctr < maps_len; map_ctr := map_ctr + 1)
-            {
-              if (map_ctr > 0) http ('              union\n', ses);
-              http ('              { quad map <' || maps[map_ctr][0] || '> { ?:subj_iri ?p1 ?o1 } }\n', ses);
-            }
-          http ('            }\n', ses);
-          http ('          optional { graph ?g2 {\n', ses);
-          http ('                  ?st2 a rdf:Statement ; rdf:subject ?:subj_iri ; rdf:predicate ?p1 ; rdf:object ?o1 } }\n', ses);
-          http ('            } ) do {\n', ses);
-          if (graphs_listed)
-            http ('      if (position (__i2idn ("g1"), sorted_good_graphs)) {\n', ses);
-          http ('      dict_bitor_or_put (res, vector (subj, "p1", "o1"), 1);\n', ses);
-          http ('      if (isiri_id ("o1") and "o1" > min_bnode_iri_id() and dict_get (subj_dict, "o1") is null)\n', ses);
-          http ('        dict_put (next_iter_subjs, "o1", 1);\n', ses);
-          if (graphs_listed)
-            http ('      if (position (__i2idn ("g2"), sorted_good_graphs)) {\n', ses);
-          http ('      if ("st2" is not null and dict_get (subj_dict, "st2") is null)\n', ses);
-          http ('        dict_put (next_iter_subjs, "o1", 1);\n', ses);
-          if (graphs_listed)
-            http ('        } }\n', ses);
-          http ('      } }\n', ses);
+          http ('}\n', ses);
           txt := string_output_string (ses);
           -- dbg_obj_princ ('Procedure text: ', txt);
-	  saved_user := user;
-	  set_user_id ('dba', 1);
+          saved_user := user;
+          set_user_id ('dba', 1);
           exec (txt);
-	  set_user_id (saved_user);
+          set_user_id (saved_user);
         }
       if (graphs_listed)
         {
@@ -9896,42 +9910,46 @@ next_iteration:
           http ('{\n', ses);
           http ('  declare obj_iri varchar;\n', ses);
           http ('  obj_iri := id_to_iri_nosignal (obj);\n', ses);
-          http ('  for (sparql define output:valmode "LONG" define input:storage <' || storage_name || '> ', ses);
-          foreach (any g in sorted_bad_graphs) do
+          if (maps_len > 0)
             {
-              http ('  define input:named-graph-exclude <' || id_to_iri_nosignal (g) || '>\n', ses);
+              http ('  for (sparql define output:valmode "LONG" define input:storage <' || storage_name || '> ', ses);
+              foreach (any g in sorted_bad_graphs) do
+                {
+                  http ('  define input:named-graph-exclude <' || id_to_iri_nosignal (g) || '>\n', ses);
+                }
+              if (inf_ruleset is not null)
+                  http ('  define input:inference <' || inf_ruleset || '>\n', ses);
+              http ('select ?g1 ?p1 ?s1 ?g2 ?st2\n', ses);
+              http ('      where { graph ?g1 {\n', ses);
+              for (map_ctr := 0; map_ctr < maps_len; map_ctr := map_ctr + 1)
+                {
+                  if (map_ctr > 0) http ('              union\n', ses);
+                  http ('              { quad map <' || maps[map_ctr][0] || '> { ?s1 ?p1 ?:obj_iri } }\n', ses);
+                }
+              http ('            }\n', ses);
+              http ('          optional { graph ?g2 {\n', ses);
+              http ('                  ?st2 a rdf:Statement ; rdf:object ?:obj_iri ; rdf:predicate ?p1 ; rdf:subject ?s1 } }\n', ses);
+              http ('            } ) do {\n', ses);
+              if (graphs_listed)
+                http ('      if (position (__i2idn ("g1"), sorted_good_graphs)) {\n', ses);
+              http ('      dict_bitor_or_put (res, vector ("s1", "p1", obj), 1);\n', ses);
+              http ('      if (is_bnode_iri_id ("s1") and dict_get (obj_dict, "s1") is null)\n', ses);
+              http ('        dict_put (next_iter_objs, "s1", 1);\n', ses);
+              if (graphs_listed)
+                http ('      if (position (__i2idn ("g2"), sorted_good_graphs)) {\n', ses);
+              http ('      if ("st2" is not null and dict_get (obj_dict, "st2") is null)\n', ses);
+              http ('        dict_put (next_iter_objs, "s1", 1);\n', ses);
+              if (graphs_listed)
+                http ('        } }\n', ses);
+              http ('      }\n', ses);
             }
-          if (inf_ruleset is not null)
-              http ('  define input:inference <' || inf_ruleset || '>\n', ses);
-          http ('select ?g1 ?p1 ?s1 ?g2 ?st2\n', ses);
-          http ('      where { graph ?g1 {\n', ses);
-          for (map_ctr := 0; map_ctr < maps_len; map_ctr := map_ctr + 1)
-            {
-              if (map_ctr > 0) http ('              union\n', ses);
-              http ('              { quad map <' || maps[map_ctr][0] || '> { ?s1 ?p1 ?:obj_iri } }\n', ses);
-            }
-          http ('            }\n', ses);
-          http ('          optional { graph ?g2 {\n', ses);
-          http ('                  ?st2 a rdf:Statement ; rdf:object ?:obj_iri ; rdf:predicate ?p1 ; rdf:subject ?s1 } }\n', ses);
-          http ('            } ) do {\n', ses);
-          if (graphs_listed)
-            http ('      if (position (__i2idn ("g1"), sorted_good_graphs)) {\n', ses);
-          http ('      dict_bitor_or_put (res, vector ("s1", "p1", obj), 1);\n', ses);
-          http ('      if (is_bnode_iri_id ("s1") and dict_get (obj_dict, "s1") is null)\n', ses);
-          http ('        dict_put (next_iter_objs, "s1", 1);\n', ses);
-          if (graphs_listed)
-            http ('      if (position (__i2idn ("g2"), sorted_good_graphs)) {\n', ses);
-          http ('      if ("st2" is not null and dict_get (obj_dict, "st2") is null)\n', ses);
-          http ('        dict_put (next_iter_objs, "s1", 1);\n', ses);
-          if (graphs_listed)
-            http ('        } }\n', ses);
-          http ('      } }\n', ses);
+          http ('}\n', ses);
           txt := string_output_string (ses);
           -- dbg_obj_princ ('Procedure text: ', txt);
-	  saved_user := user;
-	  set_user_id ('dba', 1);
+          saved_user := user;
+          set_user_id ('dba', 1);
           exec (txt);
-	  set_user_id (saved_user);
+          set_user_id (saved_user);
         }
       if (graphs_listed)
         {
