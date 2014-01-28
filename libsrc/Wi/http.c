@@ -2000,6 +2000,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
   if (ws->ws_xslt_url)
     {
       dk_session_t * strses = ws->ws_strses;
+      client_connection_t * cli = ws->ws_cli;
       caddr_t url,
 	  xslt_url = ws->ws_xslt_url, xslt_parms = ws->ws_xslt_params;
       caddr_t err = NULL, * exec_params = NULL;
@@ -2019,8 +2020,20 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	  exec_params[6] = box_string ("PARAMS"); exec_params[7] = (caddr_t) &xslt_parms;
 	  exec_params[8] = box_string ("MEDIATYPE"); exec_params[9] = (caddr_t) &media_type;
 	  exec_params[10] = box_string ("ENC"); exec_params[11] = (caddr_t) &xsl_encoding;
-	  err = qr_exec (ws->ws_cli, http_xslt_qr, CALLER_LOCAL, NULL, NULL, NULL, exec_params, NULL, 1);
-	  cli_set_slice (ws->ws_cli, NULL, QI_NO_SLICE, NULL);
+	  IN_TXN;
+	  if (!cli->cli_trx->lt_threads)
+	    lt_wait_checkpoint ();
+	  lt_threads_set_inner (cli->cli_trx, 1);
+	  LEAVE_TXN;
+	  err = qr_exec (cli, http_xslt_qr, CALLER_LOCAL, NULL, NULL, NULL, exec_params, NULL, 1);
+	  IN_TXN;
+	  if (err && (err != (caddr_t) SQL_NO_DATA_FOUND))
+	    lt_rollback (cli->cli_trx, TRX_CONT);
+	  else
+	    lt_commit (cli->cli_trx, TRX_CONT);
+	  lt_threads_set_inner (cli->cli_trx, 0);
+	  LEAVE_TXN;
+	  cli_set_slice (cli, NULL, QI_NO_SLICE, NULL);
 	  dk_free_box ((box_t) exec_params);
 	}
       if (err)
