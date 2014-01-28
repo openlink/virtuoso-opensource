@@ -1883,7 +1883,7 @@ bif_st_dv_geo_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_geometry_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  geo_t *g = bif_geo_arg (qst, args, 0, "GeometryType", -1);
+  geo_t *g = bif_geo_arg (qst, args, 0, "GeometryType", GEO_ARG_ANY_NULLABLE);
   ewkt_kwd_metas_t *metas;
   if (NULL == g)
     return NEW_DB_NULL;
