@@ -3116,9 +3116,9 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
 	sel->sel_client_batch_start = cc_new_instance_slot (sc->sc_cc);
       if (sel->sel_set_ctr)
 	{
-	  dk_set_t pred;
 	  /* the select node belongs to an inlined subq.  The select node will set the set nos for the inlined sqs, so the predecessor of the sel is the predecessor of the set ctr that too the place of the inlined sqs */
 	  /* the result cols of the subq are assigned right before the select and are aligned. For purposes of subsequent qns, these are assigned by the elect node but not reset by it.  So mark the place of asignment but do not cause the clear to be added  */
+	  dk_set_t pred;
 	  DO_BOX (state_slot_t *, out, inx, sel->sel_out_slots)
 	    {
 	      if (inx >= sel->sel_n_value_slots)

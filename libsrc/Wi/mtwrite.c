@@ -1062,9 +1062,9 @@ dbs_schedule_write (dbe_storage_t * dbs, buffer_desc_t ** bufs, int n_bufs)
       for (inx = 0; inx < n_bufs; inx++)
 	{
 	  buffer_desc_t * buf = bufs[inx];
+	  it_map_t * buf_itm;
 	  if (buf < bp->bp_bufs || buf > &bp->bp_bufs[bp->bp_n_bufs - 1])
 	    continue;
-	  it_map_t * buf_itm;
       if (wi_inst.wi_checkpoint_atomic && !buf->bd_is_dirty)
 	continue;
       if (dbs != buf->bd_storage)
