@@ -1901,7 +1901,7 @@ caddr_t bif_st_geometry_n (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
     return NEW_DB_NULL;
   if ((idx < 1) || (idx > g->_.parts.len))
     sqlr_new_error ("22023", "GEO..", "Invalid index value " BOXINT_FMT ", valid values for this geometery are 1 to %ld", (long)(g->_.parts.len));
-  sqlr_new_error ("22023", "GEO..", "The function is not yet implemented");
+  return (caddr_t)geo_copy (g->_.parts.items[idx-1]);
 }
 
 caddr_t bif_st_get_bounding_box_n (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
