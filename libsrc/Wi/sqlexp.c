@@ -1734,6 +1734,8 @@ src_is_local (data_source_t * src, int is_cluster)
       || (!enable_rec_qf && IS_QN (src, query_frag_input))
       )
     return 0;
+  if ((CV_NO_INDEX & is_cluster) && IS_TS (src))
+    return 0;
   if (IS_QN (src, subq_node_input))
     return qr_is_local (((subq_source_t*)src)->sqs_query, is_cluster);
   return 1;
@@ -1743,6 +1745,8 @@ src_is_local (data_source_t * src, int is_cluster)
 int
 qr_is_local (query_t * qr, int is_cluster)
 {
+  if ((CV_NO_INDEX & is_cluster))
+    return 0;
   DO_SET (data_source_t *, src, &qr->qr_nodes)
     {
       if (!cv_is_local_1 (src->src_after_code, is_cluster)
