@@ -49,7 +49,7 @@ extern "C" {
 extern int adler32_of_buffer (unsigned char *data, size_t len);
 
 /*! Description of blocker that become conditional wrapper of form "if (field <> inverse_qmf (const)) { rdb2rdf actions }".
- Some quad map pattern may correspond to a given table and given field values when used standalone but be shadowed by EXCLUSIVE patterns before.
+Some quad map pattern may correspond to a given table and given field values when used standalone but be shadowed by EXCLUSIVE patterns before.
 This structure is to keep one such blocking pattern, as one value per item of blocking pattern.
 Field value is NULL if quad map value is not specified in the corresponding position, or qm_value if the value is a constant.
 If quad map value is specified but not a constant then there's no need to remember it: it's enough to interrupt scan of branch of quad map tree after such an "match-all" exclusive (no more processing -- no need for data for that processing).
@@ -64,7 +64,7 @@ typedef struct rdb2rdf_blocker_s {
 #define RDB2RDF_MAX_ALIASES_OF_MAIN_TABLE	7 /*!< Maximim allowed number of aliases of the main table in the quad map pattern. More than enough, I guess. 8*4=32, so uint32 type is sufficient for control bitmasks */
 
 typedef struct rdb2rdf_optree_s {
-    quad_map_t *rro_qm;			/*!< Pointer to map that is root of qm subtree in question */
+    quad_map_t *rro_qm;				/*!< Pointer to map that is root of qm subtree in question */
     struct rdb2rdf_optree_s *rro_parent;	/*!< Pointer to a parent node, it may contain exclusive blockers that */
     struct rdb2rdf_optree_s *rro_breakup_begin;	/*!< Pointer to a node that will be first in the breakup containing the given leaf, NULL for non-leafs */
     struct rdb2rdf_optree_s **rro_subtrees;	/*!< optrees corresponding to sub quad maps */
@@ -78,7 +78,7 @@ typedef struct rdb2rdf_optree_s {
     int			rro_qm_index;		/*!< Position of rro_qm in \c rrc_all_qms of codegen context */
     boxint		rro_rule_id;		/*!< Value for RULE_ID field of RDF_QUAD_DELETE_QUEUE */
     int			rro_self_multi;		/*!< Flags if multiple database rows may create one quad via \c rro_qm alone. */
-    int			rro_sample_of_rule;	/*!< Value for RULE_ID field of RDF_QUAD_DELETE_QUEUE */
+    int			rro_sample_of_rule;	/*!< Flags that \c rro_rule_id is set and  */
   } rdb2rdf_optree_t;
 
 #define RDB2RDF_RSVS_CONST	1
@@ -102,6 +102,7 @@ typedef struct rdb2rdf_ctx_s {
     rdb2rdf_optree_t		rrc_root_rro;	/*!< Root optree, an fake one that corresponds to the whole storage (user's quad maps are its subtrees) */
     rdb2rdf_vals_state_t *	rrc_rrvs_stack;	/*!< Stack of states of variables */
     int			rrc_all_qm_count;	/*!< Count of all quad maps in the storage */
+    int			rrc_printed_qm_count;	/*!< Count of quad maps printed in the text of the function being composed */
     dk_set_t			rrc_qm_revlist;	/*!< Accumulator to build \c rrc_all_qms */
     quad_map_t **		rrc_all_qms;	/*!< List of all quad maps of the storage (first */
     char **		rrc_conflicts_of_qms;	/*!< Matrix of RDB2RDF_QMQM_xxx values, one row per quad map (same order as in \c rrc_all_qms), one item per qm-to-qm relation */
@@ -118,21 +119,23 @@ typedef struct rdb2rdf_ctx_s {
 #define RDB2RDF_CODEGEN_AFTER_INSERT		2
 #define RDB2RDF_CODEGEN_AFTER_UPDATE		3
 #define RDB2RDF_CODEGEN_BEFORE_DELETE		4
-#define COUNTOF__RDB2RDF_CODEGEN		5
+#define RDB2RDF_CODEGEN_INITIAL_LOOPS		5
+#define COUNTOF__RDB2RDF_CODEGEN		6
 #define RDB2RDF_CODEGEN_BEFORE_UPDATE		13
 #define RDB2RDF_CODEGEN_AFTER_DELETE		14
 
-#define RDB2RDF_CODEGEN_INITIAL_SUB_SINGLE	1
-#define RDB2RDF_CODEGEN_INITIAL_SUB_MULTI	2
-#define RDB2RDF_CODEGEN_SUB_INS			3
-#define RDB2RDF_CODEGEN_SUB_BEFORE_DEL		4
-#define RDB2RDF_CODEGEN_SUB_AFTER_DEL		5
+#define RDB2RDF_CODEGEN_INITIAL_SUB_ALL		20
+#define RDB2RDF_CODEGEN_SUB_INS			21
+#define RDB2RDF_CODEGEN_SUB_BEFORE_DEL		22
+#define RDB2RDF_CODEGEN_SUB_AFTER_DEL		23
+#define RDB2RDF_CODEGEN_INITIAL_SUB_SINGLE_LOOPS	24
+#define RDB2RDF_CODEGEN_INITIAL_SUB_MULTI_LOOPS		25
 
 #define RDB2RDF_QMQM_NOT_PROVEN		'?'	/*!< The cell is not yet filled with RDB2RDF_QMQM_DISJOIN or RDB2RDF_QMQM_INTERSECT */
 #define RDB2RDF_QMQM_DISJOIN		'.'	/*!< Qm is proven to be disjoint with the main qm */
 #define RDB2RDF_QMQM_INTERSECT		'I'	/*!< Qm is proven to be intersecting with the main qm */
-#define RDB2RDF_QMQM_SELF		's'	/*!< Qm is equal to the main qm (on "main diagonal" of rrc_conflicts_of_qms) */
-#define RDB2RDF_QMQM_WEIRD_SELF		'w'	/*!< Qm is equal to the main qm but not on "main diagonal", so onw qm is found in the storage _twice_ */
+#define RDB2RDF_QMQM_SELF		's'	/*!< Qm is equal to the main qm (on "main diagonal" of \c rrc_conflicts_of_qms) */
+#define RDB2RDF_QMQM_WEIRD_SELF		'w'	/*!< Qm is equal to the main qm but not on "main diagonal", so one qm is found in the storage _twice_ */
 #define RDB2RDF_QMQM_GROUPING		'g'	/*!< Grouping qms are excluded from processing */
 #define RDB2RDF_QMQM_SHADOWED_BY_MAIN	'>'	/*!< Qm is shadowed by the main qm that is declared as an "exclusive" or "soft exclusive" */
 #define RDB2RDF_QMQM_SHADOWED_BY_THIRD	'}'	/*!< Qm is shadowed not by by the main qm but by some third party */
@@ -549,9 +552,10 @@ rdb2rdf_optree_dump (rdb2rdf_ctx_t *rrc, rdb2rdf_optree_t *rro, dk_session_t *se
   int sub_qm_rro_ctr;
   int ctr;
   rdb2rdf_blocker_t *blockers_tail;
-  sprintf (buf, "-----\n%s optree %d from qm %d, subtree of %d, breakup starts at %d\n",
+  jso_rtti_t *qm_rtti = (jso_rtti_t *)gethash (rro->rro_qm, jso_rttis_of_structs);
+  sprintf (buf, "-----\n%s optree %d from qm %d %s, subtree of %d, breakup starts at %d\n",
     (rro->rro_is_leaf ? "LEAF" : "grouping"),
-    rro->rro_own_serial, rro->rro_qm_index,
+    rro->rro_own_serial, rro->rro_qm_index, ((NULL == qm_rtti) ? "UNKNOWN QM" : ((NULL == qm_rtti->jrtti_inst_iri) ? "NULL IRI" : qm_rtti->jrtti_inst_iri)),
     ((NULL != rro->rro_parent) ? rro->rro_parent->rro_own_serial : -1),
     ((NULL != rro->rro_breakup_begin) ? rro->rro_breakup_begin->rro_own_serial : -1) );
   SES_PRINT (ses, buf);
@@ -596,7 +600,7 @@ rdb2rdf_optree_dump (rdb2rdf_ctx_t *rrc, rdb2rdf_optree_t *rro, dk_session_t *se
       SES_PRINT (ses, "Adds a breakup");
       for (ctr = 0; ctr < SPART_TRIPLE_FIELDS_COUNT; ctr++)
         {
-          ccaddr_t cv = blockers_tail->rrb_const_vals[ctr];
+          ccaddr_t cv = (ccaddr_t)(blockers_tail->rrb_const_vals[ctr]);
           if (NULL == cv)
             continue;
           sprintf (buf, "  %c = ", "GSPO"[ctr]); SES_PRINT (ses, buf);
@@ -859,7 +863,7 @@ rdb2rdf_qm_codegen (rdb2rdf_ctx_t *rrc, rdb2rdf_optree_t *rro, caddr_t table_nam
             continue;
           ssg_newline (0);
           ssg_puts ("if ("); ssg_putchar ("gspo"[fld_ctr]); ssg_puts ("_val != ");
-          rdb2rdf_print_const (rrc, rrb_c, ssg);
+          rdb2rdf_print_const (rrc, (caddr_t)rrb_c, ssg);
           ssg_puts (") {");
           ssg->ssg_indent++;
           rdb2rdf_push_rrvs_stack (rrc);
@@ -870,7 +874,7 @@ rdb2rdf_qm_codegen (rdb2rdf_ctx_t *rrc, rdb2rdf_optree_t *rro, caddr_t table_nam
   for (fld_ctr = SPART_TRIPLE_FIELDS_COUNT; fld_ctr--; /* no step*/)
     {
       rdf_val_range_t *fld_const_rvr = SPARP_FIELD_CONST_RVR_OF_QM(qm,fld_ctr);
-      caddr_t *fld_const = NULL;
+      SPART *fld_const = NULL;
       rdb2rdf_single_val_state_t *rvvs_val_ptr = rrc->rrc_rrvs_stack->rrvs_vals + fld_ctr;
       if (!(bits_of_fields_here & (1 << fld_ctr)))
         continue;
@@ -882,16 +886,16 @@ rdb2rdf_qm_codegen (rdb2rdf_ctx_t *rrc, rdb2rdf_optree_t *rro, caddr_t table_nam
         continue;
       fld_const = spar_make_qname_or_literal_from_rvr (&(rrc->rrc_sparp_stub), fld_const_rvr, 1);
       if ((SPART_TRIPLE_GRAPH_IDX == fld_ctr) && rrc->rrc_graph_xlat_count)
-        rrc_tweak_const_with_graph_xlat (rrc, &fld_const);
+        rrc_tweak_const_with_graph_xlat (rrc, (ccaddr_t *)(&fld_const));
       if ((RDB2RDF_RSVS_CONST == rvvs_val_ptr->rsvs_type) &&
-        sparp_values_equal (&(rrc->rrc_sparp_stub), rvvs_val_ptr->_.tsvs_const, NULL, NULL, fld_const, NULL, NULL))
+        sparp_values_equal (&(rrc->rrc_sparp_stub), rvvs_val_ptr->_.tsvs_const, NULL, NULL, (caddr_t)fld_const, NULL, NULL))
       continue;
       ssg_newline (0);
       ssg_putchar ("gspo"[fld_ctr]); ssg_puts ("_val := ");
-      rdb2rdf_print_const (rrc, fld_const, ssg);
+      rdb2rdf_print_const (rrc, (caddr_t)fld_const, ssg);
       ssg_putchar (';');
       rvvs_val_ptr->rsvs_type = RDB2RDF_RSVS_CONST;
-      rvvs_val_ptr->_.tsvs_const = fld_const;
+      rvvs_val_ptr->_.tsvs_const = (caddr_t)fld_const;
     }
   if ((1 == dk_set_length (rro->rro_aliases_of_main_table)) &&
     (1 == rro->rro_qm->qmAllATableUseCount) &&
@@ -1143,11 +1147,25 @@ rdb2rdf_optree_codegen (rdb2rdf_ctx_t *rrc, rdb2rdf_optree_t *rro, caddr_t table
   single_use_of_single_main = ((1 == dk_set_length (rro->rro_aliases_of_main_table)) && (1 == rro->rro_qm->qmAllATableUseCount));
   switch (subopcode)
     {
-    case RDB2RDF_CODEGEN_INITIAL_SUB_SINGLE:
+    case RDB2RDF_CODEGEN_INITIAL_SUB_ALL:
+      {
+        jso_rtti_t *qm_rtti = (jso_rtti_t *)gethash (rro->rro_qm, jso_rttis_of_structs);
+        if ((NULL == qm_rtti) || (rro->rro_qm != qm_rtti->jrtti_self))
+          sqlr_new_error ("22023", "SR638", "Some quad maps of quad store virtrdf:SyncToQuads are not loaded or corrupted or being edited during SQL code generation");
+        ssg_newline (0);
+        if (rrc->rrc_printed_qm_count)
+          ssg_puts ("UNION ");
+        ssg_puts (" { QUAD MAP ");
+        ssg_sdprin_qname (ssg, (SPART *)(qm_rtti->jrtti_inst_iri));
+        ssg_puts (" { graph ?g { ?s ?p ?o }}} ");
+        rrc->rrc_printed_qm_count++;
+        break;
+      }
+    case RDB2RDF_CODEGEN_INITIAL_SUB_SINGLE_LOOPS:
       if (single_use_of_single_main)
         rdb2rdf_qm_codegen (rrc, rro, table_name, opcode, subopcode, prefix, (ccaddr_t)(rro->rro_aliases_of_main_table->data), 0, ssg);
       break;
-    case RDB2RDF_CODEGEN_INITIAL_SUB_MULTI:
+    case RDB2RDF_CODEGEN_INITIAL_SUB_MULTI_LOOPS:
       if (!single_use_of_single_main)
         rdb2rdf_qm_codegen (rrc, rro, table_name, opcode, subopcode, prefix, "-no-such-", RDB2RDF_MAX_ALIASES_OF_MAIN_TABLE, ssg);
       break;
@@ -1229,18 +1247,30 @@ rdb2rdf_codegen (rdb2rdf_ctx_t *rrc, caddr_t table_name, int opcode, dk_session_
   switch (opcode)
     {
     case RDB2RDF_CODEGEN_INITIAL:
-      ssg_puts ("create procedure DB.DBA.\"RDB2RDF_FILL__"); ssg_puts (table_name_for_proc); ssg_puts ("\" ()\n");
+      ssg_puts ("create procedure DB.DBA.\"RDB2RDF_FILL__"); ssg_puts (table_name_for_proc); ssg_puts ("\" ()\n{\n");
+      ssg_puts ("  declare old_mode integer;\n");
+      ssg_puts ("  old_mode := log_enable (null, 1);\n");
+      ssg_puts ("  log_enable (2);\n");
+      ssg_puts ("  sparql define output:valmode \"LONG\" define input:storage virtrdf:SyncToQuads select count (sql:rdf_vec_ins_triples (?s, ?p, ?o, ?g))\n");
+      ssg_puts ("  where {\n");
+      rdb2rdf_optree_codegen (rrc, &(rrc->rrc_root_rro), table_name, opcode, RDB2RDF_CODEGEN_INITIAL_SUB_ALL, NULL, ssg);
+      ssg_puts ("      };\n");
+      ssg_puts ("  log_enable (old_mode, 1);\n");
+      ssg_puts ("}\n");
+      break;
+    case RDB2RDF_CODEGEN_INITIAL_LOOPS:
+      ssg_puts ("create procedure DB.DBA.\"RDB2RDF_FILL_BY_LOOPS__"); ssg_puts (table_name_for_proc); ssg_puts ("\" ()\n");
       rdb2rdf_print_body_begin (ssg, 1);
       ssg_puts ("  for (select * from "); ssg_puts (table_name); ssg_puts (") do\n");
       ssg_puts ("    {\n");
       ssg->ssg_indent = 3;
       rdb2rdf_push_rrvs_stack (rrc);
-      rdb2rdf_optree_codegen (rrc, &(rrc->rrc_root_rro), table_name, opcode, RDB2RDF_CODEGEN_INITIAL_SUB_SINGLE, NULL, ssg);
+      rdb2rdf_optree_codegen (rrc, &(rrc->rrc_root_rro), table_name, opcode, RDB2RDF_CODEGEN_INITIAL_SUB_SINGLE_LOOPS, NULL, ssg);
       ssg_puts ("\n      ;\n");
       ssg_puts ("\n    }\n");
       ssg->ssg_indent = 1;
       rdb2rdf_pop_rrvs_stack (rrc, 0);
-      rdb2rdf_optree_codegen (rrc, &(rrc->rrc_root_rro), table_name, opcode, RDB2RDF_CODEGEN_INITIAL_SUB_MULTI, NULL, ssg);
+      rdb2rdf_optree_codegen (rrc, &(rrc->rrc_root_rro), table_name, opcode, RDB2RDF_CODEGEN_INITIAL_SUB_MULTI_LOOPS, NULL, ssg);
       rdb2rdf_print_body_end (ssg, 1);
       break;
     case RDB2RDF_CODEGEN_AFTER_INSERT:
