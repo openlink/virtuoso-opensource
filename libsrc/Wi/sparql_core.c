@@ -654,20 +654,10 @@ sparp_exec_Narg (sparp_t *sparp, const char *pl_call_text, query_t **cached_qr_p
     }
   if (lc)
     {
-#if 1
-      while (lc_next (lc));
-      if (SQL_SUCCESS != lc->lc_error)
-	{
-	  if (err_ret)
-	    *err_ret = lc->lc_error;
-	  lc_free (lc);
-          res = NULL;
-          goto leave_and_ret; /* see below */
-	}
-      res = t_full_box_copy_tree (((caddr_t *) lc->lc_proc_ret) [1]);
-#else
-      ret = t_full_box_copy_tree(lc_nth_col (lc, 0));
-#endif
+      if (lc_next (lc))
+        res = t_full_box_copy_tree (lc_nth_col (lc, 0));
+      else
+        res = NEW_DB_NULL;
       lc_free (lc);
       goto leave_and_ret; /* see below */
     }
@@ -2772,7 +2762,7 @@ spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
 }
 
 SPART *
-spar_gp_add_union_of_triple_and_inverses (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **sinv_idx_and_qms, SPART **options, int banned_tricks, dk_set_t inv_props)
+spar_gp_add_union_of_triple_and_inverses (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **qm_iri_or_pair, SPART **options, int banned_tricks, dk_set_t inv_props)
 {
   SPART *triple, *gp, *union_gp;
   rdf_inf_ctx_t *saved_inf = sparp->sparp_env->spare_inference_ctx;
@@ -2782,7 +2772,7 @@ spar_gp_add_union_of_triple_and_inverses (sparp_t *sparp, SPART *graph, SPART *s
     spar_error (sparp, "Options are not supported for a triple pattern with property name \"%.200s\" that is declared in inference rules \"%.200s\" as a property with inverse",
       predicate->_.qname.val, sparp->sparp_env->spare_inference_name );
   sparp->sparp_env->spare_inference_ctx = NULL;
-  triple = spar_gp_add_triplelike (sparp, graph, subject, predicate, object, sinv_idx_and_qms, options, banned_tricks | SPAR_TRIPLE_TRICK_INV_UNION);
+  triple = spar_gp_add_triplelike (sparp, graph, subject, predicate, object, qm_iri_or_pair, options, banned_tricks | SPAR_TRIPLE_TRICK_INV_UNION);
   if (SPAR_TRIPLE != SPART_TYPE (triple))
     spar_error (sparp, "Property name \"%.200s\" has special meaning that conflicts with its declaration in inference rules \"%.200s\" as a property with inverse",
       predicate->_.qname.val, sparp->sparp_env->spare_inference_name );
@@ -2799,7 +2789,7 @@ spar_gp_add_union_of_triple_and_inverses (sparp_t *sparp, SPART *graph, SPART *s
         (SPART *)t_full_box_copy_tree ((caddr_t)object), /* object is swapped with subject*/
         (SPART *)t_full_box_copy_tree ((caddr_t)predicate),
         (SPART *)t_full_box_copy_tree ((caddr_t)subject),
-        sparp_treelist_full_copy (sparp, sinv_idx_and_qms, NULL),
+        sparp_treelist_full_copy (sparp, qm_iri_or_pair, NULL),
         (SPART **)t_full_box_copy_tree ((caddr_t)options),
         banned_tricks | SPAR_TRIPLE_TRICK_INV_UNION );
       if (SPAR_TRIPLE != SPART_TYPE (triple))
@@ -2834,7 +2824,7 @@ spar_gp_add_transitive_triple_anchor_filter (sparp_t *sparp, caddr_t fld_vname, 
 }
 
 SPART *
-spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **sinv_idx_and_qms, SPART **options, int banned_tricks)
+spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **qm_iri_or_pair, SPART **options, int banned_tricks)
 {
 #ifdef DEBUG
   sparp_env_t *saved_env = sparp->sparp_env;
@@ -2895,7 +2885,7 @@ spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPA
   spar_gp_init (sparp, WHERE_L);
   subj_var = spar_make_variable (sparp, subj_vname);
   obj_var = spar_make_variable (sparp, obj_vname);
-  spar_gp_add_triplelike (sparp, graph, subj_var, predicate, obj_var, sinv_idx_and_qms, NULL, banned_tricks | SPAR_TRIPLE_TRICK_TRANSITIVE);
+  spar_gp_add_triplelike (sparp, graph, subj_var, predicate, obj_var, qm_iri_or_pair, NULL, banned_tricks | SPAR_TRIPLE_TRICK_TRANSITIVE);
   if (NULL != options)
     {
       int idx;
@@ -3018,7 +3008,7 @@ g_found:
 #endif
 
 SPART *
-spar_gp_add_ppath_leaf (sparp_t *sparp,  SPART **parts, int part_count, int pp_makes_union, int pp_subtype, SPART *graph, SPART *subject, SPART *object, SPART **sinv_idx_and_qms, int banned_tricks)
+spar_gp_add_ppath_leaf (sparp_t *sparp,  SPART **parts, int part_count, int pp_makes_union, int pp_subtype, SPART *graph, SPART *subject, SPART *object, SPART **qm_iri_or_pair, int banned_tricks)
 {
   SPART *res;
   graph = (SPART *)t_box_copy_tree ((caddr_t)graph);
@@ -3027,12 +3017,12 @@ spar_gp_add_ppath_leaf (sparp_t *sparp,  SPART **parts, int part_count, int pp_m
   if (pp_makes_union)
     spar_gp_init (sparp, 0);
   if ((0 == pp_subtype) && (1 == part_count))
-    res = spar_gp_add_triplelike (sparp, graph, subject, parts[0], object, sinv_idx_and_qms, NULL, banned_tricks);
+    res = spar_gp_add_triplelike (sparp, graph, subject, parts[0], object, qm_iri_or_pair, NULL, banned_tricks);
   else
     {
       caddr_t pred_vname = spar_mkid (sparp, "_::ppath_p");
       SPART *filt;
-      res = spar_gp_add_triplelike (sparp, graph, subject, spar_make_variable (sparp, pred_vname), object, sinv_idx_and_qms, NULL, banned_tricks);
+      res = spar_gp_add_triplelike (sparp, graph, subject, spar_make_variable (sparp, pred_vname), object, qm_iri_or_pair, NULL, banned_tricks);
       if (1 == part_count)
         filt = spartlist (sparp, 3, ((0 == pp_subtype) ? BOP_EQ : BOP_NEQ), spar_make_variable (sparp, pred_vname), parts[0]);
       else if (1 < part_count)
@@ -3058,7 +3048,7 @@ spar_gp_add_ppath_leaf (sparp_t *sparp,  SPART **parts, int part_count, int pp_m
 }
 
 SPART *
-spar_gp_add_ppath_triples (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pp, SPART *object, SPART **sinv_idx_and_qms, int banned_tricks)
+spar_gp_add_ppath_triples (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pp, SPART *object, SPART **qm_iri_or_pair, int banned_tricks)
 {
   ptrlong parent_gp_subtype = (ptrlong)(sparp->sparp_env->spare_context_gp_subtypes->data);
   SPART **parts = pp->_.ppath.parts;
@@ -3077,9 +3067,9 @@ spar_gp_add_ppath_triples (sparp_t *sparp, SPART *graph, SPART *subject, SPART *
         if (wrapper_gp_needed)
           spar_gp_init (sparp, pp_makes_union ? UNION_L : 0);
         if (fwd_count)
-          spar_gp_add_ppath_leaf (sparp, parts, fwd_count, pp_makes_union, pp->_.ppath.subtype, graph, subject, object, sinv_idx_and_qms, banned_tricks);
+          spar_gp_add_ppath_leaf (sparp, parts, fwd_count, pp_makes_union, pp->_.ppath.subtype, graph, subject, object, qm_iri_or_pair, banned_tricks);
         if (rev_count)
-          spar_gp_add_ppath_leaf (sparp, parts + fwd_count, rev_count, pp_makes_union, pp->_.ppath.subtype, graph, object /* yes, before subject, this makes the reverse */, subject, sinv_idx_and_qms, banned_tricks);
+          spar_gp_add_ppath_leaf (sparp, parts + fwd_count, rev_count, pp_makes_union, pp->_.ppath.subtype, graph, object /* yes, before subject, this makes the reverse */, subject, qm_iri_or_pair, banned_tricks);
         if (wrapper_gp_needed)
           {
             res = spar_gp_finalize (sparp, NULL);
@@ -3099,7 +3089,7 @@ spar_gp_add_ppath_triples (sparp_t *sparp, SPART *graph, SPART *subject, SPART *
               obj_connection = object;
             else
               obj_connection = spar_make_variable (sparp, spar_mkid (sparp, "_::ppath_seq"));
-            res = spar_gp_add_ppath_triples (sparp, graph, subj_connection, parts[part_ctr], obj_connection, sinv_idx_and_qms, banned_tricks);
+            res = spar_gp_add_ppath_triples (sparp, graph, subj_connection, parts[part_ctr], obj_connection, qm_iri_or_pair, banned_tricks);
             subj_connection = obj_connection;
           }
         if (join_gp_needed)
@@ -3115,7 +3105,7 @@ spar_gp_add_ppath_triples (sparp_t *sparp, SPART *graph, SPART *subject, SPART *
         if (union_needed)
           spar_gp_init (sparp, UNION_L);
         for (part_ctr = 0; part_ctr < part_count; part_ctr++)
-          res = spar_gp_add_ppath_triples (sparp, graph, subject, parts[part_ctr], object, sinv_idx_and_qms, banned_tricks);
+          res = spar_gp_add_ppath_triples (sparp, graph, subject, parts[part_ctr], object, qm_iri_or_pair, banned_tricks);
         if (union_needed)
           {
             res = spar_gp_finalize (sparp, NULL);
@@ -3147,7 +3137,7 @@ spar_gp_add_ppath_triples (sparp_t *sparp, SPART *graph, SPART *subject, SPART *
         t_set_push (&opts, (caddr_t)((ptrlong)TRANSITIVE_L));
         if (wrapper_gp_needed)
           spar_gp_init (sparp, 0);
-        res = spar_gp_add_transitive_triple (sparp, graph, subject, part0, object, sinv_idx_and_qms, (SPART **)t_list_to_array (opts), banned_tricks);
+        res = spar_gp_add_transitive_triple (sparp, graph, subject, part0, object, qm_iri_or_pair, (SPART **)t_list_to_array (opts), banned_tricks);
         if (wrapper_gp_needed)
           {
             res = spar_gp_finalize (sparp, NULL);
@@ -3255,7 +3245,7 @@ spar_gp_make_graph_field_from_context (sparp_t *sparp, SPART **ret_graph_eq_from
 }
 
 SPART *
-spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **sinv_idx_and_qms, SPART **options, int banned_tricks)
+spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **qm_iri_or_pair, SPART **options, int banned_tricks)
 {
   sparp_env_t *env = sparp->sparp_env;
   rdf_inf_ctx_t *inf_ctx = sparp->sparp_env->spare_inference_ctx;
@@ -3283,16 +3273,16 @@ spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pre
         spar_error (sparp, "Property paths are not allowed in constructor templates");
       goto plain_triple_in_ctor; /* see below */
     }
-  if (NULL == sinv_idx_and_qms)
+  if (NULL == qm_iri_or_pair)
     {
       if (NULL == env->spare_context_qms)
-        sinv_idx_and_qms = (SPART **)t_list (2, NULL, ((ptrlong)_STAR));
+        qm_iri_or_pair = (SPART **)t_list (2, NULL, ((ptrlong)_STAR));
       else
-        sinv_idx_and_qms = (SPART **)(env->spare_context_qms->data);
+        qm_iri_or_pair = (SPART **)(env->spare_context_qms->data);
       if (NULL != env->spare_context_sinvs)
         {
           SPART *inner_sinv = (SPART *)(env->spare_context_sinvs->data);
-          sinv_idx_and_qms[0] = (SPART *)t_box_num_nonull (inner_sinv->_.sinv.own_idx);
+          qm_iri_or_pair[0] = (SPART *)t_box_num_nonull (inner_sinv->_.sinv.own_idx);
         }
     }
   if (NULL != options)
@@ -3315,7 +3305,7 @@ spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pre
     {
       SPART *trans = sparp_get_option (sparp, options, TRANSITIVE_L);
       if ((NULL != trans) && !(SPAR_TRIPLE_TRICK_TRANSITIVE & banned_tricks))
-        return spar_gp_add_transitive_triple (sparp, graph, subject, predicate, object, sinv_idx_and_qms, options, SPAR_TRIPLE_TRICK_TRANSITIVE | banned_tricks);
+        return spar_gp_add_transitive_triple (sparp, graph, subject, predicate, object, qm_iri_or_pair, options, SPAR_TRIPLE_TRICK_TRANSITIVE | banned_tricks);
     }
   if (SPAR_PPATH == SPART_TYPE (predicate))
     {
@@ -3329,7 +3319,7 @@ spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pre
             expand_ppath_to_triples = 0;
         }
       if (expand_ppath_to_triples)
-        return spar_gp_add_ppath_triples (sparp, graph, subject, predicate, object, sinv_idx_and_qms, banned_tricks | SPAR_TRIPLE_TRICK_TRANSITIVE | SPAR_TRIPLE_TRICK_INV_UNION | SPAR_TRIPLE_TRICK_MACRO);
+        return spar_gp_add_ppath_triples (sparp, graph, subject, predicate, object, qm_iri_or_pair, banned_tricks | SPAR_TRIPLE_TRICK_TRANSITIVE | SPAR_TRIPLE_TRICK_INV_UNION | SPAR_TRIPLE_TRICK_MACRO);
     }
   if ((NULL != inf_ctx) && (SPAR_QNAME == SPART_TYPE (predicate)))
     {
@@ -3338,10 +3328,10 @@ spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pre
       if (SPAR_TRIPLE_TRICK_TRANSITIVE & tricks)
         {
           sparp_set_option (sparp, &options, TRANSITIVE_L, (SPART *)((ptrlong)1), SPARP_SET_OPTION_REPLACING);
-          return spar_gp_add_transitive_triple (sparp, graph, subject, predicate, object, sinv_idx_and_qms, options, SPAR_TRIPLE_TRICK_TRANSITIVE | banned_tricks);
+          return spar_gp_add_transitive_triple (sparp, graph, subject, predicate, object, qm_iri_or_pair, options, SPAR_TRIPLE_TRICK_TRANSITIVE | banned_tricks);
         }
       if (SPAR_TRIPLE_TRICK_INV_UNION & tricks)
-        return spar_gp_add_union_of_triple_and_inverses (sparp, graph, subject, predicate, object, sinv_idx_and_qms, options, SPAR_TRIPLE_TRICK_INV_UNION | banned_tricks, inv_names);
+        return spar_gp_add_union_of_triple_and_inverses (sparp, graph, subject, predicate, object, qm_iri_or_pair, options, SPAR_TRIPLE_TRICK_INV_UNION | banned_tricks, inv_names);
     }
   if (SPAR_QNAME == SPART_TYPE (predicate))
     {
@@ -3422,7 +3412,7 @@ plain_triple_in_ctor:
   if (NULL != graph_eq_from_option_expn)
     spar_gp_add_filter (sparp, graph_eq_from_option_expn, 0);
 
-  triple = spar_make_plain_triple (sparp, graph, subject, predicate, object, sinv_idx_and_qms, options);
+  triple = spar_make_plain_triple (sparp, graph, subject, predicate, object, qm_iri_or_pair, options);
   if (NULL != options)
     sparp_validate_options_of_tree (sparp, triple, options);
   spar_gp_add_member (sparp, triple);
@@ -3430,14 +3420,14 @@ plain_triple_in_ctor:
 }
 
 SPART *
-spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **sinv_idx_and_qms, SPART **options)
+spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **qm_iri_or_pair, SPART **options)
 {
   sparp_env_t *env = sparp->sparp_env;
   int fctr;
   SPART *triple;
   triple = spartlist (sparp, 17, SPAR_TRIPLE,
     (ptrlong)0,
-    graph, subject, predicate, object, sinv_idx_and_qms,
+    graph, subject, predicate, object, qm_iri_or_pair,
     NULL /*selid*/, NULL /*tabid*/, NULL,
     NULL, NULL, NULL, NULL,
     options, (ptrlong)0, (ptrlong)((sparp->sparp_unictr)++) );
