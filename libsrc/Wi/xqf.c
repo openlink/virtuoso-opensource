@@ -1638,6 +1638,12 @@ xqf_matches (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   val2 = __normalize_arg (val2);
   val3 = __normalize_arg (val3);
 
+  if (!DV_STRINGP (val2))
+    {
+      XQI_SET (xqi, tree->_.xp_func.res, (caddr_t) 0L );
+      return;
+    }
+
   c_opts = xqf_make_regexp_modes (val3);
   xqf_check_regexp (val2, c_opts);
 
