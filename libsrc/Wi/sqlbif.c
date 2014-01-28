@@ -14126,11 +14126,15 @@ bif_getrusage (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 void 
 sti_init (sys_timer_t* sti)
 {
+#ifdef HAVE_GETRUSAGE
   struct rusage ru;
   getrusage (RUSAGE_SELF, &ru);
+#endif
   sti->sti_real = get_msec_real_time ();
+#ifdef HAVE_GETRUSAGE
   sti->sti_cpu = ru.ru_utime.tv_sec * 1000 +  ru.ru_utime.tv_usec / 1000;
   sti->sti_sys = ru.ru_stime.tv_sec * 1000 +  ru.ru_stime.tv_usec / 1000;
+#endif
 }
 
 
