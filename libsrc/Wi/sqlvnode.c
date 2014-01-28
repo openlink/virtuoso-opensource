@@ -331,19 +331,29 @@ bits_mix (db_buf_t bits, db_buf_t mask, int n_bits)
 {
   /*consider bits of bits where mask has a 1 bit.  2 if both 0 and 1 exist, 1 if all 1, 0 if all 0 */
   int n_bytes = ALIGN_8 (n_bits) / 8;
-  int rem = (n_bytes * 8) - n_bits, inx, zeros = 0, ones = 0;
+  int rem = 8 - (n_bytes * 8 - n_bits), inx, zeros = 0, ones = 0;
+  dtp_t last_ones = n_ones (rem);
   if (!mask)
     {
       for (inx = 0; inx < n_bytes; inx++)
 	{
 	  dtp_t w = bits[inx];
-	  /* in last byte, where only low 8 - rem bits are significant, or ones for the high bits, i.e. ff and and off the 8 - rem low bits */
+	  /* in last byte, where only low rem bits are significant, take out the high bits */
 	  if (inx == n_bytes - 1)
-	    w |= 0xff & ~n_ones (8 - rem);
-	  if (w == 0)
+	    {
+	      w &= last_ones;
+	      if (w == last_ones)
+		ones++;
+	      else  if (0 == w)
 	    zeros++;
-	  else if (w == 255)
+	      else
+		return 2;
+	      break;
+	    }
+	  if (0xff == w)
 	    ones++;
+	  else if (0 == w)
+	    zeros++;
 	  else
 	    return 2;
 	  if (zeros && ones)
@@ -356,10 +366,18 @@ bits_mix (db_buf_t bits, db_buf_t mask, int n_bits)
 	{
 	  dtp_t w = ((dtp_t *) bits)[inx];
 	  dtp_t m = ((dtp_t *) mask)[inx];
-	  if (0 == (m & w))
-	    zeros++;
-	  else if (m == (w & m))
+	  if (inx ==  n_bytes - 1)
+	    {
+	      w &= last_ones;
+	      m &= last_ones;
+	    }
+	  if (w == m)
+	    {
+	      if (w)
 	    ones++;
+	    }
+	  else if (0 == w)
+	    zeros++;
 	  else
 	    return 2;
 	  if (zeros && ones)
