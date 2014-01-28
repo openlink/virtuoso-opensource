@@ -485,6 +485,18 @@ sqlc_select_as (state_slot_t ** sls, caddr_t ** as_list)
   END_DO_BOX;
 }
 
+int
+qr_has_sort_oby (query_t * qr)
+{
+  DO_SET (setp_node_t *, setp, &qr->qr_nodes)
+    {
+      if (IS_QN (setp, setp_node_input) && setp->setp_ha && HA_ORDER == setp->setp_ha->ha_op)
+	return 1;
+    }
+  END_DO_SET();
+  return 0;
+}
+
 
 void
 sqlc_select_top (sql_comp_t * sc, select_node_t * sel, ST * tree,
@@ -492,7 +504,7 @@ sqlc_select_top (sql_comp_t * sc, select_node_t * sel, ST * tree,
 {
   ST * top = SEL_TOP (tree);
   ST * texp = tree->_.select_stmt.table_exp;
-  if (texp && texp->_.table_exp.order_by)
+  if (texp && texp->_.table_exp.order_by && qr_has_sort_oby (sc->sc_cc->cc_query))
     return;
   if (!top || SEL_IS_TRANS (tree))
     return;
