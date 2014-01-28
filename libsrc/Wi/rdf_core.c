@@ -4142,6 +4142,8 @@ void jso__qm_format_jsocd_validation_cbk (jso_rtti_t *inst_rtti, dk_set_t *warni
 extern caddr_t bif_turtle_lex_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 #endif
 
+void bif_iri_to_id_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
+
 void
 rdf_core_init (void)
 {
@@ -4164,6 +4166,7 @@ rdf_core_init (void)
   bif_set_uses_index (bif_rdf_load_turtle_local_file);
   bif_define ("turtle_lex_analyze", bif_turtle_lex_analyze);
   bif_define_typed ("iri_to_id", bif_iri_to_id, &bt_iri_id);
+  bif_set_vectored (bif_iri_to_id, bif_iri_to_id_vec);
   bif_set_cluster_rec ("iri_to_id");
   bif_set_enlist ("iri_to_id");
   bif_define ("iri_ensure", bif_iri_ensure);
@@ -4175,17 +4178,17 @@ rdf_core_init (void)
   bif_set_uses_index (bif_iri_to_id_repl);
   bif_define ("iri_canonicalize", bif_iri_canonicalize);
   bif_set_uses_index (bif_iri_canonicalize);
-  bif_define ("iri_to_id_nosignal", bif_iri_to_id_nosignal);
+  bif_define_typed ("iri_to_id_nosignal", bif_iri_to_id_nosignal, &bt_any);
   bif_set_uses_index (bif_iri_to_id_nosignal);
   bif_set_cluster_rec ("iri_to_id_nosignal");
   bif_define_typed ("iri_to_id_if_cached", bif_iri_to_id_if_cached, &bt_varchar);
-  bif_define_typed ("id_to_iri", bif_id_to_iri, &bt_varchar);
+  bif_define_typed ("id_to_iri", bif_id_to_iri, &bt_any);
   bif_set_uses_index (bif_id_to_iri);
   bif_set_cluster_rec ("id_to_iri");
   bif_define_typed ("id_to_canonicalized_iri", bif_id_to_canonicalized_iri, &bt_varchar);
   bif_set_uses_index (bif_id_to_canonicalized_iri);
   bif_set_cluster_rec ("id_to_canonicalized_iri");
-  bif_define_typed ("id_to_iri_nosignal", bif_id_to_iri_nosignal, &bt_varchar);
+  bif_define_typed ("id_to_iri_nosignal", bif_id_to_iri_nosignal, &bt_any);
   bif_set_uses_index (bif_id_to_iri_nosignal);
   bif_set_cluster_rec ("id_to_iri_nosignal");
 

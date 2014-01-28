@@ -1595,10 +1595,13 @@ bif_metadata_t *
 bif_define (const char *raw_name, bif_t bif)
 {
   caddr_t name;
-  bif_metadata_t *bmd;
+  bif_metadata_t *bmd = bif_to_bif_metadata_hash ? (bif_metadata_t*)gethash ((void*)bif, bif_to_bif_metadata_hash) : NULL;
   name = sqlp_box_id_upcase (raw_name);
-  bmd = (bif_metadata_t *)dk_alloc_zero (sizeof (bif_metadata_t));
-  bmd->bmd_name = box_dv_short_string (name);
+if (!bmd)
+  {
+    bmd = (bif_metadata_t *)dk_alloc_zero (sizeof (bif_metadata_t));
+    bmd->bmd_name = box_dv_short_string (name);
+  }
   bmd->bmd_main_impl = bif;
   bmd->bmd_max_argcount = MAX_BOX_ELEMENTS;
   bif_define_int (name, bif, bmd);
@@ -1664,8 +1667,11 @@ bif_metadata_t *
 bif_define_typed (const char *name, bif_t bif, bif_type_t * bt)
 {
   bif_metadata_t *bmd = bif_define (name, bif);
-  if (NULL != bmd->bmd_ret_type)
-    GPF_T1 ("bif return type cannot be changed");
+  if (NULL != bmd->bmd_ret_type && bt->bt_dtp !=  bmd->bmd_ret_type->bt_dtp)
+    {
+      bing ();
+      //GPF_T1 ("bif return type cannot be changed");
+    }
   bmd->bmd_ret_type = bt;
   return bmd;
 }

@@ -5966,7 +5966,7 @@ rdf_box_init ()
   bif_define_typed ("rdf_box_needs_digest", bif_rdf_box_needs_digest, &bt_integer);
   bif_define_typed ("rdf_box_strcmp", bif_rdf_box_strcmp, &bt_integer);
   bif_define_typed ("rdf_box_migrate_after_06_02_3129", bif_rdf_box_migrate_after_06_02_3129, &bt_integer);
-  bif_define_typed ("__rdf_long_of_obj", bif_rdf_long_of_obj, &bt_any);
+  bif_define_typed ("__rdf_long_of_obj", bif_rdf_long_of_obj, &bt_any_box);
   bif_set_uses_index (bif_rdf_long_of_obj);
   bif_define_typed ("__rdf_box_make_complete", bif_rdf_box_make_complete, &bt_integer);
   bif_set_uses_index (bif_rdf_box_make_complete);

@@ -723,3 +723,57 @@ bif_str_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_
     }
   END_SET_LOOP;
 }
+
+
+void
+bif_iri_to_id_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret)
+{
+  static char * cl_op_name = "IRI_TO_ID_1";
+  static char * op_name = "L_IRI_TO_ID";
+  QNCAST (QI, qi, qst);
+  db_buf_t set_mask = qi->qi_set_mask;
+  int set, n_sets = qi->qi_n_sets, first_set = 0;
+  int n_args = BOX_ELEMENTS (args);
+  cl_req_group_t * clrg;
+  cucurbit_t * cu;
+  int is_cl = CL_RUN_CLUSTER == cl_run_local_only;
+  if (1 != n_args)
+    {
+      *err_ret = BIF_NOT_VECTORED;
+      return;
+    }
+  clrg = dpipe_allocate (qi, 0, 1, is_cl ? &cl_op_name : &op_name);
+  cu = clrg->clrg_cu;
+  cu->cu_is_ordered = 1;
+  cu->cu_qst = qst;
+  mp_comment (clrg->clrg_pool, "vec_iri ", "");
+  QR_RESET_CTX
+    {
+      SET_LOOP 
+	{
+	  cu_ssl_row (cu, qst, args, 0);
+	}
+      END_SET_LOOP;
+      if (!is_cl)
+	{
+	  cu_rl_local_exec (cu);
+	}
+      first_set = 0;
+      SET_LOOP
+	{
+	  caddr_t * r = cu_next (clrg->clrg_cu, qi, 0);
+	  qst_set_over (qst, ret, r[2]);
+	}
+      END_SET_LOOP;
+      if (is_cl)
+	cu_next (clrg->clrg_cu, qi, 1);
+    }
+  QR_RESET_CODE
+    {
+      POP_QR_RESET;
+      dk_free_box ((caddr_t)clrg);
+      longjmp_splice (__self->thr_reset_ctx, reset_code);
+    }
+  END_QR_RESET;
+  dk_free_box ((caddr_t) clrg);
+}
