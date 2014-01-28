@@ -1882,7 +1882,7 @@ caddr_t bif_geometry_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
 
 caddr_t bif_st_num_geometries (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  geo_t *g = bif_geo_arg (qst, args, 0, "ST_NumGeometries", -1);
+  geo_t *g = bif_geo_arg (qst, args, 0, "ST_NumGeometries", GEO_ARG_ANY_NULLABLE);
   ewkt_kwd_metas_t *metas;
   if (NULL == g)
     return NEW_DB_NULL;
@@ -1893,7 +1893,7 @@ caddr_t bif_st_num_geometries (caddr_t * qst, caddr_t * err_ret, state_slot_t **
 
 caddr_t bif_st_geometry_n (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  geo_t *g = bif_geo_arg (qst, args, 0, "ST_GeometryN", -1);
+  geo_t *g = bif_geo_arg (qst, args, 0, "ST_GeometryN", GEO_ARG_ANY_NULLABLE);
   boxint idx = bif_long_arg (qst, args, 1, "ST_GeometryN");
   if (NULL == g)
     return NEW_DB_NULL;
@@ -1906,7 +1906,7 @@ caddr_t bif_st_geometry_n (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
 
 caddr_t bif_st_get_bounding_box_n (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  geo_t *g = bif_geo_arg (qst, args, 0, "st_get_bounding_box_n", -1);
+  geo_t *g = bif_geo_arg (qst, args, 0, "st_get_bounding_box_n", GEO_ARG_ANY_NULLABLE);
   geo_t *sub_g, *res, xy;
   boxint idx = bif_long_arg (qst, args, 1, "st_get_bounding_box_n");
   if (NULL == g)
