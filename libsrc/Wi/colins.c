@@ -1154,7 +1154,7 @@ cer_append_ce (ce_ins_ctx_t * ceic, ceic_result_page_t * cer, db_buf_t ce, int i
 
 #define CER_ADD(bytes, ce)				\
 {  \
-  if (cer->cer_pm->pm_bytes_free < bytes) \
+  if (cer->cer_pm->pm_bytes_free < bytes || cer->cer_n_ces >= (PM_MAX_ENTRIES - 4) / 2) \
     cer = ceic_result_page (ceic); \
   cer->cer_pm->pm_bytes_free -= bytes; \
   cer->cer_n_ces++; \
