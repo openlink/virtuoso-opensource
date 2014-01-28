@@ -1622,6 +1622,7 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
     {
       ssg_valmode_t smallest_union = SSG_VALMODE_AUTO;
       int var_miss_in_some_members = 0;
+      int var_is_fixed_ref_in_some_members = 0;
       int all_cases_make_only_refs = 1;
       int sqlval_is_ok_and_cheap = 0x2;
       DO_BOX_FAST (SPART *, gp_member, gp_member_idx, gp->_.gp.members)
@@ -1640,17 +1641,12 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
             (SPART_VARR_NOT_NULL & member_eq->e_rvr.rvrRestrictions) &&
             (SPART_VARR_IS_REF & member_eq->e_rvr.rvrRestrictions) )
             {
-              quad_map_t *dflt_qm = sparp->sparp_storage ? sparp->sparp_storage->qsDefaultMap : NULL;
-              member_valmode = qm_format_default_iri_ref;
-              if ((NULL != dflt_qm) && (NULL != dflt_qm->qmSubjectMap))
-                member_valmode = dflt_qm->qmSubjectMap->qmvFormat;
+              var_is_fixed_ref_in_some_members = 1;
+              continue;
             }
-          else
-            {
-              member_valmode = sparp_equiv_native_valmode (sparp, gp_member, member_eq);
-              if (all_cases_make_only_refs && !(SPART_VARR_IS_REF & member_eq->e_rvr.rvrRestrictions))
-                all_cases_make_only_refs = 0;
-            }
+          member_valmode = sparp_equiv_native_valmode (sparp, gp_member, member_eq);
+          if (all_cases_make_only_refs && !(SPART_VARR_IS_REF & member_eq->e_rvr.rvrRestrictions))
+            all_cases_make_only_refs = 0;
           if (NULL == member_valmode)
             continue;
           smallest_union = ssg_smallest_union_valmode (smallest_union, member_valmode, &sqlval_is_ok_and_cheap);
@@ -1669,7 +1665,15 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
             smallest_union = ssg_find_nullable_superformat (smallest_union); /* ... format that does not support NULLs is not appropriate, too */
         }
       if ((sqlval_is_ok_and_cheap || all_cases_make_only_refs) && (SSG_VALMODE_LONG == smallest_union))
-        smallest_union = SSG_VALMODE_SQLVAL;
+        return SSG_VALMODE_SQLVAL;
+      if (var_is_fixed_ref_in_some_members)
+        {
+          quad_map_t *dflt_qm = sparp->sparp_storage ? sparp->sparp_storage->qsDefaultMap : NULL;
+          ssg_valmode_t fixed_ref_member_valmode = qm_format_default_iri_ref;
+          if ((NULL != dflt_qm) && (NULL != dflt_qm->qmSubjectMap))
+            fixed_ref_member_valmode = dflt_qm->qmSubjectMap->qmvFormat;
+          smallest_union = ssg_smallest_union_valmode (smallest_union, fixed_ref_member_valmode, &sqlval_is_ok_and_cheap);
+        }
       return smallest_union;
     }
   largest_intersect = SSG_VALMODE_AUTO;

@@ -6322,10 +6322,15 @@ sparp_try_reuse_tabid_in_union (sparp_t *sparp, SPART *curr, int base_idx)
                   if (((base_restr & SPART_VARR_IS_REF) && (dep_restr & SPART_VARR_IS_LIT)) ||
                     ((base_restr & SPART_VARR_IS_LIT) && (dep_restr & SPART_VARR_IS_REF)) )
                     goto next_dep; /* see below */
-#if 0
-                  if (!sparp_equivs_have_same_fixedvalue (sparp, base_fld_eq, dep_fld_eq))
+/* For a typical RDF View, predicate in
+select ?o where { graph ?g { ?s ?:p_param ?o }}
+is a strong filter that will disable all or almost all branches of UNION except very few, so UNION is much better than BREAKUP.
+In addition, ignoring external connections may result in an error because the connection will be printed as
+WHERE (p_param = const_p_from_base_fld)
+at the end of the breakup. This is wrong because consts of base_fld and dep_fld may differ. */
+                  if (!sparp_equivs_have_same_fixedvalue (sparp, base_fld_eq, dep_fld_eq)
+                    && (SPARP_ASSIGNED_EXTERNALLY (base_restr) || SPARP_ASSIGNED_EXTERNALLY (dep_restr)) )
                     goto next_dep; /* see below */
-#endif
                 }
             }
         }
