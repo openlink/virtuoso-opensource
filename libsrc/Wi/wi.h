@@ -1730,7 +1730,7 @@ struct row_delta_s
   row_size_t	rd_non_comp_len;
   slice_id_t	rd_slice;
   char		rd_any_ser_flags;
-  short		rd_non_comp_max;
+  uint32		rd_non_comp_max;
   dp_addr_t		rd_leaf; /* if lp, if upd or ins concerns leaf ptr */
   dbe_col_loc_t **	rd_upd_change;
   dbe_key_t *		rd_key;
