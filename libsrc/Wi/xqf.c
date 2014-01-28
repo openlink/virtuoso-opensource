@@ -1642,7 +1642,7 @@ xqf_matches (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   xqf_check_regexp (val2, c_opts);
 
   {
-    caddr_t res = regexp_match_01 (val2, val1, c_opts);
+    caddr_t res = DV_STRINGP (val1) ? regexp_match_01 (val2, val1, c_opts) : NULL;
     if (res)
       XQI_SET (xqi, tree->_.xp_func.res, (caddr_t) 1L );
     else
