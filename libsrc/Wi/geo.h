@@ -259,6 +259,8 @@ EXE_EXPORT (int, geo_destroy, (geo_t *g));
 EXE_EXPORT (void, geo_serialize, (geo_t * g, dk_session_t * ses));
 EXE_EXPORT (caddr_t, geo_deserialize, (dk_session_t * ses));
 
+EXE_EXPORT (void, geo_print_as_dxf_entity, (geo_t *g, caddr_t *attrs, dk_session_t * ses));
+
 /* EWKT Reader */
 
 #define EWKT_NUM		-1

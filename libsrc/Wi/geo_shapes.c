@@ -2054,6 +2054,111 @@ ewkt_print_sf12 (geo_t * g, dk_session_t * ses)
   ewkt_print_sf12_one (g, ses, 1);
 }
 
+#define SES_DXF_REAL(ses,mark,v) do { char tmpbuf[50]; sprintf (tmpbuf, "\n%3d\n%lf", (mark), (double)(v)); SES_PRINT ((ses), tmpbuf); } while (0)
+
+#define SES_DXF_INTEGER(ses,mark,v) do { char tmpbuf[50]; sprintf (tmpbuf, "\n%3d\n%d", (mark), (int)(v)); SES_PRINT ((ses), tmpbuf); } while (0)
+
+#define SES_DXF_ID(ses,mark,v) do { char tmpbuf[50]; sprintf (tmpbuf, "\n%3d\n%s", (mark), (const char *)(v)); SES_PRINT ((ses), tmpbuf); } while (0)
+
+#define SES_DXF_XYZ(ses,xmark,x,y,z,flags) do { \
+    SES_DXF_REAL (ses, xmark, (x)); \
+    SES_DXF_REAL (ses, xmark+10, (y)); \
+    if ((flags) & GEO_A_Z) \
+      SES_DXF_REAL (ses, xmark+20, (z)); \
+  } while (0)
+
+void
+geo_print_dxf_attrs (caddr_t *attrs, dk_session_t *ses)
+{
+  int ofs, len = BOX_ELEMENTS (attrs);
+  if (len % 2)
+    sqlr_new_error ("22023", "DXF01", "Vector of DXF attributes should be of even length, not of length %d", len);
+  for (ofs = 0; ofs < len; ofs += 2)
+    {
+      caddr_t mark_box = attrs [ofs], v_box = attrs [ofs + 1];
+      int mark;
+      if (DV_LONG_INT != DV_TYPE_OF (mark_box))
+        sqlr_new_error ("22023", "DXF02", "Vector of DXF attributes contains non-integer attribute mark at offset %d", ofs);
+      mark = unbox (mark_box);
+      if ((mark <= 0) || (mark > 9999))
+        sqlr_new_error ("22023", "DXF03", "Vector of DXF attributes contains wrong attribute mark %d at offset %d", mark, ofs);
+      switch (DV_TYPE_OF (v_box))
+        {
+        case DV_SINGLE_FLOAT: SES_DXF_REAL (ses, mark, unbox_float (v_box)); break;
+        case DV_DOUBLE_FLOAT: SES_DXF_REAL (ses, mark, unbox_double (v_box)); break;
+        case DV_LONG_INT: SES_DXF_INTEGER (ses, mark, unbox (v_box)); break;
+        case DV_UNAME: SES_DXF_ID (ses, mark, v_box); break;
+        case DV_STRING: SES_DXF_ID (ses, mark, v_box); break;
+        default:
+          sqlr_new_error ("22023", "DXF04", "Vector of DXF attributes contains value of unsupported type %d for attribute mark %d at offset %d", DV_TYPE_OF (v_box), mark, ofs);
+        }
+    }
+}
+
+void
+geo_print_as_dxf_entity (geo_t *g, caddr_t *attrs, dk_session_t *ses)
+{
+  int flags_no_zm = GEO_TYPE_NO_ZM (g->geo_flags);
+  switch (flags_no_zm)
+    {
+    case GEO_POINT:
+      SES_DXF_ID (ses, 0, "POINT");
+      SES_DXF_XYZ (ses, 10, g->XYbox.Xmin, g->XYbox.Ymin, g->_.point.point_ZMbox.Zmin, g->geo_flags);
+      break;
+    case GEO_BOX:
+      SES_DXF_ID (ses, 0, "SOLID");
+      SES_DXF_XYZ (ses, 10, g->XYbox.Xmin, g->XYbox.Ymin, 0.0, 0);
+      SES_DXF_XYZ (ses, 11, g->XYbox.Xmin, g->XYbox.Ymax, 0.0, 0);
+      SES_DXF_XYZ (ses, 12, g->XYbox.Xmax, g->XYbox.Ymin, 0.0, 0);
+      SES_DXF_XYZ (ses, 13, g->XYbox.Xmax, g->XYbox.Ymax, 0.0, 0);
+      if (g->geo_flags & GEO_A_Z)
+        {
+          SES_DXF_REAL (ses, 38, g->_.point.point_ZMbox.Zmin);
+          SES_DXF_REAL (ses, 39, g->_.point.point_ZMbox.Zmax - g->_.point.point_ZMbox.Zmin);
+        }
+      break;
+    case GEO_POINTLIST:
+      {
+        int inx, len = g->_.pline.len;
+        for (inx=0; inx < len; inx++)
+          {
+            SES_DXF_ID (ses, 0, "POINT");
+            SES_DXF_XYZ (ses, 10, g->_.pline.Xs[inx], g->_.pline.Ys[inx], g->_.pline.Zs[inx], g->geo_flags);
+            geo_print_dxf_attrs (attrs, ses);
+          }
+        return; /* not "break" because attrs are repeatedly printed for each point */
+      }
+    case GEO_LINESTRING: case GEO_RING:
+      {
+        int inx, len = g->_.pline.len;
+        SES_DXF_ID (ses, 0, "LWPOLYLINE");
+        if (GEO_RING == flags_no_zm)
+          SES_DXF_INTEGER (ses, 70, 1);
+        geo_print_dxf_attrs (attrs, ses);
+        SES_DXF_INTEGER (ses, 90, len);
+        for (inx=0; inx < len; inx++)
+          SES_DXF_XYZ (ses, 10, g->_.pline.Xs[inx], g->_.pline.Ys[inx], g->_.pline.Zs[inx], g->geo_flags);
+        return; /* not "break" because attrs are repeatedly printed for each point */
+      }
+    case GEO_COLLECTION: case GEO_MULTI_LINESTRING: case GEO_MULTI_POLYGON: case GEO_MULTI_CURVE:
+    case GEO_POLYGON:
+      {
+        int inx, len = g->_.parts.len;
+        for (inx=0; inx < len; inx++)
+          {
+            geo_t *itm = g->_.parts.items[inx];
+            geo_print_as_dxf_entity (itm, attrs, ses);
+          }
+        return; /* not "break" because attrs are repeatedly printed for each item */
+      }
+    case GEO_ARCSTRING: case GEO_ARCSTRING | GEO_A_CLOSED:
+    case GEO_CURVE: case GEO_CLOSEDCURVE: case GEO_CURVEPOLYGON:
+      sqlr_new_error ("22023", "DXF05", "This version of Virtuoso does not support DXF output of shapes of type %d", g->geo_flags);
+    default: GPF_T;
+    }
+  geo_print_dxf_attrs (attrs, ses);
+}
+
 /* Internal binary serialization/deserialization */
 
 /* Serialization format is as follows:
