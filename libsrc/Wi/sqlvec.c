@@ -4177,6 +4177,9 @@ sqlg_vec_qns (sql_comp_t * sc, data_source_t * qn, dk_set_t prev_nodes)
       if (qn_is_const_card (qn))
 	{
 	  sqlg_const_card_ssl_defs (sc, qn);
+	  /* the next precode will define slots as if it was the after code of the prev, can have more consecutive const card qns and the current node should not be one of these when doing the precode because then the ssl will be defd on a qn that is not in the list of predecessor qns and a ref cannot be made  */
+	  if (qn->src_prev)
+	    sc->sc_vec_current = qn->src_prev;
 	  continue;
 	}
       if (IS_QN (qn, outer_seq_end_input))
