@@ -3179,7 +3179,7 @@ col_min_max_trunc (caddr_t val)
   switch (dtp)
     {
     case DV_SINGLE_FLOAT: case DV_DOUBLE_FLOAT: case DV_NUMERIC: 
-    case DV_DATETIME:
+    case DV_LONG_INT: case DV_DATETIME:
       return val;
     case DV_STRING:
       len = box_length (val);
