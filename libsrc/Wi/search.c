@@ -1771,6 +1771,11 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
   while (1)
     {
 #ifndef NDEBUG
+      if (it->itc_insert_key->key_is_bitmap && it->itc_map_pos >= (*buf_ret)->bd_content_map->pm_count)
+	{
+	  log_error ("itc_map_pos out of range in page search");
+	  it->itc_map_pos = ITC_AT_END;
+	}
       if (ITC_AT_END == it->itc_map_pos)
 	{
 	  *leaf_ret = 0;
