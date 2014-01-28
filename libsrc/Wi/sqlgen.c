@@ -5749,7 +5749,9 @@ dfe_unit_col_loci (df_elt_t * dfe)
       END_DO_SET();
       dfe_list_col_loci ((df_elt_t *)dfe->_.setp.after_test);
       break;
-
+    case DFE_FILTER:
+      dfe_list_col_loci ((df_elt_t *)dfe->_.filter.body);
+      break;
     case DFE_BOP:
     case DFE_BOP_PRED:
       dfe_unit_col_loci (dfe->_.bin.left);
