@@ -1484,7 +1484,9 @@ ks_start_search (key_source_t * ks, caddr_t * inst, caddr_t * state,
       itc->itc_rows_on_leaves = 0;
       itc->itc_rows_selected = 0;
       qr = ts->src_gen.src_query;
-      if (qr->qr_select_node
+      if (ks->ks_lock_mode)
+	itc->itc_lock_mode = ks->ks_lock_mode;
+      else if (qr->qr_select_node
 	  && ts->src_gen.src_query->qr_lock_mode != PL_EXCLUSIVE)
 	{
 	  itc->itc_lock_mode = qi->qi_lock_mode;

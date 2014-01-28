@@ -602,6 +602,7 @@ struct key_source_s
     char		ks_descending;	/* if reading from end to start */
     char		ks_is_vacuum;
     char		ks_isolation;
+    char		ks_lock_mode;
     char		ks_check;
     char		ks_is_last;	/* if last ks in join and no select or
 					   postprocess follows.

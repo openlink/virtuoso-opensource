@@ -424,10 +424,13 @@ sqlg_key_source_create (sqlo_t * so, df_elt_t * tb_dfe, dbe_key_t * key)
   int part_no = 0;
   df_elt_t ** in_list;
   caddr_t iso = sqlo_opt_value (tb_dfe->_.table.ot->ot_opts, OPT_ISOLATION);
+  int lock_mode = (ptrlong)sqlo_opt_value (tb_dfe->_.table.ot->ot_opts, OPT_NO_LOCK);
   NEW_VARZ (key_source_t, ks);
   ks->ks_key = key;
   if (iso)
     ks->ks_isolation = iso_string_to_code  (iso);
+  if (lock_mode)
+    ks->ks_lock_mode = 1 == lock_mode ? 0 : 2 == lock_mode ? PL_EXCLUSIVE : 3 == lock_mode ? PL_SHARED : 0;
   ks->ks_check =  NULL != sqlo_opt_value (tb_dfe->_.table.ot->ot_opts, OPT_CHECK);
   if (key->key_is_col)
     ks->ks_row_check = itc_col_row_check_dummy;
