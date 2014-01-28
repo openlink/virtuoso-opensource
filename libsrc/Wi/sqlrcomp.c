@@ -1880,7 +1880,9 @@ sqlc_pos_to_searched_where (sql_comp_t * sc, subq_compilation_t * sqc, char *cr_
       while (n_out &&
 	     DV_ITC == out[n_out - 1]-> ssl_sqt.sqt_dtp)
 	n_out--;
-      snprintf (prefix, sizeof (prefix), "C%d", cr_ctr++);
+      if (!sqc->sqc_cr_pref_no)
+	sqc->sqc_cr_pref_no = ++cr_ctr;
+      snprintf (prefix, sizeof (prefix), "C%d", sqc->sqc_cr_pref_no);
 
       for (inx = 0; inx < n_parts; inx++)
 	{

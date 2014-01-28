@@ -313,6 +313,7 @@ typedef struct subq_compilation_s
     state_slot_t *	sqc_cr_state_ssl;
     dk_set_t		sqc_fetches;	/* fetch instructions referencing this
 					   cr */
+    short		sqc_cr_pref_no;
     char		sqc_is_cursor;	/* in declare .. cursor for ... */
     char		sqc_is_current_of;
 					/* if cursor ref'd in where current of
