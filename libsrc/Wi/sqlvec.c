@@ -3909,7 +3909,10 @@ sqlg_vec_ts (sql_comp_t * sc, table_source_t * ts)
   ssl_list = ks->ks_out_slots;
   inx = 0;
   if (ks->ks_is_proc_view)
-    ks->ks_out_cols = dk_set_copy (ks->ks_key->key_parts);
+    {
+      dk_set_free (ks->ks_out_cols);
+      ks->ks_out_cols = dk_set_copy (ks->ks_key->key_parts);
+    }
   DO_SET (dbe_column_t *, col, &ks->ks_out_cols)
   {
     state_slot_t *ssl = (state_slot_t *) ssl_list->data, *shadow;
