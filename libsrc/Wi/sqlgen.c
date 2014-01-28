@@ -1893,6 +1893,8 @@ sqlg_pop_sqs (sql_comp_t * sc, subq_source_t * sqs, data_source_t ** head, dk_se
 	QNCAST (select_node_t, sel, qn);
 	sel->sel_set_ctr = sctr;
 	sel->sel_subq_inlined = 1;
+	  sel->src_gen.src_after_test = sqs->sqs_after_join_test;
+	  sqs->sqs_after_join_test = NULL;
 	break;
       }
   }
