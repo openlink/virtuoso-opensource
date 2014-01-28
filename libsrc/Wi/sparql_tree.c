@@ -2072,19 +2072,9 @@ sparp_rvrs_have_same_fixedvalue (sparp_t *sparp, rdf_val_range_t *first_rvr, rdf
     return 0;
   if (!(SPART_VARR_FIXED & second_rvr->rvrRestrictions))
     return 0;
-#ifndef NDEBUG
   return sparp_values_equal (sparp,
     first_rvr->rvrFixedValue, first_rvr->rvrDatatype, first_rvr->rvrLanguage,
     second_rvr->rvrFixedValue, second_rvr->rvrDatatype, second_rvr->rvrLanguage );
-#endif
-  if ((SPART_VARR_IS_REF & first_rvr->rvrRestrictions) != (SPART_VARR_IS_REF & second_rvr->rvrRestrictions))
-    return 0;
-  if (first_rvr->rvrDatatype != second_rvr->rvrDatatype)
-    return 0;
-  if ( strcmp (
-    ((NULL == first_rvr->rvrDatatype) ? "" : first_rvr->rvrDatatype),
-    ((NULL == second_rvr->rvrDatatype) ? "" : second_rvr->rvrDatatype) ) )
-    return 0;
 }
 
 void
