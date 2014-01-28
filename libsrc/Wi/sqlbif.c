@@ -12089,7 +12089,6 @@ bif_ddl_change (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int sys_tb = (id_hash_system_tables && NULL != id_hash_get (id_hash_system_tables, (caddr_t) &tb));
   if (tb_def && tb_def->tb_primary_key && tb_def->tb_primary_key->key_id <= KI_UDT)
     sqlr_new_error ("42000", ".....", "May not redef or reload def of system table");
-  thr_set_tlsf (THREAD_CURRENT_THREAD, dk_base_tlsf);
   log_dd_change (qi -> qi_trx, tb);
   qi_read_table_schema (qi, tb_def && !sys_tb ? tb_def->tb_name : tb);
   qi->qi_trx->lt_replicate = (caddr_t *)repl;
