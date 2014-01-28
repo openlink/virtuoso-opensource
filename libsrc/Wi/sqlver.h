@@ -25,7 +25,7 @@
  *
  */
 
-#define PRODUCT_COPYRIGHT	"Copyright (C) 1998-2013 OpenLink Software"
+#define PRODUCT_COPYRIGHT	"Copyright (C) 1998-2014 OpenLink Software"
 #define PRODUCT_NAME		"OpenLink Virtuoso"
 
 /* DBMS Server */
