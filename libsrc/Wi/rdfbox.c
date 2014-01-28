@@ -2196,8 +2196,7 @@ rdf_dist_or_redu_ser_long (caddr_t val, caddr_t * err_ret, int is_reduiced, cons
 	}
       if (rbb->rbb_base.rb_chksum_tail)
 	ser_vec[5] = (caddr_t) rbb->rbb_chksum;
-
-      res = print_object_to_new_string ((caddr_t) ser_vec, fun_name, err_ret);
+      res = print_object_to_new_string ((caddr_t) ser_vec, fun_name, err_ret, 0);
 
       if (subbox != rbb->rbb_base.rb_box)
 	dk_free_box (subbox);
@@ -2207,7 +2206,7 @@ rdf_dist_or_redu_ser_long (caddr_t val, caddr_t * err_ret, int is_reduiced, cons
       return res;
     }
 
-  return print_object_to_new_string (val, fun_name, err_ret);
+  return print_object_to_new_string (val, fun_name, err_ret, 0);
 }
 
 caddr_t

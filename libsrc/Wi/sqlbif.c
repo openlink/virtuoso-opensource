@@ -11671,7 +11671,7 @@ bif_log_enable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 caddr_t
-print_object_to_new_string (caddr_t xx, const char *fun_name, caddr_t * err_ret)
+print_object_to_new_string (caddr_t xx, const char *fun_name, caddr_t * err_ret, int flags)
 {
   scheduler_io_data_t iod;
   caddr_t res;
@@ -11681,6 +11681,7 @@ print_object_to_new_string (caddr_t xx, const char *fun_name, caddr_t * err_ret)
   SESSION_SCH_DATA (out) = &iod;
   memset (&iod, 0, sizeof (iod));
 
+  out->dks_cluster_flags = flags;
   CATCH_WRITE_FAIL (out)
     {
       print_object (xx, out, NULL, NULL);
@@ -11708,8 +11709,9 @@ print_object_to_new_string (caddr_t xx, const char *fun_name, caddr_t * err_ret)
 caddr_t
 bif_serialize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  int flags = BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "serialize") : 0;
   caddr_t xx = bif_arg (qst, args, 0, "serialize");
-  return print_object_to_new_string (xx, "serialize", err_ret);
+  return print_object_to_new_string (xx, "serialize", err_ret, flags);
 }
 
 caddr_t
