@@ -241,6 +241,7 @@ dfe_scan_card (df_elt_t * dfe)
   DO_SET (df_elt_t *, pred, &dfe->_.table.col_preds)
     {
       if (((DFE_BOP_PRED  == pred->dfe_type || DFE_BOP == pred->dfe_type) && BOP_EQ == pred->_.bin.op)
+	  && DFE_COLUMN == pred->_.bin.left->dfe_type
 	  && 'P' == toupper (pred->_.bin.left->_.col.col->col_name[0])
 	  && (p = pred_rhs_iri (pred)))
 	break;
