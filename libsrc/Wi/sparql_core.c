@@ -1725,45 +1725,57 @@ caddr_t
 spar_filter_is_freetext (sparp_t *sparp, SPART *filt, SPART *base_triple)
 {
   caddr_t fname;
+  SPART **args;
+  int argcount;
   if (SPAR_FUNCALL != SPART_TYPE (filt))
-    return 0;
+    return NULL;
   fname = filt->_.funcall.qname;
+  args = filt->_.funcall.argtrees;
+  argcount = BOX_ELEMENTS (args);
   if (SPAR_FT_TYPE_IS_GEO(fname))
     {
-      if (2 < BOX_ELEMENTS (filt->_.funcall.argtrees))
+      if (3 < argcount)
         return NULL;
-      if (2 > BOX_ELEMENTS (filt->_.funcall.argtrees))
-        spar_internal_error (sparp, "sparp_" "filter_is_freetext(): not enough arguments for spatial intersect function");
-      if (SPAR_VARIABLE != SPART_TYPE (filt->_.funcall.argtrees[0]))
+      if (2 > argcount)
+        spar_error (sparp, "Not enough arguments for spatial function %s", fname);
+      if ((SPAR_VARIABLE != SPART_TYPE (args[0]))
+        && (SPAR_VARIABLE == SPART_TYPE (args[1]))
+        && ( (uname_bif_c_spatial_intersects	== (fname))
+          || (uname_bif_c_st_intersects		== (fname))
+          || (uname_bif_c_st_may_intersect	== (fname)) ) )
         {
-          if ((  (uname_bif_c_spatial_intersects	== (fname))
-              || (uname_bif_c_st_intersects		== (fname))
-              || (uname_bif_c_st_may_intersect		== (fname)) )
-            && (SPAR_VARIABLE == SPART_TYPE (filt->_.funcall.argtrees[1])) )
-            {
-              SPART *swap = filt->_.funcall.argtrees[0]; filt->_.funcall.argtrees[0] = filt->_.funcall.argtrees[1]; filt->_.funcall.argtrees[1] = swap;
-            }
-          else
-            return NULL;
+          SPART *swap = args[0]; args[0] = args[1]; args[1] = swap;
         }
+      if ((SPAR_VARIABLE != SPART_TYPE (args[0]))
+        || !SPART_VARNAME_IS_PLAIN (args[0]->_.var.vname)
+        || !sparp_tree_is_global_expn (sparp, args[1])
+        || ((2 < argcount) && !sparp_tree_is_global_expn (sparp, args[1])) )
+        return NULL;
     }
   else if ((fname == uname_bif_c_contains)
     || (fname == uname_bif_c_xcontains)
     || (fname == uname_bif_c_xpath_contains)
     || (fname == uname_bif_c_xquery_contains) )
-    { ; }
+    { 
+      if (2 > argcount)
+        spar_error (sparp, "Not enough arguments for free-text function %s", fname);
+      if ((SPAR_VARIABLE != SPART_TYPE (args[0]))
+        || !SPART_VARNAME_IS_PLAIN (args[0]->_.var.vname)
+        || !sparp_tree_is_global_expn (sparp, args[1])
+        || ((2 < argcount) && !sparp_tree_is_global_expn (sparp, args[1])) )
+        return NULL;
+    }
   else
     return NULL;
   if (NULL != base_triple)
     {
       caddr_t ft_var_name;
       if (SPAR_VARIABLE != SPART_TYPE (base_triple->_.triple.tr_object))
-        spar_internal_error (sparp, "sparp_" "filter_is_freetext(): triple should have free-text predicate but the object is not a variable");
+        return NULL;
       ft_var_name = base_triple->_.triple.tr_object->_.var.vname;
-      if ((0 == BOX_ELEMENTS (filt->_.funcall.argtrees)) ||
-        (SPAR_VARIABLE != SPART_TYPE (filt->_.funcall.argtrees[0])) ||
-        strcmp (filt->_.funcall.argtrees[0]->_.var.vname, ft_var_name) )
-      return 0;
+      if ((SPAR_VARIABLE != SPART_TYPE (args[0])) ||
+        strcmp (args[0]->_.var.vname, ft_var_name) )
+      return NULL;
     }
   return fname;
 }
@@ -3876,7 +3888,6 @@ SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, cadd
       long desc_idx = ecm_find_name (p_name, xqf_str_parser_descs_ptr, xqf_str_parser_desc_count, sizeof (xqf_str_parser_desc_t));
       xqf_str_parser_desc_t *desc;
       dtp_t strg_dtp = DV_TYPE_OF (strg);
-      caddr_t cvt;
       if (ECM_MEM_NOT_FOUND == desc_idx)
         goto generic_literal; /* see below */
       desc = xqf_str_parser_descs_ptr + desc_idx;
@@ -5645,7 +5656,7 @@ spar_make_literal_from_sql_box (sparp_t * sparp, caddr_t box, int mode)
 {
   switch (DV_TYPE_OF (box))
     {
-    case DV_LONG_INT: return spartlist (sparp, 4, SPAR_LIT, t_box_num_nonull (box), uname_xmlschema_ns_uri_hash_integer, NULL);
+    case DV_LONG_INT: return spartlist (sparp, 4, SPAR_LIT, t_box_num_nonull (unbox (box)), uname_xmlschema_ns_uri_hash_integer, NULL);
     case DV_NUMERIC: return spartlist (sparp, 4, SPAR_LIT, t_box_copy (box), uname_xmlschema_ns_uri_hash_decimal, NULL);
     case DV_DOUBLE_FLOAT: return spartlist (sparp, 4, SPAR_LIT, t_box_copy (box), uname_xmlschema_ns_uri_hash_double, NULL);
     case DV_UNAME: return spartlist (sparp, 2, SPAR_QNAME, t_box_copy (box));
@@ -5715,12 +5726,12 @@ spar_make_qname_or_literal_from_rvr (sparp_t * sparp, rdf_val_range_t *rvr, int 
       if (!(rvr->rvrRestrictions & SPART_VARR_IS_IRI))
         spar_internal_error (sparp, "spar_" "make_qname_or_literal_from_rvr(): the SPART_VARR_IS_REF rvr is not SPART_VARR_IS_IRI");
       if (make_naked_box_if_possible)
-        return (SPART *)t_box_copy (rvr->rvrFixedValue);
-      return spartlist (sparp, 2, SPAR_QNAME, t_box_copy (rvr->rvrFixedValue));
+        return (SPART *)t_box_copy ((caddr_t)(rvr->rvrFixedValue));
+      return spartlist (sparp, 2, SPAR_QNAME, t_box_copy ((caddr_t)(rvr->rvrFixedValue)));
     }
   if (make_naked_box_if_possible && !(rvr->rvrRestrictions & SPART_VARR_TYPED) && (NULL == rvr->rvrFixedValue))
-    return (SPART *)t_box_copy (rvr->rvrFixedValue);
-  return spartlist (sparp, 4, SPAR_LIT, t_box_copy (rvr->rvrFixedValue), t_box_copy (rvr->rvrDatatype), t_box_copy (rvr->rvrLanguage));
+    return (SPART *)t_box_copy ((caddr_t)(rvr->rvrFixedValue));
+  return spartlist (sparp, 4, SPAR_LIT, t_box_copy ((caddr_t)(rvr->rvrFixedValue)), t_box_copy ((caddr_t)(rvr->rvrDatatype)), t_box_copy ((caddr_t)(rvr->rvrLanguage)));
 }
 
 
