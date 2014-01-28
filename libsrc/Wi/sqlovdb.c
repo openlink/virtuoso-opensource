@@ -41,6 +41,8 @@
 
 
 
+int enable_rts_qp = 1;
+
 void sqlg_dt_text (sqlo_t * so, df_elt_t * dt_dfe, remote_table_source_t * top_rts,
     char * text, size_t tlen, int * fill);
 
@@ -174,6 +176,7 @@ sqlo_dfe_preferred_locus (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 
 #define SQLO_VDB_SAVE
 #define SQLO_VDB_RESTORE
+
 
 
 void

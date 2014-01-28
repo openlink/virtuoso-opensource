@@ -493,6 +493,7 @@ dc_append_null (data_col_t * dc)
   dc_set_null (dc, dc->dc_n_values);
 }
 
+
 caddr_t
 box_deserialize_reusing (db_buf_t string, caddr_t box)
 {

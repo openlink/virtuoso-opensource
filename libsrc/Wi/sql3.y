@@ -1717,15 +1717,22 @@ sql_option
 	| INTO scalar_exp { $$ = t_CONS (OPT_INTO, t_CONS ($2, NULL)); }
 	| FETCH column_ref BY scalar_exp SET column_ref { $$ = t_cons ((void*)OPT_INS_FETCH, t_cons (t_list (4, OPT_INS_FETCH, $2, $4, $6), NULL)); }
 	| VECTORED { $$ = t_cons ((void*)OPT_VECTORED, t_cons ((void*)1, NULL)); }
+	| VECTORED INTNUM { $$ = t_cons ((void*)OPT_VECTORED, t_cons ((void*)$2, NULL)); }
 	| PARTITION GROUP BY { $$ = t_cons ((void*)OPT_PART_GBY, t_cons ((void*)1, NULL)); }
 	| DO NOT PARTITION GROUP BY { $$ = t_cons ((void*)OPT_NO_PART_GBY, t_cons ((void*)1, NULL)); }
 	| CHECK { $$ = t_cons ((void*)OPT_CHECK, t_cons ((void*)1, NULL)); }
 	| WITHOUT_L VECTORING { $$ = t_cons ((void*)OPT_NOT_VECTORED, t_cons ((void*)1, NULL)); }
+	| PARTITION NAME { $$ = t_cons ((void*)OPT_PARTITION, t_cons ((void*)$2, NULL)); }
+	| FROM scalar_exp { $$ = t_cons ((void*)OPT_FROM_FILE, t_cons ((void*)$2, NULL)); }
+	| START_L scalar_exp { $$ = t_cons ((void*)OPT_FILE_START, t_cons ((void*)$2, NULL)); }
+	| ENDX scalar_exp { $$ = t_cons ((void*)OPT_FILE_END, t_cons ((void*)$2, NULL)); }
 	| NAME INTNUM {
 	  if (!stricmp ($1, "vacuum"))
 	    $$ = t_CONS (OPT_VACUUM, t_CONS ($2, NULL));
 	  else if (!stricmp ($1, "RANDOM"))
 	    $$ = t_CONS (OPT_RANDOM_FETCH, t_CONS ($2, NULL));
+	  else if (!stricmp ($1, "PARALLEL"))
+	    $$ = t_CONS (OPT_PARALLEL, t_CONS ($2, NULL));
 	  else if (!stricmp ($1, "EST_TIME"))
 	    $$ = t_CONS (OPT_EST_TIME, t_CONS ($2, NULL));
 	  else if (!stricmp ($1, "EST_SIZE"))

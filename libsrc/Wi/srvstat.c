@@ -2199,6 +2199,11 @@ bif_col_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return box_num (col->col_avg_len);
   if (0 == strcmp (name, "n_values"))
     return box_num (col->col_count);
+  if (0 == strcmp (name, "min"))
+    return box_copy_tree (col->col_min);
+  if (0 == strcmp (name, "max"))
+    return box_copy_tree (col->col_max);
+
   sqlr_new_error ("42000", "ST002", "Bad attribute name in col_stat");
   return NULL;
 }
@@ -4336,6 +4341,108 @@ bif_lt_rc_w_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 void
+col_stat_row (it_cursor_t * itc, dk_set_t cols, caddr_t * row)
+{
+  int n_data = 1;
+  int nth_col = 0;
+  int n_cols = BOX_ELEMENTS (row);
+
+  DO_SET (dbe_column_t *, col, &cols)
+    {
+      col_stat_t * col_stat;
+      caddr_t data;
+      dbe_column_t * current_col;
+      int len;
+      ptrlong * place;
+      dbe_col_loc_t *cl;
+      if (nth_col >= n_cols)
+	break;
+      data = row[nth_col];
+      if (IS_BLOB_DTP (col->col_sqt.sqt_dtp))
+	{
+	  nth_col++;
+	  continue;
+	}
+      current_col = sch_id_to_column (wi_inst.wi_schema, col->col_id);
+      /* can be obsolete row, use the corresponding col of the current version of the key */
+      col_stat = (col_stat_t *) gethash ((void*) current_col, itc->itc_st.cols);
+      if (!col_stat)
+	{
+	  NEW_VARZ (col_stat_t, cs);
+	  sethash ((void*)current_col, itc->itc_st.cols, (void*) cs);
+	  cs->cs_distinct = id_hash_allocate (1001, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+	  id_hash_set_rehash_pct (cs->cs_distinct, 200);
+	  col_stat = cs;
+	}
+
+      len = sqt_fixed_length (&col->col_sqt);
+      if (len <= 0)
+	len = IS_BOX_POINTER (data) ? box_length (data) : 8;
+      if (DV_DB_NULL != DV_TYPE_OF (data))
+	{
+	  col_stat->cs_n_values++;
+	  col_stat->cs_len += len;
+	}
+      place = (ptrlong *) id_hash_get (col_stat->cs_distinct, (caddr_t) &data);
+      if (place)
+	{
+	  if (!(CS_IN_SAMPLE & *place))
+	    *place += CS_IN_SAMPLE | CS_SAMPLE_INC | 1;
+	  else
+	    (*place)++;
+	}
+      else
+	{
+	  uint64 one = CS_IN_SAMPLE | CS_SAMPLE_INC | 1;
+	  id_hash_set (col_stat->cs_distinct, (caddr_t) &data, (caddr_t)&one);
+	  row[nth_col] = NULL;
+	}
+      nth_col++;
+    }
+  END_DO_SET();
+  itc->itc_st.n_sample_rows++;
+  dk_free_tree ((caddr_t)row);
+}
+
+
+caddr_t
+bif_col_set_samples (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int inx, inx2;
+  caddr_t tb_name = bif_string_arg (qst, args, 0, "col_set_samples");
+  caddr_t ** samples = (caddr_t**)bif_array_of_pointer_arg (qst, args, 1, "col_set_samples");
+  int64 est = bif_long_arg (qst, args, 2, "col_set_samples");
+  it_cursor_t itc_auto;
+  it_cursor_t * itc = &itc_auto;
+  dbe_table_t * tb = sch_name_to_table (wi_inst.wi_schema, tb_name);
+  dk_set_t cols;
+  ITC_INIT (itc, NULL, NULL);
+  memzero (&itc->itc_st, sizeof (itc->itc_st));
+  itc->itc_st.cols = hash_table_allocate (31);
+  if (!tb)
+    sqlr_new_error ("42000", "CSNTB", "No table %s", tb_name);
+  cols = key_ensure_visible_parts (tb->tb_primary_key);
+  DO_BOX (caddr_t **, rset, inx, samples)
+    {
+      if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (rset))
+	continue;
+      cs_new_page (itc->itc_st.cols);
+      DO_BOX (caddr_t *, row, inx2, rset)
+	{
+      if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (row))
+	continue;
+	  col_stat_row (itc, cols, row);
+	  rset[inx2] = NULL;
+	}
+      END_DO_BOX;
+    }
+  END_DO_BOX;
+  itc_col_stat_free (itc, 1, est);
+  return NULL;
+}
+
+
+void
 bif_status_init (void)
 {
 #ifdef WIN32
@@ -4351,7 +4458,7 @@ bif_status_init (void)
   bif_define ("__dbf_set", bif_dbf_set);
   bif_define_typed ("key_stat", bif_key_stat, &bt_integer);
   bif_define_typed ("key_estimate", bif_key_estimate, &bt_integer);
-  bif_define_typed ("col_stat", bif_col_stat, &bt_integer);
+  bif_define_typed ("col_stat", bif_col_stat, &bt_any_box);
   bif_define ("__col_info", bif_col_info);
   bif_define ("prof_enable", bif_profile_enable);
   bif_define ("prof_sample", bif_profile_sample);
@@ -4368,6 +4475,8 @@ bif_status_init (void)
   bif_define ("key_seg_check", bif_key_seg_check);
   bif_define_typed ("lt_w_id", bif_lt_w_id, &bt_integer);
   bif_define_typed ("lt_rc_w_id", bif_lt_rc_w_id, &bt_integer);
+  bif_define ("col_set_samples", bif_col_set_samples);
+
 #ifndef NDEBUG
   bif_define ("_sys_real_cv_size", bif_real_cv_size);
 #endif

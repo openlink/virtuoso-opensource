@@ -875,6 +875,7 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
     n_rows = QST_INT (qst, ins->src_gen.src_prev->src_out_fill);
   else
     n_rows = qi->qi_n_sets;
+  ins_mp->mp_block_size = mp_block_size_sc (n_rows * 8 * n_parts);
   rds = (row_delta_t **) mp_alloc (ins_mp, n_rows * sizeof (caddr_t));
   if (!key->key_parts)
     sqlr_new_error ("42S11", "SR119", "Key %.300s has 0 parts. Create index probably failed", key->key_name);

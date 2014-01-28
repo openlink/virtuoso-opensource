@@ -57,6 +57,7 @@ int dc_str_buf_unit = 0x10000;
 size_t c_max_large_vec;
 size_t mp_qi_large_block;
 
+int32 qi_mp_block_sz = 0;
 search_spec_t *sp_list_copy (search_spec_t * sp);
 
 
@@ -929,6 +930,13 @@ ssl_insert_cast (insert_node_t * ins, caddr_t * inst, int nth_col, caddr_t * err
 		      goto next_row;
 		    }
 		  tmp_cl = *cl;
+		  if (DV_BLOB == cl->cl_sqt.sqt_col_dtp && cl->cl_sqt.sqt_class)
+		    {
+		      rd->rd_any_ser_flags = DKS_TO_DC;
+		      rd->rd_non_comp_max = INT32_MAX;
+		      tmp_cl.cl_sqt.sqt_col_dtp = DV_ANY;
+		    }
+		  else
 		  tmp_cl.cl_sqt.sqt_col_dtp = tmp_cl.cl_sqt.sqt_dtp = bh_str_dtp (cl->cl_sqt.sqt_col_dtp);
 		  pcl = &tmp_cl;
 		  if (!res->ssl_sqt.sqt_non_null)
@@ -1947,7 +1955,8 @@ qn_nth_set (data_source_t * qn, caddr_t * inst, int *total_sets)
 	  *total_sets = itc->itc_n_sets - itc->itc_first_set;
 	  return itc->itc_set - itc->itc_first_set;
 	}
-      return *total_sets = ts->src_gen.src_prev ? QST_INT (inst, ts->src_gen.src_prev->src_out_fill) : 0;
+      *total_sets = ts->src_gen.src_prev ? QST_INT (inst, ts->src_gen.src_prev->src_out_fill) : 0;
+      return MAX (0, *total_sets - 1);
     }
   if (IS_QN (qn, hash_source_input)
       || IS_QN (qn, txs_input))
@@ -2052,7 +2061,8 @@ ts_check_batch_sz (table_source_t * ts, caddr_t * inst, it_cursor_t * itc)
   int prev_sz;
   float min_density = 5;
   dbe_key_t *key;
-  if ((!prev && !ts->ts_order_ks->ks_is_qf_first) || !itc->itc_n_sets || !enable_dyn_batch_sz || dc_max_q_batch_sz == itc->itc_batch_size
+  int32 max_q_batch_sz = MIN (dc_max_q_batch_sz, dc_max_batch_sz);
+  if ((!prev && !ts->ts_order_ks->ks_is_qf_first) || !itc->itc_n_sets || !enable_dyn_batch_sz || max_q_batch_sz == itc->itc_batch_size
       || qi->qi_mp->mp_bytes > qi_mp_max_bytes
       || (qi->qi_client->cli_anytime_started && (qi->qi_client->cli_anytime_started + qi->qi_client->cli_anytime_timeout < approx_msec_real_time () + dc_adjust_batch_sz_min_anytime)))
     return;
@@ -2072,7 +2082,7 @@ ts_check_batch_sz (table_source_t * ts, caddr_t * inst, it_cursor_t * itc)
   prev_sz = QST_INT (inst, prev->src_batch_size);
   else
     prev_sz = QST_INT (inst, ts->src_gen.src_batch_size);
-  if (prev_sz == dc_max_q_batch_sz)
+  if (prev_sz == max_q_batch_sz)
     return;
   rows_to_expect = qn_rows_to_expect (prev, inst);
   if (rows_to_expect < prev_sz)
@@ -2087,7 +2097,7 @@ ts_check_batch_sz (table_source_t * ts, caddr_t * inst, it_cursor_t * itc)
     }
   if ((float) itc->itc_rows_on_leaves / MAX (itc->itc_n_sets, itc->itc_rows_selected) > min_density)
     {
-      int target_sz = MIN ((float)dc_max_q_batch_sz, rows_to_expect * 1.2);
+      int target_sz = MIN ((float)max_q_batch_sz, rows_to_expect * 1.2);
       if (target_sz < prev_sz * 2)
 	return;
       if (enable_batch_sz_reserve)
@@ -2103,6 +2113,62 @@ ts_check_batch_sz (table_source_t * ts, caddr_t * inst, it_cursor_t * itc)
     }
 }
 
+
+void
+ins_check_batch_sz (insert_node_t * ins, caddr_t * inst, it_cursor_t * itc)
+{
+  QNCAST (query_instance_t, qi, inst);
+  size_t inc;
+  data_source_t * prev = ins->src_gen.src_prev;
+  float rows_to_expect;
+  int prev_sz, target_sz;
+  float min_density = 5;
+  dbe_key_t * key;
+  if (!itc->itc_n_sets || !enable_dyn_batch_sz || dc_max_batch_sz == itc->itc_n_sets
+      || qi->qi_mp->mp_bytes > qi_mp_max_bytes
+      || (qi->qi_client->cli_anytime_started && (qi->qi_client->cli_anytime_started + qi->qi_client->cli_anytime_timeout < approx_msec_real_time () + dc_adjust_batch_sz_min_anytime)))
+    return;
+  if (mp_large_in_use > c_max_large_vec)
+    {
+      TC (tc_no_mem_for_longer_batch);
+      return;
+    }
+  if (itc->itc_set < itc->itc_first_set)
+    {
+      bing (); /* anomalous to have first set above set, will /0 so return. */
+      return;
+    }
+  if (prev)
+    prev_sz = QST_INT (inst, prev->src_batch_size);
+  else
+    prev_sz = itc->itc_n_sets;
+  if (prev_sz == dc_max_batch_sz)
+    return;
+  rows_to_expect = qn_rows_to_expect (prev, inst);
+  if (rows_to_expect < prev_sz)
+    return;
+  key = itc->itc_insert_key;
+  if (key && key->key_is_col)
+    {
+      if (key->key_segs_sampled)
+	min_density = (float)5 / ((1 |  key->key_rows_in_sampled_segs) / key->key_segs_sampled);
+      else
+	min_density = 1.0 / 800;
+    }
+  target_sz = MIN ((float)dc_max_batch_sz, rows_to_expect * 1.2);
+  if (target_sz < prev_sz * 2)
+    return;
+  if (enable_batch_sz_reserve)
+    {
+      inc = qi_batch_inc (inst, (data_source_t*)ins);
+      if (!mp_reserve (qi->qi_mp, inc))
+	{
+	  TC (tc_no_mem_for_longer_batch);
+	  return;
+	}
+    }
+  qi_set_batch_sz (inst, ins, target_sz);
+}
 
 /* query parallelization */
 
@@ -2347,7 +2413,7 @@ int
 ts_handle_aq (table_source_t * ts, caddr_t * inst, buffer_desc_t ** order_buf_ret, int *order_buf_preset)
 {
   /* called when continuing a ts with an aq.  Return 1 if ts should return. */
-  it_cursor_t *itc = (it_cursor_t *) QST_GET_V (inst, ts->ts_order_cursor);
+  it_cursor_t * itc = ts->ts_order_cursor ? (it_cursor_t*) QST_GET_V (inst, ts->ts_order_cursor) : NULL;
   int aq_state = QST_INT (inst, ts->ts_aq_state);
   QNCAST (query_instance_t, qi, inst);
   if (aq_state != TS_AQ_COORD_AQ_WAIT)

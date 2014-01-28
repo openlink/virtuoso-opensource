@@ -3387,6 +3387,7 @@ ceic_split (ce_ins_ctx_t * ceic, buffer_desc_t * buf)
       }
   }
   END_DO_BOX;
+  itc->itc_rows_in_seg = sz;
   if (!longest_bytes || longest_bytes < max_pages * PAGE_DATA_SZ / 2)
     {
       longest_col = col_w_most_pages;
@@ -3760,6 +3761,7 @@ itc_col_insert_rows (it_cursor_t * itc, buffer_desc_t * buf, int is_update)
   if (!ceic.ceic_mp && !is_update && last_cr)
     {
       int new_sz = cr_new_size (last_cr, NULL);
+      itc->itc_rows_in_seg = new_sz;
       if (new_sz > col_seg_max_rows)
 	ceic.ceic_mp = mem_pool_alloc ();
     }
@@ -4595,6 +4597,7 @@ itc_col_vec_insert (it_cursor_t * itc, insert_node_t * ins)
   buffer_desc_t *buf;
   caddr_t *bounds;
   int rc, n_ranges, save_n;
+  int n_in_segs = 0;
   db_buf_t row;
   if (dbf_ins_no_distincts && itc->itc_insert_key->key_distinct)
     return;
@@ -4718,6 +4721,7 @@ itc_col_vec_insert (it_cursor_t * itc, insert_node_t * ins)
 	    itc_col_dbg_log (itc);
 	  itc->itc_insert_key->key_touch += itc->itc_range_fill;
 	  itc_col_insert_rows (itc, buf, 0);
+	  n_in_segs += itc->itc_rows_in_seg;
 	  if (dbf_rq_check && dbf_rq_key == itc->itc_insert_key->key_id)
 	    {
 	      if (bounds)
@@ -4737,6 +4741,8 @@ itc_col_vec_insert (it_cursor_t * itc, insert_node_t * ins)
 	{
 	  if (dbf_rq_check && -dbf_rq_key == itc->itc_insert_key->key_id)
 	    rq_check (itc);
+	  if (itc->itc_n_sets > 10 && (n_in_segs - itc->itc_n_sets) > 10 * itc->itc_n_sets)
+	    ins_check_batch_sz (ins, itc->itc_out_state, itc);
 	  return;
 	}
       if (itc->itc_n_sets > 1)

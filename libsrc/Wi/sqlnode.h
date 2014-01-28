@@ -704,6 +704,8 @@ typedef struct table_source_s
     key_source_t *	ts_main_ks;
     state_slot_t *	ts_order_cursor;
     state_slot_t *	ts_current_of;
+    int			ts_batch_sz;
+    short		ts_qp_max;
     bitf_t		ts_is_unique:1;	/* Only one hit expected, do not look for more */
     bitf_t		ts_is_outer:1;
     bitf_t		ts_is_random:1; /* random search */
@@ -1034,8 +1036,13 @@ typedef struct remote_table_source_s
     query_t *		rts_policy_qr;
   } remote_table_source_t;
 
-#define IS_RTS(n) \
-  ((qn_input_fn) remote_table_source_input == ((remote_table_source_t *)(n))->src_gen.src_input)
+
+/* rts_parallel */
+#define RTS_NO_PAR 0
+#define RTS_PAR_RANGE 1 /* splits scan by range of a column */
+#define RTS_PAR_SETS 2 /* is an index lookup that can be part in a parallel plan, may make new threads if many sets of input */
+
+#define IS_RTS(n) 0
 
 #define IS_TS(n) \
   ((qn_input_fn) table_source_input_unique == ((data_source_t*)(n))->src_input || \
@@ -1723,7 +1730,8 @@ typedef struct db_activity_s
 struct cl_slice_s
 {
   /* unit of movable storage, several per server if elastic, else 1:1 to host groups */
-  int	csl_id;
+  int	csl_id; /* dense sequence number of slice from 0 to cluuster-wide n slices - 1 */
+  int	csl_ordinal;
   short	csl_threads; /* count of running threads scoped to this */
   char	csl_is_local; /* copy of this slice hosted in this process */
   char	csl_status;

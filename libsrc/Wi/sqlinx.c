@@ -904,7 +904,7 @@ sqlg_rdf_string_range (df_elt_t * tb_dfe, table_source_t *org_ts, index_choice_t
   search_spec_t * sp;
   table_source_t * r_ts, * range_ref_ts;
   sqlo_t * so = tb_dfe->dfe_sqlo;
-  r_ts = (table_source_t*)sqlg_make_ts (so, ic->ic_o_range);
+  r_ts = (table_source_t*)sqlg_make_ts (so, ic->ic_o_range, NULL);
   r_ts->ts_is_alternate = TS_ALT_PRE;
   dfe_list_set_placed (ic->ic_o_range_ref_ic->ic_col_preds, DFE_PLACED);
   range_ref_ts = (table_source_t*)sqlg_make_1_ts (so, tb_dfe, ic->ic_o_range_ref_ic, tb_dfe->_.table.join_test, 0);
