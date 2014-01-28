@@ -48,6 +48,10 @@
 #include "sqlcmps.h"
 #include "sqlintrp.h"
 #include "datesupp.h"
+#include "sqlcmps.h"
+#include "sqlo.h"
+#include "rdfinf.h"
+#include "rdf_core.h"
 
 #ifndef WIN32
 # include <pwd.h>
@@ -4446,6 +4450,182 @@ bif_col_set_samples (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+caddr_t 
+sc_data_to_ext (query_instance_t * qi, caddr_t dt)
+{
+  int inx;
+  dtp_t dtp = DV_TYPE_OF (dt);
+  if (DV_IRI_ID == dtp)
+    {
+      caddr_t str = key_id_to_iri (qi, *(iri_id_t*)dt);
+      if (str)
+	box_flags (str) = BF_IRI;
+      return str;
+    }
+  else if (DV_ARRAY_OF_POINTER == dtp)
+    {
+      caddr_t * arr = (caddr_t*)dk_alloc_box (box_length (dt), DV_ARRAY_OF_POINTER);
+      DO_BOX (caddr_t, a, inx, dt)
+	{
+	  arr[inx] = sc_data_to_ext (qi, a);
+	}
+      END_DO_BOX;
+      return arr;
+    }
+  else
+    return box_copy_tree (dt);
+}
+
+caddr_t 
+sc_ext_to_data (query_instance_t * qi, caddr_t dt)
+{
+  int  inx;
+  dtp_t dtp = DV_TYPE_OF (dt);
+  caddr_t err = NULL;
+  if (DV_STRING == dtp && box_flags (dt))
+    return iri_to_id (qi, dt, 1, &err);
+  else if (DV_ARRAY_OF_POINTER == dtp)
+    {
+      caddr_t * arr = (caddr_t*)dk_alloc_box (box_length (dt), DV_ARRAY_OF_POINTER);
+      DO_BOX (caddr_t, a, inx, dt)
+	{
+	  arr[inx] = sc_ext_to_data (qi, a);
+	}
+      END_DO_BOX;
+      return arr;
+    }
+  else
+    return box_copy_tree (dt);
+}
+
+caddr_t
+bif_stat_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  QNCAST (QI, qi, qst);
+  int inx, inx2;
+  dbe_schema_t * sc = wi_inst.wi_schema;
+  dk_set_t * cols = NULL, keys = NULL, rics = NULL;
+  DO_HT (ptrlong, id, dbe_column_t *, col, sc->sc_id_to_col)
+    {
+      dk_set_push (&cols, list (6, box_string (col->col_defined_in->tb_name), box_string (col->col_name),
+				box_num (col->col_n_distinct), box_num (col->col_count), sc_data_to_ext (qi, col->col_min), sc_data_to_ext (qi, col->col_max)));
+    }
+  END_DO_HT;
+  DO_HT (ptrlong, id, dbe_key_t *, key, sc->sc_id_to_key)
+    {
+      caddr_t p_arr = NULL;
+      if (key->key_p_stat)
+	{
+	  dk_set_t psts = NULL;
+	  id_hash_iterator_t hit;
+	  float * arr;
+	  caddr_t * k;
+	  id_hash_iterator (&hit, key->key_p_stat);
+	  while (hit_next (&hit, (caddr_t*)&id, (caddr_t*)&arr))
+	    {
+	      dk_set_push (&psts, list (5, sc_data_to_ext (qi, box_iri_id (*(iri_id_t*)id)), box_float (arr[0]), box_float (arr[1]), box_float (arr[2]), box_float (arr[3])));
+	    }
+	  p_arr = list_to_array (psts);
+	}
+      dk_set_push (&keys, list (4, box_string (key->key_table->tb_name), box_string (key->key_name), box_num (key->key_table->tb_count_estimate), p_arr)); 
+    }
+  END_DO_HT;
+  DO_IDHASH (caddr_t, name, rdf_inf_ctx_t *, ric, rdf_name_to_ric)
+    {
+      id_hash_iterator_t hit;
+      dk_set_t smps = NULL;
+      tb_sample_t * smp;
+      caddr_t s_key;
+      id_hash_iterator (&hit, ric->ric_samples);
+      while (hit_next (&hit, (caddr_t*)&s_key, (caddr_t*)&smp))
+	{
+	  dk_set_push (&smps, list (3, sc_data_to_ext (qi, *(caddr_t*)s_key), box_float (smp->smp_card), box_float (smp->smp_inx_card)));
+	}
+      dk_set_push (&rics, list (2, box_string (ric->ric_name), list_to_array (smps)));
+    }
+  END_DO_IDHASH;
+  return list (3, list_to_array (cols), list_to_array (keys), list_to_array (rics));
+}
+
+
+caddr_t
+bif_stat_import (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  dbe_schema_t * sc = wi_inst.wi_schema;
+  QNCAST (QI, qi, qst);
+  int inx, inx2;
+  caddr_t ** stats = (caddr_t**)bif_array_of_pointer_arg (qst, args, 0, "stat_import");
+  caddr_t * cols = stats[0];
+  dbe_table_t * tb;
+  dbe_key_t * key;
+  dbe_column_t * col;
+  rdf_inf_ctx_t * ric;
+  sec_check_dba ((query_instance_t *) qst, "stat_import");
+
+  DO_BOX (caddr_t *, cs, inx, stats[0])
+    {
+      tb = sch_name_to_table (sc, cs[0]);
+      if (!tb)
+	continue;
+      col = tb_name_to_column (tb, cs[1]);
+      if (!col)
+	continue;
+      col->col_n_distinct =  unbox (cs[2]);
+      col->col_n_distinct =  unbox (cs[2]);
+      col->col_count =  unbox (cs[3]);
+      col->col_min =  unbox (sc_ext_to_data (qi, cs[4]));
+      col->col_max =  unbox (sc_ext_to_data (qi, cs[4]));
+    }
+  END_DO_BOX;
+  DO_BOX (caddr_t *, ks, inx, stats[1])
+    {
+      dbe_table_t * tb = sch_name_to_table (sc, ks[0]);
+      caddr_t * ps = ks[3];
+      if (!tb)
+	continue;
+      key = tb_name_to_key (tb, ks[1], 0);
+      if (!key)
+	continue;
+      key->key_table->tb_count_estimate = unbox (ks[1]);
+      if (ps)
+	{
+	  DO_BOX (caddr_t *, p, inx2, ps)
+	    {
+	      float fs[4];
+	      caddr_t iid = sc_ext_to_data (qi, p[0]);
+	      if (DV_IRI_ID != DV_TYPE_OF (iid))
+		continue;
+	      fs[0] = unbox_float (p[1]);
+	      fs[1] = unbox_float (p[2]);
+	      fs[2] = unbox_float (p[3]);
+	      fs[3] = unbox_float (p[4]);
+	      id_hash_set  (key->key_p_stat, (caddr_t)iid, (caddr_t)&fs); 
+	    }
+	  END_DO_BOX;
+	}
+    }
+  END_DO_BOX;
+  DO_BOX (caddr_t *, rc, inx, stats[2])
+    {
+      ric = rdf_name_to_ctx (rc[0]);
+      if (!ric)
+	continue;
+      DO_BOX (caddr_t *, smp, inx, rc[1])
+	{
+	  caddr_t k = sc_ext_to_data (qi, smp[0]);
+	  tb_sample_t smpl;
+	  memzero (&smpl, sizeof (smpl));
+	  smpl.smp_time = approx_msec_real_time ();
+	  smpl.smp_card = unbox_float (smp[1]);
+	  smpl.smp_inx_card = unbox_float (smp[2]);
+	  id_hash_set (ric->ric_samples, (caddr_t)&k, (caddr_t*)&smpl);
+	}
+      END_DO_BOX;
+    }
+  END_DO_BOX;
+  return NULL;
+}
+
 
 void
 bif_status_init (void)
@@ -4481,7 +4661,8 @@ bif_status_init (void)
   bif_define_typed ("lt_w_id", bif_lt_w_id, &bt_integer);
   bif_define_typed ("lt_rc_w_id", bif_lt_rc_w_id, &bt_integer);
   bif_define ("col_set_samples", bif_col_set_samples);
-
+  bif_define ("stat_import", bif_stat_import);
+  bif_define_typed ("stat_export", bif_stat_export, &bt_any_box);
 #ifndef NDEBUG
   bif_define ("_sys_real_cv_size", bif_real_cv_size);
 #endif
