@@ -3889,7 +3889,7 @@ srv_global_init (char *mode)
     }
 #endif /* BYTE_ORDER_REV_SUPPORT */
 
-  remote_init ();
+  remote_init (0);
   srv_compatibility_init ();  /* AFTER remote_init */
   registry_exec ();
   if (!strchr (mode, 'n'))

@@ -303,6 +303,7 @@ sqlg_qf_end (sql_comp_t * sc, query_frag_t * qf)
   while (qn_next (qn))
     qn = qn_next (qn);
   if ((0 && IS_INNER_TS (qn) && !qn->src_after_test && !qn->src_after_code)
+      || IS_QN (qn, insert_node_input) 
       || (IS_QN (qn, setp_node_input) && !((setp_node_t *) qn)->setp_distinct))
     return;
   {

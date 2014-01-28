@@ -916,7 +916,7 @@ int cli_check_ws_terminate (client_connection_t *cli);
 typedef struct _rstmtstruct remote_stmt_t;
 #endif
 
-void remote_init (void);
+void remote_init (int cl_reinit);
 
 /* sqlprt.h */
 

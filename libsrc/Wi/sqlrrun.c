@@ -221,7 +221,7 @@ bif_vdd_init (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 void
-remote_init (void)
+remote_init (int cl_reinit)
 {
   bif_define ("vdd_init", bif_vdd_init);
   bif_define ("vdd_remote_table", bif_remote_table);
