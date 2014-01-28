@@ -491,6 +491,9 @@ sqlc_select_top (sql_comp_t * sc, select_node_t * sel, ST * tree,
 		 dk_set_t * code)
 {
   ST * top = SEL_TOP (tree);
+  ST * texp = tree->_.select_stmt.table_exp;
+  if (texp && texp->_.table_exp.order_by)
+    return;
   if (!top || SEL_IS_TRANS (tree))
     return;
   sc->sc_top = top;
