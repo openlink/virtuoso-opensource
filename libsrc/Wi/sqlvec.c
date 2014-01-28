@@ -273,6 +273,20 @@ sqlg_branch_copy (sql_comp_t * sc, data_source_t * qn, state_slot_t * ssl)
   int inx, place = -1, len;
   state_slot_t **ssls2;
   QNCAST (table_source_t, ts, qn);
+  if (IS_QN (qn, select_node_input_subq))
+    {
+      QNCAST (select_node_t, sel, qn);
+      if (sel->sel_subq_inlined)
+	{
+	  data_source_t * pred;
+	  for (pred = qn->src_prev; pred; pred = pred->src_prev)
+	    {
+	      if ((set_ctr_node_t*)pred == sel->sel_set_ctr)
+		break;
+	      sqlg_branch_copy (sc, pred, ssl);
+	    }
+	}
+    }
   if (!IS_TS (qn))
     {
       return;
@@ -3126,6 +3140,8 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
 	      sethash ((void*)out, sc->sc_vec_ssl_def, (void*)sel);
 	    }
 	  END_DO_BOX;
+	  /* can be the inlined select has after code.  The after code can ref places before the select, it comes from the outside of teh original subq.  if so, the sel must have the prev node set so it is possible to ensure bvalues from before the sel are copied if making new threads in the inlined subq.  For ssl refs the nodes in the inlined bit do not count, for copying they do */
+	  sel->src_gen.src_prev = (data_source_t*)sc->sc_vec_pred->data;
 	  for (pred = sc->sc_vec_pred; pred; pred = pred->next)
 	    {
 	      if ((set_ctr_node_t*)pred->data == sel->sel_set_ctr)
