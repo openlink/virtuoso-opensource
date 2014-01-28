@@ -2279,6 +2279,8 @@ bif_cursors_init (void)
 
 caddr_t bif_iri_to_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t bif_iri_to_id_nosignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
+caddr_t bif_box_flags_tweak (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
+caddr_t bif_sprintf_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 
 int
 bif_is_relocatable (bif_t bif)
@@ -2299,6 +2301,9 @@ bif_is_relocatable (bif_t bif)
 
       /* cast (let the VDB layer decide) */
       || bif_convert == bif
+      /* box flags */
+      || bif_box_flags_tweak == bif
+      || bif_sprintf_iri == bif
       )
     return 0;
 
