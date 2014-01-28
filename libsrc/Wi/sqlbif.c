@@ -15647,6 +15647,8 @@ bif_rdf_checksum_int (caddr_t * qst, state_slot_t ** args, int op, const char *f
   caddr_t res = NULL;
   int ctr, res_len;
   dtp_t arg_dtp = DV_TYPE_OF (arg);
+  if (arg_dtp == DV_DB_NULL)
+    return NEW_DB_NULL;
   if ((DV_STRING != arg_dtp) || (DV_UNAME != arg_dtp))
     arg_strg = box_cast_to_UTF8 (qst, arg);
   else
