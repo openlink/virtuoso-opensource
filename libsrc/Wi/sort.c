@@ -763,7 +763,12 @@ breakup_node_input (breakup_node_t * brk, caddr_t * inst, caddr_t * state)
 	      for (inx = 0; inx < n_per_set; inx++)
 		{
 		  if (ssl_is_settable (brk->brk_output[inx]))
-		    qst_set (inst, brk->brk_output[inx], box_copy_tree (qst_get (inst, brk->brk_all_output[inx + current - n_per_set])));
+		    {
+		      caddr_t val = box_copy_tree (qst_get (inst, brk->brk_all_output[inx + current - n_per_set]));
+		      qi->qi_set = QST_INT (inst, brk->src_gen.src_out_fill) - 1;
+		      qst_set (inst, brk->brk_output[inx], val);
+		      qi->qi_set = set;
+		    }
 		}
 	    }
 	}
