@@ -96,16 +96,18 @@ void
 ins_call_kwds (caddr_t * qst, query_t * proc, instruction_t * ins, caddr_t * params,
 	       int * any_out, code_vec_t code_vec, state_slot_t ** vec_defaults)
 {
+  caddr_t err;
   int deflt_ctr = 0;
   int is_vec_call = proc->qr_proc_vectored;
   int n_param_box = BOX_ELEMENTS (params);
-  caddr_t * kwds = ins->_.call.kwds;
+  caddr_t * kwds = ins->_.call.kwds, * copy = (caddr_t *) box_copy (params);
   state_slot_t * param_ssl = NULL;
   int param_inx;
   int inx;
   int n_ret_param = ((query_instance_t *)qst)->qi_query->qr_is_call == 2 ? 1 : 0;
   for (inx = 0; inx < n_param_box; inx++)
     params[inx] = (caddr_t) 0x7fffffff /* not a pointer nor an unboxed int */;
+  memset (copy, 0, n_param_box * sizeof (caddr_t));
   for (inx = n_ret_param; inx < (ins->_.call.params ?
 	BOX_ELEMENTS_INT (ins->_.call.params) : 0); inx++)
     {
@@ -126,8 +128,9 @@ ins_call_kwds (caddr_t * qst, query_t * proc, instruction_t * ins, caddr_t * par
 	  END_DO_SET();
 	  if (!param_ssl)
 	    {
-	      sqlr_new_error ("07S01", "SR179",
+	      err = srv_make_new_error ("07S01", "SR179",
 		  "The function %s does not accept a keyword parameter %s", proc->qr_proc_name, kwds[inx - n_ret_param]);
+	      goto err_end;
 	    }
 	}
       else
@@ -135,15 +138,19 @@ ins_call_kwds (caddr_t * qst, query_t * proc, instruction_t * ins, caddr_t * par
 	  param_inx = inx - n_ret_param;
 	  param_ssl = (state_slot_t *) dk_set_nth (proc->qr_parms, param_inx);
 	  if (!param_ssl)
-	    sqlr_new_error ("07S01", "SR180",
+	    {
+	      err = srv_make_new_error ("07S01", "SR180",
 		"Extra arguments to %s, takes only %lu", proc->qr_proc_name, (unsigned long) dk_set_length (proc->qr_parms));
+	      goto err_end;
+	    }
 	}
       if (param_ssl && IS_SSL_REF_PARAMETER (param_ssl->ssl_type))
 	{
 	  caddr_t address;
 	  if (actual_ssl->ssl_type == SSL_CONSTANT)
 	    {
-	      sqlr_new_error ("HY105", "SR181", "Cannot pass literal as reference parameter \"%.100s\"", param_ssl->ssl_name );
+	      err = srv_make_new_error ("HY105", "SR181", "Cannot pass literal as reference parameter \"%.100s\"", param_ssl->ssl_name );
+	      goto err_end;
 	    }
 	  if (SSL_VEC == actual_ssl->ssl_type ||SSL_REF == actual_ssl->ssl_type)
 	    {
@@ -151,8 +158,11 @@ ins_call_kwds (caddr_t * qst, query_t * proc, instruction_t * ins, caddr_t * par
 	      int row = caller->qi_set;
 	      data_col_t * dc = QST_BOX (data_col_t *, qst, actual_ssl->ssl_index);
 	      if (!(DCT_BOXES & dc->dc_type))
-		sqlr_new_error ("42000", "VEC..", "In vectored code calling non-vectored inout parameter mode is supported only if caller variable is a boxed vector, e.g. type any array (caller variable \"%.100s\", calling parameter \"%.100s\")",
-                  actual_ssl->ssl_name, param_ssl->ssl_name );
+		{
+		  err = srv_make_new_error ("42000", "VEC..", "In vectored code calling non-vectored inout parameter mode is supported only if caller variable is a boxed vector, e.g. type any array (caller variable \"%.100s\", calling parameter \"%.100s\")",
+		      actual_ssl->ssl_name, param_ssl->ssl_name );
+		  goto err_end;
+		}
 	      if (SSL_REF == actual_ssl->ssl_type)
 		row = sslr_set_no (qst, actual_ssl, row);
 	      address = (caddr_t)&((caddr_t*)dc->dc_values)[row];
@@ -170,7 +180,7 @@ ins_call_kwds (caddr_t * qst, query_t * proc, instruction_t * ins, caddr_t * par
 	  if (is_vec_call)
 	    params[param_inx] = (caddr_t)actual_ssl;
 	  else
-	  params[param_inx] = box_copy_tree (QST_GET (qst, actual_ssl));
+	    copy[param_inx] = params[param_inx] = box_copy_tree (QST_GET (qst, actual_ssl));
 	}
     }
   inx = 0;
@@ -180,18 +190,29 @@ ins_call_kwds (caddr_t * qst, query_t * proc, instruction_t * ins, caddr_t * par
 	{
 	  if (IS_SSL_REF_PARAMETER (formal->ssl_type)
 	      || formal->ssl_vec_param >= SSL_VP_OUT)
-	    sqlr_new_error ("HY502", "SR182",
+	    {
+	      err = srv_make_new_error ("HY502", "SR182",
 		"inout or out parameter %s not supplied in keyword parameter call of %s", formal->ssl_name, proc->qr_proc_name);
+	      goto err_end;
+	    }
 	  /* XXX: what about the =0 case */
 	  if (proc->qr_parm_default && proc->qr_parm_default[inx])
 	    params[inx] = is_vec_call ? ins_call_vec_deflt (vec_defaults, (caddr_t)proc->qr_parm_default[inx], n_param_box, &deflt_ctr) : box_copy_tree (proc->qr_parm_default[inx]);
 	  else
-	    sqlr_new_error ("07S01", "SR183",
-		"Required argument %s (no %d) not supplied to %s", formal->ssl_name, inx + 1, proc->qr_proc_name);
+	    {
+	      err = srv_make_new_error ("07S01", "SR183",
+		  "Required argument %s (no %d) not supplied to %s", formal->ssl_name, inx + 1, proc->qr_proc_name);
+	      goto err_end;
+	    }
 	}
       inx++;
     }
   END_DO_SET();
+  dk_free_box (copy);
+  return;
+err_end:
+  dk_free_tree (copy);
+  sqlr_resignal (err);
 }
 
 caddr_t

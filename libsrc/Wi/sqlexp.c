@@ -2572,6 +2572,10 @@ cv_free (code_vec_t cv)
 	  dk_set_free (ins->_.breakpoint.scope);
 	}
 #endif
+      else if (ins->ins_type == INS_FETCH)
+	{
+	  dk_free_box (ins->_.fetch.targets);
+	}
     }
   END_DO_INSTR
   dk_free_box ((caddr_t) cv);

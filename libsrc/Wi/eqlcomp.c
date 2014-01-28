@@ -527,6 +527,8 @@ qr_free (query_t * qr)
 	}
       id_hash_free (qr->qr_call_counts);
     }
+  if (qr->qr_stats_mtx)
+    mutex_free (qr->qr_stats_mtx);
 #endif
 #if defined (MALLOC_DEBUG) || defined (VALGRIND)
   if ((NULL != qr->qr_static_prev) || (NULL != qr->qr_static_next) || (qr == static_qr_dllist))
