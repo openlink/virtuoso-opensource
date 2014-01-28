@@ -3310,8 +3310,11 @@ fun_ref_set_defaults_and_counts (fun_ref_node_t *fref, caddr_t * inst)
 {
   QNCAST (query_instance_t, qi, inst);
   s_node_t *val_set = fref->fnr_default_values;
-  int max_set = fnr_max_set_no (fref, inst, NULL);
+  int max_set;
   int n_save = qi->qi_n_sets;
+  if (!fref->fnr_default_ssls)
+    return;
+  max_set = fnr_max_set_no (fref, inst, NULL);
   qi->qi_n_sets = max_set + 1;
   DO_SET (state_slot_t *, ct, &fref->fnr_default_ssls)
     {
