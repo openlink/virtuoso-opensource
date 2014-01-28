@@ -16820,6 +16820,8 @@ create procedure DB.DBA.RDF_QUAD_OUTLINE_ALL (in force integer := 0)
   declare c_main, c_pogs, c_op integer;
   declare c_main_tmp, c_pogs_tmp, c_op_tmp, old_mode integer;
   declare c_main_fixed, c_pogs_fixed, c_op_fixed integer;
+  declare c_check char;
+
   if ((registry_get ('__rb_id_only_for_plain_ro_obj') = '1') and not force)
     return;
   if (0 = sys_stat ('db_exists') or not exists (select top 1 1 from DB.DBA.RDF_QUAD option (no cluster)))
@@ -16839,7 +16841,38 @@ create procedure DB.DBA.RDF_QUAD_OUTLINE_ALL (in force integer := 0)
       exec ('checkpoint');
       return;
     }
-  log_message ('Update is required. Please be patient.');
+  if (coalesce (virtuoso_ini_item_value ('SPARQL', 'RecoveryMode'), '0') > '0')
+    {
+      log_message ('Update skipped in recovery mode');
+      return;
+    }
+  log_message ('An update is required.');
+  c_check := coalesce (virtuoso_ini_item_value ('Parameters', 'AnalyzeFixQuadStore'), '0');
+  if (coalesce (virtuoso_ini_item_value ('Parameters', 'LiteMode'), '0') <> '0') c_check := '1';
+  if (c_check <> '1')
+    {
+	log_message ('');
+	log_message ('NOTICE: Before Virtuoso can continue fixing the DB.DBA.RDF_QUAD table and its indexes');
+ 	log_message ('        the DB Administrator should check make sure that:');
+	log_message ('');
+	log_message ('         * there is a recent backup of the database');
+	log_message ('         * there is enough free disk space available to complete this conversion');
+	log_message ('         * the database can be offline for the duration of this conversion');
+	log_message ('');
+	log_message ('        Since the update can take a considerable amount of time on large databases');
+	log_message ('        it is advisable to schedule this at an appropriate time.'); 
+	log_message ('');
+	log_message ('To continue the DBA must change the virtuoso.ini file and add the following flag:');
+	log_message ('');
+	log_message ('    [Parameters]');
+	log_message ('    AnalyzeFixQuadStore = 1');
+	log_message ('');
+	log_message ('For additional information please contact OpenLink Support <support@openlinksw.com>');
+	log_message ('This process will now exit.');
+	raw_exit();
+    }
+
+  log_message ('Please be patient.');
   log_message ('The table DB.DBA.RDF_QUAD and two of its additional indexes will be patched now.');
   log_message ('In case of error during the operation, delete the transaction log before restarting the server.');
   exec ('checkpoint');
