@@ -770,6 +770,7 @@ cu_clear (cucurbit_t * cu)
   mem_pool_t *new_pool;
   cl_req_group_t *clrg = cu->cu_clrg;
   caddr_t x;
+  clrg->clrg_send_time = 0;
   DO_SET (cu_line_t *, cul, &cu->cu_lines)
   {
     caddr_t *val;
@@ -799,6 +800,7 @@ cu_clear (cucurbit_t * cu)
   clrg->clrg_vec_clos = NULL;
   DO_SET (cll_in_box_t *, clib, &clrg->clrg_clibs)
   {
+      clib->clib_keep_alive = 0;
     clib->clib_dc_read = NULL;
     clib->clib_vec_clos = NULL;
   }
