@@ -4215,6 +4215,7 @@ sparp_find_valmode_by_name_prefix (sparp_t *sparp, caddr_t name, ssg_valmode_t d
   if (!strncmp (name_begin, "BOOL::"		, 6))	return SSG_VALMODE_BOOL;
   if (!strncmp (name_begin, "NUM::"		, 5))	return SSG_VALMODE_NUM;
   if (!strncmp (name_begin, "SHORT::"		, 7))	return qm_format_default;
+  if (!strncmp (name_begin, "SHORT_REF::"	, 11))	return qm_format_default_iri_ref;
   if (!strncmp (name_begin, "SPECIAL::"		, 9))	return SSG_VALMODE_SPECIAL;
   if (!strncmp (name_begin, "SHORT_OR_LONG::"	, 15))	return SSG_VALMODE_SHORT_OR_LONG;
 /*                           0123456789012345 */
@@ -4241,13 +4242,26 @@ sparp_rettype_of_global_param (sparp_t *sparp, caddr_t name)
   return res;
 }
 
-
 ssg_valmode_t
 sparp_rettype_of_function (sparp_t *sparp, caddr_t name, SPART *tree)
 {
-  ssg_valmode_t res = sparp_find_valmode_by_name_prefix (sparp, name, SSG_VALMODE_SQLVAL);
+  ssg_valmode_t res;
   const char *xsd_name = NULL;
   long /* not dtp_t */ ret_dtp;
+  if ('(' == name[0])
+    {
+      char *coloncolon = strstr (name, "::");
+      char *rpar = strchr (name, ')');
+      if ((NULL != rpar) && (NULL != coloncolon) && (rpar < coloncolon))
+        {
+          res = sparp_find_valmode_by_name_prefix (sparp, rpar+1, SSG_VALMODE_SQLVAL);
+          if (SSG_VALMODE_SPECIAL != res)
+            return res;
+          goto valmode_is_found; /* see below */
+        }
+    }
+  res = sparp_find_valmode_by_name_prefix (sparp, name, SSG_VALMODE_SQLVAL);
+valmode_is_found:
   if (SSG_VALMODE_SPECIAL == res)
     {
       if (!strcmp (name, "SPECIAL::sql:RDF_MAKE_GRAPH_IIDS_OF_QNAMES"))
@@ -4347,7 +4361,43 @@ ret_dtp_found:
 ssg_valmode_t
 sparp_argtype_of_function (sparp_t *sparp, caddr_t name, SPART *tree, int arg_idx)
 {
-  ssg_valmode_t res = sparp_find_valmode_by_name_prefix (sparp, name, SSG_VALMODE_SQLVAL);
+  ssg_valmode_t res;
+  if ('(' == name[0])
+    {
+      char *coloncolon = strstr (name, "::");
+      char *rpar = strchr (name, ')');
+      if ((NULL != rpar) && (NULL != coloncolon) && (rpar < coloncolon))
+        {
+          int comma_ctr = 0;
+          char *prev_delim = name;
+          char *next_delim = rpar;
+          char buf[100];
+          for (;;)
+            {
+              next_delim = strchr (prev_delim + 1, ',');
+              if ((NULL == next_delim) || (next_delim > rpar))
+                {
+                  next_delim = rpar;
+                  break;
+                }
+              if (comma_ctr >= arg_idx)
+                break;
+              prev_delim = next_delim;
+              comma_ctr++;
+            }
+          if (comma_ctr < arg_idx)
+            spar_error (sparp, "The (...)...:: modifier describes too few (only %d) arguments in <%.300s>", 1+comma_ctr, name);
+          if ((next_delim - prev_delim) >= sizeof (buf) - 3)
+            spar_error (sparp, "Abnormally long valmode name in the (...)...:: modifier of <%.300s>", name);
+          memcpy (buf, prev_delim + 1, next_delim - (prev_delim + 1));
+          strcpy (buf + (next_delim - (prev_delim + 1)), "::");
+          res = sparp_find_valmode_by_name_prefix (sparp, buf, SSG_VALMODE_SQLVAL);
+          if (SSG_VALMODE_SPECIAL == res)
+            spar_error (sparp, "SPECIAL can not be used as argument valmode name in the (...)...:: modifier of <%.300s>", name);
+          return res;
+        }
+    }
+  res = sparp_find_valmode_by_name_prefix (sparp, name, SSG_VALMODE_SQLVAL);
   if (SSG_VALMODE_SPECIAL == res)
     {
       if (!strcmp (name, "SPECIAL::sql:RDF_MAKE_GRAPH_IIDS_OF_QNAMES"))
