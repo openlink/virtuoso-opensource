@@ -4000,8 +4000,12 @@ spar_shorten_binv_dataset (sparp_t *sparp, SPART *binv)
         }
       if ((eq->e_rvr.rvrRestrictions & SPART_VARR_SPRINTFF) && (eq->e_rvr.rvrSprintffCount > max_sff_count))
         max_sff_count = eq->e_rvr.rvrSprintffCount;
+/* The following "if" is needed for case of tightening \c eq with \c var in the next loop.
+As a result of tightening, the \c eq->e_rvr.rvrSprintffCount may grow, thus \c max_sff_count should be big enough to reflect this possibility. */
+      if ((var->_.var.rvr.rvrRestrictions & SPART_VARR_SPRINTFF) && (var->_.var.rvr.rvrSprintffCount > max_sff_count))
+        max_sff_count = var->_.var.rvr.rvrSprintffCount;
     }
-  if (0 <= max_sff_count)
+  if (0 < max_sff_count)
     fmt_use_counters = (int *)t_alloc (max_sff_count * sizeof (int));
   for (varctr = varcount; varctr--; /* no step */)
     {
