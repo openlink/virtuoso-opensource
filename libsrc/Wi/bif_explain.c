@@ -3897,7 +3897,22 @@ qn_walk (query_instance_t * qi, query_t * qr, qnw_cb_t cb, qnw_cd_t * cd)
 	{
 	  QNCAST (query_frag_t, qf, qn);
 	  DO_SET (data_source_t *, qn2, &qf->qf_nodes)
-	    cb (qi, qn2, cd);
+	    {
+	      if (IS_QN (qn2, subq_node_input))
+		{
+		  qn_walk (qi, ((subq_source_t*)qn2)->sqs_query, cb, cd);
+		}
+	      else if (IS_QN (qn2, trans_node_input))
+		{
+		  QNCAST (trans_node_t, tn, qn2);
+		  if (tn->tn_inlined_step)
+		    qn_walk (qi, tn->tn_inlined_step, cb, cd);
+		  if (tn->tn_complement)
+		    qn_walk (qi, tn->tn_complement->tn_inlined_step, cb, cd);
+		}
+	      else
+		cb (qi, qn2, cd);
+	    }
 	  END_DO_SET();
 	}
       else if (IS_QN (qn, subq_node_input))
