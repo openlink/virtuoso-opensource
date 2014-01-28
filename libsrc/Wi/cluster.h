@@ -1694,6 +1694,7 @@ id_hash_t * dict_ht (id_hash_iterator_t * dict);
 void dpipe_signature (caddr_t name, int n_args, ...);
 #define CU_CLI(cu) ((cu)->cu_clrg->clrg_lt ? (cu)->cu_clrg->clrg_lt->lt_client : NULL)
 void qi_free_dfg_queue_nodes (query_instance_t * qi, dk_set_t nodes);
+void qf_set_cost (query_frag_t * qf);
 
 
 #endif
