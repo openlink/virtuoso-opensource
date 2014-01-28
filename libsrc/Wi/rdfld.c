@@ -594,7 +594,7 @@ l_iri_id_disp (cucurbit_t * cu, caddr_t name, value_state_t * vs)
   boxint pref_id_no, iri_id_no;
   caddr_t prefix, local;
   dtp_t dtp = DV_TYPE_OF (name);
-  caddr_t box_to_delete = NULL;
+  caddr_t box_to_delete = NULL, name_to_delete = NULL;
   if (!cf)
     {
       cf = cu_func ("L_I_LOOK", 1);
@@ -646,11 +646,25 @@ l_iri_id_disp (cucurbit_t * cu, caddr_t name, value_state_t * vs)
       cu_set_value (cu, vs, box_iri_id (acc));
       return NULL;
     }
+  /* dynamic local  */
+  if (uriqa_dynamic_local)
+    {
+      int ofs = uriqa_iri_is_local (NULL, name);
+      if (0 != ofs)
+        {
+          int name_box_len = box_length (name);
+/*  0123456 */
+/* "local:" */
+          caddr_t localized_name = dk_alloc_box (6 + name_box_len - ofs, DV_STRING);
+          memcpy (localized_name, "local:", 6);
+          memcpy (localized_name + 6, name + ofs, name_box_len - ofs);
+          name_to_delete = name = localized_name;
+        }
+    }
   if (!iri_split (name, &prefix, &local))
     goto return_error;		/* see below */
-  /* dynamic local  */
-  prefix = uriqa_dynamic_local_replace (prefix, CU_CLI (cu));
   dk_free_box (box_to_delete);
+  dk_free_box (name_to_delete);
   pref_id_no = nic_name_id (iri_prefix_cache, prefix);
   if (!pref_id_no)
     {
@@ -677,6 +691,7 @@ l_iri_id_disp (cucurbit_t * cu, caddr_t name, value_state_t * vs)
   return NULL;
 
 return_error:
+      dk_free_box (name_to_delete);
   dk_free_box (box_to_delete);
   return list (2, NULL, box_num (1));
 }
