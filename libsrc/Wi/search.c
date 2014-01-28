@@ -2580,6 +2580,8 @@ itc_has_slice (it_cursor_t * itc, slice_id_t slice, caddr_t * err_ret)
 {
   dbe_key_t * key = itc->itc_insert_key;
   dbe_key_frag_t ** kfs = key->key_fragments;
+  if (!key->key_partition || !key->key_partition->kpd_map->clm_is_elastic)
+    return 1;
   if (!kfs || BOX_ELEMENTS (kfs) <= slice || !key->key_fragments[slice])
     {
       char msg[200];
