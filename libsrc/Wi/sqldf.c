@@ -3865,6 +3865,8 @@ sqlo_col_dtp_func  (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * c
   if (!enable_iri_like || DFE_BOP != pred->dfe_type || BOP_NOT != pred->_.bin.op)
     return 0;
   pred = pred->_.bin.left;
+  if ((DFE_TRUE == pred) || (DFE_FALSE == pred))
+    return 0;
   if (DFE_BOP_PRED != pred->dfe_type || BOP_EQ != pred->_.bin.op
       || 0 != unbox ((ccaddr_t) pred->_.bin.left->dfe_tree) || !st_is_call (pred->_.bin.right->dfe_tree, "isiri_id", 1))
     return 0;
