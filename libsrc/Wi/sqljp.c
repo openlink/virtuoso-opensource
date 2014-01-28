@@ -884,6 +884,7 @@ sqlo_hash_fill_join (sqlo_t * so, df_elt_t * hash_ref_tb, df_elt_t ** fill_ret, 
 	  t_listst (3, TABLE_REF, t_listst (6, TABLE_DOTTED, tb_dfe->_.table.ot->ot_table->tb_name,
 	      tb_dfe->_.table.ot->ot_new_prefix, NULL, NULL, NULL), NULL);
       END_DO_BOX;
+      sel = t_box_copy_tree (sel);
       sqlo_scope (so, &sel);
       fill_dfe = sqlo_df (so, sel);
       fill_dfe->dfe_super = hash_ref_tb;
