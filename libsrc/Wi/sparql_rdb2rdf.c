@@ -1154,10 +1154,8 @@ rdb2rdf_optree_codegen (rdb2rdf_ctx_t *rrc, rdb2rdf_optree_t *rro, caddr_t table
           sqlr_new_error ("22023", "SR638", "Some quad maps of quad store virtrdf:SyncToQuads are not loaded or corrupted or being edited during SQL code generation");
         ssg_newline (0);
         if (rrc->rrc_printed_qm_count)
-          ssg_puts ("UNION ");
-        ssg_puts (" { QUAD MAP ");
+          ssg_puts ("\n          ");
         ssg_sdprin_qname (ssg, (SPART *)(qm_rtti->jrtti_inst_iri));
-        ssg_puts (" { graph ?g { ?s ?p ?o }}} ");
         rrc->rrc_printed_qm_count++;
         break;
       }
@@ -1253,8 +1251,10 @@ rdb2rdf_codegen (rdb2rdf_ctx_t *rrc, caddr_t table_name, int opcode, dk_session_
       ssg_puts ("  log_enable (2);\n");
       ssg_puts ("  sparql define output:valmode \"LONG\" define input:storage virtrdf:SyncToQuads select count (sql:rdf_vec_ins_triples (?s, ?p, ?o, ?g))\n");
       ssg_puts ("  where {\n");
+      ssg_puts ("        { QUAD MAP ");
       rdb2rdf_optree_codegen (rrc, &(rrc->rrc_root_rro), table_name, opcode, RDB2RDF_CODEGEN_INITIAL_SUB_ALL, NULL, ssg);
-      ssg_puts ("      };\n");
+      ssg_puts ("            { graph ?g { ?s ?p ?o }} }");
+      ssg_puts ("    };\n");
       ssg_puts ("  log_enable (old_mode, 1);\n");
       ssg_puts ("}\n");
       break;
