@@ -2186,6 +2186,11 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
             return tr_valmode->qmfValRange.rvrRestrictions;
           return 0;
         }
+      else if (SPART_BAD_EQUIV_IDX != tree->_.retval.equiv_idx)
+        {
+          sparp_equiv_t *eq = SPARP_EQUIV (sparp, tree->_.retval.equiv_idx);
+          return eq->e_rvr.rvrRestrictions;
+        }
       else
         {
           SPART *gp = tree->_.retval.gp;

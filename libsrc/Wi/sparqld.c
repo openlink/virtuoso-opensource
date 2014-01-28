@@ -189,7 +189,7 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case BOP_PLUS: return "+";
     case BOP_MINUS: return "-";
     case BOP_TIMES: return "*";
-    case BOP_DIV: return "DIV";
+    case BOP_DIV: return "/";
     case BOP_MOD: return "MOD";
     }
 
@@ -1250,11 +1250,20 @@ fname_printed:
           ssg->ssg_sd_forgotten_dot = 1;
         return;
       }
+    case BOP_MOD:
+      ssg_puts (" mod (");
+      ssg->ssg_indent++;
+      ssg_sdprint_tree (ssg, tree->_.bin_exp.left);
+      ssg_puts (", ");
+      ssg_sdprint_tree (ssg, tree->_.bin_exp.right);
+      ssg_putchar (')');
+      ssg->ssg_indent--;
+        return;
     case BOP_EQ: case BOP_NEQ:
     case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
     /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP! */
     case BOP_SAME: case BOP_NSAME:
-    case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
+    case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV:
     case BOP_AND: case BOP_OR:
       {
         if (SPART_TYPE (tree->_.bin_exp.left) < 1000)

@@ -4241,7 +4241,7 @@ sparp_find_origin_of_external_varname_in_eq (sparp_t *sparp, sparp_equiv_t *eq, 
          return source;
     }
 #endif
-/* If nothing is found then a fake variable should be created. This is for cases like ?friend at top GP of query
+/* If nothing is found then a retval should be created. This is for cases like ?friend at top GP of query
 <code>
   sparql select ((select count(1) where { ?friend <knows> ?z }))
     where {{select * where { <me> <knows> ?friend }} option (transitive...)}.
@@ -4314,7 +4314,16 @@ make_rv:
   rv->_.retval.gp = esub_res_gp;
   memcpy (&(rv->_.retval.rvr), &(esub_res_eq->e_rvr), sizeof (rdf_val_range_t));
   rv->_.retval.selid = esub_res_gp->_.gp.selid;
+#if 0
   rv->_.retval.vname = varname;
+#else
+  if (0 <= box_position_no_tag (esub_res_eq->e_varnames, varname))
+    rv->_.retval.vname = varname;
+  else if (NULL != esub_res_eq->e_front_varname)
+    rv->_.retval.vname = esub_res_eq->e_front_varname;
+  else
+    rv->_.retval.vname = esub_res_eq->e_varnames[0];
+#endif
   return rv;
 }
 
