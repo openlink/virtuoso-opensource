@@ -491,5 +491,6 @@ if (map && map->bits[((uint32)__ptr) >> 15] & (1 << (((((uint32)__ptr) >> 12) & 
 int mp_reuse_large (mem_pool_t * mp, void * ptr);
 int mp_reserve (mem_pool_t * mp, size_t inc);
 void mp_comment (mem_pool_t * mp, char * str1, char * str2);
+size_t  mp_block_size_sc (size_t sz);
 
 #endif /* ifdef __DKPOOL_H */
