@@ -405,6 +405,20 @@ sqlg_qf_nodes_env (sql_comp_t * sc, query_frag_t * qf, dk_hash_t * local_refs, d
 void ref_ssls (dk_hash_t * ht, state_slot_t ** ssls);
 
 
+int 
+ssl_arr_cmp (void * s1, void * s2)
+{
+  state_slot_t * ssl1 = *(state_slot_t**)s1;
+  state_slot_t * ssl2 = *(state_slot_t**)s2;
+  return ssl1->ssl_index < ssl2->ssl_index ? -1 : ssl1->ssl_index == ssl2->ssl_index ? 0 : 1;
+}
+
+void
+ssl_arr_sort (state_slot_t ** ssls)
+{
+  qsort (ssls, BOX_ELEMENTS (ssls), sizeof (caddr_t), ssl_arr_cmp);
+}
+
 void
 sqlg_qf_ctx (sql_comp_t * sc, query_frag_t * qf, dk_hash_t * local_refs, dk_hash_t * refs)
 {
@@ -460,6 +474,7 @@ sqlg_qf_ctx (sql_comp_t * sc, query_frag_t * qf, dk_hash_t * local_refs, dk_hash
 	}
     }
   refd_after_qf = (state_slot_t **) ht_keys_to_array (refs);
+  ssl_arr_sort (refd_after_qf);
   if (enable_qf_dfg_scope)
     sqlg_qf_nodes_env (sc, qf, local_refs, refs, refd_after_qf, &outputs);
   else
