@@ -10046,6 +10046,18 @@ soap_check_xsd_restriction (caddr_t * restriction, caddr_t box, soap_ctx_t *ctx)
   return 1;
 }
 
+static int
+soap_same_ns (const char * str1, const char * str2)
+{
+  char * p1, * p2;
+  if (!str1 || !str2 || !(p1 = strrchr (str1, ':')) || !(p2 = strrchr (str2, ':')))
+    return 0;
+  if ((p1 - str1) != (p2 - str2))
+    return 0;
+  if (!strncmp (str1, str2, p1 - str1))
+    return 1;
+  return 0;
+}
 
 static void
 soap_print_tag (const char * tag, dk_session_t *ses, caddr_t type_ref, soap_ctx_t * ctx, int closing_1,
@@ -10460,7 +10472,7 @@ soap_print_box_validating (caddr_t box, const char * tag, dk_session_t *ses,
 			 {
 			   int is_elem = 0;
 			   char * ns = soap_wsdl_ns_prefix (elem_ns, &(ctx->types_set), NULL, &is_elem);
-			   if (!ns)
+			   if (!ns && !soap_same_ns (type_ref, elem_ns))
 			     SOAP_VALIDATE_ERROR (("22023", "SV086",
 			       "Can't resolve namespace of element '%s' of derived type '%s'", elem_name, elem_ns));
 			   dk_set_push (&ctx->ns, box_dv_short_string (ns));
