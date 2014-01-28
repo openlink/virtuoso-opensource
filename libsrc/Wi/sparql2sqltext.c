@@ -1754,7 +1754,7 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
         case IN_L: case LIKE_L: return SSG_VALMODE_BOOL;
         case SPAR_BIF_COALESCE:
           {
-            ssg_valmode_t union_valmode = SSG_VALMODE_AUTO;;
+            ssg_valmode_t union_valmode = SSG_VALMODE_AUTO;
             int sqlval_is_ok_and_cheap = 0x2;
             int argctr;
             for (argctr = BOX_ELEMENTS (tree->_.builtin.args); argctr--; /* no step */)
