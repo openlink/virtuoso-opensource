@@ -552,7 +552,7 @@ geo_long360add_pline_total_shift (geo_t * g)
 int
 geo_long360add (geo_t * g)
 {
-  switch (g->geo_flags)
+  switch (g->geo_flags & GEO_TYPE_NO_ZM_MASK)
     {
     case GEO_NULL_SHAPE:
       return GEO_LONG360ADD_NO_CHANGE | GEO_LONG360ADD_WEIRD;
