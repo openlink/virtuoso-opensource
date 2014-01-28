@@ -248,6 +248,8 @@ create method R2RML_FILL_TRIPLESMAP_METAS_CACHE () returns integer for DB.DBA.R2
       all_metas := vector (null, null);
       if ("q" is not null)
         {
+	  if (__tag ("q") = 246)
+	    "q" := rdf_box_data ("q");
           while (("q" <> '') and strchr (' \t\r\n', chr ("q" [length ("q") - 1])) is not null)
             "q" := "LEFT" ("q", length ("q") - 1);
           if (("q" <> '') and ';' = chr ("q" [length ("q") - 1]))
