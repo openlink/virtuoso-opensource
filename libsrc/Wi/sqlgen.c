@@ -1870,7 +1870,7 @@ sqlg_pop_sqs (sql_comp_t * sc, subq_source_t * sqs, data_source_t ** head, dk_se
   sql_node_append (head, (data_source_t *) sctr);
   if (*pre_code)
     {
-      sqlg_pre_code_dpipe (sc->sc_so, pre_code, qn);
+      sqlg_pre_code_dpipe (sc->sc_so, pre_code, NULL);
       sctr->src_gen.src_pre_code = code_to_cv (sc, *pre_code);
       *pre_code = NULL;
     }
@@ -3514,6 +3514,24 @@ cv_copy (code_vec_t * cv)
 	if (ins->_.agg.distinct)
 	  ins->_.agg.distinct = ha_copy (ins->_.agg.distinct);
 	break;
+	case INS_QNODE:
+	  {
+	    int inx;
+	    sql_comp_t * sc = top_sc;
+	    SQL_NODE_INIT (dpipe_node_t, dp, dpipe_node_input, dpipe_node_free);
+	    if (!IS_QN (ins->_.qnode.node, dpipe_node_input))
+	      GPF_T1 ("in a union with aggregation inlined in the branches, there may not be other qnode instructions than dpipes");
+	    memcpy (dp, ins->_.qnode.node, sizeof (dpipe_node_t));
+	    ins->_.qnode.node = (data_source_t*)dp;
+	    BOXC (dp->dp_inputs);
+	    BOXC (dp->dp_funcs);
+	    BOXC (dp->dp_outputs);
+	    BOXC (dp->dp_input_args);
+	    DO_BOX (caddr_t, ia, inx, dp->dp_input_args)
+	      BOXC (dp->dp_input_args[inx]);
+	    END_DO_BOX;
+	    break;
+	  }
 	}
     }
   END_DO_INSTR;
