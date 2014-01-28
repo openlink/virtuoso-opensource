@@ -616,9 +616,12 @@ rd_vec_blob (it_cursor_t * itc, row_delta_t * rd, dbe_column_t * col, int icol, 
     }
   if (DV_DB_NULL != DV_TYPE_OF (data))
     {
+      int rc;
+      sql_type_t sqt2 = col->col_sqt;
       caddr_t bl = mp_alloc_box (ins_mp, DV_BLOB_LEN + 1, DV_STRING);
-      int rc = itc_set_blob_col (itc, (db_buf_t) bl, rd->rd_values[icol], NULL,
-	  BLOB_IN_INSERT, &col->col_sqt);
+      sqt2.sqt_class = NULL; /* if this is long udt or any, it is anified before now */
+      rc = itc_set_blob_col (itc, (db_buf_t)bl, rd->rd_values[icol], NULL,
+				 BLOB_IN_INSERT, &sqt2);
       rd->rd_values[icol] = bl;
       if (LTE_OK != rc)
 	{
