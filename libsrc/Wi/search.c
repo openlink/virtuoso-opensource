@@ -3170,6 +3170,40 @@ itc_up_rnd_check (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 }
 
 
+caddr_t
+col_min_max_trunc (caddr_t val)
+{
+  int len;
+  caddr_t ret = NULL;
+  dtp_t dtp = DV_TYPE_OF (val);
+  switch (dtp)
+    {
+    case DV_SINGLE_FLOAT: case DV_DOUBLE_FLOAT: case DV_NUMERIC: 
+    case DV_DATETIME:
+      return val;
+    case DV_STRING:
+      len = box_length (val);
+      if (len >30)
+	{
+	  ret =  box_n_chars (val, 30);
+	  dk_free_tree (val);
+	  return ret;
+	}
+      return val;
+	  
+
+    case DV_BLOB_HANDLE:
+    case DV_BLOB_WIDE_HANDLE:
+    case DV_XML_ENTITY:
+    case DV_GEO:
+    case DV_OBJECT:
+    default:
+      dk_free_tree (val);
+      return dk_alloc_box (0, DV_DB_NULL);
+    }
+}
+
+
 void
 itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
 {
@@ -3187,6 +3221,7 @@ itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
   while (dk_hit_next (&it, (void**) &col, (void**) &cs))
     {
       boxint min = 0, max = 0;
+      caddr_t minb = NULL, maxb = NULL;
       int is_first = 1;
       int is_int = DV_LONG_INT == col->col_sqt.sqt_dtp || DV_INT64 == col->col_sqt.sqt_dtp;
       if (upd_col && (0 == stricmp (col->col_name, "P") || 0 == stricmp (col->col_name, "G")))
@@ -3214,10 +3249,38 @@ itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
 		      if (d < min)
 			min = d;
 		    }
+		  dk_free_tree (*data);
 		}
-	      dk_free_tree (*data);
+	      else 
+		{
+		  if (is_first)
+		    {
+		      minb = *data;
+		      maxb = box_copy_tree (minb);
+		      is_first = 0;
+		    }
+		  else
+		    {
+		      int low_rc =  cmp_boxes_safe (*data, minb, NULL, NULL);
+		      if (DVC_LESS == (~DVC_NOORDER & low_rc))
+			{
+			  dk_free_tree (minb);
+			  minb = *data;
+			}
+		      else 
+			{
+			  int high_rc = cmp_boxes_safe (*data, maxb, NULL, NULL);
+			  if (DVC_GREATER == (~DVC_NOORDER & high_rc))
+			    {
+			      dk_free_tree (maxb);
+			      maxb = *data;
+			    }
+			  else 
+			    dk_free_tree (*data);
+			}
+		    }
+		}
 	    }
-
 	}
       if (upd_col)
 	{
@@ -3241,6 +3304,11 @@ itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
 		  col->col_max = box_num (max);
 		  if (col->col_n_distinct > max - min)
 		    col->col_n_distinct = MAX (1, max - min);
+		}
+	      if (!is_int)
+		{
+		  col->col_min = col_min_max_trunc (minb);
+		  col->col_max = col_min_max_trunc (maxb);
 		}
 	    }
 	  else
