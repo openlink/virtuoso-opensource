@@ -1588,6 +1588,8 @@ geo_rdf_check (text_node_t * txs, caddr_t * inst)
       dtp_t dtp;
       int set = qst_vec_get_int64  (lc.lc_inst, sel->sel_set_no, lc.lc_position), hl;
       db_buf_t dv = ((db_buf_t *)ser_dc->dc_values)[set];
+      if (!IS_BOX_POINTER (dv))
+	continue;
       if (DV_SHORT_STRING_SERIAL == *dv)
 	hl = 2;
       else if (DV_STRING == *dv)
