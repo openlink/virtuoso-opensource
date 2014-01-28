@@ -299,7 +299,7 @@ VXmlParserDestroy (vxml_parser_t * parser)
 
 /* parser->includes should be erased after params, to prevent access to freed data */
   for( id_hash_iterator(&dict_hit,parser->includes);
-    hit_next (&dict_hit, (char **)(&dict_key), (char **)(&dict_include));
+    dict_hit.hit_hash->ht_count && hit_next (&dict_hit, (char **)(&dict_key), (char **)(&dict_include));
     /*no step*/ )
   {
     dk_free_box (dict_include[0]->lm_memblock);
@@ -309,7 +309,7 @@ VXmlParserDestroy (vxml_parser_t * parser)
   id_hash_free (parser->includes);
 
   for( id_hash_iterator(&dict_hit,parser->ids);
-    hit_next (&dict_hit, (char **)(&dict_key), (char **)(&id_ptr));
+    dict_hit.hit_hash->ht_count && hit_next (&dict_hit, (char **)(&dict_key), (char **)(&id_ptr));
     /*no step*/ )
   {
     ecm_id_t* id = *id_ptr;
