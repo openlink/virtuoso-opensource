@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -50,10 +48,20 @@
     ]]>
   </v:method>
 
+  <v:method name="ttl_enabled2" arglist="">
+    <![CDATA[
+      if (__proc_exists ('WS.WS.TTL_REDIRECT_ENABLED'))
+        return WS.WS.TTL_REDIRECT_ENABLED ();
+
+      return 0;
+    ]]>
+  </v:method>
+
       <v:variable name="inter" type="integer" default="10" persist="0"/>
       <v:variable name="chk" type="integer" default="0" persist="0"/>
   <v:variable name="skin" type="integer" default="0" persist="0"/>
   <v:variable name="sse" type="integer" default="0" persist="0"/>
+  <v:variable name="ttl" type="integer" default="0" persist="0"/>
       <v:variable name="c_text" type="varchar" default="''" persist="0"/>
       <v:before-data-bind>
           <![CDATA[
@@ -73,6 +81,7 @@
 
       self.skin := case when registry_get ('__WebDAV_vspx__') = 'yes' then 1 else 0 end;
       self.sse := self.sse_enabled2 ();
+      self.ttl := self.ttl_enabled2 ();
             if ('' <> get_keyword ('edit', control.vc_page.vc_event.ve_params, ''))
             {
               _mode1 := atoi(get_keyword('choice_source', control.vc_page.vc_event.ve_params));
@@ -127,7 +136,18 @@
         {
           registry_set ('__WebDAV_sse__', 'no');
         }
-        self.sse := self.sse_enabled2 ();;
+        self.sse := self.sse_enabled2 ();
+
+        -- .TTL redirect
+        if (atoi (get_keyword ('ttl_enable', control.vc_page.vc_event.ve_params)) = 1)
+        {
+          registry_set ('__WebDAV_ttl__', 'yes');
+        }
+        else
+        {
+          registry_set ('__WebDAV_ttl__', 'no');
+        }
+        self.ttl := self.ttl_enabled2 ();
             }
       if ((self.sse = 1) and not self.sse_check_key ())
       {
@@ -141,7 +161,7 @@
       <v:form name="inx_form" type="simple" method="POST" action="cont_page.vspx?page=3">
         <table class="SubData" border="0" cellpadding="3" cellspacing="0">
           <tr>
-        <td width="130px">
+        <td width="180px">
           Text Indexing
         </td>
         <td width="1px">
@@ -179,6 +199,23 @@
         <td></td>
         <td>
           Update every <input type="text" name="int" value="<?V self.inter ?>"/> minutes
+        </td>
+      </tr>
+      <tr>
+        <td valign="top">
+          Enable redirection for .TTL files
+        </td>
+        <td colspan="2">
+          <label>
+            <v:check-box name="ttl_enable" value="1" xhtml_id="ttl_enable">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_selected := case when (self.ttl = 0) then 0 else 1 end;
+                  control.vc_data_bound := 1;
+                ]]>
+              </v:before-data-bind>
+            </v:check-box> ('text/html' content negotiation only)
+          </label>
         </td>
       </tr>
       <?vsp
