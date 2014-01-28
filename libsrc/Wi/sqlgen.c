@@ -1900,6 +1900,7 @@ sqlg_pop_sqs (sql_comp_t * sc, subq_source_t * sqs, data_source_t ** head, dk_se
   return last;
 }
 
+int setp_is_high_card (setp_node_t * setp);
 
 data_source_t *
 sqlg_inline_sqs (sql_comp_t * sc, df_elt_t * dfe, subq_source_t * sqs, data_source_t ** head, dk_set_t * pre_code)
@@ -3586,7 +3587,7 @@ sqlg_union_all_list (subq_source_t * sqs, dk_set_t * res)
   return 1;
 }
 
-
+int
 sqlg_is_subq_sel (data_source_t * qn)
 {
   return IS_QN (qn, select_node_input_subq) && !((select_node_t *) qn)->sel_subq_inlined;
