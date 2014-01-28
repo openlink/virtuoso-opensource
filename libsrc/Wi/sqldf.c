@@ -3359,6 +3359,7 @@ sqlo_is_text_order (sqlo_t * so, df_elt_t * dfe)
 void
 dfe_table_set_by_best (df_elt_t * tb_dfe, index_choice_t * ic, float true_arity, dk_set_t * col_preds, dk_set_t * after_preds)
 {
+  df_elt_t * tpred;
   tb_dfe->_.table.key = ic->ic_key;
   tb_dfe->_.table.is_unique = ic->ic_is_unique;
   tb_dfe->dfe_unit = ic->ic_unit;
@@ -3376,6 +3377,9 @@ dfe_table_set_by_best (df_elt_t * tb_dfe, index_choice_t * ic, float true_arity,
       if (ic->ic_after_test)
 	((df_elt_t*)ic->ic_after_test->data)->dfe_arity = ic->ic_after_test_arity;
     }
+  tpred = tb_dfe->_.table.text_pred;
+  if (tpred && tpred->_.text.geo && !tb_dfe->_.table.is_text_order && !tb_is_rdf_quad (tb_dfe->_.table.ot->ot_table))
+    t_set_push (after_preds, (void*)tpred);
 }
 
 int enable_index_path = 1;
