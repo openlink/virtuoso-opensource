@@ -1818,6 +1818,7 @@ bif_vec_ref (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return box_copy_tree (qst_get (qst, args[0]));
   if (SSL_REF == args[0]->ssl_type)
     sqlr_new_error ("42000",  "VVCREF", "vec_ref not allowed on a reference, must be straight vector or scalar");
+  dc = QST_BOX (data_col_t *, qst, args[0]->ssl_index);
   if (inx < 0 || inx >= dc->dc_n_values)
     return dk_alloc_box (0, DV_DB_NULL);
   sv = qi->qi_set;
