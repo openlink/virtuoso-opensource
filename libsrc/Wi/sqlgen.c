@@ -2475,7 +2475,7 @@ sqlg_dfe_code (sqlo_t * so, df_elt_t * dfe, dk_set_t * code, int succ, int fail,
 	qr->qr_select_node->sel_ext_set_no = ext_sets;
 	qr->qr_select_node->src_gen.src_input = (qn_input_fn) select_node_input_subq;
 	qr->qr_select_node->sel_vec_role = SEL_VEC_SCALAR;
-	qr->qr_select_node->sel_is_scalar_agg = sc->sc_is_scalar_agg;;
+	qr->qr_select_node->sel_is_scalar_agg = sc->sc_is_scalar_agg;
 	qr->qr_select_node->sel_vec_set_mask = cc_new_instance_slot (sc->sc_cc);
 	sqlg_parallel_ts_seq (sc, dfe, (table_source_t*)qr->qr_head_node, NULL, qr->qr_select_node);
 	dk_set_push (&sc->sc_cc->cc_query->qr_subq_queries, qr);

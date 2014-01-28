@@ -752,7 +752,7 @@ int xml_canonicalize (query_instance_t * qi, caddr_t * doc_tree, caddr_t * selec
 
   xs->xs_doc = xte_from_tree ((caddr_t) select_tree, qi);
   xs->xs_namespaces = new_hash;
-  dk_set_push (&xs->xs_parent_link, xml_c_new_namespace ("xsd", "http://www.w3.org/2001/XMLSchema"));;
+  dk_set_push (&xs->xs_parent_link, xml_c_new_namespace ("xsd", "http://www.w3.org/2001/XMLSchema"));
 
   text = xml_doc_subst (xs);
 

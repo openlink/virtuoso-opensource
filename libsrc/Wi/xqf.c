@@ -384,7 +384,7 @@ __chk_float_string (const char *str)
   for (; *p; p ++, n++ )
     {
       if (NULL == strchr("+-eE.", *p) && (p[0] > '9' || p[0] <'0' ))
-	return -1;;
+	return -1;
 
       if ('.' == p[0])
 	{

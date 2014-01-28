@@ -504,7 +504,6 @@ spartlist_track (const char *file, int line)
 void sparqr_free (spar_query_t *sparqr)
 {
   dk_free_tree (sparqr->sparqr_tree);
-  ;;;
 }
 #endif
 

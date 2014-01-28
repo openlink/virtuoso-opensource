@@ -163,7 +163,7 @@ sqlo_find_inx_intersect (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, flo
     {
       if (k1 != tb->tb_primary_key && !k1->key_no_pk_ref)
 	{
-	  dk_set_t group = NULL, eq_cols = NULL;;
+	  dk_set_t group = NULL, eq_cols = NULL;
 	  n_eqs = sqlo_leading_eqs (k1, col_preds);
 	  if (!n_eqs || n_eqs == k1->key_n_significant)
 	    goto next;
@@ -304,7 +304,7 @@ dfe_col_placed_eq (sqlo_t *so, op_table_t * ot, df_elt_t * col_dfe)
 	return c;
       if (DFE_COLUMN == c->dfe_type)
 	{
-	  df_elt_t * def = dfe_col_def_dfe (so, c);;
+	  df_elt_t * def = dfe_col_def_dfe (so, c);
 	  if (def)
 	    return c;
 	}

@@ -596,7 +596,7 @@ dfe_vec_inx_cost (df_elt_t * dfe, index_choice_t * ic, int64 sample)
     return 8; /* hash fillers and refs do not take this into account */
   order = dfe_n_in_order  (dfe, NULL, &prev_tb, &card_between, &eq_on_ordering, &cl_colocated);
   ic->ic_in_order = order;
-  ref_card = dfe_arity_with_supers (dfe->dfe_prev);;
+  ref_card = dfe_arity_with_supers (dfe->dfe_prev);
   if (!order)
     {
       float t_card;

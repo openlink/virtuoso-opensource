@@ -2008,7 +2008,7 @@ cv_refd_slots (sql_comp_t * sc, code_vec_t cv, dk_hash_t * res, dk_hash_t * all_
 	case INS_CALL:
 	case INS_CALL_IND:
 	  if (ins->_.call.proc_ssl)
-	    REF_SSL (res, ins->_.call.proc_ssl);;
+	    REF_SSL (res, ins->_.call.proc_ssl);
 	  ref_ssls (res, ins->_.call.params);
 	  ASG_SSL (res, all_res, ins->_.call.ret);
 	  if (non_cl_local) *non_cl_local = 1;
@@ -2326,7 +2326,7 @@ qn_refd_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t *
       REF_SSL (res, xn->xn_exp_for_xqr_text);
       REF_SSL (res, xn->xn_text_col);
       REF_SSL (res, xn->xn_base_uri);
-      ASG_SSL (res, all_res, xn->xn_output_val);;
+      ASG_SSL (res, all_res, xn->xn_output_val);
       if (xn->xn_text_node)
 	{
 	  text_node_t * txs = xn->xn_text_node;

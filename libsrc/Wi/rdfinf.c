@@ -757,7 +757,7 @@ rdf_inf_pre_input (rdf_inf_pre_node_t * ri, caddr_t * inst,
 		    }
 	      else
 		{
-		  SRC_IN_STATE ((data_source_t *)ri, inst) = NULL;;
+		  SRC_IN_STATE ((data_source_t *)ri, inst) = NULL;
 		  dk_free_box ((caddr_t)rit);
 		  qn_send_output ((data_source_t *) ri, inst);
 		  ri_outer_output (ri, ri->ri_outer_any_passed, inst);
@@ -912,7 +912,7 @@ ric_allocate (caddr_t n2)
       id_hash_set_rehash_pct (ctx->ric_iid_to_rel_ifp, 200);
       id_hash_set_rehash_pct (ctx->ric_samples, 200);
       id_hash_set_rehash_pct (ctx->ric_ifp_exclude, 200);
-  ctx->ric_ifp_exclude = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);;
+  ctx->ric_ifp_exclude = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
       ctx->ric_mtx = mutex_allocate ();
       ctx->ric_samples = id_hash_allocate (601, sizeof (caddr_t), sizeof (tb_sample_t), treehash, treehashcmp);
   id_hash_set_rehash_pct (ctx->ric_samples, 200);

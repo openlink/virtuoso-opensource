@@ -325,7 +325,7 @@ pfh_int64 (pf_hash_t * pfh, int64 v, short nth_cl, unsigned short * off_ret)
       unsigned int64 off = v - INT64_REF (pfh->pfh_page + ref);
       if (off < 16)
 	{
-	  *off_ret = (off << COL_OFFSET_SHIFT) + pff->pff_irow;;
+	  *off_ret = (off << COL_OFFSET_SHIFT) + pff->pff_irow;
 	  return CC_OFFSET;
 	}
       start = pff->pff_next;
@@ -557,7 +557,7 @@ col_compressed_value (buffer_desc_t * buf, dbe_col_loc_t * cl, int left_of, cadd
 		iri_id_t offset = unbox_iri_id (val) - n;
 		if (offset < 16)
 		  {
-		    *prefix_ref = irow | offset << COL_OFFSET_SHIFT;;
+		    *prefix_ref = irow | offset << COL_OFFSET_SHIFT;
 		    return CC_OFFSET;
 		  }
 		not_match_continue;

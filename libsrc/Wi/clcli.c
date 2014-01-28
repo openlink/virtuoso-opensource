@@ -179,7 +179,7 @@ __dk_hash_64_print (id_hash_t * ht)
 cl_req_group_t *
 cl_req_group (lock_trx_t * lt)
 {
-  cl_req_group_t *clrg = (cl_req_group_t *) dk_alloc_box_zero (sizeof (cl_req_group_t), DV_CLRG);;
+  cl_req_group_t *clrg = (cl_req_group_t *) dk_alloc_box_zero (sizeof (cl_req_group_t), DV_CLRG);
   clrg->clrg_ref_count = 1;
   dk_mutex_init (&clrg->clrg_mtx, MUTEX_TYPE_SHORT);
   clrg->clrg_lt = lt;

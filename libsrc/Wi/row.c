@@ -2806,7 +2806,7 @@ rd_col_change (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd, dbe_col
       itc_col_leave (itc, 0);
       if (col_buf && col_buf->bd_content_map->pm_bytes_free < len)
 	{
-	  page_leave_outside_map (col_buf);;
+	  page_leave_outside_map (col_buf);
 	  col_buf = NULL;
 	}
       if (!col_buf)

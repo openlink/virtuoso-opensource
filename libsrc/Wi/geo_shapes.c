@@ -641,7 +641,7 @@ For a polygon, being weird is not necessarily an error, esp. if it clearly has c
 	  {
 	    res |=
 		(geo_long360add_pline_probe (g->_.parts.items[idx], &long_plustominus_count,
-		    &long_minustoplus_count) & ~GEO_LONG360ADD_STARTS_AT_RIGHT);;
+		    &long_minustoplus_count) & ~GEO_LONG360ADD_STARTS_AT_RIGHT);
 	    if (res & (GEO_LONG360ADD_WEIRD | GEO_LONG360ADD_ALREADY_CHANGED))
 	      return res;
 	  }

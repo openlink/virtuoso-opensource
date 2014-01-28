@@ -222,7 +222,7 @@ ce_dict_generic_sets_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, i
       value = itc_any_param (itc, itc->itc_col_spec->sp_max, &dtp);
       dtp_cmp = ce_dtp_compare (ce, dtp);
       if (dtp_cmp != DVC_MATCH)
-	return cpo_match_after (cpo, cpo->cpo_ce_row_no + n_values);;
+	return cpo_match_after (cpo, cpo->cpo_ce_row_no + n_values);
       CE_DICT_INT_FLOAT (value);
 
       upper = ce_dict_key (ce, ce_first, value, dtp, &dict, &n_distinct);

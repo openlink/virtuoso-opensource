@@ -1312,7 +1312,7 @@ composite_diff (db_buf_t dv1, db_buf_t dv2)
     {
       long n1, n2;
       dtp1 = dv1[0];
-      dtp2 = dv2[0];;
+      dtp2 = dv2[0];
       if (DV_SHORT_INT == dtp1)
 	dtp1 = DV_LONG_INT;
       if (DV_SHORT_INT == dtp2)

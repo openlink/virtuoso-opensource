@@ -52,8 +52,8 @@ sqlc_decl_variable_list_const (sql_comp_t * sc, dk_set_t *ref_recs)
       sc->sc_sqlmessage = ssl_new_inst_variable (sc->sc_cc, "__SQL_MESSAGE", DV_SHORT_STRING);
       sc->sc_sqlstate->ssl_prec = 5;
       sc->sc_sqlmessage->ssl_prec = DV_STRING_PREC;
-      state_cr->crr_col_ref = t_listst (3, COL_DOTTED, NULL, t_sym_string ("__SQL_STATE"));;
-      message_cr->crr_col_ref = t_listst (3, COL_DOTTED, NULL, t_sym_string ("__SQL_MESSAGE"));;
+      state_cr->crr_col_ref = t_listst (3, COL_DOTTED, NULL, t_sym_string ("__SQL_STATE"));
+      message_cr->crr_col_ref = t_listst (3, COL_DOTTED, NULL, t_sym_string ("__SQL_MESSAGE"));
       state_cr->crr_ssl = sc->sc_sqlstate;
       message_cr->crr_ssl = sc->sc_sqlmessage;
       t_set_push (ref_recs, (void *) state_cr);

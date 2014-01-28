@@ -797,7 +797,7 @@ tst_next_states (trans_node_t * tn, caddr_t * inst, trans_set_t * ts, trans_stat
   DO_SET (caddr_t *, related_tuple, rel_place)
     {
       trans_state_t * rel;
-      caddr_t related = (!tn->tn_data && !tn->tn_end_flag) ? (caddr_t)related_tuple : related_tuple[0];;
+      caddr_t related = (!tn->tn_data && !tn->tn_end_flag) ? (caddr_t)related_tuple : related_tuple[0];
 
       if (tn->tn_distinct
 	  && id_hash_get (ts->ts_traversed, (caddr_t)&related))

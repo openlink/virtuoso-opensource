@@ -1232,7 +1232,7 @@ cv_vec_slots (sql_comp_t * sc, code_vec_t cv, dk_hash_t * res, dk_hash_t * all_r
       case INS_CALL:
       case INS_CALL_IND:
 	if (ins->_.call.proc_ssl)
-	  REF_SSL (res, ins->_.call.proc_ssl);;
+	  REF_SSL (res, ins->_.call.proc_ssl);
 	ref_ssls (res, ins->_.call.params);
 	if (CV_CALL_PROC_TABLE != ins->_.call.ret && CV_CALL_VOID != ins->_.call.ret)
 	  {

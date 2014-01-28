@@ -6060,7 +6060,7 @@ void xenc_kt_test ()
     {
       xenc_assert (0);
       dk_free_box (t.xtb_err_buffer);
-      goto end;;
+      goto end;
     }
   XENC_TRY_END (&t);
 

@@ -485,7 +485,7 @@ rendezvous_register (
   ConvertCStringToDomainName (serviceType, &type);
   ConvertCStringToDomainName (domainName, &domain);
   port.b[0] = (portNumber >> 8) & 0x0FF;
-  port.b[1] = (portNumber >> 0) & 0x0FF;;
+  port.b[1] = (portNumber >> 0) & 0x0FF;
 
   maxTextLen = sizeof (dsnText);
   textLen = strlen (text);
