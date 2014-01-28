@@ -2600,6 +2600,39 @@ sqlo_identity_self_join (sqlo_t *so, ST ** ptree)
   END_DO_BOX;
 }
 
+/*
+   We check all columns in gb are in select list, if so the distinct is redundant.
+   The columns in gb can't be less than selection as in previous step for checking gb, missing columns are added in selection  
+*/
+static int
+sqlo_distinct_redundant (ST * sel, ST * gb)
+{
+  int inx, inx2, found;
+  DO_BOX (ST *, spec, inx, (ST **)gb)
+    {
+      spec = spec->_.o_spec.col;
+      while (ST_P (spec, BOP_AS))
+	spec = spec->_.as_exp.left;
+      found = 0;
+      DO_BOX (ST *, exp, inx2, (ST **) sel)
+	{
+	  while (ST_P (exp, BOP_AS))
+	    exp = exp->_.as_exp.left;
+	  while (ST_P (exp, CALL_STMT) && sqlo_is_unq_preserving (exp->_.call.name))
+	    exp = exp->_.call.params[0];
+	  if (box_equal (exp, spec))
+	    {
+	      found = 1;
+	      break;
+	    }
+	}
+      END_DO_BOX;
+      if (!found)
+	return 0;
+    }
+  END_DO_BOX;
+  return 1;
+}
 
 void
 sqlo_select_scope (sqlo_t * so, ST ** ptree)
@@ -2799,6 +2832,8 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
 	      &(texp->_.table_exp.group_by), ot, is_not_one_gb);
 	  sqlo_check_group_by_cols (so, (ST *) texp->_.table_exp.order_by,
 	      &(texp->_.table_exp.group_by), ot, is_not_one_gb);
+	  if (!is_not_one_gb && SEL_IS_DISTINCT (tree) && sqlo_distinct_redundant (tree->_.select_stmt.selection, texp->_.table_exp.group_by))
+	    SEL_SET_DISTINCT (tree, 0)
 	}
     }
 
