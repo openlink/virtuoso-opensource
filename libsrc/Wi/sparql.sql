@@ -6895,8 +6895,9 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES_CL (inout graph_iri any, inout triple
   if (__rdf_graph_is_in_enabled_repl (graph_iri))
     DB.DBA.RDF_REPL_INSERT_TRIPLES (id_to_iri (graph_iri), triples);
   connection_set ('g_iid', graph_iri);
-  ro_id_dict := dict_new ();
-  connection_set ('g_dict', ro_id_dict);
+  ro_id_dict := null;
+  --ro_id_dict := dict_new ();
+  --connection_set ('g_dict', ro_id_dict);
   dp := dpipe (0, 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'MAKE_RO_1', 'IRI_TO_ID_1');
   dpipe_set_rdf_load (dp);
   l := length (triples);
