@@ -627,7 +627,7 @@ typedef struct spar_tree_s
         /* #define SPAR_TRIPLE		(ptrlong)1014 */
         ptrlong subtype;
         SPART *tr_fields[SPART_TRIPLE_FIELDS_COUNT];
-        caddr_t qm_iri_or_pair;	/* !< This is one of the following: DEFAULT_L for built-in mapping or _STAR for no restriction or an UNAME of top quad map or a pair of one listed before and a serial number of a sinv */
+        SPART **qm_iri_or_pair;		/* Right now this is a list of a serial of a service invocation in first item and either _STAR as second item for no restriction or DEFAULT_L for built-in mapping or an UNAME of top quad map in every item of the list after the first one */
         caddr_t selid;
         caddr_t tabid;
         triple_case_t **tc_list;
@@ -909,7 +909,7 @@ extern void spar_gp_add_member (sparp_t *sparp, SPART *memb);
 #define SPAR_TRIPLE_TRICK_MACRO		0x4 /*!< Check triple pattern for matchong to macro signatures and make macro invocation instead of a triple */
 /*! Makes and adds a triple or a macro call or a filter like CONTAINS or a SELECT group for transitive prop or a UNION prop with inverse props or combination of few, with optional filter on graph.
 \c banned tricks is a bitmask that is 0 by default, SPAR_ADD_TRIPLELIKE_NO_xxx */
-extern SPART *spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri, SPART **options, int banned_tricks);
+extern SPART *spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **qm_iri_or_pair, SPART **options, int banned_tricks);
 /*! Checks if the given \c filt is a freetext filter. If it is so and \c base_triple is not NULL then it additionally checks if var name matches
 \returns NULL if filter is not free-text, UNAME like "bif:contains" if it is a free-text predicate */
 extern caddr_t spar_filter_is_freetext (sparp_t *sparp, SPART *filt, SPART *base_triple);
@@ -962,7 +962,7 @@ extern SPART *spar_make_bindings_inv_with_fake_equivs (sparp_t *sparp, SPART **v
 extern SPART **spar_make_sources_like_top (sparp_t *sparp, ptrlong top_subtype);
 extern SPART *spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
   SPART *pattern, SPART **groupings, SPART *having, SPART **order, SPART *limit, SPART *offset, SPART *binv);
-extern SPART *spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri_or_pair, SPART **options);
+extern SPART *spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **qm_iri_or_pair, SPART **options);
 extern SPART *spar_make_ppath (sparp_t *sparp, char subtype, SPART *part1, SPART *part2, ptrlong mincount, ptrlong maxcount);
 extern SPART *spar_bind_prepare (sparp_t *sparp, SPART *expn, int bind_has_scalar_subqs);
 extern SPART *spar_make_param_or_variable (sparp_t *sparp, caddr_t name);

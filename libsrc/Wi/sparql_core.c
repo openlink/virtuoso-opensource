@@ -1048,7 +1048,7 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
             spar_error (sparp, "Quad storage <%.100s> does not exists or is in unusable state", value);
           if ((sparp->sparp_storage != old_storage)
             && (NULL != sparp->sparp_env->spare_context_qms)
-            && ((SPART *)((ptrlong)_STAR) != sparp->sparp_env->spare_context_qms->data) )
+            && ((SPART **)((ptrlong)_STAR) != sparp->sparp_env->spare_context_qms->data) )
             spar_error (sparp, "Can't change quad storage via 'define %.30s' in subqueries inside QUAD MAP group patterns other than 'QUAD MAP * {...}'", param);
           return;
         }
@@ -2302,7 +2302,7 @@ spar_describe_restricted_by_physical (sparp_t *sparp, SPART *req_top, SPART **re
     NULL,
     spar_make_fake_blank_node (sparp),
     spar_make_fake_blank_node (sparp),
-    (caddr_t)(_STAR), NULL );
+    (SPART **)t_list (2, NULL, (ptrlong)(_STAR)), NULL );
   /*spar_selid_pop (sparp);*/
   t_set_pop (&(sparp->sparp_env->spare_context_gp_subtypes));
   DO_BOX_FAST (SPART *, s, s_ctr, retvals)
@@ -2761,7 +2761,7 @@ spar_make_top (sparp_t *sparp, ptrlong subtype, SPART **retvals,
 }
 
 SPART *
-spar_gp_add_union_of_triple_and_inverses (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri_or_pair, SPART **options, int banned_tricks, dk_set_t inv_props)
+spar_gp_add_union_of_triple_and_inverses (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **qm_iri_or_pair, SPART **options, int banned_tricks, dk_set_t inv_props)
 {
   SPART *triple, *gp, *union_gp;
   rdf_inf_ctx_t *saved_inf = sparp->sparp_env->spare_inference_ctx;
@@ -2788,7 +2788,7 @@ spar_gp_add_union_of_triple_and_inverses (sparp_t *sparp, SPART *graph, SPART *s
         (SPART *)t_full_box_copy_tree ((caddr_t)object), /* object is swapped with subject*/
         (SPART *)t_full_box_copy_tree ((caddr_t)predicate),
         (SPART *)t_full_box_copy_tree ((caddr_t)subject),
-        t_full_box_copy_tree (qm_iri_or_pair),
+        sparp_treelist_full_copy (sparp, qm_iri_or_pair, NULL),
         (SPART **)t_full_box_copy_tree ((caddr_t)options),
         banned_tricks | SPAR_TRIPLE_TRICK_INV_UNION );
       if (SPAR_TRIPLE != SPART_TYPE (triple))
@@ -2823,7 +2823,7 @@ spar_gp_add_transitive_triple_anchor_filter (sparp_t *sparp, caddr_t fld_vname, 
 }
 
 SPART *
-spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri_or_pair, SPART **options, int banned_tricks)
+spar_gp_add_transitive_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **qm_iri_or_pair, SPART **options, int banned_tricks)
 {
 #ifdef DEBUG
   sparp_env_t *saved_env = sparp->sparp_env;
@@ -3007,7 +3007,7 @@ g_found:
 #endif
 
 SPART *
-spar_gp_add_ppath_leaf (sparp_t *sparp,  SPART **parts, int part_count, int pp_makes_union, int pp_subtype, SPART *graph, SPART *subject, SPART *object, caddr_t qm_iri_or_pair, int banned_tricks)
+spar_gp_add_ppath_leaf (sparp_t *sparp,  SPART **parts, int part_count, int pp_makes_union, int pp_subtype, SPART *graph, SPART *subject, SPART *object, SPART **qm_iri_or_pair, int banned_tricks)
 {
   SPART *res;
   graph = (SPART *)t_box_copy_tree ((caddr_t)graph);
@@ -3047,7 +3047,7 @@ spar_gp_add_ppath_leaf (sparp_t *sparp,  SPART **parts, int part_count, int pp_m
 }
 
 SPART *
-spar_gp_add_ppath_triples (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pp, SPART *object, caddr_t qm_iri_or_pair, int banned_tricks)
+spar_gp_add_ppath_triples (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pp, SPART *object, SPART **qm_iri_or_pair, int banned_tricks)
 {
   ptrlong parent_gp_subtype = (ptrlong)(sparp->sparp_env->spare_context_gp_subtypes->data);
   SPART **parts = pp->_.ppath.parts;
@@ -3244,7 +3244,7 @@ spar_gp_make_graph_field_from_context (sparp_t *sparp, SPART **ret_graph_eq_from
 }
 
 SPART *
-spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri_or_pair, SPART **options, int banned_tricks)
+spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **qm_iri_or_pair, SPART **options, int banned_tricks)
 {
   sparp_env_t *env = sparp->sparp_env;
   rdf_inf_ctx_t *inf_ctx = sparp->sparp_env->spare_inference_ctx;
@@ -3275,19 +3275,13 @@ spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *pre
   if (NULL == qm_iri_or_pair)
     {
       if (NULL == env->spare_context_qms)
-        qm_iri_or_pair = (caddr_t)(_STAR);
+        qm_iri_or_pair = (SPART **)t_list (2, NULL, ((ptrlong)_STAR));
       else
-        {
-          SPART *ctx_qm = (SPART *)(env->spare_context_qms->data);
-          if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (ctx_qm))
-            qm_iri_or_pair = ctx_qm->_.lit.val;
-          else
-            qm_iri_or_pair = (caddr_t)ctx_qm;
-        }
+        qm_iri_or_pair = (SPART **)(env->spare_context_qms->data);
       if (NULL != env->spare_context_sinvs)
         {
           SPART *inner_sinv = (SPART *)(env->spare_context_sinvs->data);
-          qm_iri_or_pair = (caddr_t)t_list (2, qm_iri_or_pair, t_box_num (inner_sinv->_.sinv.own_idx));
+          qm_iri_or_pair[0] = (SPART *)t_box_num_nonull (inner_sinv->_.sinv.own_idx);
         }
     }
   if (NULL != options)
@@ -3425,7 +3419,7 @@ plain_triple_in_ctor:
 }
 
 SPART *
-spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, caddr_t qm_iri_or_pair, SPART **options)
+spar_make_plain_triple (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **qm_iri_or_pair, SPART **options)
 {
   sparp_env_t *env = sparp->sparp_env;
   int fctr;
@@ -5797,7 +5791,7 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
         spar_make_literal_from_sql_box (&sparp, sqlvals[SPART_TRIPLE_SUBJECT_IDX]	, ml_make_mode),
         spar_make_literal_from_sql_box (&sparp, sqlvals[SPART_TRIPLE_PREDICATE_IDX]	, ml_make_mode),
         spar_make_literal_from_sql_box (&sparp, sqlvals[SPART_TRIPLE_OBJECT_IDX]	, ml_make_mode),
-        (caddr_t)(_STAR), NULL );
+        (SPART **)t_list (2, NULL, (ptrlong)(_STAR)), NULL );
       DO_BOX_FAST (caddr_t, itm, src_idx, good_sources_val)
         {
           SPART *expn = spar_make_literal_from_sql_box (&sparp, itm, SPAR_ML_SAFEST);

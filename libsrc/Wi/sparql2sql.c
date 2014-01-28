@@ -4663,8 +4663,22 @@ sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, i
   int common_status = sparp_check_triple_case (sparp, tcc, qm, invalidation_level);
   if (SSG_QM_NO_MATCH == common_status)
     return SSG_QM_NO_MATCH;
-  if ((NULL == tcc->tcc_top_allowed_qm) || (qm == tcc->tcc_top_allowed_qm))
-    inside_allowed_qm = 1;
+  if (!inside_allowed_qm)
+    {
+      if (NULL == tcc->tcc_top_allowed_qms)
+        inside_allowed_qm = 1;
+      else
+        {
+          for (ctr = BOX_ELEMENTS (tcc->tcc_top_allowed_qms); ctr--; /* no step */)
+            {
+              if (qm == tcc->tcc_top_allowed_qms[ctr])
+                {
+                  inside_allowed_qm = 1;
+                  break;
+                }
+            }
+        }
+    }
   DO_BOX_FAST (quad_map_t *, sub_qm, ctr, qm->qmUserSubMaps)
     {
       int status = sparp_qm_find_triple_cases (sparp, tcc, sub_qm, inside_allowed_qm, invalidation_level+1);
@@ -4743,18 +4757,16 @@ sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, i
 triple_case_t **
 sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int required_source_type)
 {
-  caddr_t triple_qm_iri = triple->_.triple.qm_iri_or_pair;
+  SPART **qm_iri_or_pair = triple->_.triple.qm_iri_or_pair;
   caddr_t triple_storage_iri;
-  SPART *sinv = NULL;
   quad_storage_t *triple_storage;
   int ctr, fld_ctr, source_ctr;
   triple_case_t **res_list;
   tc_context_t tmp_tcc;
-  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (triple_qm_iri))
+  if (NULL != qm_iri_or_pair[0])
     {
-      sinv = SPARP_SINV (sparp, unbox (((caddr_t *)triple_qm_iri)[1]));
+      SPART *sinv = SPARP_SINV (sparp, unbox (((caddr_t *)qm_iri_or_pair)[0]));
       triple_storage_iri = sinv->_.sinv.storage_uri;
-      triple_qm_iri = ((caddr_t *)triple_qm_iri)[0];
       triple_storage = sparp_find_storage_by_name (triple_storage_iri);
       if (NULL == triple_storage)
         spar_internal_error (sparp, "quad storage metadata are lost");
@@ -4791,20 +4803,28 @@ sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int req
         tmp_tcc.tcc_source_invalidation_masks[source_ctr] = 0x1;
     }
   END_DO_BOX_FAST;
-  if (((caddr_t)DEFAULT_L) == triple_qm_iri)
-    {
-      if (NULL == triple_storage->qsDefaultMap)
-        spar_error (sparp, "QUAD MAP DEFAULT group pattern is used in RDF storage '%.200s' that has no default quad map", triple_storage_iri);
-      tmp_tcc.tcc_top_allowed_qm = triple_storage->qsDefaultMap;
-    }
-  else if (((caddr_t)_STAR) == triple_qm_iri)
-    tmp_tcc.tcc_top_allowed_qm = NULL;
+  if ((SPART *)((ptrlong)_STAR) == qm_iri_or_pair[1])
+    tmp_tcc.tcc_top_allowed_qms = NULL;
   else
     {
-      quad_map_t *top_qm = sparp_find_quad_map_by_name (triple_qm_iri);
-      if (NULL == top_qm)
-        spar_error (sparp, "QUAD MAP '%.200s' group pattern refers to undefined quad map", triple_qm_iri);
-      tmp_tcc.tcc_top_allowed_qm = top_qm;
+      tmp_tcc.tcc_top_allowed_qms = (quad_map_t **)t_alloc_list (BOX_ELEMENTS (qm_iri_or_pair)-1);
+      for (ctr = BOX_ELEMENTS(tmp_tcc.tcc_top_allowed_qms); ctr--; /* no step */)
+        {
+          caddr_t triple_qm_iri = (caddr_t)(qm_iri_or_pair[ctr + 1]);
+          if (((caddr_t)DEFAULT_L) == triple_qm_iri)
+            {
+              if (NULL == triple_storage->qsDefaultMap)
+                spar_error (sparp, "QUAD MAP DEFAULT group pattern is used in RDF storage '%.200s' that has no default quad map", triple_storage_iri);
+              tmp_tcc.tcc_top_allowed_qms[ctr] = triple_storage->qsDefaultMap;
+            }
+          else
+            {
+              quad_map_t *top_qm = sparp_find_quad_map_by_name (triple_qm_iri);
+              if (NULL == top_qm)
+                spar_error (sparp, "QUAD MAP '%.200s' group pattern refers to undefined quad map", triple_qm_iri);
+              tmp_tcc.tcc_top_allowed_qms[ctr] = top_qm;
+            }
+        }
     }
   DO_BOX_FAST (quad_map_t *, qm, ctr, triple_storage->qsMjvMaps)
     {
@@ -7074,7 +7094,7 @@ sparp_gp_trav_add_graph_perm_read_filters (sparp_t *sparp, SPART *curr, sparp_tr
       SPART *gp_of_cache;
       if (SPAR_TRIPLE != memb->type)
         continue;
-      if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (memb->_.triple.qm_iri_or_pair))
+      if (NULL != memb->_.triple.qm_iri_or_pair[0])
         continue; /* New fix for reopened Bug 14737: No permission filters should be placed inside service invocations */
       g_expn = memb->_.triple.tr_graph;
       if (!spar_graph_needs_security_testing (sparp, g_expn, RDF_GRAPH_PERM_READ))

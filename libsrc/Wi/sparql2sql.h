@@ -533,17 +533,17 @@ extern quad_map_t *sparp_find_quad_map_by_name (ccaddr_t name);
 #define SSG_QM_MATCH_AND_CUT	5	/*!< SSG_QM_APPROX_MATCH plus qm is soft/hard exclusive so red cut and no more search for possible quad maps of lower priority */
 
 typedef struct tc_context_s {
-  SPART *tcc_triple;		/*!< Triple pattern in question */
-  int tcc_check_source_graphs;	/*!< Nonzero if \c tcc_sources contains nonzero number of graphs so it forms the restriction that should be checked */
-  SPART **tcc_sources;		/*!< Source graphs that can be used */
-  uint32 *tcc_source_invalidation_masks;	/*!< String of integers, nonzero means that the source graph with same index in \c tcc_sourcess has failed some restriction at some level of nested quad maps. 0x1 is for global restriction by type, 0x2 is for RDF views etc. SPAN_NOT_FROM_xxx are never masked, of course */
-  quad_storage_t *tcc_qs;	/*!< Quad storage in question */
-  quad_map_t *tcc_top_allowed_qm;	/*!< Top qm that is allowed, if it is specified in the triple */
+  SPART *		tcc_triple;			/*!< Triple pattern in question */
+  int			tcc_check_source_graphs;	/*!< Nonzero if \c tcc_sources contains nonzero number of graphs so it forms the restriction that should be checked */
+  SPART **		tcc_sources;			/*!< Source graphs that can be used */
+  uint32 *		tcc_source_invalidation_masks;	/*!< String of integers, nonzero means that the source graph with same index in \c tcc_sourcess has failed some restriction at some level of nested quad maps. 0x1 is for global restriction by type, 0x2 is for RDF views etc. SPAN_NOT_FROM_xxx are never masked, of course */
+  quad_storage_t *	tcc_qs;				/*!< Quad storage in question */
+  quad_map_t **		tcc_top_allowed_qms;		/*!< Top qms that are allowed, if some are specified in the triple via QUAD MAP xx { } */
   void *tcc_last_qmvs [SPART_TRIPLE_FIELDS_COUNT];	/*!< Pointers to recently checked QMVs or constants. QMVs tend to repeat in sequences. */
   int tcc_last_qmv_results [SPART_TRIPLE_FIELDS_COUNT];	/*!< Results of recent comparisons. */
   dk_set_t tcc_cuts [SPART_TRIPLE_FIELDS_COUNT];	/*!< Accumulated red cuts for possible values of fields */
-  dk_set_t tcc_found_cases;		/*!< Accumulated triple cases */
-  int tcc_nonfiltered_cases_found;	/*!< Count of triples cases that passed tests, including cases rejected due to QUAD MAP xx { } restriction of triple */
+  dk_set_t		tcc_found_cases;		/*!< Accumulated triple cases */
+  int			tcc_nonfiltered_cases_found;	/*!< Count of triples cases that passed tests, including cases rejected due to QUAD MAP xx { } restriction of triple */
 } tc_context_t;
 
 /*! This checks if the given \c qm may contain data that matches \c tcc->tcc_triple by itself,

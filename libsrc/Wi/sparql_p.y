@@ -466,7 +466,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_rdf_literal
 %type <tree> spar_boolean_literal
 %type <tree> spar_iriref
-%type <tree> spar_iriref_or_star_or_default
+%type <trees> spar_iriref_or_default_list_or_star
+%type <backstack> spar_iriref_or_default_list
 %type <tree> spar_qname
 %type <token_type> spar_arrow
 %type <trees> spar_arrow_iriref
@@ -1259,7 +1260,7 @@ spar_optional_gp	/* [22]	OptionalGraphPattern	 ::=  'OPTIONAL' GroupGraphPattern
 
 spar_quad_map_gp		/* [Virt]	QuadMapGraphPattern	 ::=  'QUAD' 'MAP' ( IRIref | '*' ) GroupGraphPattern	*/
 	: QUAD_L MAP_L { SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_QUAD_MAP, "QUAD MAP { ... } group pattern"); }
-	    spar_iriref_or_star_or_default { t_set_push (&(sparp_env()->spare_context_qms), $4); }
+	    spar_iriref_or_default_list_or_star { t_set_push (&(sparp_env()->spare_context_qms), $4); }
 	    _LBRA {
 		spar_gp_init (sparp_arg, 0); }
 	    spar_group_gp { t_set_pop (&(sparp_env()->spare_context_qms)); $$ = $8; }
@@ -2278,10 +2279,16 @@ spar_boolean_literal	/* [61]	BooleanLiteral	 ::=  'true' | 'false'	*/
 	| false_L		{ $$ = SPAR_MAKE_BOOL_LITERAL(sparp_arg, 0); }
 	;
 
-spar_iriref_or_star_or_default
-	: spar_iriref
-	| _STAR			{ $$ = (SPART *)((ptrlong)_STAR); }
-	| DEFAULT_L		{ $$ = (SPART *)((ptrlong)DEFAULT_L); }
+spar_iriref_or_default_list_or_star
+	: spar_iriref_or_default_list { dk_set_t lst = $1; t_set_push (&lst, (ptrlong)0); $$ = (SPART **)t_list_to_array (lst); }
+	| _STAR			{ $$ = (SPART **)t_list (2, NULL, ((ptrlong)_STAR)); }
+	;
+
+spar_iriref_or_default_list
+	: DEFAULT_L		{ $$ = NULL; t_set_push (&($$), (SPART *)((ptrlong)DEFAULT_L)); }
+	| spar_iriref		{ $$ = NULL; t_set_push (&($$), $1->_.lit.val); }
+	| spar_iriref_or_default_list DEFAULT_L		{ $$ = $1; t_set_push (&($$), (SPART *)((ptrlong)DEFAULT_L)); }
+	| spar_iriref_or_default_list spar_iriref	{ $$ = $1; t_set_push (&($$), $2->_.lit.val); }
 	;
 
 spar_arrow
