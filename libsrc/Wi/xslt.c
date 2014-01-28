@@ -3898,7 +3898,7 @@ bif_dict_zap (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ht->ht_dict_mem_in_use = 0;
   if (ht->ht_mutex)
     mutex_leave (ht->ht_mutex);
-  return (caddr_t)len;
+  return (caddr_t)box_num (len);
 }
 
 caddr_t
