@@ -2590,7 +2590,7 @@ sqlo_identity_self_join (sqlo_t *so, ST ** ptree)
 		  sqlo_col_pref_replace (tree, ot2->ot_new_prefix, ot1->ot_new_prefix);
 		  t_box_rem_at_inx (&texp->_.table_exp.from, inx2);
 		  so->so_is_rescope = 1;
-		  sqlo_scope (so, ptree);
+		  /*sqlo_scope (so, ptree); - no need to rescope when only removing.  rescoping will re-rename things and only one rename is desired because must be able to map from org to renamed for hash build side dts */
 		  so->so_is_rescope = old_rescope;
 		  return;
 		}
