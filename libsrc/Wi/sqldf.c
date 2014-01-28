@@ -2549,7 +2549,7 @@ next_pred:;
       return copy;
     }
   if (!IS_BOX_POINTER (tb_dfe->dfe_super->dfe_locus)
-      && !(ST_P (ot->ot_dt, SELECT_STMT) && sel_has_top (ot->ot_dt)))
+      && !(ST_P (ot->ot_dt, SELECT_STMT) && (sel_has_top (ot->ot_dt) || sel_n_breakup (ot->ot_dt))))
     {
       caddr_t cc_key = NULL;
       int can_cache = 1;
