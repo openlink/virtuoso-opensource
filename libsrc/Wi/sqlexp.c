@@ -902,7 +902,6 @@ cv_asg_broader_type (instruction_t *ins)
   /* the assignment target goes to any if two incompatible types are assigned.  If one of them is a boxed type in vectored then target is that also */
   state_slot_t * res = ins->_.artm.result;
   state_slot_t * l = ins->_.artm.left;
-  res->ssl_sqt.sqt_col_dtp = 0; /* will influence dc dtp, not a column, not set */
   if (dtp_canonical[res->ssl_dtp] == dtp_canonical[l->ssl_dtp]
       || DV_OBJECT == res->ssl_dtp || DV_REFERENCE == res->ssl_dtp)
     return;
@@ -911,6 +910,8 @@ cv_asg_broader_type (instruction_t *ins)
       res->ssl_sqt.sqt_non_null = 0;
       return;
     }
+  if (!res->ssl_column)
+    res->ssl_sqt.sqt_col_dtp = 0; /* will influence dc dtp, not a column, not set */
   if (IS_NUM_DTP (res->ssl_dtp) && IS_NUM_DTP (l->ssl_dtp))
     {
       if (DV_DOUBLE_FLOAT == l->ssl_dtp)
@@ -2180,7 +2181,6 @@ qn_refd_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t *
       ks_refd_slots (sc, ts->ts_main_ks, res, all_res, non_cl_local);
       if (ts->ts_alternate)
 	{
-
 	  qn_refd_slots (sc, (data_source_t*)ts->ts_alternate, res, all_res, non_cl_local);
 	  qn_refd_slots (sc, qn_next ((data_source_t*)ts->ts_alternate), res, all_res, non_cl_local);
 	}

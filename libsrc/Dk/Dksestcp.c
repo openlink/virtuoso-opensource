@@ -40,7 +40,6 @@ static int tcpses_accept (session_t * ses, session_t * new_ses);
 static int tcpses_connect (session_t * ses);
 static int tcpses_disconnect (session_t * ses);
 int tcpses_write (session_t * ses, char *buffer, int n_bytes);
-static int tcpses_read (session_t * ses, char *buffer, int n_bytes);
 static int tcpses_set_control (session_t * ses, int fld, char *p_value, int sz);
 static int fill_fdset (int count, session_t ** sestable, fd_set * p_fdset);
 static int test_eintr (session_t * ses, int retcode, int eno);
@@ -51,7 +50,6 @@ static int test_broken (session_t * ses, int retcode, int eno);
 static void set_array_status (int count, session_t ** sesarr, int status);
 
 static int fileses_write (session_t * ses, char *buffer, int n_bytes);
-static int fileses_read (session_t * ses, char *buffer, int n_bytes);
 int tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t * timeout);
 
 
@@ -955,7 +953,7 @@ tcpses_get_last_r_errno ()
 }
 
 
-static int
+int
 tcpses_read (session_t * ses, char *buffer, int n_bytes)
 {
   int n_in;
@@ -1106,7 +1104,7 @@ tcpses_is_write_ready (session_t * ses, timeout_t * to)
 }
 
 
-static int
+int
 fileses_read (session_t * ses, char *buffer, int n_bytes)
 {
   int n_in;

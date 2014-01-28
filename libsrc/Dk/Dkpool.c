@@ -1404,6 +1404,20 @@ mm_cache_init (size_t sz, size_t min, size_t max, int steps, float step)
 }
 
 
+
+size_t 
+mp_block_size_sc (size_t sz)
+{
+  int ign;
+  if (sz >= mm_sizes[mm_n_large_sizes - 1])
+    return mm_sizes[mm_n_large_sizes - 1];
+  if (sz < mm_sizes[0])
+    return mm_sizes[0];
+  return mm_next_size (sz, &ign);
+}
+
+
+
 #ifdef MP_MAP_CHECK
 
 dk_mutex_t mp_mmap_mark_mtx;

@@ -194,4 +194,8 @@ int utf8_align_memcpy (void *dst, const void *src, size_t len, size_t * pnwc, in
 OFF_T strf_lseek (strsestmpfile_t * sesfile, OFF_T offset, int whence);
 size_t strf_read (strsestmpfile_t * sesfile, void *buf, size_t nbyte);
 
+int fileses_read (session_t * ses, char *buffer, int n_bytes);
+int tcpses_read (session_t * ses, char *buffer, int n_bytes);
+
+
 #endif

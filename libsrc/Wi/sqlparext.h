@@ -318,7 +318,11 @@ Note: bitwise OR of all these masks should be less than SMALLEST_POSSIBLE_POINTE
 #define OPT_NO_IDENTITY ((ptrlong)936)
 #define OPT_ELASTIC ((ptrlong)937)
 #define OPT_NO_TRIGGER ((ptrlong)938)
-
+#define OPT_PARTITION ((ptrlong)939)
+#define OPT_PARALLEL ((ptrlong)947)
+#define OPT_FROM_FILE ((ptrlong)953)
+#define OPT_FILE_START  ((ptrlong)954)
+#define OPT_FILE_END  ((ptrlong)955)
 
 #define OPT_HASH ((ptrlong) 903)
 #define OPT_INTERSECT ((ptrlong) 1015)

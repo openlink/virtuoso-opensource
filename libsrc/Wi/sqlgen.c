@@ -862,7 +862,6 @@ sqlg_is_text_only (sqlo_t * so, df_elt_t *tb_dfe, table_source_t *ts)
 }
 
 
-
 /*
    Ensure out cols for all non-eq parts
    Make the eq spec for all significant parts
@@ -1036,7 +1035,7 @@ sqlg_inx_op (sqlo_t * so, df_elt_t * tb_dfe, df_inx_op_t * dio, inx_op_t * paren
 extern int enable_vec_upd;
 
 data_source_t *
-sqlg_make_np_ts (sqlo_t * so, df_elt_t * tb_dfe)
+sqlg_make_np_ts (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * pre_code)
 {
   sql_comp_t * sc = so->so_sc;
   comp_context_t *cc = so->so_sc->sc_cc;
@@ -1201,12 +1200,12 @@ hs_make_signature (setp_node_t * setp, dbe_table_t * tb)
 
 
 data_source_t *
-sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe)
+sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * pre_code)
 {
   if (tb_dfe->_.table.index_path)
     return sqlg_make_path_ts (so, tb_dfe);
   else
-    return sqlg_make_np_ts (so, tb_dfe);
+    return sqlg_make_np_ts (so, tb_dfe, pre_code);
 }
 
 
@@ -5268,6 +5267,9 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query, ST ** targ
 		  pre_code = NULL;
 		  if (DFE_TABLE == dfe->dfe_type && HR_FILL == dfe->_.table.hash_role)
 		    rts = sqlg_hash_filler (so, dfe, rts);
+		  else if (DFE_DT == dfe->dfe_type && dfe->_.sub.hash_filler_of)
+		    rts = sqlg_hash_filler_dt (so, dfe, (subq_source_t*)qn);
+
 		  last_qn = rts;
 		  sql_node_append (&head, rts);
 		}
@@ -5333,7 +5335,7 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query, ST ** targ
 		  else
 		    {
 		      sqlg_pred_merge (so, dfe, &pre_code);
-		      last_qn = qn = sqlg_make_ts (so, dfe);
+		      last_qn = qn = sqlg_make_ts (so, dfe, &pre_code);
 		    }
 		  if (dfe->_.table.text_node && (dfe->_.table.is_text_order || dfe->_.table.text_only))
 		    qn = dfe->_.table.text_node;

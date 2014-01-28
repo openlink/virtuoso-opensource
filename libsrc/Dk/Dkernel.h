@@ -876,6 +876,8 @@ int is_protocol (session_t * ses, int proto);
 int check_inputs (TAKE_G timeout_t * timeout, int is_recursive);
 int read_service_request (dk_session_t * ses);
 EXE_EXPORT (dk_session_t *, dk_session_allocate, (int sesclass));
+dk_session_t * dk_session_alloc_box (int sesclass, int in_len);
+
 void timeout_round (TAKE_G dk_session_t * ses);
 void PrpcSuckAvidly (int mode);
 void PrpcAddAnswer (caddr_t result, int ret_type, int is_partial, int flush);

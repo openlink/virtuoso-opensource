@@ -2520,6 +2520,29 @@ dk_session_allocate (int sesclass)
 }
 
 
+dk_session_t *
+dk_session_alloc_box (int sesclass, int in_len)
+{
+  dk_session_t *dk_ses = NULL;
+  session_t *ses;
+  dk_ses = (dk_session_t *) dk_alloc_box (sizeof (dk_session_t), DV_STRING_SESSION);
+  memset (dk_ses, 0, sizeof (dk_session_t));
+  ses = session_allocate (sesclass);
+  SESSION_SCH_DATA (dk_ses) = (scheduler_io_data_t *) dk_alloc (sizeof (scheduler_io_data_t));
+  memset (SESSION_SCH_DATA (dk_ses), 0, sizeof (scheduler_io_data_t));
+  SESSION_SCH_DATA (dk_ses)->sio_is_served = -1;
+  dk_ses->dks_session = ses;
+  SESSION_DK_SESSION (ses) = dk_ses;		 /* two way link. */
+  dk_ses->dks_mtx = mutex_allocate ();
+  dk_ses->dks_in_buffer = (char *) dk_alloc (in_len);
+  dk_ses->dks_in_length = in_len;
+  dk_ses->dks_out_buffer = (char *) dk_alloc (DKSES_OUT_BUFFER_LENGTH);
+  dk_ses->dks_out_length = DKSES_OUT_BUFFER_LENGTH;
+  dk_ses->dks_read_block_timeout.to_sec = 100;
+  dk_ses->dks_refcount = 1;
+  return dk_ses;
+}
+
 void
 dk_session_clear (dk_session_t * ses)
 {

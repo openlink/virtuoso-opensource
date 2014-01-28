@@ -265,6 +265,7 @@ void ddl_std_proc_1 (const char *text, int is_public, int to_recompile);
 void ddl_ensure_table (const char *name, const char *text);
 void ddl_ensure_column (const char *table, const char *col, const char *text, int is_drop);
 void ddl_sel_for_effect (const char *str);
+caddr_t qi_sel_for_effect (query_instance_t * qi, char *str, int n_pars,...);
 
 
 void ddl_create_table (query_instance_t * cli, const char * name, caddr_t * cols);
@@ -378,7 +379,6 @@ EXE_EXPORT (void, ddl_commit, (query_instance_t * qi));
 void sql_ddl_node_input (ddl_node_t * ddl, caddr_t * inst, caddr_t * state);
 
 void srv_global_init (char * mode);
-
 EXE_EXPORT (client_connection_t *, client_connection_create, (void));
 EXE_EXPORT (void, client_connection_reset, (client_connection_t * cli));
 
@@ -811,7 +811,9 @@ void remote_table_source_input (remote_table_source_t * ts, caddr_t * inst,
     caddr_t * state);
 void rts_skip_to_set (remote_table_source_t * rts, caddr_t * inst, int set);
 int  rts_target_set (remote_table_source_t * rts, caddr_t * inst, state_slot_t * set_ssl, int set_no);
-
+void file_source_input (table_source_t * ts, caddr_t * inst, caddr_t * state);
+caddr_t aq_qr_func (caddr_t av, caddr_t * err_ret);
+void ts_aq_result (table_source_t * ts, caddr_t * inst);
 
 
 caddr_t deref_node_main_row (it_cursor_t * it, buffer_desc_t ** buf,
@@ -1424,6 +1426,7 @@ int ts_handle_aq (table_source_t * ts, caddr_t * inst, buffer_desc_t ** order_bu
 void ts_aq_handle_end (table_source_t * ts, caddr_t * inst);
 void ts_aq_final (table_source_t * ts, caddr_t * inst, it_cursor_t * itc);
 void ts_check_batch_sz (table_source_t * ts, caddr_t * inst, it_cursor_t * itc);
+void ins_check_batch_sz (insert_node_t * ins, caddr_t * inst, it_cursor_t * itc);
 buffer_desc_t * ts_split_range (table_source_t * ts, caddr_t * inst, it_cursor_t * itc, int n_parts);
 buffer_desc_t * ts_initial_itc (table_source_t * ts, caddr_t * inst, it_cursor_t * itc);
 extern dk_mutex_t * qi_ref_mtx;

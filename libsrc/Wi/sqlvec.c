@@ -49,6 +49,7 @@
 
 
 int sqlg_vec_debug = 0;
+void sqlg_ts_qp_copy (sql_comp_t * sc, table_source_t * ts);
 state_slot_ref_t *sqlg_vec_ssl_ref (sql_comp_t * sc, state_slot_t * ssl, int test_only);
 search_spec_t *ks_find_eq_sp (key_source_t * ks, oid_t col_id);
 void cv_vec_slots (sql_comp_t * sc, code_vec_t cv, dk_hash_t * res, dk_hash_t * all_res, int *non_cl_local);
@@ -273,7 +274,9 @@ sqlg_branch_copy (sql_comp_t * sc, data_source_t * qn, state_slot_t * ssl)
   state_slot_t **ssls2;
   QNCAST (table_source_t, ts, qn);
   if (!IS_TS (qn))
-    return;
+    {
+      return;
+    }
   if (!ts->ts_aq)
     return;
   if (!ts->ts_branch_ssls)
@@ -3705,10 +3708,13 @@ sqlg_ts_qp_copy (sql_comp_t * sc, table_source_t * ts)
   state_slot_t *ign = NULL;
   dk_set_t steps = NULL;
   int inx, n_steps, fill;
-  key_source_t *ks = ts->ts_order_ks;
-  DO_BOX (state_slot_t *, ssl, inx, ks->ks_vec_cast)
-    sqlg_branch_copy (sc, (data_source_t*)ts, ssl);
-  END_DO_BOX;
+  if (IS_TS (ts))
+    {
+      key_source_t *ks = ts->ts_order_ks;
+      DO_BOX (state_slot_t *, ssl, inx, ks->ks_vec_cast) sqlg_branch_copy (sc, (data_source_t *) ts, ssl);
+      END_DO_BOX;
+    }
+
   DO_SET (data_source_t *, qn, &sc->sc_vec_pred)
   {
     if (IS_QN (qn, query_frag_input) || IS_QN (qn, stage_node_input))

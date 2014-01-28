@@ -260,6 +260,7 @@ remote_table_source_input (remote_table_source_t * rts, caddr_t * inst, caddr_t 
   GPF_T;
 }
 
+
 void
 DoSQLError (SQLHDBC hdbc, SQLHSTMT hstmt)
 {

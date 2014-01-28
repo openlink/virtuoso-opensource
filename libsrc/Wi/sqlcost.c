@@ -2696,6 +2696,8 @@ sqlo_inx_sample (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_
 {
   rdf_inf_ctx_t * ctx = ic->ic_ric;
   ic->ic_inx_card = 0;
+  if (LOC_LOCAL !=tb_dfe->dfe_locus)
+    return -1;
   if (tb_is_rdf_quad (tb_dfe->_.table.ot->ot_table))
     {
       rdf_sub_t * sub;

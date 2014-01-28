@@ -1210,7 +1210,15 @@ strses_destroy (dk_session_t * ses)
   ses->dks_refcount--;
   if (ses->dks_refcount)
     return 1;
-  strses_flush (ses);
+  if (strdev_read==  ses->dks_session->ses_device->dev_funs->dfp_read)
+    strses_flush (ses);
+  else if (fileses_read==  ses->dks_session->ses_device->dev_funs->dfp_read
+	   || tcpses_read==  ses->dks_session->ses_device->dev_funs->dfp_read)
+    {
+      int fd = tcpses_get_fd (ses->dks_session);
+      if (-1 != fd)
+	close (fd);
+    }
   dk_free (ses->dks_out_buffer, ses->dks_out_length);
   if (ses->dks_in_buffer)
     dk_free (ses->dks_in_buffer, ses->dks_in_length);

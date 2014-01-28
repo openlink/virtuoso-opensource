@@ -3161,6 +3161,8 @@ itc_up_rnd_check (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 {
   if (itc->itc_st.n_sample_rows >= itc->itc_st.sample_size)
     return DVC_INDEX_END;
+  if (itc->itc_is_col && itc->itc_rows_selected >= itc->itc_st.sample_size)
+    return DVC_INDEX_END;
   itc->itc_st.n_sample_rows++; /* increment here also so as to guarantee termination even if table goes empty during the random scan. */
   itc_page_leave (itc, *buf_ret);
   *buf_ret = itc_reset (itc);

@@ -119,6 +119,7 @@ int64 itc_sample (it_cursor_t * it);
 int64 itc_local_sample (it_cursor_t * it);
 unsigned int64 key_count_estimate (dbe_key_t * key, int n_samples, int upd_col_stats);
 void itc_col_stat_free (it_cursor_t * itc, int upd_col, float est);
+void cs_new_page (dk_hash_t * cols);
 int key_n_partitions (dbe_key_t * key);
 caddr_t key_name_to_iri_id (lock_trx_t * lt, caddr_t name, int make_new);
 int  key_rdf_lang_id (caddr_t name);
