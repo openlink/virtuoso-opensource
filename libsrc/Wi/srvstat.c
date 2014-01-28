@@ -370,6 +370,8 @@ extern int32 cl_stage;
 extern int32 cl_batch_bytes;
 extern int32 cl_first_buf;
 extern int32 iri_range_size;
+extern int enable_small_int_part;
+extern int iri_seqs_used;
 int64 tn_max_memory = 1000000000;
 extern int64 tn_at_mem_cutoff;
 extern int64 tn_mem_cutoff;

@@ -1903,6 +1903,8 @@ tb_string_and_id_check (dbe_table_t * tb, dbe_column_t ** str_col, dbe_column_t 
 
 int32 iri_range_size = 1000000;
 #define N_IRI_SEQS 19
+#define N_IRI_SEQS_USED iri_seqs_used
+int iri_seqs_used = N_IRI_SEQS;
 #define IRI_RANGE_SZ iri_range_size
 
 extern dk_mutex_t * log_write_mtx;
@@ -1921,10 +1923,10 @@ rdf_new_iri_id (lock_trx_t * lt, char ** value_seq_ret, int nth, query_instance_
     {
       du_thread_t * self = THREAD_CURRENT_THREAD;
       nth = (((uptrlong)self) ^ (((uptrlong)self) >> 11))
-      % N_IRI_SEQS;
+      % N_IRI_SEQS_USED;
     }
   else
-    nth = ((unsigned int)nth) % N_IRI_SEQS;
+    nth = ((unsigned int)nth) % N_IRI_SEQS_USED;
   if (!range_seq)
     {
       int inx;
@@ -4162,6 +4164,10 @@ rdf_core_init (void)
   jso__quad_map.jsocd_validation_cbk = jso__quad_map_jsocd_validation_cbk;
   jso__qm_value.jsocd_validation_cbk = jso__qm_value_jsocd_validation_cbk;
   jso__qm_format.jsocd_validation_cbk = jso__qm_format_jsocd_validation_cbk;
+  if (iri_seqs_used < 1)
+    iri_seqs_used = 1;
+  if (iri_seqs_used > N_IRI_SEQS)
+    iri_seqs_used = N_IRI_SEQS;
   iri_nic_rc = resource_allocate (10, NULL, (rc_destr_t)nic_free, (rc_destr_t)nic_clear, 0);
   prefix_nic_rc = resource_allocate (10, NULL, (rc_destr_t)nic_free, (rc_destr_t)nic_clear, 0);
   bif_define_typed ("rdf_load_rdfxml", bif_rdf_load_rdfxml, &bt_xml_entity);

@@ -1681,9 +1681,21 @@ uint32 cp_any_hash (col_partition_t * cp, db_buf_t val, int32 * rem_ret);
 #define N_ONES(n) ((1 << (n)) - 1)
 
 
+
+extern int enable_small_int_part;
+#if 0
+#define I_PART(i) i
+#else
+#define I_PART(i, shift) \
+ (enable_small_int_part && (uint64)i < (1 << (shift + 2)) \
+ ? ((uint64)i) << shift  \
+ : (uint64)i)
+#endif
+
 #define cp_int_hash(cp, i, rem_ret)				\
-  ((*rem_ret = (cp->cp_shift << 24) | (cp->cp_shift ? (i & N_ONES (cp->cp_shift)) : -1)), \
-   ((((unsigned int64)i) >> cp->cp_shift) & cp->cp_mask))
+  ((*rem_ret = (cp->cp_shift << 24) | (cp->cp_shift ? (I_PART (i, cp->cp_shift) & N_ONES (cp->cp_shift)) : -1)), \
+   ((((unsigned int64)I_PART (i, cp->cp_shift)) >> cp->cp_shift) & cp->cp_mask))
+
 
 
 

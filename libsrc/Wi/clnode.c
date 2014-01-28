@@ -73,6 +73,8 @@ cp_string_hash (col_partition_t * cp, caddr_t bytes, int len, int32 * rem_ret)
 }
 
 
+int enable_small_int_part = 0;
+
 
 uint32
 cp_int_any_hash (col_partition_t * cp, unsigned int64 i, int32 * rem_ret)
@@ -81,6 +83,7 @@ cp_int_any_hash (col_partition_t * cp, unsigned int64 i, int32 * rem_ret)
   if (cp->cp_n_first < 0)
     {
       shift = MIN (32, -cp->cp_n_first * 8);
+      i = I_PART (i, shift);
       *rem_ret = (shift << 24) | (i & N_ONES (shift));
       return (i >> shift) & cp->cp_mask;
     }
