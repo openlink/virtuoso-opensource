@@ -89,7 +89,7 @@ ts_set_local_code (table_source_t * ts, int is_cluster)
   if (!ks || ks->ks_key->key_is_col)
     return; /* inx op that does not join main row */
   if (ts->src_gen.src_after_test
-      && cv_is_local_1 (ts->src_gen.src_after_test, 0))
+      && cv_is_local_1 (ts->src_gen.src_after_test, CV_NO_INDEX))
     {
       ks->ks_local_test = ts->src_gen.src_after_test;
       ts->src_gen.src_after_test = NULL;

@@ -1794,7 +1794,7 @@ cv_is_local_1 (code_vec_t cv, int is_cluster)
 	  if (subq_comp_func == ins->_.pred.func)
 	    {
 	      subq_pred_t * subq = (subq_pred_t *) ins->_.pred.cmp;
-	      if (!is_cluster)
+	      if (!is_cluster || (CV_NO_INDEX & is_cluster))
 		return 0;
 	      if (!enable_rec_qf && CV_IS_LOCAL_CN == is_cluster)
 		break;
@@ -1836,7 +1836,7 @@ cv_is_local_1 (code_vec_t cv, int is_cluster)
 	  sqlc_need_enlist (sqlc_current_sc);
 	    return 0;
 	case INS_CALL_BIF:
-	  if (!is_cluster && bif_uses_index (ins->_.bif.bif))
+	  if (CV_NO_INDEX & is_cluster && bif_uses_index (ins->_.bif.bif))
 	    return 0;
 	  if (bif_need_enlist (ins->_.bif.bif))
 	    sqlc_need_enlist (sqlc_current_sc);

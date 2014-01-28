@@ -472,7 +472,7 @@ int cv_is_local_1 (code_vec_t cv, int is_cluster);
 #define CV_IS_LOCAL_CLUSTER 1 /* check funcs are partitionable and not aggregates */
 #define CV_IS_LOCAL_AGG 2 /* check that funcs are partitionable, allow aggrs */
 #define CV_IS_LOCAL_CN 3 /* when checking code node with subqs.  Accept the subqs but reject non locatable funcs */
-
+#define CV_NO_INDEX 8 /* functions that access index are out */
 dk_set_t cv_assigned_slots (code_vec_t cv, int no_subqs);
 void sqlc_ct_generate (sql_comp_t * sc, comp_table_t * ct);
 
