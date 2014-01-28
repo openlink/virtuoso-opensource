@@ -25,6 +25,7 @@ struct keyword { char *keiiyword; int token; };
 %%
 __COST, __COST
 __ELASTIC, __ELASTIC
+__LOCK, __LOCK
 __TAG, __TAG_L
 __SOAP_DOC, __SOAP_DOC
 __SOAP_DOCW, __SOAP_DOCW
