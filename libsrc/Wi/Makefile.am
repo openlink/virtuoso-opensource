@@ -456,6 +456,7 @@ libwi_la_SOURCES += \
 	bif_text.c \
 	bif_tidy.c \
 	geo.c \
+	geo_de9im.c \
 	geo_shapes.c \
 	http_client.c \
 	qncache.c \
@@ -493,6 +494,7 @@ libwi_odbc_la_SOURCES += \
 	bif_text.c \
 	bif_tidy.c \
  	geo.c \
+	geo_de9im.c \
 	geo_shapes.c \
 	http_client.c \
 	qncache.c \

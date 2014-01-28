@@ -320,41 +320,125 @@ EXE_EXPORT (int, geo_XYbbox_inside, (geo_XYbox_t *inner, geo_XYbox_t *outer));
 EXE_EXPORT (int, geo_XY_inoutside_ring, (geoc pX, geoc pY, geo_t *ring));
 EXE_EXPORT (int, geo_XY_inoutside_polygon, (geoc pX, geoc pY, geo_t *g));
 
-typedef boxint geo_de9im_mask_t;
+/* We have two sorts of DE9IM data.
+A value matrix represents (possibly incomplete) knowledge about relation of two shapes.
+A subop matrix represents one of OR-ed suboperations of a DE9IM operation
+In both cases we discard EE and fit 8 remaining values into 8 bytes of an unsigned 64-bit integer.
+The values of bits are carefully chosen to simplify all common operations to an absolute minimum.
+The logic will work if any partial check will either set the right values for all bits except \c GEO_DE9IM_MAYBE_NON_F or will not set any bits at all.
+Say, one can not set \c GEO_DE9IM_HAS_T and not set some of bits GEO_DE9IM_HAS_DPOINT, GEO_DE9IM_HAS_DLINE, GEO_DE9IM_HAS_AREA, or set GEO_DE9IM_HAS_AREA for two regions and not set \c GEO_DE9IM_HAS_T.
+*/
+typedef uint64 geo_de9im_matrix_t;	/*!< An encoded DE9IM value or suboperation matrix */
 
-/* Allowed or found state of cell of DE-9IM model matrix. Bit values are chosen in such a way that mask code can be bitwise ANDed with the intersection data. */
-#define GEO_DE9IM_CONFL		0x0	/*!< The cell of the matrix should contain conflicting requirements, like F and DPOINT. No one pair of shapes may match it. */
-#define GEO_DE9IM_F		0x1	/*!< Intersection is totally empty */
-#define GEO_DE9IM_DPOINT	0x2	/*!< Intersection consists of individual points */
-#define GEO_DE9IM_DLINE		0x4	/*!< Intersection consists of individual lines (and optionally points, but lines should present) */
-#define GEO_DE9IM_NOTF		0x7	/*!< Intersection is not empty and the dimension is not important */
-#define GEO_DE9IM_T		0x8	/*!< Intersection is "T", i.e., its dimension is equal to smaller of dimensions of arguments */
-#define GEO_DE9IM_STAR		0xF	/*!< Intersection could be any, ranging from T to empty */
-#define GEO_DE9IM_CELL_FILLER	0xF	/*!< The default value for cells */
+/*! Checks whether a single cell matches single predicate of a subop */
+#define GEO_DE9IM_CELL_MATCHES_P(cell,p) (((cell) & ((p) & 0x8f)) && !((cell) & ((p) & 0x70) >> 4))
+
+/*! This sets 1 to a byte in cell position N if value of the cell N is fully calculated (neither unser nor a "maybe", a proven and final T/F) */
+#define GEO_DE9IM_FULL_CALC_BITFLAGS(v) ((((v) & 0x8080808080808080L) >> 7) | (((v) & 0x0808080808080808L) >> 3))
+
+/*! This sets 1 to a byte in cell position N if predicate of the cell N is not "*" */
+#define GEO_DE9IM_SELECTIVE_BITFLAGS(subop) ((((subop) & 0x4040404040404040L) >> 6) | (((subip) & 0x0808080808080808L) >> 3))
+
+/*! This sets 1 to a byte in cell position N if value of the cell N in \c v should be calculated before matching \c v against \c subop */
+#define GEO_DE9IM_VAL_MISSES_BEFORE_SUBOP_BITFLAGS(v,subop) (GEO_DE9IM_SELECTIVE_BITFLAGS(subop) & ~GEO_DE9IM_FULL_CALC_BITFLAGS(v))
+
+/*! Checks whether a value matrix \c v is calculated to such a degree that all cells tested by \c subop have the final calculated values */
+#define GEO_DE9IM_VAL_READY_FOR_SUBOP(v,subop) (!GEO_DE9IM_VAL_MISSES_BEFORE_SUBOP_BITFLAGS(v,subop))
+
+/*! Checks whether a value matrix \c v matches all predicates of a \c subop matrix */
+#define GEO_DE9IM_VAL_MATCHES_SUBOP(v,subop) ((((v) & ((subop) & 0x8f8f8f8f8f8f8f8fL)) == ((subop) & 0x8f8f8f8f8f8f8f8fL)) && !((v) & ((subop) & 0x7070707070707070) >> 4))
+
+/*! Given relation v1 between A1 and B, relation v2 between A2 and B, returns relation between (A1 union A2) and B */
+#define GEO_DE9IM_UNION_OF_VALS(v1,v2) (((v1) & (v2) & 0x8080808080808080L) | (((v1) | (v2)) & 0x7f7f7f7f7f7f7f7fL))
+
+/* States of cells of DE-9IM model VALUE matrix */
+#define GEO_DE9IM_HAS_T		0x08	/*!< Intersection is "T", i.e., non-empty */
+#define GEO_DE9IM_HAS_DPOINT	0x09	/*!< Intersection contains of individual points */
+#define GEO_DE9IM_HAS_DLINE	0x0a	/*!< Intersection contains individual lines (and optionally points, but lines should present) */
+#define GEO_DE9IM_HAS_AREA	0x0c	/*!< Intersection contains regions (and optionally points and lines) */
+#define GEO_DE9IM_MAYBE_NON_F	0x10	/*!< Intersection might be non empty because bboxes intersects. This is a temporary value, it is ignored by subops but can be useful for cacheing. */
+#define GEO_DE9IM_IS_F		0x80	/*!< Intersection is known to be totally empty */
+
+/* Predicates of cells of DE-9IM model OPERATION matrix */
+#define GEO_DE9IM_P_STAR	0x00	/*!< Operation matrix character "*": no checks at all */
+#define GEO_DE9IM_P_F		0xF0	/*!< Operation matrix character "F": 0x80 to check that emptyness is really calculated and 0x70 to force calculation of \c GEO_DE9IM_HAS_DPOINT, \c GEO_DE9IM_HAS_DLINE and \c GEO_DE9IM_HAS_AREA */
+#define GEO_DE9IM_P_ZERO	0x61	/*!< Operation matrix character "0": 0x01 to check bit \c GEO_DE9IM_HAS_DPOINT and 0x60 to ban (and to force calculation of) \c GEO_DE9IM_HAS_DLINE and \c GEO_DE9IM_HAS_AREA */
+#define GEO_DE9IM_P_ONE		0x42	/*!< Operation matrix character "1": 0x02 to check bit \c GEO_DE9IM_HAS_DLINE and 0x40 to ban (and to force calculation of) \c GEO_DE9IM_HAS_AREA */
+#define GEO_DE9IM_P_T		0x08	/*!< Operation matrix character "T": 0x08 to check bit \c GEO_DE9IM_HAS_T */
 
 /* Indicies of cells of DE-9IM matrix in mask code or in intersection data */
-#define GEO_DE9IM_II		0
-#define GEO_DE9IM_IB		1
-#define GEO_DE9IM_IE		2
-#define GEO_DE9IM_BI		3
-#define GEO_DE9IM_BB		4
-#define GEO_DE9IM_BE		5
-#define GEO_DE9IM_EI		6
-#define GEO_DE9IM_EB		7
-/*#define GEO_DE9IM_EE		8*/ /* EE is always GEO_DE9IM_T so there's no need to store it */
-#define GEO_DE9IM_TOTALBITS	32
+#define GEO_DE9IM_II		7
+#define GEO_DE9IM_IB		6
+#define GEO_DE9IM_IE		5
+#define GEO_DE9IM_BI		4
+#define GEO_DE9IM_BB		3
+#define GEO_DE9IM_BE		2
+#define GEO_DE9IM_EI		1
+#define GEO_DE9IM_EB		0
+#define GEO_DE9IM_EE		-1 /* EE is always GEO_DE9IM_HAS_AREA so there's no need to store it */
+#define GEO_DE9IM_TOTALBITS	64
 
 /* Hex notation of a mask code is readed left to right, one hex digit per cell.
-Say, masks of OVERLAPS oeprator, "T*T***T**" and "1*T***T**"
-                                  |:|:::|::       |:|:::|::
-will be recorded as             0x8f8fff8ff and 0x2f8fff8ff
+Say, masks of OVERLAPS oeprator, " T * T * * * T * *" and " 1 * T * * * T * *"
+                                   | : | : : : | :          | : | : : : | :
+will be recorded as             0x0800080000000800   and 0x4200080000000800
 Note that "0", "1", "2" and "F" are NOT encoded as 0x0, 0x1, 0x2 and 0xF. */
-#define GEO_DE9IM_CELL_SHIFT_BITS(idx) (GEO_DE9IM_TOTALBITS-(idx)*4)
-#define GEO_DE9IM_SHIFTED_CELL(idx,val) (((geo_de9im_mask_t)(val)) << GEO_DE9IM_CELL_SHIFT_BITS((idx)))
+#define GEO_DE9IM_CELL_SHIFT_BITS(idx) ((idx)*8)
+#define GEO_DE9IM_SHIFTED_CELL(idx,val) (((geo_de9im_matrix_t)(val)) << GEO_DE9IM_CELL_SHIFT_BITS((idx)))
 #define GEO_DE9IM_GETCELL(mask,idx) (((mask) >> GEO_DE9IM_CELL_SHIFT_BITS((idx))) & GEO_DE9IM_CELL_FILLER);
 #define GEO_DE9IM_SETCELL(mask,idx,val) do { \
   (mask) = (((mask) & ~GEO_DE9IM_SHIFTED_CELL((idx),GEO_DE9IM_CELL_FILLER)) \
     | GEO_DE9IM_SHIFTED_CELL((idx),(val)) ); } while (0);
+#define GEO_DE9IM_8CELLS(ii,ib,ie,bi,bb,be,ei,eb) ( \
+  GEO_DE9IM_SHIFTED_CELL(GEO_DE9IM_II,(ii)) | \
+  GEO_DE9IM_SHIFTED_CELL(GEO_DE9IM_IB,(ib)) | \
+  GEO_DE9IM_SHIFTED_CELL(GEO_DE9IM_IE,(ie)) | \
+  GEO_DE9IM_SHIFTED_CELL(GEO_DE9IM_BI,(bi)) | \
+  GEO_DE9IM_SHIFTED_CELL(GEO_DE9IM_BB,(bb)) | \
+  GEO_DE9IM_SHIFTED_CELL(GEO_DE9IM_BE,(be)) | \
+  GEO_DE9IM_SHIFTED_CELL(GEO_DE9IM_EI,(ei)) | \
+  GEO_DE9IM_SHIFTED_CELL(GEO_DE9IM_EB,(eb)) )
+
+/* Codes for dimension rules of suboperations */
+#define GEO_DE9IM_DIM_ANY_ANY		0	/*!< Perform the suboperation always (any value of any argument). This value must stay zero. */
+#define GEO_DE9IM_DIM_ANY_0		1	/*!< Perform the suboperation if any of arguments is point */
+#define GEO_DE9IM_DIM_BOTH_1		2	/*!< Perform the suboperation if both arguments are lines */
+#define GEO_DE9IM_DIM_A_EQ_B_NEQ_1	3	/*!< Perform the suboperation if both arguments are dots or both are areas, but not one is line */
+#define GEO_DE9IM_DIM_A_EQ_B_NEQ_2	4	/*!< Perform the suboperation if both arguments are dots or both are lines, but not one is area */
+#define GEO_DE9IM_DIM_A_LT_B		5	/*!< Perform the suboperation if dimension of left argument is strictly less than one of right argument */
+#define GEO_DE9IM_DIM_A_GT_B		6	/*!< Perform the suboperation if dimension of left argument is strictly greater than one of right argument */
+#define GEO_DE9IM_DIM_SIGNAL		7	/*!< Signal an error isntead of calculations, probably \c gdo_subop_count is too big and \c GEO_DE9IM_SUBOP_FILLER is hit */
+
+/*!< Suboperation with conditions and hints */
+typedef struct geo_de9im_subop_s
+  {
+    geo_de9im_matrix_t	gds_m;		/*!< Matrix of predicates */
+    int			gds_first;	/*!< Index of most selective predicate in matrix, calculate it first */
+    int			gds_second;	/*!< Index of next most selective predicate in matrix, calculate it second */
+    int			gds_dim_rule;	/*!< Code of the dimension rule to apply the subop, zero for dim-insensitive operations, nonzero for subops of "crosses" and "overlaps" */
+  } geo_de9im_subop_t;
+
+#define GEO_DE9IM_SUBOP_FILLER	{ 0x0L, 0, 0, GEO_DE9IM_DIM_SIGNAL }
+
+/*!< Full description of de9im operation */
+typedef struct geo_de9im_op_s
+  {
+    int			gdo_subop_count;	/*!< Count of suboperations in the operation. */
+    geo_de9im_subop_t	gdo_subs[5];		/*!< Suboperations of the operation. First \c gdo_subop_count items are used, the rest should be \c GEO_DE9IM_SUBOP_FILLER . Standard operations require at most 4 suboperation, custom may get 5 */
+  } geo_de9im_op_t;
+
+extern geo_de9im_op_t	geo_de9im_op_Equals;
+extern geo_de9im_op_t	geo_de9im_op_Disjoint;
+extern geo_de9im_op_t	geo_de9im_op_Touches;
+extern geo_de9im_op_t	geo_de9im_op_Contains;
+extern geo_de9im_op_t	geo_de9im_op_Covers;
+extern geo_de9im_op_t	geo_de9im_op_Intersects;
+extern geo_de9im_op_t	geo_de9im_op_Within;
+extern geo_de9im_op_t	geo_de9im_op_CoveredBy;
+extern geo_de9im_op_t	geo_de9im_op_Crosses;
+extern geo_de9im_op_t	geo_de9im_op_Overlaps;
+
+/* For any pair of geometries, we cache any partial (e.g., bbox-related) calculation of relation */
 
 #ifdef NDEBUG
 #undef GEO_DEBUG
