@@ -902,6 +902,7 @@ int sqlo_is_unq_preserving (caddr_t name);
 int box_is_subtree (caddr_t box, caddr_t subtree);
 void sqlg_unplace_ssl (sqlo_t * so, ST * tree);
 char  sqlc_geo_op (sql_comp_t * sc, ST * op);
+dbe_table_t * sqlg_geo_index_table (dbe_key_t * id_key, ST ** geo_args);
 int sqlo_solve (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * cond, dk_set_t * cond_ret, dk_set_t * after_preds);
 
 df_inx_op_t * inx_op_copy (sqlo_t * so, df_inx_op_t * dio,

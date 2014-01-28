@@ -664,6 +664,25 @@ sqlc_geo_op (sql_comp_t * sc, ST * op)
 }
 
 
+dbe_table_t *
+sqlg_geo_index_table (dbe_key_t * text_key, ST ** geo_args)
+{
+  int inx, n = BOX_ELEMENTS (geo_args);
+  for (inx = 2; inx < n; inx++)
+    {
+      ST * arg = geo_args[inx];
+      if (DV_STRINGP (arg) && !stricmp (arg, "index") && inx + 1 < n && DV_STRINGP (geo_args[inx + 1]))
+	{
+	  caddr_t inx_name = geo_args[inx + 1];
+	  dbe_table_t * tb = sch_name_to_table (wi_inst.wi_schema, inx_name);
+	  if (!tb)
+	    sqlc_new_error (top_sc->sc_cc, "28008", "GEOTB", "No geo index table %s", inx_name);
+	}
+    }
+  return text_key->key_geo_table;
+}
+
+
 void
 sqlg_text_node (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic)
 {
@@ -709,7 +728,7 @@ sqlg_text_node (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic)
   txs->txs_cached_compiled_tree = ssl_new_variable (sc->sc_cc, "text_search_cached_tree", DV_ARRAY_OF_POINTER);
   txs->txs_cached_dtd_config = ssl_new_variable (sc->sc_cc, "text_search_dtd_config", DV_ARRAY_OF_POINTER);
   if (text_pred->_.text.geo)
-    txs->txs_table =text_key->key_geo_table;
+    txs->txs_table = sqlg_geo_index_table (text_key, geo_args);
   else
     txs->txs_table =text_key->key_text_table;
   txs->txs_d_id = text_id;

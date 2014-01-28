@@ -1305,11 +1305,11 @@ return QI_NO_SLICE;
 float
 sqlo_geo_count (df_elt_t * tb_dfe, df_elt_t * pred)
 {
-  dbe_key_t * id_key = tb_text_key (tb_dfe->_.table.ot->ot_table);
-  dbe_table_t * tb = id_key->key_geo_table;
-  float card;
   int gt;
   ST ** args = sqlc_geo_args (pred->dfe_tree, &gt);
+  dbe_key_t * id_key = tb_text_key (tb_dfe->_.table.ot->ot_table);
+  dbe_table_t * tb = sqlg_geo_index_table (id_key, args);
+  float card;
   int prec_literal = 0;
   double prec = 0;
   geo_t * geo = NULL;
