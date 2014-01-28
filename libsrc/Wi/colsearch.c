@@ -3130,6 +3130,8 @@ itc_col_row_check (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t * leaf
 {
   int rc = DVC_LESS, inx, wait, first_set, rnd_inc;
   col_row_lock_t *clk;
+  client_connection_t * cli = itc->itc_ltrx->lt_client;
+  int64 seq_prev = cli->cli_activity.da_seq_rows;
   db_buf_t row;
   key_ver_t kv;
   buffer_desc_t *buf;
@@ -3214,8 +3216,10 @@ start:
     rnd_inc = itc->itc_set - first_set ? itc->itc_set - first_set - 1 : 0;
   else
     rnd_inc = itc->itc_range_fill - 1;
-  itc->itc_ltrx->lt_client->cli_activity.da_same_seg += rnd_inc;
-  itc->itc_ltrx->lt_client->cli_activity.da_random_rows += rnd_inc;
+  cli->cli_activity.da_same_seg += rnd_inc;
+  cli->cli_activity.da_random_rows += rnd_inc;
+  if (RANDOM_SEARCH_ON == itc->itc_random_search)
+    itc->itc_st.n_sample_rows += cli->cli_activity.da_seq_rows - seq_prev;
 
   if (CLK_NO_WAIT != wait && DVC_MATCH != rc)
     {
