@@ -1957,8 +1957,8 @@ sparp_values_equal (sparp_t *sparp, ccaddr_t first, ccaddr_t first_dt, ccaddr_t 
       else
         {
 #ifndef NDEBUG
-          if ((DV_STRING != DV_TYPE_OF (first_val)) && ((NULL == first_dt) || (NULL != first_lang)))
-            spar_internal_error (sparp, "sparp_" "values_equal(): first is a uname with non-NULL dt/lang");
+          if ((DV_STRING != DV_TYPE_OF (first_val)) && ((NULL != first_dt) || (NULL != first_lang)))
+            spar_internal_error (sparp, "sparp_" "values_equal(): first is a non-string with non-NULL dt/lang");
 #endif
           first_is_iri = 0;
         }
@@ -2000,8 +2000,8 @@ sparp_values_equal (sparp_t *sparp, ccaddr_t first, ccaddr_t first_dt, ccaddr_t 
       else
         {
 #ifndef NDEBUG
-          if ((DV_STRING != DV_TYPE_OF (second_val)) && ((NULL == second_dt) || (NULL != second_lang)))
-            spar_internal_error (sparp, "sparp_" "values_equal(): second is a uname with non-NULL dt/lang");
+          if ((DV_STRING != DV_TYPE_OF (second_val)) && ((NULL != second_dt) || (NULL != second_lang)))
+            spar_internal_error (sparp, "sparp_" "values_equal(): second is a non-string with non-NULL dt/lang");
 #endif
           second_is_iri = 0;
         }

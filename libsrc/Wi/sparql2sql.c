@@ -6309,12 +6309,12 @@ sparp_try_reuse_tabid_in_union (sparp_t *sparp, SPART *curr, int base_idx)
               dep_fld_eq = SPARP_EQUIV (sparp, dep_fld->_.var.equiv_idx);
               base_fld_qmv = SPARP_FIELD_QMV_OF_QM (base_qm, fld_ctr);
               dep_fld_qmv = SPARP_FIELD_QMV_OF_QM (dep_qm, fld_ctr);
-              if (base_fld_qmv != dep_fld_qmv)
-                goto next_dep; /* see below */
               if (!(base_bitmask_of_equations & (1 << fld_ctr)))
                 continue;
               if (!(dep_bitmask_of_equations & (1 << fld_ctr)))
                 continue;
+              if (base_fld_qmv != dep_fld_qmv)
+                goto next_dep; /* see below */
               if (NULL == base_fld_qmv)
                 {
                   long base_restr = base_fld_eq->e_rvr.rvrRestrictions;
@@ -6322,8 +6322,10 @@ sparp_try_reuse_tabid_in_union (sparp_t *sparp, SPART *curr, int base_idx)
                   if (((base_restr & SPART_VARR_IS_REF) && (dep_restr & SPART_VARR_IS_LIT)) ||
                     ((base_restr & SPART_VARR_IS_LIT) && (dep_restr & SPART_VARR_IS_REF)) )
                     goto next_dep; /* see below */
+#if 0
                   if (!sparp_equivs_have_same_fixedvalue (sparp, base_fld_eq, dep_fld_eq))
                     goto next_dep; /* see below */
+#endif
                 }
             }
         }

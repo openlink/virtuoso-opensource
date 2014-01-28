@@ -8870,6 +8870,7 @@ ssg_print_breakup_in_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int 
   int *leftmost_tc_of_tabid_reuses = (int *)t_alloc (triples_count * sizeof(int));
   int save_where_l_printed;
   const char *save_where_l_text;
+  dk_set_t saved_valid_ret_tabids;
 #ifdef DEBUG
   if (SPAR_GP != SPART_TYPE (first_mcase))
     spar_internal_error (ssg->ssg_sparp, "ssg_" "print_breakup(): the member is not a SPAR_GP");
@@ -8959,6 +8960,13 @@ fld_restrictions_may_vary:
         }
     }
   ssg_puts (" * FROM (SELECT BREAKUP");
+  saved_valid_ret_tabids = ssg->ssg_valid_ret_tabids;
+  for (tc = triples_count; tc--; /* no step */)
+    {
+      SPART *mcase = gp->_.gp.members [first_mcase_idx];
+      SPART *mcase_triple = mcase->_.gp.members [tc];
+      t_set_push (&(ssg->ssg_valid_ret_tabids), mcase_triple->_.triple.tabid);
+    }
   for (breakup_ctr = 0; breakup_ctr <= /* not '<' */ breakup_shift; breakup_ctr++)
     {
       SPART *mcase = gp->_.gp.members [first_mcase_idx + breakup_ctr];
@@ -8998,6 +9006,7 @@ fld_restrictions_may_vary:
       ssg->ssg_indent--;
       ssg_puts (")");
     }
+  ssg->ssg_valid_ret_tabids = saved_valid_ret_tabids;
   ssg_newline (0);
   ssg_puts ("FROM");
   ssg->ssg_indent++;
