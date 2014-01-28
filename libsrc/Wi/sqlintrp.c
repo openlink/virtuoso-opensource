@@ -196,7 +196,7 @@ ins_call_kwds (caddr_t * qst, query_t * proc, instruction_t * ins, caddr_t * par
 	      goto err_end;
 	    }
 	  /* XXX: what about the =0 case */
-	  if (proc->qr_parm_default && proc->qr_parm_default[inx])
+	  if (proc->qr_parm_default && BOX_ELEMENTS (proc->qr_parm_default) > inx && proc->qr_parm_default[inx])
 	    params[inx] = is_vec_call ? ins_call_vec_deflt (vec_defaults, (caddr_t)proc->qr_parm_default[inx], n_param_box, &deflt_ctr) : box_copy_tree (proc->qr_parm_default[inx]);
 	  else
 	    {
