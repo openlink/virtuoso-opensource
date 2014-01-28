@@ -1248,7 +1248,7 @@ rdb2rdf_codegen (rdb2rdf_ctx_t *rrc, caddr_t table_name, int opcode, dk_session_
       ssg_puts ("create procedure DB.DBA.\"RDB2RDF_FILL__"); ssg_puts (table_name_for_proc); ssg_puts ("\" ()\n{\n");
       ssg_puts ("  declare old_mode integer;\n");
       ssg_puts ("  old_mode := log_enable (null, 1);\n");
-      ssg_puts ("  log_enable (2);\n");
+      ssg_puts ("  log_enable (2, 1);\n");
       ssg_puts ("  sparql define output:valmode \"LONG\" define input:storage virtrdf:SyncToQuads select count (sql:rdf_vec_ins_triples (?s, ?p, ?o, ?g))\n");
       ssg_puts ("  where {\n");
       ssg_puts ("        { QUAD MAP ");
