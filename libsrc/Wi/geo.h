@@ -102,6 +102,10 @@ typedef unsigned short geo_srid_t;	/*!< Type for Spatial Reference system ID */
 typedef unsigned short geo_srcode_t;	/*!< Type for internal code of SRID and its internal details. So far, srcode of a SRID is equal to SRID itself but scrode may get additional bit flags in the future */
 typedef unsigned short geo_flags_t;	/*!< Type for flags of a shape (type + serialization details */
 
+#define GEO_ARG_ANY_NONNULL	0x50000000	/*!< Special value for use in bif_geo_arg to indicate that the argument can be of any shapetype but not NULL. It does not fit into \c geo_flags_t shortint! */
+#define GEO_ARG_ANY_NULLABLE	0x60000000	/*!< Special value for use in bif_geo_arg to indicate that the argument can be of any shapetype or a NULL. It does not fit into \c geo_flags_t shortint! */
+#define GEO_ARG_ANY_MASK	0x40000000	/*!< Mask for \c GEO_ARG_ANY_xxx values. */
+
 typedef double geoc;		/*!< Type of geographical coordinate */
 typedef double geo_measure_t;	/*!< Type of M coordinate */
 

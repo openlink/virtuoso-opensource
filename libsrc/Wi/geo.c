@@ -1123,10 +1123,15 @@ bif_geo_arg (caddr_t * qst, state_slot_t ** args, int inx, const char *f, int tp
 {
   geo_t *g;
   caddr_t v = bif_arg_unrdf (qst, args, inx, f);
-  if (DV_GEO != DV_TYPE_OF (v))
+  dtp_t v_dtp = DV_TYPE_OF (v);
+  if (DV_GEO != v_dtp)
+    {
+      if ((GEO_ARG_ANY_NULLABLE == tp) && (DV_DB_NULL == v_dtp))
+	return NULL;
     sqlr_new_error ("22032", "GEO..", "Function %s expects a geometry as argument %d", f, inx);
+    }
   g = (geo_t *) v;
-  if (-1 != tp && tp != GEO_TYPE (g->geo_flags))
+  if (!(GEO_ARG_ANY_MASK & tp) && (tp != GEO_TYPE (g->geo_flags)))
     sqlr_new_error ("22023", "GEO..", "Function %s expects a geometry of type %d as argument %d", f, tp, inx);
   return g;
 }
@@ -1152,7 +1157,7 @@ bif_geo_insert (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   dbe_key_t *key = NULL;
   caddr_t tn = bif_arg (qst, args, 0, "geo_insert");
-  geo_t *g = bif_geo_arg (qst, args, 1, "geo_insert", -1);
+  geo_t *g = bif_geo_arg (qst, args, 1, "geo_insert", GEO_ARG_ANY_NONNULL);
   boxint id = bif_long_arg (qst, args, 2, "geo_insert");
   QNCAST (query_instance_t, qi, qst);
   dbe_table_t *tb;
@@ -1181,7 +1186,7 @@ bif_geo_estimate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   QNCAST (query_instance_t, qi, qst);
   dbe_key_t *key = NULL;
   caddr_t tn = bif_string_arg (qst, args, 0, "geo_estimate");
-  geo_t *g = bif_geo_arg (qst, args, 1, "geo_estimate", -1);
+  geo_t *g = bif_geo_arg (qst, args, 1, "geo_estimate", GEO_ARG_ANY_NONNULL);
   int op = bif_long_arg (qst, args, 2, "geo_estimate");
   double prec = bif_double_arg (qst, args, 3, "geo_estimate");
   dbe_table_t *tb = sch_name_to_table (wi_inst.wi_schema, tn);
@@ -1198,9 +1203,9 @@ caddr_t
 bif_geo_delete (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   dbe_key_t *key = NULL;
-  caddr_t tn = bif_arg (qst, args, 0, "geo_insert");
-  geo_t *g = bif_geo_arg (qst, args, 1, "geo_insert", -1);
-  boxint id = bif_long_arg (qst, args, 2, "geo_insert");
+  caddr_t tn = bif_arg (qst, args, 0, "geo_delete");
+  geo_t *g = bif_geo_arg (qst, args, 1, "geo_delete", GEO_ARG_ANY_NONNULL);
+  boxint id = bif_long_arg (qst, args, 2, "geo_delete");
   QNCAST (query_instance_t, qi, qst);
   dbe_table_t *tb;
   dtp_t dtp = DV_TYPE_OF (tn);
@@ -1274,7 +1279,9 @@ bif_st_y (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_st_xmin (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  geo_t * g = bif_geo_arg (qst, args, 0, "st_xmin", -1);
+  geo_t * g = bif_geo_arg (qst, args, 0, "st_xmin", GEO_ARG_ANY_NULLABLE);
+  if (NULL == g)
+    return box_double (geoc_FARAWAY);
   if (GEO_POINT == GEO_TYPE_NO_ZM (g->geo_flags))
     {
       if (geoc_FARAWAY == g->Xkey)
@@ -1287,7 +1294,9 @@ bif_st_xmin (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_st_ymin (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  geo_t * g = bif_geo_arg (qst, args, 0, "st_ymin", -1);
+  geo_t * g = bif_geo_arg (qst, args, 0, "st_ymin", GEO_ARG_ANY_NULLABLE);
+  if (NULL == g)
+    return box_double (geoc_FARAWAY);
   if (GEO_POINT == GEO_TYPE_NO_ZM (g->geo_flags))
     {
       if (geoc_FARAWAY == g->Xkey) /* yes, Xkey here and not Ykey */
@@ -1300,7 +1309,9 @@ bif_st_ymin (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_st_xmax (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  geo_t * g = bif_geo_arg (qst, args, 0, "st_xmax", -1);
+  geo_t * g = bif_geo_arg (qst, args, 0, "st_xmax", GEO_ARG_ANY_NULLABLE);
+  if (NULL == g)
+    return box_double (geoc_FARAWAY);
   if (GEO_POINT == GEO_TYPE_NO_ZM (g->geo_flags))
     {
       if (geoc_FARAWAY == g->Xkey)
@@ -1313,7 +1324,9 @@ bif_st_xmax (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_st_ymax (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  geo_t * g = bif_geo_arg (qst, args, 0, "st_ymax", -1);
+  geo_t * g = bif_geo_arg (qst, args, 0, "st_ymax", GEO_ARG_ANY_NULLABLE);
+  if (NULL == g)
+    return box_double (geoc_FARAWAY);
   if (GEO_POINT == GEO_TYPE_NO_ZM (g->geo_flags))
     {
       if (geoc_FARAWAY == g->Xkey) /* yes, Xkey here and not Ykey */
@@ -1326,7 +1339,9 @@ bif_st_ymax (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_st_srid (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  geo_t *g = bif_geo_arg (qst, args, 0, "st_srid", -1);
+  geo_t *g = bif_geo_arg (qst, args, 0, "st_srid", GEO_ARG_ANY_NULLABLE);
+  if (NULL == g)
+    return NEW_DB_NULL;
   return box_num (GEO_SRID (g->geo_srcode));
 }
 
@@ -1334,8 +1349,11 @@ bif_st_srid (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_st_setsrid (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  geo_t *g = bif_geo_arg (qst, args, 0, "st_setsrid", -1), *cp;
-  int srid = bif_long_arg (qst, args, 1, "st_setsrid");
+  geo_t *g = bif_geo_arg (qst, args, 0, "st_setsrid", GEO_ARG_ANY_NULLABLE), *cp;
+  int srid;
+  if (NULL == g)
+    return NEW_DB_NULL;
+  srid = bif_long_arg (qst, args, 1, "st_setsrid");
   cp = (geo_t *) box_copy ((caddr_t) g);
   cp->geo_srcode = GEO_SRCODE_OF_SRID (srid);
   return (caddr_t) cp;
@@ -1354,8 +1372,8 @@ bif_st_distance (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_geo_pred (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, char *f, int op)
 {
-  geo_t *g1 = bif_geo_arg (qst, args, 0, f, -1);
-  geo_t *g2 = bif_geo_arg (qst, args, 1, f, -1);
+  geo_t *g1 = bif_geo_arg (qst, args, 0, f, GEO_ARG_ANY_NULLABLE);
+  geo_t *g2 = bif_geo_arg (qst, args, 1, f, GEO_ARG_ANY_NULLABLE);
   double prec = 0;
   if (BOX_ELEMENTS (args) > 2)
     prec = bif_double_arg (qst, args, 2, f);
@@ -1390,7 +1408,7 @@ bif_st_may_intersect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_st_astext (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  geo_t *g = bif_geo_arg (qst, args, 0, "st_wkt", -1);
+  geo_t *g = bif_geo_arg (qst, args, 0, "st_wkt", GEO_ARG_ANY_NONNULL);
   return geo_wkt ((caddr_t) g);
 }
 
@@ -1466,6 +1484,8 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
     {
     case GSOP_INTERSECTS:
       {
+        if ((NULL == g1) || (NULL == g2))
+          return 0;
         if (GEO_TYPE_NO_ZM (g1->geo_flags) > GEO_TYPE_NO_ZM (g2->geo_flags))
           { geo_t * swap; swap = g1; g1 = g2; g2 = swap; }
         if (GEO_POINT == GEO_TYPE_NO_ZM (g1->geo_flags))
@@ -1512,6 +1532,8 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
         goto unsupported;
       }
     case GSOP_MAY_INTERSECT:
+      if ((NULL == g1) || (NULL == g2))
+        return 0;
       if ( (g1->XYbox.Xmax < g2->XYbox.Xmin - prec)
         || (g1->XYbox.Xmin > g2->XYbox.Xmax + prec)
         || (g1->XYbox.Ymax < g2->XYbox.Ymin - prec)
@@ -1804,7 +1826,7 @@ bif_st_ewkt_read (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_http_st_ewkt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  geo_t *g = bif_geo_arg (qst, args, 0, "http_st_ewkt", -1);
+  geo_t *g = bif_geo_arg (qst, args, 0, "http_st_ewkt", GEO_ARG_ANY_NONNULL);
   dk_session_t *ses = bif_strses_or_http_ses_arg (qst, args, 1, "http_st_ewkt");
   ewkt_print_sf12 (g, ses);
   return (caddr_t) NULL;
@@ -1813,7 +1835,7 @@ bif_http_st_ewkt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_st_get_bounding_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  geo_t *g = bif_geo_arg (qst, args, 0, "st_get_bounding_box", -1);
+  geo_t *g = bif_geo_arg (qst, args, 0, "st_get_bounding_box", GEO_ARG_ANY_NULLABLE);
   double prec_x = 0, prec_y = 0;
   int argcount = BOX_ELEMENTS (args);
   geo_t *res, xy;
