@@ -3747,7 +3747,7 @@ sparp_gp_detach_filter (sparp_t *sparp, SPART *parent_gp, int filter_idx, sparp_
     spar_internal_error (sparp, "sparp_" "gp_detach_filter(): bad filter_idx");
 #endif
   filt = old_filters [filter_idx];
-  ft_type = spar_filter_is_freetext (sparp, filt, NULL);
+  ft_type = spar_filter_is_freetext_or_rtree (sparp, filt, NULL);
   if (NULL != ft_type)
     {
       SPART *triple_with_var_obj = sparp_find_triple_with_var_obj_of_freetext (sparp, parent_gp, filt, SPAR_TRIPLE_FOR_FT_SHOULD_EXIST | SPAR_TRIPLE_SHOULD_HAVE_FT_TYPE);
@@ -3825,7 +3825,7 @@ sparp_gp_detach_all_filters (sparp_t *sparp, SPART *parent_gp, int extract_filte
     spar_internal_error (sparp, "sparp_" "gp_detach_all_filters(): optimization tries to break the semantics of LEFT OUTER JOIN for OPTIONAL clause");
   DO_BOX_FAST_REV (SPART *, filt, filt_ctr, filters)
     {
-      caddr_t ft_type = spar_filter_is_freetext (sparp, filt, NULL);
+      caddr_t ft_type = spar_filter_is_freetext_or_rtree (sparp, filt, NULL);
       if (NULL != ft_type)
         {
           SPART *triple_with_var_obj = sparp_find_triple_with_var_obj_of_freetext (sparp, parent_gp, filt, SPAR_TRIPLE_FOR_FT_SHOULD_EXIST | SPAR_TRIPLE_SHOULD_HAVE_FT_TYPE);
@@ -3901,7 +3901,7 @@ sparp_gp_attach_filter (sparp_t *sparp, SPART *parent_gp, SPART *new_filt, int i
   parent_gp->_.gp.filters = (SPART **)t_list_insert_before_nth ((caddr_t)old_filters, (caddr_t)new_filt, insert_before_idx);
   if (insert_before_idx > (old_len - parent_gp->_.gp.glued_filters_count))
     parent_gp->_.gp.glued_filters_count += 1;
-  ft_type = spar_filter_is_freetext (sparp, new_filt, NULL);
+  ft_type = spar_filter_is_freetext_or_rtree (sparp, new_filt, NULL);
   if (NULL != ft_type)
     {
       SPART *triple_with_var_obj = sparp_find_triple_with_var_obj_of_freetext (sparp, parent_gp, new_filt, SPAR_TRIPLE_FOR_FT_SHOULD_EXIST | SPAR_TRIPLE_SHOULD_HAVE_NO_FT_TYPE);
@@ -3948,7 +3948,7 @@ sparp_gp_attach_many_filters (sparp_t *sparp, SPART *parent_gp, SPART **new_filt
   for (filt_ctr = ins_count; filt_ctr--; /*no step*/)
     {
       SPART *new_filt = new_filters [filt_ctr];
-      caddr_t ft_type = spar_filter_is_freetext (sparp, new_filt, NULL);
+      caddr_t ft_type = spar_filter_is_freetext_or_rtree (sparp, new_filt, NULL);
       if (NULL != ft_type)
         {
           SPART *triple_with_var_obj = sparp_find_triple_with_var_obj_of_freetext (sparp, parent_gp, new_filt, SPAR_TRIPLE_FOR_FT_SHOULD_EXIST | SPAR_TRIPLE_SHOULD_HAVE_NO_FT_TYPE);

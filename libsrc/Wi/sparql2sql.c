@@ -1314,7 +1314,7 @@ sparp_optimize_BOP_OR_filter_walk (SPART **filt_ptr, SPART **filt_parent_ptr, so
       return;
     case SPAR_FUNCALL:
       {
-        if (NULL != spar_filter_is_freetext (ctx->bofc_sparp, filt, NULL))
+        if (NULL != spar_filter_is_freetext_or_rtree (ctx->bofc_sparp, filt, NULL))
           {
             ctx->bofc_reason_for_union = filt;
             ctx->bofc_BOP_OR_of_reason_for_union = filt_parent_ptr;
@@ -1379,7 +1379,7 @@ sparp_optimize_BOP_OR_filter (sparp_t *sparp, SPART *parent_gp, SPART *gp, int g
       case_with_rest = sparp_gp_full_clone (sparp, gp);
       if (ctx.bofc_BOP_OR_of_reason_for_union == filt_ptr)
         {
-          caddr_t ft_type = spar_filter_is_freetext (sparp, alt_for_reason, NULL);
+          caddr_t ft_type = spar_filter_is_freetext_or_rtree (sparp, alt_for_reason, NULL);
           if (NULL != ft_type)
             {
               SPART *triple_with_var_obj = sparp_find_triple_with_var_obj_of_freetext (sparp, case_with_rest, alt_for_reason, SPAR_TRIPLE_FOR_FT_SHOULD_EXIST | SPAR_TRIPLE_SHOULD_HAVE_NO_FT_TYPE);
@@ -1390,7 +1390,7 @@ sparp_optimize_BOP_OR_filter (sparp_t *sparp, SPART *parent_gp, SPART *gp, int g
       ctx.bofc_BOP_OR_of_reason_for_union[0] = ctx.bofc_reason_for_union;
       if (ctx.bofc_BOP_OR_of_reason_for_union == filt_ptr)
         {
-          caddr_t ft_type = spar_filter_is_freetext (sparp, ctx.bofc_reason_for_union, NULL);
+          caddr_t ft_type = spar_filter_is_freetext_or_rtree (sparp, ctx.bofc_reason_for_union, NULL);
           if (NULL != ft_type)
             {
               SPART *triple_with_var_obj = sparp_find_triple_with_var_obj_of_freetext (sparp, gp, ctx.bofc_reason_for_union, SPAR_TRIPLE_FOR_FT_SHOULD_EXIST | SPAR_TRIPLE_SHOULD_HAVE_NO_FT_TYPE);
@@ -5590,7 +5590,7 @@ int sparp_gp_trav_multiqm_to_unions (sparp_t *sparp, SPART *curr, sparp_trav_sta
           int filt_ctr;
           DO_BOX_FAST_REV (SPART *, filt, filt_ctr, curr->_.gp.filters)
             {
-              if (NULL != spar_filter_is_freetext (sparp, filt, memb))
+              if (NULL != spar_filter_is_freetext_or_rtree (sparp, filt, memb))
                 {
                   ft_cond_to_relocate = sparp_gp_detach_filter (sparp, curr, filt_ctr, NULL); 
                   break;

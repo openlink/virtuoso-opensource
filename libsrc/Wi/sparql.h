@@ -912,7 +912,7 @@ extern void spar_gp_add_member (sparp_t *sparp, SPART *memb);
 extern SPART *spar_gp_add_triplelike (sparp_t *sparp, SPART *graph, SPART *subject, SPART *predicate, SPART *object, SPART **sinv_idx_and_qms, SPART **options, int banned_tricks);
 /*! Checks if the given \c filt is a freetext filter. If it is so and \c base_triple is not NULL then it additionally checks if var name matches
 \returns NULL if filter is not free-text, UNAME like "bif:contains" if it is a free-text predicate */
-extern caddr_t spar_filter_is_freetext (sparp_t *sparp, SPART *filt, SPART *base_triple);
+extern caddr_t spar_filter_is_freetext_or_rtree (sparp_t *sparp, SPART *filt, SPART *base_triple);
 #define SPAR_FT_TYPE_IS_GEO(ft_type) ( \
   (uname_bif_c_spatial_contains		== (ft_type)) \
   || (uname_bif_c_spatial_intersects	== (ft_type)) \

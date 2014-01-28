@@ -7820,7 +7820,7 @@ ssg_print_filter (spar_sqlgen_t *ssg, SPART *tree)
 {
   if (tree == (SPART *)(1)) /* The filter has been disabled because it's printed already */
     return;
-  if (NULL != spar_filter_is_freetext (ssg->ssg_sparp, tree, NULL))
+  if (NULL != spar_filter_is_freetext_or_rtree (ssg->ssg_sparp, tree, NULL))
     {
       return;
       /* spar_error (ssg->ssg_sparp, "Unable to generate SQL code for %.100s() special predicate for variable '%.100s', try to rephrase the query",
@@ -8175,7 +8175,7 @@ from_printed:
           ft_alias = (NULL == qmft->qmvftAlias) ? sub_tabid : t_box_sprintf (210, "%.100s~%.100s", sub_tabid, qmft->qmvftAlias);
           DO_BOX_FAST (SPART *, filt, ctr, gp->_.gp.filters)
             {
-              if (NULL == spar_filter_is_freetext (ssg->ssg_sparp, filt, tree))
+              if (NULL == spar_filter_is_freetext_or_rtree (ssg->ssg_sparp, filt, tree))
                 continue;
               if (NULL == ft_pred)
                 {
@@ -8220,7 +8220,17 @@ from_printed:
                 case SCORE_LIMIT_L:	ssg_puts (", SCORE_LIMIT, ");	goto contains_print_scalar; /* see below */
                 case GEO_L:		ssg_puts (", GEO, ");		goto contains_print_scalar; /* see below */
                 case PRECISION_L:	ssg_puts (", PRECISION, ");	goto contains_print_scalar; /* see below */
-                default: spar_internal_error (ssg->ssg_sparp, "Unsupported option in printing freetext predicate"); break;
+                default:
+                  if (SPAR_FT_TYPE_IS_GEO (ft_type))
+                    {
+                      while (argctr < argcount)
+                        {
+                          ssg_puts (", ");
+                          ssg_print_scalar_expn (ssg, args[argctr++], SSG_VALMODE_SQLVAL, NULL);
+                        }
+                      goto args_done; /* see below */
+                    }
+                  spar_internal_error (ssg->ssg_sparp, "Unsupported option in printing freetext predicate"); break;
                 }
 contains_prin_id:
               ssg_prin_id (ssg, args[argctr+1]->_.var.vname);
@@ -8229,6 +8239,7 @@ contains_print_scalar:
               ssg_print_scalar_expn (ssg, args[argctr+1], SSG_VALMODE_SQLVAL, NULL);
               continue;
             }
+args_done:
           ssg_puts (")");
         }
       else if (NULL != ft_type)

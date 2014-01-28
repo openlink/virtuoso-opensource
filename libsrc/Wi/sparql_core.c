@@ -1635,7 +1635,7 @@ check_optionals:
                     {
                       DO_SET (SPART *, filt, &local_filts)
                         {
-                          if (NULL == spar_filter_is_freetext (sparp, filt, memb))
+                          if (NULL == spar_filter_is_freetext_or_rtree (sparp, filt, memb))
                             continue;
                           t_set_delete (&local_filts, filt);
                           t_set_push (&left_ft_filts, filt);
@@ -1712,7 +1712,7 @@ void spar_gp_add_member (sparp_t *sparp, SPART *memb)
 }
 
 caddr_t
-spar_filter_is_freetext (sparp_t *sparp, SPART *filt, SPART *base_triple)
+spar_filter_is_freetext_or_rtree (sparp_t *sparp, SPART *filt, SPART *base_triple)
 {
   caddr_t fname;
   SPART **args;
@@ -1822,7 +1822,7 @@ spar_gp_add_filter (sparp_t *sparp, SPART *filt, int filt_is_movable)
       spar_gp_add_filter (sparp, filt->_.bin_exp.right, filt_is_movable);
       return;
     }
-  ft_type = spar_filter_is_freetext (sparp, filt, NULL);
+  ft_type = spar_filter_is_freetext_or_rtree (sparp, filt, NULL);
   if (ft_type)
     {
       caddr_t ft_pred_name = filt->_.funcall.qname;
@@ -1831,6 +1831,7 @@ spar_gp_add_filter (sparp_t *sparp, SPART *filt, int filt_is_movable)
       dk_set_t *triples_ptr;
       SPART **args, *triple_with_var_obj = NULL;
       int argctr, argcount, fld_ctr;
+      int ft_is_geo = SPAR_FT_TYPE_IS_GEO (ft_pred_name);
       args = filt->_.funcall.argtrees;
       argcount = BOX_ELEMENTS (args);
       if (2 > argcount)
@@ -1859,25 +1860,28 @@ spar_gp_add_filter (sparp_t *sparp, SPART *filt, int filt_is_movable)
       if (NULL == triple_with_var_obj)
         spar_error (sparp, "The group does not contain triple pattern with '$%s' object before %s() predicate", var_name, ft_pred_name);
       triple_with_var_obj->_.triple.ft_type = ft_type;
-      if (argcount % 2)
-        spar_error (sparp, "%s() special predicate is used with wrong number of arguments", ft_pred_name);
-      if (2 < argcount)
-        for (argctr = 2; argctr < argcount; argctr += 2)
-          {
-            SPART *arg_value = args[argctr+1];
-            SPART *opt_value;
-            if (SPAR_VARIABLE != SPART_TYPE (arg_value))
-              continue;
-            if (DV_LONG_INT != DV_TYPE_OF (args[argctr]))
-              spar_error (sparp, "Invalid argument #%d for %s() special predicate", argctr+1);
-            spar_tree_is_var_with_forbidden_ft_name (sparp, arg_value, 1);
-            opt_value = (SPART *)t_box_copy_tree ((caddr_t)arg_value);
-            opt_value->_.var.tabid = triple_with_var_obj->_.triple.tabid;
-            opt_value->_.var.tr_idx = (ptrlong)args[argctr];
-            triple_with_var_obj->_.triple.options = t_spartlist_concat (
-              triple_with_var_obj->_.triple.options,
-              (SPART **)t_list (2, args[argctr], opt_value) );
-          }
+      if (!ft_is_geo)
+        {
+          if (argcount % 2)
+            spar_error (sparp, "%s() special predicate is used with wrong number of arguments", ft_pred_name);
+          if (2 < argcount)
+            for (argctr = 2; argctr < argcount; argctr += 2)
+              {
+                SPART *arg_value = args[argctr+1];
+                SPART *opt_value;
+                if (SPAR_VARIABLE != SPART_TYPE (arg_value))
+                  continue;
+                if (DV_LONG_INT != DV_TYPE_OF (args[argctr]))
+                  spar_error (sparp, "Invalid argument #%d for %s() special predicate", argctr+1);
+                spar_tree_is_var_with_forbidden_ft_name (sparp, arg_value, 1);
+                opt_value = (SPART *)t_box_copy_tree ((caddr_t)arg_value);
+                opt_value->_.var.tabid = triple_with_var_obj->_.triple.tabid;
+                opt_value->_.var.tr_idx = (ptrlong)args[argctr];
+                triple_with_var_obj->_.triple.options = t_spartlist_concat (
+                  triple_with_var_obj->_.triple.options,
+                  (SPART **)t_list (2, args[argctr], opt_value) );
+              }
+        }
       for (fld_ctr = 0; fld_ctr < SPART_TRIPLE_FIELDS_COUNT; fld_ctr++)
         spar_tree_is_var_with_forbidden_ft_name (sparp, triple_with_var_obj->_.triple.tr_fields[fld_ctr], 1);
       if (IS_BOX_POINTER (sparp->sparp_env->spare_sql_refresh_free_text))
