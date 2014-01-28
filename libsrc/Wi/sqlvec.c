@@ -1338,12 +1338,14 @@ cv_vec_slots (sql_comp_t * sc, code_vec_t cv, dk_hash_t * res, dk_hash_t * all_r
 	{
 	  data_source_t *save_cur = sc->sc_vec_current;
 	  dk_set_t save_pred = sc->sc_vec_pred;
+	    data_source_t * save_prec = sc->sc_pre_code_of;
 	  QN_SAVE_PRERESET;
 	  if (!sc->sc_vec_current)
 	    sc->sc_vec_current = ins->_.qnode.node;
 	qn_vec_slots (sc, ins->_.qnode.node, res, all_res, non_cl_local);
 	  sc->sc_vec_current = save_cur;
 	  sc->sc_vec_pred = save_pred;
+	  sc->sc_pre_code_of = save_prec;
 	  QN_RESTORE_PRERESET;
 	  ins_qnode_asg (sc, ins->_.qnode.node);
 	break;
