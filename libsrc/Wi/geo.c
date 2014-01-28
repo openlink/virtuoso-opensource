@@ -1742,15 +1742,16 @@ again:
 	    id = INT64_REF (itc->itc_row_data + id_cl->cl_pos[0]);
 	  else
 	    id = LONG_REF (itc->itc_row_data + id_cl->cl_pos[0]);
+	  qi->qi_set = dc->dc_n_values;
 	  if (txs->txs_is_rdf)
 	    {
 	      rdf_box_t *rb = rb_allocate ();
 	      rb->rb_ro_id = id;
 	      rb->rb_type = RDF_BOX_GEO;
-	      dc_append_box (dc, (caddr_t) rb);
+	      qst_vec_set (inst, txs->txs_d_id, (caddr_t) rb);
 	    }
 	  else
-	    dc_append_box (dc, box_num (id));
+	    dc_set_long (dc, qi->qi_set, id);
 	  qn_result ((data_source_t *) txs, inst, nth_set);
 	  if (QST_INT (inst, txs->src_gen.src_out_fill) >= batch_sz)
 	    {
@@ -1914,7 +1915,7 @@ caddr_t bif_st_get_bounding_box_n (caddr_t * qst, caddr_t * err_ret, state_slot_
   if (!(g->geo_flags & (GEO_A_MULTI | GEO_A_ARRAY)))
     sub_g = g;
   if ((idx < 1) || (idx > g->_.parts.len))
-    sqlr_new_error ("22023", "GEO..", "Invalid index value " BOXINT_FMT ", valid values for this geometery are 1 to %ld", (long)(g->_.parts.len));
+    sqlr_new_error ("22023", "GEO..", "Invalid index value " BOXINT_FMT ", valid values for this geometery are 1 to %ld", (long)idx, (long)(g->_.parts.len));
   sub_g = g->_.parts.items[idx-1];
   geo_get_bounding_XYbox (sub_g, &xy, 0, 0);
   res = geo_alloc (GEO_BOX | (sub_g->geo_flags & (GEO_A_Z | GEO_A_M)), 0, sub_g->geo_srcode);
