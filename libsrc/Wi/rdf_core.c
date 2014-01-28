@@ -3932,6 +3932,14 @@ bif_iri_ensure (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
+bif_iri_cache_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  nic_clear (iri_name_cache);
+  nic_clear (iri_prefix_cache);
+}
+
+
+caddr_t
 bif_uriqa_iri_is_local (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t name = bif_string_or_uname_arg (qst, args, 0, "uriqa_iri_is_local");
@@ -4220,6 +4228,7 @@ rdf_core_init (void)
   bif_define_typed ("iri_from_pref_name", bif_iri_from_pref_name, &bt_any);
   bif_define ("rdf_graph_keyword", bif_rdf_graph_keyword);
   bif_define ("iri_split", bif_iri_split);
+  bif_define ("iri_cache_clear",  bif_iri_cache_clear);
   bif_define ("uriqa_dynamic_local_set", bif_uriqa_dynamic_local_set);
   bif_define ("uriqa_iri_is_local", bif_uriqa_iri_is_local);
   bif_define ("uriqa_dynamic_local_replace", bif_uriqa_dynamic_local_replace);
