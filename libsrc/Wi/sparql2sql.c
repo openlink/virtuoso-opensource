@@ -4757,15 +4757,15 @@ sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, i
 triple_case_t **
 sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int required_source_type)
 {
-  SPART **qm_iri_or_pair = triple->_.triple.qm_iri_or_pair;
+  SPART **sinv_idx_and_qms = triple->_.triple.sinv_idx_and_qms;
   caddr_t triple_storage_iri;
   quad_storage_t *triple_storage;
   int ctr, fld_ctr, source_ctr;
   triple_case_t **res_list;
   tc_context_t tmp_tcc;
-  if (NULL != qm_iri_or_pair[0])
+  if (NULL != sinv_idx_and_qms[0])
     {
-      SPART *sinv = SPARP_SINV (sparp, unbox (((caddr_t *)qm_iri_or_pair)[0]));
+      SPART *sinv = SPARP_SINV (sparp, unbox (((caddr_t *)sinv_idx_and_qms)[0]));
       triple_storage_iri = sinv->_.sinv.storage_uri;
       triple_storage = sparp_find_storage_by_name (triple_storage_iri);
       if (NULL == triple_storage)
@@ -4803,14 +4803,14 @@ sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int req
         tmp_tcc.tcc_source_invalidation_masks[source_ctr] = 0x1;
     }
   END_DO_BOX_FAST;
-  if ((SPART *)((ptrlong)_STAR) == qm_iri_or_pair[1])
+  if ((SPART *)((ptrlong)_STAR) == sinv_idx_and_qms[1])
     tmp_tcc.tcc_top_allowed_qms = NULL;
   else
     {
-      tmp_tcc.tcc_top_allowed_qms = (quad_map_t **)t_alloc_list (BOX_ELEMENTS (qm_iri_or_pair)-1);
+      tmp_tcc.tcc_top_allowed_qms = (quad_map_t **)t_alloc_list (BOX_ELEMENTS (sinv_idx_and_qms)-1);
       for (ctr = BOX_ELEMENTS(tmp_tcc.tcc_top_allowed_qms); ctr--; /* no step */)
         {
-          caddr_t triple_qm_iri = (caddr_t)(qm_iri_or_pair[ctr + 1]);
+          caddr_t triple_qm_iri = (caddr_t)(sinv_idx_and_qms[ctr + 1]);
           if (((caddr_t)DEFAULT_L) == triple_qm_iri)
             {
               if (NULL == triple_storage->qsDefaultMap)
@@ -7097,7 +7097,7 @@ sparp_gp_trav_add_graph_perm_read_filters (sparp_t *sparp, SPART *curr, sparp_tr
       SPART *gp_of_cache;
       if (SPAR_TRIPLE != memb->type)
         continue;
-      if (NULL != memb->_.triple.qm_iri_or_pair[0])
+      if (NULL != memb->_.triple.sinv_idx_and_qms[0])
         continue; /* New fix for reopened Bug 14737: No permission filters should be placed inside service invocations */
       g_expn = memb->_.triple.tr_graph;
       if (!spar_graph_needs_security_testing (sparp, g_expn, RDF_GRAPH_PERM_READ))
