@@ -213,7 +213,10 @@ again:
       val += 5;
       goto again;
     default:
-      return cp_string_hash (cp, (char *) val, known_len != -1 ? known_len : box_length (val) - 1, rem_ret);
+      {
+	DB_BUF_TLEN (len, val[0], val);
+	return cp_string_hash (cp, (char *)val, len, rem_ret);
+      }
     }
 }
 
