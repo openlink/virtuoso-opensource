@@ -3129,10 +3129,17 @@ int sparp_gp_trav_check_if_local (sparp_t *sparp, SPART *curr, sparp_trav_state_
 int
 sparp_tree_is_global_expn (sparp_t *sparp, SPART *tree)
 {
-  int res = sparp_gp_trav (sparp, NULL /* unused */, tree, NULL,
+
+  int res;
+  int sparp_inside_gp_trav = (NULL != sparp->sparp_stp);
+  if (sparp_inside_gp_trav)
+    sparp_gp_trav_suspend (sparp);
+  res = sparp_gp_trav (sparp, NULL /* unused */, tree, NULL,
     NULL, NULL,
     sparp_gp_trav_check_if_local, NULL, NULL /*!!!TBD add*/,
     NULL );
+  if (sparp_inside_gp_trav)
+    sparp_gp_trav_resume (sparp);
   return !(SPAR_GPT_COMPLETED & res);
 }
 
