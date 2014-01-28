@@ -410,6 +410,7 @@ long st_db_free_pages;
 long st_db_buffers;
 long st_db_used_buffers;
 long st_db_dirty_buffers;
+long st_db_read_aside_buffers;
 long st_db_wired_buffers;
 long st_db_temp_pages;
 long st_db_temp_free_pages;
@@ -610,7 +611,7 @@ dbms_status_report (void)
   static long last_read_cum_time, last_write_cum_time;
   extern sys_timer_t sti_sync;
  extern long tc_n_flush;
-  int n_dirty = 0, n_wired = 0, n_buffers = 0, n_used = 0, n_io = 0, n_crsr = 0;
+ int n_dirty = 0, n_wired = 0, n_buffers = 0, n_used = 0, n_io = 0, n_crsr = 0, n_read_aside = 0;
   char * bp_curr_ts;
   dk_mem_stat (mem, sizeof (mem));
   PrpcStatus (rpc, sizeof (rpc));
@@ -643,6 +644,8 @@ dbms_status_report (void)
 		n_wired++;
 	      if (buf->bd_is_dirty)
 		n_dirty++;
+	      if (buf->bdf.r.is_read_aside)
+		n_read_aside++;
 	      if (buf->bd_iq)
 		n_io++;
 	    }
@@ -664,6 +667,7 @@ dbms_status_report (void)
       st_db_buffers = n_buffers;
       st_db_used_buffers = n_used;
       st_db_dirty_buffers = n_dirty;
+      st_db_read_aside_buffers = n_read_aside;
       st_db_wired_buffers = n_wired;
       if (sti_sync.sti_real && tc_n_flush)
 	snprintf (w_rate, sizeof (w_rate), "flush %10.4g MB/s", (tc_n_flush / PAGES_PER_MB) / ((float)sti_sync.sti_real / 1000));
@@ -1603,6 +1607,7 @@ stat_desc_t stat_descs [] =
     {"st_db_free_pages", &st_db_free_pages, NULL},
     {"st_db_buffers", &st_db_buffers, NULL},
     {"st_db_used_buffers", &st_db_used_buffers, NULL},
+    {"st_db_read_aside_buffers", &st_db_read_aside_buffers, NULL},
     {"st_db_dirty_buffers", &st_db_dirty_buffers, NULL},
     {"st_db_wired_buffers", &st_db_wired_buffers, NULL},
     {"st_db_disk_read_avg", &st_db_disk_read_avg, NULL},
