@@ -697,6 +697,8 @@ sqlg_text_node (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic)
     {
       dbe_column_t *col = (dbe_column_t *) text_key->key_parts->data;
       df_elt_t *col_dfe = sqlo_df (so, t_listst (3, COL_DOTTED, ot->ot_new_prefix, col->col_name));
+      if (geo_args && !tb_is_rdf_quad (tb_dfe->_.table.ot->ot_table))
+	return; /* After test in a sql table geo pred is a function call, no text node */
       text_id = sqlg_dfe_ssl (so, col_dfe);
       if (!tb_dfe->_.table.is_text_order)
 	text_id = sqlg_rdf_text_check (tb_dfe, txs, col_dfe, text_id, &code);
