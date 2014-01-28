@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -20,7 +18,6 @@
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -
  -
 -->
 <v:page name="robot_queues_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
@@ -134,15 +131,15 @@
               <th>Description</th>
               <th>URL</th>
               <th>State</th>
-              <th>Action</th>
+                                <th width="1%">Action</th>
             </tr>
           </table>
         </v:template>
         <v:template type="repeat" name-to-remove="" set-to-remove="" name="data_set2_repeat_template">
           <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="data_set2_if_not_exists_template">
             <table>
-              <tr class="listing_count">
-                <td class="listing_row_count" colspan="4">
+                                <tr>
+                                  <td class="listing_count" colspan="4">
                   No rows selected
                 </td>
               </tr>
@@ -164,9 +161,7 @@
 				), 50)" />
                 </td>
                 <td class="listing_col" nowrap="1">
-		    <v:label format="%s" name="data_set2_browse_label_5" value="--
-			WS.WS.VFS_STATUS_GET ((control.vc_parent as vspx_row_template).te_rowset[1],
-						(control.vc_parent as vspx_row_template).te_rowset[3])" />
+                                    <v:label format="%s" name="data_set2_browse_label_5" value="--WS.WS.VFS_STATUS_GET ((control.vc_parent as vspx_row_template).te_rowset[1], (control.vc_parent as vspx_row_template).te_rowset[3])" />
                 </td>
                 <td class="listing_col_action">
 		  <v:button action="simple" style="image" name="data_set2_update"
@@ -175,9 +170,7 @@
 		      xhtml_title="Run"
 		      text="&nbsp;Run"
 		      >
-                  <!--v:button action="simple" value="Run" width="64" height="24" name="data_set2_update" style="url"-->
                     <v:on-post width="0" height="16">
-                      <v:script>
                       <![CDATA[
                         declare _host, _root, _url  varchar;
                         declare update_flag integer;
@@ -189,15 +182,14 @@
 			  update_flag := 1;
 			else
 			  update_flag := 0;   
-			--update_flag := coalesce ((select top 1 1 from WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root and VQ_URL <> _url), 0);
                           http_rewrite();
 			self.vc_redirect (sprintf ('robot_status.vspx?host=%U&root=%U&url=%U', _host, _root, _url));
                           http_flush();
 			if (exists (select 1 from WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root and VQ_STAT = 'pending' ))
 			  return;
+
                         WS.WS.SERV_QUEUE_TOP(_host, _root, update_flag, 3, null, null);
                       ]]>
-                    </v:script>
                     </v:on-post>
                   </v:button>
 		    <v:button action="simple" style="image" name="url2"
@@ -209,7 +201,6 @@
 		      />
                   <v:button action="simple" value="Reset" width="64" height="24" name="data_set2_reset" style="url" >
                     <v:on-post width="0" height="16">
-                      <v:script>
                       <![CDATA[
                         declare _host, _root, _url varchar;
                         declare old_mode int;
@@ -229,7 +220,6 @@
                         commit work;
 			log_enable (old_mode, 1);
                       ]]>
-                    </v:script>
                     </v:on-post>
                   </v:button>
 		    <v:button action="simple" style="image" name="data_set2_stop"
@@ -239,7 +229,6 @@
 		      text="&nbsp;Stop"
 		      >
                     <v:on-post width="0" height="16">
-                      <v:script>
                       <![CDATA[
                         declare _host, _root, _url varchar;
                         declare old_mode int;
@@ -255,12 +244,7 @@
 			};
                         commit work;
 			WS.WS.VFS_STATUS_SET (_host, _root, 'stopped');
-			--old_mode := log_enable (3,1);
-			--update WS.WS.VFS_QUEUE set VQ_STAT = 'stopped' where VQ_HOST = _host and VQ_ROOT = _root and VQ_STAT = 'waiting';
-                        --commit work;
-			--log_enable (old_mode, 1);
                       ]]>
-                    </v:script>
                     </v:on-post>
                   </v:button>
                 </td>
@@ -295,7 +279,7 @@
               <th>Start on</th>
               <th>Interval (minutes)</th>
               <th>Last executed</th>
-              <th>Action</th>
+                                  <th width="1%">Action</th>
             </tr>
           </table>
         </v:template>
@@ -341,7 +325,6 @@
 		      text="&nbsp;Delete"
 		      >
                     <v:on-post width="0" height="16">
-                      <v:script>
                         <![CDATA[
                           declare descr varchar;
                           declare ds vspx_data_set;
@@ -350,7 +333,6 @@
                           delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = descr;
                           ds.vc_data_bind(e);
                         ]]>
-                      </v:script>
                     </v:on-post>
                   </v:button>
                 </td>
@@ -363,7 +345,7 @@
         <v:template type="simple" name-to-remove="table" set-to-remove="top" name="data_set3_footer_template">
           <table>
             <tr class="browse_button_row">
-              <td colspan="4" align="center"  class="listing_col_action">
+                                  <td colspan="5" align="center"  class="listing_col_action">
 		<vm:ds-navigation data-set="data_set3"/>
               </td>
             </tr>
