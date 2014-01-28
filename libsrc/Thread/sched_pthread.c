@@ -361,7 +361,7 @@ thread_create (
        thr != (thread_t *) &_deadq.thq_head;
        thr = (thread_t *) thr->thr_hdr.thr_next)
     {
-      /* if (thr->thr_stack_size >= stack_size) */
+      if (thr->thr_stack_size >= stack_size) 
 	break;
     }
   Q_UNLOCK ();
