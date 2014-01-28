@@ -997,6 +997,7 @@ sqlg_in_iter_add_after_test (sqlo_t * so, dk_set_t prev_in_iters, key_source_t *
 		sp->sp_cl = *cl_list_find (ks->ks_key->key_row_var, col->col_id);
 	      else
 	      sp->sp_cl = *key_find_cl (ks->ks_key, col->col_id);
+	      sp->sp_col = col;
 	    }
 	}
       END_DO_SET();
