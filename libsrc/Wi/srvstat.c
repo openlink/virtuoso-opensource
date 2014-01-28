@@ -1746,6 +1746,7 @@ stat_desc_t dbf_descs [] =
     {"dbf_2pc_wait", &dbf_2pc_wait, NULL},
     {"dbf_branch_transact_wait", &dbf_branch_transact_wait, NULL},
     {"dbf_log_no_disk", &dbf_log_no_disk, NULL},
+    {"txn_after_image_limit", &txn_after_image_limit, NULL},
     {"dbf_clop_enter_wait", &dbf_clop_enter_wait, NULL},
     {"dbf_cl_skip_wait_notify", &dbf_cl_skip_wait_notify, NULL},
     {"dbf_cpt_rb", &dbf_cpt_rb, NULL},

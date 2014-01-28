@@ -864,7 +864,7 @@ lt_log_prime_key (lock_trx_t * lt, row_delta_t * rd, int is_upd)
 }
 
 
-long txn_after_image_limit = 50000000L;
+size_t txn_after_image_limit = 50000000L;
 #define TXN_CHECK_LOG_IMAGE(lt) \
   if (txn_after_image_limit > 0 && lt->lt_log->dks_bytes_sent > (OFF_T) txn_after_image_limit) \
     { \
