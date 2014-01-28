@@ -3266,6 +3266,7 @@ ts_merge_subq_branches (table_source_t * ts, caddr_t * inst)
   db_buf_t main_bits = QST_BOX (db_buf_t, inst, sel->sel_vec_set_mask);
   set_ctr_node_t *sctr = (set_ctr_node_t *) ts->src_gen.src_query->qr_head_node;
   data_col_t *set_nos;
+  data_col_t * ext_set_dc = NULL;
   int n_sets;
   caddr_t ***qis = (caddr_t ***) QST_GET_V (inst, ts->ts_aq_qis);
   int qi_inx;
@@ -3276,6 +3277,11 @@ ts_merge_subq_branches (table_source_t * ts, caddr_t * inst)
 
   set_nos = QST_BOX (data_col_t *, inst, sctr->sctr_set_no->ssl_index);
   n_sets = ((int64 *) set_nos->dc_values)[set_nos->dc_n_values - 1] + 1;
+  if (sctr->sctr_ext_set_no)
+    {
+      ext_set_dc = QST_BOX (data_col_t *, inst, sctr->sctr_ext_set_no->ssl_index);
+      n_sets = ((int64*)ext_set_dc->dc_values)[n_sets - 1] + 1;
+    }
   DO_BOX (caddr_t *, branch, qi_inx, qis)
   {
     db_buf_t branch_bits;
