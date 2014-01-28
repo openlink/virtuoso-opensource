@@ -1418,16 +1418,13 @@ geo_parse_wkt (char *text, caddr_t * err_ret)
   geo_t *g;
   do
     {
-      char *par, ns1[30], ns2[30];
+      char *par = text, ns1[30], ns2[30];
       double x, y;
-      if (strncmp (text, "point", 5) && strncmp (text, "POINT", 5))
+      if (strncmp (text, "point(", 6) && strncmp (text, "POINT(", 6))
 	break;
-      par = strchr (text, '(');
-      if (!par)
+      if (2 != sscanf (par + 6, "%20s %20s", ns1, ns2))
 	break;
-      if (2 != sscanf (par + 1, "%20s %20s", ns1, ns2))
-	break;
-      if (2 != sscanf (par + 1, "%lg %lg", &x, &y))
+      if (2 != sscanf (par + 6, "%lg %lg", &x, &y))
 	break;
       g = geo_point (x, y);
       if (!(strlen (ns1) > 8 && strlen (ns2) > 8))
@@ -1437,7 +1434,7 @@ geo_parse_wkt (char *text, caddr_t * err_ret)
     }
   while (0);
   g = ewkt_parse (text, err_ret);
-  return g;
+  return (caddr_t)g;
 }
 
 caddr_t
@@ -1870,6 +1867,74 @@ bif_st_dv_geo_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_num (hl + l);
 }
 
+caddr_t bif_geometry_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  geo_t *g = bif_geo_arg (qst, args, 0, "GeometryType", -1);
+  ewkt_kwd_metas_t *metas;
+  if (NULL == g)
+    return NEW_DB_NULL;
+  metas = ewkt_find_metas_by_geotype (GEO_TYPE (g->geo_flags));
+  if (NULL == metas)
+    sqlr_new_error ("22023", "GEO..", "Unsupported shape type %u, geometry instance is corrupted or created by Virtuoso server of later version", GEO_TYPE (g->geo_flags));
+  return box_dv_short_string (metas->kwd_name);
+  
+}
+
+caddr_t bif_st_num_geometries (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  geo_t *g = bif_geo_arg (qst, args, 0, "ST_NumGeometries", -1);
+  ewkt_kwd_metas_t *metas;
+  if (NULL == g)
+    return NEW_DB_NULL;
+  if (g->geo_flags & (GEO_A_MULTI | GEO_A_ARRAY))
+    return box_num (g->_.parts.len);
+  return box_num (1);
+}
+
+caddr_t bif_st_geometry_n (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  geo_t *g = bif_geo_arg (qst, args, 0, "ST_GeometryN", -1);
+  boxint idx = bif_long_arg (qst, args, 1, "ST_GeometryN");
+  if (NULL == g)
+    return NEW_DB_NULL;
+  if (!(g->geo_flags & (GEO_A_MULTI | GEO_A_ARRAY)))
+    return NEW_DB_NULL;
+  if ((idx < 1) || (idx > g->_.parts.len))
+    sqlr_new_error ("22023", "GEO..", "Invalid index value " BOXINT_FMT ", valid values for this geometery are 1 to %ld", (long)(g->_.parts.len));
+  sqlr_new_error ("22023", "GEO..", "The function is not yet implemented");
+}
+
+caddr_t bif_st_get_bounding_box_n (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  geo_t *g = bif_geo_arg (qst, args, 0, "st_get_bounding_box_n", -1);
+  geo_t *sub_g, *res, xy;
+  boxint idx = bif_long_arg (qst, args, 1, "st_get_bounding_box_n");
+  if (NULL == g)
+    return NEW_DB_NULL;
+  if (!(g->geo_flags & (GEO_A_MULTI | GEO_A_ARRAY)))
+    sub_g = g;
+  if ((idx < 1) || (idx > g->_.parts.len))
+    sqlr_new_error ("22023", "GEO..", "Invalid index value " BOXINT_FMT ", valid values for this geometery are 1 to %ld", (long)(g->_.parts.len));
+  sub_g = g->_.parts.items[idx-1];
+  geo_get_bounding_XYbox (sub_g, &xy, 0, 0);
+  res = geo_alloc (GEO_BOX | (sub_g->geo_flags & (GEO_A_Z | GEO_A_M)), 0, sub_g->geo_srcode);
+  res->XYbox = xy.XYbox;
+  if (g->geo_flags & (GEO_A_Z | GEO_A_M))
+    {
+      geo_ZMbox_t *zm = geo_get_ZMbox_field (g);
+      if (res->geo_flags & GEO_A_Z)
+        {
+          res->_.point.point_ZMbox.Zmin = zm->Zmin;
+          res->_.point.point_ZMbox.Zmax = zm->Zmax;
+        }
+      if (res->geo_flags & GEO_A_M)
+        {
+          res->_.point.point_ZMbox.Mmin = zm->Mmin;
+          res->_.point.point_ZMbox.Mmax = zm->Mmax;
+        }
+    }
+  return (caddr_t)res;
+}
 
 dk_mutex_t *geo_reg_mtx;
 
@@ -1905,6 +1970,10 @@ geo_init ()
   bif_define ("http_st_ewkt", bif_http_st_ewkt);
   bif_define ("st_get_bounding_box", bif_st_get_bounding_box);
   bif_define ("st_dv_geo_length", bif_st_dv_geo_length);
+  bif_define_ex ("GeometryType"			, bif_geometry_type	, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("ST_NumGeometries"		, bif_st_num_geometries	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("ST_GeometryN"			, bif_st_geometry_n	, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("st_get_bounding_box_n"	, bif_st_get_bounding_box_n	, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
   dk_mem_hooks_2 (DV_GEO, (box_copy_f) geo_copy, (box_destr_f) geo_destroy, 0, (box_tmp_copy_f) mp_geo_copy);
   get_readtable ()[DV_GEO] = (macro_char_func) geo_deserialize;
   PrpcSetWriter (DV_GEO, (ses_write_func) geo_serialize);

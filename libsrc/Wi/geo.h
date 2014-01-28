@@ -259,6 +259,31 @@ EXE_EXPORT (int, geo_destroy, (geo_t *g));
 EXE_EXPORT (void, geo_serialize, (geo_t * g, dk_session_t * ses));
 EXE_EXPORT (caddr_t, geo_deserialize, (dk_session_t * ses));
 
+/* EWKT Reader */
+
+#define EWKT_NUM		-1
+#define EWKT_NUM_BAD		-2
+#define EWKT_KWD_GEO_TYPE	-3
+#define EWKT_KWD_MODIF		-4
+#define EWKT_KWD_EXT		-5
+#define EWKT_KWD_BAD		-6
+#define EWKT_BAD		-7
+#define EWKT_KWD_SRID		-10
+
+
+typedef struct ewkt_kwd_metas_s
+{
+  const char *	kwd_name;
+  int		kwd_dictserial;
+  int		kwd_type;
+  int		kwd_subtype;
+  int		kwd_parens_after;
+  int		kwd_min_nums;
+  int		kwd_max_nums;
+  int		kwd_is_alias;
+} ewkt_kwd_metas_t;
+
+EXE_EXPORT (ewkt_kwd_metas_t *, ewkt_find_metas_by_geotype, (int geotype));
 EXE_EXPORT (geo_t *, ewkt_parse, (const char *strg, caddr_t *err_ret));
 EXE_EXPORT (void, ewkt_print_sf12, (geo_t *g, dk_session_t *ses));
 

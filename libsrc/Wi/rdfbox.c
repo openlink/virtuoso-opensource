@@ -2720,6 +2720,11 @@ http_ttl_or_nt_prepare_obj (query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, tt
         rb_dt_lang_check(rb);
         if (RDF_BOX_DEFAULT_TYPE == rb->rb_type)
           return;
+        if (RDF_BOX_GEO_TYPE == rb->rb_type)
+          {
+            dt_ret->uri = uname_virtrdf_ns_uri_Geometry;
+            return;
+          }
         dt_ret->uri = rdf_type_twobyte_to_iri (rb->rb_type);
         if (dt_ret->uri) /* if by some reason rb_type is wrong */
           box_flags (dt_ret->uri) |= BF_IRI;
