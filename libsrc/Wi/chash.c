@@ -5577,8 +5577,8 @@ ks_add_hash_spec (key_source_t * ks, caddr_t * inst, it_cursor_t * itc)
 	  if (n_deps)
 	    itc->itc_value_ret_hash_spec = 1;
 	  tree = qst_get_chash (inst, hrng->hrng_ht, hrng->hrng_ht_id, NULL);
-	  cha = tree->it_hi->hi_chash;
-	  if (!cha->cha_distinct_count)
+	  cha = tree ? tree->it_hi->hi_chash : NULL;
+	if (!cha || !cha->cha_distinct_count)
 	    {
 	      /* join with empty chash is like null in search params, always empty */
 	      key_free_trail_specs (sp_copy_1);
