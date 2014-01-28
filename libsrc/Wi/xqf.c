@@ -3544,7 +3544,8 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
           /* test only : xte_word_range(xte,&l1,&l2); */
           return ((caddr_t) xte);
         }
-      if (!strcmp (type_iri, "http://www.openlinksw.com/schemas/virtrdf#Geometry")
+      if ((!strcmp (type_iri, "http://www.openlinksw.com/schemas/virtrdf#Geometry")
+	   || !strcmp (type_iri, "http://www.opengis.net/ont/geosparql#wktLiteral"))
 	  && DV_STRING == arg_dtp)
 	{
 	  caddr_t err = NULL;

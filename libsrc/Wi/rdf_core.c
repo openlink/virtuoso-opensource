@@ -3261,6 +3261,8 @@ rdf_cache_id (query_instance_t * qi, caddr_t mode, caddr_t pref, boxint new_id, 
     : mode[0] == 'l' ? rdf_lang_cache
     : mode[0] == 't' ? rdf_type_cache
     : mode[0] == 'i'? iri_name_cache : NULL;
+  if ('t' == mode[0] && !strcmp (pref, "http://www.opengis.net/ont/geosparql#wktLiteral"))
+    return box_num (256);
   if (!cache)
     sqlr_new_error ("42000", "RDF..", "bad mode for rdf_cache_id");
   if (is_set)
