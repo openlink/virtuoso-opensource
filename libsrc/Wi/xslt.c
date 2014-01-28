@@ -4331,7 +4331,7 @@ typedef struct dsort_itm_s {
 caddr_t
 bif_gvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char *funname, char algo)
 {
-  caddr_t *vect = (caddr_t *)bif_array_arg (qst, args, 0, funname);
+  caddr_t *vect = (caddr_t *)bif_array_of_pointer_arg (qst, args, 0, funname);
   int vect_elems = BOX_ELEMENTS (vect);
   int block_elts = bif_long_range_arg (qst, args, 1, funname, 1, 1024);
   int key_ofs = bif_long_range_arg (qst, args, 2, funname, 0, 1024);
