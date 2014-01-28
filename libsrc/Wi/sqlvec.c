@@ -1096,7 +1096,7 @@ ins_is_single_state (instruction_t * ins)
     {
     case INS_CALL:
     case INS_CALL_BIF:
-      if (ins->_.call.ret && SSL_VEC == ins->_.call.ret->ssl_type)
+      if (ins->_.call.ret && IS_REAL_SSL (ins->_.call.ret) && SSL_VEC == ins->_.call.ret->ssl_type)
 	  return 0;
       if (INS_CALL_BIF == ins->ins_type && 0 == stricmp (ins->_.bif.proc, "__all_eq"))
 	{
