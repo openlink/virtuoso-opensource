@@ -4741,7 +4741,7 @@ itc_col_vec_insert (it_cursor_t * itc, insert_node_t * ins)
 	{
 	  if (dbf_rq_check && -dbf_rq_key == itc->itc_insert_key->key_id)
 	    rq_check (itc);
-	  if (itc->itc_n_sets > 10 && (n_in_segs - itc->itc_n_sets) > 10 * itc->itc_n_sets)
+	  if (itc->itc_out_state && itc->itc_n_sets > 10 && (n_in_segs - itc->itc_n_sets) > 10 * itc->itc_n_sets)
 	    ins_check_batch_sz (ins, itc->itc_out_state, itc);
 	  return;
 	}
