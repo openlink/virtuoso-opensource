@@ -1981,13 +1981,12 @@ DAV_AUTHENTICATE_SSL_WEBID (
   webidGraph := connection_get ('__webidGraph');
   if (isnull (webid))
   {
-    declare cert, vtype any;
-
-    if (isnull (webidGraph))
-      webidGraph := 'http://local.virt/ods/' || uuid ();
+    declare cert, fing, vtype any;
 
     cert := client_attr ('client_certificate');
-    if (not DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 0, webid, webidGraph, 0, vtype))
+    fing := get_certificate_info (6, cert);
+    webidGraph := 'http:' || replace (fing, ':', '');
+    if (not DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 1, webid, webidGraph, 0, vtype))
       webid := null;
   }
   connection_set ('__webid', coalesce (webid, ''));
@@ -2203,16 +2202,13 @@ DAV_AUTHENTICATE_SSL (
   rc := 0;
   if (DAV_AUTHENTICATE_SSL_CONDITION ())
   {
-  DAV_AUTHENTICATE_SSL_ITEM (id, what, path);
+    DAV_AUTHENTICATE_SSL_ITEM (id, what, path);
 
-  webidGraph := 'http://local.virt/ods/' || uuid ();
-  DB.DBA.DAV_AUTHENTICATE_SSL_WEBID (webid, webidGraph);
+    webidGraph := null;
+    DB.DBA.DAV_AUTHENTICATE_SSL_WEBID (webid, webidGraph);
 
     _perms := '___';
-  rc := DAV_CHECK_ACLS (id, webid, webidGraph, what, path, req, a_uid, a_gid, _perms);
-
-  if (not is_empty_or_null (webidGraph))
-    DB.DBA.SPARUL_CLEAR (webidGraph, 0, 0, silent=>1);
+    rc := DAV_CHECK_ACLS (id, webid, webidGraph, what, path, req, a_uid, a_gid, _perms);
   }
   return rc;
 }
