@@ -2501,7 +2501,7 @@ return cast (get_keyword ('column_#' || cast (N as varchar), settings, case when
 create procedure WEBDAV.DBA.settings_orderBy (
   inout settings any)
 {
-  return get_keyword ('orderBy', settings, 'column_#1');
+  return get_keyword ('orderBy', settings, 'column_#4');
 }
 ;
 
@@ -2510,7 +2510,7 @@ create procedure WEBDAV.DBA.settings_orderBy (
 create procedure WEBDAV.DBA.settings_orderDirection (
   inout settings any)
 {
-  return get_keyword ('orderDirection', settings, 'asc');
+  return get_keyword ('orderDirection', settings, case when (WEBDAV.DBA.settings_orderBy (settings) = 'column_#4') then 'desc' else 'asc' end);
 }
 ;
 

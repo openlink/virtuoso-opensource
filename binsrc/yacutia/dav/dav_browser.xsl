@@ -102,8 +102,8 @@
           <v:variable name="dir_path" persist="0" type="varchar" default="'__root__'" />
           <v:variable name="dir_right" persist="0" type="varchar" default="''" />
           <v:variable name="dir_details" persist="1" type="integer" default="0" />
-          <v:variable name="dir_order" persist="0" type="varchar" default="'column_#1'" />
-          <v:variable name="dir_direction" persist="0" type="varchar" default="'asc'" />
+          <v:variable name="dir_order" persist="0" type="varchar" default="'column_#4'" />
+          <v:variable name="dir_direction" persist="0" type="varchar" default="'desc'" />
           <v:variable name="dir_grouping" type="varchar" default="''" />
           <v:variable name="dir_groupName" type="varchar" default="''" />
           <v:variable name="dir_cloud" type="integer" default="0" />
@@ -463,8 +463,8 @@
                   if (WEBDAV.DBA.isVector (state) and length(state))
                   {
                     state := WEBDAV.DBA.json2obj (state[0]);
-                    columnName := get_keyword ('column', state, 'column_#1');
-                    self.dir_direction := get_keyword ('direction', state, 'asc');
+                    columnName := get_keyword ('column', state, 'column_#4');
+                    self.dir_direction := get_keyword ('direction', state, case when (columnName = 'column_#4') then 'desc' else 'asc' end);
                   }
                 }
                 columnName := self.dir_order;
@@ -478,6 +478,9 @@
                   self.dir_direction := 'asc';
                 }
               }
+              if (not self.enabledColumn(columnName))
+                columnName := 'column_#1';
+
               self.dir_order := columnName;
               self.settings := WEBDAV.DBA.set_keyword ('orderBy', self.settings, self.dir_order);
               self.settings := WEBDAV.DBA.set_keyword ('orderDirection', self.settings, self.dir_direction);
