@@ -376,6 +376,13 @@ again:
     {
       plink_href := concat (plink_href, sprintf ('&sas=%U', connection_get ('sas')));
     }
+  if (length (grs) <> 0)
+    {
+      foreach (any x in grs) do
+	{
+	  plink_href := plink_href || sprintf ('&graph=%U', x);
+	}
+    }
 
 
 ?>
