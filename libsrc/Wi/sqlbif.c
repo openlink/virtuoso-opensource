@@ -8453,6 +8453,147 @@ bif_get_keyword_ucase (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
 }
 
+static caddr_t*
+bif_set_by_keywords_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int is_tweak, const char *fname)
+{
+  int argcount = BOX_ELEMENTS (args);
+  caddr_t *orig_arr = (caddr_t *)bif_array_or_null_arg (qst, args, 0, fname);
+  caddr_t *curr_arr = (NULL != orig_arr) ? orig_arr : dk_alloc_list (0);
+  int curr_arr_len = BOX_ELEMENTS (curr_arr);
+  caddr_t *changed_arr;
+  if (1 != (argcount % 3))
+    sqlr_new_error ("22023", "SR651", "Wrong argument of arguments (%d) in call of %s()", argcount, fname);
+  if (curr_arr_len % 2 != 0)
+    sqlr_new_error ("22024", "SR652", "%s() expects a vector of even length, not of length %d", fname, curr_arr_len);
+  curr_arr = NULL;
+  if (is_tweak)
+    curr_arr = (caddr_t *)box_copy_tree ((caddr_t)orig_arr);
+  else
+    {
+      if (!qst_swap_or_get_copy (qst, args[0], (caddr_t *)(&curr_arr)))
+        {
+          dk_free_tree ((caddr_t)curr_arr);
+          sqlr_new_error ("22024", "SR656", "%s() expects a settable variable as first argument", fname);
+        }
+    }
+  changed_arr = curr_arr;
+  QR_RESET_CTX
+    {
+      int argctr;
+      for (argctr = 1; argctr < argcount; argctr += 3)
+        {
+          caddr_t opcode = bif_string_or_uname_arg (qst, args, argctr, fname);
+          caddr_t kwd = bif_string_or_uname_arg (qst, args, argctr+1, fname);
+          caddr_t val = bif_arg (qst, args, argctr+2, fname);
+          int old_kwd_pos;
+          for (old_kwd_pos = 0; old_kwd_pos < curr_arr_len; old_kwd_pos += 2)
+            {
+              caddr_t k = curr_arr[old_kwd_pos];
+              if ((DV_STRING != DV_TYPE_OF (k)) && (DV_UNAME != DV_TYPE_OF (k)))
+                sqlr_new_error ("22024", "SR653", "The get_keyword-style vector contains a non-string key at index %d", old_kwd_pos);
+              if (!strcmp (kwd, k))
+                goto kwd_pos_done;
+            }
+          old_kwd_pos = -1;
+kwd_pos_done:
+          if (!strcmp (opcode, "new"))
+            {
+              if (-1 != old_kwd_pos)
+                sqlr_new_error ("22024", "SR654", "The function %s() gets opcode '%s' as %d-th argument but the specified keyword %.500s is already in the array at index %d", fname, opcode, argctr+1, kwd, old_kwd_pos);
+              goto op_do_extend;
+            }
+          if (!strcmp (opcode, "set"))
+            {
+              if (-1 != old_kwd_pos)
+                goto op_do_replace;
+              goto op_do_extend;
+            }
+          if (!strcmp (opcode, "soft"))
+            {
+              if (-1 != old_kwd_pos)
+                continue;
+              goto op_do_extend;
+            }
+          if (!strcmp (opcode, "replace"))
+            {
+              if (-1 != old_kwd_pos)
+                goto op_do_replace;
+              sqlr_new_error ("22024", "SR654", "The function %s() gets opcode '%s' as %d-th argument but the specified keyword %.500s is not found in the array", fname, opcode, argctr+1, kwd);
+            }
+          if (!strcmp (opcode, "delete"))
+            {
+              if (-1 != old_kwd_pos)
+                goto op_do_remove;
+              continue;
+            }
+          sqlr_new_error ("22024", "SR655", "The function %s() gets invalid opcode '%.500s' as %d-th argument", fname, opcode, argctr+1);
+op_do_replace:
+          dk_free_tree (curr_arr[old_kwd_pos + 1]);
+          curr_arr[old_kwd_pos+1] = box_copy (val);
+#if 0
+              caddr_t old_val = curr_arr[old_kwd_pos + 1];
+              curr_arr[old_kwd_pos + 1] = NULL;
+              changed_arr = (caddr_t *)box_copy_tree ((caddr_t)curr_arr);
+              curr_arr[old_kwd_pos + 1] = old_val;
+              changed_arr[old_kwd_pos + 1] = box_copy (val);
+#endif
+          goto op_done;
+op_do_extend:
+          list_extend ((caddr_t *)(&changed_arr), 2, box_copy (kwd), box_copy (val));
+          curr_arr = NULL;
+          goto op_done;
+op_do_remove:
+          changed_arr = dk_alloc_list (curr_arr_len - 2);
+          memcpy (changed_arr, curr_arr, sizeof (caddr_t) * old_kwd_pos);
+          memcpy (changed_arr + old_kwd_pos, curr_arr + old_kwd_pos + 2, sizeof (caddr_t) * ((curr_arr_len - 2) - old_kwd_pos));
+#if 0
+          if (curr_arr == orig_arr)
+            {
+              int ctr;
+              for (ctr = curr_arr_len - 2; ctr--; /*no step*/)
+                changed_arr[ctr] = box_copy_tree (changed_arr[ctr]);
+            }
+#endif
+          goto op_done;
+op_done:
+          if (curr_arr != changed_arr)
+            {
+              dk_free_box ((caddr_t)curr_arr);
+              curr_arr = changed_arr;
+              curr_arr_len = BOX_ELEMENTS (curr_arr);
+            }
+        }
+    }
+  QR_RESET_CODE
+    {
+      du_thread_t * self = THREAD_CURRENT_THREAD;
+      caddr_t err = thr_get_error_code (self);
+      dk_free_box ((caddr_t)curr_arr);
+      if ((changed_arr != orig_arr) && (changed_arr != curr_arr))
+        dk_free_box ((caddr_t)changed_arr);
+      POP_QR_RESET;
+      sqlr_resignal (err);
+    }
+  END_QR_RESET
+  return changed_arr;
+}
+
+
+caddr_t
+bif_set_by_keywords (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t *res = bif_set_by_keywords_imp (qst, err_ret, args, 0, "set_by_keywords");
+  qst_swap (qst, args[0], (caddr_t *)(&res));
+  return NULL;
+}
+
+caddr_t
+bif_tweak_by_keywords (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t *res = bif_set_by_keywords_imp (qst, err_ret, args, 1, "tweak_by_keywords");
+  return (caddr_t)res;
+}
+
 /*
    First argument: Any scalar item, or maybe a vector itself
    (in case vectors may contain subvectors as their elements).
@@ -15346,6 +15487,8 @@ sql_bif_init (void)
   bif_define_typed ("vector_zap_args", bif_vector_zap_args, &bt_any);
   bif_define_typed ("get_keyword", bif_get_keyword, &bt_any);
   bif_define_typed ("get_keyword_ucase", bif_get_keyword_ucase, &bt_any);
+  bif_define_typed ("set_by_keywords", bif_set_by_keywords, &bt_integer);
+  bif_define_typed ("tweak_by_keywords", bif_tweak_by_keywords, &bt_any_box);
   bif_define_typed ("position", bif_position, &bt_integer);
   bif_define_typed ("one_of_these", bif_one_of_these, &bt_integer);
 #if 0
