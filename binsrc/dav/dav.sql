@@ -2474,7 +2474,7 @@ again:
     }
 
     _accept := HTTP_RDF_GET_ACCEPT_BY_Q (http_request_header_full (lines, 'Accept', '*/*'));
-    if (isinteger (_res_id) and (_accept = 'text/html') and (cont_type = 'text/turtle') and not isnull (DB.DBA.VAD_CHECK_VERSION ('fct')))
+	  if (WS.WS.TTL_REDIRECT_ENABLED () and isinteger (_res_id) and (_accept = 'text/html') and (cont_type = 'text/turtle') and not isnull (DB.DBA.VAD_CHECK_VERSION ('fct')))
     {
       http_rewrite ();
       http_status_set (303);
@@ -3098,6 +3098,12 @@ create procedure WS.WS.TTL_QUERY_POST (
   DB.DBA.TTLP (ses, def_gr, def_gr);
 
   return 0;
+}
+;
+
+create procedure WS.WS.TTL_REDIRECT_ENABLED ()
+{
+  return case when registry_get ('__WebDAV_ttl__') = 'yes' then 1 else 0 end;
 }
 ;
 
