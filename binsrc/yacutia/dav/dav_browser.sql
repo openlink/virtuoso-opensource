@@ -1894,7 +1894,6 @@ create procedure WEBDAV.DBA.host_protocol ()
 create procedure WEBDAV.DBA.host_url ()
 {
   declare host varchar;
-
   declare exit handler for sqlstate '*' { goto _default; };
 
   if (is_http_ctx ())
@@ -1959,7 +1958,7 @@ create procedure WEBDAV.DBA.dav_url (
   declare lpath varchar;
 
   lpath := WEBDAV.DBA.dav_lpath (path);
-  return WEBDAV.DBA.host_url() || WEBDAV.DBA.path_escape (lpath);
+  return WEBDAV.DBA.host_url () || WEBDAV.DBA.path_escape (lpath);
 }
 ;
 
@@ -5214,6 +5213,8 @@ create procedure WEBDAV.DBA.iri2ssl (
 {
   declare V, ssl any;
 
+  if (iri not like 'https://%')
+  {
   ssl := ODS.ODS_API.getDefaultHttps ();
   if (ssl is not null)
   {
@@ -5221,6 +5222,29 @@ create procedure WEBDAV.DBA.iri2ssl (
     V[0] := 'https';
     V[1] := ssl;
     iri := DB.DBA.vspx_uri_compose (V);
+  }
+  }
+  return iri;
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.ssl2iri (
+  in iri varchar)
+{
+  declare V, noSsl any;
+
+  if (iri not like 'http://%')
+  {
+    noSsl := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+    if (noSsl is not null)
+    {
+      V := rfc1808_parse_uri (iri);
+      V[0] := 'http';
+      V[1] := noSsl;
+      iri := DB.DBA.vspx_uri_compose (V);
+    }
   }
   return iri;
 }
