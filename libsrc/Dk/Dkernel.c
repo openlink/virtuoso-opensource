@@ -319,6 +319,8 @@ find_service (char *name)
 {
   USE_GLOBAL
   service_t * srv = services;
+  if (!(IS_BOX_POINTER (name) && DV_STRING == box_tag (name)))
+    return NULL;
   while (srv)
     {
       if (0 == strcmp (srv->sr_name, name))
@@ -1159,7 +1161,10 @@ future_wrapper (void *ignore)
 		else if (ret_type == DV_C_STRING)
 		  ret_box[0] = box_string (result);
 		else
-		  ret_box[0] = result;
+		  {
+		    ret_box[0] = result;
+		    result = NULL;
+		  }
 	      }
 	    ret_block[DA_MESSAGE_TYPE] = (caddr_t) (long) DA_FUTURE_ANSWER;
 	    ret_block[RRC_COND_NUMBER] = box_num (future->rq_condition);
@@ -1468,6 +1473,7 @@ future_request_t *
 frq_create (dk_session_t * ses, caddr_t * request)
 {
   future_request_t *future_request = (future_request_t *) dk_alloc (sizeof (future_request_t));
+  caddr_t * args;
   memset (future_request, 0, sizeof (*future_request));
 
   future_request->rq_client = ses;
@@ -1499,13 +1505,22 @@ frq_create (dk_session_t * ses, caddr_t * request)
 
   if (!future_request->rq_service)
     {
-      printf ("\nUnknown service %s requested. req no = %d", request[FRQ_SERVICE_NAME], (int) unbox (request[FRQ_COND_NUMBER]));
+      caddr_t name = request[FRQ_SERVICE_NAME], svc;
+
+      if (IS_BOX_POINTER (name) && DV_TYPE_OF (name) == DV_STRING)
+	svc = name;
+      else
+	svc = "no name";
+
+      printf ("\nUnknown service %s requested. req no = %d", svc, (int) unbox (request[FRQ_COND_NUMBER]));
       dk_free (future_request, sizeof (future_request_t));
       return NULL;
     }
 
   future_request->rq_condition = (long) unbox (request[FRQ_COND_NUMBER]);	/* mty HUHTI */
-  future_request->rq_arguments = (long **) request[FRQ_ARGUMENTS];
+  args = request[FRQ_ARGUMENTS];
+  if (IS_BOX_POINTER (args) && DV_TYPE_OF (args) == DV_ARRAY_OF_POINTER)
+    future_request->rq_arguments = (long **) request[FRQ_ARGUMENTS];
 
   return future_request;
 }
