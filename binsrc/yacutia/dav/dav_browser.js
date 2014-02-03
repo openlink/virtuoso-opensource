@@ -95,6 +95,12 @@ function vspxView(fValue) {
   return vspxPost('action', '_cmd', 'view', '_path', fValue);
 }
 
+function cleanPost() {
+  var frm = document.forms['F1'];
+  frm.__submit_func.value = '__submit__';
+  frm.__submit_func.name = '';
+}
+
 function odsPost(obj, fields, button) {
   var form = getParent (obj, 'form');
   var formName = form.name;

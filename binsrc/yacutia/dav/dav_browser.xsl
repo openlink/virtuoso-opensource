@@ -111,7 +111,7 @@
           <v:variable name="dir_columns" type="any" default="null" />
           <v:variable name="returnName" persist="0" type="varchar" default="''" />
           <v:variable name="search_filter" persist="0" type="varchar" default="''" />
-          <v:variable name="search_simple" persist="0" param-name="keywords" type="any" default="null" />
+          <v:variable name="search_simple" persist="0" type="any" default="null" />
           <v:variable name="search_advanced" persist="0" type="any" default="null" />
           <v:variable name="search_dc" persist="0" type="any" default="null" />
           <v:variable name="noPrepare" persist="temp" type="integer" default="0" />
@@ -1541,7 +1541,7 @@
                 <vm:search-dc-template10 />
               </div>
               <div class="WEBDAV_formFooter">
-                <v:button action="simple" name="ssSearch" value="Search">
+                <v:button action="simple" name="ssSearch" value="Search" xhtml_onclick="javascript: cleanPost();">
                   <v:on-post>
                     <![CDATA[
                       -- save & validate metadata
@@ -1567,7 +1567,7 @@
                     ]]>
                   </v:on-post>
                 </v:button>
-                <v:button action="simple" name="ssClear" value="Clear" xhtml_title="Clear Criteria">
+                <v:button action="simple" name="ssClear" value="Clear" xhtml_title="Clear Criteria" xhtml_onclick="javascript: cleanPost();">
                   <v:on-post>
                     <![CDATA[
                       self.search_dc := null;
@@ -1577,7 +1577,7 @@
                     ]]>
                   </v:on-post>
                 </v:button>
-                <v:button action="simple" name="ssSave" value="Save" xhtml_title="Save as Smart Folder" enabled="--either (equ (self.dir_right, 'W'), 1, 0)">
+                <v:button action="simple" name="ssSave" value="Save" xhtml_title="Save as Smart Folder" enabled="--either (equ (self.dir_right, 'W'), 1, 0)" xhtml_onclick="javascript: cleanPost();">
                   <v:on-post>
                     <![CDATA[
                       -- save & validate metadata
@@ -1594,7 +1594,7 @@
                     ]]>
                   </v:on-post>
                 </v:button>
-                <v:button action="simple" name="ssCancel" value="Cancel">
+                <v:button action="simple" name="ssCancel" value="Cancel" xhtml_onclick="javascript: cleanPost();">
                   <v:on-post>
                     <![CDATA[
                       self.vc_is_valid := 1;
