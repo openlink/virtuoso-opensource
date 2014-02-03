@@ -315,10 +315,10 @@ echo "        {" >> $STICKER
 echo "          result ('ERROR', 'Please update server version');" >> $STICKER
 echo "          signal ('FATAL', 'Please update server version');" >> $STICKER
 echo "        }" >> $STICKER
-echo "     if ((__proc_exists ('DB.DBA.WebDAV_DAV_AUTHENTICATE') is not null) and (__proc_exists ('DB.DBA.WebDAV__verify') is null))" >> $STICKER
+echo "     if (((__proc_exists ('DB.DBA.WebDAV_DAV_AUTHENTICATE') is not null) and (__proc_exists ('DB.DBA.WebDAV__verify') is null)) or ((__proc_exists ('DB.DBA.SkyDrive_DAV_AUTHENTICATE') is not null) and (__proc_exists ('DB.DBA.SkyDrive_CONFIGURE') is null)) or ((__proc_exists ('DB.DBA.oMail_DAV_AUTHENTICATE') is not null) and (__proc_exists ('DB.DBA.oMail_CONFIGURE') is null)))" >> $STICKER
 echo "       {" >> $STICKER
-echo "         result ('ERROR', 'Please install the last Briefcase');" >> $STICKER
-echo "         signal ('FATAL', 'Please install the last Briefcase');" >> $STICKER
+echo "         result ('ERROR', 'Please install the last Briefcase and WebMail VAD packages');" >> $STICKER
+echo "         signal ('FATAL', 'Please install the last Briefcase and WebMail VAD packages');" >> $STICKER
 echo "       }" >> $STICKER
 echo "      if (equ ($ISDAV, 0) and isinteger (file_stat (http_root ())))" >> $STICKER
 echo "        {" >> $STICKER
