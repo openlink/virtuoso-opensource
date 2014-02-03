@@ -2,8 +2,6 @@
 #
 #  mkvad.sh
 #
-#  $Id$
-#
 #  Creates a vad package for Virtuoso Conductor
 #
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
@@ -311,6 +309,11 @@ echo "      if (lt (sys_stat ('st_dbms_ver'), '$NEED_VERSION'))" >> $STICKER
 echo "        {" >> $STICKER
 echo "          result ('ERROR', 'The conductor package requires server version $NEED_VERSION or greater');" >> $STICKER
 echo "          signal ('FATAL', 'The conductor package requires server version $NEED_VERSION or greater');" >> $STICKER
+echo "        }" >> $STICKER
+echo "      if (__proc_exists ('WS.WS.TTL_REDIRECT_ENABLED') is null)" >> $STICKER
+echo "        {" >> $STICKER
+echo "          result ('ERROR', 'Please update server version');" >> $STICKER
+echo "          signal ('FATAL', 'Please update server version');" >> $STICKER
 echo "        }" >> $STICKER
 echo "      if (equ ($ISDAV, 0) and isinteger (file_stat (http_root ())))" >> $STICKER
 echo "        {" >> $STICKER
