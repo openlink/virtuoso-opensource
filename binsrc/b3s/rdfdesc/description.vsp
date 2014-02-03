@@ -145,17 +145,6 @@ again:
 
   _F := ''; _from := null;
   grs := connection_get ('graphs', null);
-  if (length (grs) = 0)
-    {
-      declare fg any;
-      fg := (select top 1 "g" from (sparql select ?g count (*) where { quad map virtrdf:DefaultQuadMap { graph ?g { `iri(?:gr)` ?p ?o } 
-		filter (!(str(?g) like "http://local.virt/%" )  && !(str(?g) like "% %")) }} group by ?g order by desc 2 limit 1) x); 
-      if (fg is not null)
-        {
-          grs := vector (fg);
-          connection_set ('graphs', grs);
-        }
-    }
   ses_parms := b3s_render_ses_params ();
   if (grs is not null)
     {
