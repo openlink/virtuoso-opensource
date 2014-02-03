@@ -4808,7 +4808,7 @@ create procedure WEBDAV.DBA.aci_load (
                   ' prefix foaf: <http://xmlns.com/foaf/0.1/> \n' ||
                   ' prefix acl: <http://www.w3.org/ns/auth/acl#> \n' ||
                   ' prefix flt: <http://www.openlinksw.com/schemas/acl/filter#> \n' ||
-                  ' select distinct ?rule ?agent ?mode ?filter ?criteria ?operand ?condition ?pattern ?statement \n' ||
+                  ' select distinct ?rule ?agent ?agentClass ?mode ?filter ?criteria ?operand ?condition ?pattern ?statement \n' ||
                   '   from <%s> \n' ||
                   '  where { \n' ||
                   '          { \n' ||
@@ -4822,7 +4822,7 @@ create procedure WEBDAV.DBA.aci_load (
                   '            ?rule rdf:type acl:Authorization ; \n' ||
                   '                  acl:accessTo <%s> ; \n' ||
                   '                  acl:mode ?mode ; \n' ||
-                  '                  acl:agentClass ?agent. \n' ||
+                  '                  acl:agentClass ?agentClass. \n' ||
                   '          } \n' ||
                   '          union \n' ||
                   '          { \n' ||
@@ -4863,33 +4863,49 @@ create procedure WEBDAV.DBA.aci_load (
 
           aclNo := aclNo + 1;
           aclRule := row[0];
-          V := vector (aclNo, ODS.ODS_API."ontology.normalize" (row[1]), 'person', 0, 0, 0);
+          V := vector (aclNo, null, null, 0, 0, 0);
           F := vector ();
           aclCriteria := '';
         }
-        if (ODS.ODS_API."ontology.normalize" (row[1]) = 'foaf:Agent')
+        if      (not isnull (row[1]))
+        {
+          V[1] := row[1];
+          V[2] := 'person';
+        }
+        else if (not isnull (row[2]))
+        {
+          if (ODS.ODS_API."ontology.normalize" (row[2]) = 'foaf:Agent')
+          {
+            V[1] := ODS.ODS_API."ontology.normalize" (row[2]);
           V[2] := 'public';
-        if (row[1] like SIOC.DBA.get_graph () || '/%/group/%')
+          }
+          else
+          {
+            V[1] := row[2];
           V[2] := 'group';
-        if (row[3] like (graph || 'filter_%'))
+          }
+        }
+        else if (not isnull (row[4]))
         {
           V[2] := 'advanced';
-          if (aclCriteria <> row[4])
+          if (aclCriteria <> row[5])
           {
-            F := vector_concat (F, vector (vector (1, replace (row[5], 'http://www.openlinksw.com/schemas/acl/filter#', ''), replace (row[6], 'http://www.openlinksw.com/schemas/acl/filter#', ''), cast (row[7] as varchar), cast (row[8] as varchar))));
-            aclCriteria := row[4];
+            F := vector_concat (F, vector (vector (1, replace (row[6], 'http://www.openlinksw.com/schemas/acl/filter#', ''), replace (row[7], 'http://www.openlinksw.com/schemas/acl/filter#', ''), cast (row[8] as varchar), cast (row[9] as varchar))));
+            aclCriteria := row[5];
             V[1] := F;
           }
         }
-        aclMode := ODS.ODS_API."ontology.normalize" (row[2]);
+        aclMode := ODS.ODS_API."ontology.normalize" (row[3]);
         if (aclMode = 'acl:Read')
           V[3] := 1;
+
         if (aclMode = 'acl:Write')
           V[4] := 1;
+
         if (aclMode = 'acl:Execute')
           V[5] := 1;
       }
-      if (not isnull (V))
+      if (not isnull (V) and not isnull (V[2]))
         retValue := vector_concat (retValue, vector (V));
     }
   }
@@ -5129,8 +5145,6 @@ create procedure WEBDAV.DBA.aci_params (
         else
         {
           T := trim (params[N+1]);
-          if (is_empty_or_null (T))
-            goto _skip;
         }
         V := vector (M,
                      T,
