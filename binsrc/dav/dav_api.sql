@@ -1936,29 +1936,6 @@ DAV_AUTHENTICATE_SSL_CONDITION () returns integer
 }
 ;
 
--- redundant code muste be deleted after move the procedure WEBID_AUTH_GEN_2 in DAV!!!
--- START REDUNDANT CODE
-create function DAV_WEBID_QR (in gr varchar, in uri varchar)
-{
-    return sprintf ('sparql
-    define input:storage ""
-    define input:same-as "yes"
-    prefix cert: <http://www.w3.org/ns/auth/cert#>
-    prefix rsa: <http://www.w3.org/ns/auth/rsa#>
-    select (str (?exp)) (str (?mod))
-    from <%S>
-    where
-    {
-      { ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod .  }
-      union
-      { ?id cert:identity <%S> ; rsa:public_exponent ?exp1 ; rsa:modulus ?mod1 . ?exp1 cert:decimal ?exp . ?mod1 cert:hex ?mod . }
-      union
-      { <%S> cert:key ?key . ?key cert:exponent ?exp . ?key cert:modulus ?mod .  }
-    }', gr, uri, uri, uri);
-}
-;
--- END REDUNDANT CODE
-
 
 create function
 DAV_AUTHENTICATE_SSL_SQL_PREPARE (
@@ -2033,6 +2010,8 @@ DAV_CHECK_ACLS_INTERNAL (
   declare _filterMode, _filterValue, _filterCriteriaValue, _mode, _filter, _criteria, _operand, _condition, _value, _pattern, _statement, _params any;
   declare _sql, _state, _msg, _sqlParams, _meta, _rows any;
 
+  if (not isnull (webid))
+  {
   for (
     sparql
     define input:storage ""
@@ -2112,6 +2091,7 @@ DAV_CHECK_ACLS_INTERNAL (
     IRIs[I] := vector_concat (IRIs[I], vector (tmp));
 
     _skip:;
+  }
   }
 
 
@@ -2216,23 +2196,20 @@ DAV_AUTHENTICATE_SSL (
   declare rc integer;
   declare webidGraph any;
 
-  if (not DAV_AUTHENTICATE_SSL_CONDITION ())
-    return 0;
-
   rc := 0;
-  _perms := '___';
+  if (DAV_AUTHENTICATE_SSL_CONDITION ())
+  {
   DAV_AUTHENTICATE_SSL_ITEM (id, what, path);
 
-  webid := null;
-  webidGraph := null;
+  webidGraph := 'http://local.virt/ods/' || uuid ();
   DB.DBA.DAV_AUTHENTICATE_SSL_WEBID (webid, webidGraph);
-  if (isnull (webid))
-    return 0;
 
+    _perms := '___';
   rc := DAV_CHECK_ACLS (id, webid, webidGraph, what, path, req, a_uid, a_gid, _perms);
 
   if (not is_empty_or_null (webidGraph))
     DB.DBA.SPARUL_CLEAR (webidGraph, 0, 0, silent=>1);
+  }
   return rc;
 }
 ;
