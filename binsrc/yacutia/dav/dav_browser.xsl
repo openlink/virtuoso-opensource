@@ -1188,7 +1188,7 @@
               declare path varchar;
 
               path := WEBDAV.DBA.real_path (self.dir_path);
-              writePermission := WEBDAV.DBA.write_permission (path);
+              writePermission := case when self.dir_right = 'W' then 1 else 0 end;
               self.dav_actions := self.actions (WEBDAV.DBA.det_subClass (path, 'C'));
               self.toolbarShow (writePermission, 'refresh', 'Refresh', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'refresh\');"', 'ref_32.png', '', 0);
               self.toolbarShow (writePermission, 'up', 'Up', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'up\');"', 'up_32.png', 'grey_up_32.png', 0);
@@ -1915,7 +1915,7 @@
                         </td>
                       </tr>
                     </v:template>
-                    <v:template name="tf_3" type="simple" enabled="--self.viewField ('name')">
+                    <v:template name="tf_3" type="simple" enabled="-- self.viewField ('name')">
                       <tr id="davRow_name">
                         <th width="30%">
                           <span id="label_dav"><vm:label for="dav_name" value="--either (equ (self.dav_type, 'R'), 'File name (*)', 'Folder name (*)')" /></span>
@@ -2124,7 +2124,7 @@
                         </td>
                       </tr>
                     </v:template>
-                    <v:template name="tf_9" type="simple" enabled="--case when self.viewField ('owner') then 1 else 0 end">
+                    <v:template name="tf_9" type="simple" enabled="-- self.viewField ('owner')">
                       <tr id="davRow_owner">
                         <th width="30%">
                           <vm:label for="dav_owner" value="--'Owner'" />
@@ -2175,7 +2175,7 @@
                         </td>
                       </tr>
                     </v:template>
-                    <v:template name="tf_10" type="simple" enabled="--case when self.viewField ('group') then 1 else 0 end">
+                    <v:template name="tf_10" type="simple" enabled="-- self.viewField ('group')">
                       <tr id="davRow_group">
                         <th width="30%">
                           <vm:label for="dav_group" value="--'Group'" />
@@ -2220,7 +2220,7 @@
                         </td>
                       </tr>
                     </v:template>
-                    <v:template name="tf_11" type="simple" enabled="--case when self.viewField ('permissions') then 1 else 0 end">
+                    <v:template name="tf_11" type="simple" enabled="-- self.viewField ('permissions')">
                       <tr id="davRow_perms">
                         <th width="30%" valign="top">
                           <vm:label value="--'Permissions'" />
@@ -4511,7 +4511,16 @@
 
                           <v:template name="ds_items_browse" type="browse" name-to-remove="table" set-to-remove="both">
                             <table>
-                              <v:template type="simple" enabled="-- case when (self.dir_grouping <> '') then 1 else 0 end;">
+                              <?vsp
+                                declare rowset any;
+                                declare path varchar;
+                                declare permission varchar;
+
+                                rowset := (control as vspx_row_template).te_rowset;
+                                path := rowset[8];
+                                permission := WEBDAV.DBA.permission (path);
+                              ?>
+                              <v:template type="simple" enabled="-- neq (self.dir_grouping, '')">
                                 <?vsp
                                   declare tmp, dir_column any;
 
@@ -4533,52 +4542,43 @@
                               </v:template>
                               <tr>
                                 <?vsp
-                                  declare rowset any;
-                                  rowset := (control as vspx_row_template).te_rowset;
-
                                   if (self.dir_path <> '')
                                   {
                                     http (         '<td class="checkbox">');
-                                    if ((rowset[8] not like '%,acl') and (rowset[8] not like '%,meta'))
-                                      http (sprintf ('  <input type="checkbox" name="cb_item" value="%V" onclick="selectCheck (this, \'cb_item\')"/>', WEBDAV.DBA.utf2wide (rowset[8])));
+                                    if ((path not like '%,acl') and (path not like '%,meta'))
+                                      http (sprintf ('  <input type="checkbox" name="cb_item" value="%V" onclick="selectCheck (this, \'cb_item\')"/>', WEBDAV.DBA.utf2wide (path)));
                                     http (         '</td>');
                                   }
                                 ?>
                                 <td nowrap="nowrap">
                                   <?vsp
-                                    declare id, rowset, click any;
+                                    declare id, click any;
 
-                                    rowset := (control as vspx_row_template).te_rowset;
-                                    id := case when (rowset[1] = 'R') then sprintf ('id="%V"', rowset[8]) else '' end;
+                                    id := case when (rowset[1] = 'R') then sprintf ('id="%V"', path) else '' end;
                                     if ((self.returnName <> '') and (rowset[1] = 'R'))
                                     {
-                                      http (sprintf ('<a %s href="%s" onclick="javascript: $(\'item_name\').value = \'%s\'; return false;" title="%s"><img src="%s" border="0" /> %V</a>', id, WEBDAV.DBA.dav_url (rowset[8]), replace (WEBDAV.DBA.dav_lpath (rowset[8]), '\'', '\\\''), WEBDAV.DBA.utf2wide (rowset[0]), self.image_src (WEBDAV.DBA.ui_image(rowset[8], rowset[1], rowset[4])), WEBDAV.DBA.utf2wide (WEBDAV.DBA.stringCut (rowset[0], self.chars))));
+                                      http (sprintf ('<a %s href="%s" onclick="javascript: $(\'item_name\').value = \'%s\'; return false;" title="%s"><img src="%s" border="0" /> %V</a>', id, WEBDAV.DBA.dav_url (path), replace (WEBDAV.DBA.dav_lpath (path), '\'', '\\\''), WEBDAV.DBA.utf2wide (rowset[0]), self.image_src (WEBDAV.DBA.ui_image(path, rowset[1], rowset[4])), WEBDAV.DBA.utf2wide (WEBDAV.DBA.stringCut (rowset[0], self.chars))));
                                     }
                                     else
                                     {
-                                      declare path varchar;
-                                      declare permission varchar;
-
-                                      path := rowset[8];
-                                      permission := WEBDAV.DBA.permission (path);
                                       click := case when (permission <> '') then sprintf ('ondblclick="javascript: vspxUpdate(\'%V\');" ', WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))) else '' end
-                                            || sprintf ('onclick="javascript: vspxSelect(\'%V\'); return false;"', WEBDAV.DBA.utf2wide (replace (WEBDAV.DBA.dav_lpath (rowset[8]), '\'', '\\\'')));
-                                      http (sprintf ('<a %s href="%s" %s title="%V" class="WEBDAV_a"><img src="%s" border="0" /> %V</a>', id, WEBDAV.DBA.utf2wide (WEBDAV.DBA.dav_url (rowset[8])), click, WEBDAV.DBA.utf2wide (rowset[0]), self.image_src (WEBDAV.DBA.ui_image (rowset[8], rowset[1], rowset[4])), WEBDAV.DBA.utf2wide (WEBDAV.DBA.stringCut (rowset[0], self.chars))));
+                                            || sprintf ('onclick="javascript: vspxSelect(\'%V\'); return false;"', WEBDAV.DBA.utf2wide (replace (WEBDAV.DBA.dav_lpath (path), '\'', '\\\'')));
+                                      http (sprintf ('<a %s href="%s" %s title="%V" class="WEBDAV_a"><img src="%s" border="0" /> %V</a>', id, WEBDAV.DBA.utf2wide (WEBDAV.DBA.dav_url (path)), click, WEBDAV.DBA.utf2wide (rowset[0]), self.image_src (WEBDAV.DBA.ui_image (path, rowset[1], rowset[4])), WEBDAV.DBA.utf2wide (WEBDAV.DBA.stringCut (rowset[0], self.chars))));
                                     }
                                   ?>
                                   <v:template type="simple" enabled="-- case when (self.command_mode <> 3 or is_empty_or_null(WEBDAV.DBA.dc_get (self.search_dc, 'base', 'content'))) then 0 else 1 end">
                                     <br /><i><v:label value="--WEBDAV.DBA.content_excerpt((((control.vc_parent).vc_parent as vspx_row_template).te_rowset[8]), WEBDAV.DBA.dc_get(self.search_dc, 'base', 'content'))" format="%s" /></i>
                                   </v:template>
                                 </td>
-                                <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#2')) then 1 else 0 end;">
+                                <v:template type="simple" enabled="-- self.enabledColumn('column_#2')">
                                   <td nowrap="nowrap">
                                     <?vsp
                                       declare N integer;
                                       declare tags any;
 
                                       N := 0;
-                                      tags := WEBDAV.DBA.DAV_PROP_GET((control.vc_parent as vspx_row_template).te_rowset[8], ':virtpublictags');
-                                      if (isstring(tags))
+                                      tags := WEBDAV.DBA.DAV_PROP_GET ((control.vc_parent as vspx_row_template).te_rowset[8], ':virtpublictags', '');
+                                      if (isstring (tags))
                                       {
                                         tags := split_and_decode (tags, 0, '\0\0,');
                                         foreach (any tag in tags) do
@@ -4589,8 +4589,8 @@
                                           N := N + 1;
                                         }
                                       }
-                                      tags := coalesce(WEBDAV.DBA.DAV_PROP_GET((control.vc_parent as vspx_row_template).te_rowset[8], ':virtprivatetags'), '');
-                                      if (isstring(tags))
+                                      tags := WEBDAV.DBA.DAV_PROP_GET((control.vc_parent as vspx_row_template).te_rowset[8], ':virtprivatetags', '');
+                                      if (isstring (tags))
                                       {
                                         tags := split_and_decode (tags, 0, '\0\0,');
                                         foreach (any tag in tags) do
@@ -4604,7 +4604,7 @@
                                     ?>
                                   </td>
                                 </v:template>
-                                <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#3')) then 1 else 0 end;">
+                                <v:template type="simple" enabled="-- self.enabledColumn('column_#3')">
                                   <td class="number" nowrap="nowrap">
                                     <v:label>
                                       <v:before-data-bind>
@@ -4615,7 +4615,7 @@
                                     </v:label>
                                   </td>
                                 </v:template>
-                                <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#10')) then 1 else 0 end;">
+                                <v:template type="simple" enabled="-- self.enabledColumn('column_#10')">
                                   <td nowrap="nowrap">
                                     <v:label value="--left ((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[10], 10)" format="%s" />
                                     <font size="1">
@@ -4623,7 +4623,7 @@
                                     </font>
                                   </td>
                                 </v:template>
-                                <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#4')) then 1 else 0 end;">
+                                <v:template type="simple" enabled="-- self.enabledColumn('column_#4')">
                                   <td nowrap="nowrap">
                                     <v:label value="--left ((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[3], 10)" format="%s" />
                                     <font size="1">
@@ -4631,7 +4631,7 @@
                                     </font>
                                   </td>
                                 </v:template>
-                                <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#11')) then 1 else 0 end;">
+                                <v:template type="simple" enabled="-- self.enabledColumn('column_#11')">
                                   <td nowrap="nowrap">
                                     <v:label value="--left ((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[11], 10)" format="%s" />
                                     <font size="1">
@@ -4639,39 +4639,35 @@
                                     </font>
                                   </td>
                                 </v:template>
-                                <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#5')) then 1 else 0 end;">
+                                <v:template type="simple" enabled="-- self.enabledColumn('column_#5')">
                                   <td nowrap="nowrap">
                                     <v:label value="--either (equ ((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[1], 'R'), (((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[4], ' ')" />
                                   </td>
                                 </v:template>
-                                <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#6')) then 1 else 0 end;">
+                                <v:template type="simple" enabled="-- self.enabledColumn('column_#6')">
                                   <td nowrap="nowrap">
                                     <v:label value="--(((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[9]" />
                                   </td>
                                 </v:template>
-                                <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#7')) then 1 else 0 end;">
+                                <v:template type="simple" enabled="-- self.enabledColumn('column_#7')">
                                   <td nowrap="nowrap">
                                     <v:label value="--(((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[5]" />
                                   </td>
                                 </v:template>
-                                <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#8')) then 1 else 0 end;">
+                                <v:template type="simple" enabled="-- self.enabledColumn('column_#8')">
                                   <td nowrap="nowrap">
                                     <v:label value="--(((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[6]" />
                                   </td>
                                 </v:template>
-                                <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#9')) then 1 else 0 end;">
+                                <v:template type="simple" enabled="-- self.enabledColumn('column_#9')">
                                   <td nowrap="nowrap">
                                     <v:label value="--(((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[7]" />
                                   </td>
                                 </v:template>
                                 <td class="action">
                                   <?vsp
-                                    declare path varchar;
                                     declare id any;
-                                    declare permission varchar;
 
-                                    path := rowset[8];
-                                    permission := WEBDAV.DBA.permission (path);
                                     id := DB.DBA.DAV_SEARCH_ID (path, rowset[1]);
                                     if (permission <> '')
                                       http (sprintf( ' <img class="pointer" border="0" alt="Update Properties" title="Update Properties"" src="%s" onclick="javascript: vspxUpdate(\'%V\');" />', self.image_src ('dav/image/dav/item_prop.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
