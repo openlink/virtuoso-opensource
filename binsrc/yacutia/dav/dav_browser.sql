@@ -2492,7 +2492,7 @@ create procedure WEBDAV.DBA.settings_column (
   inout settings any,
   in N integer)
 {
-return cast (get_keyword ('column_#' || cast (N as varchar), settings, case when (N = 10) or (N = 11) then '0' else '1' end) as integer);
+  return cast (get_keyword ('column_#' || cast (N as varchar), settings, case when (N = 10) or (N = 11) then '0' else '1' end) as integer);
 }
 ;
 
@@ -3218,11 +3218,13 @@ create procedure WEBDAV.DBA.DAV_INIT_INT (
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.DAV_INIT_RESOURCE (
-  in path varchar)
+  in path varchar,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare item any;
 
-  item := WEBDAV.DBA.DAV_INIT_INT (path);
+  item := WEBDAV.DBA.DAV_INIT_INT (path, auth_name, auth_pwd);
   aset(item, 1, 'R');
   return item;
 }
@@ -3231,11 +3233,13 @@ create procedure WEBDAV.DBA.DAV_INIT_RESOURCE (
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.DAV_INIT_COLLECTION (
-  in path varchar)
+  in path varchar,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
   declare item any;
 
-  item := WEBDAV.DBA.DAV_INIT_INT (path);
+  item := WEBDAV.DBA.DAV_INIT_INT (path, auth_name, auth_pwd);
   aset(item, 1, 'C');
   aset(item, 9, 'dav/unix-directory');
   return item;
@@ -3594,68 +3598,44 @@ create procedure WEBDAV.DBA.DAV_DIR_FILTER (
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.ResFilter_CONFIGURE (
-  in path varchar := '/DAV/',
-  in search_params varchar)
+  in id integer,
+  in params varchar,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
-  declare search_path varchar;
+  declare path varchar;
   declare filter any;
+  declare uid integer;
+  declare uname, gname varchar;
 
-  search_path := WEBDAV.DBA.real_path (WEBDAV.DBA.dc_get(search_params, 'base', 'path', '/DAV/'));
-  filter := WEBDAV.DBA.dc_filter (search_params);
-  return WEBDAV.DBA.ResFilter_CONFIGURE_INT(path, search_path, filter);
-}
-;
+  path := WEBDAV.DBA.real_path (WEBDAV.DBA.dc_get (params, 'base', 'path', '/DAV/'));
+  filter := WEBDAV.DBA.dc_filter (params);
 
--------------------------------------------------------------------------------
---
-create procedure WEBDAV.DBA.ResFilter_CONFIGURE_INT (
-  in path varchar,
-  in search_path varchar,
-  in filter any)
-{
-  declare cid integer;
-
-  cid := DB.DBA.DAV_SEARCH_ID (path, 'C');
-  if (WEBDAV.DBA.DAV_ERROR (cid))
-    return cid;
-  return DB.DBA.ResFilter_CONFIGURE (cid, search_path, filter);
+  WEBDAV.DBA.DAV_API_PARAMS (null, null, uname, gname, auth_name, auth_pwd);
+  uid := WEBDAV.DBA.user_id (auth_name);
+  return DB.DBA.ResFilter_CONFIGURE (id, params, path, filter, auth_name, auth_pwd, uid);
 }
 ;
 
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.CatFilter_CONFIGURE (
-  in path varchar := '/DAV/',
-  in search_params varchar)
-{
-  declare search_path varchar;
-  declare filter any;
-
-  search_path := WEBDAV.DBA.real_path (WEBDAV.DBA.dc_get (search_params, 'base', 'path', '/DAV/'));
-  filter := WEBDAV.DBA.dc_filter (search_params);
-  return WEBDAV.DBA.CatFilter_CONFIGURE_INT (path, search_path, filter);
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure WEBDAV.DBA.CatFilter_CONFIGURE_INT (
-  in path varchar,
-  in search_path varchar,
-  in filter any,
+  in id integer,
+  in params varchar,
   in auth_name varchar := null,
   in auth_pwd varchar := null)
 {
-  declare cid, uid integer;
+  declare path varchar;
+  declare filter any;
+  declare uid integer;
   declare uname, gname varchar;
 
-  cid := DB.DBA.DAV_SEARCH_ID (path, 'C');
-  if (WEBDAV.DBA.DAV_ERROR (cid))
-    return cid;
+  path := WEBDAV.DBA.real_path (WEBDAV.DBA.dc_get (params, 'base', 'path', '/DAV/'));
+  filter := WEBDAV.DBA.dc_filter (params);
 
   WEBDAV.DBA.DAV_API_PARAMS (null, null, uname, gname, auth_name, auth_pwd);
   uid := WEBDAV.DBA.user_id (auth_name);
-  return DB.DBA.CatFilter_CONFIGURE (cid, search_path, filter, auth_name, auth_pwd, uid);
+  return DB.DBA.CatFilter_CONFIGURE (id, params, path, filter, auth_name, auth_pwd, uid);
 }
 ;
 
@@ -5393,65 +5373,55 @@ create procedure WEBDAV.DBA.metaCartridges_get ()
 
 -------------------------------------------------------------------------------
 --
-create procedure WEBDAV.DBA.graph_private_remove (
-  in path varchar,
-  in what varchar,
-  in graph varchar)
-{
-  if (not WEBDAV.DBA.VAD_CHECK ('Framework'))
-    return;
-
-  -- remove from private graphs
-  if (not DB.DBA.is_empty_or_null (graph))
-  {
-    SIOC..private_graph_remove (graph);
-    DB.DBA.wa_private_graph_remove (graph, 'WebDAV', path, what);
-  }
-}
-;
-
--------------------------------------------------------------------------------
---
-create procedure WEBDAV.DBA.graph_private_add (
-  in path varchar,
-  in what varchar,
-  in permissions varchar,
-  in graph varchar)
-{
-  if (not WEBDAV.DBA.VAD_CHECK ('Framework'))
-    return;
-
-  if (not DB.DBA.is_empty_or_null (graph))
-  {
-    if (permissions[6] = ascii('0'))
-    {
-      -- add to private graphs
-      SIOC..private_init ();
-      SIOC..private_graph_add (graph);
-      DB.DBA.wa_private_graph_add (graph, 'WebDAV', path, what);
-    }
-    else
-    {
-      -- remove from private graphs
-      SIOC..private_graph_remove (graph);
-      DB.DBA.wa_private_graph_remove (graph, 'WebDAV', path, what);
-    }
-  }
-}
-;
-
--------------------------------------------------------------------------------
---
 create procedure WEBDAV.DBA.graph_update (
-  in path varchar,
+  in id any,
   in detType varchar,
   in oldGraph varchar,
   in newGraph varchar)
 {
+  declare path varchar;
+  declare permissions varchar;
   declare aq any;
 
-  aq := async_queue (1);
-  aq_request (aq, 'WEBDAV.DBA.graph_update_aq', vector (path, detType, oldGraph, newGraph));
+  path := DB.DBA.DAV_SEARCH_PATH (id, 'C');
+  if (WEBDAV.DBA.DAV_ERROR (path))
+    return;
+
+  if (not WEBDAV.DBA.VAD_CHECK ('Framework'))
+    return;
+
+  -- old graph
+  if (not DB.DBA.is_empty_or_null (oldGraph))
+  {
+    SIOC..private_graph_remove (oldGraph);
+    DB.DBA.wa_private_graph_remove (oldGraph, 'WebDAV', path, 'C');
+  }
+
+  -- new graph
+  if (not DB.DBA.is_empty_or_null (newGraph))
+  {
+    permissions := DB.DBA.DAV_PROP_GET_INT (id, 'C', ':virtpermissions', 0);
+    if (permissions[6] = ascii('0'))
+    {
+      -- add to private graphs
+      SIOC..private_init ();
+      SIOC..private_graph_add (newGraph);
+      DB.DBA.wa_private_graph_add (newGraph, 'WebDAV', path, 'C');
+    }
+    else
+    {
+      -- remove from private graphs
+      SIOC..private_graph_remove (newGraph);
+      DB.DBA.wa_private_graph_remove (newGraph, 'WebDAV', path, 'C');
+    }
+  }
+
+  -- update graph if needed
+  if (oldGraph <> newGraph)
+  {
+    aq := async_queue (1);
+    aq_request (aq, 'WEBDAV.DBA.graph_update_aq', vector (path, cast (detType as varchar), oldGraph, newGraph));
+  }
 }
 ;
 
