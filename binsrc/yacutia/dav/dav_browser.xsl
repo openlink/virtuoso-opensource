@@ -471,12 +471,12 @@
               }
               else
               {
-                if (self.dir_order = columnName)
-                {
-                  self.dir_direction := either (equ (self.dir_direction, 'asc'), 'desc', 'asc');
-                } else {
-                  self.dir_direction := 'asc';
-                }
+              if (self.dir_order = columnName)
+              {
+                self.dir_direction := either (equ (self.dir_direction, 'asc'), 'desc', 'asc');
+              } else {
+                self.dir_direction := 'asc';
+              }
               }
               if (not self.enabledColumn(columnName))
                 columnName := 'column_#1';
@@ -1834,6 +1834,9 @@
               ]]>
             </v:before-data-bind>
             <v:text name="formRight" xhtml_id="formRight" type="hidden" value="--self.dav_enable" />
+            <vm:if test="self.command_mode = 10">
+              <v:text name="item_path" xhtml_id="item_path" type="hidden" value="--WEBDAV.DBA.utf2wide (self.source)" />
+            </vm:if>
             <div class="WEBDAV_formHeader">
               <v:label format="%V">:
                 <v:before-data-bind>
@@ -2010,15 +2013,11 @@
                         </th>
                         <td>
                           <div id="dav_plain" style="display: <?V case when WEBDAV.DBA.VAD_CHECK ('Framework') and get_keyword ('dav_mime', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'mimeType')) = 'text/html' then 'none' else '' end ?>;">
-                            <?vsp
-                              http (sprintf ('<textarea id="dav_content_plain" name="dav_content_plain" style="width: 100%%; height: 170px">%V</textarea>', get_keyword ('dav_content_plain', self.vc_page.vc_event.ve_params, '')));
-                            ?>
+                            <textarea id="dav_content_plain" name="dav_content_plain" style="width: 100%; height: 170px"><?vsp http (get_keyword ('dav_content_plain', self.vc_page.vc_event.ve_params, '')); ?></textarea>
                           </div>
                           <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
                             <div id="dav_html" style="display: <?V case when get_keyword ('dav_mime', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'mimeType')) = 'text/html' then '' else 'none' end ?>;">
-                              <?vsp
-                                http (sprintf ('<textarea id="dav_content_html" name="dav_content_html" style="width: 400px; height: 170px;">%V</textarea>', get_keyword ('dav_content_html', self.vc_page.vc_event.ve_params, '')));
-                              ?>
+                              <textarea id="dav_content_html" name="dav_content_html" style="width: 400px; height: 170px;"><?vsp http (get_keyword ('dav_content_html', self.vc_page.vc_event.ve_params, '')); ?></textarea>
                               <![CDATA[
                                 <script type="text/javascript" src="/ods/ckeditor/ckeditor.js"></script>
                                 <script type="text/javascript">
@@ -2885,19 +2884,47 @@
                         }
                         else if (dav_detType = 'IMAP')
                         {
-                          tmp := get_keyword ('dav_IMAP_server', params);
-                          WEBDAV.DBA.test (tmp, vector ('name', 'IMAP Server', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
-                          tmp := get_keyword ('dav_IMAP_port', params);
-                          WEBDAV.DBA.test (tmp, vector ('name', 'IMAP Port', 'class', 'integer', 'minLength', 1, 'maxLength', 4));
-                          tmp := get_keyword ('dav_IMAP_user', params);
-                          WEBDAV.DBA.test (tmp, vector ('name', 'IMAP User', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+                          WEBDAV.DBA.test (get_keyword ('dav_IMAP_server', params), vector ('name', 'IMAP Server', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+                          WEBDAV.DBA.test (get_keyword ('dav_IMAP_port', params), vector ('name', 'IMAP Port', 'class', 'integer', 'minLength', 1, 'maxLength', 4));
+                          WEBDAV.DBA.test (get_keyword ('dav_IMAP_user', params), vector ('name', 'IMAP User', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+                          tmp := get_keyword ('dav_IMAP_password', params, '');
+                          if ((tmp = '**********') and (self.command_mode = 10))
+                            tmp := DB.DBA.IMAP__paramGet (self.dav_id, 'C', 'password', 0);
+
                           tmp := DB.DBA.IMAP__verify (
                             get_keyword ('dav_IMAP_connection', params),
                             get_keyword ('dav_IMAP_server', params),
                             get_keyword ('dav_IMAP_port', params),
                             get_keyword ('dav_IMAP_user', params),
-                            get_keyword ('dav_IMAP_password', params)
+                            tmp
                           );
+                          if (tmp <> '')
+                            signal('TEST', tmp);
+                        }
+                        else if (dav_detType = 'WebDAV')
+                        {
+                          WEBDAV.DBA.test (get_keyword ('dav_WebDAV_path', params), vector ('name', 'WebDAV Path', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+                          if (get_keyword ('dav_WebDAV_authenticationType', params, 'Digest') = 'Digest')
+                          {
+                            WEBDAV.DBA.test (get_keyword ('dav_WebDAV_user', params), vector ('name', 'WebDAV user', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+                            tmp := get_keyword ('dav_WebDAV_password', params, '');
+                            if ((tmp = '**********') and (self.command_mode = 10))
+                              tmp := DB.DBA.WebDAV__paramGet (self.dav_id, 'C', 'password', 0, 1, 1);
+
+                            tmp := DB.DBA.WebDAV__verify (
+                              get_keyword ('dav_WebDAV_path', params),
+                              vector ('authenticationType', 'Digest', 'user', get_keyword ('dav_WebDAV_user', params), 'password', tmp)
+                            );
+                          }
+                          else
+                          {
+                            WEBDAV.DBA.test (get_keyword ('dav_WebDAV_key', params), vector ('name', 'WebDAV Access Key', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+                            tmp := DB.DBA.WebDAV__verify (
+                              get_keyword ('dav_WebDAV_path', params),
+                              vector ('authenticationType', 'WebID', 'key', get_keyword ('dav_WebDAV_key', params), 'keyOwner', WEBDAV.DBA.account_name (self.account_id))
+                            );
+                            commit work;
+                          }
                           if (tmp <> '')
                             signal('TEST', tmp);
                         }
@@ -3238,7 +3265,8 @@
                             WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-server', get_keyword ('dav_IMAP_server', params));
                             WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-port', get_keyword ('dav_IMAP_port', params));
                             WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-user', get_keyword ('dav_IMAP_user', params));
-                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-password', get_keyword ('dav_IMAP_password', params));
+                            if (get_keyword ('dav_IMAP_password', params, '') <> '**********')
+                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-password', get_keyword ('dav_IMAP_password', params));
                             WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-folder', trim (trim (get_keyword ('dav_IMAP_folder', params), '.'), '/'));
                           }
                           else if (dav_detType = 'PropFilter')
@@ -3685,8 +3713,8 @@
                           {
                             retValue := WEBDAV.DBA.DAV_MOVE (itemPath, targetPath, self.overwriteFlag);
                             self.retItems (itemList, itemPath, retValue, 'Move');
-                          }
                         }
+                      }
                       }
                     }
                     self.items := itemList;
@@ -3727,242 +3755,242 @@
             </div>
             <?vsp self.showSelected(); ?>
             <v:template name="template_71" type="simple" enabled="-- case when self.v_step <> 'error' then 1 else 0 end">
-              <div id="c1">
-                <div class="tabs">
-                  <vm:tabCaption tab="1" tabs="2" caption="Main" />
-                  <vm:tabCaption tab="2" tabs="2" caption="Sharing" />
+            <div id="c1">
+              <div class="tabs">
+                <vm:tabCaption tab="1" tabs="2" caption="Main" />
+                <vm:tabCaption tab="2" tabs="2" caption="Sharing" />
+              </div>
+              <div class="contents">
+                <div id="1" class="tabContent">
+                  <table class="WEBDAV_formBody WEBDAV_noBorder" cellspacing="0">
+                    <tr>
+                      <th>
+                        <vm:label for="prop_mime" value="--'Content Type'" />
+                      </th>
+                      <td>
+                        <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
+                          <v:text name="prop_mime" xhtml_id="prop_mime" value="--'Do not change'" format="%s" xhtml_class="field-short" />&amp;nbsp;
+                          <input type="button" value="Select" onclick="javascript: windowShow('<?V WEBDAV.DBA.url_fix ('/ods/mimes_select.vspx?params=prop_mime:s1;') ?>');" class="button" />
+                        </vm:if>
+                        <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
+                          <v:data-list name="prop_mime2" xhtml_id="prop_mime2" sql="select 'Do not change' as T_TYPE from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select distinct T_TYPE from WS.WS.SYS_DAV_RES_TYPES order by T_TYPE" key-column="T_TYPE" value-column="T_TYPE" xhtml_class="field-short">
+                            <v:before-data-bind>
+                              <v:script>
+                                <![CDATA[
+                                  control.ufl_value := get_keyword ('prop_mime2', self.vc_page.vc_event.ve_params, 'Do not change');
+                                ]]>
+                              </v:script>
+                            </v:before-data-bind>
+                          </v:data-list>
+                        </vm:if>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>
+                        <vm:label for="prop_owner" value="--'Owner'" />
+                      </th>
+                      <td>
+                        <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
+                          <v:text name="prop_owner" xhtml_id="prop_owner" value="--'Do not change'" format="%s" xhtml_class="field-short" />&amp;nbsp;
+                          <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u_set&amp;params=prop_owner:s1;&nrows=<?V WEBDAV.DBA.settings_rows (self.settings) ?>')" class="button" />
+                        </vm:if>
+                        <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
+                          <v:data-list name="prop_owner2" xhtml_id="prop_owner2" sql="select -1 as U_ID, 'Do not change' as U_NAME from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select TOP 100 U_ID, U_NAME from WS.WS.SYS_DAV_USER" key-column="U_NAME" value-column="U_NAME" xhtml_class="field-short" instantiate="--case when WEBDAV.DBA.VAD_CHECK ('Framework') then 0 else 1 end">
+                            <v:before-data-bind>
+                              <v:script>
+                                <![CDATA[
+                                  control.ufl_value := get_keyword ('prop_owner2', self.vc_page.vc_event.ve_params, 'Do not change');
+                                ]]>
+                              </v:script>
+                            </v:before-data-bind>
+                          </v:data-list>
+                        </vm:if>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>
+                        <vm:label for="prop_group" value="--'Group'" />
+                      </th>
+                      <td>
+                        <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
+                          <v:text name="prop_group" xhtml_id="prop_group" value="--'Do not change'" format="%s" xhtml_class="field-short" />&amp;nbsp;
+                          <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=g_set&amp;params=prop_group:s1;')" class="button" />
+                        </vm:if>
+                        <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
+                          <v:data-list name="prop_group2" xhtml_id="prop_group2" sql="select -1 as G_ID, 'Do not change' as G_NAME from WS.WS.SYS_DAV_GROUP where G_NAME = 'administrators' union all select G_ID, G_NAME from WS.WS.SYS_DAV_GROUP" key-column="G_NAME" value-column="G_NAME" xhtml_class="field-short">
+                            <v:before-data-bind>
+                              <v:script>
+                                <![CDATA[
+                                  control.ufl_value := get_keyword ('prop_group2', self.vc_page.vc_event.ve_params, 'Do not change');
+                                ]]>
+                              </v:script>
+                            </v:before-data-bind>
+                          </v:data-list>
+                        </vm:if>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th valign="top">
+                        <vm:label value="--'Permissions'" />
+                      </th>
+                      <td>
+                        <table class="WEBDAV_permissionList" cellspacing="0">
+                          <vm:permissions-header1 text="Add"/>
+                          <vm:permissions-header2 />
+                          <tr>
+                            <td>Add</td>
+                            <?vsp
+                              declare i integer;
+                              declare S, D varchar;
+                              for (i := 0; i < 9; i := i + 1)
+                              {
+                                S := case when (i = 8) then 'class="right"' else '' end;
+                                D := case when (mod (i+1, 3) = 0) and not WEBDAV.DBA.check_admin (self.account_id) then 'disabled="disabled"' else '' end;
+                                http (sprintf ('<td %s><input type="checkbox" name="prop_add_perm%i" onclick="chkbx(this,prop_rem_perm%i);" %s /></td>', S, i, i, D));
+                              }
+                            ?>
+                          </tr>
+                          <tr>
+                            <td class="bottom">Remove</td>
+                            <?vsp
+                              for (i := 0; i < 9; i := i + 1)
+                              {
+                                S := case when (i = 8) then 'class="right bottom"' else 'class="bottom"' end;
+                                D := case when (mod (i+1, 3) = 0) and not WEBDAV.DBA.check_admin (self.account_id) then 'disabled="disabled"' else '' end;
+                                http (sprintf ('<td %s><input type="checkbox" name="prop_rem_perm%i" onclick="chkbx(this,prop_add_perm%i);" %s /></td>', S, i, i, D));
+                              }
+                            ?>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>
+                        <vm:label for="prop_index" value="--'Full Text Search'" />
+                      </th>
+                      <td>
+                        <v:select-list name="prop_index" xhtml_id="prop_index" >
+                          <v:item name="Do not change" value="*" />
+                          <v:item name="Off" value="N" />
+                          <v:item name="Direct members" value="T" />
+                          <v:item name="Recursively" value="R" />
+                        </v:select-list>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th>
+                        <vm:label for="prop_metagrab" value="--'Metadata Retrieval'" />
+                      </th>
+                      <td>
+                        <v:select-list name="prop_metagrab" xhtml_id="prop_metagrab" >
+                          <v:item name="Do not change" value="*" />
+                          <v:item name="Off" value="N" />
+                          <v:item name="Direct members" value="M" />
+                          <v:item name="Recursively" value="R" />
+                        </v:select-list>
+                      </td>
+                    </tr>
+                    <tr>
+                      <th />
+                      <td valign="center">
+                        <input type="checkbox" name="prop_recursive" id="prop_recursive" title="Recursive" />
+                        <vm:label for="prop_recursive" value="--'Recursive'" />
+                      </td>
+                    </tr>
+                    <tr>
+                      <th valign="top">WebDAV Properties</th>
+                      <td>
+                        <table>
+                          <tr>
+                            <td width="600px">
+                              <table id="c_tbl" class="WEBDAV_formList" cellspacing="0">
+                                <tr>
+                                  <th width="50%">Property</th>
+                                  <th width="50%">Value</th>
+                                  <th>Action</th>
+                                  <th>&amp;nbsp;</th>
+                                </tr>
+                                <tr id="c_tr_no"><td colspan="4"><b>No Properties</b></td></tr>
+                              </table>
+                            </td>
+                            <td valign="top" nowrap="nowrap">
+                              <span class="button pointer">
+                                <xsl:attribute name="onclick">javascript: TBL.createRow('c', null, {fld_1: {mode: 40, className: '_validate_', onblur: function(){validateField(this);}}, fld_2: {mode: 0}, fld_3: {mode: 41}});</xsl:attribute>
+                              <img src="<?V self.image_src ('dav/image/add_16.png') ?>" class="button" alt="Add Property" title="Add Property" /> Add</span><br /><br />
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
                 </div>
-                <div class="contents">
-                  <div id="1" class="tabContent">
-                    <table class="WEBDAV_formBody WEBDAV_noBorder" cellspacing="0">
+
+                <div id="2" class="tabContent">
+                  <fieldset>
+                    <legend><b>ODS users/groups</b></legend>
+                    <table>
                       <tr>
-                        <th>
-                          <vm:label for="prop_mime" value="--'Content Type'" />
-                        </th>
-                        <td>
-                          <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
-                            <v:text name="prop_mime" xhtml_id="prop_mime" value="--'Do not change'" format="%s" xhtml_class="field-short" />&amp;nbsp;
-                            <input type="button" value="Select" onclick="javascript: windowShow('<?V WEBDAV.DBA.url_fix ('/ods/mimes_select.vspx?params=prop_mime:s1;') ?>');" class="button" />
-                          </vm:if>
-                          <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
-                            <v:data-list name="prop_mime2" xhtml_id="prop_mime2" sql="select 'Do not change' as T_TYPE from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select distinct T_TYPE from WS.WS.SYS_DAV_RES_TYPES order by T_TYPE" key-column="T_TYPE" value-column="T_TYPE" xhtml_class="field-short">
-                              <v:before-data-bind>
-                                <v:script>
-                                  <![CDATA[
-                                    control.ufl_value := get_keyword ('prop_mime2', self.vc_page.vc_event.ve_params, 'Do not change');
-                                  ]]>
-                                </v:script>
-                              </v:before-data-bind>
-                            </v:data-list>
-                          </vm:if>
+                        <td width="100%">
+                          <table id="f_tbl" class="WEBDAV_formList" style="width: 100%;"  cellspacing="0">
+                            <thead>
+                              <tr>
+                                <th nowrap="nowrap">User/Group</th>
+                                <th>Inheritance</th>
+                                <th width="1%" align="center" nowrap="nowrap">Allow<br />(R)ead, (W)rite, e(X)ecute</th>
+                                <th width="1%" align="center" nowrap="nowrap">Deny<br />(R)ead, (W)rite, e(X)ecute</th>
+                                <th width="1%">Action</th>
+                              </tr>
+                            </thead>
+                            <tbody id="f_tbody">
+                              <tr id="f_tr_no"><td colspan="5"><b>No Security Properties</b></td></tr>
+                            </tbody>
+                        </table>
                         </td>
-                      </tr>
-                      <tr>
-                        <th>
-                          <vm:label for="prop_owner" value="--'Owner'" />
-                        </th>
-                        <td>
-                          <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
-                            <v:text name="prop_owner" xhtml_id="prop_owner" value="--'Do not change'" format="%s" xhtml_class="field-short" />&amp;nbsp;
-                            <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u_set&amp;params=prop_owner:s1;&nrows=<?V WEBDAV.DBA.settings_rows (self.settings) ?>')" class="button" />
-                          </vm:if>
-                          <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
-                            <v:data-list name="prop_owner2" xhtml_id="prop_owner2" sql="select -1 as U_ID, 'Do not change' as U_NAME from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select TOP 100 U_ID, U_NAME from WS.WS.SYS_DAV_USER" key-column="U_NAME" value-column="U_NAME" xhtml_class="field-short" instantiate="--case when WEBDAV.DBA.VAD_CHECK ('Framework') then 0 else 1 end">
-                              <v:before-data-bind>
-                                <v:script>
-                                  <![CDATA[
-                                    control.ufl_value := get_keyword ('prop_owner2', self.vc_page.vc_event.ve_params, 'Do not change');
-                                  ]]>
-                                </v:script>
-                              </v:before-data-bind>
-                            </v:data-list>
-                          </vm:if>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>
-                          <vm:label for="prop_group" value="--'Group'" />
-                        </th>
-                        <td>
-                          <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
-                            <v:text name="prop_group" xhtml_id="prop_group" value="--'Do not change'" format="%s" xhtml_class="field-short" />&amp;nbsp;
-                            <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=g_set&amp;params=prop_group:s1;')" class="button" />
-                          </vm:if>
-                          <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
-                            <v:data-list name="prop_group2" xhtml_id="prop_group2" sql="select -1 as G_ID, 'Do not change' as G_NAME from WS.WS.SYS_DAV_GROUP where G_NAME = 'administrators' union all select G_ID, G_NAME from WS.WS.SYS_DAV_GROUP" key-column="G_NAME" value-column="G_NAME" xhtml_class="field-short">
-                              <v:before-data-bind>
-                                <v:script>
-                                  <![CDATA[
-                                    control.ufl_value := get_keyword ('prop_group2', self.vc_page.vc_event.ve_params, 'Do not change');
-                                  ]]>
-                                </v:script>
-                              </v:before-data-bind>
-                            </v:data-list>
-                          </vm:if>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th valign="top">
-                          <vm:label value="--'Permissions'" />
-                        </th>
-                        <td>
-                          <table class="WEBDAV_permissionList" cellspacing="0">
-                            <vm:permissions-header1 text="Add"/>
-                            <vm:permissions-header2 />
-                            <tr>
-                              <td>Add</td>
-                              <?vsp
-                                declare i integer;
-                                declare S, D varchar;
-                                for (i := 0; i < 9; i := i + 1)
-                                {
-                                  S := case when (i = 8) then 'class="right"' else '' end;
-                                  D := case when (mod (i+1, 3) = 0) and not WEBDAV.DBA.check_admin (self.account_id) then 'disabled="disabled"' else '' end;
-                                  http (sprintf ('<td %s><input type="checkbox" name="prop_add_perm%i" onclick="chkbx(this,prop_rem_perm%i);" %s /></td>', S, i, i, D));
-                                }
-                              ?>
-                            </tr>
-                            <tr>
-                              <td class="bottom">Remove</td>
-                              <?vsp
-                                for (i := 0; i < 9; i := i + 1)
-                                {
-                                  S := case when (i = 8) then 'class="right bottom"' else 'class="bottom"' end;
-                                  D := case when (mod (i+1, 3) = 0) and not WEBDAV.DBA.check_admin (self.account_id) then 'disabled="disabled"' else '' end;
-                                  http (sprintf ('<td %s><input type="checkbox" name="prop_rem_perm%i" onclick="chkbx(this,prop_add_perm%i);" %s /></td>', S, i, i, D));
-                                }
-                              ?>
-                            </tr>
-                          </table>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>
-                          <vm:label for="prop_index" value="--'Full Text Search'" />
-                        </th>
-                        <td>
-                          <v:select-list name="prop_index" xhtml_id="prop_index" >
-                            <v:item name="Do not change" value="*" />
-                            <v:item name="Off" value="N" />
-                            <v:item name="Direct members" value="T" />
-                            <v:item name="Recursively" value="R" />
-                          </v:select-list>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th>
-                          <vm:label for="prop_metagrab" value="--'Metadata Retrieval'" />
-                        </th>
-                        <td>
-                          <v:select-list name="prop_metagrab" xhtml_id="prop_metagrab" >
-                            <v:item name="Do not change" value="*" />
-                            <v:item name="Off" value="N" />
-                            <v:item name="Direct members" value="M" />
-                            <v:item name="Recursively" value="R" />
-                          </v:select-list>
-                        </td>
-                      </tr>
-                      <tr>
-                        <th />
-                        <td valign="center">
-                          <input type="checkbox" name="prop_recursive" id="prop_recursive" title="Recursive" />
-                          <vm:label for="prop_recursive" value="--'Recursive'" />
-                        </td>
-                      </tr>
-                      <tr>
-                        <th valign="top">WebDAV Properties</th>
-                        <td>
-                          <table>
-                            <tr>
-                              <td width="600px">
-                                <table id="c_tbl" class="WEBDAV_formList" cellspacing="0">
-                                  <tr>
-                                    <th width="50%">Property</th>
-                                    <th width="50%">Value</th>
-                                    <th>Action</th>
-                                    <th>&amp;nbsp;</th>
-                                  </tr>
-                                  <tr id="c_tr_no"><td colspan="4"><b>No Properties</b></td></tr>
-                                </table>
-                              </td>
-                              <td valign="top" nowrap="nowrap">
-                                <span class="button pointer">
-                                  <xsl:attribute name="onclick">javascript: TBL.createRow('c', null, {fld_1: {mode: 40, className: '_validate_', onblur: function(){validateField(this);}}, fld_2: {mode: 0}, fld_3: {mode: 41}});</xsl:attribute>
-                                <img src="<?V self.image_src ('dav/image/add_16.png') ?>" class="button" alt="Add Property" title="Add Property" /> Add</span><br /><br />
-                              </td>
-                            </tr>
-                          </table>
+                        <td valign="top" nowrap="nowrap">
+                          <span class="button pointer">
+                            <xsl:attribute name="onclick">javascript: TBL.createRow('f', null, {fld_1: {mode: 51, formMode: 'u', tdCssText: 'white-space: nowrap;', className: '_validate_'}, fld_2: {mode: 43, value: 1}, fld_3: {mode: 42, value: [1, 1, 0], suffix: '_grant', onclick: function(){TBL.clickCell42(this);}, tdCssText: 'width: 1%; text-align: center;'}, fld_4: {mode: 42,  suffix: '_deny', onclick: function(){TBL.clickCell42(this);}, tdCssText: 'width: 1%; text-align: center;'}});</xsl:attribute>
+                          <img src="<?V self.image_src ('dav/image/add_16.png') ?>" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
                         </td>
                       </tr>
                     </table>
-                  </div>
-
-                  <div id="2" class="tabContent">
-                    <fieldset>
-                      <legend><b>ODS users/groups</b></legend>
-                      <table>
-                        <tr>
-                          <td width="100%">
-                            <table id="f_tbl" class="WEBDAV_formList" style="width: 100%;"  cellspacing="0">
-                              <thead>
-                                <tr>
-                                  <th nowrap="nowrap">User/Group</th>
-                                  <th>Inheritance</th>
-                                  <th width="1%" align="center" nowrap="nowrap">Allow<br />(R)ead, (W)rite, e(X)ecute</th>
-                                  <th width="1%" align="center" nowrap="nowrap">Deny<br />(R)ead, (W)rite, e(X)ecute</th>
-                                  <th width="1%">Action</th>
-                                </tr>
-                              </thead>
-                              <tbody id="f_tbody">
-                                <tr id="f_tr_no"><td colspan="5"><b>No Security Properties</b></td></tr>
-                              </tbody>
+                  </fieldset>
+                  <fieldset>
+                    <legend><b>WebID users</b></legend>
+                    <table>
+                      <tr>
+                        <td width="100%">
+                          <table id="s_tbl" class="WEBDAV_formList" style="width: 100%;"  cellspacing="0">
+                            <thead>
+                              <tr>
+                                <th width="1%" align="center" nowrap="nowrap">Acces Type</th>
+                                <th nowrap="nowrap">WebID</th>
+                                <th width="1%" align="center" nowrap="nowrap">Allow<br />(R)ead, (W)rite, e(X)ecute</th>
+                                <th width="1%" >Action</th>
+                              </tr>
+                            </thead>
+                            <tbody id="s_tbody" >
+                              <tr id="s_tr_no"><td colspan="4"><b>No Security Properties</b></td></tr>
+                            </tbody>
                           </table>
-                          </td>
-                          <td valign="top" nowrap="nowrap">
+                        </td>
+                        <td valign="top" nowrap="nowrap">
+                          <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework') and (sys_stat('st_has_vdb') = 1)">
                             <span class="button pointer">
-                              <xsl:attribute name="onclick">javascript: TBL.createRow('f', null, {fld_1: {mode: 51, formMode: 'u', tdCssText: 'white-space: nowrap;', className: '_validate_'}, fld_2: {mode: 43, value: 1}, fld_3: {mode: 42, value: [1, 1, 0], suffix: '_grant', onclick: function(){TBL.clickCell42(this);}, tdCssText: 'width: 1%; text-align: center;'}, fld_4: {mode: 42,  suffix: '_deny', onclick: function(){TBL.clickCell42(this);}, tdCssText: 'width: 1%; text-align: center;'}});</xsl:attribute>
+                              <xsl:attribute name="onclick">javascript: TBL.createRow('s', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', tdCssText: 'white-space: nowrap;', className: '_validate_ _uri_'}, fld_3: {mode: 52, value: [1, 0, 0], execute: true, tdCssText: 'width: 1%; text-align: center;'}});</xsl:attribute>
                             <img src="<?V self.image_src ('dav/image/add_16.png') ?>" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
-                          </td>
-                        </tr>
-                      </table>
-                    </fieldset>
-                    <fieldset>
-                      <legend><b>WebID users</b></legend>
-                      <table>
-                        <tr>
-                          <td width="100%">
-                            <table id="s_tbl" class="WEBDAV_formList" style="width: 100%;"  cellspacing="0">
-                              <thead>
-                                <tr>
-                                  <th width="1%" align="center" nowrap="nowrap">Acces Type</th>
-                                  <th nowrap="nowrap">WebID</th>
-                                  <th width="1%" align="center" nowrap="nowrap">Allow<br />(R)ead, (W)rite, e(X)ecute</th>
-                                  <th width="1%" >Action</th>
-                                </tr>
-                              </thead>
-                              <tbody id="s_tbody" >
-                                <tr id="s_tr_no"><td colspan="4"><b>No Security Properties</b></td></tr>
-                              </tbody>
-                            </table>
-                          </td>
-                          <td valign="top" nowrap="nowrap">
-                            <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework') and (sys_stat('st_has_vdb') = 1)">
-                              <span class="button pointer">
-                                <xsl:attribute name="onclick">javascript: TBL.createRow('s', null, {fld_1: {mode: 50, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', tdCssText: 'white-space: nowrap;', className: '_validate_ _uri_'}, fld_3: {mode: 52, value: [1, 0, 0], execute: true, tdCssText: 'width: 1%; text-align: center;'}});</xsl:attribute>
-                              <img src="<?V self.image_src ('dav/image/add_16.png') ?>" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
-                            </vm:if>
-                            <vm:if test="not (WEBDAV.DBA.VAD_CHECK ('Framework') and (sys_stat('st_has_vdb') = 1))">
-                              <span class="button pointer">
-                                <xsl:attribute name="onclick">javascript: TBL.createRow('s', null, {fld_1: {mode: 50, noAdvanced: true, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', tdCssText: 'white-space: nowrap;', className: '_validate_ _uri_'}, fld_3: {mode: 52, value: [1, 0, 0], execute: true, tdCssText: 'width: 1%; text-align: center;'}});</xsl:attribute>
-                              <img src="<?V self.image_src ('dav/image/add_16.png') ?>" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
-                            </vm:if>
-                          </td>
-                        </tr>
-                      </table>
-                    </fieldset>
-                  </div>
+                          </vm:if>
+                          <vm:if test="not (WEBDAV.DBA.VAD_CHECK ('Framework') and (sys_stat('st_has_vdb') = 1))">
+                            <span class="button pointer">
+                              <xsl:attribute name="onclick">javascript: TBL.createRow('s', null, {fld_1: {mode: 50, noAdvanced: true, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: 'F1', tdCssText: 'white-space: nowrap;', className: '_validate_ _uri_'}, fld_3: {mode: 52, value: [1, 0, 0], execute: true, tdCssText: 'width: 1%; text-align: center;'}});</xsl:attribute>
+                            <img src="<?V self.image_src ('dav/image/add_16.png') ?>" class="button" alt="Add Security" title="Add Security" /> Add</span><br /><br />
+                          </vm:if>
+                        </td>
+                      </tr>
+                    </table>
+                  </fieldset>
                 </div>
               </div>
+            </div>
             </v:template>
             <div class="WEBDAV_formFooter">
               <v:button action="simple" name="Update_70" value="Update" enabled="--case when self.v_step <> 'error' then 1 else 0 end">
@@ -4122,8 +4150,8 @@
                         {
                           retValue := WEBDAV.DBA.DAV_PROP_SET (itemPath, 'virt:aci_meta_n3', aci_value);
                           self.retItems (itemList, itemPath, retValue, 'ACL update');
-                        }
                       }
+                    }
                     }
                     self.items := itemList;
                     if (length (self.items) = 0)
@@ -5629,7 +5657,7 @@
             <v:text type="password" name="dav_IMAP_password" xhtml_id="dav_IMAP_password" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" xhtml_onblur="javascript: WEBDAV.loadIMAPFolders();">
               <v:before-data-bind>
                 <![CDATA[
-                  control.ufl_value := self.get_fieldProperty ('dav_IMAP_password', self.dav_path, 'virt:IMAP-password', '');
+                  control.ufl_value := '**********';
                 ]]>
               </v:before-data-bind>
             </v:text>

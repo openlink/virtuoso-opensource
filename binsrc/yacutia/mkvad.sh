@@ -315,6 +315,11 @@ echo "        {" >> $STICKER
 echo "          result ('ERROR', 'Please update server version');" >> $STICKER
 echo "          signal ('FATAL', 'Please update server version');" >> $STICKER
 echo "        }" >> $STICKER
+echo "     if ((__proc_exists ('DB.DBA.WebDAV_DAV_AUTHENTICATE') is not null) and (__proc_exists ('DB.DBA.WebDAV__verify') is null))" >> $STICKER
+echo "       {" >> $STICKER
+echo "         result ('ERROR', 'Please install the last Briefcase');" >> $STICKER
+echo "         signal ('FATAL', 'Please install the last Briefcase');" >> $STICKER
+echo "       }" >> $STICKER
 echo "      if (equ ($ISDAV, 0) and isinteger (file_stat (http_root ())))" >> $STICKER
 echo "        {" >> $STICKER
 echo "          result ('ERROR', 'Please setup [HTTPServer] ServerRoot INI setting properly');" >> $STICKER
