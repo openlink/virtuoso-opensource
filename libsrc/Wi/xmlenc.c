@@ -7351,6 +7351,54 @@ bif_xenc_x509_verify (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_num (rc);
 }
 
+static X509 *
+x509_from_pem (caddr_t pem)
+{
+  BIO *buf;
+  X509 *ret;
+  buf = BIO_new_mem_buf (pem, box_length (pem) - 1);
+  ret = PEM_read_bio_X509 (buf, NULL, NULL, NULL);
+  BIO_free (buf);
+  return ret;
+}
+
+static caddr_t
+bif_xenc_x509_verify_array (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char * me = "x509_verify_array";
+  caddr_t cert_name = bif_string_arg (qst, args, 0, me);
+  caddr_t * ca_certs  = bif_arg (qst, args, 1, me);
+  xenc_key_t * cert = xenc_get_key_by_name (cert_name, 1);
+  int rc = 0, inx;
+  BIO *buf;
+  X509 *ca_cert;
+
+  if (!cert)
+    SQLR_NEW_KEY_ERROR (cert_name);
+  if (!cert->xek_x509)
+    sqlr_new_error ("22023", ".....", "The certificate key does not have x509 assigned.");
+  if (!ARRAYP (ca_certs))
+    sqlr_new_error ("22023", ".....", "The x509_verify_array needs and array of PEM encoded CA certificates.");
+  DO_BOX (caddr_t, ca, inx, ca_certs)
+    {
+      EVP_PKEY * pubkey;
+      if (!DV_STRINGP (ca))
+	sqlr_new_error ("22023", ".....", "The CA certificates array must be array of strings.");
+      ca_cert = x509_from_pem (ca);
+      if (ca_cert)
+	{
+	  pubkey = X509_get_pubkey (ca_cert);
+	  rc = X509_verify (cert->xek_x509, pubkey);
+	  EVP_PKEY_free (pubkey);
+	  X509_free (ca_cert);
+	}
+      if (rc)
+	break;
+    }
+  END_DO_BOX;
+  return box_num (rc);
+}
+
 void bif_xmlenc_init ()
 {
 #ifdef DEBUG
@@ -7503,6 +7551,7 @@ void bif_xmlenc_init ()
   bif_define ("xenc_dsig_sign", bif_xenc_dsig_signature);
   bif_define ("xenc_dsig_verify", bif_xenc_dsig_verify);
   bif_define ("x509_verify", bif_xenc_x509_verify);
+  bif_define ("x509_verify_array", bif_xenc_x509_verify_array);
 
   xenc_cert_X509_idx = ecm_find_name ("X.509", (void*)xenc_cert_types, xenc_cert_types_len,
 					 sizeof (xenc_cert_type_t));
