@@ -356,7 +356,7 @@ again:
   if (vlbl <> 0) label := vlbl;
   declare desc_resource_uri varchar;
   declare desc_qr varchar;
-  desc_qr := sprintf ('define sql:describe-mode "CBD" DESCRIBE <%s>', page_resource_uri);
+  desc_qr := sprintf ('define sql:describe-mode "SPO" DESCRIBE <%s>', page_resource_uri);
   desc_resource_uri := sprintf ('http://%{WSHost}s/sparql?query=%U&format=cxml', desc_qr);
   --http_flush (1);
 
