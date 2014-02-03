@@ -807,8 +807,14 @@ create procedure b3s_label (in _S any, in langs any, in lbl_order_pref_id int :=
 }
 ;
 
+create procedure b3s_xsd_link (in t varchar)
+{
+  return sprintf ('<a href="http://www.w3.org/2001/XMLSchema#%s">xsd:%s</a>', t, t);
+}
+;
+
 create procedure
-b3s_http_print_r (in _object any, in sid varchar, in prop any, in langs any, in rel int := 1, in acc any := null, in _from varchar := null)
+b3s_http_print_r (in _object any, in sid varchar, in prop any, in langs any, in rel int := 1, in acc any := null, in _from varchar := null, in flag int := 0)
 {
    declare lang, rdfs_type, rdfa, visible any;
 
@@ -894,22 +900,22 @@ again:
    else if (__tag (_object) = 189)
      {
        http (sprintf ('<span %s>%d</span>', rdfa, _object));
-       lang := 'xsd:integer';
+       lang := b3s_xsd_link ('integer');
      }
    else if (__tag (_object) = 190)
      {
        http (sprintf ('<span %s>%f</span>', rdfa, _object));
-       lang := 'xsd:float';
+       lang := b3s_xsd_link ('float');
      }
    else if (__tag (_object) = 191)
      {
        http (sprintf ('<span %s>%d</span>', rdfa, _object));
-       lang := 'xsd:double';
+       lang := b3s_xsd_link ('double');
      }
    else if (__tag (_object) = 219)
      {
        http (sprintf ('<span %s>%s</span>', rdfa, cast (_object as varchar)));
-       lang := 'xsd:double';
+       lang := b3s_xsd_link ('double');
      }
    else if (__tag (_object) = 182)
      {
@@ -933,7 +939,7 @@ again:
    else if (__tag (_object) = 211)
      {
        http (sprintf ('<span %s>%s</span>', rdfa, datestring (_object)));
-       lang := 'xsd:date';
+       lang := b3s_xsd_link ('date');
      }
    else if (__tag (_object) = 230)
      {

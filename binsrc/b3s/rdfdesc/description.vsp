@@ -147,7 +147,7 @@ again:
   if (length (grs) = 0)
     {
       declare fg any;
-      fg := (select top 1 "g" from (sparql select ?g count (*) where { quad map virtrdf:DefaultQuadMap { graph ?g { `iri(?:gr)` ?p ?o }}} group by ?g order by desc 2 limit 1) x); 
+      fg := (select top 1 "g" from (sparql select ?g count (*) where { quad map virtrdf:DefaultQuadMap { graph ?g { `iri(?:gr)` ?p ?o } filter (!(str(?g) like "http://local.virt/%" )) }} group by ?g order by desc 2 limit 1) x); 
       if (fg is not null)
         {
           grs := vector (fg);
@@ -435,7 +435,9 @@ again:
     'nodeID://%' then b3s_http_url (page_resource_uri) else
     page_resource_uri end ?>"><?vsp if (length(label)) http_value
     (label); else http_value(b3s_uri_curie (page_resource_uri));
-    ?></a>&nbsp;&nbsp;&nbsp;<a class="desc_sponge_link"
+    ?></a>&nbsp;&nbsp;&nbsp;<a class="desc_permalink" href="<?= case when page_resource_uri like
+    'nodeID://%' then b3s_http_url (page_resource_uri) else
+    page_resource_uri end ?>">Goto</a>&nbsp;<a class="desc_sponge_link"
     href="/describe/?url=<?U page_resource_uri ?><?= case when sid is
     not null then '&sid=' || sid end ?>&amp;sponger:get=add"
     title="Click to generate local descriptor data for this entity"
@@ -599,7 +601,7 @@ if (_subject <> '') {
 	       b3s_http_print_l (PRED, odd_position, flag, sid, langs);
 	       curr_pred := pred;
 	     }
-           vis := b3s_http_print_r (OBJECT, sid, PRED, langs, 1, all_langs, _from);
+           vis := b3s_http_print_r (OBJECT, sid, PRED, langs, 1, all_langs, _from, FLAG);
 	   nxt1:;
 	   inx := inx + 1;
 	   skip:;
