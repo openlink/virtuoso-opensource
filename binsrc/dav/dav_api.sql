@@ -2067,7 +2067,6 @@ DAV_CHECK_ACLS_INTERNAL (
                {
                  ?p3 rdf:type foaf:Group ;
                  foaf:member `iri(?:webid)` .
-                 filter (?g like (?:grpGraph)) .
                }
              }
            }
