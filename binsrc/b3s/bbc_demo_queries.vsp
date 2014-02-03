@@ -140,7 +140,7 @@ where {
         <img alt="Linked Data" src="/fct/images/LoDLogo.gif"/>
       </a>
       <br/>
-      <span class="copyright">Copyright © 2009-2013 OpenLink Software</span>
+      <span class="copyright">Copyright &copy; 2009-<?V "LEFT" (datestring (now ()), 4)?> OpenLink Software</span>
       <div id="FT_L"/>
       <div id="FT_R"/>
     </div> <!-- #FT -->
