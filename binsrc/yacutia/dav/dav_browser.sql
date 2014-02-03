@@ -1701,7 +1701,7 @@ create procedure WEBDAV.DBA.account_password (
 create procedure WEBDAV.DBA.account_fullName (
   in account_id integer)
 {
-  return coalesce ((select WEBDAV.DBA.user_name (U_NAME, U_FULL_NAME) from DB.DBA.SYS_USERS where U_ID = account_id), '');
+  return coalesce ((select WEBDAV.DBA.user_showName (U_NAME, U_FULL_NAME) from DB.DBA.SYS_USERS where U_ID = account_id), '');
 }
 ;
 
@@ -1770,12 +1770,13 @@ create procedure WEBDAV.DBA.account_basicAuthorization (
 
 ----------------------------------------------
 --
-create procedure WEBDAV.DBA.user_name (
+create procedure WEBDAV.DBA.user_showName (
   in u_name any,
   in u_full_name any) returns varchar
 {
   if (not is_empty_or_null (trim (u_full_name)))
     return trim (u_full_name);
+
   return u_name;
 }
 ;
@@ -1788,6 +1789,7 @@ create procedure WEBDAV.DBA.user_name (
 {
   if (not isnull (user_id))
     return coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id), unknown);
+
   return '~none~';
 }
 ;
@@ -3287,13 +3289,13 @@ create procedure WEBDAV.DBA.DAV_GET (
     return resource[6];
 
   if (property = 'groupName')
-    return WEBDAV.DBA.user_name(resource[6]);
+    return WEBDAV.DBA.user_name (resource[6]);
 
   if (property = 'ownerID')
     return resource[7];
 
   if (property = 'ownerName')
-    return WEBDAV.DBA.user_name(resource[7]);
+    return WEBDAV.DBA.user_name (resource[7]);
 
   if (property = 'creationTime')
     return case when is_empty_or_null (resource[8]) then now () else resource[8] end;
