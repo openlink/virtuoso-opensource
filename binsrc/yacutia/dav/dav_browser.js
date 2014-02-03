@@ -104,6 +104,7 @@ function cleanPost() {
 function odsPost(obj, fields, button) {
   var form = getParent (obj, 'form');
   var formName = form.name;
+  createHidden(formName, '_cmd', '');
   for (var i = 0; i < fields.length; i += 2)
     createHidden(formName, fields[i], fields[i+1]);
 
