@@ -663,7 +663,7 @@ b3s_uri_curie (in uri varchar)
 	if (length(rhs) = 0) {
 		return uri;
 	} else {
-		return nsPrefix || ':' || rhs;
+		return __bft (nsPrefix || ':' || rhs, 2);
 	}
   }
   return uri;
