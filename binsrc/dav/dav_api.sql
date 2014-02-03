@@ -1996,15 +1996,23 @@ DAV_AUTHENTICATE_SSL_WEBID (
   inout webid varchar,
   inout webidGraph varchar)
 {
-  declare cert, vtype any;
+  webid := connection_get ('__webid');
+  webidGraph := connection_get ('__webidGraph');
+  if (isnull (webid))
+  {
+    declare cert, vtype any;
 
-  webid := null;
-  if (__proc_exists ('DB.DBA.WEBID_AUTH_GEN_2') is not null)
-    {
-      cert := client_attr ('client_certificate');
-      if (not DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 0, webid, webidGraph, 0, vtype))
-        webid := null;
-    }
+    if (isnull (webidGraph))
+      webidGraph := 'http://local.virt/ods/' || uuid ();
+
+    cert := client_attr ('client_certificate');
+    if (not DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 0, webid, webidGraph, 0, vtype))
+      webid := null;
+  }
+  connection_set ('__webid', coalesce (webid, ''));
+  connection_get ('__webidGraph', webidGraph);
+
+  webid := case when webid = '' then null else webid end;
   return webid;
 }
 ;
@@ -2216,7 +2224,7 @@ DAV_AUTHENTICATE_SSL (
   DAV_AUTHENTICATE_SSL_ITEM (id, what, path);
 
   webid := null;
-  webidGraph := 'http://local.virt/ods/' || uuid ();
+  webidGraph := null;
   DB.DBA.DAV_AUTHENTICATE_SSL_WEBID (webid, webidGraph);
   if (isnull (webid))
     return 0;
