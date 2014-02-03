@@ -2352,7 +2352,7 @@
                               ]]>
                             </v:before-render>
                             <v:item name="Off" value="N" />
-                            <v:item name="Direct members" value="T" />
+                            <v:item name="Direct members" value="M" />
                             <v:item name="Recursively" value="R" />
                           </v:select-list>
                         </td>
