@@ -141,13 +141,15 @@ again:
       langs := lang_parm;
     }
   gr := get_keyword ('g', params, '');
+  gr := replace (gr, ' ', '%20');
 
   _F := ''; _from := null;
   grs := connection_get ('graphs', null);
   if (length (grs) = 0)
     {
       declare fg any;
-      fg := (select top 1 "g" from (sparql select ?g count (*) where { quad map virtrdf:DefaultQuadMap { graph ?g { `iri(?:gr)` ?p ?o } filter (!(str(?g) like "http://local.virt/%" )) }} group by ?g order by desc 2 limit 1) x); 
+      fg := (select top 1 "g" from (sparql select ?g count (*) where { quad map virtrdf:DefaultQuadMap { graph ?g { `iri(?:gr)` ?p ?o } 
+		filter (!(str(?g) like "http://local.virt/%" )  && !(str(?g) like "% %")) }} group by ?g order by desc 2 limit 1) x); 
       if (fg is not null)
         {
           grs := vector (fg);
@@ -159,6 +161,7 @@ again:
     {
       foreach (any x in grs) do
 	{
+          x := replace (x, ' ', '%20');
 	  _F := _F || sprintf (' FROM <%s> ', x);
 	}
     }
