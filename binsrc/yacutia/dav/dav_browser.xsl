@@ -2424,7 +2424,7 @@
                         <th width="30%"> </th>
                         <td>
                           <label>
-                            <input type="checkbox" name="dav_recursive" id="dav_recursive" disabled="disabled" title="Recursive" class="<?V case when self.dav_enable and not self.editField ('reqursive') then 'disabled' else '' end ?>" />
+                            <input type="checkbox" name="dav_recursive" id="dav_recursive" disabled="disabled" title="Recursive" class="<?V case when self.dav_enable and not self.editField ('recursive') then 'disabled' else '' end ?>" />
                             <b> Apply changes to all subfolders and resources</b>
                           </label>
                         </td>
