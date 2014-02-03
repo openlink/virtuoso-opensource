@@ -38,10 +38,10 @@
         self.va_mode := 1;
 
       else
-        self.va_mode := atoi (get_keyword ('mode', params, '0'));
+        self.va_mode := 0;
     ]]>
   </v:on-init>
-  <v:variable name="va_mode" type="integer" default="null" />
+  <v:variable name="va_mode" type="integer" default="0" />
 
   <h2>Audit <?V case when self.va_mode then '& Error Recovery' end ?></h2>
   <v:form name="a_page_form" type="simple" method="POST" action="graphs_page.vspx?page=4">
