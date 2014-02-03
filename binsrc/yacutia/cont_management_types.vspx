@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -55,7 +53,7 @@
             <th>MIME Type</th>
             <th>File extension</th>
             <th>Description</th>
-            <th>Action</th>
+            <th width="1%">Action</th>
           </tr>
         </table>
       </v:template>
