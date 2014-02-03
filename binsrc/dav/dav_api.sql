@@ -1652,10 +1652,12 @@ DAV_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar
   if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms, webid))
     return a_uid;
 
-  if (DAV_AUTHENTICATE_WITH_SESSION_ID (id, what, null, req, a_uid, a_gid, _perms, serviceId))
-    return a_uid;
+  if (__proc_exists ('VAL.DBA.authentication_details_for_connection') is not null) {
+    if (DAV_AUTHENTICATE_WITH_VAL (id, what, null, req, a_uid, a_gid, _perms, serviceId))
+      return a_uid;
+  }
 
-  -- Both DAV_AUTHENTICATE_SSL and DAV_AUTHENTICATE_WITH_SESSION_ID only check IRI ACLs
+  -- Both DAV_AUTHENTICATE_SSL and DAV_AUTHENTICATE_WITH_VAL only check IRI ACLs
   -- However, service ids may map to ODS user accounts. This is what we check here
   a_uid := -1;
 
@@ -1802,9 +1804,11 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
         {
           return a_uid;
         }
-        if (DAV_AUTHENTICATE_WITH_SESSION_ID (id, what, null, req, a_uid, a_gid, _perms, serviceId))
-        {
-          return a_uid;
+        if (__proc_exists ('VAL.DBA.authentication_details_for_connection') is not null) {
+          if (DAV_AUTHENTICATE_WITH_VAL (id, what, null, req, a_uid, a_gid, _perms, serviceId))
+          {
+            return a_uid;
+          }
         }
 
         -- Normalize the service variables for error handling in VAL
@@ -1813,7 +1817,7 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
           serviceId := webid;
         }
 
-        -- Both DAV_AUTHENTICATE_SSL and DAV_AUTHENTICATE_WITH_SESSION_ID only check IRI ACLs
+        -- Both DAV_AUTHENTICATE_SSL and DAV_AUTHENTICATE_WITH_VAL only check IRI ACLs
         -- However, service ids may map to ODS user accounts. This is what we check here
         a_uid := -1;
 
@@ -2215,15 +2219,10 @@ DAV_AUTHENTICATE_SSL (
 ;
 
 --!
--- Try to authenticate via a session id which is stored in query parameter "sid".
--- A session id can be mapped to an actual user account or to a third-party account.
--- This includes WebID, Facebook, BrowserID, etc... anything VAL supports.
---
--- In the latter case the service id which the session is connected to is checked
--- against the ACL rules of the resource in question.
+-- Get authentication information via VAL and check ACLs.
 --/
 create function
-DAV_AUTHENTICATE_WITH_SESSION_ID (
+DAV_AUTHENTICATE_WITH_VAL (
   in id any,
   in what char(1),
   in path varchar,
@@ -2233,23 +2232,26 @@ DAV_AUTHENTICATE_WITH_SESSION_ID (
   inout _perms varchar,
   out serviceId varchar) returns integer
 {
-  --dbg_printf('DAV_AUTHENTICATE_WITH_SESSION_ID (%d, %s, %s, ...)', id, what, path);
-  declare sid varchar;
+  --dbg_printf('DAV_AUTHENTICATE_WITH_VAL (%d, %s, %s, ...)', id, what, path);
+  declare val_sid, val_sidRealm varchar;
+  declare val_uname varchar;
+  declare val_isRealUser integer;
 
-  -- Extract the session id from the query parameters
-  sid :=  http_param ('sid');
-  if (isnull (sid))
-    return 0;
-
-  serviceId := null;
-
-  -- Map the sid to a 3rd-party account
-  declare exit handler for not found {
+  declare exit handler for sqlstate '*' {
     return 0;
   };
 
-  -- Get the service id which created the session
-  select VS_UID into serviceId from DB.DBA.VSPX_SESSION where VS_SID = sid;
+  val_sidRealm := null;
+  if (not VAL.DBA.authentication_details_for_connection (
+        val_sid,
+        serviceId,
+        val_uname,
+        val_isRealUser,
+        val_sidRealm,
+        'sid')
+     ) {
+    return 0;
+  }
 
   -- Finally verify the ACL rules
   DAV_AUTHENTICATE_SSL_ITEM (id, what, path);
