@@ -222,6 +222,7 @@ create procedure adm_menu_tree ()
       <node name="ACL List" url="sec_auth_serv.vspx" id="25" place="1" allowed="yacutia_acl_page"/>
       <node name="ACL Edit" url="sec_acl_edit.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
      </node>
+     <node name="CA Roots" url="sec_ca.vspx" id="271" place="1" allowed="yacutia_acl_page"/>
    </node>
    <node name="User Accounts" url="accounts_page.vspx" id="3" allowed="yacutia_accounts_page">
      <node name="Accounts" url="accounts.vspx" id="4" place="1" allowed="yacutia_accounts_page"/>
