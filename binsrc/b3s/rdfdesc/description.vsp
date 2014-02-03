@@ -200,7 +200,7 @@ again:
     sp_accept := 'define get:accept "' || sp_accept || '"';
   -- check ACL
   if (get_keyword ('sp', params) = '1' or get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null)
-    if (__proc_exists ('DB.DBA.RDF_SPONGE_AUTH') is not null and 0 = DB.DBA.RDF_SPONGE_AUTH ('Virtuoso Sponger'))
+    if (__proc_exists ('DB.DBA.RDF_SPONGE_AUTH_SI') is not null and 0 = DB.DBA.RDF_SPONGE_AUTH_SI ('Virtuoso Sponger'))
       {
         http_rewrite ();
         http_status_set (403);
@@ -208,13 +208,6 @@ again:
         http (sprintf ('<html><body>Use of this service is not allowed for your current WebID: %V</body></html>', connection_get ('WebID', '<none>')));
         return;  
       } 
-
-  if (is_https_ctx ())
-  {
-    declare authenticated_user varchar;
-    authenticated_user := coalesce (connection_get ('SPARQLUserId'), 'SPARQL');
-    set_user_id (authenticated_user, 0);
-  }
 
   -- if (get_keyword ('sp', params) = '1' and 0 = length (_F))
   if (get_keyword ('sp', params) = '1')
