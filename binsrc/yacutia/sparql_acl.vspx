@@ -345,7 +345,7 @@
                 				      xhtml_alt="Edit"
                 				      />
                                                             <v:url name="ur2"
-                                                                   value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
+                                                                   value='<img src="images/icons/trash_16.png" hspace="3" border="0"/>Delete'
                 				      format="%s"
                                                                    url="--sprintf ('sparql_acl.vspx?del=%U&edit_realm=%U', (control.vc_parent as vspx_row_template).te_rowset[1], (control.vc_parent as vspx_row_template).te_rowset[3])"
                 				      xhtml_title="Delete"

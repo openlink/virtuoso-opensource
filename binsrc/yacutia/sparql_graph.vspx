@@ -133,7 +133,7 @@
                    xhtml_title="Rename"
                    xhtml_alt="Rename"
             />
-            <v:url value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
+            <v:url value='<img src="images/icons/trash_16.png" hspace="3" border="0"/>Delete'
                    format="%s"
                    name="udel"
                    url="--sprintf ('graphs_page.vspx?page=1&mode=delete&graph_name=%U', GRAPH_IRI)"

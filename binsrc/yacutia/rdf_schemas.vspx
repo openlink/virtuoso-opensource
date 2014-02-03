@@ -46,14 +46,15 @@
           <thead>
             <tr class="listing_header_row">
               <th>Schema IRI</th>
-              <th>Action</th>
+              <th width="1%">Action</th>
             </tr>
           </thead>
           <tbody>
-	      <?vsp
-	      declare to_del varchar;
-	      to_del := get_keyword ('del', self.vc_event.ve_params, null);
-	      if (to_del is not null)
+            <?vsp
+              declare to_del varchar;
+
+              to_del := get_keyword ('del', self.vc_event.ve_params, null);
+              if (to_del is not null)
                 RDF_GRAPH_GROUP_DEL ('http://www.openlinksw.com/schemas/virtrdf#schemas', to_del);
 
               for select id_to_iri (RGGM_MEMBER_IID) as url from RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#schemas') do
@@ -61,8 +62,14 @@
             ?>
             <tr>
               <td><?V url ?></td>
-              <td>
-                <v:url name="u1" value="Delete" url="--sprintf ('rdf_schemas.vspx?del=%U', url)" render-only="1"/>
+              <td nowrap="nowrap">
+      			    <v:url name="u1" value='<img src="images/icons/trash_16.png" hspace="3" border="0"/>Delete'
+      			      format="%s"
+      			      url="--sprintf ('rdf_schemas.vspx?del=%U', url)"
+      			      render-only="1"
+      			      xhtml_title="Delete"
+      			      xhtml_alt="Delete"
+      			    />
               </td>
             </tr>
             <?vsp
