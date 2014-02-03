@@ -4368,6 +4368,7 @@ create procedure WEBDAV.DBA.ui_date (
 --
 create procedure WEBDAV.DBA.send_mail (
   in _path varchar,
+  in _path_url varchar,
   in _from integer,
   in _to any,
   in _subject varchar,
@@ -4375,13 +4376,13 @@ create procedure WEBDAV.DBA.send_mail (
   in _mode integer := 1,
   in _encryption_state integer := 0)
 {
-  -- dbg_obj_princ ('WEBDAV.DBA.send_mail (', _path, _from, _to, _mode, _encryption_state, ')');
+  -- dbg_obj_princ ('WEBDAV.DBA.send_mail (', _path, _path_url, _from, _to, _mode, _encryption_state, ')');
   declare _data any;
   declare _certificate, _encrypt any;
   declare _from_address, _to_address varchar;
 
   _body := replace (_body, '%resource_path%', _path);
-  _body := replace (_body, '%resource_uri%', WEBDAV.DBA.dav_url (_path));
+  _body := replace (_body, '%resource_uri%', _path_url);
   _body := replace (_body, '%owner_uri%', SIOC..person_iri (SIOC..user_iri (_from)));
   _body := replace (_body, '%owner_name%', WEBDAV.DBA.account_name (_from));
 
@@ -4609,8 +4610,8 @@ create procedure WEBDAV.DBA.send_mail_internal (
   {
     declare exit handler for sqlstate '*' { return;};
 
-    --dbg_obj_print (_from_address, _to_address, _body);
-    --string_to_file ('test.eml', sprintf ('From: %s\r\nTo: %s\r\n', _from_address, _to_address) || _message, 2);
+    -- dbg_obj_print (_from_address, _to_address, _body);
+    -- string_to_file ('test.eml', sprintf ('From: %s\r\nTo: %s\r\n', _from_address, _to_address) || _message, 2);
     smtp_send (_smtp_server, _from_address, _to_address, _message);
   }
 }
@@ -4645,24 +4646,27 @@ create procedure WEBDAV.DBA.acl_send_mail (
   in _encryption_state integer := 0)
 {
   declare aq any;
+  declare _path_url varchar;
 
+  _path_url := WEBDAV.DBA.ssl2iri (WEBDAV.DBA.dav_url (_path));
   _old_acl := WEBDAV.DBA.acl_vector_unique (WEBDAV.DBA.acl_vector (_old_acl));
   _new_acl := WEBDAV.DBA.acl_vector_unique (WEBDAV.DBA.acl_vector (_new_acl));
   aq := async_queue (1);
-  aq_request (aq, 'WEBDAV.DBA.acl_send_mail_aq', vector (_from, _path, _old_acl, _new_acl, _encryption_state));
+  aq_request (aq, 'WEBDAV.DBA.acl_send_mail_aq', vector (_path, _path_url, _from, _old_acl, _new_acl, _encryption_state));
 }
 ;
 
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.acl_send_mail_aq (
-  in _from integer,
   in _path varchar,
+  in _path_url varchar,
+  in _from integer,
   in _old_acl any,
   in _new_acl any,
   in _encryption_state integer := 0)
 {
-  -- dbg_obj_princ ('WEBDAV.DBA.acl_send_mail_aq (', _path, _old_acl, _new_acl, _encryption_state, ')');
+  -- dbg_obj_princ ('WEBDAV.DBA.acl_send_mail_aq (', _path, _path_url, _old_acl, _new_acl, _encryption_state, ')');
   declare N integer;
   declare settings, subject, text any;
 
@@ -4674,7 +4678,7 @@ create procedure WEBDAV.DBA.acl_send_mail_aq (
     if (not WEBDAV.DBA.vector_contains (_old_acl, _new_acl[N]) or (_encryption_state = 2))
     {
       WEBDAV.DBA.acl_share_create (_new_acl[N]);
-      WEBDAV.DBA.send_mail (_path, _from, _new_acl[N], subject, text, 1, _encryption_state);
+      WEBDAV.DBA.send_mail (_path, _path_url, _from, _new_acl[N], subject, text, 1, _encryption_state);
     }
   }
   subject := 'Unsharing notification';
@@ -4682,7 +4686,7 @@ create procedure WEBDAV.DBA.acl_send_mail_aq (
   for (N := 0; N < length (_old_acl); N := N + 1)
   {
     if (not WEBDAV.DBA.vector_contains (_new_acl, _old_acl[N]))
-      WEBDAV.DBA.send_mail (_path, _from, _old_acl[N], subject, text, 1, 0);
+      WEBDAV.DBA.send_mail (_path, _path_url, _from, _old_acl[N], subject, text, 1, 0);
   }
 }
 ;
@@ -5038,24 +5042,27 @@ create procedure WEBDAV.DBA.aci_send_mail (
   in _encryption_state integer := 0)
 {
   declare aq any;
+  declare _path_url varchar;
 
+  _path_url := WEBDAV.DBA.iri2ssl (WEBDAV.DBA.dav_url (_path));
   _old_acl := WEBDAV.DBA.aci_vector (_old_acl);
   _new_acl := WEBDAV.DBA.aci_vector (_new_acl);
   aq := async_queue (1);
-  aq_request (aq, 'WEBDAV.DBA.aci_send_mail_aq', vector (_from, _path, _old_acl, _new_acl, _encryption_state));
+  aq_request (aq, 'WEBDAV.DBA.aci_send_mail_aq', vector (_path, _path_url, _from, _old_acl, _new_acl, _encryption_state));
 }
 ;
 
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.aci_send_mail_aq (
-  in _from integer,
   in _path varchar,
+  in _path_url varchar,
+  in _from integer,
   in _old_acl any,
   in _new_acl any,
   in _encryption_state integer := 0)
 {
-  -- dbg_obj_princ ('WEBDAV.DBA.aci_send_mail_aq (', _path, _old_acl, _new_acl, ')');
+  -- dbg_obj_princ ('WEBDAV.DBA.aci_send_mail_aq (', _path, _path_url, _old_acl, _new_acl, ')');
   declare N integer;
   declare settings, subject, text any;
 
@@ -5065,14 +5072,14 @@ create procedure WEBDAV.DBA.aci_send_mail_aq (
   for (N := 0; N < length (_new_acl); N := N + 1)
   {
     if (not WEBDAV.DBA.vector_contains (_old_acl, _new_acl[N]) or (_encryption_state = 2))
-      WEBDAV.DBA.send_mail (_path, _from, _new_acl[N], subject, text, 0, _encryption_state);
+      WEBDAV.DBA.send_mail (_path, _path_url, _from, _new_acl[N], subject, text, 0, _encryption_state);
   }
   subject := 'Unsharing notification';
   text := WEBDAV.DBA.settings_mailUnshare (settings);
   for (N := 0; N < length (_old_acl); N := N + 1)
   {
     if (not WEBDAV.DBA.vector_contains (_new_acl, _old_acl[N]))
-      WEBDAV.DBA.send_mail (_path, _from, _old_acl[N], subject, text, 0, 0);
+      WEBDAV.DBA.send_mail (_path, _path_url, _from, _old_acl[N], subject, text, 0, 0);
   }
 }
 ;
