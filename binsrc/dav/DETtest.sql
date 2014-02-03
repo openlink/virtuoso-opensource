@@ -1,6 +1,4 @@
 --
---  $Id$
---
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
@@ -384,6 +382,7 @@ select length (DAV_DIR_FILTER ('/DAV/rftest/orig/', 1,
 
 select "ResFilter_CONFIGURE" (
   DAV_SEARCH_ID ('/DAV/rftest/filt/', 'C'),
+  null,
   '/DAV/rftest/orig/',
   vector (
     vector ('PROP_VALUE', '=', 'Main',
@@ -395,6 +394,7 @@ select "ResFilter_CONFIGURE" (
 
 select "ResFilter_CONFIGURE" (
   DAV_SEARCH_ID ('/DAV/rftest/orig/sub1/', 'C'),
+  null,
   '/DAV/rftest/orig/',
   vector (
     vector ('PROP_VALUE', '=', 'Main',
@@ -407,6 +407,7 @@ select "ResFilter_CONFIGURE" (
 select DAV_COL_CREATE ('/DAV/rfwmtest/', '110110110RR', 'dav', 'administrators', 'dav', 'dav');
 select "ResFilter_CONFIGURE" (
   DAV_SEARCH_ID ('/DAV/rfwmtest/', 'C'),
+  null,
   '/DAV/wmtest/',
   vector (
     vector ('RES_NAME', 'like', '%match%')
@@ -418,6 +419,7 @@ select DAV_COL_CREATE ('/DAV/home/cf10000/cats/', '110100000RR', 'dav',
 
 select "CatFilter_CONFIGURE" (
   DAV_SEARCH_ID ('/DAV/home/cf10000/cats/', 'C'),
+  null,
   '/DAV/home/cf10000/',
   vector () );
 
@@ -426,6 +428,7 @@ select DAV_COL_CREATE ('/DAV/home/cf10001/cats/', '110100000RR', 'dav',
 
 select "CatFilter_CONFIGURE" (
   DAV_SEARCH_ID ('/DAV/home/cf10001/cats/', 'C'),
+  null,
   '/DAV/home/cf10001/',
   vector () );
 
@@ -434,6 +437,7 @@ select DAV_COL_CREATE ('/DAV/home/cf10002/cats/', '110100000RR', 'dav',
 
 select "CatFilter_CONFIGURE" (
   DAV_SEARCH_ID ('/DAV/home/cf10002/cats/', 'C'),
+  null,
   '/DAV/home/cf10002/',
   vector () );
 
@@ -442,6 +446,7 @@ select DAV_COL_CREATE ('/DAV/home/cf10000/cats_slow/', '110100000RR', 'dav',
 
 select "CatFilter_CONFIGURE" (
   DAV_SEARCH_ID ('/DAV/home/cf10000/cats_slow/', 'C'),
+  null,
   '/DAV/home/cf10000/',
   vector (vector ('RES_FULL_PATH', 'starts_with', '/DAV/home/')) );
 
@@ -450,6 +455,7 @@ select DAV_COL_CREATE ('/DAV/home/cf10001/cats_slow/', '110100000RR', 'dav',
 
 select "CatFilter_CONFIGURE" (
   DAV_SEARCH_ID ('/DAV/home/cf10001/cats_slow/', 'C'),
+  null,
   '/DAV/home/cf10001/',
   vector (vector ('RES_FULL_PATH', 'starts_with', '/DAV/home/')) );
 
@@ -458,6 +464,7 @@ select DAV_COL_CREATE ('/DAV/home/cf10002/cats_slow/', '110100000RR', 'dav',
 
 select "CatFilter_CONFIGURE" (
   DAV_SEARCH_ID ('/DAV/home/cf10002/cats_slow/', 'C'),
+  null,
   '/DAV/home/cf10002/',
   vector (vector ('RES_FULL_PATH', 'starts_with', '/DAV/home/')) );
 
