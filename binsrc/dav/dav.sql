@@ -3090,7 +3090,7 @@ create procedure WS.WS.TTL_QUERY_POST (
   	  ses := http_body_read (1);
 	 }
     }
-  def_gr := WS.WS.DAV_HOST () || path;
+  def_gr := WS.WS.DAV_IRI (path);
   if (exists (select 1 from DB.DBA.SYS_USERS where U_NAME = uname and U_SQL_ENABLE = 1))
     set_user_id (uname);
 

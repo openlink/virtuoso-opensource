@@ -3185,7 +3185,7 @@ create procedure DAV_DELETE_INT (
     type := (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = id);
     if (type = 'text/turtle')
     {
-      graph := WS.WS.DAV_HOST () || path;
+      graph := WS.WS.DAV_IRI (path);
       SPARQL clear graph ?:graph;
     }
 
