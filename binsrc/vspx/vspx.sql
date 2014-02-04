@@ -96,6 +96,22 @@ create trigger VSPX_SESSION_INSERT_AFTER after insert on DB.DBA.VSPX_SESSION {
 }
 ;
 
+-- VSPX Trigger for delete graphs used for WebID verifivation
+--
+create trigger VSPX_SESSION_WEBID_D before delete on DB.DBA.VSPX_SESSION order 100 referencing old as O
+{
+  -- dbg_obj_print ('VSPX_SESSION_WEBID_D');
+  declare _state, webidGraph any;
+
+  _state := deserialize (O.VS_STATE);
+  if (not isnull (get_keyword ('agent', _state)) and not isnull (get_keyword ('vtype', _state)))
+  {
+    webidGraph := 'http:' || replace (O.VS_SID, ':', '');
+    DB.DBA.SPARUL_CLEAR (webidGraph, 0, 0, silent=>1);
+  }
+}
+;
+
 --#pragma begin base, event
 -- Event class
 
