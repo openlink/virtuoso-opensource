@@ -29,7 +29,6 @@
   id := cast (get_keyword ('id', params, '0') as integer);
   action := get_keyword ('a', params, '');
   subAction := get_keyword ('sa', params, '');
-
   if (action = 'search')
   {
     returnData := vector ();
@@ -65,19 +64,16 @@
     http_rewrite ();
     http_header ('Content-Type: text/plain\r\n');
     http (WEBDAV.DBA.obj2json (returnData, 5));
-    return;
   }
-  if (action = 'cartridges')
+  else if (action = 'cartridges')
   {
     http (WEBDAV.DBA.obj2json (WEBDAV.DBA.cartridges_get (), 5));
-    return;
   }
-  if (action = 'metaCartridges')
+  else if (action = 'metaCartridges')
   {
     http (WEBDAV.DBA.obj2json (WEBDAV.DBA.metaCartridges_get (), 5));
-    return;
   }
-  if (action = 'mailVerify')
+  else if (action = 'mailVerify')
   {
     declare _error, _connection, _server, _port, _user, _password any;
     declare exit handler for SQLSTATE '*'
@@ -91,6 +87,9 @@
     _port       := trim (get_keyword ('port', params, '143'));
     _user       := trim (get_keyword ('user', params, ''));
     _password   := trim (get_keyword ('password', params, ''));
+    if (_password = '**********')
+      _password := DB.DBA.IMAP__paramGet (DB.DBA.DAV_SEARCH_ID (get_keyword ('path', params), 'C'), 'C', 'password', 0);
+
     _error      := DB.DBA.IMAP__verify (_connection, _server, _port, _user, _password);
 
   _exit:;
@@ -98,12 +97,11 @@
     http_header ('Access-Control-Allow-Origin: *\r\n');
     http_header ('Content-Type: text/plain\r\n');
     http (_error);
-    return;
   }
-  if (action = 'mailFolders')
+  else if (action = 'mailFolders')
   {
-    declare _error, _connection, _server, _port, _user, _password varchar;
-    declare _folders, _folderParts, _folderPath, _list any;
+    declare _error, _server, _port, _user, _password varchar;
+    declare _connection, _folders, _folderParts, _folderPath, _list any;
 
     _list := vector ();
     _connection := trim (get_keyword ('connection', params));
@@ -122,6 +120,9 @@
     _password := trim (get_keyword ('password', params));
     if (is_empty_or_null (_password))
       goto _exit_1;
+
+    if (_password = '**********')
+      _password := DB.DBA.IMAP__paramGet (DB.DBA.DAV_SEARCH_ID (get_keyword ('path', params), 'C'), 'C', 'password', 0);
 
     _connection := case when (_connection = 'ssl') then 1 else 0 end;
     if (isnull (_port))
@@ -151,6 +152,36 @@
     http_rewrite ();
     http_header ('Access-Control-Allow-Origin: *\r\n');
     http (WEBDAV.DBA.obj2json (_list, 5));
-    return;
   }
+  else if (action = 'webdavVerify')
+  {
+    declare _error, _server, _params, _password any;
+    declare exit handler for SQLSTATE '*'
+    {
+      _error := __SQL_MESSAGE;
+      goto _exit_2;
+    };
+
+    _server     := get_keyword ('server', params, '');
+    if (get_keyword ('type', params, 'Digest') = 'Digest')
+    {
+      _password   := get_keyword ('password', params);
+      if (_password = '**********')
+        _password := DB.DBA.WebDAV__paramGet (DB.DBA.DAV_SEARCH_ID (get_keyword ('path', params), 'C'), 'C', 'password', 0, 1, 1);
+
+      _params     := vector ('authenticationType', 'Digest', 'user', get_keyword ('user', params, ''), 'password', _password);
+    }
+    else
+    {
+      _params     := vector ('authenticationType', 'WebID', 'key', get_keyword ('key', params), 'keyOwner', (select VS_UID from DB.DBA.VSPX_SESSION where VS_SID = sid));
+    }
+    _error      := DB.DBA.WebDAV__verify (_server, _params);
+
+  _exit_2:;
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http_header ('Content-Type: text/plain\r\n');
+    http (_error);
+  }
+  return;
 ?>

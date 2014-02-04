@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,31 +19,31 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="sparql_create_page"
         decor="yacutia_decor.vspx"
         style="yacutia_style.xsl"
         vm:owner="yacutia_sparql_page"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
         xmlns:vm="http://www.openlinksw.com/vspx/macro">
- <vm:pagetitle>Configuration</vm:pagetitle>
- <vm:pagewrapper>
+  <vm:pagetitle>Configuration</vm:pagetitle>
+  <vm:pagewrapper>
     <vm:variables>
-      <v:variable name="del" default="null" type="int" persist="temp" param-name="del"/>
-      <v:variable name="vhost" default="null" type="varchar" persist="temp" param-name="vhost"/>
-      <v:variable name="lhost" default="null" type="varchar" persist="temp" param-name="lhost"/>
+      <v:variable name="del" default="null" type="int" persist="temp" param-name="del" />
+      <v:variable name="vhost" default="null" type="varchar" persist="temp" param-name="vhost" />
+      <v:variable name="lhost" default="null" type="varchar" persist="temp" param-name="lhost" />
     </vm:variables>
-  <vm:menu>
-   <vm:menuitem value="Configuration"/>
-  </vm:menu>
-  <vm:header caption="Configuration"/>
-  <vm:pagebody>
+    <vm:menu>
+      <vm:menuitem value="Configuration"/>
+    </vm:menu>
+    <vm:header caption="Configuration"/>
+    <vm:pagebody>
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
           <td>
-		<!-- tab -->
+            <!-- tab -->
             <table cellpadding='10' cellspacing='0' border='0' width='100%'>
               <tr>
                 <td>
@@ -58,107 +56,151 @@
                       <col/>
                     </colgroup>
                     <tr>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="url1" value="Extractor Cartridges" format="%s" url="rdf_filters.vspx" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="url2" value="Meta Cartridges" format="%s" url="rdf_filters_pp.vspx" xhtml_class="uddi"/>
-                        </td>
+                      <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="url1" value="Extractor Cartridges" format="%s" url="rdf_filters.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="url2" value="Meta Cartridges" format="%s" url="rdf_filters_pp.vspx" xhtml_class="uddi"/>
+                      </td>
                       <td class="page_tab" align="center" nowrap="1">
                         <v:url name="url1" value="Stylesheets" format="%s" url="sparql_filters.vspx" xhtml_class="uddi"/>
-		      </td>
+                      </td>
                       <td class="page_tab" align="center" nowrap="1">
                         <v:url name="url3" value="Console" format="%s" url="rdf_console.vspx" xhtml_class="uddi"/>
-		      </td>
-                        <td class="page_tab_selected" align="center" nowrap="1">
-                          Configuration
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
+                      </td>
+                      <td class="page_tab_selected" align="center" nowrap="1">
+                        Configuration
+                      </td>
+                      <td class="page_tab_empty" align="center" width="100%">
+                        <table cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td width="100%" >
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                  <v:on-init>
+                    <![CDATA[
+                      if (self.del)
+                      {
+                        DB.DBA.VHOST_REMOVE ( lhost=>self.lhost, vhost=>self.vhost, lpath=>'/rdfdesc');
+                        DB.DBA.VHOST_REMOVE ( lhost=>self.lhost, vhost=>self.vhost, lpath=>'/about/id');
+                        DB.DBA.VHOST_REMOVE ( lhost=>self.lhost, vhost=>self.vhost, lpath=>'/about/id/entity');
+                        DB.DBA.VHOST_REMOVE ( lhost=>self.lhost, vhost=>self.vhost, lpath=>'/about/data');
+                        DB.DBA.VHOST_REMOVE ( lhost=>self.lhost, vhost=>self.vhost, lpath=>'/about/data/entity');
+                      }
+                    ]]>
+                  </v:on-init>
+                  <table class="tab_page">
+                    <tr>
+                      <td valign="top">
+                      <!-- tab -->
+	                      <fieldset>
+                          <legend>Settings</legend>
+                          <v:form name="frm1" type="simple" method="POST">
+                            <label>
+                              <v:check-box name="rdf_use" value="1" xhtml_id="rdf_use">
+                                <v:before-data-bind>
+                                  <![CDATA[
+                                    control.ufl_selected := case when registry_get ('__rdf_mappers_use_VAL') = '1' then 1 else 0 end;
+                                    control.vc_data_bound := 1;
+                                  ]]>
+                                </v:before-data-bind>
+                              </v:check-box> Use VAL with Sponger Cartridges
+                            </label>
+                            <br /><br />
+                            <v:button action="simple" name="save1" value="Save Settings">
+                              <v:on-post>
+                                <![CDATA[
+                                  if (atoi (get_keyword ('rdf_use', control.vc_page.vc_event.ve_params)) = 1)
+                                  {
+                                    registry_set ('__rdf_mappers_use_VAL', '1');
+                                  }
+                                  else
+                                  {
+                                    registry_set ('__rdf_mappers_use_VAL', '0');
+                                  }
+                                  self.vc_data_bind (self.vc_page.vc_event);
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                          </v:form>
+                        </fieldset>
+                        <fieldset>
+                          <legend>Endpoints</legend>
+                          <table class="listing">
+                            <thead>
+                              <tr class="listing_header_row">
+                                <th>Endpoint</th>
+                                <th width="1%">Action</th>
+                              </tr>
+                            </thead>
+                            <?vsp
+                              for select distinct hp_host, hp_listen_host from http_path where hp_security = 'SSL' and HP_LPATH = '/about/id/entity' do
+                              {
+                            ?>
                             <tr>
-                              <td width="100%" >
+                              <td>
+                                <?V hp_host ?>(<?V hp_listen_host ?>)
+                              </td>
+                              <td nowrap="nowrap">
+                                <v:url name="ur1" url="--sprintf ('rdf_conf.vspx?del=1&vhost=%U&lhost=%U', hp_host, hp_listen_host)" render-only="1" value="Delete Sponger Endpoints"/>
                               </td>
                             </tr>
+                            <?vsp
+                              }
+                            ?>
                           </table>
-                        </td>
+                          <br />
+                          <?vsp
+                            if (not exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST not like '%ini%' and HP_SECURITY = 'SSL'))
+                            {
+                              http ('No HTTPS listeners defined');
+                            }
+                            else
+                            {
+                          ?>
+                          <v:form name="frm2" type="simple" method="POST">
+                            Virtual Host:
+                            <select name="l_domains" xhtml_id="l_domains">
+                              <?vsp
+                                for select distinct HP_HOST, HP_LISTEN_HOST from DB.DBA.HTTP_PATH where HP_HOST not like '%ini%' and HP_SECURITY = 'SSL' do
+                                {
+                                  http(sprintf ('<option value=\"%s=%s\">%s (%s)</option>', HP_HOST, HP_LISTEN_HOST, HP_HOST, HP_LISTEN_HOST));
+                                }
+                              ?>
+                            </select>
+                            <v:button action="simple" name="save2" value="Create Secure Endpoints">
+                              <v:on-post>
+                                <![CDATA[
+                                  declare vhost, lhost, arr, domain any;
+                                  domain := get_keyword('l_domains', self.vc_event.ve_params);
+                                  domain := trim(domain, '/.\\ ');
+                                  arr := split_and_decode(domain);
+                                  vhost := arr[0];
+                                  lhost := arr[1];
+                                  RDF_CARTRIDGES_SECURE_VD (vhost, lhost);
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                          </v:form>
+                          <?vsp
+                            }
+                          ?>
+                        </fieldset>
+                      <!-- end tab  -->
+                      </td>
                     </tr>
-		</table>
-		<v:on-init><![CDATA[
-		if (self.del)
-                  {
-		    DB.DBA.VHOST_REMOVE ( lhost=>self.lhost, vhost=>self.vhost, lpath=>'/rdfdesc');
-		    DB.DBA.VHOST_REMOVE ( lhost=>self.lhost, vhost=>self.vhost, lpath=>'/about/id');
-		    DB.DBA.VHOST_REMOVE ( lhost=>self.lhost, vhost=>self.vhost, lpath=>'/about/id/entity'); 
-		    DB.DBA.VHOST_REMOVE ( lhost=>self.lhost, vhost=>self.vhost, lpath=>'/about/data'); 
-		    DB.DBA.VHOST_REMOVE ( lhost=>self.lhost, vhost=>self.vhost, lpath=>'/about/data/entity');
-		  }
-		    ]]></v:on-init>
-		  <table class="tab_page">
-		      <tr>
-			  <td valign="top">
-			      <!-- tab -->
-			      <table class="listing">
-				  <thead>
-				      <tr class="listing_header_row">
-					  <th>Endpoint</th>
-					  <th>Action</th>
-				      </tr>
-				  </thead>
-				  <?vsp 
-				   for select distinct hp_host, hp_listen_host from http_path where hp_security = 'SSL' and HP_LPATH = '/about/id/entity' do { ?>
-				  <tr>
-				      <td><?V hp_host ?>(<?V hp_listen_host ?>)</td>
-				      <td>
-					  <v:url name="ur1" url="--sprintf ('rdf_conf.vspx?del=1&vhost=%U&lhost=%U', hp_host, hp_listen_host)" render-only="1" value="Delete Sponger Endpoints"/>
-				      </td>
-				  </tr>
-				  <?vsp } ?>
-			      </table>
-			      <br/>
-			      <?vsp 
-			      if (not exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST not like '%ini%' and HP_SECURITY = 'SSL'))
-			        {
-				  http ('No HTTPS listeners defined');
-				}
-			      else {			
-			      ?> 
-			      <v:form name="frm1" type="simple" method="POST">
-              Virtual Host:				  
-              <select name="l_domains" xhtml_id="l_domains">
-                <?vsp
-		for select distinct HP_HOST, HP_LISTEN_HOST from DB.DBA.HTTP_PATH where HP_HOST not like '%ini%' and HP_SECURITY = 'SSL' 
-		do
-                  {
-                    http(sprintf ('<option value=\"%s=%s\">%s (%s)</option>', HP_HOST, HP_LISTEN_HOST, HP_HOST, HP_LISTEN_HOST));
-                  }
-                ?>
-	    </select> 
-	    <v:button action="simple" name="save" value="Create Secure Endpoints">
-		<v:on-post><![CDATA[
-		    declare vhost, lhost, arr, domain any;
-		    domain := get_keyword('l_domains', self.vc_event.ve_params);
-		    domain := trim(domain, '/.\\ ');
-		    arr := split_and_decode(domain);
-		    vhost := arr[0];
-		    lhost := arr[1];
-		    RDF_CARTRIDGES_SECURE_VD (vhost, lhost);
-		    ]]></v:on-post>
-	    </v:button>
-			      </v:form>
-			      <?vsp 
-			      }
-			      ?> 
-			      <!-- end tab  -->
-			  </td>
-		      </tr>
-		  </table>
-	      </td>
-	  </tr>
-      </table>
-		<!-- end tab -->
+                  </table>
+                </td>
+              </tr>
+            </table>
+          <!-- end tab -->
           </td>
         </tr>
       </table>
-  </vm:pagebody>
- </vm:pagewrapper>
+    </vm:pagebody>
+  </vm:pagewrapper>
 </v:page>

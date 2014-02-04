@@ -215,7 +215,7 @@ footer:;
   ?>
   <br/>
   <?vsp fct_virt_info (); ?><br />
-  <span class="copyright">Data on this page is owned by its respective rights holders.<br/>Virtuoso Faceted Browser Copyright &copy; 2009-2013 OpenLink Software</span>
+  <span class="copyright">Data on this page is owned by its respective rights holders.<br/>Virtuoso Faceted Browser Copyright &copy; 2009-<?V "LEFT" (datestring (now ()), 4)?> OpenLink Software</span>
   <div id="FT_L"></div>
   <div id="FT_R"></div>
 </div>

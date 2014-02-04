@@ -102,8 +102,8 @@
           <v:variable name="dir_path" persist="0" type="varchar" default="'__root__'" />
           <v:variable name="dir_right" persist="0" type="varchar" default="''" />
           <v:variable name="dir_details" persist="1" type="integer" default="0" />
-          <v:variable name="dir_order" persist="0" type="varchar" default="'column_#1'" />
-          <v:variable name="dir_direction" persist="0" type="varchar" default="'asc'" />
+          <v:variable name="dir_order" persist="0" type="varchar" default="'column_#4'" />
+          <v:variable name="dir_direction" persist="0" type="varchar" default="'desc'" />
           <v:variable name="dir_grouping" type="varchar" default="''" />
           <v:variable name="dir_groupName" type="varchar" default="''" />
           <v:variable name="dir_cloud" type="integer" default="0" />
@@ -111,7 +111,7 @@
           <v:variable name="dir_columns" type="any" default="null" />
           <v:variable name="returnName" persist="0" type="varchar" default="''" />
           <v:variable name="search_filter" persist="0" type="varchar" default="''" />
-          <v:variable name="search_simple" persist="0" param-name="keywords" type="any" default="null" />
+          <v:variable name="search_simple" persist="0" type="any" default="null" />
           <v:variable name="search_advanced" persist="0" type="any" default="null" />
           <v:variable name="search_dc" persist="0" type="any" default="null" />
           <v:variable name="noPrepare" persist="temp" type="integer" default="0" />
@@ -463,8 +463,8 @@
                   if (WEBDAV.DBA.isVector (state) and length(state))
                   {
                     state := WEBDAV.DBA.json2obj (state[0]);
-                    columnName := get_keyword ('column', state, 'column_#1');
-                    self.dir_direction := get_keyword ('direction', state, 'asc');
+                    columnName := get_keyword ('column', state, 'column_#4');
+                    self.dir_direction := get_keyword ('direction', state, case when (columnName = 'column_#4') then 'desc' else 'asc' end);
                   }
                 }
                 columnName := self.dir_order;
@@ -478,6 +478,9 @@
                   self.dir_direction := 'asc';
                 }
               }
+              if (not self.enabledColumn(columnName))
+                columnName := 'column_#1';
+
               self.dir_order := columnName;
               self.settings := WEBDAV.DBA.set_keyword ('orderBy', self.settings, self.dir_order);
               self.settings := WEBDAV.DBA.set_keyword ('orderDirection', self.settings, self.dir_direction);
@@ -713,19 +716,7 @@
             ]]>
           </v:method>
 
-          <v:method name="detActivity" arglist="in params any, in det varchar">
-            <![CDATA[
-              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, sprintf ('virt:%s-activity', det), get_keyword (sprintf ('dav_%s_activity', det), params, 'off'));
-            ]]>
-          </v:method>
-
-          <v:method name="detCheckInterval" arglist="in params any, in det varchar">
-            <![CDATA[
-              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, sprintf ('virt:%s-checkInterval', det), get_keyword (sprintf ('dav_%s_checkInterval', det), params, '15'));
-            ]]>
-          </v:method>
-
-          <v:method name="detGraph" arglist="in params any, in det varchar, in permissions varchar">
+          <v:method name="detGraph" arglist="in params any, in det varchar">
             <![CDATA[
               declare oldGraph, newGraph, prop varchar;
 
@@ -733,25 +724,19 @@
               oldGraph := WEBDAV.DBA.DAV_PROP_GET (self.dav_path, prop, '');
               newGraph := get_keyword (sprintf ('dav_%s_graph', det), params, '');
               WEBDAV.DBA.DAV_PROP_SET (self.dav_path, prop, newGraph);
-              WEBDAV.DBA.graph_private_remove (self.dav_path, 'C', oldGraph);
-              WEBDAV.DBA.graph_private_add (self.dav_path, 'C', permissions, newGraph);
-
-              if (oldGraph <> newGraph)
-                WEBDAV.DBA.graph_update (self.dav_path, det, oldGraph, newGraph);
+              WEBDAV.DBA.graph_update (DB.DBA.DAV_SEARCH_ID (self.dav_path, 'C'), det, oldGraph, newGraph);
             ]]>
           </v:method>
 
-          <v:method name="detSponger" arglist="in params any, in det varchar, in ndx integer">
+          <v:method name="detSpongerPrepare" arglist="in params any, in det varchar, in ndx integer, inout sponger varchar, inout cartridges varchar, inout metaCartridges varchar">
             <![CDATA[
               declare N integer;
-              declare tmp any;
-              declare cartridges, metaCartridges varchar;
               declare ca_item, mca_item varchar;
 
               cartridges := '';
               metaCartridges := '';
-              tmp := get_keyword (sprintf ('dav_%s_sponger', det), params, 'off');
-              if (tmp = 'on')
+              sponger := get_keyword ('dav_' || det || '_sponger', params, 'off');
+              if (sponger = 'on')
               {
                 ca_item := sprintf ('ca%d_item', ndx);
                 mca_item := sprintf ('mca%d_item', ndx);
@@ -765,7 +750,15 @@
                 cartridges := ltrim (cartridges, ',');
                 metaCartridges := ltrim (metaCartridges, ',');
               }
-              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, sprintf ('virt:%s-sponger', det), tmp);
+            ]]>
+          </v:method>
+
+          <v:method name="detSponger" arglist="in params any, in det varchar, in ndx integer">
+            <![CDATA[
+              declare sponger, cartridges, metaCartridges varchar;
+
+              self.detSpongerPrepare (params, det, ndx, sponger, cartridges, metaCartridges);
+              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, sprintf ('virt:%s-sponger', det), sponger);
               WEBDAV.DBA.DAV_PROP_SET (self.dav_path, sprintf ('virt:%s-cartridges', det), cartridges);
               WEBDAV.DBA.DAV_PROP_SET (self.dav_path, sprintf ('virt:%s-metaCartridges', det), metaCartridges);
             ]]>
@@ -923,6 +916,55 @@
 
             _exit:;
               return datestring (now ());
+            ]]>
+          </v:method>
+
+          <v:method name="detParamsPrepare" arglist="in det varchar, in labels any, in ndx integer">
+            <![CDATA[
+              declare retValue, val any;
+              declare params any;
+
+              params := self.vc_page.vc_event.ve_params;
+              retValue := vector ();
+              foreach (any label in labels) do
+              {
+                val := get_keyword ('dav_' || det || '_' || label, params);
+                if (not isnull (val))
+                  retValue := vector_concat (retValue, vector (label, val));
+              }
+              if (ndx is not null)
+              {
+                declare sponger, cartridges, metaCartridges varchar;
+
+                self.detSpongerPrepare (params, det, ndx, sponger, cartridges, metaCartridges);
+                retValue := vector_concat (retValue, vector ('sponger', sponger, 'cartridges', cartridges, 'metaCartridges', metaCartridges));
+              }
+              return retValue;
+            ]]>
+          </v:method>
+
+          <v:method name="detOAuthParamsPrepare" arglist="in det varchar, in properties any, in labels any, in ndx integer">
+            <![CDATA[
+              declare json varchar;
+              declare retValue, params any;
+
+              params := self.vc_page.vc_event.ve_params;
+
+              retValue := self.detParamsPrepare (det, labels, ndx);
+              json := trim (get_keyword ('dav_' || det || '_JSON', params, ''));
+              if (json <> '')
+              {
+                retValue := vector_concat (retValue, subseq (WEBDAV.DBA.json2obj (json), 2));
+                retValue := WEBDAV.DBA.set_keyword ('Authentication', retValue, 'Yes');
+              retValue := WEBDAV.DBA.set_keyword ('access_timestamp', retValue, self.detAccessTimestamp(retValue));
+              retValue := WEBDAV.DBA.set_keyword ('display_name', retValue, get_keyword ('dav_' || det || '_display_name', params, ''));
+              retValue := WEBDAV.DBA.set_keyword ('email', retValue, get_keyword ('dav_' || det || '_email', params, ''));
+              }
+              else
+              {
+                self.virtPropertiesRestore (properties, 'virt:' || det || '-%');
+              }
+              return retValue;
             ]]>
           </v:method>
 
@@ -1188,7 +1230,7 @@
               declare path varchar;
 
               path := WEBDAV.DBA.real_path (self.dir_path);
-              writePermission := WEBDAV.DBA.write_permission (path);
+              writePermission := case when self.dir_right = 'W' then 1 else 0 end;
               self.dav_actions := self.actions (WEBDAV.DBA.det_subClass (path, 'C'));
               self.toolbarShow (writePermission, 'refresh', 'Refresh', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'refresh\');"', 'ref_32.png', '', 0);
               self.toolbarShow (writePermission, 'up', 'Up', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'up\');"', 'up_32.png', 'grey_up_32.png', 0);
@@ -1541,7 +1583,7 @@
                 <vm:search-dc-template10 />
               </div>
               <div class="WEBDAV_formFooter">
-                <v:button action="simple" name="ssSearch" value="Search">
+                <v:button action="simple" name="ssSearch" value="Search" xhtml_onclick="javascript: cleanPost();">
                   <v:on-post>
                     <![CDATA[
                       -- save & validate metadata
@@ -1567,7 +1609,7 @@
                     ]]>
                   </v:on-post>
                 </v:button>
-                <v:button action="simple" name="ssClear" value="Clear" xhtml_title="Clear Criteria">
+                <v:button action="simple" name="ssClear" value="Clear" xhtml_title="Clear Criteria" xhtml_onclick="javascript: cleanPost();">
                   <v:on-post>
                     <![CDATA[
                       self.search_dc := null;
@@ -1577,7 +1619,7 @@
                     ]]>
                   </v:on-post>
                 </v:button>
-                <v:button action="simple" name="ssSave" value="Save" xhtml_title="Save as Smart Folder" enabled="--either (equ (self.dir_right, 'W'), 1, 0)">
+                <v:button action="simple" name="ssSave" value="Save" xhtml_title="Save as Smart Folder" enabled="--either (equ (self.dir_right, 'W'), 1, 0)" xhtml_onclick="javascript: cleanPost();">
                   <v:on-post>
                     <![CDATA[
                       -- save & validate metadata
@@ -1594,7 +1636,7 @@
                     ]]>
                   </v:on-post>
                 </v:button>
-                <v:button action="simple" name="ssCancel" value="Cancel">
+                <v:button action="simple" name="ssCancel" value="Cancel" xhtml_onclick="javascript: cleanPost();">
                   <v:on-post>
                     <![CDATA[
                       self.vc_is_valid := 1;
@@ -1831,6 +1873,9 @@
               ]]>
             </v:before-data-bind>
             <v:text name="formRight" xhtml_id="formRight" type="hidden" value="--self.dav_enable" />
+            <vm:if test="self.command_mode = 10">
+              <v:text name="item_path" xhtml_id="item_path" type="hidden" value="--WEBDAV.DBA.utf2wide (self.source)" />
+            </vm:if>
             <div class="WEBDAV_formHeader">
               <v:label format="%V">:
                 <v:before-data-bind>
@@ -1915,7 +1960,7 @@
                         </td>
                       </tr>
                     </v:template>
-                    <v:template name="tf_3" type="simple" enabled="--self.viewField ('name')">
+                    <v:template name="tf_3" type="simple" enabled="-- self.viewField ('name')">
                       <tr id="davRow_name">
                         <th width="30%">
                           <span id="label_dav"><vm:label for="dav_name" value="--either (equ (self.dav_type, 'R'), 'File name (*)', 'Folder name (*)')" /></span>
@@ -2124,7 +2169,7 @@
                         </td>
                       </tr>
                     </v:template>
-                    <v:template name="tf_9" type="simple" enabled="--case when self.viewField ('owner') then 1 else 0 end">
+                    <v:template name="tf_9" type="simple" enabled="-- self.viewField ('owner')">
                       <tr id="davRow_owner">
                         <th width="30%">
                           <vm:label for="dav_owner" value="--'Owner'" />
@@ -2175,7 +2220,7 @@
                         </td>
                       </tr>
                     </v:template>
-                    <v:template name="tf_10" type="simple" enabled="--case when self.viewField ('group') then 1 else 0 end">
+                    <v:template name="tf_10" type="simple" enabled="-- self.viewField ('group')">
                       <tr id="davRow_group">
                         <th width="30%">
                           <vm:label for="dav_group" value="--'Group'" />
@@ -2220,7 +2265,7 @@
                         </td>
                       </tr>
                     </v:template>
-                    <v:template name="tf_11" type="simple" enabled="--case when self.viewField ('permissions') then 1 else 0 end">
+                    <v:template name="tf_11" type="simple" enabled="-- self.viewField ('permissions')">
                       <tr id="davRow_perms">
                         <th width="30%" valign="top">
                           <vm:label value="--'Permissions'" />
@@ -2349,7 +2394,7 @@
                               ]]>
                             </v:before-render>
                             <v:item name="Off" value="N" />
-                            <v:item name="Direct members" value="T" />
+                            <v:item name="Direct members" value="M" />
                             <v:item name="Recursively" value="R" />
                           </v:select-list>
                         </td>
@@ -2379,7 +2424,7 @@
                         <th width="30%"> </th>
                         <td>
                           <label>
-                            <input type="checkbox" name="dav_recursive" id="dav_recursive" disabled="disabled" title="Recursive" class="<?V case when self.dav_enable and not self.editField ('reqursive') then 'disabled' else '' end ?>" />
+                            <input type="checkbox" name="dav_recursive" id="dav_recursive" disabled="disabled" title="Recursive" class="<?V case when self.dav_enable and not self.editField ('recursive') then 'disabled' else '' end ?>" />
                             <b> Apply changes to all subfolders and resources</b>
                           </label>
                         </td>
@@ -2655,11 +2700,11 @@
               <v:button action="simple" name="cCreate" value="--case when (self.command_mode >= 10) then 'Update' else case when (self.command_mode = 5) then 'Upload' else 'Create' end end" enabled="--case when (self.dav_enable or (self.viewField ('sharing') and (self.mode <> 'webdav'))) then 1 else 0 end" xhtml_onclick="return WEBDAV.validateInputs(this);">
                 <v:on-post>
                   <![CDATA[
-                    declare N, M, retValue, dav_id, dav_owner, dav_group, dav_encryption_state integer;
+                    declare N, M, retValue, dav_owner, dav_group, dav_encryption_state integer;
                     declare mode, dav_detType, dav_mime, dav_name, dav_link, dav_fullPath, dav_perms, msg, _p varchar;
                     declare properties, c_properties, v_properties any;
                     declare dav_acl, dav_aci, old_dav_aci, dav_filename, dav_file, rdf_content any;
-                    declare params, itemList any;
+                    declare params, detParams, itemList any;
                     declare tmp any;
 
                     msg := '';
@@ -2871,7 +2916,7 @@
                         {
                           declare search_path varchar;
 
-                          search_path := WEBDAV.DBA.real_path(get_keyword ('dav_PropFilter_SearchPath', params, '/DAV/'));
+                          search_path := WEBDAV.DBA.real_path (get_keyword ('dav_PropFilter_SearchPath', params, '/DAV/'));
                           retValue := DB.DBA.DAV_SEARCH_ID(search_path, 'C');
                           if (WEBDAV.DBA.DAV_ERROR (retValue))
                             signal('TEST', 'Search path does not exists!<>');
@@ -2882,19 +2927,47 @@
                         }
                         else if (dav_detType = 'IMAP')
                         {
-                          tmp := get_keyword ('dav_IMAP_server', params);
-                          WEBDAV.DBA.test (tmp, vector ('name', 'IMAP Server', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
-                          tmp := get_keyword ('dav_IMAP_port', params);
-                          WEBDAV.DBA.test (tmp, vector ('name', 'IMAP Port', 'class', 'integer', 'minLength', 1, 'maxLength', 4));
-                          tmp := get_keyword ('dav_IMAP_user', params);
-                          WEBDAV.DBA.test (tmp, vector ('name', 'IMAP User', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+                          WEBDAV.DBA.test (get_keyword ('dav_IMAP_server', params), vector ('name', 'IMAP Server', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+                          WEBDAV.DBA.test (get_keyword ('dav_IMAP_port', params), vector ('name', 'IMAP Port', 'class', 'integer', 'minLength', 1, 'maxLength', 4));
+                          WEBDAV.DBA.test (get_keyword ('dav_IMAP_user', params), vector ('name', 'IMAP User', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+                          tmp := get_keyword ('dav_IMAP_password', params, '');
+                          if ((tmp = '**********') and (self.command_mode = 10))
+                            tmp := DB.DBA.IMAP__paramGet (self.dav_id, 'C', 'password', 0);
+
                           tmp := DB.DBA.IMAP__verify (
                             get_keyword ('dav_IMAP_connection', params),
                             get_keyword ('dav_IMAP_server', params),
                             get_keyword ('dav_IMAP_port', params),
                             get_keyword ('dav_IMAP_user', params),
-                            get_keyword ('dav_IMAP_password', params)
+                            tmp
                           );
+                          if (tmp <> '')
+                            signal('TEST', tmp);
+                        }
+                        else if (dav_detType = 'WebDAV')
+                        {
+                          WEBDAV.DBA.test (get_keyword ('dav_WebDAV_path', params), vector ('name', 'WebDAV Path', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+                          if (get_keyword ('dav_WebDAV_authenticationType', params, 'Digest') = 'Digest')
+                          {
+                            WEBDAV.DBA.test (get_keyword ('dav_WebDAV_user', params), vector ('name', 'WebDAV user', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+                            tmp := get_keyword ('dav_WebDAV_password', params, '');
+                            if ((tmp = '**********') and (self.command_mode = 10))
+                              tmp := DB.DBA.WebDAV__paramGet (self.dav_id, 'C', 'password', 0, 1, 1);
+
+                            tmp := DB.DBA.WebDAV__verify (
+                              get_keyword ('dav_WebDAV_path', params),
+                              vector ('authenticationType', 'Digest', 'user', get_keyword ('dav_WebDAV_user', params), 'password', tmp)
+                            );
+                          }
+                          else
+                          {
+                            WEBDAV.DBA.test (get_keyword ('dav_WebDAV_key', params), vector ('name', 'WebDAV Access Key', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+                            tmp := DB.DBA.WebDAV__verify (
+                              get_keyword ('dav_WebDAV_path', params),
+                              vector ('authenticationType', 'WebID', 'key', get_keyword ('dav_WebDAV_key', params), 'keyOwner', WEBDAV.DBA.account_name (self.account_id))
+                            );
+                            commit work;
+                          }
                           if (tmp <> '')
                             signal('TEST', tmp);
                         }
@@ -3139,16 +3212,14 @@
                             signal('TEST', concat(WEBDAV.DBA.DAV_PERROR (retValue), '<>'));
 
                           self.dav_path := dav_fullPath;
+                          self.dav_id := retValue;
                         }
                         else
                         {
                           if (get_keyword ('dav_recursive', params, '') <> '')
                             WEBDAV.DBA.DAV_SET_RECURSIVE (self.dav_path, dav_perms, dav_owner, dav_group);
 
-                          if (dav_detType <> 'Versioning')
-                          {
-                            dav_id := DB.DBA.DAV_SEARCH_ID (dav_fullPath, 'C');
-                            if (not WEBDAV.DBA.DAV_ERROR (dav_id) and isinteger (dav_id))
+                          if ((dav_detType <> 'Versioning') and isinteger (self.dav_id))
                             {
                               -- clear old properties
                               itemList := DB.DBA.DAV_PROP_LIST_INT (DB.DBA.DAV_SEARCH_ID (dav_fullPath, 'C'), 'C', 'virt:%', 0);
@@ -3163,7 +3234,6 @@
                               WEBDAV.DBA.exec ('delete from DB.DBA.SYNC_COLS_TYPES where CT_COL_ID = ?', vector (DB.DBA.DAV_SEARCH_ID (self.dav_path, 'C')));
                             }
                           }
-                        }
                         WEBDAV.DBA.DAV_SET (dav_fullPath, 'permissions-inheritance', get_keyword ('dav_permissions_inheritance', params, 'N'));
 
                         if (not self.editField ('name'))
@@ -3173,28 +3243,20 @@
                         if (dav_detType in ('ResFilter', 'CatFilter'))
                         {
                           -- save & validate metadata
-                          declare rValue any;
-
-                          rValue := self.dc_prepare ();
-                          if (not isnull (rValue))
+                          tmp := self.dc_prepare ();
+                          if (not isnull (tmp))
                           {
-                            self.vc_error_message := rValue;
+                            self.vc_error_message := tmp;
                             self.vc_is_valid := 0;
                             return;
                           }
-                          WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:Filter-Params', self.search_dc);
-                          if (dav_detType = 'ResFilter')
-                          {
-                            retValue := WEBDAV.DBA.ResFilter_CONFIGURE(self.dav_path, self.search_dc);
-                          } else {
-                            retValue := WEBDAV.DBA.CatFilter_CONFIGURE(self.dav_path, self.search_dc);
-                          }
+                          retValue := call ('WEBDAV.DBA.' || dav_detType || '_CONFIGURE') (self.dav_id, self.search_dc);
                           if (WEBDAV.DBA.DAV_ERROR (retValue))
                             signal('TEST', concat(WEBDAV.DBA.DAV_PERROR (retValue), '<>'));
                         }
                         else if (dav_detType = 'rdfSink')
                         {
-                          self.detGraph (params, 'rdfSink', dav_perms);
+                          self.detGraph (params, 'rdfSink');
                           self.detSponger (params, 'rdfSink', 8);
                           WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:rdfSink-base', get_keyword ('dav_rdfSink_base', params));
                         }
@@ -3214,186 +3276,65 @@
                           retValue := WEBDAV.DBA.DAV_SET (self.dav_path, 'detType', either (equ (dav_detType, ''), null, dav_detType));
                           if (dav_detType = 'oMail')
                           {
-                            tmp := trim (get_keyword ('dav_oMail_FolderName', params, ''));
-                            if (tmp = '')
-                              tmp := 'NULL';
-                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:oMail-DomainId', '1');
-                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:oMail-UserName', WEBDAV.DBA.account_name (self.account_id));
-                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:oMail-FolderName', tmp);
-                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:oMail-NameFormat', get_keyword ('dav_oMail_NameFormat', params));
+                            detParams := self.detParamsPrepare (dav_detType, vector ('FolderName', 'NameFormat'), null);
+                            detParams := vector_concat (detParams, vector ('UserName', WEBDAV.DBA.account_name (self.account_id)));
+                            DB.DBA.oMail_CONFIGURE (self.dav_id, detParams);
                           }
                           else if (dav_detType = 'IMAP')
                           {
                             self.virtPropertiesRestore (v_properties, 'virt:IMAP-%');
 
-                            self.detActivity (params, 'IMAP');
-                            self.detCheckInterval (params, 'IMAP');
-                            self.detGraph (params, 'IMAP', dav_perms);
-                            self.detSponger (params, 'IMAP', 11);
-
-                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-connection', get_keyword ('dav_IMAP_connection', params));
-                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-server', get_keyword ('dav_IMAP_server', params));
-                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-port', get_keyword ('dav_IMAP_port', params));
-                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-user', get_keyword ('dav_IMAP_user', params));
-                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-password', get_keyword ('dav_IMAP_password', params));
-                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:IMAP-folder', trim (trim (get_keyword ('dav_IMAP_folder', params), '.'), '/'));
+                            detParams := self.detParamsPrepare (dav_detType, vector ('activity', 'checkInterval', 'graph', 'connection', 'server', 'port', 'user', 'password', 'folder'), 11);
+                            DB.DBA.IMAP_CONFIGURE (self.dav_id, detParams);
                           }
                           else if (dav_detType = 'PropFilter')
                           {
-                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:PropFilter-SearchPath', WEBDAV.DBA.real_path(get_keyword ('dav_PropFilter_SearchPath', params, '/DAV/')));
-                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:PropFilter-PropName', get_keyword ('dav_PropFilter_PropName', params));
-                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:PropFilter-PropValue', get_keyword ('dav_PropFilter_PropValue', params));
+                            detParams := self.detParamsPrepare (dav_detType, vector ('SearchPath', 'PropName', 'PropValue'), null);
+                            detParams := WEBDAV.DBA.set_keyword ('SearchPath', detParams, WEBDAV.DBA.real_path (get_keyword ('SearchPath', detParams, '')));
+                            DB.DBA.PropFilter_CONFIGURE (self.dav_id, detParams);
                           }
                           else if (dav_detType = 'S3')
                           {
                             self.virtPropertiesRestore (v_properties, 'virt:S3-%');
 
-                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:S3-BucketName', get_keyword ('dav_S3_BucketName', params));
-                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:S3-AccessKeyID', get_keyword ('dav_S3_AccessKeyID', params));
-                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:S3-SecretKey', get_keyword ('dav_S3_SecretKey', params));
-
-                            self.detActivity (params, 'S3');
-                            self.detCheckInterval (params, 'S3');
-                            self.detGraph (params, 'S3', dav_perms);
-                            self.detSponger (params, 'S3', 6);
+                            detParams := self.detParamsPrepare (dav_detType, vector ('activity', 'checkInterval', 'graph', 'BucketName', 'AccessKeyID', 'SecretKey'), 6);
+                            DB.DBA.S3_CONFIGURE (self.dav_id, detParams);
                           }
                           else if (dav_detType = 'GDrive')
                           {
-                            tmp := trim (get_keyword ('dav_GDrive_JSON', params, ''));
-                            if (tmp <> '')
-                            {
-                              tmp := subseq (WEBDAV.DBA.json2obj (tmp), 2);
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-Authentication', 'Yes');
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-access_timestamp', self.detAccessTimestamp(tmp));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-access_token', get_keyword ('access_token', tmp, ''));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-token_type', get_keyword ('token_type', tmp, 'Bearer'));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-expires_in', cast (get_keyword ('expires_in', tmp, '3600') as varchar));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-refresh_token', get_keyword ('refresh_token', tmp, ''));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-display_name', get_keyword ('dav_GDrive_display_name', params, ''));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:GDrive-email', get_keyword ('dav_GDrive_email', params, ''));
+                            detParams := self.detOAuthParamsPrepare (dav_detType, v_properties, vector ('activity', 'checkInterval', 'graph'), 12);
+                              DB.DBA.GDrive_CONFIGURE (self.dav_id, detParams);
                             }
-                            else
-                            {
-                              self.virtPropertiesRestore (v_properties, 'virt:GDrive-%');
-                            }
-                            self.detActivity (params, 'GDrive');
-                            self.detCheckInterval (params, 'GDrive');
-                            self.detGraph (params, 'GDrive', dav_perms);
-                            self.detSponger (params, 'GDrive', 12);
-                          }
                           else if (dav_detType = 'Dropbox')
                           {
-                            tmp := trim (get_keyword ('dav_Dropbox_JSON', params, ''));
-                            if (tmp <> '')
-                            {
-                              tmp := subseq (WEBDAV.DBA.json2obj (tmp), 2);
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:Dropbox-Authentication', 'Yes');
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:Dropbox-sid', get_keyword ('sid', tmp, ''));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:Dropbox-access_token', get_keyword ('access_token', tmp, ''));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:Dropbox-display_name', get_keyword ('dav_Dropbox_display_name', params, ''));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:Dropbox-email', get_keyword ('dav_Dropbox_email', params, ''));
+                            detParams := self.detOAuthParamsPrepare (dav_detType, v_properties, vector ('activity', 'checkInterval', 'graph'), 13);
+                              DB.DBA.Dropbox_CONFIGURE (self.dav_id, detParams);
                             }
-                            else
-                            {
-                              self.virtPropertiesRestore (v_properties, 'virt:Dropbox-%');
-                            }
-                            self.detActivity (params, 'Dropbox');
-                            self.detCheckInterval (params, 'Dropbox');
-                            self.detGraph (params, 'Dropbox', dav_perms);
-                            self.detSponger (params, 'Dropbox', 13);
-                          }
                           else if (dav_detType = 'SkyDrive')
                           {
-                            tmp := trim (get_keyword ('dav_SkyDrive_JSON', params, ''));
-                            if (tmp <> '')
-                            {
-                              tmp := subseq (WEBDAV.DBA.json2obj (tmp), 2);
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-Authentication', 'Yes');
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-access_timestamp', self.detAccessTimestamp(tmp));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-scope', get_keyword ('scope', tmp, ''));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-access_token', pwd_magic_calc ('skydrive', get_keyword ('access_token', tmp, '')));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-token_type', get_keyword ('token_type', tmp, 'Bearer'));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-expires_in', cast (get_keyword ('expires_in', tmp, '3600') as varchar));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-refresh_token', pwd_magic_calc ('skydrive', get_keyword ('refresh_token', tmp, '')));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-authentication_token', pwd_magic_calc ('skydrive', get_keyword ('authentication_token', tmp, '')));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-display_name', get_keyword ('dav_SkyDrive_display_name', params, ''));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:SkyDrive-email', get_keyword ('dav_SkyDrive_email', params, ''));
+                            detParams := self.detOAuthParamsPrepare (dav_detType, v_properties, vector ('activity', 'checkInterval', 'graph'), 14);
+                              DB.DBA.SkyDrive_CONFIGURE (self.dav_id, detParams);
                             }
-                            else
-                            {
-                              self.virtPropertiesRestore (v_properties, 'virt:SkyDrive-%');
-                            }
-                            self.detActivity (params, 'SkyDrive');
-                            self.detCheckInterval (params, 'SkyDrive');
-                            self.detGraph (params, 'SkyDrive', dav_perms);
-                            self.detSponger (params, 'SkyDrive', 14);
-                          }
                           else if (dav_detType = 'Box')
                           {
-                            tmp := trim (get_keyword ('dav_Box_JSON', params, ''));
-                            if (tmp <> '')
-                            {
-                              tmp := subseq (WEBDAV.DBA.json2obj (tmp), 2);
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:Box-Authentication', 'Yes');
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:Box-access_timestamp', self.detAccessTimestamp(tmp));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:Box-scope', get_keyword ('scope', tmp, ''));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:Box-access_token', pwd_magic_calc ('box', get_keyword ('access_token', tmp, '')));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:Box-token_type', get_keyword ('token_type', tmp, 'Bearer'));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:Box-expires_in', cast (get_keyword ('expires_in', tmp, '3600') as varchar));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:Box-refresh_token', pwd_magic_calc ('box', get_keyword ('refresh_token', tmp, '')));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:Box-authentication_token', pwd_magic_calc ('box', get_keyword ('authentication_token', tmp, '')));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:Box-display_name', get_keyword ('dav_Box_display_name', params, ''));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:Box-email', get_keyword ('dav_Box_email', params, ''));
-                            }
-                            else
-                            {
-                              self.virtPropertiesRestore (v_properties, 'virt:Box-%');
-                            }
-                            self.detActivity (params, 'Box');
-                            self.detCheckInterval (params, 'Box');
-                            self.detGraph (params, 'Box', dav_perms);
-                            self.detSponger (params, 'Box', 15);
+                            detParams := self.detOAuthParamsPrepare (dav_detType, v_properties, vector ('activity', 'checkInterval', 'graph'), 15);
+                              DB.DBA.Box_CONFIGURE (self.dav_id, detParams);
 
                           }
                           else if (dav_detType = 'WebDAV')
                           {
                             self.virtPropertiesRestore (v_properties, 'virt:WebDAV-%');
 
-                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:WebDAV-path', get_keyword ('dav_WebDAV_path', params, ''));
-                            tmp := get_keyword ('dav_WebDAV_authenticationType', params, 'Digest');
-                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:WebDAV-authenticationType', tmp);
-                            if (tmp = 'Digest')
-                            {
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:WebDAV-key', '');
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:WebDAV-user', get_keyword ('dav_WebDAV_user', params, ''));
-                              if (get_keyword ('dav_WebDAV_password', params, '') <> '**********')
-                                WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:WebDAV-password', pwd_magic_calc ('webdav', get_keyword ('dav_WebDAV_password', params, '')));
-                            }
-                            else
-                            {
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:WebDAV-key', get_keyword ('dav_WebDAV_key', params, ''));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:WebDAV-keyOwner', WEBDAV.DBA.account_name (self.account_id));
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:WebDAV-user', '');
-                              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:WebDAV-password', '');
-                            }
-                            self.detActivity (params, 'WebDAV');
-                            self.detCheckInterval (params, 'WebDAV');
-                            self.detGraph (params, 'WebDAV', dav_perms);
-                            self.detSponger (params, 'WebDAV', 16);
+                            detParams := self.detParamsPrepare (dav_detType, vector ('activity', 'checkInterval', 'graph', 'path', 'authenticationType', 'user', 'password', 'key'), 16);
+                            detParams := vector_concat (detParams, vector ('keyOwner', WEBDAV.DBA.account_name (self.account_id)));
+                            DB.DBA.WebDAV_CONFIGURE (self.dav_id, detParams);
                           }
                           else if (dav_detType = 'RACKSPACE')
                           {
                             self.virtPropertiesRestore (v_properties, 'virt:RACKSPACE-%');
 
-                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:RACKSPACE-Type', get_keyword ('dav_RACKSPACE_Type', params));
-                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:RACKSPACE-User', get_keyword ('dav_RACKSPACE_User', params));
-                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:RACKSPACE-Container', get_keyword ('dav_RACKSPACE_Container', params));
-                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:RACKSPACE-API_Key', get_keyword ('dav_RACKSPACE_API_Key', params));
-
-                            self.detActivity (params, 'RACKSPACE');
-                            self.detCheckInterval (params, 'RACKSPACE');
-                            self.detGraph (params, 'RACKSPACE', dav_perms);
-                            self.detSponger (params, 'RACKSPACE', 17);
+                            detParams := self.detParamsPrepare (dav_detType, vector ('activity', 'checkInterval', 'graph', 'Type', 'User', 'Container', 'API_Key'), 17);
+                            DB.DBA.RACKSPACE_CONFIGURE (self.dav_id, detParams);
                           }
                         }
                       _exec_8:;
@@ -4511,7 +4452,16 @@
 
                           <v:template name="ds_items_browse" type="browse" name-to-remove="table" set-to-remove="both">
                             <table>
-                              <v:template type="simple" enabled="-- case when (self.dir_grouping <> '') then 1 else 0 end;">
+                              <?vsp
+                                declare rowset any;
+                                declare path varchar;
+                                declare permission varchar;
+
+                                rowset := (control as vspx_row_template).te_rowset;
+                                path := rowset[8];
+                                permission := WEBDAV.DBA.permission (path);
+                              ?>
+                              <v:template type="simple" enabled="-- neq (self.dir_grouping, '')">
                                 <?vsp
                                   declare tmp, dir_column any;
 
@@ -4533,52 +4483,43 @@
                               </v:template>
                               <tr>
                                 <?vsp
-                                  declare rowset any;
-                                  rowset := (control as vspx_row_template).te_rowset;
-
                                   if (self.dir_path <> '')
                                   {
                                     http (         '<td class="checkbox">');
-                                    if ((rowset[8] not like '%,acl') and (rowset[8] not like '%,meta'))
-                                      http (sprintf ('  <input type="checkbox" name="cb_item" value="%V" onclick="selectCheck (this, \'cb_item\')"/>', WEBDAV.DBA.utf2wide (rowset[8])));
+                                    if ((path not like '%,acl') and (path not like '%,meta'))
+                                      http (sprintf ('  <input type="checkbox" name="cb_item" value="%V" onclick="selectCheck (this, \'cb_item\')"/>', WEBDAV.DBA.utf2wide (path)));
                                     http (         '</td>');
                                   }
                                 ?>
                                 <td nowrap="nowrap">
                                   <?vsp
-                                    declare id, rowset, click any;
+                                    declare id, click any;
 
-                                    rowset := (control as vspx_row_template).te_rowset;
-                                    id := case when (rowset[1] = 'R') then sprintf ('id="%V"', rowset[8]) else '' end;
+                                    id := case when (rowset[1] = 'R') then sprintf ('id="%V"', path) else '' end;
                                     if ((self.returnName <> '') and (rowset[1] = 'R'))
                                     {
-                                      http (sprintf ('<a %s href="%s" onclick="javascript: $(\'item_name\').value = \'%s\'; return false;" title="%s"><img src="%s" border="0" /> %V</a>', id, WEBDAV.DBA.dav_url (rowset[8]), replace (WEBDAV.DBA.dav_lpath (rowset[8]), '\'', '\\\''), WEBDAV.DBA.utf2wide (rowset[0]), self.image_src (WEBDAV.DBA.ui_image(rowset[8], rowset[1], rowset[4])), WEBDAV.DBA.utf2wide (WEBDAV.DBA.stringCut (rowset[0], self.chars))));
+                                      http (sprintf ('<a %s href="%s" onclick="javascript: $(\'item_name\').value = \'%s\'; return false;" title="%s"><img src="%s" border="0" /> %V</a>', id, WEBDAV.DBA.dav_url (path), replace (WEBDAV.DBA.dav_lpath (path), '\'', '\\\''), WEBDAV.DBA.utf2wide (rowset[0]), self.image_src (WEBDAV.DBA.ui_image(path, rowset[1], rowset[4])), WEBDAV.DBA.utf2wide (WEBDAV.DBA.stringCut (rowset[0], self.chars))));
                                     }
                                     else
                                     {
-                                      declare path varchar;
-                                      declare permission varchar;
-
-                                      path := rowset[8];
-                                      permission := WEBDAV.DBA.permission (path);
                                       click := case when (permission <> '') then sprintf ('ondblclick="javascript: vspxUpdate(\'%V\');" ', WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))) else '' end
-                                            || sprintf ('onclick="javascript: vspxSelect(\'%V\'); return false;"', WEBDAV.DBA.utf2wide (replace (WEBDAV.DBA.dav_lpath (rowset[8]), '\'', '\\\'')));
-                                      http (sprintf ('<a %s href="%s" %s title="%V" class="WEBDAV_a"><img src="%s" border="0" /> %V</a>', id, WEBDAV.DBA.utf2wide (WEBDAV.DBA.dav_url (rowset[8])), click, WEBDAV.DBA.utf2wide (rowset[0]), self.image_src (WEBDAV.DBA.ui_image (rowset[8], rowset[1], rowset[4])), WEBDAV.DBA.utf2wide (WEBDAV.DBA.stringCut (rowset[0], self.chars))));
+                                            || sprintf ('onclick="javascript: vspxSelect(\'%V\'); return false;"', WEBDAV.DBA.utf2wide (replace (WEBDAV.DBA.dav_lpath (path), '\'', '\\\'')));
+                                      http (sprintf ('<a %s href="%s" %s title="%V" class="WEBDAV_a"><img src="%s" border="0" /> %V</a>', id, WEBDAV.DBA.utf2wide (WEBDAV.DBA.dav_url (path)), click, WEBDAV.DBA.utf2wide (rowset[0]), self.image_src (WEBDAV.DBA.ui_image (path, rowset[1], rowset[4])), WEBDAV.DBA.utf2wide (WEBDAV.DBA.stringCut (rowset[0], self.chars))));
                                     }
                                   ?>
                                   <v:template type="simple" enabled="-- case when (self.command_mode <> 3 or is_empty_or_null(WEBDAV.DBA.dc_get (self.search_dc, 'base', 'content'))) then 0 else 1 end">
                                     <br /><i><v:label value="--WEBDAV.DBA.content_excerpt((((control.vc_parent).vc_parent as vspx_row_template).te_rowset[8]), WEBDAV.DBA.dc_get(self.search_dc, 'base', 'content'))" format="%s" /></i>
                                   </v:template>
                                 </td>
-                                <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#2')) then 1 else 0 end;">
+                                <v:template type="simple" enabled="-- self.enabledColumn('column_#2')">
                                   <td nowrap="nowrap">
                                     <?vsp
                                       declare N integer;
                                       declare tags any;
 
                                       N := 0;
-                                      tags := WEBDAV.DBA.DAV_PROP_GET((control.vc_parent as vspx_row_template).te_rowset[8], ':virtpublictags');
-                                      if (isstring(tags))
+                                      tags := WEBDAV.DBA.DAV_PROP_GET ((control.vc_parent as vspx_row_template).te_rowset[8], ':virtpublictags', '');
+                                      if (isstring (tags))
                                       {
                                         tags := split_and_decode (tags, 0, '\0\0,');
                                         foreach (any tag in tags) do
@@ -4589,8 +4530,8 @@
                                           N := N + 1;
                                         }
                                       }
-                                      tags := coalesce(WEBDAV.DBA.DAV_PROP_GET((control.vc_parent as vspx_row_template).te_rowset[8], ':virtprivatetags'), '');
-                                      if (isstring(tags))
+                                      tags := WEBDAV.DBA.DAV_PROP_GET((control.vc_parent as vspx_row_template).te_rowset[8], ':virtprivatetags', '');
+                                      if (isstring (tags))
                                       {
                                         tags := split_and_decode (tags, 0, '\0\0,');
                                         foreach (any tag in tags) do
@@ -4604,7 +4545,7 @@
                                     ?>
                                   </td>
                                 </v:template>
-                                <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#3')) then 1 else 0 end;">
+                                <v:template type="simple" enabled="-- self.enabledColumn('column_#3')">
                                   <td class="number" nowrap="nowrap">
                                     <v:label>
                                       <v:before-data-bind>
@@ -4615,7 +4556,7 @@
                                     </v:label>
                                   </td>
                                 </v:template>
-                                <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#10')) then 1 else 0 end;">
+                                <v:template type="simple" enabled="-- self.enabledColumn('column_#10')">
                                   <td nowrap="nowrap">
                                     <v:label value="--left ((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[10], 10)" format="%s" />
                                     <font size="1">
@@ -4623,7 +4564,7 @@
                                     </font>
                                   </td>
                                 </v:template>
-                                <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#4')) then 1 else 0 end;">
+                                <v:template type="simple" enabled="-- self.enabledColumn('column_#4')">
                                   <td nowrap="nowrap">
                                     <v:label value="--left ((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[3], 10)" format="%s" />
                                     <font size="1">
@@ -4631,7 +4572,7 @@
                                     </font>
                                   </td>
                                 </v:template>
-                                <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#11')) then 1 else 0 end;">
+                                <v:template type="simple" enabled="-- self.enabledColumn('column_#11')">
                                   <td nowrap="nowrap">
                                     <v:label value="--left ((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[11], 10)" format="%s" />
                                     <font size="1">
@@ -4639,39 +4580,35 @@
                                     </font>
                                   </td>
                                 </v:template>
-                                <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#5')) then 1 else 0 end;">
+                                <v:template type="simple" enabled="-- self.enabledColumn('column_#5')">
                                   <td nowrap="nowrap">
                                     <v:label value="--either (equ ((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[1], 'R'), (((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[4], ' ')" />
                                   </td>
                                 </v:template>
-                                <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#6')) then 1 else 0 end;">
+                                <v:template type="simple" enabled="-- self.enabledColumn('column_#6')">
                                   <td nowrap="nowrap">
                                     <v:label value="--(((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[9]" />
                                   </td>
                                 </v:template>
-                                <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#7')) then 1 else 0 end;">
+                                <v:template type="simple" enabled="-- self.enabledColumn('column_#7')">
                                   <td nowrap="nowrap">
                                     <v:label value="--(((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[5]" />
                                   </td>
                                 </v:template>
-                                <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#8')) then 1 else 0 end;">
+                                <v:template type="simple" enabled="-- self.enabledColumn('column_#8')">
                                   <td nowrap="nowrap">
                                     <v:label value="--(((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[6]" />
                                   </td>
                                 </v:template>
-                                <v:template type="simple" enabled="-- case when (self.enabledColumn('column_#9')) then 1 else 0 end;">
+                                <v:template type="simple" enabled="-- self.enabledColumn('column_#9')">
                                   <td nowrap="nowrap">
                                     <v:label value="--(((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[7]" />
                                   </td>
                                 </v:template>
                                 <td class="action">
                                   <?vsp
-                                    declare path varchar;
                                     declare id any;
-                                    declare permission varchar;
 
-                                    path := rowset[8];
-                                    permission := WEBDAV.DBA.permission (path);
                                     id := DB.DBA.DAV_SEARCH_ID (path, rowset[1]);
                                     if (permission <> '')
                                       http (sprintf( ' <img class="pointer" border="0" alt="Update Properties" title="Update Properties"" src="%s" onclick="javascript: vspxUpdate(\'%V\');" />', self.image_src ('dav/image/dav/item_prop.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
@@ -4788,7 +4725,6 @@
           </th>
           <td>
             <v:text name="dav_oMail_FolderName" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_oMail_FolderName', self.dav_path, 'virt:oMail-FolderName', 'NULL');
@@ -4804,8 +4740,7 @@
             <v:label for="dav_oMail_NameFormat" value="--'WebMail name format'" />
           </th>
           <td>
-            <v:text name="dav_oMail_NameFormat" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
+            <v:text name="dav_oMail_NameFormat" format="%s" xhtml_disabled="disabled" xhtml_class="field-text _validate_">
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_oMail_NameFormat', self.dav_path, 'virt:oMail-NameFormat', '^from^ ^subject^');
@@ -5630,7 +5565,7 @@
             <v:text type="password" name="dav_IMAP_password" xhtml_id="dav_IMAP_password" format="%s" xhtml_disabled="disabled" xhtml_class="field-short" xhtml_onblur="javascript: WEBDAV.loadIMAPFolders();">
               <v:before-data-bind>
                 <![CDATA[
-                  control.ufl_value := self.get_fieldProperty ('dav_IMAP_password', self.dav_path, 'virt:IMAP-password', '');
+                  control.ufl_value := '**********';
                 ]]>
               </v:before-data-bind>
             </v:text>

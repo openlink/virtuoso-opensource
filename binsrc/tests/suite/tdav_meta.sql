@@ -55,6 +55,7 @@ create procedure TDAV_META_LOAD ()
   passed_if_not_error ('set up CatFilter in /DAV/tdav_meta_home/catfilt/',
     "CatFilter_CONFIGURE" (
       DAV_SEARCH_ID ('/DAV/tdav_meta_home/catfilt/', 'C'),
+      '',
       '/DAV/tdav_meta_home/',
       vector() ) );
   passed_if_not_error ('copy /DAV/mnt/tdav_meta/ to /DAV/tdav_meta_home/zip_samples/',

@@ -95,9 +95,16 @@ function vspxView(fValue) {
   return vspxPost('action', '_cmd', 'view', '_path', fValue);
 }
 
+function cleanPost() {
+  var frm = document.forms['F1'];
+  frm.__submit_func.value = '__submit__';
+  frm.__submit_func.name = '';
+}
+
 function odsPost(obj, fields, button) {
   var form = getParent (obj, 'form');
   var formName = form.name;
+  createHidden(formName, '_cmd', '');
   for (var i = 0; i < fields.length; i += 2)
     createHidden(formName, fields[i], fields[i+1]);
 
@@ -310,7 +317,7 @@ function updateLabel(value)
   else if (value == 'RACKSPACE')
     showLabel(17, 17);
 
-  if (value == 'IMAP')
+  if ((value == 'IMAP') || (value == 'WebDAV'))
     OAT.Dom.show('cVerify');
   else
     OAT.Dom.hide('cVerify');
@@ -843,9 +850,14 @@ WEBDAV.verifyDialog = function ()
   if (verifyDiv)
     OAT.Dom.unlink(verifyDiv);
 
-  var content =
+  var verifyType = $v('dav_det');
+
+  var content;
+  content =
     '<div style="padding: 1em;">' +
-    '<table style="width: 100%;">' +
+    '<table style="width: 100%;">';
+  if (verifyType == 'IMAP') {
+    content +=
     '  <tr>' +
     '    <td align="right" width="50%">' +
     '      <b>Connection type:</b>' +
@@ -863,7 +875,25 @@ WEBDAV.verifyDialog = function ()
     '      <b>User:</b>' +
     '    </td>' +
     '    <td>{user}</td>' +
-    '  </tr>' +
+      '  </tr>'
+  ;
+  } else {
+    content +=
+      '  <tr>' +
+      '    <td align="right" width="50%">' +
+      '      <b>WebDAV path:</b>' +
+      '    </td>' +
+      '    <td>{path}</td>' +
+      '  </tr>' +
+      '  <tr>' +
+      '    <td align="right" width="50%">' +
+      '      <b>User:</b>' +
+      '    </td>' +
+      '    <td>{user}</td>' +
+      '  </tr>'
+    ;
+  }
+  content +=
     '  <tr><td align="center" colspan="2"><hr /><td></tr>' +
     '  <tr>' +
     '    <td align="right">' +
@@ -891,10 +921,15 @@ WEBDAV.verifyDialog = function ()
   var x = function (txt) {
     var verifyDiv = $("verifyDiv");
     if (verifyDiv) {
+      if (verifyType == 'IMAP') {
       content = content.replace('{connection}', $v('dav_IMAP_connection'));
       content = content.replace('{server}', $v('dav_IMAP_server'));
       content = content.replace('{port}', $v('dav_IMAP_port'));
       content = content.replace('{user}', $v('dav_IMAP_user'));
+      } else {
+        content = content.replace('{path}', $v('dav_WebDAV_path'));
+        content = content.replace('{user}', $v('dav_WebDAV_user'));
+      }
       if (txt) {
         if (txt.length > 30)
           verifyDiv.style.height = '180px';
@@ -910,12 +945,35 @@ WEBDAV.verifyDialog = function ()
   var t = function(){x('Timeout');};
 
   OAT.MSG.attach(OAT.AJAX, 'AJAX_TIMEOUT', t);
-  var params = '&connection=' + encodeURIComponent($v('dav_IMAP_connection'))
+  var params;
+  if (verifyType == 'IMAP') {
+    params = '&a=mailVerify'
+           + '&connection=' + encodeURIComponent($v('dav_IMAP_connection'))
              + '&server='     + encodeURIComponent($v('dav_IMAP_server'))
              + '&port='       + encodeURIComponent($v('dav_IMAP_port'))
              + '&user='       + encodeURIComponent($v('dav_IMAP_user'))
              + '&password='   + encodeURIComponent($v('dav_IMAP_password'));
-  OAT.AJAX.GET(WEBDAV.httpsLink('dav/dav_browser_rest.vsp')+'?a=mailVerify'+params, '', x, {type:OAT.AJAX.TYPE_TEXT, timeout: 5000, onend: function(){OAT.MSG.detach(OAT.AJAX, 'AJAX_TIMEOUT', t);}});
+  }
+  if (verifyType == 'WebDAV') {
+    var webdavType = 'Digest';
+    if ($('dav_WebDAV_authenticationType_1') && $('dav_WebDAV_authenticationType_1').checked)
+      webdavType = 'WebID';
+
+    params = '&a=webdavVerify'
+           + '&type='       + webdavType
+           + '&server='     + encodeURIComponent($v('dav_WebDAV_path'));
+    if (webdavType == 'Digest') {
+      params +='&user='     + encodeURIComponent($v('dav_WebDAV_user'))
+             + '&password=' + encodeURIComponent($v('dav_WebDAV_password'));
+    } else {
+      params +='&key='      + encodeURIComponent($v('dav_WebDAV_key'))
+             + WEBDAV.sessionParams();
+    }
+  }
+  if ($('item_path'))
+    params += '&path='      + $v('item_path');
+
+  OAT.AJAX.GET(WEBDAV.httpsLink('dav/dav_browser_rest.vsp')+'?'+params, '', x, {type:OAT.AJAX.TYPE_TEXT, timeout: 5000, onend: function(){OAT.MSG.detach(OAT.AJAX, 'AJAX_TIMEOUT', t);}});
 }
 
 var dav_IMAP_connection;
@@ -975,6 +1033,9 @@ WEBDAV.loadIMAPFolders = function ()
                  + '&port='       + encodeURIComponent(dav_IMAP_port)
                  + '&user='       + encodeURIComponent(dav_IMAP_user)
                  + '&password='   + encodeURIComponent(dav_IMAP_password);
+      if ($('item_path'))
+        params  += '&path='       + $v('item_path');
+
       dav_IMAP_seqNo += 1;
       var seqNo = dav_IMAP_seqNo;
       OAT.AJAX.GET(WEBDAV.httpsLink('dav/dav_browser_rest.vsp')+'?a=mailFolders'+params, '', function(data){x(seqNo, data);});

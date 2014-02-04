@@ -1654,7 +1654,7 @@ DAV_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar
 
   if (__proc_exists ('VAL.DBA.authentication_details_for_connection') is not null) {
     if (DAV_AUTHENTICATE_WITH_VAL (id, what, null, req, a_uid, a_gid, _perms, serviceId))
-    return a_uid;
+      return a_uid;
   }
 
   -- Both DAV_AUTHENTICATE_SSL and DAV_AUTHENTICATE_WITH_VAL only check IRI ACLs
@@ -1806,9 +1806,9 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
         }
         if (__proc_exists ('VAL.DBA.authentication_details_for_connection') is not null) {
           if (DAV_AUTHENTICATE_WITH_VAL (id, what, null, req, a_uid, a_gid, _perms, serviceId))
-        {
-          return a_uid;
-        }
+          {
+            return a_uid;
+          }
         }
 
         -- Normalize the service variables for error handling in VAL
@@ -1940,29 +1940,6 @@ DAV_AUTHENTICATE_SSL_CONDITION () returns integer
 }
 ;
 
--- redundant code muste be deleted after move the procedure WEBID_AUTH_GEN_2 in DAV!!!
--- START REDUNDANT CODE
-create function DAV_WEBID_QR (in gr varchar, in uri varchar)
-{
-    return sprintf ('sparql
-    define input:storage ""
-    define input:same-as "yes"
-    prefix cert: <http://www.w3.org/ns/auth/cert#>
-    prefix rsa: <http://www.w3.org/ns/auth/rsa#>
-    select (str (?exp)) (str (?mod))
-    from <%S>
-    where
-    {
-      { ?id cert:identity <%S> ; rsa:public_exponent ?exp ; rsa:modulus ?mod .  }
-      union
-      { ?id cert:identity <%S> ; rsa:public_exponent ?exp1 ; rsa:modulus ?mod1 . ?exp1 cert:decimal ?exp . ?mod1 cert:hex ?mod . }
-      union
-      { <%S> cert:key ?key . ?key cert:exponent ?exp . ?key cert:modulus ?mod .  }
-    }', gr, uri, uri, uri);
-}
-;
--- END REDUNDANT CODE
-
 
 create function
 DAV_AUTHENTICATE_SSL_SQL_PREPARE (
@@ -2000,15 +1977,22 @@ DAV_AUTHENTICATE_SSL_WEBID (
   inout webid varchar,
   inout webidGraph varchar)
 {
-  declare cert, vtype any;
+  webid := connection_get ('__webid');
+  webidGraph := connection_get ('__webidGraph');
+  if (isnull (webid))
+  {
+    declare cert, fing, vtype any;
 
-  webid := null;
-  if (__proc_exists ('DB.DBA.WEBID_AUTH_GEN_2') is not null)
-    {
-      cert := client_attr ('client_certificate');
-      if (not DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 0, webid, webidGraph, 0, vtype))
-        webid := null;
-    }
+    cert := client_attr ('client_certificate');
+    fing := get_certificate_info (6, cert);
+    webidGraph := 'http:' || replace (fing, ':', '');
+    if (not DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 1, webid, webidGraph, 0, vtype))
+      webid := null;
+  }
+  connection_set ('__webid', coalesce (webid, ''));
+  connection_get ('__webidGraph', webidGraph);
+
+  webid := case when webid = '' then null else webid end;
   return webid;
 }
 ;
@@ -2029,6 +2013,8 @@ DAV_CHECK_ACLS_INTERNAL (
   declare _filterMode, _filterValue, _filterCriteriaValue, _mode, _filter, _criteria, _operand, _condition, _value, _pattern, _statement, _params any;
   declare _sql, _state, _msg, _sqlParams, _meta, _rows any;
 
+  if (not isnull (webid))
+  {
   for (
     sparql
     define input:storage ""
@@ -2071,7 +2057,6 @@ DAV_CHECK_ACLS_INTERNAL (
                {
                  ?p3 rdf:type foaf:Group ;
                  foaf:member `iri(?:webid)` .
-                 filter (?g like (?:grpGraph)) .
                }
              }
            }
@@ -2109,6 +2094,7 @@ DAV_CHECK_ACLS_INTERNAL (
     IRIs[I] := vector_concat (IRIs[I], vector (tmp));
 
     _skip:;
+  }
   }
 
 
@@ -2213,23 +2199,17 @@ DAV_AUTHENTICATE_SSL (
   declare rc integer;
   declare webidGraph any;
 
-  if (not DAV_AUTHENTICATE_SSL_CONDITION ())
-    return 0;
-
   rc := 0;
-  _perms := '___';
-  DAV_AUTHENTICATE_SSL_ITEM (id, what, path);
+  if (DAV_AUTHENTICATE_SSL_CONDITION ())
+  {
+    DAV_AUTHENTICATE_SSL_ITEM (id, what, path);
 
-  webid := null;
-  webidGraph := 'http://local.virt/ods/' || uuid ();
-  DB.DBA.DAV_AUTHENTICATE_SSL_WEBID (webid, webidGraph);
-  if (isnull (webid))
-    return 0;
+    webidGraph := null;
+    DB.DBA.DAV_AUTHENTICATE_SSL_WEBID (webid, webidGraph);
 
-  rc := DAV_CHECK_ACLS (id, webid, webidGraph, what, path, req, a_uid, a_gid, _perms);
-
-  if (not is_empty_or_null (webidGraph))
-    DB.DBA.SPARUL_CLEAR (webidGraph, 0, 0, silent=>1);
+    _perms := '___';
+    rc := DAV_CHECK_ACLS (id, webid, webidGraph, what, path, req, a_uid, a_gid, _perms);
+  }
   return rc;
 }
 ;
@@ -3187,7 +3167,7 @@ create procedure DAV_DELETE_INT (
     type := (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = id);
     if (type = 'text/turtle')
     {
-      graph := WS.WS.DAV_HOST () || path;
+      graph := WS.WS.DAV_IRI (path);
       SPARQL clear graph ?:graph;
     }
 
