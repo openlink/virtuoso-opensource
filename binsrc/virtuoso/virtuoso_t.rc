@@ -60,8 +60,8 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 7,0,0,3203
- PRODUCTVERSION 7,0,0,3203
+ FILEVERSION 7,0,1,3207
+ PRODUCTVERSION 7,0,1,3207
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -78,11 +78,11 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "OpenLink Software"
             VALUE "FileDescription", "Virtuoso OpenSource"
-            VALUE "FileVersion", "7.0.0.3203"
+            VALUE "FileVersion", "7.0.1.3207"
             VALUE "InternalName", "Virtuoso"
             VALUE "LegalCopyright", "Copyright (C) 1998-2013 OpenLink Software"
             VALUE "ProductName", "Virtuoso OpenSource"
-            VALUE "ProductVersion", "7.0.0.3203"
+            VALUE "ProductVersion", "7.0.1.3207"
         END
     END
     BLOCK "VarFileInfo"
