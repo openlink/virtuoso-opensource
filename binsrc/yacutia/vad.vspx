@@ -225,7 +225,7 @@
 			    control.vc_enabled := 0;
 
 			   declare pkg any;
-			   pkg := (control.vc_parent as vspx_row_template).te_rowset[0]; 
+			   pkg := lower ((control.vc_parent as vspx_row_template).te_rowset[0]);
 			   if (exists (select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = '/DAV/VAD/conductor/vad_' || pkg || '_config.vspx'))
 			     {
 			       control.vc_enabled := 1;
