@@ -117,6 +117,7 @@ dv:photo rdfs:subPropertyOf virtrdf:image .
 <http://rdf.freebase.com/ns/common.topic.alias> rdfs:subPropertyOf virtrdf:label .
 <http://rdf.freebase.com/ns/measurement_unit.dated_money_value.amount> rdfs:subPropertyOf virtrdf:label .
 <http://commontag.org/ns#label> rdfs:subPropertyOf virtrdf:label .
+<http://purl.org/ontology/iron#prefLabel> rdfs:subPropertyOf virtrdf:label .
 oplzllw:latitude owl:equivalentProperty geo:lat .
 oplzllw:longitude owl:equivalentProperty geo:long .
 oplgp:organization_name rdfs:subPropertyOf virtrdf:label .
