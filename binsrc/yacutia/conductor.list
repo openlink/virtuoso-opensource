@@ -395,6 +395,7 @@ conductor/sec_auth_serv.vspx
 conductor/sec_auth_serv_sp.vspx
 conductor/sec_auth_sponger_1.vspx
 conductor/sec_auth_sponger_2.vspx
+conductor/sec_ca.vspx
 conductor/sec_pki_1.vspx
 conductor/sec_pki_2.vspx
 conductor/sec_pki_2_conf.vspx
