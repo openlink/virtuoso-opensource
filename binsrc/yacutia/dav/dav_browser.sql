@@ -5180,17 +5180,14 @@ create procedure WEBDAV.DBA.path_normalize (
   in path varchar,
   in path_type varchar := 'P')
 {
-  declare N integer;
-
   path := trim (path);
-  N := length (path);
-  if (N > 0)
+  if (length (path) > 0)
   {
     if (chr (path[0]) <> '/')
     {
       path := '/' || path;
     }
-    if ((path_type = 'C') and (chr (path[N-1]) <> '/'))
+    if ((path_type = 'C') and (chr (path[length (path)-1]) <> '/'))
     {
       path := path || '/';
     }
