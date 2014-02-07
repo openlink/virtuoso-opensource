@@ -1594,6 +1594,7 @@ void
 qr_set_freeable (comp_context_t *cc, query_t * qr)
 {
   dk_set_t res = NULL;
+  dk_hash_t * freeable_inx = hash_table_allocate (101);
   dk_set_t  slots = qr->qr_state_map;
   dk_set_t * prev = &qr->qr_state_map;
   dk_set_t copy = NULL;
@@ -1608,9 +1609,11 @@ qr_set_freeable (comp_context_t *cc, query_t * qr)
       state_slot_t * use_ssl = ssl_use_stock (cc, ssl);
       if (!ssl->ssl_is_alias
 	  && !IS_SSL_REF_PARAMETER (ssl->ssl_type)
-	  && ssl->ssl_type != SSL_CONSTANT)
+	  && ssl->ssl_type != SSL_CONSTANT
+	  && !gethash ((ptrlong)ssl->ssl_index, freeable_inx))
 	{
 	  dk_set_push (&res, (void*)use_ssl);
+	  sethash ((ptrlong)ssl->ssl_index, freeable_inx, (void*)1);
 	  if (SSL_ITC != ssl->ssl_type && SSL_PLACEHOLDER != ssl->ssl_type && !gethash ((void*)ssl, no_copy))
 	    dk_set_push (&copy, ssl);
 	}
@@ -1625,6 +1628,7 @@ qr_set_freeable (comp_context_t *cc, query_t * qr)
 	prev = &slots->next;
       slots = next;
     }
+  hash_table_free (freeable_inx);
   dk_free_box ((box_t) qr->qr_freeable_slots);
   qr->qr_freeable_slots = (state_slot_t **) list_to_array (res);
   ssl_sort_by_index (qr->qr_freeable_slots);

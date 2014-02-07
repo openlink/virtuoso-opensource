@@ -5874,3 +5874,13 @@ sqlg_top (sqlo_t * so, df_elt_t * dfe)
 }
 
 
+void
+qr_print_ssl (query_t * qr, ssl_index_t i)
+{
+  DO_SET (state_slot_t *, ssl, &qr->qr_state_map)
+    if (i == ssl->ssl_index)
+      printf ("%p\n", ssl);
+  END_DO_SET ();
+}
+
+
