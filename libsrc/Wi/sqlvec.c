@@ -1176,6 +1176,8 @@ cv_deduplicate_param_ssls (comp_context_t *cc, state_slot_t **params)
   int inx, prev_inx;
   DO_BOX (state_slot_t *, arg, inx, params)
   {
+      if (arg->ssl_qr_global)
+	continue;
     switch (arg->ssl_type)
       {
       case SSL_CONSTANT:

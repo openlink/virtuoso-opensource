@@ -1610,10 +1610,11 @@ qr_set_freeable (comp_context_t *cc, query_t * qr)
       if (!ssl->ssl_is_alias
 	  && !IS_SSL_REF_PARAMETER (ssl->ssl_type)
 	  && ssl->ssl_type != SSL_CONSTANT
-	  && !gethash ((ptrlong)ssl->ssl_index, freeable_inx))
+	  && !gethash ((void*)(ptrlong)ssl->ssl_index, freeable_inx))
 	{
 	  dk_set_push (&res, (void*)use_ssl);
-	  sethash ((ptrlong)ssl->ssl_index, freeable_inx, (void*)1);
+	  if (!SSL_IS_VEC_OR_REF (ssl))
+	    sethash ((void*)(ptrlong)ssl->ssl_index, freeable_inx, (void*)1);
 	  if (SSL_ITC != ssl->ssl_type && SSL_PLACEHOLDER != ssl->ssl_type && !gethash ((void*)ssl, no_copy))
 	    dk_set_push (&copy, ssl);
 	}

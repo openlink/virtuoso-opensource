@@ -196,7 +196,7 @@ void
 sqlc_copy_ssl_if_constant (sql_comp_t * sc, state_slot_t ** ssl_ret, dk_set_t * asg_code, setp_node_t * setp)
 {
   state_slot_t *ssl = *ssl_ret;
-  if (SSL_CONSTANT == ssl->ssl_type)
+  if (SSL_CONSTANT == ssl->ssl_type || ssl->ssl_qr_global)
     {
       state_slot_t * v = ssl_new_variable (sc->sc_cc, "", DV_UNKNOWN);
       ssl_copy_types (v, ssl);
