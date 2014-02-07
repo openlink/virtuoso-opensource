@@ -2582,6 +2582,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
   int end, rows_in_seg = -1;
   int initial_set = itc->itc_set, initial_n_matches = 0, nth_sp;
   int64 check_start_ts = 0;
+  char do_sp_stat = itc->itc_n_row_specs > 1;
   //memzero (&cpo, sizeof (cpo));
   cpo.cpo_range = &itc->itc_ranges[itc->itc_set - itc->itc_col_first_set];
   if (!is_singles && itc->itc_rl)
@@ -2604,6 +2605,8 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
   if (!is_singles)
     {
       n = cpo.cpo_range->r_end - cpo.cpo_range->r_first;
+      if (n < 10)
+	do_sp_stat = 0;
       itc->itc_n_matches = 0;
       if (ISO_SERIALIZABLE == itc->itc_isolation)
 	{
@@ -2629,6 +2632,8 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
   else
     {
       initial_n_matches = itc->itc_n_matches;
+      if (initial_n_matches < 10)
+	do_sp_stat = 0;
       rng.r_first = itc->itc_matches[0];
       rng.r_end = itc->itc_matches[itc->itc_n_matches - 1] + 1;
       cpo.cpo_range = &rng;
@@ -2716,7 +2721,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
 	  itc->itc_match_sz = rows_in_seg + 400;
 	  itc->itc_matches = (row_no_t *) itc_alloc_box (itc, sizeof (row_no_t) * itc->itc_match_sz, DV_BIN);
 	}
-      if (itc->itc_n_row_specs > 1)
+      if (do_sp_stat)
 	{
 	  check_start_ts = rdtsc ();
 	  if (!itc->itc_n_matches && !is_singles)
@@ -2755,7 +2760,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
 	next_page:;
 	}
     next_spec:
-      if (itc->itc_n_row_specs > 1)
+      if (do_sp_stat)
 	{
 	  itc->itc_sp_stat[nth_sp].spst_out += itc->itc_match_out;
 	  itc->itc_sp_stat[nth_sp].spst_time += rdtsc () - check_start_ts;
@@ -2771,7 +2776,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
       itc->itc_match_in = 0;
     }
   itc->itc_is_last_col_spec = 0;
-  if (itc->itc_n_row_specs > 1 && itc->itc_sp_stat[0].spst_in > 10000)
+  if (do_sp_stat && itc->itc_sp_stat[0].spst_in > 10000)
     itc_sp_stat_check (itc);
   if (RANDOM_SEARCH_COND == itc->itc_random_search)
     return DVC_LESS;
