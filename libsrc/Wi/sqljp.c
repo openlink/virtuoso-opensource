@@ -186,6 +186,8 @@ sqlo_rdfs_type_card (df_elt_t * tb_dfe, df_elt_t * p_dfe, df_elt_t * o_dfe)
   df_elt_t *lower[2];
   df_elt_t *upper[2];
   index_choice_t ic;
+  locus_t * loc_save = tb_dfe->dfe_locus;
+  float ret;
   memzero (&ic, sizeof (ic));
   lower[0] = p_dfe;
   lower[1] = o_dfe;
@@ -194,7 +196,10 @@ sqlo_rdfs_type_card (df_elt_t * tb_dfe, df_elt_t * p_dfe, df_elt_t * o_dfe)
   if (!ic.ic_key)
     return dbe_key_count (tb_dfe->_.table.ot->ot_table->tb_primary_key);
   ic.ic_ric = rdf_name_to_ctx (sqlo_opt_value (tb_dfe->_.table.ot->ot_opts, OPT_RDF_INFERENCE));
-  return sqlo_inx_sample (tb_dfe, ic.ic_key, lower, upper, 2, &ic);
+  tb_dfe->dfe_locus = LOC_LOCAL;
+  ret = sqlo_inx_sample (tb_dfe, ic.ic_key, lower, upper, 2, &ic);
+  tb_dfe->dfe_locus = loc_save;
+  return ret;
 }
 
 
