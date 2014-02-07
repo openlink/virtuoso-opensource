@@ -3106,6 +3106,18 @@ sqlo_check_rdf_lit (ST ** ptree)
 }
 
 
+extern caddr_t uname_one_of_these;
+
+ST *
+sqlo_iri_in_opt (sqlo_t * so, ST * tree)
+{
+  ST ** params = tree->_.call.params;
+  if (st_is_call (params[0], "__ro2lo", 1))
+    params[0] = params[0]->_.call.params[0];
+  return tree;
+}
+
+
 void
 sqlo_scope (sqlo_t * so, ST ** ptree)
 {
@@ -3222,6 +3234,8 @@ sqlo_scope (sqlo_t * so, ST ** ptree)
 	  }
 	END_DO_BOX;
 	res = sinv_check_inverses (tree, sqlc_client());
+	if (call_name == uname_one_of_these)
+	  res = sqlo_iri_in_opt (so, tree);
 	if (res != tree)
 	  {
 	    *ptree = res;
