@@ -1080,7 +1080,7 @@ geo_insert (query_instance_t * qi, dbe_table_t * tb, caddr_t g, boxint id, int i
   if (DV_SINGLE_FLOAT == dtp)
     {
       if (IS_OV ((float)box.XYbox.Xmin) || IS_OV ((float)box.XYbox.Xmax) || IS_OV ((float)box.XYbox.Ymin) || IS_OV ((float)box.XYbox.Ymax))
-	sqlr_new_error ("42000", "GEOOV", "insertingf geometry with bounding box with NAN or INF coordinates");
+	sqlr_new_error ("42000", "GEOOV", "inserting geometry with bounding box with NAN or INF coordinates");
       rd.rd_non_comp_len += 16;
       rd.rd_values[RD_X] = box_float (box.XYbox.Xmin);
       rd.rd_values[RD_Y] = box_float (box.XYbox.Ymin);
@@ -1863,6 +1863,16 @@ bif_st_get_bounding_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   double prec_x = 0, prec_y = 0;
   int argcount = BOX_ELEMENTS (args);
   geo_t *res, xy;
+  if (NULL == g)
+    {
+#if 0
+      res = geo_alloc (GEO_BOX, 0, SRID_DEFAULT);
+      GEO_XYBOX_SET_EMPTY (res->XYbox);
+      return (caddr_t)res;
+#else
+      return NEW_DB_NULL;
+#endif
+    }
   if (2 <= argcount) prec_y = prec_x = bif_double_arg (qst, args, 1, "st_get_bounding_box");
   if (3 <= argcount) prec_y = bif_double_arg (qst, args, 2, "st_get_bounding_box");
   geo_get_bounding_XYbox (g, &xy, prec_x, prec_y);

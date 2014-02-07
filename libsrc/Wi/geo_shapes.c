@@ -216,7 +216,7 @@ geo_point (geoc x, geoc y)
   GEO_RESET_GCB(_.parts.parts_gcb); \
   res->_.parts.items = (geo_t **)((void *)(((char *)res) + (((char *)(src->_.parts.items)) - (char *)src))); \
   for (ctr = res->_.parts.len; ctr--; /* no step */) \
-    res->_.parts.items[ctr] = geo_copy (res->_.parts.items[ctr]); \
+    res->_.parts.items[ctr] = geo_copy (src->_.parts.items[ctr]); \
   } while (0)
 
 geo_t *
@@ -286,9 +286,9 @@ geo_copy (geo_t *src)
   GEO_RESET_CVECT(_.pline.Ys);
 
 #define GEO_MP_COPY_PARTS(lastfld) do { int ctr; \
-  res->_.parts.items = (geo_t **)((void *)(((char *)res) + (((char *)(&(src->_.parts.items))) - (char *)src))); \
+  res->_.parts.items = (geo_t **)((void *)(((char *)res) + (((char *)(src->_.parts.items)) - (char *)src))); \
   for (ctr = res->_.parts.len; ctr--; /* no step */) \
-    res->_.parts.items[ctr] = mp_geo_copy (mp, res->_.parts.items[ctr]); \
+    res->_.parts.items[ctr] = mp_geo_copy (mp, src->_.parts.items[ctr]); \
   } while (0)
 
 geo_t *
@@ -1502,6 +1502,25 @@ ewkt_get_points (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas)
 		ewkt_signal (in, "Too many coordinates are listed for a point");
 	      if (dim_idx >= head_metas->kwd_max_nums)
 		ewkt_signal (in, "The point has more coordinates than permitted by the spatial type");
+              if (GEO_SR_SPHEROID_DEGREES (in->ewkt_srcode))
+                {
+                  switch (dim_idx)
+                    {
+                    case 0:
+                      if ((val.v_geoc < -270.0) || (val.v_geoc > 450.0))
+                        ewkt_signal (in, "The point coordinates are spherical degrees and the longitude is out of range -270..450");
+                    break;
+                    case 1:
+                      if ((val.v_geoc < -90.0) || (val.v_geoc > 90.0))
+                        ewkt_signal (in, "The point coordinates are spherical degrees and the latitude is out of range -90..90");
+                    break;
+                    }
+                }
+              else
+                {
+                  if ((val.v_geoc <= -0.5 * geoc_FARAWAY) || (val.v_geoc >= 0.5 * geoc_FARAWAY))
+                    ewkt_signal (in, "The point coordinate is out of range -5E37..+5E37");
+                }
 	      in->ekwt_Cs[dim_idx++][in->ekwt_point_count] = val.v_geoc;
 	      continue;
 	    case EWKT_NUM_BAD:
@@ -2564,8 +2583,8 @@ geo_deserialize_one (int srcode /* -1 for topmost */ , dk_session_t * ses)
 /* Old types */
     case GEO_POINT:
       g = geo_alloc_safe (flags, 0, srcode, ses);
-      g->Xkey = read_v_double (ses);
-      g->Ykey = read_v_double (ses);
+      g->XYbox.Xmin = g->XYbox.Xmax = read_v_double (ses);
+      g->XYbox.Ymin = g->XYbox.Ymax = read_v_double (ses);
       return g;
     case GEO_BOX:
       g = geo_alloc_safe (flags, 0, srcode, ses);
@@ -2578,10 +2597,12 @@ geo_deserialize_one (int srcode /* -1 for topmost */ , dk_session_t * ses)
       {
 	int inx, pointcount = (read_int (ses) - 1) / 2;
 	g = geo_alloc_safe (flags, pointcount, srcode, ses);
+        GEO_XYBOX_SET_EMPTY (g->XYbox);
 	for (inx = 0; inx < pointcount; inx++)
 	  {
-	    g->_.pline.Xs[inx] = read_v_double (ses);
-	    g->_.pline.Ys[inx] = read_v_double (ses);
+            geoc pX = g->_.pline.Xs[inx] = read_v_double (ses);
+            geoc pY = g->_.pline.Ys[inx] = read_v_double (ses);
+            GEO_XYBOX_STRETCH_BY_POINT (g->XYbox, pX, pY);
 	  }
 	return g;
       }

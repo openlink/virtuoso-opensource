@@ -131,6 +131,12 @@ typedef struct geo_XYbox_s
 #define GEO_XYBOX_SET_EMPTY(bbox) \
   do { (bbox).Xmin = (bbox).Ymin = geoc_FARAWAY; (bbox).Xmax = (bbox).Ymax = -geoc_FARAWAY; } while (0)
 
+/*! Set the box to a single faraway point. */
+#define GEO_XYBOX_SET_FARAWAY(bbox) \
+  do { (bbox).Xmin = (bbox).Ymin = geoc_FARAWAY; (bbox).Xmax = (bbox).Ymax = /* no minus here */ geoc_FARAWAY; } while (0)
+
+#define GEO_XYBOX_IS_EMPTY_OR_FARAWAY(bbox) (geoc_FARAWAY <= (bbox).Xmin)
+
 /*! Set the box to a point */
 #define GEO_XYBOX_SET_TO_POINT(tgt_bbox,x,y) \
   do { \
