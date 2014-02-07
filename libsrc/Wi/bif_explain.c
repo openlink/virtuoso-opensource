@@ -783,7 +783,7 @@ ks_print_0 (key_source_t * ks)
 static int
 ssl_is_column_derived(state_slot_t * ssl)
 {
-  return SSL_VEC == ssl->ssl_type && ssl->ssl_column;
+  return ssl && SSL_VEC == ssl->ssl_type && ssl->ssl_column;
 }
 
 /* milos: function which is used to detect a bad plan (possible Cartesian product) and set a warning with appropriate message */
