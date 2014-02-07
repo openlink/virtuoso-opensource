@@ -3796,6 +3796,12 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
 	      col_cost += p_cost * col_arity;
 	      if (!col_already_eq)
 		col_arity *= p_arity;
+	      else if (in_list)
+		{
+		  /* if there is an eq and an in pred on the same col, say that the in selects 1/2.  Will be run once for each in the in list, hence divide by the length */
+		  ic->ic_in_list_sel = 0.5;
+		  col_arity *= 0.5 / BOX_ELEMENTS (in_list);
+		}
 	    }
 	}
       END_DO_SET();
@@ -3995,6 +4001,12 @@ dfe_table_cost_ic (df_elt_t * dfe, index_choice_t * ic, int inx_only)
   SET_THR_ATTR (thr, TA_NTH_IN_ITEM, 0);
   dfe_table_cost_ic_1 (dfe, ic, inx_only);
   n_in = (ptrlong) THR_ATTR (thr, TA_N_IN_ITEMS);
+  if (ic->ic_in_list_sel)
+    {
+      /* if there is an eq and an in on the same, the in does not weigh very much, is likely redundant but still 0.9 */
+      ic->ic_arity *= 0.9;
+      return;
+    }
   if (-1 == n_in)
     return;
   for (inx = 1; inx < n_in; inx++)
