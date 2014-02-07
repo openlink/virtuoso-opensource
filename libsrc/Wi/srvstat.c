@@ -245,6 +245,7 @@ extern long tc_dfg_max_empty_mores;
 extern int mp_local_rc_sz;
 extern int enable_distinct_sas;
 extern int enable_inline_sqs;
+extern enable_joins_only;
 int32 ha_rehash_pct = 300;
 extern int c_use_aio;
 extern int32 sqlo_sample_dep_cols;
@@ -1769,6 +1770,7 @@ stat_desc_t dbf_descs [] =
     {"enable_distinct_sas", (long *)&enable_distinct_sas, SD_INT32},
     {"enable_inline_sqs", (long *)&enable_inline_sqs, SD_INT32},
     {"hash_join_enable", (long *)&hash_join_enable, SD_INT32},
+    {"enable_joins_only", &enable_joins_only, SD_INT32},
     {"em_ra_window", (long *)&em_ra_window, SD_INT32},
     {"em_ra_threshold", (long *)&em_ra_threshold, SD_INT32},
     {"em_ra_startup_threshold", (long *)&em_ra_startup_threshold, SD_INT32},
