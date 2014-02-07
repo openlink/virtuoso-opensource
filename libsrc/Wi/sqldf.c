@@ -6671,6 +6671,8 @@ sqlo_layout_lim (sqlo_t * so, op_table_t * ot, int is_top)
 }
 
 
+#define CATCH_SQLO_NO_MEM 11102
+
 
 void
 sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
@@ -6696,9 +6698,7 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 	  return;
 	}
       else
-	sqlc_error (so->so_sc->sc_cc, "42000",
-	    "The memory pool size %d reached the limit %d bytes, try to increase the MaxMemPoolSize ini setting.",
-	    (THR_TMP_POOL)->mp_bytes, sqlo_max_mp_size);
+	lisp_throw (CATCH_SQLO_NO_MEM, 1);
     }
   if (sqlo_no_more_time (so, ot))
     return;
@@ -6958,7 +6958,7 @@ sqlo_layout_plan (sqlo_t * so, op_table_t * ot, int is_top)
 df_elt_t *
 sqlo_layout (sqlo_t * so, op_table_t * ot, int is_top, df_elt_t * super)
 {
-  df_elt_t * ret;
+  df_elt_t * ret = NULL;
   df_elt_t * so_dfe = so->so_dfe;
   op_table_t * prev_dt = so->so_this_dt;
   float sc1= so->so_best_score;
@@ -7008,17 +7008,42 @@ sqlo_layout (sqlo_t * so, op_table_t * ot, int is_top, df_elt_t * super)
   ot->ot_is_contradiction = 0;
   ot->ot_invariant_preds = NULL;
   ot->ot_layouts_tried = 0;
-  sqlo_layout_plan (so, ot, is_top);
-
-  ret = so->so_best;
-  dfe_ref_check (ret);
-  ret->_.sub.is_contradiction = ot->ot_is_contradiction;
-  ret->_.sub.is_complete = 1;
-  dfe_top_discount (ret, &ret->dfe_unit, &ret->dfe_arity); /* if top or value/exists subq, not all rows are produced. Consider this only after layout is done */
-  if (!ret->dfe_tree)
-    ret->dfe_tree = ot->ot_dt;
-  ret->dfe_hash = sql_tree_hash ((char*)&ret->dfe_tree);
-  ret->dfe_unit = so->so_best_score;
+  CATCH (CATCH_SQLO_NO_MEM)
+  {
+    sqlo_layout_plan (so, ot, is_top);
+  }
+  THROW_CODE
+    {
+      if (!so->so_best)
+	{
+	  POP_CATCH;
+	  so->so_plan_mode = save_mode;
+	  so->so_any_with_this_first = any_w_first;
+	  so->so_this_dt = prev_dt;
+	  so->so_subscore = subs;
+	  so->so_best = best1;
+	  so->so_best_score = sc1;
+	  so->so_gen_pt = pt;
+	  so->so_dfe = so_dfe;
+	  so->so_cache_subqs = cache_subqs;
+	  if (ot->ot_super)
+	    lisp_throw (CATCH_SQLO_NO_MEM, 1);
+	  else
+	    sqlc_error (so->so_sc->sc_cc, "42000",
+			"The memory pool size %d reached the limit %d bytes, try to increase the MaxMemPoolSize ini setting.",
+			(THR_TMP_POOL)->mp_bytes, sqlo_max_mp_size);
+	}
+    }
+  END_CATCH;
+    ret = so->so_best;
+    dfe_ref_check (ret);
+    ret->_.sub.is_contradiction = ot->ot_is_contradiction;
+    ret->_.sub.is_complete = 1;
+    dfe_top_discount (ret, &ret->dfe_unit, &ret->dfe_arity); /* if top or value/exists subq, not all rows are produced. Consider this only after layout is done */
+    if (!ret->dfe_tree)
+      ret->dfe_tree = ot->ot_dt;
+    ret->dfe_hash = sql_tree_hash ((char*)&ret->dfe_tree);
+    ret->dfe_unit = so->so_best_score;
   so->so_plan_mode = save_mode;
   so->so_any_with_this_first = any_w_first;
   so->so_this_dt = prev_dt;
