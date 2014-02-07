@@ -712,6 +712,7 @@ void sqlc_need_enlist (sql_comp_t * sc);
 int sqlg_distinct_colocated  (sql_comp_t * sc, state_slot_t ** ssls, int n_ssls);
 void stn_set_in_slots (sql_comp_t * sc, stage_node_t * stn);
 void sqlc_code_dpipe (sql_comp_t * sc, dk_set_t * code);
+dbe_key_t *sqlg_flood_key ();
 
 
 #define  RDF_UNTYPED ((caddr_t) 1)

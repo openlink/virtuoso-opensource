@@ -1048,6 +1048,7 @@ int itc_rd_cluster_blobs (it_cursor_t * itc, row_delta_t * rd, mem_pool_t * ins_
 
 
 /**add vec */
+void ts_ensure_fs_part (table_source_t * ts);
 void clrg_call_flush_if_due (cl_req_group_t * clrg, query_instance_t * qi, int anyway);
 void chash_cl_init ();
 caddr_t daq_call_1 (cl_req_group_t * clrg, dbe_key_t * key, caddr_t fn, caddr_t * vec, int flags, int * first_seq_ret, caddr_t * host_nos);

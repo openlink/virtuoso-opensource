@@ -114,6 +114,7 @@ int vc_date_date (data_col_t * target, data_col_t * source, int row, caddr_t * e
 void dc_get_buffer (data_col_t * dc, int bytes);
 void dc_reset (data_col_t * dc);
 void dc_append_bytes (data_col_t * dc, db_buf_t bytes, int len, db_buf_t pref, int pref_len);
+void dc_append_chars (data_col_t * dc, char *field, int field_lem);
 void dc_append (data_col_t * target, data_col_t * source, int inx);
 void dc_append_box (data_col_t * dc, caddr_t box);
 void dc_append_null (data_col_t * dc);
