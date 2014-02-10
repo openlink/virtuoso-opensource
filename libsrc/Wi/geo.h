@@ -248,6 +248,7 @@ typedef struct geo_s
 
 extern double haversine_deg_km (double long1, double lat1, double long2, double lat2);
 extern double dist_from_point_to_line_segment (double xP, double yP, double xL1, double yL1, double xL2, double yL2);
+extern double geo_distance (geo_srcode_t srcode, double x1, double y1, double x2, double y2);
 
 extern int geo_pred (geo_t * g1, geo_t * g2, int op, double prec);
 extern geo_t *geo_point (double x, double y);
