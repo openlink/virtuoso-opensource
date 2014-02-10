@@ -40,6 +40,7 @@ typedef struct
     long		bt_prec;
     long		bt_scale;
     long		bt_non_null;
+    const char *	bt_sql_dml_name;
   } bif_type_t;
 
 #define is_some_sort_of_an_integer(T)\
@@ -61,6 +62,7 @@ typedef struct sql_tree_s *bif_sql_optimizer_t (sql_comp_ptr_t sqlc, int bif_opt
 typedef struct spar_tree_s *bif_sparql_optimizer_t (sparp_ptr_t sparp, int bif_opt_opcode, struct spar_tree_s *tree, bif_metadata_ptr_t bmd, void *more);
 
 #define BMD_DONE			12053	/*!< The value in arglist of bif_define_ex that indicates the end of arglist */
+#define BMD_ALIAS			1	/*!< An additional (alias) name of a function */
 #define BMD_VECTOR_IMPL			2	/*!< Flags that the BIF has a vectored variant, the pointer to the vectored implementation is the value */
 #define BMD_SQL_OPTIMIZER_IMPL		3	/*!< Flags that the BIF has a special optimizer, the pointer to the function is the value */
 #define BMD_SPARQL_OPTIMIZER_IMPL	4	/*!< Flags that the BIF has a special optimizer, the pointer to the function is the value */
@@ -72,9 +74,11 @@ typedef struct spar_tree_s *bif_sparql_optimizer_t (sparp_ptr_t sparp, int bif_o
 #define BMD_IS_PURE			10	/*!< Flags that the function is pure, no associated value */
 #define BMD_IS_DBA_ONLY			11	/*!< Flags that the function is for DBA only, no associated value */
 #define BMD_USES_INDEX			12	/*!< Flags that the function uses at least some index, no associated value */
-#define BMD_NO_CLUSTER			13	/*!< Flags that the function is not cluster friendly and can not be relocated from node to node without the change in semantics, no associated value */
-#define BMD_SPARQL_ONLY			14	/*!< Flag for a special name that looks like a function name in SPARQL front-end, but not a BIF in the generated SQL. The value should be the last one because it does not correspond to any field of \c bif_metadata_t */
-#define COUNTOF__BMD_OPTIONs		15
+#define BMD_SPARQL_ONLY			13	/*!< Flag for a special name that looks like a function name in SPARQL front-end, but not a BIF in the generated SQL. The value should be the last one because it does not correspond to any field of \c bif_metadata_t */
+#define BMD_NO_CLUSTER			14	/*!< Flags that the function is not cluster friendly and can not be relocated from node to node without the change in semantics, no associated value */
+#define BMD_OUT_OF_PARTITION		15	/*!< Flags that the function makes a cross partition cluster operation */
+#define BMD_NEED_ENLIST			16	/*!< Flags that the query should get \c qr_need_enlist set to 1 if it contains any call of this function */
+#define COUNTOF__BMD_OPTIONs		17
 
 /*! \brief Metadata about single BIF or similar object.
 These metadata are created once, remains constant after the creation and never deleted.
@@ -83,18 +87,19 @@ If a metadata record describes BIF that was loaeded from a plugin and later unlo
 typedef struct bif_metadata_s {
   const char *			bmd_name;
   bif_t				bmd_main_impl;
-  bif_vec_t			bmd_vector_impl;		/*!<offset 2	, see \c BMD_VECTOR_IMPL */
-  bif_sql_optimizer_t *		bmd_sql_optimizer_impl;		/*!<offset 3	, see \c BMD_SQL_OPTIMIZER_IMPL */
-  bif_sparql_optimizer_t *	bmd_sparql_optimizer_impl;	/*!<offset 4	, see \c BMD_SPARQL_OPTIMIZER_IMPL */
-  bif_type_t *			bmd_ret_type;			/*!<offset 5	, see \c BMD_RET_TYPE */
-  ptrlong			bmd_min_argcount;		/*!<offset 6	, see \c BMD_MIN_ARGCOUNT */
-  ptrlong			bmd_argcount_inc;		/*!<offset 7	, see \c BMD_ARGCOUNT_INC */
-  ptrlong			bmd_max_argcount;		/*!<offset 8	, see \c BMD_MAX_ARGCOUNT */
-  ptrlong			bmd_is_aggregate;		/*!<offset 9	, see \c BMD_IS_AGGREGATE */
-  ptrlong			bmd_is_pure;			/*!<offset 10	, see \c BMD_IS_PURE */
-  ptrlong			bmd_is_dba_only;		/*!<offset 11	, see \c BMD_IS_DBA_ONLY */
-  ptrlong			bmd_uses_index;			/*!<offset 12	, see \c BMD_USES_INDEX */
-  ptrlong			bmd_no_cluster;			/*!<offset 13	, see \c BMD_NO_CLUSTER */
+  dk_set_t			bmd_aliases;			/*!< see \c BMD_ALIAS */
+  bif_vec_t			bmd_vector_impl;		/*!< see \c BMD_VECTOR_IMPL */
+  bif_sql_optimizer_t *		bmd_sql_optimizer_impl;		/*!< see \c BMD_SQL_OPTIMIZER_IMPL */
+  bif_sparql_optimizer_t *	bmd_sparql_optimizer_impl;	/*!< see \c BMD_SPARQL_OPTIMIZER_IMPL */
+  bif_type_t *			bmd_ret_type;			/*!< see \c BMD_RET_TYPE */
+  ptrlong			bmd_min_argcount;		/*!< see \c BMD_MIN_ARGCOUNT */
+  ptrlong			bmd_argcount_inc;		/*!< see \c BMD_ARGCOUNT_INC */
+  ptrlong			bmd_max_argcount;		/*!< see \c BMD_MAX_ARGCOUNT */
+  ptrlong			bmd_is_aggregate;		/*!< see \c BMD_IS_AGGREGATE */
+  ptrlong			bmd_is_pure;			/*!< see \c BMD_IS_PURE */
+  ptrlong			bmd_is_dba_only;		/*!< see \c BMD_IS_DBA_ONLY */
+  ptrlong			bmd_uses_index;			/*!< see \c BMD_USES_INDEX */
+  ptrlong			bmd_no_cluster;			/*!< see \c BMD_NO_CLUSTER, \c BMD_OUT_OF_PARTITION and \c BMD_NEED_ENLIST */
 } bif_metadata_t;
 
 extern id_hash_t *name_to_bif_metadata_idhash;			/*!< Metadata of all known BIFs (except \c BMD_SPARQL_ONLY records); results of sqlp_box_id_upcase() as keys, pointers to \c bif_metadata_t as values */
@@ -336,13 +341,10 @@ long raw_length (caddr_t arg);
 
 int bif_is_no_cluster (bif_t bif); /* cannot be execd except where invoked */
 int bif_need_enlist (bif_t bif);
-void bif_set_no_cluster (char * n);
-void bif_set_cluster_rec (char * n);
-void bif_set_enlist (char * n);
 
-#define BIF_NO_CLUSTER 1 /* bif not shippable, e.g. depends on local thread context */
-#define BIF_OUT_OF_PARTITION 2 /* bif makes a cross partition cluster op, can ship only if recursive qf enabled */
-#define BIF_ENLIST 4  /* require and propagate enlist, bif makes a transactional write */
+#define BIF_NO_CLUSTER		0x1	/*!< bif is not shippable, e.g., depends on local thread context */
+#define BIF_OUT_OF_PARTITION	0x2	/*!< bif makes a cross partition cluster op, can ship only if recursive qf enabled */
+#define BIF_ENLIST		0x4	/*!< require and propagate enlist, bif makes a transactional write */ 
 
 typedef struct
 {

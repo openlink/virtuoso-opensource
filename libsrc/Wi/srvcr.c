@@ -2272,8 +2272,8 @@ bif_cursors_init (void)
   bif_define ( __SCROLL_CR_FETCH, bif_scroll_cr_fetch);
 
   bif_define ("bookmark", bif_bookmark);
-  bif_define_typed ("tree_md5", bif_tree_md5, &bt_varchar);
-  bif_define_typed ("__burst_mode_set", bif_burst_mode_set, &bt_integer);
+  bif_define_ex ("tree_md5", bif_tree_md5, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("__burst_mode_set", bif_burst_mode_set, BMD_RET_TYPE, &bt_integer, BMD_DONE);
 }
 
 

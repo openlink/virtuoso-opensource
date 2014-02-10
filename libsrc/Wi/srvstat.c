@@ -4646,28 +4646,28 @@ bif_status_init (void)
   bif_define ("status", bif_status);
   bif_define ("sys_stat", bif_sys_stat);
   bif_define ("__dbf_set", bif_dbf_set);
-  bif_define_typed ("key_stat", bif_key_stat, &bt_integer);
-  bif_define_typed ("key_estimate", bif_key_estimate, &bt_integer);
-  bif_define_typed ("col_stat", bif_col_stat, &bt_any_box);
+  bif_define_ex ("key_stat", bif_key_stat, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("key_estimate", bif_key_estimate, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("col_stat", bif_col_stat, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
   bif_define ("__col_info", bif_col_info);
   bif_define ("prof_enable", bif_profile_enable);
   bif_define ("prof_sample", bif_profile_sample);
   bif_define ("prof_proc", bif_prof_proc);
-  bif_define_typed ("msec_time", bif_msec_time, &bt_integer);
-  bif_define_typed ("usec_time", bif_usec_time, &bt_integer);
-  bif_define_typed ("identify_self", bif_identify_self, &bt_any);
+  bif_define_ex ("msec_time", bif_msec_time, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("usec_time", bif_usec_time, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("identify_self", bif_identify_self, BMD_RET_TYPE, &bt_any, BMD_DONE);
   ps_sem = semaphore_allocate (0);
   bif_define ("itcs", dbg_print_itcs);
-  bif_define_typed ("sys_index_space_usage", bif_sys_index_space_usage, &bt_any);
+  bif_define_ex ("sys_index_space_usage", bif_sys_index_space_usage, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define ("db_activity", bif_db_activity);
   bif_define ("ext_stat", bif_ext_stat);
   bif_define ("ext_em", bif_ext_em);
   bif_define ("key_seg_check", bif_key_seg_check);
-  bif_define_typed ("lt_w_id", bif_lt_w_id, &bt_integer);
-  bif_define_typed ("lt_rc_w_id", bif_lt_rc_w_id, &bt_integer);
+  bif_define_ex ("lt_w_id", bif_lt_w_id, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("lt_rc_w_id", bif_lt_rc_w_id, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("col_set_samples", bif_col_set_samples);
   bif_define ("stat_import", bif_stat_import);
-  bif_define_typed ("stat_export", bif_stat_export, &bt_any_box);
+  bif_define_ex ("stat_export", bif_stat_export, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
 #ifndef NDEBUG
   bif_define ("_sys_real_cv_size", bif_real_cv_size);
 #endif

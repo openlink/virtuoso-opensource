@@ -3661,17 +3661,20 @@ void xqf_init(void)
 {
   st_double =  (sql_tree_tmp *) list (3, DV_DOUBLE_FLOAT, (ptrlong)0, (ptrlong)0);
 
-  bif_define ("__xqf_str_parse", bif_xqf_str_parse);
+  bif_define_ex ("__xqf_str_parse", bif_xqf_str_parse, BMD_ALIAS, "__xqf_str_parse_boolean", BMD_ALIAS, "__xqf_str_parse_date", BMD_ALIAS, "__xqf_str_parse_datetime", BMD_ALIAS, "__xqf_str_parse_double", BMD_ALIAS, "__xqf_str_parse_float", BMD_ALIAS, "__xqf_str_parse_integer", BMD_ALIAS, "__xqf_str_parse_numeric", BMD_ALIAS, "__xqf_str_parse_nvarchar", BMD_ALIAS, "__xqf_str_parse_time",
+    BMD_RET_TYPE, &bt_any, BMD_DONE );
   bif_define ("__xqf_str_parse_to_rdf_box", bif_xqf_str_parse_to_rdf_box);
-  bif_define_typed ("__xqf_str_parse_boolean"	, bif_xqf_str_parse_boolean	, &bt_integer	);
-  bif_define_typed ("__xqf_str_parse_date"	, bif_xqf_str_parse_date	, &bt_date	);
-  bif_define_typed ("__xqf_str_parse_datetime"	, bif_xqf_str_parse_datetime	, &bt_datetime	);
-  bif_define_typed ("__xqf_str_parse_double"	, bif_xqf_str_parse_double	, &bt_double	);
-  bif_define_typed ("__xqf_str_parse_float"	, bif_xqf_str_parse_float	, &bt_float	);
-  bif_define_typed ("__xqf_str_parse_integer"	, bif_xqf_str_parse_integer	, &bt_integer	);
-  bif_define_typed ("__xqf_str_parse_numeric"	, bif_xqf_str_parse_numeric	, &bt_numeric	);
-  bif_define_typed ("__xqf_str_parse_nvarchar"	, bif_xqf_str_parse_nvarchar	, &bt_wvarchar	);
-  bif_define_typed ("__xqf_str_parse_time"	, bif_xqf_str_parse_time	, &bt_time	);
+#if 0
+  bif_define_typed ("__xqf_str_parse_boolean"	, bif_xqf_str_parse	, &bt_any /* was &bt_integer */		);
+  bif_define_typed ("__xqf_str_parse_date"	, bif_xqf_str_parse	, &bt_any /* was &bt_date */		);
+  bif_define_typed ("__xqf_str_parse_datetime"	, bif_xqf_str_parse	, &bt_any /* was &bt_datetime */	);
+  bif_define_typed ("__xqf_str_parse_double"	, bif_xqf_str_parse	, &bt_any /* was &bt_double */		);
+  bif_define_typed ("__xqf_str_parse_float"	, bif_xqf_str_parse	, &bt_any /* was &bt_float */		);
+  bif_define_typed ("__xqf_str_parse_integer"	, bif_xqf_str_parse	, &bt_any /* was &bt_integer */		);
+  bif_define_typed ("__xqf_str_parse_numeric"	, bif_xqf_str_parse	, &bt_any /* was &bt_numeric */		);
+  bif_define_typed ("__xqf_str_parse_nvarchar"	, bif_xqf_str_parse	, &bt_any /* was &bt_wvarchar */	);
+  bif_define_typed ("__xqf_str_parse_time"	, bif_xqf_str_parse	, &bt_any /* was &bt_time */		);
+#endif
 
   /* Functions */
   x2f_define_builtin ("ENTITY"					, NULL /*xqf_entity*/		/* ??? */	, DV_SHORT_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);

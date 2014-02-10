@@ -226,9 +226,9 @@ remote_init (int cl_reinit)
   bif_define ("vdd_init", bif_vdd_init);
   bif_define ("vdd_remote_table", bif_remote_table);
   bif_define ("vdd_pass_through_function", bif_pass_through_function);
-  bif_define_typed ("proc_is_remote", bif_proc_is_remote, &bt_integer);
+  bif_define_ex ("proc_is_remote", bif_proc_is_remote, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("vdd_set_password", bif_vdd_set_password);
-  bif_define_typed ("vdd_measure_rpc_time", bif_vdd_measure_rpc_time, &bt_float);
+  bif_define_ex ("vdd_measure_rpc_time", bif_vdd_measure_rpc_time, BMD_RET_TYPE, &bt_float, BMD_DONE);
 
 
   odbc_cat_init ();

@@ -4886,7 +4886,7 @@ xslt_init (void)
   bif_define ("xslt", bif_xslt);
   bif_set_uses_index (bif_xslt);
   bif_define ("xslt_stale", bif_xslt_stale);
-  bif_define_typed ("xslt_is_sheet", bif_xslt_is_sheet, &bt_integer);
+  bif_define_ex ("xslt_is_sheet", bif_xslt_is_sheet, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("xslt_profile_enable", bif_xslt_profile_enable);
   bif_define ("xslt_profile_disable", bif_xslt_profile_disable);
   bif_define ("xslt_profile_list", bif_xslt_profile_list);
@@ -5096,7 +5096,7 @@ xslt_init (void)
   bif_define ("dict_duplicate", bif_dict_duplicate);
   bif_define ("dict_put", bif_dict_put);
   bif_define ("dict_get", bif_dict_get);
-  bif_define_typed ("dict_contains_key", bif_dict_contains_key, &bt_integer);
+  bif_define_ex ("dict_contains_key", bif_dict_contains_key, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("dict_remove", bif_dict_remove);
   bif_define ("dict_inc_or_put", bif_dict_inc_or_put);
   bif_define ("dict_dec_or_remove", bif_dict_dec_or_remove);

@@ -466,6 +466,6 @@ endwrite:
 void
 bif_pop3_init (void)
 {
-  bif_define_typed ("pop3_get", bif_pop3_get, &bt_varchar);
-  bif_define_typed ("ses_write", bif_ses_write, &bt_varchar);
+  bif_define_ex ("pop3_get", bif_pop3_get, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("ses_write", bif_ses_write, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 }

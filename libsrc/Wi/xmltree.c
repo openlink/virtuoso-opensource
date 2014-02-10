@@ -10738,7 +10738,7 @@ xml_tree_init (void)
   xquery_eval_cache = shuric_cache__LRU.shuric_cache_alloc (XP_EVAL_CACHE_SIZE, NULL);
   xpath_eval_cache = shuric_cache__LRU.shuric_cache_alloc (XP_EVAL_CACHE_SIZE, NULL);
 
-  bif_define_typed ("xml_tree_doc", bif_xml_tree_doc, &bt_xml_entity);
+  bif_define_ex ("xml_tree_doc", bif_xml_tree_doc, BMD_RET_TYPE, &bt_xml_entity, BMD_DONE);
   bif_define ("xml_doc_get_base_uri", bif_xml_doc_get_base_uri);
   bif_define ("xml_doc_assign_base_uri", bif_xml_doc_assign_base_uri);
   bif_define ("xml_doc_output_option", bif_xml_doc_output_option);
@@ -10748,7 +10748,7 @@ xml_tree_init (void)
   bif_define ("xml_tree_doc_set_ns_output", bif_xml_tree_doc_set_ns_output);
   bif_define ("xml_namespace_scope", bif_xml_namespace_scope);
   bif_define ("xtree_doc_get_dtd", bif_xtree_doc_get_dtd);
-  bif_define ("xpath_eval", bif_xpath_eval); /* not bif_define_typed ("xpath_eval", bif_xpath_eval, &bt_xml_entity); */
+  bif_define ("xpath_eval", bif_xpath_eval); /* not bif_define_ex ("xpath_eval", bif_xpath_eval, BMD_RET_TYPE, &bt_xml_entity, BMD_DONE); */
   bif_set_uses_index (bif_xpath_eval);
   bif_define ("xquery_eval", bif_xquery_eval);
   bif_set_uses_index (bif_xquery_eval);
@@ -10772,11 +10772,9 @@ xml_tree_init (void)
 #ifdef XPATHP_DEBUG
   bif_define ("xpathp_test", bif_xpathp_test);
 #endif
-  bif_define_typed ("xslt_format_number", bif_xslt_format_number, &bt_varchar);
-  bif_define ("updateXML", bif_updateXML);
-  bif_define ("updateXML_ent", bif_updateXML_ent);
-  bif_define ("XMLUpdate", bif_updateXML);
-  bif_define ("XMLUpdate_ent", bif_updateXML_ent);
+  bif_define_ex ("xslt_format_number", bif_xslt_format_number, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("updateXML", bif_updateXML, BMD_ALIAS, "XMLUpdate", BMD_DONE);
+  bif_define_ex ("updateXML_ent", bif_updateXML_ent, BMD_ALIAS, "XMLUpdate_ent", BMD_DONE);
   bif_define ("XMLReplace", bif_XMLReplace);
   bif_define ("XMLInsertBefore", bif_XMLInsertBefore);
   bif_define ("XMLInsertAfter", bif_XMLInsertAfter);

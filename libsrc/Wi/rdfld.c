@@ -760,7 +760,7 @@ bif_dc_batch_sz (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 void
 bif_rld_init ()
 {
-  bif_define_typed ("dc_batch_sz", bif_dc_batch_sz, &bt_integer);
+  bif_define_ex ("dc_batch_sz", bif_dc_batch_sz, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("rl_dp_ids", bif_rl_dp_ids);
   bif_define ("__rl_set_pref_id", bif_rl_set_pref_id);
   bif_set_vectored (bif_rl_set_pref_id, (bif_vec_t) bif_rl_set_pref_id);

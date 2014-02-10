@@ -1017,8 +1017,8 @@ bif_ldapcli_init (void)
   con_ldap_version_name = box_dv_short_string ("LDAP_VERSION");
   bif_define ("ldap_search", bif_ldap_search);
   bif_define ("ldap_delete", bif_ldap_delete);
-  bif_define_typed ("ldap_add",    bif_ldap_add, &bt_varchar);
-  bif_define_typed ("ldap_modify", bif_ldap_modify, &bt_varchar);
+  bif_define_ex ("ldap_add", bif_ldap_add, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("ldap_modify", bif_ldap_modify, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 #endif
 }
 
@@ -1055,8 +1055,8 @@ bif_ldapcli_init (void)
 #ifndef WIN95COMPAT
   bif_define ("ldap_search", bif_ldap_search);
   bif_define ("ldap_delete", bif_ldap_delete);
-  bif_define_typed ("ldap_add",    bif_ldap_add, &bt_varchar);
-  bif_define_typed ("ldap_modify", bif_ldap_modify, &bt_varchar);
+  bif_define_ex ("ldap_add", bif_ldap_add, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("ldap_modify", bif_ldap_modify, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 #endif
 }
 #endif /* ndef NO_LDAP */
