@@ -257,7 +257,7 @@ extern int64 geo_estimate (struct dbe_table_s * tb, geo_t * g, int op, double pr
 #define DEG_TO_RAD (M_PI / 180)
 #define KM_TO_DEG (360 / (EARTH_RADIUS_GEOM_MEAN_KM * 2 * M_PI))
 #define GEO_SET_LAT_DEG_BY_KM(deg,km) do { (deg) = (km) * KM_TO_DEG; } while (0)
-#define GEO_LON_TO_LAT_PER_DEG_RATIO(lat_deg) cos((lat_deg))
+#define GEO_LON_TO_LAT_PER_DEG_RATIO(lat_deg) cos((lat_deg)/DEG_TO_RAD)
 #define GEO_SET_LON_DEG_BY_KM(deg,km,lat_deg) do { double latfactor = GEO_LON_TO_LAT_PER_DEG_RATIO(lat_deg); (deg) = ((km) > (latfactor * 360.0 / KM_TO_DEG)) ? 360.0 : ((km) * KM_TO_DEG / latfactor); } while (0)
 
 EXE_EXPORT (geo_t *, geo_alloc, (geo_flags_t geo_flags, int geo_len, int srid));
