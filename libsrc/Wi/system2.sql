@@ -1402,3 +1402,36 @@ qt_xpath_gen (in xt any, in s any := null, in ck int := 0)
     http (']', ss);
 }
 ;
+
+
+create procedure DPIPE_DEFINE_SRV (in n varchar, in tb varchar, in k varchar, in srv varchar, in is_upd int, in cproc varchar := null, in cbif varchar := null, in extra any := null)
+{
+  dpipe_define_1 (n, tb, k, srv, is_upd, cproc, cbif, extra);
+  log_text ('dpipe_define_1 (?,?,?,?,?,?,?,?)', n, tb, k, srv, is_upd, cproc, cbif, extra);
+}
+;
+
+create procedure dpipe_define (in n varchar, in tb varchar, in k varchar, in srv varchar, in is_upd int, in cproc varchar := null, in cbif varchar := null, in extra any := null)
+{
+  delete from SYS_DPIPE where DP_NAME = n;
+  insert into SYS_DPIPE (DP_NAME, DP_PART_TABLE, DP_PART_KEY, DP_SRV_PROC, DP_IS_UPD, DP_CALL_PROC, DP_CALL_BIF, DP_EXTRA)
+  values (n, tb, k, srv, is_upd, cproc, cbif, extra);
+  cl_exec ('DB.DBA.DPIPE_DEFINE_SRV (?, ?, ?, ?, ?, ?, ?, ?)',
+        vector (n, tb, k, srv, is_upd, cproc, cbif, extra));
+}
+;
+
+create procedure DPIPE_DROP_SRV (in n varchar)
+{
+  dpipe_drop_1 (n);
+  log_text ('dpipe_drop_1 (?)', n);
+}
+;
+
+create procedure dpipe_drop (in n varchar)
+{
+  delete from SYS_DPIPE where DP_NAME = n;
+  cl_exec ('DB.DBA.DPIPE_DROP_SRV (?)', vector (n));
+}
+;
+

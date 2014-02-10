@@ -1220,12 +1220,48 @@ bif_dpipe_reuse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_dpipe_define (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  caddr_t name = bif_string_arg (qst, args, 0, "dpipe_define");
+  dbe_key_t *key = bif_key_arg (qst, args, 1, "dpipe_define");
+  caddr_t fn = bif_string_arg (qst, args, 3, "dpipe_define");
+  int l = bif_long_arg (qst, args, 4, "dpipe_define");
+  cu_func_t *cf, *prev_cf = NULL;
+  prev_cf = cu_func (name, 0);
+  if (prev_cf && prev_cf->cf_dispatch)
+    return NULL;		/* no redef of builtin cf with dispatch */
+  if (prev_cf)
+    cf = prev_cf;
+  else
+    {
+      NEW_VARZ (cu_func_t, cf2);
+      cf = cf2;
+    }
+  cf->cf_name = box_copy (name);
+  cf->cf_part_key = key;
+  cf->cf_proc = box_copy (fn);
+  cf->cf_is_upd = CF_UPD_FLAGS (l);
+  if (CF_SINGLE_ACTION & l)
+    cf->cf_single_action = 1;
+  if (BOX_ELEMENTS (args) > 5)
+    {
+      cf->cf_call_proc = box_copy (bif_string_or_null_arg (qst, args, 5, "dpipe_define"));
+      cf->cf_call_bif = box_copy (bif_string_or_null_arg (qst, args, 6, "dpipe_define"));
+      cf->cf_extra = box_copy_tree (bif_arg (qst, args, 7, "dpipe_define"));
+    }
+  id_hash_set (name_to_cu_func, (caddr_t) & cf->cf_name, (caddr_t) & cf);
   return NULL;
 }
 
 caddr_t
 bif_dpipe_drop (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  caddr_t name = bif_string_arg (qst, args, 0, "dpipe_drop");
+  cu_func_t *oldfn = NULL;
+  caddr_t oldkey = NULL;
+  if (BOX_ELEMENTS (args) > 1)
+    sqlr_new_error ("42000", "CL...", "dpipe_drop() takes only one string parameter, dpipe name.");
+  id_hash_get_and_remove (name_to_cu_func, (caddr_t) & name, (caddr_t) & oldkey, (caddr_t) & oldfn);
+  if (oldfn)
+    dk_free (oldfn, sizeof (cu_func_t));
   return NULL;
 }
 
@@ -1355,12 +1391,6 @@ cl_read_dpipes ()
       "select count (*) from SYS_DPIPE where 0 = dpipe_define_no_err (DP_NAME, DP_PART_TABLE, DP_PART_KEY, DP_SRV_PROC, DP_IS_UPD, DP_CALL_PROC, DP_CALL_BIF, DP_EXTRA)");
 }
 
-void
-dpipe_define_1_bif_define (void)
-{
-  bif_define ("dpipe_define_1", bif_dpipe_define);
-}
-
 
 caddr_t
 bif_cl_current_slice (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -1388,7 +1418,7 @@ bif_daq_init ()
   bif_define ("dpipe_input", bif_dpipe_input);
   bif_set_cluster_rec ("dpipe_input");
   bif_define ("dpipe_next", bif_dpipe_next);
-  dpipe_define_1_bif_define ();
+  bif_define ("dpipe_define_1", bif_dpipe_define);
   bif_set_cluster_rec ("dpipe_next");
   bif_define ("dpipe_drop_1", bif_dpipe_drop);
   bif_define ("dpipe_count", bif_dpipe_count);

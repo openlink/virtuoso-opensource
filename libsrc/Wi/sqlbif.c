@@ -15863,7 +15863,6 @@ extern caddr_t bif_search_excerpt (caddr_t *qst, caddr_t * err_ret, state_slot_t
 extern caddr_t bif_fct_level (caddr_t *qst, caddr_t * err_ret, state_slot_t ** args);
 void bif_fct_level_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
 caddr_t bif_sum_rank (caddr_t *qst, caddr_t * err_ret, state_slot_t ** args);
-caddr_t bif_dpipe_define (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 
 
 void
@@ -15893,16 +15892,10 @@ sql_bif_init (void)
   bif_define ("__autocompact", bif_autocompact);
   bif_define ("__flush", bif_flush);
   bif_define_typed ("__qi_is_branch", bif_qi_is_branch, &bt_integer);
-#if 0
-  /*partition_def_bif_define ();*/
-  dpipe_define_1_bif_define ();
-#endif
-  bif_define ("dpipe_define", bif_dpipe_define);
 
 #if 1
   bif_define ("xid_test", test_xid_encode_decode);
 #endif
-
 
 /* Functions for error & result handling in user created procedures: */
   bif_define ("signal", bif_signal);

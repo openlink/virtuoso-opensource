@@ -287,12 +287,6 @@ cluster_init ()
 
 
 void
-dpipe_define_1_bif_define (void)
-{
-  return;
-}
-
-void
 partition_def_bif_define (void)
 {
   return;
