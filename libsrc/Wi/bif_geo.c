@@ -614,6 +614,12 @@ bif_st_contains (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
+bif_st_may_contain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_geo_pred (qst, err_ret, args, "st_may_contain", GSOP_MAY_CONTAIN);
+}
+
+caddr_t
 bif_st_within (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   return bif_geo_pred (qst, err_ret, args, "st_within", GSOP_WITHIN);
@@ -637,14 +643,6 @@ bif_st_astext (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   geo_t * g = bif_geo_arg (qst, args, 0, "st_wkt", GEO_ARG_ANY_NONNULL);
   return geo_wkt ((caddr_t)g);
 }
-
-caddr_t
-bif_st_geomfromtext (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  caddr_t str = bif_string_arg (qst, args, 0, "st_geomfromtext");
-  return geo_parse_wkt (str, err_ret);
-}
-
 
 caddr_t
 bif_is_geometry (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -1104,7 +1102,7 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
                   }
                 return 1;
               }
-            goto unsupported;
+            goto unsupported_intersects;
           }
         if ((GEO_A_MULTI | GEO_A_ARRAY) & g2->geo_flags)
           {
@@ -1176,7 +1174,7 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
               {
                 if (!geo_may_intersect_XYbox (g1, &(g2->_.parts.items[itemctr]->XYbox), prec))
                   continue;
-                goto unsupported;
+                goto unsupported_intersects;
               }
             return 1;
           }
@@ -1242,7 +1240,7 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
             {
             }
           }
-        goto unsupported;
+        goto unsupported_intersects;
       }
     case GSOP_MAY_INTERSECT:
       {
@@ -1280,9 +1278,64 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
           return 0;
         return 1;
       }
+    case GSOP_CONTAINS:
+      {
+        if ((NULL == g1) || (NULL == g2))
+          return 0;
+        if (GEO_POINT == GEO_TYPE_NO_ZM (g2->geo_flags))
+          {
+            if (GEO_POINT == GEO_TYPE_NO_ZM (g1->geo_flags))
+              {
+                if (prec >= geo_distance (g2->geo_srcode, Xkey(g2), Ykey(g2), Xkey(g1), Ykey(g1)))
+                  return 1;
+                return 0;
+              }
+            if (!geo_point_intersects_XYbox (g2->geo_srcode, Xkey(g2), Ykey(g2), &(g1->XYbox), prec))
+              return 0;
+            if (GEO_BOX == GEO_TYPE_NO_ZM (g1->geo_flags))
+              return 1;
+            return geo_point_intersects (g2->geo_srcode, Xkey(g2), Ykey(g2), g1, prec);
+          }
+        sqlr_new_error ("42000", "GEO..", "for geo contains, only \"shape contains point\" case is supported in current version");
+        break;
+      }
+    case GSOP_MAY_CONTAIN:
+      {
+        if ((NULL == g1) || (NULL == g2))
+          return 0;
+          if (GEO_POINT == GEO_TYPE_NO_ZM (g2->geo_flags))
+            {
+              if (GEO_POINT == GEO_TYPE_NO_ZM (g1->geo_flags))
+                {
+                  if (prec >= geo_distance (g1->geo_srcode, Xkey(g1), Ykey(g1), Xkey(g2), Ykey(g2)))
+                    return 1;
+                  return 0;
+                }
+              if (GEO_BOX == GEO_TYPE_NO_ZM (g1->geo_flags))
+                {
+                  geoc boxproximaX = ((Xkey(g2) > g1->XYbox.Xmax) ? g1->XYbox.Xmax : ((Xkey(g2) < g1->XYbox.Xmin) ? g1->XYbox.Xmin : Xkey(g2)));
+                  geoc boxproximaY = ((Ykey(g2) > g1->XYbox.Ymax) ? g1->XYbox.Ymax : ((Ykey(g2) < g1->XYbox.Ymin) ? g1->XYbox.Ymin : Ykey(g2)));
+                  if (prec >= geo_distance (g1->geo_srcode, Xkey(g2), Ykey(g2), boxproximaX, boxproximaY))
+                    return 1;
+                  return 0;
+                }
+              if ( (Xkey(g2) < g1->XYbox.Xmin - prec)
+                || (Xkey(g2) > g1->XYbox.Xmax + prec)
+                || (Ykey(g2) < g1->XYbox.Ymin - prec)
+                || (Ykey(g2) > g1->XYbox.Ymax + prec) )
+                return 0;
+              return 1;
+            }
+        if ( (g2->XYbox.Xmin < g1->XYbox.Xmin - prec)
+          || (g2->XYbox.Xmax > g1->XYbox.Xmax + prec)
+          || (g2->XYbox.Ymin < g1->XYbox.Ymin - prec)
+          || (g2->XYbox.Ymax > g1->XYbox.Ymax + prec) )
+          return 0;
+        return 1;
+      }
     }
-unsupported:
-  sqlr_new_error ("42000", "GEO..", "for after check of geo contains, only may_intersect and intersects of points with precision is supported");
+unsupported_intersects:
+  sqlr_new_error ("42000", "GEO..", "for after check of geo intersects, some shape types (e.g., polygon rings and curves) are not yet supported");
   return 0;
 }
 
@@ -1402,7 +1455,7 @@ bif_st_geometry_n (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (!(g->geo_flags & (GEO_A_MULTI | GEO_A_ARRAY)))
     return NEW_DB_NULL;
   if ((idx < 1) || (idx > g->_.parts.len))
-    sqlr_new_error ("22023", "GEO..", "Invalid index value " BOXINT_FMT ", valid values for this geometery are 1 to %ld", (boxint)(g->_.parts.len), (long)(g->_.parts.len));
+    sqlr_new_error ("22023", "GEO..", "Invalid index value " BOXINT_FMT ", valid values for this geometery are 1 to %ld", (boxint)idx, (long)(g->_.parts.len));
   return (caddr_t)geo_copy (g->_.parts.items[idx-1]);
 }
 
@@ -1449,7 +1502,7 @@ bif_st_interior_ring_n (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if ((idx < 1) || (idx >= g->_.parts.len))
     {
 #if 0
-      sqlr_new_error ("22023", "GEO..", "Invalid index value " BOXINT_FMT ", valid values for this geometery are 1 to %ld", (long)(g->_.parts.len));
+      sqlr_new_error ("22023", "GEO..", "Invalid index value " BOXINT_FMT ", valid values for this geometery are 1 to %ld", (boxint)idx, (long)(g->_.parts.len));
 #else
       return NEW_DB_NULL;
 #endif
@@ -1620,6 +1673,8 @@ bif_geo_init ()
       BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("st_contains", bif_st_contains, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3, BMD_IS_PURE,
       BMD_DONE);
+  bif_define_ex ("st_may_contain", bif_st_may_contain, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3,
+      BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("st_within", bif_st_within, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3, BMD_IS_PURE,
       BMD_DONE);
   bif_define_ex ("st_distance"		, bif_st_distance						, BMD_IS_PURE, BMD_DONE);

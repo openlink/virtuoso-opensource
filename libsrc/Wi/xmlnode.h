@@ -85,6 +85,7 @@ typedef struct text_node_s
 #define GSOP_WITHIN	0x02
 #define GSOP_INTERSECTS	0x03
 #define GSOP_MAY_INTERSECT	0x04
+#define GSOP_MAY_CONTAIN	0x05
 
 #define GSOP_CORE_MASK		0x0F
 
