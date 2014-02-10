@@ -1783,7 +1783,7 @@ bif_bif_list_names (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       bmd = bmd_ptr[0];
       if (main_names_only && strcmp (name, bmd->bmd_name))
         continue;
-      dk_set_push (&res, box_dv_short_string (bmd->bmd_name));
+      dk_set_push (&res, box_dv_short_string (name));
     }
   return (caddr_t)list_to_array (res);
 }
