@@ -3013,3 +3013,174 @@ geo_XY_inoutside_polygon (geoc pX, geoc pY, geo_t * g)
     }
   return GEO_INOUTSIDE_IN;
 }
+
+void
+geo_modify_by_translate (geo_t *g, geoc dX, geoc dY, geoc dZ)
+{
+  geo_flags_t flags = g->geo_flags;
+
+/* local macro defs */
+#define XY_TRANSLATE(x,y) do { x += dX; y += dY; } while (0)
+#define Z_TRANSLATE(z) do { z += dZ; } while (0)
+#define XYBOX_TRANSLATE(xybox) do { \
+  XY_TRANSLATE(xybox.Xmin, xybox.Ymin); \
+  XY_TRANSLATE(xybox.Xmax, xybox.Ymax); } while (0)
+#define ZBOX_TRANSLATE(zmbox) do { \
+  if ((0 != dZ) && (flags & GEO_A_Z)) \
+    { \
+      Z_TRANSLATE(zmbox.Zmin); \
+      Z_TRANSLATE(zmbox.Zmax); \
+    } } while (0)
+
+  if (flags & (GEO_A_RINGS | GEO_A_COMPOUND | GEO_A_MULTI | GEO_A_ARRAY))
+    {
+      int ctr;
+      for (ctr = g->_.parts.len; ctr--; /* no step */)
+        geo_modify_by_translate (g->_.parts.items[ctr], dX, dY, dZ);
+      if (flags & GEO_IS_CHAINBOXED)
+        {
+          geo_chainbox_t *gcb = g->_.parts.parts_gcb;
+          if (gcb->gcb_is_set)
+            for (ctr = gcb->gcb_box_count; ctr--; /* no step */)
+              if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(gcb->gcb_boxes[ctr]))
+                XYBOX_TRANSLATE(gcb->gcb_boxes[ctr]);
+        }
+      if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
+        {
+          XYBOX_TRANSLATE(g->XYbox);
+          ZBOX_TRANSLATE(g->_.parts.parts_ZMbox);
+        }
+      return;
+    }
+  switch (GEO_TYPE_CORE (flags))
+    {
+    case GEO_NULL_SHAPE: case GEO_BOX:
+      if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
+        {
+          XYBOX_TRANSLATE(g->XYbox);
+          ZBOX_TRANSLATE(g->_.point.point_ZMbox);
+        }
+      return;
+    case GEO_POINT: case GEO_GSOP:
+      if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
+        {
+          XY_TRANSLATE(g->Xkey, g->Ykey);
+          ZBOX_TRANSLATE(g->_.point.point_ZMbox);
+        }
+      return;
+    case GEO_LINESTRING: case GEO_POINTLIST: case GEO_ARCSTRING:
+      {
+        int ctr;
+        for (ctr = g->_.pline.len; ctr--; /* no step */)
+          XY_TRANSLATE(g->_.pline.Xs[ctr], g->_.pline.Ys[ctr]);
+        if ((0 != dZ) && (flags & GEO_A_Z))
+          for (ctr = g->_.pline.len; ctr--; /* no step */)
+            Z_TRANSLATE(g->_.pline.Zs[ctr]);
+        if (flags & GEO_IS_CHAINBOXED)
+          {
+            geo_chainbox_t *gcb = g->_.pline.pline_gcb;
+            if (gcb->gcb_is_set)
+              for (ctr = gcb->gcb_box_count; ctr--; /* no step */)
+                XYBOX_TRANSLATE(gcb->gcb_boxes[ctr]);
+          }
+        if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
+          {
+            XYBOX_TRANSLATE(g->XYbox);
+            ZBOX_TRANSLATE(g->_.pline.pline_ZMbox);
+          }
+        return;
+      }
+    default: GPF_T;
+    }
+  return;
+#undef XY_TRANSLATE
+#undef Z_TRANSLATE
+#undef XYBOX_TRANSLATE
+#undef ZBOX_TRANSLATE
+}
+
+void
+geo_modify_by_transscale (geo_t *g, geoc dX, geoc dY, geoc Xfactor, geoc Yfactor)
+{
+  geo_flags_t flags = g->geo_flags;
+
+/* local macro defs */
+#define XY_TRANSSCALE(x,y) do { x = (x + dX) * Xfactor; y = (y + dY) * Yfactor; } while (0)
+#define XYBOX_TRANSSCALE(xybox) do { \
+  XY_TRANSSCALE(xybox.Xmin, xybox.Ymin); \
+  XY_TRANSSCALE(xybox.Xmax, xybox.Ymax); \
+  if (Xfactor < 0) { geoc swap = xybox.Xmin; xybox.Xmin = xybox.Xmax; xybox.Xmax = swap; } \
+  if (Yfactor < 0) { geoc swap = xybox.Ymin; xybox.Ymin = xybox.Ymax; xybox.Ymax = swap; } \
+  } while (0)
+
+  if (flags & (GEO_A_RINGS | GEO_A_COMPOUND | GEO_A_MULTI | GEO_A_ARRAY))
+    {
+      int ctr;
+      int invert = ((flags & GEO_A_COMPOUND) && (0 < (Xfactor * Yfactor)));
+      for (ctr = g->_.parts.len; ctr--; /* no step */)
+        geo_modify_by_transscale (g->_.parts.items[ctr], dX, dY, Xfactor, Yfactor);
+      if (invert)
+        {
+          geo_inverse_point_order (g);
+          geo_calc_bounding (g, GEO_CALC_BOUNDING_DO_ALL | GEO_CALC_BOUNDING_TRANSITIVE);
+          return;
+        }
+      if (flags & GEO_IS_CHAINBOXED)
+        {
+          geo_chainbox_t *gcb = g->_.parts.parts_gcb;
+          if (gcb->gcb_is_set)
+            for (ctr = gcb->gcb_box_count; ctr--; /* no step */)
+              if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(gcb->gcb_boxes[ctr]))
+                XYBOX_TRANSSCALE(gcb->gcb_boxes[ctr]);
+        }
+      if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
+        {
+          XYBOX_TRANSSCALE(g->XYbox);
+        }
+      return;
+    }
+  switch (GEO_TYPE_CORE (flags))
+    {
+    case GEO_NULL_SHAPE: case GEO_BOX:
+      if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
+        {
+          XYBOX_TRANSSCALE(g->XYbox);
+        }
+      return;
+    case GEO_POINT: case GEO_GSOP:
+      if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
+        {
+          XY_TRANSSCALE(g->Xkey, g->Ykey);
+        }
+      return;
+    case GEO_LINESTRING: case GEO_POINTLIST: case GEO_ARCSTRING:
+      {
+        int ctr;
+        int invert = ((flags & GEO_A_CLOSED) && (0 < (Xfactor * Yfactor)));
+        for (ctr = g->_.pline.len; ctr--; /* no step */)
+          XY_TRANSSCALE(g->_.pline.Xs[ctr], g->_.pline.Ys[ctr]);
+        if (invert)
+          geo_inverse_point_order (g);
+        if (invert || ((Xfactor != Yfactor) && (GEO_ARCSTRING == GEO_TYPE_CORE(flags))))
+          {
+            geo_calc_bounding (g, GEO_CALC_BOUNDING_DO_ALL | GEO_CALC_BOUNDING_TRANSITIVE);
+            return;
+          }
+        if (flags & GEO_IS_CHAINBOXED)
+          {
+            geo_chainbox_t *gcb = g->_.pline.pline_gcb;
+            if (gcb->gcb_is_set)
+              for (ctr = gcb->gcb_box_count; ctr--; /* no step */)
+                XYBOX_TRANSSCALE(gcb->gcb_boxes[ctr]);
+          }
+        if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
+          XYBOX_TRANSSCALE(g->XYbox);
+        return;
+      }
+    default: GPF_T;
+    }
+  return;
+#undef XY_TRANSSCALE
+#undef XYBOX_TRANSSCALE
+}
+

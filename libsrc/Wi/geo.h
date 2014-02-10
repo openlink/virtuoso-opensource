@@ -327,6 +327,8 @@ EXE_EXPORT (int, geo_XYbbox_inside, (geo_XYbox_t *inner, geo_XYbox_t *outer));
 
 EXE_EXPORT (int, geo_XY_inoutside_ring, (geoc pX, geoc pY, geo_t *ring));
 EXE_EXPORT (int, geo_XY_inoutside_polygon, (geoc pX, geoc pY, geo_t *g));
+EXE_EXPORT (void, geo_modify_by_translate, (geo_t *g, geoc dX, geoc dY, geoc dZ));
+EXE_EXPORT (void, geo_modify_by_transscale, (geo_t *g, geoc dX, geoc dY, geoc Xfactor, geoc Yfactor));
 
 /* We have two sorts of DE9IM data.
 A value matrix represents (possibly incomplete) knowledge about relation of two shapes.

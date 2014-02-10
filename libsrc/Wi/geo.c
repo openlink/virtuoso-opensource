@@ -1481,7 +1481,6 @@ txs_prec (text_node_t * txs, caddr_t * inst)
   return 0;
 }
 
-
 int
 geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
 {
@@ -1543,14 +1542,41 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
         goto unsupported;
       }
     case GSOP_MAY_INTERSECT:
-      if ((NULL == g1) || (NULL == g2))
-        return 0;
-      if ( (g1->XYbox.Xmax < g2->XYbox.Xmin - prec)
-        || (g1->XYbox.Xmin > g2->XYbox.Xmax + prec)
-        || (g1->XYbox.Ymax < g2->XYbox.Ymin - prec)
-        || (g1->XYbox.Ymin > g2->XYbox.Ymax + prec) )
-        return 0;
-      return 1;
+      {
+        if ((NULL == g1) || (NULL == g2))
+          return 0;
+        if (GEO_TYPE_NO_ZM (g1->geo_flags) > GEO_TYPE_NO_ZM (g2->geo_flags))
+          { geo_t * swap; swap = g1; g1 = g2; g2 = swap; }
+          if (GEO_POINT == GEO_TYPE_NO_ZM (g1->geo_flags))
+            {
+              if (GEO_POINT == GEO_TYPE_NO_ZM (g2->geo_flags))
+                {
+                  if (prec >= geo_distance (g1->geo_srcode, g1->Xkey, g1->Ykey, g2->Xkey, g2->Ykey))
+                    return 1;
+                  return 0;
+                }
+              if (GEO_BOX == GEO_TYPE_NO_ZM (g2->geo_flags))
+                {
+                  geoc boxproximaX = ((g1->Xkey > g2->XYbox.Xmax) ? g2->XYbox.Xmax : ((g1->Xkey < g2->XYbox.Xmin) ? g2->XYbox.Xmin : g1->Xkey));
+                  geoc boxproximaY = ((g1->Ykey > g2->XYbox.Ymax) ? g2->XYbox.Ymax : ((g1->Ykey < g2->XYbox.Ymin) ? g2->XYbox.Ymin : g1->Ykey));
+                  if (prec >= geo_distance (g1->geo_srcode, g1->Xkey, g1->Ykey, boxproximaX, boxproximaY))
+                    return 1;
+                  return 0;
+                }
+              if ( (g1->Xkey < g2->XYbox.Xmin - prec)
+                || (g1->Xkey > g2->XYbox.Xmax + prec)
+                || (g1->Ykey < g2->XYbox.Ymin - prec)
+                || (g1->Ykey > g2->XYbox.Ymax + prec) )
+                return 0;
+              return 1;
+            }
+        if ( (g1->XYbox.Xmax < g2->XYbox.Xmin - prec)
+          || (g1->XYbox.Xmin > g2->XYbox.Xmax + prec)
+          || (g1->XYbox.Ymax < g2->XYbox.Ymin - prec)
+          || (g1->XYbox.Ymin > g2->XYbox.Ymax + prec) )
+          return 0;
+        return 1;
+      }
     }
 unsupported:
   sqlr_new_error ("42000", "GEO..", "for after check of geo contains, only may_intersect and intersects of points with precision is supported");
@@ -1849,10 +1875,11 @@ bif_http_st_ewkt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_http_st_dxf_entity (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  geo_t *g = bif_geo_arg (qst, args, 0, "http_st_dxf_entity", GEO_ARG_ANY_NONNULL);
+  geo_t *g = bif_geo_arg (qst, args, 0, "http_st_dxf_entity", GEO_ARG_ANY_NULLABLE);
   caddr_t *attrs = bif_array_of_pointer_arg (qst, args, 1, "http_st_dxf_entity");
   dk_session_t *ses = bif_strses_or_http_ses_arg (qst, args, 2, "http_st_dxf_entity");
-  geo_print_as_dxf_entity (g, attrs, ses);
+  if (NULL != g)
+    geo_print_as_dxf_entity (g, attrs, ses);
   return (caddr_t)NULL;
 }
 
@@ -1922,7 +1949,6 @@ caddr_t
 bif_st_num_geometries (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   geo_t *g = bif_geo_arg (qst, args, 0, "ST_NumGeometries", GEO_ARG_ANY_NULLABLE);
-  ewkt_kwd_metas_t *metas;
   if (NULL == g)
     return NEW_DB_NULL;
   if (g->geo_flags & (GEO_A_MULTI | GEO_A_ARRAY))
@@ -1940,7 +1966,7 @@ bif_st_geometry_n (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (!(g->geo_flags & (GEO_A_MULTI | GEO_A_ARRAY)))
     return NEW_DB_NULL;
   if ((idx < 1) || (idx > g->_.parts.len))
-    sqlr_new_error ("22023", "GEO..", "Invalid index value " BOXINT_FMT ", valid values for this geometery are 1 to %ld", (long)(g->_.parts.len));
+    sqlr_new_error ("22023", "GEO..", "Invalid index value " BOXINT_FMT ", valid values for this geometery are 1 to %ld", (boxint)(g->_.parts.len), g->_.parts.len);
   return (caddr_t)geo_copy (g->_.parts.items[idx-1]);
 }
 
@@ -2006,7 +2032,7 @@ bif_st_get_bounding_box_n (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
   if (!(g->geo_flags & (GEO_A_MULTI | GEO_A_ARRAY)))
     sub_g = g;
   if ((idx < 1) || (idx > g->_.parts.len))
-    sqlr_new_error ("22023", "GEO..", "Invalid index value " BOXINT_FMT ", valid values for this geometery are 1 to %ld", (long)idx, (long)(g->_.parts.len));
+    sqlr_new_error ("22023", "GEO..", "Invalid index value " BOXINT_FMT ", valid values for this geometery are 1 to %ld", (boxint)idx, (long)(g->_.parts.len));
   sub_g = g->_.parts.items[idx-1];
   geo_get_bounding_XYbox (sub_g, &xy, 0, 0);
   res = geo_alloc (GEO_BOX | (sub_g->geo_flags & (GEO_A_Z | GEO_A_M)), 0, sub_g->geo_srcode);
@@ -2028,7 +2054,42 @@ bif_st_get_bounding_box_n (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
   return (caddr_t)res;
 }
 
-dk_mutex_t *geo_reg_mtx;
+
+caddr_t
+bif_st_translate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  geo_t *g = bif_geo_arg (qst, args, 0, "ST_Translate", GEO_ARG_ANY_NULLABLE);
+  geoc dX, dY, dZ=0.0;
+  geo_t *res;
+  if (NULL == g)
+    return NEW_DB_NULL;
+  dX = bif_double_arg (qst, args, 1, "ST_Translate");
+  dY = bif_double_arg (qst, args, 2, "ST_Translate");
+  if (3 < BOX_ELEMENTS (args))
+    dZ = bif_double_arg (qst, args, 3, "ST_Translate");
+  res = box_copy (g);
+  geo_modify_by_translate (res, dX, dY, dZ);
+  return (caddr_t) res;
+}
+
+
+caddr_t
+bif_st_transscale (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  geo_t *g = bif_geo_arg (qst, args, 0, "ST_TransScale", GEO_ARG_ANY_NULLABLE);
+  geoc dX, dY, Xfactor, Yfactor;
+  geo_t *res;
+  if (NULL == g)
+    return NEW_DB_NULL;
+  dX          = bif_double_arg (qst, args, 1, "ST_TransScale");
+  dY          = bif_double_arg (qst, args, 2, "ST_TransScale");
+  Xfactor     = bif_double_arg (qst, args, 3, "ST_TransScale");
+  Yfactor     = bif_double_arg (qst, args, 4, "ST_TransScale");
+  res = box_copy (g);
+  geo_modify_by_transscale (res, dX, dY, Xfactor, Yfactor);
+  return (caddr_t) res;
+}
+
 
 void
 geo_init ()
@@ -2065,6 +2126,8 @@ geo_init ()
   bif_define_ex ("ST_NumInteriorRings"		, bif_st_num_interior_rings	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("ST_InteriorRingN"		, bif_st_interior_ring_n	, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("st_get_bounding_box_n"	, bif_st_get_bounding_box_n	, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("ST_Translate"			, bif_st_translate		, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 3, BMD_MAX_ARGCOUNT, 4	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("ST_TransScale"		, bif_st_transscale		, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 3, BMD_MAX_ARGCOUNT, 4	, BMD_IS_PURE, BMD_DONE);
   dk_mem_hooks_2 (DV_GEO, (box_copy_f) geo_copy, (box_destr_f) geo_destroy, 0, (box_tmp_copy_f) mp_geo_copy);
   get_readtable ()[DV_GEO] = (macro_char_func) geo_deserialize;
   PrpcSetWriter (DV_GEO, (ses_write_func) geo_serialize);
