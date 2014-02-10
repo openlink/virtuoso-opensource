@@ -1482,8 +1482,21 @@ txs_prec (text_node_t * txs, caddr_t * inst)
 }
 
 int
+geo_point_intersects_XYbox (geo_srcode_t srcode, geoc pX, geoc pY, geo_XYbox_t *b, double prec)
+{
+  if (0 < prec)
+    {
+      geoc boxproximaX = ((pX > b->Xmax) ? b->Xmax : ((pX < b->Xmin) ? b->Xmin : pX));
+      geoc boxproximaY = ((pY > b->Ymax) ? b->Ymax : ((pY < b->Ymin) ? b->Ymin : pY));
+      if (prec < geo_distance (srcode, pX, pY, boxproximaX, boxproximaY))
+        return 0;
+    }
+}
+
+int
 geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
 {
+  int cctr, ictr, itemctr;
   if (GSOP_WITHIN == op)
     {
       geo_t * swap;
@@ -1506,11 +1519,56 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
         return 1;
       return 0;
     }
+            if (!geo_point_intersects_XYbox (g1->geo_srcode, g1->Xkey, g1->Ykey, &(g2->XYbox), prec))
+              return 0;
             if (GEO_BOX == GEO_TYPE_NO_ZM (g2->geo_flags))
+              return 1;
+            if ((GEO_A_MULTI | GEO_A_ARRAY) & g2->geo_flags)
               {
-                geoc boxproximaX = ((g1->Xkey > g2->XYbox.Xmax) ? g2->XYbox.Xmax : ((g1->Xkey < g2->XYbox.Xmin) ? g2->XYbox.Xmin : g1->Xkey));
-                geoc boxproximaY = ((g1->Ykey > g2->XYbox.Ymax) ? g2->XYbox.Ymax : ((g1->Ykey < g2->XYbox.Ymin) ? g2->XYbox.Ymin : g1->Ykey));
-                if (prec >= geo_distance (g1->geo_srcode, g1->Xkey, g1->Ykey, boxproximaX, boxproximaY))
+                if (GEO_IS_CHAINBOXED & g2->geo_flags)
+                  {
+                    geo_chainbox_t *g2gcb = g2->_.parts.parts_gcb;
+                    for (cctr = 0; cctr < g2gcb->gcb_box_count; cctr ++)
+                      {
+                        if (!geo_point_intersects_XYbox (g1->geo_srcode, g1->Xkey, g1->Ykey, g2gcb->gcb_boxes+cctr, prec))
+                          continue;
+                        for (ictr = 0; ictr < g2gcb->gcb_step; ictr++)
+                          {
+                            itemctr = cctr * g2gcb->gcb_step + ictr;
+                            if (itemctr >= g2->_.parts.len)
+                              return 0;
+                            if (geo_pred (g1, g2->_.parts.items[itemctr], op, prec))
+                              return 1;
+                          }
+                      }
+                  }
+                else
+                  {
+                    for (itemctr = 0; itemctr < g2->_.parts.len; itemctr++)
+                      {
+                        if (geo_pred (g1, g2->_.parts.items[itemctr], op, prec))
+                          return 1;
+                      }
+                  }
+                return 0;
+              }
+            if (GEO_A_RINGS & g2->geo_flags)
+              {
+                if (0 == g2->_.parts.len)
+                  return 0;
+                if (!geo_pred (g1, g2->_.parts.items[0], op, prec))
+                  return 0;
+                for (itemctr = 1; itemctr < g2->_.parts.len; itemctr++)
+                  {
+                    if (geo_pred (g1, g2->_.parts.items[itemctr], op, prec))
+                      return 0;
+                  }
+                return 1;
+              }
+            if (GEO_RING == GEO_TYPE_NO_ZM (g2->geo_flags))
+              {
+                int inoutside = geo_XY_inoutside_ring (g1->Xkey, g1->Ykey, g2);
+                if ((GEO_INOUTSIDE_IN | GEO_INOUTSIDE_BORDER) & inoutside)
                   return 1;
                 return 0;
               }
