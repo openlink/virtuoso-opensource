@@ -109,6 +109,11 @@ typedef unsigned short geo_flags_t;	/*!< Type for flags of a shape (type + seria
 typedef double geoc;		/*!< Type of geographical coordinate */
 typedef double geo_measure_t;	/*!< Type of M coordinate */
 
+#define geoc_min(a,b) (((a)<(b))?(a):(b))
+#define geoc_max(a,b) (((a)<(b))?(b):(a))
+#define double_min(a,b) (((a)<(b))?(a):(b))
+#define double_max(a,b) (((a)<(b))?(b):(a))
+
 #define geoc_FARAWAY ((geoc)(1e38))	/*!< A very distant coordinate that will not appear on any map, but not an infinity and vector operations will not overflow */
 
 /*! Point on a plane or on a latlong grid */
@@ -197,8 +202,8 @@ typedef struct geo_s
   struct {
     struct {
 /* There's no special data for GEO_POINT and GEO_BOX, it's defined by its bbox */
-#define Xkey XYbox.Xmin
-#define Ykey XYbox.Ymin
+#define Xkey(p) ((p)->XYbox.Xmin+0)
+#define Ykey(p) ((p)->XYbox.Ymin+0)
       geo_ZMbox_t	point_ZMbox;
       int		point_gs_op;
       int		point_gs_precision;
@@ -335,6 +340,22 @@ EXE_EXPORT (int, geo_XY_inoutside_ring, (geoc pX, geoc pY, geo_t *ring));
 EXE_EXPORT (int, geo_XY_inoutside_polygon, (geoc pX, geoc pY, geo_t *g));
 EXE_EXPORT (void, geo_modify_by_translate, (geo_t *g, geoc dX, geoc dY, geoc dZ));
 EXE_EXPORT (void, geo_modify_by_transscale, (geo_t *g, geoc dX, geoc dY, geoc Xfactor, geoc Yfactor));
+
+/*! Map projection callback that gets pointer to projection, longitude and latitude of a point, fills in X and Y of corresponding point on map and returns NULL on success or error message otherwise. */
+typedef const char *geo_proj_point_cbk_t (void *geo_proj, geoc longP, geoc latP, double *retX, double *retY);
+
+/*! Map projection */
+typedef struct geo_proj_s {
+  geo_proj_point_cbk_t *gp_point_cbk;	/*!< Callback to project a single point */
+  geo_srcode_t gp_input_srcode;		/*!< Internal code of SRS of projection argument */
+  geo_srcode_t gp_result_srcode;	/*!< Internal code of SRS of projection result */
+  double gp_placeholder_1[10];
+  geoc gp_placeholder_2[10];
+  void *gp_placeholder_3[5];
+} geo_proj_t;
+
+EXE_EXPORT (const char *, geo_modify_by_projection, (geo_t *g, void *geo_proj));
+
 
 /* We have two sorts of DE9IM data.
 A value matrix represents (possibly incomplete) knowledge about relation of two shapes.

@@ -137,7 +137,7 @@ cmpf_geo (buffer_desc_t * buf, int irow, it_cursor_t * itc)
       geo_t *pt = (geo_t *) itc->itc_search_params[1];
       double prec = unbox_coord (itc->itc_search_params[2]);
       if (GEO_POINT == GEO_TYPE (pt->geo_flags) && (rx2 - rx) < (prec / 100) && (ry2 - ry) < (prec / 100)
-	  && prec < geo_distance (pt->geo_srcode, rx, ry, pt->Xkey, pt->Ykey))
+        && prec < geo_distance (pt->geo_srcode, rx, ry, Xkey(pt), Ykey(pt)))
 	return DVC_LESS;
     }
   return DVC_MATCH;
@@ -1248,7 +1248,7 @@ geo_wkt (caddr_t x)
   if ((GEO_POINT == GEO_TYPE (g->geo_flags)) && (GEO_SRCODE_DEFAULT == g->geo_srcode))
     {
       char xx[100];
-      snprintf (xx, sizeof (xx), "POINT(%g %g)", g->Xkey, g->Ykey);
+      snprintf (xx, sizeof (xx), "POINT(%g %g)", Xkey(g), Ykey(g));
       return box_dv_short_string (xx);
     }
   else
@@ -1556,7 +1556,7 @@ dbg_geo_to_text (caddr_t x)
   switch (GEO_TYPE (g->geo_flags))
     {
     case GEO_POINT:
-      snprintf (tmp, sizeof (tmp), "<point %g %g>", g->Xkey, g->Ykey);
+      snprintf (tmp, sizeof (tmp), "<point %g %g>", Xkey(g), Ykey(g));
       break;
     default:
       sprintf (tmp, "<geo type %d>", GEO_TYPE (g->geo_flags));

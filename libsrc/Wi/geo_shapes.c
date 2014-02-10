@@ -75,7 +75,12 @@
       gcb_sz = 0; \
     } \
   full_sz = head_sz + gcb_sz + len_ * (cvecs * sizeof (geoc) + mvecs * sizeof (geo_measure_t)); \
-  if (ses && (full_sz & ~0xffffff)) box_read_error (ses, DV_GEO); \
+  if (full_sz & ~0xffffff) \
+    { \
+      if (NULL != ses) box_read_error (ses, DV_GEO); \
+      sqlr_new_error ("22023", "GEO..", "Unable to create a shape of type 0x%x with %ld points, that would be %ld bytes long, more than the limit of %ld bytes", \
+        (int)geo_flags_, (long)len_, (long)full_sz, 0xffffffL ); \
+    } \
   res = (geo_t *)dk_alloc_box (full_sz, DV_GEO); \
   res->_.pline.len = len_; \
   GEO_SET_CVECT(_.pline.Xs); \
@@ -100,6 +105,12 @@
       gcb_sz = 0; \
     } \
   full_sz = head_sz + gcb_sz + (len_ * sizeof (geo_t *)); \
+  if (full_sz & ~0xffffff) \
+    { \
+      if (NULL != ses) box_read_error (ses, DV_GEO); \
+      sqlr_new_error ("22023", "GEO..", "Unable to create a composite shape of type 0x%x with %ld components, that would be %ld bytes long, more than the limit of %ld bytes", \
+        (int)geo_flags_, (long)len_, (long)full_sz, 0xffffffL ); \
+    } \
   res = (geo_t *)dk_alloc_box (full_sz, DV_GEO); \
   res->_.parts.len = len_; \
   res->_.parts.items = ((geo_t **)(((char *)res) + head_sz)); \
@@ -198,11 +209,11 @@ geo_point (geoc x, geoc y)
   if (src->geo_flags & GEO_IS_CHAINBOXED) \
     res->fld = (geo_chainbox_t *)((void *)(((char *)res) + (((char *)(src->fld)) - (char *)src))); } while (0)
 
-#define GEO_RESET_CVECT(fld) \
-  res->fld = (geoc *)((void *)(((char *)res) + (((char *)(src->fld)) - (char *)src)));
+#define GEO_RESET_CVECT(fld) do { \
+  res->fld = (geoc *)((void *)(((char *)res) + (((char *)(src->fld)) - (char *)src))); } while (0)
 
-#define GEO_RESET_MVECT(fld) \
-  res->fld = (geo_measure_t *)((void *)(((char *)res) + (((char *)(src->fld)) - (char *)src)));
+#define GEO_RESET_MVECT(fld) do { \
+  res->fld = (geo_measure_t *)((void *)(((char *)res) + (((char *)(src->fld)) - (char *)src))); } while (0)
 
 #define GEO_COPY_POINT(lastfld)
 
@@ -282,10 +293,12 @@ geo_copy (geo_t *src)
 #define GEO_MP_COPY_POINT(lastfld)
 
 #define GEO_MP_COPY_PLINE(lastfld,cvecs,mvecs) \
+  GEO_RESET_GCB(_.pline.pline_gcb); \
   GEO_RESET_CVECT(_.pline.Xs); \
   GEO_RESET_CVECT(_.pline.Ys);
 
 #define GEO_MP_COPY_PARTS(lastfld) do { int ctr; \
+  GEO_RESET_GCB(_.pline.pline_gcb); \
   res->_.parts.items = (geo_t **)((void *)(((char *)res) + (((char *)(src->_.parts.items)) - (char *)src))); \
   for (ctr = res->_.parts.len; ctr--; /* no step */) \
     res->_.parts.items[ctr] = mp_geo_copy (mp, src->_.parts.items[ctr]); \
@@ -1158,18 +1171,18 @@ geo_get_bounding_XYbox (geo_t * g, geo_t * box, geoc prec_x, geoc prec_y)
   switch (GEO_TYPE_NO_ZM (g->geo_flags))
     {
     case GEO_POINT:
-      if (geoc_FARAWAY == g->Xkey)
+      if (geoc_FARAWAY == Xkey (g))
 	goto faraway;		/* see below */
-      box->XYbox.Xmin = g->Xkey;
-      box->XYbox.Ymin = g->Ykey;
-      box->XYbox.Xmax = g->Xkey;
-      box->XYbox.Ymax = g->Ykey;
+      box->XYbox.Xmin = Xkey (g);
+      box->XYbox.Ymin = Ykey (g);
+      box->XYbox.Xmax = Xkey (g);
+      box->XYbox.Ymax = Ykey (g);
       if (prec_x || prec_y)
 	{
 	  if (GEO_SR_SPHEROID_DEGREES (g->geo_srcode))
 	    {
 	      double prec_rad = prec_y * KM_TO_DEG * DEG_TO_RAD;
-	      double lat_r = g->Ykey * DEG_TO_RAD;
+	      double lat_r = Ykey (g) * DEG_TO_RAD;
 	      if (fabs ((M_PI / 2) - lat_r) < prec_rad)
 		{
 		  box->XYbox.Xmin = -180;
@@ -1512,7 +1525,12 @@ ewkt_get_points (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas)
                     break;
                     case 1:
                       if ((val.v_geoc < -90.0) || (val.v_geoc > 90.0))
-                        ewkt_signal (in, "The point coordinates are spherical degrees and the latitude is out of range -90..90");
+                        {
+                          geo_flags_t core_type = GEO_TYPE_CORE (head_metas->kwd_subtype);
+                          if ((GEO_BOX != core_type) || ((val.v_geoc < -181.0) || (val.v_geoc > 181.0)))
+                            ewkt_signal (in, "The point coordinates are spherical degrees and the latitude is out of range -90..90");
+                          val.v_geoc = ((val.v_geoc < 0) ? -90 : 90.0); /* Special case for bounding boxes calculated by ill algorithms */
+                        }
                     break;
                     }
                 }
@@ -2436,8 +2454,8 @@ geo_serialize_one (geo_t * g, int is_topmost, dk_session_t * ses)
     {
 /* Old types */
     case GEO_POINT:
-      print_v_double (g->Xkey, ses);
-      print_v_double (g->Ykey, ses);
+      print_v_double (Xkey(g), ses);
+      print_v_double (Ykey(g), ses);
       return;
     case GEO_BOX:
       print_v_double (g->XYbox.Xmin, ses);
@@ -3064,7 +3082,8 @@ geo_modify_by_translate (geo_t *g, geoc dX, geoc dY, geoc dZ)
     case GEO_POINT: case GEO_GSOP:
       if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
         {
-          XY_TRANSLATE(g->Xkey, g->Ykey);
+          XY_TRANSLATE(g->XYbox.Xmin, g->XYbox.Ymin);
+          g->XYbox.Xmax = g->XYbox.Xmin; g->XYbox.Ymax = g->XYbox.Ymin;
           ZBOX_TRANSLATE(g->_.point.point_ZMbox);
         }
       return;
@@ -3122,7 +3141,7 @@ geo_modify_by_transscale (geo_t *g, geoc dX, geoc dY, geoc Xfactor, geoc Yfactor
       if (invert)
         {
           geo_inverse_point_order (g);
-          geo_calc_bounding (g, GEO_CALC_BOUNDING_DO_ALL | GEO_CALC_BOUNDING_TRANSITIVE);
+          geo_calc_bounding (g, GEO_CALC_BOUNDING_DO_ALL);
           return;
         }
       if (flags & GEO_IS_CHAINBOXED)
@@ -3150,7 +3169,8 @@ geo_modify_by_transscale (geo_t *g, geoc dX, geoc dY, geoc Xfactor, geoc Yfactor
     case GEO_POINT: case GEO_GSOP:
       if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
         {
-          XY_TRANSSCALE(g->Xkey, g->Ykey);
+          XY_TRANSSCALE(g->XYbox.Xmin, g->XYbox.Ymin);
+          g->XYbox.Xmax = g->XYbox.Xmin; g->XYbox.Ymax = g->XYbox.Ymin;
         }
       return;
     case GEO_LINESTRING: case GEO_POINTLIST: case GEO_ARCSTRING:
@@ -3163,7 +3183,7 @@ geo_modify_by_transscale (geo_t *g, geoc dX, geoc dY, geoc Xfactor, geoc Yfactor
           geo_inverse_point_order (g);
         if (invert || ((Xfactor != Yfactor) && (GEO_ARCSTRING == GEO_TYPE_CORE(flags))))
           {
-            geo_calc_bounding (g, GEO_CALC_BOUNDING_DO_ALL | GEO_CALC_BOUNDING_TRANSITIVE);
+            geo_calc_bounding (g, GEO_CALC_BOUNDING_DO_ALL);
             return;
           }
         if (flags & GEO_IS_CHAINBOXED)
@@ -3182,5 +3202,73 @@ geo_modify_by_transscale (geo_t *g, geoc dX, geoc dY, geoc Xfactor, geoc Yfactor
   return;
 #undef XY_TRANSSCALE
 #undef XYBOX_TRANSSCALE
+}
+
+const char *
+geo_modify_by_projection (geo_t *g, void *geo_proj)
+{
+  geo_proj_point_cbk_t *gp_point_cbk = ((geo_proj_t *)geo_proj)->gp_point_cbk;
+  geo_flags_t flags = g->geo_flags;
+/* local macro defs */
+#define XY_PROJECT(x,y) do { \
+  double resx,resy; \
+  const char *proj_err = gp_point_cbk (geo_proj, (x), (y), &resx, &resy); \
+  if (NULL != proj_err) \
+    return proj_err; \
+  (x) = resx; (y) = resy; \
+  } while (0)
+#define XYBOX_PROJECT(xybox) do { \
+  const char *proj_err; \
+  double x1,x2,x3,x4,y1,y2,y3,y4,v12,v34; \
+  if (GEO_XYBOX_IS_EMPTY_OR_FARAWAY(xybox)) \
+    return "The shape is either empty or intentionally invalidated so it cannot be projected"; \
+  proj_err = gp_point_cbk (geo_proj, xybox.Xmin, xybox.Ymin, &x1, &y1); if (NULL != proj_err) return proj_err; \
+  proj_err = gp_point_cbk (geo_proj, xybox.Xmin, xybox.Ymax, &x2, &y2); if (NULL != proj_err) return proj_err; \
+  proj_err = gp_point_cbk (geo_proj, xybox.Xmax, xybox.Ymin, &x3, &y3); if (NULL != proj_err) return proj_err; \
+  proj_err = gp_point_cbk (geo_proj, xybox.Xmax, xybox.Ymax, &x4, &y4); if (NULL != proj_err) return proj_err; \
+  v12 = double_min (x1, x2); v34 = double_min (x3, x4); xybox.Xmin = double_min (v12, v34); \
+  v12 = double_max (x1, x2); v34 = double_max (x3, x4); xybox.Xmax = double_max (v12, v34); \
+  v12 = double_min (y1, y2); v34 = double_min (y3, y4); xybox.Ymin = double_min (v12, v34); \
+  v12 = double_max (y1, y2); v34 = double_max (y3, y4); xybox.Ymax = double_max (v12, v34); \
+  } while (0)
+  if (((geo_proj_t *)geo_proj)->gp_input_srcode != g->geo_srcode)
+    return "The shape is in spatial reference system that is not equal to the input spatial reference system of the projection";
+  g->geo_srcode = ((geo_proj_t *)geo_proj)->gp_result_srcode;
+  if (flags & (GEO_A_RINGS | GEO_A_COMPOUND | GEO_A_MULTI | GEO_A_ARRAY))
+    {
+      int ctr;
+      if (0 == g->_.parts.len)
+        return NULL;
+      for (ctr = g->_.parts.len; ctr--; /* no step */)
+        geo_modify_by_projection (g->_.parts.items[ctr], geo_proj);
+      geo_calc_bounding (g, 0);
+      return NULL;
+    }
+  switch (GEO_TYPE_CORE (flags))
+    {
+    case GEO_NULL_SHAPE: case GEO_BOX:
+      XYBOX_PROJECT(g->XYbox);
+      return NULL;
+    case GEO_POINT:
+      if (GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
+        return "The point is intentionally invalidated so it cannot be projected";
+      XY_PROJECT(g->XYbox.Xmin, g->XYbox.Ymin);
+      g->XYbox.Xmax = g->XYbox.Xmin; g->XYbox.Ymax = g->XYbox.Ymin;
+      return NULL;
+    case GEO_GSOP:
+      return "Spatial operator is not a true shape so it cannot be projected";
+    case GEO_LINESTRING: case GEO_POINTLIST: case GEO_ARCSTRING:
+      {
+        int ctr;
+        for (ctr = g->_.pline.len; ctr--; /* no step */)
+          XY_PROJECT(g->_.pline.Xs[ctr], g->_.pline.Ys[ctr]);
+        geo_calc_bounding (g, 0);
+        return NULL;
+      }
+    default: GPF_T;
+    }
+  return NULL;
+#undef XY_PROJECT
+#undef XYBOX_PROJECT
 }
 

@@ -38,6 +38,38 @@
 #include "sqlbif.h"
 #include "geo.h"
 
+double
+bif_geoc_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int *isnull_ret, geo_srcode_t srcode, int coord_idx)
+{
+  double c;
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
+  dtp_t dtp = DV_TYPE_OF (arg);
+  switch (dtp)
+    {
+    case DV_SHORT_INT: case DV_LONG_INT: c = (double) unbox (arg); break;
+    case DV_SINGLE_FLOAT: c = (double) unbox_float (arg); break;
+    case DV_DOUBLE_FLOAT: c = unbox_double (arg); break;
+    case DV_NUMERIC: numeric_to_double ((numeric_t) arg, &c); break;
+    case DV_DB_NULL: if (NULL != isnull_ret) { isnull_ret[0] = 1; return 0; }
+      /* no break */
+    default: sqlr_new_error ("22023", "GEO..",
+      "Function %s needs a number%s as argument %d, not an arg of type %s (%d)",
+      func, ((NULL != isnull_ret) ? " or NULL" : ""), nth + 1, dv_type_title (dtp), dtp );
+    }
+  if (NULL != isnull_ret) isnull_ret[0] = 0;
+  if ((c >= geoc_FARAWAY - 16 * FLT_EPSILON) || (c <= -(geoc_FARAWAY - 16 * FLT_EPSILON)))
+    sqlr_new_error ("22023", "GEO..",
+      "Function %s needs a coordinate as argument %d, the number %g is not a valid coordiate",
+      func, nth + 1, c);
+  if ((2 > coord_idx) && GEO_SR_SPHEROID_DEGREES(srcode))
+    {
+      if ((0 == coord_idx) ? ((c < -270.0) || (c > 540.0)) : ((c < -90) || (c > 90)))
+        sqlr_new_error ("22023", "GEO..",
+          "Function %s needs a %s as argument %d, the number %g is out of range",
+          func, ((0 == coord_idx) ? "longitude" : "latitude"), nth + 1, c);
+    }
+  return c;
+}
 
 caddr_t
 bif_earth_radius (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -74,13 +106,10 @@ haversine_deg_km (double long1, double lat1, double long2, double lat2)
 caddr_t
 bif_haversine_deg_km (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  double lat1 = bif_double_arg (qst, args, 0, "haversine_deg_km");
-  double long1 = bif_double_arg (qst, args, 1, "haversine_deg_km");
-  double lat2 = bif_double_arg (qst, args, 2, "haversine_deg_km");
-  double long2 = bif_double_arg (qst, args, 3, "haversine_deg_km");
-  if ((lat1 > 90.0) || (lat1 < -90.0) || (long1 > 180.0) || (long1 < -180.0) ||
-      (lat2 > 90.0) || (lat2 < -90.0) || (long2 > 180.0) || (long2 < -180.0))
-    sqlr_new_error ("22023", "SP001", "Latitude and longitude in degrees are expected (-90 to 90 and -180 to 180)");
+  double lat1 = bif_geoc_arg (qst, args, 0, "haversine_deg_km", NULL, GEO_SRCODE_OF_SRID (SRID_WGS84), 1);
+  double long1 = bif_geoc_arg (qst, args, 1, "haversine_deg_km", NULL, GEO_SRCODE_OF_SRID (SRID_WGS84), 0);
+  double lat2 = bif_geoc_arg (qst, args, 2, "haversine_deg_km", NULL, GEO_SRCODE_OF_SRID (SRID_WGS84), 1);
+  double long2 = bif_geoc_arg (qst, args, 3, "haversine_deg_km", NULL, GEO_SRCODE_OF_SRID (SRID_WGS84), 0);
   return box_double (haversine_deg_km (long1, lat1, long2, lat2));
 }
 
@@ -124,27 +153,354 @@ bif_st_point (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t first = bif_arg_unrdf (qst, args, 0, "st_point");
   dtp_t dtp = DV_TYPE_OF (first);
-  double x = bif_double_arg (qst, args, 0, "st_point");
-  double y = bif_double_arg (qst, args, 1, "st_point");
-  geo_t * res = geo_point (x,y);
+  double x = bif_geoc_arg (qst, args, 0, "st_point", NULL, GEO_SRCODE_DEFAULT, 0);
+  double y = bif_geoc_arg (qst, args, 1, "st_point", NULL, GEO_SRCODE_DEFAULT, 1);
+  geo_flags_t flags = GEO_POINT;
+  double z,m;
+  geo_t *res;
+  switch (BOX_ELEMENTS (args))
+    {
+    case 2:
+      res = geo_point (x,y);
+      goto all_coords_are_set;
+      break;
+    case 3:
+      flags = GEO_POINT_Z;
+      z = bif_double_arg (qst, args, 2, "st_point");
+      break;
+      break;
+    case 4:
+      flags = GEO_POINT;
+      if (DV_DB_NULL != DV_TYPE_OF (bif_arg_nochecks (qst, args, 2)))
+        {
+          flags |= GEO_A_Z;
+          z = bif_double_arg (qst, args, 2, "st_point");
+        }
+      if (DV_DB_NULL != DV_TYPE_OF (bif_arg_nochecks (qst, args, 3)))
+        {
+          flags |= GEO_A_M;
+          m = bif_double_arg (qst, args, 3, "st_point");
+        }
+      break;
+    default:
+      sqlr_new_error ("22023", "GEO..", "Wrong number of arguments in call of st_point()");
+    }
+  res = geo_alloc (flags, 0, GEO_SRCODE_DEFAULT);
+  res->XYbox.Xmax = res->XYbox.Xmin = x;
+  res->XYbox.Ymax = res->XYbox.Ymin = y;
+  if (flags & GEO_A_Z)
+    res->_.point.point_ZMbox.Zmax = res->_.point.point_ZMbox.Zmin = z;
+  if (flags & GEO_A_M)
+    res->_.point.point_ZMbox.Mmax = res->_.point.point_ZMbox.Mmin = m;
+
+all_coords_are_set:
   if (DV_SINGLE_FLOAT == dtp || DV_LONG_INT == dtp)
     res->geo_flags |= GEO_IS_FLOAT;
   return (caddr_t)res;
 }
 
+double
+geo_cast_box_to_geoc (caddr_t v, geo_srcode_t srcode, int coord_idx, int *isnull_ret, const char **err_text_ret)
+{
+  double c;
+  dtp_t dtp = DV_TYPE_OF (v);
+  switch (dtp)
+    {
+    case DV_SHORT_INT: case DV_LONG_INT: c = (double) unbox (v); break;
+    case DV_SINGLE_FLOAT: c = (double) unbox_float (v); break;
+    case DV_DOUBLE_FLOAT: c = unbox_double (v); break;
+    case DV_NUMERIC: numeric_to_double ((numeric_t) v, &c); break;
+    case DV_DB_NULL: if (NULL != isnull_ret) { isnull_ret[0] = 1; err_text_ret[0] = NULL; return 0; }
+      /* no break */
+    default: err_text_ret[0] = "Coordinate is not a number"; return 0;
+    }
+  if (NULL != isnull_ret) isnull_ret[0] = 0;
+  if ((c >= geoc_FARAWAY - 16 * FLT_EPSILON) || (c <= -(geoc_FARAWAY - 16 * FLT_EPSILON)))
+    {
+      err_text_ret[0] = "Coordinate is a number that is not a valid coordiate";
+      return 0;
+    }
+  if ((2 > coord_idx) && GEO_SR_SPHEROID_DEGREES(srcode))
+    {
+      if ((0 == coord_idx) ? ((c < -270.0) || (c > 540.0)) : ((c < -90) || (c > 90)))
+        {
+          err_text_ret[0] =  ((0 == coord_idx) ? "Longitude is out of range" : "Latitude is out of range");
+          return 0;
+        }
+    }
+  err_text_ret[0] = NULL;
+  return c;
+}
+
+/*! The \c point should have preset \c geo_srcode and \c geo_flags.
+The \c point should not be used as filled, because the function may write to Z or M past "plain" point and will not set "...max" fields. */
+void
+geo_cast_box_to_point (caddr_t v, geo_t *point, const char **err_text_ret)
+{
+  const char *err;
+  switch (DV_TYPE_OF (v))
+    {
+    case DV_ARRAY_OF_POINTER:
+      {
+        int p_len = BOX_ELEMENTS (v);
+        int isnull;
+        geo_flags_t flags = GEO_POINT;
+        if ((p_len < 2) || (p_len > 4))
+          {
+            err_text_ret[0] = "When a point is given as a vector of coordinates, the length of vector should be 2, 3 or 4";
+            return;
+          }
+        point->XYbox.Xmin = geo_cast_box_to_geoc (((caddr_t *)v)[0], point->geo_srcode, 0, NULL, &err);
+        if (NULL != err)
+          {
+            err_text_ret[0] = err;
+            return;
+          }
+        point->XYbox.Ymin = geo_cast_box_to_geoc (((caddr_t *)v)[1], point->geo_srcode, 1, NULL, &err);
+        if (NULL != err)
+          {
+            err_text_ret[0] = err;
+            return;
+          }
+        switch (p_len)
+          {
+          case 2:
+            break;
+          case 3:
+            flags |= GEO_A_Z;
+            point->_.point.point_ZMbox.Zmin = geo_cast_box_to_geoc (((caddr_t *)v)[2], point->geo_srcode, 2, NULL, &err);
+            if (NULL != err)
+              {
+                err_text_ret[0] = err;
+                return;
+              }
+            break;
+          case 4:
+            point->_.point.point_ZMbox.Zmin = geo_cast_box_to_geoc (((caddr_t *)v)[3], point->geo_srcode, 3, &isnull, &err);
+            if (NULL != err)
+              {
+                err_text_ret[0] = err;
+                return;
+              }
+            if (!isnull)
+              flags |= GEO_A_Z;
+            point->_.point.point_ZMbox.Mmin = geo_cast_box_to_geoc (((caddr_t *)v)[4], point->geo_srcode, 4, &isnull, &err);
+            if (NULL != err)
+              {
+                err_text_ret[0] = err;
+                return;
+              }
+            if (!isnull)
+              flags |= GEO_A_M;
+            break;
+          }
+        if ((GEO_UNDEFTYPE != point->geo_flags) && (flags != GEO_TYPE (point->geo_flags)))
+          {
+            err = "Unexpected number of coordinates for a point";
+            return;
+          }
+        point->geo_flags = flags;
+        if ((DV_SINGLE_FLOAT == DV_TYPE_OF (((caddr_t *)v)[0])) || (DV_LONG_INT == DV_TYPE_OF (((caddr_t *)v)[0])))
+          point->geo_flags |= GEO_IS_FLOAT;
+        err_text_ret[0] = NULL;
+        return;
+      }
+    case DV_GEO:
+      {
+        if (GEO_POINT != GEO_TYPE_NO_ZM (((geo_t *)v)->geo_flags))
+          {
+            err = "Non-point geometry can not specify coordinates of a single point";
+            return;
+          }
+        if ((GEO_UNDEFTYPE != point->geo_flags) && (GEO_TYPE (((geo_t *)v)->geo_flags) != GEO_TYPE (point->geo_flags)))
+          {
+            err = "Unexpected number of coordinates for a point";
+            return;
+          }
+        memcpy (point, v, box_length (v));
+        err_text_ret[0] = NULL;
+        return;
+      }
+    }
+  err_text_ret[0] = "The value can not be converted to set of coordinates of a point: wrong datatype";
+  return;
+}
+
+caddr_t
+bif_st_linestring (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  const char *fname = "st_linestring";
+  int argctr, argcount = BOX_ELEMENTS (args);
+  int pointctr, total_point_count = 0, arcmid_count = 0;
+  geoc prevX, prevY;
+  geo_flags_t flags = GEO_LINESTRING;
+  geo_srcode_t srcode = GEO_SRCODE_DEFAULT;
+  const char *err;
+  geo_t *res;
+  int pass2 = 0;
+/* The processing is done in two passes.
+Pass 1: checking for errors and counting points of the result, excluding redundand points at concatenations.
+Then allocation of the result. Then
+Pass 2: copying co-ordinates from arguments and filling in missing Zs and Ms where necessary.
+Then building bounding boxes and filling in chainboxes. */
+start_pass:
+  prevX = geoc_FARAWAY;
+  prevY = geoc_FARAWAY;
+  for (argctr = 0; argctr < argcount; argctr++)
+    {
+      caddr_t arg = bif_arg_nochecks (qst, args, argctr);
+      int arg_is_list_and_not_point = 0;
+      caddr_t *v_list;
+      int v_ctr, v_len;
+      if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (arg))
+        {
+          v_len = BOX_ELEMENTS (arg);
+          if (0 == v_len)
+            arg_is_list_and_not_point = 1;
+          else
+            {
+              dtp_t dtp0 = DV_TYPE_OF (((caddr_t *)arg)[0]);
+              if (!(DV_SHORT_INT == dtp0 || DV_LONG_INT == dtp0 || DV_SINGLE_FLOAT == dtp0 || DV_DOUBLE_FLOAT == dtp0 || DV_NUMERIC == dtp0))
+                arg_is_list_and_not_point = 1;
+            }
+        }
+      if (arg_is_list_and_not_point)
+        v_list = (caddr_t *)arg; /* v_len is set above */
+      else
+        {
+          v_len = 1;
+          v_list = &arg;
+        }
+      for (v_ctr = 0; v_ctr < v_len; v_ctr++)
+        { /* Vector of points or geometries */
+          caddr_t v = v_list[v_ctr];
+          if (DV_GEO == DV_TYPE_OF (v))
+            {
+              geo_t *itm = (geo_t *)v;
+              int first_new_point_ofs, addon_count;
+              switch (GEO_TYPE_NO_ZM (itm->geo_flags))
+                {
+                case GEO_POINT:
+                  if ((fabs (itm->XYbox.Xmin - prevX) <= FLT_EPSILON) && (fabs (itm->XYbox.Ymin - prevY) <= FLT_EPSILON))
+                    continue;
+                  prevX = itm->XYbox.Xmin;
+                  prevY = itm->XYbox.Ymin;
+                  if (pass2)
+                    {
+                      res->_.pline.Xs[pointctr] = itm->XYbox.Xmin;
+                      res->_.pline.Ys[pointctr] = itm->XYbox.Ymin;
+                      if (flags & itm->geo_flags & GEO_A_Z)
+                        res->_.pline.Zs[pointctr] = itm->_.point.point_ZMbox.Zmin;
+                      if (flags & itm->geo_flags & GEO_A_M)
+                        res->_.pline.Ms[pointctr] = itm->_.point.point_ZMbox.Mmin;
+                      pointctr++;
+                    }
+                  else
+                    total_point_count++;
+                  continue;
+                case GEO_LINESTRING:
+                  if (0 == itm->_.pline.len)
+                    continue;
+                  break;
+                  break;
+                case GEO_ARCSTRING:
+                  if (3 < itm->_.pline.len)
+                    continue;
+                  break;
+                default:
+                  sqlr_new_error ("22023", "SP...", "Invalid argument %d in call of %s(): the vector contains shape that can not be used as a fragment of the result",
+                    argctr+1, fname);
+                }
+              if ((fabs (itm->_.pline.Xs[0] - prevX) <= FLT_EPSILON) && (fabs (itm->_.pline.Ys[0] - prevY) <= FLT_EPSILON))
+                first_new_point_ofs = 1;
+              else
+                first_new_point_ofs = 0;
+              addon_count = itm->_.pline.len - first_new_point_ofs;
+              prevX = itm->_.pline.Xs[itm->_.pline.len-1];
+              prevY = itm->_.pline.Ys[itm->_.pline.len-1];
+              if (pass2)
+                {
+                  memcpy (res->_.pline.Xs + pointctr, itm->_.pline.Xs + first_new_point_ofs, sizeof (geoc) * addon_count);
+                  memcpy (res->_.pline.Ys + pointctr, itm->_.pline.Ys + first_new_point_ofs, sizeof (geoc) * addon_count);
+                  if (flags & itm->geo_flags & GEO_A_Z)
+                    memcpy (res->_.pline.Zs + pointctr, itm->_.pline.Zs + first_new_point_ofs, sizeof (geoc) * addon_count);
+                  if (flags & itm->geo_flags & GEO_A_M)
+                    memcpy (res->_.pline.Ms + pointctr, itm->_.pline.Ms + first_new_point_ofs, sizeof (geo_measure_t) * addon_count);
+                  pointctr += addon_count;
+                }
+              else
+                total_point_count += addon_count;
+            }
+          else
+            {
+              geo_t p; p.geo_flags = GEO_UNDEFTYPE; p.geo_srcode = srcode;
+              geo_cast_box_to_point (v, &p, &err);
+              if (NULL != err)
+                {
+                  if (arg_is_list_and_not_point)
+                    sqlr_new_error ("22023", "SP001", "Invalid item [%d] (zero-based) of vector argument %d in call of %s(): %s",
+                      v_ctr, argctr+1, fname, err );
+                  else
+                    sqlr_new_error ("22023", "SP001", "Invalid argument %d in call of %s(): %s", argctr+1, fname, err);
+                }
+              if ((fabs (p.XYbox.Xmin - prevX) <= FLT_EPSILON) && (fabs (p.XYbox.Ymin - prevY) <= FLT_EPSILON))
+                continue;
+              prevX = p.XYbox.Xmin;
+              prevY = p.XYbox.Ymin;
+              if (pass2)
+                {
+                  res->_.pline.Xs[pointctr] = p.XYbox.Xmin;
+                  res->_.pline.Ys[pointctr] = p.XYbox.Ymin;
+                  if (flags & p.geo_flags & GEO_A_Z)
+                    res->_.pline.Zs[pointctr] = p._.point.point_ZMbox.Zmin;
+                  if (flags & p.geo_flags & GEO_A_M)
+                    res->_.pline.Ms[pointctr] = p._.point.point_ZMbox.Mmin;
+                  pointctr++;
+                }
+              else
+                total_point_count++;
+            }
+        }
+    }
+  if (!pass2)
+    {
+      int ctr;
+      res = geo_alloc (flags, total_point_count, srcode);
+      if (flags & GEO_A_Z)
+        {
+          for (ctr = total_point_count; ctr--; /* no step */)
+            res->_.pline.Zs[ctr] = 0;
+        }
+      if (flags & GEO_A_M)
+        {
+          for (ctr = total_point_count; ctr--; /* no step */)
+            res->_.pline.Ms[ctr] = 0;
+        }
+      pass2 = 1;
+      goto start_pass; /* see above */
+    }
+  if (pointctr != total_point_count)
+    {
+      if (pointctr < total_point_count)
+        sqlr_new_error ("22023", "SP...", "Internal error in bif_st_polyline()");
+      GPF_T1 ("Internal error in bif_st_polyline(), memory can be corrupted");
+    }
+  geo_calc_bounding (res, GEO_CALC_BOUNDING_DO_ALL);
+  return (caddr_t)res;
+}
 
 caddr_t
 bif_st_x (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   geo_t * g = bif_geo_arg (qst, args, 0, "st_x", GEO_POINT);
-  return box_double (g->Xkey);
+  return box_double (Xkey(g));
 }
 
 caddr_t
 bif_st_y (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   geo_t * g = bif_geo_arg (qst, args, 0, "st_y", GEO_POINT);
-  return box_double (g->Ykey);
+  return box_double (Ykey(g));
 }
 
 caddr_t
@@ -155,9 +511,9 @@ bif_st_xmin (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return box_double (geoc_FARAWAY);
   if (GEO_POINT == GEO_TYPE_NO_ZM (g->geo_flags))
     {
-      if (geoc_FARAWAY == g->Xkey)
+      if (geoc_FARAWAY == Xkey(g))
         return box_double (geoc_FARAWAY);
-      return box_double (g->Xkey);
+      return box_double (Xkey(g));
     }
   return box_double (g->XYbox.Xmin);
 }
@@ -170,9 +526,9 @@ bif_st_ymin (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return box_double (geoc_FARAWAY);
   if (GEO_POINT == GEO_TYPE_NO_ZM (g->geo_flags))
     {
-      if (geoc_FARAWAY == g->Xkey) /* yes, Xkey here and not Ykey */
+      if (geoc_FARAWAY == Xkey(g)) /* yes, Xkey here and not Ykey */
         return box_double (geoc_FARAWAY);
-      return box_double (g->Ykey);
+      return box_double (Ykey(g));
     }
   return box_double (g->XYbox.Ymin);
 }
@@ -185,9 +541,9 @@ bif_st_xmax (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return box_double (geoc_FARAWAY);
   if (GEO_POINT == GEO_TYPE_NO_ZM (g->geo_flags))
     {
-      if (geoc_FARAWAY == g->Xkey)
+      if (geoc_FARAWAY == Xkey(g))
         return box_double (geoc_FARAWAY);
-      return box_double (g->Xkey);
+      return box_double (Xkey(g));
     }
   return box_double (g->XYbox.Xmax);
 }
@@ -200,9 +556,9 @@ bif_st_ymax (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return box_double (geoc_FARAWAY);
   if (GEO_POINT == GEO_TYPE_NO_ZM (g->geo_flags))
     {
-      if (geoc_FARAWAY == g->Xkey) /* yes, Xkey here and not Ykey */
+      if (geoc_FARAWAY == Xkey(g)) /* yes, Xkey here and not Ykey */
         return box_double (geoc_FARAWAY);
-      return box_double (g->Ykey);
+      return box_double (Ykey(g));
     }
   return box_double (g->XYbox.Ymax);
 }
@@ -236,7 +592,7 @@ bif_st_distance (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   geo_t * g1 = bif_geo_arg (qst, args, 0, "st_distance", GEO_POINT);
   geo_t * g2 = bif_geo_arg (qst, args, 1, "st_distance", GEO_POINT);
-  return box_double (geo_distance (g1->geo_srcode, g1->Xkey, g1->Ykey, g2->Xkey, g2->Ykey));
+  return box_double (geo_distance (g1->geo_srcode, Xkey(g1), Ykey(g1), Xkey(g2), Ykey(g2)));
 }
 
 
@@ -397,7 +753,7 @@ geo_line_intersects_line (geo_srcode_t srcode, geoc p1X, geoc p1Y, geoc p2X, geo
   if ((0 < prec) && GEO_SR_SPHEROID_DEGREES (srcode))
     {
       double avglat, lat_prec_deg, lon_prec_deg, lon_to_lat;
-      avglat = (abs(p1Y+p2Y)+abs(q3Y+q4Y)) / 4;
+      avglat = (fabs(p1Y+p2Y)+fabs(q3Y+q4Y)) / 4;
       lon_to_lat = GEO_LON_TO_LAT_PER_DEG_RATIO(avglat);
       GEO_SET_LAT_DEG_BY_KM (lat_prec_deg, prec);
       GEO_SET_LON_DEG_BY_KM (lon_prec_deg, prec, avglat);
@@ -438,7 +794,7 @@ geo_point_intersects (geo_srcode_t srcode, geoc pX, geoc pY, geo_t *g2, double p
   int cctr, ictr, itemctr;
   if (GEO_POINT == GEO_TYPE_NO_ZM (g2->geo_flags))
     {
-      if (prec >= geo_distance (srcode, pX, pY, g2->Xkey, g2->Ykey))
+      if (prec >= geo_distance (srcode, pX, pY, Xkey(g2), Ykey(g2)))
         return 1;
       return 0;
     }
@@ -562,7 +918,7 @@ geo_line_intersects (geo_srcode_t srcode, geoc p1X, geoc p1Y, geoc p2X, geoc p2Y
 {
   int cctr, ictr, itemctr;
   if (GEO_POINT == GEO_TYPE_NO_ZM (g2->geo_flags))
-    return geo_point_intersects_line (srcode, g2->Xkey, g2->Ykey, p1X, p1Y, p2X, p2Y, prec);
+    return geo_point_intersects_line (srcode, Xkey(g2), Ykey(g2), p1X, p1Y, p2X, p2Y, prec);
   if (!geo_line_intersects_XYbox (srcode, p1X, p1Y, p2X, p2Y, &(g2->XYbox), prec))
     return 0;
   if ((GEO_A_MULTI | GEO_A_ARRAY) & g2->geo_flags)
@@ -689,7 +1045,7 @@ int
 geo_may_intersect_XYbox (geo_t *g, geo_XYbox_t *b, double prec)
 {
   if (GEO_POINT == GEO_TYPE_NO_ZM (g->geo_flags))
-    return geo_point_intersects_XYbox (g->geo_srcode, g->Xkey, g->Ykey, b, prec);
+    return geo_point_intersects_XYbox (g->geo_srcode, Xkey(g), Ykey(g), b, prec);
   if ( (g->XYbox.Xmax < b->Xmin - prec)
     || (g->XYbox.Xmin > b->Xmax + prec)
     || (g->XYbox.Ymax < b->Ymin - prec)
@@ -720,15 +1076,15 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
           {
             if (GEO_POINT == GEO_TYPE_NO_ZM (g2->geo_flags))
               {
-                if (prec >= geo_distance (g1->geo_srcode, g1->Xkey, g1->Ykey, g2->Xkey, g2->Ykey))
+                if (prec >= geo_distance (g1->geo_srcode, Xkey(g1), Ykey(g1), Xkey(g2), Ykey(g2)))
                   return 1;
                 return 0;
               }
-            if (!geo_point_intersects_XYbox (g1->geo_srcode, g1->Xkey, g1->Ykey, &(g2->XYbox), prec))
+            if (!geo_point_intersects_XYbox (g1->geo_srcode, Xkey(g1), Ykey(g1), &(g2->XYbox), prec))
               return 0;
             if (GEO_BOX == GEO_TYPE_NO_ZM (g2->geo_flags))
               return 1;
-            return geo_point_intersects (g1->geo_srcode, g1->Xkey, g1->Ykey, g2, prec);
+            return geo_point_intersects (g1->geo_srcode, Xkey(g1), Ykey(g1), g2, prec);
           }
         if (!geo_may_intersect_XYbox (g1, &(g2->XYbox), prec))
           return 0;
@@ -898,22 +1254,22 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
             {
               if (GEO_POINT == GEO_TYPE_NO_ZM (g2->geo_flags))
                 {
-                  if (prec >= geo_distance (g1->geo_srcode, g1->Xkey, g1->Ykey, g2->Xkey, g2->Ykey))
+                  if (prec >= geo_distance (g1->geo_srcode, Xkey(g1), Ykey(g1), Xkey(g2), Ykey(g2)))
                     return 1;
                   return 0;
                 }
               if (GEO_BOX == GEO_TYPE_NO_ZM (g2->geo_flags))
                 {
-                  geoc boxproximaX = ((g1->Xkey > g2->XYbox.Xmax) ? g2->XYbox.Xmax : ((g1->Xkey < g2->XYbox.Xmin) ? g2->XYbox.Xmin : g1->Xkey));
-                  geoc boxproximaY = ((g1->Ykey > g2->XYbox.Ymax) ? g2->XYbox.Ymax : ((g1->Ykey < g2->XYbox.Ymin) ? g2->XYbox.Ymin : g1->Ykey));
-                  if (prec >= geo_distance (g1->geo_srcode, g1->Xkey, g1->Ykey, boxproximaX, boxproximaY))
+                  geoc boxproximaX = ((Xkey(g1) > g2->XYbox.Xmax) ? g2->XYbox.Xmax : ((Xkey(g1) < g2->XYbox.Xmin) ? g2->XYbox.Xmin : Xkey(g1)));
+                  geoc boxproximaY = ((Ykey(g1) > g2->XYbox.Ymax) ? g2->XYbox.Ymax : ((Ykey(g1) < g2->XYbox.Ymin) ? g2->XYbox.Ymin : Ykey(g1)));
+                  if (prec >= geo_distance (g1->geo_srcode, Xkey(g1), Ykey(g1), boxproximaX, boxproximaY))
                     return 1;
                   return 0;
                 }
-              if ( (g1->Xkey < g2->XYbox.Xmin - prec)
-                || (g1->Xkey > g2->XYbox.Xmax + prec)
-                || (g1->Ykey < g2->XYbox.Ymin - prec)
-                || (g1->Ykey > g2->XYbox.Ymax + prec) )
+              if ( (Xkey(g1) < g2->XYbox.Xmin - prec)
+                || (Xkey(g1) > g2->XYbox.Xmax + prec)
+                || (Ykey(g1) < g2->XYbox.Ymin - prec)
+                || (Ykey(g1) > g2->XYbox.Ymax + prec) )
                 return 0;
               return 1;
             }
@@ -1168,6 +1524,80 @@ bif_st_transscale (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (caddr_t) res;
 }
 
+/* OLAEAPS --- the oblique Lampert Azimuthal Equal-Area projection for sphere,
+as defined in "Map Projections --- A Working Manual" by J.P.Snyder, USGS PP 1395, pp.185 -- 186 */
+
+typedef struct geo_proj_olaeaps_s {
+  geo_proj_point_cbk_t *gp_point_cbk;
+  geo_srcode_t gp_input_srcode;
+  geo_srcode_t gp_result_srcode;
+  double cos_lat0, sin_lat0, long0;
+} geo_proj_olaeaps_t;
+
+const char *
+geo_proj_point_olaeaps (void *geo_proj, geoc longP, geoc latP, double *retX, double *retY)
+{
+  double cos_latP = cos (latP * DEG_TO_RAD), sin_latP = sin (latP * DEG_TO_RAD);
+  double longdiff = longP - ((geo_proj_olaeaps_t *)geo_proj)->long0;
+  double cos_longdiff = cos (longdiff * DEG_TO_RAD),  sin_longdiff = sin (longdiff * DEG_TO_RAD);
+  double kdiv, k;
+  kdiv = 1 + ((geo_proj_olaeaps_t *)geo_proj)->sin_lat0 * sin_latP + ((geo_proj_olaeaps_t *)geo_proj)->cos_lat0 * cos_latP * cos_longdiff;
+  if (kdiv < FLT_EPSILON)
+    { /* The special point of the projection is opposite to POINT(long0 lat0), the fallback is the lowest point of the outer circle, i.e., -2,0. */
+      retX[0] = 0;
+      retY[0] = -2;
+      return "The projection of the shape gives indeterminates, try some other projection";
+    }
+  k = sqrt (2.0/kdiv);
+  retX[0] = k * cos_latP * sin_longdiff;
+  retY[0] = k * ((geo_proj_olaeaps_t *)geo_proj)->cos_lat0 * sin_latP - ((geo_proj_olaeaps_t *)geo_proj)->sin_lat0 * cos_latP * cos_longdiff;
+  return NULL;
+}
+
+const char *
+geo_proj_olaeaps_init (void *geo_proj, geoc long0, geoc lat0)
+{
+  ((geo_proj_olaeaps_t *)geo_proj)->gp_point_cbk = geo_proj_point_olaeaps;
+  ((geo_proj_olaeaps_t *)geo_proj)->gp_input_srcode = GEO_SRCODE_OF_SRID (SRID_WGS84);
+  ((geo_proj_olaeaps_t *)geo_proj)->gp_result_srcode = 0;
+  ((geo_proj_olaeaps_t *)geo_proj)->cos_lat0 = cos (lat0 * DEG_TO_RAD);
+  ((geo_proj_olaeaps_t *)geo_proj)->sin_lat0 = sin (lat0 * DEG_TO_RAD);
+  ((geo_proj_olaeaps_t *)geo_proj)->long0 = long0;
+  return NULL;
+}
+
+caddr_t
+bif_st_transform_by_custom_projection (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  geo_t *g = bif_geo_arg (qst, args, 0, "st_transform_by_custom_projection", GEO_ARG_ANY_NULLABLE);
+  caddr_t proj_name = bif_string_or_uname_arg (qst, args, 1, "st_transform_by_custom_projection");
+  geo_proj_t proj;
+  geo_t *res;
+  const char *err = NULL;
+  if (NULL == g)
+    return NEW_DB_NULL;
+  if (!strcmp (proj_name, "OLAEAPS"))
+    {
+      geoc long0 = bif_double_arg (qst, args, 2, "st_transform_by_custom_projection");
+      geoc lat0 = bif_double_arg (qst, args, 3, "st_transform_by_custom_projection");
+      err = geo_proj_olaeaps_init (&proj, long0, lat0);
+    }
+  else
+    sqlr_new_error ("22023", "GEOxx", "Unknown custom projection name '%.300s'", proj_name);
+  if (NULL != err)
+    sqlr_new_error ("22023", "GEOxx", "Custom projection '%.300s' rejected configuration arguments: %.500s", proj_name, err);
+  if (g->geo_srcode != proj.gp_input_srcode)
+    sqlr_new_error ("22023", "GEOxx", "Custom projection '%.300s' requires argument with SRcode %d but called for SRcode %d",
+      proj_name, (int)(proj.gp_input_srcode), (int)(g->geo_srcode) );
+  res = (geo_t *)box_copy ((caddr_t)g);
+  err = geo_modify_by_projection (res, &proj);
+  if (NULL != err)
+    {
+      dk_free_box ((caddr_t)res);
+      sqlr_new_error ("22023", "GEOxx", "Custom projection '%.300s' failed: %.500s", proj_name, err);
+    }
+  return (caddr_t) res;
+}
 
 void
 bif_geo_init ()
@@ -1177,6 +1607,7 @@ bif_geo_init ()
   bif_define ("dist_from_point_to_line_segment", bif_dist_from_point_to_line_segment);
   bif_define_ex ("st_point", bif_st_point, BMD_RET_TYPE, &bt_any_box, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 4, BMD_IS_PURE,
       BMD_DONE);
+  bif_define_ex ("st_linestring", bif_st_linestring, BMD_RET_TYPE, &bt_any_box, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("st_x"			, bif_st_x			, BMD_RET_TYPE, &bt_double	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("st_y"			, bif_st_y			, BMD_RET_TYPE, &bt_double	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("st_xmin"		, bif_st_xmin			, BMD_RET_TYPE, &bt_double	, BMD_IS_PURE, BMD_DONE);
@@ -1220,4 +1651,6 @@ bif_geo_init ()
       BMD_DONE);
   bif_define_ex ("ST_TransScale", bif_st_transscale, BMD_RET_TYPE, &bt_any_box, BMD_MIN_ARGCOUNT, 3, BMD_MAX_ARGCOUNT, 4,
       BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("st_transform_by_custom_projection", bif_st_transform_by_custom_projection, BMD_RET_TYPE, &bt_any_box,
+      BMD_MIN_ARGCOUNT, 2, BMD_IS_PURE, BMD_DONE);
 }
