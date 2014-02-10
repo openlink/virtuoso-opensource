@@ -247,6 +247,8 @@ typedef struct geo_s
 
 
 extern double haversine_deg_km (double long1, double lat1, double long2, double lat2);
+extern double dist_from_point_to_line_segment (double xP, double yP, double xL1, double yL1, double xL2, double yL2);
+
 extern int geo_pred (geo_t * g1, geo_t * g2, int op, double prec);
 extern geo_t *geo_point (double x, double y);
 struct dbe_table_s;
@@ -254,6 +256,9 @@ extern int64 geo_estimate (struct dbe_table_s * tb, geo_t * g, int op, double pr
 
 #define DEG_TO_RAD (M_PI / 180)
 #define KM_TO_DEG (360 / (EARTH_RADIUS_GEOM_MEAN_KM * 2 * M_PI))
+#define GEO_SET_LAT_DEG_BY_KM(deg,km) do { (deg) = (km) * KM_TO_DEG; } while (0)
+#define GEO_LON_TO_LAT_PER_DEG_RATIO(lat_deg) cos((lat_deg))
+#define GEO_SET_LON_DEG_BY_KM(deg,km,lat_deg) do { double latfactor = GEO_LON_TO_LAT_PER_DEG_RATIO(lat_deg); (deg) = ((km) > (latfactor * 360.0 / KM_TO_DEG)) ? 360.0 : ((km) * KM_TO_DEG / latfactor); } while (0)
 
 EXE_EXPORT (geo_t *, geo_alloc, (geo_flags_t geo_flags, int geo_len, int srid));
 EXE_EXPORT (geo_t *, geo_point, (geoc x, geoc y));
@@ -343,11 +348,11 @@ typedef uint64 geo_de9im_matrix_t;	/*!< An encoded DE9IM value or suboperation m
 /*! Checks whether a single cell matches single predicate of a subop */
 #define GEO_DE9IM_CELL_MATCHES_P(cell,p) (((cell) & ((p) & 0x8f)) && !((cell) & ((p) & 0x70) >> 4))
 
-/*! This sets 1 to a byte in cell position N if value of the cell N is fully calculated (neither unser nor a "maybe", a proven and final T/F) */
+/*! This sets 1 to a byte in cell position N if value of the cell N is fully calculated (neither unset nor a "maybe", a proven and final T/F) */
 #define GEO_DE9IM_FULL_CALC_BITFLAGS(v) ((((v) & 0x8080808080808080L) >> 7) | (((v) & 0x0808080808080808L) >> 3))
 
 /*! This sets 1 to a byte in cell position N if predicate of the cell N is not "*" */
-#define GEO_DE9IM_SELECTIVE_BITFLAGS(subop) ((((subop) & 0x4040404040404040L) >> 6) | (((subip) & 0x0808080808080808L) >> 3))
+#define GEO_DE9IM_SELECTIVE_BITFLAGS(subop) ((((subop) & 0x4040404040404040L) >> 6) | (((subop) & 0x0808080808080808L) >> 3))
 
 /*! This sets 1 to a byte in cell position N if value of the cell N in \c v should be calculated before matching \c v against \c subop */
 #define GEO_DE9IM_VAL_MISSES_BEFORE_SUBOP_BITFLAGS(v,subop) (GEO_DE9IM_SELECTIVE_BITFLAGS(subop) & ~GEO_DE9IM_FULL_CALC_BITFLAGS(v))
@@ -363,7 +368,7 @@ typedef uint64 geo_de9im_matrix_t;	/*!< An encoded DE9IM value or suboperation m
 
 /* States of cells of DE-9IM model VALUE matrix */
 #define GEO_DE9IM_HAS_T		0x08	/*!< Intersection is "T", i.e., non-empty */
-#define GEO_DE9IM_HAS_DPOINT	0x09	/*!< Intersection contains of individual points */
+#define GEO_DE9IM_HAS_DPOINT	0x09	/*!< Intersection consists of individual points */
 #define GEO_DE9IM_HAS_DLINE	0x0a	/*!< Intersection contains individual lines (and optionally points, but lines should present) */
 #define GEO_DE9IM_HAS_AREA	0x0c	/*!< Intersection contains regions (and optionally points and lines) */
 #define GEO_DE9IM_MAYBE_NON_F	0x10	/*!< Intersection might be non empty because bboxes intersects. This is a temporary value, it is ignored by subops but can be useful for cacheing. */
@@ -388,14 +393,17 @@ typedef uint64 geo_de9im_matrix_t;	/*!< An encoded DE9IM value or suboperation m
 #define GEO_DE9IM_EE		-1 /* EE is always GEO_DE9IM_HAS_AREA so there's no need to store it */
 #define GEO_DE9IM_TOTALBITS	64
 
-/* Hex notation of a mask code is readed left to right, one hex digit per cell.
-Say, masks of OVERLAPS oeprator, " T * T * * * T * *" and " 1 * T * * * T * *"
+/* Hex notation of a mask code is readed left to right, two hex digits per cell.
+Say, masks of OVERLAPS operator, " T * T * * * T * *" and " 1 * T * * * T * *"
                                    | : | : : : | :          | : | : : : | :
 will be recorded as             0x0800080000000800   and 0x4200080000000800
 Note that "0", "1", "2" and "F" are NOT encoded as 0x0, 0x1, 0x2 and 0xF. */
+#define GEO_DE9IM_CELL_FILLER	0xFF	/*!< All bits of one cell */
 #define GEO_DE9IM_CELL_SHIFT_BITS(idx) ((idx)*8)
 #define GEO_DE9IM_SHIFTED_CELL(idx,val) (((geo_de9im_matrix_t)(val)) << GEO_DE9IM_CELL_SHIFT_BITS((idx)))
+/*! \returns bits of cell with index \c idx from bitmask \c mask, e.g., GEO_DE9IM_GETCELL(0x4200080000006100, GEO_DE9IM_IE) will return 0x08 */
 #define GEO_DE9IM_GETCELL(mask,idx) (((mask) >> GEO_DE9IM_CELL_SHIFT_BITS((idx))) & GEO_DE9IM_CELL_FILLER);
+/*! Sets bits of cell with index \c idx in bitmask \c mask, e.g., GEO_DE9IM_SETCELL(X, GEO_DE9IM_IE, 0x08) may change X from 0x4200610000006100 to 0x4200080000006100 */
 #define GEO_DE9IM_SETCELL(mask,idx,val) do { \
   (mask) = (((mask) & ~GEO_DE9IM_SHIFTED_CELL((idx),GEO_DE9IM_CELL_FILLER)) \
     | GEO_DE9IM_SHIFTED_CELL((idx),(val)) ); } while (0);

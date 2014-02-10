@@ -1491,6 +1491,394 @@ geo_point_intersects_XYbox (geo_srcode_t srcode, geoc pX, geoc pY, geo_XYbox_t *
       if (prec < geo_distance (srcode, pX, pY, boxproximaX, boxproximaY))
         return 0;
     }
+  return ((pX >= b->Xmin) && (pY >= b->Ymin) && (pX <= b->Xmax) && (pY <= b->Ymax));
+}
+
+int
+geo_point_intersects_line (geo_srcode_t srcode, geoc pX, geoc pY, geoc p1X, geoc p1Y, geoc p2X, geoc p2Y, double prec)
+{
+  if ((0 < prec) && GEO_SR_SPHEROID_DEGREES (srcode))
+    {
+      double lat_prec_deg, lon_to_lat;
+      GEO_SET_LAT_DEG_BY_KM (lat_prec_deg, prec);
+      lon_to_lat = GEO_LON_TO_LAT_PER_DEG_RATIO((p1Y + p2Y) / 2);
+      return ((lat_prec_deg >= dist_from_point_to_line_segment (pX*lon_to_lat, pY, p1X*lon_to_lat, p1Y, p2X*lon_to_lat, p2Y)) ? 1 : 0);
+    }
+  return ((prec >= dist_from_point_to_line_segment (pX, pY, p1X, p1Y, p2X, p2Y)) ? 1 : 0);
+}
+
+#define GEO_SCALAR_PRODUCT(oX,oY,aX,aY,bX,bY) (((aX)-(oX))*((bY)-(oY)) - ((aY)-(oY))*((bX)-(oX)))
+#define GEOC_SWAP(a,b) do { geoc swap = (a); (a) = (b); (b) = swap; } while (0)
+#define GEOC_MAX(a,b) (((a) > (b)) ? (a) : (b))
+#define GEOC_MIN(a,b) (((a) < (b)) ? (a) : (b))
+int
+geo_line_intersects_XYbox (geo_srcode_t srcode, geoc p1X, geoc p1Y, geoc p2X, geoc p2Y, geo_XYbox_t *b, double prec)
+{
+  geoc bXmin, bXmax, bYmin, bYmax;
+  if (GEO_XYBOX_IS_EMPTY_OR_FARAWAY(*b))
+    return 0;
+  if ((0 < prec) && GEO_SR_SPHEROID_DEGREES (srcode))
+    {
+      geoc lat_prec_deg, lon_prec_deg;
+      GEO_SET_LAT_DEG_BY_KM (lat_prec_deg, prec);
+      GEO_SET_LON_DEG_BY_KM (lon_prec_deg, prec, ((b->Ymax + b->Ymin) / 2));
+      bXmin = b->Xmin - lon_prec_deg; bXmax = b->Xmax + lon_prec_deg;
+      bYmin = b->Ymin - lat_prec_deg; bYmax = b->Ymax + lat_prec_deg;
+    }
+  else
+    {
+      bXmin = b->Xmin-prec; bXmax = b->Xmax+prec;
+      bYmin = b->Ymin-prec; bYmax = b->Ymax+prec;
+    }
+  if (p1X < p2X)
+    {
+      GEOC_SWAP (p1X, p2X);
+      GEOC_SWAP (p1Y, p2Y);
+    }
+  if ((p1X > bXmax) || (p2X < bXmin))
+    return 0;
+  if (p1Y < p2Y)
+    { /* "/" orientation of line means check for intersection with "\" diagonal of bbox */
+      if ((p1Y > bYmax) || (p2Y < bYmin))
+        return 0;
+      if ((p1Y >= bYmin) && (p1Y <= bYmax) && (p1X >= bXmin) && (p1X <= bXmax))
+        return 1;
+      if ((p2Y >= bYmin) && (p2Y <= bYmax) && (p2X >= bXmin) && (p2X <= bXmax))
+        return 1;
+      if (GEO_SCALAR_PRODUCT (p1X,p1Y, p2X,p2Y, bXmax,bYmin) * GEO_SCALAR_PRODUCT (p1X,p1Y, p2X,p2Y, bXmin,bYmax) <= 0)
+        return 1;
+    }
+  else
+    { /* "\" orientation of line means check for intersection with "/" diagonal of bbox */
+      if ((p2Y > bYmax) || (p1Y < bYmin))
+        return 0;
+      if ((p1Y >= bYmin) && (p1Y <= bYmax) && (p1X >= bXmin) && (p1X <= bXmax))
+        return 1;
+      if ((p2Y >= bYmin) && (p2Y <= bYmax) && (p2X >= bXmin) && (p2X <= bXmax))
+        return 1;
+      if (GEO_SCALAR_PRODUCT (p1X,p1Y, p2X,p2Y, bXmin,bYmin) * GEO_SCALAR_PRODUCT (p1X,p1Y, p2X,p2Y, bXmax,bYmax) <= 0)
+        return 1;
+      return 0;
+    }
+  return 0;
+}
+
+int
+geo_range_intersects_range (geoc p1c, geoc p2c, geoc q3c, geoc q4c, double prec_norm)
+{
+  if (p1c > p2c) GEOC_SWAP (p1c, p2c);
+  if (q3c > q4c) GEOC_SWAP (q3c, q4c);
+  if (GEOC_MAX (p1c, q3c) + prec_norm <= GEOC_MIN (p2c, q4c))
+    return 1;
+  return 0;
+}
+
+int
+geo_line_intersects_line (geo_srcode_t srcode, geoc p1X, geoc p1Y, geoc p2X, geoc p2Y, geoc q3X, geoc q3Y, geoc q4X, geoc q4Y, double prec)
+{
+  double sc1, sc2;
+  if ((0 < prec) && GEO_SR_SPHEROID_DEGREES (srcode))
+    {
+      double avglat, lat_prec_deg, lon_prec_deg, lon_to_lat;
+      avglat = (abs(p1Y+p2Y)+abs(q3Y+q4Y)) / 4;
+      lon_to_lat = GEO_LON_TO_LAT_PER_DEG_RATIO(avglat);
+      GEO_SET_LAT_DEG_BY_KM (lat_prec_deg, prec);
+      GEO_SET_LON_DEG_BY_KM (lon_prec_deg, prec, avglat);
+      if (!geo_range_intersects_range (p1X, p2X, q3X, q4X, lon_prec_deg))
+        return 0;
+      if (!geo_range_intersects_range (p1Y, p2Y, q3Y, q4Y, lat_prec_deg))
+        return 0;
+      sc1 = GEO_SCALAR_PRODUCT(p1X*lon_to_lat, p1Y, p2X*lon_to_lat, p2Y, q3X*lon_to_lat, q3Y);
+      sc2 = GEO_SCALAR_PRODUCT(p1X*lon_to_lat, p1Y, p2X*lon_to_lat, p2Y, q4X*lon_to_lat, q4Y);
+      if (sc1 * sc2 > 0)
+        {
+          return 0;
+        }
+      sc1 = GEO_SCALAR_PRODUCT(q3X*lon_to_lat, q3Y, q4X*lon_to_lat, q4Y, p1X*lon_to_lat, p1Y);
+      sc2 = GEO_SCALAR_PRODUCT(q3X*lon_to_lat, q3Y, q4X*lon_to_lat, q4Y, p2X*lon_to_lat, p2Y);
+      if (sc1 * sc2 > 0)
+        return 0;
+      return 1;
+    }
+  if (!geo_range_intersects_range (p1X, p2X, q3X, q4X, prec))
+    return 0;
+  if (!geo_range_intersects_range (p1Y, p2Y, q3Y, q4Y, prec))
+    return 0;
+  sc1 = GEO_SCALAR_PRODUCT(p1X, p1Y, p2X, p2Y, q3X, q3Y);
+  sc2 = GEO_SCALAR_PRODUCT(p1X, p1Y, p2X, p2Y, q4X, q4Y);
+  if (sc1 * sc2 > 0)
+    return 0;
+  sc1 = GEO_SCALAR_PRODUCT(q3X, q3Y, q4X, q4Y, p1X, p1Y);
+  sc2 = GEO_SCALAR_PRODUCT(q3X, q3Y, q4X, q4Y, p2X, p2Y);
+  if (sc1 * sc2 > 0)
+    return 0;
+  return 1;
+}
+
+int
+geo_point_intersects (geo_srcode_t srcode, geoc pX, geoc pY, geo_t *g2, double prec)
+{
+  int cctr, ictr, itemctr;
+  if (GEO_POINT == GEO_TYPE_NO_ZM (g2->geo_flags))
+    {
+      if (prec >= geo_distance (srcode, pX, pY, g2->Xkey, g2->Ykey))
+        return 1;
+      return 0;
+    }
+  if (!geo_point_intersects_XYbox (srcode, pX, pY, &(g2->XYbox), prec))
+    return 0;
+  if ((GEO_A_MULTI | GEO_A_ARRAY) & g2->geo_flags)
+    {
+      if (GEO_IS_CHAINBOXED & g2->geo_flags)
+        {
+          geo_chainbox_t *g2gcb = g2->_.parts.parts_gcb;
+          for (cctr = 0; cctr < g2gcb->gcb_box_count; cctr ++)
+            {
+              
+              if (!geo_point_intersects_XYbox (srcode, pX, pY, g2gcb->gcb_boxes+cctr, prec))
+                continue;
+              for (ictr = 0; ictr < g2gcb->gcb_step; ictr++)
+                {
+                  itemctr = cctr * g2gcb->gcb_step + ictr;
+                  if (itemctr >= g2->_.parts.len)
+                    return 0;
+                  if (geo_point_intersects (srcode, pX, pY, g2->_.parts.items[itemctr], prec))
+                    return 1;
+                }
+            }
+        }
+      else
+        {
+          for (itemctr = 0; itemctr < g2->_.parts.len; itemctr++)
+            {
+              if (geo_point_intersects (srcode, pX, pY, g2->_.parts.items[itemctr], prec))
+                return 1;
+            }
+        }
+      return 0;
+    }
+  if (GEO_A_RINGS & g2->geo_flags)
+    {
+      if (0 == g2->_.parts.len)
+        return 0;
+      if (!geo_point_intersects (srcode, pX, pY, g2->_.parts.items[0], prec))
+        return 0;
+      for (itemctr = 1; itemctr < g2->_.parts.len; itemctr++)
+        {
+          if (geo_point_intersects (srcode, pX, pY, g2->_.parts.items[itemctr], prec))
+            return 0;
+        }
+      return 1;
+    }
+  switch (GEO_TYPE_NO_ZM (g2->geo_flags))
+    {
+    case GEO_BOX:
+      return 1;
+    case GEO_LINESTRING:
+      if (GEO_IS_CHAINBOXED & g2->geo_flags)
+        {
+          geo_chainbox_t *g2gcb = g2->_.pline.pline_gcb;
+          for (cctr = 0; cctr < g2gcb->gcb_box_count; cctr ++)
+            {
+              if (!geo_point_intersects_XYbox (srcode, pX, pY, g2gcb->gcb_boxes+cctr, prec))
+                continue;
+              for (ictr = 0; ictr < g2gcb->gcb_step; ictr++)
+                {
+                  itemctr = cctr * g2gcb->gcb_step + ictr;
+                  if (itemctr >= g2->_.pline.len-1)
+                    return 0;
+                  if (geo_point_intersects_line (srcode, pX, pY, g2->_.pline.Xs[itemctr], g2->_.pline.Ys[itemctr], g2->_.pline.Xs[itemctr+1], g2->_.pline.Ys[itemctr+1], prec))
+                    return 1;
+                }
+            }
+        }
+      else
+        {
+          for (itemctr = 0; itemctr < g2->_.pline.len; itemctr++)
+            {
+              if (geo_point_intersects_line (srcode, pX, pY, g2->_.pline.Xs[itemctr], g2->_.pline.Ys[itemctr], g2->_.pline.Xs[itemctr+1], g2->_.pline.Ys[itemctr+1], prec))
+                return 1;
+            }
+        }
+      return 0;
+    case GEO_POINTLIST:
+      if (GEO_IS_CHAINBOXED & g2->geo_flags)
+        {
+          geo_chainbox_t *g2gcb = g2->_.pline.pline_gcb;
+          for (cctr = 0; cctr < g2gcb->gcb_box_count; cctr ++)
+            {
+              if (!geo_point_intersects_XYbox (srcode, pX, pY, g2gcb->gcb_boxes+cctr, prec))
+                continue;
+              for (ictr = 0; ictr < g2gcb->gcb_step; ictr++)
+                {
+                  itemctr = cctr * g2gcb->gcb_step + ictr;
+                  if (itemctr >= g2->_.pline.len)
+                    return 0;
+                  if (prec >= geo_distance (srcode, pX, pY, g2->_.pline.Xs[itemctr], g2->_.pline.Ys[itemctr]))
+                    return 1;
+                }
+            }
+        }
+      else
+        {
+          for (itemctr = 0; itemctr < g2->_.pline.len; itemctr++)
+            {
+              if (prec >= geo_distance (srcode, pX, pY, g2->_.pline.Xs[itemctr], g2->_.pline.Ys[itemctr]))
+                return 1;
+            }
+        }
+      return 0;
+    case GEO_RING:
+      {
+        int inoutside = geo_XY_inoutside_ring (pX, pY, g2);
+        if ((GEO_INOUTSIDE_IN | GEO_INOUTSIDE_BORDER) & inoutside)
+          return 1;
+        return 0;
+      }
+    }
+  sqlr_new_error ("42000", "GEO..", "for after check of geo intersects, and a given point, supported types of second argument are POINT, BOX, POLYGON, LINESTRING, POINTLIST, and their MULTI... and COLLECTIONs");
+  return 0;
+}
+
+int
+geo_line_intersects (geo_srcode_t srcode, geoc p1X, geoc p1Y, geoc p2X, geoc p2Y, geo_t *g2, double prec)
+{
+  int cctr, ictr, itemctr;
+  if (GEO_POINT == GEO_TYPE_NO_ZM (g2->geo_flags))
+    return geo_point_intersects_line (srcode, g2->Xkey, g2->Ykey, p1X, p1Y, p2X, p2Y, prec);
+  if (!geo_line_intersects_XYbox (srcode, p1X, p1Y, p2X, p2Y, &(g2->XYbox), prec))
+    return 0;
+  if ((GEO_A_MULTI | GEO_A_ARRAY) & g2->geo_flags)
+    {
+      if (GEO_IS_CHAINBOXED & g2->geo_flags)
+        {
+          geo_chainbox_t *g2gcb = g2->_.parts.parts_gcb;
+          for (cctr = 0; cctr < g2gcb->gcb_box_count; cctr ++)
+            {
+              
+              if (!geo_line_intersects_XYbox (srcode, p1X, p1Y, p2X, p2Y, g2gcb->gcb_boxes+cctr, prec))
+                continue;
+              for (ictr = 0; ictr < g2gcb->gcb_step; ictr++)
+                {
+                  itemctr = cctr * g2gcb->gcb_step + ictr;
+                  if (itemctr >= g2->_.parts.len)
+                    return 0;
+                  if (geo_line_intersects (srcode, p1X, p1Y, p2X, p2Y, g2->_.parts.items[itemctr], prec))
+                    return 1;
+                }
+            }
+        }
+      else
+        {
+          for (itemctr = 0; itemctr < g2->_.parts.len; itemctr++)
+            {
+              if (geo_line_intersects (srcode, p1X, p1Y, p2X, p2Y, g2->_.parts.items[itemctr], prec))
+                return 1;
+            }
+        }
+      return 0;
+    }
+  if (GEO_A_RINGS & g2->geo_flags)
+    {
+      if (0 == g2->_.parts.len)
+        return 0;
+      if (!geo_line_intersects (srcode, p1X, p1Y, p2X, p2Y, g2->_.parts.items[0], prec))
+        return 0;
+      for (itemctr = 1; itemctr < g2->_.parts.len; itemctr++)
+        {
+          if (!geo_line_intersects (srcode, p1X, p1Y, p2X, p2Y, g2->_.parts.items[itemctr], prec))
+            continue;
+        }
+      goto unsupported;
+    }
+  switch (GEO_TYPE_NO_ZM (g2->geo_flags))
+    {
+    case GEO_BOX:
+      return 1;
+    case GEO_LINESTRING:
+      if (GEO_IS_CHAINBOXED & g2->geo_flags)
+        {
+          geo_chainbox_t *g2gcb = g2->_.pline.pline_gcb;
+          for (cctr = 0; cctr < g2gcb->gcb_box_count; cctr ++)
+            {
+              if (!geo_line_intersects_XYbox (srcode, p1X, p1Y, p2X, p2Y, g2gcb->gcb_boxes+cctr, prec))
+                continue;
+              for (ictr = 0; ictr < g2gcb->gcb_step; ictr++)
+                {
+                  itemctr = cctr * g2gcb->gcb_step + ictr;
+                  if (itemctr >= g2->_.pline.len-1)
+                    return 0;
+                  if (geo_line_intersects_line (srcode, p1X, p1Y, p2X, p2Y, g2->_.pline.Xs[itemctr], g2->_.pline.Ys[itemctr], g2->_.pline.Xs[itemctr+1], g2->_.pline.Ys[itemctr+1], prec))
+                    return 1;
+                }
+            }
+        }
+      else
+        {
+          for (itemctr = 0; itemctr < g2->_.pline.len; itemctr++)
+            {
+              if (geo_line_intersects_line (srcode, p1X, p1Y, p2X, p2Y, g2->_.pline.Xs[itemctr], g2->_.pline.Ys[itemctr], g2->_.pline.Xs[itemctr+1], g2->_.pline.Ys[itemctr+1], prec))
+                return 1;
+            }
+        }
+      return 0;
+    case GEO_POINTLIST:
+      if (GEO_IS_CHAINBOXED & g2->geo_flags)
+        {
+          geo_chainbox_t *g2gcb = g2->_.pline.pline_gcb;
+          for (cctr = 0; cctr < g2gcb->gcb_box_count; cctr ++)
+            {
+              if (!geo_line_intersects_XYbox (srcode, p1X, p1Y, p2X, p2Y, g2gcb->gcb_boxes+cctr, prec))
+                continue;
+              for (ictr = 0; ictr < g2gcb->gcb_step; ictr++)
+                {
+                  itemctr = cctr * g2gcb->gcb_step + ictr;
+                  if (itemctr >= g2->_.pline.len)
+                    return 0;
+                  if (geo_point_intersects_line (srcode, g2->_.pline.Xs[itemctr], g2->_.pline.Ys[itemctr], p1X, p1Y, p2X, p2Y, prec))
+                    return 1;
+                }
+            }
+        }
+      else
+        {
+          for (itemctr = 0; itemctr < g2->_.pline.len; itemctr++)
+            {
+              if (geo_point_intersects_line (srcode, g2->_.pline.Xs[itemctr], g2->_.pline.Ys[itemctr], p1X, p1Y, p2X, p2Y, prec))
+                return 1;
+            }
+        }
+      return 0;
+    case GEO_RING:
+      {
+        int inoutside;
+        inoutside = geo_XY_inoutside_ring (p1X, p1Y, g2);
+        if ((GEO_INOUTSIDE_IN | GEO_INOUTSIDE_BORDER) & inoutside)
+          return 1;
+        inoutside = geo_XY_inoutside_ring (p2X, p2Y, g2);
+        if ((GEO_INOUTSIDE_IN | GEO_INOUTSIDE_BORDER) & inoutside)
+          return 1;
+        goto unsupported;
+        return 0;
+      }
+    }
+unsupported:
+  sqlr_new_error ("42000", "GEO..", "for after check of geo contains, only may_intersect and intersects of points with precision is supported");
+  return 0;
+}
+
+
+int
+geo_may_intersect_XYbox (geo_t *g, geo_XYbox_t *b, double prec)
+{
+  if (GEO_POINT == GEO_TYPE_NO_ZM (g->geo_flags))
+    return geo_point_intersects_XYbox (g->geo_srcode, g->Xkey, g->Ykey, b, prec);
+  if ( (g->XYbox.Xmax < b->Xmin - prec)
+    || (g->XYbox.Xmin > b->Xmax + prec)
+    || (g->XYbox.Ymax < b->Ymin - prec)
+    || (g->XYbox.Ymin > b->Ymax + prec) )
+    return 0;
+  return 1;
 }
 
 int
@@ -1523,64 +1911,12 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
               return 0;
             if (GEO_BOX == GEO_TYPE_NO_ZM (g2->geo_flags))
               return 1;
-            if ((GEO_A_MULTI | GEO_A_ARRAY) & g2->geo_flags)
-              {
-                if (GEO_IS_CHAINBOXED & g2->geo_flags)
-                  {
-                    geo_chainbox_t *g2gcb = g2->_.parts.parts_gcb;
-                    for (cctr = 0; cctr < g2gcb->gcb_box_count; cctr ++)
-                      {
-                        if (!geo_point_intersects_XYbox (g1->geo_srcode, g1->Xkey, g1->Ykey, g2gcb->gcb_boxes+cctr, prec))
-                          continue;
-                        for (ictr = 0; ictr < g2gcb->gcb_step; ictr++)
-                          {
-                            itemctr = cctr * g2gcb->gcb_step + ictr;
-                            if (itemctr >= g2->_.parts.len)
-                              return 0;
-                            if (geo_pred (g1, g2->_.parts.items[itemctr], op, prec))
-                              return 1;
-                          }
-                      }
-                  }
-                else
-                  {
-                    for (itemctr = 0; itemctr < g2->_.parts.len; itemctr++)
-                      {
-                        if (geo_pred (g1, g2->_.parts.items[itemctr], op, prec))
-                          return 1;
-                      }
-                  }
-                return 0;
-              }
-            if (GEO_A_RINGS & g2->geo_flags)
-              {
-                if (0 == g2->_.parts.len)
-                  return 0;
-                if (!geo_pred (g1, g2->_.parts.items[0], op, prec))
-                  return 0;
-                for (itemctr = 1; itemctr < g2->_.parts.len; itemctr++)
-                  {
-                    if (geo_pred (g1, g2->_.parts.items[itemctr], op, prec))
-                      return 0;
-                  }
-                return 1;
-              }
-            if (GEO_RING == GEO_TYPE_NO_ZM (g2->geo_flags))
-              {
-                int inoutside = geo_XY_inoutside_ring (g1->Xkey, g1->Ykey, g2);
-                if ((GEO_INOUTSIDE_IN | GEO_INOUTSIDE_BORDER) & inoutside)
-                  return 1;
-                return 0;
-              }
-            goto unsupported;
+            return geo_point_intersects (g1->geo_srcode, g1->Xkey, g1->Ykey, g2, prec);
           }
+        if (!geo_may_intersect_XYbox (g1, &(g2->XYbox), prec))
+          return 0;
         if (GEO_BOX == GEO_TYPE_NO_ZM (g1->geo_flags))
           {
-            if ( (g1->XYbox.Xmax < g2->XYbox.Xmin - prec)
-              || (g1->XYbox.Xmin > g2->XYbox.Xmax + prec)
-              || (g1->XYbox.Ymax < g2->XYbox.Ymin - prec)
-              || (g1->XYbox.Ymin > g2->XYbox.Ymax + prec) )
-              return 0;
             if (GEO_BOX == GEO_TYPE_NO_ZM (g2->geo_flags))
               {
                 if (0 < prec)
@@ -1596,6 +1932,142 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
                 return 1;
               }
             goto unsupported;
+          }
+        if ((GEO_A_MULTI | GEO_A_ARRAY) & g2->geo_flags)
+          {
+            if (GEO_IS_CHAINBOXED & g2->geo_flags)
+              {
+                geo_chainbox_t *g2gcb = g2->_.parts.parts_gcb;
+                for (cctr = 0; cctr < g2gcb->gcb_box_count; cctr ++)
+                  {
+                    
+                    if (!geo_may_intersect_XYbox (g1, g2gcb->gcb_boxes+cctr, prec))
+                      continue;
+                    for (ictr = 0; ictr < g2gcb->gcb_step; ictr++)
+                      {
+                        itemctr = cctr * g2gcb->gcb_step + ictr;
+                        if (itemctr >= g2->_.parts.len)
+                          return 0;
+                        if (geo_pred (g2->_.parts.items[itemctr], g1, op, prec))
+                          return 1;
+                      }
+                  }
+              }
+            else
+              {
+                for (itemctr = 0; itemctr < g2->_.parts.len; itemctr++)
+                  {
+                    if (geo_pred (g2->_.parts.items[itemctr], g1, op, prec))
+                      return 1;
+                  }
+              }
+            return 0;
+          }
+        if ((GEO_A_MULTI | GEO_A_ARRAY) & g1->geo_flags)
+          {
+            if (GEO_IS_CHAINBOXED & g1->geo_flags)
+              {
+                geo_chainbox_t *g1gcb = g1->_.parts.parts_gcb;
+                for (cctr = 0; cctr < g1gcb->gcb_box_count; cctr ++)
+                  {
+                    
+                    if (!geo_may_intersect_XYbox (g2, g1gcb->gcb_boxes+cctr, prec))
+                      continue;
+                    for (ictr = 0; ictr < g1gcb->gcb_step; ictr++)
+                      {
+                        itemctr = cctr * g1gcb->gcb_step + ictr;
+                        if (itemctr >= g1->_.parts.len)
+                          return 0;
+                        if (geo_pred (g1->_.parts.items[itemctr], g2, op, prec))
+                          return 1;
+                      }
+                  }
+              }
+            else
+              {
+                for (itemctr = 0; itemctr < g1->_.parts.len; itemctr++)
+                  {
+                    if (geo_pred (g1->_.parts.items[itemctr], g2, op, prec))
+                      return 1;
+                  }
+              }
+            return 0;
+          }
+        if (GEO_A_RINGS & g2->geo_flags)
+          {
+            if (0 == g2->_.parts.len)
+              return 0;
+            if (!geo_pred (g2->_.parts.items[0], g1, op, prec))
+              return 0;
+            for (itemctr = 1; itemctr < g2->_.parts.len; itemctr++)
+              {
+                if (!geo_may_intersect_XYbox (g1, &(g2->_.parts.items[itemctr]->XYbox), prec))
+                  continue;
+                goto unsupported;
+              }
+            return 1;
+          }
+        switch (GEO_TYPE_NO_ZM (g1->geo_flags))
+          {
+          case GEO_LINESTRING:
+            if (GEO_IS_CHAINBOXED & g1->geo_flags)
+              {
+                geo_chainbox_t *g1gcb = g1->_.pline.pline_gcb;
+                for (cctr = 0; cctr < g1gcb->gcb_box_count; cctr ++)
+                  {
+                    
+                    if (!geo_may_intersect_XYbox (g2, g1gcb->gcb_boxes+cctr, prec))
+                      continue;
+                    for (ictr = 0; ictr < g1gcb->gcb_step; ictr++)
+                      {
+                        itemctr = cctr * g1gcb->gcb_step + ictr;
+                        if (itemctr >= g1->_.pline.len)
+                          return 0;
+                        if (geo_line_intersects (g1->geo_srcode, g1->_.pline.Xs[itemctr], g1->_.pline.Ys[itemctr], g1->_.pline.Xs[itemctr+1], g1->_.pline.Ys[itemctr+1], g2, prec))
+                          return 1;
+                      }
+                  }
+              }
+            else
+              {
+                for (itemctr = 0; itemctr < g1->_.pline.len; itemctr++)
+                  {
+                    if (geo_line_intersects (g1->geo_srcode, g1->_.pline.Xs[itemctr], g1->_.pline.Ys[itemctr], g1->_.pline.Xs[itemctr+1], g1->_.pline.Ys[itemctr+1], g2, prec))
+                      return 1;
+                  }
+              }
+            return 0;
+          case GEO_POINTLIST:
+            if (GEO_IS_CHAINBOXED & g1->geo_flags)
+              {
+                geo_chainbox_t *g1gcb = g1->_.pline.pline_gcb;
+                for (cctr = 0; cctr < g1gcb->gcb_box_count; cctr ++)
+                  {
+                    
+                    if (!geo_may_intersect_XYbox (g2, g1gcb->gcb_boxes+cctr, prec))
+                      continue;
+                    for (ictr = 0; ictr < g1gcb->gcb_step; ictr++)
+                      {
+                        itemctr = cctr * g1gcb->gcb_step + ictr;
+                        if (itemctr >= g1->_.pline.len)
+                          return 0;
+                        if (geo_point_intersects (g1->geo_srcode, g1->_.pline.Xs[itemctr], g1->_.pline.Ys[itemctr], g2, prec))
+                          return 1;
+                      }
+                  }
+              }
+            else
+              {
+                for (itemctr = 0; itemctr < g1->_.pline.len; itemctr++)
+                  {
+                    if (geo_point_intersects (g1->geo_srcode, g1->_.pline.Xs[itemctr], g1->_.pline.Ys[itemctr], g2, prec))
+                      return 1;
+                  }
+              }
+            return 0;
+          case GEO_RING:
+            {
+            }
           }
         goto unsupported;
       }
