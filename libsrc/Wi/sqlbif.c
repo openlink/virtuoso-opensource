@@ -16631,35 +16631,6 @@ bif_need_enlist (bif_t bif)
   return fl & BIF_ENLIST;
 }
 
-void
-bif_set_no_cluster (char * n)
-{
-  bif_metadata_t *bmd = find_bif_metadata_by_raw_name (n);
-  if (NULL == bmd)
-    GPF_T1 (n);
-  bmd->bmd_no_cluster = BIF_NO_CLUSTER;
-    }
-
-
-void
-bif_set_cluster_rec (char * n)
-{
-  bif_metadata_t *bmd = find_bif_metadata_by_raw_name (n);
-  if (NULL == bmd)
-    GPF_T1 (n);
-  bmd->bmd_no_cluster |= BIF_OUT_OF_PARTITION;
-}
-
-
-void
-bif_set_enlist (char * n)
-{
-  bif_metadata_t *bmd = find_bif_metadata_by_raw_name (n);
-  if (NULL == bmd)
-    GPF_T1 (n);
-  bmd->bmd_no_cluster |= BIF_ENLIST;
-}
-
 
 bif_vec_t
 bif_vectored (bif_t bif)
