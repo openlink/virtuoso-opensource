@@ -4058,8 +4058,8 @@ bif_udt_init (void)
   bif_define ("udt_find_by_ext_name", bif_udt_find_by_ext_name);
   bif_define ("udt_find_by_ext_type", bif_udt_find_by_ext_type);
   bif_define ("__ddl_udt_get_udt_list_by_user", bif_ddl_udt_get_udt_list_by_user);
-  bif_define_typed ("complete_udt_name", bif_complete_udt_name, &bt_varchar);
-  bif_define_typed ("udt_get_info", bif_udt_get_info, &bt_any);
+  bif_define_ex ("complete_udt_name", bif_complete_udt_name, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("udt_get_info", bif_udt_get_info, BMD_RET_TYPE, &bt_any, BMD_DONE);
 
 
   imp_map[UDT_LANG_SQL].scli_instantiate_class = udt_sql_instantiate_class;

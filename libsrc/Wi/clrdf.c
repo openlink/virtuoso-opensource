@@ -730,7 +730,7 @@ void
 cl_rdf_init ()
 {
   bif_define ("dpipe_set_rdf_load", bif_dpipe_set_rdf_load);
-  bif_define_typed ("dpipe_rdf_load_mode", bif_dpipe_rdf_load_mode, &bt_integer);
+  bif_define_ex ("dpipe_rdf_load_mode", bif_dpipe_rdf_load_mode, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("dpipe_exec_rdf_callback", bif_dpipe_exec_rdf_callback);
   rdf_ld_batch_sz = dc_batch_sz;
   if (CL_RUN_LOCAL == cl_run_local_only)

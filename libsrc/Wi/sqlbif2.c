@@ -1742,28 +1742,28 @@ sqlbif2_init (void)
   pwnam_mutex = mutex_allocate ();
   mutex_option (pwnam_mutex, "pwnam_mutex", NULL, NULL);
 #ifndef KEYCOMP
-  bif_define_typed ("itc_dive_transit_call_ctr", bif_itc_dive_transit_call_ctr, &bt_integer);
-  bif_define_typed ("itc_try_land_call_ctr", bif_itc_try_land_call_ctr, &bt_integer);
+  bif_define_ex ("itc_dive_transit_call_ctr", bif_itc_dive_transit_call_ctr, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("itc_try_land_call_ctr", bif_itc_try_land_call_ctr, BMD_RET_TYPE, &bt_integer, BMD_DONE);
 #endif
   bif_define ("__ddl_read_constraints", bif_ddl_read_constraints);
-  bif_define_typed ("sys_lockdown", bif_sys_lockdown, &bt_integer);
-  bif_define_typed ("__blob_handle_from_session", bif_blob_handle_from_session, &bt_blob_handle);
-  bif_define_typed ("os_chmod", bif_os_chmod, &bt_varchar);
-  bif_define_typed ("host_id", bif_host_id, &bt_varchar);
-  bif_define_typed ("os_chown", bif_os_chown, &bt_varchar);
-  bif_define_typed ("user_has_role", bif_user_has_role, &bt_integer);
-  bif_define_typed ("user_is_dba", bif_user_is_dba, &bt_integer);
-  bif_define_typed ("client_attr", bif_client_attr, &bt_integer);
-  bif_define_typed ("query_instance_id", bif_query_instance_id, &bt_integer);
+  bif_define_ex ("sys_lockdown", bif_sys_lockdown, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("__blob_handle_from_session", bif_blob_handle_from_session, BMD_RET_TYPE, &bt_blob_handle, BMD_DONE);
+  bif_define_ex ("os_chmod", bif_os_chmod, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("host_id", bif_host_id, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("os_chown", bif_os_chown, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("user_has_role", bif_user_has_role, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("user_is_dba", bif_user_is_dba, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("client_attr", bif_client_attr, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("query_instance_id", bif_query_instance_id, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("sql_warning", bif_sql_warning);
   bif_define ("sql_warnings_resignal", bif_sql_warnings_resignal);
-  bif_define_typed ("__sec_uid_to_user", bif_sec_uid_to_user, &bt_varchar);
+  bif_define_ex ("__sec_uid_to_user", bif_sec_uid_to_user, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("current_proc_name", bif_current_proc_name);
   bif_define ("zorder_index", bif_zorder_index);
   bif_define ("rfc1808_parse_uri", bif_rfc1808_parse_uri);
   bif_define ("rfc1808_expand_uri", bif_rfc1808_expand_uri);
   bif_define ("patch_restricted_xml_chars", bif_patch_restricted_xml_chars);
-  bif_define_typed ("format_number", bif_format_number, &bt_varchar);
+  bif_define_ex ("format_number", bif_format_number, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("__stop_cpt", bif_stop_cpt);
   bif_define ("soundex", bif_soundex);
   bif_define ("difference", bif_difference);
@@ -1782,7 +1782,7 @@ sqlbif_sequence_init (void)
   pl_bif_name_define ("cl_sequence_set");
   pl_bif_name_define ("sequence_set");
 #if 0
-  bif_define_typed ("sequence_set", bif_sequence_set, &bt_integer);
+  bif_define_ex ("sequence_set", bif_sequence_set, BMD_RET_TYPE, &bt_integer, BMD_DONE);
 #endif
 }
 

@@ -1761,20 +1761,20 @@ bif_pkcs7_certificates (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 void
 bif_crypto_init (void)
 {
-  bif_define_typed ("tree_sha1", bif_tree_sha1, &bt_varchar);
-  bif_define_typed ("sha1_digest", bif_sha1_digest, &bt_varchar);
-  bif_define_typed ("asn1_to_xml", bif_asn1_to_xml, &bt_varchar);
-  bif_define_typed ("tree_hmac", bif_tree_hmac, &bt_varchar);
-  bif_define_typed ("smime_verify", bif_smime_verify, &bt_varchar);
-  bif_define_typed ("smime_sign", bif_smime_sign, &bt_varchar);
-  bif_define_typed ("smime_encrypt", bif_smime_encrypt, &bt_varchar);
-  bif_define_typed ("smime_decrypt", bif_smime_decrypt, &bt_varchar);
-  bif_define_typed ("pem_certificates_to_array", bif_pem_certificates_to_array, &bt_any);
-  bif_define_typed ("get_certificate_info", bif_get_certificate_info, &bt_any);
-  bif_define_typed ("x509_certificate_verify", bif_x509_certificate_verify, &bt_any);
-  bif_define_typed ("pkcs7_certificates", bif_pkcs7_certificates, &bt_any);
-  bif_define_typed ("bin2hex", bif_bin2hex, &bt_varchar);
-  bif_define_typed ("hex2bin", bif_hex2bin, &bt_bin);
+  bif_define_ex ("tree_sha1", bif_tree_sha1, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("sha1_digest", bif_sha1_digest, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("asn1_to_xml", bif_asn1_to_xml, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("tree_hmac", bif_tree_hmac, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("smime_verify", bif_smime_verify, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("smime_sign", bif_smime_sign, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("smime_encrypt", bif_smime_encrypt, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("smime_decrypt", bif_smime_decrypt, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("pem_certificates_to_array", bif_pem_certificates_to_array, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("get_certificate_info", bif_get_certificate_info, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("x509_certificate_verify", bif_x509_certificate_verify, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("pkcs7_certificates", bif_pkcs7_certificates, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("bin2hex", bif_bin2hex, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("hex2bin", bif_hex2bin, BMD_RET_TYPE, &bt_bin, BMD_DONE);
 }
 
 #else /* _SSL dummy section for bifs that are defined here to not break existing apps */
@@ -1797,10 +1797,10 @@ bif_smime_verify (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 void
 bif_crypto_init (void)
 {
-  bif_define_typed ("smime_verify", bif_smime_verify, &bt_varchar);
-  bif_define_typed ("smime_sign", bif_smime_verify, &bt_varchar);
-  bif_define_typed ("pem_certificates_to_array", bif_get_certificate_info, &bt_any);
-  bif_define_typed ("get_certificate_info", bif_get_certificate_info, &bt_any);
+  bif_define_ex ("smime_verify", bif_smime_verify, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("smime_sign", bif_smime_verify, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("pem_certificates_to_array", bif_get_certificate_info, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("get_certificate_info", bif_get_certificate_info, BMD_RET_TYPE, &bt_any, BMD_DONE);
 }
 #endif
 

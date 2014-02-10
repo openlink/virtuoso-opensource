@@ -5945,51 +5945,47 @@ rdf_box_init ()
   MAKE_RDF_GRAPH_DICT(rdf_graph_group_of_privates_dict);
   MAKE_RDF_GRAPH_DICT(rdf_graph_default_world_perms_of_user_dict);
   MAKE_RDF_GRAPH_DICT(rdf_graph_default_private_perms_of_user_dict);
-  bif_define_typed ("__rdf_set_bnode_t_treshold", bif_rdf_set_bnode_t_treshold, &bt_integer);
+  bif_define_ex ("__rdf_set_bnode_t_treshold", bif_rdf_set_bnode_t_treshold, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_set_uses_index (bif_rdf_set_bnode_t_treshold);
   bif_define ("rdf_box", bif_rdf_box);
   bif_define ("rdf_box_from_ro_id", bif_rdf_box_from_ro_id);
   bif_define ("ro_digest_from_parts", bif_ro_digest_from_parts);
-  bif_define_typed ("is_rdf_box", bif_is_rdf_box, &bt_integer);
-  bif_define_typed ("rdf_box_set_data", bif_rdf_box_set_data, &bt_any);
+  bif_define_ex ("is_rdf_box", bif_is_rdf_box, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("rdf_box_set_data", bif_rdf_box_set_data, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define ("rdf_box_data", bif_rdf_box_data);
-  bif_define_typed ("rdf_box_data_tag", bif_rdf_box_data_tag, &bt_integer);
-  bif_define_typed ("rdf_box_ro_id", bif_rdf_box_ro_id, &bt_integer);
-  bif_define_typed ("ro_digest_id", bif_ro_digest_id, &bt_integer);
+  bif_define_ex ("rdf_box_data_tag", bif_rdf_box_data_tag, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("rdf_box_ro_id", bif_rdf_box_ro_id, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("ro_digest_id", bif_ro_digest_id, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("rdf_box_set_ro_id", bif_rdf_box_set_ro_id);
-  bif_define_typed ("rdf_box_lang", bif_rdf_box_lang, &bt_integer);
-  bif_define_typed ("rdf_box_type", bif_rdf_box_type, &bt_integer);
-  bif_define_typed ("rdf_box_dt_and_lang", bif_rdf_box_dt_and_lang, &bt_integer);
+  bif_define_ex ("rdf_box_lang", bif_rdf_box_lang, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("rdf_box_type", bif_rdf_box_type, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("rdf_box_dt_and_lang", bif_rdf_box_dt_and_lang, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("rdf_box_set_type", bif_rdf_box_set_type);
   bif_define ("rdf_box_chksum", bif_rdf_box_chksum);
-  bif_define_typed ("rdf_box_is_text", bif_rdf_box_is_text, &bt_integer);
+  bif_define_ex ("rdf_box_is_text", bif_rdf_box_is_text, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("rdf_box_set_is_text", bif_rdf_box_set_is_text);
-  bif_define_typed ("rdf_box_is_complete", bif_rdf_box_is_complete, &bt_integer);
-  /*bif_define_typed ("rdf_box_set_is_complete", bif_rdf_box_set_is_complete, &bt_integer);*/
-  bif_define_typed ("rdf_box_is_storeable", bif_rdf_box_is_storeable, &bt_integer);
-  bif_define_typed ("rdf_box_needs_digest", bif_rdf_box_needs_digest, &bt_integer);
-  bif_define_typed ("rdf_box_strcmp", bif_rdf_box_strcmp, &bt_integer);
-  bif_define_typed ("rdf_box_migrate_after_06_02_3129", bif_rdf_box_migrate_after_06_02_3129, &bt_integer);
-  bif_define_typed ("__rdf_long_of_obj", bif_rdf_long_of_obj, &bt_any_box);
-  bif_set_uses_index (bif_rdf_long_of_obj);
-  bif_define_typed ("__rdf_box_make_complete", bif_rdf_box_make_complete, &bt_integer);
-  bif_set_uses_index (bif_rdf_box_make_complete);
-  bif_define_typed ("__rdf_box_to_ro_id_search_fields", bif_rdf_box_to_ro_id_search_fields, &bt_integer);
-  bif_define_typed ("__rdf_sqlval_of_obj", bif_rdf_sqlval_of_obj, &bt_any);
-  bif_set_uses_index (bif_rdf_sqlval_of_obj);
-  bif_define_typed ("__rdf_strsqlval", bif_rdf_strsqlval, &bt_varchar);
-  bif_set_uses_index (bif_rdf_strsqlval);
-  bif_set_vectored (bif_rdf_strsqlval, bif_str_vec);
-    
-  bif_define_typed ("__rdf_long_to_ttl", bif_rdf_long_to_ttl, &bt_any);
+  bif_define_ex ("rdf_box_is_complete", bif_rdf_box_is_complete, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  /*bif_define_ex ("rdf_box_set_is_complete", bif_rdf_box_set_is_complete, BMD_RET_TYPE, &bt_integer, BMD_DONE); */
+  bif_define_ex ("rdf_box_is_storeable", bif_rdf_box_is_storeable, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("rdf_box_needs_digest", bif_rdf_box_needs_digest, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("rdf_box_strcmp", bif_rdf_box_strcmp, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("rdf_box_migrate_after_06_02_3129", bif_rdf_box_migrate_after_06_02_3129, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("__rdf_long_of_obj", bif_rdf_long_of_obj, BMD_ALIAS, "__ro2lo", BMD_VECTOR_IMPL, bif_ro2lo_vec, BMD_RET_TYPE,
+      &bt_any_box, BMD_USES_INDEX, BMD_DONE);
+  bif_define_ex ("__rdf_box_make_complete", bif_rdf_box_make_complete, BMD_RET_TYPE, &bt_integer, BMD_USES_INDEX, BMD_DONE);
+  bif_define_ex ("__rdf_box_to_ro_id_search_fields", bif_rdf_box_to_ro_id_search_fields, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("__rdf_sqlval_of_obj", bif_rdf_sqlval_of_obj, BMD_ALIAS, "__ro2sq", BMD_VECTOR_IMPL, bif_ro2sq_vec, BMD_RET_TYPE,
+      &bt_any, BMD_USES_INDEX, BMD_DONE);
+  bif_define_ex ("__rdf_strsqlval", bif_rdf_strsqlval, BMD_VECTOR_IMPL, bif_str_vec, BMD_RET_TYPE, &bt_varchar, BMD_USES_INDEX,
+      BMD_DONE);
+  bif_define_ex ("__rdf_long_to_ttl", bif_rdf_long_to_ttl, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_set_uses_index (bif_rdf_long_to_ttl);
-  bif_define_typed ("__rq_iid_of_o", bif_rq_iid_of_o, &bt_any);
+  bif_define_ex ("__rq_iid_of_o", bif_rq_iid_of_o, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define ("__rdf_long_from_batch_params", bif_rdf_long_from_batch_params);
-
-  bif_define_typed ("__rdf_dist_ser_long", bif_rdf_dist_ser_long, &bt_varchar);
-  bif_define_typed ("__rdf_dist_deser_long", bif_rdf_dist_deser_long, &bt_any);
-  bif_define_typed ("__rdf_redu_ser_long", bif_rdf_redu_ser_long, &bt_varchar);
-  bif_define_typed ("__rdf_redu_deser_long", bif_rdf_dist_deser_long, &bt_any);
+  bif_define_ex ("__rdf_dist_ser_long", bif_rdf_dist_ser_long, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("__rdf_dist_deser_long", bif_rdf_dist_deser_long, BMD_ALIAS, "__rdf_redu_deser_long", BMD_RET_TYPE, &bt_any,
+      BMD_DONE);
+  bif_define_ex ("__rdf_redu_ser_long", bif_rdf_redu_ser_long, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("http_sys_find_best_sparql_accept", bif_http_sys_find_best_sparql_accept);
   bif_define ("http_ttl_prefixes", bif_http_ttl_prefixes);
   bif_set_uses_index (bif_http_ttl_prefixes);
@@ -6013,21 +6009,12 @@ rdf_box_init ()
   bif_set_uses_index (bif_http_nt_object);
   bif_define ("http_rdf_object", bif_http_rdf_object);
   bif_set_uses_index (bif_http_rdf_object);
-  bif_define ("sparql_rset_ttl_write_row", bif_sparql_rset_ttl_write_row);
-  bif_set_uses_index (bif_sparql_rset_ttl_write_row);
-  bif_define ("sparql_rset_nt_write_row", bif_sparql_rset_nt_write_row);
-  bif_set_uses_index (bif_sparql_rset_nt_write_row);
-  bif_define ("sparql_rset_json_write_row", bif_sparql_rset_json_write_row);
-  bif_set_uses_index (bif_sparql_rset_json_write_row);
-  bif_define ("sparql_rset_xml_write_row", bif_sparql_rset_xml_write_row);
-  bif_set_uses_index (bif_sparql_rset_xml_write_row);
-  bif_set_no_cluster ("sparql_rset_xml_write_row");
+  bif_define_ex ("sparql_rset_ttl_write_row", bif_sparql_rset_ttl_write_row, BMD_USES_INDEX, BMD_NO_CLUSTER, BMD_DONE);
+  bif_define_ex ("sparql_rset_nt_write_row", bif_sparql_rset_nt_write_row, BMD_USES_INDEX, BMD_NO_CLUSTER, BMD_DONE);
+  bif_define_ex ("sparql_rset_json_write_row", bif_sparql_rset_json_write_row, BMD_USES_INDEX, BMD_NO_CLUSTER, BMD_DONE);
+  bif_define_ex ("sparql_rset_xml_write_row", bif_sparql_rset_xml_write_row, BMD_USES_INDEX, BMD_NO_CLUSTER, BMD_DONE);
   bif_define ("sparql_iri_split_rdfa_qname", bif_sparql_iri_split_rdfa_qname);
   /* Short aliases for use in generated SQL text: */
-  bif_define_typed ("__ro2lo", bif_rdf_long_of_obj, &bt_any_box);
-  bif_set_vectored (bif_rdf_long_of_obj, bif_ro2lo_vec);
-  bif_define_typed ("__ro2sq", bif_rdf_sqlval_of_obj, &bt_any);
-  bif_set_vectored (bif_rdf_sqlval_of_obj, bif_ro2sq_vec);
   bif_define ("__rdf_graph_id2iri_dict", bif_rdf_graph_id2iri_dict);
   bif_define ("__rdf_graph_iri2id_dict", bif_rdf_graph_iri2id_dict);
   bif_define ("__rdf_graph_group_dict", bif_rdf_graph_group_dict);
@@ -6043,8 +6030,8 @@ rdf_box_init ()
   bif_define ("__rgs_ack", bif_rgs_ack);
   bif_define ("__rgs_ack_cbk", bif_rgs_ack_cbk);
   bif_set_uses_index (bif_rgs_ack_cbk );
-  bif_define_typed ("__rdf_repl_uid", bif_rdf_repl_uid, &bt_integer);
-  bif_define_typed ("__rgs_prepare_del_or_ins", bif_rgs_prepare_del_or_ins, &bt_integer);
+  bif_define_ex ("__rdf_repl_uid", bif_rdf_repl_uid, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("__rgs_prepare_del_or_ins", bif_rgs_prepare_del_or_ins, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_set_uses_index (bif_rgs_prepare_del_or_ins);
   repl_pub_name = box_dv_short_string ("__rdf_repl");
   text5arg = box_dv_short_string ("__rdf_repl_action (?, ?, ?, ?, ?)");
@@ -6058,5 +6045,5 @@ rdf_box_init ()
   bif_set_uses_index (bif_rdf_repl_flush_queue);
   bif_define ("__rdf_range_check", bif_rdf_range_check);
   bif_set_uses_index (bif_rdf_range_check );
-  bif_define_typed ("iri_name_id", bif_iri_name_id, &bt_integer);
+  bif_define_ex ("iri_name_id", bif_iri_name_id, BMD_RET_TYPE, &bt_integer, BMD_DONE);
 }

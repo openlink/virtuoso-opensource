@@ -2789,7 +2789,7 @@ void
 bif_http_client_init (void)
 {
   init_acl_set (http_cli_proxy_except, &http_cli_proxy_except_set);
-  bif_define_typed ("http_client_internal", bif_http_client, &bt_varchar);
-  bif_define_typed ("http_pipeline", bif_http_pipeline, &bt_any);
-  bif_define_typed ("http_get", bif_http_get, &bt_varchar);
+  bif_define_ex ("http_client_internal", bif_http_client, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("http_pipeline", bif_http_pipeline, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("http_get", bif_http_get, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 }

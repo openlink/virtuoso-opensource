@@ -564,7 +564,7 @@ bif_hosting_http_handler (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 void
 bif_hosting_init (void)
 {
-  bif_define_typed ("__hosting_http_handler", bif_hosting_http_handler, &bt_varchar);
+  bif_define_ex ("__hosting_http_handler", bif_hosting_http_handler, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 }
 
 void

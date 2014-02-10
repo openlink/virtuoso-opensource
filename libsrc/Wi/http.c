@@ -10877,17 +10877,16 @@ http_init_part_one ()
   DAV_CHAR_ESCAPE ('&', "%26");
   DAV_CHAR_ESCAPE ('"', "%22");
 
-  bif_define_typed ("http_auth", bif_http_auth, &bt_varchar);
-  bif_define_typed ("http_client_ip", bif_http_client_ip, &bt_varchar);
-  bif_define_typed ("sys_connected_server_address", bif_sys_connected_server_address, &bt_varchar);
+  bif_define_ex ("http_auth", bif_http_auth, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("http_client_ip", bif_http_client_ip, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("sys_connected_server_address", bif_sys_connected_server_address, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 
   bif_define ("http_rewrite", bif_http_rewrite);
   bif_define ("http_enable_gz", bif_http_enable_gz);
-  bif_define ("http_header", bif_http_header);
-  bif_define ("http_response_header", bif_http_header);
+  bif_define_ex ("http_header", bif_http_header, BMD_ALIAS, "http_response_header", BMD_DONE);
   bif_define ("http_host", bif_http_host);
-  bif_define_typed ("http_header_get", bif_http_header_get, &bt_varchar);
-  bif_define_typed ("http_header_array_get", bif_http_header_array_get, &bt_any);
+  bif_define_ex ("http_header_get", bif_http_header_get, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("http_header_array_get", bif_http_header_array_get, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define ("http", bif_http_result);
   bif_define ("http_xmlelement_start", bif_http_xmlelement_start);
   bif_define ("http_xmlelement_empty", bif_http_xmlelement_empty);
@@ -10900,29 +10899,29 @@ http_init_part_one ()
   bif_define ("http_file", bif_http_file);
   bif_define ("http_proxy", bif_http_proxy);
   bif_define ("http_request_status", bif_http_request_status);
-  bif_define_typed ("http_request_status_get", bif_http_request_status_get, &bt_varchar);
+  bif_define_ex ("http_request_status_get", bif_http_request_status_get, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_typed (ENC_B64_NAME, bif_encode_base64, &bt_varchar);
   bif_define_typed (DEC_B64_NAME, bif_decode_base64, &bt_varchar);
-  bif_define_typed ("encode_base64url", bif_encode_base64url, &bt_varchar);
-  bif_define_typed ("decode_base64url", bif_decode_base64url, &bt_varchar);
-  bif_define_typed ("http_root", bif_http_root, &bt_varchar);
-  bif_define_typed ("dav_root", bif_dav_root, &bt_varchar);
-  bif_define_typed ("http_path", bif_http_path, &bt_varchar);
+  bif_define_ex ("encode_base64url", bif_encode_base64url, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("decode_base64url", bif_decode_base64url, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("http_root", bif_http_root, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("dav_root", bif_dav_root, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("http_path", bif_http_path, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("http_internal_redirect", bif_http_internal_redirect);
 #if 0
-  bif_define_typed ("http_get", bif_http_get, &bt_varchar);
+  bif_define_ex ("http_get", bif_http_get, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 #endif
-  bif_define_typed ("http_client_cache_enable", bif_http_client_cache_enable, &bt_varchar);
-  bif_define_typed ("string_output", bif_string_output, &bt_varchar);
-  bif_define_typed ("string_output_string", bif_string_output_string, &bt_varchar);
+  bif_define_ex ("http_client_cache_enable", bif_http_client_cache_enable, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("string_output", bif_string_output, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("string_output_string", bif_string_output_string, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("string_output_flush", bif_string_output_flush);
   bif_define ("http_output_flush", bif_http_output_flush);
-  bif_define_typed ("server_http_port", bif_server_http_port, &bt_varchar);
-  bif_define_typed ("server_https_port", bif_server_https_port, &bt_varchar);
+  bif_define_ex ("server_http_port", bif_server_http_port, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("server_https_port", bif_server_https_port, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("http_xslt", bif_http_xslt);
-  bif_define_typed ("ses_read_line", bif_ses_read_line, &bt_varchar);
-  bif_define_typed ("ses_read", bif_ses_read, &bt_varchar);
-  bif_define_typed ("ses_can_read_char", bif_ses_can_read_char, &bt_integer);
+  bif_define_ex ("ses_read_line", bif_ses_read_line, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("ses_read", bif_ses_read, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("ses_can_read_char", bif_ses_can_read_char, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define("http_flush", bif_http_flush);
   bif_define ("http_pending_req", bif_http_pending_req);
   bif_define ("http_kill", bif_http_kill);
@@ -10931,48 +10930,48 @@ http_init_part_one ()
   bif_define ("http_unlock", bif_http_unlock);
   bif_define ("http_request_header", bif_http_request_header);
   bif_define ("http_request_header_full", bif_http_request_header_full);
-  bif_define_typed ("http_param", bif_http_param, &bt_any);
-  bif_define_typed ("http_set_params", bif_http_set_params, &bt_any);
-  bif_define_typed ("http_body_read", bif_http_body_read, &bt_any);
-  bif_define_typed ("__http_stream_params", bif_http_stream_params, &bt_any);
-  bif_define_typed ("is_http_ctx", bif_is_http_ctx, &bt_any);
-  bif_define_typed ("is_https_ctx", bif_is_https_ctx, &bt_any);
-  bif_define_typed ("http_is_flushed", bif_http_is_flushed, &bt_any);
+  bif_define_ex ("http_param", bif_http_param, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("http_set_params", bif_http_set_params, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("http_body_read", bif_http_body_read, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("__http_stream_params", bif_http_stream_params, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("is_http_ctx", bif_is_http_ctx, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("is_https_ctx", bif_is_https_ctx, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("http_is_flushed", bif_http_is_flushed, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define ("https_renegotiate", bif_https_renegotiate);
-  bif_define_typed ("http_debug_log", bif_http_debug_log, &bt_any);
+  bif_define_ex ("http_debug_log", bif_http_debug_log, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define("http_login_failed", bif_http_login_failed);
 #ifdef VIRTUAL_DIR
-  bif_define_typed ("http_physical_path", bif_http_physical_path, &bt_varchar);
+  bif_define_ex ("http_physical_path", bif_http_physical_path, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("http_map_table", bif_http_map_table);
-  bif_define_typed ("http_map_del", bif_http_map_del, &bt_varchar);
-  bif_define_typed ("http_listen_host", bif_http_listen_host, &bt_varchar);
-  bif_define_typed ("http_map_get", bif_http_map_get, &bt_any);
-  bif_define_typed ("http_request_get", bif_http_request_get, &bt_varchar);
-  bif_define_typed ("http_physical_path_resolve", bif_http_physical_path_resolve, &bt_varchar);
+  bif_define_ex ("http_map_del", bif_http_map_del, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("http_listen_host", bif_http_listen_host, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("http_map_get", bif_http_map_get, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("http_request_get", bif_http_request_get, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("http_physical_path_resolve", bif_http_physical_path_resolve, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 #endif
-  bif_define_typed ("http_dav_uid", bif_http_dav_uid, &bt_integer);
-  bif_define_typed ("http_admin_gid", bif_http_admin_gid, &bt_integer);
-  bif_define_typed ("http_nobody_uid", bif_http_nobody_uid, &bt_integer);
-  bif_define_typed ("http_nogroup_gid", bif_http_nogroup_gid, &bt_integer);
-  bif_define_typed ("http_auth_verify", bif_http_auth_verify, &bt_any);
-  bif_define_typed ("http_acl_set", bif_http_acl_set, &bt_any);
-  bif_define_typed ("http_acl_get", bif_http_acl_get, &bt_any);
-  bif_define_typed ("http_acl_remove", bif_http_acl_remove, &bt_any);
-  bif_define_typed ("http_acl_stats", bif_http_acl_stats, &bt_any);
+  bif_define_ex ("http_dav_uid", bif_http_dav_uid, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("http_admin_gid", bif_http_admin_gid, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("http_nobody_uid", bif_http_nobody_uid, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("http_nogroup_gid", bif_http_nogroup_gid, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("http_auth_verify", bif_http_auth_verify, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("http_acl_set", bif_http_acl_set, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("http_acl_get", bif_http_acl_get, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("http_acl_remove", bif_http_acl_remove, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("http_acl_stats", bif_http_acl_stats, BMD_RET_TYPE, &bt_any, BMD_DONE);
 
-  bif_define_typed ("sysacl_compose", bif_sysacl_compose, &bt_varchar);
-  bif_define_typed ("sysacl_direct_bits_of_user", bif_sysacl_direct_bits_of_user, &bt_integer);
-  bif_define_typed ("sysacl_all_bits_of_tree", bif_sysacl_all_bits_of_tree, &bt_integer);
-  bif_define_typed ("sysacl_bit1_of_tree", bif_sysacl_bit1_of_tree, &bt_integer);
+  bif_define_ex ("sysacl_compose", bif_sysacl_compose, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("sysacl_direct_bits_of_user", bif_sysacl_direct_bits_of_user, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("sysacl_all_bits_of_tree", bif_sysacl_all_bits_of_tree, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("sysacl_bit1_of_tree", bif_sysacl_bit1_of_tree, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_set_vectored (bif_sysacl_bit1_of_tree, bif_sysacl_bit1_of_tree_vec);
 
   bif_define ("http_url_cache_set", bif_http_url_cache_set);
   bif_define ("http_url_cache_get", bif_http_url_cache_get);
   bif_define ("http_url_cache_remove", bif_http_url_cache_remove);
 
-  bif_define_typed ("tcpip_gethostbyname", bif_tcpip_gethostbyname, &bt_varchar);
-  bif_define_typed ("tcpip_gethostbyaddr", bif_tcpip_gethostbyaddr, &bt_varchar);
-  bif_define_typed ("tcpip_local_interfaces", bif_tcpip_local_interfaces, &bt_any);
+  bif_define_ex ("tcpip_gethostbyname", bif_tcpip_gethostbyname, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("tcpip_gethostbyaddr", bif_tcpip_gethostbyaddr, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("tcpip_local_interfaces", bif_tcpip_local_interfaces, BMD_RET_TYPE, &bt_any, BMD_DONE);
 
   bif_define ("http_full_request", bif_http_full_request);
   bif_define ("http_get_string_output", bif_http_get_string_output);
@@ -10987,8 +10986,8 @@ http_init_part_one ()
   bif_define ("http_keep_session", bif_http_keep_session);
   bif_define ("http_recall_session", bif_http_recall_session);
   bif_define ("http_current_charset", bif_http_current_charset);
-  bif_define_typed ("http_status_set", bif_http_status_set, &bt_varchar);
-  bif_define_typed ("http_methods_set", bif_http_methods_set, &bt_any);
+  bif_define_ex ("http_status_set", bif_http_status_set, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("http_methods_set", bif_http_methods_set, BMD_RET_TYPE, &bt_any, BMD_DONE);
   ws_cli_sessions = hash_table_allocate (100);
   ws_cli_mtx = mutex_allocate ();
 #ifdef VIRTUAL_DIR

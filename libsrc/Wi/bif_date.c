@@ -978,39 +978,29 @@ bif_date_init ()
 {
   bif_define_ex ("dayname"			, bif_dayname				, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("monthname"			, bif_monthname				, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("dayofmonth"			, bif_day				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("dayofmonth"	, bif_day		,BMD_ALIAS, "rdf_day_impl"	, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("dayofweek"			, bif_dayofweek				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("dayofyear"			, bif_dayofyear				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("quarter"			, bif_quarter				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("month"	, bif_month		, BMD_ALIAS, "rdf_month_impl"	, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("year"		, bif_year		, BMD_ALIAS, "rdf_year_impl"	, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("hour"		, bif_hour		, BMD_ALIAS, "rdf_hours_impl"	, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("minute"	, bif_minute		, BMD_ALIAS, "rdf_minutes_impl"	, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("week"				, bif_week				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("month"			, bif_month				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("year"				, bif_year				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("hour"				, bif_hour				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("minute"			, bif_minute				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("second"			, bif_second				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("timezone"			, bif_timezone				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("rdf_now_impl"			, bif_timestamp				, BMD_RET_TYPE, &bt_timestamp	, /*BMD_IS_PURE,*/ BMD_DONE);
-  bif_define_ex ("rdf_year_impl"		, bif_year				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("rdf_month_impl"		, bif_month				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("rdf_day_impl"			, bif_day				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("rdf_hours_impl"		, bif_hour				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("rdf_minutes_impl"		, bif_minute				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("nasa_tjd_number"		, bif_nasa_tjd_number			, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("nasa_tjd_fraction"		, bif_nasa_tjd_fraction			, BMD_RET_TYPE, &bt_double	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("merge_nasa_tjd_to_datetime"	, bif_merge_nasa_tjd_to_datetime	, BMD_RET_TYPE, &bt_datetime	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("now"				, bif_timestamp				, BMD_RET_TYPE, &bt_timestamp	, /*BMD_IS_PURE,*/ BMD_DONE);	/* This is standard name */
-  bif_define_ex ("getdate"			, bif_timestamp				, BMD_RET_TYPE, &bt_datetime	, /*BMD_IS_PURE,*/ BMD_DONE);	/* This is standard name? */
+  bif_define_ex ("now"	, bif_timestamp	, BMD_ALIAS, "getdate"	, BMD_ALIAS, "rdf_now_impl", BMD_ALIAS, "get_timestamp", BMD_RET_TYPE, &bt_timestamp	, /*BMD_IS_PURE,*/ BMD_DONE);	/* This is standard name */
   bif_define_ex ("curdate"			, bif_curdate				, BMD_RET_TYPE, &bt_date	, /*BMD_IS_PURE,*/ BMD_DONE);	/* This is standard fun. */
   bif_define_ex ("curtime"			, bif_curtime				, BMD_RET_TYPE, &bt_time	, /*BMD_IS_PURE,*/ BMD_DONE);	/* This is standard fun. */
   bif_define_ex ("curdatetime"			, bif_curdatetime			, BMD_RET_TYPE, &bt_timestamp	, /*BMD_IS_PURE,*/ BMD_DONE);	/* This is our own. */
   bif_define_ex ("datestring"			, bif_date_string			, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("datestring_GMT"		, bif_date_string_GMT			, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("stringdate"			, bif_string_timestamp			, BMD_RET_TYPE, &bt_datetime	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("stringdate"	, bif_string_timestamp	, BMD_ALIAS, "ts"		, BMD_RET_TYPE, &bt_datetime	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("d"				, bif_string_date			, BMD_RET_TYPE, &bt_date	, BMD_IS_PURE, BMD_DONE);	/* Two aliases for ODBC */
-  bif_define_ex ("ts"				, bif_string_timestamp			, BMD_RET_TYPE, &bt_timestamp	, BMD_IS_PURE, BMD_DONE);	/* brace literals */
-  bif_define_ex ("stringtime"			, bif_string_time			, BMD_RET_TYPE, &bt_time	, BMD_IS_PURE, BMD_DONE);	/* New one. */
-  bif_define_ex ("t"				, bif_string_time			, BMD_RET_TYPE, &bt_time	, BMD_IS_PURE, BMD_DONE);	/* An alias for ODBC */
-  bif_define_ex ("get_timestamp"		, bif_timestamp				, BMD_RET_TYPE, &bt_timestamp	, /*BMD_IS_PURE,*/ BMD_DONE);
+  bif_define_ex ("stringtime"	, bif_string_time	, BMD_ALIAS, "t"		, BMD_RET_TYPE, &bt_time	, BMD_IS_PURE, BMD_DONE);	/* New one. */
   bif_define_ex ("dateadd"			, bif_dateadd				, BMD_RET_TYPE, &bt_timestamp	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("datediff"			, bif_datediff				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("timestampadd"			, bif_timestampadd			, BMD_RET_TYPE, &bt_timestamp	, BMD_IS_PURE, BMD_DONE);

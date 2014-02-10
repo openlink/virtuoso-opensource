@@ -750,11 +750,11 @@ bif_nntp_auth_post (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 void
 bif_nntp_init (void)
 {
-  bif_define_typed ("nntp_get", bif_nntp_get, &bt_varchar);
-  bif_define_typed ("nntp_get_new", bif_nntp_get_new, &bt_varchar);
-  bif_define_typed ("nntp_auth_get", bif_nntp_auth_get, &bt_varchar);
-  bif_define_typed ("nntp_id_get", bif_nntp_id_get, &bt_varchar);
-  bif_define_typed ("nntp_post", bif_nntp_post, &bt_varchar);
-  bif_define_typed ("nntp_auth_post", bif_nntp_auth_post, &bt_varchar);
+  bif_define_ex ("nntp_get", bif_nntp_get, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("nntp_get_new", bif_nntp_get_new, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("nntp_auth_get", bif_nntp_auth_get, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("nntp_id_get", bif_nntp_id_get, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("nntp_post", bif_nntp_post, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("nntp_auth_post", bif_nntp_auth_post, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 }
 

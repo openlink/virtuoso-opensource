@@ -7057,81 +7057,74 @@ bif_file_init (void)
 {
   run_executable_mtx = mutex_allocate ();
   bif_define ("string_to_file", bif_string_to_file);
-  bif_define_typed ("server_root", bif_server_root, &bt_varchar);
-  bif_define_typed ("file_to_string", bif_file_to_string, &bt_varchar);
-  bif_define_typed ("file_to_string_output", bif_file_to_string_session, &bt_any);
-  bif_define_typed ("file_to_string_output_utf8", bif_file_to_string_session_utf8, &bt_any);
-  bif_define_typed ("file_append_to_string_output", bif_file_append_to_string_session, &bt_integer);
-  bif_define_typed ("file_append_to_string_output_utf8", bif_file_append_to_string_session_utf8, &bt_integer);
-  bif_define_typed ("file_read_line", bif_file_read_line, &bt_varchar);
-  bif_define_typed ("virtuoso_ini_path", bif_virtuoso_ini_path, &bt_varchar);
-  bif_define_typed ("virtuoso_ini_item_value", bif_virtuoso_ini_item_value, &bt_varchar);
-  bif_define_typed ("cfg_section_count", bif_cfg_section_count, &bt_integer);
-  bif_define_typed ("cfg_item_count", bif_cfg_item_count, &bt_integer);
-  bif_define_typed ("cfg_section_name", bif_cfg_section_name, &bt_varchar);
-  bif_define_typed ("cfg_item_name", bif_cfg_item_name, &bt_varchar);
-  bif_define_typed ("cfg_item_value", bif_cfg_item_value, &bt_varchar);
+  bif_define_ex ("server_root", bif_server_root, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("file_to_string", bif_file_to_string, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("file_to_string_output", bif_file_to_string_session, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("file_to_string_output_utf8", bif_file_to_string_session_utf8, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("file_append_to_string_output", bif_file_append_to_string_session, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("file_append_to_string_output_utf8", bif_file_append_to_string_session_utf8, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("file_read_line", bif_file_read_line, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("virtuoso_ini_path", bif_virtuoso_ini_path, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("virtuoso_ini_item_value", bif_virtuoso_ini_item_value, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("cfg_section_count", bif_cfg_section_count, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("cfg_item_count", bif_cfg_item_count, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("cfg_section_name", bif_cfg_section_name, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("cfg_item_name", bif_cfg_item_name, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("cfg_item_value", bif_cfg_item_value, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("cfg_write", bif_cfg_write);
-  bif_define_typed ("adler32", bif_adler32, &bt_integer);
+  bif_define_ex ("adler32", bif_adler32, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("tridgell32", bif_tridgell32);
-  bif_define_typed ("mdigest5", bif_mdigest5, &bt_varchar);
-  bif_define_typed ("md5", bif_md5, &bt_varchar);
-  bif_define_typed ("md5_init", bif_md5_init, &bt_varchar);
-  bif_define_typed ("md5_update", bif_md5_update, &bt_varchar);
-  bif_define_typed ("md5_final", bif_md5_final, &bt_varchar);
-  bif_define_typed ("__vector_sort", bif_vector_sort, &bt_any);
-  bif_define ("uuid", bif_uuid);
-  bif_define ("rdf_struuid_impl", bif_uuid);
+  bif_define_ex ("mdigest5", bif_mdigest5, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("md5", bif_md5, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("md5_init", bif_md5_init, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("md5_update", bif_md5_update, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("md5_final", bif_md5_final, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("__vector_sort", bif_vector_sort, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("uuid", bif_uuid, BMD_ALIAS, "rdf_struuid_impl", BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("dime_compose", bif_dime_compose);
   bif_define ("dime_tree", bif_dime_tree);
-  bif_define_typed ("file_stat", bif_file_stat, &bt_any);
+  bif_define_ex ("file_stat", bif_file_stat, BMD_RET_TYPE, &bt_any, BMD_DONE);
   if (do_os_calls)
-    bif_define_typed ("system", bif_system, &bt_integer);
-  bif_define_typed ("run_executable", bif_run_executable, &bt_integer);
-  bif_define_typed ("mime_tree", bif_mime_tree, &bt_any);
-  bif_define_typed ("mime_header", bif_mime_header, &bt_any);
-  bif_define_typed ("mime_tree_ses", bif_mime_tree_ses, &bt_any);
-  bif_define_typed ("gz_compress", bif_gz_compress, &bt_varchar);
-  bif_define_typed ("string_output_gz_compress",
-      bif_string_output_gz_compress, &bt_integer);
+    bif_define_ex ("system", bif_system, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("run_executable", bif_run_executable, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("mime_tree", bif_mime_tree, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("mime_header", bif_mime_header, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("mime_tree_ses", bif_mime_tree_ses, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("gz_compress", bif_gz_compress, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_typed ("string_output_gz_compress", bif_string_output_gz_compress, &bt_integer);
   bif_define ("gz_uncompress", bif_gz_uncompress);
   bif_define ("gzip_uncompress", bif_gzip_uncompress);
-  bif_define_typed ("gz_compress_file", bif_gz_compress_file, &bt_integer);
-  bif_define_typed ("gz_uncompress_file", bif_gz_uncompress_file, &bt_integer);
+  bif_define_ex ("gz_compress_file", bif_gz_compress_file, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("gz_uncompress_file", bif_gz_uncompress_file, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("unzip_file", bif_unzip_file);
   bif_define ("unzip_list", bif_unzip_list);
-  bif_define_typed ("sys_unlink", bif_sys_unlink, &bt_integer);
-  bif_define_typed ("sys_mkdir", bif_sys_mkdir, &bt_integer);
-  bif_define_typed ("sys_mkpath", bif_sys_mkpath, &bt_integer);
-  bif_define_typed ("mail_header", bif_get_mailmsg_hf, &bt_varchar);
-  bif_define_typed ("sys_dirlist", bif_sys_dirlist, &bt_any);
-  bif_define_typed ("file_delete", bif_file_delete, &bt_any);
-  bif_define_typed ("tmp_file_name", bif_tmp_file, &bt_varchar);
+  bif_define_ex ("sys_unlink", bif_sys_unlink, BMD_ALIAS, "file_unlink", BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("sys_mkdir", bif_sys_mkdir, BMD_ALIAS, "file_mkdir", BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("sys_mkpath", bif_sys_mkpath, BMD_ALIAS, "file_mkpath", BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("sys_dirlist", bif_sys_dirlist, BMD_ALIAS, "file_dirlist", BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("mail_header", bif_get_mailmsg_hf, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("file_delete", bif_file_delete, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("tmp_file_name", bif_tmp_file, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("http_mime_type_add", bif_http_mime_type_add);
-  bif_define_typed ("http_mime_type", bif_http_mime_type, &bt_varchar);
-  bif_define_typed ("delay", bif_sleep, &bt_integer);
+  bif_define_ex ("http_mime_type", bif_http_mime_type, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("delay", bif_sleep, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_set_uses_index (bif_sleep); /* is io sect, means can't hold a page wired */
-  bif_define_typed ("trace_on", bif_trace_on, &bt_any);
-  bif_define_typed ("trace_status", bif_trace_status, &bt_any);
-  bif_define_typed ("trace_off", bif_trace_off, &bt_any);
+  bif_define_ex ("trace_on", bif_trace_on, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("trace_status", bif_trace_status, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("trace_off", bif_trace_off, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define ("log_message", bif_log_message);
-  bif_define_typed ("sys_dir_is_allowed", bif_sys_dir_is_allowed,
-      &bt_integer);
+  bif_define_typed ("sys_dir_is_allowed", bif_sys_dir_is_allowed, &bt_integer);
   /* aliases of sys_... bifs */
-  bif_define_typed ("file_unlink", bif_sys_unlink, &bt_integer);
-  bif_define_typed ("file_mkdir", bif_sys_mkdir, &bt_integer);
-  bif_define_typed ("file_mkpath", bif_sys_mkpath, &bt_integer);
-  bif_define_typed ("file_dirlist", bif_sys_dirlist, &bt_any);
-  bif_define_typed ("file_rl", bif_file_rl, &bt_any);
-  bif_define_typed ("file_rb", bif_file_rb, &bt_any);
-  bif_define_typed ("file_rlo", bif_file_rlo, &bt_any);
-  bif_define_typed ("file_rlc", bif_file_rlc, &bt_any);
-  bif_define_typed ("file_open", bif_file_open, &bt_any);
-  bif_define_typed ("read_object", bif_read_object, &bt_any);
-  bif_define_typed ("gz_file_open", bif_gz_file_open, &bt_any);
-  bif_define_typed ("get_csv_row", bif_get_csv_row, &bt_any);
-  bif_define_typed ("get_plaintext_row", bif_get_plaintext_row, &bt_varchar);
-  bif_define_typed ("getenv", bif_getenv, &bt_varchar);
+  bif_define_ex ("file_rl", bif_file_rl, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("file_rb", bif_file_rb, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("file_rlo", bif_file_rlo, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("file_rlc", bif_file_rlc, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("file_open", bif_file_open, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("read_object", bif_read_object, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("gz_file_open", bif_gz_file_open, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("get_csv_row", bif_get_csv_row, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("get_plaintext_row", bif_get_plaintext_row, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("getenv", bif_getenv, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 #ifdef HAVE_BIF_GPF
   bif_define ("__gpf", bif_gpf);
 #endif
@@ -7144,8 +7137,8 @@ bif_file_init (void)
 #endif
 #endif
 #if defined (__APPLE__) && defined(SPOTLIGHT)
-  bif_define_typed ("spotlight_metadata", bif_spotlight_metadata, &bt_any);
-  bif_define_typed ("spotlight_status", bif_spotlight_status, &bt_any);
+  bif_define_ex ("spotlight_metadata", bif_spotlight_metadata, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("spotlight_status", bif_spotlight_status, BMD_RET_TYPE, &bt_any, BMD_DONE);
   init_file_acl_set ("/usr/bin/mdimport", &dba_execs_set);
 #endif
   set_ses_tmp_dir ();

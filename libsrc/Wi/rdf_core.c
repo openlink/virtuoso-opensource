@@ -3390,13 +3390,13 @@ bif_rdf_cache_id_to_name_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
 caddr_t
 bif_iri_from_pref_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t pref = bif_string_arg (qst, args, 0, "ir_from_pref_name");
-  caddr_t name = bif_string_arg (qst, args, 1, "ir_from_pref_name");
+  caddr_t pref = bif_string_arg (qst, args, 0, "iri_from_pref_name");
+  caddr_t name = bif_string_arg (qst, args, 1, "iri_from_pref_name");
   int pref_len = box_length (pref) - 1;
   int name_len = box_length (name) - 1;
   caddr_t res;
   if (name_len < 4)
-    res = box_dv_short_string ("no_prefix_in_iri");
+    res = box_dv_short_string ("iri_from_pref_name");
   else
     {
       res = dk_alloc_box (pref_len + name_len - 3, DV_STRING);
@@ -3404,7 +3404,7 @@ bif_iri_from_pref_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       memcpy_16 (res + pref_len, name + 4, name_len - 4);
       res[pref_len + name_len - 4] = 0;
     }
-  box_flags (res) = 1;
+  box_flags (res) = BF_IRI;
   return res;
 }
 
@@ -4170,45 +4170,30 @@ rdf_core_init (void)
     iri_seqs_used = N_IRI_SEQS;
   iri_nic_rc = resource_allocate (10, NULL, (rc_destr_t)nic_free, (rc_destr_t)nic_clear, 0);
   prefix_nic_rc = resource_allocate (10, NULL, (rc_destr_t)nic_free, (rc_destr_t)nic_clear, 0);
-  bif_define_typed ("rdf_load_rdfxml", bif_rdf_load_rdfxml, &bt_xml_entity);
+  bif_define_ex ("rdf_load_rdfxml", bif_rdf_load_rdfxml, BMD_RET_TYPE, &bt_xml_entity, BMD_DONE);
   bif_set_uses_index (bif_rdf_load_rdfxml);
-  bif_define_typed ("rdf_load_rdfa", bif_rdf_load_rdfa, &bt_xml_entity);
+  bif_define_ex ("rdf_load_rdfa", bif_rdf_load_rdfa, BMD_RET_TYPE, &bt_xml_entity, BMD_DONE);
   bif_set_uses_index (bif_rdf_load_rdfa);
-  bif_define_typed ("rdf_load_microdata", bif_rdf_load_microdata, &bt_xml_entity);
+  bif_define_ex ("rdf_load_microdata", bif_rdf_load_microdata, BMD_RET_TYPE, &bt_xml_entity, BMD_DONE);
   bif_set_uses_index (bif_rdf_load_microdata);
   bif_define ("rdf_load_turtle", bif_rdf_load_turtle);
   bif_set_uses_index (bif_rdf_load_turtle);
   bif_define ("rdf_load_turtle_local_file", bif_rdf_load_turtle_local_file);
   bif_set_uses_index (bif_rdf_load_turtle_local_file);
   bif_define ("turtle_lex_analyze", bif_turtle_lex_analyze);
-  bif_define_typed ("iri_to_id", bif_iri_to_id, &bt_iri_id);
-  bif_set_vectored (bif_iri_to_id, bif_iri_to_id_vec);
-  bif_set_cluster_rec ("iri_to_id");
-  bif_set_enlist ("iri_to_id");
+  bif_define_ex ("iri_to_id"			, bif_iri_to_id	, BMD_ALIAS, "__i2id"	, BMD_VECTOR_IMPL, bif_iri_to_id_vec, BMD_RET_TYPE, &bt_iri_id, BMD_USES_INDEX, BMD_NO_CLUSTER, BMD_OUT_OF_PARTITION, BMD_NEED_ENLIST, BMD_DONE);
   bif_define ("iri_ensure", bif_iri_ensure);
-  bif_set_uses_index (bif_iri_to_id);
-  bif_set_no_cluster ("iri_to_id");
-  bif_define ("iri_to_id_repl", bif_iri_to_id_repl);
-  bif_set_cluster_rec ("iri_to_id_repl");
-  bif_set_enlist ("iri_to_id_repl");
+  bif_define_ex ("iri_to_id_repl", bif_iri_to_id_repl, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_NEED_ENLIST, BMD_DONE);
   bif_set_uses_index (bif_iri_to_id_repl);
   bif_define ("iri_canonicalize", bif_iri_canonicalize);
   bif_set_uses_index (bif_iri_canonicalize);
-  bif_define_typed ("iri_to_id_nosignal", bif_iri_to_id_nosignal, &bt_any);
-  bif_set_uses_index (bif_iri_to_id_nosignal);
-  bif_set_cluster_rec ("iri_to_id_nosignal");
-  bif_define_typed ("iri_to_id_if_cached", bif_iri_to_id_if_cached, &bt_varchar);
-  bif_define_typed ("id_to_iri", bif_id_to_iri, &bt_any);
-  bif_set_uses_index (bif_id_to_iri);
-  bif_set_cluster_rec ("id_to_iri");
-  bif_define_typed ("id_to_canonicalized_iri", bif_id_to_canonicalized_iri, &bt_varchar);
-  bif_set_uses_index (bif_id_to_canonicalized_iri);
-  bif_set_cluster_rec ("id_to_canonicalized_iri");
-  bif_define_typed ("id_to_iri_nosignal", bif_id_to_iri_nosignal, &bt_any);
-  bif_set_uses_index (bif_id_to_iri_nosignal);
-  bif_set_cluster_rec ("id_to_iri_nosignal");
-
+  bif_define_ex ("iri_to_id_nosignal", bif_iri_to_id_nosignal, BMD_ALIAS, "__i2idn", BMD_RET_TYPE, &bt_iri_id, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_DONE);
+  bif_define_ex ("iri_to_id_if_cached", bif_iri_to_id_if_cached, BMD_ALIAS, "__i2idc", BMD_RET_TYPE, &bt_iri_id, BMD_DONE);
+  bif_define_ex ("id_to_iri"			, bif_id_to_iri	, BMD_ALIAS, "__id2i"	, BMD_VECTOR_IMPL, bif_id2i_vec, BMD_RET_TYPE, &bt_any /* was &bt_varchar */, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_DONE);
+  bif_define_ex ("id_to_canonicalized_iri"	, bif_id_to_canonicalized_iri	, BMD_RET_TYPE, &bt_any /* was &bt_varchar */, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_DONE);
+  bif_define_ex ("id_to_iri_nosignal"		, bif_id_to_iri_nosignal	, BMD_ALIAS, "__id2in"	, BMD_VECTOR_IMPL, bif_id2i_vec_ns, BMD_RET_TYPE, &bt_any /* was &bt_varchar */, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_DONE);
   bif_define ("iri_to_rdf_prefix_and_local", bif_iri_to_rdf_prefix_and_local);
+  bif_define_ex ("iri_from_pref_name", bif_iri_from_pref_name, BMD_RET_TYPE, &bt_any, BMD_IS_PURE, BMD_DONE);
   bif_define ("rdf_cache_id", bif_rdf_cache_id);
   bif_set_vectored (bif_rdf_cache_id, bif_rdf_cache_id_vec);
   bif_define ("rdf_cache_id_to_name", bif_rdf_cache_id_to_name);
@@ -4222,16 +4207,6 @@ rdf_core_init (void)
   bif_define ("__rdf_obj_set_is_text_if_ft_rule_check", bif_rdf_obj_set_is_text_if_ft_rule_check);
   bif_set_uses_index (bif_rdf_obj_set_is_text_if_ft_rule_check);
   bif_define ("__rdf_obj_ft_rule_count_in_graph", bif_rdf_obj_ft_rule_count_in_graph);
-  /* Short aliases for use in generated SQL text: */
-  bif_define ("__i2idn", bif_iri_to_id_nosignal);
-  bif_define ("__i2id", bif_iri_to_id);
-  bif_define ("__i2idc", bif_iri_to_id_if_cached);
-  bif_define_typed ("__id2i", bif_id_to_iri, &bt_any /* Was &bt_varchar */);
-  bif_set_vectored (bif_id_to_iri, bif_id2i_vec);
-  bif_set_uses_index (bif_id_to_iri);
-  bif_define_typed ("__id2in", bif_id_to_iri_nosignal, &bt_any);
-  bif_set_vectored (bif_id_to_iri_nosignal, bif_id2i_vec_ns);
-  bif_define_typed ("iri_from_pref_name", bif_iri_from_pref_name, &bt_any);
   bif_define ("rdf_graph_keyword", bif_rdf_graph_keyword);
   bif_define ("iri_split", bif_iri_split);
   bif_define ("iri_cache_clear",  bif_iri_cache_clear);
