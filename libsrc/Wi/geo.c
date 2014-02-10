@@ -137,7 +137,7 @@ cmpf_geo (buffer_desc_t * buf, int irow, it_cursor_t * itc)
       geo_t *pt = (geo_t *) itc->itc_search_params[1];
       double prec = unbox_coord (itc->itc_search_params[2]);
       if (GEO_POINT == GEO_TYPE (pt->geo_flags) && (rx2 - rx) < (prec / 100) && (ry2 - ry) < (prec / 100)
-	  && prec < geo_distance (pt->geo_srcode, rx, ry, pt->Xkey, pt->Ykey))
+        && prec < geo_distance (pt->geo_srcode, rx, ry, Xkey(pt), Ykey(pt)))
 	return DVC_LESS;
     }
   return DVC_MATCH;
@@ -1248,7 +1248,7 @@ geo_wkt (caddr_t x)
   if ((GEO_POINT == GEO_TYPE (g->geo_flags)) && (GEO_SRCODE_DEFAULT == g->geo_srcode))
     {
       char xx[100];
-      snprintf (xx, sizeof (xx), "POINT(%g %g)", g->Xkey, g->Ykey);
+      snprintf (xx, sizeof (xx), "POINT(%g %g)", Xkey(g), Ykey(g));
       return box_dv_short_string (xx);
     }
   else
@@ -1260,170 +1260,6 @@ geo_wkt (caddr_t x)
       strses_free (ses);
       return res;
     }
-}
-
-caddr_t
-bif_st_point (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  caddr_t first = bif_arg_unrdf (qst, args, 0, "st_point");
-  dtp_t dtp = DV_TYPE_OF (first);
-  double x = bif_double_arg (qst, args, 0, "st_point");
-  double y = bif_double_arg (qst, args, 1, "st_point");
-  geo_t *res = geo_point (x, y);
-  if (DV_SINGLE_FLOAT == dtp || DV_LONG_INT == dtp)
-    res->geo_flags |= GEO_IS_FLOAT;
-  return (caddr_t) res;
-}
-
-
-caddr_t
-bif_st_x (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  geo_t *g = bif_geo_arg (qst, args, 0, "st_x", GEO_POINT);
-  return box_double (g->Xkey);
-}
-
-caddr_t
-bif_st_y (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  geo_t *g = bif_geo_arg (qst, args, 0, "st_y", GEO_POINT);
-  return box_double (g->Ykey);
-}
-
-caddr_t
-bif_st_xmin (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  geo_t * g = bif_geo_arg (qst, args, 0, "st_xmin", GEO_ARG_ANY_NULLABLE);
-  if (NULL == g)
-    return box_double (geoc_FARAWAY);
-  if (GEO_POINT == GEO_TYPE_NO_ZM (g->geo_flags))
-    {
-      if (geoc_FARAWAY == g->Xkey)
-        return box_double (geoc_FARAWAY);
-      return box_double (g->Xkey);
-    }
-  return box_double (g->XYbox.Xmin);
-}
-
-caddr_t
-bif_st_ymin (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  geo_t * g = bif_geo_arg (qst, args, 0, "st_ymin", GEO_ARG_ANY_NULLABLE);
-  if (NULL == g)
-    return box_double (geoc_FARAWAY);
-  if (GEO_POINT == GEO_TYPE_NO_ZM (g->geo_flags))
-    {
-      if (geoc_FARAWAY == g->Xkey) /* yes, Xkey here and not Ykey */
-        return box_double (geoc_FARAWAY);
-      return box_double (g->Ykey);
-    }
-  return box_double (g->XYbox.Ymin);
-}
-
-caddr_t
-bif_st_xmax (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  geo_t * g = bif_geo_arg (qst, args, 0, "st_xmax", GEO_ARG_ANY_NULLABLE);
-  if (NULL == g)
-    return box_double (geoc_FARAWAY);
-  if (GEO_POINT == GEO_TYPE_NO_ZM (g->geo_flags))
-    {
-      if (geoc_FARAWAY == g->Xkey)
-        return box_double (geoc_FARAWAY);
-      return box_double (g->Xkey);
-    }
-  return box_double (g->XYbox.Xmax);
-}
-
-caddr_t
-bif_st_ymax (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  geo_t * g = bif_geo_arg (qst, args, 0, "st_ymax", GEO_ARG_ANY_NULLABLE);
-  if (NULL == g)
-    return box_double (geoc_FARAWAY);
-  if (GEO_POINT == GEO_TYPE_NO_ZM (g->geo_flags))
-    {
-      if (geoc_FARAWAY == g->Xkey) /* yes, Xkey here and not Ykey */
-        return box_double (geoc_FARAWAY);
-      return box_double (g->Ykey);
-    }
-  return box_double (g->XYbox.Ymax);
-}
-
-caddr_t
-bif_st_srid (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  geo_t *g = bif_geo_arg (qst, args, 0, "st_srid", GEO_ARG_ANY_NULLABLE);
-  if (NULL == g)
-    return NEW_DB_NULL;
-  return box_num (GEO_SRID (g->geo_srcode));
-}
-
-
-caddr_t
-bif_st_setsrid (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  geo_t *g = bif_geo_arg (qst, args, 0, "st_setsrid", GEO_ARG_ANY_NULLABLE), *cp;
-  int srid;
-  if (NULL == g)
-    return NEW_DB_NULL;
-  srid = bif_long_arg (qst, args, 1, "st_setsrid");
-  cp = (geo_t *) box_copy ((caddr_t) g);
-  cp->geo_srcode = GEO_SRCODE_OF_SRID (srid);
-  return (caddr_t) cp;
-}
-
-
-caddr_t
-bif_st_distance (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  geo_t *g1 = bif_geo_arg (qst, args, 0, "st_distance", GEO_POINT);
-  geo_t *g2 = bif_geo_arg (qst, args, 1, "st_distance", GEO_POINT);
-  return box_double (geo_distance (g1->geo_srcode, g1->Xkey, g1->Ykey, g2->Xkey, g2->Ykey));
-}
-
-
-caddr_t
-bif_geo_pred (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, char *f, int op)
-{
-  geo_t *g1 = bif_geo_arg (qst, args, 0, f, GEO_ARG_ANY_NULLABLE);
-  geo_t *g2 = bif_geo_arg (qst, args, 1, f, GEO_ARG_ANY_NULLABLE);
-  double prec = 0;
-  if (BOX_ELEMENTS (args) > 2)
-    prec = bif_double_arg (qst, args, 2, f);
-  return box_num (geo_pred (g1, g2, op, prec));
-}
-
-caddr_t
-bif_st_contains (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  return bif_geo_pred (qst, err_ret, args, "st_contains", GSOP_CONTAINS);
-}
-
-
-caddr_t
-bif_st_within (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  return bif_geo_pred (qst, err_ret, args, "st_within", GSOP_WITHIN);
-}
-
-caddr_t
-bif_st_intersects (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  return bif_geo_pred (qst, err_ret, args, "st_intersects", GSOP_INTERSECTS);
-}
-
-caddr_t
-bif_st_may_intersect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  return bif_geo_pred (qst, err_ret, args, "st_may_intersect", GSOP_MAY_INTERSECT);
-}
-
-caddr_t
-bif_st_astext (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  geo_t *g = bif_geo_arg (qst, args, 0, "st_wkt", GEO_ARG_ANY_NONNULL);
-  return geo_wkt ((caddr_t) g);
 }
 
 caddr_t
@@ -1451,22 +1287,6 @@ geo_parse_wkt (char *text, caddr_t * err_ret)
   return (caddr_t)g;
 }
 
-caddr_t
-bif_st_geomfromtext (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  caddr_t str = bif_string_arg (qst, args, 0, "st_geomfromtext");
-  return geo_parse_wkt (str, err_ret);
-}
-
-
-caddr_t
-bif_is_geometry (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  caddr_t x = bif_arg_unrdf (qst, args, 0, "isgeometry");
-  return box_num (DV_GEO == DV_TYPE_OF (x));
-}
-
-
 double
 txs_prec (text_node_t * txs, caddr_t * inst)
 {
@@ -1480,83 +1300,6 @@ txs_prec (text_node_t * txs, caddr_t * inst)
     }
   return 0;
 }
-
-
-int
-geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
-{
-  if (GSOP_WITHIN == op)
-    {
-      geo_t * swap;
-      swap = g1; g1 = g2; g2 = swap;
-      op = GSOP_CONTAINS;
-    }
-  switch (op)
-    {
-    case GSOP_INTERSECTS:
-      {
-        if ((NULL == g1) || (NULL == g2))
-          return 0;
-        if (GEO_TYPE_NO_ZM (g1->geo_flags) > GEO_TYPE_NO_ZM (g2->geo_flags))
-          { geo_t * swap; swap = g1; g1 = g2; g2 = swap; }
-        if (GEO_POINT == GEO_TYPE_NO_ZM (g1->geo_flags))
-          {
-            if (GEO_POINT == GEO_TYPE_NO_ZM (g2->geo_flags))
-    {
-      if (prec >= geo_distance (g1->geo_srcode, g1->Xkey, g1->Ykey, g2->Xkey, g2->Ykey))
-        return 1;
-      return 0;
-    }
-            if (GEO_BOX == GEO_TYPE_NO_ZM (g2->geo_flags))
-              {
-                geoc boxproximaX = ((g1->Xkey > g2->XYbox.Xmax) ? g2->XYbox.Xmax : ((g1->Xkey < g2->XYbox.Xmin) ? g2->XYbox.Xmin : g1->Xkey));
-                geoc boxproximaY = ((g1->Ykey > g2->XYbox.Ymax) ? g2->XYbox.Ymax : ((g1->Ykey < g2->XYbox.Ymin) ? g2->XYbox.Ymin : g1->Ykey));
-                if (prec >= geo_distance (g1->geo_srcode, g1->Xkey, g1->Ykey, boxproximaX, boxproximaY))
-                  return 1;
-                return 0;
-              }
-            goto unsupported;
-          }
-        if (GEO_BOX == GEO_TYPE_NO_ZM (g1->geo_flags))
-          {
-            if ( (g1->XYbox.Xmax < g2->XYbox.Xmin - prec)
-              || (g1->XYbox.Xmin > g2->XYbox.Xmax + prec)
-              || (g1->XYbox.Ymax < g2->XYbox.Ymin - prec)
-              || (g1->XYbox.Ymin > g2->XYbox.Ymax + prec) )
-              return 0;
-            if (GEO_BOX == GEO_TYPE_NO_ZM (g2->geo_flags))
-              {
-                if (0 < prec)
-                  {
-                    if ( (g1->XYbox.Xmax < g2->XYbox.Xmin)
-                      || (g1->XYbox.Xmin > g2->XYbox.Xmax)
-                      || (g1->XYbox.Ymax < g2->XYbox.Ymin)
-                      || (g1->XYbox.Ymin > g2->XYbox.Ymax) )
-                      { /* corners/sides at close distance are possible */
-                        return 1; /* rough estimation */
-                      }
-                  }
-                return 1;
-              }
-            goto unsupported;
-          }
-        goto unsupported;
-      }
-    case GSOP_MAY_INTERSECT:
-      if ((NULL == g1) || (NULL == g2))
-        return 0;
-      if ( (g1->XYbox.Xmax < g2->XYbox.Xmin - prec)
-        || (g1->XYbox.Xmin > g2->XYbox.Xmax + prec)
-        || (g1->XYbox.Ymax < g2->XYbox.Ymin - prec)
-        || (g1->XYbox.Ymin > g2->XYbox.Ymax + prec) )
-        return 0;
-      return 1;
-    }
-unsupported:
-  sqlr_new_error ("42000", "GEO..", "for after check of geo contains, only may_intersect and intersects of points with precision is supported");
-  return 0;
-}
-
 
 query_t * geo_ck_qr;
 
@@ -1813,7 +1556,7 @@ dbg_geo_to_text (caddr_t x)
   switch (GEO_TYPE (g->geo_flags))
     {
     case GEO_POINT:
-      snprintf (tmp, sizeof (tmp), "<point %g %g>", g->Xkey, g->Ykey);
+      snprintf (tmp, sizeof (tmp), "<point %g %g>", Xkey(g), Ykey(g));
       break;
     default:
       sprintf (tmp, "<geo type %d>", GEO_TYPE (g->geo_flags));
@@ -1824,247 +1567,12 @@ dbg_geo_to_text (caddr_t x)
 
 dk_mutex_t *geo_reg_mtx;
 
-caddr_t
-bif_st_ewkt_read (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  geo_t *res;
-  caddr_t strg = bif_string_arg (qst, args, 0, "st_ewkt_read");
-  caddr_t err = NULL;
-  res = ewkt_parse (strg, &err);
-  if (NULL != err)
-    sqlr_resignal (err);
-  geo_calc_bounding (res, GEO_CALC_BOUNDING_DO_ALL);
-  return (caddr_t) res;
-}
-
-caddr_t
-bif_http_st_ewkt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  geo_t *g = bif_geo_arg (qst, args, 0, "http_st_ewkt", GEO_ARG_ANY_NONNULL);
-  dk_session_t *ses = bif_strses_or_http_ses_arg (qst, args, 1, "http_st_ewkt");
-  ewkt_print_sf12 (g, ses);
-  return (caddr_t) NULL;
-}
-
-caddr_t
-bif_http_st_dxf_entity (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  geo_t *g = bif_geo_arg (qst, args, 0, "http_st_dxf_entity", GEO_ARG_ANY_NONNULL);
-  caddr_t *attrs = bif_array_of_pointer_arg (qst, args, 1, "http_st_dxf_entity");
-  dk_session_t *ses = bif_strses_or_http_ses_arg (qst, args, 2, "http_st_dxf_entity");
-  geo_print_as_dxf_entity (g, attrs, ses);
-  return (caddr_t)NULL;
-}
-
-caddr_t
-bif_st_get_bounding_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  geo_t *g = bif_geo_arg (qst, args, 0, "st_get_bounding_box", GEO_ARG_ANY_NULLABLE);
-  double prec_x = 0, prec_y = 0;
-  int argcount = BOX_ELEMENTS (args);
-  geo_t *res, xy;
-  if (NULL == g)
-    {
-#if 0
-      res = geo_alloc (GEO_BOX, 0, SRID_DEFAULT);
-      GEO_XYBOX_SET_EMPTY (res->XYbox);
-      return (caddr_t)res;
-#else
-      return NEW_DB_NULL;
-#endif
-    }
-  if (2 <= argcount) prec_y = prec_x = bif_double_arg (qst, args, 1, "st_get_bounding_box");
-  if (3 <= argcount) prec_y = bif_double_arg (qst, args, 2, "st_get_bounding_box");
-  geo_get_bounding_XYbox (g, &xy, prec_x, prec_y);
-  res = geo_alloc (GEO_BOX | (g->geo_flags & (GEO_A_Z | GEO_A_M)), 0, g->geo_srcode);
-  res->XYbox = xy.XYbox;
-  if (g->geo_flags & (GEO_A_Z | GEO_A_M))
-    {
-      geo_ZMbox_t *zm = geo_get_ZMbox_field (g);
-      if (res->geo_flags & GEO_A_Z)
-	{
-	  res->_.point.point_ZMbox.Zmin = zm->Zmin;
-	  res->_.point.point_ZMbox.Zmax = zm->Zmax;
-	}
-      if (res->geo_flags & GEO_A_M)
-	{
-	  res->_.point.point_ZMbox.Mmin = zm->Mmin;
-	  res->_.point.point_ZMbox.Mmax = zm->Mmax;
-	}
-    }
-  return (caddr_t) res;
-}
-
-caddr_t
-bif_st_dv_geo_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  caddr_t buf = bif_string_arg (qst, args, 0, "st_dv_geo_length");
-  long hl = 0, l = 0;
-  dv_geo_length ((unsigned char *) buf, &hl, &l);
-  return box_num (hl + l);
-}
-
-caddr_t
-bif_geometry_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  geo_t *g = bif_geo_arg (qst, args, 0, "GeometryType", GEO_ARG_ANY_NULLABLE);
-  ewkt_kwd_metas_t *metas;
-  if (NULL == g)
-    return NEW_DB_NULL;
-  metas = ewkt_find_metas_by_geotype (GEO_TYPE (g->geo_flags));
-  if (NULL == metas)
-    sqlr_new_error ("22023", "GEO..", "Unsupported shape type %u, geometry instance is corrupted or created by Virtuoso server of later version", GEO_TYPE (g->geo_flags));
-  return box_dv_short_string (metas->kwd_name);
-  
-}
-
-caddr_t
-bif_st_num_geometries (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  geo_t *g = bif_geo_arg (qst, args, 0, "ST_NumGeometries", GEO_ARG_ANY_NULLABLE);
-  ewkt_kwd_metas_t *metas;
-  if (NULL == g)
-    return NEW_DB_NULL;
-  if (g->geo_flags & (GEO_A_MULTI | GEO_A_ARRAY))
-    return box_num (g->_.parts.len);
-  return box_num (1);
-}
-
-caddr_t
-bif_st_geometry_n (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  geo_t *g = bif_geo_arg (qst, args, 0, "ST_GeometryN", GEO_ARG_ANY_NULLABLE);
-  boxint idx = bif_long_arg (qst, args, 1, "ST_GeometryN");
-  if (NULL == g)
-    return NEW_DB_NULL;
-  if (!(g->geo_flags & (GEO_A_MULTI | GEO_A_ARRAY)))
-    return NEW_DB_NULL;
-  if ((idx < 1) || (idx > g->_.parts.len))
-    sqlr_new_error ("22023", "GEO..", "Invalid index value " BOXINT_FMT ", valid values for this geometery are 1 to %ld", (long)(g->_.parts.len));
-  return (caddr_t)geo_copy (g->_.parts.items[idx-1]);
-}
-
-caddr_t
-bif_st_exterior_ring (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  geo_t *g = bif_geo_arg (qst, args, 0, "ST_ExteriorRing", GEO_ARG_ANY_NULLABLE);
-  if (NULL == g)
-    return NEW_DB_NULL;
-  if (!(g->geo_flags & GEO_A_RINGS) || (g->geo_flags & (GEO_A_MULTI | GEO_A_ARRAY)))
-    return NEW_DB_NULL;
-  return (caddr_t)geo_copy (g->_.parts.items[0]);
-}
-;
-
-caddr_t
-bif_st_num_interior_rings (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  geo_t *g = bif_geo_arg (qst, args, 0, "ST_NumInteriorRings", GEO_ARG_ANY_NULLABLE);
-  if (NULL == g)
-    return NEW_DB_NULL;
-  if (!(g->geo_flags & GEO_A_RINGS))
-    return NEW_DB_NULL;
-  if (g->geo_flags & GEO_A_ARRAY)
-    return NEW_DB_NULL;
-  if (g->geo_flags & GEO_A_MULTI)
-    {
-      if (0 == g->_.parts.len)
-        return box_num (0);
-      return box_num (g->_.parts.items[0]->_.parts.len - 1);
-    }
-  return box_num (g->_.parts.len - 1);
-}
-
-caddr_t
-bif_st_interior_ring_n (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  geo_t *g = bif_geo_arg (qst, args, 0, "ST_InteriorRingN", GEO_ARG_ANY_NULLABLE);
-  boxint idx = bif_long_arg (qst, args, 1, "ST_InteriorRingN");
-  if (NULL == g)
-    return NEW_DB_NULL;
-  if (!(g->geo_flags & GEO_A_RINGS) || (g->geo_flags & (GEO_A_MULTI | GEO_A_ARRAY)))
-    return NEW_DB_NULL;
-  if ((idx < 1) || (idx >= g->_.parts.len))
-    {
-#if 0
-      sqlr_new_error ("22023", "GEO..", "Invalid index value " BOXINT_FMT ", valid values for this geometery are 1 to %ld", (long)(g->_.parts.len));
-#else
-      return NEW_DB_NULL;
-#endif
-    }
-  return (caddr_t)geo_copy (g->_.parts.items[idx /* No "minus one" because index zero is for exterior ring */]);
-}
-
-caddr_t
-bif_st_get_bounding_box_n (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  geo_t *g = bif_geo_arg (qst, args, 0, "st_get_bounding_box_n", GEO_ARG_ANY_NULLABLE);
-  geo_t *sub_g, *res, xy;
-  boxint idx = bif_long_arg (qst, args, 1, "st_get_bounding_box_n");
-  if (NULL == g)
-    return NEW_DB_NULL;
-  if (!(g->geo_flags & (GEO_A_MULTI | GEO_A_ARRAY)))
-    sub_g = g;
-  if ((idx < 1) || (idx > g->_.parts.len))
-    sqlr_new_error ("22023", "GEO..", "Invalid index value " BOXINT_FMT ", valid values for this geometery are 1 to %ld", (long)idx, (long)(g->_.parts.len));
-  sub_g = g->_.parts.items[idx-1];
-  geo_get_bounding_XYbox (sub_g, &xy, 0, 0);
-  res = geo_alloc (GEO_BOX | (sub_g->geo_flags & (GEO_A_Z | GEO_A_M)), 0, sub_g->geo_srcode);
-  res->XYbox = xy.XYbox;
-  if (g->geo_flags & (GEO_A_Z | GEO_A_M))
-    {
-      geo_ZMbox_t *zm = geo_get_ZMbox_field (g);
-      if (res->geo_flags & GEO_A_Z)
-        {
-          res->_.point.point_ZMbox.Zmin = zm->Zmin;
-          res->_.point.point_ZMbox.Zmax = zm->Zmax;
-        }
-      if (res->geo_flags & GEO_A_M)
-        {
-          res->_.point.point_ZMbox.Mmin = zm->Mmin;
-          res->_.point.point_ZMbox.Mmax = zm->Mmax;
-        }
-    }
-  return (caddr_t)res;
-}
-
-dk_mutex_t *geo_reg_mtx;
-
 void
 geo_init ()
 {
-  bif_define_ex ("st_point"		, bif_st_point	, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 4	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_x"			, bif_st_x			, BMD_RET_TYPE, &bt_double	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_y"			, bif_st_y			, BMD_RET_TYPE, &bt_double	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_xmin"		, bif_st_xmin			, BMD_RET_TYPE, &bt_double	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_ymin"		, bif_st_ymin			, BMD_RET_TYPE, &bt_double	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_xmax"		, bif_st_xmax			, BMD_RET_TYPE, &bt_double	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_ymax"		, bif_st_ymax			, BMD_RET_TYPE, &bt_double	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("geo_insert"		, bif_geo_insert						, BMD_USES_INDEX, BMD_NEED_ENLIST, BMD_DONE);
   bif_define_ex ("geo_delete"		, bif_geo_delete						, BMD_USES_INDEX, BMD_NEED_ENLIST, BMD_DONE);
   bif_define_ex ("geo_estimate"		, bif_geo_estimate						, BMD_USES_INDEX, BMD_DONE);
-  bif_define_ex ("st_intersects"	, bif_st_intersects		, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_may_intersect"	, bif_st_may_intersect		, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_contains"		, bif_st_contains		, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_within"		, bif_st_within			, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_distance"		, bif_st_distance						, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("isgeometry"		, bif_is_geometry		, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_astext"		, bif_st_astext			, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_srid"		, bif_st_srid			, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_setsrid"		, bif_st_setsrid						, BMD_DONE);
-  bif_define_ex ("st_geomfromtext"	, bif_st_geomfromtext		, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_ewkt_read"		, bif_st_ewkt_read						, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("http_st_ewkt"		, bif_http_st_ewkt						, BMD_DONE);
-  bif_define_ex ("http_st_dxf_entity"	, bif_http_st_dxf_entity					, BMD_DONE);
-  bif_define_ex ("st_get_bounding_box"	, bif_st_get_bounding_box					, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_dv_geo_length"	, bif_st_dv_geo_length						, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("GeometryType"			, bif_geometry_type		, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("ST_NumGeometries"		, bif_st_num_geometries		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("ST_GeometryN"			, bif_st_geometry_n		, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("ST_ExteriorRing"		, bif_st_exterior_ring		, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("ST_NumInteriorRings"		, bif_st_num_interior_rings	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("ST_InteriorRingN"		, bif_st_interior_ring_n	, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_get_bounding_box_n"	, bif_st_get_bounding_box_n	, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
   dk_mem_hooks_2 (DV_GEO, (box_copy_f) geo_copy, (box_destr_f) geo_destroy, 0, (box_tmp_copy_f) mp_geo_copy);
   get_readtable ()[DV_GEO] = (macro_char_func) geo_deserialize;
   PrpcSetWriter (DV_GEO, (ses_write_func) geo_serialize);
