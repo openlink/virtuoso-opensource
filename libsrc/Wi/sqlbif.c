@@ -470,23 +470,23 @@ bif_string_or_uname_or_wide_or_null_arg (caddr_t * qst, state_slot_t ** args, in
   return arg;
 }
 
-bif_type_t bt_varchar = {NULL, DV_LONG_STRING, 0, 0};
-bif_type_t bt_wvarchar = {NULL, DV_WIDE, 0, 0};
-bif_type_t bt_varbinary = {NULL, DV_BIN, 0, 0};
-bif_type_t bt_any = {NULL, DV_ANY, 0, 0};			/*!< Vector of values of for this "any" type will keep its members serialized into plain session representation. It means that the RDF boxes will loose "long" part and only RO_IDs are preserved, boxes will become incomplete. */
-bif_type_t bt_any_box = {NULL, DV_ARRAY_OF_POINTER, 0, 0};	/*!< Vector of values of for this "any" type will keep its members as plain boxes. No serialization, no loss of "long" content of RDF boxes. */
-bif_type_t bt_iri_id = {NULL, DV_IRI_ID, 0, 0};
-bif_type_t bt_integer = {NULL, DV_LONG_INT, 0, 0};
-bif_type_t bt_integer_nn = {NULL, DV_LONG_INT, 0, 0, 1};
-bif_type_t bt_iri = {NULL, DV_IRI_ID, 0, 0};
-bif_type_t bt_double = {NULL, DV_DOUBLE_FLOAT, 0, 0};
-bif_type_t bt_float = {NULL, DV_SINGLE_FLOAT, 0, 0};
-bif_type_t bt_numeric = {NULL, DV_NUMERIC, 40, 20};
-bif_type_t bt_time = {NULL, DV_TIME, 0, 0};
-bif_type_t bt_date = {NULL, DV_DATE, 10, 0};
-bif_type_t bt_datetime = {NULL, DV_DATETIME, 10, 0};
-bif_type_t bt_timestamp = {NULL, DV_DATETIME, 10, 0};
-bif_type_t bt_bin = {NULL, DV_BIN, 10, 0};
+bif_type_t bt_varchar		= {NULL	, DV_LONG_STRING	, 0	, 0	, 0	, "varchar"		};
+bif_type_t bt_wvarchar		= {NULL	, DV_WIDE		, 0	, 0	, 0	, "nvarchar"		};
+bif_type_t bt_varbinary		= {NULL	, DV_BIN		, 0	, 0	, 0	, "varbinary"		};
+bif_type_t bt_any		= {NULL	, DV_ANY		, 0	, 0	, 0	, "any"			};	/*!< Vector of values of for this "any" type will keep its members serialized into plain session representation. It means that the RDF boxes will loose "long" part and only RO_IDs are preserved, boxes will become incomplete. */
+bif_type_t bt_any_box		= {NULL	, DV_ARRAY_OF_POINTER	, 0	, 0	, 0	, "any array"		};	/*!< Vector of values of for this "any" type will keep its members as plain boxes. No serialization, no loss of "long" content of RDF boxes. */
+bif_type_t bt_iri_id		= {NULL	, DV_IRI_ID		, 0	, 0	, 0	, "IRI_ID"		};
+bif_type_t bt_integer		= {NULL	, DV_LONG_INT		, 0	, 0	, 0	, "integer"		};
+bif_type_t bt_integer_nn	= {NULL	, DV_LONG_INT		, 0	, 0	, 1	, "integer not null"	};
+bif_type_t bt_iri		= {NULL	, DV_IRI_ID		, 0	, 0	, 0	, "IRI_ID"		};
+bif_type_t bt_double		= {NULL	, DV_DOUBLE_FLOAT	, 0	, 0	, 0	, "double precision"	};
+bif_type_t bt_float		= {NULL	, DV_SINGLE_FLOAT	, 0	, 0	, 0	, "float"		};
+bif_type_t bt_numeric		= {NULL	, DV_NUMERIC		, 40	, 20	, 0	, "decimal"		};
+bif_type_t bt_time		= {NULL	, DV_TIME		, 0	, 0	, 0	, "time"		};
+bif_type_t bt_date		= {NULL	, DV_DATE		, 10	, 0	, 0	, "date"		};
+bif_type_t bt_datetime		= {NULL	, DV_DATETIME		, 10	, 0	, 0	, "datetime"		};
+bif_type_t bt_timestamp		= {NULL	, DV_DATETIME		, 10	, 0	, 0	, "timestamp"		};
+bif_type_t bt_bin		= {NULL	, DV_BIN		, 10	, 0	, 0	, "binary(10)"		};
 
 boxint
 bif_long_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
@@ -1671,7 +1671,7 @@ bif_define_ex (const char *raw_name, bif_t bif, ...)
               GPF_T1 ("sparql-only pseudo bif name cannot be reused as alias in bif_define_ex");
             if (NULL != id_hash_get (name_to_bif_metadata_idhash, (caddr_t)(&alias_name)))
               GPF_T1 ("alias name is reused in bif_define_ex");
-            dk_set_push (&raw_alias_names, raw_alias_name);
+            dk_set_push (&raw_alias_names, box_copy (alias_noupcase_name));
             break;
           }
         case BMD_VECTOR_IMPL:		bmd->bmd_vector_impl = va_arg (tail, void *); break;
@@ -1766,6 +1766,63 @@ find_bif_metadata_by_raw_name (const char *name)
   return NULL;
 }
 
+caddr_t
+bif_bif_list_names (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int main_names_only = bif_long_arg (qst, args, 0, "bif_list_names");
+  dk_set_t res = NULL;
+  caddr_t *name_ptr, name;
+  bif_metadata_t **bmd_ptr, *bmd;
+  id_hash_iterator_t iter;
+  id_hash_iterator (&iter, name_to_bif_metadata_idhash);
+  while (hit_next (&iter, (caddr_t *)(&name_ptr), (caddr_t *)(&bmd_ptr)))
+    {
+      dk_set_t props = NULL;
+      dk_set_t aliases = NULL;
+      name = name_ptr[0];
+      bmd = bmd_ptr[0];
+      if (main_names_only && strcmp (name, bmd->bmd_name))
+        continue;
+      dk_set_push (&res, box_dv_short_string (bmd->bmd_name));
+    }
+  return (caddr_t)list_to_array (res);
+}
+
+caddr_t
+bif_bif_metadata (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t name = bif_string_arg (qst, args, 0, "bif_metadata");
+  int name_is_raw = ((2 <= BOX_ELEMENTS (args)) ? bif_long_arg (qst, args, 1, "bif_metadata") : 1);
+  bif_metadata_t *bmd = (name_is_raw ? find_bif_metadata_by_raw_name (name) : find_bif_metadata_by_name (name));
+  dk_set_t props = NULL;
+  dk_set_t aliases = NULL;
+  DO_SET (caddr_t, aname, &(bmd->bmd_aliases))
+    dk_set_push_two (&aliases, box_dv_uname_string ("alias"), box_dv_short_string (aname));
+  END_DO_SET ();
+  dk_set_push_two (&props, box_dv_uname_string ("no_cluster"), box_num (bmd->bmd_no_cluster));
+  dk_set_push_two (&props, box_dv_uname_string ("uses_index"), box_num (bmd->bmd_uses_index));
+  dk_set_push_two (&props, box_dv_uname_string ("is_dba_only"), box_num (bmd->bmd_is_dba_only));
+  dk_set_push_two (&props, box_dv_uname_string ("is_pure"), box_num (bmd->bmd_is_pure));
+  dk_set_push_two (&props, box_dv_uname_string ("is_aggregate"), box_num (bmd->bmd_is_aggregate));
+  if ((0 != bmd->bmd_min_argcount) || (0 != bmd->bmd_argcount_inc) || (MAX_BOX_ELEMENTS != bmd->bmd_max_argcount))
+    {
+      dk_set_push_two (&props, box_dv_uname_string ("max_argcount"), box_num (bmd->bmd_max_argcount));
+      dk_set_push_two (&props, box_dv_uname_string ("argcount_inc"), box_num (bmd->bmd_argcount_inc));
+      dk_set_push_two (&props, box_dv_uname_string ("min_argcount"), box_num (bmd->bmd_min_argcount));
+    }
+  if (NULL != bmd->bmd_ret_type)
+    {
+      const char *n = bmd->bmd_ret_type->bt_sql_dml_name;
+      dk_set_push_two (&props, box_dv_uname_string ("return_sql_dml_type"), box_dv_short_string ((NULL != n) ? n : "any /* special */"));
+    }
+  dk_set_push_two (&props, box_dv_uname_string ("has_sparql_optimizer_impl"), box_num (bmd->bmd_sparql_optimizer_impl ? 1 : 0));
+  dk_set_push_two (&props, box_dv_uname_string ("has_sql_optimizer_impl"), box_num (bmd->bmd_sql_optimizer_impl ? 1 : 0));
+  dk_set_push_two (&props, box_dv_uname_string ("has_vector_impl"), box_num (bmd->bmd_vector_impl ? 1 : 0));
+  dk_set_push_two (&props, box_dv_uname_string ("has_main_impl"), box_num (bmd->bmd_main_impl ? 1 : 0));
+  dk_set_push_two (&props, box_dv_uname_string ("aliases"), list_to_array (aliases));
+  dk_set_push_two (&props, box_dv_uname_string ("name"), box_dv_short_string (bmd->bmd_name));
+  return (caddr_t)(list_to_array (props));
+}
 
 bif_t
 bif_find (const char *name)
@@ -15931,6 +15988,8 @@ sql_bif_init (void)
   icc_locks_mutex = mutex_allocate();
   icc_locks = id_str_hash_create (31);
   dba_sequences = id_str_hash_create (11);
+  bif_define ("bif_list_names", bif_bif_list_names);
+  bif_define ("bif_metadata", bif_bif_metadata);
 /* For debugging */
   bif_define_ex ("dbg_printf", bif_dbg_printf, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("dbg_obj_print", bif_dbg_obj_print);

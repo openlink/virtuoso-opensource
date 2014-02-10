@@ -111,6 +111,7 @@ typedef struct
     long		bt_dtp;
     long		bt_prec;
     long		bt_scale;
+    const char *	bt_sql_dml_name;
   } bif_type_t;
 
 VIRTVARCLASS bif_type_t bt_varchar;

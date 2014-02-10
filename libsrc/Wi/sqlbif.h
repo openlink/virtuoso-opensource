@@ -40,6 +40,7 @@ typedef struct
     long		bt_prec;
     long		bt_scale;
     long		bt_non_null;
+    const char *	bt_sql_dml_name;
   } bif_type_t;
 
 #define is_some_sort_of_an_integer(T)\
