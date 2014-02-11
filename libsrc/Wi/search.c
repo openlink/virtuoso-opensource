@@ -3546,6 +3546,7 @@ itc_page_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
     }
       else
 	{
+	  int init_sample = itc->itc_st.n_sample_rows;
 	  for (r = itc->itc_map_pos; r < buf->bd_content_map->pm_count; r++)
 	    {
 	      int prev_sample = itc->itc_st.n_sample_rows;
@@ -3557,8 +3558,9 @@ itc_page_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
 	      itc_row_col_stat (itc, buf, &is_leaf);
 	      if (itc->itc_st.n_sample_rows < 1000)
 		continue;
-	      if (itc->itc_st.n_sample_rows > 100000 / key_n_partitions (itc->itc_insert_key)
-		  || itc->itc_st.n_sample_rows < prev_sample + 1)
+	      if (itc->itc_st.n_sample_rows > 1000000 / key_n_partitions (itc->itc_insert_key)
+		  || itc->itc_st.n_sample_rows < prev_sample + 1
+		  || itc->itc_st.n_sample_rows - init_sample > 40000)
 	      break;
 	    }
 }

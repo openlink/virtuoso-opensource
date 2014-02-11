@@ -1252,6 +1252,85 @@ dfe_pred_body_cost (df_elt_t **body, float * unit_ret, float * arity_ret, float 
     }
 }
 
+
+void
+key_set_p_stat (dbe_key_t * key, iri_id_t p, float * p_stat)
+{
+  if (!key->key_p_stat)
+    {
+      key->key_p_stat = id_hash_allocate (201, sizeof (iri_id_t), 4 * sizeof (float), boxint_hash, boxint_hashcmp);
+      id_hash_set_rehash_pct (key->key_p_stat, 200);
+    }
+  mutex_enter (alt_ts_mtx);
+  id_hash_set (key->key_p_stat, (caddr_t)&p, (caddr_t)p_stat);
+  mutex_leave (alt_ts_mtx);
+}
+
+
+void
+sqlo_p_stat_query (dbe_table_t * tb, caddr_t p)
+{
+  int64 cnt, s_cnt,cnt, o_cnt;
+  dbe_column_t * col;
+  dbe_key_t * key;
+  float p_stat[4];
+  static query_t * s_qr = NULL;
+  static query_t * o_qr = NULL;
+  lock_trx_t * lt = cli->cli_trx;
+  user_t * usr = cli->cli_user;
+  int at_start = cli->cli_anytime_started;
+  int rpc_timeout = cli->cli_rpc_timeout;
+  local_cursor_t * lc = NULL;
+  caddr_t err = NULL;
+  if (cli->cli_clt)
+    return -1; /* if in a cluster transaction branch, can't do partitioned ops */
+  if (!lt->lt_threads)
+    {
+      entered = 1;
+      rc = lt_enter (lt);
+      if (LTE_OK != rc)
+	{
+	  return -1;
+	}
+    }
+  cli->cli_anytime_started = 0;
+  if (!s_qr || !o_qr)
+    {
+      s_qr = sql_compile ("select count (*), count (distinct s option (order)) from rdf_quad table option (index rdf_quad where p = ?)", cli, &err, SQLC_DEFAULT);
+      o_qr = sql_compile ("select count (*), count (distinct o option (order)) from rdf_quad table option (index rdf_quad_pogs) where p = ?", cli, &err, SQLC_DEFAULT);
+    }
+  err = qr_rec_exec (s_qr, cli, &lc, CALLER_LOCAL, NULL, 1, ":0", box_copy (p), QRP_RAW);
+  lc_next (lc);
+  cnt = lc_nth_col (lc, 0);
+  s_cnt = lc_nth_col (lc, 1);
+  lc_free (lc);
+  err = qr_rec_exec (o_qr, cli, &lc, CALLER_LOCAL, NULL, 1, ":0", box_copy (p), QRP_RAW);
+  lc_next (lc);
+  o_cnt = lc_nth_col (lc, 1);
+  lc_free (lc);
+  if (entered)
+    {
+      IN_TXN;
+      lt_leave (lt);
+      LEAVE_TXN;
+    }
+  col = tb_name_to_column (tb, "S");
+  key = tb_px_key (tb, col);
+  p_stat[0] = cnt;
+  p_stat[1] = s_cnt;
+  p_stat[2] = o_cnt;
+  p_stat[3] = 1;
+  key_set_p_stat (key, p, p_stat);
+  col = tb_name_to_column (tb, "O");
+  key = tb_px_key (tb, col);
+  p_stat[0] = cnt;
+  p_stat[1] = o_cnt;
+  p_stat[2] = s_cnt;
+  p_stat[3] = 1;
+  key_set_p_stat (key, p, p_stat);
+}
+
+
 caddr_t sqlo_rdf_obj_const_value (ST * tree, caddr_t * val_ret, caddr_t *lang_ret);
 
 
@@ -2488,7 +2567,7 @@ sqlo_record_rdf_p (sample_opt_t * sop, dbe_key_t * key, caddr_t p_const, int64 e
   if (0 == sop->sop_n_sample_rows)
     sop->sop_n_sample_rows = 1;
   mutex_enter (alt_ts_mtx); /*any mtx that is never enterd, not worth one of its own */
-  if (!key->key_p_stat)
+<  if (!key->key_p_stat)
     {
       key->key_p_stat = id_hash_allocate (201, sizeof (iri_id_t), 4 * sizeof (float), boxint_hash, boxint_hashcmp);
       id_hash_set_rehash_pct (key->key_p_stat, 200);

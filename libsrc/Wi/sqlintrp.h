@@ -360,7 +360,7 @@ void cv_artm_set_type (instruction_t * ins);
 void cv_artm (dk_set_t * code, ao_func_t f, state_slot_t * res,
 	      state_slot_t * l, state_slot_t * r);
 void cv_agg (dk_set_t * code, int op, state_slot_t * res,
-	     state_slot_t * arg, state_slot_t * set_no, int distinct, sql_comp_t * sc);
+	     state_slot_t * arg, state_slot_t * set_no, void * distinct, sql_comp_t * sc);
 void cv_compare (dk_set_t * code, int bop,
      state_slot_t * l, state_slot_t * r, jmp_label_t succ, jmp_label_t fail, jmp_label_t unkn);
 

@@ -1083,12 +1083,12 @@ cv_artm (dk_set_t * code, ao_func_t f, state_slot_t * res,
   cv_artm_set_type ((instruction_t *)(*code)->data);
 }
 
-void * distinct_comparison (state_slot_t * data, sql_comp_t * sc);
+void * distinct_comparison (state_slot_t * data, sql_comp_t * sc, void * opts);
 
 
 void
 cv_agg (dk_set_t * code, int op, state_slot_t * res,
-	state_slot_t * arg, state_slot_t * set_no, int distinct, sql_comp_t * sc)
+	state_slot_t * arg, state_slot_t * set_no, void * distinct, sql_comp_t * sc)
 {
   NEW_INSTR (ins, IN_AGG, code);
   ins->_.agg.result = res;
@@ -1100,7 +1100,7 @@ cv_agg (dk_set_t * code, int op, state_slot_t * res,
   sc->sc_is_scalar_agg = 1;
   if (distinct)
     {
-      hash_area_t * ha = (hash_area_t*)distinct_comparison (arg, sc);
+      hash_area_t * ha = (hash_area_t*)distinct_comparison (arg, sc, distinct);
       ins->_.agg.distinct = ha;
     }
 }
@@ -1178,32 +1178,24 @@ cv_compare (dk_set_t * code, int bop,
 
 
 void *
-distinct_comparison (state_slot_t * data, sql_comp_t * sc)
+distinct_comparison (state_slot_t * data, sql_comp_t * sc, void * opts)
 {
   setp_node_t setp;
+  if (IS_BOX_POINTER (opts))
+    {
+      /* opts specify ordered distinct */
+      NEW_VARZ (hash_area_t, ha);
+      ha->ha_op = HA_ORD_DISTINCT;
+      ha->ha_slots = (state_slot_t**)list (1, data);
+      ha->ha_tree = ssl_new_variable (sc->sc_cc, "ord_dist", DV_LONG_INT);
+      return ha;
+    }
   memset (&setp, 0, sizeof (setp));
   setp.src_gen.src_query = sc->sc_cc->cc_query;
   t_set_push (&setp.setp_keys, (void*) data);
   setp_distinct_hash (sc, &setp, 0, HA_DISTINCT);
   return ((void*) setp.setp_ha);
 }
-
-void
-cv_distinct (dk_set_t * code,
-       state_slot_t * data, sql_comp_t * sc, jmp_label_t succ, jmp_label_t fail)
-{
-  void * ha; /* hash_area_t* */
-  NEW_INSTR (ins, IN_PRED, code);
-  ins->_.pred.succ = succ;
-  ins->_.pred.fail = fail;
-  ins->_.pred.unkn = fail;
-  ins->_.pred.func = distinct_comp_func;
-  ins->_.pred.cmp = ha = distinct_comparison (data, sc);
-  ((hash_area_t *)ha)->ha_allow_nulls = 0;
-  dk_set_push (&sc->sc_fref->fnr_distinct_ha, ha);
-}
-
-
 
 
 void
@@ -1809,6 +1801,8 @@ cv_is_local_1 (code_vec_t cv, int is_cluster)
 	    return 0;
 	  break;
 	case IN_AGG:
+	  if (ins->_.agg.distinct && HA_ORD_DISTINCT == ins->_.agg.distinct->ha_op)
+	    break;
 	  if (ins->_.agg.distinct && !sqlg_distinct_colocated (sqlc_current_sc, &ins->_.agg.arg, 1))
 	    return 0;
 	  break;
@@ -2649,7 +2643,9 @@ sqlg_agg_ins (sql_comp_t * sc, ST * tree, dk_set_t * code,
 	else
 	  sc->sc_fun_ref_defaults = NCONC (sc->sc_fun_ref_defaults, CONS (box_num (0), NULL));
 	sc->sc_fun_ref_default_ssls = NCONC (sc->sc_fun_ref_default_ssls, CONS (count, NULL));
-	cv_agg (fun_ref_code, AMMSC_COUNT, count, arg, set_no, tree->_.fn_ref.all_distinct, sc);
+	if (tree->_.fn_ref.all_distinct)
+	  dist_opt = tree->_.fn_ref.fn_arglist ? tree->_.fn_ref.fn_arglist : (void *) 1;
+	cv_agg (fun_ref_code, AMMSC_COUNT, count, arg, set_no, dist_opt, sc);
 	result = count;
 	break;
       }
@@ -2685,13 +2681,7 @@ select_ref_generate (sql_comp_t * sc, ST * tree, dk_set_t * code,
       jmp_label_t is_distinct = 0;
       *is_fun_ref = 1;
       if (tree->_.fn_ref.all_distinct)
-	{
-	  state_slot_t *arg = scalar_exp_generate (sc, tree->_.fn_ref.fn_arg, fun_ref_code);
-	  is_distinct = sqlc_new_label (sc);
-	  next_fun_ref = sqlc_new_label (sc);
-	  cv_distinct (fun_ref_code, arg, sc, is_distinct, next_fun_ref);
-	  cv_label (fun_ref_code, is_distinct);
-	}
+	GPF_T1 ("branch not in use, ins agg has an integrated distinct ");
       switch (tree->_.fn_ref.fn_code)
 	{
 	case AMMSC_MIN:
@@ -2771,6 +2761,7 @@ select_ref_generate (sql_comp_t * sc, ST * tree, dk_set_t * code,
 
 	case AMMSC_COUNT:
 	  {
+	void * dist_opt = NULL;
 	    state_slot_t *count = ssl_new_inst_variable (sc->sc_cc, "count", DV_LONG_INT);
 	    count->ssl_qr_global = 1;
 	    dk_set_push (&sc->sc_fun_ref_temps, (void *) count);

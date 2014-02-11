@@ -1303,6 +1303,7 @@ cv_vec_slots (sql_comp_t * sc, code_vec_t cv, dk_hash_t * res, dk_hash_t * all_r
 	    hash_area_t *ha = ins->_.agg.distinct;
 	    ref_ssls (res, ha->ha_slots);
 	    ha->ha_set_no = ins->_.agg.set_no;
+	      if (HA_ORD_DISTINCT != ha->ha_op)
 	    ASG_SSL_AGG (NULL, NULL, ha->ha_tree);
 	  }
 	break;

@@ -550,7 +550,7 @@ typedef struct hash_area_s
 #define HA_GROUP 3
 #define HA_FILL 4
 #define HA_PROC_FILL 5
-
+#define HA_ORD_DISTINCT 6
 
 typedef struct clo_comp_s
 {

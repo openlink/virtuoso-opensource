@@ -2866,7 +2866,7 @@ aggregate_ref
 		  $$ = sqlp_make_user_aggregate_fun_ref ($2, arglist, 1);
 		}
 /*	| AMMSC '(' '*' ')'			{ FN_REF ($$, $1, 0, 0); }*/
-	| AMMSC '(' DISTINCT scalar_exp ')'	{ FN_REF ($$, $1, 1, $4) }
+| AMMSC '(' DISTINCT scalar_exp opt_sql_opt ')'	{ FN_REF ($$, $1, 1, $4); $$->_.fn_ref.fn_arglist = $5; }
 	| AMMSC '(' ALL scalar_exp ')'		{ FN_REF ($$, $1, 0, $4) }
 	| AMMSC '(' scalar_exp ')'		{ FN_REF ($$, $1, 0, $3) }
 	;

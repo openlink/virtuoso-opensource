@@ -38,6 +38,7 @@
 #include "sqltype.h"
 #include "repl.h"
 #include "replsr.h"
+#include "mhash.h"
 
 static instruction_t dummy_ins_t;
 
@@ -3064,6 +3065,69 @@ ins_vec_agg_int_sum (instruction_t * ins, caddr_t * inst)
     }
 }
 
+void
+ins_vec_agg_ord_distinct (instruction_t * ins, caddr_t * inst)
+{
+  /* count distinct where all equal values of argg are consecutive.  Approximate of anies and changes in dc type */
+  data_col_t * arg_dc = QST_BOX (data_col_t *, inst, ins->_.agg.arg->ssl_index);
+  data_col_t * res_dc = QST_BOX (data_col_t *, inst, ins->_.agg.result->ssl_index);
+  int n_sets = arg_dc->dc_n_values;
+  hash_area_t * ha = ins->_.agg.distinct;
+  caddr_t h_box = QST_GET_V (inst, ha->ha_tree);
+  uint64 prev_hno;
+  int ctr = 0;
+  int inx, any = NULL != h_box;
+  if (h_box)
+    prev_hno = *(int64*)h_box;
+  else
+    prev_hno = -1;
+  if (DV_ANY == arg_dc->dc_dtp)
+    {
+      for (inx = 0; inx < n_sets; inx++)
+	{
+	  int64 hno = 1;
+	  int len;
+	  db_buf_t dv = ((db_buf_t *)arg_dc->dc_values)[inx];
+	  DB_BUF_TLEN (len,dv[0], dv);
+	  MHASH_VAR (hno, dv, len);
+	  ctr += hno != prev_hno;
+	  prev_hno = hno;
+	}
+    }
+  else if (DV_DATETIME == arg_dc->dc_dtp)
+    {
+      for (inx = 0; inx < n_sets; inx++)
+	{
+	  uint64 hno = *(int64*) (arg_dc->dc_values + DT_LENGTH * inx); 
+	    ctr += prev_hno != hno;
+	    prev_hno = hno;
+	}
+    }
+  else if (DV_SINGLE_FLOAT == arg_dc->dc_dtp)
+    {
+      for (inx = 0; inx < n_sets; inx++)
+	{
+	  uint64 hno = ((int32*) arg_dc->dc_values)[inx];
+	    ctr += prev_hno != hno;
+	    prev_hno = hno;
+	}
+    }
+  else
+    {
+      for (inx = 0; inx < n_sets; inx++)
+	{
+	  uint64 hno = ((int64*) arg_dc->dc_values)[inx];
+	  ctr += prev_hno != hno;
+	  prev_hno = hno;
+	}
+
+    }
+  ((int64*)res_dc->dc_values)[0] += ctr;
+  res_dc->dc_n_values = 1;
+  if (!h_box)
+    QST_GET_V (inst, ha->ha_tree) = h_box = box_num (0xfffffff);
+  *(int64*)h_box = prev_hno;
+}
 
 
 void
@@ -3085,6 +3149,11 @@ ins_vec_agg (instruction_t * ins, caddr_t * inst)
 	  ins_vec_agg_int_sum (ins, inst);
 	  return;
 	}
+    }
+  if (ins->_.agg.distinct && HA_ORD_DISTINCT == ins->_.agg.distinct->ha_op)
+    {
+      ins_vec_agg_ord_distinct (ins, inst);
+	return;
     }
   SET_LOOP
     {
