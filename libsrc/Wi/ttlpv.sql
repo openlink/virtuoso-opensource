@@ -739,3 +739,32 @@ create procedure DB.DBA.RDF_QUADS_BATCH_COMPLETE (inout triples any)
 }
 ;
 
+create procedure rdf_vec_ins_triples (in s any, in p any, in o any, in g any)
+{
+  vectored;
+  not vectored {
+    declare dp any array;
+    declare is_local int;
+    is_local := sys_stat ('cl_run_local_only');
+    if (is_local)
+      dp := dpipe (1, 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_MAKE_RO', 'L_IRI_TO_ID');
+    else
+      {
+        dp := dpipe (5, 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'MAKE_RO_1', 'IRI_TO_ID_1');
+	dpipe_set_rdf_load (dp, 1);
+      }
+  }
+  dpipe_input (dp, s, p, null, o, g);
+  not vectored {
+    if (log_enable (null, 1) in (2,3))
+      set non_txn_insert = 1;
+    if (is_local)
+      rl_dp_ids (dp, 0);
+    else
+      {
+	dpipe_next (dp, 0);
+	dpipe_next (dp, 1);
+      }
+  }
+}
+;
