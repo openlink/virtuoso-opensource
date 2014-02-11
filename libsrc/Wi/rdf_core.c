@@ -3777,8 +3777,11 @@ bif_rdf_obj_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
 {
   if (CL_RUN_LOCAL != cl_run_local_only)
     {
-      caddr_t cl_text_set = registry_get ("cl_rdf_text_index");
-      char flag = cl_text_set ? cl_text_set[0] : '\0';
+      char *  cl_text_set, flag;
+      IN_TXN;
+      cl_text_set = registry_get ("cl_rdf_text_index");
+      LEAVE_TXN;
+      flag = cl_text_set ? cl_text_set[0] : '\0';
       dk_free_tree (cl_text_set);
       if ('1' == flag)
         return box_num (2);
@@ -3818,8 +3821,11 @@ bif_rdf_obj_set_is_text_if_ft_rule_check (caddr_t * qst, caddr_t * err_ret, stat
     goto need_ft; /* see below */
   if (CL_RUN_LOCAL != cl_run_local_only)
     {
-      caddr_t cl_text_set = registry_get ("cl_rdf_text_index");
-      char flag = cl_text_set ? cl_text_set[0] : '\0';
+      char *  cl_text_set, flag;
+      IN_TXN;
+      cl_text_set = registry_get ("cl_rdf_text_index");
+      LEAVE_TXN;
+      flag = cl_text_set ? cl_text_set[0] : '\0';
       dk_free_tree (cl_text_set);
       if ('1' == flag)
         goto need_ft; /* see below */
