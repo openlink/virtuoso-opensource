@@ -2944,17 +2944,13 @@ create procedure DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L (
   inout o_val any, inout o_type varchar, inout o_lang varchar,
   inout app_env any )
 {
-  if (not isstring (o_type) and not isuname (o_type) and o_type is not null)
-    o_type := null;
-  if (not isstring (o_lang) and not isuname (o_lang) and o_lang is not null)
-    o_lang := null;
   dict_put (app_env,
     vector (
       iri_to_id (s_uri),
       iri_to_id (p_uri),
       DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (o_val,
-        case when (isstring (o_type) or __tag (o_type) = 217) then o_type else null end,
-        case when (isstring (o_lang) or __tag (o_lang) = 217) then o_lang else null end) ),
+        case when (isstring (o_type) or isuname (o_type)) then o_type else null end,
+        case when (isstring (o_lang) or isuname (o_lang)) then o_lang else null end) ),
     0 );
 }
 ;
@@ -3079,17 +3075,13 @@ create procedure DB.DBA.RDF_TTL2SQLHASH_EXEC_TRIPLE_L (
   inout o_val any, inout o_type varchar, inout o_lang varchar,
   inout app_env any )
 {
-  if (not isstring (o_type) and not isuname (o_type) and o_type is not null)
-    o_type := null;
-  if (not isstring (o_lang) and not isuname (o_lang) and o_lang is not null)
-    o_lang := null;
   dict_put (app_env,
     vector (
       __bft (s_uri, 1),
       __bft (p_uri, 1),
       DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (o_val,
-        case (isstring (o_type)) when 0 then null else o_type end,
-        case (isstring (o_lang)) when 0 then null else o_lang end) ),
+        case when (isstring (o_type) or isuname (o_type)) then o_type else null end,
+        case when (isstring (o_lang) or isuname (o_lang)) then o_lang else null end) ),
     0 );
 }
 ;
