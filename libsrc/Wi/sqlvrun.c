@@ -3186,7 +3186,7 @@ qi_assign_root_id (query_instance_t * qi)
 int
 qi_inc_branch_count (query_instance_t * qi, int max, int n)
 {
-  uint32 br, ret = 0;
+  volatile uint32 br, ret = 0;
   void * brp;
   mutex_enter (qi_ref_mtx);
   GETHASH ((void*)(ptrlong)qi->qi_root_id, qi_branch_count, brp, no_root);
