@@ -542,7 +542,7 @@ l_make_ro_disp (cucurbit_t * cu, caddr_t * args, value_state_t * vs)
       if (DV_GEO == cdtp)
 	{
 	  caddr_t err = NULL;
-	  content = box_to_any (content, &err);
+	  content = box_to_any_1 (content, &err, NULL, DKS_TO_DC);
 	  allocd_content = content;
 	  is_text = 2;
 	}
