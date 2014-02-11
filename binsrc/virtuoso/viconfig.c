@@ -2298,6 +2298,22 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 	  return;
 	}
     }
+  else				/* no striping, imitate 1 segment, 1 stripe, with parameters taken from [XXXDatabase] section. */
+    {
+      disk_segment_t *seg = (disk_segment_t *) dk_alloc (sizeof (disk_segment_t));
+      disk_stripe_t *dst;
+      seg->ds_size = EXTENT_SZ;
+      seg->ds_n_stripes = 1;
+      seg->ds_stripes = (disk_stripe_t **) dk_alloc_box (sizeof (caddr_t), DV_ARRAY_OF_LONG);
+      dst = (disk_stripe_t *) dk_alloc (sizeof (disk_stripe_t));
+      memset (dst, 0, sizeof (disk_stripe_t));
+      seg->ds_stripes[0] = dst;
+      dst->dst_mtx = mutex_allocate ();
+      dst->dst_iq_id = box_string ("defqueue");
+      dst->dst_file = box_string (c_database_file);
+
+      c_stripes = dk_set_conc (c_stripes, dk_set_cons ((caddr_t) seg, NULL));
+    }
 
   dbs->dbs_file = box_string (c_database_file);
   dbs->dbs_log_name = box_string (c_txfile);
