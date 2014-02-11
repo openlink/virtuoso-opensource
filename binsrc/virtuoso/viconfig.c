@@ -1681,6 +1681,9 @@ cfg_setup (void)
   if (c_number_of_buffers - c_oldest_flushable > c_max_dirty_buffers)
     c_oldest_flushable = c_number_of_buffers - c_max_dirty_buffers / 2;
 
+  if (c_server_threads > MAX_THREADS - 3)
+    c_server_threads = MAX_THREADS - 3;
+
   /* Initialization of UCMs */
 
   section = "Ucms";
