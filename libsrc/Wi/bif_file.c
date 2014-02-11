@@ -470,6 +470,8 @@ void
 file_path_assert (caddr_t fname_cvt, caddr_t *err_ret, int free_fname_cvt)
 {
   caddr_t err = NULL;
+  if (!DV_STRINGP (fname_cvt))
+    sqlr_new_error ("42000", "FS....", "File path not a string");
   if (PATH_MAX < (box_length (fname_cvt) - 1))
     err = srv_make_new_error ("42000", "FA117",
       "File path '%.200s...' is too long (%ld chars), OS limit is %ld chars",
