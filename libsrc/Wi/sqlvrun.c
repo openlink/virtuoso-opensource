@@ -2897,6 +2897,8 @@ ts_split_sets (table_source_t * ts, caddr_t * inst, it_cursor_t * itc, int n_par
     n_ways = n_ways_d;
   if (n_ways > n_sets)
     n_ways = n_sets;
+  if (n_ways < 2)
+    return itc_reset (itc);
   n_ways = 1 + qi_inc_branch_count (qi, enable_qp, n_ways - 1);
   if (n_ways < 2)
     return itc_reset (itc);
