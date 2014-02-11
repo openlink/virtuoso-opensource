@@ -926,7 +926,7 @@ update_node_run (update_node_t * upd, caddr_t * inst, caddr_t * state)
   QNCAST (QI, qi, inst);
   if (upd->src_gen.src_sets)
     {
-      if (!upd->upd_trigger_args)
+      if (!upd->upd_trigger_args || upd->upd_no_trig)
 	{
 	  update_node_vec_run (upd, inst, state);
 	  if (!upd->cms.cms_clrg && ROW_AUTOCOMMIT_DUE (qi, upd->upd_table, 10000))

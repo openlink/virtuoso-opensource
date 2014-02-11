@@ -2569,7 +2569,7 @@ delete_node_input (delete_node_t * del, caddr_t * inst, caddr_t * state)
   if (del->del_policy_qr)
     trig_call (del->del_policy_qr, inst, del->del_trigger_args, del->del_table, (data_source_t *)del);
 
-  if (!del->del_trigger_args)
+  if (!del->del_trigger_args || del->del_no_trig)
     {
       QNCAST (query_instance_t, qi, inst);
       delete_node_run (del, inst, state);

@@ -3223,6 +3223,16 @@ dfe_init_p_stat (df_elt_t * dfe, df_elt_t * lower)
 }
 
 
+#if 0
+float
+sqlo_pg_sample (rq_cols_t * rq)
+{
+  dbe_key_t *save_key = dfe->_.table.key;
+  dbe_key_t *key = dfe->_.table.key = save_key->key_table->tb_primary_key;
+  smp = sqlo_inx_sample (dfe, dfe->_.table.key, !!!);
+}
+#endif
+
 int
 sqlo_use_p_stat_2 (df_elt_t * dfe, float *inx_card, float * col_card, index_choice_t * ic, int64 * sample_ret)
 {
@@ -3256,9 +3266,12 @@ sqlo_use_p_stat_2 (df_elt_t * dfe, float *inx_card, float * col_card, index_choi
       /* if p and g are given, do not guess under 1 because if used together not in error there must be at least one.  Moore common will estimate higher */
       if (!p_card)
 	return 0;
+      return 0;
+#if 0
       *inx_card = p_card;
-      *col_card = arity_scale (*col_card);
+      *col_card = sqlo_pg_sample (&rq);
       return 1;
+#endif
     }
   if (RQ_BOUND_RANGE == rq.rq_s.rqp_op)
     return 0;

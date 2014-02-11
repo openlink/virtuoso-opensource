@@ -1167,6 +1167,7 @@ typedef struct update_node_s
     state_slot_t *	upd_cols_param;
     state_slot_t *	upd_values_param;
     char 		upd_no_keys;	/* if no key parts changed */
+    char		upd_no_trig; /* no trig call even if trig args set */
     /* opt for single col in row of known key */
     key_id_t		upd_exact_key; /* if no key parts */
     state_slot_t **	upd_quick_values;
@@ -1204,6 +1205,7 @@ typedef struct delete_node_s
     ssl_index_t		del_param_nos;
     ssl_index_t		del_set_mask; /* in cluster local branch, indicates which rows in the cast in the iks are for delete, i.e. local */
     char		del_is_view;
+    char 		del_no_trig;
   } delete_node_t;
 
 
