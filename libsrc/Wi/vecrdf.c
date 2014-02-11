@@ -758,7 +758,6 @@ bif_iri_to_id_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state
 	{
 	  cu_rl_local_exec (cu);
 	}
-#if 0
       first_set = 0;
       SET_LOOP
 	{
@@ -768,7 +767,6 @@ bif_iri_to_id_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state
       END_SET_LOOP;
       if (is_cl)
 	cu_next (clrg->clrg_cu, qi, 1);
-#endif
     }
   QR_RESET_CODE
     {

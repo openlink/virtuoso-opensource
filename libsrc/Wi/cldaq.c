@@ -658,6 +658,17 @@ cu_process_return (cucurbit_t * cu, cu_return_t * cur, value_state_t * vs, int s
 
 void cu_clear (cucurbit_t * cu);
 
+caddr_t *
+cu_next (cucurbit_t * cu, query_instance_t * qi, int is_flush)
+{
+  caddr_t *next;
+  if (cu->cu_nth_set == cu->cu_fill)
+    return NULL;
+  next = (caddr_t *) cu->cu_rows[cu->cu_nth_set];
+  cu->cu_nth_set++;
+  return next;
+}
+
 void
 cu_row_ready (cucurbit_t * cu, int irow)
 {
