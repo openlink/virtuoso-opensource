@@ -1252,6 +1252,9 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "AdjustVectorSize", &enable_dyn_batch_sz) == -1)
     enable_dyn_batch_sz = 1;
 
+  if (cfg_getlong (pconfig, section, "EnableMonitor", &mon_enable) == -1)
+    mon_enable = 1;
+
 
   /*
    *  Parse [HTTPServer] section
@@ -1338,8 +1341,6 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "FTPServerTimeout", &c_ftp_server_timeout) == -1)
     c_ftp_server_timeout = 600;
 #endif
-  if (cfg_getlong (pconfig, section, "EnableMonitor", &mon_enable) == -1)
-    mon_enable = 1;
 
 #ifdef _SSL
   if (cfg_getstring (pconfig, section, "SSLPort", &c_https_port) == -1)
@@ -1545,6 +1546,12 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "MaxMemInUse", &c_sparql_max_mem_in_use) == -1)
     c_sparql_max_mem_in_use = 0;
+
+  if (cfg_getlong (pconfig, section, "CreateGraphKeywords", &c_rdf_create_graph_keywords) == -1)
+    c_rdf_create_graph_keywords = 0;
+
+  if (cfg_getlong (pconfig, section, "QueryGraphKeywords", &c_rdf_query_graph_keywords) == -1)
+    c_rdf_query_graph_keywords = 0;
 
   if (cfg_getlong (pconfig, section, "TransitivityCacheEnabled", &tn_cache_enable) == -1)
     tn_cache_enable = 0;
