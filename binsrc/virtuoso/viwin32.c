@@ -1439,6 +1439,8 @@ ApplicationMain (int argc, char **argv)
   if (kernel_init () == -1)
     terminate (1);
 
+  dk_box_initialize (); /* This should happen before cfg_setup() because loading plugins may result in calls of bif_define() and thus calls of box_dv_uname_string() and the like */
+
   /* parse configuration file */
   if (cfg_setup () == -1)
     terminate (1);

@@ -597,6 +597,8 @@ main (int argc, char **argv)
                 L_STYLE_LEVEL | L_STYLE_GROUP | L_STYLE_TIME :
 		L_STYLE_GROUP | L_STYLE_TIME);
 
+  dk_box_initialize (); /* This should happen before cfg_setup() because loading plugins may result in calls of bif_define() and thus calls of box_dv_uname_string() and the like */
+
   /* parse configuration file */
   if (cfg_setup () == -1)
     viunix_terminate (1);
