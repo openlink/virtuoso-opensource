@@ -2567,7 +2567,7 @@ sqlo_record_rdf_p (sample_opt_t * sop, dbe_key_t * key, caddr_t p_const, int64 e
   if (0 == sop->sop_n_sample_rows)
     sop->sop_n_sample_rows = 1;
   mutex_enter (alt_ts_mtx); /*any mtx that is never enterd, not worth one of its own */
-<  if (!key->key_p_stat)
+  if (!key->key_p_stat)
     {
       key->key_p_stat = id_hash_allocate (201, sizeof (iri_id_t), 4 * sizeof (float), boxint_hash, boxint_hashcmp);
       id_hash_set_rehash_pct (key->key_p_stat, 200);
