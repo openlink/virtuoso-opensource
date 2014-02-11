@@ -469,8 +469,8 @@ bif_ro2sq_vec_1 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_s
     {
       rb_complete_qr =
 	  sql_compile_static
-	  ("select RO_DT_AND_LANG, RO_FLAGS, RO_VAL, RO_LONG from DB.DBA.RDF_OBJ where RO_ID = rdf_box_ro_id (?)", qi->qi_client,
-	  &err, SQLC_DEFAULT);
+	  ("select RO_DT_AND_LANG, RO_FLAGS, RO_VAL, blob_to_string (RO_LONG) from DB.DBA.RDF_OBJ where RO_ID = rdf_box_ro_id (?)",
+	  qi->qi_client, &err, SQLC_DEFAULT);
       if (err)
 	sqlr_resignal (err);
     }
