@@ -2634,7 +2634,7 @@ repl_append_vec_entry_async (lre_queue_t *lq, client_connection_t * cli, lre_req
   data_col_t **qr_params_vec = request->lr_params_vec;
   log_row_map_t row_map[TB_MAX_COLS];
   int n_pars = BOX_ELEMENTS(row) - 1; /* first is key_id */
-  int k = 0;
+  int k = 0, n_actual_params;
   caddr_t err = NULL;
   dbe_key_t * key = sch_id_to_key (wi_inst.wi_schema, unbox (row[0]));
   LOCAL_RD (rd);
@@ -2652,12 +2652,14 @@ repl_append_vec_entry_async (lre_queue_t *lq, client_connection_t * cli, lre_req
   if (qr_pool == NULL)
     {
       int inx = 0;
+      int plen;
       query_t *qr = get_vec_query (request, key, flag, &err);
+      plen = dk_set_length (qr->qr_parms);
       if (err)
 	return err;
       request->lr_qr = qr;
       qr_pool = request->lr_pool = mem_pool_alloc ();
-      qr_params_vec = request->lr_params_vec = (data_col_t**) mp_alloc_box(qr_pool, n_pars * sizeof (data_col_t*), DV_BIN);
+      qr_params_vec = request->lr_params_vec = (data_col_t**) mp_alloc_box(qr_pool, plen * sizeof (data_col_t*), DV_BIN);
       DO_SET (state_slot_t *, col_ssl, &qr->qr_parms)
 	{
 	  state_slot_t ssl;
@@ -2680,7 +2682,7 @@ repl_append_vec_entry_async (lre_queue_t *lq, client_connection_t * cli, lre_req
 	  GPF_T1("repl_append_vec_entry_async param count");
 	}
     }
-
+  n_actual_params = dk_set_length (request->lr_qr->qr_parms);
   /* check for blobs */
   if (key && key->key_row_var
       && request->lr_op != LOG_KEY_DELETE && request->lr_op != LOG_DELETE) /* delete log only PK */
@@ -2742,7 +2744,7 @@ repl_append_vec_entry_async (lre_queue_t *lq, client_connection_t * cli, lre_req
       END_DO_CL;
     }
 
-  for (k = 0; k < n_pars; k++)
+  for (k = 0; k < n_actual_params; k++) 
     {
       caddr_t arg, to_free = NULL;
       dtp_t dtp;
