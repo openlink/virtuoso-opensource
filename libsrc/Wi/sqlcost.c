@@ -1742,7 +1742,7 @@ sqlo_iri_constant_name (ST* tree)
   if (DV_IRI_ID == DV_TYPE_OF (tree))
     return (caddr_t)tree;
   if (ST_P (tree, CALL_STMT) && 1 <= BOX_ELEMENTS (tree->_.call.params)
-      && DV_STRINGP (tree->_.call.name)
+      && SINV_DV_STRINGP (tree->_.call.name)
       && (0 == strnicmp (tree->_.call.name, "__I2ID", 6) || 0 == strnicmp (tree->_.call.name, "IRI_TO_ID", 9))
       && DV_STRINGP ((name = sqlo_iri_constant_name_1 (tree->_.call.params[0]))))
     return name;

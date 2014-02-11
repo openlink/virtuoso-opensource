@@ -4207,6 +4207,12 @@ rdf_core_init (void)
   bif_define ("__rdf_obj_set_is_text_if_ft_rule_check", bif_rdf_obj_set_is_text_if_ft_rule_check);
   bif_set_uses_index (bif_rdf_obj_set_is_text_if_ft_rule_check);
   bif_define ("__rdf_obj_ft_rule_count_in_graph", bif_rdf_obj_ft_rule_count_in_graph);
+  {
+    char * inv1[] = { "__id2in", "__i2idn", "__ID2IN", "__I2IDN"};
+    char * inv2[] = { "__i2idn", "__id2in", "__I2IDN", "__ID2IN"};
+    int flags[] = { 0, 0, 0, 0 };
+    sinv_builtin_inverse (inv1, inv2, flags, 4);
+  }
   bif_define ("rdf_graph_keyword", bif_rdf_graph_keyword);
   bif_define ("iri_split", bif_iri_split);
   bif_define ("iri_cache_clear",  bif_iri_cache_clear);

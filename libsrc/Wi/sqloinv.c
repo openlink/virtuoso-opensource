@@ -280,6 +280,74 @@ sinv_read_sql_inverses (const char * function_name, client_connection_t * cli)
   qr_free (rd);
 }
 
+
+void
+sinv_builtin_inverse (caddr_t * f1, caddr_t * f2, int * flags, int n)
+{
+  client_connection_t * cli = bootstrap_cli;
+  sinv_map_t *map = NULL;
+  dk_set_t inverse_set = NULL;
+  caddr_t sinvm_name;
+  caddr_t sinvm_inverse;
+  unsigned sinvm_flags, nth;
+
+  if (!sinv_func_hash)
+    {
+      sinv_func_hash = id_str_hash_create (50);
+    }
+
+  for (nth = 0; nth < n; nth++)
+    {
+      sinvm_name = f1[nth];
+      sinvm_inverse = f2[nth];
+      sinvm_flags = flags[nth];
+
+      if (!map || CASEMODESTRCMP (map->sinvm_name, sinvm_name))
+	{
+	  if (map)
+
+	    {
+	      map->sinvm_inverse =
+		  (caddr_t *) list_to_array (dk_set_nreverse (inverse_set));
+	      inverse_set = NULL;
+#ifndef NDEBUG
+	      if (!map->sinvm_inverse
+		  || BOX_ELEMENTS (map->sinvm_inverse) < 1)
+		GPF_T1 ("no inverse set");
+#endif
+	      sinv_make_decoy_procs (cli, map);
+	    }
+	  map = (sinv_map_t *) dk_alloc (sizeof (sinv_map_t));
+	  map->sinvm_name = box_dv_short_string (sinvm_name);
+
+	  id_hash_set (sinv_func_hash,
+	      (caddr_t) & map->sinvm_name, (caddr_t) & map);
+	}
+
+      dk_set_push (&inverse_set,
+	  (void *) box_dv_short_string (sinvm_inverse));
+      map->sinvm_flags = sinvm_flags;
+    }
+  if (map)
+    {
+      map->sinvm_inverse =
+	  (caddr_t *) list_to_array (dk_set_nreverse (inverse_set));
+      inverse_set = NULL;
+#ifndef NDEBUG
+      if (!map->sinvm_inverse || BOX_ELEMENTS (map->sinvm_inverse) < 1)
+	GPF_T1 ("no inverse set");
+#endif
+      sinv_make_decoy_procs (cli, map);
+    }
+#ifndef NDEBUG
+  else if (dk_set_length (inverse_set))
+    GPF_T1 ("no map have set");
+#endif
+
+
+}
+
+
 static int
 sinv_normalize_func_name (const char *fname, client_connection_t *cli,
     char *nm, int sizeof_nm)

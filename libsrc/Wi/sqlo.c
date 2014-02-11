@@ -3304,6 +3304,8 @@ sqlo_scope (sqlo_t * so, ST ** ptree)
 	    {
 	      *ptree = res;
 	      tree = res;
+	      sqlo_check_rdf_lit (&tree->_.bin_exp.left);
+	      sqlo_check_rdf_lit (&tree->_.bin_exp.right);
 	    }
 	  if (ST_P (tree, BOP_OR))
 	    sqlo_bop_expand_or (so, tree);

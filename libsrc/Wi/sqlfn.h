@@ -326,6 +326,8 @@ switch (dtp) \
 
 
 
+void sinv_builtin_inverse (caddr_t * f1, caddr_t * f2, int * flags, int n);
+
 void table_source_input (table_source_t * ts, caddr_t * inst,
     caddr_t * volatile state);
 void inx_op_source_input (table_source_t * ts, caddr_t * inst,
