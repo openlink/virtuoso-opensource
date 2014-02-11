@@ -4113,6 +4113,8 @@ itc_local_sample (it_cursor_t * itc)
   return ((int64) mean);
 }
 
+int enable_exact_p_stat = 0;
+
 
 int64
 itc_sample (it_cursor_t * itc)
@@ -4122,6 +4124,18 @@ itc_sample (it_cursor_t * itc)
   for (inx = 0; inx < itc->itc_search_par_fill; inx++)
     if (DV_DB_NULL == DV_TYPE_OF (itc->itc_search_params[inx]))
       return 0;
+  if (enable_exact_p_stat && 1 == itc->itc_search_par_fill && tb_is_rdf_quad (itc->itc_insert_key->key_table)
+      && CL_RUN_SINGLE_CLUSTER != cl_run_local_only
+      && 'P' == toupper (((dbe_column_t *) itc->itc_insert_key->key_parts->data)->col_name[0]) && itc->itc_st.cols)
+    {
+      int64 res = sqlo_p_stat_query (itc->itc_insert_key->key_table, itc->itc_search_params[0]);
+      if (-1 != res)
+	{
+	  itc->itc_st.cols = (dk_hash_t *) - 1;
+	  return res;
+	}
+    }
+
     {
 
       if (itc->itc_insert_key->key_is_elastic && !itc->itc_tree)

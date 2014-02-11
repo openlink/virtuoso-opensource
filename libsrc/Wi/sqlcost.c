@@ -1254,7 +1254,7 @@ dfe_pred_body_cost (df_elt_t **body, float * unit_ret, float * arity_ret, float 
 
 
 void
-key_set_p_stat (dbe_key_t * key, iri_id_t p, float * p_stat)
+key_set_p_stat (dbe_key_t * key, caddr_t p, float * p_stat)
 {
   if (!key->key_p_stat)
     {
@@ -1262,20 +1262,22 @@ key_set_p_stat (dbe_key_t * key, iri_id_t p, float * p_stat)
       id_hash_set_rehash_pct (key->key_p_stat, 200);
     }
   mutex_enter (alt_ts_mtx);
-  id_hash_set (key->key_p_stat, (caddr_t)&p, (caddr_t)p_stat);
+  id_hash_set (key->key_p_stat, (caddr_t)&((iri_id_t*)p)[0], (caddr_t)p_stat);
   mutex_leave (alt_ts_mtx);
 }
 
 
-void
+int64
 sqlo_p_stat_query (dbe_table_t * tb, caddr_t p)
 {
-  int64 cnt, s_cnt,cnt, o_cnt;
+  int entered = 0, rc;
+  int64 cnt, s_cnt, o_cnt;
   dbe_column_t * col;
   dbe_key_t * key;
   float p_stat[4];
   static query_t * s_qr = NULL;
   static query_t * o_qr = NULL;
+  client_connection_t * cli = sqlc_client ();
   lock_trx_t * lt = cli->cli_trx;
   user_t * usr = cli->cli_user;
   int at_start = cli->cli_anytime_started;
@@ -1296,24 +1298,35 @@ sqlo_p_stat_query (dbe_table_t * tb, caddr_t p)
   cli->cli_anytime_started = 0;
   if (!s_qr || !o_qr)
     {
-      s_qr = sql_compile ("select count (*), count (distinct s option (order)) from rdf_quad table option (index rdf_quad where p = ?)", cli, &err, SQLC_DEFAULT);
-      o_qr = sql_compile ("select count (*), count (distinct o option (order)) from rdf_quad table option (index rdf_quad_pogs) where p = ?", cli, &err, SQLC_DEFAULT);
+      s_qr = sql_compile ("select count (*), count (distinct s option (order)) from rdf_quad table option (index rdf_quad, isolation read uncommitted) where p = ?", cli, &err, SQLC_DEFAULT);
+      if (err)
+	goto err;
+      o_qr = sql_compile ("select count (*), count (distinct o option (order)) from rdf_quad table option (index rdf_quad_pogs, isolation read uncommitted) where p = ?", cli, &err, SQLC_DEFAULT);
+      if (err)
+	goto err;
     }
   err = qr_rec_exec (s_qr, cli, &lc, CALLER_LOCAL, NULL, 1, ":0", box_copy (p), QRP_RAW);
+  if (err)
+    goto err;
   lc_next (lc);
-  cnt = lc_nth_col (lc, 0);
-  s_cnt = lc_nth_col (lc, 1);
+  cnt = unbox (lc_nth_col (lc, 0));
+  s_cnt = unbox (lc_nth_col (lc, 1));
   lc_free (lc);
   err = qr_rec_exec (o_qr, cli, &lc, CALLER_LOCAL, NULL, 1, ":0", box_copy (p), QRP_RAW);
+  if (err)
+    goto err;
   lc_next (lc);
-  o_cnt = lc_nth_col (lc, 1);
+  o_cnt = unbox (lc_nth_col (lc, 1));
   lc_free (lc);
+ err:
   if (entered)
     {
       IN_TXN;
       lt_leave (lt);
       LEAVE_TXN;
     }
+  if (err)
+    return -1;
   col = tb_name_to_column (tb, "S");
   key = tb_px_key (tb, col);
   p_stat[0] = cnt;
@@ -1328,6 +1341,7 @@ sqlo_p_stat_query (dbe_table_t * tb, caddr_t p)
   p_stat[2] = s_cnt;
   p_stat[3] = 1;
   key_set_p_stat (key, p, p_stat);
+  return cnt;
 }
 
 
@@ -2385,6 +2399,12 @@ sqlo_inx_sample_1 (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_el
     {
     res = itc_sample (itc);
       row_sel = itc_row_selectivity (itc, res);
+      if (sop && (dk_hash_t*)-1 == itc->itc_st.cols)
+	{
+	  /* the itc sample has set the p stat, so no p stat or cxol samples here */
+	  hash_table_free (sop->sop_cols);
+	  sop->sop_cols = NULL;
+	}
     }
   if (sop)
     sop->sop_n_sample_rows += itc->itc_st.n_sample_rows;

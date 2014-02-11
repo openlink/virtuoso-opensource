@@ -1724,6 +1724,7 @@ src_is_local (data_source_t * src, int is_cluster)
       || (qn_input_fn) remote_table_source_input == src->src_input
       || (is_cluster && !enable_hash_colocate && IS_QN (src, hash_source_input))
       || (!enable_rec_qf && IS_QN (src, query_frag_input))
+      || (IS_QN (src, trans_node_input) && ((trans_node_t *)src)->tn_inlined_step)
       )
     return 0;
   if ((CV_NO_INDEX & is_cluster) && IS_TS (src))
@@ -2635,6 +2636,7 @@ sqlg_agg_ins (sql_comp_t * sc, ST * tree, dk_set_t * code,
 
     case AMMSC_COUNT:
       {
+	void * dist_opt = NULL;
 	state_slot_t *count = ssl_new_inst_variable (sc->sc_cc, "count", DV_LONG_INT);
 	count->ssl_qr_global = 1;
 	dk_set_push (&sc->sc_fun_ref_temps, (void *) count);
@@ -2761,7 +2763,6 @@ select_ref_generate (sql_comp_t * sc, ST * tree, dk_set_t * code,
 
 	case AMMSC_COUNT:
 	  {
-	void * dist_opt = NULL;
 	    state_slot_t *count = ssl_new_inst_variable (sc->sc_cc, "count", DV_LONG_INT);
 	    count->ssl_qr_global = 1;
 	    dk_set_push (&sc->sc_fun_ref_temps, (void *) count);

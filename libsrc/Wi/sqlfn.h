@@ -1714,6 +1714,9 @@ uint64 qi_total_mem (query_instance_t * qi);
 
 int tb_is_rdf_quad (dbe_table_t * tb);
 void qn_vec_reuse (data_source_t * qn, caddr_t * inst);
+int64 sqlo_p_stat_query (dbe_table_t * tb, caddr_t p);
+
+
 extern int32 enable_vec_reuse;
 
 #define B_NEW_VARZ(t, v) NEW_VARZ(t, v)

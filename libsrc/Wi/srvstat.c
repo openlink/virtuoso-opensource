@@ -332,6 +332,7 @@ extern int enable_flush_all;
 extern int enable_hash_join;
 extern int enable_hash_merge;
 extern int enable_hash_fill_join;
+extern int enable_exact_p_stat;
 extern int enable_vec;
 extern int32 enable_qp;
 extern int32 enable_qn_cache;
@@ -1771,6 +1772,7 @@ stat_desc_t dbf_descs [] =
     {"enable_inline_sqs", (long *)&enable_inline_sqs, SD_INT32},
     {"hash_join_enable", (long *)&hash_join_enable, SD_INT32},
     {"enable_joins_only", &enable_joins_only, SD_INT32},
+    {"enable_exact_p_stat", &enable_exact_p_stat, SD_INT32},
     {"em_ra_window", (long *)&em_ra_window, SD_INT32},
     {"em_ra_threshold", (long *)&em_ra_threshold, SD_INT32},
     {"em_ra_startup_threshold", (long *)&em_ra_startup_threshold, SD_INT32},
