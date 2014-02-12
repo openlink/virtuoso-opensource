@@ -1586,7 +1586,11 @@ bif_define_int (caddr_t name, bif_t bif, bif_metadata_t *bmd)
       bif_metadata_t *old_bmd = find_bif_metadata_by_name (name);
       bif_metadata_t *old_meta_for_bif = find_bif_metadata_by_bif (bif);
       if (NULL != old_bmd)
+        {
+          if ((old_bmd == bmd) && (NULL == old_meta_for_bif))  /* The call is redundand because, e.g., st_point and ST_Point both become ST_POINT after the case conversion */
+            return;
           GPF_T1 ("bif name cannot be redefined");
+        }
       if (NULL != old_meta_for_bif)
 #if 1
         GPF_T1 ("bif function pointer cannot be used in two definitions");
