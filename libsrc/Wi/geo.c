@@ -121,10 +121,10 @@ cmpf_geo (buffer_desc_t * buf, int irow, it_cursor_t * itc)
     return DVC_LESS;
   if (GSOP_CONTAINS == gs_op)
     {
-      rx *= ((0 < rx) ? (1 - FLT_EPSILON) : (1 + FLT_EPSILON));
-      ry *= ((0 < ry) ? (1 - FLT_EPSILON) : (1 + FLT_EPSILON));
-      rx2 *= ((0 < rx2) ? (1 + FLT_EPSILON) : (1 - FLT_EPSILON));
-      ry2 *= ((0 < ry2) ? (1 + FLT_EPSILON) : (1 - FLT_EPSILON));
+      rx *= ((0 < rx) ? (1 - geoc_EPSILON) : (1 + geoc_EPSILON));
+      ry *= ((0 < ry) ? (1 - geoc_EPSILON) : (1 + geoc_EPSILON));
+      rx2 *= ((0 < rx2) ? (1 + geoc_EPSILON) : (1 - geoc_EPSILON));
+      ry2 *= ((0 < ry2) ? (1 + geoc_EPSILON) : (1 - geoc_EPSILON));
       /* if the row is smaller than the box, the row/leaf can't contain the whole item being searched */
       if (rx > g->XYbox.Xmin || rx2 < g->XYbox.Xmax)
 	return DVC_LESS;
@@ -1140,13 +1140,25 @@ bif_geo_arg (caddr_t * qst, state_slot_t ** args, int inx, const char *f, int tp
   dtp_t v_dtp = DV_TYPE_OF (v);
   if (DV_GEO != v_dtp)
     {
-      if ((GEO_ARG_ANY_NULLABLE == tp) && (DV_DB_NULL == v_dtp))
+      if ((GEO_ARG_NULLABLE & tp) && (DV_DB_NULL == v_dtp))
 	return NULL;
-    sqlr_new_error ("22032", "GEO..", "Function %s expects a geometry as argument %d", f, inx);
+      sqlr_new_error ("22032", "GEO..", "Function %s() expects a geometry%s as argument %d",
+	  f, ((GEO_ARG_NULLABLE == (tp & GEO_ARG_MASK)) ? " or NULL" : ""), inx);
     }
   g = (geo_t *) v;
-  if (!(GEO_ARG_ANY_MASK & tp) && (tp != GEO_TYPE (g->geo_flags)))
-    sqlr_new_error ("22023", "GEO..", "Function %s expects a geometry of type %d as argument %d", f, tp, inx);
+  if ((GEO_UNDEFTYPE != GEO_TYPE_NO_ZM (tp)) && (GEO_TYPE_NO_ZM (tp) != GEO_TYPE_NO_ZM (g->geo_flags)))
+    sqlr_new_error ("22023", "GEO..", "Function %s() expects a geometry of type %d%s as argument %d, not geometry of type %d",
+	f, GEO_TYPE (tp), ((GEO_ARG_NULLABLE == (tp & GEO_ARG_MASK)) ? " or NULL" : ""), inx, GEO_TYPE (g->geo_flags));
+  if ((GEO_ARG_CHECK_ZM & tp) && ((GEO_A_Z | GEO_A_M) & tp & ~(g->geo_flags)))
+    {
+      const char *zm_text = "both Z and M coordinates";
+      if (!(GEO_A_Z & tp))
+	zm_text = "M coordinate";
+      else if (!(GEO_A_M & tp))
+	zm_text = "Z coordinate";
+      sqlr_new_error ("22023", "GEO..", "Function %s() expects a geometry with %s as argument %d, not geometry of type %d",
+	  f, zm_text, inx, GEO_TYPE (g->geo_flags));
+    }
   return g;
 }
 

@@ -58,7 +58,8 @@
     } \
   } while (0);
 
-#define GEO_ALLOC_PLINE(lastfld,cvecs,mvecs,gcb_min_len,gcb_step_,gcb_ignore_first) do { \
+#define GEO_ALLOC_PLINE(lastfld,cvecs,mvecs,gcb_min_len,gcb_step_init,gcb_ignore_first) do { \
+  int gcb_step_ = gcb_step_init; \
   head_sz = ALIGN_LIKE_BOX(GEO_HEAD_SZ(lastfld)); \
   if ((len_-gcb_ignore_first) >= ((geo_flags_ & GEO_IS_CHAINBOXED) ? (2*gcb_step_) : gcb_min_len)) \
     { \
@@ -66,6 +67,8 @@
       geo_flags_ |= GEO_IS_CHAINBOXED; \
       if (head_sz < gcb_head_sz) \
         head_sz = gcb_head_sz; \
+      while (gcb_step_ * gcb_step_ * 6 < len_) \
+        gcb_step_ *= 2; \
       gcb_bcount = (((len_-gcb_ignore_first) + gcb_step_ - 1) / gcb_step_); \
       gcb_sz = sizeof (geo_chainbox_t) + sizeof (geo_XYbox_t) * gcb_bcount; \
     } \
@@ -204,6 +207,19 @@ geo_point (geoc x, geoc y)
   return res;
 }
 
+geo_t *
+geo_bbox (geoc Xmin, geoc Ymin, geoc Xmax, geoc Ymax)
+{
+  geo_t *res;
+  GEO_ALLOC_POINT(XYbox);
+  res->geo_flags = GEO_BOX;
+  res->geo_srcode = GEO_SRCODE_DEFAULT;
+  res->XYbox.Xmin = Xmin;
+  res->XYbox.Xmax = Xmax;
+  res->XYbox.Ymin = Ymin;
+  res->XYbox.Ymax = Ymax;
+  return res;
+}
 
 #define GEO_RESET_GCB(fld) do { \
   if (src->geo_flags & GEO_IS_CHAINBOXED) \
@@ -1221,10 +1237,10 @@ geo_get_bounding_XYbox (geo_t * g, geo_t * box, geoc prec_x, geoc prec_y)
   box->XYbox.Ymax += prec_y;
 
 adjust_with_epsilon:
-  box->XYbox.Xmin *= ((0 < box->XYbox.Xmin) ? (1 - FLT_EPSILON) : (1 + FLT_EPSILON));
-  box->XYbox.Ymin *= ((0 < box->XYbox.Ymin) ? (1 - FLT_EPSILON) : (1 + FLT_EPSILON));
-  box->XYbox.Xmax *= ((0 < box->XYbox.Xmax) ? (1 + FLT_EPSILON) : (1 - FLT_EPSILON));
-  box->XYbox.Ymax *= ((0 < box->XYbox.Ymax) ? (1 + FLT_EPSILON) : (1 - FLT_EPSILON));
+  box->XYbox.Xmin *= ((0 < box->XYbox.Xmin) ? (1 - geoc_EPSILON) : (1 + geoc_EPSILON));
+  box->XYbox.Ymin *= ((0 < box->XYbox.Ymin) ? (1 - geoc_EPSILON) : (1 + geoc_EPSILON));
+  box->XYbox.Xmax *= ((0 < box->XYbox.Xmax) ? (1 + geoc_EPSILON) : (1 - geoc_EPSILON));
+  box->XYbox.Ymax *= ((0 < box->XYbox.Ymax) ? (1 + geoc_EPSILON) : (1 - geoc_EPSILON));
   return;
 
 faraway:
@@ -1607,7 +1623,7 @@ ewkt_get_points (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas)
       for (p_idx = in->ekwt_point_count; --p_idx > 0; /* no step */ )
 	{
 	  if ((fabs (in->ekwt_Cs[0][p_idx - 1] - in->ekwt_Cs[0][p_idx]) +
-		  fabs (in->ekwt_Cs[1][p_idx - 1] - in->ekwt_Cs[1][p_idx])) <= 2 * FLT_EPSILON)
+		  fabs (in->ekwt_Cs[1][p_idx - 1] - in->ekwt_Cs[1][p_idx])) <= 2 * geoc_EPSILON)
 	    ewkt_signal (in, "Neighbor points of an ARCSTRING are too close to each other");
 	}
     }
@@ -1617,7 +1633,7 @@ ewkt_get_points (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas)
 	ewkt_signal (in, "Closed ring contains too few points");
       for (dim_idx = dim; dim_idx--; /* no step */ )
 	{
-	  if (fabs (in->ekwt_Cs[dim_idx][in->ekwt_point_count - 1] - in->ekwt_Cs[dim_idx][0]) >= FLT_EPSILON)
+	  if (fabs (in->ekwt_Cs[dim_idx][in->ekwt_point_count - 1] - in->ekwt_Cs[dim_idx][0]) >= geoc_EPSILON)
 	    ewkt_signal (in, "The distance between ends of a closed ring is too big");
 	}
     }
@@ -2832,9 +2848,9 @@ geo_inverse_point_order (geo_t * g)
 int
 geo_XYbbox_inside (geo_XYbox_t * inner, geo_XYbox_t * outer)
 {
-  return ((inner->Xmin + FLT_EPSILON >= outer->Xmin) &&
-      (inner->Xmax - FLT_EPSILON <= outer->Xmax) &&
-      (inner->Ymin + FLT_EPSILON >= outer->Ymin) && (inner->Ymax - FLT_EPSILON <= outer->Ymax));
+  return ((inner->Xmin + geoc_EPSILON >= outer->Xmin) &&
+      (inner->Xmax - geoc_EPSILON <= outer->Xmax) &&
+      (inner->Ymin + geoc_EPSILON >= outer->Ymin) && (inner->Ymax - geoc_EPSILON <= outer->Ymax));
 }
 
 
@@ -2887,9 +2903,9 @@ b = border exact hit, i = ignore
       if ((aX == pX) && (aY == pY))	/* if# B */
 	return GEO_INOUTSIDE_BORDER;
       isectX = aX + (bX - aX) * (pY - aY) / (bY - aY);
-      if (isectX < (pX - FLT_EPSILON))
+      if (isectX < (pX - geoc_EPSILON))
 	continue;
-      if (isectX > (pX + FLT_EPSILON))
+      if (isectX > (pX + geoc_EPSILON))
 	{
 	  if ((aY < pY) && (bY > pY))
 	    (up_crosses_ray_ptr[0]) += 2;
@@ -2932,8 +2948,7 @@ geo_XY_inoutside_ring (geoc pX, geoc pY, geo_t * ring)
 	    {
 	      if (pX >= gcb_ptr->Xmin)
 		{
-		  int inoutside =
-		      geo_XY_inoutside_ring_lines (pX, pY, gcb_next_stop - inx, Xs + inx, Ys + inx, &up_crosses_ray,
+		  int inoutside = geo_XY_inoutside_ring_lines (pX, pY, gcb_next_stop - inx, Xs + inx, Ys + inx, &up_crosses_ray,
 		      &down_crosses_ray);
 		  if (inoutside)
 		    return inoutside;
@@ -3202,6 +3217,73 @@ geo_modify_by_transscale (geo_t *g, geoc dX, geoc dY, geoc Xfactor, geoc Yfactor
   return;
 #undef XY_TRANSSCALE
 #undef XYBOX_TRANSSCALE
+}
+
+void
+geo_modify_by_affine2d (geo_t *g, geoc XXa, geoc XYb, geoc YXd, geoc YYe, geoc Xoff, geoc Yoff)
+{
+  geo_flags_t flags = g->geo_flags;
+
+/* local macro defs */
+#define XY_AFFINE2D(x,y) do { \
+  geoc newX = XXa * x + XYb * y + Xoff; \
+  geoc newY = YXd * x + YYe * y + Yoff; \
+  x = newX; \
+  y = newY; } while (0)
+#define XYBOX_AFFINE2D(xybox) do { \
+  geoc X1 = xybox.Xmin, X2 = xybox.Xmin, X3 = xybox.Xmax, X4 = xybox.Xmax; \
+  geoc Y1 = xybox.Ymin, Y2 = xybox.Ymax, Y3 = xybox.Ymin, Y4 = xybox.Ymax; \
+  XY_AFFINE2D(X1, Y1); \
+  XY_AFFINE2D(X2, Y2); \
+  XY_AFFINE2D(X3, Y3); \
+  XY_AFFINE2D(X4, Y4); \
+  xybox.Xmin = geoc_min (geoc_min (X1, X2), geoc_min (X3, X4)); \
+  xybox.Ymin = geoc_min (geoc_min (Y1, Y2), geoc_min (Y3, Y4)); \
+  xybox.Xmax = geoc_max (geoc_max (X1, X2), geoc_max (X3, X4)); \
+  xybox.Ymax = geoc_max (geoc_max (Y1, Y2), geoc_max (Y3, Y4)); \
+  } while (0)
+  if (flags & (GEO_A_RINGS | GEO_A_COMPOUND | GEO_A_MULTI | GEO_A_ARRAY))
+    {
+      int ctr;
+      int invert = ((XXa * YYe) < (XYb * YXd));
+      for (ctr = g->_.parts.len; ctr--; /* no step */)
+        geo_modify_by_affine2d (g->_.parts.items[ctr], XXa, XYb, YXd, YYe, Xoff, Yoff);
+      if (invert)
+        geo_inverse_point_order (g);
+      geo_calc_bounding (g, GEO_CALC_BOUNDING_DO_ALL);
+      return;
+    }
+  switch (GEO_TYPE_CORE (flags))
+    {
+    case GEO_NULL_SHAPE: case GEO_BOX:
+      if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
+        {
+          XYBOX_AFFINE2D(g->XYbox);
+        }
+      return;
+    case GEO_POINT: case GEO_GSOP:
+      if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
+        {
+          XY_AFFINE2D(g->XYbox.Xmin, g->XYbox.Ymin);
+          g->XYbox.Xmax = g->XYbox.Xmin; g->XYbox.Ymax = g->XYbox.Ymin;
+        }
+      return;
+    case GEO_LINESTRING: case GEO_POINTLIST: case GEO_ARCSTRING:
+      {
+        int ctr;
+        int invert = ((XXa * YYe) < (XYb * YXd));
+        for (ctr = g->_.pline.len; ctr--; /* no step */)
+          XY_AFFINE2D(g->_.pline.Xs[ctr], g->_.pline.Ys[ctr]);
+        if (invert)
+          geo_inverse_point_order (g);
+        geo_calc_bounding (g, GEO_CALC_BOUNDING_DO_ALL);
+        return;
+      }
+    default: GPF_T;
+    }
+  return;
+#undef XY_AFFINE2D
+#undef XYBOX_AFFINE2D
 }
 
 const char *

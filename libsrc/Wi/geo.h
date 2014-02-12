@@ -51,7 +51,7 @@
 #define GEO_A_Z			0x0200	/*!< Indicates that the shape has Z (elevation) coordinate */
 #define GEO_A_M			0x0400	/*!< Indicates that the shape has M coordinate of any purpose (traditional measure along the shape, milestones or even a timestamp) */
 
-#define GEO_A_CLOSED		0x0800	/*!< The shape is closed. In this case the last recorded vertex should be equal to the first vertex, or at least the distance in XY plane must be less than FLT_EPSILON */
+#define GEO_A_CLOSED		0x0800	/*!< The shape is closed. In this case the last recorded vertex should be equal to the first vertex, or at least the distance in XY plane must be less than geoc_EPSILON */
 #define GEO_A_COMPOUND		0x1000	/*!< The shape is an chained ordered compound of shorter shapes so that one shape starts at the end of previous shape. */
 #define GEO_A_RINGS		0x2000	/*!< The shape is a single connected region of dimension 2 that may be described by multiple rings (borders) of dimension 1. In this case first ring is exterior and all other are holes */
 #define GEO_A_MULTI		0x4000	/*!< The shape is an unordered union of pairwise dim2-disjoint "connected regions" or a union of 1-dimentional shapes. Members of "multi"-shape should be all of same type, their order is not preserved, they should not intersect with nonzero intersection areas (i.e., no more than some common lines). Note that pointlist is not a MULTI because it's ordered. */
@@ -102,9 +102,12 @@ typedef unsigned short geo_srid_t;	/*!< Type for Spatial Reference system ID */
 typedef unsigned short geo_srcode_t;	/*!< Type for internal code of SRID and its internal details. So far, srcode of a SRID is equal to SRID itself but scrode may get additional bit flags in the future */
 typedef unsigned short geo_flags_t;	/*!< Type for flags of a shape (type + serialization details */
 
-#define GEO_ARG_ANY_NONNULL	0x50000000	/*!< Special value for use in bif_geo_arg to indicate that the argument can be of any shapetype but not NULL. It does not fit into \c geo_flags_t shortint! */
-#define GEO_ARG_ANY_NULLABLE	0x60000000	/*!< Special value for use in bif_geo_arg to indicate that the argument can be of any shapetype or a NULL. It does not fit into \c geo_flags_t shortint! */
-#define GEO_ARG_ANY_MASK	0x40000000	/*!< Mask for \c GEO_ARG_ANY_xxx values. */
+#define GEO_ARG_NULLABLE	0x40000000				/*!< Special value for use in bif_geo_arg to indicate that the argument can be NULL. It does not fit into \c geo_flags_t shortint! */
+#define GEO_ARG_NONNULL		0x10000000				/*!< Special value for use in bif_geo_arg to indicate that the argument can be NULL. It does not fit into \c geo_flags_t shortint! */
+#define GEO_ARG_CHECK_ZM	0x20000000				/*!< Special value for use in bif_geo_arg to indicate that the argument should have Z and/or M dimensions specified by the argument. It does not fit into \c geo_flags_t shortint! */
+#define GEO_ARG_ANY_NULLABLE	(GEO_ARG_NULLABLE | GEO_UNDEFTYPE)	/*!< Special value for use in bif_geo_arg to indicate that the argument can be of any shapetype or a NULL. It does not fit into \c geo_flags_t shortint! */
+#define GEO_ARG_ANY_NONNULL	(GEO_ARG_NONNULL | GEO_UNDEFTYPE)	/*!< Special value for use in bif_geo_arg to indicate that the argument can be of any shapetype but not NULL. It does not fit into \c geo_flags_t shortint! */
+#define GEO_ARG_MASK		0x70000000				/*!< Mask for GEO_ARG_xxx values. It does not fit into \c geo_flags_t shortint! */
 
 typedef double geoc;		/*!< Type of geographical coordinate */
 typedef double geo_measure_t;	/*!< Type of M coordinate */
@@ -115,15 +118,16 @@ typedef double geo_measure_t;	/*!< Type of M coordinate */
 #define double_max(a,b) (((a)<(b))?(b):(a))
 
 #define geoc_FARAWAY ((geoc)(1e38))	/*!< A very distant coordinate that will not appear on any map, but not an infinity and vector operations will not overflow */
+#define geoc_EPSILON ((geoc)FLT_EPSILON)	/*!< A small increment to stay on safe side on arc calculation errors and the like */
 
 /*! Point on a plane or on a latlong grid */
 typedef struct geo_point_s
 {
-  geoc	p_X;	/*!< Horisontal or left-to-right or longitude (_usually_ -180.0 to +180.0 and _always_ -270.0-FLT_EPSILON to +610.0+FLT_EPSILON for WGS84) */
-  geoc	p_Y;	/*!< Height or behind-to-ahead or latitude (_always_ -90.0-FLT_EPSILON to +90.0+FLT_EPSILON for WGS84) */
+  geoc	p_X;	/*!< Horisontal or left-to-right or longitude (_usually_ -180.0 to +180.0 and _always_ -270.0-geoc_EPSILON to +610.0+geoc_EPSILON for WGS84) */
+  geoc	p_Y;	/*!< Height or behind-to-ahead or latitude (_always_ -90.0-geoc_EPSILON to +90.0+geoc_EPSILON for WGS84) */
 } geo_point_t;
 
-/*! A canonical rectlinear bounding box for X+Y or long+lat. It may be stretched by FLT_EPSILON from "mathematical" bounding box or not, depending on its use. */
+/*! A canonical rectlinear bounding box for X+Y or long+lat. It may be stretched by geoc_EPSILON from "mathematical" bounding box or not, depending on its use. */
 typedef struct geo_XYbox_s
 {
   geoc	Xmin; /*!< West side of bounding box */
@@ -202,8 +206,10 @@ typedef struct geo_s
   struct {
     struct {
 /* There's no special data for GEO_POINT and GEO_BOX, it's defined by its bbox */
-#define Xkey(p) ((p)->XYbox.Xmin+0)
-#define Ykey(p) ((p)->XYbox.Ymin+0)
+#define Xkey(p) ((p)->XYbox.Xmin + 0)
+#define Ykey(p) ((p)->XYbox.Ymin + 0)
+#define Zkey(p) ((p)->_.point.point_ZMbox.Zmin + 0)
+#define Mkey(p) ((p)->_.point.point_ZMbox.Mmin + 0)
       geo_ZMbox_t	point_ZMbox;
       int		point_gs_op;
       int		point_gs_precision;
@@ -233,6 +239,15 @@ typedef struct geo_s
 #define GEO_TYPE_NO_ZM(flags) ((flags) & GEO_TYPE_NO_ZM_MASK)
 #define GEO_TYPE(flags) ((flags) & GEO_TYPE_MASK)
 #define G_OP(f) ((f) >> 8)
+#define GEO_TYPE_HAS_PLINE(flags) ((GEO_TYPE_NO_ZM(flags) = GEO_LINESTRING) || (GEO_TYPE_NO_ZM(flags) = GEO_ARCSTRING) || (GEO_TYPE_NO_ZM(flags) = GEO_POINTLIST))
+#define GEO_TYPE_HAS_PARTS(flags) (flags & (GEO_A_COMPOUND | GEO_A_RINGS | GEO_A_MULTI | GEO_A_ARRAY))
+
+#define GEO_ZMBOX_OR_NULL(g) ((0 == ((g)->geo_flags & (GEO_A_Z | GEO_A_M))) ? NULL : \
+    (GEO_TYPE_HAS_PARTS ((g)->geo_flags) ? &((g)->_.parts.parts_ZMbox) : \
+      (GEO_TYPE_HAS_PLINE ((g)->geo_flags) ? &((g)->_.pline.pline_ZMbox) : &((g)->_.point.point_ZMbox)) ) )
+
+#define GEO_GCB_OR_NULL(g) ((! ((g)->geo_flags & GEO_IS_CHAINBOXED)) ? NULL : \
+    (GEO_TYPE_HAS_PARTS ((g)->geo_flags) ? (g)->_.parts.parts_gcb : (g)->_.pline.pline_gcb) )
 
 #define SRID_WGS84	4326		/*!< I know one mapmaker who had chosen these four digits as last digits of his business phone */
 #define SRID_DEFAULT	SRID_WGS84
@@ -256,7 +271,6 @@ extern double dist_from_point_to_line_segment (double xP, double yP, double xL1,
 extern double geo_distance (geo_srcode_t srcode, double x1, double y1, double x2, double y2);
 
 extern int geo_pred (geo_t * g1, geo_t * g2, int op, double prec);
-extern geo_t *geo_point (double x, double y);
 struct dbe_table_s;
 extern int64 geo_estimate (struct dbe_table_s * tb, geo_t * g, int op, double prec, slice_id_t slice);
 
@@ -267,7 +281,8 @@ extern int64 geo_estimate (struct dbe_table_s * tb, geo_t * g, int op, double pr
 #define GEO_SET_LON_DEG_BY_KM(deg,km,lat_deg) do { double latfactor = GEO_LON_TO_LAT_PER_DEG_RATIO(lat_deg); (deg) = ((km) > (latfactor * 360.0 / KM_TO_DEG)) ? 360.0 : ((km) * KM_TO_DEG / latfactor); } while (0)
 
 EXE_EXPORT (geo_t *, geo_alloc, (geo_flags_t geo_flags, int geo_len, int srid));
-EXE_EXPORT (geo_t *, geo_point, (geoc x, geoc y));
+EXE_EXPORT (geo_t *, geo_point, (geoc X, geoc Y));
+EXE_EXPORT (geo_t *, geo_bbox, (geoc Xmin, geoc Ymin, geoc Xmax, geoc Ymax));
 
 EXE_EXPORT (geo_t *, geo_copy, (geo_t *g));
 EXE_EXPORT (geo_t *, mp_geo_copy, (mem_pool_t * mp, geo_t *g));
@@ -340,6 +355,7 @@ EXE_EXPORT (int, geo_XY_inoutside_ring, (geoc pX, geoc pY, geo_t *ring));
 EXE_EXPORT (int, geo_XY_inoutside_polygon, (geoc pX, geoc pY, geo_t *g));
 EXE_EXPORT (void, geo_modify_by_translate, (geo_t *g, geoc dX, geoc dY, geoc dZ));
 EXE_EXPORT (void, geo_modify_by_transscale, (geo_t *g, geoc dX, geoc dY, geoc Xfactor, geoc Yfactor));
+EXE_EXPORT (void, geo_modify_by_affine2d, (geo_t *g, geoc XXa, geoc XYb, geoc YXd, geoc YYe, geoc Xoff, geoc Yoff));
 
 /*! Map projection callback that gets pointer to projection, longitude and latitude of a point, fills in X and Y of corresponding point on map and returns NULL on success or error message otherwise. */
 typedef const char *geo_proj_point_cbk_t (void *geo_proj, geoc longP, geoc latP, double *retX, double *retY);
