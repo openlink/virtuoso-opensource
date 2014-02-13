@@ -5397,7 +5397,7 @@ create procedure WEBDAV.DBA.graph_update (
   -- new graph
   if (not DB.DBA.is_empty_or_null (newGraph))
   {
-    permissions := DB.DBA.DAV_PROP_GET_INT (id, 'C', ':virtpermissions', 0);
+    permissions := DB.DBA.DAV_PROP_GET_INT (id, 'C', ':virtpermissions', 0, null, null, http_dav_uid ());
     if (permissions[6] = ascii('0'))
     {
       -- add to private graphs
