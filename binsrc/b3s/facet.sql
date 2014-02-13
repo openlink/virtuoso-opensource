@@ -920,6 +920,13 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
 }
 ;
 
+create procedure fct_esc_lit (in val any)
+{
+  --no_c_escapes+
+  return replace (val, '"', '\"');
+}
+;
+
 create procedure
 fct_literal (in tree any)
 {
@@ -934,10 +941,10 @@ fct_literal (in tree any)
   fct_dbg_msg (sprintf('fct_literal: val:%s, dtp:%s, lang:%s', val, dtp, lang));
 
   if (lang is not null and lang <> '')
-    return sprintf ('"""%s"""@%s', val, lang);
+    return sprintf ('"""%s"""@%s', fct_esc_lit (val), lang);
 
   if (dtp = 'http://www.openlinksw.com/schemas/facets/dtp/plainstring')
-    return sprintf ('"""%s"""', val);
+    return sprintf ('"""%s"""', fct_esc_lit (val));
 
   if (val like '"%"^^<uri>')
     {
