@@ -1,6 +1,4 @@
-#!/bin/bash
-#
-#  $Id: test_server.sh,v 1.13.6.1.4.21 2013/01/02 16:15:07 source Exp $
+#!/bin/sh
 #
 #  choose a server to run with
 #  

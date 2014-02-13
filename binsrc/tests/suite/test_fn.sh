@@ -1,9 +1,5 @@
 #!/bin/sh
 #
-#  test_fn.sh
-#
-#  $Id: test_fn.sh,v 1.49.6.11.4.35 2013/01/02 16:15:06 source Exp $
-#
 #  Generic test functions which should be read at the beginning of the
 #  shell script.
 #  

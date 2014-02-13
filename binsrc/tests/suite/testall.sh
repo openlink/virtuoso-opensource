@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 #  $Id: testall.sh,v 1.69.2.5.4.31 2013/01/02 16:15:07 source Exp $
 #
