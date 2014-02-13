@@ -63,7 +63,13 @@ SERVER=virtuoso
 TEST_DIR_MASK=""
 APPENDMODE=0
 
-set -- -csV
+#
+# VOS
+#
+SERVER=virtuoso
+VIRTUOSO_VDB=0
+VIRTUOSO_TABLE_SCHEME="row"
+VIRTUOSO_CAPACITY="single"
 
 while getopts ":smrcvwV" optname
   do
