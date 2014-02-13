@@ -1781,8 +1781,6 @@ bif_bif_list_names (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   id_hash_iterator (&iter, name_to_bif_metadata_idhash);
   while (hit_next (&iter, (caddr_t *)(&name_ptr), (caddr_t *)(&bmd_ptr)))
     {
-      dk_set_t props = NULL;
-      dk_set_t aliases = NULL;
       name = name_ptr[0];
       bmd = bmd_ptr[0];
       if (main_names_only && strcmp (name, bmd->bmd_name))
@@ -8538,98 +8536,100 @@ find_index_to_vector (caddr_t item, caddr_t vec, int veclen,
   char *end_ptr, *vec_ptr = ((char *) vec);
 
   if (start >= veclen)
-  {
-    return (0);
-  }       /* Not that many elements? */
+    {
+      return (0);
+    }				/* Not that many elements? */
 
-  switch (vectype)    /* Get the size of one element in bytes. */
-  {
-  case DV_ARRAY_OF_POINTER: case DV_LIST_OF_POINTER: case DV_ARRAY_OF_XQVAL:
+  switch (vectype)		/* Get the size of one element in bytes. */
     {
-  elem_size = sizeof (caddr_t);
-  break;
+    case DV_ARRAY_OF_POINTER:
+    case DV_LIST_OF_POINTER:
+    case DV_ARRAY_OF_XQVAL:
+      {
+	elem_size = sizeof (caddr_t);
+	break;
+      }
+    case DV_ARRAY_OF_LONG:
+      {
+	if ((item_type != DV_SHORT_INT) && (item_type != DV_LONG_INT))
+	  {
+	    goto wrong_item_type;
+	  }
+	elem_size = sizeof (ptrlong);
+	/* Do it here, not in loop. I hope that long fits to caddr_t (char *) */
+	item = ((caddr_t) unbox_ptrlong (item));
+	break;
+      }
+    case DV_ARRAY_OF_DOUBLE:
+      {
+	if (item_type == DV_SINGLE_FLOAT)
+	  {
+	    double_item = ((double) unbox_float (item));
+	    item = ((caddr_t) & double_item);
+	  }
+	else if (item_type != DV_DOUBLE_FLOAT)
+	  {
+	    goto wrong_item_type;
+	  }
+	elem_size = sizeof (double);
+	break;
+      }
+    case DV_ARRAY_OF_FLOAT:
+      {
+	if (item_type == DV_DOUBLE_FLOAT)
+	  {
+	    float_item = ((float) unbox_double (item));
+	    item = ((caddr_t) & float_item);
+	  }
+	else if (item_type != DV_SINGLE_FLOAT)
+	  {
+	    goto wrong_item_type;
+	  }
+	elem_size = sizeof (float);
+	break;
+      }
+    case DV_STRING:
+    case DV_UNAME:
+      {
+	/* if item is a string, then use its first character
+	   (which could be a terminating zero if string is empty),
+	   otherwise it must be an integer, which should be an unsigned
+	   ascii value of the character. */
+	if ((DV_STRING == item_type) || (DV_UNAME == item_type))
+	  {
+	    item = ((caddr_t) (ptrlong) * ((unsigned char *) item));
+	  }
+	else if ((item_type == DV_SHORT_INT) || (item_type == DV_LONG_INT))
+	  {
+	    item = ((caddr_t) unbox_ptrlong (item));
+	  }
+	else
+	  {
+	    goto wrong_item_type;
+	  }
+	elem_size = sizeof (char);
+	break;
+      }
     }
-  case DV_ARRAY_OF_LONG:
-    {
-  if ((item_type != DV_SHORT_INT) && (item_type != DV_LONG_INT))
-    {
-    goto wrong_item_type;
-    }
-  elem_size = sizeof (ptrlong);
-  /* Do it here, not in loop. I hope that long fits to caddr_t (char *) */
-  item = ((caddr_t) unbox_ptrlong (item));
-  break;
-    }
-  case DV_ARRAY_OF_DOUBLE:
-    {
-  if ((item_type == DV_SINGLE_FLOAT))
-    {
-    double_item = ((double) unbox_float (item));
-    item = ((caddr_t) & double_item);
-    }
-  else if ((item_type != DV_DOUBLE_FLOAT))
-    {
-    goto wrong_item_type;
-    }
-  elem_size = sizeof (double);
-  break;
-    }
-  case DV_ARRAY_OF_FLOAT:
-    {
-  if ((item_type == DV_DOUBLE_FLOAT))
-    {
-    float_item = ((float) unbox_double (item));
-    item = ((caddr_t) & float_item);
-    }
-  else if ((item_type != DV_SINGLE_FLOAT))
-    {
-    goto wrong_item_type;
-    }
-  elem_size = sizeof (float);
-  break;
-    }
-  case DV_STRING: case DV_UNAME:
-    {
-  /* if item is a string, then use its first character
-    (which could be a terminating zero if string is empty),
-    otherwise it must be an integer, which should be an unsigned
-    ascii value of the character. */
-  if ((DV_STRING == item_type) || (DV_UNAME == item_type))
-    {
-    item = ((caddr_t) (ptrlong) *((unsigned char *) item));
-    }
-  else if ((item_type == DV_SHORT_INT) || (item_type == DV_LONG_INT))
-    {
-    item = ((caddr_t) unbox_ptrlong (item));
-    }
-  else
-    {
-    goto wrong_item_type;
-    }
-  elem_size = sizeof (char);
-  break;
-    }
-  }
 
   end_ptr = vec_ptr + (veclen * elem_size);
   vec_ptr += (start * elem_size);
 
   for (; vec_ptr < end_ptr; vec_ptr += (skip_value * elem_size))
-  {
-    if (vecelem_equal (vec_ptr, item, vectype))
-  {
-    return (int) (1 + ((vec_ptr - ((char *) vec)) / elem_size));
-  }
-  }
-  return (0);     /* Not found. */
+    {
+      if (vecelem_equal (vec_ptr, item, vectype))
+	{
+	  return (int) (1 + ((vec_ptr - ((char *) vec)) / elem_size));
+	}
+    }
+  return (0);			/* Not found. */
 
 wrong_item_type:
 
   sqlr_new_error ("22023", "SR056",
-    "%s expects the type of item searched for (%s (%d)) and "
-    "the type of the vector searched from (%s (%d)) to match. Veclen=%d.",
-    calling_fun, dv_type_title (item_type), item_type,
-    dv_type_title (vectype), vectype, veclen);
+      "%s expects the type of item searched for (%s (%d)) and "
+      "the type of the vector searched from (%s (%d)) to match. Veclen=%d.",
+      calling_fun, dv_type_title (item_type), item_type, dv_type_title (vectype), vectype, veclen);
   return (0);
 }
 
@@ -9500,7 +9500,6 @@ caddr_t bif_mem_get_current_total (caddr_t * qst, caddr_t * err_ret, state_slot_
 caddr_t
 bif_mem_summary (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  char *dp = bif_string_or_null_arg (qst, args, 0, "mem_summary");
   return NULL;
 }
 
@@ -10868,7 +10867,7 @@ bif_get_user_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static caddr_t
 bif_get_user_id_by_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  query_instance_t *qi = (query_instance_t *) QST_INSTANCE (qst);
+  /* query_instance_t *qi = (query_instance_t *) QST_INSTANCE (qst); */
   caddr_t name = bif_string_arg (qst, args, 0, "get_user_id");
   user_t * usr = sec_name_to_user (name);
   if (usr) 
@@ -13448,15 +13447,14 @@ bif_exec_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t * rsets = NULL;
   int64 k;
   dk_set_t proc_resultset = NULL;
-  int n_args = BOX_ELEMENTS (args), n_cols;
+  int n_args = BOX_ELEMENTS (args);
   query_instance_t *qi = (query_instance_t *) qst;
-  stmt_compilation_t *comp = NULL, *proc_comp = NULL;
+  stmt_compilation_t *proc_comp = NULL;
   caddr_t _text;
   caddr_t text = NULL;
   caddr_t *params = NULL;
   caddr_t err = NULL;
   query_t *qr = NULL;
-  long max = 0;
   client_connection_t *cli = qi->qi_client;
   caddr_t res = NULL;
   dk_set_t warnings = NULL;
@@ -15758,7 +15756,7 @@ bif_rdf_checksum_int (caddr_t * qst, state_slot_t ** args, int op, const char *f
   caddr_t arg = bif_arg_unrdf (qst, args, 0, fname);
   caddr_t arg_strg = NULL;
   caddr_t res = NULL;
-  int ctr, res_len;
+  int ctr, res_len = 0;
   dtp_t arg_dtp = DV_TYPE_OF (arg);
   if (arg_dtp == DV_DB_NULL)
     return NEW_DB_NULL;
