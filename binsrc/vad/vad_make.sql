@@ -1152,6 +1152,7 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
     {
       registry_set ('VAD_wet_run', '0');
       registry_set ('VAD_errcount', '1');
+      connection_set ('vad_pkg_fullname', 'unknown');
       result ('42VAD', concat ('Could not open ',
       case when is_dav = 0 then 'filesystem' else 'DAV' end, 
       ' resource ', fname, ' Reason: File not found'));
