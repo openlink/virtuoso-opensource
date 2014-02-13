@@ -80,7 +80,7 @@ BEGIN
             VALUE "FileDescription", "Virtuoso OpenSource"
             VALUE "FileVersion", "7.0.1.3207"
             VALUE "InternalName", "Virtuoso"
-            VALUE "LegalCopyright", "Copyright (C) 1998-2013 OpenLink Software"
+            VALUE "LegalCopyright", "Copyright (C) 1998-2014 OpenLink Software"
             VALUE "ProductName", "Virtuoso OpenSource"
             VALUE "ProductVersion", "7.0.1.3207"
         END

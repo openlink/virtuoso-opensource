@@ -1,15 +1,15 @@
 --
 --  recovck1_noreg.sql
 --
---  $Id: recovck1_noreg.sql,v 1.10.6.6.4.5 2013/01/02 16:14:52 source Exp $
+--  $Id$
 --
 --  Recovery check test
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---
---  Copyright (C) 1998-2013 OpenLink Software
---
+--  
+--  Copyright (C) 1998-2014 OpenLink Software
+--  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
