@@ -433,7 +433,7 @@ KILL_TEST_INSTANCES()
     #
     #  Killing virtuoso instances left, if any.
     #
-    kill `find . -type f -name "virtuoso.lck" -print0 | xargs -0 cat | cut -d "=" -f 2` 2> /dev/null
+    for f in `find . -type f -name virtuoso.lck`; do . $f ; kill $VIRT_PID ; done
 }
 
 
