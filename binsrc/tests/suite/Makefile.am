@@ -94,9 +94,12 @@ check_SCRIPTS = \
 	txslt.sh \
 	wtf.sh
 
-TESTS=test_server.sh
+#TESTS=test_server.sh
 TESTS_ENVIRONMENT=PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
 	PORT=$(PORT) TOP="$(TOP)" HOME="$(TOP)" JDK2="@ac_jdk2_path@" JDK3="@ac_jdk3_path@" HOST=localhost SERVER=virtuoso-t MAKE=$(MAKE)
+
+check-local:
+	env $(TESTS_ENVIRONMENT) $(SHELL) ./test_server.sh
 
 clean-local:
 	TOP="$(TOP)" ./clean.sh

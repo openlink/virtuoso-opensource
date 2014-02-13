@@ -52,8 +52,6 @@ base_cflags += -DUNIX
 bin_PROGRAMS = $(INTEG_JDK_PROGS) $(IODBC_JDK_EXTRA)
 noinst_PROGRAMS = virtuoso-sample-t $(IODBC_EXTRA)
 
-TESTS	= thook.sh
-
 BUILT_SOURCES = sql_code_javavm.c sql_code_clr.c sql_code_xslt.c
 CLEANFILES = \
 	sql_code_javavm.c sql_code_clr.c sql_code_xslt.c \
@@ -110,6 +108,11 @@ virtuoso_javavm_t_LDADD = \
 	$(LIBMONO) \
 	@LIBS@ \
 	@java_LDFLAGS@
+
+#TESTS	= thook.sh
+
+check-local:
+	env $(TESTS_ENVIRONMENT) $(SHELL) ./thook.sh
 
 
 # ----------------------------------------------------------------------

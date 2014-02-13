@@ -21,9 +21,12 @@
 
 TOP=@TOP@
 
-TESTS=test_server.sh
+#TESTS=test_server.sh
 TESTS_ENVIRONMENT=PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
 	PORT=$(PORT) HOME="$(TOP)" JDK2="$(JDK2)" JDK3="$(JDK3)" HOST=localhost SERVER=virtuoso-t
+
+check-local:
+	env $(TESTS_ENVIRONMENT) $(SHELL) ./test_server.sh
 
 clean-local:
 	-rm -rf lubm_8000
