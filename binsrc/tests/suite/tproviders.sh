@@ -58,7 +58,7 @@ START_SERVER $PORT 1000
 #
 cd $JENADIR
 
-RUN make
+RUN $MAKE
 if test $STATUS -ne 0
 then
     LOG "***FAILED: Jena compile"
@@ -66,7 +66,7 @@ else
     LOG "PASSED: Jena compile"
 fi
 
-RUN make run-tests
+RUN $MAKE run-tests
 if test $STATUS -ne 0
 then
     LOG "***FAILED: Jena provider JUnit tests"
@@ -82,7 +82,7 @@ cd $CURRDIR
 #
 cd $SESAME2DIR
 
-RUN make
+RUN $MAKE
 if test $STATUS -ne 0
 then
     LOG "***FAILED: Sesame2 compile"
@@ -90,7 +90,7 @@ else
     LOG "PASSED: Sesame2 compile"
 fi
 
-RUN make run-tests
+RUN $MAKE run-tests
 if test $STATUS -ne 0
 then
     LOG "***FAILED: Sesame2 suite"
