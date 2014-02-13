@@ -1106,11 +1106,20 @@ sqlo_mark_gb_dep (sqlo_t * so, df_elt_t * dfe)
     case DFE_GROUP: case DFE_ORDER: case DFE_TABLE: case DFE_DT:
       return;
     }
+  
   for (next = dfe->dfe_next; next; next = next->dfe_next)
     {
       if (DFE_GROUP == next->dfe_type && !next->_.setp.is_being_placed)
 	t_set_pushnew (&next->_.setp.gb_dependent, (void*)dfe);
     }
+  /* it can be that a dt being placed has a having that has an invariant.  If so, the invariant goes a level above and the grup by is not directly after it.  So then start from the ghen pt and goup to the placed and get all the setps on the way and add the dfe as dep to them */
+  dfe_latest (so, 1, &dfe, 1);
+  DO_SET (df_elt_t *, setp, &so->so_crossed_setps)
+    {
+      if (!setp->_.setp.is_being_placed)
+	t_set_pushnew (&setp->_.setp.gb_dependent, (void*)dfe);
+    }
+  END_DO_SET();
 }
 
 
@@ -1710,7 +1719,7 @@ dfe_defines_any (df_elt_t * pt, int n, df_elt_t ** dfes)
 int enable_is_control = 1;
 
 df_elt_t *
-dfe_latest_up (df_elt_t * pt, int n, df_elt_t ** dfes)
+dfe_latest_up (sqlo_t * so, df_elt_t * pt, int n, df_elt_t ** dfes)
 {
   while (pt)
     {
@@ -1722,7 +1731,11 @@ dfe_latest_up (df_elt_t * pt, int n, df_elt_t ** dfes)
 	return DFE_CONTROL_BOUNDARY; /* do not place outside of control exp even if could by dependencies */
       pt = pt->dfe_super;
       if (pt)
-	pt = dfe_skip_exp_dfes (pt, dfes, n);
+	{
+	  if (DFE_GROUP == pt->dfe_type || DFE_ORDER == pt->dfe_type)
+	    t_set_push (&so->so_crossed_setps, (void*)pt);
+	  pt = dfe_skip_exp_dfes (pt, dfes, n);
+	}
     }
   return NULL;
 }
@@ -1732,7 +1745,7 @@ df_elt_t *
 dfe_latest (sqlo_t * so, int n_dfes, df_elt_t ** dfes, int default_to_top)
 {
   df_elt_t * pt;
-
+  so->so_crossed_setps = NULL;
   if (so->so_place_code_forr_cond)
     {
       if (default_to_top)
@@ -1760,12 +1773,15 @@ dfe_latest (sqlo_t * so, int n_dfes, df_elt_t ** dfes, int default_to_top)
       if (dfe_defines_any (pt, n_dfes, dfes))
 	return pt;
       if (DFE_ORDER == pt->dfe_type || DFE_GROUP == pt->dfe_type)
-	so->so_crossed_oby = pt;
+	{
+	  so->so_crossed_oby = pt;
+	  t_set_push (&so->so_crossed_setps, (void*)pt);
+	}
       if (pt->dfe_prev)
 	pt = pt->dfe_prev;
       else
 	{
-	  df_elt_t * sup = dfe_latest_up (pt, n_dfes, dfes);
+	  df_elt_t * sup = dfe_latest_up (so, pt, n_dfes, dfes);
 	  if (!sup)
 	    break;
 	  if (DFE_DEFD_IN_SUPER == sup)
@@ -2412,9 +2428,9 @@ sqlo_place_outside_dt (sqlo_t * so, df_elt_t * pred, df_elt_t * super, df_elt_t 
     }
   if (DFE_BOP_PRED == pred->dfe_type)
     {
-      if (dfe_depends_only (pred->_.bin.left, dt_dfe->_.sub.ot) && dfe_does_not_depend (pred->_.bin.right, dt_dfe->_.sub.ot))
+      if (dfe_depends_only (pred->_.bin.left, dt_dfe->_.sub.ot) && dfe_does_not_depend (pred->_.bin.right, dt_dfe->_.sub.ot) && !sqlo_has_node (pred->_.bin.right->dfe_tree, SELECT_STMT))
 	sqlo_place_exp (so, super, pred->_.bin.right);
-      else if (dfe_depends_only (pred->_.bin.right, dt_dfe->_.sub.ot) && dfe_does_not_depend (pred->_.bin.left, dt_dfe->_.sub.ot))
+      else if (dfe_depends_only (pred->_.bin.right, dt_dfe->_.sub.ot) && dfe_does_not_depend (pred->_.bin.left, dt_dfe->_.sub.ot) && !sqlo_has_node (pred->_.bin.left->dfe_tree, SELECT_STMT))
 	sqlo_place_exp (so, super, pred->_.bin.left);
       else
 	*can_cache = 0;
