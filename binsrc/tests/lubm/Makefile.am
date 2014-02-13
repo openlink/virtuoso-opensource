@@ -22,8 +22,17 @@
 TOP=@TOP@
 
 #TESTS=test_server.sh
-TESTS_ENVIRONMENT=PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
-	PORT=$(PORT) HOME="$(TOP)" JDK2="$(JDK2)" JDK3="$(JDK3)" HOST=localhost SERVER=virtuoso-t
+TESTS_ENVIRONMENT= \
+	HOME="$(TOP)" \
+	HOST=localhost \
+	JDK2="@ac_jdk2_path@" \
+	JDK3="@ac_jdk3_path@" \
+	JDK4="@ac_jdk4_path@" \
+	MAKE=$(MAKE) \
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
+	PORT=$(PORT) \
+	SERVER=virtuoso-t \
+	TOP="$(TOP)"
 
 check-local:
 	env $(TESTS_ENVIRONMENT) $(SHELL) ./test_server.sh

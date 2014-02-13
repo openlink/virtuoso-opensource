@@ -110,6 +110,16 @@ virtuoso_javavm_t_LDADD = \
 	@java_LDFLAGS@
 
 #TESTS	= thook.sh
+TESTS_ENVIRONMENT= \
+	HOME="$(TOP)" \
+	HOST=localhost \
+	JDK2="@ac_jdk2_path@" \
+	JDK3="@ac_jdk3_path@" \
+	JDK4="@ac_jdk4_path@" \
+	MAKE=$(MAKE) \
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
+	PORT=$(PORT) \
+	TOP="$(TOP)"
 
 check-local:
 	env $(TESTS_ENVIRONMENT) $(SHELL) ./thook.sh

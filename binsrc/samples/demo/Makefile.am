@@ -34,13 +34,15 @@ endif
 #  Test loading of vad packages by creating demo.db
 # ----------------------------------------------------------------------
 #TESTS=mkdemo.sh
-TESTS_ENVIRONMENT=PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
-	PORT=$(PORT) \
+TESTS_ENVIRONMENT= \
 	HOME="$(TOP)" \
-	TOP="$(TOP)" \
+	HOST=localhost \
 	HTMLDOC="$(HTMLDOC)" \
+	MAKE=$(MAKE) \
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
+	PORT=$(PORT) \
 	prefix="$(prefix)" \
-	HOST=localhost 
+	TOP="$(TOP)"
 
 check-local:
 	env $(TESTS_ENVIRONMENT) $(SHELL) ./mkdemo.sh
