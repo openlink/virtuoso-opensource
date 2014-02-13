@@ -842,11 +842,38 @@ sqlo_eq_cost (dbe_column_t * left_col, df_elt_t * right, df_elt_t * lower, float
 #define TA_N_IN_ITEMS 5002
 
 
-
+int
+sqlo_rq_g_in_check (df_elt_t * in_tb, df_elt_t ** in_list)
+{
+  /* if there is a in on g with enumeration for rdf quad then assume the g cond does not change the card 
+   * if either s or o is a joined column.  If only g or pg or const s or o then sample using the values times the different gs */
+  dbe_column_t * s_col, *o_col;
+  df_elt_t * s_pred, *o_pred;
+  int n_in = BOX_ELEMENTS(in_list) - 1;
+  dbe_table_t * tb;
+  if (!in_tb)
+    return n_in;
+  tb  = in_tb->_.table.ot->ot_table;
+  if (!tb_is_rdf_quad (tb))
+    return n_in;
+  if (DFE_COLUMN != in_list[0]->dfe_type || 'G' != in_list[0]->_.col.col->col_name[0])
+    return n_in;
+  o_col = tb_name_to_column (tb, "O");
+  s_col = tb_name_to_column (tb, "S");
+  s_pred = sqlo_key_part_best (s_col, in_tb->_.table.col_preds, 0);
+  o_pred = sqlo_key_part_best (s_col, in_tb->_.table.col_preds, 0);
+  if (o_pred && pred_const_rhs (o_pred))
+    return n_in;
+  if (s_pred && pred_const_rhs (s_pred))
+    return n_in;
+  if (!s_pred && !o_pred)
+    return n_in;
+  return 1;
+}
 
 
 int
-sqlo_in_list_unit (df_elt_t * pred, float * u1, float * a1)
+sqlo_in_list_unit (df_elt_t * in_tb, df_elt_t * pred, float * u1, float * a1)
 {
   du_thread_t * thr;
   int n_items, nth;
@@ -858,7 +885,8 @@ sqlo_in_list_unit (df_elt_t * pred, float * u1, float * a1)
   n_items = (ptrlong) THR_ATTR (thr, TA_N_IN_ITEMS);
   if (-1 == n_items)
     {
-      SET_THR_ATTR (thr, TA_N_IN_ITEMS, (caddr_t)(ptrlong) BOX_ELEMENTS (in_list) - 1);
+      int n_in = sqlo_rq_g_in_check (in_tb, in_list);
+      SET_THR_ATTR (thr, TA_N_IN_ITEMS, (caddr_t)(ptrlong) n_in);
       nth = 0;
     }
   else if (nth >= BOX_ELEMENTS (in_list) - 1)
@@ -887,7 +915,7 @@ sqlo_pred_unit_1 (df_elt_t * lower, df_elt_t * upper, df_elt_t * in_tb, float * 
     *u1 = sqlo_cs_col_pred_cost;
   else
     *u1 = COL_PRED_COST;
-  if (sqlo_in_list_unit (lower, u1, a1))
+  if (sqlo_in_list_unit (in_tb, lower, u1, a1))
     return;
   if (upper == lower)
     upper = NULL;
