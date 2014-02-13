@@ -11356,6 +11356,43 @@ bif_key_replay_insert (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
+caddr_t
+bif_key_delete_replay (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *) qst;
+  row_delta_t rd;
+  caddr_t * arr = (caddr_t*) bif_array_arg (qst, args, 0, "key_replay_insert");
+  dbe_key_t * key = sch_id_to_key (wi_inst.wi_schema, unbox (arr[0]));
+  it_cursor_t itc_auto;
+  it_cursor_t * it = &itc_auto;
+  QI_CHECK_STACK (qi, &qst, INS_STACK_MARGIN);
+    sec_check_dba (qi, "key_delete_replay");
+
+  ITC_INIT (it, NULL, qi->qi_trx);
+  memset (&rd, 0, sizeof (row_delta_t));
+  if (!key || key->key_n_significant != BOX_ELEMENTS (arr) - 1)
+    sqlr_new_error ("42000", "KI...", "No key for the id or bad number of columns in key_delete_replay_co;cols");
+  rd.rd_allocated = RD_AUTO;
+  rd.rd_key = key;
+  rd.rd_op = RD_DELETE;
+  rd.rd_non_comp_len = key->key_row_var_start[0];
+  rd.rd_n_values = key->key_n_significant;
+  rd.rd_values = &arr[1];
+  rd.rd_non_comp_max = MAX_ROW_BYTES;
+  rd.rd_itc = it;
+  rd.rd_qst = qst;
+  it->itc_insert_key = key;
+  ITC_FAIL (it)
+    {
+      itc_delete_rd (it, &rd);
+    }
+  ITC_FAILED
+    {
+    }
+  END_FAIL (it);
+  return 0;
+}
+
 
 caddr_t
 bif_set_user_struct (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -16326,6 +16363,7 @@ sql_bif_init (void)
   bif_define_ex ("name_part", bif_name_part, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("key_replay_insert", bif_key_replay_insert, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("__clear_index", bif_clear_index);
+  bif_define_ex ("key_delete_replay", bif_key_delete_replay, BMD_RET_TYPE, &bt_integer, BMD_DONE);
 
   /* security functions */
   bif_define ("sec_set_user_data", bif_set_user_data);
