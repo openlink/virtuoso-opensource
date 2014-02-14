@@ -283,7 +283,7 @@
 	  <?vsp
 	    }  
 	  ?>
-	  <h2>Quad Maps</h2>
+	  <h2>SQL Relations (Tables) to RDF Statements (Predicate / Property Graph) Mappings</h2>
 	  <?vsp
 	       declare defhost, stat, msg, data, meta, data2, meta2, qr, gr, fct_installed any;
 	       stat := '00000';
@@ -302,7 +302,7 @@
 	  if (self.view_vd or self.owl_vd)
 	    {
 	  ?>
-	  <h2>Sample URIs</h2>
+	  <h2>Sample Graph IRIs &amp; Linked Data Entity URIs</h2>
 	  <?vsp
 	    }
 	  ?>
@@ -311,11 +311,12 @@
 	         shcompo_clear ();
 	       if (self.view_vd)
                  {
+		   http_value ('RDF Document (Named Graph) IRIs: ', 'h3');
 		   qr := sprintf ('sparql select distinct ?class from <%s> { ?s a ?class } limit 10', gr);
 		   exec (qr, stat, msg, vector (), 0, meta, data);
 		   if (stat = '00000' and length (data) and length (data[0]))
 		     {
-		     http (sprintf ('<div>Instance Data Named Graph: <a href="/describe/?uri=%U"i target="_blank">%V</a> <br/>', gr, gr));
+		     http (sprintf ('<div>Transient Views: <a href="/describe/?uri=%U"i target="_blank">%V</a> <br/>', gr, gr));
 		       foreach (any _row in data) do
 			 {
 			   if (_row[0] not like '%/stat#%')
@@ -339,7 +340,7 @@
 		       exec (qr, stat, msg, vector (), 0, meta, data);
 		       if (stat = '00000' and length (data) and length (data[0]))
 			 {
-			   http (sprintf ('<div>Instance Data Physical Named Graph: %V <br/>', self.pgraphv));
+			   http (sprintf ('<div>Materialized Views: %V <br/>', self.pgraphv));
 			   foreach (any _row in data) do
 			     {
 			       qr := sprintf ('sparql select ?s from <%s> { ?s a <%s> } limit 1', self.pgraphv, _row[0]);
@@ -363,7 +364,7 @@
 		   exec (qr, stat, msg, vector (), 1, meta, data);
 		   if (stat = '00000' and length (data) and length (data[0]))
 		   {
-		       http ('<div>Metadata Data (VoiD): ');
+		       http ('<div>Metadata Data Document (VoiD) URI/URL: ');
 		   if (fct_installed)
 		     http (sprintf ('<a href="%s" target="_blank">%s</a>', data[0][0], data[0][0]));
                    else  
@@ -374,7 +375,7 @@
 	       if (self.owl_vd)
                  {
 		   gr := sprintf ('http://%s/schemas/%s/', defhost, self.base_url);
-		   http ('<div>Ontology Data Named Graph: ');
+		   http ('<div>Linked Data Ontology URI: ');
 		   if (fct_installed)
 	             http (sprintf ('<a href="%V" target="_blank">%V</a>', gr, gr));
 		   else
