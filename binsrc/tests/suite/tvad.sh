@@ -48,7 +48,7 @@ END_SQL
   echo $comment >> $file 
 
   echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $*		>> $LOGFILE	
-  RUN $ISQL $DSN dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tvadtest.sql
+  RUN $ISQL $DSN dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < "$VIRTUOSO_TEST/tvadtest.sql" 
 }
 
 DoBadCommand()

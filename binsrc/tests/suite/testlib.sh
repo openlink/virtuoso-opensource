@@ -1135,7 +1135,7 @@ CL_START_SERVER ()
           if [ "$this_host" = "$master_host" ]
           then 
               LOG "RDF storage will be reconfigured for elastic cluster now ..."
-              RUN $ISQL $port dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/../../../libsrc/Wi/rdfela.sql
+              RUN $ISQL $port dba dba "exec=select 1"
               if test $STATUS -ne 0
               then
                       LOG "***ABORTED: RDF storage cannot be reconfigured for elastic cluster. "

@@ -742,40 +742,71 @@ case $1 in
    Gen404VSP
    cd ..
    CHECK_PORT $TPORT
-   if [ "$MAKE_VAD" = "yes" ] ; then
-       if [ $do_mappers_only -eq 1 ]
-       then
-	   (cd $VIRTUOSO_TEST/../../rdf_mappers; $MAKE)
-	   cp $VIRTUOSO_TEST/../../rdf_mappers/cartridges_dav.vad ./
-       elif [ "x$HOST_OS" = "x" ]
-       then
-	   LOG "Create ODS VAD Package"
-	   (cd $VIRTUOSO_TEST/../../samples/wa/; $MAKE)
-	   cp $VIRTUOSO_TEST/../../samples/wa/ods_framework_dav.vad ./
-	   LOG "Create BLOG VAD Package"
-	   (cd $VIRTUOSO_TEST/../../weblog2/; $MAKE)
-	   cp $VIRTUOSO_TEST/../../weblog2/ods_blog_dav.vad ./
-	   LOG "Create SyncML VAD Package"
-	   (cd $VIRTUOSO_TEST/../../sync/; $MAKE)
-	   cp $VIRTUOSO_TEST/../../sync/syncml_dav.vad ./
-	   (cd $VIRTUOSO_TEST/../../rdf_mappers; $MAKE)
-	   cp $VIRTUOSO_TEST/../../rdf_mappers/cartridges_dav.vad ./
-       elif [ "x$SRC" != "x" ]
-       then
-	   LOG "Create ODS VAD Package"
-	   (cd "$SRC/binsrc/samples/wa/" ; $MAKE)
-	   cp "$SRC/binsrc/samples/wa/ods_framework_dav.vad" .
-	   LOG "Create BLOG VAD Package"
-	   (cd "$SRC/binsrc/weblog2/" ; $MAKE)
-	   cp "$SRC/binsrc/weblog2/ods_blog_dav.vad" .
-	   (cd "$SRC/binsrc/rdf_mappers"; $MAKE)
-	   cp "$SRC/binsrc/rdf_mappers/cartridges_dav.vad" .
-       elif [ ! -f ../../../../autogen.sh ]
-       then
-	   LOG "***ABORTED: Cannot build ODS & Blog2 VAD packages"
-	   exit 1
-       fi
-   fi
+
+  LOG 'Starting graph CRUD tests before tightening the security by ODS...'
+   START_SERVER $PORT 1000
+   sleep 5
+  cd ..
+    rm http/_virtrdf_log*.ttl
+    rm http/graphcrud*.log
+    curl --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud?graph-uri=http://www.openlinksw.com/schemas/virtrdf%23" > http/_virtrdf_log1.ttl 2> http/graphcrud_get0.log
+    if grep 'virtrdf:' http/_virtrdf_log1.ttl > /dev/null ; then
+      LOG 'PASSED: http/_virtrdf_log1.ttl contains data (old IRI syntax)'
+    else
+      LOG '***FAILED: http/_virtrdf_log1.ttl does not contains virtrdf: string, but it should (old IRI syntax)'
+    fi
+
+    curl --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud?graph=http://www.openlinksw.com/schemas/virtrdf%23" > http/_virtrdf_log1.ttl 2> http/graphcrud_get0.log
+    if grep 'virtrdf:' http/_virtrdf_log1.ttl > /dev/null ; then
+      LOG 'PASSED: http/_virtrdf_log1.ttl contains data (new IRI syntax)'
+    else
+      LOG '***FAILED: http/_virtrdf_log1.ttl does not contains virtrdf: string, but it should (new IRI syntax)'
+    fi
+
+    curl --digest --user dba:dba --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud-auth?graph-uri=http://example.com/crud1" -X DELETE > http/graphcrud_1.log 2>&1
+    if grep 'HTTP/1.1 404' http/graphcrud_1.log > /dev/null ; then
+      LOG 'PASSED: http/graphcrud_1.log contains 404 error for missing graph'
+    else
+      LOG '***FAILED: http/graphcrud_1.log does not contains 404 error for missing graph, but it should'
+    fi
+
+    curl --digest --user dba:dba --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud-auth?graph-uri=http://example.com/crud1" -T http/_virtrdf_log1.ttl > http/graphcrud_2.log 2>&1
+    if grep  'HTTP/1.1 201' http/graphcrud_2.log > /dev/null ; then
+      LOG 'PASSED: http/graphcrud_2.log contains 201 for newly created graph'
+    else
+      LOG '***FAILED: http/graphcrud_2.log does not contain 201 for newly created graph, but it should'
+    fi
+
+    curl --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud?graph-uri=http://example.com/crud1" > http/_virtrdf_log2.ttl 2> http/graphcrud_get2.log
+    if grep 'virtrdf:' http/_virtrdf_log2.ttl > /dev/null ; then
+      LOG 'PASSED: http/_virtrdf_log2.ttl contains data'
+    else
+      LOG '***FAILED: http/_virtrdf_log2.ttl does not contains virtrdf: string, but it should'
+    fi
+
+    curl --digest --user dba:dba --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud-auth?graph-uri=http://example.com/crud1" -T http/_virtrdf_log1.ttl > http/graphcrud_2.log 2>&1
+    if grep  'HTTP/1.1 200' http/graphcrud_2.log > /dev/null ; then
+      LOG 'PASSED: http/graphcrud_2.log contains 200 for recreated graph'
+    else
+      LOG '***FAILED: http/graphcrud_2.log does not contains 200 for newly created graph, but it should'
+    fi
+
+    curl --digest --user dba:dba --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud-auth?graph-uri=http://example.com/crud1" -X DELETE > http/graphcrud_3.log 2>&1
+    if grep 'HTTP/1.1 200' http/graphcrud_3.log > /dev/null ; then
+      LOG 'PASSED: http/graphcrud_3.log contains 200 for successful graph removal'
+    else
+      LOG '***FAILED: http/graphcrud_3.log does not contain 200 for successful graph removal, but it should'
+    fi
+
+    curl --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud?graph-uri=http://example.com/crud1" > http/graphcrud_4.log 2>&1
+    if grep 'HTTP/1.1 404' http/graphcrud_4.log > /dev/null ; then
+      LOG 'PASSED: http/graphcrud_4.log contains 404 for deleted graph'
+    else
+      LOG '***FAILED: http/graphcrud_4.log does not contain 404 for deleted graph, but it should'
+    fi
+  cd http
+  SHUTDOWN_SERVER
+
    # Prepare GRDDL tests to run locally
    gzip -c -d $VIRTUOSO_TEST/grddl-tests.tar.gz | tar xf -
    if grep -r ":14300" grddl-tests/* > /dev/null
@@ -791,28 +822,8 @@ case $1 in
        cp -f tmp.tmp $f
        rm -f tmp.tmp
    done
-   if [ ! -f cartridges_dav.vad -a -f $VIRTUOSO_TEST/../../rdf_mappers/cartridges_dav.vad ]
-   then
-     cp $VIRTUOSO_TEST/../../rdf_mappers/cartridges_dav.vad .
-   fi
-   if [ ! -f ods_framework_dav.vad -o ! -f ods_blog_dav.vad ]
-   then
-     BLOG_TEST=0  
-     LOG "ODS & Blog2 VAD packages are not built"
-   fi
    START_SERVER $PORT 1000
    sleep 1
-   if [ $BLOG_TEST -eq 1 ]
-   then
-       DoCommand $DSN "registry_set ('__blog_api_tests__', '1');" 
-       DoCommand $DSN "checkpoint;" 
-       DoCommand $DSN "VAD_INSTALL ('ods_framework_dav.vad', 0);" 
-       DoCommand $DSN "VAD_INSTALL ('ods_blog_dav.vad', 0);" 
-   fi
-   if [ -f $PLUGINDIR/wbxml2.so -a $SYNCML_TEST -eq 1 ]
-   then
-       DoCommand $DSN "VAD_INSTALL ('syncml_dav.vad', 0);"
-   fi
    cd ..
 
 if [ $do_mappers_only -ne 1 ]
@@ -989,8 +1000,16 @@ then
       LOG "***ABORTED: twsrm.sql"
       exit 1
    fi
-   if [ $BLOG_TEST -eq 1 ]
+   if [ -f $HOME/vad/ods_framework_dav.vad -a -f $HOME/vad/ods_blog_dav.vad -a -f $HOME/vad/val_dav.vad ]
    then
+       cp $HOME/vad/ods_framework_dav.vad http
+       cp $HOME/vad/ods_blog_dav.vad http
+       cp $HOME/vad/val_dav.vad http
+       DoCommand $DSN "registry_set ('__blog_api_tests__', '1');" 
+       DoCommand $DSN "checkpoint;" 
+       DoCommand $DSN "VAD_INSTALL ('val_dav.vad', 0);" 
+       DoCommand $DSN "VAD_INSTALL ('ods_framework_dav.vad', 0);" 
+       DoCommand $DSN "VAD_INSTALL ('ods_blog_dav.vad', 0);" 
        RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/tblog.sql 
        if test $STATUS -ne 0
        then
@@ -1000,8 +1019,10 @@ then
    fi
 
 
-if [ -f $PLUGINDIR/wbxml2.so ]
+if [ -f $PLUGINDIR/wbxml2.so -a -f $HOME/vad/syncml_dav.vad ]
 then
+   cp $HOME/vad/syncml_dav.vad http
+   DoCommand $DSN "VAD_INSTALL ('syncml_dav.vad', 0);"
    RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/tsyncml.sql 
    if test $STATUS -ne 0
    then
@@ -1026,6 +1047,9 @@ fi
       exit 1
    fi
 fi
+if [ -f $HOME/vad/cartridges_dav.vad ]
+then  
+   cp $HOME/vad/cartridges_dav.vad http/ 
    DoCommand $DSN "registry_set ('__rdf_cartridges_original_doc_uri__', '1');" 
    # XXX 
    #RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsponge.sql
@@ -1042,6 +1066,8 @@ fi
       LOG "***ABORTED: xhtml1-testcases.sql"
       exit 1
    fi
+fi
+
 
    SHUTDOWN_SERVER
 

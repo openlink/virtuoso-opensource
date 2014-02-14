@@ -1,4 +1,5 @@
 #!/bin/sh
+set -x
 #
 #  Generic test functions which should be read at the beginning of the
 #  shell script.
@@ -243,7 +244,7 @@ START_SERVER()
 	nowh=`expr $nowh - $starth`
 	nows=`expr $nows - $starts`
 
-	nows=`expr $nows + $nowh \*  60`
+	nows=`expr 1 + $nows + $nowh \*  60`
 	if test $nows -ge $timeout
 	then
 	    LOG "***FAILED: The Listener on port $port didn't stop within $timeout seconds"

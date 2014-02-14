@@ -29,11 +29,13 @@ export LOGFILE
 . $VIRTUOSO_TEST/testlib.sh
 SQLPATH=$SQLPATH:$VIRTUOSO_TEST/tpc-d
 DS1=$PORT
-DS2=$PORT
+DS2=`expr $PORT + 1`
 if [ "$VIRTUOSO_VDB" = "1" ]
 then
+        PORT=$DS2
 	GENERATE_PORTS 1
 	DS2=$GENERATED_PORT
+        PORT=$DS1
 fi
 
 HOST_OS=`uname -s | grep WIN`
