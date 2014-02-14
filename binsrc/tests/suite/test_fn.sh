@@ -1,5 +1,4 @@
 #!/bin/sh
-set -x
 #
 #  Generic test functions which should be read at the beginning of the
 #  shell script.
