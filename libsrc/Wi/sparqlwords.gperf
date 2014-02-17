@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free softwareyou can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -173,6 +173,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "SUBJECT",		SUBJECT_L		, 0
 "SUBSTR",		SPARQL_BIF		, SPAR_BIF_SUBSTR
 "SUM",			SUM_L			, 0
+"TABID",		TABID_L			, 0
 "TABLE_OPTION",		TABLE_OPTION_L		, 0
 "TEXT",			TEXT_L			, 0
 "TIMEZONE",		SPARQL_BIF		, SPAR_BIF_TIMEZONE
@@ -201,6 +202,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "URI",			SPARQL_BIF		, SPAR_BIF_URI
 "USING",		USING_L			, 0
 "UUID",			SPARQL_BIF		, SPAR_BIF_UUID
+"VALID",		SPARQL_BIF		, SPAR_BIF_VALID
 "VALUES",		VALUES_L		, 0
 "WHERE",		WHERE_L			, 0
 "WITH",			WITH_L			, 0

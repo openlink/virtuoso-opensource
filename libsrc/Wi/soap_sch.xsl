@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2014 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -237,7 +237,14 @@
   <xsl:template match="extension">
     <xsl:choose>
 	<xsl:when test="not boolean ($udt_struct)">
-	  <xsl:variable name="ext" select="vs:getExtension (@base)"/>
+	    <xsl:choose>
+		<xsl:when test="contains (@base, ':')">
+		    <xsl:variable name="ext" select="vs:getExtension (@base)"/>
+		</xsl:when>
+		<xsl:otherwise>
+		    <xsl:variable name="ext" select="vs:getExtension (concat(ancestor-or-self::*/@targetNamespace,':',@base))"/>
+		</xsl:otherwise>
+            </xsl:choose> 		
 	  <xsl:choose>
 	      <xsl:when test="$ext//xs:element or xs:sequence/xs:element">
 	  <restriction base="enc:Struct">

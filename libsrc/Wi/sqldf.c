@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -234,6 +234,9 @@ sqlo_df_size (int type)
 	  break;
       case DFE_CALL:
 	  len += sizeof (df_elt_head.call);
+	  break;
+      case DFE_FILTER:
+	  len += sizeof (df_elt_head.filter);
 	  break;
       default:
 	  len = sizeof (df_elt_t);
@@ -599,7 +602,7 @@ sqlo_df (sqlo_t * so, ST * tree)
   if (DK_MEM_RESERVE)
     sqlc_error (so->so_sc->sc_cc, "42000", "Out of memory");
   SQLO_MP_SAMPLE;
-  if (so->so_max_memory > 0 && (THR_TMP_POOL)->mp_bytes > so->so_max_memory * 1.4)
+  if (0 && so->so_max_memory > 0 && (THR_TMP_POOL)->mp_bytes > so->so_max_memory * 1.4)
     {
       sqlc_error (so->so_sc->sc_cc, "42000",
 	  "Query optimization temp memory   %d bytes reached the limit %d bytes, try to increase the MaxMemPoolSize ini setting",
@@ -1103,11 +1106,20 @@ sqlo_mark_gb_dep (sqlo_t * so, df_elt_t * dfe)
     case DFE_GROUP: case DFE_ORDER: case DFE_TABLE: case DFE_DT:
       return;
     }
+  
   for (next = dfe->dfe_next; next; next = next->dfe_next)
     {
       if (DFE_GROUP == next->dfe_type && !next->_.setp.is_being_placed)
 	t_set_pushnew (&next->_.setp.gb_dependent, (void*)dfe);
     }
+  /* it can be that a dt being placed has a having that has an invariant.  If so, the invariant goes a level above and the grup by is not directly after it.  So then start from the ghen pt and goup to the placed and get all the setps on the way and add the dfe as dep to them */
+  dfe_latest (so, 1, &dfe, 1);
+  DO_SET (df_elt_t *, setp, &so->so_crossed_setps)
+    {
+      if (!setp->_.setp.is_being_placed)
+	t_set_pushnew (&setp->_.setp.gb_dependent, (void*)dfe);
+    }
+  END_DO_SET();
 }
 
 
@@ -1707,7 +1719,7 @@ dfe_defines_any (df_elt_t * pt, int n, df_elt_t ** dfes)
 int enable_is_control = 1;
 
 df_elt_t *
-dfe_latest_up (df_elt_t * pt, int n, df_elt_t ** dfes)
+dfe_latest_up (sqlo_t * so, df_elt_t * pt, int n, df_elt_t ** dfes)
 {
   while (pt)
     {
@@ -1719,7 +1731,11 @@ dfe_latest_up (df_elt_t * pt, int n, df_elt_t ** dfes)
 	return DFE_CONTROL_BOUNDARY; /* do not place outside of control exp even if could by dependencies */
       pt = pt->dfe_super;
       if (pt)
-	pt = dfe_skip_exp_dfes (pt, dfes, n);
+	{
+	  if (DFE_GROUP == pt->dfe_type || DFE_ORDER == pt->dfe_type)
+	    t_set_push (&so->so_crossed_setps, (void*)pt);
+	  pt = dfe_skip_exp_dfes (pt, dfes, n);
+	}
     }
   return NULL;
 }
@@ -1729,7 +1745,7 @@ df_elt_t *
 dfe_latest (sqlo_t * so, int n_dfes, df_elt_t ** dfes, int default_to_top)
 {
   df_elt_t * pt;
-
+  so->so_crossed_setps = NULL;
   if (so->so_place_code_forr_cond)
     {
       if (default_to_top)
@@ -1757,12 +1773,15 @@ dfe_latest (sqlo_t * so, int n_dfes, df_elt_t ** dfes, int default_to_top)
       if (dfe_defines_any (pt, n_dfes, dfes))
 	return pt;
       if (DFE_ORDER == pt->dfe_type || DFE_GROUP == pt->dfe_type)
-	so->so_crossed_oby = pt;
+	{
+	  so->so_crossed_oby = pt;
+	  t_set_push (&so->so_crossed_setps, (void*)pt);
+	}
       if (pt->dfe_prev)
 	pt = pt->dfe_prev;
       else
 	{
-	  df_elt_t * sup = dfe_latest_up (pt, n_dfes, dfes);
+	  df_elt_t * sup = dfe_latest_up (so, pt, n_dfes, dfes);
 	  if (!sup)
 	    break;
 	  if (DFE_DEFD_IN_SUPER == sup)
@@ -2409,9 +2428,9 @@ sqlo_place_outside_dt (sqlo_t * so, df_elt_t * pred, df_elt_t * super, df_elt_t 
     }
   if (DFE_BOP_PRED == pred->dfe_type)
     {
-      if (dfe_depends_only (pred->_.bin.left, dt_dfe->_.sub.ot) && dfe_does_not_depend (pred->_.bin.right, dt_dfe->_.sub.ot))
+      if (dfe_depends_only (pred->_.bin.left, dt_dfe->_.sub.ot) && dfe_does_not_depend (pred->_.bin.right, dt_dfe->_.sub.ot) && !sqlo_has_node (pred->_.bin.right->dfe_tree, SELECT_STMT))
 	sqlo_place_exp (so, super, pred->_.bin.right);
-      else if (dfe_depends_only (pred->_.bin.right, dt_dfe->_.sub.ot) && dfe_does_not_depend (pred->_.bin.left, dt_dfe->_.sub.ot))
+      else if (dfe_depends_only (pred->_.bin.right, dt_dfe->_.sub.ot) && dfe_does_not_depend (pred->_.bin.left, dt_dfe->_.sub.ot) && !sqlo_has_node (pred->_.bin.left->dfe_tree, SELECT_STMT))
 	sqlo_place_exp (so, super, pred->_.bin.left);
       else
 	*can_cache = 0;
@@ -2546,7 +2565,7 @@ next_pred:;
       return copy;
     }
   if (!IS_BOX_POINTER (tb_dfe->dfe_super->dfe_locus)
-      && !(ST_P (ot->ot_dt, SELECT_STMT) && sel_has_top (ot->ot_dt)))
+      && !(ST_P (ot->ot_dt, SELECT_STMT) && (sel_has_top (ot->ot_dt) || sel_n_breakup (ot->ot_dt))))
     {
       caddr_t cc_key = NULL;
       int can_cache = 1;
@@ -2750,7 +2769,7 @@ sqlo_trans_preds (dk_set_t * cols, dk_set_t preds, dk_set_t * pred_rhs_ret, dk_s
 	      t_set_push (&rhs_list, pred->_.bin.right->dfe_tree);
 	      if (!importable_pred)
 		{
-		  importable_pred = t_listst (3, BOP_EQ, pred->_.bin.left->dfe_tree, t_list (3, CALL_STMT, t_box_dv_short_string ("__TN_IN"), t_list (1, t_box_num (nth_col))));
+		  importable_pred = t_listst (3, BOP_EQ, pred->_.bin.left->dfe_tree, t_list (3, CALL_STMT, t_box_dv_short_string ("__TN_IN"), t_list (1, t_box_num (1+nth_col))));
 		  nth_col++;
 		}
 	      t_set_push (&used_preds, (void*)pred);
@@ -2761,7 +2780,7 @@ sqlo_trans_preds (dk_set_t * cols, dk_set_t preds, dk_set_t * pred_rhs_ret, dk_s
 	      t_set_push (&rhs_list, pred->_.bin.left->dfe_tree);
 	      if (!importable_pred)
 		{
-		  importable_pred = t_listst (3, BOP_EQ, pred->_.bin.right->dfe_tree, list (3, CALL_STMT, t_box_dv_short_string ("__TN_IN"), t_list (1, t_box_num (nth_col))));
+		  importable_pred = t_listst (3, BOP_EQ, pred->_.bin.right->dfe_tree, list (3, CALL_STMT, t_box_dv_short_string ("__TN_IN"), t_list (1, t_box_num (1+nth_col))));
 		  nth_col++;
 		}
 	      t_set_push (&used_preds, (void*)pred);
@@ -2916,6 +2935,7 @@ sqlo_trans_dt_2_way (sqlo_t * so, df_elt_t * dfe, dk_set_t preds, ptrlong * in_p
       gen2 = dfe->_.sub.generated_dfe;
       tl2 = gen2->_.sub.trans;
       tl2->tl_direction = TRANS_RL;
+      tl2->tl_is_second_in_direction3 = 1;
     }
   if (TRANS_ANY == dir)
     dir = sqlo_trans_direction (gen1, gen2);
@@ -3206,6 +3226,12 @@ sqlo_merge_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, dk_set
 
 #define dfe_is_upper(dfe) (dfe->_.bin.op == BOP_LT || dfe->_.bin.op == BOP_LTE)
 
+extern caddr_t uname_one_of_these;
+
+#define IS_ONE_OF_THESE(name)  (0 == stricmp (name, "one_of_these")) 
+#define IS_ONE_OF_THESE(n) (n == uname_one_of_these)
+
+
 int do_sqlo_in_list = 1;
 
 df_elt_t **
@@ -3213,10 +3239,16 @@ sqlo_in_list (df_elt_t * pred, df_elt_t *tb_dfe, caddr_t name)
 {
   if (!do_sqlo_in_list)
     return NULL;
-  if (DFE_BOP_PRED == pred->dfe_type && BOP_LT == pred->_.bin.op &&
+  if (DFE_BOP_PRED != pred->dfe_type || 2 == pred->_.bin.is_in_list)
+    return NULL;
+
+  if (0 == pred->_.bin.is_in_list
+      && BOP_LT == pred->_.bin.op &&
     DFE_CONST == pred->_.bin.left->dfe_type && !unbox ((ccaddr_t)(pred->_.bin.left->dfe_tree)) &&
     DFE_CALL == pred->_.bin.right->dfe_type && pred->_.bin.right->_.call.func_name &&
-    0 == stricmp (pred->_.bin.right->_.call.func_name, "one_of_these") )
+    IS_ONE_OF_THESE (pred->_.bin.right->_.call.func_name))
+    pred->_.bin.is_in_list = 1;
+  if (1 == pred->_.bin.is_in_list)
     {
       df_elt_t ** args = pred->_.bin.right->_.call.args;
       if (args[0] && DFE_COLUMN == args[0]->dfe_type
@@ -3234,10 +3266,13 @@ sqlo_in_list (df_elt_t * pred, df_elt_t *tb_dfe, caddr_t name)
 	    }
 	  /* it found something that look like as a col but it's not a column */
 	  if (NULL == args[0]->_.col.col)
-	    return NULL;
+	    goto no;
 	  return args;
 	}
+      return NULL;
     }
+ no:
+  pred->_.bin.is_in_list = 2;
   return NULL;
 }
 
@@ -3340,6 +3375,7 @@ sqlo_is_text_order (sqlo_t * so, df_elt_t * dfe)
 void
 dfe_table_set_by_best (df_elt_t * tb_dfe, index_choice_t * ic, float true_arity, dk_set_t * col_preds, dk_set_t * after_preds)
 {
+  df_elt_t * tpred;
   tb_dfe->_.table.key = ic->ic_key;
   tb_dfe->_.table.is_unique = ic->ic_is_unique;
   tb_dfe->dfe_unit = ic->ic_unit;
@@ -3357,6 +3393,9 @@ dfe_table_set_by_best (df_elt_t * tb_dfe, index_choice_t * ic, float true_arity,
       if (ic->ic_after_test)
 	((df_elt_t*)ic->ic_after_test->data)->dfe_arity = ic->ic_after_test_arity;
     }
+  tpred = tb_dfe->_.table.text_pred;
+  if (tpred && tpred->_.text.geo && !tb_dfe->_.table.is_text_order && !tb_is_rdf_quad (tb_dfe->_.table.ot->ot_table))
+    t_set_push (after_preds, (void*)tpred);
 }
 
 int enable_index_path = 1;
@@ -3842,6 +3881,8 @@ sqlo_col_dtp_func  (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * c
   if (!enable_iri_like || DFE_BOP != pred->dfe_type || BOP_NOT != pred->_.bin.op)
     return 0;
   pred = pred->_.bin.left;
+  if ((DFE_TRUE == pred) || (DFE_FALSE == pred))
+    return 0;
   if (DFE_BOP_PRED != pred->dfe_type || BOP_EQ != pred->_.bin.op
       || 0 != unbox ((ccaddr_t) pred->_.bin.left->dfe_tree) || !st_is_call (pred->_.bin.right->dfe_tree, "isiri_id", 1))
     return 0;
@@ -3861,6 +3902,8 @@ sqlo_like_range (sqlo_t *so, df_elt_t * tb_dfe, df_elt_t * pred, dk_set_t * col_
   dbe_table_t * tb = tb_dfe->_.table.ot->ot_table;
   /* if there is a like of a key part of a local table, then add the range conds implied by the like */
   dbe_column_t * col = pred->_.bin.left->_.col.col;
+  if (dtp_is_fixed (col->col_sqt.sqt_dtp))
+    sqlc_new_error (so->so_sc->sc_cc, "HY105", "SR194", "LIKE must be between strings.");
   if (tb_dfe->_.table.ot->ot_rds
       || col->col_sqt.sqt_dtp != DV_LONG_STRING)
     return;
@@ -4089,7 +4132,7 @@ sqlo_is_constant_in_pred (sqlo_t *so, df_elt_t *pred)
       && DFE_IS_CONST (pred->_.bin.left)
       && pred->_.bin.right->dfe_type == DFE_CALL
       && pred->_.bin.right->dfe_tree->_.call.name
-      && !strcmp (pred->_.bin.right->dfe_tree->_.call.name, t_sqlp_box_id_upcase ("one_of_these")))
+      && IS_ONE_OF_THESE (pred->_.bin.right->dfe_tree->_.call.name))
     {
       unsigned inx;
       for (inx = 1; inx < BOX_ELEMENTS (pred->_.bin.right->_.call.args); inx++)
@@ -4470,7 +4513,7 @@ sqlo_is_invariant_in_pred (sqlo_t *so, df_elt_t *pred)
       && DFE_IS_CONST (pred->_.bin.left)
       && pred->_.bin.right->dfe_type == DFE_CALL
       && pred->_.bin.right->dfe_tree->_.call.name
-      && !strcmp (pred->_.bin.right->dfe_tree->_.call.name, t_sqlp_box_id_upcase ("one_of_these")))
+      && IS_ONE_OF_THESE (pred->_.bin.right->dfe_tree->_.call.name))
     {
       unsigned inx;
       for (inx = 1; inx < BOX_ELEMENTS (pred->_.bin.right->_.call.args); inx++)
@@ -4579,7 +4622,7 @@ sqlo_preds_make_invariant (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *pred1, df_elt
 		      {
 			ST *in_cond;
 			BIN_OP (in_cond, BOP_EQ, (ST *) t_box_num (0),
-			    t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("one_of_these"),
+			    t_listst (3, CALL_STMT, uname_one_of_these,
 			      t_box_copy_tree ((caddr_t) pred2->_.bin.right->dfe_tree->_.call.params)));
 			in_cond->_.bin_exp.right->_.call.params[0] =
 			    (ST *) t_box_copy_tree ((caddr_t) pred1->_.bin.right->_.call.args[inx]->dfe_tree);
@@ -4595,7 +4638,7 @@ sqlo_preds_make_invariant (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *pred1, df_elt
 		{
 		  ST *res;
 		  BIN_OP (res, BOP_EQ, (ST *) t_box_num (0),
-		      t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("one_of_these"),
+		      t_listst (3, CALL_STMT, uname_one_of_these,
 			t_box_copy_tree ((caddr_t) pred1->_.bin.right->dfe_tree->_.call.params)));
 		  tree = res;
 		  tree->_.bin_exp.right->_.call.params[0] =
@@ -4610,7 +4653,7 @@ sqlo_preds_make_invariant (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *pred1, df_elt
 		{
 		  ST *res;
 		  BIN_OP (res, BOP_EQ, (ST *) t_box_num (0),
-		      t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("one_of_these"),
+		      t_listst (3, CALL_STMT, uname_one_of_these,
 			t_box_copy_tree ((caddr_t) pred1->_.bin.right->dfe_tree->_.call.params)));
 		  tree = res;
 		  tree->_.bin_exp.right->_.call.params[0] =
@@ -4630,7 +4673,7 @@ sqlo_preds_make_invariant (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *pred1, df_elt
 	    {
 	      ST *res;
 	      BIN_OP (res, BOP_EQ, (ST *) t_box_num (0),
-		  t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("one_of_these"),
+		  t_listst (3, CALL_STMT, uname_one_of_these,
 		    t_box_copy_tree ((caddr_t) pred2->_.bin.right->dfe_tree->_.call.params)));
 	      tree = res;
 	      tree->_.bin_exp.right->_.call.params[0] =
@@ -4673,7 +4716,7 @@ sqlo_preds_make_invariant (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *pred1, df_elt
 	    {
 	      ST *res;
 	      BIN_OP (res, BOP_EQ, (ST *) t_box_num (0),
-		  t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("one_of_these"),
+		  t_listst (3, CALL_STMT, uname_one_of_these,
 		    t_box_copy_tree ((caddr_t) pred2->_.bin.right->dfe_tree->_.call.params)));
 	      tree = res;
 	      tree->_.bin_exp.right->_.call.params[0] =
@@ -4731,7 +4774,7 @@ sqlo_has_no_subq (df_elt_t * dfe)
 {
   int is_pred = DFE_BOP == dfe->dfe_type || DFE_BOP_PRED == dfe->dfe_type;
   if (!is_pred)
-    return sqlo_parse_tree_has_node (dfe->dfe_tree, SELECT_STMT);;
+    return sqlo_parse_tree_has_node (dfe->dfe_tree, SELECT_STMT);
   if (!dfe->_.bin.no_subq)
     dfe->_.bin.no_subq = 1 + sqlo_parse_tree_has_node (dfe->dfe_tree, SELECT_STMT);
   return dfe->_.bin.no_subq - 1;
@@ -5073,6 +5116,8 @@ dfe_is_tb_only (df_elt_t * dfe, op_table_t * ot)
 }
 
 
+int enable_dt_card = 1;
+
 float
 dfe_arity_with_supers (df_elt_t * dfe)
 {
@@ -5095,6 +5140,8 @@ dfe_arity_with_supers (df_elt_t * dfe)
 	    }
 	  sub_arity *= dfe->dfe_arity;
 	}
+      if (enable_dt_card && DFE_DT == dfe->dfe_type && !dfe->_.sub.is_being_placed && dfe->dfe_unit)
+	sub_arity *= dfe->dfe_arity;
       dfe = dfe->dfe_prev;
     }
   while (dfe->dfe_prev)
@@ -5178,6 +5225,43 @@ sqlo_best_hash_filler (sqlo_t * so, df_elt_t * fill_dfe, int remote, dk_set_t * 
 
 
 void
+sqlo_hash_redundant_keys (sqlo_t * so, dk_set_t * hash_refs_ret, dk_set_t * hash_keys_ret)
+{
+  /* if two refs are known eq and the 2 keys corresponding are eq then drop the ref that is assigned later in the plan */
+  int inx1, inx2, n_refs, rminx;
+  dk_set_t hash_refs = *hash_refs_ret;
+  dk_set_t hash_keys = *hash_keys_ret;
+  if (!hash_refs->next)
+    return;
+  n_refs = dk_set_length (hash_refs);
+  for (inx1 = 0; inx1 < n_refs; inx1++)
+    {
+      df_elt_t * r1 = (df_elt_t*)dk_set_nth (hash_refs, inx1);
+      for (inx2 = inx1 + 1; inx2 < n_refs; inx2++)
+	{
+	  df_elt_t * r2 = (df_elt_t*)dk_set_nth (hash_refs, inx2);
+	  {if (sqlo_is_col_eq (so->so_this_dt, r1, r2)
+	       && sqlo_is_col_eq (so->so_this_dt, (df_elt_t*)dk_set_nth (hash_keys, inx1), (df_elt_t*)dk_set_nth (hash_keys, inx2)))
+	      {
+		df_elt_t * refs[2];
+		df_elt_t * def;
+		refs[0] = r1;
+		refs[1] = r2;
+		def = dfe_latest (so, 2, refs, 0);
+		if (!def)
+		  return;
+		rminx =  dfe_defines (def, r1) ? inx1 : inx2;
+		t_set_delete (hash_refs_ret, dk_set_nth (hash_refs, rminx));
+		t_set_delete (hash_keys_ret, dk_set_nth (hash_keys, rminx));
+		return;
+	      }
+	  }
+	}
+    }
+}
+
+
+void
 sqlo_check_col_pred_placed (df_elt_t * tb_dfe)
 {
   return;
@@ -5186,13 +5270,15 @@ sqlo_check_col_pred_placed (df_elt_t * tb_dfe)
   END_DO_SET();
 }
 
+extern int chash_per_query_pct;
+
 
 int
 sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score_ret)
 {
   dk_set_t hash_pred_locus_refs = NULL;
   int remote = sqlo_try_remote_hash (so, dfe);
-  float ov = 0;
+  float ov = 0, size_est = 0;
   dk_set_t preds = dfe->_.table.ot->ot_is_outer ? dfe->_.table.ot->ot_join_preds :  dfe->_.table.all_preds;
   float fill_unit, fill_arity, ref_arity;
   dk_set_t hash_refs = NULL, hash_keys = NULL;
@@ -5286,14 +5372,14 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
   text_pred_save = dfe->_.table.text_pred;
   dfe->_.table.text_pred = NULL; /* if text pred on inner table of hash join, the filler will always do the text pred */
   sqlo_check_col_pred_placed (dfe);
+  sqlo_hash_redundant_keys (so, &hash_refs, &hash_keys);
   if (sqlo_hash_fill_join (so, dfe, &fill_dfe, org_preds, hash_keys, ref_arity))
     {
       sqlo_check_col_pred_placed (dfe);
       fill_unit = fill_dfe->dfe_unit;
       fill_arity = fill_dfe->dfe_arity;
-      fill_unit += sqlo_hash_ins_cost (dfe, fill_arity, hash_keys);
+      fill_unit += sqlo_hash_ins_cost (dfe, fill_arity, hash_keys, &size_est);
       dfe->dfe_arity *= dfe_hash_fill_cond_card (dfe);
-
     }
   else
     {
@@ -5302,12 +5388,13 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
       fill_dfe->_.table.hash_role = HR_FILL;
       fill_dfe->_.table.is_hash_filler_unique = dfe->_.table.is_unique;
       sqlo_best_hash_filler (so, fill_dfe, remote, &org_preds, &post_preds, &fill_unit, &fill_arity, &ov);
-      fill_unit += sqlo_hash_ins_cost (dfe, fill_arity, hash_keys);
+      fill_unit += sqlo_hash_ins_cost (dfe, fill_arity, hash_keys, &size_est);
     }
 
   if (!mode)
     {
-      if (dfe->dfe_unit * ref_arity < fill_unit + ref_arity * sqlo_hash_ref_cost (dfe, fill_arity))
+      int is_large = dfe->dfe_unit < 1000 && size_est > chash_space_avail  * chash_per_query_pct / 100;
+      if (is_large || dfe->dfe_unit * ref_arity < fill_unit + ref_arity * sqlo_hash_ref_cost (dfe, fill_arity))
 	{
 	  /* hash us not better */
 	  {
@@ -5712,6 +5799,13 @@ sqlo_dfe_unplace (sqlo_t * so, df_elt_t * dfe)
 	dfe->_.table.ot = ot;
 	break;
       }
+    case DFE_FILTER:
+      DO_SET (df_elt_t *, pred, &dfe->_.filter.preds)
+	{
+	  sqlo_dfe_unplace (so, pred);
+	}
+      END_DO_SET ();
+      break;
     case DFE_ORDER:
     case DFE_GROUP:
       {
@@ -5874,7 +5968,7 @@ sqlo_set_select_mode (sqlo_t * so, op_table_t * ot, df_elt_t * sel_dfe, ST * top
 
 
 int sqlo_max_layouts = 1000;
-int32 sqlo_max_mp_size = 10485760;
+size_t sqlo_max_mp_size = 10485760;
 
 
 
@@ -6407,6 +6501,8 @@ sqlo_try (sqlo_t * so, op_table_t * ot, dk_set_t dfes, df_elt_t ** in_loop_ret, 
     {
       if (dfe->dfe_is_placed)
 	continue; /* can be that a non-first was placed in try hash of first if we had a selective join made into hash with the join in the build */
+      if (DFE_TEXT_PRED == dfe->dfe_type)
+	continue;
       sqlo_place_table (so, dfe);
       dfe_ref_check (ot->ot_work_dfe);
 
@@ -6591,6 +6687,8 @@ sqlo_layout_lim (sqlo_t * so, op_table_t * ot, int is_top)
 }
 
 
+#define CATCH_SQLO_NO_MEM 11102
+
 
 void
 sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
@@ -6616,9 +6714,7 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 	  return;
 	}
       else
-	sqlc_error (so->so_sc->sc_cc, "42000",
-	    "The memory pool size %d reached the limit %d bytes, try to increase the MaxMemPoolSize ini setting.",
-	    (THR_TMP_POOL)->mp_bytes, sqlo_max_mp_size);
+	lisp_throw (CATCH_SQLO_NO_MEM, 1);
     }
   if (sqlo_no_more_time (so, ot))
     return;
@@ -6878,7 +6974,7 @@ sqlo_layout_plan (sqlo_t * so, op_table_t * ot, int is_top)
 df_elt_t *
 sqlo_layout (sqlo_t * so, op_table_t * ot, int is_top, df_elt_t * super)
 {
-  df_elt_t * ret;
+  df_elt_t * ret = NULL;
   df_elt_t * so_dfe = so->so_dfe;
   op_table_t * prev_dt = so->so_this_dt;
   float sc1= so->so_best_score;
@@ -6928,17 +7024,42 @@ sqlo_layout (sqlo_t * so, op_table_t * ot, int is_top, df_elt_t * super)
   ot->ot_is_contradiction = 0;
   ot->ot_invariant_preds = NULL;
   ot->ot_layouts_tried = 0;
-  sqlo_layout_plan (so, ot, is_top);
-
-  ret = so->so_best;
-  dfe_ref_check (ret);
-  ret->_.sub.is_contradiction = ot->ot_is_contradiction;
-  ret->_.sub.is_complete = 1;
-  dfe_top_discount (ret, &ret->dfe_unit, &ret->dfe_arity); /* if top or value/exists subq, not all rows are produced. Consider this only after layout is done */
-  if (!ret->dfe_tree)
-    ret->dfe_tree = ot->ot_dt;
-  ret->dfe_hash = sql_tree_hash ((char*)&ret->dfe_tree);
-  ret->dfe_unit = so->so_best_score;
+  CATCH (CATCH_SQLO_NO_MEM)
+  {
+    sqlo_layout_plan (so, ot, is_top);
+  }
+  THROW_CODE
+    {
+      if (!so->so_best)
+	{
+	  POP_CATCH;
+	  so->so_plan_mode = save_mode;
+	  so->so_any_with_this_first = any_w_first;
+	  so->so_this_dt = prev_dt;
+	  so->so_subscore = subs;
+	  so->so_best = best1;
+	  so->so_best_score = sc1;
+	  so->so_gen_pt = pt;
+	  so->so_dfe = so_dfe;
+	  so->so_cache_subqs = cache_subqs;
+	  if (ot->ot_super)
+	    lisp_throw (CATCH_SQLO_NO_MEM, 1);
+	  else
+	    sqlc_error (so->so_sc->sc_cc, "42000",
+			"The memory pool size %d reached the limit %d bytes, try to increase the MaxMemPoolSize ini setting.",
+			(THR_TMP_POOL)->mp_bytes, sqlo_max_mp_size);
+	}
+    }
+  END_CATCH;
+    ret = so->so_best;
+    dfe_ref_check (ret);
+    ret->_.sub.is_contradiction = ot->ot_is_contradiction;
+    ret->_.sub.is_complete = 1;
+    dfe_top_discount (ret, &ret->dfe_unit, &ret->dfe_arity); /* if top or value/exists subq, not all rows are produced. Consider this only after layout is done */
+    if (!ret->dfe_tree)
+      ret->dfe_tree = ot->ot_dt;
+    ret->dfe_hash = sql_tree_hash ((char*)&ret->dfe_tree);
+    ret->dfe_unit = so->so_best_score;
   so->so_plan_mode = save_mode;
   so->so_any_with_this_first = any_w_first;
   so->so_this_dt = prev_dt;
@@ -7195,6 +7316,13 @@ sqlo_layout_copy_1 (sqlo_t * so, df_elt_t * dfe, df_elt_t * parent)
       {
 	df_elt_t * copy = dfe_copy (so, dfe);
 	copy->dfe_super = parent;
+	return copy;
+      }
+    case DFE_FILTER:
+      {
+	df_elt_t * copy = dfe_copy (so, dfe);
+	copy->dfe_super = parent;
+	copy->_.filter.body = dfe_pred_body_copy (so, copy->_.filter.body, copy);
 	return copy;
       }
     case DFE_GROUP:
@@ -7475,10 +7603,163 @@ sqlo_unor_replace_col_refs (sqlo_t *so, ST ** orig_sel, ST * new_sel, ST * left)
     }
 }
 
+static int 
+sqlp_col_is_same (ST ** pcol, ST * left, ST * right, dk_set_t * or_list)
+{
+  ST *col = *pcol;
+  ST *llcol = left->_.bin_exp.left; 
+  ST *lrcol = left->_.bin_exp.right; 
+  ST *rlcol = right ? right->_.bin_exp.left : NULL; 
+  ST *rrcol = right ? right->_.bin_exp.right : NULL; 
+
+  if (!col)
+    {
+      if (NULL == right)
+	{
+	  if (ST_COLUMN (llcol,0))
+	    {
+	      *pcol = llcol;
+	      t_set_push (or_list, lrcol);
+	      return 1;
+	    }
+	  else if (ST_COLUMN (lrcol,0))
+	    {
+	      *pcol = lrcol;
+	      t_set_push (or_list, llcol);
+	      return 1;
+	    }
+	  return 0;
+	}
+      else
+	{
+	  if (ST_COLUMN (llcol,0) && ST_COLUMN (rlcol, 0) && box_equal (llcol, rlcol))
+	    {
+	      *pcol = llcol;
+	      t_set_push (or_list, lrcol);
+	      t_set_push (or_list, rrcol);
+	      return 1;
+	    }
+	  else if (ST_COLUMN (llcol,0) && ST_COLUMN (rrcol, 0) && box_equal (llcol, rrcol))
+	    {
+	      *pcol = llcol;
+	      t_set_push (or_list, lrcol);
+	      t_set_push (or_list, rlcol);
+	      return 1;
+	    }
+	  else if (ST_COLUMN (lrcol,0) && ST_COLUMN (rlcol, 0) && box_equal (lrcol, rlcol))
+	    {
+	      *pcol = lrcol;
+	      t_set_push (or_list, llcol);
+	      t_set_push (or_list, rrcol);
+	      return 1;
+	    }
+	  else if (ST_COLUMN (lrcol,0) && ST_COLUMN (rrcol, 0) && box_equal (lrcol, rrcol))
+	    {
+	      *pcol = lrcol;
+	      t_set_push (or_list, llcol);
+	      t_set_push (or_list, rlcol);
+	      return 1;
+	    }
+	  return 0;
+	}
+    }
+  else
+    {
+      int l = 0, r = right ? 0 : 1;
+      if (ST_COLUMN (llcol,0) && box_equal (llcol, col))
+	{
+	  t_set_push (or_list, lrcol);
+	  l = 1;
+	}
+      else if (ST_COLUMN (lrcol,0) && box_equal (lrcol, col))
+	{
+	  t_set_push (or_list, llcol);
+	  l = 1;
+	}
+
+      if (ST_COLUMN (rlcol,0) && box_equal (rlcol, col))
+	{
+	  t_set_push (or_list, rrcol);
+	  r = 1;
+	}
+      else if (ST_COLUMN (rrcol,0) && box_equal (rrcol, col))
+	{
+	  t_set_push (or_list, rlcol);
+	  r = 1;
+	}
+      return (l && r);
+    }
+}
+
+static int
+sqlp_or_is_on_equalities (sqlo_t * so, ST * tree, ST ** col, dk_set_t * or_list)
+{
+  if (!tree)
+    return 0;
+  if (box_tag ((caddr_t) tree) != DV_ARRAY_OF_POINTER)
+    return 0;
+  if (tree->type != BOP_OR)
+    {
+      return 0;
+    }
+  else if (tree->_.bin_exp.right->type == BOP_EQ && tree->_.bin_exp.left->type == BOP_EQ && sqlp_col_is_same (col, tree->_.bin_exp.left, tree->_.bin_exp.right, or_list))
+    {
+      return 1;
+    }
+  else if (tree->_.bin_exp.right->type == BOP_EQ && sqlp_col_is_same (col, tree->_.bin_exp.right, NULL, or_list))
+    {
+      int l;
+      l = sqlp_or_is_on_equalities (so, tree->_.bin_exp.left, col, or_list);
+      return l;
+    }
+  else if (tree->_.bin_exp.left->type == BOP_EQ && sqlp_col_is_same (col, tree->_.bin_exp.left, NULL, or_list))
+    {
+      int l;
+      l = sqlp_or_is_on_equalities (so, tree->_.bin_exp.right, col, or_list);
+      return l;
+    }
+  else
+    {
+      int l, r;
+      l = sqlp_or_is_on_equalities (so, tree->_.bin_exp.right, col, or_list);
+      r = sqlp_or_is_on_equalities (so, tree->_.bin_exp.left, col, or_list);
+      return (l && r);
+    }
+  return 0;
+}
+
+static int
+sqlp_convert_or_to_inlist (sqlo_t * so, ST **ptree)
+{
+  ST *tree = *ptree;
+  ST *col = NULL;
+  dk_set_t or_list = NULL;
+  if (ST_P (tree, SELECT_STMT) && BOX_ELEMENTS (tree) >= 5 &&
+      ST_P (tree->_.select_stmt.table_exp, TABLE_EXP) &&
+      ST_P (tree->_.select_stmt.table_exp->_.table_exp.where, BOP_OR) &&
+      sqlp_or_is_on_equalities (so, tree->_.select_stmt.table_exp->_.table_exp.where, &col, &or_list) &&
+      !sqlp_tree_has_fun_ref (tree) &&
+      !tree->_.select_stmt.table_exp->_.table_exp.group_by &&
+      !tree->_.select_stmt.table_exp->_.table_exp.order_by)
+    {
+      /*ST *where = tree->_.select_stmt.table_exp->_.table_exp.where;*/
+      ST *new_where = NULL;
+      new_where = sqlp_in_exp (col, or_list, 0);
+      tree->_.select_stmt.table_exp->_.table_exp.where = new_where;
+      *ptree = tree;
+      return 1;
+    }
+  return 0;
+}
+
+int32 sqlo_max_union_nesting = 100; 
+
 static int
 sqlp_convert_or_to_union (sqlo_t * so, ST **ptree)
 {
   ST *tree = *ptree;
+  if (sqlp_convert_or_to_inlist (so, ptree))
+    return 1;
   if (ST_P (tree, SELECT_STMT) && BOX_ELEMENTS (tree) >= 5 &&
       ST_P (tree->_.select_stmt.table_exp, TABLE_EXP) &&
       ST_P (tree->_.select_stmt.table_exp->_.table_exp.where, BOP_OR) &&
@@ -7500,6 +7781,9 @@ sqlp_convert_or_to_union (sqlo_t * so, ST **ptree)
 	  	tree->_.select_stmt.table_exp->_.table_exp.from);
 
       sqlc_make_or_list (where, &or_list);
+
+      if (sqlo_max_union_nesting > 0 && dk_set_length (or_list) > sqlo_max_union_nesting)
+	return 0;
 
       DO_SET (ST *, clause, &or_list)
 	{

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1212,17 +1212,16 @@ itc_ac_stat (it_cursor_t * itc, page_rel_t * pr, int pr_fill, int get_all,   ac_
 }
 
 void
-itc_col_multipage_ac (it_cursor_t * itc, page_rel_t * pr, int pr_fill, mem_pool_t ** mp_ret)
+itc_col_multipage_ac (it_cursor_t * itc, page_rel_t * pr, int pr_fill, mem_pool_t ** mp_ret, ce_ins_ctx_t * ceic)
 {
-  ce_ins_ctx_t ceic;
-  memset (&ceic, 0, sizeof (ce_ins_ctx_t));
-  ceic.ceic_is_ac = CEIC_AC_MULTIPAGE;
-  ceic.ceic_itc = itc;
-  ceic.ceic_end_map_pos = itc->itc_map_pos;
+  memset (ceic, 0, sizeof (ce_ins_ctx_t));
+  ceic->ceic_is_ac = CEIC_AC_MULTIPAGE;
+  ceic->ceic_itc = itc;
+  ceic->ceic_end_map_pos = itc->itc_map_pos;
   itc_ac_stat (itc, pr, pr_fill, 1, NULL, 0);
-  *mp_ret = ceic.ceic_mp = mem_pool_alloc ();
+  *mp_ret = ceic->ceic_mp = mem_pool_alloc ();
   itc->itc_buf = NULL; /* this will not use this to ref to segs right of split for ce updates since there is nothing to the right, being full page */
-  ceic_split (&ceic, pr[0].pr_buf);
+  ceic_split (ceic, pr[0].pr_buf);
 }
 
 extern long ac_pages_in;
@@ -1251,8 +1250,9 @@ itc_compact (it_cursor_t * itc, buffer_desc_t * parent, page_rel_t * pr, int pr_
   pfh_init (pf.pf_hash, pf.pf_current);
   if (is_col)
     {
+      ce_ins_ctx_t ceic;
       mem_pool_t * mp;
-      itc_col_multipage_ac (itc, pr, pr_fill, &mp);
+      itc_col_multipage_ac (itc, pr, pr_fill, &mp, &ceic);
       if (KV_LEFT_DUMMY == IE_KEY_VERSION (BUF_ROW (pr[0].pr_buf, 0)))
 	{
 	  row_size_t tf = 1000;
@@ -1541,16 +1541,10 @@ itc_cp_check_node (it_cursor_t * itc, buffer_desc_t *parent, int mode)
 	  buffer_desc_t * buf;
 	  mutex_enter (&itm->itm_mtx);
 	  buf = (buffer_desc_t*) gethash ((void*)(ptrlong) leaf, &itm->itm_dp_to_buf);
-	  if (BUF_COMPACT_ALL_READY (buf, leaf, itm)
-	       && (COMPACT_ALL == mode ? 1 : buf->bd_is_dirty)
-	      && !buf_has_leaves (buf))
+	  if (BUF_COMPACT_ALL_READY (buf, leaf, itm) && (COMPACT_ALL == mode ? 1 : buf->bd_is_dirty) && !buf_has_leaves (buf))
 	    {
 	      if (mode == COMPACT_DIRTY && !gethash ((void*)(void*)(ptrlong)leaf, &itm->itm_remap))
-		{
-		  dbg_page_map_to_file (buf);
-		  log_error ("dirty buffer flags: can reuse logical: %d, dp=%d, physical dp=%d", it_can_reuse_logical (it, buf->bd_page), buf->bd_page, buf->bd_physical_page);
-		  GPF_T1 ("In compact, no remap dp for a dirty buffer");
-		}
+		    GPF_T1 ("In compact, no remap dp for a dirty buffer");
 	      BD_SET_IS_WRITE (buf, 1);
 	      mutex_leave (&itm->itm_mtx);
 	      pg_check_map (buf);

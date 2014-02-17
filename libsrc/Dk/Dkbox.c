@@ -18,7 +18,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -802,6 +802,7 @@ box_reuse (caddr_t box, ccaddr_t data, size_t len, dtp_t dtp)
   ((dtp_t *) box)[-4] = (dtp_t) (len & 0xff);
   ((dtp_t *) box)[-3] = (dtp_t) (len >> 8);
   ((dtp_t *) box)[-2] = (dtp_t) (len >> 16);
+  if (DV_STRING == dtp) len --; /* the length of string box is always +1 but actual data is one char less */
   if (box != data)
   memcpy (box, data, len);
 }
@@ -1966,6 +1967,33 @@ DBG_NAME (box_dv_ubuf) (DBG_PARAMS size_t buf_strlen)
 }
 
 
+char *
+DBG_NAME (box_dv_ubuf_or_null) (DBG_PARAMS size_t buf_strlen)
+{
+#ifdef MALLOC_DEBUG
+  caddr_t uname;
+  buf_strlen++;
+  uname = DBG_NAME (dk_try_alloc_box) (DBG_ARGS buf_strlen, DV_NULL);
+  if (NULL == uname)
+    return NULL;
+  box_tag_modify_impl (uname, DV_UNAME);
+  return uname;
+#else
+  uname_blk_t *blk;
+  caddr_t uname;
+  caddr_t hd;
+  buf_strlen++;
+  blk = (uname_blk_t *) dk_try_alloc (sizeof (uname_blk_t) + (buf_strlen - sizeof (ptrlong)));
+  if (NULL == blk)
+    return NULL;
+  uname = blk->unb_data;
+  hd = uname - 4;
+  WRITE_BOX_HEADER (hd, buf_strlen, DV_UNAME);
+  return uname;
+#endif
+}
+
+
 box_t
 DBG_NAME (box_dv_uname_from_ubuf) (DBG_PARAMS char *text)
 {
@@ -2624,6 +2652,14 @@ char *
 box_dv_ubuf (size_t buf_strlen)
 {
   return dbg_box_dv_ubuf (__FILE__, __LINE__, buf_strlen);
+}
+
+
+#undef box_dv_ubuf_or_null
+char *
+box_dv_ubuf_or_null (size_t buf_strlen)
+{
+  return dbg_box_dv_ubuf_or_null (__FILE__, __LINE__, buf_strlen);
 }
 
 

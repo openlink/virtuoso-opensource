@@ -6,7 +6,7 @@
 --
 --  RDF Schema objects, generator of RDF Views
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1239,8 +1239,10 @@ RDF_VIEW_SYNC_TO_PHYSICAL (in vgraph varchar, in load_data int := 0, in pgraph v
 	{
 	  declare pname varchar;
 	  pname := sprintf ('DB.DBA.RDB2RDF_FILL__%s', replace (replace (tb, '"', '`'), '.', '~'));
+	  commit work;
 	  aq_request (aq, pname, vector ());
 	}
+      commit work;
       aq_wait_all (aq);
     }
   log_enable (old_mode, 1);

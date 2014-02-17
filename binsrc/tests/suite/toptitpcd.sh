@@ -7,7 +7,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2014 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -29,11 +29,13 @@ export LOGFILE
 . $VIRTUOSO_TEST/testlib.sh
 SQLPATH=$SQLPATH:$VIRTUOSO_TEST/tpc-d
 DS1=$PORT
-DS2=$PORT
+DS2=`expr $PORT + 1`
 if [ "$VIRTUOSO_VDB" = "1" ]
 then
+        PORT=$DS2
 	GENERATE_PORTS 1
 	DS2=$GENERATED_PORT
+        PORT=$DS1
 fi
 
 HOST_OS=`uname -s | grep WIN`

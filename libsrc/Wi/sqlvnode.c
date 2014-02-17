@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2011 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -68,6 +68,36 @@ select_node_input_subq_vec (select_node_t * sel, caddr_t * inst, caddr_t * state
   else
     n_rows = 1;
   QST_INT (inst, sel->src_gen.src_out_fill) = n_rows;
+  if (sel->sel_subq_inlined)
+    {
+      /* a select node after a group by reader, flattened into containing query.  Set the output sets according to the set no ssl  */
+      data_col_t * dc = sel->sel_set_no ? QST_BOX (data_col_t *, inst, sel->sel_set_no->ssl_index) : NULL;
+      int64 * nos = dc ? (int64*)dc->dc_values : NULL;
+      int * out_sets;
+      QN_CHECK_SETS (sel, inst, n_rows);
+      out_sets = QST_BOX (int *, inst, sel->src_gen.src_sets);
+      if (sel->sel_set_no && SSL_REF == sel->sel_set_no->ssl_type)
+	{
+	  int sets[ARTM_VEC_LEN];
+	  int inx, inx2;
+	  for (inx = 0; inx < n_rows; inx += ARTM_VEC_LEN)
+	    {
+	      int to = MIN (n_rows, inx + ARTM_VEC_LEN);
+	      sslr_n_consec_ref (inst, (state_slot_ref_t*)sel->sel_set_no, sets, inx, to - inx);
+	      to -= inx;
+	      for (inx2 = 0; inx2 < to; inx2++)
+		out_sets[inx + inx2] = nos[sets[inx2]];
+	    }
+	}
+      else
+	{
+	  int inx2;
+	  for (inx2 = 0; inx2 < n_rows; inx2++)
+	    out_sets[inx2] = nos ? nos[inx2] : 0;
+	}
+      qn_send_output ((data_source_t*)sel, inst);
+      return;
+    }
   if (sel->sel_top)
     {
       top = unbox (qst_get (inst, sel->sel_top));
@@ -301,19 +331,29 @@ bits_mix (db_buf_t bits, db_buf_t mask, int n_bits)
 {
   /*consider bits of bits where mask has a 1 bit.  2 if both 0 and 1 exist, 1 if all 1, 0 if all 0 */
   int n_bytes = ALIGN_8 (n_bits) / 8;
-  int rem = (n_bytes * 8) - n_bits, inx, zeros = 0, ones = 0;
+  int rem = 8 - (n_bytes * 8 - n_bits), inx, zeros = 0, ones = 0;
+  dtp_t last_ones = n_ones (rem);
   if (!mask)
     {
       for (inx = 0; inx < n_bytes; inx++)
 	{
 	  dtp_t w = bits[inx];
-	  /* in last byte, where only low 8 - rem bits are significant, or ones for the high bits, i.e. ff and and off the 8 - rem low bits */
+	  /* in last byte, where only low rem bits are significant, take out the high bits */
 	  if (inx == n_bytes - 1)
-	    w |= 0xff & ~n_ones (8 - rem);
-	  if (w == 0)
+	    {
+	      w &= last_ones;
+	      if (w == last_ones)
+		ones++;
+	      else  if (0 == w)
 	    zeros++;
-	  else if (w == 255)
+	      else
+		return 2;
+	      break;
+	    }
+	  if (0xff == w)
 	    ones++;
+	  else if (0 == w)
+	    zeros++;
 	  else
 	    return 2;
 	  if (zeros && ones)
@@ -326,10 +366,18 @@ bits_mix (db_buf_t bits, db_buf_t mask, int n_bits)
 	{
 	  dtp_t w = ((dtp_t *) bits)[inx];
 	  dtp_t m = ((dtp_t *) mask)[inx];
-	  if (0 == (m & w))
-	    zeros++;
-	  else if (m == (w & m))
+	  if (inx ==  n_bytes - 1)
+	    {
+	      w &= last_ones;
+	      m &= last_ones;
+	    }
+	  if (w == m)
+	    {
+	      if (w)
 	    ones++;
+	    }
+	  else if (0 == w)
+	    zeros++;
 	  else
 	    return 2;
 	  if (zeros && ones)
@@ -714,10 +762,13 @@ outer_seq_end_vec_input (outer_seq_end_node_t * ose, caddr_t * inst, caddr_t * s
     shadow_dc = QST_BOX (data_col_t *, inst, ose->ose_out_shadow[inx]->ssl_index);
     len = dc_elt_size (out_dc);
     dc_reset (shadow_dc);
-    if (DV_ANY == shadow_dc->dc_dtp && DV_ANY != out_dc->dc_dtp)
-      dc_convert_empty (shadow_dc, out_dc->dc_dtp);
-      else if (DV_ANY != shadow_dc->dc_dtp && shadow_dc->dc_dtp != out_dc->dc_dtp)
-      dc_heterogenous (shadow_dc);
+      if (shadow_dc->dc_dtp != out_dc->dc_dtp)
+	{
+	  if (DV_ANY == out_dc->dc_dtp)
+	    dc_heterogenous (shadow_dc);
+	  else
+	    dc_convert_empty (shadow_dc, out_dc->dc_dtp);
+	}
     DC_CHECK_LEN (shadow_dc, n_sets - 1);
     shadow_dc->dc_n_values = n_sets;
     if (out_dc->dc_nulls)
@@ -844,6 +895,7 @@ cl_local_deletes (delete_node_t * del, caddr_t * inst, caddr_t * part_inst)
       continue;
       itc->itc_isolation = ISO_SERIALIZABLE == qi->qi_isolation ? ISO_SERIALIZABLE : ISO_REPEATABLE;
     itc_free_owned_params (itc);
+      itc_col_free (itc);
       itc->itc_insert_key = ik->ik_key;
       ks.ks_v_out_map = itc->itc_v_out_map = ik->ik_key->key_is_col ? empty_om : om;
       ITC_START_SEARCH_PARS (itc);
@@ -907,6 +959,7 @@ cl_local_deletes (delete_node_t * del, caddr_t * inst, caddr_t * part_inst)
     }
   END_DO_BOX;
   itc_free_owned_params (itc);
+  itc_col_free (itc);
   qi->qi_n_affected += n_sets;
   if (qi->qi_client->cli_row_autocommit)
     qi->qi_client->cli_n_to_autocommit += n_sets;
@@ -1109,6 +1162,11 @@ update_node_vec_run (update_node_t * upd, caddr_t * inst, caddr_t * state)
 	}
     }
   qi->qi_n_affected = n_aff;
+  if (itc->itc_siblings)
+    {
+      itc_free_box (itc, (caddr_t)itc->itc_siblings);
+      itc->itc_siblings = NULL;
+    }
  skip_2nd:
   if (upd->upd_pk_change)
     {

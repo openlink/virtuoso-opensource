@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -690,6 +690,8 @@ itc_like_compare (it_cursor_t * itc, buffer_desc_t * buf, caddr_t pattern, searc
   db_buf_t dv1, dv3;
   collation_t *collation = spec->sp_collation;
   dbe_col_loc_t * cl = &spec->sp_cl;
+  if (dtp_is_fixed (cl->cl_sqt.sqt_dtp)) /* if by chance numeric column then no match */
+    return DVC_LESS;
   ROW_STR_COL (itc->itc_insert_key, buf, itc->itc_row_data, cl, dv1, len1, dv3, len3, offset);
   dtp1 = spec->sp_cl.cl_sqt.sqt_dtp;
   if (DV_BLOB == dtp1 || DV_BLOB_WIDE == dtp1)
@@ -1769,6 +1771,11 @@ itc_page_search (it_cursor_t * it, buffer_desc_t ** buf_ret, dp_addr_t * leaf_re
   while (1)
     {
 #ifndef NDEBUG
+      if (it->itc_insert_key->key_is_bitmap && it->itc_map_pos >= (*buf_ret)->bd_content_map->pm_count)
+	{
+	  log_error ("itc_map_pos out of range in page search");
+	  it->itc_map_pos = ITC_AT_END;
+	}
       if (ITC_AT_END == it->itc_map_pos)
 	{
 	  *leaf_ret = 0;
@@ -2573,6 +2580,8 @@ itc_has_slice (it_cursor_t * itc, slice_id_t slice, caddr_t * err_ret)
 {
   dbe_key_t * key = itc->itc_insert_key;
   dbe_key_frag_t ** kfs = key->key_fragments;
+  if (!key->key_partition || !key->key_partition->kpd_map->clm_is_elastic)
+    return 1;
   if (!kfs || BOX_ELEMENTS (kfs) <= slice || !key->key_fragments[slice])
     {
       char msg[200];
@@ -2861,7 +2870,7 @@ itc_read_ahead_blob (it_cursor_t * itc, ra_req_t *ra, int flags)
       char btmp_not_decoy = 0;
       ITC_IN_KNOWN_MAP (itc, ra->ra_dp[inx]);
       if (!DBS_PAGE_IN_RANGE (itc->itc_tree->it_storage, ra->ra_dp[inx])
-	  ||dbs_is_free_page (itc->itc_tree->it_storage, ra->ra_dp[inx]) || 0 == ra->ra_dp[inx])
+	  ||dbs_may_be_free (itc->itc_tree->it_storage, ra->ra_dp[inx]) || 0 == ra->ra_dp[inx])
 	{
 	  log_error ("*** read-ahead of a free or out of range page dp L=%ld, database not necessarily corrupted.",
 	       ra->ra_dp[inx]);
@@ -3159,10 +3168,46 @@ itc_up_rnd_check (it_cursor_t * itc, buffer_desc_t ** buf_ret)
 {
   if (itc->itc_st.n_sample_rows >= itc->itc_st.sample_size)
     return DVC_INDEX_END;
+  if (itc->itc_is_col && itc->itc_rows_selected >= itc->itc_st.sample_size)
+    return DVC_INDEX_END;
   itc->itc_st.n_sample_rows++; /* increment here also so as to guarantee termination even if table goes empty during the random scan. */
   itc_page_leave (itc, *buf_ret);
   *buf_ret = itc_reset (itc);
   return DVC_MATCH;
+}
+
+
+caddr_t
+col_min_max_trunc (caddr_t val)
+{
+  int len;
+  caddr_t ret = NULL;
+  dtp_t dtp = DV_TYPE_OF (val);
+  switch (dtp)
+    {
+    case DV_SINGLE_FLOAT: case DV_DOUBLE_FLOAT: case DV_NUMERIC: 
+    case DV_LONG_INT: case DV_DATETIME:
+      return val;
+    case DV_STRING:
+      len = box_length (val);
+      if (len >30)
+	{
+	  ret =  box_n_chars (val, 30);
+	  dk_free_tree (val);
+	  return ret;
+	}
+      return val;
+	  
+
+    case DV_BLOB_HANDLE:
+    case DV_BLOB_WIDE_HANDLE:
+    case DV_XML_ENTITY:
+    case DV_GEO:
+    case DV_OBJECT:
+    default:
+      dk_free_tree (val);
+      return dk_alloc_box (0, DV_DB_NULL);
+    }
 }
 
 
@@ -3183,6 +3228,7 @@ itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
   while (dk_hit_next (&it, (void**) &col, (void**) &cs))
     {
       boxint min = 0, max = 0;
+      caddr_t minb = NULL, maxb = NULL;
       int is_first = 1;
       int is_int = DV_LONG_INT == col->col_sqt.sqt_dtp || DV_INT64 == col->col_sqt.sqt_dtp;
       if (upd_col && (0 == stricmp (col->col_name, "P") || 0 == stricmp (col->col_name, "G")))
@@ -3210,10 +3256,38 @@ itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
 		      if (d < min)
 			min = d;
 		    }
+		  dk_free_tree (*data);
 		}
-	      dk_free_tree (*data);
+	      else 
+		{
+		  if (is_first)
+		    {
+		      minb = *data;
+		      maxb = box_copy_tree (minb);
+		      is_first = 0;
+		    }
+		  else
+		    {
+		      int low_rc =  cmp_boxes_safe (*data, minb, NULL, NULL);
+		      if (DVC_LESS == (~DVC_NOORDER & low_rc))
+			{
+			  dk_free_tree (minb);
+			  minb = *data;
+			}
+		      else 
+			{
+			  int high_rc = cmp_boxes_safe (*data, maxb, NULL, NULL);
+			  if (DVC_GREATER == (~DVC_NOORDER & high_rc))
+			    {
+			      dk_free_tree (maxb);
+			      maxb = *data;
+			    }
+			  else 
+			    dk_free_tree (*data);
+			}
+		    }
+		}
 	    }
-
 	}
       if (upd_col)
 	{
@@ -3237,6 +3311,11 @@ itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
 		  col->col_max = box_num (max);
 		  if (col->col_n_distinct > max - min)
 		    col->col_n_distinct = MAX (1, max - min);
+		}
+	      if (!is_int)
+		{
+		  col->col_min = col_min_max_trunc (minb);
+		  col->col_max = col_min_max_trunc (maxb);
 		}
 	    }
 	  else
@@ -3308,7 +3387,7 @@ itc_n_p_matches_in_col (it_cursor_t * itc, caddr_t * data_col, int * first, int 
 
 
 void
-itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
+itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf, int * is_leaf)
 {
   int n_data = 1;
   db_buf_t row = BUF_ROW (buf, itc->itc_map_pos);
@@ -3317,6 +3396,11 @@ itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
   int len_limit = -1, first_match = 0;
   if (!kv ||  KV_LEFT_DUMMY == kv)
     return;
+  if (!*is_leaf)
+    {
+      *is_leaf = 1;
+      cs_new_page (itc->itc_st.cols);
+    }
   itc->itc_row_data = row;
   itc->itc_row_key = itc->itc_insert_key->key_versions[kv];
   DO_SET (dbe_column_t *, col, &itc->itc_row_key->key_parts)
@@ -3434,24 +3518,35 @@ void
 itc_page_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
     {
   int pos = itc->itc_map_pos;
-  cs_new_page (itc->itc_st.cols);
+  int is_leaf = 0;
   if (itc->itc_insert_key->key_is_col)
 	{
       int r;
       static  int32 col_seed;
       if (!itc->itc_search_par_fill)
     {
+	  key_ver_t kv;
+	  db_buf_t row;
 	  r = (sqlbif_rnd (&col_seed) & 0x7ffff) % buf->bd_content_map->pm_count;
+	  row = BUF_ROW (buf, r);
+	  kv= IE_KEY_VERSION (row);
+	  if (KV_LEFT_DUMMY == kv)
+	    {
+	      if (r == buf->bd_content_map->pm_count - 1)
+		return;
+	      r++;
+	    }
 	  itc->itc_map_pos = r; /* randomize after first found, else might never hit */
 #ifdef MALLOC_DEBUG
 	  if (itc->itc_st.n_sample_rows < 100)
-	  itc_row_col_stat (itc, buf);
+	    itc_row_col_stat (itc, buf, &is_leaf);
 #else
-	  itc_row_col_stat (itc, buf);
+	  itc_row_col_stat (itc, buf, &is_leaf);
 #endif
     }
       else
 	{
+	  int init_sample = itc->itc_st.n_sample_rows;
 	  for (r = itc->itc_map_pos; r < buf->bd_content_map->pm_count; r++)
 	    {
 	      int prev_sample = itc->itc_st.n_sample_rows;
@@ -3460,11 +3555,12 @@ itc_page_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
 	      if (itc->itc_st.n_sample_rows > 5)
 		break;
 #endif
-	      itc_row_col_stat (itc, buf);
+	      itc_row_col_stat (itc, buf, &is_leaf);
 	      if (itc->itc_st.n_sample_rows < 1000)
 		continue;
-	      if (itc->itc_st.n_sample_rows > 100000 / key_n_partitions (itc->itc_insert_key)
-		  || itc->itc_st.n_sample_rows < prev_sample + 1)
+	      if (itc->itc_st.n_sample_rows > 1000000 / key_n_partitions (itc->itc_insert_key)
+		  || itc->itc_st.n_sample_rows < prev_sample + 1
+		  || itc->itc_st.n_sample_rows - init_sample > 40000)
 	      break;
 	    }
 }
@@ -3474,7 +3570,7 @@ itc_page_col_stat (it_cursor_t * itc, buffer_desc_t * buf)
   DO_ROWS (buf, map_pos, row, NULL)
     {
       itc->itc_map_pos = map_pos;
-      itc_row_col_stat (itc, buf);
+	  itc_row_col_stat (itc, buf, &is_leaf);
     }
   END_DO_ROWS;
     }
@@ -4017,6 +4113,8 @@ itc_local_sample (it_cursor_t * itc)
   return ((int64) mean);
 }
 
+int enable_exact_p_stat = 0;
+
 
 int64
 itc_sample (it_cursor_t * itc)
@@ -4026,6 +4124,18 @@ itc_sample (it_cursor_t * itc)
   for (inx = 0; inx < itc->itc_search_par_fill; inx++)
     if (DV_DB_NULL == DV_TYPE_OF (itc->itc_search_params[inx]))
       return 0;
+  if (enable_exact_p_stat && 1 == itc->itc_search_par_fill && tb_is_rdf_quad (itc->itc_insert_key->key_table)
+      && CL_RUN_SINGLE_CLUSTER != cl_run_local_only
+      && 'P' == toupper (((dbe_column_t *) itc->itc_insert_key->key_parts->data)->col_name[0]) && itc->itc_st.cols)
+    {
+      int64 res = sqlo_p_stat_query (itc->itc_insert_key->key_table, itc->itc_search_params[0]);
+      if (-1 != res)
+	{
+	  itc->itc_st.cols = (dk_hash_t *) - 1;
+	  return res;
+	}
+    }
+
     {
 
       if (itc->itc_insert_key->key_is_elastic && !itc->itc_tree)
@@ -4040,6 +4150,7 @@ key_count_estimate_slice  (dbe_key_t * key, int n_samples, int upd_col_stats, sl
 {
   int64 res = 0, sample;
   int n;
+  int max_samples = (key->key_is_col ? 10 : 100);
   it_cursor_t itc_auto;
   it_cursor_t * itc = &itc_auto;
   ITC_INIT (itc, key->key_fragments[0]->kf_it, NULL);
@@ -4076,14 +4187,14 @@ key_count_estimate_slice  (dbe_key_t * key, int n_samples, int upd_col_stats, sl
 	}
       if (upd_col_stats)
 	{
-	  if (sample == itc->itc_st.n_sample_rows)
+	  if (0 == n && sample == itc->itc_st.n_sample_rows)
 	    {
 	      /* short table, all seen on one go */
 	      n_samples = 1;
 	      break;
 	    }
 	  /* if doing cols also, adjust the sample to table size */
-	  if (n_samples < (key->key_is_col ? 10 : 100) && itc->itc_st.n_sample_rows < 0.01 * res / (n + 1))
+	  if (n_samples < max_samples && itc->itc_st.n_sample_rows < 0.01 * res / (n + 1))
 	    n_samples++;
 	}
     }

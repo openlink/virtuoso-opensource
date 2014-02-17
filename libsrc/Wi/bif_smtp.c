@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -499,7 +499,7 @@ void
 bif_smtp_init (void)
 {
   dk_mem_hooks (DV_CONNECTION, box_non_copiable, type_connection_destroy, 0);
-  bif_define_typed ("smtp_send", bif_smtp_send, &bt_varchar);
+  bif_define_ex ("smtp_send", bif_smtp_send, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("ses_connect", bif_ses_connect);
   bif_define ("ses_accept", bif_ses_accept);
   bif_define ("ses_listen", bif_ses_listen);

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -179,7 +179,7 @@ DBGP_NAME (page_wait_access) (DBGP_PARAMS it_cursor_t * itc, dp_addr_t dp,  buff
 	em_check_dp (itc->itc_tree->it_extent_map, dp);
 	}
 #endif
-      if ((DP_DELETED == phys_dp || dbs_is_free_page (itc->itc_tree->it_storage, phys_dp))
+      if ((DP_DELETED == phys_dp || dbs_may_be_free (itc->itc_tree->it_storage, phys_dp))
 	  && !strchr (wi_inst.wi_open_mode, 'a'))
 	{
 	  log_error ("Reference to page with free remap dp = %ld, remap = %ld",
@@ -1021,7 +1021,6 @@ itc_dive_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t to)
 #ifndef NDEBUG
   if ((*buf_ret)->bd_readers <= 0 && !(*buf_ret)->bd_is_write)
     GPF_T1 ("dive transit ends in bd_readers <= 0 or is_write > 0");
-#endif
   if ((*buf_ret)->bd_is_dirty && (*buf_ret)->bd_physical_page != (*buf_ret)->bd_page)
     {
       it_map_t * itm = IT_DP_MAP (tree, to);
@@ -1030,6 +1029,7 @@ itc_dive_transit (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t to)
 	GPF_T;
       mutex_leave (&itm->itm_mtx);
     }
+#endif
 }
 
 

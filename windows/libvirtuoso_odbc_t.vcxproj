@@ -56,7 +56,7 @@
     <ClCompile>
       <Optimization>Full</Optimization>
       <AdditionalIncludeDirectories>..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;..\SDK\$(ShortPlatform)\sslsdk\inc32; .;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>PACKAGE_VERSION="7.0.0";_SSL;_CONSOLE;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;SHARED_OBJECT;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>PACKAGE_VERSION="7.1.0";_SSL;_CONSOLE;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;SHARED_OBJECT;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <ExceptionHandling>
       </ExceptionHandling>

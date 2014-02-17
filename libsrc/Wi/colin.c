@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2011 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -55,7 +55,14 @@ cpo_iri_int64 (col_pos_t * cpo, caddr_t val, dtp_t dtp_wanted, char *dtp_match)
     {
       db_buf_t dv = (db_buf_t) val;
       if (dtp_wanted == dtp_canonical[dv[0]])
-	return INT64_REF_NA (dv + 1);
+	{
+	  dtp_t a_dtp = dv[0];
+	  if (DV_LONG_INT == a_dtp)
+	    return LONG_REF_NA (dv + 1);
+	  if (DV_IRI_ID == a_dtp)
+	    return (int64)(uint32)LONG_REF_NA (dv + 1);
+	  return INT64_REF_NA (dv + 1);
+	}
       *dtp_match = 0;
       return -1;
     }
@@ -215,7 +222,7 @@ ce_dict_generic_sets_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, i
       value = itc_any_param (itc, itc->itc_col_spec->sp_max, &dtp);
       dtp_cmp = ce_dtp_compare (ce, dtp);
       if (dtp_cmp != DVC_MATCH)
-	return cpo_match_after (cpo, cpo->cpo_ce_row_no + n_values);;
+	return cpo_match_after (cpo, cpo->cpo_ce_row_no + n_values);
       CE_DICT_INT_FLOAT (value);
 
       upper = ce_dict_key (ce, ce_first, value, dtp, &dict, &n_distinct);

@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2014 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -33,13 +33,19 @@ endif
 # ----------------------------------------------------------------------
 #  Test loading of vad packages by creating demo.db
 # ----------------------------------------------------------------------
-TESTS=mkdemo.sh
-TESTS_ENVIRONMENT=PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
-	PORT=$(PORT) \
+#TESTS=mkdemo.sh
+TESTS_ENVIRONMENT= \
 	HOME="$(TOP)" \
+	HOST=localhost \
 	HTMLDOC="$(HTMLDOC)" \
+	MAKE=$(MAKE) \
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
+	PORT=$(PORT) \
 	prefix="$(prefix)" \
-	HOST=localhost 
+	TOP="$(TOP)"
+
+check-local:
+	env $(TESTS_ENVIRONMENT) $(SHELL) ./mkdemo.sh
 
 
 # ----------------------------------------------------------------------
@@ -54,7 +60,7 @@ doc_dav.vad: mkdoc.sh mksearch.sql drop.sql mkdemo.ini
 	HTMLDOC="$(HTMLDOC)" \
 	HOST=localhost \
 	MAKE="$(MAKE)" \
-	$(SHELL) mkdoc.sh
+	$(SHELL) ./mkdoc.sh
 
 
 # ----------------------------------------------------------------------
@@ -98,7 +104,7 @@ demo_dav.vad: make_vad.sh $(DEMO_DEPS) doc_dav.vad
 	HOME="$(TOP)" \
 	HTMLDOC="$(HTMLDOC)" \
 	HOST=localhost \
-	$(SHELL) make_vad.sh
+	$(SHELL) ./make_vad.sh
 
 
 
@@ -165,7 +171,7 @@ install-data-local:
 	$(do_subst) < "$(srcdir)/install_ini.sh.in" > "install_ini.sh"
 	chmod +x install_ini.sh
 	mkdir -p "$(DESTDIR)$(dbdir)"
-	$(SHELL) install_ini.sh database
+	$(SHELL) ./install_ini.sh database
 if WITH_HTMLDOC
 	mkdir -p "$(DESTDIR)$(htmldocdir)"
 	-$(INSTALL_DATA) $(top_srcdir)/docsrc/html_virt/*.html "$(DESTDIR)$(htmldocdir)"

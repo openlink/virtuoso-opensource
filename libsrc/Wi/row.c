@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -424,7 +424,8 @@ page_box_col (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t row, dbe_col_loc_
 #ifdef BIF_XML
 	if (DV_BLOB_XPER_HANDLE == DV_TYPE_OF (bh))
 	  {
-	    caddr_t val = (caddr_t) xper_entity (NULL, bh, NULL, 0, itc_box_base_uri_column (itc, buf->bd_buffer, cl->cl_col_id), NULL /* no enc */, &lh__xany, NULL /* DTD config */, 1);
+	    query_instance_t *qi = (query_instance_t *)(itc->itc_out_state);
+	    caddr_t val = (caddr_t) xper_entity (qi, bh, NULL, 0, itc_box_base_uri_column (itc, buf->bd_buffer, cl->cl_col_id), NULL /* no enc */, &lh__xany, NULL /* DTD config */, 1);
 	    dk_free_box (bh);
 	    return val;
 	  }
@@ -452,6 +453,7 @@ page_box_col (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t row, dbe_col_loc_
       VL;
       {
 	caddr_t bh = blob_ref_check (xx, len, itc, col_dtp);
+        query_instance_t *qi = (query_instance_t *)(itc->itc_out_state);
 	caddr_t val = (caddr_t) xper_entity (NULL, bh, NULL, 0, itc_box_base_uri_column (itc, buf->bd_buffer, cl->cl_col_id), NULL /* no enc */, &lh__xany, NULL /* DTD config */, 1);
 	dk_free_box (bh);
 	return val;
@@ -2804,7 +2806,7 @@ rd_col_change (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd, dbe_col
       itc_col_leave (itc, 0);
       if (col_buf && col_buf->bd_content_map->pm_bytes_free < len)
 	{
-	  page_leave_outside_map (col_buf);;
+	  page_leave_outside_map (col_buf);
 	  col_buf = NULL;
 	}
       if (!col_buf)

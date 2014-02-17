@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1662,7 +1662,7 @@ void
 tp_bif_init ()
 {
   /* compatibility */
-  bif_define_typed ("tp_enlist", bif_2pc_enlist, &bt_integer);
+  bif_define_ex ("tp_enlist", bif_2pc_enlist, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_typed ("virt_tp_update_cli_001", bif_2pc_enlist_001,
       &bt_integer);
   bif_define_typed ("__mts_fail_after_prepare", bif_mts_fail_after_prepare,
@@ -1670,9 +1670,9 @@ tp_bif_init ()
 
   /* XA xid mapping init */
   global_xa_init ();
-  bif_define_typed ("get_rec_xid_beg", bif_get_rec_xid_beg, &bt_any);
-  bif_define_typed ("get_rec_xid", bif_get_rec_xid, &bt_any);
-  bif_define_typed ("get_rec_xid_end", bif_get_rec_xid_end, &bt_any);
+  bif_define_ex ("get_rec_xid_beg", bif_get_rec_xid_beg, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("get_rec_xid", bif_get_rec_xid, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("get_rec_xid_end", bif_get_rec_xid_end, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define ("heuristic_transact", bif_heuristic_transact);
   bif_define ("txa_get_all_trx", bif_txa_get_all_trx);
   bif_define ("txa_bin_encode", bif_txa_bin_encode);

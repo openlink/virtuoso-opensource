@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -221,14 +221,14 @@ bif_vdd_init (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 void
-remote_init (void)
+remote_init (int cl_reinit)
 {
   bif_define ("vdd_init", bif_vdd_init);
   bif_define ("vdd_remote_table", bif_remote_table);
   bif_define ("vdd_pass_through_function", bif_pass_through_function);
-  bif_define_typed ("proc_is_remote", bif_proc_is_remote, &bt_integer);
+  bif_define_ex ("proc_is_remote", bif_proc_is_remote, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("vdd_set_password", bif_vdd_set_password);
-  bif_define_typed ("vdd_measure_rpc_time", bif_vdd_measure_rpc_time, &bt_float);
+  bif_define_ex ("vdd_measure_rpc_time", bif_vdd_measure_rpc_time, BMD_RET_TYPE, &bt_float, BMD_DONE);
 
 
   odbc_cat_init ();
@@ -259,6 +259,7 @@ remote_table_source_input (remote_table_source_t * rts, caddr_t * inst, caddr_t 
 {
   GPF_T;
 }
+
 
 void
 DoSQLError (SQLHDBC hdbc, SQLHSTMT hstmt)

@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -42,6 +42,7 @@ typedef struct scn3_include_frag_s {
 } scn3_include_frag_t;
 
 struct user_s;
+struct sparp_s;
 
 typedef struct spar_query_env_s
 {
@@ -68,6 +69,8 @@ typedef struct spar_query_env_s
   int			sparqre_key_gen;
   caddr_t		sparqre_compiled_text;
   caddr_t		sparqre_catched_error;
+  const char *		sparqre_dbg_query_text;	/*!< A source text as passed to the top-level sparql compilation. For debug purposes and for mem pool callback only. Can be NULL. */
+  struct sparp_s *	sparqre_dbg_sparp;  /*!< A top-level instance of sparql compiler. For debug purposes and for mem pool callback only. Can be NULL; when non-NULL then the structure under pointer may be half-full. */
 } spar_query_env_t;
 
 extern int national_char;
@@ -86,11 +89,11 @@ extern int scn3_lexdepth;	/*!< Number of opened parenthesis */
 
 extern dk_set_t scn3_namespaces; /*!< List of namespace prefixes and URIs */
 
-#define MAXLEXDEPTH 80	/*!< Maximum allowed number of opened parenthesis */
-extern scn3_paren_t scn3_parens[MAXLEXDEPTH];
+#define SCN3_MAX_LEX_DEPTH 180	/*!< Maximum allowed number of any opened parenthesis in SQL text. SPARQL lexer has its own limit of the sort, \c SPARP_MAX_LEX_DEPTH */
+extern scn3_paren_t scn3_parens[SCN3_MAX_LEX_DEPTH];
 
-
-#define MAX_PRAGMALINE_DEPTH 4	/*!< Maximum nesting of line locations (i.e. 1 + (max no of nested '#pragma line push')) */
+#define SCN3_MAX_BRACE_DEPTH 80		/*!< Maximum allowed number of any opened parenthesis outside pair of curly braces in SQL text. SPARQL lexer has its own limit of the sort, \c SPARP_MAX_BRACE_DEPTH */
+#define SCN3_MAX_PRAGMALINE_DEPTH 4	/*!< Maximum nesting of line locations (i.e. 1 + (max no of nested '#pragma line push')) */
 
 /*! Logical line location as it is set by #pragma line statements.
 See the body of scn3_sprint_curr_line_loc() to find out how to use such data
@@ -110,7 +113,7 @@ opened in one file and pair '}' is closed in some other file. */
 } scn3_line_loc_t;
 
 /*! Stack of logical locations. */
-extern scn3_line_loc_t scn3_line_locs[MAX_PRAGMALINE_DEPTH];
+extern scn3_line_loc_t scn3_line_locs[SCN3_MAX_PRAGMALINE_DEPTH];
 /*! This is the number of not-yet-popped '#pragma line push' directives. */
 extern int scn3_pragmaline_depth;
 
@@ -262,6 +265,7 @@ void ddl_std_proc_1 (const char *text, int is_public, int to_recompile);
 void ddl_ensure_table (const char *name, const char *text);
 void ddl_ensure_column (const char *table, const char *col, const char *text, int is_drop);
 void ddl_sel_for_effect (const char *str);
+caddr_t qi_sel_for_effect (query_instance_t * qi, char *str, int n_pars,...);
 
 
 void ddl_create_table (query_instance_t * cli, const char * name, caddr_t * cols);
@@ -322,6 +326,8 @@ switch (dtp) \
 
 
 
+void sinv_builtin_inverse (caddr_t * f1, caddr_t * f2, int * flags, int n);
+
 void table_source_input (table_source_t * ts, caddr_t * inst,
     caddr_t * volatile state);
 void inx_op_source_input (table_source_t * ts, caddr_t * inst,
@@ -375,7 +381,6 @@ EXE_EXPORT (void, ddl_commit, (query_instance_t * qi));
 void sql_ddl_node_input (ddl_node_t * ddl, caddr_t * inst, caddr_t * state);
 
 void srv_global_init (char * mode);
-
 EXE_EXPORT (client_connection_t *, client_connection_create, (void));
 EXE_EXPORT (void, client_connection_reset, (client_connection_t * cli));
 
@@ -394,6 +399,7 @@ typedef struct server_lock_s
   lock_trx_t *	sl_owner_lt;
   dk_set_t	sl_waiting;
   int		sl_ac_save; /* for atomic mode, save the cli ac flag */
+  int 		sl_qp_save;
 } server_lock_t;
 
 extern server_lock_t server_lock;
@@ -586,6 +592,7 @@ void lt_hi_row_change (lock_trx_t * lt, key_id_t key, int log_op, db_buf_t log_e
 int  it_hi_done (index_tree_t * it);
 void cli_set_trx (client_connection_t * cli, lock_trx_t * trx);
 lock_trx_t * cli_set_new_trx (client_connection_t *cli);
+lock_trx_t * cli_set_new_trx_no_wait_cpt (client_connection_t *cli);
 
 
 void qr_free (query_t * qr);
@@ -806,7 +813,9 @@ void remote_table_source_input (remote_table_source_t * ts, caddr_t * inst,
     caddr_t * state);
 void rts_skip_to_set (remote_table_source_t * rts, caddr_t * inst, int set);
 int  rts_target_set (remote_table_source_t * rts, caddr_t * inst, state_slot_t * set_ssl, int set_no);
-
+void file_source_input (table_source_t * ts, caddr_t * inst, caddr_t * state);
+caddr_t aq_qr_func (caddr_t av, caddr_t * err_ret);
+void ts_aq_result (table_source_t * ts, caddr_t * inst);
 
 
 caddr_t deref_node_main_row (it_cursor_t * it, buffer_desc_t ** buf,
@@ -909,7 +918,7 @@ int cli_check_ws_terminate (client_connection_t *cli);
 typedef struct _rstmtstruct remote_stmt_t;
 #endif
 
-void remote_init (void);
+void remote_init (int cl_reinit);
 
 /* sqlprt.h */
 
@@ -1270,7 +1279,11 @@ extern int in_log_replay;
 extern int hash_join_enable;
 
 void list_wired_buffers (char *file, int line, char *format, ...);
-extern semaphore_t * parse_sem;
+extern dk_mutex_t * parse_mtx;
+extern du_thread_t * parse_mtx_owner;
+
+#define IN_PARSE { mutex_enter (parse_mtx); parse_mtx_owner = THREAD_CURRENT_THREAD; }
+#define LEAVE_PARSE { parse_mtx_owner = NULL; mutex_leave (parse_mtx); }
 
 extern void set_ini_trace_option (void);
 
@@ -1415,6 +1428,7 @@ int ts_handle_aq (table_source_t * ts, caddr_t * inst, buffer_desc_t ** order_bu
 void ts_aq_handle_end (table_source_t * ts, caddr_t * inst);
 void ts_aq_final (table_source_t * ts, caddr_t * inst, it_cursor_t * itc);
 void ts_check_batch_sz (table_source_t * ts, caddr_t * inst, it_cursor_t * itc);
+void ins_check_batch_sz (insert_node_t * ins, caddr_t * inst, it_cursor_t * itc);
 buffer_desc_t * ts_split_range (table_source_t * ts, caddr_t * inst, it_cursor_t * itc, int n_parts);
 buffer_desc_t * ts_initial_itc (table_source_t * ts, caddr_t * inst, it_cursor_t * itc);
 extern dk_mutex_t * qi_ref_mtx;
@@ -1462,7 +1476,12 @@ void key_col_insert (it_cursor_t * itc, row_delta_t * rd, insert_node_t * ins);
 int ce_col_cmp (db_buf_t any, int64 offset, dtp_t ce_flags, dbe_col_loc_t * cl, caddr_t value);
 int itc_col_row_check (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t * leaf_ret);
 int itc_col_row_check_dummy (it_cursor_t * itc, buffer_desc_t * buf);
+#ifdef MALLOC_DEBUG
+caddr_t DBG_NAME (itc_alloc_box) (DBG_PARAMS it_cursor_t * itc, int len, dtp_t dtp);
+#define itc_alloc_box(itc, len, dtp) dbg_itc_alloc_box (__FILE__, __LINE__, (itc), (len), (dtp))
+#else
 caddr_t itc_alloc_box (it_cursor_t * itc, int len, dtp_t dtp);
+#endif
 
 #define itc_free_box(itc, b) \
   {if ((uptrlong)itc->itc_temp > (uptrlong)b || (uptrlong)itc->itc_temp + itc->itc_temp_max < (uptrlong)b) dk_free_box ((caddr_t)b);}
@@ -1508,6 +1527,7 @@ extern int64 chash_space_avail;
 index_tree_t * qst_get_chash (caddr_t * inst, state_slot_t * ssl, state_slot_t * id_ssl, setp_node_t * setp);
 void cha_part_from_ssl (caddr_t * inst, state_slot_t * ssl, int min, int max);
 search_spec_t * sp_copy (search_spec_t * sp);
+search_spec_t * sp_list_copy (search_spec_t * sp);
 void qi_assign_root_id (query_instance_t * qi);
 void qi_root_done (query_instance_t * qi);
 int qi_inc_branch_count (query_instance_t * qi, int max, int n);
@@ -1610,6 +1630,8 @@ sort_cmp_func_t  itc_param_cmp_func (it_cursor_t * itc);
 void upd_col_pk (update_node_t * upd, caddr_t * inst);
 caddr_t cl_vec_exec (query_t * qr, client_connection_t * cli, mem_pool_t * mp, caddr_t * params, slice_id_t * slices, slice_id_t slid, db_buf_t * set_mask_ret, data_col_t ** dc_ret, int set_no_in_params);
 void sqlg_ks_col_alter  (key_source_t * ks);
+int sqlg_fref_n_grouping_sets (fun_ref_node_t * fref);
+setp_node_t * sqlg_qf_nth_setp (query_frag_t * qf, int nth);
 
 #define CAR(dt,x)	(x ? ((dt) ((x)->data)) : 0)
 #define CDR(x)		(x ? (x)->next : NULL)
@@ -1692,6 +1714,9 @@ uint64 qi_total_mem (query_instance_t * qi);
 
 int tb_is_rdf_quad (dbe_table_t * tb);
 void qn_vec_reuse (data_source_t * qn, caddr_t * inst);
+int64 sqlo_p_stat_query (dbe_table_t * tb, caddr_t p);
+
+
 extern int32 enable_vec_reuse;
 
 #define B_NEW_VARZ(t, v) NEW_VARZ(t, v)

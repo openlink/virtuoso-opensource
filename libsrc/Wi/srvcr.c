@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2057,7 +2057,9 @@ bif_scroll_cr_init (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   stmt = (srv_stmt_t *) dk_alloc_box_zero (sizeof (srv_stmt_t), DV_PL_CURSOR);
   stmt->sst_is_pl_cursor = 1;
   stmt->sst_query = qr;
+  IN_CLL;
   qr->qr_ref_count++;
+  LEAVE_CLL;
 
   return (caddr_t) stmt;
 }
@@ -2270,13 +2272,15 @@ bif_cursors_init (void)
   bif_define ( __SCROLL_CR_FETCH, bif_scroll_cr_fetch);
 
   bif_define ("bookmark", bif_bookmark);
-  bif_define_typed ("tree_md5", bif_tree_md5, &bt_varchar);
-  bif_define_typed ("__burst_mode_set", bif_burst_mode_set, &bt_integer);
+  bif_define_ex ("tree_md5", bif_tree_md5, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("__burst_mode_set", bif_burst_mode_set, BMD_RET_TYPE, &bt_integer, BMD_DONE);
 }
 
 
 caddr_t bif_iri_to_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 caddr_t bif_iri_to_id_nosignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
+caddr_t bif_box_flags_tweak (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
+caddr_t bif_sprintf_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 
 int
 bif_is_relocatable (bif_t bif)
@@ -2297,6 +2301,9 @@ bif_is_relocatable (bif_t bif)
 
       /* cast (let the VDB layer decide) */
       || bif_convert == bif
+      /* box flags */
+      || bif_box_flags_tweak == bif
+      || bif_sprintf_iri == bif
       )
     return 0;
 

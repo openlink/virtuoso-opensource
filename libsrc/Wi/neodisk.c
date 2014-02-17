@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -46,7 +46,13 @@
 #endif
 
 extern long tc_atomic_wait_2pc;
+extern int32 enable_flush_all;
+extern long tc_n_flush;
 long atomic_cp_msecs;
+long tc_dirty_at_cpt_start;
+sys_timer_t sti_cpt_atomic;
+sys_timer_t sti_cpt_sync;
+sys_timer_t sti_cpt_rollback;
 int auto_cpt_scheduled = 0;
 
 
@@ -114,6 +120,22 @@ lt_rb_check (lock_trx_t * lt)
   END_DO_HT;
 }
 
+int enable_cpt_rb_ck = 0;
+
+void
+cpt_rb_ck ()
+{
+  DO_SET (volatile lock_trx_t *, lt, &all_trxs)
+    {
+      if (lt->lt_threads && lt->lt_thr && !lt->lt_vdb_threads)
+	{
+	  du_thread_t * thr = lt->lt_thr;
+	  if (thr->thr_sem->sem_entry_count || !thr->thr_sem->sem_waiting.thq_count  || thr != thr->thr_sem->sem_waiting.thq_head.thr_prev)
+	    log_info ("thread %x may not be stopped for cpt rb lt %p", thr, lt);
+	}
+    }
+  END_DO_SET();
+}
 du_thread_t * cpt_thread;
 
 void
@@ -211,6 +233,8 @@ cpt_rollback (int may_freeze)
 #ifdef CHECKPOINT_TIMING
   all_trx_killed = get_msec_real_time();
 #endif
+  if (enable_cpt_rb_ck)
+    cpt_rb_ck ();
   ASSERT_IN_TXN;
 #ifdef CHECKPOINT_TIMING
   cp_is_attomic = get_msec_real_time();
@@ -1304,6 +1328,8 @@ void
 cpt_unremap (dbe_storage_t * dbs, it_cursor_t * itc)
 {
   int bufs_done = 0, bufs_done_total, buf_quota = main_bufs / 4, target;
+  dp_addr_t initial_remaps = 0;
+  uint32 start_unremap, end_unremap;
   dk_set_t bufs_list = NULL;
   cpt_remap_reverse = hash_table_allocate (cpt_dbs->dbs_cpt_remap->ht_actual_size);
   cpt_remap_free_logical_pages = cpt_reamp_free_physical_pages = cpt_reamp_free_pages = 0;
@@ -1323,7 +1349,18 @@ cpt_unremap (dbe_storage_t * dbs, it_cursor_t * itc)
       sethash ((void*)phys, cpt_remap_reverse, (void*)log);
     }
   END_DO_HT;
-  target = MIN (dbs->dbs_max_cp_remaps, (dbs->dbs_cpt_remap->ht_count / 20) * 19);
+  initial_remaps = dbs->dbs_cpt_remap->ht_count;
+  start_unremap = get_msec_real_time ();
+  if (cp_unremap_quota_is_set)
+    {
+      target = dbs->dbs_cpt_remap->ht_count - cp_unremap_quota;
+      if (target < 0)
+	target = 0;
+      if (target >  dbs->dbs_max_cp_remaps)
+	target = dbs->dbs_max_cp_remaps;
+    }
+  else
+    target = MIN (dbs->dbs_max_cp_remaps, (dbs->dbs_cpt_remap->ht_count / 20) * 19);
  again:
   bufs_done_total = 0;
   cpt_unremap_ram (target, &bufs_done_total);
@@ -1349,6 +1386,9 @@ cpt_unremap (dbe_storage_t * dbs, it_cursor_t * itc)
   if (bufs_done_total && cpt_dbs->dbs_cpt_remap->ht_count > target)
     goto again;
   iq_shutdown (IQ_STOP);
+  end_unremap = get_msec_real_time ();
+  if (end_unremap - start_unremap  > 5000)
+    log_info ("Checkpoint removed %d MB of remapped pages, leaving %d MB. Duration %9.4g s.  To save this time, increase MaxCheckpointRemap and/or set Unremap quota to 0 in ini file.", (initial_remaps - dbs->dbs_cpt_remap->ht_count) / PAGES_PER_MB, dbs->dbs_cpt_remap->ht_count / PAGES_PER_MB, (float)(end_unremap - start_unremap) / 1000);
   /* verify all unremaps are written.  shutdown exityy with bufs in iq will lose the pages, very corrupt, often visible as bad parent linkand sometimes as just lost updates.  */
   dbs_cache_check (dbs, IT_CHECK_FAST);
   iq_restart ();
@@ -1935,17 +1975,52 @@ int dbs_stop_cp = 0;
 void
 dbs_checkpoint (char *log_name, int shutdown)
 {
+  sys_timer_t _atm;
   char dt_start[DT_LENGTH];
   int mcp_delta_count, inx;
   long start_atomic;
+  uint32 start;
   FILE *checkpoint_flag_fd = NULL;
   if (!c_checkpoint_sync)
     dbf_fast_cpt = 1;
   mcp_delta_count = 0;
   LEAVE_TXN;
-  wi_check_all_compact (0);
-
-  bp_flush_all ();
+  if (enable_flush_all)
+    {
+      int ctr;
+      for (ctr = 0; ctr < 2; ctr++)
+	{
+	  float rate = 0;
+	  int n_dirty = dbs_dirty_count (), dirty_after;
+	  long n_flush = tc_n_flush;
+	  uint32 start = get_msec_real_time ();
+	  bp_flush (NULL, 1);
+	  start = get_msec_real_time () - start;
+	  dirty_after = dbs_dirty_count ();
+	  if (0 == ctr)
+	    rate = ((tc_n_flush - n_flush) / PAGES_PER_MB) / ((float)start / 1000);
+	  if (shutdown)
+	    break;
+	  if (dirty_after < 10000)
+	    break;
+	  if (0 == ctr && (float)dirty_after / (n_dirty + 1) > 0.7)
+	    {
+	      log_info ("Write load very high relative to disk write throughput.  Flushing at %9.2g MB/s while application is making dirty pages at %9.2g MB/s. To checkpoint the database, will now pause the workload with %d MB unflushed.",
+			(n_dirty / PAGES_PER_MB) / ((float)start / 1000), (dirty_after / PAGES_PER_MB) / ((float)start / 1000), dirty_after / PAGES_PER_MB);
+	      break;
+	    }
+	  if (0 == ctr && (float)dirty_after / (n_dirty + 1) > 0.2)
+	    {
+	      log_info ("Write load high relative to disk write throughput.  Flushing at %9.2g MB/s while application is making dirty pages at %9.2g MB/s. Doing a second flushing pass before checkpoint",
+			(n_dirty / PAGES_PER_MB) / ((float)start / 1000), (dirty_after / PAGES_PER_MB) / ((float)start / 1000));
+	    }
+	}
+    }
+  else
+    {
+      wi_check_all_compact (0);
+      bp_flush_all ();
+    }
   if (!shutdown)
     {
   iq_shutdown (IQ_SYNC);
@@ -1953,11 +2028,16 @@ dbs_checkpoint (char *log_name, int shutdown)
   iq_shutdown (IQ_SYNC);
     }
 
+  STI_START;
   IN_TXN;
   cpt_rollback (LT_KILL_FREEZE);
+  STI_END (sti_cpt_rollback);
   dt_now ((caddr_t)&dt_start);
+  tc_dirty_at_cpt_start += dbs_dirty_count ();
   start_atomic = get_msec_real_time ();
+  sti_init (&_atm);
   iq_shutdown (IQ_STOP);
+  sti_cum (&sti_cpt_sync, &_atm);
   wi_check_all_compact (0);
   wi_inst.wi_checkpoint_atomic = 1;
   iq_restart ();
@@ -1979,12 +2059,16 @@ dbs_checkpoint (char *log_name, int shutdown)
 	fclose(checkpoint_flag_fd);
       }
     bp_flush_all ();
+    STI_START;
     iq_shutdown (IQ_STOP);
+    STI_END (sti_cpt_sync);
     DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
       {
 	if (dbs->dbs_slices)
 	  continue;
+	STI_START;
 	dbs_sync_disks (dbs);
+	STI_END (sti_cpt_sync);
       }
     END_DO_SET();
   DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
@@ -2065,7 +2149,9 @@ dbs_checkpoint (char *log_name, int shutdown)
       {
       if (dbs->dbs_cpt_file_name && !dbs->dbs_slices)
 	{
+	  STI_START;
 	  dbs_sync_disks (dbs);
+	  STI_END (sti_cpt_sync);
 		unlink (dbs->dbs_cpt_file_name); /* remove cpt backup file */
 	}
       }
@@ -2101,6 +2187,7 @@ dbs_checkpoint (char *log_name, int shutdown)
   if (CPT_NORMAL == shutdown)
     cpt_over ();
   auto_cpt_scheduled = 0;
+  sti_cum (&sti_cpt_atomic, &_atm);
   atomic_cp_msecs += get_msec_real_time () - start_atomic;
 
   LEAVE_TXN;
@@ -2146,6 +2233,7 @@ srv_global_unlock_1 (client_connection_t *cli, lock_trx_t *lt, int was_error)
       server_lock.sl_owner = NULL;
       server_lock.sl_owner_lt = NULL;
       wi_inst.wi_atomic_ignore_2pc = 0;
+      enable_qp = server_lock.sl_qp_save;
       cpt_over ();
       LEAVE_TXN;
       lt->lt_is_excl = 0;
@@ -2206,6 +2294,8 @@ srv_global_lock (query_instance_t * qi, int flag)
       LEAVE_TXN;
       server_lock.sl_ac_save = lt->lt_client->cli_row_autocommit;
       lt->lt_client->cli_row_autocommit = 1;
+      server_lock.sl_qp_save = enable_qp;
+      enable_qp = 1;
       return;
     }
   else

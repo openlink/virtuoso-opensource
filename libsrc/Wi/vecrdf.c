@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2011 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -47,6 +47,24 @@ bif_id2i_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot
   if (IS_BOX_POINTER (err))
     sqlr_resignal (err);
 }
+
+
+
+void
+bif_id2i_vec_ns (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret)
+{
+  caddr_t err = NULL;
+  QNCAST (query_instance_t, qi, qst);
+  query_t * id2i = sch_proc_exact_def (wi_inst.wi_schema, "DB.DBA.ID_TO_IRI_VEC_NS");
+  if (!id2i)
+    sqlr_new_error ("42001", "VEC..", "id to iri vectored is not defined");
+  if (id2i->qr_to_recompile)
+    id2i = qr_recompile (id2i, NULL);
+  err = qr_subq_exec_vec (qi->qi_client, id2i, qi, NULL, 0, args, ret, NULL, NULL);
+  if (IS_BOX_POINTER (err))
+    sqlr_resignal (err);
+}
+
 
 int
 rb_serial_complete_len (caddr_t x)
@@ -251,8 +269,17 @@ dc_rb_id (data_col_t * dc, int inx)
   db_buf_t place = ((db_buf_t *) dc->dc_values)[inx];
   if (DV_RDF_ID == place[0])
     return LONG_REF_NA (place + 1);
-  else
+  else if (DV_RDF_ID_8 == place[0])
     return INT64_REF_NA (place + 1);
+  else if (DV_RDF == place[0])
+    {
+      rdf_box_t * rb = (rdf_box_t*)box_deserialize_string (place, INT32_MAX, 0);
+      int64 id = rb->rb_ro_id;
+      dk_free_box ((caddr_t)rb);
+      return id;
+    }
+  else
+    return 0;
 }
 
 void
@@ -442,8 +469,8 @@ bif_ro2sq_vec_1 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_s
     {
       rb_complete_qr =
 	  sql_compile_static
-	  ("select RO_DT_AND_LANG, RO_FLAGS, RO_VAL, RO_LONG from DB.DBA.RDF_OBJ where RO_ID = rdf_box_ro_id (?)", qi->qi_client,
-	  &err, SQLC_DEFAULT);
+	  ("select RO_DT_AND_LANG, RO_FLAGS, RO_VAL, blob_to_string (RO_LONG) from DB.DBA.RDF_OBJ where RO_ID = rdf_box_ro_id (?)",
+	  qi->qi_client, &err, SQLC_DEFAULT);
       if (err)
 	sqlr_resignal (err);
     }
@@ -464,7 +491,7 @@ bif_ro2sq_vec_1 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_s
       vec_ssl_assign (qst, ret, args[0]);
       return;
     }
-  if (DV_ANY != dc->dc_dtp && DV_ARRAY_OF_POINTER != dc->dc_dtp)
+  if (DV_ANY != ret->ssl_sqt.sqt_dtp && DV_ARRAY_OF_POINTER != ret->ssl_sqt.sqt_dtp)
     {
       SET_LOOP
       {
@@ -473,11 +500,15 @@ bif_ro2sq_vec_1 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_s
       END_SET_LOOP;
       return;
     }
+  if (DV_ANY == ret->ssl_sqt.sqt_dtp && DV_ANY != dc->dc_dtp)
+    dc_heterogenous (dc);
   is_boxes = DCT_BOXES & arg->dc_type;
   empty_mark = (DCT_BOXES & dc->dc_type) ? NULL : &dv_null;
   DC_CHECK_LEN (dc, qi->qi_n_sets - 1);
   if (DCT_BOXES & dc->dc_type)
     DC_FILL_TO (dc, int64, qi->qi_n_sets);
+  if (DV_ANY == dc->dc_dtp)
+    DC_FILL_TO (dc, caddr_t, qi->qi_n_sets);
   SET_LOOP
   {
     db_buf_t dv;
@@ -499,6 +530,7 @@ bif_ro2sq_vec_1 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_s
 	rb_sets[rb_fill++] = set;
 	rb_bits[set >> 3] |= 1 << (set & 7);
 	((db_buf_t *) dc->dc_values)[set] = empty_mark;
+	  dc->dc_n_values = set + 1;
       }
     else if ((DV_IRI_ID == dtp || DV_IRI_ID_8 == dtp) && !no_iris)
       {
@@ -509,6 +541,7 @@ bif_ro2sq_vec_1 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_s
 	  }
 	iri_bits[set >> 3] |= 1 << (set & 7);
 	((db_buf_t *) dc->dc_values)[set] = empty_mark;
+	  dc->dc_n_values = set + 1;
       }
     else
       {
@@ -628,7 +661,11 @@ bif_str_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_
   data_col_t * dc;
   db_buf_t set_mask = qi->qi_set_mask;
   int set, n_sets = qi->qi_n_sets, first_set = 0;
-  bif_ro2sq_vec_1 (qst, err_ret, args, ret, 0);
+  state_slot_t ssl_tmp;
+  memcpy (&ssl_tmp, ret, sizeof (state_slot_t));
+  if (ret->ssl_dc_dtp == DV_ANY)
+    ssl_tmp.ssl_dtp = DV_ANY;
+  bif_ro2sq_vec_1 (qst, err_ret, args, &ssl_tmp, 0);
   dc = QST_BOX (data_col_t *, qst, ret->ssl_index);
   if (dc->dc_dtp != DV_ANY)
     dc_heterogenous (dc);
@@ -685,4 +722,58 @@ bif_str_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_
 	}
     }
   END_SET_LOOP;
+}
+
+
+void
+bif_iri_to_id_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret)
+{
+  static char * cl_op_name = "IRI_TO_ID_1";
+  static char * op_name = "L_IRI_TO_ID";
+  QNCAST (QI, qi, qst);
+  db_buf_t set_mask = qi->qi_set_mask;
+  int set, n_sets = qi->qi_n_sets, first_set = 0;
+  int n_args = BOX_ELEMENTS (args);
+  cl_req_group_t * clrg;
+  cucurbit_t * cu;
+  int is_cl = CL_RUN_CLUSTER == cl_run_local_only;
+  if (1 != n_args)
+    {
+      *err_ret = BIF_NOT_VECTORED;
+      return;
+    }
+  clrg = dpipe_allocate (qi, 0, 1, is_cl ? &cl_op_name : &op_name);
+  cu = clrg->clrg_cu;
+  cu->cu_is_ordered = 1;
+  cu->cu_qst = qst;
+  mp_comment (clrg->clrg_pool, "vec_iri ", "");
+  QR_RESET_CTX
+    {
+      SET_LOOP 
+	{
+	  cu_ssl_row (cu, qst, args, 0);
+	}
+      END_SET_LOOP;
+      if (!is_cl)
+	{
+	  cu_rl_local_exec (cu);
+	}
+      first_set = 0;
+      SET_LOOP
+	{
+	  caddr_t * r = cu_next (clrg->clrg_cu, qi, 0);
+	  qst_set_over (qst, ret, r[2]);
+	}
+      END_SET_LOOP;
+      if (is_cl)
+	cu_next (clrg->clrg_cu, qi, 1);
+    }
+  QR_RESET_CODE
+    {
+      POP_QR_RESET;
+      dk_free_box ((caddr_t)clrg);
+      longjmp_splice (__self->thr_reset_ctx, reset_code);
+    }
+  END_QR_RESET;
+  dk_free_box ((caddr_t) clrg);
 }

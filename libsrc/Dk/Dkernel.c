@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -319,6 +319,8 @@ find_service (char *name)
 {
   USE_GLOBAL
   service_t * srv = services;
+  if (!(IS_BOX_POINTER (name) && DV_STRING == box_tag (name)))
+    return NULL;
   while (srv)
     {
       if (0 == strcmp (srv->sr_name, name))
@@ -361,6 +363,7 @@ get_free_thread (TAKE_G dk_session_t * for_ses)
     {
       if (for_ses)
 	for_ses->dks_n_threads++;
+      return dkt;
     }
   else
     {
@@ -368,7 +371,6 @@ get_free_thread (TAKE_G dk_session_t * for_ses)
 	{
 	  dkt = dk_thread_alloc ();
 	  future_thread_count++;
-
 	  if (for_ses)
 	    for_ses->dks_n_threads++;
 	}
@@ -986,6 +988,12 @@ sr_check_and_set_args (future_request_t * future, caddr_t * arguments, int argco
       goto error;
     }
 
+  if (DV_TYPE_OF (arguments) != DV_ARRAY_OF_POINTER)
+    {
+      reason = "malformed arguments array";
+      goto error;
+    }
+
   for (inx = 0; inx < argcount; inx++)
     {
       dtp_t arg_dtp = DV_TYPE_OF (arguments[inx]);
@@ -1010,7 +1018,7 @@ sr_check_and_set_args (future_request_t * future, caddr_t * arguments, int argco
   return 0;
 error:
   sr_report_future_error (future->rq_client, future->rq_service->sr_name, reason);
-  PrpcDisconnect (future->rq_client);
+  DKST_RPC_DONE (future->rq_client);
   return 1;
 }
 
@@ -1076,11 +1084,14 @@ future_wrapper (void *ignore)
 
   du_thread_t *this_thread = THREAD_CURRENT_THREAD;
 
+ again:
   {
 
     dbg_printf_2 (("future wrapper point 1 thread %p", this_thread));
     semaphore_enter (this_thread->thr_schedule_sem);	/* XXX: schedule_sem */
     dbg_printf_1 (("future wrapper activated thread %p", this_thread));
+    if ((void*)-1 == this_thread->thr_client_data)
+      return 0;
     c_thread = PROCESS_TO_DK_THREAD (this_thread);
   }
 
@@ -1157,7 +1168,10 @@ future_wrapper (void *ignore)
 		else if (ret_type == DV_C_STRING)
 		  ret_box[0] = box_string (result);
 		else
-		  ret_box[0] = result;
+		  {
+		    ret_box[0] = result;
+		    result = NULL;
+		  }
 	      }
 	    ret_block[DA_MESSAGE_TYPE] = (caddr_t) (long) DA_FUTURE_ANSWER;
 	    ret_block[RRC_COND_NUMBER] = box_num (future->rq_condition);
@@ -1188,8 +1202,19 @@ future_wrapper (void *ignore)
       if (this_thread->thr_reset_code)
 	thr_set_error_code (this_thread, NULL);
       dbg_printf_2 (("Done Future %ld on thread %p", future->rq_condition, this_thread));
-      mutex_enter (thread_mtx);
       F_RETURNED;
+      mutex_enter (thread_mtx);
+      if (DKST_FINISH == client->dks_thread_state && !client->dks_to_close && !client->dks_fixed_thread
+	  && 1 == client->dks_n_threads && !in_basket.bsk_count)
+	{
+	  c_thread->dkt_request_count = 0;
+	  client->dks_thread_state = DKST_IDLE;
+	  client->dks_n_threads = 0;
+	  resource_store (free_threads, (void*)c_thread);
+	  mutex_leave (thread_mtx);
+	  dk_free (future, sizeof (future_request_t));
+	  goto again;
+	}
       client->dks_n_threads--;
       if (client->dks_n_threads < 0 || client->dks_n_threads > MAX_THREADS)
 	{
@@ -1410,7 +1435,7 @@ future_wrapper (void *ignore)
       PROCESS_ALLOW_SCHEDULE ();
     }
   dbg_printf_2 (("future_wrapper exiting on thread %p", this_thread));
-  return 0;
+  goto again;
 }
 
 
@@ -1466,6 +1491,7 @@ future_request_t *
 frq_create (dk_session_t * ses, caddr_t * request)
 {
   future_request_t *future_request = (future_request_t *) dk_alloc (sizeof (future_request_t));
+  caddr_t * args;
   memset (future_request, 0, sizeof (*future_request));
 
   future_request->rq_client = ses;
@@ -1484,7 +1510,9 @@ frq_create (dk_session_t * ses, caddr_t * request)
   if (BOX_ELEMENTS (request) != DA_FRQ_LENGTH)
     {
       sr_report_future_error (ses, "", "invalid future request length");
+      dk_free_tree (request);
       PrpcDisconnect (ses);
+      PrpcSessionFree (ses);
       dk_free (future_request, sizeof (future_request_t));
       return NULL;
     }
@@ -1495,13 +1523,22 @@ frq_create (dk_session_t * ses, caddr_t * request)
 
   if (!future_request->rq_service)
     {
-      printf ("\nUnknown service %s requested. req no = %d", request[FRQ_SERVICE_NAME], (int) unbox (request[FRQ_COND_NUMBER]));
+      caddr_t name = request[FRQ_SERVICE_NAME], svc;
+
+      if (IS_BOX_POINTER (name) && DV_TYPE_OF (name) == DV_STRING)
+	svc = name;
+      else
+	svc = "no name";
+
+      printf ("\nUnknown service %s requested. req no = %d", svc, (int) unbox (request[FRQ_COND_NUMBER]));
       dk_free (future_request, sizeof (future_request_t));
       return NULL;
     }
 
   future_request->rq_condition = (long) unbox (request[FRQ_COND_NUMBER]);	/* mty HUHTI */
-  future_request->rq_arguments = (long **) request[FRQ_ARGUMENTS];
+  args = request[FRQ_ARGUMENTS];
+  if (IS_BOX_POINTER (args) && DV_TYPE_OF (args) == DV_ARRAY_OF_POINTER)
+    future_request->rq_arguments = (long **) request[FRQ_ARGUMENTS];
 
   return future_request;
 }
@@ -1579,21 +1616,11 @@ schedule_future:
       return;
     }
   thread = get_free_thread (PASS_G ses);
-  /* If there is a thread for the request, put it underway right off
-     without queuing - oui 020693 */
   if (thread)
     {
-      ss_dprintf_4 (("found free thread %p", thread->dkt_process));
-      reqs_on_the_fly++;
       thread->dkt_requests[0] = future_request;
       thread->dkt_request_count = 1;
       future_request->rq_thread = thread;
-#if 1						 /*!!! */
-      ss_dprintf_2 (("Starting future %ld with thread %p", future_request->rq_condition,
-	      /*future_request->rq_service->sr_name, */ thread->dkt_process));
-#else
-      ss_dprintf_2 (("Starting future %ld %s with thread %p", future_request->rq_condition, future_request->rq_service->sr_name, thread->dkt_process));
-#endif
       if (ses->dks_thread_state != DKST_BURST)
 	{
 	  if (ses->dks_thread_state != DKST_IDLE)
@@ -1622,9 +1649,9 @@ schedule_future:
 	{
 	  thrs_printf ((thrs_fo, "ses %p thr:%p still burst (%s, to_close:%d)\n", ses, THREAD_CURRENT_THREAD, future_request->rq_service ? future_request->rq_service->sr_name : "<no-service>", future_request->rq_to_close));
 	}
-      mutex_leave (thread_mtx);
 
-      semaphore_leave (thread->dkt_process->thr_schedule_sem);	/* XXX: schedule_sem */
+      mutex_leave (thread_mtx);
+      semaphore_leave (thread->dkt_process->thr_schedule_sem);
       check_inputs_action_count++;
     }
   else
@@ -2274,6 +2301,8 @@ dks_remove_pending (dk_session_t * ses)
  *
  * Globals used : session_request_hook services
  */
+extern box_destr_f box_destr[256];
+
 int
 read_service_request (dk_session_t * ses)
 {
@@ -2282,6 +2311,8 @@ read_service_request (dk_session_t * ses)
 
   if (!SESSTAT_ISSET (ses->dks_session, SST_TIMED_OUT) && !SESSTAT_ISSET (ses->dks_session, SST_BROKEN_CONNECTION) && (DV_TYPE_OF (request) != DV_ARRAY_OF_POINTER || BOX_ELEMENTS (request) < 1))
     {
+      if (!box_destr [DV_TYPE_OF (request)])
+	dk_free_tree (request);
       sr_report_future_error (ses, "", "invalid future box");
       SESSTAT_CLR (ses->dks_session, SST_OK);
       SESSTAT_SET (ses->dks_session, SST_BROKEN_CONNECTION);
@@ -2488,6 +2519,29 @@ dk_session_allocate (int sesclass)
   return dk_ses;
 }
 
+
+dk_session_t *
+dk_session_alloc_box (int sesclass, int in_len)
+{
+  dk_session_t *dk_ses = NULL;
+  session_t *ses;
+  dk_ses = (dk_session_t *) dk_alloc_box (sizeof (dk_session_t), DV_STRING_SESSION);
+  memset (dk_ses, 0, sizeof (dk_session_t));
+  ses = session_allocate (sesclass);
+  SESSION_SCH_DATA (dk_ses) = (scheduler_io_data_t *) dk_alloc (sizeof (scheduler_io_data_t));
+  memset (SESSION_SCH_DATA (dk_ses), 0, sizeof (scheduler_io_data_t));
+  SESSION_SCH_DATA (dk_ses)->sio_is_served = -1;
+  dk_ses->dks_session = ses;
+  SESSION_DK_SESSION (ses) = dk_ses;		 /* two way link. */
+  dk_ses->dks_mtx = mutex_allocate ();
+  dk_ses->dks_in_buffer = (char *) dk_alloc (in_len);
+  dk_ses->dks_in_length = in_len;
+  dk_ses->dks_out_buffer = (char *) dk_alloc (DKSES_OUT_BUFFER_LENGTH);
+  dk_ses->dks_out_length = DKSES_OUT_BUFFER_LENGTH;
+  dk_ses->dks_read_block_timeout.to_sec = 100;
+  dk_ses->dks_refcount = 1;
+  return dk_ses;
+}
 
 void
 dk_session_clear (dk_session_t * ses)
@@ -2742,7 +2796,10 @@ void
 dk_thread_free (void *data)
 {
   dk_thread_t *dkt = (dk_thread_t *) data;
+  du_thread_t  * thr = dkt->dkt_process;
   ASSERT_IN_MTX (thread_mtx);
+  thr->thr_client_data = (void*)-1;
+  semaphore_leave (thr->thr_schedule_sem);
   if (dkt && dkt->dkt_requests[0] && dkt->dkt_request_count)
     dk_free (dkt->dkt_requests[0], sizeof (future_request_t));
   dk_free (dkt, sizeof (dk_thread_t));

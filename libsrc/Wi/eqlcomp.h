@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -58,8 +58,8 @@ stmt_compilation_t *qr_describe_1 (query_t * qr, caddr_t *err_ret, client_connec
 caddr_t str_to_sym (const char *str);
 
 void ts_free (table_source_t * ts);
-
 void sel_free (select_node_t * sel);
+void hash_source_free (hash_source_t * hs);
 
 #define SSL_ADD_TO_QR(sl) \
   dk_set_push (&cc->cc_super_cc->cc_query->qr_state_map, (void *) sl);

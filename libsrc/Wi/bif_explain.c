@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -233,9 +233,14 @@ dv_iri_short_name (caddr_t x)
     return NULL;
   if (iri_split (name, &pref, &local))
     {
+      int inx;
+      caddr_t r;
       dk_free_box (name);
       dk_free_box (pref);
-      r = box_dv_short_string (local + 4);
+      for (inx = box_length (local) - 1; inx > 3; inx--)
+	if (':'== local[inx] || '/' == local[inx] || '#'== local[inx])
+	  break;
+      r = box_dv_short_nchars (local + inx, box_length (local) - inx);
       dk_free_box (local);
       return r;
     }
@@ -778,7 +783,7 @@ ks_print_0 (key_source_t * ks)
 static int
 ssl_is_column_derived(state_slot_t * ssl)
 {
-  return SSL_VEC == ssl->ssl_type && ssl->ssl_column;
+  return ssl && SSL_VEC == ssl->ssl_type && ssl->ssl_column;
 }
 
 /* milos: function which is used to detect a bad plan (possible Cartesian product) and set a warning with appropriate message */
@@ -905,10 +910,10 @@ node_stat (data_source_t * qn)
     {
       QNCAST (query_frag_t, qf, qn);
       int64 rt = ((QI*)ctx_inst)->qi_client->cli_run_clocks;
-      stmt_printf (("wait time %9.2g%% of exec real time, fanout %9.2g\n",  (float)QST_INT (ctx_inst, qf->qf_wait_clocks) * 100 / (float)rt, srs->srs_n_in ? srs->srs_n_out / (float)srs->srs_n_in : 0.0));
+      stmt_printf (("wait time %9.2g%% of exec real time, fanout %9.6g\n",  (float)QST_INT (ctx_inst, qf->qf_wait_clocks) * 100 / (float)rt, srs->srs_n_in ? srs->srs_n_out / (float)srs->srs_n_in : 0.0));
     }
   else
-    stmt_printf (("time %9.2g%% fanout %9.2g input %9.2g rows\n",  (float)srs->srs_cum_time * 100 / (float)total, srs->srs_n_in ? srs->srs_n_out / (float)srs->srs_n_in : 0.0, (float)srs->srs_n_in));
+    stmt_printf (("time %9.2g%% fanout %9.6g input %9.6g rows\n",  (float)srs->srs_cum_time * 100 / (float)total, srs->srs_n_in ? srs->srs_n_out / (float)srs->srs_n_in : 0.0, (float)srs->srs_n_in));
   if (IS_TS (qn) || IS_QN (qn, hash_source_input))
     {
   	  float guess = IS_TS (qn) ? ((table_source_t *)qn)->ts_cardinality : ((hash_source_t *)qn)->hs_cardinality;
@@ -1108,6 +1113,18 @@ qn_print_reuse (data_source_t * qn)
     }
 }
 
+const char *
+predicate_name_of_gsop (int gsop)
+{
+  switch (gsop)
+    {
+    case GSOP_CONTAINS:		return "st_contains"		; break;
+    case GSOP_WITHIN:		return "st_within"		; break;
+    case GSOP_INTERSECTS:	return "st_intersects"		; break;
+    case GSOP_MAY_INTERSECT:	return "st_may_intersect"	; break;
+    default:			return "???"			; break;
+    }
+}
 
 
 void
@@ -1525,7 +1542,7 @@ node_print_0 (data_source_t * node)
     {
       text_node_t *txs = (text_node_t *) node;
       if (txs->txs_geo)
-	stmt_printf (("geo %s (", GSOP_INTERSECTS == txs->txs_geo ? "intersects": GSOP_CONTAINS == txs->txs_geo ? "contains": "within"));
+        stmt_printf (("geo %x %s (", txs->txs_geo, predicate_name_of_gsop (txs->txs_geo)));
       else
 	if (txs->txs_xpath_text_exp)
 	stmt_printf (("XCONTAINS ("));
@@ -1605,7 +1622,8 @@ node_print (data_source_t * node)
 {
   qn_input_fn in;
   query_instance_t * qi = (query_instance_t *) THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_QST);
-  QI_CHECK_STACK (qi, &node, 10000);
+  if (qi)
+    QI_CHECK_STACK (qi, &node, 10000);
   in = node->src_input;
   if (node->src_stat)
     node_stat (node);
@@ -1856,7 +1874,6 @@ node_print (data_source_t * node)
 	  stmt_printf ((" array "));
 	  ssl_print (fref->fnr_ssa.ssa_array);
 	  stmt_printf ((" save: "));
-	  ssl_array_print (fref->fnr_ssa.ssa_save);
 	  stmt_printf (("\n"));
 	}
       { 
@@ -2220,7 +2237,7 @@ node_print (data_source_t * node)
     {
       text_node_t *txs = (text_node_t *) node;
       if (txs->txs_geo)
-	stmt_printf (("geo %s ", GSOP_INTERSECTS == txs->txs_geo ? "intersects": GSOP_CONTAINS == txs->txs_geo ? "contains": "within"));
+	stmt_printf (("geo %x %s ", txs->txs_geo, predicate_name_of_gsop (txs->txs_geo)));
       else
 	if (txs->txs_xpath_text_exp)
 	stmt_printf (("XCONTAINS ("));
@@ -2356,9 +2373,12 @@ qr_print (query_t * qr)
   du_thread_t * self = THREAD_CURRENT_THREAD;
   query_instance_t * qi = (query_instance_t *) THR_ATTR (self, TA_REPORT_QST);
   query_instance_t * stat_qi = (QI*)THR_ATTR (self, TA_STAT_INST);
-  if (!qi || (qi->qi_trx->lt_threads != 1&& qi != stat_qi))
-    GPF_T;
-  QI_CHECK_STACK (qi, &qr, 10000);
+  if (qi || stat_qi)
+    {
+      if (!qi || (qi->qi_trx->lt_threads != 1&& qi != stat_qi))
+	GPF_T;
+      QI_CHECK_STACK (qi, &qr, 10000);
+    }
   stmt_printf (("{ %s\n", qr->qr_lock_mode == PL_EXCLUSIVE ? "FOR UPDATE" : ""));
   qr_print_params (qr);
   node_print (qr->qr_head_node);
@@ -2398,6 +2418,920 @@ qr_print_top (query_t * qr)
   qr_print (qr);
 }
 
+void ses_sprintf (dk_session_t *ses, const char *fmt, ...);
+
+/* explain in XML format  */
+
+static void
+ssl_print_xml (state_slot_t * ssl, dk_session_t * s)
+{
+  if (!ssl)
+    {
+      SES_PRINT(s, "<ssl />");
+      return;
+    }
+  if (CV_CALL_PROC_TABLE == ssl)
+    {
+      SES_PRINT (s, "<ssl proc-table='1' />");
+      return;
+    }
+  else if (CV_CALL_VOID == ssl)
+    {
+      SES_PRINT (s, "<ssl void-proc='1' />");
+      return;
+    }
+  switch (ssl->ssl_type)
+    {
+#if 0
+    case SSL_PARAMETER:
+    case SSL_COLUMN:
+    case SSL_VARIABLE:
+    case SSL_VEC:
+      ses_sprintf (s, "<ssl index='%d' name='%s' />", ssl->ssl_index, ssl->ssl_name ? ssl->ssl_name : "-");
+      break;
+#endif
+    case SSL_REF:
+      {
+	QNCAST (state_slot_ref_t, sslr, ssl);
+	ssl_print_xml (sslr->sslr_ssl, s);
+	break;
+      }
+    case SSL_CONSTANT:
+	{
+	  caddr_t err_ret = NULL;
+	  dtp_t dtp = DV_TYPE_OF (ssl->ssl_constant);
+	  if (DV_DB_NULL == dtp)
+	    SES_PRINT (s, "<ssl constant='NULL' />");
+	  else if (DV_RDF == dtp)
+	    {
+	      rdf_box_t * rb = (rdf_box_t*)ssl->ssl_constant;
+	      ses_sprintf (s, "<ssl constant='rdflit" BOXINT_FMT "' />", rb->rb_ro_id);
+	    }
+	  else
+	    {
+	      caddr_t strval = box_cast_to (NULL, ssl->ssl_constant,
+					    dtp, DV_SHORT_STRING,
+		  NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE,
+		  &err_ret);
+	      if (!err_ret && strval)
+		{
+		  ses_sprintf (s, "<ssl constant='" EXPLAIN_LINE_MAX_STR_FORMAT "' />", strval);
+		}
+	      else
+		SES_PRINT (s, "<ssl constant='' />");
+	      if (err_ret)
+		dk_free_tree (err_ret);
+	      if (strval)
+		dk_free_box (strval);
+	    }
+	}
+      break;
+    default:
+	{
+	  char * name = ssl->ssl_name ? ssl->ssl_name : "-";
+	  ses_sprintf (s, "<ssl index='%d' name='", ssl->ssl_index);
+	  dks_esc_write (s, name, strlen (name), CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_PTEXT);
+	  SES_PRINT (s, "' />");
+	}
+      break;
+    }
+  SES_PRINT (s, "\n");
+}
+
+void
+ssl_array_print_xml (state_slot_t ** ssls, dk_session_t * s)
+{
+  int inx;
+  DO_BOX (state_slot_t *, ssl, inx, ssls)
+  {
+    ssl_print_xml (ssl, s);
+  }
+  END_DO_BOX;
+}
+
+void
+ssl_list_print_xml (dk_set_t ssls, dk_session_t * s)
+{
+  DO_SET (state_slot_t *, ssl, &ssls)
+  {
+    ssl_print_xml (ssl, s);
+  }
+  END_DO_SET ();
+}
+
+const char *
+cmp_op_text_xml (int cmp)
+{
+  switch (cmp)
+    {
+    case CMP_EQ:
+      return ("=");
+
+    case CMP_LT:
+      return ("&lt;");
+
+    case CMP_LTE:
+      return "&lt;=";
+
+    case CMP_GT:
+      return ("&gt;");
+
+    case CMP_GTE:
+      return ("&gt;=");
+
+    case CMP_NULL:
+      return ("IS NULL");
+
+    case CMP_LIKE:
+      return ("LIKE");
+    }
+  return ("unknown");
+}
+
+static void
+sp_list_print_xml (search_spec_t * sp, dk_session_t * s)
+{
+  while (sp)
+    {
+      SES_PRINT (s, "<sp");
+      if (sp->sp_col)
+	ses_sprintf (s, " col='%s'", sp->sp_col->col_name);
+      else
+	ses_sprintf (s, " col='col#%ld'", sp->sp_cl.cl_col_id);
+      SES_PRINT (s, ">\n");
+      if (sp->sp_min_op != CMP_NONE)
+	{
+	  SES_PRINT (s, "<op");
+	  ses_sprintf (s, " code='%s' ", cmp_op_text_xml (sp->sp_min_op));
+	  SES_PRINT (s, ">\n");
+	  ssl_print_xml (sp->sp_min_ssl, s);
+	  SES_PRINT (s, "</op>\n");
+	}
+      if (sp->sp_max_op != CMP_NONE)
+	{
+	  SES_PRINT (s, "<op");
+	  ses_sprintf (s, " code='%s' ", cmp_op_text_xml (sp->sp_max_op));
+	  SES_PRINT (s, ">\n");
+	  ssl_print_xml (sp->sp_max_ssl, s);
+	  SES_PRINT (s, "</op>\n");
+	}
+      SES_PRINT (s, "</sp>");
+      sp = sp->sp_next;
+    }
+}
+
+void node_print_xml (QI * qi, dk_session_t * s, data_source_t * qn);
+
+static void
+qr_print_xml (QI * qi, query_t * qr, dk_session_t * s, const char * tag)
+{
+  ses_sprintf (s, "<%s>", tag);
+  SES_PRINT (s, "<params>");
+  ssl_list_print_xml (qr->qr_parms, s);
+  SES_PRINT (s, "</params>");
+  node_print_xml (qi, s, qr->qr_head_node);
+  ses_sprintf (s, "</%s>", tag);
+}
+
+static void
+code_vec_print_xml (QI * qi, code_vec_t cv, dk_session_t * s)
+{
+  int compound_level = 0;
+  char *strptr;
+  DO_INSTR (in, 0, cv)
+    {
+      if (in->ins_type == INS_COMPOUND_END)
+	compound_level--;
+      /*stmt_printf (("      %d: ", (int) INSTR_OFS (in, cv)));*/
+      switch (in->ins_type)
+	{
+	case IN_ARTM_FPTR: strptr = "<UNKNOWN>"; goto artm_print;
+	case IN_ARTM_PLUS: strptr = "+"; goto artm_print;
+	case IN_ARTM_MINUS: strptr = "-"; goto artm_print;
+	case IN_ARTM_TIMES: strptr = "*"; goto artm_print;
+	case IN_ARTM_DIV: strptr = "/"; goto artm_print;
+	case IN_ARTM_IDENTITY: strptr = ":=";
+artm_print:
+     	  ses_sprintf (s, "<artm op='%s'>", strptr); 
+     	  SES_PRINT (s, "<res>"); 
+	  ssl_print_xml (in->_.artm.result, s);
+     	  SES_PRINT (s, "</res>"); 
+     	  SES_PRINT (s, "<left>"); 
+	  ssl_print_xml (in->_.artm.left, s);
+     	  SES_PRINT (s, "</left>"); 
+	  if (in->_.artm.right)
+	    {
+	      SES_PRINT (s, "<right>"); 
+	      ssl_print_xml (in->_.artm.right, s);
+	      SES_PRINT (s, "</right>"); 
+	    }
+     	  SES_PRINT (s, "</artm>");
+	  break;
+	case IN_AGG:
+	  {
+	    int op = in->_.agg.op;
+	    char * name = AMMSC_SUM == op ? "sum": AMMSC_COUNTSUM == op ? "countsum": AMMSC_COUNT == op ? "count": AMMSC_MIN == op ? "min": AMMSC_MAX == op ? "max" : AMMSC_ONE == op ? "subq_value": "unknown ";
+
+	    ses_sprintf (s, "<agg op='%s'>", name);
+	    SES_PRINT (s, "<res>");
+	    ssl_print_xml (in->_.agg.result, s);
+	    SES_PRINT (s, "</res>");
+	    SES_PRINT (s, "<arg>");
+	    ssl_print_xml (in->_.agg.arg, s);
+	    SES_PRINT (s, "</arg>");
+	    if (in->_.agg.set_no)
+	      {
+		SES_PRINT (s, "<setno>");
+		ssl_print_xml (in->_.agg.set_no, s);
+		SES_PRINT (s, "</setno>");
+	      }
+	    if (in->_.agg.distinct)
+	      {
+		SES_PRINT (s, "<distinct>");
+		ssl_print_xml (in->_.agg.distinct->ha_tree, s);
+		SES_PRINT (s, "</distinct>");
+	      }
+	    SES_PRINT (s, "</agg>");
+	    break;
+	  }
+	case IN_PRED:
+	  {
+	    if (in->_.pred.func == subq_comp_func)
+	      {
+		subq_pred_t *subp = (subq_pred_t *) in->_.pred.cmp;
+		SES_PRINT (s, "<if>");
+		qr_print_xml (qi, subp->subp_query, s, "subq");
+		SES_PRINT (s, "</if>");
+	      }
+	    else if (in->_.pred.func == bop_comp_func)
+	      {
+		bop_comparison_t *bop = (bop_comparison_t *) in->_.pred.cmp;
+		ses_sprintf (s, "<if op='%s' succ='%d' else='%d' unkn='%d' merge='%d'>", cmp_op_text_xml (in->_.cmp.op),
+		    in->_.cmp.succ, in->_.cmp.fail, in->_.cmp.unkn, in->_.cmp.end);
+		SES_PRINT (s, "<left>");
+		ssl_print_xml (bop->cmp_left, s);
+		SES_PRINT (s, "</left>");
+		SES_PRINT (s, "<right>");
+		ssl_print_xml (bop->cmp_right, s);
+		SES_PRINT (s, "</right>");
+		SES_PRINT (s, "</if>");
+	      }
+	    else if (in->_.pred.func == distinct_comp_func)
+	      {
+		SES_PRINT (s, "<distinct>");
+		ssl_array_print_xml (((hash_area_t *) in->_.pred.cmp)->ha_slots, s);
+		SES_PRINT (s, "</distinct>");
+	      }
+	    break;
+	  }
+
+	case IN_COMPARE:
+	  {
+	    ses_sprintf (s, "<if op='%s' succ='%d' else='%d' unkn='%d' merge='%d'>", cmp_op_text_xml (in->_.cmp.op),
+		in->_.cmp.succ, in->_.cmp.fail, in->_.cmp.unkn, in->_.cmp.end);
+	    SES_PRINT (s, "<left>");
+	    ssl_print_xml (in->_.cmp.left, s);
+	    SES_PRINT (s, "</left>");
+	    SES_PRINT (s, "<right>");
+	    ssl_print_xml (in->_.cmp.right, s);
+	    SES_PRINT (s, "</right>");
+	    SES_PRINT (s, "</if>");
+	    break;
+	  }
+	case INS_SUBQ:
+	  {
+	    qr_print_xml (qi, in->_.subq.query, s, "subq");
+	    break;
+	  }
+	case IN_VRET:
+	  SES_PRINT (s, "<vret>");
+	  ssl_print_xml (in->_.vret.value, s);
+	  SES_PRINT (s, "</vret>");
+	  break;
+
+	case IN_BRET:
+	  ses_sprintf (s, "<bret ret='%d'/>", in->_.bret.bool_value);
+	  break;
+
+	case INS_CALL:
+	case INS_CALL_BIF:
+	  if (in->_.call.ret != (state_slot_t *)1)
+	    {
+	      ses_sprintf (s, "<call name='%s'>", in->_.call.proc); 
+	      SES_PRINT (s, "<params>");
+	      ssl_array_print_xml (in->_.call.params, s);
+	      SES_PRINT (s, "</params>");
+	      SES_PRINT (s, "<ret>");
+	      ssl_print_xml (in->_.call.ret, s);
+	      SES_PRINT (s, "</ret>");
+	      SES_PRINT (s, "</call>");
+	    }
+	  else
+	    {
+	      unsigned _inx;
+	      state_slot_t **ssls = in->_.call.params;
+	      ses_sprintf (s, "<call name='%s'>", in->_.call.proc); 
+	      SES_PRINT (s, "<ret>");
+	      ssl_print (in->_.call.params[0]);
+	      SES_PRINT (s, "</ret>");
+	      SES_PRINT (s, "<params>");
+	      for (_inx = 1; _inx < (ssls ? BOX_ELEMENTS (ssls) : 0); _inx++)
+		{
+		  state_slot_t *ssl = (state_slot_t *)ssls[_inx];
+		  ssl_print_xml (ssl, s);
+		}
+	      SES_PRINT (s, "</params>");
+	      SES_PRINT (s, "</call>");
+	    }
+	  break;
+	case INS_OPEN:
+	  SES_PRINT (s, "<open>");
+	  SES_PRINT (s, "<cr>");
+	  ssl_print_xml (in->_.open.cursor, s);
+	  SES_PRINT (s, "</cr>");
+	  qr_print_xml (qi, in->_.open.query, s, "qr");
+	  SES_PRINT (s, "</open>");
+	  break;
+
+	case INS_FETCH:
+	  SES_PRINT (s, "<fetch>");
+	  SES_PRINT (s, "<cr>");
+	  ssl_print_xml (in->_.fetch.cursor, s);
+	  SES_PRINT (s, "</cr>");
+	  SES_PRINT (s, "<into>");
+	  ssl_array_print_xml (in->_.fetch.targets, s);
+	  SES_PRINT (s, "</into>");
+	  SES_PRINT (s, "</fetch>");
+	  break;
+	case INS_HANDLER:
+	  ses_sprintf (s, "<handler label='%d'>", in->_.handler.label);
+	    {
+	      int inx;
+	      DO_BOX (caddr_t *, state, inx, in->_.handler.states)
+		{
+		  ses_sprintf (s, "<state code='%s' />", IS_BOX_POINTER (state) ? state[0] : "not found");
+		}
+	      END_DO_BOX;
+	    }
+	  break;
+	case INS_HANDLER_END:
+	  ses_sprintf (s, "</handler>");
+	  break;
+	case INS_COMPOUND_START:
+	  compound_level++;
+	  ses_sprintf (s, "<comp level='%d' line='%d' src='%s'>", compound_level,
+		in->_.compound_start.line_no,
+		in->_.compound_start.file_name ? in->_.compound_start.file_name : ""
+	      ); 
+	  break;
+	case INS_COMPOUND_END:
+	  SES_PRINT (s, "</comp>");
+	  break;
+
+	case IN_JUMP:
+	  ses_sprintf (s, "<jmp label='%d' lev='%d'/>", in->_.label.label, in->_.label.nesting_level);
+	  break;
+
+	case INS_QNODE:
+	    {
+	      data_source_t *new_node = (data_source_t *)in->_.qnode.node;
+	      dk_set_t conts = new_node->src_continuations;
+	      new_node->src_continuations = NULL;
+	      SES_PRINT (s, "<qnode>");
+	      node_print_xml (qi, s, new_node);
+	      SES_PRINT (s, "</qnode>");
+	      new_node->src_continuations = conts;
+	    }
+	  break;
+	case INS_BREAKPOINT:
+	  ses_sprintf (s, "<brk line='%d'/>", (int) in->_.breakpoint.line_no);
+	  break;
+	case INS_FOR_VECT:
+	   {
+	     SES_PRINT (s, "<vectored>");
+	     SES_PRINT (s, "<in_vars>");
+	     ssl_array_print_xml (in->_.for_vect.in_vars, s);
+	     SES_PRINT (s, "</in_vars>");
+	     SES_PRINT (s, "<in_values>");
+	     ssl_array_print_xml (in->_.for_vect.in_values, s);
+	     SES_PRINT (s, "</in_values>");
+	     SES_PRINT (s, "<out_vars>");
+	     ssl_array_print_xml (in->_.for_vect.out_vars, s);
+	     SES_PRINT (s, "</out_vars>");
+	     SES_PRINT (s, "<out_values>");
+	     ssl_array_print_xml (in->_.for_vect.out_values, s);
+	     SES_PRINT (s, "</out_values>");
+	     SES_PRINT (s, "<code>");
+	     code_vec_print_xml (qi, in->_.for_vect.code, s);
+	     SES_PRINT (s, "<code>");
+	     SES_PRINT (s, "</vectored>");
+	   }
+	 break;
+	default:;
+	}
+    }
+  END_DO_INSTR;
+}
+
+static void
+node_print_code_xml (QI * qi, dk_session_t * s, data_source_t * qn)
+{
+  if (qn->src_pre_code)
+    {
+      SES_PRINT (s, "<pre_code>");
+      code_vec_print_xml (qi, qn->src_pre_code, s);
+      SES_PRINT (s, "</pre_code>");
+    }
+  if (qn->src_after_test)
+    {
+      SES_PRINT (s, "<after_test>");
+      code_vec_print_xml (qi, qn->src_after_test, s);
+      SES_PRINT (s, "</after_test>");
+    }
+  if (qn->src_after_code)
+    {
+      SES_PRINT (s, "<after_code>");
+      code_vec_print_xml (qi, qn->src_after_code, s);
+      SES_PRINT (s, "</after_code>");
+    }
+}
+
+static char *
+setp_ha_op_name (setp_node_t *setp)
+{
+  if (!setp->setp_ha)
+    return "";
+  switch (setp->setp_ha->ha_op)
+    {
+      case HA_FILL: return "build";
+      case HA_DISTINCT: return "distinct";
+      case HA_GROUP: return "group";
+      case HA_ORDER: return "order";
+      default: return "";
+    }
+}
+
+void
+node_print_xml (QI * qi, dk_session_t * s, data_source_t * qn)
+{
+  char buf[250];
+  QI_CHECK_STACK (qi, &qn, 10000);
+  if (IS_QN (qn, table_source_input) || IS_QN (qn, table_source_input_unique))
+    {
+      QNCAST (table_source_t, ts, qn);
+      key_source_t * ks = ts->ts_order_ks;
+      if (!ts->ts_order_ks->ks_from_temp_tree && ts->ts_order_ks->ks_key)
+	snprintf (buf, sizeof (buf), "<ts key='%s' table='%s'>\n", ts->ts_order_ks->ks_key->key_name, ts->ts_order_ks->ks_key->key_table->tb_name);
+      else
+	snprintf (buf, sizeof (buf), "<ts key='temp'>\n");
+      SES_PRINT (s, buf);
+      node_print_code_xml (qi, s, qn);
+      if (ks->ks_spec.ksp_spec_array)
+	{
+	  SES_PRINT (s, "<ks_spec>\n");
+	  sp_list_print_xml (ks->ks_spec.ksp_spec_array, s);
+	  SES_PRINT (s, "</ks_spec>");
+	}
+      if (ks->ks_row_spec)
+	{
+	  SES_PRINT (s, "<ks_row_spec>\n");
+	  sp_list_print_xml (ks->ks_row_spec, s);
+	  SES_PRINT (s, "</ks_row_spec>\n");
+	}
+      if (ks->ks_hash_spec)
+	{
+	  SES_PRINT (s, "<ks_hash_spec>\n");
+	  DO_SET (search_spec_t *, sp, &ks->ks_hash_spec)
+	    {
+	      hash_range_spec_t * hrng = (hash_range_spec_t *)sp->sp_min_ssl;
+	      if (hrng->hrng_hs || hrng->hrng_ht_id || hrng->hrng_ht)
+		{
+		  ses_sprintf (s, "<hrng hs='%d' flags='%d' />", hrng->hrng_hs ? hrng->hrng_hs->src_gen.src_sets : 0, hrng->hrng_flags); 
+		}
+	    }
+	  END_DO_SET();
+	  SES_PRINT (s, "</ks_hash_spec>\n");
+	}
+      SES_PRINT (s, "<ks_out_slots>\n");
+      ssl_list_print_xml (ks->ks_out_slots, s);
+      SES_PRINT (s, "</ks_out_slots>\n");
+      SES_PRINT (s, "</ts>");
+    }
+  else if (IS_QN (qn, ts_split_input))
+    {
+      QNCAST (ts_split_node_t, tssp, qn);
+      SES_PRINT (s, "<alt-ts>\n");
+      node_print_code_xml (qi, s, qn);
+      node_print_xml (qi, s, (data_source_t *) tssp->tssp_alt_ts);
+      SES_PRINT (s, "</alt-ts>");
+    }
+  else if (IS_QN (qn, query_frag_input))
+    {
+      QNCAST (query_frag_t, qf, qn);
+      ses_sprintf (s, "<qf>");
+      node_print_xml (qi, s, qf->qf_head_node);
+      SES_PRINT (s, "</qf>");
+    }
+  else if (IS_QN (qn, dpipe_node_input))
+    {
+      int inx;
+      QNCAST (dpipe_node_t, dp, qn);
+      SES_PRINT (s, "<dpipe>");
+      DO_BOX (cu_func_t *, cf, inx, dp->dp_funcs)
+	{
+	  ses_sprintf (s, "<func name='%s'>", cf->cf_name);
+	  SES_PRINT (s, "<in>");
+	  ssl_print_xml (dp->dp_inputs[inx], s);
+	  SES_PRINT (s, "</in>");
+	  SES_PRINT (s, "<out>");
+	  ssl_print_xml (dp->dp_outputs[inx], s);
+	  SES_PRINT (s, "</out>");
+	  SES_PRINT (s, "</func>");
+	}
+      END_DO_BOX;
+      SES_PRINT (s, "</dpipe>");
+    }
+  else if (IS_QN (qn, ssa_iter_input))
+    {
+      SES_PRINT (s, "<ssi />");
+    }
+  else if (IS_QN (qn, cl_fref_read_input))
+    {
+      SES_PRINT (s, "<clf />");
+    }
+  else if (IS_QN (qn, code_node_input))
+    {
+      QNCAST (code_node_t, cn, qn);
+      SES_PRINT (s, "<cn>");
+      code_vec_print_xml (qi, cn->cn_code, s);
+      SES_PRINT (s, "</cn>");
+    }
+  else if (IS_QN (qn, qf_select_node_input))
+    {
+      QNCAST (qf_select_node_t, qfs, qn);
+      SES_PRINT (s, "<qfs>");
+      ssl_array_print_xml (qfs->qfs_out_slots, s);
+      SES_PRINT (s, "<qfs>");
+    }
+  else if (IS_QN (qn, skip_node_input))
+    {
+      QNCAST (skip_node_t, sk, qn);
+      SES_PRINT (s, "<skip>");
+      ssl_print_xml (sk->sk_top, s);
+      ssl_print_xml (sk->sk_top_skip, s);
+      ssl_print_xml (sk->sk_set_no, s);
+      SES_PRINT (s, "</skip>");
+    }
+  else if (IS_QN (qn, sort_read_input))
+    {
+      SES_PRINT (s, "<sr />");
+    }
+  else if (IS_QN (qn, chash_read_input))
+    {
+      SES_PRINT (s, "<chash />");
+    }
+  else if (IS_QN (qn, select_node_input))
+    {
+      select_node_t *sel = (select_node_t *) qn;
+      /* top/skip */
+      ses_sprintf (s, "<sel>");
+      node_print_code_xml (qi, s, qn);
+      ssl_array_print_xml (sel->sel_out_slots, s);
+      SES_PRINT (s, "</sel>");
+    }
+  else if (IS_QN (qn, select_node_input_subq))
+    {
+      select_node_t *sel = (select_node_t *) qn;
+      /* top/skip */
+      SES_PRINT (s, "<sel>");
+      node_print_code_xml (qi, s, qn);
+      SES_PRINT (s, "<out>");
+      ssl_array_print_xml (sel->sel_out_slots, s);
+      SES_PRINT (s, "</out>");
+      SES_PRINT (s, "</sel>");
+    }
+  else if (IS_QN (qn, setp_node_input))
+    {
+      setp_node_t *setp = (setp_node_t *) qn;
+      ses_sprintf (s, "<setp ha_op='%s' hf='%d' sets='%d'>", 
+	  	setp_ha_op_name (setp), 
+		setp->setp_ha && setp->setp_ha->ha_op == HA_FILL ? setp->setp_ha->ha_tree->ssl_index : 0,
+		qn->src_sets);
+      if (setp->setp_ha)
+	{
+	  int inx;
+	  SES_PRINT (s, "<key>");
+	  for (inx = 0; inx < setp->setp_ha->ha_n_keys; inx ++)
+	    {
+	      ssl_print_xml (setp->setp_ha->ha_slots[inx], s);
+	    }
+	  SES_PRINT (s, "</key>");
+	  SES_PRINT (s, "<dep>");
+	  for (; inx < setp->setp_ha->ha_n_keys + setp->setp_ha->ha_n_deps; inx ++)
+	    {
+	      ssl_print_xml (setp->setp_ha->ha_slots[inx], s);
+	    }
+	  SES_PRINT (s, "</dep>");
+	}
+      SES_PRINT (s, "</setp>");
+    }
+  else if (IS_QN (qn, fun_ref_node_input))
+    {
+      fun_ref_node_t *fref = (fun_ref_node_t *) qn;
+      ses_sprintf (s, "<fref sets='%d'>", qn->src_sets);
+      node_print_xml (qi, s, fref->fnr_select);
+      SES_PRINT (s, "</fref>");
+    }
+  else if (IS_QN (qn, hash_fill_node_input))
+    {
+      fun_ref_node_t *fref = (fun_ref_node_t *) qn;
+      ses_sprintf (s, "<hf sets='%d'>", qn->src_sets);
+      node_print_xml (qi, s, fref->fnr_select);
+      SES_PRINT (s, "</hf>");
+    }
+  else if (IS_QN (qn, remote_table_source_input))
+    {
+      QNCAST (remote_table_source_t, rts, qn);
+      SES_PRINT (s, "<rts>");
+      node_print_code_xml (qi, s, qn);
+      SES_PRINT (s, "<text><![CDATA[");
+      SES_PRINT (s, rts->rts_text);
+      SES_PRINT (s, "]]></text>");
+      if (rts->rts_params)
+	{
+	  SES_PRINT (s, "<params>");
+	  ssl_list_print_xml (rts->rts_params, s);
+	  SES_PRINT (s, "</params>");
+	}
+      if (rts->rts_out_slots)
+	{
+	  SES_PRINT (s, "<out>");
+	  ssl_array_print_xml (rts->rts_out_slots, s);
+	  SES_PRINT (s, "</out>");
+	}
+      if (rts->rts_after_join_test)
+	{
+	  SES_PRINT (s, "<after_join_test>");
+	  code_vec_print_xml (qi, rts->rts_after_join_test, s);
+	  SES_PRINT (s, "</after_join_test>");
+	}
+      SES_PRINT (s, "</rts>");
+    }
+  else if (IS_QN (qn, breakup_node_input))
+    {
+      QNCAST (breakup_node_t, brk, qn);
+      SES_PRINT (s, "<brk>");
+      ssl_array_print_xml (brk->brk_output, s);
+      ssl_array_print_xml (brk->brk_all_output, s);
+      SES_PRINT (s, "</brk>");
+    }
+  else if (IS_QN (qn, subq_node_input))
+    {
+      subq_source_t *sqs = (subq_source_t *) qn;
+      SES_PRINT (s, "<subq>\n");
+      node_print_code_xml (qi, s, qn);
+      node_print_xml (qi, s, sqs->sqs_query->qr_head_node);
+      SES_PRINT (s, "</subq>");
+    }
+  else if (IS_QN (qn, union_node_input))
+    {
+      union_node_t *uni = (union_node_t *) qn;
+      SES_PRINT (s, "<union>\n");
+      node_print_code_xml (qi, s, qn);
+      DO_SET (query_t *, qr, &uni->uni_successors)
+      {
+	node_print_xml (qi, s, qr->qr_head_node);
+      }
+      END_DO_SET ();
+      SES_PRINT (s, "</union>");
+    }
+  else if (IS_QN (qn, gs_union_node_input))
+    {
+      QNCAST (gs_union_node_t, gsu, qn);
+      SES_PRINT (s, "<gsu>");
+      node_print_code_xml (qi, s, qn);
+      DO_SET (data_source_t *, nd, &gsu->gsu_cont)
+      {
+	SES_PRINT (s, "<branch>");
+	node_print_xml (qi, s, nd);
+	SES_PRINT (s, "</branch>");
+      }
+      END_DO_SET ();
+      SES_PRINT (s, "</gsu>");
+    }
+  else if (IS_QN (qn, update_node_input))
+    {
+      int inx;
+      QNCAST (update_node_t, upd, qn);
+      ses_sprintf (s, "<upd tb='%s'>", upd->upd_table->tb_name);
+      node_print_code_xml (qi, s, qn);
+      SES_PRINT (s, "<place>");
+      ssl_print_xml (upd->upd_place, s);
+      SES_PRINT (s, "</place>");
+      SES_PRINT (s, "<values>");
+      ssl_array_print_xml (upd->upd_values, s);
+      SES_PRINT (s, "</values>");
+      if (upd->upd_keys)
+	{
+	  DO_BOX (ins_key_t *, ik, inx, upd->upd_keys)
+	    {
+	      if (!ik)
+		continue;
+		ses_sprintf (s, "<key name='%s'>", ik->ik_key->key_name);
+		if (ik->ik_slots)
+		  ssl_array_print_xml (ik->ik_slots, s);
+		SES_PRINT (s, "</key>");
+	    }
+	  END_DO_BOX;
+	}
+      SES_PRINT (s, "</upd>");
+    }
+  else if (IS_QN (qn, delete_node_input))
+    {
+      QNCAST (delete_node_t, del, qn);
+      ses_sprintf (s, "<del tb='%s' key='%s'>", 
+	  del->del_table->tb_name, 
+	  del->del_key_only ? del->del_key_only->key_name : "");
+      node_print_code_xml (qi, s, qn);
+      SES_PRINT (s, "<place>");
+      ssl_print_xml (del->del_place, s);
+      SES_PRINT (s, "</place>");
+      if (del->del_keys)
+	{
+	  int inx;
+	  DO_BOX (ins_key_t *, ik, inx, del->del_keys)
+	    if (ik)
+	      {
+		ses_sprintf (s, "<key name='%s'>", ik->ik_key->key_name);
+		if (ik->ik_del_slots)
+		  ssl_array_print_xml (ik->ik_del_slots, s);
+		SES_PRINT (s, "</key>");
+	      }
+	  END_DO_BOX;
+	}
+      SES_PRINT (s, "</del>");
+    }
+  else if (IS_QN (qn, insert_node_input))
+    {
+      QNCAST (insert_node_t, ins, qn);
+      ses_sprintf (s, "<ins tb='%s' key='%s'>", ins->ins_table->tb_name, ins->ins_key_only ? ins->ins_key_only : "");
+      node_print_code_xml (qi, s, qn);
+      SES_PRINT (s, "</ins>");
+    }
+  else if (IS_QN (qn, hash_source_input))
+    {
+      QNCAST (hash_source_t, hs, qn);
+      ses_sprintf (s, "<hs hf='%d'>", hs->hs_filler->src_gen.src_sets);
+      node_print_code_xml (qi, s, qn);
+      SES_PRINT (s, "</hs>");
+    }
+  else if (IS_QN (qn, rdf_inf_pre_input))
+    {
+      QNCAST (rdf_inf_pre_node_t, ri, qn);
+      char * mode = "";
+      switch (ri->ri_mode)
+	{
+	case RI_SUBCLASS: mode = "subclass"; break;
+	case RI_SUPERCLASS: mode = "superclass"; break;
+	case RI_SUBPROPERTY: mode = "subproperty"; break;
+	case RI_SUPERPROPERTY: mode = "superproperty"; break;
+	case RI_SAME_AS_O: mode = "same-as-O"; break;
+	case RI_SAME_AS_S: mode = "same-as-S"; break;
+	case RI_SAME_AS_P: mode = "same-as-P"; break;
+	}
+      ses_sprintf (s, "<ri mode='%s'>", mode);
+      node_print_code_xml (qi, s, qn);
+      SES_PRINT (s, "<p>");
+      ssl_print_xml (ri->ri_p, s);
+      SES_PRINT (s, "</p>");
+      SES_PRINT (s, "<o>");
+      ssl_print_xml (ri->ri_o, s);
+      SES_PRINT (s, "</o>");
+      SES_PRINT (s, "<out>");
+      ssl_print_xml (ri->ri_output, s);
+      SES_PRINT (s, "</out>");
+      SES_PRINT (s, "</ri>");
+    }
+  else if (IS_QN (qn, trans_node_input))
+    {
+      QNCAST (trans_node_t, tn, qn);
+      ses_sprintf (s, "<trans ctx='%s' dir='%d'>", 
+	  tn->tn_prepared_step && tn->tn_ifp_ctx_name ? tn->tn_ifp_ctx_name : "",
+	  tn->tn_direction
+	  );
+      node_print_code_xml (qi, s, qn);
+      SES_PRINT (s, "<in>");
+      ssl_array_print_xml (tn->tn_input, s);
+      SES_PRINT (s, "</in>");
+      SES_PRINT (s, "<shadow>");
+      ssl_array_print_xml (tn->tn_input_ref, s);
+      SES_PRINT (s, "</shadow>");
+      SES_PRINT (s, "<out>");
+      ssl_array_print_xml (tn->tn_output, s);
+      SES_PRINT (s, "</out>");
+      /* more to be added */
+      SES_PRINT (s, "</trans>");
+    }
+  else if (IS_QN (qn, stage_node_input))
+    {
+      QNCAST (stage_node_t, stn, qn);
+      ses_sprintf (s, "<stn nth='%d'/>", stn->stn_nth);
+    }
+  else if (IS_QN (qn, in_iter_input))
+    {
+      QNCAST (in_iter_node_t, ii, qn);
+      SES_PRINT (s, "<iter>");
+      node_print_code_xml (qi, s, qn);
+      SES_PRINT (s, "<in>");
+      ssl_array_print_xml (ii->ii_values, s);
+      SES_PRINT (s, "</in>");
+      SES_PRINT (s, "<out>");
+      ssl_print_xml (ii->ii_output, s);
+      SES_PRINT (s, "</out>");
+      SES_PRINT (s, "</iter>");
+    }
+  else if (IS_QN (qn, outer_seq_end_input))
+    {
+      outer_seq_end_node_t * ose = (outer_seq_end_node_t *)qn;
+      ses_sprintf (s, "<ose sets='%d'>", qn->src_sets);
+      node_print_code_xml (qi, s, qn);
+      SES_PRINT (s, "<out>");
+      ssl_array_print_xml (ose->ose_out_slots, s);
+      SES_PRINT (s, "</out>");
+      SES_PRINT (s, "<shadow>");
+      ssl_array_print_xml (ose->ose_out_shadow, s);
+      SES_PRINT (s, "</shadow>");
+      SES_PRINT (s, "</ose>");
+      SES_PRINT (s, "</outer>\n");
+    }
+  else if (IS_QN (qn, set_ctr_input))
+    {
+      QNCAST (set_ctr_node_t, sctr, qn);
+      outer_seq_end_node_t * ose = sctr->sctr_ose;
+      if (ose)
+	SES_PRINT (s, "<outer>\n");
+      ses_sprintf (s, "<sctr sctr_ose='%d'/>", ose ? ose->src_gen.src_sets : 0);
+    }
+  else if (IS_QN (qn, txs_input))
+    {
+      QNCAST (text_node_t, txs, qn);
+      ses_sprintf (s, "<txs op='%scontains' tb='%s' card='%.2g' geo='%s'>", 
+	  txs->txs_xpath_text_exp ? "x" : "",
+	  txs->txs_table->tb_name, txs->txs_card, 
+	  txs->txs_geo ? predicate_name_of_gsop (txs->txs_geo) : "");
+      node_print_code_xml (qi, s, qn);
+      SES_PRINT (s, "<exp>");
+      ssl_print_xml (txs->txs_text_exp, s);
+      SES_PRINT (s, "</exp>");
+      SES_PRINT (s, "<d_id>");
+      ssl_print_xml (txs->txs_d_id, s);
+      SES_PRINT (s, "</d_id>");
+      SES_PRINT (s, "</txs>");
+    }
+  else if (IS_QN (qn, xn_input))
+    {
+      QNCAST (xpath_node_t, xn, qn);
+      ses_sprintf (s, "<xn op='%s'>", 'q' == xn->xn_predicate_type ? "xquery" : "xpath");
+      SES_PRINT (s, "<tcol>");
+      ssl_print_xml (xn->xn_text_col, s);
+      SES_PRINT (s, "</tcol>");
+      SES_PRINT (s, "<out>");
+      ssl_print_xml (xn->xn_output_val, s);
+      SES_PRINT (s, "</out>");
+      SES_PRINT (s, "</xn>");
+    }
+  else if (IS_QN (qn, end_node_input))
+    {
+      node_print_code_xml (qi, s, qn);
+      SES_PRINT (s, "<end />");
+    }
+  else
+    {
+      SES_PRINT (s, "<node>");
+      node_print_code_xml (qi, s, qn);
+      SES_PRINT (s, "</node>");
+    }
+  SES_PRINT (s, "\n");
+  if (qn->src_continuations)
+    node_print_xml (qi, s, (data_source_t *) qn->src_continuations->data);
+}
+
+static caddr_t
+qr_print_top_xml (QI * qi, query_t * qr)
+{
+  dk_session_t * s = strses_allocate ();
+  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_QST, qi);
+  SES_PRINT (s, "<report>\n");
+  if (qr->qr_parms)
+    {
+      SES_PRINT (s, "<params>");
+      ssl_list_print_xml (qr->qr_parms, s);
+      SES_PRINT (s, "</params>");
+    }
+  node_print_xml (qi, s, qr->qr_head_node);
+  SES_PRINT (s, "</report>\n");
+  return (caddr_t) s;
+} 
 
 caddr_t
 sqlc_text_no_semi (caddr_t text)
@@ -2418,8 +3352,9 @@ bif_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   query_instance_t *qi = (query_instance_t *) qst;
   caddr_t err = NULL;
   caddr_t text = bif_string_arg (qst, args, 0, "explain");
-  int cr_type = SQLC_DO_NOT_STORE_PROC;
+  int cr_type = SQLC_DO_NOT_STORE_PROC, xml_out = 0;
   int old_debug = -1;
+
   if (BOX_ELEMENTS (args) > 1)
     cr_type = (int) bif_long_arg (qst, args, 1, "explain");
   if (cr_type == SQLC_SQLO_VERBOSE)
@@ -2428,6 +3363,8 @@ bif_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       old_debug = sqlo_print_debug_output;
       sqlo_print_debug_output = 1;
     }
+  if (BOX_ELEMENTS (args) > 2)
+    xml_out = (int) bif_long_arg (qst, args, 2, "explain");
   text = sqlc_text_no_semi (text);
   qr = sql_compile (text, qi->qi_client, &err, cr_type);
   dk_free_box (text);
@@ -2453,6 +3390,8 @@ bif_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return NULL;
   else if (SQLC_PARSE_ONLY == cr_type)
     return (caddr_t) qr;
+  if (xml_out || dbf_explain_level == 4)
+    return qr_print_top_xml (qi, qr);
   trset_start (qst);
   if (QR_IS_MODULE (qr))
     {
@@ -2748,7 +3687,7 @@ bif_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   sc.sc_exp_print_hook = xsql_print_stmt;
 
   MP_START();
-  semaphore_enter (parse_sem);
+  mutex_enter (parse_mtx);
   SCS_STATE_PUSH;
   sqlc_target_rds (local_rds);
 
@@ -2770,7 +3709,7 @@ bif_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   sqlc_set_client (old_cli);
   SCS_STATE_POP;
   MP_DONE();
-  semaphore_leave (parse_sem);
+  mutex_leave (parse_mtx);
   sc_free (&sc);
   qr_free (qr);
 
@@ -2958,7 +3897,22 @@ qn_walk (query_instance_t * qi, query_t * qr, qnw_cb_t cb, qnw_cd_t * cd)
 	{
 	  QNCAST (query_frag_t, qf, qn);
 	  DO_SET (data_source_t *, qn2, &qf->qf_nodes)
-	    cb (qi, qn2, cd);
+	    {
+	      if (IS_QN (qn2, subq_node_input))
+		{
+		  qn_walk (qi, ((subq_source_t*)qn2)->sqs_query, cb, cd);
+		}
+	      else if (IS_QN (qn2, trans_node_input))
+		{
+		  QNCAST (trans_node_t, tn, qn2);
+		  if (tn->tn_inlined_step)
+		    qn_walk (qi, tn->tn_inlined_step, cb, cd);
+		  if (tn->tn_complement)
+		    qn_walk (qi, tn->tn_complement->tn_inlined_step, cb, cd);
+		}
+	      else
+		cb (qi, qn2, cd);
+	    }
 	  END_DO_SET();
 	}
       else if (IS_QN (qn, subq_node_input))
@@ -3143,7 +4097,6 @@ char * c_query_log_file = "virtuoso.qrl";
 void
 qi_log_stats_1 (query_instance_t * qi, caddr_t err, caddr_t ext_text)
 {
-#ifndef WIN32    
   caddr_t * inst = (caddr_t*)qi;
   du_thread_t * self = THREAD_CURRENT_THREAD;
   query_t * qr = qi->qi_query;
@@ -3151,7 +4104,9 @@ qi_log_stats_1 (query_instance_t * qi, caddr_t err, caddr_t ext_text)
   void * rs_comp = NULL;
   int r_len = 0;
   dk_set_t res = NULL;
+#ifdef HAVE_GETRUSAGE
   struct rusage ru;
+#endif
   client_connection_t * cli = qi->qi_client;
   dk_session_t * ses;
   uint64 rt;
@@ -3207,6 +4162,7 @@ qi_log_stats_1 (query_instance_t * qi, caddr_t err, caddr_t ext_text)
       session_buffered_write_char (DV_DB_NULL, ses);
       session_buffered_write_char (DV_DB_NULL, ses);
     }
+#ifdef HAVE_GETRUSAGE
   getrusage (RUSAGE_SELF, &ru);
   /*7*/
   print_int (ru.ru_majflt, ses);
@@ -3214,6 +4170,11 @@ qi_log_stats_1 (query_instance_t * qi, caddr_t err, caddr_t ext_text)
   print_int (ru.ru_utime.tv_sec * 1000 +  ru.ru_utime.tv_usec / 1000, ses);
   /*9*/
   print_int (ru.ru_stime.tv_sec * 1000 +  ru.ru_stime.tv_usec / 1000, ses);
+#else
+  print_int (0, ses);
+  print_int (0, ses);
+  print_int (0, ses);
+#endif
 
   /*10*/
   if (ext_text)
@@ -3342,7 +4303,7 @@ mutex_enter (&ql_mtx);
     {
       OFF_T off;
       int fd;
-      file_set_rw (QL_NAME);
+      file_set_rw (c_query_log_file);
       fd = fd_open (c_query_log_file, LOG_OPEN_FLAGS);
       off = LSEEK (fd, 0, SEEK_END);
       ql_file = dk_session_allocate (SESCLASS_TCPIP);
@@ -3360,7 +4321,6 @@ mutex_enter (&ql_mtx);
   da_clear (&cli->cli_activity);
   da_clear (&cli->cli_compile_activity);
   qi->qi_log_stats = 0;
-#endif
 }
 
 

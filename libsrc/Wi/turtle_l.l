@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -24,7 +24,11 @@
 %option 8bit
 %option case-sensitive
 %option never-interactive
+%option noyyalloc
+%option noyyrealloc
+%option noyyfree
 %option noyywrap
+%option nounput
 %option reentrant
 %option bison-bridge
 %option stack
@@ -43,6 +47,38 @@
   Sources of parsers are out of sync: mismatch between token declarations in nquad_p.y and turtle_p.y
 #endif
 
+#ifdef DEBUG
+
+typedef struct ttl_lexem_descr_s
+{
+  int ld_val;
+  const char *ld_yname;
+  char ld_fmttype;
+  const char * ld_fmt;
+  caddr_t *ld_tests;
+} ttl_lexem_descr_t;
+
+ttl_lexem_descr_t ttl_lexem_descrs[__TTL_NONPUNCT_END+1];
+
+#define LEX_PROPS ttl_lex_props
+#define PUNCT(x) 'P', (x)
+#define LITERAL(x) 'L', (x)
+#define FAKE(x) 'F', (x)
+#define TTL "s"
+#define TRIG "t"
+
+#define LAST(x) "L", (x)
+#define LAST1(x) "K", (x)
+#define MISS(x) "M", (x)
+#define ERR(x)  "E", (x)
+
+#define PUNCT_TTL_LAST(x) PUNCT(x), TTL, LAST(x)
+#define PUNCT_TRIG_LAST(x) PUNCT(x), TRIG, LAST(x)
+
+extern void ttl_lexem_descrs_fill (void);
+
+#endif
+
 #ifdef TTLYYDEBUG
 #define ttlyy_dbg_printf(x) do { printf x; fflush (stdout); } while (0)
 #define TTLYYBEGIN(x) do { ttlyy_dbg_printf (("{MODE %d}", (x))); BEGIN((x)); } while (0)
@@ -54,6 +90,7 @@
 #define YY_EXTRA_TYPE ttlp_t *
 
 #define ttlyyerror(strg) ttlyyerror_impl(ttlp_arg, yytext, (strg))
+#define YY_FATAL_ERROR(err) ttlyyerror_impl(NULL, NULL, (err))
 
 #define TTLYYERROR_OR_REPORT(strg) do { \
   if (!(ttlp_arg[0].ttlp_flags & TTLP_ERROR_RECOVERY)) \
@@ -139,6 +176,27 @@ extern int ttlyylex (YYSTYPE *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner
 #define YY_DECL int ttlyylex (YYSTYPE *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner)
 
 extern int ttlyydebug;
+
+void *
+ttlyyalloc (yy_size_t  size, yyscan_t yyscanner)
+{
+  return (void *) malloc( size );
+}
+
+void *
+ttlyyrealloc  (void * ptr, yy_size_t  size , yyscan_t yyscanner)
+{
+  if (NULL == ptr)
+    return ttlyyalloc (size, yyscanner);
+  return (void *) realloc( (char *) ptr, size );
+}
+
+void
+ttlyyfree (void * ptr , yyscan_t yyscanner)
+{
+  if (NULL != ptr)
+    free( (char *) ptr );
+}
 
 %}
 
@@ -244,8 +302,8 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <INITIAL>[+-]?"NaN"		{ return NaN_L; }
 <INITIAL>"false"		{ return false_L; }
 <INITIAL>"true"			{ return true_L; }
-<INITIAL,TWO_CRS>"base"|"BASE"|"Base"		{ TTLYYBEGIN(INITIAL); return PREFIX_L; }
-<INITIAL,TWO_CRS>"prefix"|"PREFIX"|"Prefix"	{ TTLYYBEGIN(INITIAL); return PREFIX_L; }
+<INITIAL,TWO_CRS>[Bb][Aa][Ss][Ee]		{ TTLYYBEGIN(INITIAL); return BASE_L; }
+<INITIAL,TWO_CRS>[Pp][Rr][Ee][Ff][Ii][Xx]	{ TTLYYBEGIN(INITIAL); return PREFIX_L; }
 
 <INITIAL>"a"			{ TTL_SPECIAL_QNAME (TTLP_ALLOW_QNAME_A, _AT_a_L) }
 <INITIAL>"has"			{ TTL_SPECIAL_QNAME (TTLP_ALLOW_QNAME_HAS, _AT_has_L) }
@@ -486,7 +544,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>("#"(.*))?{S_NL}		{ TTL_ONE_CR; }
 <INITIAL,TWO_CRS>"#"(.*)		{ }
 <INITIAL,TWO_CRS>[ \t]+			{ }
-<INITIAL>.		{
+<INITIAL,TWO_CRS>.		{
     char buf[100]; sprintf (buf, "Unexpected character '%c'", yytext[yyleng-1]);
     TTLYYERROR_OR_REPORT (buf);
     TTLYYBEGIN (TURTLE_SKIP_TO_DOT_WS); yymore(); }
@@ -497,6 +555,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
       { char buf[100]; sprintf (buf, "Failed to recover syntax error at \"%.50s...\"", yytext); ttlyyerror (buf); }
     yymore(); }
 
+<GARBAGE,GARBAGE_BOL><<EOF>>				{ return 0; }
 <GARBAGE>([^_<@# \t\:\r\n][^: \t\r\n]*[ \t]+)+		{ ttlyy_dbg_printf(("{Garbage 1 %s}", yytext)); }
 <GARBAGE>[^ \t\r\n]+					{ ttlyy_dbg_printf(("{Garbage 2 %s}", yytext)); }
 <GARBAGE>[ \t]+	{ }
@@ -504,6 +563,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <GARBAGE_BOL>[^ \t\r\n]+				{ ttlyy_dbg_printf(("{Garbage_BOL 2 %s}", yytext)); TTLYYBEGIN(GARBAGE); }
 <GARBAGE,GARBAGE_BOL>{S_NL}[ \t]*			{ TTLYYBEGIN(GARBAGE_BOL); TTL_ONE_CR; }
 <TWO_CRS>("#"(.*))?{S_NL}[ \t]*		{ TTL_ONE_CR; }
+<GARBAGE,GARBAGE_BOL>.					{ }
 
 %%
 
@@ -557,10 +617,10 @@ ttlp_NUMBER_int (YYSTYPE *yylval_param, ttlp_t *ttlp_arg, struct yyguts_t * yyg)
   int l = strlen (yytext);
   int has_sign = ((('-' == yytext[0]) || ('+' == yytext[0])) ? 1 : 0);
   int is_negative = ('-' == yytext[0]);
-  if (((10+has_sign) > l) ||
-    (((10+has_sign) == l) &&
-      (0 >= strcmp (yytext + has_sign,
-          (is_negative ? "2147483648" : "2147483647") ) ) ) )
+  if (((18+has_sign) > l) ||
+    (((18+has_sign) == l) &&
+      (0 >= strcmp (yytext + has_sign,        /* 0123456789012345678 */
+          (is_negative ? "223372036854775808" : "223372036854775807") ) ) ) )
     {
       ttlyylval.box = box_num_nonull (atol (yytext));
       return TURTLE_INTEGER;
@@ -617,6 +677,9 @@ ttl_lex_analyze (caddr_t str, int flags, wcharset_t *query_charset)
     {
       return list (1, list (3, (ptrlong)0, (ptrlong)0, box_dv_short_string ("TURTLE parser: input text is not a string")));
     }
+#ifdef DEBUG
+  ttl_lexem_descrs_fill ();
+#endif
   ttlp = ttlp_alloc ();
   ttlp->ttlp_flags = flags;
 
@@ -655,6 +718,7 @@ resume_sniffing:
         {
           caddr_t lex_value = NULL;
           int lexem;
+          const char *ld_txt = NULL;
           lexem = ttlyylex ((YYSTYPE *)(&lex_value), ttlp, scanner);
           if (0 == lexem)
             {
@@ -663,28 +727,35 @@ resume_sniffing:
 #endif
             break;
             }
+#ifdef DEBUG
+          if (lexem <= __TTL_NONPUNCT_END)
+            {
+              ttl_lexem_descr_t *lexem_descr = ttl_lexem_descrs + lexem;
+              ld_txt = lexem_descr->ld_yname;
+            }
+#endif
 #ifdef TTLYYDEBUG
           while (last_reported_line < ttlp->ttlp_lexlineno)
             {
               last_reported_line++;
-              ttlyy_dbg_printf (("\n%05d:\t", last_reported_line)); /* Not a single ttlyy_dbg_printf (("\n%05d:\t", last_reported_line++)); because taht would hang on empty ttlyy_dbg_printf definition */
+              ttlyy_dbg_printf (("\n%05d:\t", last_reported_line)); /* Not a single ttlyy_dbg_printf (("\n%05d:\t", last_reported_line++)); because that would hang on empty ttlyy_dbg_printf definition */
             }
           if (NULL != ttlp->ttlp_raw_text)
-            ttlyy_dbg_printf (("{Traw %d %s} ", lexem, ttlp->ttlp_raw_text));
+            ttlyy_dbg_printf (("{Traw %d %s %s} ", lexem, ((NULL == ld_txt) ? "?" : ld_txt), ttlp->ttlp_raw_text));
           else if (DV_STRING == DV_TYPE_OF (lex_value))
-            ttlyy_dbg_printf (("{Tstrg %d %s} ", lexem, lex_value));
+            ttlyy_dbg_printf (("{Tstrg %d %s %s} ", lexem, ((NULL == ld_txt) ? "?" : ld_txt), lex_value));
           else if (DV_UNAME == DV_TYPE_OF (lex_value))
-            ttlyy_dbg_printf (("{Tuname %d %s} ", lexem, lex_value));
+            ttlyy_dbg_printf (("{Tuname %d %s %s} ", lexem, ((NULL == ld_txt) ? "?" : ld_txt), lex_value));
           else if (DV_LONG_INT == DV_TYPE_OF (lex_value))
-            ttlyy_dbg_printf (("{Tint %d " BOXINT_FMT "} ", lexem, unbox (lex_value)));
+            ttlyy_dbg_printf (("{Tint %d %s %s " BOXINT_FMT "} ", lexem, ((NULL == ld_txt) ? "?" : ld_txt), unbox (lex_value)));
           else
-            ttlyy_dbg_printf (("{Tint %d ???} ", lexem));
+            ttlyy_dbg_printf (("{Tint %d %s ???} ", lexem, ((NULL == ld_txt) ? "?" : ld_txt)));
 #endif
           dk_check_tree (lex_value);
           dk_set_push (&lexems, list (6,
               box_num (ttlp->ttlp_lexlineno),
               box_num (ttlp->ttlp_lexdepth),
-              box_copy (ttlp->ttlp_raw_text),
+              ((NULL != ttlp->ttlp_raw_text) ? box_copy (ttlp->ttlp_raw_text) : ((NULL == ld_txt) ? NEW_DB_NULL : box_dv_short_string (ld_txt))),
               box_num (lexem), lex_value,
               (ptrlong)yy_top_state (scanner) ) );
         }
@@ -913,3 +984,172 @@ resume_sniffing:
   return res;
 }
 
+#ifdef DEBUG
+
+static void ttl_lex_props (int val, const char *yname, char fmttype, const char *fmt, ...)
+{
+  va_list tail;
+  const char *cmd;
+  dk_set_t tests = NULL;
+  ttl_lexem_descr_t *ld = ttl_lexem_descrs + val;
+  if (0 != ld->ld_val)
+    GPF_T;
+  ld->ld_val = val;
+  ld->ld_yname = yname;
+  ld->ld_fmttype = fmttype;
+  ld->ld_fmt = fmt;
+  va_start (tail, fmt);
+  for (;;)
+    {
+      cmd = va_arg (tail, const char *);
+      if (NULL == cmd)
+	break;
+      dk_set_push (&tests, box_dv_short_string (cmd));
+    }
+  va_end (tail);
+  ld->ld_tests = (caddr_t *)revlist_to_array (tests);
+}
+
+void
+ttl_lexem_descrs_fill (void)
+{
+  static int first_run = 1;
+  if (!first_run)
+    return;
+  first_run = 0;
+  #include "turtle_lex_props.c"
+}
+
+caddr_t
+bif_turtle_lex_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  dk_set_t report = NULL;
+  int tested_lex_val = 0;
+  ttl_lexem_descrs_fill ();
+  for (tested_lex_val = 0; tested_lex_val < __TTL_NONPUNCT_END; tested_lex_val++)
+    {
+      char cmd;
+      caddr_t **lexems;
+      unsigned lex_count;
+      unsigned cmd_idx = 0;
+      int mode_bits = 0, last_lval, last1_lval;
+      ttl_lexem_descr_t *ld = ttl_lexem_descrs + tested_lex_val;
+      if (0 == ld->ld_val)
+	continue;
+      dk_set_push (&report, box_dv_short_string (""));
+      dk_set_push (&report,
+        box_sprintf (0x100, "#define % 25s %d /* '%s' (%c) */",
+	  ld->ld_yname, ld->ld_val, ld->ld_fmt, ld->ld_fmttype ) );
+      for (cmd_idx = 0; cmd_idx < BOX_ELEMENTS(ld->ld_tests); cmd_idx++)
+	{
+	  cmd = ld->ld_tests[cmd_idx][0];
+	  switch (cmd)
+	    {
+	    case 's': mode_bits = 0; break;
+	    case 't': mode_bits = TTLP_ALLOW_TRIG; break;
+	    case 'K': case 'L': case 'M': case 'E':
+	      cmd_idx++;
+	      lexems = (caddr_t **) ttl_lex_analyze (ld->ld_tests[cmd_idx], mode_bits, QST_CHARSET(qst));
+	      dk_set_push (&report, box_dv_short_string (ld->ld_tests[cmd_idx]));
+	      lex_count = BOX_ELEMENTS (lexems);
+	      if (0 == lex_count)
+		{
+		  dk_set_push (&report, box_dv_short_string ("FAILED: no lexems parsed and no error reported!"));
+		  goto end_of_test;
+		}
+	      { char buf[0x1000]; char *buf_tail = buf;
+	        unsigned lctr = 0;
+		for (lctr = 0; lctr < lex_count && (5 == BOX_ELEMENTS(lexems[lctr])); lctr++)
+		  {
+		    ptrlong *ldata = ((ptrlong *)(lexems[lctr]));
+		    int lval = ldata[3];
+		    ttl_lexem_descr_t *ld = ttl_lexem_descrs + lval;
+		    if (ld->ld_val)
+		      buf_tail += sprintf (buf_tail, " %s", ld->ld_yname);
+		    else if (lval < 0x100)
+		      buf_tail += sprintf (buf_tail, " '%c'", lval);
+		    else GPF_T;
+		    buf_tail += sprintf (buf_tail, " %ld ", (long)(ldata[4]));
+		  }
+	        buf_tail[0] = '\0';
+		dk_set_push (&report, box_dv_short_string (buf));
+	      }
+	      if (3 == BOX_ELEMENTS(lexems[lex_count-1])) /* lexical error */
+		{
+		  dk_set_push (&report,
+		    box_sprintf (0x1000, "%s: ERROR %s",
+		      ('E' == cmd) ? "PASSED": "FAILED", lexems[lex_count-1][2] ) );
+		  goto end_of_test;
+		}
+/*
+	      if (END_OF_TURTLE_TEXT != ((ptrlong *)(lexems[lex_count-1]))[3])
+		{
+		  dk_set_push (&report, box_dv_short_string ("FAILED: end of source is not reached and no error reported!"));
+		  goto end_of_test;
+		}
+*/
+	      if (0 /*1*/ == lex_count)
+		{
+		  dk_set_push (&report, box_dv_short_string ("FAILED: no lexems parsed and only end of source has found!"));
+		  goto end_of_test;
+		}
+	      last_lval = ((ptrlong *)(lexems[lex_count-/*2*/1]))[3];
+	      if ('E' == cmd)
+		{
+		  dk_set_push (&report,
+		    box_sprintf (0x1000, "FAILED: %d lexems found, last lexem is %d, must be error",
+		      lex_count, last_lval) );
+		  goto end_of_test;
+		}
+	      if ('K' == cmd)
+		{
+		  if (/*4*/2 > lex_count)
+		    {
+		      dk_set_push (&report,
+			box_sprintf (0x1000, "FAILED: %d lexems found, the number of actual lexems is less than two",
+			  lex_count ) );
+		      goto end_of_test;
+		    }
+		  last1_lval = ((ptrlong *)(lexems[lex_count-/*3*/2]))[3];
+		  dk_set_push (&report,
+		    box_sprintf (0x1000, "%s: %d lexems found, one-before-last lexem is %d, must be %d",
+		      (last1_lval == tested_lex_val) ? "PASSED": "FAILED", lex_count, last1_lval, tested_lex_val) );
+		  goto end_of_test;
+		}
+	      if ('L' == cmd)
+		{
+		  dk_set_push (&report,
+		    box_sprintf (0x1000, "%s: %d lexems found, last lexem is %d, must be %d",
+		      (last_lval == tested_lex_val) ? "PASSED": "FAILED", lex_count, last_lval, tested_lex_val) );
+		  goto end_of_test;
+		}
+	      if ('M' == cmd)
+		{
+		  unsigned lctr;
+		  for (lctr = 0; lctr < lex_count; lctr++)
+		    {
+		      int lval = ((ptrlong *)(lexems[lctr]))[3];
+		      if (lval == tested_lex_val)
+			{
+			  dk_set_push (&report,
+			    box_sprintf (0x1000, "FAILED: %d lexems found, lexem %d is found but it should not occur",
+			      lex_count, tested_lex_val) );
+			  goto end_of_test;
+			}
+		    }
+		  dk_set_push (&report,
+		    box_sprintf (0x1000, "PASSED: %d lexems found, lexem %d is not found and it should not occur",
+		      lex_count, tested_lex_val) );
+		  goto end_of_test;
+		}
+	      GPF_T;
+end_of_test:
+	      dk_free_tree (lexems);
+	      break;
+	    default: GPF_T;
+	    }
+	  }
+    }
+  return revlist_to_array (report);
+}
+#endif

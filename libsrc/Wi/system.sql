@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -141,7 +141,7 @@ create procedure REPL_COLTYPE_PS (
   else if (_col_dtp = 219)
     {
       -- (prec, scale) for numeric
-      if (_col_prec < _col_scale)
+      if (_col_prec < _col_scale or _col_scale is null)
         _col_scale := 0;
       _coltype := concat (_coltype, sprintf('(%d, %d)', _col_prec, _col_scale));
     }
@@ -6291,7 +6291,19 @@ create procedure csv_vec_load (in s any, in _from int := 0, in _to int := null, 
     }
 
   log_enable (old_mode, 1);
-  exec (sprintf ('drop procedure %s', pname));
+  deadl := 0;
+  again2:
+  stat := '00000';
+  exec (sprintf ('drop procedure %s', pname), stat, msg);
+  if (stat <> '00000')
+    {
+      deadl := deadl + 1;
+      rollback work;
+      if (deadl > 5)
+	resignal;
+      delay (0.1 * deadl);
+      goto again2;
+    }
   if (log_error)
     return vector (nrows, log_ses);
   return nrows;

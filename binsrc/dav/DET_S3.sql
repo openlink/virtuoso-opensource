@@ -1,10 +1,8 @@
 --
---  $Id$
---
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -851,6 +849,40 @@ create function "S3_DAV_SCHEDULER_FOLDER" (
 
 -------------------------------------------------------------------------------
 --
+create function "S3_CONFIGURE" (
+  in id integer,
+  in params any)
+{
+  -- dbg_obj_princ ('S3_CONFIGURE (', id, params, ')');
+  declare oldGraph, newGraph varchar;
+
+  -- Activity
+  DB.DBA.S3__paramSet (id, 'C', 'activity',       get_keyword ('activity', params), 0);
+
+  -- Check Interval
+  DB.DBA.S3__paramSet (id, 'C', 'checkInterval',  get_keyword ('checkInterval', params, '15'), 0);
+
+  -- Graph
+  oldGraph := coalesce (DB.DBA.S3__paramGet (id, 'C', 'graph', 0), '');
+  newGraph := get_keyword ('graph', params, '');
+  DB.DBA.S3__paramSet (id, 'C', 'graph',            newGraph, 0);
+  if (__proc_exists ('WEBDAV.DBA.graph_update') is not null)
+    WEBDAV.DBA.graph_update (id, DB.DBA.S3__detName (), oldGraph, newGraph);
+
+  -- Sponger
+  DB.DBA.S3__paramSet (id, 'C', 'sponger',        get_keyword ('sponger', params), 0);
+  DB.DBA.S3__paramSet (id, 'C', 'cartridges',     get_keyword ('cartridges', params), 0);
+  DB.DBA.S3__paramSet (id, 'C', 'metaCartridges', get_keyword ('metaCartridges', params), 0);
+
+  -- Access params
+  DB.DBA.S3__paramSet (id, 'C', 'BucketName',     get_keyword ('BucketName', params), 0);
+  DB.DBA.S3__paramSet (id, 'C', 'AccessKeyID',    get_keyword ('AccessKeyID', params), 0);
+  DB.DBA.S3__paramSet (id, 'C', 'SecretKey',      get_keyword ('SecretKey', params), 0);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create function DB.DBA.S3__encode (
  in S varchar)
 {
@@ -898,6 +930,22 @@ create function DB.DBA.S3__davId (
     return id;
 
   return id[2];
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create function DB.DBA.S3__stringdate (
+  in dt varchar)
+{
+	declare rs any;
+  declare exit handler for sqlstate '*' { return now ();};
+
+  rs := dt;
+  if (isstring (rs))
+	  rs := stringdate (rs);
+
+	return dateadd ('minute', timezone (now()), rs);
 }
 ;
 
@@ -1389,7 +1437,8 @@ create function DB.DBA.S3__davList (
                       RES_OWNER,
                       RES_CR_TIME,
                       RES_TYPE,
-                      RES_NAME ) as I
+                      RES_NAME,
+                      coalesce (RES_ADD_TIME, RES_CR_TIME)) as I
          from WS.WS.SYS_DAV_RES
         where RES_COL = DB.DBA.S3__davId (colId)) do
   {
@@ -1406,7 +1455,8 @@ create function DB.DBA.S3__davList (
                       COL_OWNER,
                       COL_CR_TIME,
                       'dav/unix-directory',
-                      COL_NAME) as I
+                      COL_NAME,
+                      coalesce (COL_ADD_TIME, COL_CR_TIME)) as I
         from WS.WS.SYS_DAV_COL
        where COL_PARENT = DB.DBA.S3__davId (colId)) do
   {
@@ -1492,7 +1542,7 @@ create function DB.DBA.S3__load (
               if (DB.DBA.S3__entryXPath (davEntry, '/updated', 1) <> datestring (get_keyword ('updated', listItem)))
               {
                 set triggers off;
-                DB.DBA.S3__paramSet (davItem[4], davItem[1], ':getlastmodified', get_keyword ('updated', listItem), 0, 0);
+                DB.DBA.S3__paramSet (davItem[4], davItem[1], ':getlastmodified', DB.DBA.S3__stringdate (get_keyword ('updated', listItem)), 0, 0);
                 set triggers on;
 
                 if (davItem[1] = 'R')
@@ -1576,8 +1626,9 @@ create function DB.DBA.S3__load (
           if (DAV_HIDE_ERROR (_id) is not null)
           {
             set triggers off;
-            DB.DBA.S3__paramSet (_id, _what, ':creationdate', get_keyword ('updated', listItem), 0, 0);
-            DB.DBA.S3__paramSet (_id, _what, ':getlastmodified', get_keyword ('updated', listItem), 0, 0);
+            DB.DBA.S3__paramSet (_id, _what, ':addeddate', now (), 0, 0);
+            DB.DBA.S3__paramSet (_id, _what, ':creationdate', DB.DBA.S3__stringdate (get_keyword ('updated', listItem)), 0, 0);
+            DB.DBA.S3__paramSet (_id, _what, ':getlastmodified', DB.DBA.S3__stringdate (get_keyword ('updated', listItem)), 0, 0);
             set triggers on;
             DB.DBA.S3__paramSet (_id, _what, 'path', listID, 0);
             DB.DBA.S3__paramSet (_id, _what, 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);

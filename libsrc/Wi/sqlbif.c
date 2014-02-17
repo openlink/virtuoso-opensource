@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -470,23 +470,23 @@ bif_string_or_uname_or_wide_or_null_arg (caddr_t * qst, state_slot_t ** args, in
   return arg;
 }
 
-bif_type_t bt_varchar = {NULL, DV_LONG_STRING, 0, 0};
-bif_type_t bt_wvarchar = {NULL, DV_WIDE, 0, 0};
-bif_type_t bt_varbinary = {NULL, DV_BIN, 0, 0};
-bif_type_t bt_any = {NULL, DV_ANY, 0, 0};			/*!< Vector of values of for this "any" type will keep its members serialized into plain session representation. It means that the RDF boxes will loose "long" part and only RO_IDs are preserved, boxes will become incomplete. */
-bif_type_t bt_any_box = {NULL, DV_ARRAY_OF_POINTER, 0, 0};	/*!< Vector of values of for this "any" type will keep its members as plain boxes. No serialization, no loss of "long" content of RDF boxes. */
-bif_type_t bt_iri_id = {NULL, DV_IRI_ID, 0, 0};
-bif_type_t bt_integer = {NULL, DV_LONG_INT, 0, 0};
-bif_type_t bt_integer_nn = {NULL, DV_LONG_INT, 0, 0, 1};
-bif_type_t bt_iri = {NULL, DV_IRI_ID, 0, 0};
-bif_type_t bt_double = {NULL, DV_DOUBLE_FLOAT, 0, 0};
-bif_type_t bt_float = {NULL, DV_SINGLE_FLOAT, 0, 0};
-bif_type_t bt_numeric = {NULL, DV_NUMERIC, 40, 20};
-bif_type_t bt_time = {NULL, DV_TIME, 0, 0};
-bif_type_t bt_date = {NULL, DV_DATE, 10, 0};
-bif_type_t bt_datetime = {NULL, DV_DATETIME, 10, 0};
-bif_type_t bt_timestamp = {NULL, DV_DATETIME, 10, 0};
-bif_type_t bt_bin = {NULL, DV_BIN, 10, 0};
+bif_type_t bt_varchar		= {NULL	, DV_LONG_STRING	, 0	, 0	, 0	, "varchar"		};
+bif_type_t bt_wvarchar		= {NULL	, DV_WIDE		, 0	, 0	, 0	, "nvarchar"		};
+bif_type_t bt_varbinary		= {NULL	, DV_BIN		, 0	, 0	, 0	, "varbinary"		};
+bif_type_t bt_any		= {NULL	, DV_ANY		, 0	, 0	, 0	, "any"			};	/*!< Vector of values of for this "any" type will keep its members serialized into plain session representation. It means that the RDF boxes will loose "long" part and only RO_IDs are preserved, boxes will become incomplete. */
+bif_type_t bt_any_box		= {NULL	, DV_ARRAY_OF_POINTER	, 0	, 0	, 0	, "any array"		};	/*!< Vector of values of for this "any" type will keep its members as plain boxes. No serialization, no loss of "long" content of RDF boxes. */
+bif_type_t bt_iri_id		= {NULL	, DV_IRI_ID		, 0	, 0	, 0	, "IRI_ID"		};
+bif_type_t bt_integer		= {NULL	, DV_LONG_INT		, 0	, 0	, 0	, "integer"		};
+bif_type_t bt_integer_nn	= {NULL	, DV_LONG_INT		, 0	, 0	, 1	, "integer not null"	};
+bif_type_t bt_iri		= {NULL	, DV_IRI_ID		, 0	, 0	, 0	, "IRI_ID"		};
+bif_type_t bt_double		= {NULL	, DV_DOUBLE_FLOAT	, 0	, 0	, 0	, "double precision"	};
+bif_type_t bt_float		= {NULL	, DV_SINGLE_FLOAT	, 0	, 0	, 0	, "float"		};
+bif_type_t bt_numeric		= {NULL	, DV_NUMERIC		, 40	, 20	, 0	, "decimal"		};
+bif_type_t bt_time		= {NULL	, DV_TIME		, 0	, 0	, 0	, "time"		};
+bif_type_t bt_date		= {NULL	, DV_DATE		, 10	, 0	, 0	, "date"		};
+bif_type_t bt_datetime		= {NULL	, DV_DATETIME		, 10	, 0	, 0	, "datetime"		};
+bif_type_t bt_timestamp		= {NULL	, DV_DATETIME		, 10	, 0	, 0	, "timestamp"		};
+bif_type_t bt_bin		= {NULL	, DV_BIN		, 10	, 0	, 0	, "binary(10)"		};
 
 boxint
 bif_long_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
@@ -1584,8 +1584,27 @@ bif_define_int (caddr_t name, bif_t bif, bif_metadata_t *bmd)
   else
     {
       bif_metadata_t *old_bmd = find_bif_metadata_by_name (name);
+      bif_metadata_t *old_meta_for_bif = find_bif_metadata_by_bif (bif);
       if (NULL != old_bmd)
+        {
+          if ((old_bmd == bmd) && (NULL == old_meta_for_bif))  /* The call is redundand because, e.g., st_point and ST_Point both become ST_POINT after the case conversion */
+            return;
           GPF_T1 ("bif name cannot be redefined");
+        }
+      if (NULL != old_meta_for_bif)
+#if 1
+        GPF_T1 ("bif function pointer cannot be used in two definitions");
+#else
+        {
+          log_info ("bif_define_int: %s should get \t BMD_ALIAS, \"%s\", BMD_DONE", old_meta_for_bif->bmd_name, name);
+          if (old_meta_for_bif->bmd_is_aggregate != bmd->bmd_is_aggregate)
+            GPF_T1 ("bmd_is_aggregate differs in two defines of same bif_t");
+          if (old_meta_for_bif->bmd_no_cluster != bmd->bmd_no_cluster)
+            GPF_T1 ("bmd_no_cluster differs in two defines of same bif_t");
+          if (old_meta_for_bif->bmd_ret_type != bmd->bmd_ret_type)
+            GPF_T1 ("bmd_ret_type differs in two defines of same bif_t");
+        }
+#endif
 	}
   id_hash_set (name_to_bif_metadata_idhash, (caddr_t)(&name), (caddr_t)(&bmd));
   sethash (bif, bif_to_bif_metadata_hash, bmd);
@@ -1595,15 +1614,31 @@ bif_metadata_t *
 bif_define (const char *raw_name, bif_t bif)
 {
   caddr_t name;
-  bif_metadata_t *bmd;
+  bif_metadata_t *bmd = bif_to_bif_metadata_hash ? (bif_metadata_t*)gethash ((void*)bif, bif_to_bif_metadata_hash) : NULL;
   name = sqlp_box_id_upcase (raw_name);
   bmd = (bif_metadata_t *)dk_alloc_zero (sizeof (bif_metadata_t));
-  bmd->bmd_name = box_dv_short_string (name);
+  bmd->bmd_name = box_dv_uname_string (name);
   bmd->bmd_main_impl = bif;
   bmd->bmd_max_argcount = MAX_BOX_ELEMENTS;
   bif_define_int (name, bif, bmd);
   return bmd;
 }
+
+bif_metadata_t *
+bif_define_typed (const char *raw_name, bif_t bif, bif_type_t * bt)
+{
+  caddr_t name;
+  bif_metadata_t *bmd;
+  name = sqlp_box_id_upcase (raw_name);
+  bmd = (bif_metadata_t *)dk_alloc_zero (sizeof (bif_metadata_t));
+  bmd->bmd_name = box_dv_uname_string (name);
+  bmd->bmd_main_impl = bif;
+  bmd->bmd_max_argcount = MAX_BOX_ELEMENTS;
+  bmd->bmd_ret_type = bt;
+  bif_define_int (name, bif, bmd);
+  return bmd;
+}
+
 
 bif_metadata_t *
 bif_define_ex (const char *raw_name, bif_t bif, ...)
@@ -1612,6 +1647,7 @@ bif_define_ex (const char *raw_name, bif_t bif, ...)
   va_list tail;
   bif_metadata_t *bmd = (bif_metadata_t *)dk_alloc_zero (sizeof (bif_metadata_t));
   int bif_is_sparql_only = 0;
+  dk_set_t raw_alias_names = NULL;
   bmd->bmd_main_impl = bif;
   bmd->bmd_max_argcount = MAX_BOX_ELEMENTS;
   va_start (tail, bif);
@@ -1622,12 +1658,26 @@ bif_define_ex (const char *raw_name, bif_t bif, ...)
         break;
       if ((0 >= op) || (COUNTOF__BMD_OPTIONs <= op))
         GPF_T1 ("invalid option in bif_define_ex");
-      if (options_bitmask & (1 << op))
-        GPF_T1 ("duplicate option in bif_define_ex");
-      options_bitmask |= (1 << op);
+      if (BMD_ALIAS != op)
+        {
+          if (options_bitmask & (1 << op))
+            GPF_T1 ("duplicate option in bif_define_ex");
+          options_bitmask |= (1 << op);
+        }
       switch (op)
         {
-        case BMD_DONE: break;
+        case BMD_ALIAS:
+          {
+            const char *raw_alias_name = va_arg (tail, const char *);
+            caddr_t alias_noupcase_name = box_dv_uname_string (raw_alias_name);
+            caddr_t alias_name = box_dv_uname_string (sqlp_box_id_upcase (raw_alias_name));
+            if (NULL != gethash (alias_noupcase_name, name_to_bif_sparql_only_metadata_hash))
+              GPF_T1 ("sparql-only pseudo bif name cannot be reused as alias in bif_define_ex");
+            if (NULL != id_hash_get (name_to_bif_metadata_idhash, (caddr_t)(&alias_name)))
+              GPF_T1 ("alias name is reused in bif_define_ex");
+            dk_set_push (&raw_alias_names, box_copy (alias_noupcase_name));
+            break;
+          }
         case BMD_VECTOR_IMPL:		bmd->bmd_vector_impl = va_arg (tail, void *); break;
         case BMD_SQL_OPTIMIZER_IMPL:	bmd->bmd_sql_optimizer_impl = va_arg (tail, void *); break;
         case BMD_SPARQL_OPTIMIZER_IMPL:	bmd->bmd_sparql_optimizer_impl = va_arg (tail, void *); break;
@@ -1639,8 +1689,10 @@ bif_define_ex (const char *raw_name, bif_t bif, ...)
         case BMD_IS_PURE:		bmd->bmd_is_pure = 1; break;
         case BMD_IS_DBA_ONLY:		bmd->bmd_is_dba_only = 1; break;
         case BMD_USES_INDEX:		bmd->bmd_uses_index = 1; break;
-        case BMD_NO_CLUSTER:		bmd->bmd_no_cluster = 1; break;
         case BMD_SPARQL_ONLY:		bif_is_sparql_only = 1; break;
+        case BMD_NO_CLUSTER:		bmd->bmd_no_cluster |= BIF_NO_CLUSTER; break;
+        case BMD_OUT_OF_PARTITION:	bmd->bmd_no_cluster |= BIF_OUT_OF_PARTITION; break;
+        case BMD_NEED_ENLIST:		bmd->bmd_no_cluster |= BIF_ENLIST; break;
         default: GPF_T1 ("invalid option in bif_define_ex");
         }
     }
@@ -1650,23 +1702,27 @@ bif_define_ex (const char *raw_name, bif_t bif, ...)
       if (NULL != gethash (bmd->bmd_name, name_to_bif_sparql_only_metadata_hash))
         GPF_T1 ("sparql-only pseudo bif name cannot be redefined");
       sethash (bmd->bmd_name, name_to_bif_sparql_only_metadata_hash, bmd);
+      while (NULL != raw_alias_names)
+        {
+          const char *raw_alias_name = (const char *)dk_set_pop (&raw_alias_names);
+          caddr_t alias_noupcase_name = box_dv_uname_string (raw_alias_name);
+          dk_set_push (&(bmd->bmd_aliases), alias_noupcase_name);
+          sethash (alias_noupcase_name, name_to_bif_sparql_only_metadata_hash, bmd);
+        }
     }
   else
     {
       caddr_t name = sqlp_box_id_upcase (raw_name);
-      bmd->bmd_name = box_dv_short_string (name);
+      bmd->bmd_name = box_dv_uname_string (name);
+      while (NULL != raw_alias_names)
+        {
+          const char *raw_alias_name = (const char *)dk_set_pop (&raw_alias_names);
+          caddr_t alias_name = box_dv_uname_string (sqlp_box_id_upcase (raw_alias_name));
+          dk_set_push (&(bmd->bmd_aliases), alias_name);
+          id_hash_set (name_to_bif_metadata_idhash, (caddr_t)(&alias_name), (caddr_t)(&bmd));
+        }
       bif_define_int (name, bif, bmd);
     }
-  return bmd;
-}
-
-bif_metadata_t *
-bif_define_typed (const char *name, bif_t bif, bif_type_t * bt)
-{
-  bif_metadata_t *bmd = bif_define (name, bif);
-  if (NULL != bmd->bmd_ret_type)
-    GPF_T1 ("bif return type cannot be changed");
-  bmd->bmd_ret_type = bt;
   return bmd;
 }
 
@@ -1714,6 +1770,61 @@ find_bif_metadata_by_raw_name (const char *name)
   return NULL;
 }
 
+caddr_t
+bif_bif_list_names (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int main_names_only = bif_long_arg (qst, args, 0, "bif_list_names");
+  dk_set_t res = NULL;
+  caddr_t *name_ptr, name;
+  bif_metadata_t **bmd_ptr, *bmd;
+  id_hash_iterator_t iter;
+  id_hash_iterator (&iter, name_to_bif_metadata_idhash);
+  while (hit_next (&iter, (caddr_t *)(&name_ptr), (caddr_t *)(&bmd_ptr)))
+    {
+      name = name_ptr[0];
+      bmd = bmd_ptr[0];
+      if (main_names_only && strcmp (name, bmd->bmd_name))
+        continue;
+      dk_set_push (&res, box_dv_short_string (name));
+    }
+  return (caddr_t)list_to_array (res);
+}
+
+caddr_t
+bif_bif_metadata (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t name = bif_string_arg (qst, args, 0, "bif_metadata");
+  int name_is_raw = ((2 <= BOX_ELEMENTS (args)) ? bif_long_arg (qst, args, 1, "bif_metadata") : 1);
+  bif_metadata_t *bmd = (name_is_raw ? find_bif_metadata_by_raw_name (name) : find_bif_metadata_by_name (name));
+  dk_set_t props = NULL;
+  dk_set_t aliases = NULL;
+  DO_SET (caddr_t, aname, &(bmd->bmd_aliases))
+    dk_set_push_two (&aliases, box_dv_uname_string ("alias"), box_dv_short_string (aname));
+  END_DO_SET ();
+  dk_set_push_two (&props, box_dv_uname_string ("no_cluster"), box_num (bmd->bmd_no_cluster));
+  dk_set_push_two (&props, box_dv_uname_string ("uses_index"), box_num (bmd->bmd_uses_index));
+  dk_set_push_two (&props, box_dv_uname_string ("is_dba_only"), box_num (bmd->bmd_is_dba_only));
+  dk_set_push_two (&props, box_dv_uname_string ("is_pure"), box_num (bmd->bmd_is_pure));
+  dk_set_push_two (&props, box_dv_uname_string ("is_aggregate"), box_num (bmd->bmd_is_aggregate));
+  if ((0 != bmd->bmd_min_argcount) || (0 != bmd->bmd_argcount_inc) || (MAX_BOX_ELEMENTS != bmd->bmd_max_argcount))
+    {
+      dk_set_push_two (&props, box_dv_uname_string ("max_argcount"), box_num (bmd->bmd_max_argcount));
+      dk_set_push_two (&props, box_dv_uname_string ("argcount_inc"), box_num (bmd->bmd_argcount_inc));
+      dk_set_push_two (&props, box_dv_uname_string ("min_argcount"), box_num (bmd->bmd_min_argcount));
+    }
+  if (NULL != bmd->bmd_ret_type)
+    {
+      const char *n = bmd->bmd_ret_type->bt_sql_dml_name;
+      dk_set_push_two (&props, box_dv_uname_string ("return_sql_dml_type"), box_dv_short_string ((NULL != n) ? n : "any /* special */"));
+    }
+  dk_set_push_two (&props, box_dv_uname_string ("has_sparql_optimizer_impl"), box_num (bmd->bmd_sparql_optimizer_impl ? 1 : 0));
+  dk_set_push_two (&props, box_dv_uname_string ("has_sql_optimizer_impl"), box_num (bmd->bmd_sql_optimizer_impl ? 1 : 0));
+  dk_set_push_two (&props, box_dv_uname_string ("has_vector_impl"), box_num (bmd->bmd_vector_impl ? 1 : 0));
+  dk_set_push_two (&props, box_dv_uname_string ("has_main_impl"), box_num (bmd->bmd_main_impl ? 1 : 0));
+  dk_set_push_two (&props, box_dv_uname_string ("aliases"), list_to_array (aliases));
+  dk_set_push_two (&props, box_dv_uname_string ("name"), box_dv_short_string (bmd->bmd_name));
+  return (caddr_t)(list_to_array (props));
+}
 
 bif_t
 bif_find (const char *name)
@@ -1793,6 +1904,42 @@ bif_signal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   sqlr_error ("07001", "signal state can accept up to 3 arguments.");
   return NULL;
 }
+
+caddr_t
+bif_vec_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  data_col_t * dc;
+  if (!BOX_ELEMENTS (args))
+    return NULL;
+  if (!SSL_IS_VEC_OR_REF (args[0]))
+    return (caddr_t)1;
+  dc = QST_BOX (data_col_t *, qst, args[0]->ssl_index);
+  return box_num (dc->dc_n_values);
+}
+
+
+caddr_t
+bif_vec_ref (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t ret;
+  QNCAST (QI, qi, qst);
+  int inx = bif_long_arg (qst, args, 1, "vec_ref"), sv;
+  data_col_t * dc;
+  if (!SSL_IS_VEC_OR_REF (args[0]))
+    return box_copy_tree (qst_get (qst, args[0]));
+  if (SSL_REF == args[0]->ssl_type)
+    sqlr_new_error ("42000",  "VVCREF", "vec_ref not allowed on a reference, must be straight vector or scalar");
+  dc = QST_BOX (data_col_t *, qst, args[0]->ssl_index);
+  if (inx < 0 || inx >= dc->dc_n_values)
+    return dk_alloc_box (0, DV_DB_NULL);
+  sv = qi->qi_set;
+  qi->qi_set = inx;
+  ret = qst_get (qst, args[0]);
+  qi->qi_set = sv;
+  return box_copy_tree (ret);
+}
+
+
 
 
 /* Now returns 0 for NULL, and also the lengths of the BLOBS.
@@ -2933,7 +3080,7 @@ bif_trim (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 /* Modified by AK 29-OCT-1997 to skip all NULL arguments (i.e.
    the result being exactly like they were empty strings "") */
 caddr_t
-bif_concatenate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+bif_concat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *) qst;
   int n_args = BOX_ELEMENTS (args), inx;
@@ -4029,18 +4176,21 @@ retry_unrdf:
   if ((DV_STRING != str_dtp) && (DV_UNAME != str_dtp))
     {
       if (DV_RDF == str_dtp)
-	{
-	  str = ((rdf_box_t *) str)->rb_box;
-	  str_dtp = DV_TYPE_OF (str);
-	  goto retry_unrdf;	/* see above */
-	}
+        {
+          rdf_box_t *rb = (rdf_box_t *) str;
+          if (!rb->rb_is_complete)
+            rb_complete (rb, ((query_instance_t *)qst)->qi_trx, (query_instance_t *)qst);
+          str = rb->rb_box;
+          str_dtp = DV_TYPE_OF (str);
+          goto retry_unrdf;	/* see above */
+        }
       if ((0 == hide_errors) && (DV_DB_NULL != str_dtp))
-	{
+        {
           err_ret[0] = srv_make_new_error ("22023", "SR536",
-	      "Function sprintf_inverse needs a string as argument 0 if argument 2 is zero, not an arg of type %s (%d)",
-	      dv_type_title (str_dtp), str_dtp );
+            "Function sprintf_inverse needs a string as argument 0 if argument 2 is zero, not an arg of type %s (%d)",
+            dv_type_title (str_dtp), str_dtp );
           return NULL;
-	}
+        }
       goto format_mismatch;
     }
   QR_RESET_CTX
@@ -7451,7 +7601,7 @@ bif_connection_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t * qi = (query_instance_t *)qst;
   client_connection_t * cli = qi->qi_client;
-  caddr_t name = bif_string_arg (qst, args, 0, "connection_set");
+  caddr_t name = bif_string_or_uname_arg (qst, args, 0, "connection_set");
   caddr_t val = bif_arg (qst, args, 1, "connection_set");
   if (!box_outlives_qi (val))
   sqlr_new_error ("22023", "SR049",
@@ -7467,7 +7617,7 @@ bif_connection_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   query_instance_t * qi = (query_instance_t *)qst;
   client_connection_t * cli = qi->qi_client;
   int n_args = BOX_ELEMENTS (args);
-  caddr_t name = bif_string_arg (qst, args, 0, "connection_get");
+  caddr_t name = bif_string_or_uname_arg (qst, args, 0, "connection_get");
   caddr_t * place = (caddr_t *) id_hash_get (cli->cli_globals, (caddr_t) &name);
   if (!place)
     {
@@ -7597,10 +7747,10 @@ sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strva
       caddr_t str;
       memset (&sc, 0, sizeof (sc));
 
-      if (!parse_sem)
-	parse_sem = semaphore_allocate (1);
+      if (!parse_mtx)
+	parse_mtx = mutex_allocate ();
       MP_START ();
-      semaphore_enter (parse_sem);
+      mutex_enter (parse_mtx);
       SCS_STATE_PUSH;
       str = (caddr_t) t_alloc_box (20 + strlen (str2), DV_SHORT_STRING);
       snprintf (str, box_length (str), "EXEC SQL %s;", str2);
@@ -7650,7 +7800,7 @@ sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strva
     cleanup:
       sql_pop_all_buffers ();
       SCS_STATE_POP;
-      semaphore_leave (parse_sem);
+      mutex_leave (parse_mtx);
       MP_DONE ();
       sc_free (&sc);
       result_array = (caddr_t) (dk_set_to_array (lexems));
@@ -7763,10 +7913,10 @@ sql_split_text (const char * str2, caddr_t * qst, int flags)
   SCS_STATE_FRAME;
   memset (&sc, 0, sizeof (sc));
 
-  if (!parse_sem)
-    parse_sem = semaphore_allocate (1);
+  if (!parse_mtx)
+    parse_mtx = mutex_allocate ();
   MP_START();
-  semaphore_enter (parse_sem);
+  mutex_enter (parse_mtx);
   SCS_STATE_PUSH;
   str = (caddr_t) t_alloc_box (20 + strlen (str2), DV_SHORT_STRING);
   snprintf (str, box_length (str), "EXEC SQL %s", str2);
@@ -7849,7 +7999,7 @@ cleanup:
   SCS_STATE_POP;
   dk_free_box (scn3split_ses); /* must be released inside semaphore */
   scn3split_ses = NULL;
-  semaphore_leave (parse_sem);
+  mutex_leave (parse_mtx);
   sc_free (&sc);
   dk_free_box (start_filename);
   return revlist_to_array (res);
@@ -8117,7 +8267,7 @@ bif_split_and_decode (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     occurrences += occurrences;
   }
     /* And allocate a vector of once or twice of that many elements. */
-    arr = dk_alloc_box ((occurrences * sizeof (caddr_t)), DV_ARRAY_OF_POINTER);
+    arr = dk_alloc_box_zero ((occurrences * sizeof (caddr_t)), DV_ARRAY_OF_POINTER);
   }
 
 /*
@@ -8386,98 +8536,100 @@ find_index_to_vector (caddr_t item, caddr_t vec, int veclen,
   char *end_ptr, *vec_ptr = ((char *) vec);
 
   if (start >= veclen)
-  {
-    return (0);
-  }       /* Not that many elements? */
+    {
+      return (0);
+    }				/* Not that many elements? */
 
-  switch (vectype)    /* Get the size of one element in bytes. */
-  {
-  case DV_ARRAY_OF_POINTER: case DV_LIST_OF_POINTER: case DV_ARRAY_OF_XQVAL:
+  switch (vectype)		/* Get the size of one element in bytes. */
     {
-  elem_size = sizeof (caddr_t);
-  break;
+    case DV_ARRAY_OF_POINTER:
+    case DV_LIST_OF_POINTER:
+    case DV_ARRAY_OF_XQVAL:
+      {
+	elem_size = sizeof (caddr_t);
+	break;
+      }
+    case DV_ARRAY_OF_LONG:
+      {
+	if ((item_type != DV_SHORT_INT) && (item_type != DV_LONG_INT))
+	  {
+	    goto wrong_item_type;
+	  }
+	elem_size = sizeof (ptrlong);
+	/* Do it here, not in loop. I hope that long fits to caddr_t (char *) */
+	item = ((caddr_t) unbox_ptrlong (item));
+	break;
+      }
+    case DV_ARRAY_OF_DOUBLE:
+      {
+	if (item_type == DV_SINGLE_FLOAT)
+	  {
+	    double_item = ((double) unbox_float (item));
+	    item = ((caddr_t) & double_item);
+	  }
+	else if (item_type != DV_DOUBLE_FLOAT)
+	  {
+	    goto wrong_item_type;
+	  }
+	elem_size = sizeof (double);
+	break;
+      }
+    case DV_ARRAY_OF_FLOAT:
+      {
+	if (item_type == DV_DOUBLE_FLOAT)
+	  {
+	    float_item = ((float) unbox_double (item));
+	    item = ((caddr_t) & float_item);
+	  }
+	else if (item_type != DV_SINGLE_FLOAT)
+	  {
+	    goto wrong_item_type;
+	  }
+	elem_size = sizeof (float);
+	break;
+      }
+    case DV_STRING:
+    case DV_UNAME:
+      {
+	/* if item is a string, then use its first character
+	   (which could be a terminating zero if string is empty),
+	   otherwise it must be an integer, which should be an unsigned
+	   ascii value of the character. */
+	if ((DV_STRING == item_type) || (DV_UNAME == item_type))
+	  {
+	    item = ((caddr_t) (ptrlong) * ((unsigned char *) item));
+	  }
+	else if ((item_type == DV_SHORT_INT) || (item_type == DV_LONG_INT))
+	  {
+	    item = ((caddr_t) unbox_ptrlong (item));
+	  }
+	else
+	  {
+	    goto wrong_item_type;
+	  }
+	elem_size = sizeof (char);
+	break;
+      }
     }
-  case DV_ARRAY_OF_LONG:
-    {
-  if ((item_type != DV_SHORT_INT) && (item_type != DV_LONG_INT))
-    {
-    goto wrong_item_type;
-    }
-  elem_size = sizeof (ptrlong);
-  /* Do it here, not in loop. I hope that long fits to caddr_t (char *) */
-  item = ((caddr_t) unbox_ptrlong (item));
-  break;
-    }
-  case DV_ARRAY_OF_DOUBLE:
-    {
-  if ((item_type == DV_SINGLE_FLOAT))
-    {
-    double_item = ((double) unbox_float (item));
-    item = ((caddr_t) & double_item);
-    }
-  else if ((item_type != DV_DOUBLE_FLOAT))
-    {
-    goto wrong_item_type;
-    }
-  elem_size = sizeof (double);
-  break;
-    }
-  case DV_ARRAY_OF_FLOAT:
-    {
-  if ((item_type == DV_DOUBLE_FLOAT))
-    {
-    float_item = ((float) unbox_double (item));
-    item = ((caddr_t) & float_item);
-    }
-  else if ((item_type != DV_SINGLE_FLOAT))
-    {
-    goto wrong_item_type;
-    }
-  elem_size = sizeof (float);
-  break;
-    }
-  case DV_STRING: case DV_UNAME:
-    {
-  /* if item is a string, then use its first character
-    (which could be a terminating zero if string is empty),
-    otherwise it must be an integer, which should be an unsigned
-    ascii value of the character. */
-  if ((DV_STRING == item_type) || (DV_UNAME == item_type))
-    {
-    item = ((caddr_t) (ptrlong) *((unsigned char *) item));
-    }
-  else if ((item_type == DV_SHORT_INT) || (item_type == DV_LONG_INT))
-    {
-    item = ((caddr_t) unbox_ptrlong (item));
-    }
-  else
-    {
-    goto wrong_item_type;
-    }
-  elem_size = sizeof (char);
-  break;
-    }
-  }
 
   end_ptr = vec_ptr + (veclen * elem_size);
   vec_ptr += (start * elem_size);
 
   for (; vec_ptr < end_ptr; vec_ptr += (skip_value * elem_size))
-  {
-    if (vecelem_equal (vec_ptr, item, vectype))
-  {
-    return (int) (1 + ((vec_ptr - ((char *) vec)) / elem_size));
-  }
-  }
-  return (0);     /* Not found. */
+    {
+      if (vecelem_equal (vec_ptr, item, vectype))
+	{
+	  return (int) (1 + ((vec_ptr - ((char *) vec)) / elem_size));
+	}
+    }
+  return (0);			/* Not found. */
 
 wrong_item_type:
 
   sqlr_new_error ("22023", "SR056",
-    "%s expects the type of item searched for (%s (%d)) and "
-    "the type of the vector searched from (%s (%d)) to match. Veclen=%d.",
-    calling_fun, dv_type_title (item_type), item_type,
-    dv_type_title (vectype), vectype, veclen);
+      "%s expects the type of item searched for (%s (%d)) and "
+      "the type of the vector searched from (%s (%d)) to match. Veclen=%d.",
+      calling_fun, dv_type_title (item_type), item_type, dv_type_title (vectype), vectype, veclen);
   return (0);
 }
 
@@ -8825,6 +8977,9 @@ bif_position (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
    returns an index (zero-based if we think item as first argument)
    of a first argument that is equal to item, zero otherwise. */
+
+
+caddr_t uname_one_of_these;
 caddr_t
 bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -9345,7 +9500,6 @@ caddr_t bif_mem_get_current_total (caddr_t * qst, caddr_t * err_ret, state_slot_
 caddr_t
 bif_mem_summary (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  char *dp = bif_string_or_null_arg (qst, args, 0, "mem_summary");
   return NULL;
 }
 
@@ -10524,7 +10678,7 @@ boxint cl_sequence_next_no_refill (query_instance_t * qi, caddr_t seq, int step,
 
 
 caddr_t
-bif_sequence_next_bounded (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int sec_check)
+bif_sequence_next_bounded (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   *err_ret = srv_make_new_error ("42000", "SEQCL", "sequence_next_bounded not defined outside cluster support");
   return NULL;
@@ -10713,7 +10867,7 @@ bif_get_user_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static caddr_t
 bif_get_user_id_by_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  query_instance_t *qi = (query_instance_t *) QST_INSTANCE (qst);
+  /* query_instance_t *qi = (query_instance_t *) QST_INSTANCE (qst); */
   caddr_t name = bif_string_arg (qst, args, 0, "get_user_id");
   user_t * usr = sec_name_to_user (name);
   if (usr) 
@@ -10831,10 +10985,10 @@ bif_set_qualifier (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       sqlr_new_error ("22023", "SR484", "The qualifier cannot be longer than %d characters nor empty string", MAX_NAME_LEN);
     }
   sch_normalize_new_table_case (isp_schema (qi->qi_space), q, box_length (q), NULL, 0);
-  semaphore_enter (parse_sem);
+  mutex_enter (parse_mtx);
   dk_free_box (qi->qi_client->cli_qualifier);
   qi->qi_client->cli_qualifier = q;
-  semaphore_leave (parse_sem);
+  mutex_leave (parse_mtx);
 
   if (!cli_ws && cli_is_interactive (cli))
   {
@@ -11201,6 +11355,43 @@ bif_key_replay_insert (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return 0;
 }
 
+
+caddr_t
+bif_key_delete_replay (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *) qst;
+  row_delta_t rd;
+  caddr_t * arr = (caddr_t*) bif_array_arg (qst, args, 0, "key_replay_insert");
+  dbe_key_t * key = sch_id_to_key (wi_inst.wi_schema, unbox (arr[0]));
+  it_cursor_t itc_auto;
+  it_cursor_t * it = &itc_auto;
+  QI_CHECK_STACK (qi, &qst, INS_STACK_MARGIN);
+    sec_check_dba (qi, "key_delete_replay");
+
+  ITC_INIT (it, NULL, qi->qi_trx);
+  memset (&rd, 0, sizeof (row_delta_t));
+  if (!key || key->key_n_significant != BOX_ELEMENTS (arr) - 1)
+    sqlr_new_error ("42000", "KI...", "No key for the id or bad number of columns in key_delete_replay_co;cols");
+  rd.rd_allocated = RD_AUTO;
+  rd.rd_key = key;
+  rd.rd_op = RD_DELETE;
+  rd.rd_non_comp_len = key->key_row_var_start[0];
+  rd.rd_n_values = key->key_n_significant;
+  rd.rd_values = &arr[1];
+  rd.rd_non_comp_max = MAX_ROW_BYTES;
+  rd.rd_itc = it;
+  rd.rd_qst = qst;
+  it->itc_insert_key = key;
+  ITC_FAIL (it)
+    {
+      itc_delete_rd (it, &rd);
+    }
+  ITC_FAILED
+    {
+    }
+  END_FAIL (it);
+  return 0;
+}
 
 
 caddr_t
@@ -11623,7 +11814,7 @@ bif_log_enable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 caddr_t
-print_object_to_new_string (caddr_t xx, const char *fun_name, caddr_t * err_ret)
+print_object_to_new_string (caddr_t xx, const char *fun_name, caddr_t * err_ret, int flags)
 {
   scheduler_io_data_t iod;
   caddr_t res;
@@ -11633,6 +11824,7 @@ print_object_to_new_string (caddr_t xx, const char *fun_name, caddr_t * err_ret)
   SESSION_SCH_DATA (out) = &iod;
   memset (&iod, 0, sizeof (iod));
 
+  out->dks_cluster_flags = flags;
   CATCH_WRITE_FAIL (out)
     {
       print_object (xx, out, NULL, NULL);
@@ -11660,8 +11852,9 @@ print_object_to_new_string (caddr_t xx, const char *fun_name, caddr_t * err_ret)
 caddr_t
 bif_serialize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  int flags = BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "serialize") : 0;
   caddr_t xx = bif_arg (qst, args, 0, "serialize");
-  return print_object_to_new_string (xx, "serialize", err_ret);
+  return print_object_to_new_string (xx, "serialize", err_ret, flags);
 }
 
 caddr_t
@@ -12080,10 +12273,11 @@ bif_ddl_change (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t repl = box_copy_tree ((box_t) qi->qi_trx->lt_replicate);
   /* save the logging mode across the autocommit inside the schema read */
   dbe_table_t * tb_def = sch_name_to_table (wi_inst.wi_schema, tb);
+  int sys_tb = (id_hash_system_tables && NULL != id_hash_get (id_hash_system_tables, (caddr_t) &tb));
   if (tb_def && tb_def->tb_primary_key && tb_def->tb_primary_key->key_id <= KI_UDT)
     sqlr_new_error ("42000", ".....", "May not redef or reload def of system table");
   log_dd_change (qi -> qi_trx, tb);
-  qi_read_table_schema (qi, tb);
+  qi_read_table_schema (qi, tb_def && !sys_tb ? tb_def->tb_name : tb);
   qi->qi_trx->lt_replicate = (caddr_t *)repl;
   return 0;
 }
@@ -13150,8 +13344,6 @@ done:
 }
 
 
-
-
 #define LC_BOX_ARRAY 1
 #define MAX_COLS 16
 
@@ -13292,15 +13484,14 @@ bif_exec_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t * rsets = NULL;
   int64 k;
   dk_set_t proc_resultset = NULL;
-  int n_args = BOX_ELEMENTS (args), n_cols;
+  int n_args = BOX_ELEMENTS (args);
   query_instance_t *qi = (query_instance_t *) qst;
-  stmt_compilation_t *comp = NULL, *proc_comp = NULL;
+  stmt_compilation_t *proc_comp = NULL;
   caddr_t _text;
   caddr_t text = NULL;
   caddr_t *params = NULL;
   caddr_t err = NULL;
   query_t *qr = NULL;
-  long max = 0;
   client_connection_t *cli = qi->qi_client;
   caddr_t res = NULL;
   dk_set_t warnings = NULL;
@@ -13416,7 +13607,7 @@ qr_set:
     cli->cli_log_qi_stats = 1;
   k = bif_exec_start (cli, qr->qr_text);
   cli_set_start_times (cli);
-  err =qr_exec_vec_lc (qr, qst, params,  &rsets);
+  err = qr_exec_vec_lc (qr, qst, (caddr_t **) params,  &rsets);
   bif_exec_done (k);
   if (n_args > 6 && ssl_is_settable (args[6]))
     qst_set (qst, args[6], (caddr_t)rsets);
@@ -14073,6 +14264,32 @@ bif_getrusage (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #else
   return box_num (0);
 #endif
+}
+
+
+void 
+sti_init (sys_timer_t* sti)
+{
+#ifdef HAVE_GETRUSAGE
+  struct rusage ru;
+  getrusage (RUSAGE_SELF, &ru);
+#endif
+  sti->sti_real = get_msec_real_time ();
+#ifdef HAVE_GETRUSAGE
+  sti->sti_cpu = ru.ru_utime.tv_sec * 1000 +  ru.ru_utime.tv_usec / 1000;
+  sti->sti_sys = ru.ru_stime.tv_sec * 1000 +  ru.ru_stime.tv_usec / 1000;
+#endif
+}
+
+
+void 
+sti_cum (sys_timer_t * cum, sys_timer_t * start)
+{
+  sys_timer_t now;
+  sti_init (&now);
+  cum->sti_real += now.sti_real - start->sti_real;
+  cum->sti_cpu += now.sti_cpu - start->sti_cpu;
+  cum->sti_sys += now.sti_sys - start->sti_sys;
 }
 
 
@@ -14785,10 +15002,18 @@ bif_autocompact (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       buffer_pool_t * bp = wi_inst.wi_bps[0];
       if (2 == flags)
 	col_ac_last_duration = 0; /* do col ac anyway, even if not due by local reckoning */
-      bp_flush (bp);
+      bp_flush (bp, 0);
 	}
       else
     wi_check_all_compact (0);
+  return NULL;
+}
+
+
+caddr_t
+bif_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  bp_flush (NULL, bif_long_arg (qst, args, 0, "__flush"));
   return NULL;
 }
 
@@ -15498,7 +15723,7 @@ bif_rdf_encode_for_uri_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
 caddr_t
 bif_rdf_concat_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t res_strg = bif_concatenate (qst, err_ret, args);
+  caddr_t res_strg = bif_concat (qst, err_ret, args);
   int n_args = BOX_ELEMENTS (args), inx;
   unsigned short common_type_twobytes = 0;
   unsigned short common_lang_twobytes = 0;
@@ -15568,8 +15793,10 @@ bif_rdf_checksum_int (caddr_t * qst, state_slot_t ** args, int op, const char *f
   caddr_t arg = bif_arg_unrdf (qst, args, 0, fname);
   caddr_t arg_strg = NULL;
   caddr_t res = NULL;
-  int ctr, res_len;
+  int ctr, res_len = 0;
   dtp_t arg_dtp = DV_TYPE_OF (arg);
+  if (arg_dtp == DV_DB_NULL)
+    return NEW_DB_NULL;
   if ((DV_STRING != arg_dtp) || (DV_UNAME != arg_dtp))
     arg_strg = box_cast_to_UTF8 (qst, arg);
   else
@@ -15687,40 +15914,101 @@ caddr_t
 bif_rdf_SHA512_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 { return bif_rdf_checksum_int (qst, args, SPAR_BIF_SHA512, "rdf_sha512_impl"); }
 
+caddr_t
+bif_rdf_valid_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  rdf_box_t *arg = (rdf_box_t *)bif_arg (qst, args, 0, "rdf_valid_impl");
+  if (DV_RDF != DV_TYPE_OF (arg))
+    return box_bool (1);
+  if (RDF_BOX_DEFAULT_TYPE == arg->rb_type)
+    return box_bool (1);
+  if (RDF_BOX_DEFAULT_LANG != arg->rb_lang)
+    return box_bool (0); /* Non-default datatype with non-default language? */
+  if (DV_STRING != DV_TYPE_OF (arg->rb_box))
+    return box_bool (1);
+  if (2 <= BOX_ELEMENTS (args))
+    {
+      caddr_t dt_uname = bif_string_or_uname_or_wide_or_null_arg (qst, args, 1, "rdf_valid_impl");
+      if (NULL == dt_uname) /* Invalid twobytes of a datatype? */
+        return box_bool (0);
+      /* Despite the use of bif_string_or_uname_or_wide_or_null_arg() we handle only UNAMEs here */
+      if ( (uname_xmlschema_ns_uri_hash_boolean			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_byte			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_date			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_dateTime		== dt_uname)
+      /*|| (uname_xmlschema_ns_uri_hash_dateTimeStamp		== dt_uname)*/
+        || (uname_xmlschema_ns_uri_hash_dayTimeDuration		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_decimal			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_double			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_duration		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_float			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_gDay			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_gMonth			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_gMonthDay		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_gYear			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_gYearMonth		== dt_uname)
+      /*|| (uname_xmlschema_ns_uri_hash_hexBinary		== dt_uname)*/
+        || (uname_xmlschema_ns_uri_hash_int			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_integer			== dt_uname)
+      /*|| (uname_xmlschema_ns_uri_hash_language		== dt_uname)*/
+        || (uname_xmlschema_ns_uri_hash_long			== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_negativeInteger		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_nonNegativeInteger	== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_nonPositiveInteger	== dt_uname)
+      /*|| (uname_xmlschema_ns_uri_hash_normalizedString	== dt_uname)*/
+        || (uname_xmlschema_ns_uri_hash_positiveInteger		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_short			== dt_uname)
+      /*|| (uname_xmlschema_ns_uri_hash_string			== dt_uname)*/
+        || (uname_xmlschema_ns_uri_hash_time			== dt_uname)
+      /*|| (uname_xmlschema_ns_uri_hash_token			== dt_uname)*/
+        || (uname_xmlschema_ns_uri_hash_unsignedByte		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_unsignedInt		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_unsignedLong		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_unsignedShort		== dt_uname)
+        || (uname_xmlschema_ns_uri_hash_yearMonthDuration	== dt_uname) )
+        return box_bool (0);
+    }
+  return box_bool (1);
+}
+
 void
 bif_sparql_init (void)
 {
-  bif_define ("rdf_abs_impl", bif_abs);
   bif_define ("rdf_ceil_impl", bif_rdf_ceil_impl);
   bif_define ("rdf_floor_impl", bif_rdf_floor_impl);
-  bif_define_typed ("rdf_rand_impl", bif_rdf_rand_impl, &bt_double);
+  bif_define_ex ("rdf_rand_impl", bif_rdf_rand_impl, BMD_RET_TYPE, &bt_double, BMD_DONE);
   bif_define ("rdf_round_impl", bif_rdf_round_impl);
-  bif_define_typed ("rdf_strlen_impl", bif_rdf_strlen_impl, &bt_integer);
-  bif_define_typed ("rdf_substr_impl", bif_rdf_substr_impl, &bt_string);
-  bif_define_typed ("rdf_ucase_impl", bif_rdf_ucase_impl, &bt_string);
-  bif_define_typed ("rdf_lcase_impl", bif_rdf_lcase_impl, &bt_string);
-  bif_define_ex ("rdf_strafter_impl"	, bif_rdf_strafter_impl	, BMD_RET_TYPE, &bt_any		, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("rdf_strbefore_impl"	, bif_rdf_strbefore_impl, BMD_RET_TYPE, &bt_any		, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("rdf_strstarts_impl"	, bif_rdf_strstarts_impl, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("rdf_strends_impl"	, bif_rdf_strends_impl	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("rdf_contains_impl"	, bif_rdf_contains_impl	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
-  bif_define_typed ("rdf_encode_for_uri_impl", bif_rdf_encode_for_uri_impl, &bt_varchar);
-  bif_define_typed ("rdf_concat_impl", bif_rdf_concat_impl, &bt_varchar);
+  bif_define_ex ("rdf_strlen_impl", bif_rdf_strlen_impl, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("rdf_substr_impl", bif_rdf_substr_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
+  bif_define_ex ("rdf_ucase_impl", bif_rdf_ucase_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
+  bif_define_ex ("rdf_lcase_impl", bif_rdf_lcase_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
+  bif_define_ex ("rdf_strafter_impl", bif_rdf_strafter_impl, BMD_RET_TYPE, &bt_any, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2,
+      BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("rdf_strbefore_impl", bif_rdf_strbefore_impl, BMD_RET_TYPE, &bt_any, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2,
+      BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("rdf_strstarts_impl", bif_rdf_strstarts_impl, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2,
+      BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("rdf_strends_impl", bif_rdf_strends_impl, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2,
+      BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("rdf_contains_impl", bif_rdf_contains_impl, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2,
+      BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("rdf_encode_for_uri_impl", bif_rdf_encode_for_uri_impl, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("rdf_concat_impl", bif_rdf_concat_impl, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   /* Functions rdf_now_impl() and rdf_year_impl() to rdf_minutes_impl() are in bif_date.c */
-  bif_define_typed ("rdf_seconds_impl", bif_rdf_seconds_impl, &bt_double);
-  bif_define_typed ("rdf_md5_impl", bif_rdf_MD5_impl, &bt_string);
-  bif_define_typed ("rdf_sha1_impl", bif_rdf_SHA1_impl, &bt_string);
-  bif_define_typed ("rdf_sha224_impl", bif_rdf_SHA224_impl, &bt_string);
-  bif_define_typed ("rdf_sha256_impl", bif_rdf_SHA256_impl, &bt_string);
-  bif_define_typed ("rdf_sha384_impl", bif_rdf_SHA384_impl, &bt_string);
-  bif_define_typed ("rdf_sha512_impl", bif_rdf_SHA512_impl, &bt_string);
+  bif_define_ex ("rdf_seconds_impl", bif_rdf_seconds_impl, BMD_RET_TYPE, &bt_double, BMD_DONE);
+  bif_define_ex ("rdf_md5_impl", bif_rdf_MD5_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
+  bif_define_ex ("rdf_sha1_impl", bif_rdf_SHA1_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
+  bif_define_ex ("rdf_sha224_impl", bif_rdf_SHA224_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
+  bif_define_ex ("rdf_sha256_impl", bif_rdf_SHA256_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
+  bif_define_ex ("rdf_sha384_impl", bif_rdf_SHA384_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
+  bif_define_ex ("rdf_sha512_impl", bif_rdf_SHA512_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
+  bif_define_ex ("rdf_valid_impl", bif_rdf_valid_impl, BMD_RET_TYPE, &bt_integer, BMD_DONE);
 }
 
 extern caddr_t bif_search_excerpt (caddr_t *qst, caddr_t * err_ret, state_slot_t ** args);
 extern caddr_t bif_fct_level (caddr_t *qst, caddr_t * err_ret, state_slot_t ** args);
 void bif_fct_level_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
 caddr_t bif_sum_rank (caddr_t *qst, caddr_t * err_ret, state_slot_t ** args);
-caddr_t bif_dpipe_define (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 
 
 void
@@ -15739,26 +16027,22 @@ sql_bif_init (void)
   icc_locks_mutex = mutex_allocate();
   icc_locks = id_str_hash_create (31);
   dba_sequences = id_str_hash_create (11);
+  bif_define ("bif_list_names", bif_bif_list_names);
+  bif_define ("bif_metadata", bif_bif_metadata);
 /* For debugging */
-  bif_define_typed ("dbg_printf", bif_dbg_printf, &bt_varchar);
+  bif_define_ex ("dbg_printf", bif_dbg_printf, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("dbg_obj_print", bif_dbg_obj_print);
-  bif_define ("dbg_obj_princ", bif_dbg_obj_princ); bif_set_uses_index (bif_dbg_obj_princ);
-  bif_define ("dbg_obj_prin1", bif_dbg_obj_princ);
+  bif_define_ex ("dbg_obj_princ"	, bif_dbg_obj_princ, BMD_ALIAS, "dbg_obj_prin1", BMD_USES_INDEX, BMD_DONE);
   bif_define ("dbg_obj_print_vars", bif_dbg_obj_print_vars);
   bif_define ("dbg_user_dump", bif_dbg_user_dump);
   bif_define ("__cache_check", bif_cache_check);
   bif_define ("__autocompact", bif_autocompact);
-  bif_define_typed ("__qi_is_branch", bif_qi_is_branch, &bt_integer);
-#if 0
-  /*partition_def_bif_define ();*/
-  dpipe_define_1_bif_define ();
-#endif
-  bif_define ("dpipe_define", bif_dpipe_define);
+  bif_define ("__flush", bif_flush);
+  bif_define_ex ("__qi_is_branch", bif_qi_is_branch, BMD_RET_TYPE, &bt_integer, BMD_DONE);
 
 #if 1
   bif_define ("xid_test", test_xid_encode_decode);
 #endif
-
 
 /* Functions for error & result handling in user created procedures: */
   bif_define ("signal", bif_signal);
@@ -15772,26 +16056,26 @@ sql_bif_init (void)
 /* These are all SQL-92 standard functions. */
 
 /* String manipulation. */
-  bif_define_typed ("length", bif_length, &bt_integer);
-  bif_define_typed ("char_length", bif_length, &bt_integer);
-  bif_define_typed ("character_length", bif_length, &bt_integer);
-  bif_define_typed ("octet_length", bif_length, &bt_integer);
-
-  bif_define_typed ("aref", bif_aref, &bt_any_box);
-  bif_define_typed ("aref_or_default", bif_aref_or_default, &bt_any_box);
-  bif_define_typed ("aref_set_0", bif_aref_set_0, &bt_any_box);
-  bif_define_typed ("aset", bif_aset, &bt_integer);
-  bif_define_typed ("aset_zap_arg", bif_aset_zap_arg, &bt_integer);
+  bif_define_ex ("length", bif_length, BMD_ALIAS, "char_length", BMD_ALIAS, "character_length", BMD_ALIAS, "octet_length",
+      BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("vec_length", bif_vec_length, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("vec_ref", bif_vec_ref, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
+  bif_define_ex ("aref", bif_aref, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
+  bif_define_ex ("aref_or_default", bif_aref_or_default, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
+  bif_define_ex ("aref_set_0", bif_aref_set_0, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
+  bif_define_ex ("aset", bif_aset, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("aset_zap_arg", bif_aset_zap_arg, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("aset_1_2_zap", bif_aset_1_2_zap);
   bif_define ("composite", bif_composite);
   bif_define ("composite_ref", bif_composite_ref);
-  bif_define_typed ("ascii", bif_ascii, &bt_integer);
-  bif_define_typed ("chr", bif_chr, &bt_varchar);
-  bif_define_typed ("chr1", bif_chr1, &bt_varchar);
+  bif_define_ex ("ascii", bif_ascii, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("chr", bif_chr, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("chr1", bif_chr1, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 
 /* Substring extraction: */
   bif_define_ex ("subseq"		, bif_subseq		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("substring"		, bif_substr		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("substring", bif_substr, BMD_RET_TYPE, &bt_string, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3, BMD_IS_PURE,
+      BMD_DONE);
   bif_define_ex ("left"			, bif_left		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("right"		, bif_right		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("ltrim"		, bif_ltrim		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
@@ -15801,86 +16085,132 @@ sql_bif_init (void)
 /* Producing new strings by repetition: */
   bif_define_ex ("repeat"		, bif_repeat		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("space"		, bif_space		, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("make_string"		, bif_make_string	, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("make_wstring"		, bif_make_wstring	, BMD_RET_TYPE, &bt_wvarchar	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("make_bin_string"	, bif_make_bin_string	, BMD_RET_TYPE, &bt_varbinary	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("concatenate"		, bif_concatenate	, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 0				, BMD_IS_PURE, BMD_DONE);  /* Synonym for old times */
-  bif_define_ex ("concat"		, bif_concatenate	, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 0				, BMD_IS_PURE, BMD_DONE); /* This is more to standard */
+  bif_define_ex ("make_string", bif_make_string, BMD_RET_TYPE, &bt_varchar, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("make_wstring", bif_make_wstring, BMD_RET_TYPE, &bt_wvarchar, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1,
+      BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("make_bin_string", bif_make_bin_string, BMD_RET_TYPE, &bt_varbinary, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1,
+      BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("concat", bif_concat, BMD_ALIAS, "concatenate", BMD_RET_TYPE, &bt_string, BMD_MIN_ARGCOUNT, 0, BMD_IS_PURE,
+      BMD_DONE);
   bif_define_ex ("replace"		, bif_replace		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 3, BMD_MAX_ARGCOUNT, 4	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("sprintf"		, bif_sprintf		, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1				, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("sprintf_or_null"	, bif_sprintf_or_null	, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1				, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("sprintf_iri"		, bif_sprintf_iri	, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1				, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("sprintf_iri_or_null"	, bif_sprintf_iri_or_null, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1				, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("sprintf_inverse"	, bif_sprintf_inverse					, BMD_MIN_ARGCOUNT, 3, BMD_MAX_ARGCOUNT, 3	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("sprintf"		, bif_sprintf		, BMD_ALIAS, "__spf"	, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1				, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("sprintf_or_null", bif_sprintf_or_null, BMD_ALIAS, "__spfn", BMD_RET_TYPE, &bt_varchar, BMD_MIN_ARGCOUNT, 1,
+      BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("sprintf_iri", bif_sprintf_iri, BMD_ALIAS, "__spfi", BMD_RET_TYPE, &bt_varchar, BMD_MIN_ARGCOUNT, 1, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("sprintf_iri_or_null", bif_sprintf_iri_or_null, BMD_ALIAS, "__spfin", BMD_RET_TYPE, &bt_varchar, BMD_MIN_ARGCOUNT,
+      1, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("sprintf_inverse", bif_sprintf_inverse, BMD_ALIAS, "__spfinv", BMD_MIN_ARGCOUNT, 3, BMD_MAX_ARGCOUNT, 3,
+      BMD_IS_PURE, BMD_DONE);
 
 /* Finding occurrences of characters and substrings in strings: */
   bif_define_ex ("strchr"		, bif_strchr		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("strrchr"		, bif_strrchr		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("strstr"		, bif_strstr		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("strcontains"		, bif_strcontains	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("starts_with"		, bif_starts_with	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("ends_with"		, bif_ends_with		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("strindex"		, bif_strstr		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("strrchr", bif_strrchr, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("strstr", bif_strstr, BMD_ALIAS, "strindex", BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2,
+      BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("strcontains", bif_strcontains, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("starts_with", bif_starts_with, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("ends_with", bif_ends_with, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2, BMD_IS_PURE,
+      BMD_DONE);
   bif_define_ex ("strcasestr"		, bif_nc_strstr		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);  /* Name was nc_strstr */
   bif_define_ex ("locate"		, bif_locate		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3	, BMD_IS_PURE, BMD_DONE);   /* Standard SQL function. */
-  bif_define_ex ("matches_like"		, bif_matches_like	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("__like_min"		, bif_like_min		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("__like_max"		, bif_like_max		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("__rdf_rng_min"	, bif_rdf_rng_min	, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("fix_identifier_case"	, bif_fix_identifier_case, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("casemode_strcmp"	, bif_casemode_strcmp	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("matches_like", bif_matches_like, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("__like_min", bif_like_min, BMD_RET_TYPE, &bt_string, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 2, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("__like_max", bif_like_max, BMD_RET_TYPE, &bt_string, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 2, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("__rdf_rng_min", bif_rdf_rng_min, BMD_RET_TYPE, &bt_string, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("fix_identifier_case", bif_fix_identifier_case, BMD_RET_TYPE, &bt_varchar, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT,
+      1, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("casemode_strcmp", bif_casemode_strcmp, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2,
+      BMD_IS_PURE, BMD_DONE);
 
 /* Conversion between cases: */
-  bif_define_ex ("lcase"		, bif_lcase		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("lower"		, bif_lcase		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE); /* Synonym to lcase */
-  bif_define_ex ("ucase"		, bif_ucase		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("upper"		, bif_ucase		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE); /* Synonym to ucase */
+  bif_define_ex ("lcase", bif_lcase, BMD_ALIAS, "lower", BMD_RET_TYPE, &bt_string, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1,
+      BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("ucase", bif_ucase, BMD_ALIAS, "upper", BMD_RET_TYPE, &bt_string, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1,
+      BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("initcap"		, bif_initcap		, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE); /* Name is taken from Oracle */
   bif_define_ex ("split_and_decode"	, bif_split_and_decode	, BMD_RET_TYPE, &bt_any_box		, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 3	, BMD_IS_PURE, BMD_DONE);   /* Does it all! */
 
 /* Type testing functions. */
   bif_define_ex ("__tag"		, bif_tag		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);   /* for sqlext.c */
-  bif_define_ex ("__box_flags"		, bif_box_flags		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("__box_flags", bif_box_flags, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
+      BMD_DONE);
   bif_define_ex ("__box_flags_set"	, bif_box_flags_set					, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2			, BMD_DONE);
-  bif_define_ex ("__box_flags_tweak"	, bif_box_flags_tweak					, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("dv_to_sql_type"	, bif_dv_to_sql_type	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);   /* for sqlext.c */
+  bif_define_ex ("__box_flags_tweak", bif_box_flags_tweak, BMD_ALIAS, "__bft", BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2,
+      BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("dv_to_sql_type", bif_dv_to_sql_type, BMD_ALIAS, "internal_to_sql_type"	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);   /* for sqlext.c */
   bif_define_ex ("dv_to_sql_type3"	, bif_dv_to_sql_type3	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);   /* for sqlext.c */
-  bif_define_ex ("internal_to_sql_type"	, bif_dv_to_sql_type	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("dv_type_title"	, bif_dv_type_title	, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE); /* needed by sqlext.c */
+  bif_define_ex ("dv_type_title", bif_dv_type_title, BMD_ALIAS, "internal_type_name"	, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE); /* needed by sqlext.c */
   bif_define_ex ("dv_buffer_length"	, bif_dv_buffer_length	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE); /* needed by sqlext.c */
   bif_define_ex ("table_type"		, bif_table_type	, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1			, BMD_DONE);
-  bif_define_ex ("internal_type_name"	, bif_dv_type_title	, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);  /* Alias for prev */
-  bif_define_ex ("internal_type"	, bif_internal_type	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("isinteger"		, bif_isinteger		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("isnumeric"		, bif_isnumeric		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("isfinitenumeric"	, bif_isfinitenumeric	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("isfloat"		, bif_isfloat		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("isdouble"		, bif_isdouble		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("isnull"		, bif_isnull		, BMD_RET_TYPE, &bt_integer_nn	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("isnotnull"		, bif_isnotnull		, BMD_VECTOR_IMPL, bif_isnotnull_vec, BMD_RET_TYPE, &bt_integer_nn	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("isblob"		, bif_isblob_handle	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("isentity"		, bif_isentity		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("isstring"		, bif_isstring		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("isstring_session"	, bif_isstring_session	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("isbinary"		, bif_isbinary		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("isarray"		, bif_isarray		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("isvector"		, bif_isvector		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("isiri_id"		, bif_isiri_id		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("is_named_iri_id"	, bif_is_named_iri_id	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("is_bnode_iri_id"	, bif_is_bnode_iri_id	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("isuname"		, bif_isuname		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("internal_type", bif_internal_type, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1,
+      BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("isinteger", bif_isinteger, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("isnumeric", bif_isnumeric, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("isfinitenumeric", bif_isfinitenumeric, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1,
+      BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("isfloat", bif_isfloat, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("isdouble", bif_isdouble, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("isnull", bif_isnull, BMD_RET_TYPE, &bt_integer_nn, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("isnotnull", bif_isnotnull, BMD_VECTOR_IMPL, bif_isnotnull_vec, BMD_RET_TYPE, &bt_integer_nn, BMD_MIN_ARGCOUNT, 1,
+      BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("isblob", bif_isblob_handle, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("isentity", bif_isentity, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("isstring", bif_isstring, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("isstring_session", bif_isstring_session, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1,
+      BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("isbinary", bif_isbinary, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("isarray", bif_isarray, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("isvector", bif_isvector, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("isiri_id", bif_isiri_id, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("is_named_iri_id", bif_is_named_iri_id, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1,
+      BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("is_bnode_iri_id", bif_is_bnode_iri_id, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1,
+      BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("isuname", bif_isuname, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
+      BMD_DONE);
 
-  bif_define_ex ("iri_id_num"		, bif_iri_id_num	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("iri_id_from_num"	, bif_iri_id_from_num	, BMD_RET_TYPE, &bt_iri		, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("iri_id_num", bif_iri_id_num, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("iri_id_from_num", bif_iri_id_from_num, BMD_RET_TYPE, &bt_iri, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1,
+      BMD_IS_PURE, BMD_DONE);
   bif_define ("__set_64bit_min_bnode_iri_id"	, bif_set_64bit_min_bnode_iri_id);
-  bif_define_ex ("min_bnode_iri_id"	, bif_min_bnode_iri_id	, BMD_RET_TYPE, &bt_iri	, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT, 0	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("max_bnode_iri_id"	, bif_max_bnode_iri_id	, BMD_RET_TYPE, &bt_iri	, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT, 0	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("min_named_bnode_iri_id"	, bif_min_named_bnode_iri_id		, BMD_RET_TYPE, &bt_iri	, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT, 0	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("min_32bit_bnode_iri_id"	, bif_min_32bit_bnode_iri_id		, BMD_RET_TYPE, &bt_iri	, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT, 0	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("min_32bit_named_bnode_iri_id"	, bif_min_32bit_named_bnode_iri_id	, BMD_RET_TYPE, &bt_iri	, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT, 0	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("min_64bit_bnode_iri_id"	, bif_min_64bit_bnode_iri_id		, BMD_RET_TYPE, &bt_iri	, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT, 0	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("min_64bit_named_bnode_iri_id"	, bif_min_64bit_named_bnode_iri_id	, BMD_RET_TYPE, &bt_iri	, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT, 0	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("iri_id_bnode32_to_bnode64"	, bif_iri_id_bnode32_to_bnode64		, BMD_RET_TYPE, &bt_iri	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("min_bnode_iri_id", bif_min_bnode_iri_id, BMD_RET_TYPE, &bt_iri, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT, 0,
+      BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("max_bnode_iri_id", bif_max_bnode_iri_id, BMD_RET_TYPE, &bt_iri, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT, 0,
+      BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("min_named_bnode_iri_id", bif_min_named_bnode_iri_id, BMD_RET_TYPE, &bt_iri, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT,
+      0, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("min_32bit_bnode_iri_id", bif_min_32bit_bnode_iri_id, BMD_RET_TYPE, &bt_iri, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT,
+      0, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("min_32bit_named_bnode_iri_id", bif_min_32bit_named_bnode_iri_id, BMD_RET_TYPE, &bt_iri, BMD_MIN_ARGCOUNT, 0,
+      BMD_MAX_ARGCOUNT, 0, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("min_64bit_bnode_iri_id", bif_min_64bit_bnode_iri_id, BMD_RET_TYPE, &bt_iri, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT,
+      0, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("min_64bit_named_bnode_iri_id", bif_min_64bit_named_bnode_iri_id, BMD_RET_TYPE, &bt_iri, BMD_MIN_ARGCOUNT, 0,
+      BMD_MAX_ARGCOUNT, 0, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("iri_id_bnode32_to_bnode64", bif_iri_id_bnode32_to_bnode64, BMD_RET_TYPE, &bt_iri, BMD_MIN_ARGCOUNT, 1,
+      BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE, BMD_DONE);
 
   bif_define_ex ("__all_eq"		, bif_all_eq		, BMD_RET_TYPE, &bt_any_box		, BMD_MIN_ARGCOUNT, 0				, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("__max"		, bif_max		, BMD_RET_TYPE, &bt_any_box		, BMD_MIN_ARGCOUNT, 0				, BMD_IS_PURE, BMD_DONE);
@@ -15909,7 +16239,8 @@ sql_bif_init (void)
   bif_define_ex ("atoi"			, bif_atoi	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("dtoi"			, bif_dtoi	, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("mod"			, bif_mod	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("abs"			, bif_abs	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("abs", bif_abs, BMD_ALIAS, "rdf_abs_impl", BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1,
+      BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("sign"			, bif_sign	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("acos"			, bif_acos	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("asin"			, bif_asin	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
@@ -15927,86 +16258,79 @@ sql_bif_init (void)
   bif_define_ex ("sqrt"			, bif_sqrt	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("atan2"		, bif_atan2	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("power"		, bif_power	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("ceiling"		, bif_ceiling	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("ceiling", bif_ceiling, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
+      BMD_DONE);
   bif_define_ex ("floor"		, bif_floor	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("pi"			, bif_pi	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT, 0	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("round"		, bif_round	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
 
-  bif_define_ex ("rnd"			, bif_rnd	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1				/*, BMD_IS_PURE*/, BMD_DONE);
-  bif_define_ex ("rand"			, bif_rnd	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1				/*, BMD_IS_PURE*/, BMD_DONE); /* SQL 92 standard function */
+  bif_define_ex ("rnd", bif_rnd, BMD_ALIAS, "rand"	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1				/*, BMD_IS_PURE*/, BMD_DONE);
   bif_define ("randomize", bif_randomize);
   bif_define_ex ("hash"			, bif_hash	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("md5_box"		, bif_md5_box	, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("box_hash"		, bif_box_hash	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("md5_box", bif_md5_box, BMD_RET_TYPE, &bt_varchar, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("box_hash", bif_box_hash, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
+      BMD_DONE);
 /* Bitwise: */
   bif_define_ex ("bit_and"		, bif_bit_and	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 0				, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("bit_or"		, bif_bit_or	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 0				, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("bit_xor"		, bif_bit_xor	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("bit_not"		, bif_bit_not	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("bit_shift"		, bif_bit_shift	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("bit_xor", bif_bit_xor, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("bit_not", bif_bit_not, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
+      BMD_DONE);
+  bif_define_ex ("bit_shift", bif_bit_shift, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2, BMD_IS_PURE,
+      BMD_DONE);
 
 /* Miscellaneous: */
-  bif_define_typed ("dbname", bif_dbname, &bt_varchar);   /* Standard system function ? */
-  bif_define_typed ("get_user", bif_user, &bt_varchar);
-  bif_set_no_cluster ("get_user");
-  bif_define_typed ("pwd_magic_calc", bif_pwd_magic_calc, &bt_varchar);
-  bif_define_typed ("username", bif_user, &bt_varchar);   /* Standard system function name ? */
-  bif_define_typed ("disconnect_user", bif_disconnect, &bt_integer);
-  bif_define_typed ("connection_id", bif_connection_id, &bt_varchar);
-  bif_set_no_cluster ("connection_id");
-  bif_define ("connection_set", bif_connection_set);
-  bif_set_no_cluster ("connection_set");
-  bif_define ("connection_get", bif_connection_get);
-  bif_set_no_cluster ("connection_get");
-  bif_define ("connection_vars_set", bif_connection_vars_set);
-  bif_set_no_cluster ("connection_vars_set");
-  bif_define ("connection_vars", bif_connection_vars);
-  bif_set_no_cluster ("connection_vars");
-  bif_define ("connection_is_dirty", bif_connection_is_dirty);
-  bif_set_no_cluster ("connection_is_dirty");
-  bif_define ("backup", bif_backup);
-  bif_set_no_cluster ("backup");
-  bif_define ("db_check", bif_check);
-  bif_set_no_cluster ("db_check");
-  bif_define ("cl_idn", bif_cl_idn);
-  bif_set_no_cluster ("cl_idn");
-  bif_define_typed ("cl_idni", bif_cl_idni, &bt_integer);
-  bif_set_no_cluster ("cl_idni");
-  bif_set_vectored (bif_cl_idni, bif_cl_idni_vec);
+  bif_define_ex ("dbname", bif_dbname, BMD_RET_TYPE, &bt_varchar, BMD_DONE);   /* Standard system function ? */
+  bif_define_ex ("get_user", bif_user, BMD_ALIAS, "username"	, BMD_RET_TYPE, &bt_varchar							, BMD_NO_CLUSTER, BMD_DONE);
+  bif_define_ex ("pwd_magic_calc", bif_pwd_magic_calc, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("disconnect_user", bif_disconnect, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("connection_id"	, bif_connection_id , BMD_RET_TYPE, &bt_varchar							, BMD_NO_CLUSTER, BMD_DONE);
+  bif_define_ex ("connection_set"	, bif_connection_set										, BMD_NO_CLUSTER, BMD_DONE);
+  bif_define_ex ("connection_get"	, bif_connection_get										, BMD_NO_CLUSTER, BMD_DONE);
+  bif_define_ex ("connection_vars_set"	, bif_connection_vars_set									, BMD_NO_CLUSTER, BMD_DONE);
+  bif_define_ex ("connection_vars"	, bif_connection_vars										, BMD_NO_CLUSTER, BMD_DONE);
+  bif_define_ex ("connection_is_dirty"	, bif_connection_is_dirty									, BMD_NO_CLUSTER, BMD_DONE);
+  bif_define_ex ("backup"		, bif_backup											, BMD_NO_CLUSTER, BMD_DONE);
+  bif_define_ex ("db_check"		, bif_check											, BMD_NO_CLUSTER, BMD_DONE);
+  bif_define_ex ("cl_idn"		, bif_cl_idn											, BMD_NO_CLUSTER, BMD_DONE);
+  bif_define_ex ("cl_idni"		, bif_cl_idni	, BMD_RET_TYPE, &bt_integer, BMD_VECTOR_IMPL, bif_cl_idni_vec			, BMD_NO_CLUSTER, BMD_DONE);
   bif_define ("idn", bif_idn);
-  bif_define_typed ("idn_no_copy", bif_idn_no_copy, &bt_any_box);
-  bif_set_vectored (bif_idn_no_copy, bif_idn_no_copy_vec);
-  bif_define_typed ("__rdflit", bif_rdflit_idn, &bt_any_box);
+  bif_define_ex ("idn_no_copy", bif_idn_no_copy, BMD_RET_TYPE, &bt_any_box, BMD_VECTOR_IMPL,
+      bif_idn_no_copy_vec /*, BMD_NO_CLUSTER */ , BMD_DONE);
+  bif_define_ex ("__rdflit", bif_rdflit_idn, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
   bif_define ("asg_v", bif_asg_v);
-  bif_define_typed ("vector", bif_vector, &bt_any_box);
-  bif_define_typed ("vector_zap_args", bif_vector_zap_args, &bt_any_box);
-  bif_define_typed ("get_keyword", bif_get_keyword, &bt_any_box);
-  bif_define_typed ("get_keyword_ucase", bif_get_keyword_ucase, &bt_any_box);
-  bif_define_typed ("set_by_keywords", bif_set_by_keywords, &bt_integer);
-  bif_define_typed ("tweak_by_keywords", bif_tweak_by_keywords, &bt_any_box);
-  bif_define_typed ("position", bif_position, &bt_integer);
-  bif_define_typed ("one_of_these", bif_one_of_these, &bt_integer);
+  bif_define_ex ("vector", bif_vector, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
+  bif_define_ex ("vector_zap_args", bif_vector_zap_args, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
+  bif_define_ex ("get_keyword", bif_get_keyword, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
+  bif_define_ex ("get_keyword_ucase", bif_get_keyword_ucase, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
+  bif_define_ex ("set_by_keywords", bif_set_by_keywords, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("tweak_by_keywords", bif_tweak_by_keywords, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
+  bif_define_ex ("position", bif_position, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("one_of_these", bif_one_of_these, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  uname_one_of_these = box_dv_uname_string  (sqlp_box_id_upcase ("one_of_these"));
 #if 0
-  bif_define_typed ("row_table", bif_row_table, &bt_varchar);
-  bif_define_typed ("row_column", bif_row_column, &bt_any);
+  bif_define_ex ("row_table", bif_row_table, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("row_column", bif_row_column, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define ("row_identity", bif_row_identity);
   bif_define ("row_deref", bif_row_deref);
 #endif
 
 #ifndef NDEBUG
-  bif_define_typed ("dbg_row_deref_page", bif_dbg_row_deref_page, &bt_integer);
-  bif_define_typed ("dbg_row_deref_pos", bif_dbg_row_deref_pos, &bt_integer);
+  bif_define_ex ("dbg_row_deref_page", bif_dbg_row_deref_page, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("dbg_row_deref_pos", bif_dbg_row_deref_pos, BMD_RET_TYPE, &bt_integer, BMD_DONE);
 #endif
   bif_define ("page_dump", bif_page_dump);
-  bif_define_typed ("lisp_read", bif_lisp_read, &bt_any_box);
+  bif_define_ex ("lisp_read", bif_lisp_read, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
 
-  bif_define_typed ("make_array", bif_make_array, &bt_any_box);
-  bif_define_typed ("lvector", bif_lvector, &bt_any_box);
-  bif_define_typed ("fvector", bif_fvector, &bt_any_box);
-  bif_define_typed ("dvector", bif_dvector, &bt_any_box);
+  bif_define_ex ("make_array", bif_make_array, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
+  bif_define_ex ("lvector", bif_lvector, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
+  bif_define_ex ("fvector", bif_fvector, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
+  bif_define_ex ("dvector", bif_dvector, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
   bif_define ("raw_exit", bif_raw_exit);
-  bif_define_typed ("blob_to_string", bif_blob_to_string, &bt_string);
-  bif_define_typed ("blob_to_string_output", bif_blob_to_string_output, &bt_any_box);
+  bif_define_ex ("blob_to_string", bif_blob_to_string, BMD_RET_TYPE, &bt_string, BMD_DONE);
+  bif_define_ex ("blob_to_string_output", bif_blob_to_string_output, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
   bif_define ("blob_page", bif_blob_page);
   bif_define_ex ("_cvt"		, bif_convert		, BMD_RET_TYPE, &bt_convert	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3	, BMD_IS_PURE, BMD_DONE);
   bif_define ("__cast_internal", bif_cast_internal);
@@ -16016,29 +16340,30 @@ sql_bif_init (void)
   bif_define ("xpath_contains", bif_stub_xpath_contains);
   bif_define ("xquery_contains", bif_stub_xquery_contains);
   bif_define ("xcontains", bif_stub_xcontains);
-  bif_define_typed ("exists", bif_stub_exists, &bt_integer);
+  bif_define_ex ("exists", bif_stub_exists, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   st_varchar = (sql_tree_tmp *) list (3, DV_LONG_STRING, 0, 0);
   st_nvarchar = (sql_tree_tmp *) list (3, DV_LONG_WIDE, 0, 0);
 
 
-  bif_define_typed ("sequence_next", bif_sequence_next, &bt_integer);
-  bif_define_typed ("sequence_next_bounded", bif_sequence_next_bounded, &bt_integer);
-  bif_define_typed ("sequence_remove", bif_sequence_remove, &bt_integer);
-  bif_define_typed ("__sequence_set", bif_sequence_set, &bt_integer);
-  bif_define_typed ("get_all_sequences", bif_sequence_get_all, &bt_any_box);
-  bif_define_typed ("sequence_get_all", bif_sequence_get_all, &bt_any_box);
-  bif_define_ex ("\x01__sequence_set_no_check", bif_sequence_set_no_check, BMD_MIN_ARGCOUNT, 3, BMD_MAX_ARGCOUNT, 3, BMD_IS_DBA_ONLY, BMD_DONE);
-  bif_define_ex ("\x01__sequence_next_no_check", bif_sequence_next_no_check, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 3, BMD_IS_DBA_ONLY, BMD_DONE);
-  bif_define_typed ("registry_get_all", bif_registry_get_all, &bt_any_box);
-  bif_define_typed ("registry_get", bif_registry_get, &bt_varchar);
-  bif_define_typed ("registry_name_is_protected", bif_registry_name_is_protected, &bt_integer);
-  bif_define_typed ("registry_set", bif_registry_set, &bt_integer);
-  bif_define_typed ("registry_remove", bif_registry_remove, &bt_integer);
-  bif_define_typed ("set_qualifier", bif_set_qualifier, &bt_integer);
-  bif_set_no_cluster ("set_qualifier");
-  bif_define_typed ("name_part", bif_name_part, &bt_varchar);
-  bif_define_typed ("key_replay_insert", bif_key_replay_insert, &bt_integer);
+  bif_define_ex ("sequence_next", bif_sequence_next, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("sequence_next_bounded", bif_sequence_next_bounded, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("sequence_remove", bif_sequence_remove, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("__sequence_set", bif_sequence_set, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("sequence_get_all", bif_sequence_get_all, BMD_ALIAS, "get_all_sequences", BMD_RET_TYPE, &bt_any_box, BMD_DONE);
+  bif_define_ex ("\x01__sequence_set_no_check", bif_sequence_set_no_check, BMD_MIN_ARGCOUNT, 3, BMD_MAX_ARGCOUNT, 3,
+      BMD_IS_DBA_ONLY, BMD_DONE);
+  bif_define_ex ("\x01__sequence_next_no_check", bif_sequence_next_no_check, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 3,
+      BMD_IS_DBA_ONLY, BMD_DONE);
+  bif_define_ex ("registry_get_all", bif_registry_get_all, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
+  bif_define_ex ("registry_get", bif_registry_get, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("registry_name_is_protected", bif_registry_name_is_protected, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("registry_set", bif_registry_set, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("registry_remove", bif_registry_remove, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("set_qualifier", bif_set_qualifier, BMD_RET_TYPE, &bt_integer, BMD_NO_CLUSTER, BMD_DONE);
+  bif_define_ex ("name_part", bif_name_part, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("key_replay_insert", bif_key_replay_insert, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("__clear_index", bif_clear_index);
+  bif_define_ex ("key_delete_replay", bif_key_delete_replay, BMD_RET_TYPE, &bt_integer, BMD_DONE);
 
   /* security functions */
   bif_define ("sec_set_user_data", bif_set_user_data);
@@ -16064,25 +16389,23 @@ sql_bif_init (void)
   bif_define ("repl_is_raw", bif_repl_is_raw);
   bif_define ("log_enable", bif_log_enable);
   bif_set_vectored (bif_log_enable, (bif_vec_t)bif_log_enable);
-  bif_define_typed ("serialize", bif_serialize, &bt_any);
-  bif_define_typed ("deserialize", bif_deserialize, &bt_any);
-  bif_define_typed ("complete_table_name", bif_complete_table_name, &bt_varchar);
-  bif_define_typed ("complete_proc_name", bif_complete_proc_name, &bt_varchar);
-  bif_define_typed ("__any_grants", bif_any_grants, &bt_integer);
-  bif_define_typed ("__any_grants_to_user", bif_any_grants_to_user, &bt_integer);
+  bif_define_ex ("serialize", bif_serialize, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("deserialize", bif_deserialize, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("complete_table_name", bif_complete_table_name, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("complete_proc_name", bif_complete_proc_name, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("__any_grants", bif_any_grants, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("__any_grants_to_user", bif_any_grants_to_user, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("txn_error", bif_txn_error);
   bif_define ("__trx_no", bif_trx_no);
-  bif_define ("__commit", bif_commit);
-  bif_set_no_cluster ("__commit");
-  bif_define ("__rollback", bif_rollback);
-  bif_set_no_cluster ("__rollback");
+  bif_define_ex ("__commit", bif_commit, BMD_NO_CLUSTER, BMD_DONE);
+  bif_define_ex ("__rollback", bif_rollback, BMD_NO_CLUSTER, BMD_DONE);
   bif_define ("replay", bif_replay);
   bif_define ("txn_killall", bif_txn_killall);
 
   bif_define ("__ddl_changed", bif_ddl_change);
   /*bif_define ("__ddl_table_renamed", bif_ddl_table_renamed);*/
   bif_define ("__ddl_index_def", bif_ddl_index_def);
-  bif_define_typed ("__row_count_exceed", bif_row_count_exceed, &bt_integer);
+  bif_define_ex ("__row_count_exceed", bif_row_count_exceed, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("__view_changed", bif_view_changed);
   bif_set_uses_index (bif_view_changed);
   bif_define ("__mapping_schema_changed", bif_mapping_schema_changed);
@@ -16093,21 +16416,21 @@ sql_bif_init (void)
   bif_define ("__drop_proc", bif_drop_proc);
   bif_define ("__proc_exists", bif_proc_exists);
   bif_define ("__proc_params_num", bif_proc_params_num);
-  bif_define_typed ("__copy", bif_copy, &bt_copy);
-  bif_define_typed ("__copy_non_local", bif_copy_non_local, &bt_copy);
+  bif_define_ex ("__copy", bif_copy, BMD_RET_TYPE, &bt_copy, BMD_DONE);
+  bif_define_ex ("__copy_non_local", bif_copy_non_local, BMD_RET_TYPE, &bt_copy, BMD_DONE);
   bif_set_uses_index (bif_copy_non_local);
-  bif_define_typed ("exec", bif_exec, &bt_integer);
-  bif_define_typed ("exec_vec", bif_exec_vec, &bt_integer);
-  bif_define_typed ("exec_metadata", bif_exec_metadata, &bt_integer);
+  bif_define_ex ("exec", bif_exec, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("exec_vec", bif_exec_vec, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("exec_metadata", bif_exec_metadata, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("exec_score", bif_exec_score);
   bif_set_uses_index (bif_exec);
-  bif_define_typed ("exec_next", bif_exec_next, &bt_integer);
+  bif_define_ex ("exec_next", bif_exec_next, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("exec_close", bif_exec_close);
   bif_define ("exec_result_names", bif_exec_result_names);
   bif_define ("exec_result", bif_exec_result);
   bif_define ("__set", bif_set);
   bif_set_vectored (bif_set, (bif_vec_t)bif_set);
-  bif_define_typed ("vector_concat", bif_vector_concatenate, &bt_any_box);
+  bif_define_ex ("vector_concat", bif_vector_concatenate, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
 #if 1 /* meter functions */
   bif_define ("mutex_meter", bif_mutex_meter);
   bif_define ("spin_wait_meter", bif_spin_wait_meter);
@@ -16121,9 +16444,9 @@ sql_bif_init (void)
   bif_define ("alloc_cache_status", bif_alloc_cache_status);
 #endif
   bif_define ("getrusage", bif_getrusage);
-  bif_define_typed ("rdtsc",  bif_rdtsc, &bt_integer);
-  bif_define_typed ("row_count", bif_row_count, &bt_integer);
-  bif_define_typed ("set_row_count", bif_set_row_count, &bt_integer);
+  bif_define_ex ("rdtsc", bif_rdtsc, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("row_count", bif_row_count, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("set_row_count", bif_set_row_count, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("__assert_found", bif_assert_found);
   bif_define ("__atomic", bif_atomic);
   bif_define ("is_atomic", bif_is_atomic);
@@ -16136,8 +16459,7 @@ sql_bif_init (void)
   bif_define ("client_trace", bif_client_trace);
 
   bif_define ("__set_identity", bif_set_identity);
-  bif_define ("__set_user_id", bif_set_user_id);
-  bif_define ("set_user_id", bif_set_user_id);
+  bif_define_ex ("set_user_id", bif_set_user_id, BMD_ALIAS, "__set_user_id", BMD_DONE);
   bif_define ("get_user_id", bif_get_user_id);
   bif_define ("get_user_id_by_name", bif_get_user_id_by_name);
   bif_define ("__pop_user_id", bif_pop_user_id);
@@ -16150,7 +16472,7 @@ sql_bif_init (void)
   bif_define ("mem_new_in_use", bif_mem_new_in_use);
   bif_define ("mem_leaks", bif_mem_leaks);
 #endif
-  bif_define_typed ("mem_get_current_total", bif_mem_get_current_total, &bt_integer);
+  bif_define_ex ("mem_get_current_total", bif_mem_get_current_total, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("mem_summary", bif_mem_summary);
 #ifdef MALLOC_STRESS
   bif_define ("set_hard_memlimit", bif_set_hard_memlimit);
@@ -16186,17 +16508,9 @@ sql_bif_init (void)
   bif_define ("v_equal", bif_v_equal);
   bif_define ("bit_print", bif_bit_print);
   bif_define ("search_excerpt", bif_search_excerpt);
-  bif_define_typed ("fct_level", bif_fct_level, &bt_varchar);
-  bif_define_typed ("sum_rank", bif_sum_rank, &bt_double);
+  bif_define_ex ("fct_level", bif_fct_level, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("sum_rank", bif_sum_rank, BMD_RET_TYPE, &bt_double, BMD_DONE);
   bif_set_vectored (bif_fct_level, bif_fct_level_vec);
-
-  /* Short aliases for use in generated SQL text: */
-  bif_define ("__bft", bif_box_flags_tweak);
-  bif_define ("__spf", bif_sprintf);
-  bif_define ("__spfn", bif_sprintf_or_null);
-  bif_define ("__spfi", bif_sprintf_iri);
-  bif_define ("__spfin", bif_sprintf_iri_or_null);
-  bif_define ("__spfinv", bif_sprintf_inverse);
 
   sqlbif2_init ();
   bif_sparql_init ();
@@ -16355,35 +16669,6 @@ bif_need_enlist (bif_t bif)
     GPF_T;
   fl = bmd->bmd_no_cluster;
   return fl & BIF_ENLIST;
-}
-
-void
-bif_set_no_cluster (char * n)
-{
-  bif_metadata_t *bmd = find_bif_metadata_by_raw_name (n);
-  if (NULL == bmd)
-    GPF_T1 (n);
-  bmd->bmd_no_cluster = BIF_NO_CLUSTER;
-    }
-
-
-void
-bif_set_cluster_rec (char * n)
-{
-  bif_metadata_t *bmd = find_bif_metadata_by_raw_name (n);
-  if (NULL == bmd)
-    GPF_T1 (n);
-  bmd->bmd_no_cluster |= BIF_OUT_OF_PARTITION;
-}
-
-
-void
-bif_set_enlist (char * n)
-{
-  bif_metadata_t *bmd = find_bif_metadata_by_raw_name (n);
-  if (NULL == bmd)
-    GPF_T1 (n);
-  bmd->bmd_no_cluster |= BIF_ENLIST;
 }
 
 

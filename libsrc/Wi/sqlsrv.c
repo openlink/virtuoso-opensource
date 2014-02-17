@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -525,6 +525,16 @@ cli_set_new_trx (client_connection_t *cli)
 {
   if (!cli->cli_trx)
     cli_set_trx (cli, lt_start ());
+  else
+    cli_set_trx (cli, cli->cli_trx);
+  return cli->cli_trx;
+}
+
+lock_trx_t *
+cli_set_new_trx_no_wait_cpt (client_connection_t *cli)
+{
+  if (!cli->cli_trx)
+    cli_set_trx (cli, lt_start_inner (0));
   else
     cli_set_trx (cli, cli->cli_trx);
   return cli->cli_trx;
@@ -3011,6 +3021,7 @@ lt_enter_anyway (lock_trx_t * lt)
       LEAVE_TXN;
       return LTE_DEADLOCK;
     }
+  lt_wait_checkpoint_lt (lt);
   if (LT_PENDING == lt->lt_status)
     {
       rc = LTE_OK;
@@ -3491,7 +3502,6 @@ sql_code_global_init ()
   sqls_define_1 ();
   cache_resources();
   NO_LITE (sqls_define_2pc);
-  NO_LITE (sqls_define_blog);
   NO_LITE (sqls_define_pldbg);
   NO_LITE (sqls_define_adm);
 #ifdef VAD
@@ -3524,7 +3534,6 @@ sql_code_arfw_global_init ()
   sqls_arfw_define_sys ();
   sqls_arfw_define_sparql ();
   sqls_arfw_define ();
-  NO_LITE (sqls_arfw_define_blog);
   sqls_arfw_define_1 ();
   NO_LITE (sqls_arfw_define_ddk);
   NO_LITE (sqls_arfw_define_repl);
@@ -3581,7 +3590,7 @@ static caddr_t
 sf_sql_cancel_hook (dk_session_t* session, caddr_t _request)
 {
   ptrlong *request  = (ptrlong *) _request;
-  if (session && request && request[DA_MESSAGE_TYPE] == DA_FUTURE_REQUEST &&
+  if (session && IS_FRQ (request) &&
       !strcmp ((char *) request[FRQ_SERVICE_NAME], "CANCEL"))
     {
       client_connection_t *cli = DKS_DB_DATA (session);
@@ -3880,7 +3889,7 @@ srv_global_init (char *mode)
     }
 #endif /* BYTE_ORDER_REV_SUPPORT */
 
-  remote_init ();
+  remote_init (0);
   srv_compatibility_init ();  /* AFTER remote_init */
   registry_exec ();
   if (!strchr (mode, 'n'))
@@ -4070,6 +4079,7 @@ srv_global_init (char *mode)
 	  local_commit (bootstrap_cli);
 	  sf_shutdown (sf_make_new_log_name (wi_inst.wi_master), bootstrap_cli->cli_trx);
     }
+  ddl_redo_undefined_triggers ();
   IN_TXN;
   lt_leave(bootstrap_cli->cli_trx);
   LEAVE_TXN;

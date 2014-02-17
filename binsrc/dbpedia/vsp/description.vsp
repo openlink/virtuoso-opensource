@@ -11,7 +11,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -89,7 +89,7 @@
      project_home_page := registry_get('dbp_graph') || '/meta';
 
    page_resource_uri := replace (_resource_, '\'', '%27');
-   page_resource_uri := replace (page_resource_uri, registry_get('dbp_domain')||'/page', registry_get('dbp_domain')||'/resource');
+   page_resource_uri := replace (page_resource_uri, 'dbpedia.org/page', 'dbpedia.org/resource');
 
    -- HACK properties !!!
 
@@ -369,7 +369,6 @@
       </div> <!-- #ft_b -->
       <div id="ft_ccbysa">
 	<?vsp dbp_wikipedia_cc_by_sa(_S, _G); ?>
-	<br /><?vsp dbp_virt_info (); ?>
       </div> <!-- #ft_ccbysa -->
     </div> <!-- #footer -->
     <!--script type="text/javascript">

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -52,8 +52,8 @@ sqlc_decl_variable_list_const (sql_comp_t * sc, dk_set_t *ref_recs)
       sc->sc_sqlmessage = ssl_new_inst_variable (sc->sc_cc, "__SQL_MESSAGE", DV_SHORT_STRING);
       sc->sc_sqlstate->ssl_prec = 5;
       sc->sc_sqlmessage->ssl_prec = DV_STRING_PREC;
-      state_cr->crr_col_ref = t_listst (3, COL_DOTTED, NULL, t_sym_string ("__SQL_STATE"));;
-      message_cr->crr_col_ref = t_listst (3, COL_DOTTED, NULL, t_sym_string ("__SQL_MESSAGE"));;
+      state_cr->crr_col_ref = t_listst (3, COL_DOTTED, NULL, t_sym_string ("__SQL_STATE"));
+      message_cr->crr_col_ref = t_listst (3, COL_DOTTED, NULL, t_sym_string ("__SQL_MESSAGE"));
       state_cr->crr_ssl = sc->sc_sqlstate;
       message_cr->crr_ssl = sc->sc_sqlmessage;
       t_set_push (ref_recs, (void *) state_cr);
@@ -597,6 +597,8 @@ sqlc_handler_decl (sql_comp_t * sc, ST * stmt)
 }
 
 
+#define SC_LEAVE_SCOPE ((dk_set_t)-1)  /* a compound stmt can declare vars and they stay visible after it */
+
 state_slot_t **
 sqlc_compound_stmt (sql_comp_t * sc, ST * tree, dk_set_t ret_exps)
 {
@@ -642,21 +644,27 @@ sqlc_compound_stmt (sql_comp_t * sc, ST * tree, dk_set_t ret_exps)
       }
   }
   END_DO_BOX;
-  DO_SET  (ST *, ret, &ret_exps)
+  if (SC_LEAVE_SCOPE != ret_exps)
     {
-      dk_set_push (&rets, (void*)scalar_exp_generate (sc, ret, &sc->sc_routine_code));
+      DO_SET  (ST *, ret, &ret_exps)
+	{
+	  dk_set_push (&rets, (void*)scalar_exp_generate (sc, ret, &sc->sc_routine_code));
+	}
+      END_DO_SET();
     }
-  END_DO_SET();
   {
     NEW_INSTR (proc_start, INS_COMPOUND_END, &sc->sc_routine_code);
     proc_start->_.compound_start.skip = skip;
   }
   t_set_pop (&sc->sc_compound_scopes);
-  DO_SET (col_ref_rec_t *, crr, &compound_recs)
+  if (SC_LEAVE_SCOPE != ret_exps)
     {
-      t_set_delete (&sc->sc_col_ref_recs, crr);
+      DO_SET (col_ref_rec_t *, crr, &compound_recs)
+	{
+	  t_set_delete (&sc->sc_col_ref_recs, crr);
+	}
+      END_DO_SET();
     }
-  END_DO_SET();
   if (rets)
     return (state_slot_t **)revlist_to_array (rets);
   return NULL;
@@ -946,6 +954,32 @@ sqlc_for_vectored_stmt (sql_comp_t * sc, ST * stmt)
 
 
 void
+sqlc_not_vectored_stmt (sql_comp_t * sc, ST * stmt)
+{
+  end_node_t en;
+  data_source_t * save_qn;
+  dk_set_t save;
+  int inx;
+  NEW_INSTR (ins, INS_FOR_VECT, &sc->sc_routine_code);
+  if (!sc->sc_cc->cc_query->qr_proc_vectored)
+    sqlc_new_error (sc->sc_cc, "37000", ".....", "Not_vectored is not allowed outside vectored code");
+  ins->_.for_vect.modify = NO_VEC;
+  save = sc->sc_routine_code;
+  sc->sc_routine_code = NULL;
+  sc->sc_cc->cc_query->qr_proc_vectored = 0;
+  sqlc_compound_stmt (sc, stmt->_.for_vec.body, SC_LEAVE_SCOPE);
+  ins->_.for_vect.code = code_to_cv (sc, sc->sc_routine_code);
+  memset (&en, 0, sizeof (en));
+  en.src_gen.src_pre_code = ins->_.for_vect.code;
+  save_qn = sc->sc_cc->cc_query->qr_head_node;
+  sc->sc_cc->cc_query->qr_head_node = (data_source_t*)&en;
+  sc->sc_cc->cc_query->qr_proc_vectored = QR_VEC_STMT;
+  sc->sc_routine_code = save;
+  sc->sc_cc->cc_query->qr_head_node = save_qn;
+}
+
+
+void
 sqlc_vec_qnode (sql_comp_t * sc, data_source_t ** qn_ret)
 {
   data_source_t * qn = *qn_ret;
@@ -1005,6 +1039,9 @@ sqlc_proc_stmt (sql_comp_t * sc, ST ** pstmt)
       break;
     case FOR_VEC_STMT:
       sqlc_for_vectored_stmt (sc, stmt);
+      break;
+    case NOT_VEC_STMT:
+      sqlc_not_vectored_stmt (sc, stmt);
       break;
     case OPEN_STMT:
       sqlc_open_stmt (sc, stmt);
@@ -1212,6 +1249,7 @@ sch_set_ua_func_ua (caddr_t name, query_t * qr)
   if (!ua_func_to_ua)
     ua_func_to_ua = id_casemode_hash_create (23);
   name = box_copy (name);
+  if (strstr (name, "DB.DBA.SPARQL_RSET_TTL_H")) bing ();
   id_hash_set (ua_func_to_ua, (caddr_t)&name, (caddr_t)&qr);
 }
 
@@ -1265,6 +1303,8 @@ sqlc_user_aggregate_decl (sql_comp_t * sc, ST * tree)
   aggr->ua_merge.uaf_name = box_copy (tree->_.user_aggregate.merge_name);
   aggr->ua_init.uaf_bif = box_num ((ptrlong) bif_ua_find (aggr->ua_init.uaf_name));
   aggr->ua_acc.uaf_bif = box_num ((ptrlong) bif_find (aggr->ua_acc.uaf_name));
+  if (aggr->ua_acc.uaf_bif)
+    bif_set_is_aggregate ((bif_t)unbox (aggr->ua_acc.uaf_bif));
   aggr->ua_final.uaf_bif = box_num ((ptrlong) bif_find (aggr->ua_final.uaf_name));
   if (aggr->ua_merge.uaf_name)
     aggr->ua_merge.uaf_bif = box_num ((ptrlong) bif_find (aggr->ua_merge.uaf_name));

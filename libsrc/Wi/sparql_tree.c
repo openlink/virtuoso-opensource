@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1957,8 +1957,8 @@ sparp_values_equal (sparp_t *sparp, ccaddr_t first, ccaddr_t first_dt, ccaddr_t 
       else
         {
 #ifndef NDEBUG
-          if ((DV_STRING != DV_TYPE_OF (first_val)) && ((NULL == first_dt) || (NULL != first_lang)))
-            spar_internal_error (sparp, "sparp_" "values_equal(): first is a uname with non-NULL dt/lang");
+          if ((DV_STRING != DV_TYPE_OF (first_val)) && ((NULL != first_dt) || (NULL != first_lang)))
+            spar_internal_error (sparp, "sparp_" "values_equal(): first is a non-string with non-NULL dt/lang");
 #endif
           first_is_iri = 0;
         }
@@ -2000,8 +2000,8 @@ sparp_values_equal (sparp_t *sparp, ccaddr_t first, ccaddr_t first_dt, ccaddr_t 
       else
         {
 #ifndef NDEBUG
-          if ((DV_STRING != DV_TYPE_OF (second_val)) && ((NULL == second_dt) || (NULL != second_lang)))
-            spar_internal_error (sparp, "sparp_" "values_equal(): second is a uname with non-NULL dt/lang");
+          if ((DV_STRING != DV_TYPE_OF (second_val)) && ((NULL != second_dt) || (NULL != second_lang)))
+            spar_internal_error (sparp, "sparp_" "values_equal(): second is a non-string with non-NULL dt/lang");
 #endif
           second_is_iri = 0;
         }
@@ -2072,19 +2072,9 @@ sparp_rvrs_have_same_fixedvalue (sparp_t *sparp, rdf_val_range_t *first_rvr, rdf
     return 0;
   if (!(SPART_VARR_FIXED & second_rvr->rvrRestrictions))
     return 0;
-#ifndef NDEBUG
   return sparp_values_equal (sparp,
     first_rvr->rvrFixedValue, first_rvr->rvrDatatype, first_rvr->rvrLanguage,
     second_rvr->rvrFixedValue, second_rvr->rvrDatatype, second_rvr->rvrLanguage );
-#endif
-  if ((SPART_VARR_IS_REF & first_rvr->rvrRestrictions) != (SPART_VARR_IS_REF & second_rvr->rvrRestrictions))
-    return 0;
-  if (first_rvr->rvrDatatype != second_rvr->rvrDatatype)
-    return 0;
-  if ( strcmp (
-    ((NULL == first_rvr->rvrDatatype) ? "" : first_rvr->rvrDatatype),
-    ((NULL == second_rvr->rvrDatatype) ? "" : second_rvr->rvrDatatype) ) )
-    return 0;
 }
 
 void
@@ -2506,9 +2496,12 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
               dest->rvrLanguage = value->_.lit.language;
               if ((NULL == dest->rvrDatatype) && (NULL == dest->rvrLanguage) && (DV_STRING != valtype))
                 {
+                  valtype = DV_TYPE_OF (value->_.lit.val);
                   dest->rvrDatatype = xsd_type_of_box (value->_.lit.val);
                   if (uname_xmlschema_ns_uri_hash_string == dest->rvrDatatype)
                     dest->rvrDatatype = NULL;
+                  else if ((dest->rvrDatatype == value->_.lit.datatype) && ((DV_LONG_INT == valtype) || (DV_DOUBLE_FLOAT == valtype) || (DV_SINGLE_FLOAT == valtype) || (DV_DATETIME == valtype)))
+                    dest->rvrRestrictions &= ~SPART_VARR_LONG_EQ_SQL;
                 }
             }
           else
@@ -2516,6 +2509,8 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
               dest->rvrDatatype = xsd_type_of_box ((caddr_t)value);
               if (uname_xmlschema_ns_uri_hash_string == dest->rvrDatatype)
                 dest->rvrDatatype = NULL;
+              else if ((DV_LONG_INT == valtype) || (DV_DOUBLE_FLOAT == valtype) || (DV_SINGLE_FLOAT == valtype) || (DV_DATETIME == valtype))
+                dest->rvrRestrictions &= ~SPART_VARR_LONG_EQ_SQL;
               dest->rvrLanguage = NULL;
             }
           if (NULL == dest->rvrDatatype)
@@ -2924,7 +2919,7 @@ sparp_gp_detach_member_int (sparp_t *sparp, SPART *parent_gp, int member_idx, dk
 {
   SPART *memb;
   SPART **old_members = parent_gp->_.gp.members;
-#ifdef DEBUG
+#ifndef NDEBUG
   int old_len = BOX_ELEMENTS (old_members);
   if ((0 > member_idx) || (old_len <= member_idx))
     spar_internal_error (sparp, "sparp_" "gp_detach_member_int(): bad member_idx");
@@ -3275,6 +3270,14 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
       tgt->_.sinv.rset_varnames = (caddr_t *)t_box_copy ((caddr_t)(orig->_.sinv.rset_varnames));
       tgt->_.sinv.defines = sparp_treelist_full_copy (sparp, orig->_.sinv.defines, parent_gp);
       spar_add_service_inv_to_sg (sparp, tgt);
+      return tgt;
+    case SPAR_BINDINGS_INV:
+      tgt = (SPART *)t_box_copy ((caddr_t) orig);
+      tgt->_.binv.own_idx = sparp->sparp_unictr++;
+      tgt->_.binv.vars = sparp_treelist_full_clone_int (sparp, orig->_.binv.vars, parent_gp);
+      /* No copying for SPART ***data_rows */
+      tgt->_.binv.data_rows_mask = t_box_copy (orig->_.binv.data_rows_mask);
+      tgt->_.binv.counters_of_unbound = (ptrlong *)t_box_copy ((caddr_t)(orig->_.binv.counters_of_unbound));
       return tgt;
     case SPAR_DEFMACRO:
       spar_internal_error (sparp, "sparp_" "tree_full_clone_int(): attempt of copying a macro definition");
@@ -3744,7 +3747,7 @@ sparp_gp_detach_filter (sparp_t *sparp, SPART *parent_gp, int filter_idx, sparp_
     spar_internal_error (sparp, "sparp_" "gp_detach_filter(): bad filter_idx");
 #endif
   filt = old_filters [filter_idx];
-  ft_type = spar_filter_is_freetext (sparp, filt, NULL);
+  ft_type = spar_filter_is_freetext_or_rtree (sparp, filt, NULL);
   if (NULL != ft_type)
     {
       SPART *triple_with_var_obj = sparp_find_triple_with_var_obj_of_freetext (sparp, parent_gp, filt, SPAR_TRIPLE_FOR_FT_SHOULD_EXIST | SPAR_TRIPLE_SHOULD_HAVE_FT_TYPE);
@@ -3822,7 +3825,7 @@ sparp_gp_detach_all_filters (sparp_t *sparp, SPART *parent_gp, int extract_filte
     spar_internal_error (sparp, "sparp_" "gp_detach_all_filters(): optimization tries to break the semantics of LEFT OUTER JOIN for OPTIONAL clause");
   DO_BOX_FAST_REV (SPART *, filt, filt_ctr, filters)
     {
-      caddr_t ft_type = spar_filter_is_freetext (sparp, filt, NULL);
+      caddr_t ft_type = spar_filter_is_freetext_or_rtree (sparp, filt, NULL);
       if (NULL != ft_type)
         {
           SPART *triple_with_var_obj = sparp_find_triple_with_var_obj_of_freetext (sparp, parent_gp, filt, SPAR_TRIPLE_FOR_FT_SHOULD_EXIST | SPAR_TRIPLE_SHOULD_HAVE_FT_TYPE);
@@ -3898,7 +3901,7 @@ sparp_gp_attach_filter (sparp_t *sparp, SPART *parent_gp, SPART *new_filt, int i
   parent_gp->_.gp.filters = (SPART **)t_list_insert_before_nth ((caddr_t)old_filters, (caddr_t)new_filt, insert_before_idx);
   if (insert_before_idx > (old_len - parent_gp->_.gp.glued_filters_count))
     parent_gp->_.gp.glued_filters_count += 1;
-  ft_type = spar_filter_is_freetext (sparp, new_filt, NULL);
+  ft_type = spar_filter_is_freetext_or_rtree (sparp, new_filt, NULL);
   if (NULL != ft_type)
     {
       SPART *triple_with_var_obj = sparp_find_triple_with_var_obj_of_freetext (sparp, parent_gp, new_filt, SPAR_TRIPLE_FOR_FT_SHOULD_EXIST | SPAR_TRIPLE_SHOULD_HAVE_NO_FT_TYPE);
@@ -3945,7 +3948,7 @@ sparp_gp_attach_many_filters (sparp_t *sparp, SPART *parent_gp, SPART **new_filt
   for (filt_ctr = ins_count; filt_ctr--; /*no step*/)
     {
       SPART *new_filt = new_filters [filt_ctr];
-      caddr_t ft_type = spar_filter_is_freetext (sparp, new_filt, NULL);
+      caddr_t ft_type = spar_filter_is_freetext_or_rtree (sparp, new_filt, NULL);
       if (NULL != ft_type)
         {
           SPART *triple_with_var_obj = sparp_find_triple_with_var_obj_of_freetext (sparp, parent_gp, new_filt, SPAR_TRIPLE_FOR_FT_SHOULD_EXIST | SPAR_TRIPLE_SHOULD_HAVE_NO_FT_TYPE);
@@ -4151,7 +4154,7 @@ sparp_find_language_dialect_by_service (sparp_t *sparp, SPART *service_expn)
     return 0;
   lang_strs = jso_triple_get_objs ((caddr_t *)(sparp->sparp_sparqre->sparqre_qi), service_iri, uname_virtrdf_ns_uri_dialect);
   if (1 != BOX_ELEMENTS_0 (lang_strs))
-    return 0;
+    return SSG_SD_NEED_LOAD_SERVICE_DATA;
   if (1 != sscanf (lang_strs[0], "%08x", &res))
     return 0;
   if (0 > res)
@@ -4228,7 +4231,7 @@ sparp_find_origin_of_external_varname_in_eq (sparp_t *sparp, sparp_equiv_t *eq, 
          return source;
     }
 #endif
-/* If nothing is found then a fake variable should be created. This is for cases like ?friend at top GP of query
+/* If nothing is found then a retval should be created. This is for cases like ?friend at top GP of query
 <code>
   sparql select ((select count(1) where { ?friend <knows> ?z }))
     where {{select * where { <me> <knows> ?friend }} option (transitive...)}.
@@ -4301,7 +4304,16 @@ make_rv:
   rv->_.retval.gp = esub_res_gp;
   memcpy (&(rv->_.retval.rvr), &(esub_res_eq->e_rvr), sizeof (rdf_val_range_t));
   rv->_.retval.selid = esub_res_gp->_.gp.selid;
+#if 0
   rv->_.retval.vname = varname;
+#else
+  if (0 <= box_position_no_tag (esub_res_eq->e_varnames, varname))
+    rv->_.retval.vname = varname;
+  else if (NULL != esub_res_eq->e_front_varname)
+    rv->_.retval.vname = esub_res_eq->e_front_varname;
+  else
+    rv->_.retval.vname = esub_res_eq->e_varnames[0];
+#endif
   return rv;
 }
 
@@ -4472,6 +4484,7 @@ void
 sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
 {
   int ttype = SPART_TYPE (tree);
+  int has_tabid = 0;
   int has_ft = 0;
   int has_geo = 0;
   int has_inference = 0;
@@ -4493,6 +4506,10 @@ sparp_validate_options_of_tree (sparp_t *sparp, SPART *tree, SPART **options)
       SPART *val = options [idx+1];
       switch (key)
         {
+        case TABID_L:
+          if (has_tabid)
+            spar_error (sparp, "More than one TABID is used for one triple pattern");
+          has_tabid = 1; continue;
         case INFERENCE_L: has_inference = 1; continue;
         case OFFBAND_L: case SCORE_L: case SCORE_LIMIT_L: has_ft = 1; continue;
         case GEO_L: case PRECISION_L: has_geo = 1; continue;

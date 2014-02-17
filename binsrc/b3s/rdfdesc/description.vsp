@@ -15,7 +15,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -95,6 +95,8 @@ again:
 
   sp_mode := 'add';
 
+  if (__proc_exists ('DB.DBA.lp_score_ck') is not null)
+    DB.DBA.lp_score_ck (lines);
   b3s_handle_ses (path, lines, params);
   sid := connection_get ('sid');
 
@@ -139,24 +141,16 @@ again:
       langs := lang_parm;
     }
   gr := get_keyword ('g', params, '');
+  gr := replace (gr, ' ', '%20');
 
   _F := ''; _from := null;
   grs := connection_get ('graphs', null);
-  if (length (grs) = 0)
-    {
-      declare fg any;
-      fg := (select top 1 "g" from (sparql select ?g count (*) where { quad map virtrdf:DefaultQuadMap { graph ?g { `iri(?:gr)` ?p ?o }}} group by ?g order by desc 2 limit 1) x); 
-      if (fg is not null)
-        {
-          grs := vector (fg);
-          connection_set ('graphs', grs);
-        }
-    }
   ses_parms := b3s_render_ses_params ();
   if (grs is not null)
     {
       foreach (any x in grs) do
 	{
+          x := replace (x, ' ', '%20');
 	  _F := _F || sprintf (' FROM <%s> ', x);
 	}
     }
@@ -206,7 +200,7 @@ again:
     sp_accept := 'define get:accept "' || sp_accept || '"';
   -- check ACL
   if (get_keyword ('sp', params) = '1' or get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null)
-    if (__proc_exists ('DB.DBA.RDF_SPONGE_AUTH') is not null and 0 = DB.DBA.RDF_SPONGE_AUTH ('Virtuoso Sponger'))
+    if (__proc_exists ('DB.DBA.RDF_SPONGE_AUTH_SI') is not null and 0 = DB.DBA.RDF_SPONGE_AUTH_SI ('Virtuoso Sponger'))
       {
         http_rewrite ();
         http_status_set (403);
@@ -214,12 +208,15 @@ again:
         http (sprintf ('<html><body>Use of this service is not allowed for your current WebID: %V</body></html>', connection_get ('WebID', '<none>')));
         return;  
       } 
-  if (get_keyword ('sp', params) = '1' and 0 = length (_F))
+
+  -- if (get_keyword ('sp', params) = '1' and 0 = length (_F))
+  if (get_keyword ('sp', params) = '1')
     {
       EXEC (sprintf ('sparql define input:storage "" define get:soft "add" SELECT * from <%S> where { ?x ?y ?z . }', doc), state, msg);
       DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
     }
-  else if ((get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null) and 0 = length (_F))
+  -- else if ((get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null) and 0 = length (_F))
+  else if ((get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null))
     {
       declare refr varchar;
       if (get_keyword ('sr', params, '') = 'clean')
@@ -344,7 +341,7 @@ again:
   if (vlbl <> 0) label := vlbl;
   declare desc_resource_uri varchar;
   declare desc_qr varchar;
-  desc_qr := sprintf ('define sql:describe-mode "CBD" DESCRIBE <%s>', page_resource_uri);
+  desc_qr := sprintf ('define sql:describe-mode "SPO" DESCRIBE <%s>', page_resource_uri);
   desc_resource_uri := sprintf ('http://%{WSHost}s/sparql?query=%U&format=cxml', desc_qr);
   --http_flush (1);
 
@@ -363,6 +360,13 @@ again:
   if (connection_get ('sas') is not null)
     {
       plink_href := concat (plink_href, sprintf ('&sas=%U', connection_get ('sas')));
+    }
+  if (length (grs) <> 0)
+    {
+      foreach (any x in grs) do
+	{
+	  plink_href := plink_href || sprintf ('&graph=%U', x);
+	}
     }
 
 
@@ -423,7 +427,9 @@ again:
     'nodeID://%' then b3s_http_url (page_resource_uri) else
     page_resource_uri end ?>"><?vsp if (length(label)) http_value
     (label); else http_value(b3s_uri_curie (page_resource_uri));
-    ?></a>&nbsp;&nbsp;&nbsp;<a class="desc_sponge_link"
+    ?></a>&nbsp;&nbsp;&nbsp;<a class="desc_permalink" href="<?= case when page_resource_uri like
+    'nodeID://%' then b3s_http_url (page_resource_uri) else
+    page_resource_uri end ?>">Goto</a>&nbsp;<a class="desc_sponge_link"
     href="/describe/?url=<?U page_resource_uri ?><?= case when sid is
     not null then '&sid=' || sid end ?>&amp;sponger:get=add"
     title="Click to generate local descriptor data for this entity"
@@ -499,7 +505,7 @@ if (_subject <> '') {
   <p class="subj_delim"></p>
 <?vsp
 }
-       if (state <> '00000')
+      if (state <> '00000' and dbg_enable = '1')
          http_value (msg, 'div');
 ?>
 <!--            <li><a href="/fct/facet.vsp?sid=<?V sid ?>&amp;cmd=set_class&amp;iri=<?V gr ?>">Choose <?V ''?> as Type</a></li>
@@ -587,7 +593,7 @@ if (_subject <> '') {
 	       b3s_http_print_l (PRED, odd_position, flag, sid, langs);
 	       curr_pred := pred;
 	     }
-           vis := b3s_http_print_r (OBJECT, sid, PRED, langs, 1, all_langs, _from);
+           vis := b3s_http_print_r (OBJECT, sid, PRED, langs, 1, all_langs, _from, FLAG);
 	   nxt1:;
 	   inx := inx + 1;
 	   skip:;
@@ -677,8 +683,11 @@ if (_subject <> '') {
 <?vsp } ?>
       <div id="ft_t">
         Alternative Linked Data Views:
-	<?vsp if (VAD_CHECK_VERSION ('PivotViewer') is not null) { ?>
-	<a href="/PivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>" title="PivotViewer page for exploring results and generating new queries" target="_blank">PivotViewer</a>
+	<?vsp if (VAD_CHECK_VERSION ('html5pivotviewer') is not null) { ?>	
+	<a href="/HtmlPivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>" title="PivotViewer page for exploring results and generating new queries (HTML5)" target="_blank">PivotViewer</a> 
+	|
+	<?vsp } else if (VAD_CHECK_VERSION ('PivotViewer') is not null) { ?>	
+	<a href="/PivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>" title="PivotViewer page for exploring results and generating new queries (Silverlight)" target="_blank">PivotViewer</a> 
 	|
 	<?vsp } ?>
 	<?vsp if (VAD_CHECK_VERSION ('rdf_mappers') is not null) { ?>
@@ -729,7 +738,7 @@ if (_subject <> '') {
 
         ?>
 	Data on this page belongs to its respective rights holders.<br/>
-        Virtuoso Faceted Browser Copyright &copy; 2009-2013 OpenLink Software
+	Virtuoso Faceted Browser Copyright &copy; 2009-<?V "LEFT" (datestring (now ()), 4)?> OpenLink Software 
       </div> <!-- #ft_b -->
     </div> <!-- #FT -->
     </div> <!-- #PG -->

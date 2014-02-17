@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -169,7 +169,9 @@ typedef struct df_inx_op_s
 #define DFE_FUN_REF 19
 #define DFE_EXISTS 20
 #define DFE_CONTROL_EXP 21	/* coalesce, case-when */
+#define DFE_FILTER 22
 #define DFE_HEAD 100
+
 #define DFE_TEXT_PRED 101
 
 
@@ -189,6 +191,7 @@ typedef struct trans_layout_s
   dk_set_t	tl_target;
   df_elt_t *	tl_complement;
   char		tl_direction;
+  char		tl_is_second_in_direction3;
 }trans_layout_t;
 
 /* for setp. is_distinct */
@@ -301,6 +304,7 @@ struct df_elt_s
       df_elt_t **	terms;
       caddr_t *	corresponding;
       char	is_best;
+      char	is_in_fref;
     } qexp;
     struct {
       dbe_column_t *	col;
@@ -312,9 +316,16 @@ struct df_elt_s
       int 	op;
       df_elt_t *	left;
       df_elt_t* right;
+      dtp_t	eq_set;
       char 	escape;
+      char      is_in_list;          /* top level lte of a x < one_of_these (...) */
+      bitf_t	eq_other_dt:1; /* if following this eq, the joined is in a different dt/subq, the join is existence, card can only be restricted */
       bitf_t	no_subq:2;
     } bin;
+    struct {
+      df_elt_t **	body;
+      dk_set_t		preds;
+    } filter;
     struct {
       int	op;
       caddr_t	func_name;
@@ -431,6 +442,8 @@ struct sqlo_s
   char	so_no_text_preds;
   char	so_any_with_this_first;  /* is there any plan that starts with the dfe this plan starts with  */
   char	so_plan_mode;
+  char	so_rts_parallel;
+  dbe_column_t *	so_rts_part_col;
   dk_set_t	so_placed; /*accumulate new prospective placements here */
   short	so_label_ctr;
   float		so_best_score;
@@ -464,6 +477,7 @@ struct sqlo_s
   id_hash_t *	so_subscore;
   id_hash_t *	so_subq_cache;
   df_elt_t *	so_crossed_oby; /* If placing exp and there is an oby that is crossed, then set this to be the oby so that the exp can be added to its deps */
+  dk_set_t	so_crossed_setps;
   df_elt_t *	so_context_dt;
   uint32	so_last_sample_time; /* used for stopping compilation if longer is elapsed since last sample than the best plan's time */
   int32		so_max_layouts;
@@ -559,17 +573,20 @@ typedef struct index_choice_s
   float	ic_unit;
   float	ic_overhead;
   float	ic_spacing; /* this many rows between consecutive rows fetched on vectored index lookup. 1 means consecutive */
+  float	ic_in_list_sel;
   char	ic_in_order; /* vectored index lookup in order with the previous index lookup */
   char	ic_is_cl_part_first; /* preceded by a cluster partitioning step, qf or dfg stage */ 
   char	ic_leading_constants; /* this many leading constants used for sampling */
   char	ic_is_unique;
   char	ic_not_applicable;
+  char	ic_no_dep_sample;
   int	ic_op;
   int	ic_n_lookups;
   dk_set_t	ic_altered_col_pred;
   dk_set_t	ic_after_test;
   float 	ic_after_test_arity;
   float		ic_inx_card;
+  float		ic_col_card;
   float		ic_col_card_corr; /* if ic samples dependent cols, this is the correction factor to the for the  cols sampled to the dependent col card est */
   struct rdf_inf_ctx_s *	ic_ric;
   df_elt_t *	ic_inf_dfe;
@@ -587,6 +604,7 @@ typedef struct index_choice_s
   char		ic_text_order;
   char		ic_geo_order;
   char		ic_o_string_range_lit; /* 1 if o is known to be a string 2 if literal strings */
+  char		ic_set_sample_key;
   dk_set_t	ic_inx_sample_cols;
 } index_choice_t;
 
@@ -596,7 +614,6 @@ typedef struct pred_score_s
   dbe_column_t *	ps_left_col;
   df_elt_t *		ps_right;
   caddr_t		ps_const;
-  df_elt_t *		ps_joins_to;
   float			ps_card;
   char			ps_is_placeable;
   char			ps_is_const;
@@ -607,23 +624,26 @@ typedef struct pred_score_s
 typedef struct join_plan_s
 {
   df_elt_t *	jp_tb_dfe;
-  pred_score_t	jp_preds[JP_MAX_PREDS];
-  df_elt_t *	jp_joined[JP_MAX_PREDS];
   int		jp_n_preds;
   int		jp_n_joined;
   float		jp_fanout;
   float		jp_cost;
   float		jp_best_cost;
   float		jp_best_card;
+  float			jp_reached; /* how many joined dfes in so many steps, recognize a star join, closer counts for more  */
   float		jp_fill_selectivity; /* for selective hash join, seeing if more joins should go in the build, this is the fraction selected by the first dfe on build side */
+  dtp_t		jp_eq_set; /* joined to previous via this eq set */
   char		jp_not_for_hash_fill; /* set if jp_tb_dfe not suited for use in hash fill join */
   char		jp_hash_fill_non_unq;
+  char		jp_is_exists;
+  char		jp_unique;
   dk_set_t	jp_best_jp;
   dk_set_t	jp_extra_preds; /* if hash filler dt, preds that are redundant, covered by the join of the first to the probe */
+  pred_score_t	jp_preds[JP_MAX_PREDS];
+  df_elt_t *	jp_joined[JP_MAX_PREDS];
   struct join_plan_s *	jp_prev;
   dk_set_t		jp_hash_fill_dfes; /* other dfes that compose a join on the  fill side of hash join */
   dk_set_t		jp_hash_fill_preds;
-  float			jp_reached; /* how many joined dfes in so many steps, recognize a star join, closer counts for more  */
 } join_plan_t;
 
 
@@ -884,6 +904,7 @@ int sqlo_is_unq_preserving (caddr_t name);
 int box_is_subtree (caddr_t box, caddr_t subtree);
 void sqlg_unplace_ssl (sqlo_t * so, ST * tree);
 char  sqlc_geo_op (sql_comp_t * sc, ST * op);
+dbe_table_t * sqlg_geo_index_table (dbe_key_t * id_key, ST ** geo_args);
 int sqlo_solve (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * cond, dk_set_t * cond_ret, dk_set_t * after_preds);
 
 df_inx_op_t * inx_op_copy (sqlo_t * so, df_inx_op_t * dio,
@@ -901,7 +922,7 @@ void sqlg_is_text_only (sqlo_t * so, df_elt_t *tb_dfe, table_source_t *ts);
 data_source_t * sqlg_make_path_ts (sqlo_t * so, df_elt_t * tb_dfe);
 int dfe_is_eq_pred (df_elt_t * pred);
 float sqlo_index_path_cost (dk_set_t path, float * cost_ret, float * card_ret, char * sure_ret);
-data_source_t * sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe);
+data_source_t * sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * pre_code);
 float dfe_group_by_card (df_elt_t * dfe);
 int dfe_is_o_ro2sq_range (df_elt_t * pred, df_elt_t * tb_dfe, df_elt_t ** o_col_dfe_ret, df_elt_t ** exp_dfe_ret, int * op_ret);
 int qn_is_iter (data_source_t  * qn);
@@ -912,7 +933,7 @@ float dfe_exp_card (sqlo_t * so, df_elt_t * dfe);
 void sqlo_rdf_col_card (sqlo_t * so, df_elt_t * td_dfe, df_elt_t * dfe);
 
 #define PRED_IS_EQ(dfe) ((DFE_BOP_PRED == dfe->dfe_type || DFE_BOP == dfe->dfe_type) && BOP_EQ == dfe->_.bin.op)
-
+#define PRED_IS_EQ_OR_IN(dfe) ((DFE_BOP_PRED == dfe->dfe_type || DFE_BOP == dfe->dfe_type) && (BOP_EQ == dfe->_.bin.op || 1 == dfe->_.bin.is_in_list))
 int64 sqlo_inx_sample (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_t ** uppers, int n_parts, index_choice_t * ic);
 float arity_scale (float ar);
 caddr_t sqlo_rdf_lit_const (ST * tree);
@@ -927,7 +948,7 @@ void dfe_unplace_fill_join (df_elt_t * fill_dt, df_elt_t * tb_dfe, dk_set_t org_
 int st_is_call (ST * tree, char * f, int n_args);
 df_elt_t * dfe_container (sqlo_t * so, int type, df_elt_t * super);
 float dfe_hash_fill_cond_card (df_elt_t * tb_dfe);
-float sqlo_hash_ins_cost (df_elt_t * dfe, float card, dk_set_t cols);
+float sqlo_hash_ins_cost (df_elt_t * dfe, float card, dk_set_t cols, float * size_ret);
 float sqlo_hash_ref_cost (df_elt_t * dfe, float hash_card);
 
 #define SQK_MAX_CHARS 2000
@@ -947,5 +968,6 @@ void dbg_qi_print_slots( query_instance_t *qi, state_slot_t** slots, int nthset 
 dbe_key_t * tb_px_key (dbe_table_t * tb, dbe_column_t * col);
 float dfe_scan_card (df_elt_t * dfe);
 int sqlo_parse_tree_count_node (ST *tree, long *nodes, int n_nodes);
+int dfe_init_p_stat (df_elt_t * dfe, df_elt_t * lower);
 
 #endif /* _SQLO_H */

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -186,7 +186,7 @@
 #define USER_AGGREGATE_DECL	(ptrlong)632
 #define FOR_VEC_STMT (ptrlong)635
 #define VECT_DECL ((ptrlong)636)
-
+#define NOT_VEC_STMT ((ptrlong)637)
 #define SIMPLE_CASE		(ptrlong)622
 #define SEARCHED_CASE		(ptrlong)623
 #define WHEN_CLAUSE		(ptrlong)624
@@ -318,7 +318,11 @@ Note: bitwise OR of all these masks should be less than SMALLEST_POSSIBLE_POINTE
 #define OPT_NO_IDENTITY ((ptrlong)936)
 #define OPT_ELASTIC ((ptrlong)937)
 #define OPT_NO_TRIGGER ((ptrlong)938)
-
+#define OPT_PARTITION ((ptrlong)939)
+#define OPT_PARALLEL ((ptrlong)947)
+#define OPT_FROM_FILE ((ptrlong)953)
+#define OPT_FILE_START  ((ptrlong)954)
+#define OPT_FILE_END  ((ptrlong)955)
 
 #define OPT_HASH ((ptrlong) 903)
 #define OPT_INTERSECT ((ptrlong) 1015)
@@ -340,7 +344,10 @@ Note: bitwise OR of all these masks should be less than SMALLEST_POSSIBLE_POINTE
 #define OPT_CHECK ((ptrlong)944)
 #define OPT_PART_GBY ((ptrlong)945)
 #define OPT_NO_PART_GBY ((ptrlong)946)
+#define OPT_NO_LOCK ((ptrlong)956)
 
+#define OPT_EST_TIME ((ptrlong)950)
+#define OPT_EST_SIZE ((ptrlong)951)
 
 /* GROUPING SETS */
 #define GROUPING_FUNC	"__grouping"
@@ -553,10 +560,11 @@ typedef struct sql_tree_s
 	    ptrlong	fk_state;
 	  } fkey;
 	struct {
-	  caddr_t	proc;
-	  ST **	params;
-	  ST **	cols;
-	} proc_table;
+	    caddr_t	proc;
+	    ST **	params;
+	    ST **	cols;
+	    caddr_t *	opts;
+	  } proc_table;
 	struct
 	  {
 	    char *	name;

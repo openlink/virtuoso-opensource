@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1484,7 +1484,9 @@ ks_start_search (key_source_t * ks, caddr_t * inst, caddr_t * state,
       itc->itc_rows_on_leaves = 0;
       itc->itc_rows_selected = 0;
       qr = ts->src_gen.src_query;
-      if (qr->qr_select_node
+      if (ks->ks_lock_mode)
+	itc->itc_lock_mode = ks->ks_lock_mode;
+      else if (qr->qr_select_node
 	  && ts->src_gen.src_query->qr_lock_mode != PL_EXCLUSIVE)
 	{
 	  itc->itc_lock_mode = qi->qi_lock_mode;
@@ -2235,6 +2237,11 @@ insert_node_run (insert_node_t * ins, caddr_t * inst, caddr_t * state)
 	}
       qi->qi_set_mask = save_sets;
       qi->qi_n_sets = n_sets;
+      if (itc->itc_siblings)
+	{
+	  itc_free_box (itc, (caddr_t) itc->itc_siblings);
+	  itc->itc_siblings = NULL;
+	}
       return;
     }
   ITC_FAIL (itc)
@@ -2278,8 +2285,9 @@ insert_node_input (insert_node_t * ins, caddr_t * inst, caddr_t * state)
 	(data_source_t *) ins, (qn_input_fn) insert_node_run);
   else
     {
+      QNCAST (QI, qi, inst);
       insert_node_run (ins, inst, state);
-      if (cl_run_local_only || !ins->clb.clb_fill)
+      if ((cl_run_local_only || !ins->clb.clb_fill) && !qi->qi_non_txn_insert)
 	{
 	  ROW_AUTOCOMMIT (inst);
 	}
@@ -2561,7 +2569,7 @@ delete_node_input (delete_node_t * del, caddr_t * inst, caddr_t * state)
   if (del->del_policy_qr)
     trig_call (del->del_policy_qr, inst, del->del_trigger_args, del->del_table, (data_source_t *)del);
 
-  if (!del->del_trigger_args)
+  if (!del->del_trigger_args || del->del_no_trig)
     {
       QNCAST (query_instance_t, qi, inst);
       delete_node_run (del, inst, state);
@@ -3293,6 +3301,8 @@ fnr_max_set_no (fun_ref_node_t * fref, caddr_t * inst, state_slot_t ** ssl_ret)
   set_nos = QST_BOX (data_col_t*, inst, set_no_ssl->ssl_index);
   if (ssl_ret)
     *ssl_ret = set_no_ssl;
+  if (!set_nos->dc_n_values)
+    GPF_T1 ("musta forgotten branch copy of set no ssl for fref");
   return ((int64*)set_nos->dc_values)[set_nos->dc_n_values - 1];
 }
 
@@ -3302,8 +3312,11 @@ fun_ref_set_defaults_and_counts (fun_ref_node_t *fref, caddr_t * inst)
 {
   QNCAST (query_instance_t, qi, inst);
   s_node_t *val_set = fref->fnr_default_values;
-  int max_set = fnr_max_set_no (fref, inst, NULL);
+  int max_set;
   int n_save = qi->qi_n_sets;
+  if (!fref->fnr_default_ssls)
+    return;
+  max_set = fnr_max_set_no (fref, inst, NULL);
   qi->qi_n_sets = max_set + 1;
   DO_SET (state_slot_t *, ct, &fref->fnr_default_ssls)
     {
@@ -4626,13 +4639,17 @@ qr_subq_exec (client_connection_t * cli, query_t * qr,
 int
 qi_n_sets (query_instance_t * qi)
 {
-  int inx, n = 0;
+  int inx, n = 0, n_bytes;
+  uint32 mask;
   if (!qi->qi_n_sets)
     return 1;
   if (!qi->qi_set_mask)
     return qi->qi_n_sets;
-  for (inx = 0; inx < ALIGN_8 (qi->qi_n_sets) / 8; inx++)
-    n += byte_logcount[qi->qi_set_mask[inx]];
+  n_bytes = ALIGN_8 (qi->qi_n_sets) / 8;
+  for (inx = 0; inx < n_bytes - 1; inx++)
+      n += byte_logcount[qi->qi_set_mask[inx]];
+  mask = N_ONES (qi->qi_n_sets- ((n_bytes - 1) * 8));
+  n += byte_logcount[qi->qi_set_mask[n_bytes - 1] & mask];
   return n;
 }
 

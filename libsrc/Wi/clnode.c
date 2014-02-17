@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2011 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -73,6 +73,8 @@ cp_string_hash (col_partition_t * cp, caddr_t bytes, int len, int32 * rem_ret)
 }
 
 
+int enable_small_int_part = 0;
+
 
 uint32
 cp_int_any_hash (col_partition_t * cp, unsigned int64 i, int32 * rem_ret)
@@ -81,6 +83,7 @@ cp_int_any_hash (col_partition_t * cp, unsigned int64 i, int32 * rem_ret)
   if (cp->cp_n_first < 0)
     {
       shift = MIN (32, -cp->cp_n_first * 8);
+      i = I_PART (i, shift);
       *rem_ret = (shift << 24) | (i & N_ONES (shift));
       return (i >> shift) & cp->cp_mask;
     }
@@ -213,7 +216,10 @@ again:
       val += 5;
       goto again;
     default:
-      return cp_string_hash (cp, (char *) val, known_len != -1 ? known_len : box_length (val) - 1, rem_ret);
+      {
+	DB_BUF_TLEN (len, val[0], val);
+	return cp_string_hash (cp, (char *)val, len, rem_ret);
+      }
     }
 }
 
@@ -490,6 +496,42 @@ cl_key_delete_op_vec (caddr_t * qst, dbe_key_t * key,
 	  END_DO_SET ();
   return is_first ? clo : NULL;
 }
+
+
+void
+itc_delete_rd (it_cursor_t * itc, row_delta_t * rd)
+{
+  buffer_desc_t * buf;
+  int inx, rc;
+  dbe_key_t * key = itc->itc_insert_key;
+  itc_from (itc, itc->itc_insert_key, QI_NO_SLICE);
+  for (inx = 0; inx < key->key_n_significant; inx++)
+    ITC_SEARCH_PARAM (itc, rd->rd_values[key->key_part_in_layout_order[inx]]);
+  itc->itc_search_mode = SM_INSERT;
+  itc->itc_key_spec = key->key_insert_spec;
+  itc->itc_lock_mode = PL_EXCLUSIVE;
+  buf = itc_reset (itc);
+  rc = itc_search (itc, &buf);
+  if (rc == DVC_MATCH)
+    {
+      itc->itc_is_on_row = 1;
+      itc_set_lock_on_row (itc, &buf);
+      if (!itc->itc_is_on_row)
+	{
+	  if (itc->itc_ltrx)
+	    itc->itc_ltrx->lt_error = LTE_DEADLOCK;
+	    /* not really, but just put something there. */
+	  itc_bust_this_trx (itc, &buf, ITC_BUST_THROW);
+	}
+      itc->itc_is_on_row = 1;	/* flag not set in SM_INSERT search */
+      itc_delete (itc, &buf, NO_BLOBS);
+      itc_page_leave (itc, buf);
+      log_delete (itc->itc_ltrx, rd, LOG_KEY_ONLY);
+    }
+  else
+    itc_page_leave (itc, buf);
+}
+
 
 caddr_t
 cl_ddl (query_instance_t * qi, lock_trx_t * lt, caddr_t name, int type, caddr_t trig_table)

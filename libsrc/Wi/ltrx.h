@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -41,6 +41,11 @@
 #define LT_PREPARED LT_COMMITTED
 #define LT_FINAL_COMMIT_PENDING	7 /* when the commit came in, but there's a thread inside */
 #endif
+
+/* bit mask for lt_transact operation */
+#define LT_CPT_WAIT 		0
+#define LT_CPT_NO_WAIT 		0x8
+#define LT_CPT_FLAG_MASK 	0x7
 
 #define LT_CL_PREPARED 8 /* in cluster, first phase of commit started or finished.  Cancellable any time, during and after  */
 #define LT_1PC_PENDING 9 /* waiting for cluster 1pc reply */
@@ -540,6 +545,7 @@ void lt_kill_other_trx (lock_trx_t * lt, it_cursor_t * itc, buffer_desc_t * buf,
 
 void lt_killall (lock_trx_t * lt, int lte);
 int lock_enter (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf);
+lock_trx_t * lt_start_inner (int cpt_wait);
 EXE_EXPORT (lock_trx_t *, lt_start, (void));
 lock_trx_t * lt_start_outside_map (void);
 EXE_EXPORT (int, lt_commit, (lock_trx_t * lt, int free_trx));
@@ -897,7 +903,7 @@ extern resource_t * rb_page_rc;
 
 lock_trx_t * itc_main_lt (it_cursor_t * itc, buffer_desc_t * buf);
 lock_trx_t * lt_main_lt (lock_trx_t * lt);
-
+int lt_has_delta (lock_trx_t * lt);
 int lt_set_is_branch (dk_set_t list, lock_trx_t * lt, lock_trx_t ** main_lt_ret);
 int lt_log_merge (lock_trx_t * lt, int in_txn);
 #define NO_LOCK_LT ((lock_trx_t*)-1L)

@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2011 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -68,6 +68,14 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t * collation, offset_t offset
 	    unsigned int32 i1 = LONG_REF_NA (dv1 + 1) + offset;
 	    unsigned int32 i2 = LONG_REF_NA (dv2 + 1);
 	    return ((i1 < i2 ? DVC_LESS : (i1 == i2 ? DVC_MATCH : DVC_GREATER)));
+	  }
+	case DV_GEO:
+	  {
+	    /* geometrias have no meaningful ordering as such but here they collate like strings because most order somehow */
+	    long l1, l2, hl1, hl2;
+	    dv_geo_length (dv1, &l1, &hl1);
+	    dv_geo_length (dv2, &l2, &hl2);
+	    return str_cmp_2 (dv1 + hl1, dv2 + hl2, NULL, l1, l2, 0, offset);
 	  }
 	case DV_SHORT_STRING_SERIAL:
 	  if ((dv1_flags & BF_IRI) != (dv2_flags & BF_IRI))

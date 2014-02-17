@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -26,74 +26,30 @@
 create procedure
 DB.DBA.HP_AUTH_SQL_USER (in realm varchar)
 {
-  declare _u_name, _u_password varchar;
-  declare _u_group, _u_id, allow_basic integer;
+  declare r integer;
+  r := DB.DBA.HTTP_AUTH_CHECK_USER (realm, 1, 1);
 
-  declare sec, lev varchar;
-  declare _user varchar;
-  declare ses_dta, lines, auth any;
-
-  lines := http_request_header ();
-  sec := http_map_get ('security_level');
-  if (isstring (sec))
-    sec := ucase (sec);
-  if (sec = 'DIGEST')
-    allow_basic := 0;
-  else
-    allow_basic := 1;
-
-  auth := DB.DBA.vsp_auth_vec (lines);
-  if (0 <> auth)
+  if (r = 1)
+  {
+    if (http_map_get ('persist_ses_vars'))
     {
-
-      lev := get_keyword ('authtype', auth, '');
-      if (allow_basic = 0 and 'basic' = lev)
-	goto nf;
-      _user := get_keyword ('username', auth, '');
-
-      if ('' = _user)
-	return 0;
-
-      whenever not found goto nf;
-
-      select U_NAME, U_PASSWORD, U_GROUP, U_ID
-	into _u_name, _u_password, _u_group, _u_id from DB.DBA.SYS_USERS
-	where U_NAME = _user and U_ACCOUNT_DISABLED = 0 and U_SQL_ENABLE = 1 and U_IS_ROLE = 0;
-
-      if (1 = DB.DBA.vsp_auth_verify_pass (auth, _u_name,
-					       get_keyword ('realm', auth, ''),
-					       get_keyword ('uri', auth, ''),
-					       get_keyword ('nonce', auth, ''),
-					       get_keyword ('nc', auth, ''),
-					       get_keyword ('cnonce', auth, ''),
-					       get_keyword ('qop', auth, ''),
-					       _u_password))
-	{
-	  connection_set ('SPARQLUserId', _u_name);
-	  if (http_map_get ('persist_ses_vars'))
-	    {
-	      declare vars any;
-	      declare sid varchar;
-              vars := null;
-              sid := http_param ('sid');
-              vars := coalesce ((select deserialize (ASES_VARS) from DB.DBA.ADMIN_SESSION where ASES_ID = sid),
-		       	null);
-              if (sid is not null and vars is null or isarray (vars))
-		connection_vars_set (vars);
-	      if (sid is not null and connection_get ('sid') is null)
-		{
-		  connection_set ('sid', sid);
-		}
-	    }
-	  return 1;
-	}
+      declare vars any;
+      declare sid varchar;
+      vars := null;
+      sid := http_param ('sid');
+      vars := coalesce ((select deserialize (ASES_VARS) from DB.DBA.ADMIN_SESSION where ASES_ID = sid), null);
+      if (sid is not null and vars is null or isarray (vars))
+        connection_vars_set (vars);
+      if (sid is not null and connection_get ('sid') is null)
+        connection_set ('sid', sid);
     }
- nf:
-  DB.DBA.vsp_auth_get (realm, http_path (),
-		md5 (datestring (now ())),
-		md5 ('eEsSlLAaf'),
-		'false', lines, allow_basic);
-  return 0;
+    return 1;
+  }
+
+  else
+  {
+    return 0;
+  }
 }
 ;
 
@@ -102,74 +58,30 @@ DB.DBA.HP_AUTH_SQL_USER (in realm varchar)
 create procedure
 DB.DBA.HP_AUTH_DAV_ADMIN (in realm varchar)
 {
-  declare _u_name, _u_pwd varchar;
-  declare _u_group, _u_id, allow_basic integer;
+  declare r integer;
+  r := DB.DBA.HTTP_AUTH_CHECK_USER (realm, 0, 1, '/admin/admin_dav');
 
-  declare sec, lev varchar;
-  declare _user varchar;
-  declare ses_dta, lines, auth any;
-
-
-  lines := http_request_header ();
-  sec := http_map_get ('security_level');
-  if (isstring (sec))
-    sec := ucase (sec);
-  if (sec = 'DIGEST')
-    allow_basic := 0;
-  else
-    allow_basic := 1;
-  auth := DB.DBA.vsp_auth_vec (lines);
-
-  if (0 <> auth)
+  if (r = 1)
+  {
+    if (http_map_get ('persist_ses_vars'))
     {
-
-      lev := get_keyword ('authtype', auth, '');
-      if (allow_basic = 0 and 'basic' = lev)
-	goto nf;
-      _user := get_keyword ('username', auth, '');
-
-      if ('' = _user)
-	return 0;
-
-      whenever not found goto nf;
-
-      select U_NAME, pwd_magic_calc (U_NAME, U_PWD, 1), U_GROUP, U_ID
-	into _u_name, _u_pwd, _u_group, _u_id from WS.WS.SYS_DAV_USER
-	where U_NAME = _user and U_ACCOUNT_DISABLED = 0;
-
-      if (DB.DBA.vsp_auth_verify_pass (auth, _u_name,
-				get_keyword ('realm', auth, ''),
-				get_keyword ('uri', auth, ''),
-				get_keyword ('nonce', auth, ''),
-				get_keyword ('nc', auth, ''),
-				get_keyword ('cnonce', auth, ''),
-				get_keyword ('qop', auth, ''),
-				_u_pwd))
-	{
-	  if (http_map_get ('persist_ses_vars'))
-	    {
-	      declare vars any;
-	      declare sid varchar;
-              vars := null;
-              sid := http_param ('sid');
-              vars := coalesce ((select deserialize (ASES_VARS) from DB.DBA.ADMIN_SESSION where ASES_ID = sid),
-		       	null);
-              if (vars is null or isarray (vars))
-		connection_vars_set (vars);
-	      if (connection_get ('sid') is null)
-		{
-		  connection_set ('sid', sid);
-		}
-	    }
-	  return (_u_id);
-	}
+      declare vars any;
+      declare sid varchar;
+      vars := null;
+      sid := http_param ('sid');
+      vars := coalesce ((select deserialize (ASES_VARS) from DB.DBA.ADMIN_SESSION where ASES_ID = sid), null);
+      if (vars is null or isarray (vars))
+        connection_vars_set (vars);
+      if (connection_get ('sid') is null)
+        connection_set ('sid', sid);
     }
- nf:
-  DB.DBA.vsp_auth_get (realm, '/admin/admin_dav',
-		md5 (datestring (now ())),
-		md5 ('vVAadAnIimMDdaNnimda'),
-		'false', lines, allow_basic);
-  return 0;
+    return r;
+  }
+
+  else
+  {
+    return 0;
+  }
 }
 ;
 
@@ -536,12 +448,22 @@ CREATE PROCEDURE WS.WS.DIGEST_AUTH (in realm varchar)
 }
 ;
 
+--!
+-- Check for digest HTTP AUTH parameters.
+--
+-- \return \p 1 if credentials were found in the request headers, \p 0 if no credentials were given,
+-- \p -1 if invalid credentials were given.
+--/
 create procedure
-DB.DBA.HP_AUTH_SPARQL_USER (in realm varchar)
+DB.DBA.HTTP_AUTH_CHECK_USER (
+  in realm varchar,
+  in needSql integer := 0,
+  in requestAuth integer := 0,
+  in authDomain varchar := null)
 {
   declare _u_name, _u_password varchar;
-  declare allow_basic integer;
   declare sec, lev varchar;
+  declare allow_basic integer;
   declare _user varchar;
   declare lines, auth any;
 
@@ -556,41 +478,60 @@ DB.DBA.HP_AUTH_SPARQL_USER (in realm varchar)
 
   auth := DB.DBA.vsp_auth_vec (lines);
   if (0 <> auth)
+  {
+    lev := get_keyword ('authtype', auth, '');
+    if (allow_basic = 0 and 'basic' = lev)
+      return -1;
+    _user := get_keyword ('username', auth, '');
+
+    if ('' = _user)
+      goto nf;
+
+    whenever not found goto nf;
+
+    select U_NAME, U_PASSWORD
+      into _u_name, _u_password from DB.DBA.SYS_USERS
+      where U_NAME = _user and U_ACCOUNT_DISABLED = 0 and U_IS_ROLE = 0 and (U_SQL_ENABLE = 1 or needSql = 0) with (prefetch 1);
+
+    if (1 = DB.DBA.vsp_auth_verify_pass (auth, _u_name,
+      get_keyword ('realm', auth, ''),
+      get_keyword ('uri', auth, ''),
+      get_keyword ('nonce', auth, ''),
+      get_keyword ('nc', auth, ''),
+      get_keyword ('cnonce', auth, ''),
+      get_keyword ('qop', auth, ''),
+      _u_password))
     {
-
-      lev := get_keyword ('authtype', auth, '');
-      if (allow_basic = 0 and 'basic' = lev)
-	goto nf;
-      _user := get_keyword ('username', auth, '');
-
-      if ('' = _user)
-	return 0;
-
-      whenever not found goto nf;
-
-      select U_NAME, U_PASSWORD
-	into _u_name, _u_password from DB.DBA.SYS_USERS
-	where U_NAME = _user and U_IS_ROLE = 0 and U_SQL_ENABLE = 1 with (prefetch 1);
-
-      if (1 = DB.DBA.vsp_auth_verify_pass (auth, _u_name,
-					       get_keyword ('realm', auth, ''),
-					       get_keyword ('uri', auth, ''),
-					       get_keyword ('nonce', auth, ''),
-					       get_keyword ('nc', auth, ''),
-					       get_keyword ('cnonce', auth, ''),
-					       get_keyword ('qop', auth, ''),
-					       _u_password))
-	{
-	  connection_set ('SPARQLUserId', _u_name);
-	  commit work;
-	  return 1;
-	}
+      connection_set ('SPARQLUserId', _u_name);
+      commit work;
+      return 1;
     }
- nf:
-  DB.DBA.vsp_auth_get (realm, http_path (),
-		md5 (datestring (now ())),
-		md5 ('secret'),
-		'false', lines, allow_basic);
-  return 0;
+  }
+
+nf:
+  if (requestAuth = 1)
+  {
+    DB.DBA.vsp_auth_get (
+      realm,
+      coalesce (authDomain, http_path ()),
+      md5 (datestring (now ())),
+      md5 ('secret'),
+      'false',
+      lines,
+      allow_basic);
+    return 0;
+  }
+
+  return -1;
+}
+;
+
+create procedure
+DB.DBA.HP_AUTH_SPARQL_USER (in realm varchar)
+{
+  if (DB.DBA.HTTP_AUTH_CHECK_USER (realm, 1, 1) = 1)
+    return 1;
+  else
+    return 0;
 }
 ;

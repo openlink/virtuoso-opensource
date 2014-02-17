@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -313,7 +313,7 @@ sqlo_dfe_print (df_elt_t * dfe, int offset)
 	if (dfe->_.table.hash_filler)
 	  {
 	    df_elt_t * filler = dfe->_.table.hash_filler;
-	    sqlo_print (("  hash filler dfe build time %g ms:\n", sqlo_hash_ins_cost (dfe, filler->dfe_arity, dfe->_.table.out_cols) * compiler_unit_msecs));
+	    sqlo_print (("  hash filler dfe build time %g ms:\n", sqlo_hash_ins_cost (dfe, filler->dfe_arity, dfe->_.table.out_cols, NULL) * compiler_unit_msecs));
 	    sqlo_dfe_print (filler, offset + OFS_INCR);
 	  }
 
@@ -456,6 +456,10 @@ sqlo_dfe_print (df_elt_t * dfe, int offset)
 	}
       sqlo_print (("\n"));
       break;
+    case DFE_FILTER:
+      sqlo_print (("after test: "));
+      sqlo_dfe_print ((df_elt_t *) dfe->_.filter.body, offset + OFS_INCR);
+      sqlo_print (("\n"));
     default:
       sqlo_print (("node\n"));
       break;

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -215,3 +215,22 @@ tro2sqv5 ();
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": ro2sq heterogeneous values from any to boxes with conditinal branch : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+create procedure tf () {return 1;}
+
+create procedure irivv (in s any array)
+{
+  declare iris any array;
+  for vectored (in str any := s, out iris := res) {
+  declare res iri_id;
+  if (tf ())
+  res := iri_to_id (str);
+}
+  return  iris;
+}
+
+
+select  __ro2sq (irivv (vector ('pfaal', 'hans',  'hyrim'))[0]);
+echo both $if $equ $last[1]  "pfaal" "PASSED" "***FAILED";
+echo both ":  vec iri to id\n";
+

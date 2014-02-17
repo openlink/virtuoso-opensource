@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2011 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -33,7 +33,7 @@
 
 
 caddr_t
-itc_alloc_box (it_cursor_t * itc, int len, dtp_t dtp)
+DBG_NAME (itc_alloc_box) (DBG_PARAMS it_cursor_t * itc, int len, dtp_t dtp)
 {
   if (itc && itc->itc_temp_max)
     {
@@ -52,14 +52,14 @@ itc_alloc_box (it_cursor_t * itc, int len, dtp_t dtp)
 #endif
       if (fill + bytes > itc->itc_temp_max)
 	{
-	  return dk_alloc_box (len, dtp);
+	  return DBG_NAME (dk_alloc_box) (DBG_ARGS len, dtp);
 	}
       ptr = itc->itc_temp + fill + 4;
       WRITE_BOX_HEADER (ptr, len, dtp);
       itc->itc_temp_fill += bytes;
       return (caddr_t) itc->itc_temp + fill + 8;
     }
-  return dk_alloc_box (len, dtp);
+  return DBG_NAME (dk_alloc_box) (DBG_ARGS len, dtp);
 }
 
 col_data_ref_t *
@@ -750,6 +750,95 @@ cr_nth_dp (col_data_ref_t * cr, int inx)
 
 
 long tc_col_rewait;
+int enable_col_fetch_vec = 1;
+
+void
+itc_fetch_col_vec (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, int from_row, ptrlong to_row)
+{
+  /* read and wire the buffers for the seg/col */
+  dp_addr_t dps[1000];
+  dbe_key_t * key = itc->itc_insert_key;
+  unsigned short vl1, vl2, offset;
+  int n_pages, cr_inx, ces_left;
+  db_buf_t xx, xx2;
+  db_buf_t row = NULL;
+  page_lock_t * pl = itc->itc_pl;
+  col_data_ref_t * cr = itc->itc_col_refs[cl->cl_nth - key->key_n_significant];
+  dtp_t dtp;
+  index_tree_t * tree = itc->itc_tree;
+  it_map_t * maps = tree->it_maps;
+  row = BUF_ROW (buf, itc->itc_map_pos);
+  ROW_STR_COL (buf->bd_tree->it_key->key_versions[IE_KEY_VERSION (row)], buf, row, cl, xx, vl1, xx2, vl2, offset);
+  if (vl2) GPF_T1 ("col ref string should nott be compressed");
+  dtp = *xx;
+  if (DV_STRING == dtp)
+    GPF_T1 ("ces inlined on leaf page are not supported");
+  cr->cr_n_access++;
+  cr->cr_n_pages = n_pages = (vl1 - CPP_DP) / sizeof (dp_addr_t);
+  if (n_pages > sizeof (dps) / sizeof (dp_addr_t)) 
+    GPF_T1 ("over 1000 pages in col in segment");
+  if (cr->cr_pages_sz < n_pages)
+    {
+      col_page_t * old_pages = cr->cr_pages;
+      cr->cr_pages_sz = n_pages + 4;
+      cr->cr_pages = (col_page_t*)itc_alloc_box (itc, cr->cr_pages_sz * sizeof (col_page_t), DV_BIN);
+      if (old_pages != &cr->cr_pre_pages[0])
+	itc_free_box (itc, (caddr_t)old_pages);
+    }
+  cr->cr_first_ce_page = 0;
+  cr->cr_first_ce = SHORT_REF_NA (xx + CPP_FIRST_CE);
+  ces_left = cr->cr_n_ces = SHORT_REF_NA (xx + CPP_N_CES);
+  cr->cr_limit_ce = -1;
+
+  for (cr_inx = 0; cr_inx < n_pages; cr_inx++)
+    {
+      dp_addr_t dp = LONG_REF_NA ((xx + CPP_DP) + sizeof (dp_addr_t) * cr_inx);
+      it_map_t * itm = IT_DP_MAP (tree, dp);
+      dk_hash_t * ht = &itm->itm_dp_to_buf;
+      uint32 hno = HASH_INX (ht, (void*)(ptrlong)dp);
+      __builtin_prefetch (&ht->ht_elements[hno]);
+      dps[cr_inx] = dp;
+    }
+  for (cr_inx = 0; cr_inx < n_pages; cr_inx++)
+    {
+      dp_addr_t dp = dps[cr_inx];
+      do {
+	ITC_IN_KNOWN_MAP (itc, dp);
+	page_wait_access (itc, dp, 
+			  NULL, &cr->cr_pages[cr_inx].cp_buf, ITC_LANDED_PA (itc), RWG_WAIT_ANY);
+	if (itc->itc_to_reset > RWG_WAIT_ANY) TC (tc_col_rewait);
+      } 	while (itc->itc_to_reset > RWG_WAIT_ANY);
+      ITC_LEAVE_MAPS (itc);
+      if (PF_OF_DELETED == cr->cr_pages[cr_inx].cp_buf)
+	GPF_T1 ("ref to deld col page");
+      cr->cr_pages[cr_inx].cp_string = cr->cr_pages[cr_inx].cp_buf->bd_buffer;
+      cr->cr_pages[cr_inx].cp_map = cr->cr_pages[cr_inx].cp_buf->bd_content_map;
+      cr->cr_pages[cr_inx].cp_ceic = NULL;
+    }
+  for (cr_inx = 0; cr_inx < n_pages; cr_inx++) 
+    {
+      int ces_here;
+      page_map_t * pm = cr->cr_pages[cr_inx].cp_map;
+      if (cr_inx < n_pages - 2)
+	__builtin_prefetch (&cr->cr_pages[cr_inx + 2].cp_map->pm_count);
+      ces_here = (pm->pm_count / 2) - (0 == cr_inx ? cr->cr_first_ce  : 0);
+      if (ces_left < ces_here)
+	{
+	  if (cr_inx != cr->cr_n_pages - 1) 
+	    log_error ("out of whack to have col ref where the last ce is not on the last refd page");
+	  cr->cr_limit_ce = 2 * ((0 == cr_inx ? cr->cr_first_ce : 0) + ces_left);
+	  if (0 == cr->cr_limit_ce)
+	    log_error ("out of whack to have 0 as limit ce.  Means that the col string refs a page that has no ce of this seg");
+	}
+      ces_left -= ces_here;
+    }
+  if (-1 == cr->cr_limit_ce)
+    cr->cr_limit_ce = cr->cr_pages[cr->cr_n_pages - 1].cp_map->pm_count;
+  cr->cr_is_valid = 1;
+  itc->itc_pl = pl;
+}
+
+
 void
 itc_fetch_col (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, int from_row, ptrlong to_row)
 {
@@ -776,11 +865,16 @@ itc_fetch_col (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, int f
       from_row = 0;
       is_append = 1;
     }
-  if (FC_FROM_CEIC == from_row)
+  else if (FC_FROM_CEIC == from_row)
     {
       from_row = 0;
       ceic = (ce_ins_ctx_t *) to_row;
       to_row = COL_NO_ROW;
+    }
+  else if (enable_col_fetch_vec)
+    {
+      itc_fetch_col_vec (itc, buf, cl, from_row, to_row);
+      return;
     }
   if (!is_append)
     cr->cr_n_pages = 0;
@@ -1020,6 +1114,7 @@ ce_dtp_compare (db_buf_t ce, dtp_t dtp)
 	break;
       }
     default:
+      ce_dtp = 0;
       GPF_T1 ("unknown dtp for ce_is_dtp_less");
     }
   if (ce_dtp == dtp)
@@ -1048,6 +1143,7 @@ ce_typed_vec_dtp_compare (db_buf_t ce, dtp_t dtp)
       ce_dtp = DV_LONG_INT;
       break;
     default:
+      ce_dtp = 0;		/*uninited warning */
       GPF_T1 ("unknown dtp for ce_is_dtp_less");
     }
   if (ce_dtp == dtp)
@@ -1527,6 +1623,87 @@ ret_this:
   return ce;
 }
 
+int enable_ce_next_skip = 1;
+
+
+db_buf_t
+itc_next_ce_skip (it_cursor_t * itc, int * is_last_ce,   int64 value, dtp_t dtp, db_buf_t prev_ce)
+{
+  /* After getting next ce, if access pattern is sparse and next ce starts with lt, see the ce's after next to skip to last in range that starts with lt */
+  int set = itc->itc_set - itc->itc_col_first_set;
+  int nth_key = itc->itc_nth_key;
+  page_map_t * pm;
+  int strinx, cinx, rc, ce_rows;
+  int prev_ce_row = itc->itc_row_of_ce, prev_strinx = itc->itc_nth_col_string, prev_ce_inx = itc->itc_nth_ce;
+  col_data_ref_t * cr;
+  row_no_t row_no = itc->itc_row_of_ce;
+  row_no_t upper;
+  db_buf_t ce;
+  int last_ce = 0, initial_ce_inx;
+  if (nth_key)
+    upper = itc->itc_ranges[set].r_end;
+  else 
+    upper = COL_NO_ROW;
+  cr = itc->itc_col_refs[nth_key];
+  strinx = itc->itc_nth_col_string;
+  initial_ce_inx = itc->itc_nth_ce + 2;
+  row_no = itc->itc_row_of_ce;
+  pm = cr->cr_pages[strinx].cp_map;
+  ce_rows = pm->pm_entries[prev_ce_inx + 1];
+  row_no += ce_rows;
+  if (upper <= row_no)
+    return prev_ce;
+  for (strinx = itc->itc_nth_col_string; strinx < cr->cr_n_pages; strinx++)
+    {
+      db_buf_t page = cr->cr_pages[strinx].cp_string;
+      pm = cr->cr_pages[strinx].cp_map;
+      last_ce = strinx == cr->cr_n_pages - 1 ? cr->cr_limit_ce : pm->pm_count;
+      for (cinx = initial_ce_inx; cinx < last_ce; cinx += 2)
+	{
+	  if (cinx + 2 < last_ce)
+	    __builtin_prefetch (page + pm->pm_entries[cinx + 2]);
+	  ce_rows = pm->pm_entries[cinx + 1];
+	  ce = page + pm->pm_entries[cinx];
+	  if (row_no + ce_rows >= upper)
+	    {
+	      if (DVC_MATCH != ce_dtp_compare (ce, dtp))
+		goto ret_prev;
+	      rc = ce_search_cmp (ce, 0, value, dtp, itc);
+	      if (DVC_LESS == rc)
+		goto ret_this;
+	      goto ret_prev;
+	    }
+	  rc = ce_dtp_compare (ce, dtp);
+	  if (DVC_MATCH != rc)
+	    goto ret_prev;
+	  rc = 7 & ce_search_cmp (ce, 0, value, dtp, itc); /* and off the dvc dtp lt/gt.  dtp incompatible is checked before.  If dtp lt/gt here, does not disqualify because ce may is mixed dtps in that event */
+	  if (DVC_LESS == rc)
+	    {
+	      prev_strinx = strinx;
+	      prev_ce_inx = cinx;
+	      prev_ce_row = row_no;
+	      prev_ce = ce;
+	      row_no += ce_rows;
+	      continue;
+	    }
+	  goto ret_prev;
+	}
+      initial_ce_inx = 0;
+    }
+ ret_prev:
+  itc->itc_nth_col_string = prev_strinx;
+  itc->itc_nth_ce = prev_ce_inx;
+  itc->itc_row_of_ce = prev_ce_row;
+  *is_last_ce = itc_is_last_ce (itc, cr);
+  return prev_ce;
+ ret_this:
+  itc->itc_nth_col_string = strinx;
+  itc->itc_nth_ce = cinx;
+  itc->itc_row_of_ce = row_no;
+  *is_last_ce = itc_is_last_ce (itc, cr);
+  return ce;
+}
+
 
 db_buf_t
 itc_next_ce (it_cursor_t * itc, int *is_last)
@@ -1567,6 +1744,8 @@ itc_next_ce (it_cursor_t * itc, int *is_last)
   if (DVC_GREATER == rc)
     return NULL;
   *is_last = itc_is_last_ce (itc, itc->itc_col_refs[itc->itc_nth_key]);
+  if (enable_ce_next_skip && DVC_LESS == rc && !*is_last)
+    return itc_next_ce_skip (itc, is_last, value, dtp, ce); 
   return ce;
 }
 
@@ -2403,6 +2582,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
   int end, rows_in_seg = -1;
   int initial_set = itc->itc_set, initial_n_matches = 0, nth_sp;
   int64 check_start_ts = 0;
+  char do_sp_stat = itc->itc_n_row_specs > 1;
   //memzero (&cpo, sizeof (cpo));
   cpo.cpo_range = &itc->itc_ranges[itc->itc_set - itc->itc_col_first_set];
   if (!is_singles && itc->itc_rl)
@@ -2425,6 +2605,8 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
   if (!is_singles)
     {
       n = cpo.cpo_range->r_end - cpo.cpo_range->r_first;
+      if (n < 10)
+	do_sp_stat = 0;
       itc->itc_n_matches = 0;
       if (ISO_SERIALIZABLE == itc->itc_isolation)
 	{
@@ -2450,6 +2632,8 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
   else
     {
       initial_n_matches = itc->itc_n_matches;
+      if (initial_n_matches < 10)
+	do_sp_stat = 0;
       rng.r_first = itc->itc_matches[0];
       rng.r_end = itc->itc_matches[itc->itc_n_matches - 1] + 1;
       cpo.cpo_range = &rng;
@@ -2537,7 +2721,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
 	  itc->itc_match_sz = rows_in_seg + 400;
 	  itc->itc_matches = (row_no_t *) itc_alloc_box (itc, sizeof (row_no_t) * itc->itc_match_sz, DV_BIN);
 	}
-      if (itc->itc_n_row_specs > 1)
+      if (do_sp_stat)
 	{
 	  check_start_ts = rdtsc ();
 	  if (!itc->itc_n_matches && !is_singles)
@@ -2576,7 +2760,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
 	next_page:;
 	}
     next_spec:
-      if (itc->itc_n_row_specs > 1)
+      if (do_sp_stat)
 	{
 	  itc->itc_sp_stat[nth_sp].spst_out += itc->itc_match_out;
 	  itc->itc_sp_stat[nth_sp].spst_time += rdtsc () - check_start_ts;
@@ -2592,7 +2776,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
       itc->itc_match_in = 0;
     }
   itc->itc_is_last_col_spec = 0;
-  if (itc->itc_n_row_specs > 1 && itc->itc_sp_stat[0].spst_in > 10000)
+  if (do_sp_stat && itc->itc_sp_stat[0].spst_in > 10000)
     itc_sp_stat_check (itc);
   if (RANDOM_SEARCH_COND == itc->itc_random_search)
     return DVC_LESS;
@@ -2810,7 +2994,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
       for (nth = 0; nth < n_keys; nth++)
 	{
 	  if (!om[nth].om_ssl)
-	    dk_free_box (key_vals[nth]);
+	    dk_free_tree (key_vals[nth]);
 	}
     }
   if (!stop_in_mid_seg)
@@ -2951,10 +3135,12 @@ itc_col_row_check (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t * leaf
 {
   int rc = DVC_LESS, inx, wait, first_set, rnd_inc;
   col_row_lock_t *clk;
+  client_connection_t * cli = itc->itc_ltrx->lt_client;
+  int64 seq_prev = cli->cli_activity.da_seq_rows;
   db_buf_t row;
   key_ver_t kv;
   buffer_desc_t *buf;
-  CHECK_TRX_DEAD (itc, buf_ret, ITC_BUST_THROW);
+  CHECK_TRX_DEAD (itc, buf_ret, ITC_BUST_CONTINUABLE);
   ITC_DFG_CK (itc);
   itc->itc_col_need_preimage = 0;
 start:
@@ -3035,8 +3221,10 @@ start:
     rnd_inc = itc->itc_set - first_set ? itc->itc_set - first_set - 1 : 0;
   else
     rnd_inc = itc->itc_range_fill - 1;
-  itc->itc_ltrx->lt_client->cli_activity.da_same_seg += rnd_inc;
-  itc->itc_ltrx->lt_client->cli_activity.da_random_rows += rnd_inc;
+  cli->cli_activity.da_same_seg += rnd_inc;
+  cli->cli_activity.da_random_rows += rnd_inc;
+  if (RANDOM_SEARCH_ON == itc->itc_random_search)
+    itc->itc_st.n_sample_rows += cli->cli_activity.da_seq_rows - seq_prev;
 
   if (CLK_NO_WAIT != wait && DVC_MATCH != rc)
     {

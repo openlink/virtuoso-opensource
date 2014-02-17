@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -769,7 +769,7 @@ TBL.initValues = function ()
     TBL.compares = o[1];
     TBL.triplets = o[2];
   }
-  OAT.AJAX.GET('/ods/api/filtersData', false, x, {async: false});
+  OAT.AJAX.GET('/webid/api/acl_filters', false, x, {async: false});
 }
 
 TBL.predicateGet = function (fldName)

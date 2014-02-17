@@ -1,12 +1,12 @@
 <?xml version="1.0"?>
 <!--
  -
- -  $Id: sec_auth_sponger_2.vspx,v 1.1 2012/05/23 15:47:17 mitko Exp $
+ -  $Id$
  -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2014 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,13 +21,14 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="auth_serv"
         decor="yacutia_decor.vspx"
         style="yacutia_style.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <vm:pagetitle>Virtuoso Access Control Lists</vm:pagetitle>
   <vm:pagewrapper>
     <vm:variables>
@@ -39,221 +40,273 @@
       <v:variable persist="0" name="addnew" type="int" default="0" param-name="add"/>
       <v:variable persist="0" name="wdel" type="varchar" default="null" param-name="wdel"/>
       <v:variable persist="0" name="wdata" type="any" default="null" param-name="d"/>
-
     </vm:variables>
+
     <vm:menu>
       <vm:menuitem name="HTTP" value="Access Control Lists"/>
     </vm:menu>
+
     <vm:header caption="Access Control Lists">
-     <!--vm:help id="sec_auth_serv_sp" sect=""/-->
+      <!--vm:help id="sec_auth_serv_sp" sect=""/-->
     </vm:header>
     <vm:pagebody>
       <![CDATA[
-	      <script language="JavaScript" src="admin_utils.js"></script>
+        <script language="JavaScript" src="admin_utils.js"></script>
       ]]>
-  <v:method name="astyle" arglist="in cmp varchar">
-    <![CDATA[
-    if ((self.acl_name = cmp))
-      return 'page_tab_selected';
-    return 'page_tab';
-    ]]>
-  </v:method>
-  <v:on-init>
-    <![CDATA[
-	if (self.del is not null)
+
+      <v:method name="astyle" arglist="in cmp varchar">
+        <![CDATA[
+        if ((self.acl_name = cmp))
+          return 'page_tab_selected';
+        return 'page_tab';
+        ]]>
+      </v:method>
+
+      <v:on-init>
+        <![CDATA[
+          if (self.del is not null)
           {
-	    delete from RDF_CARTRIDGES_ACL where RC_WEBID = self.del;
-	    self.del := null;
-	  }
-    ]]>
-  </v:on-init>
-    <v:form name="page_form" type="simple" method="POST">
-	<!-- top of security layout -->
-      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
-        <tr valign='top'>
-          <td>
-            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
-              <tr>
-                <td>
-                  <table cellpadding="0" cellspacing="0" border="0">
-                    <tr>
-		      <!--td class="page_tab" align="center">
-			  	
-			<v:url xhtml_style="page_tab" url="sec_pki_1.vspx" value="Public Key Infrastructure" render-only="1"/>
-		      </td-->
-		      <td class="page_tab_selected" align="center">
-			Access Control
-		      </td>
-			<td class="page_tab_empty" align="right" width="100%">
-                        </td>
-                    </tr>
-                  </table>
-                  <table class="tab_page">
-                    <tr>
-			<td valign="top">
-		   <!-- end of top security layout -->
-      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
-        <tr valign='top'>
-          <td>
-            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
-              <tr>
-                <td>
-                  <table cellpadding="0" cellspacing="0" border="0">
-                    <tr>
+            delete from RDF_CARTRIDGES_ACL where RC_WEBID = self.del;
+            self.del := null;
+          }
+        ]]>
+      </v:on-init>
 
-		      <!--td class="<?V self.astyle ('Sponger') ?>" align="center">
-			<v:url xhtml_style="page_tab" url="sec_auth_serv_sp.vspx?acl=Sponger" value="Sponger" render-only="1"/>
-		      </td-->
-		      <td class="<?V self.astyle ('Groups') ?>" align="center">
-			<v:url xhtml_style="page_tab" url="sec_auth_sponger_1.vspx" value="Groups" render-only="1"/>
-		      </td>
-		      <?vsp
-		        if (vad_check_version ('rdf_mappers') is not null or check_package ('cartridges'))
-			  {
-		      ?>
-		      <td class="<?V self.astyle ('Cartridges') ?>" align="center">
-			<v:url xhtml_style="page_tab" url="sec_auth_sponger_2.vspx" value="Cartridges" render-only="1"/>
-		      </td>
-                      <?vsp
-		          }
-                      ?>
-		      <?vsp if (DB.DBA.VAD_CHECK_VERSION ('Framework') is not null or DB.DBA.VAD_CHECK_VERSION ('policy_manager') is not null) { ?>
-		      <td class="<?V self.astyle ('NetID ACLs') ?>" align="center">
-			<v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="NetID ACLs" render-only="1"/>
-		      </td>
-		      <?vsp } ?>
-                        
-			<td class="page_tab_empty" align="right" width="100%">
+      <v:form name="page_form" type="simple" method="POST">
+      <!-- top of security layout -->
+        <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+          <tr valign='top'>
+            <td>
+              <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+                <tr>
+                  <td>
+                    <table cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <!--td class="page_tab" align="center">
+                        <v:url xhtml_style="page_tab" url="sec_pki_1.vspx" value="Public Key Infrastructure" render-only="1"/>
+                        </td-->
+                        <td class="page_tab_selected" align="center">
+                          Access Control
                         </td>
-                    </tr>
-                  </table>
-                  <table class="tab_page">
-                    <tr>
-		      <td valign="top">
-			<!-- MAIN -->
-			<v:template name="list" type="simple" condition="self.addnew = 0 and self.edit is null">
-			<table class="listing">
-			    <tr class="listing_header_row"><th>NetID/Group URI</th><th><v:url value="Add New" name="uadd" url="sec_auth_sponger_2.vspx?add=1"  enabled="--(select 1 from FOAF_SSL_ACL where FS_REALM = 'Virtuoso Sponger')"/></th></tr>
-			    <?vsp 
-			    	declare ctr int;
-			    	for select distinct RC_WEBID from RDF_CARTRIDGES_ACL do { ?>
-			    <tr>
-				<td><?V RC_WEBID ?></td>
-				<td>
-				    <v:url value="Edit" name="udel" url="--sprintf ('sec_auth_sponger_2.vspx?edit=%U', RC_WEBID)" render-only="1"/>
-				    <v:url value="Delete" name="udel" url="--sprintf ('sec_auth_sponger_2.vspx?del=%U', RC_WEBID)" render-only="1"/>
-				</td>
-			    </tr>  
-			    <?vsp ctr := ctr + 1; } 
-			    if (ctr = 0) 
-			      http ('<tr><td colspan="2">No permissions defined</td></tr>');	
-			    ?>
-		        </table>
-		        </v:template>
-			<v:template name="tadd" type="simple" condition="self.addnew = 1 or self.edit is not null">
-			    <div>
-				<label for="gname">NetID/Group URI pattern</label>
-				      <!--v:text name="gname" value="-#-self.edit" xhtml_id="gname" xhtml_size="100"/--> 
-				      <v:data-list name="gname" 
-					  sql="select FS_URI from FOAF_SSL_ACL where FS_REALM = 'Virtuoso Sponger'" 
-					  key-column="FS_URI" 
-					  value-column="FS_URI" 
-					  value="--self.edit" />
-				      <br/>
-                        	      <table class="listing" rules="groups">
-                          	      <tr class="listing_header_row">
-  		                              <th style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_item')"/></th>
-  		                              <th>Seq#</th>
-                              		  <th colspan="2">Description</th>
-                          	      </tr>
-                                  <v:data-source name="ds_maps" expression-type="sql" nrows="1000" initial-offset="0">
-				    <v:param name="wid" value="--self.edit"/>
-                                    <v:before-data-bind>
-                                      <![CDATA[
-                                        control.ds_sql := 'select RM_PATTERN, RM_TYPE, RM_DESCRIPTION, RM_ID, RM_HOOK, RM_KEY, RC_PERMISSION, RM_OPTIONS from DB.DBA.SYS_RDF_MAPPERS left outer join (select * from RDF_CARTRIDGES_ACL where RC_WEBID = ? ) x on (RM_HOOK = RC_CART) order by 4';
-                                      ]]>
-                                    </v:before-data-bind>
-                                  </v:data-source>
+                        <td class="page_tab_empty" align="right" width="100%">
+                        </td>
+                      </tr>
+                    </table>
+                    <table class="tab_page">
+                      <tr>
+                        <td valign="top">
+                          <!-- end of top security layout -->
+                          <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+                            <tr valign='top'>
+                              <td>
+                                <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+                                  <tr>
+                                    <td>
+                                      <table cellpadding="0" cellspacing="0" border="0">
+                                        <tr>
+                                          <!--td class="<?V self.astyle ('Sponger') ?>" align="center">
+                                            <v:url xhtml_style="page_tab" url="sec_auth_serv_sp.vspx?acl=Sponger" value="Sponger" render-only="1"/>
+                                          </td-->
+                                          <td class="<?V self.astyle ('Groups') ?>" align="center">
+                                            <v:url xhtml_style="page_tab" url="sec_auth_sponger_1.vspx" value="Groups" render-only="1"/>
+                                          </td>
+                                          <?vsp
+                                            if (vad_check_version ('rdf_mappers') is not null or check_package ('cartridges'))
+                                            {
+                                          ?>
+                                          <td class="<?V self.astyle ('Cartridges') ?>" align="center">
+                                             <v:url xhtml_style="page_tab" url="sec_auth_sponger_2.vspx" value="Cartridges" render-only="1"/>
+                                          </td>
+                                          <?vsp
+                                            }
+                                          ?>
+                                          <?vsp
+                                            if (DB.DBA.VAD_CHECK_VERSION ('Framework') is not null or DB.DBA.VAD_CHECK_VERSION ('policy_manager') is not null)
+                                            {
+                                          ?>
+                                          <td class="<?V self.astyle ('NetID ACLs') ?>" align="center">
+                                             <v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="NetID ACLs" render-only="1"/>
+                                          </td>
+                                          <?vsp
+                                            }
+                                          ?>
+                                          <td class="page_tab_empty" align="right" width="100%">
+                                          </td>
+                                        </tr>
+                                      </table>
+                                      <table class="tab_page">
+                                        <tr>
+                                          <td valign="top">
+                                            <!-- MAIN -->
+                                            <v:template name="list" type="simple" condition="self.addnew = 0 and self.edit is null">
+                                              <table class="listing">
+                                                <thead>
+                                                  <tr class="listing_header_row">
+                                                    <th>NetID/Group URI</th>
+                                                    <th nowrap="nowrap" width="1%">
+                                                      <v:url value='<img src="images/icons/add_16.png" hspace="3" border="0"/>Add New'
+                                                             name="uadd"
+                                                             url="sec_auth_sponger_2.vspx?add=1"
+                                                             enabled="--(select 1 from FOAF_SSL_ACL where FS_REALM = 'Virtuoso Sponger')"
+                                                             xhtml_title="Add"
+                                                             xhtml_alt="Add"
+                                                      />
+                                                    </th>
+                                                  </tr>
+                                                </thead>
+                                                <?vsp
+                                                  declare ctr int;
 
-                                  <v:data-set name="maps" data-source="self.ds_maps"  scrollable="1">
-                               		  <v:template name="maps_rep" type="repeat">
-                             		      <v:template name="maps_brows" type="browse">
-                                			  <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
-                                			    <td>
-                                				    <v:check-box name="cb_item" value="--(control.vc_parent as vspx_row_template).te_rowset[3]" initial-checked="--(control.vc_parent as vspx_row_template).te_rowset[6]"/>
-                                			    </td>
-                                			    <td>
-                                				    <v:label name="la2" value="--(control.vc_parent as vspx_row_template).te_rowset[3]" />
-                                			    </td>
-                                			    <td>
-                                				    <v:label name="la3" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" />
-                                			    </td>
-                                			  </tr>
-                                		  </v:template>
-                                		</v:template>
-                                		<v:template name="maps_footer" type="simple">
-                                		  <tr>
-                                			  <td colspan="6" class="listing_col_action">
-                                			    <vm:ds-navigation data-set="maps" type="set" />
-                                			  </td>
-                                		  </tr>
-                                	  </v:template>
-                                  </v:data-set>
+                                                  for select distinct RC_WEBID from RDF_CARTRIDGES_ACL do
+                                                  {
+                                                ?>
+                                                <tbody>
+                                                  <tr>
+                                                    <td><?V RC_WEBID ?></td>
+                                                    <td nowrap="nowrap">
+                                                      <v:url value='<img src="images/icons/edit_16.png" hspace="3" border="0"/>Edit'
+                                                             format="%s"
+                                                             name="udel"
+                                                             url="--sprintf ('sec_auth_sponger_2.vspx?edit=%U', RC_WEBID)"
+                                                             render-only="1"
+                                                             xhtml_title="Edit"
+                                                             xhtml_alt="Edit"
+                                                      />
+                                                      <v:url value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
+                                                             format="%s"
+                                                             name="udel"
+                                                             url="--sprintf ('sec_auth_sponger_2.vspx?del=%U', RC_WEBID)"
+                                                             render-only="1"
+                                                             xhtml_title="Delete"
+                                                             xhtml_alt="Delete"
+                                                      />
+                                                    </td>
+                                                  </tr>
+                                                  <?vsp
+                                                      ctr := ctr + 1;
+                                                    }
+                                                    if (ctr = 0)
+                                                      http ('<tr><td colspan="2">No permissions defined</td></tr>');
+                                                  ?>
+                                                </tbody>
+                                              </table>
+                                            </v:template>
+                                            <v:template name="tadd" type="simple" condition="self.addnew = 1 or self.edit is not null">
+                                              <div class="fm">
+                                                <label for="gname">NetID/Group URI pattern</label>
+                                                <!--v:text name="gname" value="-#-self.edit" xhtml_id="gname" xhtml_size="100"/-->
+                                                <v:data-list
+                                                  name="gname"
+                                                  xhtml_id="gname"
+                                                  sql="select FS_URI from FOAF_SSL_ACL where FS_REALM = 'Virtuoso Sponger' union select FS_URI from (select 'nobody' as FS_URI) dt"
+                                                  key-column="FS_URI"
+                                                  value-column="FS_URI"
+                                                  value="--self.edit"
+                                                  xhtml_style="width: 500px;"
+                                                />
+                                                <br />
+                                                <table class="listing" rules="groups">
+                                                  <thead>
+                                                    <tr class="listing_header_row">
+                                                      <th style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_item')"/></th>
+                                                      <th width="1%">Seq#</th>
+                                                      <th>Description</th>
+                                                    </tr>
+                                                  </thead>
+                                                  <v:data-source name="ds_maps" expression-type="sql" nrows="1000" initial-offset="0">
+                                                    <v:param name="wid" value="--self.edit"/>
+                                                    <v:before-data-bind>
+                                                      <![CDATA[
+                                                        control.ds_sql := 'select RM_PATTERN, RM_TYPE, RM_DESCRIPTION, RM_ID, RM_HOOK, RM_KEY, RC_PERMISSION, RM_OPTIONS from DB.DBA.SYS_RDF_MAPPERS left outer join (select * from RDF_CARTRIDGES_ACL where RC_WEBID = ? ) x on (RM_HOOK = RC_CART) order by 4';
+                                                      ]]>
+                                                    </v:before-data-bind>
+                                                  </v:data-source>
+
+                                                  <tbody>
+                                                  <v:data-set name="maps" data-source="self.ds_maps"  scrollable="1">
+                                                    <v:template name="maps_rep" type="repeat">
+                                                      <v:template name="maps_brows" type="browse">
+                                                        <tr>
+                                                          <td>
+                                                            <v:check-box name="cb_item" value="--(control.vc_parent as vspx_row_template).te_rowset[3]" initial-checked="--(control.vc_parent as vspx_row_template).te_rowset[6]"/>
+                                                          </td>
+                                                          <td align="right" style="padding-right: 5px;">
+                                                            <v:label name="la2" value="--(control.vc_parent as vspx_row_template).te_rowset[3]" />
+                                                          </td>
+                                                          <td>
+                                                            <v:label name="la3" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" />
+                                                          </td>
+                                                        </tr>
+                                                      </v:template>
+                                                    </v:template>
+                                                    <v:template name="maps_footer" type="simple">
+                                                      <tr>
+                                                        <td colspan="3" class="listing_col_action">
+                                                          <vm:ds-navigation data-set="maps" type="set" />
+                                                        </td>
+                                                      </tr>
+                                                    </v:template>
+                                                  </v:data-set>
+                                                  </tbody>
+                                                </table>
+                                                <v:button action="simple" name="cancel_new" value="Cancel">
+                                                  <v:on-post>
+                                                    <![CDATA[
+                                                      self.vc_redirect ('sec_auth_sponger_2.vspx');
+                                                    ]]>
+                                                  </v:on-post>
+                                                </v:button>
+                                                <v:button action="simple" name="save_new" value="Save">
+                                                  <v:on-post>
+                                                    <![CDATA[
+                                                      declare N int;
+                                                      self.gname.ufl_value := trim (self.gname.ufl_value);
+                                                      if (not length (self.gname.ufl_value))
+                                                      {
+                                                        self.vc_is_valid := 0;
+                                                        self.vc_error_message := 'Can not have empty Group URI';
+                                                        return 0;
+                                                      }
+                                                      delete from RDF_CARTRIDGES_ACL where RC_WEBID = self.gname.ufl_value;
+                                                      for (N := 0; N < length(params); N := N + 2)
+                                                      {
+                                                        if (params[N] like '%:cb_item%')
+                                                        {
+                                                          declare cid any;
+
+                                                          cid := (select RM_HOOK from SYS_RDF_MAPPERS where RM_ID = cast (params[N+1] as integer));
+                                                          insert into RDF_CARTRIDGES_ACL (RC_WEBID, RC_CART) values (self.gname.ufl_value, cid);
+                                                        }
+                                                      }
+                                                      commit work;
+                                                      self.vc_redirect ('sec_auth_sponger_2.vspx');
+                                                    ]]>
+                                                  </v:on-post>
+                                                </v:button>
+                                              </div>
+                                            </v:template>
+                                            <!-- END -->
+                                          </td>
+                                        </tr>
+                                      </table>
+                                    </td>
+                                  </tr>
                                 </table>
-			    <v:button action="simple" name="cancel_new" value="Cancel">
-				<v:on-post>
-                                    self.vc_redirect ('sec_auth_sponger_2.vspx');
-				</v:on-post>
-			    </v:button>
-			    <v:button action="simple" name="save_new" value="Save">
-				<v:on-post><![CDATA[
-				    declare N int;
-				    self.gname.ufl_value := trim (self.gname.ufl_value);
-				    if (not length (self.gname.ufl_value))
-				      {
-				        self.vc_is_valid := 0;
-					self.vc_error_message := 'Can not have empty Group URI';
-					return 0;
-				      }
-				    delete from RDF_CARTRIDGES_ACL where RC_WEBID = self.gname.ufl_value;
-                                    for (N := 0; N < length(params); N := N + 2)
-                                      {
-				         if (params[N] like '%:cb_item%')
-				           {		
-					     declare cid any;
-                                             cid := (select RM_HOOK from SYS_RDF_MAPPERS where RM_ID = cast (params[N+1] as integer));
-					     insert into RDF_CARTRIDGES_ACL (RC_WEBID, RC_CART) values (self.gname.ufl_value, cid);
-					   }
-                                      }
-				    commit work;
-                                    self.vc_redirect ('sec_auth_sponger_2.vspx');
-				    ]]></v:on-post>
-			    </v:button>
-			    </div>
-		        </v:template>
-			<!-- END -->
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-		   <!-- bottom of security layout -->
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-	<!-- end of bottom security layout -->
-    </v:form>
+                              </td>
+                            </tr>
+                          </table>
+                        <!-- bottom of security layout -->
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+        <!-- end of bottom security layout -->
+      </v:form>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>
-

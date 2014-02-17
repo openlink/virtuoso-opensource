@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2011 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -255,8 +255,15 @@ rl_query_init (dbe_table_t * quad_tb)
   int nth_key = 0;
   char txt[200];
   char pars[20];
-  if (rl_query_inited == quad_tb->tb_primary_key->key_id)
+  if (rl_query_inited == quad_tb->tb_primary_key->key_id && !rl_queries[0]->qr_to_recompile)
     return;
+  if (rl_queries[0] && rl_queries[0]->qr_to_recompile)
+    {
+      int inx;
+      for (inx = 0; NULL != rl_queries[inx] && inx < sizeof (rl_queries) / sizeof (void*); inx ++)
+	qr_free (rl_queries[inx]);
+      memset (&rl_queries[0], 0, sizeof (rl_queries)); 
+    }
   pars[0] = 0;
   nth_key = 0;
   DO_SET (dbe_key_t *, key, &quad_tb->tb_keys)
@@ -461,7 +468,7 @@ cu_rl_cols (cucurbit_t * cu, caddr_t g_iid)
       aq_request  (aq, is_del ? aq_rl_del_key_func : aq_rl_key_func, list (2, box_copy ((caddr_t)clrg), box_num (nth_key++)));
   }
   END_DO_SET ();
-  cu_rl_graph_words (cu, g_iid);
+  /*cu_rl_graph_words (cu, g_iid);*/
   IO_SECT (inst);
   aq->aq_wait_qi = qi;
   aq_wait_all (aq, &err1);
@@ -535,7 +542,7 @@ l_make_ro_disp (cucurbit_t * cu, caddr_t * args, value_state_t * vs)
       if (DV_GEO == cdtp)
 	{
 	  caddr_t err = NULL;
-	  content = box_to_any (content, &err);
+	  content = box_to_any_1 (content, &err, NULL, DKS_TO_DC);
 	  allocd_content = content;
 	  is_text = 2;
 	}
@@ -574,7 +581,7 @@ l_make_ro_disp (cucurbit_t * cu, caddr_t * args, value_state_t * vs)
       dk_free_box (trid);
       return NULL;
     }
-  cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, box, ap_box_num (&ap, dt_lang), l_null, NULL, NULL));
+  cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, box, ap_box_num (&ap, dt_lang), l_null, (caddr_t) 1, NULL));
   return NULL;
 }
 
@@ -587,7 +594,7 @@ l_iri_id_disp (cucurbit_t * cu, caddr_t name, value_state_t * vs)
   boxint pref_id_no, iri_id_no;
   caddr_t prefix, local;
   dtp_t dtp = DV_TYPE_OF (name);
-  caddr_t box_to_delete = NULL;
+  caddr_t box_to_delete = NULL, name_to_delete = NULL;
   if (!cf)
     {
       cf = cu_func ("L_I_LOOK", 1);
@@ -639,11 +646,25 @@ l_iri_id_disp (cucurbit_t * cu, caddr_t name, value_state_t * vs)
       cu_set_value (cu, vs, box_iri_id (acc));
       return NULL;
     }
+  /* dynamic local  */
+  if (uriqa_dynamic_local)
+    {
+      int ofs = uriqa_iri_is_local (NULL, name);
+      if (0 != ofs)
+        {
+          int name_box_len = box_length (name);
+/*  0123456 */
+/* "local:" */
+          caddr_t localized_name = dk_alloc_box (6 + name_box_len - ofs, DV_STRING);
+          memcpy (localized_name, "local:", 6);
+          memcpy (localized_name + 6, name + ofs, name_box_len - ofs);
+          name_to_delete = name = localized_name;
+        }
+    }
   if (!iri_split (name, &prefix, &local))
     goto return_error;		/* see below */
-  /* dynamic local  */
-  prefix = uriqa_dynamic_local_replace (prefix, CU_CLI (cu));
   dk_free_box (box_to_delete);
+  dk_free_box (name_to_delete);
   pref_id_no = nic_name_id (iri_prefix_cache, prefix);
   if (!pref_id_no)
     {
@@ -670,6 +691,7 @@ l_iri_id_disp (cucurbit_t * cu, caddr_t name, value_state_t * vs)
   return NULL;
 
 return_error:
+      dk_free_box (name_to_delete);
   dk_free_box (box_to_delete);
   return list (2, NULL, box_num (1));
 }
@@ -738,7 +760,7 @@ bif_dc_batch_sz (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 void
 bif_rld_init ()
 {
-  bif_define_typed ("dc_batch_sz", bif_dc_batch_sz, &bt_integer);
+  bif_define_ex ("dc_batch_sz", bif_dc_batch_sz, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("rl_dp_ids", bif_rl_dp_ids);
   bif_define ("__rl_set_pref_id", bif_rl_set_pref_id);
   bif_set_vectored (bif_rl_set_pref_id, (bif_vec_t) bif_rl_set_pref_id);

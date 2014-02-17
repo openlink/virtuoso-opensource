@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -53,7 +53,7 @@ sched_do_round_1 (const char * text)
 {
   caddr_t err = NULL;
   query_t *qr;
-  client_connection_t * save_cli = THR_ATTR (THREAD_CURRENT_THREAD, TA_IMMEDIATE_CLIENT);
+  client_connection_t * save_cli = THR_ATTR (THREAD_CURRENT_THREAD, TA_IMMEDIATE_CLIENT), *old_cli = sqlc_client ();
   caddr_t org_qual = sched_cli->cli_qualifier; /* store the original qualifier */
 
   if (cpt_is_global_lock (NULL))
@@ -62,6 +62,7 @@ sched_do_round_1 (const char * text)
     sched_cli->cli_user = sec_id_to_user (U_ID_DBA);
   sched_cli->cli_qualifier = box_string (org_qual);
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_IMMEDIATE_CLIENT, sched_cli);
+  sqlc_set_client (sched_cli);
   local_start_trx (sched_cli);
   cli_set_start_times (sched_cli);
   qr = sql_compile (text, sched_cli, &err, SQLC_DEFAULT);
@@ -76,6 +77,7 @@ sched_do_round_1 (const char * text)
     }
   local_commit_end_trx (sched_cli);
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_IMMEDIATE_CLIENT, save_cli);
+  sqlc_set_client (old_cli);
   /* restore the original qualifier */
   dk_free_box (sched_cli->cli_qualifier);
   sched_cli->cli_qualifier = org_qual;

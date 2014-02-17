@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -163,7 +163,7 @@ sqlo_find_inx_intersect (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, flo
     {
       if (k1 != tb->tb_primary_key && !k1->key_no_pk_ref)
 	{
-	  dk_set_t group = NULL, eq_cols = NULL;;
+	  dk_set_t group = NULL, eq_cols = NULL;
 	  n_eqs = sqlo_leading_eqs (k1, col_preds);
 	  if (!n_eqs || n_eqs == k1->key_n_significant)
 	    goto next;
@@ -218,6 +218,8 @@ int
 sqlo_is_col_eq (op_table_t * ot, df_elt_t * col, df_elt_t * val)
 {
   dk_set_t *place;
+  if (col == val)
+    return 1;
   if (!ot->ot_eq_hash)
     return 0;
   place = (dk_set_t *) id_hash_get (ot->ot_eq_hash, (caddr_t) &col->dfe_tree);
@@ -302,7 +304,7 @@ dfe_col_placed_eq (sqlo_t *so, op_table_t * ot, df_elt_t * col_dfe)
 	return c;
       if (DFE_COLUMN == c->dfe_type)
 	{
-	  df_elt_t * def = dfe_col_def_dfe (so, c);;
+	  df_elt_t * def = dfe_col_def_dfe (so, c);
 	  if (def)
 	    return c;
 	}

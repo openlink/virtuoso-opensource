@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2014 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -93,8 +93,6 @@ fi
 
 version_init() 
 {
-  if [ $VOS -eq 1 ]
-  then
       if [ -f vad_version ]
       then
       VERSION=`cat vad_version`
@@ -102,15 +100,6 @@ version_init()
         LOG "The vad_version does not exist, please verify your checkout"    
     exit 1
       fi
-  else  
-      rm -f version.tmp
-      for i in `find . -name 'Entries' | grep -v "vad/"`; do
-      cat $i | grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
-      done
-      VERSION=`cat version.tmp | awk ' BEGIN { cnt=1 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
-      rm -f version.tmp
-      echo "$VERSION" > vad_version
-  fi
 }
 
 do_command_safe () {
@@ -260,7 +249,7 @@ sticker_init() {
   echo "  <name package=\"$VAD_NAME\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"$VAD_DESC\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2013 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2014 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER

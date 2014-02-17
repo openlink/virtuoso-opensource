@@ -1,10 +1,8 @@
 --
---  $Id$
---
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -97,7 +95,6 @@ create function "DynaRes__path" (
 }
 ;
 
-
 create function "DynaRes__acl" (
   in detcol_id any)
 {
@@ -110,7 +107,6 @@ create function "DynaRes__acl" (
   return acl;
 }
 ;
-
 
 --| This matches DAV_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar, in a_pwd varchar, in a_uid integer := null)
 --| The difference is that the DET function should not check whether the pair of name and password is valid; the auth_uid is not a null already.
@@ -136,20 +132,52 @@ create function "DynaRes_DAV_AUTHENTICATE" (
 
   set isolation='serializable';
 
+  if (a_uid >= 0)
+  {
   if (DAV_CHECK_PERM (pperms, req, a_uid, http_nogroup_gid(), pgid, puid))
     return a_uid;
 
   pacl := "DynaRes__acl" (id[1]);
   if (not isnull (pacl) and WS.WS.ACL_IS_GRANTED (pacl, a_uid, DAV_REQ_CHARS_TO_BITMASK (req)))
     return a_uid;
-
-  if (DAV_AUTHENTICATE_SSL_CONDITION ())
-  {
-    declare _perms, a_gid any;
-
-    if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms))
-      return a_uid;
   }
+
+    declare _perms, a_gid any;
+  declare webid, serviceId varchar;
+
+  if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms, webid))
+      return a_uid;
+
+  if (DAV_AUTHENTICATE_WITH_SESSION_ID (id, what, null, req, a_uid, a_gid, _perms, serviceId))
+    return a_uid;
+
+  -- Both DAV_AUTHENTICATE_SSL and DAV_AUTHENTICATE_WITH_SESSION_ID only check IRI ACLs
+  -- However, service ids may map to ODS user accounts. This is what we check here
+  a_uid := -1;
+
+  -- A session ID might be connected to a normal user account, that is what we check first
+  for (select top 1 U_ID from DB.DBA.SYS_USERS where U_NAME=serviceId and U_ACCOUNT_DISABLED=0) do
+    a_uid := U_ID;
+
+  if (a_uid = -1 and exists (select 1 from DB.DBA.SYS_KEYS where KEY_NAME='DB.DBA.WA_USER_OL_ACCOUNTS')) -- this check is only valid if table is accessed in a separate SP which is not precompiled
+  {
+    if (not DAV_GET_UID_BY_SERVICE_ID (serviceId, a_uid, a_gid))
+      a_uid := -1;
+  }
+
+  -- If we were able to map the session or WebID to an existing user account, then check its permissions on the resource
+  if (a_uid > 0)
+  {
+    if (DAV_CHECK_PERM (pperms, req, a_uid, a_gid, pgid, puid))
+    {
+      return a_uid;
+    }
+    if (WS.WS.ACL_IS_GRANTED (pacl, a_uid, DAV_REQ_CHARS_TO_BITMASK (req)))
+    {
+      return a_uid;
+    }
+  }
+
   return -13;
 
 _exit:
@@ -180,14 +208,21 @@ create function "DynaRes_DAV_AUTHENTICATE_HTTP" (
   declare pacl any;
   declare u_password, pperms varchar;
   declare allow_anon integer;
+
+  -- used for error reporting in case of NetID or OAuth login
+  declare webid, serviceId varchar;
   whenever not found goto _exit;
+
+  webid := null;
+  serviceId := null;
+
+  what := upper (what);
+  if ((what <> 'R') and (what <> 'C'))
+    return -14;
 
   select DR_PERMS, DR_OWNER_UID, DR_OWNER_GID into pperms, puid, pgid from WS.WS.DYNA_RES where DR_DETCOL_ID = id[1] and DR_RES_ID = id[3];
   if (pperms is null)
     return -1;
-
-  if ((what <> 'R') and (what <> 'C'))
-    return -14;
 
   allow_anon := WS.WS.PERM_COMP (substring (cast (pperms as varchar), 7, 3), req);
   if (a_uid is null)
@@ -197,8 +232,52 @@ create function "DynaRes_DAV_AUTHENTICATE_HTTP" (
 
     if (rc < 0)
     {
-      if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms))
+      if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms, webid))
         return a_uid;
+
+      if (DAV_AUTHENTICATE_WITH_SESSION_ID (id, what, null, req, a_uid, a_gid, _perms, serviceId))
+      {
+        http_rewrite ();
+        return a_uid;
+      }
+
+      -- Normalize the service variables for error handling in VAL
+      if (not webid is null and serviceId is null)
+      {
+        serviceId := webid;
+      }
+
+      a_uid := -1;
+
+      -- A session ID might be connected to a normal user account, that is what we check first
+      for (select top 1 U_ID from DB.DBA.SYS_USERS where U_NAME=serviceId and U_ACCOUNT_DISABLED=0) do
+        a_uid := U_ID;
+
+      if (a_uid = -1 and exists (select 1 from DB.DBA.SYS_KEYS where KEY_NAME='DB.DBA.WA_USER_OL_ACCOUNTS')) -- this check is only valid if table is accessed in a separate SP which is not precompiled
+      {
+        if (not DAV_GET_UID_BY_SERVICE_ID (serviceId, a_uid, a_gid))
+          a_uid := -1;
+      }
+
+      -- If we were able to map the session or WebID to an existing user account, then check its permissions on the resource
+      if (a_uid > 0)
+      {
+        if (DAV_CHECK_PERM (pperms, req, a_uid, a_gid, pgid, puid))
+        {
+          return a_uid;
+        }
+        if (WS.WS.ACL_IS_GRANTED (pacl, a_uid, DAV_REQ_CHARS_TO_BITMASK (req)))
+        {
+        return a_uid;
+        }
+      }
+
+      -- If the user already provided some kind of credentials we return a 403 code
+      if (not serviceId is null)
+      {
+        connection_set ('deniedServiceId', serviceId);
+        rc := -13;
+      }
 
       return rc;
     }
@@ -210,9 +289,19 @@ create function "DynaRes_DAV_AUTHENTICATE_HTTP" (
 
     if (a_uid = 1) -- Anonymous FTP
     {
-      a_uid := 0;
-      a_gid := 0;
+      a_uid := http_nobody_uid ();
+      a_gid := http_nogroup_gid ();
     }
+    else if (a_uid = http_dav_uid())
+    {
+      return a_uid;
+    }
+  }
+  else
+  {
+    a_uid := http_nobody_uid ();
+    a_gid := http_nogroup_gid ();
+    _perms := '110110110--';
   }
   if (DAV_CHECK_PERM (pperms, req, a_uid, a_gid, pgid, puid))
     return a_uid;
@@ -227,7 +316,6 @@ _exit:
   return -1;
 }
 ;
-
 
 --| This matches DAV_GET_PARENT (in id any, in st char(1), in path varchar) returns any
 create function "DynaRes_DAV_GET_PARENT" (
@@ -365,16 +453,45 @@ create function "DynaRes_DAV_PROP_SET" (
   in auth_uid integer) returns any
 {
   -- dbg_obj_princ ('DynaRes_DAV_PROP_SET (', id, what, propname, propvalue, overwrite, auth_uid, ')');
-  if (('R' = what) and (propname = 'virt:aci_meta_n3'))
+  if ('R' = what)
   {
-    if (length (id) = 5)
-      return 1;
+    if (':getcontenttype' = propname)
+    {
+      update WS.WS.DYNA_RES set DR_MIME = propvalue where DR_RES_ID = id[3];
+      return 0;
+    }
+    if (':virtowneruid' = propname)
+    {
+      if (not exists (select top 1 1 from WS.WS.SYS_DAV_USER where U_ID = propvalue))
+        propvalue := 0;
 
-    update WS.WS.DYNA_RES
-       set DR_ACL = propvalue
-     where DR_RES_ID = id[3];
+      update WS.WS.DYNA_RES set DR_OWNER_UID = propvalue where DR_RES_ID = id[3];
+      return 0;
+    }
+    if (':virtownergid' = propname)
+    {
+      if (not exists (select top 1 1 from WS.WS.SYS_DAV_GROUP where G_ID = propvalue))
+        propvalue := 0;
 
-    return 1;
+      update WS.WS.DYNA_RES set DR_OWNER_GID = propvalue where DR_RES_ID = id[3];
+      return 0;
+    }
+    if (':virtpermissions' = propname)
+    {
+      if (regexp_match (DAV_REGEXP_PATTERN_FOR_PERM (), propvalue) is null)
+        return -17;
+
+      update WS.WS.DYNA_RES set DR_PERMS = propvalue where DR_RES_ID = id[3];
+      return 0;
+    }
+    if (propname = 'virt:aci_meta_n3')
+    {
+      if (length (id) = 5)
+        return 0;
+
+      update WS.WS.DYNA_RES set DR_ACL = propvalue where DR_RES_ID = id[3];
+      return 0;
+    }
   }
   if (propname[0] = 58)
     return -16;
@@ -391,12 +508,28 @@ create function "DynaRes_DAV_PROP_GET" (
   in auth_uid integer)
 {
   -- dbg_obj_princ ('DynaRes_DAV_PROP_GET (', id, what, propname, auth_uid, ')');
-  if (('R' = what) and ('virt:aci_meta_n3' = propname))
+  if ('R' = what)
   {
-    if (length (id) = 5)
-      return null;
-
+    if (':getcontenttype' = propname)
+    {
+      return (select DR_MIME from WS.WS.DYNA_RES where DR_RES_ID = id[3]);
+    }
+    if (':virtowneruid' = propname)
+    {
+      return (select DR_OWNER_UID from WS.WS.DYNA_RES where DR_RES_ID = id[3]);
+    }
+    if (':virtownergid' = propname)
+    {
+      return (select DR_OWNER_GID from WS.WS.DYNA_RES where DR_RES_ID = id[3]);
+    }
+    if (':virtpermissions' = propname)
+    {
+      return (select DR_PERMS from WS.WS.DYNA_RES where DR_RES_ID = id[3]);
+    }
+    if ('virt:aci_meta_n3' = propname)
+  {
     return (select DR_ACL from WS.WS.DYNA_RES where DR_RES_ID = id[3]);
+  }
   }
   return -11;
 }
@@ -494,35 +627,34 @@ create function "DynaRes_DAV_DIR_LIST" (
 }
 ;
 
-
 create procedure "DynaRes_DAV_FC_PRED_METAS" (
   inout pred_metas any)
 {
   pred_metas := vector (
-    'RES_ID',    vector ('DYNA_RES'  , 0, 'any'  , 'vector (UNAME''DynaRes'', DR_DETCOL_ID, null, DR_RES_ID)'  ),
+    'RES_ID',           vector ('DYNA_RES'  , 0, 'any'      , 'vector (UNAME''DynaRes'', DR_DETCOL_ID, null, DR_RES_ID)'  ),
     'RES_ID_SERIALIZED',vector ('DYNA_RES'  , 0, 'varchar'  , 'serialize (vector (UNAME''DynaRes'', DR_DETCOL_ID, null, DR_RES_ID))' ),
-    'RES_NAME',    vector ('DYNA_RES'    , 0, 'varchar'  , 'DR_NAME'  ),
-    'RES_FULL_PATH',  vector ('DYNA_RES'  , 0, 'varchar'  , 'concat (DAV_CONCAT_PATH (_param.detcolpath, null), DR_NAME)'  ),
-    'RES_TYPE',    vector ('DYNA_RES'  , 0, 'varchar'  , 'DR_MIME'  ),
-    'RES_OWNER_ID',  vector ('DYNA_RES'  , 0, 'integer'  , 'DR_OWNER_UID'  ),
-    'RES_OWNER_NAME',  vector ('DYNA_RES'  , 0, 'varchar'  , '(select U_NAME from DB.DBA.SYS_USERS where U_ID=DR_OWNER_UID)'  ),
-    'RES_GROUP_ID',  vector ('DYNA_RES'  , 0, 'integer'  , 'DR_OWNER_GID'  ),
-    'RES_GROUP_NAME',  vector ('DYNA_RES'  , 0, 'varchar'  , '(select U_NAME from DB.DBA.SYS_USERS where U_ID=DR_OWNER_GID)'  ),
+    'RES_NAME',         vector ('DYNA_RES'  , 0, 'varchar'  , 'DR_NAME'  ),
+    'RES_FULL_PATH',    vector ('DYNA_RES'  , 0, 'varchar'  , 'concat (DAV_CONCAT_PATH (_param.detcolpath, null), DR_NAME)'  ),
+    'RES_TYPE',         vector ('DYNA_RES'  , 0, 'varchar'  , 'DR_MIME'  ),
+    'RES_OWNER_ID',     vector ('DYNA_RES'  , 0, 'integer'  , 'DR_OWNER_UID'  ),
+    'RES_OWNER_NAME',   vector ('DYNA_RES'  , 0, 'varchar'  , '(select U_NAME from DB.DBA.SYS_USERS where U_ID=DR_OWNER_UID)'  ),
+    'RES_GROUP_ID',     vector ('DYNA_RES'  , 0, 'integer'  , 'DR_OWNER_GID'  ),
+    'RES_GROUP_NAME',   vector ('DYNA_RES'  , 0, 'varchar'  , '(select U_NAME from DB.DBA.SYS_USERS where U_ID=DR_OWNER_GID)'  ),
     'RES_COL_FULL_PATH',vector ('DYNA_RES'  , 0, 'varchar'  , '(_param.detcolpath'  ),
-    'RES_COL_NAME',  vector ('DYNA_RES'  , 0, 'varchar'  , 'null'  ),
-    -- 'RES_COL_ID',  vector ('SYS_DAV_RES'  , 0, 'varchar'  , 'RES_COL'  ),
-    'RES_CR_TIME',  vector ('DYNA_RES'  , 0, 'datetime' , 'DR_CREATED_DT'  ),
-    'RES_MOD_TIME',  vector ('DYNA_RES'  , 0, 'datetime' , 'DR_MODIFIED_DT'  ),
-    'RES_PERMS',  vector ('DYNA_RES'  , 0, 'varchar'  , 'DR_PERMS'  ),
-    'RES_CONTENT',  vector ('DYNA_RES'  , 0, 'text'  , 'coalesce (DR_CONTENT, ''(dynamic)'')'  ),
-    'PROP_NAME',  vector ('DYNA_RES'  , 0, 'varchar'  , '(''Content'')'  ),
-    'PROP_VALUE',  vector ('DYNA_RES'  , 1, 'text'  , 'coalesce (DR_CONTENT, ''(dynamic)'')'  ),
-    'RES_TAGS',    vector ('DYNA_RES'  , 0, 'varchar'  , '('''')'  ), -- 'varchar', not 'text-tag' because there's no free-text on union
+    'RES_COL_NAME',     vector ('DYNA_RES'  , 0, 'varchar'  , 'null'  ),
+     -- 'RES_COL_ID',   vector ('SYS_DAV_RES'  , 0, 'varchar'  , 'RES_COL'  ),
+    'RES_CR_TIME',      vector ('DYNA_RES'  , 0, 'datetime' , 'DR_CREATED_DT'  ),
+    'RES_MOD_TIME',     vector ('DYNA_RES'  , 0, 'datetime' , 'DR_MODIFIED_DT'  ),
+    'RES_PERMS',        vector ('DYNA_RES'  , 0, 'varchar'  , 'DR_PERMS'  ),
+    'RES_CONTENT',      vector ('DYNA_RES'  , 0, 'text'     , 'coalesce (DR_CONTENT, ''(dynamic)'')'  ),
+    'PROP_NAME',        vector ('DYNA_RES'  , 0, 'varchar'  , '(''Content'')'  ),
+    'PROP_VALUE',       vector ('DYNA_RES'  , 1, 'text'     , 'coalesce (DR_CONTENT, ''(dynamic)'')'  ),
+    'RES_TAGS',         vector ('DYNA_RES'  , 0, 'varchar'  , '('''')'  ), -- 'varchar', not 'text-tag' because there's no free-text on union
     'RES_PUBLIC_TAGS',  vector ('DYNA_RES'  , 0, 'varchar'  , '('''')'  ),
-    'RES_PRIVATE_TAGS',  vector ('DYNA_RES'  , 0, 'varchar'  , '('''')'  ),
-    'RDF_PROP',    vector ('DYNA_RES'  , 1, 'varchar'  , NULL  ),
-    'RDF_VALUE',  vector ('DYNA_RES'  , 2, 'XML'  , NULL  ),
-    'RDF_OBJ_VALUE',  vector ('DYNA_RES'  , 3, 'XML'  , NULL  )
+    'RES_PRIVATE_TAGS', vector ('DYNA_RES'  , 0, 'varchar'  , '('''')'  ),
+    'RDF_PROP',         vector ('DYNA_RES'  , 1, 'varchar'  , NULL  ),
+    'RDF_VALUE',        vector ('DYNA_RES'  , 2, 'XML'  , NULL  ),
+    'RDF_OBJ_VALUE',    vector ('DYNA_RES'  , 3, 'XML'  , NULL  )
     );
 }
 ;
@@ -531,45 +663,23 @@ create procedure "DynaRes_DAV_FC_TABLE_METAS" (
   inout table_metas any)
 {
   table_metas := vector (
-  'DYNA_RES'   , vector (  '\n  inner join WS.WS.DYNA_RES as ^{alias}^ on ((^{alias}^.DR_RES_ID = _top.DR_RES_ID)^{andpredicates}^)'  ,
-            'DR_CONTENT'  , 'DR_CONTENT'  , '[__quiet] /' )
---  'SYS_BLOG_OWNERS' , vector (  '\n  left outer join BLOG.DBA.SYS_BLOG_OWNERS as ^{alias}^ on ((^{alias}^.BI_BLOG_ID = _top.B_BLOG_ID)^{andpredicates}^)'  ,
---          '\n  exists (select 1 from BLOG.DBA.SYS_BLOG_OWNERS as ^{alias}^ where (^{alias}^.BI_BLOG_ID = _top.B_BLOG_ID)^{andpredicates}^)'  ,
---            NULL    , NULL    , NULL  )
---  'SYS_DAV_COL'  , vector (  '\n  inner join WS.WS.SYS_DAV_COL as ^{alias}^ on ((^{alias}^.COL_ID = _param.detcol)^{andpredicates}^)'  ,
---          '\n  exists (select 1 from WS.WS.SYS_DAV_COL as ^{alias}^ where (^{alias}^.COL_ID = _param.detcol)^{andpredicates}^)'  ,
---            NULL    , NULL    , NULL  ),
---  'SYS_DAV_GROUP'  , vector (  '\n  left outer join WS.WS.SYS_DAV_GROUP as ^{alias}^ on ((^{alias}^.G_ID = _top.RES_GROUP)^{andpredicates}^)'  ,
---          '\n  exists (select 1 from WS.WS.SYS_DAV_GROUP as ^{alias}^ where (^{alias}^.G_ID = _top.RES_GROUP)^{andpredicates}^)'  ,
---            NULL    , NULL    , NULL  )--,
---  'SYS_DAV_PROP'  , vector (  '\n  inner join WS.WS.SYS_DAV_PROP as ^{alias}^ on ((^{alias}^.PROP_PARENT_ID = _top.RES_ID) and (^{alias}^.PROP_TYPE = ''R'')^{andpredicates}^)'  ,
---          '\n  exists (select 1 from WS.WS.SYS_DAV_PROP as ^{alias}^ where (^{alias}^.PROP_PARENT_ID = _top.RES_ID) and (^{alias}^.PROP_TYPE = ''R'')^{andpredicates}^)'  ,
---            'PROP_VALUE'  , 'PROP_VALUE'  , '[__quiet __davprop xmlns:virt="virt"] .'  ),
---  'public-tags'  , vector (  '\n  inner join WS.WS.SYS_DAV_TAG as ^{alias}^ on ((^{alias}^.DT_RES_ID = _top.RES_ID) and (^{alias}^.DT_U_ID = http_nobody_uid())^{andpredicates}^)'  ,
---          '\n  exists (select 1 from WS.WS.SYS_DAV_TAG as ^{alias}^ where (^{alias}^.DT_RES_ID = _top.RES_ID) and (^{alias}^.DT_U_ID = http_nobody_uid())^{andpredicates}^)'  ,
---            'DT_TAGS'  , 'DT_TAGS'  , NULL  ),
---  'private-tags'  , vector (  '\n  inner join WS.WS.SYS_DAV_TAG as ^{alias}^ on ((^{alias}^.DT_RES_ID = _top.RES_ID) and (^{alias}^.DT_U_ID = ^{uid}^)^{andpredicates}^)'  ,
---          '\n  exists (select 1 from WS.WS.SYS_DAV_TAG as ^{alias}^ where (^{alias}^.DT_RES_ID = _top.RES_ID) and (^{alias}^.DT_U_ID = ^{uid}^)^{andpredicates}^)'  ,
---            'DT_TAGS'  , 'DT_TAGS'  , NULL  ),
---  'all-tags'    , vector (  '\n  inner join (select * from WS.WS.SYS_DAV_TAG ^{alias}^_pub where ^{alias}^_pub.DT_U_ID = http_nobody_uid() union select * from WS.WS.SYS_DAV_TAG ^{alias}^_prv where ^{alias}^_prv.DT_U_ID = ^{uid}^) as ^{alias}^ on ((^{alias}^.DT_RES_ID = _top.RES_ID)^{andpredicates}^)'  ,
---          '\n  exists (select 1 from (select * from WS.WS.SYS_DAV_TAG ^{alias}^_pub where ^{alias}^_pub.DT_U_ID = http_nobody_uid() union select * from WS.WS.SYS_DAV_TAG ^{alias}^_prv where ^{alias}^_prv.DT_U_ID = ^{uid}^) as ^{alias}^ where (^{alias}^.DT_RES_ID = _top.RES_ID)^{andpredicates}^)'  ,
---            'DT_TAGS'  , 'DT_TAGS'  , NULL  )
+    'DYNA_RES', vector ('\n  inner join WS.WS.DYNA_RES as ^{alias}^ on ((^{alias}^.DR_RES_ID = _top.DR_RES_ID)^{andpredicates}^)', 'DR_CONTENT'  , 'DR_CONTENT'  , '[__quiet] /' )
   );
 }
 ;
-
 
 -- This prints the fragment that starts after 'FROM WS.WS.DYNA_RES' and contains the rest of FROM and whole 'WHERE'
 create function "DynaRes_DAV_FC_PRINT_WHERE" (
   inout filter any,
   in param_uid integer) returns varchar
 {
+  -- dbg_obj_princ ('DynaRes_DAV_FC_PRINT_WHERE (', filter, param_uid, ')');
   declare pred_metas, cmp_metas, table_metas any;
   declare used_tables any;
-  -- dbg_obj_princ ('DynaRes_POST_DAV_FC_PRINT_WHERE (', filter, param_uid, ')');
-  "DynaRes_POST_DAV_FC_PRED_METAS" (pred_metas);
+
+  "DynaRes_DAV_FC_PRED_METAS" (pred_metas);
   DAV_FC_CMP_METAS (cmp_metas);
-  "DynaRes_POST_DAV_FC_TABLE_METAS" (table_metas);
+  "DynaRes_DAV_FC_TABLE_METAS" (table_metas);
   used_tables := vector (
     'DYNA_RES', vector ('DYNA_RES', '_top', null, vector (), vector (), vector ())
     );
@@ -594,13 +704,14 @@ create function "DynaRes_DAV_DIR_FILTER" (
 
   vectorbld_init (res);
   cond_list := get_keyword ('', compilation);
-  condtext := "DynaRes_POST_DAV_FC_PRINT_WHERE" (cond_list, auth_uid);
+  condtext := "DynaRes_DAV_FC_PRINT_WHERE" (cond_list, auth_uid);
   compilation := vector_concat (compilation, vector (cond_key, condtext));
   execstate := '00000';
   qry_text :=
     ' select DAV_CONCAT_PATH (?, _top.DR_NAME), ''R'', _top.DR_LAST_LENGTH, coalesce (_top.DR_MODIFIED_DT, now ()), vector (UNAME''DynaRes'', _top.DR_DETCOL_ID, null, _top.DR_RES_ID), _top.DR_PERMS, _top.DR_OWNER_GID, _top.DR_OWNER_UID, _top.DR_CREATED_DT, _top.DR_MIME, _top.DR_NAME' ||
     '   from WS.WS.DYNA_RES as _top ' ||
-    '  where _top.DR_DETCOL_ID = ? ' || condtext;
+    condtext ||
+    '    and _top.DR_DETCOL_ID = ? ';
   exec (qry_text, execstate, execmessage, vector (detcol_path, detcol_id), 100000000, execmeta, execrows);
   if ('00000' <> execstate)
     signal (execstate, execmessage || ' in ' || qry_text);
@@ -610,7 +721,8 @@ create function "DynaRes_DAV_DIR_FILTER" (
   qry_text :=
     ' select DAV_CONCAT_PATH (?, _top.DR_NAME, '',acl''), ''R'', _top.DR_LAST_LENGTH, coalesce (_top.DR_MODIFIED_DT, now ()), vector (UNAME''DynaRes'', _top.DR_DETCOL_ID, null, _top.DR_RES_ID, 1), _top.DR_PERMS, _top.DR_OWNER_GID, _top.DR_OWNER_UID, _top.DR_CREATED_DT, ''text/n3'', concat (_top.DR_NAME, '',acl'')' ||
     '   from WS.WS.DYNA_RES as _top ' ||
-    '  where _top.DR_ACL is not null and _top.DR_DETCOL_ID = ? ' || condtext;
+    condtext ||
+    '    and _top.DR_ACL is not null and _top.DR_DETCOL_ID = ? ';
   exec (qry_text, execstate, execmessage, vector (detcol_path, detcol_id), 100000000, execmeta, execrows);
   if ('00000' <> execstate)
     signal (execstate, execmessage || ' in ' || qry_text);
@@ -889,7 +1001,6 @@ create function "DynaRes_DAV_LOCK" (
 }
 ;
 
-
 --| There's no API function to unlock for a while (do we need such?) The "UNLOCK" DAV method checks that all parameters are valid but does not check for existing locks.
 create function "DynaRes_DAV_UNLOCK" (
   in id any,
@@ -913,7 +1024,6 @@ create function "DynaRes_DAV_IS_LOCKED" (
   return 0;
 }
 ;
-
 
 --| The caller does not check if id is valid.
 --| This returns -1 if id is not valid, list of tuples (LOCK_TYPE, LOCK_SCOPE, LOCK_TOKEN, LOCK_TIMEOUT, LOCK_OWNER, LOCK_OWNER_INFO) otherwise.
@@ -989,7 +1099,6 @@ where_clause_complete:
   return from_clause;
 }
 ;
-
 
 create procedure "DynaRes_CF_LIST_PROP_DISTVALS" (
   in detcol_id integer,

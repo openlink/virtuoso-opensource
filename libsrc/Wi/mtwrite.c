@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -167,16 +167,31 @@ iq_sync_disks (io_queue_t * iq)
 #endif
 }
 
-void
+
+dp_addr_t 
+buf_nn_phys_dp (buffer_desc_t * buf)
+{
+  if (!buf)
+    return DP_MAX;
+  return buf->bd_physical_page;
+}
+
+
+dp_addr_t
 iq_schedule (buffer_desc_t ** bufs, int n)
 {
+  dp_addr_t max_dp = 0;
   int inx;
   int is_reads = 0;
-  buf_sort (bufs, n, (sort_key_func_t) bd_phys_page_key);
+  buf_sort (bufs, n, (sort_key_func_t)buf_nn_phys_dp );
   for (inx = 0; inx < n; inx++)
     {
+      if (!bufs[inx])
+	continue;
       if (BD_SYNC == bufs[inx]->bd_buffer)
 	continue;
+      if (bufs[inx]->bd_physical_page > max_dp)
+	max_dp = bufs[inx]->bd_physical_page;
       if (bufs[inx]->bd_iq)
 	GPF_T1 ("buffer added to iq already has a bd_iq");
       bufs[inx]->bd_iq = db_io_queue (bufs[inx]->bd_storage, bufs[inx]->bd_physical_page);
@@ -232,9 +247,12 @@ iq_schedule (buffer_desc_t ** bufs, int n)
 	}
       LEAVE_IOQ (iq);
       if (n_added && !is_reads)
-	idbg_printf (("IQ %s %d %s added, %s.\n", IQ_NAME (iq),
-		      n_added, is_reads ? "reads" : "writes",
-		      was_empty ? "starting" : "running"));
+	{
+	  iq->iq_n_writes += n_added;
+	  idbg_printf (("IQ %s %d %s added, %s.\n", IQ_NAME (iq),
+			n_added, is_reads ? "reads" : "writes",
+			was_empty ? "starting" : "running"));
+	}
       if (n_added && was_empty)
 	semaphore_leave (iq->iq_sem);
 
@@ -247,6 +265,7 @@ iq_schedule (buffer_desc_t ** bufs, int n)
       else
 	mti_writes_queued += n;
     }
+  return max_dp;
 }
 
 
@@ -1018,6 +1037,219 @@ mt_write_dirty (buffer_pool_t * bp, int age_limit, int phys_eq_log)
     bp->bp_sort_tmp = bufs;
   else
     dk_free (local_bufs, n);
+}
+
+
+
+
+
+int c_flush_batch = 128 * 1024; /* 1GB worth of buffers */
+
+#define BUFS_BATCH 10000
+
+
+dp_addr_t
+dbs_schedule_write (dbe_storage_t * dbs, buffer_desc_t ** bufs, int n_bufs)
+{
+  /* Locate, sort and write dirty buffers. */
+  dp_addr_t max_dp;
+  buffer_desc_t *buf;
+  int inx, fill = 0, binx;
+  size_t n = 0;
+  DO_BOX (buffer_pool_t *, bp, binx, wi_inst.wi_bps)
+    {
+      IN_BP (bp);
+      for (inx = 0; inx < n_bufs; inx++)
+	{
+	  buffer_desc_t * buf = bufs[inx];
+	  it_map_t * buf_itm;
+	  if (buf < bp->bp_bufs || buf > &bp->bp_bufs[bp->bp_n_bufs - 1])
+	    continue;
+      if (wi_inst.wi_checkpoint_atomic && !buf->bd_is_dirty)
+	continue;
+      if (dbs != buf->bd_storage)
+	{
+	  bufs[inx] = NULL;
+	  continue;
+	}
+      if (bp_buf_enter (buf, &buf_itm))
+	{
+	  if (!buf->bd_is_write
+	      && !buf->bd_readers
+	      && !buf->bd_write_waiting
+	      && !buf->bd_iq
+	      && buf->bd_is_dirty
+	      )
+	    {
+	      if (buf->bd_being_read)
+		GPF_T1 ("planning write of buffer being read");
+	      buf->bd_readers++;
+	    }
+	  else
+	    bufs[inx] = NULL;
+	  mutex_leave (&buf_itm->itm_mtx);
+	}
+      else
+	bufs[inx] = NULL;
+	}
+      LEAVE_BP (bp);
+    }
+  END_DO_BOX;
+  max_dp = iq_schedule (bufs, n_bufs);
+  return max_dp;
+}
+
+long tc_n_flush;
+long tc_dirty_after_flush;
+sys_timer_t sti_iq_sync;
+sys_timer_t sti_sync;
+sys_timer_t sti_flush_sched;
+
+
+int
+dbs_dirty_count ()
+{
+  int binx, inx, n_dirty = 0;
+  DO_BOX (buffer_pool_t *, bp, binx, wi_inst.wi_bps)
+    {
+      buffer_desc_t * buf;
+      for (inx = 0; inx < bp->bp_n_bufs; inx++)
+	{
+	  buf = &bp->bp_bufs[inx];
+	  if (buf->bd_is_dirty)
+	    n_dirty++;
+	}
+    }
+  END_DO_BOX;
+  return n_dirty;
+}
+
+extern int buf_sort_dirty;
+
+dp_addr_t
+dbs_sched_low_dirty (dbe_storage_t * dbs, dp_addr_t min_dp, int * n_sched)
+{
+  buffer_desc_t ** all_bufs;
+  uint32 start;
+  int fill = 0, ctr = 0, fill2 = 0, n_bufs, b_fill, org_n_bufs;
+  dp_addr_t sort_limit, max_dp;
+  buffer_desc_t ** bufs;
+  int bpinx, inx;
+  uint64 dp_sum = 0;
+  mem_pool_t * mp = mem_pool_alloc ();
+  dk_set_t buf_list = NULL;
+  bufs = (buffer_desc_t **)mp_alloc_box (mp, sizeof (caddr_t) * BUFS_BATCH, DV_NON_BOX);
+  mp_set_push (mp, &buf_list, (void*)bufs);
+  DO_BOX (buffer_pool_t *, bp, bpinx, wi_inst.wi_bps)
+    {
+      for (inx = 0; inx < bp->bp_n_bufs; inx++)
+	{
+	  buffer_desc_t * buf = &bp->bp_bufs[inx];
+	  if (buf->bd_is_dirty && buf->bd_storage == dbs && buf->bd_physical_page > min_dp)
+	    {
+	      dp_sum += buf->bd_physical_page;
+	      bufs[fill++] = buf;
+	      if (fill == BUFS_BATCH)
+		{
+		  bufs = mp_alloc_box (mp, sizeof (caddr_t) * BUFS_BATCH, DV_NON_BOX);
+		  mp_set_push (mp, &buf_list, (void*)bufs);
+		  fill = 0;
+		}
+	    }
+	}
+    }
+  END_DO_BOX;
+  n_bufs = fill + (BUFS_BATCH * (dk_set_length (buf_list) - 1));
+  org_n_bufs = n_bufs;
+  sort_limit = DP_MAX;
+  while (n_bufs > c_flush_batch * 2 && ctr < 4)
+    {
+      int n_below = 0;
+      int b_fill = fill;
+      dp_addr_t avg = dp_sum / n_bufs;
+      dp_sum = 0;
+      DO_SET (buffer_desc_t **, bufs, &buf_list)
+	{
+	  for (inx = 0; inx < b_fill; inx++)
+	    {
+	      buffer_desc_t * buf = bufs[inx];
+	      if (buf->bd_physical_page < avg)
+		{
+		  dp_sum += buf->bd_physical_page;
+		  n_below++;
+		}	
+	    }
+	  b_fill = BUFS_BATCH;
+	}
+      END_DO_SET();
+      n_bufs = n_below;
+      sort_limit = avg;
+      ctr++;
+    }
+  all_bufs = (buffer_desc_t**)mp_alloc_box (mp, n_bufs * sizeof (caddr_t), DV_NON_BOX);
+  b_fill = fill;
+  DO_SET (buffer_desc_t **, bufs, &buf_list)
+    {
+      for (inx = 0; inx < fill; inx++)
+	{
+	  buffer_desc_t * buf = bufs[inx];
+	  if (buf->bd_physical_page < sort_limit)
+	    {
+	      all_bufs[fill2++] = buf;
+	      if (fill2 >= n_bufs)
+		break; /* is a dirty read, can be some that were not below are so now */
+	    }
+	}
+      fill = BUFS_BATCH;
+    }
+  END_DO_SET();
+  buf_sort_dirty = 1;
+  buf_sort (all_bufs, fill2, (sort_key_func_t) bd_phys_page_key);
+  buf_sort_dirty = 0;
+  *n_sched = MIN (n_bufs, c_flush_batch);
+  STI_START;
+  max_dp = dbs_schedule_write (dbs, all_bufs, *n_sched);
+  STI_END (sti_flush_sched);
+  mp_free (mp);
+  return org_n_bufs > c_flush_batch ? max_dp : DP_MAX;
+}
+
+
+void
+mt_flush_all ()
+{
+  int total_sched = 0, dirty_after = 0;
+  long init_flushed = tc_n_flush;
+  dp_addr_t min_dp;
+  DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
+    {
+      if (dbs->dbs_slices || DBS_TEMP == dbs->dbs_type)
+	continue;
+      min_dp = 0;
+      while (min_dp < DP_MAX)
+	{
+	  int n_sched;
+	  uint32 start;
+	  min_dp = dbs_sched_low_dirty (dbs, min_dp, &n_sched);
+	  total_sched += n_sched;
+	  STI_START;
+	  iq_shutdown (IQ_SYNC);
+	  sti_cum (&sti_iq_sync, &__sti);
+	  dbs_sync_disks (dbs);
+	  tc_n_flush += n_sched;
+	  STI_END (sti_sync);
+	}
+      
+    }
+  END_DO_SET();
+  DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
+    {
+      if (dbs->dbs_slices)
+	continue;
+      dirty_after += dbs_dirty_count (dbs);
+      tc_dirty_after_flush += dirty_after;
+    }
+  END_DO_SET();
 }
 
 

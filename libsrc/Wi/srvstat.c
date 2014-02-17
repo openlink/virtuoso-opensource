@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -48,6 +48,10 @@
 #include "sqlcmps.h"
 #include "sqlintrp.h"
 #include "datesupp.h"
+#include "sqlcmps.h"
+#include "sqlo.h"
+#include "rdfinf.h"
+#include "rdf_core.h"
 
 #ifndef WIN32
 # include <pwd.h>
@@ -240,6 +244,8 @@ extern int dfg_empty_more_pause_msec;
 extern long tc_dfg_max_empty_mores;
 extern int mp_local_rc_sz;
 extern int enable_distinct_sas;
+extern int enable_inline_sqs;
+extern enable_joins_only;
 int32 ha_rehash_pct = 300;
 extern int c_use_aio;
 extern int32 sqlo_sample_dep_cols;
@@ -322,15 +328,18 @@ extern int dbf_col_del_leaf;
 extern int enable_pogs_check;
 int key_seg_check[10];
 int dbf_fast_cpt = 0;
+extern int enable_flush_all;
 extern int enable_hash_join;
 extern int enable_hash_merge;
 extern int enable_hash_fill_join;
+extern int enable_exact_p_stat;
 extern int enable_vec;
 extern int32 enable_qp;
 extern int32 enable_qn_cache;
 extern int32 enable_mt_txn;
 extern int32 enable_mt_transact;
 extern int32 enable_lead_subq_colocate;
+extern int64 mp_mmap_clocks;
 extern int64 ql_ctr;
 extern int aq_max_threads;
 extern int qp_even_if_lock;
@@ -363,6 +372,8 @@ extern int32 cl_stage;
 extern int32 cl_batch_bytes;
 extern int32 cl_first_buf;
 extern int32 iri_range_size;
+extern int enable_small_int_part;
+extern int iri_seqs_used;
 int64 tn_max_memory = 1000000000;
 extern int64 tn_at_mem_cutoff;
 extern int64 tn_mem_cutoff;
@@ -407,6 +418,7 @@ long st_db_free_pages;
 long st_db_buffers;
 long st_db_used_buffers;
 long st_db_dirty_buffers;
+long st_db_read_aside_buffers;
 long st_db_wired_buffers;
 long st_db_temp_pages;
 long st_db_temp_free_pages;
@@ -441,6 +453,9 @@ long fe_replication_support = 0;
 
 long sparql_result_set_max_rows = 0;
 long sparql_max_mem_in_use = 0;
+
+extern int rdf_create_graph_keywords;
+extern int rdf_query_graph_keywords;
 
 static long thr_cli_running;
 static long thr_cli_waiting;
@@ -598,10 +613,13 @@ dbms_status_report (void)
   char mem[100];
   char rpc[200];
   char col_ac_str[100];
+  char w_rate[20];
   long read_percent = 0, write_percent = 0, interval_msec = 0;
   static long last_time;
   static long last_read_cum_time, last_write_cum_time;
-  int n_dirty = 0, n_wired = 0, n_buffers = 0, n_used = 0, n_io = 0, n_crsr = 0;
+  extern sys_timer_t sti_sync;
+ extern long tc_n_flush;
+ int n_dirty = 0, n_wired = 0, n_buffers = 0, n_used = 0, n_io = 0, n_crsr = 0, n_read_aside = 0;
   char * bp_curr_ts;
   dk_mem_stat (mem, sizeof (mem));
   PrpcStatus (rpc, sizeof (rpc));
@@ -634,6 +652,8 @@ dbms_status_report (void)
 		n_wired++;
 	      if (buf->bd_is_dirty)
 		n_dirty++;
+	      if (buf->bdf.r.is_read_aside)
+		n_read_aside++;
 	      if (buf->bd_iq)
 		n_io++;
 	    }
@@ -655,14 +675,19 @@ dbms_status_report (void)
       st_db_buffers = n_buffers;
       st_db_used_buffers = n_used;
       st_db_dirty_buffers = n_dirty;
+      st_db_read_aside_buffers = n_read_aside;
       st_db_wired_buffers = n_wired;
+      if (sti_sync.sti_real && tc_n_flush)
+	snprintf (w_rate, sizeof (w_rate), "flush %10.4g MB/s", (tc_n_flush / PAGES_PER_MB) / ((float)sti_sync.sti_real / 1000));
+      else
+	w_rate[0] = 0;
       if (ac_col_pages_in)
 	snprintf (col_ac_str, sizeof (col_ac_str), " col ac: %ld in %ld%% saved", ac_col_pages_in, 100 * (ac_col_pages_in - ac_col_pages_out) / (1 + ac_col_pages_in));
       else
 	col_ac_str[0] = 0;
-      rep_printf ("  Disk Usage: %ld reads avg %ld msec, %d%% r %d%% w last  %ld s, %ld writes,\n    %ld read ahead, batch = %ld.  Autocompact %ld in %ld out, %ld%% saved%s.\n",
+      rep_printf ("  Disk Usage: %ld reads avg %ld msec, %d%% r %d%% w last  %ld s, %ld writes %s,\n    %ld read ahead, batch = %ld.  Autocompact %ld in %ld out, %ld%% saved%s.\n",
 	  disk_reads, read_cum_time / (disk_reads ? disk_reads : 1),
-		  read_percent, write_percent, interval_msec / 1000, disk_writes, ra_count, ra_pages / (ra_count + 1), ac_pages_in, ac_pages_out, 100 * (ac_pages_in - ac_pages_out) / (1 + ac_pages_in), col_ac_str);
+		  read_percent, write_percent, interval_msec / 1000, disk_writes, w_rate, ra_count, ra_pages / (ra_count + 1), ac_pages_in, ac_pages_out, 100 * (ac_pages_in - ac_pages_out) / (1 + ac_pages_in), col_ac_str);
 
       st_db_disk_read_avg = read_cum_time / (disk_reads ? disk_reads : 1);
       st_db_disk_read_pct = read_percent;
@@ -791,11 +816,11 @@ cli_status_report (dk_session_t * ses)
       cli->cli_statements->ht_inserts - cli->cli_statements->ht_deletes);
   if (ARRAYP(cli->cli_info) && BOX_ELEMENTS (cli->cli_info) > 5)
     {
-      caddr_t app_name = cli->cli_info[0];
+      caddr_t app_name = cli->cli_info[LGID_APP_NAME];
       tcpses_print_client_ip (ses->dks_session, from, sizeof (from));
       rep_printf ("PID: %ld, OS: %s, Application: %s, IP#: %s\n",
-	  	(long) (cli->cli_info[1]),
-		cli->cli_info[3],
+	  	unbox (cli->cli_info[LGID_PID]),
+		cli->cli_info[LGID_OS],
 		app_name[0] ? app_name : "unknown",
 		from);
     }
@@ -1202,6 +1227,29 @@ get_total_sys_mem ()
 
 extern int process_is_swapping;
 
+extern int64 dk_n_allocs;
+extern int64 dk_n_free;
+extern int64 dk_n_total;
+extern int64 dk_n_nosz_free;
+extern int64 dk_n_bytes;
+size_t http_threads_mem_report ();
+size_t dk_alloc_global_cache_total ();
+size_t aq_thr_mem_cache_total ();
+
+void
+mem_status_report ()
+{
+  char buf[1024];
+  size_t wsc = http_threads_mem_report ();
+  size_t gsz = dk_alloc_global_cache_total ();
+  size_t aqsz = aq_thr_mem_cache_total ();
+  mp_map_count_print (buf, sizeof (buf));
+  rep_printf ("Memory:\n");
+  rep_printf ("%s", buf);
+  rep_printf ("%Ld alloc, %Ld free, %Ld bytes, %Ld no size free, %Ld outstanding\n", dk_n_allocs, dk_n_free, dk_n_bytes, dk_n_nosz_free, dk_n_total);
+  rep_printf ("%Ld WS, %Ld AQ, %Ld global\n", wsc, aqsz, gsz);
+}
+
 void
 status_report (const char * mode, query_instance_t * qi)
 {
@@ -1212,15 +1260,20 @@ status_report (const char * mode, query_instance_t * qi)
       cl_srv_status ();
       return;
     }
-  if (!stricmp (mode, "exec"))
+  else if (!stricmp (mode, "exec"))
     {
       bif_exec_status ();
       return;
     }
-  if (!stricmp (mode, "cluster_d"))
+  else if (!stricmp (mode, "cluster_d"))
     {
       gen_info = 0;
       cl_mode = CLST_DETAILS;
+    }
+  else if (!stricmp (mode, "memory"))
+    {
+      mem_status_report ();
+      return;
     }
   else   if (!stricmp (mode, "cluster"))
     gen_info = 0;
@@ -1343,7 +1396,10 @@ static long st_has_vdb =
   0;
 char st_os_user_name[512];
 static char *_st_os_user_name = &st_os_user_name[0];
+extern long mp_sparql_cap;
 extern long srv_cpu_count;
+extern int32 col_seg_max_bytes;
+extern int32 col_seg_max_rows;
 
 
 
@@ -1454,6 +1510,7 @@ stat_desc_t stat_descs [] =
     {"tc_dc_extend_values", &tc_dc_extend_values, NULL},
     {"mp_large_in_use", (long *)&mp_large_in_use, NULL},
     {"mp_max_large_in_use", (long *)&mp_max_large_in_use, NULL},
+    {"mp_mmap_clocks", &mp_mmap_clocks, NULL},
     {"tc_read_aside", &tc_read_aside, NULL},
     {"tc_merge_reads", &tc_merge_reads, NULL},
     {"tc_merge_read_pages", &tc_merge_read_pages, NULL},
@@ -1558,6 +1615,7 @@ stat_desc_t stat_descs [] =
     {"st_db_free_pages", &st_db_free_pages, NULL},
     {"st_db_buffers", &st_db_buffers, NULL},
     {"st_db_used_buffers", &st_db_used_buffers, NULL},
+    {"st_db_read_aside_buffers", &st_db_read_aside_buffers, NULL},
     {"st_db_dirty_buffers", &st_db_dirty_buffers, NULL},
     {"st_db_wired_buffers", &st_db_wired_buffers, NULL},
     {"st_db_disk_read_avg", &st_db_disk_read_avg, NULL},
@@ -1669,6 +1727,8 @@ stat_desc_t stat_descs [] =
     /* sparql vars */
     {"sparql_result_set_max_rows", &sparql_result_set_max_rows, NULL},
     {"sparql_max_mem_in_use", &sparql_max_mem_in_use, NULL},
+    {"rdf_create_graph_keywords", &rdf_create_graph_keywords, SD_INT32},
+    {"rdf_query_graph_keywords", &rdf_query_graph_keywords, SD_INT32},
     {"enable_vec", (long *)&enable_vec, SD_INT32},
     {"srv_init", (long *)&in_srv_global_init, SD_INT32},
     {"ac_real_time", (long *)&ac_real_time, SD_INT32},
@@ -1688,6 +1748,7 @@ stat_desc_t dbf_descs [] =
     {"dbf_2pc_wait", &dbf_2pc_wait, NULL},
     {"dbf_branch_transact_wait", &dbf_branch_transact_wait, NULL},
     {"dbf_log_no_disk", &dbf_log_no_disk, NULL},
+    {"txn_after_image_limit", &txn_after_image_limit, NULL},
     {"dbf_clop_enter_wait", &dbf_clop_enter_wait, NULL},
     {"dbf_cl_skip_wait_notify", &dbf_cl_skip_wait_notify, NULL},
     {"dbf_cpt_rb", &dbf_cpt_rb, NULL},
@@ -1695,6 +1756,7 @@ stat_desc_t dbf_descs [] =
     {"dbf_cl_blob_autosend_limit", &dbf_cl_blob_autosend_limit, NULL},
     {"dbf_no_sample_timeout", &dbf_no_sample_timeout, NULL},
     {"dbf_fast_cpt", (long *)&dbf_fast_cpt, SD_INT32},
+    {"enable_flush_all", &enable_flush_all, SD_INT32},
     {"cl_req_batch_size", (long *)&cl_req_batch_size, SD_INT32},
     {"cl_dfg_batch_bytes", (long *)&cl_dfg_batch_bytes, SD_INT32},
     {"cl_res_buffer_bytes", (long *)&cl_res_buffer_bytes, SD_INT32},
@@ -1707,7 +1769,10 @@ stat_desc_t dbf_descs [] =
     {"enable_at_print", (long *)&enable_at_print, SD_INT32},
     {"enable_min_card", (long *)&enable_min_card},
     {"enable_distinct_sas", (long *)&enable_distinct_sas, SD_INT32},
+    {"enable_inline_sqs", (long *)&enable_inline_sqs, SD_INT32},
     {"hash_join_enable", (long *)&hash_join_enable, SD_INT32},
+    {"enable_joins_only", &enable_joins_only, SD_INT32},
+    {"enable_exact_p_stat", &enable_exact_p_stat, SD_INT32},
     {"em_ra_window", (long *)&em_ra_window, SD_INT32},
     {"em_ra_threshold", (long *)&em_ra_threshold, SD_INT32},
     {"em_ra_startup_threshold", (long *)&em_ra_startup_threshold, SD_INT32},
@@ -1746,6 +1811,8 @@ stat_desc_t dbf_descs [] =
     {"enable_ac", (long *)&enable_ac, SD_INT32},
     {"enable_col_ac", (long *)&enable_col_ac, SD_INT32},
     {"col_ins_error", (long *)&col_ins_error, SD_INT32},
+    {"col_seg_max_bytes", (long *)&col_seg_max_bytes, SD_INT32},
+    {"col_seg_max_rows", (long *)&col_seg_max_rows, SD_INT32},
     {"cl_ac_interval", (long *)&cl_ac_interval, SD_INT32},
     {"enable_buf_mprotect", (long *)&enable_buf_mprotect, SD_INT32},
     {"cl_no_disable_of_unavailable", (long *)&local_cll.cll_no_disable_of_unavailable, SD_INT32},
@@ -1765,6 +1832,9 @@ stat_desc_t dbf_descs [] =
     {"mp_large_reserved", &mp_large_reserved},
     {"mp_max_large_reserved", &mp_max_large_reserved},
     {"mp_large_reserve_limit", &mp_large_reserve_limit},
+    {"mp_large_soft_cap", &mp_large_soft_cap},
+    {"mp_large_hard_cap", &mp_large_hard_cap},
+    {"mp_sparql_cap", &mp_sparql_cap, NULL},
 
     {"iri_range_size", (long *)&iri_range_size, SD_INT32},
     { "tn_max_memory",  (long *)&tn_max_memory, NULL},
@@ -2145,6 +2215,11 @@ bif_col_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return box_num (col->col_avg_len);
   if (0 == strcmp (name, "n_values"))
     return box_num (col->col_count);
+  if (0 == strcmp (name, "min"))
+    return box_copy_tree (col->col_min);
+  if (0 == strcmp (name, "max"))
+    return box_copy_tree (col->col_max);
+
   sqlr_new_error ("42000", "ST002", "Bad attribute name in col_stat");
   return NULL;
 }
@@ -4097,7 +4172,7 @@ bif_key_estimate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       prev_sp = &specs[inx].sp_next;
     }
   if (!key->key_is_elastic)
-    itc_from (itc, key, QI_NO_SLICE);
+    itc_from_keep_params (itc, key, QI_NO_SLICE);
   res = itc_sample (itc);
   return box_num (res);
 }
@@ -4282,6 +4357,284 @@ bif_lt_rc_w_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 void
+col_stat_row (it_cursor_t * itc, dk_set_t cols, caddr_t * row)
+{
+  int n_data = 1;
+  int nth_col = 0;
+  int n_cols = BOX_ELEMENTS (row);
+
+  DO_SET (dbe_column_t *, col, &cols)
+    {
+      col_stat_t * col_stat;
+      caddr_t data;
+      dbe_column_t * current_col;
+      int len;
+      ptrlong * place;
+      dbe_col_loc_t *cl;
+      if (nth_col >= n_cols)
+	break;
+      data = row[nth_col];
+      if (IS_BLOB_DTP (col->col_sqt.sqt_dtp))
+	{
+	  nth_col++;
+	  continue;
+	}
+      current_col = sch_id_to_column (wi_inst.wi_schema, col->col_id);
+      /* can be obsolete row, use the corresponding col of the current version of the key */
+      col_stat = (col_stat_t *) gethash ((void*) current_col, itc->itc_st.cols);
+      if (!col_stat)
+	{
+	  NEW_VARZ (col_stat_t, cs);
+	  sethash ((void*)current_col, itc->itc_st.cols, (void*) cs);
+	  cs->cs_distinct = id_hash_allocate (1001, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+	  id_hash_set_rehash_pct (cs->cs_distinct, 200);
+	  col_stat = cs;
+	}
+
+      len = sqt_fixed_length (&col->col_sqt);
+      if (len <= 0)
+	len = IS_BOX_POINTER (data) ? box_length (data) : 8;
+      if (DV_DB_NULL != DV_TYPE_OF (data))
+	{
+	  col_stat->cs_n_values++;
+	  col_stat->cs_len += len;
+	}
+      place = (ptrlong *) id_hash_get (col_stat->cs_distinct, (caddr_t) &data);
+      if (place)
+	{
+	  if (!(CS_IN_SAMPLE & *place))
+	    *place += CS_IN_SAMPLE | CS_SAMPLE_INC | 1;
+	  else
+	    (*place)++;
+	}
+      else
+	{
+	  uint64 one = CS_IN_SAMPLE | CS_SAMPLE_INC | 1;
+	  id_hash_set (col_stat->cs_distinct, (caddr_t) &data, (caddr_t)&one);
+	  row[nth_col] = NULL;
+	}
+      nth_col++;
+    }
+  END_DO_SET();
+  itc->itc_st.n_sample_rows++;
+  dk_free_tree ((caddr_t)row);
+}
+
+
+caddr_t
+bif_col_set_samples (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int inx, inx2;
+  caddr_t tb_name = bif_string_arg (qst, args, 0, "col_set_samples");
+  caddr_t ** samples = (caddr_t**)bif_array_of_pointer_arg (qst, args, 1, "col_set_samples");
+  int64 est = bif_long_arg (qst, args, 2, "col_set_samples");
+  it_cursor_t itc_auto;
+  it_cursor_t * itc = &itc_auto;
+  dbe_table_t * tb = sch_name_to_table (wi_inst.wi_schema, tb_name);
+  dk_set_t cols;
+  ITC_INIT (itc, NULL, NULL);
+  memzero (&itc->itc_st, sizeof (itc->itc_st));
+  itc->itc_st.cols = hash_table_allocate (31);
+  if (!tb)
+    sqlr_new_error ("42000", "CSNTB", "No table %s", tb_name);
+  cols = key_ensure_visible_parts (tb->tb_primary_key);
+  DO_BOX (caddr_t **, rset, inx, samples)
+    {
+      if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (rset))
+	continue;
+      cs_new_page (itc->itc_st.cols);
+      DO_BOX (caddr_t *, row, inx2, rset)
+	{
+      if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (row))
+	continue;
+	  col_stat_row (itc, cols, row);
+	  rset[inx2] = NULL;
+	}
+      END_DO_BOX;
+    }
+  END_DO_BOX;
+  itc_col_stat_free (itc, 1, est);
+  return NULL;
+}
+
+caddr_t 
+sc_data_to_ext (query_instance_t * qi, caddr_t dt)
+{
+  int inx;
+  dtp_t dtp = DV_TYPE_OF (dt);
+  if (DV_IRI_ID == dtp)
+    {
+      caddr_t str = key_id_to_iri (qi, *(iri_id_t*)dt);
+      if (str)
+	box_flags (str) = BF_IRI;
+      return str;
+    }
+  else if (DV_ARRAY_OF_POINTER == dtp)
+    {
+      caddr_t * arr = (caddr_t*)dk_alloc_box (box_length (dt), DV_ARRAY_OF_POINTER);
+      DO_BOX (caddr_t, a, inx, dt)
+	{
+	  arr[inx] = sc_data_to_ext (qi, a);
+	}
+      END_DO_BOX;
+      return arr;
+    }
+  else
+    return box_copy_tree (dt);
+}
+
+caddr_t 
+sc_ext_to_data (query_instance_t * qi, caddr_t dt)
+{
+  int  inx;
+  dtp_t dtp = DV_TYPE_OF (dt);
+  caddr_t err = NULL;
+  if (DV_STRING == dtp && box_flags (dt))
+    return iri_to_id (qi, dt, 1, &err);
+  else if (DV_ARRAY_OF_POINTER == dtp)
+    {
+      caddr_t * arr = (caddr_t*)dk_alloc_box (box_length (dt), DV_ARRAY_OF_POINTER);
+      DO_BOX (caddr_t, a, inx, dt)
+	{
+	  arr[inx] = sc_ext_to_data (qi, a);
+	}
+      END_DO_BOX;
+      return arr;
+    }
+  else
+    return box_copy_tree (dt);
+}
+
+caddr_t
+bif_stat_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  QNCAST (QI, qi, qst);
+  int inx, inx2;
+  dbe_schema_t * sc = wi_inst.wi_schema;
+  dk_set_t * cols = NULL, keys = NULL, rics = NULL;
+  DO_HT (ptrlong, id, dbe_column_t *, col, sc->sc_id_to_col)
+    {
+      dk_set_push (&cols, list (6, box_string (col->col_defined_in->tb_name), box_string (col->col_name),
+				box_num (col->col_n_distinct), box_num (col->col_count), sc_data_to_ext (qi, col->col_min), sc_data_to_ext (qi, col->col_max)));
+    }
+  END_DO_HT;
+  DO_HT (ptrlong, id, dbe_key_t *, key, sc->sc_id_to_key)
+    {
+      caddr_t p_arr = NULL;
+      if (key->key_p_stat)
+	{
+	  dk_set_t psts = NULL;
+	  id_hash_iterator_t hit;
+	  float * arr;
+	  caddr_t * k;
+	  id_hash_iterator (&hit, key->key_p_stat);
+	  while (hit_next (&hit, (caddr_t*)&id, (caddr_t*)&arr))
+	    {
+	      dk_set_push (&psts, list (5, sc_data_to_ext (qi, box_iri_id (*(iri_id_t*)id)), box_float (arr[0]), box_float (arr[1]), box_float (arr[2]), box_float (arr[3])));
+	    }
+	  p_arr = list_to_array (psts);
+	}
+      dk_set_push (&keys, list (4, box_string (key->key_table->tb_name), box_string (key->key_name), box_num (key->key_table->tb_count_estimate), p_arr)); 
+    }
+  END_DO_HT;
+  DO_IDHASH (caddr_t, name, rdf_inf_ctx_t *, ric, rdf_name_to_ric)
+    {
+      id_hash_iterator_t hit;
+      dk_set_t smps = NULL;
+      tb_sample_t * smp;
+      caddr_t s_key;
+      id_hash_iterator (&hit, ric->ric_samples);
+      while (hit_next (&hit, (caddr_t*)&s_key, (caddr_t*)&smp))
+	{
+	  dk_set_push (&smps, list (3, sc_data_to_ext (qi, *(caddr_t*)s_key), box_float (smp->smp_card), box_float (smp->smp_inx_card)));
+	}
+      dk_set_push (&rics, list (2, box_string (ric->ric_name), list_to_array (smps)));
+    }
+  END_DO_IDHASH;
+  return list (3, list_to_array (cols), list_to_array (keys), list_to_array (rics));
+}
+
+
+caddr_t
+bif_stat_import (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  dbe_schema_t * sc = wi_inst.wi_schema;
+  QNCAST (QI, qi, qst);
+  int inx, inx2;
+  caddr_t ** stats = (caddr_t**)bif_array_of_pointer_arg (qst, args, 0, "stat_import");
+  caddr_t * cols = stats[0];
+  dbe_table_t * tb;
+  dbe_key_t * key;
+  dbe_column_t * col;
+  rdf_inf_ctx_t * ric;
+  sec_check_dba ((query_instance_t *) qst, "stat_import");
+
+  DO_BOX (caddr_t *, cs, inx, stats[0])
+    {
+      tb = sch_name_to_table (sc, cs[0]);
+      if (!tb)
+	continue;
+      col = tb_name_to_column (tb, cs[1]);
+      if (!col)
+	continue;
+      col->col_n_distinct =  unbox (cs[2]);
+      col->col_n_distinct =  unbox (cs[2]);
+      col->col_count =  unbox (cs[3]);
+      col->col_min =  unbox (sc_ext_to_data (qi, cs[4]));
+      col->col_max =  unbox (sc_ext_to_data (qi, cs[4]));
+    }
+  END_DO_BOX;
+  DO_BOX (caddr_t *, ks, inx, stats[1])
+    {
+      dbe_table_t * tb = sch_name_to_table (sc, ks[0]);
+      caddr_t * ps = ks[3];
+      if (!tb)
+	continue;
+      key = tb_name_to_key (tb, ks[1], 0);
+      if (!key)
+	continue;
+      key->key_table->tb_count_estimate = unbox (ks[1]);
+      if (ps)
+	{
+	  DO_BOX (caddr_t *, p, inx2, ps)
+	    {
+	      float fs[4];
+	      caddr_t iid = sc_ext_to_data (qi, p[0]);
+	      if (DV_IRI_ID != DV_TYPE_OF (iid))
+		continue;
+	      fs[0] = unbox_float (p[1]);
+	      fs[1] = unbox_float (p[2]);
+	      fs[2] = unbox_float (p[3]);
+	      fs[3] = unbox_float (p[4]);
+	      id_hash_set  (key->key_p_stat, (caddr_t)iid, (caddr_t)&fs); 
+	    }
+	  END_DO_BOX;
+	}
+    }
+  END_DO_BOX;
+  DO_BOX (caddr_t *, rc, inx, stats[2])
+    {
+      ric = rdf_name_to_ctx (rc[0]);
+      if (!ric)
+	continue;
+      DO_BOX (caddr_t *, smp, inx, rc[1])
+	{
+	  caddr_t k = sc_ext_to_data (qi, smp[0]);
+	  tb_sample_t smpl;
+	  memzero (&smpl, sizeof (smpl));
+	  smpl.smp_time = approx_msec_real_time ();
+	  smpl.smp_card = unbox_float (smp[1]);
+	  smpl.smp_inx_card = unbox_float (smp[2]);
+	  id_hash_set (ric->ric_samples, (caddr_t)&k, (caddr_t*)&smpl);
+	}
+      END_DO_BOX;
+    }
+  END_DO_BOX;
+  return NULL;
+}
+
+
+void
 bif_status_init (void)
 {
 #ifdef WIN32
@@ -4295,25 +4648,28 @@ bif_status_init (void)
   bif_define ("status", bif_status);
   bif_define ("sys_stat", bif_sys_stat);
   bif_define ("__dbf_set", bif_dbf_set);
-  bif_define_typed ("key_stat", bif_key_stat, &bt_integer);
-  bif_define_typed ("key_estimate", bif_key_estimate, &bt_integer);
-  bif_define_typed ("col_stat", bif_col_stat, &bt_integer);
+  bif_define_ex ("key_stat", bif_key_stat, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("key_estimate", bif_key_estimate, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("col_stat", bif_col_stat, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
   bif_define ("__col_info", bif_col_info);
   bif_define ("prof_enable", bif_profile_enable);
   bif_define ("prof_sample", bif_profile_sample);
   bif_define ("prof_proc", bif_prof_proc);
-  bif_define_typed ("msec_time", bif_msec_time, &bt_integer);
-  bif_define_typed ("usec_time", bif_usec_time, &bt_integer);
-  bif_define_typed ("identify_self", bif_identify_self, &bt_any);
+  bif_define_ex ("msec_time", bif_msec_time, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("usec_time", bif_usec_time, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("identify_self", bif_identify_self, BMD_RET_TYPE, &bt_any, BMD_DONE);
   ps_sem = semaphore_allocate (0);
   bif_define ("itcs", dbg_print_itcs);
-  bif_define_typed ("sys_index_space_usage", bif_sys_index_space_usage, &bt_any);
+  bif_define_ex ("sys_index_space_usage", bif_sys_index_space_usage, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define ("db_activity", bif_db_activity);
   bif_define ("ext_stat", bif_ext_stat);
   bif_define ("ext_em", bif_ext_em);
   bif_define ("key_seg_check", bif_key_seg_check);
-  bif_define_typed ("lt_w_id", bif_lt_w_id, &bt_integer);
-  bif_define_typed ("lt_rc_w_id", bif_lt_rc_w_id, &bt_integer);
+  bif_define_ex ("lt_w_id", bif_lt_w_id, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("lt_rc_w_id", bif_lt_rc_w_id, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define ("col_set_samples", bif_col_set_samples);
+  bif_define ("stat_import", bif_stat_import);
+  bif_define_ex ("stat_export", bif_stat_export, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
 #ifndef NDEBUG
   bif_define ("_sys_real_cv_size", bif_real_cv_size);
 #endif

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -982,6 +982,456 @@ mem_hum_size (in sz integer) returns varchar
   if (sz < 1073741824)
     return (sprintf ('%d MB', cast (sz/1048576 as integer)));
   return (sprintf ('%d GB', sz/1073741824));
+}
+;
+
+--
+-- Object 2 JSON functions
+--
+create procedure DB.DBA.jsonObject ()
+{
+  return subseq (soap_box_structure ('x', 1), 0, 2);
+}
+;
+
+create procedure DB.DBA.isJsonObject (
+  inout o any)
+{
+  if (isarray (o) and (length (o) > 1) and (__tag (o[0]) = 255))
+    return 1;
+  return 0;
+}
+;
+
+create procedure DB.DBA.array2obj (
+  in V any)
+{
+  return vector_concat (jsonObject (), V);
+}
+;
+
+create procedure DB.DBA.obj2json (
+  in o any,
+  in d integer := 10,
+  in nsArray any := null,
+  in attributePrefix varchar := null)
+{
+  declare N, M integer;
+  declare R, T any;
+  declare S, retValue any;
+
+  if (d = 0)
+    return '[maximum depth achieved]';
+
+  T := vector ('\b', '\\b', '\t', '\\t', '\n', '\\n', '\f', '\\f', '\r', '\\r', '"', '\\"', '\\', '\\\\');
+  retValue := '';
+  if (isnull (o))
+  {
+    retValue := 'null';
+  }
+  else if (isnumeric (o))
+  {
+    retValue := cast (o as varchar);
+  }
+  else if (isstring (o))
+  {
+    for (N := 0; N < length(o); N := N + 1)
+    {
+      R := chr (o[N]);
+      for (M := 0; M < length(T); M := M + 2)
+      {
+        if (R = T[M])
+          R := T[M+1];
+      }
+      retValue := retValue || R;
+    }
+    retValue := '"' || retValue || '"';
+  }
+  else if (isarray (o) and (length (o) > 1) and ((__tag (o[0]) = 255) or (o[0] is null and (o[1] = '<soap_box_structure>' or o[1] = 'structure'))))
+  {
+    retValue := '{';
+    for (N := 2; N < length (o); N := N + 2)
+    {
+      S := o[N];
+      if (chr (S[0]) = attributePrefix)
+        S := subseq (S, length (attributePrefix));
+      if (not isnull (nsArray))
+      {
+        for (M := 0; M < length (nsArray); M := M + 1)
+        {
+          if (S like nsArray[M]||':%')
+            S := subseq (S, length (nsArray[M])+1);
+        }
+      }
+      retValue := retValue || '"' || S || '":' || obj2json (o[N+1], d-1, nsArray, attributePrefix);
+      if (N <> length(o)-2)
+        retValue := retValue || ', ';
+    }
+    retValue := retValue || '}';
+  }
+  else if (isarray (o))
+  {
+    retValue := '[';
+    for (N := 0; N < length(o); N := N + 1)
+    {
+      retValue := retValue || obj2json (o[N], d-1, nsArray, attributePrefix);
+      if (N <> length(o)-1)
+        retValue := retValue || ',\n';
+    }
+    retValue := retValue || ']';
+  }
+  return retValue;
+}
+;
+
+create procedure DB.DBA.params2json (
+  in o any)
+{
+  return obj2json (array2obj(o));
+}
+;
+
+create procedure DB.DBA.json2obj (
+  in o any)
+{
+  return json_parse (o);
+}
+;
+
+--
+-- Object 2 XML functions
+--
+create procedure DB.DBA.obj2xml (
+  in o any,
+  in d integer := 10,
+  in tag varchar := null,
+  in nsArray any := null,
+  in attributePrefix varchar := '')
+{
+  declare N, M integer;
+  declare R, T any;
+  declare S, nsValue, retValue any;
+
+  if (d = 0)
+    return '[maximum depth achieved]';
+
+  nsValue := '';
+  if (not isnull (nsArray))
+  {
+    for (N := 0; N < length(nsArray); N := N + 2)
+      nsValue := sprintf ('%s xmlns%s="%s"', nsValue, case when nsArray[N]='' then '' else ':'||nsArray[N] end, nsArray[N+1]);
+  }
+  retValue := '';
+  if (isnumeric (o))
+  {
+    retValue := cast (o as varchar);
+  }
+  else if (isstring (o))
+  {
+    retValue := sprintf ('%V', o);
+  }
+  else if (__tag (o) = 211)
+  {
+    retValue := datestring (o);
+  }
+  else if (isJsonObject (o))
+  {
+    for (N := 2; N < length(o); N := N + 2)
+    {
+      if (not isJsonObject (o[N+1]) and isarray (o[N+1]) and not isstring (o[N+1]))
+      {
+        retValue := retValue || obj2xml (o[N+1], d-1, o[N], nsArray, attributePrefix);
+      } else {
+        if (chr (o[N][0]) <> attributePrefix)
+        {
+          nsArray := null;
+          S := '';
+          if ((attributePrefix <> '') and isJsonObject (o[N+1]))
+          {
+            for (M := 2; M < length(o[N+1]); M := M + 2)
+            {
+              if (chr (o[N+1][M][0]) = attributePrefix)
+                S := sprintf ('%s %s="%s"', S, subseq (o[N+1][M], length (attributePrefix)), obj2xml (o[N+1][M+1]));
+            }
+          }
+          retValue := retValue || sprintf ('<%s%s%s>%s</%s>\n', o[N], S, nsValue, obj2xml (o[N+1], d-1, null, nsArray, attributePrefix), o[N]);
+        }
+      }
+    }
+  }
+  else if (isarray (o))
+  {
+    for (N := 0; N < length(o); N := N + 1)
+    {
+      if (isnull (tag))
+      {
+        retValue := retValue || obj2xml (o[N], d-1, tag, nsArray, attributePrefix);
+      } else {
+        nsArray := null;
+        S := '';
+        if (not isnull (attributePrefix) and isJsonObject (o[N]))
+        {
+          for (M := 2; M < length(o[N]); M := M + 2)
+          {
+            if (chr (o[N][M][0]) = attributePrefix)
+              S := sprintf ('%s %s="%s"', S, subseq (o[N][M], length (attributePrefix)), obj2xml (o[N][M+1]));
+          }
+        }
+        retValue := retValue || sprintf ('<%s%s%s>%s</%s>\n', tag, S, nsValue, obj2xml (o[N], d-1, null, nsArray, attributePrefix), tag);
+      }
+    }
+  }
+  return retValue;
+}
+;
+
+create procedure
+qt_record (in file varchar, in text varchar, in params any := null, in comment varchar, in check_order int := 1,
+in check_col_names int := 1, in check_da_below int := 0,
+in check_plan int := 1, in plan_xpath varchar := null, in addp int := 0, in ref_result varchar := null)
+{
+  declare stat, msg, meta, data, xp, xd, ss, axp, da, meta1, data1 any;
+  declare daseq, darnd int;
+
+  ss := string_output ();
+  xp := explain (text, -1, 1);
+  xd := xtree_doc (xp);
+
+  --axp := cast (xslt ('file:/qt.xsl', xd) as varchar);
+  axp := qt_xpath_gen (xd);
+
+  if (check_plan and plan_xpath is not null and xpath_eval (plan_xpath, xd) = 0)
+    signal ('.....', 'The spcified check do not match execution plan');
+
+  if (check_plan and axp is not null and xpath_eval (axp, xd) is null)
+    signal ('.....', 'The auto generated xpath check cannot be generated');
+--  dbg_obj_print (axp);
+--  dbg_obj_print (xpath_eval (axp, xd));
+
+  if (plan_xpath is null)
+    plan_xpath := '';
+  if (plan_xpath = '' and axp is not null)
+    plan_xpath := axp;
+
+  exec (text, stat, msg, params, 0, meta, data);
+  da := db_activity (1);
+  if (check_da_below)
+    {
+      darnd := (da[0] * (check_da_below + 100)) / 100;
+      daseq := (da[1] * (check_da_below + 100)) / 100;
+    }
+
+  http (sprintf ('<test>\n'), ss);
+  http (sprintf ('    <comment>%V</comment>\n', comment), ss);
+  http (sprintf ('    <query><![CDATA['), ss);
+  http (text, ss);
+  http (sprintf ('    ]]></query>\n'), ss);
+  http (sprintf ('    <plans>\n'), ss);
+  http (sprintf ('	<plan>\n'), ss);
+  http (sprintf ('	    <verify result-order="%d" col-names="%d" plan-xpath="%V">\n', check_order, check_col_names, plan_xpath), ss);
+  http (sprintf ('		<da-below rnd="%d" seq="%d" same-seg="" />\n', darnd, daseq), ss);
+  http (sprintf ('	    </verify>\n'), ss);
+  exec ('explain (?)', stat, msg, vector (text), 0, meta1, data1);
+  http ('<text><![CDATA[', ss);
+  foreach (any c in data1) do
+    {
+      http (c[0], ss);
+      http ('\n', ss);
+    }
+  http (']]></text>\n', ss);
+  http (sprintf ('	    <xmlplan>\n'), ss);
+  http (xp, ss);
+  http (sprintf ('	    </xmlplan>\n'), ss);
+  http (sprintf ('	</plan>\n'), ss);
+  http (sprintf ('    </plans>\n'), ss);
+
+  http (sprintf ('    <columns>\n'), ss);
+  foreach (any c in meta[0]) do
+    {
+      --dbg_obj_print (c);
+      http (sprintf ('         <column name="%V"/>\n', c[0]), ss);
+    }
+  http (sprintf ('    </columns>\n'), ss);
+  http (sprintf ('    <result cnt="%d">\n', length (data)), ss);
+  if (check_order = 0)
+    gvector_sort (data, 1, 0, 1);
+  foreach (any c in data) do
+    {
+      declare i int;
+      http ('<row>\n', ss);
+      for (i := 0; i < length (c); i := i + 1)
+        {
+	  http (sprintf ('    <col dtp="%d">%V</col>\n', __tag (c[i]), cast (c[i] as varchar)), ss);
+        }
+      http ('</row>\n', ss);
+    }
+  http (sprintf ('    </result>\n'), ss);
+  http (sprintf ('</test>'), ss);
+  string_to_file (file, ss, -2);
+  return axp;
+}
+;
+
+
+create procedure
+qt_check (in file varchar, out message varchar, in add_test int := 0) returns int
+{
+  declare xt, qr, xp_test, expl, da any;
+  declare stat, msg, meta, data, r, check_order, cnt any;
+  declare daseq, darnd int;
+
+  declare exit handler for sqlstate '*' {
+    message := message || ' : ' || __SQL_MESSAGE;
+    return 0;
+  };
+
+  xt := qt_source (file);
+  message := xpath_eval ('/test/comment/text()', xt);
+  qr := charset_recode (xpath_eval ('string (/test/query)', xt), '_WIDE_', 'UTF-8');
+  check_order := atoi (charset_recode (xpath_eval ('/test/plans/plan/verify/@result-order', xt), '_WIDE_', 'UTF-8'));
+  xp_test := charset_recode (xpath_eval ('/test/plans/plan/verify/@plan-xpath', xt), '_WIDE_', 'UTF-8');
+  darnd := atoi (charset_recode (xpath_eval ('/test/plans/plan/verify/da-below/@rnd', xt), '_WIDE_', 'UTF-8'));
+  daseq := atoi (charset_recode (xpath_eval ('/test/plans/plan/verify/da-below/@seq', xt), '_WIDE_', 'UTF-8'));
+  --dbg_obj_print (qr);
+  expl := xtree_doc (explain (qr, -1, 1));
+  if (xpath_eval (xp_test, expl) is null)
+    {
+      message := message || ' : XPath test do not match';
+      return 0;
+    }
+  cnt := atoi (charset_recode (xpath_eval ('/test/result/@cnt', xt), '_WIDE_', 'UTF-8'));
+  exec (qr, stat, msg, vector (), 0, meta, data);
+  da := db_activity (1);
+  if ((darnd and darnd < da[0]) or (daseq and daseq < da[1]))
+    {
+      message := message || sprintf (' : DA is over the limit rnd %d<%d seq %d<%d', darnd, da[0], daseq, da[1]);
+      return 0;
+    }
+  r := 0;
+  if (check_order = 0)
+    gvector_sort (data, 1, 0, 1);
+  if (cnt <> length (data))
+      message := message || ' : result len do not match';
+  foreach (any c in data) do
+    {
+      declare i int;
+      for (i := 0; i < length (c); i := i + 1)
+        {
+	  if (cast (xpath_eval (sprintf ('string (/test/result/row[%d]/col[%d][@dtp=%d])', r + 1, i + 1, __tag(c[i])), xt) as varchar)
+	      <>  cast (c[i] as varchar))
+	    return 0;
+	}
+      r := r + 1;
+    }
+  return 1;
+}
+;
+
+create procedure
+qt_check_dir (in dir varchar)
+{
+  declare ls, inx, f, msg, report any;
+  ls := sys_dirlist (dir, 1);
+  result_names (report);
+  for (inx := 0; inx < length (ls); inx := inx + 1)
+    {
+      if (ls[inx] like '%.xml')
+	{
+	  f := qt_check (dir || '/' || ls[inx], msg);
+	  result (case f when 1 then 'PASSED: ' else '***FAILED: ' end || msg);
+	}
+    }
+}
+;
+
+create procedure
+qt_source (in file varchar)
+{
+  declare t any;
+  t := file_to_string (file);
+  return xtree_doc (t);
+}
+;
+
+create procedure
+qt_xpath_gen (in xt any, in s any := null, in ck int := 0)
+{
+  declare xp, ss any;
+  declare qn, qns, ret varchar;
+  declare i int;
+  if (s is null)
+    {
+      ss := string_output ();
+      http ('/report[', ss);
+      xp := xpath_eval ('/report/*', xt, 0);
+      qt_xpath_gen (xp, ss);
+      http (']', ss);
+      ret := string_output_string (ss);
+      if (ck and xpath_eval (ret, xt) is null)
+        return null;
+      return ret;
+    }
+  qn := 'ts|sel|union|setp|subq|fref|iter|qf|stn';
+  qns := split_and_decode (qn, 0, '\0\0|');
+  ss := s;
+  i := 0;
+  foreach (any x in xt) do
+    {
+      declare n any;
+      x := xml_cut (x);
+      n := cast (xpath_eval ('local-name(.)', x) as varchar);
+--      dbg_obj_print (n);
+      if (n in (qns))
+	{
+	  if (i > 0)
+	    http (sprintf ('[following::%s', n), ss);
+          else
+            http (n, ss);
+	  if (0 and n = 'ts')
+	    {
+	      http (sprintf ('[@key="%s"]', cast (xpath_eval ('@key', x) as varchar)), ss);
+	    }
+          xp := xpath_eval (qn, x, 0);
+	  if (length (xp)) http ('[', ss);
+	  qt_xpath_gen (xp, ss);
+	  if (length (xp)) http (']', ss);
+	  i := i + 1;
+	}
+    }
+  for (i := i - 1; i > 0; i := i - 1)
+    http (']', ss);
+}
+;
+
+
+create procedure DPIPE_DEFINE_SRV (in n varchar, in tb varchar, in k varchar, in srv varchar, in is_upd int, in cproc varchar := null, in cbif varchar := null, in extra any := null)
+{
+  dpipe_define_1 (n, tb, k, srv, is_upd, cproc, cbif, extra);
+  log_text ('dpipe_define_1 (?,?,?,?,?,?,?,?)', n, tb, k, srv, is_upd, cproc, cbif, extra);
+}
+;
+
+create procedure dpipe_define (in n varchar, in tb varchar, in k varchar, in srv varchar, in is_upd int, in cproc varchar := null, in cbif varchar := null, in extra any := null)
+{
+  delete from SYS_DPIPE where DP_NAME = n;
+  insert into SYS_DPIPE (DP_NAME, DP_PART_TABLE, DP_PART_KEY, DP_SRV_PROC, DP_IS_UPD, DP_CALL_PROC, DP_CALL_BIF, DP_EXTRA)
+  values (n, tb, k, srv, is_upd, cproc, cbif, extra);
+  cl_exec ('DB.DBA.DPIPE_DEFINE_SRV (?, ?, ?, ?, ?, ?, ?, ?)',
+        vector (n, tb, k, srv, is_upd, cproc, cbif, extra));
+}
+;
+
+create procedure DPIPE_DROP_SRV (in n varchar)
+{
+  dpipe_drop_1 (n);
+  log_text ('dpipe_drop_1 (?)', n);
+}
+;
+
+create procedure dpipe_drop (in n varchar)
+{
+  delete from SYS_DPIPE where DP_NAME = n;
+  cl_exec ('DB.DBA.DPIPE_DROP_SRV (?)', vector (n));
 }
 ;
 

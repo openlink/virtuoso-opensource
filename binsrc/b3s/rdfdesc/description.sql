@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -663,7 +663,7 @@ b3s_uri_curie (in uri varchar)
 	if (length(rhs) = 0) {
 		return uri;
 	} else {
-		return nsPrefix || ':' || rhs;
+		return __bft (nsPrefix || ':' || rhs, 2);
 	}
   }
   return uri;
@@ -807,8 +807,14 @@ create procedure b3s_label (in _S any, in langs any, in lbl_order_pref_id int :=
 }
 ;
 
+create procedure b3s_xsd_link (in t varchar)
+{
+  return sprintf ('<a href="http://www.w3.org/2001/XMLSchema#%s">xsd:%s</a>', t, t);
+}
+;
+
 create procedure
-b3s_http_print_r (in _object any, in sid varchar, in prop any, in langs any, in rel int := 1, in acc any := null, in _from varchar := null)
+b3s_http_print_r (in _object any, in sid varchar, in prop any, in langs any, in rel int := 1, in acc any := null, in _from varchar := null, in flag int := 0)
 {
    declare lang, rdfs_type, rdfa, visible any;
 
@@ -894,28 +900,32 @@ again:
    else if (__tag (_object) = 189)
      {
        http (sprintf ('<span %s>%d</span>', rdfa, _object));
-       lang := 'xsd:integer';
+       lang := b3s_xsd_link ('integer');
      }
    else if (__tag (_object) = 190)
      {
        http (sprintf ('<span %s>%f</span>', rdfa, _object));
-       lang := 'xsd:float';
+       lang := b3s_xsd_link ('float');
      }
    else if (__tag (_object) = 191)
      {
        http (sprintf ('<span %s>%d</span>', rdfa, _object));
-       lang := 'xsd:double';
+       lang := b3s_xsd_link ('double');
      }
    else if (__tag (_object) = 219)
      {
        http (sprintf ('<span %s>%s</span>', rdfa, cast (_object as varchar)));
-       lang := 'xsd:double';
+       lang := b3s_xsd_link ('double');
      }
    else if (__tag (_object) = 182)
      {
        declare vlbl any;
        http (sprintf ('<span %s>', rdfa));
-       _object := regexp_replace (_object, ' (http://[^ ]+) ', ' <a href="\\1">\\1</a> ', 1, null);
+       if (strstr (_object, 'http://') is not null)
+	 {
+	   declare continue handler for sqlstate '*';
+           _object := regexp_replace (_object, ' (http://[^ ]+) ', ' <a href="\\1">\\1</a> ', 1, null);
+	 }
        vlbl := charset_recode (_object, 'UTF-8', '_WIDE_');
        if (vlbl = 0)
          vlbl := charset_recode (_object, current_charset (), '_WIDE_');
@@ -929,7 +939,7 @@ again:
    else if (__tag (_object) = 211)
      {
        http (sprintf ('<span %s>%s</span>', rdfa, datestring (_object)));
-       lang := 'xsd:date';
+       lang := b3s_xsd_link ('date');
      }
    else if (__tag (_object) = 230)
      {
@@ -1030,6 +1040,7 @@ create procedure fct_links_hdr (in subj any, in desc_link any)
       sprintf ('<%s&output=%U>; rel="alternate"; type="%s"; title="Structured Descriptor Document (%s format)",', desc_link, elm[0], elm[0], elm[1]);
     }
   links := links || sprintf ('<%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic",', subj);
+  links := links || ' <?first>; rel="first", <?last>; rel="last", <?next>; rel="next", <?prev>; rel="prev", ';
   links := links || sprintf ('<%s>; rev="describedby"\r\n', subj);
   http_header (http_header_get () || links);
 }

@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2014 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -51,8 +51,6 @@ base_cflags += -DUNIX
 
 bin_PROGRAMS = $(INTEG_JDK_PROGS) $(IODBC_JDK_EXTRA)
 noinst_PROGRAMS = virtuoso-sample-t $(IODBC_EXTRA)
-
-TESTS	= thook.sh
 
 BUILT_SOURCES = sql_code_javavm.c sql_code_clr.c sql_code_xslt.c
 CLEANFILES = \
@@ -110,6 +108,21 @@ virtuoso_javavm_t_LDADD = \
 	$(LIBMONO) \
 	@LIBS@ \
 	@java_LDFLAGS@
+
+#TESTS	= thook.sh
+TESTS_ENVIRONMENT= \
+	HOME="$(TOP)" \
+	HOST=localhost \
+	JDK2="@ac_jdk2_path@" \
+	JDK3="@ac_jdk3_path@" \
+	JDK4="@ac_jdk4_path@" \
+	MAKE=$(MAKE) \
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
+	PORT=$(PORT) \
+	TOP="$(TOP)"
+
+check-local:
+	env $(TESTS_ENVIRONMENT) $(SHELL) ./thook.sh
 
 
 # ----------------------------------------------------------------------

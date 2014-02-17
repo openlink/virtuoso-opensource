@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -56,7 +56,7 @@ typedef struct text_node_s
     ptrlong		txs_why_ranges;			/*!< Bits from TXS_RANGES4XXX */
     char		txs_is_driving;
     char		txs_order; /* if should give deterministic order in cluster */
-    char		txs_geo;
+    unsigned char 	txs_geo;
     char		txs_is_rdf;
     table_source_t *	txs_loc_ts; /* half filled ts to serve for partitioning in cluster if txs partitioned by d_id */
     state_slot_t *	txs_cached_string;		/*!< previous string, compiled by xp_text_parse() for this node, as caddr_t */
@@ -84,11 +84,17 @@ typedef struct text_node_s
 #define GSOP_CONTAINS	0x01
 #define GSOP_WITHIN	0x02
 #define GSOP_INTERSECTS	0x03
+#define GSOP_MAY_INTERSECT	0x04
+#define GSOP_MAY_CONTAIN	0x05
 
-#define GSOP_CORE_MASK	0x03
+#define GSOP_CORE_MASK		0x0F
 
-#define GSOP_NEGATION	0x08
-#define GSOP_PRECISION	0x10
+#define GSOP_NEGATION		0x10
+#define GSOP_PRECISION		0x20
+/* If more bits are occupied, change the size of txs_geo and itc_geo_op fields */
+
+
+extern const char *predicate_name_of_gsop (int gsop);
 
 
 typedef struct xpath_node_s

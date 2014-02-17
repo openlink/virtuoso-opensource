@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2011 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -138,6 +138,8 @@ clib_local_autocommit (cll_in_box_t * clib, query_instance_t * qi, cl_op_t * clo
       if (LT_PENDING == cli->cli_trx->lt_status && (cli->cli_trx->lt_cl_branches || cli->cli_trx->lt_cl_enlisted
 	      || cli->cli_trx->lt_cl_main_enlisted))
 	return LTE_OK;		/* if for other reasons this has enlisted contenty do not commit the enclosing txn.  makes half transactions and really fucks over remote branches */
+      if (cli->cli_trx->lt_remotes)
+	return LTE_OK; /* if local daq call, whether recursive or not there is an enclosing context hat will transact the remotes, transacting remote in mid qr w open cursor will kill the cursor */
       IN_TXN;
       detail = cli->cli_trx->lt_error_detail;
       cli->cli_trx->lt_error_detail = NULL;
@@ -656,6 +658,17 @@ cu_process_return (cucurbit_t * cu, cu_return_t * cur, value_state_t * vs, int s
 
 void cu_clear (cucurbit_t * cu);
 
+caddr_t *
+cu_next (cucurbit_t * cu, query_instance_t * qi, int is_flush)
+{
+  caddr_t *next;
+  if (cu->cu_nth_set == cu->cu_fill)
+    return NULL;
+  next = (caddr_t *) cu->cu_rows[cu->cu_nth_set];
+  cu->cu_nth_set++;
+  return next;
+}
+
 void
 cu_row_ready (cucurbit_t * cu, int irow)
 {
@@ -768,6 +781,7 @@ cu_clear (cucurbit_t * cu)
   mem_pool_t *new_pool;
   cl_req_group_t *clrg = cu->cu_clrg;
   caddr_t x;
+  clrg->clrg_send_time = 0;
   DO_SET (cu_line_t *, cul, &cu->cu_lines)
   {
     caddr_t *val;
@@ -797,6 +811,7 @@ cu_clear (cucurbit_t * cu)
   clrg->clrg_vec_clos = NULL;
   DO_SET (cll_in_box_t *, clib, &clrg->clrg_clibs)
   {
+      clib->clib_keep_alive = 0;
     clib->clib_dc_read = NULL;
     clib->clib_vec_clos = NULL;
   }
@@ -1216,12 +1231,48 @@ bif_dpipe_reuse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_dpipe_define (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  caddr_t name = bif_string_arg (qst, args, 0, "dpipe_define");
+  dbe_key_t *key = bif_key_arg (qst, args, 1, "dpipe_define");
+  caddr_t fn = bif_string_arg (qst, args, 3, "dpipe_define");
+  int l = bif_long_arg (qst, args, 4, "dpipe_define");
+  cu_func_t *cf, *prev_cf = NULL;
+  prev_cf = cu_func (name, 0);
+  if (prev_cf && prev_cf->cf_dispatch)
+    return NULL;		/* no redef of builtin cf with dispatch */
+  if (prev_cf)
+    cf = prev_cf;
+  else
+    {
+      NEW_VARZ (cu_func_t, cf2);
+      cf = cf2;
+    }
+  cf->cf_name = box_copy (name);
+  cf->cf_part_key = key;
+  cf->cf_proc = box_copy (fn);
+  cf->cf_is_upd = CF_UPD_FLAGS (l);
+  if (CF_SINGLE_ACTION & l)
+    cf->cf_single_action = 1;
+  if (BOX_ELEMENTS (args) > 5)
+    {
+      cf->cf_call_proc = box_copy (bif_string_or_null_arg (qst, args, 5, "dpipe_define"));
+      cf->cf_call_bif = box_copy (bif_string_or_null_arg (qst, args, 6, "dpipe_define"));
+      cf->cf_extra = box_copy_tree (bif_arg (qst, args, 7, "dpipe_define"));
+    }
+  id_hash_set (name_to_cu_func, (caddr_t) & cf->cf_name, (caddr_t) & cf);
   return NULL;
 }
 
 caddr_t
 bif_dpipe_drop (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  caddr_t name = bif_string_arg (qst, args, 0, "dpipe_drop");
+  cu_func_t *oldfn = NULL;
+  caddr_t oldkey = NULL;
+  if (BOX_ELEMENTS (args) > 1)
+    sqlr_new_error ("42000", "CL...", "dpipe_drop() takes only one string parameter, dpipe name.");
+  id_hash_get_and_remove (name_to_cu_func, (caddr_t) & name, (caddr_t) & oldkey, (caddr_t) & oldfn);
+  if (oldfn)
+    dk_free (oldfn, sizeof (cu_func_t));
   return NULL;
 }
 
@@ -1351,12 +1402,6 @@ cl_read_dpipes ()
       "select count (*) from SYS_DPIPE where 0 = dpipe_define_no_err (DP_NAME, DP_PART_TABLE, DP_PART_KEY, DP_SRV_PROC, DP_IS_UPD, DP_CALL_PROC, DP_CALL_BIF, DP_EXTRA)");
 }
 
-void
-dpipe_define_1_bif_define (void)
-{
-  bif_define ("dpipe_define_1", bif_dpipe_define);
-}
-
 
 caddr_t
 bif_cl_current_slice (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -1379,21 +1424,17 @@ bif_daq_init ()
   bif_define ("cl_set_slice", bif_cl_set_slice);
   name_to_cu_func = id_casemode_hash_create (11);
 //  func_name_to_cu_func = id_casemode_hash_create (11);
-  bif_define ("dpipe", bif_dpipe);
-  bif_set_cluster_rec ("dpipe");
-  bif_define ("dpipe_input", bif_dpipe_input);
-  bif_set_cluster_rec ("dpipe_input");
-  bif_define ("dpipe_next", bif_dpipe_next);
-  dpipe_define_1_bif_define ();
-  bif_set_cluster_rec ("dpipe_next");
+  bif_define_ex ("dpipe", bif_dpipe, BMD_OUT_OF_PARTITION, BMD_DONE);
+  bif_define_ex ("dpipe_input", bif_dpipe_input, BMD_OUT_OF_PARTITION, BMD_DONE);
+  bif_define_ex ("dpipe_next", bif_dpipe_next, BMD_OUT_OF_PARTITION, BMD_DONE);
+  bif_define ("dpipe_define_1", bif_dpipe_define);
   bif_define ("dpipe_drop_1", bif_dpipe_drop);
   bif_define ("dpipe_count", bif_dpipe_count);
   bif_define ("dpipe_reuse", bif_dpipe_reuse);
-  bif_define ("dpipe_redo", bif_dpipe_redo);
-  bif_set_cluster_rec ("dpipe_redo");
+  bif_define_ex ("dpipe_redo", bif_dpipe_redo, BMD_OUT_OF_PARTITION, BMD_DONE);
   bif_define ("cl_is_autocommit", bif_cl_is_autocommit);
   bif_define ("cl_daq_client", bif_cl_daq_client);
-  bif_define_typed ("cl_current_slice", bif_cl_current_slice, &bt_integer);
+  bif_define_ex ("cl_current_slice", bif_cl_current_slice, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("cl_detach_thread", bif_cl_detach_thread);
   {
     /* define identity as identity op for dpipe */

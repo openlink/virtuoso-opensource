@@ -10,7 +10,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2014 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -433,7 +433,7 @@ KILL_TEST_INSTANCES()
     #
     #  Killing virtuoso instances left, if any.
     #
-    kill `find . -type f -name "virtuoso.lck" -print0 | xargs -0 cat | cut -d "=" -f 2` 2> /dev/null
+    for f in `find . -type f -name virtuoso.lck`; do . $f ; kill $VIRT_PID ; done
 }
 
 
@@ -1135,7 +1135,7 @@ CL_START_SERVER ()
           if [ "$this_host" = "$master_host" ]
           then 
               LOG "RDF storage will be reconfigured for elastic cluster now ..."
-              RUN $ISQL $port dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/../../../libsrc/Wi/rdfela.sql
+              RUN $ISQL $port dba dba "exec=select 1"
               if test $STATUS -ne 0
               then
                       LOG "***ABORTED: RDF storage cannot be reconfigured for elastic cluster. "

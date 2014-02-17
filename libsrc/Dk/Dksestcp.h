@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -64,7 +64,9 @@ extern int last_errno;
 # define init_tcpip()
 /* if (!pctcp_started) {pctcp_started=1;init_pctcp();};
   Init called from level 2.  */
+# ifndef EMSGSIZE
 # define EMSGSIZE WSAEMSGSIZE
+# endif
 #else /* PCTCP */
 # define init_tcpip()
 #endif

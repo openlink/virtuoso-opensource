@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -170,11 +170,16 @@ clause
 		  }
 		if (NULL != old_uri_ptr)
 		  {
+		    /*
 		    int err = strcmp (old_uri_ptr[0], $3);
 		    dk_free_box ($2);
 		    dk_free_box ($3);
 		    if (err)
 		      ttlyyerror_action ("Namespace prefix is re-used for a different namespace IRI");
+		    */
+		    dk_free_box ($2);
+		    dk_free_box (old_uri_ptr[0]);
+		    old_uri_ptr[0] = $3;
 		  }
 		else
 		  id_hash_set (ttlp_arg->ttlp_namespaces_prefix2iri, (caddr_t)(&($2)), (caddr_t)(&($3))); }

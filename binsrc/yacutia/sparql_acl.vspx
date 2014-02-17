@@ -1,12 +1,10 @@
 <?xml version="1.0"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2014 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,13 +19,14 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="auth_serv"
         decor="yacutia_decor.vspx"
         style="yacutia_style.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <vm:pagetitle>Virtuoso Access Control Lists</vm:pagetitle>
   <vm:pagewrapper>
     <vm:variables>
@@ -40,6 +39,7 @@
       <v:variable name="u_id" type="int" default="null" />
       <v:variable name="apps" type="any" default="null" persist="temp"/>
       <v:variable name="rules" type="any" default="null" persist="temp"/>
+      <v:variable name="app_realm" type="varchar" default="'GENERIC'" />
     </vm:variables>
     <vm:menu>
       <vm:menuitem name="HTTP" value="Access Control Lists"/>
@@ -51,10 +51,19 @@
         function aclToggle (obj)
         {
           if ($v('type') != 'Advanced') {
-            OAT.Dom.show('webid');
+              OAT.Dom.show('webid_span');
             OAT.Dom.hide('filter');
+              if ($v('type') == 'Person') {
+                $('webid_label').innerHTML = 'NetID';
+                OAT.Dom.show('webid');
+                OAT.Dom.hide('webid_group');
           } else {
+                $('webid_label').innerHTML = 'Group URI';
             OAT.Dom.hide('webid');
+                OAT.Dom.show('webid_group');
+              }
+            } else {
+              OAT.Dom.hide('webid_span');
             OAT.Dom.show('filter');
           }
         }
@@ -126,9 +135,9 @@
         </script>
     </vm:header>
     <vm:pagebody>
-  <v:on-init>	
-      self.rules := vector ();		
-  </v:on-init>	
+  <v:on-init>
+      self.rules := vector ();
+  </v:on-init>
   <v:method name="astyle" arglist="in cmp varchar">
     <![CDATA[
       return 'page_tab';
@@ -190,7 +199,7 @@
                   <table cellpadding="0" cellspacing="0" border="0">
                     <tr>
 		      <!--td class="page_tab" align="center">
-			  	
+
 			<v:url xhtml_style="page_tab" url="sec_pki_1.vspx" value="Public Key Infrastructure" render-only="1"/>
 		      </td-->
 		      <td class="page_tab_selected" align="center">
@@ -221,15 +230,15 @@
 		      <?vsp if (DB.DBA.VAD_CHECK_VERSION ('rdf_mappers') is not null or check_package ('cartridges')) { ?>
 		      <td class="<?V self.astyle ('Cartridges') ?>" align="center">
 			<v:url xhtml_style="page_tab" url="sec_auth_sponger_2.vspx" value="Cartridges" render-only="1"/>
-			  </td>
-          <?vsp } ?>          
+		      </td>
+          <?vsp } ?>
 
 		      <?vsp if (DB.DBA.VAD_CHECK_VERSION ('Framework') is not null or DB.DBA.VAD_CHECK_VERSION ('policy_manager') is not null) { ?>
 		      <td class="page_tab_selected" align="center">
 			<v:url xhtml_style="page_tab" url="sparql_acl.vspx" value="NetID ACLs" render-only="1"/>
 		      </td>
 		      <?vsp } ?>
-                        
+
 			<td class="page_tab_empty" align="right" width="100%">
                         </td>
                     </tr>
@@ -244,20 +253,24 @@
 ?>
 <div class="error_msg" id="page_error_msg"><?vsp self.vc_error_summary (0); ?></div>
 <?vsp
-} ?>
+                                            }
+                                          ?>
 	  <div class="message"><v:label name="pwd_msg" value="--self.msg_msg" /></div>
 		      <v:form type="simple" method="POST">
 			<table class="listing">
+                                                <thead>
 			  <tr class="listing_header_row">
 			      <th>NetID/Group</th>
 			    <th>Realm</th>
 			    <th>SQL User Account</th>
-			    <th>Action</th>
+                                                    <th nowrap="nowrap" width="1%">Action</th>
 			  </tr>
-			  <v:data-set name="oauth" 
-			      sql="select null as DUMMY, FS_URI, FS_UID, FS_REALM, FS_APP_DATA, FS_PRIORITY 
-			      		from FOAF_SSL_ACL left outer join  SYS_USERS u on (u.U_NAME = FS_UID) order by FS_REALM, FS_PRIORITY" 
-			      scrollable="1" editable="1" nrows="1000">
+                                                </thead>
+			  <v:data-set name="oauth"
+                                                            sql="select null as DUMMY, FS_URI, FS_UID, FS_REALM, FS_APP_DATA, FS_PRIORITY from FOAF_SSL_ACL left outer join  SYS_USERS u on (u.U_NAME = FS_UID) order by FS_REALM, FS_PRIORITY"
+                                                            scrollable="1"
+                                                            editable="1"
+                                                            nrows="1000">
 			    <v:before-data-bind>
                         if (not e.ve_is_post and self.del_acl is not null)
                         {
@@ -271,25 +284,31 @@
                         }
                 		  </v:before-data-bind>
 
+                                                  <tbody>
 				  <v:template name="maps_rep" type="repeat">
 				    <v:template name="template7" type="if-not-exists">
-				      <tr><td colspan="4">No ACL(s)</td></tr>
+                                                        <tr>
+                                                          <td colspan="4">No ACL(s)</td>
+                                                        </tr>
 				    </v:template>
+
                 		    <v:template name="maps_brows" type="browse">
             <v:after-data-bind>
               if (not e.ve_is_post and control.te_rowset[1] = self.edit_acl and control.te_rowset[3] = self.edit_realm)
-              {
+	      {
 	        declare tp any;
+
                 self.webid.ufl_value := control.te_rowset[1];
-                self.rol.ufl_value := (select  g.U_NAME from SYS_USERS u join SYS_USER_GROUP on (u.U_ID = UG_UID)
-					join SYS_USERS g on (g.U_ID = UG_GID) where u.U_NAME = control.te_rowset[2] 
-					and g.U_NAME like 'SPARQL_%');
-		self.app_realm.ufl_value := control.te_rowset[3];
-                self.usr.ufl_value := control.te_rowset[2];
+                                                            self.rol.ufl_value := (select g.U_NAME
+                                                                                     from SYS_USERS u
+                                                                                       join SYS_USER_GROUP on (u.U_ID = UG_UID)
+                                                                                         join SYS_USERS g on (g.U_ID = UG_GID)
+                                                                                     where u.U_NAME = control.te_rowset[2] and g.U_NAME like 'SPARQL_%');
+                                                            self.app_realm := control.te_rowset[3];
+		self.usr.ufl_value := control.te_rowset[2];
 		self.priority.ufl_value := control.te_rowset[5];
 		self.app_data.ufl_value := vector_to_text_opt (control.te_rowset[4]);
-		self.rules := (select vector_agg (vector (SWA_ID, SWA_PROP, SWA_OP, SWA_VAL, SWA_QUERY)) from SPARQL_WEBID_ACL 
-			where SWA_RULE = self.edit_acl and SWA_REALM = self.edit_realm);
+                                                            self.rules := (select vector_agg (vector (SWA_ID, SWA_PROP, SWA_OP, SWA_VAL, SWA_QUERY)) from SPARQL_WEBID_ACL where SWA_RULE = self.edit_acl and SWA_REALM = self.edit_realm);
 		tp := (select FS_TYPE from FOAF_SSL_ACL where FS_URI = self.edit_acl and FS_REALM = self.edit_realm);
 		if (tp = 0)
 		  self.type.ufl_value := 'Person';
@@ -299,13 +318,9 @@
 		  self.type.ufl_value := 'Advanced';
               }
             </v:after-data-bind>
-	    <tr class="<?V case when self.edit_acl = control.te_rowset[1] and self.edit_realm = control.te_rowset[3] 
-					   then 'listing_row_selected'
-					    when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                                                        <tr class="<?V case when self.edit_acl = control.te_rowset[1] and self.edit_realm = control.te_rowset[3] then 'listing_row_selected' end ?>">
                 			    <td>
-                				    <v:label name="la2" value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
-                				      format="%s" render-only="1"/>
-
+                                                            <v:label name="la2" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s" render-only="1"/>
                 			    </td>
                 			    <td>
                 				    <v:label name="ur1"
@@ -321,23 +336,18 @@
 						      render-only="1"
                 				    />
                 			    </td>
-                			    <td>
-						<v:url name="ur3" value='<img src="images/icons/edit_16.png" hspace="3" border="0"/>Edit'
+                                                          <td nowrap="nowrap">
+                                                            <v:url name="ur3"
+                                                                   value='<img src="images/icons/edit_16.png" hspace="3" border="0"/>Edit'
                 				      format="%s"
-						      url="--sprintf ('sparql_acl.vspx?edit=%U&edit_realm=%U', 
-						      (control.vc_parent as vspx_row_template).te_rowset[1],
-						      (control.vc_parent as vspx_row_template).te_rowset[3]
-						      )
-						      "
+                                                                   url="--sprintf ('sparql_acl.vspx?edit=%U&edit_realm=%U', (control.vc_parent as vspx_row_template).te_rowset[1], (control.vc_parent as vspx_row_template).te_rowset[3])"
                 				      xhtml_title="Edit"
                 				      xhtml_alt="Edit"
                 				      />
-						  <v:url name="ur2" value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
+                                                            <v:url name="ur2"
+                                                                   value='<img src="images/icons/trash_16.png" hspace="3" border="0"/>Delete'
                 				      format="%s"
-						      url="--sprintf ('sparql_acl.vspx?del=%U&edit_realm=%U', 
-						      	(control.vc_parent as vspx_row_template).te_rowset[1],
-						      	(control.vc_parent as vspx_row_template).te_rowset[3]
-							)"
+                                                                   url="--sprintf ('sparql_acl.vspx?del=%U&edit_realm=%U', (control.vc_parent as vspx_row_template).te_rowset[1], (control.vc_parent as vspx_row_template).te_rowset[3])"
                 				      xhtml_title="Delete"
                 				      xhtml_alt="Delete"
                 				      />
@@ -345,6 +355,7 @@
                 			  </tr>
                 		    </v:template>
                 		  </v:template>
+                                                  </tbody>
 
                 		  <v:template name="maps_footer" type="simple">
                 		  <tr>
@@ -357,25 +368,63 @@
                 	  </table>
                   	  <div class="fm">
 			      <fieldset>
-			      Type: <v:select-list name="type" xhtml_id="type" xhtml_onchange="javascript: aclToggle(this);">
+                                                  <label for="type">Type</label>
+                                                  <v:select-list name="type" xhtml_id="type" xhtml_onchange="javascript: aclToggle(this);" xhtml_style="width: 200px;">
 				  <v:item name="Person" value="Person"/>
 				  <v:item name="Group" value="Group"/>
 				  <v:item name="Advanced" value="Advanced"/>
-			      </v:select-list> <br/>
-			      <span id="webid">
-				  NetID/Group: <v:text name="webid" value="" xhtml_size="100"/>
-			      <!--v:button action="browse" name="sel_id" value="Browse" selector="sel_user.vspx"
-				  child-window-options="scrollbars=yes, menubar=no, height=630, width=600"
-				  enabled="-#-coalesce ((select top 1 1 from SYS_KEYS where KEY_TABLE = 'DB.DBA.WA_USER_INFO'), 0)">
-				  <v:field name="webid"/>
- 			      </v:button-->
-			      </span><br/>
-			      Realm: <v:text name="app_realm" value="" default_value="GENERIC" xhtml_size="100"/><br/>
-			      Priority (0 - top): <v:text name="priority" value="" default_value="0" xhtml_size="3"/><br/>
-			      Options: <br/><v:textarea name="app_data" xhtml_cols="30" xhtml_rows="5" xhtml_id="t_opt"/> <br/>
-			      <span id="filter">
-              Filter:
-              <table id="s_tbl" style="width: 90%;">
+                                                  </v:select-list>
+                                                  <br />
+
+                                                  <span id="webid_span">
+                                                    <label id="webid_label">NetID</label>
+                                                    <v:text name="webid" xhtml_id="webid" value="" xhtml_style="width: 500px;"/>
+                                                    <v:data-list name="webid_group"
+                                                                 xhtml_id="webid_group"
+                                                                 sql="select distinct AG_GROUP from DB.DBA.RDF_WEBID_ACL_GROUPS"
+                                                                 key-column="AG_GROUP"
+                                                                 value-column="AG_GROUP"
+                                                                 xhtml_style="width: 500px;"
+                                                    />
+                                                    <br />
+                                                  </span>
+
+                                                  <label for="app_realm">Realm</label>
+                                                  <span id="realm">
+                                                    <script type="text/javascript">
+                                                      <![CDATA[
+                                                        function init ()
+                                                        {
+                                                          var fld = new OAT.Combolist([], "<?V self.app_realm ?>");
+                                                          fld.input.name = 'app_realm';
+                                                          fld.input.id = 'app_realm';
+                                                          fld.input.style.width = "200px";
+                                                          $("realm").appendChild(fld.div);
+                                                          <?vsp
+                                                            http ('fld.addOption("GENERIC");');
+                                                            http ('fld.addOption("Virtuoso Sponger");');
+                                                            for (select distinct FS_REALM from DB.DBA.FOAF_SSL_ACL) do
+                                                            {
+                                                              if ((FS_REALM <> 'GENERIC') and (FS_REALM <> 'Virtuoso Sponger'))
+                                                                http (sprintf ('fld.addOption("%s");', FS_REALM));
+                                                            }
+                                                          ?>
+                                                        }
+                                                      ]]>
+                                                    </script>
+                                                  </span>
+
+                                                  <label for="priority">Priority (0 - top)</label>
+                                                  <v:text name="priority" xhtml_id="priority" value="" default_value="0" xhtml_size="3"/>
+                                                  <br />
+
+                                                  <label for="app_data">Options</label>
+                                                  <v:textarea name="app_data" xhtml_id="app_data" xhtml_rows="5" xhtml_style="width: 500px;" />
+                                                  <br />
+
+                                                  <div id="filter">
+                                                    <b>Filter</b>
+                                                    <table id="s_tbl" style="width: 100%;">
                 <tr>
                   <td>
                     <table class="listing" style="width: 100%;">
@@ -389,7 +438,7 @@
                       </thead>
                       <tbody id="s_tbody">
                         <tr id="s_tr_no">
-                          <td colspan="3">
+                                                                <td colspan="4">
                             <b>No Criteria</b>
                           </td>
                         </tr>
@@ -404,51 +453,67 @@
                     </table>
                   </td>
                   <td style="white-space: nowrap; vertical-align: top;">
-                    <img border="0" title="Add Condition" alt="Add Condition" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 55, tdCssText: 'width: 33%; vertical-align: top;', className: '_validate_'}, fld_2: {mode: 56, tdCssText: 'width: 33%; vertical-align: top;', cssText: 'display: none;', className: '_validate_'}, fld_3: {mode: 57, tdCssText: 'width: 33%; vertical-align: top;', cssText: 'display: none;', className: '_validate_'}, btn_1: {mode: 55}});" class="button pointer" src="/ods/images/icons/add_16.png" />
+                                                          <img border="0" title="Add Condition" alt="Add Condition" onclick="javascript: TBL.createRow('s', null, {fld_1: {mode: 55, tdCssText: 'width: 33%; vertical-align: top;', className: '_validate_'}, fld_2: {mode: 56, tdCssText: 'width: 33%; vertical-align: top;', cssText: 'display: none;', className: '_validate_'}, fld_3: {mode: 57, tdCssText: 'width: 33%; vertical-align: top;', cssText: 'display: none;', className: '_validate_'}, btn_1: {mode: 55}});" class="button pointer" src="images/icons/add_16.png" />
                   </td>
                 </tr>
               </table>
-			      </span>
 				  <br/>
-			      SPARQL Role: <v:select-list name="rol">
+                                                  </div>
+
+                                                  <label for="rol">SPARQL Role</label>
+                                                  <v:select-list name="rol" xhtml_id="rol" xhtml_style="width: 200px;">
 				  <v:item name="none" value="none"/>
 				  <v:item name="SELECT" value="SPARQL_SELECT"/>
 				  <v:item name="SPONGE" value="SPARQL_SPONGE"/>
 				  <v:item name="UPDATE" value="SPARQL_UPDATE"/>
-			      </v:select-list> <br/>
-			      Use existing User account: <v:data-list name="usr" sql="select U_NAME from (select 'none' as U_NAME) x union all select U_NAME from SYS_USERS where U_SQL_ENABLE = 1"
-				  	key-column="U_NAME" value-column="U_NAME"/> (for new ACL entry, leave none to create a new user)
-			      <!-- SQL Account: <v:text name="acc" value="" xhtml_size="100"/--><br/>
+                                                  </v:select-list>
+                                                  <br />
+
+                                                  <label for="usr">Use existing user account</label>
+                                                  <v:data-list name="usr" xhtml_id="usr" sql="select U_NAME from (select 'none' as U_NAME) x union all select U_NAME from SYS_USERS where U_SQL_ENABLE = 1" key-column="U_NAME" value-column="U_NAME" xhtml_style="width: 200px;"/>
+                                                  (for new ACL entry, leave none to create a new user)
+                                                  <br />
+
 				  <span class="fm_ctl_btn">
 				      <v:button name="cancel2" value="Cancel" action="simple" enabled="--equ(isnull(self.edit_acl),0)">
 					  <v:on-post>
-
 					      self.webid.ufl_value := null;
-					      self.rol.ufl_value := null;
-					      self.app_realm.ufl_value := 'GENERIC';
-
+                                                        self.webid_group.ufl_value := null;
+                                                        self.rol.ufl_value := 'none';
+                                                        self.usr.ufl_value := 'none';
+                                                        self.app_realm := 'GENERIC';
 					      self.edit_acl := null;
-					      self.save1.vc_data_bind (e);
+
+                                                        self.vc_data_bind (e);
 					      control.vc_enabled := 0;
 					  </v:on-post>
 				      </v:button>
 				  </span>
                  	      <span class="fm_ctl_btn">
                   		  <v:button name="save1" value="--case when self.edit_acl is not null then 'Update' else 'Register' end" action="simple">
-				      <v:on-post><![CDATA[
-					  declare uid, orole, tp varchar;
+                                                      <v:on-post>
+                                                        <![CDATA[
+                                                          declare uid, orole, tp, webid varchar;
 					  declare stat, msg, acl, opts any;
-					  self.webid.ufl_value := trim (self.webid.ufl_value);
-					  self.app_realm.ufl_value := trim (self.app_realm.ufl_value);
+
+                                                          webid := trim (self.webid.ufl_value);
+                                                          self.app_realm := trim (get_keyword ('app_realm', self.vc_page.vc_event.ve_params, 'GENERIC'));
 					  opts := text_opt_to_vector (self.app_data.ufl_value);
 					  if (self.type.ufl_value = 'Advanced')
+                                                          {
 					    tp := 2;
+                                                          }
 					  else if (self.type.ufl_value = 'Group')
+                                                          {
 					    tp := 1;
+                                                            webid := trim (self.webid_group.ufl_value);
+                                                          }
 					  else if (self.type.ufl_value = 'Person')
-					    tp := 0;   
+                                                          {
+					    tp := 0;
+                                                          }
 
-					  if (0 = length (self.app_realm.ufl_value))
+                                                          if (0 = length (self.app_realm))
 					    {
 					      self.vc_is_valid := 0;
 					      self.vc_error_message := 'Application realm can not be empty string';
@@ -456,14 +521,14 @@
 					    }
 					  if (self.type.ufl_value <> 'Advanced')
   					  {
-					  if (0 = length (self.webid.ufl_value))
+                                                            if (0 = length (webid))
 					    {
   					      self.vc_is_valid := 0;
 					      self.vc_error_message := 'Web ID could not be empty';
-					      return;
+  					      return;
 					    }
-					  -- it is pattern  
-  					  if (0 and FOAF_CHECK_WEBID (self.webid.ufl_value))
+					  -- it is pattern
+                                                            if (0 and FOAF_CHECK_WEBID (webid))
                                             {
 					      self.vc_is_valid := 0;
                                               self.vc_error_message := 'The WebID is inaccessible or does not contain certificate properties';
@@ -472,37 +537,39 @@
   					  }
   					else
   					  {
-					     if (length (self.webid.ufl_value) = 0) 
+                                                            if (length (webid) = 0)
 					       self.webid.ufl_value := sprintf ('Rule-%d', sequence_next ('sparql_webid_acl_rule'));
+
 					     acl := self.aci_params (self.vc_page.vc_event.ve_params);
   					  }
-
 					  if (self.edit_acl is null)
                                             {
 					      if (self.usr.ufl_value = 'none')
-                                            {
-						  if (exists (select 1 from FOAF_SSL_ACL where FS_URI = self.webid.ufl_value and FS_REALM = self.app_realm.ufl_value))
-						{
-						  self.vc_is_valid := 0;
+                                                {
+                                                              if (exists (select 1 from FOAF_SSL_ACL where FS_URI = webid and FS_REALM = self.app_realm))
+						    {
+						      self.vc_is_valid := 0;
 						      self.vc_error_message := 'This Web ID is already registered for that realm';
-						  return;
-						}
-					      uid := sprintf ('SPUID%d', sequence_next ('__SPUID'));
-					      USER_CREATE (uid, uuid());
+						      return;
+						    }
+						  uid := sprintf ('SPUID%d', sequence_next ('__SPUID'));
+						  USER_CREATE (uid, uuid());
 						  if (self.rol.ufl_value <> 'none')
-					      USER_GRANT_ROLE (uid, self.rol.ufl_value);
-					      USER_SET_OPTION (uid, 'DISABLED', 1);
+						    USER_GRANT_ROLE (uid, self.rol.ufl_value);
+						  USER_SET_OPTION (uid, 'DISABLED', 1);
 					        }
-					      else 
+					      else
 					        uid := self.usr.ufl_value;
-					      insert into FOAF_SSL_ACL (FS_URI, FS_UID, FS_TYPE, FS_REALM, FS_APP_DATA, FS_PRIORITY) 
-							values (self.webid.ufl_value, uid, tp, self.app_realm.ufl_value, opts, self.priority.ufl_value);
+
+					      insert into FOAF_SSL_ACL (FS_URI, FS_UID, FS_TYPE, FS_REALM, FS_APP_DATA, FS_PRIORITY)
+                                                              values (webid, uid, tp, self.app_realm, opts, self.priority.ufl_value);
+
 					      if (self.type.ufl_value = 'Advanced')
 					        {
      						  foreach (any x in acl) do
 						    {
                                                       insert into SPARQL_WEBID_ACL (SWA_RULE, SWA_REALM, SWA_ID, SWA_PROP, SWA_OP, SWA_VAL, SWA_QUERY)
-						   	values (self.webid.ufl_value, self.app_realm.ufl_value, x[0], x[1], x[2], x[3], x[4]);   
+                                                                  values (webid, self.app_realm, x[0], x[1], x[2], x[3], x[4]);
 						    }
 						}
 					    }
@@ -515,21 +582,23 @@
 						   return;
 					        }
 					      uid := (select FS_UID from FOAF_SSL_ACL where FS_URI = self.edit_acl and FS_REALM = self.edit_realm);
-
-					      orole := (select  g.U_NAME from SYS_USERS u join SYS_USER_GROUP on (u.U_ID = UG_UID)
-					      		join SYS_USERS g on (g.U_ID = UG_GID) where u.U_NAME = uid and g.U_NAME like 'SPARQL_%');
+                                                            orole := (select g.U_NAME
+                                                                        from SYS_USERS u
+                                                                          join SYS_USER_GROUP on (u.U_ID = UG_UID)
+                                                                            join SYS_USERS g on (g.U_ID = UG_GID)
+                                                                       where u.U_NAME = uid and g.U_NAME like 'SPARQL_%');
 
 					      if (uid like 'SPUID%')
-			                        {		      
-					      if (orole is not null)		
-					        USER_REVOKE_ROLE (uid, orole);
-					      uid := self.usr.ufl_value;
-					      if (self.rol.ufl_value <> 'none')
-					        exec ('DB.DBA.USER_GRANT_ROLE (?,?)', stat, msg, vector (uid, self.rol.ufl_value));
+			                        {
+						  if (orole is not null)
+						    USER_REVOKE_ROLE (uid, orole);
+						  uid := self.usr.ufl_value;
+						  if (self.rol.ufl_value <> 'none')
+						    exec ('DB.DBA.USER_GRANT_ROLE (?,?)', stat, msg, vector (uid, self.rol.ufl_value));
 					        }
 					      uid := self.usr.ufl_value;
-				              update FOAF_SSL_ACL set FS_TYPE = tp, FS_UID = uid, FS_REALM = self.app_realm.ufl_value, FS_APP_DATA = opts,
-                                                FS_PRIORITY = self.priority.ufl_value
+                                                            update FOAF_SSL_ACL
+                                                               set FS_TYPE = tp, FS_UID = uid, FS_REALM = self.app_realm, FS_APP_DATA = opts, FS_PRIORITY = self.priority.ufl_value
 						where FS_URI = self.edit_acl and FS_REALM = self.edit_realm;
 					      delete from SPARQL_WEBID_ACL where SWA_RULE = self.edit_acl and SWA_REALM = self.edit_realm;
 					      if (self.type.ufl_value = 'Advanced')
@@ -537,17 +606,19 @@
      						  foreach (any x in acl) do
 						    {
                                                       insert into SPARQL_WEBID_ACL (SWA_RULE, SWA_REALM, SWA_ID, SWA_PROP, SWA_OP, SWA_VAL, SWA_QUERY)
-						   	values (self.edit_acl, self.app_realm.ufl_value, x[0], x[1], x[2], x[3], x[4]);   
-					    }
+                                                                  values (self.edit_acl, self.app_realm, x[0], x[1], x[2], x[3], x[4]);
+						    }
 						}
 					    }
-					  if (__proc_exists (sprintf ('DB.DBA.WEBID_ACL_CHECK__%s_%s', self.webid.ufl_value, self.edit_realm)) 
-					    is not null)
-					    exec (sprintf ('drop procedure DB.DBA."WEBID_ACL_CHECK__%s_%s"', self.webid.ufl_value, self.edit_realm));
+                                                          if (__proc_exists (sprintf ('DB.DBA.WEBID_ACL_CHECK__%s_%s', webid, self.edit_realm)) is not null)
+                                                            exec (sprintf ('drop procedure DB.DBA."WEBID_ACL_CHECK__%s_%s"', webid, self.edit_realm));
+
                                           if (self.type.ufl_value = 'Advanced')
-					    exec (WEBID_GEN_ACL_PROC (self.webid.ufl_value, self.app_realm.ufl_value));
+                                                            exec (WEBID_GEN_ACL_PROC (webid, self.app_realm));
+
 					  self.vc_redirect ('sparql_acl.vspx');
-                          ]]></v:on-post>
+                                                        ]]>
+                                                      </v:on-post>
                   		  </v:button>
                 	      </span>
                   	  </fieldset>

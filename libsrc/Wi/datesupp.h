@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -27,6 +27,7 @@
 
 #ifndef _DATESUPP_H
 #define _DATESUPP_H
+#include "Dk.h"
 #include "date.h"
 
 /*! GMTIMESTAMP_STRUCT is identical to TIMESTAMP_STRUCT but is supposed to be in GMT, not in default server timezone or anything else */
@@ -44,7 +45,7 @@ int file_mtime_to_dt (const char * name, char *dt);
 #endif
 void sec2time (int sec, int *day, int *hour, int *min, int *tsec);
 int time2sec (int day, int hour, int min, int sec);
-void ts_add (TIMESTAMP_STRUCT *ts, int n, const char *unit);
+void ts_add (TIMESTAMP_STRUCT *ts, boxint n, const char *unit);
 int dt_validate (caddr_t dt);
 void dt_to_GMTimestamp_struct (ccaddr_t dt, GMTIMESTAMP_STRUCT *ts);
 void GMTimestamp_struct_to_dt (GMTIMESTAMP_STRUCT *ts_in, char *dt);
@@ -109,4 +110,9 @@ extern int dt_local_tz;
 int dt_compare (caddr_t dt1, caddr_t dt2);
 unsigned int64  dt_seconds (caddr_t dt);
 void dt_print (caddr_t dt);
+
+typedef caddr_t arithm_dt_operation_t (ccaddr_t box1, ccaddr_t box2, caddr_t *err_ret);
+extern arithm_dt_operation_t arithm_dt_add;
+extern arithm_dt_operation_t arithm_dt_subtract;
+
 #endif /* _DATESUPP_H */

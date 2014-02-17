@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -357,6 +357,7 @@ create procedure column_privileges (in TableQualifier varchar,
 	 and __any_grants (k.KEY_TABLE)
 	 and k.KEY_IS_MAIN = 1
 	 and k.KEY_MIGRATE_TO is NULL
+	 order by COLUMN_NAME, PRIVILEGE_TYPE
      ) x
      where TABLE_CATALOG like TableQualifier
        and TABLE_SCHEMA like TableOwner

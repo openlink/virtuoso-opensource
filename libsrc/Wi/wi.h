@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -73,6 +73,14 @@ typedef int errcode;
 typedef int errno_t;
 #endif
 #endif
+
+#ifdef LARGE_QI_INST
+#define MAX_STATE_SLOTS 0xffffe
+#else
+#define MAX_STATE_SLOTS 0xfffe
+#endif
+#define STATE_SLOT_LIMIT (MAX_STATE_SLOTS-500)
+
 typedef struct remap_s remap_t;
 typedef struct buffer_pool_s buffer_pool_t;
 typedef struct hash_index_s hash_index_t;
@@ -83,7 +91,11 @@ typedef int (*key_cmp_t) (buffer_desc_t * buf, int pos, it_cursor_t * itc);
 typedef struct pf_hash_s pf_hash_t;
 typedef struct state_slot_s state_slot_t;
 typedef struct state_slot_ref_s state_slot_ref_t;
+#if (MAX_STATE_SLOTS > 0xffff)
+typedef unsigned int ssl_index_t;
+#else
 typedef unsigned short ssl_index_t;
+#endif
 typedef struct key_source_s key_source_t;
 typedef unsigned short row_no_t;
 typedef struct data_col_s data_col_t;
@@ -302,6 +314,7 @@ struct dbe_storage_s
   dk_mutex_t *	dbs_page_mtx;  /* serializes page alloc/free */
   du_thread_t *	dbs_owner_thr;  /* thread owning this dbs, also owner of  dbs_page_mtx */
   buffer_desc_t *	dbs_free_set;  /* page allocation bitmap pages */
+  buffer_desc_t **	dbs_free_set_arr;
   buffer_desc_t *	dbs_incbackup_set; /* set of backuped pages for incremental backup */
   dp_addr_t		dbs_n_pages_in_sets; /* space for so many bits in free set and backup set */
   uint32		dbs_n_free_pages;
@@ -683,6 +696,7 @@ typedef struct hash_range_spec_s
 #define HR_NOT 1 /* true if not found */
 #define HR_NO_BLOOM 2 /* bloom not selective, do not check */
 #define HR_RANGE_ONLY 4
+#define HRNG_IN 8 /* in pred with literals */
 
 
 
@@ -823,7 +837,6 @@ struct it_cursor_s
     bitf_t		itc_is_vacuum:1;
     bitf_t		itc_ac_parent_deld:1; /* set by autocompact to indicate that the parent page was popped off because of having only one leaf left */
     bitf_t		itc_is_geo_registered:1; /* in list of itcs in the geo index of itc_tree.  itc_tree can be a temp deld at time of itc free, so can't look in the tree*/
-    bitf_t		itc_geo_op:2;
     bitf_t		itc_cl_results:1; /* in cluster server, send stuff in out map to the client node */
     bitf_t		itc_cl_local:1; /* if cluster but running local */
     bitf_t		itc_cl_batch_done:1; /* set if reset due ti batch done */
@@ -863,6 +876,7 @@ struct it_cursor_s
     short			itc_temp_max;
     short			itc_n_siblings;
     short			itc_nth_sibling;
+    unsigned char	itc_geo_op;
 
     /* dp_addr_t		itc_parent_page; */
     dp_addr_t		itc_siblings_parent; /* the pages in itc siblings are children of this.  Use for checking that the siblings list has the right content */
@@ -1716,7 +1730,7 @@ struct row_delta_s
   row_size_t	rd_non_comp_len;
   slice_id_t	rd_slice;
   char		rd_any_ser_flags;
-  short		rd_non_comp_max;
+  uint32		rd_non_comp_max;
   dp_addr_t		rd_leaf; /* if lp, if upd or ins concerns leaf ptr */
   dbe_col_loc_t **	rd_upd_change;
   dbe_key_t *		rd_key;
@@ -1778,7 +1792,9 @@ struct io_queue_s
     dk_mutex_t * 	iq_mtx; /* serializes access to the buffers list */
     dk_set_t	iq_waiting_shut; /* list of threads waiting for all activity on this iq to finish */
     int		iq_action_ctr; /* if a thread waits for sync, release ity anyway after so many increments of this &*/
-  };
+    int64	iq_n_writes;
+    int64	iq_sync_delay;
+};
 
 
 #define IN_IOQ(iq) \
@@ -1990,7 +2006,7 @@ extern int64 bdf_is_avail_mask; /* all bits on except read aside flag which does
 
 #define LT_NEED_WAIT_CPT(lt) \
   (wi_inst.wi_is_checkpoint_pending  && \
-   wi_inst.wi_cpt_lt != lt && cpt_is_global_lock (lt))
+   wi_inst.wi_cpt_lt != lt && !cpt_is_global_lock (lt))
 
 
 /* reset catch context around itc operations */
@@ -2089,6 +2105,22 @@ typedef struct stat_desc_s
   } stat_desc_t;
 
 extern stat_desc_t dbf_descs[];
+
+typedef struct s_time_t
+{
+  uint32	sti_real;
+  uint32	sti_cpu;
+  uint32	sti_sys;
+} sys_timer_t;
+
+#define STI_START \
+  { sys_timer_t __sti; sti_init (&__sti);
+
+#define STI_END(total) \
+  sti_cum (&total, &__sti); } \
+
+void sti_init (sys_timer_t*);
+void sti_cum (sys_timer_t * cum, sys_timer_t * start);
 
 #endif /* _WI_H */
 

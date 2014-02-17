@@ -10,7 +10,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -72,7 +72,8 @@ int lite_mode = 0;
 extern int it_n_maps;
 extern int rdf_obj_ft_rules_size;
 int wi_is_cl_listener_affinity;
-int cp_unremap_quota;
+int32 cp_unremap_quota;
+int32 cp_unremap_quota_is_set;
 int correct_parent_links;
 int main_bufs;
 int n_fds_per_file = 1;
@@ -692,8 +693,8 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   vt_batch_size_limit = (int) (ptrlong) cfg_get_parm (wholefile, "\nfree_text_batch:", 0);
   if (!vt_batch_size_limit )
     vt_batch_size_limit  = 1000000;
-  vd_opt_arrayparams = (int) (ptrlong) cfg_get_parm (wholefile, "\nvd_array_params:", 0);;
-  vd_param_batch = (int) (ptrlong) cfg_get_parm (wholefile, "\nvd_param_batch:", 0);;
+  vd_opt_arrayparams = (int) (ptrlong) cfg_get_parm (wholefile, "\nvd_array_params:", 0);
+  vd_param_batch = (int) (ptrlong) cfg_get_parm (wholefile, "\nvd_param_batch:", 0);
   n_fds_per_file = (int) (ptrlong) cfg_get_parm (wholefile, "\nfds_per_file:", 0);
   if (!n_fds_per_file)
     n_fds_per_file = 1;

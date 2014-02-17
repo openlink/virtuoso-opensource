@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -688,6 +688,14 @@ qr_replace_node (query_t * qr, data_source_t * to_replace,
   }
   }
   END_DO_SET ();
+  if (IS_QN (qr->qr_head_node, union_node_input))
+    {
+      QNCAST (union_node_t, uni, qr->qr_head_node);
+      DO_SET (query_t *, uqr, &uni->uni_successors)
+	if (to_replace == uqr->qr_head_node)
+	  uqr->qr_head_node = replace_with;
+      END_DO_SET();
+    }
 }
 
 

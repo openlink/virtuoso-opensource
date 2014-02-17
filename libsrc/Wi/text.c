@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -281,10 +281,12 @@ d_id_ref (d_id_t * d_id, db_buf_t p)
    do { \
       if ((txs)->src_gen.src_sets) \
 	{ \
+	  QNCAST (QI, qi, qst); \
+	  int save_set = qi->qi_set; \
 	  data_col_t * dc = QST_BOX (data_col_t *, qst, (ssl)->ssl_index); \
-	  caddr_t v2 = v; \
-	  dc_append_box (dc, v2); \
-	  dk_free_box (v2); \
+	  qi->qi_set = dc->dc_n_values; \
+	  qst_vec_set (qst, ssl, v); \
+	  qi->qi_set = save_set; \
 	} \
       else \
 	qst_set ((qst), (ssl), (v)); \
@@ -1310,7 +1312,7 @@ composite_diff (db_buf_t dv1, db_buf_t dv2)
     {
       long n1, n2;
       dtp1 = dv1[0];
-      dtp2 = dv2[0];;
+      dtp2 = dv2[0];
       if (DV_SHORT_INT == dtp1)
 	dtp1 = DV_LONG_INT;
       if (DV_SHORT_INT == dtp2)

@@ -17,6 +17,7 @@ x
 *.log
 *.rej
 *.orig
+*.patch
 .deps
 .libs
 .generated

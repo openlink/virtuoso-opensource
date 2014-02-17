@@ -1,10 +1,8 @@
 --
---  $Id$
---
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -939,40 +937,61 @@ create function "ResFilter_DAV_LIST_LOCKS" (in id any, in type char(1), in recur
 }
 ;
 
-
-create function "ResFilter_CONFIGURE" (in col any, in search_path varchar, in filter any) returns integer
+create function "ResFilter_CONFIGURE" (
+  in id any,
+  in params any,
+  in path varchar,
+  in filter any,
+  in auth_uname varchar := null,
+  in auth_upwd varchar := null,
+  in auth_uid integer := null) returns integer
 {
+  -- dbg_obj_princ ('ResFilter_CONFIGURE', id, params, path, filter);
   declare rc integer;
   declare colname varchar;
   declare compilation, del_act any;
+
   compilation := vector ('', filter);
-  rc := DAV_DIR_FILTER_INT (search_path, 1, compilation, null, null, http_dav_uid ());
+  rc := DAV_DIR_FILTER_INT (path, 1, compilation, auth_uname, auth_upwd, auth_uid);
   if (isinteger (rc))
     return rc;
-  if (not isinteger (col))
+
+  if (not isinteger (id))
     return -20;
-  colname := DAV_SEARCH_PATH (col, 'C');
+
+  colname := DAV_SEARCH_PATH (id, 'C');
   if (not (isstring (colname)))
     return -23;
-  rc := DAV_SEARCH_ID (search_path, 'C');
+
+  rc := DAV_SEARCH_ID (path, 'C');
   if (DAV_HIDE_ERROR (rc) is null)
     return rc;
-  if (search_path <> DAV_SEARCH_PATH (rc, 'C'))
+
+  if (path <> DAV_SEARCH_PATH (rc, 'C'))
     return -2;
-  if (search_path between colname and (colname || '\255\255\255\255'))
+
+  if (path between colname and (colname || '\255\255\255\255'))
     return -28;
-  rc := DAV_PROP_SET_INT (colname, 'virt:ResFilter-SearchPath', search_path, null, null, 0, 1, 1);
+
+  rc := DAV_PROP_SET_INT (colname, 'virt:Filter-Params', params, null, null, 0, 1, 1);
   if (DAV_HIDE_ERROR (rc) is null)
     return rc;
+
+  rc := DAV_PROP_SET_INT (colname, 'virt:ResFilter-SearchPath', path, null, null, 0, 1, 1);
+  if (DAV_HIDE_ERROR (rc) is null)
+    return rc;
+
   rc := DAV_PROP_SET_INT (colname, 'virt:ResFilter-ListCond', "ResFilter_ENCODE_FILTER" (compilation), null, null, 0, 1, 1);
   if (DAV_HIDE_ERROR (rc) is null)
     return rc;
+
   del_act := "ResFilter_MAKE_DEL_ACTION_FROM_CONDITION" (compilation);
-  -- dbg_obj_princ ('ResFilter_CONFIGURE has made del_action ', del_act, ' from ', compilation);
   rc := DAV_PROP_SET_INT (colname, 'virt:ResFilter-DelAction', "ResFilter_ENCODE_FILTER" (del_act), null, null, 0, 1, 1);
   if (DAV_HIDE_ERROR (rc) is null)
     return rc;
-  update WS.WS.SYS_DAV_COL set COL_DET='ResFilter' where COL_ID=col;
+
+  update WS.WS.SYS_DAV_COL set COL_DET='ResFilter' where COL_ID=id;
+
   return 0;
 }
 ;

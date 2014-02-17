@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -297,7 +297,7 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
   -- dbg_obj_princ ('DB.DBA.SPARQL_REXEC_INT Request: ', req_method, req_uri);
   -- dbg_obj_princ ('DB.DBA.SPARQL_REXEC_INT Request: ', req_hdr);
   -- dbg_obj_princ ('DB.DBA.SPARQL_REXEC_INT Request: ', req_body);
-  ret_body := http_get (req_uri, ret_hdr, req_method, req_hdr, req_body);
+  ret_body := http_get (req_uri, ret_hdr, req_method, req_hdr, req_body, null, 15);
   -- dbg_obj_princ ('DB.DBA.SPARQL_REXEC_INT Returned header: ', ret_hdr);
   -- dbg_obj_princ ('DB.DBA.SPARQL_REXEC_INT Returned body: ', ret_body);
   ret_content_type := http_request_header (ret_hdr, 'Content-Type', null, null);
@@ -1731,6 +1731,11 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
           DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA (triples, ses);
 	  ret_mime := 'text/html';
 	}
+      else if (ret_format = 'HTML;NICE_MICRODATA')
+	{
+          DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA (triples, ses);
+	  ret_mime := 'text/html';
+	}
       else if (ret_format = 'JSON;MICRODATA')
         DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (triples, ses);
       else if (ret_format = 'ATOM;XML')
@@ -2325,27 +2330,28 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('			for(var i = format.options.length; i > 0; i--)\n');
     http('				format.options[i] = null;\n');
     http('			format.options[1] = new Option(\'Turtle\',\'text/turtle\');\n');
-    http('			format.options[2] = new Option(\'RDF/JSON\',\'application/rdf+json\');\n');
-    http('			format.options[3] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
-    http('			format.options[4] = new Option(\'N-Triples\',\'text/plain\');\n');
-    http('			format.options[5] = new Option(\'XHTML+RDFa\',\'application/xhtml+xml\');\n');
-    http('			format.options[6] = new Option(\'ATOM+XML\',\'application/atom+xml\');\n');
-    http('			format.options[7] = new Option(\'ODATA/JSON\',\'application/odata+json\');\n');
-    http('			format.options[8] = new Option(\'JSON-LD\',\'application/x-json+ld\');\n');
-    http('			format.options[9] = new Option(\'HTML (list)\',\'text/x-html+ul\');\n');
-    http('			format.options[10] = new Option(\'HTML (table)\',\'text/x-html+tr\');\n');
-    http('			format.options[11] = new Option(\'HTML+Microdata\',\'text/html\');\n');
-    http('			format.options[12] = new Option(\'Microdata/JSON\',\'application/microdata+json\');\n');
-    http('			format.options[13] = new Option(\'CSV\',\'text/csv\');\n');
-    http('			format.options[14] = new Option(\'TSV\',\'text/tab-separated-values\');\n');
-    http('			format.options[15] = new Option(\'TriG\',\'application/x-trig\');\n');
-    http('			format.options[16] = new Option(\'Pretty-printed Turtle (slow!)\',\'application/x-nice-turtle\');\n');
+    http('			format.options[2] = new Option(\'Pretty-printed Turtle (slow!)\',\'application/x-nice-turtle\');\n');
+    http('			format.options[3] = new Option(\'RDF/JSON\',\'application/rdf+json\');\n');
+    http('			format.options[4] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
+    http('			format.options[5] = new Option(\'N-Triples\',\'text/plain\');\n');
+    http('			format.options[6] = new Option(\'XHTML+RDFa\',\'application/xhtml+xml\');\n');
+    http('			format.options[7] = new Option(\'ATOM+XML\',\'application/atom+xml\');\n');
+    http('			format.options[8] = new Option(\'ODATA/JSON\',\'application/odata+json\');\n');
+    http('			format.options[9] = new Option(\'JSON-LD\',\'application/x-json+ld\');\n');
+    http('			format.options[10] = new Option(\'HTML (list)\',\'text/x-html+ul\');\n');
+    http('			format.options[11] = new Option(\'HTML (table)\',\'text/x-html+tr\');\n');
+    http('			format.options[12] = new Option(\'HTML+Microdata (inconvenient)\',\'text/html\');\n');
+    http('			format.options[13] = new Option(\'HTML+Microdata (pretty-printed table)\',\'application/x-nice-microdata\');\n');
+    http('			format.options[14] = new Option(\'Microdata/JSON\',\'application/microdata+json\');\n');
+    http('			format.options[15] = new Option(\'CSV\',\'text/csv\');\n');
+    http('			format.options[16] = new Option(\'TSV\',\'text/tab-separated-values\');\n');
+    http('			format.options[17] = new Option(\'TriG\',\'application/x-trig\');\n');
 
     if (can_cxml)
       {
-	http('			format.options[17] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
+	http('			format.options[18] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
 	if (can_qrcode)
-	  http('		format.options[18] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
+	  http('		format.options[19] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
       }
     http('			format.selectedIndex = 1;\n');
     http('			last_format = 2;\n');
@@ -2457,22 +2463,23 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
       )
     {
       opts := vector (
-        vector ('text/turtle'			, 'Turtle'				),
-	  vector ('application/rdf+json'		, 'RDF/JSON'		),
-	  vector ('application/rdf+xml'			, 'RDF/XML'		),
-	  vector ('text/plain'				, 'N-Triples'		),
-	  vector ('application/xhtml+xml'		, 'XHTML+RDFa'		),
-	  vector ('application/atom+xml'		, 'ATOM+XML'		),
-	  vector ('application/odata+json'		, 'ODATA/JSON'		),
-	  vector ('application/x-json+ld'		, 'JSON-LD'		),
-	  vector ('text/x-html+ul'			, 'HTML (list)'		),
-	  vector ('text/x-html+tr'			, 'HTML (table)'	),
-	  vector ('text/html'				, 'HTML+Microdata'	),
-	  vector ('application/microdata+json'		, 'Microdata/JSON'	),
-	  vector ('text/csv'				, 'CSV'			),
-        vector ('text/tab-separated-values'			, 'TSV'			),
-        vector ('application/x-trig'		, 'TriG'				),
-        vector ('application/x-nice-turtle'	, 'Pretty-printed Turtle (slow!)'	) );
+        vector ('text/turtle'			, 'Turtle'					),
+        vector ('application/x-nice-turtle'	, 'Pretty-printed Turtle (slow!)'		),
+        vector ('application/rdf+json'		, 'RDF/JSON'					),
+        vector ('application/rdf+xml'		, 'RDF/XML'					),
+        vector ('text/plain'			, 'N-Triples'					),
+        vector ('application/xhtml+xml'		, 'XHTML+RDFa'					),
+        vector ('application/atom+xml'		, 'ATOM+XML'					),
+        vector ('application/odata+json'	, 'ODATA/JSON'					),
+        vector ('application/x-json+ld'		, 'JSON-LD'					),
+        vector ('text/x-html+ul'			, 'HTML (list)'					),
+        vector ('text/x-html+tr'			, 'HTML (table)'				),
+        vector ('text/html'			, 'HTML+Microdata (inconvenient)'		),
+        vector ('application/x-nice-microdata'	, 'HTML+Microdata (pretty-printed table)'	),
+        vector ('application/microdata+json'	, 'Microdata/JSON'				),
+        vector ('text/csv'			, 'CSV'						),
+        vector ('text/tab-separated-values'	, 'TSV'						),
+        vector ('application/x-trig'		, 'TriG'					) );
     }
   else
     {
@@ -2835,6 +2842,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   declare ses, content any;
   declare def_max, add_http_headers, hard_timeout, timeout, client_supports_partial_res, sp_ini, soap_ver int;
   declare http_meth, content_type, ini_dflt_graph, get_user, jsonp_callback varchar;
+  declare reported_unknown_services any;
   declare state, msg varchar;
   declare metas, rset any;
   declare accept, soap_action, user_id varchar;
@@ -3433,6 +3441,7 @@ host_found:
     {
       declare dt int;
       rollback work;
+      -- dbg_obj_princ ('deadlock and http is not flushed, deadlock counter ', deadl);
       deadl := deadl + 1;
       dt := ((rnd (5) + 1) / 10.0) * (2 * deadl);
       delay (dt);
@@ -3445,6 +3454,31 @@ host_found:
       exec ('isnull (sparql_to_sql_text (''{ define sql:big-data-const 0 '' || ? || ''\\n}''))', state2, msg2, vector (full_query));
       if (state2 <> '00000')
         {
+          declare unknown_service varchar;
+          unknown_service := connection_get ('SPARQL_endpoint_to_load_service_metadata');
+          if (__tag (unknown_service) in (__tag of varchar, 217))
+            {
+              if (isinteger (reported_unknown_services))
+                reported_unknown_services := dict_new ();
+              if (not dict_get (reported_unknown_services, unknown_service, 0))
+                {
+                  declare state3, msg3 varchar;
+                  state3 := '00000';
+                  exec ('sparql load service ?? data', state3, msg3, vector (unknown_service));
+                  -- dbg_obj_princ ('exec state3=', state3, ', msg3=', msg3);
+                  if (state3 <> '00000')
+                    {
+                      DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+                        '500', 'SPARQL Request Failed',
+                        full_query, state3, msg3, format);
+                      return;
+                    }
+                  dict_put (reported_unknown_services, unknown_service, 1);
+                  connection_get ('SPARQL_endpoint_to_load_service_metadata', null);
+                  commit work;
+                  goto again;
+                }
+            }
           DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
             '400', 'Bad Request',
             full_query, state2, msg2, format);
@@ -3457,6 +3491,7 @@ host_found:
     }
 
 write_results:
+  -- dbg_obj_princ ('writing results');
   if (save_mode is not null)
     {
       declare status any;

@@ -1,13 +1,11 @@
-#!/bin/bash
-#
-#  $Id: test_server.sh,v 1.13.6.1.4.21 2013/01/02 16:15:07 source Exp $
+#!/bin/sh
 #
 #  choose a server to run with
 #  
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2014 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -65,7 +63,13 @@ SERVER=virtuoso
 TEST_DIR_MASK=""
 APPENDMODE=0
 
-set -- -csV
+#
+# VOS
+#
+SERVER=virtuoso
+VIRTUOSO_VDB=0
+VIRTUOSO_TABLE_SCHEME="row"
+VIRTUOSO_CAPACITY="single"
 
 while getopts ":smrcvwV" optname
   do

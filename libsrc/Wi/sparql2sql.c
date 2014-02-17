@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -36,6 +36,7 @@ extern "C" {
 }
 #endif
 #include "xml_ecm.h"
+#include "xqf.h"
 #include "rdf_core.h"
 
 /* PART 1. EXPRESSION TERM REWRITING */
@@ -300,7 +301,8 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
     spar_internal_error (sparp, "sparp_" "expand_top_retvals () failed to process special result-set");
 }
 
-int sparp_gp_trav_wrap_vars_in_max (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
+int
+sparp_gp_trav_wrap_vars_in_max (sparp_t *sparp, SPART *curr, sparp_trav_state_t *sts_this, void *common_env)
 {
   caddr_t varname;
   ssg_valmode_t native;
@@ -338,10 +340,15 @@ sparp_wpar_retvars_in_max (sparp_t *sparp, SPART *query)
   ssg_find_formatter_by_name_and_subtype (formatmode_name, query->_.req_top.subtype, &formatter, &agg_formatter, &agg_meta);
   if (((SELECT_L == query->_.req_top.subtype) ||
     (DISTINCT_L == query->_.req_top.subtype) ) &&
-    (NULL == formatter) && (NULL == agg_formatter) &&
-    ((NULL == retvalmode_name) ||
-    (SSG_VALMODE_SQLVAL == ssg_find_valmode_by_name (retvalmode_name)) ) )
-  return;
+    (NULL == formatter) && (NULL == agg_formatter) )
+    {
+      ssg_valmode_t retvalmode;
+      if (NULL == retvalmode_name)
+        return;
+      retvalmode = ssg_find_valmode_by_name (retvalmode_name);
+      if ((SSG_VALMODE_SQLVAL == retvalmode) || (SSG_VALMODE_AUTO == retvalmode))
+        return;
+    }
   sparp_gp_localtrav_treelist (sparp, retvals,
     NULL, NULL,
     NULL, NULL,
@@ -1132,7 +1139,7 @@ typedef struct so_BOP_OR_filter_ctx_s
   sparp_t *bofc_sparp;				/*!< parser/compiler context, to not pass an extra argument */
   SPART *bofc_var_sample;			/*!< Common optimizable variable in question */
   dk_set_t bofc_strings;			/*!< Collected string values, they may be convert into sprintf format strings to tighten equiv of the common variable */
-  SPART *bofc_reason_for_union;			/*!< The filter has a call of contains() or sp_intersects() as members so the gp containing this OR should be converted to UNION */
+  SPART *bofc_reason_for_union;			/*!< The filter has a call of contains() or st_intersects() as members so the gp containing this OR should be converted to UNION */
   SPART **bofc_BOP_OR_of_reason_for_union;	/*!< When a { pattern FILTER ( ... OR ... ) } should be replaced with UNION, one OR should be edited */
   int bofc_not_optimizable;			/*!< The filter is of complicated form or the variable is not common or global */
   int bofc_can_be_iri;				/*!< Flag if there's at least equality to a IRI */
@@ -1307,7 +1314,7 @@ sparp_optimize_BOP_OR_filter_walk (SPART **filt_ptr, SPART **filt_parent_ptr, so
       return;
     case SPAR_FUNCALL:
       {
-        if (NULL != spar_filter_is_freetext (ctx->bofc_sparp, filt, NULL))
+        if (NULL != spar_filter_is_freetext_or_rtree (ctx->bofc_sparp, filt, NULL))
           {
             ctx->bofc_reason_for_union = filt;
             ctx->bofc_BOP_OR_of_reason_for_union = filt_parent_ptr;
@@ -1343,7 +1350,7 @@ sparp_optimize_BOP_OR_filter (sparp_t *sparp, SPART *parent_gp, SPART *gp, int g
         spar_internal_error (sparp, "sparp_" "optimize_BOP_OR_filter(): weird NULL parent gp / WHERE_L gp subtype combination");
 #endif
       if (filt_idx >= BOX_ELEMENTS (gp->_.gp.filters) - gp->_.gp.glued_filters_count)
-        spar_error (sparp, "A special predicate, like bif:contains or bif:sp_intersects, can not be used as an argument of '||' operator in a \"joining\" FILTER at line %ld of query; please re-phrase the query", (long)unbox (filt_ptr[0]->srcline));
+        spar_error (sparp, "A special predicate, like bif:contains or bif:st_intersects, can not be used as an argument of '||' operator in a \"joining\" FILTER at line %ld of query; please re-phrase the query", (long)unbox (filt_ptr[0]->srcline));
       if (0 != gp->_.gp.subtype)
         {
           SPART **all_membs, *filt, *new_gp;
@@ -1372,7 +1379,7 @@ sparp_optimize_BOP_OR_filter (sparp_t *sparp, SPART *parent_gp, SPART *gp, int g
       case_with_rest = sparp_gp_full_clone (sparp, gp);
       if (ctx.bofc_BOP_OR_of_reason_for_union == filt_ptr)
         {
-          caddr_t ft_type = spar_filter_is_freetext (sparp, alt_for_reason, NULL);
+          caddr_t ft_type = spar_filter_is_freetext_or_rtree (sparp, alt_for_reason, NULL);
           if (NULL != ft_type)
             {
               SPART *triple_with_var_obj = sparp_find_triple_with_var_obj_of_freetext (sparp, case_with_rest, alt_for_reason, SPAR_TRIPLE_FOR_FT_SHOULD_EXIST | SPAR_TRIPLE_SHOULD_HAVE_NO_FT_TYPE);
@@ -1383,7 +1390,7 @@ sparp_optimize_BOP_OR_filter (sparp_t *sparp, SPART *parent_gp, SPART *gp, int g
       ctx.bofc_BOP_OR_of_reason_for_union[0] = ctx.bofc_reason_for_union;
       if (ctx.bofc_BOP_OR_of_reason_for_union == filt_ptr)
         {
-          caddr_t ft_type = spar_filter_is_freetext (sparp, ctx.bofc_reason_for_union, NULL);
+          caddr_t ft_type = spar_filter_is_freetext_or_rtree (sparp, ctx.bofc_reason_for_union, NULL);
           if (NULL != ft_type)
             {
               SPART *triple_with_var_obj = sparp_find_triple_with_var_obj_of_freetext (sparp, gp, ctx.bofc_reason_for_union, SPAR_TRIPLE_FOR_FT_SHOULD_EXIST | SPAR_TRIPLE_SHOULD_HAVE_NO_FT_TYPE);
@@ -2654,8 +2661,16 @@ sparp_gp_trav_eq_restr_from_connected_receivers_gp_in (sparp_t *sparp, SPART *cu
   if (VALUES_L == curr->_.gp.subtype)
     {
       SPART *binv = curr->_.gp.subquery;
+      SPART *parent_gp = (((NULL != sts_this->sts_parent) && (SPAR_GP == SPART_TYPE (sts_this->sts_parent))) ? sts_this->sts_parent : NULL);
       spar_shorten_binv_dataset (sparp, binv);
-      spar_refresh_binv_var_rvrs (sparp, binv);
+      if ((NULL != parent_gp) && (1 == BOX_ELEMENTS (binv->_.binv.vars)) && (0 == binv->_.binv.counters_of_unbound[0]) &&
+        spar_binv_is_convertible_to_filter (sparp, parent_gp, curr, binv) )
+        {
+          spar_refresh_binv_var_rvrs (sparp, binv);
+          spar_binv_to_filter (sparp, parent_gp, curr, binv);
+        }
+      else
+        spar_refresh_binv_var_rvrs (sparp, binv);
     }
   return SPAR_GPT_ENV_PUSH;
 }
@@ -2680,11 +2695,9 @@ sparp_eq_restr_from_connected (sparp_t *sparp, SPART *req_top)
         {
           SPART *var, *ret_expn = NULL;
           int retctr, ret_expn_type;
-          sparp_equiv_t *var_eq;
           if (binv->_.binv.counters_of_unbound[varctr])
             continue;
           var = binv->_.binv.vars[varctr];
-          var_eq = SPARP_EQUIV (sparp, var->_.var.equiv_idx);
           for (retctr = BOX_ELEMENTS (retlist); retctr--; /* no step */)
             {
               SPART *candidate = retlist[retctr];
@@ -2710,17 +2723,21 @@ sparp_eq_restr_from_connected (sparp_t *sparp, SPART *req_top)
               if (sparp->sparp_sg->sg_signal_void_variables)
                 spar_error (sparp, "Variable name '%.100s' is used in the BINDINGS clause but not in the query result set", var->_.var.vname);
               SPARP_DEBUG_WEIRD(sparp,"conflict");
-              var_eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
+              var->_.var.rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
             }
           else
             {
-              sparp_equiv_tighten (sparp, var_eq, &(var->_.var.rvr), ~0);
               if (SPAR_VARIABLE == ret_expn_type)
                 {
                   sparp_equiv_t *ret_orig_eq = SPARP_EQUIV (sparp, ret_expn->_.var.equiv_idx);
-                  sparp_equiv_tighten (sparp, var_eq, &(ret_orig_eq->e_rvr), ~(SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
+                  sparp_rvr_tighten (sparp, &(var->_.var.rvr), &(ret_orig_eq->e_rvr), ~(SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
                   if (!(sparp_req_top_has_limofs (req_top) && (NULL != req_top->_.req_top.order)))
-                    sparp_equiv_tighten (sparp, ret_orig_eq, &(var_eq->e_rvr), ~(SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
+                    sparp_equiv_tighten (sparp, ret_orig_eq, &(var->_.var.rvr), ~(SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
+                }
+              else
+                {
+                  ptrlong restr = sparp_restr_bits_of_expn (sparp, ret_expn);
+                  sparp_rvr_add_restrictions (sparp, &(var->_.var.rvr), restr & ~(SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
                 }
             }
         }
@@ -3112,10 +3129,17 @@ int sparp_gp_trav_check_if_local (sparp_t *sparp, SPART *curr, sparp_trav_state_
 int
 sparp_tree_is_global_expn (sparp_t *sparp, SPART *tree)
 {
-  int res = sparp_gp_trav (sparp, NULL /* unused */, tree, NULL,
+
+  int res;
+  int sparp_inside_gp_trav = (NULL != sparp->sparp_stp);
+  if (sparp_inside_gp_trav)
+    sparp_gp_trav_suspend (sparp);
+  res = sparp_gp_trav (sparp, NULL /* unused */, tree, NULL,
     NULL, NULL,
     sparp_gp_trav_check_if_local, NULL, NULL /*!!!TBD add*/,
     NULL );
+  if (sparp_inside_gp_trav)
+    sparp_gp_trav_resume (sparp);
   return !(SPAR_GPT_COMPLETED & res);
 }
 
@@ -3259,6 +3283,46 @@ sparql_init_bif_optimizers (void)
   bif_define_ex ("SPECIAL::bif:SUM"		, NULL, BMD_SPARQL_OPTIMIZER_IMPL, bifsparqlopt_special_bif_agg		, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1				, BMD_SPARQL_ONLY, BMD_DONE);
   bif_define_ex ("sparql_only:args_in_same_eq"	, NULL, BMD_SPARQL_OPTIMIZER_IMPL, bifsparqlopt_args_in_same_eq		, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2, BMD_RET_TYPE, &bt_integer	, BMD_SPARQL_ONLY, BMD_DONE);
   bif_define_ex ("sparql_only:arg_is_local_var"	, NULL, BMD_SPARQL_OPTIMIZER_IMPL, bifsparqlopt_arg_is_local_var	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_RET_TYPE, &bt_integer	, BMD_SPARQL_ONLY, BMD_DONE);
+}
+
+int
+sparp_literal_is_xsd_valid (sparp_t *sparp, caddr_t sqlval, caddr_t dt_iri, caddr_t lang)
+{
+  dtp_t sqlval_dtp = DV_TYPE_OF (sqlval);
+  if (DV_STRING != sqlval_dtp)
+    return 1; /* IRI or successfully parsed literal */
+  if (NULL == dt_iri)
+    return 1; /* no datatype --- no restrictions */
+  if (!strncmp (dt_iri, XMLSCHEMA_NS_URI "#", XMLSCHEMA_NS_URI_LEN + 1 /* +1 is for '#' */))
+    {
+      const char *p_name = dt_iri + XMLSCHEMA_NS_URI_LEN + 1;
+      long desc_idx = ecm_find_name (p_name, xqf_str_parser_descs_ptr, xqf_str_parser_desc_count, sizeof (xqf_str_parser_desc_t));
+      xqf_str_parser_desc_t *desc;
+      dtp_t sqlval_dtp = DV_TYPE_OF (sqlval);
+      caddr_t cvt;
+      if (ECM_MEM_NOT_FOUND == desc_idx)
+        return 1; /* an unknown type */
+      desc = xqf_str_parser_descs_ptr + desc_idx;
+      if (DV_STRING != sqlval_dtp)
+        return 1;
+      else
+        {
+          caddr_t parsed_value = NULL;
+          QR_RESET_CTX
+            {
+              desc->p_proc (&parsed_value, sqlval, desc->p_opcode);
+            }
+          QR_RESET_CODE
+            {
+              POP_QR_RESET;
+              return 0; /* see below */
+            }
+          END_QR_RESET
+          dk_free_tree (parsed_value);
+          return 1;
+        }
+    }
+  return 1;
 }
 
 void
@@ -3611,6 +3675,37 @@ sparp_simplify_builtin (sparp_t *sparp, SPART *tree, int *trouble_ret)
     case SPAR_BIF_UCASE: break;
     case SPAR_BIF_URI: break;
     case SPAR_BIF_UUID: break;
+    case SPAR_BIF_VALID:
+      {
+        switch (SPART_TYPE (arg1))
+          {
+          case SPAR_QNAME: goto res_bool_true; /* see below */
+          case SPAR_LIT:
+            {
+              if (sparp_literal_is_xsd_valid (sparp, arg1->_.lit.val, arg1->_.lit.datatype, arg1->_.lit.language))
+                goto res_bool_true; /* see below */
+              else
+                goto res_bool_false; /* see below */
+            }
+          case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
+            if (arg1->_.var.rvr.rvrRestrictions & SPART_VARR_CONFLICT)
+              goto res_bool_true; /* see below */
+            if (arg1->_.var.rvr.rvrRestrictions & SPART_VARR_ALWAYS_NULL)
+              goto res_bool_true; /* see below */
+            if (arg1->_.var.rvr.rvrRestrictions & SPART_VARR_IS_REF)
+              goto res_bool_true; /* see below */
+            if (arg1->_.var.rvr.rvrRestrictions & SPART_VARR_FIXED)
+              {
+                if (sparp_literal_is_xsd_valid (sparp, arg1->_.var.rvr.rvrFixedValue, arg1->_.var.rvr.rvrDatatype, arg1->_.var.rvr.rvrLanguage))
+                  goto res_bool_true; /* see below */
+                else
+                  goto res_bool_false; /* see below */
+              }
+            break;
+          default: break;
+          }
+        goto trouble_now; /* see below */
+      }
     case SPAR_BIF_YEAR: break;
     default: break;
     }
@@ -3905,8 +4000,12 @@ spar_shorten_binv_dataset (sparp_t *sparp, SPART *binv)
         }
       if ((eq->e_rvr.rvrRestrictions & SPART_VARR_SPRINTFF) && (eq->e_rvr.rvrSprintffCount > max_sff_count))
         max_sff_count = eq->e_rvr.rvrSprintffCount;
+/* The following "if" is needed for case of tightening \c eq with \c var in the next loop.
+As a result of tightening, the \c eq->e_rvr.rvrSprintffCount may grow, thus \c max_sff_count should be big enough to reflect this possibility. */
+      if ((var->_.var.rvr.rvrRestrictions & SPART_VARR_SPRINTFF) && (var->_.var.rvr.rvrSprintffCount > max_sff_count))
+        max_sff_count = var->_.var.rvr.rvrSprintffCount;
     }
-  if (0 <= max_sff_count)
+  if (0 < max_sff_count)
     fmt_use_counters = (int *)t_alloc (max_sff_count * sizeof (int));
   for (varctr = varcount; varctr--; /* no step */)
     {
@@ -3914,8 +4013,9 @@ spar_shorten_binv_dataset (sparp_t *sparp, SPART *binv)
       sparp_equiv_t *eq = SPARP_EQUIV (sparp, var->_.var.equiv_idx);
       int eq_has_sffs_bit = (eq->e_rvr.rvrRestrictions & SPART_VARR_SPRINTFF);
       int eq_sff_count = eq->e_rvr.rvrSprintffCount;
-      if (!rvr_can_be_tightened (sparp, &(var->_.var.rvr), &(eq->e_rvr), 1))
+      if (!rvr_can_be_tightened (sparp, &(eq->e_rvr), &(var->_.var.rvr), 1))
         continue;
+      sparp_equiv_tighten (sparp, eq, &(var->_.var.rvr), ~0);
       if (eq->e_rvr.rvrSprintffCount)
         memset (fmt_use_counters, 0, eq->e_rvr.rvrSprintffCount * sizeof (int));
       for (rowctr = rowcount; rowctr--; /* no step */)
@@ -3983,6 +4083,104 @@ spar_shorten_binv_dataset (sparp_t *sparp, SPART *binv)
     }
 }
 
+#define BINV_CELL_HASH(hash,cell) do { \
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (cell)) \
+    hash = box_hash ((caddr_t)cell); \
+  else if (SPAR_LIT == cell->type) \
+    hash = 0x1 ^ box_hash (cell->_.lit.val) ^ box_hash (cell->_.lit.datatype) ^ box_hash (cell->_.lit.language); \
+  else if (SPAR_QNAME == cell->type) \
+    hash = 0x2 ^ box_hash (cell->_.qname.val); \
+  } while (0)
+
+int
+spar_binv_is_convertible_to_filter (sparp_t *sparp, SPART *parent_gp, SPART *member_gp, SPART *member_binv)
+{
+  sparp_equiv_t *eq;
+  SPART ***rows = member_binv->_.binv.data_rows;
+  char *mask = member_binv->_.binv.data_rows_mask;
+  int row_idx;
+  unsigned char hash_bits[1027];
+  unsigned int hash_mod;
+  eq = sparp_equiv_get_ro (sparp->sparp_sg->sg_equivs, sparp->sparp_sg->sg_equiv_count, parent_gp, (SPART *)(member_binv->_.binv.vars[0]->_.var.vname), SPARP_EQUIV_GET_NAMESAKES);
+  if (NULL == eq)
+    return 0;
+  if (!((eq->e_rvr.rvrRestrictions & SPART_VARR_GLOBAL) || (0 < eq->e_gspo_uses) || (1 < eq->e_nested_bindings)))
+    return 0;
+  /* The most boring thing is check for duplicate values. It should be as fast as possible and not memory-consuming, so we're cheating. */
+  hash_mod = member_binv->_.binv.rows_in_use;
+  hash_mod = ((hash_mod * hash_mod * 5) | 0xf) * 8;
+  if (hash_mod > sizeof (hash_bits) * 8)
+    hash_mod = sizeof (hash_bits) * 8;
+  memset (hash_bits, 0, hash_mod/8);
+  DO_BOX_FAST (SPART **, row, row_idx, rows)
+    {
+      SPART *cell;
+      id_hashed_key_t hash, hash_sml;
+      int row_idx2;
+      if ('/' != mask[row_idx])
+        continue;
+      cell = row[0];
+      BINV_CELL_HASH(hash,cell);
+      hash_sml = hash % hash_mod;
+      if (!(hash_bits[hash_sml >> 3] & (1 << (hash_sml & 0x7))))
+        {
+          hash_bits[hash_sml >> 3] |= (1 << (hash_sml & 0x7));
+          continue;
+        }
+      for (row_idx2 = row_idx; row_idx2--; /* no step */)
+        {
+          SPART *cell2;
+          id_hashed_key_t hash2;
+          if ('/' != mask[row_idx2])
+            continue;
+          cell2 = rows[row_idx2][0];
+          BINV_CELL_HASH(hash2,cell2);
+          if (hash2 == hash)
+            return 0;
+        }
+    }
+  END_DO_BOX_FAST;
+  return 1;
+}
+
+#undef BINV_CELL_HASH
+
+void 
+spar_binv_to_filter (sparp_t *sparp, SPART *parent_gp, SPART *member_gp, SPART *member_binv)
+{
+  SPART ***rows = member_binv->_.binv.data_rows;
+  char *mask = member_binv->_.binv.data_rows_mask;
+  ptrlong arg_ctr = 0, arg_count = member_binv->_.binv.rows_in_use + 1;
+  SPART **args = (SPART **)t_alloc_list (arg_count);
+  SPART *var_copy, *filt;
+  int row_idx, memb_pos;
+  var_copy = sparp_tree_full_copy (sparp, member_binv->_.binv.vars[0], parent_gp);
+/* Without equiv_idx reset we will get internal error in sparp_gp_attach_filter_cbk(): attempt to attach a filter with used variable */
+  var_copy->_.var.selid = parent_gp->_.gp.selid;
+  var_copy->_.var.equiv_idx = SPART_BAD_EQUIV_IDX;
+  args[arg_ctr++] = var_copy;
+  DO_BOX_FAST (SPART **, row, row_idx, rows)
+    {
+      SPART *cell;
+      id_hashed_key_t hash;
+      int row_idx2;
+      if ('/' != mask[row_idx])
+        continue;
+      cell = row[0];
+      if (arg_ctr >= arg_count)
+        spar_internal_error (sparp, "corrupted counter of rows in use in VALUES() clause (too small)");
+      args[arg_ctr++] = cell;
+    }
+  END_DO_BOX_FAST;
+  if (arg_ctr != arg_count)
+    spar_internal_error (sparp, "corrupted counter of rows in use in VALUES() clause (too big)");
+  filt = sparp_make_builtin_call (sparp, IN_L, args);
+  filt->srcline = member_binv->srcline;
+  memb_pos = box_position ((caddr_t *)(parent_gp->_.gp.members), (caddr_t)member_gp);
+  sparp_gp_detach_member (sparp, parent_gp, memb_pos, NULL);
+  sparp_gp_attach_filter (sparp, parent_gp, filt, 0, NULL);
+}
+
 void
 spar_refresh_binv_var_rvrs (sparp_t *sparp, SPART *binv)
 {
@@ -4018,7 +4216,7 @@ spar_refresh_binv_var_rvrs (sparp_t *sparp, SPART *binv)
   for (varctr = varcount; varctr--; /* no step */)
     {
       SPART *var;
-      int restr_set = SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK | SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL;
+      int restr_set = SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK | SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL;
       if (binv->_.binv.counters_of_unbound[varctr])
         continue;
       var = binv->_.binv.vars[varctr];
@@ -4033,7 +4231,7 @@ spar_refresh_binv_var_rvrs (sparp_t *sparp, SPART *binv)
           switch (SPART_TYPE (datum))
             {
             case SPAR_QNAME:
-              restr_set &= ~SPART_VARR_IS_LIT;
+              restr_set &= ~(SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL);
               /*                                 0123456789 */
               if (!strncmp (datum->_.qname.val, "nodeID://", 9))
                 restr_set &= ~SPART_VARR_IS_IRI;
@@ -4041,8 +4239,18 @@ spar_refresh_binv_var_rvrs (sparp_t *sparp, SPART *binv)
                 restr_set &= ~SPART_VARR_IS_BLANK;
               break;
             case SPAR_LIT:
-              restr_set &= ~(SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK);
-              break;
+              {
+                dtp_t datum_dtp = DV_TYPE_OF (datum);
+                restr_set &= ~(SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK);
+                if (restr_set & SPART_VARR_LONG_EQ_SQL)
+                  {
+                    if (DV_ARRAY_OF_POINTER == datum_dtp)
+                      datum_dtp = DV_TYPE_OF (datum->_.lit.val);
+                    if (!((DV_LONG_INT == datum_dtp) || (DV_DOUBLE_FLOAT == datum_dtp) || (DV_SINGLE_FLOAT == datum_dtp) || (DV_DATETIME == datum_dtp)))
+                      restr_set &= ~SPART_VARR_LONG_EQ_SQL;
+                  }
+                break;
+              }
             }
         }
       var->_.var.rvr.rvrRestrictions |= restr_set;
@@ -4466,8 +4674,22 @@ sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, i
   int common_status = sparp_check_triple_case (sparp, tcc, qm, invalidation_level);
   if (SSG_QM_NO_MATCH == common_status)
     return SSG_QM_NO_MATCH;
-  if ((NULL == tcc->tcc_top_allowed_qm) || (qm == tcc->tcc_top_allowed_qm))
-    inside_allowed_qm = 1;
+  if (!inside_allowed_qm)
+    {
+      if (NULL == tcc->tcc_top_allowed_qms)
+        inside_allowed_qm = 1;
+      else
+        {
+          for (ctr = BOX_ELEMENTS (tcc->tcc_top_allowed_qms); ctr--; /* no step */)
+            {
+              if (qm == tcc->tcc_top_allowed_qms[ctr])
+                {
+                  inside_allowed_qm = 1;
+                  break;
+                }
+            }
+        }
+    }
   DO_BOX_FAST (quad_map_t *, sub_qm, ctr, qm->qmUserSubMaps)
     {
       int status = sparp_qm_find_triple_cases (sparp, tcc, sub_qm, inside_allowed_qm, invalidation_level+1);
@@ -4546,18 +4768,16 @@ sparp_qm_find_triple_cases (sparp_t *sparp, tc_context_t *tcc, quad_map_t *qm, i
 triple_case_t **
 sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int required_source_type)
 {
-  caddr_t triple_qm_iri = triple->_.triple.qm_iri_or_pair;
+  SPART **sinv_idx_and_qms = triple->_.triple.sinv_idx_and_qms;
   caddr_t triple_storage_iri;
-  SPART *sinv = NULL;
   quad_storage_t *triple_storage;
   int ctr, fld_ctr, source_ctr;
   triple_case_t **res_list;
   tc_context_t tmp_tcc;
-  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (triple_qm_iri))
+  if (NULL != sinv_idx_and_qms[0])
     {
-      sinv = SPARP_SINV (sparp, unbox (((caddr_t *)triple_qm_iri)[1]));
+      SPART *sinv = SPARP_SINV (sparp, unbox (((caddr_t *)sinv_idx_and_qms)[0]));
       triple_storage_iri = sinv->_.sinv.storage_uri;
-      triple_qm_iri = ((caddr_t *)triple_qm_iri)[0];
       triple_storage = sparp_find_storage_by_name (triple_storage_iri);
       if (NULL == triple_storage)
         spar_internal_error (sparp, "quad storage metadata are lost");
@@ -4594,20 +4814,28 @@ sparp_find_triple_cases (sparp_t *sparp, SPART *triple, SPART **sources, int req
         tmp_tcc.tcc_source_invalidation_masks[source_ctr] = 0x1;
     }
   END_DO_BOX_FAST;
-  if (((caddr_t)DEFAULT_L) == triple_qm_iri)
-    {
-      if (NULL == triple_storage->qsDefaultMap)
-        spar_error (sparp, "QUAD MAP DEFAULT group pattern is used in RDF storage '%.200s' that has no default quad map", triple_storage_iri);
-      tmp_tcc.tcc_top_allowed_qm = triple_storage->qsDefaultMap;
-    }
-  else if (((caddr_t)_STAR) == triple_qm_iri)
-    tmp_tcc.tcc_top_allowed_qm = NULL;
+  if ((SPART *)((ptrlong)_STAR) == sinv_idx_and_qms[1])
+    tmp_tcc.tcc_top_allowed_qms = NULL;
   else
     {
-      quad_map_t *top_qm = sparp_find_quad_map_by_name (triple_qm_iri);
-      if (NULL == top_qm)
-        spar_error (sparp, "QUAD MAP '%.200s' group pattern refers to undefined quad map", triple_qm_iri);
-      tmp_tcc.tcc_top_allowed_qm = top_qm;
+      tmp_tcc.tcc_top_allowed_qms = (quad_map_t **)t_alloc_list (BOX_ELEMENTS (sinv_idx_and_qms)-1);
+      for (ctr = BOX_ELEMENTS(tmp_tcc.tcc_top_allowed_qms); ctr--; /* no step */)
+        {
+          caddr_t triple_qm_iri = (caddr_t)(sinv_idx_and_qms[ctr + 1]);
+          if (((caddr_t)DEFAULT_L) == triple_qm_iri)
+            {
+              if (NULL == triple_storage->qsDefaultMap)
+                spar_error (sparp, "QUAD MAP DEFAULT group pattern is used in RDF storage '%.200s' that has no default quad map", triple_storage_iri);
+              tmp_tcc.tcc_top_allowed_qms[ctr] = triple_storage->qsDefaultMap;
+            }
+          else
+            {
+              quad_map_t *top_qm = sparp_find_quad_map_by_name (triple_qm_iri);
+              if (NULL == top_qm)
+                spar_error (sparp, "QUAD MAP '%.200s' group pattern refers to undefined quad map", triple_qm_iri);
+              tmp_tcc.tcc_top_allowed_qms[ctr] = top_qm;
+            }
+        }
     }
   DO_BOX_FAST (quad_map_t *, qm, ctr, triple_storage->qsMjvMaps)
     {
@@ -4693,6 +4921,7 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART **sources, SPART *triple)
       SPART *field_expn = triple->_.triple.tr_fields[field_ctr];
       rdf_val_range_t acc_rvr;
       int all_cases_make_only_refs = 1;
+      int sqlval_is_ok_and_cheap = 0x2;
       memset (&acc_rvr, 0, sizeof (rdf_val_range_t));
       acc_rvr.rvrRestrictions = SPART_VARR_CONFLICT;
       for (ctr = 0; ctr < new_cases_count; ctr++)
@@ -4707,7 +4936,7 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART **sources, SPART *triple)
               qm_format_t *qmv_fmt = qmv->qmvFormat;
               if (all_cases_make_only_refs && !(SPART_VARR_IS_REF & qmv_fmt->qmfValRange.rvrRestrictions))
                 all_cases_make_only_refs = 0;
-              field_valmode = ssg_smallest_union_valmode (field_valmode, qmv_fmt);
+              field_valmode = ssg_smallest_union_valmode (field_valmode, qmv_fmt, &sqlval_is_ok_and_cheap);
               sparp_rvr_copy (sparp, &qmv_rvr, &(qmv->qmvRange));
               if (SPART_VARR_SPRINTFF & qmv_fmt->qmfValRange.rvrRestrictions)
                 {
@@ -4751,7 +4980,7 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART **sources, SPART *triple)
             }
           sparp_rvr_loose (sparp, &acc_rvr, &qmv_rvr, ~0);
         }
-      if (all_cases_make_only_refs && (SSG_VALMODE_LONG == field_valmode))
+      if ((all_cases_make_only_refs || sqlval_is_ok_and_cheap) && (SSG_VALMODE_LONG == field_valmode))
         field_valmode = SSG_VALMODE_SQLVAL;
       sparp_jso_validate_format (sparp, field_valmode);
       triple->_.triple.native_formats[field_ctr] = field_valmode;
@@ -5361,7 +5590,7 @@ int sparp_gp_trav_multiqm_to_unions (sparp_t *sparp, SPART *curr, sparp_trav_sta
           int filt_ctr;
           DO_BOX_FAST_REV (SPART *, filt, filt_ctr, curr->_.gp.filters)
             {
-              if (NULL != spar_filter_is_freetext (sparp, filt, memb))
+              if (NULL != spar_filter_is_freetext_or_rtree (sparp, filt, memb))
                 {
                   ft_cond_to_relocate = sparp_gp_detach_filter (sparp, curr, filt_ctr, NULL); 
                   break;
@@ -6091,12 +6320,12 @@ sparp_try_reuse_tabid_in_union (sparp_t *sparp, SPART *curr, int base_idx)
               dep_fld_eq = SPARP_EQUIV (sparp, dep_fld->_.var.equiv_idx);
               base_fld_qmv = SPARP_FIELD_QMV_OF_QM (base_qm, fld_ctr);
               dep_fld_qmv = SPARP_FIELD_QMV_OF_QM (dep_qm, fld_ctr);
-              if (base_fld_qmv != dep_fld_qmv)
-                goto next_dep; /* see below */
               if (!(base_bitmask_of_equations & (1 << fld_ctr)))
                 continue;
               if (!(dep_bitmask_of_equations & (1 << fld_ctr)))
                 continue;
+              if (base_fld_qmv != dep_fld_qmv)
+                goto next_dep; /* see below */
               if (NULL == base_fld_qmv)
                 {
                   long base_restr = base_fld_eq->e_rvr.rvrRestrictions;
@@ -6104,7 +6333,14 @@ sparp_try_reuse_tabid_in_union (sparp_t *sparp, SPART *curr, int base_idx)
                   if (((base_restr & SPART_VARR_IS_REF) && (dep_restr & SPART_VARR_IS_LIT)) ||
                     ((base_restr & SPART_VARR_IS_LIT) && (dep_restr & SPART_VARR_IS_REF)) )
                     goto next_dep; /* see below */
-                  if (!sparp_equivs_have_same_fixedvalue (sparp, base_fld_eq, dep_fld_eq))
+/* For a typical RDF View, predicate in
+select ?o where { graph ?g { ?s ?:p_param ?o }}
+is a strong filter that will disable all or almost all branches of UNION except very few, so UNION is much better than BREAKUP.
+In addition, ignoring external connections may result in an error because the connection will be printed as
+WHERE (p_param = const_p_from_base_fld)
+at the end of the breakup. This is wrong because consts of base_fld and dep_fld may differ. */
+                  if (!sparp_equivs_have_same_fixedvalue (sparp, base_fld_eq, dep_fld_eq)
+                    && (SPARP_ASSIGNED_EXTERNALLY (base_restr) || SPARP_ASSIGNED_EXTERNALLY (dep_restr)) )
                     goto next_dep; /* see below */
                 }
             }
@@ -6877,6 +7113,8 @@ sparp_gp_trav_add_graph_perm_read_filters (sparp_t *sparp, SPART *curr, sparp_tr
       SPART *gp_of_cache;
       if (SPAR_TRIPLE != memb->type)
         continue;
+      if (NULL != memb->_.triple.sinv_idx_and_qms[0])
+        continue; /* New fix for reopened Bug 14737: No permission filters should be placed inside service invocations */
       g_expn = memb->_.triple.tr_graph;
       if (!spar_graph_needs_security_testing (sparp, g_expn, RDF_GRAPH_PERM_READ))
         continue;

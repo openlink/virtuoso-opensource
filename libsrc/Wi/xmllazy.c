@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -62,7 +62,7 @@ xml_lazy_ent_t *
 DBG_NAME(xlazye_from_cache_key) (DBG_PARAMS xml_doc_cache_stdkey_t *cache_key, query_instance_t *qi)
 {
   xml_lazy_ent_t * xlazye = (xml_lazy_ent_t*) dk_alloc_box_zero (sizeof (xml_entity_un_t), DV_XML_ENTITY);
-  NEW_VARZ (xml_lazy_doc_t, xlazyd);
+  NEW_BOX_VARZ (xml_lazy_doc_t, xlazyd);
   xlazye->_ = &xec_lazy_xe;
 #ifdef MALLOC_DEBUG
   xlazyd->xd_dbg_file = file;

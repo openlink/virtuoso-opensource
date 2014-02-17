@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2011 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -36,12 +36,17 @@
 #include "rdfinf.h"
 #include "strlike.h"
 
+dk_set_t dfe_tables (df_elt_t * dfe);
 
 df_elt_t *
 dfe_left_col (df_elt_t * tb_dfe, df_elt_t * pred)
 {
+  df_elt_t **in_list;
   if (DFE_BOP != pred->dfe_type && DFE_BOP_PRED != pred->dfe_type)
     return NULL;
+  in_list = sqlo_in_list (pred, tb_dfe, NULL);
+  if (in_list && dfe_tables (pred) && !pred->dfe_tables->next)
+    return in_list[0];
   if (DFE_COLUMN == pred->_.bin.left->dfe_type && tb_dfe->_.table.ot == (op_table_t *) pred->_.bin.left->dfe_tables->data)
     return pred->_.bin.left;
   if (DFE_COLUMN == pred->_.bin.right->dfe_type && tb_dfe->_.table.ot == (op_table_t *) pred->_.bin.right->dfe_tables->data)
@@ -52,8 +57,16 @@ dfe_left_col (df_elt_t * tb_dfe, df_elt_t * pred)
 df_elt_t *
 dfe_right (df_elt_t * tb_dfe, df_elt_t * pred)
 {
+  df_elt_t **in_list;
   if (DFE_BOP != pred->dfe_type && DFE_BOP_PRED != pred->dfe_type)
     return NULL;
+  in_list = sqlo_in_list (pred, tb_dfe, NULL);
+  if (in_list && dfe_tables (pred) && !pred->dfe_tables->next)
+    {
+      if (BOX_ELEMENTS (in_list) > 1)
+	return in_list[1];
+      return NULL;
+    }
   if (!dk_set_member (pred->_.bin.left->dfe_tables, (void *) tb_dfe->_.table.ot))
     return pred->_.bin.left;
   if (!dk_set_member (pred->_.bin.right->dfe_tables, (void *) tb_dfe->_.table.ot))
@@ -113,8 +126,9 @@ dfe_p_const_abbrev (df_elt_t * tb_dfe)
 
 
 float *
-dfe_p_stat (df_elt_t * tb_dfe, iri_id_t pid, dk_set_t * parts_ret, dbe_column_t * o_col, float **o_stat_ret)
+dfe_p_stat (df_elt_t * tb_dfe, df_elt_t * pred, iri_id_t pid, dk_set_t * parts_ret, dbe_column_t * o_col, float **o_stat_ret)
 {
+  int tried = 0;
 #if 0
   caddr_t ctx_name = sqlo_opt_value (tb_dfe->_.table.ot->ot_opts, OPT_RDF_INFERENCE);
   rdf_inf_ctx_t **place = ctx_name ? (rdf_inf_ctx_t **) id_hash_get (rdf_name_to_ric, (caddr_t) & ctx_name) : NULL;
@@ -122,8 +136,15 @@ dfe_p_stat (df_elt_t * tb_dfe, iri_id_t pid, dk_set_t * parts_ret, dbe_column_t 
   dbe_key_t *pk = tb_dfe->_.table.ot->ot_table->tb_primary_key;
   dbe_key_t *o_key = NULL;
   float *p_stat;
+again:
   if (!pk->key_p_stat)
+    {
+      if (tried)
     return NULL;
+      tried = 1;
+      dfe_init_p_stat (tb_dfe, pred);
+      goto again;
+    }
   if (o_col)
     o_key = tb_px_key (tb_dfe->_.table.ot->ot_table, o_col);
   p_stat = (float *) id_hash_get (pk->key_p_stat, (caddr_t) & pid);
@@ -132,6 +153,14 @@ dfe_p_stat (df_elt_t * tb_dfe, iri_id_t pid, dk_set_t * parts_ret, dbe_column_t 
     *o_stat_ret = (float *) id_hash_get (o_key->key_p_stat, (caddr_t) & pid);
   else if (o_stat_ret)
     o_stat_ret = NULL;
+  if (!p_stat || (o_stat_ret && !o_stat_ret))
+    {
+      if (tried)
+	return p_stat;
+      tried = 1;
+      dfe_init_p_stat (tb_dfe, pred);
+      goto again;
+    }
   return p_stat;
 }
 
@@ -157,6 +186,8 @@ sqlo_rdfs_type_card (df_elt_t * tb_dfe, df_elt_t * p_dfe, df_elt_t * o_dfe)
   df_elt_t *lower[2];
   df_elt_t *upper[2];
   index_choice_t ic;
+  locus_t * loc_save = tb_dfe->dfe_locus;
+  float ret;
   memzero (&ic, sizeof (ic));
   lower[0] = p_dfe;
   lower[1] = o_dfe;
@@ -165,7 +196,10 @@ sqlo_rdfs_type_card (df_elt_t * tb_dfe, df_elt_t * p_dfe, df_elt_t * o_dfe)
   if (!ic.ic_key)
     return dbe_key_count (tb_dfe->_.table.ot->ot_table->tb_primary_key);
   ic.ic_ric = rdf_name_to_ctx (sqlo_opt_value (tb_dfe->_.table.ot->ot_opts, OPT_RDF_INFERENCE));
-  return sqlo_inx_sample (tb_dfe, ic.ic_key, lower, upper, 2, &ic);
+  tb_dfe->dfe_locus = LOC_LOCAL;
+  ret = sqlo_inx_sample (tb_dfe, ic.ic_key, lower, upper, 2, &ic);
+  tb_dfe->dfe_locus = loc_save;
+  return ret;
 }
 
 
@@ -254,7 +288,7 @@ jp_fanout (join_plan_t * jp)
 	  if (is_o && o)
 	    return jp->jp_fanout = sqlo_rdfs_type_card (jp->jp_tb_dfe, is_p, is_o);
 	}
-      p_stat = dfe_p_stat (jp->jp_tb_dfe, p, &parts, o_col, &o_stat);
+      p_stat = dfe_p_stat (jp->jp_tb_dfe, is_p, p, &parts, o_col, &o_stat);
       if (!p_stat)
 	goto general;
 
@@ -437,13 +471,13 @@ jp_add (join_plan_t * jp, df_elt_t * tb_dfe, df_elt_t * pred, int is_join)
 	}
     }
 
-  if (!right || !ps->ps_left_col || !PRED_IS_EQ (pred))
+  if (!right || !ps->ps_left_col || !PRED_IS_EQ_OR_IN (pred))
     {
       ps->ps_card = DFE_TEXT_PRED == pred->dfe_type ? 0.01 : 0.3;
       return;
     }
   ps->ps_right = right;
-  if (DFE_COLUMN == right->dfe_type && PRED_IS_EQ (pred))
+  if (DFE_COLUMN == right->dfe_type && PRED_IS_EQ_OR_IN (pred))
     {
       df_elt_t *right_tb = ((op_table_t *) right->dfe_tables->data)->ot_dfe;
       if (!right_tb->dfe_is_placed)
@@ -458,7 +492,9 @@ jp_add (join_plan_t * jp, df_elt_t * tb_dfe, df_elt_t * pred, int is_join)
       else
 	{
 	  if (-1 != ps->ps_left_col->col_n_distinct)
-	    ps->ps_card = 1.0 / ps->ps_left_col->col_n_distinct;
+	    {
+	      ps->ps_card = 1.0 / ps->ps_left_col->col_n_distinct;
+	    }
 	  else
 	    ps->ps_card = 0.5;
 	}
@@ -498,7 +534,7 @@ dfe_jp_fill (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, join_plan_t * jp, 
     else if (dk_set_member (pred->dfe_tables, (void *) tb_dfe->_.table.ot) && dfe_in_hash_set (tb_dfe, hash_set))
       {
 	jp_add (jp, tb_dfe, pred, 1 | mode);
-	if (jp->jp_preds[jp->jp_n_preds - 1].ps_is_placeable)
+	  if (jp->jp_n_preds && jp->jp_preds[jp->jp_n_preds - 1].ps_is_placeable)
 	  {
 	    if (!jp->jp_prev)
 	      tb_dfe->dfe_is_joined = 1;
@@ -507,7 +543,7 @@ dfe_jp_fill (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, join_plan_t * jp, 
   }
   END_DO_SET ();
   jp->jp_fanout = jp_fanout (jp);
-  if (jp->jp_fanout < 0)
+  if (jp->jp_fanout < 0 && jp->jp_fanout != -1)
     bing ();
 }
 
@@ -561,6 +597,8 @@ dfe_join_score_jp (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, dk_set_t * r
       root_jp = prev_jp;
       level++;
     }
+  if (DFE_DT == tb_dfe->dfe_type && tb_dfe->_.sub.ot->ot_trans && level)
+    return 0;			/* if trans dt joined and not first, do not go further, can get a case where neither end of trans is fully placed */
   tb_dfe->dfe_double_placed = tb_dfe->dfe_is_placed != 0;
   tb_dfe->dfe_is_placed = DFE_JP_PLACED;	/* to fool dfe_reqd_placed */
   dfe_jp_fill (so, ot, tb_dfe, &jp, JPF_TRY, 0);
@@ -851,6 +889,7 @@ sqlo_hash_fill_join (sqlo_t * so, df_elt_t * hash_ref_tb, df_elt_t ** fill_ret, 
 	  t_listst (3, TABLE_REF, t_listst (6, TABLE_DOTTED, tb_dfe->_.table.ot->ot_table->tb_name,
 	      tb_dfe->_.table.ot->ot_new_prefix, NULL, NULL, NULL), NULL);
       END_DO_BOX;
+      sel = t_box_copy_tree (sel);
       sqlo_scope (so, &sel);
       fill_dfe = sqlo_df (so, sel);
       fill_dfe->dfe_super = hash_ref_tb;

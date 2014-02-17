@@ -5,9 +5,9 @@
  *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *
- *  Copyright (C) 1998-2013 OpenLink Software
- *
+ *  
+ *  Copyright (C) 1998-2014 OpenLink Software
+ *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
@@ -73,7 +73,6 @@ extern PCONFIG pconfig;     /* configuration file */
 /* Globals for libwi */
 void it_make_buffer_list (index_tree_t * it, int n);
 
-extern int cp_unremap_quota;
 extern int correct_parent_links;
 extern long repl_queue_max;
 extern int main_bufs;
@@ -174,7 +173,7 @@ extern unsigned long cfg_autocheckpoint; /* from auxfiles.c */
 extern int default_txn_isolation;
 extern int c_col_by_default;
 extern int c_use_aio;
-extern long txn_after_image_limit; /* from log.c */
+extern size_t txn_after_image_limit; /* from log.c */
 extern int iri_cache_size;
 extern int32 iri_range_size;
 extern int uriqa_dynamic_local;
@@ -208,7 +207,8 @@ int32 c_number_of_buffers;
 int32 c_lock_in_mem;
 int32 c_max_dirty_buffers;
 int32 c_max_checkpoint_remap;
-int32 c_unremap_quota;
+extern int32 cp_unremap_quota;
+extern int32 cp_unremap_quota_is_set;
 int32 c_file_extend;
 int32 c_case_mode;
 int32 c_isdts;
@@ -394,7 +394,9 @@ extern unsigned long log_file_line; /* from Dkernel.c */
 int32 c_sqlo_max_layouts = 0;
 extern int sqlo_max_layouts; /* from sqldf.c */
 extern int32 sqlo_compiler_exceeds_run_factor;
-extern int32 sqlo_max_mp_size;
+extern size_t sqlo_max_mp_size;
+extern long mp_sparql_cap;
+int32 c_mp_sparql_cap = -1;
 
 int32 c_sql_proc_use_recompile = 0;
 extern int sql_proc_use_recompile; /* from sqlcomp2.c */
@@ -444,17 +446,25 @@ int32 c_dbev_enable = 1;
 
 extern long sparql_result_set_max_rows;
 extern long sparql_max_mem_in_use;
+extern int rdf_create_graph_keywords;
+extern int rdf_query_graph_keywords;
+
 int32 c_sparql_result_set_max_rows = 0;
 int32 c_sparql_max_mem_in_use = 0;
+int32 c_rdf_create_graph_keywords = 0;
+int32 c_rdf_query_graph_keywords = 0;
 
 extern int32 enable_qp;
 extern int32 dc_max_batch_sz;
+extern int32 dc_max_q_batch_sz;
 extern int32 dc_batch_sz;
 extern int32 enable_dyn_batch_sz;
 extern int c_query_log;
 extern char * c_query_log_file;
 extern int64 chash_space_avail;
 extern size_t c_max_large_vec;
+extern int32 mon_enable;
+
 
 /* for use in bif_servers */
 int
@@ -800,9 +810,10 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "MaxDirtyBuffers", &c_max_dirty_buffers) == -1)
     c_max_dirty_buffers = 0;
 
-  if (cfg_getlong (pconfig, section, "UnremapQuota", &c_unremap_quota) == -1)
-    c_unremap_quota = 0;
-
+  if (cfg_getlong (pconfig, section, "UnremapQuota", &cp_unremap_quota) == -1)
+    cp_unremap_quota = 0;
+  else 
+    cp_unremap_quota_is_set = 1;
 #if 0 /*GK: obosolete */
   if (cfg_getlong (pconfig, section, "AtomicDive", &c_atomic_dive) == -1)
     c_atomic_dive = 1;
@@ -981,9 +992,10 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "StopCompilerWhenXOverRunTime", &sqlo_compiler_exceeds_run_factor) == -1)
     sqlo_compiler_exceeds_run_factor = 0;
 
-  if (cfg_getlong (pconfig, section, "MaxMemPoolSize", &sqlo_max_mp_size) == -1)
+  if (cfg_getlong (pconfig, section, "MaxMemPoolSize", &long_helper) == -1)
     sqlo_max_mp_size = 200000000;
-
+  else
+    sqlo_max_mp_size = (uint32)long_helper;
 #ifdef POINTER_64
   if (sqlo_max_mp_size >= 0x40000000)
     sqlo_max_mp_size = INT32_MAX;
@@ -993,6 +1005,9 @@ cfg_setup (void)
 
   if (sqlo_max_mp_size != 0 && sqlo_max_mp_size < 5000000)
     sqlo_max_mp_size = 5000000;
+
+ if (cfg_getlong (pconfig, section, "MaxSparqlMemPoolSize", &c_mp_sparql_cap) == -1)
+   c_mp_sparql_cap = -1;
 
   if (cfg_getlong (pconfig, section, "SkipStartupCompilation", &c_sql_proc_use_recompile) == -1)
     c_sql_proc_use_recompile = 1;
@@ -1222,16 +1237,23 @@ cfg_setup (void)
       enable_qp = 8;
     }
 
-  if (cfg_getlong (pconfig, section, "MaxVectorSize", &dc_max_batch_sz) == -1)
-    dc_max_batch_sz = 1000000;
-  if (dc_max_batch_sz > (1024 * 1024 * 4) - 16)
-    dc_max_batch_sz = (1024 * 1024 * 4) - 16;
+  if (cfg_getlong (pconfig, section, "MaxVectorSize", &dc_max_q_batch_sz) == -1)
+    dc_max_q_batch_sz = 1000000;
+  /*
+  if (dc_max_q_batch_sz > (1024 * 1024 * 4)  - 16)
+    dc_max_q_batch_sz = (1024 * 1024 * 4)  - 16;
+  */
+  if (dc_max_q_batch_sz > dc_max_batch_sz)
+    dc_max_batch_sz = dc_max_q_batch_sz;
 
   if (cfg_getlong (pconfig, section, "VectorSize", &dc_batch_sz) == -1)
     dc_batch_sz = 10000;
 
   if (cfg_getlong (pconfig, section, "AdjustVectorSize", &enable_dyn_batch_sz) == -1)
     enable_dyn_batch_sz = 1;
+
+  if (cfg_getlong (pconfig, section, "EnableMonitor", &mon_enable) == -1)
+    mon_enable = 1;
 
 
   /*
@@ -1525,6 +1547,12 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "MaxMemInUse", &c_sparql_max_mem_in_use) == -1)
     c_sparql_max_mem_in_use = 0;
 
+  if (cfg_getlong (pconfig, section, "CreateGraphKeywords", &c_rdf_create_graph_keywords) == -1)
+    c_rdf_create_graph_keywords = 0;
+
+  if (cfg_getlong (pconfig, section, "QueryGraphKeywords", &c_rdf_query_graph_keywords) == -1)
+    c_rdf_query_graph_keywords = 0;
+
   if (cfg_getlong (pconfig, section, "TransitivityCacheEnabled", &tn_cache_enable) == -1)
     tn_cache_enable = 0;
 
@@ -1644,21 +1672,17 @@ cfg_setup (void)
 
   if (c_max_dirty_buffers > (c_number_of_buffers * 9) / 10)
     c_max_dirty_buffers = (c_number_of_buffers * 9) / 10;
+  if (c_max_dirty_buffers < (c_number_of_buffers * 2) / 10)
+    c_max_dirty_buffers = (c_number_of_buffers * 2) / 10;
   if (c_max_dirty_buffers == 0)
-    c_max_dirty_buffers = (c_number_of_buffers * 2) / 3;
+    c_max_dirty_buffers = (c_number_of_buffers * 9) / 10;
 
   c_oldest_flushable = c_number_of_buffers / 2;
   if (c_number_of_buffers - c_oldest_flushable > c_max_dirty_buffers)
     c_oldest_flushable = c_number_of_buffers - c_max_dirty_buffers / 2;
 
-  if (c_unremap_quota == 0)
-    c_unremap_quota = c_number_of_buffers / 3;
-  else if (c_unremap_quota < 500)
-    c_unremap_quota = 500;
-
   if (c_server_threads > MAX_THREADS - 3)
     c_server_threads = MAX_THREADS - 3;
-
 
   /* Initialization of UCMs */
 
@@ -1812,7 +1836,6 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
 {
   main_bufs = c_number_of_buffers;
   cf_lock_in_mem = c_lock_in_mem;
-  cp_unremap_quota = c_unremap_quota;
   correct_parent_links = c_bad_parent_links;
   disable_listen_on_unix_sock = c_disable_listen_on_unix_sock;
   disable_listen_on_tcp_sock = c_disable_listen_on_tcp_sock;
@@ -1941,6 +1964,7 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   recursive_ft_usage = c_recursive_ft_usage;
   recursive_trigger_calls = c_recursive_trigger_calls;
 
+  mp_sparql_cap = ((c_mp_sparql_cap <= 0) ? ~0L : c_mp_sparql_cap);
   setp_top_row_limit = c_setp_top_row_limit;
   sql_max_tree_depth = c_sql_max_tree_depth;
   hi_end_memcache_size = c_hi_end_memcache_size;
@@ -1969,6 +1993,14 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
   uriqa_dynamic_local = c_uriqa_dynamic_local;
   sparql_result_set_max_rows = c_sparql_result_set_max_rows;
   sparql_max_mem_in_use = c_sparql_max_mem_in_use;
+  rdf_create_graph_keywords = c_rdf_create_graph_keywords;
+  rdf_query_graph_keywords = c_rdf_query_graph_keywords;
+  if (c_rdf_query_graph_keywords && !c_rdf_create_graph_keywords)
+    {
+      log_error ("non-zero QueryGraphKeyword conflicts with zero CreateGraphKeywords, cannot query what is not created. Querying is disabled.");
+      rdf_query_graph_keywords = 0;
+    }
+
   cli_encryption_on_password = c_cli_encryption_on_password;
 
   lh_xany_normalization_flags = c_lh_xany_normalization_flags;
@@ -2265,6 +2297,22 @@ new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
 	  log_error ("Striping is enabled, but no stripes are specified");
 	  return;
 	}
+    }
+  else				/* no striping, imitate 1 segment, 1 stripe, with parameters taken from [XXXDatabase] section. */
+    {
+      disk_segment_t *seg = (disk_segment_t *) dk_alloc (sizeof (disk_segment_t));
+      disk_stripe_t *dst;
+      seg->ds_size = EXTENT_SZ;
+      seg->ds_n_stripes = 1;
+      seg->ds_stripes = (disk_stripe_t **) dk_alloc_box (sizeof (caddr_t), DV_ARRAY_OF_LONG);
+      dst = (disk_stripe_t *) dk_alloc (sizeof (disk_stripe_t));
+      memset (dst, 0, sizeof (disk_stripe_t));
+      seg->ds_stripes[0] = dst;
+      dst->dst_mtx = mutex_allocate ();
+      dst->dst_iq_id = box_string ("defqueue");
+      dst->dst_file = box_string (c_database_file);
+
+      c_stripes = dk_set_conc (c_stripes, dk_set_cons ((caddr_t) seg, NULL));
     }
 
   dbs->dbs_file = box_string (c_database_file);

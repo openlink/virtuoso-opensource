@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -939,13 +939,13 @@ bif_regexp_init ()
   regexp_codes.hash = id_hash_allocate (NHASHITEMS, sizeof (caddr_t), sizeof (pcre_info_t),
       strhash, strhashcmp);
 
-  bif_define_typed ("regexp_match", bif_regexp_match, &bt_varchar);
-  bif_define_typed ("rdf_regex_impl", bif_rdf_regex_impl, &bt_varchar);
-  bif_define_typed ("regexp_substr", bif_regexp_substr, &bt_varchar);
-  bif_define_typed ("regexp_parse", bif_regexp_parse, &bt_any);
-  bif_define_typed ("regexp_parse_list", bif_regexp_parse_list, &bt_any);
-  bif_define_typed ("regexp_replace_hits_with_template", bif_regexp_replace_hits_with_template, &bt_varchar);
-  bif_define_typed ("regexp_version", bif_regexp_version, &bt_varchar);
+  bif_define_ex ("regexp_match", bif_regexp_match, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("rdf_regex_impl", bif_rdf_regex_impl, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("regexp_substr", bif_regexp_substr, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("regexp_parse", bif_regexp_parse, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("regexp_parse_list", bif_regexp_parse_list, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("regexp_replace_hits_with_template", bif_regexp_replace_hits_with_template, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("regexp_version", bif_regexp_version, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 }
 
 

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -119,6 +119,7 @@ int64 itc_sample (it_cursor_t * it);
 int64 itc_local_sample (it_cursor_t * it);
 unsigned int64 key_count_estimate (dbe_key_t * key, int n_samples, int upd_col_stats);
 void itc_col_stat_free (it_cursor_t * itc, int upd_col, float est);
+void cs_new_page (dk_hash_t * cols);
 int key_n_partitions (dbe_key_t * key);
 caddr_t key_name_to_iri_id (lock_trx_t * lt, caddr_t name, int make_new);
 int  key_rdf_lang_id (caddr_t name);
@@ -244,11 +245,10 @@ buffer_desc_t * page_fault_map_sem (it_cursor_t * it, dp_addr_t dp, int stay_ins
 #define PF_STAY_ATOMIC 1
 
 #if defined (MTX_DEBUG) && !defined (PAGE_DEBUG)
-#define PAGE_DEBUG
+//#define PAGE_DEBUG
 #endif
 
 #ifdef PAGE_DEBUG
-
 
 void buf_prot_read (buffer_desc_t * buf);
 void buf_prot_WRITE (buffer_desc_t * buf);
@@ -395,7 +395,8 @@ void gen_qsort (int * in, int * left,
 void gen_qmsort (int * in, int * left,
 	    int n_in, sort_cmp_func_t cmp, void* cd, int key_bytes);
 
-void bp_flush (buffer_pool_t * bp);
+void bp_flush (buffer_pool_t * bp, int wait);
+void mt_flush_all ();
 int page_set_length (buffer_desc_t * buf);
 int bp_buf_enter (buffer_desc_t * buf, it_map_t ** itm_ret);
 buffer_desc_t * bp_get_buffer_1  (buffer_pool_t * bp, buffer_pool_t ** pool_for_action, int mode);
@@ -420,6 +421,8 @@ long dbs_count_pageset_items (dbe_storage_t * dbs, buffer_desc_t** ppage_set);
 long dbs_count_free_pages (dbe_storage_t * dbs);
 long dbs_count_incbackup_pages (dbe_storage_t * dbs);
 long dbs_is_free_page (dbe_storage_t * dbs, dp_addr_t n);
+void dbs_set_free_set_arr (dbe_storage_t * dbs);
+int dbs_may_be_free (dbe_storage_t * dbs, dp_addr_t dp);
 
 void it_page_allocated (index_tree_t * it, dp_addr_t n);
 
@@ -457,8 +460,8 @@ extern int neodisk;
 void dbs_write_page_set (dbe_storage_t * dbs, buffer_desc_t * buf);
 void dbs_write_cfg_page (dbe_storage_t * dbs, int is_first);
 void lt_wait_checkpoint (void);
-void lt_wait_checkpoint_lt (lock_trx_t * lt);
 void lt_wait_checkpoint_1 (int cl_listener_also);
+void lt_wait_checkpoint_lt (lock_trx_t * lt);
 
 /*
 void dbs_locate_free_bit (dbe_storage_t * dbs, dp_addr_t near_dp,
@@ -817,8 +820,8 @@ extern char * pl_debug_cov_file;
 extern long vt_batch_size_limit;
 extern long sqlc_add_views_qualifiers;
 extern int sqlo_max_layouts;
-extern int32 sqlo_max_mp_size;
-extern long txn_after_image_limit;
+extern size_t sqlo_max_mp_size;
+extern size_t txn_after_image_limit;
 extern long stripe_growth_ratio;
 extern int disable_listen_on_unix_sock;
 extern int disable_listen_on_tcp_sock;
@@ -906,6 +909,7 @@ long sf_log (caddr_t * replicate);
 
 /* mtwrite.c */
 
+int dbs_dirty_count ();
 void buf_cancel_write (buffer_desc_t * buf);
 void buf_release_read_waits (buffer_desc_t * buf, int itc_state);
 void mt_write_start (int n_oldest);
@@ -916,7 +920,7 @@ extern int num_cont_pages;
 void mt_write_dirty (buffer_pool_t * bp, int n_oldest, int phys_eq_log_only);
 #define PHYS_EQ_LOG 1  /* only write pages that are not remapped. Used before checkpoint. */
 
-void iq_schedule (buffer_desc_t ** bufs, int n);
+dp_addr_t iq_schedule (buffer_desc_t ** bufs, int n);
 void iq_shutdown (int mode);
 #define IQ_SYNC 0
 #define IQ_STOP 1
@@ -1287,6 +1291,7 @@ extern int is_read_pending;
 extern int32 bp_n_bps;
 
 extern int cp_unremap_quota;
+					extern int cp_unremap_quota_is_set;
 extern dp_addr_t crashdump_start_dp;
 extern dp_addr_t crashdump_end_dp;
 extern int sqlc_hook_enable;

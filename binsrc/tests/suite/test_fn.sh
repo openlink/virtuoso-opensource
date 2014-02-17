@@ -1,16 +1,12 @@
 #!/bin/sh
 #
-#  test_fn.sh
-#
-#  $Id: test_fn.sh,v 1.49.6.11.4.35 2013/01/02 16:15:06 source Exp $
-#
 #  Generic test functions which should be read at the beginning of the
 #  shell script.
 #  
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2014 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -247,7 +243,7 @@ START_SERVER()
 	nowh=`expr $nowh - $starth`
 	nows=`expr $nows - $starts`
 
-	nows=`expr $nows + $nowh \*  60`
+	nows=`expr 1 + $nows + $nowh \*  60`
 	if test $nows -ge $timeout
 	then
 	    LOG "***FAILED: The Listener on port $port didn't stop within $timeout seconds"

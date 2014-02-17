@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3355,7 +3355,7 @@ bif_text_init (void)
   vt_stop_words = id_hash_allocate (11, sizeof (caddr_t), sizeof (caddr_t), strhash, strhashcmp);
   bif_define ("vt_word_string_ends", bif_vt_word_string_ends);
   bif_define ("vt_word_string_details", bif_vt_word_string_details);
-  bif_define_typed ("wb_all_done_bif", bif_wb_all_done, &bt_integer);
+  bif_define_ex ("wb_all_done_bif", bif_wb_all_done, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("vt_batch", bif_vt_batch);
   bif_define ("vt_batch_d_id", bif_vt_batch_d_id);
   bif_define ("vt_batch_alpha_range", bif_vt_batch_alpha_range);
@@ -3369,8 +3369,8 @@ bif_text_init (void)
   bif_define ("wb_apply", bif_wb_apply);
   bif_define ("vt_batch_words_length", bif_vt_batch_words_length);
 
-  bif_define_typed ("vt_is_noise", bif_vt_is_noise, &bt_integer);
-  bif_define_typed ("vt_load_stop_words", bif_vt_load_stop_words, &bt_any);
+  bif_define_ex ("vt_is_noise", bif_vt_is_noise, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("vt_load_stop_words", bif_vt_load_stop_words, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define ("key_is_d_id_partition", bif_key_is_d_id_partition);
   vt_noise_word_init ("noise.txt", &lh_noise_words);
   dk_mem_hooks(DV_TEXT_BATCH, (box_copy_f)vtb_copy, (box_destr_f) vtb_destroy, 0);

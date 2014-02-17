@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -764,44 +764,52 @@ ttlp_free (ttlp_t *ttlp)
 void
 ttlyyerror_impl (ttlp_t *ttlp_arg, const char *raw_text, const char *strg)
 {
-  int lineno = ttlp_arg[0].ttlp_lexlineno;
-  if (NULL == raw_text)
-    raw_text = ttlp_arg[0].ttlp_raw_text;
-  tf_report (ttlp_arg[0].ttlp_tf, 'F', "37000", "RDF29", strg);
-  sqlr_new_error ("37000", "SP029",
-      "%.400s, line %d: %.500s%.5s%.1000s",
-      ttlp_arg[0].ttlp_err_hdr,
-      lineno,
-      strg,
-      ((NULL == raw_text) ? "" : " at "),
-      ((NULL == raw_text) ? "" : raw_text));
+  if (NULL != ttlp_arg)
+    {
+      int lineno = ttlp_arg[0].ttlp_lexlineno;
+      if (NULL == raw_text)
+        raw_text = ttlp_arg[0].ttlp_raw_text;
+      tf_report (ttlp_arg[0].ttlp_tf, 'F', "37000", "RDF29", strg);
+      sqlr_new_error ("37000", "SP029",
+          "%.400s, line %d: %.500s%.5s%.1000s",
+          ttlp_arg[0].ttlp_err_hdr,
+          lineno,
+          strg,
+          ((NULL == raw_text) ? "" : " at "),
+          ((NULL == raw_text) ? "" : raw_text));
+    }
+  sqlr_new_error ("37000", "SP029", "Parser error: %s; please report the parsed document", strg);
 }
 
 
 void
 ttlyyerror_impl_1 (ttlp_t *ttlp_arg, const char *raw_text, int yystate, short *yyssa, short *yyssp, const char *strg)
 {
-  int sm2, sm1, sp1;
-  int lineno = ttlp_arg[0].ttlp_lexlineno;
-  if (NULL == raw_text)
-    raw_text = ttlp_arg[0].ttlp_raw_text;
-  tf_report (ttlp_arg[0].ttlp_tf, 'F', "37000", "RDF30", strg);
-  sp1 = yyssp[1];
-  sm1 = yyssp[-1];
-  sm2 = ((sm1 > 0) ? yyssp[-2] : 0);
-  sqlr_new_error ("37000", "RDF30",
-     /*errlen,*/ "%.400s, line %d: %.500s [%d-%d-(%d)-%d]%.5s%.1000s%.5s",
-      ttlp_arg[0].ttlp_err_hdr,
-      lineno,
-      strg,
-      sm2,
-      sm1,
-      yystate,
-      ((sp1 & ~0x7FF) ? -1 : sp1) /* stub to avoid printing random garbage in logs */ ,
-      ((NULL == raw_text) ? "" : " at '"),
-      ((NULL == raw_text) ? "" : raw_text),
-      ((NULL == raw_text) ? "" : "'")
-      );
+  if (NULL != ttlp_arg)
+    {
+      int sm2, sm1, sp1;
+      int lineno = ttlp_arg[0].ttlp_lexlineno;
+      if (NULL == raw_text)
+        raw_text = ttlp_arg[0].ttlp_raw_text;
+      tf_report (ttlp_arg[0].ttlp_tf, 'F', "37000", "RDF30", strg);
+      sp1 = yyssp[1];
+      sm1 = yyssp[-1];
+      sm2 = ((sm1 > 0) ? yyssp[-2] : 0);
+      sqlr_new_error ("37000", "RDF30",
+         /*errlen,*/ "%.400s, line %d: %.500s [%d-%d-(%d)-%d]%.5s%.1000s%.5s",
+          ttlp_arg[0].ttlp_err_hdr,
+          lineno,
+          strg,
+          sm2,
+          sm1,
+          yystate,
+          ((sp1 & ~0x7FF) ? -1 : sp1) /* stub to avoid printing random garbage in logs */ ,
+          ((NULL == raw_text) ? "" : " at '"),
+          ((NULL == raw_text) ? "" : raw_text),
+          ((NULL == raw_text) ? "" : "'")
+          );
+    }
+  sqlr_new_error ("37000", "SP029", "Parser error: %s; please report the parsed document", strg);
 }
 
 
@@ -1270,204 +1278,6 @@ bif_turtle_lex_analyze (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int mode_flags = ((1 < BOX_ELEMENTS(args)) ? bif_long_arg (qst, args, 1, "turtle_lex_analyze") : 0);
   return ttl_lex_analyze (str, mode_flags, QST_CHARSET(qst));
 }
-
-#ifdef DEBUG
-
-typedef struct ttl_lexem_descr_s
-{
-  int ld_val;
-  const char *ld_yname;
-  char ld_fmttype;
-  const char * ld_fmt;
-  caddr_t *ld_tests;
-} ttl_lexem_descr_t;
-
-ttl_lexem_descr_t ttl_lexem_descrs[__TTL_NONPUNCT_END+1];
-
-#define LEX_PROPS ttl_lex_props
-#define PUNCT(x) 'P', (x)
-#define LITERAL(x) 'L', (x)
-#define FAKE(x) 'F', (x)
-#define TTL "s"
-#define TRIG "t"
-
-#define LAST(x) "L", (x)
-#define LAST1(x) "K", (x)
-#define MISS(x) "M", (x)
-#define ERR(x)  "E", (x)
-
-#define PUNCT_TTL_LAST(x) PUNCT(x), TTL, LAST(x)
-#define PUNCT_TRIG_LAST(x) PUNCT(x), TRIG, LAST(x)
-
-
-static void ttl_lex_props (int val, const char *yname, char fmttype, const char *fmt, ...)
-{
-  va_list tail;
-  const char *cmd;
-  dk_set_t tests = NULL;
-  ttl_lexem_descr_t *ld = ttl_lexem_descrs + val;
-  if (0 != ld->ld_val)
-    GPF_T;
-  ld->ld_val = val;
-  ld->ld_yname = yname;
-  ld->ld_fmttype = fmttype;
-  ld->ld_fmt = fmt;
-  va_start (tail, fmt);
-  for (;;)
-    {
-      cmd = va_arg (tail, const char *);
-      if (NULL == cmd)
-	break;
-      dk_set_push (&tests, box_dv_short_string (cmd));
-    }
-  va_end (tail);
-  ld->ld_tests = (caddr_t *)revlist_to_array (tests);
-}
-
-static void ttl_lexem_descrs_fill (void)
-{
-  static int first_run = 1;
-  if (!first_run)
-    return;
-  first_run = 0;
-#include "turtle_lex_props.c"
-}
-
-caddr_t
-bif_turtle_lex_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  dk_set_t report = NULL;
-  int tested_lex_val = 0;
-  ttl_lexem_descrs_fill ();
-  for (tested_lex_val = 0; tested_lex_val < __TTL_NONPUNCT_END; tested_lex_val++)
-    {
-      char cmd;
-      caddr_t **lexems;
-      unsigned lex_count;
-      unsigned cmd_idx = 0;
-      int mode_bits = 0, last_lval, last1_lval;
-      ttl_lexem_descr_t *ld = ttl_lexem_descrs + tested_lex_val;
-      if (0 == ld->ld_val)
-	continue;
-      dk_set_push (&report, box_dv_short_string (""));
-      dk_set_push (&report,
-        box_sprintf (0x100, "#define % 25s %d /* '%s' (%c) */",
-	  ld->ld_yname, ld->ld_val, ld->ld_fmt, ld->ld_fmttype ) );
-      for (cmd_idx = 0; cmd_idx < BOX_ELEMENTS(ld->ld_tests); cmd_idx++)
-	{
-	  cmd = ld->ld_tests[cmd_idx][0];
-	  switch (cmd)
-	    {
-	    case 's': mode_bits = 0; break;
-	    case 't': mode_bits = TTLP_ALLOW_TRIG; break;
-	    case 'K': case 'L': case 'M': case 'E':
-	      cmd_idx++;
-	      lexems = (caddr_t **) ttl_lex_analyze (ld->ld_tests[cmd_idx], mode_bits, QST_CHARSET(qst));
-	      dk_set_push (&report, box_dv_short_string (ld->ld_tests[cmd_idx]));
-	      lex_count = BOX_ELEMENTS (lexems);
-	      if (0 == lex_count)
-		{
-		  dk_set_push (&report, box_dv_short_string ("FAILED: no lexems parsed and no error reported!"));
-		  goto end_of_test;
-		}
-	      { char buf[0x1000]; char *buf_tail = buf;
-	        unsigned lctr = 0;
-		for (lctr = 0; lctr < lex_count && (5 == BOX_ELEMENTS(lexems[lctr])); lctr++)
-		  {
-		    ptrlong *ldata = ((ptrlong *)(lexems[lctr]));
-		    int lval = ldata[3];
-		    ttl_lexem_descr_t *ld = ttl_lexem_descrs + lval;
-		    if (ld->ld_val)
-		      buf_tail += sprintf (buf_tail, " %s", ld->ld_yname);
-		    else if (lval < 0x100)
-		      buf_tail += sprintf (buf_tail, " '%c'", lval);
-		    else GPF_T;
-		    buf_tail += sprintf (buf_tail, " %ld ", (long)(ldata[4]));
-		  }
-	        buf_tail[0] = '\0';
-		dk_set_push (&report, box_dv_short_string (buf));
-	      }
-	      if (3 == BOX_ELEMENTS(lexems[lex_count-1])) /* lexical error */
-		{
-		  dk_set_push (&report,
-		    box_sprintf (0x1000, "%s: ERROR %s",
-		      ('E' == cmd) ? "PASSED": "FAILED", lexems[lex_count-1][2] ) );
-		  goto end_of_test;
-		}
-/*
-	      if (END_OF_TURTLE_TEXT != ((ptrlong *)(lexems[lex_count-1]))[3])
-		{
-		  dk_set_push (&report, box_dv_short_string ("FAILED: end of source is not reached and no error reported!"));
-		  goto end_of_test;
-		}
-*/
-	      if (0 /*1*/ == lex_count)
-		{
-		  dk_set_push (&report, box_dv_short_string ("FAILED: no lexems parsed and only end of source has found!"));
-		  goto end_of_test;
-		}
-	      last_lval = ((ptrlong *)(lexems[lex_count-/*2*/1]))[3];
-	      if ('E' == cmd)
-		{
-		  dk_set_push (&report,
-		    box_sprintf (0x1000, "FAILED: %d lexems found, last lexem is %d, must be error",
-		      lex_count, last_lval) );
-		  goto end_of_test;
-		}
-	      if ('K' == cmd)
-		{
-		  if (/*4*/2 > lex_count)
-		    {
-		      dk_set_push (&report,
-			box_sprintf (0x1000, "FAILED: %d lexems found, the number of actual lexems is less than two",
-			  lex_count ) );
-		      goto end_of_test;
-		    }
-		  last1_lval = ((ptrlong *)(lexems[lex_count-/*3*/2]))[3];
-		  dk_set_push (&report,
-		    box_sprintf (0x1000, "%s: %d lexems found, one-before-last lexem is %d, must be %d",
-		      (last1_lval == tested_lex_val) ? "PASSED": "FAILED", lex_count, last1_lval, tested_lex_val) );
-		  goto end_of_test;
-		}
-	      if ('L' == cmd)
-		{
-		  dk_set_push (&report,
-		    box_sprintf (0x1000, "%s: %d lexems found, last lexem is %d, must be %d",
-		      (last_lval == tested_lex_val) ? "PASSED": "FAILED", lex_count, last_lval, tested_lex_val) );
-		  goto end_of_test;
-		}
-	      if ('M' == cmd)
-		{
-		  unsigned lctr;
-		  for (lctr = 0; lctr < lex_count; lctr++)
-		    {
-		      int lval = ((ptrlong *)(lexems[lctr]))[3];
-		      if (lval == tested_lex_val)
-			{
-			  dk_set_push (&report,
-			    box_sprintf (0x1000, "FAILED: %d lexems found, lexem %d is found but it should not occur",
-			      lex_count, tested_lex_val) );
-			  goto end_of_test;
-			}
-		    }
-		  dk_set_push (&report,
-		    box_sprintf (0x1000, "PASSED: %d lexems found, lexem %d is not found and it should not occur",
-		      lex_count, tested_lex_val) );
-		  goto end_of_test;
-		}
-	      GPF_T;
-end_of_test:
-	      dk_free_tree (lexems);
-	      break;
-	    default: GPF_T;
-	    }
-	  }
-    }
-  return revlist_to_array (report);
-}
-#endif
-
-
 
 
 id_hashed_key_t iristrhash (char *strp);
@@ -2093,6 +1903,8 @@ tb_string_and_id_check (dbe_table_t * tb, dbe_column_t ** str_col, dbe_column_t 
 
 int32 iri_range_size = 1000000;
 #define N_IRI_SEQS 19
+#define N_IRI_SEQS_USED iri_seqs_used
+int iri_seqs_used = N_IRI_SEQS;
 #define IRI_RANGE_SZ iri_range_size
 
 extern dk_mutex_t * log_write_mtx;
@@ -2111,10 +1923,10 @@ rdf_new_iri_id (lock_trx_t * lt, char ** value_seq_ret, int nth, query_instance_
     {
       du_thread_t * self = THREAD_CURRENT_THREAD;
       nth = (((uptrlong)self) ^ (((uptrlong)self) >> 11))
-      % N_IRI_SEQS;
+      % N_IRI_SEQS_USED;
     }
   else
-    nth = ((unsigned int)nth) % N_IRI_SEQS;
+    nth = ((unsigned int)nth) % N_IRI_SEQS_USED;
   if (!range_seq)
     {
       int inx;
@@ -3445,22 +3257,19 @@ bif_iri_to_rdf_prefix_and_local (caddr_t * qst, caddr_t * err_ret, state_slot_t 
 
 
 caddr_t
-bif_rdf_cache_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+rdf_cache_id (query_instance_t * qi, caddr_t mode, caddr_t pref, boxint new_id, int is_set, int is_txn)
 {
-  QNCAST (query_instance_t, qi, qst);
-  caddr_t mode = bif_string_arg (qst, args, 0, "rdf_cache_id");
-  caddr_t pref = bif_string_or_uname_arg (qst, args, 1, "rdf_cache_id");
   name_id_cache_t * cache = mode[0] == 'p' ? iri_prefix_cache
     : mode[0] == 'l' ? rdf_lang_cache
     : mode[0] == 't' ? rdf_type_cache
     : mode[0] == 'i'? iri_name_cache : NULL;
+  if ('t' == mode[0] && !strcmp (pref, "http://www.opengis.net/ont/geosparql#wktLiteral"))
+    return box_num (256);
   if (!cache)
     sqlr_new_error ("42000", "RDF..", "bad mode for rdf_cache_id");
-  if (BOX_ELEMENTS (args) > 2)
+  if (is_set)
     {
-      boxint new_id = 'i' == mode[0] ? (boxint)bif_iri_id_arg (qst, args, 2, "rdf_cache_id")
-	: bif_long_arg (qst, args, 2, "rdf_cache_id");
-      if (cache == iri_name_cache || cache == iri_prefix_cache)
+      if (is_txn && (cache == iri_name_cache || cache == iri_prefix_cache))
 	lt_nic_set (qi->qi_trx, cache, pref, new_id);
       else
 	nic_set (cache, pref, new_id);
@@ -3470,6 +3279,49 @@ bif_rdf_cache_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return box_num (lt_nic_name_id (qi->qi_trx, cache, pref));
   else
     return box_num (nic_name_id (cache, pref));
+}
+
+
+
+caddr_t
+bif_rdf_cache_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  QNCAST (query_instance_t, qi, qst);
+  int is_set = 0;
+  caddr_t mode = bif_string_arg (qst, args, 0, "rdf_cache_id");
+  caddr_t pref = bif_string_or_uname_arg (qst, args, 1, "rdf_cache_id");
+  boxint new_id = 0;
+  if (BOX_ELEMENTS (args) > 2)
+    {
+      new_id = 'i' == mode[0] ? (boxint)bif_iri_id_arg (qst, args, 2, "rdf_cache_id")
+	: bif_long_arg (qst, args, 2, "rdf_cache_id");
+      is_set = 1;
+    }
+  return  rdf_cache_id (qi, mode, pref, new_id, is_set, lt_has_delta (qi->qi_trx));
+}
+
+
+void
+bif_rdf_cache_id_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret)
+{
+  QNCAST (QI, qi, qst);
+  caddr_t mode;
+  int is_txn = lt_has_delta (qi->qi_trx);
+  db_buf_t set_mask = qi->qi_set_mask;
+  int set, n_sets = qi->qi_n_sets, first_set = 0;
+  if (BOX_ELEMENTS (args) < 3 || SSL_CONSTANT != args[0]->ssl_type)
+    {
+      *err_ret = BIF_NOT_VECTORED;
+      return;
+    }
+  mode = bif_string_or_uname_arg (qst, args, 0, "rdf_cache_id");
+  SET_LOOP
+    {
+      boxint new_id = 'i' == mode[0] ? (boxint)bif_iri_id_arg (qst, args, 2, "rdf_cache_id")
+	: bif_long_arg (qst, args, 2, "rdf_cache_id");
+      rdf_cache_id (qi, mode, bif_string_or_uname_arg (qst, args, 1, "rdf_cache_id"), new_id, 1, is_txn);
+    }
+  END_SET_LOOP;
 }
 
 
@@ -3489,6 +3341,71 @@ bif_rdf_cache_id_to_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
     return lt_nic_id_name (qi->qi_trx, cache, id);
   else
     return nic_id_name (cache, id);
+}
+
+
+void
+bif_rdf_cache_id_to_name_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret)
+{
+  QNCAST (QI, qi, qst);
+  name_id_cache_t * cache;
+  boxint prev = -1;
+  caddr_t mode;
+  db_buf_t set_mask = qi->qi_set_mask;
+  int set, n_sets = qi->qi_n_sets, first_set = 0;
+  caddr_t box = NULL;
+  if (BOX_ELEMENTS (args) < 2 || SSL_CONSTANT != args[0]->ssl_type || !ret || SSL_VEC != ret->ssl_type)
+    {
+      *err_ret = BIF_NOT_VECTORED;
+      return;
+    }
+  mode = bif_string_or_uname_arg (qst, args, 0, "rdf_cache_id");
+  cache = mode[0] == 'p' ? iri_prefix_cache
+    : mode[0] == 'l' ? rdf_lang_cache
+    : mode[0] == 'i' ? iri_name_cache
+    : mode[0] == 't' ? rdf_type_cache : NULL;
+  if (!cache)
+    sqlr_new_error ("42000", "RDF..", "bad mode for rdf_cache_id_to_name");
+  SET_LOOP
+    {
+      boxint id = bif_long_arg (qst, args, 1, "rdf_cache_id_to_name");
+      if (id == prev)
+	{
+	  qst_set_copy (qst, ret, box);
+	  continue;
+	}
+      dk_free_tree (box);
+      if (cache == iri_name_cache || cache == iri_prefix_cache)
+	box = lt_nic_id_name (qi->qi_trx, cache, id);
+      else
+	box = nic_id_name (cache, id);
+      qst_set_copy (qst, ret, box);
+      prev = id;
+    }
+  END_SET_LOOP;
+  dk_free_tree (box);
+}
+
+
+caddr_t
+bif_iri_from_pref_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t pref = bif_string_arg (qst, args, 0, "iri_from_pref_name");
+  caddr_t name = bif_string_arg (qst, args, 1, "iri_from_pref_name");
+  int pref_len = box_length (pref) - 1;
+  int name_len = box_length (name) - 1;
+  caddr_t res;
+  if (name_len < 4)
+    res = box_dv_short_string ("iri_from_pref_name");
+  else
+    {
+      res = dk_alloc_box (pref_len + name_len - 3, DV_STRING);
+      memcpy_16 (res, pref, pref_len);
+      memcpy_16 (res + pref_len, name + 4, name_len - 4);
+      res[pref_len + name_len - 4] = 0;
+    }
+  box_flags (res) = BF_IRI;
+  return res;
 }
 
 
@@ -3782,45 +3699,22 @@ bif_rdf_obj_ft_rule_zap_all (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
   return 0;
 }
 
-caddr_t
-bif_rdf_obj_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+int
+rdf_obj_ft_rule_check_if_configured (caddr_t * qst, state_slot_t ** args, int g_arg_idx, const char *fname)
 {
   iri_id_t g_id;
   caddr_t p;
   rdf_obj_ft_rule_iid_hkey_t iid_hkey;
-  dtp_t g_dtp, p_dtp;
-  if (CL_RUN_LOCAL != cl_run_local_only)
-    {
-      caddr_t cl_text_set = registry_get ("cl_rdf_text_index");
-      char flag = cl_text_set ? cl_text_set[0] : '\0';
-      dk_free_tree (cl_text_set);
-      if ('1' == flag)
-        return box_num (2);
-    }
-
+  dtp_t p_dtp;
   if (!rdf_obj_ft_rules_by_iris->ht_count)
-    return NULL;
-  g_id = bif_arg (qst, args, 0, "__rdf_obj_ft_rule_check");
-  p = bif_arg (qst, args, 1, "__rdf_obj_ft_rule_check");
+    return 0;
   iid_hkey.hkey_g = 0;
   iid_hkey.hkey_iid_p = 0;
   mutex_enter (rdf_obj_ft_rules_mtx);
   if (NULL != id_hash_get (rdf_obj_ft_rules_by_iids, (caddr_t)(&iid_hkey)))
     goto hit; /* see_below */
-  g_dtp = DV_TYPE_OF (g_id);
-  switch (g_dtp)
-    {
-      case DV_IRI_ID: /* case DV_STRING: case DV_UNAME: */
-        break;
-      case DV_DB_NULL:
-        g_id = 0;
-        break;
-      default:
-        mutex_leave (rdf_obj_ft_rules_mtx);
-        sqlr_new_error ("22023", "SR008",
-          "Function __rdf_obj_ft_rule_check needs a IRI_ID as argument 1, "
-          "not an arg of type %s (%d)", dv_type_title (g_dtp), g_dtp );
-    }
+  g_id = bif_iri_id_or_null_arg (qst, args, g_arg_idx, fname);
+  p = bif_arg (qst, args, g_arg_idx + 1, fname);
   p_dtp = DV_TYPE_OF (p);
   switch (p_dtp)
     {
@@ -3832,8 +3726,8 @@ bif_rdf_obj_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
       default:
         mutex_leave (rdf_obj_ft_rules_mtx);
 	  sqlr_new_error ("22023", "SR008",
-		    "Function __rdf_obj_ft_rule_check needs a string or UNAME or IRI_ID as argument 2, "
-		    "not an arg of type %s (%d)", dv_type_title (p_dtp), p_dtp);
+	  "Function %s() needs a string or UNAME or IRI_ID as argument %d, "
+	  "not an arg of type %s (%d)", fname, g_arg_idx + 2, dv_type_title (p_dtp), p_dtp);
     }
   if (NULL != id_hash_get (rdf_obj_ft_rules_by_iids, (caddr_t)(&iid_hkey)))
     goto hit; /* see_below */
@@ -3853,7 +3747,7 @@ bif_rdf_obj_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
       if (NULL != id_hash_get (rdf_obj_ft_rules_by_iids, (caddr_t)(&iid_hkey)))
         goto hit; /* see_below */
       mutex_leave (rdf_obj_ft_rules_mtx);
-      return box_num (0);
+      return 0;
    }
   else
     {
@@ -3871,10 +3765,94 @@ bif_rdf_obj_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
       if (NULL != id_hash_get (rdf_obj_ft_rules_by_iris, (caddr_t)(&iri_hkey)))
         goto hit; /* see_below */
       mutex_leave (rdf_obj_ft_rules_mtx);
-      return box_num (0);
+      return 0;
    }
 hit:
   mutex_leave (rdf_obj_ft_rules_mtx);
+  return 1;
+}
+
+caddr_t
+bif_rdf_obj_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  if (CL_RUN_LOCAL != cl_run_local_only)
+    {
+      char *  cl_text_set, flag;
+      IN_TXN;
+      cl_text_set = registry_get ("cl_rdf_text_index");
+      LEAVE_TXN;
+      flag = cl_text_set ? cl_text_set[0] : '\0';
+      dk_free_tree (cl_text_set);
+      if ('1' == flag)
+        return box_num (2);
+    }
+  return box_num (rdf_obj_ft_rule_check_if_configured (qst, args, 0, "__rdf_obj_ft_rule_check"));
+}
+
+caddr_t
+bif_rdf_obj_set_is_text_if_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t obj = bif_arg (qst, args, 0, "__rdf_obj_set_is_text_if_ft_rule_check");
+  caddr_t ro_dict;
+  int wrap_if_ft;
+  switch (DV_TYPE_OF (obj))
+    {
+    case DV_RDF:
+      {
+        rdf_box_t *obj_rb = (rdf_box_t *)obj;
+        if (obj_rb->rb_is_text_index
+          || (obj_rb->rb_is_outlined && (DV_STRING != ((rdf_bigbox_t *)obj_rb)->rbb_box_dtp) && (DV_XML_ENTITY != ((rdf_bigbox_t *)obj_rb)->rbb_box_dtp)) )
+          return box_num (1);
+        if (!obj_rb->rb_is_complete)
+          rb_complete (obj_rb, ((query_instance_t *)qst)->qi_trx, (query_instance_t *)qst);
+        if ((DV_STRING != DV_TYPE_OF (obj_rb->rb_box)) && (DV_XML_ENTITY != DV_TYPE_OF (obj_rb->rb_box)))
+          return box_num (1);
+        wrap_if_ft = 0;
+        break;
+      }
+    case DV_XML_ENTITY: case DV_STRING:
+      wrap_if_ft = 1;
+      break;
+    default:
+      return box_num (0);
+    }
+  ro_dict = bif_arg (qst, args, 3, "__rdf_obj_set_is_text_if_ft_rule_check");
+  if (DV_DB_NULL != DV_TYPE_OF (ro_dict))
+    goto need_ft; /* see below */
+  if (CL_RUN_LOCAL != cl_run_local_only)
+    {
+      char *  cl_text_set, flag;
+      IN_TXN;
+      cl_text_set = registry_get ("cl_rdf_text_index");
+      LEAVE_TXN;
+      flag = cl_text_set ? cl_text_set[0] : '\0';
+      dk_free_tree (cl_text_set);
+      if ('1' == flag)
+        goto need_ft; /* see below */
+    }
+  if (rdf_obj_ft_rule_check_if_configured (qst, args, 1, "__rdf_obj_set_is_text_if_ft_rule_check"));
+    goto need_ft; /* see below */
+  return box_num (0);
+need_ft:
+  if (wrap_if_ft)
+    {
+      caddr_t swap;
+      rdf_box_t *rb = rb_allocate ();
+      rb->rb_box = obj;
+      rb->rb_is_complete = 1;
+      rb->rb_is_text_index = 1;
+      rb->rb_lang = RDF_BOX_DEFAULT_LANG;
+      rb->rb_type = RDF_BOX_DEFAULT_TYPE;
+      swap = (caddr_t)((void *)rb);
+      qst_swap (qst, args[0], &swap);
+      if (swap != obj)
+        GPF_T1 ("weird swap");
+    }
+  else
+    {
+      rdf_box_t *rb = (rdf_box_t *)((void *)obj);
+      rb->rb_is_text_index = 1;
+    }
   return box_num (1);
 }
 
@@ -3962,6 +3940,14 @@ bif_iri_ensure (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
+bif_iri_cache_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  nic_clear (iri_name_cache);
+  nic_clear (iri_prefix_cache);
+}
+
+
+caddr_t
 bif_uriqa_iri_is_local (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t name = bif_string_or_uname_arg (qst, args, 0, "uriqa_iri_is_local");
@@ -3972,9 +3958,10 @@ bif_uriqa_iri_is_local (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t 
 bif_uriqa_dynamic_local_replace (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t name = box_copy (bif_string_arg (qst, args, 0, "uriqa_dynamic_local_replace"));
+  caddr_t name = box_copy (bif_string_or_uname_arg (qst, args, 0, "uriqa_dynamic_local_replace"));
   name = uriqa_dynamic_local_replace (name, ((query_instance_t *) qst)->qi_client);
-  box_flags (name) = BF_IRI;
+  if (DV_STRING == DV_TYPE_OF (name))
+    box_flags (name) = BF_IRI;
   return name;
 }
 
@@ -4065,6 +4052,9 @@ rdf_key_comp_init ()
 
 void bif_rld_init ();
 void bif_id2i_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
+void bif_id2i_vec_ns (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
+
+
 extern jso_class_descr_t jso__quad_map;
 
 void jso__rdf_val_range_inst_validation (rdf_val_range_t *rvr, const char *structname, jso_rtti_t *inst_rtti, dk_set_t *warnings_log_ptr)
@@ -4166,6 +4156,11 @@ void jso__qm_format_jsocd_validation_cbk (jso_rtti_t *inst_rtti, dk_set_t *warni
   jso__rdf_val_range_inst_validation (&(qmf->qmfValRange), "qmfValRange", inst_rtti, warnings_log_ptr);
 }
 
+#ifdef DEBUG
+extern caddr_t bif_turtle_lex_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
+#endif
+
+void bif_iri_to_id_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
 
 void
 rdf_core_init (void)
@@ -4175,65 +4170,58 @@ rdf_core_init (void)
   jso__quad_map.jsocd_validation_cbk = jso__quad_map_jsocd_validation_cbk;
   jso__qm_value.jsocd_validation_cbk = jso__qm_value_jsocd_validation_cbk;
   jso__qm_format.jsocd_validation_cbk = jso__qm_format_jsocd_validation_cbk;
+  if (iri_seqs_used < 1)
+    iri_seqs_used = 1;
+  if (iri_seqs_used > N_IRI_SEQS)
+    iri_seqs_used = N_IRI_SEQS;
   iri_nic_rc = resource_allocate (10, NULL, (rc_destr_t)nic_free, (rc_destr_t)nic_clear, 0);
   prefix_nic_rc = resource_allocate (10, NULL, (rc_destr_t)nic_free, (rc_destr_t)nic_clear, 0);
-  bif_define_typed ("rdf_load_rdfxml", bif_rdf_load_rdfxml, &bt_xml_entity);
+  bif_define_ex ("rdf_load_rdfxml", bif_rdf_load_rdfxml, BMD_RET_TYPE, &bt_xml_entity, BMD_DONE);
   bif_set_uses_index (bif_rdf_load_rdfxml);
-  bif_define_typed ("rdf_load_rdfa", bif_rdf_load_rdfa, &bt_xml_entity);
+  bif_define_ex ("rdf_load_rdfa", bif_rdf_load_rdfa, BMD_RET_TYPE, &bt_xml_entity, BMD_DONE);
   bif_set_uses_index (bif_rdf_load_rdfa);
-  bif_define_typed ("rdf_load_microdata", bif_rdf_load_microdata, &bt_xml_entity);
+  bif_define_ex ("rdf_load_microdata", bif_rdf_load_microdata, BMD_RET_TYPE, &bt_xml_entity, BMD_DONE);
   bif_set_uses_index (bif_rdf_load_microdata);
   bif_define ("rdf_load_turtle", bif_rdf_load_turtle);
   bif_set_uses_index (bif_rdf_load_turtle);
   bif_define ("rdf_load_turtle_local_file", bif_rdf_load_turtle_local_file);
   bif_set_uses_index (bif_rdf_load_turtle_local_file);
   bif_define ("turtle_lex_analyze", bif_turtle_lex_analyze);
-  bif_define_typed ("iri_to_id", bif_iri_to_id, &bt_iri_id);
-  bif_set_cluster_rec ("iri_to_id");
-  bif_set_enlist ("iri_to_id");
+  bif_define_ex ("iri_to_id"			, bif_iri_to_id	, BMD_ALIAS, "__i2id"	, BMD_VECTOR_IMPL, bif_iri_to_id_vec, BMD_RET_TYPE, &bt_iri_id, BMD_USES_INDEX, BMD_NO_CLUSTER, BMD_OUT_OF_PARTITION, BMD_NEED_ENLIST, BMD_DONE);
   bif_define ("iri_ensure", bif_iri_ensure);
-  bif_set_uses_index (bif_iri_to_id);
-  bif_set_no_cluster ("iri_to_id");
-  bif_define ("iri_to_id_repl", bif_iri_to_id_repl);
-  bif_set_cluster_rec ("iri_to_id_repl");
-  bif_set_enlist ("iri_to_id_repl");
+  bif_define_ex ("iri_to_id_repl", bif_iri_to_id_repl, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_NEED_ENLIST, BMD_DONE);
   bif_set_uses_index (bif_iri_to_id_repl);
   bif_define ("iri_canonicalize", bif_iri_canonicalize);
   bif_set_uses_index (bif_iri_canonicalize);
-  bif_define ("iri_to_id_nosignal", bif_iri_to_id_nosignal);
-  bif_set_uses_index (bif_iri_to_id_nosignal);
-  bif_set_cluster_rec ("iri_to_id_nosignal");
-  bif_define_typed ("iri_to_id_if_cached", bif_iri_to_id_if_cached, &bt_varchar);
-  bif_define_typed ("id_to_iri", bif_id_to_iri, &bt_varchar);
-  bif_set_uses_index (bif_id_to_iri);
-  bif_set_cluster_rec ("id_to_iri");
-  bif_define_typed ("id_to_canonicalized_iri", bif_id_to_canonicalized_iri, &bt_varchar);
-  bif_set_uses_index (bif_id_to_canonicalized_iri);
-  bif_set_cluster_rec ("id_to_canonicalized_iri");
-  bif_define_typed ("id_to_iri_nosignal", bif_id_to_iri_nosignal, &bt_varchar);
-  bif_set_uses_index (bif_id_to_iri_nosignal);
-  bif_set_cluster_rec ("id_to_iri_nosignal");
-
+  bif_define_ex ("iri_to_id_nosignal", bif_iri_to_id_nosignal, BMD_ALIAS, "__i2idn", BMD_RET_TYPE, &bt_iri_id, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_DONE);
+  bif_define_ex ("iri_to_id_if_cached", bif_iri_to_id_if_cached, BMD_ALIAS, "__i2idc", BMD_RET_TYPE, &bt_iri_id, BMD_DONE);
+  bif_define_ex ("id_to_iri"			, bif_id_to_iri	, BMD_ALIAS, "__id2i"	, BMD_VECTOR_IMPL, bif_id2i_vec, BMD_RET_TYPE, &bt_any /* was &bt_varchar */, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_DONE);
+  bif_define_ex ("id_to_canonicalized_iri"	, bif_id_to_canonicalized_iri	, BMD_RET_TYPE, &bt_any /* was &bt_varchar */, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_DONE);
+  bif_define_ex ("id_to_iri_nosignal"		, bif_id_to_iri_nosignal	, BMD_ALIAS, "__id2in"	, BMD_VECTOR_IMPL, bif_id2i_vec_ns, BMD_RET_TYPE, &bt_any /* was &bt_varchar */, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_DONE);
   bif_define ("iri_to_rdf_prefix_and_local", bif_iri_to_rdf_prefix_and_local);
+  bif_define_ex ("iri_from_pref_name", bif_iri_from_pref_name, BMD_RET_TYPE, &bt_any, BMD_IS_PURE, BMD_DONE);
   bif_define ("rdf_cache_id", bif_rdf_cache_id);
+  bif_set_vectored (bif_rdf_cache_id, bif_rdf_cache_id_vec);
   bif_define ("rdf_cache_id_to_name", bif_rdf_cache_id_to_name);
+  bif_set_vectored (bif_rdf_cache_id_to_name, bif_rdf_cache_id_to_name_vec);
   bif_define ("iri_id_cache_flush", bif_iri_id_cache_flush);
   bif_define ("iri_id_new", bif_iri_id_new);
   bif_define ("__rdf_obj_ft_rule_add", bif_rdf_obj_ft_rule_add);
   bif_define ("__rdf_obj_ft_rule_del", bif_rdf_obj_ft_rule_del);
   bif_define ("__rdf_obj_ft_rule_zap_all", bif_rdf_obj_ft_rule_zap_all);
   bif_define ("__rdf_obj_ft_rule_check", bif_rdf_obj_ft_rule_check);
+  bif_define ("__rdf_obj_set_is_text_if_ft_rule_check", bif_rdf_obj_set_is_text_if_ft_rule_check);
+  bif_set_uses_index (bif_rdf_obj_set_is_text_if_ft_rule_check);
   bif_define ("__rdf_obj_ft_rule_count_in_graph", bif_rdf_obj_ft_rule_count_in_graph);
-  /* Short aliases for use in generated SQL text: */
-  bif_define ("__i2idn", bif_iri_to_id_nosignal);
-  bif_define ("__i2id", bif_iri_to_id);
-  bif_define ("__i2idc", bif_iri_to_id_if_cached);
-  bif_define_typed ("__id2i", bif_id_to_iri, &bt_any /* Was &bt_varchar */);
-  bif_set_vectored (bif_id_to_iri, bif_id2i_vec);
-  bif_set_uses_index (bif_id_to_iri);
-  bif_define ("__id2in", bif_id_to_iri_nosignal);
+  {
+    char * inv1[] = { "__id2in", "__i2idn", "__ID2IN", "__I2IDN"};
+    char * inv2[] = { "__i2idn", "__id2in", "__I2IDN", "__ID2IN"};
+    int flags[] = { 0, 0, 0, 0 };
+    sinv_builtin_inverse (inv1, inv2, flags, 4);
+  }
   bif_define ("rdf_graph_keyword", bif_rdf_graph_keyword);
   bif_define ("iri_split", bif_iri_split);
+  bif_define ("iri_cache_clear",  bif_iri_cache_clear);
   bif_define ("uriqa_dynamic_local_set", bif_uriqa_dynamic_local_set);
   bif_define ("uriqa_iri_is_local", bif_uriqa_iri_is_local);
   bif_define ("uriqa_dynamic_local_replace", bif_uriqa_dynamic_local_replace);

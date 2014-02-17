@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2025,8 +2025,13 @@ runX_begin: ;
 		  || (rc == DVC_LESS && op->go_op == AMMSC_MIN)
 		  || (rc == DVC_GREATER && op->go_op == AMMSC_MAX))
 		  {
-		    dk_free_tree (dep_ptr[0]);
-		    dep_ptr[0] = box_copy_tree (new_val);
+		    if (!hi->hi_pool)
+		      {
+			dk_free_tree (dep_ptr[0]);
+			dep_ptr[0] = box_copy_tree (new_val);
+		      }
+		    else
+		      dep_ptr[0] = mp_full_box_copy_tree (hi->hi_pool, new_val);
 		  }
 		break;
 	      }
@@ -2048,16 +2053,33 @@ runX_begin: ;
 		/* can be null on the row if 1st value was null. Replace w/ new val */
 		if (DV_DB_NULL == DV_TYPE_OF (dep_ptr[0]))
 		  {
-		    dk_free_tree (dep_ptr[0]);
-		    dep_ptr[0] = box_copy_tree (new_val);
+		    if (!hi->hi_pool)
+		      {
+			dk_free_tree (dep_ptr[0]);
+			dep_ptr[0] = box_copy_tree (new_val);
+		      }
+		    else
+		      dep_ptr[0] = mp_full_box_copy_tree (hi->hi_pool, new_val);
 		  }
 		else
 		  {
-		    QST_GET_V (qst, op->go_old_val) = dep_ptr[0];
-		    dep_ptr[0] = NULL;
-		    box_add (new_val, QST_GET_V (qst, op->go_old_val), qst, op->go_old_val);
-		    dep_ptr[0] = QST_GET_V (qst, op->go_old_val);
-		    QST_GET_V (qst, op->go_old_val) = NULL;
+		    caddr_t res;
+		    res = box_add (new_val, dep_ptr[0], qst, NULL);
+		    if (!hi->hi_pool)
+		      {
+			dk_free_tree (dep_ptr[0]);
+			dep_ptr[0] = res;
+		      }
+		    else
+		      {
+			int len1 = IS_BOX_POINTER (dep_ptr[0]) ? box_length (dep_ptr[0]) : 0; 
+			int len2 = IS_BOX_POINTER (res) ? box_length (res) : 0;
+			if (DV_TYPE_OF (dep_ptr[0]) == DV_TYPE_OF (res) && len1 == len2 && len1 > 0)
+			  memcpy (dep_ptr[0], res, len1);
+			else
+			  dep_ptr[0] = mp_full_box_copy_tree (hi->hi_pool, res);
+			dk_free_tree (res);
+		      }
 		  }
 		break;
 	      }
@@ -2435,7 +2457,7 @@ hash_source_input (hash_source_t * hs, caddr_t * qst, caddr_t * qst_cont)
   hash_area_t * ha = hs->hs_ha;
   if (hs->src_gen.src_sets)
     {
-      hash_source_vec_input (hs, qst, qst_cont);
+      hash_source_chash_input (hs, qst, qst_cont);
       return;
     }
   if (!qst_cont)

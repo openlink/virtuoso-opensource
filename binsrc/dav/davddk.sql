@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -33,6 +33,7 @@ create table WS.WS.SYS_DAV_COL (
     COL_PARENT          integer,
     COL_CR_TIME         datetime,
     COL_MOD_TIME        datetime,
+    COL_ADD_TIME        datetime,
     COL_PERMS           char (11),
     COL_DET             varchar,
     COL_ACL             long varbinary,
@@ -63,7 +64,10 @@ alter table WS.WS.SYS_DAV_COL add COL_IID IRI_ID_8
 
 alter table WS.WS.SYS_DAV_COL add COL_INHERIT char(1) default 'N'
 ;
+
 --#ENDIF
+alter table WS.WS.SYS_DAV_COL add COL_ADD_TIME datetime
+;
 
 -- WebDAV Resource
 create table WS.WS.SYS_DAV_RES (
@@ -77,6 +81,7 @@ create table WS.WS.SYS_DAV_RES (
     RES_SIZE            integer,
     RES_CR_TIME         datetime,
     RES_MOD_TIME        datetime,
+    RES_ADD_TIME        datetime,
     RES_PERMS           char (11),
     RES_FULL_PATH       varchar,
     ROWGUID             varchar,
@@ -107,8 +112,11 @@ alter table WS.WS.SYS_DAV_RES modify RES_PERMS char (11)
 alter table WS.WS.SYS_DAV_RES add RES_IID IRI_ID_8
 ;
 
---#ENDIF
 alter table WS.WS.SYS_DAV_RES add RES_SIZE integer
+;
+
+--#ENDIF
+alter table WS.WS.SYS_DAV_RES add RES_ADD_TIME datetime
 ;
 
 --__ddl_changed ('WS.WS.SYS_DAV_RES')

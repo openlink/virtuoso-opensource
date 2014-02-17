@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -78,7 +78,6 @@ setp_node_free (setp_node_t * setp)
   dk_set_free (setp->setp_const_gb_values);
   dk_set_free (setp->setp_const_gb_args);
   dk_free_box ((box_t) setp->setp_last_vals);
-  dk_free_box ((box_t)setp->setp_ssa.ssa_save);
 }
 
 
@@ -197,7 +196,7 @@ void
 sqlc_copy_ssl_if_constant (sql_comp_t * sc, state_slot_t ** ssl_ret, dk_set_t * asg_code, setp_node_t * setp)
 {
   state_slot_t *ssl = *ssl_ret;
-  if (SSL_CONSTANT == ssl->ssl_type)
+  if (SSL_CONSTANT == ssl->ssl_type || ssl->ssl_qr_global)
     {
       state_slot_t * v = ssl_new_variable (sc->sc_cc, "", DV_UNKNOWN);
       ssl_copy_types (v, ssl);

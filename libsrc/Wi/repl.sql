@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -187,7 +187,7 @@ cont:
 
 -- type : 1-dav, 2-table, 3-proc
 -- mode : 1-delete, 0-remain
-create procedure REPL_UNSUBSCRIBE (in serv varchar, in _pub varchar, in _item varchar)
+create procedure REPL_UNSUBSCRIBE (in serv varchar, in _pub varchar, in _item varchar := null)
 {
   declare _path any;
   declare _id, _tp integer;
@@ -3006,6 +3006,16 @@ create procedure REPL_ENSURE_RDS (
 	DB..vd_remote_data_source (_dsn, '', _usr, _pwd);
       else
         return 1;
+    }
+  else
+    {
+      declare tu, tp any;
+      declare exit handler for not found {
+	signal ('42000', 'The DSN for publisher is missing');
+      };
+      select DS_UID, pwd_magic_calc (DS_UID, DS_PWD, 1) into tu, tp from DB.DBA.SYS_DATA_SOURCE where DS_DSN = _dsn;
+      if ((tu <> _usr or _pwd <> tp) and (_usr is not null and _pwd is not null))
+	DB..vd_remote_data_source (_dsn, '', _usr, _pwd);
     }
   return 0;
 }

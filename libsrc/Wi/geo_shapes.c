@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -58,7 +58,8 @@
     } \
   } while (0);
 
-#define GEO_ALLOC_PLINE(lastfld,cvecs,mvecs,gcb_min_len,gcb_step_,gcb_ignore_first) do { \
+#define GEO_ALLOC_PLINE(lastfld,cvecs,mvecs,gcb_min_len,gcb_step_init,gcb_ignore_first) do { \
+  int gcb_step_ = gcb_step_init; \
   head_sz = ALIGN_LIKE_BOX(GEO_HEAD_SZ(lastfld)); \
   if ((len_-gcb_ignore_first) >= ((geo_flags_ & GEO_IS_CHAINBOXED) ? (2*gcb_step_) : gcb_min_len)) \
     { \
@@ -66,6 +67,8 @@
       geo_flags_ |= GEO_IS_CHAINBOXED; \
       if (head_sz < gcb_head_sz) \
         head_sz = gcb_head_sz; \
+      while (gcb_step_ * gcb_step_ * 6 < len_) \
+        gcb_step_ *= 2; \
       gcb_bcount = (((len_-gcb_ignore_first) + gcb_step_ - 1) / gcb_step_); \
       gcb_sz = sizeof (geo_chainbox_t) + sizeof (geo_XYbox_t) * gcb_bcount; \
     } \
@@ -75,6 +78,12 @@
       gcb_sz = 0; \
     } \
   full_sz = head_sz + gcb_sz + len_ * (cvecs * sizeof (geoc) + mvecs * sizeof (geo_measure_t)); \
+  if (full_sz & ~0xffffff) \
+    { \
+      if (NULL != ses) box_read_error (ses, DV_GEO); \
+      sqlr_new_error ("22023", "GEO..", "Unable to create a shape of type 0x%x with %ld points, that would be %ld bytes long, more than the limit of %ld bytes", \
+        (int)geo_flags_, (long)len_, (long)full_sz, 0xffffffL ); \
+    } \
   res = (geo_t *)dk_alloc_box (full_sz, DV_GEO); \
   res->_.pline.len = len_; \
   GEO_SET_CVECT(_.pline.Xs); \
@@ -99,6 +108,12 @@
       gcb_sz = 0; \
     } \
   full_sz = head_sz + gcb_sz + (len_ * sizeof (geo_t *)); \
+  if (full_sz & ~0xffffff) \
+    { \
+      if (NULL != ses) box_read_error (ses, DV_GEO); \
+      sqlr_new_error ("22023", "GEO..", "Unable to create a composite shape of type 0x%x with %ld components, that would be %ld bytes long, more than the limit of %ld bytes", \
+        (int)geo_flags_, (long)len_, (long)full_sz, 0xffffffL ); \
+    } \
   res = (geo_t *)dk_alloc_box (full_sz, DV_GEO); \
   res->_.parts.len = len_; \
   res->_.parts.items = ((geo_t **)(((char *)res) + head_sz)); \
@@ -108,9 +123,9 @@
   } while (0);
 
 geo_t *
-geo_alloc (geo_flags_t geo_flags_, int len_, int srcode_)
+geo_alloc_safe (geo_flags_t geo_flags_, int len_, int srcode_, dk_session_t * ses)
 {
-  geo_t *res;
+  geo_t *res = NULL;
   int head_sz, gcb_bcount, gcb_sz, full_sz;
   switch (GEO_TYPE (geo_flags_))
     {
@@ -157,11 +172,22 @@ geo_alloc (geo_flags_t geo_flags_, int len_, int srcode_)
     case GEO_CLOSEDCURVE:		GEO_ALLOC_PARTS(_.parts.items		,  0x10, 0x04, 0); break;
     case GEO_CURVEPOLYGON:		GEO_ALLOC_PARTS(_.parts.items		,  0x10, 0x04, 1); break;
     case GEO_MULTI_CURVE:		GEO_ALLOC_PARTS(_.parts.items		,  0x10, 0x04, 0); break;
-    default: GPF_T;
+    default:
+					{
+					  if (!ses)
+					    GPF_T;
+					  box_read_error (ses, DV_GEO);
+					}
     }
   res->geo_flags = geo_flags_;
   res->geo_srcode = srcode_;
   return res;
+}
+
+geo_t *
+geo_alloc (geo_flags_t geo_flags_, int len_, int srcode_)
+{
+  return geo_alloc_safe (geo_flags_, len_, srcode_, NULL);
 }
 
 #undef GEO_SET_CVECT
@@ -181,16 +207,29 @@ geo_point (geoc x, geoc y)
   return res;
 }
 
+geo_t *
+geo_bbox (geoc Xmin, geoc Ymin, geoc Xmax, geoc Ymax)
+{
+  geo_t *res;
+  GEO_ALLOC_POINT(XYbox);
+  res->geo_flags = GEO_BOX;
+  res->geo_srcode = GEO_SRCODE_DEFAULT;
+  res->XYbox.Xmin = Xmin;
+  res->XYbox.Xmax = Xmax;
+  res->XYbox.Ymin = Ymin;
+  res->XYbox.Ymax = Ymax;
+  return res;
+}
 
 #define GEO_RESET_GCB(fld) do { \
   if (src->geo_flags & GEO_IS_CHAINBOXED) \
     res->fld = (geo_chainbox_t *)((void *)(((char *)res) + (((char *)(src->fld)) - (char *)src))); } while (0)
 
-#define GEO_RESET_CVECT(fld) \
-  res->fld = (geoc *)((void *)(((char *)res) + (((char *)(src->fld)) - (char *)src)));
+#define GEO_RESET_CVECT(fld) do { \
+  res->fld = (geoc *)((void *)(((char *)res) + (((char *)(src->fld)) - (char *)src))); } while (0)
 
-#define GEO_RESET_MVECT(fld) \
-  res->fld = (geo_measure_t *)((void *)(((char *)res) + (((char *)(src->fld)) - (char *)src)));
+#define GEO_RESET_MVECT(fld) do { \
+  res->fld = (geo_measure_t *)((void *)(((char *)res) + (((char *)(src->fld)) - (char *)src))); } while (0)
 
 #define GEO_COPY_POINT(lastfld)
 
@@ -204,7 +243,7 @@ geo_point (geoc x, geoc y)
   GEO_RESET_GCB(_.parts.parts_gcb); \
   res->_.parts.items = (geo_t **)((void *)(((char *)res) + (((char *)(src->_.parts.items)) - (char *)src))); \
   for (ctr = res->_.parts.len; ctr--; /* no step */) \
-    res->_.parts.items[ctr] = geo_copy (res->_.parts.items[ctr]); \
+    res->_.parts.items[ctr] = geo_copy (src->_.parts.items[ctr]); \
   } while (0)
 
 geo_t *
@@ -270,13 +309,15 @@ geo_copy (geo_t *src)
 #define GEO_MP_COPY_POINT(lastfld)
 
 #define GEO_MP_COPY_PLINE(lastfld,cvecs,mvecs) \
+  GEO_RESET_GCB(_.pline.pline_gcb); \
   GEO_RESET_CVECT(_.pline.Xs); \
   GEO_RESET_CVECT(_.pline.Ys);
 
 #define GEO_MP_COPY_PARTS(lastfld) do { int ctr; \
-  res->_.parts.items = (geo_t **)((void *)(((char *)res) + (((char *)(&(src->_.parts.items))) - (char *)src))); \
+  GEO_RESET_GCB(_.pline.pline_gcb); \
+  res->_.parts.items = (geo_t **)((void *)(((char *)res) + (((char *)(src->_.parts.items)) - (char *)src))); \
   for (ctr = res->_.parts.len; ctr--; /* no step */) \
-    res->_.parts.items[ctr] = mp_geo_copy (mp, res->_.parts.items[ctr]); \
+    res->_.parts.items[ctr] = mp_geo_copy (mp, src->_.parts.items[ctr]); \
   } while (0)
 
 geo_t *
@@ -540,7 +581,7 @@ geo_long360add_pline_total_shift (geo_t * g)
 int
 geo_long360add (geo_t * g)
 {
-  switch (g->geo_flags)
+  switch (g->geo_flags & GEO_TYPE_NO_ZM_MASK)
     {
     case GEO_NULL_SHAPE:
       return GEO_LONG360ADD_NO_CHANGE | GEO_LONG360ADD_WEIRD;
@@ -629,7 +670,7 @@ For a polygon, being weird is not necessarily an error, esp. if it clearly has c
 	  {
 	    res |=
 		(geo_long360add_pline_probe (g->_.parts.items[idx], &long_plustominus_count,
-		    &long_minustoplus_count) & ~GEO_LONG360ADD_STARTS_AT_RIGHT);;
+		    &long_minustoplus_count) & ~GEO_LONG360ADD_STARTS_AT_RIGHT);
 	    if (res & (GEO_LONG360ADD_WEIRD | GEO_LONG360ADD_ALREADY_CHANGED))
 	      return res;
 	  }
@@ -1146,18 +1187,18 @@ geo_get_bounding_XYbox (geo_t * g, geo_t * box, geoc prec_x, geoc prec_y)
   switch (GEO_TYPE_NO_ZM (g->geo_flags))
     {
     case GEO_POINT:
-      if (geoc_FARAWAY == g->Xkey)
+      if (geoc_FARAWAY == Xkey (g))
 	goto faraway;		/* see below */
-      box->XYbox.Xmin = g->Xkey;
-      box->XYbox.Ymin = g->Ykey;
-      box->XYbox.Xmax = g->Xkey;
-      box->XYbox.Ymax = g->Ykey;
+      box->XYbox.Xmin = Xkey (g);
+      box->XYbox.Ymin = Ykey (g);
+      box->XYbox.Xmax = Xkey (g);
+      box->XYbox.Ymax = Ykey (g);
       if (prec_x || prec_y)
 	{
 	  if (GEO_SR_SPHEROID_DEGREES (g->geo_srcode))
 	    {
 	      double prec_rad = prec_y * KM_TO_DEG * DEG_TO_RAD;
-	      double lat_r = g->Ykey * DEG_TO_RAD;
+	      double lat_r = Ykey (g) * DEG_TO_RAD;
 	      if (fabs ((M_PI / 2) - lat_r) < prec_rad)
 		{
 		  box->XYbox.Xmin = -180;
@@ -1196,10 +1237,10 @@ geo_get_bounding_XYbox (geo_t * g, geo_t * box, geoc prec_x, geoc prec_y)
   box->XYbox.Ymax += prec_y;
 
 adjust_with_epsilon:
-  box->XYbox.Xmin *= ((0 < box->XYbox.Xmin) ? (1 - FLT_EPSILON) : (1 + FLT_EPSILON));
-  box->XYbox.Ymin *= ((0 < box->XYbox.Ymin) ? (1 - FLT_EPSILON) : (1 + FLT_EPSILON));
-  box->XYbox.Xmax *= ((0 < box->XYbox.Xmax) ? (1 + FLT_EPSILON) : (1 - FLT_EPSILON));
-  box->XYbox.Ymax *= ((0 < box->XYbox.Ymax) ? (1 + FLT_EPSILON) : (1 - FLT_EPSILON));
+  box->XYbox.Xmin *= ((0 < box->XYbox.Xmin) ? (1 - geoc_EPSILON) : (1 + geoc_EPSILON));
+  box->XYbox.Ymin *= ((0 < box->XYbox.Ymin) ? (1 - geoc_EPSILON) : (1 + geoc_EPSILON));
+  box->XYbox.Xmax *= ((0 < box->XYbox.Xmax) ? (1 + geoc_EPSILON) : (1 - geoc_EPSILON));
+  box->XYbox.Ymax *= ((0 < box->XYbox.Ymax) ? (1 + geoc_EPSILON) : (1 - geoc_EPSILON));
   return;
 
 faraway:
@@ -1234,28 +1275,6 @@ typedef struct ewkt_input_s
       } \
     break; \
   }
-
-#define EWKT_NUM		-1
-#define EWKT_NUM_BAD		-2
-#define EWKT_KWD_GEO_TYPE	-3
-#define EWKT_KWD_MODIF		-4
-#define EWKT_KWD_EXT		-5
-#define EWKT_KWD_BAD		-6
-#define EWKT_BAD		-7
-#define EWKT_KWD_SRID		-10
-
-
-typedef struct ewkt_kwd_metas_s
-{
-  const char *kwd_name;
-  int kwd_dictserial;
-  int kwd_type;
-  int kwd_subtype;
-  int kwd_parens_after;
-  int kwd_min_nums;
-  int kwd_max_nums;
-  int kwd_is_alias;
-} ewkt_kwd_metas_t;
 
 typedef union ewkt_token_val_s
 {
@@ -1434,7 +1453,7 @@ ewkt_get_token (ewkt_input_t * in, ewkt_token_val_t * val)
 	    {
 	      (buf_tail++)[0] = (in->ewkt_tail++)[0];
 	    }
-	  while (isalpha (in->ewkt_tail[0]) && buf_tail < buf + sizeof (buf) - 1);
+	  while (isalnum (in->ewkt_tail[0]) && buf_tail < buf + sizeof (buf) - 1);
 	  buf_tail[0] = '\0';
 	  metas_inx =
 	      ecm_find_name (buf, ewkt_keyword_metas, sizeof (ewkt_keyword_metas) / sizeof (ewkt_kwd_metas_t),
@@ -1512,6 +1531,30 @@ ewkt_get_points (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas)
 		ewkt_signal (in, "Too many coordinates are listed for a point");
 	      if (dim_idx >= head_metas->kwd_max_nums)
 		ewkt_signal (in, "The point has more coordinates than permitted by the spatial type");
+              if (GEO_SR_SPHEROID_DEGREES (in->ewkt_srcode))
+                {
+                  switch (dim_idx)
+                    {
+                    case 0:
+                      if ((val.v_geoc < -270.0) || (val.v_geoc > 450.0))
+                        ewkt_signal (in, "The point coordinates are spherical degrees and the longitude is out of range -270..450");
+                    break;
+                    case 1:
+                      if ((val.v_geoc < -90.0) || (val.v_geoc > 90.0))
+                        {
+                          geo_flags_t core_type = GEO_TYPE_CORE (head_metas->kwd_subtype);
+                          if ((GEO_BOX != core_type) || ((val.v_geoc < -181.0) || (val.v_geoc > 181.0)))
+                            ewkt_signal (in, "The point coordinates are spherical degrees and the latitude is out of range -90..90");
+                          val.v_geoc = ((val.v_geoc < 0) ? -90 : 90.0); /* Special case for bounding boxes calculated by ill algorithms */
+                        }
+                    break;
+                    }
+                }
+              else
+                {
+                  if ((val.v_geoc <= -0.5 * geoc_FARAWAY) || (val.v_geoc >= 0.5 * geoc_FARAWAY))
+                    ewkt_signal (in, "The point coordinate is out of range -5E37..+5E37");
+                }
 	      in->ekwt_Cs[dim_idx++][in->ekwt_point_count] = val.v_geoc;
 	      continue;
 	    case EWKT_NUM_BAD:
@@ -1580,7 +1623,7 @@ ewkt_get_points (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas)
       for (p_idx = in->ekwt_point_count; --p_idx > 0; /* no step */ )
 	{
 	  if ((fabs (in->ekwt_Cs[0][p_idx - 1] - in->ekwt_Cs[0][p_idx]) +
-		  fabs (in->ekwt_Cs[1][p_idx - 1] - in->ekwt_Cs[1][p_idx])) <= 2 * FLT_EPSILON)
+		  fabs (in->ekwt_Cs[1][p_idx - 1] - in->ekwt_Cs[1][p_idx])) <= 2 * geoc_EPSILON)
 	    ewkt_signal (in, "Neighbor points of an ARCSTRING are too close to each other");
 	}
     }
@@ -1590,7 +1633,7 @@ ewkt_get_points (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas)
 	ewkt_signal (in, "Closed ring contains too few points");
       for (dim_idx = dim; dim_idx--; /* no step */ )
 	{
-	  if (fabs (in->ekwt_Cs[dim_idx][in->ekwt_point_count - 1] - in->ekwt_Cs[dim_idx][0]) >= FLT_EPSILON)
+	  if (fabs (in->ekwt_Cs[dim_idx][in->ekwt_point_count - 1] - in->ekwt_Cs[dim_idx][0]) >= geoc_EPSILON)
 	    ewkt_signal (in, "The distance between ends of a closed ring is too big");
 	}
     }
@@ -1791,20 +1834,17 @@ ewkt_get_one (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas)
 	  res = geo_alloc (geo_type, 0, in->ewkt_srcode);
 	  if (2 != in->ekwt_point_count)
 	    ewkt_signal (in, "BOX should have only two sets of coordinates");
-	  res->XYbox.Xmin = in->ekwt_Cs[dim_ctr][0];
-	  res->XYbox.Xmax = in->ekwt_Cs[dim_ctr++][0];
-	  res->XYbox.Ymin = in->ekwt_Cs[dim_ctr][0];
-	  res->XYbox.Ymax = in->ekwt_Cs[dim_ctr++][0];
+#define SET_MINMAX(Cmin,Cmax) do { \
+  res->Cmin = in->ekwt_Cs[dim_ctr][0]; \
+  res->Cmax = in->ekwt_Cs[dim_ctr++][1]; \
+  if (res->Cmax < res->Cmin) { geoc Cswap = res->Cmin ; res->Cmin = res->Cmax; res->Cmax = Cswap; } \
+  } while (0)
+          SET_MINMAX(XYbox.Xmin,XYbox.Xmax);
+          SET_MINMAX(XYbox.Ymin,XYbox.Ymax);
 	  if (GEO_A_Z & geo_type)
-	    {
-	      res->_.point.point_ZMbox.Zmin = in->ekwt_Cs[dim_ctr][0];
-	      res->_.point.point_ZMbox.Zmax = in->ekwt_Cs[dim_ctr++][0];
-	    }
+            SET_MINMAX(_.point.point_ZMbox.Zmin,_.point.point_ZMbox.Zmax);
 	  if (GEO_A_M & geo_type)
-	    {
-	      res->_.point.point_ZMbox.Mmin = in->ekwt_Cs[dim_ctr][0];
-	      res->_.point.point_ZMbox.Mmax = in->ekwt_Cs[dim_ctr++][0];
-	    }
+            SET_MINMAX(_.point.point_ZMbox.Mmin,_.point.point_ZMbox.Mmax);
 	  return res;
 	}
       res = geo_alloc (geo_type, in->ekwt_point_count, in->ewkt_srcode);
@@ -1878,11 +1918,31 @@ ewkt_get_one (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas)
 	}
       itm_ctr = dk_set_length (items[0]);
       res = geo_alloc (geo_type, itm_ctr, in->ewkt_srcode);
-      while (NULL != (res->_.parts.items[--itm_ctr] = (geo_t *) dk_set_pop (items))) /* empty body */ ;
+      while (itm_ctr--)
+	res->_.parts.items[itm_ctr] = (geo_t *) dk_set_pop (items);
       return res;
     }
   ewkt_signal (in, "Internal error");
   return NULL;			/* never happens */
+}
+
+void
+ewkt_destroy_input (ewkt_input_t * in)
+{
+  int dctr;
+  for (dctr = 0; dctr < 4; dctr++)
+    {
+      if (NULL != in->ekwt_Cs[dctr])
+	dk_free ((void *) (in->ekwt_Cs[dctr]), in->ekwt_point_max * sizeof (geoc));
+    }
+  while (NULL != in->ekwt_cuts)
+    dk_free_box ((box_t) dk_set_pop (&(in->ekwt_cuts)));
+  while (NULL != in->ekwt_rings)
+    dk_free_box ((box_t) dk_set_pop (&(in->ekwt_rings)));
+  while (NULL != in->ekwt_childs)
+    dk_free_box ((box_t) dk_set_pop (&(in->ekwt_childs)));
+  while (NULL != in->ekwt_members)
+    dk_free_box ((box_t) dk_set_pop (&(in->ekwt_members)));
 }
 
 geo_t *
@@ -1932,6 +1992,7 @@ ewkt_parse (const char *strg, caddr_t * err_ret)
 	    in.ewkt_error, 1 + in.ewkt_row_no, (int) (1 + (in.ewkt_tail - in.ewkt_row_begin)), strg);
       res = NULL;
     }
+  ewkt_destroy_input (&in);
   return res;
 }
 
@@ -2044,6 +2105,111 @@ ewkt_print_sf12 (geo_t * g, dk_session_t * ses)
       SES_PRINT (ses, buf);
     }
   ewkt_print_sf12_one (g, ses, 1);
+}
+
+#define SES_DXF_REAL(ses,mark,v) do { char tmpbuf[50]; sprintf (tmpbuf, "\n%3d\n%lf", (mark), (double)(v)); SES_PRINT ((ses), tmpbuf); } while (0)
+
+#define SES_DXF_INTEGER(ses,mark,v) do { char tmpbuf[50]; sprintf (tmpbuf, "\n%3d\n%d", (mark), (int)(v)); SES_PRINT ((ses), tmpbuf); } while (0)
+
+#define SES_DXF_ID(ses,mark,v) do { char tmpbuf[50]; sprintf (tmpbuf, "\n%3d\n%s", (mark), (const char *)(v)); SES_PRINT ((ses), tmpbuf); } while (0)
+
+#define SES_DXF_XYZ(ses,xmark,x,y,z,flags) do { \
+    SES_DXF_REAL (ses, xmark, (x)); \
+    SES_DXF_REAL (ses, xmark+10, (y)); \
+    if ((flags) & GEO_A_Z) \
+      SES_DXF_REAL (ses, xmark+20, (z)); \
+  } while (0)
+
+void
+geo_print_dxf_attrs (caddr_t *attrs, dk_session_t *ses)
+{
+  int ofs, len = BOX_ELEMENTS (attrs);
+  if (len % 2)
+    sqlr_new_error ("22023", "DXF01", "Vector of DXF attributes should be of even length, not of length %d", len);
+  for (ofs = 0; ofs < len; ofs += 2)
+    {
+      caddr_t mark_box = attrs [ofs], v_box = attrs [ofs + 1];
+      int mark;
+      if (DV_LONG_INT != DV_TYPE_OF (mark_box))
+        sqlr_new_error ("22023", "DXF02", "Vector of DXF attributes contains non-integer attribute mark at offset %d", ofs);
+      mark = unbox (mark_box);
+      if ((mark <= 0) || (mark > 9999))
+        sqlr_new_error ("22023", "DXF03", "Vector of DXF attributes contains wrong attribute mark %d at offset %d", mark, ofs);
+      switch (DV_TYPE_OF (v_box))
+        {
+        case DV_SINGLE_FLOAT: SES_DXF_REAL (ses, mark, unbox_float (v_box)); break;
+        case DV_DOUBLE_FLOAT: SES_DXF_REAL (ses, mark, unbox_double (v_box)); break;
+        case DV_LONG_INT: SES_DXF_INTEGER (ses, mark, unbox (v_box)); break;
+        case DV_UNAME: SES_DXF_ID (ses, mark, v_box); break;
+        case DV_STRING: SES_DXF_ID (ses, mark, v_box); break;
+        default:
+          sqlr_new_error ("22023", "DXF04", "Vector of DXF attributes contains value of unsupported type %d for attribute mark %d at offset %d", DV_TYPE_OF (v_box), mark, ofs);
+        }
+    }
+}
+
+void
+geo_print_as_dxf_entity (geo_t *g, caddr_t *attrs, dk_session_t *ses)
+{
+  int flags_no_zm = GEO_TYPE_NO_ZM (g->geo_flags);
+  switch (flags_no_zm)
+    {
+    case GEO_POINT:
+      SES_DXF_ID (ses, 0, "POINT");
+      SES_DXF_XYZ (ses, 10, g->XYbox.Xmin, g->XYbox.Ymin, g->_.point.point_ZMbox.Zmin, g->geo_flags);
+      break;
+    case GEO_BOX:
+      SES_DXF_ID (ses, 0, "SOLID");
+      SES_DXF_XYZ (ses, 10, g->XYbox.Xmin, g->XYbox.Ymin, 0.0, 0);
+      SES_DXF_XYZ (ses, 11, g->XYbox.Xmin, g->XYbox.Ymax, 0.0, 0);
+      SES_DXF_XYZ (ses, 12, g->XYbox.Xmax, g->XYbox.Ymin, 0.0, 0);
+      SES_DXF_XYZ (ses, 13, g->XYbox.Xmax, g->XYbox.Ymax, 0.0, 0);
+      if (g->geo_flags & GEO_A_Z)
+        {
+          SES_DXF_REAL (ses, 38, g->_.point.point_ZMbox.Zmin);
+          SES_DXF_REAL (ses, 39, g->_.point.point_ZMbox.Zmax - g->_.point.point_ZMbox.Zmin);
+        }
+      break;
+    case GEO_POINTLIST:
+      {
+        int inx, len = g->_.pline.len;
+        for (inx=0; inx < len; inx++)
+          {
+            SES_DXF_ID (ses, 0, "POINT");
+            SES_DXF_XYZ (ses, 10, g->_.pline.Xs[inx], g->_.pline.Ys[inx], g->_.pline.Zs[inx], g->geo_flags);
+            geo_print_dxf_attrs (attrs, ses);
+          }
+        return; /* not "break" because attrs are repeatedly printed for each point */
+      }
+    case GEO_LINESTRING: case GEO_RING:
+      {
+        int inx, len = g->_.pline.len;
+        SES_DXF_ID (ses, 0, "LWPOLYLINE");
+        if (GEO_RING == flags_no_zm)
+          SES_DXF_INTEGER (ses, 70, 1);
+        geo_print_dxf_attrs (attrs, ses);
+        SES_DXF_INTEGER (ses, 90, len);
+        for (inx=0; inx < len; inx++)
+          SES_DXF_XYZ (ses, 10, g->_.pline.Xs[inx], g->_.pline.Ys[inx], g->_.pline.Zs[inx], g->geo_flags);
+        return; /* not "break" because attrs are repeatedly printed for each point */
+      }
+    case GEO_COLLECTION: case GEO_MULTI_LINESTRING: case GEO_MULTI_POLYGON: case GEO_MULTI_CURVE:
+    case GEO_POLYGON:
+      {
+        int inx, len = g->_.parts.len;
+        for (inx=0; inx < len; inx++)
+          {
+            geo_t *itm = g->_.parts.items[inx];
+            geo_print_as_dxf_entity (itm, attrs, ses);
+          }
+        return; /* not "break" because attrs are repeatedly printed for each item */
+      }
+    case GEO_ARCSTRING: case GEO_ARCSTRING | GEO_A_CLOSED:
+    case GEO_CURVE: case GEO_CLOSEDCURVE: case GEO_CURVEPOLYGON:
+      sqlr_new_error ("22023", "DXF05", "This version of Virtuoso does not support DXF output of shapes of type %d", g->geo_flags);
+    default: GPF_T;
+    }
+  geo_print_dxf_attrs (attrs, ses);
 }
 
 /* Internal binary serialization/deserialization */
@@ -2304,8 +2470,8 @@ geo_serialize_one (geo_t * g, int is_topmost, dk_session_t * ses)
     {
 /* Old types */
     case GEO_POINT:
-      print_v_double (g->Xkey, ses);
-      print_v_double (g->Ykey, ses);
+      print_v_double (Xkey(g), ses);
+      print_v_double (Ykey(g), ses);
       return;
     case GEO_BOX:
       print_v_double (g->XYbox.Xmin, ses);
@@ -2424,7 +2590,7 @@ geo_serialize (geo_t * g, dk_session_t * ses)
   geo_serialize_one (g, 1, ses);
 }
 
-#define GEO_DESERIALIZE_ERROR(msg) GPF_T1(msg "in geo_deserialize_one()")
+#define GEO_DESERIALIZE_ERROR(msg) box_read_error (ses, 0)
 
 geo_t *
 geo_deserialize_one (int srcode /* -1 for topmost */ , dk_session_t * ses)
@@ -2450,12 +2616,12 @@ geo_deserialize_one (int srcode /* -1 for topmost */ , dk_session_t * ses)
     {
 /* Old types */
     case GEO_POINT:
-      g = geo_alloc (flags, 0, srcode);
-      g->Xkey = read_v_double (ses);
-      g->Ykey = read_v_double (ses);
+      g = geo_alloc_safe (flags, 0, srcode, ses);
+      g->XYbox.Xmin = g->XYbox.Xmax = read_v_double (ses);
+      g->XYbox.Ymin = g->XYbox.Ymax = read_v_double (ses);
       return g;
     case GEO_BOX:
-      g = geo_alloc (flags, 0, srcode);
+      g = geo_alloc_safe (flags, 0, srcode, ses);
       g->XYbox.Xmin = read_v_double (ses);
       g->XYbox.Ymin = read_v_double (ses);
       g->XYbox.Xmax = read_v_double (ses);
@@ -2464,11 +2630,13 @@ geo_deserialize_one (int srcode /* -1 for topmost */ , dk_session_t * ses)
     case GEO_LINESTRING:
       {
 	int inx, pointcount = (read_int (ses) - 1) / 2;
-	g = geo_alloc (flags, pointcount, srcode);
+	g = geo_alloc_safe (flags, pointcount, srcode, ses);
+        GEO_XYBOX_SET_EMPTY (g->XYbox);
 	for (inx = 0; inx < pointcount; inx++)
 	  {
-	    g->_.pline.Xs[inx] = read_v_double (ses);
-	    g->_.pline.Ys[inx] = read_v_double (ses);
+            geoc pX = g->_.pline.Xs[inx] = read_v_double (ses);
+            geoc pY = g->_.pline.Ys[inx] = read_v_double (ses);
+            GEO_XYBOX_STRETCH_BY_POINT (g->XYbox, pX, pY);
 	  }
 	return g;
       }
@@ -2485,7 +2653,7 @@ geo_deserialize_one (int srcode /* -1 for topmost */ , dk_session_t * ses)
       if (is_topmost)
 	serlen = read_int (ses);
       item_count = read_int (ses);
-      g = geo_alloc (flags, item_count, srcode);
+      g = geo_alloc_safe (flags, item_count, srcode, ses);
       g->_.parts.serialization_length = serlen;
       if (flags & GEO_IS_CHAINBOXED)
 	{
@@ -2508,10 +2676,10 @@ geo_deserialize_one (int srcode /* -1 for topmost */ , dk_session_t * ses)
   switch (GEO_TYPE_CORE (flags))
     {
     case GEO_NULL_SHAPE:
-      g = geo_alloc (flags, 0, srcode);
+        g = geo_alloc_safe (flags, 0, srcode, ses);
       return g;
     case GEO_POINT:
-      g = geo_alloc (flags, 0, srcode);
+        g = geo_alloc_safe (flags, 0, srcode, ses);
       g->XYbox.Xmin = g->XYbox.Xmax = read_v_double (ses);
       g->XYbox.Ymin = g->XYbox.Ymax = read_v_double (ses);
       print_v_double (g->XYbox.Ymin, ses);
@@ -2521,7 +2689,7 @@ geo_deserialize_one (int srcode /* -1 for topmost */ , dk_session_t * ses)
 	g->_.point.point_ZMbox.Mmin = g->_.point.point_ZMbox.Mmax = read_v_double (ses);
       return g;
     case GEO_BOX:
-      g = geo_alloc (flags, 0, srcode);
+        g = geo_alloc_safe (flags, 0, srcode, ses);
       read_bbox (g, g->_.point.point_ZMbox, ses);
       return g;
     case GEO_ARCSTRING:
@@ -2530,7 +2698,7 @@ geo_deserialize_one (int srcode /* -1 for topmost */ , dk_session_t * ses)
       {
 	int bbox_preserved = ((GEO_ARCSTRING == GEO_TYPE_CORE (flags)) || (flags & GEO_IS_CHAINBOXED));
 	int pointcount = read_int (ses);
-	g = geo_alloc (flags, pointcount, srcode);
+        g = geo_alloc_safe (flags, pointcount, srcode, ses);
 	if (flags & GEO_IS_CHAINBOXED)
 	  {
 	    geo_chainbox_t *gcb;
@@ -2680,9 +2848,9 @@ geo_inverse_point_order (geo_t * g)
 int
 geo_XYbbox_inside (geo_XYbox_t * inner, geo_XYbox_t * outer)
 {
-  return ((inner->Xmin + FLT_EPSILON >= outer->Xmin) &&
-      (inner->Xmax - FLT_EPSILON <= outer->Xmax) &&
-      (inner->Ymin + FLT_EPSILON >= outer->Ymin) && (inner->Ymax - FLT_EPSILON <= outer->Ymax));
+  return ((inner->Xmin + geoc_EPSILON >= outer->Xmin) &&
+      (inner->Xmax - geoc_EPSILON <= outer->Xmax) &&
+      (inner->Ymin + geoc_EPSILON >= outer->Ymin) && (inner->Ymax - geoc_EPSILON <= outer->Ymax));
 }
 
 
@@ -2735,9 +2903,9 @@ b = border exact hit, i = ignore
       if ((aX == pX) && (aY == pY))	/* if# B */
 	return GEO_INOUTSIDE_BORDER;
       isectX = aX + (bX - aX) * (pY - aY) / (bY - aY);
-      if (isectX < (pX - FLT_EPSILON))
+      if (isectX < (pX - geoc_EPSILON))
 	continue;
-      if (isectX > (pX + FLT_EPSILON))
+      if (isectX > (pX + geoc_EPSILON))
 	{
 	  if ((aY < pY) && (bY > pY))
 	    (up_crosses_ray_ptr[0]) += 2;
@@ -2780,8 +2948,7 @@ geo_XY_inoutside_ring (geoc pX, geoc pY, geo_t * ring)
 	    {
 	      if (pX >= gcb_ptr->Xmin)
 		{
-		  int inoutside =
-		      geo_XY_inoutside_ring_lines (pX, pY, gcb_next_stop - inx, Xs + inx, Ys + inx, &up_crosses_ray,
+		  int inoutside = geo_XY_inoutside_ring_lines (pX, pY, gcb_next_stop - inx, Xs + inx, Ys + inx, &up_crosses_ray,
 		      &down_crosses_ray);
 		  if (inoutside)
 		    return inoutside;
@@ -2879,3 +3046,311 @@ geo_XY_inoutside_polygon (geoc pX, geoc pY, geo_t * g)
     }
   return GEO_INOUTSIDE_IN;
 }
+
+void
+geo_modify_by_translate (geo_t *g, geoc dX, geoc dY, geoc dZ)
+{
+  geo_flags_t flags = g->geo_flags;
+
+/* local macro defs */
+#define XY_TRANSLATE(x,y) do { x += dX; y += dY; } while (0)
+#define Z_TRANSLATE(z) do { z += dZ; } while (0)
+#define XYBOX_TRANSLATE(xybox) do { \
+  XY_TRANSLATE(xybox.Xmin, xybox.Ymin); \
+  XY_TRANSLATE(xybox.Xmax, xybox.Ymax); } while (0)
+#define ZBOX_TRANSLATE(zmbox) do { \
+  if ((0 != dZ) && (flags & GEO_A_Z)) \
+    { \
+      Z_TRANSLATE(zmbox.Zmin); \
+      Z_TRANSLATE(zmbox.Zmax); \
+    } } while (0)
+
+  if (flags & (GEO_A_RINGS | GEO_A_COMPOUND | GEO_A_MULTI | GEO_A_ARRAY))
+    {
+      int ctr;
+      for (ctr = g->_.parts.len; ctr--; /* no step */)
+        geo_modify_by_translate (g->_.parts.items[ctr], dX, dY, dZ);
+      if (flags & GEO_IS_CHAINBOXED)
+        {
+          geo_chainbox_t *gcb = g->_.parts.parts_gcb;
+          if (gcb->gcb_is_set)
+            for (ctr = gcb->gcb_box_count; ctr--; /* no step */)
+              if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(gcb->gcb_boxes[ctr]))
+                XYBOX_TRANSLATE(gcb->gcb_boxes[ctr]);
+        }
+      if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
+        {
+          XYBOX_TRANSLATE(g->XYbox);
+          ZBOX_TRANSLATE(g->_.parts.parts_ZMbox);
+        }
+      return;
+    }
+  switch (GEO_TYPE_CORE (flags))
+    {
+    case GEO_NULL_SHAPE: case GEO_BOX:
+      if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
+        {
+          XYBOX_TRANSLATE(g->XYbox);
+          ZBOX_TRANSLATE(g->_.point.point_ZMbox);
+        }
+      return;
+    case GEO_POINT: case GEO_GSOP:
+      if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
+        {
+          XY_TRANSLATE(g->XYbox.Xmin, g->XYbox.Ymin);
+          g->XYbox.Xmax = g->XYbox.Xmin; g->XYbox.Ymax = g->XYbox.Ymin;
+          ZBOX_TRANSLATE(g->_.point.point_ZMbox);
+        }
+      return;
+    case GEO_LINESTRING: case GEO_POINTLIST: case GEO_ARCSTRING:
+      {
+        int ctr;
+        for (ctr = g->_.pline.len; ctr--; /* no step */)
+          XY_TRANSLATE(g->_.pline.Xs[ctr], g->_.pline.Ys[ctr]);
+        if ((0 != dZ) && (flags & GEO_A_Z))
+          for (ctr = g->_.pline.len; ctr--; /* no step */)
+            Z_TRANSLATE(g->_.pline.Zs[ctr]);
+        if (flags & GEO_IS_CHAINBOXED)
+          {
+            geo_chainbox_t *gcb = g->_.pline.pline_gcb;
+            if (gcb->gcb_is_set)
+              for (ctr = gcb->gcb_box_count; ctr--; /* no step */)
+                XYBOX_TRANSLATE(gcb->gcb_boxes[ctr]);
+          }
+        if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
+          {
+            XYBOX_TRANSLATE(g->XYbox);
+            ZBOX_TRANSLATE(g->_.pline.pline_ZMbox);
+          }
+        return;
+      }
+    default: GPF_T;
+    }
+  return;
+#undef XY_TRANSLATE
+#undef Z_TRANSLATE
+#undef XYBOX_TRANSLATE
+#undef ZBOX_TRANSLATE
+}
+
+void
+geo_modify_by_transscale (geo_t *g, geoc dX, geoc dY, geoc Xfactor, geoc Yfactor)
+{
+  geo_flags_t flags = g->geo_flags;
+
+/* local macro defs */
+#define XY_TRANSSCALE(x,y) do { x = (x + dX) * Xfactor; y = (y + dY) * Yfactor; } while (0)
+#define XYBOX_TRANSSCALE(xybox) do { \
+  XY_TRANSSCALE(xybox.Xmin, xybox.Ymin); \
+  XY_TRANSSCALE(xybox.Xmax, xybox.Ymax); \
+  if (Xfactor < 0) { geoc swap = xybox.Xmin; xybox.Xmin = xybox.Xmax; xybox.Xmax = swap; } \
+  if (Yfactor < 0) { geoc swap = xybox.Ymin; xybox.Ymin = xybox.Ymax; xybox.Ymax = swap; } \
+  } while (0)
+
+  if (flags & (GEO_A_RINGS | GEO_A_COMPOUND | GEO_A_MULTI | GEO_A_ARRAY))
+    {
+      int ctr;
+      int invert = ((flags & GEO_A_COMPOUND) && (0 < (Xfactor * Yfactor)));
+      for (ctr = g->_.parts.len; ctr--; /* no step */)
+        geo_modify_by_transscale (g->_.parts.items[ctr], dX, dY, Xfactor, Yfactor);
+      if (invert)
+        {
+          geo_inverse_point_order (g);
+          geo_calc_bounding (g, GEO_CALC_BOUNDING_DO_ALL);
+          return;
+        }
+      if (flags & GEO_IS_CHAINBOXED)
+        {
+          geo_chainbox_t *gcb = g->_.parts.parts_gcb;
+          if (gcb->gcb_is_set)
+            for (ctr = gcb->gcb_box_count; ctr--; /* no step */)
+              if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(gcb->gcb_boxes[ctr]))
+                XYBOX_TRANSSCALE(gcb->gcb_boxes[ctr]);
+        }
+      if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
+        {
+          XYBOX_TRANSSCALE(g->XYbox);
+        }
+      return;
+    }
+  switch (GEO_TYPE_CORE (flags))
+    {
+    case GEO_NULL_SHAPE: case GEO_BOX:
+      if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
+        {
+          XYBOX_TRANSSCALE(g->XYbox);
+        }
+      return;
+    case GEO_POINT: case GEO_GSOP:
+      if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
+        {
+          XY_TRANSSCALE(g->XYbox.Xmin, g->XYbox.Ymin);
+          g->XYbox.Xmax = g->XYbox.Xmin; g->XYbox.Ymax = g->XYbox.Ymin;
+        }
+      return;
+    case GEO_LINESTRING: case GEO_POINTLIST: case GEO_ARCSTRING:
+      {
+        int ctr;
+        int invert = ((flags & GEO_A_CLOSED) && (0 < (Xfactor * Yfactor)));
+        for (ctr = g->_.pline.len; ctr--; /* no step */)
+          XY_TRANSSCALE(g->_.pline.Xs[ctr], g->_.pline.Ys[ctr]);
+        if (invert)
+          geo_inverse_point_order (g);
+        if (invert || ((Xfactor != Yfactor) && (GEO_ARCSTRING == GEO_TYPE_CORE(flags))))
+          {
+            geo_calc_bounding (g, GEO_CALC_BOUNDING_DO_ALL);
+            return;
+          }
+        if (flags & GEO_IS_CHAINBOXED)
+          {
+            geo_chainbox_t *gcb = g->_.pline.pline_gcb;
+            if (gcb->gcb_is_set)
+              for (ctr = gcb->gcb_box_count; ctr--; /* no step */)
+                XYBOX_TRANSSCALE(gcb->gcb_boxes[ctr]);
+          }
+        if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
+          XYBOX_TRANSSCALE(g->XYbox);
+        return;
+      }
+    default: GPF_T;
+    }
+  return;
+#undef XY_TRANSSCALE
+#undef XYBOX_TRANSSCALE
+}
+
+void
+geo_modify_by_affine2d (geo_t *g, geoc XXa, geoc XYb, geoc YXd, geoc YYe, geoc Xoff, geoc Yoff)
+{
+  geo_flags_t flags = g->geo_flags;
+
+/* local macro defs */
+#define XY_AFFINE2D(x,y) do { \
+  geoc newX = XXa * x + XYb * y + Xoff; \
+  geoc newY = YXd * x + YYe * y + Yoff; \
+  x = newX; \
+  y = newY; } while (0)
+#define XYBOX_AFFINE2D(xybox) do { \
+  geoc X1 = xybox.Xmin, X2 = xybox.Xmin, X3 = xybox.Xmax, X4 = xybox.Xmax; \
+  geoc Y1 = xybox.Ymin, Y2 = xybox.Ymax, Y3 = xybox.Ymin, Y4 = xybox.Ymax; \
+  XY_AFFINE2D(X1, Y1); \
+  XY_AFFINE2D(X2, Y2); \
+  XY_AFFINE2D(X3, Y3); \
+  XY_AFFINE2D(X4, Y4); \
+  xybox.Xmin = geoc_min (geoc_min (X1, X2), geoc_min (X3, X4)); \
+  xybox.Ymin = geoc_min (geoc_min (Y1, Y2), geoc_min (Y3, Y4)); \
+  xybox.Xmax = geoc_max (geoc_max (X1, X2), geoc_max (X3, X4)); \
+  xybox.Ymax = geoc_max (geoc_max (Y1, Y2), geoc_max (Y3, Y4)); \
+  } while (0)
+  if (flags & (GEO_A_RINGS | GEO_A_COMPOUND | GEO_A_MULTI | GEO_A_ARRAY))
+    {
+      int ctr;
+      int invert = ((XXa * YYe) < (XYb * YXd));
+      for (ctr = g->_.parts.len; ctr--; /* no step */)
+        geo_modify_by_affine2d (g->_.parts.items[ctr], XXa, XYb, YXd, YYe, Xoff, Yoff);
+      if (invert)
+        geo_inverse_point_order (g);
+      geo_calc_bounding (g, GEO_CALC_BOUNDING_DO_ALL);
+      return;
+    }
+  switch (GEO_TYPE_CORE (flags))
+    {
+    case GEO_NULL_SHAPE: case GEO_BOX:
+      if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
+        {
+          XYBOX_AFFINE2D(g->XYbox);
+        }
+      return;
+    case GEO_POINT: case GEO_GSOP:
+      if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
+        {
+          XY_AFFINE2D(g->XYbox.Xmin, g->XYbox.Ymin);
+          g->XYbox.Xmax = g->XYbox.Xmin; g->XYbox.Ymax = g->XYbox.Ymin;
+        }
+      return;
+    case GEO_LINESTRING: case GEO_POINTLIST: case GEO_ARCSTRING:
+      {
+        int ctr;
+        int invert = ((XXa * YYe) < (XYb * YXd));
+        for (ctr = g->_.pline.len; ctr--; /* no step */)
+          XY_AFFINE2D(g->_.pline.Xs[ctr], g->_.pline.Ys[ctr]);
+        if (invert)
+          geo_inverse_point_order (g);
+        geo_calc_bounding (g, GEO_CALC_BOUNDING_DO_ALL);
+        return;
+      }
+    default: GPF_T;
+    }
+  return;
+#undef XY_AFFINE2D
+#undef XYBOX_AFFINE2D
+}
+
+const char *
+geo_modify_by_projection (geo_t *g, void *geo_proj)
+{
+  geo_proj_point_cbk_t *gp_point_cbk = ((geo_proj_t *)geo_proj)->gp_point_cbk;
+  geo_flags_t flags = g->geo_flags;
+/* local macro defs */
+#define XY_PROJECT(x,y) do { \
+  double resx,resy; \
+  const char *proj_err = gp_point_cbk (geo_proj, (x), (y), &resx, &resy); \
+  if (NULL != proj_err) \
+    return proj_err; \
+  (x) = resx; (y) = resy; \
+  } while (0)
+#define XYBOX_PROJECT(xybox) do { \
+  const char *proj_err; \
+  double x1,x2,x3,x4,y1,y2,y3,y4,v12,v34; \
+  if (GEO_XYBOX_IS_EMPTY_OR_FARAWAY(xybox)) \
+    return "The shape is either empty or intentionally invalidated so it cannot be projected"; \
+  proj_err = gp_point_cbk (geo_proj, xybox.Xmin, xybox.Ymin, &x1, &y1); if (NULL != proj_err) return proj_err; \
+  proj_err = gp_point_cbk (geo_proj, xybox.Xmin, xybox.Ymax, &x2, &y2); if (NULL != proj_err) return proj_err; \
+  proj_err = gp_point_cbk (geo_proj, xybox.Xmax, xybox.Ymin, &x3, &y3); if (NULL != proj_err) return proj_err; \
+  proj_err = gp_point_cbk (geo_proj, xybox.Xmax, xybox.Ymax, &x4, &y4); if (NULL != proj_err) return proj_err; \
+  v12 = double_min (x1, x2); v34 = double_min (x3, x4); xybox.Xmin = double_min (v12, v34); \
+  v12 = double_max (x1, x2); v34 = double_max (x3, x4); xybox.Xmax = double_max (v12, v34); \
+  v12 = double_min (y1, y2); v34 = double_min (y3, y4); xybox.Ymin = double_min (v12, v34); \
+  v12 = double_max (y1, y2); v34 = double_max (y3, y4); xybox.Ymax = double_max (v12, v34); \
+  } while (0)
+  if (((geo_proj_t *)geo_proj)->gp_input_srcode != g->geo_srcode)
+    return "The shape is in spatial reference system that is not equal to the input spatial reference system of the projection";
+  g->geo_srcode = ((geo_proj_t *)geo_proj)->gp_result_srcode;
+  if (flags & (GEO_A_RINGS | GEO_A_COMPOUND | GEO_A_MULTI | GEO_A_ARRAY))
+    {
+      int ctr;
+      if (0 == g->_.parts.len)
+        return NULL;
+      for (ctr = g->_.parts.len; ctr--; /* no step */)
+        geo_modify_by_projection (g->_.parts.items[ctr], geo_proj);
+      geo_calc_bounding (g, 0);
+      return NULL;
+    }
+  switch (GEO_TYPE_CORE (flags))
+    {
+    case GEO_NULL_SHAPE: case GEO_BOX:
+      XYBOX_PROJECT(g->XYbox);
+      return NULL;
+    case GEO_POINT:
+      if (GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
+        return "The point is intentionally invalidated so it cannot be projected";
+      XY_PROJECT(g->XYbox.Xmin, g->XYbox.Ymin);
+      g->XYbox.Xmax = g->XYbox.Xmin; g->XYbox.Ymax = g->XYbox.Ymin;
+      return NULL;
+    case GEO_GSOP:
+      return "Spatial operator is not a true shape so it cannot be projected";
+    case GEO_LINESTRING: case GEO_POINTLIST: case GEO_ARCSTRING:
+      {
+        int ctr;
+        for (ctr = g->_.pline.len; ctr--; /* no step */)
+          XY_PROJECT(g->_.pline.Xs[ctr], g->_.pline.Ys[ctr]);
+        geo_calc_bounding (g, 0);
+        return NULL;
+      }
+    default: GPF_T;
+    }
+  return NULL;
+#undef XY_PROJECT
+#undef XYBOX_PROJECT
+}
+

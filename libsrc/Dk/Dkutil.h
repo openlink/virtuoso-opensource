@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -48,7 +48,7 @@ void int_asc_fill (int * ptr, int len, int start);
 void memcpy_16 (void * t, const void * s, size_t len);
 void memcpy_16_nt (void * t, const void * s, size_t len);
 void memmove_16 (void * t, const void * s, size_t len);
-unsigned  int64 rdtsc();
+uint64 rdtsc(void);
 void print_trace (void);
 
 char * dk_cslentry (const char *list, int idx);

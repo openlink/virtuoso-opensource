@@ -9,7 +9,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -92,6 +92,22 @@ create trigger VSPX_SESSION_INSERT_AFTER after insert on DB.DBA.VSPX_SESSION {
       }
     }
     result := cast(DB.DBA.DAV_RES_UPLOAD(name, v_sql,'text/html','110110110R','dav','dav','dav', pwd) as INTEGER);
+  }
+}
+;
+
+-- VSPX Trigger for delete graphs used for WebID verifivation
+--
+create trigger VSPX_SESSION_WEBID_D before delete on DB.DBA.VSPX_SESSION order 100 referencing old as O
+{
+  -- dbg_obj_print ('VSPX_SESSION_WEBID_D');
+  declare _state, webidGraph any;
+
+  _state := deserialize (O.VS_STATE);
+  if (not isnull (get_keyword ('agent', _state)) and not isnull (get_keyword ('vtype', _state)))
+  {
+    webidGraph := 'http:' || replace (O.VS_SID, ':', '');
+    DB.DBA.SPARUL_CLEAR (webidGraph, 0, 0, silent=>1);
   }
 }
 ;

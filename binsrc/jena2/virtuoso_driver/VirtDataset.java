@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -134,57 +134,40 @@ public class VirtDataset extends VirtGraph implements Dataset {
       return (ret!=0);
     }
 
+
     /** Set a named graph. */
-    public void addNamedModel(String name, Model model)	throws LabelExistsException 
+    public void addNamedModel(String name, Model model, boolean checkExists) throws LabelExistsException 
     {
       String query = "select count(*) from (sparql select * where { graph `iri(??)` { ?s ?p ?o }})f";
       ResultSet rs = null;
       int ret = 0;
 
       checkOpen();
-      try {
-        java.sql.PreparedStatement ps = prepareStatement(query);
-        ps.setString(1, name);
-        rs = ps.executeQuery();
-        if (rs.next())
-          ret = rs.getInt(1);
-        rs.close();
-      } catch (Exception e) {
-        throw new JenaException(e);
-      }
+      if (checkExists) {
+        try {
+          java.sql.PreparedStatement ps = prepareStatement(query);
+          ps.setString(1, name);
+          rs = ps.executeQuery();
+          if (rs.next())
+            ret = rs.getInt(1);
+          rs.close();
+        } catch (Exception e) {
+          throw new JenaException(e);
+        }
 
-      try {
         if (ret != 0)
           throw new LabelExistsException("A model with ID '" + name
-					+ "' already exists.");
-        Graph g = model.getGraph();
-        int count = 0;
-        java.sql.PreparedStatement ps = prepareStatement(sinsert);
-
-        for (Iterator i = g.find(Node.ANY, Node.ANY, Node.ANY); i.hasNext();) 
-        {
-          Triple t = (Triple)i.next();
-
-          ps.setString(1, name);
-          bindSubject(ps, 2, t.getSubject());
-          bindPredicate(ps, 3, t.getPredicate());
-          bindObject(ps, 4, t.getObject());
-          ps.addBatch();
-          count++;
-          if (count > BATCH_SIZE) {
-            ps.executeBatch();
-            ps.clearBatch();
-            count = 0;
-          }
-        }
-        if (count > 0) {
-          ps.executeBatch();
-          ps.clearBatch();
-        }
-        ps.close();
-      } catch (Exception e) {
-        throw new JenaException(e);
+					  + "' already exists.");
       }
+
+      Graph g = model.getGraph();
+      add(name, g.find(Node.ANY, Node.ANY, Node.ANY), null);
+    }
+
+    /** Set a named graph. */
+    public void addNamedModel(String name, Model model)	throws LabelExistsException 
+    {
+      addNamedModel(name, model, true);  
     }
 
     /** Remove a named graph. */
@@ -206,19 +189,10 @@ public class VirtDataset extends VirtGraph implements Dataset {
     public void replaceNamedModel(String name, Model model) 
     {
       try {
-        getConnection().setAutoCommit(false);
         removeNamedModel(name);
-        addNamedModel(name, model);
-        getConnection().commit();
-        getConnection().setAutoCommit(true);
+        addNamedModel(name, model, false);
       } catch (Exception e) {
-         try {
-           getConnection().rollback();
-         } catch (Exception e2) {
-           throw new JenaException(
-                  "Could not replace model, and could not rollback!", e2);
-         }
-           throw new JenaException("Could not replace model:", e);
+        throw new JenaException("Could not replace model:", e);
       }
     }
 
@@ -415,51 +389,23 @@ public class VirtDataset extends VirtGraph implements Dataset {
      */
       public void addGraph(Node graphName, Graph graph)
       {
-        boolean autoCommit = false;
 	try {
-	  autoCommit = vd.getConnection().getAutoCommit();
-	  if (autoCommit)
-	    vd.getConnection().setAutoCommit(false);
           vd.clearGraph(graphName.toString());
 //??todo add optimize  when graph is VirtGraph
           ExtendedIterator<Triple> it = graph.find(Node.ANY, Node.ANY, Node.ANY);
 	  vd.add(graphName.toString(), it, null);
-	  vd.getConnection().commit();
 	} catch (Exception e) {
-	  try {
-	    vd.getConnection().rollback();
-	  } catch(Exception e1) {}
 	  throw new JenaException("Error in addGraph:"+e);
-	} finally {
-	  if (autoCommit)  {
-	    try {
-	    vd.getConnection().setAutoCommit(true);
-	    } catch(Exception e) {}
-	  }
 	}
       }
 
     /** Remove all data associated with the named graph */
       public void removeGraph(Node graphName)
       {
-        boolean autoCommit = false;
 	try {
-	  autoCommit = vd.getConnection().getAutoCommit();
-	  if (autoCommit)
-	    vd.getConnection().setAutoCommit(false);
           vd.clearGraph(graphName.toString());
-	  vd.getConnection().commit();
 	} catch (Exception e) {
-	  try {
-	    vd.getConnection().rollback();
-	  } catch(Exception e1) {}
 	  throw new JenaException("Error in removeGraph:"+e);
-	} finally {
-	  if (autoCommit)  {
-	    try {
-	    vd.getConnection().setAutoCommit(true);
-	    } catch(Exception e) {}
-	  }
 	}
       }
 

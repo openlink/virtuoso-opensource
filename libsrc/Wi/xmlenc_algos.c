@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -752,7 +752,7 @@ int xml_canonicalize (query_instance_t * qi, caddr_t * doc_tree, caddr_t * selec
 
   xs->xs_doc = xte_from_tree ((caddr_t) select_tree, qi);
   xs->xs_namespaces = new_hash;
-  dk_set_push (&xs->xs_parent_link, xml_c_new_namespace ("xsd", "http://www.w3.org/2001/XMLSchema"));;
+  dk_set_push (&xs->xs_parent_link, xml_c_new_namespace ("xsd", "http://www.w3.org/2001/XMLSchema"));
 
   text = xml_doc_subst (xs);
 
@@ -1867,6 +1867,11 @@ int xenc_aes_decryptor (dk_session_t * ses_in, long seslen, dk_session_t * ses_o
 
   len = xenc_decode_base64 (text, text + seslen + 1);
 
+  if (len < 16)
+    {
+      dk_free_box (text_beg);
+      xenc_report_error (t, 500, XENC_ENC_ERR, "AES decryption internal error #3");
+    }
   memcpy (ivec, text, 16);
   memcpy (&key->ki.aes.iv, &ivec, 16);
   text += 16;

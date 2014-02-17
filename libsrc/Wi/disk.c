@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -70,6 +70,7 @@
 #else
 #include "util/md5.h"
 #endif /* _SSL */
+
 
 
 #define CHECK_PG(pg,name) \
@@ -884,6 +885,7 @@ buffer_set_free (buffer_desc_t* ps)
 
 
 int32 bp_flush_trig_pct = 50;
+int32 bp_flush_range;
 int64 bp_replace_age;
 int32 bp_replace_count;
 
@@ -1064,15 +1066,45 @@ bp_found (buffer_desc_t * buf, int from_free_list)
 
 
 du_thread_t * bp_flush_thr;
+dk_mutex_t bp_flush_mtx;
+dk_set_t bp_waiting_flush;
 semaphore_t * bp_flush_sem;
 int bp_flush_pending = 0;
 
+
 void
-bp_flush (buffer_pool_t * bp)
+bp_flush (buffer_pool_t * bp, int wait)
 {
-  if (bp_flush_pending || !bp_flush_sem)
+  du_thread_t * self = THREAD_CURRENT_THREAD;
+  if (!bp_flush_sem)
     return;
-  semaphore_leave (bp_flush_sem);
+  mutex_enter (&bp_flush_mtx);
+  if (bp_flush_pending)
+    {
+      if (wait)
+	{
+	  dk_set_push (&bp_waiting_flush, (void*)self);
+	  mutex_leave (&bp_flush_mtx);
+	  semaphore_enter (self->thr_sem);
+	}
+      else 
+	{
+	  mutex_leave (&bp_flush_mtx);
+	  return;
+	}
+    }
+  else
+    {
+      bp_flush_pending = 1;
+      if (wait)
+	{
+	  dk_set_push (&bp_waiting_flush, (void*)self);
+	}
+      mutex_leave (&bp_flush_mtx);
+      semaphore_leave (bp_flush_sem);
+      if (wait)
+	semaphore_enter (self->thr_sem);
+    }
 }
 
 
@@ -1080,6 +1112,7 @@ int bp_stat_action (buffer_pool_t * bp, int stat_only);
 extern uint32 col_ac_last_time;
 extern uint32 col_ac_last_duration;
 int col_ac_is_due (uint32 now);
+int enable_flush_all = 1;
 
 void
 bp_flush_thread_func (void * arg)
@@ -1089,7 +1122,6 @@ bp_flush_thread_func (void * arg)
   for (;;)
     {
       semaphore_enter (bp_flush_sem);
-      bp_flush_pending = 1;
       DO_BOX (buffer_pool_t *, bp, inx, wi_inst.wi_bps)
 	{
 	  IN_BP (bp);
@@ -1099,7 +1131,14 @@ bp_flush_thread_func (void * arg)
 	  LEAVE_BP (bp);
 	}
       END_DO_BOX;
-      wi_check_all_compact (min_age - 1); /* -1 because 0 m,means do all */
+      if (enable_flush_all)
+	{
+	  wi_check_all_compact (0); /* -1 because 0 means do all */
+	  mt_flush_all ();
+	}
+      else
+	{
+	  wi_check_all_compact (min_age - 1); /* -1 because 0 means do all */
       DO_BOX (buffer_pool_t *, bp, inx, wi_inst.wi_bps)
 	{
 	  IN_BP (bp);
@@ -1107,7 +1146,17 @@ bp_flush_thread_func (void * arg)
 	  LEAVE_BP (bp);
 	}
       END_DO_BOX;
+	}
+      mutex_enter (&bp_flush_mtx);
+      DO_SET (du_thread_t *, waiting, &bp_waiting_flush)
+      {
+	semaphore_leave (waiting->thr_sem);
+      }
+      END_DO_SET ();
       bp_flush_pending = 0;
+      dk_set_free (bp_waiting_flush);
+      bp_waiting_flush = NULL;
+      mutex_leave (&bp_flush_mtx);
     }
   dk_free (age_limit, -1);
 }
@@ -1120,12 +1169,12 @@ bp_stat_action (buffer_pool_t * bp, int stat_only)
   /* schedule writes if appropriate.  If nothing free write synchronously */
   int n_dirty = 0, n_clean = 0;
   int bucket, age_limit;
-  int flushable_range = bp->bp_n_bufs / BP_N_BUCKETS;
+  int flushable_range = bp_flush_range ? bp_flush_range : bp->bp_n_bufs / BP_N_BUCKETS;
   for (bucket = 0; bucket < BP_N_BUCKETS; bucket++)
     {
       n_clean += bp->bp_n_clean[bucket];
       n_dirty += bp->bp_n_dirty[bucket];
-      if (n_dirty + n_clean > bp->bp_n_bufs / flushable_range)
+      if (n_dirty + n_clean > flushable_range)
 	break;
     }
   if (bucket == BP_N_BUCKETS)
@@ -1133,7 +1182,8 @@ bp_stat_action (buffer_pool_t * bp, int stat_only)
   age_limit = bp->bp_bucket_limit[bucket];
   if (stat_only)
     return -bucket;
-  if ((n_dirty * 100) / (n_clean + n_dirty) > bp_flush_trig_pct
+  if ((n_dirty * 100) / (n_clean + n_dirty) > bp_flush_trig_pct 
+      || n_dirty > wi_inst.wi_max_dirty / wi_inst.wi_n_bps
       /*|| action_ctr++ % 1000 == 0 */)
     {
       if (!wi_inst.wi_checkpoint_atomic)
@@ -1141,7 +1191,7 @@ bp_stat_action (buffer_pool_t * bp, int stat_only)
 	  /* not inside checkpoint. bp_get_buffer can happen inside, for reading uncommitted pages for cpt rb */
 	  bp->bp_stat_pending = 1;
 	  LEAVE_BP (bp);
-	  bp_flush (bp);
+	  bp_flush (bp, 0);
       IN_BP (bp);
       bp->bp_stat_pending = 0;
     }
@@ -1270,8 +1320,10 @@ bp_get_buffer_1 (buffer_pool_t * bp, buffer_pool_t ** action_bp_ret, int mode)
 	    age_limit = 0;
 	  bp_write_dirty (bp, 0, 1, age_limit);
 	}
-      // computing age limit.
-  if (((int) (bp->bp_ts - bp->bp_stat_ts)) > (bp->bp_n_bufs / BP_N_BUCKETS) / 2)
+      /* computing age limit. */
+      if (dbs_autocompact_in_progress)
+	age_limit = 0;
+      else if (((int) (bp->bp_ts - bp->bp_stat_ts)) > (bp->bp_n_bufs / BP_N_BUCKETS) / 2)
     {
       if (!bp->bp_stat_pending)
 	{
@@ -1351,8 +1403,9 @@ bp_get_buffer_1 (buffer_pool_t * bp, buffer_pool_t ** action_bp_ret, int mode)
 	    return buf;
 	}
       tc_bp_get_buffer_loop++;
-      age_limit--;
+          age_limit = (age_limit * 2) / 3;
     }
+
   for (buf = &bp->bp_bufs[0]; buf < &bp->bp_bufs[bp->bp_next_replace]; buf++)
     {
       if (!buf->bd_is_dirty
@@ -1362,7 +1415,7 @@ bp_get_buffer_1 (buffer_pool_t * bp, buffer_pool_t ** action_bp_ret, int mode)
 	    return buf;
 	}
       tc_bp_get_buffer_loop++;
-      age_limit--;
+          age_limit--;
     }
 
   /* absolutely all were dirty */
@@ -2304,6 +2357,48 @@ dbs_read_page_set (dbe_storage_t * dbs, dp_addr_t first_dp, int flag)
 }
 
 void
+dbs_set_free_set_arr (dbe_storage_t * dbs)
+{
+  int n_pages = 1, fill = 0;
+  buffer_desc_t ** arr;
+  buffer_desc_t * buf = dbs->dbs_free_set;
+  for (buf = buf->bd_next; buf; buf = buf->bd_next)
+    n_pages++;
+  arr = dbs->dbs_free_set_arr;
+  if (!arr || n_pages >= BOX_ELEMENTS (arr))
+    arr = (buffer_desc_t**)dk_alloc_box_zero (MAX (200, n_pages) * 2 * sizeof (caddr_t), DV_BIN);
+  for (buf = dbs->dbs_free_set; buf; buf = buf->bd_next)
+    arr[fill++] = buf;
+  /* previous is intentionally not freed, remain accessible with no mtx */
+  dbs->dbs_free_set_arr = arr;
+}
+
+
+int
+dbs_may_be_free (dbe_storage_t * dbs, dp_addr_t dp)
+{
+  /* when asserting that a page is allocated, can check without mtx.  The array of pages of free set is add-only and am apparent free can always be double checked inside the mtx. The read will in any case not take place inside the dbs mtx hence a page that is checked to be allocated can go free between the check and the actual read */
+  int nth = dp / BITS_ON_PAGE;
+  uint32 w;
+  buffer_desc_t * buf;
+  int word, bit, dp_in_page;
+  buffer_desc_t ** arr = dbs->dbs_free_set_arr;
+  if (!arr)
+    return 1;
+  if (nth >= BOX_ELEMENTS (arr))
+    return 1;
+  if (!arr[nth])
+    return 1;
+  dp_in_page = dp - (nth * BITS_ON_PAGE);
+  word = dp_in_page / BITS_IN_LONG;
+  bit = dp_in_page % BITS_IN_LONG;
+  buf = arr[nth];
+  w = ((uint32*)(buf->bd_buffer + DP_DATA))[word];
+  return 0 == (w & (1L << bit));
+}
+
+
+void
 dbs_write_page_set (dbe_storage_t * dbs, buffer_desc_t * buf)
 {
   while (buf)
@@ -2635,6 +2730,8 @@ buf_bsort (buffer_desc_t ** bs, int n_bufs, sort_key_func_t key)
 
 
 int32 qsort_seed;
+int buf_sort_dirty = 0;
+
 
 void
 buf_qsort (buffer_desc_t ** in, buffer_desc_t ** left,
@@ -2656,6 +2753,7 @@ buf_qsort (buffer_desc_t ** in, buffer_desc_t ** left,
       int split_point = 0 == (depth % 5) ? 	  ((sqlbif_rnd (&qsort_seed) & 0x7fffffff) % n_in) : n_in / 2;
       dp_addr_t split;
       buffer_desc_t *mid_buf = NULL;
+      int n_mids = 0;
       int n_left = 0, n_right = n_in - 1;
       int inx;
       if (depth > 60)
@@ -2669,9 +2767,13 @@ buf_qsort (buffer_desc_t ** in, buffer_desc_t ** left,
       for (inx = 0; inx < n_in; inx++)
 	{
 	  dp_addr_t this_pg = key (in[inx]);
-	  if (!mid_buf && this_pg == split)
+	  if (this_pg == split)
 	    {
-	      mid_buf = in[inx];
+	      n_mids++;
+	      if (1 == n_mids)
+		mid_buf = in[inx];
+	      else
+		left[n_left++] = in[inx];
 	      continue;
 	    }
 	  if (this_pg <= split)
@@ -2683,11 +2785,14 @@ buf_qsort (buffer_desc_t ** in, buffer_desc_t ** left,
 	      left[n_right--] = in[inx];
 	    }
 	}
-      if (!mid_buf)
+      if (!n_mids)
 	{
-	  log_error ("In buf_qsort, the items being sorted have moved, so results are not necessarily in order");
+	  if (!buf_sort_dirty)
+	    log_error ("In buf_qsort, the items being sorted have moved, so results are not necessarily in order");
 	  return;
 	}
+      if (n_mids == n_in)
+	return; /* all are equal */
       buf_qsort (left, in, n_left, depth + 1, key);
       buf_qsort (left + n_right + 1, in + n_right + 1,
 	  (n_in - n_right) - 1, depth + 1, key);
@@ -2703,7 +2808,6 @@ buf_qsort (buffer_desc_t ** in, buffer_desc_t ** left,
 dk_mutex_t *buf_sort_mtx;
 buffer_desc_t **left_bufs;
 size_t left_bufs_len;
-
 
 void
 buf_sort (buffer_desc_t ** bs, int n_bufs, sort_key_func_t key)
@@ -2984,14 +3088,14 @@ typedef struct digit_sort_s
 digit_sort_t *
 ds_allocate ()
     {
-  return (digit_sort_t*)dk_alloc (sizeof (digit_sort_t));
+  return (digit_sort_t *) dk_alloc_box (sizeof (digit_sort_t), DV_BIN);
     }
 
 
 void
 ds_free (caddr_t ds)
 {
-  dk_free (ds, -1);
+  dk_free_box (ds);
 }
 
 
@@ -3567,9 +3671,40 @@ dbs_close_disks (dbe_storage_t * dbs, int delete)
 int32 bp_n_bps = 4;
 extern int dbf_fast_cpt;
 
+
+semaphore_t * dst_sync_sem;
+
+void
+dst_sync (caddr_t * xx)
+{
+  uint32 start, inx;
+  dbe_storage_t * dbs = (dbe_storage_t*)xx[0];
+  io_queue_t * iq = (io_queue_t*)xx[1];
+  DO_SET (disk_segment_t *, seg, &dbs->dbs_disks)
+    {
+      DO_BOX (disk_stripe_t *, dst, inx, seg->ds_stripes)
+	{
+	  int fd;
+	  if (dst->dst_iq != iq)
+	    continue;
+	  fd = dst_fd (dst);
+	  start = get_msec_real_time ();
+	  fd_fsync (fd);
+	  iq->iq_sync_delay += get_msec_real_time () - start;
+	  dst_fd_done (dst, fd, NULL);
+		}
+	      END_DO_BOX;
+	    }
+	  END_DO_SET ();
+	  semaphore_leave (dst_sync_sem);
+}
+
+
 void
 dbs_sync_disks (dbe_storage_t * dbs)
 {
+  if (!dst_sync_sem)
+    dst_sync_sem = semaphore_allocate (0);
 #ifdef HAVE_FSYNC
   int inx;
 
@@ -3591,15 +3726,39 @@ dbs_sync_disks (dbe_storage_t * dbs)
     default:
       if (dbs->dbs_disks)
 	{
+	  dk_set_t iqs = NULL;
+	  dk_set_t args = NULL;
 	  DO_SET (disk_segment_t *, seg, &dbs->dbs_disks)
 	    {
 	      DO_BOX (disk_stripe_t *, dst, inx, seg->ds_stripes)
 		{
-		  fd_fsync (dst->dst_fds[0]);
+		  dk_set_pushnew (&iqs, (void*)dst->dst_iq);
 		}
 	      END_DO_BOX;
 	    }
-	  END_DO_SET ();
+	  END_DO_SET();
+	  DO_SET (io_queue_t *, iq, &iqs)
+	    {
+	      caddr_t * xx = (caddr_t*) list (2, dbs, iq);
+	      dk_set_push (&args, (void*)xx);
+	    }
+	  END_DO_SET();
+	  DO_SET (caddr_t *, xx, &args->next)
+	    {
+	      thread_create ((thread_init_func)dst_sync, 20000, xx);
+	    }
+	  END_DO_SET();
+	  dst_sync ((caddr_t*)args->data);
+	  DO_SET (caddr_t *, xx, &args)
+	    {
+		semaphore_enter (dst_sync_sem);
+	    }
+	  END_DO_SET();
+	  DO_SET (caddr_t *, xx, &args)
+	    dk_free_box (xx);
+	  END_DO_SET();
+	  dk_set_free (iqs);
+	  dk_set_free (args);
 	}
       else
 	{
@@ -4304,6 +4463,7 @@ dbs_from_file (char * name, char * file, char type, volatile int * exists)
 
       dbs->dbs_n_pages_in_extent_set = EXTENT_SZ * BITS_ON_PAGE * page_set_length (dbs->dbs_extent_set);
       dbs->dbs_free_set = dbs_read_page_set (dbs, cfg_page.db_free_set, DPF_FREE_SET);
+      dbs_set_free_set_arr (dbs);
       dbs->dbs_n_pages_in_sets = BITS_ON_PAGE * page_set_length (dbs->dbs_free_set);
       dbs->dbs_incbackup_set = dbs_read_page_set (dbs, cfg_page.db_incbackup_set, DPF_INCBACKUP_SET);
       dbs_read_checkpoint_remap (dbs, cfg_page.db_checkpoint_map);
@@ -4443,6 +4603,13 @@ wi_open (char *mode)
   mutex_option (transit_list_mtx, "transit_list", NULL, NULL);
   srv_client_defaults_init ();
   wi_inst.wi_bps = (buffer_pool_t **) dk_alloc_box (bp_n_bps * sizeof (caddr_t), DV_CUSTOM);
+  if (wi_inst.wi_max_dirty > main_bufs)
+    wi_inst.wi_max_dirty = main_bufs;
+  if (wi_inst.wi_max_dirty < main_bufs / 15)
+    wi_inst.wi_max_dirty = main_bufs / 15;
+  bp_flush_range = MAX (main_bufs - wi_inst.wi_max_dirty, main_bufs / 5)  / bp_n_bps;
+
+
   for (inx = 0; inx < bp_n_bps; inx++)
     {
       wi_inst.wi_bps[inx] = bp_make_buffer_list (main_bufs / bp_n_bps);
@@ -4506,6 +4673,7 @@ dbs_close (dbe_storage_t * dbs)
 
 extern int enable_malloc_cache;
 extern size_t mp_large_min;
+extern size_t mp_qi_large_block;
 
 void
 mem_cache_init (void)
@@ -4525,8 +4693,10 @@ mem_cache_init (void)
 	dk_cache_allocs (sz, 10);
     }
   {
+    int ign;
     size_t low = MAX (mp_large_min, sizeof (int64) * dc_batch_sz), high = sizeof (int64) * dc_max_batch_sz;
     mm_cache_init (c_max_large_vec, low, high, 21, pow (high / low, 1.0 / 20));
+    mp_qi_large_block = mm_next_size (2000000, &ign);
   }
 }
 
@@ -4657,6 +4827,8 @@ wi_init_globals (void)
   time_mtx = mutex_allocate ();
   checkpoint_mtx = mutex_allocate_typed (MUTEX_TYPE_LONG);
   mutex_option (checkpoint_mtx, "CPT", NULL, NULL);
+  dk_mutex_init (&bp_flush_mtx, MUTEX_TYPE_SHORT);
+  mutex_option (&bp_flush_mtx, "bp_flush", NULL, NULL);
   old_roots_mtx = mutex_allocate ();
   mutex_option (old_roots_mtx, "old_root_images", NULL, NULL);
 
@@ -4678,6 +4850,7 @@ wi_init_globals (void)
   qi_ref_mtx = mutex_allocate ();
   qi_branch_count = hash_table_allocate (61);
   alt_ts_mtx = mutex_allocate ();
+  mutex_option (alt_ts_mtx, "alt_ts_and_p_stat", NULL, NULL);
 }
 
 
@@ -4711,7 +4884,8 @@ dbe_key_open_dbs (dbe_key_t * key, dbe_storage_t * dbs)
       {
 	int inx;
 	char mtx_name[200];
-	snprintf (mtx_name, sizeof (mtx_name), "lock_rel_%100s", kf->kf_name);
+	snprintf (mtx_name, sizeof (mtx_name), "lock_rel_%s", kf->kf_name);
+	mtx_name[sizeof (mtx_name) - 1] = 0;
 	mutex_option (kf->kf_it->it_lock_release_mtx, mtx_name, NULL,  NULL);
 	for (inx = 0; inx < IT_N_MAPS; inx++)
 	  {
@@ -4897,6 +5071,9 @@ sch_save_roots (dbe_schema_t * sc)
 
 int enable_mm_cache_trim = 1;
 
+void aq_thr_mem_cache_clear ();
+void ws_thr_cache_clear ();
+
 void
 resources_reaper (void)
 {
@@ -4913,6 +5090,8 @@ resources_reaper (void)
   malloc_cache_clear ();
   if (enable_mm_cache_trim)
     mm_cache_trim (c_max_large_vec, 100000, 1);
+  ws_thr_cache_clear ();
+  aq_thr_mem_cache_clear ();
 }
 
 

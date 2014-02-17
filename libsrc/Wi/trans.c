@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -797,7 +797,7 @@ tst_next_states (trans_node_t * tn, caddr_t * inst, trans_set_t * ts, trans_stat
   DO_SET (caddr_t *, related_tuple, rel_place)
     {
       trans_state_t * rel;
-      caddr_t related = (!tn->tn_data && !tn->tn_end_flag) ? (caddr_t)related_tuple : related_tuple[0];;
+      caddr_t related = (!tn->tn_data && !tn->tn_end_flag) ? (caddr_t)related_tuple : related_tuple[0];
 
       if (tn->tn_distinct
 	  && id_hash_get (ts->ts_traversed, (caddr_t)&related))
@@ -1047,7 +1047,10 @@ tn_result_row (trans_node_t * tn, caddr_t * inst, trans_state_t * tst, trans_sta
 	{
 	  DO_BOX (state_slot_t *, out, inx, tn->tn_step_out)
 	    {
-	      data_col_t * dc = QST_BOX (data_col_t *, inst, out->ssl_index);
+	      data_col_t * dc;
+	      if (NULL == out)
+	        continue;
+	      dc = QST_BOX (data_col_t *, inst, out->ssl_index);
 	      dc_append_box (dc, ((caddr_t*)tst->tst_value)[inx]);
 	    }
 	  END_DO_BOX;

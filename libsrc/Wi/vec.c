@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2011 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -224,7 +224,7 @@ caddr_t dc_mp_box_for_rd (mem_pool_t * mp, data_col_t * dc, int inx)
     case DV_TIMESTAMP:
       {
 	caddr_t b = mp_alloc_box (mp, DT_LENGTH, DV_DATETIME);
-	memcpy (b, dc->dc_values + DT_LENGTH * inx, DT_LENGTH);
+	memcpy_dt (b, dc->dc_values + DT_LENGTH * inx);
 	return b;
       }
     }
@@ -352,8 +352,8 @@ dc_append_bytes (data_col_t * dc, db_buf_t bytes, int len, db_buf_t pref_bytes, 
     }
   ((db_buf_t *) dc->dc_values)[dc->dc_n_values++] = dc->dc_buffer + dc->dc_buf_fill;
   if (pref_len)
-    memcpy (dc->dc_buffer + dc->dc_buf_fill, pref_bytes, pref_len);
-  memcpy (dc->dc_buffer + dc->dc_buf_fill + pref_len, bytes, len - pref_len);
+    memcpy_16 (dc->dc_buffer + dc->dc_buf_fill, pref_bytes, pref_len);
+  memcpy_16 (dc->dc_buffer + dc->dc_buf_fill + pref_len, bytes, len - pref_len);
   dc->dc_buf_fill += len;
 }
 
@@ -478,7 +478,7 @@ dc_append_box (data_col_t * dc, caddr_t box)
     case DV_DATE:
     case DV_TIME:
     case DV_TIMESTAMP:
-      memcpy (dc->dc_values + dc->dc_n_values * DT_LENGTH, box, DT_LENGTH);
+      memcpy_dt (dc->dc_values + dc->dc_n_values * DT_LENGTH, box);
       dc->dc_n_values++;
       break;
     default:
@@ -492,6 +492,7 @@ dc_append_null (data_col_t * dc)
 {
   dc_set_null (dc, dc->dc_n_values);
 }
+
 
 caddr_t
 box_deserialize_reusing (db_buf_t string, caddr_t box)
@@ -587,7 +588,7 @@ box_deserialize_reusing (db_buf_t string, caddr_t box)
     case DV_DATETIME:
       if (DV_DATETIME == old_dtp)
 	{
-	  memcpy (box, string + 1, DT_LENGTH);
+	  memcpy_dt (box, string + 1);
 	  return box;
 	}
       goto no_reuse;
@@ -630,7 +631,7 @@ dc_box (data_col_t * dc, int inx)
     case DV_TIMESTAMP:
       {
 	caddr_t b = dk_alloc_box (DT_LENGTH, DV_DATETIME);
-	memcpy (b, dc->dc_values + DT_LENGTH * inx, DT_LENGTH);
+	memcpy_dt (b, dc->dc_values + DT_LENGTH * inx);
 	return b;
       }
     }
@@ -773,7 +774,7 @@ dc_itc_append_datetime (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * 
       dc_append_null (dc);
       return;
     }
-  memcpy (dc->dc_values + dc->dc_n_values * DT_LENGTH, row + cl->cl_pos[rv], DT_LENGTH);
+  memcpy_dt (dc->dc_values + dc->dc_n_values * DT_LENGTH, row + cl->cl_pos[rv]);
   dc->dc_n_values++;
 }
 
@@ -1001,9 +1002,9 @@ dc_itc_append_any (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, c
       bytes = MAX (dc->dc_buf_len, vl1 + vl2);
       dc_get_buffer (dc, bytes);
     }
-  memcpy (dc->dc_buffer + dc->dc_buf_fill, xx, vl1);
+  memcpy_16 (dc->dc_buffer + dc->dc_buf_fill, xx, vl1);
   if (vl2)
-    memcpy (dc->dc_buffer + dc->dc_buf_fill + vl1, xx2, vl2);
+    memcpy_16 (dc->dc_buffer + dc->dc_buf_fill + vl1, xx2, vl2);
   dc->dc_buffer[dc->dc_buf_fill + vl1 + vl2 - 1] += offset;
   ((db_buf_t *) dc->dc_values)[dc->dc_n_values++] = dc->dc_buffer + dc->dc_buf_fill;
   dc->dc_buf_fill += vl1 + vl2;
@@ -1056,9 +1057,9 @@ dc_itc_append_string (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl
       LONG_SET_NA (ptr + 1, vl1 + vl2);
       ptr += 5;
     }
-  memcpy (ptr, xx, vl1);
+  memcpy_16 (ptr, xx, vl1);
   if (vl2)
-    memcpy (ptr + vl1, xx2, vl2);
+    memcpy_16 (ptr + vl1, xx2, vl2);
   else
     ptr[vl1 + vl2 - 1] += offset;
 }
@@ -1109,9 +1110,9 @@ dc_itc_append_wide (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, 
       LONG_SET_NA (ptr + 1, vl1 + vl2);
       ptr += 5;
     }
-  memcpy (ptr, xx, vl1);
+  memcpy_16 (ptr, xx, vl1);
   if (vl2)
-    memcpy (ptr + vl1, xx2, vl2);
+    memcpy_16 (ptr + vl1, xx2, vl2);
   else
     ptr[vl1 + vl2 - 1] += offset;
 }
@@ -1156,7 +1157,7 @@ dc_itc_placeholder (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, 
 {
   data_col_t *dc = (data_col_t *) inst[ssl->ssl_index];
   NEW_PLH (pl);
-  memcpy (pl, itc, ITC_PLACEHOLDER_BYTES);
+  memcpy_16 (pl, itc, ITC_PLACEHOLDER_BYTES);
   pl->itc_type = ITC_PLACEHOLDER;
   pl->itc_is_on_row = 1;
   itc_register ((it_cursor_t *) pl, buf);
@@ -1267,7 +1268,7 @@ dc_elt_size (data_col_t * dc)
   else \
     { \
       box_tag_modify (box, dtp);		      \
-      memcpy (box, val_dc->dc_values + len * row_no, len);	\
+      memcpy_16 (box, val_dc->dc_values + len * row_no, len);	\
     }\
   return box; \
 }
@@ -1570,7 +1571,7 @@ dc_nn_sets (data_col_t * dc, int *sets, int first_set, int n_sets)
   ((int32*)target_val)[tgt] = ((int32*)source_val)[src]
 
 #define VA_N(tgt, src) \
-  memcpy (target_val + dc_elt_len * (tgt), source_val + dc_elt_len * (src), dc_elt_len)
+  memcpy_16 (target_val + dc_elt_len * (tgt), source_val + dc_elt_len * (src), dc_elt_len)
 
 #define VA_CPY(tgt) \
 { \
@@ -1578,7 +1579,7 @@ dc_nn_sets (data_col_t * dc, int *sets, int first_set, int n_sets)
   int l; \
   DB_BUF_TLEN (l, dv[0], dv); \
   dv2 = dc_alloc (target_dc, l); \
-  memcpy (dv2, dv, l); \
+  memcpy_16 (dv2, dv, l); \
   ((db_buf_t*)target_val)[tgt] = dv2; \
 }
 
@@ -1856,7 +1857,7 @@ qst_vec_set_copy (caddr_t * inst, state_slot_t * ssl, caddr_t v)
 		dc_set_null (dc, set);
 		return;
 	      }
-	    memcpy (dc->dc_values + DT_LENGTH * set, (v ? v : zero), DT_LENGTH);
+	    memcpy_dt (dc->dc_values + DT_LENGTH * set, (v ? v : zero));
 	  if (dc->dc_nulls)
 	    DC_CLR_NULL (dc, set);
 	  if (set >= dc->dc_n_values)
@@ -1937,7 +1938,7 @@ qst_vec_set (caddr_t * inst, state_slot_t * ssl, caddr_t v)
 	case DV_DATE:
 	case DV_TIME:
 	case DV_TIMESTAMP:
-	  memcpy (dc->dc_values + DT_LENGTH * set, v, DT_LENGTH);
+	  memcpy_dt (dc->dc_values + DT_LENGTH * set, v);
 	  if (dc->dc_nulls)
 	    DC_CLR_NULL (dc, set);
 	  if (set >= dc->dc_n_values)
@@ -2552,7 +2553,7 @@ box_mt_copy_tree (caddr_t box)
       {
 	int len = box_length (box);
 	rdf_bigbox_t *cp = sizeof (rdf_bigbox_t) == len ? rbb_allocate () : (rdf_bigbox_t *) rb_allocate ();
-	memcpy (cp, box, len);
+	memcpy_16 (cp, box, len);
 	cp->rbb_base.rb_box = box_copy_tree (cp->rbb_base.rb_box);
 	cp->rbb_base.rb_ref_count = 1;
 	if (cp->rbb_base.rb_chksum_tail)
@@ -2658,7 +2659,7 @@ dc_assign (caddr_t * inst, state_slot_t * ssl_to, int row_to, state_slot_t * ssl
       else
 	{
 	  int elt_sz = dc_elt_size (source);
-	  memcpy (target->dc_values + row_to * elt_sz, source->dc_values + row_from * elt_sz, elt_sz);
+	    memcpy_16 (target->dc_values + row_to * elt_sz, source->dc_values + row_from * elt_sz, elt_sz);
 	}
       if (row_to >= target->dc_n_values)
 	target->dc_n_values = row_to + 1;

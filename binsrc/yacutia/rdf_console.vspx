@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2014 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -129,7 +129,7 @@
 		xhtml_title="Refresh page"
 		url="--http_path () || '?view=' || self.ses">
 	    </v:button>
-	    &#160;
+	    &nbsp;
 		      Session
 		  </th>
 		  <th>Seq</th>
@@ -158,7 +158,7 @@
 			      <td>
 			      </td>
 			      <td>
-				  &#160;
+				  &nbsp;
 				  <v:url name="ur2" value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
 				      format="%s"
 				      url="--sprintf ('rdf_console.vspx?del=%U', mses)"
@@ -187,7 +187,7 @@
 				  <?V coalesce ((select MC_DESC from DB.DBA.RDF_META_CARTRIDGES where MC_HOOK = ML_PROC), ML_PROC) ?>
 			      </td>
 			      <td>
-				  &#160;
+				  &nbsp;
 				  <v:url name="ur2" value='<img src="images/icons/view_16.png" hspace="3" border="0"/>Details'
 				      format="%s"
 				      url="--sprintf ('rdf_console.vspx?detail=%U&id=%d', mses, ML_ID)"

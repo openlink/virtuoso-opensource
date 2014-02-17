@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -2562,7 +2562,7 @@ exec:;
 create procedure fct_virt_info ()
 {
   http ('<a href="http://www.openlinksw.com/virtuoso/">OpenLink Virtuoso</a> version ');
-  http (sys_stat ('st_dbms_ver'));
+  http (sprintf ('%s as of %s', sys_stat ('st_dbms_ver'), sys_stat('st_build_date'))); 
   http (', on ');
   http (sys_stat ('st_build_opsys_id')); http (sprintf (' (%s), ', host_id ()));
   http (case when sys_stat ('cl_run_local_only') = 1 then 'Standard Edition' else 'Cluster Edition' end);

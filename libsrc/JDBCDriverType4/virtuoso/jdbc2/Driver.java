@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -62,7 +62,7 @@ public class Driver implements java.sql.Driver
    // The major and minor version number
    protected static final int major = 3;
 
-   protected static final int minor = 65;
+   protected static final int minor = 66;
 
    // Some variables
    private String host = "localhost";

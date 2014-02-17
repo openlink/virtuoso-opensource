@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2014 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -20,7 +18,6 @@
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -
  -
 -->
 <v:page name="robot_sites_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
@@ -50,111 +47,112 @@
                       <col/>
                     </colgroup>
                     <tr>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url41" value="Repository" url="cont_page.vspx?page=1" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center" nowrap="1">
-                          <v:url name="b_url45" value="Content Imports" url="cont_page.vspx?page=2" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-			  <v:url name="b_url43" value="Text Indexing" format="%s" url="cont_page.vspx?page=3" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-			  <v:url name="b_url42" value="Resource Types" format="%s" url="cont_page.vspx?page=4" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
+                      <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="b_url41" value="Repository" url="cont_page.vspx?page=1" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_selected" align="center" nowrap="1">
+                        <v:url name="b_url45" value="Content Imports" url="cont_page.vspx?page=2" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="b_url43" value="Text Indexing" format="%s" url="cont_page.vspx?page=3" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="b_url42" value="Resource Types" format="%s" url="cont_page.vspx?page=4" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_empty" align="center" width="100%">
+                        <table cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td width="100%" >
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
                     </tr>
                   </table>
                   <table class="tab_page">
                     <tr>
                       <td valign="top">
-      <table width="100%">
-        <tr>
-          <td align="right">
-            <v:form name="robot_form1" type="simple" method="POST" action="">
-              <table>
-                <tr>
-                  <td align="right">
-                    <v:button action="simple" value="Import Targets" name="robot_button29" format="%s">
-                      <v:on-post>
-                        <![CDATA[
-                          http_request_status ('HTTP/1.1 302 Found');
-                          http_header(sprintf('Location: cont_page.vspx?page=2&sid=%s&realm=%s\r\n', self.sid , self.realm));
-                          return;
-                        ]]>
-                      </v:on-post>
-                    </v:button>
-                  </td>
-                  <td align="right">
-                    <v:button action="simple" value="Import Queues" name="robot_button37" format="%s">
-                      <v:on-post>
-                        <![CDATA[
-                          http_request_status ('HTTP/1.1 302 Found');
-                          http_header(sprintf('Location: robot_queues.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
-                          return;
-                        ]]>
-                      </v:on-post>
-                    </v:button>
-                  </td>
-                </tr>
-              </table>
-            </v:form>
-          </td>
-        </tr>
-      </table>
-      <div class="scroll_area">
-      <table class="listing">
-        <tr class="listing_header_row">
-          <th>Description</th>
-          <th>URL</th>
-	  <th>Pages (downloaded/total)</th>
-          <th>Action</th>
-        </tr>
-        <?vsp
-          declare _count, _all, idx integer;
-          _count := idx := 0;
-	  set isolation='uncommitted';
-          for select VS_DESCR, VS_HOST, VS_URL, VS_ROOT from WS.WS.VFS_SITE do
-          {
-            idx := 1;
-            select count (*) into _count from WS.WS.VFS_QUEUE where VQ_HOST = VS_HOST and VQ_ROOT = VS_ROOT and VQ_STAT = 'retrieved';
-            select count (*) into _all from WS.WS.VFS_QUEUE where VQ_HOST = VS_HOST and VQ_ROOT = VS_ROOT;
-          self.r_count := self.r_count + 1;
-          http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
-        ?>
-              <td class="listing_col"><?V VS_DESCR ?></td>
-	      <td class="listing_col"><?V y_trunc_uri ('http://' || VS_HOST || VS_URL) ?></td>
-	      <td class="listing_col_num"><?V cast(_count as varchar) ?>/<?V _all ?></td>
-              <td class="listing_col_action">
-                <?vsp
-                  http(concat('<a href="robot_urls_list.vspx?host=', VS_HOST, '&sid=', self.sid, '&realm=', self.realm, '&root='));
-		  http_url (VS_ROOT);
-		  http('"><img src="images/icons/edit_16.png" border="0" />&#160;Edit</a>');
-                ?>
-	        <v:url name="exp1" value="Export" url="--sprintf ('robot_export.vspx?host=%U&url=%U&root=%U', VS_HOST,VS_URL,VS_ROOT)" />
-              </td>
-        <?vsp
-          http ('</tr>');
-          }
-          if (idx = 0)
-          {
-        ?>
-        <tr class="listing_count">
-          <td class="listing_count" colspan="4">There are no retrieved sites</td>
-        </tr>
-        <?vsp
-          }
-        ?>
-      </table>
-    </div>
-      <br/>
+                        <table width="100%">
+                          <tr>
+                            <td align="right">
+                              <v:form name="robot_form1" type="simple" method="POST" action="">
+                                <table>
+                                  <tr>
+                                    <td align="right">
+                                      <v:button action="simple" value="Import Targets" name="robot_button29" format="%s">
+                                        <v:on-post>
+                                          <![CDATA[
+                                            http_request_status ('HTTP/1.1 302 Found');
+                                            http_header(sprintf('Location: cont_page.vspx?page=2&sid=%s&realm=%s\r\n', self.sid , self.realm));
+                                            return;
+                                          ]]>
+                                        </v:on-post>
+                                      </v:button>
+                                    </td>
+                                    <td align="right">
+                                      <v:button action="simple" value="Import Queues" name="robot_button37" format="%s">
+                                        <v:on-post>
+                                          <![CDATA[
+                                            http_request_status ('HTTP/1.1 302 Found');
+                                            http_header(sprintf('Location: robot_queues.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
+                                            return;
+                                          ]]>
+                                        </v:on-post>
+                                      </v:button>
+                                    </td>
+                                  </tr>
+                                </table>
+                              </v:form>
+                            </td>
+                          </tr>
+                        </table>
+                        <div class="scroll_area">
+                          <table class="listing">
+                            <tr class="listing_header_row">
+                              <th>Description</th>
+                              <th>URL</th>
+                              <th>Pages (downloaded/total)</th>
+                              <th width="1%">Action</th>
+                            </tr>
+                            <?vsp
+                              declare _count, _all, idx integer;
+
+                              _count := idx := 0;
+                              set isolation='uncommitted';
+                              for select VS_DESCR, VS_HOST, VS_URL, VS_ROOT from WS.WS.VFS_SITE do
+                              {
+                                idx := 1;
+                                select count (*) into _count from WS.WS.VFS_QUEUE where VQ_HOST = VS_HOST and VQ_ROOT = VS_ROOT and VQ_STAT = 'retrieved';
+                                select count (*) into _all from WS.WS.VFS_QUEUE where VQ_HOST = VS_HOST and VQ_ROOT = VS_ROOT;
+                                self.r_count := self.r_count + 1;
+                                http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
+                            ?>
+                                <td class="listing_col"><?V VS_DESCR ?></td>
+                                <td class="listing_col"><?V y_trunc_uri ('http://' || VS_HOST || VS_URL) ?></td>
+                                <td class="listing_col_num"><?V cast(_count as varchar) ?>/<?V _all ?></td>
+                                <td class="listing_col_action">
+                                  <?vsp
+                                    http(concat('<a href="robot_urls_list.vspx?host=', VS_HOST, '&sid=', self.sid, '&realm=', self.realm, '&root='));
+                                    http_url (VS_ROOT);
+                                    http('"><img src="images/icons/edit_16.png" border="0" />&nbsp;Edit</a>');
+                                  ?>
+                                  <v:url name="exp1" value="Export" url="--sprintf ('robot_export.vspx?host=%U&url=%U&root=%U', VS_HOST,VS_URL,VS_ROOT)" />
+                                </td>
+                            <?vsp
+                                http ('</tr>');
+                              }
+                              if (idx = 0)
+                              {
+                            ?>
+                            <tr class="listing_count">
+                              <td class="listing_count" colspan="4">There are no retrieved sites</td>
+                            </tr>
+                            <?vsp
+                              }
+                            ?>
+                          </table>
+                        </div>
+                        <br/>
                       </td>
                     </tr>
                   </table>

@@ -9,7 +9,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -566,7 +566,9 @@ static void *
 box_read_symbol (dk_session_t *session, dtp_t dtp)
 {
   size_t length = (size_t) read_long (session);
-  char *string = (char *) dk_alloc_box (length + 1, DV_SYMBOL);
+  char *string;
+  MARSH_CHECK_LENGTH (length + 1);
+  MARSH_CHECK_BOX (string = (char *) dk_try_alloc_box (length + 1, DV_SYMBOL));
   session_buffered_read (session, string, (int) length);
   string[length] = 0;
   return (void *) string;

@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2014 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -95,7 +95,7 @@ generated_code = \
 $(generated_code): .generated
 
 .generated: Makefile.am gen_all_gates.sh gen_gate.sh gate_virtuoso.h plugin_lang25.h plugin_msdtc.h
-	cd $(top_srcdir)/libsrc/plugin; ./gen_all_gates.sh
+	cd $(top_srcdir)/libsrc/plugin; $(SHELL) $(srcdir)/gen_all_gates.sh
 	-rm -rf tmp
 	touch .generated
 

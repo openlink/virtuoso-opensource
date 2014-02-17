@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -58,8 +58,8 @@ int scn3_plineno = 1;
 int scn3_lineno_increment = 1;
 int scn3_lexdepth = 0;
 dk_set_t scn3_namespaces = NULL;
-scn3_paren_t scn3_parens[MAXLEXDEPTH];
-scn3_line_loc_t scn3_line_locs[MAX_PRAGMALINE_DEPTH];
+scn3_paren_t scn3_parens[SCN3_MAX_LEX_DEPTH];
+scn3_line_loc_t scn3_line_locs[SCN3_MAX_PRAGMALINE_DEPTH];
 int scn3_pragmaline_depth = 0;
 scn3_include_fragment_t scn3_include_stack [MAX_INCLUDE_DEPTH];
 int scn3_include_depth = 0;
@@ -75,7 +75,7 @@ scn3_pragma_line (char *text)
 #endif
   char *file_start;
   scn3_line_loc_t *sll;
-  if (scn3_pragmaline_depth >= MAX_PRAGMALINE_DEPTH)
+  if (scn3_pragmaline_depth >= SCN3_MAX_PRAGMALINE_DEPTH)
     return;
   sll = scn3_line_locs + scn3_pragmaline_depth;
   sll->sll_start_lineno = scn3_lineno;
@@ -128,7 +128,7 @@ scn3_pragma_line_push (void)
   scn3_line_loc_t *sll = scn3_line_locs + scn3_pragmaline_depth;
   sll->sll_pragma_lineno += scn3_lineno - sll->sll_start_lineno;
   scn3_pragmaline_depth++;
-  if (scn3_pragmaline_depth >= MAX_PRAGMALINE_DEPTH)
+  if (scn3_pragmaline_depth >= SCN3_MAX_PRAGMALINE_DEPTH)
     return;
   sll = scn3_line_locs + scn3_pragmaline_depth;
   sll->sll_start_lineno = scn3_lineno;
@@ -143,7 +143,7 @@ scn3_pragma_line_pop (void)
   scn3_line_loc_t *sll;
   if (0 == scn3_pragmaline_depth)
     yyerror ("More '#line pop' directives than there were '#line push'");
-  if (scn3_pragmaline_depth < MAX_PRAGMALINE_DEPTH)
+  if (scn3_pragmaline_depth < SCN3_MAX_PRAGMALINE_DEPTH)
     {
       sll = scn3_line_locs + scn3_pragmaline_depth;
       if (scn3_lexdepth != sll->sll_start_lexdepth)
@@ -208,7 +208,7 @@ scn3_get_file_name (void)
 void
 scn3_set_file_line (char *file, int file_nchars, int line_no)
 {
-  if (scn3_pragmaline_depth < MAX_PRAGMALINE_DEPTH)
+  if (scn3_pragmaline_depth < SCN3_MAX_PRAGMALINE_DEPTH)
     {
       scn3_line_loc_t *sll = scn3_line_locs + scn3_pragmaline_depth;
       sll->sll_start_lineno = scn3_lineno;
@@ -286,12 +286,14 @@ scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_sql_te
 #define TOK(name) { SV; RETURN_CODE (name); }
 
 #define TOKOPEN_AUX(close) do { \
-  if (scn3_lexdepth >= MAXLEXDEPTH) \
+  if (scn3_lexdepth >= SCN3_MAX_LEX_DEPTH) \
     { \
-      if (MAXLEXDEPTH == scn3_lexdepth) \
+      if (SCN3_MAX_LEX_DEPTH == scn3_lexdepth) \
         yyerror ("Too many opened parentheses"); \
       GPF_T; \
     } \
+  if (((close) == '}') && (scn3_lexdepth >= SCN3_MAX_BRACE_DEPTH)) \
+    yyerror ("Curly brace is nested too deep"); \
   if (scn3_lexdepth < 0) \
     GPF_T; \
   scn3_parens[scn3_lexdepth].sp_open_line = scn3_lineno; \

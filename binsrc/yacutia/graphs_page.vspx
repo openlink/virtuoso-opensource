@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2014 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page
+  name="graphs_page"
+  decor="yacutia_decor.vspx"
+  style="yacutia_style.xsl"
+  fast-render="1"
+  xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+  <v:method name="tab_element" arglist="in label varchar, in ndx varchar">
+    <![CDATA[
+      if (get_keyword ('page', self.vc_page.vc_event.ve_params, '2') = ndx)
+      {
+        http (label);
+      }
+      else
+      {
+        http (sprintf ('<a class="uddi" href="graphs_page.vspx?page=%s&amp;sid=%s&amp;realm=%s">%s</a>', ndx, self.sid, self.realm, label));
+      }
+    ]]>
+  </v:method>
+
+  <v:method name="tab_selected" arglist="in ndx varchar">
+    <![CDATA[
+      return case when (get_keyword ('page', self.vc_page.vc_event.ve_params, '2') = ndx) then 'page_tab_selected' else 'page_tab' end;
+    ]]>
+  </v:method>
+
+  <v:method name="rfc1808_compose_uri" arglist="in sch varchar, in host varchar, in path varchar, in params any, in qry varchar, in frag varchar">
+    <![CDATA[
+      declare pctr, plen integer;
+      declare final_iri varchar;
+
+      final_iri := '';
+      if (sch <> '')
+        final_iri := sch || ':';
+
+      if (sch in ('http', 'https', 'ftp') and host <> '' and not (host like '//%'))
+      {
+        final_iri := final_iri || '//' || host;
+      }
+      else
+      {
+        final_iri := final_iri || host;
+      }
+      if (__tag of vector = __tag (path))
+      {
+        plen := length (path);
+        for (pctr := 0; pctr < plen; pctr := pctr + 1)
+          final_iri := final_iri || '/' || path[pctr];
+
+        if (0 = plen)
+          final_iri := final_iri || '/';
+      }
+      else if ((path is not null) and (path <> ''))
+      {
+        if (path like '/%')
+          final_iri := final_iri || path;
+        else
+          final_iri := final_iri || '/' || path;
+      }
+      else
+      {
+        final_iri := final_iri || '/';
+      }
+      if (__tag of vector = __tag (params))
+      {
+        declare leadchar varchar;
+        leadchar := '?';
+        plen := length (params);
+        for (pctr := 0; pctr < plen; pctr := pctr + 2)
+        {
+          if ('Content' <> params[pctr])
+          {
+            final_iri := final_iri || leadchar || params[pctr] || '=' || params[pctr+1];
+            leadchar := '&';
+          }
+        }
+      }
+      else if (params is not null)
+      {
+        if (params <> '')
+          final_iri := final_iri || params;
+      }
+      final_iri := final_iri || qry;
+      if (frag <> '')
+        final_iri := final_iri || '#' || frag;
+
+      return final_iri;
+    ]]>
+  </v:method>
+
+  <v:method name="rgs_uri" arglist="inout params any">
+    <![CDATA[
+      return self.rfc1808_compose_uri ('', '', '/conductor/graphs_page.vspx', params, '', '');
+    ]]>
+  </v:method>
+
+  <v:method name="rgs_query_graphs" arglist="inout params any, out stat varchar, out msg varchar, out selected_graphs any">
+    <![CDATA[
+      declare graphs_by_group, graphs_by_like varchar;
+      declare sqlfilt_for_graphs, qry varchar;
+      declare meta any;
+
+      sqlfilt_for_graphs := '';
+      graphs_by_group := get_keyword ('graphs_by_group', params, '');
+      graphs_by_like := trim (get_keyword ('graphs_by_like', params, ''));
+      if (graphs_by_group <> '')
+      {
+        sqlfilt_for_graphs := sqlfilt_for_graphs || sprintf ('
+          and exists (select 1 from RDF_GRAPH_GROUP_MEMBER rggm where rggm.RGGM_GROUP_IID = iri_to_id (UNAME''%S'') and rggm.RGGM_MEMBER_IID = giid.RGU_GRAPH_IID)', graphs_by_group);
+      }
+      if (not (graphs_by_like in ('', '%')))
+      {
+        sqlfilt_for_graphs := sqlfilt_for_graphs || sprintf (' and (id_to_iri (giid.RGU_GRAPH_IID) like ''%S'')', graphs_by_like);
+      }
+      qry := 'select case (giid.RGU_GRAPH_IID)
+                       when #i0 then ''0Default for "world" graphs''
+                       when #i8192 then ''1Default for "private" graphs''
+                       else ''2'' || id_to_canonicalized_iri (giid.RGU_GRAPH_IID)
+                     end,
+                     giid.RGU_GRAPH_IID,
+                     id_to_canonicalized_iri (giid.RGU_GRAPH_IID)
+                from (select distinct RGU_GRAPH_IID from DB.DBA.RDF_GRAPH_USER) as giid
+               where (giid.RGU_GRAPH_IID in (#i0, #i8192)) or ((1=1) ' || sqlfilt_for_graphs || ')
+               order by 1';
+      stat := '00000';
+      msg := '';
+      exec (qry, stat, msg, vector(), 1000, meta, selected_graphs);
+    ]]>
+  </v:method>
+
+  <v:method name="rgs_row_of_graph_begin" arglist="inout params any, in sel_title varchar, in sel_iid IRI_ID, in sel_iri varchar">
+    <![CDATA[
+      declare ispriv, isgg integer;
+
+      ispriv := case
+        when exists (select 1 from RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = iri_to_id (UNAME'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs') and RGGM_MEMBER_IID = sel_iid)
+        then 1 else 0 end;
+      isgg := case
+        when exists (select 1 from RDF_GRAPH_GROUP where RGG_IID = sel_iid)
+        then 1 else 0 end;
+      http ('<td valign="top">\n');
+      http_value (subseq (sel_title, 1));
+      http ('</td>');
+      http ('<td valign="top">');
+      http (case when (sel_iri in (#i0, #i8192)) then '' when (ispriv) then 'Private graph' else 'World graph' end);
+      if (isgg)
+      {
+        declare membcount, privmembcount integer;
+        declare link_params any;
+        membcount := (select count (1) from RDF_GRAPH_GROUP_MEMBER sel where sel.RGGM_GROUP_IID = sel_iid);
+        privmembcount := (select count (1)
+          from RDF_GRAPH_GROUP_MEMBER sel join RDF_GRAPH_GROUP_MEMBER priv on (sel.RGGM_MEMBER_IID = priv.RGGM_MEMBER_IID)
+          where sel.RGGM_GROUP_IID = sel_iid and priv.RGGM_GROUP_IID = iri_to_id (UNAME'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs' ) );
+        link_params := tweak_by_keywords (params, 'set', 'graphs_by_group', id_to_iri (sel_iid), 'delete', 'mode', '', 'delete', 'graphs_by_like', '');
+        http (', and <a href="' || self.rgs_uri (link_params) || '">');
+        http (sprintf ('group of %d%s graphs', membcount, case when (membcount > 0 and privmembcount = 0) then ' public' when (membcount > 0 and privmembcount = membcount) then ' private' else '' end));
+        http ('</a>');
+      }
+      http ('</td>');
+    ]]>
+  </v:method>
+
+  <v:method name="rgs_pexplain" arglist="in perms integer">
+    <![CDATA[
+      return (case perms
+        when 0 then '----'
+        when 1 then 'Read'
+        when 3 then 'R/W'
+        when 7 then 'R/W+Sponge'
+        when 8 then 'DirList'
+        when 15 then 'Full'
+        when 1023 then 'Absolute'
+        else sprintf ('<font size="1">0hex</font>%x=%s', perms,
+          (case bit_and (perms, 1) when 0 then '-' else 'r' end) ||
+          (case bit_and (perms, 2) when 0 then '-' else 'w' end) ||
+          (case bit_and (perms, 4) when 0 then '-' else 's' end) ||
+          (case bit_and (perms, 8) when 0 then '-' else 'l' end) ||
+          sprintf ('+<font size="1">0hex</font>%x', bit_and (perms, 65535-15)) )
+        end );
+    ]]>
+  </v:method>
+
+  <v:method name="rgs_pagination_for_users_or_roles" arglist="inout params any, inout selected_users any, in uor varchar, in users_per_page integer">
+    <![CDATA[
+      declare uors_page, count_of_users_pages integer;
+
+      uors_page := atoi (get_keyword ('uors_page', params, '0'));
+      count_of_users_pages := __min (20, 1 + ((length (selected_users) - 1) / users_per_page));
+      uors_page := __max (0, __min (uors_page, count_of_users_pages - 1));
+      if (length (selected_users) > users_per_page)
+      {
+        declare pagectr integer;
+        if (length (selected_users) > users_per_page * count_of_users_pages)
+        {
+          http ('<p>Not all found ' || uor || 's are shown below, the following links scroll horisontally by first ' || users_per_page * 20 || ' ' || uor || 's:');
+        }
+        else
+        {
+          http ('<p>Not all found ' || uor || 's are shown below, the following links scroll horisontally by ' || uor || 's:');
+        }
+        for (pagectr := 0; pagectr < count_of_users_pages; pagectr := pagectr + 1)
+        {
+          if (pagectr)
+            http (',');
+
+          if (pagectr = uors_page)
+          {
+            http (' <b>');
+          }
+          else
+          {
+            http (' <a href="' || self.rgs_uri (tweak_by_keywords (params, 'set', 'uors_page', pagectr, 'delete', 'mode', '')) || '">');
+          }
+          http (selected_users[pagectr * users_per_page][0] || ' to ' || selected_users[__min ((pagectr+1) * users_per_page, length (selected_users)) - 1][0]);
+          if (pagectr = uors_page)
+          {
+            http ('</b>');
+          }
+          else
+          {
+            http ('</a>');
+          }
+        }
+        selected_users := subseq (selected_users, uors_page * users_per_page, __min ((uors_page+1) * users_per_page, length (selected_users)));
+      }
+    ]]>
+  </v:method>
+
+  <v:method name="rgs_pagination_for_graphs" arglist="inout params any, inout selected_graphs any, in graphs_per_page integer">
+    <![CDATA[
+      declare graphs_page, count_of_graphs_pages integer;
+
+      graphs_page := atoi (get_keyword ('graphs_page', params, '0'));
+      count_of_graphs_pages := __min (20, 1 + ((length (selected_graphs) - 1) / graphs_per_page));
+      graphs_page := __max (0, __min (graphs_page, count_of_graphs_pages - 1));
+      if (length (selected_graphs) > graphs_per_page)
+      {
+        declare pagectr integer;
+        if (length (selected_graphs) > graphs_per_page * count_of_graphs_pages)
+        {
+          http ('<p>Not all found graphs are shown below, the following links scroll by first ' || graphs_per_page * 20 || ' graphs:');
+        }
+        else
+        {
+          http ('<p>Not all found graphs are shown below, the following links scroll by graphs:');
+        }
+        for (pagectr := 0; pagectr < count_of_graphs_pages; pagectr := pagectr + 1)
+        {
+          if (pagectr)
+            http (',');
+
+          if (pagectr = graphs_page)
+          {
+            http (' <b>');
+          }
+          else
+          {
+            http (' <a href="' || self.rgs_uri (tweak_by_keywords (params, 'set', 'graphs_page', pagectr, 'delete', 'mode', '')) || '">');
+          }
+          http (subseq (selected_graphs[pagectr * graphs_per_page][0], 1) || ' to ' || subseq (selected_graphs[__min ((pagectr+1) * graphs_per_page, length (selected_graphs)) - 1][0], 1));
+          if (pagectr = graphs_page)
+          {
+            http ('</b>');
+          }
+          else
+          {
+            http ('</a>');
+          }
+        }
+        selected_graphs := subseq (selected_graphs, graphs_page * graphs_per_page, __min ((graphs_page+1) * graphs_per_page, length (selected_graphs)));
+      }
+    ]]>
+  </v:method>
+
+  <vm:pagetitle>WebDAV Content Management</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:menu>
+      <vm:menuitem value="Graphs Management"/>
+    </vm:menu>
+    <vm:header caption="Graphs Management">
+    </vm:header>
+    <vm:pagebody>
+      <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+        <tr>
+          <td>
+            <table cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td class="<?V self.tab_selected ('1') ?>" align="center" nowrap="1">
+                  <?vsp self.tab_element ('Graphs', '1'); ?>
+                </td>
+                <td class="<?V self.tab_selected ('2') ?>" align="center" nowrap="1">
+                  <?vsp self.tab_element ('Users Security', '2'); ?>
+                </td>
+                <td class="<?V self.tab_selected ('3') ?>" align="center" nowrap="1">
+                  <?vsp self.tab_element ('Roles Security', '3'); ?>
+                </td>
+                <td class="<?V self.tab_selected ('4') ?>" align="center" nowrap="1">
+                  <?vsp self.tab_element ('Security Audit', '4'); ?>
+                </td>
+                <td class="page_tab_empty" align="center" width="100%">
+                  &amp;nbsp;
+                </td>
+              </tr>
+            </table>
+            <table class="tab_page">
+              <tr>
+                <td valign="top">
+                  <v:template name="_tabtemplate1" type="simple" enabled="-- equ (get_keyword ('page', control.vc_page.vc_event.ve_params), '1')">
+                    <v:include url="sparql_graph.vspx"/>
+                  </v:template>
+                  <v:template name="_tabtemplate2" type="simple" enabled="-- equ (get_keyword ('page', control.vc_page.vc_event.ve_params, '2'), '2')">
+                    <v:include url="graphs_users_security.vspx"/>
+                  </v:template>
+                  <v:template name="_tabtemplate3" type="simple" enabled="-- equ (get_keyword ('page', control.vc_page.vc_event.ve_params), '3')">
+                    <v:include url="graphs_roles_security.vspx"/>
+                  </v:template>
+                  <v:template name="_tabtemplate4" type="simple" enabled="-- equ (get_keyword ('page', control.vc_page.vc_event.ve_params), '4')">
+                    <v:include url="graphs_audit_security.vspx"/>
+                  </v:template>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -70,6 +70,7 @@ JSO_CONST virtrdf SSG_SD_TRANSIT			0x1000	--!< Allows the use of transitivity ex
 JSO_CONST virtrdf SSG_SD_VOS_6				0x1FFF	--!< Allows everything that is supported by Virtuoso Open Source 6.0.0
 JSO_CONST virtrdf SSG_SD_SPARQL11_DRAFT			0x2000	--!< Allows the use of SPARQL 1.1 aggregates, BINDINGS, new built-in functions, MINUS, EXISTS syntax
 JSO_CONST virtrdf SSG_SD_SPARQL11_MORE			0x4000	--!< Allows the use of SPARQL 1.1 BIND, path expressions, entilement
+JSO_CONST virtrdf SSG_SD_NEED_LOAD_SERVICE_DATA		0x80000000	--!< Flags are not known for the service endpoint in question
 
 
 JSO_STRUCT_BEGIN rdf_val_range virtrdf ValRange		--!< Description of set of possible values of a variable or a format or an pattern item
@@ -127,7 +128,8 @@ JSO_SCALAR qmfExistingShortOfLongTmpl STRING OPTIONAL		--!< ... finds existing o
 JSO_SCALAR qmfExistingShortOfUriTmpl STRING OPTIONAL		--!< ... finds existing obj by uri
 JSO_SCALAR qmfExistingShortOfNiceSqlvalTmpl STRING OPTIONAL	--!< ... works like qmfExistingShortOfSqlvalTmpl for values of one selected data type, not suitable for other types
 -- Misc
-JSO_SCALAR qmfIsBijection BOOLEAN REQUIRED		--!< Nonzero if the format is bijection so long values are equal IFF short values of the type are equal
+JSO_SCALAR qmfIsBijection BOOLEAN REQUIRED		--!< Nonzero if the format is bijection to long values are equal IFF short values of the type are equal
+JSO_SCALAR qmfHasCheapSqlval BOOLEAN OPTIONAL		--!< Nonzero if conversions of short to sqlval and back are cheaper than to long and back
 JSO_SCALAR qmfMapsOnlyNullToNull BOOLEAN OPTIONAL	--!< Nonzero if the format gives NULL IFF short value is NULL
 JSO_SCALAR qmfDerefFlags BOOLEAN OPTIONAL		--!< Flags of IRI dereferencing
 JSO_SCALAR qmfIsStable BOOLEAN REQUIRED			--!< Nonzero if sql values are in order IFF of short values are in order

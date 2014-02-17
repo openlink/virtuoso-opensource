@@ -8,7 +8,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2014 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -144,13 +144,14 @@ then
     exit 1
 fi
 
-LOG + running sql script tcoll
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tcoll.sql
-if test $STATUS -ne 0
-then
-    LOG "***ABORTED: tcoll.sql"
-    exit 1
-fi
+# collation not supported in v7
+#LOG + running sql script tcoll
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tcoll.sql
+#if test $STATUS -ne 0
+#then
+#    LOG "***ABORTED: tcoll.sql"
+#    exit 1
+#fi
 
 LOG + running sql script tschema2
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tschema2.sql

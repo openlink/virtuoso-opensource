@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1069,8 +1069,8 @@ bif_imap_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 void
 bif_imap_init (void)
 {
-  bif_define_typed ("imap_get", bif_imap_get, &bt_varchar);
-	bif_define_typed ("imap4_login", bif_imap_login, &bt_varchar);
-	bif_define_typed ("imap4_command", bif_imap_command, &bt_varchar);
-	bif_define_typed ("imap4_logout", bif_imap_logout, &bt_varchar);
+  bif_define_ex ("imap_get", bif_imap_get, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("imap4_login", bif_imap_login, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("imap4_command", bif_imap_command, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("imap4_logout", bif_imap_logout, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 }

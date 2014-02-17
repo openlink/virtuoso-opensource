@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2014 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -184,7 +184,7 @@
 		  <v:button action="simple" style="image"  name="edit1" value="images/icons/edit_16.png"
 		    xhtml_alt="Edit Grants"
 		    xhtml_title="Edit Grants"
-		    text="&#160;Edit"
+		    text="&nbsp;Edit"
                     url="--concat('caps_browser.vspx?mode=edit&user_name=',(control.vc_parent as vspx_row_template).te_rowset[0])"/>
                 </td>
 <?vsp

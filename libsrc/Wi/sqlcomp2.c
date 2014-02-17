@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -89,7 +89,7 @@ ts_set_local_code (table_source_t * ts, int is_cluster)
   if (!ks || ks->ks_key->key_is_col)
     return; /* inx op that does not join main row */
   if (ts->src_gen.src_after_test
-      && cv_is_local_1 (ts->src_gen.src_after_test, 0))
+      && cv_is_local_1 (ts->src_gen.src_after_test, CV_NO_INDEX))
     {
       ks->ks_local_test = ts->src_gen.src_after_test;
       ts->src_gen.src_after_test = NULL;
@@ -146,7 +146,6 @@ fun_ref_free (fun_ref_node_t * fref)
   dk_set_free (fref->fnr_distinct_ha);
   dk_set_free (fref->fnr_setps);
   clb_free (&fref->clb);
-  dk_free_box ((box_t)fref->fnr_ssa.ssa_save);
   dk_set_free (fref->fnr_select_nodes);
   dk_set_free (fref->fnr_prev_hash_fillers);
 }
@@ -486,12 +485,27 @@ sqlc_select_as (state_slot_t ** sls, caddr_t ** as_list)
   END_DO_BOX;
 }
 
+int
+qr_has_sort_oby (query_t * qr)
+{
+  DO_SET (setp_node_t *, setp, &qr->qr_nodes)
+    {
+      if (IS_QN (setp, setp_node_input) && setp->setp_ha && HA_ORDER == setp->setp_ha->ha_op)
+	return 1;
+    }
+  END_DO_SET();
+  return 0;
+}
+
 
 void
 sqlc_select_top (sql_comp_t * sc, select_node_t * sel, ST * tree,
 		 dk_set_t * code)
 {
   ST * top = SEL_TOP (tree);
+  ST * texp = tree->_.select_stmt.table_exp;
+  if (texp && texp->_.table_exp.order_by && qr_has_sort_oby (sc->sc_cc->cc_query))
+    return;
   if (!top || SEL_IS_TRANS (tree))
     return;
   sc->sc_top = top;
@@ -937,7 +951,8 @@ sql_stmt_comp (sql_comp_t * sc, ST ** ptree)
 }
 
 
-semaphore_t *parse_sem;
+dk_mutex_t *parse_mtx;
+du_thread_t * parse_mtx_owner;
 
 char *
 wrap_sql_string (const char *text)
@@ -1002,6 +1017,21 @@ sc_free (sql_comp_t * sc)
 #endif
       dk_free_tree (sc->sc_big_ssl_consts);
     }
+  if (sc->sc_qn_to_dfe)
+    hash_table_free (sc->sc_qn_to_dfe);
+  /*if left due to error in vec */
+  if (sc->sc_vec_ssl_def)
+    hash_table_free (sc->sc_vec_ssl_def);
+  if (sc->sc_vec_ssl_shadow)
+    hash_table_free (sc->sc_vec_ssl_shadow);
+  if (sc->sc_vec_no_copy_ssls)
+    hash_table_free (sc->sc_vec_no_copy_ssls);
+  if (sc->sc_vec_cast_ssls)
+    hash_table_free (sc->sc_vec_cast_ssls);
+  if (sc->sc_vec_last_ref)
+    hash_table_free (sc->sc_vec_last_ref);
+  if (sc->sc_vec_save_shadow)
+    hash_table_free (sc->sc_vec_save_shadow);
 }
 
 query_t *
@@ -1121,7 +1151,7 @@ sqlc_hook (client_connection_t * cli, caddr_t * real_tree_ret, caddr_t * err_ret
     {
       return;
     }
-  semaphore_leave (parse_sem);
+  mutex_leave (parse_mtx);
   if (proc->qr_to_recompile)
     proc = qr_recompile (proc, NULL);
   p1 = (state_slot_t *) (proc->qr_parms ? proc->qr_parms->data : NULL);
@@ -1129,7 +1159,7 @@ sqlc_hook (client_connection_t * cli, caddr_t * real_tree_ret, caddr_t * err_ret
     {
 
       log_error ("SQLPrepare hook must take at least 1 reference parameter");
-      semaphore_enter (parse_sem);
+      mutex_enter (parse_mtx);
       return;
     }
   tree = box_copy_tree (*real_tree_ret);
@@ -1139,7 +1169,7 @@ sqlc_hook (client_connection_t * cli, caddr_t * real_tree_ret, caddr_t * err_ret
 		 NULL, NULL, params, NULL, 0);
   dk_free_box ((caddr_t) params);
  SET_THR_TMP_POOL (saved_thr_mem_pool);
-  semaphore_enter (parse_sem);
+  mutex_enter (parse_mtx);
   sqlc_set_client (cli);
   if (err_ret)
     *err_ret = err;
@@ -1296,10 +1326,11 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   cc.cc_query = qr;
 
   sqlc_compile_hook (cli, string2, err);
-  if (!parse_sem)
-    parse_sem = semaphore_allocate (1);
-  if (parse_sem->sem_entry_count > 1)
-    GPF_T1 ("compiler parse sem entry count > 1");
+  if (!parse_mtx)
+    {
+      parse_mtx = mutex_allocate ();
+      mutex_option (parse_mtx, "parse_mtx", NULL, NULL);
+    }
   if (!nested_sql_comp)
     {
       sql_warnings_clear ();
@@ -1311,7 +1342,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
     cr_type = SQLC_PARSE_ONLY;
   else
     {
-      semaphore_enter (parse_sem);
+      mutex_enter (parse_mtx);
       inside_sem = 1;
     }
   SCS_STATE_PUSH;
@@ -1369,7 +1400,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	      sql_pop_all_buffers ();
 	      SCS_STATE_POP;
 	      if (inside_sem)
-	        semaphore_leave (parse_sem);
+		mutex_leave (parse_mtx);
 	      POP_CATCH;
 	      if (*err && strstr ((*(caddr_t**)err)[2], "RDFNI") )
 		{
@@ -1393,7 +1424,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	{
           if (inside_sem)
             {
-              semaphore_leave (parse_sem);
+              mutex_leave (parse_mtx);
               inside_sem = 0;
             }
 	}
@@ -1411,7 +1442,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	  qr_free (qr);
 	  POP_CATCH;
 	  if (inside_sem)
-	    semaphore_leave (parse_sem);
+	    mutex_leave (parse_mtx);
 	  return ((query_t*) tree1);
 	}
       if (cr_type == SQLC_TRY_SQLO)
@@ -1528,10 +1559,9 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
     SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_META, NULL);
 
   sqlc_set_client (old_cli);
-  /* TREE_CHECK (tree); */
   SCS_STATE_POP;
   if (inside_sem)
-    semaphore_leave (parse_sem);
+    mutex_leave (parse_mtx);
   if (qr)
     {
       qr->qr_text = SET_QR_TEXT(qr,sc.sc_text);
@@ -1551,8 +1581,6 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
       da_sub (&cli->cli_activity, &tmp);
       cli->cli_compile_activity.da_memory = sqlc_mem;
     }
-/*  dk_free_tree ((caddr_t) tree);*/
-/*  dk_free (string, -1); */
   sc_free (&sc);
 
   if (qr)
@@ -1625,9 +1653,11 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 		  static char *ua_header = "--#pragma bootstrap user-aggregate\n";
 		  caddr_t string3 = dk_alloc_box (strlen (ua_header)+strlen(string2)+1, DV_STRING);
 		  snprintf (string3, box_length (string3), "%s%s", ua_header, string2);
-	          return (sqlc_make_proc_store_qr (cli, qr, string3));
+		  qr = sqlc_make_proc_store_qr (cli, qr, string3);
+	          return qr;
 		}
-	      return (sqlc_make_proc_store_qr (cli, qr, string2));
+	      qr = sqlc_make_proc_store_qr (cli, qr, string2);
+	      return qr;
 	    }
 	}
     }
@@ -1660,7 +1690,7 @@ dbg_sql_compile_static (const char *file, int line, const char *string2, client_
   sql_tree_t *tree = NULL;
   if (SQLC_STATIC_PRESERVES_TREE == cr_type)
     {
-      int cr_tree_type = ((NULL != parse_sem) && parse_sem->sem_entry_count) ? SQLC_PARSE_ONLY_REC : SQLC_PARSE_ONLY;
+      int cr_tree_type = ((NULL != parse_mtx) && global_scs && !sqlc_inside_sem) ? SQLC_PARSE_ONLY_REC : SQLC_PARSE_ONLY;
       tree = (sql_tree_t *)DBG_NAME(sql_compile_1) (DBG_ARGS string2, cli, err, cr_tree_type, NULL, NULL);
       if (NULL != err[0])
         return NULL;
@@ -1761,7 +1791,7 @@ sql_compile_static (const char *string2, client_connection_t * cli,
   sql_tree_t *tree = NULL;
   if (SQLC_STATIC_PRESERVES_TREE == cr_type)
     {
-      int cr_tree_type = ((NULL != parse_sem) && parse_sem->sem_entry_count) ? SQLC_PARSE_ONLY_REC : SQLC_PARSE_ONLY;
+      int cr_tree_type = ((NULL != parse_mtx) && global_scs && !sqlc_inside_sem) ? SQLC_PARSE_ONLY_REC : SQLC_PARSE_ONLY;
       tree = (sql_tree_t *)DBG_NAME(sql_compile_1) (DBG_ARGS string2, cli, err, cr_tree_type, NULL, NULL);
       if (NULL != err[0])
         return NULL;
@@ -2150,17 +2180,8 @@ sqlc_test (void)
 #ifdef MALLOC_DEBUG
 #undef sql_compile
 query_t *
-sql_compile (const char *string2, client_connection_t * cli, caddr_t * err, int store_procs)
+sql_compile (char *string2, client_connection_t * cli, caddr_t * err, int store_procs)
 {
   return dbg_sql_compile (__FILE__, __LINE__, string2, cli, err, store_procs);
 }
-
-#undef sql_proc_to_recompile
-query_t *
-sql_proc_to_recompile (const char *string2, client_connection_t * cli, caddr_t proc_name, int text_is_constant)
-{
-  return dbg_sql_proc_to_recompile (__FILE__, __LINE__, string2, cli, proc_name, text_is_constant);
-}
-
-
 #endif

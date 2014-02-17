@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -748,28 +748,34 @@ breakup_node_input (breakup_node_t * brk, caddr_t * inst, caddr_t * state)
       current += n_per_set;
       inst[brk->brk_current_slot] = (caddr_t) current;
       if (current == n_total)
-	SRC_IN_STATE ((data_source_t*) brk, inst) = NULL;
+	SRC_IN_STATE ((data_source_t *) brk, inst) = NULL;
       if (current > n_total)
 	return;
-      DO_BOX (state_slot_t *, out, oinx, brk->brk_output)
-	dc_reset (QST_BOX (data_col_t*, inst, out->ssl_index));
+      DO_BOX (state_slot_t *, out, oinx, brk->brk_output) 
+	dc_reset (QST_BOX (data_col_t *, inst, out->ssl_index));
       END_DO_BOX;
       for (set = 0; set < n_sets; set++)
 	{
 	  qi->qi_set = set;
 	  if (unbox (qst_get (inst, brk->brk_all_output[current - 1])))
 	    {
-	      qn_result ((data_source_t*)brk, inst, set);
-	  for (inx = 0; inx < n_per_set; inx++)
-	    {
-	      if (ssl_is_settable (brk->brk_output[inx]))
-		    qst_set (inst, brk->brk_output[inx], box_copy_tree (qst_get (inst, brk->brk_all_output[inx + current - n_per_set])));
+	      qn_result ((data_source_t *) brk, inst, set);
+	      for (inx = 0; inx < n_per_set; inx++)
+		{
+		  if (ssl_is_settable (brk->brk_output[inx]))
+		    {
+		      caddr_t val = box_copy_tree (qst_get (inst, brk->brk_all_output[inx + current - n_per_set]));
+		      qi->qi_set = QST_INT (inst, brk->src_gen.src_out_fill) - 1;
+		      qst_set (inst, brk->brk_output[inx], val);
+		      qi->qi_set = set;
+		    }
+		}
 	    }
 	}
-    }
       if (QST_INT (inst, brk->src_gen.src_out_fill))
-	qn_send_output ((data_source_t*) brk, inst);
-}
+	qn_send_output ((data_source_t *) brk, inst);
+      state = NULL;
+    }
 }
 
 
@@ -1015,7 +1021,6 @@ in_iter_free (in_iter_node_t * ii)
   dk_free_box ((caddr_t) ii->ii_values);
 }
 
-
 void
 sort_read_vec_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
 {
@@ -1045,12 +1050,16 @@ sort_read_vec_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
   last_set = QST_INT (inst, ts->clb.clb_nth_set);
   for (set = last_set; set < n_sets; set++)
     {
+      data_col_t * dc;
       qi->qi_set = qst_vec_get_int64 (inst, ks->ks_set_no, set);
       if (qi->qi_set < 0 || qi->qi_set >= n_sets)
 	{
 	  qi->qi_set = 0;
 	  sqlr_new_error ("MISCI", "SORTI",  "set no in reading top order by out of range..  Reprt the query to support");
 	}
+      dc = QST_BOX (data_col_t *, inst, setp->setp_sorted->ssl_index);
+      if (dc->dc_n_values <= qi->qi_set)
+	break;
       fill = unbox (qst_get (inst, setp->setp_row_ctr));
       arr = (caddr_t **) qst_get (inst, setp->setp_sorted);
       QST_INT (inst, ts->clb.clb_nth_set) = set;

@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2014 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -136,7 +136,7 @@
 		xhtml_alt="Refresh page"
 		xhtml_title="Refresh page"
 		url="--http_path ()">
-	      </v:button>&#160;
+	      </v:button>&nbsp;
 	    Interface</th>
 	    <th>Port</th>
 	    <th><label class="req">HTTP Host</label></th>
@@ -225,7 +225,7 @@
 		      key-column="xenc_key"
 		      value-column="xenc_key"
 		      />
-		  &#160;
+		  &nbsp;
 		  <v:button action="simple" name="gen_key" value="Generate New" enabled="--xenc_key_exists ('id_rsa')">
 		      <v:on-post><![CDATA[
 			  declare k varchar;
@@ -426,6 +426,7 @@
 		    self.vc_error_message := msg;
 		    return;
                   }
+		commit work;  
 	     }
 	    http_listen_host (lhost, 0, ssl_opts);
 	    self.stopit := 0;

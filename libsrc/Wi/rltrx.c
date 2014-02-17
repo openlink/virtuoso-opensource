@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1387,8 +1387,6 @@ lt_blob_transact (it_cursor_t * itc, int op)
     {
       dk_hash_iterator_t current_blob;
       void *key, *data;
-      if (lt->lt_is_excl)
-	op = SQL_COMMIT; /* for an atomic mode txn, rollback is commit since no rb records kept.  So if blobs are del'd refs are not, so do as if commit no matter what and things will be consistent. */
       dk_hash_iterator (&current_blob, dirt);
       while (dk_hit_next (&current_blob, &key, &data))
 	{
@@ -1588,7 +1586,7 @@ lt_locks_to_array (lock_trx_t * lt, page_lock_t ** arr, int max, int * fill_ret,
   if (n_locks > max)
     {
       max = MIN (n_locks, 1000000);
-      arr = dk_alloc (sizeof (caddr_t) * max );
+      arr = dk_alloc_box (sizeof (caddr_t) * max, DV_BIN);
     }
   dk_hash_iterator (&hit, locks);
   mutex_enter (pl_ref_count_mtx);
@@ -1662,6 +1660,7 @@ int enable_mt_transact = 0;
 void
 lt_transact (lock_trx_t * lt, int op)
 {
+  int cpt_wait;
   it_cursor_t itc_auto;
   it_cursor_t *itc = &itc_auto;
   page_lock_t * pl_arr_auto[100];
@@ -1672,6 +1671,8 @@ lt_transact (lock_trx_t * lt, int op)
   for (binx = 0; binx < 4; binx++)
     lt_start_ts[binx] = wi_inst.wi_bps[binx]->bp_ts;
 #endif
+  cpt_wait = !(op & LT_CPT_NO_WAIT);
+  op = op & LT_CPT_FLAG_MASK;
   if (SQL_COMMIT == op && lt->lt_rc_w_id && lt->lt_rc_w_id != lt->lt_w_id)
     {
       /* non main branches may have some state if the main was gone by the time the state was acquired.  These will not commit */
@@ -1684,8 +1685,8 @@ lt_transact (lock_trx_t * lt, int op)
   ASSERT_IN_TXN;
   if (lt != wi_inst.wi_cpt_lt && wi_inst.wi_checkpoint_atomic)
     {
-      log_error ("transact (%d) while cpt atomic, trx no %d (status %d), cpt trx no %d, entering wait cpt",
-	  op, lt->lt_trx_no, lt->lt_status, (wi_inst.wi_cpt_lt ? wi_inst.wi_cpt_lt->lt_trx_no : 0));
+      log_error ("transact (%d) while cpt atomic, trx no %d (status %d), cpt trx no %d, ltt %p thr %p  entering wait cpt",
+		 op, lt->lt_trx_no, lt->lt_status, (wi_inst.wi_cpt_lt ? wi_inst.wi_cpt_lt->lt_trx_no : 0), lt, THREAD_CURRENT_THREAD);
       lt_wait_checkpoint ();
       log_error ("transact (%d) resumed, trx no %d (status %d)", op, lt->lt_trx_no, lt->lt_status);
     }
@@ -1770,7 +1771,7 @@ lt_transact (lock_trx_t * lt, int op)
 	}
 	}
       if (pl_arr != (page_lock_t**) &pl_arr_auto)
-	dk_free ((caddr_t)pl_arr, -1);
+	dk_free_box ((caddr_t) pl_arr);
       IN_LT_LOCKS (lt);
       if (0 == lt->lt_lock.ht_count)
 	break;
@@ -1807,7 +1808,8 @@ lt_transact (lock_trx_t * lt, int op)
   LT_CLOSE_ACK_THREADS(lt);
   lt->lt_close_ack_threads = 0;
   lt_resume_waiting_end (lt);
-  lt_wait_checkpoint_lt (lt);
+  if (cpt_wait)
+    lt_wait_checkpoint_lt (lt);
 #ifdef VIRTTP
   if (lt->lt_2pc._2pc_info)
     {

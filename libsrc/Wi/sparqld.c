@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -189,7 +189,7 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case BOP_PLUS: return "+";
     case BOP_MINUS: return "-";
     case BOP_TIMES: return "*";
-    case BOP_DIV: return "DIV";
+    case BOP_DIV: return "/";
     case BOP_MOD: return "MOD";
     }
 
@@ -274,6 +274,26 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
   return NULL;
 }
 
+void
+ssg_assert_sd_flags (spar_sqlgen_t *ssg, int sd_needed_flags, const char *feature_name)
+{
+  char *msg_tail = "";
+  if (sd_needed_flags & ssg->ssg_sd_flags)
+    return;
+  if (NULL != ssg->ssg_sd_current_sinv)
+    {
+      SPART *sinv = ssg->ssg_sd_current_sinv;
+      if ((SSG_SD_NEED_LOAD_SERVICE_DATA & ssg->ssg_sd_flags) && (SPAR_QNAME == SPART_TYPE (sinv->_.sinv.endpoint)))
+        {
+          client_connection_t *cli = ssg->ssg_sparp->sparp_sparqre->sparqre_cli;
+          if (NULL != cli)
+            connection_set (cli, box_dv_uname_string ("SPARQL_endpoint_to_load_service_metadata"), box_dv_short_string (sinv->_.sinv.endpoint->_.qname.val));
+          msg_tail = "; execute SPARQL LOAD SERVICE ... DATA and re-try";
+        }
+    }
+  spar_error (ssg->ssg_sparp, "%.100s does not support %.300s so SPARQL query can not be composed%.300s", ssg->ssg_sd_service_naming, feature_name, msg_tail);
+}
+
 int
 ssg_fields_are_equal (SPART *tree1, SPART *tree2)
 {
@@ -319,11 +339,10 @@ ssg_sdprin_local_varname (spar_sqlgen_t *ssg, ccaddr_t vname)
     {
       if (ssg->ssg_inside_t_inouts)
         spar_error (ssg->ssg_sparp, "External parameter ?%.100s should not appear in T_IN or T_OUT variable lists", vname);
-      if (!(SSG_SD_GLOBALS & ssg->ssg_sd_flags))
-        spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like external parameters) so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
+      ssg_assert_sd_flags (ssg, SSG_SD_GLOBALS, "SPARQL-BI extensions (like external parameters)");
     }
-  else if ((/* strchr (vname, '_') || --- Bug 14613 */ strchr (vname, '"') || strchr (vname, ':')) && !(SSG_SD_BI & ssg->ssg_sd_flags))
-    spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (say, SQL-like names of variables) so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
+  else if (/* strchr (vname, '_') || --- Bug 14613 */ strchr (vname, '"') || strchr (vname, ':'))
+    ssg_assert_sd_flags (ssg, SSG_SD_BI, "SPARQL-BI extensions (say, SQL-like names of variables)");
   ssg_putchar ('?');
   ssg_puts (vname);
 }
@@ -508,8 +527,7 @@ ssg_sdprint_option_list (spar_sqlgen_t *ssg, SPART **options)
         case LIMIT_L: continue; /* It's only a hint, not a requirement, and it's put sometimes via other parts of codegen, but not always */
         case SPAR_SERVICE_INV: continue; /* It's printed via dedicated code */
         }
-      if (!(SSG_SD_OPTION & ssg->ssg_sd_flags))
-        spar_error (ssg->ssg_sparp, "%.100s does not support OPTION (...) clause for triples so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
+      ssg_assert_sd_flags (ssg, SSG_SD_OPTION, "OPTION (...) clause for triples");
       if (inside_option_list)
         ssg_puts (", ");
       else
@@ -640,8 +658,7 @@ ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
         switch (tree->_.builtin.btype)
           {
           case LIKE_L:
-            if (!(SSG_SD_LIKE & ssg->ssg_sd_flags))
-              spar_error (ssg->ssg_sparp, "%.100s does not support LIKE operator so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
+            ssg_assert_sd_flags (ssg, SSG_SD_LIKE, "LIKE operator");
             ssg_puts (" (");
             ssg->ssg_indent++;
             ssg_sdprint_tree (ssg, tree->_.builtin.args[0]);
@@ -707,8 +724,7 @@ ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
 static const char *sparql11aggregates[] = { "AVG", "COUNT", "GROUP_CONCAT", "MAX", "MIN", "SAMPLE", "SUM" };
             if (ECM_MEM_NOT_FOUND != ecm_find_name (fname+13, sparql11aggregates, sizeof (sparql11aggregates)/sizeof (char *), sizeof (char *)))
               {
-                if (!(SSG_SD_BI_OR_SPARQL11_DRAFT & ssg->ssg_sd_flags))
-                  spar_error (ssg->ssg_sparp, "%.100s does not support %s aggregate function so SPARQL query can not be composed", ssg->ssg_sd_service_naming, fname+13);
+                ssg_assert_sd_flags (ssg, SSG_SD_BI_OR_SPARQL11_DRAFT, t_box_sprintf (100, "%.50s aggregate function", fname+13));
                 ssg_puts (fname+13);
                 goto fname_printed; /* see below */
               }
@@ -760,8 +776,7 @@ fname_printed:
         switch (tree->_.gp.subtype)
           {
           case SELECT_L:
-            if (!(SSG_SD_BI & ssg->ssg_sd_flags))
-              spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like nested SELECT) so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
+            ssg_assert_sd_flags (ssg, SSG_SD_BI, "SPARQL-BI extensions (like nested SELECT)");
             if ((gp_is_top_in_filter) && (ASK_L == tree->_.gp.subquery->_.req_top.subtype)
               && (0 == BOX_ELEMENTS_0 (tree->_.gp.options))
               && (0 == BOX_ELEMENTS_0 (tree->_.gp.subquery->_.req_top.sources))
@@ -998,8 +1013,7 @@ fname_printed:
         ssg->ssg_sd_graph_gp_nesting = 0;
         if ((NULL != tree->_.req_top.storage_name) && (tree->_.req_top.storage_name != uname_virtrdf_ns_uri_DefaultServiceStorage))
           {
-            if (!(SSG_SD_VIRTSPECIFIC & ssg->ssg_sd_flags))
-              spar_error (ssg->ssg_sparp, "%.100s does not support Virtuoso-specific extensions (like define input:storage) so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
+            ssg_assert_sd_flags (ssg, SSG_SD_VIRTSPECIFIC, "Virtuoso-specific extensions (like define input:storage)");
             ssg_puts ("define input:storage <");
             ssg_puts (tree->_.req_top.storage_name);
             ssg_puts ("> ");
@@ -1031,8 +1045,7 @@ fname_printed:
                 ssg_sdprint_tree (ssg, arg);
                 break;
               default:
-                if (!(SSG_SD_BI & ssg->ssg_sd_flags))
-                  spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like expressions in result list) so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
+                ssg_assert_sd_flags (ssg, SSG_SD_BI | SSG_SD_SPARQL11_MORE, "SPARQL-BI extensions (like expressions in result set)");
                 ssg_putchar ('(');
                 ssg->ssg_indent++;
                 ssg_sdprint_tree (ssg, arg);
@@ -1092,16 +1105,16 @@ fname_printed:
               }
             if (NULL != lim)
               {
-                if ((DV_LONG_INT != DV_TYPE_OF (lim)) && !(SSG_SD_BI & ssg->ssg_sd_flags))
-                  spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like expression in LIMIT clause) so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
+                if (DV_LONG_INT != DV_TYPE_OF (lim))
+                  ssg_assert_sd_flags (ssg, SSG_SD_BI, "SPARQL-BI extensions (like expression in LIMIT clause)");
                 ssg_newline (0);
                 ssg_puts ("LIMIT");
                 ssg_sdprint_tree (ssg, lim);
               }
             if (NULL != ofs)
               {
-                if ((DV_LONG_INT != DV_TYPE_OF (ofs)) && !(SSG_SD_BI & ssg->ssg_sd_flags))
-                  spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like expression in OFFSET clause) so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
+                if (DV_LONG_INT != DV_TYPE_OF (ofs))
+                  ssg_assert_sd_flags (ssg, SSG_SD_BI, "SPARQL-BI extensions (like expression in OFFSET clause)");
                 ssg_newline (0);
                 ssg_puts ("OFFSET");
                 ssg_sdprint_tree (ssg, ofs);
@@ -1250,11 +1263,20 @@ fname_printed:
           ssg->ssg_sd_forgotten_dot = 1;
         return;
       }
+    case BOP_MOD:
+      ssg_puts (" mod (");
+      ssg->ssg_indent++;
+      ssg_sdprint_tree (ssg, tree->_.bin_exp.left);
+      ssg_puts (", ");
+      ssg_sdprint_tree (ssg, tree->_.bin_exp.right);
+      ssg_putchar (')');
+      ssg->ssg_indent--;
+        return;
     case BOP_EQ: case BOP_NEQ:
     case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
     /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP! */
     case BOP_SAME: case BOP_NSAME:
-    case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
+    case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV:
     case BOP_AND: case BOP_OR:
       {
         if (SPART_TYPE (tree->_.bin_exp.left) < 1000)

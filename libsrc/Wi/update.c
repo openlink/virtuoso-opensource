@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -667,6 +667,7 @@ update_node_run_1 (update_node_t * upd, caddr_t * inst,
 	    new_rd.rd_make_ins_rbe = 1;
 	    if (!is_cluster)
 	      {
+	      itc_free_owned_params (main_itc);
 		ITC_START_SEARCH_PARS (main_itc);
 		for (inx = 0; inx < main_itc->itc_insert_key->key_n_significant; inx++)
 		  ITC_SEARCH_PARAM (main_itc, new_rd.rd_values[main_itc->itc_insert_key->key_part_in_layout_order[inx]]);
@@ -686,6 +687,7 @@ update_node_run_1 (update_node_t * upd, caddr_t * inst,
 	    if (ALL_KEYS != keys)
 	      dk_set_free (keys);
 	    rd_free (&rd);
+	  itc_free (main_itc);
 	    return;
 	  }
       }
@@ -924,7 +926,7 @@ update_node_run (update_node_t * upd, caddr_t * inst, caddr_t * state)
   QNCAST (QI, qi, inst);
   if (upd->src_gen.src_sets)
     {
-      if (!upd->upd_trigger_args)
+      if (!upd->upd_trigger_args || upd->upd_no_trig)
 	{
 	  update_node_vec_run (upd, inst, state);
 	  if (!upd->cms.cms_clrg && ROW_AUTOCOMMIT_DUE (qi, upd->upd_table, 10000))

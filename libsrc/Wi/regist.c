@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -360,13 +360,14 @@ int in_crash_dump = 0;
 void
 db_replay_registry_setting (caddr_t ent, caddr_t *err_ret)
 {
+  client_connection_t * cli = GET_IMMEDIATE_CLIENT_OR_NULL;
   if (ent[0] == 'X' && !in_crash_dump)
     {
       caddr_t err = NULL;
       query_t *qr = sql_compile (ent + 1, bootstrap_cli, &err, 0);
       if (qr)
 	{
-	  err = qr_quick_exec (qr, bootstrap_cli, "", NULL, 0);
+	  err = qr_quick_exec (qr, cli, "", NULL, 0);
 	  qr_free (qr);
 	}
       if (IS_BOX_POINTER (err))

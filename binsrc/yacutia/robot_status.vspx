@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2014 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -80,7 +80,7 @@
 		  <td align="left" class="listing_col_action">
 		  <v:button style="image" action="simple" value="images/icons/ref_16.png" url="--http_path ()"
                               xhtml_alt="Refresh page" xhtml_title="Refresh page"
-			       text="&#160;Refresh"
+			       text="&nbsp;Refresh"
 			       >
 			       <v:before-render><![CDATA[
 				 declare params any;
@@ -94,7 +94,7 @@
 		  </v:button>
 		  </td>
 		  <td>
-		    &#160;
+		    &nbsp;
 		  </td>
                   <td align="right">
 		      <v:url value="Back" name="robot_button25" url="robot_queues.vspx"/>  

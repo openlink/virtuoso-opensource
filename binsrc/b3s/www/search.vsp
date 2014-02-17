@@ -7,7 +7,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -389,10 +389,13 @@
         <?vsp if (squery <> '' and squery is not null) { ?>
          Alternative Linked Data Views:
 
-	       <?vsp if (VAD_CHECK_VERSION ('PivotViewer') is not null) { ?>
-	         <a href="/PivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>" title="PivotViewer page for exploring results and generating new queries" target="_blank">PivotViewer</a>
-	       <?vsp } ?>
+		<?vsp if (VAD_CHECK_VERSION ('html5pivotviewer') is not null) { ?>	
+		<a href="/HtmlPivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>" title="PivotViewer page for exploring results and generating new queries (HTML5)" target="_blank">PivotViewer</a> 
+		|
+		<?vsp } else if (VAD_CHECK_VERSION ('PivotViewer') is not null) { ?>	
+		<a href="/PivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>" title="PivotViewer page for exploring results and generating new queries (Silverlight)" target="_blank">PivotViewer</a> 
 	        |
+		<?vsp } ?>
 	       <?vsp if (VAD_CHECK_VERSION ('iSPARQL') is not null) {
 	         squery := ltrim(squery, 'sparql ');
            http (sprintf('&nbsp;<a href="/isparql/view/?query=%U&endpoint=/sparql&maxrows=50&default-graph-uri=&amp;resultview=browser" title="Interactive Query By Example oriented SPARQL UI" target="_blank">iSPARQL</a>',squery));
@@ -411,7 +414,7 @@
 	This work is licensed under a
 	<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-Share Alike 3.0 Unported License</a>.<br />
 	<?vsp fct_virt_info (); ?><br />
-	Copyright &copy; 2009-2013 OpenLink Software
+	Copyright &copy; 2009-<?V "LEFT" (datestring (now ()), 4)?> OpenLink Software 
       </div> <!-- #ft_b -->
     </div> <!-- #footer -->
   </body>

@@ -7,7 +7,7 @@
  *
  *  The iODBC driver manager.
  *  
- *  Copyright (C) 1999-2013 OpenLink Software <iodbc@openlinksw.com>
+ *  Copyright (C) 1999-2014 OpenLink Software <iodbc@openlinksw.com>
  *  All Rights Reserved.
  *
  *  This software is released under the terms of either of the following

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -37,6 +37,7 @@ class VirtuosoPoolManager {
   private static ThreadGroup thrGroup = null;
   private static Thread poolChecker = null;
   private static Thread propertyChecker = null;
+
 
   protected static VirtuosoPoolManager getInstance() {
     synchronized(lock) {
@@ -97,10 +98,21 @@ class VirtuosoPoolManager {
     return poolMgr;
   }
 
+
   protected void addPool(VirtuosoConnectionPoolDataSource pool) {
     synchronized(lock) {
      connPools.put(pool, null);
     }
   }
 
+
+  protected VirtuosoPoolStatistic[] getAll_statistics() {
+   VirtuosoConnectionPoolDataSource[] poolTmp = (VirtuosoConnectionPoolDataSource[])(connPools.keySet().toArray(new VirtuosoConnectionPoolDataSource[0]));
+   VirtuosoPoolStatistic[] retVal = new VirtuosoPoolStatistic[poolTmp.length];
+   for(int i = 0; i < poolTmp.length; i++) {
+      retVal[i] = poolTmp[i].get_statistics();
+      poolTmp[i] = null;
+    }
+    return retVal;
+  }
 }

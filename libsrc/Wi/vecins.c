@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2011 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -616,9 +616,12 @@ rd_vec_blob (it_cursor_t * itc, row_delta_t * rd, dbe_column_t * col, int icol, 
     }
   if (DV_DB_NULL != DV_TYPE_OF (data))
     {
+      int rc;
+      sql_type_t sqt2 = col->col_sqt;
       caddr_t bl = mp_alloc_box (ins_mp, DV_BLOB_LEN + 1, DV_STRING);
-      int rc = itc_set_blob_col (itc, (db_buf_t) bl, rd->rd_values[icol], NULL,
-	  BLOB_IN_INSERT, &col->col_sqt);
+      sqt2.sqt_class = NULL; /* if this is long udt or any, it is anified before now */
+      rc = itc_set_blob_col (itc, (db_buf_t)bl, rd->rd_values[icol], NULL,
+				 BLOB_IN_INSERT, &sqt2);
       rd->rd_values[icol] = bl;
       if (LTE_OK != rc)
 	{
@@ -875,6 +878,7 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
     n_rows = QST_INT (qst, ins->src_gen.src_prev->src_out_fill);
   else
     n_rows = qi->qi_n_sets;
+  ins_mp->mp_block_size = mp_block_size_sc (n_rows * 8 * n_parts);
   rds = (row_delta_t **) mp_alloc (ins_mp, n_rows * sizeof (caddr_t));
   if (!key->key_parts)
     sqlr_new_error ("42S11", "SR119", "Key %.300s has 0 parts. Create index probably failed", key->key_name);

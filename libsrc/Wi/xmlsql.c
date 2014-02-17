@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1982,9 +1982,9 @@ xmls_proc (query_instance_t * qi, caddr_t name)
 
   ddl_commit (qi);
 
-  semaphore_enter (parse_sem);
+  mutex_enter (parse_mtx);
   sqlc_target_rds (local_rds);
-  semaphore_leave (parse_sem);
+  mutex_leave (parse_mtx);
 
   {
     static query_t *xml_view_drop_proc_qr = NULL;

@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -77,8 +77,10 @@ extern caddr_t uname_SPECIAL_cc_bif_c_SUM;
 extern caddr_t uname_bif_c_contains;
 extern caddr_t uname_bif_c_spatial_contains;
 extern caddr_t uname_bif_c_spatial_intersects;
-extern caddr_t uname_bif_c_sp_contains;
-extern caddr_t uname_bif_c_sp_intersects;
+extern caddr_t uname_bif_c_st_contains;
+extern caddr_t uname_bif_c_st_intersects;
+extern caddr_t uname_bif_c_st_may_intersect;
+extern caddr_t uname_bif_c_st_within;
 extern caddr_t uname_bif_c_xcontains;
 extern caddr_t uname_bif_c_xpath_contains;
 extern caddr_t uname_bif_c_xquery_contains;
@@ -174,17 +176,57 @@ extern caddr_t uname_xml_ns_uri_colon_lang;
 extern caddr_t uname_xml_ns_uri_colon_space;
 extern caddr_t uname_xmlschema_ns_uri;
 extern caddr_t uname_xmlschema_ns_uri_hash;
+extern caddr_t uname_xmlschema_ns_uri_hash_ENTITY;
+extern caddr_t uname_xmlschema_ns_uri_hash_ENTITIES;
+extern caddr_t uname_xmlschema_ns_uri_hash_ID;
+extern caddr_t uname_xmlschema_ns_uri_hash_IDREF;
+extern caddr_t uname_xmlschema_ns_uri_hash_IDREFS;
+extern caddr_t uname_xmlschema_ns_uri_hash_NCName;
+extern caddr_t uname_xmlschema_ns_uri_hash_Name;
+extern caddr_t uname_xmlschema_ns_uri_hash_NMTOKEN;
+extern caddr_t uname_xmlschema_ns_uri_hash_NMTOKENS;
+extern caddr_t uname_xmlschema_ns_uri_hash_NOTATION;
+extern caddr_t uname_xmlschema_ns_uri_hash_QName;
 extern caddr_t uname_xmlschema_ns_uri_hash_any;
+extern caddr_t uname_xmlschema_ns_uri_hash_anyAtomicType;
+extern caddr_t uname_xmlschema_ns_uri_hash_anySimpleType;
+extern caddr_t uname_xmlschema_ns_uri_hash_anyType;
 extern caddr_t uname_xmlschema_ns_uri_hash_anyURI;
+extern caddr_t uname_xmlschema_ns_uri_hash_base64Binary;
 extern caddr_t uname_xmlschema_ns_uri_hash_boolean;
+extern caddr_t uname_xmlschema_ns_uri_hash_byte;
 extern caddr_t uname_xmlschema_ns_uri_hash_date;
 extern caddr_t uname_xmlschema_ns_uri_hash_dateTime;
+extern caddr_t uname_xmlschema_ns_uri_hash_dateTimeStamp;
 extern caddr_t uname_xmlschema_ns_uri_hash_decimal;
 extern caddr_t uname_xmlschema_ns_uri_hash_double;
+extern caddr_t uname_xmlschema_ns_uri_hash_duration;
+extern caddr_t uname_xmlschema_ns_uri_hash_dayTimeDuration;
+extern caddr_t uname_xmlschema_ns_uri_hash_yearMonthDuration;
 extern caddr_t uname_xmlschema_ns_uri_hash_float;
+extern caddr_t uname_xmlschema_ns_uri_hash_gDay;
+extern caddr_t uname_xmlschema_ns_uri_hash_gMonth;
+extern caddr_t uname_xmlschema_ns_uri_hash_gMonthDay;
+extern caddr_t uname_xmlschema_ns_uri_hash_gYear;
+extern caddr_t uname_xmlschema_ns_uri_hash_gYearMonth;
+extern caddr_t uname_xmlschema_ns_uri_hash_hexBinary;
+extern caddr_t uname_xmlschema_ns_uri_hash_int;
 extern caddr_t uname_xmlschema_ns_uri_hash_integer;
+extern caddr_t uname_xmlschema_ns_uri_hash_language;
+extern caddr_t uname_xmlschema_ns_uri_hash_long;
+extern caddr_t uname_xmlschema_ns_uri_hash_negativeInteger;
+extern caddr_t uname_xmlschema_ns_uri_hash_nonNegativeInteger;
+extern caddr_t uname_xmlschema_ns_uri_hash_nonPositiveInteger;
+extern caddr_t uname_xmlschema_ns_uri_hash_normalizedString;
+extern caddr_t uname_xmlschema_ns_uri_hash_positiveInteger;
+extern caddr_t uname_xmlschema_ns_uri_hash_short;
 extern caddr_t uname_xmlschema_ns_uri_hash_string;
 extern caddr_t uname_xmlschema_ns_uri_hash_time;
+extern caddr_t uname_xmlschema_ns_uri_hash_token;
+extern caddr_t uname_xmlschema_ns_uri_hash_unsignedByte;
+extern caddr_t uname_xmlschema_ns_uri_hash_unsignedInt;
+extern caddr_t uname_xmlschema_ns_uri_hash_unsignedLong;
+extern caddr_t uname_xmlschema_ns_uri_hash_unsignedShort;
 extern caddr_t unames_colon_number[20];
 
 #endif

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -110,6 +110,9 @@ long http_ses_trap = 0;
 int www_maintenance = 0;
 
 #define MAINTENANCE (NULL != www_maintenance_page && (wi_inst.wi_is_checkpoint_pending || www_maintenance || cpt_is_global_lock (NULL)))
+
+size_t dk_alloc_cache_total (void * cache);
+void thr_alloc_cache_clear (thread_t * thr);
 
 caddr_t
 temp_aspx_dir_get (void)
@@ -1799,6 +1802,24 @@ ws_header_line_to_array (caddr_t string)
   return headers;
 }
 
+static char *
+ws_get_mime_variant (char * mime, char ** found)
+{
+  static char * compat[] = {"text/plain", "text/*", NULL, NULL}; /* for now text/plain only, can be added more */
+  int inx;
+  *found = NULL;
+  for (inx = 0; NULL != compat[inx]; inx += 2)
+    {
+      if (!strcmp (compat[inx], mime))
+	{
+	  *found = compat[inx];
+	  return compat[inx+1];
+	}
+    }
+  return mime;
+}
+
+
 static const char *
 ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check_only, OFF_T clen, const char * charset)
 {
@@ -1818,7 +1839,7 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
   char buf [1000];
   caddr_t ctype = NULL, cenc = NULL;
   caddr_t * asked;
-  char * match = NULL;
+  char * match = NULL, * found = NULL;
   int inx;
   int ignore = (ws->ws_p_path_string ?
       ((0 == strnicmp (ws->ws_p_path_string, "http://", 7)) ||
@@ -1844,6 +1865,7 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
   asked = ws_split_ac_header (accept);
   DO_BOX (caddr_t, p, inx, asked)
     {
+      p = ws_get_mime_variant (p, &found);
       if (DVC_MATCH == cmp_like (mime, p, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR))
 	{
 	  match = p;
@@ -1870,6 +1892,23 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
 	  HTTP_SET_STATUS_LINE (ws, code, 1);
 	}
       check_only = 0;
+    }
+  if (NULL != found && ws->ws_header && nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Type:") != NULL)
+    {
+      caddr_t * headers = ws_header_line_to_array (ws->ws_header);
+      dk_session_t * ses = strses_allocate ();
+      DO_BOX (caddr_t, h, inx, headers)
+	{
+	  if (nc_strstr ((unsigned char *) h, (unsigned char *) "Content-Type:") != NULL)
+	    continue;
+	  SES_PRINT (ses, h);
+	}
+      END_DO_BOX;
+      SES_PRINT (ses, "Content-Type: "); SES_PRINT (ses, found); SES_PRINT (ses, "\r\n");
+      dk_free_tree (ws->ws_header);
+      ws->ws_header = strses_string (ses);
+      dk_free_tree (headers);
+      dk_free_box (ses);
     }
   dk_free_tree (ctype);
   dk_free_tree (cenc);
@@ -1961,6 +2000,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
   if (ws->ws_xslt_url)
     {
       dk_session_t * strses = ws->ws_strses;
+      client_connection_t * cli = ws->ws_cli;
       caddr_t url,
 	  xslt_url = ws->ws_xslt_url, xslt_parms = ws->ws_xslt_params;
       caddr_t err = NULL, * exec_params = NULL;
@@ -1980,8 +2020,20 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	  exec_params[6] = box_string ("PARAMS"); exec_params[7] = (caddr_t) &xslt_parms;
 	  exec_params[8] = box_string ("MEDIATYPE"); exec_params[9] = (caddr_t) &media_type;
 	  exec_params[10] = box_string ("ENC"); exec_params[11] = (caddr_t) &xsl_encoding;
-	  err = qr_exec (ws->ws_cli, http_xslt_qr, CALLER_LOCAL, NULL, NULL, NULL, exec_params, NULL, 1);
-	  cli_set_slice (ws->ws_cli, NULL, QI_NO_SLICE, NULL);
+	  IN_TXN;
+	  if (!cli->cli_trx->lt_threads)
+	    lt_wait_checkpoint ();
+	  lt_threads_set_inner (cli->cli_trx, 1);
+	  LEAVE_TXN;
+	  err = qr_exec (cli, http_xslt_qr, CALLER_LOCAL, NULL, NULL, NULL, exec_params, NULL, 1);
+	  IN_TXN;
+	  if (err && (err != (caddr_t) SQL_NO_DATA_FOUND))
+	    lt_rollback (cli->cli_trx, TRX_CONT);
+	  else
+	    lt_commit (cli->cli_trx, TRX_CONT);
+	  lt_threads_set_inner (cli->cli_trx, 0);
+	  LEAVE_TXN;
+	  cli_set_slice (cli, NULL, QI_NO_SLICE, NULL);
 	  dk_free_box ((box_t) exec_params);
 	}
       if (err)
@@ -4363,6 +4415,11 @@ ws_init_func (ws_connection_t * ws)
       if (!ses)
 	{
 	  http_trace (("ws %p to sleep\n", ws));
+	  if (ws->ws_thr_cache_clear)
+	    {
+	      ws->ws_thr_cache_clear = 0;
+	      thr_alloc_cache_clear (ws->ws_thread);
+	    }
 	  resource_store (ws_dbcs, (void*) ws);
 	  mutex_leave (ws_queue_mtx);
 	  semaphore_enter (ws->ws_thread->thr_sem);
@@ -5273,7 +5330,8 @@ bif_http_limited (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   IN_TXN;
   DO_SET (lock_trx_t *, lt, &all_trxs)
     {
-      if ((lt->lt_threads > 0 || lt_has_locks (lt)) && lt->lt_client && lt->lt_client->cli_ws && lt->lt_client->cli_ws->ws_limited)
+      if ((lt->lt_threads > 0 || lt_has_locks (lt)) && lt->lt_client && !lt->lt_client->cli_terminate_requested && 
+	  lt->lt_client->cli_ws && lt->lt_client->cli_ws->ws_limited)
 	limited ++;
     }
   END_DO_SET ();
@@ -6110,7 +6168,8 @@ decode_base64_impl (char * src, char * end, char * table)
        } /* unknown symbols are ignored */
     }
     if (i>0) {
-	for(;i<4;c[i++]=0); /* will leave padding nulls - does not matter here */
+	for(;i<4;c[i++]=0)
+	  ; /* will leave padding nulls - does not matter here */
        base64_store24(&d, c);
     }
     *d=0;
@@ -7499,6 +7558,14 @@ caddr_t
 int_client_ip (query_instance_t * qi, long dns_name)
 {
   caddr_t iaddr, ret;
+
+  if (!qi->qi_client->cli_ws && !qi->qi_client->cli_session) /* via scheduler or some internal client */
+    {
+      if (dns_name)
+	return box_dv_short_string ("localhost");
+      else
+	return box_dv_short_string ("127.0.0.1");
+    }
 
   if (!qi->qi_client->cli_ws)
     iaddr = http_client_ip (qi->qi_client->cli_session->dks_session);
@@ -9812,7 +9879,7 @@ bif_sysacl_compose (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       caddr_t src_grp = src [gid_ctr*2];
       dtp_t src_grp_dtp = DV_TYPE_OF (src_grp);
       caddr_t src_perm = src [gid_ctr*2 + 1];
-      user_t *grp;
+      user_t *grp = NULL;
       boxint gid;
       boxint perm;
       if (DV_LONG_INT == src_grp_dtp)
@@ -10028,7 +10095,7 @@ bif_sysacl_bit1_of_tree_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
   DC_CHECK_LEN (dc, qi->qi_n_sets - 1);
   SET_LOOP
     {
-      caddr_t sysacl, user_name_or_id;
+      caddr_t sysacl = NULL, user_name_or_id = NULL;
       int sysacl_row_no, user_row_no;
       int bit1;
       if (SSL_REF == sysacl_ssl->ssl_type)
@@ -10810,17 +10877,16 @@ http_init_part_one ()
   DAV_CHAR_ESCAPE ('&', "%26");
   DAV_CHAR_ESCAPE ('"', "%22");
 
-  bif_define_typed ("http_auth", bif_http_auth, &bt_varchar);
-  bif_define_typed ("http_client_ip", bif_http_client_ip, &bt_varchar);
-  bif_define_typed ("sys_connected_server_address", bif_sys_connected_server_address, &bt_varchar);
+  bif_define_ex ("http_auth", bif_http_auth, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("http_client_ip", bif_http_client_ip, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("sys_connected_server_address", bif_sys_connected_server_address, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 
   bif_define ("http_rewrite", bif_http_rewrite);
   bif_define ("http_enable_gz", bif_http_enable_gz);
-  bif_define ("http_header", bif_http_header);
-  bif_define ("http_response_header", bif_http_header);
+  bif_define_ex ("http_header", bif_http_header, BMD_ALIAS, "http_response_header", BMD_DONE);
   bif_define ("http_host", bif_http_host);
-  bif_define_typed ("http_header_get", bif_http_header_get, &bt_varchar);
-  bif_define_typed ("http_header_array_get", bif_http_header_array_get, &bt_any);
+  bif_define_ex ("http_header_get", bif_http_header_get, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("http_header_array_get", bif_http_header_array_get, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define ("http", bif_http_result);
   bif_define ("http_xmlelement_start", bif_http_xmlelement_start);
   bif_define ("http_xmlelement_empty", bif_http_xmlelement_empty);
@@ -10833,29 +10899,29 @@ http_init_part_one ()
   bif_define ("http_file", bif_http_file);
   bif_define ("http_proxy", bif_http_proxy);
   bif_define ("http_request_status", bif_http_request_status);
-  bif_define_typed ("http_request_status_get", bif_http_request_status_get, &bt_varchar);
+  bif_define_ex ("http_request_status_get", bif_http_request_status_get, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_typed (ENC_B64_NAME, bif_encode_base64, &bt_varchar);
   bif_define_typed (DEC_B64_NAME, bif_decode_base64, &bt_varchar);
-  bif_define_typed ("encode_base64url", bif_encode_base64url, &bt_varchar);
-  bif_define_typed ("decode_base64url", bif_decode_base64url, &bt_varchar);
-  bif_define_typed ("http_root", bif_http_root, &bt_varchar);
-  bif_define_typed ("dav_root", bif_dav_root, &bt_varchar);
-  bif_define_typed ("http_path", bif_http_path, &bt_varchar);
+  bif_define_ex ("encode_base64url", bif_encode_base64url, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("decode_base64url", bif_decode_base64url, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("http_root", bif_http_root, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("dav_root", bif_dav_root, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("http_path", bif_http_path, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("http_internal_redirect", bif_http_internal_redirect);
 #if 0
-  bif_define_typed ("http_get", bif_http_get, &bt_varchar);
+  bif_define_ex ("http_get", bif_http_get, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 #endif
-  bif_define_typed ("http_client_cache_enable", bif_http_client_cache_enable, &bt_varchar);
-  bif_define_typed ("string_output", bif_string_output, &bt_varchar);
-  bif_define_typed ("string_output_string", bif_string_output_string, &bt_varchar);
+  bif_define_ex ("http_client_cache_enable", bif_http_client_cache_enable, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("string_output", bif_string_output, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("string_output_string", bif_string_output_string, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("string_output_flush", bif_string_output_flush);
   bif_define ("http_output_flush", bif_http_output_flush);
-  bif_define_typed ("server_http_port", bif_server_http_port, &bt_varchar);
-  bif_define_typed ("server_https_port", bif_server_https_port, &bt_varchar);
+  bif_define_ex ("server_http_port", bif_server_http_port, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("server_https_port", bif_server_https_port, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("http_xslt", bif_http_xslt);
-  bif_define_typed ("ses_read_line", bif_ses_read_line, &bt_varchar);
-  bif_define_typed ("ses_read", bif_ses_read, &bt_varchar);
-  bif_define_typed ("ses_can_read_char", bif_ses_can_read_char, &bt_integer);
+  bif_define_ex ("ses_read_line", bif_ses_read_line, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("ses_read", bif_ses_read, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("ses_can_read_char", bif_ses_can_read_char, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define("http_flush", bif_http_flush);
   bif_define ("http_pending_req", bif_http_pending_req);
   bif_define ("http_kill", bif_http_kill);
@@ -10864,48 +10930,48 @@ http_init_part_one ()
   bif_define ("http_unlock", bif_http_unlock);
   bif_define ("http_request_header", bif_http_request_header);
   bif_define ("http_request_header_full", bif_http_request_header_full);
-  bif_define_typed ("http_param", bif_http_param, &bt_any);
-  bif_define_typed ("http_set_params", bif_http_set_params, &bt_any);
-  bif_define_typed ("http_body_read", bif_http_body_read, &bt_any);
-  bif_define_typed ("__http_stream_params", bif_http_stream_params, &bt_any);
-  bif_define_typed ("is_http_ctx", bif_is_http_ctx, &bt_any);
-  bif_define_typed ("is_https_ctx", bif_is_https_ctx, &bt_any);
-  bif_define_typed ("http_is_flushed", bif_http_is_flushed, &bt_any);
+  bif_define_ex ("http_param", bif_http_param, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("http_set_params", bif_http_set_params, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("http_body_read", bif_http_body_read, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("__http_stream_params", bif_http_stream_params, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("is_http_ctx", bif_is_http_ctx, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("is_https_ctx", bif_is_https_ctx, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("http_is_flushed", bif_http_is_flushed, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define ("https_renegotiate", bif_https_renegotiate);
-  bif_define_typed ("http_debug_log", bif_http_debug_log, &bt_any);
+  bif_define_ex ("http_debug_log", bif_http_debug_log, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define("http_login_failed", bif_http_login_failed);
 #ifdef VIRTUAL_DIR
-  bif_define_typed ("http_physical_path", bif_http_physical_path, &bt_varchar);
+  bif_define_ex ("http_physical_path", bif_http_physical_path, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("http_map_table", bif_http_map_table);
-  bif_define_typed ("http_map_del", bif_http_map_del, &bt_varchar);
-  bif_define_typed ("http_listen_host", bif_http_listen_host, &bt_varchar);
-  bif_define_typed ("http_map_get", bif_http_map_get, &bt_any);
-  bif_define_typed ("http_request_get", bif_http_request_get, &bt_varchar);
-  bif_define_typed ("http_physical_path_resolve", bif_http_physical_path_resolve, &bt_varchar);
+  bif_define_ex ("http_map_del", bif_http_map_del, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("http_listen_host", bif_http_listen_host, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("http_map_get", bif_http_map_get, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("http_request_get", bif_http_request_get, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("http_physical_path_resolve", bif_http_physical_path_resolve, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 #endif
-  bif_define_typed ("http_dav_uid", bif_http_dav_uid, &bt_integer);
-  bif_define_typed ("http_admin_gid", bif_http_admin_gid, &bt_integer);
-  bif_define_typed ("http_nobody_uid", bif_http_nobody_uid, &bt_integer);
-  bif_define_typed ("http_nogroup_gid", bif_http_nogroup_gid, &bt_integer);
-  bif_define_typed ("http_auth_verify", bif_http_auth_verify, &bt_any);
-  bif_define_typed ("http_acl_set", bif_http_acl_set, &bt_any);
-  bif_define_typed ("http_acl_get", bif_http_acl_get, &bt_any);
-  bif_define_typed ("http_acl_remove", bif_http_acl_remove, &bt_any);
-  bif_define_typed ("http_acl_stats", bif_http_acl_stats, &bt_any);
+  bif_define_ex ("http_dav_uid", bif_http_dav_uid, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("http_admin_gid", bif_http_admin_gid, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("http_nobody_uid", bif_http_nobody_uid, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("http_nogroup_gid", bif_http_nogroup_gid, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("http_auth_verify", bif_http_auth_verify, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("http_acl_set", bif_http_acl_set, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("http_acl_get", bif_http_acl_get, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("http_acl_remove", bif_http_acl_remove, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("http_acl_stats", bif_http_acl_stats, BMD_RET_TYPE, &bt_any, BMD_DONE);
 
-  bif_define_typed ("sysacl_compose", bif_sysacl_compose, &bt_varchar);
-  bif_define_typed ("sysacl_direct_bits_of_user", bif_sysacl_direct_bits_of_user, &bt_integer);
-  bif_define_typed ("sysacl_all_bits_of_tree", bif_sysacl_all_bits_of_tree, &bt_integer);
-  bif_define_typed ("sysacl_bit1_of_tree", bif_sysacl_bit1_of_tree, &bt_integer);
+  bif_define_ex ("sysacl_compose", bif_sysacl_compose, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("sysacl_direct_bits_of_user", bif_sysacl_direct_bits_of_user, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("sysacl_all_bits_of_tree", bif_sysacl_all_bits_of_tree, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("sysacl_bit1_of_tree", bif_sysacl_bit1_of_tree, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_set_vectored (bif_sysacl_bit1_of_tree, bif_sysacl_bit1_of_tree_vec);
 
   bif_define ("http_url_cache_set", bif_http_url_cache_set);
   bif_define ("http_url_cache_get", bif_http_url_cache_get);
   bif_define ("http_url_cache_remove", bif_http_url_cache_remove);
 
-  bif_define_typed ("tcpip_gethostbyname", bif_tcpip_gethostbyname, &bt_varchar);
-  bif_define_typed ("tcpip_gethostbyaddr", bif_tcpip_gethostbyaddr, &bt_varchar);
-  bif_define_typed ("tcpip_local_interfaces", bif_tcpip_local_interfaces, &bt_any);
+  bif_define_ex ("tcpip_gethostbyname", bif_tcpip_gethostbyname, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("tcpip_gethostbyaddr", bif_tcpip_gethostbyaddr, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("tcpip_local_interfaces", bif_tcpip_local_interfaces, BMD_RET_TYPE, &bt_any, BMD_DONE);
 
   bif_define ("http_full_request", bif_http_full_request);
   bif_define ("http_get_string_output", bif_http_get_string_output);
@@ -10920,8 +10986,8 @@ http_init_part_one ()
   bif_define ("http_keep_session", bif_http_keep_session);
   bif_define ("http_recall_session", bif_http_recall_session);
   bif_define ("http_current_charset", bif_http_current_charset);
-  bif_define_typed ("http_status_set", bif_http_status_set, &bt_varchar);
-  bif_define_typed ("http_methods_set", bif_http_methods_set, &bt_any);
+  bif_define_ex ("http_status_set", bif_http_status_set, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("http_methods_set", bif_http_methods_set, BMD_RET_TYPE, &bt_any, BMD_DONE);
   ws_cli_sessions = hash_table_allocate (100);
   ws_cli_mtx = mutex_allocate ();
 #ifdef VIRTUAL_DIR
@@ -10975,6 +11041,8 @@ http_init_part_one ()
   return 1;
 }
 
+dk_set_t ws_threads;
+
 void
 http_threads_allocate (int n_threads)
 {
@@ -10993,7 +11061,55 @@ http_threads_allocate (int n_threads)
 
       ws->ws_thread = thr->dkt_process;
       resource_store (ws_dbcs, (void*) ws);
+      dk_set_push (&ws_threads, ws);
     }
+}
+
+void
+ws_thr_cache_clear ()
+{
+#define WS_MIN_RC 1
+  static void ** wst;
+  ws_connection_t * ws;
+  int i, n = 0;
+  if (!http_threads)
+    return;
+  if (!wst)
+    wst = (void **) malloc (http_threads * sizeof (void *));
+  DO_SET (ws_connection_t *, ws, &ws_threads)
+      ws->ws_thr_cache_clear = 1;
+  END_DO_SET();
+  if (ws_dbcs->rc_fill > WS_MIN_RC)
+    {
+      mutex_enter (ws_dbcs->rc_mtx);
+      n = ws_dbcs->rc_fill;
+      memcpy (wst, ws_dbcs->rc_items, n * sizeof (void*));
+      ws_dbcs->rc_fill = WS_MIN_RC;
+      mutex_leave (ws_dbcs->rc_mtx);
+    }
+  else
+    return;
+  for (i = WS_MIN_RC; i < n; i++)
+    {
+      ws = (ws_connection_t *) wst[i];
+      thr_alloc_cache_clear (ws->ws_thread);
+      ws->ws_thr_cache_clear = 0;
+      resource_store (ws_dbcs, ws);
+    }
+}
+
+size_t dk_alloc_cache_total (void * cache);
+
+size_t
+http_threads_mem_report ()
+{
+  size_t cache_fill = 0;
+  DO_SET (ws_connection_t *, ws, &ws_threads)
+    {
+      cache_fill += dk_alloc_cache_total (ws->ws_thread->thr_alloc_cache);  
+    }
+  END_DO_SET();
+  return cache_fill;
 }
 
 extern int cl_no_init;

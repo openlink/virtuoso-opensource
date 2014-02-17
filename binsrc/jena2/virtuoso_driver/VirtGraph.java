@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -63,6 +63,7 @@ public class VirtGraph extends GraphBase
     static final String sinsert = "sparql insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
     static final String sdelete = "sparql delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
     static final int BATCH_SIZE = 5000;
+    static final int MAX_CMD_SIZE = 36000;
     static final String utf8 = "charset=utf-8";
     static final String charset = "UTF-8";
 
@@ -429,12 +430,12 @@ public class VirtGraph extends GraphBase
       if (n.isURI()) {
         return "<"+n+">";
       } else if (n.isBlank()) {
-        return "<_:"+n+">"; 
+        return "_:"+n; 
       } else if (n.isLiteral()) {
         String s;
         StringBuffer sb = new StringBuffer();
         sb.append("\"");
-        sb.append(escapeString(n.getLiteralValue().toString()));
+        sb.append(escapeString(n.getLiteralLexicalForm()));
         sb.append("\"");
 
         s = n.getLiteralLanguage();
@@ -804,18 +805,60 @@ public class VirtGraph extends GraphBase
 
     void delete(Iterator<Triple> it, List<Triple> list)
     {
+      String del_start = "sparql define output:format '_JAVA_' DELETE FROM <";
+      java.sql.Statement stmt = null;
+      int count = 0;
+      StringBuilder data = new StringBuilder(256);
+
+      data.append(del_start);
+      data.append(this.graphName);
+      data.append("> { ");
+
       try {
+        stmt = createStatement();
+
         while (it.hasNext())
         {
-          Triple triple = (Triple) it.next();
+          Triple t = (Triple) it.next();
 
           if (list != null)
-            list.add(triple);
+            list.add(t);
 
-          performDelete (triple);
+          StringBuilder row = new StringBuilder(256);
+          row.append(Node2Str(t.getSubject()));
+          row.append(' ');
+          row.append(Node2Str(t.getPredicate()));
+          row.append(' ');
+          row.append(Node2Str(t.getObject()));
+          row.append(" .\n");
+
+          if (count > 0 && data.length()+row.length() > MAX_CMD_SIZE) {
+            data.append(" }");
+	    stmt.execute(data.toString());
+
+	    data.setLength(0);
+            data.append(del_start);
+            data.append(this.graphName);
+            data.append("> { ");
+            count = 0;
+          }
+
+          data.append(row);
+          count++;
         }
+
+        if (count > 0) 
+        {
+          data.append(" }");
+	  stmt.execute(data.toString());
+        }
+      
       }	catch(Exception e) {
         throw new JenaException(e);
+      } finally {
+        try {
+          stmt.close();
+        } catch (Exception e) {}
       }
     }
 

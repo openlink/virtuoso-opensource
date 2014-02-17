@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3554,7 +3554,10 @@ xqr_serialize (xp_query_t * xqr, dk_session_t * ses)
   caddr_t text = xqr->xqr_key;
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (text)) /* If key is not a plain text but text plus namespace decls */
     text = ((caddr_t *)text)[0];
-  print_string (text, ses);
+  if (text)
+    print_string (text, ses);
+  else
+    print_int (0, ses);
 }
 
 
@@ -6678,7 +6681,7 @@ and the document will stay locked in that time */
 	}
       dk_free_tree (xtd->xout_media_type);
       xml_ns_2dict_clean (&(xtd->xd_ns_2dict));
-      dk_free ((caddr_t) xtd, -1 /* not sizeof (xml_tree_doc_t) because it may be doc made by lazy loader */);
+      dk_free_box ((caddr_t) xtd);
     }
 }
 
@@ -6686,7 +6689,7 @@ and the document will stay locked in that time */
 query_instance_t *
 qi_top_qi (query_instance_t * qi)
 {
-  if (-1 == (ptrlong)qi)
+  if ((-1 == (ptrlong)qi) || (NULL == qi))
     return NULL;
   while (IS_POINTER (qi->qi_caller))
     qi = qi->qi_caller;
@@ -6701,7 +6704,7 @@ DBG_NAME(xte_from_tree) (DBG_PARAMS caddr_t tree, query_instance_t * qi)
   size_t stack_sz = stack_elems * sizeof (xte_bmk_t);
   xte_bmk_t * newstack = (xte_bmk_t *) dk_alloc (stack_sz);
   xml_tree_ent_t * xte = (xml_tree_ent_t*) dk_alloc_box_zero (sizeof (xml_entity_un_t), DV_XML_ENTITY);
-  NEW_VARZ (xml_tree_doc_t, xtd);
+  NEW_BOX_VARZ (xml_tree_doc_t, xtd);
   xte->_ = &xec_tree_xe;
 #ifdef MALLOC_DEBUG
   xtd->xd_dbg_file = (char *) file;
@@ -7140,7 +7143,7 @@ DBG_NAME(xte_cut) (DBG_PARAMS xml_entity_t * xe, query_instance_t *qi)
   xml_tree_ent_t * tgt_xte = (xml_tree_ent_t*) dk_alloc_box_zero (sizeof (xml_entity_un_t), DV_XML_ENTITY);
   caddr_t *tree_copy;
   int add_new_root;
-  NEW_VARZ (xml_tree_doc_t, tgt_xtd);
+  NEW_BOX_VARZ (xml_tree_doc_t, tgt_xtd);
   tree_copy = (caddr_t *) (box_copy_tree ((caddr_t)(src_xte->xte_current)));
   add_new_root = ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree_copy)) ||
     (uname__root != ((caddr_t *)(tree_copy[0]))[0]) );
@@ -10735,7 +10738,7 @@ xml_tree_init (void)
   xquery_eval_cache = shuric_cache__LRU.shuric_cache_alloc (XP_EVAL_CACHE_SIZE, NULL);
   xpath_eval_cache = shuric_cache__LRU.shuric_cache_alloc (XP_EVAL_CACHE_SIZE, NULL);
 
-  bif_define_typed ("xml_tree_doc", bif_xml_tree_doc, &bt_xml_entity);
+  bif_define_ex ("xml_tree_doc", bif_xml_tree_doc, BMD_RET_TYPE, &bt_xml_entity, BMD_DONE);
   bif_define ("xml_doc_get_base_uri", bif_xml_doc_get_base_uri);
   bif_define ("xml_doc_assign_base_uri", bif_xml_doc_assign_base_uri);
   bif_define ("xml_doc_output_option", bif_xml_doc_output_option);
@@ -10745,7 +10748,7 @@ xml_tree_init (void)
   bif_define ("xml_tree_doc_set_ns_output", bif_xml_tree_doc_set_ns_output);
   bif_define ("xml_namespace_scope", bif_xml_namespace_scope);
   bif_define ("xtree_doc_get_dtd", bif_xtree_doc_get_dtd);
-  bif_define ("xpath_eval", bif_xpath_eval); /* not bif_define_typed ("xpath_eval", bif_xpath_eval, &bt_xml_entity); */
+  bif_define ("xpath_eval", bif_xpath_eval); /* not bif_define_ex ("xpath_eval", bif_xpath_eval, BMD_RET_TYPE, &bt_xml_entity, BMD_DONE); */
   bif_set_uses_index (bif_xpath_eval);
   bif_define ("xquery_eval", bif_xquery_eval);
   bif_set_uses_index (bif_xquery_eval);
@@ -10769,11 +10772,9 @@ xml_tree_init (void)
 #ifdef XPATHP_DEBUG
   bif_define ("xpathp_test", bif_xpathp_test);
 #endif
-  bif_define_typed ("xslt_format_number", bif_xslt_format_number, &bt_varchar);
-  bif_define ("updateXML", bif_updateXML);
-  bif_define ("updateXML_ent", bif_updateXML_ent);
-  bif_define ("XMLUpdate", bif_updateXML);
-  bif_define ("XMLUpdate_ent", bif_updateXML_ent);
+  bif_define_ex ("xslt_format_number", bif_xslt_format_number, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("updateXML", bif_updateXML, BMD_ALIAS, "XMLUpdate", BMD_DONE);
+  bif_define_ex ("updateXML_ent", bif_updateXML_ent, BMD_ALIAS, "XMLUpdate_ent", BMD_DONE);
   bif_define ("XMLReplace", bif_XMLReplace);
   bif_define ("XMLInsertBefore", bif_XMLInsertBefore);
   bif_define ("XMLInsertAfter", bif_XMLInsertAfter);

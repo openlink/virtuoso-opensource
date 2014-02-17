@@ -1,10 +1,8 @@
 --
---  $Id$
---
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1759,79 +1757,96 @@ create function "CatFilter_DAV_LIST_LOCKS" (in id any, in type char(1), in recur
 }
 ;
 
-
-create function "CatFilter_CONFIGURE" (in col any, in search_path varchar, in filter any, in auth_uname varchar := 'dav', in auth_upwd varchar := 'dav', in auth_uid integer := null) returns integer
+create function "CatFilter_CONFIGURE" (
+  in id any,
+  in params any,
+  in path varchar,
+  in filter any,
+  in auth_uname varchar := null,
+  in auth_upwd varchar := null,
+  in auth_uid integer := null) returns integer
 {
   declare cfid, rc, ctr integer;
   declare colname varchar;
   declare compilation, del_act any;
+
   compilation := vector ('', filter);
-  rc := DAV_DIR_FILTER_INT (search_path, 1, compilation, auth_uname, auth_upwd, auth_uid);
+  rc := DAV_DIR_FILTER_INT (path, 1, compilation, auth_uname, auth_upwd, auth_uid);
   if (isinteger (rc))
     return rc;
-  if (not isinteger (col))
+
+  if (DAV_HIDE_ERROR (id) is null)
     return -20;
-  colname := DAV_SEARCH_PATH (col, 'C');
+
+  colname := DAV_SEARCH_PATH (id, 'C');
   if (not (isstring (colname)))
     return -23;
-  rc := DAV_SEARCH_ID (search_path, 'C');
+
+  rc := DAV_SEARCH_ID (path, 'C');
   if (DAV_HIDE_ERROR (rc) is null)
     return rc;
-  if (search_path <> DAV_SEARCH_PATH (rc, 'C'))
+
+  if (path <> DAV_SEARCH_PATH (rc, 'C'))
     return -2;
-  if (search_path between colname and (colname || '\255\255\255\255'))
+
+  if (path between colname and (colname || '\255\255\255\255'))
     return -28;
-  rc := DAV_PROP_SET_INT (colname, 'virt:ResFilter-SearchPath', search_path, null, null, 0, 1, 1);
+
+  rc := DAV_PROP_SET_INT (colname, 'virt:Filter-Params', params, null, null, 0, 1, 1);
   if (DAV_HIDE_ERROR (rc) is null)
     return rc;
+
+  rc := DAV_PROP_SET_INT (colname, 'virt:ResFilter-SearchPath', path, null, null, 0, 1, 1);
+  if (DAV_HIDE_ERROR (rc) is null)
+    return rc;
+
   rc := DAV_PROP_SET_INT (colname, 'virt:ResFilter-ListCond', "ResFilter_ENCODE_FILTER" (compilation), null, null, 0, 1, 1);
   if (DAV_HIDE_ERROR (rc) is null)
     return rc;
+
   del_act := "ResFilter_MAKE_DEL_ACTION_FROM_CONDITION" (compilation);
-  -- dbg_obj_princ ('ResFilter_CONFIGURE has made del_action ', del_act, ' from ', compilation);
   rc := DAV_PROP_SET_INT (colname, 'virt:ResFilter-DelAction', "ResFilter_ENCODE_FILTER" (del_act), null, null, 0, 1, 1);
   if (DAV_HIDE_ERROR (rc) is null)
     return rc;
 
-  cfid := coalesce ((select CF_ID from WS.WS.SYS_DAV_CATFILTER where CF_SEARCH_PATH = search_path));
+  cfid := coalesce ((select CF_ID from WS.WS.SYS_DAV_CATFILTER where CF_SEARCH_PATH = path));
   if (cfid is null)
+  {
+    declare path_z varchar;
+
+    cfid := WS.WS.GETID ('CF');
+    insert into WS.WS.SYS_DAV_CATFILTER (CF_ID, CF_SEARCH_PATH)
+      values (cfid, path);
+
+    path_z := path || '\255\255\255\255';
+    for (select p.PROP_VALUE, p.PROP_PARENT_ID
+           from WS.WS.SYS_DAV_RES r join WS.WS.SYS_DAV_PROP p on (r.RES_ID = p.PROP_PARENT_ID)
+          where (r.RES_FULL_PATH between path and path_z) and (p.PROP_NAME = 'http://local.virt/DAV-RDF') and (p.PROP_TYPE = 'R')) do
+	  {
+	    "CatFilter_FEED_DAV_RDF_INVERSE" (PROP_VALUE, PROP_PARENT_ID, 0, cfid);
+	    ctr := ctr + 1;
+	    if (mod (ctr, 1000) = 0)
+	      commit work;
+	  }
+    commit work;
+    for (select COL_ID, COL_DET, WS.WS.COL_PATH (COL_ID) as _c_path from WS.WS.SYS_DAV_COL where COL_DET is not null and not (COL_DET like '%Filter')) do
     {
-      declare search_path_z varchar;
-      cfid := WS.WS.GETID ('CF');
-      insert into WS.WS.SYS_DAV_CATFILTER (CF_ID, CF_SEARCH_PATH) values (cfid, search_path);
-      search_path_z := search_path || '\255\255\255\255';
-      for (select p.PROP_VALUE, p.PROP_PARENT_ID
-        from WS.WS.SYS_DAV_RES r join WS.WS.SYS_DAV_PROP p on (r.RES_ID = p.PROP_PARENT_ID)
-        where (r.RES_FULL_PATH between search_path and search_path_z) and (p.PROP_NAME = 'http://local.virt/DAV-RDF') and (p.PROP_TYPE = 'R')) do
-	{
-	  "CatFilter_FEED_DAV_RDF_INVERSE" (PROP_VALUE, PROP_PARENT_ID, 0, cfid);
-	  ctr := ctr + 1;
-	  if (mod (ctr, 1000) = 0)
-	    commit work;
-	}
-      commit work;
-      for (select COL_ID, COL_DET, WS.WS.COL_PATH (COL_ID) as _c_path from WS.WS.SYS_DAV_COL where COL_DET is not null and not (COL_DET like '%Filter')) do
-        {
-          if ("LEFT" (_c_path, length (search_path)) = search_path)
+      if ("LEFT" (_c_path, length (path)) = path)
 	    {
-              insert replacing WS.WS.SYS_DAV_CATFILTER_DETS (CFD_CF_ID, CFD_DET_SUBCOL_ID, CFD_DET)
-	      values (cfid, COL_ID, COL_DET);
-    	    }
-	}
-    }
---  if (search_path between colname and (colname || '\255\255\255\255'))
---    return -28;
---  if (colname between search_path and (search_path || '\255\255\255\255'))
---    return -28;
+        insert replacing WS.WS.SYS_DAV_CATFILTER_DETS (CFD_CF_ID, CFD_DET_SUBCOL_ID, CFD_DET)
+	        values (cfid, COL_ID, COL_DET);
+    	}
+	  }
+  }
   rc := DAV_PROP_SET_INT (colname, 'virt:CatFilter-ID', cast (cfid as varchar), null, null, 0, 1, 1);
   if (DAV_HIDE_ERROR (rc) is null)
     return rc;
-  update WS.WS.SYS_DAV_COL set COL_DET='CatFilter' where COL_ID=col;
+
+  update WS.WS.SYS_DAV_COL set COL_DET='CatFilter' where COL_ID=id;
 
   return 0;
 }
 ;
-
 
 create procedure "CatFilter_FEED_DAV_RDF_INVERSE" (inout propval any, inout propparent integer, in is_del integer := 0, in cfid integer := null)
 {

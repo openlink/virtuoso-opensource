@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -49,6 +49,13 @@
 
 #define NEW_VARZ(type, var) \
 	NEW_VAR(type,var); \
+	memset (var, 0, sizeof (type))
+
+#define NEW_BOX_VAR(type,var) \
+	type *var = (type *) dk_alloc_box (sizeof (type), DV_BIN)
+
+#define NEW_BOX_VARZ(type, var) \
+	NEW_BOX_VAR(type,var); \
 	memset (var, 0, sizeof (type))
 
 

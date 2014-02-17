@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -147,37 +147,52 @@ sqlc_call_ret_name (ST * tree, char * func_name, state_slot_t * ssl)
 state_slot_t *
 sqlc_trans_funcs (sql_comp_t * sc, ST * tree, state_slot_t * ret, dk_set_t * code)
 {
+  int call_param_count;
   /* process the special functions that deal with transitive nodes */
   if (ARRAYP (tree->_.call.name))
     return NULL;
+  call_param_count = BOX_ELEMENTS (tree->_.call.params);
   if (!stricmp (tree->_.call.name, "__TN_IN"))
     {
-      if (!sc->sc_trans
-	  || BOX_ELEMENTS (tree->_.call.params) < 1 || BOX_ELEMENTS (sc->sc_trans->tn_input) < unbox ((caddr_t) tree->_.call.params[0]))
-	sqlc_new_error (sc->sc_cc, "37000", "TR...", "__TN_IN is only allowed in transitive step dt");
-      ssl_alias (ret, sc->sc_trans->tn_input [unbox ((caddr_t)tree->_.call.params[0])]);
+      caddr_t arg;
+      int pos;
+      if (!sc->sc_trans || call_param_count < 1)
+        sqlc_new_error (sc->sc_cc, "37000", "TR...", "__TN_IN is only allowed in transitive step dt and requires an argument");
+      arg = (caddr_t)tree->_.call.params[0];
+      pos = unbox ((caddr_t)arg) - 1;
+      if ((pos < 0) || (pos >= BOX_ELEMENTS (sc->sc_trans->tn_input)))
+        sqlc_new_error (sc->sc_cc, "37000", "TR...", "__TN_IN argument is not an 1 based index of a column in the selection");
+      ssl_alias (ret, sc->sc_trans->tn_input [pos]);
       return ret;
     }
   if (!stricmp (tree->_.call.name, "T_STEP"))
     {
       caddr_t arg;
       dtp_t dtp;
-      if (!sc->sc_trans
-	  || BOX_ELEMENTS (tree->_.call.params) < 1)
-	sqlc_new_error (sc->sc_cc, "37000", "TR...", "T_STEP is only allowed in transitive step dt");
-
+      if (!sc->sc_trans || call_param_count < 1)
+	sqlc_new_error (sc->sc_cc, "37000", "TR...", "T_STEP is only allowed in transitive step dt and requires an argument");
       arg = (caddr_t)tree->_.call.params[0];
       dtp = DV_TYPE_OF (arg);
       if (DV_LONG_INT == dtp)
 	{
-	  if (BOX_ELEMENTS (sc->sc_trans->tn_input) < unbox ((caddr_t)arg) - 1 || unbox (arg) < 1)
-	    sqlc_new_error (sc->sc_cc, "37000", "TR...", "t_step argument not an index to a column in the selection");
+	  int pos = unbox ((caddr_t)arg) - 1;
+	  state_slot_t *wanted;
+	  int wanted_pos;
+	  if ((pos < 0) || (pos >= BOX_ELEMENTS (sc->sc_trans->tn_out_slots)))
+	    sqlc_new_error (sc->sc_cc, "37000", "TR...", "T_STEP argument not an 1 based index to a column in the selection");
 	  if (!sc->sc_trans->tn_step_out)
 	    {
 	      sc->sc_trans->tn_step_out = (state_slot_t **)box_copy ((caddr_t)sc->sc_trans->tn_input);
 	      memset (sc->sc_trans->tn_step_out, 0, box_length ((caddr_t)sc->sc_trans->tn_step_out));
 	    }
-	  sc->sc_trans->tn_step_out[unbox ((caddr_t)tree->_.call.params[0]) - 1] = ret;
+	  wanted = sc->sc_trans->tn_out_slots[pos];
+	  if (sc->sc_trans->tn_is_second_in_direction3)
+	    wanted_pos = box_position ((caddr_t *)(sc->sc_trans->tn_output_pos), (caddr_t)pos);
+          else
+	    wanted_pos = box_position ((caddr_t *)(sc->sc_trans->tn_input_pos), (caddr_t)pos);
+	  if (-1 == wanted_pos)
+	    sqlc_new_error (sc->sc_cc, "37000", "TR...", "T_STEP argument refers to an index %d of a column %.200s that is not in %s list (T_DIRECTION is set to %d)", pos+1, wanted->ssl_name, ((TRANS_LR == sc->sc_trans->tn_direction) ? "T_IN" : "T_OUT"), sc->sc_trans->tn_direction);
+	  sc->sc_trans->tn_step_out[wanted_pos] = ret;
 	  cv_artm (code, (ao_func_t)box_identity, ret, ssl_new_constant (sc->sc_cc, NULL), NULL);
 	  ret->ssl_sqt.sqt_dtp = DV_ARRAY_OF_POINTER;
 	}
@@ -192,14 +207,13 @@ sqlc_trans_funcs (sql_comp_t * sc, ST * tree, state_slot_t * ret, dk_set_t * cod
 	  cv_artm (code, (ao_func_t)box_identity, ret, ssl_new_constant (sc->sc_cc, NULL), NULL);
 	}
       else
-	sqlc_new_error (sc->sc_cc, "37000", "TR...", "the argument of t_step must be a 1 based column index in the selection of 'step_no' or 'path_id'");
+	sqlc_new_error (sc->sc_cc, "37000", "TR...", "the argument of T_STEP must be a 1 based column index in the selection or 'step_no' or 'path_id'");
       return ret;
     }
   if (!stricmp (tree->_.call.name, "T_STATE"))
     {
-      if (!sc->sc_trans
-	  || BOX_ELEMENTS (tree->_.call.params) < 1)
-	sqlc_new_error (sc->sc_cc, "37000", "TR...", "T_STEP is only allowed in transitive step dt");
+      if (!sc->sc_trans || call_param_count < 1)
+	sqlc_new_error (sc->sc_cc, "37000", "TR...", "T_STATE is only allowed in transitive step dt and requires an argument");
       if (!sc->sc_trans->tn_state_ssl)
 	sc->sc_trans->tn_state_ssl = ssl_new_variable (sc->sc_cc, "tn_state", DV_ANY);
       tree->_.call.params = (ST**)t_box_append_1 ((caddr_t)tree->_.call.params, t_box_num ((ptrlong)sc->sc_trans->tn_state_ssl));
@@ -896,6 +910,8 @@ cv_asg_broader_type (instruction_t *ins)
       res->ssl_sqt.sqt_non_null = 0;
       return;
     }
+  if (!res->ssl_column)
+    res->ssl_sqt.sqt_col_dtp = 0; /* will influence dc dtp, not a column, not set */
   if (IS_NUM_DTP (res->ssl_dtp) && IS_NUM_DTP (l->ssl_dtp))
     {
       if (DV_DOUBLE_FLOAT == l->ssl_dtp)
@@ -931,10 +947,40 @@ cv_artm_set_type (instruction_t * ins)
     {
       if (ins->_.artm.right)
 	{
+	  switch (ins->ins_type)
+            {
+            case IN_ARTM_PLUS:
+              if ((DV_DATETIME == ins->_.artm.left->ssl_dtp) || (DV_DATETIME == ins->_.artm.right->ssl_dtp))
+                {
+                  ins->_.artm.result->ssl_dtp = DV_DATETIME;
+                  ins->_.artm.result->ssl_sqt.sqt_non_null = 0;
+                  goto result_dtp_is_set;
+                }
+              break;
+            case IN_ARTM_MINUS:
+              if (DV_DATETIME == ins->_.artm.left->ssl_dtp)
+                {
+                  ins->_.artm.result->ssl_sqt.sqt_non_null = 0;
+                  if (DV_DATETIME == ins->_.artm.right->ssl_dtp)
+                    {
+                      ins->_.artm.result->ssl_dtp = DV_NUMERIC;
+                      goto result_dtp_is_set;
+                    }
+                  if ((DV_LONG_INT == ins->_.artm.right->ssl_dtp) || (DV_INT64 == ins->_.artm.right->ssl_dtp) || (DV_DOUBLE_FLOAT == ins->_.artm.right->ssl_dtp))
+                    {
+                      ins->_.artm.result->ssl_dtp = DV_DATETIME;
+                      goto result_dtp_is_set;
+                    }
+                  ins->_.artm.result->ssl_dtp = DV_ANY;
+                  goto result_dtp_is_set;
+                }
+              break;
+            }
 	  ins->_.artm.result->ssl_dtp = MAX (dtp_canonical[ins->_.artm.left->ssl_dtp], dtp_canonical[ins->_.artm.right->ssl_dtp]);
 	  if (DV_LONG_INT == ins->_.artm.result->ssl_sqt.sqt_dtp && (DV_INT64 == ins->_.artm.left->ssl_sqt.sqt_dtp || DV_INT64 == ins->_.artm.right->ssl_sqt.sqt_dtp))
 	    ins->_.artm.result->ssl_sqt.sqt_dtp = DV_INT64;
 	  ins->_.artm.result->ssl_sqt.sqt_non_null = ins->_.artm.left->ssl_sqt.sqt_non_null && ins->_.artm.right->ssl_sqt.sqt_non_null;
+result_dtp_is_set:
 	  if (DV_NUMERIC == ins->_.artm.result->ssl_dtp)
 	    {
 	      ins->_.artm.result->ssl_sqt.sqt_precision = NUMERIC_MAX_PRECISION;
@@ -1037,12 +1083,12 @@ cv_artm (dk_set_t * code, ao_func_t f, state_slot_t * res,
   cv_artm_set_type ((instruction_t *)(*code)->data);
 }
 
-void * distinct_comparison (state_slot_t * data, sql_comp_t * sc);
+void * distinct_comparison (state_slot_t * data, sql_comp_t * sc, void * opts);
 
 
 void
 cv_agg (dk_set_t * code, int op, state_slot_t * res,
-	state_slot_t * arg, state_slot_t * set_no, int distinct, sql_comp_t * sc)
+	state_slot_t * arg, state_slot_t * set_no, void * distinct, sql_comp_t * sc)
 {
   NEW_INSTR (ins, IN_AGG, code);
   ins->_.agg.result = res;
@@ -1054,7 +1100,7 @@ cv_agg (dk_set_t * code, int op, state_slot_t * res,
   sc->sc_is_scalar_agg = 1;
   if (distinct)
     {
-      hash_area_t * ha = (hash_area_t*)distinct_comparison (arg, sc);
+      hash_area_t * ha = (hash_area_t*)distinct_comparison (arg, sc, distinct);
       ins->_.agg.distinct = ha;
     }
 }
@@ -1132,32 +1178,24 @@ cv_compare (dk_set_t * code, int bop,
 
 
 void *
-distinct_comparison (state_slot_t * data, sql_comp_t * sc)
+distinct_comparison (state_slot_t * data, sql_comp_t * sc, void * opts)
 {
   setp_node_t setp;
+  if (IS_BOX_POINTER (opts))
+    {
+      /* opts specify ordered distinct */
+      NEW_VARZ (hash_area_t, ha);
+      ha->ha_op = HA_ORD_DISTINCT;
+      ha->ha_slots = (state_slot_t**)list (1, data);
+      ha->ha_tree = ssl_new_variable (sc->sc_cc, "ord_dist", DV_LONG_INT);
+      return ha;
+    }
   memset (&setp, 0, sizeof (setp));
   setp.src_gen.src_query = sc->sc_cc->cc_query;
   t_set_push (&setp.setp_keys, (void*) data);
   setp_distinct_hash (sc, &setp, 0, HA_DISTINCT);
   return ((void*) setp.setp_ha);
 }
-
-void
-cv_distinct (dk_set_t * code,
-       state_slot_t * data, sql_comp_t * sc, jmp_label_t succ, jmp_label_t fail)
-{
-  void * ha; /* hash_area_t* */
-  NEW_INSTR (ins, IN_PRED, code);
-  ins->_.pred.succ = succ;
-  ins->_.pred.fail = fail;
-  ins->_.pred.unkn = fail;
-  ins->_.pred.func = distinct_comp_func;
-  ins->_.pred.cmp = ha = distinct_comparison (data, sc);
-  ((hash_area_t *)ha)->ha_allow_nulls = 0;
-  dk_set_push (&sc->sc_fref->fnr_distinct_ha, ha);
-}
-
-
 
 
 void
@@ -1654,10 +1692,10 @@ sqlo_proc_cl_locatable (caddr_t name, int level, query_t ** qr_ret)
     {
       int is_sem = sqlc_inside_sem;
       if (is_sem)
-	semaphore_leave (parse_sem);
+	mutex_leave (parse_mtx);
       tree = (ST*) sql_compile (qr->qr_text, sqlc_client (), &err,  SQLC_PARSE_ONLY);
       if (is_sem)
-	semaphore_enter (parse_sem);
+	mutex_enter (parse_mtx);
     }
   END_WITHOUT_TMP_POOL;
   if (err)
@@ -1686,7 +1724,10 @@ src_is_local (data_source_t * src, int is_cluster)
       || (qn_input_fn) remote_table_source_input == src->src_input
       || (is_cluster && !enable_hash_colocate && IS_QN (src, hash_source_input))
       || (!enable_rec_qf && IS_QN (src, query_frag_input))
+      || (IS_QN (src, trans_node_input) && ((trans_node_t *)src)->tn_inlined_step)
       )
+    return 0;
+  if ((CV_NO_INDEX & is_cluster) && IS_TS (src))
     return 0;
   if (IS_QN (src, subq_node_input))
     return qr_is_local (((subq_source_t*)src)->sqs_query, is_cluster);
@@ -1697,6 +1738,8 @@ src_is_local (data_source_t * src, int is_cluster)
 int
 qr_is_local (query_t * qr, int is_cluster)
 {
+  if ((CV_NO_INDEX & is_cluster))
+    return 0;
   DO_SET (data_source_t *, src, &qr->qr_nodes)
     {
       if (!cv_is_local_1 (src->src_after_code, is_cluster)
@@ -1748,7 +1791,7 @@ cv_is_local_1 (code_vec_t cv, int is_cluster)
 	  if (subq_comp_func == ins->_.pred.func)
 	    {
 	      subq_pred_t * subq = (subq_pred_t *) ins->_.pred.cmp;
-	      if (!is_cluster)
+	      if (!is_cluster || (CV_NO_INDEX & is_cluster))
 		return 0;
 	      if (!enable_rec_qf && CV_IS_LOCAL_CN == is_cluster)
 		break;
@@ -1759,6 +1802,8 @@ cv_is_local_1 (code_vec_t cv, int is_cluster)
 	    return 0;
 	  break;
 	case IN_AGG:
+	  if (ins->_.agg.distinct && HA_ORD_DISTINCT == ins->_.agg.distinct->ha_op)
+	    break;
 	  if (ins->_.agg.distinct && !sqlg_distinct_colocated (sqlc_current_sc, &ins->_.agg.arg, 1))
 	    return 0;
 	  break;
@@ -1781,17 +1826,21 @@ cv_is_local_1 (code_vec_t cv, int is_cluster)
 	      }
 	    else if (is_cluster)
 	      sqlc_need_enlist (sqlc_current_sc);
-	    return 0;
+	    if (is_cluster != CV_IS_LOCAL_AGG
+		&& sch_ua_func_ua (ins->_.call.proc))
+	      return 0;
+	    return is_cluster ? 0 : enable_mt_txn ? 1 : 0;
 	  }
 	case INS_CALL_IND:
 	  sqlc_need_enlist (sqlc_current_sc);
 	    return 0;
 	case INS_CALL_BIF:
-	  if (!is_cluster && bif_uses_index (ins->_.bif.bif))
+	  if (CV_NO_INDEX & is_cluster && bif_uses_index (ins->_.bif.bif))
 	    return 0;
 	  if (bif_need_enlist (ins->_.bif.bif))
 	    sqlc_need_enlist (sqlc_current_sc);
-	  if (CV_IS_LOCAL_CLUSTER == is_cluster && bif_is_aggregate (ins->_.bif.bif))
+	  if (is_cluster != CV_IS_LOCAL_AGG
+	      && bif_is_aggregate (ins->_.bif.bif))
 	    return 0;
 	  if (is_cluster && bif_is_no_cluster (ins->_.bif.bif))
 	    return 0;
@@ -1958,7 +2007,7 @@ cv_refd_slots (sql_comp_t * sc, code_vec_t cv, dk_hash_t * res, dk_hash_t * all_
 	case INS_CALL:
 	case INS_CALL_IND:
 	  if (ins->_.call.proc_ssl)
-	    REF_SSL (res, ins->_.call.proc_ssl);;
+	    REF_SSL (res, ins->_.call.proc_ssl);
 	  ref_ssls (res, ins->_.call.params);
 	  ASG_SSL (res, all_res, ins->_.call.ret);
 	  if (non_cl_local) *non_cl_local = 1;
@@ -2013,6 +2062,7 @@ cv_refd_slots (sql_comp_t * sc, code_vec_t cv, dk_hash_t * res, dk_hash_t * all_
 	  if (non_cl_local)
 	    *non_cl_local = 1;
 	    sc->sc_sel_out = NULL;
+	  if (res)
 	  sqlg_qn_env (sc, ins->_.subq.query->qr_head_node, NULL, res);
 	    sc->sc_sel_out = out_save;
 	    if (ins->_.subq.query->qr_select_node)
@@ -2130,7 +2180,6 @@ qn_refd_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t *
       ks_refd_slots (sc, ts->ts_main_ks, res, all_res, non_cl_local);
       if (ts->ts_alternate)
 	{
-
 	  qn_refd_slots (sc, (data_source_t*)ts->ts_alternate, res, all_res, non_cl_local);
 	  qn_refd_slots (sc, qn_next ((data_source_t*)ts->ts_alternate), res, all_res, non_cl_local);
 	}
@@ -2276,7 +2325,7 @@ qn_refd_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t *
       REF_SSL (res, xn->xn_exp_for_xqr_text);
       REF_SSL (res, xn->xn_text_col);
       REF_SSL (res, xn->xn_base_uri);
-      ASG_SSL (res, all_res, xn->xn_output_val);;
+      ASG_SSL (res, all_res, xn->xn_output_val);
       if (xn->xn_text_node)
 	{
 	  text_node_t * txs = xn->xn_text_node;
@@ -2502,6 +2551,14 @@ cv_free (code_vec_t cv)
 	{
 	  dk_free_tree ((box_t) ins->_.handler.states);
 	}
+      else if (INS_FOR_VECT == ins->ins_type)
+	{
+	  dk_free_box (ins->_.for_vect.in_values);
+	  dk_free_box (ins->_.for_vect.in_vars);
+	  dk_free_box (ins->_.for_vect.out_values);
+	  dk_free_box (ins->_.for_vect.out_vars);
+	/*cv_free (ins->_.for_vect.code); */
+	}
       else if (ins->ins_type == INS_COMPOUND_START)
 	{
 	  dk_free_box (ins->_.compound_start.file_name);
@@ -2514,6 +2571,10 @@ cv_free (code_vec_t cv)
 	  dk_set_free (ins->_.breakpoint.scope);
 	}
 #endif
+      else if (ins->ins_type == INS_FETCH)
+	{
+	  dk_free_box (ins->_.fetch.targets);
+	}
     }
   END_DO_INSTR
   dk_free_box ((caddr_t) cv);
@@ -2575,6 +2636,7 @@ sqlg_agg_ins (sql_comp_t * sc, ST * tree, dk_set_t * code,
 
     case AMMSC_COUNT:
       {
+	void * dist_opt = NULL;
 	state_slot_t *count = ssl_new_inst_variable (sc->sc_cc, "count", DV_LONG_INT);
 	count->ssl_qr_global = 1;
 	dk_set_push (&sc->sc_fun_ref_temps, (void *) count);
@@ -2583,7 +2645,9 @@ sqlg_agg_ins (sql_comp_t * sc, ST * tree, dk_set_t * code,
 	else
 	  sc->sc_fun_ref_defaults = NCONC (sc->sc_fun_ref_defaults, CONS (box_num (0), NULL));
 	sc->sc_fun_ref_default_ssls = NCONC (sc->sc_fun_ref_default_ssls, CONS (count, NULL));
-	cv_agg (fun_ref_code, AMMSC_COUNT, count, arg, set_no, tree->_.fn_ref.all_distinct, sc);
+	if (tree->_.fn_ref.all_distinct)
+	  dist_opt = tree->_.fn_ref.fn_arglist ? tree->_.fn_ref.fn_arglist : (void *) 1;
+	cv_agg (fun_ref_code, AMMSC_COUNT, count, arg, set_no, dist_opt, sc);
 	result = count;
 	break;
       }
@@ -2619,13 +2683,7 @@ select_ref_generate (sql_comp_t * sc, ST * tree, dk_set_t * code,
       jmp_label_t is_distinct = 0;
       *is_fun_ref = 1;
       if (tree->_.fn_ref.all_distinct)
-	{
-	  state_slot_t *arg = scalar_exp_generate (sc, tree->_.fn_ref.fn_arg, fun_ref_code);
-	  is_distinct = sqlc_new_label (sc);
-	  next_fun_ref = sqlc_new_label (sc);
-	  cv_distinct (fun_ref_code, arg, sc, is_distinct, next_fun_ref);
-	  cv_label (fun_ref_code, is_distinct);
-	}
+	GPF_T1 ("branch not in use, ins agg has an integrated distinct ");
       switch (tree->_.fn_ref.fn_code)
 	{
 	case AMMSC_MIN:

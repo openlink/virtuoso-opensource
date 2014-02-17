@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -199,7 +199,7 @@ bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   /* data, type, lamg, ro_id, is_complete */
   rdf_box_t * rb;
-  caddr_t box, chksum = NULL;
+  caddr_t box, bcopy, chksum = NULL;
   dtp_t box_dtp;
   long type, lang, ro_id, is_complete;
   box = bif_arg (qst, args, 0, "rdf_box");
@@ -231,6 +231,10 @@ bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     case DV_BLOB: case DV_BLOB_HANDLE: case DV_BLOB_BIN: case DV_BLOB_WIDE: case DV_BLOB_WIDE_HANDLE:
     case DV_BLOB_XPER: case DV_BLOB_XPER_HANDLE:
       sqlr_new_error ("22023", "SR559", "Large object (tag %d) is not a valid argument #1 in call of rdf_box()", box_dtp);
+    case DV_RDF:
+      sqlr_new_error ("22023", "SR559", "RDF box (tag %d) is not a valid argument #1 in call of rdf_box()", box_dtp);
+    case DV_IRI_ID:
+      sqlr_new_error ("22023", "SR559", "IRI_ID box (tag %d) is not a valid argument #1 in call of rdf_box()", box_dtp);
     }
   if (type == RDF_BOX_GEO && box_dtp != DV_GEO)
     sqlr_new_error ("22023", "SR559", "The RDF box of type geometry needs a spatial object as a value, not a value of type %s (%d)", dv_type_title (box_dtp), box_dtp);
@@ -270,11 +274,25 @@ bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       rdf_bigbox_audit(rbb);
       return (caddr_t) rbb;
     }
+  if (DV_STRING == DV_TYPE_OF (box))
+    {
   if (is_complete && (0 == ro_id) && (RDF_BOX_DEFAULT_TYPE == type) && (RDF_BOX_DEFAULT_LANG == lang) &&
-    (DV_STRING == DV_TYPE_OF (box)) && ((RB_MAX_INLINED_CHARS+1) >= box_length_inline (box)) )
-    return box_copy (box);
+        ((RB_MAX_INLINED_CHARS+1) >= box_length_inline (box)) )
+        {
+          bcopy = box_copy (box);
+          if (BF_IRI & box_flags(bcopy))
+            box_flags(bcopy) = BF_UTF8;
+          return bcopy;
+        }
+/* The following three rows are intentionally duplicated from above in order to get different location of memory leaks for two cases: a string lost after being returned "as is" and string lost in rb_box field */
+      bcopy = box_copy (box); 
+      if (BF_IRI & box_flags(bcopy))
+        box_flags(bcopy) = BF_UTF8;
+    }
+  else
+    bcopy = box_copy_tree (box);
   rb = rb_allocate ();
-  rb->rb_box = box_copy_tree (box);
+  rb->rb_box = bcopy;
   rb->rb_type = (short)type;
   rb->rb_lang = (short)lang;
   rb->rb_ro_id = ro_id;
@@ -583,7 +601,7 @@ bif_rdf_box_set_is_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (DV_RDF == DV_TYPE_OF (rb))
     {
       rdf_box_t * rb2 = (rdf_box_t *) rb;
-      rb2->rb_is_text_index = f;
+      rb2->rb_is_text_index = (f & 0x1);
       rb2->rb_serialize_id_only = f >> 1;
     }
   return box_num (1);
@@ -2178,8 +2196,7 @@ rdf_dist_or_redu_ser_long (caddr_t val, caddr_t * err_ret, int is_reduiced, cons
 	}
       if (rbb->rbb_base.rb_chksum_tail)
 	ser_vec[5] = (caddr_t) rbb->rbb_chksum;
-
-      res = print_object_to_new_string ((caddr_t) ser_vec, fun_name, err_ret);
+      res = print_object_to_new_string ((caddr_t) ser_vec, fun_name, err_ret, 0);
 
       if (subbox != rbb->rbb_base.rb_box)
 	dk_free_box (subbox);
@@ -2189,7 +2206,7 @@ rdf_dist_or_redu_ser_long (caddr_t val, caddr_t * err_ret, int is_reduiced, cons
       return res;
     }
 
-  return print_object_to_new_string (val, fun_name, err_ret);
+  return print_object_to_new_string (val, fun_name, err_ret, 0);
 }
 
 caddr_t
@@ -2496,7 +2513,7 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
     {
       int ctr;
       caddr_t *tmp;
-      tmp = (caddr_t *)list (37*2,
+      tmp = (caddr_t *)list (38*2,
         "application/x-trig"			, "TRIG"		, /*  0 */
         "text/rdf+n3"				, "TTL"			, /*  1 */
         "text/rdf+ttl"				, "TTL"			, /*  2 */
@@ -2533,7 +2550,8 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "text/ntriples"				, "NT"			, /* 33 */
         "text/csv"				, "CSV"			, /* 34 */
         "text/tab-separated-values"		, "TSV"			, /* 35 */
-        "application/x-nice-turtle"		, "NICE_TTL"		/* 36 Increase count in this list() call when add more MIME types! */ );
+        "application/x-nice-turtle"		, "NICE_TTL"		, /* 36 */
+        "application/x-nice-microdata"		, "HTML;NICE_MICRODATA"		/* 37 Increase count in this list() call when add more MIME types! */ );
       for (ctr = BOX_ELEMENTS (tmp); ctr--; /* no step */)
         tmp[ctr] = box_dv_short_string (tmp[ctr]);
       supp_dict = tmp;
@@ -2701,6 +2719,11 @@ http_ttl_or_nt_prepare_obj (query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, tt
         rb_dt_lang_check(rb);
         if (RDF_BOX_DEFAULT_TYPE == rb->rb_type)
           return;
+        if (RDF_BOX_GEO_TYPE == rb->rb_type)
+          {
+            dt_ret->uri = uname_virtrdf_ns_uri_Geometry;
+            return;
+          }
         dt_ret->uri = rdf_type_twobyte_to_iri (rb->rb_type);
         if (dt_ret->uri) /* if by some reason rb_type is wrong */
           box_flags (dt_ret->uri) |= BF_IRI;
@@ -4770,7 +4793,7 @@ bif_sparql_iri_split_rdfa_qname (caddr_t * qst, caddr_t * err_ret, state_slot_t 
   int flags = bif_long_arg (qst, args, 2, "sparql_iri_split_rdfa_qname");
   const char *tail;
   int iri_strlen;
-  caddr_t ns_iri, prefix, *prefix_ptr, res, to_free = NULL;
+  caddr_t ns_iri, prefix, *prefix_ptr, res = NULL, to_free = NULL;
   switch (DV_TYPE_OF (raw_iri))
     {
       case DV_IRI_ID:
@@ -4808,28 +4831,52 @@ bif_sparql_iri_split_rdfa_qname (caddr_t * qst, caddr_t * err_ret, state_slot_t 
       if (!isalnum(c) && ('_' != c) && ('-' != c) && !(c & 0x80))
         break;
     }
-  if (tail == iri)
-    {
-      res = (flags & 0x2) ? list (3, NULL, box_dv_short_string (""), box_dv_short_nchars (iri, iri_strlen)) : NULL;
-      goto res_done; /* see below */
-    }
-  if (tail > iri && tail[-1] == '%' && (tail <= (iri + iri_strlen - 2)))
-    tail += 2;
-  to_free = ns_iri = box_dv_short_nchars (iri, tail-iri);
-  prefix_ptr = (caddr_t *)id_hash_get (ht, (caddr_t)(&ns_iri));
-  if (NULL != prefix_ptr)
-    prefix = prefix_ptr[0];
-  else if (flags & 0x1)
-    {
-      char buf[10];
-      sprintf (buf, "n%ld", (long)(ht->ht_count));
-      prefix = box_dv_short_string (buf);
-      id_hash_set (ht, (caddr_t)(&ns_iri), (caddr_t)(&prefix));
-      to_free = NULL; /* to be released when hash table is free */
-    }
-  else
-    prefix = NULL;
-    res = (flags & 0x2) ? list (3, box_copy (prefix), box_copy (ns_iri), box_dv_short_nchars (tail, iri + iri_strlen - tail)) : NULL;
+  do {
+      if (tail == iri)
+        {
+          res = (flags & 0x2) ? list (3, NULL, box_dv_short_string (""), box_dv_short_nchars (iri, iri_strlen)) : NULL;
+          break;
+        }
+      if (tail > iri && tail[-1] == '%' && (tail <= (iri + iri_strlen - 2)))
+        tail += 2;
+      to_free = ns_iri = box_dv_short_nchars (iri, tail-iri);
+      prefix_ptr = (caddr_t *)id_hash_get (ht, (caddr_t)(&ns_iri));
+      if (NULL != prefix_ptr)
+        {
+          res = (flags & 0x2) ? list (3, box_copy (prefix_ptr[0]), box_copy (ns_iri), box_dv_short_nchars (tail, iri + iri_strlen - tail)) : NULL;
+          break;
+        }
+      prefix = xml_get_cli_or_global_ns_prefix (qst, ns_iri, 0xff);
+      if (NULL != prefix)
+        {
+          if (('n' == prefix[0]) && isdigit (prefix[1]))
+            {
+              dk_free_box (prefix);
+              prefix = NULL;
+            }
+          else
+            {
+              if (flags & 0x1)
+                {
+                  id_hash_set (ht, (caddr_t)(&ns_iri), (caddr_t)(&prefix));
+                  to_free = NULL; /* to be released when hash table is free */
+                }
+              res = (flags & 0x2) ? list (3, box_copy (prefix), box_copy (ns_iri), box_dv_short_nchars (tail, iri + iri_strlen - tail)) : NULL;
+              break;
+            }
+        }
+      if (flags & 0x1)
+        {
+          char buf[10];
+          sprintf (buf, "n%ld", (long)(ht->ht_count));
+          prefix = box_dv_short_string (buf);
+          id_hash_set (ht, (caddr_t)(&ns_iri), (caddr_t)(&prefix));
+          to_free = NULL; /* to be released when hash table is free */
+          break;
+        }
+      res = (flags & 0x2) ? list (3, NULL, box_copy (ns_iri), box_dv_short_nchars (tail, iri + iri_strlen - tail)) : NULL;
+      break;
+    } while (0);
 res_done:
   if (iri != raw_iri)
     dk_free_tree (iri);
@@ -5004,6 +5051,7 @@ rdf_graph_app_cbk_perms (query_instance_t *qst, caddr_t graph_boxed_iid, user_t 
 {
   static query_t *app_cbk_qr = NULL;
   local_cursor_t * lc = NULL;
+  int rc = 0;
   client_connection_t *cli = qst->qi_client;
   if (NULL == app_cbk_qr)
     app_cbk_qr = sql_compile_static ("call (?)(?, ?)", bootstrap_cli, err_ret, SQLC_DEFAULT);
@@ -5013,8 +5061,9 @@ rdf_graph_app_cbk_perms (query_instance_t *qst, caddr_t graph_boxed_iid, user_t 
       ":2", app_uid, QRP_STR );
   if (lc && DV_ARRAY_OF_POINTER == DV_TYPE_OF (lc->lc_proc_ret)
       && BOX_ELEMENTS ((caddr_t *)lc->lc_proc_ret) > 1)
-    return unbox (((caddr_t *)lc->lc_proc_ret)[1]);
-  return 0;
+    rc = unbox (((caddr_t *)lc->lc_proc_ret)[1]);
+  if (lc) lc_free (lc);
+  return rc;
 }
 
 caddr_t
@@ -5896,51 +5945,47 @@ rdf_box_init ()
   MAKE_RDF_GRAPH_DICT(rdf_graph_group_of_privates_dict);
   MAKE_RDF_GRAPH_DICT(rdf_graph_default_world_perms_of_user_dict);
   MAKE_RDF_GRAPH_DICT(rdf_graph_default_private_perms_of_user_dict);
-  bif_define_typed ("__rdf_set_bnode_t_treshold", bif_rdf_set_bnode_t_treshold, &bt_integer);
+  bif_define_ex ("__rdf_set_bnode_t_treshold", bif_rdf_set_bnode_t_treshold, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_set_uses_index (bif_rdf_set_bnode_t_treshold);
   bif_define ("rdf_box", bif_rdf_box);
   bif_define ("rdf_box_from_ro_id", bif_rdf_box_from_ro_id);
   bif_define ("ro_digest_from_parts", bif_ro_digest_from_parts);
-  bif_define_typed ("is_rdf_box", bif_is_rdf_box, &bt_integer);
-  bif_define_typed ("rdf_box_set_data", bif_rdf_box_set_data, &bt_any);
+  bif_define_ex ("is_rdf_box", bif_is_rdf_box, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("rdf_box_set_data", bif_rdf_box_set_data, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define ("rdf_box_data", bif_rdf_box_data);
-  bif_define_typed ("rdf_box_data_tag", bif_rdf_box_data_tag, &bt_integer);
-  bif_define_typed ("rdf_box_ro_id", bif_rdf_box_ro_id, &bt_integer);
-  bif_define_typed ("ro_digest_id", bif_ro_digest_id, &bt_integer);
+  bif_define_ex ("rdf_box_data_tag", bif_rdf_box_data_tag, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("rdf_box_ro_id", bif_rdf_box_ro_id, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("ro_digest_id", bif_ro_digest_id, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("rdf_box_set_ro_id", bif_rdf_box_set_ro_id);
-  bif_define_typed ("rdf_box_lang", bif_rdf_box_lang, &bt_integer);
-  bif_define_typed ("rdf_box_type", bif_rdf_box_type, &bt_integer);
-  bif_define_typed ("rdf_box_dt_and_lang", bif_rdf_box_dt_and_lang, &bt_integer);
+  bif_define_ex ("rdf_box_lang", bif_rdf_box_lang, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("rdf_box_type", bif_rdf_box_type, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("rdf_box_dt_and_lang", bif_rdf_box_dt_and_lang, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("rdf_box_set_type", bif_rdf_box_set_type);
   bif_define ("rdf_box_chksum", bif_rdf_box_chksum);
-  bif_define_typed ("rdf_box_is_text", bif_rdf_box_is_text, &bt_integer);
+  bif_define_ex ("rdf_box_is_text", bif_rdf_box_is_text, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("rdf_box_set_is_text", bif_rdf_box_set_is_text);
-  bif_define_typed ("rdf_box_is_complete", bif_rdf_box_is_complete, &bt_integer);
-  /*bif_define_typed ("rdf_box_set_is_complete", bif_rdf_box_set_is_complete, &bt_integer);*/
-  bif_define_typed ("rdf_box_is_storeable", bif_rdf_box_is_storeable, &bt_integer);
-  bif_define_typed ("rdf_box_needs_digest", bif_rdf_box_needs_digest, &bt_integer);
-  bif_define_typed ("rdf_box_strcmp", bif_rdf_box_strcmp, &bt_integer);
-  bif_define_typed ("rdf_box_migrate_after_06_02_3129", bif_rdf_box_migrate_after_06_02_3129, &bt_integer);
-  bif_define_typed ("__rdf_long_of_obj", bif_rdf_long_of_obj, &bt_any);
-  bif_set_uses_index (bif_rdf_long_of_obj);
-  bif_define_typed ("__rdf_box_make_complete", bif_rdf_box_make_complete, &bt_integer);
-  bif_set_uses_index (bif_rdf_box_make_complete);
-  bif_define_typed ("__rdf_box_to_ro_id_search_fields", bif_rdf_box_to_ro_id_search_fields, &bt_integer);
-  bif_define_typed ("__rdf_sqlval_of_obj", bif_rdf_sqlval_of_obj, &bt_any);
-  bif_set_uses_index (bif_rdf_sqlval_of_obj);
-  bif_define_typed ("__rdf_strsqlval", bif_rdf_strsqlval, &bt_varchar);
-  bif_set_uses_index (bif_rdf_strsqlval);
-  bif_set_vectored (bif_rdf_strsqlval, bif_str_vec);
-    
-  bif_define_typed ("__rdf_long_to_ttl", bif_rdf_long_to_ttl, &bt_any);
+  bif_define_ex ("rdf_box_is_complete", bif_rdf_box_is_complete, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  /*bif_define_ex ("rdf_box_set_is_complete", bif_rdf_box_set_is_complete, BMD_RET_TYPE, &bt_integer, BMD_DONE); */
+  bif_define_ex ("rdf_box_is_storeable", bif_rdf_box_is_storeable, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("rdf_box_needs_digest", bif_rdf_box_needs_digest, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("rdf_box_strcmp", bif_rdf_box_strcmp, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("rdf_box_migrate_after_06_02_3129", bif_rdf_box_migrate_after_06_02_3129, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("__rdf_long_of_obj", bif_rdf_long_of_obj, BMD_ALIAS, "__ro2lo", BMD_VECTOR_IMPL, bif_ro2lo_vec, BMD_RET_TYPE,
+      &bt_any_box, BMD_USES_INDEX, BMD_DONE);
+  bif_define_ex ("__rdf_box_make_complete", bif_rdf_box_make_complete, BMD_RET_TYPE, &bt_integer, BMD_USES_INDEX, BMD_DONE);
+  bif_define_ex ("__rdf_box_to_ro_id_search_fields", bif_rdf_box_to_ro_id_search_fields, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("__rdf_sqlval_of_obj", bif_rdf_sqlval_of_obj, BMD_ALIAS, "__ro2sq", BMD_VECTOR_IMPL, bif_ro2sq_vec, BMD_RET_TYPE,
+      &bt_any, BMD_USES_INDEX, BMD_DONE);
+  bif_define_ex ("__rdf_strsqlval", bif_rdf_strsqlval, BMD_VECTOR_IMPL, bif_str_vec, BMD_RET_TYPE, &bt_varchar, BMD_USES_INDEX,
+      BMD_DONE);
+  bif_define_ex ("__rdf_long_to_ttl", bif_rdf_long_to_ttl, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_set_uses_index (bif_rdf_long_to_ttl);
-  bif_define_typed ("__rq_iid_of_o", bif_rq_iid_of_o, &bt_any);
+  bif_define_ex ("__rq_iid_of_o", bif_rq_iid_of_o, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define ("__rdf_long_from_batch_params", bif_rdf_long_from_batch_params);
-
-  bif_define_typed ("__rdf_dist_ser_long", bif_rdf_dist_ser_long, &bt_varchar);
-  bif_define_typed ("__rdf_dist_deser_long", bif_rdf_dist_deser_long, &bt_any);
-  bif_define_typed ("__rdf_redu_ser_long", bif_rdf_redu_ser_long, &bt_varchar);
-  bif_define_typed ("__rdf_redu_deser_long", bif_rdf_dist_deser_long, &bt_any);
+  bif_define_ex ("__rdf_dist_ser_long", bif_rdf_dist_ser_long, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("__rdf_dist_deser_long", bif_rdf_dist_deser_long, BMD_ALIAS, "__rdf_redu_deser_long", BMD_RET_TYPE, &bt_any,
+      BMD_DONE);
+  bif_define_ex ("__rdf_redu_ser_long", bif_rdf_redu_ser_long, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("http_sys_find_best_sparql_accept", bif_http_sys_find_best_sparql_accept);
   bif_define ("http_ttl_prefixes", bif_http_ttl_prefixes);
   bif_set_uses_index (bif_http_ttl_prefixes);
@@ -5964,20 +6009,12 @@ rdf_box_init ()
   bif_set_uses_index (bif_http_nt_object);
   bif_define ("http_rdf_object", bif_http_rdf_object);
   bif_set_uses_index (bif_http_rdf_object);
-  bif_define ("sparql_rset_ttl_write_row", bif_sparql_rset_ttl_write_row);
-  bif_set_uses_index (bif_sparql_rset_ttl_write_row);
-  bif_define ("sparql_rset_nt_write_row", bif_sparql_rset_nt_write_row);
-  bif_set_uses_index (bif_sparql_rset_nt_write_row);
-  bif_define ("sparql_rset_json_write_row", bif_sparql_rset_json_write_row);
-  bif_set_uses_index (bif_sparql_rset_json_write_row);
-  bif_define ("sparql_rset_xml_write_row", bif_sparql_rset_xml_write_row);
-  bif_set_uses_index (bif_sparql_rset_xml_write_row);
+  bif_define_ex ("sparql_rset_ttl_write_row", bif_sparql_rset_ttl_write_row, BMD_USES_INDEX, BMD_NO_CLUSTER, BMD_DONE);
+  bif_define_ex ("sparql_rset_nt_write_row", bif_sparql_rset_nt_write_row, BMD_USES_INDEX, BMD_NO_CLUSTER, BMD_DONE);
+  bif_define_ex ("sparql_rset_json_write_row", bif_sparql_rset_json_write_row, BMD_USES_INDEX, BMD_NO_CLUSTER, BMD_DONE);
+  bif_define_ex ("sparql_rset_xml_write_row", bif_sparql_rset_xml_write_row, BMD_USES_INDEX, BMD_NO_CLUSTER, BMD_DONE);
   bif_define ("sparql_iri_split_rdfa_qname", bif_sparql_iri_split_rdfa_qname);
   /* Short aliases for use in generated SQL text: */
-  bif_define_typed ("__ro2lo", bif_rdf_long_of_obj, &bt_any_box);
-  bif_set_vectored (bif_rdf_long_of_obj, bif_ro2lo_vec);
-  bif_define_typed ("__ro2sq", bif_rdf_sqlval_of_obj, &bt_any);
-  bif_set_vectored (bif_rdf_sqlval_of_obj, bif_ro2sq_vec);
   bif_define ("__rdf_graph_id2iri_dict", bif_rdf_graph_id2iri_dict);
   bif_define ("__rdf_graph_iri2id_dict", bif_rdf_graph_iri2id_dict);
   bif_define ("__rdf_graph_group_dict", bif_rdf_graph_group_dict);
@@ -5993,8 +6030,8 @@ rdf_box_init ()
   bif_define ("__rgs_ack", bif_rgs_ack);
   bif_define ("__rgs_ack_cbk", bif_rgs_ack_cbk);
   bif_set_uses_index (bif_rgs_ack_cbk );
-  bif_define_typed ("__rdf_repl_uid", bif_rdf_repl_uid, &bt_integer);
-  bif_define_typed ("__rgs_prepare_del_or_ins", bif_rgs_prepare_del_or_ins, &bt_integer);
+  bif_define_ex ("__rdf_repl_uid", bif_rdf_repl_uid, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("__rgs_prepare_del_or_ins", bif_rgs_prepare_del_or_ins, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_set_uses_index (bif_rgs_prepare_del_or_ins);
   repl_pub_name = box_dv_short_string ("__rdf_repl");
   text5arg = box_dv_short_string ("__rdf_repl_action (?, ?, ?, ?, ?)");
@@ -6008,5 +6045,5 @@ rdf_box_init ()
   bif_set_uses_index (bif_rdf_repl_flush_queue);
   bif_define ("__rdf_range_check", bif_rdf_range_check);
   bif_set_uses_index (bif_rdf_range_check );
-  bif_define_typed ("iri_name_id", bif_iri_name_id, &bt_integer);
+  bif_define_ex ("iri_name_id", bif_iri_name_id, BMD_RET_TYPE, &bt_integer, BMD_DONE);
 }

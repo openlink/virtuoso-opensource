@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2011 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -37,7 +37,7 @@
 int chash_max_count = 20000000;
 int chash_init_gb_size = 10000;
 int chash_max_key_len = (PAGE_DATA_SZ - 5);
-int chash_max_partitions = 1000000;
+int chash_max_partitions = 1045111;
 int chash_part_size = 7011;
 int chash_part_max_fill = 4000;
 int enable_chash_bloom = 1;
@@ -86,6 +86,19 @@ void hash_source_chash_input_1i_n (hash_source_t * hs, caddr_t * inst, caddr_t *
 #define GB_IS_NULL(ha, row, nth) \
   (!(((db_buf_t)row)[ ha->ha_ch_nn_flags + (nth / 8)] & (1 << (nth & 7))))
 
+
+
+uint64 
+th2 (int64 h1, int64 h2)
+{
+  uint64 h = 1;
+  MHASH_STEP (h, h1);
+  if (h2)
+    {
+      MHASH_STEP (h, h2);
+    }
+  return h;
+}
 
 
 int consec_sets[ARTM_VEC_LEN];
@@ -570,7 +583,7 @@ gb_values (chash_t * cha, uint64 * hash_no, caddr_t * inst, state_slot_t * ssl, 
       /* make the arr into an array of anies from an array of boxes, alloc in the dc pool */
       if (!temp)
 	{
-	  temp = (int64 *) & temp_space[nth * ARTM_VEC_LEN * sizeof (caddr_t)];
+	  temp = (int64 *) &temp_space[nth * ARTM_VEC_LEN * DT_LENGTH];
 	  memcpy_16 (temp, arr, (last_set - first_set) * sizeof (caddr_t));
 	  arr = temp;
 	}
@@ -1387,7 +1400,7 @@ cha_cmp (chash_t * cha, int64 * ent, db_buf_t ** key_vecs, int row_no, dtp_t * n
 	  if (memcmp (k1, k2, l1))
 	    return 0;
 #endif
-	  return 1;
+	  continue;
 	}
       else if (!cha->cha_sqt[inx].sqt_non_null)
 	{
@@ -1395,7 +1408,7 @@ cha_cmp (chash_t * cha, int64 * ent, db_buf_t ** key_vecs, int row_no, dtp_t * n
 	  if (is_null != nulls[inx * ARTM_VEC_LEN + row_no])
 	    return 0;
 	}
-      if (DV_DATETIME == cha->cha_sqt[inx].sqt_dtp)
+      else if (DV_DATETIME == cha->cha_sqt[inx].sqt_dtp)
 	{
 	  k2 = ((db_buf_t *) key_vecs)[inx] + DT_LENGTH * row_no;
 	  if (INT64_REF_CA (k1) != INT64_REF_CA (k2))
@@ -1713,6 +1726,7 @@ cha_alloc_int (chash_t * cha, setp_node_t * setp, sql_type_t * new_sqt, chash_t 
   if (n_rows <= 0)
     n_rows = 10000;
   n_part = _RNDUP (n_rows, chash_part_max_fill) / chash_part_max_fill;
+  n_part = hash_nextprime (n_part);
   n_part = MIN (n_part, chash_max_partitions);
   if (n_part)
     {
@@ -1975,7 +1989,7 @@ setp_chash_group (setp_node_t * setp, caddr_t * inst)
   if (setp->setp_is_streaming
       && cha->cha_distinct_count * 100 > (dc_batch_sz * cha_stream_gb_flush_pct) && setp_stream_breakable (setp, inst))
     longjmp_splice (THREAD_CURRENT_THREAD->thr_reset_ctx, RST_GB_ENOUGH);
-  if (cha->cha_pool->mp_bytes > cha_max_gb_bytes && (cha->cha_pool->mp_bytes + mp_large_in_use) > c_max_large_vec)
+  if (cha->cha_pool->mp_bytes > cha_max_gb_bytes && (cha->cha_pool->mp_bytes + mp_large_in_use) > c_max_large_vec && !setp->setp_is_streaming)
     cha->cha_oversized = 1;
   return 1;
 no:
@@ -1983,8 +1997,6 @@ no:
     chash_to_memcache (inst, tree, ha);
   return 0;
 }
-
-
 
 
 void
@@ -2651,7 +2663,7 @@ next_batch:
 	  chash_t *cha_p = CHA_PARTITION (cha, part);
 	  if (!chp)
 	    {
-	      chp = cha_p->cha_current;
+	      chp = cha_p->cha_init_page ? cha_p->cha_init_page : cha_p->cha_current;
 	      row = 0;
 	    }
 	  for (chp = chp; chp; chp = chp->h.h.chp_next)
@@ -3051,10 +3063,17 @@ cha_hs_cmp (hash_source_t * hs, caddr_t * inst, chash_t * cha, int set, int64 * 
 
 long chash_cum_input;
 
+
+#define HS_N_SETS \
+  hs->src_gen.src_prev ? QST_INT (inst, hs->src_gen.src_prev->src_out_fill) : qi->qi_n_sets
+
+
+
 void
 hash_source_chash_input (hash_source_t * hs, caddr_t * inst, caddr_t * state)
 {
   int n_sets, set;
+  QNCAST (QI, qi, inst);
   key_source_t *ks = hs->hs_ks;
   int64 *deps;
   chash_t *cha;
@@ -3074,7 +3093,7 @@ hash_source_chash_input (hash_source_t * hs, caddr_t * inst, caddr_t * state)
   cha = hi->hi_chash;
   if (state)
     {
-      n_sets = QST_INT (inst, hs->src_gen.src_prev->src_out_fill);
+      n_sets = HS_N_SETS;
       if (hs->hs_merged_into_ts)
 	{
 	  QST_INT (inst, hs->src_gen.src_out_fill) = n_sets;
@@ -3103,7 +3122,7 @@ hash_source_chash_input (hash_source_t * hs, caddr_t * inst, caddr_t * state)
 	  if (ks->ks_last_vec_param)
 	    n_sets = QST_BOX (data_col_t *, inst, ks->ks_last_vec_param->ssl_index)->dc_n_values;
 	  else
-	    n_sets = QST_INT (inst, hs->src_gen.src_prev->src_out_fill);
+	    n_sets = HS_N_SETS;
 	}
       else
 	{
@@ -4228,6 +4247,7 @@ setp_chash_fill (setp_node_t * setp, caddr_t * inst)
     }
 }
 
+
 void
 hash_source_chash_input_1i (hash_source_t * hs, caddr_t * inst, caddr_t * state, int n_sets)
 {
@@ -5188,10 +5208,36 @@ ret_sets:
 }
 
 
+void
+dbg_dc_ck (data_col_t * dc)
+{
+  int inx;
+  db_buf_t * any_arr = (db_buf_t*)dc->dc_values;
+  if (DV_ANY == dc->dc_dtp)
+    {
+      for (inx = 1; inx < dc->dc_n_values; inx++)
+	{
+	  int l1;
+	  DB_BUF_TLEN (l1, any_arr[inx][0], any_arr[inx]);
+	}
+    }
+}
+
+
+void
+dclck (data_col_t * dc)
+{
+  if ((long)dc->dc_values < (long)dc->dc_buffer )
+    {
+      if ((long)dc->dc_buffer - (long)dc->dc_values  < 8 * dc->dc_n_places) bing ();
+    }
+}
+
+
 int
 ce_hash_sets_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_bytes)
 {
-  int rl = 1, last_v;
+  int rl = 1, last_v, max_values;
   db_buf_t ce = cpo->cpo_ce;
   dtp_t flags = ce[0];
   int dc_off = 0, inx;
@@ -5219,7 +5265,8 @@ ce_hash_sets_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_byt
   if (!enable_chash_bloom)
     return 0;
   dc_reset (dc);
-  DC_CHECK_LEN (dc, n_values);
+  max_values = (itc->itc_n_matches - itc->itc_match_in) + 1;
+  DC_CHECK_LEN (dc, max_values);
   if (DV_ANY == dc->dc_dtp)
     {
       dc->dc_n_values = 1;
@@ -5289,6 +5336,7 @@ ce_hash_sets_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_byt
     n_values = cha_inline_1i (hrng->hrng_hs, cha, itc, matches, n_values, hash_no, 0, rl, dc);
   else
     n_values = cha_inline_any (hrng->hrng_hs, cha, itc, matches, n_values, hash_no, 0, rl, dc);
+  dc->dc_values -= dc_off;
   if (!n_values)
     return itc->itc_match_in >= itc->itc_n_matches ? CE_AT_END : itc->itc_matches[itc->itc_match_in];
 
@@ -5529,8 +5577,8 @@ ks_add_hash_spec (key_source_t * ks, caddr_t * inst, it_cursor_t * itc)
 	  if (n_deps)
 	    itc->itc_value_ret_hash_spec = 1;
 	  tree = qst_get_chash (inst, hrng->hrng_ht, hrng->hrng_ht_id, NULL);
-	  cha = tree->it_hi->hi_chash;
-	  if (!cha->cha_distinct_count)
+	  cha = tree ? tree->it_hi->hi_chash : NULL;
+	if (!cha || !cha->cha_distinct_count)
 	    {
 	      /* join with empty chash is like null in search params, always empty */
 	      key_free_trail_specs (sp_copy_1);
@@ -5658,6 +5706,7 @@ void
 chash_fill_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * state)
 {
   QNCAST (query_instance_t, qi, inst);
+  int save_prev_sets = QST_INT (inst, fref->fnr_select->src_prev->src_out_fill);
   int p, n_part, nth_part;
   setp_node_t *setp = fref->fnr_setp;
   index_tree_t *tree = (index_tree_t *) qst_get (inst, setp->setp_ha->ha_tree);
@@ -5743,7 +5792,10 @@ chash_fill_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * state)
 	    uint64 now = rdtsc ();
 	    SRC_STOP_TIME (fref, inst);
 	  }
+	  QST_INT (inst, fref->fnr_select->src_prev->src_out_fill) = 1;
 	qn_input (fref->fnr_select, inst, inst);
+	  QST_INT (inst, fref->fnr_select->src_prev->src_out_fill) = save_prev_sets;
+
 	cl_fref_resume (fref, inst);
 	SRC_START_TIME (fref, inst);
 	n_filled = qi->qi_n_affected;

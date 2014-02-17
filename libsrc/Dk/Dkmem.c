@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -27,6 +27,7 @@
 #include "Dk.h"
 #include "Dk/Dksystem.h"
 #include "Dksimd.h"
+
 
 
 void
@@ -105,7 +106,41 @@ memmove_16 (void * t, const void * s, size_t len)
 
 
 
-unsigned  int64 rdtsc()
+uint64
+rdtsc()
 {
+#if defined(HAVE_GETHRTIME) || defined(SOLARIS)
+  return (uint64) gethrtime ();
+#elif defined (WIN32)
+  return __rdtsc ();
+#elif defined (__GNUC__) && defined (__x86_64__)
+  uint32 lo, hi;
+
+  /* Serialize */
+  __asm__ __volatile__ ("xorl %%eax,%%eax\n\tcpuid":::"%rax", "%rbx", "%rcx", "%rdx");
+
+  /* We cannot use "=A", since this would use %rax on x86_64 and return only the lower 32bits of the TSC */
+  __asm__ __volatile__ ("rdtsc":"=a" (lo), "=d" (hi));
+
+  return (uint64) hi << 32 | lo;
+#elif defined (__GNUC__) && defined (__i386__)
+  uint64 result;
+  __asm__ __volatile__ ("rdtsc":"=A" (result));
+  return result;
+#elif defined(__GNUC__) && defined(__ia64__)
+  uint64 result;
+  __asm__ __volatile__ ("mov %0=ar.itc":"=r" (result));
+  return result;
+#elif defined(__GNUC__) && (defined(__powerpc__) || defined(__POWERPC__)) && (defined(__64BIT__) || defined(_ARCH_PPC64))
+  uint64 result;
+  __asm__ __volatile__ ("mftb %0":"=r" (result));
+  return result;
+#elif defined(HAVE_CLOCK_GETTIME) && defined(CLOCK_REALTIME)
+  {
+    struct timespec t;
+    clock_gettime(CLOCK_REALTIME, &t);
+    return (uint64) t.tv_sec * 1000000000 + (uint64) t.tv_nsec;
+  }
   return 0;
+#endif
 }

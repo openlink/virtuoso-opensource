@@ -7,7 +7,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2014 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -58,7 +58,7 @@ then
 fi
 
 # XXX
-if [ 0 == 1 ] 
+if [ 0 -eq 1 ] 
 then
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tplscroll.sql
 
@@ -134,7 +134,7 @@ then
 fi
 
 # XXX
-if [ 0 == 1 ]
+if [ 0 -eq 1 ]
 then
 if [ "$VIRTUOSO_VDB" = "0" ]
 then 

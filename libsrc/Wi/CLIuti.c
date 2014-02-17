@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1669,6 +1669,7 @@ dv_to_sqlc_default (caddr_t xx)
       return SQL_C_LONG;
 
     case DV_STRING:
+    case DV_UNAME:
       return SQL_C_CHAR;
 
     case DV_SINGLE_FLOAT:
@@ -2183,6 +2184,7 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
 	switch (dtp)		/* Not SQL_C_CHAR/SQL_C_OID */
 	  {
 	  case DV_STRING:
+          case DV_UNAME:
 	    len--;		/* Exclude the termination byte */
 	    break;
 
@@ -2196,15 +2198,16 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
     switch (dtp)
       {
       case DV_STRING:
+      case DV_UNAME:
+        len = box_len-1;		/* Terminating zero byte '\0' is excluded. */
+        str = ((char *) it);
+        break;
       case DV_SHORT_CONT_STRING:
       case DV_LONG_CONT_STRING:
       case DV_BIN:
-	len = box_len;		/* box_length(it); */
-	if (DV_SHORT_STRING == dtp || DV_LONG_STRING == dtp)
-	  len--;		/* Terminating zero byte '\0' is excluded. */
-	str = ((char *) it);
-	break;
-
+        len = box_len;			/* Terminating zero byte '\0' is missing so nothing to exclude. */
+        str = ((char *) it);
+        break;
       case DV_SHORT_INT:
       case DV_LONG_INT:
 	snprintf (temp, sizeof (temp), BOXINT_FMT, (boxint) unbox (it));
@@ -3041,6 +3044,7 @@ nt_to_numeric_struct (char * it, SQL_NUMERIC_STRUCT * ons)
       break;
 
     case DV_STRING:
+    case DV_UNAME:
       numeric_from_string (nt, it);
       break;
 

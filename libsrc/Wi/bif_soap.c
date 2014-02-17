@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -283,7 +283,7 @@ void soap_mime_tree_ctx (caddr_t ctype, caddr_t body, dk_set_t * set, caddr_t * 
 
 query_instance_t soap_fake_top_qi;
 
-static void
+void
 ses_sprintf (dk_session_t *ses, const char *fmt, ...)
 {
   char buf[PAGE_SZ];
@@ -10046,6 +10046,18 @@ soap_check_xsd_restriction (caddr_t * restriction, caddr_t box, soap_ctx_t *ctx)
   return 1;
 }
 
+static int
+soap_same_ns (const char * str1, const char * str2)
+{
+  char * p1, * p2;
+  if (!str1 || !str2 || !(p1 = strrchr (str1, ':')) || !(p2 = strrchr (str2, ':')))
+    return 0;
+  if ((p1 - str1) != (p2 - str2))
+    return 0;
+  if (!strncmp (str1, str2, p1 - str1))
+    return 1;
+  return 0;
+}
 
 static void
 soap_print_tag (const char * tag, dk_session_t *ses, caddr_t type_ref, soap_ctx_t * ctx, int closing_1,
@@ -10460,7 +10472,7 @@ soap_print_box_validating (caddr_t box, const char * tag, dk_session_t *ses,
 			 {
 			   int is_elem = 0;
 			   char * ns = soap_wsdl_ns_prefix (elem_ns, &(ctx->types_set), NULL, &is_elem);
-			   if (!ns)
+			   if (!ns && !soap_same_ns (type_ref, elem_ns))
 			     SOAP_VALIDATE_ERROR (("22023", "SV086",
 			       "Can't resolve namespace of element '%s' of derived type '%s'", elem_name, elem_ns));
 			   dk_set_push (&ctx->ns, box_dv_short_string (ns));
@@ -11767,9 +11779,9 @@ bif_soap_init (void)
   ht_soap_sup = id_str_hash_create (101);
   con_soap_fault_name = box_dv_short_string ("SOAPFault");
   con_soap_blob_limit_name = box_dv_short_string ("SOAPBlobLimit");
-  bif_define_typed ("soap_find_xml_attribute", bif_soap_find_xml_attribute, &bt_varchar);
-  bif_define_typed ("soap_print_box", bif_soap_print_box, &bt_varchar);
-  bif_define_typed ("soap_print_box_validating", bif_soap_print_box_validating, &bt_varchar);
+  bif_define_ex ("soap_find_xml_attribute", bif_soap_find_xml_attribute, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("soap_print_box", bif_soap_print_box, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("soap_print_box_validating", bif_soap_print_box_validating, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("soap_box_xml_entity", bif_soap_box_xml_entity);
   bif_define ("soap_box_xml_entity_validating", bif_soap_box_xml_entity_validating);
   bif_define ("soap_call", bif_soap_call);
@@ -11778,11 +11790,11 @@ bif_soap_init (void)
   bif_define ("soap_server", bif_soap_server);
   bif_define ("soap_box_structure", bif_soap_box_structure);
   bif_define ("soap_boolean", bif_soap_boolean);
-  bif_define_typed ("soap_make_error", bif_soap_make_error, &bt_varchar);
-  bif_define_typed ("soap_sdl", bif_soap_sdl, &bt_varchar);
-  bif_define_typed ("soap_wsdl", bif_soap_wsdl, &bt_varchar);
-  bif_define_typed ("soap_current_url", bif_soap_current_url, &bt_varchar);
-  bif_define_typed ("dv_to_soap_type", bif_dv_to_soap_type, &bt_varchar);
+  bif_define_ex ("soap_make_error", bif_soap_make_error, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("soap_sdl", bif_soap_sdl, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("soap_wsdl", bif_soap_wsdl, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("soap_current_url", bif_soap_current_url, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("dv_to_soap_type", bif_dv_to_soap_type, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("__soap_dt_define", bif_soap_dt_define);
   bif_define ("__soap_udt_publish", bif_soap_udt_publish);
   bif_define ("__soap_udt_unpublish", bif_soap_udt_unpublish);

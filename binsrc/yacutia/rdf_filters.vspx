@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2014 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -110,7 +110,7 @@
   		                              <th>Seq#</th>
                               		  <th colspan="2">Description</th>
                               		  <th>Pattern</th>
-                              		  <th>Action</th>
+                              		  <th width="1%">Action</th>
                           	      </tr>
                                   <v:data-source name="ds_maps" expression-type="sql" nrows="1000" initial-offset="0">
                                     <v:before-data-bind>
@@ -182,15 +182,15 @@
                                 			    <td>
                                 				    <v:label name="la1" format="%70.70s" value="--(control.vc_parent as vspx_row_template).te_rowset[0]"/>
                                 			    </td>
-                                			    <td>
-                                				    &#160;
-                                				    <v:url name="ur2" value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
+                                			    <td nowrap="nowrap">
+                                				    &nbsp;
+                                				    <v:url name="ur2" value='<img src="images/icons/trash_16.png" hspace="3" border="0"/>Delete'
                                 				      format="%s"
                                 				      url="--sprintf ('rdf_filters.vspx?del=%d', (control.vc_parent as vspx_row_template).te_rowset[3])"
                                 				      xhtml_title="Delete"
                                 				      xhtml_alt="Delete"
                                 				    />
-                                				    &#160;
+                                				    &nbsp;
                                     				<v:button name="earul1" value="Up" action="simple" style="url">
                                   				    <v:on-post><![CDATA[
                                       					declare to_move, to_swap, mv_ord, sw_ord int;
@@ -218,7 +218,7 @@
                                 					      self.vc_data_bind (e);
                                 				      ]]></v:on-post>
                                 				    </v:button>
-                                				    &#160;
+                                				    &nbsp;
                                 				    <v:button name="earul2" value="Down" action="simple" style="url">
                                 				      <v:on-post><![CDATA[
                                       					declare to_move, to_swap, mv_ord, sw_ord int;

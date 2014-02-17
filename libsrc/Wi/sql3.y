@@ -8,7 +8,7 @@
  *   This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *   project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *   This project is free software; you can redistribute it and/or modify it
  *   under the terms of the GNU General Public License as published by the
@@ -544,7 +544,7 @@
 %token <box> MODIFIES INPUT CALLED ADA C COBOL FORTRAN MUMPS PASCAL_L PLI NAME_L TEXT_L JAVA INOUT_L REMOTE KEYSET VALUE PARAMETER VARIABLE ADMIN_L ROLE_L TEMPORARY CLR ATTRIBUTE
 %token <box> __SOAP_DOC __SOAP_DOCW __SOAP_HEADER __SOAP_HTTP __SOAP_NAME __SOAP_TYPE __SOAP_XML_TYPE __SOAP_FAULT __SOAP_DIME_ENC __SOAP_ENC_MIME __SOAP_OPTIONS FOREACH POSITION_L
 %token ARE REF STATIC_L SPECIFIC DYNAMIC COLUMN START_L
-%token __TAG_L RDF_BOX_L VECTOR_L VECTORED FOR_VECTORED FOR_ROWS NOT_VECTORED VECTORING
+%token __LOCK __TAG_L RDF_BOX_L VECTOR_L VECTORED FOR_VECTORED FOR_ROWS NOT_VECTORED VECTORING
 
 %nonassoc ORDER FOR
 %left UNION EXCEPT
@@ -1163,8 +1163,9 @@ view_def
                 { $$ = $5; $$->_.view_def.name = $3; }
 	| CREATE PROCEDURE VIEW new_table_name AS q_table_name '(' column_commalist_or_empty ')' '(' proc_col_list ')'
 		{ $$ = (ST*) t_list (5, VIEW_DEF, $4,
-		    t_list (4, PROC_TABLE, $6, $8,
-		      t_list_to_array (sqlc_ensure_primary_key (sqlp_process_col_options ($4, $11)))),
+		    t_list (5, PROC_TABLE, $6, $8,
+		      t_list_to_array (sqlc_ensure_primary_key (sqlp_process_col_options ($4, $11))),
+		      NULL ),
 		    NULL, NULL); }
 	;
 
@@ -1702,6 +1703,9 @@ sql_option
 	| HASH REPLICATION { $$ = t_CONS (OPT_HASH_REPLICATION, t_CONS ((ptrlong)1, NULL)); }
 	| ISOLATION_L txn_isolation_level { $$ = t_CONS (OPT_ISOLATION, t_CONS ( $2, NULL)); }
 	| INTERSECT { $$ = t_CONS (OPT_JOIN, t_CONS (OPT_INTERSECT, NULL)); }
+	| NO_L __LOCK { $$ = t_CONS (OPT_NO_LOCK, t_CONS (1, NULL)); }
+	|  FOR UPDATE { $$ = t_CONS (OPT_NO_LOCK, t_CONS (2, NULL)); }
+	| __LOCK { $$ = t_CONS (OPT_NO_LOCK, t_CONS (3, NULL)); }
 	| LOOP { $$ = t_CONS (OPT_JOIN, t_CONS (OPT_LOOP, NULL)); }
 	| LOOP EXISTS { $$ = t_CONS (OPT_SUBQ_LOOP, t_CONS (SUBQ_LOOP, NULL)); }
 	| DO NOT LOOP EXISTS { $$ = t_CONS (OPT_SUBQ_LOOP, t_CONS (SUBQ_NO_LOOP, NULL)); }
@@ -1716,15 +1720,26 @@ sql_option
 	| INTO scalar_exp { $$ = t_CONS (OPT_INTO, t_CONS ($2, NULL)); }
 	| FETCH column_ref BY scalar_exp SET column_ref { $$ = t_cons ((void*)OPT_INS_FETCH, t_cons (t_list (4, OPT_INS_FETCH, $2, $4, $6), NULL)); }
 	| VECTORED { $$ = t_cons ((void*)OPT_VECTORED, t_cons ((void*)1, NULL)); }
+	| VECTORED INTNUM { $$ = t_cons ((void*)OPT_VECTORED, t_cons ((void*)$2, NULL)); }
 	| PARTITION GROUP BY { $$ = t_cons ((void*)OPT_PART_GBY, t_cons ((void*)1, NULL)); }
 	| DO NOT PARTITION GROUP BY { $$ = t_cons ((void*)OPT_NO_PART_GBY, t_cons ((void*)1, NULL)); }
 	| CHECK { $$ = t_cons ((void*)OPT_CHECK, t_cons ((void*)1, NULL)); }
 	| WITHOUT_L VECTORING { $$ = t_cons ((void*)OPT_NOT_VECTORED, t_cons ((void*)1, NULL)); }
+	| PARTITION NAME { $$ = t_cons ((void*)OPT_PARTITION, t_cons ((void*)$2, NULL)); }
+	| FROM scalar_exp { $$ = t_cons ((void*)OPT_FROM_FILE, t_cons ((void*)$2, NULL)); }
+	| START_L scalar_exp { $$ = t_cons ((void*)OPT_FILE_START, t_cons ((void*)$2, NULL)); }
+	| ENDX scalar_exp { $$ = t_cons ((void*)OPT_FILE_END, t_cons ((void*)$2, NULL)); }
 	| NAME INTNUM {
 	  if (!stricmp ($1, "vacuum"))
 	    $$ = t_CONS (OPT_VACUUM, t_CONS ($2, NULL));
 	  else if (!stricmp ($1, "RANDOM"))
 	    $$ = t_CONS (OPT_RANDOM_FETCH, t_CONS ($2, NULL));
+	  else if (!stricmp ($1, "PARALLEL"))
+	    $$ = t_CONS (OPT_PARALLEL, t_CONS ($2, NULL));
+	  else if (!stricmp ($1, "EST_TIME"))
+	    $$ = t_CONS (OPT_EST_TIME, t_CONS ($2, NULL));
+	  else if (!stricmp ($1, "EST_SIZE"))
+	    $$ = t_CONS (OPT_EST_SIZE, t_CONS ($2, NULL));
 	  else
 	    $$ = NULL;
 	}
@@ -2127,9 +2142,9 @@ table_ref
 		}
 	| joined_table
 		{ $$ = t_listbox (3, TABLE_REF,$1, (caddr_t) NULL); }
-        | q_table_name '(' column_commalist_or_empty ')' opt_proc_col_list identifier
+        | q_table_name '(' column_commalist_or_empty ')' opt_proc_col_list identifier opt_table_opt
 		{
-		  $$ =  t_listbox (3, DERIVED_TABLE, t_list (4, PROC_TABLE, $1, $3, $5), $6);
+		  $$ = t_listbox (3, DERIVED_TABLE, t_list (5, PROC_TABLE, $1, $3, $5, $7), $6);
 		}
 	;
 
@@ -2851,7 +2866,7 @@ aggregate_ref
 		  $$ = sqlp_make_user_aggregate_fun_ref ($2, arglist, 1);
 		}
 /*	| AMMSC '(' '*' ')'			{ FN_REF ($$, $1, 0, 0); }*/
-	| AMMSC '(' DISTINCT scalar_exp ')'	{ FN_REF ($$, $1, 1, $4) }
+| AMMSC '(' DISTINCT scalar_exp opt_sql_opt ')'	{ FN_REF ($$, $1, 1, $4); $$->_.fn_ref.fn_arglist = $5; }
 	| AMMSC '(' ALL scalar_exp ')'		{ FN_REF ($$, $1, 0, $4) }
 	| AMMSC '(' scalar_exp ')'		{ FN_REF ($$, $1, 0, $3) }
 	;
@@ -3715,6 +3730,7 @@ for_statement
 	| FOREACH '(' data_type_ref identifier IN_L scalar_exp ')' DO statement
 		{ $$ = sqlp_foreach_statement ($3, $4, $6, $9); }
 	| FOR VECTORED opt_modify '(' vectored_list ')' compound_statement { $$ = t_listst (4, FOR_VEC_STMT, t_list_to_array ($5), $7, (ptrlong) $3); }
+	| NOT VECTORED compound_statement { $$ = t_listst (4, NOT_VEC_STMT, NULL, $3, NULL); }
 	;
 
 trigger_def

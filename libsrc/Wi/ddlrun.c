@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -4612,6 +4612,107 @@ ddl_read_constraints (char *spec_tb_name, caddr_t *qst)
     ddl_table_check_constraints_define_triggers (qi, curr_tb_name, check_cond);
 }
 
+dk_set_t triggers_to_redo = NULL;
+
+void
+ddl_redo_undefined_triggers ()
+{
+  caddr_t * trigs;
+  user_t *org_user = bootstrap_cli->cli_user;
+  caddr_t org_qual = bootstrap_cli->cli_qualifier;
+  caddr_t err;
+  query_t *rdproc;
+  local_cursor_t *lc;
+  int inx;
+
+  if (!triggers_to_redo) 
+    return;
+  trigs = (caddr_t *) list_to_array (dk_set_nreverse (triggers_to_redo));
+  triggers_to_redo = NULL;
+  sqlc_set_client (NULL);
+  rdproc = sql_compile_static (
+      "select T_TEXT, T_MORE, T_SCH, DB.DBA.TRIG_OWNER (T_NAME, T_TABLE), T_NAME, T_TABLE from DB.DBA.SYS_TRIGGERS where T_NAME = ? and T_TABLE = ?",
+      bootstrap_cli, NULL, SQLC_DEFAULT);
+
+  if (!rdproc)
+    goto end;
+
+  DO_BOX (caddr_t *, rec, inx, trigs)
+    {
+      caddr_t ttable = rec[0], tname = rec[1];
+      trigs[inx] = NULL;
+      lc = NULL;
+      qr_quick_exec (rdproc, bootstrap_cli, "q", &lc, 2, ":0", tname, QRP_RAW, ":1", ttable, QRP_RAW);
+      CLI_QUAL_ZERO (bootstrap_cli);
+      if (lc_next (lc))
+	{
+	  char *full_text = NULL;
+	  char *short_text = lc_nth_col (lc, 0);
+	  char *long_text = lc_nth_col (lc, 1);
+	  char *qual = lc_nth_col (lc, 2);
+	  char *owner = lc_nth_col (lc, 3);
+	  char *t_name = lc_nth_col (lc, 4);
+	  char *t_table = lc_nth_col (lc, 5);
+	  user_t *owner_user = sec_name_to_user (owner);
+	  if (owner_user)
+	    bootstrap_cli->cli_user = owner_user;
+	  else
+	    log_error ("Trigger %s on %s with bad owner, owner =  %s", t_name, t_table, owner);
+	  err = NULL;
+	  CLI_SET_QUAL (bootstrap_cli, qual);
+	  if (IS_BLOB_HANDLE (long_text))
+	    {
+	      caddr_t err2 = NULL;
+	      full_text = safe_blob_to_string (bootstrap_cli->cli_trx, long_text, &err2);
+	      if (err2)
+		{
+		  log_error (
+		      "Error reading trigger %s on %s body: %s: %s."
+		      "It will not be defined. Drop the trigger and recreate it.",
+		      t_name, t_table,
+		      ((caddr_t *) err2)[QC_ERRNO], ((caddr_t *) err2)[QC_ERROR_STRING]);
+		  dk_free_tree (err2);
+		  continue;
+		}
+	      sql_compile (full_text, bootstrap_cli, &err, SQLC_DO_NOT_STORE_PROC);
+	    }
+	  else
+	    {
+	      if (DV_STRINGP (long_text))
+		{
+		  short_text = long_text;
+		  long_text = NULL;
+		}
+	      sql_compile (short_text, bootstrap_cli, &err, SQLC_DO_NOT_STORE_PROC);
+	    }
+	  if (err)
+	    {
+	      if (full_text && strlen (full_text) > 60)
+		full_text[59] = 0;
+	      if (short_text && strlen (short_text) > 60)
+		short_text[59] = 0;
+	      if (0 == strcmp (ERR_STATE (err), "37000") && NULL != strstr (ERR_MESSAGE (err), "SPARQL compiler: Quad storage")) /* quad store is not inited */
+		{
+		  dk_set_push (&triggers_to_redo, list (2, box_string (t_table), box_string (t_name)));
+		}
+	      else
+		log_error ("Error compiling trigger %s on %s: %s: %s -- %s", t_name, t_table,
+		    ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING],
+		    full_text ? full_text : short_text);
+	    }
+	  dk_free_box (full_text);
+	}
+      lc_free (lc);
+    }
+  END_DO_BOX;
+  qr_free (rdproc);
+
+end:;
+  dk_free_box (trigs);  
+  bootstrap_cli->cli_user = org_user;
+  CLI_RESTORE_QUAL (bootstrap_cli, org_qual);
+  local_commit (bootstrap_cli);
+}
 
 void
 read_proc_and_trigger_tables (int remotes)
@@ -4798,16 +4899,16 @@ scan_SYS_PROCEDURES:
       CLI_SET_QUAL (bootstrap_cli, qual);
       if (IS_BLOB_HANDLE (long_text))
 	{
-	  caddr_t err = NULL;
-	  full_text = safe_blob_to_string (bootstrap_cli->cli_trx, long_text, &err);
-	  if (err)
+	  caddr_t err2 = NULL;
+	  full_text = safe_blob_to_string (bootstrap_cli->cli_trx, long_text, &err2);
+	  if (err2)
 	    {
 	      log_error (
 		  "Error reading trigger %s on %s body: %s: %s."
 		  "It will not be defined. Drop the trigger and recreate it.",
 		  t_name, t_table,
-		  ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING]);
-	      dk_free_tree (err);
+		  ((caddr_t *) err2)[QC_ERRNO], ((caddr_t *) err2)[QC_ERROR_STRING]);
+	      dk_free_tree (err2);
 	      continue;
 	    }
 	  proc_qr = sql_compile (full_text, bootstrap_cli, &err, SQLC_DO_NOT_STORE_PROC);
@@ -4827,7 +4928,12 @@ scan_SYS_PROCEDURES:
 	    full_text[59] = 0;
 	  if (short_text && strlen (short_text) > 60)
 	    short_text[59] = 0;
-	  log_error ("Error compiling trigger %s on %s: %s: %s -- %s", t_name, t_table,
+	  if (0 == strcmp (ERR_STATE (err), "37000") && NULL != strstr (ERR_MESSAGE (err), "SPARQL compiler: Quad storage")) /* quad store is not inited */
+	    {
+	      dk_set_push (&triggers_to_redo, list (2, box_string (t_table), box_string (t_name)));
+	    }
+	  else
+	    log_error ("Error compiling trigger %s on %s: %s: %s -- %s", t_name, t_table,
 	      ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING],
 	      full_text ? full_text : short_text);
 	}
@@ -5195,7 +5301,7 @@ ddl_store_proc (caddr_t * state, op_node_t * op)
 	  bootstrap_cli, NULL, SQLC_DEFAULT);
       proc_rm_duplicate_query = sql_compile_static ("delete from DB.DBA.SYS_PROCEDURES where P_NAME = ?",
 	      bootstrap_cli, NULL, SQLC_DEFAULT);
-      cl_proc_rm_duplicate_query = sql_compile_static ("cl_exec (\'delete from DB.DBA.SYS_PROCEDURES table option (no cluster) where P_NAME = ? option (no cluster)\', params => vector (?))",
+      cl_proc_rm_duplicate_query = sql_compile_static ("cl_exec (\'delete from DB.DBA.SYS_PROCEDURES table option (no cluster) where P_NAME = ? option (no cluster)\', params => vector (?), txn=> case when bit_and (log_enable (null, 1), 2) = 2 then 0 else 1 end)",
 	      bootstrap_cli, NULL, SQLC_DEFAULT);
       proc_revoke_query = sql_compile_static ("delete from DB.DBA.SYS_GRANTS where G_OBJECT = ? and G_OP = 32",
 	      bootstrap_cli, NULL, SQLC_DEFAULT);
@@ -6683,15 +6789,16 @@ static const char * scheduler_do_round_text =
 "create procedure scheduler_do_round(in n integer) \n"
 "{\n"
 "  declare n_events, inx integer;\n"
-"  declare arr any;\n"
+"  declare arr, dtn any;\n"
 "  declare last_chkp, achkp integer; \n"
+"  dtn := curdatetime(); \n"
 "  last_chkp := sys_stat ('st_chkp_last_checkpointed'); \n"
 "  achkp := sys_stat ('st_chkp_autocheckpoint'); \n"
 "  select count (*) into n_events\n"
 "      from SYS_SCHEDULED_EVENT \n"
-"      where SE_START <= curdatetime() and SE_INTERVAL > 0 and\n"
+"      where SE_START <= dtn and SE_INTERVAL > 0 and\n"
 "      (SE_LAST_COMPLETED is NULL or \n"
-"       dateadd('minute', SE_INTERVAL, SE_LAST_COMPLETED) <= curdatetime());\n"
+"       dateadd('minute', SE_INTERVAL, SE_LAST_COMPLETED) <= dtn);\n"
 " \n"
 "  if (n_events = 0)\n"
 "    return;\n"
@@ -6699,9 +6806,9 @@ static const char * scheduler_do_round_text =
 "  inx := 0;\n"
 "  for select SE_NAME, SE_SQL, SE_NOTIFICATION_SENT  \n"
 "    from SYS_SCHEDULED_EVENT \n"
-"    where SE_START <= curdatetime() and SE_INTERVAL > 0 and\n"
+"    where SE_START <= dtn and SE_INTERVAL > 0 and\n"
 "    (SE_LAST_COMPLETED is NULL or \n"
-"     dateadd('minute', SE_INTERVAL, SE_LAST_COMPLETED) <= curdatetime()) \n"
+"     dateadd('minute', SE_INTERVAL, SE_LAST_COMPLETED) <= dtn) \n"
 "    order by SE_LAST_COMPLETED \n"
 "    do \n"
 "      {\n"

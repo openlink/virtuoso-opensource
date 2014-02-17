@@ -7,7 +7,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -65,7 +65,7 @@ For your convenience we have a set of <a href="nspref.vsp">predefined name space
 	This work is licensed under a
 	<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-Share Alike 3.0 Unported License</a>.<br />
 	<?vsp fct_virt_info (); ?><br />
-	Copyright &copy; 2009-2013 OpenLink Software
+	Copyright &copy; 2009-<?V "LEFT" (datestring (now ()), 4)?> OpenLink Software 
       </div> <!-- #ft_b -->
     </div> <!-- #footer -->
   </body>

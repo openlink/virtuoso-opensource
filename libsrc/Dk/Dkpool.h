@@ -9,7 +9,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -38,12 +38,27 @@ extern size_t mp_max_large_in_use;
 extern size_t mp_large_reserved;
 extern size_t mp_max_large_reserved;
 extern size_t mp_large_reserve_limit;
+extern size_t mp_large_soft_cap;
+extern size_t mp_large_hard_cap;
 #ifdef VALGRIND
 #define LACERATED_POOL
 #endif
 #ifdef MALLOC_DEBUG
 #define LACERATED_POOL
 #endif
+
+#define MP_LARGE_SOFT_CK (mp_large_soft_cap && mp_large_in_use > mp_large_soft_cap)
+
+typedef struct mem_block_s mem_block_t;
+
+typedef void mem_pool_size_cap_cbk_t (mem_pool_t *mp, void *cbk_env);
+
+typedef struct mem_pool_size_cap_s {
+  mem_pool_size_cap_cbk_t *	cbk;
+  size_t			limit;
+  size_t			last_cbk_limit;
+  void *			cbk_env;
+} mem_pool_size_cap_t;
 
 #ifdef LACERATED_POOL
 struct mem_pool_s
@@ -68,6 +83,7 @@ struct mem_pool_s
   const char *		mp_list_alloc_file;
   int 			mp_list_alloc_line;
 #endif
+  mem_pool_size_cap_t	mp_size_cap;
   caddr_t	mp_comment;
 };
 #else
@@ -77,8 +93,6 @@ struct mem_block_s
   size_t 		mb_fill;
   size_t 		mb_size;
 };
-
-typedef struct mem_block_s mem_block_t;
 
 struct mem_pool_s
 {
@@ -96,6 +110,7 @@ struct mem_pool_s
   int 			mp_alloc_line;
 #endif
   caddr_t	mp_comment;
+  mem_pool_size_cap_t	mp_size_cap;
 };
 #endif
 
@@ -106,6 +121,7 @@ extern mem_pool_t *dbg_mem_pool_alloc (const char *file, int line);
 #endif
 
 EXE_EXPORT (caddr_t, mp_alloc_box, (mem_pool_t * mp, size_t len, dtp_t dtp));
+EXE_EXPORT (caddr_t, mp_alloc_box_ni, (mem_pool_t * mp, int len, dtp_t dtp));
 EXE_EXPORT (caddr_t, mp_box_string, (mem_pool_t * mp, const char *str));
 EXE_EXPORT (caddr_t, mp_box_substr, (mem_pool_t * mp, ccaddr_t str, int n1, int n2));
 EXE_EXPORT (box_t, mp_box_dv_short_nchars, (mem_pool_t * mp, const char *str, size_t len));
@@ -122,6 +138,7 @@ void * mp_large_alloc (mem_pool_t * mp, size_t sz);
 
 #ifdef MALLOC_DEBUG
 extern caddr_t dbg_mp_alloc_box (const char *file, int line, mem_pool_t * mp, size_t len, dtp_t dtp);
+extern caddr_t dbg_mp_alloc_box_ni (const char *file, int line, mem_pool_t * mp, int len, dtp_t dtp);
 extern caddr_t dbg_mp_box_string (const char *file, int line, mem_pool_t * mp, const char *str);
 extern caddr_t dbg_mp_box_substr (const char *file, int line, mem_pool_t * mp, ccaddr_t str, int n1, int n2);
 extern box_t dbg_mp_box_dv_short_nchars (const char *file, int line, mem_pool_t * mp, const char *str, size_t len);
@@ -137,6 +154,7 @@ extern caddr_t dbg_mp_box_float (const char *file, int line, mem_pool_t * mp, fl
 #ifndef _USRDLL
 #ifndef EXPORT_GATE
 #define mp_alloc_box(mp,len,dtp) dbg_mp_alloc_box (__FILE__, __LINE__, (mp), (len), (dtp))
+#define mp_alloc_box_ni(mp,len,dtp) dbg_mp_alloc_box_ni (__FILE__, __LINE__, (mp), (len), (dtp))
 #define mp_box_string(mp, str) dbg_mp_box_string (__FILE__, __LINE__, (mp), (str))
 #define mp_box_substr(mp, str, n1, n2) dbg_mp_box_substr (__FILE__, __LINE__, (mp), (str), (n1), (n2))
 #define mp_box_dv_short_nchars(mp, str, len) dbg_mp_box_dv_short_nchars (__FILE__, __LINE__, (mp), (str), (len))
@@ -356,7 +374,6 @@ void mp_trash (mem_pool_t * mp, caddr_t box);
 #define mp_trash_push(mp,box) dk_set_push (&((mp)->mp_trash), (void *)(box))
 #define t_trash_push(box) mp_trash_push(THR_TMP_POOL,box)
 
-caddr_t mp_alloc_box_ni (mem_pool_t * mp, int len, dtp_t dtp);
 extern box_tmp_copy_f box_tmp_copier[256];
 
 #ifdef LACERATED_POOL
@@ -474,5 +491,6 @@ if (map && map->bits[((uint32)__ptr) >> 15] & (1 << (((((uint32)__ptr) >> 12) & 
 int mp_reuse_large (mem_pool_t * mp, void * ptr);
 int mp_reserve (mem_pool_t * mp, size_t inc);
 void mp_comment (mem_pool_t * mp, char * str1, char * str2);
+size_t  mp_block_size_sc (size_t sz);
 
 #endif /* ifdef __DKPOOL_H */

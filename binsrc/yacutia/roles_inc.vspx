@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2014 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -548,9 +548,9 @@
           http('<td class="listing_col">');  http(fn);    http('</td>');
           http('<td class="listing_col_action" colspan="2">');
           if( not (get_keyword('mode', control.vc_page.vc_event.ve_params) = 'edit' and get_keyword('role_name', control.vc_page.vc_event.ve_params) =U_NAME ) or get_keyword('mode', control.vc_page.vc_event.ve_params) is NULL or  get_keyword('role_name', control.vc_page.vc_event.ve_params) is NULL )
-	  http(sprintf('<a href="accounts_page.vspx?page=2&sid=%s&realm=%s&mode=edit&role_name=%s#%s"><img src="images/icons/edit_16.png" border="0" alt="Edit" title="Edit"/>&#160;Edit</a>&nbsp;',self.sid ,self.realm,U_NAME,U_NAME));
+	  http(sprintf('<a href="accounts_page.vspx?page=2&sid=%s&realm=%s&mode=edit&role_name=%s#%s"><img src="images/icons/edit_16.png" border="0" alt="Edit" title="Edit"/>&nbsp;Edit</a>&nbsp;',self.sid ,self.realm,U_NAME,U_NAME));
           if( not (get_keyword('mode', control.vc_page.vc_event.ve_params) = 'edit' and get_keyword('role_name', control.vc_page.vc_event.ve_params) =U_NAME ) or get_keyword('mode', control.vc_page.vc_event.ve_params) is NULL or  get_keyword('role_name', control.vc_page.vc_event.ve_params) is NULL )
-	  http(sprintf('<a href="role_remove.vspx?sid=%s&realm=%s&mode=delete&role_name=%s"><img src="images/icons/trash_16.png" border="0" alt="Delete" title="Delete"/>&#160;Delete</a>',self.sid ,self.realm,U_NAME));
+	  http(sprintf('<a href="role_remove.vspx?sid=%s&realm=%s&mode=delete&role_name=%s"><img src="images/icons/trash_16.png" border="0" alt="Delete" title="Delete"/>&nbsp;Delete</a>',self.sid ,self.realm,U_NAME));
           http('</td>');
             http('</tr>');
 	  }

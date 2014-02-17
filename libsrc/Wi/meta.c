@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2651,12 +2651,12 @@ dbe_table_t *
 qi_name_to_table (query_instance_t * qi, const char *name)
 {
   dbe_table_t *tb;
-  if (parse_sem)
-    semaphore_enter (parse_sem);
+  if (parse_mtx)
+    mutex_enter (parse_mtx);
   sqlc_set_client (qi->qi_client);
   tb = sch_name_to_table (isp_schema (NULL), name);
-  if (parse_sem)
-    semaphore_leave (parse_sem);
+  if (parse_mtx)
+    mutex_leave (parse_mtx);
   return tb;
 }
 

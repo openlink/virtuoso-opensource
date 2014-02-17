@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -384,7 +384,7 @@ __chk_float_string (const char *str)
   for (; *p; p ++, n++ )
     {
       if (NULL == strchr("+-eE.", *p) && (p[0] > '9' || p[0] <'0' ))
-	return -1;;
+	return -1;
 
       if ('.' == p[0])
 	{
@@ -1638,11 +1638,17 @@ xqf_matches (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   val2 = __normalize_arg (val2);
   val3 = __normalize_arg (val3);
 
+  if (!DV_STRINGP (val2))
+    {
+      XQI_SET (xqi, tree->_.xp_func.res, (caddr_t) 0L );
+      return;
+    }
+
   c_opts = xqf_make_regexp_modes (val3);
   xqf_check_regexp (val2, c_opts);
 
   {
-    caddr_t res = regexp_match_01 (val2, val1, c_opts);
+    caddr_t res = DV_STRINGP (val1) ? regexp_match_01 (val2, val1, c_opts) : NULL;
     if (res)
       XQI_SET (xqi, tree->_.xp_func.res, (caddr_t) 1L );
     else
@@ -3377,11 +3383,11 @@ static xqf_str_parser_desc_t xqf_str_parser_descs[] = {
     {	"double"		, __float_from_string		, NULL			, XQ_DOUBLE		, 0	, 0	, DV_DOUBLE_FLOAT, "__xqf_str_parse_double"	, "DOUBLE PRECISION"	},
     {	"duration"		, __duration_from_string	, NULL /*???*/		, 0			, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
     {	"float"			, __float_from_string		, NULL			, XQ_FLOAT		, 0	, 0	, DV_SINGLE_FLOAT, "__xqf_str_parse_float"	, "REAL"		},
-    {	"gDay"			, __datetime_from_string	, __datetime_rcheck	, XQ_DAY		, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
-    {	"gMonth"		, __datetime_from_string	, __datetime_rcheck	, XQ_MONTH		, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
-    {	"gMonthDay"		, __datetime_from_string	, __datetime_rcheck	, XQ_MONTHDAY		, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
-    {	"gYear"			, __datetime_from_string	, __datetime_rcheck	, XQ_YEAR		, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
-    {	"gYearMonth"		, __datetime_from_string	, __datetime_rcheck	, XQ_YEARMONTH		, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
+    {	"gDay"			, __datetime_from_string	, __datetime_rcheck	, XQ_DAY		, 0	, 1	, DV_DATETIME	, "__xqf_str_parse_datetime"	, NULL			},
+    {	"gMonth"		, __datetime_from_string	, __datetime_rcheck	, XQ_MONTH		, 0	, 1	, DV_DATETIME	, "__xqf_str_parse_datetime"	, NULL			},
+    {	"gMonthDay"		, __datetime_from_string	, __datetime_rcheck	, XQ_MONTHDAY		, 0	, 1	, DV_DATETIME	, "__xqf_str_parse_datetime"	, NULL			},
+    {	"gYear"			, __datetime_from_string	, __datetime_rcheck	, XQ_YEAR		, 0	, 1	, DV_DATETIME	, "__xqf_str_parse_datetime"	, NULL			},
+    {	"gYearMonth"		, __datetime_from_string	, __datetime_rcheck	, XQ_YEARMONTH		, 0	, 1	, DV_DATETIME	, "__xqf_str_parse_datetime"	, NULL			},
     {	"int"			, __integer_from_string		, __integer_rcheck	, XQ_INT32		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
     {	"integer"		, __integer_from_string		, __integer_rcheck	, XQ_INT		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, "INTEGER"		},
     {	"long"			, __integer_from_string		, __integer_rcheck	, XQ_INT64		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, "INTEGER"		},
@@ -3432,7 +3438,7 @@ bif_xqf_str_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long desc_idx;
   int flags = 0;
   xqf_str_parser_desc_t *desc;
-  desc_idx = ecm_find_name (p_name, xqf_str_parser_descs,
+  desc_idx = ecm_find_name (p_name, xqf_str_parser_descs_ptr,
     xqf_str_parser_desc_count, sizeof (xqf_str_parser_desc_t) );
   if (ECM_MEM_NOT_FOUND == desc_idx)
     sqlr_new_error ("22023", "SR486", "Function xqf_str_parse() does not support XQuery library function '%.300s'", p_name);
@@ -3544,7 +3550,8 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
           /* test only : xte_word_range(xte,&l1,&l2); */
           return ((caddr_t) xte);
         }
-      if (!strcmp (type_iri, "http://www.openlinksw.com/schemas/virtrdf#Geometry")
+      if ((!strcmp (type_iri, "http://www.openlinksw.com/schemas/virtrdf#Geometry")
+	   || !strcmp (type_iri, "http://www.opengis.net/ont/geosparql#wktLiteral"))
 	  && DV_STRING == arg_dtp)
 	{
 	  caddr_t err = NULL;
@@ -3585,9 +3592,23 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
           res = box_copy_tree (arg);
           goto res_ready;
         }
-      res = box_cast_to (qst, arg, arg_dtp, desc->p_dest_dtp, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, &err);
-      if (NULL == err)
-        goto res_ready;
+      if (!strcmp (type_iri, uname_xmlschema_ns_uri_hash_dayTimeDuration))
+        {
+          caddr_t res1 = box_cast_to (qst, arg, arg_dtp, DV_STRING, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, &err);
+          if (NULL == err)
+            {
+              res = box_sprintf (100, "PT%.100sS", res1);
+              dk_free_box (res1);
+              goto res_ready;
+            }
+          dk_free_box (res1);
+        }
+      else
+        {
+          res = box_cast_to (qst, arg, arg_dtp, desc->p_dest_dtp, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, &err);
+          if (NULL == err)
+            goto res_ready;
+        }
       sqlr_new_error ("22023", "SR553",
         "Literal of type xsd:%s can not be created from SQL value of type %s (%d): %.1000s",
         p_name, dv_type_title (arg_dtp), arg_dtp, ERR_MESSAGE (err) );
@@ -3619,23 +3640,41 @@ res_ready:
   return res;
 }
 
+#define XQF_STR_FN(n) \
+caddr_t bif_xqf_str_parse_##n (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args) \
+{ \
+  return bif_xqf_str_parse (qst, err_ret, args); \
+}
+
+XQF_STR_FN(boolean)
+XQF_STR_FN(date)
+XQF_STR_FN(datetime)
+XQF_STR_FN(double)
+XQF_STR_FN(float)
+XQF_STR_FN(integer)
+XQF_STR_FN(numeric)
+XQF_STR_FN(nvarchar)
+XQF_STR_FN(time)
 
 /* TO DO: the whole list 5.7.1 */
 void xqf_init(void)
 {
   st_double =  (sql_tree_tmp *) list (3, DV_DOUBLE_FLOAT, (ptrlong)0, (ptrlong)0);
 
-  bif_define ("__xqf_str_parse", bif_xqf_str_parse);
+  bif_define_ex ("__xqf_str_parse", bif_xqf_str_parse, BMD_ALIAS, "__xqf_str_parse_boolean", BMD_ALIAS, "__xqf_str_parse_date", BMD_ALIAS, "__xqf_str_parse_datetime", BMD_ALIAS, "__xqf_str_parse_double", BMD_ALIAS, "__xqf_str_parse_float", BMD_ALIAS, "__xqf_str_parse_integer", BMD_ALIAS, "__xqf_str_parse_numeric", BMD_ALIAS, "__xqf_str_parse_nvarchar", BMD_ALIAS, "__xqf_str_parse_time",
+    BMD_RET_TYPE, &bt_any, BMD_DONE );
   bif_define ("__xqf_str_parse_to_rdf_box", bif_xqf_str_parse_to_rdf_box);
-  bif_define_typed ("__xqf_str_parse_boolean"	, bif_xqf_str_parse	, &bt_integer	);
-  bif_define_typed ("__xqf_str_parse_date"	, bif_xqf_str_parse	, &bt_date	);
-  bif_define_typed ("__xqf_str_parse_datetime"	, bif_xqf_str_parse	, &bt_datetime	);
-  bif_define_typed ("__xqf_str_parse_double"	, bif_xqf_str_parse	, &bt_double	);
-  bif_define_typed ("__xqf_str_parse_float"	, bif_xqf_str_parse	, &bt_float	);
-  bif_define_typed ("__xqf_str_parse_integer"	, bif_xqf_str_parse	, &bt_integer	);
-  bif_define_typed ("__xqf_str_parse_numeric"	, bif_xqf_str_parse	, &bt_numeric	);
-  bif_define_typed ("__xqf_str_parse_nvarchar"	, bif_xqf_str_parse	, &bt_wvarchar	);
-  bif_define_typed ("__xqf_str_parse_time"	, bif_xqf_str_parse	, &bt_time	);
+#if 0
+  bif_define_typed ("__xqf_str_parse_boolean"	, bif_xqf_str_parse	, &bt_any /* was &bt_integer */		);
+  bif_define_typed ("__xqf_str_parse_date"	, bif_xqf_str_parse	, &bt_any /* was &bt_date */		);
+  bif_define_typed ("__xqf_str_parse_datetime"	, bif_xqf_str_parse	, &bt_any /* was &bt_datetime */	);
+  bif_define_typed ("__xqf_str_parse_double"	, bif_xqf_str_parse	, &bt_any /* was &bt_double */		);
+  bif_define_typed ("__xqf_str_parse_float"	, bif_xqf_str_parse	, &bt_any /* was &bt_float */		);
+  bif_define_typed ("__xqf_str_parse_integer"	, bif_xqf_str_parse	, &bt_any /* was &bt_integer */		);
+  bif_define_typed ("__xqf_str_parse_numeric"	, bif_xqf_str_parse	, &bt_any /* was &bt_numeric */		);
+  bif_define_typed ("__xqf_str_parse_nvarchar"	, bif_xqf_str_parse	, &bt_any /* was &bt_wvarchar */	);
+  bif_define_typed ("__xqf_str_parse_time"	, bif_xqf_str_parse	, &bt_any /* was &bt_time */		);
+#endif
 
   /* Functions */
   x2f_define_builtin ("ENTITY"					, NULL /*xqf_entity*/		/* ??? */	, DV_SHORT_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);

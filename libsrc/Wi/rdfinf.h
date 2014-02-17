@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -162,6 +162,7 @@ struct trans_node_s
   char		tn_ends_given; /* both start and end are given */
   char		tn_shortest_only; /* if both ends given, generate all paths with length equal to the shortest path length */
   char		tn_direction;
+  char		tn_is_second_in_direction3;
   trans_node_t *	tn_complement; /* from left-right and back */
   state_slot_t *	tn_min_depth;
   state_slot_t *	tn_max_depth;

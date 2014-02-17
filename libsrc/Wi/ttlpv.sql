@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2011 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -25,6 +25,7 @@
 create procedure L_O_LOOK (inout  val_str varchar, inout dt_lang int, inout lng varchar, inout is_text int, inout id int)
 {
   vectored;
+  -- dbg_obj_princ ('L_O_LOOK (', val_str, dt_lang, lng, is_text, id, ')');
   declare fetched int;
   set triggers off;
   insert into rdf_obj index ro_val option (fetch id by 'RDF_RO_ID' set fetched) (ro_val, ro_dt_and_lang, ro_id) values (val_str, dt_lang, id);
@@ -32,9 +33,14 @@ create procedure L_O_LOOK (inout  val_str varchar, inout dt_lang int, inout lng 
     {
       declare flags int;
       flags := case when is_text = 2 then 0 else is_text end;
+      -- if (0 = flags)
+      --   {
+      --     dbg_obj_princ ('zero ro_flags in ttlpv,sql:37 ', val_str, lng);
+      --     ;
+      --   }
       insert into rdf_obj index rdf_obj (ro_id, ro_val, ro_flags, ro_dt_and_lang, ro_long) values (id, val_str, flags, dt_lang, lng);
       if (1 = is_text)
-	insert into VTLOG_DB_DBA_RDF_OBJ option (no cluster) (vtlog_ro_id, SNAPTIME, DMLTYPE) values (id, curdatetime (), 'I');
+        insert soft VTLOG_DB_DBA_RDF_OBJ option (no cluster) (vtlog_ro_id, SNAPTIME, DMLTYPE) values (id, curdatetime (), 'I');
       if (2 = is_text)
 	{
 	  declare geo any;
@@ -51,6 +57,15 @@ create procedure L_O_LOOK (inout  val_str varchar, inout dt_lang int, inout lng 
       else
         pref := subseq (lng, 0, 10);
       insert into ro_start option (no cluster) (rs_start, rs_dt_and_lang, rs_ro_id) values (pref, dt_lang, rdf_box (0, 257, 257, id, 0));
+    }
+  else if ((1 = is_text) and not __rdf_obj_ft_rule_check (null, null))
+    {
+      declare flags int;
+      if (bit_and (is_text, 1) and exists (select 1 from DB.DBA.RDF_OBJ where RO_ID=id and not bit_and (RO_FLAGS, 1)))
+        {
+          update DB.DBA.RDF_OBJ set RO_FLAGS = bit_or (RO_FLAGS, 1) where RO_ID=id;
+          insert soft VTLOG_DB_DBA_RDF_OBJ option (no cluster) (vtlog_ro_id, SNAPTIME, DMLTYPE) values (id, curdatetime (), 'I');
+        }
     }
 }
 ;
@@ -94,7 +109,7 @@ create procedure DB.DBA.TTLP_RL_TRIPLE (
 {
   connection_set ('g_iid', g_iid);
   dpipe_input (app_env[1], s_uri, p_uri, o_uri, null);
-  if (daq_buffered_bytes (app_env[1]) > 30000000)
+  if (daq_buffered_bytes (app_env[1]) > 30000000 or dpipe_count (app_env[1]) >= sys_stat ('dc_max_batch_sz'))
     rl_send (app_env, g_iid);
 }
 ;
@@ -222,6 +237,11 @@ create procedure DB.DBA.TTLP_RL_TRIPLE_L (
 		  parsed := rdf_box (parsed, 300, 257, 0, 1);
 		  rdf_box_set_type (parsed, 257);
 		}
+              -- if (not bit_and (is_text, 1))
+              --   {
+              --     dbg_obj_princ ('zero set_is_text in ttlpv.sql:231', parsed);
+              --     ;
+              --   }
 	      rdf_box_set_is_text (parsed, is_text);
               dpipe_input (app_env[1], s_uri, p_uri, null, parsed);
               goto do_flush; -- see below
@@ -233,6 +253,11 @@ create procedure DB.DBA.TTLP_RL_TRIPLE_L (
       else
         tid := 257;
       o_val_2 := rdf_box (o_val, tid, lid, 0, 1);
+      -- if (not bit_and (is_text, 1))
+      --   {
+      --     dbg_obj_princ ('zero set_is_text in ttlpv.sql:241', o_val_2);
+      --     ;
+      --   }
       rdf_box_set_is_text (o_val_2, is_text);
       dpipe_input (app_env[1], s_uri, p_uri, null, o_val_2);
     }
@@ -241,13 +266,18 @@ create procedure DB.DBA.TTLP_RL_TRIPLE_L (
       -- make first first non default type because if all is default it will make no box
       declare o_val_2 any;
       o_val_2 := rdf_box (o_val, 300, 257, 0, 1);
+      -- if (not is_text)
+      --   {
+      --     dbg_obj_princ ('zero set_is_text in ttlpv.sql:265', o_val_2);
+      --     ;
+      --   }
       if (is_text)
 	rdf_box_set_is_text (o_val_2, 1);
       rdf_box_set_type (o_val_2, 257);
       dpipe_input (app_env[1], s_uri, p_uri, null, o_val_2);
     }
 do_flush:
-  if (daq_buffered_bytes (app_env[1]) > 30000000)
+  if (daq_buffered_bytes (app_env[1]) > 30000000 or dpipe_count (app_env[1]) >= sys_stat ('dc_max_batch_sz'))
     rl_send (app_env, g_iid);
 }
 ;
@@ -298,6 +328,7 @@ create procedure rl_send (inout env any, in g_iid any)
 {
   declare req, n_reqs int;
   commit work;
+  -- dbg_obj_princ ('rl_send (', env, g_iid, ')');
   n_reqs := env[2];
   env[2] := n_reqs + 1;
   req := aq_request (env[0], 'DB.DBA.RL_FLUSH', vector (env[1], g_iid));
@@ -322,6 +353,7 @@ create procedure rl_send_gs (inout env any, in g_iid any)
   declare req, n_reqs int;
   if (bit_and (4, dpipe_rdf_load_mode (env[1])))
     return;
+  -- dbg_obj_princ ('rl_send_gs (', env, g_iid, ')');
   commit work;
   n_reqs := env[2];
   env[2] := n_reqs + 1;
@@ -345,7 +377,8 @@ create procedure DB.DBA.TTLP_RL_GS_TRIPLE (
   connection_set ('g_iid', g_iid);
  dp := app_env[1];
   dpipe_input (dp, s_uri, p_uri, o_uri, null, g_iid);
-  if (daq_buffered_bytes (dp) > 30000000 and 0 = bit_and (4, dpipe_rdf_load_mode (dp)))
+  if ((daq_buffered_bytes (dp) > 30000000 or dpipe_count (app_env[1]) >= sys_stat ('dc_max_batch_sz')) 
+      and 0 = bit_and (4, dpipe_rdf_load_mode (dp)))
     rl_send_gs (app_env, g_iid);
 }
 ;
@@ -391,6 +424,11 @@ create procedure DB.DBA.TTLP_RL_GS_TRIPLE_L (
 		  parsed := rdf_box (parsed, 300, 257, 0, 1);
 		  rdf_box_set_type (parsed, 257);
 		}
+              -- if (not bit_and (is_text, 1))
+              --   {
+              --     dbg_obj_princ ('zero set_is_text in ttlpv.sql:401', parsed, is_text);
+              --     ;
+              --   }
 	      rdf_box_set_is_text (parsed, is_text);
               dpipe_input (dp, s_uri, p_uri, null, parsed, g_iid);
               goto do_flush; -- see below
@@ -402,6 +440,11 @@ create procedure DB.DBA.TTLP_RL_GS_TRIPLE_L (
       else
         tid := 257;
       o_val_2 := rdf_box (o_val, tid, lid, 0, 1);
+      -- if (not bit_and (is_text, 1))
+      --   {
+      --     dbg_obj_princ ('zero set_is_text in ttlpv.sql:414', o_val_2, is_text);
+      --     ;
+      --   }
       rdf_box_set_is_text (o_val_2, is_text);
       dpipe_input (dp, s_uri, p_uri, null, o_val_2, g_iid);
     }
@@ -410,13 +453,19 @@ create procedure DB.DBA.TTLP_RL_GS_TRIPLE_L (
       -- make first first non default type because if all is default it will make no box
       declare o_val_2 any;
       o_val_2 := rdf_box (o_val, 300, 257, 0, 1);
+      -- if (not is_text)
+      --   {
+      --     dbg_obj_princ ('zero set_is_text in ttlpv.sql:451', o_val_2);
+      --     ;
+      --   }
       if (is_text)
 	rdf_box_set_is_text (o_val_2, 1);
       rdf_box_set_type (o_val_2, 257);
       dpipe_input (dp, s_uri, p_uri, null, o_val_2, g_iid);
     }
 do_flush:
-  if (daq_buffered_bytes (dp) > 30000000 and 0 = bit_and (4, dpipe_rdf_load_mode (dp)))
+  if ((daq_buffered_bytes (dp) > 30000000 or dpipe_count (app_env[1]) >= sys_stat ('dc_max_batch_sz'))
+      and 0 = bit_and (4, dpipe_rdf_load_mode (dp)))
     rl_send_gs (app_env, g_iid);
 }
 ;
@@ -569,7 +618,7 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_V (in strg varchar, in base varchar, in 
 create procedure ID_TO_IRI_VEC (in id iri_id)
 {
   vectored;
-  declare name, pref varchar array;
+  declare name, pref varchar;
   declare idn int;
   if (id is null)
     return id;
@@ -591,13 +640,50 @@ create procedure ID_TO_IRI_VEC (in id iri_id)
     }
   pref := rdf_cache_id_to_name ('p', iri_name_id (name), 0);
   if (pref <> 0)
-    return __box_flags_tweak (pref || subseq (name, 4, length (name)), 1);
+    return iri_from_pref_name (pref, name);
   pref := (select rp_name from rdf_prefix where rp_id = iri_name_id (name));
   if (pref is null)
     pref := 'no prefix';
   else
     rdf_cache_id ('p', pref, iri_name_id (name));
-  return __box_flags_tweak (pref || subseq (name, 4, length (name)), 1);
+  return iri_from_pref_name (pref, name);
+}
+;
+
+
+
+create procedure ID_TO_IRI_VEC_NS (in id any array)
+{
+  vectored;
+  declare name, pref varchar;
+  declare idn int;
+  if (not isiri_id (id))
+    return id;
+  idn := iri_id_num (id);
+  if ((id >= #ib0) and (id < min_named_bnode_iri_id()))
+    {
+      if (idn >= 4611686018427387904)
+        return sprintf_iri ('nodeID://b%ld', idn-4611686018427387904);
+      return sprintf_iri ('nodeID://%ld', idn);
+    }
+  name := rdf_cache_id_to_name ('i', idn, 0);
+  if (0 = name)
+    {
+      name := (select ri_name from rdf_iri where ri_id = id);
+      if (name is null)
+        return sprintf_iri ('iri_id_%ld_with_no_name_entry', iri_id_num (id));
+      else
+        rdf_cache_id ('i', name, id);
+    }
+  pref := rdf_cache_id_to_name ('p', iri_name_id (name), 0);
+  if (pref <> 0)
+    return iri_from_pref_name (pref, name);
+  pref := (select rp_name from rdf_prefix where rp_id = iri_name_id (name));
+  if (pref is null)
+    pref := 'no prefix';
+  else
+    rdf_cache_id ('p', pref, iri_name_id (name));
+  return iri_from_pref_name (pref, name);
 }
 ;
 
@@ -653,3 +739,32 @@ create procedure DB.DBA.RDF_QUADS_BATCH_COMPLETE (inout triples any)
 }
 ;
 
+create procedure rdf_vec_ins_triples (in s any, in p any, in o any, in g any)
+{
+  vectored;
+  not vectored {
+    declare dp any array;
+    declare is_local int;
+    is_local := sys_stat ('cl_run_local_only');
+    if (is_local)
+      dp := dpipe (1, 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_MAKE_RO', 'L_IRI_TO_ID');
+    else
+      {
+        dp := dpipe (5, 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'MAKE_RO_1', 'IRI_TO_ID_1');
+	dpipe_set_rdf_load (dp, 1);
+      }
+  }
+  dpipe_input (dp, s, p, null, o, g);
+  not vectored {
+    if (log_enable (null, 1) in (2,3))
+      set non_txn_insert = 1;
+    if (is_local)
+      rl_dp_ids (dp, 0);
+    else
+      {
+	dpipe_next (dp, 0);
+	dpipe_next (dp, 1);
+      }
+  }
+}
+;

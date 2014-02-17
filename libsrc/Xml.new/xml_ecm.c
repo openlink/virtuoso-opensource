@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1581,18 +1581,18 @@ caddr_t ecm_try_add_name (const char *new_obj_name, id_hash_t *hash, size_t size
 
 
 static void xml_def_4_notation_free(xml_def_4_notation_t *ptr) {
- if(ptr->xd4n_publicId) dk_free(ptr->xd4n_publicId,-1);
- if(ptr->xd4n_systemId) dk_free(ptr->xd4n_systemId,-1);
- dk_free(ptr,-1);
+ if (ptr->xd4n_publicId) dk_free_box (ptr->xd4n_publicId);
+ if (ptr->xd4n_systemId) dk_free_box (ptr->xd4n_systemId);
+ dk_free (ptr, sizeof (xml_def_4_notation_t));
  }
 
 static void xml_def_4_entity_free(xml_def_4_entity_t *ptr) {
- if(ptr->xd4e_literalVal) dk_free_box (ptr->xd4e_literalVal);
- if(ptr->xd4e_publicId) dk_free_box (ptr->xd4e_publicId);
- if(ptr->xd4e_systemId) dk_free_box (ptr->xd4e_systemId);
- if(ptr->xd4e_notationName) dk_free_box (ptr->xd4e_notationName);
- if(ptr->xd4e_repl.lm_memblock) dk_free_box (ptr->xd4e_repl.lm_memblock);
- dk_free(ptr,-1);
+ if (ptr->xd4e_literalVal) dk_free_box (ptr->xd4e_literalVal);
+ if (ptr->xd4e_publicId) dk_free_box (ptr->xd4e_publicId);
+ if (ptr->xd4e_systemId) dk_free_box (ptr->xd4e_systemId);
+ if (ptr->xd4e_notationName) dk_free_box (ptr->xd4e_notationName);
+ if (ptr->xd4e_repl.lm_memblock) dk_free_box (ptr->xd4e_repl.lm_memblock);
+ dk_free (ptr, sizeof (xml_def_4_entity_t));
  }
 
 #ifdef dtd_free
@@ -1618,7 +1618,7 @@ void dtd_free (dtd_t *dtd)
 	/*no step*/ )
 	{
 	  xml_def_4_notation_free(dict_notation[0]);
-	  dk_free (dict_key[0],-1);
+	  dk_free_box (dict_key[0]);
 	}
       id_hash_free(dict);
     }
@@ -1651,16 +1651,16 @@ void dtd_free (dtd_t *dtd)
   for (el_ctr = dtd->ed_el_no; el_ctr--; /*no step*/)
     {
       ecm_el_t *el = dtd->ed_els+el_ctr;
-      dk_free (el->ee_name, -1);
+      dk_free_box (el->ee_name);
       if (NULL != el->ee_grammar)
-	dk_free (el->ee_grammar, -1);
+	dk_free_box (el->ee_grammar);
       dk_free_box (el->ee_errmsg);
       for (attr_ctr = el->ee_attrs_no; attr_ctr--; /*no step*/)
 	{
 	  ecm_attr_t *attr = el->ee_attrs + attr_ctr;
-	  dk_free (attr->da_name, -1);
+	  dk_free_box (attr->da_name);
 	  for (ctr = attr->da_values_no; ctr--; /* no step*/ )
-	    dk_free (attr->da_values[ctr], -1);
+	    dk_free_box (attr->da_values[ctr]);
 	  if (NULL == attr->da_values)
 	    {
 	      if (NULL != attr->da_default.boxed_value)

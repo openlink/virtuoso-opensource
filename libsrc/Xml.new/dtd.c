@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -87,7 +87,7 @@ extern unsigned char ecm_utf8props[0x100];
     ((UCP_ALPHA | UCP_IDEO) & unichar_getprops((c))) )
 
 #define FREE_NAMEBUF(lenmem) \
-  dk_free((lenmem).lm_memblock,(lenmem).lm_length+1);
+  dk_free_box((lenmem).lm_memblock);
 
 
 int get_refentry (vxml_parser_t* parser, char* refname);
@@ -705,7 +705,7 @@ dtd_get_content_def (vxml_parser_t * parser, ecm_el_t* element)
       gram.end = parser->pptr;
       brcpy (&grammar_buf, &gram);
       if (NULL != element->ee_grammar)
-	dk_free (element->ee_grammar, -1);
+	dk_free_box (element->ee_grammar);
       element->ee_grammar = grammar_buf.lm_memblock;
       return 1;
     }
@@ -910,19 +910,20 @@ int entity_compile_repl (vxml_parser_t *parser, xml_def_4_entity_t *newdef)
     int state = 0;
     const char *src_begin = raw_text.lm_memblock;
     unichar tmp_cells = (unichar) ((20 + raw_text.lm_length) / body_eh->eh_minsize);
-    unichar *tmp = dk_alloc (sizeof(unichar) * tmp_cells);
+    int tmp_len = sizeof(unichar) * tmp_cells;
+    unichar *tmp = (unichar *)dk_alloc (tmp_len);
     int decode_res = body_eh->eh_decode_buffer (tmp, tmp_cells, &src_begin, raw_text.lm_memblock+raw_text.lm_length, body_eh, &state);
     int tmp2_len;
     char *tmp2, *tmp2_tail;
     if (decode_res < 0)
       decode_res = 0;
     tmp2_len = MAX_UTF8_CHAR * tmp_cells + 1;
-    tmp2 = dk_alloc (tmp2_len);
+    tmp2 = (char *)dk_alloc (tmp2_len);
     tmp2_tail = eh_encode_buffer__UTF8 (tmp, tmp+decode_res, tmp2, tmp2+tmp2_len);
-    dk_free (tmp, -1);
+    dk_free (tmp, tmp_len);
     recoded_text.lm_length = tmp2_tail - tmp2;
     recoded_text.lm_memblock = box_dv_short_nchars (tmp2, recoded_text.lm_length);
-    dk_free (tmp2, -1);
+    dk_free (tmp2, tmp2_len);
   }
   xml_pos_set (&(newdef->xd4e_val_pos), &include_pos);
 
@@ -1084,7 +1085,7 @@ int insert_external_xmlschema_dtd (vxml_parser_t * parser)
   if (NULL == p) p = "";
   if (NULL == s) s = "";
   text.lm_length = xmlschema_system_dtd_pure_strlen + (2 * strlen (p)) + strlen (s);
-  text.lm_memblock = dk_alloc (text.lm_length + 1);
+  text.lm_memblock = dk_alloc_box (text.lm_length + 1, DV_STRING);
 
   sprintf (text.lm_memblock, xmlschema_system_dtd, p, p, s);
 

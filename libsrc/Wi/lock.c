@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -360,14 +360,20 @@ lt_start_outside_map ()
   return lt;
 }
 
-
 lock_trx_t *
 lt_start ()
+{
+  return lt_start_inner (1);
+}
+
+lock_trx_t *
+lt_start_inner (int cpt_wait)
 {
   lock_trx_t *lt = (lock_trx_t *) resource_get (trx_rc);
   ASSERT_IN_TXN;
   LT_THREADS_REPORT(lt, "LT_START");
-  lt_wait_checkpoint ();
+  if (cpt_wait)
+    lt_wait_checkpoint ();
   lt->lt_status = LT_PENDING;
   CHECK_DK_MEM_RESERVE (lt);
   lt->lt_started = 0;
@@ -448,6 +454,7 @@ lt_restart (lock_trx_t * lt, int leave_flag)
       }
   }
   IN_TXN;
+  lt_wait_checkpoint_lt (lt);
   if (TRX_CONT == leave_flag || TRX_CONT_LT_LEAVE == leave_flag)
     {
       lt->lt_status = LT_PENDING;
@@ -523,6 +530,28 @@ lt_main_lt (lock_trx_t * lt)
       return main_lt;
     }
   return NULL;
+}
+
+
+int
+lt_has_delta (lock_trx_t * lt)
+{
+  int flag;
+  lock_trx_t * main_lt;
+  if (!lt->lt_rc_w_id || lt->lt_rc_w_id == lt->lt_w_id)
+    return LT_HAS_DELTA (lt);
+  IN_TXN;
+  main_lt = lt_main_lt (lt);
+  if (!main_lt)
+    {
+      LEAVE_TXN;
+      lt->lt_status = LT_BLOWN_OFF;
+      lt->lt_error = LTE_CANCEL;
+      sqlr_new_error ("4000X", "MTXNA",  "Main transaction branch has aborted.");
+    }
+  flag = LT_HAS_DELTA (main_lt);
+  LEAVE_TXN;
+  return flag;
 }
 
 
@@ -606,6 +635,8 @@ lt_commit (lock_trx_t * lt, int free_trx)
       }
 #endif
 
+  if (lt->lt_log->dks_out_fill || lt->lt_log->dks_bytes_sent)
+    {
   LEAVE_TXN;
   mutex_enter (log_write_mtx);
   if (LTE_OK != log_commit (lt))
@@ -619,6 +650,7 @@ lt_commit (lock_trx_t * lt, int free_trx)
     }
   mutex_leave (log_write_mtx);
   IN_TXN;
+    }
   DBG_PT_COMMIT (lt);
       ASSERT_IN_TXN;
       LT_CLOSE_ACK_THREADS(lt);
@@ -965,7 +997,7 @@ lt_rollback_other (lock_trx_t * lt)
   int thr = lt->lt_threads;
   if (!thr)
     lt->lt_close_ack_threads = lt->lt_threads = 1;
-  lt_transact (lt, SQL_ROLLBACK);
+  lt_transact (lt, SQL_ROLLBACK | LT_CPT_NO_WAIT);
   if (!thr)
     lt->lt_threads = 0;
 }
@@ -2402,8 +2434,8 @@ the_grim_lock_reaper (void)
 #endif
   if (DK_ALLOC_ON_RESERVE)
     dk_alloc_set_reserve_mode (DK_ALLOC_RESERVE_PREPARED); /* IvAn/OutOfMem/040513 If idle then it must have memory reserve. */
-  mon_update();
-  mon_check();
+  mon_update (n_threads,  n_vdb_threads, n_lw_threads);
+  mon_check ();
 }
 
 

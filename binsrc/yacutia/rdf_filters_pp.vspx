@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2014 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -43,12 +43,12 @@
     <vm:header caption="Meta Cartridges"/>
     <vm:pagebody>
       <![CDATA[
-	      <script language="JavaScript" src="admin_utils.js"></script>
+        <script language="JavaScript" src="admin_utils.js"></script>
       ]]>
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
-  	      <td>
-  		    <!-- tab -->
+          <td>
+          <!-- tab -->
             <table cellpadding='10' cellspacing='0' border='0' width='100%'>
               <tr>
                 <td>
@@ -66,17 +66,17 @@
                       </td>
                       <td class="page_tab_selected" align="center" nowrap="1">
                         Meta Cartridges
-  		                </td>
-  			              <?vsp if (check_package('rdf_mappers') or check_package ('cartridges')) { ?>
+                      </td>
+                      <?vsp if (check_package('rdf_mappers') or check_package ('cartridges')) { ?>
                       <td class="page_tab" align="center" nowrap="1">
                         <v:url name="url2" value="Stylesheets" format="%s" url="sparql_filters.vspx" xhtml_class="uddi"/>
-  		                </td>
+                      </td>
                       <td class="page_tab" align="center" nowrap="1">
                         <v:url name="url3" value="Console" format="%s" url="rdf_console.vspx" xhtml_class="uddi"/>
-  		                </td>
+                      </td>
                       <td class="page_tab" align="center" nowrap="1">
                         <v:url name="url4" value="Configuration" format="%s" url="rdf_conf.vspx" xhtml_class="uddi"/>
-		      </td>
+          </td>
                       <?vsp } ?>
                       <td class="page_tab_empty" align="center" width="100%">
                         <table cellpadding="0" cellspacing="0">
@@ -91,44 +91,44 @@
                   <table class="tab_page">
                     <tr>
                       <td valign="top">
-                  		<!-- tab -->
+                      <!-- tab -->
                         <table cellpadding='10' cellspacing='0' border='0' width='100%'>
                           <tr>
-                      		  <td>
+                            <td>
                               <v:form name="fm" type="simple" method="POST">
-                            	  <table class="listing" rules="groups">
-                          	      <colgroup>
-                              		  <col/>
-                              		  <col/>
-                              		  <col/>
-                              		  <col/>
-                              		  <col/>
-                              		  <col/>
-                              		  <col/>
-                          	      </colgroup>
-                          	      <tr class="listing_header_row">
-  		                              <th style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_item')"/></th>
-                              		  <th>Seq#</th>
-                              		  <th>ID</th>
-                              		  <th colspan="2">Description</th>
-                              		  <th>Pattern</th>
-                              		  <th>API type</th>
-                              		  <th>Action</th>
-                          	      </tr>
-                          	      <v:data-set name="maps"
-                          	                  sql="select MC_PATTERN, MC_TYPE, MC_DESC, MC_ID, MC_HOOK, MC_KEY, MC_ENABLED, MC_OPTIONS, MC_SEQ, MC_API_TYPE from DB.DBA.RDF_META_CARTRIDGES order by MC_SEQ"
-                          		                scrollable="1"
-                          		                editable="1"
-                          		                nrows="1000">
-                              		  <v:before-data-bind>
+                                <table class="listing" rules="groups">
+                                  <colgroup>
+                                    <col/>
+                                    <col/>
+                                    <col/>
+                                    <col/>
+                                    <col/>
+                                    <col/>
+                                    <col/>
+                                  </colgroup>
+                                  <tr class="listing_header_row">
+                                    <th style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_item')"/></th>
+                                    <th>Seq#</th>
+                                    <th>ID</th>
+                                    <th colspan="2">Description</th>
+                                    <th>Pattern</th>
+                                    <th>API type</th>
+                                    <th width="1%">Action</th>
+                                  </tr>
+                                  <v:data-set name="maps"
+                                              sql="select MC_PATTERN, MC_TYPE, MC_DESC, MC_ID, MC_HOOK, MC_KEY, MC_ENABLED, MC_OPTIONS, MC_SEQ, MC_API_TYPE from DB.DBA.RDF_META_CARTRIDGES order by MC_SEQ"
+                                              scrollable="1"
+                                              editable="1"
+                                              nrows="1000">
+                                    <v:before-data-bind>
                                       if (not e.ve_is_post and self.del_item is not null)
                                       {
                                         delete from DB.DBA.RDF_META_CARTRIDGES where MC_ID = self.del_item;
                                       }
-                              		  </v:before-data-bind>
-                              		  <v:template name="maps_rep" type="repeat">
-                              	      <v:template name="maps_brows" type="browse">
-                              			    <v:after-data-bind><![CDATA[
+                                    </v:before-data-bind>
+                                    <v:template name="maps_rep" type="repeat">
+                                      <v:template name="maps_brows" type="browse">
+                                        <v:after-data-bind><![CDATA[
                                           if (not e.ve_is_post and control.te_rowset[3] = self.edit_item)
                                           {
                                             declare skey, _key, _uid, _opts any;
@@ -185,17 +185,17 @@
                                             <v:label name="la1" format="%70.70s" value="--(control.vc_parent as vspx_row_template).te_rowset[0]"/>
                                           </td>
                                           <td>
-					      <v:label name="la4" format="%s" value="--y_rdf_api_type ((control.vc_parent as vspx_row_template).te_rowset[9])" />
+                                            <v:label name="la4" format="%s" value="--y_rdf_api_type ((control.vc_parent as vspx_row_template).te_rowset[9])" />
                                           </td>
-                                          <td>
-                                            &#160;
-                                            <v:url name="ur2" value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
+                                          <td nowrap="nowrap">
+                                            &nbsp;
+                                            <v:url name="ur2" value='<img src="images/icons/trash_16.png" hspace="3" border="0"/>Delete'
                                                 format="%s"
                                                 url="--sprintf ('rdf_filters_pp.vspx?del=%d', (control.vc_parent as vspx_row_template).te_rowset[3])"
                                                 xhtml_title="Delete"
                                                 xhtml_alt="Delete"
                                             />
-                                            &#160;
+                                            &nbsp;
                                             <v:button name="earul1" value="Up" action="simple" style="url">
                                               <v:on-post><![CDATA[
                                                 declare to_move, to_swap, mv_ord, sw_ord int;
@@ -222,7 +222,7 @@
                                                 self.vc_data_bind (e);
                                               ]]></v:on-post>
                                             </v:button>
-                                            &#160;
+                                            &nbsp;
                                             <v:button name="earul2" value="Down" action="simple" style="url">
                                               <v:on-post><![CDATA[
                                                 declare to_move, to_swap, mv_ord, sw_ord int;
@@ -266,14 +266,14 @@
                                     </v:template>
                                   </v:data-set>
                                 </table>
-                        		    <v:button name="apply1" value="Apply" action="simple">
-                        		      <v:on-post>
+                                <v:button name="apply1" value="Apply" action="simple">
+                                  <v:on-post>
                                     <![CDATA[
-                              			  declare M, N, enabled integer;
-                              			  declare params, checked any;
-                              			  declare chil vspx_control;
-                              			  declare cb vspx_check_box;
-                              			  declare ds vspx_data_set;
+                                      declare M, N, enabled integer;
+                                      declare params, checked any;
+                                      declare chil vspx_control;
+                                      declare cb vspx_check_box;
+                                      declare ds vspx_data_set;
 
                                       params := e.ve_params;
                                       checked := vector();
@@ -282,12 +282,12 @@
                                         if (params[N] like '%:cb_item%')
                                           checked := vector_concat (checked, vector (cast (params[N+1] as integer)));
                                       }
-                              			  ds := self.maps;
-                              			  M := 0;
-                              			  while ((chil := ds.ds_iterate_rows (M)) is not null)
-                            			    {
-                            			      enabled := 0;
-                            			      cb := chil.vc_find_control ('cb_item');
+                                      ds := self.maps;
+                                      M := 0;
+                                      while ((chil := ds.ds_iterate_rows (M)) is not null)
+                                      {
+                                        enabled := 0;
+                                        cb := chil.vc_find_control ('cb_item');
                                         for (N := 0; N < length (checked); N := N + 1)
                                         {
                                           if (checked[N] = cb.ufl_value)
@@ -299,11 +299,11 @@
                                       _skip:;
                                         update DB.DBA.RDF_META_CARTRIDGES set MC_ENABLED = enabled where MC_ID = cb.ufl_value;
                                         cb.ufl_selected := enabled;
-                            			    }
+                                      }
                                       self.edit_item := null;
                                     ]]>
-                        		      </v:on-post>
-                        		    </v:button>
+                                  </v:on-post>
+                                </v:button>
                               </v:form>
                               <v:form name="fm1" type="simple" method="POST">
                                 <div class="fm">
@@ -338,11 +338,11 @@
                                     <label for="opts1">Options</label>
                                     <v:textarea name="opts1" value="" xhtml_rows="5" xhtml_cols="70" xhtml_id="opts1" error-glyph="*">
                                     </v:textarea>
-                              	    <?vsp if (strstr (self.desc1.ufl_value, 'FQL') is not null) { ?>
-                              	    <a href="fb_popup.vspx" target="_blank">Get Facebook session</a>
-                              	    <?vsp } ?>
-                              	    <?vsp if (strstr (self.desc1.ufl_value, 'Graph API') is not null) { ?>
-                              	    <a href="/sponger/fb_access_token_popup.vsp" target="_blank">Get Facebook access token</a>
+                                    <?vsp if (strstr (self.desc1.ufl_value, 'FQL') is not null) { ?>
+                                    <a href="fb_popup.vspx" target="_blank">Get Facebook session</a>
+                                    <?vsp } ?>
+                                    <?vsp if (strstr (self.desc1.ufl_value, 'Graph API') is not null) { ?>
+                                    <a href="/sponger/fb_access_token_popup.vsp" target="_blank">Get Facebook access token</a>
                                     <?vsp } ?>
                                     <br />
                                     <span class="fm_ctl_btn">

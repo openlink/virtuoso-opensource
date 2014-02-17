@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -243,6 +243,7 @@ typedef struct sql_comp_s
     char		sc_in_ins_replacing;
     char		sc_re_emit_code; /* in conditional expressions, repeating code must be generated for each branch even if overlap */
     char		sc_is_first_cond; /* true if doing 1st condition in a conditional exp, i.e. will always execute */
+    char		sc_delay_colocate; /* do not do cluster colocating qr by qr, the qrs may be modified and only then located */
     dk_set_t		sc_re_emitted_dfes;
     rdf_inf_slots_t *	sc_rdf_inf_slots;
     caddr_t * sc_big_ssl_consts;	/*!< Vector of saved values for SSL consts of unusual types (like vectors) or just too big to fit into SQL text in a plain way */
@@ -251,6 +252,7 @@ typedef struct sql_comp_s
     dk_hash_t *		sc_vec_ssl_shadow;
     dk_hash_t *		sc_vec_prov_cast;
     dk_hash_t * 	sc_vec_last_ref;
+    dk_hash_t *         sc_vec_save_shadow;
     data_source_t *	sc_pre_code_of; /* when setting last ref ni vec, pre code does not set last ref to ts current */
     key_source_t * 	sc_ref_ks;
     dk_hash_t *		sc_vec_no_copy_ssls;
@@ -265,6 +267,7 @@ typedef struct sql_comp_s
     key_source_t *	sc_qf_ks;
     query_frag_t *	sc_in_qf;
     query_t *		sc_vec_qr;
+    dk_hash_t *	sc_qn_to_dfe; /* if dfes are made into executable plan for sampling of other, map to dfe */
   } sql_comp_t;
 
 
@@ -310,6 +313,7 @@ typedef struct subq_compilation_s
     state_slot_t *	sqc_cr_state_ssl;
     dk_set_t		sqc_fetches;	/* fetch instructions referencing this
 					   cr */
+    short		sqc_cr_pref_no;
     char		sqc_is_cursor;	/* in declare .. cursor for ... */
     char		sqc_is_current_of;
 					/* if cursor ref'd in where current of
@@ -468,7 +472,7 @@ int cv_is_local_1 (code_vec_t cv, int is_cluster);
 #define CV_IS_LOCAL_CLUSTER 1 /* check funcs are partitionable and not aggregates */
 #define CV_IS_LOCAL_AGG 2 /* check that funcs are partitionable, allow aggrs */
 #define CV_IS_LOCAL_CN 3 /* when checking code node with subqs.  Accept the subqs but reject non locatable funcs */
-
+#define CV_NO_INDEX 8 /* functions that access index are out */
 dk_set_t cv_assigned_slots (code_vec_t cv, int no_subqs);
 void sqlc_ct_generate (sql_comp_t * sc, comp_table_t * ct);
 
@@ -692,12 +696,12 @@ void qr_no_copy_ssls (query_t * qr, dk_hash_t * no_copy);
   { \
       int is_sem = sqlc_inside_sem; \
       if (is_sem) \
-	semaphore_leave (parse_sem);
+	LEAVE_PARSE; 
 
 
 #define END_OUTSIDE_PARSE_SEM \
       if (is_sem) \
-	semaphore_enter (parse_sem); \
+	IN_PARSE; \
   }
 
 dk_hash_t * hash_table_copy (dk_hash_t * ht);
@@ -708,6 +712,7 @@ void sqlc_need_enlist (sql_comp_t * sc);
 int sqlg_distinct_colocated  (sql_comp_t * sc, state_slot_t ** ssls, int n_ssls);
 void stn_set_in_slots (sql_comp_t * sc, stage_node_t * stn);
 void sqlc_code_dpipe (sql_comp_t * sc, dk_set_t * code);
+dbe_key_t *sqlg_flood_key ();
 
 
 #define  RDF_UNTYPED ((caddr_t) 1)

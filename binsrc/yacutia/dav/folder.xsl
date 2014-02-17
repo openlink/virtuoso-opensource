@@ -26,8 +26,9 @@
     <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN">
     <html>
       <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
         <title>Directory listing of <xsl:value-of select="$path" /></title>
-        <link rel="stylesheet" href="/conductor/dav/dav_browser.css" type="text/css" />
+        <link rel="stylesheet" href="/conductor/dav/dav_browser.css" type="text/css"><xsl:text> </xsl:text></link>
         <script type="text/javascript" src="/conductor/toolkit/loader.js"><xsl:text> </xsl:text></script>
         <script type="text/javascript" src="/conductor/toolkit/json.js"><xsl:text> </xsl:text></script>
         <script type="text/javascript" src="/conductor/dav/dav_state.js"><xsl:text> </xsl:text></script>

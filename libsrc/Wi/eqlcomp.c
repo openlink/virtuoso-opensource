@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -60,8 +60,8 @@ int
 cc_new_instance_slot (comp_context_t * cc)
 {
   cc = cc->cc_super_cc;
-  if (cc->cc_instance_fill > 0xfffe)
-    GPF_T1 ("qi with over 64K state slots.");
+  if (cc->cc_instance_fill > MAX_STATE_SLOTS)
+    GPF_T1 ("qi with state slots over the limit.");
   return (cc->cc_instance_fill++);
 }
 
@@ -527,6 +527,8 @@ qr_free (query_t * qr)
 	}
       id_hash_free (qr->qr_call_counts);
     }
+  if (qr->qr_stats_mtx)
+    mutex_free (qr->qr_stats_mtx);
 #endif
 #if defined (MALLOC_DEBUG) || defined (VALGRIND)
   if ((NULL != qr->qr_static_prev) || (NULL != qr->qr_static_next) || (qr == static_qr_dllist))
@@ -1592,6 +1594,7 @@ void
 qr_set_freeable (comp_context_t *cc, query_t * qr)
 {
   dk_set_t res = NULL;
+  dk_hash_t * freeable_inx = hash_table_allocate (101);
   dk_set_t  slots = qr->qr_state_map;
   dk_set_t * prev = &qr->qr_state_map;
   dk_set_t copy = NULL;
@@ -1606,9 +1609,12 @@ qr_set_freeable (comp_context_t *cc, query_t * qr)
       state_slot_t * use_ssl = ssl_use_stock (cc, ssl);
       if (!ssl->ssl_is_alias
 	  && !IS_SSL_REF_PARAMETER (ssl->ssl_type)
-	  && ssl->ssl_type != SSL_CONSTANT)
+	  && ssl->ssl_type != SSL_CONSTANT
+	  && !gethash ((void*)(ptrlong)ssl->ssl_index, freeable_inx))
 	{
 	  dk_set_push (&res, (void*)use_ssl);
+	  if (!SSL_IS_VEC_OR_REF (ssl))
+	    sethash ((void*)(ptrlong)ssl->ssl_index, freeable_inx, (void*)1);
 	  if (SSL_ITC != ssl->ssl_type && SSL_PLACEHOLDER != ssl->ssl_type && !gethash ((void*)ssl, no_copy))
 	    dk_set_push (&copy, ssl);
 	}
@@ -1623,6 +1629,7 @@ qr_set_freeable (comp_context_t *cc, query_t * qr)
 	prev = &slots->next;
       slots = next;
     }
+  hash_table_free (freeable_inx);
   dk_free_box ((box_t) qr->qr_freeable_slots);
   qr->qr_freeable_slots = (state_slot_t **) list_to_array (res);
   ssl_sort_by_index (qr->qr_freeable_slots);
@@ -2770,12 +2777,12 @@ eql_compile_2 (const char *string, client_connection_t * cli, caddr_t * err,
     {
       query_t *qr;
       client_connection_t *old_cli = sqlc_client ();
-      if (!parse_sem)
-	parse_sem = semaphore_allocate (1);
-      semaphore_enter (parse_sem);
+      if (!parse_mtx)
+	parse_mtx = mutex_allocate ();
+      mutex_enter (parse_mtx);
       sqlc_set_client (cli);
       qr = eql_compile_eql (string, cli, err);
-      semaphore_leave (parse_sem);
+      mutex_leave (parse_mtx);
       sqlc_set_client (old_cli);
       return qr;
     }

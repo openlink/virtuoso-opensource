@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -39,7 +39,7 @@ Whitespaces in all other places, including two whitespaces after "::=" in BNF co
 %pure_parser
 %parse-param {sparp_t * sparp_arg}
 %lex-param {sparp_t * sparp_arg}
-%expect 12
+%expect 14
 
 %{
 #include "libutil.h"
@@ -249,6 +249,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token SUBCLASS_L	/*:: PUNCT_SPAR_LAST("SUBCLASS") ::*/
 %token SUBJECT_L	/*:: PUNCT_SPAR_LAST("SUBJECT") ::*/
 %token SUM_L		/*:: PUNCT_SPAR_LAST("SUM") ::*/
+%token TABID_L		/*:: PUNCT_SPAR_LAST("TABID") ::*/
 %token TABLE_OPTION_L	/*:: PUNCT_SPAR_LAST("TABLE_OPTION") ::*/
 %token TEXT_L	/*:: PUNCT_SPAR_LAST("TEXT") ::*/
 %token T_CYCLES_ONLY_L	/*:: PUNCT_SPAR_LAST("T_CYCLES_ONLY") ::*/
@@ -465,7 +466,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_rdf_literal
 %type <tree> spar_boolean_literal
 %type <tree> spar_iriref
-%type <tree> spar_iriref_or_star_or_default
+%type <trees> spar_iriref_or_default_list_or_star
+%type <backstack> spar_iriref_or_default_list
 %type <tree> spar_qname
 %type <token_type> spar_arrow
 %type <trees> spar_arrow_iriref
@@ -1258,7 +1260,7 @@ spar_optional_gp	/* [22]	OptionalGraphPattern	 ::=  'OPTIONAL' GroupGraphPattern
 
 spar_quad_map_gp		/* [Virt]	QuadMapGraphPattern	 ::=  'QUAD' 'MAP' ( IRIref | '*' ) GroupGraphPattern	*/
 	: QUAD_L MAP_L { SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_QUAD_MAP, "QUAD MAP { ... } group pattern"); }
-	    spar_iriref_or_star_or_default { t_set_push (&(sparp_env()->spare_context_qms), $4); }
+	    spar_iriref_or_default_list_or_star { t_set_push (&(sparp_env()->spare_context_qms), $4); }
 	    _LBRA {
 		spar_gp_init (sparp_arg, 0); }
 	    spar_group_gp { t_set_pop (&(sparp_env()->spare_context_qms)); $$ = $8; }
@@ -1473,7 +1475,7 @@ spar_service_option
 		    sparp_arg->sparp_inner_permitted_syntax = unbox (((caddr_t *)(defvals->data))[1]) | SSG_SD_GLOBALS;
 		  }
 		$$ = (SPART **)t_list (2, (SPART *)((ptrlong)DEFINE_L), t_list (2, defname, t_revlist_to_array(defvals))); }
-	| IN_L spar_triple_option_var_commalist		{ $$ = (SPART **)t_list (2, (SPART *)((ptrlong)IN_L), $2); }
+	| IN_L spar_triple_option_var_commalist		{ $$ = (SPART **)t_list (2, (SPART *)((ptrlong)IN_L), t_revlist_to_array ($2)); }
 	| IN_L _STAR					{ $$ = (SPART **)t_list (2, (SPART *)((ptrlong)IN_L), (SPART *)((ptrlong)_STAR)); }
 	;
 
@@ -1577,11 +1579,14 @@ spar_ograph_node	/* [Virt]	ObjGraphNode	 ::=  GraphNode TripleOptions?	*/
 
 spar_triple_optionlist_opt	/* [Virt]	TripleOptions	 ::=  'OPTION' '(' TripleOption ( ',' TripleOption )? ')'	*/
 	: /* empty */	{ $$ = NULL; }
+	| TABID_L SPARQL_PLAIN_ID { $$ = (SPART **)t_list (2, TABID_L, $2); }
 	| OPTION_L _LPAR {
 		if (CONSTRUCT_L == SPARP_ENV_CONTEXT_GP_SUBTYPE(sparp_arg))
 		  sparyyerror (sparp_arg, "Triple options are not allowed in constructor template");
 		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_OPTION, "OPTION () triple matching configuration"); }
-	    spar_triple_option_commalist _RPAR { $$ = (SPART **)t_revlist_to_array ($4); }
+	    spar_triple_option_commalist _RPAR {
+		SPART **opts = (SPART **)t_revlist_to_array ($4);
+		$$ = opts; }
 	;
 
 spar_triple_option_commalist
@@ -1593,6 +1598,9 @@ spar_triple_option	/* [Virt]	TripleOption	 ::=  'TABLE_OPTION' SPARQL_STRING	*/
 	: TABLE_OPTION_L SPARQL_STRING	{
 		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_VIRTSPECIFIC, "TABLE OPTION hint for SQL optimizer");
 		$$ = (SPART **)t_list (2, (ptrlong)TABLE_OPTION_L, $2); }
+	| TABID_L SPARQL_PLAIN_ID	{
+		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_VIRTSPECIFIC, "TABID OPTION hint for using in SQL code");
+		$$ = (SPART **)t_list (2, (ptrlong)TABID_L, $2); }
 	| spar_triple_inference_option	{
 		SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_VIRTSPECIFIC, "inference option");
 		$$ = $1; }
@@ -2271,10 +2279,16 @@ spar_boolean_literal	/* [61]	BooleanLiteral	 ::=  'true' | 'false'	*/
 	| false_L		{ $$ = SPAR_MAKE_BOOL_LITERAL(sparp_arg, 0); }
 	;
 
-spar_iriref_or_star_or_default
-	: spar_iriref
-	| _STAR			{ $$ = (SPART *)((ptrlong)_STAR); }
-	| DEFAULT_L		{ $$ = (SPART *)((ptrlong)DEFAULT_L); }
+spar_iriref_or_default_list_or_star
+	: spar_iriref_or_default_list { dk_set_t lst = $1; t_set_push (&lst, (ptrlong)0); $$ = (SPART **)t_list_to_array (lst); }
+	| _STAR			{ $$ = (SPART **)t_list (2, NULL, ((ptrlong)_STAR)); }
+	;
+
+spar_iriref_or_default_list
+	: DEFAULT_L		{ $$ = NULL; t_set_push (&($$), (SPART *)((ptrlong)DEFAULT_L)); }
+	| spar_iriref		{ $$ = NULL; t_set_push (&($$), $1->_.lit.val); }
+	| spar_iriref_or_default_list DEFAULT_L		{ $$ = $1; t_set_push (&($$), (SPART *)((ptrlong)DEFAULT_L)); }
+	| spar_iriref_or_default_list spar_iriref	{ $$ = $1; t_set_push (&($$), $2->_.lit.val); }
 	;
 
 spar_arrow

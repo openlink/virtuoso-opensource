@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -627,6 +627,8 @@ sqlc_geo_fn_to_char (const char *name)
     return GSOP_INTERSECTS;
   else if (0 == stricmp (name, "st_within"))
     return GSOP_WITHIN;
+  else if (0 == stricmp (name, "st_may_intersect"))
+    return GSOP_MAY_INTERSECT;
   else
   return 0;
 }

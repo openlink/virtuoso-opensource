@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -58,6 +58,7 @@ void print_raw_float (float f, dk_session_t * session);
 void print_raw_double (double f, dk_session_t * session);
 void dks_array_head (dk_session_t * session, long n_elements, dtp_t type);
 void print_string (char *string, dk_session_t * session);
+void print_uname (char *string, dk_session_t * session);
 void print_ref_box (char *string, dk_session_t * session);
 void print_object2 (void *object, dk_session_t * session);
 int srv_write_in_session (void *object, dk_session_t * session, int flush);
@@ -70,7 +71,7 @@ void *box_read_error (dk_session_t * session, dtp_t dtp);
 
 #define MAX_READ_STRING 0xfffffe /*3 byte len - 1 for the final 0, box_length returns correct len */
 #define MARSH_CHECK_LENGTH(length) \
-  if ((length) > MAX_READ_STRING) \
+  if ((length) > MAX_READ_STRING || (length) < 0) \
     { \
       sr_report_future_error (session, "", "Box length too large"); \
       CHECK_READ_FAIL (session); \

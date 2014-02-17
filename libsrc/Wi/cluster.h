@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1048,6 +1048,7 @@ int itc_rd_cluster_blobs (it_cursor_t * itc, row_delta_t * rd, mem_pool_t * ins_
 
 
 /**add vec */
+void ts_ensure_fs_part (table_source_t * ts);
 void clrg_call_flush_if_due (cl_req_group_t * clrg, query_instance_t * qi, int anyway);
 void chash_cl_init ();
 caddr_t daq_call_1 (cl_req_group_t * clrg, dbe_key_t * key, caddr_t fn, caddr_t * vec, int flags, int * first_seq_ret, caddr_t * host_nos);
@@ -1681,9 +1682,21 @@ uint32 cp_any_hash (col_partition_t * cp, db_buf_t val, int32 * rem_ret);
 #define N_ONES(n) ((1 << (n)) - 1)
 
 
+
+extern int enable_small_int_part;
+#if 0
+#define I_PART(i) i
+#else
+#define I_PART(i, shift) \
+ (enable_small_int_part && (uint64)i < (1 << (shift + 2)) \
+ ? ((uint64)i) << shift  \
+ : (uint64)i)
+#endif
+
 #define cp_int_hash(cp, i, rem_ret)				\
-  ((*rem_ret = (cp->cp_shift << 24) | (cp->cp_shift ? (i & N_ONES (cp->cp_shift)) : -1)), \
-   ((((unsigned int64)i) >> cp->cp_shift) & cp->cp_mask))
+  ((*rem_ret = (cp->cp_shift << 24) | (cp->cp_shift ? (I_PART (i, cp->cp_shift) & N_ONES (cp->cp_shift)) : -1)), \
+   ((((unsigned int64)I_PART (i, cp->cp_shift)) >> cp->cp_shift) & cp->cp_mask))
+
 
 
 
@@ -1694,6 +1707,7 @@ id_hash_t * dict_ht (id_hash_iterator_t * dict);
 void dpipe_signature (caddr_t name, int n_args, ...);
 #define CU_CLI(cu) ((cu)->cu_clrg->clrg_lt ? (cu)->cu_clrg->clrg_lt->lt_client : NULL)
 void qi_free_dfg_queue_nodes (query_instance_t * qi, dk_set_t nodes);
+void qf_set_cost (query_frag_t * qf);
 
 
 #endif

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -937,6 +937,7 @@ sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 		if (ST_P (view, PROC_TABLE))
 		  {
 		    sqlo_proc_table_cols (so, ot);
+		    ot->ot_opts = ST_OPT (tree, caddr_t *, _.table.opts);
 		    ot->ot_is_proc_view = 1;
 		  }
 		sco_add_table (so->so_scope, ot);
@@ -1239,6 +1240,23 @@ sqlo_join_exp_inlineable (ST * exp)
 
 
 int
+sqlo_oj_has_const (ST * tree)
+{
+  /* if a rhs of left oj is a select with constant exps, this cannot be inlined because the constant must be a variable in order to be null. */ 
+  int inx;
+  if (!ST_P (tree, SELECT_STMT))
+    return 0;
+  DO_BOX (ST *, exp, inx, tree->_.select_stmt.selection)
+    {
+      if (!sqlo_has_node (exp, COL_DOTTED))
+	return 1;
+    }
+  END_DO_BOX;
+  return 0;
+}
+
+
+int
 sqlo_dt_inlineable (sqlo_t *so, ST *tree, ST * from, op_table_t *ot, int single_only)
 {
   ST *dtexp = from->_.table_ref.table;
@@ -1266,6 +1284,8 @@ sqlo_dt_inlineable (sqlo_t *so, ST *tree, ST * from, op_table_t *ot, int single_
 	    return 0;
 	  while (ST_P (dt_from, TABLE_REF))
 	    dt_from = dt_from->_.table_ref.table;
+	  if (single_only && sqlo_oj_has_const (dtexp))
+	    return 0;
 	  if (single_only && ST_P (dt_from, JOINED_TABLE))
 	    return 0;
 	  if (ST_P (dt_from, JOINED_TABLE)
@@ -1395,6 +1415,11 @@ sqlo_inline_jt (sqlo_t * so, ST * tree, ST * exp, op_table_t * ot)
 	  texp->_.table_exp.where = NULL;
 	  sqlo_expand_dt (so, tree, &exp->_.join.right, ot, 1, NULL);
 	  any++;
+	}
+      if (!any && J_INNER == exp->_.join.type && sqlo_dt_inlineable (so, tree, exp->_.join.right, ot, 0))
+	{
+	  sqlo_expand_dt (so, tree, &exp->_.join.right, ot, 1, NULL);
+	  any = 1;
 	}
       return any;
     }
@@ -2565,7 +2590,7 @@ sqlo_identity_self_join (sqlo_t *so, ST ** ptree)
 		  sqlo_col_pref_replace (tree, ot2->ot_new_prefix, ot1->ot_new_prefix);
 		  t_box_rem_at_inx (&texp->_.table_exp.from, inx2);
 		  so->so_is_rescope = 1;
-		  sqlo_scope (so, ptree);
+		  /*sqlo_scope (so, ptree); - no need to rescope when only removing.  rescoping will re-rename things and only one rename is desired because must be able to map from org to renamed for hash build side dts */
 		  so->so_is_rescope = old_rescope;
 		  return;
 		}
@@ -2575,6 +2600,39 @@ sqlo_identity_self_join (sqlo_t *so, ST ** ptree)
   END_DO_BOX;
 }
 
+/*
+   We check all columns in gb are in select list, if so the distinct is redundant.
+   The columns in gb can't be less than selection as in previous step for checking gb, missing columns are added in selection  
+*/
+static int
+sqlo_distinct_redundant (ST * sel, ST * gb)
+{
+  int inx, inx2, found;
+  DO_BOX (ST *, spec, inx, (ST **)gb)
+    {
+      spec = spec->_.o_spec.col;
+      while (ST_P (spec, BOP_AS))
+	spec = spec->_.as_exp.left;
+      found = 0;
+      DO_BOX (ST *, exp, inx2, (ST **) sel)
+	{
+	  while (ST_P (exp, BOP_AS))
+	    exp = exp->_.as_exp.left;
+	  while (ST_P (exp, CALL_STMT) && sqlo_is_unq_preserving (exp->_.call.name))
+	    exp = exp->_.call.params[0];
+	  if (box_equal (exp, spec))
+	    {
+	      found = 1;
+	      break;
+	    }
+	}
+      END_DO_BOX;
+      if (!found)
+	return 0;
+    }
+  END_DO_BOX;
+  return 1;
+}
 
 void
 sqlo_select_scope (sqlo_t * so, ST ** ptree)
@@ -2774,6 +2832,8 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
 	      &(texp->_.table_exp.group_by), ot, is_not_one_gb);
 	  sqlo_check_group_by_cols (so, (ST *) texp->_.table_exp.order_by,
 	      &(texp->_.table_exp.group_by), ot, is_not_one_gb);
+	  if (!is_not_one_gb && SEL_IS_DISTINCT (tree) && sqlo_distinct_redundant (tree->_.select_stmt.selection, texp->_.table_exp.group_by))
+	    SEL_SET_DISTINCT (tree, 0)
 	}
     }
 
@@ -3046,6 +3106,18 @@ sqlo_check_rdf_lit (ST ** ptree)
 }
 
 
+extern caddr_t uname_one_of_these;
+
+ST *
+sqlo_iri_in_opt (sqlo_t * so, ST * tree)
+{
+  ST ** params = tree->_.call.params;
+  if (st_is_call (params[0], "__ro2lo", 1))
+    params[0] = params[0]->_.call.params[0];
+  return tree;
+}
+
+
 void
 sqlo_scope (sqlo_t * so, ST ** ptree)
 {
@@ -3162,6 +3234,8 @@ sqlo_scope (sqlo_t * so, ST ** ptree)
 	  }
 	END_DO_BOX;
 	res = sinv_check_inverses (tree, sqlc_client());
+	if (call_name == uname_one_of_these)
+	  res = sqlo_iri_in_opt (so, tree);
 	if (res != tree)
 	  {
 	    *ptree = res;
@@ -3230,6 +3304,8 @@ sqlo_scope (sqlo_t * so, ST ** ptree)
 	    {
 	      *ptree = res;
 	      tree = res;
+	      sqlo_check_rdf_lit (&tree->_.bin_exp.left);
+	      sqlo_check_rdf_lit (&tree->_.bin_exp.right);
 	    }
 	  if (ST_P (tree, BOP_OR))
 	    sqlo_bop_expand_or (so, tree);

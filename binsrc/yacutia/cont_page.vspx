@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2014 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,14 +21,17 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="databases" decor="yacutia_decor.vspx"
-        style="yacutia_style.xsl"
-        fast-render="1"
-        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-        xmlns:v="http://www.openlinksw.com/vspx/"
-        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+<v:page
+  name="cont_page"
+  decor="yacutia_decor.vspx"
+  style="yacutia_style.xsl"
+  fast-render="1"
+  xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
   <vm:pagetitle>WebDAV Content Management</vm:pagetitle>
   <vm:pagewrapper>
     <vm:menu>

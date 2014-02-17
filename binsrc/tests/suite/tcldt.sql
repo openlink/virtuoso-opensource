@@ -97,9 +97,13 @@ select row_no, case when mod (row_no, 2 ) = 1 then (select max (b.row_no) - 1 as
 echo both $if $equ $last[2] 50 "PASSED" "***FAILED";
 echo both ": cond scalar subq with exp on aggregate\n";
 
-select row_no, case when mod (row_no, 2 ) = 1 then (select  (b.row_no) - 1 as ct  from t1 b where b.row_no = 140 - a.row_no) else 1 end  as cnt from t1 a where row_no + 0 < 90 order by row_no;
+select row_no, case when mod (row_no, 2 ) = 1 then (select  (b.row_no) - 1 as ct  from t1 b table option (hash) where b.row_no = 140 - a.row_no) else 1 end  as cnt from t1 a where row_no + 0 < 90 order by row_no;
 echo both $if $equ $last[2] 50 "PASSED" "***FAILED";
-echo both ": cond scalar subq with exp on result\n";
+echo both ": cond scalar subq with exp on result, hash\n";
+
+select row_no, case when mod (row_no, 2 ) = 1 then (select  (b.row_no) - 1 as ct  from t1 b table option (loop) where b.row_no = 140 - a.row_no) else 1 end  as cnt from t1 a where row_no + 0 < 90 order by row_no;
+echo both $if $equ $last[2] 50 "PASSED" "***FAILED";
+echo both ": cond scalar subq with exp on result, loop\n";
 
 
 explain ('select a.row_no, b.row_no from t1 a left join (select row_no from t1) b on b.row_no in (a.row_no + 1, a.row_no + 2)');

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -61,19 +61,26 @@ create procedure DAV_DEBUG_CHECK_DIR_ITEM (inout itm any, in refetch integer := 
   if (not exists (select top 1 1 from WS.WS.SYS_DAV_GROUP where G_ID = itm[6])) { reason := '[6] is not in WS.WS.SYS_DAV_GROUP'; goto oblom; }
   fpath_id := DAV_SEARCH_ID (fpath, st);
   if (DAV_HIDE_ERROR (fpath_id) is null) { reason := '[0] "' || fpath || '" not found: ' || DAV_PERROR (fpath_id); goto oblom; }
-  if (serialize (itm[4]) <> serialize (fpath_id)) { dbg_obj_princ ('full path ID is ', fpath_id); reason := 'DAV_SEARCH_ID ([0]) <> [4]'; goto oblom; }
+  if (serialize (itm[4]) <> serialize (fpath_id)) { dbg_obj_princ ('full path ID is ', fpath_id);
+    reason := 'DAV_SEARCH_ID ([0]) <> [4]'; goto oblom; }
   if (refetch)
     {
       fpath_itm := DAV_DIR_LIST_INT (fpath, -1, '%', 'dav', 'dav', http_dav_uid());
       if (DAV_HIDE_ERROR (fpath_itm) is null) { reason := 'can not get a diritem of [0] "' || fpath || '": ' || DAV_PERROR (fpath_itm); goto oblom; }
-      if (not isarray (fpath_itm)) { dbg_obj_princ ('DAV_DIR_SINGLE returned ', fpath_itm); reason := 'bad type'; goto oblom; }
-      if (1 <> length (fpath_itm)) { dbg_obj_princ ('DAV_DIR_SINGLE returned ', fpath_itm); reason := 'DAV_DIR_SINGLE ([0]) is not of length 1'; goto oblom; }
-      if (serialize (itm) <> serialize (fpath_itm[0])) { dbg_obj_princ ('DAV_DIR_SINGLE returned ', fpath_itm[0]); reason := 'DAV_DIR_SINGLE ([0]) <> itm'; goto oblom; }
+      if (not isarray (fpath_itm)) {
+	-- dbg_obj_princ ('DAV_DIR_SINGLE returned ', fpath_itm);
+	reason := 'bad type'; goto oblom; }
+      if (1 <> length (fpath_itm)) {
+	-- dbg_obj_princ ('DAV_DIR_SINGLE returned ', fpath_itm);
+	reason := 'DAV_DIR_SINGLE ([0]) is not of length 1'; goto oblom; }
+      if (serialize (itm) <> serialize (fpath_itm[0])) {
+        -- dbg_obj_princ ('DAV_DIR_SINGLE returned ', fpath_itm[0]);
+        reason := 'DAV_DIR_SINGLE ([0]) <> itm'; goto oblom; }
     }
   return;
 
 oblom:
-  dbg_obj_princ ('DAV_DEBUG_CHECK_DIR_ITEM (', itm, '): ', reason);
+  -- dbg_obj_princ ('DAV_DEBUG_CHECK_DIR_ITEM (', itm, '): ', reason);
   signal ('OBLOM', 'DAV_DEBUG_CHECK_DIR_ITEM (): ' || reason);
 }
 ;
@@ -95,7 +102,7 @@ create procedure DAV_DEBUG_CHECK_DIR_LIST (inout dirlist any, in refetch integer
   return;
 
 oblom:
-  dbg_obj_princ ('DAV_DEBUG_CHECK_DIR_LIST (', dirlist, '): ', reason);
+  -- dbg_obj_princ ('DAV_DEBUG_CHECK_DIR_LIST (', dirlist, '): ', reason);
   signal ('OBLOM', 'DAV_DEBUG_CHECK_DIR_LIST (): ' || reason);
 }
 ;
@@ -160,12 +167,12 @@ create procedure DAV_DEBUG_CHECK_SPACE_QUOTAS ()
   vectorbld_final (err_log);
   foreach (any rec in err_log) do
     {
-      dbg_obj_princ (rec[0], '\t: ', rec[1]);
+      -- dbg_obj_princ (rec[0], '\t: ', rec[1]);
       result (rec[0], rec[1]);
     }
   if (length (err_log) > 0)
     {
-      dbg_obj_princ ('DAV_DEBUG_CHECK_SPACE_QUOTAS (): ', length (err_log), ' integrity error(s) found');
+      -- dbg_obj_princ ('DAV_DEBUG_CHECK_SPACE_QUOTAS (): ', length (err_log), ' integrity error(s) found');
       signal ('OBLOM', sprintf ('DAV_DEBUG_CHECK_SPACE_QUOTAS () : %d integrity error(s) found', length (err_log)));
     }
 }

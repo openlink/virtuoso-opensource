@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -413,4 +413,12 @@ table.WEBDAV_formList tbody tr:nth-child(even) {
   background-color: #fff;
   border: solid #7f94a5;
   border-width: 1px 0px 0px 1px;
+}
+
+.WEBDAV_a:visited {
+  color:blue;
+}
+
+.WEBDAV_a:hover {
+  text-decoration: none;
 }

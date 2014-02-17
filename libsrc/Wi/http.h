@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -137,6 +137,7 @@ typedef struct ws_connection_s
 #endif
     char  		ws_options[HTTP_MAX_METHOD];
     char		ws_limited;
+    char 		ws_thr_cache_clear;
   } ws_connection_t;
 
 #define WS_CHARSET(ws, qst) \
@@ -193,7 +194,7 @@ extern long  tws_bad_request;
 
 #define WM_IS_URIQA(opcode) ((WM_URIQA_FIRST <= (opcode)) && (WM_URIQA_LAST >= (opcode)))
 
-#define PATH_ELT_MAX_CHARS 255
+#define PATH_ELT_MAX_CHARS 512
 
 long ws_content_length (caddr_t * head);
 char * ws_header_field (caddr_t * head, const char * f, char * deflt);

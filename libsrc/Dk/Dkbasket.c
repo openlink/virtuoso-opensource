@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -446,7 +446,7 @@ rbuf_test ()
     }
   rbuf_delete_all (&rb);
   for (inx = 1; inx < 100000; inx++)
-    rbuf_add (&rb, (void*)inx);
+    rbuf_add (&rb, (void*)(ptrlong)inx);
   rbuf_rewrite (&rb);
   DO_RBUF (ptrlong, x, rbe, rbe_inx, &rb)
     {
@@ -514,7 +514,7 @@ rbuf_append (rbuf_t * dest, rbuf_t * src)
 
 
 
-void * rbuf_rewrite (rbuf_t * rb)
+void rbuf_rewrite (rbuf_t * rb)
 {
   rb->rb_rewrite_last = rb->rb_first;
   rb->rb_rewrite = rb->rb_first->rbe_read;

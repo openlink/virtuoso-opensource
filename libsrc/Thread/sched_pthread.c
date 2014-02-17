@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -361,7 +361,7 @@ thread_create (
        thr != (thread_t *) &_deadq.thq_head;
        thr = (thread_t *) thr->thr_hdr.thr_next)
     {
-      /* if (thr->thr_stack_size >= stack_size) */
+      if (thr->thr_stack_size >= stack_size) 
 	break;
     }
   Q_UNLOCK ();
@@ -1462,6 +1462,8 @@ mutex_stat ()
   #ifdef MTX_METER
   DO_HT (dk_mutex_t *, mtx, void*, ign, all_mtxs)
     {
+      if (!mtx->mtx_enters)
+	continue;
 #ifdef APP_SPIN
       printf ("%s %p E: %ld W %ld  spinw: %ld spin: %d\n", mtx->mtx_name ? mtx->mtx_name : "<?>",  mtx,
 	      mtx->mtx_enters, mtx->mtx_waits, mtx->mtx_spin_waits, mtx->mtx_spins);

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -350,7 +350,8 @@ trig_wrapper (caddr_t * qst, state_slot_t ** args, dbe_table_t * tb,
       || qi->qi_client->cli_no_triggers)
     {
       qn_run (qn, qst, qst);
-      ROW_AUTOCOMMIT (qi);
+      if (!(TRIG_INSERT == event && qi->qi_non_txn_insert))
+	ROW_AUTOCOMMIT (qi);
       return;
     }
 

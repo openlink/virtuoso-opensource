@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -108,9 +108,9 @@ create procedure profile (in stmt varchar, in flags varchar := '', in params any
   prof_enable (1);
   sdate := curdatetime ();
   if (params is null) params := vector ();
- st := '00000';
+  st := '00000';
   e_clocks := rdtsc ();
-    exec (stmt, st, msg, params, 20, resd, res);
+  exec (stmt, st, msg, params, 20, resd, res);
   e_clocks := rdtsc () - e_clocks;
   prof_enable (0);
 
@@ -147,14 +147,33 @@ from sys_query_log where qrl_start_dt = sdate order by ql_start_dt;
       result (string_output_string (strses));
     }
   result (plan);
- strses := string_output ();
-  result (sprintf ('\n %d msec %d%% cpu, %9.6g rnd %9.6g seq %9.6g same seg %9.6g same pg ',
-		   rt_msec, thread_clocks * 100.0 / e_clocks, rnd_rows, seq_rows, same_seg, same_page));
+  strses := string_output ();
+  result (sprintf ('\n %d msec %d%% cpu, %9.6g rnd %9.6g seq %9.6g%% same seg %9.6g%% same pg ', 
+      rt_msec, 
+      case e_clocks when 0 then -1 else thread_clocks * 100.0 / e_clocks end, 
+      rnd_rows, 
+      seq_rows, 
+      (100.0 * same_seg) / (rnd_rows + 1), 
+      (100.0 * same_page) / (1 + rnd_rows)
+      ));
   if (disk_reads)
-    result (sprintf ('%d disk reads, %d read ahead, %9.6g%% wait', disk_reads, spec_disk_reads, 100.0 * disk_wait_clocks / e_clocks));
+    result (sprintf ('%d disk reads, %d read ahead, %9.6g%% wait', 
+	disk_reads, 
+	spec_disk_reads, 
+	case e_clocks when 0 then -1 else 100.0 * disk_wait_clocks / e_clocks end
+	));
   if (messages)
-    result (sprintf (' %d messages %9.6g bytes/m, %9.2g%% clw', messages, message_bytes / messages, cl_wait_clocks * 100.0 / e_clocks));
-  result (sprintf ('Compilation: %d msec %d reads %9.6g%% read %d messages %9.6g%% clw', c_msec, c_disk_reads, 100.0 * c_disk_wait / e_clocks,  cl_messages, 100.0 * c_cl_wait  / e_clocks));
-
+    result (sprintf (' %d messages %9.6g bytes/m, %9.2g%% clw', 
+    	messages, 
+	message_bytes / messages, 
+	case e_clocks when 0 then -1 else cl_wait_clocks * 100.0 / e_clocks end
+	));
+  result (sprintf ('Compilation: %d msec %d reads %9.6g%% read %d messages %9.6g%% clw', 
+  	c_msec, 
+	c_disk_reads, 
+	case e_clocks when 0 then -1 else 100.0 * c_disk_wait / e_clocks end,  
+	cl_messages, 
+	case e_clocks when 0 then -1 else 100.0 * c_cl_wait  / e_clocks end
+	));
 }
 ;

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -143,14 +143,14 @@ create procedure TEST_CATFILTER_INIT (in users_count integer, in files_per_user 
   DAV_ADD_GROUP ('DETtest_CatFilter', 'dav', 'dav');
   DAV_COL_CREATE ('/DAV/DETtest_CatFilter/', '110100100R', 'dav', 'administrators', 'dav', 'dav');
   TEST_CATFILTER_MAKE_SCHEMAS (schema_count, schema_size);
-  dbg_obj_princ ('TEST_CATFILTER_INIT: schemas done');
+  -- dbg_obj_princ ('TEST_CATFILTER_INIT: schemas done');
   for (user_ctr := 0; user_ctr < users_count; user_ctr := user_ctr + 1)
     {
       declare cf_uname varchar;
       cf_uname := sprintf ('cf%d', 10000 + user_ctr);
       TEST_CATFILTER_MAKE_USER (cf_uname);
     }
-  dbg_obj_princ ('TEST_CATFILTER_INIT: users done');
+  -- dbg_obj_princ ('TEST_CATFILTER_INIT: users done');
   for (ctr1 := 0; ctr1 < files_per_user; ctr1 := ctr1 + 1)
     {
       declare colname varchar;
@@ -166,9 +166,9 @@ create procedure TEST_CATFILTER_INIT (in users_count integer, in files_per_user 
 	    schema_idx, schema_size );
 	}
       commit work;
-      dbg_obj_princ ('TEST_CATFILTER_INIT: files ', ctr1, '/', files_per_user);
+      -- dbg_obj_princ ('TEST_CATFILTER_INIT: files ', ctr1, '/', files_per_user);
     }
-  dbg_obj_princ ('TEST_CATFILTER_INIT: files done');
+  -- dbg_obj_princ ('TEST_CATFILTER_INIT: files done');
 }
 ;
 

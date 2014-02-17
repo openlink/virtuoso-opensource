@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2014 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -111,9 +111,9 @@
                       <td>
                 	      <!--<v:button style="image" action="simple" value="images/icons/ref_16.png" url="--'logging_page.vspx?page=' || self.page || '&autorefresh=' || self.autorefresh"
                                   xhtml_alt="Refresh page" xhtml_title="Refresh page"
-                			            xmlns:v="http://www.openlinksw.com/vspx/" text="&#160;Refresh"
+                			            xmlns:v="http://www.openlinksw.com/vspx/" text="&nbsp;Refresh"
                 			  />-->
-                			  <span style="font-weight: normal;">&#160;Data Updated:</span>
+                			  <span style="font-weight: normal;">&nbsp;Data Updated:</span>
                 			  <span id="upd_time"><?V substring (cast (now() as varchar), 1, 19) ?></span>
                       </td>
                       <td align="right">

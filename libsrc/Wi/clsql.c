@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2011 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -38,7 +38,7 @@
 #include "xmlnode.h"
 
 
-int enable_hash_colocate = 0;
+int enable_hash_colocate = 1;
 int enable_dfg = 1;
 int enable_multistate_code = 1;
 int enable_last_qf_dml = 1;
@@ -303,6 +303,7 @@ sqlg_qf_end (sql_comp_t * sc, query_frag_t * qf)
   while (qn_next (qn))
     qn = qn_next (qn);
   if ((0 && IS_INNER_TS (qn) && !qn->src_after_test && !qn->src_after_code)
+      || IS_QN (qn, insert_node_input) 
       || (IS_QN (qn, setp_node_input) && !((setp_node_t *) qn)->setp_distinct))
     return;
   {
@@ -405,6 +406,20 @@ sqlg_qf_nodes_env (sql_comp_t * sc, query_frag_t * qf, dk_hash_t * local_refs, d
 void ref_ssls (dk_hash_t * ht, state_slot_t ** ssls);
 
 
+int 
+ssl_arr_cmp (void * s1, void * s2)
+{
+  state_slot_t * ssl1 = *(state_slot_t**)s1;
+  state_slot_t * ssl2 = *(state_slot_t**)s2;
+  return ssl1->ssl_index < ssl2->ssl_index ? -1 : ssl1->ssl_index == ssl2->ssl_index ? 0 : 1;
+}
+
+void
+ssl_arr_sort (state_slot_t ** ssls)
+{
+  qsort (ssls, BOX_ELEMENTS (ssls), sizeof (caddr_t), ssl_arr_cmp);
+}
+
 void
 sqlg_qf_ctx (sql_comp_t * sc, query_frag_t * qf, dk_hash_t * local_refs, dk_hash_t * refs)
 {
@@ -460,6 +475,7 @@ sqlg_qf_ctx (sql_comp_t * sc, query_frag_t * qf, dk_hash_t * local_refs, dk_hash
 	}
     }
   refd_after_qf = (state_slot_t **) ht_keys_to_array (refs);
+  ssl_arr_sort (refd_after_qf);
   if (enable_qf_dfg_scope)
     sqlg_qf_nodes_env (sc, qf, local_refs, refs, refd_after_qf, &outputs);
   else
@@ -730,6 +746,16 @@ sqlg_part_fref_order (sql_comp_t * sc, fun_ref_node_t * fref)
 }
 
 
+void
+sqlg_un_refs (sql_comp_t * sc, union_node_t * un, dk_hash_t * refs)
+{
+  DO_HT (state_slot_t *, ssl, ptrlong, igm, un->un_refs_after)
+    {
+      REF_SSL (refs, ssl);
+    }
+  END_DO_HT;
+}
+
 
 void
 sqlg_qn_env (sql_comp_t * sc, data_source_t * qn, dk_set_t qn_stack, dk_hash_t * refs)
@@ -742,9 +768,25 @@ sqlg_qn_env (sql_comp_t * sc, data_source_t * qn, dk_set_t qn_stack, dk_hash_t *
 	  /* here we are at end of a subq and call the next of the caller.  The caller of the subq is either a sqs or a union node.  Mind the sqs's or union's after tests so that upon return, when the subq is processed, they are properly in the refs */
 	  int cl_flag = 0;
 	  QNCAST (data_source_t, sqs, qn_stack->data);
+	  if (IS_QN (sqs, union_node_input))
+	    {
+	      QNCAST (union_node_t, un, sqs);
+	      if (un->un_refs_after)
+		{
+		  /* the union's  continuation has been seen. Redo the same refs, no need to get them again  */
+		  sqlg_un_refs (sc, un, refs);
+		  return;
+		}
+	    }
 	  sqlg_qn_env (sc, qn_next (sqs), qn_stack->next, refs);
 	  cv_refd_slots (sc, sqs->src_after_code, refs, NULL, &cl_flag);
 	  cv_refd_slots (sc, sqs->src_after_test, refs, NULL, &cl_flag);
+	  if (IS_QN (sqs,  union_node_input))
+	    {
+	      QNCAST (union_node_t, un, sqs);
+	      if (!un->un_refs_after)
+		un->un_refs_after = hash_table_copy (refs); 
+	    }
 	}
       else
 	{
@@ -796,11 +838,15 @@ sqlg_qn_env (sql_comp_t * sc, data_source_t * qn, dk_set_t qn_stack, dk_hash_t *
   else if ((qn_input_fn) union_node_input == qn->src_input)
     {
       QNCAST (union_node_t, un, qn);
+      un->un_refs_after = NULL;
       DO_SET (query_t *, term, &un->uni_successors)
       {
 	sqlg_qn_env (sc, term->qr_head_node, t_cons ((void *) qn, qn_stack), refs);
       }
       END_DO_SET ();
+      if (un->un_refs_after)
+	hash_table_free (un->un_refs_after);
+      un->un_refs_after = NULL;
     }
   else
     {
@@ -1211,6 +1257,12 @@ qr_is_multistate (query_t * qr)
 }
 
 
+dk_set_t
+cv_multistate (code_vec_t cv)
+{
+}
+
+
 int
 qr_begins_with_iter_or_test (query_t * qr, data_source_t ** first_clb_ret)
 {
@@ -1376,7 +1428,6 @@ ssa_init (sql_comp_t * sc, setp_save_t * ssa, state_slot_t * set_no_ssl)
 {
   ssa->ssa_set_no = set_no_ssl;
   ssa->ssa_array = ssl_new_variable (sc->sc_cc, "multistate_save", DV_ARRAY_OF_POINTER);
-  ssa->ssa_current_set = ssl_new_variable (sc->sc_cc, "last_set_no", DV_LONG_INT);
   ssa->ssa_batch_size = cl_req_batch_size;
 }
 
@@ -1542,4 +1593,14 @@ int
 sqlg_distinct_colocated (sql_comp_t * sc, state_slot_t ** ssls, int n_ssls)
 {
   return 0;
+}
+
+
+int enable_high_card_part = 0;
+float c_setp_partition_threshold = 100000;
+
+int
+setp_is_high_card (setp_node_t * setp)
+{
+  return enable_high_card_part && setp->setp_card > c_setp_partition_threshold && !setp->setp_in_union;
 }

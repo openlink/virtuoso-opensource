@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -146,8 +146,7 @@ again:
     {
       langs := http_request_header_full (lines, 'Accept-Language', 'en');
     }
-  exec (sprintf ('sparql  '||
-  'select ?o (lang(?o)) where { graph <%S> { <%S> rdfs:label ?o } }', _G, _S), null, null, vector (), 0, meta, data);
+  exec ('sparql select ?o (lang(?o)) where { graph `iri(??)` { `iri(??)` rdfs:label ?o } }', null, null, vector (_G, _S), vector ('use_cache', 1, 'max_rows', 0), meta, data);
   best_str := '';
   best_q := 0;
   if (length (data))
@@ -171,8 +170,7 @@ again:
     {
       return best_str;
     }
-  exec (sprintf ('sparql define input:inference "dbprdf-label" '||
-  'select ?o (lang(?o)) where { graph <%S> { <%S> virtrdf:label ?o } }', _G, _S), null, null, vector (), 0, meta, data);
+  exec ('sparql define input:inference "dbprdf-label" select ?o (lang(?o)) where { graph `iri(??)` { `iri(??)` virtrdf:label ?o } }', null, null, vector (_G, _S), vector ('use_cache', 1, 'max_rows', 0), meta, data);
   best_str := '';
   best_q := 0;
   if (length (data))

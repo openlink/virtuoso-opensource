@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -122,5 +122,10 @@ extern void ldbg_longjmp (jmp_buf env, int value);
 #  define gettext(X)		X
 
 #endif /* ENABLE_NLS */
+
+#if defined (MAC_OS_X_VERSION_10_9) && (MAC_OS_X_VERSION_MIN_REQUIRED >= MAC_OS_X_VERSION_10_9)
+#include <xmmintrin.h>
+#define __builtin_ia32_loadups(p) _mm_loadu_ps((p))
+#endif
 
 #endif /* _DK_H */

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -222,9 +222,7 @@ typedef struct setp_save_s
 {
   /* save state for cluster batch  execution of setp/fref pairs */
   state_slot_t *	ssa_array;
-  state_slot_t **	ssa_save;
   state_slot_t *	ssa_set_no; /* no of top level set that is on the qst */
-  state_slot_t *	ssa_current_set;
   int			ssa_batch_size;
 } setp_save_t;
 
@@ -272,6 +270,7 @@ struct query_s
     int			qr_ref_count;
     int			qr_trig_order;
     int			qr_instance_length;
+    int 		qr_dc_est;
     short		qr_cl_run_started; /*inx into qi, flag set when cl multistate qr running, no more input states allowed until outputs consumed */
     bitf_t		qr_is_ddl:1;
     bitf_t		qr_is_complete:1; /* false while trig being compiled */
@@ -551,7 +550,7 @@ typedef struct hash_area_s
 #define HA_GROUP 3
 #define HA_FILL 4
 #define HA_PROC_FILL 5
-
+#define HA_ORD_DISTINCT 6
 
 typedef struct clo_comp_s
 {
@@ -603,6 +602,7 @@ struct key_source_s
     char		ks_descending;	/* if reading from end to start */
     char		ks_is_vacuum;
     char		ks_isolation;
+    char		ks_lock_mode;
     char		ks_check;
     char		ks_is_last;	/* if last ks in join and no select or
 					   postprocess follows.
@@ -705,6 +705,8 @@ typedef struct table_source_s
     key_source_t *	ts_main_ks;
     state_slot_t *	ts_order_cursor;
     state_slot_t *	ts_current_of;
+    int			ts_batch_sz;
+    short		ts_qp_max;
     bitf_t		ts_is_unique:1;	/* Only one hit expected, do not look for more */
     bitf_t		ts_is_outer:1;
     bitf_t		ts_is_random:1; /* random search */
@@ -1035,8 +1037,13 @@ typedef struct remote_table_source_s
     query_t *		rts_policy_qr;
   } remote_table_source_t;
 
-#define IS_RTS(n) \
-  ((qn_input_fn) remote_table_source_input == ((remote_table_source_t *)(n))->src_gen.src_input)
+
+/* rts_parallel */
+#define RTS_NO_PAR 0
+#define RTS_PAR_RANGE 1 /* splits scan by range of a column */
+#define RTS_PAR_SETS 2 /* is an index lookup that can be part in a parallel plan, may make new threads if many sets of input */
+
+#define IS_RTS(n) 0
 
 #define IS_TS(n) \
   ((qn_input_fn) table_source_input_unique == ((data_source_t*)(n))->src_input || \
@@ -1065,7 +1072,10 @@ typedef struct union_node_s
     data_source_t	src_gen;
     state_slot_t *	uni_nth_output;
     dk_set_t		uni_successors;
+    dk_hash_t *         un_refs_after;	/* in tracking ssl refs, do a union's continuation only once, remember the refd ssls here */
+    short 		uni_op;
     char		uni_sequential; /* finish each branch before starting next.  Needed in except and intersect */
+    char		uni_cl_colocate_delayed;
   } union_node_t;
 
 
@@ -1157,6 +1167,7 @@ typedef struct update_node_s
     state_slot_t *	upd_cols_param;
     state_slot_t *	upd_values_param;
     char 		upd_no_keys;	/* if no key parts changed */
+    char		upd_no_trig; /* no trig call even if trig args set */
     /* opt for single col in row of known key */
     key_id_t		upd_exact_key; /* if no key parts */
     state_slot_t **	upd_quick_values;
@@ -1194,13 +1205,13 @@ typedef struct delete_node_s
     ssl_index_t		del_param_nos;
     ssl_index_t		del_set_mask; /* in cluster local branch, indicates which rows in the cast in the iks are for delete, i.e. local */
     char		del_is_view;
+    char 		del_no_trig;
   } delete_node_t;
 
 
 typedef struct end_node_s
   {
     data_source_t	src_gen;
-    int			en_send_rc;
   } end_node_t;
 
 
@@ -1223,7 +1234,6 @@ typedef struct code_node_s
 typedef struct row_insert_node_s
   {
     data_source_t	src_gen;
-    int			en_send_rc;
     state_slot_t *	rins_row;
     int			rins_mode;	/* c.f. ins_node */
   } row_insert_node_t;
@@ -1232,7 +1242,6 @@ typedef struct row_insert_node_s
 typedef struct key_insert_node_s
   {
     data_source_t	src_gen;
-    int			en_send_rc;
     state_slot_t *	kins_row;
     dbe_key_t *		kins_key;
   } key_insert_node_t;
@@ -1291,10 +1300,12 @@ typedef struct select_node_s
     state_slot_t *	sel_prev_set_no; /* set no of prev row.  when changes, reset the top ctr */
     state_slot_t *	sel_cn_set_no; /* if in multistate exists or value subq, this is set no of containing code node.  As soon as one result is produced, advance the multistate qr to the next set as per this set no */
     state_slot_t *	sel_scalar_ret;
+    set_ctr_node_t *	sel_set_ctr; /* if inlined subq ends here, this is the set ctr that marks the strat of the subq */
     ssl_index_t		sel_vec_set_mask; /* In vectored subq, if top = 1, bit mask where each exists marks a 1 at the set no.  If top > 1, array of ints with row count in the set in question. */
     ssl_index_t	sel_client_batch_start; /* set no of 1st result row in current batch of rows to sql client */
     char		sel_vec_role;
     char		sel_is_scalar_agg; /* scalar subq with aggregate and no group by */
+    char		sel_subq_inlined;
   } select_node_t;
 
 #define SEL_VEC_EXISTS 1
@@ -1396,6 +1407,7 @@ typedef struct setp_node_s
     char		setp_is_qf_last; /* if set, the next can be a read node of partitioned setp but do not call it from the setp. */
     char		setp_is_streaming; /* a group by with ordering cols as grouping cols, results available in mid-grouping */
     char		setp_is_cl_gb_result;
+    char		setp_in_union;
     state_slot_t *	setp_streaming_ssl; /* if grouping cols are ordering cols but have duplicates, this is the col to check for distinguishing known complete groups from possible incomplete groups */
 
     /* partitioned hash fill */
@@ -1447,6 +1459,7 @@ typedef struct fun_ref_node_s
     dk_set_t 		fnr_distinct_ha;
     hi_signature_t *	fnr_hi_signature;
     query_frag_t *	fnr_cl_qf; /* if the aggregation is done in remotes, this is the qf that holds the state */
+    dk_set_t		fnr_cl_qfs; /* if a union followed by aggregation */
     dk_set_t		fnr_cl_merge_temps; /* for adding up aggs in cluster */
     setp_save_t		fnr_ssa; /* save for multiple set aggregation */
     char		fnr_partitioned;
@@ -1720,7 +1733,8 @@ typedef struct db_activity_s
 struct cl_slice_s
 {
   /* unit of movable storage, several per server if elastic, else 1:1 to host groups */
-  int	csl_id;
+  int	csl_id; /* dense sequence number of slice from 0 to cluuster-wide n slices - 1 */
+  int	csl_ordinal;
   short	csl_threads; /* count of running threads scoped to this */
   char	csl_is_local; /* copy of this slice hosted in this process */
   char	csl_status;
@@ -2001,7 +2015,8 @@ struct user_aggregate_s
 /*! Merge function or NULL, that gets two inout box of environments, merges them and saves the result to the first one; returns nothing
     If the name is NULL, then the parallelization of grouping is prohibited. */
     user_aggregate_fun_t	ua_merge;
-    char		ua_need_order;
+/*! Flag whether the order of passing values to the aggregate is significant. */
+    char			ua_need_order;
   };
 
 

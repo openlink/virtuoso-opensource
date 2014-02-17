@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2014 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -21,9 +21,21 @@
 
 TOP=@TOP@
 
-TESTS=runtests.sh
-TESTS_ENVIRONMENT=PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
-	PORT=$(PORT) HOME="$(TOP)" JDK2="$(JDK2)" JDK3="$(JDK3)" HOST=localhost SERVER=virtuoso-t
+#TESTS=runtests.sh
+TESTS_ENVIRONMENT= \
+	HOME="$(TOP)" \
+	HOST=localhost \
+	JDK2="@ac_jdk2_path@" \
+	JDK3="@ac_jdk3_path@" \
+	JDK4="@ac_jdk4_path@" \
+	MAKE=$(MAKE) \
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
+	PORT=$(PORT) \
+	SERVER=virtuoso-t \
+	TOP="$(TOP)"
+
+check-local:
+	env $(TESTS_ENVIRONMENT) $(SHELL) ./runtests.sh
 
 clean-local:
 	rm -f tpcd.db tpcd.log tpcd.pxa tpcd.trx tpcd.tdb

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -28,6 +28,7 @@
 #ifndef _DATE_H
 #define _DATE_H
 
+#include "widv.h"
 #include "odbcinc.h"
 
 typedef unsigned char  datetime_t[DT_LENGTH];
@@ -189,6 +190,8 @@ extern void dt_audit_fields (char *dt);
 	) \
        ))
 
+#define SPERDAY (24*60*60)
+#define DT_CAST_TO_TOTAL_SECONDS(dt) ((boxint)DT_DAY (dt) * 24 * 60 * 60 + (boxint)DT_HOUR (dt) * 60 * 60 + (boxint)DT_MINUTE (dt) * 60 + DT_SECOND (dt))
 
 #ifdef WORDS_BIGENDIAN
 #define memcpy_dt(tgt, src) memcpy (tgt, src, DT_LENGTH)
@@ -204,6 +207,5 @@ extern void dt_audit_fields (char *dt);
 #define memcmp_dt(dt1, dt2, neq)				\
   {if (*(int64*)(dt1) != *(int64*)(dt2)) goto neq;}
 #endif
-
 
 #endif /* _DATE_H */

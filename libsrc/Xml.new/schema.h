@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -828,7 +828,6 @@ extern int xs_set_error (vxml_parser_t * parser, ptrlong errlevel, size_t buflen
 int xmlparser_log_cm_location (struct vxml_parser_s *parser, xs_component_t *comp, int mode);
 extern caddr_t xml_add_system_path (caddr_t uri);
 extern void xs_add_predefined_types(vxml_parser_t* parser);
-extern void xs_clear_tag(ptrlong tag, int is_free);
 extern void xs_clear_processor(schema_processor_t* processor);
 
 extern void grp_print_tree(grp_tree_elem_t* tree, int level, const char* comment);

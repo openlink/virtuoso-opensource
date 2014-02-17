@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2014 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -31,7 +31,7 @@
   <vm:helppagewrapper>
       <!--div style="font-size:15px;">
         <form>
-	    <a href="#" style="text-decoration:none;" onclick="window.close (); return false;"><img title="Close" alt="Close" src="images/icons/close_24.png" border="0" />&#160; Close</a>
+	    <a href="#" style="text-decoration:none;" onclick="window.close (); return false;"><img title="Close" alt="Close" src="images/icons/close_24.png" border="0" />&nbsp; Close</a>
         </form>
       </div-->
       <div class="help_content">

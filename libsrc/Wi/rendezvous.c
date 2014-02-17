@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -485,7 +485,7 @@ rendezvous_register (
   ConvertCStringToDomainName (serviceType, &type);
   ConvertCStringToDomainName (domainName, &domain);
   port.b[0] = (portNumber >> 8) & 0x0FF;
-  port.b[1] = (portNumber >> 0) & 0x0FF;;
+  port.b[1] = (portNumber >> 0) & 0x0FF;
 
   maxTextLen = sizeof (dsnText);
   textLen = strlen (text);

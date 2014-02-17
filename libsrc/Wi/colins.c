@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2011 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -216,6 +216,7 @@ itc_ce_check (it_cursor_t * itc, buffer_desc_t * buf, int leave)
 	itc_free_box (itc, cr);
       }
       END_DO_BOX;
+      itc_free_box (itc, itc->itc_col_refs);
       itc->itc_col_refs = old_cr;
     }
 #ifdef COL_CK_TS
@@ -1153,7 +1154,7 @@ cer_append_ce (ce_ins_ctx_t * ceic, ceic_result_page_t * cer, db_buf_t ce, int i
 
 #define CER_ADD(bytes, ce)				\
 {  \
-  if (cer->cer_pm->pm_bytes_free < bytes) \
+  if (cer->cer_pm->pm_bytes_free < bytes || cer->cer_n_ces >= (PM_MAX_ENTRIES - 4) / 2) \
     cer = ceic_result_page (ceic); \
   cer->cer_pm->pm_bytes_free -= bytes; \
   cer->cer_n_ces++; \
@@ -2340,6 +2341,14 @@ cr_new_size (col_data_ref_t * cr, int *bytes_ret)
 	  delta_save = col_ceic->ceic_delta_ce;
 	  CEIC_NEXT_OP (col_ceic, delta_ce, delta_op, delta_row);
 	}
+      if (!col_ceic && inx > 0 && inx < cr->cr_n_pages - 1)
+	{
+	  n_ces += pm->pm_count / 2;
+	  bytes += PAGE_DATA_SZ - pm->pm_bytes_free;
+	  for (minx = 0; minx < pm->pm_count; minx += 2)
+	    n += pm->pm_entries[minx + 1];
+	  continue;
+	}
       for (minx = 0 == inx ? cr->cr_first_ce * 2 : 0;; minx += 2)
 	{
 	  int any_replace = 0;
@@ -2350,7 +2359,8 @@ cr_new_size (col_data_ref_t * cr, int *bytes_ret)
 		any_replace = 1;
 	      if (CE_DELETE != delta_op)
 		{
-	      bytes += ce_total_bytes (delta_ce);
+		  if (bytes_ret)
+		    bytes += ce_total_bytes (delta_ce);
 	      n += ce_n_values (delta_ce);
 		}
 	      CEIC_NEXT_OP (col_ceic, delta_ce, delta_op, delta_row);
@@ -2361,7 +2371,8 @@ cr_new_size (col_data_ref_t * cr, int *bytes_ret)
 	    break;
 	  if (!any_replace)
 	    {
-	      bytes += ce_total_bytes (ce);
+	      if (bytes_ret)
+		bytes += ce_total_bytes (ce);
 	      n += pm->pm_entries[minx + 1];
 	    }
 	}
@@ -2380,8 +2391,8 @@ cr_new_size (col_data_ref_t * cr, int *bytes_ret)
 
 
 
-int col_seg_max_bytes = 16 * PAGE_DATA_SZ;
-int col_seg_max_rows = 2 * 8192;
+int32 col_seg_max_bytes = 16 * PAGE_DATA_SZ;
+int32 col_seg_max_rows = 2 * 8192;
 extern long ac_col_pages_in;
 extern long ac_col_pages_out;
 
@@ -3310,10 +3321,13 @@ ceic_split_registered (ce_ins_ctx_t * ceic, row_delta_t * rd, buffer_desc_t * bu
   ITC_LEAVE_MAP_NC (itc);
 }
 
+#define CR_N_BITS 64
+
 
 int
 ceic_split (ce_ins_ctx_t * ceic, buffer_desc_t * buf)
 {
+  dtp_t cr_need_bytes[CR_N_BITS / 8];
   it_cursor_t *itc = ceic->ceic_itc;
   dbe_key_t *key = itc->itc_insert_key;
   row_delta_t **rds;
@@ -3326,12 +3340,43 @@ ceic_split (ce_ins_ctx_t * ceic, buffer_desc_t * buf)
   int bytes, sz = -1;
   int cinx, cum_rows = 0, cum_bytes = 0, row_ctr = 0;
   int longest_col = -1, longest_bytes = -1;
+  int n_pages = 0, n_crs = 0, max_pages = 0, col_w_most_pages = -1, total_pages = 0;
+  memzero (&cr_need_bytes, sizeof (cr_need_bytes));
+  DO_BOX (col_data_ref_t *, cr, cinx, itc->itc_col_refs)
+  {
+    int pinx;
+    if (!cr || !cr->cr_is_valid)
+      continue;
+    n_pages = cr->cr_n_pages;
+    total_pages += n_pages;
+    for (pinx = 0; pinx < n_pages; pinx++)
+      {
+	if (cr->cr_pages[pinx].cp_ceic)
+	  {
+	    BIT_SET (cr_need_bytes, cinx);
+	  }
+      }
+    if (n_pages >= max_pages)
+      {
+	/* the test is gte so as to get last col with max no of pages */
+	col_w_most_pages = cinx;
+	max_pages = n_pages;
+      }
+    n_crs++;
+  }
+  END_DO_BOX;
   DO_BOX (col_data_ref_t *, cr, cinx, itc->itc_col_refs)
   {
     int new_sz;
+    int *bytes_ret;
     if (!cr || !cr->cr_is_valid)
       continue;
-    new_sz = cr_new_size (cr, &bytes);
+    bytes = 0;
+    if (cinx > CR_N_BITS || BIT_IS_SET (cr_need_bytes, cinx))
+      bytes_ret = &bytes;
+    else
+      bytes_ret = NULL;
+    new_sz = cr_new_size (cr, bytes_ret);
     if (-1 != sz && sz != new_sz)
       GPF_T1 ("uneven length cols after insert");
     sz = new_sz;
@@ -3342,6 +3387,12 @@ ceic_split (ce_ins_ctx_t * ceic, buffer_desc_t * buf)
       }
   }
   END_DO_BOX;
+  itc->itc_rows_in_seg = sz;
+  if (!longest_bytes || longest_bytes < max_pages * PAGE_DATA_SZ / 2)
+    {
+      longest_col = col_w_most_pages;
+      cr_new_size (itc->itc_col_refs[longest_col], &longest_bytes);
+    }
   if (longest_bytes < col_seg_max_bytes && sz < col_seg_max_rows)
     {
       if (!ceic->ceic_is_ac)
@@ -3701,6 +3752,7 @@ itc_col_insert_rows (it_cursor_t * itc, buffer_desc_t * buf, int is_update)
     if (!cr->cr_is_valid)
       itc_fetch_col (itc, buf, &key->key_row_var[nth], 0, COL_NO_ROW);
     cr_insert (&ceic, buf, cr);
+    if (!last_cr || cr->cr_n_ces < last_cr->cr_n_ces)
     last_cr = cr;
   next_col:
     nth++;
@@ -3708,9 +3760,9 @@ itc_col_insert_rows (it_cursor_t * itc, buffer_desc_t * buf, int is_update)
   END_DO_SET ();
   if (!ceic.ceic_mp && !is_update && last_cr)
     {
-      int new_bytes = 0;
-      int new_sz = cr_new_size (last_cr, &new_bytes);
-      if (new_sz > col_seg_max_rows || new_bytes > col_seg_max_bytes)
+      int new_sz = cr_new_size (last_cr, NULL);
+      itc->itc_rows_in_seg = new_sz;
+      if (new_sz > col_seg_max_rows)
 	ceic.ceic_mp = mem_pool_alloc ();
     }
   if (ceic.ceic_mp)
@@ -4217,6 +4269,8 @@ key_col_insert (it_cursor_t * itc, row_delta_t * rd, insert_node_t * ins)
   itc->itc_vec_rds = (row_delta_t **) list (1, (caddr_t) rd);
   itc_col_vec_insert (itc, ins);
   dk_free_box ((caddr_t) itc->itc_vec_rds);
+  itc_free_box (itc, itc->itc_param_order);
+  itc->itc_param_order = 0;
 }
 #endif
 
@@ -4543,6 +4597,7 @@ itc_col_vec_insert (it_cursor_t * itc, insert_node_t * ins)
   buffer_desc_t *buf;
   caddr_t *bounds;
   int rc, n_ranges, save_n;
+  int n_in_segs = 0;
   db_buf_t row;
   if (dbf_ins_no_distincts && itc->itc_insert_key->key_distinct)
     return;
@@ -4666,6 +4721,7 @@ itc_col_vec_insert (it_cursor_t * itc, insert_node_t * ins)
 	    itc_col_dbg_log (itc);
 	  itc->itc_insert_key->key_touch += itc->itc_range_fill;
 	  itc_col_insert_rows (itc, buf, 0);
+	  n_in_segs += itc->itc_rows_in_seg;
 	  if (dbf_rq_check && dbf_rq_key == itc->itc_insert_key->key_id)
 	    {
 	      if (bounds)
@@ -4685,6 +4741,8 @@ itc_col_vec_insert (it_cursor_t * itc, insert_node_t * ins)
 	{
 	  if (dbf_rq_check && -dbf_rq_key == itc->itc_insert_key->key_id)
 	    rq_check (itc);
+	  if (itc->itc_out_state && itc->itc_n_sets > 10 && (n_in_segs - itc->itc_n_sets) > 10 * itc->itc_n_sets)
+	    ins_check_batch_sz (ins, itc->itc_out_state, itc);
 	  return;
 	}
       if (itc->itc_n_sets > 1)

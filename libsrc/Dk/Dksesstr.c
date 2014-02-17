@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2014 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -30,6 +30,7 @@
 #include "Dksesstr.h"
 
 char *ses_tmp_dir;
+extern box_destr_f box_destr[256];
 
 /* The string session
 
@@ -726,7 +727,7 @@ void
 strses_write_out (dk_session_t * ses, dk_session_t * out)
 {
   buffer_elt_t *elt = ses->dks_buffer_chain;
-  strsestmpfile_t * ses_file = ses->dks_session->ses_file;
+  strsestmpfile_t * ses_file = ses->dks_session ? ses->dks_session->ses_file : NULL;
 
   while (elt)
     {
@@ -737,7 +738,7 @@ strses_write_out (dk_session_t * ses, dk_session_t * out)
       session_buffered_write (out, elt->data, elt->fill);	/* was: service_write, there was error when we have smth in buffer */
       elt = elt->next;
     }
-  if (ses_file->ses_file_descriptor)
+  if (ses_file && ses_file->ses_file_descriptor)
     {
       char buffer[DKSES_IN_BUFFER_LENGTH];
       size_t readed, to_read;
@@ -992,7 +993,8 @@ strses_deserialize (dk_session_t * session, dtp_t macro)
 
       if (str && DV_TYPE_OF (str) != DV_STRING)
 	{					 /* being paranoid is a good thing */
-	  dk_free_tree (str);
+	  if (!box_destr [DV_TYPE_OF (str)])
+	    dk_free_tree (str);
 	  sr_report_future_error (session, "", "Invalid data type of the incoming session segment");
 	  str = NULL;
 	}
@@ -1186,6 +1188,7 @@ t_strses_string (dk_session_t * ses)
   box = t_alloc_box (len + 1, DV_LONG_STRING);
   strses_to_array (ses, box);
   box[len] = 0;
+  t_check_tree (box);
   return box;
 }
 
@@ -1207,7 +1210,15 @@ strses_destroy (dk_session_t * ses)
   ses->dks_refcount--;
   if (ses->dks_refcount)
     return 1;
-  strses_flush (ses);
+  if (strdev_read==  ses->dks_session->ses_device->dev_funs->dfp_read)
+    strses_flush (ses);
+  else if (fileses_read==  ses->dks_session->ses_device->dev_funs->dfp_read
+	   || tcpses_read==  ses->dks_session->ses_device->dev_funs->dfp_read)
+    {
+      int fd = tcpses_get_fd (ses->dks_session);
+      if (-1 != fd)
+	close (fd);
+    }
   dk_free (ses->dks_out_buffer, ses->dks_out_length);
   if (ses->dks_in_buffer)
     dk_free (ses->dks_in_buffer, ses->dks_in_length);

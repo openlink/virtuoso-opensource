@@ -1,10 +1,8 @@
 --
---  $Id$
---
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2014 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -32,7 +30,6 @@ create function "PropFilter_DAV_AUTHENTICATE" (in id any, in what char(1), in re
 }
 ;
 
-
 create function "PropFilter_NORM" (in value any) returns varchar
 {
   value := blob_to_string (value);
@@ -44,7 +41,6 @@ create function "PropFilter_NORM" (in value any) returns varchar
   return cast (xml_tree_doc(value) as varchar);
 }
 ;
-
 
 create function "PropFilter_GET_CONDITION" (in detcol_id integer, out pfc_spath varchar, out pfc_name varchar, out pfc_value varchar)
 {
@@ -84,14 +80,12 @@ ins:
 }
 ;
 
-
 create function "PropFilter_LEAVE_CONDITION" (in id integer, in what char (1), in pfc_name varchar, in pfc_value varchar) returns integer
 {
   delete from WS.WS.SYS_DAV_PROP where PROP_NAME = pfc_name and PROP_PARENT_ID = id and PROP_TYPE = what and "PropFilter_NORM" (PROP_VALUE) = pfc_value;
   return 0;
 }
 ;
-
 
 create function "PropFilter_FNMERGE" (in path any, in id integer) returns varchar
 {
@@ -102,7 +96,6 @@ create function "PropFilter_FNMERGE" (in path any, in id integer) returns varcha
   return sprintf ('%s-PfId%d%s', subseq (path, 0, pairs[5]), id, subseq (path, pairs[6]));
 }
 ;
-
 
 create procedure "PropFilter_FNSPLIT" (in path any, out colpath varchar, out orig_fnameext varchar, out id integer)
 {
@@ -616,7 +609,6 @@ create function "PropFilter_DAV_RES_UPLOAD_COPY" (in detcol_id any, in path_part
 }
 ;
 
-
 create function "PropFilter_DAV_RES_UPLOAD_MOVE" (in detcol_id any, in path_parts any, in source_id any, in what char(1), in overwrite integer, in auth_uid integer) returns any
 {
   declare pfc_spath, pfc_name, pfc_value varchar;
@@ -655,7 +647,6 @@ create function "PropFilter_DAV_RES_UPLOAD_MOVE" (in detcol_id any, in path_part
 }
 ;
 
-
 create function "PropFilter_DAV_RES_CONTENT" (in id any, inout content any, out type varchar, in content_mode integer) returns integer
 {
   -- dbg_obj_princ ('PropFilter_DAV_RES_CONTENT (', id, ', [content], [type], ', content_mode, ')');
@@ -670,14 +661,12 @@ create function "PropFilter_DAV_RES_CONTENT" (in id any, inout content any, out 
 }
 ;
 
-
 create function "PropFilter_DAV_SYMLINK" (in detcol_id any, in path_parts any, in source_id any, in what char(1), in overwrite integer, in uid integer, in gid integer, in auth_uid integer) returns any
 {
   -- dbg_obj_princ ('PropFilter_DAV_SYMLINK (', detcol_id, path_parts, source_id, overwrite, uid, gid, auth_uid, ')');
   return -20;
 }
 ;
-
 
 create function "PropFilter_DAV_LOCK" (in path any, inout id any, in type char(1), inout locktype varchar, inout scope varchar, in token varchar, inout owner_name varchar, inout owned_tokens varchar, in depth varchar, in timeout_sec integer, in auth_uid integer) returns any
 {
@@ -693,7 +682,6 @@ create function "PropFilter_DAV_LOCK" (in path any, inout id any, in type char(1
 }
 ;
 
-
 create function "PropFilter_DAV_UNLOCK" (in id any, in type char(1), in token varchar, in auth_uid integer)
 {
   -- dbg_obj_princ ('PropFilter_DAV_UNLOCK (', id, type, token, auth_uid, ')');
@@ -702,7 +690,6 @@ create function "PropFilter_DAV_UNLOCK" (in id any, in type char(1), in token va
   return DAV_UNLOCK_INT (id, type, token, null, null, auth_uid);
 }
 ;
-
 
 create function "PropFilter_DAV_IS_LOCKED" (inout id any, inout type char(1), in owned_tokens varchar) returns integer
 {
@@ -727,7 +714,6 @@ create function "PropFilter_DAV_IS_LOCKED" (inout id any, inout type char(1), in
 }
 ;
 
-
 create function "PropFilter_DAV_LIST_LOCKS" (in id any, in type char(1), in recursive integer) returns any
 {
   declare res any;
@@ -741,5 +727,42 @@ create function "PropFilter_DAV_LIST_LOCKS" (in id any, in type char(1), in recu
       res := vector_concat (res, vector (vector (LOCK_TYPE, LOCK_SCOPE, LOCK_TOKEN, LOCK_TIMEOUT, LOCK_OWNER, LOCK_OWNER_INFO)));
     }
   return res;
+}
+;
+
+create function "PropFilter_CONFIGURE" (
+  in id integer,
+  in params any)
+{
+  DB.DBA.PropFilter__paramSet (id, 'C', 'SearchPath', get_keyword ('SearchPath', params), 0);
+  DB.DBA.PropFilter__paramSet (id, 'C', 'PropName', get_keyword ('PropName', params), 0);
+  DB.DBA.PropFilter__paramSet (id, 'C', 'PropValue', get_keyword ('PropValue', params), 0);
+}
+;
+
+create function DB.DBA.PropFilter__paramSet (
+  in _id any,
+  in _what varchar,
+  in _propName varchar,
+  in _propValue any,
+  in _serialized integer := 1,
+  in _prefixed integer := 1,
+  in _encrypt integer := 0)
+{
+  -- dbg_obj_princ ('DB.DBA.PropFilter__paramSet', _propName, _propValue, ')');
+  declare retValue any;
+
+  if (_serialized)
+    _propValue := serialize (_propValue);
+
+  if (_encrypt)
+    _propValue := pwd_magic_calc ('s3', _propValue);
+
+  if (_prefixed)
+    _propName := 'virt:PropFilter-' || _propName;
+
+  retValue := DB.DBA.DAV_PROP_SET_RAW (_id, _what, _propName, _propValue, 1, http_dav_uid ());
+
+  return retValue;
 }
 ;

@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2014 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -196,7 +196,6 @@ libwi_la_SOURCES = \
 	monitor.c \
 	log.c \
 	map_schema.c \
-	mem.c \
 	meta.c \
 	mtwrite.c \
 	multibyte.c \
@@ -225,7 +224,6 @@ libwi_la_SOURCES = \
 	sql_code_2pc.c \
 	sql_code_adm.c \
 	sql_code_auto.c \
-	sql_code_blog.c \
 	sql_code_cache.c \
 	sql_code_dav.c \
 	sql_code_dbp.c \
@@ -346,7 +344,6 @@ libwi_odbc_la_SOURCES = \
 	monitor.c \
 	log.c \
 	map_schema.c \
-	mem.c \
 	meta.c \
 	mtwrite.c \
 	multibyte.c \
@@ -375,7 +372,6 @@ libwi_odbc_la_SOURCES = \
 	sql_code_2pc.c \
 	sql_code_adm.c \
 	sql_code_auto.c \
-	sql_code_blog.c \
 	sql_code_cache.c \
 	sql_code_dav.c \
 	sql_code_dbp.c \
@@ -460,6 +456,7 @@ libwi_la_SOURCES += \
 	bif_text.c \
 	bif_tidy.c \
 	geo.c \
+	geo_de9im.c \
 	geo_shapes.c \
 	http_client.c \
 	qncache.c \
@@ -497,6 +494,7 @@ libwi_odbc_la_SOURCES += \
 	bif_text.c \
 	bif_tidy.c \
  	geo.c \
+	geo_de9im.c \
 	geo_shapes.c \
 	http_client.c \
 	qncache.c \
@@ -628,9 +626,6 @@ SQL_FILES_ADM		= \
 
 SQL_FILES_AUTO		= \
 	$(srcdir)/autoexec.sql
-
-SQL_FILES_BLOG		= \
-	$(top_srcdir)/binsrc/weblog2/widgets/rss2rdf.xsl
 
 SQL_FILES_DAV		= \
 	$(top_srcdir)/binsrc/dav/dav.sql \
@@ -790,7 +785,7 @@ xpathp.c xpathp.h : xpathp.y Makefile.am
 	@$(GEN) $(YACC) -o xpathp.c -vd -pxpyy $(srcdir)/xpathp.y
 
 xpathp_lex_props.c: list_lex_props.sh xpathp.y Makefile.am
-	list_lex_props.sh xpathp.y xpathp_lex_props.c
+	$(SHELL) $(srcdir)/list_lex_props.sh xpathp.y xpathp_lex_props.c
 
 xpscn.c: xpscn.l xpathp.h Makefile.am
 	@$(GEN) $(LEX) -o xpscn.c -Pxpyy $(srcdir)/xpscn.l
@@ -809,7 +804,7 @@ sparql_p.c sparql_p.h: sparql_p.y Makefile.am
 	@$(GEN) $(YACC) -o sparql_p.c -vd -psparyy $(srcdir)/sparql_p.y
 
 sparql_lex_props.c: list_lex_props.sh sparql_p.y Makefile.am
-	list_lex_props.sh sparql_p.y sparql_lex_props.c
+	$(SHELL) $(srcdir)/list_lex_props.sh sparql_p.y sparql_lex_props.c
 
 sparql_l.c: sparql_l.l sparql_p.h Makefile.am
 	@$(GEN) $(LEX) -o sparql_l.c -Psparyy $(srcdir)/sparql_l.l
@@ -821,7 +816,7 @@ turtle_p.c turtle_p.h: turtle_p.y Makefile.am
 	@$(GEN) $(YACC) -o turtle_p.c -vd -pttlyy $(srcdir)/turtle_p.y
 
 turtle_lex_props.c: list_lex_props.sh turtle_p.y Makefile.am
-	list_lex_props.sh turtle_p.y turtle_lex_props.c
+	$(SHELL) $(srcdir)/list_lex_props.sh turtle_p.y turtle_lex_props.c
 
 turtle_l.c: turtle_l.l turtle_p.h Makefile.am
 	@$(GEN) $(LEX) -o turtle_l.c -Pttlyy $(srcdir)/turtle_l.l
@@ -916,10 +911,6 @@ sql_code_2pc.c: $(SQL_FILES_2PC) $(AWK_FILES) Makefile.am
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_2PC)
 
-#sql_code_blog.c: $(SQL_FILES_BLOG) $(AWK_FILES)
-#	@${GEN} ${GAWK} -o sql_code_2pc.c -f $(srcdir)/sql_to_c.awk \
-#		-v init_name=_blog -v pl_stats=$(PLSTATS) $(SQL_FILES_BLOG)
-
 sql_code_vdb.c: $(SQL_FILES_VDB) $(AWK_FILES) Makefile.am
 	@${GEN} ${GAWK} \
 		-o sql_code_vdb.c \
@@ -968,9 +959,6 @@ sql_code_pldbg.c: $(SQL_FILES_PLDBG) $(SQL_AWK_DEPS) Makefile.am
 		-v pl_stats=$(PLSTATS) \
 		$(SQL_FILES_PLDBG)
 
-
-blog_pages.sql: FORCE
-	(cd $(top_srcdir)/binsrc/weblog ; $(MAKE))
 
 #
 # JSON
