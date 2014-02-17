@@ -31,7 +31,7 @@
 /* DBMS Server */
 #define PRODUCT_DBMS		PRODUCT_NAME
 #define DBMS_SRV_NAME		PRODUCT_DBMS " Universal Server"
-#define DBMS_SRV_VER_ONLY	"07.00"
+#define DBMS_SRV_VER_ONLY	"07.10"
 #define DBMS_SRV_GEN_MAJOR	"32"
 #define DBMS_SRV_GEN_MINOR	"07"
 #define DBMS_SRV_VER		DBMS_SRV_VER_ONLY "." \
