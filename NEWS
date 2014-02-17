@@ -1,3 +1,111 @@
+February 17, 2014, V7.1.0:
+  * Engine
+    - Enhancements to cost based optimizer
+    - Added optimization when splitting on scattered inserts
+    - Added optimization on fetching col seg
+    - Added support for multithreaded sync/flush
+    - Added support for ordered count distinct and exact p stat
+    - Added new settings EnableMonitor
+    - Added BIFs key_delete_replay(), set_by_graph_keywords(),
+      tweak_by_graph_keywords, vec_length(), vec_ref(),
+      x509_verify_array(), xenc_x509_cert_verify_array()
+    - Added new functions bif_list_names() and bif_metadata()
+    - Added new general-purpose HTTP auth procedure
+    - Added support for local dpipes
+    - Added support for session pool
+    - Added option to allow restricting number of id ranges for new IRIs
+    - Added support for execution profile in xml format
+    - Added support for PL-as-BIFs in SPARQL
+    - Improved I/O for geometries in SQL
+    - Fixed geo cost of non point geos where no explicit prec
+    - Fixed reentrant lexer
+    - Fixed rpc argument checks
+    - Fixed memory leaks
+    - Fixed compiler warnings
+    - Treat single db file as a single segment with one stripe
+    - Updated testsuite
+
+   *  GEO functions
+    - Added initial support for geoc_epsilon(), geometrytype(),
+      st_affine() (2D trans nly), st_geometryn(), st_get_bounding_box_n(),
+      st_intersects(), st_linestring(), st_numgeometries(),
+      st_transform_by_custom_projection(), st_translate() ,
+      st_transscale(), st_contains() , st_may_contain(),
+      st_may_intersect()
+    - Added new BIFs for getting Z and M coords
+    - Added support for <(type,type,...)type::sql:function> trick
+      in order to eliminate conversion of types on function call
+    - Optimization in calculation of gcb steps to make number of
+      chained blocks close to square root of lenght of the shape
+    - Fixed geo box support for large polygons
+    - Fixed mp_box_copy() of long shapes
+    - Fixed range checks for coordinates
+    - Fixed calculation of lat/long ratio for proximity checks
+    - Fixed bboxes in geo_deserialize
+    - Fixed check for NAN and INF in float valued geo inx
+    - Fixed check for NULL arguments
+    - Minor fixes to other geo BIFs
+
+  * SPARQL
+    - Added initial support for list of quad maps in SPARQL BI
+    - Added initial support for vectored iri to id
+    - Added initial support for sparql valid()
+    - Added new codegen for initial fill of RDB2RDF
+    - Added new settings CreateGraphKeywords, QueryGraphKeywords
+    - Added new SPARQL triple/group/subqery options
+    - Added missing function rdf_vec_ins_triples
+    - Added support for application/x-nice-microdata SPARQL format
+    - Added support for buildin inverse functions
+    - Added support for geosparql wkt type literal as synonym
+    - Added support for the '-' operator for datetime data types
+    - Fixed issues in handling geo predicates in SPARQL
+    - Fixed RDF view to use multiple quad maps
+    - Fixed issues with UNION and BREAKUP
+    - Fixed dynamic local for vectored
+    - Fixed support for combination of T_DIRECTION 3 and T_STEP (var)
+    - Fixed handle 30x redirects when calling remote endpoint
+    - Fixed support for MALLOC_DEBUG inside SPARQL compiler
+    - Fixed TriG parser
+
+  * Jena & Sesame
+    - Improved speed of batch delete
+    - Removed unnesessary check that graph exists after remove
+    - Removed unnesessary commits 
+    - Replaced n.getLiteralValue().toString() with n.getLiteralLexicalForm()
+
+  * JDBC Driver
+    - Added staticstics for Connection Pool
+    - Fixed speed of finalize
+
+  * Conductor and DAV
+    - Added trigger for delete temporary graphs used for WebID verification
+    - Added new CONFIGURE methods to DETs to unify folder creation
+    - Added new page for managing CA root certificates
+    - Added new pages for graph level security
+    - Added verify for WebDAV DET folders
+    - Added creation of shared DET folders
+    - Fixed creation of ETAGs for DET resources
+    - Fixed DAV rewrite issue
+    - Fixed dav to use proper escape for graphs when uploading
+    - Fixed issue deleting graphs
+    - Fixed issue uploading bad .TTL files
+    - Fixed issue with DAV QoS re-write rule for text/html
+    - Fixed issue with user dba when creating DET folders
+    - Fixed normalize paths procedure in WebDAV
+    - Fixed reset connection variable before no file error
+
+  * Faceted Browser
+    - Added missing grants
+    - Added graph param in FCT permalink
+    - Changed labels in LD views
+    - Changed default sort order to date (desc)
+    - Copied virt_rdf_label.sql locally
+    - Fixed escape double quote in literals
+    - Fixed FCT datatype links
+    - Fixed the curie may contain UTF-8, so mark string accordingly
+    - Changed describe mode for PivotViewer link
+
+
 August 02, 2013, V7.0.0:
   * First official release of Virtuoso Open Source Edition v7.0
 
