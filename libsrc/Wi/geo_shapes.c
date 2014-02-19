@@ -144,7 +144,7 @@ geo_alloc_safe (geo_flags_t geo_flags_, int len_, int srcode_, dk_session_t * se
     case GEO_BOX_Z_M:			GEO_ALLOC_POINT(_.point.point_ZMbox.Mmax); break;
     case GEO_ARCSTRING:			GEO_ALLOC_PLINE(_.pline.Ys		, 2, 0,  0x10, 0x08, 1); break;
     case GEO_GSOP:			GEO_ALLOC_POINT(_.point.point_gs_precision); break;
-    case GEO_RING:			GEO_ALLOC_PLINE(_.pline.Ys		, 2, 0,  0x4, 0x2, 1); break;
+    case GEO_RING:			GEO_ALLOC_PLINE(_.pline.Ys		, 2, 0,  0x80, 0x20, 1); break;
     case GEO_RING_Z:			GEO_ALLOC_PLINE(_.pline.pline_ZMbox.Zmax, 3, 0,  0x80, 0x20, 1); GEO_SET_CVECT(_.pline.Zs); break;
     case GEO_RING_M:			GEO_ALLOC_PLINE(_.pline.Ms		, 2, 1,  0x80, 0x20, 1); GEO_SET_MVECT(_.pline.Ms); break;
     case GEO_RING_Z_M:			GEO_ALLOC_PLINE(_.pline.Ms		, 3, 1,  0x80, 0x20, 1); GEO_SET_CVECT(_.pline.Zs); GEO_SET_MVECT(_.pline.Ms); break;
@@ -2581,9 +2581,18 @@ geo_serialize (geo_t * g, dk_session_t * ses)
   if (cli && cli->cli_version)
     {
       caddr_t xx = geo_wkt ((caddr_t) g);
-      session_buffered_write_char (DV_SHORT_STRING_SERIAL, ses);
-      session_buffered_write_char (strlen (xx), ses);
-      session_buffered_write (ses, xx, strlen (xx));
+      size_t len = box_length (xx) - 1;
+      if (len < 256)
+	{
+	  session_buffered_write_char (DV_SHORT_STRING_SERIAL, ses);
+	  session_buffered_write_char (len, ses);
+	}
+      else
+	{
+	  session_buffered_write_char (DV_STRING, ses);
+	  print_long ((long) len, ses);
+	}
+      session_buffered_write (ses, xx, len);
       dk_free_box (xx);
       return;
     }
