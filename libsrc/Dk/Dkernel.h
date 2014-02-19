@@ -87,6 +87,8 @@ struct dk_session_s
 
   /*! max msecs to block on a read */
   timeout_t 			dks_read_block_timeout;
+  /*! max msecs to block on a write */
+  timeout_t 			dks_write_block_timeout;
   /*! Is this a client or server initiated session */
   char 				dks_is_server;
   char 				dks_cluster_flags;

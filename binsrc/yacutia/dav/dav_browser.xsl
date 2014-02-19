@@ -6062,7 +6062,7 @@
               }
               else
               {
-                http ('<b>Digest</b>');
+	         http ('<b>Digest</b><input type="checkbox" name="dav_WebDAV_authenticationType" id="dav_WebDAV_authenticationType_0" value="Digest" checked="true" style="display: none;"/>');
               }
             ?>
           </td>

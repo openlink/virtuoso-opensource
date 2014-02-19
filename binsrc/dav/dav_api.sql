@@ -2864,7 +2864,7 @@ create procedure RDF_SINK_UPLOAD (
         file_delete (tmp_file, 1);
         return 0;
       };
-      rdf_graph2 := 'http://local.virt' || path;
+      rdf_graph2 := WS.WS.DAV_IRI (path);
       string_to_file (tmp_file, _content, -2);
       lst := unzip_list (tmp_file);
       foreach (any x in lst) do
@@ -2875,7 +2875,7 @@ create procedure RDF_SINK_UPLOAD (
           content := unzip_file (tmp_file, fname);
           http_dav_url (fname, null, ss);
           fname := string_output_string (ss);
-          item_graph := 'http://local.virt' || path || '/' || fname;
+          item_graph := WS.WS.DAV_IRI (path || '/' || fname);
           RDF_SINK_UPLOAD (concat (path, '/', fname), content, DAV_GUESS_MIME_TYPE_BY_NAME (fname), rdf_graph, rdf_base, rdf_sponger, rdf_cartridges, rdf_metaCartridges, 0);
           SPARQL insert in graph ?:rdf_graph2 { ?s ?p ?o } where { graph `iri(?:item_graph)` { ?s ?p ?o } };
           SPARQL clear graph ?:item_graph;
@@ -2899,7 +2899,7 @@ create procedure RDF_SINK_UPLOAD (
     }
   -- dbg_obj_print ('RDF_SINK_UPLOAD (', length (content), type, rdf_graph, rdf_graph2, rdf_sponger, rdf_cartridges, rdf_metaCartridges, ')');
   rdf_iri := WS.WS.DAV_IRI (path);
-  rdf_graph2 := 'http://local.virt' || path;
+  rdf_graph2 := WS.WS.DAV_IRI (path);
   if (is_empty_or_null (rdf_base))
   {
     rdf_base2 := WS.WS.DAV_HOST () || path;
@@ -3095,7 +3095,7 @@ create procedure RDF_SINK_CLEAR (
   if (path like '%.gz')
     path := regexp_replace (path, '\.gz\x24', '');
 
-  rdf_graph2 := 'http://local.virt' || path;
+  rdf_graph2 := WS.WS.DAV_IRI (path);
   SPARQL delete from graph ?:rdf_graph { ?s ?p ?o } where { graph `iri(?:rdf_graph2)` { ?s ?p ?o } };
   SPARQL clear graph ?:rdf_graph2;
   if (exists (select top 1 1 from DB.DBA.RDF_GRAPH_GROUP where RGG_IRI = rdf_group))
@@ -7527,3 +7527,46 @@ insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTER
   values('WebDAV Scheduler', now(), 'DB.DBA.DAV_SCHEDULER ()', 5)
 ;
 
+-------------------------------------------------------------------------------
+--
+-- RDF SINK Update Internal Graph Name
+--
+-------------------------------------------------------------------------------
+create procedure DB.DBA.DAV_RDF_SINK_UPDATE (
+  in queue_id integer := null)
+{
+  -- dbg_obj_princ ('DB.DBA.DAV_RDF_SINK_UPDATE (', queue_id, ')');
+  declare path, old_graph, new_graph varchar;
+  declare old_mode int;
+
+  if (registry_get ('__dav_rdf_sink_update') = '1')
+    return;
+
+  if (isnull (queue_id))
+  {
+    DB.DBA.DAV_QUEUE_ADD ('RDF_SINK', 0, 'DB.DBA.DAV_RDF_SINK_UPDATE', vector ());
+    DB.DBA.DAV_QUEUE_INIT ();
+    return;
+  }
+
+  old_mode := log_enable (3, 1);
+  for (select PROP_PARENT_ID from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-graph') do
+  {
+    path := DB.DBA.DAV_SEARCH_PATH (PROP_PARENT_ID, 'C');
+    for (select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_FULL_PATH like (path || '%')) do
+    {
+      old_graph := 'http://local.virt' || RES_FULL_PATH;
+      new_graph := WS.WS.DAV_IRI (RES_FULL_PATH);
+      SPARQL insert in graph ?:new_graph { ?s ?p ?o } where { graph `iri(?:old_graph)` { ?s ?p ?o } };
+      SPARQL clear graph ?:old_graph;
+    }
+  }
+
+  log_enable (old_mode, 1);
+  registry_set ('__dav_rdf_sink_update', '1');
+  DB.DBA.DAV_QUEUE_UPDATE_STATE (queue_id, 2);
+}
+;
+
+DB.DBA.DAV_RDF_SINK_UPDATE ()
+;

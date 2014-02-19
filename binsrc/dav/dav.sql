@@ -1401,7 +1401,7 @@ create procedure WS.WS.MKCOL (in path varchar, inout params varchar, in lines va
   {
     commit work;
     http_request_status ('HTTP/1.1 201 Created');
-    http_header('Link: <>;rel=<http://www.w3.org/ns/ldp/Container>\r\n');
+    http_header('Link: <http://www.w3.org/ns/ldp#Container>; rel="type"\r\n');
   }
   else if (rc = -24)
   {
@@ -1764,7 +1764,7 @@ create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varc
     {
       commit work;
       http_request_status ('HTTP/1.1 201 Created');
-      http_header (sprintf('Content-Type: %s\r\nLink: <>;rel=<http://www.w3.org/ns/ldp/Resource>\r\n', content_type));
+    http_header (sprintf('Content-Type: %s\r\nLink: <http://www.w3.org/ns/ldp#Resource>; rel="type"\r\n', content_type));
     if (content_type = 'application/sparql-query')
 	http_header ('MS-Author-Via: SPARQL\r\n');
       else
