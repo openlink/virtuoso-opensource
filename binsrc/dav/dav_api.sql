@@ -7537,6 +7537,7 @@ create procedure DB.DBA.DAV_RDF_SINK_UPDATE (
 {
   -- dbg_obj_princ ('DB.DBA.DAV_RDF_SINK_UPDATE (', queue_id, ')');
   declare path, old_graph, new_graph varchar;
+  declare old_mode int;
 
   if (registry_get ('__dav_rdf_sink_update') = '1')
     return;
@@ -7548,6 +7549,7 @@ create procedure DB.DBA.DAV_RDF_SINK_UPDATE (
     return;
   }
 
+  old_mode := log_enable (3, 1);
   for (select PROP_PARENT_ID from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-graph') do
   {
     path := DB.DBA.DAV_SEARCH_PATH (PROP_PARENT_ID, 'C');
@@ -7560,6 +7562,7 @@ create procedure DB.DBA.DAV_RDF_SINK_UPDATE (
     }
   }
 
+  log_enable (old_mode, 1);
   registry_set ('__dav_rdf_sink_update', '1');
   DB.DBA.DAV_QUEUE_UPDATE_STATE (queue_id, 2);
 }
