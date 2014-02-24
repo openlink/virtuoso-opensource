@@ -1342,7 +1342,19 @@ blob_schedule_delayed_delete (it_cursor_t * itc, blob_layout_t *bl, int add_jobs
   else
   /* if (REPL_NO_LOG != itc->itc_ltrx->lt_replicate) GK: nothing to do w/ the log mode */
     {
-      dk_hash_t ** hash_ptr = &(itc->itc_ltrx->lt_dirty_blobs);
+      int in_mtx = 0;
+      lock_trx_t * main_lt = itc->itc_ltrx;
+      dk_hash_t ** hash_ptr;
+
+      if ((main_lt->lt_has_branches || IS_MT_BRANCH (main_lt) || cl_run_local_only == CL_RUN_CLUSTER) && main_lt->lt_status == LT_PENDING)
+	{
+	  IN_TXN;
+	  in_mtx = 1;
+	}
+      if (IS_MT_BRANCH (main_lt))
+	main_lt = lt_main_lt (main_lt);
+
+      hash_ptr = &(main_lt->lt_dirty_blobs);
       if (0 != add_jobs)
 	{
 /* If some jobs should be added, hashtable should be created, if missing, and either old
@@ -1360,6 +1372,7 @@ blob_schedule_delayed_delete (it_cursor_t * itc, blob_layout_t *bl, int add_jobs
 	    }
 	  bl->bl_delete_later = add_jobs;
 	  sethash ((void *) (ptrlong) (bl->bl_start), hash_ptr[0], bl);
+	  if (in_mtx) LEAVE_TXN;
 	  return;
 	}
       else
@@ -1375,10 +1388,12 @@ blob_schedule_delayed_delete (it_cursor_t * itc, blob_layout_t *bl, int add_jobs
 /*There was an error here: dk_free_box() instead of blob_layout_free(). */
 		  blob_layout_free (old_bl);	/* ...and free old versions. */
 		  sethash ((void *) (ptrlong) (bl->bl_start), hash_ptr[0], bl);
+		  if (in_mtx) LEAVE_TXN;
 		  return;
 		}
 	    }
 	}
+      if (in_mtx) LEAVE_TXN;
     }
 /* If no real processing has performed, bl will not be freed in future and
    it should be freed right now */

@@ -212,6 +212,7 @@ typedef struct lock_trx_s
     unsigned int	lt_trace_ctr;
     int	lt_line[LT_TRACE_SZ];
 #endif
+    char		lt_has_branches;
     dk_hash_t 		lt_lock;
 #define lt_has_locks(lt) ((lt)->lt_lock.ht_count)
     /* all below members are considered data area and cleared with memset in lt_cleare, saving individual ones as needed */
