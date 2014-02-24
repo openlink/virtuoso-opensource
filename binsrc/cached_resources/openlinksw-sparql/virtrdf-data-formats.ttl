@@ -47,7 +47,7 @@ virtrdf:QuadStorage virtrdf:isGcResistantType "2" .
 
 # Don't forget to change version, both here and in DB.DBA.SPARQL_RELOAD_QM_GRAPH, to force reload.
 <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
-  virtrdf:version '2013-12-05 0002v7' ;
+  virtrdf:version '2014-02-20 0001v7' ;
   virtrdf:item
     rdfdf:default-iid ,				rdfdf:default-iid-nullable ,
     rdfdf:default-iid-nonblank ,		rdfdf:default-iid-nonblank-nullable ,
@@ -3451,6 +3451,7 @@ virtrdf:DefaultServiceMap-O
   virtrdf:qmvATables virtrdf:DefaultServiceMap-atables;
   virtrdf:qmvColumns virtrdf:DefaultServiceMap-O-cols;
   virtrdf:qmvFText virtrdf:DefaultServiceMap-ft;
+  virtrdf:qmvGeo virtrdf:DefaultServiceMap-geo;
   virtrdf:qmvFormat rdfdf:default;
   virtrdf:qmvColumnsFormKey 0
 .
@@ -3490,8 +3491,18 @@ virtrdf:DefaultServiceMap-ft-conds
   rdf:type virtrdf:array-of-string;
 .
 
+virtrdf:DefaultServiceMap-geo
+  rdf:type virtrdf:QuadMapFText;
+  virtrdf:qmvftAlias "!sinv";
+  virtrdf:qmvftColumnName "sinv_O";
+  virtrdf:qmvftConds virtrdf:DefaultServiceMap-geo-conds;
+  virtrdf:qmvftTableName "sinv";
+  virtrdf:qmvftXmlIndex 0
+.
 
-
+virtrdf:DefaultServiceMap-geo-conds
+  rdf:type virtrdf:array-of-string;
+.
 
 
 rdfdf:sql-varchar-fixedlang-x-any
