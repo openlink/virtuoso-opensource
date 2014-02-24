@@ -126,6 +126,21 @@ create view DB.DBA.SYS_INDEX_SPACE_STATS as
     ISS_KEY_ID = KEY_ID
 ;
 
+
+create procedure SYS_EXTENT_MAP_STAT ()
+{
+  declare EM_KEY varchar(50);
+  declare EM_N_PAGES, EM_N_FREE_PAGES, EM_N_REMAP_PAGES, EM_N_FREE_REMAP_PAGES, EM_REMAP_ON_HOLD, EM_N_BLOB_PAGES, EM_N_FREE_BLOB_PAGES, EM_C_FREE, EM_C_FREE_BLOB, EM_C_FREE_REMAP integer;
+  declare arr any;
+  result_names (EM_KEY, EM_N_PAGES, EM_N_FREE_PAGES, EM_N_REMAP_PAGES, EM_N_FREE_REMAP_PAGES, EM_REMAP_ON_HOLD, EM_N_BLOB_PAGES, EM_N_FREE_BLOB_PAGES);
+  arr := sys_em_stat ();
+  foreach (any x in arr) do
+    {
+      result (x[0], x[1], x[2], x[3], x[4], x[5], x[6], x[7]);
+    }
+}
+;
+
 --!AWK PUBLIC
 create procedure DB.DBA.__VD_GET_SQLSTATS_COUNT (in _ds_dsn varchar, in _remote_name varchar)
 {
