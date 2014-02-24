@@ -900,6 +900,7 @@ bif_async_queue (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (AQ_TXN_BRANCH & flags)
     {
       aq->aq_rc_w_id = LT_MAIN_W_ID (qi->qi_client->cli_trx);
+      qi->qi_client->cli_trx->lt_has_branches = 1;
       lt_timestamp (qi->qi_trx, (char *) &aq->aq_lt_timestamp);
     }
   if (!(flags & AQ_CLUSTER_RECURSIVE))

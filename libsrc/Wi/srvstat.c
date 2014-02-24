@@ -3852,6 +3852,50 @@ bif_sys_index_space_usage (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
   return srv_collect_inx_space_stats (err_ret, qi);
 }
 
+static void
+sys_em_stat_entry (dk_set_t * set, dbe_key_t * key, extent_map_t * em)
+{
+  int32 n_free = em_free_count (em, EXT_INDEX);
+  int32 n_free_blob = em_free_count (em, EXT_BLOB);
+  int32 n_free_remap = em_free_count (em, EXT_REMAP);
+  dk_set_push (set, list (11, 
+		box_dv_short_string (key ? key->key_name : "no_key"),  
+		box_num (em->em_n_pages),
+		box_num (em->em_n_free_pages),
+		box_num (em->em_n_remap_pages),
+		box_num (em->em_n_free_remap_pages),
+		box_num (em->em_remap_on_hold),
+		box_num (em->em_n_blob_pages),
+		box_num (em->em_n_free_blob_pages),
+		box_num (n_free),
+		box_num (n_free_blob),
+		box_num (n_free_remap)
+		));
+}
+
+static caddr_t
+bif_sys_em_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *) qst;
+  extent_map_t * sys_em = wi_inst.wi_master->dbs_extent_map;
+  dk_set_t set = NULL;
+
+  sec_check_dba (qi, "sys_em_stat");
+  IN_DBS (wi_inst.wi_master);
+  sys_em_stat_entry (&set, NULL, sys_em);
+  DO_SET (index_tree_t * , it, &wi_inst.wi_master->dbs_trees)
+    {
+      extent_map_t * em = it->it_extent_map;
+      if (!em || em == sys_em) 
+	continue;
+      bing ();
+      sys_em_stat_entry (&set, it->it_key, em);
+    }
+  END_DO_SET()
+  LEAVE_DBS (wi_inst.wi_master);
+  return list_to_array (dk_set_nreverse (set));
+}
+
 
 caddr_t
 bif_col_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -4662,6 +4706,7 @@ bif_status_init (void)
   bif_define ("itcs", dbg_print_itcs);
   bif_define_ex ("sys_index_space_usage", bif_sys_index_space_usage, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define ("db_activity", bif_db_activity);
+  bif_define_ex ("sys_em_stat", bif_sys_em_stat, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define ("ext_stat", bif_ext_stat);
   bif_define ("ext_em", bif_ext_em);
   bif_define ("key_seg_check", bif_key_seg_check);
