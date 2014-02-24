@@ -1352,7 +1352,14 @@ blob_schedule_delayed_delete (it_cursor_t * itc, blob_layout_t *bl, int add_jobs
 	  in_mtx = 1;
 	}
       if (IS_MT_BRANCH (main_lt))
-	main_lt = lt_main_lt (main_lt);
+	{
+	  if (NULL == (main_lt = lt_main_lt (main_lt)))
+	    {
+	      main_lt = itc->itc_ltrx;
+	      main_lt->lt_status = LT_BLOWN_OFF_C;
+	      main_lt->lt_error = LTE_CANCEL;
+	    }
+	}
 
       hash_ptr = &(main_lt->lt_dirty_blobs);
       if (0 != add_jobs)
