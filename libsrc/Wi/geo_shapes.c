@@ -1359,7 +1359,7 @@ ewkt_kwd_metas_t ewkt_keyword_metas[] = {
   {"RINGM"			, 72	, EWKT_KWD_GEO_TYPE	, GEO_RING_M		, 1	, 3	, 4	, 0	},
   {"RINGZ"			, 73	, EWKT_KWD_GEO_TYPE	, GEO_RING_Z		, 1	, 3	, 4	, 0	},
   {"RINGZM"			, 74	, EWKT_KWD_GEO_TYPE	, GEO_RING_Z_M		, 1	, 4	, 4	, 0	},
-  {"SRID"			, 75	, EWKT_KWD_EXT		, 0			, 0	, 0	, 0	, 0	},
+  {"SRID"			, 75	, EWKT_KWD_EXT		, EWKT_KWD_SRID		, 0	, 0	, 0	, 0	},
   {"SURFACE"			, 76	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
   {"SURFACEM"			, 77	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
   {"SURFACEZ"			, 78	, EWKT_KWD_GEO_TYPE	, -1			, 1	, 2	, 2	, 0	},
@@ -1968,7 +1968,7 @@ ewkt_parse (const char *strg, caddr_t * err_ret)
 	      tkn = ewkt_get_token (&in, &val);
 	      if (EWKT_NUM != tkn)
 		ewkt_signal (&in, "SRID identification number is expected");
-	      if ((val.v_geoc != floor (val.v_geoc)) || (0 >= val.v_geoc))
+              if ((val.v_geoc != floor (val.v_geoc)) || (0 > val.v_geoc))
 		ewkt_signal (&in, "Invalid SRID identification number");
 	      in.ewkt_srid = val.v_geoc;
 	      in.ewkt_srcode = GEO_SRCODE_OF_SRID (in.ewkt_srid);
@@ -2225,16 +2225,13 @@ New types:
   (Note that more significant byte 0xNN00 is AFTER less significant byte 0X00NN !)
   point/box types:
     2b flags, 2b? SRID, coords as listed in the structure (2 to 8 coords)
-  linestring types:
+  linestring and arcstring types:
     2b flags, 2b? SRID,
-    2|5b (len*2+1), coords as listed in the structure (2 to 8 coords)
-  arcstring types:
-    2b flags, 2b? SRID,
-    2|5b len, bbox (2 to 4 cords), coords as listed in the structure (2 to 8 coords)
+    2|5b len, XYbbox?, chainboxes?, ZMbbox?, coords as listed in the structure (2 to 4 coords)
   any collections and groups of items:
     2b flags, 2b? SRID (recorded only at top level),
     2|5b total len of the serialization (with all subchildren but without the leading DV_GEO and the length of the "length of the serialization" itself, recorded only at top level),
-    2|5b len, bbox (2 to 4 cords), serializations of children
+    2|5b len, XYbbox?, chainboxes?, ZMbbox?, serializations of children
 */
 
 #define DV_INT_FROM_DVLEN(res,dv,len) do {\
@@ -2253,7 +2250,7 @@ dv_geo_length (db_buf_t dv, long *hl, long *l)
   *hl = 1;
   if (flags & GEO_2BYTE_TYPE)
     flags |= (dv[len++] << 8);
-  if (!(GEO_IS_DEFAULT_SRCODE & flags))	/* Not that it's always topmost here */
+  if (!(GEO_IS_DEFAULT_SRCODE & flags)) /* Note that it's always topmost here */
     len += 2;
 /* Old types */
   switch (flags & (GEO_TYPE_MASK | GEO_IS_CHAINBOXED))
@@ -2281,11 +2278,11 @@ dv_geo_length (db_buf_t dv, long *hl, long *l)
 /* New types */
   if (flags & (GEO_A_COMPOUND | GEO_A_RINGS | GEO_A_MULTI | GEO_A_ARRAY))
     {
-      int cached_len, saved_len = len + 1;
+      int cached_len, saved_len = len;
       DV_INT_FROM_DVLEN (cached_len, dv, len);
       len -= saved_len;
       len += cached_len;
-      *l = len - 1;
+      *l = len;
       return;
     }
   else
@@ -2327,20 +2324,16 @@ dv_geo_length (db_buf_t dv, long *hl, long *l)
     }
 }
 
-#define DV_INT_SERIALIZATION_LENGTH(i) (((i) & ~0xFF) ? 5 : 2)
+#define DV_INT_SERIALIZATION_LENGTH(i) ((((i) > -128) && ((i) < 128)) ? 2 : 5)
 
 int
 geo_calc_length_of_serialization (geo_t * g, int is_topmost)
 {
   geo_flags_t flags = g->geo_flags;
-#if 0
-  int type_twobytes = ((g->geo_flags & (GEO_TYPE_MASK | GEO_IS_CHAINBOXED | GEO_IS_FLOAT))
-      | (is_topmost ? (GEO_SRCODE_DEFAULT == g->geo_srcode ? GEO_IS_DEFAULT_SRCODE : 0) : 0));
-#endif
   int len = ((flags & ~0xFF) ? 3 : 2);	/* First byte is DV_GEO, so we count from 1. The top-level field of serialization length will have 1 subtracted because it's in header_length */
   int coord_len = (GEO_IS_FLOAT & flags) ? 4 : 8;
   int dims;
-  if (is_topmost && !(GEO_IS_DEFAULT_SRCODE & flags))
+  if (is_topmost && (GEO_SRCODE_DEFAULT != g->geo_srcode))
     len += 2;			/* SRID */
   dims = 2;
   if (flags & GEO_A_Z)
@@ -2390,9 +2383,26 @@ geo_calc_length_of_serialization (geo_t * g, int is_topmost)
 	  return len + DV_INT_SERIALIZATION_LENGTH (ct) + ct * dims * coord_len;
 	}
     }
-  GPF_T1 ("bad geo core type in dv_geo_length");
+  GPF_T1 ("bad geo core type in geo_calc_length_of_serialization");
   return 0;			/* to keep the compiler happy */
 }
+
+int
+geo_serial_length (geo_t *g)
+{
+  int len_wo_len_length;
+  if (g->geo_flags & (GEO_A_COMPOUND | GEO_A_RINGS | GEO_A_MULTI | GEO_A_ARRAY))
+    {
+      if (0 == g->_.parts.serialization_length)
+        len_wo_len_length = geo_calc_length_of_serialization (g, 1);
+      else
+        len_wo_len_length = g->_.parts.serialization_length;
+      return DV_INT_SERIALIZATION_LENGTH (len_wo_len_length) + len_wo_len_length;
+    }
+  len_wo_len_length = geo_calc_length_of_serialization (g, 1);
+  return len_wo_len_length;
+}
+
 
 #define print_v_double(d, s) \
   {if (is_float) print_raw_float (d, s); else print_raw_double (d, s);}
@@ -2590,7 +2600,7 @@ geo_serialize (geo_t * g, dk_session_t * ses)
       else
 	{
 	  session_buffered_write_char (DV_STRING, ses);
-	  print_long ((long) len, ses);
+          print_long ((long)len, ses);
 	}
       session_buffered_write (ses, xx, len);
       dk_free_box (xx);
@@ -2663,7 +2673,7 @@ geo_deserialize_one (int srcode /* -1 for topmost */ , dk_session_t * ses)
 	serlen = read_int (ses);
       item_count = read_int (ses);
       g = geo_alloc_safe (flags, item_count, srcode, ses);
-      g->_.parts.serialization_length = serlen;
+      g->_.parts.serialization_length = serlen+1;
       if (flags & GEO_IS_CHAINBOXED)
 	{
 	  geo_chainbox_t *gcb;
@@ -2957,7 +2967,8 @@ geo_XY_inoutside_ring (geoc pX, geoc pY, geo_t * ring)
 	    {
 	      if (pX >= gcb_ptr->Xmin)
 		{
-		  int inoutside = geo_XY_inoutside_ring_lines (pX, pY, gcb_next_stop - inx, Xs + inx, Ys + inx, &up_crosses_ray,
+		  int inoutside =
+		      geo_XY_inoutside_ring_lines (pX, pY, gcb_next_stop - inx, Xs + inx, Ys + inx, &up_crosses_ray,
 		      &down_crosses_ray);
 		  if (inoutside)
 		    return inoutside;

@@ -11893,6 +11893,15 @@ bif_deserialize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return res;
 }
 
+caddr_t
+bif_serial_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int dtp_or_approx = BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "__serial_length") : 0;
+  caddr_t xx = bif_arg (qst, args, 0, "__serial_length");
+  if ((0 != dtp_or_approx) && (SERIAL_LENGTH_APPROX != dtp_or_approx) && (DV_TYPE_OF (xx) != dtp_or_approx))
+    sec_check_dba ((query_instance_t *)qst, "__serial_length");
+  return box_num (box_serial_length (xx, dtp_or_approx));
+}
 
 caddr_t
 bif_composite (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -16389,7 +16398,8 @@ sql_bif_init (void)
   bif_define ("repl_is_raw", bif_repl_is_raw);
   bif_define ("log_enable", bif_log_enable);
   bif_set_vectored (bif_log_enable, (bif_vec_t)bif_log_enable);
-  bif_define_ex ("serialize", bif_serialize, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("serialize", bif_serialize, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("__serial_length", bif_serial_length, BMD_RET_TYPE, &bt_integer_nn, BMD_DONE);
   bif_define_ex ("deserialize", bif_deserialize, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("complete_table_name", bif_complete_table_name, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("complete_proc_name", bif_complete_proc_name, BMD_RET_TYPE, &bt_varchar, BMD_DONE);

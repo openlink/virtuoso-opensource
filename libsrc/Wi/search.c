@@ -34,6 +34,7 @@
 #include "xmltree.h"
 #include "sqlbif.h"
 #include "srvstat.h"
+#include "geo.h"
 
 
 signed char  db_buf_const_length[256];
@@ -275,7 +276,7 @@ box_serial_length (caddr_t box, dtp_t dtp)
 	boxint n = IS_BOX_POINTER (box) ? *((ptrlong *) box) : (boxint)((ptrlong)box); /* Is it ((ptrlong *) box) or ((boxint *) box) ??? */
 	if ((n > -128) && (n < 128))
 	  return 2;
-	else if (n > 0x80000000 && n < 0x7fffffff)
+	else if (n >= (int64) INT32_MIN && n <= (int64) INT32_MAX)
 	  return 5;
 	else
 	  return 9;
@@ -288,7 +289,7 @@ box_serial_length (caddr_t box, dtp_t dtp)
     case DV_IRI_ID:
       {
 	iri_id_t iid = unbox_iri_id (box);
-	return  (iid < 0xffffffff) ? 5 : 9;
+	return  (iid <= 0xffffffff) ? 5 : 9;
       }
     case DV_SINGLE_FLOAT:
       return 5;
@@ -302,6 +303,11 @@ box_serial_length (caddr_t box, dtp_t dtp)
       return 1 + DT_LENGTH;
     case DV_RDF:
       return rb_serial_length (box);
+    case DV_GEO:
+      {
+        geo_t *g = (geo_t *)box;
+        return geo_serial_length (g);
+      }
     case DV_ARRAY_OF_POINTER: /* _ROW */
 	{
 	  int inx, elts = BOX_ELEMENTS (box);
