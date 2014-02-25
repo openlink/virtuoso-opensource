@@ -156,7 +156,7 @@
       <screen>
 create procedure tb_is_empty (in tb varchar)
 {
-  declare state, msg, 1, descs, rows any;
+  declare state, msg, descs, rows any;
   state := '00000';
   exec (sprintf ('select 1 from %s', tb), state,
     msg, vector (), 1, descs, rows);

@@ -70,8 +70,8 @@ Done. -- 15 msec.
 SQL> SELECT * FROM DB.DBA.SYS_RDF_SCHEMA ;
 RS_NAME                              RS_URI                                                         RS_G
 VARCHAR NOT NULL                     VARCHAR NOT NULL                                               VARCHAR
-_______________________________________________________________________________                    
-                                                                                                   
+_______________________________________________________________________________                    
+                                                                                                   
 http://localhost:8890/dataspace      http://localhost:8890/dataspace/inf                            NULL
 http://www.w3.org/2002/07/owl#       http://www.w3.org/2002/07/owl#                                 NULL
 myset                                http://mygraph.com                                             NULL

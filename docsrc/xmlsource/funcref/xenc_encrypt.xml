@@ -102,6 +102,8 @@ key store of the calling user account.</para>
   </refsect1>
   <refsect1 id="seealso_xenc_encrypt">
     <title>See Also</title>
+    <para><link linkend="fn_encrypt"><function>encrypt()</function></link></para>    
+    <para><link linkend="fn_decrypt"><function>decrypt()</function></link></para>    
     <para><link linkend="fn_dsig_template_ext"><function>dsig_template_ext()</function></link></para>
     <para><link linkend="fn_xenc_key_inst_create"><function>xenc_key_inst_create()</function></link></para>
   </refsect1>

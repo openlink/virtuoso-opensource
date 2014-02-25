@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2014 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<refentry id="fn_rdf_geo_fill">
+  <refmeta>
+    <refentrytitle>DB.DBA.RDF_GEO_FILL</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>DB.DBA.RDF_GEO_FILL</refname>
+    <refpurpose>Converts geo:lat and geo:long properties properties into geometries.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_rdf_geo_fill">
+      <funcprototype id="fproto_rdf_geo_fill">
+        <funcdef><function>DB.DBA.RDF_GEO_FILL</function></funcdef>
+	      <paramdef><parameter>n_threads</parameter> integer (optional, default 4)</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_rdf_geo_fill">
+    <title>Description</title>
+    <para>Converts geo:lat and geo:long properties into geometries.
+This operation reads through all graphs and for each subject with at least one geo:lat and geo:long, a point
+geometry is made for each distinct lat/long pair where lat and long are in the same graph.</para>
+    <para>It should not happen in practice that a single subject has multiple lats or long within one graph.
+If this still happens, a geometry is made for each combination.
+The geometry is added to the subject with the lat and long as the value of the geo:geometry property.
+</para>
+    <para>This is performed in parallel on multiple threads and is optimized for cluster execution and
+done without transaction logging and is not transactional. To make the result persistent, the operator
+should do an explicit checkpoint by executing:</para>
+<programlisting><![CDATA[
+SQL>cl_exec ('checkpoint');
+]]></programlisting>
+    <para>on any process of a cluster or single server. Otherwise the result may be lost if the server
+terminates abnormally before an automatic checkpoint is made.</para>
+  </refsect1>
+  <refsect1 id="params_rdf_geo_fill">
+    <title>Parameters</title>
+    <refsect2><title>n_threads</title>
+      <para>Number of threads to run. Default is to run 4 threads that will make geomerty objects 
+      	(not counting the thread that searches for separate geo:lat and geo:long properties).</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_rdf_geo_fill"><title>Return Types</title>
+    <para></para>
+  </refsect1>
+
+  <refsect1 id="examples_rdf_geo_fill">
+    <title>Examples</title>
+    <example id="ex_rdf_geo_fill"><title></title>
+      <para></para>
+<programlisting><![CDATA[
+SQL> rdf_geo_fill ();
+
+Done. -- 282 msec.
+]]></programlisting>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_rdf_geo_fill">
+    <title>See Also</title>
+    <para><link linkend="rdfsparqlgeospatcrg">Creating Geometries From RDF Data</link></para>
+    <para><link linkend="rdfsparqlgeospatprog">Programmatic Manipulation of Geometries in RDF</link></para>
+    <para><link linkend="rdfsparqlgeospatusg">Using Geometries With Existing Databases</link></para>
+    <para><link linkend="fn_st_point"><function>st_point</function></link></para>
+    <para><link linkend="fn_st_x"><function>st_x</function></link></para>
+    <para><link linkend="fn_st_y"><function>st_y</function></link></para>
+    <para><link linkend="fn_st_distance"><function>st_distance</function></link></para>
+    <para><link linkend="fn_st_srid"><function>st_srid</function></link></para>
+    <para><link linkend="fn_st_setsrid"><function>st_setsrid</function></link></para>
+    <para><link linkend="fn_st_astext"><function>st_astext</function></link></para>
+    <para><link linkend="fn_st_geomfromtext"><function>st_geomfromtext</function></link></para>
+    <para><link linkend="fn_st_intersects"><function>st_intersects</function></link></para>
+    <para><link linkend="fn_st_contains"><function>st_contains</function></link></para>
+    <para><link linkend="fn_st_within"><function>st_within</function></link></para>
+    <para><link linkend="fn_isgeometry"><function>isgeometry</function></link></para>
+    <para><link linkend="fn_geo_insert"><function>geo_insert</function></link></para>
+    <para><link linkend="fn_geo_delete"><function>geo_delete</function></link></para>
+    <para><link linkend="fn_rdf_geo_add"><function>DB.DBA.RDF_GEO_ADD</function></link></para>
+  </refsect1>
+</refentry>

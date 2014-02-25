@@ -426,7 +426,7 @@ CREATE PROCEDURE CFIBO (IN X INTEGER)
 		<sect2 id="grantprocstmt">
 			<title>Grand Execute Statement</title>
 <programlisting><![CDATA[
-GRANT EXECUTE ON procedure_name TO "{USER | ROLE}" ;
+GRANT EXECUTE ON proceudre_name TO "{USER | ROLE}" ;
 ]]></programlisting>
 <para>The identifier quote character (double quotes) is important usage information since it indicates that 
 the USER or ROLE has a literal identifier. Just as a reference (e.g., URL or URI) has the identifier quote 
@@ -1033,6 +1033,192 @@ of triggers or for debugging triggers.
 				<para><link linkend="SETstmt">SET statement.</link></para>
 			</tip>
 		</sect2>
+		
+		 <sect2 id="vectoredprocedure">
+			<title>Vectored Procedures</title>
+		<para>Note: This feature only applies to Virtuoso 7.0 and later.</para>	
+    <para>A stored procedure may be declared vectored. This means that when called from a statement 
+    	operating on multiple values, a single call of the procedure can take the whole batch of 
+    	variable bindings the statement is operating on in a single invocation. This saves invocation 
+    	and interpretation overhead, and, most importantly, allows running any SQL statements inside 
+    	the procedure on multiple values at once, creating possibilities for parallelization and 
+    	exploitation of locality. The vectored declaration consists of the VECTORED reserved 
+    	word at the start of the procedure body.</para>
+    <para>Consider the example of a lookup table:</para>
+<programlisting><![CDATA[
+CREATE TABLE person 
+  (
+    p_id   INT PRIMARY KEY, 
+    p_name VARCHAR
+  );
+
+CREATE TABLE knows 
+  ( p1 INT REFERENCES PERSON, 
+    p2 INT REFERENCES PERSON, 
+    PRIMARY KEY ( p1, p2 )
+  );
+
+CREATE PROCEDURE p_name 
+  ( IN code INT )  
+  RETURNS VARCHAR 
+  { 
+    VECTORED; 
+    RETURN 
+      (
+        SELECT p_name 
+          FROM person 
+         WHERE p_id  = id
+      ) ; 
+  }
+
+SELECT  p_name (p1) 
+  FROM  knows 
+ WHERE  p2 = 123;
+]]></programlisting>
+    <para>This last statement is equivalent to:</para> 
+<programlisting><![CDATA[
+SELECT  p_name
+  FROM  knows, 
+        person 
+ WHERE  p_id = p1 
+   AND  p2 = 123;
+]]></programlisting>
+    <para>For non-trivial transformations, hiding the logic inside a procedure makes sense, 
+    	Running the procedure vectored makes it so that efficiency is not lost. For example, 
+    	if person 123 knows 1000 people, there will not be 1000 random lookups in person for 
+    	the names but rather a single, vectored, merge-style lookup, accessing the rows in order 
+    	of ID, saving time if the IDs are nearby each other. Furthermore, if the lookup is in 
+    	READ COMMITTED isolation, the multiple lookups can be scheduled on multiple threads.</para>
+    <para>The restrictions for vectored statement bodies also apply to function bodies that 
+    	are declared vectored.</para>
+    <para>A vectored procedure can be called from a non-vectored procedure. In this case, 
+    	the vectored procedure simply executes on a single set of values, as if it were not vectored.</para>
+    <para>A vectored procedure can call a non-vectored procedure. When this happens, the non-vectored 
+    	procedure is called once for each set of eligible values, i.e., once for the first values of 
+    	the arguments, once for the second values of the arguments, and so forth.</para> 
+    <para>A vectored procedure, if called from vectored code, returns a return value for each set 
+    	of arguments.</para>
+    <para>A vectored procedure can have IN and OUT parameters. These have the same semantics as in 
+    	single-value execution. When calling a non-vectored procedure with an OUT or INOUT parameter, 
+    	the argument in the vectored caller must be declared to be of a boxed data type. (See the 
+    	section on vectoring and data types below.)</para>	
+  </sect2>
+
+<sect2 id="forvectorestatement">
+			<title>FOR VECTORED Statement</title>
+			<para>Note: This feature only applies to Virtuoso 7.0 and later.</para>
+<programlisting><![CDATA[
+FOR VECTORED
+  ( {IN|OUT} <variable> <data_type> [ := <value>], 
+    ... 
+  ) 
+  <compound_statement>
+]]></programlisting>
+    <para>The FOR VECTORED statement allows executing a block of code on several sets of variable 
+    	bindings at once. The benefit of this is that any database operations in such a block can 
+    	be run on multiple sets of parameters at once, allowing exploitation of locality and, in some 
+    	cases, running the operation on different bindings on different threads. Additionally, if 
+    	vectored procedures are called from inside such a block, the call is made with multiple bindings 
+    	for the parameters. The input variables of FOR VECTORED are initialized from an array of 
+    	scalar values. The statements inside the body are then executed vectored, as if the operation 
+    	were first made on all the first values of the vectors, then on the second values, and so 
+    	forth. Operations combining values from different places in the vectors are not possible 
+    	in the FOR VECTORED body, but, since vectored results can be seen as arrays after the return 
+    	of FOR VECTORED, any aggregation or comparison between values in different positions of the 
+    	same vector can be done after the FOR VECTORED, simply accessing different elements of the 
+    	arrays produced.</para>
+    <para>The FOR VECTORED statement communicates with its environment through a list of input and 
+    	output variables. The input variables are marked with the syntax:</para>
+<programlisting><![CDATA[
+IN <variable> <data_type> := <value>
+]]></programlisting>
+    <para>The &lt;value&gt; must be an expression evaluating to an array. The data type must correspond 
+    	to the element type of the array. When multiple input variables are specified, the arrays 
+    	initializing each must be of equal length.</para>
+    <para>An output variable is marked with:</para> 
+<programlisting><![CDATA[
+OUT <variable> := <value>
+]]></programlisting>
+    <para>The variable must be declared in a context outside of the FOR VECTORED statement. The value of 
+    	the variable will be an array where each value of the vectored expression &lt;value&gt; is 
+    	represented as a separate value.</para>
+    <para>Variables declared outside of a FOR VECTORED statement are visible in the body of FOR 
+    	VECTORED and they appear as a single value for all rows of the vectored section.</para>
+    <para>Consider the task of pair-wise adding the elements of two arrays:</para>
+<programlisting><![CDATA[
+CREATE PROCEDURE a_add
+  (
+    IN  a1  INT ARRAY , 
+    IN  a2  INT ARRAY 
+  )
+  {
+  DECLARE  res  INT ARRAY ;
+  res := make_array (LENGTH (a1, ' any' );
+  FOR (i := 0; i < LENGTH (a1); i := i + 1)
+    res[i] := a1[i] + a2[i];
+  RETURN res;
+}
+]]></programlisting>
+    <para>This can be expressed as:</para> 
+<programlisting><![CDATA[
+CREATE PROCEDURE a_add_v 
+  (
+    IN  a1  INT ARRAY , 
+    IN  a2  INT ARRAY 
+  )
+  {
+    DECLARE  res  INT ARRAY;
+    FOR VECTORED 
+      ( IN   n1  INT  := a1 , 
+        IN   i2  INT  := a2 , 
+        OUT  res      := r
+      )
+      {
+         DECLARE  r  INT ;
+         r := i1 + i2 ;
+      }
+    RETURN res;
+  }
+]]></programlisting>
+    <para>The two procedures are identical in function. The second will make use of vector instructions 
+    	in the host CPU, if available, and will incur less interpretation overhead, since the SQL run 
+    	time will not need to run a loop. In practice, substantial benefit, up to an order of magnitude, 
+    	can be had from vectored execution with database operations exhibiting significant locality. 
+    	Bulk loads and bulk lookups are a typical example.</para>
+  </sect2>
+
+ <sect2 id="limitonvectorecode">
+			<title>Limitations on Vectored Code</title>
+			<para>Note: This feature only applies to Virtuoso 7.0 and later.</para>
+    <para>The body of FOR VECTORED or a vectored procedure may contain arbitrary Virtuoso PL, 
+    	except for LOOPs and backward GOTOs. Conditional expressions and statements are allowed, 
+    	as well as any subqueries or DML statements. Looping over a cursor is not allowed, since 
+    	this is a loop, but scalar subqueries and selecting-into-variables in <emphasis>SELECT ... INTO</emphasis> 
+    	is allowed. Exception handlers are not allowed inside, but an exception handler outside 
+    	of FOR VECTORED will catch errors signaled from inside FOR VECTORED. FOR VECTORED statements 
+    	may not be nested and may not occur in the body of a vectored procedure. The handler, being 
+    	itself not in vectored code, will not be able to see which specific value in a vectored 
+    	section gave rise to the exception.</para> 
+  </sect2>
+
+ <sect2 id="datatypesandvectoring">
+			<title>Data Types and Vectoring</title>
+			<para>Note: This feature only applies to Virtuoso 7.0 and later.</para>
+    <para>Parameters in vectored procedures or FOR VECTORED blocks can be declared to be of the 
+    	corresponding scalar data type. The vectoring is thus in most cases transparent; the variable 
+    	will simply have multiple scalar values instead of one. The ANY type in a vectored code section 
+    	is represented as an array of serialized values. Thus types that are represented as data 
+    	structures in allocated memory (e.g., arrays, hash tables, XML elements, etc.) will not work 
+    	efficiently with ANY vectored variables. In some cases (for example, with streams or 
+    	dictionaries), assigning to a vectored ANY will lose the information.</para>
+    <para>Therefore, if dealing with vectors of complex data types in vectored code, the variable 
+    	holding these must be declared as an ANY ARRAY. With this type, the representation will be 
+    	an array of pointers to allocated memory, not an array of flat serialized values. The ANY 
+    	ARRAY type must be used instead of the customary ANY in all cases involving complex values 
+    	in vectored code. If dealing with vectors of simple scalars like strings or numbers, the 
+    	ANY type is generally more efficient.</para>
+  </sect2>
+  
 	</sect1>
 <sect1 id="EXECSQLPROCSELECT">
 		<title>Execute Stored Procedures via SELECT statement</title>
@@ -2349,6 +2535,115 @@ messages shorter.
 
 &pldebugger;
 &rowlevelsecurity;
+
+  <sect1 id="vexqrparl"><title>Vectored Execution and Query Parallelization</title>
+    <para>Note: This feature only applies to Virtuoso 7.0 and later.</para>
+    <para>Vectored execution means executing queries or stored procedures simultaneously on 
+    	multiple sets of parameters. Further, when a query contains a <emphasis>JOIN</emphasis>, a 
+    	single invocation of the query will, with vectored execution, execute every consecutive 
+    	<emphasis>JOIN</emphasis> step with multiple inputs. When every stage of a query's evaluation 
+    	is performed on a large number of intermediate result rows at a time, two benefits are 
+    	obtained:</para>
+    <orderedlist>
+      <listitem>The interpretation overhead disappears and</listitem>
+      <listitem>Locality of reference in <emphasis>JOINs</emphasis> can be better exploited.</listitem>
+    </orderedlist>	
+    <para>For example, with a <emphasis>JOIN</emphasis> like:</para> 
+<programlisting><![CDATA[
+SELECT  COUNT(*) 
+  FROM  part, 
+        lineitem 
+ WHERE  l_partkey = p_partkey 
+   AND     p_size < 23 
+OPTION  ( LOOP, ORDER );
+]]></programlisting>
+    <para>the outermost <emphasis>LOOP</emphasis> of the query will look for parts with 
+    <emphasis>p_size &lt; 23</emphasis>. The part keys of these are used as lookup keys for an index on 
+    <emphasis>l_partkey</emphasis> in <emphasis>lineitem</emphasis>. This index translates these 
+    values into values of the primary key, <emphasis>l_orderkey</emphasis>, 
+    <emphasis>l_linenumber</emphasis>, which is then used to get the data row with 
+    the price and discount. When each of these steps is done with tens of thousands of 
+    values at the same time, the SQL interpretation overhead is almost completely 
+    eliminated and locality can be exploited when accessing nearby rows. The chance of 
+    hitting nearby rows also increases when the size of the intermediate result batch 
+    increases.</para>
+    
+    <sect2 id="vexqrparlautoqp"><title>Automatic Query Parallelization</title>
+      <para>If a query does not modify data, executes in <emphasis>READ COMMITTED</emphasis> 
+      isolation, and contains some form of aggregation or <emphasis>ORDER BY</emphasis>, it can 
+      be automatically parallelized. Parallelization typically splits the query's outermost 
+      <emphasis>LOOP</emphasis> into approximately equal size chunks, which are independently 
+      evaluated each on its own thread. The results are merged together when all are ready, 
+      and are combined in an aggregation or <emphasis>ORDER BY</emphasis>. This is entirely 
+      transparent to the user.</para>
+    </sect2>
+    
+    <sect2 id="vexqrparlconfp"><title>Configuration Parameters for Vectoring and Parallelization</title>
+      <para>The following virtuoso.ini [Parameters] section entries concern query parallelization and vectoring:</para>
+      <para>Note: These settings only apply to Virtuoso 7.0 and later.</para>
+      <itemizedlist mark="bullet">
+        <listitem><link linkend="ini_Parameters">AsyncQueueMaxThreads</link>: 
+        <para>Sets the number of threads in a pool that is used for getting extra threads for running 
+		    	queries and for aq_request. Each running statement has at least one thread that is not allocated 
+		    	from this pool plus zero or more threads from this pool.</para>
+		    <para>Setting the pool size to the number of cores plus a few is a reasonable default. On 
+		    	platforms with core multithreading, one can count a core thread as a core for purposes of 
+		    	this parameter.</para>
+		    <para>If one expects to run many slow <link linkend="fn_aq_requests"><function>aq_requests()</function></link> 
+		    (see <link linkend="fn_async_queue"><function>async_queue()</function></link>, 
+		    <link linkend="fn_aq_request"><function>aq_request()</function></link>, etc.), 
+		    then the number of threads should be increased by the number of slow threads one expects.
+		    </para>
+		    <para>Slow threads are typically I/O bound threads used for web crawling or similar long-latency, 
+		    	low-CPU activity.</para>
+		    <para>Note: Only effective with Virtuoso 7.0 and later.</para>
+		    </listitem>
+        <listitem><link linkend="ini_Parameters">ThreadsPerQuery</link>: 
+        <para>This is maximum number of threads that can be claimed from the thread pool by a single 
+		    	query. A value of one means that no query parallelization will take place, and all queries 
+		    	will run single threaded.</para>
+		    <para>The number of cores on the machine is a reasonable default if running large queries.</para>	
+		    <para>Note that since every query is served by at least one thread, a single query taking 
+		    	all the extra threads will not prevent other queries from progressing.</para>
+		    <para>Note: Only effective with Virtuoso 7.0 and later.</para>
+        </listitem>
+        <listitem><link linkend="ini_Parameters">VectorSize</link>
+          <para>This the number of simultaneous sets of query variable bindings processed at one time. 
+		    	The default is 10,000, which is good for most cases.</para>
+		    <para>If we are evaluating the query:</para>	
+<programlisting><![CDATA[
+SELECT COUNT (*) 
+FROM t1 a, 
+     t1 b 
+WHERE a.row_no + 1 = b.row_no 
+OPTION (LOOP, ORDER) 
+]]></programlisting>
+        <para>with vector size of 10,000, then 10,000 rows of t1 a will be fetched first; 
+        	1 will be added to the 10,000 row_no values; 
+        	and then the corresponding row of t1 b will be fetched for the 10,000 row_no of t1 a. 
+        	This process will repeat until enough batches of t1 a have been fetched to come to its end.</para>
+        <para>Note: Only effective with Virtuoso 7.0 and later.</para>
+        </listitem>
+        <listitem><link linkend="ini_Parameters">AdjustVectorSize</link>: 
+          <para>Using a larger vector size when evaluating large queries with indexed random-access can 
+		    	yield up to a 3x speed-up relative to using the default vector size. However, always using a 
+		    	large vector size will prohibitively increase the overhead of running small queries. For this 
+		    	reason, there is the option to adaptively select the vector size. Set AdjustVectorSize = 1 
+		    	to enable this feature. The SQL execution engine will increase the vector size when it sees 
+		    	an index lookup that does not get good locality, (e.g., after sorting the keys to look for, 
+		    	too few consecutive lookups fall on the same page). Having more keys to look up increases 
+		    	the chance that consecutive keys should be found on the same page, thus eliminating much of 
+		    	the index lookup cost.</para>
+		    <para>Note: Only effective with Virtuoso 7.0 and later.</para>
+          </listitem>
+        <listitem><link linkend="ini_Parameters">MaxVectorSize</link>:
+        <para>When AdjustVectorSize is on, this setting gives the maximum vector size. The 
+		    	default is 1,000,000 and the largest allowed value is about 3,500,000.</para>	
+		    <para>Note: Only effective with Virtuoso 7.0 and later.</para>	   
+        </listitem>
+      </itemizedlist>
+    </sect2>
+  </sect1>
 
 </chapter>
 

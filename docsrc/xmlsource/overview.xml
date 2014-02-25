@@ -710,6 +710,53 @@ Such models are not currently used by default, but they are achievable with our 
 	
 	<sect1 id="virtuosotipsandtricks">
           <title>Tips and Tricks</title>
+    <sect2 id="virtuosotipsandtricksgeotr">
+          <title>How Can I convert triples with geo properties to geometries to use spartial query?</title>
+    <para>Assuming a Named Graph with the following triples:</para>
+<programlisting><![CDATA[
+...
+<http://linkedgeodata.org/triplify/node454640663> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://linkedgeodata.org/ontology/hostel> .
+<http://linkedgeodata.org/triplify/node454640663> <http://www.georss.org/georss/point> "53.2752338 -9.0443748" .
+<http://linkedgeodata.org/triplify/node454640663> <http://www.w3.org/2003/01/geo/wgs84_pos#long> "-9.0443748"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+<http://linkedgeodata.org/triplify/node454640663> <http://www.w3.org/2003/01/geo/wgs84_pos#lat> "53.2752338"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+
+<http://linkedgeodata.org/triplify/node280886720> <http://www.w3.org/2000/01/rdf-schema#label> "Abbey House" .
+<http://linkedgeodata.org/triplify/node280886720> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://linkedgeodata.org/ontology/bed_and_breakfast> .
+<http://linkedgeodata.org/triplify/node280886720> <http://www.georss.org/georss/point> "53.2874983 -9.0702631" .
+<http://linkedgeodata.org/triplify/node280886720> <http://www.w3.org/2003/01/geo/wgs84_pos#long> "-9.0702631"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+<http://linkedgeodata.org/triplify/node280886720> <http://www.w3.org/2003/01/geo/wgs84_pos#lat> "53.2874983"^^<http://www.w3.org/2001/XMLSchema#decimal> .
+...
+]]></programlisting>
+  <para>In order to convert these triples ( with geo properties ) to geometries to use spartial query,
+	you need to run the <link linkend="fn_fn_rdf_geo_add"><function>DB.DBA.RDF_GEO_FILL ()</function></link>
+	function to populate the special RDF_GEO table with the point information as detailed at
+	<link linkend="rdfsparqlgeospatcrg">Creating Geometries From RDF Data</link> documentation section.</para>
+  <para>Then the geo-spatail information will be available and can be queried.</para>
+  <para>Note: RDF_GEO and associated indexes are created when the database is first created and
+	thus just needs to be populated with the geometry data in the RDF triples, which is what
+	the <link linkend="fn_fn_rdf_geo_add"><function>DB.DBA.RDF_GEO_FILL ()</function></link> function does</para>.
+  <tip><title>See Also:</title>
+    <itemizedlist mark="bullet">
+      <listitem><link linkend="rdfsparqlgeospatprog">Programmatic Manipulation of Geometries in RDF</link></listitem>
+      <listitem><link linkend="rdfsparqlgeospatexmp">GEO Spatial Examples</link></listitem>
+      <listitem>GEO Spatial Tutorials:
+        <itemizedlist mark="bullet">
+          <listitem><ulink url="http://virtuoso.openlinksw.com/presentations/SPARQL_Tutorials/SPARQL_Tutorials_Part_2/SPARQL_Tutorials_Part_2.html#(26)">ROUND</ulink></listitem>
+          <listitem><ulink url="http://virtuoso.openlinksw.com/presentations/SPARQL_Tutorials/SPARQL_Tutorials_Part_2/SPARQL_Tutorials_Part_2.html#(27)">DESCRIBE</ulink></listitem>
+          <listitem><ulink url="http://virtuoso.openlinksw.com/presentations/SPARQL_Tutorials/SPARQL_Tutorials_Part_2/SPARQL_Tutorials_Part_2.html#(28)">CONSTRUCT</ulink></listitem>
+          <listitem><ulink url="http://virtuoso.openlinksw.com/presentations/SPARQL_Tutorials/SPARQL_Tutorials_Part_2/SPARQL_Tutorials_Part_2.html#(29)">ASK</ulink></listitem>
+          <listitem><ulink url="http://virtuoso.openlinksw.com/presentations/SPARQL_Tutorials/SPARQL_Tutorials_Part_2/SPARQL_Tutorials_Part_2.html#(30)">UNION</ulink></listitem>
+          <listitem><ulink url="http://virtuoso.openlinksw.com/presentations/SPARQL_Tutorials/SPARQL_Tutorials_Part_2/SPARQL_Tutorials_Part_2.html#(31)">COUNT</ulink></listitem>
+          <listitem><ulink url="http://virtuoso.openlinksw.com/presentations/SPARQL_Tutorials/SPARQL_Tutorials_Part_2/SPARQL_Tutorials_Part_2.html#(32)">FILTER</ulink></listitem>
+          <listitem><ulink url="http://virtuoso.openlinksw.com/presentations/SPARQL_Tutorials/SPARQL_Tutorials_Part_2/SPARQL_Tutorials_Part_2.html#(33)">Find Distance Variant I</ulink></listitem>
+          <listitem><ulink url="http://virtuoso.openlinksw.com/presentations/SPARQL_Tutorials/SPARQL_Tutorials_Part_2/SPARQL_Tutorials_Part_2.html#(34)">Find Distance Variant II</ulink></listitem>
+          <listitem><ulink url="http://virtuoso.openlinksw.com/presentations/SPARQL_Tutorials/SPARQL_Tutorials_Part_2/SPARQL_Tutorials_Part_2.html#(35)">Querying Time and Space Variant I</ulink></listitem>
+          <listitem><ulink url="http://virtuoso.openlinksw.com/presentations/SPARQL_Tutorials/SPARQL_Tutorials_Part_2/SPARQL_Tutorials_Part_2.html#(36)">Querying Time and Space Variant II</ulink></listitem>
+        </itemizedlist>
+      </listitem>
+    </itemizedlist>
+  </tip>
+    </sect2>
     <sect2 id="virtuosotipsandtricksspchar">
           <title>How Can I execute SPARQL queries containing '$' character using ISQL?</title>                
       <para>Assuming a SPARQL query should filter on the length of labels:</para>
@@ -3224,6 +3271,61 @@ http://www.openlinksw.com/virtrdf-data-formats#sql-nvarchar-lang       20
         <listitem>Click "Save". </listitem>
       </orderedlist>    	                   
     </sect2>   
+    <sect2 id="gecodedata">
+    	<title>How Do I Gecode Data?</title>
+    	<para><emphasis>What?</emphasis></para>
+    	<para>Automatic geocoding of data in quad store.</para>
+    	<para><emphasis>Why?</emphasis></para>
+    	<para>Enable exploitation of SPARQL-GEO for geospatial oriented queries.</para>
+    	<para><emphasis>How?</emphasis></para>
+    	<para>To gecode data one should call the <link linkend="fn_rdf_geo_fill"><function>rdf_geo_fill</function></link> API from Conductor or iSQL:</para>
+<programlisting><![CDATA[
+SQL> rdf_geo_fill ();
+
+Done. -- 282 msec.
+]]></programlisting>
+      <sect3 id="gecodedata">
+      	<title>SPARQL-GEO sample queries</title>
+      	<itemizedlist mark="bullet">
+          <listitem><ulink url="http://lod.openlinksw.com/b3s/search.vsp?q=20&amp;sc=http%3A%2F%2Fdbpedia.org%2Fresource%2FOxford&amp;sc2=5&amp;sc3=http%3A%2F%2Fdbpedia.org%2Fproperty%2Festablished&amp;sc4=en&amp;fa=Execute">All Educational Institutions within 10km of Oxford, UK</ulink>:
+<programlisting><![CDATA[
+SELECT DISTINCT ?thing AS ?uri ?thingLabel AS ?name ?date AS ?established ?lat ?long WHERE
+  {
+    <http://dbpedia.org/resource/Oxford> geo:geometry ?sourcegeo .
+    ?resource geo:geometry ?matchgeo .
+    ?resource geo:lat ?lat .
+    ?resource geo:long ?long .
+    FILTER ( bif:st_intersects ( ?matchgeo, ?sourcegeo, 5 ) ) .
+    ?thing ?somelink ?resource .
+    ?thing <http://dbpedia.org/property/established> ?date .
+    ?thing rdfs:label ?thingLabel .
+    FILTER ( lang ( ?thingLabel ) = "en" )
+  }
+]]></programlisting>
+          </listitem>
+          <listitem><ulink url="http://lod.openlinksw.com/b3s/search.vsp?q=18&amp;sc=http%3A%2F%2Fdbpedia.org%2Fresource%2FLondon&amp;sc2=20&amp;sc3=en&amp;fa=Execute">Things within close proximity of London</ulink>:
+<programlisting><![CDATA[
+SELECT DISTINCT ?resource ?label ?location WHERE
+  {
+    <http://dbpedia.org/resource/London> geo:geometry ?sourcegeo .
+    ?resource geo:geometry ?location ; rdfs:label ?label .
+    FILTER ( bif:st_intersects ( ?location, ?sourcegeo, 20 ) ) .
+    FILTER ( lang ( ?label ) = "en" )
+  }
+]]></programlisting>
+          </listitem>
+        </itemizedlist>
+      </sect3>
+      <tip><title>See Also:</title>
+        <itemizedlist mark="bullet">
+        	<listitem><link linkend="fn_rdf_geo_fill"><function>rdf_geo_fill</function></link></listitem>
+          <listitem><link linkend="rdfsparqlgeospatcrg">Creating Geometries From RDF Data</link></listitem>
+          <listitem><link linkend="rdfsparqlgeospatprog">Programmatic Manipulation of Geometries in RDF</link></listitem>
+          <listitem><link linkend="rdfsparqlgeospatusg">Using Geometries With Existing Databases</link></listitem>
+          <listitem><ulink url="http://lod.openlinksw.com/b3s/">OpenLink Billion Triple Demo queries</ulink></listitem>
+        </itemizedlist>
+      </tip>
+    </sect2>
     <sect2 id="delsptriple">    
     	<title>How Can I Delete a Specific Triple Across Graphs?</title>        	
     	<para>Suppose the following situation:</para>  
@@ -3853,5 +3955,213 @@ $ curl -d@soap.xml -H "Content-Type:text/xml" -H "SOAPAction: ''" http://localho
       <title>How Can I Use Expressions inside CONSTRUCT, INSERT and DELETE {...} Templates?</title>   	
       <para>Please examples <link linkend="rdfsparulexamples25">here</link>.</para>
     </sect2>     
+    <sect2 id="sparqldatediffindexfriendly">
+    	<title>How to optimize bif:dateadd in SPARQL query using selective index-friendly filter?</title>
+    	<sect3 id="sparqldatediffindexfriendlywhat">
+    	  <title>What?</title>
+      	<para>Index-friendly filter for Date range ( bif:dateadd ) optimization within SPARQL query.</para>
+      </sect3>
+    	<sect3 id="sparqldatediffindexfriendlywhy">
+    	  <title>Why?</title>
+      	<para>Achieve fast results and better performance.</para>
+      </sect3>
+    	<sect3 id="sparqldatediffindexfriendlyhow">
+    	  <title>How?</title>
+      	<para>Assume the following SPARQL query:</para>
+<programlisting><![CDATA[
+SELECT ?wiki,
+       ?dbp,
+       bif:datediff('second',  xsd:DateTime(?extracted), now()) AS ?secondsAgo
+ FROM <http://nl.dbpedia.org>
+WHERE
+  {
+    ?wiki foaf:primaryTopic ?dbp .
+    ?dbp dcterms:modified ?extracted .
+    FILTER ( bif:datediff('minute', now(), xsd:DateTime(?extracted)) <= 10 )
+  }
+ORDER BY DESC(?extracted)
+LIMIT 30
+]]></programlisting>
+        <para>Let's take a look at the calculation of:</para>
+<programlisting><![CDATA[
+FILTER ( bif:datediff('minute', now(),  xsd:DateTime(?extracted)) <= 10 ) .
+]]></programlisting>
+        <para>For each "is modified" triple we:</para>
+        <orderedlist>
+          <listitem>Convert ?extracted to xsd:dateTime;</listitem>
+          <listitem>Calculate datediff;</listitem>
+          <listitem>Make a comparison and know whether we hit or miss 10 minutes interval</listitem>
+        </orderedlist>
+        <para>Written so, this will lead to a potentially long loop, because even if the optimizer will realize
+        that the filter is selective, it can't discover why is it so selective.</para>
+        <para>Now let's change the filter to: </para>
+<programlisting><![CDATA[
+FILTER ( ?extracted > bif:dateadd('minute', -10, now())) .
+]]></programlisting>
+        <para><code>now()</code> can be calculated once at the very beginning of the query execution because it
+        does not depend on any rows in a given table. Then <code>bif:dateadd</code> has all arguments known and
+        thus the whole <code>bif:dateadd('minute', -10, now())</code> can be calculated only once and produce
+        some value. Therefor <code>FILTER ( ?extracted &gt; some_known_value )</code> can be represented as a
+        single search step: look at index and get triples with known P, known G, O greater than the given one
+        and any S. That's pretty fast and predictable step, good for both optimizer and the runtime.</para>
+        <para>We can rephrase the query to filter index-friendly:</para>
+<programlisting><![CDATA[
+SELECT ?wiki,
+       ?dbp,
+        bif:datediff('second',  xsd:DateTime(?extracted) ,
+        now()) AS ?secondsAgo
+ FROM <http://nl.dbpedia.org>
+WHERE
+  {
+    ?wiki foaf:primaryTopic ?dbp .
+    ?dbp dcterms:modified ?extracted .
+     FILTER ( ?extracted > bif:dateadd('minute', -10, now()))
+  }
+ORDER BY DESC (?extracted)
+LIMIT 30
+]]></programlisting>
+        <para>In this case the presence or the absence of the order by does not matter too much, because the query
+        is way more straightforward: selective index-friendly filter first, and the selection could be ordered
+        naturally via hot index used by the filter.</para>
+        <para>Note also that if you know the datatype of an object literal, there's no need to write a cast like
+        xsd:dateTime --- it can make an expression index-unfriendly even if it will always return the argument
+        unchanged on your specific data.</para>
+        <orderedlist>
+          <listitem><ulink url="http://bit.ly/13xefMl">View the SPARQL Query Definition via SPARQL Protocol URL</ulink></listitem>
+          <listitem><ulink url="http://bit.ly/18rI9VA">View the SPARQL Query Results via SPARQL Protocol URL</ulink></listitem>
+        </orderedlist>
+      </sect3>
+    </sect2>
+    <sect2 id="determinedatausagetip">
+    	<title>How can I Determine the data usage across a Virtuoso instance?</title>    
+    	<sect3 id="determinedatausagetipwhat">
+    		<title>What?</title>
+    		<para>How to determine the data usage across a Virtuoso instance.</para>
+      </sect3>
+    	<sect3 id="determinedatausagetipwhy">
+    		<title>Why?</title>
+    		<para>There are times when a variety of DBMS activities (e.g., automated content crawling) can lead to 
+    			increase in database size, without the instance operator being fully aware of such activities and 
+    			their consequences.</para>
+      </sect3>     
+    	<sect3 id="determinedatausagetiphow">
+    		<title>How?</title>
+    		<para>Run the following statement:</para>
+<programlisting><![CDATA[
+	SELECT TOP 20 * FROM sys_index_space_stats ORDER BY iss_pages DESC;
+
+Query result:
+ISS_KEY_TABLE ISS_KEY_NAME ISS_KEY_ID            ISS_NROWS       ISS_ROW_BYTES ISS_BLOB_PAGES ISS_ROW_PAGES ISS_PAGES 
+ WS.WS.SYS_DAV_RES         WS.WS.SYS_DAV_RE..    492   630627	   437635794     501049         57521         558570
+ DB.DBA.RDF_QUAD           DB.DBA.RDF_QUAD       487   25134153  321502272     0	            49779         49779
+ DB.DBA.RDF_QUAD           RDF_QUAD_POGS         489   14749814  307163163     0	            47191         47191
+ WS.WS.SYS_DAV_RES....     DB.DBA.RDF_OBJ        501   1139934   160445830     10748          21478         32226
+ WS.WS.SYS_DAV_RES         WS.WS.SYS_DAV_RE..    729   432       307124	       28840          97            28937
+ DB.DBA.RDF_IRI            DB.DBA.RDF_IRI        485   4378779   138542078     0	            22479         22479
+ DB.DBA.RDF_IRI            DB_DBA_RDF_IRI_UN..   486   4259557   139496730     0	            20187         20187
+......
+]]></programlisting>
+      </sect3>       
+    </sect2>    	
+    <sect2 id="discoversparqlfedcapabtip">
+    	<title>How to discover the capabilities of a SPARQL endpoint to enhancing SPARQL-FED usage from Virtuoso instances?</title>    
+    	<sect3 id="discoversparqlfedcapabtipwhat">
+    		<title>What?</title>
+    		<para>How to discover the capabilities of a SPARQL endpoint en route to enhancing SPARQL-FED usage from Virtuoso instances.</para>
+      </sect3>
+    	<sect3 id="discoversparqlfedcapabtipwhy">
+    		<title>Why?</title>
+    		<para>There are features supported in Virtuoso SPARQL that aren't supported by other SPARQL engines. 
+    			There are also a lot of Virtuoso instances behind bubbles in the LOD cloud. Net effect, a Virtuoso 
+    			instance operator is faced with varied behavior when attempting to use SPARQL-FED functionality.</para>
+      </sect3>     
+    	<sect3 id="discoversparqlfedcapabtiphow">
+    		<title>How?</title>
+    		<para>Run this command to load metadata (or lack thereof) from an external SPARQL endpoint:</para>
+<programlisting><![CDATA[
+SPARQL LOAD SERVICE <{sparql-endpoint-iri> DATA 
+]]></programlisting>
+	      <sect4 id="discoversparqlfedcapabtiphowex">
+    		  <title>Example</title>
+    		  <orderedlist>
+            <listitem>Run:
+<programlisting><![CDATA[	
+Query result:
+ANY
+ Load service <http://lod.openlinksw.com/sparql> data -- done.  
+ Trying to query <http://lod.openlinksw.com/sparql> as SPARQL web service endpoint, POST mode...
+]]></programlisting>
+            </listitem>
+            <listitem>Check the retrieved data:
+<programlisting><![CDATA[	            	
+SPARQL 
+SELECT * 
+  FROM virtrdf: 
+ WHERE 
+     {
+       <http://lod.openlinksw.com/sparql> ?p ?o
+     }
+ LIMIT 10
+
+
+Query result:
+p                                                                o 
+ANY                                                              ANY 	
+http://www.openlinksw.com/schemas/virtrdf#isEndpointOfService	   http://lod.openlinksw.com/sparql-sd
+http://www.openlinksw.com/schemas/virtrdf#dialect                000037ff	
+]]></programlisting>
+            </listitem>
+          </orderedlist>
+        </sect4>  
+      </sect3>       
+    </sect2>    
+    <sect2 id="howtospliturlencodedlist">
+    	<title>How to split a urlencoded ";-" separated list of urls in a SPARQL query?</title>    
+    	<orderedlist>
+        <listitem>Assume the following string: "http://example.org/test1;http://example.org/test2".</listitem>
+        <listitem>In order to split the given string into two values i.e. http://example.org/test1 and 
+        	http://example.org/test2 , one should use 
+        	<link linkend="fn_split_and_decode"><function>split_and_decode()</function></link> which returns an 
+        	array. Thus the <link linkend="fn_aref"><function>aref()</function></link> also needs to be used for 
+        	loading the elements.</listitem>
+        <listitem>Example: 
+<programlisting><![CDATA[
+SELECT bif:aref (bif:split_and_decode('http%3A%2F%2Fexample.org%2Ftest1%3Bhttp%3A%2F%2Fexample.org%2Ftest2',0), 0) 
+{ ?S ?P ?O } 
+LIMIT 1
+]]></programlisting>        
+          <itemizedlist mark="bullet">
+            <listitem><ulink url="http://bit.ly/19eOiDE">View the SPARQL Query Definition via SPARQL Protocol URL</ulink>;</listitem>
+            <listitem><ulink url="http://bit.ly/18AgJS6">View the SPARQL Query Results via SPARQL Protocol URL</ulink></listitem>
+          </itemizedlist>	
+        </listitem>
+      </orderedlist>
+    </sect2>    	
+    <sect2 id="howtoloadlargedatanocheckpointabort">
+    	<title>How to Update Large SPARQL Data avoiding due to database checkpoint abortion?</title>    
+    	<para>Assume while performing large SPARQL update, for example of triples around 80 millions in total, 
+    		one gets the following error which aborts the update: 
+    	</para>	
+<programlisting><![CDATA[
+"Transaction aborted due to a database checkpoint or database-wide
+atomic operation. Please retry transaction" .	
+]]></programlisting>    	
+      <para>The error means that the SPARQL update has possibly encountered a database checkpoint during the 
+      	load. Thus one should check the CheckpointInterval in the INI file and possible increase its value:
+      </para>	
+<programlisting><![CDATA[
+;
+;  Server parameters
+;
+[Parameters]
+...
+CheckpointInterval       = 60
+...	
+]]></programlisting>
+      <para>Note: The <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtBulkRDFLoader">RDF Bulk loader</ulink> 
+      can be used for loading large datasets, and it will handle the checkpoint matter automatically.
+      </para>
+    </sect2>    		
   </sect1>    
 </chapter>
+

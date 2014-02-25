@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2014 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<refentry id="fn_GROUP_CONCAT_DISTINCT">
+  <refmeta>
+    <refentrytitle>DB.DBA.GROUP_CONCAT_DISTINCT</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>DB.DBA.GROUP_CONCAT_DISTINCT</refname>
+    <refpurpose>returns a string that is concatenation of token strings delimited with delimiter</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_GROUP_CONCAT_DISTINCT">
+      <funcprototype id="fproto_GROUP_CONCAT_DISTINCT">
+        <funcdef><function>DB.DBA.GROUP_CONCAT_DISTINCT</function></funcdef>
+	        <paramdef>in <parameter>token</parameter> varchar</paramdef>
+	        <paramdef>in <parameter>delim</parameter> varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_GROUP_CONCAT_DISTINCT">
+    <title>Description</title>
+    <para>DB.DBA.GROUP_CONCAT_DISTINCT is aggregate function that performs a string concatenation across
+    	the values of an expression with a group. The order of the strings is not specified.
+    	The separator character used in the concatenation may be given with the scalar
+    	argument delimiter.</para>
+    <para>Note: the "sql:" prefix is mandatory when this aggregate is used in SPARQL queries.
+    	In SQL queries the prefix is "DB.DBA".
+    </para>
+  </refsect1>
+  <refsect1 id="params_GROUP_CONCAT_DISTINCT">
+    <title>Parameters</title>
+    <refsect2><title>token</title>
+      <para>An item that should be added to a delimited list.</para>
+    </refsect2>
+    <refsect2><title>delim</title>
+      <para>The delimeter character to be used in the concatenation.</para>
+    </refsect2>
+
+  </refsect1>
+  <refsect1 id="ret_GROUP_CONCAT_DISTINCT"><title>Return Types</title>
+    <para>any</para>
+  </refsect1>
+  <refsect1 id="examples_GROUP_CONCAT_DISTINCT">
+    <title>Examples</title>
+    <example id="ex_GROUP_CONCAT_DISTINCT"><title></title>
+<programlisting><![CDATA[
+SQL>SPARQL
+SELECT ?name, (sql:GROUP_CONCAT_DISTINCT(?near, ' , '))
+WHERE
+  {
+    GRAPH ?g
+      {
+        [] a foaf:Person ;
+        foaf:name ?name ;
+        foaf:based_near ?near
+      }
+  }
+LIMIT 2
+
+name callret-1
+ANY  ANY
+________________________________________________
+Donny Hathaway	 http://linkeddata.uriburner.com/about/id/entity/http/sws.geonames.org/3996063/ , http://linkeddata.uriburner.com/about/id/entity/http/sws.geonames.org/4990729/ , ..
+Jill Scott	     http://linkeddata.uriburner.com/about/id/entity/http/sws.geonames.org/3996034/ , http://linkeddata.uriburner.com/about/id/entity/http/sws.geonames.org/4990735/ , ...
+No. of rows in result: 2
+
+]]></programlisting>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_GROUP_CONCAT_DISTINCT">
+    <title>See Also</title>
+    <para><link linkend="fn_SAMPLE"><function>DB.DBA.SAMPLE</function></link></para>
+    <para><link linkend="fn_GROUP_CONCAT"><function>DB.DBA.GROUP_CONCAT</function></link></para>
+    <para><link linkend="fn_GROUP_DIGEST"><function>DB.DBA.GROUP_DIGEST</function></link></para>
+    <para><link linkend="samplegroupconcatdigest">Differences between DB.DBA.SAMPLE, DB.DBA.GROUP_CONCAT,
+    DB.DBA.GROUP_CONCAT_DISTINCT and DB.DBA.GROUP_DIGEST functions usage.</link></para>
+  </refsect1>
+</refentry>
+

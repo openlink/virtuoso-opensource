@@ -587,7 +587,7 @@ DataGrid1.DataBind()
   </listitem>
 
   <listitem><formalpara><title>Configure Virtual Directory</title>
-    <para>Now we have to configure a Virtuoso virtual directory. Go to Conductor / Web Application Server / HTTP Hosts &mp; Directories.
+    <para>Now we have to configure a Virtuoso virtual directory. Go to Conductor / Web Application Server / HTTP Hosts &amp; Directories.
     </para></formalpara>
     <figure id="rthmig009"><title>Migrating ASP.Net Applications to Virtuoso</title>
       <graphic fileref="rth/mig009.png"/></figure>

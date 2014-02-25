@@ -1048,6 +1048,9 @@ lite is 2 in 'normal' mode is 256 by default.
 		    <para>Slow threads are typically I/O bound threads used for web crawling or similar long-latency, 
 		    	low-CPU activity.</para>
 		    <para>Note: Only effective with Virtuoso 7.0 and later.</para>
+        <tip><title>See Also:</title>
+          <para><link linkend="confvectexec">Configuring Vectored Execution</link></para>
+        </tip>
 	    </formalpara>
 	  </listitem>
 	  <listitem id="ini_ThreadsPerQuery">
@@ -1060,6 +1063,9 @@ lite is 2 in 'normal' mode is 256 by default.
 		    <para>Note that since every query is served by at least one thread, a single query taking 
 		    	all the extra threads will not prevent other queries from progressing.</para>
 		    <para>Note: Only effective with Virtuoso 7.0 and later.</para>	
+        <tip><title>See Also:</title>
+          <para><link linkend="confvectexec">Configuring Vectored Execution</link></para>
+        </tip>
 	    </formalpara>
 	  </listitem>
 	  <listitem id="ini_VectorSize">
@@ -1080,6 +1086,9 @@ OPTION (LOOP, ORDER)
         	and then the corresponding row of t1 b will be fetched for the 10,000 row_no of t1 a. 
         	This process will repeat until enough batches of t1 a have been fetched to come to its end.</para>
         <para>Note: Only effective with Virtuoso 7.0 and later.</para>	
+        <tip><title>See Also:</title>
+          <para><link linkend="confvectexec">Configuring Vectored Execution</link></para>
+        </tip>
 	    </formalpara>
 	  </listitem>
 	  <listitem id="ini_AdjustVectorSize">
@@ -1095,14 +1104,56 @@ OPTION (LOOP, ORDER)
 		    	the chance that consecutive keys should be found on the same page, thus eliminating much of 
 		    	the index lookup cost.</para>
 		    <para>Note: Only effective with Virtuoso 7.0 and later.</para>	
+        <tip><title>See Also:</title>
+          <para><link linkend="confvectexec">Configuring Vectored Execution</link></para>
+        </tip>
+
 	    </formalpara>
 	  </listitem>
+
+
+
+	  <listitem id="ini_MaxQueryMem">
+	    <formalpara>
+		    <title>MaxQueryMem</title>
+		    <para> This controls the maximum amount of memory that can be used across the
+server process for large vectors, i.e. if the memory in use is near
+this limit, a query will not switch to large vector size even if it
+finds it useful.  The event counter tc_no_mem_for_longer_batch counts
+how many times this situation is detected.  A size letter of G or M follows the value. 
+		    </para>
+		    <para>Note: Only effective with Virtuoso 7.0 and later.</para>	
+        <tip><title>See Also:</title>
+          <para><link linkend="confvectexec">Configuring Vectored Execution</link></para>
+        </tip>
+
+	    </formalpara>
+	  </listitem>
+	  <listitem id="ini_HashJoinSpace">
+	    <formalpara>
+		    <title>HashJoinSpace</title>
+		    <para> This controls the maximum amount of memory that can be used across the
+server process for hash join hash tables.
+This is followed by a size letter M or G.  A single hash join hash table  will only claim a percentage of the remaining hash join space, by default 50.  This is controlled by the chash_per_query_pct setting, see section on vectored execution tuning.   If there is not enough memory, a partitioned hash join will be used, making as many passes over the data as needed so that the hash table will fit within the set limits.
+		    </para>
+		    <para>Note: Only effective with Virtuoso 7.0 and later.</para>	
+        <tip><title>See Also:</title>
+          <para><link linkend="confvectexec">Configuring Vectored Execution</link></para>
+        </tip>
+
+	    </formalpara>
+	  </listitem>
+
+
 	  <listitem id="ini_MaxVectorSize">
 	    <formalpara>
 		    <title>MaxVectorSize</title>
 		    <para>When AdjustVectorSize is on, this setting gives the maximum vector size. The 
 		    	default is 1,000,000 and the largest allowed value is about 3,500,000.</para>	
 		    <para>Note: Only effective with Virtuoso 7.0 and later.</para>		
+        <tip><title>See Also:</title>
+          <para><link linkend="confvectexec">Configuring Vectored Execution</link></para>
+        </tip>
 	    </formalpara>
 	  </listitem>
           </itemizedlist>
@@ -1138,6 +1189,7 @@ specified the default will be used.
 						<title>ServerThreads</title>
 						<para>
 This specifies the number of concurrently serviced HTTP requests.
+Its alias is <emphasis>MaxClientConnections</emphasis>. 
 If there are more concurrent requests, accepting the connections
 will be deferred until there is a thread ready to serve each.  If
 an attempt to exceed the number of licensed connections is found.
@@ -2383,6 +2435,72 @@ Segment1	= 100M, db-seg1-1.db, db-seg1-2.db
 Segment2	= 100M, db-seg2-1.db
 </programlisting>
 </sect4>
+             <sect4 id="confvectexec">              
+               <title>Configuring Vectored Execution</title>	
+               <para>Note: Only effective with Virtuoso 7.0 and later.</para>
+               <para>A Virtuoso 7 executable executes all SQL statements in vectored mode, except for 
+               	positioned updates and deletes in stored procedures. Procedures are executed without 
+               	vectoring unless they are declared vectored using the vectored keyword. A scalar 
+               	(non-vectored) procedure can have a vectored block introduced with the for vectored 
+               	construct. These are discussed in the SQL reference section on vectoring.</para>
+               <para>Vectored execution is controlled by the following virtuoso.ini settings:</para>
+               <itemizedlist mark="bullet">
+                 <listitem><emphasis>VectorSize = 10000</emphasis>: This is the default number of 
+                 concurrent variable bindings that are generated for a column in a batch of bindings.
+                 </listitem>
+
+                 <listitem><emphasis>MaxQueryMem = 1G</emphasis>: 
+
+This controls the maximum amount of memory that can be used across the
+server process for large vectors, i.e. if the memory in use is near
+this limit, a query will not switch to large vector size even if it
+finds it useful.  The event counter tc_no_mem_for_longer_batch counts
+how many times this situation is detected.  A size letter of G or M follows the value. 
+
+                 </listitem>
+
+                 <listitem><emphasis>AdjustVectorSize = 1</emphasis>: If non-zero, this enables automatic 
+                 increasing of vector size whenever the system notices a random access pattern that is 
+                 not benefiting from vectoring due to too few consecutive hits falling on the same page. 
+                 The vector size can be increased up to MaxVectorSize if the situation warrants. This 
+                 is the case if there is enough unprocessed state in the query.
+                 </listitem>
+                 <listitem><emphasis>MaxVectorSize = 1000000</emphasis>: This is the maximum vector size. 
+                 This can reach up to 4000000 but values in excess of 1000000 have not been found useful 
+                 in practice. If the server is running out of memory with multiuser workloads involving 
+                 long queries, dropping the MaxVectorSize to a lower value is a means of curtailing per 
+                 query memory consumption.
+                 </listitem>
+                 <listitem><emphasis>ThreadsPerQuery = 8</emphasis>: This controls the maximum number of 
+                 parallelizable work units a query will have outstanding at any one time. A value of 8 
+                 means that a scan or vector of lookups is maximally divided into 8 units, of which 7 will 
+                 be allocated to a pool of worker threads and one will be processed by the thread 
+                 coordinating the query. Each query will always have one thread running, which is the 
+                 thread allocated for serving the client-server or HTTP request initiating the query. 
+                 Extra work units are serviced by threads from a parallel execution thread pool. If there 
+                 are unstarted parallel work units that have not started at the time the coordinated thread 
+                 finishes its own work unit, it will execute any of its own pending work units locally.
+                 </listitem>
+                 <listitem><emphasis>AsyncQueueMaxThreads = 16</emphasis>: This is the maximum number of 
+                 worker threads that can be started for running parallelized work units generated by 
+                 queries or functions requested with the aq_request () PL function. Thus the number of 
+                 threads running on a server at any time is the number of client server or HTTP threads 
+                 that have a running request plus this number. These threads consider the totality of all 
+                 async execution requests across all async queues and each thread picks a unit of work 
+                 from the oldest queue that has unstarted work units. The age of the queue is the 
+                 timestamp of its creation. A queue is created whenever a query operator decides to split 
+                 its work. This scheduling favors thus old queries over new ones. However any request is 
+                 guaranteed one thread, that on which its initiating request is served.
+                 <para>For a query processing workload, one should set AsyncQueueMaxThreads to the number 
+                 	of cores minus the expected number of concurrent queries, this would in principle use 
+                 	all cores or core threads. In practice for machines with large numbers of cores, e.g. 
+                 	32 cores, a lower value may serve in practice better, subject to experimentation. For 
+                 	a web crawling situation where threads are waiting for the network for most of the 
+                 	time, a larger number will do better.</para>
+                 </listitem>
+               </itemizedlist>               
+               <para>These parameters can be set at run time by a dba group user using the <link linkend="fn_dbf_set"><function>__dbf_set()</function></link> function.</para>
+             </sect4>	
                <sect4 id="indexdefragm">
                <title>Index Defragmentation</title>
                <para>
@@ -2446,7 +2564,7 @@ Db..VACUUM ('WS.%');
 </programlisting>
 <programlisting>
 DB..VACUUM ('DB.DBA.RDF_QUAD', 'RDF_QUAD_PGOS');
--- compact the rdf_quad_phgos index of the rdf_quad table.
+-- compact the rdf_quad_pgos index of the rdf_quad table.
 </programlisting>
                <para>
 Virtuoso has an autocompact feature.

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2014 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<refentry id="fn_uptime">
+  <refmeta>
+    <refentrytitle>uptime</refentrytitle>
+    <refmiscinfo>admin</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>uptime</refname>
+    <refpurpose>returns a string result set with how much time server have been up.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_uptime">
+      <funcprototype id="fproto_uptime">
+        <funcdef><function>uptime</function></funcdef>
+        <paramdef></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_uptime"><title>Description</title>
+	<para>The uptime function will run a string result set with how much time server have been up.</para>
+	</refsect1>
+	<refsect1 id="examples"><title>Examples</title>
+    <example id="ex_uptime"><title></title>
+<programlisting>
+<![CDATA[
+SQL> uptime();
+VARCHAR
+_______________________________________________________________________________
+
+13 hour(s), 12 minute(s)
+
+1 Rows. -- 59 msec.
+]]></programlisting>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso"><title>See Also</title>
+    <para>
+      <link linkend="fn_system"><function>system</function></link>
+    </para>
+  </refsect1>
+</refentry>
+
+
+
