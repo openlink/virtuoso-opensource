@@ -7568,5 +7568,6 @@ create procedure DB.DBA.DAV_RDF_SINK_UPDATE (
 }
 ;
 
+--!AFTER
 DB.DBA.DAV_RDF_SINK_UPDATE ()
 ;
