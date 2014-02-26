@@ -1179,8 +1179,8 @@ http_cli_parse_resp_hdr (http_cli_ctx * ctx, char* hdr, int num_chars)
 HC_RET
 http_cli_read_resp_hdrs (http_cli_ctx * ctx)
 {
-  char read_buf[4096];
-  char resp_hdr_tmp[4096];
+  char read_buf[DKSES_IN_BUFFER_LENGTH];
+  char resp_hdr_tmp[DKSES_IN_BUFFER_LENGTH];
   int resp_hdr_tmp_fill;
   int num_chars;
 
