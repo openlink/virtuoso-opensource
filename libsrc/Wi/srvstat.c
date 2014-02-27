@@ -4677,6 +4677,38 @@ bif_stat_import (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+caddr_t
+bif_key_em_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *) qst;
+  dbe_key_t * key = bif_key_arg (qst, args, 0, "key_em_check");
+  int type = bif_long_arg (qst, args, 2, "key_em_check");
+  int flag = bif_long_arg (qst, args, 3, "key_em_check");
+  int n = 0;
+  dk_set_t l = NULL;
+  extent_map_t * em = key->key_fragments[0]->kf_it->it_extent_map;
+
+  DO_EXT (ext, em)
+    {
+      if (type == EXT_TYPE (ext))
+	{
+	  dp_addr_t dp;
+	  for (dp = ext->ext_dp; dp < ext->ext_dp + EXTENT_SZ; dp++)
+	    {
+	      int32 word = ext->ext_pages[(dp - ext->ext_dp) / 32];
+	      int bit = (dp - ext->ext_dp) % 32;
+	      if ((word & (1 << bit)))
+		{
+		  if (dbs_is_free_page (em->em_dbs, dp) || flag)
+		    dk_set_push (&l, (void*) box_num (dp));
+		  n++;
+		}
+	    }
+	}
+    }
+  END_DO_EXT;
+  return list_to_array (dk_set_nreverse (l));
+}
 
 void
 bif_status_init (void)
@@ -4718,6 +4750,7 @@ bif_status_init (void)
 #ifndef NDEBUG
   bif_define ("_sys_real_cv_size", bif_real_cv_size);
 #endif
+  bif_define ("key_em_check", bif_key_em_check);
 }
 
 

@@ -9413,8 +9413,11 @@ bif_page_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   else
     {
-      itc_from_it (itc, buf->bd_tree);
-      col_ac_set_dirty (qst, args, itc, buf, 5, 10);
+      if (buf->bd_tree)
+	{
+	  itc_from_it (itc, buf->bd_tree);
+	  col_ac_set_dirty (qst, args, itc, buf, 5, 10);
+	}
     dbg_page_map (buf);
     }
   if (buf->bd_content_map)
@@ -10504,6 +10507,22 @@ bif_blob_page (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (dtp != DV_BLOB_HANDLE && dtp != DV_BLOB_WIDE_HANDLE)
   return (box_num (0));
   return (box_num ((((blob_handle_t *) bh)->bh_page)));
+}
+
+dk_set_t bh_dp_list_n (lock_trx_t * lt, blob_handle_t * bh);
+
+caddr_t
+bif_blob_dps (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  QNCAST (query_instance_t, qi, qst);
+  caddr_t bh = bif_arg (qst, args, 0, "blob_dps");
+  dk_set_t l;
+
+  dtp_t dtp = DV_TYPE_OF (bh);
+  if (dtp != DV_BLOB_HANDLE && dtp != DV_BLOB_WIDE_HANDLE)
+    return NEW_DB_NULL;
+  l = bh_dp_list_n (qi->qi_trx, bh);
+  return list_to_array (l);
 }
 
 
@@ -16341,6 +16360,7 @@ sql_bif_init (void)
   bif_define_ex ("blob_to_string", bif_blob_to_string, BMD_RET_TYPE, &bt_string, BMD_DONE);
   bif_define_ex ("blob_to_string_output", bif_blob_to_string_output, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
   bif_define ("blob_page", bif_blob_page);
+  bif_define ("blob_dps", bif_blob_dps);
   bif_define_ex ("_cvt"		, bif_convert		, BMD_RET_TYPE, &bt_convert	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3	, BMD_IS_PURE, BMD_DONE);
   bif_define ("__cast_internal", bif_cast_internal);
   bif_define ("__ssl_const", bif_stub_ssl_const);
