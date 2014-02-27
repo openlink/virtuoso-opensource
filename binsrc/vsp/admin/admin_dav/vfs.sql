@@ -1827,7 +1827,7 @@ create procedure WS.WS.VFS_EXTRACT_RDF (in _host varchar, in _root varchar, in _
 
   _graph := get_keyword ('rdf-graph', opts);
   if (length (_graph) = 0)
-  _graph := WS.WS.MAKE_URL (_host, _start_path);
+    _graph := WS.WS.MAKE_URL (_host, url);
   _base := WS.WS.MAKE_URL (_host, url);
 
   commit work;

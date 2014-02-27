@@ -825,7 +825,7 @@
 	    </tr>
 	    <tr>
 	      <td colspan="2">
-		<span>* The "Target URL" will be used as a graph IRI. If no RDF cartridge is enabled only RDF formats will be imported.</span>
+		<span>* The target resource URL will be used as a graph IRI. If no RDF cartridge is enabled only RDF formats will be imported.</span>
 	      </td>
 	    </tr>
           </table>
