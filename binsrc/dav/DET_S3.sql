@@ -2206,66 +2206,7 @@ create function DB.DBA.S3__activity (
   in detcol_id integer,
   in text varchar)
 {
-  -- dbg_obj_princ ('DB.DBA.S3__activity (', detcol_id, text, ')');
-  declare parentId integer;
-  declare parentPath varchar;
-  declare activity_id integer;
-  declare activity, activityName, activityPath, activityContent, activityType varchar;
-  declare davEntry any;
-  declare _errorCount integer;
-  declare exit handler for sqlstate '*'
-  {
-    if (__SQL_STATE = '40001')
-    {
-      rollback work;
-      if (_errorCount > 5)
-        resignal;
-
-      delay (1);
-      _errorCount := _errorCount + 1;
-      goto _start;
-    }
-    return;
-  };
-
-  _errorCount := 0;
-
-_start:;
-  activity := DB.DBA.S3__paramGet (detcol_id, 'C', 'activity', 0);
-  if (activity is null)
-    return;
-
-  if (activity <> 'on')
-    return;
-
-  davEntry := DB.DBA.DAV_DIR_SINGLE_INT (detcol_id, 'C', '', null, null, http_dav_uid ());
-  if (DB.DBA.DAV_HIDE_ERROR (davEntry) is null)
-    return;
-
-  parentId := DB.DBA.DAV_SEARCH_ID (davEntry[0], 'P');
-  if (DB.DBA.DAV_HIDE_ERROR (parentId) is null)
-    return;
-
-  parentPath := DB.DBA.DAV_SEARCH_PATH (parentId, 'C');
-  if (DB.DBA.DAV_HIDE_ERROR (parentPath) is null)
-    return;
-
-  activityContent := '';
-  activityName := davEntry[10] || '_activity.log';
-  activityPath := parentPath || activityName;
-  activity_id := DB.DBA.DAV_SEARCH_ID (activityPath, 'R');
-  if (DB.DBA.DAV_HIDE_ERROR (activity_id) is not null)
-  {
-    DB.DBA.DAV_RES_CONTENT_INT (activity_id, activityContent, activityType, 0, 0);
-    if (activityType <> 'text/plain')
-      return;
-
-    activityContent := cast (activityContent as varchar);
-  }
-  activityContent := activityContent || sprintf ('%s %s\r\n', subseq (datestring (now ()), 0, 19), text);
-  activityType := 'text/plain';
-  DB.DBA.DAV_RES_UPLOAD_STRSES_INT (activityPath, activityContent, activityType, '110100000RR', DB.DBA.S3__user (davEntry[6]), DB.DBA.S3__user (davEntry[7]), extern=>0, check_locks=>0);
-  commit work;
+  DB.DBA.DAV_DET_ACTIVITY (DB.DBA.S3__detName (), detcol_id, text);
 }
 ;
 
