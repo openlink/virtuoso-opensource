@@ -639,6 +639,7 @@ SQL_FILES_DAV		= \
 	$(top_srcdir)/binsrc/dav/rdfxml2n3xml.xsl \
 	$(top_srcdir)/binsrc/dav/n3xml2uriqahtml.xsl \
 	$(top_srcdir)/binsrc/dav/uriqa.sql \
+	$(top_srcdir)/binsrc/dav/dav_det.sql \
 	$(top_srcdir)/binsrc/dav/DET_CatFilter.sql \
 	$(top_srcdir)/binsrc/dav/DET_HostFs.sql \
 	$(top_srcdir)/binsrc/dav/DET_ResFilter.sql \
