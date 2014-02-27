@@ -585,8 +585,8 @@ dc_mp_insert_copy_any (mem_pool_t * mp, data_col_t * dc, int inx, dbe_column_t *
       db_buf_t rdf_id = mp_dv_rdf_to_db_serial (mp, dv);
       return (caddr_t) rdf_id;
     }
-  if ((DV_STRING == dv[0] || DV_SHORT_STRING_SERIAL == dv[0] || DV_DB_NULL == dv[0]) && col && 'O' == col->col_name[0]
-      && tb_is_rdf_quad (col->col_defined_in) && !f_read_from_rebuilt_database)
+  if ((DV_STRING == dv[0] || DV_SHORT_STRING_SERIAL == dv[0] || DV_DB_NULL == dv[0] || DV_UNAME == dv[0] || DV_SYMBOL == dv[0] || DV_BOX_FLAGS == dv[0]) 
+      && col && 'O' == col->col_name[0] && tb_is_rdf_quad (col->col_defined_in) && !f_read_from_rebuilt_database)
     {
       if (THR_TMP_POOL == mp)
 	SET_THR_TMP_POOL (NULL);
