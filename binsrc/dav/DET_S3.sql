@@ -818,6 +818,7 @@ create function "S3_DAV_SCHEDULER" (
   -- dbg_obj_princ ('DB.DBA.S3_DAV_SCHEDULER (', queue_id, ')');
   declare detcol_parts any;
 
+  connection_set ('S3_DAV_SCHEDULER', 1);
   for (select COL_ID from WS.WS.SYS_DAV_COL where COL_DET = cast (DB.DBA.S3__detName () as varchar)) do
   {
     detcol_parts := split_and_decode (WS.WS.COL_PATH (COL_ID), 0, '\0\0/');
@@ -2274,15 +2275,21 @@ create function DB.DBA.S3__downloads (
   in detcol_id integer,
   in downloads any)
 {
-  -- dbg_obj_princ ('DB.DBA.S3__downloads ()');
-  declare aq any;
-
   if (length (downloads) = 0)
     return;
 
-  set_user_id ('dba');
-  aq := async_queue (1);
-  aq_request (aq, 'DB.DBA.S3__downloads_aq', vector (detcol_id, downloads));
+  if (connection_get ('S3_DAV_SCHEDULER') = 1)
+  {
+    DB.DBA.S3__downloads_aq (detcol_id, downloads);
+  }
+  else
+  {
+    declare aq any;
+
+    set_user_id ('dba');
+    aq := async_queue (1);
+    aq_request (aq, 'DB.DBA.S3__downloads_aq', vector (detcol_id, downloads));
+  }
 }
 ;
 
