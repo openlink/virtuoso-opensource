@@ -166,7 +166,7 @@ hosting_perl_version = {
       HOSTING_TITLE,			/*!< Title of unit, filled by unit */
       DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR,/*!< Version number, filled by unit */
       "OpenLink Software",			/*!< Plugin's developer, filled by unit */
-      "Perl " PERL_XS_APIVERSION " hosting plugin",			/*!< Any additional info, filled by unit */
+      "Perl " PERL_VERSION_STRING " hosting plugin",			/*!< Any additional info, filled by unit */
       NULL,					/*!< Error message, filled by unit loader */
       NULL,					/*!< Name of file with unit's code, filled by unit loader */
       hosting_perl_connect,		/*!< Pointer to connection function, cannot be NULL */

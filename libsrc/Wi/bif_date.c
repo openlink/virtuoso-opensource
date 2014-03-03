@@ -992,9 +992,15 @@ bif_date_init ()
   bif_define_ex ("nasa_tjd_number"		, bif_nasa_tjd_number			, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("nasa_tjd_fraction"		, bif_nasa_tjd_fraction			, BMD_RET_TYPE, &bt_double	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("merge_nasa_tjd_to_datetime"	, bif_merge_nasa_tjd_to_datetime	, BMD_RET_TYPE, &bt_datetime	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("now"	, bif_timestamp	, BMD_ALIAS, "getdate"	, BMD_ALIAS, "rdf_now_impl", BMD_ALIAS, "get_timestamp", BMD_RET_TYPE, &bt_timestamp	, /*BMD_IS_PURE,*/ BMD_DONE);	/* This is standard name */
-  bif_define_ex ("curdate"			, bif_curdate				, BMD_RET_TYPE, &bt_date	, /*BMD_IS_PURE,*/ BMD_DONE);	/* This is standard fun. */
-  bif_define_ex ("curtime"			, bif_curtime				, BMD_RET_TYPE, &bt_time	, /*BMD_IS_PURE,*/ BMD_DONE);	/* This is standard fun. */
+  bif_define_ex ("now"				, bif_timestamp
+						, BMD_ALIAS, "getdate"
+						, BMD_ALIAS, "rdf_now_impl"
+						, BMD_ALIAS, "get_timestamp"
+						, BMD_ALIAS, "current_timestamp" 	, BMD_RET_TYPE, &bt_timestamp	, /*BMD_IS_PURE,*/ BMD_DONE);	/* This is standard name */
+bif_define_ex ("curdate"			, bif_curdate
+						, BMD_ALIAS, "current_date"		, BMD_RET_TYPE, &bt_date	, /*BMD_IS_PURE, */ BMD_DONE);	/* This is standard fun. */
+  bif_define_ex ("curtime"			, bif_curtime
+						, BMD_ALIAS, "current_time"		, BMD_RET_TYPE, &bt_time	, /*BMD_IS_PURE,*/ BMD_DONE);	/* This is standard fun. */
   bif_define_ex ("curdatetime"			, bif_curdatetime			, BMD_RET_TYPE, &bt_timestamp	, /*BMD_IS_PURE,*/ BMD_DONE);	/* This is our own. */
   bif_define_ex ("datestring"			, bif_date_string			, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("datestring_GMT"		, bif_date_string_GMT			, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
