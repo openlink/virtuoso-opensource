@@ -852,6 +852,11 @@ qn_vec_reuse (data_source_t * qn, caddr_t * inst)
     }
 }
 
+#define ZINPUTS_ERR do { \
+  if (qi->qi_query && qi->qi_query->qr_text) \
+    log_error ("0 inputs on: %s", qi->qi_query->qr_text); \
+  sqlr_new_error ("42000", "ZIN00", "cannot run on 0 inputs"); \
+} while (0)
 
 void
 qn_input (data_source_t * xx, caddr_t * inst, caddr_t * state)
@@ -874,14 +879,14 @@ qn_input (data_source_t * xx, caddr_t * inst, caddr_t * state)
     {
       n_sets = qi->qi_n_sets;
       /* non-vectored calling a vec subq will have no src_prev and 0 sets in qi, so what starts with a set ctr is an exception */
-      if (!n_sets && !IS_QN (xx, set_ctr_input)) GPF_T1 ("cannot run on 0 inputs");
+      if (!n_sets && !IS_QN (xx, set_ctr_input)) ZINPUTS_ERR;
       if (state)
 	SRC_N_IN (xx, inst, n_sets);
     }
   if (xx->src_prev)
     {
       n_sets = QST_INT (inst, xx->src_prev->src_out_fill);
-      if (!n_sets) GPF_T1 ("cannot run on 0 inputs");
+      if (!n_sets) ZINPUTS_ERR;
       if (state)
 	SRC_N_IN (xx, inst, n_sets);
     }
