@@ -682,38 +682,35 @@ ttl_lex_analyze (caddr_t str, int flags, wcharset_t *query_charset)
 #endif
   ttlp = ttlp_alloc ();
   ttlp->ttlp_flags = flags;
+  ttlp->ttlp_text = str;
+  ttlp->ttlp_text_len = strlen (str);
+  ttlp->ttlp_err_hdr = ((flags & TTLP_ALLOW_NQUAD) ? "NQuads lexical analyzer" : ((flags & TTLP_ALLOW_TRIG) ? "TriG lexical analyzer" : "TURTLE lexical analyzer"));
+  if (NULL == query_charset)
+    query_charset = default_charset;
+  if (NULL == query_charset)
+    ttlp->ttlp_enc = &eh__ISO8859_1;
+  else
+    {
+      ttlp->ttlp_enc = eh_get_handler (CHARSET_NAME (query_charset, NULL));
+      if (NULL == ttlp->ttlp_enc)
+        ttlp->ttlp_enc = &eh__ISO8859_1;
+    }
+  ttlyylex_init (&scanner);
+  ttlyyset_extra (ttlp, scanner);
+  if (flags & TTLP_SNIFFER)
+    yy_push_state (GARBAGE_BOL, scanner);
+  else
+    {
+#ifdef MALLOC_DEBUG
+      yy_push_state (INITIAL, scanner);
+#endif
+    }
 
 resume_sniffing:
   QR_RESET_CTX
     {
       if (sniffer_recovery)
         yy_push_state (GARBAGE, scanner);
-      else
-        {
-          ttlp->ttlp_text = str;
-          ttlp->ttlp_text_len = strlen (str);
-          ttlp->ttlp_err_hdr = ((flags & TTLP_ALLOW_NQUAD) ? "NQuads lexical analyzer" : ((flags & TTLP_ALLOW_TRIG) ? "TriG lexical analyzer" : "TURTLE lexical analyzer"));
-          if (NULL == query_charset)
-            query_charset = default_charset;
-          if (NULL == query_charset)
-            ttlp->ttlp_enc = &eh__ISO8859_1;
-          else
-            {
-              ttlp->ttlp_enc = eh_get_handler (CHARSET_NAME (query_charset, NULL));
-              if (NULL == ttlp->ttlp_enc)
-                ttlp->ttlp_enc = &eh__ISO8859_1;
-            }
-          ttlyylex_init (&scanner);
-          ttlyyset_extra (ttlp, scanner);
-          if (flags & TTLP_SNIFFER)
-            yy_push_state (GARBAGE_BOL, scanner);
-          else
-            {
-#ifdef MALLOC_DEBUG
-              yy_push_state (INITIAL, scanner);
-#endif
-            }
-        }
       for (;;)
         {
           caddr_t lex_value = NULL;
@@ -829,7 +826,20 @@ rdf_load_turtle (
   tf = ttlp->ttlp_tf;
   tf->tf_qi = qi;
   tf->tf_app_env = app_env;
-
+  QR_RESET_CTX
+    {
+      tf_set_cbk_names (tf, (ccaddr_t *)cbk_names);
+    }
+  QR_RESET_CODE
+    {
+      du_thread_t *self = THREAD_CURRENT_THREAD;
+      err_ret[0] = thr_get_error_code (self);
+      thr_set_error_code (self, NULL);
+      POP_QR_RESET;
+      ttlp_free (ttlp);
+      return NULL;
+    }
+  END_QR_RESET
   if (arg1_is_filename)
     {
       sec_check_dba (qi, "<read XML from URL of type file://...>");
@@ -906,29 +916,25 @@ iter_is_set:
   if (box_length (base_uri) > 1)
     tf->tf_base_uri = box_copy (base_uri);
   tf->tf_line_no_ptr = &(ttlp->ttlp_lexlineno);
+  ttlyylex_init (&scanner);
+  ttlyyset_extra (ttlp, scanner);
+  if ((ttlp->ttlp_iter == file_read) && !lite_mode && (YY_BUF_SIZE < 0x10000))
+    ttlyypush_buffer_state (ttlyy_create_buffer (NULL, (YY_BUF_SIZE > 0x2000) ? (YY_BUF_SIZE * 8) : 0x10000, scanner), scanner);
+  if (flags & TTLP_SNIFFER)
+    yy_push_state (GARBAGE_BOL, scanner);
+  else
+    {
+#ifdef MALLOC_DEBUG
+      yy_push_state (INITIAL, scanner);
+#endif
+    }
+  TF_CHANGE_GRAPH_TO_DEFAULT (tf);
+  /* ttlyydebug = 1; */
 resume_sniffing:
   QR_RESET_CTX
     {
       if (sniffer_recovery)
         yy_push_state (GARBAGE, scanner);
-      else
-        {
-          ttlyylex_init (&scanner);
-          ttlyyset_extra (ttlp, scanner);
-          if ((ttlp->ttlp_iter == file_read) && !lite_mode && (YY_BUF_SIZE < 0x10000))
-            ttlyypush_buffer_state (ttlyy_create_buffer (NULL, (YY_BUF_SIZE > 0x2000) ? (YY_BUF_SIZE * 8) : 0x10000, scanner), scanner);
-          if (flags & TTLP_SNIFFER)
-            yy_push_state (GARBAGE_BOL, scanner);
-          else
-            {
-#ifdef MALLOC_DEBUG
-              yy_push_state (INITIAL, scanner);
-#endif
-            }
-          tf_set_cbk_names (tf, (ccaddr_t *)cbk_names);
-          TF_CHANGE_GRAPH_TO_DEFAULT (tf);
-          /* ttlyydebug = 1; */
-        }
       if (flags & TTLP_SNIFFER)
         ttlyyparse (ttlp, scanner);
       if (flags & TTLP_ALLOW_NQUAD)
