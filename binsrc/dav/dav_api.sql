@@ -440,10 +440,20 @@ DAV_GET_PARENT (in id any, in st char(1), in path varchar) returns any
 
 
 create function
-DAV_DIR_SINGLE_INT (in did any, in st char (0), in path varchar, in auth_uname varchar := null, in auth_pwd varchar := null, in auth_uid integer := null) returns any
+DAV_DIR_SINGLE_INT (
+  in did any,
+  in st char (0),
+  in path varchar,
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null,
+  in auth_uid integer := null,
+  in extern integer := 1) returns any
 {
-  declare rc integer;
   -- dbg_obj_princ ('DAV_DIR_SINGLE_INT (', did, st, path, auth_uname, auth_pwd, auth_uid, ')');
+  declare rc integer;
+
+  if (extern)
+    {
   rc := DAV_AUTHENTICATE (did, st, '1__', auth_uname, auth_pwd, auth_uid);
   if (rc < 0)
     {
@@ -458,6 +468,7 @@ DAV_DIR_SINGLE_INT (in did any, in st char (0), in path varchar, in auth_uname v
     }
   if (auth_uid is null)
     auth_uid := rc;
+    }
   if (isarray (did))
     {
       if ('R' = st)
@@ -4478,7 +4489,7 @@ DAV_PROP_GET_INT (
       if (idx >= 0)
         {
           declare dirsingle any;
-          dirsingle := DAV_DIR_SINGLE_INT (id, what, 'fake', auth_uname, auth_pwd, auth_uid);
+          dirsingle := DAV_DIR_SINGLE_INT (id, what, 'fake', auth_uname, auth_pwd, auth_uid, extern);
           if (isarray (dirsingle))
           {
             if ((propname = ':addeddate') and (length (dirsingle) <= 11))
