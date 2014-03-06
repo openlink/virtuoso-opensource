@@ -622,11 +622,17 @@ create procedure WEBDAV.DBA.dc_search_like_fix (
   if (is_empty_or_null (value))
   {
     value := '%';
-  } else {
-    if (isnull (strstr (value, '%')))
+  }
+  else
+  {
+    value := trim (value);
+    if (chr (value[0]) <> '%')
+      value := '%' || value;
+
+    if (chr (value[length (value)-1]) <> '%')
       value := value || '%';
   }
-  return replace (value, '%%', '%');
+  return value;
 }
 ;
 
@@ -5199,6 +5205,7 @@ create procedure WEBDAV.DBA.path_normalize (
     {
       path := '/DAV' || path;
     }
+    path := replace (path, '//', '/');
   }
   return path;
 }

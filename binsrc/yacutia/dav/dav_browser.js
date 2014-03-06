@@ -840,6 +840,10 @@ WEBDAV.oauthParams = function (drive, oauth)
       $('td_dav_'+drive+'_email').innerHTML = params.email;
     }
 
+    if ($('tr_dav_'+drive+'_path')) {
+      OAT.Dom.show('tr_dav_'+drive+'_path');
+    }
+
     $('dav_'+drive+'_authenticate').value = 'Re-Authenticate';
   }
 }
