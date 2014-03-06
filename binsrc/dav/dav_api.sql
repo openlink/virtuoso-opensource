@@ -2822,7 +2822,7 @@ create procedure RDF_SINK_FUNC (
       rdf_graph_resource_id := WS.WS.GETID ('R');
       insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_OWNER, RES_GROUP, RES_PERMS, RES_CR_TIME, RES_MOD_TIME, RES_TYPE, RES_CONTENT)
       values (rdf_graph_resource_id, rdf_graph_resource_name, c_id, ouid, ogid, '111101101NN', now (), now (), 'text/xml', '');
-      DB.DBA.DAV_PROP_SET_INT (rdf_graph_resource_path, 'redirectref', sprintf ('http://%s/sparql?default-graph-uri=%U&query=%U&format=%U', host, rdf_graph,
+      DB.DBA.DAV_PROP_SET_INT (rdf_graph_resource_path, 'redirectref', sprintf ('%s/sparql?default-graph-uri=%U&query=%U&format=%U', host, rdf_graph,
       'CONSTRUCT { ?s ?p ?o} WHERE {?s ?p ?o}', 'application/rdf+xml'), null, null, 0, 0, 1);
     }
   }
