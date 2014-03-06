@@ -2562,11 +2562,12 @@ exec:;
 create procedure fct_virt_info ()
 {
   http ('<a href="http://www.openlinksw.com/virtuoso/">OpenLink Virtuoso</a> version ');
-  http (sprintf ('%s as of %s', sys_stat ('st_dbms_ver'), sys_stat('st_build_date'))); 
+  http (sys_stat ('st_dbms_ver')); 
   http (', on ');
   http (sys_stat ('st_build_opsys_id')); http (sprintf (' (%s), ', host_id ()));
-  http (case when sys_stat ('cl_run_local_only') = 1 then 'Standard Edition' else 'Cluster Edition' end);
-  http (case when sys_stat ('cl_run_local_only') = 0 then sprintf ('(%d server processes)', sys_stat ('cl_n_hosts')) else '' end);
+  http (case when sys_stat ('cl_run_local_only') = 1 then 'Single-Server' else 'Cluster' end); http (' Edition ');
+  http (case when sys_stat ('cl_run_local_only') = 0 then sprintf ('(%d server processes, %s total memory)', sys_stat ('cl_n_hosts'), mem_hum_size (mem_info_cl ())) 
+      else sprintf ('(%s total memory)', mem_hum_size (mem_info_cl ())) end); 
 }
 ;
 
