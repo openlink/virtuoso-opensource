@@ -203,6 +203,7 @@ create function "S3_DAV_DELETE" (
   connection_set ('dav_store', 1);
   if (what = 'R')
     DB.DBA.S3__rdf_delete (detcol_id, id, what);
+
   retValue := DAV_DELETE_INT (path, 1, null, null, 0, 0);
 
 _exit:;
@@ -1182,7 +1183,7 @@ create function DB.DBA.S3__paramRemove (
 create function DB.DBA.S3__obj2xml (
   in item any)
 {
-  return '<entry>' || ODS..obj2xml (item, 10) || '</entry>';
+  return '<entry>' || DB.DBA.obj2xml (item, 10) || '</entry>';
 }
 ;
 
@@ -1725,7 +1726,7 @@ create function DB.DBA.S3__listBuckets (
       vectorbld_acc (
         buckets,
           vector_concat (
-            subseq (soap_box_structure ('x', 1), 0, 2),
+            DB.DBA.jsonObject (),
             vector ('path', '/' || name || '/',
                     'name', name,
                     'type', 'C',
@@ -1788,7 +1789,7 @@ create function DB.DBA.S3__listBucket (
     vectorbld_acc (
       buckets,
         vector_concat (
-          subseq (soap_box_structure ('x', 1), 0, 2),
+        DB.DBA.jsonObject (),
           vector ('path', itemPath,
                   'name', itemName,
                   'type', itemType,
@@ -1815,7 +1816,7 @@ create function DB.DBA.S3__listBucket (
     vectorbld_acc (
       buckets,
         vector_concat (
-          subseq (soap_box_structure ('x', 1), 0, 2),
+        DB.DBA.jsonObject (),
           vector ('path', itemPath,
                   'name', itemName,
                   'type', itemType,
@@ -1950,7 +1951,7 @@ create function DB.DBA.S3__headObject (
     return -28;
   }
   item := vector_concat (
-    subseq (soap_box_structure ('x', 1), 0, 2),
+    DB.DBA.jsonObject (),
     vector ('path', s3Path,
             'name', DB.DBA.S3__nameFromUrl (s3Path),
             'type', what,
