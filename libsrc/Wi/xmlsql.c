@@ -5131,7 +5131,7 @@ bif_xml_template (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dk_session_t *ses = http_session_no_catch_arg (qst, args, 2, "xml_auto");
   id_hash_t * pars = id_str_hash_create (128);
   char *char_out_method;
-  caddr_t old_enc;
+  caddr_t old_enc, to_free = NULL;
   xte_serialize_state_t xsst;
   xml_template_state_t xts;
 
@@ -5180,7 +5180,10 @@ bif_xml_template (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   old_enc = xte->xe_doc.xd->xout_encoding;
   if (!xte->xe_doc.xd->xout_encoding && qi->qi_client->cli_ws)
-    xte->xe_doc.xd->xout_encoding = CHARSET_NAME (WS_CHARSET (qi->qi_client->cli_ws, NULL), NULL);
+    {
+      caddr_t wenc = CHARSET_NAME (WS_CHARSET (qi->qi_client->cli_ws, NULL), NULL);
+      to_free = xte->xe_doc.xd->xout_encoding = wenc ? box_dv_short_string (wenc) : NULL;
+    }
   xsst.xsst_charset = wcharset_by_name_or_dflt (xte->xe_doc.xd->xout_encoding, xte->xe_doc.xd->xd_qi);
   xsst.xsst_charset_meta = xte->xe_doc.xd->xout_encoding_meta;
   if (!xte->xe_doc.xd->xout_omit_xml_declaration)
@@ -5194,6 +5197,7 @@ bif_xml_template (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   xte_serialize_1 (xte->xte_current, ses, &xsst);
   xte->xe_doc.xd->xout_encoding = old_enc;
+  dk_free_box (to_free);
   id_hash_free (pars);
   return (caddr_t) (xts.xts_xsl_template ? box_copy_tree (xts.xts_xsl_template) : NEW_DB_NULL);
 }
