@@ -440,10 +440,20 @@ DAV_GET_PARENT (in id any, in st char(1), in path varchar) returns any
 
 
 create function
-DAV_DIR_SINGLE_INT (in did any, in st char (0), in path varchar, in auth_uname varchar := null, in auth_pwd varchar := null, in auth_uid integer := null) returns any
+DAV_DIR_SINGLE_INT (
+  in did any,
+  in st char (0),
+  in path varchar,
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null,
+  in auth_uid integer := null,
+  in extern integer := 1) returns any
 {
-  declare rc integer;
   -- dbg_obj_princ ('DAV_DIR_SINGLE_INT (', did, st, path, auth_uname, auth_pwd, auth_uid, ')');
+  declare rc integer;
+
+  if (extern)
+    {
   rc := DAV_AUTHENTICATE (did, st, '1__', auth_uname, auth_pwd, auth_uid);
   if (rc < 0)
     {
@@ -458,6 +468,7 @@ DAV_DIR_SINGLE_INT (in did any, in st char (0), in path varchar, in auth_uname v
     }
   if (auth_uid is null)
     auth_uid := rc;
+    }
   if (isarray (did))
     {
       if ('R' = st)
@@ -2822,7 +2833,7 @@ create procedure RDF_SINK_FUNC (
       rdf_graph_resource_id := WS.WS.GETID ('R');
       insert into WS.WS.SYS_DAV_RES (RES_ID, RES_NAME, RES_COL, RES_OWNER, RES_GROUP, RES_PERMS, RES_CR_TIME, RES_MOD_TIME, RES_TYPE, RES_CONTENT)
       values (rdf_graph_resource_id, rdf_graph_resource_name, c_id, ouid, ogid, '111101101NN', now (), now (), 'text/xml', '');
-      DB.DBA.DAV_PROP_SET_INT (rdf_graph_resource_path, 'redirectref', sprintf ('http://%s/sparql?default-graph-uri=%U&query=%U&format=%U', host, rdf_graph,
+      DB.DBA.DAV_PROP_SET_INT (rdf_graph_resource_path, 'redirectref', sprintf ('%s/sparql?default-graph-uri=%U&query=%U&format=%U', host, rdf_graph,
       'CONSTRUCT { ?s ?p ?o} WHERE {?s ?p ?o}', 'application/rdf+xml'), null, null, 0, 0, 1);
     }
   }
@@ -4478,7 +4489,7 @@ DAV_PROP_GET_INT (
       if (idx >= 0)
         {
           declare dirsingle any;
-          dirsingle := DAV_DIR_SINGLE_INT (id, what, 'fake', auth_uname, auth_pwd, auth_uid);
+          dirsingle := DAV_DIR_SINGLE_INT (id, what, 'fake', auth_uname, auth_pwd, auth_uid, extern);
           if (isarray (dirsingle))
           {
             if ((propname = ':addeddate') and (length (dirsingle) <= 11))

@@ -928,9 +928,19 @@
               retValue := vector ();
               foreach (any label in labels) do
               {
-                val := get_keyword ('dav_' || det || '_' || label, params);
+                val := trim (get_keyword ('dav_' || det || '_' || label, params));
                 if (not isnull (val))
+                {
+                  if (label = 'path')
+                  {
+                    if (chr (val[0]) <> '/')
+                      val := '/' || val;
+
+                    if (chr (val[length (val)-1]) <> '/')
+                      val := val || '/';
+                  }
                   retValue := vector_concat (retValue, vector (label, val));
+              }
               }
               if (ndx is not null)
               {
@@ -960,7 +970,7 @@
               retValue := WEBDAV.DBA.set_keyword ('display_name', retValue, get_keyword ('dav_' || det || '_display_name', params, ''));
               retValue := WEBDAV.DBA.set_keyword ('email', retValue, get_keyword ('dav_' || det || '_email', params, ''));
               }
-              else
+              else if (not isnull (properties))
               {
                 self.virtPropertiesRestore (properties, 'virt:' || det || '-%');
               }
@@ -1912,7 +1922,7 @@
                 <v:template name="tform_171" type="simple" enabled="-- case when (self.dav_detClass = '') then 1 else 0 end">
                 <vm:tabCaption tab="12"  tabs="18" caption="Google Drive" hide="1" />
                 <vm:tabCaption tab="13"  tabs="18" caption="Dropbox" hide="1" />
-                <vm:tabCaption tab="14"  tabs="18" caption="SkyDrive" hide="1" />
+                <vm:tabCaption tab="14"  tabs="18" caption="OneDrive" hide="1" />
                 <vm:tabCaption tab="15"  tabs="18" caption="Box Net" hide="1" />
                 <vm:tabCaption tab="16"  tabs="18" caption="WebDAV" hide="1" />
                 <vm:tabCaption tab="17"  tabs="18" caption="Rackspace" hide="1" />
@@ -2111,7 +2121,7 @@
                                               1, 'S3',         'Amazon S3',
                                               1, 'GDrive',     'Google Drive',
                                               1, 'Dropbox',    'Dropbox',
-                                              1, 'SkyDrive',   'SkyDrive',
+                                              1, 'SkyDrive',   'OneDrive',
                                               1, 'Box',        'Box Net',
                                               1, 'WebDAV',     'WebDAV',
                                               1, 'RACKSPACE',  'Rackspace Cloud Files',
@@ -2903,8 +2913,26 @@
                         {
                           tmp := get_keyword (sprintf ('dav_%s_checkInterval', dav_detType), params);
                           WEBDAV.DBA.test (tmp, vector ('name', 'Check Interval', 'class', 'integer', 'minValue', 1));
+                          if (dav_detType in ('Box', 'Dropbox', 'GDrive', 'SkyDrive', 'RACKSPACE', 'S3'))
+                          {
+                            if      (dav_detType = 'RACKSPACE')
+                            {
+                              detParams := self.detParamsPrepare (dav_detType, vector ('path', 'Type', 'User', 'Container', 'API_Key'), null);
+                            }
+                            else if (dav_detType = 'S3')
+                            {
+                              detParams := self.detParamsPrepare (dav_detType, vector ('path', 'BucketName', 'AccessKeyID', 'SecretKey'), null);
+                            }
+                            else
+                            {
+                              detParams := self.detOAuthParamsPrepare (dav_detType, null, vector ('path'), null);
+                            }
+                            tmp := call ('DB.DBA.' || dav_detType || '_VERIFY') (dav_fullPath, detParams);;
+                            if (not isnull (tmp))
+                              signal('TEST', tmp);
+                          }
                         }
-                        if ((dav_detType = 'ResFilter') or (dav_detType = 'CatFilter'))
+                        else if ((dav_detType = 'ResFilter') or (dav_detType = 'CatFilter'))
                         {
                           declare search_path varchar;
 
@@ -2924,6 +2952,7 @@
                         else if (dav_detType = 'rdfSink')
                         {
                           WEBDAV.DBA.test (get_keyword ('dav_rdfSink_graph', params), vector ('name', 'RDF Graph', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+                          WEBDAV.DBA.test (get_keyword ('dav_rdfSink_base', params), vector ('name', 'RDF Base URI', 'class', 'varchar', 'minLength', 0, 'maxLength', 255));
                         }
                         else if (dav_detType = 'IMAP')
                         {
@@ -2970,24 +2999,6 @@
                           }
                           if (tmp <> '')
                             signal('TEST', tmp);
-                        }
-                        else if (dav_detType = 'S3')
-                        {
-                          tmp := get_keyword ('dav_S3_BucketName', params);
-                          WEBDAV.DBA.test (tmp, vector ('name', 'S3 Bucker Name', 'class', 'varchar', 'minLength', 0, 'maxLength', 63));
-                          tmp := get_keyword ('dav_S3_AccessKeyID', params);
-                          WEBDAV.DBA.test (tmp, vector ('name', 'S3 Access Key', 'class', 'varchar', 'minLength', 1, 'maxLength', 20));
-                          tmp := get_keyword ('dav_S3_SecretKey', params);
-                          WEBDAV.DBA.test (tmp, vector ('name', 'S3 Secret Key', 'class', 'varchar', 'minLength', 1, 'maxLength', 40));
-                        }
-                        else if (dav_detType = 'RACKSPACE')
-                        {
-                          tmp := get_keyword ('dav_RACKSPACE_User', params);
-                          WEBDAV.DBA.test (tmp, vector ('name', 'Rackspace Account Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 40));
-                          tmp := get_keyword ('dav_RACKSPACE_API_Key', params);
-                          WEBDAV.DBA.test (tmp, vector ('name', 'Rackspace API Key', 'class', 'varchar', 'minLength', 1, 'maxLength', 32));
-                          tmp := get_keyword ('dav_RACKSPACE_Container', params);
-                          WEBDAV.DBA.test (tmp, vector ('name', 'Rackspace Container Name', 'class', 'varchar', 'minLength', 0, 'maxLength', 256));
                         }
                       }
                       if (self.command_mode = 5)
@@ -3256,9 +3267,8 @@
                         }
                         else if (dav_detType = 'rdfSink')
                         {
-                          self.detGraph (params, 'rdfSink');
-                          self.detSponger (params, 'rdfSink', 8);
-                          WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:rdfSink-base', get_keyword ('dav_rdfSink_base', params));
+                          detParams := self.detOAuthParamsPrepare (dav_detType, v_properties, vector ('graph', 'base'), 8);
+                          WEBDAV.DBA.rdfSink_CONFIGURE (self.dav_id, detParams);
                         }
                         else if (dav_detType = 'SyncML')
                         {
@@ -3297,27 +3307,27 @@
                           {
                             self.virtPropertiesRestore (v_properties, 'virt:S3-%');
 
-                            detParams := self.detParamsPrepare (dav_detType, vector ('activity', 'checkInterval', 'graph', 'BucketName', 'AccessKeyID', 'SecretKey'), 6);
+                            detParams := self.detParamsPrepare (dav_detType, vector ('activity', 'checkInterval', 'path', 'graph', 'BucketName', 'AccessKeyID', 'SecretKey'), 6);
                             DB.DBA.S3_CONFIGURE (self.dav_id, detParams);
                           }
                           else if (dav_detType = 'GDrive')
                           {
-                            detParams := self.detOAuthParamsPrepare (dav_detType, v_properties, vector ('activity', 'checkInterval', 'graph'), 12);
+                            detParams := self.detOAuthParamsPrepare (dav_detType, v_properties, vector ('activity', 'checkInterval', 'path', 'graph'), 12);
                               DB.DBA.GDrive_CONFIGURE (self.dav_id, detParams);
                             }
                           else if (dav_detType = 'Dropbox')
                           {
-                            detParams := self.detOAuthParamsPrepare (dav_detType, v_properties, vector ('activity', 'checkInterval', 'graph'), 13);
+                            detParams := self.detOAuthParamsPrepare (dav_detType, v_properties, vector ('activity', 'checkInterval', 'path', 'graph'), 13);
                               DB.DBA.Dropbox_CONFIGURE (self.dav_id, detParams);
                             }
                           else if (dav_detType = 'SkyDrive')
                           {
-                            detParams := self.detOAuthParamsPrepare (dav_detType, v_properties, vector ('activity', 'checkInterval', 'graph'), 14);
+                            detParams := self.detOAuthParamsPrepare (dav_detType, v_properties, vector ('activity', 'checkInterval', 'path', 'graph'), 14);
                               DB.DBA.SkyDrive_CONFIGURE (self.dav_id, detParams);
                             }
                           else if (dav_detType = 'Box')
                           {
-                            detParams := self.detOAuthParamsPrepare (dav_detType, v_properties, vector ('activity', 'checkInterval', 'graph'), 15);
+                            detParams := self.detOAuthParamsPrepare (dav_detType, v_properties, vector ('activity', 'checkInterval', 'path', 'graph'), 15);
                               DB.DBA.Box_CONFIGURE (self.dav_id, detParams);
 
                           }
@@ -3333,7 +3343,7 @@
                           {
                             self.virtPropertiesRestore (v_properties, 'virt:RACKSPACE-%');
 
-                            detParams := self.detParamsPrepare (dav_detType, vector ('activity', 'checkInterval', 'graph', 'Type', 'User', 'Container', 'API_Key'), 17);
+                            detParams := self.detParamsPrepare (dav_detType, vector ('activity', 'checkInterval', 'path', 'graph', 'Type', 'User', 'Container', 'API_Key'), 17);
                             DB.DBA.RACKSPACE_CONFIGURE (self.dav_id, detParams);
                           }
                         }
@@ -4850,6 +4860,18 @@
             </v:text>
           </td>
         </tr>
+        <tr id="tr_dav_S3_path">
+          <th>Root Path</th>
+          <td id="td_dav_S3_path">
+            <v:text name="dav_S3_path" xhtml_id="dav_S3_path" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_S3_path', self.dav_path, 'virt:S3-path', '/');
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
         <tr>
           <th>
             <v:label for="dav_S3_AccessKey" value="Access Key ID (*)" />
@@ -5629,7 +5651,7 @@
       <?vsp
         declare _value any;
 
-        _value := self.get_fieldProperty ('===', self.dav_path, 'virt:GDrive-Authentication', 'No');
+        _value := WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:GDrive-Authentication', 'No');
       ?>
       <table class="WEBDAV_formBody WEBDAV_noBorder" cellspacing="0">
         <tr>
@@ -5680,7 +5702,7 @@
           <th>User name</th>
           <td id="td_dav_GDrive_display_name">
             <?vsp
-              http (self.get_fieldProperty ('===', self.dav_path, 'virt:GDrive-display_name', ''));
+              http (WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:GDrive-display_name', ''));
             ?>
           </td>
         </tr>
@@ -5688,7 +5710,7 @@
           <th>User email</th>
           <td id="td_dav_GDrive_email">
             <?vsp
-              http (self.get_fieldProperty ('===', self.dav_path, 'virt:GDrive-email', ''));
+              http (WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:GDrive-email', ''));
             ?>
           </td>
         </tr>
@@ -5698,14 +5720,22 @@
             <?vsp
               declare _name, _url any;
 
-              if (_value = 'Yes')
-                _name := 'Re-Authenticate';
-              else
-                _name := 'Authenticate';
-
+              _name := case when (_value = 'Yes') then 'Re-Authenticate' else 'Authenticate' end;
               _url := '/ods/access_service.vsp?m=webdav&p=GDrive&service=google';
               http (sprintf ('<input type="button" id="dav_GDrive_authenticate" value="%s" onclick="javascript: windowShowInternal(\'%s\');" disabled="disabled" class="button" />', _name, _url));
             ?>
+          </td>
+        </tr>
+        <tr id="tr_dav_GDrive_path" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
+          <th>Root Path</th>
+          <td id="td_dav_GDrive_path">
+            <v:text name="dav_GDrive_path" xhtml_id="dav_GDrive_path" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_GDrive_path', self.dav_path, 'virt:GDrive-path', '/');
+                ]]>
+              </v:before-data-bind>
+            </v:text>
           </td>
         </tr>
       </table>
@@ -5723,7 +5753,7 @@
       <?vsp
         declare _value any;
 
-        _value := self.get_fieldProperty ('===', self.dav_path, 'virt:Dropbox-Authentication', 'No');
+        _value := WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:Dropbox-Authentication', 'No');
       ?>
       <table class="WEBDAV_formBody WEBDAV_noBorder" cellspacing="0">
         <tr>
@@ -5774,7 +5804,7 @@
           <th>User name</th>
           <td id="td_dav_Dropbox_display_name">
             <?vsp
-              http (self.get_fieldProperty ('===', self.dav_path, 'virt:Dropbox-display_name', ''));
+              http (WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:Dropbox-display_name', ''));
             ?>
           </td>
         </tr>
@@ -5782,7 +5812,7 @@
           <th>User email</th>
           <td id="td_dav_Dropbox_email">
             <?vsp
-              http (self.get_fieldProperty ('===', self.dav_path, 'virt:Dropbox-email', ''));
+              http (WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:Dropbox-email', ''));
             ?>
           </td>
         </tr>
@@ -5792,14 +5822,22 @@
             <?vsp
               declare _name, _url any;
 
-              if (_value = 'Yes')
-                _name := 'Re-Authenticate';
-              else
-                _name := 'Authenticate';
-
+              _name := case when (_value = 'Yes') then 'Re-Authenticate' else 'Authenticate' end;
               _url := '/ods/access_service.vsp?m=webdav&p=Dropbox&service=dropbox';
               http (sprintf ('<input type="button" id="dav_Dropbox_authenticate" value="%s" onclick="javascript: windowShowInternal(\'%s\', \'Dropbox DAV authenticate\', 1100);" disabled="disabled" class="button" />', _name, _url));
             ?>
+          </td>
+        </tr>
+        <tr id="tr_dav_Dropbox_path" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
+          <th>Root Path</th>
+          <td id="td_dav_Dropbox_path">
+            <v:text name="dav_Dropbox_path" xhtml_id="dav_Dropbox_path" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_Dropbox_path', self.dav_path, 'virt:Dropbox-path', '/');
+                ]]>
+              </v:before-data-bind>
+            </v:text>
           </td>
         </tr>
       </table>
@@ -5817,7 +5855,7 @@
       <?vsp
         declare _value any;
 
-        _value := self.get_fieldProperty ('===', self.dav_path, 'virt:SkyDrive-Authentication', 'No');
+        _value := WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:SkyDrive-Authentication', 'No');
       ?>
       <table class="WEBDAV_formBody WEBDAV_noBorder" cellspacing="0">
         <tr>
@@ -5868,7 +5906,7 @@
           <th>User name</th>
           <td id="td_dav_SkyDrive_display_name">
             <?vsp
-              http (self.get_fieldProperty ('===', self.dav_path, 'virt:SkyDrive-display_name', ''));
+              http (WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:SkyDrive-display_name', ''));
             ?>
           </td>
         </tr>
@@ -5876,7 +5914,7 @@
           <th>User email</th>
           <td id="td_dav_SkyDrive_email">
             <?vsp
-              http (self.get_fieldProperty ('===', self.dav_path, 'virt:SkyDrive-email', ''));
+              http (WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:SkyDrive-email', ''));
             ?>
           </td>
         </tr>
@@ -5886,14 +5924,22 @@
             <?vsp
               declare _name, _url any;
 
-              if (_value = 'Yes')
-                _name := 'Re-Authenticate';
-              else
-                _name := 'Authenticate';
-
+              _name := case when (_value = 'Yes') then 'Re-Authenticate' else 'Authenticate' end;
               _url := '/ods/access_service.vsp?m=webdav&p=SkyDrive&service=windowslive';
               http (sprintf ('<input type="button" id="dav_SkyDrive_authenticate" value="%s" onclick="javascript: windowShowInternal(\'%s\');" disabled="disabled" class="button" />', _name, _url));
             ?>
+          </td>
+        </tr>
+        <tr id="tr_dav_SkyDrive_path" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
+          <th>Root Path</th>
+          <td id="td_dav_SkyDrive_path">
+            <v:text name="dav_SkyDrive_path" xhtml_id="dav_SkyDrive_path" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_SkyDrive_path', self.dav_path, 'virt:SkyDrive-path', '/');
+                ]]>
+              </v:before-data-bind>
+            </v:text>
           </td>
         </tr>
       </table>
@@ -5911,7 +5957,7 @@
       <?vsp
         declare _value any;
 
-        _value := self.get_fieldProperty ('===', self.dav_path, 'virt:Box-Authentication', 'No');
+        _value := WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:Box-Authentication', 'No');
       ?>
       <table class="WEBDAV_formBody WEBDAV_noBorder" cellspacing="0">
         <tr>
@@ -5962,7 +6008,7 @@
           <th>User name</th>
           <td id="td_dav_Box_display_name">
             <?vsp
-              http (self.get_fieldProperty ('===', self.dav_path, 'virt:Box-display_name', ''));
+              http (WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:Box-display_name', ''));
             ?>
           </td>
         </tr>
@@ -5970,7 +6016,7 @@
           <th>User email</th>
           <td id="td_dav_Box_email">
             <?vsp
-              http (self.get_fieldProperty ('===', self.dav_path, 'virt:Box-email', ''));
+              http (WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:Box-email', ''));
             ?>
           </td>
         </tr>
@@ -5980,14 +6026,22 @@
             <?vsp
               declare _name, _url any;
 
-              if (_value = 'Yes')
-                _name := 'Re-Authenticate';
-              else
-                _name := 'Authenticate';
-
+              _name := case when (_value = 'Yes') then 'Re-Authenticate' else 'Authenticate' end;
               _url := '/ods/access_service.vsp?m=webdav&p=Box&service=boxnet';
               http (sprintf ('<input type="button" id="dav_Box_authenticate" value="%s" onclick="javascript: windowShowInternal(\'%s\', \'Box.Net access\', 1024);" disabled="disabled" class="button" />', _name, _url));
             ?>
+          </td>
+        </tr>
+        <tr id="tr_dav_Box_path" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
+          <th>Root Path</th>
+          <td id="td_dav_Box_path">
+            <v:text name="dav_Box_path" xhtml_id="dav_Box_path" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_Box_path', self.dav_path, 'virt:Box-path', '/');
+                ]]>
+              </v:before-data-bind>
+            </v:text>
           </td>
         </tr>
       </table>
@@ -6005,7 +6059,7 @@
       <?vsp
         declare _value any;
 
-        _value := self.get_fieldProperty ('===', self.dav_path, 'virt:WebDAV-authenticationType', 'Digest');
+        _value := WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:WebDAV-authenticationType', 'No');
       ?>
       <table class="WEBDAV_formBody WEBDAV_noBorder" cellspacing="0">
         <tr>
@@ -6062,7 +6116,7 @@
               }
               else
               {
-	         http ('<b>Digest</b><input type="checkbox" name="dav_WebDAV_authenticationType" id="dav_WebDAV_authenticationType_0" value="Digest" checked="true" style="display: none;"/>');
+                http ('<b>Digest</b>');
               }
             ?>
           </td>
@@ -6226,6 +6280,18 @@
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_RACKSPACE_Container', self.dav_path, 'virt:RACKSPACE-Container', '');
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+        <tr id="tr_dav_RACKSPACE_path">
+          <th>Root Path</th>
+          <td id="td_dav_RACKSPACE_path">
+            <v:text name="dav_RACKSPACE_path" xhtml_id="dav_RACKSPACE_path" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_RACKSPACE_path', self.dav_path, 'virt:RACKSPACE-path', '/');
                 ]]>
               </v:before-data-bind>
             </v:text>
