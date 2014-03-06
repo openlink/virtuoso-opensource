@@ -632,14 +632,6 @@ create function "S3_DAV_RES_UPLOAD_MOVE" (
 
   _exit:;
     connection_set ('dav_store', save);
-    if (DAV_HIDE_ERROR (retValue) is not null)
-    {
-      if (save is null)
-      {
-        DB.DBA.S3__paramSet (retValue, what, 'Entry', DB.DBA.S3__obj2xml (listItem), 0);
-        DB.DBA.S3__paramSet (retValue, what, 'path', listID, 0);
-      }
-    }
   }
   return retValue;
 }
@@ -880,6 +872,63 @@ create function "S3_CONFIGURE" (
   DB.DBA.S3__paramSet (id, 'C', 'BucketName',     get_keyword ('BucketName', params), 0);
   DB.DBA.S3__paramSet (id, 'C', 'AccessKeyID',    get_keyword ('AccessKeyID', params), 0);
   DB.DBA.S3__paramSet (id, 'C', 'SecretKey',      get_keyword ('SecretKey', params), 0);
+
+  -- Root Path
+  DB.DBA.S3__paramSet (id, 'C', 'path',           get_keyword ('path', params), 0);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create function "S3_VERIFY" (
+  in path integer,
+  in params any)
+{
+  -- dbg_obj_princ ('S3_VERIFY (', path, params, ')');
+  declare detcol_id integer;
+  declare tmp, _path, _params, _parts any;
+  declare retValue, retHeader any;
+  declare exit handler for sqlstate '*'
+  {
+    return __SQL_MESSAGE;
+  };
+
+  tmp := trim (get_keyword ('BucketName', params, ''));
+  if (is_empty_or_null (tmp))
+    return 'Field ''S3 Bucker Name'' cannot be empty!';
+
+  if (length (tmp) > 63)
+    return 'The length of field ''S3 Bucker Name'' should be less or equal than 63 characters!';
+
+  tmp := trim (get_keyword ('AccessKeyID', params, ''));
+  if (is_empty_or_null (tmp))
+    return 'Field ''S3 Access Key'' cannot be empty!';
+
+  if (length (tmp) > 20)
+    return 'The length of field ''S3 Access Key'' should be less or equal than 20 characters!';
+
+  tmp := trim (get_keyword ('SecretKey', params, ''));
+  if (is_empty_or_null (tmp))
+    return 'Field ''S3 Secret Key'' cannot be empty!';
+
+  if (length (tmp) > 40)
+    return 'The length of field ''S3 Secret Key'' should be less or equal than 40 characters!';
+
+  _path := get_keyword ('path', params, '/');
+  if (_path = '/')
+    return null;
+
+  _params := vector ('authentication', 'Yes',
+                     'BucketName',     get_keyword ('BucketName', params),
+                     'AccessKeyID',    get_keyword ('AccessKeyID', params),
+                     'SecretKey',      get_keyword ('SecretKey', params)
+                    );
+  _parts := split_and_decode (ltrim (_path, '/'), 0, '\0\0/');
+  retValue := DB.DBA.S3__headObject (0, _parts, 'C', params=>_params);
+  if (DAV_HIDE_ERROR (retValue) is null)
+    return 'Error: The path does not exists!';
+
+  return null;
 }
 ;
 
@@ -1044,14 +1093,18 @@ create function DB.DBA.S3__path (
 --
 create function DB.DBA.S3__parts2path (
   in bucket varchar,
+  in rootPath varchar,
   in pathParts any,
   in what any)
 {
+  -- dbg_obj_princ ('DB.DBA.S3__parts2path (', bucket, rootPath, pathParts, what, ')');
   declare path varchar;
 
   path := DB.DBA.DAV_CONCAT_PATH (pathParts, null);
   if ((path <> '') and (chr (path[0]) <> '/'))
     path := '/' || path;
+
+  path := case when (coalesce (rootPath, '/') <> '/') then rtrim (rootPath, '/') else '' end || path;
 
   if (bucket <> '')
     path := '/' || bucket || path;
@@ -1093,9 +1146,10 @@ create function DB.DBA.S3__params (
   colId := DB.DBA.S3__detcolId (colId);
   params := vector (
     'authentication', 'Yes',
-    'bucket',         DB.DBA.S3__paramGet (colId, 'C', 'BucketName',  0),
-    'accessCode',     DB.DBA.S3__paramGet (colId, 'C', 'AccessKeyID', 0, 1, 0),
-    'secretKey',      DB.DBA.S3__paramGet (colId, 'C', 'SecretKey',   0, 1, 0),
+    'BucketName',     DB.DBA.S3__paramGet (colId, 'C', 'BucketName',  0),
+    'AccessKeyID',    DB.DBA.S3__paramGet (colId, 'C', 'AccessKeyID', 0, 1, 0),
+    'SecretKey',      DB.DBA.S3__paramGet (colId, 'C', 'SecretKey',   0, 1, 0),
+    'path',           DB.DBA.S3__paramGet (colId, 'C', 'path', 0),
     'graph',          DB.DBA.S3__paramGet (colId, 'C', 'graph', 0)
   );
   return params;
@@ -1114,8 +1168,10 @@ create function DB.DBA.S3__paramSet (
   in _encrypt integer := 0)
 {
   -- dbg_obj_princ ('DB.DBA.S3__paramSet', _propName, _propValue, ')');
-  declare retValue any;
+  declare retValue, save any;
 
+  save := connection_get ('dav_store');
+  connection_set ('dav_store', 1);
   if (_serialized)
     _propValue := serialize (_propValue);
 
@@ -1128,6 +1184,7 @@ create function DB.DBA.S3__paramSet (
   _id := DB.DBA.S3__davId (_id);
   retValue := DB.DBA.DAV_PROP_SET_RAW (_id, _what, _propName, _propValue, 1, http_dav_uid ());
 
+  connection_set ('dav_store', save);
   return retValue;
 }
 ;
@@ -1267,25 +1324,24 @@ create function DB.DBA.S3__makeUrl (
   if (isSecure)
   {
     s3Protocol := 'http://';
-    s3URL := 'http://s3.amazonaws.com';
+    s3URL := 's3.amazonaws.com';
   } else {
     s3Protocol := 'http://';
-    s3URL := 'http://s3.amazonaws.com';
+    s3URL := 's3.amazonaws.com';
   }
   path := ltrim (path, '/');
   bucket := DB.DBA.S3__bucketFromUrl (path);
-  dir := '';
-  if (length (bucket) < length (path))
-    dir := subseq (path, length (bucket)+1);
   if ((lcase (bucket) = bucket) and (bucket <> ''))
   {
-    hostUrl := s3Protocol || bucket || '.s3.amazonaws.com/' || dir;
+    hostUrl := s3Protocol || bucket || '.' || s3URL || '/' || path;
   }
   else
   {
+    dir := case when (length (bucket) < length (path)) then subseq (path, length (bucket)+1) else '' end;
     if (bucket <> '')
       bucket := bucket || '/';
-    hostUrl := s3Protocol || 's3.amazonaws.com/' || bucket || dir;
+
+    hostUrl := s3Protocol || s3URL || '/' || bucket || dir;
   }
   return hostUrl;
 }
@@ -1368,8 +1424,8 @@ create function DB.DBA.S3__makeAWSHeader (
 
   authHeader := authHeader || coalesce (CanonicalizedResource, '');
 
-  accessCode := get_keyword ('accessCode', params);
-  secretKey := get_keyword ('secretKey', params);
+  accessCode := get_keyword ('AccessKeyID', params);
+  secretKey := get_keyword ('SecretKey', params);
   hmacKey := xenc_key_RAW_read (null, encode_base64 (secretKey));
   S := xenc_hmac_sha1_digest (authHeader, hmacKey);
   xenc_key_remove (hmacKey);
@@ -1663,18 +1719,19 @@ create function DB.DBA.S3__list (
   inout subPath_parts varchar)
 {
   -- dbg_obj_princ ('DB.DBA.S3__list (', detcol_id, detcol_parts, subPath_parts, ')');
-  declare bucket varchar;
+  declare bucket, rootPath varchar;
   declare retValue, retHeader, params any;
 
   params := DB.DBA.S3__params (detcol_id);
-  bucket := get_keyword ('bucket', params);
+  bucket := get_keyword ('BucketName', params);
+  rootPath := get_keyword ('path', params);
   if (is_empty_or_null (bucket) and (length (subPath_parts) = 1) and subPath_parts[0] = '')
   {
     retValue := DB.DBA.S3__listBuckets (detcol_id, params);
   }
   else
   {
-    retValue := DB.DBA.S3__listBucket (detcol_id, params, DB.DBA.S3__parts2path (bucket, subPath_parts, 'C'));
+    retValue := DB.DBA.S3__listBucket (detcol_id, params, DB.DBA.S3__parts2path (bucket, rootPath, subPath_parts, 'C'));
   }
   if (not isinteger (retValue))
     DB.DBA.S3__paramSet (col_id, 'C', 'syncTime', now ());
@@ -1806,16 +1863,18 @@ create function DB.DBA.S3__listBucket (
     keyName := serialize_to_UTF8_xml (xpath_eval ('string (./Key)', xtItem));
     keyName := replace (keyName, bucketPath, '');
     itemName := replace (keyName, DB.DBA.S3__folderOldSuffix (), '');
-    itemType := case when (itemName <> keyName) then 'C' else 'R' end;
-    itemPath := url || itemName || case when (itemType = 'C') then '/' end;
-    lastModified := stringdate (cast (xpath_eval ('./LastModified', xtItem) as varchar));
-    itemSize := cast (xpath_eval ('./Size', xtItem) as integer);
-    itemETag := cast (xpath_eval ('./ETag', xtItem) as varchar);
-    itemStorage := cast (xpath_eval ('./StorageClass', xtItem) as varchar);
-    vectorbld_acc (
-      buckets,
+    if (itemName <> '')
+    {
+      itemType := case when (itemName <> keyName) then 'C' else 'R' end;
+      itemPath := url || itemName || case when (itemType = 'C') then '/' end;
+      lastModified := stringdate (cast (xpath_eval ('./LastModified', xtItem) as varchar));
+      itemSize := cast (xpath_eval ('./Size', xtItem) as integer);
+      itemETag := cast (xpath_eval ('./ETag', xtItem) as varchar);
+      itemStorage := cast (xpath_eval ('./StorageClass', xtItem) as varchar);
+      vectorbld_acc (
+        buckets,
         vector_concat (
-        DB.DBA.jsonObject (),
+          DB.DBA.jsonObject (),
           vector ('path', itemPath,
                   'name', itemName,
                   'type', itemType,
@@ -1824,8 +1883,9 @@ create function DB.DBA.S3__listBucket (
                   'etag', itemETag,
                   'storage', itemStorage
           )
-        )
-    );
+          )
+      );
+    }
   }
   vectorbld_final (buckets);
   return buckets;
@@ -1850,7 +1910,7 @@ create function DB.DBA.S3__putObject (
 
   params := DB.DBA.S3__params (detcol_id);
   dateUTC := date_rfc1123 (now());
-  s3Path := DB.DBA.S3__parts2path (get_keyword ('bucket', params), path_parts, what);
+  s3Path := DB.DBA.S3__parts2path (get_keyword ('BucketName', params), get_keyword ('path', params), path_parts, what);
 
   workPath := DB.DBA.S3__encode (s3Path);
   if (trim (s3Path, '/') <> DB.DBA.S3__bucketFromUrl (s3Path))
@@ -1920,16 +1980,19 @@ create function DB.DBA.S3__putObject (
 create function DB.DBA.S3__headObject (
   in detcol_id any,
   in path_parts any,
-  in what varchar)
+  in what varchar,
+  in params any := null)
 {
   -- dbg_obj_princ ('DB.DBA.S3__headObject (', detcol_id, path_parts, what, ')');
   declare dateUTC, authHeader, s3Path, workPath varchar;
   declare reqHeader, retHeader, retValue varchar;
-  declare params, item any;
+  declare item any;
 
-  params := DB.DBA.S3__params (detcol_id);
+  if (isnull (params))
+    params := DB.DBA.S3__params (detcol_id);
+
   dateUTC := date_rfc1123 (now());
-  s3Path := DB.DBA.S3__parts2path (get_keyword ('bucket', params), path_parts, what);
+  s3Path := DB.DBA.S3__parts2path (get_keyword ('BucketName', params), get_keyword ('path', params), path_parts, what);
 
   workPath := DB.DBA.S3__encode (s3Path);
   if (trim (s3Path, '/') <> DB.DBA.S3__bucketFromUrl (s3Path))
@@ -1946,7 +2009,9 @@ create function DB.DBA.S3__headObject (
   );
   if (not DB.DBA.S3__exec_error (retHeader, 1))
   {
-    DB.DBA.S3__activity (detcol_id, 'HTTP error: ' || retValue);
+    if (detcol_id > 0)
+      DB.DBA.S3__activity (detcol_id, 'HTTP error: ' || retValue);
+
     return -28;
   }
   item := vector_concat (
@@ -1974,16 +2039,28 @@ create function DB.DBA.S3__copyObject (
   in detcol_id any,
   in path_parts any,
   in source_id any,
-  in what varchar)
+  in what varchar,
+  in propName varchar := 'path')
 {
-  -- dbg_obj_princ ('DB.DBA.S3__copyObject (', detcol_id, path_parts, source_id, what, ')');
+  -- dbg_obj_princ ('DB.DBA.S3__copyObject (', detcol_id, path_parts, source_id, what, propName, ')');
   declare path, src_path, dst_path, det_path varchar;
   declare tmp, copy_id, retValue, copy_path_parts any;
+  declare params any;
 
-  if (what = 'R')
-    retValue := DB.DBA.S3__copySingleObject (detcol_id, path_parts, source_id, what);
+  params := DB.DBA.S3__params (detcol_id);
+  if      (what = 'R')
+  {
+    retValue := DB.DBA.S3__copySingleObject (detcol_id, path_parts, source_id, what, params);
 
-  if (what = 'C')
+    tmp := DB.DBA.S3__paramSet (source_id, what, propName, get_keyword ('path', retValue), 0);
+    if (DAV_HIDE_ERROR (tmp) is null)
+      return tmp;
+
+    tmp := DB.DBA.S3__paramSet (source_id, what, 'Entry', DB.DBA.S3__obj2xml (retValue), 0);
+    if (DAV_HIDE_ERROR (tmp) is null)
+      return tmp;
+  }
+  else if (what = 'C')
   {
     det_path := DB.DBA.DAV_SEARCH_PATH (detcol_id, 'C');
     src_path := DB.DBA.DAV_SEARCH_PATH (source_id, what);
@@ -1992,16 +2069,22 @@ create function DB.DBA.S3__copyObject (
     {
       path := WS.WS.COL_PATH (COL_ID);
       path := dst_path || subseq (path, length (src_path));
-      copy_id := source_id;
-      copy_id[2] := COL_ID;
-      copy_id[3] := 'C';
       copy_path_parts := split_and_decode (subseq (path, length (det_path)), 0, '\0\0/');
-      tmp := DB.DBA.S3__copySingleObject (detcol_id, copy_path_parts, copy_id, 'C');
+      tmp := DB.DBA.S3__putObject (detcol_id, copy_path_parts, 'C');
+
       if (DAV_HIDE_ERROR (tmp) is null)
         return tmp;
 
       if (WS.WS.COL_PATH (COL_ID) = src_path)
         retValue := tmp;
+
+      tmp := DB.DBA.S3__paramSet (COL_ID, 'C', propName, get_keyword ('path', tmp), 0);
+      if (DAV_HIDE_ERROR (tmp) is null)
+        return tmp;
+
+      tmp := DB.DBA.S3__paramSet (COL_ID, 'C', 'Entry', DB.DBA.S3__obj2xml (tmp), 0);
+      if (DAV_HIDE_ERROR (tmp) is null)
+        return tmp;
     }
     for (select RES_ID, RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_FULL_PATH like src_path || '%') do
     {
@@ -2011,12 +2094,19 @@ create function DB.DBA.S3__copyObject (
       copy_id := source_id;
       copy_id[2] := RES_ID;;
       copy_id[3] := 'R';
-      tmp := DB.DBA.S3__copySingleObject (detcol_id, copy_path_parts, RES_ID, 'R');
+      tmp := DB.DBA.S3__copySingleObject (detcol_id, copy_path_parts, copy_id, 'R', params);
+      if (DAV_HIDE_ERROR (tmp) is null)
+        return tmp;
+
+      tmp := DB.DBA.S3__paramSet (RES_ID, 'R', propName, get_keyword ('path', tmp), 0);
+      if (DAV_HIDE_ERROR (tmp) is null)
+        return tmp;
+
+      tmp := DB.DBA.S3__paramSet (RES_ID, 'R', 'Entry', DB.DBA.S3__obj2xml (tmp), 0);
       if (DAV_HIDE_ERROR (tmp) is null)
         return tmp;
     }
   }
-
   return retValue;
 }
 ;
@@ -2027,17 +2117,20 @@ create function DB.DBA.S3__copySingleObject (
   in detcol_id any,
   in path_parts any,
   in source_id any,
-  in what varchar)
+  in what varchar,
+  in params any := null)
 {
   -- dbg_obj_princ ('DB.DBA.S3__copySingleObject (', detcol_id, path_parts, source_id, what, ')');
   declare dateUTC, s3Path, srcPath, dstPath varchar;
   declare reqHeader, retHeader, retValue, acl varchar;
-  declare params, item, davEntry any;
+  declare item, davEntry any;
   declare encryption varchar;
 
-  params := DB.DBA.S3__params (detcol_id);
+  if (isnull (params))
+    params := DB.DBA.S3__params (detcol_id);
+
   dateUTC := date_rfc1123 (now());
-  s3Path := DB.DBA.S3__parts2path (get_keyword ('bucket', params), path_parts, what);
+  s3Path := DB.DBA.S3__parts2path (get_keyword ('BucketName', params), get_keyword ('path', params), path_parts, what);
 
   dstPath := DB.DBA.S3__encode (s3Path);
   if (trim (s3Path, '/') <> DB.DBA.S3__bucketFromUrl (s3Path))
@@ -2060,7 +2153,7 @@ create function DB.DBA.S3__copySingleObject (
   -- encryption
   encryption := connection_get ('server-side-encryption');
   if (isnull (encryption))
-    encryption := DB.DBA.S3_DAV_PROP_GET (source_id, what, 'virt:server-side-encryption', http_dav_uid ());
+    encryption := DB.DBA.S3__paramGet (source_id, what, 'virt:server-side-encryption', 0, 0);
 
   -- copy
   commit work;
@@ -2105,14 +2198,39 @@ create function DB.DBA.S3__moveObject (
   in what varchar)
 {
   -- dbg_obj_princ ('DB.DBA.S3__moveObject (', detcol_id, path_parts, what, ')');
+  declare path, src_path varchar;
   declare retValue, tmp any;
 
-  retValue := DB.DBA.S3__copyObject (detcol_id, path_parts, source_id, what);
+  retValue := DB.DBA.S3__copyObject (detcol_id, path_parts, source_id, what, 'path_tmp');
   if (DAV_HIDE_ERROR (retValue) is not null)
   {
     tmp := DB.DBA.S3__deleteObject (detcol_id, source_id, what);
     if (DAV_HIDE_ERROR (tmp) is null)
       retValue := tmp;
+
+    if      (what = 'R')
+    {
+      path := DB.DBA.S3__paramGet (source_id, what, 'path_tmp', 0);
+      DB.DBA.S3__paramSet (source_id, what, 'path', path, 0);
+      DB.DBA.S3__paramRemove (source_id, what, 'path_tmp');
+    }
+    else if (what = 'C')
+    {
+      src_path := DB.DBA.DAV_SEARCH_PATH (source_id, what);
+      for (select COL_ID from WS.WS.SYS_DAV_COL where WS.WS.COL_PATH (COL_ID) like src_path || '%') do
+      {
+        path := DB.DBA.S3__paramGet (COL_ID, 'C', 'path_tmp', 0);
+        DB.DBA.S3__paramSet (COL_ID, 'C', 'path', path, 0);
+        DB.DBA.S3__paramRemove (COL_ID, 'C', 'path_tmp');
+      }
+      for (select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH like src_path || '%') do
+      {
+        path := DB.DBA.S3__paramGet (RES_ID, 'R', 'path_tmp', 0);
+        DB.DBA.S3__paramSet (RES_ID, 'R', 'path', path, 0);
+        DB.DBA.S3__paramRemove (RES_ID, 'R', 'path_tmp');
+      }
+    }
+
   }
   return retValue;
 }
