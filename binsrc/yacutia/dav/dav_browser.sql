@@ -3645,6 +3645,32 @@ create procedure WEBDAV.DBA.CatFilter_CONFIGURE (
 }
 ;
 
+-----------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.rdfSink_CONFIGURE (
+  in id integer,
+  in params any)
+{
+  -- dbg_obj_princ ('rdfSink_CONFIGURE (', id, params, ')');
+  declare path, oldGraph, newGraph varchar;
+
+  path := DB.DBA.DAV_SEARCH_PATH (id, 'C');
+  oldGraph := DB.DBA.DAV_PROP_GET_INT (id, 'C', 'graph', 0);
+  if (WEBDAV.DBA.DAV_ERROR (oldGraph))
+    oldGraph := '';
+
+  newGraph := trim (get_keyword ('graph', params, ''));
+  DB.DBA.DAV_PROP_SET_INT (path, 'virt:rdfSink-base', get_keyword ('base', params), null, null, 0, 0, 1, http_dav_uid ());
+  DB.DBA.DAV_PROP_SET_INT (path, 'virt:rdfSink-graph', get_keyword ('graph', params), null, null, 0, 0, 1, http_dav_uid ());
+  WEBDAV.DBA.graph_update (id, 'rdfSink', oldGraph, newGraph);
+
+  -- Sponger
+  DB.DBA.DAV_PROP_SET_INT (path, 'virt:rdfSink-sponger',        get_keyword ('sponger', params), null, null, 0, 0, 1, http_dav_uid ());
+  DB.DBA.DAV_PROP_SET_INT (path, 'virt:rdfSink-cartridges',     get_keyword ('cartridges', params), null, null, 0, 0, 1, http_dav_uid ());
+  DB.DBA.DAV_PROP_SET_INT (path, 'virt:rdfSink-metaCartridges', get_keyword ('metaCartridges', params), null, null, 0, 0, 1, http_dav_uid ());
+}
+;
+
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.DAV_COPY (

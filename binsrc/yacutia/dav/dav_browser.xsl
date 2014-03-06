@@ -2952,6 +2952,7 @@
                         else if (dav_detType = 'rdfSink')
                         {
                           WEBDAV.DBA.test (get_keyword ('dav_rdfSink_graph', params), vector ('name', 'RDF Graph', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+                          WEBDAV.DBA.test (get_keyword ('dav_rdfSink_base', params), vector ('name', 'RDF Base URI', 'class', 'varchar', 'minLength', 0, 'maxLength', 255));
                         }
                         else if (dav_detType = 'IMAP')
                         {
@@ -3266,9 +3267,8 @@
                         }
                         else if (dav_detType = 'rdfSink')
                         {
-                          self.detGraph (params, 'rdfSink');
-                          self.detSponger (params, 'rdfSink', 8);
-                          WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:rdfSink-base', get_keyword ('dav_rdfSink_base', params));
+                          detParams := self.detOAuthParamsPrepare (dav_detType, v_properties, vector ('graph', 'base'), 8);
+                          WEBDAV.DBA.rdfSink_CONFIGURE (self.dav_id, detParams);
                         }
                         else if (dav_detType = 'SyncML')
                         {
