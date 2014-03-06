@@ -487,7 +487,7 @@ create function "S3_DAV_SEARCH_ID" (
       retValue := vector (DB.DBA.S3__detName (), detcol_id, retValue, what);
 
     else if (isarray (retValue) and (save = 1))
-      retValue := DB.DBA.S3_davId (retValue);
+      retValue := DB.DBA.S3__davId (retValue);
   }
   return retValue;
 }
@@ -624,9 +624,9 @@ create function "S3_DAV_RES_UPLOAD_MOVE" (
     connection_set ('dav_store', 1);
     if (what = 'C')
     {
-      update WS.WS.SYS_DAV_COL set COL_NAME = newName, COL_MOD_TIME = now () where COL_ID = DB.DBA.S3_davId (source_id);
+      update WS.WS.SYS_DAV_COL set COL_NAME = newName, COL_MOD_TIME = now () where COL_ID = DB.DBA.S3__davId (source_id);
     } else {
-      update WS.WS.SYS_DAV_RES set RES_NAME = newName, RES_MOD_TIME = now () where RES_ID = DB.DBA.S3_davId (source_id);
+      update WS.WS.SYS_DAV_RES set RES_NAME = newName, RES_MOD_TIME = now () where RES_ID = DB.DBA.S3__davId (source_id);
     }
     retValue := source_id;
 
@@ -1480,7 +1480,6 @@ create function DB.DBA.S3__load (
   -- dbg_obj_princ ('DB.DBA.S3__load (', detcol_id, subPath_parts, detcol_parts, ')');
   declare colId, checkInterval integer;
   declare colPath varchar;
-  declare boxItem any;
   declare retValue, save, downloads, listItems, davItems, colEntry, xmlItems, davEntry, listIds, listId any;
   declare syncTime datetime;
   declare exit handler for sqlstate '*'
@@ -2244,7 +2243,7 @@ create function DB.DBA.S3__downloads_aq (
   -- dbg_obj_princ ('DB.DBA.S3__downloads_aq (', detcol_id, downloads, ')');
   declare N, downloaded integer;
   declare url, listID varchar;
-  declare params, items, boxItem, listEntry, davEntry any;
+  declare params, items, listEntry, davEntry any;
   declare retValue, authHeader, reqHeader, retHeader any;
   declare S, dateUTC, path varchar;
 
