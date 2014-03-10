@@ -1944,7 +1944,7 @@ DAV_AUTHENTICATE_SSL_ITEM (
 create function
 DAV_AUTHENTICATE_SSL_CONDITION () returns integer
 {
-  if (is_https_ctx () and (__proc_exists ('SIOC.DBA.get_graph') is not null))
+  if (is_https_ctx () and (__proc_exists ('SIOC.DBA.get_graph') is not null) and client_attr ('client_certificate') <> 0)
     return 1;
 
   return 0;
