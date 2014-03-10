@@ -1,8 +1,6 @@
 <?xml version="1.0"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -20,7 +18,6 @@
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -
  -
 -->
 <v:page name="download" fast-render="1"  xmlns:v="http://www.openlinksw.com/vspx/">
@@ -40,7 +37,7 @@
     <tr>
       <td align="right">
         <v:form name="form_back" type="simple" method="POST" action="">
-          <v:url name="back_submit" format="%s" value="--'Back'" url="--sprintf('popup_browser.vspx?sid=%s&realm=%s&path=%s&title=%s\r\n', self.sid , self.realm, self.path, self.title)" xhtml_target="_parent"/>
+          <v:url name="back_submit" format="%s" value="--'Back'" url="--sprintf('popup_browser.vspx?sid=%s&realm=%s&dir=%s&title=%s\r\n', self.sid , self.realm, self.path, self.title)" xhtml_target="_parent"/>
         </v:form>
       </td>
     </tr>

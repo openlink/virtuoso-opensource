@@ -44,14 +44,14 @@
           value="WebDAV Browser"
           selector="popup_browser.vspx"
           child-window-options="scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800"
-          browser-options="ses_type={@ses_type}&amp;list_type={@list_type}&amp;flt={@flt}&amp;flt_pat={@flt_pat}&amp;path={@path}&amp;browse_type={@browse_type}&amp;style_css={@style_css}&amp;w_title={@w_title}&amp;title={@title}&amp;advisory={@advisory}&amp;lang={@lang}&amp;view={@view}"
+          browser-options="ses_type={@ses_type}&amp;list_type={@list_type}&amp;flt={@flt}&amp;flt_pat={@flt_pat}&amp;dir={@path}&amp;browse_type={@browse_type}&amp;style_css={@style_css}&amp;w_title={@w_title}&amp;title={@title}&amp;advisory={@advisory}&amp;lang={@lang}&amp;view={@view}"
         />
       </xsl:when>
       <xsl:when test="not @browse_type='standalone' and @render='popup' and @return_box">
         <v:browse-button
           value="Browse..."
           selector="popup_browser.vspx"
-          child-window-options="scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800 " browser-options="ses_type={@ses_type}&amp;list_type={@list_type}&amp;flt={@flt}&amp;flt_pat={@flt_pat}&amp;path={@path}&amp;browse_type={@browse_type}&amp;style_css={@style_css}&amp;w_title={@w_title}&amp;title={@title}&amp;advisory={@advisory}&amp;lang={@lang}&amp;retname={@return_box}&amp;view={@view}"
+          child-window-options="scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800 " browser-options="ses_type={@ses_type}&amp;list_type={@list_type}&amp;flt={@flt}&amp;flt_pat={@flt_pat}&amp;dir={@path}&amp;browse_type={@browse_type}&amp;style_css={@style_css}&amp;w_title={@w_title}&amp;title={@title}&amp;advisory={@advisory}&amp;lang={@lang}&amp;retname={@return_box}&amp;view={@view}"
           >
           <v:field name="{@return_box}" />
         </v:browse-button>
@@ -4715,7 +4715,7 @@
             <v:template type="simple" name="Brouse_Footer" enabled="-- case when (self.returnName <> '') then 1 else 0 end">
               <div style="margin-bottom: 0.5em;">
                 <b> Resource Name </b>
-                <v:text type="simple" name="item_name" xhtml_id="item_name" value="--''"  />
+                <v:text type="simple" name="item_name" xhtml_id="item_name" value="--WEBDAV.DBA.utf2wide (WEBDAV.DBA.real_path (self.dir_path))" xhtml_size="60" />
                 <input type="button" name="b_return" value="Select" onClick="javascript:  WEBDAV.selectRow ('F1')" />
                 <v:button name="b_cancel" action="simple" value="Cancel" xhtml_onClick="javascript: if (opener != null) opener.focus(); window.close()"/>
               </div>
