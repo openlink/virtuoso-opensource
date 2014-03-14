@@ -1252,6 +1252,41 @@ bif_geo_delete (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+caddr_t
+bif_geo_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  dbe_key_t * key = NULL;
+  caddr_t tn = bif_arg (qst, args, 0, "geo_check");
+  geo_t * g = bif_geo_arg (qst, args, 1, "geo_check", GEO_ARG_ANY_NONNULL);
+  QNCAST (query_instance_t, qi, qst);
+  dbe_table_t * tb;
+  dtp_t dtp = DV_TYPE_OF (tn);
+  int rc = 0;
+  geo_t box;
+
+  if (DV_LONG_INT == dtp)
+    {
+      key = sch_id_to_key (wi_inst.wi_schema, unbox (tn));
+    }
+  else if (DV_STRING == dtp)
+    {
+      tb = sch_name_to_table (wi_inst.wi_schema, tn);
+      if (!tb || !key_is_geo (tb->tb_primary_key))
+	sqlr_new_error ("22032", "GEO..", "table %s is not a geo index table", tn);
+      key = tb->tb_primary_key;
+    }
+  if (!key || !key_is_geo (key))
+    sqlr_new_error ("22032", "GEO..", "key %d is not a geo key", (int)unbox (tn));
+  dtp = key->key_key_fixed[RD_X].cl_sqt.sqt_dtp;
+  geo_get_bounding_XYbox ((geo_t*)g, &box, 0, 0);
+  if (DV_SINGLE_FLOAT == dtp)
+    {
+      if (IS_OV ((float)box.XYbox.Xmin) || IS_OV ((float)box.XYbox.Xmax) || IS_OV ((float)box.XYbox.Ymin) || IS_OV ((float)box.XYbox.Ymax))
+	rc = 1;
+    }
+  return box_num (rc);
+}
+
 
 caddr_t
 geo_wkt (caddr_t x)
@@ -1585,6 +1620,7 @@ geo_init ()
   bif_define_ex ("geo_insert"		, bif_geo_insert						, BMD_USES_INDEX, BMD_NEED_ENLIST, BMD_DONE);
   bif_define_ex ("geo_delete"		, bif_geo_delete						, BMD_USES_INDEX, BMD_NEED_ENLIST, BMD_DONE);
   bif_define_ex ("geo_estimate"		, bif_geo_estimate						, BMD_USES_INDEX, BMD_DONE);
+  bif_define_ex ("geo_check"		, bif_geo_check							, BMD_USES_INDEX, BMD_NEED_ENLIST, BMD_DONE);
   dk_mem_hooks_2 (DV_GEO, (box_copy_f) geo_copy, (box_destr_f) geo_destroy, 0, (box_tmp_copy_f) mp_geo_copy);
   get_readtable ()[DV_GEO] = (macro_char_func) geo_deserialize;
   PrpcSetWriter (DV_GEO, (ses_write_func) geo_serialize);
