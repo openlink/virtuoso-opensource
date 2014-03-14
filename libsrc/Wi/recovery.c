@@ -149,19 +149,64 @@ walk_dbtree ( it_cursor_t * it, buffer_desc_t ** buf_ret, int level,
   END_DO_ROWS;
 }
 
+char * backup_ignore_keys;
+
+void
+split_string (caddr_t str, char * chrs, dk_set_t * set)
+{
+  char *tok_s = NULL, *tok, *tmp;
+  caddr_t string = str ? box_dv_short_string (str) : NULL;
+  if (NULL == chrs)
+    chrs = ", "; 
+  if (NULL == string)
+    return;
+  tok_s = NULL;
+  tok = strtok_r (string, chrs, &tok_s);
+  while (tok)
+    {
+      if (tok && strlen (tok) > 0)
+	{
+	  while (*tok && isspace (*tok))
+	    tok++;
+	  if (tok && strlen (tok) > 1)
+	    tmp = tok + strlen (tok) - 1;
+	  else
+	    tmp = NULL;
+	  while (tmp && tmp >= tok && isspace (*tmp))
+	    *(tmp--) = 0;
+	  dk_set_push (set, box_dv_short_string (tok));
+	}
+      tok = strtok_r (NULL, chrs, &tok_s);
+    }
+  dk_free_box (string);
+}
+
+static int
+backup_key_is_ignored (dk_set_t * ign, dbe_key_t * key)
+{
+  DO_SET (caddr_t, kn, ign)
+    {
+      if (!stricmp (kn, key->key_name))
+	return 1;
+    }
+  END_DO_SET ();
+  return 0;
+} 
 
 static void
 walk_db (lock_trx_t * lt, page_func_t func)
 {
   buffer_desc_t *buf;
   it_cursor_t *itc;
+  dk_set_t ign = NULL;
+  split_string (backup_ignore_keys, NULL, &ign);
 
   memset (levels, 0, sizeof (levels));
 
   {
     DO_SET (index_tree_t * , it, &wi_inst.wi_master->dbs_trees)
       {
-	if (it != wi_inst.wi_master->dbs_cpt_tree)
+	if (it != wi_inst.wi_master->dbs_cpt_tree && !backup_key_is_ignored (&ign, it->it_key))
 	  {
 	    itc = itc_create (NULL , lt);
 	    itc_from_it (itc, it);

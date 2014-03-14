@@ -112,6 +112,7 @@ extern char *http_cli_proxy_server;
 extern char *http_cli_proxy_except;
 extern int32 http_enable_client_cache;
 extern int32 log_proc_overwrite;
+extern char * backup_ignore_keys;
 
 #ifdef _SSL
 extern char *https_port;
@@ -886,6 +887,9 @@ cfg_setup (void)
 
   if (cfg_getstring (pconfig, section, "BackupDirs", &c_backup_dirs) == -1)
     c_backup_dirs = 0;
+
+  if (cfg_getstring (pconfig, section, "BackupIgnoreKeys", &backup_ignore_keys) == -1)
+    backup_ignore_keys = 0;
 
   if (cfg_getstring (pconfig, section, "SafeExecutables", &c_safe_execs) == -1)
     c_safe_execs = 0;
