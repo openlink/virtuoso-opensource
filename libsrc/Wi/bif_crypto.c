@@ -1758,6 +1758,33 @@ bif_pkcs7_certificates (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (caddr_t) ret;
 }
 
+static caddr_t
+bif_base36enc (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  boxint value = bif_long_range_arg (qst, args, 0, "base36enc", 0, INT64_MAX);
+  char base36[36] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  char buf[14];
+  size_t offset = sizeof (buf);
+
+  buf[--offset] = '\0';
+  do 
+    {
+      buf [--offset] = base36 [value % 36];
+    } 
+  while (value /= 36);
+
+  return box_dv_short_string (&buf[offset]);
+}
+
+static caddr_t
+bif_base36dec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  boxint str = bif_string_arg (qst, args, 0, "base36dec");
+  boxint ret;
+  ret = strtoul(str, NULL, 36);
+  return box_num (ret);
+}
+
 void
 bif_crypto_init (void)
 {
@@ -1775,6 +1802,8 @@ bif_crypto_init (void)
   bif_define_ex ("pkcs7_certificates", bif_pkcs7_certificates, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("bin2hex", bif_bin2hex, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("hex2bin", bif_hex2bin, BMD_RET_TYPE, &bt_bin, BMD_DONE);
+  bif_define_ex ("base36enc", bif_base36enc, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("base36dec", bif_base36dec, BMD_RET_TYPE, &bt_integer, BMD_DONE);
 }
 
 #else /* _SSL dummy section for bifs that are defined here to not break existing apps */
