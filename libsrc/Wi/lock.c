@@ -1590,10 +1590,47 @@ lt_clear_pl_wait_ref (lock_trx_t * waiting, gen_lock_t * pl)
     }
 }
 
+const char * lt_short_name (lock_trx_t * lt);
+
+static void
+lock_report (char * label, it_cursor_t * it)
+{
+  lock_trx_t *lt = it->itc_ltrx;
+  dbe_key_t * key = it->itc_insert_key;
+  query_instance_t * qi = (query_instance_t *) (it->itc_out_state); 
+  query_t * qr = qi ? qi->qi_query : NULL; 
+  FILE * fp = fopen ("lock_errors.txt", "at");
+  fprintf (fp, "--- %s ---\n", label);
+  fprintf (fp, "key %s\n", key && key->key_name ? key->key_name : "<no key>");
+  fprintf (fp, "query %s\n", qr && qr->qr_text ? qr->qr_text : "<no text>");
+  if (lt->lt_waits_for || lt->lt_waiting_for_this)
+    {
+      char since[40];
+      since[0] = 0;
+      if (lt->lt_waits_for)
+	snprintf (since, sizeof (since), "for %ld ms ", (long)(get_msec_real_time () - lt->lt_wait_since));
+      fprintf (fp, "Trx %s s=%d %p: %s w. for: ", lt_short_name (lt), lt->lt_status, lt, since);
+      DO_SET (lock_trx_t *, w, &lt->lt_waits_for)
+	{
+	  fprintf (fp, " %s ", lt_short_name (w));
+	}
+      END_DO_SET();
+      fprintf (fp, "\n   is before: ");
+      DO_SET (lock_trx_t *, w, &lt->lt_waiting_for_this)
+	{
+	  fprintf (fp, " %s ", lt_short_name (w));
+	}
+      END_DO_SET();
+      fprintf (fp, "\n");
+    }
+  fprintf (fp, "--- end ---\n\n");
+  fclose (fp);
+}
 
 void
-lt_drop_wait (lock_trx_t * before, lock_trx_t * after)
+lt_drop_wait (it_cursor_t * waiting, it_cursor_t * next)
 {
+  lock_trx_t *before = waiting->itc_ltrx, *after = next->itc_ltrx;
   int both_pending;
   IN_TXN;
   both_pending = after->lt_status == LT_PENDING && before->lt_status == LT_PENDING;
@@ -1606,15 +1643,21 @@ lt_drop_wait (lock_trx_t * before, lock_trx_t * after)
 	{
 	  log_error ("Missing wait edge between non-pending #1 after status = %d before status = %d",
 		     after->lt_status, before->lt_status);
+	  lock_report ("waiting", waiting); lock_report ("next", next);
+#ifdef DEBUG
 	  if (!wi_inst.wi_is_checkpoint_pending && both_pending)
 	    GPF_T1 ("Missing wait edge outside of checkpoint ");
+#endif
 	}
       if (!dk_set_delete (&after->lt_waits_for, (void*) before))
 	{
 	  log_error ("Missing wait edge between non-pending #2 after status = %d before status = %d",
 		     after->lt_status, before->lt_status);
+	  lock_report ("waiting", waiting); lock_report ("next", next);
+#ifdef DEBUG
 	  if (!wi_inst.wi_is_checkpoint_pending && both_pending)
 	    GPF_T1 ("Missing wait edge outside of checkpoint ");
+#endif
 	}
     }
   LEAVE_TXN;
@@ -1637,12 +1680,12 @@ lt_clear_non_acq_release_wait (it_cursor_t * waiting)
   if (PL_EXCLUSIVE == waiting->itc_lock_mode)
     {
       if (PL_EXCLUSIVE == next->itc_lock_mode)
-	lt_drop_wait (waiting->itc_ltrx, next->itc_ltrx);
+	lt_drop_wait (waiting, next);
       else
 	{
 	  while (next && PL_SHARED == next->itc_lock_mode)
 	    {
-	      lt_drop_wait (waiting->itc_ltrx, next->itc_ltrx);
+	      lt_drop_wait (waiting, next);
 	      next = next->itc_next_on_lock;
 	    }
 	}
@@ -1654,7 +1697,7 @@ lt_clear_non_acq_release_wait (it_cursor_t * waiting)
       if (next && PL_EXCLUSIVE != next->itc_lock_mode)
 	GPF_T1 ("next excl is not excl");
       if (next)
-	lt_drop_wait (waiting->itc_ltrx, next->itc_ltrx);
+	lt_drop_wait (waiting, next);
     }
 }
 
