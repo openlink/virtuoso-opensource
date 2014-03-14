@@ -93,7 +93,7 @@
   http_header ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\n');
   label := ''; _subject := '';
 
-  exec (sprintf ('sparql  define input:inference "facets" select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S),
+  exec (sprintf ('sparql define sql:table-option "index primary key" define input:inference "facets" select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S), 
                  null, null, vector (), 0, meta, data);
 
   label := b3s_label_get (data, langs);
@@ -202,31 +202,28 @@
 	    declare qr varchar;
 	    if (tp = 1) -- refd in data sets
 	      {
-	        qr := sprintf ('sparql select ?g count (*) where { graph ?g { <%S> ?p ?o }} group by ?g order by desc 2 limit 20', _S);
+		qr := 'sparql define input:storage "" select ?g count (*) where { graph ?g { `iri(??)` ?p ?o }} group by ?g order by desc 2 limit 20';
                 http ('<tr><th class="property">Graph IRI</th><th class="value">Count</th></tr>\n');
 	      }
 	    if (tp = 2) -- defd in data sets
 	      {
-	        qr := sprintf ('sparql select ?g count (*) where { graph ?g { ?s ?p <%S>  }} group by ?g order by desc 2 limit 20', _S);
+	        qr := 'sparql define input:storage "" select ?g count (*) where { graph ?g { ?s ?p `iri(??)` }} group by ?g order by desc 2 limit 20';
                 http ('<tr><th>Graph IRI</th><th>Count</th></tr>\n');
 	      }
 	    if (tp = 3) -- Expanded sas
 	      {
-	         qr := sprintf ('sparql select ?syn (sql:rnk_scale (<LONG::IRI_RANK> (?syn))) where {{ select ?s ?syn  where {{?syn owl:sameAs ?s } union {?s owl:sameAs ?syn}}} option (transitive, t_distinct, t_min (0), T_in (?s), t_out (?syn)) . filter (!isliteral (?syn) && ?s = <%S> ) } order by desc 2 limit 20', _S);
-		 http (sprintf ('<tr><th>%s</th><th>Rank</th></tr>\n',
-		'Identifier (URI)'
-		--fct_s_term ()
-		));
+	         qr := 'sparql define input:storage "" select ?syn (sql:rnk_scale (<LONG::IRI_RANK> (?syn))) where {{ select ?s ?syn  where {{?syn owl:sameAs ?s } union {?s owl:sameAs ?syn}}} option (transitive, t_distinct, t_min (0), T_in (?s), t_out (?syn)) . filter (!isliteral (?syn) && ?s = iri(??) ) } order by desc 2 limit 20';
+		 http (sprintf ('<tr><th>%s</th><th>Rank</th></tr>\n', 'Identifier (URI)'));
 	      }
 	    if (tp = 4) -- Expanded ifp
 	      {
-	         qr := sprintf ('sparql select distinct ?syn ?p ?o (sql:rnk_scale (<LONG::IRI_RANK> (?syn))) where { <%S> ?p ?o .  filter (0 != (<LONG::bif:rdf_is_sub> ("%s", ?p, lod:ifp_like, 3))) .  ?syn ?p ?o . } order by desc 4 limit 20', _S, coalesce (inf_rule, 'b3sifp'));
+	         qr := sprintf ('sparql define input:storage "" select distinct ?syn ?p ?o (sql:rnk_scale (<LONG::IRI_RANK> (?syn))) where { `iri(??)` ?p ?o .  filter (0 != (<LONG::bif:rdf_is_sub> ("%s", ?p, lod:ifp_like, 3))) .  ?syn ?p ?o . } order by desc 4 limit 20', coalesce (inf_rule, 'b3sifp'));
 		 http (sprintf ('<tr><th>%s</th><th>%s</th><th>%s</th><th>Rank</th></tr>\n', fct_s_term (), fct_p_term (), fct_o_term ()));
 	      }
 
             b3s_dbg_out(dbg_out, qr);
 
-	    exec (qr, null, null, vector (), 0, null, null, h1);
+	    exec (qr, null, null, vector (_S), 0, null, null, h1); 
 	    while (0 = exec_next (h1, null, null, data))
 	      {
 	         http ('<tr>');
