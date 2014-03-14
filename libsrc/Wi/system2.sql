@@ -1169,6 +1169,9 @@ create procedure DB.DBA.obj2xml (
                 S := sprintf ('%s %s="%s"', S, subseq (o[N+1][M], length (attributePrefix)), obj2xml (o[N+1][M+1]));
             }
           }
+	  if (o[N] = '#text')
+	    retValue := retValue || obj2xml (o[N+1], d-1, o[N], nsArray, attributePrefix);
+	  else
           retValue := retValue || sprintf ('<%s%s%s>%s</%s>\n', o[N], S, nsValue, obj2xml (o[N+1], d-1, null, nsArray, attributePrefix), o[N]);
         }
       }
@@ -1197,6 +1200,46 @@ create procedure DB.DBA.obj2xml (
     }
   }
   return retValue;
+}
+;
+
+create procedure xml2json (in str any)
+{
+  declare js varchar;
+  declare xt any;
+
+  if (__tag (str) <> __tag of XML)
+    xt := xtree_doc (str);
+  else
+    xt := str;
+  js := xslt ('http://local.virt/xml2json', xt);
+  return serialize_to_UTF8_xml (js);
+}
+;
+
+--!AWK PUBLIC
+create procedure
+DB.DBA.JSON_ESC_TEXT (in txt varchar)
+{
+  --no_c_escapes+
+  txt := replace (txt, '\r', '\\r');
+  txt := replace (txt, '\n', '\\n');
+  txt := replace (txt, '"', '\\"');
+  return txt;
+}
+;
+
+insert soft DB.DBA.SYS_XPF_EXTENSIONS (XPE_NAME, XPE_PNAME) VALUES ('http://www.openlinksw.com/virtuoso/xslt/:json-esc-text',
+'DB.DBA.JSON_ESC_TEXT')
+;
+
+xpf_extension ('http://www.openlinksw.com/virtuoso/xslt/:json-esc-text', 'DB.DBA.JSON_ESC_TEXT', 0)
+;
+
+
+create procedure json2xml (in str varchar)
+{
+  return obj2xml (json_parse (str), 100, null, null, '-');
 }
 ;
 

@@ -737,6 +737,7 @@ SQL_FILES_WS		= \
 	$(srcdir)/rdf_net.sql \
 	$(srcdir)/simile.sql \
 	$(srcdir)/xrd2json.xsl \
+	$(srcdir)/xml2json.xsl \
 	$(srcdir)/http_auth.sql \
 	$(srcdir)/xmla.sql \
 	$(srcdir)/openxml.sql \
