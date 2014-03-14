@@ -4508,16 +4508,21 @@ itc_hash_compare (it_cursor_t * itc, buffer_desc_t * buf, search_spec_t * sp)
       MHASH_VAR (h, box2, l);
       break;
     }
-  min = QST_INT (inst, hrng->hrng_min);
-  max = QST_INT (inst, hrng->hrng_max);
-  if (!(min <= H_PART (h) && max >= H_PART (h)))
+  if (hrng->hrng_min)
     {
-      dk_free_tree (box);
-      return DVC_LESS;
+      min = QST_INT (inst, hrng->hrng_min);
+      max = QST_INT (inst, hrng->hrng_max);
+      if (!(min <= H_PART (h) && max >= H_PART (h)))
+	{
+	  dk_free_tree (box);
+	  dk_free_box (box2);
+	  return DVC_LESS;
+	}
     }
-  if (hs && sp->sp_max_op != CMP_HASH_RANGE_ONLY)
+  if (sp->sp_max_op != CMP_HASH_RANGE_ONLY)
     {
-      index_tree_t *tree = QST_BOX (index_tree_t *, inst, hs->hs_ha->ha_tree->ssl_index);
+      state_slot_t *tree_ssl = hrng->hrng_ht ? hrng->hrng_ht : hs->hs_ha->ha_tree;
+      index_tree_t *tree = QST_BOX (index_tree_t *, inst, tree_ssl->ssl_index);
       chash_t *cha;
       if (!tree)
 	goto not_found;
@@ -4560,7 +4565,29 @@ itc_hash_compare (it_cursor_t * itc, buffer_desc_t * buf, search_spec_t * sp)
 	    }
 	  goto not_found;
 	found_e:
-	  if (hs->hs_ha->ha_n_deps)
+	  if (hs && hs->hs_ha->ha_n_deps)
+	    cha_inline_result (hs, cha, inst, ent, 1);
+	  goto found;
+	}
+      else
+	{
+	  dtp_t nulls = 0;
+	  db_buf_t *k = box2 ? (db_buf_t *) & box2 : (db_buf_t *) & box;
+	  ent = array[pos1_1];
+	  if (ent && h == ent[0] && cha_cmp (cha, ent, &k, 0, &nulls))
+	    goto found_a;
+	  ent = array[pos2_1];
+	  if (ent && h == ent[0] && cha_cmp (cha, ent, &k, 0, &nulls))
+	    goto found_a;
+	  for (e = 0; e < cha_p->cha_exception_fill; e++)
+	    {
+	      ent = cha_p->cha_exceptions[e];
+	      if (h == ent[0] && cha_cmp (cha, ent, &k, 0, &nulls))
+		goto found_a;
+	    }
+	  goto not_found;
+	found_a:
+	  if (hs && hs->hs_ha->ha_n_deps)
 	    cha_inline_result (hs, cha, inst, ent, 1);
 	  goto found;
 	}
@@ -4569,9 +4596,13 @@ itc_hash_compare (it_cursor_t * itc, buffer_desc_t * buf, search_spec_t * sp)
     goto found;
 not_found:
   dk_free_tree (box);
+  if (box2)
+    dk_free_box (box2);
   return DVC_LESS;
 found:
   dk_free_tree (box);
+  if (box2)
+    dk_free_box (box2);
   return DVC_MATCH;
 }
 
