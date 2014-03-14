@@ -2913,8 +2913,10 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   def_max := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'ResultSetMaxRows'), '-1'));
 
   -- Get the max values as specified by the client but always stick to the system-wide max if there is any
-  hard_timeout := __min (atoi (coalesce (connection_get ('SPARQL/MaxQueryExecutionTime'), '0')) * 1000, hard_timeout);
-  def_max := __min (atoi (coalesce (connection_get ('SPARQL/ResultSetMaxRows'), '-1')), def_max);
+  if (not connection_get ('SPARQL/MaxQueryExecutionTime') is null)
+    hard_timeout := __min (cast (connection_get ('SPARQL/MaxQueryExecutionTime') as int) * 1000, hard_timeout);
+  if (not connection_get ('SPARQL/ResultSetMaxRows') is null)
+    def_max := __min (cast (connection_get ('SPARQL/ResultSetMaxRows') as int), def_max);
 
   -- if timeout specified and it's over 1 second
 
