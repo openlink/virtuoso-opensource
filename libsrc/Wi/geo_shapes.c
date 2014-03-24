@@ -1698,7 +1698,7 @@ geo_t *
 ewkt_get_nested_poinstrings (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas, int geo_type, int nesting)
 {
   geo_t *res;
-  int sub_itm_type = geo_type, new_sub_itm_type, itm_ctr;
+  int sub_itm_type = GEO_TYPE (geo_type), new_sub_itm_type, itm_ctr;
   dk_set_t *items;
   if (geo_type & GEO_A_MULTI)
     {
@@ -1739,7 +1739,7 @@ ewkt_get_nested_poinstrings (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas, i
 	    itm = ewkt_get_nested_poinstrings (in, head_metas, sub_itm_type, nesting - 1);
 	  dk_set_push (items, itm);
 	  if (NULL == items[0]->next)
-	    sub_itm_type = itm->geo_flags;
+	    sub_itm_type = GEO_TYPE (itm->geo_flags);
 	  else if (sub_itm_type != itm->geo_flags)
 	    ewkt_signal (in, "Fragments of MULTIfeature differ in number of coordinates");
 	  if ((geo_type & (GEO_A_Z | GEO_A_M)) != (itm->geo_flags & (GEO_A_Z | GEO_A_M)))
