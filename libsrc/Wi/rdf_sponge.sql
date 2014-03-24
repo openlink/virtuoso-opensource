@@ -1699,13 +1699,13 @@ retry_after_deadlock:
       if (xpath_eval ('[ xmlns:dv="http://www.w3.org/2003/g/data-view#" ] /*[1]/@dv:transformation', xt) is not null)
         goto load_grddl;
       DB.DBA.RDF_LOAD_RDFXML (ret_body, base, coalesce (dest, graph_iri));
-      if (extra <> '0')
+      if (get_soft <> 'no-sponge')
         DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, coalesce (dest, graph_iri), ret_content_type);
       rdf_fmt := 1;
       if (groupdest is not null)
         {
           DB.DBA.RDF_LOAD_RDFXML (ret_body, base, groupdest);
-          if (extra <> '0')
+	  if (get_soft <> 'no-sponge')
             DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, groupdest, ret_content_type);
         }
         goto load_grddl;
@@ -1746,14 +1746,16 @@ retry_after_deadlock:
       --log_enable (2, 1);
       --if (dest is null)
       --  DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1);
+
       DB.DBA.TTLP (ret_body, base, coalesce (dest, graph_iri), ttl_mode);
-      if(extra<>'0')
+      if (get_soft <> 'no-sponge')
         DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, coalesce (dest, graph_iri), ret_content_type);
       rdf_fmt := 1;
+
       if (groupdest is not null)
         {
           DB.DBA.TTLP (ret_body, base, groupdest);
-          if(extra<>'0')
+          if(get_soft <> 'no-sponge')
             DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, groupdest, ret_content_type);
         }
       if (exists (select 1 from DB.DBA.SYS_RDF_MAPPERS where RM_TYPE = 'URL' and regexp_match (RM_PATTERN, new_origin_uri) and RM_ENABLED = 1))
