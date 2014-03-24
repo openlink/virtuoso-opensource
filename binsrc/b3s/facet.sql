@@ -362,7 +362,7 @@ FCT_LABEL_S (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
   if (__proc_exists ('rdf_resolve_labels_s') is not null)
     {
       declare ret any;
-      ret := rdf_resolve_labels_s (adler32 (lng), vector (x));
+      ret := rdf_resolve_labels_s (adler32 (coalesce (lng, '')), vector (x));
       ret := coalesce (ret[0], '');
       return __ro2sq (ret);
     }

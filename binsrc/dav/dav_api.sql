@@ -4158,6 +4158,8 @@ DAV_PROP_SET_RAW_INNER (
         {
           if (0 >= can_patch_access)
             return -13;
+          if ((propvalue like '__1%' or propvalue like '_____1%' or propvalue like '________1%') and auth_uid <> http_dav_uid ())
+            return -10;
           if (regexp_match (DAV_REGEXP_PATTERN_FOR_PERM (), propvalue) is null)
             return -17;
           if ('R' = st)
