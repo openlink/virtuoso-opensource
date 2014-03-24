@@ -4508,7 +4508,7 @@ create procedure WS.WS.EXPAND_INCLUDES (in path varchar, inout stream varchar, i
 		signal ('37000', 'Includes can be owned only by admin & cannot be writable for others', 'DA001');
 	    }
 	  if (st is not null and isarray (st))
-	    st := vector_concat (st, vector (path, datestring(modt)));
+	    st := vector_concat (st, vector (path, DB.DBA.date_iso8601 (modt)));
 	}
       else
 	curr_file := content;
