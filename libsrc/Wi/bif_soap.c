@@ -6263,7 +6263,7 @@ ws_soap_get_url (ws_connection_t *ws, int full_path)
       if (szHost != szHostBuffer)
 	dk_free_box (szHost);
     }
-  len = BOX_ELEMENTS (ws->ws_path);
+  len = BOX_ELEMENTS_0 (ws->ws_path);
   if (!full_path)
     len --;
   DO_BOX (char *, path_elem, inx, ws->ws_path)
