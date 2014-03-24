@@ -63,8 +63,11 @@
                 OAT.Dom.show('webid_group');
               }
             } else {
-              OAT.Dom.hide('webid_span');
+	      OAT.Dom.show('webid_span');
             OAT.Dom.show('filter');
+	      $('webid_label').innerHTML = 'Group URI';
+	      OAT.Dom.hide('webid');
+	      OAT.Dom.show('webid_group');
           }
         }
 
@@ -502,6 +505,7 @@
 					  if (self.type.ufl_value = 'Advanced')
                                                           {
 					    tp := 2;
+                                                            webid := trim (self.webid_group.ufl_value);
                                                           }
 					  else if (self.type.ufl_value = 'Group')
                                                           {
