@@ -4104,7 +4104,7 @@ ws_read_req (ws_connection_t * ws)
     }
   END_READ_FAIL (ws->ws_session);
 end_req:
-  /*empty*/;
+  ws_connection_vars_clear (ws->ws_cli); /* can have connection vars set from authentication hook */
 }
 
 
