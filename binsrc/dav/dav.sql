@@ -1171,29 +1171,24 @@ nf:
   http ('</D:multistatus>\n');
 }
 ;
+
 -- /* PROPPATCH method */
-create procedure WS.WS.PROPPATCH (in path varchar, inout params varchar, in lines varchar)
+create procedure WS.WS.PROPPATCH (
+  in path varchar,
+  inout params varchar,
+  in lines varchar)
 {
   -- dbg_obj_princ ('WS.WS.PROPPATCH (', path, params, lines, ')');
-  declare _u_id, _g_id, _slen, _len, _ix, id, _pid, _ix1, is_calendar, is_addressbook integer;
-  declare uname, upwd, st, _perms, _body, _name varchar;
-  declare _ses, _set, _del, _tmp, _val any;
-  declare rc, acc, _proprc, xtree, prop_path any;
+  declare id any;
+  declare uid, gid integer;
+  declare auth_name, auth_pwd, st, perms varchar;
+  declare rc any;
 
-  is_addressbook := 0;
-  is_calendar := 0;
   id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'C'));
 	if (id is not null)
 	{
-		if (isarray(id) = 1)
-		{
-			if (id[0] = UNAME'CalDAV')
-				is_calendar := 1;
-			if (id[0] = UNAME'CardDAV')
-				is_addressbook := 1;
-		}
 		st := 'C';
-    prop_path := DB.DBA.DAV_CONCAT_PATH (vector_concat (vector(''), path, vector('')), null);
+    path := DB.DBA.DAV_CONCAT_PATH (vector_concat (vector(''), path, vector('')), null);
 	}
   else
   {
@@ -1204,58 +1199,80 @@ create procedure WS.WS.PROPPATCH (in path varchar, inout params varchar, in line
       return;
     }
     st := 'R';
-    prop_path := DB.DBA.DAV_CONCAT_PATH (vector_concat (vector(''), path), null);
+    path := DB.DBA.DAV_CONCAT_PATH (vector_concat (vector(''), path), null);
   }
-  _u_id := null;
-  _g_id := null;
-  rc := DAV_AUTHENTICATE_HTTP (id, st, '11_', 1, lines, uname, upwd, _u_id, _g_id, _perms);
-  -- dbg_obj_princ ('Authentication in PROPPATCH gives ', rc, uname, upwd, _u_id, _g_id, _perms);
+  uid := null;
+  gid := null;
+  rc := DAV_AUTHENTICATE_HTTP (id, st, '11_', 1, lines, auth_name, auth_pwd, uid, gid, perms);
 	if (rc < 0)
 	{
     DB.DBA.DAV_SET_AUTHENTICATE_HTTP_STATUS (rc);
 		return;
 	}
 
+  return WS.WS.PROPPATCH_INT (path, params, lines, id, st, auth_name, auth_pwd, uid, gid, 'proppatch');
+}
+;
+
+-- /* PROPPATCH method */
+create procedure WS.WS.PROPPATCH_INT (
+  in path varchar,
+  inout params varchar,
+  in lines varchar,
+  in id any,
+  in st varchar,
+  in uid varchar,
+  in gid varchar,
+  in auth_uid varchar,
+  in auth_pwd varchar,
+  in mode varchar := 'proppatch')
+{
+  -- dbg_obj_princ ('WS.WS.PROPPATCH_INT (', path, params, lines, ')');
+  declare i, l integer;
+  declare _body any;
+  declare rc, rc_all, xtree, xtd any;
+  declare pa, pn, pns, pv, ps, prop_name, props, rc_prop any;
+
+  rc_all := id;
   rc := string_output ();
-  _ses := aref_set_0 (params, 1);
-  _body := string_output_string (_ses);
-  --dbg_obj_princ ('PROPPATCH body is ', _body);
+  _body := aref_set_0 (params, 1);
+  _body := string_output_string (_body);
+  if (length (_body) = 0)
+  {
+    if (mode = 'proppatch')
+    {
+      DB.DBA.DAV_SET_HTTP_STATUS (400);
+      return -1;
+    }
+    return rc_all;
+  }
   xtree := xml_tree (_body, 0);
   if (not isarray (xtree))
   {
     DB.DBA.DAV_SET_HTTP_STATUS (400);
-    return;
+    return -1;
   }
-  if (WS.WS.ISLOCKED (vector_concat (vector (''), path), lines, _u_id))
+  if (WS.WS.ISLOCKED (path, lines, auth_uid))
   {
     DB.DBA.DAV_SET_HTTP_STATUS (423);
-    return;
+    return -1;
   }
 
-  xte_nodebld_init (acc);
+  if (mode = 'proppatch')
   http_request_status ('HTTP/1.1 207 Multi-Status');
+
   http ('<?xml version="1.0" encoding="utf-8" ?>\n', rc);
   http ('<D:multistatus xmlns:D="DAV:">\n', rc);
   http ('<D:response>\n', rc);
-  http ('<D:propstat>\n', rc);
-
-  declare xtd, prop_set any;
-  declare i, l integer;
 
   xtd := xml_tree_doc (xtree);
-  prop_set := xpath_eval('//set/prop/*',xtd,0);
-  l := length (prop_set);
-  if (l > 0)
-    {
-      i := 0;
-      while (i < l)
+  props := xpath_eval ('//set/prop/*', xtd, 0);
+  l := length (props);
+  for (i := 0; i < l; i := i + 1)
 	      {
-	        declare pa, pn, pns, pv, ps, _prop_name any;
-
-          pa := prop_set[i];
-           -- dbg_obj_princ ('set prop_set [', i, '] = ', pa);
+    pa := props[i];
           pn := cast (xpath_eval ('local-name(.)', pa) as varchar);
-	        _prop_name := pn;
+    prop_name := pn;
           pns := cast(xpath_eval ('namespace-uri(.)', pa) as varchar);
 
           ps := string_output ();
@@ -1264,82 +1281,211 @@ create procedure WS.WS.PROPPATCH (in path varchar, inout params varchar, in line
           if (length (pns) > 0)
             pn := concat (pns, ':', pn);
 
-          xte_nodebld_acc (acc, xte_node (xte_head (pn)));
-          if (is_calendar or is_addressbook)
+    if ((pns = 'http://www.openlinksw.com/virtuoso/webdav/1.0/') and (prop_name in ('virtpermissions', 'virtowneruid', 'virtownergid')))
             {
-              -- do nothing for now;
-              ;
+      declare tmp any;
+
+      tmp := trim (cast (xpath_eval ('text()', pa) as varchar));
+      if (prop_name = 'virtowneruid')
+      {
+        tmp := (select U_ID from DB.DBA.SYS_USERS where U_NAME = tmp);
             }
-          else if (pns = 'http://www.openlinksw.com/virtuoso/webdav/1.0/' and _prop_name in ('virtpermissions', 'virtowneruid', 'virtownergid'))
+      else if (prop_name = 'virtownergid')
             {
-              declare tmp, tmp_id any;
-
-              tmp := cast (xpath_eval ('string()', pa) as varchar);
-              if (_prop_name = 'virtpermissions')
+        tmp := (select U_ID from DB.DBA.SYS_USERS where U_NAME = tmp);
+      }
+      rc_prop := DAV_PROP_SET_INT (path, ':' || prop_name, tmp, null, null, 0, 0, 1, auth_uid);
+    }
+    else if ((pns = 'http://www.openlinksw.com/virtuoso/webdav/1.0/') and (prop_name = 'virtdet'))
                 {
-                  -- execute perms can set only and only dav
-                  if ((tmp like '__1%' or tmp like '_____1%' or tmp like '________1%') and _u_id <> http_dav_uid ())
-                    goto skip_perm_update;
+      declare j, m integer;
+      declare det varchar;
+      declare det_props, det_params any;
+      declare dpa, dpn, dpv any;
 
-                  -- bad permission string
-                  if (regexp_match (DB.DBA.DAV_REGEXP_PATTERN_FOR_PERM (), tmp) is null)
-                    goto skip_perm_update;
+      det := trim (cast (xpath_eval ('[xmlns:V="http://www.openlinksw.com/virtuoso/webdav/1.0/"] ./V:name/text()', pa) as varchar));
 
-                  DAV_PROP_SET_INT (prop_path, ':' || _prop_name, tmp, null, null, 0, 0, 1, _u_id);
-               skip_perm_update:;
+      -- verify for DET properties
+      --
+      if      (det = 'DynamicResource' or det = 'DR')
+      {
+        det := 'DynRes';
                 }
-              else if (_prop_name = 'virtowneruid')
+      else if (det = 'LinkedDataImport' or det = 'LDI')
                 {
-                  tmp_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = tmp);
-                  DAV_PROP_SET_INT (prop_path, ':' || _prop_name, tmp_id, null, null, 0, 0, 1, _u_id);
+        det := 'rdfSink';
                 }
-              else if (_prop_name = 'virtownergid')
+      if ((det <> 'rdfSink') and (__proc_exists ('DB.DBA.' || det || '_DAV_AUTHENTICATE_HTTP') is null))
                 {
-                  tmp_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = tmp);
-                  DAV_PROP_SET_INT (prop_path, ':' || _prop_name, tmp_id, null, null, 0, 0, 1, _u_id);
+        DB.DBA.DAV_SET_HTTP_STATUS (400);
+        return;
                 }
+      det_params := vector ();
+      det_props := xpath_eval ('[xmlns:V="http://www.openlinksw.com/virtuoso/webdav/1.0/"] ./V:params/*', pa, 0);
+      m := length (det_props);
+      for (j := 0; j < m; j := j + 1)
+      {
+        dpa := det_props[j];
+        dpn := cast (xpath_eval ('local-name(.)', dpa) as varchar);
+        dpv := trim (cast (xpath_eval ('text()', dpa) as varchar));
+        det_params := vector_concat (det_params, vector (dpn, dpv));
+      }
+
+      if (det in ('Box', 'Dropbox', 'SkyDrive', 'GDrive'))
+      {
+        declare expire_in integer;
+        declare expire_time datetime;
+        declare service_id, service_name, service_sid varchar;
+        declare qry, st, msg, meta, rows any;
+
+        -- check if OAuth connection exist
+        service_id := get_keyword ('det_serviceId', det_params);
+        if      (det = 'SkyDrive')
+          service_name := 'windowslive';
+        else if (det = 'GDrive')
+          service_name := 'google';
+        else if (det = 'Box')
+          service_name := 'boxnet';
+        else
+          service_name := lcase (det);
+
+        qry := ' select TOP 1 CS_SID                        \n' ||
+               '  from OAUTH.DBA.CLI_SESSIONS,              \n' ||
+               '       DB.DBA.WA_USER_OL_ACCOUNTS           \n' ||
+               ' where CS_SID = WUO_OAUTH_SID               \n' ||
+               '   and CS_SERVICE = ?                       \n' ||
+               '   and ((? is null) or (CS_SERVICE_ID = ?)) \n' ||
+               '   and position (\'dav\', CS_SCOPE) > 0     \n' ||
+               '   and WUO_U_ID = ?                         \n' ||
+               '   and WUO_TYPE = \'P\'';
+        st := '00000';
+        exec (qry, st, msg, vector (service_name, service_id, service_id, auth_uid), 0, meta, rows);
+        if (('00000' <> st) or (length (rows) = 0))
+        {
+          DB.DBA.DAV_SET_HTTP_STATUS (400);
+          return;
             }
-          else
+        service_sid := rows[0][0];
+        st := '00000';
+        qry := 'select * from OAUTH.DBA.CLI_SESSIONS where CS_SID = ?';
+        exec (qry, st, msg, vector (service_sid), 0, meta, rows);
+        if (('00000' <> st) or (length (rows) = 0))
             {
-              DAV_PROP_SET_INT (path, pn, serialize(pv[1]), null, null, 0, 0, 1, _u_id);
+          DB.DBA.DAV_SET_HTTP_STATUS (400);
+          return;
             }
-          i := i + 1;
+        det_params := vector_concat (det_params, vector ('Authentication', 'Yes'));
+        -- Box, SkyDrive and GDrive - OAuth 2.0 params
+        if (det in ('Box', 'SkyDrive', 'GDrive'))
+        {
+          expire_time := rows[0][0];
+          if (isnull (expire_time) or (expire_time < now ()))
+            expire_time := now ();
+
+          expire_in := datediff ('second', now (), expire_time);
+          det_params := vector_concat (det_params, vector ('access_token', rows[0][1]));
+          det_params := vector_concat (det_params, vector ('refresh_token', rows[0][2]));
+          det_params := vector_concat (det_params, vector ('expire_in', expire_in));
+          det_params := vector_concat (det_params, vector ('access_timestamp', datestring (now ())));
+        }
+        -- Dropbox  - OAuth 1.0 params
+        else if (det in ('Dropbox'))
+        {
+          det_params := vector_concat (det_params, vector ('sid', service_sid));
+          det_params := vector_concat (det_params, vector ('access_token', rows[0][1]));
+        }
+      }
+
+      -- verify input DET params
+      rc_prop := null;
+      if (__proc_exists ('DB.DBA.' || det || '_VERIFY') is not null)
+      {
+        -- set DET type parameters
+        rc_prop := call ('DB.DBA.' || det || '_VERIFY') (path, det_params);
+      }
+      else if (__proc_exists ('WEBDAV.DBA.' || det || '_VERIFY') is not null)
+      {
+        rc_prop := call ('WEBDAV.DBA.' || det || '_VERIFY') (path, det_params);
        }
+      if (not isnull (rc_prop))
+      {
+        rc_prop := -17;
+        goto _skip;
      }
 
-  prop_set := xpath_eval('//remove/prop/*',xtd,0);
+      -- set DET type
+      if (det <> 'rdfSink')
+        rc_prop := DB.DBA.DAV_PROP_SET_INT (path, ':virtdet', det, null, null, 0, 0, 0, http_dav_uid ());
 
-  l := length (prop_set);
-  if (l > 0)
+      if (not WEBDAV.DBA.DAV_ERROR (rc))
     {
-      i := 0;
-      while (i < l)
+        if (__proc_exists ('DB.DBA.' || det || '_CONFIGURE') is not null)
         {
-          declare pa, pn, pns any;
+          -- set DET type parameters
+          rc_prop := call ('DB.DBA.' || det || '_CONFIGURE') (id, det_params);
+        }
+        else if (__proc_exists ('WEBDAV.DBA.' || det || '_CONFIGURE') is not null)
+        {
+          rc_prop := call ('WEBDAV.DBA.' || det || '_CONFIGURE') (id, det_params);
+        }
+        if (DAV_HIDE_ERROR (rc_prop) is null)
+        {
+          rc_prop := -17;
+          goto _skip;
+        }
+      }
+    }
+    else
+    {
+      rc_prop := DAV_PROP_SET_INT (path, pn, serialize (pv[1]), null, null, 0, 0, 1, auth_uid);
+    }
+  _skip:;
+    WS.WS.PROPPATCH_STATUS_INT (rc, pn, rc_all, rc_prop);
+  }
 
-          pa := prop_set[i];
-          -- dbg_obj_princ ('remove prop_set [', i, '] = ', pa);
+  props := xpath_eval ('//remove/prop/*', xtd, 0);
+  l := length (props);
+  for (i := 0; i < l; i := i + 1)
+  {
+    pa := props[i];
           pn := cast (xpath_eval ('local-name(.)', pa) as varchar);
           pns := cast(xpath_eval ('namespace-uri(.)', pa) as varchar);
 
           if (length (pns) > 0)
             pn := concat (pns, ':', pn);
 
-          xte_nodebld_acc (acc, xte_node (xte_head (pn)));
-          DAV_PROP_REMOVE_INT (prop_path, pn, null, null, 0, 0);
-          i := i + 1;
-        }
+    rc_prop := DAV_PROP_REMOVE_INT (path, pn, null, null, 0, 0);
+    WS.WS.PROPPATCH_STATUS_INT (rc, pn, rc_all, rc_prop);
     }
-  acc := xte_nodebld_final (acc);
-  _proprc := xte_node_from_nodebld (xte_head ('DAV::prop'), acc);
-
-  http_value (xml_tree_doc (_proprc), null, rc);
-  http ('<D:status>HTTP/1.1 200 OK</D:status>\n', rc);
-  http ('</D:propstat>\n', rc);
   http ('</D:response>\n', rc);
   http ('</D:multistatus>\n', rc);
   http_header ('Content-Type: text/xml\r\n');
   http (string_output_string (rc));
+
+  return rc_all;
+}
+;
+
+create procedure WS.WS.PROPPATCH_STATUS_INT (
+  inout rc any,
+  inout pn any,
+  inout rc_all any,
+  inout rc_prop any)
+{
+  declare acc, prop any;
+  http ('<D:propstat>\n', rc);
+
+  xte_nodebld_init (acc);
+  xte_nodebld_acc (acc, xte_node (xte_head (pn)));
+  acc := xte_nodebld_final (acc);
+  prop := xte_node_from_nodebld (xte_head ('DAV::prop'), acc);
+  http_value (xml_tree_doc (prop), null, rc);
+
+  http (sprintf ('<D:status>%V</D:status>\n', DAV_SET_HTTP_REQUEST_STATUS_DESCRIPTION (rc_prop)), rc);
+  http ('</D:propstat>\n', rc);
+
+  if (DAV_HIDE_ERROR (rc_prop) is null)
+    rc_all := rc_prop;
 }
 ;
 
