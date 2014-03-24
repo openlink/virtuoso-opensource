@@ -59,3 +59,4 @@ grant execute on DB.DBA.lp_score_ck to "SPARQL_SELECT";
 grant execute on DB.DBA.IRI_RANK to "SPARQL_SELECT";
 grant execute on DB.DBA.RL_I2ID to "SPARQL_SELECT";
 grant execute on DB.DBA.RL_I2ID_NP to "SPARQL_SELECT";
+grant execute on DB.DBA.VT_BATCH_REAL_PROCESS_1_DB_DBA_RDF_OBJ to "SPARQL_SPONGE";
