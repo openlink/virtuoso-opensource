@@ -5608,59 +5608,53 @@ create procedure WS.WS."TRACE" (in path varchar, inout params varchar, in lines 
 create procedure DAV_SET_HTTP_REQUEST_STATUS (
   in rc integer)
 {
-  if (rc = -1)
-  {
-    http_request_status ('HTTP/1.1 409 Invalid path');
+  http_request_status (DAV_SET_HTTP_REQUEST_STATUS_DESCRIPTION (rc));
   }
-  else if (rc = -2)
-  {
-    http_request_status ('HTTP/1.1 409 Conflict: the destination (path) is not valid');
-  }
-  else if (rc = -3)
-  {
-    http_request_status ('HTTP/1.1 412 Precondition Failed: overwrite flag is not set and destination exists');
-  }
-  else if (rc = -8)
-  {
-    http_request_status ('HTTP/1.1 423 Locked');
-  }
-  else if (rc = -12)
-  {
-    http_request_status ('HTTP/1.1 403 Forbidden: authentication has failed');
-  }
-  else if (rc = -13)
-  {
-    http_request_status ('HTTP/1.1 403 Forbidden: insufficient user permissions');
-  }
-  else if (rc = -25)
-  {
-    http_request_status ('HTTP/1.1 409 Conflict: can not create collection if a resource with same name exists');
-  }
-  else if (rc = -26)
-  {
-    http_request_status ('HTTP/1.1 409 Conflict: can not create resource if a collection with same name exists');
-  }
-  else if (rc = -24)
-  {
     ;
-  }
-  else if (rc = -28)
+
+create procedure DAV_SET_HTTP_REQUEST_STATUS_DESCRIPTION (
+  in rc integer)
   {
-    http_request_status ('HTTP/1.1 599 Internal server error');
-  }
-  else if (rc = -29)
-  {
-    http_request_status ('HTTP/1.1 599 Internal server error');
-  }
-  else if (rc = -41)
-  {
-    http_request_status ('HTTP/1.1 507 Insufficient storage');
-  }
-  else
-  {
-    http_request_status ('HTTP/1.1 405 Method Not Allowed');
-  }
-  return;
+  if (DAV_HIDE_ERROR (rc) is not null)
+    return 'HTTP/1.1 200 OK';
+
+  if (rc = -1)
+    return 'HTTP/1.1 409 Invalid path';
+
+  if (rc = -2)
+    return 'HTTP/1.1 409 Conflict: the destination (path) is not valid';
+
+  if (rc = -3)
+    return 'HTTP/1.1 412 Precondition Failed: overwrite flag is not set and destination exists';
+
+  if (rc = -8)
+    return 'HTTP/1.1 423 Locked';
+
+  if (rc = -12)
+    return 'HTTP/1.1 403 Forbidden: authentication has failed';
+
+  if (rc = -13)
+    return 'HTTP/1.1 403 Forbidden: insufficient user permissions';
+
+  if (rc = -25)
+    return 'HTTP/1.1 409 Conflict: can not create collection if a resource with same name exists';
+
+  if (rc = -26)
+    return 'HTTP/1.1 409 Conflict: can not create resource if a collection with same name exists';
+
+  if (rc = -24)
+    return '';
+
+  if (rc = -28)
+    return 'HTTP/1.1 599 Internal server error';
+
+  if (rc = -29)
+    return 'HTTP/1.1 599 Internal server error';
+
+  if (rc = -41)
+    return 'HTTP/1.1 507 Insufficient storage';
+
+  return 'HTTP/1.1 405 Method Not Allowed';
 }
 ;
 
