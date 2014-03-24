@@ -1508,48 +1508,40 @@ create procedure WS.WS.FINDPARAM (inout params varchar, in pkey varchar)
 }
 ;
 
-create procedure WS.WS.MKCOL (in path varchar, inout params varchar, in lines varchar)
+create procedure WS.WS.MKCOL (
+  in path varchar,
+  inout params varchar,
+  in lines varchar)
 {
-  declare _parent_name varchar;
-  declare _col_id, rc integer;
-  declare _perms varchar;
-  declare _col_parent_id integer;
-  declare uname, upwd varchar;
-  declare _u_id, _g_id integer;
-  declare ses, ses_str any;
-
   -- dbg_obj_princ ('WS.WS.MKCOL (', path, params, lines, ')');
+  declare _col_id, _col_parent_id, rc any;
+  declare _perms varchar;
+  declare auth_name, auth_pwd varchar;
+  declare uid, gid integer;
+
   _col_parent_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'P'));
   _col_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'C'));
-  _u_id := null;
-  _g_id := null;
+  uid := null;
+  gid := null;
   if (_col_parent_id is not null)
   {
-    -- dbg_obj_princ ('MKCOL has _col_parent_id=', _col_parent_id);
-    rc := DAV_AUTHENTICATE_HTTP (_col_parent_id, 'C', '11_', 1, lines, uname, upwd, _u_id, _g_id, _perms);
-    -- dbg_obj_princ ('Authentication in MKCOL gives ', rc, uname, upwd, _u_id, _g_id, _perms);
+    rc := DAV_AUTHENTICATE_HTTP (_col_parent_id, 'C', '11_', 1, lines, auth_name, auth_pwd, uid, gid, _perms);
   	if (rc < 0)
   	{
       DB.DBA.DAV_SET_AUTHENTICATE_HTTP_STATUS (rc);
   		return;
   	}
   }
-  ses := aref_set_0 (params, 1);
-  ses_str := string_output_string (ses);
-  if (length (ses_str) > 0)
-  {
-    DB.DBA.DAV_SET_HTTP_STATUS (415);
-    return;
-  }
-  rc := DAV_COL_CREATE_INT ('/' || DAV_CONCAT_PATH (path, '/'), _perms, null, null, null, null, 1, 0, 1, _u_id, _g_id);
-  -- dbg_obj_princ ('DAV_COL_CREATE_INT returned ', rc, ' of type ', __tag (rc));
+
+  path := '/' || DAV_CONCAT_PATH (path, '/');
+  rc := DAV_COL_CREATE_INT (path, _perms, null, null, null, null, 1, 0, 1, uid, gid);
   if (DAV_HIDE_ERROR (rc) is not null)
+    rc := WS.WS.PROPPATCH_INT (path, params, lines, rc, 'C', auth_name, auth_pwd, uid, gid, 'mkcol');
+
+  if (DAV_HIDE_ERROR (rc) is null)
   {
-    commit work;
-    http_request_status ('HTTP/1.1 201 Created');
-    http_header('Link: <http://www.w3.org/ns/ldp#Container>; rel="type"\r\n');
-  }
-  else if (rc = -24)
+    rollback work;
+    if (rc = -24)
   {
     ;
   }
@@ -1569,6 +1561,13 @@ create procedure WS.WS.MKCOL (in path varchar, inout params varchar, in lines va
   {
     DB.DBA.DAV_SET_HTTP_STATUS (405);
   }
+  return;
+}
+
+  commit work;
+  http_request_status ('HTTP/1.1 201 Created');
+  http_header('Link: <http://www.w3.org/ns/ldp#Container>; rel="type"\r\n');
+
   return;
 }
 ;
