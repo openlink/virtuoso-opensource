@@ -3919,11 +3919,18 @@ do_file:
 	      ws_clear (ws, 1);
 
 	      dk_free_box (ws->ws_path_string);
-	      ws->ws_path_string = dk_alloc_box (strlen (text) + lpath_len + 2, DV_SHORT_STRING);
-	      if (lpath_len > 0 && lpath[lpath_len - 1] == '/')
-		snprintf (ws->ws_path_string, box_length (ws->ws_path_string), "%s%s", lpath, text);
+	      if (text[0] != '/')
+		{
+		  ws->ws_path_string = dk_alloc_box (strlen (text) + lpath_len + 2, DV_SHORT_STRING);
+		  if (lpath_len > 0 && lpath[lpath_len - 1] == '/')
+		    snprintf (ws->ws_path_string, box_length (ws->ws_path_string), "%s%s", lpath, text);
+		  else
+		    snprintf (ws->ws_path_string, box_length (ws->ws_path_string), "%s/%s", lpath, text);
+		}
 	      else
-		snprintf (ws->ws_path_string, box_length (ws->ws_path_string), "%s/%s", lpath, text);
+		{
+		  ws->ws_path_string = box_copy (text);
+		}
 	      dk_free_box (ws->ws_p_path_string); ws->ws_p_path_string = NULL;
 	      dk_free_tree ((box_t) ws->ws_p_path); ws->ws_p_path = NULL; path1 = "";
 	      ws_set_phy_path (ws, 0, ws->ws_path_string);
