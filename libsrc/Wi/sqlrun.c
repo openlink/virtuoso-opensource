@@ -3705,8 +3705,13 @@ qr_mt_dml_sync (query_t * qr, query_instance_t * qi)
 		}
 	      do {
 		err = NULL;
-		aq_wait_all (aq, &err);
-		dk_free_tree (err);
+		IO_SECT (qi)
+		{
+		  aq_wait_all (aq, &err);
+		  dk_free_tree (err);
+		  err = NULL;
+		}
+		END_IO_SECT (err);
 	      } while (err);
 	    }
 	}
