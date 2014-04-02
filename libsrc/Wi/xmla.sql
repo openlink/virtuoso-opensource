@@ -262,6 +262,16 @@ create procedure
 }
 ;
 
+create procedure xmla_get_user (inout uname varchar, inout passwd varchar)
+{
+  if (uname is null and is_https_ctx ())
+    {
+      uname := connection_get ('SPARQLUserId'); -- if WebID ACL is checked
+      passwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = uname);
+    }
+}
+;
+
 create procedure
 "Execute"  (in  "Command" varchar
             --__soap_type 'http://openlinksw.com/virtuoso/xmla/types:Execute.Command'
@@ -304,11 +314,7 @@ create procedure
   uname := xmla_get_property ("Properties", 'UserName', null);
   passwd := xmla_get_property ("Properties", 'Password', null);
 
-  if (uname is null and is_https_ctx ())
-    {
-      uname := connection_get ('SPARQLUserId'); -- if WebID ACL is checked
-      passwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = uname);
-    }
+  xmla_get_user (uname, passwd);
 
   -- XMLA command, no statement
   if (stmt is null and ("BeginSession" is not null or "EndSession" is not null))
@@ -852,6 +858,7 @@ create method xmla_dbschema_columns () for xmla_discover
       declare uname, passwd varchar;
       uname := self.xmla_get_property ('UserName', null);
       passwd := self.xmla_get_property ('Password', null);
+      xmla_get_user (uname, passwd);
       if (uname is null or passwd is null)
 	signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
       set_user_id (uname, 1, passwd);
@@ -977,6 +984,7 @@ create method xmla_dbschema_foreign_keys () for xmla_discover
       declare uname, passwd varchar;
       uname := self.xmla_get_property ('UserName', null);
       passwd := self.xmla_get_property ('Password', null);
+      xmla_get_user (uname, passwd);
       if (uname is null or passwd is null)
 	signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
       set_user_id (uname, 1, passwd);
@@ -1055,6 +1063,7 @@ create method xmla_dbschema_primary_keys () for xmla_discover
       declare uname, passwd varchar;
       uname := self.xmla_get_property ('UserName', null);
       passwd := self.xmla_get_property ('Password', null);
+      xmla_get_user (uname, passwd);
       if (uname is null or passwd is null)
 	signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
       set_user_id (uname, 1, passwd);
@@ -1201,6 +1210,7 @@ create method xmla_dbschema_tables () for xmla_discover
       declare uname, passwd varchar;
       uname := self.xmla_get_property ('UserName', null);
       passwd := self.xmla_get_property ('Password', null);
+      xmla_get_user (uname, passwd);
       if (uname is null or passwd is null)
 	signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
       set_user_id (uname, 1, passwd);
