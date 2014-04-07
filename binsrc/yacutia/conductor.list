@@ -168,6 +168,7 @@ conductor/db_repl_sub_image.vspx
 conductor/db_repl_sub_new_inc.vspx
 conductor/db_repl_trans.vspx
 conductor/ent.dtd
+conductor/entity_uri_patterns.vspx
 conductor/error.vspx
 conductor/fb_popup.vspx
 conductor/file_browser.xsl
