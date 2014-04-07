@@ -233,5 +233,6 @@ caddr_t sqlp_minus (caddr_t n);
 char * sqlp_default_cluster ();
 dk_set_t cl_all_host_group_list ();
 dk_set_t sqlp_index_default_opts(dk_set_t opts);
+char * sqlp_inx_col_opt ();
 
 #endif /* _SQLPFN_H */

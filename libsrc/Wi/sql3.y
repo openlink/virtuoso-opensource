@@ -1001,7 +1001,9 @@ index_option
 	| OBJECT_ID	{ $$ = t_box_string ("object_id"); }
 	| BITMAPPED 	{ $$ = t_box_string ("bitmap"); }
 	| DISTINCT { $$ = t_box_string ("distinct"); }
-	| COLUMN { $$ = t_box_string ("column"); }
+	| COLUMN 		{
+				    $$ = t_box_string (sqlp_inx_col_opt ());
+				}
 	| NOT COLUMN { $$ = t_box_string ("not_column"); }
 	| NOT NULLX { $$ = t_box_string ("not_null"); }
 	| NO_L PRIMARY KEY REF { $$ = t_box_string ("no_pk"); }

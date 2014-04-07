@@ -2674,3 +2674,8 @@ sqlp_index_default_opts(dk_set_t opts)
   return opts;
 }
 
+char *
+sqlp_inx_col_opt ()
+{
+    return "column";
+}
