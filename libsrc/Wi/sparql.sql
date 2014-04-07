@@ -8110,7 +8110,7 @@ create function DB.DBA.SPARQL_DELETE_QUAD_DICT_CONTENT (in dflt_graph_iri any, i
   declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
   if (__tag of vector = __tag (dflt_graph_iri))
     {
-      del_count := dflt_graph_iri[2]; -- 2, not 1
+      del_count := dflt_graph_iri[1]; -- 1 for del count
       dflt_graph_iri := dflt_graph_iri[0]; -- the last op.
     }
   while (dict_size (quads_dict) > 0)
