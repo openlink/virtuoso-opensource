@@ -20,6 +20,7 @@ Some ideas for using maven with virtuoso jar:
 		<systemPath>${project.basedir}/lib/virt_sesame2.jar</systemPath>
 	</dependency>
 
+
 2) In order to publish manually the virtuoso jar on the local maven repository, it's possible to do something like:
 
 	>> mvn install:install-file -Dfile=some-path-to-lib/virt_sesame2.jar -DgroupId=virtuoso.sesame2.driver -DartifactId=virt_sesame2 -Dversion=1.12 -Dpackaging=jar
