@@ -2701,6 +2701,18 @@ sqlg_hs_realias_key_out (sql_comp_t * sc, hash_source_t * hs)
   hs->hs_out_aliases = NULL;
 }
 
+int
+qn_in_union_subq (data_source_t * qn)
+{
+  if (IS_QN (qn, subq_node_input) && !qn->src_sets)
+    {
+      QNCAST (subq_source_t, sqs, qn);
+      return IS_QN (sqs->sqs_query->qr_head_node,  union_node_input);
+    }
+  return 0;
+}
+
+
 int enable_unq_non_unq = 1;
 
 void
@@ -2749,6 +2761,12 @@ sqlg_vec_hs (sql_comp_t * sc, hash_source_t * hs)
 	if (sctr->sctr_ose || sctr->sctr_not_in_top_and)
 	  no_bloom_in_probe = 1;
       }
+      if (qn_in_union_subq (pred))
+	{
+	  	    hs->hs_partition_filter_self = 1;
+
+		    break;
+	}
     DO_BOX (state_slot_t *, ref, inx, hs->hs_ref_slots)
     {
       if (pred == gethash ((void *) ref, sc->sc_vec_ssl_def))
