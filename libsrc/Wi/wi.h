@@ -1225,7 +1225,7 @@ len = row_length (row, key)
 }
 
 
-#define ITC_ASSERT_TRANSIT(itc, dp1, dp2) \\
+#define ITC_ASSERT_TRANSIT(itc, dp1, dp2) \
 {\
   it_map_t itm1 = IT_DP_MAP (itc->itc_tree, dp1);\
   it_map_t itm2 = IT_DP_MAP (itc->itc_tree, dp2);\
