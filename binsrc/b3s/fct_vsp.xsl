@@ -225,6 +225,9 @@
 			<option value="121" selected="true">External resource link</option>\
 	  		<option value="">No link out</option>\
 			<!-- <option value="LOCAL_PIVOT">External faceted navigation links</option> -->\
+                        <option value="DESCRIBE"> External Description Link</option>\
+                        <option value="ABOUT_RDF">External Sponged Data Link (RDF)</option>\
+                        <option value="ABOUT_HTML">External Sponged Data Link (HTML)</option>\
 			<option value="LOCAL_TTL">External description resource (TTL)</option>\
 			<!-- <option value="LOCAL_CXML">External description resource (CXML)</option> -->\
 			<option value="LOCAL_NTRIPLES">External description resource (NTRIPLES)</option>\
@@ -237,6 +240,9 @@
 			<option value="" selected="true">Local faceted navigation link</option>\
 			<option value="121">External resource link</option>\
 			<option value="LOCAL_PIVOT">External faceted navigation links</option>\
+                        <option value="DESCRIBE"> External Description Links</option>\
+                        <option value="ABOUT_RDF">External Sponged Data Links (RDF)</option>\
+                        <option value="ABOUT_HTML">External Sponged Data Links (HTML)</option>\
 			<option value="LOCAL_TTL">External description resource (TTL)</option>\
 			<option value="LOCAL_CXML">External description resource (CXML)</option>\
 			<option value="LOCAL_NTRIPLES">External description resource (NTRIPLES)</option>\
