@@ -549,6 +549,29 @@ dfe_jp_fill (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, join_plan_t * jp, 
 
 
 int
+jp_is_unplaceable_oj (df_elt_t * tb_dfe)
+{
+  op_table_t * ot = DFE_TABLE == tb_dfe->dfe_type ? tb_dfe->_.table.ot : tb_dfe->_.sub.ot;
+  if (ot->ot_is_outer)
+    {
+      int save = tb_dfe->dfe_is_placed;
+      tb_dfe->dfe_is_placed = 1;
+      DO_SET (df_elt_t *, pred, &tb_dfe->_.table.ot->ot_join_preds)
+	{
+	  if (!dfe_reqd_placed (pred))
+	    {
+	      tb_dfe->dfe_is_placed = save;
+	      return 1;
+	    }
+	}
+      END_DO_SET ();
+      tb_dfe->dfe_is_placed = save;
+    }
+  return 0;
+}
+
+
+int
 jp_mark_restr_join (sqlo_t * so, join_plan_t * jp, join_plan_t * root_jp)
 {
   join_plan_t *prev;
@@ -625,6 +648,8 @@ dfe_join_score_jp (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, dk_set_t * r
 	root_jp->jp_reached += (float) jp.jp_n_joined / level;
       for (jinx = 0; jinx < jp.jp_n_joined; jinx++)
 	{
+	  if (jp_is_unplaceable_oj (jp.jp_joined[jinx]))
+	    continue;
 	  dfe_join_score_jp (so, ot, jp.jp_joined[jinx], res, &jp);
 	  any_tried = 1;
 	}
