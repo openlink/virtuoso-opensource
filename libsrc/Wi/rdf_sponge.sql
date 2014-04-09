@@ -1611,6 +1611,10 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI(in uri varchar := '', in login varc
 create procedure DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC (in contents varchar, in base varchar, in graph varchar, in mimetype varchar :='text/html')
 {
   declare proxyiri, docproxyiri, dociri varchar;
+
+  if (__proc_exists ('DB.DBA.RM_SPONGE_DOC_IRI') is null)
+    return;
+
   proxyiri := DB.DBA.RDF_PROXY_ENTITY_IRI (graph);
   docproxyiri := DB.DBA.RDF_SPONGE_PROXY_IRI (graph);
   dociri:=DB.DBA.RM_SPONGE_DOC_IRI(graph);
