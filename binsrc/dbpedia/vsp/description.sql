@@ -508,6 +508,10 @@ create procedure dbp_ldd_http_print_r (in _object any, in org int := 0, in label
 {
    declare lang, rdfs_type, rdfa, visible any;
 
+   if (__tag of rdf_box = __tag (_object))
+     {
+       __rdf_box_make_complete (_object);
+     }
    lang := DB.DBA.RDF_LANGUAGE_OF_OBJ (_object);
    visible := dbp_ldd_str_lang_check (lang, acc);
    rdfs_type := DB.DBA.RDF_DATATYPE_OF_OBJ (_object);

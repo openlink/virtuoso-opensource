@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,7 +19,6 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="sparql_create_page"
         decor="yacutia_decor.vspx"
@@ -33,9 +30,8 @@
   <vm:pagetitle>Meta Cartridges</vm:pagetitle>
   <vm:pagewrapper>
     <vm:variables>
-      <v:variable name="del_item" default="null" type="int" param-name="del"/>
-      <v:variable name="edit_item" default="null" type="int" param-name="edit"/>
-      <v:variable name="step" default="0" type="int" persist="0"/>
+      <v:variable name="c_mode" type="varchar" default="'C/browse'"/>
+      <v:variable name="c_id" type="integer" default="null"/>
     </vm:variables>
     <vm:menu>
       <vm:menuitem value="Meta Cartridges"/>
@@ -59,6 +55,8 @@
                       <col/>
                       <col/>
                       <col/>
+                      <col/>
+                      <col/>
                     </colgroup>
                     <tr>
                       <td class="page_tab" align="center" nowrap="1">
@@ -71,7 +69,7 @@
                       <td class="page_tab" align="center" nowrap="1">
                         <v:url name="url2" value="Stylesheets" format="%s" url="sparql_filters.vspx" xhtml_class="uddi"/>
                       </td>
-		      <td class="page_tab" align="center" nowrap="1">
+		                  <td class="page_tab" align="center" nowrap="1">
                         <v:url name="url1" value="Entity URIs" format="%s" url="entity_uri_patterns.vspx" xhtml_class="uddi"/>
                       </td>
                       <td class="page_tab" align="center" nowrap="1">
@@ -79,7 +77,7 @@
                       </td>
                       <td class="page_tab" align="center" nowrap="1">
                         <v:url name="url4" value="Configuration" format="%s" url="rdf_conf.vspx" xhtml_class="uddi"/>
-          </td>
+                      </td>
                       <?vsp } ?>
                       <td class="page_tab_empty" align="center" width="100%">
                         <table cellpadding="0" cellspacing="0">
@@ -99,356 +97,368 @@
                           <tr>
                             <td>
                               <v:form name="fm" type="simple" method="POST">
-                                <table class="listing" rules="groups">
-                                  <colgroup>
-                                    <col/>
-                                    <col/>
-                                    <col/>
-                                    <col/>
-                                    <col/>
-                                    <col/>
-                                    <col/>
-                                  </colgroup>
-                                  <tr class="listing_header_row">
-                                    <th style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_item')"/></th>
-                                    <th>Seq#</th>
-                                    <th>ID</th>
-                                    <th colspan="2">Description</th>
-                                    <th>Pattern</th>
-                                    <th>API type</th>
-                                    <th width="1%">Action</th>
-                                  </tr>
-                                  <v:data-set name="maps"
-                                              sql="select MC_PATTERN, MC_TYPE, MC_DESC, MC_ID, MC_HOOK, MC_KEY, MC_ENABLED, MC_OPTIONS, MC_SEQ, MC_API_TYPE from DB.DBA.RDF_META_CARTRIDGES order by MC_SEQ"
-                                              scrollable="1"
-                                              editable="1"
-                                              nrows="1000">
-                                    <v:before-data-bind>
-                                      if (not e.ve_is_post and self.del_item is not null)
-                                      {
-                                        delete from DB.DBA.RDF_META_CARTRIDGES where MC_ID = self.del_item;
-                                      }
-                                    </v:before-data-bind>
-                                    <v:template name="maps_rep" type="repeat">
-                                      <v:template name="maps_brows" type="browse">
-                                        <v:after-data-bind><![CDATA[
-                                          if (not e.ve_is_post and control.te_rowset[3] = self.edit_item)
+                                <vm:if test="self.c_mode = 'C/browse'">
+                                  <v:button name="add1" value="Add" action="simple">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        self.c_mode := 'C/add';
+
+                                        self.desc1.ufl_value := '';
+                                        self.patt1.ufl_value := '';
+                                        self.typ1.ufl_value := '';
+                                        self.pl1.ufl_value := '';
+                                        self.key1.ufl_value := '';
+                                        self.opts1.ufl_value := '';
+
+                                        self.c_id := null;
+                                        self.vc_data_bind (e);
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+
+                                  <v:button name="apply1" value="Enable Selected" action="simple">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        declare M, N, enabled integer;
+                                        declare params, checked any;
+                                        declare chil vspx_control;
+                                        declare cb vspx_check_box;
+                                        declare ds vspx_data_set;
+
+                                        params := e.ve_params;
+                                        checked := vector();
+                                        for (N := 0; N < length(params); N := N + 2)
+                                        {
+                                          if (params[N] like '%:cb_item%')
+                                            checked := vector_concat (checked, vector (cast (params[N+1] as integer)));
+                                        }
+                                        ds := self.maps;
+                                        M := 0;
+                                        while ((chil := ds.ds_iterate_rows (M)) is not null)
+                                        {
+                                          enabled := 0;
+                                          cb := chil.vc_find_control ('cb_item');
+                                          for (N := 0; N < length (checked); N := N + 1)
                                           {
-                                            declare skey, _key, _uid, _opts any;
-                                            declare i int;
-                                            skey := control.te_rowset[5];
-                                            skey := deserialize (skey);
-                                            _opts := control.te_rowset[7];
-                                            if (not isarray(skey))
+                                            if (checked[N] = cb.ufl_value)
                                             {
-                                              _key := control.te_rowset[5];
-                                              _uid := '';
-                                            }
-                                            else
-                                            {
-                                              _key := skey[0];
-                                              _uid := skey[1];
-                                            }
-                                            self.desc1.ufl_value := control.te_rowset[2];
-                                            self.patt1.ufl_value := control.te_rowset[0];
-                                            self.typ1.ufl_value := control.te_rowset[1];
-                                            self.pl1.ufl_value := control.te_rowset[4];
-                                            self.key1.ufl_value := _key;
-                                            self.key2.ufl_value := _uid;
-                                            self.opts1.ufl_value := '';
-                                            for (i := 0; i < length (_opts); i := i + 2)
-                                            {
-                                              self.opts1.ufl_value :=  self.opts1.ufl_value || _opts[i] || '=' || _opts[i+1] || '\n';
+                                              enabled := 1;
+                                              goto _skip;
                                             }
                                           }
-                                        ]]></v:after-data-bind>
-                                        <tr class="<?V case when self.edit_item = control.te_rowset[3] then 'listing_row_selected' when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
-                                          <td>
-                                            <v:check-box name="cb_item" value="--(control.vc_parent as vspx_row_template).te_rowset[3]" initial-checked="--(control.vc_parent as vspx_row_template).te_rowset[6]" />
-                                          </td>
-                                          <td>
-                                            <v:label name="la3" value="--(control.vc_parent as vspx_row_template).te_rowset[8]" />
-                                          </td>
-                                          <td>
-                                            <v:label name="lan1" format="%d" value="--(control.vc_parent as vspx_row_template).te_rowset[3]"/>
-                                          </td>
-                                          <td>
-                                            <v:url name="ur1"
-                                                   value='--concat (&apos;<img src="images/icons/edit_16.png" hspace="3" border="0"/>&apos;, (control.vc_parent as vspx_row_template).te_rowset[2])'
-                                                   format="%s"
-                                                   url="--sprintf ('rdf_filters_pp.vspx?edit=%d', (control.vc_parent as vspx_row_template).te_rowset[3])"
-                                                   xhtml_title="Edit"
-                                                   xhtml_alt="Edit"
-                                            />
-                                          </td>
-                                          <td>
-                                            <v:label name="la2" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" />
-                                          </td>
-                                          <td>
-                                            <v:label name="la1" format="%70.70s" value="--(control.vc_parent as vspx_row_template).te_rowset[0]"/>
-                                          </td>
-                                          <td>
-                                            <v:label name="la4" format="%s" value="--y_rdf_api_type ((control.vc_parent as vspx_row_template).te_rowset[9])" />
-                                          </td>
-                                          <td nowrap="nowrap">
-                                            &nbsp;
-                                            <v:url name="ur2" value='<img src="images/icons/trash_16.png" hspace="3" border="0"/>Delete'
-                                                format="%s"
-                                                url="--sprintf ('rdf_filters_pp.vspx?del=%d', (control.vc_parent as vspx_row_template).te_rowset[3])"
-                                                xhtml_title="Delete"
-                                                xhtml_alt="Delete"
-                                            />
-                                            &nbsp;
-                                            <v:button name="earul1" value="Up" action="simple" style="url">
-                                              <v:on-post><![CDATA[
-                                                declare to_move, to_swap, mv_ord, sw_ord int;
-                                                if (not self.vc_is_valid)
-                                                  return;
-                                                to_swap := null;
-                                                to_move := (control.vc_parent as vspx_row_template).te_rowset[3];
-                                                for select MC_ID, MC_SEQ from DB.DBA.RDF_META_CARTRIDGES order by MC_SEQ do
-                                                  {
-                                                    if (MC_ID = to_move)
+                                        _skip:;
+                                          update DB.DBA.RDF_META_CARTRIDGES set MC_ENABLED = enabled where MC_ID = cb.ufl_value;
+                                          cb.ufl_selected := enabled;
+                                        }
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+
+                                  <table class="listing" rules="groups">
+                                    <tr class="listing_header_row">
+                                      <th style="width:5px;"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_item')"/></th>
+                                      <th width="1%">Seq#</th>
+                                      <th width="1%">ID</th>
+                                      <th colspan="2">Description</th>
+                                      <th>Pattern</th>
+                                      <th>API type</th>
+                                      <th width="1%">Action</th>
+                                    </tr>
+                                    <v:data-set name="maps"
+                                                sql="select MC_PATTERN, MC_TYPE, MC_DESC, MC_ID, MC_HOOK, MC_KEY, MC_ENABLED, MC_OPTIONS, MC_SEQ, MC_API_TYPE from DB.DBA.RDF_META_CARTRIDGES order by MC_SEQ"
+                                                scrollable="1"
+                                                editable="1"
+                                                nrows="1000">
+                                      <v:template name="maps_rep" type="repeat">
+
+                                        <v:template name="maps_brows" type="browse">
+                                          <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                                            <td>
+                                              <v:check-box name="cb_item" value="--(control.vc_parent as vspx_row_template).te_rowset[3]" initial-checked="--(control.vc_parent as vspx_row_template).te_rowset[6]" />
+                                            </td>
+                                            <td align="right" style="padding: 0 5px 0 0px">
+                                              <v:label name="la3" value="--(control.vc_parent as vspx_row_template).te_rowset[8]" />
+                                            </td>
+                                            <td align="right" style="padding: 0 5px 0 0px">
+                                              <v:label name="lan1" format="%d" value="--(control.vc_parent as vspx_row_template).te_rowset[3]"/>
+                                            </td>
+                                            <td>
+                                              <v:button name="edit1" action="simple" style="url" value="''" xhtml_title="Edit" xhtml_alt="Edit">
+                                                <v:before-render>
+                                                  <![CDATA[
+                                                    control.ufl_value := '<img src="images/icons/edit_16.png" hspace="3" border="0"/>' || (control.vc_parent as vspx_row_template).te_rowset[2];
+                                                  ]]>
+                                                </v:before-render>
+                                                <v:on-post>
+                                                  <![CDATA[
+                                                    declare skey, _key, _uid, _opts any;
+                                                    declare i integer;
+
+                                                    skey := (control.vc_parent as vspx_row_template).te_rowset[5];
+                                                    skey := deserialize (skey);
+                                                    _opts := (control.vc_parent as vspx_row_template).te_rowset[7];
+                                                    if (not isarray(skey))
+                                                    {
+                                                      _key := (control.vc_parent as vspx_row_template).te_rowset[5];
+                                                      _uid := '';
+                                                    }
+                                                    else
+                                                    {
+                                                      _key := skey[0];
+                                                      _uid := skey[1];
+                                                    }
+                                                    self.desc1.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[2];
+                                                    self.patt1.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[0];
+                                                    self.typ1.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[1];
+                                                    self.pl1.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[4];
+                                                    self.key1.ufl_value := _key;
+                                                    self.key2.ufl_value := _uid;
+                                                    self.opts1.ufl_value := '';
+                                                    for (i := 0; i < length (_opts); i := i + 2)
+                                                    {
+                                                      self.opts1.ufl_value :=  self.opts1.ufl_value || _opts[i] || '=' || _opts[i+1] || '\n';
+                                                    }
+                                                    self.c_id := (control.vc_parent as vspx_row_template).te_rowset[3];
+
+                                                    self.c_mode := 'C/edit';
+                                                    self.vc_data_bind (e);
+                                                  ]]>
+                                                </v:on-post>
+                                              </v:button>
+                                            </td>
+                                            <td>
+                                              <v:label name="la2" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" />
+                                            </td>
+                                            <td>
+                                              <v:label name="la1" format="%70.70s" value="--(control.vc_parent as vspx_row_template).te_rowset[0]"/>
+                                            </td>
+                                            <td>
+                                              <v:label name="la4" format="%s" value="--y_rdf_api_type ((control.vc_parent as vspx_row_template).te_rowset[9])" />
+                                            </td>
+                                            <td nowrap="nowrap">
+                                              &nbsp;
+                                              <v:button name="delete1" action="simple" style="url" value="''">
+                                                <v:before-render>
+                                                  <![CDATA[
+                                                    control.ufl_value := '<img src="images/icons/trash_16.png" border="0" alt="Delete" title="Delete"/> Delete';
+                                                  ]]>
+                                                </v:before-render>
+                                                <v:on-post>
+                                                  <![CDATA[
+                                                    delete from DB.DBA.RDF_META_CARTRIDGES where MC_ID = (control.vc_parent as vspx_row_template).te_rowset[3];
+                                                    self.vc_data_bind (e);
+                                                  ]]>
+                                                </v:on-post>
+                                              </v:button>
+                                              &nbsp;
+                                              <v:button name="earul1" value="Up" action="simple" style="url">
+                                                <v:on-post>
+                                                  <![CDATA[
+                                                    declare to_move, to_swap, mv_ord, sw_ord int;
+
+                                                    if (not self.vc_is_valid)
+                                                      return;
+
+                                                    to_swap := null;
+                                                    to_move := (control.vc_parent as vspx_row_template).te_rowset[3];
+                                                    for select MC_ID, MC_SEQ from DB.DBA.RDF_META_CARTRIDGES order by MC_SEQ do
+                                                    {
+                                                      if (MC_ID = to_move)
                                                       {
                                                         mv_ord := MC_SEQ;
                                                         goto swapit;
                                                       }
-                                                    to_swap := MC_ID;
-                                                    sw_ord := MC_SEQ;
-                                                  }
-                                                swapit:
-                                                if (to_swap is not null)
-                                                  {
-                                                    update DB.DBA.RDF_META_CARTRIDGES set MC_SEQ = sw_ord where MC_ID = to_move;
-                                                    update DB.DBA.RDF_META_CARTRIDGES set MC_SEQ = mv_ord where MC_ID = to_swap;
-                                                  }
-                                                self.vc_data_bind (e);
-                                              ]]></v:on-post>
-                                            </v:button>
-                                            &nbsp;
-                                            <v:button name="earul2" value="Down" action="simple" style="url">
-                                              <v:on-post><![CDATA[
-                                                declare to_move, to_swap, mv_ord, sw_ord int;
-                                                if (not self.vc_is_valid)
-                                                  return;
-                                                to_swap := null;
-                                                to_move := (control.vc_parent as vspx_row_template).te_rowset[3];
-                                                mv_ord := null;
-                                                for select MC_ID, MC_SEQ from DB.DBA.RDF_META_CARTRIDGES order by MC_SEQ do
-                                                {
-                                                  if (MC_ID = to_move)
-                                                  {
-                                                    mv_ord := MC_SEQ;
-                                                  }
-                                                  else if (mv_ord is not null)
-                                                  {
-                                                    to_swap := MC_ID;
-                                                    sw_ord := MC_SEQ;
-                                                    goto swapit;
-                                                  }
-                                                }
-                                              swapit:
-                                                if (to_swap is not null)
-                                                {
-                                                  update DB.DBA.RDF_META_CARTRIDGES set MC_SEQ = sw_ord where MC_ID = to_move;
-                                                  update DB.DBA.RDF_META_CARTRIDGES set MC_SEQ = mv_ord where MC_ID = to_swap;
-                                                }
-                                                self.vc_data_bind (e);
-                                              ]]></v:on-post>
-                                            </v:button>
-                                          </td>
-                                        </tr>
+                                                      to_swap := MC_ID;
+                                                      sw_ord := MC_SEQ;
+                                                    }
+                                                  swapit:
+                                                    if (to_swap is not null)
+                                                    {
+                                                      update DB.DBA.RDF_META_CARTRIDGES set MC_SEQ = sw_ord where MC_ID = to_move;
+                                                      update DB.DBA.RDF_META_CARTRIDGES set MC_SEQ = mv_ord where MC_ID = to_swap;
+                                                    }
+                                                    self.vc_data_bind (e);
+                                                  ]]>
+                                                </v:on-post>
+                                              </v:button>
+                                              &nbsp;
+                                              <v:button name="earul2" value="Down" action="simple" style="url">
+                                                <v:on-post>
+                                                  <![CDATA[
+                                                    declare to_move, to_swap, mv_ord, sw_ord int;
+
+                                                    if (not self.vc_is_valid)
+                                                      return;
+
+                                                    to_swap := null;
+                                                    to_move := (control.vc_parent as vspx_row_template).te_rowset[3];
+                                                    mv_ord := null;
+                                                    for select MC_ID, MC_SEQ from DB.DBA.RDF_META_CARTRIDGES order by MC_SEQ do
+                                                    {
+                                                      if (MC_ID = to_move)
+                                                      {
+                                                        mv_ord := MC_SEQ;
+                                                      }
+                                                      else if (mv_ord is not null)
+                                                      {
+                                                        to_swap := MC_ID;
+                                                        sw_ord := MC_SEQ;
+                                                        goto swapit;
+                                                      }
+                                                    }
+                                                  swapit:
+                                                    if (to_swap is not null)
+                                                    {
+                                                      update DB.DBA.RDF_META_CARTRIDGES set MC_SEQ = sw_ord where MC_ID = to_move;
+                                                      update DB.DBA.RDF_META_CARTRIDGES set MC_SEQ = mv_ord where MC_ID = to_swap;
+                                                    }
+                                                    self.vc_data_bind (e);
+                                                  ]]>
+                                                </v:on-post>
+                                              </v:button>
+                                            </td>
+                                          </tr>
+                                        </v:template>
                                       </v:template>
-                                    </v:template>
-                                    <v:template name="maps_footer" type="simple">
-                                      <tr>
-                                        <td colspan="7" class="listing_col_action">
-                                          <vm:ds-navigation data-set="maps" type="set" />
-                                        </td>
-                                      </tr>
-                                    </v:template>
-                                  </v:data-set>
-                                </table>
-                                <v:button name="apply1" value="Apply" action="simple">
-                                  <v:on-post>
-                                    <![CDATA[
-                                      declare M, N, enabled integer;
-                                      declare params, checked any;
-                                      declare chil vspx_control;
-                                      declare cb vspx_check_box;
-                                      declare ds vspx_data_set;
+                                      <v:template name="maps_footer" type="simple">
+                                      </v:template>
+                                    </v:data-set>
+                                  </table>
+                                </vm:if>
 
-                                      params := e.ve_params;
-                                      checked := vector();
-                                      for (N := 0; N < length(params); N := N + 2)
-                                      {
-                                        if (params[N] like '%:cb_item%')
-                                          checked := vector_concat (checked, vector (cast (params[N+1] as integer)));
-                                      }
-                                      ds := self.maps;
-                                      M := 0;
-                                      while ((chil := ds.ds_iterate_rows (M)) is not null)
-                                      {
-                                        enabled := 0;
-                                        cb := chil.vc_find_control ('cb_item');
-                                        for (N := 0; N < length (checked); N := N + 1)
-                                        {
-                                          if (checked[N] = cb.ufl_value)
-                                          {
-                                            enabled := 1;
-                                            goto _skip;
-                                          }
-                                        }
-                                      _skip:;
-                                        update DB.DBA.RDF_META_CARTRIDGES set MC_ENABLED = enabled where MC_ID = cb.ufl_value;
-                                        cb.ufl_selected := enabled;
-                                      }
-                                      self.edit_item := null;
-                                    ]]>
-                                  </v:on-post>
-                                </v:button>
-                              </v:form>
-                              <v:form name="fm1" type="simple" method="POST">
-                                <div class="fm">
-                                  <fieldset>
-                                    <label for="desc1">Description</label>
-                                    <v:text name="desc1" value="" xhtml_id="desc1" error-glyph="*" xhtml_size="110">
-                                    </v:text>
-                                    <br/>
-                                    <label for="patt1">Pattern</label>
-                                    <v:text name="patt1" xhtml_id="patt1" error-glyph="*" value="" xhtml_size="110" />
-                                    <br />
-                                    <label for="typ1">Pattern Type</label>
-                                    <v:select-list name="typ1" value="" xhtml_id="typ1" error-glyph="*">
-                                      <v:item name="Content Type" value="MIME"/>
-                                      <v:item name="URL" value="URL"/>
-                                      <v:item name="Entity Type" value="CLASS"/>
-                                      <v:item name="HTTP protocol" value="HTTP"/>
-                                    </v:select-list>
-                                    <br />
-                                    <label for="pl1">Cartridge Name</label>
-                                    <v:text name="pl1" value="" xhtml_size="110" xhtml_id="pl1" error-glyph="*">
-                                    </v:text>
-                                    <br />
-                                    <label for="key2">API Account</label>
-                                    <v:text name="key2" value="" xhtml_size="110" xhtml_id="key2" error-glyph="*">
-                                    </v:text>
-                                    <br />
-                                    <label for="key1">API Key</label>
-                                    <v:text name="key1" value="" xhtml_size="110" xhtml_id="key1" error-glyph="*">
-                                    </v:text>
-                                    <br />
-                                    <label for="opts1">Options</label>
-                                    <v:textarea name="opts1" value="" xhtml_rows="5" xhtml_cols="70" xhtml_id="opts1" error-glyph="*">
-                                    </v:textarea>
-                                    <?vsp if (strstr (self.desc1.ufl_value, 'FQL') is not null) { ?>
-                                    <a href="fb_popup.vspx" target="_blank">Get Facebook session</a>
-                                    <?vsp } ?>
-                                    <?vsp if (strstr (self.desc1.ufl_value, 'Graph API') is not null) { ?>
-                                    <a href="/sponger/fb_access_token_popup.vsp" target="_blank">Get Facebook access token</a>
-                                    <?vsp } ?>
-                                    <br />
-                                    <span class="fm_ctl_btn">
-                                      <v:button name="cancel1" value="Cancel" action="simple" enabled="--equ(isnull(self.edit_item),0)">
-                                        <v:on-post>
-                                          self.desc1.ufl_value := '';
-                                          self.patt1.ufl_value := '';
-                                          self.typ1.ufl_value := '';
-                                          self.pl1.ufl_value := '';
-                                          self.key1.ufl_value := '';
-                                          self.opts1.ufl_value := '';
-                                          self.edit_item := null;
-                                          self.save1.vc_data_bind (e);
-                                          control.vc_enabled := 0;
-                                        </v:on-post>
-                                      </v:button>
-                                      <v:button name="save1" value="--case when self.edit_item is null then 'Add' else 'Update' end" action="simple">
-                                        <v:on-post>
-                                          declare _key, opts any;
-                                          if (not self.vc_is_valid)
-                                            return;
+                                <vm:if test="(self.c_mode = 'C/add') or (self.c_mode = 'C/edit')">
+                                  <div class="fm">
+                                    <fieldset>
+                                      <label for="desc1">Description</label>
+                                      <v:text name="desc1" value="" xhtml_id="desc1" error-glyph="*" xhtml_size="110">
+                                      </v:text>
+                                      <br/>
+                                      <label for="patt1">Pattern</label>
+                                      <v:text name="patt1" xhtml_id="patt1" error-glyph="*" value="" xhtml_size="110" />
+                                      <br />
+                                      <label for="typ1">Pattern Type</label>
+                                      <v:select-list name="typ1" value="" xhtml_id="typ1" error-glyph="*">
+                                        <v:item name="Content Type" value="MIME"/>
+                                        <v:item name="URL" value="URL"/>
+                                        <v:item name="Entity Type" value="CLASS"/>
+                                        <v:item name="HTTP protocol" value="HTTP"/>
+                                      </v:select-list>
+                                      <br />
+                                      <label for="pl1">Cartridge Name</label>
+                                      <v:text name="pl1" value="" xhtml_size="110" xhtml_id="pl1" error-glyph="*">
+                                      </v:text>
+                                      <br />
+                                      <label for="key2">API Account</label>
+                                      <v:text name="key2" value="" xhtml_size="110" xhtml_id="key2" error-glyph="*">
+                                      </v:text>
+                                      <br />
+                                      <label for="key1">API Key</label>
+                                      <v:text name="key1" value="" xhtml_size="110" xhtml_id="key1" error-glyph="*">
+                                      </v:text>
+                                      <br />
+                                      <label for="opts1">Options</label>
+                                      <v:textarea name="opts1" value="" xhtml_rows="5" xhtml_cols="70" xhtml_id="opts1" error-glyph="*">
+                                      </v:textarea>
+                                      <?vsp if (strstr (self.desc1.ufl_value, 'FQL') is not null) { ?>
+                                      <a href="fb_popup.vspx" target="_blank">Get Facebook session</a>
+                                      <?vsp } ?>
+                                      <?vsp if (strstr (self.desc1.ufl_value, 'Graph API') is not null) { ?>
+                                      <a href="/sponger/fb_access_token_popup.vsp" target="_blank">Get Facebook access token</a>
+                                      <?vsp } ?>
+                                      <br />
+                                      <span class="fm_ctl_btn">
+                                        <v:button name="cancel1" value="Cancel" action="simple">
+                                          <v:on-post>
+                                            <![CDATA[
+                                              self.c_mode := 'C/browse';
+                                              self.vc_data_bind (e);
+                                            ]]>
+                                          </v:on-post>
+                                        </v:button>
 
-                                          declare exit handler for sqlstate '23000'
-                                          {
-                                            rollback work;
-                                            self.vc_is_valid := 0;
-                                            self.vc_error_message := 'The values entered conflict with other RDF Mapper. Please supply correct values.';
-                                            return;
-                                          };
+                                        <v:button name="save1" value="--case when self.c_mode = 'C/add' then 'Add' else 'Update' end" action="simple">
+                                          <v:on-post>
+                                            <![CDATA[
+                                              declare _key, opts any;
 
-                                          self.desc1.ufl_value := trim (self.desc1.ufl_value);
-                                          self.patt1.ufl_value := trim (self.patt1.ufl_value);
-                                          self.typ1.ufl_value  := trim (self.typ1.ufl_value);
-                                          self.pl1.ufl_value   := trim (self.pl1.ufl_value);
-                                          self.key1.ufl_value  := trim (self.key1.ufl_value);
-                                          self.key2.ufl_value  := trim (self.key2.ufl_value);
-                                          opts := trim(self.opts1.ufl_value);
-                                          opts := replace (opts, '\r', '\n');
-                                          opts := replace (opts, '\n\n', '\n');
-                                          opts := rtrim (opts, '\n');
-                                          if (length (opts))
-                                          {
-                                            opts := split_and_decode (opts, 0, '\0\0\n=');
-                                          }
-                                          else
-                                            opts := null;
+                                              if (not self.vc_is_valid)
+                                                return;
 
-                                          if (not length (self.key2.ufl_value))
-                                            _key := self.key1.ufl_value;
-                                          else
-                                            _key := serialize (vector (self.key1.ufl_value, self.key2.ufl_value));
+                                              declare exit handler for sqlstate '23000'
+                                              {
+                                                rollback work;
+                                                self.vc_is_valid := 0;
+                                                self.vc_error_message := 'The values entered conflict with other RDF Mapper. Please supply correct values.';
+                                                return;
+                                              };
 
-                                          if (not length (self.desc1.ufl_value) or
-                                              not length (self.patt1.ufl_value) or
-                                              not length (self.typ1.ufl_value) or
-                                              not length (self.pl1.ufl_value))
-                                            {
-                                              declare what any;
-                                              what := case when length (self.desc1.ufl_value) = 0 then 'description' when length (self.patt1.ufl_value) = 0 then 'pattern'
-                                              when length (self.typ1.ufl_value) = 0 then 'type' when length (self.pl1.ufl_value) = 0  then 'function' else 'field' end;
+                                              self.desc1.ufl_value := trim (self.desc1.ufl_value);
+                                              self.patt1.ufl_value := trim (self.patt1.ufl_value);
+                                              self.typ1.ufl_value  := trim (self.typ1.ufl_value);
+                                              self.pl1.ufl_value   := trim (self.pl1.ufl_value);
+                                              self.key1.ufl_value  := trim (self.key1.ufl_value);
+                                              self.key2.ufl_value  := trim (self.key2.ufl_value);
+                                              opts := trim(self.opts1.ufl_value);
+                                              opts := replace (opts, '\r', '\n');
+                                              opts := replace (opts, '\n\n', '\n');
+                                              opts := rtrim (opts, '\n');
+                                              if (length (opts))
+                                              {
+                                                opts := split_and_decode (opts, 0, '\0\0\n=');
+                                              }
+                                              else
+                                                opts := null;
 
-                                              rollback work;
-                                              self.vc_is_valid := 0;
-                                              self.vc_error_message := sprintf ('The %s value cannot be empty.', what);
-                                              return;
-                                            }
+                                              if (not length (self.key2.ufl_value))
+                                                _key := self.key1.ufl_value;
+                                              else
+                                                _key := serialize (vector (self.key1.ufl_value, self.key2.ufl_value));
 
-                                          if (self.edit_item is null)
-                                          {
-                                            insert into DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN,MC_TYPE,MC_HOOK,MC_KEY,MC_DESC, MC_OPTIONS)
-                                              values (self.patt1.ufl_value,self.typ1.ufl_value,self.pl1.ufl_value,_key,self.desc1.ufl_value, opts);
-                                          }
-                                          else
-                                          {
-                                             update DB.DBA.RDF_META_CARTRIDGES set
-                                              MC_PATTERN = self.patt1.ufl_value,
-                                              MC_TYPE = self.typ1.ufl_value,
-                                              MC_HOOK = self.pl1.ufl_value,
-                                              MC_KEY = _key,
-                                              MC_DESC = self.desc1.ufl_value,
-                                              MC_OPTIONS = opts
-                                              where MC_ID = self.edit_item;
-                                          }
-                                          self.desc1.ufl_value := '';
-                                          self.patt1.ufl_value := '';
-                                          self.typ1.ufl_value := '';
-                                          self.pl1.ufl_value := '';
-                                          self.key1.ufl_value := '';
-                                          self.key2.ufl_value := '';
-                                          self.opts1.ufl_value := '';
-                                          self.edit_item := null;
-                                          control.vc_data_bind (e);
-                                          self.maps.vc_data_bind (e);
-                                        </v:on-post>
-                                      </v:button>
-                                    </span>
-                                  </fieldset>
-                                </div>
+                                              if (not length (self.desc1.ufl_value) or
+                                                  not length (self.patt1.ufl_value) or
+                                                  not length (self.typ1.ufl_value) or
+                                                  not length (self.pl1.ufl_value))
+                                              {
+                                                declare what any;
+                                                what := case when length (self.desc1.ufl_value) = 0 then 'description' when length (self.patt1.ufl_value) = 0 then 'pattern'
+                                                when length (self.typ1.ufl_value) = 0 then 'type' when length (self.pl1.ufl_value) = 0  then 'function' else 'field' end;
+
+                                                rollback work;
+                                                self.vc_is_valid := 0;
+                                                self.vc_error_message := sprintf ('The %s value cannot be empty.', what);
+                                                return;
+                                              }
+
+                                              if (self.c_mode = 'C/add')
+                                              {
+                                                insert into DB.DBA.RDF_META_CARTRIDGES (MC_PATTERN, MC_TYPE, MC_HOOK, MC_KEY, MC_DESC, MC_OPTIONS)
+                                                  values (self.patt1.ufl_value, self.typ1.ufl_value, self.pl1.ufl_value, _key, self.desc1.ufl_value, opts);
+                                              }
+                                              else
+                                              {
+                                                update DB.DBA.RDF_META_CARTRIDGES
+                                                   set MC_PATTERN = self.patt1.ufl_value,
+                                                       MC_TYPE = self.typ1.ufl_value,
+                                                       MC_HOOK = self.pl1.ufl_value,
+                                                       MC_KEY = _key,
+                                                       MC_DESC = self.desc1.ufl_value,
+                                                       MC_OPTIONS = opts
+                                                 where MC_ID = self.c_id;
+                                              }
+
+                                              self.c_mode := 'C/browse';
+                                              self.vc_data_bind (e);
+                                            ]]>
+                                          </v:on-post>
+                                        </v:button>
+                                      </span>
+                                    </fieldset>
+                                  </div>
+                                </vm:if>
                               </v:form>
                             </td>
                           </tr>
                         </table>
-                        <!-- end tab  -->
                       </td>
                     </tr>
                   </table>
