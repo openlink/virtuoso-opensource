@@ -50,15 +50,6 @@
               <tr>
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
                     <tr>
                       <td class="page_tab_selected" align="center" nowrap="1">
                         Extractor Cartridges
@@ -97,8 +88,8 @@
                         <table cellpadding='10' cellspacing='0' border='0' width='100%'>
                           <tr>
                             <td>
-                              <vm:if test="self.c_mode = 'C/browse'">
-                                <v:form name="fm" type="simple" method="POST">
+                              <v:form name="fm" type="simple" method="POST">
+                                <vm:if test="self.c_mode = 'C/browse'">
                                   <v:button name="add1" value="Add" action="simple">
                                     <v:on-post>
                                       <![CDATA[
@@ -151,7 +142,6 @@
                                           update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = enabled where RM_ID = cb.ufl_value;
                                           cb.ufl_selected := enabled;
                                         }
-                                        self.vc_data_bind (e);
                                       ]]>
                                     </v:on-post>
                                   </v:button>
@@ -327,10 +317,8 @@
 
                                     </v:data-set>
                                   </table>
-                                </v:form>
-                              </vm:if>
-                              <vm:if test="(self.c_mode = 'C/add') or (self.c_mode = 'C/edit')">
-                                <v:form name="fm1" type="simple" method="POST">
+                                </vm:if>
+                                <vm:if test="(self.c_mode = 'C/add') or (self.c_mode = 'C/edit')">
                                   <div class="fm">
                                     <fieldset>
                                       <label for="desc1">Description</label>
@@ -455,8 +443,8 @@
                                       </span>
                                     </fieldset>
                                   </div>
-                                </v:form>
-                              </vm:if>
+                                </vm:if>
+                              </v:form>
                             </td>
                           </tr>
                         </table>
