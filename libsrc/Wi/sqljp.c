@@ -552,11 +552,13 @@ int
 jp_is_unplaceable_oj (df_elt_t * tb_dfe)
 {
   op_table_t * ot = DFE_TABLE == tb_dfe->dfe_type ? tb_dfe->_.table.ot : tb_dfe->_.sub.ot;
+  if (DFE_TEXT_PRED == tb_dfe->dfe_type)
+    return 0;
   if (ot->ot_is_outer)
     {
       int save = tb_dfe->dfe_is_placed;
       tb_dfe->dfe_is_placed = 1;
-      DO_SET (df_elt_t *, pred, &tb_dfe->_.table.ot->ot_join_preds)
+      DO_SET (df_elt_t *, pred, &ot->ot_join_preds)
 	{
 	  if (!dfe_reqd_placed (pred))
 	    {
