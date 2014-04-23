@@ -2619,12 +2619,18 @@ again:
     }
 
     _accept := HTTP_RDF_GET_ACCEPT_BY_Q (http_request_header_full (lines, 'Accept', '*/*'));
-	  if (WS.WS.TTL_REDIRECT_ENABLED () and isinteger (_res_id) and (_accept = 'text/html') and (cont_type = 'text/turtle') and not isnull (DB.DBA.VAD_CHECK_VERSION ('fct')))
+  if (WS.WS.TTL_REDIRECT_ENABLED () and isinteger (_res_id) and (_accept = 'text/html') and (cont_type = 'text/turtle') and not isnull (DB.DBA.VAD_CHECK_VERSION ('fct')))
     {
+      declare sp_opt any;
+
       http_rewrite ();
       http_status_set (303);
-      http_header (http_header_get () || sprintf ('Location: %s/describe/?url=%U&sponger:get=add\r\n',
-      WS.WS.DAV_HOST (), WS.WS.DAV_HOST () || replace (full_path, ' ', '%20')));
+      if (registry_get ('__WebDAV_sponge_ttl__') = 'yes')
+        sp_opt := '&sponger:get=add';
+      else
+        sp_opt := '';
+      http_header (http_header_get () || sprintf ('Location: %s/describe/?url=%U%s\r\n',
+      WS.WS.DAV_HOST (), WS.WS.DAV_HOST () || replace (full_path, ' ', '%20'), sp_opt));
       return;
     }
 
