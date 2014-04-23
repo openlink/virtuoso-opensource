@@ -442,6 +442,21 @@ b3s_parse_inf (in sid varchar, inout params any)
 	vectorbld_acc (grs, params[i+1]);
     }
   vectorbld_final (grs);
+  if (length (grs) = 0 and sid is not null and get_keyword ('set_graphs', params) is null)
+    {
+      declare xt, xp, inx any;
+      xt := (select fct_state from fct_state where fct_sid = sid);
+      inx := 1;
+      vectorbld_init (grs);
+      while ((xp := xpath_eval (sprintf ('//query/@graph%d', inx), xt)) is not null)
+	{
+	  vectorbld_acc (grs, cast (xp as varchar));
+	  inx := inx + 1;
+	}
+      vectorbld_final (grs);
+    }
+  if (get_keyword ('clear_graphs', params) is not null)
+    grs := vector ();
   connection_set ('graphs', grs);
 }
 ;
@@ -813,6 +828,19 @@ create procedure b3s_xsd_link (in t varchar)
 }
 ;
 
+create procedure b3s_o_is_out (in x any)
+{
+  declare f any;
+  f := 'http://xmlns.com/foaf/0.1/';
+  -- foaf:page, foaf:homePage, foaf:img, foaf:logo, foaf:depiction
+  if (__ro2sq (x) in (f||'page', f||'homePage', f||'img', f||'logo', f||'depiction'))
+    {
+      return 1;
+    }
+  return 0;
+}
+;
+
 create procedure
 b3s_http_print_r (in _object any, in sid varchar, in prop any, in langs any, in rel int := 1, in acc any := null, in _from varchar := null, in flag int := 0)
 {
@@ -875,7 +903,14 @@ again:
 	   http (sprintf ('<div id="x_content"><iframe src="%s" width="100%%" height="100%%" frameborder="0"><p>Your browser does not support iframes.</p></iframe></div><br/>', src));
 	 }
        else if (http_mime_type (_url) like 'image/%' or http_mime_type (_url) = 'application/x-openlink-photo')
-	 http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" style="border-width:0" alt="External Image" /></a>', rdfa, b3s_http_url (_url, sid, _from), _url));
+	 {
+	   declare u any;
+	   if (b3s_o_is_out (prop))
+	     u := _url;
+	   else
+	     u := b3s_http_url (_url, sid, _from);
+	   http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" style="border-width:0" alt="External Image" /></a>', rdfa, u, _url));
+	 }
        else
 	 {
 	   usual_iri:;
@@ -891,6 +926,8 @@ again:
 	   vlbl := charset_recode (lbl, 'UTF-8', '_WIDE_');
 	   http_value (case when vlbl <> 0 then vlbl else lbl end);
 	   http (sprintf ('</a>'));
+	   if (b3s_o_is_out (prop))
+	     http (sprintf ('&nbsp;<a href="%s"><img src="/fct/images/goout.gif" border="0"/></a>', _url));
 	 }
        --if (registry_get ('fct_sponge') = '1' and _url like 'http://%' or _url like 'https://%')
        --	 http (sprintf ('&nbsp;<a class="uri" href="%s&sp=1"><img src="/fct/images/goout.gif" alt="Sponge" title="Sponge" border="0"/></a>', 
@@ -1243,3 +1280,21 @@ create procedure b3s_gs_check_needed ()
 ;
 
 grant execute on b3s_gs_check_needed to public;
+
+create procedure fct_set_graphs (in sid any, in graphs any)
+{
+  declare xt, newx, s any;
+  if (sid is null) return;
+  xt := (select fct_state from fct_state where fct_sid = sid);
+  s := string_output ();
+  http ('<graphs>', s);
+  foreach (any g in graphs) do
+    {
+      http (sprintf ('<graph name="%V" />', g), s);
+    } 
+  http ('</graphs>', s);
+  newx := xslt (registry_get ('_fct_xslt_') || 'fct_set_graphs.xsl', xt, vector ('graphs', xtree_doc (s)));
+  update fct_state set fct_state = newx where fct_sid = sid; 
+  commit work;
+}
+;
