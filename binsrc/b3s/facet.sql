@@ -552,6 +552,20 @@ fct_graph_clause (in tree any)
 ;
 
 create procedure
+fct_named_graph_clause (in tree any)
+{
+  declare xt, xp, inx, s any;
+  inx := 1;
+  s := string_output ();
+  while ((xp := xpath_eval (sprintf ('//query/@graph%d', inx), tree)) is not null)
+    {
+      inx := inx + 1;
+      http (sprintf (' define input:default-graph-uri <%s> ', cast (xp as varchar)), s);
+    }
+  return string_output_string (s);
+}
+;
+create procedure
 fct_post (in tree any, in post any, in lim int, in offs int)
 {
   if (lim is not null)
@@ -785,7 +799,7 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
   offs := xpath_eval ('./@offset', tree, 1);
   lim  := xpath_eval ('./@limit', tree, 1);
 
-  http (sprintf (' %s %s %s ', fct_graph_clause (tree), fct_inf_clause (tree), fct_sas_clause (tree)), pre);
+  http (sprintf (' %s %s %s %s ', fct_graph_clause (tree), fct_named_graph_clause (tree), fct_inf_clause (tree), fct_sas_clause (tree)), pre);
 
   mode := fct_get_mode (tree, './@type');
 

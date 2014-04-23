@@ -442,6 +442,21 @@ b3s_parse_inf (in sid varchar, inout params any)
 	vectorbld_acc (grs, params[i+1]);
     }
   vectorbld_final (grs);
+  if (length (grs) = 0 and sid is not null and get_keyword ('set_graphs', params) is null)
+    {
+      declare xt, xp, inx any;
+      xt := (select fct_state from fct_state where fct_sid = sid);
+      inx := 1;
+      vectorbld_init (grs);
+      while ((xp := xpath_eval (sprintf ('//query/@graph%d', inx), xt)) is not null)
+	{
+	  vectorbld_acc (grs, cast (xp as varchar));
+	  inx := inx + 1;
+	}
+      vectorbld_final (grs);
+    }
+  if (get_keyword ('clear_graphs', params) is not null)
+    grs := vector ();
   connection_set ('graphs', grs);
 }
 ;
@@ -1265,3 +1280,21 @@ create procedure b3s_gs_check_needed ()
 ;
 
 grant execute on b3s_gs_check_needed to public;
+
+create procedure fct_set_graphs (in sid any, in graphs any)
+{
+  declare xt, newx, s any;
+  if (sid is null) return;
+  xt := (select fct_state from fct_state where fct_sid = sid);
+  s := string_output ();
+  http ('<graphs>', s);
+  foreach (any g in graphs) do
+    {
+      http (sprintf ('<graph name="%V" />', g), s);
+    } 
+  http ('</graphs>', s);
+  newx := xslt (registry_get ('_fct_xslt_') || 'fct_set_graphs.xsl', xt, vector ('graphs', xtree_doc (s)));
+  update fct_state set fct_state = newx where fct_sid = sid; 
+  commit work;
+}
+;

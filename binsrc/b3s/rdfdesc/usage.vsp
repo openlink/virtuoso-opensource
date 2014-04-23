@@ -64,6 +64,8 @@
 
   b3s_parse_inf (sid, params);
   grs := connection_get ('graphs');
+  if ({?'set_graphs'} is not null or {?'clear_graphs'} is not null)
+    fct_set_graphs (sid, grs);
 
   inf := b3s_render_inf_clause ();
   inf_rule := connection_get ('inf');
@@ -200,6 +202,8 @@
         <table class="description">
 	  <?vsp
 	    declare qr varchar;
+	    declare tgr any;
+	    tgr := vector ();
 	    if (tp = 1) -- refd in data sets
 	      {
 		qr := 'sparql define input:storage "" select ?g count (*) where { graph ?g { `iri(??)` ?p ?o }} group by ?g order by desc 2 limit 20';
@@ -231,6 +235,8 @@
 		   {
 		     declare grvar any;
 	             grvar := data[0];
+		     if (position (grvar, grs))
+		       tgr := vector_concat (tgr, vector (grvar));
 		     http (sprintf ('<td><input type="checkbox" value="%V" name="graph" %s/><a href="/describe/?url=%U&graph=%U%s">%V</a></td>', 
 			grvar, 
 			case when position (grvar, grs) then 'checked' else '' end,
@@ -270,9 +276,18 @@
 	      }
 	    exec_close (h1);
 	  ?>
-	  <?vsp if (tp = 1 or tp = 2) { ?>
+	  <?vsp 
+	  if (tp = 1 or tp = 2) { 
+            foreach (any g in grs) do
+              {
+		 if (not position (g, tgr))
+                   http (sprintf ('<input type="hidden" name="graph" value="%V"/>', g));
+	      }
+          ?>
 	  <tr><td colspan="2">
+		  <input type="hidden" name="tp" value="<?V tp ?>"/>
 		  <input type="submit" name="set_graphs" value="Set Graphs"/> 
+		  <input type="submit" name="clear_graphs" value="Clear Graph Selection"/> 
 	  </td></tr>
 	  <?vsp } ?>
         </table>
