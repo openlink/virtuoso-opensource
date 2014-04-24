@@ -321,7 +321,7 @@
 
           <v:method name="toolbarEnable" arglist="in writePermission integer, in cmd varchar">
             <![CDATA[
-              if (cmd in ('refresh', 'bookmarklet', 'home'))
+              if (cmd in ('refresh', 'bookmarklet', 'home', 'feeds'))
                 return 1;
 
              if (is_empty_or_null (self.dir_path))
@@ -1281,6 +1281,30 @@
               http (sprintf ('<img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
 
               self.toolbarShow (writePermission, 'bookmarklet', 'Bookmarklet', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'bookmarklet\');"', 'bmklet_32.png', '', 0);
+              }
+            ?>
+            <?vsp
+              if (WEBDAV.DBA.DAV_REQUIRE_VERSION ('1.0'))
+              {
+                http (sprintf ('<img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
+            ?>
+            <div class="WEBDAV_menuBar">
+              <span id="tb_feeds" class="toolbar menuButton" style="cursor: pointer;" onclick="javascript: WEBDAV.menuPopup(this, 'feedsMenu');">
+                <img src="<?V self.image_src ('dav/image/rss_32.png') ?>" border="0" alt="Web Feeds" />
+                <br />
+                <span class="toolbarLabel">Web Feeds</span>
+              </span>
+              <div class="WEBDAV_menu" id="feedsMenu" style="display: none;">
+                <?vsp
+                  http(sprintf('<a class="WEBDAV_menuItem" href="%s?a=rss"  target="_blank" title="%s"><img src="%s" border="0" alt="%s"/> %s</a>', path, 'RSS Export', self.image_src ('dav/image/rss-icon-16.gif'), 'RSS Export', 'RSS'));
+                  http(sprintf('<a class="WEBDAV_menuItem" href="%s?a=atom" target="_blank" title="%s"><img src="%s" border="0" alt="%s"/> %s</a>', path, 'Atom Export', self.image_src ('dav/image/rss-icon-16.gif'), 'Atom Export', 'Atom'));
+                  http(sprintf('<a class="WEBDAV_menuItem" href="%s?a=rdf"  target="_blank" title="%s"><img src="%s" border="0" alt="%s"/> %s</a>', path, 'RDF Export', self.image_src ('dav/image/rss-icon-16.gif'), 'RDF Export', 'RDF'));
+                  http('<div class="WEBDAV_menuItemSep"></div>');
+                  http(sprintf('<a class="WEBDAV_menuItem" href="%s?a=opml" target="_blank" title="%s"><img src="%s" border="0" alt="%s"/> %s</a>', path, 'OPML Export', self.image_src ('dav/image/blue-icon-16.gif'), 'OPML Export', 'OPML'));
+                ?>
+              </div>
+            </div>
+            <?vsp
               }
             ?>
           </div>
@@ -4720,6 +4744,35 @@
                 <v:button name="b_cancel" action="simple" value="Cancel" xhtml_onClick="javascript: if (opener != null) opener.focus(); window.close()"/>
               </div>
             </v:template>
+            <?vsp
+              if (WEBDAV.DBA.DAV_REQUIRE_VERSION ('1.0'))
+              {
+            ?>
+            <![CDATA[
+              <script type="text/javascript">
+                function davLinks ()
+                {
+                  var u = '<?V WEBDAV.DBA.host_url () || WEBDAV.DBA.real_path (self.dir_path) ?>';
+                  var h = document.getElementsByTagName("head")[0];
+                  var l = OAT.Dom.create('link', {rel: 'alternate', type: 'application/rss+xml', title: 'WebDAV Directory Listing (RSS)'});
+                  l.href = u + '?a=rss';
+                  h.appendChild(l);
+                  var l = OAT.Dom.create('link', {rel: 'alternate', type: 'application/atom+xml', title: 'WebDAV Directory Listing (Atom)'});
+                  l.href = u + '?a=atom';
+                  h.appendChild(l);
+                  var l = OAT.Dom.create('link', {rel: 'alternate', type: 'application/rdf+xml', title: 'WebDAV Directory Listing (RDF RSS 1.0)'});
+                  l.href = u + '?a=rdf';
+                  h.appendChild(l);
+                  var l = OAT.Dom.create('link', {rel: 'outline', type: 'text/x-opml', title: 'WebDAV Directory Subscriptions (OPML)'});
+                  l.href = u + '?a=opml';
+                  h.appendChild(l);
+                }
+                OAT.Loader.load([], davLinks);
+              </script>
+            ]]>
+            <?vsp
+              }
+            ?>
           </v:template>
         </v:template>
       </xsl:otherwise>

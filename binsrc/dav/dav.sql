@@ -5413,11 +5413,11 @@ create function WS.WS.DAV_DIR_LIST (
           _group_id := coalesce (_dir_item[6], -1);
           _group_name := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _group_id), '');
         }
-  	    http (sprintf ('<SUBDIR modify="%s" owner="%s" group="%s" permissions="%s" name="', left (cast (_dir_item[3] as varchar), 19), _user_name, _group_name, DB.DBA.DAV_PERM_D2U (_dir_item[5]), _dir_item[9]), _xml );
+  	    http (sprintf ('<SUBDIR modify="%s" owner="%s" group="%s" permissions="%s" name="', soap_print_box (_dir_item[3], '', 0), _user_name, _group_name, DB.DBA.DAV_PERM_D2U (_dir_item[5]), _dir_item[9]), _xml );
   	    http_value (_name, null, _xml );
   	    http ('"', _xml );
         if (feedAction)
-          http (sprintf (' pubDate="%s"', soap_print_box (_dir_item[3], '', 1)), _xml);
+          http (sprintf (' pubDate="%s"', soap_print_box (_dir_item[8], '', 1)), _xml);
 
   	    http (' />\n', _xml );
   	  }
@@ -5458,11 +5458,11 @@ create function WS.WS.DAV_DIR_LIST (
           _group_id := coalesce (_dir_item[6], -1);
           _group_name := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _group_id), '');
         }
-        http (sprintf ('<FILE modify="%s" owner="%s" group="%s" permissions="%s" mimeType="%s" rs="%i" lenght="%d" hs="%d %s" name="', left (cast (_dir_item[3] as varchar), 19), _user_name, _group_name, DB.DBA.DAV_PERM_D2U (_dir_item[5]), _dir_item[9], _res_len, _dir_item[2], flen, aref (fsize, mult)), _xml);
+        http (sprintf ('<FILE modify="%s" owner="%s" group="%s" permissions="%s" mimeType="%s" rs="%i" lenght="%d" hs="%d %s" name="', soap_print_box (_dir_item[3], '', 0), _user_name, _group_name, DB.DBA.DAV_PERM_D2U (_dir_item[5]), _dir_item[9], _res_len, _dir_item[2], flen, aref (fsize, mult)), _xml);
   	    http_value (_name, null, _xml );
   	    http ('"', _xml );
         if (feedAction)
-          http (sprintf (' pubDate="%s"', soap_print_box (_dir_item[3], '', 1)), _xml);
+          http (sprintf (' pubDate="%s"', soap_print_box (_dir_item[8], '', 1)), _xml);
 
   	    http (' />\n', _xml );
   	  }

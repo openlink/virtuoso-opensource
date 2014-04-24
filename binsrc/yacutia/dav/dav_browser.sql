@@ -4024,6 +4024,21 @@ create procedure WEBDAV.DBA.DAV_UNLOCK (
 
 -------------------------------------------------------------------------------
 --
+create procedure WEBDAV.DBA.DAV_REQUIRE_VERSION (
+  in req_version varchar)
+{
+  declare dav_version varchar;
+
+  dav_version := '0.0';
+  if (__proc_exists ('DB.DBA.DAV_VERSION') is not null)
+    dav_version := DB.DBA.DAV_VERSION ();
+
+  return case when VAD.DBA.VER_LT (req_version, dav_version) or (dav_version = req_version) then 1 else 0 end;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure WEBDAV.DBA.get_rdf (
   in graphName varchar)
 {
@@ -5613,19 +5628,32 @@ create procedure WEBDAV.DBA.dav_rdf_schema_properties_short_rs (
 
 -----------------------------------------------------------------------------
 --
-create procedure WEBDAV.DBA.xsl_upload (
-  in isDAV integer)
+create procedure WEBDAV.DBA.xsl_upload_single (
+  in isDAV integer,
+  in fileName varchar)
 {
   declare content, type varchar;
 
   if (isDAV)
   {
     registry_set ('__WebDAV_vspx__', 'yes');
-    DAV_RES_CONTENT_INT (DAV_SEARCH_ID ('/DAV/VAD/conductor/dav/folder.xsl', 'R'), content, type, 0, 0);
+    DAV_RES_CONTENT_INT (DAV_SEARCH_ID ('/DAV/VAD/conductor/dav/' || fileName, 'R'), content, type, 0, 0);
   } else {
     registry_set ('__WebDAV_vspx__', 'no');
-    content := xml_uri_get('file://vad/vsp/conductor/dav/', 'folder.xsl');
+    content := xml_uri_get('file://vad/vsp/conductor/dav/', fileName);
   }
-  DB.DBA.DAV_RES_UPLOAD_STRSES_INT ('/DAV/.folder.xsl', content, 'text/xsl', '110110100R', http_dav_uid (), http_dav_uid () + 1, null, null, 0);
+  DB.DBA.DAV_RES_UPLOAD_STRSES_INT ('/DAV/.' || fileName, content, 'text/xsl', '110110100R', http_dav_uid (), http_dav_uid () + 1, null, null, 0);
+}
+;
+
+-----------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.xsl_upload (
+  in isDAV integer)
+{
+  WEBDAV.DBA.xsl_upload_single (isDAV, 'folder.xsl');
+  WEBDAV.DBA.xsl_upload_single (isDAV, 'xml2rss.xsl');
+  WEBDAV.DBA.xsl_upload_single (isDAV, 'rss2atom.xsl');
+  WEBDAV.DBA.xsl_upload_single (isDAV, 'rss2rdf.xsl');
 }
 ;
