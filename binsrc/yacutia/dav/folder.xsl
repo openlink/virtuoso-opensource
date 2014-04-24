@@ -33,6 +33,18 @@
         <script type="text/javascript" src="/conductor/toolkit/json.js"><xsl:text> </xsl:text></script>
         <script type="text/javascript" src="/conductor/dav/dav_state.js"><xsl:text> </xsl:text></script>
         <script type="text/javascript" src="/conductor/dav/sorttable.js"><xsl:text> </xsl:text></script>
+        <link rel="alternate" type="application/rss+xml" title="WebDAV Directory Listing (RSS)">
+          <xsl:attribute name="href"><xsl:value-of select='$path' />?a=rss</xsl:attribute>
+        </link>
+        <link rel="alternate" type="application/atom+xml" title="WebDAV Directory Listing (Atom)">
+          <xsl:attribute name="href"><xsl:value-of select='$path' />?a=atom</xsl:attribute>
+        </link>
+        <link rel="alternate" type="application/rdf+xml" title="WebDAV Directory Listing (RDF RSS 1.0)">
+          <xsl:attribute name="href"><xsl:value-of select='$path' />?a=rdf</xsl:attribute>
+        </link>
+        <link rel="outline" type="text/x-opml" title="WebDAV Directory Subscriptions (OPML)">
+          <xsl:attribute name="href"><xsl:value-of select='$path' />?a=opml</xsl:attribute>
+        </link>
       </head>
       <body style="background-color: #fff; color: #000; font-family: Arial,Helvetica,Helv,sans-serif;">
         <h4>Index of <xsl:value-of select="$path" /></h4>
