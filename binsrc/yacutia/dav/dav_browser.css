@@ -422,3 +422,44 @@ table.WEBDAV_formList tbody tr:nth-child(even) {
 .WEBDAV_a:hover {
   text-decoration: none;
 }
+
+/* Menus */
+
+a.WEBDAV_menuItem {
+  font-family: verdana, sans-serif;
+  text-align: left;
+  font-size: 11px;
+}
+
+div.WEBDAV_menu {
+  background-color: #EFEFEF;
+  border: 1px solid;
+  border-color: #f0f0f0 #7f94a5 #7f94a5 #f0f0f0;
+  margin:0px 0px 0px 9px;
+  padding: 0px 1px 1px 0px;
+  position: absolute;
+  vertical-align:bottom;
+  z-index: 101;
+}
+
+div.WEBDAV_menu a.WEBDAV_menuItem {
+  cursor: pointer;
+  display: block;
+  font-size: .8em;
+  font-family: verdana, sans-serif;
+  font-weight: bold;
+  padding: 3px 1em;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+div.WEBDAV_menu a.WEBDAV_menuItem:hover {
+  background-color: #99B3C5;
+  color: #ffffff;
+}
+
+div.WEBDAV_menu div.WEBDAV_menuItemSep {
+  border-top: 1px solid #7f94a5;
+  border-bottom: 1px solid #f0f0f0;
+  margin: 4px 2px;
+}

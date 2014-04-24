@@ -1074,3 +1074,53 @@ WEBDAV.selectRow = function (formName) {
   opener.focus ();
   close ();
 }
+
+// Menu functions
+WEBDAV.menuMouseOut = function (event)
+{
+  var current, related;
+
+  function menuMouseIn(a, b)
+  {
+    if (b) {
+      while (b.parentNode) {
+        b = b.parentNode;
+        if (b == a)
+          return true;
+      }
+    }
+    return false;
+  }
+
+  if (window.event)
+  {
+    current = this;
+    related = window.event.toElement;
+  } else {
+    current = event.currentTarget;
+    related = event.relatedTarget;
+  }
+  if ((current != related) && !menuMouseIn(current, related))
+    OAT.Dom.hide(current);
+}
+
+WEBDAV.menuPopup = function (obj, menuID)
+{
+  var actions = $$('WEBDAV_menu');
+  for (var i = 0; i < actions.length; i++) {
+    OAT.Dom.hide(actions[i]);
+    OAT.Event.attach(actions[i], 'mouseout', WEBDAV.menuMouseOut);
+  }
+  var div = $(menuID);
+  if (div.style.display != 'none') {
+    OAT.Dom.hide(div);
+  } else {
+    var coords = OAT.Dom.position(obj);
+    var dims = OAT.Dom.getWH(obj);
+    div.style.left = (coords[0]+25) +"px";
+    div.style.top = (coords[1]+dims[1]-23)+"px";
+    OAT.Dom.show(div);
+    div.focus();
+  }
+  return false;
+}
