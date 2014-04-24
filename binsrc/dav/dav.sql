@@ -5314,23 +5314,31 @@ nfp:
 }
 ;
 
-create function WS.WS.DAV_DIR_LIST (in full_path varchar, in logical_root_path varchar, in col integer, in auth_uname varchar, in auth_pwd varchar, in auth_uid integer) returns integer
+create function WS.WS.DAV_DIR_LIST (
+  in full_path varchar,
+  in logical_root_path varchar,
+  in col integer,
+  in auth_uname varchar,
+  in auth_pwd varchar,
+  in auth_uid integer) returns integer
 {
   -- dbg_obj_princ ('WS.WS.DAV_DIR_LIST (', full_path, logical_root_path, col, auth_uname, auth_pwd, auth_uid, ')');
-  declare _dir, _xml, _modify, fsize, _html, _b_opt, _xml_sheet any;
+  declare _dir, _dir_item, _dir_entry, _xml, _modify, fsize, _html, _b_opt, _xml_sheet any;
   declare _name, xslt_file, xslt_folder, vspx_path varchar;
   declare _res_len, flen, mult, N integer;
   declare _dir_len, _dir_ctr integer;
   declare _user_name, _group_name varchar;
   declare _user_id, _group_id integer;
+  declare path, action, feedAction, params, lines any;
 
-  if (registry_get ('__WebDAV_vspx__') = 'yes')
+  params := http_param ();
+  action := get_keyword ('a', params, '');
+  feedAction := case when (action  in ('rss', 'atom', 'rdf', 'opml')) then 1 else 0 end;
+  if (not feedAction and (registry_get ('__WebDAV_vspx__') = 'yes'))
   {
-    declare path, action, params, lines any;
     vspx_path := '/DAV/VAD/conductor/folder.vspx';
     path := http_path ();
     lines := http_request_header ();
-    params := http_param ();
     params := vector_concat (params, vector ('dir', full_path));
 
     action := get_keyword ('a', params, '');
@@ -5347,143 +5355,207 @@ create function WS.WS.DAV_DIR_LIST (in full_path varchar, in logical_root_path v
     DB.DBA.vspx_dispatch (vspx_path, path, params, lines);
     return;
   }
-  fsize := vector ('B','K','M','G','T');
-  _xml := string_output ();
-  xslt_file := null;
   _dir := DAV_DIR_LIST_INT (full_path, 0, '%', auth_uname, auth_pwd, auth_uid);
   if (isinteger (_dir))
     return _dir;
 
   _dir_len := length (_dir);
-  http ('<?xml version="1.0" encoding="UTF-8" ?>', _xml);
-  http (sprintf ('<PATH dir_name="%V" physical_dir_name="%V">', cast (logical_root_path as varchar), cast (full_path as varchar)), _xml);
-  http ('<DIRS>', _xml);
-
-  http ('<SUBDIR modify="" name=".." />\n', _xml);
-  _user_id := -1;
-  _group_id := -1;
-  _user_name := '';
-  _group_name := '';
-  _dir_ctr := 0;
-  while (_dir_ctr < _dir_len)
+  if (action = 'opml')
   {
-    declare _col any;
-    _col := _dir [_dir_ctr];
-    if (_col [1] = 'C')
+    _dir_entry := DAV_DIR_SINGLE_INT (col, 'C', full_path, null, null, http_dav_uid ());
+  	http_header ('Content-type: text/xml; charset="UTF-8"\r\n');
+    http ('<?xml version="1.0" encoding="UTF-8" ?>');
+    http ('<opml version="2.0">');
+	  http ('<head>');
+		http (sprintf ('<title>WebDAV Directory %s"</title>', cast (full_path as varchar)));
+		http (sprintf ('<dateCreated>%s</dateCreated>', soap_print_box (_dir_entry[8], '', 1)));
+		http (sprintf ('<dateModified>%s</dateModified>', soap_print_box (_dir_entry[3], '', 1)));
+		http (sprintf ('<ownerName>%s</ownerName>', coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _dir_entry[7]), 'nobody')));
+    http ('</head>');
+	  http ('<body>');
+    for (_dir_ctr := 0; _dir_ctr < _dir_len; _dir_ctr := _dir_ctr + 1)
     {
-      _name := rtrim (_col[0], '/');
-      _name := subseq (_name, strrchr (_name, '/') + 1);
-      if (_user_id <> coalesce (_col[7], -1))
+      _dir_item := _dir [_dir_ctr];
+      if (_dir_item[1] = 'C')
       {
-        _user_id := coalesce (_col[7], -1);
-        _user_name := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _user_id), '');
-      }
-      if (_group_id <> coalesce (_col[6], -1))
-      {
-        _group_id := coalesce (_col[6], -1);
-        _group_name := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _group_id), '');
-      }
-	    http (sprintf ('<SUBDIR modify="%s" owner="%s" group="%s" permissions="%s" name="', left (cast (_col[3] as varchar), 19), _user_name, _group_name, DB.DBA.DAV_PERM_D2U (_col[5]), _col[9]), _xml );
-	    http_value (_name, null, _xml );
-	    http ('" />\n', _xml );
-	  }
-    _dir_ctr := _dir_ctr + 1;
-  }
-  http ('</DIRS><FILES>', _xml);
-
-  _user_id := -1;
-  _group_id := -1;
-  _user_name := '';
-  _group_name := '';
-  _dir_ctr := 0;
-  while (_dir_ctr < _dir_len)
-  {
-    declare _res any;
-    _res := _dir [_dir_ctr];
-    if (_res [1] = 'R')
-    {
-      _name := _res[0];
-      _name := subseq (_name, strrchr (_name, '/') + 1);
-      if (lower (_name) = '.folder.xsl')
-        xslt_file := cast (full_path as varchar) || _name;
-
-	    _res_len := _res[2];
-	    flen := _res_len;
-	    mult := 0;
-      while ((flen / 1024) > 1)
-	    {
-	      mult := mult + 1;
-	      flen := flen / 1024;
-	    }
-      if (_user_id <> coalesce (_res[7], -1))
-      {
-        _user_id := coalesce (_res[7], -1);
-        _user_name := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _user_id), '');
-      }
-      if (_group_id <> coalesce (_res[6], -1))
-      {
-        _group_id := coalesce (_res[6], -1);
-        _group_name := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _group_id), '');
-      }
-      http (sprintf ('<FILE modify="%s" owner="%s" group="%s" permissions="%s" mimeType="%s" rs="%i" lenght="%d" hs="%d %s" name="', left (cast (_res[3] as varchar), 19), _user_name, _group_name, DB.DBA.DAV_PERM_D2U (_res[5]), _res[9], _res_len, _res[2], flen, aref (fsize, mult)), _xml);
-	    http_value (_name, null, _xml );
-	    http ('" />\n', _xml );
-	  }
-    _dir_ctr := _dir_ctr + 1;
-  }
-  http ('</FILES></PATH>', _xml);
-  _xml := xtree_doc (_xml);
-
-  if (isnull (xslt_file))
-  {
-    xslt_folder := full_path;
-    while (xslt_folder <> '')
-    {
-      xslt_folder := rtrim (xslt_folder, '/');
-      N := strrchr (xslt_folder, '/');
-      if (not isnull (N))
-      {
-        xslt_folder := subseq (xslt_folder, 0, N+1);
-        if (exists (select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = xslt_folder || '.folder.xsl'))
-        {
-          xslt_file := xslt_folder || '.folder.xsl';
-          goto _exit;
-        }
-      }
+    		http (sprintf ('<outline text="WebDAV Directory %V" htmlUrl="%V" type="rss" xmlUrl="%V?a=rss" />', _dir_item[0], WS.WS.DAV_HOST () || _dir_item[0], WS.WS.DAV_HOST () || _dir_item[0]));
+  	  }
     }
-  _exit:;
-  }
-	http_header ('Content-type: text/html; charset="UTF-8"\r\n');
-  if (not isnull (xslt_file))
-  {
-    select blob_to_string (RES_CONTENT) into _xml_sheet from WS.WS.SYS_DAV_RES where RES_FULL_PATH = xslt_file;
-    xslt_sheet ('http://local.virt/custom_dir_output', xtree_doc (_xml_sheet));
-    _html := xslt ('http://local.virt/custom_dir_output', _xml);
-    http_value (_html);
-  }
+	  http ('</body>');
+	  http ('</opml>');
+	}
   else
   {
-    _b_opt := null;
-    if (exists (select 1 from DB.DBA.HTTP_PATH where HP_LPATH = http_map_get ('domain') and HP_PPATH = http_map_get ('mounted')))
-    {
-      select deserialize(HP_OPTIONS) into _b_opt
-        from DB.DBA.HTTP_PATH
-       where HP_LPATH = http_map_get ('domain') and HP_PPATH = http_map_get ('mounted');
+    _xml := string_output ();
+    http ('<?xml version="1.0" encoding="UTF-8" ?>', _xml);
+    http (sprintf ('<PATH dir_host="%V" dir_name="%V" physical_dir_name="%V">', WS.WS.DAV_HOST (), cast (logical_root_path as varchar), cast (full_path as varchar)), _xml);
+    http ('<DIRS>', _xml);
 
-      if (_b_opt is not NULL)
-        _b_opt := get_keyword ('browse_sheet', _b_opt, '');
-    }
-    if (_b_opt <> '')
+    http ('<SUBDIR modify="" name=".." />\n', _xml);
+    _user_id := -1;
+    _group_id := -1;
+    _user_name := '';
+    _group_name := '';
+    for (_dir_ctr := 0; _dir_ctr < _dir_len; _dir_ctr := _dir_ctr + 1)
     {
-      select blob_to_string (RES_CONTENT) into _xml_sheet from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _b_opt;
-      xslt_sheet ('http://local.virt/custom_dir_output', xml_tree_doc (_xml_sheet));
-      _html := cast (xslt ('http://local.virt/custom_dir_output', _xml) as varchar);
+      _dir_item := _dir [_dir_ctr];
+      if (_dir_item[1] = 'C')
+      {
+        _name := rtrim (_dir_item[0], '/');
+        _name := subseq (_name, strrchr (_name, '/') + 1);
+        if (_user_id <> coalesce (_dir_item[7], -1))
+        {
+          _user_id := coalesce (_dir_item[7], -1);
+          _user_name := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _user_id), '');
+        }
+        if (_group_id <> coalesce (_dir_item[6], -1))
+        {
+          _group_id := coalesce (_dir_item[6], -1);
+          _group_name := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _group_id), '');
+        }
+  	    http (sprintf ('<SUBDIR modify="%s" owner="%s" group="%s" permissions="%s" name="', left (cast (_dir_item[3] as varchar), 19), _user_name, _group_name, DB.DBA.DAV_PERM_D2U (_dir_item[5]), _dir_item[9]), _xml );
+  	    http_value (_name, null, _xml );
+  	    http ('"', _xml );
+        if (feedAction)
+          http (sprintf (' pubDate="%s"', soap_print_box (_dir_item[3], '', 1)), _xml);
+
+  	    http (' />\n', _xml );
+  	  }
+    }
+    http ('</DIRS><FILES>', _xml);
+
+    fsize := vector ('B', 'K', 'M', 'G', 'T');
+    xslt_file := null;
+    _user_id := -1;
+    _group_id := -1;
+    _user_name := '';
+    _group_name := '';
+    for (_dir_ctr := 0; _dir_ctr < _dir_len; _dir_ctr := _dir_ctr + 1)
+    {
+      _dir_item := _dir [_dir_ctr];
+      if (_dir_item[1] = 'R')
+      {
+        _name := _dir_item[0];
+        _name := subseq (_name, strrchr (_name, '/') + 1);
+        if (lower (_name) = '.folder.xsl')
+          xslt_file := cast (full_path as varchar) || _name;
+
+  	    _res_len := _dir_item[2];
+  	    flen := _res_len;
+  	    mult := 0;
+        while ((flen / 1024) > 1)
+  	    {
+  	      mult := mult + 1;
+  	      flen := flen / 1024;
+  	    }
+        if (_user_id <> coalesce (_dir_item[7], -1))
+        {
+          _user_id := coalesce (_dir_item[7], -1);
+          _user_name := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _user_id), '');
+        }
+        if (_group_id <> coalesce (_dir_item[6], -1))
+        {
+          _group_id := coalesce (_dir_item[6], -1);
+          _group_name := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _group_id), '');
+        }
+        http (sprintf ('<FILE modify="%s" owner="%s" group="%s" permissions="%s" mimeType="%s" rs="%i" lenght="%d" hs="%d %s" name="', left (cast (_dir_item[3] as varchar), 19), _user_name, _group_name, DB.DBA.DAV_PERM_D2U (_dir_item[5]), _dir_item[9], _res_len, _dir_item[2], flen, aref (fsize, mult)), _xml);
+  	    http_value (_name, null, _xml );
+  	    http ('"', _xml );
+        if (feedAction)
+          http (sprintf (' pubDate="%s"', soap_print_box (_dir_item[3], '', 1)), _xml);
+
+  	    http (' />\n', _xml );
+  	  }
+    }
+    http ('</FILES></PATH>', _xml);
+    _xml := xtree_doc (_xml);
+
+    if (feedAction)
+    {
+      _xml_sheet := (select blob_to_string (RES_CONTENT) from WS.WS.SYS_DAV_RES where RES_FULL_PATH = '/DAV/.xml2rss.xsl');
+      if (not isnull (_xml_sheet))
+      {
+    	  http_header ('Content-type: text/xml; charset="UTF-8"\r\n');
+        xslt_sheet ('http://local.virt/custom_dir_output', xml_tree_doc (_xml_sheet));
+        _html := xslt ('http://local.virt/custom_dir_output', _xml);
+        if (action = 'atom')
+        {
+          _xml_sheet := (select blob_to_string (RES_CONTENT) from WS.WS.SYS_DAV_RES where RES_FULL_PATH = '/DAV/.rss2atom.xsl');
+          if (not isnull (_xml_sheet))
+          {
+            xslt_sheet ('http://local.virt/custom_dir_output', xml_tree_doc (_xml_sheet));
+            _html := xslt ('http://local.virt/custom_dir_output', _html);
+          }
+        }
+        else if (action = 'rdf')
+        {
+          _xml_sheet := (select blob_to_string (RES_CONTENT) from WS.WS.SYS_DAV_RES where RES_FULL_PATH = '/DAV/.rss2rdf.xsl');
+          if (not isnull (_xml_sheet))
+          {
+            xslt_sheet ('http://local.virt/custom_dir_output', xml_tree_doc (_xml_sheet));
+            _html := xslt ('http://local.virt/custom_dir_output', _html);
+          }
+        }
+        http_value (_html);
+      }
     }
     else
     {
-      _html := cast (xslt ('http://local.virt/dir_output', _xml) as varchar);
+      if (isnull (xslt_file))
+      {
+        xslt_folder := full_path;
+        while (xslt_folder <> '')
+        {
+          xslt_folder := rtrim (xslt_folder, '/');
+          N := strrchr (xslt_folder, '/');
+          if (not isnull (N))
+          {
+            xslt_folder := subseq (xslt_folder, 0, N+1);
+            if (exists (select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = xslt_folder || '.folder.xsl'))
+            {
+              xslt_file := xslt_folder || '.folder.xsl';
+              goto _exit;
+            }
+          }
+        }
+      _exit:;
+      }
+    	http_header ('Content-type: text/html; charset="UTF-8"\r\n');
+      if (not isnull (xslt_file))
+      {
+        _xml_sheet := (select blob_to_string (RES_CONTENT) from WS.WS.SYS_DAV_RES where RES_FULL_PATH = xslt_file);
+        if (not isnull (_xml_sheet))
+        {
+          xslt_sheet ('http://local.virt/custom_dir_output', xtree_doc (_xml_sheet));
+          _html := xslt ('http://local.virt/custom_dir_output', _xml);
+          http_value (_html);
+        }
+      }
+      else
+      {
+        _b_opt := null;
+        if (exists (select 1 from DB.DBA.HTTP_PATH where HP_LPATH = http_map_get ('domain') and HP_PPATH = http_map_get ('mounted')))
+        {
+          select deserialize(HP_OPTIONS) into _b_opt
+            from DB.DBA.HTTP_PATH
+           where HP_LPATH = http_map_get ('domain') and HP_PPATH = http_map_get ('mounted');
+
+          if (_b_opt is not NULL)
+            _b_opt := get_keyword ('browse_sheet', _b_opt, '');
+        }
+        if (_b_opt <> '')
+        {
+          select blob_to_string (RES_CONTENT) into _xml_sheet from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _b_opt;
+          xslt_sheet ('http://local.virt/custom_dir_output', xml_tree_doc (_xml_sheet));
+          _html := cast (xslt ('http://local.virt/custom_dir_output', _xml) as varchar);
+        }
+        else
+        {
+          _html := cast (xslt ('http://local.virt/dir_output', _xml) as varchar);
+        }
+        http (_html);
+      }
     }
-    http (_html);
   }
   return 0;
 }
