@@ -102,6 +102,10 @@
 		  exec (self.crview_textfield.ufl_value, stat, msg);
 		  if (stat = '00000')
 		    {
+		      declare x any;
+		      x := sql_parse (self.crview_textfield.ufl_value);
+		      if (isvector (x) and length (x) > 0 and x[0] = 508)
+		        self.name := x[1][0][1];
 		      exec (sprintf ('select top 1 1 from "%I"."%I"."%I"',
 		        name_part (self.name,0),name_part (self.name,1), name_part (self.name,2)), stat, msg);
 		      if (stat = 'S0002')
