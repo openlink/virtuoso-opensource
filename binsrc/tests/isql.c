@@ -647,7 +647,7 @@ int web_mode = 0;		/* Is set to 1 in the beginning of main if used
 int kubl_mode = 1;		/* Currently affects only how MAXROWS are handled. */
 int print_banner_flag = 1, print_types_also = 1, verbose_mode = 1, echo_mode = 0,
     explain_mode = 0, sparql_translate_mode = 0, vert_row_out_mode = 0,
-    csv_mode = 0;
+    csv_mode = 0, profile_mode = 0;
 int flag_newlines_at_eor = 1;	/* By default print one nl at the end of row */
 long int select_max_rows = 0;	/* By default show them all. */
 long int perm_deadlock_retries = 0, vol_deadlock_retries = 0;
@@ -2637,6 +2637,7 @@ struct name_var_pair isql_variables[] =
   add_var_def (_T("SPARQL_TRANSLATE"), (&sparql_translate_mode), INT_FLAG, OFF_ON),
   add_var_def (_T("VERT_ROW_OUTPUT"), (&vert_row_out_mode), INT_FLAG, OFF_ON),
   add_var_def (_T("CSV"), (&csv_mode), INT_FLAG, OFF_ON),
+  add_var_def (_T("PROFILE"), (&profile_mode), INT_FLAG, OFF_ON),
   add_var_def (_T("CVS_FIELD_SEPARATOR"), (&csv_field_separator), CHARPTR_VAR, NULL),
   add_var_def (_T("CVS_ROW_SEPARATOR"), (&csv_row_separator), CHARPTR_VAR, NULL),
   add_var_def (_T("HIDDEN_CRS"), (&clear_hidden_crs_flag), INT_FLAG, PRESERVED_CLEARED),
@@ -6175,6 +6176,15 @@ again_exec:;
           rc = SQLBindParameter (stmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, isqlt_tcslen(q), 0, UCP(q), isqlt_tcslen(q), NULL);
           IF_ERR_GO (stmt, error, rc);
           rc = SQLExecute (stmt);
+        }
+      else if (profile_mode)
+        {
+	  print_blobs_flag = 1;
+	  rc = SQLPrepare (stmt, _T("PROFILE(?)"), SQL_NTS);
+	  IF_ERR_GO (stmt, error, rc);
+	  rc = SQLBindParameter (stmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, isqlt_tcslen(text), 0, UCP(text), isqlt_tcslen(text), NULL);
+	  IF_ERR_GO (stmt, error, rc);
+	  rc = SQLExecute (stmt);
         }
       else
         {
