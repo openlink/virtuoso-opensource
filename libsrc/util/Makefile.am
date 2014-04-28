@@ -110,7 +110,7 @@ libutil_la_SOURCES = \
 BUILT_SOURCES = getdate.c
 
 getdate.c: getdate.y
-	@$(GEN) $(YACC) -o getdate.c $(top_srcdir)/libsrc/util/getdate.y
+	@$(GEN) $(YACC) -p OPL_gd_ -o getdate.c $(top_srcdir)/libsrc/util/getdate.y
 	
 
 
