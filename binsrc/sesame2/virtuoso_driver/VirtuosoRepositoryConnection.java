@@ -160,7 +160,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	protected VirtuosoRepository repository;
 	static final String S_INSERT = "sparql insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
         static final String S_DELETE = "sparql delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
-        static final String S_TTLP_INSERT = "DB.DBA.TTLP(?,'',?,255)";
+//        static final String S_TTLP_INSERT = "DB.DBA.TTLP(?,'',?,255)";
+        static final String S_TTLP_INSERT = "DB.DBA.TTLP_MT (?, '', ?, 255, 2, 3, ?)";
         static final int MAX_CMD_SIZE = 36000;
 
 	private int BATCH_SIZE = 5000;
@@ -2064,7 +2065,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-/*** can't rollback inserts, that was done via TTLP, so it is disable **
 	private synchronized void addToQuadStore(Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException {
 		verifyIsOpen();
 
@@ -2140,71 +2140,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			}
 		} catch (Exception e) {}
 	}
-***/
-
-	private synchronized void addToQuadStore(Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException {
-		verifyIsOpen();
-
-		try {
-			boolean isAutoCommit = getQuadStoreConnection().getAutoCommit();
-		        if (psInsert == null)
-				psInsert = prepareStatement(VirtuosoRepositoryConnection.S_INSERT);
-
-	        	if (!isAutoCommit && useLazyAdd) {
-				for (int i = 0; i < contexts.length; i++) {
-					psInsert.setString(1, contexts[i].stringValue());
-					bindResource(psInsert, 2, subject);
-					bindURI(psInsert, 3, predicate);
-					bindValue(psInsert, 4, object);
-
-					psInsert.addBatch();
-					psInsertCount++;
-				}
-			
-				if (psInsertCount >= BATCH_SIZE)
-					flushDelayAdd();
-		        } else {
-				for (int i = 0; i < contexts.length; i++) {
-					psInsert.setString(1, contexts[i].stringValue());
-					bindResource(psInsert, 2, subject);
-					bindURI(psInsert, 3, predicate);
-					bindValue(psInsert, 4, object);
-
-					psInsert.addBatch();
-					psInsertCount++;
-				}
-
-				flushDelayAdd();
-		        }
-		}
-		catch (Exception e) {
-			throw new RepositoryException(e);
-		}
-	}
-
-	private synchronized void flushDelayAdd() throws RepositoryException 
-	{
-		try {
-			if (psInsertCount > 0 && psInsert!=null) {
-				psInsert.executeBatch();
-				psInsert.clearBatch();
-				psInsertCount = 0;
-			}
-		}
-		catch (Exception e) {
-			throw new RepositoryException(e);
-		}
-	}
-
-	private synchronized void dropDelayAdd() throws RepositoryException 
-	{
-		try {
-			if (psInsertCount > 0 && psInsert!=null) {
-				psInsert.clearBatch();
-				psInsertCount = 0;
-			}
-		} catch (Exception e) {}
-	}
 
 
 	private synchronized void sendDelayAdd() throws RepositoryException 
@@ -2227,9 +2162,12 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			ps = pstmp = prepareStatement(VirtuosoRepositoryConnection.S_TTLP_INSERT);
 
 		try {
+		        int transactional = quadStoreConnection.getAutoCommit()?0:1;
+
 			for(Map.Entry<String,StringBuilder> e : data.entrySet()) {
 				ps.setString(1, e.getValue().toString());
 				ps.setString(2, e.getKey());
+				ps.setInt(3, transactional);
 				ps.executeUpdate();
 			}
 		} finally {
@@ -2685,7 +2623,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 		else { // if(val instanceof String) {
 			try {
-				return getRepository().getValueFactory().createLiteral((String) val);
+				return getRepository().getValueFactory().createLiteral(val.toString());
 			}
 			catch (IllegalArgumentException iaex2) {
 				throw new RepositoryException("VirtuosoRepositoryConnection().castValue() Could not parse resource: " + val, iaex2);
