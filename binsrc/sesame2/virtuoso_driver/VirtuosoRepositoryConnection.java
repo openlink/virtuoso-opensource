@@ -2623,7 +2623,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 		else { // if(val instanceof String) {
 			try {
-				return getRepository().getValueFactory().createLiteral((String) val);
+				return getRepository().getValueFactory().createLiteral(val.toString());
 			}
 			catch (IllegalArgumentException iaex2) {
 				throw new RepositoryException("VirtuosoRepositoryConnection().castValue() Could not parse resource: " + val, iaex2);
