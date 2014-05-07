@@ -710,23 +710,57 @@ class VirtuosoInputStream extends BufferedInputStream
       return bd;
    }
 
+   
    private VirtuosoRdfBox readRdfBox () throws IOException, VirtuosoException
    {
       int flags = read ();
-      Object box;
-      short type;
-      short lang;
+      Object box = null;
+      short type = VirtuosoRdfBox.RDF_BOX_DEFAULT_TYPE;
+      short lang = VirtuosoRdfBox.RDF_BOX_DEFAULT_LANG;
       boolean is_complete = false;
       long ro_id = 0L;
+      boolean id_only = false;
       VirtuosoRdfBox rb;
 
       //System.out.println ("flags:" + flags);
-      if (0 != (flags & VirtuosoRdfBox.RBS_CHKSUM))
+      if (0 != (flags & VirtuosoRdfBox.RBS_EXT_TYPE)) 
       {
-	throw new VirtuosoException ("Invalid rdf box received", "42000", VirtuosoException.MISCERROR);
-      }
-      if (0 != (flags & VirtuosoRdfBox.RBS_SKIP_DTP))
-      {
+        int ID_ONLY = VirtuosoRdfBox.RBS_HAS_LANG | VirtuosoRdfBox.RBS_HAS_TYPE;
+        if ((flags & ID_ONLY) == ID_ONLY) {
+            id_only = true;
+        } else if ((flags & VirtuosoRdfBox.RBS_HAS_LANG)!=0){
+            lang = readshort();
+        } else {
+            type = readshort();
+        }
+
+        if (0 != (flags & VirtuosoRdfBox.RBS_64))
+            ro_id = readlong();
+        else
+            ro_id = readlongint();
+
+        if (0 != (flags & VirtuosoRdfBox.RBS_COMPLETE)){
+            is_complete = true;
+            box = read_object ();
+            if (type == VirtuosoRdfBox.RDF_BOX_GEO_TYPE) {
+                String data = ((String)box).substring(6);
+                try {
+                    box = new VirtuosoPoint(data.substring(0, data.length()-1));
+                } catch (Exception e){
+                    throw new VirtuosoException(e, VirtuosoException.IOERROR);
+                }
+            }
+        }
+
+      } else {
+
+        if (0 != (flags & VirtuosoRdfBox.RBS_CHKSUM))
+        {
+	  throw new VirtuosoException ("Invalid rdf box received", "42000", VirtuosoException.MISCERROR);
+        }
+
+        if (0 != (flags & VirtuosoRdfBox.RBS_SKIP_DTP))
+        {
 	  int n = readshortint();
 	  byte[] array = new byte[n];
 	  for(int i = read(array,0,(int)n) ; i != n ; i+=read(array,i,(int)n-i));
@@ -735,30 +769,33 @@ class VirtuosoInputStream extends BufferedInputStream
 	  else
 	      box = convByte2Ascii(array);
 
+        }
+        else
+          box = read_object ();
+      
+        if (0 != (flags & VirtuosoRdfBox.RBS_OUTLINED))
+        {
+	  if (0 != (flags & VirtuosoRdfBox.RBS_64))
+	    ro_id = readlong();
+	  else
+	    ro_id = readlongint ();
+        }
+
+        if (0 != (flags & VirtuosoRdfBox.RBS_COMPLETE))
+	  is_complete = true;
+
+        if (0 != (flags & VirtuosoRdfBox.RBS_HAS_TYPE))
+	  type = readshort ();
+        else
+	  type = VirtuosoRdfBox.RDF_BOX_DEFAULT_TYPE;
+
+        if (0 != (flags & VirtuosoRdfBox.RBS_HAS_LANG))
+	  lang = readshort ();
+        else
+	  lang = VirtuosoRdfBox.RDF_BOX_DEFAULT_LANG;
       }
-      else
-      box = read_object ();
-      if (0 != (flags & VirtuosoRdfBox.RBS_OUTLINED))
-      {
-	if (0 != (flags & VirtuosoRdfBox.RBS_64))
-	  ro_id = readlong();
-	else
-	  ro_id = readlongint ();
-      }
 
-      if (0 != (flags & VirtuosoRdfBox.RBS_COMPLETE))
-	is_complete = true;
-
-      if (0 != (flags & VirtuosoRdfBox.RBS_HAS_TYPE))
-	type = readshort ();
-      else
-	type = VirtuosoRdfBox.RDF_BOX_DEFAULT_TYPE;
-
-      if (0 != (flags & VirtuosoRdfBox.RBS_HAS_LANG))
-	lang = readshort ();
-      else
-	lang = VirtuosoRdfBox.RDF_BOX_DEFAULT_LANG;
-      rb = new VirtuosoRdfBox (this.connection, box, is_complete, type, lang, ro_id);
+      rb = new VirtuosoRdfBox(this.connection, box, is_complete, id_only, type, lang, ro_id);
       return rb;
    }
 

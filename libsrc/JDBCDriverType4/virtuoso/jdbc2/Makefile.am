@@ -78,6 +78,7 @@ infiles = \
 	VirtuosoOutputStream.java \
 	VirtuosoPreparedStatement.java \
 	VirtuosoRdfBox.java \
+	VirtuosoPoint.java \
 	VirtuosoResultSet.java \
 	VirtuosoResultSetMetaData.java \
 	VirtuosoRow.java \
