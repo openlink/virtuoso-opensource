@@ -147,6 +147,11 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
        {
 	 Object[] args = new Object[6];
 	 openlink.util.Vector vect = new openlink.util.Vector(1);
+         if (future != null) 
+           {
+             connection.removeFuture(future);
+             future = null;
+           }
 	 // Set arguments to the RPC function
 	 args[0] = statid;
 	 args[2] = (cursorName == null) ? args[0] : cursorName;
@@ -255,6 +260,12 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	 args[4] = null;
 	 try
 	   {
+             if (future != null) 
+               {
+	         connection.removeFuture(future);
+	         future = null;
+               }
+
 	     // Put the options array in the args array
 	     args[5] = getStmtOpts();
 	     future = connection.getFuture(VirtuosoFuture.exec,args, this.rpc_timeout);

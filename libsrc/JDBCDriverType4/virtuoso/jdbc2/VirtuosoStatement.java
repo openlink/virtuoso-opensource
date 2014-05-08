@@ -88,6 +88,8 @@ public class VirtuosoStatement implements Statement
    // The true when the statement is closed
    protected volatile boolean close_flag = false;
 
+   protected boolean wait_result = false;
+
    // The request number
    protected static int req_no;
 
@@ -242,7 +244,7 @@ public class VirtuosoStatement implements Statement
 		   close_flag = false;
 	       }
 	       else
-		   cancel();
+		   cancel_rs();
 	       //System.out.println(this+" "+connection+" [@"+sql+"@]");
 	       // Set arguments to the RPC function
 	       args[0] = (statid == null) ? statid = new String("s" + connection.hashCode() + (req_no++)) : statid;
@@ -292,6 +294,17 @@ public class VirtuosoStatement implements Statement
     * @exception virtuoso.jdbc2.VirtuosoException If a database access error occurs
     */
    public void cancel() throws VirtuosoException
+   {
+     synchronized (this)
+     {
+       if (future != null && wait_result == true)
+         future.sendCancelFuture();
+     }
+
+     cancel_rs();
+   }
+
+   protected void cancel_rs() throws VirtuosoException
    {
      synchronized (connection)
        {
@@ -347,7 +360,7 @@ public class VirtuosoStatement implements Statement
 	     if(statid == null)
 	       return;
 	     // Cancel current result set
-	     cancel();
+	     cancel_rs();
 	     // Build the args array
 	     Object[] args = new Object[2];
 	     args[0] = statid;
