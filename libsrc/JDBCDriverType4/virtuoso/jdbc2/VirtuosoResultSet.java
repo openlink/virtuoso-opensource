@@ -438,7 +438,9 @@ public class VirtuosoResultSet implements ResultSet
 	   throw new VirtuosoException ("Statement closed. Operation not applicable",
 	       VirtuosoException.MISCERROR);
          // Get the next row (if one exist else null)
+	 synchronized (statement) { statement.wait_result = true; }
 	 curr = statement.future.nextResult();
+	 synchronized (statement) { statement.wait_result = false; }
 	 curr = (curr==null)?null:((openlink.util.Vector)curr).firstElement();
 	 //String xx;
 	 //if (curr != null)
@@ -1586,7 +1588,7 @@ public class VirtuosoResultSet implements ResultSet
       // Run the method
       date = ((VirtuosoRow)rows.elementAt(currentRow - 1)).getTimestamp(columnIndex);
       // Specify a calendar
-      if(cal != null && date!=null)
+      if(cal != null && date != null)
       {
         cal.setTime(date);
 	date = new java.sql.Timestamp (cal.getTime().getTime());
