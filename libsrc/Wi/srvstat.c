@@ -4661,7 +4661,7 @@ bif_stat_import (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       ric = rdf_name_to_ctx (rc[0]);
       if (!ric)
 	continue;
-      DO_BOX (caddr_t *, smp, inx, rc[1])
+      DO_BOX (caddr_t *, smp, inx2, rc[1])
 	{
 	  caddr_t k = sc_ext_to_data (qi, smp[0]);
 	  tb_sample_t smpl;
