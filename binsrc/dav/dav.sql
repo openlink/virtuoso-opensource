@@ -5515,7 +5515,7 @@ create function WS.WS.DAV_DIR_LIST (
   declare _user_id, _group_id integer;
   declare action, feedAction any;
 
-  if ((length (params) = 4) and (__tag (params[1]) = 185))
+  if ((length (params) = 4) and (__tag (params[1]) = 185) and (params[2] = 'attr-Content'))
     params := __http_stream_params ();
 
   action := get_keyword ('a', params, '');
