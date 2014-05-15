@@ -2592,7 +2592,7 @@ again:
       DB.DBA.DAV_SET_HTTP_STATUS (403, null, null, 'You are not permitted to view the directory index in this location: ' || sprintf ('%V', http_path ()), 1);
       return;
     }
-    dir_ret := WS.WS.DAV_DIR_LIST (full_path, http_path(), _col_id, uname, upwd, uid);
+    dir_ret := WS.WS.DAV_DIR_LIST (path, params, lines, full_path, http_path(), _col_id, uname, upwd, uid);
     if (DAV_HIDE_ERROR (dir_ret))
     {
       DB.DBA.DAV_SET_HTTP_STATUS (
@@ -5496,6 +5496,9 @@ nfp:
 ;
 
 create function WS.WS.DAV_DIR_LIST (
+  in path any,
+  inout params any,
+  in lines any,
   in full_path varchar,
   in logical_root_path varchar,
   in col integer,
@@ -5510,16 +5513,16 @@ create function WS.WS.DAV_DIR_LIST (
   declare _dir_len, _dir_ctr integer;
   declare _user_name, _group_name varchar;
   declare _user_id, _group_id integer;
-  declare path, action, feedAction, params, lines any;
+  declare action, feedAction any;
 
-  params := http_param ();
+  if ((length (params) = 4) and (__tag (params[1]) = 185))
+    params := __http_stream_params ();
+
   action := get_keyword ('a', params, '');
   feedAction := case when (action  in ('rss', 'atom', 'rdf', 'opml', 'atomPub')) then 1 else 0 end;
   if (not feedAction and (registry_get ('__WebDAV_vspx__') = 'yes'))
   {
     vspx_path := '/DAV/VAD/conductor/folder.vspx';
-    path := http_path ();
-    lines := http_request_header ();
     params := vector_concat (params, vector ('dir', full_path));
 
     action := get_keyword ('a', params, '');
