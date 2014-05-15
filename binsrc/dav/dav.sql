@@ -1563,14 +1563,14 @@ create procedure WS.WS.MKCOL (
   {
     DB.DBA.DAV_SET_HTTP_STATUS (405);
   }
-  return;
+    return rc;
 }
 
   commit work;
   http_request_status ('HTTP/1.1 201 Created');
   http_header('Link: <http://www.w3.org/ns/ldp#Container>; rel="type"\r\n');
 
-  return;
+  return rc;
 }
 ;
 
