@@ -1221,10 +1221,10 @@ create procedure WS.WS.PROPPATCH_INT (
   in lines varchar,
   in id any,
   in st varchar,
-  in uid varchar,
-  in gid varchar,
   in auth_uid varchar,
   in auth_pwd varchar,
+  in uid integer,
+  in gid integer,
   in mode varchar := 'proppatch')
 {
   -- dbg_obj_princ ('WS.WS.PROPPATCH_INT (', path, params, lines, ')');
@@ -1511,7 +1511,8 @@ create procedure WS.WS.FINDPARAM (inout params varchar, in pkey varchar)
 create procedure WS.WS.MKCOL (
   in path varchar,
   inout params varchar,
-  in lines varchar)
+  in lines varchar,
+  in method varchar := 'mkcol')
 {
   -- dbg_obj_princ ('WS.WS.MKCOL (', path, params, lines, ')');
   declare _col_id, _col_parent_id, rc any;
@@ -1535,7 +1536,8 @@ create procedure WS.WS.MKCOL (
 
   path := '/' || DAV_CONCAT_PATH (path, '/');
   rc := DAV_COL_CREATE_INT (path, _perms, null, null, null, null, 1, 0, 1, uid, gid);
-  if (DAV_HIDE_ERROR (rc) is not null)
+
+  if ((DAV_HIDE_ERROR (rc) is not null) and (method = 'mkcol'))
     rc := WS.WS.PROPPATCH_INT (path, params, lines, rc, 'C', auth_name, auth_pwd, uid, gid, 'mkcol');
 
   if (DAV_HIDE_ERROR (rc) is null)
@@ -1845,23 +1847,149 @@ create procedure WS.WS.HEAD (in path varchar, inout params varchar, in lines var
 --#IF VER=5
 --!AFTER
 --#ENDIF
-create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varchar)
+create procedure WS.WS.PUT (
+  in path varchar,
+  inout params varchar,
+  in lines varchar)
 {
-  declare rc, _col_parent_id integer;
+  -- dbg_obj_princ ('WS.WS.PUT (', path, params, lines, ')');
+  declare rc, _col, _col_parent_id integer;
   declare id integer;
-  declare content_type varchar;
-  declare _col integer;
-  declare _name varchar;
+  declare content_type, content_type_attr varchar;
   declare _cont_len integer;
-  declare full_path, _perms, uname, upwd varchar;
-  declare _u_id, _g_id integer;
+  declare full_path, _perms, auth_name, auth_pwd varchar;
+  declare uid, gid integer;
   declare location varchar;
   declare ses any;
-  --set isolation = 'serializable';
-
-  ses := aref_set_0 (params, 1);
-
+  -- atomPub
+  declare _atomPub integer;
+  declare _path, _destination, _oldName, _name, _what, _method, _category varchar;
+  declare _xtree, _content, _parts any;
   whenever sqlstate '*' goto error_ret;
+
+  --set isolation = 'serializable';
+  ses := aref_set_0 (params, 1);
+  _atomPub := 0;
+  content_type := http_request_header (lines, 'Content-Type', null, '');
+  content_type_attr := http_request_header (lines, 'Content-Type', 'type', '');
+  if ((content_type = 'application/atom+xml') and (content_type_attr = 'entry'))
+  {
+    -- AtomPub: POST and PUT methods
+    -- application/atom+xml
+
+    _atomPub := 1;
+    if (__tag (ses) = 126)
+    {
+      ses := string_output_string (http_body_read (1));
+    }
+    else if (__tag (ses) = 185)
+    {
+      ses := string_output_string (http_body_read (0));
+    }
+    _xtree := xml_tree_doc (blob_to_string (ses));
+    ses := xpath_eval ('[ xmlns="http://www.w3.org/2005/Atom" ] string (/entry/content)', _xtree, 1);
+  }
+  if (content_type = 'multipart/related')
+  {
+    -- AtomPub: POST and PUT methods
+    -- multipart/related
+
+    _atomPub := 1;
+    if (__tag (ses) = 126)
+    {
+      ses := string_output_string (http_body_read (1));
+    }
+    else if (__tag (ses) = 185)
+    {
+      ses := string_output_string (http_body_read (0));
+    }
+    if (length (ses) = 0)
+    {
+      _xtree := xml_tree_doc (blob_to_string (get_keyword ('mime_part1', params, '')));
+      content_type := get_keyword ('Content-Type', get_keyword ('attr-mime_part2', params, vector ()), '');
+      ses := blob_to_string (get_keyword ('mime_part2', params, ''));
+    }
+    else
+    {
+      _content := 'Content-Type:' || http_request_header_full (lines, 'Content-Type') || '\r\n\r\n' || ses;
+      _parts := mime_tree (_content);
+      rc := -28;
+      if (not isarray (_parts))
+        goto error_ret;
+
+      if (not isarray (_parts[0]))
+        goto error_ret;
+
+      _parts := _parts[2];
+      if (length (_parts) <> 2)
+        goto error_ret;
+
+      if (get_keyword ('Content-Type', _parts[0][0], '') <> 'application/atom+xml')
+        goto error_ret;
+
+      if (get_keyword ('type', _parts[0][0], '') <> 'entry')
+        goto error_ret;
+
+      _xtree := xml_tree_doc (subseq (blob_to_string (_content), _parts[0][1][0], _parts[0][1][1]));
+      content_type := get_keyword ('Content-Type', _parts[1][0], '');
+      ses := subseq (blob_to_string (_content), _parts[1][1][0], _parts[1][1][1]);
+    }
+  }
+  if (_atomPub)
+  {
+    _method := http_request_get ('REQUEST_METHOD');
+    _name := serialize_to_UTF8_xml (xpath_eval ('[ xmlns="http://www.w3.org/2005/Atom" ] string (/entry/title)', _xtree, 1));
+    _category := serialize_to_UTF8_xml (xpath_eval ('[ xmlns="http://www.w3.org/2005/Atom" ] string (/entry/category/@term)', _xtree, 1));
+
+    if (is_empty_or_null (_category))
+      _category := 'resource';
+
+    _what := case when (_category = 'collection') then 'C' else 'R' end;
+    if (_method = 'POST')
+    {
+      if (is_empty_or_null (_name))
+      {
+        DB.DBA.DAV_SET_HTTP_STATUS (409);
+        return;
+      }
+      _oldName := _name;
+      path := vector_concat (path, vector (_name));
+    }
+    else if (_method = 'PUT')
+    {
+      _oldName := path[length (path)-1];
+    }
+    if (_method = 'PUT')
+    {
+      _path := vector_concat (vector(''), path);
+      if (_what = 'C')
+        _path := vector_concat (_path, vector(''));
+
+      if (DAV_HIDE_ERROR (DAV_SEARCH_ID (_path, _what)) is null)
+      {
+        DB.DBA.DAV_SET_HTTP_STATUS (409);
+        return;
+      }
+    }
+    if (_category = 'collection')
+    {
+      if (_method = 'POST')
+      {
+        rc := WS.WS.MKCOL (path, params, lines, 'atomPub');
+      }
+      else if ((_method = 'PUT') and not is_empty_or_null (_name) and (_name <> _oldName))
+      {
+        -- rename
+        full_path := DB.DBA.DAV_CONCAT_PATH (_path, null);
+        _destination := concat (left (full_path, strrchr (rtrim (full_path, '/'), '/')), '/', _name, either (equ (right (full_path, 1), '/'), '/', ''));
+        rc := DB.DBA.DAV_MOVE_INT (full_path, _destination, 0, null, null, 0);
+      }
+      if (DAV_HIDE_ERROR (rc) is not null)
+        WS.WS.DAV_ATOM_ENTRY (rc, 'C');
+
+      return;
+    }
+  }
 
 -- As instructed by Orri, loop retries are removed
 --deadlock_retry:
@@ -1869,14 +1997,14 @@ create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varc
   WS.WS.IS_REDIRECT_REF (path, lines, location);
   path := WS.WS.FIXPATH (path);
   full_path := DAV_CONCAT_PATH ('/', path);
-  _u_id := null;
-  _g_id := null;
+  uid := null;
+  gid := null;
   _col_parent_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'P'));
   if (_col_parent_id is not null)
     {
        --dbg_obj_princ ('WS.WS.PUT has _col_parent_id=', _col_parent_id);
-      rc := DAV_AUTHENTICATE_HTTP (_col_parent_id, 'C', '11_', 1, lines, uname, upwd, _u_id, _g_id, _perms);
-       --dbg_obj_princ ('Authentication in WS.WS.PUT gives ', rc, uname, upwd, _u_id, _g_id, _perms);
+    rc := DAV_AUTHENTICATE_HTTP (_col_parent_id, 'C', '11_', 1, lines, auth_name, auth_pwd, uid, gid, _perms);
+    --dbg_obj_princ ('Authentication in WS.WS.PUT gives ', rc, auth_name, auth_pwd, uid, gid, _perms);
       if (rc < 0)
         goto error_ret;
     }
@@ -1885,12 +2013,11 @@ create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varc
     DB.DBA.DAV_SET_HTTP_STATUS (409);
       return;
     }
-  if (WS.WS.ISLOCKED (vector_concat (vector (''), path), lines, _u_id))
+  if (WS.WS.ISLOCKED (vector_concat (vector (''), path), lines, uid))
     {
     DB.DBA.DAV_SET_HTTP_STATUS (423);
       return;
     }
-  content_type := WS.WS.FINDPARAM (lines, 'Content-Type:');
   if (content_type = '')
   {
     content_type := http_mime_type (full_path);
@@ -1900,26 +2027,42 @@ create procedure WS.WS.PUT (in path varchar, inout params varchar, in lines varc
     {
       content_type := 'text/html';
     }
-   --dbg_obj_princ ('content_type=', content_type, ',  _cont_len=', _cont_len);
-
   rc := -28;
-  rc := DAV_RES_UPLOAD_STRSES_INT (full_path, ses, content_type, _perms, uname, null, uname, upwd, 0, now(), now(), null, _u_id, _g_id, 0, 1);
+  rc := DAV_RES_UPLOAD_STRSES_INT (full_path, ses, content_type, _perms, auth_name, null, auth_name, auth_pwd, 0, now(), now(), null, uid, gid, 0, 1);
   --dbg_obj_princ ('DAV_RES_UPLOAD_STRSES_INT returned ', rc, ' of type ', __tag (rc));
+  if (_atomPub and (_method = 'PUT') and not is_empty_or_null (_name) and (_name <> _oldName))
+  {
+    -- rename
+
+    _destination := concat (left (full_path, strrchr (rtrim (full_path, '/'), '/')), '/', _name, either (equ (right (full_path, 1), '/'), '/', ''));
+    rc := DB.DBA.DAV_MOVE_INT (full_path, _destination, 0, null, null, 0);
+  }
   if (DAV_HIDE_ERROR (rc) is not null)
     {
       commit work;
       http_request_status ('HTTP/1.1 201 Created');
-    http_header (sprintf('Content-Type: %s\r\nLink: <http://www.w3.org/ns/ldp#Resource>; rel="type"\r\n', content_type));
-    if (content_type = 'application/sparql-query')
-	http_header ('MS-Author-Via: SPARQL\r\n');
+    http_header ('Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"\r\n');
+    if (_atomPub)
+    {
+      WS.WS.DAV_ATOM_ENTRY (rc, 'R');
+    }
       else
-	http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
-	    '<HTML><HEAD>',
-	    '<TITLE>201 Created</TITLE>',
-	    '</HEAD><BODY>', '<H1>Created</H1>',
-        'Resource ', sprintf ('%V', full_path),' has been created.</BODY></HTML>')
-      );
-
+    {
+      http_header (sprintf('Content-Type: %s\r\n', content_type));
+      if (content_type = 'application/sparql-query')
+      {
+        http_header ('MS-Author-Via: SPARQL\r\n');
+      }
+      else
+      {
+        http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">',
+          '<HTML><HEAD>',
+          '<TITLE>201 Created</TITLE>',
+          '</HEAD><BODY>', '<H1>Created</H1>',
+          'Resource ', sprintf ('%V', full_path),' has been created.</BODY></HTML>')
+        );
+      }
+    }
       return;
     }
 error_ret:
@@ -2208,13 +2351,15 @@ create procedure WS.WS.GET_DAV_CHUNKED_QUOTA () returns integer
 ;
 
 -- GET METHOD
-
-create procedure WS.WS.GET (in path any, inout params any, in lines any)
+create procedure WS.WS.GET (
+  in path any,
+  inout params any,
+  in lines any)
 {
-  declare col_depth, path_len integer;
+  -- dbg_obj_princ ('WS.WS.GET (', path, params, lines, ')');
+  declare path_len integer;
   declare content long varchar;
   declare content_type varchar;
-  declare fake_content any;
   declare rc, err integer;
   declare _col integer;
   declare _name, uname, upwd varchar;
@@ -2226,10 +2371,10 @@ create procedure WS.WS.GET (in path any, inout params any, in lines any)
   declare uid, gid, maxres integer;
   declare p_comm, stat, msg, xpr, sxtag, rxtag, resource_content, str varchar;
   declare resource_owner, exec_safety_level integer;
-  declare _res_id , _col_id, is_admin_owned_res integer;
+  declare _res_id, _col_id, is_admin_owned_res integer;
   declare def_page varchar;
   declare asmx_path, auth_opts, webid_check, webid_check_rc, modt any;
-  -- dbg_obj_princ ('WS.WS.GET (', path, params, lines, ')');
+
   -- set isolation='committed';
   if (WS.WS.DAV_CHECK_ASMX (path, asmx_path))
     path := asmx_path;
@@ -2403,21 +2548,43 @@ again:
   if (WS.WS.IS_REDIRECT_REF (path, lines, location) and (get_keyword ('a', params, '') not in ('update', 'edit')))
   {
     declare host1 varchar;
+
     http_request_status ('HTTP/1.1 302 Found');
     host1 := http_request_header (lines, 'Host', NULL, NULL);
     if (host1 is not null and location not like '%://%')
       host1 := concat ('http://', host1);
     else
       host1 := '';
+
     http_header (sprintf ('Location: %s%s\r\n', host1, location));
     return (0);
   }
   http_request_status ('HTTP/1.1 200 OK');
   client_etag := WS.WS.FINDPARAM (lines, 'If-None-Match:');
+  if ((_col_id is not null) or (_res_id is not null))
+  {
+    if ((http_request_header (lines, 'Content-Type', null, '') = 'application/atom+xml') and (http_request_header (lines, 'Content-Type', 'type', '') = 'entry'))
+    {
+      if (_res_id is not null)
+        WS.WS.DAV_ATOM_ENTRY (_res_id, 'R');
+
+      if (_col_id is not null)
+        WS.WS.DAV_ATOM_ENTRY (_col_id, 'C');
+
+      return;
+
+    }
+    if ((_col_id is not null) and (http_request_header (lines, 'Content-Type', null, '') = 'application/atom+xml') and (http_request_header (lines, 'Content-Type', 'type', '') = 'feed'))
+    {
+      WS.WS.DAV_ATOM_ENTRY_LIST (_col_id, 'C');
+      return;
+    }
+  }
   if ((_col_id is not null) or ((_res_id is not null) and (get_keyword ('a', params) in ('update', 'edit'))))
   {
     declare dir_ret any;
-    if (WS.WS.GET_EXT_LDP(lines, client_etag, full_path, _res_id, _col_id))
+
+    if (WS.WS.GET_EXT_LDP (lines, client_etag, full_path, _res_id, _col_id))
       return;
 
     if (0 = http_map_get ('browseable'))
@@ -3152,26 +3319,40 @@ create procedure WS.WS.GET_EXT_LDP(in lines any, in client_etag varchar, in full
 ;
 
 -- /* POST method */
-create procedure WS.WS.POST (in path varchar, inout params varchar, in lines varchar)
+create procedure WS.WS.POST (
+  in path varchar,
+  inout params varchar,
+  in lines varchar)
 {
-  declare _content_type any;
+  -- dbg_obj_princ ('WS.WS.POST (', path, params, lines, ')');
+  declare _content_type, _content_type_attr varchar;
+
   _content_type := http_request_header (lines, 'Content-Type', null, '');
+  _content_type_attr := http_request_header (lines, 'Content-Type', 'type', '');
   if (_content_type = 'application/vnd.syncml+wbxml' or
       _content_type = 'application/vnd.syncml+xml')
-   {
-     if (__proc_exists ('DB.DBA.SYNCML'))
-       DB.DBA.SYNCML (path, params, lines);
-     else
-       signal ('37000', 'The SyncML server is not available');
-   }
+  {
+    if (not __proc_exists ('DB.DBA.SYNCML'))
+      signal ('37000', 'The SyncML server is not available');
+
+    DB.DBA.SYNCML (path, params, lines);
+  }
+  else if ((_content_type = 'application/atom+xml') and (_content_type_attr = 'entry'))
+  {
+    WS.WS.PUT (path, params, lines);
+  }
+  else if (_content_type = 'multipart/related')
+  {
+    WS.WS.PUT (path, params, lines);
+  }
   else if (_content_type = 'application/sparql-query')
-   {
-     WS.WS.PUT (path, params, lines);
-   }
+  {
+    WS.WS.PUT (path, params, lines);
+  }
   else
-   {
-     WS.WS.GET (path, params, lines);
-   }
+  {
+    WS.WS.GET (path, params, lines);
+  }
 }
 ;
 
@@ -5333,7 +5514,7 @@ create function WS.WS.DAV_DIR_LIST (
 
   params := http_param ();
   action := get_keyword ('a', params, '');
-  feedAction := case when (action  in ('rss', 'atom', 'rdf', 'opml')) then 1 else 0 end;
+  feedAction := case when (action  in ('rss', 'atom', 'rdf', 'opml', 'atomPub')) then 1 else 0 end;
   if (not feedAction and (registry_get ('__WebDAV_vspx__') = 'yes'))
   {
     vspx_path := '/DAV/VAD/conductor/folder.vspx';
@@ -5383,6 +5564,24 @@ create function WS.WS.DAV_DIR_LIST (
     }
 	  http ('</body>');
 	  http ('</opml>');
+	}
+  else if (action = 'atomPub')
+  {
+    _dir_entry := DAV_DIR_SINGLE_INT (col, 'C', full_path, null, null, http_dav_uid ());
+  	http_header ('Content-type: text/xml; charset="UTF-8"\r\n');
+    http (         '<?xml version="1.0" encoding="UTF-8" ?>');
+    http (         '<service xmlns="http://www.w3.org/2007/app" xmlns:atom="http://www.w3.org/2005/Atom">');
+    http (         '  <workspace>');
+    http (         '    <atom:title>WebDAV AtomPub</atom:title>');
+    http (sprintf ('    <collection href="%V" >', WS.WS.DAV_HOST () || _dir_entry[0]));
+    http (sprintf ('      <atom:title>%V Entries</atom:title>', _dir_entry[0]));
+    http (         '      <categories>');
+    http (         '        <atom:category term="collection" />');
+    http (         '        <atom:category term="resource" />');
+    http (         '      </categories>');
+    http (         '    </collection>');
+    http (         '  </workspace>');
+    http (         '</service>');
 	}
   else
   {
@@ -5558,6 +5757,63 @@ create function WS.WS.DAV_DIR_LIST (
     }
   }
   return 0;
+}
+;
+
+create procedure WS.WS.DAV_ATOM_ENTRY (
+  in id any,
+  in what char (1),
+  in isFullXml integer := 1)
+{
+  -- dbg_obj_princ ('WS.WS.DAV_ATOM_ENTRY (', id, what, ')');
+  declare entry any;
+
+  entry := DAV_DIR_SINGLE_INT (id, what, 'fake', null, null, http_dav_uid (), 0);
+  if (isFullXml)
+  {
+  	http_header ('Content-type: text/xml; charset="UTF-8"\r\n');
+    http (       '<?xml version="1.0" ?>');
+  }
+  http (         '<entry xmlns="http://www.w3.org/2005/Atom">');
+  http (sprintf ('  <title>%V</title>', entry[10]));
+  http (sprintf ('  <link rel="edit" href="%V" />', WS.WS.DAV_HOST () || entry[0]));
+  http (sprintf ('  <id>%V</id>', entry[0]));
+  http (sprintf ('  <category term="%V" />', case when what = 'R' then 'resource' else 'collection' end));
+  http (sprintf ('  <author><name>%V</name></author>', (select U_NAME from DB.DBA.SYS_USERS where U_ID = entry[7])));
+  http (sprintf ('  <updated>%V</updated>', soap_print_box (entry[3], '', 0)));
+  http (sprintf ('  <published>%V</published>', soap_print_box (entry[8], '', 0)));
+  http (         '</entry>');
+}
+;
+
+create procedure WS.WS.DAV_ATOM_ENTRY_LIST (
+  in id any,
+  in what char (1))
+{
+  -- dbg_obj_princ ('WS.WS.DAV_ATOM_ENTRY_LIST (', id, what, ')');
+  declare N integer;
+  declare path varchar;
+  declare entry, dir any;
+
+	http_header ('Content-type: text/xml; charset="UTF-8"\r\n');
+  entry := DAV_DIR_SINGLE_INT (id, what, 'fake', null, null, http_dav_uid (), 0);
+  http (         '<?xml version="1.0" ?>');
+  http (         '<feed xmlns="http://www.w3.org/2005/Atom">');
+  http (sprintf ('  <title>%V</title>', entry[10]));
+  http (sprintf ('  <link rel="edit" href="%V" />', WS.WS.DAV_HOST () || entry[0]));
+  http (sprintf ('  <id>%V</id>', entry[0]));
+  http (sprintf ('  <category term="%V" />', case when what = 'R' then 'resource' else 'collection' end));
+  http (sprintf ('  <author><name>%V</name></author>', (select U_NAME from DB.DBA.SYS_USERS where U_ID = entry[7])));
+  http (sprintf ('  <updated>%V</updated>', soap_print_box (entry[3], '', 0)));
+  http (sprintf ('  <published>%V</published>', soap_print_box (entry[8], '', 0)));
+
+  dir := DB.DBA.DAV_DIR_LIST_INT (DB.DBA.DAV_SEARCH_PATH (id, what), 0, '%', null, null, http_dav_uid ());
+  for (N := 0; N < length (dir); N := N + 1)
+  {
+    WS.WS.DAV_ATOM_ENTRY (dir [N][4], dir [N][1], 0);
+  }
+
+  http (         '</feed>');
 }
 ;
 
