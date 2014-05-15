@@ -92,6 +92,7 @@ conductor/dav/image/grey_move_32.png
 conductor/dav/image/grey_new_fldr_32.png
 conductor/dav/image/grey_prop_32.png
 conductor/dav/image/grey_renm_32.png
+conductor/dav/image/grey_share_32.png
 conductor/dav/image/grey_tag_32.png
 conductor/dav/image/grey_up_32.png
 conductor/dav/image/grey_upld_32.png
@@ -109,6 +110,7 @@ conductor/dav/image/rss_32.png
 conductor/dav/image/rss-icon-16.gif
 conductor/dav/image/select.gif
 conductor/dav/image/sel_nav_grad2.gif
+conductor/dav/image/share_32.png
 conductor/dav/image/stl_blu1_grad.gif
 conductor/dav/image/stl_blu2_grad.gif
 conductor/dav/image/tag_32.png

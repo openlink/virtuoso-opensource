@@ -56,7 +56,7 @@
         <link><xsl:value-of select="$f_host" /><xsl:value-of select="$f_path" /><xsl:value-of select="@name" />/</link>
         <pubDate><xsl:value-of select="@pubDate" /></pubDate>
         <ods:modified><xsl:value-of select="@modify" /></ods:modified>
-        <category>Folder</category>
+        <category>collection</category>
       </item>
     </xsl:if>
   </xsl:template>
@@ -69,7 +69,7 @@
       <link><xsl:value-of select="$f_host" /><xsl:value-of select="$f_path" /><xsl:value-of select="@name" /></link>
       <pubDate><xsl:value-of select="@pubDate" /></pubDate>
       <ods:modified><xsl:value-of select="@modify" /></ods:modified>
-      <category>File</category>
+      <category>resource</category>
     </item>
   </xsl:template>
 

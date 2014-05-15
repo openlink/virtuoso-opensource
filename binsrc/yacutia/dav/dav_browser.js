@@ -688,6 +688,7 @@ WEBDAV.enableToolbars = function(objForm, prefix, doc)
 
   WEBDAV.enableElement('tb_tag', 'tb_tag_gray', tCount>0, doc);
   WEBDAV.enableElement('tb_properties', 'tb_properties_gray', oCount>1, doc);
+  WEBDAV.enableElement('tb_share', 'tb_share_gray', oCount>1, doc);
 }
 
 WEBDAV.resetToolbars = function ()
@@ -699,6 +700,7 @@ WEBDAV.resetToolbars = function ()
 
   WEBDAV.enableElement('tb_tag', 'tb_tag_gray', 0);
   WEBDAV.enableElement('tb_properties', 'tb_properties_gray', 0);
+  WEBDAV.enableElement('tb_share', 'tb_share_gray', 0);
 }
 
 WEBDAV.davFolderSelect = function (fld)

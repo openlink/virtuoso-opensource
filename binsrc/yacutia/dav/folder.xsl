@@ -45,6 +45,12 @@
         <link rel="outline" type="text/x-opml" title="WebDAV Directory Subscriptions (OPML)">
           <xsl:attribute name="href"><xsl:value-of select='$path' />?a=opml</xsl:attribute>
         </link>
+        <link rel="service" type="application/atomserv+xml" title="WebDAV Directory AtomPub Service">
+          <xsl:attribute name="href"><xsl:value-of select='$path' />?a=atomPub</xsl:attribute>
+        </link>
+        <link rel="service" type="application/atomsvc+xml" title="WebDAV Directory AtomPub Service">
+          <xsl:attribute name="href"><xsl:value-of select='$path' />?a=atomPub</xsl:attribute>
+        </link>
       </head>
       <body style="background-color: #fff; color: #000; font-family: Arial,Helvetica,Helv,sans-serif;">
         <h4>Index of <xsl:value-of select="$path" /></h4>

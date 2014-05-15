@@ -463,3 +463,18 @@ div.WEBDAV_menu div.WEBDAV_menuItemSep {
   border-bottom: 1px solid #f0f0f0;
   margin: 4px 2px;
 }
+
+/* Menus */
+
+.combo_list_list {
+  background-color: white;
+  border: 1px solid black;
+  padding: 2px;
+  height: 100px;
+  overflow: auto;
+}
+
+.combo_list_option:hover {
+  background-color: #0080FF;
+  color: white;
+}
