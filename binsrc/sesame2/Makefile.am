@@ -23,7 +23,7 @@
 if WITH_JDK4
 TARGETS		= lib virt_sesame2.jar
 JDK		= @ac_jdk4_path@
-JDK_FLAGS	= -Xlint -O -g:none 
+JDK_FLAGS	= -Xlint -g 
 JAVA		= $(JDK)/java
 JAVAC		= $(JDK)/javac
 JAVAH		= $(JDK)/javah
