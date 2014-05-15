@@ -4766,6 +4766,12 @@
                   var l = OAT.Dom.create('link', {rel: 'outline', type: 'text/x-opml', title: 'WebDAV Directory Subscriptions (OPML)'});
                   l.href = u + '?a=opml';
                   h.appendChild(l);
+                  var l = OAT.Dom.create('link', {rel: 'service', type: 'application/atomserv+xml', title: 'WebDAV Directory AtomPub Service'});
+                  l.href = u + '?a=atomPub';
+                  h.appendChild(l);
+                  var l = OAT.Dom.create('link', {rel: 'service', type: 'application/atomsvc+xml', title: 'WebDAV Directory AtomPub Service'});
+                  l.href = u + '?a=atomPub';
+                  h.appendChild(l);
                 }
                 OAT.Loader.load([], davLinks);
               </script>
