@@ -48,6 +48,12 @@
 --      1) collection MUST have a trailing slash,
 --      2) resources MUST NOT have a trailing slash
 
+create procedure DAV_VERSION ()
+{
+  return '1.0';
+}
+;
+
 create function DAV_PERROR (in x any)
 {
   declare errlist any;
