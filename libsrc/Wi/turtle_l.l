@@ -133,6 +133,7 @@ int ttl_yy_null = YY_NULL;
 
 struct yyguts_t;
 
+/*! Signals an error (or return TTL_RECOVERABLE_ERROR) if \c box is too long. In case of troubles the box is freed. */
 extern int ttlyyerror_if_long_qname (ttlp_t *ttlp_arg, int lexcode, caddr_t box, const char *lex_type_descr, struct yyguts_t * yyg);
 
 #define TTL_TOKBOX_Q_FINAL(lexcode,lex_type_descr) \
@@ -142,6 +143,10 @@ extern int ttlyyerror_if_long_qname (ttlp_t *ttlp_arg, int lexcode, caddr_t box,
 
 #define TTL_TOKBOX_Q(n,lexcode,lex_type_descr) { \
     ttlyylval.box = box_dv_short_string (yytext+(n)); \
+    TTL_TOKBOX_Q_FINAL(lexcode,lex_type_descr) }
+
+#define TTL_TOKBOX_Q_SAVE(n,lexcode,lex_type_descr) { \
+    ttlp_arg->ttlp_last_q_save = ttlyylval.box = box_dv_short_string (yytext+(n)); \
     TTL_TOKBOX_Q_FINAL(lexcode,lex_type_descr) }
 
 #define TTL_TOKBOX_BNODE(n,lexcode,lex_type_descr) { \
@@ -388,7 +393,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
     tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "Invalid characters in local part of QName");
     TTL_TOKBOX_Q(0,QNAME,"qualified URI"); }
 
-<INITIAL>{SPAR_NCNAME_PREFIX}":"					{ TTL_TOKBOX_Q(0,QNAME_NS,"namespace"); }
+<INITIAL>{SPAR_NCNAME_PREFIX}":"					{ TTL_TOKBOX_Q_SAVE(0,QNAME_NS,"namespace"); }
 
 <GARBAGE_BOL,GARBAGE,TWO_CRS>{SPAR_NCNAME_PREFIX}":"			{ if (ttlp_qname_prefix_is_explicit_and_valid (ttlp_arg, yytext)) { TTLYYBEGIN(INITIAL); TTL_TOKBOX_Q(0,QNAME_NS,"namespace"); } }
 
@@ -607,6 +612,9 @@ ttlyyerror_if_long_qname (ttlp_t *ttlp_arg, int lexcode, caddr_t box, const char
   return lexcode;
 
 err:
+  if (box == ttlp_arg->ttlp_last_q_save)
+    ttlp_arg->ttlp_last_q_save = NULL;
+  dk_free_box (box);
   TTLYYERROR_OR_RECOVER (buf);
   return 0; /* Never reached */
 }
@@ -947,9 +955,14 @@ resume_sniffing:
   QR_RESET_CODE
     {
       du_thread_t *self = THREAD_CURRENT_THREAD;
+      caddr_t err = thr_get_error_code (self);
+#ifdef NDEBUG
       if (flags & TTLP_SNIFFER)
+#else
+      if ((flags & TTLP_SNIFFER) && (NULL == strstr (ERR_MESSAGE (err), "nternal error")))
+#endif
         {
-          dk_free_tree (thr_get_error_code (self));
+          dk_free_tree (err);
           thr_set_error_code (self, NULL);
           yy_pop_state (scanner);
           ttlp_reset_stacks (ttlp);
@@ -958,7 +971,7 @@ resume_sniffing:
       else
         {
           /* ttlyydebug = 0; */
-          ttlp->ttlp_catched_error = thr_get_error_code (self);
+          ttlp->ttlp_catched_error = err;
           thr_set_error_code (self, NULL);
           if (NULL != ttlp->ttlp_iter_abend)
             {
