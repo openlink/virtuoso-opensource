@@ -1155,7 +1155,7 @@ cer_append_ce (ce_ins_ctx_t * ceic, ceic_result_page_t * cer, db_buf_t ce, int i
 
 #define CER_ADD(bytes, ce)				\
 {  \
-  if (cer->cer_pm->pm_bytes_free < bytes || cer->cer_n_ces >= (PM_MAX_ENTRIES - 4) / 2) \
+  if (cer->cer_pm->pm_bytes_free < bytes || cer->cer_n_ces >= PM_MAX_CES) \
     cer = ceic_result_page (ceic); \
   cer->cer_pm->pm_bytes_free -= bytes; \
   cer->cer_n_ces++; \
@@ -2474,7 +2474,7 @@ ceic_feed (ce_ins_ctx_t * ceic, db_buf_t ce, int row)
 {
   int bytes = ce_total_bytes (ce), spacing;
   spacing = (row != -1 && bytes < 4090) ? 50 : 0;
-  if (ceic->ceic_batch_bytes + bytes > PAGE_DATA_SZ - spacing)
+  if (ceic->ceic_batch_bytes + bytes > PAGE_DATA_SZ - spacing || ceic->ceic_last_nth >= PM_MAX_CES - 1)
     {
       /* leave some space at end but only if dealing with ces of the segment itself.  If a ce from before the seg, must fit where it was, thus apply no margin, else the seg before could acquire a new page that would be unrefd from the previous col ref string */
       ceic_feed_flush (ceic);

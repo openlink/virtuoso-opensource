@@ -51,7 +51,7 @@
 #define CET_IRI CE_IS_IRI
 
 
-#define CE_MAX_CES 1000
+#define PM_MAX_CES ((PM_MAX_ENTRIES - 4) / 2)
 #define CE_VEC_MAX_VALUES 2267
 #define CS_MAX_VALUES 2267
 #define CE_DICT_MAX_VALUES ((PAGE_DATA_SZ / 3) * 2)
