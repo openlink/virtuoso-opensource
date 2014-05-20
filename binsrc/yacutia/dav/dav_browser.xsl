@@ -3170,7 +3170,7 @@
 
                         -- ACI (Web Access)
                       dav_aci := WEBDAV.DBA.aci_params (params);
-                      DB.DBA.ACL_VALIDATE (dav_aci);
+                      --DB.DBA.ACL_VALIDATE (dav_aci);
 
                     _test_14:;
 
@@ -4113,7 +4113,7 @@
                     params := e.ve_params;
 
                     -- validate ACL rules
-                    DB.DBA.ACL_VALIDATE (WEBDAV.DBA.aci_params (params));
+                    --DB.DBA.ACL_VALIDATE (WEBDAV.DBA.aci_params (params));
 
                     -- acl properties
                     acl_value := WS.WS.ACL_PARSE (WEBDAV.DBA.acl_params (params));
