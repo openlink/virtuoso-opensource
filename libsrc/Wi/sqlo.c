@@ -2721,7 +2721,7 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
 	  sqlo_add_table_ref (so, &texp->_.table_exp.from[inx], &res);
 	}
       END_DO_BOX;
-      sqlo_implied_columns_of_contains (so, texp->_.table_exp.where, sqlo_select_ref_score ((ST*) tree->_.select_stmt.selection));
+      sqlo_implied_columns_of_contains (so, texp->_.table_exp.where, sqlo_select_ref_score ((ST*) tree));
       sqlo_scope (so, &(texp->_.table_exp.where));
       DO_SET (ST *, jc, &res)
 	{
