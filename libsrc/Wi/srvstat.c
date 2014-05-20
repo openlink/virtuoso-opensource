@@ -4352,9 +4352,9 @@ bif_db_activity (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     : &qi->qi_client->cli_activity;
   caddr_t res;
   if ((flag & 1))
-    res = list (8, box_num (da->da_random_rows), box_num (da->da_seq_rows), box_num (da->da_lock_waits),
+    res = list (9, box_num (da->da_random_rows), box_num (da->da_seq_rows), box_num (da->da_lock_waits),
 		box_num (da->da_lock_wait_msec), box_num (da->da_disk_reads), box_num (da->da_spec_disk_reads),
-		box_num (da->da_cl_messages), box_num (da->da_cl_bytes));
+		box_num (da->da_cl_messages), box_num (da->da_cl_bytes), box_num (da->da_same_seg));
   else
     {
       char txt[200];
