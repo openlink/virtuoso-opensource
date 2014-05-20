@@ -1464,6 +1464,7 @@ spar_var_eq_to_equiv (sparp_t *sparp, SPART *curr, sparp_equiv_t *eq_l, SPART *r
 {
   int ret = 0;
   int flags = 0;
+  int old_eq_l_restr = eq_l->e_rvr.rvrRestrictions;
   ptrlong tree_restr_bits = sparp_restr_bits_of_expn (sparp, r);
   eq_l->e_rvr.rvrRestrictions |= SPART_VARR_NOT_NULL | (tree_restr_bits & (
     SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK |
@@ -1474,7 +1475,32 @@ spar_var_eq_to_equiv (sparp_t *sparp, SPART *curr, sparp_equiv_t *eq_l, SPART *r
     case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
       {
         sparp_equiv_t *eq_r = sparp_equiv_get (sparp, curr, r, 0);
-        eq_l->e_rvr.rvrRestrictions |= SPART_VARR_NOT_NULL;
+        if ((!(old_eq_l_restr & SPART_VARR_NOT_NULL) || (eq_l->e_replaces_filter & SPART_VARR_NOT_NULL))
+          && (!(eq_r->e_rvr.rvrRestrictions & SPART_VARR_NOT_NULL) || (eq_r->e_replaces_filter & SPART_VARR_NOT_NULL)) )
+          { /* This case is, e.g., for filter (?pv=?qv) in weird query
+sparql select * where { ?s a <t> . optional { ?s <p> ?pv } optional { ?s <q> ?qv } filter (?pv = ?qv) }
+The query is found while testing a fix for bug 16064. */
+            int l_sub_ctr;
+            if ((0 != eq_l->e_gspo_uses) && (0 != eq_r->e_gspo_uses))
+              { /* If vars are in triple patterns of same BGP (eq_l->e_gp == eq_r->eq_gp) then they're nullabe due to nullable quad map value, not due to being in OPTIONAL {} */
+                goto same_source_of_two_nullables; /* see below */
+              }
+            DO_BOX_FAST (int, l_sub_idx, l_sub_ctr, eq_l->e_subvalue_idxs)
+              {
+                sparp_equiv_t *l_sub = SPARP_EQUIV (sparp, l_sub_idx);
+                DO_BOX_FAST (int, r_sub_idx, l_sub_ctr, eq_r->e_subvalue_idxs)
+                  {
+                    sparp_equiv_t *r_sub = SPARP_EQUIV (sparp, r_sub_idx);
+                    if (l_sub->e_gp == r_sub->e_gp)
+                      goto same_source_of_two_nullables; /* see below */
+                  }
+                END_DO_BOX_FAST;
+              }
+            END_DO_BOX_FAST;
+            eq_l->e_replaces_filter |= SPART_VARR_NOT_NULL; /* This is to force running this check at next iteration */
+            return 0;
+same_source_of_two_nullables: ;
+          }
         ret = sparp_equiv_merge (sparp, eq_l, eq_r);
         if (
           (SPARP_EQUIV_MERGE_OK != ret) &&
@@ -1483,6 +1509,7 @@ spar_var_eq_to_equiv (sparp_t *sparp, SPART *curr, sparp_equiv_t *eq_l, SPART *r
           return 0;
         if (sparp_equiv_contains_t_io (sparp, eq_r))
           return 0;
+        sparp_rvr_add_restrictions (sparp, &(eq_l->e_rvr), SPART_VARR_NOT_NULL);
         flags = SPART_VARR_EQ_VAR;
         break;
       }
@@ -3299,7 +3326,6 @@ sparp_literal_is_xsd_valid (sparp_t *sparp, caddr_t sqlval, caddr_t dt_iri, cadd
       long desc_idx = ecm_find_name (p_name, xqf_str_parser_descs_ptr, xqf_str_parser_desc_count, sizeof (xqf_str_parser_desc_t));
       xqf_str_parser_desc_t *desc;
       dtp_t sqlval_dtp = DV_TYPE_OF (sqlval);
-      caddr_t cvt;
       if (ECM_MEM_NOT_FOUND == desc_idx)
         return 1; /* an unknown type */
       desc = xqf_str_parser_descs_ptr + desc_idx;
