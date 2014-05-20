@@ -496,6 +496,7 @@ fragment instead of searching for the the fragment actually needed. */
   uint32	key_segs_sampled;
   uint32	key_rows_in_sampled_segs;
   id_hash_t *	key_p_stat; /* for rdf inx starting with p, stats on the rest for a given p */
+  int64		key_count; /* if distinct proj, count is not the table count */
 };
 
 

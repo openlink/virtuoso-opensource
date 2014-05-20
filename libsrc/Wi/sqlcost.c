@@ -116,10 +116,28 @@ key_n_partitions (dbe_key_t * key)
     }
 }
 
+
+void
+tb_distinct_key_counts (dbe_table_t * tb)
+{
+  DO_SET (dbe_key_t *, key, &tb->tb_keys)
+    {
+      if (key->key_distinct)
+	key->key_count = key_count_estimate (key, tb->tb_primary_key->key_is_elastic ? 1 : 3, 1);
+    }
+  END_DO_SET();
+}
+
+
 int64
 dbe_key_count (dbe_key_t * key)
 {
   dbe_table_t * tb = key->key_table;
+  if (key->key_distinct)
+    {
+      dbe_key_count (key->key_table->tb_primary_key);
+      return key->key_count;
+    }
   if (key->key_table->tb_count != DBE_NO_STAT_DATA)
     return MAX (1, key->key_table->tb_count);
   else if (tb->tb_count_estimate == DBE_NO_STAT_DATA
@@ -129,6 +147,7 @@ dbe_key_count (dbe_key_t * key)
 	return 10000; /* if you know nothing, assume a remote table is 10K rows */
       tb->tb_count_estimate = key_count_estimate (tb->tb_primary_key, tb->tb_primary_key->key_is_elastic ? 1 : 3, 1);
       tb->tb_count_delta = 0;
+      tb_distinct_key_counts (tb);
       return MAX (1, tb->tb_count_estimate);
     }
   else
