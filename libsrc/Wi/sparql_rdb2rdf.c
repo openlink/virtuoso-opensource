@@ -78,7 +78,7 @@ typedef struct rdb2rdf_optree_s {
     int			rro_qm_index;		/*!< Position of rro_qm in \c rrc_all_qms of codegen context */
     boxint		rro_rule_id;		/*!< Value for RULE_ID field of RDF_QUAD_DELETE_QUEUE */
     int			rro_self_multi;		/*!< Flags if multiple database rows may create one quad via \c rro_qm alone. */
-    int			rro_sample_of_rule;	/*!< Flags that \c rro_rule_id is set and  */
+    int			rro_sample_of_rule;	/*!< Flags that \c rro_rule_id is set */
   } rdb2rdf_optree_t;
 
 #define RDB2RDF_RSVS_CONST	1
@@ -1249,7 +1249,25 @@ rdb2rdf_codegen (rdb2rdf_ctx_t *rrc, caddr_t table_name, int opcode, dk_session_
       ssg_puts ("  declare old_mode integer;\n");
       ssg_puts ("  old_mode := log_enable (null, 1);\n");
       ssg_puts ("  log_enable (2, 1);\n");
-      ssg_puts ("  sparql define output:valmode \"LONG\" define input:storage virtrdf:SyncToQuads select count (sql:rdf_vec_ins_triples (?s, ?p, ?o, ?g))\n");
+      ssg_puts ("  sparql\n");
+      ssg_puts ("  define output:valmode \"LONG\"\n");
+      ssg_puts ("  define input:storage virtrdf:SyncToQuads\n");
+      ssg_puts ("  select count (sql:rdf_vec_ins_triples (?s, ?p, ?o,");
+      if (rrc->rrc_graph_xlat_count)
+        {
+          int xlat_ctr;
+          ssg_puts ("\n      case ?g"); 
+          for (xlat_ctr = 0; xlat_ctr < rrc->rrc_graph_xlat_count; xlat_ctr += 2)
+            {
+              ssg_puts (" when ");
+              ssg_print_box_as_sql_atom (ssg, rrc->rrc_graph_xlat [xlat_ctr], SQL_ATOM_UNAME_ALLOWED);
+              ssg_puts (" then ");
+              ssg_print_box_as_sql_atom (ssg, rrc->rrc_graph_xlat [xlat_ctr+1], SQL_ATOM_UNAME_ALLOWED);
+            }
+          ssg_puts (" else ?g end ) )\n");
+        }
+      else
+        ssg_puts (" ?g))\n");
       ssg_puts ("  where {\n");
       ssg_puts ("        { QUAD MAP ");
       rdb2rdf_optree_codegen (rrc, &(rrc->rrc_root_rro), table_name, opcode, RDB2RDF_CODEGEN_INITIAL_SUB_ALL, NULL, ssg);
