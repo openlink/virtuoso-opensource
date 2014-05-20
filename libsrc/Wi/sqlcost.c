@@ -3184,7 +3184,7 @@ rq_cols_init (df_elt_t * dfe, rq_cols_t * rq)
 	}
       rqp->rqp_lower = sqlo_key_part_best (col, dfe->_.table.col_preds, 0);
       rqp->rqp_upper = sqlo_key_part_best (col, dfe->_.table.col_preds, 1);
-      if (rqp->rqp_lower && PRED_IS_EQ (rqp->rqp_lower))
+      if (rqp->rqp_lower && PRED_IS_EQ_OR_IN (rqp->rqp_lower))
 	rqp->rqp_op = pred_const_rhs  (rqp->rqp_lower) ? RQ_CONST_EQ : RQ_BOUND_EQ;
       else if (rqp->rqp_lower || rqp->rqp_upper)
 	{
