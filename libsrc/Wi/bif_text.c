@@ -2938,13 +2938,11 @@ static char *vt_create_update_log_text =
 "	     txn_error (6); \\\n"
 "	     signal (\\\'22008\\\', \\\'Invalid XML supplied for an validating free text index of <DB>.<DBA>.<TB>:\\\n\\\' || __SQL_MESSAGE, \\\'FT030\\\'); \\\n"
 "       }\', "
-// ZIV
 "       \'create procedure <DB>.<DBA>.\"VT_INC_INDEX_SLICE_<SUFF>\" (in slid int)\n"
 "       {\n"
 "         cl_set_slice (\\'<DB_1>.<DBA_1>.<TBU>\\', \\'<TBU>\\', slid);\n"
 "         <DB>.<DBA>.\"VT_INC_INDEX_1_<SUFF>\" ();\n"
 "       }\', \n"
-// ZIV end.
 "	\'create procedure <DB>.<DBA>.\"VT_INC_INDEX_<SUFF>\" () \n"
 "	{ \n"
 "	  if (0 = <IS_CL>) \n"
@@ -2952,7 +2950,6 @@ static char *vt_create_update_log_text =
 "	  else \n"
 "	    DB.DBA.CL_EXEC (\\'<DB>.<DBA>.\"VT_INC_INDEX_SRV_<SUFF>\" ()\\'); \n"
 "	}\', \n"
-// ZIV
 "	\'create procedure <DB>.<DBA>.\"VT_INC_INDEX_SRV_<SUFF>\" () \n"
 "	{ \n"
 "	  declare aq, slices any; \n"
@@ -2965,7 +2962,6 @@ static char *vt_create_update_log_text =
 "	    aq_request (aq, \\'<DB_1>.<DBA_1>.VT_INC_INDEX_SLICE_<SUFF>\\', vector (slices[inx])); }\n"
 "	  aq_wait_all (aq); \n"
 "	}\', \n"
-// ZIV end.
 "	\'create procedure <DB>.<DBA>.\"VT_INC_INDEX_1_<SUFF>\" () \n"
 "	{ \n"
 "	  declare _vtlog_id, _data, _dmltype, _vt_wordump, _vt_offband_data, vtb, decses, dav_res_type any; \n"

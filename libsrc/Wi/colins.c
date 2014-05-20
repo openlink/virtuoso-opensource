@@ -1786,7 +1786,7 @@ ceic_init_dc (ce_ins_ctx_t * ceic, data_col_t * dc, db_buf_t ce)
   dtp_t col_dtp = dtp_canonical[ceic->ceic_col->col_sqt.sqt_col_dtp];
   if (!cs)
     cs = ceic->ceic_cs;
-  //goto any;
+  /*goto any; */
   if (ceic->ceic_is_cpt_restore > COL_UPDATE)
     goto any;
   if (ceic->ceic_col->col_sqt.sqt_non_null && (DV_IRI_ID == col_dtp || DV_LONG_INT == col_dtp))

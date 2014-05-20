@@ -371,7 +371,7 @@ cs_int_high_distinct (compress_state_t * cs, int from, int to)
   for (inx = from; inx < to; inx++)
     {
       int64 i = cs->cs_numbers[inx] >> 8;
-      //DH_ADD_INT ((&dh), n, 1);
+      /*DH_ADD_INT ((&dh), n, 1); */
 
 #define nth 1
 
@@ -5227,7 +5227,7 @@ vhtst (v2di_t data, v2di_t h)
 {
   v2di_t tmp, k = data;
   k *= mhash_m_v;
-  //tmp = __builtin_ia32_vpshlq (k, mhash_r_v);
+  /*tmp = __builtin_ia32_vpshlq (k, mhash_r_v);*/
   k ^= tmp;
   k *= mhash_m_v;
   h ^= k;
@@ -5300,7 +5300,7 @@ hash_test_4v (uint64 * in, int n)
   memcpy (&mhash_r_v, &kl, sizeof (kl));
   test_vs.l[0] = -1;
   test_vs.l[1] = -1;
-  //tmp = __builtin_ia32_vpshlq (tmp, mhash_r_v);
+  /*tmp = __builtin_ia32_vpshlq (tmp, mhash_r_v);*/
   for (i = 0; i < n; i += 4)
     {
       v2di_u_t h1, h2;
@@ -5380,7 +5380,7 @@ cpy16 (long *t, long *s, int n)
   for (i = 0; i < n; i++)
     {
       __builtin_ia32_storeups ((float *) t, __builtin_ia32_loadups ((float *) s));
-      //*(v2di_u_t*)t = *(v2di_u_t*)s;
+      /* *(v2di_u_t*)t = *(v2di_u_t*)s;*/
       s += 2;
       t += 2;
     }

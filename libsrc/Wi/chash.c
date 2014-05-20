@@ -1545,7 +1545,7 @@ setp_chash_run (setp_node_t * setp, caddr_t * inst, index_tree_t * it)
   dtp_t temp_any[9 * CHASH_GB_MAX_KEYS * ARTM_VEC_LEN];
   dtp_t nulls[CHASH_GB_MAX_KEYS][ARTM_VEC_LEN];
   int first_set, set;
-  //dcckz (ha, inst, n_sets);
+  /*dcckz (ha, inst, n_sets); */
   for (first_set = 0; first_set < n_sets; first_set += ARTM_VEC_LEN)
     {
       int any_temp_fill = 0;
@@ -2388,9 +2388,9 @@ chash_merge (setp_node_t * setp, chash_t * cha, chash_t * delta, int n_to_go)
 	      cha_p = CHA_PARTITION (cha, h);
 	      array = cha_p->cha_array;
 	      pos1_1 = CHA_POS_1 (cha_p, h);
-	      //pos2_1 = CHA_POS_2 (cha_p, h);
+	      /*pos2_1 = CHA_POS_2 (cha_p, h); */
 	      __builtin_prefetch (array[pos1_1]);
-	      //__builtin_prefetch ( array[pos2_1]);
+	     /*__builtin_prefetch ( array[pos2_1]);*/
 	    }
 #endif
 	  for (row = 0; row < chp->h.h.chp_fill; row += de_p->cha_first_len)
@@ -4489,7 +4489,7 @@ itc_hash_compare (it_cursor_t * itc, buffer_desc_t * buf, search_spec_t * sp)
     case DV_INT64:
     case DV_IRI_ID:
     case DV_IRI_ID_8:
-      //: case DV_DOUBLE_FLOAT:
+      /* case DV_DOUBLE_FLOAT: */
       k = IS_BOX_POINTER (box) ? *(int64 *) box : (int64) (ptrlong) box;
       MHASH_STEP (h, k);
       break;

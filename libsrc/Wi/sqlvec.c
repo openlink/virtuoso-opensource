@@ -2308,9 +2308,11 @@ sqlg_vec_upd (sql_comp_t * sc, update_node_t * upd)
   ref_ssls (NULL, upd->upd_trigger_args);
   if (!upd->upd_pk_change)
     {
-      //state_slot_t * co = ssl_new_placeholder (sc->sc_cc, "co");
-      //last_ts->ts_current_of = co;
-      //upd->upd_place = last_ts->ts_current_of;
+#if 0
+      state_slot_t *co = ssl_new_placeholder (sc->sc_cc, "co");
+      last_ts->ts_current_of = co;
+      upd->upd_place = last_ts->ts_current_of;
+#endif
       REF_SSL (NULL, upd->upd_place);
       sqlg_set_ts_plh (sc, last_ts);
       sqlg_vec_upd_col_pk (sc, upd);

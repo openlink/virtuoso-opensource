@@ -1573,8 +1573,8 @@ buf_prot_read (buffer_desc_t * buf)
     return;
   rc = mprotect (buf->bd_buffer, PAGE_SZ,  PROT_READ);
   if (rc) GPF_T1 ("can't set mem [protection");
-  //buf->bd_buffer[0] ++;
-  //buf->bd_buffer[0] --;
+  /*buf->bd_buffer[0] ++;*/
+  /*buf->bd_buffer[0] --;*/
 #endif
 }
 
@@ -1670,7 +1670,7 @@ bp_make_buffer_list (int n)
 	  buf->bd_buffer = buf_ptr;
 	      BUF_PR (buf);
 	  buf_ptr += ALIGN_VOIDP (PAGE_SZ);
-	      //BUF_PR (buf);
+	      /*BUF_PR (buf); */
 	}
       buf->bd_pool = bp;
       buf->bd_timestamp = 0;
@@ -3558,14 +3558,15 @@ dbs_open_disks (dbe_storage_t * dbs)
 			     dst->dst_file, errno);
 		  call_exit (1);
 		}
-//#ifdef LOCK_EX
-//	      if ( flock (fd, LOCK_EX | LOCK_NB) )
-//	        {
-//	          log_error ("Cannot lock stripe file on %s (%d), it may be used by other server instance",
-//	                             dst->dst_file, errno);
-//	          call_exit (1);
-//	        }
-//#endif // HAVE_FLOCK
+#if 0
+#ifdef LOCK_EX
+	      if (flock (fd, LOCK_EX | LOCK_NB))
+		{
+		  log_error ("Cannot lock stripe file on %s (%d), it may be used by other server instance", dst->dst_file, errno);
+		  call_exit (1);
+		}
+#endif /* HAVE_FLOCK */
+#endif
 	      dst_fd_done (dst, fd, NULL);
 	    }
 	}
@@ -3598,7 +3599,7 @@ dbs_open_disks (dbe_storage_t * dbs)
 	}
       actual_segment_size += (dp_addr_t) ( size / PAGE_SZ );
 
-      // check file size to be multiple of 2MB.
+      /* check file size to be multiple of 2MB. */
       db_file_size (dst->dst_fds[0], dst->dst_file, 1);
 
       is_first = 0;

@@ -1560,8 +1560,10 @@ trans_node_input (trans_node_t * tn, caddr_t * inst, caddr_t * state)
     tn->tn_prepared_step->qr_select_node->src_gen.src_input = (qn_input_fn)select_node_input_subq;
   if (THR_TMP_POOL)
     GPF_T1 ("not supposed to run trans node with tmp pool set on entry");
-  //if (0 && tn_cache_lookup (tn, inst, state))
-  //  return;
+#if 0
+  if (0 && tn_cache_lookup (tn, inst, state))
+    return;
+#endif
   trans_node_vec_input (tn, inst, state);
 }
 

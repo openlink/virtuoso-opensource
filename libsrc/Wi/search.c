@@ -3432,7 +3432,7 @@ itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf, int * is_leaf)
 	{
 	  if (itc->itc_insert_key->key_is_col)
 	    {
-	      //if (tlsf_check (THREAD_CURRENT_THREAD->thr_tlsf, 0)) GPF_T1 ("corrupt");
+	      /*if (tlsf_check (THREAD_CURRENT_THREAD->thr_tlsf, 0)) GPF_T1 ("corrupt");*/
 	      data_col = itc_box_col_seg (itc, buf, cl);
 	      if (col == (dbe_column_t*)itc->itc_insert_key->key_parts->data && 1 == itc->itc_search_par_fill)
 		{
@@ -3507,9 +3507,9 @@ itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf, int * is_leaf)
 	    }
 	  else
 	    {
-		  uint64 one = CS_IN_SAMPLE | CS_SAMPLE_INC | 1;
+	      uint64 one = CS_IN_SAMPLE | CS_SAMPLE_INC | 1;
 	      id_hash_set (col_stat->cs_distinct, (caddr_t) &data, (caddr_t)&one);
-		  //if (THREAD_CURRENT_THREAD->thr_tlsf->tlsf_total_mapped < 4000000 && tlsf_check (THREAD_CURRENT_THREAD->thr_tlsf, 0)) GPF_T1 ("corrupt");
+	      /*if (THREAD_CURRENT_THREAD->thr_tlsf->tlsf_total_mapped < 4000000 && tlsf_check (THREAD_CURRENT_THREAD->thr_tlsf, 0)) GPF_T1 ("corrupt");*/
 	    }
 	}
 	  if (data_col)

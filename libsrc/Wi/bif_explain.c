@@ -1877,7 +1877,7 @@ node_print (data_source_t * node)
 	  stmt_printf (("\n"));
 	}
       { 
-	  // milos: set the 'first' flag on
+	  /* milos: set the 'first' flag on */
 	  du_thread_t * self = THREAD_CURRENT_THREAD;
 	  qr_comment_t * comm = THR_ATTR (self, TA_STAT_COMM);
 	  caddr_t * ctx_inst;

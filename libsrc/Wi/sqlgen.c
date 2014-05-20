@@ -4277,7 +4277,7 @@ sqlg_make_sort_nodes (sqlo_t * so, data_source_t ** head, ST ** order_by,
 		sqlc_add_distinct_node (sc, head, (state_slot_t **) t_list_to_array (out_slots), (long) tb_dfe->dfe_arity, &code,
 		    NULL);
 	}
-	      //dt->_.select_stmt.top = NULL;
+	    /*dt->_.select_stmt.top = NULL; */
     }
 	  if (!is_grouping_sets || !setps->gsu_cont)
     {

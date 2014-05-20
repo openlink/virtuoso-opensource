@@ -637,7 +637,7 @@ dbg_qi_print_slots (query_instance_t * qi, state_slot_t ** slots, int nthset)
   fflush (stdout);
 }
 
-#endif // DEBUG
+#endif /* DEBUG */
 
 
 void

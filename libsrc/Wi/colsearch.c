@@ -2583,7 +2583,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
   int initial_set = itc->itc_set, initial_n_matches = 0, nth_sp;
   int64 check_start_ts = 0;
   char do_sp_stat = itc->itc_n_row_specs > 1;
-  //memzero (&cpo, sizeof (cpo));
+  /*memzero (&cpo, sizeof (cpo)); */
   cpo.cpo_range = &itc->itc_ranges[itc->itc_set - itc->itc_col_first_set];
   if (!is_singles && itc->itc_rl)
     {

@@ -939,7 +939,7 @@ key_bm_insert (it_cursor_t * itc, row_delta_t * rd)
     if (1017819 == unbox_iri_id (itc->itc_search_params[0])
 	&& 1000151 == unbox_iri_id (itc->itc_search_params[1])
 	&& !memcmp (tmp, itc->itc_search_params[2], 5)
-	//&& 1000199 == unbox_iri_id (itc->itc_search_params[3])
+	/* && 1000199 == unbox_iri_id (itc->itc_search_params[3]) */
 	)
       printf ("bing\n");
   }

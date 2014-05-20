@@ -676,7 +676,7 @@ l_iri_id_disp (cucurbit_t * cu, caddr_t name, value_state_t * vs)
     }
   dk_free_box (prefix);
   LONG_SET_NA (local, pref_id_no);
-  iri_id_no = 0;		//nic_name_id (iri_name_cache, local);
+  iri_id_no = 0;		/*nic_name_id (iri_name_cache, local); */
   if (iri_id_no)
     {
       dk_free_box (local);

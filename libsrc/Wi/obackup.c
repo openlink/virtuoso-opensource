@@ -1102,16 +1102,18 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
   dbs_write_page_set (dbs, dbs->dbs_incbackup_set);
   LEAVE_DBS (dbs);
 
-//  DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
-//    {
-//    if (dbs->dbs_slices)
-//      {
-//#ifdef OBACKUP_TRACE
-//  fprintf (obackup_trace, "\n\n\DBS: %s\n", dbs->dbs_name);
-//#endif
-//      }
-//    }
-//  END_DO_SET();
+#if 0
+  DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
+  {
+    if (dbs->dbs_slices)
+      {
+#ifdef OBACKUP_TRACE
+	fprintf (obackup_trace, "\n\n\DBS: %s\n", dbs->dbs_name);
+#endif
+      }
+  }
+  END_DO_SET ();
+#endif
 
   if (obackup_trace)
     {
