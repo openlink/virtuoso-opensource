@@ -44,10 +44,6 @@
 #define IS_64(n) \
   (!((n) >= (int64) INT32_MIN && (n) <= (int64) INT32_MAX))
 
-#define IS_64_T(n, dtp)						\
-  (IS_IRI_DTP (dtp) ? (((iri_id_t)n) > (iri_id_t)0xffffffff) \
-: (!((n) >= (int64) INT32_MIN && (n) <= (int64) INT32_MAX)))
-
 
 dtp_t
 cs_any_ce_flags (compress_state_t * cs, int nth)

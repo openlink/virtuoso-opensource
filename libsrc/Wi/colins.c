@@ -621,12 +621,13 @@ extern client_connection_t *rfwd_cli;
 //#define RQ_CHECK_TEXT "select count (*)  from rdf_quad a table option (index rdf_quad_op, index_only, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_op, index_only, no cluster) where  a.p = b.p and a.o = b.o )"
 //#define RQ_CHECK_TEXT "select count (*) from rdf_quad a table option (loop, index rdf_quad_pogs, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_pogs, no cluster)  where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s)"
 //#define RQ_CHECK_TEXT "select count (*)  from rdf_quad a table option (index rdf_quad_gs, index_only, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_gs, index_only, no cluster) where  a.g = b.g and a.s = b.s )"
-#define RQ_CHECK_TEXT "select 0, count (s), count (p), count (o), count (g) from rdf_quad table option (index rdf_quad) where p =  #i292339462 and s > #ib390000000"
+//#define RQ_CHECK_TEXT "select 0, count (s), count (p), count (o), count (g) from rdf_quad table option (index rdf_quad) where p =  #i292339462 and s > #ib390000000"
 
 #define RQ_RANGE_CHECK_TEXT_1 "select count (*) from rdf_quad a table option (loop, index rdf_quad_pogs, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_pogs, no cluster)  where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s) and p = ? and o >= ? and o <= ?"
 #define RQ_RANGE_CHECK_TEXT_2 "select count (*) from rdf_quad a table option (loop, index rdf_quad_pogs, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_pogs, no cluster)  where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s) and p >= ? and p <= ?"
 
 //#define RQ_CHECK_TEXT "select count (*) from t1 a table option (index str2) where not exists (select 1 from t1 b table option (loop, index str2) where b.string2 = a.string2 and b.row_no = a.row_no)"
+#define RQ_CHECK_TEXT "select count (*) from knows k1 table option (index k_p2) where not exists (select 1 from knows k2 table option (loop, index k_p2) where k1.k_person1id = k2.k_person1id and k1.k_person2id = k2.k_person2id)"
 
 
 void
@@ -4698,7 +4699,7 @@ itc_col_vec_insert (it_cursor_t * itc, insert_node_t * ins)
 	{
 	  if (strstr (itc->itc_insert_key->key_name, "POGS"))
 	itc_pogs_seg_check (itc, buf);
-	  else if (strstr (itc->itc_insert_key->key_name, "QUAD_GS"))
+	  else if (strstr (itc->itc_insert_key->key_name, "k_p2"))
 	    itc_gs_seg_check (itc, buf);
 	}
       if (col_ins_error)

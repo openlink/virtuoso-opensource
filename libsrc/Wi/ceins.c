@@ -33,6 +33,8 @@ int dbf_ce_insert_mask = 0;
 int
 ceic_all_dtp (ce_ins_ctx_t * ceic, dtp_t dtp)
 {
+
+  int is_32 = DV_LONG_INT == dtp || DV_IRI_ID == dtp;
   it_cursor_t *itc = ceic->ceic_itc;
   dtp_t can_dtp = dtp_canonical[dtp];
   int inx;
@@ -57,9 +59,16 @@ ceic_all_dtp (ce_ins_ctx_t * ceic, dtp_t dtp)
     {
       for (inx = itc->itc_ce_first_set; inx < last; inx++)
 	{
+	  int64 n;
 	  val = (db_buf_t) itc->itc_vec_rds[itc->itc_param_order[inx]]->rd_values[ceic->ceic_nth_col];
 	  if (can_dtp != dtp_canonical[DV_TYPE_OF (val)])
 	    return 0;
+	  if (is_32)
+	    {
+	      n = unbox_iri_int64 (val);
+	      if (IS_64_T (n, can_dtp))
+		return 0;
+	    }
 	}
     }
   ceic->ceic_dtp_checked = 1;
@@ -75,7 +84,7 @@ ceic_all_dtp (ce_ins_ctx_t * ceic, dtp_t dtp)
 
 
 #define VEC_DTP_CK(dtp) \
-  if ((DV_ANY == ceic->ceic_col->col_sqt.sqt_dtp || !ceic->ceic_col->col_sqt.sqt_non_null) && !ceic_all_dtp (ceic, dtp)) \
+  if ((DV_ANY == ceic->ceic_col->col_sqt.sqt_dtp || DV_LONG_INT == dtp || DV_IRI_ID == dtp ||  !ceic->ceic_col->col_sqt.sqt_non_null) && !ceic_all_dtp (ceic, dtp)) \
     goto general;
 
 
