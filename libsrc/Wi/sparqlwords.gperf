@@ -41,6 +41,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "BNODE",		SPARQL_BIF		, SPAR_BIF_BNODE
 "BOUND",		BOUND_L			, 0
 "BY",			BY_L			, 0
+"CASE",			CASE_L			, 0
 "CLASS",		CLASS_L			, 0
 "CLEAR",		CLEAR_L			, 0
 "CEIL",			SPARQL_BIF		, SPAR_BIF_CEIL
@@ -64,7 +65,9 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "DETACH",		DETACH_L		, 0
 "DISTINCT",		DISTINCT_L		, 0
 "DROP",			DROP_L			, 0
+"ELSE",			ELSE_L			, 0
 "ENCODE_FOR_URI",	SPARQL_BIF		, SPAR_BIF_ENCODE_FOR_URI
+"END",			END_L			, 0
 "EXCLUSIVE",		EXCLUSIVE_L		, 0
 "EXISTS",		EXISTS_L		, 0
 "FALSE",		false_L			, 0
@@ -176,6 +179,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "TABID",		TABID_L			, 0
 "TABLE_OPTION",		TABLE_OPTION_L		, 0
 "TEXT",			TEXT_L			, 0
+"THEN",			THEN_L			, 0
 "TIMEZONE",		SPARQL_BIF		, SPAR_BIF_TIMEZONE
 "TO",			TO_L			, 0
 "TRANSITIVE",		TRANSITIVE_L		, 0
@@ -204,6 +208,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "UUID",			SPARQL_BIF		, SPAR_BIF_UUID
 "VALID",		SPARQL_BIF		, SPAR_BIF_VALID
 "VALUES",		VALUES_L		, 0
+"WHEN",			WHEN_L			, 0
 "WHERE",		WHERE_L			, 0
 "WITH",			WITH_L			, 0
 "XML",			XML_L			, 0

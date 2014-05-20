@@ -3584,6 +3584,8 @@ sparp_simplify_builtin (sparp_t *sparp, SPART *tree, int *trouble_ret)
       }
     case SPAR_BIF_ABS: break;
     case SPAR_BIF_BNODE: break;
+    case SPAR_BIF_CASEWHEN: break;
+    case SPAR_BIF_CASEX: break;
     case SPAR_BIF_CEIL: break;
     case SPAR_BIF_COALESCE: break;
     case SPAR_BIF_CONCAT: break;

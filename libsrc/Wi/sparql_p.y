@@ -154,6 +154,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token BINDINGS_L	/*:: PUNCT_SPAR_LAST("BINDINGS") ::*/
 %token BOUND_L		/*:: PUNCT_SPAR_LAST("BOUND") ::*/
 %token BY_L		/*:: PUNCT("BY"), SPAR, LAST("BY"), LAST("IDENTIFIED BY") ::*/
+%token CASE_L		/*:: PUNCT_SPAR_LAST("CASE") ::*/
 %token CLASS_L		/*:: PUNCT_SPAR_LAST("CLASS") ::*/
 %token CLEAR_L		/*:: PUNCT_SPAR_LAST("CLEAR") ::*/
 %token CREATE_L		/*:: PUNCT_SPAR_LAST("CREATE") ::*/
@@ -174,6 +175,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token DETACH_L		/*:: PUNCT_SPAR_LAST("DETACH") ::*/
 %token DISTINCT_L	/*:: PUNCT_SPAR_LAST("DISTINCT") ::*/
 %token DROP_L		/*:: PUNCT_SPAR_LAST("DROP") ::*/
+%token ELSE_L		/*:: PUNCT_SPAR_LAST("ELSE") ::*/
+%token END_L		/*:: PUNCT_SPAR_LAST("END") ::*/
 %token EXCLUSIVE_L	/*:: PUNCT_SPAR_LAST("EXCLUSIVE") ::*/
 %token EXISTS_L		/*:: PUNCT_SPAR_LAST("EXISTS") ::*/
 %token false_L		/*:: PUNCT_SPAR_LAST("false") ::*/
@@ -251,7 +254,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token SUM_L		/*:: PUNCT_SPAR_LAST("SUM") ::*/
 %token TABID_L		/*:: PUNCT_SPAR_LAST("TABID") ::*/
 %token TABLE_OPTION_L	/*:: PUNCT_SPAR_LAST("TABLE_OPTION") ::*/
-%token TEXT_L	/*:: PUNCT_SPAR_LAST("TEXT") ::*/
+%token TEXT_L		/*:: PUNCT_SPAR_LAST("TEXT") ::*/
+%token THEN_L		/*:: PUNCT_SPAR_LAST("THEN") ::*/
 %token T_CYCLES_ONLY_L	/*:: PUNCT_SPAR_LAST("T_CYCLES_ONLY") ::*/
 %token T_DIRECTION_L	/*:: PUNCT_SPAR_LAST("T_DIRECTION") ::*/
 %token T_DISTINCT_L	/*:: PUNCT_SPAR_LAST("T_DISTINCT") ::*/
@@ -274,6 +278,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token UNION_L		/*:: PUNCT_SPAR_LAST("UNION") ::*/
 %token USING_L		/*:: PUNCT_SPAR_LAST("USING") ::*/
 %token VALUES_L		/*:: PUNCT_SPAR_LAST("VALUES") ::*/
+%token WHEN_L		/*:: PUNCT_SPAR_LAST("WHEN") ::*/
 %token WHERE_L		/*:: PUNCT("WHERE"), SPAR, LAST1("WHERE {"), LAST1("WHERE ("), LAST1("WHERE #cmt\n{"), LAST1("WHERE\r\n("), ERR("WHERE"), ERR("WHERE bad") ::*/
 %token WITH_L		/*:: PUNCT_SPAR_LAST("WITH") ::*/
 %token XML_L	/*:: PUNCT_SPAR_LAST("XML") ::*/
@@ -456,6 +461,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_expn_or_ggp
 %type <tree> spar_expn
 %type <tree> spar_built_in_call
+%type <backstack> spar_caselist
 %type <tree> spar_function_call
 %type <tree> spar_macro_call
 %type <backstack> spar_arg_list_opt
@@ -2158,6 +2164,21 @@ spar_built_in_call	/* [52]*	BuiltInCall	 ::=  */
 		  $$ = $2;
 		else
 		  SPAR_BIN_OP ($$, BOP_NOT, $2, NULL); }
+	| CASE_L spar_expn spar_caselist ELSE_L spar_expn END_L {
+		dk_set_t a = $3;
+		t_set_push (&a, $5);
+		a = dk_set_conc (a, t_cons ($2, NULL));
+		$$ = sparp_make_builtin_call (sparp_arg, SPAR_BIF_CASEX, (SPART **)t_revlist_to_array (a)); }
+	| CASE_L spar_caselist ELSE_L spar_expn END_L {
+		dk_set_t a = $2;
+		t_set_push (&a, $4);
+		$$ = sparp_make_builtin_call (sparp_arg, SPAR_BIF_CASEWHEN, (SPART **)t_revlist_to_array (a)); }
+	;
+
+spar_caselist
+	: WHEN_L spar_expn THEN_L spar_expn			{ $$ = NULL; t_set_push (&($$), $2); t_set_push (&($$), $4); }
+	| spar_caselist WHEN_L spar_expn THEN_L spar_expn	{ $$ = $1; t_set_push (&($$), $3); t_set_push (&($$), $5); }
+	| spar_caselist error { sparyyerror (sparp_arg, "'WHEN' or 'ELSE' expected after end of 'THEN'-expression"); }
 	;
 
 spar_function_call	/* [54]	FunctionCall	 ::=  IRIref ArgList	*/
