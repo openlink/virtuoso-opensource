@@ -921,7 +921,7 @@ void sqlg_non_index_ins (df_elt_t * tb_dfe);
 void sqlg_is_text_only (sqlo_t * so, df_elt_t *tb_dfe, table_source_t *ts);
 data_source_t * sqlg_make_path_ts (sqlo_t * so, df_elt_t * tb_dfe);
 int dfe_is_eq_pred (df_elt_t * pred);
-float sqlo_index_path_cost (dk_set_t path, float * cost_ret, float * card_ret, char * sure_ret);
+float sqlo_index_path_cost (dk_set_t path, float * cost_ret, float * card_ret, char * sure_ret, df_elt_t * tb_dfe);
 data_source_t * sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * pre_code);
 float dfe_group_by_card (df_elt_t * dfe);
 int dfe_is_o_ro2sq_range (df_elt_t * pred, df_elt_t * tb_dfe, df_elt_t ** o_col_dfe_ret, df_elt_t ** exp_dfe_ret, int * op_ret);

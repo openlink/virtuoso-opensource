@@ -3713,7 +3713,7 @@ dfe_hash_fill_cost (df_elt_t * dfe, float * unit, float * card, float * overhead
 void
 dfe_table_ip_cost (df_elt_t * tb_dfe, index_choice_t * ic)
 {
-  sqlo_index_path_cost (tb_dfe->_.table.index_path, &ic->ic_unit, &ic->ic_arity, &ic->ic_leading_constants);
+  sqlo_index_path_cost (tb_dfe->_.table.index_path, &ic->ic_unit, &ic->ic_arity, &ic->ic_leading_constants, tb_dfe);
 }
 
 
