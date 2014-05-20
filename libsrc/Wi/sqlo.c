@@ -1669,9 +1669,31 @@ sqlo_xpath_col (sqlo_t * so, op_table_t * ot, ST ** args, int nth, char ctype)
   ot->ot_xpath_value = crr;
 }
 
+static int
+sqlo_select_ref_score (ST *tree)
+{
+  if (!tree || DV_TYPE_OF (tree) != DV_ARRAY_OF_POINTER)
+    return 0;
+  if (ST_COLUMN ((tree), COL_DOTTED))
+    {
+      if (tree->_.col_ref.name != STAR && !CASEMODESTRCMP ("SCORE", (tree)->_.col_ref.name))
+	return 1;
+    }
+  else
+    {
+      int inx;
+      _DO_BOX (inx, (ST **) (tree))
+	{
+	  if (sqlo_select_ref_score (((ST **)tree)[inx]))
+	    return 1;
+	}
+      END_DO_BOX;
+    }
+  return 0;
+}
 
 int
-sqlo_implied_columns_of_contains (sqlo_t *so, ST *tree)
+sqlo_implied_columns_of_contains (sqlo_t *so, ST *tree, int add_score)
 {
   ST **args;
   int ctype;
@@ -1714,7 +1736,7 @@ sqlo_implied_columns_of_contains (sqlo_t *so, ST *tree)
 		    "Table referenced in %s does not have a text index", sqlo_spec_predicate_name (ctype));
 	      if (ctype == 'x' || ctype == 'c')
 		sqlo_check_ft_offband (so, ot, args, (char) ctype);
-	      if (NULL == ot->ot_text_score)
+	      if (NULL == ot->ot_text_score && add_score)
 		ot->ot_text_score = sqlo_virtual_col_crr (so, ot, "SCORE", DV_LONG_INT, 1);
 	      if ((ctype == 'x') || (NULL != ot->ot_main_range_out))
 		{
@@ -1739,8 +1761,8 @@ sqlo_implied_columns_of_contains (sqlo_t *so, ST *tree)
     }
   if (ST_P (tree, BOP_AND))
     {
-      if (!sqlo_implied_columns_of_contains (so, tree->_.bin_exp.left))
-	return sqlo_implied_columns_of_contains (so, tree->_.bin_exp.right);
+      if (!sqlo_implied_columns_of_contains (so, tree->_.bin_exp.left, add_score))
+	return sqlo_implied_columns_of_contains (so, tree->_.bin_exp.right, add_score);
       else
 	return 1;
     }
@@ -2699,7 +2721,7 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
 	  sqlo_add_table_ref (so, &texp->_.table_exp.from[inx], &res);
 	}
       END_DO_BOX;
-      sqlo_implied_columns_of_contains (so, texp->_.table_exp.where);
+      sqlo_implied_columns_of_contains (so, texp->_.table_exp.where, sqlo_select_ref_score ((ST*) tree->_.select_stmt.selection));
       sqlo_scope (so, &(texp->_.table_exp.where));
       DO_SET (ST *, jc, &res)
 	{
@@ -2832,7 +2854,7 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
 	      &(texp->_.table_exp.group_by), ot, is_not_one_gb);
 	  sqlo_check_group_by_cols (so, (ST *) texp->_.table_exp.order_by,
 	      &(texp->_.table_exp.group_by), ot, is_not_one_gb);
-	  if (!is_not_one_gb && SEL_IS_DISTINCT (tree) && sqlo_distinct_redundant (tree->_.select_stmt.selection, texp->_.table_exp.group_by))
+	  if (!is_not_one_gb && SEL_IS_DISTINCT (tree) && sqlo_distinct_redundant ((ST*)tree->_.select_stmt.selection, (ST*)texp->_.table_exp.group_by))
 	    SEL_SET_DISTINCT (tree, 0)
 	}
     }

@@ -969,5 +969,6 @@ dbe_key_t * tb_px_key (dbe_table_t * tb, dbe_column_t * col);
 float dfe_scan_card (df_elt_t * dfe);
 int sqlo_parse_tree_count_node (ST *tree, long *nodes, int n_nodes);
 int dfe_init_p_stat (df_elt_t * dfe, df_elt_t * lower);
+int sqlo_has_node (ST * tree, int type);
 
 #endif /* _SQLO_H */
