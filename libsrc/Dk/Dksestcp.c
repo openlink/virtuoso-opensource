@@ -2330,8 +2330,17 @@ sslses_read (session_t * ses, char *buffer, int n_bytes)
   n_in = SSL_read ((SSL *) (ses->ses_device->dev_connection->ssl), buffer, n_bytes);
   if (n_in <= 0)
     {
-      SESSTAT_CLR (ses, SST_OK);
-      SESSTAT_SET (ses, SST_BROKEN_CONNECTION);
+      int error_code = SSL_get_error ((SSL *) (ses->ses_device->dev_connection->ssl), n_in);
+      if (SSL_ERROR_WANT_READ == error_code || SSL_ERROR_WANT_WRITE == error_code)
+	{
+	  SESSTAT_CLR (ses, SST_OK);
+	  SESSTAT_SET (ses, SST_BLOCK_ON_READ);
+	}
+      else
+	{
+	  SESSTAT_CLR (ses, SST_OK);
+	  SESSTAT_SET (ses, SST_BROKEN_CONNECTION);
+	}
     }
   ses->ses_bytes_read = n_in;
   return (n_in);
@@ -2344,17 +2353,26 @@ sslses_write (session_t * ses, char *buffer, int n_bytes)
   int n_out;
   if (ses->ses_class == SESCLASS_UNIX)
     {
-      SESSTAT_CLR (ses, SST_OK);
-      SESSTAT_SET (ses, SST_BROKEN_CONNECTION);
+      SESSTAT_W_CLR (ses, SST_OK);
+      SESSTAT_W_SET (ses, SST_BROKEN_CONNECTION);
       return 0;
     }
-  SESSTAT_SET (ses, SST_OK);
-  SESSTAT_CLR (ses, SST_BLOCK_ON_WRITE);
+  SESSTAT_W_SET (ses, SST_OK);
+  SESSTAT_W_CLR (ses, SST_BLOCK_ON_WRITE);
   n_out = SSL_write ((SSL *) (ses->ses_device->dev_connection->ssl), buffer, n_bytes);
   if (n_out <= 0)
     {
-      SESSTAT_CLR (ses, SST_OK);
-      SESSTAT_SET (ses, SST_BROKEN_CONNECTION);
+      int error_code = SSL_get_error ((SSL *) (ses->ses_device->dev_connection->ssl), n_out);
+      if (SSL_ERROR_WANT_READ == error_code || SSL_ERROR_WANT_WRITE == error_code)
+	{
+	  SESSTAT_W_CLR (ses, SST_OK);
+	  SESSTAT_W_SET (ses, SST_BLOCK_ON_WRITE);
+	}
+      else
+	{
+	  SESSTAT_W_CLR (ses, SST_OK);
+	  SESSTAT_W_SET (ses, SST_BROKEN_CONNECTION);
+	}
     }
   ses->ses_bytes_written = n_out;
   return (n_out);
