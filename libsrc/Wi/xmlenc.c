@@ -2246,17 +2246,37 @@ bif_xenc_key_rsa_read (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
 {
   caddr_t name = bif_key_name_arg (qst, args, 0, "xenc_key_RSA_read");
   caddr_t key_data = bif_string_arg (qst, args, 1, "xenc_key_RSA_read");
+  long fmt = BOX_ELEMENTS (args) > 2 ? bif_long_arg (qst, args, 2, "xenc_key_RSA_read") : 0;
   xenc_key_t * k;
   int len;
   caddr_t key_base64 = box_copy (key_data);
-  RSA *r, *p;
+  RSA *r = NULL, *p = NULL;
+  BIO * in;
+  EVP_PKEY * pkey = NULL, * pkkey = NULL;
 
   len = xenc_decode_base64 (key_base64, key_base64 + box_length (key_base64));
-  r = d2i_RSAPrivateKey (NULL, (const unsigned char **) &key_base64, len);
-  p = d2i_RSAPublicKey (NULL, (const unsigned char **) &key_base64, len);
+  if (fmt)
+    {
+      in = BIO_new_mem_buf (key_base64, len);
+      pkey = d2i_PUBKEY_bio (in, NULL);
+      if (pkey && pkey->type == EVP_PKEY_RSA)
+	p = pkey->pkey.rsa;
+      BIO_reset (in);
+      pkkey = d2i_PrivateKey_bio (in, NULL);
+      if (pkkey && pkkey->type == EVP_PKEY_RSA)
+	r = pkkey->pkey.rsa;
+      BIO_free (in);
+    }
+  else
+    {
+      r = d2i_RSAPrivateKey (NULL, (const unsigned char **) &key_base64, len);
+      p = d2i_RSAPublicKey (NULL, (const unsigned char **) &key_base64, len);
+    }
 
   if (!r && !p)
     {
+      if (pkey) EVP_PKEY_free (pkey);
+      if (pkkey) EVP_PKEY_free (pkkey);
       dk_free_box (key_base64);
       sqlr_new_error ("42000", "XENC05", "Cannot import the supplied RSA key");
     }
@@ -2280,11 +2300,21 @@ bif_xenc_key_rsa_read (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
   k->ki.rsa.pad = RSA_PKCS1_PADDING;
   if (r)
     {
-      k->xek_evp_private_key = EVP_PKEY_new();
-      if (k->xek_evp_private_key) EVP_PKEY_assign_RSA (k->xek_evp_private_key, k->xek_private_rsa);
+      if (pkkey)
+	k->xek_evp_private_key = pkkey;
+      else
+	{
+	  k->xek_evp_private_key = EVP_PKEY_new();
+	  if (k->xek_evp_private_key) EVP_PKEY_assign_RSA (k->xek_evp_private_key, k->xek_private_rsa);
+	}
     }
-  k->xek_evp_key = EVP_PKEY_new();
-  if (k->xek_evp_key) EVP_PKEY_assign_RSA (k->xek_evp_key, k->xek_rsa);
+  if (pkey)
+    k->xek_evp_key = pkey;
+  else
+    {
+      k->xek_evp_key = EVP_PKEY_new();
+      if (k->xek_evp_key) EVP_PKEY_assign_RSA (k->xek_evp_key, k->xek_rsa);
+    }
   mutex_leave (xenc_keys_mtx);
   return box_dv_short_string (k->xek_name);
 }
