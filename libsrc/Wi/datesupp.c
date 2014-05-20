@@ -442,7 +442,7 @@ dt_now (caddr_t dt)
   DT_SET_HOUR (dt, tm.tm_hour);
   DT_SET_MINUTE (dt, tm.tm_min);
   DT_SET_SECOND (dt, tm.tm_sec);
-  DT_SET_FRACTION (dt, tv.tv_usec);
+  DT_SET_FRACTION (dt, (tv.tv_usec * 1000));
   DT_SET_TZ (dt, dt_local_tz);
   DT_SET_DT_TYPE (dt, DT_TYPE_DATETIME);
 }
