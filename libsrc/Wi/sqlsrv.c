@@ -4087,15 +4087,6 @@ srv_global_init (char *mode)
 	  sf_shutdown (sf_make_new_log_name (wi_inst.wi_master), bootstrap_cli->cli_trx);
     }
   ddl_redo_undefined_triggers ();
-  IN_TXN;
-  lt_leave(bootstrap_cli->cli_trx);
-  LEAVE_TXN;
-#ifdef DBSE_TREES_DEBUG
-  dbg_it_print_trees ();
-#endif
-#ifdef WIN32
-  sec_set_user_os_struct ("dba", "", "");
-#endif
   if (NULL != srv_global_init_postponed_actions)
     {
       srv_global_init_postponed_actions = dk_set_nreverse (srv_global_init_postponed_actions);
@@ -4105,6 +4096,15 @@ srv_global_init (char *mode)
           f (mode);
         }
     }
+  IN_TXN;
+  lt_leave(bootstrap_cli->cli_trx);
+  LEAVE_TXN;
+#ifdef DBSE_TREES_DEBUG
+  dbg_it_print_trees ();
+#endif
+#ifdef WIN32
+  sec_set_user_os_struct ("dba", "", "");
+#endif
   box_dv_uname_make_immortal_all ();
   while (srv_have_global_lock (THREAD_CURRENT_THREAD))
     {
