@@ -2423,7 +2423,7 @@ page_apply_1 (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t *
 	  }
 	else if (irow < org_pm->pm_count)
 	  {
-	    if (itc->itc_insert_key->key_no_compression)
+	    if (itc->itc_insert_key->key_no_compression && !itc->itc_insert_key->key_is_col)
 	      page_whole_row (buf, irow, rd);
 	    else
 	    page_row (buf, irow, rd, 0);
