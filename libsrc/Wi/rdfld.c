@@ -561,8 +561,26 @@ l_make_ro_disp (cucurbit_t * cu, caddr_t * args, value_state_t * vs)
       dk_free_box (allocd_content);
       return NULL;
     }
-  else if (DV_GEO == dtp)
-    sqlr_new_error ("22023", "CLGEO", "A geometry without rdf box is not allowed as object of quad");
+  if (DV_GEO == dtp)
+    {
+      /* A trick instead of sqlr_new_error ("22023", "CLGEO", "A geometry without rdf box is not allowed as object of quad"); */
+      caddr_t err = NULL;
+      caddr_t content = box_to_any_1 (box, &err, NULL, DKS_TO_DC);
+      dt_lang = RDF_BOX_GEO << 16 | RDF_BOX_DEFAULT_LANG;
+      allocd_content = content;
+      len = box_length (content) - 1;
+      is_text = 2;
+      if (len > RB_BOX_HASH_MIN_LEN)
+        {
+          caddr_t trid = mdigest5 (content);
+          cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, trid, ap_box_num (&ap, dt_lang), content, (caddr_t)(ptrlong)is_text, NULL));
+          dk_free_box (trid);
+        }
+      else
+        cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, content, ap_box_num (&ap, dt_lang), l_null, (caddr_t)(ptrlong)is_text, NULL));
+      dk_free_box (allocd_content);
+      return NULL;
+    }
   else if (DV_STRING == dtp)
     len = box_length (box) - 1;
   if (DV_STRING != dtp || (!rdf_no_string_inline && len < RB_MAX_INLINED_CHARS))

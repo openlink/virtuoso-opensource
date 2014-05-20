@@ -34,6 +34,7 @@
 #include "replsr.h"	/* For log_repl_text_array() */
 #include "xslt_impl.h"	/* For vector_sort_t */
 #include "aqueue.h"	/* For aq_allocate() in rdf replication */
+#include "geo.h"
 
 int rb_type__xsd_ENTITY;
 int rb_type__xsd_ENTITIES;
@@ -2021,7 +2022,23 @@ bif_rdf_box_to_ro_id_search_fields (caddr_t * qst, caddr_t * err_ret, state_slot
       goto res; /* see below */
     }
   if (DV_GEO == dtp)
-    sqlr_new_error ("22023", "CLGEO", "A geometry without rdf box is not allowed as object of quad");
+    {
+      /* A trick instead of sqlr_new_error ("22023", "CLGEO", "A geometry without rdf box is not allowed as object of quad"); */
+      caddr_t err = NULL;
+      caddr_t content = box_to_any (box, &err);
+      if (err)
+        sqlr_resignal (err);
+      ro_dt_and_lang = RDF_BOX_GEO << 16 | RDF_BOX_DEFAULT_LANG;
+      len = box_length (content) - 1;
+      if (len > RB_BOX_HASH_MIN_LEN)
+        {
+          ro_val = mdigest5 (content);
+          dk_free_box (content);
+        }
+      else
+        ro_val = content;
+      goto res; /* see below */
+    }
   if (DV_STRING != dtp)
     return NULL;
   if (BF_IRI == box_flags (box))
@@ -2910,6 +2927,7 @@ http_ttl_or_nt_prepare_obj (query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, tt
         }
     case DV_SINGLE_FLOAT: dt_ret->uri = uname_xmlschema_ns_uri_hash_float; return;
     case DV_DOUBLE_FLOAT: dt_ret->uri = uname_xmlschema_ns_uri_hash_double; return;
+    case DV_GEO: dt_ret->uri = uname_virtrdf_ns_uri_Geometry; return;
     default: ;
     }
 }
@@ -3071,6 +3089,15 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
           }
         session_buffered_write (ses, tmpbuf, buffill);
         break;
+      }
+    case DV_GEO:
+      {
+        session_buffered_write_char ('"', ses);
+        ewkt_print_sf12 ((geo_t *)obj_box_value, ses);
+        session_buffered_write_char ('"', ses);
+        session_buffered_write (ses, "^^", 2);
+        ttl_http_write_ref (ses, env, dt_ptr);
+        return;
       }
     default:
       {
@@ -3730,6 +3757,15 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
     case DV_DB_NULL:
       session_buffered_write (ses, "(NULL)", 6);
       break;
+    case DV_GEO:
+      {
+        session_buffered_write_char ('"', ses);
+        ewkt_print_sf12 ((geo_t *)obj_box_value, ses);
+        session_buffered_write_char ('"', ses);
+        session_buffered_write (ses, "^^", 2);
+        nt_http_write_ref_1 (ses, env, dt_ptr, NULL, esc_mode == DKS_ESC_PTEXT);
+        return;
+      }
     default:
       {
         caddr_t iri = xsd_type_of_box (obj_box_value);
@@ -3768,7 +3804,7 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
             {
               session_buffered_write_char ('@', ses);
               session_buffered_write (ses, lang_id, box_length (lang_id) - 1);
-	      dk_free_box (lang_id);
+              dk_free_box (lang_id);
             }
         }
       if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
