@@ -142,6 +142,8 @@ EXE_EXPORT (int, dk_set_delete, (dk_set_t * set, void *item));
 EXE_EXPORT (void *, dk_set_delete_nth, (dk_set_t * set, int idx));
 EXE_EXPORT (void, dk_set_push, (s_node_t ** set, void *item));
 EXE_EXPORT (void, dk_set_push_two, (s_node_t ** set, void *car_item, void *cadr_item));
+EXE_EXPORT (void, dk_set_pushnew, (s_node_t ** set, void *item));
+EXE_EXPORT (void *, dk_set_pop, (s_node_t ** set));
 
 #ifdef MALLOC_DEBUG
 dk_set_t dbg_dk_set_cons (const char *file, int line, void *s1, dk_set_t s2);

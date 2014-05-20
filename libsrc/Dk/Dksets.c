@@ -468,6 +468,21 @@ dk_set_push_two (s_node_t ** set, void *car_item, void *cadr_item)
   dbg_dk_set_push_two (__FILE__, __LINE__, set, car_item, cadr_item);
 }
 
+#undef dk_set_pushnew
+void
+dk_set_pushnew (s_node_t ** set, void *item)
+{
+  dbg_dk_set_pushnew (__FILE__, __LINE__, set, item);
+}
+
+#undef dk_set_pop
+void *
+dk_set_pop (s_node_t ** set)
+{
+  return dbg_dk_set_pop (__FILE__, __LINE__, set);
+}
+
+
 #undef list_to_array
 caddr_t
 list_to_array (dk_set_t l)
