@@ -166,6 +166,7 @@ extern void tf_new_base (triple_feed_t *tf, caddr_t new_base);
 #define TTLP_ALLOW_NQUAD		0x0200	/*!< Enables NQuads syntax but disables TURTLE and TriG */
 #define TTLP_DEBUG_BNODES		0x1000	/*!< Add virtrdf:bnode-base, virtrdf:bnode-row and virtrdf:bnode-label triples for every created blank node. */
 #define TTLP_SNIFFER			0x2000	/*!< Sniffer mode: scan for Turtle fragments in non-Turtle texts. */
+#define TTLP_SNIFFER_COMPLETE		0x8000	/*!< Sniffer mode has ended with an error at the end of text and must be stopped, no more retries. */
 
 #define TTLP_ALLOW_QNAME_A		0x01
 #define TTLP_ALLOW_QNAME_HAS		0x02

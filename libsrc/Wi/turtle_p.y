@@ -223,7 +223,7 @@ prefix_clause
 		  }
 		else
 		  id_hash_set (local_hash_ptr[0], (caddr_t)(&prefix), (caddr_t)(&ns));
-		    ttlp_arg->ttlp_last_q_save = NULL; }
+		ttlp_arg->ttlp_last_q_save = NULL; }
 	| prefix_kwd QNAME_NS error { dk_free_box ($2); ttlp_arg->ttlp_last_q_save = NULL; ttlyyerror_action ("A namespace IRI is expected after prefix in namepace declaration"); }
 	| prefix_kwd _COLON Q_IRI_REF	{
 		if (ttlp_arg->ttlp_default_ns_uri != ttlp_arg->ttlp_default_ns_uri_saved)

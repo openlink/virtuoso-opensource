@@ -480,8 +480,8 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <TURTLE_DDDQ>[\\]		{ ttlyyerror ("Bad escape sequence in a long double-quoted string"); }
 <TURTLE_SSSQ>.			{ ttlyyerror ("Bad character in a long single-quoted string"); }
 <TURTLE_DDDQ>.			{ ttlyyerror ("Bad character in a long double-quoted string"); }
-<TURTLE_SSSQ><<EOF>>		{ ttlyyerror ("Unterminated long single-quoted string"); }
-<TURTLE_DDDQ><<EOF>>		{ ttlyyerror ("Unterminated long double-quoted string"); }
+<TURTLE_SSSQ><<EOF>>		{ ttlp_arg[0].ttlp_flags |= TTLP_SNIFFER_COMPLETE; ttlyyerror ("Unterminated long single-quoted string"); }
+<TURTLE_DDDQ><<EOF>>		{ ttlp_arg[0].ttlp_flags |= TTLP_SNIFFER_COMPLETE; ttlyyerror ("Unterminated long double-quoted string"); }
 
 <INITIAL>['']		{ yymore(); TTLYYBEGIN (TURTLE_SQ); }
 <INITIAL>[""]		{ yymore(); TTLYYBEGIN (TURTLE_DQ); }
@@ -538,8 +538,8 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <TURTLE_BAD_SQ>['']("@"{SPAR_LANGTAG})? { TTLYYBEGIN (INITIAL); return TTL_RECOVERABLE_ERROR; }
 <TURTLE_BAD_DQ>[""]("@"{SPAR_LANGTAG})? { TTLYYBEGIN (INITIAL); return TTL_RECOVERABLE_ERROR; }
 
-<TURTLE_SQ,TURTLE_BAD_SQ><<EOF>>		{ ttlyyerror ("Unterminated short single-quoted string"); }
-<TURTLE_DQ,TURTLE_BAD_DQ><<EOF>>		{ ttlyyerror ("Unterminated short double-quoted string"); }
+<TURTLE_SQ,TURTLE_BAD_SQ><<EOF>>		{ ttlp_arg[0].ttlp_flags |= TTLP_SNIFFER_COMPLETE; ttlyyerror ("Unterminated short single-quoted string"); }
+<TURTLE_DQ,TURTLE_BAD_DQ><<EOF>>		{ ttlp_arg[0].ttlp_flags |= TTLP_SNIFFER_COMPLETE; ttlyyerror ("Unterminated short double-quoted string"); }
 
 <INITIAL>[+-]?{INTEGER_LITERAL}		{ return ttlp_NUMBER_int (yylval, ttlp_arg, yyg); }
 <INITIAL>[+-]?{DECIMAL_LITERAL}		{ return ttlp_NUMBER_decimal (yylval, ttlp_arg, yyg); }
@@ -769,23 +769,23 @@ resume_sniffing:
   QR_RESET_CODE
     {
       du_thread_t *self = THREAD_CURRENT_THREAD;
-#ifdef TTLYYDEBUG
       caddr_t *err = (caddr_t *)thr_get_error_code (self);
+#ifdef TTLYYDEBUG
       ttlyy_dbg_printf (("{ERROR %s %s}", ERR_STATE(err), ERR_MESSAGE(err)));
 #endif
-      if (flags & TTLP_SNIFFER)
+      thr_set_error_code (self, NULL);
+      if ((flags & TTLP_SNIFFER) && (NULL == strstr (ERR_MESSAGE (err), "nternal error")))
         {
-          dk_free_tree (thr_get_error_code (self));
-          thr_set_error_code (self, NULL);
+          dk_free_tree (err);
           yy_pop_state (scanner);
           ttlp_reset_stacks (ttlp);
-          sniffer_recovery = 2;
+          if (!(ttlp->ttlp_flags & TTLP_SNIFFER_COMPLETE)) /* Note that \c ttlp->ttlp_flags might differ from \c flags in this bit. */
+            sniffer_recovery = 2;
         }
       else
         {
           /* ttlyydebug = 0; */
-          ttlp->ttlp_catched_error = thr_get_error_code (self);
-          thr_set_error_code (self, NULL);
+          ttlp->ttlp_catched_error = err;
         }
       /*no POP_QR_RESET*/;
     }
@@ -956,23 +956,19 @@ resume_sniffing:
     {
       du_thread_t *self = THREAD_CURRENT_THREAD;
       caddr_t err = thr_get_error_code (self);
-#if 0
-      if (flags & TTLP_SNIFFER)
-#else
-      if ((flags & TTLP_SNIFFER) && (NULL == strstr (ERR_MESSAGE (err), "internal error")))
-#endif
+      thr_set_error_code (self, NULL);
+      if ((flags & TTLP_SNIFFER) && (NULL == strstr (ERR_MESSAGE (err), "nternal error")))
         {
           dk_free_tree (err);
-          thr_set_error_code (self, NULL);
           yy_pop_state (scanner);
           ttlp_reset_stacks (ttlp);
+          if (!(ttlp->ttlp_flags & TTLP_SNIFFER_COMPLETE)) /* Note that \c ttlp->ttlp_flags might differ from \c flags in this bit. */
           sniffer_recovery = 2;
         }
       else
         {
           /* ttlyydebug = 0; */
           ttlp->ttlp_catched_error = err;
-          thr_set_error_code (self, NULL);
           if (NULL != ttlp->ttlp_iter_abend)
             {
               ttlp->ttlp_iter_abend (ttlp->ttlp_iter_data);
