@@ -3338,7 +3338,7 @@ rq_sample_subp (df_elt_t * dfe, rq_cols_t * rq, index_choice_t * ic)
   variable = &rq->rq_p.rqp_lower->_.bin.right->dfe_tree;
   save = *variable;
   sub = ric_iri_to_sub (ric, save, RI_SUBPROPERTY, 0);
-  if (!sub || !sub->rs_sub)
+  if (!sub || (!sub->rs_sub && !sub->rs_equiv))
     {
       found = ric_p_stat_from_cache (empty_ric, dfe->_.table.key, unbox_iri_id (*variable), p_stat);
       if (!found)

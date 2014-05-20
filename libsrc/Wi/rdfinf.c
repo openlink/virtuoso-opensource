@@ -1961,6 +1961,13 @@ ssl_inf_name (df_elt_t * dfe)
 
 rdf_inf_ctx_t * sas_dummy_ctx;
 
+int
+ric_iri_has_subs (rdf_inf_ctx_t * ric, caddr_t iri, int mode)
+{
+  rdf_sub_t * sub = ric_iri_to_sub (ric, iri, mode, 0);
+  return sub && (sub->rs_sub || sub->rs_equiv);
+}
+
 
 void
 sqlg_leading_subclass_inf (sqlo_t * so, data_source_t ** q_head, data_source_t * ts, df_elt_t * p_dfe, caddr_t p_const, df_elt_t * o_dfe, caddr_t o_iri,
@@ -1973,7 +1980,7 @@ sqlg_leading_subclass_inf (sqlo_t * so, data_source_t ** q_head, data_source_t *
     return;
   if (!p_const && !p_dfe && !sqlg_col_ssl (tb_dfe, "P"))
     return; /* if p is neither specified nor extracted, then do nothing.  P must ve specified or extracted if a dfe is for inference */
-  if (p_const && o_iri && !id_hash_get (ctx->ric_iri_to_subclass, (caddr_t)&o_iri))
+  if (p_const && o_iri && !ric_iri_has_subs (ctx, o_iri, RI_SUBCLASS))
     return;
   ri = sqlg_rdf_inf_node (so->so_sc);
   qn_ins_before (tb_dfe->dfe_sqlo->so_sc, q_head, (data_source_t *)ts, (data_source_t *)ri);
@@ -2043,7 +2050,7 @@ sqlg_leading_subproperty_inf (sqlo_t * so, data_source_t ** q_head, data_source_
     return;
   if (!p_const && !p_dfe && !sqlg_col_ssl (tb_dfe, "P"))
     return; /* if p is neither specified nor extracted, then do nothing.  P must ve specified or extracted if a dfe is for inference */
-  if (p_const && !id_hash_get (ctx->ric_iri_to_subproperty, (caddr_t)&p_const))
+  if (p_const && !ric_iri_has_subs (ctx, p_const, RI_SUBPROPERTY))
     return;
   ri = sqlg_rdf_inf_node (so->so_sc);
   qn_ins_before (tb_dfe->dfe_sqlo->so_sc, q_head, (data_source_t *)ts, (data_source_t *)ri);
