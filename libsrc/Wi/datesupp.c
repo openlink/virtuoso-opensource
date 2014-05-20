@@ -423,6 +423,8 @@ int dt_local_tz;		/* minutes from GMT */
 void
 dt_now (caddr_t dt)
 {
+  static time_t last_time;
+  static long last_frac;
   time_t tim;
   long day;
   struct timeval tv;
@@ -442,7 +444,17 @@ dt_now (caddr_t dt)
   DT_SET_HOUR (dt, tm.tm_hour);
   DT_SET_MINUTE (dt, tm.tm_min);
   DT_SET_SECOND (dt, tm.tm_sec);
-  DT_SET_FRACTION (dt, (tv.tv_usec * 1000));
+  if (tim == last_time && last_frac == tv.tv_usec)
+    {
+      last_frac++;
+      DT_SET_FRACTION (dt, (last_frac * 1000));
+    }
+  else
+    {
+      last_frac = tv.tv_usec;
+      last_time = tim;
+      DT_SET_FRACTION (dt, (tv.tv_usec * 1000));
+    }
   DT_SET_TZ (dt, dt_local_tz);
   DT_SET_DT_TYPE (dt, DT_TYPE_DATETIME);
 }

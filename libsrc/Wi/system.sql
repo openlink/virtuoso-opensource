@@ -5605,9 +5605,11 @@ DB.DBA.SYS_SQL_VAL_PRINT (in v any)
   else if (isnumeric (v))
     return cast (v as varchar);
   else if (__tag (v) = 193)
-    {
-      return concat ('vector (',SYS_SQL_VECTOR_PRINT (v),')');
-    }
+    return concat ('vector (',SYS_SQL_VECTOR_PRINT (v),')');
+  else if (__tag (v) = 211)
+    return sprintf ('{ts ''%s''}', datestring (v));
+  else if (__tag (v) = __tag of nvarchar)
+    return sprintf ('N\'%S\'', replace (charset_recode (v, '_WIDE_', 'UTF-8'), '\\', '\\\\'));
   else if (__tag (v) = 255)
     return '<tag 255>';
   else
