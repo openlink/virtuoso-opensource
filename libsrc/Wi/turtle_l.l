@@ -956,10 +956,10 @@ resume_sniffing:
     {
       du_thread_t *self = THREAD_CURRENT_THREAD;
       caddr_t err = thr_get_error_code (self);
-#ifdef NDEBUG
+#if 0
       if (flags & TTLP_SNIFFER)
 #else
-      if ((flags & TTLP_SNIFFER) && (NULL == strstr (ERR_MESSAGE (err), "nternal error")))
+      if ((flags & TTLP_SNIFFER) && (NULL == strstr (ERR_MESSAGE (err), "internal error")))
 #endif
         {
           dk_free_tree (err);
