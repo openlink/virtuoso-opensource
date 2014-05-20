@@ -1637,6 +1637,12 @@ bif_format_number (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 static caddr_t
+bif_set_client_acl_restrictions (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return NULL;
+}
+
+static caddr_t
 soundex (caddr_t name)
 {
 #define raw_toupper(C) ((C) & (255-32))
@@ -1767,6 +1773,7 @@ sqlbif2_init (void)
   bif_define ("__stop_cpt", bif_stop_cpt);
   bif_define ("soundex", bif_soundex);
   bif_define ("difference", bif_difference);
+  bif_define ("set_client_acl_restrictions", bif_set_client_acl_restrictions);
   /*bif_define ("repl_this_server", bif_this_server);*/
   /*sqls_bif_init ();*/
   sqls_bif_init ();
