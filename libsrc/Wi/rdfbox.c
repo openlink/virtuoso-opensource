@@ -2679,6 +2679,9 @@ ttl_http_write_prefix_if_needed (caddr_t *qst, dk_session_t *ses, ttl_env_t *env
   return 1;
 }
 
+#define SES_WRITE(ses, str) \
+	session_buffered_write (ses, str, strlen (str))
+
 void
 ttl_http_write_ref (dk_session_t *ses, ttl_env_t *env, ttl_iriref_t *ti)
 {
@@ -2692,9 +2695,9 @@ ttl_http_write_ref (dk_session_t *ses, ttl_env_t *env, ttl_iriref_t *ti)
     }
   if (env->te_flags & TTL_ENV_HTML_OUTPUT)
     {
-      session_buffered_write (ses, "<a href=\"", 9);
+      SES_WRITE (ses, "<a href=\"/sparql/?query=DESCRIBE%20%3C");
       dks_esc_write (ses, full_uri, box_length (full_uri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_URI);
-      session_buffered_write (ses, "\">", 2);
+      SES_WRITE (ses, "%3E&format=text%2Fx-html-nice-turtle\">");
       if (NULL != ti->prefix)
         {
           session_buffered_write (ses, ti->prefix, strlen (ti->prefix));
@@ -3723,8 +3726,18 @@ bif_http_ttl_value (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   obj_dtp = DV_TYPE_OF (obj);
   switch (obj_dtp)
     {
-    case DV_UNAME: case DV_IRI_ID: case DV_IRI_ID_8: obj_is_iri = 1; break;
-    case DV_STRING: obj_is_iri = (BF_IRI & box_flags (obj)) ? 1 : 0; break;
+    case DV_UNAME:
+    case DV_IRI_ID:
+    case DV_IRI_ID_8:
+	obj_is_iri = 1;
+	break;
+    case DV_STRING:
+	  {
+	    obj_is_iri = (BF_IRI & box_flags (obj)) ? 1 : 0;
+	    if (env->te_flags & TTL_ENV_HTML_OUTPUT)
+	      tii.o.uri = box_copy_tree (obj);
+	    break;
+	  }
     default: obj_is_iri = 0; break;
     }
   if (obj_is_iri)
