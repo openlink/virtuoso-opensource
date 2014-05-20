@@ -47,6 +47,7 @@ typedef struct rdf_inf_ctx_s
   id_hash_t *	ric_ifp_exclude;			/*!< Map from ifp P iri to values that do not make identity even if they occur as ifp values of 2 subjects. e.g. sha1 of "mailto://" */
   id_hash_t *	ric_samples;				/*!< Cardinality estimates with this inf ctx enabled */
   dk_mutex_t *	ric_mtx;				/*!< Mutex for ric_samples sample cache */
+  dk_hash_t *	ric_p_stat;
 } rdf_inf_ctx_t;
 
 
@@ -237,5 +238,10 @@ caddr_t iri_ensure (caddr_t * qst, caddr_t name, int flag, caddr_t * err_ret);
   if (1 != cl_rdf_inf_inited) cl_rdf_inf_init_1 (qst);
 
 void  cl_rdf_inf_init_1 (caddr_t * qst);
+rdf_inf_ctx_t * dfe_ric (df_elt_t * dfe);
+int ric_p_stat_from_cache (rdf_inf_ctx_t * ric, dbe_key_t * key, iri_id_t id, float * p_stat);
+void ric_set_p_stat (rdf_inf_ctx_t * ric, dbe_key_t * key, caddr_t p, float * p_stat);
+extern rdf_inf_ctx_t * empty_ric;
+
 
 #endif

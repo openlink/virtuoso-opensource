@@ -125,43 +125,43 @@ dfe_p_const_abbrev (df_elt_t * tb_dfe)
 }
 
 
-float *
-dfe_p_stat (df_elt_t * tb_dfe, df_elt_t * pred, iri_id_t pid, dk_set_t * parts_ret, dbe_column_t * o_col, float **o_stat_ret)
+int
+dfe_p_stat (df_elt_t * tb_dfe, df_elt_t * pred, iri_id_t pid, dk_set_t * parts_ret, dbe_column_t * o_col, float *p_stat_ret,
+    float *o_stat_ret)
 {
+  int found1, found2;
   int tried = 0;
-#if 0
-  caddr_t ctx_name = sqlo_opt_value (tb_dfe->_.table.ot->ot_opts, OPT_RDF_INFERENCE);
-  rdf_inf_ctx_t **place = ctx_name ? (rdf_inf_ctx_t **) id_hash_get (rdf_name_to_ric, (caddr_t) & ctx_name) : NULL;
-#endif
   dbe_key_t *pk = tb_dfe->_.table.ot->ot_table->tb_primary_key;
   dbe_key_t *o_key = NULL;
-  float *p_stat;
 again:
-  if (!pk->key_p_stat)
+  found1 = ric_p_stat_from_cache (dfe_ric (tb_dfe), pk, pid, p_stat_ret);
+  if (!found1)
     {
       if (tried)
-    return NULL;
+	return 0;
       tried = 1;
       dfe_init_p_stat (tb_dfe, pred);
       goto again;
     }
   if (o_col)
     o_key = tb_px_key (tb_dfe->_.table.ot->ot_table, o_col);
-  p_stat = (float *) id_hash_get (pk->key_p_stat, (caddr_t) & pid);
   *parts_ret = pk->key_parts;
-  if (o_key && o_stat_ret && o_key->key_p_stat)
-    *o_stat_ret = (float *) id_hash_get (o_key->key_p_stat, (caddr_t) & pid);
-  else if (o_stat_ret)
-    o_stat_ret = NULL;
-  if (!p_stat || (o_stat_ret && !o_stat_ret))
+  if (o_key && o_stat_ret)
+    {
+      float os[4];
+      found2 = ric_p_stat_from_cache (dfe_ric (tb_dfe), o_key, pid, os);
+      if (found2)
+	memcpy_16 (o_stat_ret, os, 4 * sizeof (float));
+      if (!found1 || (o_stat_ret && !found2))
     {
       if (tried)
-	return p_stat;
+	    return 0;
       tried = 1;
       dfe_init_p_stat (tb_dfe, pred);
       goto again;
     }
-  return p_stat;
+    }
+  return found1 + 2 * found2;
 }
 
 #define iri_id_check(x) (DV_IRI_ID == DV_TYPE_OF (x) ? unbox_iri_id (x) : 0)
@@ -227,16 +227,19 @@ jp_fanout (join_plan_t * jp)
 {
   /* for sql this is the table card over the col pred cards , for rdf this is based on p stat */
   dbe_column_t *o_col = NULL;
-  int jinx;
+  int jinx, p_found;
+  float p_stat[4];
   if (dfe_is_quad (jp->jp_tb_dfe))
     {
       dk_set_t parts = NULL;
       int nth_col = 0;
-      float *p_stat, *o_stat = NULL;
+      float p_stat[4];
+      float o_stat[4];
       float s_card, o_card, g_card, misc_card = 1;
       iri_id_t p = 0, s = 0, g = 0;
       caddr_t o = NULL;
       df_elt_t *is_p = NULL, *is_s = NULL, *is_o = NULL, *is_g = NULL;
+      jp->jp_tb_dfe->dfe_locus = LOC_LOCAL;
       for (jinx = 0; jinx < jp->jp_n_preds; jinx++)
 	{
 	  pred_score_t *ps = &jp->jp_preds[jinx];
@@ -288,8 +291,8 @@ jp_fanout (join_plan_t * jp)
 	  if (is_o && o)
 	    return jp->jp_fanout = sqlo_rdfs_type_card (jp->jp_tb_dfe, is_p, is_o);
 	}
-      p_stat = dfe_p_stat (jp->jp_tb_dfe, is_p, p, &parts, o_col, &o_stat);
-      if (!p_stat)
+      p_found = dfe_p_stat (jp->jp_tb_dfe, is_p, p, &parts, o_col, p_stat, o_stat);
+      if (!p_found)
 	goto general;
 
       DO_SET (dbe_column_t *, part, &parts)
@@ -308,7 +311,7 @@ jp_fanout (join_plan_t * jp)
 	    o_card = p_stat[nth_col];
 	    break;
 		}
-	      o_card = o_stat ? o_stat[1] : p_stat[nth_col];
+		o_card = (2 & p_found) ? o_stat[1] : p_stat[nth_col];
 	      break;
 	    }
 	  case 'G':
@@ -507,7 +510,7 @@ jp_add (join_plan_t * jp, df_elt_t * tb_dfe, df_elt_t * pred, int is_join)
 	ps->ps_card = 1.0 / ps->ps_left_col->col_n_distinct;
     }
   if (!ps->ps_card)
-    ps->ps_card = 0, 5;
+    ps->ps_card = 0.5;
 }
 
 
@@ -914,7 +917,7 @@ sqlo_hash_fill_join (sqlo_t * so, df_elt_t * hash_ref_tb, df_elt_t ** fill_ret, 
       DO_BOX (df_elt_t *, tb_dfe, inx, texp->_.table_exp.from)
 	  texp->_.table_exp.from[inx] =
 	  t_listst (3, TABLE_REF, t_listst (6, TABLE_DOTTED, tb_dfe->_.table.ot->ot_table->tb_name,
-	      tb_dfe->_.table.ot->ot_new_prefix, NULL, NULL, NULL), NULL);
+	      tb_dfe->_.table.ot->ot_new_prefix, NULL, NULL, tb_dfe->_.table.ot->ot_opts), NULL);
       END_DO_BOX;
       sel = t_box_copy_tree (sel);
       sqlo_scope (so, &sel);

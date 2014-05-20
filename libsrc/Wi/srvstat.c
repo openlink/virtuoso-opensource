@@ -4564,14 +4564,16 @@ bif_stat_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   END_DO_HT;
   DO_HT (ptrlong, id, dbe_key_t *, key, sc->sc_id_to_key)
     {
+      id_hash_t * p_hash;
       caddr_t p_arr = NULL;
-      if (key->key_p_stat)
+      p_hash = (id_hash_t*)gethash ((void*)(ptrlong)key->key_id, empty_ric->ric_p_stat);
+      if (p_hash)
 	{
 	  dk_set_t psts = NULL;
 	  id_hash_iterator_t hit;
 	  float * arr;
 	  caddr_t * k;
-	  id_hash_iterator (&hit, key->key_p_stat);
+	  id_hash_iterator (&hit, p_hash);
 	  while (hit_next (&hit, (caddr_t*)&id, (caddr_t*)&arr))
 	    {
 	      dk_set_push (&psts, list (5, sc_data_to_ext (qi, box_iri_id (*(iri_id_t*)id)), box_float (arr[0]), box_float (arr[1]), box_float (arr[2]), box_float (arr[3])));
@@ -4650,7 +4652,7 @@ bif_stat_import (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	      fs[1] = unbox_float (p[2]);
 	      fs[2] = unbox_float (p[3]);
 	      fs[3] = unbox_float (p[4]);
-	      id_hash_set  (key->key_p_stat, (caddr_t)iid, (caddr_t)&fs); 
+	      ric_set_p_stat (empty_ric, key, iid, fs); 
 	    }
 	  END_DO_BOX;
 	}

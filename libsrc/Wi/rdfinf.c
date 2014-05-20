@@ -836,6 +836,7 @@ rdf_inf_pre_input (rdf_inf_pre_node_t * ri, caddr_t * inst,
 id_hash_t * rdf_name_to_ric;
 
 rdf_inf_ctx_t *
+
 rdf_name_to_ctx (caddr_t name)
 {
   rdf_inf_ctx_t ** place;
@@ -916,6 +917,7 @@ ric_allocate (caddr_t n2)
       ctx->ric_mtx = mutex_allocate ();
       ctx->ric_samples = id_hash_allocate (601, sizeof (caddr_t), sizeof (tb_sample_t), treehash, treehashcmp);
   id_hash_set_rehash_pct (ctx->ric_samples, 200);
+  ctx->ric_p_stat = hash_table_allocate (11);
       return ctx;
     }
 
@@ -1971,6 +1973,8 @@ sqlg_leading_subclass_inf (sqlo_t * so, data_source_t ** q_head, data_source_t *
     return;
   if (!p_const && !p_dfe && !sqlg_col_ssl (tb_dfe, "P"))
     return; /* if p is neither specified nor extracted, then do nothing.  P must ve specified or extracted if a dfe is for inference */
+  if (p_const && o_iri && !id_hash_get (ctx->ric_iri_to_subclass, (caddr_t)&o_iri))
+    return;
   ri = sqlg_rdf_inf_node (so->so_sc);
   qn_ins_before (tb_dfe->dfe_sqlo->so_sc, q_head, (data_source_t *)ts, (data_source_t *)ri);
   ri->ri_mode = RI_SUBCLASS;
@@ -2039,6 +2043,8 @@ sqlg_leading_subproperty_inf (sqlo_t * so, data_source_t ** q_head, data_source_
     return;
   if (!p_const && !p_dfe && !sqlg_col_ssl (tb_dfe, "P"))
     return; /* if p is neither specified nor extracted, then do nothing.  P must ve specified or extracted if a dfe is for inference */
+  if (p_const && !id_hash_get (ctx->ric_iri_to_subproperty, (caddr_t)&p_const))
+    return;
   ri = sqlg_rdf_inf_node (so->so_sc);
   qn_ins_before (tb_dfe->dfe_sqlo->so_sc, q_head, (data_source_t *)ts, (data_source_t *)ri);
   ri->ri_mode = RI_SUBPROPERTY;
