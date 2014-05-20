@@ -2532,6 +2532,10 @@ cv_free (code_vec_t cv)
 	    {
 	      ha_free ((hash_area_t *) ins->_.pred.cmp);
 	    }
+	  else if (bop_comp_func == ins->_.pred.func)
+	    dk_free ((box_t) ins->_.pred.cmp, sizeof (bop_comparison_t));
+	  else if (subq_comp_func == ins->_.pred.func)
+	    dk_free ((box_t) ins->_.pred.cmp, sizeof (subq_pred_t));
 	  else
 	    dk_free ((box_t) ins->_.pred.cmp, -1);
 	}
