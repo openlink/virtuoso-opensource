@@ -153,7 +153,7 @@ create function DB.DBA.SPARQL_RSET_TTL_HTTP_PRE (in colnames any, in accept varc
     {
       res [colctr * 7] := colnames [colctr];
     }
-  return vector (dict_new (16000), 0, '', '', '', 0, 0, res, 0);
+  return DB.DBA.RDF_TRIPLES_TO_TTL_ENV (16000, 0, res, ses);
 }
 ;
 
@@ -1267,7 +1267,7 @@ create procedure DB.DBA.SPARQL_RESULTS_TTL_WRITE_RES (inout ses any, in mdta any
     {
       colbuf [colctr * 7] := cols[colctr][0];
     }
-  env := vector (dict_new (__min (len * 3, 16000)), 0, '', '', '', 0, 0, colbuf, ses);
+  env := DB.DBA.RDF_TRIPLES_TO_TTL_ENV (__min (len * 3, 16000), 0, colbuf, ses);
   rowctr := 0;
   while (rowctr < len)
     {
@@ -1754,6 +1754,11 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
         {
           DB.DBA.RDF_TRIPLES_TO_NICE_TTL (triples, ses);
           ret_mime := 'text/turtle';
+        }
+      else if (ret_format = 'HTML;NICE_TTL')
+        {
+          DB.DBA.RDF_TRIPLES_TO_HTML_NICE_TTL (triples, ses);
+          ret_mime := 'text/html';
         }
       else if (ret_format = 'SOAP')
 	{
@@ -2320,13 +2325,13 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('\n');
     http('    <script type="text/javascript">\n');
     http('    /*<![CDATA[*/\n');
-    http('	var last_format = 1;\n');
+    http('	var last_format = 0;\n');
     http('	function format_select(query_obg)\n');
     http('	{\n');
     http('		var query = query_obg.value; \n');
     http('		var format = query_obg.form.format;\n');
     http('\n');
-    http('		if ((query.match(/\\bconstruct\\b/i) || query.match(/\\bdescribe\\b/i)) && last_format == 1) {\n');
+    http('		if ((query.match(/\\bconstruct\\b/i) || query.match(/\\bdescribe\\b/i)) && last_format != 2) {\n');
     http('			for(var i = format.options.length; i > 0; i--)\n');
     http('				format.options[i] = null;\n');
     http('			format.options[1] = new Option(\'Turtle\',\'text/turtle\');\n');
@@ -2342,22 +2347,23 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('			format.options[11] = new Option(\'HTML (table)\',\'text/x-html+tr\');\n');
     http('			format.options[12] = new Option(\'HTML+Microdata (inconvenient)\',\'text/html\');\n');
     http('			format.options[13] = new Option(\'HTML+Microdata (pretty-printed table)\',\'application/x-nice-microdata\');\n');
-    http('			format.options[14] = new Option(\'Microdata/JSON\',\'application/microdata+json\');\n');
-    http('			format.options[15] = new Option(\'CSV\',\'text/csv\');\n');
-    http('			format.options[16] = new Option(\'TSV\',\'text/tab-separated-values\');\n');
-    http('			format.options[17] = new Option(\'TriG\',\'application/x-trig\');\n');
+    http('			format.options[14] = new Option(\'Turtle-style HTML (for browsing, not for export)\',\'text/x-html-nice-turtle\');\n');
+    http('			format.options[15] = new Option(\'Microdata/JSON\',\'application/microdata+json\');\n');
+    http('			format.options[16] = new Option(\'CSV\',\'text/csv\');\n');
+    http('			format.options[17] = new Option(\'TSV\',\'text/tab-separated-values\');\n');
+    http('			format.options[18] = new Option(\'TriG\',\'application/x-trig\');\n');
 
     if (can_cxml)
       {
-	http('			format.options[18] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
+	http('			format.options[19] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
 	if (can_qrcode)
-	  http('		format.options[19] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
+	  http('		format.options[20] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
       }
     http('			format.selectedIndex = 1;\n');
     http('			last_format = 2;\n');
     http('		}\n');
     http('\n');
-    http('		if (!(query.match(/\\bconstruct\\b/i) || query.match(/\\bdescribe\\b/i)) && last_format == 2) {\n');
+    http('		if (!(query.match(/\\bconstruct\\b/i) || query.match(/\\bdescribe\\b/i)) && last_format != 1) {\n');
     http('			for(var i = format.options.length; i > 0; i--)\n');
     http('				format.options[i] = null;\n');
     http('			format.options[1] = new Option(\'HTML\',\'text/html\');\n');
@@ -2463,49 +2469,56 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
       )
     {
       opts := vector (
-        vector ('text/turtle'			, 'Turtle'					),
-        vector ('application/x-nice-turtle'	, 'Pretty-printed Turtle (slow!)'		),
-        vector ('application/rdf+json'		, 'RDF/JSON'					),
-        vector ('application/rdf+xml'		, 'RDF/XML'					),
-        vector ('text/plain'			, 'N-Triples'					),
-        vector ('application/xhtml+xml'		, 'XHTML+RDFa'					),
-        vector ('application/atom+xml'		, 'ATOM+XML'					),
-        vector ('application/odata+json'	, 'ODATA/JSON'					),
-        vector ('application/x-json+ld'		, 'JSON-LD'					),
-        vector ('text/x-html+ul'			, 'HTML (list)'					),
-        vector ('text/x-html+tr'			, 'HTML (table)'				),
-        vector ('text/html'			, 'HTML+Microdata (inconvenient)'		),
-        vector ('application/x-nice-microdata'	, 'HTML+Microdata (pretty-printed table)'	),
-        vector ('application/microdata+json'	, 'Microdata/JSON'				),
-        vector ('text/csv'			, 'CSV'						),
-        vector ('text/tab-separated-values'	, 'TSV'						),
-        vector ('application/x-trig'		, 'TriG'					) );
+        vector ('Turtle'						, 'text/turtle'				),
+        vector ('Pretty-printed Turtle (slow!)'				, 'application/x-nice-turtle'		),
+        vector ('RDF/JSON'						, 'application/rdf+json'		),
+        vector ('RDF/XML'						, 'application/rdf+xml'			),
+        vector ('N-Triples'						, 'text/plain'				),
+        vector ('XHTML+RDFa'						, 'application/xhtml+xml'		),
+        vector ('ATOM+XML'						, 'application/atom+xml'		),
+        vector ('ODATA/JSON'						, 'application/odata+json'		),
+        vector ('JSON-LD'						, 'application/x-json+ld'		),
+        vector ('HTML (list)'						, 'text/x-html+ul'			),
+        vector ('HTML (table)'						, 'text/x-html+tr'			),
+        vector ('HTML+Microdata (inconvenient)'				, 'text/html'				),
+        vector ('HTML+Microdata (pretty-printed table)'			, 'application/x-nice-microdata'		),
+        vector ('Turtle-style HTML (for browsing, not for export)'	, 'text/x-html-nice-turtle'		),
+        vector ('Microdata/JSON'					, 'application/microdata+json'		),
+        vector ('CSV'							, 'text/csv'				),
+        vector ('TSV'							, 'text/tab-separated-values'		),
+        vector ('TriG'							, 'application/x-trig'			) );
+      if (can_cxml)
+        {
+          opts := vector_concat (opts, vector (
+            vector ('CXML (Pivot Collection)'				, 'text/cxml'				) ) );
+          if (can_qrcode)
+            opts := vector_concat (opts, vector (
+              vector ('CXML (Pivot Collection with QRcodes)'		, 'text/cxml+qrcode'			) ) );
+        }
     }
   else
     {
       if (not length (format)) format := 'text/html';
       opts := vector (
-	  vector ('auto'				, 'Auto'		),
-	  vector ('text/html'				, 'HTML'		),
-	  vector ('application/vnd.ms-excel'		, 'Spreadsheet'		),
-	  vector ('application/sparql-results+xml'	, 'XML'			),
-	  vector ('application/sparql-results+json'	, 'JSON'		),
-	  vector ('application/javascript'		, 'Javascript'		),
-	  vector ('text/plain'				, 'NTriples'		),
-        vector ('application/rdf+xml',		'RDF/XML') );
+        vector ('Auto'							, 'auto'				),
+        vector ('HTML'							, 'text/html'				),
+        vector ('Spreadsheet'						, 'application/vnd.ms-excel'		),
+        vector ('XML'							, 'application/sparql-results+xml'	),
+        vector ('JSON'							, 'application/sparql-results+json'	),
+        vector ('Javascript'						, 'application/javascript'		),
+        vector ('Turtle'						, 'text/turtle'				),
+        vector ('RDF/XML'						, 'application/rdf+xml'			),
+        vector ('N-Triples'						, 'text/plain'				),
+        vector ('CSV'							, 'text/csv'				),
+        vector ('TSV'							, 'text/tab-separated-values'		) );
+        if (can_cxml)
+          opts := vector_concat (opts, vector (
+        vector ('CXML (Pivot Collection)'				, 'text/cxml'				) ) );
     }
   foreach (any x in opts) do
     {
       http(sprintf ('			<option value="%V" %s>%V</option>\n',
-	  x[0], case when format = x[0] then 'selected="selected"' else '' end , x[1]));
-    }
-  http('			<option value="text/csv">CSV</option>\n');
-  http('			<option value="text/tab-separated-values">TSV</option>\n');
-  if (can_cxml)
-    {
-      http('			<option value="text/cxml">CXML (Pivot Collection)</option>\n');
-      if (can_qrcode)
-        http('			<option value="text/cxml+qrcode">CXML (Pivot Collection with QRcode)</option>\n');
+          x[1], case when format = x[1] then 'selected="selected"' else '' end , x[0]));
     }
 }
 ;
@@ -2962,6 +2975,16 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
     soap_ver := 12;
   else if (soap_action is not null)
     soap_ver := 11;
+
+  if (content_type = 'application/sparql-update')
+    {
+      declare b any;
+      b := http_body_read ();
+      query := string_output_string (b);
+      paramcount := length (params);
+      if (paramcount = 0 or (((2 = paramcount) and ('Content' = params[0])) and soap_ver = 0))
+	goto execute_query;
+    }
 
   content := null;
   declare exit handler for sqlstate '*' {
@@ -4214,7 +4237,8 @@ DB.DBA.http_rq_file_handler (in content any, in params any, in lines any, inout 
       strcasestr (accept, 'text/cxml') is not null or
       strcasestr (accept, 'text/cxml+qrcode') is not null or
       strcasestr (accept, 'text/csv') is not null or
-      strcasestr (accept, 'application/x-nice-turtle') is not null
+      strcasestr (accept, 'application/x-nice-turtle') is not null or
+      strcasestr (accept, 'text/x-html-nice-turtle') is not null
      )
     {
       http_request_status ('HTTP/1.1 303 See Other');
@@ -4392,7 +4416,27 @@ create procedure DB.DBA.RDF_GRANT_SPARQL_IO ()
     'grant execute on DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARQL_SD_PROBE to SPARQL_SPONGE',
     'grant execute on DB.DBA.SPARQL_SINV_IMP to SPARQL_SPONGE',
-    'grant select on DB.DBA.SPARQL_SINV_2 to SPARQL_SPONGE' );
+    'grant select on DB.DBA.SPARQL_SINV_2 to SPARQL_SPONGE',
+    'grant execute on DB.DBA.SPARQL_RESULTS_XML_WRITE_HEAD to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_XML_WRITE_RES to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_NS to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_HEAD to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_RES to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_ROW to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_TTL_WRITE_NS to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_TTL_WRITE_HEAD to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_TTL_WRITE_RES to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_NT_WRITE_NS to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_NT_WRITE_HEAD to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_NT_WRITE_RES to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_JSON_WRITE to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_CSV_WRITE to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_TSV_WRITE to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_HTML_NICE_TTL_WRITE to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_WRITE to SPARQL_SELECT' );
   foreach (varchar cmd in cmds) do
     {
       exec (cmd, state, msg);

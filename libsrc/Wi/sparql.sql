@@ -3784,9 +3784,9 @@ print_o:
 }
 ;
 
-create function DB.DBA.RDF_TRIPLES_TO_TTL_ENV (in tcount integer)
+create function DB.DBA.RDF_TRIPLES_TO_TTL_ENV (in tcount integer, in env_flags integer, in col_metas any, inout ses any)
 {
-  return vector (dict_new (__min (tcount, 16000)), 0, '', '', '', 0, 0, 0, 0);
+  return vector (dict_new (__min (tcount, 16000)), 0, '', '', '', 0, 0, env_flags, col_metas, ses);
 }
 ;
 
@@ -3801,7 +3801,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TTL (inout triples any, inout ses any)
       http ('# Empty TURTLE\n', ses);
       return;
     }
-  env := DB.DBA.RDF_TRIPLES_TO_TTL_ENV (tcount);
+  env := DB.DBA.RDF_TRIPLES_TO_TTL_ENV (tcount, 0, 0, ses);
   { whenever sqlstate '*' goto end_pred_sort;
     rowvector_subj_sort (triples, 1, 1);
 end_pred_sort: ;
@@ -3831,7 +3831,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TRIG (inout triples any, inout ses any)
       http ('# Empty TriG\n', ses);
       return;
     }
-  env := DB.DBA.RDF_TRIPLES_TO_TTL_ENV (tcount);
+  env := DB.DBA.RDF_TRIPLES_TO_TTL_ENV (tcount, 0, 0, ses);
   { whenever sqlstate '*' goto end_pred_sort;
     rowvector_subj_sort (triples, 1, 1);
 end_pred_sort: ;
@@ -6148,7 +6148,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL (inout triples_dict any) re
 create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_NICE_TTL (inout triples_dict any) returns long varchar
 {
   declare triples, ses any;
-  if (2500 <= dict_size (triples_dict)) -- The "nice" algorithm is too slow to be applied to large outputs. There's also a limit for 8000 namespace prefixes.
+  if (2666 < dict_size (triples_dict)) -- The "nice" algorithm is too slow to be applied to large outputs. There's also a limit for 8000 namespace prefixes.
     return DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL (triples_dict);
   ses := string_output ();
   if (214 <> __tag (triples_dict))
@@ -6161,6 +6161,24 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_NICE_TTL (inout triples_dict an
 ;
 
 create procedure DB.DBA.RDF_TRIPLES_TO_NICE_TTL (inout triples any, inout ses any)
+{
+  declare tcount integer;
+  tcount := length (triples);
+  if (0 = tcount)
+    {
+      http ('# Empty Turtle\n', ses);
+      return;
+    }
+  if (2666 < tcount) -- The "nice" algorithm is too slow to be applied to large outputs. There's also a limit for 8000 namespace prefixes.
+    {
+      DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
+      return;
+    }
+  DB.DBA.RDF_TRIPLES_TO_NICE_TTL_IMPL (triples, 0, ses);
+}
+;
+
+create procedure DB.DBA.RDF_TRIPLES_TO_NICE_TTL_IMPL (inout triples any, in env_flags integer, inout ses any)
 {
   declare env, printed_triples_mask any;
   declare rdf_first_iid, rdf_rest_iid, rdf_nil_iid IRI_ID;
@@ -6180,20 +6198,10 @@ create procedure DB.DBA.RDF_TRIPLES_TO_NICE_TTL (inout triples any, inout ses an
   declare prefixes_are_printed integer;
   declare prev_s, prev_p varchar;
   tcount := length (triples);
-  if (0 = tcount)
-    {
-      http ('# Empty Turtle\n', ses);
-      return;
-    }
-  if (2500 <= tcount) -- The "nice" algorithm is too slow to be applied to large outputs. There's also a limit for 8000 namespace prefixes.
-    {
-      DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
-      return;
-    }
   rowvector_obj_sort (triples, 2, 1);
   rowvector_subj_sort (triples, 1, 1);
   rowvector_subj_sort (triples, 0, 1);
-  env := DB.DBA.RDF_TRIPLES_TO_TTL_ENV (tcount);
+  env := DB.DBA.RDF_TRIPLES_TO_TTL_ENV (tcount, env_flags, 0, ses);
   rdf_first_iid	:= iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#first');
   rdf_rest_iid	:= iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#rest');
   rdf_nil_iid	:= iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#nil');
@@ -16607,6 +16615,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_TRIPLES_TO_HTML_TR to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_TRIPLES_TO_HTML_NICE_TTL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_TRIPLES_TO_ODATA_JSON to SPARQL_SELECT',
@@ -16619,6 +16628,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_INIT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_ACC to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_FIN to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_HTML_NICE_TTL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_INIT to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_ACC to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_FIN to SPARQL_SELECT',
@@ -16639,6 +16649,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_LD to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_MICRODATA to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_NICE_MICRODATA to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_NICE_TTL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_MICRODATA to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_CSV to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TSV to SPARQL_SELECT',
