@@ -817,8 +817,10 @@ bif_curdatetime (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t res = dk_alloc_box (DT_LENGTH, DV_DATETIME);
   dt_now (res);
   if (args && BOX_ELEMENTS (args) > 0)
-    fract = (long) bif_long_arg (qst, args, 0, "curdatetime");
-  DT_SET_FRACTION (res, fract);
+    {
+      fract = (long) bif_long_arg (qst, args, 0, "curdatetime");
+      DT_SET_FRACTION (res, fract);
+    }
   return res;
 }
 
@@ -840,8 +842,10 @@ bif_curtime (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t res = dk_alloc_box (DT_LENGTH, DV_DATETIME);
   dt_now (res);
   if (args && BOX_ELEMENTS (args) > 0)
-    fract = (long) bif_long_arg (qst, args, 0, "curtime");
-  DT_SET_FRACTION (res, fract);
+    {
+      fract = (long) bif_long_arg (qst, args, 0, "curtime");
+      DT_SET_FRACTION (res, fract);
+    }
   dt_make_day_zero (res);
   return res;
 }

@@ -376,6 +376,47 @@ date2weekday (const int year, const int month, const int day)
   return ((julian_days > 2) ? (int) julian_days - 2 : (int) julian_days + 5);
 }
 
+#ifdef WIN32
+struct timezone
+{
+  int  tz_minuteswest;
+  int  tz_dsttime;
+};
+
+int 
+gettimeofday (struct timeval *tv, struct timezone *tz)
+{
+  FILETIME ft;
+  uint64 res = 0;
+  static int tzflag;
+
+  if (NULL != tv)
+    {
+      GetSystemTimeAsFileTime(&ft);
+
+      res |= ft.dwHighDateTime;
+      res <<= 32;
+      res |= ft.dwLowDateTime;
+
+      /* converting file time to Unix epoch 1970/1/1 */
+      res -= 11644473600000000ULL;
+      res /= 10;  /* convert into microseconds */
+      tv->tv_sec = (long) (res / 1000000UL);
+      tv->tv_usec = (long) (res % 1000000UL);
+    }
+  if (NULL != tz)
+    {
+      struct tm ltm;
+      time_t tim;
+      tim = time (NULL);
+      ltm = *localtime (&tim);
+      tz->tz_minuteswest = dt_local_tz;
+      tz->tz_dsttime = ltm.tm_isdst;
+    }
+
+  return 0;
+}
+#endif
 
 int dt_local_tz;		/* minutes from GMT */
 
@@ -385,31 +426,23 @@ dt_now (caddr_t dt)
   static time_t last_time;
   static long last_frac;
   long day;
-  time_t tim = time (NULL);
+  struct timeval tv;
   struct tm tm;
 #if defined(HAVE_GMTIME_R)
   struct tm result;
-
-  tm = *(struct tm *)gmtime_r (&tim, &result);
+#endif
+  gettimeofday (&tv, NULL);
+#if defined(HAVE_GMTIME_R)
+  tm = *(struct tm *)gmtime_r (&tv.tv_sec, &result);
 #else
-  tm = *(struct tm *)gmtime (&tim);
+  tm = *(struct tm *)gmtime (&tv.tv_sec);
 #endif
   day = date2num (tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
   DT_SET_DAY (dt, day);
   DT_SET_HOUR (dt, tm.tm_hour);
   DT_SET_MINUTE (dt, tm.tm_min);
   DT_SET_SECOND (dt, tm.tm_sec);
-  if (tim == last_time)
-    {
-      last_frac++;
-      DT_SET_FRACTION (dt, (last_frac * 1000));
-    }
-  else
-    {
-      last_frac = 0;
-      last_time = tim;
-      DT_SET_FRACTION (dt, 0);
-    }
+  DT_SET_FRACTION (dt, tv.tv_usec);
   DT_SET_TZ (dt, dt_local_tz);
   DT_SET_DT_TYPE (dt, DT_TYPE_DATETIME);
 }
