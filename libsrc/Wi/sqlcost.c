@@ -1809,6 +1809,8 @@ dfe_text_cost (df_elt_t * dfe, float *u1, float * a1, int text_order_anyway)
       else
 	text_selectivity = 0.001;
       n_text_hits = ot_tbl_size * text_selectivity;
+      text_pred->dfe_arity = n_text_hits;
+
       if (text_pred->_.text.geo)
 	text_key_cost = dbe_key_unit_cost (text_key->key_geo_table->tb_primary_key);
       else
@@ -1816,7 +1818,8 @@ dfe_text_cost (df_elt_t * dfe, float *u1, float * a1, int text_order_anyway)
       if (!text_order_anyway && sqlo_is_text_after_test (dfe, text_pred))
 	{
 	  /* the id is given, text match is an after test */
-	  total_cost += 1.5 * text_key_cost * total_card;
+	  total_cost += 2.5 * text_key_cost * total_card;
+	  text_pred->dfe_arity = text_selectivity;
 	  total_card *= text_selectivity;
 	}
       else

@@ -5399,6 +5399,7 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
     {
       fill_dfe = (df_elt_t *) t_box_copy ((caddr_t) dfe);
       fill_dfe->_.table.inx_op = NULL;
+      fill_dfe->_.table.index_path = NULL;
       fill_dfe->_.table.hash_role = HR_FILL;
       fill_dfe->_.table.is_hash_filler_unique = dfe->_.table.is_unique;
       sqlo_best_hash_filler (so, fill_dfe, remote, &org_preds, &post_preds, &fill_unit, &fill_arity, &ov);
@@ -5429,6 +5430,7 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
       dfe->_.table.single_locus = 1;
     }
   dfe->_.table.inx_op = NULL; /* if hash is better, no inx op */
+  dfe->_.table.index_path = NULL; /* if hash is better, no inx path */
   dfe->_.table.hash_role = HR_REF;
   dfe->_.table.out_cols = NULL;
   dfe->_.table.hash_filler = fill_dfe;
