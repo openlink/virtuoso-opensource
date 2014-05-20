@@ -692,8 +692,23 @@ bif_geo_pred (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, char * f, 
   geo_t * g1 = bif_geo_arg (qst, args, 0, f, GEO_ARG_ANY_NULLABLE);
   geo_t * g2 = bif_geo_arg (qst, args, 1, f, GEO_ARG_ANY_NULLABLE);
   double prec = 0;
+  int srid1, srid2;
   if (BOX_ELEMENTS (args) > 2)
     prec = bif_double_arg (qst, args, 2, f);
+  srid1 = GEO_SRID (g1->geo_srcode);
+  srid2 = GEO_SRID (g2->geo_srcode);
+  if (srid2 != srid1)
+    {
+      caddr_t err = NULL;
+      caddr_t res;
+      geo_t *g2_cvt = geo_default_srid_transform_cbk (qst, g2, srid1, &err);
+      if (NULL != err)
+        sqlr_resignal (err);
+      res = box_num (geo_pred (g1, g2_cvt, op, prec));
+      if (g2_cvt != g2)
+        dk_free_box ((caddr_t)g2_cvt);
+      return res;
+    }
   return box_num (geo_pred (g1, g2, op, prec));
 }
 
@@ -1845,6 +1860,25 @@ bif_st_transform_by_custom_projection (caddr_t * qst, caddr_t * err_ret, state_s
       sqlr_new_error ("22023", "GEOxx", "Custom projection '%.300s' failed: %.500s", proj_name, err);
     }
   return (caddr_t) res;
+}
+
+geo_t *
+geo_dummy_srid_transform_cbk (caddr_t *qst, geo_t *g, int dest_srid, caddr_t *err_ret)
+{
+  int orig_srid = GEO_SRID (g->geo_srcode);
+  if (dest_srid == orig_srid)
+    return g;
+  err_ret[0] = srv_make_new_error ("22023", "GEOxx", "The function requires an implicit call of ST_Transform(), because argument with SRID %d should be transformed to SRID %d; please try plugin \"v7proj4\" or similar",
+     orig_srid, dest_srid );
+  return NULL;
+}
+
+geo_srid_transform_cbk_t *geo_default_srid_transform_cbk = geo_dummy_srid_transform_cbk;
+
+void
+geo_set_default_srid_transform_cbk (geo_srid_transform_cbk_t *cbk)
+{
+  geo_default_srid_transform_cbk = cbk;
 }
 
 void

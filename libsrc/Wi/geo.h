@@ -366,6 +366,10 @@ EXE_EXPORT (void, geo_modify_by_translate, (geo_t *g, geoc dX, geoc dY, geoc dZ)
 EXE_EXPORT (void, geo_modify_by_transscale, (geo_t *g, geoc dX, geoc dY, geoc Xfactor, geoc Yfactor));
 EXE_EXPORT (void, geo_modify_by_affine2d, (geo_t *g, geoc XXa, geoc XYb, geoc YXd, geoc YYe, geoc Xoff, geoc Yoff));
 
+typedef geo_t *geo_srid_transform_cbk_t (caddr_t *qst, geo_t *g, int dest_srid, caddr_t *err_ret);
+EXE_EXPORT (void, geo_set_default_srid_transform_cbk, (geo_srid_transform_cbk_t *cbk));
+extern geo_srid_transform_cbk_t *geo_default_srid_transform_cbk;
+
 /*! Map projection callback that gets pointer to projection, longitude and latitude of a point, fills in X and Y of corresponding point on map and returns NULL on success or error message otherwise. */
 typedef const char *geo_proj_point_cbk_t (void *geo_proj, geoc longP, geoc latP, double *retX, double *retY);
 
