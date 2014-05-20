@@ -2457,7 +2457,7 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, ch
       to_free_head = 0;
     }
 
-  if (ctx->hcctx_is_gzip && DV_STRINGP (ret))
+  if (ctx->hcctx_is_gzip && DV_STRINGP (ret) && box_length (ret) > 2)
     {
       dk_session_t *out = strses_allocate ();
       strses_enable_paging (out, http_ses_size);
