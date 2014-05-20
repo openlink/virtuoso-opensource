@@ -4980,6 +4980,12 @@ sqlg_add_breakup_node (sql_comp_t * sc, data_source_t ** head, state_slot_t *** 
 	  cv_artm (code, (ao_func_t) box_identity, v, ssl, NULL);
 	  ssl_out[inx] = v;
 	}
+      if (inx >= n_per_set)
+	{
+	  state_slot_t * prev = ssl_out[inx % n_per_set];
+	  if (prev->ssl_dtp != DV_ANY && dtp_canonical[ssl->ssl_dtp] != dtp_canonical[prev->ssl_dtp])
+	    prev->ssl_dtp = DV_ANY;
+	}
     }
   END_DO_BOX;
   if (*code)
