@@ -684,7 +684,7 @@ create procedure
 rdf_view_dv_to_sql_str_type (in _dv varchar)
 {
    if (_dv = 189 or _dv = 188 or _dv = 247) return 'integer';
-   else if (_dv = 182 or _dv = 125 or _dv = 131) return 'varchar';
+   else if (_dv = 182 or _dv = 125 or _dv = 131 or _dv = 222) return 'varchar';
    else if (__tag of double precision = _dv) return 'numeric';
    else if (__tag of real = _dv) return 'float';
    else if (__tag of numeric = _dv) return 'numeric';
@@ -701,7 +701,7 @@ create procedure
 rdf_view_dv_to_xsd_str_type (in _dv varchar)
 {
    if (_dv = 189 or _dv = 188 or _dv = 247) return 'int';
-   else if (_dv = 182 or _dv = 125 or _dv = 131 or _dv = 132) return 'string';
+   else if (_dv = 182 or _dv = 125 or _dv = 131 or _dv = 132 or _dv = 222) return 'string';
    else if (__tag of double precision = _dv) return 'numeric';
    else if (__tag of real = _dv) return 'float';
    else if (__tag of numeric = _dv) return 'numeric';

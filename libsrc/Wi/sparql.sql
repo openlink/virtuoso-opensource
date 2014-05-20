@@ -13233,6 +13233,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
         when __tag of date then 'date'
         when __tag of time then 'time'
         when __tag of long varbinary then 'longvarbinary'
+        when __tag of varbinary then 'longvarbinary'
         when 188 then 'integer'
         when __tag of integer then 'integer'
         when __tag of varchar then 'varchar'
