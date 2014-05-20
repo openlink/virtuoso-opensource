@@ -8113,7 +8113,7 @@ xn_xe_from_text (xpath_node_t * xn, query_instance_t * qi)
 	}
       /* No break. If we're not sure that this is a serialized vector that this is a text */
     case XE_PLAIN_TEXT:
-      if (DV_STRINGP (val))
+      if (DV_STRING == dtp || DV_UNAME == dtp || DV_BIN == dtp)
 	str = val;
       else if (DV_WIDESTRINGP (val))
 	{
