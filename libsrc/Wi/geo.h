@@ -114,6 +114,7 @@ typedef double geo_measure_t;	/*!< Type of M coordinate */
 
 #define geoc_min(a,b) (((a)<(b))?(a):(b))
 #define geoc_max(a,b) (((a)<(b))?(b):(a))
+#define GEOC_SWAP(a,b) do { geoc swap = (a); (a) = (b); (b) = swap; } while (0)
 #define double_min(a,b) (((a)<(b))?(a):(b))
 #define double_max(a,b) (((a)<(b))?(b):(a))
 
@@ -274,8 +275,13 @@ extern int geo_pred (geo_t * g1, geo_t * g2, int op, double prec);
 struct dbe_table_s;
 extern int64 geo_estimate (struct dbe_table_s * tb, geo_t * g, int op, double prec, slice_id_t slice);
 
-#define DEG_TO_RAD (M_PI / 180)
-#define KM_TO_DEG (360 / (EARTH_RADIUS_GEOM_MEAN_KM * 2 * M_PI))
+#ifndef DEG_TO_RAD
+#define DEG_TO_RAD (M_PI / 180.0)
+#endif
+#ifndef RAD_TO_DEG
+#define RAD_TO_DEG (180.0 / M_PI)
+#endif
+#define KM_TO_DEG (360.0 / (EARTH_RADIUS_GEOM_MEAN_KM * 2.0 * M_PI))
 #define GEO_SET_LAT_DEG_BY_KM(deg,km) do { (deg) = (km) * KM_TO_DEG; } while (0)
 #define GEO_LON_TO_LAT_PER_DEG_RATIO(lat_deg) cos((lat_deg)/DEG_TO_RAD)
 #define GEO_SET_LON_DEG_BY_KM(deg,km,lat_deg) do { double latfactor = GEO_LON_TO_LAT_PER_DEG_RATIO(lat_deg); (deg) = ((km) > (latfactor * 360.0 / KM_TO_DEG)) ? 360.0 : ((km) * KM_TO_DEG / latfactor); } while (0)

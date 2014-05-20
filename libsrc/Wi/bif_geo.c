@@ -651,6 +651,17 @@ bif_st_srid (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_num (GEO_SRID(g->geo_srcode));
 }
 
+void
+geo_set_srcode_trav (geo_t *g, int srcode)
+{
+  g->geo_srcode = srcode;
+  if (g->geo_flags & (GEO_A_COMPOUND | GEO_A_RINGS | GEO_A_MULTI | GEO_A_ARRAY))
+    {
+      int ctr, ct = g->_.parts.len;
+      for (ctr = 0; ctr < ct; ctr++)
+        geo_set_srcode_trav (g->_.parts.items[ctr], srcode);
+    }
+}
 
 caddr_t
 bif_st_setsrid (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -661,7 +672,7 @@ bif_st_setsrid (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return NEW_DB_NULL;
   srid = bif_long_arg (qst, args, 1, "st_setsrid");
   cp = (geo_t*)box_copy ((caddr_t)g);
-  cp->geo_srcode = GEO_SRCODE_OF_SRID(srid);
+  geo_set_srcode_trav (cp, GEO_SRCODE_OF_SRID(srid));
   return (caddr_t)cp;
 }
 
@@ -758,9 +769,6 @@ geo_point_intersects_line (geo_srcode_t srcode, geoc pX, geoc pY, geoc p1X, geoc
 }
 
 #define GEO_SCALAR_PRODUCT(oX,oY,aX,aY,bX,bY) (((aX)-(oX))*((bY)-(oY)) - ((aY)-(oY))*((bX)-(oX)))
-#define GEOC_SWAP(a,b) do { geoc swap = (a); (a) = (b); (b) = swap; } while (0)
-#define GEOC_MAX(a,b) (((a) > (b)) ? (a) : (b))
-#define GEOC_MIN(a,b) (((a) < (b)) ? (a) : (b))
 int
 geo_line_intersects_XYbox (geo_srcode_t srcode, geoc p1X, geoc p1Y, geoc p2X, geoc p2Y, geo_XYbox_t *b, double prec)
 {
@@ -818,7 +826,7 @@ geo_range_intersects_range (geoc p1c, geoc p2c, geoc q3c, geoc q4c, double prec_
 {
   if (p1c > p2c) GEOC_SWAP (p1c, p2c);
   if (q3c > q4c) GEOC_SWAP (q3c, q4c);
-  if (GEOC_MAX (p1c, q3c) + prec_norm <= GEOC_MIN (p2c, q4c))
+  if (geoc_max (p1c, q3c) + prec_norm <= geoc_min (p2c, q4c))
     return 1;
   return 0;
 }
