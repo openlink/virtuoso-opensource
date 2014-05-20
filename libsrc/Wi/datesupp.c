@@ -383,7 +383,7 @@ struct timezone
   int  tz_dsttime;
 };
 
-int 
+static int
 gettimeofday (struct timeval *tv, struct timezone *tz)
 {
   FILETIME ft;
@@ -399,10 +399,10 @@ gettimeofday (struct timeval *tv, struct timezone *tz)
       res |= ft.dwLowDateTime;
 
       /* converting file time to Unix epoch 1970/1/1 */
-      res -= 11644473600000000ULL;
+      res -= 116444736000000000ULL;
       res /= 10;  /* convert into microseconds */
-      tv->tv_sec = (long) (res / 1000000UL);
-      tv->tv_usec = (long) (res % 1000000UL);
+      tv->tv_sec = (long) (res / 1000000ULL);
+      tv->tv_usec = (long) (res % 1000000ULL);
     }
   if (NULL != tz)
     {
@@ -423,8 +423,7 @@ int dt_local_tz;		/* minutes from GMT */
 void
 dt_now (caddr_t dt)
 {
-  static time_t last_time;
-  static long last_frac;
+  static time_t tim;
   long day;
   struct timeval tv;
   struct tm tm;
@@ -432,10 +431,11 @@ dt_now (caddr_t dt)
   struct tm result;
 #endif
   gettimeofday (&tv, NULL);
+  tim = (time_t)tv.tv_sec;
 #if defined(HAVE_GMTIME_R)
-  tm = *(struct tm *)gmtime_r (&tv.tv_sec, &result);
+  tm = *(struct tm *)gmtime_r (&tim, &result);
 #else
-  tm = *(struct tm *)gmtime (&tv.tv_sec);
+  tm = *(struct tm *)gmtime (&tim);
 #endif
   day = date2num (tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
   DT_SET_DAY (dt, day);
