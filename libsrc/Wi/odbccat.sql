@@ -123,7 +123,7 @@ create procedure
 sql_tables (in dsn varchar, in qual varchar, in owner varchar, in name varchar, in typ varchar)
 {
   declare result, infos any;
-  declare _qual, _owner, _name, _typ varchar;
+  declare _qual, _owner, _name, _typ, _qualesc varchar;
   _qual := qual;
   _owner := owner;
   _name := name;
@@ -138,8 +138,13 @@ sql_tables (in dsn varchar, in qual varchar, in owner varchar, in name varchar, 
   if (1 = sql_tables_pre_infohub_dcsyb30 (infos, typ));
   if (1 = sql_tables_pre_excel_drv (infos, typ));
 
+  if (get_keyword (200, infos, 2) > 2)
+    _qualesc := sql_escape_meta_identifier (dsn, qual);
+  else
+    _qualesc := qual;
+
   result := _sql_tables (dsn,
-	      sql_escape_meta_identifier (dsn, qual),
+	      _qualesc,
 	      sql_escape_meta_identifier (dsn, owner),
 	      sql_escape_meta_identifier (dsn, name),
 	      typ);
