@@ -3993,7 +3993,7 @@ end_pred_sort: ;
   ns_dict := dict_new (case (print_top_level) when 0 then 10 else __min (tcount, 16000) end);
   dict_put (ns_dict, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'rdf');
   dict_put (ns_dict, 'http://www.w3.org/2000/01/rdf-schema#', 'rdfs');
-  env := vector (ns_dict, 0, 0, '', '', 0, 0, 0, 0);
+  env := vector (ns_dict, 0, 0, '', '', 0, 0, 0, 0, 0);
   if (print_top_level)
     {
        http ('<?xml version="1.0" encoding="utf-8" ?>\n<rdf:RDF\n\txmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"\n\txmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"', ses);
