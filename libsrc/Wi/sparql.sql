@@ -4264,11 +4264,9 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
       http ('"', ses);
     }
   http ('>\n<head><title>RDFa+XHTML document</title></head><body>\n', ses);
-  http (sprintf ('<p>This document contains %d facts in XHTML+RDFa format.</p>',
+  http (sprintf ('<p>This HTML document contains %d embedded RDF statements represented using (X)HTML+RDFa notation.</p>',
     tcount), ses);
-  http ('<p>A generic web browser may not display them but the document can be saved on disk and used by some appropriate program or sent to a third party.
-Use "Save As" or "Send To" menu item of the browser; choose "HTML" file type, not "text file" or "web archive".
-</p>', ses);
+  http ('<p>The embedded RDF content will be recognized by any processor of (X)HTML+RDFa.</p>', ses);
   http ('\n<table border="1">\n<thead><tr><th>Namespace Prefix</th><th>Namespace URI</th></tr></thead><tbody>', ses);
   for (ctr := len - 2; ctr >= 0; ctr := ctr-2)
     {
@@ -4277,7 +4275,6 @@ Use "Save As" or "Send To" menu item of the browser; choose "HTML" file type, no
       http ('</td></tr>', ses);
     }
   http ('\n</tbody></table>', ses);
-  http ('\n<p>The rest of the document may look like garbage for humans or not displayed by the browser.</p>', ses);
   http ('\n<table border="1">\n<thead><tr><th>Subject</th><th>Predicate</th><th>Object</th></tr></thead>', ses);
   env := vector (0, 0, 0, null);
   rowvector_subj_sort (triples, 1, 1);
@@ -4833,11 +4830,9 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
     }
   http ('<html xmlns="http://www.w3.org/1999/xhtml"', ses);
   http ('>\n<head><title>HTML Microdata document</title></head><body>\n', ses);
-  http (sprintf ('<p>This document contains %d facts in HTML Microdata format.</p>',
+  http (sprintf ('<p>This HTML5 document contains %d embedded RDF statements represented using HTML+Microdata notation.</p>',
     tcount), ses);
-  http ('<p>A generic web browser may not display them properly but the document can be saved on disk and used by some appropriate program or sent to a third party.
-Use "Save As" or "Send To" menu item of the browser; choose "HTML" file type, not "text file" or "web archive".
-</p><p>The rest of the document may look like garbage for humans or not displayed by the browser.</p>', ses);
+  http ('<p>The embedded RDF content will be recognized by any processor of HTML5 Microdata.</p>', ses);
   http ('\n<table><tr><th>Prefix</th><th>Namespace IRI</th></tr>', ses);
   nslist := dict_to_vector (nsdict, 0);
   len := length (nslist);
@@ -5030,11 +5025,9 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
     }
   http ('<html xmlns="http://www.w3.org/1999/xhtml"', ses);
   http ('>\n<head><title>HTML Based Entity Description (with embedded Microdata)</title></head><body>\n', ses);
-  http (sprintf ('<p>This document contains %d facts in HTML Microdata format.</p>',
+  http (sprintf ('<p>This HTML5 document contains %d embedded RDF statements represented using HTML+Microdata notation.</p>',
     tcount), ses);
-  http ('<p>If you are viewing it in browser and want to save this document or sent it to a third party,
-use "Save As" or "Send To" menu item of the browser. Choose "HTML" file type, not "text file" or "web archive".
-</p><p>Some portions of the document may look like garbage for humans or not displayed by the browser, nevertheless RDF-aware programs can read that data.</p>', ses);
+  http ('<p>The embedded RDF content will be recognized by any processor of HTML5 Microdata.</p>', ses);
 
   -- http ('\n<table><tr><th>Prefix</th><th>Namespace IRI</th></tr>', ses);
   -- nslist := dict_to_vector (nsdict, 0);
