@@ -3866,7 +3866,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
   DO_SET (dbe_column_t *, part, &dfe->_.table.key->key_parts)
     {
       int col_already_eq;
-      df_elt_t * lower = NULL;
+      df_elt_t * lower = NULL;
       df_elt_t * upper = NULL;
       lower = sqlo_key_part_best (part, dfe->_.table.col_preds, 0);
       upper = sqlo_key_part_best (part, dfe->_.table.col_preds, 1);
