@@ -1248,6 +1248,20 @@ sqlo_dt_col_card (sqlo_t * so, df_elt_t * col_dfe, df_elt_t * exp)
 
 
 df_elt_t *
+dfe_in_loc_dt (df_elt_t * dt_dfe, df_elt_t * exp)
+{
+  /* the exp dfe derived from the tree is not the same as the dfe representing this in a union term after the union term has been copied.  The dfe corresponding to the tree by sqlo_df_elt may be unplaced and have no locus while the copy in the placed dt is placed and has the locus.  So get the correspomding placed dfe */
+  df_elt_t * dfe;
+  if (DFE_DT != dt_dfe->dfe_type)
+    return exp;
+  for (dfe = dt_dfe->_.sub.first; dfe; dfe = dfe->dfe_next)
+    if (box_equal (exp->dfe_tree, dfe->dfe_tree))
+      return dfe;
+  return exp;
+}
+
+
+df_elt_t *
 sqlo_dt_nth_col (sqlo_t * so, df_elt_t * super, df_elt_t * dt_dfe, int inx, df_elt_t * col_dfe, int is_qexp_term)
 {
   char * col_alias;
@@ -1283,7 +1297,7 @@ sqlo_dt_nth_col (sqlo_t * so, df_elt_t * super, df_elt_t * dt_dfe, int inx, df_e
 	  exp_alias = sqlo_df (so, (ST*) t_list (3, COL_DOTTED, dt_dfe->_.sub.ot->ot_new_prefix, col_alias));
 	  if (is_qexp_term &&
 	      IS_BOX_POINTER (dt_dfe->dfe_locus) && dt_dfe->dfe_locus != super->dfe_locus)
-	    dfe_loc_result (dt_dfe->dfe_locus, super, exp);
+	    dfe_loc_result (dt_dfe->dfe_locus, super, dfe_in_loc_dt (dt_dfe, exp));
 	  else
 	    dfe_loc_result (dt_dfe->dfe_locus, super, exp_alias);
 	}
