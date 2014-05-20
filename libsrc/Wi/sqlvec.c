@@ -3398,6 +3398,7 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
       else
 	cv_vec_slots (sc, en->src_gen.src_after_code, NULL, NULL, &ign);
       sqlg_new_vec_ssls (sc, &en->src_gen);
+      qn_add_prof (sc, qn);
       return;
     }
   if (!src_resets_done)
