@@ -122,8 +122,7 @@ extern query_t *dbg_sql_compile_static (const char *file, int line,
 extern void static_qr_dllist_append (query_t *qr, int gpf_on_dupe);
 extern void static_qr_dllist_remove (query_t *qr);
 #else
-extern query_t *sql_compile_static (const char *string2, client_connection_t * cli, caddr_t * err,
-    volatile int store_procs);
+EXE_EXPORT (query_t *, sql_compile_static, (const char *string2, client_connection_t * cli, caddr_t * err, volatile int store_procs));
 #define static_qr_dllist_append(qr,g)
 #define static_qr_dllist_remove(qr)
 #endif

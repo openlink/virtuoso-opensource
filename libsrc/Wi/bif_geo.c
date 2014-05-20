@@ -1514,8 +1514,11 @@ bif_st_ewkt_read (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   geo_t *res;
   caddr_t strg = bif_string_arg (qst, args, 0, "st_ewkt_read");
+  int srid = SRID_DEFAULT;
   caddr_t err = NULL;
-  res = ewkt_parse (strg, &err);
+  if (1 < BOX_ELEMENTS (args))
+    srid = bif_long_arg (qst, args, 1, "st_ewkt_read");
+  res = ewkt_parse_2 (strg, srid, &err);
   if (NULL != err)
     sqlr_resignal (err);
   geo_calc_bounding (res, GEO_CALC_BOUNDING_DO_ALL);

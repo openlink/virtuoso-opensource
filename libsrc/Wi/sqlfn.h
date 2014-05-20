@@ -245,9 +245,8 @@ query_t * qr_recompile (query_t * qr, caddr_t * err_ret);
 
 caddr_t lc_get_col (local_cursor_t * lc, char * name);
 
-void lc_free (local_cursor_t * lc);
-
-long lc_next (local_cursor_t * lc);
+EXE_EXPORT (void, lc_free, (local_cursor_t * lc));
+EXE_EXPORT (long, lc_next, (local_cursor_t * lc));
 #define LC_FREE(lc) if (lc) \
     		      lc_free (lc)
 
@@ -710,11 +709,9 @@ void ssl_alias (state_slot_t * alias, state_slot_t * real);
 
 void ssl_copy_types (state_slot_t * to, state_slot_t * from);
 
-caddr_t qr_rec_exec (query_t * qr, client_connection_t * cli,
-    local_cursor_t ** lc_ret, query_instance_t * caller, stmt_options_t * opts,
-    long n_pars, ...);
+EXE_EXPORT (caddr_t, qr_rec_exec, (query_t * qr, client_connection_t * cli, local_cursor_t ** lc_ret, query_instance_t * caller, stmt_options_t * opts, long n_pars, ...));
 
-caddr_t lc_nth_col (local_cursor_t * lc, int n);
+EXE_EXPORT (caddr_t, lc_nth_col, (local_cursor_t * lc, int n));
 
 caddr_t sel_out_get (caddr_t * out_copy, int inx, state_slot_t * sl);
 
@@ -785,6 +782,10 @@ void pl_source_free (pl_source_t * pls);
 
 int err_is_state (caddr_t err, char * state);
 
+typedef void srv_global_init_postponed_action_t (char *mode);
+extern dk_set_t srv_global_init_postponed_actions;
+EXE_EXPORT (dk_set_t *, get_srv_global_init_postponed_actions_ptr, (void));
+EXE_EXPORT (client_connection_t *, get_bootstrap_cli, (void));
 EXE_EXPORT (void, local_commit, (client_connection_t * cli));
 EXE_EXPORT (void, local_start_trx, (client_connection_t * cli));
 EXE_EXPORT (void, local_commit_end_trx, (client_connection_t * cli));

@@ -613,10 +613,7 @@ geo_long360add (geo_t * g)
 	  }
 	return res;
       }
-    case GEO_LINESTRING:
-    case GEO_RING:
-    case GEO_ARCSTRING:
-    case (GEO_ARCSTRING | GEO_A_CLOSED):
+    case GEO_LINESTRING: case GEO_RING: case GEO_ARCSTRING: case (GEO_ARCSTRING | GEO_A_CLOSED):
       {
 /* The processing consists of two phases.
 First we check whether the polygon is weird or wrapped,
@@ -638,8 +635,7 @@ For a polygon, being weird is not necessarily an error, esp. if it clearly has c
 	  res |= geo_long360add_pline_total_shift (g);
 	return res;
       }
-    case GEO_POLYGON:
-    case GEO_CURVEPOLYGON:
+    case GEO_POLYGON: case GEO_CURVEPOLYGON:
       {
 	int res, idx = g->_.parts.len;
 	if (0 == idx)
@@ -655,8 +651,7 @@ For a polygon, being weird is not necessarily an error, esp. if it clearly has c
 	  }
 	return res;
       }
-    case GEO_CURVE:
-    case GEO_CLOSEDCURVE:
+    case GEO_CURVE: case GEO_CLOSEDCURVE:
       {
 	int res, idx, len = g->_.parts.len;
 	int long_plustominus_count = 0;
@@ -668,9 +663,7 @@ For a polygon, being weird is not necessarily an error, esp. if it clearly has c
 	  return res;
 	for (idx = 1; idx < len; idx++)
 	  {
-	    res |=
-		(geo_long360add_pline_probe (g->_.parts.items[idx], &long_plustominus_count,
-		    &long_minustoplus_count) & ~GEO_LONG360ADD_STARTS_AT_RIGHT);
+            res |= (geo_long360add_pline_probe (g->_.parts.items[idx], &long_plustominus_count, &long_minustoplus_count) & ~GEO_LONG360ADD_STARTS_AT_RIGHT);
 	    if (res & (GEO_LONG360ADD_WEIRD | GEO_LONG360ADD_ALREADY_CHANGED))
 	      return res;
 	  }
@@ -687,10 +680,7 @@ For a polygon, being weird is not necessarily an error, esp. if it clearly has c
 	  }
 	return res;
       }
-    case GEO_MULTI_POLYGON:
-    case GEO_COLLECTION:
-    case GEO_MULTI_LINESTRING:
-    case GEO_MULTI_CURVE:
+    case GEO_MULTI_POLYGON: case GEO_COLLECTION: case GEO_MULTI_LINESTRING: case GEO_MULTI_CURVE:
       {
 	int res = 0;
 	int already_changed_count = 0;
@@ -708,8 +698,7 @@ For a polygon, being weird is not necessarily an error, esp. if it clearly has c
 	  res |= GEO_LONG360ADD_ALREADY_CHANGED;
 	return res;
       }
-    default:
-      GPF_T;
+    default: GPF_T;
     }
   return 0;
 }
@@ -742,20 +731,20 @@ geo_calc_bounding_arc (geo_t * g)
   int inx, len = g->_.pline.len;
   if (g->geo_flags & GEO_A_CLOSED)
     {
-      geo_XYbox_of_arc (g->_.pline.Xs[len - 2], g->_.pline.Ys[len - 2], g->_.pline.Xs[len - 1], g->_.pline.Ys[len - 1],
-	  g->_.pline.Xs[0], g->_.pline.Ys[0], &Xmin, &Ymin, &Xmax, &Ymax);
+      geo_XYbox_of_arc (g->_.pline.Xs[len-2], g->_.pline.Ys[len-2], g->_.pline.Xs[len-1], g->_.pline.Ys[len-1], g->_.pline.Xs[0], g->_.pline.Ys[0],
+        &Xmin, &Ymin, &Xmax, &Ymax);
       inx = len - 4;
     }
   else
     {
-      geo_XYbox_of_arc (g->_.pline.Xs[len - 3], g->_.pline.Ys[len - 3], g->_.pline.Xs[len - 2], g->_.pline.Ys[len - 2],
-	  g->_.pline.Xs[len - 1], g->_.pline.Ys[len - 1], &Xmin, &Ymin, &Xmax, &Ymax);
+      geo_XYbox_of_arc (g->_.pline.Xs[len-3], g->_.pline.Ys[len-3], g->_.pline.Xs[len-2], g->_.pline.Ys[len-2], g->_.pline.Xs[len-1], g->_.pline.Ys[len-1],
+        &Xmin, &Ymin, &Xmax, &Ymax);
       inx = len - 5;
     }
   while (inx >= 0)
     {
-      geo_XYbox_of_arc (g->_.pline.Xs[inx], g->_.pline.Ys[inx], g->_.pline.Xs[inx + 1], g->_.pline.Ys[inx + 1],
-	  g->_.pline.Xs[inx + 2], g->_.pline.Ys[inx + 2], &arc_Xmin, &arc_Ymin, &arc_Xmax, &arc_Ymax);
+      geo_XYbox_of_arc (g->_.pline.Xs[inx], g->_.pline.Ys[inx], g->_.pline.Xs[inx+1], g->_.pline.Ys[inx+1], g->_.pline.Xs[inx+2], g->_.pline.Ys[inx+2],
+        &arc_Xmin, &arc_Ymin, &arc_Xmax, &arc_Ymax);
       Xmin = MIN (Xmin, arc_Xmin);
       Xmax = MAX (Xmax, arc_Xmax);
       Ymin = MIN (Ymin, arc_Ymin);
@@ -775,8 +764,7 @@ geo_calc_bounding (geo_t * g, int flags)
   int res = 0;
   switch (GEO_TYPE_NO_ZM (g->geo_flags))
     {
-    case GEO_POINT:
-    case GEO_BOX:
+    case GEO_POINT: case GEO_BOX:
       return GEO_LONG360ADD_NO_CHANGE;
     case GEO_POINTLIST:
       {
@@ -790,8 +778,7 @@ geo_calc_bounding (geo_t * g, int flags)
 	GEO_XYBOX_SET_EMPTY (total_bbox);
 	if (g->geo_flags & GEO_IS_CHAINBOXED)
 	  gcb_ptr = g->_.pline.pline_gcb->gcb_boxes;
-	gcb_next_stop = gcb_step;
-	inx = 0;
+        gcb_next_stop = gcb_step; inx = 0;
 	for (;;)
 	  {
 	    GEO_XYBOX_SET_EMPTY (gcbbox);
@@ -828,8 +815,7 @@ geo_calc_bounding (geo_t * g, int flags)
 	    if (inx >= len)
 	      break;
 	    gcb_next_stop += gcb_step;
-	    if (gcb_next_stop > len)
-	      gcb_next_stop = len;
+            if (gcb_next_stop > len) gcb_next_stop = len;
 	  }
 	if (check_wraps && !has_midpoints && (total_bbox.Xmin < -90.0) && (total_bbox.Xmax > 90.0))
 	  {
@@ -842,8 +828,7 @@ geo_calc_bounding (geo_t * g, int flags)
 	  g->_.pline.pline_gcb->gcb_is_set = 1;
 	break;
       }
-    case GEO_LINESTRING:
-    case GEO_RING:
+    case GEO_LINESTRING: case GEO_RING:
       {
 	geo_XYbox_t total_bbox, gcbbox, *gcb_ptr = NULL;
 	int inx, len = g->_.pline.len;
@@ -855,8 +840,7 @@ geo_calc_bounding (geo_t * g, int flags)
 	GEO_XYBOX_SET_EMPTY (total_bbox);
 	if (g->geo_flags & GEO_IS_CHAINBOXED)
 	  gcb_ptr = g->_.pline.pline_gcb->gcb_boxes;
-	gcb_next_stop = 1 + gcb_step;
-	inx = 0;
+        gcb_next_stop = 1 + gcb_step; inx = 0;
 	GEO_XYBOX_SET_EMPTY (gcbbox);
 	for (;;)
 	  {
@@ -896,8 +880,7 @@ geo_calc_bounding (geo_t * g, int flags)
 	    if (inx >= len)
 	      break;
 	    gcb_next_stop += gcb_step;
-	    if (gcb_next_stop > len)
-	      gcb_next_stop = len;
+            if (gcb_next_stop > len) gcb_next_stop = len;
 	    GEO_XYBOX_SET_EMPTY (gcbbox);
 	    if (X < geoc_FARAWAY)
 	      GEO_XYBOX_SET_TO_POINT (gcbbox, X, Y);
@@ -907,8 +890,7 @@ geo_calc_bounding (geo_t * g, int flags)
 	  g->_.pline.pline_gcb->gcb_is_set = 1;
 	break;
       }
-    case GEO_ARCSTRING:
-    case (GEO_ARCSTRING | GEO_A_CLOSED):
+    case GEO_ARCSTRING: case (GEO_ARCSTRING | GEO_A_CLOSED):
       {
 	if ((flags & GEO_CALC_BOUNDING_MAY_SHIFT) && GEO_SR_WRAPS180 (g->geo_srcode))
 	  {
@@ -963,8 +945,7 @@ geo_calc_bounding (geo_t * g, int flags)
 	total_bbox = itm->XYbox;
 	if (g->geo_flags & GEO_IS_CHAINBOXED)
 	  gcb_ptr = g->_.parts.parts_gcb->gcb_boxes;
-	gcb_next_stop = 1 + gcb_step;
-	inx = 1;
+        gcb_next_stop = 1 + gcb_step; inx = 1;
 	for (;;)
 	  {
 	    GEO_XYBOX_SET_EMPTY (gcbbox);
@@ -989,24 +970,21 @@ geo_calc_bounding (geo_t * g, int flags)
 	    if (inx >= len)
 	      break;
 	    gcb_next_stop += gcb_step;
-	    if (gcb_next_stop > len)
-	      gcb_next_stop = len;
+            if (gcb_next_stop > len) gcb_next_stop = len;
 	  }
 	GEO_XYBOX_COPY_NONEMPTY_OR_FARAWAY (g->XYbox, total_bbox);
 	if (NULL != gcb_ptr)
 	  g->_.parts.parts_gcb->gcb_is_set = 1;
 	break;
       }
-    case GEO_CURVE:
-    case GEO_CLOSEDCURVE:
+    case GEO_CURVE: case GEO_CLOSEDCURVE:
       if ((flags & GEO_CALC_BOUNDING_MAY_SHIFT) && GEO_SR_WRAPS180 (g->geo_srcode))
 	res |= geo_long360add (g);
       flags &= ~GEO_CALC_BOUNDING_MAY_SHIFT;
       /* no break */
     case GEO_MULTI_POLYGON:
     case GEO_COLLECTION:
-    case GEO_MULTI_LINESTRING:
-    case GEO_MULTI_CURVE:
+    case GEO_MULTI_LINESTRING: case GEO_MULTI_CURVE:
       {
 	geo_XYbox_t total_bbox, gcbbox, *gcb_ptr = NULL;
 	int inx, len = g->_.parts.len;
@@ -1015,8 +993,7 @@ geo_calc_bounding (geo_t * g, int flags)
 	GEO_XYBOX_SET_EMPTY (total_bbox);
 	if (g->geo_flags & GEO_IS_CHAINBOXED)
 	  gcb_ptr = g->_.parts.parts_gcb->gcb_boxes;
-	gcb_next_stop = gcb_step;
-	inx = 0;
+        gcb_next_stop = gcb_step; inx = 0;
 	for (;;)
 	  {
 	    GEO_XYBOX_SET_EMPTY (gcbbox);
@@ -1041,16 +1018,14 @@ geo_calc_bounding (geo_t * g, int flags)
 	    if (inx >= len)
 	      break;
 	    gcb_next_stop += gcb_step;
-	    if (gcb_next_stop > len)
-	      gcb_next_stop = len;
+            if (gcb_next_stop > len) gcb_next_stop = len;
 	  }
 	GEO_XYBOX_COPY_NONEMPTY_OR_FARAWAY (g->XYbox, total_bbox);
 	if (NULL != gcb_ptr)
 	  g->_.parts.parts_gcb->gcb_is_set = 1;
 	break;
       }
-    default:
-      GPF_T;
+    default: GPF_T;
     }
   if (g->geo_flags & (GEO_A_Z | GEO_A_M))
     {
@@ -1058,25 +1033,19 @@ geo_calc_bounding (geo_t * g, int flags)
       switch (GEO_TYPE_NO_ZM (g->geo_flags))
 	{
 	  /* case GEO_POINT: case GEO_BOX: --- note the "return" above, in the first switch */
-	case GEO_LINESTRING:
-	case GEO_RING:
-	case GEO_POINTLIST:
-	case GEO_ARCSTRING:
-	case GEO_ARCSTRING | GEO_A_CLOSED:
+        case GEO_LINESTRING: case GEO_RING: case GEO_POINTLIST:
+        case GEO_ARCSTRING: case GEO_ARCSTRING | GEO_A_CLOSED:
 	  {
 	    if (g->geo_flags & GEO_A_Z)
 	      {
 		int inx = g->_.pline.len;
-		bbox.Zmin = geoc_FARAWAY;
-		bbox.Zmax = -geoc_FARAWAY;
+                bbox.Zmin = geoc_FARAWAY; bbox.Zmax = -geoc_FARAWAY;
 		while (inx--)
 		  {
 		    geoc c;
 		    if (geoc_FARAWAY == g->_.pline.Xs[inx])
 		      continue;
-		    c = g->_.pline.Zs[inx];
-		    bbox.Zmin = MIN (bbox.Zmin, c);
-		    bbox.Zmax = MAX (bbox.Zmax, c);
+                    c = g->_.pline.Zs[inx]; bbox.Zmin = MIN (bbox.Zmin, c); bbox.Zmax = MAX (bbox.Zmax, c);
 		  }
 		g->_.pline.pline_ZMbox.Zmin = bbox.Zmin;
 		g->_.pline.pline_ZMbox.Zmax = bbox.Zmax;
@@ -1084,36 +1053,26 @@ geo_calc_bounding (geo_t * g, int flags)
 	    if (g->geo_flags & GEO_A_M)
 	      {
 		int inx = g->_.pline.len;
-		bbox.Mmin = geoc_FARAWAY;
-		bbox.Mmax = -geoc_FARAWAY;
+                bbox.Mmin = geoc_FARAWAY; bbox.Mmax = -geoc_FARAWAY;
 		while (inx--)
 		  {
 		    geoc c;
 		    if (geoc_FARAWAY == g->_.pline.Xs[inx])
 		      continue;
-		    c = g->_.pline.Ms[inx];
-		    bbox.Mmin = MIN (bbox.Mmin, c);
-		    bbox.Mmax = MAX (bbox.Mmax, c);
+                    c = g->_.pline.Ms[inx]; bbox.Mmin = MIN (bbox.Mmin, c); bbox.Mmax = MAX (bbox.Mmax, c);
 		  }
 		g->_.pline.pline_ZMbox.Mmin = bbox.Mmin;
 		g->_.pline.pline_ZMbox.Mmax = bbox.Mmax;
 	      }
 	    break;
 	  }
-	case GEO_POLYGON:
-	case GEO_MULTI_POLYGON:
+        case GEO_POLYGON: case GEO_MULTI_POLYGON:
 	case GEO_COLLECTION:
-	case GEO_CURVE:
-	case GEO_CLOSEDCURVE:
-	case GEO_CURVEPOLYGON:
-	case GEO_MULTI_LINESTRING:
-	case GEO_MULTI_CURVE:
+        case GEO_CURVE: case GEO_CLOSEDCURVE: case GEO_CURVEPOLYGON: case GEO_MULTI_LINESTRING: case GEO_MULTI_CURVE:
 	  {
 	    int inx = g->_.parts.len;
-	    bbox.Zmin = geoc_FARAWAY;
-	    bbox.Zmax = -geoc_FARAWAY;
-	    bbox.Mmin = geoc_FARAWAY;
-	    bbox.Mmax = -geoc_FARAWAY;
+            bbox.Zmin = geoc_FARAWAY; bbox.Zmax = -geoc_FARAWAY;
+            bbox.Mmin = geoc_FARAWAY; bbox.Mmax = -geoc_FARAWAY;
 	    while (inx--)
 	      {
 		geo_ZMbox_t *item_ZMbox;
@@ -1144,8 +1103,7 @@ geo_calc_bounding (geo_t * g, int flags)
 	      }
 	    break;
 	  }
-	default:
-	  GPF_T;
+        default: GPF_T;
 	}
     }
   return res;
@@ -1156,23 +1114,14 @@ geo_get_ZMbox_field (geo_t * g)
 {
   switch (GEO_TYPE_NO_ZM (g->geo_flags))
     {
-    case GEO_POINT:
-    case GEO_BOX:
+    case GEO_POINT: case GEO_BOX:
       return &(g->_.point.point_ZMbox);
-    case GEO_LINESTRING:
-    case GEO_RING:
-    case GEO_POINTLIST:
-    case GEO_ARCSTRING:
-    case GEO_ARCSTRING | GEO_A_CLOSED:
+    case GEO_LINESTRING: case GEO_RING: case GEO_POINTLIST:
+    case GEO_ARCSTRING: case GEO_ARCSTRING | GEO_A_CLOSED:
       return &(g->_.pline.pline_ZMbox);
-    case GEO_POLYGON:
-    case GEO_MULTI_POLYGON:
-    case GEO_MULTI_LINESTRING:
+    case GEO_POLYGON: case GEO_MULTI_POLYGON: case GEO_MULTI_LINESTRING:
     case GEO_COLLECTION:
-    case GEO_CURVE:
-    case GEO_CLOSEDCURVE:
-    case GEO_CURVEPOLYGON:
-    case GEO_MULTI_CURVE:
+    case GEO_CURVE: case GEO_CLOSEDCURVE: case GEO_CURVEPOLYGON: case GEO_MULTI_CURVE:
       return &(g->_.parts.parts_ZMbox);
     }
   GPF_T;
@@ -1217,14 +1166,8 @@ geo_get_bounding_XYbox (geo_t * g, geo_t * box, geoc prec_x, geoc prec_y)
 	  break;
 	}
       goto adjust_with_epsilon;	/* see below */
-    case GEO_ARCSTRING:
-    case GEO_CURVE:
-    case GEO_CLOSEDCURVE:
-    case GEO_CURVEPOLYGON:
-    case GEO_MULTI_CURVE:
-    case GEO_COLLECTION:
-      prec_x *= 4;
-      prec_y *= 4;		/* no break */
+    case GEO_ARCSTRING: case GEO_CURVE: case GEO_CLOSEDCURVE: case GEO_CURVEPOLYGON: case GEO_MULTI_CURVE: case GEO_COLLECTION:
+      prec_x *= 4; prec_y *= 4; /* no break */
     default:
       if (geoc_FARAWAY == g->XYbox.Xmin)
 	goto faraway;
@@ -1408,39 +1351,19 @@ ewkt_get_token (ewkt_input_t * in, ewkt_token_val_t * val)
   int res;
   switch (in->ewkt_tail[0])
     {
-    case '(':
-    case ')':
-    case ',':
-    case ';':
-    case '=':
-      res = (in->ewkt_tail++)[0];
-      break;
-    case '\0':
-      return 0;
-    case '+':
-    case '-':
-    case '.':
-    case '0':
-    case '1':
-    case '2':
-    case '3':
-    case '4':
-    case '5':
-    case '6':
-    case '7':
-    case '8':
-    case '9':
+    case '(': case ')': case ',': case ';': case '=': res = (in->ewkt_tail++)[0]; break;
+    case '\0': return 0;
+    case '+': case '-': case '.':
+    case '0': case '1': case '2': case '3': case '4':
+    case '5': case '6': case '7': case '8': case '9':
       {
 	const unsigned char *endptr = NULL;
 	val->v_geoc = strtod ((const char *) (in->ewkt_tail), (char **) (&endptr));
 	if ((NULL != endptr) && (in->ewkt_tail != endptr))
 	  {
-	    res = EWKT_NUM;
-	    in->ewkt_tail = endptr;
-	    break;
+            res = EWKT_NUM; in->ewkt_tail = endptr; break;
 	  }
-	res = EWKT_NUM_BAD;
-	break;
+        res = EWKT_NUM_BAD; break;
       }
     default:
       if (isalpha (in->ewkt_tail[0]))
@@ -1449,28 +1372,17 @@ ewkt_get_token (ewkt_input_t * in, ewkt_token_val_t * val)
 	  ewkt_kwd_metas_t *metas;
 	  char buf[30];
 	  char *buf_tail = buf;
-	  do
-	    {
-	      (buf_tail++)[0] = (in->ewkt_tail++)[0];
-	    }
-	  while (isalnum (in->ewkt_tail[0]) && buf_tail < buf + sizeof (buf) - 1);
+          do { (buf_tail++)[0] = (in->ewkt_tail++)[0]; } while (isalnum(in->ewkt_tail[0]) && buf_tail < buf+sizeof(buf)-1);
 	  buf_tail[0] = '\0';
-	  metas_inx =
-	      ecm_find_name (buf, ewkt_keyword_metas, sizeof (ewkt_keyword_metas) / sizeof (ewkt_kwd_metas_t),
-	      sizeof (ewkt_kwd_metas_t));
+          metas_inx = ecm_find_name (buf, ewkt_keyword_metas, sizeof (ewkt_keyword_metas) / sizeof (ewkt_kwd_metas_t), sizeof (ewkt_kwd_metas_t));
 	  if (ECM_MEM_NOT_FOUND == metas_inx)
 	    {
-	      val->v_kwd = NULL;
-	      res = EWKT_KWD_BAD;
-	      break;
+              val->v_kwd = NULL; res = EWKT_KWD_BAD; break;
 	    }
 	  metas = ewkt_keyword_metas + metas_inx;
-	  val->v_kwd = metas;
-	  res = metas->kwd_type;
-	  break;
+          val->v_kwd = metas; res = metas->kwd_type; break;
 	}
-      val->v_kwd = NULL;
-      return EWKT_BAD;
+      val->v_kwd = NULL; return EWKT_BAD;
     }
   ewkt_ws_skip (in);
   return res;
@@ -1569,7 +1481,8 @@ ewkt_get_points (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas)
 		ewkt_signal (in, "EMPTY coordinates can be assigned to a point, but not to vertex of a LINE- or ARC-string.");
 	      in->ekwt_Cs[0][in->ekwt_point_count] =
 		  in->ekwt_Cs[1][in->ekwt_point_count] =
-		  in->ekwt_Cs[2][in->ekwt_point_count] = in->ekwt_Cs[3][in->ekwt_point_count] = geoc_FARAWAY;
+              in->ekwt_Cs[2][in->ekwt_point_count] =
+              in->ekwt_Cs[3][in->ekwt_point_count] = geoc_FARAWAY;
 	      dim_idx = 0xFF;
 	      continue;
 	    case '(':
@@ -1759,8 +1672,7 @@ ewkt_get_nested_poinstrings (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas, i
     }
   itm_ctr = dk_set_length (items[0]);
   res = geo_alloc (geo_type, itm_ctr, in->ewkt_srcode);
-  while (itm_ctr--)
-    res->_.parts.items[itm_ctr] = (geo_t *) dk_set_pop (items);
+  while (itm_ctr--) res->_.parts.items[itm_ctr] = (geo_t *)dk_set_pop (items);
   return res;
 }
 
@@ -1935,26 +1847,28 @@ ewkt_destroy_input (ewkt_input_t * in)
       if (NULL != in->ekwt_Cs[dctr])
 	dk_free ((void *) (in->ekwt_Cs[dctr]), in->ekwt_point_max * sizeof (geoc));
     }
-  while (NULL != in->ekwt_cuts)
-    dk_free_box ((box_t) dk_set_pop (&(in->ekwt_cuts)));
-  while (NULL != in->ekwt_rings)
-    dk_free_box ((box_t) dk_set_pop (&(in->ekwt_rings)));
-  while (NULL != in->ekwt_childs)
-    dk_free_box ((box_t) dk_set_pop (&(in->ekwt_childs)));
-  while (NULL != in->ekwt_members)
-    dk_free_box ((box_t) dk_set_pop (&(in->ekwt_members)));
+  while (NULL != in->ekwt_cuts) dk_free_box ((box_t)dk_set_pop (&(in->ekwt_cuts)));
+  while (NULL != in->ekwt_rings) dk_free_box ((box_t)dk_set_pop (&(in->ekwt_rings)));
+  while (NULL != in->ekwt_childs) dk_free_box ((box_t)dk_set_pop (&(in->ekwt_childs)));
+  while (NULL != in->ekwt_members) dk_free_box ((box_t)dk_set_pop (&(in->ekwt_members)));
 }
 
 geo_t *
 ewkt_parse (const char *strg, caddr_t * err_ret)
+{
+  return ewkt_parse_2 (strg, SRID_DEFAULT, err_ret);
+}
+
+geo_t *
+ewkt_parse_2 (const char *strg, int dflt_srid, caddr_t * err_ret)
 {
   geo_t *res;
   ewkt_input_t in;
   int tkn;
   ewkt_token_val_t val;
   memset (&in, 0, sizeof (ewkt_input_t));
-  in.ewkt_srid = SRID_DEFAULT;
-  in.ewkt_srcode = GEO_SRCODE_DEFAULT;
+  in.ewkt_srid = dflt_srid;
+  in.ewkt_srcode = GEO_SRCODE_OF_SRID (dflt_srid);
   in.ewkt_source = in.ewkt_tail = in.ewkt_row_begin = (const unsigned char *) strg;
   if (0 == setjmp (in.ewkt_error_ctx))
     {
@@ -2055,23 +1969,16 @@ ewkt_print_sf12_one (geo_t * g, dk_session_t * ses, int named)
       ewkt_print_sf12_points (ses, g->geo_flags, ((geoc_FARAWAY == g->XYbox.Xmin) ? 0 : 2),
 	  &(g->XYbox.Xmin), &(g->XYbox.Ymin), &(g->_.point.point_ZMbox.Zmin), &(g->_.point.point_ZMbox.Mmin));
       return;
-    case GEO_LINESTRING:
-    case GEO_RING:
-    case GEO_POINTLIST:
-    case GEO_ARCSTRING:
-    case GEO_ARCSTRING | GEO_A_CLOSED:
-      ewkt_print_sf12_points (ses, g->geo_flags, g->_.pline.len, g->_.pline.Xs, g->_.pline.Ys, g->_.pline.Zs, g->_.pline.Ms);
+    case GEO_LINESTRING: case GEO_RING: case GEO_POINTLIST:
+    case GEO_ARCSTRING: case GEO_ARCSTRING | GEO_A_CLOSED:
+      ewkt_print_sf12_points (ses, g->geo_flags, g->_.pline.len,
+        g->_.pline.Xs, g->_.pline.Ys, g->_.pline.Zs, g->_.pline.Ms );
       return;
     case GEO_COLLECTION:
-    case GEO_CURVE:
-    case GEO_CLOSEDCURVE:
-    case GEO_CURVEPOLYGON:
-    case GEO_MULTI_CURVE:
+    case GEO_CURVE: case GEO_CLOSEDCURVE: case GEO_CURVEPOLYGON: case GEO_MULTI_CURVE:
       named = 1;
       /* no break */
-    case GEO_POLYGON:
-    case GEO_MULTI_POLYGON:
-    case GEO_MULTI_LINESTRING:
+    case GEO_POLYGON: case GEO_MULTI_POLYGON: case GEO_MULTI_LINESTRING:
       {
 	int inx, len = g->_.parts.len;
 	if (0 == len)
@@ -2090,8 +1997,7 @@ ewkt_print_sf12_one (geo_t * g, dk_session_t * ses, int named)
 	SES_PRINT (ses, ")");
 	return;
       }
-    default:
-      GPF_T;
+    default: GPF_T;
     }
 }
 
@@ -2256,23 +2162,19 @@ dv_geo_length (db_buf_t dv, long *hl, long *l)
   switch (flags & (GEO_TYPE_MASK | GEO_IS_CHAINBOXED))
     {
     case GEO_NULL_SHAPE:
-      *l = len;
-      return;
+      *l = len; return;
     case GEO_POINT:
       len += coord_len * 2;
-      *l = len;
-      return;
+      *l = len; return;
     case GEO_BOX:
       len += coord_len * 4;
-      *l = len;
-      return;
+      *l = len; return;
     case GEO_LINESTRING:
       {
 	int ct;
 	DV_INT_FROM_DVLEN (ct, dv, len);
 	len += ((ct - 1) / 2) * coord_len * 2;
-	*l = len;
-	return;
+        *l = len; return;
       }
     }
 /* New types */
@@ -2289,21 +2191,13 @@ dv_geo_length (db_buf_t dv, long *hl, long *l)
     {
       int dims = 2;
       int ct;
-      if (GEO_A_Z & flags)
-	dims++;
-      if (GEO_A_M & flags)
-	dims++;
+      if (GEO_A_Z & flags) dims++;
+      if (GEO_A_M & flags) dims++;
       switch (GEO_TYPE_CORE (flags))
 	{
-	case GEO_POINT:
-	  *l = len + dims * coord_len;
-	  return;
-	case GEO_BOX:
-	  *l = len + 2 * dims * coord_len;
-	  return;
-	case GEO_LINESTRING:
-	case GEO_POINTLIST:
-	case GEO_ARCSTRING:
+        case GEO_POINT: *l = len + dims * coord_len; return;
+        case GEO_BOX: *l = len + 2 * dims * coord_len; return;
+        case GEO_LINESTRING: case GEO_POINTLIST: case GEO_ARCSTRING:
 	  {
 	    DV_INT_FROM_DVLEN (ct, dv, len);
 	    if (flags & GEO_IS_CHAINBOXED)
@@ -2318,8 +2212,7 @@ dv_geo_length (db_buf_t dv, long *hl, long *l)
 	    *l = len + ct * dims * coord_len;
 	    return;
 	  }
-	default:
-	  GPF_T1 ("bad geo core type in dv_geo_length");
+        default: GPF_T1 ("bad geo core type in dv_geo_length");
 	}
     }
 }
@@ -2336,10 +2229,8 @@ geo_calc_length_of_serialization (geo_t * g, int is_topmost)
   if (is_topmost && (GEO_SRCODE_DEFAULT != g->geo_srcode))
     len += 2;			/* SRID */
   dims = 2;
-  if (flags & GEO_A_Z)
-    dims++;
-  if (flags & GEO_A_M)
-    dims++;
+  if (flags & GEO_A_Z) dims++;
+  if (flags & GEO_A_M) dims++;
   if (flags & (GEO_A_COMPOUND | GEO_A_RINGS | GEO_A_MULTI | GEO_A_ARRAY))
     {
       int item_ctr;
@@ -2351,7 +2242,8 @@ geo_calc_length_of_serialization (geo_t * g, int is_topmost)
 	{
 	  geo_chainbox_t *gcb = g->_.parts.parts_gcb;
 	  len += (DV_INT_SERIALIZATION_LENGTH (gcb->gcb_box_count)
-	      + DV_INT_SERIALIZATION_LENGTH (gcb->gcb_step) + gcb->gcb_box_count * 4 * coord_len);
+              + DV_INT_SERIALIZATION_LENGTH(gcb->gcb_step)
+              + gcb->gcb_box_count * 4 * coord_len );
 	}
       len += 2 * coord_len * dims;	/* bbox */
       while (item_ctr--)
@@ -2366,19 +2258,16 @@ geo_calc_length_of_serialization (geo_t * g, int is_topmost)
 	{
 	  geo_chainbox_t *gcb = g->_.pline.pline_gcb;
 	  len += (DV_INT_SERIALIZATION_LENGTH (gcb->gcb_box_count)
-	      + DV_INT_SERIALIZATION_LENGTH (gcb->gcb_step) + gcb->gcb_box_count * 4 * coord_len);
+              + DV_INT_SERIALIZATION_LENGTH(gcb->gcb_step)
+              + gcb->gcb_box_count * 4 * coord_len );
 	}
       if ((flags & GEO_IS_CHAINBOXED) || (GEO_ARCSTRING == GEO_TYPE_CORE (flags)))
 	len += (2 * dims * coord_len);	/* bbox */
       switch (GEO_TYPE_CORE (flags))
 	{
-	case GEO_POINT:
-	  return len + dims * coord_len;
-	case GEO_BOX:
-	  return len + 2 * dims * coord_len;
-	case GEO_LINESTRING:
-	case GEO_POINTLIST:
-	case GEO_ARCSTRING:
+        case GEO_POINT: return len + dims * coord_len;
+        case GEO_BOX: return len + 2 * dims * coord_len;
+        case GEO_LINESTRING: case GEO_POINTLIST: case GEO_ARCSTRING:
 	  ct = g->_.pline.len;
 	  return len + DV_INT_SERIALIZATION_LENGTH (ct) + ct * dims * coord_len;
 	}
@@ -2503,10 +2392,8 @@ geo_serialize_one (geo_t * g, int is_topmost, dk_session_t * ses)
     }
 /* New types */
   dims = 2;
-  if (flags & GEO_A_Z)
-    dims++;
-  if (flags & GEO_A_M)
-    dims++;
+  if (flags & GEO_A_Z) dims++;
+  if (flags & GEO_A_M) dims++;
   if (flags & (GEO_A_COMPOUND | GEO_A_RINGS | GEO_A_MULTI | GEO_A_ARRAY))
     {
       int item_ctr, item_count = g->_.parts.len;
@@ -2552,8 +2439,7 @@ geo_serialize_one (geo_t * g, int is_topmost, dk_session_t * ses)
       print_bbox (g, g->_.point.point_ZMbox, ses);
       return;
     case GEO_ARCSTRING:
-    case GEO_LINESTRING:
-    case GEO_POINTLIST:
+      case GEO_LINESTRING: case GEO_POINTLIST:
       {
 	int pointcount = g->_.pline.len;
 	print_int (pointcount, ses);
@@ -2661,10 +2547,8 @@ geo_deserialize_one (int srcode /* -1 for topmost */ , dk_session_t * ses)
       }
     }
   dims = 2;
-  if (flags & GEO_A_Z)
-    dims++;
-  if (flags & GEO_A_M)
-    dims++;
+  if (flags & GEO_A_Z) dims++;
+  if (flags & GEO_A_M) dims++;
   if (flags & (GEO_A_COMPOUND | GEO_A_RINGS | GEO_A_MULTI | GEO_A_ARRAY))
     {
       int item_ctr, item_count;
@@ -2712,8 +2596,7 @@ geo_deserialize_one (int srcode /* -1 for topmost */ , dk_session_t * ses)
       read_bbox (g, g->_.point.point_ZMbox, ses);
       return g;
     case GEO_ARCSTRING:
-    case GEO_LINESTRING:
-    case GEO_POINTLIST:
+      case GEO_LINESTRING: case GEO_POINTLIST:
       {
 	int bbox_preserved = ((GEO_ARCSTRING == GEO_TYPE_CORE (flags)) || (flags & GEO_IS_CHAINBOXED));
 	int pointcount = read_int (ses);
@@ -2788,8 +2671,7 @@ geo_ccw_flat_area (geo_t * g)
     {
       res = 0;
       ctr = g->_.parts.len;
-      if (!ctr)
-	return 0;
+      if (!ctr) return 0;
       while (--ctr)
 	res += geo_ccw_flat_area (g->_.parts.items[ctr]);
       res = geo_ccw_flat_area (g->_.parts.items[0]) - res;
@@ -2809,8 +2691,7 @@ geo_ccw_flat_area (geo_t * g)
 	  res += geo_ccw_flat_rvector_run (cut->_.pline.Xs, cut->_.pline.Ys, cut->_.pline.len, 0);
 	}
       return res;
-    default:
-      GPF_T;
+    default: GPF_T;
     }
   return 0;
 }
@@ -2848,8 +2729,7 @@ geo_inverse_point_order (geo_t * g)
     }
   switch (GEO_TYPE_CORE (g->geo_flags))
     {
-    case GEO_LINESTRING:
-    case GEO_ARCSTRING:
+    case GEO_LINESTRING: case GEO_ARCSTRING:
       {
 	int len = g->_.pline.len;
 	SWAP_DOUBLES (g->_.pline.Xs, len);
@@ -2869,7 +2749,8 @@ geo_XYbbox_inside (geo_XYbox_t * inner, geo_XYbox_t * outer)
 {
   return ((inner->Xmin + geoc_EPSILON >= outer->Xmin) &&
       (inner->Xmax - geoc_EPSILON <= outer->Xmax) &&
-      (inner->Ymin + geoc_EPSILON >= outer->Ymin) && (inner->Ymax - geoc_EPSILON <= outer->Ymax));
+    (inner->Ymin + geoc_EPSILON >= outer->Ymin) &&
+    (inner->Ymax - geoc_EPSILON <= outer->Ymax) );
 }
 
 
@@ -2959,17 +2840,14 @@ geo_XY_inoutside_ring (geoc pX, geoc pY, geo_t * ring)
       int inx;
       int gcb_next_stop;
       int gcb_step = MIN ((len - 1), ring->_.pline.pline_gcb->gcb_step);
-      gcb_next_stop = 1 + gcb_step;
-      inx = 0;
+      gcb_next_stop = 1+gcb_step; inx = 0;
       for (;;)
 	{
 	  if ((pX <= gcb_ptr->Xmax) && (pY <= gcb_ptr->Ymax) && (pY >= gcb_ptr->Ymin))
 	    {
 	      if (pX >= gcb_ptr->Xmin)
 		{
-		  int inoutside =
-		      geo_XY_inoutside_ring_lines (pX, pY, gcb_next_stop - inx, Xs + inx, Ys + inx, &up_crosses_ray,
-		      &down_crosses_ray);
+                  int inoutside = geo_XY_inoutside_ring_lines (pX, pY, gcb_next_stop - inx, Xs + inx, Ys + inx, &up_crosses_ray, &down_crosses_ray);
 		  if (inoutside)
 		    return inoutside;
 		}

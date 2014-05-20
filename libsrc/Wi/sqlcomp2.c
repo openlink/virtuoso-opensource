@@ -2185,3 +2185,13 @@ sql_compile (char *string2, client_connection_t * cli, caddr_t * err, int store_
   return dbg_sql_compile (__FILE__, __LINE__, string2, cli, err, store_procs);
 }
 #endif
+
+#if defined (MALLOC_DEBUG) || defined (VALGRIND)
+#undef sql_compile_static
+query_t *
+sql_compile_static (const char *string2, client_connection_t * cli, caddr_t * err, volatile int store_procs)
+{
+  return  dbg_sql_compile_static (__FILE__, __LINE__, string2, cli, err, store_procs);
+}
+#endif
+

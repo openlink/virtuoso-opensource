@@ -3756,6 +3756,13 @@ void   rdf_key_comp_init ();
 extern int enable_col_by_default, c_col_by_default;
 long get_total_sys_mem ();
 
+dk_set_t srv_global_init_postponed_actions = NULL;
+
+dk_set_t *get_srv_global_init_postponed_actions_ptr(void)
+{
+  return &srv_global_init_postponed_actions;
+}
+
 void
 srv_global_init (char *mode)
 {
@@ -4089,6 +4096,15 @@ srv_global_init (char *mode)
 #ifdef WIN32
   sec_set_user_os_struct ("dba", "", "");
 #endif
+  if (NULL != srv_global_init_postponed_actions)
+    {
+      srv_global_init_postponed_actions = dk_set_nreverse (srv_global_init_postponed_actions);
+      while (NULL != srv_global_init_postponed_actions)
+        {
+          srv_global_init_postponed_action_t *f = (srv_global_init_postponed_action_t *)dk_set_pop (&srv_global_init_postponed_actions);
+          f (mode);
+        }
+    }
   box_dv_uname_make_immortal_all ();
   while (srv_have_global_lock (THREAD_CURRENT_THREAD))
     {
