@@ -1260,9 +1260,9 @@ rdb2rdf_codegen (rdb2rdf_ctx_t *rrc, caddr_t table_name, int opcode, dk_session_
           for (xlat_ctr = 0; xlat_ctr < rrc->rrc_graph_xlat_count; xlat_ctr += 2)
             {
               ssg_puts (" when ");
-              ssg_print_box_as_sql_atom (ssg, rrc->rrc_graph_xlat [xlat_ctr], SQL_ATOM_UNAME_ALLOWED);
+              ssg_sdprint_tree (ssg, rrc->rrc_graph_xlat [xlat_ctr]);
               ssg_puts (" then ");
-              ssg_print_box_as_sql_atom (ssg, rrc->rrc_graph_xlat [xlat_ctr+1], SQL_ATOM_UNAME_ALLOWED);
+              ssg_sdprint_tree (ssg, rrc->rrc_graph_xlat [xlat_ctr+1]);
             }
           ssg_puts (" else ?g end ) )\n");
         }
