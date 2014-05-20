@@ -420,6 +420,12 @@ ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype,
       case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_ODATA_JSON"; return;
       default: return;
       }
+  if (!strcmp (name, "JSON;LD"))
+    switch (subtype)
+      {
+      case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_LD"; return;
+      default: return;
+      }
   if (!strcmp (name, "CXML"))
     switch (subtype)
       {
