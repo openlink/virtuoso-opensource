@@ -3297,14 +3297,14 @@ itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
 	}
       if (upd_col)
 	{
-	  if (!key->key_distinct)
+	  if (key && !key->key_distinct)
 	    {
 	      col->col_count = cs->cs_n_values / (float) itc->itc_st.n_sample_rows * est;
 	      if (CL_RUN_SINGLE_CLUSTER == cl_run_local_only)
 		col->col_count *= key_n_partitions (key);
 	    }
 	  /* for distinct value count, consider a distinct projection is the col in question is the first, otherwise do not trust one */
-	  if (itc->itc_st.n_sample_rows && (!key->key_distinct || col == (dbe_column_t*)key->key_parts->data))
+	  if (itc->itc_st.n_sample_rows && (key && (!key->key_distinct || col == (dbe_column_t*)key->key_parts->data)))
 	    {
 	      /* if n distinct under 2% of samples and under 200 values, assume that this is a flag.  If more distinct, scale pro rata.  */
 	      if (cs->cs_distinct->ht_inserts < itc->itc_st.n_sample_rows / 50 && cs->cs_distinct->ht_count < 200)
@@ -3328,7 +3328,7 @@ itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
 		  col->col_max = col_min_max_trunc (maxb);
 		}
 	    }
-	  else if (!key->key_distinct)
+	  else if (key && !key->key_distinct)
 	    {
 	      col->col_n_distinct = 1;
 	      col->col_avg_len = 0; /* no data, use declared prec instead */
