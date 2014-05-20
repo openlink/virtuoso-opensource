@@ -4273,7 +4273,7 @@ ssl_by_index (sql_comp_t * sc, int inx)
 {
   DO_HT (state_slot_t *, ssl, void *, igm, sc->sc_vec_ssl_def)
   {
-    if (inx == ssl->ssl_index)
+      if (ssl && inx == ssl->ssl_index)
       return ssl;
   }
   END_DO_HT;

@@ -1566,7 +1566,8 @@ qr_no_copy_ssls (query_t * qr, dk_hash_t * no_copy)
 	  hash_area_t * ha = setp->setp_ha;
 	  if (ha && (HA_DISTINCT == ha->ha_op || HA_GROUP == ha->ha_op ||HA_ORDER == ha->ha_op))
 	    sethash ((void*)ha->ha_tree, no_copy, (void*)1);
-	  sethash ((void*)setp->setp_sorted, no_copy, (void*) 1);
+	  if (setp->setp_sorted)
+	    sethash ((void*)setp->setp_sorted, no_copy, (void*) 1);
 	}
     }
   END_DO_SET();
