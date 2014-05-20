@@ -6462,6 +6462,40 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
         if (!(flags & SSG_RETVAL_FROM_JOIN_MEMBER))
           goto try_write_null; /* see below */
         memb_len = BOX_ELEMENTS_INT (gp->_.gp.members);
+        if (2 == memb_len)
+          { /* Special case for coalesce as a result of value that may come from more than one optional, bug 16064 */
+            SPART *gp_first_member = gp->_.gp.members[0];
+            sparp_equiv_t *first_subval;
+            if (SPAR_GP != gp_first_member->type)
+              goto print_plain_sub;
+            gp_member = gp->_.gp.members[1];
+            if (SPAR_GP != gp_member->type)
+              goto print_plain_sub;
+            if (OPTIONAL_L != gp_member->_.gp.subtype)
+              goto print_plain_sub;
+            subval = sparp_equiv_get_subvalue_ro (ssg->ssg_equivs, ssg->ssg_equiv_count, gp_member, eq);
+            if (NULL == subval)
+              goto print_plain_sub;
+            first_subval = sparp_equiv_get_subvalue_ro (ssg->ssg_equivs, ssg->ssg_equiv_count, gp_first_member, eq);
+            if (NULL == first_subval)
+              goto print_plain_sub;
+            if (first_subval->e_rvr.rvrRestrictions & SPART_VARR_NOT_NULL)
+              goto print_plain_sub;
+            ssg_puts (" COALESCE (");
+            ssg->ssg_indent++;
+            ssg_newline (0);
+            sub_flags |= SSG_RETVAL_FROM_GOOD_SELECTED |
+              (flags & (SSG_RETVAL_MUST_PRINT_SOMETHING | SSG_RETVAL_FROM_ANY_SELECTED | SSG_RETVAL_CAN_PRINT_NULL));
+            printed = ssg_print_equiv_retval_expn (ssg, gp_first_member, first_subval, sub_flags, needed, NULL);
+            ssg_putchar (',');
+            ssg_newline (0);
+            sub_flags |= SSG_RETVAL_OPTIONAL_MAKES_NULLABLE;
+            printed = ssg_print_equiv_retval_expn (ssg, gp_member, subval, sub_flags, needed, NULL);
+            ssg_putchar (')');
+            ssg->ssg_indent--;
+            goto write_assuffix; /* see below */
+          }
+print_plain_sub:
         for (memb_ctr = 0; memb_ctr < memb_len; memb_ctr++)
           {
             gp_member = gp->_.gp.members[memb_ctr];
@@ -7300,9 +7334,10 @@ print_sub_eq_sub:
           col_count = ((IS_BOX_POINTER (common_native)) ? common_native->qmfColumnCount : 1);
           ssg_print_where_or_and (ssg, "two retvals belong to same equiv");
           sub_is_nullable_inline = (
-            (VALUES_L == sub_gp->_.gp.subtype) &&
+            (VALUES_L == sub_gp->_.gp.subtype) ?
             (sub_gp->_.gp.subquery->_.binv.counters_of_unbound [
-                sparp_find_binv_rset_pos_of_varname (ssg->ssg_sparp, sub_gp, sub_gp->_.gp.subquery, sub_eq->e_varnames[0]) ] ) );
+                sparp_find_binv_rset_pos_of_varname (ssg->ssg_sparp, sub_gp, sub_gp->_.gp.subquery, sub_eq->e_varnames[0]) ] ) :
+            ((OPTIONAL_L == sub2_gp->_.gp.subtype) && !(sub_eq->e_rvr.rvrRestrictions & SPART_VARR_NOT_NULL)) /* This case is for Bug16064 */ );
           sub2_is_nullable_inline = (
             (VALUES_L == sub2_gp->_.gp.subtype) &&
             (sub2_gp->_.gp.subquery->_.binv.counters_of_unbound [
