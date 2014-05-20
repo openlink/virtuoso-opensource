@@ -423,7 +423,7 @@ int dt_local_tz;		/* minutes from GMT */
 void
 dt_now (caddr_t dt)
 {
-  static time_t tim;
+  time_t tim;
   long day;
   struct timeval tv;
   struct tm tm;
