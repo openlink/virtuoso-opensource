@@ -21,6 +21,7 @@
  *
  */
 
+#include "datesupp.h"
 #include "sqlnode.h"
 #include "sqlbif.h"
 #include "arith.h"
@@ -33,6 +34,114 @@
 #include "replsr.h"	/* For log_repl_text_array() */
 #include "xslt_impl.h"	/* For vector_sort_t */
 #include "aqueue.h"	/* For aq_allocate() in rdf replication */
+
+int rb_type__xsd_ENTITY;
+int rb_type__xsd_ENTITIES;
+int rb_type__xsd_ID;
+int rb_type__xsd_IDREF;
+int rb_type__xsd_IDREFS;
+int rb_type__xsd_NCName;
+int rb_type__xsd_Name;
+int rb_type__xsd_NMTOKEN;
+int rb_type__xsd_NMTOKENS;
+int rb_type__xsd_NOTATION;
+int rb_type__xsd_QName;
+int rb_type__xsd_any;
+int rb_type__xsd_anyAtomicType;
+int rb_type__xsd_anySimpleType;
+int rb_type__xsd_anyType;
+int rb_type__xsd_anyURI;
+int rb_type__xsd_base64Binary;
+int rb_type__xsd_boolean;
+int rb_type__xsd_byte;
+int rb_type__xsd_date;
+int rb_type__xsd_dateTime;
+int rb_type__xsd_dateTimeStamp;
+int rb_type__xsd_dayTimeDuration;
+int rb_type__xsd_decimal;
+int rb_type__xsd_double;
+int rb_type__xsd_duration;
+int rb_type__xsd_float;
+int rb_type__xsd_gDay;
+int rb_type__xsd_gMonth;
+int rb_type__xsd_gMonthDay;
+int rb_type__xsd_gYear;
+int rb_type__xsd_gYearMonth;
+int rb_type__xsd_hexBinary;
+int rb_type__xsd_int;
+int rb_type__xsd_integer;
+int rb_type__xsd_language;
+int rb_type__xsd_long;
+int rb_type__xsd_negativeInteger;
+int rb_type__xsd_nonNegativeInteger;
+int rb_type__xsd_nonPositiveInteger;
+int rb_type__xsd_normalizedString;
+int rb_type__xsd_positiveInteger;
+int rb_type__xsd_short;
+int rb_type__xsd_string;
+int rb_type__xsd_time;
+int rb_type__xsd_token;
+int rb_type__xsd_unsignedByte;
+int rb_type__xsd_unsignedInt;
+int rb_type__xsd_unsignedLong;
+int rb_type__xsd_unsignedShort;
+int rb_type__xsd_yearMonthDuration;
+
+stat_desc_t rdf_preset_datatypes_descs [] =
+  {
+    {"rb_type__xsd:ENTITY"		, (long *)&rb_type__xsd_ENTITY			, SD_INT32	},
+    {"rb_type__xsd:ENTITIES"		, (long *)&rb_type__xsd_ENTITIES		, SD_INT32	},
+    {"rb_type__xsd:ID"			, (long *)&rb_type__xsd_ID			, SD_INT32	},
+    {"rb_type__xsd:IDREF"		, (long *)&rb_type__xsd_IDREF			, SD_INT32	},
+    {"rb_type__xsd:IDREFS"		, (long *)&rb_type__xsd_IDREFS			, SD_INT32	},
+    {"rb_type__xsd:NCName"		, (long *)&rb_type__xsd_NCName			, SD_INT32	},
+    {"rb_type__xsd:Name"		, (long *)&rb_type__xsd_Name			, SD_INT32	},
+    {"rb_type__xsd:NMTOKEN"		, (long *)&rb_type__xsd_NMTOKEN			, SD_INT32	},
+    {"rb_type__xsd:NMTOKENS"		, (long *)&rb_type__xsd_NMTOKENS		, SD_INT32	},
+    {"rb_type__xsd:NOTATION"		, (long *)&rb_type__xsd_NOTATION		, SD_INT32	},
+    {"rb_type__xsd:QName"		, (long *)&rb_type__xsd_QName			, SD_INT32	},
+    {"rb_type__xsd:any"			, (long *)&rb_type__xsd_any			, SD_INT32	},
+    {"rb_type__xsd:anyAtomicType"	, (long *)&rb_type__xsd_anyAtomicType		, SD_INT32	},
+    {"rb_type__xsd:anySimpleType"	, (long *)&rb_type__xsd_anySimpleType		, SD_INT32	},
+    {"rb_type__xsd:anyType"		, (long *)&rb_type__xsd_anyType			, SD_INT32	},
+    {"rb_type__xsd:anyURI"		, (long *)&rb_type__xsd_anyURI			, SD_INT32	},
+    {"rb_type__xsd:base64Binary"	, (long *)&rb_type__xsd_base64Binary		, SD_INT32	},
+    {"rb_type__xsd:boolean"		, (long *)&rb_type__xsd_boolean			, SD_INT32	},
+    {"rb_type__xsd:byte"		, (long *)&rb_type__xsd_byte			, SD_INT32	},
+    {"rb_type__xsd:date"		, (long *)&rb_type__xsd_date			, SD_INT32	},
+    {"rb_type__xsd:dateTime"		, (long *)&rb_type__xsd_dateTime		, SD_INT32	},
+    {"rb_type__xsd:dateTimeStamp"	, (long *)&rb_type__xsd_dateTimeStamp		, SD_INT32	},
+    {"rb_type__xsd:dayTimeDuration"	, (long *)&rb_type__xsd_dayTimeDuration		, SD_INT32	},
+    {"rb_type__xsd:decimal"		, (long *)&rb_type__xsd_decimal			, SD_INT32	},
+    {"rb_type__xsd:double"		, (long *)&rb_type__xsd_double			, SD_INT32	},
+    {"rb_type__xsd:duration"		, (long *)&rb_type__xsd_duration		, SD_INT32	},
+    {"rb_type__xsd:float"		, (long *)&rb_type__xsd_float			, SD_INT32	},
+    {"rb_type__xsd:gDay"		, (long *)&rb_type__xsd_gDay			, SD_INT32	},
+    {"rb_type__xsd:gMonth"		, (long *)&rb_type__xsd_gMonth			, SD_INT32	},
+    {"rb_type__xsd:gMonthDay"		, (long *)&rb_type__xsd_gMonthDay		, SD_INT32	},
+    {"rb_type__xsd:gYear"		, (long *)&rb_type__xsd_gYear			, SD_INT32	},
+    {"rb_type__xsd:gYearMonth"		, (long *)&rb_type__xsd_gYearMonth		, SD_INT32	},
+    {"rb_type__xsd:hexBinary"		, (long *)&rb_type__xsd_hexBinary		, SD_INT32	},
+    {"rb_type__xsd:int"			, (long *)&rb_type__xsd_int			, SD_INT32	},
+    {"rb_type__xsd:integer"		, (long *)&rb_type__xsd_integer			, SD_INT32	},
+    {"rb_type__xsd:language"		, (long *)&rb_type__xsd_language		, SD_INT32	},
+    {"rb_type__xsd:long"		, (long *)&rb_type__xsd_long			, SD_INT32	},
+    {"rb_type__xsd:negativeInteger"	, (long *)&rb_type__xsd_negativeInteger		, SD_INT32	},
+    {"rb_type__xsd:nonNegativeInteger"	, (long *)&rb_type__xsd_nonNegativeInteger	, SD_INT32	},
+    {"rb_type__xsd:nonPositiveInteger"	, (long *)&rb_type__xsd_nonPositiveInteger	, SD_INT32	},
+    {"rb_type__xsd:normalizedString"	, (long *)&rb_type__xsd_normalizedString	, SD_INT32	},
+    {"rb_type__xsd:positiveInteger"	, (long *)&rb_type__xsd_positiveInteger		, SD_INT32	},
+    {"rb_type__xsd:short"		, (long *)&rb_type__xsd_short			, SD_INT32	},
+    {"rb_type__xsd:string"		, (long *)&rb_type__xsd_string			, SD_INT32	},
+    {"rb_type__xsd:time"		, (long *)&rb_type__xsd_time			, SD_INT32	},
+    {"rb_type__xsd:token"		, (long *)&rb_type__xsd_token			, SD_INT32	},
+    {"rb_type__xsd:unsignedByte"	, (long *)&rb_type__xsd_unsignedByte		, SD_INT32	},
+    {"rb_type__xsd:unsignedInt"		, (long *)&rb_type__xsd_unsignedInt		, SD_INT32	},
+    {"rb_type__xsd:unsignedLong"	, (long *)&rb_type__xsd_unsignedLong		, SD_INT32	},
+    {"rb_type__xsd:unsignedShort"	, (long *)&rb_type__xsd_unsignedShort		, SD_INT32	},
+    {"rb_type__xsd:yearMonthDuration"	, (long *)&rb_type__xsd_yearMonthDuration	, SD_INT32	},
+    {NULL, NULL, NULL}
+  };
 
 caddr_t boxed_iid_of_virtrdf_ns_uri = NULL;
 caddr_t boxed_iid_of_virtrdf_ns_uri_rdf_repl_all = NULL;
@@ -1990,6 +2099,7 @@ bif_rdf_strsqlval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int set_bf_iri = ((1 < BOX_ELEMENTS (args)) ? bif_long_arg (qst, args, 1, "__rdf_strsqlval") : 0x1);
   dtp_t val_dtp = DV_TYPE_OF (val);
   query_instance_t * qi = (query_instance_t *) qst;
+  int rb_type = RDF_BOX_ILL_TYPE;
   if (DV_RDF == val_dtp)
     {
       rdf_box_t *rb = (rdf_box_t *)val;
@@ -1997,6 +2107,7 @@ bif_rdf_strsqlval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         rb_complete (rb, qi->qi_trx, qi);
       val = rb->rb_box;
       val_dtp = DV_TYPE_OF (val);
+      rb_type = rb->rb_type;
     }
   switch (val_dtp)
     {
@@ -2018,7 +2129,8 @@ bif_rdf_strsqlval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       case DV_DATETIME:
         {
           char temp[100];
-          dt_to_iso8601_string (val, temp, sizeof (temp));
+          int mode = DT_PRINT_MODE_XML | dt_print_flags_of_rb_type (rb_type);
+          dt_to_iso8601_string_ext (val, temp, sizeof (temp), mode);
           return box_dv_short_string (temp);
           break;
         }
@@ -2050,6 +2162,7 @@ bif_rdf_long_to_ttl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   query_instance_t *qi = (query_instance_t *)qst;
   dtp_t val_dtp = DV_TYPE_OF (val);
   char temp[256];
+  int rb_type = RDF_BOX_ILL_TYPE;
   if (DV_RDF == val_dtp)
     {
       rdf_box_t *rb = (rdf_box_t *)val;
@@ -2057,13 +2170,17 @@ bif_rdf_long_to_ttl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         rb_complete (rb, qi->qi_trx, qi);
       val = rb->rb_box;
       val_dtp = DV_TYPE_OF (val);
+      rb_type = rb->rb_type;
     }
   switch (val_dtp)
     {
     case DV_DATETIME:
-      dt_to_iso8601_string (val, temp, sizeof (temp));
-      session_buffered_write (out, temp, strlen (temp));
-      break;
+      {
+        int mode = DT_PRINT_MODE_XML | dt_print_flags_of_rb_type (rb_type);
+        dt_to_iso8601_string_ext (val, temp, sizeof (temp), mode);
+        session_buffered_write (out, temp, strlen (temp));
+        break;
+      }
     case DV_STRING:
       dks_esc_write (out, val, box_length (val) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_DQ);
       break;
@@ -2869,8 +2986,10 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
     {
     case DV_DATETIME:
       {
-        char temp [50];
-        dt_to_iso8601_string (obj_box_value, temp, sizeof (temp));
+        char temp [100];
+        int rb_type = ((DV_RDF == obj_dtp) ? ((rdf_box_t *)obj)->rb_type : RDF_BOX_ILL_TYPE);
+        int mode = DT_PRINT_MODE_XML | dt_print_flags_of_rb_type (rb_type);
+        dt_to_iso8601_string_ext (obj_box_value, temp, sizeof (temp), mode);
         session_buffered_write_char ('"', ses);
         session_buffered_write (ses, temp, strlen (temp));
         session_buffered_write_char ('"', ses);
@@ -3347,8 +3466,10 @@ http_rdfxml_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, 
     {
     case DV_DATETIME:
       {
-        char temp [50];
-        dt_to_iso8601_string (obj_box_value, temp, sizeof (temp));
+        char temp [100];
+        int rb_type = ((DV_RDF == obj_dtp) ? ((rdf_box_t *)obj)->rb_type : RDF_BOX_ILL_TYPE);
+        int mode = DT_PRINT_MODE_XML | dt_print_flags_of_rb_type (rb_type);
+        dt_to_iso8601_string_ext (obj_box_value, temp, sizeof (temp), mode);
         session_buffered_write (ses, temp, strlen (temp));
         break;
       }
@@ -3575,8 +3696,10 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
     {
     case DV_DATETIME:
       {
-        char temp [50];
-        dt_to_iso8601_string (obj_box_value, temp, sizeof (temp));
+        char temp [100];
+        int rb_type = ((DV_RDF == obj_dtp) ? ((rdf_box_t *)obj)->rb_type : RDF_BOX_ILL_TYPE);
+        int mode = DT_PRINT_MODE_XML | dt_print_flags_of_rb_type (rb_type);
+        dt_to_iso8601_string_ext (obj_box_value, temp, sizeof (temp), mode);
         session_buffered_write_char ('"', ses);
         session_buffered_write (ses, temp, strlen (temp));
         session_buffered_write_char ('"', ses);
@@ -4028,8 +4151,10 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
     {
     case DV_DATETIME:
       {
-        char temp [50];
-        dt_to_iso8601_string (obj_box_value, temp, sizeof (temp));
+        char temp [100];
+        int rb_type = ((DV_RDF == obj_dtp) ? ((rdf_box_t *)obj)->rb_type : RDF_BOX_ILL_TYPE);
+        int mode = DT_PRINT_MODE_XML | dt_print_flags_of_rb_type (rb_type);
+        dt_to_iso8601_string_ext (obj_box_value, temp, sizeof (temp), mode);
         session_buffered_write_char ('\"', ses);
         session_buffered_write (ses, temp, strlen (temp));
         session_buffered_write_char ('\"', ses);
@@ -4236,8 +4361,10 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
     {
     case DV_DATETIME:
       {
-        char temp [50];
-        dt_to_iso8601_string (obj_box_value, temp, sizeof (temp));
+        char temp [100];
+        int rb_type = ((DV_RDF == obj_dtp) ? ((rdf_box_t *)obj)->rb_type : RDF_BOX_ILL_TYPE);
+        int mode = DT_PRINT_MODE_XML | dt_print_flags_of_rb_type (rb_type);
+        dt_to_iso8601_string_ext (obj_box_value, temp, sizeof (temp), mode);
         session_buffered_write_char ('\"', ses);
         session_buffered_write (ses, temp, strlen (temp));
         session_buffered_write_char ('\"', ses);
@@ -4760,8 +4887,9 @@ literal_elt_printed:
               rb_complete (rb, qi->qi_trx, qi);
             if (DV_DATETIME == DV_TYPE_OF (rb->rb_box))
               {
-                char temp [50];
-                dt_to_iso8601_string (rb->rb_box, temp, sizeof (temp));
+                char temp [100];
+                int mode = DT_PRINT_MODE_XML | dt_print_flags_of_rb_type (rb->rb_type);
+                dt_to_iso8601_string_ext (rb->rb_box, temp, sizeof (temp), mode);
                 session_buffered_write (ses, temp, strlen (temp));
               }
             else

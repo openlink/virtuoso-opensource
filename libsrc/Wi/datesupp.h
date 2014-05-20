@@ -61,6 +61,7 @@ int dt_part_ck (char *str, int min, int max, int *err);
 void dt_to_string (const char *dt, char *str, int len);
 void dbg_dt_to_string (const char *dt, char *str, int len);
 void dt_to_iso8601_string (const char *dt, char *str, int len);
+void dt_to_iso8601_string_ext (const char *dt, char *buf, int len, int mode);
 void dt_to_rfc1123_string (const char *dt, char *str, int len);
 int print_dt_to_buffer (char *buf, caddr_t arg, int mode);
 
@@ -99,6 +100,9 @@ void dt_make_day_zero (char *dt);
 void dt_from_parts (char *dt, int year, int month, int day, int hour, int minute, int second, int fraction, int tz);
 int days_in_february (const int year);
 
+#define DT_PRINT_MODE_NO_Y 0x40
+#define DT_PRINT_MODE_NO_M 0x20
+#define DT_PRINT_MODE_NO_D 0x10
 #define DT_PRINT_MODE_YMD 0x4
 #define DT_PRINT_MODE_HMS 0x2
 #define DT_PRINT_MODE_XML 0x1
@@ -114,5 +118,11 @@ void dt_print (caddr_t dt);
 typedef caddr_t arithm_dt_operation_t (ccaddr_t box1, ccaddr_t box2, caddr_t *err_ret);
 extern arithm_dt_operation_t arithm_dt_add;
 extern arithm_dt_operation_t arithm_dt_subtract;
+
+extern int rb_type__xsd_gDay;
+extern int rb_type__xsd_gMonth;
+extern int rb_type__xsd_gMonthDay;
+extern int rb_type__xsd_gYear;
+extern int rb_type__xsd_gYearMonth;
 
 #endif /* _DATESUPP_H */

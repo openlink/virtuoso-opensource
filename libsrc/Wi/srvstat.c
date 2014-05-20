@@ -1861,7 +1861,6 @@ stat_desc_t dbf_descs [] =
     {NULL, NULL, NULL}
   };
 
-
 caddr_t
 dbs_list ()
 {
@@ -1922,7 +1921,7 @@ id_hash_t * sd_hash;
 caddr_t
 sys_stat_impl (const char *name)
 {
-  stat_desc_t *sd_arrays[] = {stat_descs, dbf_descs, NULL};
+  stat_desc_t *sd_arrays[] = {stat_descs, dbf_descs, rdf_preset_datatypes_descs, NULL};
   stat_desc_t **sd_arrays_tail;
   stat_desc_t **place;
 

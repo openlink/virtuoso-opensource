@@ -4040,7 +4040,10 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
       case 'D':
 	{
-	  caddr_t arg = bif_date_arg (qst, args, arg_inx, szMe);
+	  int rb_type;
+	  caddr_t arg = bif_date_arg_rb_type (qst, args, arg_inx, szMe, &rb_type);
+	  if ((0 == (arg_len & (DT_PRINT_MODE_YMD | DT_PRINT_MODE_HMS))) && (RDF_BOX_ILL_TYPE != rb_type))
+            arg_len |= dt_print_flags_of_rb_type (rb_type);
 	  dt_print_to_buffer (tmp, arg, arg_len);
 	}
 	break;
@@ -9636,8 +9639,23 @@ box_cast (caddr_t * qst, caddr_t data, ST * dtp, dtp_t arg_dtp)
 #endif
       data = rb->rb_box;
       arg_dtp = DV_TYPE_OF (data);
-      if (DV_STRING == arg_dtp)
-        box_flags (data) |= BF_UTF8;
+      switch (arg_dtp)
+        {
+        case DV_STRING:
+          box_flags (data) |= BF_UTF8;
+          break;
+        case DV_DATETIME:
+          {
+            if (DV_STRING == dtp->type)
+              {
+                char temp [100];
+                int mode = DT_PRINT_MODE_XML | dt_print_flags_of_rb_type (rb->rb_type);
+                dt_to_iso8601_string_ext (data, temp, sizeof (temp), mode);
+                return box_dv_short_string (temp);
+              }
+            break;
+          }
+        }
     }
   switch (dtp->type)
     {

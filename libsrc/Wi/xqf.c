@@ -572,25 +572,31 @@ xqf_duration (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 #define XQ_DAY		7
 #define COUNTOF__XQ_DT_MODE	8
 
+typedef struct xq_dt_mode_s {
+  const char *name;
+  int dt_type;
+  int flags; }
+xq_dt_mode_t;
+
+xq_dt_mode_t xq_dt_modes[] = {
+  {"dateTime"	, DT_TYPE_DATETIME	, DTFLAG_YY | DTFLAG_MM | DTFLAG_DD | DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS | DTFLAG_SF | DTFLAG_ZH | DTFLAG_ZM	},
+  {"date"	, DT_TYPE_DATE		, DTFLAG_YY | DTFLAG_MM | DTFLAG_DD |                                                  DTFLAG_ZH | DTFLAG_ZM	},
+  {"time"	, DT_TYPE_TIME		,                                     DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS | DTFLAG_SF | DTFLAG_ZH | DTFLAG_ZM	},
+  {"gYearMonth"	, DT_TYPE_DATE		, DTFLAG_YY | DTFLAG_MM |                                                              DTFLAG_ZH | DTFLAG_ZM	},
+  {"gYear"	, DT_TYPE_DATE		, DTFLAG_YY |                                                                          DTFLAG_ZH | DTFLAG_ZM	},
+  {"gMonthDay"	, DT_TYPE_DATE		,             DTFLAG_MM | DTFLAG_DD |                                                  DTFLAG_ZH | DTFLAG_ZM	},
+  {"gMonth"	, DT_TYPE_DATE		,             DTFLAG_MM |                                                              DTFLAG_ZH | DTFLAG_ZM	},
+  {"gDay"	, DT_TYPE_DATE		,                         DTFLAG_DD |                                                  DTFLAG_ZH | DTFLAG_ZM	}
+};
+
 static void
 __datetime_from_string (caddr_t *n, const char *str, int do_what)
 {
-  int flags[] = {0x1ff, 0x187, 0x1f8, 0x183, 0x181, 0x186, 0x182, 0x184};
-  int types[] = { DT_TYPE_DATETIME, DT_TYPE_DATE, DT_TYPE_TIME, DT_TYPE_DATETIME, DT_TYPE_DATETIME, DT_TYPE_DATETIME, DT_TYPE_DATETIME, DT_TYPE_DATETIME };
-  const char *names[] = {	"dateTime",
-				"date",
-				"time",
-				"gYearMonth",
-				"gYear",
-				"gMonthDay",
-				"gMonth",
-				"gDay",
-  };
   caddr_t err_msg = NULL;
   caddr_t err;
   assert (do_what >= 0 && do_what < COUNTOF__XQ_DT_MODE);
   n[0] = dk_alloc_box_zero (DT_LENGTH, DV_DATETIME);
-  iso8601_or_odbc_string_to_dt (str, n[0], flags[do_what], types[do_what], &err_msg);
+  iso8601_or_odbc_string_to_dt (str, n[0], xq_dt_modes[do_what].flags, xq_dt_modes[do_what].dt_type, &err_msg);
   if (NULL == err_msg)
     return;
   if (0 == do_what)
@@ -600,7 +606,7 @@ __datetime_from_string (caddr_t *n, const char *str, int do_what)
     }
   dk_free_box (n[0]);
   n[0] = NULL;
-  err = srv_make_new_error ("42001", "XPQ??", "%s in %s constructor: \"%.300s\"", err_msg, names[do_what], str);
+  err = srv_make_new_error ("42001", "XPQ??", "%s in %s constructor: \"%.300s\"", err_msg, xq_dt_modes[do_what].name, str);
   dk_free_box (err_msg);
   sqlr_resignal (err);
 }

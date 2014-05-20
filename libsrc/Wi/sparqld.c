@@ -21,6 +21,7 @@
  *
  */
 
+#include "datesupp.h"
 #include "sparql2sql.h"
 #include "sqlparext.h"
 /*#include "arith.h"
@@ -51,7 +52,17 @@ void ssg_sdprin_literal (spar_sqlgen_t *ssg, SPART *tree)
     case DV_ARRAY_OF_POINTER:
       if (SPAR_LIT != tree->type)
         spar_sqlprint_error ("ssg_" "sdprin_literal: non-literal vector as argument");
-      ssg_sdprin_literal (ssg, (SPART *)(tree->_.lit.val));
+        if (DV_DATETIME == DV_TYPE_OF (tree->_.lit.val))
+          {
+            char temp [100];
+            int mode = DT_PRINT_MODE_XML | dt_print_flags_of_xsd_type_uname (tree->_.lit.datatype);
+            dt_to_iso8601_string_ext (tree->_.lit.val, temp, sizeof (temp), mode);
+            ssg_putchar ('"');
+            ssg_puts (temp);
+            ssg_putchar ('"');
+          }
+        else
+          ssg_sdprin_literal (ssg, (SPART *)(tree->_.lit.val));
       if (DV_STRING != DV_TYPE_OF (tree->_.lit.val))
         return;
       if (NULL != tree->_.lit.datatype)

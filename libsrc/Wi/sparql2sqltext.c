@@ -21,6 +21,7 @@
  *
  */
 
+#include "datesupp.h"
 #include "sparql2sql.h"
 #include "arith.h"
 #include "sqlparext.h"
@@ -2571,12 +2572,18 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
           return;
         }
     }
-#ifdef NDEBUG
-  ssg_puts (" DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (");
-#else
-  ssg_puts (" /* sqlval of typed literal */ DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (");
-#endif
-  ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
+  ssg_puts_with_comment (" DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (", "sqlval of typed literal");
+  if (DV_DATETIME == DV_TYPE_OF (value))
+    {
+      char temp[100];
+      int mode = DT_PRINT_MODE_XML | dt_print_flags_of_xsd_type_uname (type);
+      dt_to_iso8601_string_ext (value, temp, sizeof (temp), mode);
+      ssg_putchar ('\'');
+      ssg_puts (temp);
+      ssg_putchar ('\'');
+    }
+  else
+    ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
   ssg_putchar (',');
   if (NULL != type)
     ssg_print_box_as_sql_atom (ssg, type, SQL_ATOM_UNAME_ALLOWED);
@@ -2625,8 +2632,18 @@ ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
           ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_ABORT_ON_CAST);
           return;
         }
-      ssg_puts (" DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (");
-      ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
+      ssg_puts_with_comment (" DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (", "lit as long");
+      if (DV_DATETIME == value_dtp)
+        {
+          char temp[100];
+          int mode = DT_PRINT_MODE_XML | dt_print_flags_of_xsd_type_uname (datatype);
+          dt_to_iso8601_string_ext (value, temp, sizeof (temp), mode);
+          ssg_putchar ('\'');
+          ssg_puts (temp);
+          ssg_putchar ('\'');
+        }
+      else
+        ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
       ssg_putchar (',');
       if (NULL != datatype)
         ssg_print_box_as_sql_atom (ssg, datatype, SQL_ATOM_UNAME_ALLOWED);
@@ -5125,7 +5142,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
                 ssg->ssg_indent++;
                 ssg_print_scalar_expn (ssg, tree->_.funcall.argtrees[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
                 ssg->ssg_indent--;
-                ssg_puts (" AS ");
+                ssg_puts_with_comment (" AS ", "xqf parser funcall");
                 ssg_puts (parser_desc->p_sql_cast_type);
                 ssg_puts (")");
                 goto print_asname;
@@ -7513,7 +7530,7 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
                 ssg->ssg_indent++;
                 ssg_print_retval_simple_expn (ssg, gp, tree->_.funcall.argtrees[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
                 ssg->ssg_indent--;
-                ssg_puts (" AS ");
+                ssg_puts_with_comment (" AS ", "xqf parser simple retval");
                 ssg_puts (parser_desc->p_sql_cast_type);
                 ssg_puts (")");
                 goto print_asname;
@@ -7742,7 +7759,7 @@ ssg_print_retval_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *ret_column, int col
           ssg_puts (" CAST (");
           ssg->ssg_indent++;
           ssg_print_retval_simple_expn (ssg, gp, ret_column, needed, NULL);
-          ssg_puts (" AS VARCHAR)");
+          ssg_puts_with_comment (" AS VARCHAR)", "retval strict type");
           ssg->ssg_indent--;
           ssg_print_asname_tail ("typed retexpn", asname);
         }

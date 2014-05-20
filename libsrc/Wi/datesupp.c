@@ -937,6 +937,81 @@ short_buf:
 }
 
 void
+dt_to_iso8601_string_ext (const char *dt, char *buf, int len, int mode)
+{
+  char *tail = buf;
+  int arg_dt_type = DT_DT_TYPE (dt);
+  TIMESTAMP_STRUCT ts;
+  int tz = DT_TZ (dt);
+  if (0 == ((DT_PRINT_MODE_YMD | DT_PRINT_MODE_HMS) & mode))
+    mode |= ((DT_TYPE_TIME == arg_dt_type) ? DT_PRINT_MODE_HMS :
+      ((DT_TYPE_DATE == arg_dt_type) ? DT_PRINT_MODE_YMD : (DT_PRINT_MODE_YMD | DT_PRINT_MODE_HMS)) );
+  if ((DT_PRINT_MODE_YMD & mode) && (DT_TYPE_TIME == arg_dt_type))
+    {
+      snprintf (buf, len, "??? Bit 4 in print mode requires DATE or DATETIME argument, not TIME");
+      return;
+    }
+  if ((DT_PRINT_MODE_HMS & mode) && (DT_TYPE_DATE == arg_dt_type))
+    {
+      snprintf (buf, len, "??? Bit 2 in print mode requires TIME or DATETIME argument, not DATE");
+      return;
+    }
+  dt_to_GMTimestamp_struct (dt, &ts);
+  if (DT_PRINT_MODE_YMD & mode)
+    {
+      if (DT_PRINT_MODE_NO_D & mode)
+        {
+          if (DT_PRINT_MODE_NO_Y & mode)
+            tail += snprintf (tail, (buf + len) - tail, "--%02d", ts.month + ((15 <= ts.day) ? 1 : 0));
+          else if (DT_PRINT_MODE_NO_M & mode)
+            tail += snprintf (tail, (buf + len) - tail, "%04d", ts.year + ((6 <= ts.month) ? 1 : 0));
+          else if (15 <= ts.day)
+            tail += snprintf (tail, (buf + len) - tail, "%02d-%02d", ts.year + ((12 == ts.month) ? 1 : 0), (ts.month % 12) + 1);
+          else
+            tail += snprintf (tail, (buf + len) - tail, "%04d-%02d", ts.year, ts.month);
+        }
+      else if (DT_PRINT_MODE_NO_Y & mode)
+        {
+          if (DT_PRINT_MODE_NO_M & mode)
+            tail += snprintf (tail, (buf + len) - tail, "---%02d", ts.day);
+          else
+            tail += snprintf (tail, (buf + len) - tail, "--%02d-%02d", ts.month, ts.day);
+        }
+      else
+        tail += snprintf (tail, (buf + len) - tail, "%04d-%02d-%02d", ts.year, ts.month, ts.day);
+    }
+  if ((DT_PRINT_MODE_YMD & mode) && (DT_PRINT_MODE_HMS & mode))
+    (tail++)[0] = ((DT_PRINT_MODE_XML & mode) ? 'T' : ' ');
+  if (DT_PRINT_MODE_HMS & mode)
+    {
+      tail += snprintf (tail, (buf + len) - tail, "%02d:%02d:%02d", ts.hour, ts.minute, ts.second);
+      if (ts.fraction)
+        {
+          if (ts.fraction % 1000)
+            tail += snprintf (tail, (buf + len) - tail, ".%09d", (int)ts.fraction);
+          else if (ts.fraction % 1000000)
+            tail += snprintf (tail, (buf + len) - tail, ".%06d", (int)(ts.fraction / 1000));
+          else
+            tail += snprintf (tail, (buf + len) - tail, ".%03d", (int)(ts.fraction / 1000000));
+        }
+    }
+  if (tz)
+    snprintf (tail, (buf + len) - tail, "%+03d:%02d", tz / 60, abs (tz) % 60);
+  else if (DT_PRINT_MODE_XML & mode)
+    {
+      if (((buf + len) - tail) > 2)
+        strcpy (tail, "Z");
+    }
+  else
+    {
+      if (((buf + len) - tail) > 4)
+        strcpy (tail, " GMT");
+      return;
+    }
+}
+
+
+void
 dt_to_rfc1123_string (const char *dt, char *str, int len)
 {
   GMTIMESTAMP_STRUCT ts;
@@ -1056,7 +1131,13 @@ iso8601_or_odbc_string_to_dt_1 (const char *str, char *dt, int dtflags, int dt_t
       leading_minus = 1;
       tail++;
     }
-  for (fld_idx = 0; fld_idx < 9; fld_idx++)
+  fld_idx = 0;
+  while (('-' == tail[0]) && (2 > fld_idx) && !(dtflags & (1 << fld_idx)))
+    {
+      tail++;
+      fld_idx++;
+    }
+  for (; fld_idx < 9; fld_idx++)
     {
       int fld_flag = (1 << fld_idx);
       int fldlen, fld_maxlen, fld_value;
@@ -1163,13 +1244,15 @@ field_length_checked:
         fld_value = atoi (tail);
       fld_values[fld_idx] = fld_value;
       res_flags |= fld_flag;
-
-      expected_delimiter = delms[fld_idx];
-      if (expected_delimiter == group_end[0])
-        goto field_delim_checked; /* see below */
+      if (dtflags & (fld_flag << 1))
+        {
+          expected_delimiter = delms[fld_idx];
+          if (expected_delimiter == group_end[0])
+            goto field_delim_checked; /* see below */
+        }
       if ('\0' == group_end[0])
         goto field_delim_checked; /* see below */
-      if (NULL != strchr ("+-Z",group_end[0]))
+      if ((dtflags & DTFLAG_ZH) && ( 7 > fld_idx) && (NULL != strchr ("+-Z",group_end[0])))
         {
           tzmin = 0; /* Default timezone is dropped because an explicit one is in place */
           if ('Z' == group_end[0])
@@ -1180,10 +1263,8 @@ field_length_checked:
                   return;
                 }
             }
-          if (DTFLAG_SS == fld_flag)
-            fld_idx++;
-          else if ((DTFLAG_DD == fld_flag) && (!(dtflags & (DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS | DTFLAG_SF))))
-            fld_idx += 4;
+          if ((DTFLAG_SS == fld_flag) || (DTFLAG_DD == fld_flag) || !((0x7f << (fld_idx + 1)) & dtflags & 0x7f))
+            fld_idx = 6;
           goto field_delim_checked; /* see below */
         }
       if ((DTFLAG_SS == fld_flag) && ('.' == group_end[0]))
@@ -1239,7 +1320,7 @@ field_delim_checked:
           err_msg_ret[0] = box_sprintf (500, "Incorrect %s value", names[fld_idx]);
           return;
         }
-      if (DTFLAG_DD == fld_flag)
+      if ((DTFLAG_DD == fld_flag) && (DTFLAG_DATE == (DTFLAG_DATE & dtflags)))
         {
           int month = fld_values[1];
           int days_in_this_month = days_in_months[month-1];
@@ -1254,7 +1335,7 @@ field_delim_checked:
     }
   if (leading_minus)
     {
-      if (DTFLAG_DATE & dtflags)
+      if (DTFLAG_YY & dtflags)
         fld_values[0] = -(fld_values[0]);
       else
         {
@@ -1273,7 +1354,6 @@ field_delim_checked:
   if (0 <= dt_type)
     DT_SET_DT_TYPE (dt, dt_type);
   err_msg_ret[0] = NULL;
-  return;
 }
 
 void

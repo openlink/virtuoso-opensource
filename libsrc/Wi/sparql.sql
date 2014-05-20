@@ -841,6 +841,72 @@ cache_and_log:
 }
 ;
 
+create function DB.DBA.RDF_PRESET_TWOBYTES_OF_DATATYPES ()
+{
+  declare xsd_lnames any;
+  xsd_lnames := vector (
+    'ENTITY',
+    'ENTITIES',
+    'ID',
+    'IDREF',
+    'IDREFS',
+    'NCName',
+    'Name',
+    'NMTOKEN',
+    'NMTOKENS',
+    'NOTATION',
+    'QName',
+    'any',
+    'anyAtomicType',
+    'anySimpleType',
+    'anyType',
+    'anyURI',
+    'base64Binary',
+    'boolean',
+    'byte',
+    'date',
+    'dateTime',
+    'dateTimeStamp',
+    'dayTimeDuration',
+    'decimal',
+    'double',
+    'duration',
+    'float',
+    'gDay',
+    'gMonth',
+    'gMonthDay',
+    'gYear',
+    'gYearMonth',
+    'hexBinary',
+    'int',
+    'integer',
+    'language',
+    'long',
+    'negativeInteger',
+    'nonNegativeInteger',
+    'nonPositiveInteger',
+    'normalizedString',
+    'positiveInteger',
+    'short',
+    'string',
+    'time',
+    'token',
+    'unsignedByte',
+    'unsignedInt',
+    'unsignedLong',
+    'unsignedShort',
+    'yearMonthDuration' );
+  foreach (varchar n in xsd_lnames) do
+    {
+      __dbf_set ('rb_type__xsd:' || n, DB.DBA.RDF_TWOBYTE_OF_DATATYPE (iri_to_id ('http://www.w3.org/2001/XMLSchema#' || n)));
+    }
+  commit work;
+}
+;
+
+DB.DBA.RDF_PRESET_TWOBYTES_OF_DATATYPES ()
+;
+
 create function DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (in id varchar) returns integer
 {
   declare res integer;

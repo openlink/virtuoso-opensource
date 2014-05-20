@@ -2105,6 +2105,7 @@ typedef struct stat_desc_s
   } stat_desc_t;
 
 extern stat_desc_t dbf_descs[];
+extern stat_desc_t rdf_preset_datatypes_descs[];
 
 typedef struct s_time_t
 {

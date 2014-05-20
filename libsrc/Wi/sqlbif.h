@@ -161,6 +161,9 @@ EXE_EXPORT (iri_id_t, bif_iri_id_or_null_arg, (caddr_t * qst, state_slot_t ** ar
 EXE_EXPORT (struct id_hash_iterator_s *, bif_dict_iterator_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int chk_version));
 EXE_EXPORT (struct id_hash_iterator_s *, bif_dict_iterator_or_null_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int chk_version));
 EXE_EXPORT (caddr_t, bif_date_arg, (caddr_t * qst, state_slot_t ** args, int nth, char *func));
+EXE_EXPORT (caddr_t, bif_date_arg_rb_type, (caddr_t * qst, state_slot_t ** args, int nth, char *func, int *rb_type_ret));
+EXE_EXPORT (int, dt_print_flags_of_rb_type, (int rb_type));
+EXE_EXPORT (int, dt_print_flags_of_xsd_type_uname, (ccaddr_t xsd_type_uname));
 
 dbe_key_t * bif_key_arg (caddr_t * qst, state_slot_t ** args, int n, char * fn);
 
