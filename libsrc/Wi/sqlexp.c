@@ -1791,7 +1791,7 @@ cv_is_local_1 (code_vec_t cv, int is_cluster)
 	  if (subq_comp_func == ins->_.pred.func)
 	    {
 	      subq_pred_t * subq = (subq_pred_t *) ins->_.pred.cmp;
-	      if (!is_cluster || (CV_NO_INDEX & is_cluster))
+	      if ((CV_NO_INDEX & is_cluster))
 		return 0;
 	      if (!enable_rec_qf && CV_IS_LOCAL_CN == is_cluster)
 		break;
