@@ -6621,6 +6621,45 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_NICE_MICRODATA (inout trip
 }
 ;
 
+create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_NICE_TTL (inout triples_dict any) returns long varchar
+{
+  declare triples, ses any;
+  ses := string_output ();
+  if (214 <> __tag (triples_dict))
+    triples := vector ();
+  else
+    triples := dict_list_keys (triples_dict, 1);
+  DB.DBA.RDF_TRIPLES_TO_HTML_NICE_TTL (triples, ses);
+  return ses;
+}
+;
+
+create procedure DB.DBA.RDF_TRIPLES_TO_HTML_NICE_TTL (inout triples any, inout ses any)
+{
+  declare tcount integer;
+  tcount := length (triples);
+  if (0 = tcount)
+    {
+      http ('# Empty Turtle\n', ses);
+      return;
+    }
+  rowvector_obj_sort (triples, 2, 1);
+  rowvector_subj_sort (triples, 1, 1);
+  rowvector_subj_sort (triples, 0, 1);
+  if (2666 < tcount) -- The "nice" algorithm is too slow to be applied to large outputs. There's also a limit for 8000 namespace prefixes.
+    {
+      http (sprintf ('# The result consists of %d triples so it is too long to be pretty-printed. The dump below contains that triples without any decoration', tcount), ses);
+      http ('<xmp>', ses);
+      DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
+      http ('</xmp>', ses);
+      return;
+    }
+  http ('<pre>', ses);
+  DB.DBA.RDF_TRIPLES_TO_NICE_TTL_IMPL (triples, 257, ses);
+  http ('</pre>', ses);
+}
+;
+
 create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_MICRODATA (inout triples_dict any) returns long varchar
 {
   declare triples, ses any;
