@@ -6723,6 +6723,7 @@ ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, dk_set
   if ((SPART_VARR_NOT_NULL & restrs_not_filtered_in_subqs) && (UNION_L != eq->e_gp->_.gp.subtype) && (SPAR_UNION_WO_ALL != eq->e_gp->_.gp.subtype))
     {
       int sub_ctr;
+      int forced_notnull_opt_count = 0;
       if (0 != eq->e_gspo_uses)
         {
           int varctr;
@@ -6750,12 +6751,28 @@ ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, dk_set
           if (0 < col_count)
             {
               const char *eq_asname = ((1 == col_count) ? NULL_ASNAME : (COL_IDX_ASNAME + 0));
-              ssg_print_where_or_and (ssg, "an optional from subq is forced to be not null");
+              if (0 == forced_notnull_opt_count)
+                {
+                  ssg_print_where_or_and (ssg, "an optional from subq is forced to be not null");
+                  ssg_putchar ('(');
+                  ssg->ssg_indent++;
+                }
+              else
+                {
+                  ssg_newline (0);
+                  ssg_puts (" OR ");
+                }
               ssg_print_equiv_retval_expn (ssg, sub_gp, sub_eq, SSG_RETVAL_FROM_GOOD_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING | SSG_RETVAL_OPTIONAL_MAKES_NULLABLE, sub_native, eq_asname);
               ssg_puts (" IS NOT NULL");
+              forced_notnull_opt_count++;
             }
         }
       END_DO_BOX_FAST;
+      if (forced_notnull_opt_count)
+        {
+          ssg_putchar (')');
+          ssg->ssg_indent--;
+        }
 eq_has_join_with_nonoptional_triple:
       ;
     }
