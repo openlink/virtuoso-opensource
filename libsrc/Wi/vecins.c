@@ -841,7 +841,7 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
   dk_set_t parts;
   int null_skipped = 0;
   int n_rows, log_needed;
-  mem_pool_t *ins_mp = mem_pool_alloc ();
+  mem_pool_t * ins_mp;
   row_delta_t rd;
   row_delta_t **rds;
   int icol;
@@ -852,6 +852,8 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
   query_instance_t *qi = (query_instance_t *) qst;
   LOCAL_RD (right_rd);
   QI_CHECK_STACK (qi, &qst, INS_STACK_MARGIN);
+  ins_mp = mem_pool_alloc ();
+
   if (dbf_ko_pk && dbf_ko_pk == key->key_table->tb_primary_key->key_id && dbf_ko_key != key->key_id)
     return 0;
   right_rd.rd_temp = right_temp;
