@@ -429,8 +429,11 @@ end_scan:
 	  	sprintf ('%s://%{WSHost}s', case when is_https_ctx () then 'https' else 'http' end));
         }
     }
-  long_path := replace (long_path, '^{Host}^', http_host ());
-  long_path := replace (long_path, '^{FullHost}^', sprintf ('%s://%s', case when is_https_ctx () then 'https' else 'http' end, http_host ()));
+  if (http_host () <> 0)
+    {
+      long_path := replace (long_path, '^{Host}^', http_host ());
+      long_path := replace (long_path, '^{FullHost}^', sprintf ('%s://%s', case when is_https_ctx () then 'https' else 'http' end, http_host ()));
+    }
   return long_path;
 }
 ;
