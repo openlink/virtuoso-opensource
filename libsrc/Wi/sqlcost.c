@@ -2406,6 +2406,7 @@ sqlo_inx_sample_1 (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_el
       DO_SET (df_elt_t *, cp, &tb_dfe->_.table.col_preds)
 	{
 	  if (cp->dfe_type != DFE_TEXT_PRED && !sqlo_in_list (cp, NULL, NULL) &&
+	      DFE_COLUMN == cp->_.bin.left->dfe_type &&
 	      dk_set_member (key->key_parts, (void *) cp->_.bin.left->_.col.col) &&
 	      !dk_set_member (added_cols, (void *) cp->_.bin.left->_.col.col))
 	    {
