@@ -2669,7 +2669,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 **/
 
-        public class CloseableIterationBase<E, X extends Exception> implements CloseableIteration<E, X> {
+        public abstract class CloseableIterationBase<E, X extends Exception> implements CloseableIteration<E, X> {
                                            
 
 		E	  v_row;
@@ -2689,9 +2689,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         	}
 
 
-        	private X createException(Exception e) {
-        	  return null;
-        	}
+        	protected abstract X createException(Exception e);
 
 		public boolean hasNext() throws X 
 		{
@@ -2760,9 +2758,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			}
 		}
 
-		protected void extractRow() throws Exception 
-		{
-		}
+		protected abstract void extractRow() throws Exception;
 	}
 
 
@@ -2794,7 +2790,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		  }
         	}
 
-        	private RepositoryException createException(Exception e) {
+        	protected RepositoryException createException(Exception e) {
         		return new RepositoryException(e);
         	}
 
@@ -2857,7 +2853,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		  }
         	}
 
-        	private QueryEvaluationException createException(Exception e) {
+        	protected QueryEvaluationException createException(Exception e) {
         		return new QueryEvaluationException(e);
         	}
 
@@ -2905,7 +2901,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		  }
         	}
 
-        	private QueryEvaluationException createException(Exception e) {
+        	protected QueryEvaluationException createException(Exception e) {
         		return new QueryEvaluationException(e);
         	}
 
