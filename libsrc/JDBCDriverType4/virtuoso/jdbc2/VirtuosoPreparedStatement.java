@@ -1149,8 +1149,13 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
       // Check parameters
       if(i < 1 || i > parameters.capacity())
          throw new VirtuosoException("Index " + i + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
-      if(x == null) this.setNull(i, Types.ARRAY);
-      else objparams.setElementAt(x,i - 1);
+      if(x == null){
+          this.setNull(i, Types.ARRAY);
+      } else if (x instanceof VirtuosoArray) {
+          objparams.setElementAt(((VirtuosoArray)x).data, i - 1);
+      } else {
+          objparams.setElementAt(x,i - 1);
+      }
    }
 #endif
 

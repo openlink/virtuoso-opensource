@@ -27,25 +27,25 @@
 if WITH_JDK2
 CLASSPATH2=$(CLASSPATH2)
 JDK2=@ac_jdk2_path@
-JDK2_FLAGS=-O -g:none
+JDK2_FLAGS=-g
 endif
 
 if WITH_JDK3
 CLASSPATH3=$(CLASSPATH3)
 JDK3=@ac_jdk3_path@
-JDK3_FLAGS=-O -g:none #-Xlint:deprecation -Xlint:unchecked
+JDK3_FLAGS=-g #-Xlint:deprecation -Xlint:unchecked
 endif
 
 if WITH_JDK4
 CLASSPATH4=$(CLASSPATH4)
 JDK4=@ac_jdk4_path@
-JDK4_FLAGS=-O -g:none #-Xlint:deprecation -Xlint:unchecked
+JDK4_FLAGS=-g #-Xlint:deprecation -Xlint:unchecked
 endif
 
 if WITH_JDK4_1
 CLASSPATH4=$(CLASSPATH4)
 JDK4_1=@ac_jdk4_1_path@
-JDK4_1_FLAGS=-O -g:none #-Xlint:deprecation -Xlint:unchecked
+JDK4_1_FLAGS=-g #-Xlint:deprecation -Xlint:unchecked
 endif
 
 
@@ -97,6 +97,7 @@ in3files = \
 	PreparedStatementWrapper.java \
 	ResultSetWrapper.java \
 	StatementWrapper.java \
+	VirtuosoArray.java \
 	VirtuosoConnectionPoolDataSource.java \
 	VirtuosoDataSource.java \
 	VirtuosoDataSourceFactory.java \
