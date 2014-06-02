@@ -736,7 +736,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         this repository.
 	 */
 	public long size(Resource... contexts) throws RepositoryException {
-		int ret = 0;
+		long ret = 0;
 		verifyIsOpen();
 		flushDelayAdd();
 
@@ -754,7 +754,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		        ResultSet rs = st.executeQuery(query.toString());
 
 			if (rs.next())
-			    ret = rs.getInt(1);
+			    ret = rs.getLong(1);
                         rs.close();
 		}
 		catch (Exception e) {
