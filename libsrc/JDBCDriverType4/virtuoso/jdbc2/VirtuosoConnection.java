@@ -1844,6 +1844,12 @@ public class VirtuosoConnection implements Connection
        return prepareStatement (sql);
      }
 
+   synchronized void checkClosed() throws SQLException
+   {
+        if (isClosed())
+            throw new VirtuosoException("The connection is already closed.",VirtuosoException.DISCONNECTED);
+    }
+
 #if JDK_VER >= 16
     //------------------------- JDBC 4.0 -----------------------------------
     /**
@@ -2148,7 +2154,13 @@ public class VirtuosoConnection implements Connection
   */
   public Array createArrayOf(String typeName, Object[] elements) throws SQLException
   {
-    throw new VirtuosoFNSException ("createArrayOf(typeName, elements)  not supported", VirtuosoException.NOTIMPLEMENTED);
+      checkClosed();
+      if (typeName == null)
+          throw new VirtuosoException("typeName is null.",VirtuosoException.MISCERROR);
+
+      if (elements == null)
+          return null;
+      return new VirtuosoArray(typeName, elements);
   }
 
 /**

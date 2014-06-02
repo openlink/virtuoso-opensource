@@ -140,7 +140,7 @@ class VirtuosoOutputStream extends BufferedOutputStream
 #if JDK_VER >= 12
 	       {
 		 //System.out.println("DV_ARRAY_OF_POINTER");
-		 LinkedList o = (LinkedList)obj;
+		 List o = (List)obj;
 		 int length = o.size();
 		 write(VirtuosoTypes.DV_ARRAY_OF_POINTER);
 		 writeint(length);
@@ -854,6 +854,8 @@ class VirtuosoOutputStream extends BufferedOutputStream
 #if JDK_VER >= 12
       if(obj instanceof LinkedList)
          return VirtuosoTypes.DV_LIST_OF_POINTER;
+       if(obj instanceof ArrayList)
+           return VirtuosoTypes.DV_LIST_OF_POINTER;
 #endif
       if(obj instanceof openlink.util.Vector)
          return VirtuosoTypes.DV_ARRAY_OF_POINTER;
