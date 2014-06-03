@@ -95,6 +95,7 @@
                                       <![CDATA[
                                         self.c_mode := 'C/add';
 
+                                        self.seq1.ufl_value := '';
                                         self.desc1.ufl_value := '';
                                         self.patt1.ufl_value := '';
                                         self.typ1.ufl_value := '';
@@ -198,6 +199,7 @@
                                                       _key := skey[0];
                                                       _uid := skey[1];
                                                     }
+                                                    self.seq1.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[3];
                                                     self.desc1.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[2];
                                                     self.patt1.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[0];
                                                     self.typ1.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[1];
@@ -322,34 +324,32 @@
                                   <div class="fm">
                                     <fieldset>
                                       <label for="desc1">Description</label>
-                                      <v:text name="desc1" value="" xhtml_id="desc1" error-glyph="*" xhtml_size="110">
-                                      </v:text>
+                                      <v:text name="desc1" value="" xhtml_id="desc1" error-glyph="*" xhtml_style="width: 500px" />
+                                      <br/>
+                                      <label for="seq1">Sequence No</label>
+                                      <v:text name="seq1" value="" xhtml_id="seq1" error-glyph="*" xhtml_style="width: 120px" />
                                       <br/>
                                       <label for="patt1">Pattern</label>
-                                      <v:text name="patt1" xhtml_id="patt1" error-glyph="*" value="" xhtml_size="110" />
+                                      <v:text name="patt1" xhtml_id="patt1" error-glyph="*" value="" xhtml_style="width: 500px" />
                                       <br />
                                       <label for="typ1">Pattern Type</label>
-                                      <v:select-list name="typ1" value="" xhtml_id="typ1" error-glyph="*">
+                                      <v:select-list name="typ1" value="" xhtml_id="typ1" error-glyph="*" xhtml_style="width: 120px" >
                                         <v:item name="Content Type" value="MIME"/>
                                         <v:item name="URL" value="URL"/>
                                         <v:item name="HTTP protocol" value="HTTP"/>
                                       </v:select-list>
                                       <br />
                                       <label for="pl1">Cartridge Name</label>
-                                      <v:text name="pl1" value="" xhtml_size="110" xhtml_id="pl1" error-glyph="*">
-                                      </v:text>
+                                      <v:text name="pl1" value="" xhtml_id="pl1" error-glyph="*" xhtml_style="width: 500px" />
                                       <br />
                                       <label for="key2">API Account</label>
-                                      <v:text name="key2" value="" xhtml_size="110" xhtml_id="key2" error-glyph="*">
-                                      </v:text>
+                                      <v:text name="key2" value="" xhtml_id="key2" error-glyph="*" xhtml_style="width: 500px" />
                                       <br />
                                       <label for="key1">API Key</label>
-                                      <v:text name="key1" value="" xhtml_size="110" xhtml_id="key1" error-glyph="*">
-                                      </v:text>
+                                      <v:text name="key1" value="" xhtml_id="key1" error-glyph="*" xhtml_style="width: 500px" />
                                       <br />
                                       <label for="opts1">Options</label>
-                                      <v:textarea name="opts1" value="" xhtml_rows="5" xhtml_cols="70" xhtml_id="opts1" error-glyph="*">
-                                      </v:textarea>
+                                      <v:textarea name="opts1" value="" xhtml_rows="5" xhtml_id="opts1" error-glyph="*" xhtml_style="width: 495px" />
                                       <?vsp if (strstr (self.desc1.ufl_value, 'FQL') is not null) { ?>
                                       <a href="fb_popup.vspx" target="_blank">Get Facebook session</a>
                                       <?vsp } ?>
@@ -370,11 +370,8 @@
                                         <v:button name="save1" value="--case when self.c_mode = 'C/add' then 'Add' else 'Update' end" action="simple">
                                           <v:on-post>
                                             <![CDATA[
-                                              declare _key, opts any;
-
-                                              if (not self.vc_is_valid)
-                                                return;
-
+                                              declare _id integer;
+                                              declare _key, _opts any;
                                               declare exit handler for sqlstate '23000'
                                               {
                                                 rollback work;
@@ -384,26 +381,19 @@
                                               };
 
                                               self.desc1.ufl_value := trim (self.desc1.ufl_value);
+                                              self.seq1.ufl_value  := trim (self.seq1.ufl_value);
                                               self.patt1.ufl_value := trim (self.patt1.ufl_value);
                                               self.typ1.ufl_value  := trim (self.typ1.ufl_value);
                                               self.pl1.ufl_value   := trim (self.pl1.ufl_value);
                                               self.key1.ufl_value  := trim (self.key1.ufl_value);
                                               self.key2.ufl_value  := trim (self.key2.ufl_value);
-                                              opts := trim(self.opts1.ufl_value);
-                                              opts := replace (opts, '\r', '\n');
-                                              opts := replace (opts, '\n\n', '\n');
-                                              opts := rtrim (opts, '\n');
-                                              if (length (opts))
-                                              {
-                                                opts := split_and_decode (opts, 0, '\0\0\n=');
-                                              }
-                                              else
-                                                opts := null;
-
-                                              if (not length (self.key2.ufl_value))
-                                                _key := self.key1.ufl_value;
-                                              else
-                                                _key := serialize (vector (self.key1.ufl_value, self.key2.ufl_value));
+                                              _id   := atoi (self.seq1.ufl_value);
+                                              _opts := trim (self.opts1.ufl_value);
+                                              _opts := replace (_opts, '\r', '\n');
+                                              _opts := replace (_opts, '\n\n', '\n');
+                                              _opts := rtrim (_opts, '\n');
+                                              _opts := case when (length (_opts)) then split_and_decode (_opts, 0, '\0\0\n=') else null end;
+                                              _key := case when (not length (self.key2.ufl_value))then self.key1.ufl_value else serialize (vector (self.key1.ufl_value, self.key2.ufl_value)) end;
 
                                               if (not length (self.desc1.ufl_value) or
                                                   not length (self.patt1.ufl_value) or
@@ -422,18 +412,42 @@
                                               if (self.c_mode = 'C/add')
                                               {
                                                 insert into DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY,RM_DESCRIPTION, RM_OPTIONS)
-                                                  values (self.patt1.ufl_value, self.typ1.ufl_value, self.pl1.ufl_value,_key, self.desc1.ufl_value, opts);
+                                                  values (self.patt1.ufl_value, self.typ1.ufl_value, self.pl1.ufl_value,_key, self.desc1.ufl_value, _opts);
+
+                                                self.c_id := identity_value ();
                                               }
                                               else
                                               {
-                                                 update DB.DBA.SYS_RDF_MAPPERS
-                                                    set RM_PATTERN = self.patt1.ufl_value,
-                                                        RM_TYPE = self.typ1.ufl_value,
-                                                        RM_HOOK = self.pl1.ufl_value,
-                                                        RM_KEY = _key,
-                                                        RM_DESCRIPTION = self.desc1.ufl_value,
-                                                        RM_OPTIONS = opts
-                                                  where RM_ID = self.c_id;
+                                                update DB.DBA.SYS_RDF_MAPPERS
+                                                   set RM_PATTERN = self.patt1.ufl_value,
+                                                       RM_TYPE = self.typ1.ufl_value,
+                                                       RM_HOOK = self.pl1.ufl_value,
+                                                       RM_KEY = _key,
+                                                       RM_DESCRIPTION = self.desc1.ufl_value,
+                                                       RM_OPTIONS = _opts
+                                                 where RM_ID = self.c_id;
+                                              }
+                                              if (_id <= 0)
+                                                _id := self.c_id;
+
+                                              if (_id <> self.c_id)
+                                              {
+                                                update DB.DBA.SYS_RDF_MAPPERS set RM_ID = -1 where RM_ID = self.c_id;
+                                                if (_id < self.c_id)
+                                                {
+                                                  for (select RM_ID _rm_id from DB.DBA.SYS_RDF_MAPPERS where RM_ID >= _id and RM_ID < self.c_id order by RM_ID desc) do
+                                                  {
+                                                    update DB.DBA.SYS_RDF_MAPPERS set RM_ID = RM_ID + 1 where RM_ID = _rm_id;
+                                                  }
+                                                }
+                                                else
+                                                {
+                                                  for (select RM_ID _rm_id from DB.DBA.SYS_RDF_MAPPERS where RM_ID > self.c_id and RM_ID <= _id order by RM_ID) do
+                                                  {
+                                                    update DB.DBA.SYS_RDF_MAPPERS set RM_ID = RM_ID - 1 where RM_ID = _rm_id;
+                                                  }
+                                                }
+                                                update DB.DBA.SYS_RDF_MAPPERS set RM_ID = _id where RM_ID = -1;
                                               }
                                               self.c_mode := 'C/browse';
                                               self.vc_data_bind (e);
