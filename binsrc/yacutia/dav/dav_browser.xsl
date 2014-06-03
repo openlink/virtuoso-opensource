@@ -666,7 +666,7 @@
                 retValue := self.viewFields (detClass, what, mode);
 
               else if (detClass = 'IMAP')
-                retValue := vector ('aci');
+                retValue := vector ('name', 'aci');
 
               else if (detClass = 'S3')
                 retValue := self.viewFields (detClass, what, mode);
@@ -2859,6 +2859,9 @@
                         parent_path := WEBDAV.DBA.real_path_int (self.dir_path, 1, 'C');
                         self.dav_ownClass := WEBDAV.DBA.det_subClass (parent_path, 'C');
                       }
+                      if (self.dav_type = 'C')
+                        dav_detType := get_keyword ('dav_det', params);
+
                       dav_encryption_state := 0;
                       self.dav_editFields := self.editFields (self.dav_ownClass, self.dav_type, mode);
 
@@ -2939,7 +2942,6 @@
 
                       if (self.dav_type = 'C')
                       {
-                        dav_detType := get_keyword ('dav_det', params);
                         if (dav_detType in ('IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
                         {
                           tmp := get_keyword (sprintf ('dav_%s_checkInterval', dav_detType), params);

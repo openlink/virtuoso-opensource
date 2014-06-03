@@ -106,27 +106,14 @@
           self.user_name := get_keyword ('user_name', params, '');
           select U_NAME into user_id from SYS_USERS where U_ID = 0;
 
-          if (self.mode = 'edit' and
-              not exists (select 1
-                            from VSPX_SESSION
-                           where VS_SID = get_keyword ('sid', params)
-                             and VS_UID = user_id
-                             and not exists (select 1
-                                               from VSPX_SESSION
-                                              where VS_SID = get_keyword ('sid', params)
-                                                and VS_UID = self.user_name))
-             )
+          if (self.mode = 'edit' and not exists (select 1 from VSPX_SESSION where VS_SID = get_keyword ('sid', params) and VS_UID = user_id))
           {
             http_request_status ('HTTP/1.1 302 Found');
             http_header (sprintf ('Location: main_tabs.vspx?sid=%s&realm=%s\r\n', get_keyword ('sid', params), get_keyword ('realm', params)));
             return;
           }
 
-          if (self.mode = 'create' and
-              not exists (select 1
-                            from VSPX_SESSION
-                           where VS_SID = get_keyword ('sid', params)
-                             and VS_UID = user_id))
+          if (self.mode = 'create' and not exists (select 1 from VSPX_SESSION where VS_SID = get_keyword ('sid', params) and VS_UID = user_id))
           {
             http_request_status  ('HTTP/1.1 302 Found');
             http_header (sprintf ('Location: main_tabs.vspx?sid=%s&realm=%s\r\n', get_keyword ('sid', params), get_keyword ('realm', params)));
