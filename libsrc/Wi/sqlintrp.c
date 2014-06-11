@@ -2807,7 +2807,7 @@ int
 distinct_comp_func (caddr_t * qst, void * ha)
 {
   itc_ha_feed_ret_t ihfr;
-  if (DVC_MATCH == itc_ha_feed (&ihfr, (hash_area_t *) ha, qst, 0))
+  if (DVC_MATCH == itc_ha_feed (&ihfr, (hash_area_t *) ha, qst, 0, NULL))
     return 0;
   else
     return 1;
@@ -3184,7 +3184,7 @@ ins_vec_agg (instruction_t * ins, caddr_t * inst)
       if (ins->_.agg.distinct)
 	{
 	  itc_ha_feed_ret_t ihfr;
-	  if (DVC_MATCH == itc_ha_feed (&ihfr, ins->_.agg.distinct, inst, 0))
+	  if (DVC_MATCH == itc_ha_feed (&ihfr, ins->_.agg.distinct, inst, 0, NULL))
 	    continue;
 	}
       op = ins->_.agg.op;

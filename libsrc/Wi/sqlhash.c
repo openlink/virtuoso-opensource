@@ -291,7 +291,7 @@ setp_after_deserialize (setp_node_t * setp)
 	ha->ha_memcache_only = 1;
     }
   ha->ha_allow_nulls = 1;
-  if (setp->setp_any_user_aggregate_gos)
+  if (setp->setp_any_user_aggregate_gos || setp->setp_any_distinct_gos)
     ha->ha_memcache_only = 1;
   if (setp->setp_loc_ts)
     setp->setp_loc_ts->ts_order_ks->ks_key = ha->ha_key;

@@ -1175,7 +1175,7 @@ bif_proc_table_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args,
   ha->ha_slots = pvals;
   QR_RESET_CTX
     {
-      itc_ha_feed (&ihfr, ha, result_qst, 1);
+      itc_ha_feed (&ihfr, ha, result_qst, 1, NULL);
     }
   QR_RESET_CODE
     {

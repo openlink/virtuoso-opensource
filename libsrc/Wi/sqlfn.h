@@ -1148,7 +1148,7 @@ typedef struct itc_ha_feed_ret_s {
   caddr_t *ihfr_deps;
 } itc_ha_feed_ret_t;
 
-int itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned long feed_temp_blobs);
+int itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned long feed_temp_blobs, setp_node_t * setp);
 extern void itc_ha_flush_memcache (hash_area_t * ha, caddr_t * qst, int is_in_fill);
 
 /* is in fill */

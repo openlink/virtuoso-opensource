@@ -1629,7 +1629,7 @@ ha_rehash (caddr_t * inst, hash_area_t * ha, index_tree_t * it)
 #define HA_MAX_SZ 262139 /* max prime that can fit n*ha into a box */
 
 int
-itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned long feed_temp_blobs)
+itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned long feed_temp_blobs, setp_node_t * setp)
 {
   hi_memcache_key_t hmk;
   caddr_t hmk_data_buf [(BOX_AUTO_OVERHEAD / sizeof (caddr_t)) + 1 + MAX_STACK_N_KEYS];
@@ -1743,7 +1743,22 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
 	  hmk.hmk_data = (caddr_t *) mp_full_box_copy_tree (hi->hi_pool, (caddr_t) hmk.hmk_data);
 	  deps = (caddr_t *)mp_alloc_box (hi->hi_pool, (n_deps + next_link) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
 	  for (inx = 0; inx < n_deps; inx++)
-	    deps[inx] = mp_full_box_copy_tree (hi->hi_pool, QST_GET (qst, ha->ha_slots[n_keys+inx]));
+	    {
+	      if (setp && setp->setp_any_distinct_gos)
+		{
+		  gb_op_t * go = (gb_op_t *)dk_set_nth (setp->setp_gb_ops, inx);
+		  if (go->go_distinct_ha)
+		    {
+		      caddr_t val= qst_get (qst, go->go_distinct);
+		      if (DV_DB_NULL == DV_TYPE_OF (val))
+			{
+			  deps[inx] = 0;
+			  continue;
+			}
+		    }
+		}
+	      deps[inx] = mp_full_box_copy_tree (hi->hi_pool, QST_GET (qst, ha->ha_slots[n_keys+inx]));
+	    }
 	  if (next_link)
 	    deps[n_deps] = NULL;
 	  SET_THR_TMP_POOL (hi->hi_pool);
@@ -1755,7 +1770,22 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
 	  hmk.hmk_data = (caddr_t *) box_copy_tree ((caddr_t) hmk.hmk_data);
 	  deps = (caddr_t *)dk_alloc_box_zero ((n_deps + next_link) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
 	  for (inx = 0; inx < n_deps; inx++)
-	    deps[inx] = box_copy_tree (QST_GET (qst, ha->ha_slots[n_keys+inx]));
+	    {
+	      if (setp && setp->setp_any_distinct_gos)
+		{
+		  gb_op_t * go = (gb_op_t *)dk_set_nth (setp->setp_gb_ops, inx);
+		  if (go->go_distinct_ha)
+		    {
+		      caddr_t val= qst_get (qst, go->go_distinct);
+		      if (DV_DB_NULL == DV_TYPE_OF (val))
+			{
+			  deps[inx] = 0;
+			  continue;
+			}
+		    }
+		}
+	      deps[inx] = box_copy_tree (QST_GET (qst, ha->ha_slots[n_keys+inx]));
+	    }
 	  id_hash_set (hi->hi_memcache, (caddr_t)(&hmk), (caddr_t)(&deps));
 	}
       /* Now we have the data stored so we can check for overflow */
@@ -1864,9 +1894,10 @@ void
 setp_group_row (setp_node_t * setp, caddr_t * qst)
 {
   dtp_t row_image[MAX_ROW_BYTES];
+  int dep_box_inx;
   hash_area_t * ha = setp->setp_ha;
   itc_ha_feed_ret_t ihfr;
-  int rc = itc_ha_feed (&ihfr, ha, qst, 0);
+  int rc = itc_ha_feed (&ihfr, ha, qst, 0, setp);
   index_tree_t * tree;
   hash_index_t * hi;
   LOCAL_RF (rf, 0, 0, ha->ha_key);
@@ -1880,7 +1911,7 @@ setp_group_row (setp_node_t * setp, caddr_t * qst)
 
   if (ihfr.ihfr_memcached)
     {
-      int dep_box_inx = 0;
+      dep_box_inx = 0;
       DO_SET (gb_op_t *, op, &setp->setp_gb_ops)
 	{
 	  switch (op->go_op)
@@ -1953,13 +1984,17 @@ run1_no_user_aggregates: ;
 	 the distinct fnref arg and 2 for the
 	 group by)
        */
+  dep_box_inx = 0;
   DO_SET (gb_op_t *, op, &setp->setp_gb_ops)
     {
       if (op->go_distinct_ha)
 	{
 	  itc_ha_feed_ret_t ihfr;
-	  itc_ha_feed (&ihfr, op->go_distinct_ha, qst, 0);
+	  caddr_t val = qst_get (qst, op->go_distinct);
+	  if (DV_DB_NULL != DV_TYPE_OF (val))
+	    itc_ha_feed (&ihfr, op->go_distinct_ha, qst, 0, NULL);
 	}
+      dep_box_inx++;
     }
   END_DO_SET ();
   return;
@@ -2013,12 +2048,6 @@ runX_begin: ;
 		caddr_t new_val = QST_GET (qst, ssl);
 		if (DV_DB_NULL == DV_TYPE_OF (new_val))
 		  goto next_mem_col;
-		if (op->go_distinct_ha)
-		  {
-		    itc_ha_feed_ret_t ihfr;
-		    if (DVC_MATCH == itc_ha_feed (&ihfr, op->go_distinct_ha, qst, 0))
-		      goto next_mem_col;
-		  }
 		rc = cmp_boxes (new_val, dep_ptr[0],
 		  cl->cl_sqt.sqt_collation, cl->cl_sqt.sqt_collation);
 		if (DVC_UNKNOWN == rc
@@ -2043,13 +2072,16 @@ runX_begin: ;
 		caddr_t new_val = QST_GET (qst, ssl);
 		if (DV_DB_NULL == DV_TYPE_OF (new_val))
 		  goto next_mem_col;
-
 		if (op->go_distinct_ha)
 		  {
 		    itc_ha_feed_ret_t ihfr;
-		    if (DVC_MATCH == itc_ha_feed (&ihfr, op->go_distinct_ha, qst, 0))
+		    new_val = qst_get (qst, op->go_distinct);
+		    if (DV_DB_NULL == DV_TYPE_OF (new_val))
+		      goto next_mem_col;
+		    if (DVC_MATCH == itc_ha_feed (&ihfr, op->go_distinct_ha, qst, 0, NULL))
 		      goto next_mem_col;
 		  }
+
 		/* can be null on the row if 1st value was null. Replace w/ new val */
 		if (DV_DB_NULL == DV_TYPE_OF (dep_ptr[0]))
 		  {
@@ -2137,7 +2169,7 @@ runX_begin: ;
 		if (op->go_distinct_ha)
 		  {
 		    itc_ha_feed_ret_t ihfr;
-		    if (DVC_MATCH == itc_ha_feed (&ihfr, op->go_distinct_ha, qst, 0))
+		    if (DVC_MATCH == itc_ha_feed (&ihfr, op->go_distinct_ha, qst, 0, NULL))
 		      goto next_disk_col;
 		  }
 		rc = cmp_boxes (new_val, QST_GET_V (qst, op->go_old_val),
@@ -2162,7 +2194,7 @@ runX_begin: ;
 		if (op->go_distinct_ha)
 		  {
 		    itc_ha_feed_ret_t ihfr;
-		    if (DVC_MATCH == itc_ha_feed (&ihfr, op->go_distinct_ha, qst, 0))
+		    if (DVC_MATCH == itc_ha_feed (&ihfr, op->go_distinct_ha, qst, 0, NULL))
 		      goto next_disk_col;
 		  }
 		/* can be null on the row if 1st value was null. Replace w/ new val */
