@@ -824,6 +824,18 @@ ins_call_vec_vec (instruction_t * ins, caddr_t * qst, query_t * proc, code_vec_t
     {
       sqlr_resignal (err);
     }
+  if (CALLER_CLIENT == qi->qi_caller && !qi->qi_query->qr_select_node)
+    {
+      int n_sets = qi->qi_n_sets, first_set = 0, set;
+      db_buf_t set_mask = qi->qi_set_mask;
+      caddr_t * rets = (caddr_t*)dk_alloc_box_zero (sizeof (caddr_t) * n_sets, DV_ARRAY_OF_POINTER);
+      SET_LOOP
+	{
+	  rets[set] = list (3, QA_PROC_RETURN, NULL, NULL);
+	}
+      END_SET_LOOP;
+      qi->qi_proc_ret = (caddr_t)rets;
+    }
 }
 
 
@@ -842,13 +854,20 @@ ins_call_vec (instruction_t * ins, caddr_t * inst, code_vec_t code_vec, int firs
   return;
  general:
   {
+    caddr_t * rets = NULL;
     int set;
     db_buf_t set_mask = qi->qi_set_mask;
+    if (CALLER_CLIENT == qi->qi_caller && !ins->_.call.ret && !qi->qi_query->qr_select_node)
+      rets = dk_alloc_box_zero (sizeof (caddr_t) * n_sets, DV_ARRAY_OF_POINTER);
     SET_LOOP
       {
+	qi->qi_proc_ret = (caddr_t)rets;
 	ins_call (ins, inst, code_vec);
+	if (rets)
+	  rets[set] = qi->qi_proc_ret;
       }
     END_SET_LOOP;
+    qi->qi_proc_ret = rets;
   }
 }
 

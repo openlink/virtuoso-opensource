@@ -3905,6 +3905,14 @@ cli_send_row_count (client_connection_t * cli, long n_affected, caddr_t * ret,
   PRPC_ANSWER_END (0);
 }
 
+void
+cli_send_non_last_proc_ret (client_connection_t * cli, long n_affected, caddr_t * ret,
+    du_thread_t * thr)
+{
+  PrpcAddAnswer (SQL_SUCCESS, DV_ARRAY_OF_POINTER, 1, 0);
+  dk_free_tree ((caddr_t) ret);
+}
+
 
 int autocommit_select_read_only = 1;
 
@@ -4232,7 +4240,17 @@ qr_exec (client_connection_t * cli, query_t * qr,
     ret = cli_anytime_error (qi->qi_client);
   else
     {
-      ret = qi->qi_proc_ret;
+      {
+	ret = qi->qi_proc_ret;
+	if (ret && DV_ARRAY_OF_POINTER == DV_TYPE_OF (ret) && qr->qr_proc_vectored)
+	  {
+	    {
+	      caddr_t * prev = ret;
+	      ret = (caddr_t*)((caddr_t*)ret)[0];
+	      dk_free_box ((caddr_t)prev);
+	    }
+	  }
+      }
       qi->qi_proc_ret = NULL;
     }
   n_affected = qi->qi_n_affected;
@@ -4289,6 +4307,7 @@ qr_dml_array_exec (client_connection_t * cli, query_t * qr,
   /* when client exec dml in cluster, pass all param rows as a cluster batch  */
   int n_sets = qr->qr_proc_vectored ? BOX_ELEMENTS (param_array) : 0;
   caddr_t detail = NULL;
+  caddr_t * rets = NULL;
   long n_affected;
   int param_inx;
   int inx, was_autocommit, is_timeout = LTE_OK;
@@ -4455,6 +4474,8 @@ qr_dml_array_exec (client_connection_t * cli, query_t * qr,
  qr_complete:
   PLD_SEM_CLEAR(qi)
     n_affected = qi->qi_n_affected;
+  rets = (caddr_t*)qi->qi_proc_ret;
+  qi->qi_proc_ret = NULL;
   self_thread = qi->qi_thread;
   detail = box_copy (LT_ERROR_DETAIL (qi->qi_trx));
   is_timeout = qi_kill (qi, QI_DONE);
@@ -4463,14 +4484,29 @@ qr_dml_array_exec (client_connection_t * cli, query_t * qr,
       caddr_t err;
       err = qi_txn_code (is_timeout, caller, detail);
       dk_free_box (detail);
+      dk_free_tree ((caddr_t)rets);
       return err;
     }
   dk_free_box (detail);
   if (CALLER_CLIENT == caller)
     {
+      caddr_t ret = NULL;
       for (inx = 0; inx < param_inx - 1; inx++)
-	cli_send_row_count (cli, 0, NULL, self_thread);
-      cli_send_row_count (cli, n_affected, NULL, self_thread);
+	{
+	  if (rets)
+	    {
+	      ret = rets[inx];
+	      rets[inx] = NULL;
+	    }
+	  cli_send_non_last_proc_ret (cli, 0, (caddr_t*)ret, self_thread);
+	}
+      if (rets)
+	{
+	  ret = rets[param_inx - 1];
+	  rets[param_inx - 1] = NULL;
+	}
+      cli_send_row_count (cli, n_affected, (caddr_t*)ret, self_thread);
+      dk_free_box (rets);
     }
 #ifdef WIRE_DEBUG
   list_wired_buffers (__FILE__, __LINE__, "qr_exec finish");

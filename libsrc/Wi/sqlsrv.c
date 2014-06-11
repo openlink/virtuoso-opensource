@@ -1682,6 +1682,8 @@ cli_set_start_times (client_connection_t * cli)
 }
 
 
+int enable_vec_cli_call = 1;
+
 void
 sf_sql_execute (caddr_t stmt_id, char *text, char *cursor_name,
     caddr_t * params, caddr_t * current_ofs, stmt_options_t * options)
@@ -1911,7 +1913,7 @@ report_error:
       log_info ("EXEC_1 %s %s %s %s Exec %d time(s) %.*s", user, from, peer, stmt->sst_id,
 	  n_params, LOG_PRINT_STR_L, stmt->sst_query->qr_text ? ((stmt->sst_query->qr_text[0] == -35) ? "" : stmt->sst_query->qr_text) :"");
     }
-  if (!stmt->sst_query->qr_select_node && !stmt->sst_query->qr_is_call)
+  if (!stmt->sst_query->qr_select_node && ((stmt->sst_query->qr_proc_vectored && enable_vec_cli_call && n_params > 1) ||  !stmt->sst_query->qr_is_call))
     {
       err = qr_dml_array_exec (cli, stmt->sst_query, CALLER_CLIENT,
 			       cursor_name ? box_string (cursor_name) : NULL,

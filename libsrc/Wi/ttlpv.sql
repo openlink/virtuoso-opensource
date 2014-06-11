@@ -769,29 +769,23 @@ create procedure rdf_vec_ins_triples (in s any, in p any, in o any, in g any)
 }
 ;
 
-create procedure rdf_insert_triple_c (in s any array, in p any array, in o any array, in o_type any array, in o_flags int, in g any array)
+create procedure rdf_o_cvt_c (in o any, in o_type any, in o_flags int, in is_local int) returns any array
 {
   vectored;
-  declare rb any array;
   declare is_text int;
   declare lid, tid int;
   is_text := bit_and (o_flags, 16);
   o_flags := bit_and (o_flags, 15);
-
-  not vectored {
-    declare is_local int;
-    is_local := sys_stat ('cl_run_local_only');
-    if (log_enable (null, 1) in (2,3))
-      set non_txn_insert = 1;
-  }
-
+  declare rb any array;
   if (0 = o_flags)
-    o := __bft (o, 1);
+  return __bft (o, 1);
   else if (1 = o_flags)
     {
       rb := rdf_box (o, 258, 257, 0, 1);
       rdf_box_set_type (rb, 257);
-      o := rb;
+      if (is_text and 246 = __tag (o))
+	rdf_box_set_is_text (o, 1);
+      return rb;
     }
   else if (2 = o_flags)
     {
@@ -803,7 +797,9 @@ create procedure rdf_insert_triple_c (in s any array, in p any array, in o any a
 	  else
 	    lid := rdf_lang_id (lower (o_type));
 	}
-      o := rdf_box (o, 257, lid, 0, 1);
+      if (is_text and 246 = __tag (o))
+	rdf_box_set_is_text (o, 1);
+      return rdf_box (o, 257, lid, 0, 1);
     }
   else if (3 = o_flags)
     {
@@ -811,7 +807,7 @@ create procedure rdf_insert_triple_c (in s any array, in p any array, in o any a
       declare parsed any array;
       parsed := __xqf_str_parse_to_rdf_box (o, o_type, 1);
       if (parsed is not null)
-	o := parsed;
+	return parsed;
       else
 	{
 	  tid := rdf_cache_id ('t', o_type);
@@ -823,29 +819,42 @@ create procedure rdf_insert_triple_c (in s any array, in p any array, in o any a
 		tid := rdf_type_id (o_type);
 	    }
 	  rb := rdf_box (o, tid, 257, 0, 1);
-	  o := rb;
+	  if (is_text and 246 = __tag (o))
+	    rdf_box_set_is_text (o, 1);
+	return rb;
 	}
     }
   else if (4 = o_flags)
     {
       rb := rdf_box (xml_tree_doc (o), 300, 257, 0, 1);
       rdf_set_type (rb, 257);
-      o := rb;
+      if (is_text and 246 = __tag (o))
+	rdf_box_set_is_text (o, 1);
+      return rb;
     }
   else if (5 = o_flags)
-    o := cast (o as int);
+  return cast (o as int);
   else if (6 = o_flags)
-    o := cast (o as real);
+  return cast (o as real);
   else if (7 = o_flags)
-    o := cast (o as double precision);
+  return cast (o as double precision);
   else if (8 = o_flags)
-    o := cast (o as decimal);
+  return cast (o as decimal);
   else
     signal ('xxxxx', 'Bad rdf object flags va,value');
+}
+;
 
-  if (is_text and 246 = __tag (o))
-    rdf_box_set_is_text (o, 1);
-
+create procedure rdf_insert_triple_c (in s any array, in p any array, in o any array, in o_type any array, in o_flags int, in g any array)
+{
+  vectored;
+  not vectored {
+    declare is_local int;
+    is_local := sys_stat ('cl_run_local_only');
+    if (log_enable (null, 1) in (2,3))
+      set non_txn_insert = 1;
+  }
+ o := rdf_o_cvt_c (o, o_type, o_flags, is_local);
   not vectored {
     declare dp any array;
     if (is_local)
@@ -856,9 +865,7 @@ create procedure rdf_insert_triple_c (in s any array, in p any array, in o any a
 	dpipe_set_rdf_load (dp, 1);
       }
   }
-
   dpipe_input (dp, s, p, null, o, g);
-
   not vectored {
     if (log_enable (null, 1) in (2,3))
       set non_txn_insert = 1;
@@ -873,3 +880,85 @@ create procedure rdf_insert_triple_c (in s any array, in p any array, in o any a
 }
 ;
 
+
+create procedure rdf_replace_graph_c (in s any array, in p any array, in o any array, in o_type any array, in o_flags int, in g any array)
+{
+  vectored;
+  not vectored {
+    declare is_local int;
+    is_local := sys_stat ('cl_run_local_only');
+    if (log_enable (null, 1) in (2,3))
+      set non_txn_insert = 1;
+  }
+ o := rdf_o_cvt_c (o, o_type, o_flags, is_local);
+  not vectored {
+    declare dp any array;
+    if (is_local)
+      dp := dpipe (1, 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_MAKE_RO', 'L_IRI_TO_ID');
+    else
+      {
+        dp := dpipe (5, 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'MAKE_RO_1', 'IRI_TO_ID_1');
+      }
+    dpipe_set_rdf_load (dp, 6);
+  }
+  dpipe_input (dp, s, p, null, o, g);
+  not vectored {
+    if (log_enable (null, 1) in (2,3))
+      set non_txn_insert = 1;
+    if (is_local)
+      {
+	    dpipe_exec_rdf_callback (dp);
+      }
+    else
+      {
+	dpipe_next (dp, 0);
+	dpipe_next (dp, 1);
+      }
+  }
+}
+;
+
+create procedure rdf_delete_triple_c (in s any array, in p any array, in o any array, in o_type any array, in o_flags int, in g any array)
+{
+  vectored;
+  not vectored {
+    declare is_local int;
+    is_local := sys_stat ('cl_run_local_only');
+    if (log_enable (null, 1) in (2,3))
+      set non_txn_insert = 1;
+  }
+ o := rdf_O_cvt_c (o, o_type, o_flags, is_local);
+  not vectored {
+    declare dp any array;
+    if (is_local)
+    dp := dpipe (1, 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_MAKE_RO', 'L_IRI_TO_ID');
+    else
+      {
+        dp := dpipe (5, 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'MAKE_RO_1', 'IRI_TO_ID_1');
+      }
+    dpipe_set_rdf_load (dp, 3);
+  }
+  dpipe_input (dp, s, p, null, o, g);
+  not vectored {
+    if (log_enable (null, 1) in (2,3))
+      set non_txn_insert = 1;
+    if (is_local)
+      rl_dp_ids (dp, 0);
+    else
+      {
+	dpipe_next (dp, 0);
+	dpipe_next (dp, 1);
+      }
+  }
+}
+;
+
+create procedure rdf_clear_graphs_c (in graphs any array)
+{
+  for vectored (in in_g any array := graphs)
+    {
+      delete from RDF_QUAD table option (index G) where G = iri_to_id (in_g, 0);
+      delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS, index_only) where G = iri_to_id (in_g, 0)  option (index_only, index RDF_QUAD_GS);
+    }
+}
+;
