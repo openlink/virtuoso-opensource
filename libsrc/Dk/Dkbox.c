@@ -1714,6 +1714,8 @@ box_equal (cbox_t b1, cbox_t b2)
       return 1;
     }
   memcmp_8 (b1, b2, l1, neq);
+  if (DV_STRING == b1_tag && box_flags (b1) != box_flags (b2))
+    return 0;
   return 1;
  neq:
   return 0;
@@ -1783,6 +1785,8 @@ box_strong_equal (cbox_t b1, cbox_t b2)
       return 1;
     }
   memcmp_8 (b1, b2, l1, neq);
+  if (DV_STRING == b1_tag && box_flags (b1) != box_flags (b2))
+    return 0;
   return 1;
  neq:
   return 0;
