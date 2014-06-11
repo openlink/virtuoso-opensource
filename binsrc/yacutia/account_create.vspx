@@ -746,6 +746,7 @@
                                   <v:button action="simple" name="imp_key" value="Import Key">
                                     <v:on-post>
                                       <![CDATA[
+				        declare username any;
                                         if (self.vc_is_valid = 0)
                                           return;
                                         declare exit handler for sqlstate '*', not found
@@ -754,7 +755,8 @@
                                           self.vc_is_valid := 0;
                                           return;
                                         };
-                                        set_user_id (self.user_name);
+					username:= self.t_login_name.ufl_value;
+                                        set_user_id (username);
                                         USER_KEY_LOAD (self.k_name.ufl_value, get_keyword ('k_value', params), 'X.509', 'PKCS12', self.k_pwd.ufl_value, null, 1);
                                         exec (make_cert_stmt (self.k_name.ufl_value));
                                       ]]>
