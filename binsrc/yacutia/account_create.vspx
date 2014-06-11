@@ -717,10 +717,12 @@
                                   <v:button action="simple" name="del_key" value="Remove Selected Keys" xhtml_tabindex="21">
                                     <v:on-post>
                                       <![CDATA[
+				        declare username any;
                                         if (self.vc_is_valid = 0)
                                           return;
 
-                                        set_user_id (self.user_name);
+					username:= self.t_login_name.ufl_value;
+                                        set_user_id (username);
                                         set_qualifier ('DB');
                                         for (declare i, l int, i := 0, l := length (params); i < l; i := i + 4)
                                         {
