@@ -1964,6 +1964,7 @@ sec_user_read_groups (char *name)
 void
 sec_read_users (void)
 {
+  int save;
   caddr_t err;
   static query_t *null_users_qr = NULL;
   client_connection_t *cli = bootstrap_cli;
@@ -2062,7 +2063,11 @@ sec_read_users (void)
 
   /* separate txn for this.
      May fuck up on non-unique key in recovery of old databases */
+  /* no users, so no mt queries, error in aq if no user exists */
+  save = enable_qp;
+  enable_qp = 1;
   err = qr_quick_exec (null_users_qr, cli, "", NULL, 0);
+  enable_qp = save;
   PRINT_ERR(err);
   local_commit (bootstrap_cli);
 
@@ -2124,7 +2129,7 @@ sec_read_users (void)
   user_t_dba->usr_disabled = 0;
   user_t_dba->usr_is_role = 0;
   user_t_dba->usr_is_sql = 1;
-
+  bootstrap_cli->cli_user = user_t_dba;
   if (user_t_dba->usr_g_ids)
     {
       dk_free_box ((box_t) user_t_dba->usr_g_ids);
