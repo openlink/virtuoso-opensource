@@ -3177,9 +3177,12 @@ frq_no_thread_reply (future_request_t * frq)
   self->dkt_requests[0] = NULL;
   dk_free_tree (err);
 #else
+  static caddr_t nothr = NULL;
+  if (!nothr)
+    nothr = box_dv_short_string ("no_threads");
   dk_free_tree ((caddr_t) frq->rq_arguments);
-  frq->rq_arguments = (long**) list (01, 0);
-  frq->rq_service = find_service ("no_threads");
+  frq->rq_arguments = (long**) list (1, 0);
+  frq->rq_service = find_service (nothr);
 #endif
 }
 
