@@ -2075,8 +2075,8 @@ runX_begin: ;
 		if (op->go_distinct_ha)
 		  {
 		    itc_ha_feed_ret_t ihfr;
-		    new_val = qst_get (qst, op->go_distinct);
-		    if (DV_DB_NULL == DV_TYPE_OF (new_val))
+		    caddr_t d_val = qst_get (qst, op->go_distinct);
+		    if (DV_DB_NULL == DV_TYPE_OF (d_val))
 		      goto next_mem_col;
 		    if (DVC_MATCH == itc_ha_feed (&ihfr, op->go_distinct_ha, qst, 0, NULL))
 		      goto next_mem_col;
@@ -2166,12 +2166,6 @@ runX_begin: ;
 		caddr_t new_val = QST_GET (qst, ssl);
 		if (DV_DB_NULL == DV_TYPE_OF (new_val))
 		  goto next_disk_col;
-		if (op->go_distinct_ha)
-		  {
-		    itc_ha_feed_ret_t ihfr;
-		    if (DVC_MATCH == itc_ha_feed (&ihfr, op->go_distinct_ha, qst, 0, NULL))
-		      goto next_disk_col;
-		  }
 		rc = cmp_boxes (new_val, QST_GET_V (qst, op->go_old_val),
 		  cl->cl_sqt.sqt_collation, cl->cl_sqt.sqt_collation);
 		if (DVC_UNKNOWN == rc
@@ -2194,6 +2188,9 @@ runX_begin: ;
 		if (op->go_distinct_ha)
 		  {
 		    itc_ha_feed_ret_t ihfr;
+		    caddr_t d_val = QST_GET (qst, op->go_distinct);
+		    if (DV_DB_NULL == DV_TYPE_OF (d_val))
+		      goto next_disk_col;
 		    if (DVC_MATCH == itc_ha_feed (&ihfr, op->go_distinct_ha, qst, 0, NULL))
 		      goto next_disk_col;
 		  }
