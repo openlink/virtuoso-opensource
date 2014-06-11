@@ -484,10 +484,10 @@ create procedure DB.DBA.TTLP_EV_NULL_IID (inout uri varchar, inout g_iid IRI_ID,
 ;
 
 
-create procedure TTLP_V_GS (in strg varchar, in base varchar, in graph varchar := null, in flags integer, in threads int, in log_mode int, in old_log_mode int)
+create procedure DB.DBA.TTLP_V_GS (in strg varchar, in base varchar, in graph varchar := null, in flags integer, in threads int, in log_mode int, in old_log_mode int)
 {
   declare ro_id_dict, app_env, g_iid any;
-
+  -- dbg_obj_princ ('DB.DBA.TTLP_V_GS (...', base, graph, flags, threads, log_mode, old_log_mode);
   app_env := vector (async_queue (threads, 1), rl_local_dpipe_gs (), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   if (bit_and (flags, 2048))
     dpipe_set_rdf_load (app_env[1], 6);
@@ -546,8 +546,8 @@ create procedure DB.DBA.TTLP_V (in strg varchar, in base varchar, in graph varch
   if (126 = __tag (strg))
     strg := cast (strg as varchar);
 
-  if (bit_and (flags, 512))
-    return TTLP_V_GS (strg, base, graph, flags, threads, log_enable, old_log_mode);
+  if (bit_and (flags, 256+512))
+    return DB.DBA.TTLP_V_GS (strg, base, graph, flags, threads, log_enable, old_log_mode);
 
  app_env := vector (async_queue (threads, 1),rl_local_dpipe (), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   g_iid := iri_to_id (graph);
