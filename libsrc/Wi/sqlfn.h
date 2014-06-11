@@ -997,9 +997,14 @@ int sec_col_check (dbe_column_t * col, oid_t group, oid_t user, int op);
 void buf_bsort (buffer_desc_t ** bs, int n_bufs, sort_key_func_t key);
 
 
-#define QR_EXEC_CHECK_STACK(qi, addr, margin) \
-  if (THR_IS_STACK_OVERFLOW (qi->qi_thread, addr, margin)) \
-    return srv_make_new_error ("42000", "SR178", "Stack overflow (stack size is %ld, more than %ld is in use)", (long)(qi->qi_thread->thr_stack_size), (long)(qi->qi_thread->thr_stack_size - margin));
+#define QR_EXEC_CHECK_STACK(qi, addr, margin, params) \
+  if (THR_IS_STACK_OVERFLOW (qi->qi_thread, addr, margin))  { \
+    int pinx = 0; \
+    DO_BOX (caddr_t, v, pinx, params) \
+	dk_free_tree (v); \
+    END_DO_BOX; \
+    return srv_make_new_error ("42000", "SR178", "Stack overflow (stack size is %ld, more than %ld is in use)", (long)(qi->qi_thread->thr_stack_size), (long)(qi->qi_thread->thr_stack_size - margin)); \
+  }
 
 
 #ifdef DEBUG

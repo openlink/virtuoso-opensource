@@ -4573,7 +4573,7 @@ qr_subq_exec (client_connection_t * cli, query_t * qr,
   long end_time;
 #endif
 
-  QR_EXEC_CHECK_STACK (caller, &ret, CALL_STACK_MARGIN);
+  QR_EXEC_CHECK_STACK (caller, &ret, CALL_STACK_MARGIN, parms);
   inst = (caddr_t *) qi_alloc (qr, opts, auto_qi, auto_qi_len, is_vec ? caller->qi_n_sets : 0);
   qi = (query_instance_t *) inst;
   state = inst;
@@ -4768,7 +4768,7 @@ qr_subq_exec_vec (client_connection_t * cli, query_t * qr,
   long end_time;
 #endif
 
-  QR_EXEC_CHECK_STACK (caller, &ret, CALL_STACK_MARGIN);
+  QR_EXEC_CHECK_STACK (caller, &ret, CALL_STACK_MARGIN, NULL);
   inst = (caddr_t *) qi_alloc (qr, opts, auto_qi, auto_qi_len, n_sets);
   qi = (query_instance_t *) inst;
   state = inst;
