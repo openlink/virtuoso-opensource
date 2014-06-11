@@ -363,7 +363,7 @@
                           while( i < l ) {
                             declare mtd, dta any;
                             declare dg int;
-                            declare priv_grant, priv_revoke varchar;
+                            declare priv_grant, priv_revoke, obj varchar;
                             priv_grant := ''; priv_revoke := '';
 
                             dg := cast( get_keyword( 'cb_perm_select_'||user_caps[i][1], params, '0') as int);
@@ -390,13 +390,15 @@
                             if( not bit_and(dg, user_caps[i][2]) and dg <> 0 )
                               priv_grant := concat( priv_grant, 'EXECUTE,');
                             else if( bit_and(32, user_caps[i][2]) and dg = 0 )
-                              priv_revoke := concat( priv_revoke, 'EXECUTE,');
+			      priv_revoke := concat( priv_revoke, 'EXECUTE,');
+ 		     	    obj := user_caps[i][1];
+			    obj := sprintf ('"%I"."%I"."%I"', name_part (obj, 0), name_part (obj, 1), name_part (obj, 2));
                             if( length(priv_revoke) > 0 ) {
-                              exec( 'REVOKE ' || rtrim(priv_revoke,',') || ' ON ' || user_caps[i][1] || ' FROM "' || self.user_name || '"',
+                              exec( 'REVOKE ' || rtrim(priv_revoke,',') || ' ON ' || obj || ' FROM "' || self.user_name || '"',
                                      null, null, vector(), 0, mtd, dta);
                             }
                             if( length(priv_grant) > 0 ) {
-                              exec( 'GRANT ' || rtrim(priv_grant,',') || ' ON ' || user_caps[i][1] || ' TO "' || self.user_name || '"',
+                              exec( 'GRANT ' || rtrim(priv_grant,',') || ' ON ' || obj || ' TO "' || self.user_name || '"',
                                      null, null, vector(), 0, mtd, dta);
                             }
                             i := i + 1;
