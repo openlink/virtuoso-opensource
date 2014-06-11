@@ -914,10 +914,14 @@ http_cli_connect (http_cli_ctx * ctx)
 	  int dst = tcpses_get_fd (ctx->hcctx_http_out->dks_session);
 	  char * pkcs12_file = ctx->hcctx_pkcs12_file;
 	  char * pass = ctx->hcctx_cert_pass;
+	  timeout_t to = {100, 0};
 
 	  ctx->hcctx_ssl_method = SSLv23_client_method();
 	  ctx->hcctx_ssl_ctx = SSL_CTX_new (ctx->hcctx_ssl_method);
 	  ctx->hcctx_ssl = SSL_new (ctx->hcctx_ssl_ctx);
+	  if (ctx->hcctx_timeout > 0)
+	    to.to_sec = ctx->hcctx_timeout;
+	  session_set_control (ctx->hcctx_http_out->dks_session, SC_TIMEOUT, (char *)(&to), sizeof (timeout_t));
 	  SSL_set_fd (ctx->hcctx_ssl, dst);
 
 	  if (pkcs12_file && 0 == atoi(pkcs12_file))
