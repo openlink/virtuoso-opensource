@@ -1477,6 +1477,16 @@ ceic_int_value (ce_ins_ctx_t * ceic, int nth, dtp_t * dtp_ret)
     {
       return dv_int ((db_buf_t) val, dtp_ret);
     }
+  if (DV_DOUBLE_FLOAT == ceic->ceic_col->col_sqt.sqt_dtp)
+    {
+      *dtp_ret = DV_LONG_INT;
+      return *(int64*)val;
+    }
+  if (DV_SINGLE_FLOAT == ceic->ceic_col->col_sqt.sqt_dtp)
+    {
+      *dtp_ret = DV_LONG_INT;
+      return *(int32*)val;
+    }
   *dtp_ret = DV_TYPE_OF (val);
   return unbox_iri_int64 (val);
 }
