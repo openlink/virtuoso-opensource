@@ -1553,8 +1553,8 @@ void
 xp_rdfa_parse_profile (xparse_ctx_t *xp, caddr_t *parsed_attrvalue, caddr_t **ns_dict_ret, caddr_t **term_dict_ret, caddr_t *vocab_ret, caddr_t *err_ret)
 {
   client_connection_t *cli = xp->xp_qi->qi_client;
-static caddr_t full_profile_proc_name = NULL;
-static query_t *fetch_profile_qr = NULL;
+  caddr_t full_profile_proc_name = NULL;
+  query_t *fetch_profile_qr = NULL;
   caddr_t err = NULL;
   char  params_buf [BOX_AUTO_OVERHEAD + sizeof (caddr_t) * 4];
   caddr_t * params;
