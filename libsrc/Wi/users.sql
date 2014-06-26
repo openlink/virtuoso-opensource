@@ -808,7 +808,7 @@ USER_KEYS_INIT (in username varchar, in opts any)
   declare keys, path, key_value, key_type, key_passwd, key_pkey, os_u_name, os_u_pass any;
   declare certs any;
 
-  debug := 1;
+  debug := 0;
 
   opts := deserialize (blob_to_string (opts));
 

@@ -70,6 +70,7 @@ extern "C" {
 #include "libutil.h"
 #include "bif_text.h"
 #include "date.h"
+#include "security.h"
 
 #define XML_ELEMENT_NAME(x) \
   ((char *)( ((x) && DV_TYPE_OF (x) == DV_ARRAY_OF_POINTER && ((caddr_t *)(x))[0]) ? ((caddr_t **)(x))[0][0] : NULL))
@@ -80,6 +81,7 @@ extern "C" {
 	sqlr_new_error ("42000", "XENC14", "Could not create %s key, possible reason - key with such name already exists", \
 	name ? name : "temporary");
 
+static X509_STORE * CA_certs = NULL;
 
 static char WSSE_BASE64_ENCODING_TYPE[] = "wsse:Base64Binary";
 
@@ -1348,7 +1350,7 @@ xenc_get_password (char * name, char *tpass)
 
 /* certificate MUST be non zero */
 xenc_key_t * xenc_key_create_from_x509_cert (char * name, char * certificate, char * private_key_str,
-					     const char * private_key_passwd, int is_digest, long type, long ask_pwd)
+					     const char * private_key_passwd, int is_digest, long type, long ask_pwd, int import_chain)
 {
   xenc_key_t * k = 0;
   X509 *x509 = 0;
@@ -1392,7 +1394,19 @@ xenc_key_t * xenc_key_create_from_x509_cert (char * name, char * certificate, ch
       PKCS12 *pk12 = NULL;
       STACK_OF(X509) *ca_list = NULL;
       pk12 = d2i_PKCS12_bio (b, NULL);
-      PKCS12_parse (pk12, private_key_passwd, &private_key, &x509, &ca_list);
+      PKCS12_parse (pk12, private_key_passwd, &private_key, &x509, import_chain ? &ca_list : NULL);
+      if (ca_list && import_chain)
+	{
+	  int i;
+	  mutex_enter (xenc_keys_mtx);
+	  for (i = 0; i < sk_X509_num (ca_list) ; i++)
+	    {
+	      X509 * x = sk_X509_value (ca_list, i);
+	      X509_STORE_add_cert (CA_certs, x);
+	    }
+	  mutex_leave (xenc_keys_mtx);
+	  sk_free (ca_list);
+	}
     }
   else if (type == CERT_DER_FORMAT)
     {
@@ -1955,6 +1969,7 @@ caddr_t bif_xenc_key_create_cert (caddr_t * qst, caddr_t * err_r, state_slot_t *
   const char * private_key_passwd = BOX_ELEMENTS(args) > 5 ?
     bif_string_or_null_arg (qst, args, 5,"xenc_key_create_cert") : "password";
   long ask_pwd = cli == bootstrap_cli ?  1 : 0;
+  long import_chain = BOX_ELEMENTS(args) > 6 ?  bif_long_arg (qst, args, 6,"xenc_key_create_cert") : 0;
 
   ptrlong cert_type_idx = ecm_find_name (cert_type, (void*)xenc_cert_types, xenc_cert_types_len,
 					 sizeof (xenc_cert_type_t));
@@ -1965,7 +1980,7 @@ caddr_t bif_xenc_key_create_cert (caddr_t * qst, caddr_t * err_r, state_slot_t *
     sqlr_new_error ("42000", "XENC34", "%s certificates are still not supported",
 		    xenc_cert_types[cert_type_idx].xcert_name);
 
-  if (NULL == (k = xenc_key_create_from_x509_cert (name, cert, private_key, private_key_passwd, 0, type, ask_pwd)))
+  if (NULL == (k = xenc_key_create_from_x509_cert (name, cert, private_key, private_key_passwd, 0, type, ask_pwd, import_chain)))
     sqlr_new_error ("42000", "XENC10", "Could not create key %s with certificate", name);
 
   /* store a key nfo in U_OPTS as "KEYS" option */
@@ -4372,7 +4387,7 @@ certificate_decode (caddr_t encoded_cert, const char * value_type,
       caddr_t decoded_cert = decode_box (encoded_cert, encoding_type);
       if (decoded_cert)
 	{
-	  xenc_key_t * key = xenc_key_create_from_x509_cert (NULL, decoded_cert, NULL, NULL, 1, CERT_DER_FORMAT,0);
+	  xenc_key_t * key = xenc_key_create_from_x509_cert (NULL, decoded_cert, NULL, NULL, 1, CERT_DER_FORMAT,0,0);
 	  dk_free_box (decoded_cert);
 	  return key;
 	}
@@ -6973,6 +6988,7 @@ bif_xenc_pkcs12_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t key_name = bif_string_arg (qst, args, 0, "xenc_pkcs12_export");
   caddr_t name  = bif_string_arg (qst, args, 1, "xenc_pkcs12_export");
   caddr_t pass  = bif_string_arg (qst, args, 2, "xenc_pkcs12_export");
+  int export_chain = BOX_ELEMENTS (args) > 3 ? bif_long_arg (qst, args, 3, "xenc_pkcs12_export") : 0;
 
   xenc_key_t * key = xenc_get_key_by_name (key_name, 1);
   X509 *x;
@@ -6982,6 +6998,7 @@ bif_xenc_pkcs12_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   char *data_ptr;
   int len;
   caddr_t ret = NULL;
+  STACK_OF (X509) * chain = NULL, *certs = NULL;
 
   if (!key || !key->xek_evp_private_key || !key->xek_x509)
     goto err;
@@ -6989,7 +7006,31 @@ bif_xenc_pkcs12_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   pk = key->xek_evp_private_key;
   x = key->xek_x509;
 
-  p12 = PKCS12_create(pass, name, pk, x, NULL, 0,0,0,0,0);
+  if (export_chain)
+    {
+      int i;
+      X509_STORE_CTX store_ctx;
+      X509_STORE_CTX_init (&store_ctx, CA_certs, x, NULL);
+      if (X509_verify_cert (&store_ctx) > 0)
+	chain = X509_STORE_CTX_get1_chain (&store_ctx);
+      else
+	{
+	  const char *err_str;
+	  err_str = X509_verify_cert_error_string (store_ctx.error);
+	  *err_ret = srv_make_new_error ("22023", "XENCX", "X509 error: %s", err_str);
+	  X509_STORE_CTX_cleanup (&store_ctx);
+	  goto err;
+	}
+      X509_STORE_CTX_cleanup (&store_ctx);
+      if (chain)
+	{
+	  certs = sk_X509_new_null ();
+	  for (i = 1; i < sk_X509_num (chain) ; i++)
+	    sk_X509_push (certs, sk_X509_value (chain, i));
+	  sk_free (chain);
+	}
+    }
+  p12 = PKCS12_create(pass, name, pk, x, certs, 0,0,0,0,0);
   b = BIO_new (BIO_s_mem());
   i2d_PKCS12_bio (b, p12);
   len = BIO_get_mem_data (b, &data_ptr);
@@ -7000,6 +7041,7 @@ bif_xenc_pkcs12_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   BIO_free (b);
   PKCS12_free (p12);
+  sk_free (certs);
   return ret;
 err:
   return NULL;
@@ -7469,12 +7511,86 @@ bif_xenc_x509_cert_verify_array (caddr_t * qst, caddr_t * err_ret, state_slot_t 
   return box_num (rc);
 }
 
+
+static caddr_t
+bif_xenc_x509_ca_cert_add (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char * me = "x509_ca_cert_add";
+  caddr_t cert_text = bif_string_arg (qst, args, 0, me);
+  char err_buf[512];
+  sec_check_dba ((QI*)qst, me);
+  mutex_enter (xenc_keys_mtx);
+  if (CA_certs)
+    {
+      X509 * cacert = x509_from_pem (cert_text);
+      if (cacert)
+	X509_STORE_add_cert (CA_certs, cacert);
+      else
+	*err_ret = srv_make_new_error ("42000", ".....", "%s", get_ssl_error_text (err_buf, sizeof (err_buf)));
+    }
+  mutex_leave (xenc_keys_mtx);
+  return NULL;
+}
+
+static caddr_t
+bif_xenc_x509_ca_certs_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char * me = "x509_ca_certs_remove";
+
+  sec_check_dba ((QI*)qst, me);
+  mutex_enter (xenc_keys_mtx);
+  X509_STORE_free (CA_certs);
+  CA_certs = X509_STORE_new ();
+  mutex_leave (xenc_keys_mtx);
+  return NULL;
+}
+
+static caddr_t
+bif_xenc_x509_ca_certs_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char * me = "x509_ca_certs_list";
+  STACK_OF (X509_OBJECT) * certs;
+  BIO *in;
+  caddr_t ret;
+  int i, len;
+  char * ptr;
+  dk_set_t set = NULL;
+
+  sec_check_dba ((QI*)qst, me);
+  in = BIO_new (BIO_s_mem ());
+  mutex_enter (xenc_keys_mtx);
+  certs = CA_certs->objs;
+  len = sk_X509_num (certs);
+  for (i = 0; i < len; i++)
+    {
+      X509_OBJECT * obj = sk_X509_OBJECT_value (certs, i);
+      if (obj->type == X509_LU_X509)
+	{
+	  X509 *x = obj->data.x509;
+	  caddr_t itm;
+	  int blen;
+	  BIO_reset (in);
+	  PEM_write_bio_X509 (in, x);
+	  blen = BIO_get_mem_data (in, &ptr);
+	  itm = dk_alloc_box (blen + 1, DV_SHORT_STRING);
+	  memcpy (itm, ptr, blen);
+          itm [blen] = 0;
+	  dk_set_push (&set, itm);
+	}
+    }
+  mutex_leave (xenc_keys_mtx);
+  BIO_free (in);
+  ret = list_to_array (dk_set_nreverse (set));
+  return ret;
+}
+
 void bif_xmlenc_init ()
 {
 #ifdef DEBUG
   log_info ("xmlenc_init()");
 #endif
 
+  CA_certs = X509_STORE_new ();
   xenc_keys_mtx = mutex_allocate ();
   __xenc_keys = id_hash_allocate (231, sizeof (caddr_t), sizeof (caddr_t), strhash,
 				strhashcmp);
@@ -7623,6 +7739,9 @@ void bif_xmlenc_init ()
   bif_define ("x509_verify", bif_xenc_x509_verify);
   bif_define ("x509_verify_array", bif_xenc_x509_verify_array);
   bif_define ("x509_cert_verify_array", bif_xenc_x509_cert_verify_array);
+  bif_define ("x509_ca_cert_add", bif_xenc_x509_ca_cert_add);
+  bif_define ("x509_ca_certs_remove", bif_xenc_x509_ca_certs_remove);
+  bif_define ("xenc_x509_ca_certs_list", bif_xenc_x509_ca_certs_list);
 
   xenc_cert_X509_idx = ecm_find_name ("X.509", (void*)xenc_cert_types, xenc_cert_types_len,
 					 sizeof (xenc_cert_type_t));

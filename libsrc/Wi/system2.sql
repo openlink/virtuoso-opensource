@@ -847,6 +847,18 @@ create table SYS_X509_CERTIFICATES (
 	primary key (C_U_ID, C_KIND, C_ID))
 ;
 
+create procedure X509_CA_CERTIFICATES_INIT ()
+{
+  for select C_DATA from SYS_X509_CERTIFICATES where C_U_ID = 0 and C_KIND = 1 do
+    {
+      x509_ca_cert_add (cast (C_DATA as varchar));
+    }
+}
+;
+
+--!AFTER
+X509_CA_CERTIFICATES_INIT ()
+;
 
 create procedure X509_CERTIFICATES_ADD (in certs varchar, in kind int := 1)
 {
@@ -877,6 +889,7 @@ create procedure X509_CERTIFICATES_ADD (in certs varchar, in kind int := 1)
 	  name := split_and_decode (replace (name, '\\x', '%'))[0];
 	}
       insert soft SYS_X509_CERTIFICATES (C_U_ID, C_ID, C_DATA, C_KIND, C_NAME) values (user_id, ki, cert, kind, name);
+      x509_ca_cert_add (cert);
     }
 }
 ;
@@ -899,6 +912,8 @@ create procedure X509_CERTIFICATES_DEL (in certs varchar, in kind int := 1)
 	signal ('22023', 'Can not get certificate id');
       delete from SYS_X509_CERTIFICATES where C_U_ID = user_id and C_KIND = kind and C_ID = ki;
     }
+  x509_ca_certs_remove ();
+  X509_CA_CERTIFICATES_INIT ();
 }
 ;
 
