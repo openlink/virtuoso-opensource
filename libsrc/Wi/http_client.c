@@ -1034,6 +1034,20 @@ http_cli_add_req_hdr (http_cli_ctx * ctx, char* hdrin)
   return (HC_RET_OK);
 }
 
+void
+http_cli_print_patched_url (dk_session_t * ses, caddr_t url)
+{
+  int i;
+  for (i = 0; i < strlen (url); i++)
+    {
+      if (url[i] == ' ')
+	SES_PRINT (ses, "%20");
+      else if (url[i] == '#')
+	break;
+      else
+	session_buffered_write_char (url[i], ses);
+    }
+}
 
 HC_RET
 http_cli_send_req (http_cli_ctx * ctx)
@@ -1046,7 +1060,7 @@ http_cli_send_req (http_cli_ctx * ctx)
     {
       SES_PRINT (ctx->hcctx_http_out, http_cli_get_method_string (ctx));
       SES_PRINT (ctx->hcctx_http_out, " ");
-      SES_PRINT (ctx->hcctx_http_out, http_cli_get_doc_str (ctx));
+      http_cli_print_patched_url (ctx->hcctx_http_out, http_cli_get_doc_str (ctx));
       snprintf (req_tmp, sizeof (req_tmp),
 	       " HTTP/%d.%d\r\n", ctx->hcctx_http_maj, ctx->hcctx_http_min);
       SES_PRINT (ctx->hcctx_http_out, req_tmp);
