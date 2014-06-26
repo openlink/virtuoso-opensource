@@ -782,8 +782,10 @@ void pl_source_free (pl_source_t * pls);
 
 int err_is_state (caddr_t err, char * state);
 
-typedef void srv_global_init_postponed_action_t (char *mode);
+typedef void srv_global_init_plugin_action_t (char *mode);
+extern dk_set_t srv_global_init_pre_log_actions;
 extern dk_set_t srv_global_init_postponed_actions;
+EXE_EXPORT (dk_set_t *, get_srv_global_init_pre_log_actions_ptr, (void));
 EXE_EXPORT (dk_set_t *, get_srv_global_init_postponed_actions_ptr, (void));
 EXE_EXPORT (client_connection_t *, get_bootstrap_cli, (void));
 EXE_EXPORT (void, local_commit, (client_connection_t * cli));

@@ -3761,11 +3761,30 @@ void   rdf_key_comp_init ();
 extern int enable_col_by_default, c_col_by_default;
 long get_total_sys_mem ();
 
+dk_set_t srv_global_init_pre_log_actions = NULL;
 dk_set_t srv_global_init_postponed_actions = NULL;
 
-dk_set_t *get_srv_global_init_postponed_actions_ptr(void)
+dk_set_t *
+get_srv_global_init_pre_log_actions_ptr (void)
+{
+  return &srv_global_init_pre_log_actions;
+}
+
+dk_set_t *
+get_srv_global_init_postponed_actions_ptr (void)
 {
   return &srv_global_init_postponed_actions;
+}
+
+void
+srv_global_init_plugin_actions (dk_set_t *set_ptr, char *mode)
+{
+  set_ptr[0] = dk_set_nreverse (set_ptr[0]);
+  while (NULL != set_ptr[0])
+    {
+      srv_global_init_plugin_action_t *f = (srv_global_init_plugin_action_t *)dk_set_pop (set_ptr);
+      f (mode);
+    }
 }
 
 void
@@ -3962,6 +3981,7 @@ srv_global_init (char *mode)
 	db_replay_registry_sequences ();
       else
 	id_hash_clear (registry);
+      srv_global_init_plugin_actions (&srv_global_init_pre_log_actions, mode);
       log_init (wi_inst.wi_master);
       local_commit (bootstrap_cli);
       c_checkpoint_interval = 0;
@@ -4032,6 +4052,7 @@ srv_global_init (char *mode)
     }
   if (!f_read_from_rebuilt_database)
     {
+      srv_global_init_plugin_actions (&srv_global_init_pre_log_actions, mode);
       log_init (wi_inst.wi_master);
     }
   if (strchr (mode, 'r'))
@@ -4092,15 +4113,7 @@ srv_global_init (char *mode)
 	  sf_shutdown (sf_make_new_log_name (wi_inst.wi_master), bootstrap_cli->cli_trx);
     }
   ddl_redo_undefined_triggers ();
-  if (NULL != srv_global_init_postponed_actions)
-    {
-      srv_global_init_postponed_actions = dk_set_nreverse (srv_global_init_postponed_actions);
-      while (NULL != srv_global_init_postponed_actions)
-        {
-          srv_global_init_postponed_action_t *f = (srv_global_init_postponed_action_t *)dk_set_pop (&srv_global_init_postponed_actions);
-          f (mode);
-        }
-    }
+  srv_global_init_plugin_actions (&srv_global_init_postponed_actions, mode);
   IN_TXN;
   lt_leave(bootstrap_cli->cli_trx);
   LEAVE_TXN;
