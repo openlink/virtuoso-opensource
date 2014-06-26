@@ -1578,7 +1578,7 @@ ewkt_get_pointstrings (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas, int sub
 	curr_itm_type |= GEO_A_Z | GEO_A_M;
       else if ((3 == dim) && !(sub_itm_type & (GEO_A_Z | GEO_A_M)))
 	curr_itm_type |= GEO_A_Z;
-      if (sub_itm_type != curr_itm_type)
+      if (((GEO_A_Z | GEO_A_M) & sub_itm_type) != ((GEO_A_Z | GEO_A_M) & curr_itm_type))
 	{
 	  if (NULL == items[0])
 	    {
@@ -1653,7 +1653,7 @@ ewkt_get_nested_poinstrings (ewkt_input_t * in, ewkt_kwd_metas_t * head_metas, i
 	  dk_set_push (items, itm);
 	  if (NULL == items[0]->next)
 	    sub_itm_type = GEO_TYPE (itm->geo_flags);
-	  else if (sub_itm_type != itm->geo_flags)
+          else if (((GEO_A_Z | GEO_A_M) & sub_itm_type) != ((GEO_A_Z | GEO_A_M) & itm->geo_flags))
 	    ewkt_signal (in, "Fragments of MULTIfeature differ in number of coordinates");
 	  if ((geo_type & (GEO_A_Z | GEO_A_M)) != (itm->geo_flags & (GEO_A_Z | GEO_A_M)))
 	    ewkt_signal (in, "Dimension of spatial feature does not match dimention of containing spatial object");
