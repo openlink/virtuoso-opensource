@@ -662,6 +662,11 @@ bif_str_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_
   db_buf_t set_mask = qi->qi_set_mask;
   int set, n_sets = qi->qi_n_sets, first_set = 0;
   state_slot_t ssl_tmp;
+  if (BOX_ELEMENTS (args) > 1 && !(SSL_CONSTANT == args[1]->ssl_type && 0 == unbox (args[1]->ssl_constant)))
+    {
+      *err_ret = BIF_NOT_VECTORED;
+      return;
+    }
   memcpy (&ssl_tmp, ret, sizeof (state_slot_t));
   if (ret->ssl_dc_dtp == DV_ANY)
     ssl_tmp.ssl_dtp = DV_ANY;
