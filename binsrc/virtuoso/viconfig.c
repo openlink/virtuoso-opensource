@@ -1047,7 +1047,7 @@ cfg_setup (void)
     c_c_use_aio = 0;
 
   if (cfg_getlong (pconfig, section, "AsyncQueueMaxThreads", &c_aq_max_threads) == -1)
-    c_aq_max_threads = 10;
+    c_aq_max_threads = 48;
 
   if (cfg_getlong (pconfig, section, "BuffersAllocation", &malloc_bufs) == -1)
     malloc_bufs = 0;
@@ -1238,7 +1238,7 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "ThreadsPerQuery", &enable_qp) == -1)
     {
-      enable_qp = 8;
+      enable_qp = 16;
     }
 
   if (cfg_getlong (pconfig, section, "MaxVectorSize", &dc_max_q_batch_sz) == -1)
