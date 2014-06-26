@@ -735,6 +735,65 @@ dfe_try_ordered_key (df_elt_t * prev_tb, df_elt_t * dfe)
 }
 
 
+typedef struct fn_card_s
+{
+  char *	fnc_name;
+  float	fnc_card;
+  float	fnc_unit;
+  char	fnc_mode;
+} fn_card_t;
+
+/* fnc_mode */
+#define FN_RESTR_REL 0  /* the card of the containing is multiplied by the card of the func */
+#define FN_RESTR_ABS 1 /* if this, the card of the containing dfe cannot exceed the card given for the func */
+
+
+
+fn_card_t fn_cards[] =
+  {{"isiri_id", 1, 0.001},
+   {"rdf_is_sub", 0.8, 0.01, FN_RESTR_ABS},
+   {"__rgs_ack", 1, 0,1},
+   {"__rgs_ack_cbk", 1, 0,1},
+   {NULL, 0, 0}};
+
+
+int
+sqlo_fn_pred_unit (df_elt_t * pred, float * u1, float * a1, df_elt_t * in_tb)
+{
+  /* comparison of const and function call.  Some functions are specially known */
+  if (DFE_BOP_PRED == pred->dfe_type && pred->_.bin.left  && DFE_CONST == pred->_.bin.left->dfe_type 
+      && pred->_.bin.right && DFE_CALL == pred->_.bin.right->dfe_type)
+    {
+      int inx;
+      float card;
+      ST * call = pred->_.bin.right->dfe_tree;
+      caddr_t name = call ? call->_.call.name : NULL;
+      if (!SINV_DV_STRINGP (name))
+	return 0;
+      for (inx = 0; fn_cards[inx].fnc_name; inx++)
+	{
+	  if (!stricmp (name, fn_cards[inx].fnc_name))
+	    {
+	      *u1 = fn_cards[inx].fnc_unit;
+	      card = fn_cards[inx].fnc_card;
+	      if (FN_RESTR_ABS == fn_cards[inx].fnc_mode)
+		{
+		  /* means that the card of the in tb cannot exceed fnc_card but can be less */
+		  if (in_tb->dfe_arity < card)
+		    *a1 = card;
+		  else
+		    *a1 = card / in_tb->dfe_arity;
+		}
+	      else
+		*a1 = card;
+	      return 1;
+	    }
+	}
+    }
+  return 0;
+}
+
+
 caddr_t sqlo_iri_constant_name (ST* tree);
 
 float arity_scale (float ar);
@@ -937,6 +996,9 @@ sqlo_pred_unit_1 (df_elt_t * lower, df_elt_t * upper, df_elt_t * in_tb, float * 
     *u1 = COL_PRED_COST;
   if (sqlo_in_list_unit (in_tb, lower, u1, a1))
     return;
+  if (sqlo_fn_pred_unit (lower, u1, a1, in_tb))
+    return;
+
   if (upper == lower)
     upper = NULL;
   if (BOP_EQ == lower->_.bin.op)
@@ -1213,7 +1275,7 @@ pst_pred_sort (pred_sort_stat_t * pst, pred_sort_t * pso, df_elt_t ** body, int 
 
 
 void
-dfe_pred_body_cost (df_elt_t **body, float * unit_ret, float * arity_ret, float * overhead_ret)
+dfe_pred_body_cost (df_elt_t **body, float * unit_ret, float * arity_ret, float * overhead_ret, df_elt_t * in_tb)
 {
   pred_sort_t pso_auto[PRED_SORT_MAX];
   int order_auto[PRED_SORT_MAX];
@@ -1233,14 +1295,14 @@ dfe_pred_body_cost (df_elt_t **body, float * unit_ret, float * arity_ret, float 
       switch (op)
 	{
 	  case BOP_NOT:
-	      dfe_pred_body_cost ((df_elt_t **) body[1], &u1, &a1, overhead_ret);
+	  dfe_pred_body_cost ((df_elt_t **) body[1], &u1, &a1, overhead_ret, in_tb);
 	      *unit_ret = u1;
 	      *arity_ret = 1 - a1;
 	      break;
 	  case BOP_OR:
 	      for (inx = 1; inx < n_terms; inx++)
 		{
-		  dfe_pred_body_cost ((df_elt_t **) body[inx], &u1, &a1, overhead_ret);
+	      dfe_pred_body_cost ((df_elt_t **) body[inx], &u1, &a1, overhead_ret, in_tb);
 	      if (inx < PRED_SORT_MAX + 1)
 		{
 		  pso[inx - 1].pso_cost = u1;
@@ -1259,7 +1321,7 @@ dfe_pred_body_cost (df_elt_t **body, float * unit_ret, float * arity_ret, float 
 	  case BOP_AND:
 	  for (inx = 1; inx < n_terms; inx++)
 	    {
-	      dfe_pred_body_cost ((df_elt_t **) body[inx], &u1, &a1, overhead_ret);
+	      dfe_pred_body_cost ((df_elt_t **) body[inx], &u1, &a1, overhead_ret, in_tb);
 	      if (inx < PRED_SORT_MAX + 1)
 		{
 		  pso[inx - 1].pso_cost = u1;
@@ -1278,7 +1340,7 @@ dfe_pred_body_cost (df_elt_t **body, float * unit_ret, float * arity_ret, float 
 	  case DFE_PRED_BODY:
 	      for (inx = 1; inx < n_terms; inx++)
 		{
-		  dfe_pred_body_cost ((df_elt_t **) body[inx], &u1, &a1, overhead_ret);
+	      dfe_pred_body_cost ((df_elt_t **) body[inx], &u1, &a1, overhead_ret, in_tb);
 		  cum += arity * u1;
 		  arity *= a1;
 		}
@@ -1294,7 +1356,7 @@ dfe_pred_body_cost (df_elt_t **body, float * unit_ret, float * arity_ret, float 
     {
       df_elt_t *pred = (df_elt_t *) body;
       if (pred->dfe_type == DFE_BOP_PRED || (pred->dfe_type == DFE_BOP && pred->_.bin.op >= BOP_EQ && pred->_.bin.op <= BOP_GTE))
-	sqlo_pred_unit (pred, NULL, NULL, unit_ret, arity_ret);
+	sqlo_pred_unit (pred, NULL, in_tb, unit_ret, arity_ret);
       else
 	dfe_unit_cost ((df_elt_t *) body, 1, unit_ret, arity_ret, overhead_ret);
     }
@@ -2813,6 +2875,8 @@ sqlo_non_leading_const_inf_cost (df_elt_t * tb_dfe, df_elt_t ** lowers, df_elt_t
   return;
 }
 
+int enable_inf_filter = 1;
+
 void
 sqlo_try_inf_filter (df_elt_t * tb_dfe, index_choice_t * ic)
 {
@@ -2824,8 +2888,9 @@ sqlo_try_inf_filter (df_elt_t * tb_dfe, index_choice_t * ic)
   dk_set_t old_cp = tb_dfe->_.table.col_preds;
   sqlo_t * so = tb_dfe->dfe_sqlo;
   index_choice_t filter_ic;
-  if (IC_AS_IS == ic->ic_op || ic->ic_n_lookups < 2)
+  if (!enable_inf_filter || IC_AS_IS == ic->ic_op || ic->ic_n_lookups < 2)
     return;
+  ic->ic_unit *= ic->ic_n_lookups;
   DO_SET (df_elt_t *, cp, &tb_dfe->_.table.col_preds)
     {
       if (DFE_BOP_PRED == cp->dfe_type && ic->ic_inf_dfe == cp->_.bin.right)
@@ -2847,7 +2912,7 @@ sqlo_try_inf_filter (df_elt_t * tb_dfe, index_choice_t * ic)
   tb_dfe->dfe_unit = tb_dfe->dfe_arity = 0;
   dfe_table_cost_ic_1 (tb_dfe, &filter_ic, 0);
   tb_dfe->_.table.col_preds = old_cp;
-  if (filter_ic.ic_unit < ic->ic_unit * ic->ic_n_lookups)
+  if (filter_ic.ic_unit < ic->ic_unit)
     {
       ic->ic_n_lookups = 1;
       ic->ic_unit = filter_ic.ic_unit;
@@ -3980,7 +4045,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
 	}
       if (dfe->_.table.join_test)
 	{
-	  dfe_pred_body_cost (dfe->_.table.join_test, &p_cost, &p_arity, overhead_ret);
+	  dfe_pred_body_cost (dfe->_.table.join_test, &p_cost, &p_arity, overhead_ret, dfe);
 	}
       return;
     }
@@ -4192,7 +4257,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
     }
   if (dfe->_.table.join_test)
     {
-      dfe_pred_body_cost (dfe->_.table.join_test, &p_cost, &p_arity, overhead_ret);
+      dfe_pred_body_cost (dfe->_.table.join_test, &p_cost, &p_arity, overhead_ret, dfe);
       p_arity = arity_scale (p_arity);
     }
   else
@@ -4238,7 +4303,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
   dfe->dfe_arity = *a1 = total_arity;
   dfe->dfe_unit = *u1 = total_cost;
   if (IS_OV (dfe->dfe_unit) || IS_OV (dfe->dfe_arity)) bing ();
-  if (IC_AS_IS != ic->ic_op && ic->ic_ric)
+  if (IC_AS_IS != ic->ic_op && ic->ic_ric && empty_ric != ic->ic_ric)
     sqlo_try_inf_filter (dfe, ic);
 }
 
@@ -4646,7 +4711,7 @@ dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float 
       sqlo_proc_cost (dfe, u1, a1);
       break;
     case DFE_FILTER:
-      dfe_pred_body_cost (dfe->_.filter.body,  u1, a1,  overhead_ret);
+      dfe_pred_body_cost (dfe->_.filter.body,  u1, a1,  overhead_ret, dfe);
 	break;
     default:
     deflt:
