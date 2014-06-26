@@ -849,6 +849,9 @@ create function "S3_CONFIGURE" (
   -- dbg_obj_princ ('S3_CONFIGURE (', id, params, ')');
   declare oldGraph, newGraph varchar;
 
+  if (not isnull ("S3_VERIFY" (DB.DBA.DAV_SEARCH_PATH (id, 'C'), params)))
+    return -38;
+
   -- Activity
   DB.DBA.S3__paramSet (id, 'C', 'activity',       get_keyword ('activity', params), 0);
 
@@ -874,6 +877,9 @@ create function "S3_CONFIGURE" (
 
   -- Root Path
   DB.DBA.S3__paramSet (id, 'C', 'path',           get_keyword ('path', params), 0);
+
+  -- set DET Type Value
+  DB.DBA.S3__paramSet (id, 'C', ':virtdet', DB.DBA.S3__detName (), 0, 0, 0);
 }
 ;
 
@@ -885,33 +891,17 @@ create function "S3_VERIFY" (
 {
   -- dbg_obj_princ ('S3_VERIFY (', path, params, ')');
   declare detcol_id integer;
-  declare tmp, _path, _params, _parts any;
+  declare _path, _params, _parts any;
   declare retValue, retHeader any;
   declare exit handler for sqlstate '*'
   {
     return __SQL_MESSAGE;
   };
 
-  tmp := trim (get_keyword ('BucketName', params, ''));
-  if (is_empty_or_null (tmp))
-    return 'Field ''S3 Bucker Name'' cannot be empty!';
-
-  if (length (tmp) > 63)
-    return 'The length of field ''S3 Bucker Name'' should be less or equal than 63 characters!';
-
-  tmp := trim (get_keyword ('AccessKeyID', params, ''));
-  if (is_empty_or_null (tmp))
-    return 'Field ''S3 Access Key'' cannot be empty!';
-
-  if (length (tmp) > 20)
-    return 'The length of field ''S3 Access Key'' should be less or equal than 20 characters!';
-
-  tmp := trim (get_keyword ('SecretKey', params, ''));
-  if (is_empty_or_null (tmp))
-    return 'Field ''S3 Secret Key'' cannot be empty!';
-
-  if (length (tmp) > 40)
-    return 'The length of field ''S3 Secret Key'' should be less or equal than 40 characters!';
+  VALIDATE.DBA.validate (get_keyword ('checkInterval', params, '15'), vector ('name', 'Check Interval', 'class', 'integer', 'minValue', 1));
+  VALIDATE.DBA.validate (get_keyword ('BucketName', params), vector ('name', 'S3 Bucker Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 63));
+  VALIDATE.DBA.validate (get_keyword ('AccessKeyID', params), vector ('name', 'S3 Access Key', 'class', 'varchar', 'minLength', 1, 'maxLength', 20));
+  VALIDATE.DBA.validate (get_keyword ('SecretKey', params), vector ('name', 'S3 Secret Key', 'class', 'varchar', 'minLength', 1, 'maxLength', 40));
 
   _path := get_keyword ('path', params, '/');
   if (_path = '/')
