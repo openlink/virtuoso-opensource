@@ -8820,7 +8820,7 @@ ssg_print_binv_table_exp (spar_sqlgen_t *ssg, SPART *wrapping_gp, int pass)
           ssg_newline (0);
           if (SPAR_MAX_BINDINGS_VIEW_CN >= width)
             {
-              snprintf (buf, sizeof (buf), " DB.DBA.SPARQL_BINDINGS_VIEW_C%d as ", width);
+              snprintf (buf, sizeof (buf), " DB.DBA.SPARQL_BINDINGS_VIEW_C_%d as ", width);
               ssg_puts (buf);
             }
           else
@@ -10299,7 +10299,7 @@ The fix is to avoid printing constant expressions at all, with only exception fo
           int width = BOX_ELEMENTS (final_binv->_.binv.vars);
           ssg_newline (0);
           if (SPAR_MAX_BINDINGS_VIEW_CN >= width)
-            ssg_puts (t_box_sprintf (100, " JOIN DB.DBA.SPARQL_BINDINGS_VIEW_C%d as \"bnd2\" ON (", width));
+            ssg_puts (t_box_sprintf (100, " JOIN DB.DBA.SPARQL_BINDINGS_VIEW_C_%d as \"bnd2\" ON (", width));
           else
             ssg_puts (" JOIN DB.DBA.SPARQL_BINDINGS_VIEW as \"bnd2\" ON (");
           ssg->ssg_indent += 1;

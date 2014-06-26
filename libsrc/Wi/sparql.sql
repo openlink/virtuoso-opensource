@@ -7979,7 +7979,7 @@ grant select on DB.DBA.SPARQL_BINDINGS_VIEW to public
 ;
 
 --!AWK PUBLIC
-create procedure DB.DBA.SPARQL_BINDINGS_VIEW_C1_IMP (in dta any)
+create procedure DB.DBA.SPARQL_BINDINGS_VIEW_C_1_IMP (in dta any)
 {
   declare rcount, rctr integer;
   declare BND0 any;
@@ -7991,7 +7991,7 @@ create procedure DB.DBA.SPARQL_BINDINGS_VIEW_C1_IMP (in dta any)
 ;
 
 --!AWK PUBLIC
-create procedure DB.DBA.SPARQL_BINDINGS_VIEW_C2_IMP (in dta any)
+create procedure DB.DBA.SPARQL_BINDINGS_VIEW_C_2_IMP (in dta any)
 {
   declare rcount, rctr integer;
   declare BND0, BND1 any;
@@ -8003,7 +8003,7 @@ create procedure DB.DBA.SPARQL_BINDINGS_VIEW_C2_IMP (in dta any)
 ;
 
 --!AWK PUBLIC
-create procedure DB.DBA.SPARQL_BINDINGS_VIEW_C3_IMP (in dta any)
+create procedure DB.DBA.SPARQL_BINDINGS_VIEW_C_3_IMP (in dta any)
 {
   declare rcount, rctr integer;
   declare BND0, BND1, BND2 any;
@@ -8015,7 +8015,7 @@ create procedure DB.DBA.SPARQL_BINDINGS_VIEW_C3_IMP (in dta any)
 ;
 
 --!AWK PUBLIC
-create procedure DB.DBA.SPARQL_BINDINGS_VIEW_C4_IMP (in dta any)
+create procedure DB.DBA.SPARQL_BINDINGS_VIEW_C_4_IMP (in dta any)
 {
   declare rcount, rctr integer;
   declare BND0, BND1, BND2, BND3 any;
@@ -8026,28 +8026,28 @@ create procedure DB.DBA.SPARQL_BINDINGS_VIEW_C4_IMP (in dta any)
 }
 ;
 
-create procedure view DB.DBA.SPARQL_BINDINGS_VIEW_C1 as DB.DBA.SPARQL_BINDINGS_VIEW_C1_IMP (dta) (BND0 any)
+create procedure view DB.DBA.SPARQL_BINDINGS_VIEW_C_1 as DB.DBA.SPARQL_BINDINGS_VIEW_C_1_IMP (dta) (BND0 any)
 ;
 
-create procedure view DB.DBA.SPARQL_BINDINGS_VIEW_C2 as DB.DBA.SPARQL_BINDINGS_VIEW_C1_IMP (dta) (BND0 any, BND1 any)
+create procedure view DB.DBA.SPARQL_BINDINGS_VIEW_C_2 as DB.DBA.SPARQL_BINDINGS_VIEW_C_2_IMP (dta) (BND0 any, BND1 any)
 ;
 
-create procedure view DB.DBA.SPARQL_BINDINGS_VIEW_C3 as DB.DBA.SPARQL_BINDINGS_VIEW_C1_IMP (dta) (BND0 any, BND1 any, BND2 any)
+create procedure view DB.DBA.SPARQL_BINDINGS_VIEW_C_3 as DB.DBA.SPARQL_BINDINGS_VIEW_C_3_IMP (dta) (BND0 any, BND1 any, BND2 any)
 ;
 
-create procedure view DB.DBA.SPARQL_BINDINGS_VIEW_C4 as DB.DBA.SPARQL_BINDINGS_VIEW_C1_IMP (dta) (BND0 any, BND1 any, BND2 any, BND3 any)
+create procedure view DB.DBA.SPARQL_BINDINGS_VIEW_C_4 as DB.DBA.SPARQL_BINDINGS_VIEW_C_4_IMP (dta) (BND0 any, BND1 any, BND2 any, BND3 any)
 ;
 
-grant select on DB.DBA.SPARQL_BINDINGS_VIEW_C1 to public
+grant select on DB.DBA.SPARQL_BINDINGS_VIEW_C_1 to public
 ;
 
-grant select on DB.DBA.SPARQL_BINDINGS_VIEW_C2 to public
+grant select on DB.DBA.SPARQL_BINDINGS_VIEW_C_2 to public
 ;
 
-grant select on DB.DBA.SPARQL_BINDINGS_VIEW_C3 to public
+grant select on DB.DBA.SPARQL_BINDINGS_VIEW_C_3 to public
 ;
 
-grant select on DB.DBA.SPARQL_BINDINGS_VIEW_C4 to public
+grant select on DB.DBA.SPARQL_BINDINGS_VIEW_C_4 to public
 ;
 
 
