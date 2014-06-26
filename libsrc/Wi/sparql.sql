@@ -7241,7 +7241,7 @@ create procedure DB.DBA.RDF_DELETE_TRIPLES_AGG (in graph_iid any, inout triples 
               declare search_fields_are_ok integer;
               search_fields_are_ok := __rdf_box_to_ro_id_search_fields (a_o, o_val, o_dt_and_lang_twobyte);
               -- dbg_obj_princ ('__rdf_box_to_ro_id_search_fields (', a_o, ') returned ', search_fields_are_ok, o_val, o_dt_and_lang_twobyte);
-	      if (__tag of rdf_box = __tag (a_o) and rdf_box_is_complete (a_o))
+              if (__tag of rdf_box = __tag (a_o) and rdf_box_ro_id (a_o)) -- was if (__tag of rdf_box = __tag (a_o) and rdf_box_is_complete (a_o))
                 delete from DB.DBA.RDF_QUAD where G = graph_iid and S = a_s and P = a_p and O = a_o;
 	      else if (search_fields_are_ok)
                 delete from DB.DBA.RDF_QUAD where G = graph_iid and S = a_s and P = a_p and O = (select rdf_box_from_ro_id(RO_ID) from DB.DBA.RDF_OBJ where RO_VAL = o_val and RO_DT_AND_LANG = o_dt_and_lang_twobyte);
