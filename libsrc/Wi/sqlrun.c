@@ -3307,7 +3307,25 @@ fnr_max_set_no (fun_ref_node_t * fref, caddr_t * inst, state_slot_t ** ssl_ret)
   if (ssl_ret)
     *ssl_ret = set_no_ssl;
   if (!set_nos->dc_n_values)
-    GPF_T1 ("musta forgotten branch copy of set no ssl for fref");
+    {
+      /* can be there are flattened subqs so many set ctrs are possible, take the closest that has a value */
+      data_source_t * prev = fref->src_gen.src_prev;
+      for (prev = prev; prev; prev = prev->src_prev)
+	{
+	  if (IS_QN (prev, set_ctr_input))
+	    {
+	      QNCAST (set_ctr_node_t, sctr, prev);
+	      if (ssl_ret)
+		*ssl_ret = sctr->sctr_set_no;
+	      set_nos = QST_BOX (data_col_t *, inst, sctr->sctr_set_no->ssl_index);
+	      if (!set_nos || !set_nos->dc_n_values)
+		continue;
+	      return set_nos->dc_n_values;
+	    }
+	}
+      sqlr_new_error ("QPINT", "QPINT", "Internal, support:  Forgotten copy of set no dc for qp fref preset.  To work around, set enable_qp = 1 with __dbf_set to disable query parallelization");
+      GPF_T1 ("musta forgotten branch copy of set no ssl for fref");
+    }
   return ((int64*)set_nos->dc_values)[set_nos->dc_n_values - 1];
 }
 
