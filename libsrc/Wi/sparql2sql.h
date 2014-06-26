@@ -511,8 +511,9 @@ extern SPART *sparp_find_subexpn_in_retlist (sparp_t *sparp, const char *varname
 extern int sparp_subexpn_position1_in_retlist (sparp_t *sparp, const char *varname, SPART **retvals);
 
 /*! This returns a mapping of \c var.
-If var_triple is NULL then it tries to find it using \c sparp_find_triple_of_var() for vars and \c sparp_find_triple_of_var_or_retval() for retvals */
-extern qm_value_t *sparp_find_qmv_of_var_or_retval (sparp_t *sparp, SPART *var_triple, SPART *gp, SPART *var);
+If var_triple is NULL then it tries to find it using \c sparp_find_triple_of_var() for vars and \c sparp_find_triple_of_var_or_retval() for retvals.
+\c allow_returning_null is useful when a \c var is a retval from subselect so it is not associated with any triple pattern */
+extern qm_value_t *sparp_find_qmv_of_var_or_retval (sparp_t *sparp, SPART *var_triple, SPART *gp, SPART *var, int allow_returning_null);
 
 extern int sparp_find_language_dialect_by_service (sparp_t *sparp, SPART *service_expn);
 

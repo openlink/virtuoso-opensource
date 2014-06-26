@@ -4112,7 +4112,7 @@ sparp_find_triple_of_var_or_retval (sparp_t *sparp, SPART *gp, SPART *var, int n
 }
 
 qm_value_t *
-sparp_find_qmv_of_var_or_retval (sparp_t *sparp, SPART *var_triple, SPART *gp, SPART *var)
+sparp_find_qmv_of_var_or_retval (sparp_t *sparp, SPART *var_triple, SPART *gp, SPART *var, int allow_returning_null)
 {
   int tr_idx = var->_.var.tr_idx;
   quad_map_t *qm;
@@ -4137,7 +4137,11 @@ sparp_find_qmv_of_var_or_retval (sparp_t *sparp, SPART *var_triple, SPART *gp, S
           break;
         }
       if (NULL == var_triple)
-        spar_internal_error (sparp, "sparp_" "find_qmv_of_var_or_retval(): can't find triple");
+        {
+          if (allow_returning_null)
+            return NULL;
+          spar_internal_error (sparp, "sparp_" "find_qmv_of_var_or_retval(): can't find triple");
+        }
     }
   qm = var_triple->_.triple.tc_list[0]->tc_qm;
   qmv = JSO_FIELD_ACCESS(qm_value_t *, qm, qm_field_map_offsets[tr_idx])[0];

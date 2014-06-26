@@ -772,17 +772,18 @@ create procedure DB.DBA.GROUP_CONCAT_INIT (inout _env any)
 --!AWK PUBLIC
 create procedure DB.DBA.GROUP_CONCAT_ACC (inout _env any, in token varchar, in delim varchar)
 {
---  if (185 <> __tag (_env))
---    _env := string_output();
---  else if (delim is not null)
---    http (cast (delim as varchar), _env);
---  http (cast (token as varchar), _env);
+  if (__tag of varchar <> __tag (token))
+    {
+      token := cast (token as varchar);
+      if (token is null)
+        return;
+    }
   if (__tag of varchar <> __tag (_env))
-    _env := cast (token as varchar);
+    _env := token;
   else if (delim is not null)
-    _env := concat (_env, cast (delim as varchar), cast (token as varchar));
+    _env := concat (_env, cast (delim as varchar), token);
   else
-    _env := concat (_env, cast (token as varchar));
+    _env := concat (_env, token);
 }
 ;
 
