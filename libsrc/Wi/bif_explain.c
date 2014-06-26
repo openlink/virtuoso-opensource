@@ -305,17 +305,18 @@ ssl_print (state_slot_t * ssl)
     case SSL_CONSTANT:
 	{
 	  caddr_t err_ret = NULL;
-	  dtp_t dtp = DV_TYPE_OF (ssl->ssl_constant);
+	  caddr_t cval = ssl->ssl_constant;
+	  dtp_t dtp = DV_TYPE_OF (cval);
 	  if (DV_DB_NULL == dtp)
 	    stmt_printf (("<DB_NULL>"));
 	  else if (DV_RDF == dtp)
 	    {
-	      rdf_box_t * rb = (rdf_box_t*)ssl->ssl_constant;
+	      rdf_box_t * rb = (rdf_box_t*)cval;
 	      stmt_printf (("rdflit" BOXINT_FMT, rb->rb_ro_id));
 	    }
 	  else
 	    {
-	      caddr_t strval = box_cast_to (NULL, ssl->ssl_constant,
+	      caddr_t strval = box_cast_to (NULL, cval,
 					    dtp, DV_SHORT_STRING,
 		  NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE,
 		  &err_ret);
@@ -325,7 +326,7 @@ ssl_print (state_slot_t * ssl)
 		    {
 		      case DV_IRI_ID:
 			    {
-			      caddr_t str = dv_iri_short_name (ssl->ssl_constant);
+			caddr_t str = dv_iri_short_name (cval);
 			      if (str)
 				{
 				  stmt_printf ((" #" EXPLAIN_LINE_MAX_STR_FORMAT " ", str));
@@ -337,7 +338,12 @@ ssl_print (state_slot_t * ssl)
 			  stmt_printf ((" " EXPLAIN_LINE_MAX_STR_FORMAT " ", strval));
 			  break;
 		      default:
-			  stmt_printf (("<c " EXPLAIN_LINE_MAX_STR_FORMAT ">", strval));
+		      if (box_flags (cval))
+		        stmt_printf (("<tag %d flag %d c " EXPLAIN_LINE_MAX_STR_FORMAT ">", DV_TYPE_OF (cval), box_flags (cval), strval));
+		      else if (DV_STRING != DV_TYPE_OF (cval))
+		        stmt_printf (("<tag %d c " EXPLAIN_LINE_MAX_STR_FORMAT ">", DV_TYPE_OF (cval), strval));
+		      else
+		        stmt_printf (("<c " EXPLAIN_LINE_MAX_STR_FORMAT ">", strval));
 		    }
 		}
 	      else
