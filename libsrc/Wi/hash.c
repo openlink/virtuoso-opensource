@@ -1774,7 +1774,7 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
 	      if (setp && setp->setp_any_distinct_gos)
 		{
 		  gb_op_t * go = (gb_op_t *)dk_set_nth (setp->setp_gb_ops, inx);
-		  if (go->go_distinct_ha)
+		  if (go && go->go_distinct_ha)
 		    {
 		      caddr_t val= qst_get (qst, go->go_distinct);
 		      if (DV_DB_NULL == DV_TYPE_OF (val))

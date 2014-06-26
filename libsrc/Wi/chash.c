@@ -1975,7 +1975,7 @@ setp_chash_group (setp_node_t * setp, caddr_t * inst)
       if (ssl->ssl_type < SSL_VEC)
 	goto no;
       dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
-      if (inx >= ha->ha_n_keys && !(DCT_NUM_INLINE & dc->dc_type))
+      if (inx >= ha->ha_n_keys && !(DCT_NUM_INLINE & dc->dc_type) && dk_set_nth (setp->setp_gb_ops, inx - ha->ha_n_keys))
 	goto no;
       if (cha && dc->dc_dtp != cha->cha_sqt[inx].sqt_dtp && !((DCT_BOXES & dc->dc_type) && DV_ANY == cha->cha_sqt[inx].sqt_dtp))
 	goto no;
