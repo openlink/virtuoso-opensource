@@ -1244,7 +1244,16 @@ bif_x509_certificate_verify (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
   DO_BOX (caddr_t, ca, inx, ((caddr_t *) array))
   {
     mem_bio = BIO_new_mem_buf (ca, box_length (ca) - 1);
-    cacert = d2i_X509_bio (mem_bio, NULL);
+    if (NULL != strstr (ca, PEM_STRING_X509))
+      {
+#if OPENSSL_VERSION_NUMBER >= 0x00908000L
+	cacert = (X509 *)PEM_ASN1_read_bio ((d2i_of_void *)d2i_X509, PEM_STRING_X509, mem_bio, NULL, NULL, NULL);
+#else
+	cacert = (X509 *)PEM_ASN1_read_bio ((char *(*)())d2i_X509, PEM_STRING_X509, mem_bio, NULL, NULL, NULL);
+#endif
+      }
+    else
+      cacert = d2i_X509_bio (mem_bio, NULL);
     BIO_free (mem_bio);
     if (!cacert)
       {
