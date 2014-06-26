@@ -74,7 +74,7 @@ rr:useSubjectMap		a OVL:ObsoleteProperty ; rdfs:comment "Use rr:subjectMap inste
 
 
 rr:OVL-G_S_P_O_Map	OVL:superClassOf	rr:GraphMap,	rr:SubjectMap,	rr:PredicateMap,	rr:ObjectMap						.
-rr:OVL-S_P_O_Map		OVL:superClassOf			rr:SubjectMap,	rr:PredicateMap,	rr:ObjectMap						.
+rr:OVL-S_P_O_Map	OVL:superClassOf			rr:SubjectMap,	rr:PredicateMap,	rr:ObjectMap						.
 rr:OVL-S_Po_Map		OVL:superClassOf			rr:SubjectMap,						rr:PredicateObjectMap			.
 rr:OVL-S_O_Map		OVL:superClassOf			rr:SubjectMap,				rr:ObjectMap						.
 rr:OVL-O_Ro_Map		OVL:superClassOf								rr:ObjectMap,				rr:RefObjectMap	.
@@ -101,10 +101,10 @@ rr:logicalTable		a OVL:InferTypeFromRange .
 rr:subjectMap		a OVL:InferTypeFromRange .
 rr:predicateObjectMap	a OVL:InferTypeFromRange .
 rr:predicateMap		a OVL:InferTypeFromRange .
-rr:objectMap			a OVL:InferTypeFromRange .
-rr:useRefPredicateObjectMap	a OVL:InferTypeFromRange .
-rr:useRefPredicateMap		a OVL:InferTypeFromRange .
-rr:useRefObjectMap		a OVL:InferTypeFromRange .
+# rr:objectMap			a OVL:InferTypeFromRange .
+rr:RefPredicateObjectMap	a OVL:InferTypeFromRange .
+rr:RefPredicateMap		a OVL:InferTypeFromRange .
+rr:RefObjectMap			a OVL:InferTypeFromRange .
 rr:joinCondition		a OVL:InferTypeFromRange .
 
 rr:termType			OVL:inconsistencyOfPredicate """select ?s, ("Error") as ?severity,
