@@ -4167,7 +4167,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
 	   && !(dfe->dfe_sqlo->so_sc->sc_is_update && 0 == strcmp (dfe->_.table.ot->ot_new_prefix, "t1")))
     {
       inx_sample = sqlo_inx_sample (dfe, key, inx_lowers, inx_uppers, inx_const_fill, ic);
-      if (inx_sample > 1 && sqlo_sample_dep_cols)
+      if (inx_sample >= 1 && sqlo_sample_dep_cols)
 	{
 	  col_arity /= ic->ic_col_card_corr;
 	  inx_sample = ic->ic_inx_card;
