@@ -2456,7 +2456,7 @@
                     <v:template name="tf_14" type="simple" enabled="-- case when self.viewField ('inheritancePermissions') and (self.dav_type = 'C') then 1 else 0 end">
                       <tr id="davRow_permissions_inheritance" width="30%">
                         <th>
-                          <vm:label for="dav_permissions_inheritance" value="--'Permissions Inheritance'" />
+                          <vm:label for="dav_permissions_inheritance" value="--'Default Permissions'" />
                         </th>
                         <td>
                           <v:select-list name="dav_permissions_inheritance" xhtml_id="dav_permissions_inheritance" value="-- get_keyword ('dav_permissions_inheritance', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'permissions-inheritance'))" xhtml_disabled="disabled">
@@ -2991,7 +2991,7 @@
                             {
                               detParams := self.detOAuthParamsPrepare (dav_detType, null, vector ('path'), null);
                             }
-                            tmp := call ('DB.DBA.' || dav_detType || '_VERIFY') (dav_fullPath, detParams);;
+                            tmp := call ('DB.DBA.' || dav_detType || '_VERIFY') (dav_fullPath, detParams);
                             if (not isnull (tmp))
                               signal('TEST', tmp);
                           }
