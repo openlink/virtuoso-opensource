@@ -894,20 +894,6 @@ sparp_count_usages (sparp_t *sparp, SPART *req_top, dk_set_t *optvars_ret)
       NULL );
 }
 
-int
-sparp_tree_returns_ref (sparp_t *sparp, SPART *tree)
-{
-  switch (SPART_TYPE (tree))
-    {
-    case SPAR_QNAME: return 1;
-    case SPAR_BUILT_IN_CALL:
-      if (IRI_L == tree->_.builtin.btype)
-        return 1;
-      break;
-    }
-  return 0;
-}
-
 static int
 sparp_expn_rside_rank (SPART *tree)
 {
@@ -4931,7 +4917,12 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART **sources, SPART *triple)
     return;
   graph = triple->_.triple.tr_graph;
   graph_type = SPART_TYPE(graph);
-  required_source_type = ((SPAR_VARIABLE == graph_type) ? SPART_GRAPH_NAMED : ((SPAR_BLANK_NODE_LABEL == graph_type) ? SPART_GRAPH_FROM : 0));
+  if (SPART_IS_DEFAULT_GRAPH_BLANK(graph))
+    required_source_type = SPART_GRAPH_FROM;
+  else if (SPAR_VARIABLE == SPART_TYPE(graph))
+    required_source_type = SPART_GRAPH_NAMED;
+  else
+    required_source_type = 0;
   new_cases = sparp_find_triple_cases (sparp, triple, sources, required_source_type);
   new_cases_count = BOX_ELEMENTS (new_cases);
   if ((NULL == triple->_.triple.tc_list) &&

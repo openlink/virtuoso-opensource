@@ -4864,7 +4864,7 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
         }
     }
   if (IS_BOX_POINTER (needed) && needed->qmfIsSubformatOfLongWhenRef &&
-      ((SSG_VALMODE_SQLVAL == native) || (SSG_VALMODE_LONG == native)) )
+      (/*(SSG_VALMODE_SQLVAL == native) ||*/ (SSG_VALMODE_LONG == native)) )
     {
       ptrlong tree_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, tree);
       if (tree_restr_bits & SPART_VARR_IS_REF)
@@ -4930,8 +4930,9 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
     }
   if (IS_BOX_POINTER (needed))
     {
+      ptrlong tree_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, tree);
       const char *tmpl;
-      if (sparp_tree_returns_ref (ssg->ssg_sparp, tree))
+      if (tree_restr_bits & SPART_VARR_IS_REF)
         tmpl = ssg_tmpl_ref_short_of_X (needed, native);
       else
         tmpl = ssg_tmpl_literal_short_of_X (needed, native);

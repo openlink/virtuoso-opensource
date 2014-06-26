@@ -877,12 +877,15 @@ spar_construct_query	/* [6]	ConstructQuery	 ::=  'CONSTRUCT' ConstructTemplate D
 		spar_compose_retvals_of_construct (sparp_arg, $$, $4, formatter, agg_formatter, agg_mdata); }
 	| CONSTRUCT_L spar_dataset_clauses_opt WHERE_L _LBRA {
 		sparp_arg->sparp_allow_aggregates_in_expn &= ~1;
+		sparp_arg->sparp_in_ctor_from_where = 1;
 		spar_gp_init (sparp_arg, WHERE_L); }
-	    spar_gp _RBRA spar_solution_modifier {
+	    spar_gp _RBRA {
+		sparp_arg->sparp_in_ctor_from_where = 0; }
+	    spar_solution_modifier {
 		const char *fmt_mode_name;
 		const char *formatter, *agg_formatter, *agg_mdata;
 		SPART *where_gp = spar_gp_finalize (sparp_arg, NULL);
-		SPART *wm = $8;
+		SPART *wm = $9;
 		SPART *tmpl_gp;
 		wm->_.wm.where_gp = where_gp;
 		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, CONSTRUCT_L, NULL, wm );
@@ -1947,7 +1950,10 @@ spar_backquoted		/* [Virt]	Backquoted	 ::=  '`' Expn '`'	*/
                     $$ = $3; /* redundant backquotes in retlist or backquotes to bypass syntax limitation in CONSTRUCT gp */
                   else
 		    {
-		      SPART *bn = spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:calc"), 1);
+		      SPART *bn = sparp_arg->sparp_in_ctor_from_where ?
+		        spar_make_variable (sparp_arg, spar_mkid (sparp_arg, "ctor_from_where_calc_var"))
+ :
+		        spar_make_blank_node (sparp_arg, spar_mkid (sparp_arg, "_:calc"), 1);
 		      SPART *eq;
 		      SPAR_BIN_OP (eq, BOP_EQ, t_full_box_copy_tree ((caddr_t)bn), $3);
 		      spar_gp_add_filter (sparp_arg, eq, 0);
@@ -2591,10 +2597,13 @@ spar_sparul11_deleteinsert	/* [DML]*	DeleteInsert11Action	 ::=  */
 		    spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $<tree>6, $4); } }
 	| DELETE_L WHERE_L _LBRA {
 		sparp_arg->sparp_allow_aggregates_in_expn &= ~1;
+		sparp_arg->sparp_in_ctor_from_where = 1;
 		spar_gp_init (sparp_arg, WHERE_L); }
-	    spar_gp _RBRA spar_solution_modifier {
+	    spar_gp _RBRA {
+		sparp_arg->sparp_in_ctor_from_where = 0; }
+	    spar_solution_modifier {
 		SPART *where_gp = spar_gp_finalize (sparp_arg, NULL);
-		SPART *wm = $7;
+		SPART *wm = $8;
 		SPART *dflt_g = NULL;
 		if (spar_ctor_uses_default_graph (where_gp))
 		  dflt_g = spar_default_sparul_target (sparp_arg, "triple in DELETE WHERE {...} without GRAPH {...}");
