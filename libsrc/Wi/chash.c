@@ -752,7 +752,14 @@ setp_non_agg_dep (setp_node_t * setp, caddr_t * inst, int nth_col, int set)
     case DV_DATETIME:
       return (int64) & dc->dc_values[set * DT_LENGTH];
     default:
-      GPF_T1 ("unsupported dc dtp in non-agg dep of setp");
+      {
+	caddr_t box;
+	if (!(DCT_BOXES & dc->dc_type))
+          GPF_T1 ("unsupported dc dtp in non-agg dep of setp");
+	box = ((caddr_t*)dc->dc_values)[set];
+	*is_null = 2 | (DV_DB_NULL == DV_TYPE_OF (box));
+	return (int64)box;
+      }
     }
   return 0;
 }
@@ -2466,8 +2473,10 @@ dc_append_cha (data_col_t * dc, hash_area_t * ha, chash_t * cha, int64 * row, in
 	  return;
 	case DV_LONG_INT:
 	  ((caddr_t *) dc->dc_values)[dc->dc_n_values++] = box_num (row[col + 1]);
+	  return;
 	case DV_DOUBLE_FLOAT:
 	  ((caddr_t *) dc->dc_values)[dc->dc_n_values++] = box_double (((double *) row)[col + 1]);
+	  return;
 	case DV_IRI_ID:
 	  ((caddr_t *) dc->dc_values)[dc->dc_n_values++] = box_iri_id (row[col + 1]);
 	  return;
@@ -2481,8 +2490,10 @@ dc_append_cha (data_col_t * dc, hash_area_t * ha, chash_t * cha, int64 * row, in
 	    ((caddr_t *) dc->dc_values)[dc->dc_n_values++] = dt;
 	    return;
 	  }
+	default:
+	  ((caddr_t *)dc->dc_values)[dc->dc_n_values++] = box_deserialize_string (((caddr_t*)row)[col + 1], INT32_MAX, 0);
+          return;
 	}
-      GPF_T1 ("dc_append_cha(): unsupported type, dc of boxes");
       return;
     }
   switch (cha->cha_sqt[col].sqt_dtp)
