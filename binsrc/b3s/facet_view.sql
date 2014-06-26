@@ -147,13 +147,12 @@ fct_var_tag (in this_s int, in ctx int)
   else
     cl := 'focus';
 
-  return sprintf ('<a class="%s" href="/fct/facet.vsp?cmd=set_focus&sid=%d&n=%d" title="Focus on %s%d">%s%d</a>',
+  return sprintf ('<a class="%s" href="/fct/facet.vsp?cmd=set_focus&sid=%d&n=%d" title="Relation %s ?s%d">?s%d</a>',
                     cl,
                     connection_get ('sid'),
 		    this_s,
 		    fct_s_term (),
 		    this_s,
-		    fct_s_term (),
 		    this_s);
 }
 ;
@@ -285,8 +284,12 @@ fct_query_info (in tree any,
     }
   else if (n = 'text' or n = 'text-d')
     {
-      declare prop varchar;
+      declare prop, vt varchar;
       prop := cast (xpath_eval ('./@property', tree, 1) as varchar);
+      if (this_s = ctx)
+        vt := cast (xpath_eval ('../view/@type', tree, 1) as varchar);
+      else
+        vt := '';
 
       if (prop is not null)
         fct_li (sprintf (' %s has <span class="iri"><a href="#"/fct/facet.vsp?sid=%d&cmd=drop_text_prop">%s</a></span> containing text <span class="value">"%s"</span>. ',
@@ -295,6 +298,28 @@ fct_query_info (in tree any,
                          fct_short_form (prop),
                          charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8')),
                 txt);
+      else if (vt = 'properties')
+        fct_li (sprintf (' %s is the %s of <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=20&offset=0&cno=%d">any %s</a> where the %s is associated with <span class="value">"%s"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ', 
+                         fct_var_tag (this_s, ctx), 
+			 fct_s_term (),
+                         connection_get ('sid'), 
+                         cno,
+		         fct_p_term (),
+		         fct_o_term (),
+		         charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8'),
+                         connection_get ('sid')), 
+                 txt);
+      else if (vt = 'properties-in') 
+        fct_li (sprintf (' %s is the %s of <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=20&offset=0&cno=%d">any %s</a> where the %s is associated with <span class="value">"%s"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ', 
+                         fct_var_tag (this_s, ctx), 
+			 fct_o_term (),
+                         connection_get ('sid'), 
+                         cno,
+		         fct_p_term (),
+		         fct_s_term (),
+		         charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8'),
+                         connection_get ('sid')), 
+                 txt);
       else
         fct_li (sprintf (' %s has <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=20&offset=0&cno=%d">any %s</a> with %s <span class="value">"%s"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ',
                          fct_var_tag (this_s, ctx),
@@ -330,10 +355,10 @@ fct_query_info (in tree any,
                 txt);
 	}
       if (ctx)
-	http (sprintf ('<a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop&n=%d">Drop %s%d</a> ',
+	http (sprintf ('<a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop&n=%d">Drop ?s%d</a> ',
 	               connection_get ('sid'),
                        new_s,
-                       fct_s_term (),
+                       --fct_s_term (), 
                        new_s),
               txt);
 
@@ -354,10 +379,10 @@ fct_query_info (in tree any,
             txt);
 
       if (ctx)
-	http (sprintf ('<a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop&n=%d">Drop %s%d</a> ',
+	http (sprintf ('<a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop&n=%d">Drop ?s%d</a> ',
 	               connection_get ('sid'),
 	               new_s,
-                       fct_s_term (),
+                       --fct_s_term (), 
                        new_s), txt);
 
       fct_query_info_1 (tree, new_s, max_s, level, ctx, txt, cno);
@@ -638,9 +663,9 @@ fct_nav (in tree any,
       if (tp <> 'list-count')
     {
 	if (connection_get('s_term') = 's')
-	  fct_view_link ('list-count', 'Distinct objects (Aggregated)', txt, 'Displaying List of Distinct Entity Names ordered by Count');
+	fct_view_link ('list-count', 'Distinct (Count)', txt, 'Displaying List of Distinct Entity Names ordered by Count');
 	else
-	  fct_view_link ('list-count', 'Distinct values (Aggregated)', txt, 'Displaying List of Distinct Entity Names ordered by Count');
+	fct_view_link ('list-count', 'Distinct (Count)', txt, 'Displaying List of Distinct Entity Names ordered by Count');
     }
   if ('text' <> tp and tp <> 'text-d')
     {
