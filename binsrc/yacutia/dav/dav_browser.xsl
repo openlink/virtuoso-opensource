@@ -1218,20 +1218,51 @@
             <?vsp
               -- The DAV system makes optional use of VAL for authentication. Session cookies can be shared with other pages such as
               -- /sparql or even ODS. The following code adds a logout button to the dav browser toolbar if logged in.
-              if (__proc_exists ('VAL.DBA.session_id_for_connection') is not null)
+              if (__proc_exists ('VAL.DBA.authentication_details_for_connection') is not null)
               {
-                declare val_sid, val_serviceId, val_realm varchar;
-                if (self.mode = 'webdav' and VAL.DBA.session_id_for_connection (val_sid, val_serviceId, val_realm))
+                declare val_sid, val_serviceId, val_realm, val_uname varchar;
+                declare val_isRealUser int;
+                val_realm := null;
+
+                if (self.mode = 'webdav')
                 {
-                  http ('<div style="float:right;">');
-                  http (sprintf ('<span class="toolbar" style="width:auto;text-align:right;padding:10px;"><b>Logged in as</b><br/><span style="font-weight:normal;">%V</span></span>', val_serviceId));
-                  http (sprintf ('<img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
-                  http ('<span id="tb_logout" class="toolbar" style="cursor: pointer;">');
-                  http (sprintf ('  <a href="/val/logout.vsp?returnto=%U">', HTTP_REQUESTED_URL()));
-                  http (sprintf ('    <img src="%s" border="0" alt="Logout" /><br /><span class="toolbarLabel">Logout</span>', self.image_src ('dav/image/logout_32.png')));
-                  http ('  </a>');
-                  http ('</span>');
-                  http('</div>');
+                  if (VAL.DBA.authentication_details_for_connection (sid=>val_sid, serviceId=>val_serviceId, uname=>val_uname, isRealUser=>val_isRealUser, realm=>val_realm))
+                  {
+                    declare serviceIdHtml, profileName varchar;
+                    profileName := coalesce (val_uname, val_serviceId);
+                    serviceIdHtml := null;
+                    if (__proc_exists ('VAL.DBA.get_profile_url'))
+                    {
+                      serviceIdHtml := VAL.DBA.get_profile_url (val_serviceId);
+                      profileName := coalesce (VAL.DBA.get_profile_name (val_serviceId), val_uname, val_serviceId);
+                    }
+                    if (not serviceIdHtml is null)
+                      serviceIdHtml := sprintf ('<a href="%s">%V</a>', serviceIdHtml, profileName);
+                    else
+                      serviceIdHtml := profileName;
+
+                    http (         '<div style="float:right;">');
+                    http (sprintf ('  <span class="toolbar" style="width:auto;text-align:right;padding:10px;"><b>Logged in as</b><br/><span style="font-weight:normal;">%s</span></span>', serviceIdHtml));
+                    http (sprintf ('  <img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
+                    http (         '  <span id="tb_logout" class="toolbar" style="cursor: pointer;">');
+                    http (sprintf ('    <a href="/val/logout.vsp?returnto=%U">', HTTP_REQUESTED_URL()));
+                    http (sprintf ('      <img src="%s" border="0" alt="Logout" /><br /><span class="toolbarLabel">Logout</span>', self.image_src ('dav/image/logout_32.png')));
+                    http (         '    </a>');
+                    http (         '  </span>');
+                    http (         '</div>');
+                  }
+                  else
+                  {
+                    http (         '<div style="float:right;">');
+                    http (         '  <span class="toolbar" style="width:auto;text-align:right;padding:10px;">');
+                    http (         '    <b>Not logged in</b>');
+                    http (         '  </span>');
+                    http (sprintf ('  <img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
+                    http (         '  <span class="toolbar" style="cursor: pointer;">');
+                    http (sprintf ('    <a href="/val/authenticate.vsp?res=%U"><b>Login</b></a>', HTTP_REQUESTED_URL()));
+                    http (         '  </span>');
+                    http (         '</div>');
+                  }
                 }
               }
             ?>
