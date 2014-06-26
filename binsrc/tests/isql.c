@@ -5048,7 +5048,7 @@ print_blob_col_csv (HSTMT stmt, UWORD n_col, SQLULEN width, SWORD sql_type)
           break;
     }
 
-  if (n_col < n_out_cols - 1)  /* not the rightmost column? */
+  if (n_col < n_out_cols)  /* not the rightmost column? */
     isqlt_fputts (csv_field_separator, stdout);
 
   return rc;
