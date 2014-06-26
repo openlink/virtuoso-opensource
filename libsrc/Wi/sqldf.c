@@ -5284,6 +5284,33 @@ sqlo_check_col_pred_placed (df_elt_t * tb_dfe)
   END_DO_SET();
 }
 
+
+int
+sqlo_rdf_may_try_hash (sqlo_t * so, op_table_t * ot, df_elt_t * dfe, float ref_arity)
+{
+  /* Precheck if worth it to try hash join w rdf.  Special case if text pred with o already bound, near always best by hash */
+  if (dfe->_.table.text_pred && ref_arity > 2)
+    return 1;
+  return hash_join_enable >= 2;
+  DO_SET (df_elt_t *, cp, &dfe->_.table.col_preds)
+    {
+      df_elt_t * left = cp->_.bin.left;
+      dbe_column_t * col =  left && DFE_COLUMN == left->dfe_type ? left->_.col.col : NULL;
+      if (!col)
+	continue;
+      switch (col->col_name[0])
+	{
+	case 'P':  case 'p':
+	case 'S':  case 's':
+	case 'O':  case 'o':
+	case 'G':  case 'g': break;
+	}
+    }
+  END_DO_SET();
+return 1;
+}
+
+
 extern int chash_per_query_pct;
 
 
@@ -5315,8 +5342,8 @@ sqlo_try_hash (sqlo_t * so, df_elt_t * dfe, op_table_t * super_ot, float * score
     return 0;
   if (DFE_TABLE != dfe->dfe_type || dfe_ot (dfe)->ot_is_proc_view)
     return 0;
-  if (OPT_HASH != mode && ot && ot->ot_table && ot->ot_table->tb_name && 0 == stricmp (ot->ot_table->tb_name, "DB.DBA.RDF_QUAD")
-      && hash_join_enable < 2)
+  if (OPT_HASH != mode && ot && ot->ot_table && tb_is_rdf_quad (ot->ot_table)
+      && !sqlo_rdf_may_try_hash (so, super_ot, dfe, ref_arity))
     return 0;
   if (ot->ot_table && ot->ot_table->tb_name && nc_strstr ((unsigned char *) ot->ot_table->tb_name, (unsigned char *) "IRI_RANK"))
     return 0; /* iri ranks never by hash join */
