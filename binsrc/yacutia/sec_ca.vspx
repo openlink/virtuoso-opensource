@@ -79,6 +79,8 @@
                               delete from DB.DBA.SYS_X509_CERTIFICATES where C_U_ID = 0 and C_KIND = 1 and C_ID = params[N+1];
                             }
                           }
+			    x509_ca_certs_remove ();
+			    X509_CA_CERTIFICATES_INIT ();
            					      self.vc_data_bind (e);
                 			  ]]>
         		          </v:on-post>
