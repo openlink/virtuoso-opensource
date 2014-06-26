@@ -1634,8 +1634,8 @@ qt_check (in file varchar, out message varchar, in add_test int := 0) returns in
 {
   declare xt, qr, xp_test, expl, da any;
   declare stat, msg, meta, data, r, check_order, cnt any;
-  declare daseq, darnd int;
-
+  declare daseq, darnd, plan_diff int;
+  plan_diff := 0;
   declare exit handler for sqlstate '*' {
     message := message || ' : ' || __SQL_MESSAGE;
     return 0;
@@ -1652,8 +1652,8 @@ qt_check (in file varchar, out message varchar, in add_test int := 0) returns in
   expl := xtree_doc (explain (qr, -1, 1));
   if (xpath_eval (xp_test, expl) is null)
     {
-      message := message || ' : XPath test do not match';
-      return 0;
+      message := message || ' : ///Different plan';
+      plan_diff := 1;
     }
   cnt := atoi (charset_recode (xpath_eval ('/test/result/@cnt', xt), '_WIDE_', 'UTF-8'));
   exec (qr, stat, msg, vector (), 0, meta, data);
@@ -1667,7 +1667,7 @@ qt_check (in file varchar, out message varchar, in add_test int := 0) returns in
   if (check_order = 0)
     gvector_sort (data, 1, 0, 1);
   if (cnt <> length (data))
-      message := message || ' : result len do not match';
+      message := message || ' : result count differs';
   foreach (any c in data) do
     {
       declare i int;
@@ -1684,17 +1684,17 @@ qt_check (in file varchar, out message varchar, in add_test int := 0) returns in
 ;
 
 create procedure
-qt_check_dir (in dir varchar)
+qt_check_dir (in dir varchar, in file_mask varchar := '%')
 {
-  declare ls, inx, f, msg, report any;
+  declare ls, inx, f, msg, stat, file, report any;
   ls := sys_dirlist (dir, 1);
-  result_names (report);
+  result_names (stat, file, report);
   for (inx := 0; inx < length (ls); inx := inx + 1)
     {
-      if (ls[inx] like '%.xml')
+      if (ls[inx] like '%.xml' and ls[inx] like file_mask)
 	{
 	  f := qt_check (dir || '/' || ls[inx], msg);
-	  result (case f when 1 then 'PASSED: ' else '***FAILED: ' end || msg);
+	  result (case f when 1 then 'PASSED: ' else '***FAILED: ' end,ls[inx], msg);
 	}
     }
 }
@@ -1727,7 +1727,7 @@ qt_xpath_gen (in xt any, in s any := null, in ck int := 0)
         return null;
       return ret;
     }
-  qn := 'ts|sel|union|setp|subq|fref|iter|qf|stn';
+  qn := 'ts|sel|hs|hf|union|setp|subq|fref|iter|qf|stn';
   qns := split_and_decode (qn, 0, '\0\0|');
   ss := s;
   i := 0;
