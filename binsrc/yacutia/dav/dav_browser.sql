@@ -1873,7 +1873,7 @@ create procedure WEBDAV.DBA.user_initialize (
         {
           goto _skip;
         };
-        retCode := WEBDAV.DBA.CatFilter_CONFIGURE_INT (new_folder, user_home, vector ());
+        WEBDAV.DBA.CatFilter_CONFIGURE (cid, vector ('path', user_home, 'filter', vector(), 'params', ''), WEBDAV.DBA.account_name (http_dav_uid ()), WEBDAV.DBA.account_password (http_dav_uid ()));
       }
     }
   _skip:;
@@ -1881,6 +1881,7 @@ create procedure WEBDAV.DBA.user_initialize (
     cid := DB.DBA.DAV_SEARCH_ID (new_folder, 'C');
     if (WEBDAV.DBA.DAV_ERROR (cid))
       cid := DB.DBA.DAV_MAKE_DIR (new_folder, uid, gid, '110100100R');
+
     if (WEBDAV.DBA.DAV_ERROR (cid))
       signal ('BRF03', concat ('User''s folder ''Public'' can not be created.', WEBDAV.DBA.DAV_PERROR(cid)));
   }
@@ -3609,17 +3610,12 @@ create procedure WEBDAV.DBA.ResFilter_CONFIGURE (
   in auth_name varchar := null,
   in auth_pwd varchar := null)
 {
-  declare path varchar;
-  declare filter any;
   declare uid integer;
   declare uname, gname varchar;
 
-  path := WEBDAV.DBA.real_path (WEBDAV.DBA.dc_get (params, 'base', 'path', '/DAV/'));
-  filter := WEBDAV.DBA.dc_filter (params);
-
   WEBDAV.DBA.DAV_API_PARAMS (null, null, uname, gname, auth_name, auth_pwd);
   uid := WEBDAV.DBA.user_id (auth_name);
-  return DB.DBA.ResFilter_CONFIGURE (id, params, path, filter, auth_name, auth_pwd, uid);
+  return DB.DBA.ResFilter_CONFIGURE (id, get_keyword ('params', params), get_keyword ('path', params), get_keyword ('filter', params), auth_name, auth_pwd, uid);
 }
 ;
 
@@ -3631,17 +3627,12 @@ create procedure WEBDAV.DBA.CatFilter_CONFIGURE (
   in auth_name varchar := null,
   in auth_pwd varchar := null)
 {
-  declare path varchar;
-  declare filter any;
   declare uid integer;
   declare uname, gname varchar;
 
-  path := WEBDAV.DBA.real_path (WEBDAV.DBA.dc_get (params, 'base', 'path', '/DAV/'));
-  filter := WEBDAV.DBA.dc_filter (params);
-
   WEBDAV.DBA.DAV_API_PARAMS (null, null, uname, gname, auth_name, auth_pwd);
   uid := WEBDAV.DBA.user_id (auth_name);
-  return DB.DBA.CatFilter_CONFIGURE (id, params, path, filter, auth_name, auth_pwd, uid);
+  return DB.DBA.CatFilter_CONFIGURE (id, get_keyword ('params', params), get_keyword ('path', params), get_keyword ('filter', params), auth_name, auth_pwd, uid);
 }
 ;
 
@@ -3668,6 +3659,25 @@ create procedure WEBDAV.DBA.rdfSink_CONFIGURE (
   DB.DBA.DAV_PROP_SET_INT (path, 'virt:rdfSink-sponger',        get_keyword ('sponger', params), null, null, 0, 0, 1, http_dav_uid ());
   DB.DBA.DAV_PROP_SET_INT (path, 'virt:rdfSink-cartridges',     get_keyword ('cartridges', params), null, null, 0, 0, 1, http_dav_uid ());
   DB.DBA.DAV_PROP_SET_INT (path, 'virt:rdfSink-metaCartridges', get_keyword ('metaCartridges', params), null, null, 0, 0, 1, http_dav_uid ());
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.rdfSink_VERIFY (
+  in path integer,
+  in params any)
+{
+  -- dbg_obj_princ ('rdfSink_VERIFY (', path, params, ')');
+  declare exit handler for sqlstate '*'
+  {
+    return __SQL_MESSAGE;
+  };
+
+  WEBDAV.DBA.test (get_keyword ('graph', params), vector ('name', 'RDF Graph', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+  WEBDAV.DBA.test (get_keyword ('base', params),  vector ('name', 'RDF Base URI', 'class', 'varchar', 'minLength', 0, 'maxLength', 255));
+
+  return null;
 }
 ;
 
@@ -5067,9 +5077,9 @@ create procedure WEBDAV.DBA.aci_n3 (
   _continue:;
   }
   stream := string_output ();
- 	triples := dict_list_keys (dict, 0);
+   triples := dict_list_keys (dict, 0);
   if (length (triples))
-	  DB.DBA.RDF_TRIPLES_TO_NICE_TTL (triples, stream);
+    DB.DBA.RDF_TRIPLES_TO_NICE_TTL (triples, stream);
 
   return replace (string_output_string (stream), '<xxx>', '<>');
 }

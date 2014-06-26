@@ -698,6 +698,51 @@
             ]]>
           </v:method>
 
+          <v:method name="verifyFields" arglist="in detClass varchar">
+            <![CDATA[
+              declare retValue any;
+
+              if      (detClass in ('GDrive', 'Dropbox', 'SkyDrive', 'Box'))
+              {
+                retValue := vector (1, 1, vector ('activity', 'checkInterval', 'path', 'graph'));
+              }
+              else if (detClass = 'RACKSPACE')
+              {
+                retValue := vector (0, 1, vector ('activity', 'checkInterval', 'path', 'Type', 'User', 'Container', 'API_Key', 'graph'));
+              }
+              else if (detClass = 'S3')
+              {
+                retValue := vector (0, 1, vector ('activity', 'checkInterval', 'path', 'BucketName', 'AccessKeyID', 'SecretKey', 'graph'));
+              }
+              else if (detClass = 'PropFilter')
+              {
+                retValue := vector (0, 0, vector ('SearchPath', 'PropName', 'PropValue'));
+              }
+              else if (detClass = 'rdfSink')
+              {
+                retValue := vector (0, 1, vector ('graph', 'base'));
+              }
+              else if (detClass = 'IMAP')
+              {
+                retValue := vector (0, 1, vector ('activity', 'checkInterval', 'connection', 'server', 'port', 'user', 'password', 'folder', 'graph'));
+              }
+              else if (detClass = 'WebDAV')
+              {
+                retValue := vector (0, 1, vector ('activity', 'checkInterval', 'path', 'authenticationType', 'user', 'password', 'key', 'graph'));
+              }
+              else if (detClass = 'oMail')
+              {
+                retValue := vector (0, 0, vector ('FolderName', 'NameFormat'));
+              }
+              else
+              {
+                retValue := vector (0, 0, vector ());
+              }
+
+              return retValue;
+            ]]>
+          </v:method>
+
           <v:method name="detGraphUI" arglist="in det varchar">
             <![CDATA[
               declare retValue varchar;
@@ -919,19 +964,39 @@
             ]]>
           </v:method>
 
-          <v:method name="detParamsPrepare" arglist="in det varchar, in labels any, in ndx integer">
+          <v:method name="detParamsPrepare" arglist="in det varchar, in properties any, in ndx integer">
             <![CDATA[
-              declare retValue, val any;
-              declare params any;
+              declare json varchar;
+              declare retValue, params, labels, val any;
 
-              params := self.vc_page.vc_event.ve_params;
               retValue := vector ();
-              foreach (any label in labels) do
+              params := self.vc_page.vc_event.ve_params;
+              labels := self.verifyFields (det);
+              if (labels[0])
+              {
+                json := trim (get_keyword ('dav_' || det || '_JSON', params, ''));
+                if (json <> '')
+                {
+                  retValue := vector_concat (retValue, subseq (WEBDAV.DBA.json2obj (json), 2));
+                  retValue := WEBDAV.DBA.set_keyword ('Authentication', retValue, 'Yes');
+                  retValue := WEBDAV.DBA.set_keyword ('access_timestamp', retValue, self.detAccessTimestamp(retValue));
+                  retValue := WEBDAV.DBA.set_keyword ('display_name', retValue, get_keyword ('dav_' || det || '_display_name', params, ''));
+                  retValue := WEBDAV.DBA.set_keyword ('email', retValue, get_keyword ('dav_' || det || '_email', params, ''));
+                }
+              }
+              if (labels[1] and not isnull (ndx))
+              {
+                declare sponger, cartridges, metaCartridges varchar;
+
+                self.detSpongerPrepare (params, det, ndx, sponger, cartridges, metaCartridges);
+                retValue := vector_concat (retValue, vector ('sponger', sponger, 'cartridges', cartridges, 'metaCartridges', metaCartridges));
+              }
+              foreach (any label in labels[2]) do
               {
                 val := trim (get_keyword ('dav_' || det || '_' || label, params));
                 if (not isnull (val))
                 {
-                  if (label = 'path')
+                  if ((label = 'path') and (det <> 'WebDAV'))
                   {
                     if (chr (val[0]) <> '/')
                       val := '/' || val;
@@ -942,35 +1007,26 @@
                   retValue := vector_concat (retValue, vector (label, val));
               }
               }
-              if (ndx is not null)
+              if (det = 'oMail')
               {
-                declare sponger, cartridges, metaCartridges varchar;
-
-                self.detSpongerPrepare (params, det, ndx, sponger, cartridges, metaCartridges);
-                retValue := vector_concat (retValue, vector ('sponger', sponger, 'cartridges', cartridges, 'metaCartridges', metaCartridges));
+                retValue := WEBDAV.DBA.set_keyword ('UserName', retValue, WEBDAV.DBA.account_name (self.account_id));
               }
-              return retValue;
-            ]]>
-          </v:method>
-
-          <v:method name="detOAuthParamsPrepare" arglist="in det varchar, in properties any, in labels any, in ndx integer">
-            <![CDATA[
-              declare json varchar;
-              declare retValue, params any;
-
-              params := self.vc_page.vc_event.ve_params;
-
-              retValue := self.detParamsPrepare (det, labels, ndx);
-              json := trim (get_keyword ('dav_' || det || '_JSON', params, ''));
-              if (json <> '')
+              else if (det = 'PropFilter')
               {
-                retValue := vector_concat (retValue, subseq (WEBDAV.DBA.json2obj (json), 2));
-                retValue := WEBDAV.DBA.set_keyword ('Authentication', retValue, 'Yes');
-              retValue := WEBDAV.DBA.set_keyword ('access_timestamp', retValue, self.detAccessTimestamp(retValue));
-              retValue := WEBDAV.DBA.set_keyword ('display_name', retValue, get_keyword ('dav_' || det || '_display_name', params, ''));
-              retValue := WEBDAV.DBA.set_keyword ('email', retValue, get_keyword ('dav_' || det || '_email', params, ''));
+                retValue := WEBDAV.DBA.set_keyword ('SearchPath', retValue, WEBDAV.DBA.real_path (get_keyword ('SearchPath', retValue, '')));
               }
-              else if (not isnull (properties))
+              else if (det = 'WebDAV')
+              {
+                retValue := WEBDAV.DBA.set_keyword ('keyOwner', retValue, WEBDAV.DBA.account_name (self.account_id));
+              }
+              else if (det in ('ResFilter', 'CatFilter'))
+              {
+                self.dc_prepare ();
+                retValue := WEBDAV.DBA.set_keyword ('params', retValue, self.search_dc);
+                retValue := WEBDAV.DBA.set_keyword ('path',   retValue, WEBDAV.DBA.real_path (WEBDAV.DBA.dc_get (self.search_dc, 'base', 'path', '/DAV/')));
+                retValue := WEBDAV.DBA.set_keyword ('filter', retValue, WEBDAV.DBA.dc_filter (self.search_dc));
+              }
+              if (not isnull (properties))
               {
                 self.virtPropertiesRestore (properties, 'virt:' || det || '-%');
               }
@@ -2973,95 +3029,20 @@
 
                       if (self.dav_type = 'C')
                       {
-                        if (dav_detType in ('IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
+                        -- verify input DET params
+                        detParams := self.detParamsPrepare (dav_detType, null, null);
+                        if (not isnull (detParams))
                         {
-                          tmp := get_keyword (sprintf ('dav_%s_checkInterval', dav_detType), params);
-                          WEBDAV.DBA.test (tmp, vector ('name', 'Check Interval', 'class', 'integer', 'minValue', 1));
-                          if (dav_detType in ('Box', 'Dropbox', 'GDrive', 'SkyDrive', 'RACKSPACE', 'S3'))
+                          tmp := null;
+                          if (__proc_exists ('WEBDAV.DBA.' || dav_detType || '_VERIFY') is not null)
                           {
-                            if      (dav_detType = 'RACKSPACE')
-                            {
-                              detParams := self.detParamsPrepare (dav_detType, vector ('path', 'Type', 'User', 'Container', 'API_Key'), null);
-                            }
-                            else if (dav_detType = 'S3')
-                            {
-                              detParams := self.detParamsPrepare (dav_detType, vector ('path', 'BucketName', 'AccessKeyID', 'SecretKey'), null);
-                            }
-                            else
-                            {
-                              detParams := self.detOAuthParamsPrepare (dav_detType, null, vector ('path'), null);
-                            }
+                            tmp := call ('WEBDAV.DBA.' || dav_detType || '_VERIFY') (dav_fullPath, detParams);
+                          }
+                          else if (__proc_exists ('DB.DBA.' || dav_detType || '_VERIFY') is not null)
+                          {
                             tmp := call ('DB.DBA.' || dav_detType || '_VERIFY') (dav_fullPath, detParams);
-                            if (not isnull (tmp))
-                              signal('TEST', tmp);
                           }
-                        }
-                        else if ((dav_detType = 'ResFilter') or (dav_detType = 'CatFilter'))
-                        {
-                          declare search_path varchar;
-
-                          search_path := WEBDAV.DBA.real_path(WEBDAV.DBA.dc_get(self.search_dc, 'base', 'path', '/DAV/'));
-                          if (search_path between dav_fullPath and (dav_fullPath || '\255\255\255\255'))
-                            signal('TEST', sprintf('Search path (%s) can not contains in folder full path (%s)!<>', search_path, dav_fullPath));
-                        }
-                        else if (dav_detType = 'PropFilter')
-                        {
-                          declare search_path varchar;
-
-                          search_path := WEBDAV.DBA.real_path (get_keyword ('dav_PropFilter_SearchPath', params, '/DAV/'));
-                          retValue := DB.DBA.DAV_SEARCH_ID(search_path, 'C');
-                          if (WEBDAV.DBA.DAV_ERROR (retValue))
-                            signal('TEST', 'Search path does not exists!<>');
-                        }
-                        else if (dav_detType = 'rdfSink')
-                        {
-                          WEBDAV.DBA.test (get_keyword ('dav_rdfSink_graph', params), vector ('name', 'RDF Graph', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
-                          WEBDAV.DBA.test (get_keyword ('dav_rdfSink_base', params), vector ('name', 'RDF Base URI', 'class', 'varchar', 'minLength', 0, 'maxLength', 255));
-                        }
-                        else if (dav_detType = 'IMAP')
-                        {
-                          WEBDAV.DBA.test (get_keyword ('dav_IMAP_server', params), vector ('name', 'IMAP Server', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
-                          WEBDAV.DBA.test (get_keyword ('dav_IMAP_port', params), vector ('name', 'IMAP Port', 'class', 'integer', 'minLength', 1, 'maxLength', 4));
-                          WEBDAV.DBA.test (get_keyword ('dav_IMAP_user', params), vector ('name', 'IMAP User', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
-                          tmp := get_keyword ('dav_IMAP_password', params, '');
-                          if ((tmp = '**********') and (self.command_mode = 10))
-                            tmp := DB.DBA.IMAP__paramGet (self.dav_id, 'C', 'password', 0);
-
-                          tmp := DB.DBA.IMAP__verify (
-                            get_keyword ('dav_IMAP_connection', params),
-                            get_keyword ('dav_IMAP_server', params),
-                            get_keyword ('dav_IMAP_port', params),
-                            get_keyword ('dav_IMAP_user', params),
-                            tmp
-                          );
-                          if (tmp <> '')
-                            signal('TEST', tmp);
-                        }
-                        else if (dav_detType = 'WebDAV')
-                        {
-                          WEBDAV.DBA.test (get_keyword ('dav_WebDAV_path', params), vector ('name', 'WebDAV Path', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
-                          if (get_keyword ('dav_WebDAV_authenticationType', params, 'Digest') = 'Digest')
-                          {
-                            WEBDAV.DBA.test (get_keyword ('dav_WebDAV_user', params), vector ('name', 'WebDAV user', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
-                            tmp := get_keyword ('dav_WebDAV_password', params, '');
-                            if ((tmp = '**********') and (self.command_mode = 10))
-                              tmp := DB.DBA.WebDAV__paramGet (self.dav_id, 'C', 'password', 0, 1, 1);
-
-                            tmp := DB.DBA.WebDAV__verify (
-                              get_keyword ('dav_WebDAV_path', params),
-                              vector ('authenticationType', 'Digest', 'user', get_keyword ('dav_WebDAV_user', params), 'password', tmp)
-                            );
-                          }
-                          else
-                          {
-                            WEBDAV.DBA.test (get_keyword ('dav_WebDAV_key', params), vector ('name', 'WebDAV Access Key', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
-                            tmp := DB.DBA.WebDAV__verify (
-                              get_keyword ('dav_WebDAV_path', params),
-                              vector ('authenticationType', 'WebID', 'key', get_keyword ('dav_WebDAV_key', params), 'keyOwner', WEBDAV.DBA.account_name (self.account_id))
-                            );
-                            commit work;
-                          }
-                          if (tmp <> '')
+                          if (not isnull (tmp))
                             signal('TEST', tmp);
                         }
                       }
@@ -3315,26 +3296,8 @@
                           goto _exec_8;
 
                         -- set new properties
-                        if (dav_detType in ('ResFilter', 'CatFilter'))
-                        {
-                          -- save & validate metadata
-                          tmp := self.dc_prepare ();
-                          if (not isnull (tmp))
-                          {
-                            self.vc_error_message := tmp;
-                            self.vc_is_valid := 0;
-                            return;
-                          }
-                          retValue := call ('WEBDAV.DBA.' || dav_detType || '_CONFIGURE') (self.dav_id, self.search_dc);
-                          if (WEBDAV.DBA.DAV_ERROR (retValue))
-                            signal('TEST', concat(WEBDAV.DBA.DAV_PERROR (retValue), '<>'));
-                        }
-                        else if (dav_detType = 'rdfSink')
-                        {
-                          detParams := self.detOAuthParamsPrepare (dav_detType, v_properties, vector ('graph', 'base'), 8);
-                          WEBDAV.DBA.rdfSink_CONFIGURE (self.dav_id, detParams);
-                        }
-                        else if (dav_detType = 'SyncML')
+                        detParams := null;
+                        if (dav_detType = 'SyncML')
                         {
                           if (__proc_exists ('DB.DBA.SYNC_MAKE_DAV_DIR'))
                           {
@@ -3345,71 +3308,71 @@
                             DB.DBA.SYNC_MAKE_DAV_DIR (sync_type, DB.DBA.DAV_SEARCH_ID (dav_fullPath, 'C'), dav_name, dav_fullPath, sync_version);
                           }
                         }
-                        else if (dav_detType <> 'Versioning')
+                        else if (dav_detType in ('ResFilter', 'CatFilter'))
                         {
-                          retValue := WEBDAV.DBA.DAV_SET (self.dav_path, 'detType', either (equ (dav_detType, ''), null, dav_detType));
+                          detParams := self.detParamsPrepare (dav_detType, v_properties, null);
+                        }
                           if (dav_detType = 'oMail')
                           {
-                            detParams := self.detParamsPrepare (dav_detType, vector ('FolderName', 'NameFormat'), null);
-                            detParams := vector_concat (detParams, vector ('UserName', WEBDAV.DBA.account_name (self.account_id)));
-                            DB.DBA.oMail_CONFIGURE (self.dav_id, detParams);
-                          }
-                          else if (dav_detType = 'IMAP')
-                          {
-                            self.virtPropertiesRestore (v_properties, 'virt:IMAP-%');
-
-                            detParams := self.detParamsPrepare (dav_detType, vector ('activity', 'checkInterval', 'graph', 'connection', 'server', 'port', 'user', 'password', 'folder'), 11);
-                            DB.DBA.IMAP_CONFIGURE (self.dav_id, detParams);
+                          detParams := self.detParamsPrepare (dav_detType, v_properties, null);
                           }
                           else if (dav_detType = 'PropFilter')
                           {
-                            detParams := self.detParamsPrepare (dav_detType, vector ('SearchPath', 'PropName', 'PropValue'), null);
-                            detParams := WEBDAV.DBA.set_keyword ('SearchPath', detParams, WEBDAV.DBA.real_path (get_keyword ('SearchPath', detParams, '')));
-                            DB.DBA.PropFilter_CONFIGURE (self.dav_id, detParams);
+                          detParams := self.detParamsPrepare (dav_detType, v_properties, null);
                           }
                           else if (dav_detType = 'S3')
                           {
-                            self.virtPropertiesRestore (v_properties, 'virt:S3-%');
-
-                            detParams := self.detParamsPrepare (dav_detType, vector ('activity', 'checkInterval', 'path', 'graph', 'BucketName', 'AccessKeyID', 'SecretKey'), 6);
-                            DB.DBA.S3_CONFIGURE (self.dav_id, detParams);
+                          detParams := self.detParamsPrepare (dav_detType, v_properties, 6);
+                        }
+                        else if (dav_detType = 'rdfSink')
+                        {
+                          detParams := self.detParamsPrepare (dav_detType, v_properties, 8);
+                        }
+                        else if (dav_detType = 'IMAP')
+                        {
+                          detParams := self.detParamsPrepare (dav_detType, v_properties, 11);
                           }
                           else if (dav_detType = 'GDrive')
                           {
-                            detParams := self.detOAuthParamsPrepare (dav_detType, v_properties, vector ('activity', 'checkInterval', 'path', 'graph'), 12);
-                              DB.DBA.GDrive_CONFIGURE (self.dav_id, detParams);
+                          detParams := self.detParamsPrepare (dav_detType, v_properties, 12);
                             }
                           else if (dav_detType = 'Dropbox')
                           {
-                            detParams := self.detOAuthParamsPrepare (dav_detType, v_properties, vector ('activity', 'checkInterval', 'path', 'graph'), 13);
-                              DB.DBA.Dropbox_CONFIGURE (self.dav_id, detParams);
+                          detParams := self.detParamsPrepare (dav_detType, v_properties, 13);
                             }
                           else if (dav_detType = 'SkyDrive')
                           {
-                            detParams := self.detOAuthParamsPrepare (dav_detType, v_properties, vector ('activity', 'checkInterval', 'path', 'graph'), 14);
-                              DB.DBA.SkyDrive_CONFIGURE (self.dav_id, detParams);
+                          detParams := self.detParamsPrepare (dav_detType, v_properties, 14);
                             }
                           else if (dav_detType = 'Box')
                           {
-                            detParams := self.detOAuthParamsPrepare (dav_detType, v_properties, vector ('activity', 'checkInterval', 'path', 'graph'), 15);
-                              DB.DBA.Box_CONFIGURE (self.dav_id, detParams);
-
+                          detParams := self.detParamsPrepare (dav_detType, v_properties, 15);
                           }
                           else if (dav_detType = 'WebDAV')
                           {
-                            self.virtPropertiesRestore (v_properties, 'virt:WebDAV-%');
-
-                            detParams := self.detParamsPrepare (dav_detType, vector ('activity', 'checkInterval', 'graph', 'path', 'authenticationType', 'user', 'password', 'key'), 16);
-                            detParams := vector_concat (detParams, vector ('keyOwner', WEBDAV.DBA.account_name (self.account_id)));
-                            DB.DBA.WebDAV_CONFIGURE (self.dav_id, detParams);
+                          detParams := self.detParamsPrepare (dav_detType, v_properties, 16);
                           }
                           else if (dav_detType = 'RACKSPACE')
                           {
-                            self.virtPropertiesRestore (v_properties, 'virt:RACKSPACE-%');
-
-                            detParams := self.detParamsPrepare (dav_detType, vector ('activity', 'checkInterval', 'path', 'graph', 'Type', 'User', 'Container', 'API_Key'), 17);
-                            DB.DBA.RACKSPACE_CONFIGURE (self.dav_id, detParams);
+                          detParams := self.detParamsPrepare (dav_detType, v_properties, 17);
+                        }
+                        if (not isnull (detParams))
+                        {
+                          tmp := null;
+                          if (__proc_exists ('WEBDAV.DBA.' || dav_detType || '_CONFIGURE') is not null)
+                          {
+                            tmp := call ('WEBDAV.DBA.' || dav_detType || '_CONFIGURE') (self.dav_id, detParams);
                           }
+                          else if (__proc_exists ('DB.DBA.' || dav_detType || '_CONFIGURE') is not null)
+                          {
+                            tmp := call ('DB.DBA.' || dav_detType || '_CONFIGURE') (self.dav_id, detParams);
+                          }
+                          else
+                          {
+                            tmp := WEBDAV.DBA.DAV_SET (self.dav_path, 'detType', either (equ (dav_detType, ''), null, dav_detType));
+                          }
+                          if (WEBDAV.DBA.DAV_ERROR (tmp))
+                            signal('TEST', tmp);
                         }
                       _exec_8:;
                       }
@@ -4930,7 +4893,6 @@
           </th>
           <td>
             <v:text name="dav_PropFilter_SearchPath" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:validator test="length" min="1" max="255" message="The input can not be empty." runat="client" />
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_PropFilter_SearchPath', self.dav_path, 'virt:PropFilter-SearchPath', WEBDAV.DBA.path_show (self.dir_path));
