@@ -7560,7 +7560,7 @@ bif_xenc_x509_ca_certs_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
   in = BIO_new (BIO_s_mem ());
   mutex_enter (xenc_keys_mtx);
   certs = CA_certs->objs;
-  len = sk_X509_num (certs);
+  len = sk_X509_OBJECT_num (certs);
   for (i = 0; i < len; i++)
     {
       X509_OBJECT * obj = sk_X509_OBJECT_value (certs, i);
