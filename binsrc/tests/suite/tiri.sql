@@ -229,6 +229,17 @@ create procedure irivv (in s any array)
   return  iris;
 }
 
+create table it2 (k iri_id_8 primary key, d iri_id_8);
+
+-- check exception in insert to 32 bit iri array
+
+insert into it2 (k) select iri_id_from_num (row_no * 2) from t1;
+update it2 set d = iri_id_from_num (rnd (3000000000 + iri_id_num (k)));
+insert into it2 (k, d) values (#i11, iri_id_from_num (6000000000));
+select count (*) from it2 where d = #i6000000000;
+echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
+echo both ":  iri 32 ins range ck\n";
+
 
 select  __ro2sq (irivv (vector ('pfaal', 'hans',  'hyrim'))[0]);
 echo both $if $equ $last[1]  "pfaal" "PASSED" "***FAILED";
