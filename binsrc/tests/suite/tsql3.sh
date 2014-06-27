@@ -277,6 +277,17 @@ then
     fi
 fi
 
+    LOG + running sql script tveccli
+    RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u follow_std=0 < $VIRTUOSO_TEST/tveccli.sql
+    if test $STATUS -ne 0
+    then
+	LOG "***ABORTED:tveccli "
+	exit 1
+    fi
+fi
+
+
+
 SHUTDOWN_SERVER
 
 if [ "x$SQLOPTIMIZE" = "x" ]
