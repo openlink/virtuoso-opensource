@@ -1225,10 +1225,10 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": B7074-1 : table prepared STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
-select blob_to_string (DATA) from B7074 order by DT2;
+select blob_to_string (DATA) from B7074 order by 1;
 ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": B7074-2 : can't put long string in a temp tb STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH ": B7074-3 : can't put long string in a temp tb STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 --XXX
 --select * from (select blob_to_string (DATA) as DATA long varchar, DT2 from B7074 order by ID) dummy order by DT2;

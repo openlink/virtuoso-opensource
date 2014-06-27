@@ -229,6 +229,7 @@ create procedure irivv (in s any array)
   return  iris;
 }
 
+drop table it2;
 create table it2 (k iri_id_8 primary key, d iri_id_8);
 
 -- check exception in insert to 32 bit iri array
