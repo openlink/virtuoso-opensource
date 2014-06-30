@@ -2462,7 +2462,7 @@ create procedure DAV_RES_UPLOAD_STRSES_INT (
   }
   else if (type = 'text/turtle')
   {
-    rc := WS.WS.TTL_QUERY_POST (path, content, uid, dav_call);
+    rc := WS.WS.TTL_QUERY_POST (path, content, dav_call);
     if (DAV_HIDE_ERROR (rc) is null)
       return rc;
   }

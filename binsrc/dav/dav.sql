@@ -3403,7 +3403,6 @@ create procedure WS.WS.SPARQL_QUERY_POST (
 create procedure WS.WS.TTL_QUERY_POST (
   in path varchar,
   inout ses varchar,
-  in uname varchar,
   in dav_call integer := 0)
 {
   declare def_gr any;
@@ -3423,9 +3422,6 @@ create procedure WS.WS.TTL_QUERY_POST (
 	 }
     }
   def_gr := WS.WS.DAV_IRI (path);
-  if (exists (select 1 from DB.DBA.SYS_USERS where U_NAME = uname and U_SQL_ENABLE = 1))
-    set_user_id (uname);
-
   log_enable (3);
   DB.DBA.TTLP (ses, def_gr, def_gr);
 
