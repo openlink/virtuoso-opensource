@@ -853,7 +853,7 @@ create function "S3_CONFIGURE" (
     return -38;
 
   -- Activity
-  DB.DBA.S3__paramSet (id, 'C', 'activity',       get_keyword ('activity', params), 0);
+  DB.DBA.S3__paramSet (id, 'C', 'activity',       get_keyword ('activity', params, 'off'), 0);
 
   -- Check Interval
   DB.DBA.S3__paramSet (id, 'C', 'checkInterval',  get_keyword ('checkInterval', params, '15'), 0);
