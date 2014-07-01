@@ -1257,6 +1257,227 @@ create procedure json2xml (in str varchar)
 ;
 
 
+create procedure
+qt_record (in file varchar, in text varchar, in params any := null, in comment varchar, in check_order int := 1,
+in check_col_names int := 1, in check_da_below int := 0,
+in check_plan int := 1, in plan_xpath varchar := null, in addp int := 0, in ref_result varchar := null)
+{
+  declare stat, msg, meta, data, xp, xd, ss, axp, da, meta1, data1 any;
+  declare daseq, darnd int;
+
+  ss := string_output ();
+  xp := explain (text, -1, 1);
+  xd := xtree_doc (xp);
+
+  --axp := cast (xslt ('file:/qt.xsl', xd) as varchar);
+  axp := qt_xpath_gen (xd);
+
+  if (check_plan and plan_xpath is not null and xpath_eval (plan_xpath, xd) = 0)
+    signal ('.....', 'The spcified check do not match execution plan');
+
+  if (check_plan and axp is not null and xpath_eval (axp, xd) is null)
+    signal ('.....', 'The auto generated xpath check cannot be generated');
+--  dbg_obj_print (axp);
+--  dbg_obj_print (xpath_eval (axp, xd));
+
+  if (plan_xpath is null)
+    plan_xpath := '';
+  if (plan_xpath = '' and axp is not null)
+    plan_xpath := axp;
+
+  exec (text, stat, msg, params, 0, meta, data);
+  da := db_activity (1);
+  if (check_da_below)
+    {
+      darnd := (da[0] * (check_da_below + 100)) / 100;
+      daseq := (da[1] * (check_da_below + 100)) / 100;
+    }
+
+  http (sprintf ('<test>\n'), ss);
+  http (sprintf ('    <comment>%V</comment>\n', comment), ss);
+  http (sprintf ('    <query><![CDATA['), ss);
+  http (text, ss);
+  http (sprintf ('    ]]></query>\n'), ss);
+  http (sprintf ('    <plans>\n'), ss);
+  http (sprintf ('	<plan>\n'), ss);
+  http (sprintf ('	    <verify result-order="%d" col-names="%d" plan-xpath="%V">\n', check_order, check_col_names, plan_xpath), ss);
+  http (sprintf ('		<da-below rnd="%d" seq="%d" same-seg="" />\n', darnd, daseq), ss);
+  http (sprintf ('	    </verify>\n'), ss);
+  exec ('explain (?)', stat, msg, vector (text), 0, meta1, data1);
+  http ('<text><![CDATA[', ss);
+  foreach (any c in data1) do
+    {
+      http (c[0], ss);
+      http ('\n', ss);
+    }
+  http (']]></text>\n', ss);
+  http (sprintf ('	    <xmlplan>\n'), ss);
+  http (xp, ss);
+  http (sprintf ('	    </xmlplan>\n'), ss);
+  http (sprintf ('	</plan>\n'), ss);
+  http (sprintf ('    </plans>\n'), ss);
+
+  http (sprintf ('    <columns>\n'), ss);
+  foreach (any c in meta[0]) do
+    {
+      --dbg_obj_print (c);
+      http (sprintf ('         <column name="%V"/>\n', c[0]), ss);
+    }
+  http (sprintf ('    </columns>\n'), ss);
+  http (sprintf ('    <result cnt="%d">\n', length (data)), ss);
+  if (check_order = 0)
+    gvector_sort (data, 1, 0, 1);
+  foreach (any c in data) do
+    {
+      declare i int;
+      http ('<row>\n', ss);
+      for (i := 0; i < length (c); i := i + 1)
+        {
+	  http (sprintf ('    <col dtp="%d">%V</col>\n', __tag (c[i]), cast (c[i] as varchar)), ss);
+        }
+      http ('</row>\n', ss);
+    }
+  http (sprintf ('    </result>\n'), ss);
+  http (sprintf ('</test>'), ss);
+  string_to_file (file, ss, -2);
+  return axp;
+}
+;
+
+
+create procedure
+qt_check (in file varchar, out message varchar, in add_test int := 0) returns int
+{
+  declare xt, qr, xp_test, expl, da any;
+  declare stat, msg, meta, data, r, check_order, cnt any;
+  declare daseq, darnd, plan_diff int;
+  plan_diff := 0;
+  declare exit handler for sqlstate '*' {
+    message := message || ' : ' || __SQL_MESSAGE;
+    return 0;
+  };
+
+  xt := qt_source (file);
+  message := xpath_eval ('/test/comment/text()', xt);
+  qr := charset_recode (xpath_eval ('string (/test/query)', xt), '_WIDE_', 'UTF-8');
+  check_order := atoi (charset_recode (xpath_eval ('/test/plans/plan/verify/@result-order', xt), '_WIDE_', 'UTF-8'));
+  xp_test := charset_recode (xpath_eval ('/test/plans/plan/verify/@plan-xpath', xt), '_WIDE_', 'UTF-8');
+  darnd := atoi (charset_recode (xpath_eval ('/test/plans/plan/verify/da-below/@rnd', xt), '_WIDE_', 'UTF-8'));
+  daseq := atoi (charset_recode (xpath_eval ('/test/plans/plan/verify/da-below/@seq', xt), '_WIDE_', 'UTF-8'));
+  --dbg_obj_print (qr);
+  expl := xtree_doc (explain (qr, -1, 1));
+  if (xpath_eval (xp_test, expl) is null)
+    {
+      message := message || ' : Different plan';
+      plan_diff := 1;
+    }
+  cnt := atoi (charset_recode (xpath_eval ('/test/result/@cnt', xt), '_WIDE_', 'UTF-8'));
+  exec (qr, stat, msg, vector (), 0, meta, data);
+  da := db_activity (1);
+  if ((darnd and darnd < da[0]) or (daseq and daseq < da[1]))
+    {
+      message := message || sprintf (' : DA is over the limit rnd %d<%d seq %d<%d', darnd, da[0], daseq, da[1]);
+      return 0;
+    }
+  r := 0;
+  if (check_order = 0)
+    gvector_sort (data, 1, 0, 1);
+  if (cnt <> length (data))
+      message := message || ' : result count differs';
+  foreach (any c in data) do
+    {
+      declare i int;
+      for (i := 0; i < length (c); i := i + 1)
+        {
+	  if (cast (xpath_eval (sprintf ('string (/test/result/row[%d]/col[%d][@dtp=%d])', r + 1, i + 1, __tag(c[i])), xt) as varchar)
+	      <>  cast (c[i] as varchar))
+	    return 0;
+	}
+      r := r + 1;
+    }
+  return 1;
+}
+;
+
+create procedure
+qt_check_dir (in dir varchar, in file_mask varchar := '%')
+{
+  declare ls, inx, f, msg, stat, file, report any;
+  ls := sys_dirlist (dir, 1);
+  result_names (stat, file, report);
+  for (inx := 0; inx < length (ls); inx := inx + 1)
+    {
+      if (ls[inx] like '%.xml' and ls[inx] like file_mask)
+	{
+	  f := qt_check (dir || '/' || ls[inx], msg);
+	  result (case f when 1 then 'PASSED: ' else '***FAILED: ' end,ls[inx], msg);
+	}
+    }
+}
+;
+
+create procedure
+qt_source (in file varchar)
+{
+  declare t any;
+  t := file_to_string (file);
+  return xtree_doc (t);
+}
+;
+
+create procedure
+qt_xpath_gen (in xt any, in s any := null, in ck int := 0)
+{
+  declare xp, ss any;
+  declare qn, qns, ret varchar;
+  declare i int;
+  if (s is null)
+    {
+      ss := string_output ();
+      http ('/report[', ss);
+      xp := xpath_eval ('/report/*', xt, 0);
+      qt_xpath_gen (xp, ss);
+      http (']', ss);
+      ret := string_output_string (ss);
+      if (ck and xpath_eval (ret, xt) is null)
+        return null;
+      return ret;
+    }
+  qn := 'ts|sel|hs|hf|union|setp|subq|fref|iter|qf|stn';
+  qns := split_and_decode (qn, 0, '\0\0|');
+  ss := s;
+  i := 0;
+  foreach (any x in xt) do
+    {
+      declare n any;
+      x := xml_cut (x);
+      n := cast (xpath_eval ('local-name(.)', x) as varchar);
+--      dbg_obj_print (n);
+      if (n in (qns))
+	{
+	  if (i > 0)
+	    http (sprintf ('[following::%s', n), ss);
+          else
+            http (n, ss);
+	  if (0 and n = 'ts')
+	    {
+	      http (sprintf ('[@key="%s"]', cast (xpath_eval ('@key', x) as varchar)), ss);
+	    }
+          xp := xpath_eval (qn, x, 0);
+	  if (length (xp)) http ('[', ss);
+	  qt_xpath_gen (xp, ss);
+	  if (length (xp)) http (']', ss);
+	  i := i + 1;
+	}
+    }
+  for (i := i - 1; i > 0; i := i - 1)
+    http (']', ss);
+}
+;
+
+
+
+
 --
 -- Validate functions
 --
@@ -1552,225 +1773,6 @@ create procedure VALIDATE.DBA.validate_tags2unique(
   _next:;
   }
   return retValue;
-}
-;
-
-
-create procedure
-qt_record (in file varchar, in text varchar, in params any := null, in comment varchar, in check_order int := 1,
-in check_col_names int := 1, in check_da_below int := 0,
-in check_plan int := 1, in plan_xpath varchar := null, in addp int := 0, in ref_result varchar := null)
-{
-  declare stat, msg, meta, data, xp, xd, ss, axp, da, meta1, data1 any;
-  declare daseq, darnd int;
-
-  ss := string_output ();
-  xp := explain (text, -1, 1);
-  xd := xtree_doc (xp);
-
-  --axp := cast (xslt ('file:/qt.xsl', xd) as varchar);
-  axp := qt_xpath_gen (xd);
-
-  if (check_plan and plan_xpath is not null and xpath_eval (plan_xpath, xd) = 0)
-    signal ('.....', 'The spcified check do not match execution plan');
-
-  if (check_plan and axp is not null and xpath_eval (axp, xd) is null)
-    signal ('.....', 'The auto generated xpath check cannot be generated');
---  dbg_obj_print (axp);
---  dbg_obj_print (xpath_eval (axp, xd));
-
-  if (plan_xpath is null)
-    plan_xpath := '';
-  if (plan_xpath = '' and axp is not null)
-    plan_xpath := axp;
-
-  exec (text, stat, msg, params, 0, meta, data);
-  da := db_activity (1);
-  if (check_da_below)
-    {
-      darnd := (da[0] * (check_da_below + 100)) / 100;
-      daseq := (da[1] * (check_da_below + 100)) / 100;
-    }
-
-  http (sprintf ('<test>\n'), ss);
-  http (sprintf ('    <comment>%V</comment>\n', comment), ss);
-  http (sprintf ('    <query><![CDATA['), ss);
-  http (text, ss);
-  http (sprintf ('    ]]></query>\n'), ss);
-  http (sprintf ('    <plans>\n'), ss);
-  http (sprintf ('	<plan>\n'), ss);
-  http (sprintf ('	    <verify result-order="%d" col-names="%d" plan-xpath="%V">\n', check_order, check_col_names, plan_xpath), ss);
-  http (sprintf ('		<da-below rnd="%d" seq="%d" same-seg="" />\n', darnd, daseq), ss);
-  http (sprintf ('	    </verify>\n'), ss);
-  exec ('explain (?)', stat, msg, vector (text), 0, meta1, data1);
-  http ('<text><![CDATA[', ss);
-  foreach (any c in data1) do
-    {
-      http (c[0], ss);
-      http ('\n', ss);
-    }
-  http (']]></text>\n', ss);
-  http (sprintf ('	    <xmlplan>\n'), ss);
-  http (xp, ss);
-  http (sprintf ('	    </xmlplan>\n'), ss);
-  http (sprintf ('	</plan>\n'), ss);
-  http (sprintf ('    </plans>\n'), ss);
-
-  http (sprintf ('    <columns>\n'), ss);
-  foreach (any c in meta[0]) do
-    {
-      --dbg_obj_print (c);
-      http (sprintf ('         <column name="%V"/>\n', c[0]), ss);
-    }
-  http (sprintf ('    </columns>\n'), ss);
-  http (sprintf ('    <result cnt="%d">\n', length (data)), ss);
-  if (check_order = 0)
-    gvector_sort (data, 1, 0, 1);
-  foreach (any c in data) do
-    {
-      declare i int;
-      http ('<row>\n', ss);
-      for (i := 0; i < length (c); i := i + 1)
-        {
-	  http (sprintf ('    <col dtp="%d">%V</col>\n', __tag (c[i]), cast (c[i] as varchar)), ss);
-        }
-      http ('</row>\n', ss);
-    }
-  http (sprintf ('    </result>\n'), ss);
-  http (sprintf ('</test>'), ss);
-  string_to_file (file, ss, -2);
-  return axp;
-}
-;
-
-
-create procedure
-qt_check (in file varchar, out message varchar, in add_test int := 0) returns int
-{
-  declare xt, qr, xp_test, expl, da any;
-  declare stat, msg, meta, data, r, check_order, cnt any;
-  declare daseq, darnd, plan_diff int;
-  plan_diff := 0;
-  declare exit handler for sqlstate '*' {
-    message := message || ' : ' || __SQL_MESSAGE;
-    return 0;
-  };
-
-  xt := qt_source (file);
-  message := xpath_eval ('/test/comment/text()', xt);
-  qr := charset_recode (xpath_eval ('string (/test/query)', xt), '_WIDE_', 'UTF-8');
-  check_order := atoi (charset_recode (xpath_eval ('/test/plans/plan/verify/@result-order', xt), '_WIDE_', 'UTF-8'));
-  xp_test := charset_recode (xpath_eval ('/test/plans/plan/verify/@plan-xpath', xt), '_WIDE_', 'UTF-8');
-  darnd := atoi (charset_recode (xpath_eval ('/test/plans/plan/verify/da-below/@rnd', xt), '_WIDE_', 'UTF-8'));
-  daseq := atoi (charset_recode (xpath_eval ('/test/plans/plan/verify/da-below/@seq', xt), '_WIDE_', 'UTF-8'));
-  --dbg_obj_print (qr);
-  expl := xtree_doc (explain (qr, -1, 1));
-  if (xpath_eval (xp_test, expl) is null)
-    {
-      message := message || ' : ///Different plan';
-      plan_diff := 1;
-    }
-  cnt := atoi (charset_recode (xpath_eval ('/test/result/@cnt', xt), '_WIDE_', 'UTF-8'));
-  exec (qr, stat, msg, vector (), 0, meta, data);
-  da := db_activity (1);
-  if ((darnd and darnd < da[0]) or (daseq and daseq < da[1]))
-    {
-      message := message || sprintf (' : DA is over the limit rnd %d<%d seq %d<%d', darnd, da[0], daseq, da[1]);
-      return 0;
-    }
-  r := 0;
-  if (check_order = 0)
-    gvector_sort (data, 1, 0, 1);
-  if (cnt <> length (data))
-      message := message || ' : result count differs';
-  foreach (any c in data) do
-    {
-      declare i int;
-      for (i := 0; i < length (c); i := i + 1)
-        {
-	  if (cast (xpath_eval (sprintf ('string (/test/result/row[%d]/col[%d][@dtp=%d])', r + 1, i + 1, __tag(c[i])), xt) as varchar)
-	      <>  cast (c[i] as varchar))
-	    return 0;
-	}
-      r := r + 1;
-    }
-  return 1;
-}
-;
-
-create procedure
-qt_check_dir (in dir varchar, in file_mask varchar := '%')
-{
-  declare ls, inx, f, msg, stat, file, report any;
-  ls := sys_dirlist (dir, 1);
-  result_names (stat, file, report);
-  for (inx := 0; inx < length (ls); inx := inx + 1)
-    {
-      if (ls[inx] like '%.xml' and ls[inx] like file_mask)
-	{
-	  f := qt_check (dir || '/' || ls[inx], msg);
-	  result (case f when 1 then 'PASSED: ' else '***FAILED: ' end,ls[inx], msg);
-	}
-    }
-}
-;
-
-create procedure
-qt_source (in file varchar)
-{
-  declare t any;
-  t := file_to_string (file);
-  return xtree_doc (t);
-}
-;
-
-create procedure
-qt_xpath_gen (in xt any, in s any := null, in ck int := 0)
-{
-  declare xp, ss any;
-  declare qn, qns, ret varchar;
-  declare i int;
-  if (s is null)
-    {
-      ss := string_output ();
-      http ('/report[', ss);
-      xp := xpath_eval ('/report/*', xt, 0);
-      qt_xpath_gen (xp, ss);
-      http (']', ss);
-      ret := string_output_string (ss);
-      if (ck and xpath_eval (ret, xt) is null)
-        return null;
-      return ret;
-    }
-  qn := 'ts|sel|hs|hf|union|setp|subq|fref|iter|qf|stn';
-  qns := split_and_decode (qn, 0, '\0\0|');
-  ss := s;
-  i := 0;
-  foreach (any x in xt) do
-    {
-      declare n any;
-      x := xml_cut (x);
-      n := cast (xpath_eval ('local-name(.)', x) as varchar);
---      dbg_obj_print (n);
-      if (n in (qns))
-	{
-	  if (i > 0)
-	    http (sprintf ('[following::%s', n), ss);
-          else
-            http (n, ss);
-	  if (0 and n = 'ts')
-	    {
-	      http (sprintf ('[@key="%s"]', cast (xpath_eval ('@key', x) as varchar)), ss);
-	    }
-          xp := xpath_eval (qn, x, 0);
-	  if (length (xp)) http ('[', ss);
-	  qt_xpath_gen (xp, ss);
-	  if (length (xp)) http (']', ss);
-	  i := i + 1;
-	}
-    }
-  for (i := i - 1; i > 0; i := i - 1)
-    http (']', ss);
 }
 ;
 
