@@ -36,6 +36,8 @@ then
 	GENERATE_PORTS 1
 	DS2=$GENERATED_PORT
         PORT=$DS1
+else
+    DS2=$DS1
 fi
 
 HOST_OS=`uname -s | grep WIN`

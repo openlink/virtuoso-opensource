@@ -20,7 +20,8 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
-
+VIRTUOSO_TEST=${VIRTUOSO_TEST-$VIRTDEV_HOME/binsrc/tests/suite}
+export VIRTUOSO_TEST
 . $VIRTUOSO_TEST/testlib.sh
 LOGFILE=tpcd.output
 
