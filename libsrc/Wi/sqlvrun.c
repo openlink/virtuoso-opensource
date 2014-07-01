@@ -1713,6 +1713,7 @@ itc_param_sort (key_source_t * ks, it_cursor_t * itc, int is_del_with_nulls)
   if (itc->itc_insert_key && itc->itc_insert_key->key_is_col && !itc->itc_is_col)
     itc_col_init (itc);
   itc->itc_set = 0;
+  itc->itc_first_set = 0;
   itc->itc_n_sets = n_params;
   itc->itc_n_results = 0;
   if (!n_params)
