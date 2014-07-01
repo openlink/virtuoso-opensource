@@ -790,6 +790,17 @@ struct placeholder_s
 
 typedef void (*itc_clup_func_t) (it_cursor_t *);
 
+
+#ifdef  COL_ZERO_TR
+typedef struct itc_cr_trace_s
+{
+  int	crt_line;
+  int	crt_set;
+  int	crt_ranges;
+  int	crt_first_set;
+} itc_cr_trace_t;
+#endif
+
 #define MAX_SEARCH_PARAMS (TB_MAX_COLS + 10)
 
 #define RA_MAX_ROOTS 80
@@ -934,6 +945,9 @@ struct it_cursor_s
     int			itc_ce_first_set;
     int			itc_ce_first_range;
     int			itc_row_of_ce;
+#ifdef COL_ZERO_TR
+    itc_cr_trace_t	itc_crt;
+#endif
     int			itc_first_filter_range;
     int 		itc_range_fill;
     short 		itc_nth_col_string;

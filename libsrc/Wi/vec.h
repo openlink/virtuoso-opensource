@@ -144,6 +144,7 @@ caddr_t dc_box (data_col_t * dc, int inx);
    : DCT_BOXES & dc->dc_type ? DV_DB_NULL == DV_TYPE_OF (((caddr_t*)dc->dc_values)[inx]) \
    : DV_DB_NULL == ((db_buf_t*)dc->dc_values)[inx][0])
 
+#define DC_STR_MARGIN 16
 
 extern int dc_str_buf_unit;
 int64 dc_any_value (data_col_t * dc, int inx);

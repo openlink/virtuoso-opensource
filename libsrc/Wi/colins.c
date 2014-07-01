@@ -103,7 +103,7 @@ buf_asc_ck (buffer_desc_t * buf)
 
 
 int enable_ce_ins_check = 0;
-
+int enable_cr_trace;
 void
 itc_ce_check (it_cursor_t * itc, buffer_desc_t * buf, int leave)
 {
@@ -3324,6 +3324,7 @@ ceic_split_registered (ce_ins_ctx_t * ceic, row_delta_t * rd, buffer_desc_t * bu
 	  reg->itc_bp.bp_transiting = 1;
 	  if (COL_NO_ROW != reg->itc_col_row)
 	    reg->itc_col_row -= splits[inx - 1];
+	  CR_TRACE (reg, "split move");
 	  itc_unregister_inner (reg, buf, 1);
 	  reg->itc_next_on_page = rd->rd_keep_together_itcs;
 	  rd->rd_keep_together_itcs = reg;

@@ -2598,7 +2598,8 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
 	}
       else
 	{
-	  itc->itc_col_row = 0;	/* start at 0 on next pagge, nothing here */
+	  CR_TRACE (itc, "no matches by lock");
+	  ITC_COL_ZERO (itc);
 	return DVC_LESS;
     }
     }
@@ -2621,7 +2622,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
 	}
       if (n <= 0)
 	{
-	  itc->itc_col_row = 0;
+	  ITC_COL_ZERO (itc);
 	return DVC_LESS;
 	}
       if (COL_NO_ROW == cpo.cpo_range->r_end)
@@ -2709,7 +2710,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
 	      if (cpo.cpo_range->r_first >= rows_in_seg)
 		{
 		  itc->itc_is_multiseg_set = 0;
-		  itc->itc_col_row = 0;
+		  ITC_COL_ZERO (itc);
 		  return DVC_LESS;
 		}
 	    }
@@ -2767,7 +2768,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
 	}
       if (itc->itc_match_out <= 0)
 	{
-	  itc->itc_col_row = 0;
+	  ITC_COL_ZERO (itc);
 	  if (is_singles)
 	    itc->itc_set += n_sets_in_singles - 1;
 	  return DVC_LESS;
@@ -2839,7 +2840,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
   if (!n_used)
     {
       if (itc->itc_n_results < itc->itc_batch_size)
-	itc->itc_col_row = 0;
+	ITC_COL_ZERO (itc);
       return DVC_LESS;
     }
   {
@@ -3000,7 +3001,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
   if (!stop_in_mid_seg)
     {
       cpo.cpo_range->r_first = 0;
-      itc->itc_col_row = 0;
+      ITC_COL_ZERO (itc);
       return DVC_LESS;
     }
   return DVC_MATCH;

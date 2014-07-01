@@ -778,5 +778,18 @@ void ce_skip_bits_2 (db_buf_t bits, int skip, int * byte_ret, int * bit_ret);
   (IS_IRI_DTP (dtp) ? (((iri_id_t)n) > (iri_id_t)0xffffffff) \
 : (!((n) >= (int64) INT32_MIN && (n) <= (int64) INT32_MAX)))
 
+extern int enable_cr_trace;
+#define CR_TRACE(itc, msg) if (enable_cr_trace) \
+  { printf ("move %p %d:%d col %d %s ln %d\n", itc, itc->itc_page, itc->itc_map_pos, itc->itc_col_row, msg, __LINE__); }
+
+
+/*#define COL_ZERO_TR*/
+#ifdef COL_ZERO_TR
+#define ITC_COL_ZERO(itc) \
+  { itc->itc_col_row = 0; itc->itc_crt.crt_line = __LINE__; itc->itc_crt.crt_ranges = itc->itc_range_fill; itc->itc_crt.crt_set = itc->itc_set; itc->itc_crt.crt_first_set = itc->itc_col_first_set; }
+#else
+#define ITC_COL_ZERO(itc) \
+  itc->itc_col_row = 0
+#endif
 
 #endif

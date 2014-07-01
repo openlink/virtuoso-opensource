@@ -1136,7 +1136,7 @@ ceic_finalize_move (ce_ins_ctx_t * ceic, buffer_desc_t * buf)
     rl_empty_clks (rl, -1);
   for (reg = buf->bd_registered; reg; reg = reg->itc_next_on_page)
     {
-      if (itc->itc_map_pos != reg->itc_map_pos)
+      if (itc->itc_map_pos != reg->itc_map_pos || COL_NO_ROW == reg->itc_col_row)
 	continue;
       deld_before = 0;
       for (inx = 0; inx < itc->itc_range_fill; inx++)
@@ -1148,18 +1148,24 @@ ceic_finalize_move (ce_ins_ctx_t * ceic, buffer_desc_t * buf)
 		  reg->itc_is_on_row = 0;
 		}
 	      reg->itc_col_row -= deld_before;
+	      CR_TRACE (reg, "del move");
 	      goto next;
 	    }
 	  if (itc->itc_ranges[inx].r_first > reg->itc_col_row)
 	    {
 	      reg->itc_col_row -= deld_before;
+	      if (deld_before)
+		CR_TRACE (reg, "del move");
 	      goto next;
 	    }
 	  if (COL_NO_ROW == itc->itc_ranges[inx].r_end)
 	    deld_before++;
 	}
       if (deld_before)
+	{
 	reg->itc_col_row -= deld_before;
+	  CR_TRACE (reg, "del move");
+	}
     next:;
     }
 }
