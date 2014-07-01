@@ -38,7 +38,7 @@ trset_start (caddr_t * qst)
   caddr_t err;
   caddr_t buf;
 
-  buf = dk_alloc_box (REPORT_BUF_MAX, DV_LONG_STRING);
+  buf = dk_alloc_box (REPORT_BUF_MAX + 1, DV_LONG_STRING);
   buf[0] = 0;
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_BUFFER, buf);
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_PTR, buf);
@@ -76,46 +76,66 @@ trset_printf (const char *str, ...)
 
   va_start (ap, str);
   if (!report_ptr)
-    vprintf (str, ap);
-  else
-  vsnprintf (report_ptr, REPORT_BUF_MAX - (report_linebuf - report_ptr), str, ap);
-  va_end (ap);
-  if (!report_ptr)
-    return;
-
-  for (line = eol = report_linebuf; *line; line = eol)
     {
-      if ((eol = strchr (line, '\n')) == NULL)
-	break;
-      *eol++ = 0;
-      if (line[0] == 0)
-	line = " ";
-      copy = box_dv_short_string (line);
-      bif_result_inside_bif (1, copy);
-      dk_free_box (copy);
-    }
-  if (eol == NULL)
-    {
-      length = strlen (line);
-      if (report_linebuf != line && length >= 0)
-	memmove (report_linebuf, line, length);
+      vprintf (str, ap);
+      va_end (ap);
     }
   else
-    length = 0;
-
-  report_ptr = report_linebuf + length;
-  if (length > REPORT_BUF_MAX - EXPLAIN_LINE_MAX)
     {
-      caddr_t copy = box_dv_short_string (report_linebuf);
-      bif_result_inside_bif (1, copy);
-      dk_free_box (copy);
-      report_ptr = report_linebuf;
-    }
+      int used = report_ptr - report_linebuf;
+      int len;
+      int space = box_length (report_linebuf) - used;
+      len = vsnprintf (report_ptr, space, str, ap);
+      va_end (ap);
+      if (len > space)
+	{
+	  caddr_t nxt = dk_alloc_box (box_length  (report_linebuf) + (len - space) + 1000, DV_STRING);
+	  memcpy (nxt, report_linebuf, used);
+	  dk_free_box (report_linebuf);
+	  report_linebuf = nxt;
+	  report_ptr = nxt + used;
+	  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_BUFFER, report_linebuf);
+	  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_PTR, report_ptr);
+	  va_start (ap, str);
+	  vsnprintf (report_ptr, box_length (report_linebuf) - used, str, ap);
+	  va_end (ap);
+	}
+      if (!report_ptr)
+	return;
 
-  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_BUFFER, report_linebuf);
-  SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_PTR, report_ptr);
+      for (line = eol = report_linebuf; *line; line = eol)
+	{
+	  if ((eol = strchr (line, '\n')) == NULL)
+	    break;
+	  *eol++ = 0;
+	  if (line[0] == 0)
+	    line = " ";
+	  copy = box_dv_short_string (line);
+	  bif_result_inside_bif (1, copy);
+	  dk_free_box (copy);
+	}
+      if (eol == NULL)
+	{
+	  length = strlen (line);
+	  if (report_linebuf != line && length >= 0)
+	    memmove (report_linebuf, line, length);
+	}
+      else
+	length = 0;
+
+      report_ptr = report_linebuf + length;
+      if (length > REPORT_BUF_MAX - EXPLAIN_LINE_MAX)
+	{
+	  caddr_t copy = box_dv_short_string (report_linebuf);
+	  bif_result_inside_bif (1, copy);
+	  dk_free_box (copy);
+	  report_ptr = report_linebuf;
+	}
+
+      SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_BUFFER, report_linebuf);
+      SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_REPORT_PTR, report_ptr);
+    }
 }
-
 
 void
 trset_end (void)
