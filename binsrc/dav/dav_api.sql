@@ -7479,7 +7479,7 @@ create procedure DB.DBA.DAV_QUEUE_RUN ()
   if (threads <= 0)
     threads := 1;
 
-  aq := async_queue (threads);
+  aq := async_queue (threads, 4);
 
 _new_batch:;
   items := DB.DBA.DAV_QUEUE_GET (threads);
