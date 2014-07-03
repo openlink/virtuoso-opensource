@@ -2226,6 +2226,18 @@ DAV_AUTHENTICATE_SSL (
 
     _perms := '___';
     rc := DAV_CHECK_ACLS (id, webid, webidGraph, what, path, req, a_uid, a_gid, _perms);
+    if (rc)
+      {
+	declare hdr, hstr any;
+	hdr := http_header_array_get ();
+	hstr := '';
+	foreach (any h in hdr) do
+	  {
+	    if (h not like 'WWW-Authenticate:%')
+	      hstr := hstr || h;
+	  }
+        http_header (hstr);
+      }
   }
   return rc;
 }
