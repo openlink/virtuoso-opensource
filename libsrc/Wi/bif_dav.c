@@ -315,7 +315,7 @@ ws_dav (ws_connection_t * ws, query_t * http_call)
       dk_set_push (&parts, box_dv_short_string ("Content"));
       dk_set_push (&parts, ses);
     }
-  if (ws->ws_map->hm_exec_as_get)
+  if (ws->ws_map->hm_exec_as_get || ws->ws_in_error_handler)
     {
       strcpy_ck (p_name, "WS.WS.GET");
       goto p_name_is_set;

@@ -1669,6 +1669,7 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
       ws->ws_params = NULL;
       dk_free_tree ((box_t) ws->ws_resource);
       ws->ws_resource = NULL;
+      ws->ws_in_error_handler = 0;
     }
   dk_free_tree ((box_t) ws->ws_stream_params);
   ws->ws_stream_params = NULL;
@@ -3928,6 +3929,7 @@ do_file:
 	      previous_http_status = ws->ws_status_code;
 
 	      ws_clear (ws, 1);
+	      ws->ws_in_error_handler = 1;
 
 	      dk_free_box (ws->ws_path_string);
 	      if (text[0] != '/')
