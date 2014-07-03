@@ -3072,7 +3072,10 @@ again:
 					return;
 			}
             if (length (content) > WS.WS.GET_DAV_CHUNKED_QUOTA ())
-              http_flush (1);
+	      {
+		commit work;
+		http_flush (1);
+	      }
 
 
             http (content);
