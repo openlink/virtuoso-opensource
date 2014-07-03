@@ -2646,9 +2646,7 @@ again:
   }
   if (resource_owner = http_dav_uid ())
     is_admin_owned_res := 1;
-  if (WS.WS.GET_EXT_LDP(lines, client_etag, full_path, _res_id, _col_id))
-    return;
-
+	
   --for select COL_OWNER from WS.WS.SYS_DAV_COL where COL_ID = _col do
   --  {
   --    collection_owner := COL_OWNER;
@@ -3068,6 +3066,11 @@ again:
           }
           else
           {
+			if (cont_type <> 'text/turtle')
+			{
+				if (WS.WS.GET_EXT_LDP(lines, client_etag, full_path, _res_id, _col_id))
+					return;
+			}
             if (length (content) > WS.WS.GET_DAV_CHUNKED_QUOTA ())
               http_flush (1);
 
@@ -3114,6 +3117,11 @@ again:
             http_header (http_header_get () || sprintf ('Content-Type: %s\r\nETag: "%s"\r\n', xml_mime_type, _server_etag));
         }
       }
+		else
+		{
+			if (WS.WS.GET_EXT_LDP(lines, client_etag, full_path, _res_id, _col_id))
+				return;
+		}
     }
     else
       http_request_status ('HTTP/1.1 304 Not Modified');
