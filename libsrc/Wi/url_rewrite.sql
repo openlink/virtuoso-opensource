@@ -1077,20 +1077,20 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
   algo := http_request_header_full (lines, 'Negotiate', '*');
   do_cn := 1;
   vlist := trans := guess := 0;
-  if (algo = 'trans');
+  if (algo = 'trans')
     {
       trans := 1;
-      do_cn := 0;
+      do_cn := 1;
     }
-  if (algo = 'vlist');
+  if (algo = 'vlist')
     {
       trans := vlist := 1;
-      do_cn := 0;
+      do_cn := 1;
     }
-  if (algo = 'guess-small');
+  if (algo = 'guess-small')
     {
       trans := vlist := 1;
-      do_cn := 0;
+      do_cn := 1;
     }
   if (atof (algo) >= 1)
     do_cn := 1;
@@ -1147,7 +1147,7 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
 	   best_id := VM_ID;
 	   hook := VM_CONTENT_LOCATION_HOOK;
 	 }
-       if (not do_cn)
+       if (vlist)
          {
 	   alang := '';
 	   aenc := '';
@@ -1182,6 +1182,8 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
       if (hook is not null and __proc_exists (hook) is not null)
 	cl := call (hook) (best_id, best_variant);
       http_headers := sprintf ('TCN: choice\r\nVary: negotiate,accept\r\nContent-Location: %s\r\n%s', cl, ct);
+      if (list <> '')
+	http_headers := http_headers || sprintf ('Alternates: %s\r\n', rtrim (list, ', '));
       -- since best_variant is a relative path, we ignore semicolon, otherwise it will not expand thinking it's absolute
       path := WS.WS.EXPAND_URL (path, replace (best_variant, ':', '\x1'));
       path := replace (path, '\x1', ':');
