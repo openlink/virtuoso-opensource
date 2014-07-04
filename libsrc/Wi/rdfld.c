@@ -291,7 +291,7 @@ rl_query_init (dbe_table_t * quad_tb)
       int first = 1;
       if (key->key_distinct)
 	continue;
-      sprintf (txt, "delete from RDF_QUAD table option (index %s, vectored) where ", key->key_name);
+      sprintf (txt, "delete from DB.DBA.RDF_QUAD table option (index %s, vectored) where ", key->key_name);
       DO_SET (dbe_column_t *, col, &key->key_parts)
 	{
 	  sprintf (txt + strlen (txt), "%s %s = ? ", first ? "" : "AND", col->col_name);
