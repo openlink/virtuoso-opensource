@@ -203,7 +203,7 @@ static caddr_t java_vm_detach (void);
 #endif
 static caddr_t java_exception_text (JNIEnv * env);
 
-#define DV_EXTENSION_OBJ 255
+#define DV_EXTENSION_OBJ 251
 typedef struct extension_obj_s
 {
   ptrlong exo_type;
@@ -3310,8 +3310,10 @@ bif_init_func_javavm (void)
   bif_define ("java_vm_attach", bif_java_vm_attach);
   bif_define ("java_vm_detach", bif_java_vm_detach);
 
+#if 0
   bif_define_typed ("bit_and", bif_bit_and, &bt_integer);
   bif_define_typed ("bit_or", bif_bit_or, &bt_integer);
+#endif
 
   bif_define ("java_bpel_adaptor_class", bif_java_bpel_adaptor_class);
 

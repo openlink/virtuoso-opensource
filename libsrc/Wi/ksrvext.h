@@ -638,7 +638,7 @@ caddr_t list_to_array (dk_set_t l);
 void dk_set_push (dk_set_t *ret, void *item);
 dk_set_t dk_set_nreverse (dk_set_t set);
 
-#define DV_EXTENSION_OBJ 255
+#define DV_EXTENSION_OBJ 251
 
 #define DO_SET(type, var, set) \
 	{ \
