@@ -702,8 +702,15 @@ sqlo_fun_ref_epilogue (sqlo_t * so, op_table_t * from_ot)
 
   if (from_ot->ot_invariant_preds)
     {
-      from_ot->ot_work_dfe->_.sub.invariant_test =
-	  sqlo_and_list_body (so, LOC_LOCAL, so->so_gen_pt, from_ot->ot_invariant_preds);
+      df_elt_t * gen_pt = so->so_gen_pt;
+      df_elt_t * filter = sqlo_new_dfe (so, DFE_FILTER, NULL);
+      df_elt_t ** after_test;
+      so->so_gen_pt = from_ot->ot_work_dfe->_.sub.first;
+      after_test = sqlo_and_list_body (so, LOC_LOCAL, so->so_gen_pt, from_ot->ot_invariant_preds);
+      filter->_.filter.body = after_test;
+      filter->_.filter.preds = from_ot->ot_invariant_preds;
+      sqlo_place_dfe_after  (so, LOC_LOCAL, so->so_gen_pt, filter);
+      so->so_gen_pt = gen_pt;
     }
 
   if (!from_ot->ot_fun_refs && !group_dfe)
