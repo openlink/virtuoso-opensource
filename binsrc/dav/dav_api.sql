@@ -1,6 +1,4 @@
 --
---  $Id$
---
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
@@ -2228,6 +2226,7 @@ DAV_AUTHENTICATE_SSL (
     rc := DAV_CHECK_ACLS (id, webid, webidGraph, what, path, req, a_uid, a_gid, _perms);
     if (rc)
       {
+	DAV_PERMS_FIX (_perms, '000000000TM');
 	declare hdr, hstr any;
 	hdr := http_header_array_get ();
 	hstr := '';
@@ -2383,6 +2382,12 @@ DAV_COL_CREATE_INT (
                 values (rc, name, pid, ouid, ogid, permissions, now(), now ());
     if (not row_count())
       rc := -3;
+      if (LDP_ENABLED (pid))
+	{
+	  declare uri any;
+	  uri := WS.WS.DAV_IRI (path);
+	  TTLP ('@prefix ldp: <http://www.w3.org/ns/ldp#> .  <> a ldp:BasicContainer, ldp:Container .', uri, uri);
+	}
   }
   return rc;
 }
@@ -2407,6 +2412,24 @@ create procedure DB.DBA.IS_REDIRECT_REF (inout path any)
 }
 ;
 
+create procedure is_rdf_type(in type varchar) returns integer	
+{
+	if (
+		strstr (type, 'text/n3') is not null or
+		strstr (type, 'text/turtle') is not null or
+		strstr (type, 'text/rdf+n3') is not null or
+		strstr (type, 'text/rdf+ttl') is not null or
+		strstr (type, 'text/rdf+turtle') is not null or
+		strstr (type, 'application/rdf+xml') is not null or
+		strstr (type, 'application/rdf+n3') is not null or
+		strstr (type, 'application/rdf+turtle') is not null or
+		strstr (type, 'application/turtle') is not null or
+		strstr (type, 'application/x-turtle') is not null
+	)
+		return 1;
+	return 0;
+}
+;
 
 --!AWK PUBLIC
 create procedure DAV_RES_UPLOAD (
@@ -2467,17 +2490,6 @@ create procedure DAV_RES_UPLOAD_STRSES_INT (
     )
 {
   declare rc, old_log_mode, new_log_mode any;
-
-  if (type = 'application/sparql-query')
-  {
-    WS.WS.SPARQL_QUERY_POST (path, content, uid, dav_call);
-  }
-  else if (type = 'text/turtle')
-  {
-    rc := WS.WS.TTL_QUERY_POST (path, content, dav_call);
-    if (DAV_HIDE_ERROR (rc) is null)
-      return rc;
-  }
 
   old_log_mode := log_enable (null);
   -- we disable row auto commit since there are triggers reading blobs, we do that even in atomic mode since this is vital for dav uploads
@@ -2965,17 +2977,7 @@ create procedure RDF_SINK_UPLOAD (
     }
     goto _exit;
   }
-  if (
-       strstr (type, 'text/n3') is not null or
-       strstr (type, 'text/turtle') is not null or
-       strstr (type, 'text/rdf+n3') is not null or
-       strstr (type, 'text/rdf+ttl') is not null or
-       strstr (type, 'text/rdf+turtle') is not null or
-       strstr (type, 'application/rdf+n3') is not null or
-       strstr (type, 'application/rdf+turtle') is not null or
-       strstr (type, 'application/turtle') is not null or
-       strstr (type, 'application/x-turtle') is not null
-     )
+  if (is_rdf_type(type))
   {
     {
       declare exit handler for sqlstate '*'
@@ -3194,10 +3196,12 @@ create procedure DAV_DELETE_INT (
     declare type, graph varchar;
 
     type := (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = id);
-    if (type = 'text/turtle')
+    if (is_rdf_type(type))
     {
       graph := WS.WS.DAV_IRI (path);
       SPARQL clear graph ?:graph;
+      SPARQL delete { graph ?g { ?s <http://www.w3.org/ns/ldp#contains> ?o } } 
+      where { graph ?g { ?s <http://www.w3.org/ns/ldp#contains> ?o . filter (?o = iri(?:graph)) }};
     }
 
     delete from WS.WS.SYS_DAV_RES where RES_ID = id;

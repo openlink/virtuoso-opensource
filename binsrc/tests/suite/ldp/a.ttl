@@ -1,0 +1,5 @@
+@prefix ldp: <http://www.w3.org/ns/ldp#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+
+<>  a ldp:BasicContainer;
+    dc:title "Aziz channel" .

@@ -86,7 +86,7 @@ char *http_methods[] = { "NONE", "GET", "HEAD", "POST", "PUT", "DELETE", "OPTION
   			 "PROPFIND", "PROPPATCH", "COPY", "MOVE", "LOCK", "UNLOCK", "MKCOL",  /* WebDAV */
 			 "MGET", "MPUT", "MDELETE", 	/* URIQA */
 			 "REPORT", /* CalDAV */
-			 "TRACE", NULL };
+			 "TRACE", "PATCH", NULL };
 resource_t *ws_dbcs;
 basket_t ws_queue;
 dk_mutex_t * ws_queue_mtx;

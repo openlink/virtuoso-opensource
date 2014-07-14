@@ -23,70 +23,94 @@
 
 create procedure WS.WS."OPTIONS" (in path varchar, inout params varchar, in lines varchar)
 {
-  declare full_path varchar;
-  declare path_id any;
-  full_path := '/' || DAV_CONCAT_PATH (path, '/');
-  path_id := DAV_SEARCH_ID (full_path, 'C');
-  if (isarray(path_id) = 1)
+	declare full_path varchar;
+	declare path_id, _res_id any;
+	full_path := '/' || DAV_CONCAT_PATH (path, '/');
+	path_id := DAV_SEARCH_ID (full_path, 'C');
+	_res_id := DAV_SEARCH_ID (DAV_CONCAT_PATH ('/', path), 'R');
+	if (isarray(path_id) = 1)
     {
-      if (path_id[0] = UNAME'CalDAV')
-	{
-	  http_header (concat (
-	  'Content-Type: text/xml\r\n',
-	  'Allow: OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE\r\n',
-	  'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
-	  'DAV: 1, 2, access-control, calendar-access\r\n',
-	  'MS-Author-Via: DAV\r\n'));
-	  return;
-	}
-      if (path_id[0] = UNAME'CardDAV')
-	{
-	  http_header (concat (
-	  'Content-Type: text/xml\r\n',
-	  'Allow: OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE\r\n',
-	  'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
-	  'DAV: 1, 2, 3, access-control, addressbook\r\n',
-	  'MS-Author-Via: DAV\r\n'));
-	  return;
-	}
+		if (path_id[0] = UNAME'CalDAV')
+		{
+			http_header (concat (
+				'Content-Type: text/xml\r\n',
+				'Allow: OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE\r\n',
+				'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
+				'DAV: 1, 2, access-control, calendar-access\r\n',
+				'MS-Author-Via: DAV\r\n'));
+			return;
+		}
+		if (path_id[0] = UNAME'CardDAV')
+		{
+			http_header (concat (
+				'Content-Type: text/xml\r\n',
+				'Allow: OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE\r\n',
+				'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
+				'DAV: 1, 2, 3, access-control, addressbook\r\n',
+				'MS-Author-Via: DAV\r\n'));
+			return;
+		}
     }
-  else
+	else
     {
-      declare is_det int;
-      is_det := (select COL_ID from WS.WS.SYS_DAV_COL where COL_ID = path_id and COL_DET = 'CalDAV');
-      if (is_det > 0)
-	{
-	  http_header (concat (
-	  'Content-Type: text/xml\r\n',
-	  'Allow: OPTIONS, GET, HEAD, POST, TRACE\r\n',
-	  'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
-	  'DAV: 1, 2, access-control, calendar-access\r\n',
-	  'MS-Author-Via: DAV\r\n'));
-	  return;
-	}
-	is_det := (select COL_ID from WS.WS.SYS_DAV_COL where COL_ID = path_id and COL_DET = 'CardDAV');
-	if (is_det > 0)
-	  {
-	    http_header (concat (
-	    'Content-Type: text/xml\r\n',
-	    'Allow: OPTIONS, GET, HEAD, POST, TRACE\r\n',
-	    'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
-	    'DAV: 1, 2, 3, access-control, addressbook\r\n',
-	    'MS-Author-Via: DAV\r\n'));
-	    return;
-	  }
+		declare is_det int;
+		is_det := (select COL_ID from WS.WS.SYS_DAV_COL where COL_ID = path_id and COL_DET = 'CalDAV');
+		if (is_det > 0)
+		{
+			http_header (concat (
+				'Content-Type: text/xml\r\n',
+				'Allow: OPTIONS, GET, HEAD, POST, TRACE\r\n',
+				'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
+				'DAV: 1, 2, access-control, calendar-access\r\n',
+				'MS-Author-Via: DAV\r\n'));
+			return;
+		}
+		is_det := (select COL_ID from WS.WS.SYS_DAV_COL where COL_ID = path_id and COL_DET = 'CardDAV');
+		if (is_det > 0)
+		{
+			http_header (concat (
+				'Content-Type: text/xml\r\n',
+				'Allow: OPTIONS, GET, HEAD, POST, TRACE\r\n',
+				'Allow: PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL\r\n',
+				'DAV: 1, 2, 3, access-control, addressbook\r\n',
+				'MS-Author-Via: DAV\r\n'));
+			return;
+		}
     }
-  declare headers, ctype, msauthor any;
-  http_methods_set ('OPTIONS', 'GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'TRACE', 'PROPFIND', 'PROPPATCH', 'COPY', 'MOVE', 'LOCK', 'UNLOCK');
-  WS.WS.GET (path, params, lines);
-  headers := http_header_array_get ();
-  ctype := http_request_header (headers, 'Content-Type', null, 'text/plain');
-  msauthor := http_request_header (headers, 'MS-Author-Via', null, 'DAV');
-  http_status_set (200);
-  http_rewrite ();
-  http_header (concat (sprintf ('Content-Type: %s\r\n', ctype),
+
+	declare s_etag, res_name_, ldp_head varchar;
+	declare id_ integer;
+	declare mod_time datetime;
+	whenever not found goto not_found;
+	ldp_head := '';
+	if (path_id <> -1)
+	{
+		select COL_NAME, COL_MOD_TIME into res_name_, mod_time from WS.WS.SYS_DAV_COL where COL_ID = path_id;
+		id_ := path_id;
+		if (LDP_ENABLED (path_id))
+		  ldp_head := 'Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"\r\nLink: <http://www.w3.org/ns/ldp#BasicContainer>; rel="type"\r\n';
+	}
+	else
+	{
+		select RES_COL, RES_NAME, RES_MOD_TIME into id_, res_name_, mod_time from WS.WS.SYS_DAV_RES where RES_ID = _res_id;
+		if (LDP_ENABLED (id_))
+		  ldp_head := 'Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"\r\n';
+	}
+	s_etag := WS.WS.ETAG (res_name_, id_, mod_time);
+not_found: ;
+	declare headers, ctype, msauthor any;
+	http_methods_set ('OPTIONS', 'GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'TRACE', 'PROPFIND', 'PROPPATCH', 'COPY', 'MOVE', 'LOCK', 'UNLOCK', 'PATCH');
+	WS.WS.GET (path, params, lines);
+	headers := http_header_array_get ();
+	ctype := http_request_header (headers, 'Content-Type', null, 'text/plain');
+	msauthor := http_request_header (headers, 'MS-Author-Via', null, 'DAV');
+	http_status_set (200);
+	http_rewrite ();
+	
+	http_header (concat (sprintf ('Content-Type: %s\r\n', ctype),
+		sprintf ('ETag: %s\r\n', s_etag),
 		'DAV: 1,2,<http://www.openlinksw.com/virtuoso/webdav/1.0>\r\n',
-		'Link: <http://www.w3.org/ns/ldp/profile>;rel="profile"\r\n',
+		ldp_head,
 		'Accept-Patch: */*\r\n',
 		'Accept-Post: */*\r\n',
 		sprintf ('MS-Author-Via: %s\r\n', msauthor)));
@@ -1547,7 +1571,7 @@ create procedure WS.WS.MKCOL (
   {
     ;
   }
-  else if (rc = -25)
+    else if (rc = -25 or rc = -3)
   {
     DB.DBA.DAV_SET_HTTP_STATUS (409);
   }
@@ -1568,8 +1592,7 @@ create procedure WS.WS.MKCOL (
 
   commit work;
   http_request_status ('HTTP/1.1 201 Created');
-  http_header('Link: <http://www.w3.org/ns/ldp#Container>; rel="type"\r\n');
-
+  --http_header ('Link: <http://www.w3.org/ns/ldp#Container>; rel="type"\r\n');
   return rc;
 }
 ;
@@ -1865,28 +1888,27 @@ create procedure WS.WS.PUT (
   declare _atomPub integer;
   declare _path, _destination, _oldName, _name, _what, _method, _category varchar;
   declare _xtree, _content, _parts any;
+  declare client_etag, server_etag, res_name_ varchar;
+  declare res_id_, id_ integer;
+  declare mod_time datetime;
+
   whenever sqlstate '*' goto error_ret;
 
   --set isolation = 'serializable';
   ses := aref_set_0 (params, 1);
+  if (ses = 0 or length (ses) = 0) -- POST w/ special content, read here
+    ses := http_body_read ();
   _atomPub := 0;
   content_type := http_request_header (lines, 'Content-Type', null, '');
   content_type_attr := http_request_header (lines, 'Content-Type', 'type', '');
+  _method := http_request_get ('REQUEST_METHOD');
   if ((content_type = 'application/atom+xml') and (content_type_attr = 'entry'))
   {
     -- AtomPub: POST and PUT methods
     -- application/atom+xml
 
     _atomPub := 1;
-    if (__tag (ses) = 126)
-    {
-      ses := string_output_string (http_body_read (1));
-    }
-    else if (__tag (ses) = 185)
-    {
-      ses := string_output_string (http_body_read (0));
-    }
-    _xtree := xml_tree_doc (blob_to_string (ses));
+    _xtree := xml_tree_doc (ses);
     ses := xpath_eval ('[ xmlns="http://www.w3.org/2005/Atom" ] string (/entry/content)', _xtree, 1);
   }
   if (content_type = 'multipart/related')
@@ -1895,14 +1917,6 @@ create procedure WS.WS.PUT (
     -- multipart/related
 
     _atomPub := 1;
-    if (__tag (ses) = 126)
-    {
-      ses := string_output_string (http_body_read (1));
-    }
-    else if (__tag (ses) = 185)
-    {
-      ses := string_output_string (http_body_read (0));
-    }
     if (length (ses) = 0)
     {
       _xtree := xml_tree_doc (blob_to_string (get_keyword ('mime_part1', params, '')));
@@ -1937,7 +1951,6 @@ create procedure WS.WS.PUT (
   }
   if (_atomPub)
   {
-    _method := http_request_get ('REQUEST_METHOD');
     _name := serialize_to_UTF8_xml (xpath_eval ('[ xmlns="http://www.w3.org/2005/Atom" ] string (/entry/title)', _xtree, 1));
     _category := serialize_to_UTF8_xml (xpath_eval ('[ xmlns="http://www.w3.org/2005/Atom" ] string (/entry/category/@term)', _xtree, 1));
 
@@ -1999,10 +2012,15 @@ create procedure WS.WS.PUT (
   full_path := DAV_CONCAT_PATH ('/', path);
   uid := null;
   gid := null;
+  res_id_ := DAV_HIDE_ERROR (DAV_SEARCH_ID (full_path, 'R'));
+  _col := DAV_HIDE_ERROR (DAV_SEARCH_ID (DAV_CONCAT_PATH (full_path, '/'), 'C'));
   _col_parent_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'P'));
   if (_col_parent_id is not null)
     {
        --dbg_obj_princ ('WS.WS.PUT has _col_parent_id=', _col_parent_id);
+    if (_col is not null) -- SPARQL query on container
+      rc := DAV_AUTHENTICATE_HTTP (_col, 'C', '1__', 1, lines, auth_name, auth_pwd, uid, gid, _perms);
+    else
     rc := DAV_AUTHENTICATE_HTTP (_col_parent_id, 'C', '11_', 1, lines, auth_name, auth_pwd, uid, gid, _perms);
     --dbg_obj_princ ('Authentication in WS.WS.PUT gives ', rc, auth_name, auth_pwd, uid, gid, _perms);
       if (rc < 0)
@@ -2027,6 +2045,59 @@ create procedure WS.WS.PUT (
     {
       content_type := 'text/html';
     }
+  client_etag := WS.WS.FINDPARAM (lines, 'If-Match:');
+  if ((res_id_ is not null or _col is not null) and length (client_etag))
+    {
+      if (res_id_ is not null)
+	select RES_COL, RES_NAME, RES_MOD_TIME into id_, res_name_, mod_time from WS.WS.SYS_DAV_RES where RES_ID = res_id_;
+      else
+	select COL_ID, COL_NAME, COL_MOD_TIME into id_, res_name_, mod_time from WS.WS.SYS_DAV_COL where COL_ID = _col;
+      server_etag := WS.WS.ETAG (res_name_, id_, mod_time);
+      client_etag := trim (client_etag, '" \r\n');
+      if (client_etag <> server_etag)
+	{
+	  http_status_set (412);
+	  return;
+	}
+    }
+  if (registry_get ('LDP_strict_put') = '1' and _method = 'PUT'
+      and (res_id_ is not null or _col is not null) and content_type = 'text/turtle' and length (client_etag) = 0)
+    {
+      http_status_set (428);
+      return;
+    }
+
+  if (content_type = 'application/sparql-query')
+    {
+      http_status_set (200);
+      if (_method = 'PUT')
+        WS.WS.SPARQL_QUERY_POST (full_path, ses, uid, 1);
+      else -- POST
+	{
+	  if (_col is not null)
+	    full_path := DAV_CONCAT_PATH (full_path, '/');
+	  WS.WS.SPARQL_QUERY_GET (ses, full_path, path, lines);
+	  return;
+	}
+    }
+  else if (content_type = 'text/turtle')
+    {
+      declare gr, newg, newpath any;
+      rc := WS.WS.TTL_QUERY_POST (full_path, ses, case when _col is not null then 0 else 1 end);
+      if (DAV_HIDE_ERROR (rc) is null)
+	goto error_ret;
+      gr := iri_to_id (WS.WS.DAV_IRI (full_path));
+      if ((sparql define input:inference "ldp" ask where { graph ?:gr { ?:gr a <http://www.w3.org/ns/ldp#Container> }}))
+	{
+	  newpath := DAV_CONCAT_PATH (full_path, '/');
+	  newg := iri_to_id (WS.WS.DAV_IRI (newpath));
+	  sparql move graph ?:gr to ?:newg;
+	  if (_col is null)
+	    rc := DAV_COL_CREATE_INT (newpath, _perms, null, null, null, null, 1, 0, 1, uid, gid);
+	  goto rcck;
+	}
+    }
+
   rc := -28;
   rc := DAV_RES_UPLOAD_STRSES_INT (full_path, ses, content_type, _perms, auth_name, null, auth_name, auth_pwd, 0, now(), now(), null, uid, gid, 0, 1);
   --dbg_obj_princ ('DAV_RES_UPLOAD_STRSES_INT returned ', rc, ' of type ', __tag (rc));
@@ -2037,18 +2108,29 @@ create procedure WS.WS.PUT (
     _destination := concat (left (full_path, strrchr (rtrim (full_path, '/'), '/')), '/', _name, either (equ (right (full_path, 1), '/'), '/', ''));
     rc := DB.DBA.DAV_MOVE_INT (full_path, _destination, 0, null, null, 0);
   }
+  rcck:
   if (DAV_HIDE_ERROR (rc) is not null)
     {
       commit work;
       http_request_status ('HTTP/1.1 201 Created');
-    http_header ('Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"\r\n');
+	declare _col_parent varchar;
+	_col_parent :=  DB.DBA.DAV_SEARCH_PATH (_col_parent_id, 'C');
+	if (LDP_ENABLED (_col_parent_id))
+	{
+		declare par_graph, cur_graph any;
+		par_graph := (WS.WS.DAV_IRI (_col_parent));
+		cur_graph := (WS.WS.DAV_IRI (full_path));
+		TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', par_graph, cur_graph), par_graph, par_graph);
+		--SPARQL INSERT IN GRAPH ?:par_graph { ?:par_graph <http://www.w3.org/ns/ldp#contains> ?:cur_graph . };
+		http_header (http_header_get () || 'Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"\r\n');
+	}
     if (_atomPub)
     {
       WS.WS.DAV_ATOM_ENTRY (rc, 'R');
     }
       else
     {
-      http_header (sprintf('Content-Type: %s\r\n', content_type));
+      http_header (http_header_get () || sprintf('Content-Type: %s\r\n', content_type));
       if (content_type = 'application/sparql-query')
       {
         http_header ('MS-Author-Via: SPARQL\r\n');
@@ -2078,6 +2160,8 @@ error_ret:
 
   http_body_read ();
   DAV_SET_HTTP_REQUEST_STATUS (rc);
+  if (rc = -44)
+    http_value (connection_get ('__sql_message'), 'p');
 }
 ;
 
@@ -2106,9 +2190,13 @@ create procedure WS.WS.PATCH (in path any, inout params any, in lines any)
   full_path := DAV_CONCAT_PATH ('/', path);
   _u_id := null;
   _g_id := null;
+  _col := DAV_HIDE_ERROR (DAV_SEARCH_ID (DAV_CONCAT_PATH (full_path, '/'), 'C'));
   _col_parent_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (vector(''), path, vector('')), 'P'));
   if (_col_parent_id is not null)
     {
+    if (_col is not null)
+      rc := DAV_AUTHENTICATE_HTTP (_col, 'C', '11_', 1, lines, uname, upwd, _u_id, _g_id, _perms);
+    else
       rc := DAV_AUTHENTICATE_HTTP (_col_parent_id, 'C', '11_', 1, lines, uname, upwd, _u_id, _g_id, _perms);
       if (rc < 0)
         goto error_ret;
@@ -2133,6 +2221,15 @@ create procedure WS.WS.PATCH (in path any, inout params any, in lines any)
       content_type := 'text/html';
     }
    --dbg_obj_princ ('content_type=', content_type, ',  _cont_len=', _cont_len);
+
+  if (content_type = 'application/sparql-update')
+    {
+      connection_set ('SPARQLUserId', 'SPARQL_ADMIN');
+      WS.WS.SPARQL_QUERY_UPDATE (ses, full_path, path, lines);
+      commit work;
+      DB.DBA.DAV_SET_HTTP_STATUS (204);
+      return;
+    }
 
   rc := -28;
   rc := DAV_RES_UPLOAD_STRSES_INT (full_path, ses, content_type, _perms, uname, null, uname, upwd, 0, now(), now(), null, _u_id, _g_id, 0, 1);
@@ -2395,7 +2492,7 @@ again:
   {
     declare meta_path varchar;
     declare meta_id any;
-    declare content, type any;
+    declare content_, type any;
 
     meta_path := DAV_CONCAT_PATH ('/', full_path);
     if (meta_path like '%,meta')
@@ -2409,12 +2506,12 @@ again:
       if ((rc < 0) and (rc <> -1))
         goto _403;
 
-      rc := DAV_RES_CONTENT_META (meta_path, content, type, 0, 0);
+      rc := DAV_RES_CONTENT_META (meta_path, content_, type, 0, 0);
       if (DAV_HIDE_ERROR (rc) is null)
         goto _500;
 
       http_request_status ('HTTP/1.1 200 OK');
-      http (content);
+      http (content_);
     }
     else
     {
@@ -2521,7 +2618,7 @@ again:
   webid_check_rc := 1;
   if (is_https_ctx () and webid_check and http_map_get ('executable'))
   {
-    declare gid, perms, _check_id, _check_type any;
+    declare gid_, perms_, _check_id, _check_type any;
     uid := null;
     if (isinteger (_res_id))
     {
@@ -2533,7 +2630,7 @@ again:
       _check_id := _col_id;
       _check_type := 'C';
     }
-    webid_check_rc := DAV_AUTHENTICATE_HTTP (_check_id, _check_type, '1__', 1, lines, uname, upwd, uid, gid, perms);
+    webid_check_rc := DAV_AUTHENTICATE_HTTP (_check_id, _check_type, '1__', 1, lines, uname, upwd, uid, gid_, perms_);
     if ((webid_check_rc < 0) and (webid_check_rc <> -1))
       return 0;
   }
@@ -2583,8 +2680,8 @@ again:
   if ((_col_id is not null) or ((_res_id is not null) and (get_keyword ('a', params) in ('update', 'edit'))))
   {
     declare dir_ret any;
-
-    if (WS.WS.GET_EXT_LDP (lines, client_etag, full_path, _res_id, _col_id))
+	--this is for DAV folder
+	if (WS.WS.GET_EXT_DAV_LDP(path, lines, params, client_etag, full_path, _res_id, _col_id))
       return;
 
     if (0 = http_map_get ('browseable'))
@@ -2596,12 +2693,14 @@ again:
     if (DAV_HIDE_ERROR (dir_ret))
     {
       DB.DBA.DAV_SET_HTTP_STATUS (
+		500,
         'HTTP/1.1 500 Internal Server Error or Misconfiguration',
         '500 Internal Server Error or Misconfiguration',
         sprintf ('Failed to return the directory index in this location: %V<br />%s',  http_path (), DAV_PERROR (dir_ret)),
         1
       );
     }
+    http_header (http_header_get () || WS.WS.LDP_HDRS (1, 1));
     return;
   }
 
@@ -2646,6 +2745,8 @@ again:
   }
   if (resource_owner = http_dav_uid ())
     is_admin_owned_res := 1;
+  if (WS.WS.GET_EXT_DAV_LDP(path, lines, params, client_etag, full_path, _res_id, _col_id))
+    return;
 	
   --for select COL_OWNER from WS.WS.SYS_DAV_COL where COL_ID = _col do
   --  {
@@ -2973,7 +3074,7 @@ again:
       {
         declare c_xml cursor for select t from WS.WS.SYS_DAV_RES where xpath_contains (RES_CONTENT, xpr, t)
         and RES_NAME = _name and RES_COL = _col;
-        declare ht varchar;
+        declare ht any;
 
         sxtag := get_keyword ('set_tag', params, 'document');
         rxtag := get_keyword ('result_tag', params, '');
@@ -2997,7 +3098,7 @@ again:
       }
       else if (cont_type = 'application/sparql-query')
       {
-        WS.WS.SPARQL_QUERY_GET (content, path, lines);
+        WS.WS.SPARQL_QUERY_GET (content, full_path, path, lines);
       }
       else if (not isnull (content))
       {
@@ -3066,11 +3167,11 @@ again:
           }
           else
           {
-			if (cont_type <> 'text/turtle')
-			{
-				if (WS.WS.GET_EXT_LDP(lines, client_etag, full_path, _res_id, _col_id))
-					return;
-			}
+	    if (cont_type <> 'text/turtle' or _accept = 'application/ld+json')
+	      {
+		if (WS.WS.GET_EXT_DAV_LDP(path, lines, params, client_etag, full_path, _res_id, _col_id))
+		  return;
+	      }
             if (length (content) > WS.WS.GET_DAV_CHUNKED_QUOTA ())
 	      {
 		commit work;
@@ -3122,7 +3223,7 @@ again:
       }
 		else
 		{
-			if (WS.WS.GET_EXT_LDP(lines, client_etag, full_path, _res_id, _col_id))
+			if (WS.WS.GET_EXT_DAV_LDP (path, lines, params, client_etag, full_path, _res_id, _col_id))
 				return;
 		}
     }
@@ -3134,198 +3235,91 @@ err_end:
 }
 ;
 
--- LDP extension for GET (http://www.w3.org/TR/ldp/#http-get)
-create procedure WS.WS.GET_EXT_LDP(in lines any, in client_etag varchar, in full_path varchar, in _res_id int, in _col_id int)
+-- /* common headers */
+create procedure WS.WS.LDP_HDRS (in is_col int := 0, in add_rel int := 0, in page int := 0, in last int := 0)
 {
-	declare accept, _name, cont_type, uname, urihost varchar;
-	declare arr any;
-	declare l, i, resource_owner, non_member, page, _col, file_size int;
-	declare mod_time, cr_time datetime;
-	-- LDPR request
-	urihost := cfg_item_value(virtuoso_ini_path(), 'URIQA','DefaultHost');
-	arr := split_and_decode(http_request_get ('QUERY_STRING'));
-	non_member := 0;
-	l := length (arr);
-	page := 1;
-	for (i := 0; i < l; i := i + 2)
+  declare h any;
+  h := 'MS-Author-Via: DAV, SPARQL\r\n' ||
+      'Allow: GET,HEAD,POST,PUT,DELETE,OPTIONS,PROPFIND,PROPPATCH,COPY,MOVE,LOCK,UNLOCK,TRACE,PATCH\r\n' ||
+      'Accept-Patch: application/sparql-update\r\n' ||
+      'Accept-Post: text/turtle,text/n3,text/nt\r\n';
+  if (add_rel)
     {
-		if (arr[i] = 'non-member-properties')
-		non_member := 1;
-		if (arr[i] = 'p')
-		{
-			if (i < l - 1)
-				page := atoi(arr[i+1]);
-			else
-				page := 1;
-		}
-	}
-	if (page = 0)
-		page := 1;
+      h := h || 'Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"\r\n';
+      if (is_col)
+	h := h || 'Link: <http://www.w3.org/ns/ldp#BasicContainer>; rel="type"\r\n';
+    }
+  if (page > 0)
+    h := h || 'Link: <?p=1>; rel="first"\r\n';
+  if (last > 0)
+    h := h || sprintf ('Link: <?p=%d>; rel="last"\r\n', last);
+  return h;
+}
+;
+
+-- /* LDP extension for GET (http://www.w3.org/TR/ldp/#http-get) */
+create procedure WS.WS.GET_EXT_DAV_LDP(inout path any, inout lines any, inout params any, in client_etag varchar, in full_path varchar, in _res_id int, in _col_id int)
+{
+    declare accept, name_ varchar;
+	declare mod_time datetime;
+	declare gr any;
+	declare id_ integer;
+
+	-- LDPR request
 	accept := http_request_header_full (lines, 'Accept', '*/*');
 	accept := HTTP_RDF_GET_ACCEPT_BY_Q (accept);
-	if (accept = 'text/turtle')
+    if (accept = '*/*' and isinteger (_res_id) and exists (select 1 from WS.WS.SYS_DAV_RES where RES_ID = _res_id and RES_TYPE = 'text/turtle'))
+      {
+	accept := 'text/turtle';
+      }
+	if (accept = 'text/turtle' or accept = 'application/ld+json')
 	{
-		if (isinteger (_col_id))
-		{
-			for select COL_NAME, COL_OWNER, COL_CR_TIME, COL_MOD_TIME from WS.WS.SYS_DAV_COL where COL_ID = _col_id do
-			{
-				_name := COL_NAME;
-				resource_owner := COL_OWNER;
-				mod_time := COL_MOD_TIME;
-				cr_time := COL_CR_TIME;
-				select U_NAME into uname from WS.WS.SYS_DAV_USER where U_ID = resource_owner;
-			}
-			declare _len, cur int;
-			declare ses any;
-			ses := string_output ();
-			http ('@prefix dcterms: <http://purl.org/dc/terms/> .\n@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n@prefix ldp: <http://www.w3.org/ns/ldp#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\n', ses);
-			http ('<>\n', ses);
-			http ('  a ldp:Container, <http://www.w3.org/ns/posix/stat#Directory> ;\n', ses);
-			http ('  ldp:membershipSubject <> ;\n', ses);
-			http ('  ldp:membershipPredicate rdfs:member ;\n', ses);
-			http ('  ldp:membershipObject ldp:MemberSubject ;\n', ses);
-			http (sprintf('  <http://www.w3.org/ns/posix/stat#mtime> %d ;\n', datediff('second', dt_set_tz (stringdate ('1970-01-01'), 0), mod_time)), ses);
-			http ('  <http://www.w3.org/ns/posix/stat#size> 0 ;\n', ses);
-			http (sprintf('dcterms:title "%s";\n', _name), ses);
-			http (sprintf('dcterms:creator "%s";\n', uname), ses);
-			http (sprintf('dcterms:created "%s";\n', datestring(cr_time)), ses);
-			http (sprintf('dcterms:modified "%s";\n', datestring(mod_time)), ses);
+	declare fmt, etag any;
+	declare page, cnt, last, n_per_page, is_col int;
 
-			declare num, num_pre_page, prefix_added, next_page int;
-			num := 0;
-			num_pre_page := 10;
-			prefix_added := 0;
-			next_page := 0;
-			if (non_member = 0)
+	n_per_page := 10000;
+	page := atoi (get_keyword ('p', params, '1'));
+	fmt := accept;
+	is_col := 0;
+	if (fmt = 'text/turtle')
+	  fmt := 'application/x-nice-turtle';
+		gr := WS.WS.DAV_IRI (full_path);
+	if (_res_id is not null)
 			{
-				for select COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = _col_id order by COL_NAME do
-				{
-					if (num >= num_pre_page * (page - 1) and num < num_pre_page * page)
-					{
-						if (prefix_added = 0)
-						{
-							http ('  rdfs:member ', ses);
-							prefix_added := 1;
-						}
-						else
-							http (', ', ses);
-						http (sprintf('<%s>', COL_NAME || '/'), ses);
-					}
-					if (num >= num_pre_page * page)
-					{
-						next_page := 1;
-					}
-					num := num + 1;
-				}
-				for select RES_NAME from WS.WS.SYS_DAV_RES where RES_COL = _col_id order by RES_NAME  do
-				{
-					if (num >= num_pre_page * (page - 1) and num < num_pre_page * page)
-					{
-						if (prefix_added = 0)
-						{
-							http ('  rdfs:member ', ses);
-							prefix_added := 1;
-						}
-						else
-							http (', ', ses);
-						http (sprintf('<%s>', RES_NAME), ses);
-					}
-					if (num >= num_pre_page * page)
-					{
-						next_page := 1;
-					}
-					num := num + 1;
-				}
-				if (num >= 1)
-					http (' ;\n', ses);
+	    select RES_COL, RES_NAME, RES_MOD_TIME into id_, name_, mod_time from WS.WS.SYS_DAV_RES where RES_ID = _res_id;
+	    _col_id := id_;
 			}
-			http (sprintf('  rdfs:label "%s" .\n\n', _name), ses);
-
-			num := 0;
-			if (non_member = 0)
+	else if (_col_id is not null)
 			{
-				http (sprintf('<?p=%d>\n', page), ses);
-				http ('  a ldp:Page ;\n', ses);
-				if (next_page = 0)
-					http ('  ldp:nextPage rdf:nil ;\n', ses);
-				else
-					http (sprintf('  ldp:nextPage <?p=%d> ;\n', page + 1), ses);
-				http ('  ldp:pageOf <> .\n\n', ses);
-
-				for select COL_NAME, COL_MOD_TIME from WS.WS.SYS_DAV_COL where COL_PARENT = _col_id order by COL_NAME do
-				{
-					if (num >= num_pre_page * (page - 1) and num < num_pre_page * page)
-					{
-						http (sprintf('<%s>\n', COL_NAME || '/'), ses);
-						http ('  a <http://www.w3.org/ns/posix/stat#Directory> ;\n', ses);
-						http (sprintf('  <http://www.w3.org/ns/posix/stat#mtime> %d ;\n', datediff('second', dt_set_tz (stringdate ('1970-01-01'), 0), COL_MOD_TIME)), ses);
-						http ('  <http://www.w3.org/ns/posix/stat#size> 0 .\n\n', ses);
-					}
-					num := num + 1;
-				}
-				for select RES_NAME, RES_MOD_TIME, length(RES_CONTENT) as res_size from WS.WS.SYS_DAV_RES where RES_COL = _col_id order by RES_NAME  do
-				{
-					if (num >= num_pre_page * (page - 1) and num < num_pre_page * page)
-					{
-						http (sprintf('<%s>\n', RES_NAME), ses);
-						http ('  a <http://www.w3.org/2000/01/rdf-schema#Resource> ;\n', ses);
-						http (sprintf('  <http://www.w3.org/ns/posix/stat#mtime> %d ;\n', datediff('second', dt_set_tz (stringdate ('1970-01-01'), 0), RES_MOD_TIME)), ses);
-						http (sprintf('  <http://www.w3.org/ns/posix/stat#size> %d .\n\n', res_size), ses);
-					}
-					num := num + 1;
-				}
-			}
-			ses := string_output_string (ses);
-			_len := length(ses);
-			http_header('Link: <?p=1>; rel="first"\r\nContent-Type: text/turtle; chartset=UTF-8\r\n');
-			http(ses);
+	    select COL_ID, COL_NAME, COL_MOD_TIME into id_, name_, mod_time from WS.WS.SYS_DAV_COL where COL_ID = _col_id;
+	    is_col := 1;
 		}
-		if (isinteger (_res_id))
-		{
-			for select RES_OWNER, RES_COL, RES_NAME, RES_TYPE, RES_MOD_TIME, RES_CR_TIME, length(RES_CONTENT) as res_size from WS.WS.SYS_DAV_RES where RES_ID = _res_id do
-			{
-				_col := RES_COL;
-				_name := RES_NAME;
-				resource_owner := RES_OWNER;
-				cont_type := RES_TYPE;
-				mod_time := RES_MOD_TIME;
-				cr_time := RES_CR_TIME;
-				file_size := res_size;
-				select U_NAME into uname from WS.WS.SYS_DAV_USER where U_ID = resource_owner;
-			}
-			if (accept = cont_type) -- the content is already turtle so exit
-			  return 0;
-			declare s_etag, _s_etag varchar;
-			s_etag := WS.WS.ETAG (_name, _col, mod_time);
-			_s_etag := s_etag;
-			s_etag := concat ('"', s_etag, '"');
-			if (client_etag <> s_etag)
-			{
-				declare _len int;
-				declare ses any;
-				ses := string_output ();
-				http ('@prefix dcterms: <http://purl.org/dc/terms/> .\n@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n@prefix ldp: <http://www.w3.org/ns/ldp#> .\n@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n\n', ses);
-				http (sprintf('<%s>\n', 'http://' || urihost || full_path), ses);
-				http ('  a dcterms:PhysicalResource, <http://www.w3.org/2000/01/rdf-schema#Resource> ;\n', ses);
-				http (sprintf('dcterms:title "%s";\n', _name), ses);
-				http (sprintf('dcterms:creator "%s";\n', uname), ses);
-				http (sprintf('dcterms:created "%s";\n', datestring(cr_time)), ses);
-				http (sprintf('dcterms:modified "%s";\n', datestring(mod_time)), ses);
-				http (sprintf('  <http://www.w3.org/ns/posix/stat#mtime> %d ;\n', datediff('second', dt_set_tz (stringdate ('1970-01-01'), 0), mod_time)), ses);
-				http (sprintf('  <http://www.w3.org/ns/posix/stat#size> %d ;\n', file_size), ses);
-				http (sprintf('rdfs:label "%s".\n', _name), ses);
-				ses := string_output_string (ses);
-				_len := length(ses);
-				http_header('Content-Type: text/turtle; charset=UTF-8\r\n');
-				http(ses);
-			}
-			else
-				http_request_status ('HTTP/1.1 304 Not Modified');
-		}
-		return 1;
-	}
 	else
-		return 0;
+	  signal ('LDP00', 'Invalid request');
+	etag := WS.WS.ETAG (name_, id_, mod_time);
+	if (LDP_ENABLED (_col_id) = 0)
+	  return 0;
+			if (not (exists (sparql define input:storage "" select (1) where { graph `iri(?:gr)` { ?s ?p ?o }})))
+			{
+				http_request_status ('HTTP/1.1 404 Not Found');
+				return 1;
+			}
+	cnt := (sparql define input:storage "" select count(1) where { graph `iri(?:gr)` { ?s ?p ?o }});
+	last := (cnt / n_per_page) + 1;
+	http_header(sprintf('Content-Type: %s\r\nETag: %s\r\n%s', accept, etag, WS.WS.LDP_HDRS (is_col,1, page, last)));
+			connection_set ('SPARQLUserId', 'SPARQL');
+			WS.WS."/!sparql/" (path,
+				vector_concat (
+				  vector ('default-graph-uri', gr, 'format', fmt,
+				  'query',
+				  sprintf ('define input:storage "" construct { ?s ?p ?o } where { ?s ?p ?o } order by ?s ?p ?o limit %d offset %d',
+				  		n_per_page, n_per_page * (page - 1))),
+				  params), lines);
+        http_methods_set ('OPTIONS', 'GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'TRACE',
+	'PROPFIND', 'PROPPATCH', 'COPY', 'MOVE', 'LOCK', 'UNLOCK', 'PATCH');
+			return 1;
+		}
+	  return 0;
 }
 ;
 
@@ -3360,6 +3354,21 @@ create procedure WS.WS.POST (
   {
     WS.WS.PUT (path, params, lines);
   }
+  else if (_content_type = 'text/turtle')
+  {
+    if (DAV_SEARCH_ID (http_physical_path (),'C') IS NOT NULL)
+      {
+	declare p, slug varchar;
+	slug := http_request_header (lines, 'Slug', null, '');
+	if (length (slug))
+	  p := slug;
+	else  
+	  p := xenc_rand_bytes (8,1);
+	path := vector_concat (path, vector (p));
+	http_header (sprintf ('Location: %s%s\r\n', HTTP_REQUESTED_URL (), p));
+      }
+    WS.WS.PUT (path, params, lines);
+  }
   else
   {
     WS.WS.GET (path, params, lines);
@@ -3376,10 +3385,6 @@ create procedure WS.WS.SPARQL_QUERY_POST (
   declare def_gr, full_qr, qr any;
   declare stat, msg, meta, data any;
 
-  if (dav_call)
-  {
-  ses := http_body_read ();
-  }
   qr := ses;
   if (not isstring (ses))
     {
@@ -3414,28 +3419,30 @@ create procedure WS.WS.SPARQL_QUERY_POST (
 create procedure WS.WS.TTL_QUERY_POST (
   in path varchar,
   inout ses varchar,
-  in dav_call integer := 0)
+  in is_res integer := 0)
 {
-  declare def_gr any;
+  declare def_gr, giid any;
 	declare exit handler for sqlstate '*'
 	{
 	  connection_set ('__sql_state', __SQL_STATE);
 	  connection_set ('__sql_message', __SQL_MESSAGE);
 	  return -44;
 	};
-
-  if (dav_call)
-{
-  ses := http_body_read ();
-    if (__tag (ses) = 185) -- string output
-	{
-  	  ses := http_body_read (1);
-	 }
-    }
   def_gr := WS.WS.DAV_IRI (path);
   log_enable (3);
-  DB.DBA.TTLP (ses, def_gr, def_gr);
-
+  if (is_res)
+	{
+      sparql clear graph ?:def_gr;
+      DB.DBA.TTLP (sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/ldp#Resource> .', def_gr), '', def_gr);
+	 }
+  else
+    {
+      giid := iri_to_id (def_gr);
+      sparql delete from graph ?:giid { ?s ?p ?o }
+      	where { graph ?:giid { ?s ?p ?o .
+      filter (?p not in (<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>, <http://www.w3.org/ns/ldp#contains>)) . } };
+    }
+  DB.DBA.TTLP (ses, def_gr, def_gr, 255);
   return 0;
 }
 ;
@@ -3446,10 +3453,21 @@ create procedure WS.WS.TTL_REDIRECT_ENABLED ()
 }
 ;
 
-create procedure WS.WS.SPARQL_QUERY_GET (in content any, in path any, inout lines any)
+create procedure WS.WS.SPARQL_QUERY_GET (in content any, in full_path varchar, in path any, inout lines any)
 {
-  declare pars any;
-  pars := vector ('query', string_output_string (content));
+  declare pars, def_gr any;
+  def_gr := WS.WS.DAV_IRI (full_path);
+  connection_set ('SPARQLUserId', 'SPARQL');
+  pars := vector ('query', string_output_string (content), 'default-graph-uri', def_gr);
+  WS.WS."/!sparql/" (path, pars, lines);
+}
+;
+
+create procedure WS.WS.SPARQL_QUERY_UPDATE (in content any, in full_path varchar, in path any, inout lines any)
+{
+  declare pars, def_gr any;
+  def_gr := WS.WS.DAV_IRI (full_path);
+  pars := vector ('query', string_output_string (content), 'default-graph-uri', def_gr);
   WS.WS."/!sparql/" (path, pars, lines);
 }
 ;
@@ -4726,7 +4744,7 @@ create trigger SYS_DAV_COL_I after insert on WS.WS.SYS_DAV_COL referencing new a
   -- dbg_obj_princ ('trigger SYS_DAV_COL_I (', N.COL_ID, ')');
   _col := N.COL_ID;
   _p_col := N.COL_PARENT;
-  col_path := WS.WS.COL_PATH (N.COL_ID);
+  col_path := WS.WS.COL_PATH (_p_col) || N.COL_NAME || '/';
   set triggers off;
   _cflags := N.COL_PERMS;
   _pflags := '000000000NN';
@@ -5952,7 +5970,10 @@ create procedure WS.WS."TRACE" (in path varchar, inout params varchar, in lines 
 create procedure DAV_SET_HTTP_REQUEST_STATUS (
   in rc integer)
 {
-  http_request_status (DAV_SET_HTTP_REQUEST_STATUS_DESCRIPTION (rc));
+  declare st any;
+  st := DAV_SET_HTTP_REQUEST_STATUS_DESCRIPTION (rc);
+  if (length (st))
+    http_request_status (st);
   }
     ;
 
@@ -5998,6 +6019,9 @@ create procedure DAV_SET_HTTP_REQUEST_STATUS_DESCRIPTION (
   if (rc = -41)
     return 'HTTP/1.1 507 Insufficient storage';
 
+  if (rc = -44)
+    return 'HTTP/1.1 500 Internal server error';
+
   return 'HTTP/1.1 405 Method Not Allowed';
 }
 ;
@@ -6019,7 +6043,7 @@ create procedure DB.DBA.DAV_SET_AUTHENTICATE_HTTP_STATUS (
 
 create procedure DB.DBA.DAV_SET_HTTP_STATUS (
   in status any,
-  in title integer := null,
+  in title any := null,
   in message_head varchar := null,
   in message varchar := null,
   in rewrite integer := 0)
@@ -6068,10 +6092,10 @@ create procedure DB.DBA.DAV_SET_HTTP_STATUS (
         title := '404 Not Found';
 
       if (isnull (message_head))
-        message_head := sprintf ('Resource %V not found.', http_path ());
+        message_head := sprintf ('Not found', http_path ());
 
       if (isnull (message))
-        message := 'Access to page is forbidden';
+        message := sprintf ('Resource %V not found.', http_path ());
     }
     else if (status = 405)
     {
@@ -6121,5 +6145,21 @@ create procedure DB.DBA.DAV_SET_HTTP_STATUS (
       coalesce (message, '')
     ));
   }
+}
+;
+
+create procedure LDP_ENABLED (in _col_id any)
+{
+  declare p_id any;
+  whenever not found goto nf;
+  while (_col_id > 0)
+    {
+      if (DAV_HIDE_ERROR (DB.DBA.DAV_PROP_GET_INT (_col_id, 'C', 'LDP', 0)) is not null)
+	return 1;
+      select COL_PARENT into p_id from WS.WS.SYS_DAV_COL where COL_ID = _col_id;
+      _col_id := p_id;
+    }
+  nf:
+  return 0;
 }
 ;
