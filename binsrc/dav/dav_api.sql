@@ -2491,6 +2491,20 @@ create procedure DAV_RES_UPLOAD_STRSES_INT (
 {
   declare rc, old_log_mode, new_log_mode any;
 
+  if (0 = dav_call)
+    {
+      if (type = 'application/sparql-query')
+	{
+	  WS.WS.SPARQL_QUERY_POST (path, content, uid, dav_call);
+	}
+      else if (type = 'text/turtle')
+	{
+	  rc := WS.WS.TTL_QUERY_POST (path, content, 1);
+	  if (DAV_HIDE_ERROR (rc) is null)
+	    return rc;
+	}
+    }
+
   old_log_mode := log_enable (null);
   -- we disable row auto commit since there are triggers reading blobs, we do that even in atomic mode since this is vital for dav uploads
   new_log_mode := bit_and (old_log_mode, 1);
