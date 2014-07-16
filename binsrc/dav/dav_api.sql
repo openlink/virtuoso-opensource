@@ -2535,14 +2535,6 @@ create procedure DAV_RES_UPLOAD_STRSES_INT_INNER (
     {
       ; -- do nothing.
     }
-  if (path like '%,meta')
-    {
-      return -1;
-    }
-  if ((connection_get ('dav_acl_sync') <> 1) and (path like '%,acl'))
-    {
-      return -1;
-    }
   par := split_and_decode (path, 0, '\0\0/');
   if (aref (par, 0) <> '' or aref (par, length (par) - 1) = '')
     {

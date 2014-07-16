@@ -1987,7 +1987,7 @@ ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
       if (orgs != WS_CORS_STAR)
 	dk_free_tree (orgs);
       if (rc)
-	snprintf (buf, buf_len, "Access-Control-Allow-Origin: %s\r\n", place ? *place : "*");
+	snprintf (buf, buf_len, "Access-Control-Allow-Origin: %s\r\n%s", place ? *place : "*", place ? "Access-Control-Allow-Credentials: true\r\n" : "");
     }
   dk_free_tree (origin);
   if (0 == rc && ws->ws_map && ws->ws_map->hm_cors_restricted)
