@@ -2126,9 +2126,11 @@ create procedure WS.WS.PUT (
 	    }
 	  if (_col is null)
 	    rc := DAV_COL_CREATE_INT (newpath, _perms, null, null, null, null, 1, 0, 1, uid, gid);
+	  http_header (sprintf ('Location: %s\r\n', WS.WS.DAV_LINK (DAV_CONCAT_PATH (full_path, '/'))));
 	  http_header (http_header_get () || WS.WS.LDP_HDRS (1, 1, 0, 0, full_path)); 
 	  goto rcck;
 	}
+       http_header (sprintf ('Location: %s\r\n', WS.WS.DAV_LINK (full_path)));
        http_header (http_header_get () || WS.WS.LDP_HDRS (0, 1, 0, 0, full_path));
     }
 
@@ -3351,10 +3353,14 @@ create procedure WS.WS.GET_EXT_DAV_LDP(inout path any, inout lines any, inout pa
 	if (strchr (gr, '*') is not null)
           {
 	    declare grs any;
+	    declare dir, pwd, auid, cid any;
 	    grs := string_output ();
-	    for select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_FULL_PATH like full_path do
+	    pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dba');
+	    cid := DAV_SEARCH_ID (full_path, 'P');
+	    dir := DAV_DIR_LIST_INT (DAV_SEARCH_PATH (cid, 'C'), 0, full_path, 'dba', pwd, auid); 
+	    foreach (any x in dir) do
 	      {
-	        http (sprintf ('<%s>,', WS.WS.DAV_IRI (RES_FULL_PATH)), grs);
+	        http (sprintf ('<%s>,', WS.WS.DAV_IRI (x[0])), grs);
 	      }
 	    grs := string_output_string (grs);
 	    grs := rtrim (grs, ',');
@@ -3396,7 +3402,7 @@ create procedure WS.WS.GET_EXT_DAV_LDP(inout path any, inout lines any, inout pa
 	qr := sprintf ('define input:storage "" construct { `sql:dynamic_host_name(?s)` ?p `sql:dynamic_host_name(?o)` . `sql:dynamic_host_name(?o)` a ?t } where { ?s ?p ?o optional { graph ?g { ?o a ?t } }  } order by ?s ?p ?o limit %d offset %d',
 				  		n_per_page, n_per_page * (page - 1));
 execqr:						
-			connection_set ('SPARQLUserId', 'SPARQL');
+	connection_set ('SPARQLUserId', 'SPARQL_ADMIN');
 			WS.WS."/!sparql/" (path,
 				vector_concat (
 				  vector ('default-graph-uri', gr, 'format', fmt, 'query', qr),
@@ -3480,7 +3486,6 @@ create procedure WS.WS.POST (
 	      p := xenc_rand_bytes (8,1);
 	  }
 	path := vector_concat (path, vector (p));
-	http_header (sprintf ('Location: %s\r\n', WS.WS.DAV_LINK (DAV_CONCAT_PATH ('/', path))));
       }
     WS.WS.PUT (path, params, lines);
   }
@@ -3561,9 +3566,15 @@ create procedure WS.WS.TTL_QUERY_POST (
   DB.DBA.TTLP (ses, def_gr, def_gr, 255);
   if (def_gr like '%,meta')
     {
-      declare subj, nsubj any;
-      subj := iri_to_id (WS.WS.DAV_LINK (replace (path, ',meta', '')));
-      nsubj := iri_to_id (WS.WS.DAV_IRI (replace (path, ',meta', '')));
+      declare subj, nsubj, org_path any;
+      org_path := replace (path, ',meta', '');
+      subj := iri_to_id (WS.WS.DAV_LINK (org_path));
+      nsubj := iri_to_id (WS.WS.DAV_IRI (org_path));
+      sparql insert into graph ?:giid { ?:nsubj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+      sparql delete from graph ?:giid { ?:subj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+      org_path := org_path || '/';
+      subj := iri_to_id (WS.WS.DAV_LINK (org_path));
+      nsubj := iri_to_id (WS.WS.DAV_IRI (org_path));
       sparql insert into graph ?:giid { ?:nsubj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
       sparql delete from graph ?:giid { ?:subj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
     }
