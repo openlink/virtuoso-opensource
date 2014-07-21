@@ -2801,6 +2801,17 @@ create procedure WEBDAV.DBA.det_category (
 }
 ;
 
+
+-------------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.service_name (
+  in _service varchar)
+{
+  return replace (replace (lcase (_service), ' ', ''), 'api', '');
+}
+;
+
+
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.det_api_key (
@@ -2808,7 +2819,7 @@ create procedure WEBDAV.DBA.det_api_key (
 {
   declare retValue any;
 
-  retValue := WEBDAV.DBA.exec ('select a_key from OAUTH..APP_REG where a_name = ? and a_owner = 0', vector (name));
+  retValue := WEBDAV.DBA.exec ('select a_key from OAUTH..APP_REG where WEBDAV.DBA.service_name (a_name) = WEBDAV.DBA.service_name (?) and a_owner = 0', vector (name));
   if (WEBDAV.DBA.isVector (retValue) and length (retValue))
     return retValue[0][0];
 
