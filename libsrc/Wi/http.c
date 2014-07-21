@@ -1987,7 +1987,30 @@ ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
       if (orgs != WS_CORS_STAR)
 	dk_free_tree (orgs);
       if (rc)
-	snprintf (buf, buf_len, "Access-Control-Allow-Origin: %s\r\n%s", place ? *place : "*", place ? "Access-Control-Allow-Credentials: true\r\n" : "");
+	{
+	  char ach[2000] = {0}; 
+	  if (ws->ws_header && box_length (ws->ws_header))
+	    {
+	      caddr_t * hdrs = ws_header_line_to_array (ws->ws_header);
+	      strcat_ck (ach, "Access-Control-Expose-Headers: ");
+	      DO_BOX (caddr_t, hdr, inx, hdrs)
+		{
+		  char * sep = strchr (hdr, ':');
+		  if (sep) *sep = 0;
+		  if (sep && !strstr (ach, hdr))
+		    {
+		      strcat_ck (ach, hdr);
+		      strcat_ck (ach, ",");
+		    }
+		}
+	      END_DO_BOX;
+	      dk_free_tree (hdrs);
+	      ach[strlen (ach) - 1] = 0;
+	      strcat_ck (ach, "\r\n");
+	    }
+	  snprintf (buf, buf_len, "Access-Control-Allow-Origin: %s\r\n%s%s", 
+	      place ? *place : "*", place ? "Access-Control-Allow-Credentials: true\r\n" : "", ach);
+	}
     }
   dk_free_tree (origin);
   if (0 == rc && ws->ws_map && ws->ws_map->hm_cors_restricted)
