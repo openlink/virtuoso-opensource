@@ -2872,12 +2872,7 @@ again:
     {
       exec_err:
       http_status_set (500);
-      http ('<html><body>');
-      http (concat ('<H3>Execution of "', sprintf ('%V', http_path()), '" failed.</H3>'));
-      http (concat ('<p><b>SQL Error: ', stat, ' '));
-      http_value (msg);
-      http ('</b></p>');
-      http ('</body></html>');
+      signal (stat, msg);
     }
     else
       registry_set (concat ('__depend_', http_map_get ('vsp_proc_owner'), '_', full_path), serialize(incstat));
