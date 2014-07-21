@@ -4513,7 +4513,8 @@ DAV_PROP_GET_INT (
           ':virtdetmountable', -1,
           ':virtpublictags', -1,
           ':virtprivatetags', -1,
-          ':virttags', -1 ) );
+          ':virttags', -1,
+          ':virtpubliclink', -1 ) );
       if (idx is null)
         return -11;
       if (idx >= 0)
@@ -4659,6 +4660,10 @@ DAV_PROP_GET_INT (
                 return pub;
               return pub || ', ' || priv;
             }
+        }
+      if (':virtpubliclink' = propname)
+        {
+          return WS.WS.DAV_HOST () || DAV_SEARCH_PATH (id, what);
         }
     }
   if (isarray (id))
