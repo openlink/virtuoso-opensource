@@ -2366,14 +2366,15 @@ blob_write_crash_log_via_dir (dk_session_t * log, blob_log_t *  bl)
 #ifdef DBG_BLOB_PAGES_ACCOUNT
 	      db_dbg_account_add_page (start);
 #endif
-	      buf->bd_readers++;
 	      if (DPF_BLOB == SHORT_REF (buf->bd_buffer + DP_FLAGS))
 		return -2;
+	      buf->bd_readers++;
 	      if (DPF_BLOB_DIR != SHORT_REF (buf->bd_buffer + DP_FLAGS))
 		{
 		  log_error ("Non-blob-dir page %ld remap %ld in logging blob. %d", buf->bd_page, buf->bd_physical_page,  SHORT_REF (buf->bd_buffer + DP_FLAGS));
 		  if (is_crash)
 		    {
+		      buf->bd_readers--;
 		      is_crash++;
 		      goto fin;
 		    }
@@ -2502,6 +2503,7 @@ blob_write_crash_log (lock_trx_t * lt /* unused */, dk_session_t * log, blob_log
 		  log_error ("Non-blob page %ld remap %ld in logging blob. %d", buf->bd_page, buf->bd_physical_page,  SHORT_REF (buf->bd_buffer + DP_FLAGS));
 		  if (is_crash)
 		    {
+		      buf->bd_readers--;
 		      is_crash++;
 		      goto fin;
 		    }
