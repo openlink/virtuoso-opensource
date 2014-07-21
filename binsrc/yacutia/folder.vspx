@@ -117,16 +117,24 @@
               if (isnull (vspx_user) or (vspx_user = 'nobody'))
               {
                 self.account_id := http_nobody_uid ();
-                if (__proc_exists ('VAL.DBA.session_id_for_connection') is not null)
+                if (__proc_exists ('VAL.DBA.authentication_details_for_connection') is not null)
                 {
-                  declare val_sid, val_serviceId, val_realm varchar;
-                  if (VAL.DBA.session_id_for_connection (val_sid, val_serviceId, val_realm))
+                  declare val_sid, val_serviceId, val_realm, val_uname varchar;
+                  declare val_isRealUser integer;
+
+                  val_realm := null;
+                  if (VAL.DBA.authentication_details_for_connection (sid=>val_sid, serviceId=>val_serviceId, uname=>val_uname, isRealUser=>val_isRealUser, realm=>val_realm))
                   {
-                    connection_set ('vspx_user', val_serviceId);
-                    self.account_id := WEBDAV.DBA.account_id (val_serviceId);
+                    if (val_isRealUser)
+                    {
+                      connection_set ('vspx_user', val_serviceId);
+                      self.account_id := WEBDAV.DBA.account_id (val_serviceId);
+                    }
                   }
                 }
-              } else {
+              }
+              else
+              {
                 self.account_id := WEBDAV.DBA.account_id (vspx_user);
               }
               self.owner_id := self.account_id;
