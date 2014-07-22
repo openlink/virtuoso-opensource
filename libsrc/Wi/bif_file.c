@@ -397,7 +397,7 @@ is_db_file (char *f)
 }
 
 int
-is_allowed (char *path)
+is_allowed_int (char *path, int allow_db_files_ro)
 {
   int rc = 0;
   caddr_t abs_path = NULL;
@@ -415,7 +415,7 @@ is_allowed (char *path)
 
 
   /* explicitly deny any db file */
-  if (is_db_file (abs_path))
+  if (!allow_db_files_ro && is_db_file (abs_path))
     {
       rc = 0;
       goto ret;
@@ -465,9 +465,14 @@ ret:
   return rc;
 }
 
+int
+is_allowed (char *path)
+{
+  return is_allowed_int (path, 0);
+}
 
 void
-file_path_assert (caddr_t fname_cvt, caddr_t *err_ret, int free_fname_cvt)
+file_path_assert_int (caddr_t fname_cvt, caddr_t *err_ret, int free_fname_cvt, int allow_db_files_ro)
 {
   caddr_t err = NULL;
   if (!DV_STRINGP (fname_cvt))
@@ -476,7 +481,7 @@ file_path_assert (caddr_t fname_cvt, caddr_t *err_ret, int free_fname_cvt)
     err = srv_make_new_error ("42000", "FA117",
       "File path '%.200s...' is too long (%ld chars), OS limit is %ld chars",
       fname_cvt, (long)(box_length (fname_cvt) - 1), (long)PATH_MAX);
-  else if (!is_allowed (fname_cvt))
+  else if (!is_allowed_int (fname_cvt, allow_db_files_ro))
     err = srv_make_new_error ("42000", "FA003",
       "Access to '%.1000s' is denied due to access control in ini file",
     fname_cvt );
@@ -490,6 +495,11 @@ file_path_assert (caddr_t fname_cvt, caddr_t *err_ret, int free_fname_cvt)
     sqlr_resignal (err);
 }
 
+void
+file_path_assert (caddr_t fname_cvt, caddr_t *err_ret, int free_fname_cvt)
+{
+  file_path_assert_int (fname_cvt, err_ret, free_fname_cvt, 0);
+}
 
 static caddr_t
 bif_sys_unlink (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -6327,14 +6337,15 @@ caddr_t
 bif_file_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t fname = bif_string_arg (qst, args, 0, "file_open");
+  OFF_T start_off = BOX_ELEMENTS (args) > 1 ? bif_long_low_range_arg (qst, args, 1, "file_open", 0) : 0;
   dk_session_t * ses = strses_allocate ();
   caddr_t fname_cvt, err = NULL;
   int fd = 0;
-  OFF_T off;
+  OFF_T off, ck;
   strsestmpfile_t * sesfile;
 
   fname_cvt = file_native_name (fname);
-  file_path_assert (fname_cvt, &err, 0);
+  file_path_assert_int (fname_cvt, &err, 0, QI_IS_DBA ((QI*)qst));
   if (NULL != err)
     goto signal_error;
   fd = fd_open (fname_cvt, OPEN_FLAGS_RO);
@@ -6356,11 +6367,20 @@ bif_file_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  "Seek error in file '%.1000s', error : %s", fname_cvt, virt_strerror (saved_errno));
       goto signal_error;
     }
-  LSEEK (fd, 0, SEEK_SET);
+  ck = LSEEK (fd, start_off, SEEK_SET);
+  if (ck == -1)
+    {
+      int saved_errno = errno;
+      fd_close (fd, fname);
+      err = srv_make_new_error ("39000", "FA025",
+	  "Seek error in file '%.1000s', error : %s", fname_cvt, virt_strerror (saved_errno));
+      goto signal_error;
+    }
   strses_enable_paging (ses, DKSES_IN_BUFFER_LENGTH);
   sesfile = ses->dks_session->ses_file;
   sesfile->ses_file_descriptor = fd;
   sesfile->ses_fd_fill = sesfile->ses_fd_fill_chars = off;
+  sesfile->ses_fd_read = start_off;
   dk_free_box (fname_cvt);
   return (caddr_t) ses;
 signal_error:
