@@ -33,7 +33,7 @@
 #include "repl.h"	/* For repl_level_t in replsr.h */
 #include "replsr.h"	/* For log_repl_text_array() */
 #include "xslt_impl.h"	/* For vector_sort_t */
-#include "aqueue.h"	/* For aq_allocate() in rdf replication */
+#include "aqueue.h"	/* For aq_allocate() in RDF replication */
 #include "geo.h"
 
 int rb_type__xsd_ENTITY;
@@ -327,7 +327,7 @@ bif_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     sqlr_new_error ("22023", "SR550", "Neither is_complete nor ro_id argument is set in call of rdf_box()");
   box_dtp = DV_TYPE_OF (box);
   if (RDF_BOX_GEO_TYPE == type && DV_GEO != box_dtp && DV_LONG_INT != box_dtp)
-    sqlr_new_error ("42000",  "RDFGE",  "rdf box with a geometry rdf type and a non geometry content");
+    sqlr_new_error ("42000",  "RDFGE",  "RDF box with a geometry RDF type and a non-geometry content");
   switch (box_dtp)
     {
     case DV_DB_NULL:
@@ -544,7 +544,7 @@ bif_rdf_box_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
   dtp_t dtp = DV_TYPE_OF (arg);
   if (dtp != DV_RDF)
     sqlr_new_error ("22023", "SR014",
-  "Function %s needs an rdf box as argument %d, not an arg of type %s (%d)",
+  "Function %s needs an RDF box as argument %d, not an arg of type %s (%d)",
   func, nth + 1, dv_type_title (dtp), dtp);
   rdf_box_audit((rdf_box_t*) arg);
   return (rdf_box_t*) arg;
@@ -571,7 +571,7 @@ bif_rdf_box_set_data (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       else
         {
           if (0 == rb->rb_ro_id)
-            sqlr_new_error ("22023", "SR551", "Zero is_complete argument and rdf box with ro_id in call of rdf_box_set_data ()");
+            sqlr_new_error ("22023", "SR551", "Zero is_complete argument and RDF box with ro_id in call of rdf_box_set_data ()");
           rb->rb_is_complete = 0;
         }
     }
@@ -660,7 +660,7 @@ bif_rdf_box_set_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if ((RDF_BOX_MIN_TYPE > type) || (type & ~0xffff) || (RDF_BOX_ILL_TYPE == type))
     sqlr_new_error ("22023", "SR554", "Invalid datatype id %ld as argument 2 of rdf_box_set_type()", type);
   if (0 != rb->rb_ro_id)
-    sqlr_new_error ("22023", "SR555", "Datatype id can be changed only if rdf box has no ro_id in call of rdf_box_set_type ()");
+    sqlr_new_error ("22023", "SR555", "Datatype id can be changed only if RDF box has no ro_id in call of rdf_box_set_type ()");
   rb->rb_type = (short)type;
   return box_num (type);
 }
@@ -876,7 +876,7 @@ bif_rdf_box_set_ro_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   rdf_box_t * rb = bif_rdf_box_arg (qst, args, 0, "is_rdrf_box");
   long ro_id = bif_long_arg (qst, args, 1, "rdf_box_set_ro_id");
   if ((0 == ro_id) && !rb->rb_is_complete)
-    sqlr_new_error ("22023", "SR551", "Zero ro_id argument and rdf box with incomplete data in call of rdf_box_set_ro_id ()");
+    sqlr_new_error ("22023", "SR551", "Zero ro_id argument and RDF box with incomplete data in call of rdf_box_set_ro_id ()");
   rb->rb_ro_id = ro_id;
   return 0;
 }
@@ -963,7 +963,7 @@ rbs_ro_id (db_buf_t rbs)
 void
 rbs_hash_range (dtp_t ** buf, int * len, int * is_string)
 {
-  /* the partition hash of a any type col with an rdf box value does not depend on all bytes but only the value serialization, not the flags and ro ids */
+  /* the partition hash of a any type col with an RDF box value does not depend on all bytes but only the value serialization, not the flags and ro ids */
   long l, hl;
   dtp_t * rbs = *buf;
   dtp_t flags = rbs[1];
@@ -1010,7 +1010,7 @@ rb_id_serialize (rdf_box_t * rb, dk_session_t * ses)
 void
 rb_ext_serialize (rdf_box_t * rb, dk_session_t * ses)
 {
-  /* non string special rdf boxes like geometry or interval or udt.  id is last  */
+  /* non string special RDF boxes like geometry or interval or udt.  id is last  */
   int with_content = DKS_DB_DATA (ses) != NULL || DKS_CL_DATA (ses) != NULL
     || ((DKS_TO_CLUSTER | DKS_TO_OBY_KEY) & ses->dks_cluster_flags);
   dtp_t flags = RBS_EXT_TYPE;
@@ -1412,7 +1412,7 @@ dv_rdf_id_delta (int64 ro_id_1, int64 ro_id_2, int64 *delta_ret)
 int
 dv_rdf_id_compare (db_buf_t dv1, db_buf_t dv2, int64 offset, int64 * delta_ret)
 {
-  /* sometimes a cmp of a stored rdf id with a complete box.  Is equal if box is not ext type and ids match, else rdf id is dtp gt */
+  /* sometimes a cmp of a stored RDF id with a complete box.  Is equal if box is not ext type and ids match, else RDF id is dtp gt */
   dtp_t flags;
   int64  ro_id_2, ro_id_1;
   int len;
@@ -1477,8 +1477,8 @@ rb_copy (rdf_box_t * rb)
 int
 dv_rdf_ext_compare (db_buf_t dv1, db_buf_t dv2)
 {
-  /* rdf ext boxes like geometries, intervals or udts collate by type and ro id, values are not compared. Always gt than any scalar (non ext)  rdf type.
-  * both lang and type bits set means that there is no lang or type here and that collation is by id only.  These are less than typed ext and gt non-ext rdf dvs */
+  /* RDF ext boxes like geometries, intervals or udts collate by type and ro id, values are not compared. Always gt than any scalar (non ext)  RDF type.
+  * both lang and type bits set means that there is no lang or type here and that collation is by id only.  These are less than typed ext and gt non-ext RDF dvs */
   unsigned short type1;
   unsigned short type2;
   int64 id1, id2;
@@ -1516,13 +1516,13 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
 {
   /* this is dv_compare  where one or both arguments are dv_rdf
    * The collation is perverse: If one is not a string, collate as per dv_compare of the data.
-   * if both are strings and one is not an rdf box, treat the one that is not a box as an rdf string of max inlined chars and no lang orr type. */
+   * if both are strings and one is not an RDF box, treat the one that is not a box as an RDF string of max inlined chars and no lang orr type. */
   int len1, len2, cmp_len, mcmp;
   dtp_t dtp1 = dv1[0], dtp2 = dv2[0], flags1, flags2;
   short rdftype1, rdftype2, rdflang1, rdflang2;
   dtp_t data_dtp1, data_dtp2;
   db_buf_t data1 = NULL, data2 = NULL;
-  /* arrange so that if both are not rdf boxes, the one that is an rdf box is first */
+  /* arrange so that if both are not RDF boxes, the one that is an RDF box is first */
   if (DV_RDF != dtp1)
     {
       int res = dv_rdf_compare (dv2, dv1);
@@ -1538,7 +1538,7 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
   flags1 = dv1[1];
   if (RBS_EXT_TYPE & flags1)
     return dv_rdf_ext_compare (dv1, dv2);
-  if (dtp_canonical[dtp2] > DV_RDF) /* dtp_canonical because dv int64 is gt dv rdf but here it counts for dv long int */
+  if (dtp_canonical[dtp2] > DV_RDF) /* dtp_canonical because dv int64 is gt dv RDF but here it counts for dv long int */
     return DVC_DTP_LESS;
   if (RBS_SKIP_DTP & flags1)
     {
@@ -1590,10 +1590,10 @@ dv_rdf_compare (db_buf_t dv1, db_buf_t dv2)
     }
   else
     {
-      /* rdf string and non rdf */
+      /* RDF string and non RDF */
       if (DV_STRING != dtp2 && DV_SHORT_STRING_SERIAL != dtp2)
         return DVC_DTP_LESS;
-      /* rdf string or checksum and dv string */
+      /* RDF string or checksum and dv string */
       flags2 = RBS_COMPLETE;
       data2 = dv2;
       data_dtp2 = dtp2;
@@ -1677,8 +1677,8 @@ In version 6 (Vajra), complete boxes are equal even if ro_id differ (say, one of
       else
         return DVC_GREATER;
     }
-  /* the first is a rdf string and the second a sql one.  First max inlined chars are eq.
-   * If the rdf string is complete, it is eq if no language.  */
+  /* the first is a RDF string and the second a sql one.  First max inlined chars are eq.
+   * If the RDF string is complete, it is eq if no language.  */
   if (RBS_COMPLETE & flags1)
     {
       int64 ro1;
@@ -1701,7 +1701,7 @@ rdf_box_compare (ccaddr_t a1, ccaddr_t a2)
 {
   /* this is cmp_boxes  where one or both arguments are dv_rdf
    * The collation is perverse: If one is not a string, collate as per dv_compare of the data.
-   * if both are strings and one is not an rdf box, treat the one that is not a box as an rdf string of max inlined chars and no lang orr type. */
+   * if both are strings and one is not an RDF box, treat the one that is not a box as an RDF string of max inlined chars and no lang orr type. */
   rdf_box_t * rb1 = (rdf_box_t *) a1;
   rdf_box_t * rb2 = (rdf_box_t *) a2;
   rdf_box_t tmp_rb2;
@@ -1709,7 +1709,8 @@ rdf_box_compare (ccaddr_t a1, ccaddr_t a2)
   dtp_t data_dtp1, data_dtp2;
   int len1, len2, cmp_len, cmp_headlen, mcmp;
   caddr_t data1 = NULL, data2 = NULL;
-  /* arrange so that if both are not rdf boxes, the one that is a box is first */
+
+  /* arrange so that if both are not RDF boxes, the one that is a box is first */
   if (DV_RDF != dtp1)
     {
       int res = rdf_box_compare (a2, a1);
@@ -2023,7 +2024,7 @@ bif_rdf_box_to_ro_id_search_fields (caddr_t * qst, caddr_t * err_ret, state_slot
     }
   if (DV_GEO == dtp)
     {
-      /* A trick instead of sqlr_new_error ("22023", "CLGEO", "A geometry without rdf box is not allowed as object of quad"); */
+      /* A trick instead of sqlr_new_error ("22023", "CLGEO", "A geometry without RDF box is not allowed as object of quad"); */
       caddr_t err = NULL;
       caddr_t content = box_to_any (box, &err);
       if (err)
