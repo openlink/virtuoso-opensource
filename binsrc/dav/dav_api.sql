@@ -5089,6 +5089,30 @@ create trigger SYS_DAV_COL_WAC_D after delete on WS.WS.SYS_DAV_COL order 100 ref
 }
 ;
 
+create trigger SYS_DAV_RES_WAC_I after insert on WS.WS.SYS_DAV_RES order 100 referencing new as N
+{
+  declare aciContent, oldPath, newPath, update_acl any;
+
+  if (connection_get ('dav_acl_sync') = 1)
+    return;
+
+  if (N.RES_NAME like '%,acl')
+  {
+    declare rid int;
+    newPath := WS.WS.COL_PATH (N.RES_COL) || N.RES_NAME;
+    newPath := regexp_replace (newPath, ',acl\x24', '');
+    aciContent := N.RES_CONTENT;
+    rid := (select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH = newPath);
+    set triggers off;
+    insert into WS.WS.SYS_DAV_PROP (PROP_ID, PROP_PARENT_ID, PROP_NAME, PROP_TYPE, PROP_VALUE)
+	values (WS.WS.GETID ('P'), rid, 'virt:aci_meta_n3', 'R', N.RES_CONTENT);
+    set triggers on;
+    update_acl := 0;
+    WS.WS.WAC_INSERT (newPath, aciContent, N.RES_OWNER, N.RES_GROUP, update_acl);
+  }
+}
+;
+
 create trigger SYS_DAV_RES_WAC_U after update on WS.WS.SYS_DAV_RES order 100 referencing new as N, old as O
 {
   declare aciContent, oldPath, newPath, update_acl any;
@@ -5220,6 +5244,7 @@ create procedure WS.WS.WAC_INSERT (
 {
   -- dbg_obj_print ('WAC_INSERT', path);
   declare what, graph, permissions varchar;
+  declare giid, subj, nsubj any;
 
   graph := WS.WS.WAC_GRAPH (path);
   aciContent := cast (blob_to_string (aciContent) as varchar);
@@ -5231,7 +5256,10 @@ create procedure WS.WS.WAC_INSERT (
     DAV_RES_UPLOAD_STRSES_INT (rtrim (path, '/') || ',acl', aciContent, 'text/turtle', permissions, uid, gid, null, null, 0);
     connection_set ('dav_acl_sync', null);
   }
+  giid := iri_to_id (graph);
+  subj := iri_to_id (WS.WS.DAV_LINK (path));
   DB.DBA.TTLP (aciContent, graph, graph);
+  sparql insert into graph ?:giid { ?s ?p ?:giid } where { graph ?:giid { ?s ?p ?:subj  }};
 }
 ;
 
