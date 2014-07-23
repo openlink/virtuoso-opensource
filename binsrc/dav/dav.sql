@@ -3470,16 +3470,19 @@ create procedure WS.WS.POST (
 	      }
 	    if (p is not null)
 	      {
-		declare dir, pwd, auid any;
+		declare dir, pwd, auid, sinv any;
 		pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dba');
 		dir := DAV_DIR_LIST_INT (DAV_SEARCH_PATH (cid, 'C'), 0, p||'%', 'dba', pwd, auid); 
 		nth := 0;
 		foreach (any r in dir) do
 		  {
 		    if (r[10] not like '%,meta' and r[10] not like '%,acl')
-		      nth := nth + 1;
+		      {
+			sinv := sprintf_inverse (r[10], p||'%d', 0);
+			if (length (sinv) > 0 and sinv[0] > nth)
+			  nth := sinv[0];
+		      }
 		  }
-		--nth := (select count(*) from WS.WS.SYS_DAV_COL where COL_PARENT = cid and COL_NAME like p||'%');
 		p := sprintf ('%s%d', p, nth + 1);
 	      }
 	    else
