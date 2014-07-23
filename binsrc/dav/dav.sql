@@ -2259,11 +2259,26 @@ create procedure WS.WS.PATCH (in path any, inout params any, in lines any)
 
   if (content_type = 'application/sparql-update')
     {
+      declare giid, meta, data any;
       connection_set ('SPARQLUserId', 'SPARQL_ADMIN');
       WS.WS.SPARQL_QUERY_UPDATE (ses, full_path, path, lines);
+      giid := iri_to_id (WS.WS.DAV_IRI (full_path));
+      data := null;
+      rc := 0;
+      exec ('sparql define output:format "NICE_TTL" construct { ?s ?p ?o } where { graph ?? { ?s ?p ?o }}', null, null, vector (giid), 0, meta, data);
+      if (isvector (data) and length (data) = 1 and isvector (data[0]) and length (data[0]) = 1 and __tag (data[0][0]) = 185)
+	{
+	  data := data[0][0];
+	  rc := -28;
+	  rc := DAV_RES_UPLOAD_STRSES_INT (full_path, data, 'text/turtle', _perms, uname, null, uname, upwd, 0, now(), now(), null, _u_id, _g_id, 0, 1);
+	}
       commit work;
-      DB.DBA.DAV_SET_HTTP_STATUS (204);
-      return;
+      if (DAV_HIDE_ERROR (rc) is not null)
+	{
+	  DB.DBA.DAV_SET_HTTP_STATUS (204);
+	  return;
+	}
+      goto error_ret;
     }
 
   rc := -28;

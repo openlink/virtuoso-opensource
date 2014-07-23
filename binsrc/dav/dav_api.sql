@@ -5248,11 +5248,11 @@ create procedure WS.WS.WAC_INSERT (
 
   graph := WS.WS.WAC_GRAPH (path);
   aciContent := cast (blob_to_string (aciContent) as varchar);
+  what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
+  permissions := DB.DBA.DAV_PROP_GET_INT (DB.DBA.DAV_SEARCH_ID (path, what), what, ':virtpermissions', 0, null, null, http_dav_uid ());
   if (update_acl)
   {
     connection_set ('dav_acl_sync', 1);
-    what := case when (path[length (path)-1] <> ascii('/')) then 'R' else 'C' end;
-    permissions := DB.DBA.DAV_PROP_GET_INT (DB.DBA.DAV_SEARCH_ID (path, what), what, ':virtpermissions', 0, null, null, http_dav_uid ());
     DAV_RES_UPLOAD_STRSES_INT (rtrim (path, '/') || ',acl', aciContent, 'text/turtle', permissions, uid, gid, null, null, 0);
     connection_set ('dav_acl_sync', null);
   }
@@ -5260,6 +5260,13 @@ create procedure WS.WS.WAC_INSERT (
   subj := iri_to_id (WS.WS.DAV_LINK (path));
   DB.DBA.TTLP (aciContent, graph, graph);
   sparql insert into graph ?:giid { ?s ?p ?:giid } where { graph ?:giid { ?s ?p ?:subj  }};
+  if (exists (sparql prefix foaf: <http://xmlns.com/foaf/0.1/>  prefix acl: <http://www.w3.org/ns/auth/acl#> ask where { graph ?:giid { [] acl:accessTo ?:giid ; acl:mode acl:Read  ; acl:agentClass foaf:Agent . }})) -- public read
+    {
+      set triggers off;
+      permissions [6] := 49;
+      DAV_PROP_SET_INT (path, ':virtpermissions', permissions, null, null, 0, 0, 1, http_dav_uid ());
+      set triggers on;
+    }
 }
 ;
 
