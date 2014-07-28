@@ -3368,18 +3368,22 @@ create procedure WS.WS.GET_EXT_DAV_LDP(inout path any, inout lines any, inout pa
 	if (strchr (gr, '*') is not null)
           {
 	    declare grs any;
-	    declare dir, pwd, auid, cid any;
+	    declare dir, pwd, auid, cid, ppath, mask any;
 	    grs := string_output ();
-	    pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dba');
+	    pwd := null;
+	    auid := http_dav_uid ();
 	    cid := DAV_SEARCH_ID (full_path, 'P');
-	    dir := DAV_DIR_LIST_INT (DAV_SEARCH_PATH (cid, 'C'), 0, full_path, 'dba', pwd, auid); 
+	    ppath := DAV_SEARCH_PATH (cid, 'C');
+	    if (length (full_path) > length (ppath))
+	      mask := subseq (full_path, length (ppath));
+	    dir := DAV_DIR_LIST_INT (DAV_SEARCH_PATH (cid, 'C'), 0, mask, 'dba', pwd, auid); 
 	    foreach (any x in dir) do
 	      {
 	        http (sprintf ('<%s>,', WS.WS.DAV_IRI (x[0])), grs);
 	      }
 	    grs := string_output_string (grs);
 	    grs := rtrim (grs, ',');
-	    qr := sprintf ('construct { `sql:dynamic_host_name(?s)` ?p `sql:dynamic_host_name(?o)` } where { graph ?g { ?s ?p ?o } filter (?g in (%s)) }', grs);
+	    qr := sprintf ('define input:storage "" construct { `sql:dynamic_host_name(?s)` ?p `sql:dynamic_host_name(?o)` } where { graph ?g { ?s ?p ?o } filter (?g in (%s)) }', grs);
 	    goto execqr;
 	  }
 	if (isvector (_res_id) or isvector (_col_id))
@@ -3486,7 +3490,8 @@ create procedure WS.WS.POST (
 	    if (p is not null)
 	      {
 		declare dir, pwd, auid, sinv any;
-		pwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = 'dba');
+		pwd := null;
+		auid := http_dav_uid ();
 		dir := DAV_DIR_LIST_INT (DAV_SEARCH_PATH (cid, 'C'), 0, p||'%', 'dba', pwd, auid); 
 		nth := 0;
 		foreach (any r in dir) do
