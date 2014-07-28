@@ -4372,7 +4372,7 @@ DAV_PROP_REMOVE_RAW (
   declare can_patch_access integer;
   if (58 = propname[0])
     { -- a special property, the first char is ':'
-      if (propname in (':getlastmodified', ':creationdate', ':addeddate', ':getcontenttype', ':virtowneruid', ':virtownergid', ':virtpermissions', ':virtdetmountable'))
+      if (propname in (':getlastmodified', ':creationdate', ':addeddate', ':getcontenttype', ':virtowneruid', ':virtownergid', ':virtpermissions', ':virtdetmountable', ':virtpubliclink'))
         return -10;
       if (auth_uid = http_dav_uid())
         can_patch_access := 2;
@@ -7597,7 +7597,7 @@ create procedure DB.DBA.DAV_SCHEDULER ()
   foreach (any det in DETs) do
   {
     if (__proc_exists ('DB.DBA.' || det || '_DAV_SCHEDULER'))
-      DB.DBA.DAV_QUEUE_ADD (det, 0, 'DB.DBA.' || det || '_DAV_SCHEDULER', vector ());
+      DB.DBA.DAV_QUEUE_ADD (det, 0, 'DB.DBA.' || det || '_DAV_SCHEDULER', vector (null));
   }
   DB.DBA.DAV_QUEUE_RUN ();
   return 1;

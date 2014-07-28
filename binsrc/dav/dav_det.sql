@@ -41,6 +41,14 @@ create function DB.DBA.DAV_DET_DAV_ID (
 }
 ;
 
+create function DB.DBA.DAV_DET_PATH (
+  in detcol_id any,
+  in subPath_parts any)
+{
+  return DB.DBA.DAV_CONCAT_PATH (DB.DBA.DAV_SEARCH_PATH (detcol_id, 'C'), subPath_parts);
+}
+;
+
 create function DB.DBA.DAV_DET_DAV_LIST (
   in det varchar,
   inout detcol_id integer,
@@ -52,7 +60,7 @@ create function DB.DBA.DAV_DET_DAV_LIST (
   vectorbld_init (retValue);
   for (select vector (RES_FULL_PATH,
                       'R',
-                      length (RES_CONTENT),
+                      DB.DBA.DAV_RES_LENGTH (RES_CONTENT, RES_SIZE),
                       RES_MOD_TIME,
                       vector (det, detcol_id, RES_ID, 'R'),
                       RES_PERMS,
@@ -166,7 +174,7 @@ _start:;
   }
   activityContent := activityContent || sprintf ('%s %s\r\n', subseq (datestring (now ()), 0, 19), text);
   activityType := 'text/plain';
-  DB.DBA.DAV_RES_UPLOAD_STRSES_INT (activityPath, activityContent, activityType, '110100000RR', DB.DBA.Dropbox__user (davEntry[6]), DB.DBA.Dropbox__user (davEntry[7]), extern=>0, check_locks=>0);
+  DB.DBA.DAV_RES_UPLOAD_STRSES_INT (activityPath, activityContent, activityType, '110100000RR', DB.DBA.DAV_DET_USER (davEntry[6]), DB.DBA.DAV_DET_USER (davEntry[7]), extern=>0, check_locks=>0);
 
   -- hack for Public folders
   set triggers off;
@@ -206,9 +214,10 @@ create function DB.DBA.DAV_DET_HTTP_CODE (
 -- User related procs
 --
 create function DB.DBA.DAV_DET_USER (
-  in user_id integer)
+  in user_id integer,
+  in default_id integer := null)
 {
-  return coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = user_id), '');
+  return coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = coalesce (user_id, default_id)), '');
 }
 ;
 
@@ -216,6 +225,33 @@ create function DB.DBA.DAV_DET_PASSWORD (
   in user_id integer)
 {
   return coalesce ((select pwd_magic_calc(U_NAME, U_PWD, 1) from WS.WS.SYS_DAV_USER where U_ID = user_id), '');
+}
+;
+
+create function DB.DBA.DAV_DET_OWNER (
+  in detcol_id any,
+  in subPath_parts any,
+  in uid any,
+  in gid any,
+  inout ouid integer,
+  inout ogid integer)
+{
+  declare id any;
+  declare path varchar;
+
+  DB.DBA.DAV_OWNER_ID (uid, gid, ouid, ogid);
+  if ((ouid = -12) or (ouid = 5))
+  {
+    path := DB.DBA.DAV_DET_PATH (detcol_id, subPath_parts);
+    id := DB.DBA.DAV_SEARCH_ID (path, 'P');
+    if (DAV_HIDE_ERROR (id))
+    {
+      select COL_OWNER, COL_GROUP
+        into ouid, ogid
+        from WS.WS.SYS_DAV_COL
+       where COL_ID = id;
+    }
+  }
 }
 ;
 
@@ -423,7 +459,7 @@ create function DB.DBA.DAV_DET_RDF_INSERT (
       return;
   }
 
-  id := DB.DBA.DAV_DET_davId (id);
+  id := DB.DBA.DAV_DET_DAV_ID (id);
   path := DB.DBA.DAV_SEARCH_PATH (id, what);
   content := (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_ID = id);
   type := (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = id);
@@ -470,5 +506,24 @@ create function DB.DBA.DAV_DET_REFRESH (
   colId := DB.DBA.DAV_SEARCH_ID (path, 'C');
   if (DAV_HIDE_ERROR (colId) is not null)
     DB.DBA.DAV_DET_PARAM_REMOVE (det, colId, 'C', 'syncTime');
+}
+;
+
+create function DB.DBA.DAV_DET_SYNC (
+  in det varchar,
+  in id any)
+{
+  -- dbg_obj_princ ('DB.DBA.DAV_DET_SYNC (', id, ')');
+  declare N integer;
+  declare detcol_id, parts, subPath_parts, detcol_parts any;
+
+  detcol_id := DB.DBA.DAV_DET_DETCOL_ID (id);
+  parts := split_and_decode (DB.DBA.DAV_SEARCH_PATH (id, 'C'), 0, '\0\0/');
+  detcol_parts := split_and_decode (DB.DBA.DAV_SEARCH_PATH (detcol_id, 'C'), 0, '\0\0/');
+  N := length (detcol_parts) - 2;
+  detcol_parts := vector_concat (subseq (parts, 0, N + 1), vector (''));
+  subPath_parts := subseq (parts, N + 1);
+
+  call ('DB.DBA.' || det || '__load') (detcol_id, subPath_parts, detcol_parts, 1);
 }
 ;
