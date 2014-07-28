@@ -5526,11 +5526,7 @@ create function WS.WS.DAV_DIR_LIST (
       params := vector_concat (params, vector ('a', action));
 
     if (not isnull (auth_uname))
-    {
       connection_set ('vspx_user', auth_uname);
-    } else {
-      connection_set ('vspx_user', (select U_NAME from DB.DBA.SYS_USERS where U_ID = auth_uid));
-    }
 
     DB.DBA.vspx_dispatch (vspx_path, path, params, lines);
     return;
