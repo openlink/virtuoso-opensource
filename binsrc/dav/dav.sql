@@ -3289,12 +3289,17 @@ err_end:
 -- /* common headers */
 create procedure WS.WS.LDP_HDRS (in is_col int := 0, in add_rel int := 0, in page int := 0, in last int := 0, in link any := null)
 {
-  declare h any;
+  declare h, nid any;
   h := 'MS-Author-Via: DAV, SPARQL\r\n' ||
       'Allow: GET,HEAD,POST,PUT,DELETE,OPTIONS,PROPFIND,PROPPATCH,COPY,MOVE,LOCK,UNLOCK,TRACE,PATCH\r\n' ||
       'Accept-Patch: application/sparql-update\r\n' ||
       'Accept-Post: text/turtle,text/n3,text/nt\r\n' ||
       'Vary: Accept,Origin,If-Modified-Since,If-None-Match\r\n';
+  nid := connection_get ('NetId');
+  if (nid is not null)
+    {
+      h := h || sprintf ('User: <%s>\r\n', nid);
+    }
   if (add_rel)
     {
       h := h || 'Link: <http://www.w3.org/ns/ldp#Resource>; rel="type"\r\n';
