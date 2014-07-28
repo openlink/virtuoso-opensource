@@ -1536,36 +1536,23 @@ create procedure WEBDAV.DBA.effective_permissions (
   inout path varchar,
   in permission varchar := '1__')
 {
-  declare N, I, nPermission integer;
-  declare rc, id, what, item any;
-  declare lines, name, pwd, uid, gid, permissions any;
+  -- dbg_obj_princ ('WEBDAV.DBA.effective_permissions (', path, permission, ')');
+  declare N integer;
+  declare id, what any;
+  declare uid, gid any;
   declare auth_name varchar;
+
+  what := WEBDAV.DBA.path_type (path);
+  id := DB.DBA.DAV_SEARCH_ID (path, what);
+  if (WEBDAV.DBA.DAV_ERROR (id))
+    return 0;
 
   if (isstring(permission))
     permission := vector (permission);
 
-  name := 'nobody';
-  uid := http_nobody_uid ();
-  gid := http_nobody_uid ();
-  what := WEBDAV.DBA.path_type (path);
-  id := DB.DBA.DAV_SEARCH_ID (path, what);
-  for (N := 0; N < length (permission); N := N + 1)
-  {
-    if (not WEBDAV.DBA.DAV_ERROR (DB.DBA.DAV_AUTHENTICATE (id, what, permission[N], name, uid, gid)))
-      return 1;
-  }
-
-  item := WEBDAV.DBA.DAV_INIT (path);
-  if (isinteger (item))
-    return 0;
-
-  auth_name := WEBDAV.DBA.account ();
+  auth_name := coalesce (WEBDAV.DBA.account (), 'nobody');
   uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = auth_name);
   gid := (select U_GROUP from DB.DBA.SYS_USERS where U_NAME = auth_name);
-
-  -- owner
-  if (WEBDAV.DBA.DAV_GET (item, 'ownerID') = uid)
-    return 1;
 
   -- dba
   if (uid = 0)
@@ -1581,16 +1568,7 @@ create procedure WEBDAV.DBA.effective_permissions (
 
   for (N := 0; N < length (permission); N := N + 1)
   {
-    if (DB.DBA.DAV_CHECK_PERM (WEBDAV.DBA.DAV_GET (item, 'permissions'), permission[N], uid, gid, WEBDAV.DBA.DAV_GET(item, 'groupID'), WEBDAV.DBA.DAV_GET(item, 'ownerID')))
-      return 1;
-
-    nPermission := 0;
-    for (I := 0; I < length (permission[N]); I := I + 1) {
-      nPermission := 2*nPermission;
-      if (permission[N][I] = ascii('1'))
-        nPermission := nPermission + 1;
-    }
-    if (WS.WS.ACL_IS_GRANTED (WEBDAV.DBA.DAV_GET (item, 'acl'), uid, nPermission))
+    if (not WEBDAV.DBA.DAV_ERROR (DB.DBA.DAV_AUTHENTICATE (id, what, permission[N], auth_name, uid, gid)))
       return 1;
   }
   return 0;
