@@ -120,8 +120,8 @@ create function "S3_DAV_COL_CREATE" (
     listID := get_keyword ('path', listItem);
   }
   connection_set ('dav_store', 1);
-  DB.DBA.S3__owner (detcol_id, path_parts, DB.DBA.DAV_DET_USER (coalesce (uid, auth_uid)), DB.DBA.DAV_DET_USER (coalesce (gid, auth_uid)), ouid, ogid);
-  retValue := DAV_COL_CREATE_INT (DB.DBA.S3__path (detcol_id, path_parts), permissions, DB.DBA.DAV_DET_USER (coalesce (uid, auth_uid)), DB.DBA.DAV_DET_USER (coalesce (gid, auth_uid)), DB.DBA.DAV_DET_USER (http_dav_uid ()), DB.DBA.DAV_DET_PASSWORD (http_dav_uid ()), 1, 0, 1, ouid, ogid);
+  DB.DBA.DAV_DET_OWNER (detcol_id, path_parts, DB.DBA.DAV_DET_USER (coalesce (uid, auth_uid)), DB.DBA.DAV_DET_USER (coalesce (gid, auth_uid)), ouid, ogid);
+  retValue := DAV_COL_CREATE_INT (DB.DBA.DAV_DET_PATH (detcol_id, path_parts), permissions, DB.DBA.DAV_DET_USER (coalesce (uid, auth_uid)), DB.DBA.DAV_DET_USER (coalesce (gid, auth_uid)), DB.DBA.DAV_DET_USER (http_dav_uid ()), DB.DBA.DAV_DET_PASSWORD (http_dav_uid ()), 1, 0, 1, ouid, ogid);
 
 _exit:;
   connection_set ('dav_store', save);
@@ -188,7 +188,7 @@ create function "S3_DAV_DELETE" (
   };
 
   save := connection_get ('dav_store');
-  path := DB.DBA.S3__path (detcol_id, path_parts);
+  path := DB.DBA.DAV_DET_PATH (detcol_id, path_parts);
   id := DB.DBA.DAV_SEARCH_ID (path, what);
   if (save is null)
   {
@@ -239,7 +239,7 @@ create function "S3_DAV_RES_UPLOAD" (
   };
 
   save := connection_get ('dav_store');
-  path := DB.DBA.S3__path (detcol_id, path_parts);
+  path := DB.DBA.DAV_DET_PATH (detcol_id, path_parts);
   if (save is null)
   {
     if (__tag (content) = 126)
@@ -260,7 +260,7 @@ create function "S3_DAV_RES_UPLOAD" (
   }
 _skip_create:;
   connection_set ('dav_store', 1);
-  DB.DBA.S3__owner (detcol_id, path_parts, DB.DBA.DAV_DET_USER (coalesce (uid, auth_uid)), DB.DBA.DAV_DET_USER (coalesce (gid, auth_uid)), ouid, ogid);
+  DB.DBA.DAV_DET_OWNER (detcol_id, path_parts, DB.DBA.DAV_DET_USER (coalesce (uid, auth_uid)), DB.DBA.DAV_DET_USER (coalesce (gid, auth_uid)), ouid, ogid);
   retValue := DAV_RES_UPLOAD_STRSES_INT (path, content, type, permissions, DB.DBA.DAV_DET_USER (coalesce (uid, auth_uid)), DB.DBA.DAV_DET_USER (coalesce (gid, auth_uid)), DB.DBA.DAV_DET_USER (http_dav_uid ()), DB.DBA.DAV_DET_PASSWORD (http_dav_uid ()), 0, ouid=>ouid, ogid=>ogid, check_locks=>0);
 
 _exit:;
@@ -351,14 +351,14 @@ create function "S3_DAV_PROP_GET" (
 
   if ((propName = 'virt:server-side-encryption') and (what = 'R'))
   {
-    declare davEntry any;
+    declare oEntry any;
 
     retValue := null;
-    davEntry := DB.DBA.S3__paramGet (id, what, 'Entry', 0);
-    if (davEntry is not null)
+    oEntry := DB.DBA.S3__paramGet (id, what, 'Entry', 0);
+    if (oEntry is not null)
     {
-      davEntry := xtree_doc (davEntry);
-      retValue := DB.DBA.DAV_DET_ENTRY_XPATH (davEntry, '/amz-server-side-encryption', 1);
+      oEntry := xtree_doc (oEntry);
+      retValue := DB.DBA.DAV_DET_ENTRY_XPATH (oEntry, '/amz-server-side-encryption', 1);
     }
     if (is_empty_or_null (retValue))
       retValue := 'None';
@@ -478,7 +478,7 @@ create function "S3_DAV_SEARCH_ID" (
 
   save := connection_get ('dav_store');
   connection_set ('dav_store', 1);
-  retValue := DAV_SEARCH_ID (DB.DBA.S3__path (detcol_id, path_parts), what);
+  retValue := DAV_SEARCH_ID (DB.DBA.DAV_DET_PATH (detcol_id, path_parts), what);
   connection_set ('dav_store', save);
   if ((DAV_HIDE_ERROR (retValue) is not null))
   {
@@ -805,13 +805,14 @@ create function "S3_DAV_LIST_LOCKS" (
 -------------------------------------------------------------------------------
 --
 create function "S3_DAV_SCHEDULER" (
-  in queue_id integer)
+  in queue_id integer,
+  in detcol_id integer := null)
 {
   -- dbg_obj_princ ('DB.DBA.S3_DAV_SCHEDULER (', queue_id, ')');
   declare detcol_parts any;
 
   connection_set ('S3_DAV_SCHEDULER', 1);
-  for (select COL_ID from WS.WS.SYS_DAV_COL where COL_DET = cast (DB.DBA.S3__detName () as varchar)) do
+  for (select COL_ID from WS.WS.SYS_DAV_COL where COL_DET = cast (DB.DBA.S3__detName () as varchar) and (detcol_id is null or (detcol_id = COL_ID))) do
   {
     detcol_parts := split_and_decode (WS.WS.COL_PATH (COL_ID), 0, '\0\0/');
     DB.DBA.S3_DAV_SCHEDULER_FOLDER (queue_id, COL_ID, detcol_parts, COL_ID, vector (''));
@@ -831,12 +832,27 @@ create function "S3_DAV_SCHEDULER_FOLDER" (
 {
   -- dbg_obj_princ ('DB.DBA.S3_DAV_SCHEDULER_FOLDER (', queue_id, detcol_id, detcol_parts, cid, path_parts, ')');
 
+  DB.DBA.DAV_QUEUE_UPDATE_TS (queue_id);
   DB.DBA.S3__load (detcol_id, path_parts, detcol_parts);
-
   for (select COL_ID, COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = cid) do
   {
     DB.DBA.S3_DAV_SCHEDULER_FOLDER (queue_id, detcol_id, detcol_parts, COL_ID, vector_concat (subseq (path_parts, 0, length (path_parts)-1), vector (COL_NAME, '')));
   }
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create function "S3_DAV_SCHEDULER_ROOT" (
+  in detcol_id integer)
+{
+  -- dbg_obj_princ ('DB.DBA.S3_DAV_SCHEDULER_ROOT (', detcol_id, ')');
+
+  set_user_id ('dba');
+  DB.DBA.DAV_QUEUE_ADD (DB.DBA.S3__detName () || '_' || cast (detcol_id as varchar), 0, 'DB.DBA.S3_DAV_SCHEDULER', vector (detcol_id), 1);
+  DB.DBA.DAV_QUEUE_INIT ();
+
+  return 1;
 }
 ;
 
@@ -880,6 +896,9 @@ create function "S3_CONFIGURE" (
 
   -- set DET Type Value
   DB.DBA.S3__paramSet (id, 'C', ':virtdet', DB.DBA.S3__detName (), 0, 0, 0);
+
+  -- start sync scheduler
+  DB.DBA."S3_DAV_SCHEDULER_ROOT" (id);
 }
 ;
 
@@ -951,35 +970,6 @@ create function DB.DBA.S3__md5 (
 
 -------------------------------------------------------------------------------
 --
-create function DB.DBA.S3__owner (
-  in detcol_id any,
-  in subPath_parts any,
-  in uid any,
-  in gid any,
-  inout ouid integer,
-  inout ogid integer)
-{
-  declare id any;
-  declare path varchar;
-
-  DB.DBA.DAV_OWNER_ID (uid, gid, ouid, ogid);
-  if ((ouid = -12) or (ouid = 5))
-  {
-    path := DB.DBA.S3__path (detcol_id, subPath_parts);
-    id := DB.DBA.DAV_SEARCH_ID (path, 'P');
-    if (DAV_HIDE_ERROR (id))
-    {
-      select COL_OWNER, COL_GROUP
-        into ouid, ogid
-        from WS.WS.SYS_DAV_COL
-       where COL_ID = id;
-    }
-  }
-}
-;
-
--------------------------------------------------------------------------------
---
 create function DB.DBA.S3__detName ()
 {
   return UNAME'S3';
@@ -999,16 +989,6 @@ create function DB.DBA.S3__folderSuffix ()
 create function DB.DBA.S3__folderOldSuffix ()
 {
   return '_\$folder\$';
-}
-;
-
--------------------------------------------------------------------------------
---
-create function DB.DBA.S3__path (
-  in detcol_id any,
-  in subPath_parts any)
-{
-  return DB.DBA.DAV_CONCAT_PATH (DB.DBA.DAV_SEARCH_PATH (detcol_id, 'C'), subPath_parts);
 }
 ;
 
@@ -1271,10 +1251,21 @@ create function DB.DBA.S3__makeAWSHeader (
 
 -------------------------------------------------------------------------------
 --
+create function DB.DBA.S3__sync (
+  in id any)
+{
+  -- dbg_obj_princ ('DB.DBA.S3__sync (', id, ')');
+  return DB.DBA.DAV_DET_SYNC (DB.DBA.S3__detName (), id);
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create function DB.DBA.S3__load (
   in detcol_id any,
   in subPath_parts any,
-  in detcol_parts varchar) returns any
+  in detcol_parts varchar,
+  in forced integer := 0) returns any
 {
   -- dbg_obj_princ ('DB.DBA.S3__load (', detcol_id, subPath_parts, detcol_parts, ')');
   declare colId, checkInterval integer;
@@ -1295,12 +1286,15 @@ create function DB.DBA.S3__load (
   if (DAV_HIDE_ERROR (colId) is null)
     goto _exit;
 
-  syncTime := DB.DBA.S3__paramGet (colId, 'C', 'syncTime');
-  if (not isnull (syncTime))
+  if (not forced)
   {
-    checkInterval := atoi (coalesce (DB.DBA.S3__paramGet (detcol_id, 'C', 'checkInterval', 0), '15')) * 60;
-    if (datediff ('second', syncTime, now ()) < checkInterval)
-      goto _exit;
+    syncTime := DB.DBA.S3__paramGet (colId, 'C', 'syncTime');
+    if (not isnull (syncTime))
+    {
+      checkInterval := atoi (coalesce (DB.DBA.S3__paramGet (detcol_id, 'C', 'checkInterval', 0), '15')) * 60;
+      if (datediff ('second', syncTime, now ()) < checkInterval)
+        goto _exit;
+    }
   }
   listItems := DB.DBA.S3__list (detcol_id, detcol_parts, colId, subPath_parts);
   if (DAV_HIDE_ERROR (listItems) is null)
@@ -1675,7 +1669,7 @@ create function DB.DBA.S3__putObject (
   encryption := connection_get ('server-side-encryption');
   if (isnull (encryption))
   {
-    path := DB.DBA.S3__path (detcol_id, path_parts);
+    path := DB.DBA.DAV_DET_PATH (detcol_id, path_parts);
     id := DB.DBA.DAV_SEARCH_ID (path, what);
     if (DAV_HIDE_ERROR (id) is not null)
       encryption := DB.DBA.S3_DAV_PROP_GET (id, what, 'virt:server-side-encryption', http_dav_uid ());
@@ -2102,14 +2096,14 @@ create function DB.DBA.S3__downloads_aq (
   in downloads any)
 {
   -- dbg_obj_princ ('DB.DBA.S3__downloads_aq (', detcol_id, downloads, ')');
-  declare N, downloaded integer;
+  declare id, downloaded integer;
   declare url, listID varchar;
-  declare params, items, listEntry, davEntry any;
+  declare save, params, items, content, oEntry, davEntry any;
   declare retValue, authHeader, reqHeader, retHeader any;
   declare S, dateUTC, path varchar;
 
   set_user_id ('dba');
-  N := 0;
+  save := connection_get ('dav_store');
   items := vector ();
   DB.DBA.S3__activity (detcol_id, sprintf ('Downloading %d file(s)', length (downloads)));
   params := DB.DBA.S3__params (detcol_id);
@@ -2123,6 +2117,9 @@ create function DB.DBA.S3__downloads_aq (
     if (downloaded > 5)
       goto _continue;
 
+    if (download[1] <> 'R')
+      goto _continue;
+
     listID := DB.DBA.S3__paramGet (download[0], download[1], 'path', 0);
     if (listID is null)
       goto _continue;
@@ -2132,31 +2129,49 @@ create function DB.DBA.S3__downloads_aq (
 
     commit work;
     reqHeader := DB.DBA.S3__makeAWSHeader (params, 'GET', null, null, dateUTC, null, null, path);
-    retValue := http_client_ext (url=>DB.DBA.S3__makeUrl (path),
+    content := http_client_ext (url=>DB.DBA.S3__makeUrl (path),
                                  http_method=>'GET',
                                  http_headers=>reqHeader,
                                  headers=>retHeader);
-    if (DAV_HIDE_ERROR (retValue) is not null)
+    if (DAV_HIDE_ERROR (content) is null)
+      goto _error;
+
+    id := DB.DBA.DAV_DET_DAV_ID (download[0]);
+    davEntry := DB.DBA.DAV_DIR_SINGLE_INT (id, 'R', '', null, null, http_dav_uid ());
+    connection_set ('dav_store', 1);
+    retValue := DAV_RES_UPLOAD_STRSES_INT (davEntry[0], content, davEntry[9], davEntry[5], DB.DBA.DAV_DET_USER (davEntry[7]), DB.DBA.DAV_DET_USER (davEntry[6]), DB.DBA.DAV_DET_USER (http_dav_uid ()), DB.DBA.DAV_DET_PASSWORD (http_dav_uid ()), mod_time=>davEntry[3], extern=>0, check_locks=>0);
+    connection_set ('dav_store', save);
+    if (DAV_HIDE_ERROR (retValue) is null)
     {
-      update WS.WS.SYS_DAV_RES set RES_CONTENT = retValue where RES_ID = DB.DBA.DAV_DET_DAV_ID (download[0]);
-      DB.DBA.S3__paramRemove (download[0], download[1], 'download');
-      davEntry := DB.DBA.S3__paramGet (download[0], download[1], 'Entry', 0);
-      if (davEntry is not null)
-      {
-        davEntry := xtree_doc (davEntry);
-        DB.DBA.DAV_DET_ENTRY_XUPDATE (davEntry, 'amz-server-side-encryption', http_request_header (retHeader, 'x-amz-server-side-encryption', null, null));
-        DB.DBA.DAV_DET_ENTRY_XUPDATE (davEntry, 'amz-request-id', http_request_header (retHeader, 'x-amz-request-id', null, null));
-        DB.DBA.DAV_DET_ENTRY_XUPDATE (davEntry, 'amz-id-2', http_request_header (retHeader, 'x-amz-id-2', null, null));
-        DB.DBA.S3__paramSet (download[0], download[1], 'Entry', DB.DBA.DAV_DET_XML2STRING (davEntry), 0);
-      }
-      items := vector_concat (items, vector (download));
-      N := N + 1;
+      if ((retValue = -44) and (davEntry[9] = 'text/turtle'))
+        DB.DBA.S3__activity (detcol_id, davEntry[0] || ': turtle content is wrong.');
+
+      if (length (content) > 10485760)  -- 10MB
+        log_enable (0, 1);
+
+       update WS.WS.SYS_DAV_RES set RES_CONTENT = content where RES_ID = id;
+       DB.DBA.S3__paramRemove (download[0], download[1], 'download');
     }
-    commit work;
+    oEntry := DB.DBA.S3__paramGet (download[0], download[1], 'Entry', 0);
+    if (oEntry is not null)
+    {
+      oEntry := xtree_doc (oEntry);
+      DB.DBA.DAV_DET_ENTRY_XUPDATE (oEntry, 'amz-server-side-encryption', http_request_header (retHeader, 'x-amz-server-side-encryption', null, null));
+      DB.DBA.DAV_DET_ENTRY_XUPDATE (oEntry, 'amz-request-id', http_request_header (retHeader, 'x-amz-request-id', null, null));
+      DB.DBA.DAV_DET_ENTRY_XUPDATE (oEntry, 'amz-id-2', http_request_header (retHeader, 'x-amz-id-2', null, null));
+      DB.DBA.S3__paramSet (download[0], download[1], 'Entry', DB.DBA.DAV_DET_XML2STRING (oEntry), 0);
+    }
+    items := vector_concat (items, vector (download));
+    goto _continue;
+
+  _error:;
+    downloaded := downloaded + 1;
+    DB.DBA.S3__paramSet (download[0], download[1], 'download', cast (downloaded as varchar), 0);
 
   _continue:;
+    commit work;
   }
-  DB.DBA.S3__activity (detcol_id, sprintf ('Downloaded %d file(s)', N));
+  DB.DBA.S3__activity (detcol_id, sprintf ('Downloaded %d file(s)', length (items)));
   foreach (any item in items) do
   {
     DB.DBA.DAV_DET_RDF_DELETE (DB.DBA.S3__detName (), detcol_id, item[0], item[1]);
