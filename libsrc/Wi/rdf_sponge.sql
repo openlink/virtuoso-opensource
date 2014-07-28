@@ -949,14 +949,14 @@ perform_actual_load:
 	  rollback work;
 	  update DB.DBA.SYS_HTTP_SPONGE
 	      set HS_SQL_STATE = 'RDFXX',
-	      HS_SQL_MESSAGE = sprintf ('Unable to retrieve RDF data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]),
+	      HS_SQL_MESSAGE = sprintf ('Unable to retrieve data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]),
 	      HS_EXPIRATION = now (),
 	      HS_EXP_IS_TRUE = 0,
 	      HS_NOTE = get_note
 		  where
 		  HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
 	  commit work;
-	  signal ('RDFXX', sprintf ('Unable to retrieve RDF data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]));
+	  signal ('RDFXX', sprintf ('Unable to retrieve data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]));
 	}
       goto resp_received;
     }
@@ -996,13 +996,13 @@ resp_received:
       rollback work;
       update DB.DBA.SYS_HTTP_SPONGE
 	  set HS_SQL_STATE = 'RDFXX',
-	  HS_SQL_MESSAGE = sprintf ('Unable to retrieve RDF data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]),
+	  HS_SQL_MESSAGE = sprintf ('Unable to retrieve data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]),
 	  HS_EXPIRATION = now (),
 	  HS_EXP_IS_TRUE = 0, HS_NOTE = get_note
 	      where
 	      HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
       commit work;
-      signal ('RDFXX', sprintf ('Unable to retrieve RDF data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]));
+      signal ('RDFXX', sprintf ('Unable to retrieve data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]));
     }
   --!!!TBD: proper character set handling in response
   new_download_size := length (ret_body);
