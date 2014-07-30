@@ -1653,6 +1653,34 @@ bif_get_certificate_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 	ret = list (2, box_dv_short_string (buf), val);
 	break;
       }
+    case 14:					 /* certificate public key */
+      {
+	EVP_PKEY *k = X509_get_pubkey (cert);
+	BIO * b;
+	if (k)
+	  {
+#ifdef EVP_PKEY_RSA
+	    if (k->type == EVP_PKEY_RSA)
+	      {
+		char *data_ptr;
+		int len;
+		RSA *x = k->pkey.rsa;
+		b = BIO_new (BIO_s_mem());
+		i2d_RSA_PUBKEY_bio (b, x);
+		len = BIO_get_mem_data (b, &data_ptr);
+		ret = dk_alloc_box (len, DV_BIN);
+		memcpy (ret, data_ptr, len);
+		BIO_free (b);
+	      }
+	    else
+#endif
+	      *err_ret = srv_make_new_error ("42000", "XXXXX", "The certificate's public key not supported");
+	    EVP_PKEY_free (k);
+	  }
+	else
+	  *err_ret = srv_make_new_error ("42000", "XXXXX", "Can not read the public key from the certificate");
+	break;
+      }
     default:
       {
 	if (!internal)
