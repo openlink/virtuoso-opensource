@@ -700,11 +700,13 @@ sqlo_fun_ref_epilogue (sqlo_t * so, op_table_t * from_ot)
   ST * texp = from_ot->ot_dt->_.select_stmt.table_exp;
   ST ** group = texp ? texp->_.table_exp.group_by : NULL;
 
-  if (from_ot->ot_invariant_preds)
+  if (from_ot->ot_invariant_preds && !from_ot->ot_invariant_placed)
     {
       df_elt_t * gen_pt = so->so_gen_pt;
       df_elt_t * filter = sqlo_new_dfe (so, DFE_FILTER, NULL);
       df_elt_t ** after_test;
+      filter->_.filter.invariant_of_ot = from_ot;
+      from_ot->ot_invariant_placed = 1;
       so->so_gen_pt = from_ot->ot_work_dfe->_.sub.first;
       after_test = sqlo_and_list_body (so, LOC_LOCAL, so->so_gen_pt, from_ot->ot_invariant_preds);
       filter->_.filter.body = after_test;

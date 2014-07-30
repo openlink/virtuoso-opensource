@@ -5848,6 +5848,11 @@ sqlo_dfe_unplace (sqlo_t * so, df_elt_t * dfe)
 	  sqlo_dfe_unplace (so, pred);
 	}
       END_DO_SET ();
+      if (dfe->_.filter.invariant_of_ot)
+	{
+	  dfe->_.filter.invariant_of_ot->ot_invariant_placed = 0;
+	  dfe->_.filter.invariant_of_ot = NULL;
+	}
       break;
     case DFE_ORDER:
     case DFE_GROUP:

@@ -116,6 +116,7 @@ typedef struct op_table_s
   df_elt_t *	ot_first_dfe; /* first dfe in current plan, one of ot from dfes */
   float		ot_initial_cost; /* cost of initial plan with this ot in first position */
   char		ot_any_plan; /* true if there is at least one full plan with this ot in first position */
+  char		ot_invariant_placed;
 } op_table_t;
 
 typedef struct jt_mark_s
@@ -325,6 +326,7 @@ struct df_elt_s
     struct {
       df_elt_t **	body;
       dk_set_t		preds;
+      op_table_t *	invariant_of_ot;
     } filter;
     struct {
       int	op;
