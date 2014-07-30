@@ -285,6 +285,7 @@ create function DB.DBA.DAV_DET_PARAM_SET (
 
   _id := DB.DBA.DAV_DET_DAV_ID (_id);
   retValue := DB.DBA.DAV_PROP_SET_RAW (_id, _what, _propName, _propValue, 1, http_dav_uid ());
+  commit work;
 
   connection_set ('dav_store', save);
   return retValue;
@@ -333,6 +334,7 @@ create function DB.DBA.DAV_DET_PARAM_REMOVE (
     _propName := sprintf ('virt:%s-%s', _det, _propName);
 
   DB.DBA.DAV_PROP_REMOVE_RAW (DB.DBA.DAV_DET_DAV_ID (_id), _what, _propName, 1, http_dav_uid());
+  commit work;
 }
 ;
 
@@ -342,14 +344,14 @@ create function DB.DBA.DAV_DET_PARAM_REMOVE (
 create function DB.DBA.DAV_DET_STRINGDATE (
   in dt varchar)
 {
-	declare rs any;
+  declare rs any;
   declare exit handler for sqlstate '*' { return now ();};
 
   rs := dt;
   if (isstring (rs))
-	  rs := stringdate (rs);
+    rs := stringdate (rs);
 
-	return dateadd ('minute', timezone (now()), rs);
+  return dateadd ('minute', timezone (now()), rs);
 }
 ;
 

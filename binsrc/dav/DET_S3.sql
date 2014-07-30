@@ -127,6 +127,7 @@ _exit:;
   connection_set ('dav_store', save);
   if (DAV_HIDE_ERROR (retValue) is not null)
   {
+    commit work;
     if (save is null)
     {
       DB.DBA.S3__paramSet (retValue, 'C', 'Entry', DB.DBA.S3__obj2xml (listItem), 0);
@@ -267,6 +268,7 @@ _exit:;
   connection_set ('dav_store', save);
   if (DAV_HIDE_ERROR (retValue) is not null)
   {
+    commit work;
     rdf_graph := DB.DBA.S3__paramGet (detcol_id, 'C', 'graph', 0);
     if (not DB.DBA.is_empty_or_null (rdf_graph))
       DB.DBA.DAV_DET_RDF (DB.DBA.S3__detName (), detcol_id, retValue, 'R');
@@ -1419,6 +1421,7 @@ create function DB.DBA.S3__load (
           }
           if (DAV_HIDE_ERROR (_id) is not null)
           {
+            commit work;
             set triggers off;
             DB.DBA.S3__paramSet (_id, _what, ':addeddate', now (), 0, 0);
             DB.DBA.S3__paramSet (_id, _what, ':creationdate', DB.DBA.DAV_DET_STRINGDATE (get_keyword ('updated', listItem)), 0, 0);
