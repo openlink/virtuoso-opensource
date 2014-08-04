@@ -413,6 +413,11 @@ function renameShow(myForm, myPrefix, myPage, width, height) {
     windowShow(myPage + myFiles, width, height);
 }
 
+function authenticateShow(sPage, sPageName, drive, width, height) {
+  OAT.Dom.show('dav_'+drive+'_throbber');
+  windowShowInternal(sPage, sPageName, width, height);
+}
+
 function coloriseRow(obj, checked) {
   if (checked)
     OAT.Dom.addClass(obj, 'selected');
@@ -848,6 +853,7 @@ WEBDAV.oauthParams = function (drive, oauth)
 
     $('dav_'+drive+'_authenticate').value = 'Re-Authenticate';
   }
+  OAT.Dom.hide('dav_'+drive+'_throbber');
 }
 
 WEBDAV.verifyDialog = function ()

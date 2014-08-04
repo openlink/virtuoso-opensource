@@ -618,10 +618,13 @@
                 retValue := vector ('name', 'mime', 'owner', 'group', 'permissions', 'publicTags', 'aci');
 
               else if (detClass = 'S3')
-                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'publicTags', 'privateTags', 'properties', 'acl', 'aci');
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci');
 
-              else if (detClass in ('DynaRes', 'Share', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
+              else if (detClass in ('DynaRes', 'Share'))
                 retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'textSearch', 'inheritancePermissions', 'metadata', 'acl', 'aci');
+
+              else if (detClass in ('GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'acl', 'aci');
 
               else if (detClass in ('CalDAV', 'CardDAV'))
                 retValue := vector ('source', 'name', 'mime', 'owner', 'group', 'permissions', 'publicTags', 'aci');
@@ -2433,7 +2436,7 @@
                         </td>
                       </tr>
                     </v:template>
-                    <v:template name="tf_12" type="simple" enabled="-- case when self.viewField ('sse') and (self.dav_type = 'R') and ((self.dav_ownClass = 'S3') or ((self.dav_ownClass in ('', 'UnderVersioning')) and self.sse_enabled ())) and not self.dav_is_redirect then 1 else 0 end">
+                    <v:template name="tf_12" type="simple" enabled="-- case when self.viewField ('sse') and (self.dav_type = 'R') and self.sse_enabled () and not self.dav_is_redirect then 1 else 0 end">
                       <v:before-data-bind>
                         <![CDATA[
                           self.dav_encryption := self.get_fieldProperty ('dav_encryption', self.dav_path, 'virt:server-side-encryption', 'None');
@@ -5838,8 +5841,9 @@
 
               _name := case when (_value = 'Yes') then 'Re-Authenticate' else 'Authenticate' end;
               _url := '/ods/access_service.vsp?m=webdav&p=GDrive&service=google';
-              http (sprintf ('<input type="button" id="dav_GDrive_authenticate" value="%s" onclick="javascript: windowShowInternal(\'%s\');" disabled="disabled" class="button" />', _name, _url));
+              http (sprintf ('<input type="button" id="dav_GDrive_authenticate" value="%s" onclick="javascript: authenticateShow(\'%s\', \'Google Drive DAV authenticate\', \'GDrive\');" disabled="disabled" class="button" />', _name, _url));
             ?>
+            <img id="dav_GDrive_throbber" alt="Athenticate GDrive" src="<?V case when self.mode = 'briefcase' then '/ods/images/oat/Ajax_throbber.gif' else '/conductor/toolkit/images/Ajax_throbber.gif' end ?>" style="padding-left: 5px; display: none" />
           </td>
         </tr>
         <tr id="tr_dav_GDrive_path" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
@@ -5940,8 +5944,9 @@
 
               _name := case when (_value = 'Yes') then 'Re-Authenticate' else 'Authenticate' end;
               _url := '/ods/access_service.vsp?m=webdav&p=Dropbox&service=dropbox';
-              http (sprintf ('<input type="button" id="dav_Dropbox_authenticate" value="%s" onclick="javascript: windowShowInternal(\'%s\', \'Dropbox DAV authenticate\', 1100);" disabled="disabled" class="button" />', _name, _url));
+              http (sprintf ('<input type="button" id="dav_Dropbox_authenticate" value="%s" onclick="javascript: authenticateShow(\'%s\', \'Dropbox DAV authenticate\', \'Dropbox\', 1100);" disabled="disabled" class="button" />', _name, _url));
             ?>
+            <img id="dav_Dropbox_throbber" alt="Athenticate Dropbox" src="<?V case when self.mode = 'briefcase' then '/ods/images/oat/Ajax_throbber.gif' else '/conductor/toolkit/images/Ajax_throbber.gif' end ?>" style="padding-left: 5px; display: none" />
           </td>
         </tr>
         <tr id="tr_dav_Dropbox_path" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
@@ -6042,8 +6047,9 @@
 
               _name := case when (_value = 'Yes') then 'Re-Authenticate' else 'Authenticate' end;
               _url := '/ods/access_service.vsp?m=webdav&p=SkyDrive&service=windowslive';
-              http (sprintf ('<input type="button" id="dav_SkyDrive_authenticate" value="%s" onclick="javascript: windowShowInternal(\'%s\');" disabled="disabled" class="button" />', _name, _url));
+              http (sprintf ('<input type="button" id="dav_SkyDrive_authenticate" value="%s" onclick="javascript: authenticateShow(\'%s\', \'OneDrive DAV authenticate\', \'SkyDrive\');" disabled="disabled" class="button" />', _name, _url));
             ?>
+            <img id="dav_SkyDrive_throbber" alt="Athenticate SkyDrive" src="<?V case when self.mode = 'briefcase' then '/ods/images/oat/Ajax_throbber.gif' else '/conductor/toolkit/images/Ajax_throbber.gif' end ?>" style="padding-left: 5px; display: none" />
           </td>
         </tr>
         <tr id="tr_dav_SkyDrive_path" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">
@@ -6144,8 +6150,9 @@
 
               _name := case when (_value = 'Yes') then 'Re-Authenticate' else 'Authenticate' end;
               _url := '/ods/access_service.vsp?m=webdav&p=Box&service=boxnet';
-              http (sprintf ('<input type="button" id="dav_Box_authenticate" value="%s" onclick="javascript: windowShowInternal(\'%s\', \'Box.Net access\', 1024);" disabled="disabled" class="button" />', _name, _url));
+              http (sprintf ('<input type="button" id="dav_Box_authenticate" value="%s" onclick="javascript: authenticateShow(\'%s\', \'Box DAV authenticate\', \'Box\', 1024);" disabled="disabled" class="button" />', _name, _url));
             ?>
+            <img id="dav_Box_throbber" alt="Athenticate Box Drive" src="<?V case when self.mode = 'briefcase' then '/ods/images/oat/Ajax_throbber.gif' else '/conductor/toolkit/images/Ajax_throbber.gif' end ?>" style="padding-left: 5px; display: none" />
           </td>
         </tr>
         <tr id="tr_dav_Box_path" style="display: <?V case when _value = 'Yes' then '' else 'none' end ?>">

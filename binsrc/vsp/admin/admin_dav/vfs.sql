@@ -2112,7 +2112,7 @@ create procedure WS.WS.SITEMAP_RDF_STORE (in _host varchar, in _url varchar, in 
   use_tidy := 'N';
   if (isvector (udata) and isstring (get_keyword ('use-tidy', udata)))
     use_tidy := get_keyword ('use-tidy', udata, 'N');
-  base := WS.WS.VFS_URI_COMPOSE (vector ('http', _host, _url, '', '', ''));
+  base := WS.WS.MAKE_URL (_host, _url);
   if (not length (graph))  
     graph := base;
   url_ck := _url;
