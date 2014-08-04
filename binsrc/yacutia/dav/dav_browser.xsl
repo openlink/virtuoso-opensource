@@ -618,10 +618,13 @@
                 retValue := vector ('name', 'mime', 'owner', 'group', 'permissions', 'publicTags', 'aci');
 
               else if (detClass = 'S3')
-                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'publicTags', 'privateTags', 'properties', 'acl', 'aci');
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci');
 
-              else if (detClass in ('DynaRes', 'Share', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
+              else if (detClass in ('DynaRes', 'Share'))
                 retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'textSearch', 'inheritancePermissions', 'metadata', 'acl', 'aci');
+
+              else if (detClass in ('GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'acl', 'aci');
 
               else if (detClass in ('CalDAV', 'CardDAV'))
                 retValue := vector ('source', 'name', 'mime', 'owner', 'group', 'permissions', 'publicTags', 'aci');
@@ -2433,7 +2436,7 @@
                         </td>
                       </tr>
                     </v:template>
-                    <v:template name="tf_12" type="simple" enabled="-- case when self.viewField ('sse') and (self.dav_type = 'R') and ((self.dav_ownClass = 'S3') or ((self.dav_ownClass in ('', 'UnderVersioning')) and self.sse_enabled ())) and not self.dav_is_redirect then 1 else 0 end">
+                    <v:template name="tf_12" type="simple" enabled="-- case when self.viewField ('sse') and (self.dav_type = 'R') and self.sse_enabled () and not self.dav_is_redirect then 1 else 0 end">
                       <v:before-data-bind>
                         <![CDATA[
                           self.dav_encryption := self.get_fieldProperty ('dav_encryption', self.dav_path, 'virt:server-side-encryption', 'None');
