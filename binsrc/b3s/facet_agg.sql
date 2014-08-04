@@ -191,7 +191,7 @@ fct_agg_text (in tree any,
 
   if ('view' = n)
     {
-      http (sprintf (' filter (datatype (?s%d) IN (xsd:double, xsd:int, xsd:numeric, xsd:float, xsd:integer)) . ', this_s), txt);
+      http (sprintf (' filter (datatype (?s%d) IN (xsd:double, xsd:int, xsd:numeric, xsd:float, xsd:integer, xsd:decimal)) . ', this_s), txt);
       fct_agg_view (tree, agg, this_s, txt, pre, post, full_tree, plain);
     }
 }
