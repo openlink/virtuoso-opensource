@@ -127,7 +127,7 @@
                   {
                     if (val_isRealUser)
                     {
-                      connection_set ('vspx_user', val_serviceId);
+                      connection_set ('vspx_user', val_uname);
                       self.account_id := WEBDAV.DBA.account_id (val_serviceId);
                     }
                   }
