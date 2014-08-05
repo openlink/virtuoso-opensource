@@ -543,6 +543,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				}
 			}
 			rs.close();
+			stmt.close();
 
 		}
 		catch (Exception e) {
@@ -756,6 +757,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			if (rs.next())
 			    ret = rs.getLong(1);
                         rs.close();
+                        st.close();
 		}
 		catch (Exception e) {
 			throw new RepositoryException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
@@ -782,6 +784,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			ResultSet rs = stmt.executeQuery(query);
 			result = !rs.next();
                         rs.close();
+                        stmt.close();
                         return result;
 		}
 		catch (Exception e) {
@@ -1619,6 +1622,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				}
 			}
                         rs.close();
+                        stmt.close();
 		}
 		catch (Exception e) {
 			throw new RepositoryException(e);
@@ -1651,7 +1655,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				retVal = rs.getString(1);
 				break;
 			}
-			rs.close();
+			ps.close();
 		}
 		catch (Exception e) {
 			throw new RepositoryException(e);
@@ -1750,7 +1754,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					names.add(col); // no duplicates
 			}
 
-			return new TupleQueryResultImpl(names, new CloseableIterationBindingSet(rs));
+			return new TupleQueryResultImpl(names, new CloseableIterationBindingSet(stmt, rs));
 		}
 		catch (Exception e) {
 			throw new QueryEvaluationException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
@@ -1772,7 +1776,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			// begin at onset one
 			for (int i = 1; i <= rsmd.getColumnCount(); i++)
 				names.put(rsmd.getColumnName(i), new Integer(i));
-			return new GraphQueryResultImpl(new HashMap<String,String>(), new CloseableIterationGraphResult(rs));
+			return new GraphQueryResultImpl(new HashMap<String,String>(), new CloseableIterationGraphResult(stmt, rs));
 		}
 		catch (Exception e) {
 			throw new QueryEvaluationException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
@@ -2323,6 +2327,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		flushDelayAdd();
 
 		ResultSet rs = null;
+		java.sql.Statement stmt = null;
 		String s = "?s";
 		String p = "?p";
 		String o = "?o";
@@ -2359,14 +2364,14 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			query.append(" LIMIT 1");
 
 		try {
-			java.sql.Statement stmt = createStatement();
+			stmt = createStatement();
 			rs = stmt.executeQuery(query.toString());
 		}
 		catch (Exception e) {
 			throw new RepositoryException(getClass().getCanonicalName() + ": SPARQL execute failed." + "\n" + query.toString() + "[" + e + "]", e);
 		}
 
-		return new CloseableIterationStmt(rs, subject, predicate, object);
+		return new CloseableIterationStmt(stmt, rs, subject, predicate, object);
 	}
 
 
@@ -2679,9 +2684,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		URI       predicate;
 		Value 	  object;
 		ResultSet v_rs;
+		java.sql.Statement v_stmt;
 
-        	public CloseableIterationBase(ResultSet rs, Resource subject, URI predicate, Value object)
+        	public CloseableIterationBase(java.sql.Statement stmt, ResultSet rs, Resource subject, URI predicate, Value object)
         	{
+        	  v_stmt = stmt;
         	  v_rs = rs;
         	  this.subject = subject;
         	  this.predicate = predicate;
@@ -2723,6 +2730,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				try
 				{
 				    v_rs.close();
+				    v_stmt.close();
 				}
 				catch (SQLException e)
 				{
@@ -2769,9 +2777,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                 int col_p = -1;
                 int col_o = -1;
 
-        	public CloseableIterationStmt(ResultSet rs, Resource subject, URI predicate, Value object) throws RepositoryException
+        	public CloseableIterationStmt(java.sql.Statement stmt, ResultSet rs, Resource subject, URI predicate, Value object) throws RepositoryException
         	{
-        	  super(rs, subject, predicate, object);
+        	  super(stmt, rs, subject, predicate, object);
         	  try {
  		     ResultSetMetaData rsmd = rs.getMetaData();
 		     for (int i = 1; i <= rsmd.getColumnCount(); i++) {
@@ -2843,9 +2851,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                                            
  		ResultSetMetaData rsmd;
 
-        	public CloseableIterationBindingSet(ResultSet rs) throws QueryEvaluationException
+        	public CloseableIterationBindingSet(java.sql.Statement stmt, ResultSet rs) throws QueryEvaluationException
         	{
-        	  super(rs, null, null, null);
+        	  super(stmt, rs, null, null, null);
         	  try {
  		  	rsmd = rs.getMetaData();
 		  } catch (Exception e) {
@@ -2877,9 +2885,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                 int col_p = -1;
                 int col_o = -1;
 
-        	public CloseableIterationGraphResult(ResultSet rs) throws QueryEvaluationException
+        	public CloseableIterationGraphResult(java.sql.Statement stmt, ResultSet rs) throws QueryEvaluationException
         	{
-        	  super(rs, null, null, null);
+        	  super(stmt, rs, null, null, null);
 
         	  try {
  		  	ResultSetMetaData rsmd = rs.getMetaData();
