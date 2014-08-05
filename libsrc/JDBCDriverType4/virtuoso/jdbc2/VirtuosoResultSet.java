@@ -69,6 +69,8 @@ public class VirtuosoResultSet implements ResultSet
    // The statement which owns this result set
    private VirtuosoStatement statement;
 
+   private boolean is_prepared;
+
    // Its meta data
    protected VirtuosoResultSetMetaData metaData;
 
@@ -197,6 +199,7 @@ public class VirtuosoResultSet implements ResultSet
       stmt_current_of = -1;
       stmt_n_rows_to_get = prefetch;
       stmt_co_last_in_batch = false;
+      is_prepared = isPrepare;
       //System.err.print ("init: rows :");
       //System.err.println (rows.toString());
       process_result(isPrepare);
@@ -2162,6 +2165,12 @@ public class VirtuosoResultSet implements ResultSet
          statement = null;
       }
 #endif
+      if (statement != null && !is_prepared) 
+      {
+         statement.close_rs(false);
+         statement = null;
+      }
+
       row = null;
       cursorName = null;
    }
