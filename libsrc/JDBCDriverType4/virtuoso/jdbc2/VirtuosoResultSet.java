@@ -619,15 +619,11 @@ public class VirtuosoResultSet implements ResultSet
                case VirtuosoTypes.QA_PROC_RETURN:
                   //System.out.println("---> QA_PROC_RETURN " + result + " " + statement.objparams);
                   // Copy out parameters in the parameter vector
-		  if (statement.objparams != null && statement.objparams.size() != (result.size() - 2))
+                  if (statement.objparams == null)
 		      statement.objparams = new openlink.util.Vector(result.size() - 2);
-                  for(int j = 2;j < result.size();j++)
-                   {
-                     if (statement.objparams == null)
-                       statement.objparams = new openlink.util.Vector(result.size() - 2);
+		  for(int j = 0; j < statement.objparams.size() && (j+2) < result.size(); j++)
+		     statement.objparams.setElementAt(result.elementAt(j+2),j);
 
-		     statement.objparams.setElementAt(result.elementAt(j),j - 2);
-                   }
                   is_complete = true;
                   isLastResult = true;
                   isLastRow = true;

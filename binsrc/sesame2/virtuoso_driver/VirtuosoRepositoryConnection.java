@@ -184,7 +184,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		try {
 		  virtuoso.jdbc4.Driver drv = new virtuoso.jdbc4.Driver();
-		  if (drv.getMajorVersion()>=3 && drv.getMinorVersion()>=71)
+		  if (drv.getMajorVersion()>=3 && drv.getMinorVersion()>=72)
 		    useReprepare = false;
 		} catch(Exception e) {}
 	}
