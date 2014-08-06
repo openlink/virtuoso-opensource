@@ -406,11 +406,8 @@ void
 TSetupDlg::SetUseUID (void)
 {
   BOOL bOn = m_USEUID.Checked ();
-  m_UIDLBL.Enable (bOn);
-  m_UID.Enable (bOn);
   m_PWDLBL.Enable (bOn);
   m_PWD.Enable (bOn);
-  m_BROWSEUIDCERT.Enable (bOn);
 }
 
 
@@ -752,14 +749,14 @@ TSetupDlg::SaveToProps (void)
       break;
     }
 
+  m_props.Define (_T("UID"), m_UID.Text ());
+
   if (m_USEUID.Checked ())
     {
-      m_props.Define (_T("UID"), m_UID.Text ());
       m_props.Define (_T("PWD"), m_PWD.Text ());
     }
   else
     {
-      m_props.Undefine (_T("UID"));
       m_props.Undefine (_T("PWD"));
     }
 
