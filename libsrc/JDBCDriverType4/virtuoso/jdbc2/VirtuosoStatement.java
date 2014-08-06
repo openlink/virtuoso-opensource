@@ -90,6 +90,8 @@ public class VirtuosoStatement implements Statement
 
    protected boolean wait_result = false;
 
+   protected boolean result_opened = false;
+
    // The request number
    protected static int req_no;
 
@@ -258,6 +260,7 @@ public class VirtuosoStatement implements Statement
 		   // Put the options array in the args array
 		   args[5] = getStmtOpts();
 		   future = connection.getFuture(VirtuosoFuture.exec,args, this.rpc_timeout);
+		   result_opened = true;
 		   return new VirtuosoResultSet(this,metaData,false);
 	       }
 	       catch(IOException e)
@@ -324,6 +327,49 @@ public class VirtuosoStatement implements Statement
        }
    }
 
+   public void close_rs(boolean close_stmt) throws VirtuosoException
+   {
+     if(close_flag)
+       return;
+      
+     synchronized (connection)
+       {
+	 // System.out.println("Close statement : "+this);
+	 try
+	   {
+	     // Check if a statement is treat
+	     if(close_flag)
+	       return;
+	     if (close_stmt)
+             	close_flag = true;
+	     if(statid == null)
+	       return;
+	     // Cancel current result set
+	     cancel_rs();
+             if (!result_opened)
+               return;
+	     // Build the args array
+	     Object[] args = new Object[2];
+	     args[0] = statid;
+	     args[1] = new Long(VirtuosoTypes.STAT_DROP);
+	     // Create and get a future for this
+	     future = connection.getFuture(VirtuosoFuture.close,args, this.rpc_timeout);
+	     // Read the answer
+	     future.nextResult();
+	     // Remove the future reference
+	     connection.removeFuture(future);
+	     future = null;
+	     result_opened = false;
+	   }
+	 catch(IOException e)
+	   {
+	     throw new VirtuosoException("Problem during closing : " + e.getMessage(),VirtuosoException.IOERROR);
+	   }
+       }
+   }
+
+   
+   
    /**
     * Clears all the warnings reported on this Statement object.
     * Virtuoso doesn't generate warnings, so this function does nothing.
@@ -345,39 +391,7 @@ public class VirtuosoStatement implements Statement
     */
    public void close() throws VirtuosoException
    {
-     if(close_flag)
-       return;
-      
-     synchronized (connection)
-       {
-	 // System.out.println("Close statement : "+this);
-	 try
-	   {
-	     // Check if a statement is treat
-	     if(close_flag)
-	       return;
-             close_flag = true;
-	     if(statid == null)
-	       return;
-	     // Cancel current result set
-	     cancel_rs();
-	     // Build the args array
-	     Object[] args = new Object[2];
-	     args[0] = statid;
-	     args[1] = new Long(VirtuosoTypes.STAT_DROP);
-	     // Create and get a future for this
-	     future = connection.getFuture(VirtuosoFuture.close,args, this.rpc_timeout);
-	     // Read the answer
-	     future.nextResult();
-	     // Remove the future reference
-	     connection.removeFuture(future);
-	     future = null;
-	   }
-	 catch(IOException e)
-	   {
-	     throw new VirtuosoException("Problem during closing : " + e.getMessage(),VirtuosoException.IOERROR);
-	   }
-       }
+     close_rs(true);
    }
 
    /**

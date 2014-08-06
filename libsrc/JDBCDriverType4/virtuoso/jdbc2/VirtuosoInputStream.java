@@ -880,6 +880,13 @@ class VirtuosoInputStream extends BufferedInputStream
    {
       double x;
       int i, year;
+      boolean sign = false;
+
+      if ((julian_days & 0x800000)!=0){
+        sign = true;
+        julian_days = ((~julian_days)+1)& 0xFFFFFF;
+      }
+
       if(julian_days > 577737)
          julian_days += 10;
       x = ((double)julian_days) / 365.25;
@@ -913,6 +920,8 @@ class VirtuosoInputStream extends BufferedInputStream
 	  && (year % 100) == 0
 	  && (i < ((year / 100) - (1582 / 100)) - ((year / 400) - (1582 / 400))))
 	i++;
+      if (sign)
+        date.set(Calendar.ERA, GregorianCalendar.BC);
       date.set (Calendar.YEAR, year);
       //System.out.println ("Year=" + year);
       yearday2date(i,(VirtuosoOutputStream.days_in_february(year) == 29),date);

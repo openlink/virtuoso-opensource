@@ -69,6 +69,8 @@ public class VirtuosoResultSet implements ResultSet
    // The statement which owns this result set
    private VirtuosoStatement statement;
 
+   private boolean is_prepared;
+
    // Its meta data
    protected VirtuosoResultSetMetaData metaData;
 
@@ -197,6 +199,7 @@ public class VirtuosoResultSet implements ResultSet
       stmt_current_of = -1;
       stmt_n_rows_to_get = prefetch;
       stmt_co_last_in_batch = false;
+      is_prepared = isPrepare;
       //System.err.print ("init: rows :");
       //System.err.println (rows.toString());
       process_result(isPrepare);
@@ -616,15 +619,11 @@ public class VirtuosoResultSet implements ResultSet
                case VirtuosoTypes.QA_PROC_RETURN:
                   //System.out.println("---> QA_PROC_RETURN " + result + " " + statement.objparams);
                   // Copy out parameters in the parameter vector
-		  if (statement.objparams != null && statement.objparams.size() != (result.size() - 2))
+                  if (statement.objparams == null)
 		      statement.objparams = new openlink.util.Vector(result.size() - 2);
-                  for(int j = 2;j < result.size();j++)
-                   {
-                     if (statement.objparams == null)
-                       statement.objparams = new openlink.util.Vector(result.size() - 2);
+		  for(int j = 0; j < statement.objparams.size() && (j+2) < result.size(); j++)
+		     statement.objparams.setElementAt(result.elementAt(j+2),j);
 
-		     statement.objparams.setElementAt(result.elementAt(j),j - 2);
-                   }
                   is_complete = true;
                   isLastResult = true;
                   isLastRow = true;
@@ -2162,6 +2161,12 @@ public class VirtuosoResultSet implements ResultSet
          statement = null;
       }
 #endif
+      if (statement != null && !is_prepared) 
+      {
+         statement.close_rs(false);
+         statement = null;
+      }
+
       row = null;
       cursorName = null;
    }
