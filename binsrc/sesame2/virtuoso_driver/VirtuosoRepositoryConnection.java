@@ -2078,9 +2078,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			}
 		}
 		catch (Exception e) {
-			try {
-				getQuadStoreConnection().rollback();
-			} catch(Exception se){}
 			throw new RepositoryException(e);
 		}
 	}
@@ -2099,9 +2096,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				}
 			}
 		} catch (Exception e) {
-			try {
-				getQuadStoreConnection().rollback();
-			} catch(Exception se){}
 			throw new RepositoryException(e);
 		}
 	}
@@ -2114,9 +2108,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				flushDelayAdd();
 		}
 		catch (Exception e) {
-			try {
-				getQuadStoreConnection().rollback();
-			} catch(Exception se){}
 			throw new RepositoryException(e);
 		}
 	}
