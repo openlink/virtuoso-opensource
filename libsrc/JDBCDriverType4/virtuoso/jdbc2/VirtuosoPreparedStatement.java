@@ -99,6 +99,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	      future = connection.getFuture(VirtuosoFuture.prepare,args, this.rpc_timeout);
 	      // Process result to get information about results meta data
 	      vresultSet = new VirtuosoResultSet(this,metaData, true);
+	      result_opened = true;
               clearParameters();
 	    }
 	  catch(IOException e)
@@ -166,6 +167,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	     args[5] = getStmtOpts();
 	     future = connection.getFuture(VirtuosoFuture.exec,args, this.rpc_timeout);
 	     vresultSet.getMoreResults(false);
+	     result_opened = true;
 	   }
 	 catch(IOException e)
 	   {
@@ -360,6 +362,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	     // Remove the future reference
 	     connection.removeFuture(future);
 	     future = null;
+	     result_opened = false;
 	   }
 	 catch(IOException e)
 	   {

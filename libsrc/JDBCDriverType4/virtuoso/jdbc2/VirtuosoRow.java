@@ -916,12 +916,12 @@ class VirtuosoRow
 	       obj = createDOMT (obj);
 	   }
 	 else if(obj instanceof java.sql.Date)
-	   {
-	     obj = java.sql.Date.valueOf (((java.sql.Date)obj).toString());
+	   {                                          
+	     obj = new java.sql.Date(((java.sql.Date)obj).getTime());
 	   }
          else if(obj instanceof java.sql.Time)
            {
-             obj = java.sql.Time.valueOf (((java.sql.Time)obj).toString());
+	     obj = new java.sql.Time(((java.sql.Time)obj).getTime());
            }
          return obj;
       }
