@@ -189,7 +189,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
         if (timeout > 0)
           stmt.setQueryTimeout((int)(timeout/1000));
         java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
-        return new VirtResSetIter2(graph, rs);
+        return new VirtResSetIter2(graph, stmt, rs);
 
       } catch (Exception e) {
         throw new JenaException("execConstructTriples was FAILED.:"+e);
@@ -246,7 +246,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
         if (timeout > 0)
           stmt.setQueryTimeout((int)(timeout/1000));
         java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
-        return new VirtResSetIter2(graph, rs);
+        return new VirtResSetIter2(graph, stmt, rs);
 
       } catch (Exception e) {
         throw new JenaException("execDescribeTriples was FAILED.:"+e);

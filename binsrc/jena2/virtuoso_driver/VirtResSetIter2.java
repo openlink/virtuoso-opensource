@@ -36,6 +36,7 @@ import com.hp.hpl.jena.rdf.model.*;
 public class VirtResSetIter2 implements Iterator<Triple>
 {
     protected ResultSet 	v_resultSet;
+    protected java.sql.Statement 	v_statement;
     protected Triple 		v_row;
     protected boolean 		v_finished = false;
     protected boolean 		v_prefetched = false;
@@ -46,9 +47,10 @@ public class VirtResSetIter2 implements Iterator<Triple>
         v_finished = true;
     }
 
-    public VirtResSetIter2(VirtGraph graph, ResultSet resultSet)
+    public VirtResSetIter2(VirtGraph graph, java.sql.Statement statement, ResultSet resultSet)
     {
         v_resultSet = resultSet;
+        v_statement = statement;
 	v_graph = graph;
     }
 
@@ -142,6 +144,8 @@ public class VirtResSetIter2 implements Iterator<Triple>
 		{
 		    v_resultSet.close();
 		    v_resultSet = null;
+                    v_statement.close();
+		    v_statement = null;
 		}
 		catch (SQLException e)
 		{
