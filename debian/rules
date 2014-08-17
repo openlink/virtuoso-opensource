@@ -15,6 +15,7 @@ DEB_AUTOMAKE_ARGS += -Wno-portability
 DEB_CONFIGURE_EXTRA_FLAGS = --with-layout=debian \
 		--program-transform-name='s/isql$$/isql-vt/;s/isqlw/isqlw-vt/' \
 		--with-readline --without-internal-zlib \
+		--enable-maintainer-mode \
 		--with-iodbc=/usr \
 		--enable-demo-vad \
 		--enable-tutorial-vad \
