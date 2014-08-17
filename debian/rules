@@ -47,6 +47,9 @@ DEB_DH_INSTALLINIT_ARGS += --noscripts
 clean::
 	debconf-updatepo
 
+pre-build::
+	./autogen.sh
+
 build/virtuoso-opensource-7.1::
 	cd debian; find . -name "*.?.xml" -exec docbook2x-man --solinks {} \;
 
