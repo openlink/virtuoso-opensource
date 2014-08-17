@@ -1,0 +1,142 @@
+#!/bin/bash
+
+set -e
+
+. /usr/share/debconf/confmodule
+
+if [ -n "$DEBIAN_SCRIPT_DEBUG" ]; then set -v -x; DEBIAN_SCRIPT_TRACE=1; fi
+${DEBIAN_SCRIPT_TRACE:+ echo "#42#DEBUG# RUNNING $0 $*" 1>&2 }
+
+FILE_INI="/etc/virtuoso-opensource-7/virtuoso.ini"
+FILE_ODBC_DSN="/usr/share/virtuoso-opensource-7/odbc.ini"
+
+# import existing defaults if we have them (to check run state)
+if [ -f /etc/default/virtuoso-opensource-7 ] ; then
+	. /etc/default/virtuoso-opensource-7
+fi
+
+# are we changing the web server port?
+db_get virtuoso-opensource-7/db-server-port && DB_PORT="$RET"
+if DB_PORT=$(printf "%d" $DB_PORT 2> /dev/null); then
+	inifile +inifile $FILE_INI +section Parameters \
+		+key ServerPort +value $DB_PORT || true
+fi
+
+# are we changing the database server port?
+db_get virtuoso-opensource-7/http-server-port && HTTP_PORT="$RET"
+if HTTP_PORT=$(printf "%d" $HTTP_PORT 2> /dev/null); then
+	inifile +inifile $FILE_INI +section HTTPServer \
+		+key ServerPort +value $HTTP_PORT || true
+fi
+
+# update the list of potential default servers
+db_metaget virtuoso-opensource/primary-server owners && OWNERS="$RET"
+db_metaget virtuoso-opensource/primary-server choices && CHOICES="$RET"
+if [ "$OWNERS" != "$CHOICES" ]; then
+	db_subst virtuoso-opensource/primary-server choices $OWNERS
+	db_fset virtuoso-opensource/primary-server seen false
+fi
+
+# if there's more than one option then prompt user to choose
+if [ "$CHOICES" != "virtuoso-opensource-7" ]; then
+	db_input medium virtuoso-opensource/primary-server || true
+	db_go || true
+fi
+
+# there doesn't seem to be a way to set the log file path globally or
+# in configure so this will have to suffice for now:
+INI_LOG_FILE="inifile +inifile $FILE_INI +section Database +key ErrorLogFile"
+
+# if we have a default relative filename here then move under /var/log
+LOG_FILE="$($INI_LOG_FILE)"
+if [ "$LOG_FILE" == "virtuoso.log" ]; then
+  $INI_LOG_FILE +value /var/log/virtuoso-opensource-7/$LOG_FILE || true
+fi
+
+INI_VSP_ROOT="inifile +inifile $FILE_INI +section HTTPServer +key ServerRoot"
+INI_PLUGINS="inifile +inifile $FILE_INI +section Plugins +key LoadPath"
+INI_DSN_SERVER="inifile +inifile $FILE_ODBC_DSN +section VOS +key Address"
+
+# relocate libs etc. under the private versioned package dir
+$INI_VSP_ROOT +value /var/lib/virtuoso-opensource-7/vsp || true
+$INI_PLUGINS +value /usr/lib/virtuoso-opensource-7/hosting || true
+
+# we need to start the service to change the passwords so the
+# debhelper code gets dumped and we'll do it here instead...
+if [ -x "/etc/init.d/virtuoso-opensource-7" ]; then
+	mkdir -p /var/lib/virtuoso-opensource-7/db > /dev/null
+	update-rc.d virtuoso-opensource-7 defaults > /dev/null
+	invoke-rc.d virtuoso-opensource-7 start ignoredefault && VT_EXIT=$?
+fi
+
+# get the new admin password
+db_get virtuoso-opensource-7/dba-password && DBA_PW="$RET"
+
+# clear password from debconf db
+db_set virtuoso-opensource-7/dba-password ""
+db_set virtuoso-opensource-7/dba-password-again ""
+
+# Forget +pwdold dba +pwdba $DBA_PW +pwddav $DBA_PW (does work but
+# always exits 101 EVEN IF THE PASSWORD WAS NOT CHANGED)
+# So we're going to change the passwords via isql:
+SQL_DBAPW="EXEC=SET PASSWORD dba $DBA_PW;"
+SQL_DAVPW="EXEC=UPDATE SYS_USERS SET U_PASSWORD='$DBA_PW' WHERE U_NAME='dav';"
+
+# There seems to be a bug in 5.0.11 where the password change is lost
+# with an error on the Roll Forward (SQL Error: 22023 : SR005) if we
+# don't push it to the db before shutting down the server.
+SQL_CHECKPOINT="EXEC=checkpoint;"
+
+# if we have a new password, change it...
+if [ $VT_EXIT ] && [ -n "$DBA_PW" ]; then
+	# first see if we can change the dba password:
+	if isql-vt $DB_PORT dba dba "$SQL_DBAPW" &> /dev/null; then
+		# now change the DAV admin password also:
+		if isql-vt $DB_PORT dba $DBA_PW "$SQL_DAVPW" &> /dev/null; then
+			# the new password works, so everything seems to be ok!
+			isql-vt $DB_PORT dba $DBA_PW "$SQL_CHECKPOINT" &> /dev/null || true
+
+			# register this default instance as a DSN then we're done here
+			db_get virtuoso-opensource-7/register-odbc-dsn || true
+			if [ "$RET" = "true" ]; then
+				$INI_DSN_SERVER +value "localhost:$DB_PORT" || true
+				odbcinst -i -s -l -f $FILE_ODBC_DSN 1>&2 || true
+			fi
+		else
+			# the password was not changed for some reason
+			db_input critical virtuoso-opensource-7/error-setting-password || true
+		fi
+	else
+		# error connecting to server or non-default password
+		db_input critical virtuoso-opensource-7/error-setting-password || true
+	fi
+
+# default install process (i.e. no new admin password was given)...
+else
+	if [ $VT_EXIT ]; then
+		# let's check to see if the password is actually default
+		# (could be manual reconfigure or re-install after changing it)
+		if isql-vt $DB_PORT dba dba -K &> /dev/null; then
+			# it's a default pw so make sure the daemon is disabled
+			sed "s/RUN=yes/RUN=no/" -i /etc/default/virtuoso-opensource-7
+			echo "Warning: The current Virtuoso database uses default passwords."
+			echo "The Virtuoso daemon has been disabled for security reasons."
+			echo "You can reconfigure the package to change these passwords."
+			db_input high virtuoso-opensource-7/note-disabled || true
+		fi
+	else
+		# couldn't even start the daemon, something's broken!
+		db_input critical virtuoso-opensource-7/error-setting-password || true
+	fi
+fi
+
+# Stop the server if it was force-started
+if [ "x$RUN" == "xno" -a -x "/etc/init.d/virtuoso-opensource-7" ]; then
+	invoke-rc.d virtuoso-opensource-7 stop ignoredefault && VT_EXIT=$?
+fi
+
+db_go || true
+db_stop && exit
+
+# dh tag retained to prevent warnings only:
+#DEBHELPER#

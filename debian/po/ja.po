@@ -1,0 +1,325 @@
+# Copyright (C) Nobuhiro Iwamatsu <iwamatsu@debian.org>, 2010.
+# This file is distributed under the same license as the virtuoso-opensource package.
+# Nobuhiro Iwamatsu <iwamatsu@debian.org>, 2010.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: virtuoso-opensource_7.0.2+dfsg1-1\n"
+"Report-Msgid-Bugs-To: virtuoso-opensource@packages.debian.org\n"
+"POT-Creation-Date: 2014-08-11 06:30+0100\n"
+"PO-Revision-Date: 2010-11-23 16:26+0900\n"
+"Last-Translator: Nobuhiro Iwamatsu <iwamatsu@debian.org>\n"
+"Language-Team: Japanese <debian-japanese@lists.debian.org>\n"
+"Language: ja\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Type: password
+#. Description
+#: ../virtuoso-opensource-7.templates:2001
+msgid "Password for DBA and DAV users:"
+msgstr "DBA と DAV ユーザ用のパスワード:"
+
+#. Type: password
+#. Description
+#: ../virtuoso-opensource-7.templates:2001
+msgid ""
+"Following installation, users and passwords in Virtuoso can be managed using "
+"the command line tools (see the full documentation) or via the Conductor web "
+"application which is installed by default at http://localhost:8890/conductor."
+msgstr ""
+"以下のインストールで、Virtuosoのユーザーとパスワードはコマンドラインツールを"
+"使うか（完全なドキュメントを見てください）、http://localhost:8890/conductor "
+"にデフォルトでインストールされている Conductor ウェブアプリケーションによって"
+"管理できます。"
+
+#. Type: password
+#. Description
+#: ../virtuoso-opensource-7.templates:2001
+msgid ""
+"Two users (\"dba\" and \"dav\") are created by default, with administrative "
+"access to Virtuoso. Secure passwords must be chosen for these users in order "
+"to complete the installation."
+msgstr ""
+"2 つのユーザ (\"dba\" と \"dav\" ）は Virtuoso への管理アクセスと共に、デフォ"
+"ルトで作成されます。インストールを完了するために、これらのユーザのために安全"
+"なパスワードが選択される必要があります。"
+
+#. Type: password
+#. Description
+#: ../virtuoso-opensource-7.templates:2001
+msgid ""
+"If you leave this blank, the daemon will be disabled unless a non-default "
+"password already exists."
+msgstr ""
+"この項目が空の場合、デーモンはデフォルトではないパスワードが既に存在しない限"
+"り使用不能です。"
+
+#. Type: password
+#. Description
+#: ../virtuoso-opensource-7.templates:3001
+msgid "Administrative users password confirmation:"
+msgstr "管理ユーザのパスワード確認:"
+
+#. Type: error
+#. Description
+#: ../virtuoso-opensource-7.templates:4001
+msgid "Password mismatch"
+msgstr "パスワードが一致しません"
+
+#. Type: error
+#. Description
+#: ../virtuoso-opensource-7.templates:4001
+msgid ""
+"The two passwords you entered were not the same. Please enter a password "
+"again."
+msgstr ""
+"入力された 2 つのパスワードが一致しません。もう一度パスワードを入力してくださ"
+"い。"
+
+#. Type: note
+#. Description
+#: ../virtuoso-opensource-7.templates:5001
+msgid "No initial password set, daemon disabled"
+msgstr "初期パスワードがありません。デーモンが無効です。"
+
+#. Type: note
+#. Description
+#: ../virtuoso-opensource-7.templates:5001
+msgid ""
+"For security reasons, the default Virtuoso instance is disabled because no "
+"administration password was provided."
+msgstr ""
+"管理用のパスワードが提供されなかったので、セキュリティの理由のため、デフォル"
+"ト Virtuoso インスタンスは使用不能です。"
+
+#. Type: note
+#. Description
+#: ../virtuoso-opensource-7.templates:5001
+#, fuzzy
+#| msgid ""
+#| "You can enable the daemon manually by setting RUN to \"yes\" in /etc/"
+#| "default/virtuoso-opensource-7. The default DBA user password will then be "
+#| "\"dba\"."
+msgid ""
+"You can enable the daemon manually by setting RUN to \"yes\" in /etc/default/"
+"virtuoso-opensource-7. The default DBA user password will then be \"dba\"."
+msgstr ""
+"/etc/default/virtuoso-opensource-7 の RUN に \"yes\" を設定することによって、"
+"手動でデーモンを有効にすることができます。その時の DBA ユーザーのデフォルトパ"
+"スワードは、\"dba\" です。"
+
+#. Type: error
+#. Description
+#: ../virtuoso-opensource-7.templates:6001
+msgid "Unable to set password for the Virtuoso DBA user"
+msgstr "Virtuoso DBA ユーザのパスワードを設定することができません"
+
+#. Type: error
+#. Description
+#: ../virtuoso-opensource-7.templates:6001
+msgid ""
+"An error occurred while setting the password for the Virtuoso administrative "
+"user. This may have happened because the account already has a password, or "
+"because of a communication problem with the Virtuoso server."
+msgstr ""
+"Virtuoso の管理者ユーザに対してパスワードを設定しようとした際、エラーが発生し"
+"ました。これは既に管理者ユーザにパスワードが設定されていたか、Virtuoso サーバ"
+"との接続に問題があったためだと思われます。"
+
+#. Type: error
+#. Description
+#: ../virtuoso-opensource-7.templates:6001
+msgid ""
+"If the database already existed then it will have retained the original "
+"password. If there was some other problem then the default password (\"dba"
+"\") is used."
+msgstr ""
+"データベースが既に存在する場合、オリジナルのパスワードを保持します。いくつか"
+"の他の問題があるならば、デフォルトのパスワード ( \"DBA\" )が使われます。"
+
+#. Type: error
+#. Description
+#: ../virtuoso-opensource-7.templates:6001
+msgid ""
+"It is recommended to check the passwords for the users \"dba\" and \"dav\" "
+"immediately after installation."
+msgstr ""
+"インストール直後にユーザ \"dba\" と \"dav\" のパスワードチェックをお勧めしま"
+"す。"
+
+#. Type: boolean
+#. Description
+#: ../virtuoso-opensource-7.templates:7001
+msgid "Remove all Virtuoso databases?"
+msgstr "全ての Virtuoso データベースを削除しますか?"
+
+#. Type: boolean
+#. Description
+#: ../virtuoso-opensource-7.templates:7001
+#, fuzzy
+#| msgid ""
+#| "The /var/lib/virtuoso-opensource-7 directory which contains the Virtuoso "
+#| "databases is about to be removed."
+msgid ""
+"The /var/lib/virtuoso-opensource-7 directory which contains the Virtuoso "
+"databases is about to be removed."
+msgstr ""
+"Virtuoso データベースを含む /var/lib/virtuoso-opensource-7 ディレクトリは、削"
+"除されようとしています。"
+
+#. Type: boolean
+#. Description
+#: ../virtuoso-opensource-7.templates:7001
+msgid ""
+"If you're removing the Virtuoso package in order to later install a more "
+"recent version, or if a different Virtuoso package is already using it, you "
+"can choose to keep databases."
+msgstr ""
+"後でより新しいバージョンをインストールするために Virtuoso パッケージを削除し"
+"ている、または、異なる Virtuoso パッケージがそれを既に使っているならば、あな"
+"たはデータベースを保持することを選ぶ事ができます。"
+
+#. Type: string
+#. Description
+#: ../virtuoso-opensource-7.templates:8001
+msgid "HTTP server port:"
+msgstr "HTTP サーバポート:"
+
+#. Type: string
+#. Description
+#: ../virtuoso-opensource-7.templates:8001
+msgid ""
+"Virtuoso provides a web server capable of hosting HTML and VSP pages (with "
+"optional support for other languages). If you are installing this instance "
+"as a public web server directly on the Internet, you probably want to choose "
+"80 as web server port."
+msgstr ""
+"Virtuoso は、(他の言語に関する追加オプションとともに) HTML と VSP ページをホ"
+"スティングできるウェブサーバを提供します。あなたが直接インターネットの上に公"
+"開用ウェブサーバとしてこのインスタンスをインストールしているならば、多分ポー"
+"ト 80 をウェブサーバ用のポートに選択したいはずです。"
+
+#. Type: string
+#. Description
+#: ../virtuoso-opensource-7.templates:8001
+#, fuzzy
+#| msgid ""
+#| "Please note that the default web server root directory is /var/lib/"
+#| "virtuoso-opensource-7/vsp and will be empty unless you also install the "
+#| "package containing the standard Virtuoso start page."
+msgid ""
+"Please note that the default web server root directory is /var/lib/virtuoso-"
+"opensource-7/vsp and will be empty unless you also install the package "
+"containing the standard Virtuoso start page."
+msgstr ""
+"デフォルトウェブサーバのルートディレクトリは /var/lib/virtuoso-"
+"opensource-7.1/vsp で、標準的な Virtuoso スタートページを含んでいるパッケージ"
+"をインストールしない限り、このページは空になることを注意してください。"
+
+#. Type: string
+#. Description
+#: ../virtuoso-opensource-7.templates:9001
+msgid "Database server port:"
+msgstr "データベースサーバポート:"
+
+#. Type: string
+#. Description
+#: ../virtuoso-opensource-7.templates:9001
+msgid ""
+"You may change here the port on which the Virtuoso database server will "
+"listen for connections."
+msgstr ""
+"Virtuoso データベースサーバーが接続を listen するポートをここで変更できます。"
+
+#. Type: string
+#. Description
+#: ../virtuoso-opensource-7.templates:9001
+msgid ""
+"Modifying this default value can improve security on servers that might be "
+"targets for unauthorized intrusion."
+msgstr ""
+"このデフォルト値を修正することは、不正侵入の目標にされるかもしれないサーバ"
+"で、セキュリティを改善することができます。"
+
+#. Type: boolean
+#. Description
+#: ../virtuoso-opensource-7.templates:10001
+msgid "Register an ODBC system DSN for Virtuoso?"
+msgstr "Virtuoso のための ODBC システム DSN を登録しますか?"
+
+#. Type: boolean
+#. Description
+#: ../virtuoso-opensource-7.templates:10001
+msgid ""
+"An ODBC manager (unixodbc or iODBC) is already installed on this system, and "
+"the Virtuoso ODBC driver is installed."
+msgstr ""
+"ODBC マネージャ (unixodbc または iODBC )はこのシステム上にすでにインストール"
+"されており、そして、Virtuoso ODBC ドライバはインストールされます。"
+
+#. Type: boolean
+#. Description
+#: ../virtuoso-opensource-7.templates:10001
+msgid ""
+"The default Virtuoso instance can be automatically added to the list of "
+"available System Data Sources (and automatically deleted from the list when "
+"this package is removed)."
+msgstr ""
+"デフォルトの Virtuoso インスタンスは、利用できるシステムデータソースのリスト"
+"に自動的に自動的に追加することができます (そしてこのパッケージが取り外される"
+"とき、リストから自動的に削除されます)。"
+
+#. Type: boolean
+#. Description
+#: ../virtuoso-opensource-7.templates:10001
+msgid ""
+"If you choose this option, the DSN will be named \"VOS\". User and password "
+"details are omitted from the DSN for security reasons."
+msgstr ""
+"このオプションを有効にすると、DSN は \"VOS\" という名前がつけられます。ユー"
+"ザーとパスワードの詳細は、セキュリティ理由のためにDSNから省略されます。"
+
+#. Type: select
+#. Description
+#: ../virtuoso-opensource-7.templates:11001
+msgid "Default Virtuoso server package:"
+msgstr "デフォルトの Virtuoso サーバパッケージ:"
+
+#. Type: select
+#. Description
+#: ../virtuoso-opensource-7.templates:11001
+msgid ""
+"Please choose the version of virtuoso-server that will be linked to by the "
+"default (unversioned) names, for init scripts and client tools."
+msgstr ""
+"init スクリプトとクライアントツールのために、デフォルト（unversioned）の名前"
+"によってリンクされる virtuoso-server のバージョンを選んでください。"
+
+#. Type: boolean
+#. Description
+#: ../libvirtodbc0.templates:2001
+msgid "Register the Virtuoso ODBC driver?"
+msgstr "Virtuoso ODBC ドライバを登録しますか?"
+
+#. Type: boolean
+#. Description
+#: ../libvirtodbc0.templates:2001
+msgid ""
+"An ODBC manager (unixodbc or iODBC)  is already installed on this system."
+msgstr ""
+"ODBC マネージャ (unixodbc または iODBC) は既にこのシステムにインストールされ"
+"ています。"
+
+#. Type: boolean
+#. Description
+#: ../libvirtodbc0.templates:2001
+msgid ""
+"The Virtuoso ODBC driver can be automatically added to the list of available "
+"ODBC drivers (and automatically deleted from the list when this package is "
+"removed)."
+msgstr ""
+"Virtuoso ODBC ドライバは有効な ODBC ドライバのリストに 自動的に追加することが"
+"できます (そしてこのパッケージが取り外されるとき、リストから自動的に削除され"
+"ます)。"

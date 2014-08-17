@@ -1,0 +1,113 @@
+# These templates have been reviewed by the debian-l10n-english
+# team
+#
+# If modifications/additions/rewording are needed, please ask
+# debian-l10n-english@lists.debian.org for advice.
+#
+# Even minor modifications require translation updates and such
+# changes should be coordinated with translators and reviewers.
+
+Template: virtuoso-opensource-7/dba-password
+Type: password
+_Description: Password for DBA and DAV users:
+ Following installation, users and passwords in Virtuoso can be managed
+ using the command line tools (see the full documentation) or via
+ the Conductor web application which is installed by default at
+ http://localhost:8890/conductor.
+ .
+ Two users ("dba" and "dav") are created by default, with administrative
+ access to Virtuoso. Secure passwords must be chosen for these users
+ in order to complete the installation.
+ .
+ If you leave this blank, the daemon will be disabled
+ unless a non-default password already exists.
+
+Template: virtuoso-opensource-7/dba-password-again
+Type: password
+_Description: Administrative users password confirmation:
+
+Template: virtuoso-opensource-7/password-mismatch
+Type: error
+_Description: Password mismatch
+ The two passwords you entered were not the same. Please enter a
+ password again.
+
+Template: virtuoso-opensource-7/note-disabled
+Type: note
+_Description: No initial password set, daemon disabled
+ For security reasons, the default Virtuoso instance is disabled because
+ no administration password was provided.
+ .
+ You can enable the daemon manually by setting RUN to "yes" in
+ /etc/default/virtuoso-opensource-7. The default DBA user
+ password will then be "dba".
+
+Template: virtuoso-opensource-7/error-setting-password
+Type: error
+_Description: Unable to set password for the Virtuoso DBA user
+ An error occurred while setting the password for the Virtuoso
+ administrative user. This may have happened because the account
+ already has a password, or because of a communication problem with
+ the Virtuoso server.
+ .
+ If the database already existed then it will have retained the original
+ password. If there was some other problem then the default password
+ ("dba") is used.
+ .
+ It is recommended to check the passwords for the users "dba" and "dav"
+ immediately after installation. 
+
+Template: virtuoso-opensource-7/check-remove-databases
+Type: boolean
+Default: false
+_Description: Remove all Virtuoso databases?
+ The /var/lib/virtuoso-opensource-7 directory which contains the Virtuoso
+ databases is about to be removed.
+ .
+ If you're removing the Virtuoso package in order to later install a more
+ recent version, or if a different Virtuoso package is already using it,
+ you can choose to keep databases.
+
+Template: virtuoso-opensource-7/http-server-port
+Type: string
+Default: 8890
+_Description: HTTP server port:
+ Virtuoso provides a web server capable of hosting HTML and VSP pages
+ (with optional support for other languages). If you are installing this
+ instance as a public web server directly on the Internet, you probably want
+ to choose 80 as web server port.
+ .
+ Please note that the default web server root directory is
+ /var/lib/virtuoso-opensource-7/vsp and will be empty unless you also
+ install the package containing the standard Virtuoso start page.
+
+Template: virtuoso-opensource-7/db-server-port
+Type: string
+Default: 1111
+_Description: Database server port:
+ You may change here the port on which the Virtuoso database server will
+ listen for connections.
+ .
+ Modifying this default value can improve security on servers that
+ might be targets for unauthorized intrusion.         
+
+Template: virtuoso-opensource-7/register-odbc-dsn
+Type: boolean
+Default: false
+_Description: Register an ODBC system DSN for Virtuoso?
+ An ODBC manager (unixodbc or iODBC) is already installed on this system,
+ and the Virtuoso ODBC driver is installed.
+ .
+ The default Virtuoso instance can be automatically added to the list of
+ available System Data Sources (and automatically deleted from the list
+ when this package is removed).
+ .
+ If you choose this option, the DSN will be named "VOS". User and
+ password details are omitted from the DSN for security reasons.
+
+Template: virtuoso-opensource/primary-server
+Type: select
+Choices: ${choices}
+_Description: Default Virtuoso server package:
+ Please choose the version of virtuoso-server that will be linked to by the
+ default (unversioned) names, for init scripts and client tools.
