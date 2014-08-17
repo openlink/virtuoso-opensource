@@ -5,9 +5,9 @@ include /usr/share/cdbs/1/rules/patchsys-quilt.mk
 include /usr/share/cdbs/1/class/autotools.mk
 include /usr/share/cdbs/1/rules/utils.mk
 
-DEB_AUTO_UPDATE_ACLOCAL = 1.11
+DEB_AUTO_UPDATE_ACLOCAL = 1.14
 DEB_AUTO_UPDATE_AUTOCONF = 2.61
-DEB_AUTO_UPDATE_AUTOMAKE = 1.11
+DEB_AUTO_UPDATE_AUTOMAKE = 1.14
 DEB_AUTO_UPDATE_LIBTOOL = pre
 
 DEB_AUTOMAKE_ARGS += -Wno-portability
