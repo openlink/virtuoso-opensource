@@ -7,7 +7,7 @@ Standards-Version: 3.9.2
 Homepage: http://virtuoso.openlinksw.com/wiki/main/Main/
 Vcs-Browser: https://alioth.debian.org/plugins/scmgit/cgi-bin/gitweb.cgi?p=pkg-virtuoso/pkg-virtuoso.git
 Vcs-Git: git://scm.alioth.debian.org/git/pkg-virtuoso/pkg-virtuoso.git
-Build-Depends: libiodbc2-dev, cdbs, debhelper (>= 7), quilt, autotools-dev, autoconf (>=2.57),
+Build-Depends: cdbs, debhelper (>= 7), quilt, autotools-dev, autoconf (>=2.57),
  automake (>=1.10), libtool (>=1.5.16), flex (>=2.5.4), bison (>=1.35),
  gperf (>=2.7.2), gawk (>=3.1.1), m4 (>=1.4.1), make (>=3.79.1),
  libssl-dev (>=0.9.7), libreadline-dev, zlib1g-dev, libxml2-dev, libpcre3-dev,

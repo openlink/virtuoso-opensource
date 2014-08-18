@@ -1,6 +1,4 @@
-usr/bin/isql-iodbc
 usr/bin/isql-vt
 usr/bin/isqlw-vt
-usr/bin/isqlw-vt-iodbc
 usr/bin/virt_mail
 usr/bin/virtuoso-t
