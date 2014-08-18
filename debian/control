@@ -280,8 +280,7 @@ Description: high-performance database - Open Data Spaces module
  for Open Data Spaces support.
 
 Package: libvirtodbc0
-Depends: virtuoso-opensource-7-common (= ${binary:Version}),
- libiodbc2 | unixodbc, ${shlibs:Depends}, ${misc:Depends}
+Depends: libiodbc2 | unixodbc, ${shlibs:Depends}, ${misc:Depends}
 Replaces: virtuoso-nepomuk (<< 6.1.2+dfsg1-1ubuntu1)
 Breaks: virtuoso-nepomuk (<< 6.1.2+dfsg1-1ubuntu1)
 Architecture: any
