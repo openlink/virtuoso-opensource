@@ -281,7 +281,7 @@ Description: high-performance database - Open Data Spaces module
 
 Package: libvirtodbc0
 Depends: virtuoso-opensource-7-common (= ${binary:Version}),
- libiodbc2, ${shlibs:Depends}, ${misc:Depends}
+ libiodbc2 | unixodbc, ${shlibs:Depends}, ${misc:Depends}
 Replaces: virtuoso-nepomuk (<< 6.1.2+dfsg1-1ubuntu1)
 Breaks: virtuoso-nepomuk (<< 6.1.2+dfsg1-1ubuntu1)
 Architecture: any
@@ -308,8 +308,7 @@ Description: high-performance database - Mono assemblies
  This package contains Virtuoso's ADO.NET data provider for Mono.
 
 Package: libvirtjdbc0
-Depends: virtuoso-opensource-7-common (= ${binary:Version}),
- libiodbc2, ${misc:Depends}
+Depends: virtuoso-opensource-7-common (= ${binary:Version}), ${misc:Depends}
 Architecture: any
 Description: high-performance database - JDBC libraries
  OpenLink Virtuoso is a high-performance object-relational SQL database.
