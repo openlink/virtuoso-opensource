@@ -41,6 +41,16 @@ public class VirtuosoExplicitString
       this.dtp = dtp;
       this.bytes = bytes;
       this.str = null;
+      if (dtp == VirtuosoTypes.DV_STRING || dtp == VirtuosoTypes.DV_SHORT_STRING_SERIAL ||
+            dtp == VirtuosoTypes.DV_STRICT_STRING || dtp == VirtuosoTypes.DV_C_STRING ||
+            dtp == VirtuosoTypes.DV_BLOB || dtp == VirtuosoTypes.DV_ANY)
+        {
+            if (bytes.length < 256)
+                this.dtp = VirtuosoTypes.DV_SHORT_STRING_SERIAL;
+            else
+                this.dtp = VirtuosoTypes.DV_STRING;
+        }
+
     }
 
   protected VirtuosoExplicitString (String str, int dtp, VirtuosoConnection con) throws VirtuosoException
