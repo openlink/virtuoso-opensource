@@ -4623,10 +4623,9 @@ bif_stat_import (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (!col)
 	continue;
       col->col_n_distinct =  unbox (cs[2]);
-      col->col_n_distinct =  unbox (cs[2]);
       col->col_count =  unbox (cs[3]);
-      col->col_min =  unbox (sc_ext_to_data (qi, cs[4]));
-      col->col_max =  unbox (sc_ext_to_data (qi, cs[4]));
+      col->col_min = sc_ext_to_data (qi, cs[4]);
+      col->col_max = sc_ext_to_data (qi, cs[5]);
     }
   END_DO_BOX;
   DO_BOX (caddr_t *, ks, inx, stats[1])
