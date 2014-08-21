@@ -11930,6 +11930,37 @@ bif_deserialize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return res;
 }
 
+static caddr_t
+bif_serialize_to_string_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t xx = bif_arg (qst, args, 0, "serialize");
+  dk_session_t *out = strses_allocate ();
+
+  strses_enable_paging (out, 1024 * 1024 * 10);
+  CATCH_WRITE_FAIL (out)
+    {
+      print_object (xx, out, NULL, NULL);
+    }
+  FAILED
+    {
+      dtp_t tag = DV_TYPE_OF (xx);
+      *err_ret = srv_make_new_error ("22023", "SR479",
+	  "Cannot serialize the data of type %s (%u) in serialize",
+	  dv_type_title (tag), (unsigned) tag);
+    }
+  END_WRITE_FAIL (out);
+  return out;
+}
+
+static caddr_t
+bif_deserialize_from_string_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  dk_session_t * in = (dk_session_t *) bif_strses_arg (qst, args, 0, "deserialize");
+  caddr_t ret;
+  ret = (caddr_t) read_object (in);
+  return ret;
+}
+
 caddr_t
 bif_serial_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -16439,6 +16470,8 @@ sql_bif_init (void)
   bif_define_ex ("serialize", bif_serialize, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("__serial_length", bif_serial_length, BMD_RET_TYPE, &bt_integer_nn, BMD_DONE);
   bif_define_ex ("deserialize", bif_deserialize, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("serialize_to_string_session", bif_serialize_to_string_session, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("deserialize_from_string_session", bif_deserialize_from_string_session, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("complete_table_name", bif_complete_table_name, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("complete_proc_name", bif_complete_proc_name, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("__any_grants", bif_any_grants, BMD_RET_TYPE, &bt_integer, BMD_DONE);
