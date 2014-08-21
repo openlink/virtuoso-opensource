@@ -956,7 +956,7 @@ dt_to_iso8601_string_ext (const char *dt, char *buf, int len, int mode)
       snprintf (buf, len, "??? Bit 2 in print mode requires TIME or DATETIME argument, not DATE");
       return;
     }
-  dt_to_GMTimestamp_struct (dt, &ts);
+  dt_to_timestamp_struct (dt, &ts);
   if (DT_PRINT_MODE_YMD & mode)
     {
       if (DT_PRINT_MODE_NO_D & mode)
