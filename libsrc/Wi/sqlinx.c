@@ -260,7 +260,7 @@ sqlo_key_sp_or_op (df_elt_t * tb_dfe, dbe_key_t * key)
   QNCAST (dbe_column_t, col, key->key_parts->data);
   if (!tb_is_rdf_quad (tb_dfe->_.table.ot->ot_table))
     return 0;
-  if (key->key_distinct && key->key_decl_parts == 2 && (0 != strcmp (col->col_name, "S") || 0 != strcmp (col->col_name, "O")))
+  if (key->key_distinct && key->key_decl_parts == 2 && (0 == strcmp (col->col_name, "S") || 0 == strcmp (col->col_name, "O")))
     {
       df_elt_t * pred = sqlo_key_part_best (col, tb_dfe->_.table.col_preds, 0);
       return dfe_is_eq_pred (pred);
