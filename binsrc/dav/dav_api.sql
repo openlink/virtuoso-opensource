@@ -1682,7 +1682,7 @@ DAV_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar
 
   if (a_uid = -1 and exists (select 1 from DB.DBA.SYS_KEYS where KEY_NAME='DB.DBA.WA_USER_OL_ACCOUNTS')) -- this check is only valid if table is accessed in a separate SP which is not precompiled
   {
-    if (not DAV_GET_UID_BY_SERVICE_ID (serviceId, a_uid, a_gid))
+    if (not DAV_GET_UID_BY_SERVICE_ID (serviceId, a_uid, a_gid, a_uname, _perms))
       a_uid := -1;
   }
 
@@ -1709,19 +1709,23 @@ nf_col_or_res:
 ;
 
 -- trueg: we maybe should check if the account is disabled??
-create procedure DAV_GET_UID_BY_SERVICE_ID (in serviceId any, out a_uid int, out a_gid int)
+create procedure DAV_GET_UID_BY_SERVICE_ID (in serviceId any, out a_uid int, out a_gid int, out a_uname varchar, out _perms int)
 {
   declare st, msg, meta, rows any;
 
   a_uid := null;
   a_gid := null;
+  a_uname := null;
+  _perms := null;
   st := '00000';
-  exec ('select WUO_U_ID, U_GROUP from DB.DBA.WA_USER_OL_ACCOUNTS, DB.DBA.SYS_USERS where WUO_U_ID=U_ID and WUO_URL=?', st, msg, vector (serviceId), 0, meta, rows);
+  exec ('select WUO_U_ID, U_GROUP, U_NAME, U_DEF_PERMS from DB.DBA.WA_USER_OL_ACCOUNTS, DB.DBA.SYS_USERS where WUO_U_ID=U_ID and WUO_URL=?', st, msg, vector (serviceId), 0, meta, rows);
   if (('00000' <> st) or (length (rows) = 0))
     return 0;
 
   a_uid := rows[0][0];
   a_gid := rows[0][1];
+  a_uname := rows[0][2];
+  _perms := rows[0][3];
 
   return 1;
 }
@@ -1842,7 +1846,7 @@ DAV_AUTHENTICATE_HTTP (in id any, in what char(1), in req varchar, in can_write_
 
         if (a_uid = -1 and exists (select 1 from DB.DBA.SYS_KEYS where KEY_NAME='DB.DBA.WA_USER_OL_ACCOUNTS')) -- this check is only valid if table is accessed in a separate SP which is not precompiled
         {
-          if (not DAV_GET_UID_BY_SERVICE_ID (serviceId, a_uid, a_gid))
+          if (not DAV_GET_UID_BY_SERVICE_ID (serviceId, a_uid, a_gid, a_uname, _perms))
             a_uid := -1;
         }
 
