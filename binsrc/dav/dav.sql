@@ -111,7 +111,7 @@ not_found: ;
 	http_rewrite ();
 	
 	http_header (concat (sprintf ('Content-Type: %s\r\n', ctype),
-		case when isstring (s_etag) then sprintf ('ETag: %s\r\n', s_etag) else '' end,
+		case when isstring (s_etag) then sprintf ('ETag: "%s"\r\n', s_etag) else '' end,
 		'DAV: 1,2,<http://www.openlinksw.com/virtuoso/webdav/1.0>\r\n',
 		ldp_head,
 		'Access-Control-Allow-Methods: GET,HEAD,POST,PUT,DELETE,OPTIONS,PROPFIND,PROPPATCH,COPY,MOVE,LOCK,UNLOCK,TRACE,PATCH\r\n',
@@ -1865,6 +1865,22 @@ etag_err:
 }
 ;
 
+create procedure WS.WS.ETAG_BY_ID (in id any, in tp varchar)
+{
+  declare id_, name_, mod_time any;
+  whenever not found goto ret;
+  if (isvector (id))
+    return WS.WS.ETAG ('', id, now ());
+  if (tp = 'R')
+    select RES_COL, RES_NAME, RES_MOD_TIME into id_, name_, mod_time from WS.WS.SYS_DAV_RES where RES_ID = id;
+  else
+    select COL_ID, COL_NAME, COL_MOD_TIME into id_, name_, mod_time from WS.WS.SYS_DAV_COL where COL_ID = id;
+  return WS.WS.ETAG (name_, id_, mod_time);
+  ret:
+  return null;
+}
+;
+
 -- /* HEAD METHOD, same as GET except body is not sent */
 create procedure WS.WS.HEAD (in path varchar, inout params varchar, in lines varchar)
 {
@@ -1907,7 +1923,7 @@ create procedure WS.WS.PUT (
   declare _atomPub integer;
   declare _path, _destination, _oldName, _name, _what, _method, _category varchar;
   declare _xtree, _content, _parts any;
-  declare client_etag, server_etag, res_name_ varchar;
+  declare client_etag, server_etag, res_name_, rc_type varchar;
   declare res_id_, id_ integer;
   declare mod_time datetime;
 
@@ -1921,6 +1937,7 @@ create procedure WS.WS.PUT (
   content_type := http_request_header (lines, 'Content-Type', null, '');
   content_type_attr := http_request_header (lines, 'Content-Type', 'type', '');
   _method := http_request_get ('REQUEST_METHOD');
+  rc_type := 'R';
   if ((content_type = 'application/atom+xml') and (content_type_attr = 'entry'))
   {
     -- AtomPub: POST and PUT methods
@@ -2124,8 +2141,11 @@ create procedure WS.WS.PUT (
 	    {
 	      sparql move graph ?:gr to ?:newg;
 	    }
+	  rc_type := 'C';
 	  if (_col is null)
 	    rc := DAV_COL_CREATE_INT (newpath, _perms, null, null, null, null, 1, 0, 1, uid, gid);
+	  else
+	    rc := _col;
 	  http_header (sprintf ('Location: %s\r\n', WS.WS.DAV_LINK (DAV_CONCAT_PATH (full_path, '/'))));
 	  http_header (http_header_get () || WS.WS.LDP_HDRS (1, 1, 0, 0, full_path)); 
 	  goto rcck;
@@ -2149,8 +2169,11 @@ create procedure WS.WS.PUT (
     {
       commit work;
       http_request_status ('HTTP/1.1 201 Created');
-	declare _col_parent varchar;
+	declare _col_parent, _etag varchar;
 	_col_parent :=  DB.DBA.DAV_SEARCH_PATH (_col_parent_id, 'C');
+	_etag := WS.WS.ETAG_BY_ID (rc, rc_type);
+	if (_etag is not null)
+	  http_header (http_header_get () || sprintf ('ETag: "%s"\r\n', _etag));
 	if (LDP_ENABLED (_col_parent_id))
 	{
 		declare par_graph, cur_graph any;
@@ -2757,6 +2780,9 @@ again:
       );
     }
     http_header (http_header_get () || WS.WS.LDP_HDRS (1, 1, 0, 0, full_path));
+    server_etag := WS.WS.ETAG_BY_ID (_col_id, 'C');
+    if (server_etag is not null)
+      http_header (http_header_get () || sprintf ('ETag: "%s"\r\n', server_etag));
     return;
   }
 
@@ -3422,7 +3448,7 @@ create procedure WS.WS.GET_EXT_DAV_LDP(inout path any, inout lines any, inout pa
 	last := (cnt / n_per_page) + 1;
 	http_header (sprintf('Content-Type: %s\r\n%s', accept, WS.WS.LDP_HDRS (is_col, 1, page, last, full_path)));
 	if (isstring (etag))
-	  http_header (http_header_get () || sprintf('ETag: %s\r\n', etag));
+	  http_header (http_header_get () || sprintf('ETag: "%s"\r\n', etag));
 	qr := sprintf ('define input:storage "" construct { `sql:dynamic_host_name(?s)` ?p `sql:dynamic_host_name(?o)` . `sql:dynamic_host_name(?o)` a ?t } where { ?s ?p ?o optional { graph ?g { ?o a ?t } }  } order by ?s ?p ?o limit %d offset %d',
 				  		n_per_page, n_per_page * (page - 1));
 execqr:						
