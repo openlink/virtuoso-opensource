@@ -82,6 +82,7 @@ public class VirtuosoQueryExecutionFactory
 	}
     }
 
+/**
     static public QueryExecution create(Query query, FileManager fm)
     {
         checkArg(query) ;
@@ -96,6 +97,7 @@ public class VirtuosoQueryExecutionFactory
         checkArg(queryStr) ;
         return create(makeQuery(queryStr), fm) ;
     }
+**/
 
     // ---------------- Query + Model
 

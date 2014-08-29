@@ -26,6 +26,7 @@ package virtuoso.jena.driver;
 import java.sql.*;
 import java.util.*;
 import javax.sql.*;
+import javax.transaction.xa.*;
 
 import virtuoso.sql.*;
 
@@ -39,6 +40,7 @@ import com.hp.hpl.jena.rdf.model.impl.*;
 
 import virtuoso.jdbc4.VirtuosoConnectionPoolDataSource;
 import virtuoso.jdbc4.VirtuosoDataSource;
+import virtuoso.jdbc4.VirtuosoXADataSource;
 
 
 public class VirtGraph extends GraphBase
@@ -48,6 +50,7 @@ public class VirtGraph extends GraphBase
     }
 
     static public final String DEFAULT = "virt:DEFAULT";
+    protected boolean isXA = false;
     protected String graphName;
     protected boolean readFromAllGraphs = false;
     protected String url_hostlist;
@@ -59,7 +62,12 @@ public class VirtGraph extends GraphBase
     protected String ruleSet = null;
     protected boolean useSameAs = false;
     protected int queryTimeout = 0;
-    static final String S_TTLP_INSERT = "DB.DBA.TTLP(?,'',?,255)";
+    protected boolean useReprepare = true;
+//    static final String S_TTLP_INSERT = "DB.DBA.TTLP_MT (?, '', ?, 255, 2, 3, ?)";
+    static final String S_BATCH_INSERT = "DB.DBA.rdf_insert_triple_c (?,?,?,?,?,?)";
+    static final String S_BATCH_DELETE = "DB.DBA.rdf_delete_triple_c (?,?,?,?,?,?)";
+    static final String S_CLEAR_GRAPH = "DB.DBA.rdf_clear_graphs_c (?)";
+
     static final String sinsert = "sparql insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
     static final String sdelete = "sparql delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
     static final int BATCH_SIZE = 5000;
@@ -69,6 +77,10 @@ public class VirtGraph extends GraphBase
 
     private VirtuosoConnectionPoolDataSource pds = new VirtuosoConnectionPoolDataSource();
     private DataSource ds;
+    private XADataSource xa_ds;
+    private javax.transaction.xa.XAResource xa_resource = null;
+    private XAConnection xa_connection = null;
+    protected VirtTransactionHandler tranHandler = null;
 
 
     public VirtGraph()
@@ -100,19 +112,21 @@ public class VirtGraph extends GraphBase
 	if (_ds instanceof VirtuosoDataSource) {
 	    VirtuosoDataSource vds = (VirtuosoDataSource)_ds;
 	    this.url_hostlist = vds.getServerName();
-	    this.graphName = _graphName;
 	    this.user = vds.getUser();
 	    this.password = vds.getPassword();
 	}
 
-	if (this.graphName == null)
-	    this.graphName = DEFAULT;
+	this.graphName = _graphName==null?DEFAULT: _graphName;
 
 	try {
 	    connection = _ds.getConnection();
 	    ds = _ds;
 	    ModelCom m = new ModelCom(this); //don't drop is it needed for initialize internal Jena classes
 	    TypeMapper tm = TypeMapper.getInstance();
+
+            virtuoso.jdbc4.Driver drv = new virtuoso.jdbc4.Driver();
+            if (drv.getMajorVersion()>=3 && drv.getMinorVersion()>=72)
+                useReprepare = false;
 	} catch(Exception e) {
 	    throw new JenaException(e);
 	}
@@ -131,18 +145,20 @@ public class VirtGraph extends GraphBase
 	if (_ds instanceof VirtuosoConnectionPoolDataSource) {
 	    VirtuosoDataSource vds = (VirtuosoDataSource)_ds;
 	    this.url_hostlist = vds.getServerName();
-	    this.graphName = _graphName;
 	    this.user = vds.getUser();
 	    this.password = vds.getPassword();
 	}
 
-	if (this.graphName == null)
-	    this.graphName = DEFAULT;
+	this.graphName = _graphName==null?DEFAULT: _graphName;
 
 	try {
 	    connection = _ds.getPooledConnection().getConnection();
 	    ModelCom m = new ModelCom(this); //don't drop is it needed for initialize internal Jena classes
 	    TypeMapper tm = TypeMapper.getInstance();
+
+            virtuoso.jdbc4.Driver drv = new virtuoso.jdbc4.Driver();
+            if (drv.getMajorVersion()>=3 && drv.getMinorVersion()>=72)
+                useReprepare = false;
 	} catch(Exception e) {
 	    throw new JenaException(e);
 	}
@@ -155,19 +171,54 @@ public class VirtGraph extends GraphBase
     }
 
 
-    public VirtGraph(String graphName, String _url_hostlist, String user, 
+    public VirtGraph(String _graphName, XADataSource _ds) 
+    {
+	super();
+
+	if (_ds instanceof VirtuosoXADataSource) {
+	    VirtuosoXADataSource vds = (VirtuosoXADataSource)_ds;
+	    this.url_hostlist = vds.getServerName();
+	    this.user = vds.getUser();
+	    this.password = vds.getPassword();
+	}
+
+	this.graphName = _graphName==null?DEFAULT: _graphName;
+
+	try {
+	    xa_connection = _ds.getXAConnection();
+	    connection = xa_connection.getConnection();
+	    isXA = true;
+	    ModelCom m = new ModelCom(this); //don't drop is it needed for initialize internal Jena classes
+	    TypeMapper tm = TypeMapper.getInstance();
+
+            virtuoso.jdbc4.Driver drv = new virtuoso.jdbc4.Driver();
+            if (drv.getMajorVersion()>=3 && drv.getMinorVersion()>=72)
+                useReprepare = false;
+	} catch(Exception e) {
+	    throw new JenaException(e);
+	}
+    }
+
+
+    public VirtGraph(XADataSource _ds) 
+    {		
+	this(null, _ds);
+    }
+
+
+
+    
+    public VirtGraph(String _graphName, String _url_hostlist, String user, 
     		String password, boolean _roundrobin)
     {
 	super();
 
 	this.url_hostlist = _url_hostlist.trim();
 	this.roundrobin = _roundrobin;
-	this.graphName = graphName;
 	this.user = user;
 	this.password = password;
 
-	if(this.graphName == null)
-	    this.graphName = DEFAULT;
+	this.graphName = _graphName==null?DEFAULT: _graphName;
 
 	try {
 	    if (url_hostlist.startsWith("jdbc:virtuoso://")) {
@@ -200,6 +251,10 @@ public class VirtGraph extends GraphBase
 
 	    ModelCom m = new ModelCom(this); //don't drop is it needed for initialize internal Jena classes
 	    TypeMapper tm = TypeMapper.getInstance();
+
+            virtuoso.jdbc4.Driver drv = new virtuoso.jdbc4.Driver();
+            if (drv.getMajorVersion()>=3 && drv.getMinorVersion()>=72)
+                useReprepare = false;
 	} catch(Exception e) {
 	    throw new JenaException(e);
 	}
@@ -209,6 +264,16 @@ public class VirtGraph extends GraphBase
 // getters
     public DataSource getDataSource() {
         return ds;
+    }
+
+    public XAResource getXAResource() {
+    	try{
+            if (xa_resource==null)
+        	xa_resource = (xa_connection!=null)?xa_connection.getXAResource():null;
+            return xa_resource;
+        } catch(SQLException e) {
+            throw new JenaException(e);
+        }
     }
 
     public String getGraphName()
@@ -473,7 +538,7 @@ public class VirtGraph extends GraphBase
       if (n == null)
         return;
       if (n.isURI()) 
-      ps.setString(col, n.toString());
+        ps.setString(col, n.toString());
       else
         throw new SQLException("Only URI nodes can be used as predicate");
     }
@@ -574,7 +639,7 @@ public class VirtGraph extends GraphBase
     /**
      * more efficient
      */
-//--java5 or newer    @Override
+    @Override
     protected int graphBaseSize() 
     {
       StringBuffer sb = new StringBuffer("select count(*) from (sparql define input:storage \"\" ");
@@ -616,7 +681,7 @@ public class VirtGraph extends GraphBase
     /** maybe more efficient than default impl
      * 
      */
-//--java5 or newer    @Override
+    @Override
     protected boolean graphBaseContains(Triple t) 
     {
       return graphBaseContains(null, t);
@@ -669,7 +734,7 @@ public class VirtGraph extends GraphBase
     }
 
 
-//--java5 or newer    @Override
+    @Override
     public ExtendedIterator<Triple> graphBaseFind(TripleMatch tm) 
     {
       return graphBaseFind(null, tm);
@@ -709,21 +774,25 @@ public class VirtGraph extends GraphBase
 
       try 
       {
-        java.sql.PreparedStatement stmt;
-        stmt = prepareStatement(sb.toString());
-	return new VirtResSetIter(this, stmt.executeQuery(), tm);
+        java.sql.Statement stmt = createStatement();
+	return new VirtResSetIter(this, stmt, stmt.executeQuery(sb.toString()), tm);
       } catch (Exception e) {
         throw new JenaException(e);
       }
     }
 
 
-//--java5 or newer    @Override
+    @Override
     public void close() 
     {
       try {
         super.close(); // will set closed = true
-        connection.close();
+        if (connection!=null)
+          connection.close();
+        connection = null;
+        if (xa_connection != null)
+          xa_connection.close();
+        xa_connection = null;
       } catch (Exception e) {
         throw new JenaException(e);
       }
@@ -734,9 +803,32 @@ public class VirtGraph extends GraphBase
 
     public void clear()
     {
-      clearGraph(this.graphName);
+      clear(Node.createURI(this.graphName));
       getEventManager().notifyEvent( this, GraphEvents.removeAll );
     }
+
+
+    public void clear(Node... graphs)
+    {
+      if (graphs!=null && graphs.length > 0)
+        try {
+          String [] graphNames = new String[graphs.length];
+          for (int i = 0; i < graphs.length; i++) 
+            graphNames[i] = graphs[i].toString();
+
+          java.sql.PreparedStatement ps = prepareStatement(S_CLEAR_GRAPH);
+
+          Array gArray = connection.createArrayOf ("VARCHAR", graphNames);
+          ps.setArray (1, gArray);
+          ps.executeUpdate ();
+          ps.close();
+          gArray.free();
+	}
+	catch (Exception e) {
+          throw new JenaException(e);
+        }
+    }
+
 
 
     public void read (String url, String type)
@@ -759,9 +851,10 @@ public class VirtGraph extends GraphBase
 //--java5 or newer    @SuppressWarnings("unchecked")
     void add(String _gName, Iterator<Triple> it, List<Triple> list) 
     {
+      PreparedStatement ps = null;
       try {
-        PreparedStatement ps = prepareStatement(S_TTLP_INSERT);
-        StringBuilder sb = new StringBuilder(256);
+        ps = prepareStatement(S_BATCH_INSERT);
+
         int count = 0;
 	    
         while (it.hasNext())
@@ -771,52 +864,50 @@ public class VirtGraph extends GraphBase
           if (list != null)
             list.add(t);
 
-          sb.append(Node2Str(t.getSubject()));
-          sb.append(' ');
-          sb.append(Node2Str(t.getPredicate()));
-          sb.append(' ');
-          sb.append(Node2Str(t.getObject()));
-          sb.append(" .\n");
+          bindBatchParams(ps, t.getSubject(), t.getPredicate(),
+          		t.getObject(), _gName);
+          ps.addBatch();
           count++;
 
           if (count > BATCH_SIZE) {
-	    ps.setString(1, sb.toString());
-            ps.setString(2, (_gName!=null? _gName: this.graphName));
-	    ps.executeUpdate();
-	    sb.setLength(0);
+	    ps.executeBatch();
+	    ps.clearBatch();
             count = 0;
+            if (useReprepare) {
+               try {
+                 ps.close();
+                 ps = null;
+               } catch(Exception e){}
+               ps = prepareStatement(S_BATCH_INSERT);
+            }
           }
         }
 
         if (count > 0) 
         {
-          ps.setString(1, sb.toString());
-          ps.setString(2, (_gName!=null? _gName: this.graphName));
-          ps.executeUpdate();
+	  ps.executeBatch();
+	  ps.clearBatch();
         }
-        ps.close();
 
       }	catch(Exception e) {
         throw new JenaException(e);
+      } finally {
+        if (ps!=null)
+          try {
+            ps.close();
+          } catch (SQLException e){}
       }
     }
 
 
-
-    void delete(Iterator<Triple> it, List<Triple> list)
+    void delete(Iterator<Triple> it, List<Triple> list) 
     {
-      String del_start = "sparql define output:format '_JAVA_' DELETE FROM <";
-      java.sql.Statement stmt = null;
-      int count = 0;
-      StringBuilder data = new StringBuilder(256);
-
-      data.append(del_start);
-      data.append(this.graphName);
-      data.append("> { ");
-
+      PreparedStatement ps = null;
       try {
-        stmt = createStatement();
+        ps = prepareStatement(S_BATCH_DELETE);
 
+        int count = 0;
+	    
         while (it.hasNext())
         {
           Triple t = (Triple) it.next();
@@ -824,43 +915,95 @@ public class VirtGraph extends GraphBase
           if (list != null)
             list.add(t);
 
-          StringBuilder row = new StringBuilder(256);
-          row.append(Node2Str(t.getSubject()));
-          row.append(' ');
-          row.append(Node2Str(t.getPredicate()));
-          row.append(' ');
-          row.append(Node2Str(t.getObject()));
-          row.append(" .\n");
-
-          if (count > 0 && data.length()+row.length() > MAX_CMD_SIZE) {
-            data.append(" }");
-	    stmt.execute(data.toString());
-
-	    data.setLength(0);
-            data.append(del_start);
-            data.append(this.graphName);
-            data.append("> { ");
-            count = 0;
-          }
-
-          data.append(row);
+          bindBatchParams(ps, t.getSubject(), t.getPredicate(),
+          		t.getObject(), this.graphName);
+          ps.addBatch();
           count++;
+
+          if (count > BATCH_SIZE) {
+	    ps.executeBatch();
+	    ps.clearBatch();
+            count = 0;
+            if (useReprepare) {
+               try {
+                 ps.close();
+                 ps = null;
+               } catch(Exception e){}
+               ps = prepareStatement(S_BATCH_DELETE);
+            }
+          }
         }
 
         if (count > 0) 
         {
-          data.append(" }");
-	  stmt.execute(data.toString());
+	  ps.executeBatch();
+	  ps.clearBatch();
         }
-      
+
       }	catch(Exception e) {
         throw new JenaException(e);
       } finally {
-        try {
-          stmt.close();
-        } catch (Exception e) {}
+        if (ps!=null)
+          try {
+            ps.close();
+          } catch (SQLException e) {}
       }
     }
+
+
+    private void bindBatchParams(PreparedStatement ps, 
+    				Node subject, 
+    				Node predicate, 
+    				Node object, 
+    				String _graphName) throws SQLException
+    {
+      ps.setString(1, subject.isBlank()?"_:"+subject:subject.toString());
+      ps.setString(2, predicate.isBlank()?"_:"+predicate:predicate.toString());
+
+      if (object.isURI()) 
+      {
+        ps.setString(3, object.toString());
+        ps.setNull(4, java.sql.Types.VARCHAR);
+        ps.setInt(5, 0);
+      }
+      else if (object.isBlank()) 
+      {
+        ps.setString(3, "_:"+object.toString());
+        ps.setNull(4, java.sql.Types.VARCHAR);
+        ps.setInt(5, 0);
+      }
+      else if (object.isLiteral())
+      {
+        String s;
+        ps.setString(3, object.getLiteralLexicalForm());
+        String s_lang = object.getLiteralLanguage();
+        String s_type = object.getLiteralDatatypeURI();
+        if (s_type !=null && s_type.length() > 0) 
+        {
+          ps.setString(4, s_type);
+          ps.setInt(5, 3);
+        }
+        else if (s_lang != null && s_lang.length() > 0) 
+        {
+          ps.setString(4, s_lang);
+          ps.setInt(5, 2);
+        }
+        else
+        {
+          ps.setNull(4,java.sql.Types.VARCHAR);
+          ps.setInt(5, 1);
+        }
+      }
+      else
+      {
+        ps.setString(3, object.toString());
+        ps.setNull(4, java.sql.Types.VARCHAR);
+        ps.setInt(5, 0);
+      }
+
+      ps.setString(6, _graphName);
+    }
+
 
 
     void delete_match(TripleMatch tm)
@@ -886,7 +1029,8 @@ public class VirtGraph extends GraphBase
       try {
         if (nS == null && nP == null && nO == null) {
 
-          clearGraph((_gName!=null? _gName:this.graphName));
+          String gr = (_gName!=null? _gName:this.graphName);
+          clear(Node.createURI(gr));
 
         } else if (nS != null && nP != null && nO != null) {
           java.sql.PreparedStatement ps;
@@ -925,23 +1069,6 @@ public class VirtGraph extends GraphBase
     }
 
 
-    void clearGraph(String name)
-    {
-      String query = "sparql clear graph iri(??)";
-
-      checkOpen();
-
-      try {
-        java.sql.PreparedStatement ps = prepareStatement(query);
-        ps.setString(1, name);
-        ps.execute();
-        ps.close();
-      }	catch(Exception e) {
-        throw new JenaException(e);
-      }
-    }
-
-
     public ExtendedIterator reifierTriples( TripleMatch m )
     { return NiceIterator.emptyIterator(); }
 
@@ -950,13 +1077,15 @@ public class VirtGraph extends GraphBase
 
     
     
-//--java5 or newer    @Override
-    public TransactionHandler getTransactionHandler()
+    @Override
+    public VirtTransactionHandler getTransactionHandler()
     {
-      return new VirtTransactionHandler(this);
+      if (tranHandler == null)
+        tranHandler = new VirtTransactionHandler(this);
+      return tranHandler;
     }
 
-//--java5 or newer    @Override
+    @Override
     public BulkUpdateHandler getBulkUpdateHandler()
     {
       if (bulkHandler == null) 
@@ -1006,6 +1135,12 @@ public class VirtGraph extends GraphBase
         if ( rb_type != null)
           dt = TypeMapper.getInstance().getSafeTypeByName(rb_type);
         return Node.createLiteral(rb.toString(), rb.getLang(), dt);
+
+      } else if (o instanceof java.lang.Long) {
+
+        RDFDatatype dt = null;
+        dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#long");
+        return Node.createLiteral(o.toString(), null, dt);
 
       } else if (o instanceof java.lang.Integer) {
 

@@ -67,6 +67,7 @@ public class VirtuosoUpdateRequest
                 String query = "sparql\n "+ (String)iter.next();
                 stmt.execute(query);
             }
+            requests.clear();
 
 	    stmt.close();
 	    stmt = null;

@@ -1,5 +1,5 @@
 /*
- *  $Id: VirtResSetIter.java,v 1.8.2.3 2012/03/08 12:55:00 source Exp $
+ *  $Id: VirtResSetQIter.java,v 1.8.2.3 2012/03/08 12:55:00 source Exp $
  *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
