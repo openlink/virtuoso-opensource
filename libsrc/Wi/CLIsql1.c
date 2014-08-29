@@ -1302,6 +1302,7 @@ virtodbc__SQLError (
   if (!rec)
     {
       V_SET_ODBC_STR ("00000", szSqlState, 6, pcbSqlState, NULL);
+      V_SET_ODBC_STR (NULL, szErrorMsg, cbErrorMsgMax, pcbErrorMsg, NULL);
       return SQL_NO_DATA_FOUND;
     }
 
