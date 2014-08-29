@@ -1651,6 +1651,8 @@ sqlg_vec_setp (sql_comp_t * sc, setp_node_t * setp, dk_hash_t * res)
 	filter_done:;
 	}
       sqlg_vec_ref_ssls (sc, setp->setp_ha->ha_slots);
+      if (HA_DISTINCT == ha->ha_op)
+	cv_deduplicate_param_ssls (sc->sc_cc, setp->setp_ha->ha_slots);
       prev_tree_type = setp->setp_ha->ha_tree->ssl_type;
       ASG_SSL_AGG (NULL, NULL, setp->setp_ha->ha_tree);
       if (setp->setp_set_no_in_key)
