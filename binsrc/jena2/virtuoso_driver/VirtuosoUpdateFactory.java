@@ -32,6 +32,8 @@ import java.io.Reader;
 
 import com.hp.hpl.jena.update.*;
 import com.hp.hpl.jena.util.FileUtils;
+import com.hp.hpl.jena.rdf.model.Model ;
+import com.hp.hpl.jena.query.Dataset;
 
 public class VirtuosoUpdateFactory
 {
@@ -44,6 +46,28 @@ public class VirtuosoUpdateFactory
     static public VirtuosoUpdateRequest create(String query, VirtGraph graph)
     {
 	return new VirtuosoUpdateRequest (query, graph);
+    }
+
+    static public VirtuosoUpdateRequest create(String query, Dataset dataset)
+    {
+        checkNotNull(dataset, "dataset is a null pointer");
+        checkNotNull(query, "query string is null");
+	if (dataset instanceof VirtDataset) {
+	  return new VirtuosoUpdateRequest (query, (VirtGraph)dataset);
+	} else {
+          throw new UpdateException("Only VirtDataset is supported");
+	}
+    }
+
+    static public VirtuosoUpdateRequest create(String queryStr, Model model)
+    {
+        checkNotNull(model, "model is a null pointer");
+        checkNotNull(queryStr, "query string is null");
+	if (model.getGraph() instanceof VirtGraph) {
+	  return new VirtuosoUpdateRequest (queryStr, (VirtGraph)model.getGraph());
+	} else {
+          throw new UpdateException("Only VirtModel is supported");
+	}
     }
 
 
@@ -79,5 +103,11 @@ public class VirtuosoUpdateFactory
         return new VirtuosoUpdateRequest(b.toString(), graph);
     }
 
+
+    static private void checkNotNull(Object obj, String msg)
+    {
+        if ( obj == null )
+            throw new IllegalArgumentException(msg) ;
+    }
 }
 

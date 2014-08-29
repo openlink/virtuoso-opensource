@@ -100,7 +100,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
           stmt.setQueryTimeout((int)(timeout/1000));
         java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
 
-        return new VResultSet(graph, rs);
+        return new VResultSet(graph, stmt, rs);
       }	catch(Exception e) {
         throw new JenaException("Can not create ResultSet.:"+e);
       }
@@ -189,7 +189,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
         if (timeout > 0)
           stmt.setQueryTimeout((int)(timeout/1000));
         java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
-        return new VirtResSetIter2(graph, rs);
+        return new VirtResSetIter2(graph, stmt, rs);
 
       } catch (Exception e) {
         throw new JenaException("execConstructTriples was FAILED.:"+e);
@@ -246,7 +246,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
         if (timeout > 0)
           stmt.setQueryTimeout((int)(timeout/1000));
         java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
-        return new VirtResSetIter2(graph, rs);
+        return new VirtResSetIter2(graph, stmt, rs);
 
       } catch (Exception e) {
         throw new JenaException("execDescribeTriples was FAILED.:"+e);
@@ -297,6 +297,11 @@ public class VirtuosoQueryExecution  implements QueryExecution
           stmt.cancel();
           stmt.close();
         } catch (Exception e) {}
+    }
+
+    public boolean isClosed()
+    {
+      return stmt==null;
     }
 
 
@@ -425,6 +430,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
     ///=== Inner class ===========================================
     public class VResultSet implements com.hp.hpl.jena.query.ResultSet 
     {
+      java.sql.Statement stmt;
       ResultSetMetaData rsmd;
       java.sql.ResultSet rs;
       boolean v_finished = false;
@@ -435,8 +441,9 @@ public class VirtuosoQueryExecution  implements QueryExecution
       int row_id = 0;
 
 
-        protected VResultSet(VirtGraph _g, java.sql.ResultSet _rs) 
+        protected VResultSet(VirtGraph _g, java.sql.Statement _stmt, java.sql.ResultSet _rs) 
 	{
+	  stmt = _stmt;
 	  rs = _rs;
 	  m = new VirtModel(_g);
 
@@ -565,6 +572,13 @@ public class VirtuosoQueryExecution  implements QueryExecution
 	      try {
                 rs.close();
                 rs = null;
+              } catch (Exception e) { }
+            }
+	    if (stmt != null)
+	    {
+	      try {
+                stmt.close();
+                stmt = null;
               } catch (Exception e) { }
             }
           }

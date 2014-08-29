@@ -25,11 +25,12 @@ package virtuoso.jena.driver;
 
 
 import java.sql.*;
+import javax.transaction.xa.*;
 
 import com.hp.hpl.jena.graph.impl.*;
 import com.hp.hpl.jena.shared.*;
 
-public class VirtTransactionHandler extends TransactionHandlerBase {
+public class VirtTransactionHandler extends TransactionHandlerBase implements XAResource {
 
 	private VirtGraph graph = null;
 	private Boolean m_transactionsSupported = null;
@@ -57,7 +58,88 @@ public class VirtTransactionHandler extends TransactionHandlerBase {
 		return (false);
 	}
 
+	private XAResource checkXA()
+	{
+		if (!graph.isXA)
+			throw new JenaException("XA Transaction is supported only for XAConnections");
+		return graph.getXAResource();
+	}
+
+	private void checkNotXA(String cmd)
+	{
+		if (graph.isXA)
+			throw new JenaException("Method '"+cmd+"' doesn't work with XAConnection");
+	}
+
+	public boolean transactionsXASupported() {
+		return graph.isXA;
+	}
+
+    	public void start(Xid xid, int i) throws XAException
+    	{
+    		XAResource xa = checkXA();
+    		xa.start(xid, i);
+    	}
+    	public void commit(Xid xid, boolean flag) throws XAException
+    	{
+    		XAResource xa = checkXA();
+    		xa.commit(xid, flag);
+    	}
+
+    	public void end(Xid xid, int i) throws XAException
+    	{
+    		XAResource xa = checkXA();
+    		xa.end(xid, i);
+    	}
+
+    	public void forget(Xid xid) throws XAException
+    	{
+    		XAResource xa = checkXA();
+    		xa.forget(xid);
+    	}
+
+    	public int prepare(Xid xid) throws XAException
+    	{
+    		XAResource xa = checkXA();
+    		return xa.prepare(xid);
+    	}
+
+    	public Xid[] recover(int i) throws XAException
+    	{
+    		XAResource xa = checkXA();
+    		return xa.recover(i);
+    	}
+
+    	public void rollback(Xid xid) throws XAException
+    	{
+    		XAResource xa = checkXA();
+    		xa.rollback(xid);
+    	}
+
+    	public boolean setTransactionTimeout(int i) throws XAException
+    	{
+    		XAResource xa = checkXA();
+    		return xa.setTransactionTimeout(i);
+    	}
+    	public int getTransactionTimeout() throws XAException
+    	{
+    		XAResource xa = checkXA();
+    		return xa.getTransactionTimeout();
+    	}
+
+    	public boolean isSameRM(XAResource tr) throws XAException
+    	{
+    		XAResource xa = checkXA();
+    		if (tr instanceof VirtTransactionHandler) {
+    		  return xa.isSameRM(((VirtTransactionHandler)tr).checkXA());
+    		}else {
+    		  return xa.isSameRM(tr);  
+    		}
+    	}
+
+
 	public void begin() {
+	        checkNotXA("begin");
 		if (transactionsSupported()) {
 			try {
 				Connection c = graph.getConnection();
@@ -76,6 +158,7 @@ public class VirtTransactionHandler extends TransactionHandlerBase {
 	}
 
 	public void abort() {
+	        checkNotXA("abort");
 		if (transactionsSupported()) {
 			try {
 				Connection c = graph.getConnection();
@@ -90,6 +173,7 @@ public class VirtTransactionHandler extends TransactionHandlerBase {
 	}
 
 	public void commit() {
+	        checkNotXA("commit");
 		if (transactionsSupported()) {
 			try {
 				Connection c = graph.getConnection();

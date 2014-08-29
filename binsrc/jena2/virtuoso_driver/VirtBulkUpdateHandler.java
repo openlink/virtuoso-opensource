@@ -42,20 +42,20 @@ public class VirtBulkUpdateHandler extends SimpleBulkUpdateHandler {
 	super(parent);
     }
 
-//--java5 or newer    @Override
+    @Override
     public void add( Triple [] triples ) { 
         addIterator(Arrays.asList(triples).iterator(), false);
         manager.notifyAddArray( graph, triples );
     }
 
-//--java5 or newer    @Override
+    @Override
     protected void add(List<Triple> triples, boolean notify) {
         addIterator(triples.iterator(), false);
         if (notify)
         	manager.notifyAddList( graph, triples );
     }
 
-//--java5 or newer    @Override
+    @Override
     public void addIterator(Iterator<Triple> it, boolean notify) {
 	VirtGraph _graph=(VirtGraph)this.graph;
 	List list = notify ? new ArrayList() : null;
@@ -90,13 +90,15 @@ public class VirtBulkUpdateHandler extends SimpleBulkUpdateHandler {
         if (notify) 
         	manager.notifyDeleteIterator( graph, list);
     }
-    
+
+    @Override
     public void removeAll() { 
 	VirtGraph _graph=(VirtGraph)this.graph;
-        _graph.clearGraph(_graph.getGraphName()); 
+        _graph.clear(Node.createURI(_graph.getGraphName())); 
         notifyRemoveAll(); 
     }
 
+    @Override
     public void remove( Node s, Node p, Node o ) { 
 	VirtGraph _graph=(VirtGraph)this.graph;
         _graph.delete_match(Triple.createMatch(s, p, o));

@@ -294,6 +294,12 @@ public class VirtuosoQueryEngine extends QueryEngineMain
               rs = null;
             } catch (Exception e) { }
           }
+          if (stmt != null) {
+  	    try {
+              stmt.close();
+              stmt = null;
+            } catch (Exception e) { }
+          }
         }
         v_finished = true;
       }
