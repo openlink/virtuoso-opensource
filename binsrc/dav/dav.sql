@@ -1323,7 +1323,7 @@ create procedure WS.WS.PROPPATCH_INT (
             {
         tmp := (select U_ID from DB.DBA.SYS_USERS where U_NAME = tmp);
       }
-      rc_prop := DAV_PROP_SET_INT (path, ':' || prop_name, tmp, null, null, 0, 0, 1, auth_uid);
+      rc_prop := DAV_PROP_SET_INT (path, ':' || prop_name, tmp, null, null, 0, 0, 1, case when isstring (auth_uid) then (select U_ID from DB.DBA.SYS_USERS where U_NAME = auth_uid) else auth_uid end);
     }
     else if ((pns = 'http://www.openlinksw.com/virtuoso/webdav/1.0/') and (prop_name = 'virtdet'))
                 {
