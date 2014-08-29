@@ -1296,9 +1296,12 @@ extern int hash_join_enable;
 void list_wired_buffers (char *file, int line, char *format, ...);
 extern dk_mutex_t * parse_mtx;
 extern du_thread_t * parse_mtx_owner;
+void parse_enter ();
+void parse_leave ();
+extern int enable_parse_mtx;
 
-#define IN_PARSE { mutex_enter (parse_mtx); parse_mtx_owner = THREAD_CURRENT_THREAD; }
-#define LEAVE_PARSE { parse_mtx_owner = NULL; mutex_leave (parse_mtx); }
+#define IN_PARSE { parse_enter (); parse_mtx_owner = THREAD_CURRENT_THREAD; }
+#define LEAVE_PARSE { parse_mtx_owner = NULL; parse_leave (); }
 
 extern void set_ini_trace_option (void);
 

@@ -953,6 +953,23 @@ sql_stmt_comp (sql_comp_t * sc, ST ** ptree)
 
 dk_mutex_t *parse_mtx;
 du_thread_t * parse_mtx_owner;
+int enable_parse_mtx = 1;
+
+void
+parse_enter ()
+{
+  if (enable_parse_mtx)
+    mutex_enter (parse_mtx);
+}
+
+
+void
+parse_leave ()
+{
+  if (enable_parse_mtx)
+    mutex_leave (parse_mtx);
+}
+
 
 char *
 wrap_sql_string (const char *text)
@@ -1151,7 +1168,7 @@ sqlc_hook (client_connection_t * cli, caddr_t * real_tree_ret, caddr_t * err_ret
     {
       return;
     }
-  mutex_leave (parse_mtx);
+  parse_leave ();
   if (proc->qr_to_recompile)
     proc = qr_recompile (proc, NULL);
   p1 = (state_slot_t *) (proc->qr_parms ? proc->qr_parms->data : NULL);
@@ -1159,7 +1176,7 @@ sqlc_hook (client_connection_t * cli, caddr_t * real_tree_ret, caddr_t * err_ret
     {
 
       log_error ("SQLPrepare hook must take at least 1 reference parameter");
-      mutex_enter (parse_mtx);
+      parse_enter ();
       return;
     }
   tree = box_copy_tree (*real_tree_ret);
@@ -1169,7 +1186,7 @@ sqlc_hook (client_connection_t * cli, caddr_t * real_tree_ret, caddr_t * err_ret
 		 NULL, NULL, params, NULL, 0);
   dk_free_box ((caddr_t) params);
  SET_THR_TMP_POOL (saved_thr_mem_pool);
-  mutex_enter (parse_mtx);
+  parse_enter ();
   sqlc_set_client (cli);
   if (err_ret)
     *err_ret = err;
@@ -1342,7 +1359,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
     cr_type = SQLC_PARSE_ONLY;
   else
     {
-      mutex_enter (parse_mtx);
+      parse_enter ();
       inside_sem = 1;
     }
   SCS_STATE_PUSH;
@@ -1400,7 +1417,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	      sql_pop_all_buffers ();
 	      SCS_STATE_POP;
 	      if (inside_sem)
-		mutex_leave (parse_mtx);
+		parse_leave ();
 	      POP_CATCH;
 	      if (*err && strstr ((*(caddr_t**)err)[2], "RDFNI") )
 		{
@@ -1424,7 +1441,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	{
           if (inside_sem)
             {
-              mutex_leave (parse_mtx);
+              parse_leave ();
               inside_sem = 0;
             }
 	}
@@ -1442,7 +1459,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	  qr_free (qr);
 	  POP_CATCH;
 	  if (inside_sem)
-	    mutex_leave (parse_mtx);
+	    parse_leave ();
 	  return ((query_t*) tree1);
 	}
       if (cr_type == SQLC_TRY_SQLO)
@@ -1561,7 +1578,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   sqlc_set_client (old_cli);
   SCS_STATE_POP;
   if (inside_sem)
-    mutex_leave (parse_mtx);
+    parse_leave ();
   if (qr)
     {
       qr->qr_text = SET_QR_TEXT(qr,sc.sc_text);

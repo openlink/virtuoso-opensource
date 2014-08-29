@@ -1750,10 +1750,10 @@ sqlo_text_count (dbe_table_t * tb, caddr_t str, caddr_t ext_fti)
     {
       int is_sem = sqlc_inside_sem;
       if (is_sem)
-	mutex_leave (parse_mtx);
+	parse_leave ();
       ct = sqlo_eval_text_count (tb, str, ext_fti);
       if (is_sem)
-	mutex_enter (parse_mtx);
+	parse_enter ();
     }
   END_WITHOUT_TMP_POOL;
 

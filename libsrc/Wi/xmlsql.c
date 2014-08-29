@@ -1982,9 +1982,9 @@ xmls_proc (query_instance_t * qi, caddr_t name)
 
   ddl_commit (qi);
 
-  mutex_enter (parse_mtx);
+  parse_enter ();
   sqlc_target_rds (local_rds);
-  mutex_leave (parse_mtx);
+  parse_leave ();
 
   {
     static query_t *xml_view_drop_proc_qr = NULL;

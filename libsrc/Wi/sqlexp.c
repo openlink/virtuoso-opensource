@@ -1692,10 +1692,10 @@ sqlo_proc_cl_locatable (caddr_t name, int level, query_t ** qr_ret)
     {
       int is_sem = sqlc_inside_sem;
       if (is_sem)
-	mutex_leave (parse_mtx);
+	parse_leave ();
       tree = (ST*) sql_compile (qr->qr_text, sqlc_client (), &err,  SQLC_PARSE_ONLY);
       if (is_sem)
-	mutex_enter (parse_mtx);
+	parse_enter ();
     }
   END_WITHOUT_TMP_POOL;
   if (err)
