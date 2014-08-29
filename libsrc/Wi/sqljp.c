@@ -1026,6 +1026,8 @@ so_ensure_subq_cache (sqlo_t * so)
 }
 
 
+int sq_cache_hit, sq_cache_miss;
+
 df_elt_t *
 sqlo_dt_cache_lookup (sqlo_t * so, op_table_t * ot, dk_set_t imp_preds, caddr_t * cc_key_ret)
 {
@@ -1051,8 +1053,10 @@ sqlo_dt_cache_lookup (sqlo_t * so, op_table_t * ot, dk_set_t imp_preds, caddr_t 
   if (!place)
     {
       *cc_key_ret = t_box_string (sqk);
+      sq_cache_miss++;
       return NULL;
     }
+  sq_cache_hit++;
   *cc_key_ret = NULL;
   return sqlo_layout_copy (so, *place, NULL);
 }

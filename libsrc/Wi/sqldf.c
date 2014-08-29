@@ -244,6 +244,30 @@ sqlo_df_size (int type)
   return len;
 }
 
+int
+sqlo_is_tautology (ST * tree)
+{
+  /* 1 if always true, 0 if always false, 2 if variable */
+  int rc;
+  if (ST_P (tree, BOP_NOT))
+    {
+      rc = sqlo_is_tautology (tree->_.bin_exp.left);
+      return 2  == rc ? 2 : !rc;
+    }
+  if (ST_P (tree, BOP_EQ))
+    {
+      ST * l = tree->_.bin_exp.left;
+      ST * r = tree->_.bin_exp.right;
+      dtp_t l_dtp = DV_TYPE_OF (l);
+      dtp_t r_dtp = DV_TYPE_OF (r);
+      if (DV_LONG_INT == l_dtp && DV_LONG_INT == r_dtp)
+	return unbox (l) == unbox (r);
+      return 2;
+    }
+  return 2;
+}
+
+
 df_elt_t *
 sqlo_new_dfe (sqlo_t * so, int type, ST * tree)
 {
@@ -539,7 +563,12 @@ sqlo_wrap_dfe_true_or_false (sqlo_t *so, df_elt_t *const_dfe)
 void
 sqlo_push_pred (sqlo_t *so, df_elt_t *dfe)
 {
-  df_elt_t * c = sqlo_const_cond (so, dfe);
+  df_elt_t * c;
+  if (!dfe || DFE_TRUE == dfe || DFE_FALSE == dfe)
+    return 2;
+  if (!dfe->dfe_tables && 1 == sqlo_is_tautology (dfe->dfe_tree))
+    return;
+  c = sqlo_const_cond (so, dfe);
   if (DFE_TRUE == c)
     return;
   if (DFE_FALSE == c)
