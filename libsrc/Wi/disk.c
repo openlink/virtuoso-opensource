@@ -3701,9 +3701,13 @@ dst_sync (caddr_t * xx)
 }
 
 
+extern semaphore_t * bp_flush_sem;
+
 void
 dbs_sync_disks (dbe_storage_t * dbs)
 {
+  if (!bp_flush_sem)
+    mt_write_init ();
   if (!dst_sync_sem)
     dst_sync_sem = semaphore_allocate (0);
 #ifdef HAVE_FSYNC

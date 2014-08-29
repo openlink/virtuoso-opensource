@@ -1311,7 +1311,8 @@ mt_write_init ()
       END_DO_SET ();
     }
   END_DO_SET();
-  dbs_mtwrite_init (wi_inst.wi_temp);
+  if (wi_inst.wi_temp)
+    dbs_mtwrite_init (wi_inst.wi_temp);
   bp_flush_sem = semaphore_allocate (0);
   bp_flush_thr = PrpcThreadAllocate ((thread_init_func) bp_flush_thread_func, 100000, NULL)->dkt_process;
 }
