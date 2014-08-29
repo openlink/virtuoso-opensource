@@ -1107,10 +1107,10 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
     {
        declare alang, aenc, variant, path_str varchar;
 
-       if (VM_URI not like '/%' and path like '%/') -- directory and non-absolute variant pattern
+       if (ltrim (VM_URI, '^') not like '/%' and path like '%/') -- directory and non-absolute variant pattern
 	 goto next_variant;
 
-       if (VM_URI like '/%')
+       if (ltrim (VM_URI, '^') like '/%')
 	 path_str := path;
        else
          path_str := rel_uri;
