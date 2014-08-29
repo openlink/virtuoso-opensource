@@ -565,7 +565,7 @@ sqlo_push_pred (sqlo_t *so, df_elt_t *dfe)
 {
   df_elt_t * c;
   if (!dfe || DFE_TRUE == dfe || DFE_FALSE == dfe)
-    return 2;
+    return;
   if (!dfe->dfe_tables && 1 == sqlo_is_tautology (dfe->dfe_tree))
     return;
   c = sqlo_const_cond (so, dfe);
