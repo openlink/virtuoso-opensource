@@ -3737,6 +3737,8 @@ dbs_sync_disks (dbe_storage_t * dbs)
 	    {
 	      DO_BOX (disk_stripe_t *, dst, inx, seg->ds_stripes)
 		{
+		  if (!dst->dst_iq)
+		    dbs_mtwrite_init (dbs);
 		  dk_set_pushnew (&iqs, (void*)dst->dst_iq);
 		}
 	      END_DO_BOX;
