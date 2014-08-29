@@ -209,6 +209,8 @@ struct df_elt_s
   bitf_t	dfe_unit_includes_vdb:1;
   bitf_t	dfe_is_joined:1; /* in planning next op, true if there is join to any previously placed dfe */
   bitf_t	dfe_is_planned:1; /* true if included in a multi-dfe next step in planning next dfe */
+  bitf_t	dfe_layout_unit_first:1;
+  bitf_t	dfe_cut_alt_plans:1;
   int32		dfe_hash;
   locus_t *	dfe_locus;
   dk_set_t	dfe_remote_locus_refs;
