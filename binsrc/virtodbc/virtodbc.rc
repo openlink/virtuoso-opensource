@@ -1,4 +1,4 @@
-// Microsoft Visual C++ generated resource script.
+//Microsoft Developer Studio generated resource script.
 //
 #include "resource.h"
 
@@ -27,18 +27,18 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 // TEXTINCLUDE
 //
 
-1 TEXTINCLUDE 
+1 TEXTINCLUDE DISCARDABLE
 BEGIN
     "resource.h\0"
 END
 
-2 TEXTINCLUDE 
+2 TEXTINCLUDE DISCARDABLE
 BEGIN
     "#include ""afxres.h""\r\n"
     "\0"
 END
 
-3 TEXTINCLUDE 
+3 TEXTINCLUDE DISCARDABLE
 BEGIN
     "\r\n"
     "\0"
@@ -53,13 +53,14 @@ END
 //
 
 IDD_CONFIGDSN DIALOGEX 0, 0, 335, 204
-STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CLIPCHILDREN | WS_CAPTION | WS_SYSMENU
+STYLE DS_MODALFRAME | WS_POPUP | WS_CLIPCHILDREN | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_CONTROLPARENT
 CAPTION "OpenLink Virtuoso DSN Configuration"
-FONT 8, "MS Sans Serif", 0, 0, 0x1
+FONT 8, "MS Sans Serif"
 BEGIN
     CONTROL         105,IDC_STATIC,"Static",SS_BITMAP,7,7,20,20
-    LTEXT           "",IDC_PLACEHOLDER,94,7,234,156,NOT WS_VISIBLE | WS_BORDER
+    LTEXT           "",IDC_PLACEHOLDER,94,7,234,156,NOT WS_VISIBLE |
+                    WS_BORDER
     CONTROL         "",IDC_STATIC,"Static",SS_ETCHEDHORZ,7,174,323,1
     PUSHBUTTON      "< &Back",IDC_BACKBTN,171,183,50,14
     DEFPUSHBUTTON   "&Next >",IDC_NEXTBTN,221,183,50,14
@@ -67,96 +68,115 @@ BEGIN
 END
 
 IDD_CONFIGPAGE1 DIALOGEX 0, 0, 234, 157
-STYLE DS_SETFONT | DS_CONTROL | WS_CHILD | WS_CLIPSIBLINGS
+STYLE DS_CONTROL | WS_CHILD | WS_CLIPSIBLINGS
 EXSTYLE WS_EX_CONTROLPARENT
 FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
-    LTEXT           "This wizard will help you create an ODBC data source that you can use to connect to OpenLink Virtuoso.",IDC_STATIC,0,0,234,17
-    LTEXT           "What name do you want to use to refer to the data source?",IDC_STATIC,0,19,234,8
+    LTEXT           "This wizard will help you create an ODBC data source that you can use to connect to OpenLink Virtuoso.",
+                    IDC_STATIC,0,0,234,17
+    LTEXT           "What name do you want to use to refer to the data source?",
+                    IDC_STATIC,0,19,234,8
     RTEXT           "Na&me:",IDC_STATIC,0,36,58,8
     EDITTEXT        IDC_DSN,64,33,170,14,ES_AUTOHSCROLL
-    LTEXT           "How do you want to describe the data source?",IDC_STATIC,0,58,234,8
+    LTEXT           "How do you want to describe the data source?",
+                    IDC_STATIC,0,58,234,8
     RTEXT           "&Description:",IDC_STATIC,0,75,58,8
     EDITTEXT        IDC_COMMENT,64,72,170,14,ES_AUTOHSCROLL
-    LTEXT           "Which Virtuoso Server do you want to connect to?",IDC_STATIC,0,98,234,8
+    LTEXT           "Which Virtuoso Server do you want to connect to?",
+                    IDC_STATIC,0,98,234,8
     RTEXT           "&Server:",IDC_STATIC,0,115,58,8
-    COMBOBOX        IDC_SERVER,64,112,170,50,CBS_DROPDOWN | CBS_AUTOHSCROLL | CBS_SORT | WS_VSCROLL | WS_TABSTOP
-    CONTROL         "This server &requires a secure connection (SSL)",IDC_USESSL,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,64,128,163,10
+    COMBOBOX        IDC_SERVER,64,112,170,50,CBS_DROPDOWN | CBS_SORT |
+                    WS_VSCROLL | WS_TABSTOP | CBS_AUTOHSCROLL
+    CONTROL         "This server &requires a secure connection (SSL)",
+                    IDC_USESSL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,64,128,
+                    163,10
     CONTROL         "Use RoundRobin for failover connection",IDC_RROBIN,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,64,141,143,10
 END
 
-IDD_CONFIGPAGE3 DIALOG  0, 0, 234, 157
-STYLE DS_SETFONT | DS_CONTROL | WS_CHILD | WS_CLIPSIBLINGS
+IDD_CONFIGPAGE3 DIALOG DISCARDABLE  0, 0, 234, 157
+STYLE DS_CONTROL | WS_CHILD | WS_CLIPSIBLINGS
 FONT 8, "MS Sans Serif"
 BEGIN
     CONTROL         "Change the &default database to:",IDC_USEDEFAULTDB,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,0,0,117,10
-    COMBOBOX        IDC_DEFAULTDB,12,12,166,60,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_DEFAULTDB,12,12,166,60,CBS_DROPDOWN | WS_VSCROLL |
+                    WS_TABSTOP
     CONTROL         "Change the default character set to:",IDC_USEDEFAULTCS,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,0,33,129,10
-    COMBOBOX        IDC_DEFAULTCS,12,45,166,60,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    COMBOBOX        IDC_DEFAULTCS,12,45,166,60,CBS_DROPDOWN | WS_VSCROLL |
+                    WS_TABSTOP
     CONTROL         "Change the default transaction isolation level to:",IDC_USEDEFAULTIL,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,0,65,169,10
-    COMBOBOX        IDC_DEFAULTIL,12,78,166,60,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
-    CONTROL         "Automatically correct for daylight saving changes",IDC_USEDSTCORRECT,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,0,97,169,10
-    CONTROL         "Treat system tables as user tables",IDC_NOSYSTEMTABLES,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,0,109,169,10
-    CONTROL         "Treat views as user tables",IDC_TREATVIEWSASTABLES,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,0,121,169,10
+    COMBOBOX        IDC_DEFAULTIL,12,78,166,60,CBS_DROPDOWN | WS_VSCROLL |
+                    WS_TABSTOP
+    CONTROL         "Automatically correct for daylight saving changes",
+                    IDC_USEDSTCORRECT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
+                    0,97,169,10
+    CONTROL         "Treat system tables as user tables",
+                    IDC_NOSYSTEMTABLES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
+                    0,109,169,10
+    CONTROL         "Treat views as user tables",
+                    IDC_TREATVIEWSASTABLES,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
+                    0,121,169,10
 END
 
-IDD_ODBCERROR DIALOG  0, 0, 201, 113
-STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+IDD_ODBCERROR DIALOG DISCARDABLE  0, 0, 201, 113
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Database connection failed"
 FONT 8, "MS Sans Serif"
 BEGIN
     RTEXT           "SQL State:",IDC_STATIC,18,10,45,8
     EDITTEXT        IDC_SQLSTATE,70,7,74,14,ES_AUTOHSCROLL | ES_READONLY
     LTEXT           "Reason:",IDC_STATIC,7,31,28,8
-    EDITTEXT        IDC_SQLERROR,7,41,187,42,ES_MULTILINE | ES_AUTOVSCROLL | ES_READONLY | WS_VSCROLL
+    EDITTEXT        IDC_SQLERROR,7,41,187,42,ES_MULTILINE | ES_AUTOVSCROLL |
+                    ES_READONLY | WS_VSCROLL
     DEFPUSHBUTTON   "Dismiss",IDOK,70,92,50,14
 END
 
-IDD_LOGINDLG DIALOG  0, 0, 235, 82
-STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
+IDD_LOGINDLG DIALOG DISCARDABLE  0, 0, 235, 82
+STYLE DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "OpenLink Virtuoso Login"
 FONT 8, "MS Sans Serif"
 BEGIN
+    EDITTEXT        IDC_PWD,73,61,96,13,ES_PASSWORD | ES_AUTOHSCROLL
     LTEXT           "Data Source:",IDC_STATIC,7,9,43,8
     LTEXT           "Static",IDC_DSN,73,9,96,8
     LTEXT           "&Login ID:",IDC_UIDLBL,7,46,39,8
     EDITTEXT        IDC_UID,73,44,96,13,ES_AUTOHSCROLL
     LTEXT           "&Password:",IDC_PWDLBL,7,65,39,8
-    EDITTEXT        IDC_PWD,73,61,96,13,ES_PASSWORD | ES_AUTOHSCROLL
     DEFPUSHBUTTON   "OK",IDOK,178,7,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,178,25,50,14
     PUSHBUTTON      "Certificate...",IDC_BROWSEUIDCERT,178,43,50,14
     PUSHBUTTON      "&Options >>",IDC_OPTIONS,178,61,50,14
 END
 
-IDD_CONFIGPAGE2 DIALOG  0, 0, 234, 157
-STYLE DS_SETFONT | DS_CONTROL | WS_CHILD | WS_CLIPSIBLINGS
+IDD_CONFIGPAGE2 DIALOG DISCARDABLE  0, 0, 234, 157
+STYLE DS_CONTROL | WS_CHILD | WS_CLIPSIBLINGS
 FONT 8, "MS Sans Serif"
 BEGIN
-    LTEXT           "How should the Virtuoso Server verify the authenticity of the login ID?",IDC_STATIC,0,0,219,8
+    LTEXT           "How should the Virtuoso Server verify the authenticity of the login ID?",
+                    IDC_STATIC,0,0,219,8
     RTEXT           "&Authentication method:",IDC_STATIC,0,13,58,16
-    COMBOBOX        IDC_AUTHMETHOD,64,15,136,59,CBS_DROPDOWNLIST | CBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
-    CONTROL         "C&onnect to the Virtuoso Server to obtain default settings for the additional configuration options.",IDC_USEUID,
-                    "Button",BS_AUTOCHECKBOX | BS_MULTILINE | WS_TABSTOP,0,42,227,19
+    COMBOBOX        IDC_AUTHMETHOD,64,15,136,59,CBS_DROPDOWNLIST |
+                    CBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "C&onnect to the Virtuoso Server to obtain default settings for the additional configuration options.",
+                    IDC_USEUID,"Button",BS_AUTOCHECKBOX | BS_MULTILINE |
+                    WS_TABSTOP,0,42,227,19
     RTEXT           "&Login ID:",IDC_UIDLBL,0,67,58,8
     EDITTEXT        IDC_UID,64,64,136,13,ES_AUTOHSCROLL
     PUSHBUTTON      "...",IDC_BROWSEUIDCERT,200,65,29,13
     RTEXT           "&Password:",IDC_PWDLBL,0,83,58,8
     EDITTEXT        IDC_PWD,64,80,136,13,ES_PASSWORD | ES_AUTOHSCROLL
-    CONTROL         "&Require the server to authenticate itself with this public key:",IDC_USESERVERCERT,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,0,107,203,10
+    CONTROL         "&Require the server to authenticate itself with this public key:",
+                    IDC_USESERVERCERT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,
+                    0,107,203,10
     RTEXT           "C&ertificate:",IDC_SERVERCERTLBL,10,122,48,8
-    EDITTEXT        IDC_SERVERCERT,64,119,136,13,ES_AUTOHSCROLL | ES_READONLY
+    EDITTEXT        IDC_SERVERCERT,64,119,136,13,ES_AUTOHSCROLL
     PUSHBUTTON      "...",IDC_BROWSESERVERCERT,200,119,29,13
-    CONTROL         "&Disable interactive login",IDC_NOLOGINBOX,"Button",BS_AUTOCHECKBOX | NOT WS_VISIBLE | WS_DISABLED | WS_TABSTOP,0,147,91,10
+    CONTROL         "&Disable interactive login",IDC_NOLOGINBOX,"Button",
+                    BS_AUTOCHECKBOX | NOT WS_VISIBLE | WS_DISABLED |
+                    WS_TABSTOP,0,147,91,10
 END
 
 
@@ -166,7 +186,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO 
+GUIDELINES DESIGNINFO DISCARDABLE
 BEGIN
     IDD_CONFIGDSN, DIALOG
     BEGIN
@@ -222,52 +242,14 @@ END
 // Bitmap
 //
 
-IDB_BITMAPVIRT          BITMAP                  "virtodbc.bmp"
-
-/////////////////////////////////////////////////////////////////////////////
-//
-// Version
-//
-
-VS_VERSION_INFO VERSIONINFO
- FILEVERSION 7,0,0,3203
- PRODUCTVERSION 7,0,0,3203
- FILEFLAGSMASK 0x17L
-#ifdef _DEBUG
- FILEFLAGS 0x1L
-#else
- FILEFLAGS 0x0L
-#endif
- FILEOS 0x4L
- FILETYPE 0x1L
- FILESUBTYPE 0x0L
-BEGIN
-    BLOCK "StringFileInfo"
-    BEGIN
-        BLOCK "040904b0"
-        BEGIN
-            VALUE "CompanyName", "OpenLink Software"
-            VALUE "FileDescription", "Virtuoso OpenSource"
-            VALUE "FileVersion", "7, 0, 0, 3203"
-            VALUE "InternalName", "Virtuoso"
-            VALUE "LegalCopyright", "Copyright (C) 1998-2014 OpenLink Software"
-            VALUE "ProductName", "Virtuoso OpenSource"
-            VALUE "ProductVersion", "7, 0, 0, 3203"
-        END
-    END
-    BLOCK "VarFileInfo"
-    BEGIN
-        VALUE "Translation", 0x409, 1200
-    END
-END
-
+IDB_BITMAPVIRT          BITMAP  DISCARDABLE     "virtodbc.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
 //
 // String Table
 //
 
-STRINGTABLE 
+STRINGTABLE DISCARDABLE
 BEGIN
     IDS_FINISH              "Finish"
     IDS_NEXT                "&Next >"
@@ -283,10 +265,6 @@ BEGIN
     IDS_PKCS12BROWSE        "Personal Information Exchange (*.pfx;*.p12)|*.pfx;*.p12|PEM Encoded File (*.pem)|*.pem|All Files (*.*)|*.*|"
     IDS_ZCUNRESOLVED        "Unable to locate the Virtuoso server. Please use either <host>:<port> in the Server field, or select a configuration from the list."
     IDS_X509BROWSE          "X.509 Certificate (*.cer;*.crt;*.pem)|*.cer;*.crt;*.pem|All Files (*.*)|*.*|"
-END
-
-STRINGTABLE 
-BEGIN
     IDS_ISOLATIONLEVEL1     "Read Uncommitted"
     IDS_ISOLATIONLEVEL2     "Read Commited"
     IDS_ISOLATIONLEVEL3     "Repeatable Read"

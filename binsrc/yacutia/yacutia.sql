@@ -392,8 +392,13 @@ create procedure adm_menu_tree ()
       <node name="Delete Path" url="http_del_path.vspx" id="156" place="1" allowed="yacutia_http_server_management_page"/>
       <node name="URL rewrite" url="http_url_rewrite.vspx" id="193" place="1" allowed="yacutia_http_server_management_page"/>
       <node name="Content Negotiation" url="http_tcn.vspx" id="194" place="1" allowed="yacutia_http_server_management_page"/>
-   </node>
- </node>
+   </node>',
+ case when check_package('inclusion-engine') then
+  '<node name="Inclusion Engine" url="iengine.vspx" id="1500" allowed="yacutia_ie">
+    <node name="Inclusion Engine" url="iengine.vspx" id="1510" place="1"  allowed="yacutia_ie"/>
+   </node>'
+ end,
+'</node>
  <node name="XML" url="xml_sql.vspx" id="106" tip="XML Services permit manipulation of XML data from stored and SQL sources" allowed="yacutia_xml">
    <node name="SQL-XML" url="xml_sql.vspx" id="107" allowed="yacutia_sql_xml_page">
      <node name="SQL-XML" url="xml_sql2.vspx" id="108" place="1" allowed="yacutia_sql_xml_page">

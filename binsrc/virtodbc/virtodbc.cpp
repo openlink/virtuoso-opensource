@@ -291,7 +291,7 @@ TSetupDlg::ODBCConnect (TODBCConn &conn)
 
   if (m_AUTHMETHOD.CurSel () == AUTHMETHOD_PKCS12)
     {
-      _stprintf (szDSN, _T("HOST=%s;UID=;ENCRYPT=%s;PWD=%s;SERVERCERT=%s"),
+      _stprintf (szDSN, _T("HOST=%s;UID=;ENCRYPT=%s;PWD=%s;SERVERCERT=%s;PWDClearText=3;"),
 	  szHost,
 	  m_UID.Text (),
 	  m_PWD.Text (),
@@ -305,6 +305,18 @@ TSetupDlg::ODBCConnect (TODBCConn &conn)
 	  m_PWD.Text ());
       if (m_USESSL.Checked ())
 	_tcscat (szDSN, _T(";ENCRYPT=1"));
+      switch(m_AUTHMETHOD.CurSel ())
+        {
+        case AUTHMETHOD_CHALLENGE:
+	  _tcscat (szDSN, _T(";PWDClearText=0"));
+          break;
+        case AUTHMETHOD_ENCRYPTED:
+	  _tcscat (szDSN, _T(";PWDClearText=2"));
+          break;
+        case AUTHMETHOD_CLEAR:
+	  _tcscat (szDSN, _T(";PWDClearText=1"));
+          break;
+        }
     }
 
   if (!conn.Connect (m_hWnd, szDSN))
@@ -456,7 +468,6 @@ TSetupDlg::SetAuthMethod (void)
       m_UID.Text (_T(""));
       m_PWD.Text (_T(""));
     }
-  m_UID.ReadOnly (bCertBased);
 
   /* Show browse button for PKCS12 File authentication */
   m_BROWSEUIDCERT.Show (bCertBased);
@@ -610,6 +621,7 @@ void
 TSetupDlg::LoadFromProps (void)
 {
   TCHAR szValue[1024];
+  TCHAR szEncrypt[1024];
   HWND hFocusWnd;
 
   hFocusWnd = GetFocus ();
@@ -630,8 +642,8 @@ TSetupDlg::LoadFromProps (void)
   m_SERVER.CurSel (m_SERVER.AddString (szValue));
 
   /* Require SSL */
-  if (m_props.Get (_T("Encrypt"), szValue, NUMCHARS (szValue)))
-    m_USESSL.Check (OPTION_TRUE (szValue[0]));
+  if (m_props.Get (_T("Encrypt"), szEncrypt, NUMCHARS (szEncrypt)))
+    m_USESSL.Check (OPTION_TRUE (szEncrypt[0]));
   else
     m_USESSL.Check (FALSE);
 
@@ -654,10 +666,20 @@ TSetupDlg::LoadFromProps (void)
   m_PWD.Text (szValue);
 
   m_props.Get (_T("UID"), szValue, NUMCHARS (szValue));
-  if (ONLY_ONE_OF (m_dwClearText == 3, ISFILENAME (szValue)))
-    szValue[0] = 0;
-  m_UID.Text (szValue);
-  m_USEUID.Check (m_bFileDSN || szValue[0]);
+
+  if (ONLY_ONE_OF (m_dwClearText == 3, ISFILENAME (szEncrypt)))
+    szEncrypt[0] = 0;
+  if (m_dwClearText == 3)
+    {
+      m_UID.Text (szEncrypt);
+      m_USEUID.Check (m_bFileDSN || szEncrypt[0]);
+    }
+  else
+    {
+      m_UID.Text (szValue);
+      m_USEUID.Check (m_bFileDSN || szValue[0]);
+    }
+
   SetUseUID ();
 
   /* Server's certificate */
@@ -725,10 +747,6 @@ TSetupDlg::SaveToProps (void)
   else
     m_props.Define (_T("Address"), szServer);
 
-  if (m_USESSL.Checked ())
-    m_props.Define (_T("Encrypt"), _T("1"));
-  else
-    m_props.Define (_T("Encrypt"), _T("0"));
 
   /* Page 2 */
   iIndex = m_AUTHMETHOD.CurSel ();
@@ -745,11 +763,23 @@ TSetupDlg::SaveToProps (void)
       break;
     case AUTHMETHOD_PKCS12:
       m_props.Define (_T("PWDClearText"), _T("3"));
-      //m_props.Define (_T("Encrypt"), m_UID.Text ());
       break;
     }
 
-  m_props.Define (_T("UID"), m_UID.Text ());
+  if (m_USESSL.Checked () && iIndex ==AUTHMETHOD_PKCS12) 
+    {
+      m_props.Define (_T("Encrypt"), m_UID.Text());
+      m_props.Define (_T("UID"), _T(""));
+    }
+  else 
+    {
+      if (m_USESSL.Checked ())
+        m_props.Define (_T("Encrypt"), _T("1"));
+      else
+        m_props.Undefine (_T("Encrypt"));
+
+      m_props.Define (_T("UID"), m_UID.Text ());
+    }
 
   if (m_USEUID.Checked ())
     {
@@ -1055,26 +1085,34 @@ void
 TLoginDlg::LoadFromProps (void)
 {
   TCHAR szValue[1024];
+  TCHAR szEncrypt[1024];
   BOOL bCertBased;
 
   m_props.Get (_T("DSN"), szValue, NUMCHARS (szValue));
   m_DSN.Text (szValue);
 
+  m_props.Get (_T("Encrypt"), szEncrypt, NUMCHARS (szEncrypt));
+
   if (m_props.Get (_T("PWDClearText"), szValue, NUMCHARS (szValue)))
-    bCertBased = (_ttoi (szValue) == 3);
+    m_dwClearText = _ttoi (szValue);
   else
-    bCertBased = FALSE;
+    m_dwClearText = 0;
+
+  bCertBased = (m_dwClearText == 3);
 
   m_props.Get (_T("UID"), szValue, NUMCHARS (szValue));
-  if (ONLY_ONE_OF (bCertBased, ISFILENAME (szValue)))
-    szValue[0] = 0;
-  m_UID.Text (szValue);
+
+  if (ONLY_ONE_OF (m_dwClearText == 3, ISFILENAME (szEncrypt)))
+    szEncrypt[0] = 0;
+  if (m_dwClearText == 3)
+    m_UID.Text (szEncrypt);
+  else
+    m_UID.Text (szValue);
 
   m_props.Get (_T("PWD"), szValue, NUMCHARS (szValue));
   m_PWD.Text (szValue);
 
   m_BROWSEUIDCERT.Show (bCertBased);
-  m_UID.ReadOnly (bCertBased);
   LoadString (m_hInstance, bCertBased ? IDS_PKCS12LBL : IDS_UIDLBL,
       szValue, NUMCHARS (szValue));
   m_UIDLBL.Text (szValue);
@@ -1084,7 +1122,18 @@ TLoginDlg::LoadFromProps (void)
 void
 TLoginDlg::SaveToProps (void)
 {
-  m_props.Define (_T("UID"), m_UID.Text ());
+  TCHAR szValue[1024];
+
+  if (m_props.Get (_T("PWDClearText"), szValue, NUMCHARS (szValue)))
+    m_dwClearText = _ttoi (szValue);
+  else
+    m_dwClearText = 0;
+
+  if (m_dwClearText == 3)
+    m_props.Define (_T("Encrypt"), m_UID.Text ());
+  else
+    m_props.Define (_T("UID"), m_UID.Text ());
+
   m_props.Define (_T("PWD"), m_PWD.Text ());
 }
 
@@ -1159,6 +1208,8 @@ TODBCConn::TODBCConn ()
   m_hEnv = SQL_NULL_HENV;
   m_hDbc = SQL_NULL_HDBC;
   m_hStmt = SQL_NULL_HSTMT;
+  memset(m_szSQLState, 0, sizeof(m_szSQLState));
+  memset(m_szSQLMessage, 0, sizeof(m_szSQLMessage));
 }
 
 
@@ -1203,16 +1254,12 @@ void
 TODBCConn::ShowStmtError (HINSTANCE hInstance, HWND hParentWnd)
 {
   SQLSMALLINT wSize;
-  SQLError (
-      m_hEnv,
-      m_hDbc,
-      SQL_NULL_HSTMT,
-      (_SQLCHAR *) m_szSQLState,
-      NULL,
-      (_SQLCHAR *) m_szSQLMessage,
-      NUMCHARS (m_szSQLMessage),
-      &wSize);
-  ShowError (hInstance, hParentWnd);
+  m_szSQLState[0] = m_szSQLMessage[0] = 0;
+  if (SQLError (m_hEnv, m_hDbc, SQL_NULL_HSTMT, 
+        (_SQLCHAR *) m_szSQLState, NULL,
+        (_SQLCHAR *) m_szSQLMessage, NUMCHARS (m_szSQLMessage), 
+        &wSize) == SQL_SUCCESS)
+    ShowError (hInstance, hParentWnd);
 }
 
 
@@ -1223,6 +1270,7 @@ TODBCConn::Connect (HWND hWnd, LPCTSTR szDsn)
   SQLSMALLINT wSize;
 
   m_szSQLState[0] = m_szSQLMessage[0] = 0;
+
   if (SQLAllocEnv (&m_hEnv) == SQL_ERROR)
     {
       SQLError (
@@ -1249,6 +1297,7 @@ TODBCConn::Connect (HWND hWnd, LPCTSTR szDsn)
 	  &wSize);
       return FALSE;
     }
+
   if (SQLDriverConnect (
 	m_hDbc,
 	hWnd,

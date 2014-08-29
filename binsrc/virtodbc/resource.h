@@ -25,7 +25,6 @@
 // Used by virtodbc.rc
 //
 #define IDS_FINISH                      1
-#define VS_VERSION_INFO                 1
 #define IDS_NEXT                        3
 #define IDS_AUTHMETHOD1                 4
 #define IDS_AUTHMETHOD2                 5
