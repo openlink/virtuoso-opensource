@@ -3405,7 +3405,7 @@ create procedure WS.WS.TTL_QUERY_POST (
   inout ses varchar,
   in dav_call integer := 0)
 {
-  declare def_gr any;
+  declare ns, def_gr, giid any;
 	declare exit handler for sqlstate '*'
 	{
 	  connection_set ('__sql_state', __SQL_STATE);
@@ -3413,7 +3413,7 @@ create procedure WS.WS.TTL_QUERY_POST (
 	  return -44;
 	};
 
-  if (dav_call)
+  if (dav_call and (length (ses) = 0))
 {
   ses := http_body_read ();
     if (__tag (ses) = 185) -- string output
@@ -3422,8 +3422,28 @@ create procedure WS.WS.TTL_QUERY_POST (
 	 }
     }
   def_gr := WS.WS.DAV_IRI (path);
+  giid := iri_to_id (def_gr);
   log_enable (3);
-  DB.DBA.TTLP (ses, def_gr, def_gr);
+  if (dav_call)
+    {
+      sparql clear graph ?:def_gr;
+      DB.DBA.TTLP (sprintf ('<%s> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.w3.org/ns/ldp#Resource>, <http://www.w3.org/2000/01/rdf-schema#Resource> .', def_gr), '', def_gr);
+    }
+  else
+    {
+      sparql delete from graph ?:giid { ?s ?p ?o }
+      	where { graph ?:giid { ?s ?p ?o .
+      filter (?p not in (<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>, <http://www.w3.org/ns/ldp#contains>)) . } };
+    }
+  ns := string_output ();
+  for (select NS_PREFIX, NS_URL from DB.DBA.SYS_XML_PERSISTENT_NS_DECL) do
+    {
+      http (sprintf ('@prefix %s: <%s> .\n', NS_PREFIX, NS_URL), ns);
+    }
+  http ('\n ', ns);
+  http (ses, ns);
+  DB.DBA.TTLP (ns, def_gr, def_gr, 255);
+  log_enable (3);
 
   return 0;
 }
