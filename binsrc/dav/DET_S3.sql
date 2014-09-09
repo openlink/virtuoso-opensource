@@ -880,7 +880,7 @@ create function "S3_CONFIGURE" (
   DB.DBA.S3__paramSet (id, 'C', 'checkInterval',  get_keyword ('checkInterval', params, '15'), 0);
 
   -- Enable/Disable sync
-  syncEnabled := get_keyword ('syncEnabled', params, 'on');
+  syncEnabled := get_keyword ('syncEnabled', params, 'off');
   DB.DBA.S3__paramSet (id, 'C', 'syncEnabled',    syncEnabled, 0);
 
   -- Graph

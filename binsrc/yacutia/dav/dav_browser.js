@@ -42,6 +42,12 @@ function destinationChange(obj, changes) {
           o.value = '';
       }
     }
+    if (actions.exec) {
+		  var a = actions.exec;
+		  for ( var i = 0; i < a.length; i++) {
+			  a[i](obj);
+		  }
+	  }
   }
   if (!changes)
     return;
@@ -414,6 +420,9 @@ function renameShow(myForm, myPrefix, myPage, width, height) {
 }
 
 function authenticateShow(sPage, sPageName, drive, width, height) {
+  if (drive == 'WebDAV')
+    sPage += '&service=' + encodeURIComponent($v('dav_WebDAV_oauth'));
+
   OAT.Dom.show('dav_'+drive+'_throbber');
   windowShowInternal(sPage, sPageName, width, height);
 }
@@ -835,13 +844,13 @@ WEBDAV.oauthParams = function (drive, oauth)
     params.access_timestamp = d.format('Y-m-d H:i');
     fld.value = OAT.JSON.serialize(params);
 
-    if ($('tr_dav_'+drive+'_display_name')) {
+    if ($('tr_dav_'+drive+'_display_name') && params.name && (params.name != '(NULL)')) {
       createHidden('F1', 'dav_'+drive+'_display_name', params.name);
       OAT.Dom.show('tr_dav_'+drive+'_display_name');
       $('td_dav_'+drive+'_display_name').innerHTML = params.name;
     }
 
-    if ($('tr_dav_'+drive+'_email')) {
+    if ($('tr_dav_'+drive+'_email') && params.email && (params.email != '(NULL)')) {
       createHidden('F1', 'dav_'+drive+'_email', params.email);
       OAT.Dom.show('tr_dav_'+drive+'_email');
       $('td_dav_'+drive+'_email').innerHTML = params.email;
@@ -967,9 +976,13 @@ WEBDAV.verifyDialog = function ()
              + '&password='   + encodeURIComponent($v('dav_IMAP_password'));
   }
   if (verifyType == 'WebDAV') {
-    var webdavType = 'Digest';
+    var webdavType;
     if ($('dav_WebDAV_authenticationType_1') && $('dav_WebDAV_authenticationType_1').checked)
       webdavType = 'WebID';
+    else if ($('dav_WebDAV_authenticationType_2') && $('dav_WebDAV_authenticationType_2').checked)
+      webdavType = 'oauth';
+    else
+      webdavType = 'Digest';
 
     params = '&a=webdavVerify'
            + '&type='       + webdavType
@@ -977,13 +990,19 @@ WEBDAV.verifyDialog = function ()
     if (webdavType == 'Digest') {
       params +='&user='     + encodeURIComponent($v('dav_WebDAV_user'))
              + '&password=' + encodeURIComponent($v('dav_WebDAV_password'));
+    } else if (webdavType == 'oauth') {
+      try {
+        var p = OAT.JSON.parse($v('dav_WebDAV_JSON'));
+        if (p && p.sid)
+          params +='&oauthSid=' + encodeURIComponent(p.sid);
+      } catch (e) {}
     } else {
       params +='&key='      + encodeURIComponent($v('dav_WebDAV_key'))
              + WEBDAV.sessionParams();
     }
   }
   if ($('item_path'))
-    params += '&path='      + $v('item_path');
+    params += '&path='      + encodeURIComponent($v('item_path'));
 
   OAT.AJAX.GET(WEBDAV.httpsLink('dav/dav_browser_rest.vsp')+'?'+params, '', x, {type:OAT.AJAX.TYPE_TEXT, timeout: 5000, onend: function(){OAT.MSG.detach(OAT.AJAX, 'AJAX_TIMEOUT', t);}});
 }
