@@ -692,7 +692,19 @@ rdf_inf_pre_input (rdf_inf_pre_node_t * ri, caddr_t * inst,
       if (!rit_next (rit))
 	{
 	  SRC_IN_STATE ((data_source_t*)ri, inst) = NULL;
-	  qn_send_output ((data_source_t *)ri, inst);
+	  QR_RESET_CTX
+	    {
+	      qn_send_output ((data_source_t *)ri, inst);
+	    }
+	  QR_RESET_CODE
+	    {
+	      QNCAST (query_instance_t, qi, inst);
+	      POP_QR_RESET;
+	      if (ri->ri_o == ri->ri_output || ri->ri_p == ri->ri_output)
+		qst_set (inst, ri->ri_output, box_copy_tree (qst_get (inst, ri->ri_initial)));
+	      longjmp_splice (qi->qi_thread->thr_reset_ctx, reset_code);
+	    }
+	  END_QR_RESET;
 	  if (ri->ri_o == ri->ri_output || ri->ri_p == ri->ri_output)
 	    qst_set (inst, ri->ri_output, box_copy_tree (qst_get (inst, ri->ri_initial)));
 	  ri_outer_output (ri, ri->ri_outer_any_passed, inst);
