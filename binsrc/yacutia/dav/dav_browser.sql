@@ -5600,7 +5600,10 @@ create procedure WEBDAV.DBA.keys_list (
 --
 create procedure WEBDAV.DBA.oauth_exist ()
 {
-  if (exists (select 1 from VAL.DBA.ODS_OAUTH_INSTANCES, OAUTH.DBA.APP_REG where A_NAME = OOI_NAME))
+  declare retValue any;
+
+  retValue := WEBDAV.DBA.exec ('select 1 from VAL.DBA.ODS_OAUTH_INSTANCES, OAUTH.DBA.APP_REG where A_NAME = OOI_NAME');
+  if (WEBDAV.DBA.isVector (retValue) and (length (retValue) = 1))
     return 1;
 
   return 0;
@@ -5611,11 +5614,14 @@ create procedure WEBDAV.DBA.oauth_exist ()
 --
 create procedure WEBDAV.DBA.oauth_list ()
 {
-  declare retValue any;
+  declare retValue, items any;
 
   retValue := vector ();
-  for (select OOI_NAME, OOI_LABEL from VAL.DBA.ODS_OAUTH_INSTANCES, OAUTH.DBA.APP_REG where A_NAME = OOI_NAME) do
-    retValue := vector_concat (retvalue, vector (vector (OOI_NAME, OOI_LABEL)));
+  items := WEBDAV.DBA.exec ('select OOI_NAME, OOI_LABEL from VAL.DBA.ODS_OAUTH_INSTANCES, OAUTH.DBA.APP_REG where A_NAME = OOI_NAME');
+  foreach (any item in items) do
+  {
+    retValue := vector_concat (retvalue, vector (vector (item[0], item[1])));
+  }
 
   return retValue;
 }
