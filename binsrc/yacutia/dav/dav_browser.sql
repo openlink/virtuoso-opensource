@@ -2611,7 +2611,7 @@ create procedure WEBDAV.DBA.det_type_name (
     'S3',         'Amazon S3',
     'GDrive',     'Google Drive',
     'Dropbox',    'Dropbox',
-    'SkyDrive',   'SkyDrive',
+    'SkyDrive',   'OneDrive',
     'Box',        'Box Net',
     'WebDAV',     'WebDAV',
     'RACKSPACE',  'Rackspace Cloud',
