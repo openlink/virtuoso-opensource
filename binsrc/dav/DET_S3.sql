@@ -816,8 +816,11 @@ create function "S3_DAV_SCHEDULER" (
   connection_set ('S3_DAV_SCHEDULER', 1);
   for (select COL_ID from WS.WS.SYS_DAV_COL where COL_DET = cast (DB.DBA.S3__detName () as varchar) and (detcol_id is null or (detcol_id = COL_ID))) do
   {
-    detcol_parts := split_and_decode (WS.WS.COL_PATH (COL_ID), 0, '\0\0/');
-    DB.DBA.S3_DAV_SCHEDULER_FOLDER (queue_id, COL_ID, detcol_parts, COL_ID, vector (''));
+    if (coalesce (DB.DBA.S3__paramGet (COL_ID, 'C', 'syncEnabled', 0), 'on') = 'on')
+    {
+      detcol_parts := split_and_decode (WS.WS.COL_PATH (COL_ID), 0, '\0\0/');
+      DB.DBA.S3_DAV_SCHEDULER_FOLDER (queue_id, COL_ID, detcol_parts, COL_ID, vector (''));
+    }
   }
   DB.DBA.DAV_QUEUE_UPDATE_STATE (queue_id, 2);
 }
@@ -865,7 +868,7 @@ create function "S3_CONFIGURE" (
   in params any)
 {
   -- dbg_obj_princ ('S3_CONFIGURE (', id, params, ')');
-  declare oldGraph, newGraph varchar;
+  declare syncEnabled, oldGraph, newGraph varchar;
 
   if (not isnull ("S3_VERIFY" (DB.DBA.DAV_SEARCH_PATH (id, 'C'), params)))
     return -38;
@@ -875,6 +878,10 @@ create function "S3_CONFIGURE" (
 
   -- Check Interval
   DB.DBA.S3__paramSet (id, 'C', 'checkInterval',  get_keyword ('checkInterval', params, '15'), 0);
+
+  -- Enable/Disable sync
+  syncEnabled := get_keyword ('syncEnabled', params, 'on');
+  DB.DBA.S3__paramSet (id, 'C', 'syncEnabled',    syncEnabled, 0);
 
   -- Graph
   oldGraph := coalesce (DB.DBA.S3__paramGet (id, 'C', 'graph', 0), '');
@@ -900,7 +907,8 @@ create function "S3_CONFIGURE" (
   DB.DBA.S3__paramSet (id, 'C', ':virtdet', DB.DBA.S3__detName (), 0, 0, 0);
 
   -- start sync scheduler
-  DB.DBA."S3_DAV_SCHEDULER_ROOT" (id);
+  if (syncEnabled = 'on')
+    DB.DBA."S3_DAV_SCHEDULER_ROOT" (id);
 }
 ;
 
