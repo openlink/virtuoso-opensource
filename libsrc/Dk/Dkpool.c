@@ -1585,6 +1585,7 @@ mp_mark_check ()
 
 void mm_cache_clear ();
 
+int64 dk_n_mmaps;
 
 void *
 mp_mmap (size_t sz)
@@ -1609,6 +1610,7 @@ mp_mmap (size_t sz)
 	  continue;
     }
   mp_mmap_mark (ptr, sz, 1);
+      dk_n_mmaps++;
   return ptr;
     }
 #else
@@ -1649,6 +1651,7 @@ mp_munmap (void* ptr, size_t sz)
 	  log_error ("munmap failed with %d", errno);
 	  GPF_T1 ("munmap failed");
 	}
+      dk_n_mmaps--;
     }
 #else
   free (ptr);
@@ -1984,7 +1987,10 @@ munmap_ck (void* ptr, size_t sz)
     mp_mmap_mark  (ptr, sz, 1);
 
   if (0 == rc || (-1 == rc && ENOMEM == errno))
-    return rc;
+    {
+      dk_n_mmaps--;
+      return rc;
+    }
   log_error ("munmap failed with errno %d ptr %p sz %ld", errno, ptr, sz);
   GPF_T1 ("munmap failed with other than ENOMEM");
   return -1;

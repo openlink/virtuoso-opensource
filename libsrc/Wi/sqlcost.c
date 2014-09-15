@@ -2587,7 +2587,7 @@ ric_set_sample (rdf_inf_ctx_t * ctx, caddr_t sc_key, int64 est, float inx_card)
   smp.smp_inx_card = inx_card;
   smp.smp_time = approx_msec_real_time ();
   mutex_enter (ctx->ric_mtx);
-  if (ctx->ric_samples->ht_count > ric_samples_sz)
+  while (ctx->ric_samples->ht_count > ric_samples_sz)
     {
       caddr_t key = NULL;
       tb_sample_t old_smp;

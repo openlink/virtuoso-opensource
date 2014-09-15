@@ -684,6 +684,9 @@ dk_alloc (size_t c)
 #ifndef CACHE_MALLOC
   align_sz = ALIGN_8 (c);
   thing = dk_alloc_reserve_malloc (ADD_END_MARK (align_sz), 1);
+  dk_n_total ++;
+  dk_n_allocs++;
+  dk_n_bytes += align_sz;
 #else
   av_s_list_t *av1;
   if (c <= MAX_CACHED_MALLOC_SIZE)
