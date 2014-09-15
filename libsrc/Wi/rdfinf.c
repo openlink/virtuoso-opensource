@@ -774,6 +774,10 @@ rdf_inf_pre_input (rdf_inf_pre_node_t * ri, caddr_t * inst,
 		      && (list = ri_list (ri, qst_get (inst, ri->ri_p), &sub))))
 		{
 		  rit = ri_iterator (sub, ri->ri_mode, 1);
+		  if (ri->ri_o == ri->ri_output)
+		    qst_set (inst, ri->ri_initial, box_copy_tree (qst_get (inst, ri->ri_o)));
+		  else if (ri->ri_p == ri->ri_output)
+		    qst_set (inst, ri->ri_initial, box_copy_tree (qst_get (inst, ri->ri_p)));
 		  rit_next (rit); /* pop off initial value */
 		  if (rit_next (rit))
 		    {
@@ -815,6 +819,8 @@ rdf_inf_pre_input (rdf_inf_pre_node_t * ri, caddr_t * inst,
       if (rit->rit_at_end)
 	{
 	  SRC_IN_STATE ((data_source_t *) ri, inst) = NULL;
+	  if (ri->ri_o == ri->ri_output || ri->ri_p == ri->ri_output)
+	    qst_set (inst, ri->ri_output, box_copy_tree (qst_get (inst, ri->ri_initial)));
 	  ri_outer_output (ri, ri->ri_outer_any_passed, inst);
 	  return;
 	}
@@ -823,7 +829,21 @@ rdf_inf_pre_input (rdf_inf_pre_node_t * ri, caddr_t * inst,
       if (!rit_next (rit))
 	{
 	  SRC_IN_STATE ((data_source_t*)ri, inst) = NULL;
-	  qn_send_output ((data_source_t *)ri, inst);
+	  QR_RESET_CTX
+	    {
+	      qn_send_output ((data_source_t *)ri, inst);
+	    }
+	  QR_RESET_CODE
+	    {
+	      QNCAST (query_instance_t, qi, inst);
+	      POP_QR_RESET;
+	      if (ri->ri_o == ri->ri_output || ri->ri_p == ri->ri_output)
+		qst_set (inst, ri->ri_output, box_copy_tree (qst_get (inst, ri->ri_initial)));
+	      longjmp_splice (qi->qi_thread->thr_reset_ctx, reset_code);
+	    }
+	  END_QR_RESET;
+	  if (ri->ri_o == ri->ri_output || ri->ri_p == ri->ri_output)
+	    qst_set (inst, ri->ri_output, box_copy_tree (qst_get (inst, ri->ri_initial)));
 	  ri_outer_output (ri, ri->ri_outer_any_passed, inst);
 	  return;
 	}
@@ -1789,6 +1809,7 @@ sqlg_rdf_inf_node (sql_comp_t *sc)
 {
   SQL_NODE_INIT (rdf_inf_pre_node_t, ri, rdf_inf_pre_input, rdf_inf_pre_free);
   ri->ri_iterator = ssl_new_variable (sc->sc_cc, "iter", DV_ANY);
+  ri->ri_initial = ssl_new_variable (sc->sc_cc, "init_value", DV_ANY);
   return ri;
 }
 

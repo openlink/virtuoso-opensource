@@ -2611,7 +2611,7 @@ create procedure WEBDAV.DBA.det_type_name (
     'S3',         'Amazon S3',
     'GDrive',     'Google Drive',
     'Dropbox',    'Dropbox',
-    'SkyDrive',   'SkyDrive',
+    'SkyDrive',   'OneDrive',
     'Box',        'Box Net',
     'WebDAV',     'WebDAV',
     'RACKSPACE',  'Rackspace Cloud',
@@ -5590,6 +5590,37 @@ create procedure WEBDAV.DBA.keys_list (
         where username = _user) do
   {
     retValue := vector_concat (retvalue, vector (xenc_key));
+  }
+
+  return retValue;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.oauth_exist ()
+{
+  declare retValue any;
+
+  retValue := WEBDAV.DBA.exec ('select 1 from VAL.DBA.ODS_OAUTH_INSTANCES, OAUTH.DBA.APP_REG where A_NAME = OOI_NAME');
+  if (WEBDAV.DBA.isVector (retValue) and (length (retValue) = 1))
+    return 1;
+
+  return 0;
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.oauth_list ()
+{
+  declare retValue, items any;
+
+  retValue := vector ();
+  items := WEBDAV.DBA.exec ('select OOI_NAME, OOI_LABEL from VAL.DBA.ODS_OAUTH_INSTANCES, OAUTH.DBA.APP_REG where A_NAME = OOI_NAME');
+  foreach (any item in items) do
+  {
+    retValue := vector_concat (retvalue, vector (vector (item[0], item[1])));
   }
 
   return retValue;

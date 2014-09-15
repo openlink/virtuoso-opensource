@@ -90,6 +90,7 @@ struct rdf_inf_node_s
 #define ri_vec_array ri_iter.in_vec_array
   state_slot_t *	ri_outer_any_passed; /* if rhs of left outer, flag here to see if any answer. If not, do outer output when at end */
   state_slot_t *	ri_iterator;
+  state_slot_t *	ri_initial;
   state_slot_t *	ri_sas_in; /* the value whose same_as-s are to be listed */
   state_slot_t **	ri_sas_g;
     state_slot_t *	ri_sas_out;

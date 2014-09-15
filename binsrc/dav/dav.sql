@@ -3595,7 +3595,7 @@ create procedure WS.WS.TTL_QUERY_POST (
   inout ses varchar,
   in is_res integer := 0)
 {
-  declare def_gr, giid any;
+  declare def_gr, giid, ns any;
 	declare exit handler for sqlstate '*'
 	{
 	  connection_set ('__sql_state', __SQL_STATE);
@@ -3617,7 +3617,14 @@ create procedure WS.WS.TTL_QUERY_POST (
       	where { graph ?:giid { ?s ?p ?o .
       filter (?p not in (<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>, <http://www.w3.org/ns/ldp#contains>)) . } };
     }
-  DB.DBA.TTLP (ses, def_gr, def_gr, 255);
+  ns := string_output ();
+  for (select NS_PREFIX, NS_URL from DB.DBA.SYS_XML_PERSISTENT_NS_DECL) do
+    {
+      http (sprintf ('@prefix %s: <%s> .\n', NS_PREFIX, NS_URL), ns);
+    }
+  http ('\n ', ns);
+  http (ses, ns);
+  DB.DBA.TTLP (ns, def_gr, def_gr, 255);
   if (def_gr like '%,meta')
     {
       declare subj, nsubj, org_path any;
