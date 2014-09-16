@@ -384,8 +384,9 @@ void
 dc_append_box (data_col_t * dc, caddr_t box)
 {
   caddr_t str;
+  dtp_t dtp = DV_TYPE_OF (box);
   DC_CHECK_LEN (dc, dc->dc_n_values);
-  if (IS_BOX_POINTER (box) && DV_DB_NULL == box_tag (box))
+  if (DV_DB_NULL == dtp)
     {
       dc_set_null (dc, dc->dc_n_values);
       return;
@@ -410,6 +411,8 @@ dc_append_box (data_col_t * dc, caddr_t box)
 #endif
       return;
     }
+  if (dc->dc_min_places && DV_ANY != dc->dc_dtp && dc->dc_dtp != dtp_canonical[dtp])
+    dc_heterogenous (dc);
   switch (dc->dc_dtp)
     {
     case DV_LONG_INT:
