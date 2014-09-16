@@ -1789,7 +1789,7 @@ itc_next (it_cursor_t * it, buffer_desc_t ** buf_ret)
     }
  skip_bitmap:
   ks = it->itc_ks;
-  if (ks && (ks->ks_local_test || ks->ks_local_code || ks->ks_setp))
+  if (ks && (ks->ks_local_test || ks->ks_local_code || ks->ks_setp || ks->ks_qf_output))
     {
       int rc;
       query_instance_t * volatile qi = (query_instance_t *) it->itc_out_state;
