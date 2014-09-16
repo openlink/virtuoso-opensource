@@ -3620,9 +3620,8 @@ create procedure WS.WS.TTL_QUERY_POST (
   ns := string_output ();
   for (select NS_PREFIX, NS_URL from DB.DBA.SYS_XML_PERSISTENT_NS_DECL) do
     {
-      http (sprintf ('@prefix %s: <%s> .\n', NS_PREFIX, NS_URL), ns);
+      http (sprintf ('@prefix %s: <%s> . \t', NS_PREFIX, NS_URL), ns);
     }
-  http ('\n ', ns);
   http (ses, ns);
   DB.DBA.TTLP (ns, def_gr, def_gr, 255);
   if (def_gr like '%,meta')
