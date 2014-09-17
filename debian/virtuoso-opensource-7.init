@@ -40,7 +40,7 @@ PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
 DAEMON=/usr/bin/virtuoso-t
 NAME=virtuoso-opensource-7
 SHORTNAME=virtuoso
-DESC="Virtuoso OpenSource Edition 7.1"
+DESC="Virtuoso OpenSource Edition 7.2"
 DBPATH=/var/lib/virtuoso-opensource-7/db
 LOGDIR=/var/log/virtuoso-opensource-7  # Log directory to use
 

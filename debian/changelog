@@ -1,3 +1,8 @@
+virtuoso-opensource (7.2) unstable; urgency=low
+
+  * Bump version number 
+
+ -- OpenLink Virtuoso Maintainer <vos.admin@openlinksw.com>  Mon, 02 Feb 2015 13:44:00 +0100
 virtuoso-opensource (7.1) unstable; urgency=low
 
   * Misc minor packaging fixes
