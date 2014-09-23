@@ -38,6 +38,7 @@ public class VirtuosoRdfBox implements RdfBox
     public boolean 	rb_is_outlined;
     public boolean 	rb_chksum_tail;
     public boolean 	rb_is_text_index;
+    public boolean 	rb_id_only;
     public long 	rb_ro_id;
     public Object 	rb_box;
 
@@ -53,10 +54,11 @@ public class VirtuosoRdfBox implements RdfBox
     public static final int RBS_CHKSUM   = 0x10;
     public static final int RBS_64   	  = 0x20;
     public static final int RBS_SKIP_DTP = 0x40;
+    public static final int RBS_EXT_TYPE = 0x80;
 
     private VirtuosoConnection connection = null;
 
-    public VirtuosoRdfBox (VirtuosoConnection connection, Object box, boolean is_complete,  short type, short lang, long ro_id)
+    public VirtuosoRdfBox (VirtuosoConnection connection, Object box, boolean is_complete, boolean id_only, short type, short lang, long ro_id)
     {
 	this.connection = connection;
 	this.rb_box = box;
@@ -66,6 +68,7 @@ public class VirtuosoRdfBox implements RdfBox
 	this.rb_ro_id = ro_id;
 	this.rb_is_outlined = false;
 	this.rb_chksum_tail = false;
+        this.rb_id_only = id_only;
     }
 
     public VirtuosoRdfBox (Connection connection, Object box, String type, String lang)
@@ -80,6 +83,7 @@ public class VirtuosoRdfBox implements RdfBox
 	this.rb_ro_id = ro_id;
 	this.rb_is_outlined = false;
 	this.rb_chksum_tail = false;
+        this.rb_id_only = false;
     }
 
     private long rdfMakeObj (Object box, String type, String lang)
@@ -236,7 +240,7 @@ public class VirtuosoRdfBox implements RdfBox
 
     public String toString ()
     {
-	return this.rb_box.toString ();
+    	return (this.rb_box == null)?"NULL":this.rb_box.toString ();
     }
 }
 
