@@ -2007,7 +2007,7 @@ DAV_AUTHENTICATE_SSL_WEBID (
       webid := null;
   }
   connection_set ('__webid', coalesce (webid, ''));
-  connection_get ('__webidGraph', webidGraph);
+  connection_set ('__webidGraph', webidGraph);
 
   webid := case when webid = '' then null else webid end;
   return webid;
