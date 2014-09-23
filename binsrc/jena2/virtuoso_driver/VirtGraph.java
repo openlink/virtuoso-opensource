@@ -25,6 +25,8 @@ package virtuoso.jena.driver;
 
 import java.sql.*;
 import java.util.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import javax.sql.*;
 import javax.transaction.xa.*;
 
@@ -41,6 +43,9 @@ import com.hp.hpl.jena.rdf.model.impl.*;
 import virtuoso.jdbc4.VirtuosoConnectionPoolDataSource;
 import virtuoso.jdbc4.VirtuosoDataSource;
 import virtuoso.jdbc4.VirtuosoXADataSource;
+import virtuoso.jdbc4.VirtuosoDate;
+import virtuoso.jdbc4.VirtuosoTime;
+import virtuoso.jdbc4.VirtuosoTimestamp;
 
 
 public class VirtGraph extends GraphBase
@@ -803,7 +808,7 @@ public class VirtGraph extends GraphBase
 
     public void clear()
     {
-      clear(Node.createURI(this.graphName));
+      clear(NodeFactory.createURI(this.graphName));
       getEventManager().notifyEvent( this, GraphEvents.removeAll );
     }
 
@@ -1030,7 +1035,7 @@ public class VirtGraph extends GraphBase
         if (nS == null && nP == null && nO == null) {
 
           String gr = (_gName!=null? _gName:this.graphName);
-          clear(Node.createURI(gr));
+          clear(NodeFactory.createURI(gr));
 
         } else if (nS != null && nP != null && nO != null) {
           java.sql.PreparedStatement ps;
@@ -1115,15 +1120,15 @@ public class VirtGraph extends GraphBase
         if (vs.getIriType() == ExtendedString.IRI && (vs.getStrType() & 0x01)== 0x01) 
         {
           if (vs.toString().indexOf ("_:") == 0)
-            return Node.createAnon(AnonId.create(vs.toString().substring(2))); // _:
+            return NodeFactory.createAnon(AnonId.create(vs.toString().substring(2))); // _:
           else
-            return Node.createURI(vs.toString());
+            return NodeFactory.createURI(vs.toString());
 
         } else if (vs.getIriType() == ExtendedString.BNODE) {
-          return Node.createAnon(AnonId.create(vs.toString().substring(9))); // nodeID://
+          return NodeFactory.createAnon(AnonId.create(vs.toString().substring(9))); // nodeID://
 
         } else {
-          return Node.createLiteral(vs.toString()); 
+          return NodeFactory.createLiteral(vs.toString()); 
         }
 
       } else if (o instanceof RdfBox) {
@@ -1134,166 +1139,149 @@ public class VirtGraph extends GraphBase
 
         if ( rb_type != null)
           dt = TypeMapper.getInstance().getSafeTypeByName(rb_type);
-        return Node.createLiteral(rb.toString(), rb.getLang(), dt);
+        return NodeFactory.createLiteral(rb.toString(), rb.getLang(), dt);
 
       } else if (o instanceof java.lang.Long) {
 
         RDFDatatype dt = null;
         dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#long");
-        return Node.createLiteral(o.toString(), null, dt);
+        return NodeFactory.createLiteral(o.toString(), null, dt);
 
       } else if (o instanceof java.lang.Integer) {
 
         RDFDatatype dt = null;
         dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#integer");
-        return Node.createLiteral(o.toString(), null, dt);
+        return NodeFactory.createLiteral(o.toString(), null, dt);
 
       } else if (o instanceof java.lang.Short) {
 
         RDFDatatype dt = null;
 //      dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#short");
         dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#integer");
-        return Node.createLiteral(o.toString(), null, dt);
+        return NodeFactory.createLiteral(o.toString(), null, dt);
 
       } else if (o instanceof java.lang.Float) {
 
         RDFDatatype dt = null;
         dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#float");
-        return Node.createLiteral(o.toString(), null, dt);
+        return NodeFactory.createLiteral(o.toString(), null, dt);
 
       } else if (o instanceof java.lang.Double) {
 
         RDFDatatype dt = null;
         dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#double");
-        return Node.createLiteral(o.toString(), null, dt);
+        return NodeFactory.createLiteral(o.toString(), null, dt);
 
       } else if (o instanceof java.math.BigDecimal) {
 
         RDFDatatype dt = null;
         dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#decimal");
-        return Node.createLiteral(o.toString(), null, dt);
+        return NodeFactory.createLiteral(o.toString(), null, dt);
 
       } else if (o instanceof java.sql.Blob) {
 
         RDFDatatype dt = null;
         dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#hexBinary");
-        return Node.createLiteral(o.toString(), null, dt);
+        return NodeFactory.createLiteral(o.toString(), null, dt);
 
       } else if (o instanceof java.sql.Date) {
 
         RDFDatatype dt = null;
         dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#date");
-        return Node.createLiteral(o.toString(), null, dt);
+        return NodeFactory.createLiteral(o.toString(), null, dt);
 
       } else if (o instanceof java.sql.Timestamp) {
 
         RDFDatatype dt = null;
         dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#dateTime");
-        return Node.createLiteral(Timestamp2String((java.sql.Timestamp)o), null, dt);
+        return NodeFactory.createLiteral(Timestamp2String((java.sql.Timestamp)o), null, dt);
 
       } else if (o instanceof java.sql.Time) {
 
         RDFDatatype dt = null;
         dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#time");
-        return Node.createLiteral(o.toString(), null, dt);
+        return NodeFactory.createLiteral(o.toString(), null, dt);
+
+      } else if (o instanceof VirtuosoDate) {
+
+        RDFDatatype dt = null;
+        dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#date");
+        return NodeFactory.createLiteral(((VirtuosoDate)o).toXSD_String(), null, dt);
+
+      }	else if (o instanceof VirtuosoTimestamp) {
+
+        RDFDatatype dt = null;
+        dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#dateTime");
+        return NodeFactory.createLiteral(((VirtuosoTimestamp)o).toXSD_String(), null, dt);
+
+      }	else if (o instanceof VirtuosoTime) {
+
+        RDFDatatype dt = null;
+        dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#time");
+        return NodeFactory.createLiteral(((VirtuosoTime)o).toXSD_String(), null, dt);
 
       } else {
 
-        return Node.createLiteral(o.toString());
+        return NodeFactory.createLiteral(o.toString());
       }
     }
+
 
     private static String Timestamp2String(java.sql.Timestamp v)
     {
-      GregorianCalendar cal = new GregorianCalendar();
-      cal.setTime(v);
+        GregorianCalendar cal = new GregorianCalendar();
+        int timezone = cal.get(Calendar.ZONE_OFFSET)/60000; //min
 
-      int year = cal.get(Calendar.YEAR);
-      int month = cal.get(Calendar.MONTH) + 1;
-      int day = cal.get(Calendar.DAY_OF_MONTH);
-      int hour = cal.get(Calendar.HOUR_OF_DAY);
-      int minute = cal.get(Calendar.MINUTE);
-      int second = cal.get(Calendar.SECOND);
-      int nanos = v.getNanos();
+        StringBuilder sb = new StringBuilder();
+        DateFormat formatter= new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+        String nanosString;
+        String timeZoneString = null;
+        String zeros = "000000000";
+        int nanos = v.getNanos();
 
-      String yearS;
-      String monthS;
-      String dayS;
-      String hourS;
-      String minuteS;
-      String secondS;
-      String nanosS;
-      String zeros = "000000000";
-      String yearZeros = "0000";
-      StringBuffer timestampBuf;
+        sb.append(formatter.format(v));
 
-      if (year < 1000) {
-          yearS = "" + year;
-          yearS = yearZeros.substring(0, (4-yearS.length())) + yearS;
-      } else {
-          yearS = "" + year;
-      }
+        if (nanos == 0) {
+            nanosString = "000";
+        } else {
+            nanosString = Integer.toString(nanos);
 
-      if (month < 10)
-          monthS = "0" + month;
-      else
-          monthS = Integer.toString(month);
+            // Add leading zeros
+            nanosString = zeros.substring(0, (9-nanosString.length())) +
+                    nanosString;
 
-      if (day < 10)
-          dayS = "0" + day;
-      else
-          dayS = Integer.toString(day);
+            // Truncate trailing zeros
+            char[] nanosChar = new char[nanosString.length()];
+            nanosString.getChars(0, nanosString.length(), nanosChar, 0);
+            int truncIndex = 8;
+            while (nanosChar[truncIndex] == '0') {
+                truncIndex--;
+            }
 
-      if (hour < 10)
-          hourS = "0" + hour;
-      else
-          hourS = Integer.toString(hour);
+            nanosString = new String(nanosChar, 0, truncIndex + 1);
+        }
 
-      if (minute < 10)
-          minuteS = "0" + minute;
-      else
-          minuteS = Integer.toString(minute);
-      
-      if (second < 10)
-          secondS = "0" + second;
-      else
-          secondS = Integer.toString(second);
-      
-      if (nanos == 0) {
-          nanosS = "0";
-      } else {
-          nanosS = Integer.toString(nanos);
+        sb.append(".");
+        sb.append(nanosString);
+        sb.append(timezone>0?'+':'-');
 
-          // Add leading 0
-          nanosS = zeros.substring(0, (9-nanosS.length())) + nanosS; 
+        int tz = Math.abs(timezone);
+        int tzh = tz/60;
+        int tzm = tz%60;
 
-          // Truncate trailing 0
-          char[] nanosChar = new char[nanosS.length()];
-          nanosS.getChars(0, nanosS.length(), nanosChar, 0);
-          int truncIndex = 8;
-          while (nanosChar[truncIndex] == '0') {
-      	    truncIndex--;
-          }
-          nanosS = new String(nanosChar, 0, truncIndex + 1);
-      }
+        if (tzh < 10)
+            sb.append('0');
 
-      timestampBuf = new StringBuffer();
-      timestampBuf.append(yearS);
-      timestampBuf.append("-");
-      timestampBuf.append(monthS);
-      timestampBuf.append("-");
-      timestampBuf.append(dayS);
-      timestampBuf.append("T");
-      timestampBuf.append(hourS);
-      timestampBuf.append(":");
-      timestampBuf.append(minuteS);
-      timestampBuf.append(":");
-      timestampBuf.append(secondS);
-      timestampBuf.append(".");
-      timestampBuf.append(nanosS);
+        sb.append(tzh);
+        sb.append(':');
 
-      return (timestampBuf.toString());
+        if (tzm < 10)
+            sb.append('0');
+
+        sb.append(tzm);
+        return sb.toString();
     }
+
 
 }
 

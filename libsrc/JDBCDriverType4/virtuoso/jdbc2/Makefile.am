@@ -82,7 +82,10 @@ infiles = \
 	VirtuosoResultSetMetaData.java \
 	VirtuosoRow.java \
 	VirtuosoStatement.java \
-	VirtuosoTypes.java
+	VirtuosoTypes.java \
+	VirtuosoDate.java \
+	VirtuosoTime.java \
+	VirtuosoTimestamp.java
 
 in1files = \
 	BatchUpdateException.java \

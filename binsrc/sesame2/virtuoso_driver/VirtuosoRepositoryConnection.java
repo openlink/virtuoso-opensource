@@ -53,6 +53,8 @@ import java.util.NoSuchElementException;
 import java.util.Calendar;
 import java.util.GregorianCalendar;
 import java.util.Set;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 
 import org.openrdf.OpenRDFUtil;
 import org.openrdf.model.BNode;
@@ -109,6 +111,9 @@ import org.openrdf.rio.turtle.TurtleParserFactory;
 
 import virtuoso.sql.ExtendedString;
 import virtuoso.sql.RdfBox;
+import virtuoso.jdbc4.VirtuosoDate;
+import virtuoso.jdbc4.VirtuosoTime;
+import virtuoso.jdbc4.VirtuosoTimestamp;
 
 
 /**
@@ -2555,6 +2560,18 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#time");
 			return getRepository().getValueFactory().createLiteral(val.toString(), type);
 		}
+		else if (val instanceof VirtuosoDate) {
+			URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#date");
+			return getRepository().getValueFactory().createLiteral(((VirtuosoDate)val).toXSD_String(), type);
+		}
+		else if (val instanceof VirtuosoTimestamp) {
+			URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#dateTime");
+			return getRepository().getValueFactory().createLiteral(((VirtuosoTimestamp)val).toXSD_String(), type);
+		}
+		else if (val instanceof VirtuosoTime) {
+			URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#time");
+			return getRepository().getValueFactory().createLiteral(((VirtuosoTime)val).toXSD_String(), type);
+		}
 		else { // if(val instanceof String) {
 			try {
 				return getRepository().getValueFactory().createLiteral(val.toString());
@@ -2866,99 +2883,59 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-    private String Timestamp2String(java.sql.Timestamp v)
-    {
-      GregorianCalendar cal = new GregorianCalendar();
-      cal.setTime(v);
+      private String Timestamp2String(java.sql.Timestamp v)
+      {
+        GregorianCalendar cal = new GregorianCalendar();
+        int timezone = cal.get(Calendar.ZONE_OFFSET)/60000; //min
 
-      int year = cal.get(Calendar.YEAR);
-      int month = cal.get(Calendar.MONTH) + 1;
-      int day = cal.get(Calendar.DAY_OF_MONTH);
-      int hour = cal.get(Calendar.HOUR_OF_DAY);
-      int minute = cal.get(Calendar.MINUTE);
-      int second = cal.get(Calendar.SECOND);
-      int nanos = v.getNanos();
+        StringBuilder sb = new StringBuilder();
+        DateFormat formatter= new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+        String nanosString;
+        String timeZoneString = null;
+        String zeros = "000000000";
+        int nanos = v.getNanos();
 
-      String yearS;
-      String monthS;
-      String dayS;
-      String hourS;
-      String minuteS;
-      String secondS;
-      String nanosS;
-      String zeros = "000000000";
-      String yearZeros = "0000";
-      StringBuffer timestampBuf;
+        sb.append(formatter.format(v));
 
-      if (year < 1000) {
-          yearS = "" + year;
-          yearS = yearZeros.substring(0, (4-yearS.length())) + yearS;
-      } else {
-          yearS = "" + year;
+        if (nanos == 0) {
+            nanosString = "000";
+        } else {
+            nanosString = Integer.toString(nanos);
+
+            // Add leading zeros
+            nanosString = zeros.substring(0, (9-nanosString.length())) +
+                    nanosString;
+
+            // Truncate trailing zeros
+            char[] nanosChar = new char[nanosString.length()];
+            nanosString.getChars(0, nanosString.length(), nanosChar, 0);
+            int truncIndex = 8;
+            while (nanosChar[truncIndex] == '0') {
+                truncIndex--;
+            }
+
+            nanosString = new String(nanosChar, 0, truncIndex + 1);
+        }
+
+        sb.append(".");
+        sb.append(nanosString);
+        sb.append(timezone>0?'+':'-');
+
+        int tz = Math.abs(timezone);
+        int tzh = tz/60;
+        int tzm = tz%60;
+
+        if (tzh < 10)
+            sb.append('0');
+
+        sb.append(tzh);
+        sb.append(':');
+
+        if (tzm < 10)
+            sb.append('0');
+
+        sb.append(tzm);
+        return sb.toString();
       }
-
-      if (month < 10)
-          monthS = "0" + month;
-      else
-          monthS = Integer.toString(month);
-
-      if (day < 10)
-          dayS = "0" + day;
-      else
-          dayS = Integer.toString(day);
-
-      if (hour < 10)
-          hourS = "0" + hour;
-      else
-          hourS = Integer.toString(hour);
-
-      if (minute < 10)
-          minuteS = "0" + minute;
-      else
-          minuteS = Integer.toString(minute);
-      
-      if (second < 10)
-          secondS = "0" + second;
-      else
-          secondS = Integer.toString(second);
-      
-      if (nanos == 0) {
-          nanosS = "0";
-      } else {
-          nanosS = Integer.toString(nanos);
-
-          // Add leading 0
-          nanosS = zeros.substring(0, (9-nanosS.length())) + nanosS; 
-
-          // Truncate trailing 0
-          char[] nanosChar = new char[nanosS.length()];
-          nanosS.getChars(0, nanosS.length(), nanosChar, 0);
-          int truncIndex = 8;
-          while (nanosChar[truncIndex] == '0') {
-      	    truncIndex--;
-          }
-          nanosS = new String(nanosChar, 0, truncIndex + 1);
-      }
-
-      timestampBuf = new StringBuffer();
-      timestampBuf.append(yearS);
-      timestampBuf.append("-");
-      timestampBuf.append(monthS);
-      timestampBuf.append("-");
-      timestampBuf.append(dayS);
-      timestampBuf.append("T");
-      timestampBuf.append(hourS);
-      timestampBuf.append(":");
-      timestampBuf.append(minuteS);
-      timestampBuf.append(":");
-      timestampBuf.append(secondS);
-      if (nanos!=0) {
-        timestampBuf.append(".");
-        timestampBuf.append(nanosS);
-      }
-      timestampBuf.append("Z");
-
-      return (timestampBuf.toString());
-    }
 }
 

@@ -32,6 +32,7 @@ import java.sql.ResultSetMetaData;
 
 import virtuoso.sql.*;
 
+import com.hp.hpl.jena.graph.NodeFactory;
 import com.hp.hpl.jena.shared.*;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.ResultSet;
@@ -550,7 +551,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
 	    }
 
 	    if (virt_graph != null && !virt_graph.equals("virt:DEFAULT"))
-	      v_row.add(Var.alloc("graph"), Node.createURI(virt_graph));
+	      v_row.add(Var.alloc("graph"), NodeFactory.createURI(virt_graph));
 	  } 
 	  catch(Exception e)
 	  {

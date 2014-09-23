@@ -23,6 +23,10 @@
 
 package virtuoso.jdbc2;
 
+import java.util.*;
+import java.sql.Types;
+import java.sql.Timestamp;
+
 
 /**
  * The VirtuosoTypes is used to group together all the Virtuoso
@@ -426,4 +430,318 @@ class VirtuosoTypes
    public static final int CDF_KEY 		= 1;
    public static final int CDF_AUTOINCREMENT 	= 2;
    public static final int CDF_XMLTYPE 		= 4;
+
+
+   protected static Object mapJavaTypeToSqlType (Object x, int targetSqlType) throws VirtuosoException
+   {
+     return mapJavaTypeToSqlType(x, targetSqlType, 0, false);
+   }
+
+   protected static Object mapJavaTypeToSqlType (Object x, int targetSqlType, int scale) throws VirtuosoException
+   {
+     return mapJavaTypeToSqlType(x, targetSqlType, scale, true);
+   }
+
+   protected static Object mapJavaTypeToSqlType (Object x, int targetSqlType, int scale, boolean useScale) throws VirtuosoException
+   {
+     if (x == null)
+       return x;
+     if (x instanceof java.lang.Boolean)
+       x = new Integer (((Boolean)x).booleanValue() ? 1 : 0);
+
+     switch (targetSqlType)
+       {
+	  case Types.CHAR:
+	  case Types.VARCHAR:
+	      if (x instanceof java.lang.String)
+		return x;
+	      else
+		return x.toString();
+
+	  case Types.LONGVARCHAR:
+#if JDK_VER >= 12
+              if (x instanceof java.sql.Clob || x instanceof java.sql.Blob || x instanceof java.lang.String)
+#else
+              if (x instanceof VirtuosoClob || x instanceof VirtuosoBlob || x instanceof java.lang.String)
+#endif
+                return x;
+              else
+		return x.toString();
+
+	  case Types.DATE:
+              if(x instanceof VirtuosoDate)
+                 return ((VirtuosoDate)x).clone();
+              else if(x instanceof VirtuosoTimestamp)
+              {
+                 VirtuosoTimestamp _t = (VirtuosoTimestamp)x;
+                 return new VirtuosoDate(_t.getTime(), _t.getTimezone(), _t.withTimezone());
+              }
+              else if (x instanceof VirtuosoTime)
+              {
+                 VirtuosoTime _t = (VirtuosoTime)x;
+                 return new VirtuosoDate(_t.getTime(), _t.getTimezone(), _t.withTimezone());
+              }
+	      else if(x instanceof java.sql.Date)
+	         return new java.sql.Date(((java.sql.Date)x).getTime());
+	      else if (x instanceof String)
+	         return VirtuosoTypes.strToDate((String)x);
+	      else if (x instanceof java.util.Date) 
+	         return new java.sql.Date(((java.util.Date)x).getTime());
+	      break;
+
+	  case Types.TIME:
+              if (x instanceof VirtuosoTime)
+                 return ((VirtuosoTime)x).clone();
+              else if(x instanceof VirtuosoTimestamp)
+              {
+                 VirtuosoTimestamp _t = (VirtuosoTimestamp)x;
+                 return new VirtuosoTime(_t.getTime(), _t.getTimezone(), _t.withTimezone());
+              }
+              else if (x instanceof VirtuosoDate)
+              {
+                 VirtuosoDate _t = (VirtuosoDate)x;
+                 return new VirtuosoTime(_t.getTime(), _t.getTimezone(), _t.withTimezone());
+              }
+              else if(x instanceof java.sql.Time)
+                 return new java.sql.Time(((java.sql.Time)x).getTime());
+              else if (x instanceof java.util.Date)
+	         return new java.sql.Time(((java.util.Date)x).getTime());
+              else if(x instanceof String)
+                 return VirtuosoTypes.strToTime((String)x);
+              break;
+
+	  case Types.TIMESTAMP:
+	      
+              if (x instanceof VirtuosoTimestamp)
+                 return ((VirtuosoTimestamp)x).clone();
+              else if(x instanceof VirtuosoTime)
+              {
+                 VirtuosoTime _t = (VirtuosoTime)x;
+                 return new VirtuosoTimestamp(_t.getTime(), _t.getTimezone(), _t.withTimezone());
+              }
+              else if (x instanceof VirtuosoDate)
+              {
+                 VirtuosoDate _t = (VirtuosoDate)x;
+                 return new VirtuosoTimestamp(_t.getTime(), _t.getTimezone(), _t.withTimezone());
+              }
+	      else if(x instanceof java.sql.Timestamp)
+	        {
+	          Timestamp val = new java.sql.Timestamp(((java.sql.Timestamp)x).getTime());
+	          val.setNanos(((java.sql.Timestamp)x).getNanos());
+	          return val;
+	        }
+              else if (x instanceof java.util.Date)
+                return new java.sql.Timestamp(((java.util.Date)x).getTime());
+	      else if(x instanceof String)
+                return VirtuosoTypes.strToTimestamp((String)x);
+	      break;
+
+          case Types.NUMERIC:
+          case Types.DECIMAL:
+              {
+                java.math.BigDecimal bd = null;
+		if (x instanceof java.math.BigDecimal)
+		  bd = (java.math.BigDecimal) x;
+                else if (x instanceof java.lang.String)
+		  bd = new java.math.BigDecimal ((String) x);
+		else if (x instanceof java.lang.Number)
+		  bd = new java.math.BigDecimal (x.toString());
+                if (bd != null && useScale)
+		  return bd.setScale (scale);
+              }
+	      break;
+
+          case Types.BIGINT:
+              if (x instanceof java.math.BigDecimal || x instanceof java.lang.String)
+                return new Long(x.toString());
+              else if (x instanceof java.lang.Number)
+                return new Long(((Number)x).longValue());
+	      break;
+
+          case Types.FLOAT:
+          case Types.DOUBLE:
+              if (x instanceof java.lang.Double)
+                return x;
+              else if (x instanceof java.lang.Number)
+                return new Double (((Number)x).doubleValue());
+              else if (x instanceof java.lang.String)
+                return new Double ((String) x);
+	      break;
+          case Types.INTEGER:
+              if (x instanceof java.lang.Integer)
+                return x;
+              else if (x instanceof java.lang.Number)
+                return new Integer (((Number)x).intValue());
+              else if (x instanceof java.lang.String)
+                return new Integer ((String) x);
+	      break;
+
+          case Types.REAL:
+              if (x instanceof java.lang.Float)
+                return x;
+              else if (x instanceof java.lang.Number)
+                return new Float (((Number)x).floatValue());
+              else if (x instanceof java.lang.String)
+                return new Float ((String) x);
+	      break;
+
+          case Types.SMALLINT:
+          case Types.TINYINT:
+          case Types.BIT:
+#if JDK_VER >= 14
+          case Types.BOOLEAN:
+#endif
+              if (x instanceof java.lang.Short)
+                return x;
+              else if (x instanceof java.lang.String)
+                return new Short ((String) x);
+              else if (x instanceof java.lang.Number)
+                return new Short (((Number)x).shortValue());
+	      break;
+
+	  case Types.ARRAY:
+#if JDK_VER >= 14
+	  case Types.DATALINK:
+#endif
+#if JDK_VER >= 16
+      case Types.ROWID:
+#endif
+          case Types.DISTINCT:
+	  case Types.REF:
+	      throw new VirtuosoException ("Type not supported", VirtuosoException.NOTIMPLEMENTED);
+
+          case Types.VARBINARY:
+              if (x instanceof byte[])
+                return x;
+              break;
+
+          case Types.LONGVARBINARY:
+#if JDK_VER >= 12
+              if (x instanceof java.sql.Blob || x instanceof byte [])
+#else
+              if (x instanceof VirtuosoBlob || x instanceof byte [])
+#endif
+                return x;
+              break;
+
+	  default:
+	      return x;
+       }
+     throw new VirtuosoException ("Invalid value specified", VirtuosoException.BADPARAM);
+   }
+
+
+    /**
+     * Convert a timestamp to a different Timezone.
+     */
+    protected static long timeToCal(java.util.Date value, Calendar target) {
+        java.util.Date tmp = target.getTime();
+        try {
+            Calendar cal = Calendar.getInstance();
+            cal.setTime(value);
+            target.set(Calendar.HOUR_OF_DAY, cal.get(Calendar.HOUR_OF_DAY));
+            target.set(Calendar.MINUTE, cal.get(Calendar.MINUTE));
+            target.set(Calendar.SECOND, cal.get(Calendar.SECOND));
+            target.set(Calendar.MILLISECOND, cal.get(Calendar.MILLISECOND));
+            target.set(Calendar.YEAR, cal.get(Calendar.YEAR));
+            target.set(Calendar.MONTH, cal.get(Calendar.MONTH));
+            target.set(Calendar.DAY_OF_MONTH, cal.get(Calendar.DAY_OF_MONTH));
+            return target.getTime().getTime();
+        }
+        finally {
+            target.setTime(tmp);
+        }
+    }
+
+    /**
+     * Convert a timestamp from a different Timezone.
+     */
+    protected static long timeFromCal(java.util.Date value , Calendar target) {
+        java.util.Date tmp = target.getTime();
+        try {
+            Calendar cal = Calendar.getInstance();
+            target.setTime(value);
+            cal.set(Calendar.HOUR_OF_DAY, target.get(Calendar.HOUR_OF_DAY));
+            cal.set(Calendar.MINUTE, target.get(Calendar.MINUTE));
+            cal.set(Calendar.SECOND, target.get(Calendar.SECOND));
+            cal.set(Calendar.MILLISECOND, target.get(Calendar.MILLISECOND));
+            cal.set(Calendar.YEAR, target.get(Calendar.YEAR));
+            cal.set(Calendar.MONTH, target.get(Calendar.MONTH));
+            cal.set(Calendar.DAY_OF_MONTH, target.get(Calendar.DAY_OF_MONTH));
+            return cal.getTime().getTime();
+        }
+        finally {
+            target.setTime(tmp);
+        }
+    }
+
+
+  /**
+   * Convert a string in JDBC date escape format to a Date value
+   *
+   * @param s date in format "yyyy-mm-dd"
+   * @return corresponding Date
+   */
+  protected static java.sql.Date strToDate (String s)
+  {
+    java.sql.Date dt = null;
+    if (s == null)
+       return null;
+    try {
+	dt = java.sql.Date.valueOf (s);
+    } catch (Exception e) {
+    }
+    if (dt == null)
+      {
+	try {
+	    java.text.DateFormat df = java.text.DateFormat.getDateInstance();
+	    java.util.Date juD = df.parse (s);
+	    dt = new java.sql.Date (juD.getTime());
+        } catch (Exception e) {
+        }
+      }
+    return dt;
+  }
+
+
+  /**
+   * Convert a string in JDBC timestamp escape format to a Timestamp value
+   *
+   * @param s timestamp in format "yyyy-mm-dd hh:mm:ss.fffffffff"
+   * @return corresponding Timestamp
+   */
+  protected static java.sql.Timestamp strToTimestamp (String s)
+  {
+    java.sql.Timestamp ts = null;
+
+    if (s == null)
+      return null;
+    try {
+	ts = java.sql.Timestamp.valueOf (s);
+    } catch (Exception e) {
+    }
+    return ts;
+  }
+
+
+  /**
+   * Convert a string in JDBC time escape format to a Time value
+   *
+   * @param s time in format "hh:mm:ss"
+   * @return corresponding Time
+   */
+  protected static java.sql.Time strToTime (String s)
+  {
+    java.sql.Time tm = null;
+
+    if (s == null)
+       return null;
+    try {
+	tm = java.sql.Time.valueOf (s);
+    } catch (Exception e) {
+    }
+    return tm;
+  }
+
+
 }

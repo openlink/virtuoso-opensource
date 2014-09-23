@@ -81,6 +81,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
    VirtuosoPreparedStatement(VirtuosoConnection connection, String sql, int type, int concurrency) throws VirtuosoException
    {
       super(connection,type,concurrency);
+      sparql_executed =  sql.trim().regionMatches(true, 0, "sparql", 0, 6);
       synchronized (connection)
 	{
 	  try
@@ -358,7 +359,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	     // Create and get a future for this
 	     future = connection.getFuture(VirtuosoFuture.close,args, this.rpc_timeout);
 	     // Read the answer
-	     future.nextResult();
+	     future.nextResult(false);
 	     // Remove the future reference
 	     connection.removeFuture(future);
 	     future = null;
@@ -780,132 +781,6 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
       setObject(parameterIndex,x,targetSqlType, 0);
    }
 
-   protected Object mapJavaTypeToSqlType (Object x, int targetSqlType, int scale) throws VirtuosoException
-   {
-     if (x == null)
-       return x;
-     if (x instanceof java.lang.Boolean)
-       x = new Integer (((Boolean)x).booleanValue() ? 1 : 0);
-
-     switch (targetSqlType)
-       {
-	  case Types.CHAR:
-	  case Types.VARCHAR:
-	      if (x instanceof java.util.Date || x instanceof java.lang.String)
-		return x;
-	      else
-		return x.toString();
-
-	  case Types.LONGVARCHAR:
-#if JDK_VER >= 12
-              if (x instanceof java.sql.Clob || x instanceof java.sql.Blob || x instanceof java.lang.String)
-#else
-              if (x instanceof VirtuosoClob || x instanceof VirtuosoBlob || x instanceof java.lang.String)
-#endif
-                return x;
-              else
-		return x.toString();
-
-	  case Types.DATE:
-	  case Types.TIME:
-	  case Types.TIMESTAMP:
-	      if (x instanceof java.util.Date || x instanceof java.lang.String)
-		return x;
-              break;
-
-          case Types.NUMERIC:
-          case Types.DECIMAL:
-              {
-                java.math.BigDecimal bd = null;
-		if (x instanceof java.math.BigDecimal)
-		  bd = (java.math.BigDecimal) x;
-                else if (x instanceof java.lang.String)
-		  bd = new java.math.BigDecimal ((String) x);
-		else if (x instanceof java.lang.Number)
-		  bd = new java.math.BigDecimal (x.toString());
-                if (bd != null)
-		  return bd.setScale (scale);
-              }
-	      break;
-
-          case Types.BIGINT:
-              if (x instanceof java.math.BigDecimal || x instanceof java.lang.String)
-                return new Long(x.toString());
-              else if (x instanceof java.lang.Number)
-                return new Long(((Number)x).longValue());
-	      break;
-
-          case Types.FLOAT:
-          case Types.DOUBLE:
-              if (x instanceof java.lang.Double)
-                return x;
-              else if (x instanceof java.lang.Number)
-                return new Double (((Number)x).doubleValue());
-              else if (x instanceof java.lang.String)
-                return new Double ((String) x);
-	      break;
-          case Types.INTEGER:
-              if (x instanceof java.lang.Integer)
-                return x;
-              else if (x instanceof java.lang.Number)
-                return new Integer (((Number)x).intValue());
-              else if (x instanceof java.lang.String)
-                return new Integer ((String) x);
-	      break;
-
-          case Types.REAL:
-              if (x instanceof java.lang.Float)
-                return x;
-              else if (x instanceof java.lang.Number)
-                return new Float (((Number)x).floatValue());
-              else if (x instanceof java.lang.String)
-                return new Float ((String) x);
-	      break;
-
-          case Types.SMALLINT:
-          case Types.TINYINT:
-          case Types.BIT:
-#if JDK_VER >= 14
-          case Types.BOOLEAN:
-#endif
-              if (x instanceof java.lang.Short)
-                return x;
-              else if (x instanceof java.lang.String)
-                return new Short ((String) x);
-              else if (x instanceof java.lang.Number)
-                return new Short (((Number)x).shortValue());
-	      break;
-
-	  case Types.ARRAY:
-#if JDK_VER >= 14
-	  case Types.DATALINK:
-#endif
-#if JDK_VER >= 16
-      case Types.ROWID:
-#endif
-          case Types.DISTINCT:
-	  case Types.REF:
-	      throw new VirtuosoException ("Type not supported", VirtuosoException.NOTIMPLEMENTED);
-
-          case Types.VARBINARY:
-              if (x instanceof byte[])
-                return x;
-              break;
-
-          case Types.LONGVARBINARY:
-#if JDK_VER >= 12
-              if (x instanceof java.sql.Blob || x instanceof byte [])
-#else
-              if (x instanceof VirtuosoBlob || x instanceof byte [])
-#endif
-                return x;
-              break;
-
-	  default:
-	      return x;
-       }
-     throw new VirtuosoException ("Invalid value specified", VirtuosoException.BADPARAM);
-   }
 
    /**
     * Sets the value of a parameter using an object. The second
@@ -944,7 +819,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
       }
       // Else create a Blob
       if(x == null) this.setNull(parameterIndex, Types.OTHER);
-      x = mapJavaTypeToSqlType (x, targetSqlType, scale);
+      x = VirtuosoTypes.mapJavaTypeToSqlType (x, targetSqlType, scale);
       if (x instanceof java.io.Serializable)
 	{
 	  //System.err.println ("setObject2 (" + parameterIndex + ", " + x + ", " + targetSqlType + ", " + scale);
@@ -1347,8 +1222,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	 {
 	   if(cal != null)
 	     {
-	       cal.setTime((java.util.Date)x);
-	       x = new java.sql.Date (cal.getTime().getTime());
+	       x = new java.sql.Date (VirtuosoTypes.timeFromCal(x, cal));
 	     }
 	   objparams.setElementAt(x,parameterIndex - 1);
 	 }
@@ -1376,8 +1250,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	 {
 	   if(cal != null)
 	     {
-	       cal.setTime((java.util.Date)x);
-	       x = new java.sql.Time (cal.getTime().getTime());
+	       x = new java.sql.Time (VirtuosoTypes.timeFromCal(x, cal));
 	     }
 	   objparams.setElementAt(x,parameterIndex - 1);
 	 }
@@ -1406,8 +1279,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	   if(cal != null)
 	     {
 	       int nanos = x.getNanos();
-	       cal.setTime((java.util.Date)x);
-	       x = new java.sql.Timestamp (cal.getTime().getTime());
+	       x = new java.sql.Timestamp(VirtuosoTypes.timeFromCal(x, cal));
                x.setNanos (nanos);
 	     }
 	   objparams.setElementAt(x,parameterIndex - 1);
