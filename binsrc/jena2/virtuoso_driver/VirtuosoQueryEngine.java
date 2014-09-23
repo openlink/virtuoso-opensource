@@ -24,6 +24,7 @@ package virtuoso.jena.driver;
 
 import java.util.*;
 
+import com.hp.hpl.jena.graph.NodeFactory;
 import com.hp.hpl.jena.shared.*;
 import com.hp.hpl.jena.graph.Node;
 
@@ -330,7 +331,7 @@ public class VirtuosoQueryEngine extends QueryEngineMain
           }
 
           if (virt_graph != null && !virt_graph.equals("virt:DEFAULT"))
-	    v_row.add(Var.alloc("graph"), Node.createURI(virt_graph));
+	    v_row.add(Var.alloc("graph"), NodeFactory.createURI(virt_graph));
         } 
         catch(Exception e) {
           throw new JenaException("extractRow is FAILED.:"+e);

@@ -313,7 +313,7 @@ public class VirtuosoBlob
 		   args[8] = new Long (this.bh_timestamp);
 		   //System.out.println ("vb: init read FUTURE: " + this.bh_current_page + " " + init_read_len + " " + this.bh_position);
 		   VirtuosoFuture future = connection.getFuture(VirtuosoFuture.getdata,args, -1);
-		   curr = future.nextResult();
+		   curr = future.nextResult(false);
 		   curr = (openlink.util.Vector) curr.firstElement();
 		   connection.removeFuture (future);
 		 }
@@ -375,7 +375,7 @@ public class VirtuosoBlob
 	       args[8] = new Long (this.bh_timestamp);
 	       //System.out.println ("vb: FUTURE: " + this.bh_current_page + " " + length + " " + this.bh_position);
 	       VirtuosoFuture future = connection.getFuture(VirtuosoFuture.getdata,args, -1);
-	       curr = future.nextResult();
+	       curr = future.nextResult(false);
 	       curr = (openlink.util.Vector) curr.firstElement();
 	       connection.removeFuture (future);
 	     }

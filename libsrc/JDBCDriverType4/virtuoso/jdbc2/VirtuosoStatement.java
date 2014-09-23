@@ -92,6 +92,8 @@ public class VirtuosoStatement implements Statement
 
    protected boolean result_opened = false;
 
+   protected boolean sparql_executed = false;
+
    // The request number
    protected static int req_no;
 
@@ -231,6 +233,7 @@ public class VirtuosoStatement implements Statement
     */
    protected VirtuosoResultSet sendQuery(String sql) throws VirtuosoException
    {
+       sparql_executed =  sql.trim().regionMatches(true, 0, "sparql", 0, 6);
        try
        {
 	   synchronized (connection)
@@ -355,7 +358,7 @@ public class VirtuosoStatement implements Statement
 	     // Create and get a future for this
 	     future = connection.getFuture(VirtuosoFuture.close,args, this.rpc_timeout);
 	     // Read the answer
-	     future.nextResult();
+	     future.nextResult(false);
 	     // Remove the future reference
 	     connection.removeFuture(future);
 	     future = null;

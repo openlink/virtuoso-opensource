@@ -269,7 +269,7 @@ class VirtuosoRow
            return (java.lang.Integer.parseInt((String)obj) == 0)?false:true;
          if (obj instanceof byte[])
            return (java.lang.Integer.parseInt(new String((byte[])obj)) == 0)?false:true;
-         return new Boolean(obj.toString()).booleanValue();
+         return Boolean.parseBoolean(obj.toString());
       }
       resultSet.wasNull(true);
       return false;
@@ -306,7 +306,7 @@ class VirtuosoRow
          else
             try
             {
-               return new Byte(obj.toString()).byteValue();
+               return Byte.parseByte(obj.toString());
             }
             catch(NumberFormatException e)
             {
@@ -394,7 +394,7 @@ class VirtuosoRow
          else
             try
             {
-               return new Double(obj.toString()).doubleValue();
+               return Double.parseDouble(obj.toString().trim());
             }
             catch(NumberFormatException e)
             {
@@ -424,12 +424,27 @@ class VirtuosoRow
        if(obj != null)
 	 {
 	   resultSet.wasNull(false);
-	   if(obj instanceof java.sql.Date)
-	     return java.sql.Date.valueOf (((java.sql.Date)obj).toString());
+
+           if(obj instanceof VirtuosoDate)
+             return ((VirtuosoDate)obj).clone();
+           else if(obj instanceof VirtuosoTimestamp)
+           {
+             VirtuosoTimestamp _t = (VirtuosoTimestamp)obj;
+             return new VirtuosoDate(_t.getTime(), _t.getTimezone(), _t.withTimezone());
+           }
+           else if (obj instanceof VirtuosoTime)
+           {
+             VirtuosoTime _t = (VirtuosoTime)obj;
+             return new VirtuosoDate(_t.getTime(), _t.getTimezone(), _t.withTimezone());
+           }
+	   else if(obj instanceof java.sql.Date)
+	     return new java.sql.Date(((java.sql.Date)obj).getTime());
 	   else if (obj instanceof String)
-	     return java.sql.Date.valueOf ((String)obj);
+	     return VirtuosoTypes.strToDate((String)obj);
+	   else if (obj instanceof java.util.Date) 
+	     return new java.sql.Date(((java.util.Date)obj).getTime());
 	   else
-	     return java.sql.Date.valueOf (((java.util.Date)obj).toString());
+             throw new VirtuosoException("Column does not contain a Date.",VirtuosoException.CASTERROR);
 	 }
        resultSet.wasNull(true);
        return null;
@@ -455,19 +470,26 @@ class VirtuosoRow
       {
          resultSet.wasNull(false);
 
-         if(obj instanceof java.sql.Time)
-            return java.sql.Time.valueOf (((java.sql.Time)obj).toString());
+         if (obj instanceof VirtuosoTime)
+            return ((VirtuosoTime)obj).clone();
+         else if(obj instanceof VirtuosoTimestamp)
+         {
+            VirtuosoTimestamp _t = (VirtuosoTimestamp)obj;
+            return new VirtuosoTime(_t.getTime(), _t.getTimezone(), _t.withTimezone());
+         }
+         else if (obj instanceof VirtuosoDate)
+         {
+            VirtuosoDate _t = (VirtuosoDate)obj;
+            return new VirtuosoTime(_t.getTime(), _t.getTimezone(), _t.withTimezone());
+         }
+         else if(obj instanceof java.sql.Time)
+            return new java.sql.Time(((java.sql.Time)obj).getTime());
          else if (obj instanceof java.util.Date)
-           {
-             java.util.Date dt = (java.util.Date) obj;
-             java.sql.Time tm = new java.sql.Time (dt.getTime());
-             return java.sql.Time.valueOf(tm.toString());
-           }
+	    return new java.sql.Time(((java.util.Date)obj).getTime());
          else if(obj instanceof String)
-           {
-             return java.sql.Time.valueOf((String)obj);
-           }
-         else return null;
+            return VirtuosoTypes.strToTime((String)obj);
+	 else
+            throw new VirtuosoException("Column does not contain a Time.",VirtuosoException.CASTERROR);
       }
       resultSet.wasNull(true);
       return null;
@@ -490,34 +512,38 @@ class VirtuosoRow
        Object obj = content.elementAt(column - 1);
        // JDBC api spec
        if(obj != null)
-	 {
-	   resultSet.wasNull(false);
-	   if(obj instanceof java.sql.Timestamp)
-	     {
-	       //System.err.println ("Was a Timestamp");
-	       return (java.sql.Timestamp)obj;
-	     }
-	   else if (obj instanceof java.sql.Date)
-	     {
-	       //System.err.println ("Was a Date");
-	       java.sql.Date dt = (java.sql.Date)obj;
-	       return new java.sql.Timestamp (dt.getTime());
-	     }
-	   else if (obj instanceof java.sql.Time)
-	     {
-	       //System.err.println ("Was a Time");
-	       java.sql.Time tm = (java.sql.Time)obj;
-	       return new java.sql.Timestamp (tm.getTime());
-	     }
-	   else if(obj instanceof String)
-	     {
-	       //System.err.println ("Was a String");
-	       java.sql.Timestamp ts;
-	       ts = Timestamp.valueOf((String)obj);
-	       return ts;
-	     }
-	   return null;
-	 }
+       {
+         resultSet.wasNull(false);
+
+         if (obj instanceof VirtuosoTimestamp)
+            return ((VirtuosoTimestamp)obj).clone();
+         else if(obj instanceof VirtuosoTime)
+         {
+            VirtuosoTime _t = (VirtuosoTime)obj;
+            return new VirtuosoTimestamp(_t.getTime(), _t.getTimezone(), _t.withTimezone());
+         }
+         else if (obj instanceof VirtuosoDate)
+         {
+            VirtuosoDate _t = (VirtuosoDate)obj;
+            return new VirtuosoTimestamp(_t.getTime(), _t.getTimezone(), _t.withTimezone());
+         }
+	 else if(obj instanceof java.sql.Timestamp)
+         {
+            Timestamp val = new java.sql.Timestamp(((java.sql.Timestamp)obj).getTime());
+            val.setNanos(((java.sql.Timestamp)obj).getNanos());
+            return val;
+         }
+         else if (obj instanceof java.util.Date)
+         {
+            return new java.sql.Timestamp(((java.util.Date)obj).getTime());
+         }
+         else if(obj instanceof String)
+         {
+            return VirtuosoTypes.strToTimestamp((String)obj);
+         }
+         else
+            throw new VirtuosoException("Column does not contain a Timestamp.",VirtuosoException.CASTERROR);
+       }
        resultSet.wasNull(true);
        return null;
      }
@@ -553,7 +579,7 @@ class VirtuosoRow
          else
             try
             {
-               return new Float(obj.toString()).floatValue();
+               return Float.parseFloat(obj.toString().trim());
             }
             catch(NumberFormatException e)
             {
@@ -595,7 +621,7 @@ class VirtuosoRow
          else
             try
             {
-               return new Integer(obj.toString()).intValue();
+               return Integer.parseInt(obj.toString().trim());
             }
             catch(NumberFormatException e)
             {
@@ -637,7 +663,7 @@ class VirtuosoRow
          else
             try
             {
-               return new Long(obj.toString()).longValue();
+               return Long.parseLong(obj.toString().trim());
             }
             catch(NumberFormatException e)
             {
@@ -679,7 +705,7 @@ class VirtuosoRow
          else
             try
             {
-               return new Short(obj.toString()).shortValue();
+               return Short.parseShort(obj.toString().trim());
             }
             catch(NumberFormatException e)
             {
@@ -913,16 +939,29 @@ class VirtuosoRow
          resultSet.wasNull(false);
 	 if (resultSet.metaData.isXml (column))
 	   {
-	       obj = createDOMT (obj);
+	     return createDOMT (obj);
 	   }
+         else if (obj instanceof VirtuosoTimestamp)
+             return ((VirtuosoTimestamp)obj).clone();
+         else if(obj instanceof VirtuosoTime)
+             return ((VirtuosoTime)obj).clone();
+         else if (obj instanceof VirtuosoDate)
+             return ((VirtuosoDate)obj).clone();
 	 else if(obj instanceof java.sql.Date)
 	   {                                          
-	     obj = new java.sql.Date(((java.sql.Date)obj).getTime());
+	     return new java.sql.Date(((java.sql.Date)obj).getTime());
 	   }
          else if(obj instanceof java.sql.Time)
            {
-	     obj = new java.sql.Time(((java.sql.Time)obj).getTime());
+	     return new java.sql.Time(((java.sql.Time)obj).getTime());
            }
+	 else if(obj instanceof java.sql.Timestamp)
+	   {
+	     Timestamp val = new java.sql.Timestamp(((java.sql.Timestamp)obj).getTime());
+	     val.setNanos(((java.sql.Timestamp)obj).getNanos());
+	     return val;
+	   }
+
          return obj;
       }
       resultSet.wasNull(true);
@@ -998,5 +1037,6 @@ class VirtuosoRow
       buf.append("}");
       return buf.toString();
      }
+
 }
 

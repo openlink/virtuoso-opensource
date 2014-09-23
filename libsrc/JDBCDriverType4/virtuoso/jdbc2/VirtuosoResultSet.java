@@ -442,7 +442,7 @@ public class VirtuosoResultSet implements ResultSet
 	       VirtuosoException.MISCERROR);
          // Get the next row (if one exist else null)
 	 synchronized (statement) { statement.wait_result = true; }
-	 curr = statement.future.nextResult();
+	 curr = statement.future.nextResult(statement.sparql_executed);
 	 synchronized (statement) { statement.wait_result = false; }
 	 curr = (curr==null)?null:((openlink.util.Vector)curr).firstElement();
 	 //String xx;
@@ -1523,7 +1523,7 @@ public class VirtuosoResultSet implements ResultSet
     */
    public java.sql.Date getDate(int columnIndex, Calendar cal) throws VirtuosoException
    {
-      java.util.Date date;
+      java.sql.Date date;
       // Get and check the current row number
       if(currentRow < 1 || currentRow > rows.size())
          throw new VirtuosoException("Bad current row selected : " + currentRow + " not in 1<n<" + rows.size(),VirtuosoException.BADPARAM);
@@ -1531,12 +1531,9 @@ public class VirtuosoResultSet implements ResultSet
       date = ((VirtuosoRow)rows.elementAt(currentRow - 1)).getDate(columnIndex);
       // Specify a calendar
       if(cal != null && date != null)
-      {
-        cal.setTime(date);
-        date = cal.getTime();
-	date = java.sql.Date.valueOf (new java.sql.Date (date.getTime()).toString());
-      }
-      return (java.sql.Date)date;
+        date = new java.sql.Date(VirtuosoTypes.timeToCal(date, cal));
+
+      return date;
    }
 
    /**
@@ -1552,19 +1549,17 @@ public class VirtuosoResultSet implements ResultSet
     */
    public java.sql.Time getTime(int columnIndex, Calendar cal) throws VirtuosoException
    {
-      java.util.Date date;
+      java.sql.Time _time;
       // Get and check the current row number
       if(currentRow < 1 || currentRow > rows.size())
          throw new VirtuosoException("Bad current row selected : " + currentRow + " not in 1<n<" + rows.size(),VirtuosoException.BADPARAM);
       // Run the method
-      date = ((VirtuosoRow)rows.elementAt(currentRow - 1)).getTime(columnIndex);
+      _time = ((VirtuosoRow)rows.elementAt(currentRow - 1)).getTime(columnIndex);
       // Specify a calendar
-      if(cal != null && date != null)
-      {
-        cal.setTime(date);
-	date = java.sql.Time.valueOf (new java.sql.Time (cal.getTime().getTime()).toString());
-      }
-      return (java.sql.Time)date;
+      if(cal != null && _time != null)
+        _time = new java.sql.Time(VirtuosoTypes.timeToCal(_time, cal));
+
+      return _time;
    }
 
    /**
@@ -1580,19 +1575,19 @@ public class VirtuosoResultSet implements ResultSet
     */
    public java.sql.Timestamp getTimestamp(int columnIndex, Calendar cal) throws VirtuosoException
    {
-      java.util.Date date;
+      java.sql.Timestamp _ts, val;
       // Get and check the current row number
       if(currentRow < 1 || currentRow > rows.size())
          throw new VirtuosoException("Bad current row selected : " + currentRow + " not in 1<n<" + rows.size(),VirtuosoException.BADPARAM);
       // Run the method
-      date = ((VirtuosoRow)rows.elementAt(currentRow - 1)).getTimestamp(columnIndex);
+      _ts = val = ((VirtuosoRow)rows.elementAt(currentRow - 1)).getTimestamp(columnIndex);
       // Specify a calendar
-      if(cal != null && date != null)
-      {
-        cal.setTime(date);
-	date = new java.sql.Timestamp (cal.getTime().getTime());
-      }
-      return (java.sql.Timestamp)date;
+      if(cal != null && _ts != null)
+        _ts = new java.sql.Timestamp(VirtuosoTypes.timeToCal(_ts, cal));
+
+      _ts.setNanos(val.getNanos());
+
+      return _ts;
    }
 
    /**

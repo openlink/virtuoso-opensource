@@ -363,7 +363,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
   	  java.sql.Statement stmt = vd.createStatement();
 	  rs = stmt.executeQuery(exec_text);
 	  while(rs.next())
-	    names.add(Node.createURI(rs.getString(1))); //NodeFactory.createURI()
+	    names.add(NodeFactory.createURI(rs.getString(1))); //NodeFactory.createURI()
 	  rs.close();
 	  return names;
 	} catch (Exception e) {

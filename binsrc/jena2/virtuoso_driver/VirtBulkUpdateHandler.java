@@ -94,7 +94,7 @@ public class VirtBulkUpdateHandler extends SimpleBulkUpdateHandler {
     @Override
     public void removeAll() { 
 	VirtGraph _graph=(VirtGraph)this.graph;
-        _graph.clear(Node.createURI(_graph.getGraphName())); 
+        _graph.clear(NodeFactory.createURI(_graph.getGraphName())); 
         notifyRemoveAll(); 
     }
 

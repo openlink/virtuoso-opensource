@@ -69,7 +69,7 @@ public class VirtuosoArray implements Array {
         if (arr_data!=null){
             this.data = new ArrayList<Object>(arr_data.length);
             for(int i=0; i< arr_data.length; i++)
-                this.data.add(mapJavaTypeToSqlType(arr_data[i], typeCode));
+                this.data.add(VirtuosoTypes.mapJavaTypeToSqlType(arr_data[i], typeCode));
         }
     }
 
@@ -402,125 +402,5 @@ public class VirtuosoArray implements Array {
         data = null;
     }
 #endif
-
-    protected Object mapJavaTypeToSqlType (Object x, int targetSqlType) throws VirtuosoException
-    {
-        if (x == null)
-            return x;
-        if (x instanceof java.lang.Boolean)
-            x = new Integer (((Boolean)x).booleanValue() ? 1 : 0);
-
-        switch (targetSqlType)
-        {
-            case Types.CHAR:
-            case Types.VARCHAR:
-                if (x instanceof java.util.Date || x instanceof java.lang.String)
-                    return x;
-                else
-                    return x.toString();
-
-            case Types.LONGVARCHAR:
-#if JDK_VER >= 12
-                if (x instanceof java.sql.Clob || x instanceof java.sql.Blob || x instanceof java.lang.String)
-#else
-                if (x instanceof VirtuosoClob || x instanceof VirtuosoBlob || x instanceof java.lang.String)
-#endif
-                    return x;
-                else
-                    return x.toString();
-
-            case Types.DATE:
-            case Types.TIME:
-            case Types.TIMESTAMP:
-                if (x instanceof java.util.Date || x instanceof java.lang.String)
-                    return x;
-                break;
-
-            case Types.NUMERIC:
-            case Types.DECIMAL:
-            {
-                java.math.BigDecimal bd = null;
-                if (x instanceof java.math.BigDecimal)
-                    bd = (java.math.BigDecimal) x;
-                else if (x instanceof java.lang.String)
-                    bd = new java.math.BigDecimal ((String) x);
-                else if (x instanceof java.lang.Number)
-                    bd = new java.math.BigDecimal (x.toString());
-            }
-            break;
-
-            case Types.BIGINT:
-                if (x instanceof java.math.BigDecimal || x instanceof java.lang.String)
-                    return new Long(x.toString());
-                else if (x instanceof java.lang.Number)
-                    return new Long(((Number)x).longValue());
-                break;
-
-            case Types.FLOAT:
-            case Types.DOUBLE:
-                if (x instanceof java.lang.Double)
-                    return x;
-                else if (x instanceof java.lang.Number)
-                    return new Double (((Number)x).doubleValue());
-                else if (x instanceof java.lang.String)
-                    return new Double ((String) x);
-                break;
-            case Types.INTEGER:
-                if (x instanceof java.lang.Integer)
-                    return x;
-                else if (x instanceof java.lang.Number)
-                    return new Integer (((Number)x).intValue());
-                else if (x instanceof java.lang.String)
-                    return new Integer ((String) x);
-                break;
-
-            case Types.REAL:
-                if (x instanceof java.lang.Float)
-                    return x;
-                else if (x instanceof java.lang.Number)
-                    return new Float (((Number)x).floatValue());
-                else if (x instanceof java.lang.String)
-                    return new Float ((String) x);
-                break;
-
-            case Types.SMALLINT:
-            case Types.TINYINT:
-            case Types.BIT:
-#if JDK_VER >= 14
-            case Types.BOOLEAN:
-#endif
-                if (x instanceof java.lang.Short)
-                    return x;
-                else if (x instanceof java.lang.String)
-                    return new Short ((String) x);
-                else if (x instanceof java.lang.Number)
-                    return new Short (((Number)x).shortValue());
-                break;
-
-            case Types.ARRAY:
-#if JDK_VER >= 14
-            case Types.DATALINK:
-#endif
-#if JDK_VER >= 16
-            case Types.ROWID:
-#endif
-            case Types.DISTINCT:
-            case Types.REF:
-                throw new VirtuosoException ("Type not supported", VirtuosoException.NOTIMPLEMENTED);
-
-            case Types.VARBINARY:
-                if (x instanceof byte[])
-                    return x;
-                break;
-
-            case Types.LONGVARBINARY:
-                if (x instanceof java.sql.Blob || x instanceof byte [])
-                    return x;
-                break;
-            default:
-                return x;
-        }
-        throw new VirtuosoException ("Invalid value specified", VirtuosoException.BADPARAM);
-    }
 
 }
