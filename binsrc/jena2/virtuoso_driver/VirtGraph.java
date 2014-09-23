@@ -905,6 +905,9 @@ public class VirtGraph extends GraphBase
     }
 
 
+/***
+/// disabled, because there is issue in DB.DBA.rdf_delete_triple_c
+
     void delete(Iterator<Triple> it, List<Triple> list) 
     {
       PreparedStatement ps = null;
@@ -954,6 +957,66 @@ public class VirtGraph extends GraphBase
           } catch (SQLException e) {}
       }
     }
+***/
+    void delete(Iterator<Triple> it, List<Triple> list)
+    {
+      String del_start = "sparql define output:format '_JAVA_' DELETE FROM <";
+      java.sql.Statement stmt = null;
+      int count = 0;
+      StringBuilder data = new StringBuilder(256);
+
+      data.append(del_start);
+      data.append(this.graphName);
+      data.append("> { ");
+
+      try {
+        stmt = createStatement();
+
+        while (it.hasNext())
+        {
+          Triple t = (Triple) it.next();
+
+          if (list != null)
+            list.add(t);
+
+          StringBuilder row = new StringBuilder(256);
+          row.append(Node2Str(t.getSubject()));
+          row.append(' ');
+          row.append(Node2Str(t.getPredicate()));
+          row.append(' ');
+          row.append(Node2Str(t.getObject()));
+          row.append(" .\n");
+
+          if (count > 0 && data.length()+row.length() > MAX_CMD_SIZE) {
+            data.append(" }");
+	    stmt.execute(data.toString());
+
+	    data.setLength(0);
+            data.append(del_start);
+            data.append(this.graphName);
+            data.append("> { ");
+            count = 0;
+          }
+
+          data.append(row);
+          count++;
+        }
+
+        if (count > 0) 
+        {
+          data.append(" }");
+	  stmt.execute(data.toString());
+        }
+
+      }	catch(Exception e) {
+        throw new JenaException(e);
+      } finally {
+        try {
+          stmt.close();
+        } catch (Exception e) {}
+      }
+    }
+
 
 
     private void bindBatchParams(PreparedStatement ps, 
