@@ -86,10 +86,8 @@ public class ResultSetWrapper implements ResultSet, Closeable {
         if (wstmt == null) //DBMetaDataResultSet
           wconn.removeObjFromClose(this);
         else
-          {
-            wstmt.removeObjFromClose(this);
-            wstmt.close();
-          }
+          wstmt.removeObjFromClose(this);
+
         rs = null;
         wstmt = null;
         wconn = null;

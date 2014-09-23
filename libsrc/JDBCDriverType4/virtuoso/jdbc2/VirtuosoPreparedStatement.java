@@ -167,6 +167,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	     // Put the options array in the args array
 	     args[5] = getStmtOpts();
 	     future = connection.getFuture(VirtuosoFuture.exec,args, this.rpc_timeout);
+             vresultSet.isLastResult = false;
 	     vresultSet.getMoreResults(false);
 	     result_opened = true;
 	   }
@@ -272,6 +273,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	     // Put the options array in the args array
 	     args[5] = getStmtOpts();
 	     future = connection.getFuture(VirtuosoFuture.exec,args, this.rpc_timeout);
+             vresultSet.isLastResult = false;
 	     for (inx = 0; inx < size; inx++)
 	     {
 		 vresultSet.setUpdateCount (0);
