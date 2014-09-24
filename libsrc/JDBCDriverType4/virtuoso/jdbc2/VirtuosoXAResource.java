@@ -86,6 +86,7 @@ public class VirtuosoXAResource implements XAResource
           end(r_currentXid, XAResource.TMFAIL);
         }
         catch (Exception e) {}
+      vConnection  = null;
     }
 
 

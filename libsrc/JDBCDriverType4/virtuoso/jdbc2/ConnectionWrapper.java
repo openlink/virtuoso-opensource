@@ -72,6 +72,7 @@ public class ConnectionWrapper implements java.sql.Connection {
 
   private int maxStatements;
 
+  private boolean isClosed = false;
   private volatile Connection rconn;       // physical connection
   private VirtuosoPooledConnection pconn; // pooled connection
 
@@ -104,12 +105,12 @@ public class ConnectionWrapper implements java.sql.Connection {
 
   // reuse the physical connection
   public void close() throws java.sql.SQLException {
-    if (rconn == null)
+    if (rconn == null || isClosed)
       return;
     synchronized(this) {
       if (pconn != null)
         pconn.sendCloseEvent();
-      rconn = null;
+      isClosed = true;
       pconn = null;
     }
   }
@@ -120,9 +121,10 @@ public class ConnectionWrapper implements java.sql.Connection {
     close_objs();
     pconn = null;
     reset_XA();
-    if (rconn != null)
+    if (rconn != null && !rconn.isClosed())
       rconn.close();
     rconn = null;
+    pStmtPool = null;
   }
 
 
@@ -848,15 +850,20 @@ public class ConnectionWrapper implements java.sql.Connection {
 
     if (r_XAResource != null)
       r_XAResource.reset_XA();
+    r_XAResource = null;
   }
 
 
 #if JDK_VER >= 16
   protected synchronized LinkedList<Object> reset()
+  {
+    LinkedList<Object> rc;
 #else
   protected synchronized LinkedList reset()
-#endif
   {
+    LinkedList rc;
+#endif
+
     if (rconn == null)
       return null;
 
@@ -885,7 +892,9 @@ public class ConnectionWrapper implements java.sql.Connection {
     try {
       rconn.setTypeMap(null);
     } catch (SQLException e) {}
-    return pStmtPool.reset();
+    rc = pStmtPool.reset();
+    rconn = null;
+    return rc;
   }
 
 
@@ -921,7 +930,7 @@ public class ConnectionWrapper implements java.sql.Connection {
 
   private void check_conn() throws SQLException
   {
-    if (rconn == null)
+    if (isClosed || rconn == null)
         throw new VirtuosoException("The connection is already closed.",VirtuosoException.DISCONNECTED);
   }
 
