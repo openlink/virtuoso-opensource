@@ -193,11 +193,17 @@ public class VirtuosoPooledConnection implements PooledConnection, Cloneable {
       }
       connWrapper = null;
     }
-    if (conn != null)
-      {
-        conn.pooled_connection = null;
-        conn.xa_connection = null;
+    if (conn != null) {
+      if (!conn.isClosed()) {
+        try {
+          conn.close();
+        } catch(SQLException e) {
+          ex = e;
+        }
       }
+      conn.pooled_connection = null;
+      conn.xa_connection = null;
+    }
     conn = null;
     if (pStmtsPool != null)
       pStmtsPool.clear();
