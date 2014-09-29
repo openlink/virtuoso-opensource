@@ -2254,6 +2254,8 @@ bif_rdf_long_from_batch_params (caddr_t * qst, caddr_t * err_ret, state_slot_t *
     case 3:
       {
         caddr_t val = bif_arg (qst, args, 1, "__rdf_long_from_batch_params");
+	if (DV_TYPE_OF (val) == DV_BIN)
+	  sqlr_new_error ("22023", "RLBPE", "Value datatype is not supported");
         err = qr_quick_exec (rdf_long_from_batch_params_qr3, qi->qi_client, "", &lc, 1,
           ":0", box_copy_tree (val), QRP_RAW );
         break;
@@ -2262,6 +2264,8 @@ bif_rdf_long_from_batch_params (caddr_t * qst, caddr_t * err_ret, state_slot_t *
       {
         caddr_t val = bif_arg (qst, args, 1, "__rdf_long_from_batch_params");
         caddr_t dt = bif_string_or_uname_arg (qst, args, 2, "__rdf_long_from_batch_params");
+	if (DV_TYPE_OF (val) == DV_BIN)
+	  sqlr_new_error ("22023", "RLBPE", "Value datatype is not supported");
         err = qr_quick_exec (rdf_long_from_batch_params_qr4, qi->qi_client, "", &lc, 2,
           ":0", box_copy_tree (val), QRP_RAW, ":1", box_copy_tree (dt), QRP_RAW );
         break;
@@ -2270,6 +2274,8 @@ bif_rdf_long_from_batch_params (caddr_t * qst, caddr_t * err_ret, state_slot_t *
       {
         caddr_t val = bif_arg (qst, args, 1, "__rdf_long_from_batch_params");
         caddr_t lang = bif_string_arg (qst, args, 2, "__rdf_long_from_batch_params");
+	if (DV_TYPE_OF (val) == DV_BIN)
+	  sqlr_new_error ("22023", "RLBPE", "Value datatype is not supported");
         err = qr_quick_exec (rdf_long_from_batch_params_qr5, qi->qi_client, "", &lc, 2,
           ":0", box_copy_tree (val), QRP_RAW, ":1", box_copy_tree (lang), QRP_RAW );
         break;
