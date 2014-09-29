@@ -4458,10 +4458,9 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
                                          /* 0          1           */
             {                            /* 012.3456789012.3456.78 */
               session_buffered_write (ses, " , \"@language\" : \"", 18);
-              lang_id = rdf_lang_twobyte_to_string (((rdf_box_t *)obj)->rb_lang);
-              if (NULL != lang_id)
-                dks_esc_write (ses, lang_id, box_length (lang_id) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+	      dks_esc_write (ses, lang_id, box_length (lang_id) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
               session_buffered_write_char ('\"', ses);
+	      dk_free_box (lang_id);
             }
         }
     }
