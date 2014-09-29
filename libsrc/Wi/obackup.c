@@ -1434,6 +1434,7 @@ bif_backup_online_header_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
 
   memcpy (ctx->octx_file_prefix, fileprefix, strlen (fileprefix));
   ctx->octx_num = num;
+  ctx->octx_backup_patha = backup_patha;
 
   fd = backup_context_increment (ctx,1);
   if (fd < 0)
