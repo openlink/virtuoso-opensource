@@ -1389,9 +1389,27 @@ qt_check (in file varchar, out message varchar, in add_test int := 0) returns in
       declare i int;
       for (i := 0; i < length (c); i := i + 1)
         {
-	  if (cast (xpath_eval (sprintf ('string (/test/result/row[%d]/col[%d][@dtp=%d])', r + 1, i + 1, __tag(c[i])), xt) as varchar)
-	      <>  cast (c[i] as varchar))
-	    return 0;
+	  declare t any;
+	  t := cast (xpath_eval (sprintf ('string (/test/result/row[%d]/col[%d][@dtp=%d])', r + 1, i + 1, __tag(c[i])), xt) as varchar);
+	  if (__tag(c[i]) in (191, 190))
+	    {
+	      declare delta float;
+	      t := cast (t as double precision);
+	      delta := 1 - (t / c[i]);
+	      if (delta < 0)
+		delta := -1 * delta;
+	      if (delta > 1e-6)
+		{
+		  message := message || sprintf (' : value at #%d %s <> %s', i,
+		  	cast (t as varchar),  cast (c[i] as varchar));
+		  return 0;
+		}
+	    }
+	  else if (t <>  cast (c[i] as varchar))
+	    {
+	      message := message || sprintf (' : value at #%d %s <> %s', i, t,  cast (c[i] as varchar));
+	      return 0;
+	    }
 	}
       r := r + 1;
     }
