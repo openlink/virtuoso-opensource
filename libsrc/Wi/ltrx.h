@@ -886,10 +886,12 @@ extern resource_t * rb_page_rc;
 #if defined (PAGE_TRACE) || 0 /* off unless page trace */
 #define rdbg_printf(a) printf a
 #define rdbg_printf_2(a) printf a
+#define rdbg_printf_if(c, a) if (c) printf a
 
 #else
 #define rdbg_printf(a)
 #define rdbg_printf_2(a)
+#define rdbg_printf_if(c, a)
 
 #endif
 
