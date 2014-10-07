@@ -3329,6 +3329,7 @@ rq_best_key (df_elt_t * dfe, rq_cols_t * rq)
 float
 rq_sample (df_elt_t * dfe, rq_cols_t * rq, index_choice_t * ic)
 {
+  df_elt_t * non_index_in = NULL;
   df_elt_t * lower[4];
   df_elt_t * upper[4];
   dbe_key_t * save_key = dfe->_.table.key;
@@ -3346,6 +3347,8 @@ rq_sample (df_elt_t * dfe, rq_cols_t * rq, index_choice_t * ic)
 	{
 	  lower[fill] = rqp->rqp_lower;
 	  upper[fill] = rqp->rqp_upper;
+	  if (!rqp->rqp_lower->_.bin.is_on_index && 1 == rqp->rqp_lower->_.bin.is_in_list && !non_index_in)
+	    non_index_in = rqp->rqp_lower;
 	  fill++;
 	}
       else
@@ -3354,7 +3357,21 @@ rq_sample (df_elt_t * dfe, rq_cols_t * rq, index_choice_t * ic)
   END_DO_SET();
   dfe->_.table.key = best_key;
   ic->ic_no_dep_sample = 1;
-  res = sqlo_inx_sample (dfe, best_key, lower, upper, fill, ic);
+  if (non_index_in)
+    {
+      du_thread_t * thr = THREAD_CURRENT_THREAD;;
+      df_elt_t ** in_list = sqlo_in_list (non_index_in, NULL, NULL);
+      int ctr, nth_save = (ptrlong) THR_ATTR (thr, TA_NTH_IN_ITEM);
+      res = 0;
+      for (ctr = 1; ctr < BOX_ELEMENTS (in_list); ctr++)
+	{
+	  SET_THR_ATTR (thr, TA_NTH_IN_ITEM, (caddr_t)(ptrlong) ctr - 1);
+	  res += sqlo_inx_sample (dfe, best_key, lower, upper, fill, ic);
+	}
+      SET_THR_ATTR (thr, TA_NTH_IN_ITEM, (caddr_t)(ptrlong) nth_save);
+    }
+  else
+    res = sqlo_inx_sample (dfe, best_key, lower, upper, fill, ic);
   ic->ic_no_dep_sample = 0;
   dfe->_.table.key = save_key;
   return MAX (0.3, res);

@@ -3421,6 +3421,7 @@ dfe_table_set_by_best (df_elt_t * tb_dfe, index_choice_t * ic, float true_arity,
   df_elt_t * tpred;
   tb_dfe->_.table.key = ic->ic_key;
   tb_dfe->_.table.is_unique = ic->ic_is_unique;
+  tb_dfe->_.table.is_arity_sure = ic->ic_leading_constants;
   tb_dfe->dfe_unit = ic->ic_unit;
   tb_dfe->dfe_arity = true_arity != -1 ? true_arity : ic->ic_arity;
   tb_dfe->_.table.inx_card = ic->ic_inx_card;
