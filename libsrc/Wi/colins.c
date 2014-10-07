@@ -3317,7 +3317,7 @@ ceic_split_registered (ce_ins_ctx_t * ceic, row_delta_t * rd, buffer_desc_t * bu
   ITC_IN_KNOWN_MAP (itc, itc->itc_page);
   for (reg = buf->bd_registered; reg; reg = next)
     {
-      next = itc->itc_next_on_page;
+      next = reg->itc_next_on_page;
       if (reg->itc_map_pos == itc->itc_map_pos
 	  && reg->itc_col_row >= splits[inx - 1] && (n_splits == inx || reg->itc_col_row < splits[inx]))
 	{
@@ -3981,7 +3981,7 @@ upd_col_pk (update_node_t * upd, caddr_t * inst)
 	if (!itc->itc_is_on_row || !itc->itc_rl)
 	  {
 	    rdbg_printf (("Row to update deld before update T=%d L=%d pos=%d\n",
-		    TRX_NO (cr_itc->itc_ltrx), cr_itc->itc_page, cr_itc->itc_map_pos));
+		    TRX_NO (itc->itc_ltrx), itc->itc_page, itc->itc_map_pos));
 	    upd_col_error (itc, buf, mp, "24000", "SR251",
 		"Cursor not on row in column store UPDATE or no lock on row.  Check that there are no autocommitting functions in the statement");
 	  }

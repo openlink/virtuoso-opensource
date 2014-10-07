@@ -535,14 +535,13 @@ itc_geo_new_root (it_cursor_t * itc, buffer_desc_t * buf, bbox_t * lbox, bbox_t 
   ITC_IN_KNOWN_MAP (itc, root->bd_page);
   /* don't set it in the middle of the itc_reset sequence */
   itc->itc_tree->it_root = root->bd_page;
-  rdbg_printf (("new root of %s L=%d \n", STR_OR (pf->pf_itc->itc_insert_key->key_name, "temp"), root->bd_page));
   ITC_LEAVE_MAP_NC (itc);
   itc->itc_page = root->bd_page;
   page_apply (itc, root, 2, leaves, 0);
   LONG_SET (buf->bd_buffer + DP_PARENT, root->bd_page);
   LONG_SET (ext->bd_buffer + DP_PARENT, root->bd_page);
-  rdbg_printf (("Set parent of L=%d to new root L=%d\n", leaf->bd_page, root->bd_page));
-  pg_check_map (leaf);
+  rdbg_printf (("Set parent of L=%d to new root L=%d\n", ext->bd_page, root->bd_page));
+  pg_check_map (ext);
   page_leave_outside_map_chg (buf, RWG_WAIT_SPLIT);
   page_leave_outside_map_chg (ext, RWG_WAIT_SPLIT);
   rd_free (leaves[0]);
