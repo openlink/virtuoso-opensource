@@ -409,7 +409,7 @@ state_slot_t *
 sqlc_new_temp (sql_comp_t * sc, const char *name, dtp_t dtp)
 {
   state_slot_t *out;
-  if (sc->sc_cc->cc_query->qr_proc_vectored)
+  if (sc->sc_cc->cc_query && sc->sc_cc->cc_query->qr_proc_vectored)
     return ssl_new_vec (sc->sc_cc, name, dtp);
   if (sc->sc_temp_in_qst)
     {

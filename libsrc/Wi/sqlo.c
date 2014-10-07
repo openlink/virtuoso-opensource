@@ -1294,7 +1294,7 @@ sqlo_dt_inlineable (sqlo_t *so, ST *tree, ST * from, op_table_t *ot, int single_
 		dot->ot_prefix, dot->ot_new_prefix,
 		dot->ot_table ? dot->ot_table->tb_name : "(NONE)"));
 	}
-      return 1;
+      return enable_dt_inline;
     }
   return 0;
 }
