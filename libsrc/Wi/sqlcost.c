@@ -427,12 +427,13 @@ dfe_cl_colocated (df_elt_t * prev, df_elt_t * dfe)
 
 
 int 
-dfe_n_in_order (df_elt_t * dfe, df_elt_t * prev_tb, df_elt_t ** prev_ret, float * card_between, int * eq_on_ordering, int * cl_colocated)
+dfe_n_in_order (df_elt_t * dfe, df_elt_t * prev_tb, df_elt_t ** prev_ret, float *card_between, int *eq_on_ordering, int *cl_colocated)
 {
   int c1, c2, n1, n2, mx, nth;
   int n_col_eqs = 0;
   df_elt_t * col1, *col2, *lower1, *upper1;
-  if (HR_FILL != dfe->_.table.hash_role);
+  if (HR_FILL == dfe->_.table.hash_role)
+    return 0;
   if (!prev_tb)
     prev_tb = dfe_prev_tb (dfe, card_between, 0);
   *prev_ret = prev_tb;
