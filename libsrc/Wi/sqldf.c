@@ -1706,7 +1706,7 @@ dfe_skip_to_min_card (df_elt_t * place, df_elt_t * super, df_elt_t * dfe)
 	      place->dfe_arity = arity > top_cnt ? top_cnt /  arity : 1;
 	    }
 	  else
-	    dfe->dfe_arity = 1;
+	    place->dfe_arity = 1;
 	  arity *= MIN (0.8, place->dfe_arity);
 	}
 	  if (arity < best_arity)
