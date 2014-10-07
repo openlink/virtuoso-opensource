@@ -2529,6 +2529,7 @@ sec_call_login_hook (caddr_t *puid, caddr_t digest, dk_session_t *ses, client_co
 	"DB.DBA.USER_CERT_LOGIN"))
     return ret;
 
+  sqlc_set_client (cli);
   local_start_trx (cli);
   cli_set_start_times (cli);
   err = qr_quick_exec (sec_call_login_hook_qr, cli, NULL,
