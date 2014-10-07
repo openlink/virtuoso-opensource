@@ -867,18 +867,25 @@ sqlo_is_postprocess (sqlo_t *so, df_elt_t * dt_dfe, df_elt_t * last_tb_dfe)
 }
 
 void
-sqlo_exp_cols_from_dt (sqlo_t * so, ST * tree, df_elt_t * dt_dfe, dk_set_t * ret)
+sqlo_exp_cols_from_dt (sqlo_t * so, ST * tree, df_elt_t * dt_dfe, df_elt_t * oby_dfe, dk_set_t * ret)
 {
   /* traverse exp and return all cols that exp depends on which are defined in dt_dfe */
+  df_elt_t * dfe;
   int inx;
-  if (ST_P (tree, COL_DOTTED))
+  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (tree)
+      && (dfe = sqlo_df_elt (so, tree)))
     {
-      df_elt_t * pt, *col_dfe = sqlo_df (so, tree);
+      int crossed = 0;
+      df_elt_t * pt;
       for (pt = dt_dfe->_.sub.last; pt; pt = pt->dfe_prev)
-	if (dfe_defines (pt, col_dfe))
-	  break;
-      if (pt)
-	t_set_pushnew (ret, col_dfe);
+	{
+	  if (dfe_defines (pt, dfe))
+	    break;
+	  if (pt == oby_dfe)
+	    crossed = 1;
+	}
+      if (pt && crossed)
+	t_set_pushnew (ret, dfe);
     }
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree))
     return;
@@ -886,7 +893,7 @@ sqlo_exp_cols_from_dt (sqlo_t * so, ST * tree, df_elt_t * dt_dfe, dk_set_t * ret
     return;
   DO_BOX (ST*, x, inx, (ST**)tree)
     {
-      sqlo_exp_cols_from_dt (so, x, dt_dfe, ret);
+      sqlo_exp_cols_from_dt (so, x, dt_dfe, oby_dfe, ret);
     }
   END_DO_BOX;
 }
@@ -929,7 +936,7 @@ sqlo_post_oby_ref (sqlo_t * so, df_elt_t * dt_dfe, df_elt_t * sel_dfe, int inx)
   END_DO_BOX;
   if (!dfe_is_after (sel_dfe, oby_dfe))
     return;
-  sqlo_exp_cols_from_dt (so, sel_dfe->dfe_tree, dt_dfe, &deps);
+  sqlo_exp_cols_from_dt (so, sel_dfe->dfe_tree, dt_dfe, oby_dfe, &deps);
   if (!oby_dfe->_.setp.oby_dep_cols)
     {
       oby_dfe->_.setp.oby_dep_cols = (dk_set_t*)t_box_copy ((caddr_t)dt_dfe->_.sub.dt_out);
