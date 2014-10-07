@@ -1351,8 +1351,7 @@ sqlo_dt_nth_col (sqlo_t * so, df_elt_t * super, df_elt_t * dt_dfe, int inx, df_e
 	      sqlo_dt_col_card (so, col_dfe, exp);
 	      sqt_max_desc (&col_dfe->dfe_sqt, &exp->dfe_sqt);
 	    }
-	  if (so->so_place_code_forr_cond)
-	    sqlo_post_oby_ref (so, dt_dfe, exp, inx);
+	  sqlo_post_oby_ref (so, dt_dfe, exp, inx);
 
 	  col_alias = ((ST**)(dt_dfe->_.sub.ot->ot_left_sel->_.select_stmt.selection))[inx]->_.as_exp.name;
 	  exp_alias = sqlo_df (so, (ST*) t_list (3, COL_DOTTED, dt_dfe->_.sub.ot->ot_new_prefix, col_alias));
@@ -1657,11 +1656,12 @@ dfe_skip_to_min_card (df_elt_t * place, df_elt_t * super, df_elt_t * dfe)
 {
   /* when placing a func, see if some place later in the query has lower card */
   df_elt_t * best = place, *org_place = place;
-  float best_arity = 1, arity = 1, ref_arity = 1;
+  float best_arity, arity;
   if (!enable_min_card)
     return place;
   if (!dfe->dfe_tables)
     return place;
+  best_arity = arity = dfe_arity_with_supers (org_place);
   while (place)
     {
       if (dfe_is_super (place, super))
@@ -1691,10 +1691,23 @@ dfe_skip_to_min_card (df_elt_t * place, df_elt_t * super, df_elt_t * dfe)
 	{
 	  if (place->_.setp.is_being_placed)
 	    goto over;
-	  ref_arity = dfe_arity_with_supers (org_place);
 	  if (!place->_.setp.gb_card)
 	    place->_.setp.gb_card = dfe_group_by_card (place);
-	  arity *= MIN (0.8, place->_.setp.gb_card / ref_arity);
+	  arity *= MIN (0.8, place->_.setp.gb_card);
+	}
+      else if (DFE_ORDER ==  place->dfe_type)
+	{
+	  ptrlong top_cnt;
+	  if (place->_.setp.is_being_placed)
+	    goto over;
+	  top_cnt = place->_.setp.top_cnt;
+	  if (top_cnt)
+	    {
+	      place->dfe_arity = arity > top_cnt ? top_cnt /  arity : 1;
+	    }
+	  else
+	    dfe->dfe_arity = 1;
+	  arity *= MIN (0.8, place->dfe_arity);
 	}
 	  if (arity < best_arity)
 	    {
@@ -1702,7 +1715,7 @@ dfe_skip_to_min_card (df_elt_t * place, df_elt_t * super, df_elt_t * dfe)
 	      best = place;
 	    }
       place = place->dfe_next;
-    }
+	    }
  over:
   return best;
 }
@@ -6920,8 +6933,7 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 		      int old_mode = so->so_place_code_forr_cond;
 		      sqlo_set_select_mode (so, ot, sel_dfe, top_exp);
 		      sqlo_place_exp (so, select_super, sel_dfe);
-		      if (so->so_place_code_forr_cond)
-			sqlo_post_oby_ref (so, ot->ot_work_dfe, sel_dfe, inx);
+		      sqlo_post_oby_ref (so, ot->ot_work_dfe, sel_dfe, inx);
 		      so->so_place_code_forr_cond = old_mode;
 		    }
 		}

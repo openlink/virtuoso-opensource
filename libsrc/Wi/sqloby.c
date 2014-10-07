@@ -892,6 +892,19 @@ sqlo_exp_cols_from_dt (sqlo_t * so, ST * tree, df_elt_t * dt_dfe, dk_set_t * ret
 }
 
 
+int
+dfe_is_after (df_elt_t * after, df_elt_t * before)
+{
+  while (after)
+    {
+      if (after == before)
+	return 1;
+      after = after->dfe_prev;
+    }
+  return 0;
+}
+
+
 void
 sqlo_post_oby_ref (sqlo_t * so, df_elt_t * dt_dfe, df_elt_t * sel_dfe, int inx)
 {
@@ -914,6 +927,8 @@ sqlo_post_oby_ref (sqlo_t * so, df_elt_t * dt_dfe, df_elt_t * sel_dfe, int inx)
 	return;
     }
   END_DO_BOX;
+  if (!dfe_is_after (sel_dfe, oby_dfe))
+    return;
   sqlo_exp_cols_from_dt (so, sel_dfe->dfe_tree, dt_dfe, &deps);
   if (!oby_dfe->_.setp.oby_dep_cols)
     {
