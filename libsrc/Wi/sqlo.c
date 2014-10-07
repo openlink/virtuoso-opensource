@@ -1251,12 +1251,15 @@ sqlo_oj_has_const (ST * tree)
 }
 
 
+int enable_dt_inline = 1;
+
 int
 sqlo_dt_inlineable (sqlo_t *so, ST *tree, ST * from, op_table_t *ot, int single_only)
 {
   ST *dtexp = from->_.table_ref.table;
   ST *dt_orig = ST_P (dtexp, SELECT_STMT) ? dtexp->_.select_stmt.table_exp : NULL;
-
+  if (!enable_dt_inline)
+    return 0;
   if (ST_P (dtexp, SELECT_STMT) &&
       !dtexp->_.select_stmt.top &&
       dt_orig &&
