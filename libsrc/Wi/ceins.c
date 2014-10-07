@@ -662,9 +662,19 @@ append:
     {
       /* inserts at the end */
       int64 last_value = values[n_deltas - 1];
+      int inx2, skip_bytes = 0;
       if (value < first || value - first > 160)
 	goto no_order;
-      if ((last_value - first) / (n_deltas - nth) > 32)
+      if ((last_value - first) / (n_deltas - nth) > 20)
+	goto no_order;
+      for (inx2 = nth; inx2 < n_deltas - 1; inx2++)
+	{
+	  int delta =  values[inx2 + 1] - values[inx2];
+	  skip_bytes += delta / 15;
+	  if (delta > 15 * 15)
+	    goto no_order; /* skip of more than 15  bytes */
+	}
+      if (skip_bytes > 1000)
 	goto no_order;
       ce_rld_append (ceic, col_ceic, &ce, first, &values[nth], n_deltas - nth, ce_cur[-1], &space_after);
     }
