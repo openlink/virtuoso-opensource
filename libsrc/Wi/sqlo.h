@@ -56,6 +56,7 @@ typedef struct op_table_s
   ST *	ot_dt;
   ST *	ot_left_sel;
   ST *	ot_join_cond;
+  ST *	ot_enclosing_where_cond; /* optional or other ot can add a condition to the top level where of the enclosing dt */
   int	ot_is_outer;
   oid_t	ot_u_id;
   oid_t	ot_g_id;

@@ -361,6 +361,12 @@ sqlo_df_from (sqlo_t * so, df_elt_t * tb_dfe, ST ** from)
 	    }
 	  so->so_is_top_and = 0;
 	}
+      if (ot->ot_enclosing_where_cond)
+	{
+	  so->so_is_top_and = 1;
+	  sqlo_df (so, ot->ot_enclosing_where_cond);
+	  ot->ot_enclosing_where_cond = NULL;
+	}
     }
   END_DO_SET();
 }
