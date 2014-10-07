@@ -96,28 +96,37 @@ cmpf_geo (buffer_desc_t * buf, int irow, it_cursor_t * itc)
   db_buf_t row = BUF_ROW (buf, irow);
   row_ver_t rv = IE_ROW_VERSION (row);
   dbe_key_t *key = itc->itc_insert_key;
-  double rx, rx2, ry, ry2;
+  double rx, rx2, ry, ry2, prec = 0;
   geo_t *g = (geo_t *) itc->itc_search_params[0];
-  int gs_op, gs_precision;
-  if (GEO_GSOP == g->geo_flags)
+  geo_t *g_shape = g;
+  int gs_op;
+  if (rv)
+    GPF_T1 ("a geo inx col is supposed to have 0 rv");
+  if (GEO_GSOP == GEO_TYPE_CORE (g->geo_flags))
     {
       gs_op = itc->itc_geo_op;
-      gs_precision = GSOP_PRECISION;
+      /* if precision is given, param 1 is the geometry being searched and 2 is the precision.  If the geo is a point and prec a number, see the distance */
+      g_shape = (geo_t *) itc->itc_search_params[1];
+      prec = unbox_coord (itc->itc_search_params[2]);
     }
   else
     {
       gs_op = GSOP_CONTAINS;
-      gs_precision = 0;
     }
-  if (rv)
-    GPF_T1 ("a geo inx col is supposed to have 0 rv");
   ROW_DBL_COL (&rx, buf, row, key->key_key_fixed[RD_X]);
+  if (g->XYbox.Xmax + prec < rx)
+    return DVC_LESS;
   ROW_DBL_COL (&rx2, buf, row, key->key_key_fixed[RD_X2]);
-  if (rx2 < g->XYbox.Xmin || g->XYbox.Xmax < rx)
+  if (rx2 + prec < g->XYbox.Xmin)
     return DVC_LESS;
   ROW_DBL_COL (&ry, buf, row, key->key_key_fixed[RD_Y]);
+  if (g->XYbox.Ymax + prec < ry)
+    return DVC_LESS;
   ROW_DBL_COL (&ry2, buf, row, key->key_key_fixed[RD_Y2]);
-  if (ry2 < g->XYbox.Ymin || g->XYbox.Ymax < ry)
+  if (ry2 + prec < g->XYbox.Ymin)
+    return DVC_LESS;
+  if ((NULL != g_shape) && (GEO_POINT == GEO_TYPE (g_shape->geo_flags)) && (rx2 - rx) < (prec / 100) && (ry2 - ry) < (prec / 100)
+      && prec < geo_distance (g_shape->geo_srcode, rx, ry, Xkey (g_shape), Ykey (g_shape)))
     return DVC_LESS;
   if (GSOP_CONTAINS == gs_op)
     {
@@ -131,14 +140,26 @@ cmpf_geo (buffer_desc_t * buf, int irow, it_cursor_t * itc)
       if (ry > g->XYbox.Ymin || ry2 < g->XYbox.Ymax)
 	return DVC_LESS;
     }
-  if (GSOP_PRECISION == gs_precision)
+  if (GSOP_INTERSECTS == gs_op)
     {
-      /* if precision is given, param 1 is the geometry being searched and 2 is the precision.  If the geo is a point and prec a number, see the distance */
-      geo_t *pt = (geo_t *) itc->itc_search_params[1];
-      double prec = unbox_coord (itc->itc_search_params[2]);
-      if (GEO_POINT == GEO_TYPE (pt->geo_flags) && (rx2 - rx) < (prec / 100) && (ry2 - ry) < (prec / 100)
-        && prec < geo_distance (pt->geo_srcode, rx, ry, Xkey(pt), Ykey(pt)))
-	return DVC_LESS;
+      geoc cutx, cuty, cutx2, cuty2;
+      cutx = rx * ((0 > rx) ? (1 - geoc_EPSILON) : (1 + geoc_EPSILON));
+      cuty = ry * ((0 > ry) ? (1 - geoc_EPSILON) : (1 + geoc_EPSILON));
+      cutx2 = rx2 * ((0 > rx) ? (1 + geoc_EPSILON) : (1 - geoc_EPSILON));
+      cuty2 = ry2 * ((0 > ry) ? (1 + geoc_EPSILON) : (1 - geoc_EPSILON));
+      if ((cutx >= cutx2) || (cuty >= cuty2))
+	{
+	  geo_t *pt;
+	  char pt_buf[sizeof (geo_t) + BOX_AUTO_OVERHEAD];
+	  BOX_AUTO_TYPED (geo_t *, pt, pt_buf, sizeof (geo_t), DV_GEO);
+	  pt->geo_flags = GEO_POINT;
+	  pt->XYbox.Xmin = pt->XYbox.Xmax = (rx + rx2) / 2.0;
+	  pt->XYbox.Ymin = pt->XYbox.Ymax = (ry + ry2) / 2.0;
+	  if (geo_pred (pt, g_shape, gs_op, prec + geoc_EPSILON * (1 + abs (rx) + abs (ry))))
+	    return DVC_MATCH;
+	  else
+	    return DVC_LESS;
+	}
     }
   return DVC_MATCH;
 }
