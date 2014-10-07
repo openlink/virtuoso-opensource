@@ -3334,7 +3334,7 @@ rq_sample (df_elt_t * dfe, rq_cols_t * rq, index_choice_t * ic)
   df_elt_t * upper[4];
   dbe_key_t * save_key = dfe->_.table.key;
   dbe_key_t * best_key;
-  int fill = 0;
+  int fill = 0, n_in_items = -2;
   int64 res;
   if (ic->ic_set_sample_key)
     best_key = ic->ic_key;
@@ -3347,7 +3347,9 @@ rq_sample (df_elt_t * dfe, rq_cols_t * rq, index_choice_t * ic)
 	{
 	  lower[fill] = rqp->rqp_lower;
 	  upper[fill] = rqp->rqp_upper;
-	  if (!rqp->rqp_lower->_.bin.is_on_index && 1 == rqp->rqp_lower->_.bin.is_in_list && !non_index_in)
+	  if (-2 == n_in_items)
+	    n_in_items = THR_ATTR (THREAD_CURRENT_THREAD, TA_N_IN_ITEMS);
+	  if (-1 == n_in_items && 1 == rqp->rqp_lower->_.bin.is_in_list && !non_index_in)
 	    non_index_in = rqp->rqp_lower;
 	  fill++;
 	}
