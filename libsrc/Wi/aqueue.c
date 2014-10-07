@@ -242,7 +242,7 @@ aqt_allocate ()
 	lt_done (cli->cli_trx);
 	LEAVE_TXN;
 	client_connection_free (cli);
-	dk_free_tree (ses);
+	PrpcSessionFree (ses);	/* not a box and not free in freeing cli */
 	dk_free (aqt, sizeof (aq_thread_t));
 	return NULL;
       }
