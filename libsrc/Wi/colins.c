@@ -786,6 +786,24 @@ mp_conc1 (mem_pool_t * mp, dk_set_t * r, void *v)
   *r = dk_set_conc (*r, c);
 }
 
+void
+mp_conc1_l (mem_pool_t * mp, dk_set_t * r, void* v, dk_set_t * last)
+{
+  dk_set_t c = mp_cons (mp, v, NULL);
+  if (!*r)
+    *r = c;
+  else if (*last)
+    {
+      (*last)->next = c;
+    }
+  else 
+    {
+      *last = dk_set_last (*r);
+      (*last)->next = c;
+    }
+  *last = c;
+}
+
 #if 0
 int
 ce_total_bytes (db_buf_t ce)
@@ -1118,6 +1136,8 @@ ceic_prepare_result_page (ce_ins_ctx_t * ceic)
   if (cer->cer_pm->pm_size < 2 * cer->cer_n_ces)
     cer->cer_pm = mp_pm_alloc (ceic->ceic_mp, cer->cer_n_ces * 2, NULL);
   cer->cer_pm->pm_bytes_free = PAGE_DATA_SZ;
+  if (cer->cer_n_ces > PM_MAX_CES)
+    GPF_T1 ("A cer has more ces than fit in a pm");
   return cer;
 }
 
@@ -1147,6 +1167,8 @@ cer_append_ce (ce_ins_ctx_t * ceic, ceic_result_page_t * cer, db_buf_t ce, int i
   pm->pm_entries[pm->pm_count + 1] = ce_n_values (ce);
   pm->pm_count += 2;
   pm->pm_filled_to += bytes;
+  if (pm->pm_count / 2 > PM_MAX_CES)
+    GPF_T1 ("filling more ces on a page than max per pm");
   cs_write_gap (cer->cer_buffer + pm->pm_filled_to, PAGE_SZ - pm->pm_filled_to);
   if (is_last)
     cer->cer_after_last_insert = 1;
@@ -1234,12 +1256,13 @@ ceic_even_split (ce_ins_ctx_t * ceic, int first_ce_inx)
   /* if a page splits in 2 and left side has ces inside the run that can move to the right for balance then move some.  The move updates the pms of the cers and gives a split ce that marks the split instead of left going full. */
   page_map_t *pm1, *pm2;
   int n_avail, ctr, prev_diff, next_diff;
-  ceic_result_page_t *cer = ceic->ceic_res;
+  ceic_result_page_t *cer = ceic->ceic_res, *cer2;
   db_buf_t move_ce = NULL, prev_move = NULL;
   if (!cer->cer_next || cer->cer_next->cer_next)
     return NULL;
   pm1 = ceic->ceic_res->cer_pm;
-  pm2 = ceic->ceic_res->cer_next->cer_pm;
+  cer2 = ceic->ceic_res->cer_next;
+  pm2 = cer2->cer_pm;
   prev_diff = pm_free_diff (pm1, pm2);
   if (prev_diff < 1000)
     return NULL;
@@ -1252,13 +1275,15 @@ ceic_even_split (ce_ins_ctx_t * ceic, int first_ce_inx)
       cer->cer_ces = cer->cer_ces->next;
       next_diff = ((int) pm1->pm_bytes_free + bytes) - ((int) pm2->pm_bytes_free - bytes);
       next_diff = next_diff < 0 ? -next_diff : next_diff;
+      if (cer2->cer_n_ces >= PM_MAX_CES - 2)
+	return prev_move;
       if (next_diff > prev_diff)
 	return prev_move;
       prev_diff = next_diff;
       pm2->pm_bytes_free -= bytes;
       pm1->pm_bytes_free += bytes;
       cer->cer_n_ces--;
-      cer->cer_next->cer_n_ces++;
+      cer2->cer_n_ces++;
       prev_move = move_ce;
     }
   return move_ce;
@@ -1357,7 +1382,7 @@ ceic_apply (ce_ins_ctx_t * ceic, col_data_ref_t * cr, db_buf_t limit_ce)
 	      delta_bytes = ce_total_bytes (delta);
 	      if (!ceic->ceic_delta_ce && !split_ce)
 		delta_bytes += ce_last_insert_margin;
-	      if (cer->cer_bytes_free < delta_bytes || delta == split_ce)
+	      if (cer->cer_bytes_free < delta_bytes || cer->cer_pm->pm_count / 2 >= PM_MAX_CES || delta == split_ce)
 		cer = ceic_prepare_result_page (ceic);
 	      cer_append_ce (ceic, cer, delta, !ceic->ceic_delta_ce && !split_ce);
 	      if (CE_REPLACE == op)
@@ -1367,7 +1392,7 @@ ceic_apply (ce_ins_ctx_t * ceic, col_data_ref_t * cr, db_buf_t limit_ce)
 	}
       if (!any_replaces)
 	{
-	  if (cer->cer_bytes_free < bytes || split_ce == ce)
+	  if (cer->cer_bytes_free < bytes || cer->cer_pm->pm_count / 2 >= PM_MAX_CES || split_ce == ce)
 	    cer = ceic_prepare_result_page (ceic);
 	  cer_append_ce (ceic, cer, ce, 0);
 	}
@@ -1381,7 +1406,7 @@ ceic_apply (ce_ins_ctx_t * ceic, col_data_ref_t * cr, db_buf_t limit_ce)
       int delta_bytes = ce_total_bytes (delta);
       if (!ceic->ceic_delta_ce)
 	delta_bytes += ce_last_insert_margin;
-      if (cer->cer_bytes_free < delta_bytes)
+      if (cer->cer_bytes_free < delta_bytes || cer->cer_pm->pm_count / 2 >= PM_MAX_CES)
 	cer = ceic_prepare_result_page (ceic);
       cer_append_ce (ceic, cer, delta, !ceic->ceic_delta_ce && !split_ce);
       CEIC_NEXT_OP (ceic, delta, op, delta_row);
@@ -1902,6 +1927,7 @@ ce_comp_check (compress_state_t * cs, db_buf_t ce, dk_set_t * org, int *nth)
 void
 ceic_merge_insert (ce_ins_ctx_t * ceic, buffer_desc_t * buf, int ice, db_buf_t org_ce, int start, int split_at)
 {
+  dk_set_t l_ce = NULL, l_ce_op = NULL;
   int prev_checked = 0;
   dk_set_t ck_set = NULL;
   dtp_t pre_dc_dtp;
@@ -1966,9 +1992,9 @@ ceic_merge_insert (ce_ins_ctx_t * ceic, buffer_desc_t * buf, int ice, db_buf_t o
   cs_distinct_ces (cs);
   DO_SET (db_buf_t, prev_ce, &cs->cs_ready_ces)
   {
-    mp_conc1 (ceic->ceic_mp, &ceic->ceic_delta_ce_op, (void *) (ptrlong) (op | (itc->itc_nth_ce + (start ? 2 : 0))));
+    mp_conc1_l (ceic->ceic_mp, &ceic->ceic_delta_ce_op, (void *) (ptrlong) (op | (itc->itc_nth_ce + (start ? 2 : 0))), &l_ce_op);
     prev_ce = ce_skip_gap (prev_ce);
-    mp_conc1 (ceic->ceic_mp, &ceic->ceic_delta_ce, (void *) prev_ce);
+    mp_conc1_l (ceic->ceic_mp, &ceic->ceic_delta_ce, (void *) prev_ce, &l_ce);
     op = CE_INSERT;
     if (dbf_ce_comp_check)
       ce_comp_check (cs, prev_ce, &ck_set, &prev_checked);
@@ -1993,7 +2019,7 @@ mp_any_box (mem_pool_t * mp, db_buf_t dv)
 dk_set_t
 ce_right (ce_ins_ctx_t * ceic, db_buf_t org_ce, int start, int n_values)
 {
-  dk_set_t res = NULL;
+  dk_set_t res = NULL, l_ce;
   compress_state_t cs;
   db_buf_t last_ce;
   int last_ce_len, inx;
@@ -2029,21 +2055,14 @@ ce_right (ce_ins_ctx_t * ceic, db_buf_t org_ce, int start, int n_values)
     }
   SET_THR_TMP_POOL (NULL);
   cs_distinct_ces (&cs);
+  l_ce = NULL;
   DO_SET (db_buf_t, prev_ce, &cs.cs_ready_ces)
   {
-    mp_conc1 (ceic->ceic_mp, &res, (void *) prev_ce);
+    mp_conc1_l (ceic->ceic_mp, &res, (void *) prev_ce, &l_ce);
   }
   END_DO_SET ();
   cs_free_allocd_parts (&cs);
   return res;
-}
-
-
-void
-ceic_new_ce (ce_ins_ctx_t * ceic, db_buf_t ce, int op, int row)
-{
-  mp_conc1 (ceic->ceic_mp, &ceic->ceic_delta_ce_op, (void *) (ptrlong) (op | row));
-  mp_conc1 (ceic->ceic_mp, &ceic->ceic_delta_ce, (void *) ce);
 }
 
 
@@ -3615,7 +3634,7 @@ cr_set_new_first_ce_buf (col_data_ref_t * cr, buffer_desc_t * new_first_ce_buf)
 void
 ceic_no_split (ce_ins_ctx_t * ceic, buffer_desc_t * buf, int *action)
 {
-  int inx, col_inx, first_changed = -1;
+  int inx, col_inx;
   it_cursor_t *itc = ceic->ceic_itc;
   DO_BOX (col_data_ref_t *, cr, col_inx, itc->itc_col_refs)
   {
@@ -3636,11 +3655,13 @@ ceic_no_split (ce_ins_ctx_t * ceic, buffer_desc_t * buf, int *action)
 	    buffer_desc_t *buf = cr->cr_pages[inx].cp_buf;
 	    ceic_result_page_t *cer;
 	    last_page_ceic = page_ceic;
-	    if (-1 == first_changed)
-	      first_changed = inx;
 	    n_ces += ceic_n_new_ces (page_ceic);
 	    page_ceic->ceic_org_buf = buf;
 	    ceic_apply (page_ceic, cr, limit_ce);
+	    if (page_ceic->ceic_res->cer_n_ces > PM_MAX_CES)
+	      GPF_T1 ("more ces than fit in pm");
+
+
 	    is_first_cer = 1;
 	    if (page_ceic->ceic_res && page_ceic->ceic_res->cer_next)
 	      dp_may_compact (buf->bd_storage, buf->bd_page);
