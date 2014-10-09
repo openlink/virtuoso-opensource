@@ -3379,7 +3379,7 @@ create procedure WS.WS.GET_EXT_DAV_LDP(inout path any, inout lines any, inout pa
 
 	-- LDPR request
 	accept := http_request_header_full (lines, 'Accept', '*/*');
-	accept := HTTP_RDF_GET_ACCEPT_BY_Q (accept);
+    accept := HTTP_RDF_GET_ACCEPT_BY_Q (accept, 'text/turtle');
     if (accept = '*/*' and isinteger (_res_id) and exists (select 1 from WS.WS.SYS_DAV_RES where RES_ID = _res_id and RES_TYPE = 'text/turtle'))
       {
 	accept := 'text/turtle';

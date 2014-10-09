@@ -1291,7 +1291,7 @@ DB.DBA.VHOST_DUMP_SQL (in lpath varchar, in vhost varchar := '*ini*', in lhost v
 ;
 
 -- /* get a header field based on max of quality value */
-create procedure DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (in accept varchar)
+create procedure DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (in accept varchar, in mask any := null)
 {
   declare format, itm varchar;
   declare arr any;
@@ -1322,6 +1322,8 @@ create procedure DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (in accept varchar)
 	  best_q := q;
 	  format := itm;
 	}
+      if (mask is not null and q = best_q and itm like mask)
+	format := itm;
     }
   return format;
 }
