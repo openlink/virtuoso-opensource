@@ -136,7 +136,7 @@ install-data-local:
 	-cp virtjdbc2.jar "$(DESTDIR)${libdir}/jdbc-2.0"
 	-cp virtjdbc3.jar virtjdbc3ssl.jar "$(DESTDIR)${libdir}/jdbc-3.0"
 	-cp virtjdbc4.jar virtjdbc4ssl.jar "$(DESTDIR)${libdir}/jdbc-4.0"
-	-cp virtjdbc4_1.jar virtjdbc4ssl.jar "$(DESTDIR)${libdir}/jdbc-4.1"
+	-cp virtjdbc4_1.jar virtjdbc4_1ssl.jar "$(DESTDIR)${libdir}/jdbc-4.1"
 
 uninstall-local:
 	-rm -rf "$(DESTDIR)${libdir}/jdbc-2.0"
