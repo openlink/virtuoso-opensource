@@ -56,26 +56,7 @@ public class CallableStatementWrapper
           extends PreparedStatementWrapper implements CallableStatement{
 
   protected CallableStatementWrapper(ConnectionWrapper _wconn, CallableStatement _stmt) {
-    super(_wconn, _stmt, "");
-  }
-
-
-  protected void addLink() {
-    wconn.addObjToClose(this);
-  }
-
-  protected void removeLink() {
-    wconn.removeObjFromClose(this);
-  }
-
-  protected synchronized void closeAll() {
-    try {
-      close();
-    } catch(Exception e) { }
-  }
-
-  protected PreparedStatementWrapper reuse() {
-    throw new java.lang.UnsupportedOperationException();
+    super(_wconn, _stmt);
   }
 
 

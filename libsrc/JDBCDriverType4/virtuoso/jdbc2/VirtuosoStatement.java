@@ -312,21 +312,21 @@ public class VirtuosoStatement implements Statement
 
    protected void cancel_rs() throws VirtuosoException
    {
-     synchronized (connection)
-       {
-	 // Close the result set
-	 if(vresultSet != null)
-	   {
-	     //vresultSet.close();
-	     vresultSet = null;
-	   }
-	 // Remove the future
+     // Close the result set
+     if(vresultSet != null)
+     {
+       //vresultSet.close();
+       vresultSet = null;
+     }
+     // Remove the future
 
-	 if(future != null)
-	   {
-	     connection.removeFuture(future);
-	     future = null;
-	   }
+     if(future != null)
+       {
+         synchronized (connection)
+       	 {
+	   connection.removeFuture(future);
+	 }
+	 future = null;
        }
    }
 
