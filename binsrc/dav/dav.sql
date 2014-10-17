@@ -3405,7 +3405,7 @@ create procedure WS.WS.TTL_QUERY_POST (
   inout ses varchar,
   in dav_call integer := 0)
 {
-  declare ns, def_gr, giid any;
+  declare ns, def_gr, giid, dict, triples any;
 	declare exit handler for sqlstate '*'
 	{
 	  connection_set ('__sql_state', __SQL_STATE);
@@ -3435,13 +3435,33 @@ create procedure WS.WS.TTL_QUERY_POST (
       	where { graph ?:giid { ?s ?p ?o .
       filter (?p not in (<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>, <http://www.w3.org/ns/ldp#contains>)) . } };
     }
+  {
+    declare exit handler for sqlstate '37000' {goto _again; };
+
+    ns := ses;
+    dict := dict_new ();
+    DB.DBA.RDF_TTL_LOAD_DICT (ns, def_gr, def_gr, dict);
+
+    goto _exit;
+  }
+_again:;
   ns := string_output ();
   for (select NS_PREFIX, NS_URL from DB.DBA.SYS_XML_PERSISTENT_NS_DECL) do
     {
       http (sprintf ('@prefix %s: <%s> . \t', NS_PREFIX, NS_URL), ns);
     }
   http (ses, ns);
+  dict := dict_new ();
+  DB.DBA.RDF_TTL_LOAD_DICT (ns, def_gr, def_gr, dict);
+
+_next:;
+  triples := dict_list_keys (dict, 1);
+  ns := string_output ();
+  DB.DBA.RDF_TRIPLES_TO_NICE_TTL (triples, ns);
+
+_exit:;
   DB.DBA.TTLP (ns, def_gr, def_gr, 255);
+  ses := ns;
   log_enable (3);
 
   return 0;
