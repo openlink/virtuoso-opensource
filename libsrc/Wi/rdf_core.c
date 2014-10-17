@@ -3664,6 +3664,7 @@ rdf_core_init (void)
   bif_define ("__id2i", bif_id_to_iri);
   bif_set_no_cluster ("__id2i");
   bif_define ("__id2in", bif_id_to_iri_nosignal);
+  bif_set_uses_index (bif_id_to_iri_nosignal);
   bif_set_no_cluster ("__id2in");
   bif_define ("rdf_graph_keyword", bif_rdf_graph_keyword);
   bif_define ("iri_split", bif_iri_split);
