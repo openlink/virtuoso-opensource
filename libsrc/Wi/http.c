@@ -3515,7 +3515,8 @@ request_do_again:
       LEAVE_TXN;
       if ((DV_STRING == DV_TYPE_OF (save_history_name)) &&
 	  ((0 == strncmp(vdir, save_history_name, (box_length (save_history_name) - 1)) &&
-	    '/' == vdir[box_length(save_history_name) - 1]) || !strcmp (save_history_name, "/")))
+	    ( '/' == vdir[box_length(save_history_name) - 1] || '?' == vdir[box_length(save_history_name) - 1])) ||
+	   !strcmp (save_history_name, "/")))
 	{
 	  static query_t *stmt = NULL;
 	  if (!stmt)
