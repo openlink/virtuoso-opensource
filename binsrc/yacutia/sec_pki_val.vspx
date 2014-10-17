@@ -186,8 +186,6 @@
                                     }
                                   }
                                 }
-                                dbg_obj_print(self.hosts);
-                                dbg_obj_print(self.hostLabels);
                                 ]]>
                             </v:before-data-bind>
 

@@ -4557,7 +4557,7 @@ bif_rowvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
             key_val = unbox (key);
           else if (DV_IRI_ID == key_dtp)
             key_val = unbox_iri_id (key);
-          else if ((('S' == algo) || ('O' == algo)) && ((DV_STRING == key_dtp) || (DV_UNAME == key_dtp)))
+          else if (((DV_STRING == key_dtp) || (DV_UNAME == key_dtp)) && (('S' == algo) || (('O' == algo) && (BF_IRI & box_flags (key)))))
             {
               /* caddr_t iid = key_name_to_iri_id (((query_instance_t *)qst)->qi_trx, key, 0); */
               caddr_t iid = iri_to_id (qst, key, IRI_TO_ID_IF_KNOWN, err_ret);

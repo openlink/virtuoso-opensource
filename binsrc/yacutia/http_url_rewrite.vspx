@@ -406,7 +406,7 @@ self.save1.vc_data_bind (e);
 control.vc_enabled := 0;
 self.ah1.ufl_value := '';
 self.hc1.ufl_value := 0;
-self.rc1.ufl_value := 0;
+self.rc1.ufl_value := '2';
 self.hc1.vs_set_selected ();
 self.rc1.vs_set_selected ();
 self.hh1.ufl_value := '';
