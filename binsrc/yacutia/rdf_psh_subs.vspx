@@ -54,8 +54,8 @@
 				    <tr>
 					<td>Callback <span class="redstar">*</span></td>
 					<td>
-					    <v:text name="callback" value="" 
-						default_value="-- sprintf ('http://%s/psh/callback.vsp', registry_get ('URIQADefaultHost'))" 
+					    <v:text name="callback" value=""
+						default_value="-- sprintf ('http://%s/psh/callback.vsp', registry_get ('URIQADefaultHost'))"
 						xhtml_size="100"/>
 					</td>
 				    </tr>
@@ -78,10 +78,10 @@
 						      {
                                                         self.vc_is_valid := 0;
 						        self.vc_error_message := 'Invalid RDF Resource URI';
-						        return 0; 	
+						        return 0;
 					              }
 						    url := self.topic.ufl_value;
-						    content := DB.DBA.RDF_HTTP_URL_GET (url, '', head, 'GET', 
+						    content := DB.DBA.RDF_HTTP_URL_GET (url, '', head, 'GET',
 						    'Accept: application/rdf+xml; q=1.0, text/rdf+n3; q=0.9, application/rdf+turtle;'||
 						    ' q=0.7, application/x-turtle; q=0.6, application/turtle; q=0.5, application/xml;'||
 						    ' q=0.2, */*; q=0.1');
@@ -141,24 +141,24 @@
 	  {
             self.vc_is_valid := 0;
 	    self.vc_error_message := 'Invalid RDF Resource URI';
-	    return 0; 	
+	    return 0;
 	  }
 	if (not length (self.callback.ufl_value))
 	  {
             self.vc_is_valid := 0;
 	    self.vc_error_message := 'Invalid callback URL';
-	    return 0; 	
+	    return 0;
 	  }
 	if (not length (self.hub.ufl_value))
 	  {
             self.vc_is_valid := 0;
 	    self.vc_error_message := 'Invalid hub endpoint';
-	    return 0; 	
+	    return 0;
 	  }
 	url := self.topic.ufl_value;
-	hub := self.hub.ufl_value;   
-	PSH..cli_subscribe ('dba', self.action.ufl_value, url, 'rdf', 
-	   self.secret.ufl_value, self.verify_token.ufl_value); 
+	hub := self.hub.ufl_value;
+	PSH..cli_subscribe ('dba', self.action.ufl_value, url, 'rdf',
+	   self.secret.ufl_value, self.verify_token.ufl_value);
 	url := sprintf ('%s?hub.callback=%U&hub.mode=%U&hub.topic=%U&hub.verify=%s&hub.verify_token=%U&hub.secret=%U',
            hub,
 	   self.callback.ufl_value,
@@ -168,7 +168,6 @@
 	   self.verify_token.ufl_value,
 	   self.secret.ufl_value
 	   );
-	dbg_obj_print (url);   
 	{
 	  declare exit handler for sqlstate '*'
 	  {
@@ -180,10 +179,9 @@
 	  if (head[0] not like 'HTTP/1._ 20_ %')
 	    {
               self.vc_is_valid := 0;
-	      self.vc_error_message := head[0]; 
-	      dbg_obj_print (content);
-	    }  
-	  else  
+	      self.vc_error_message := head[0];
+	    }
+	  else
 	    self.message := 'Subscribed';
 	}
 						    ]]>
@@ -192,10 +190,10 @@
 					</td>
 				    </tr>
 				</table>
-			    </td>
-			</tr>
+			      </td>
+			    </tr>
 		    </table>
-		</v:form>
-	    </vm:pagebody>
+		  </v:form>
+    </vm:pagebody>
 	</vm:pagewrapper>
-    </v:page>
+</v:page>
