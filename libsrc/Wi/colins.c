@@ -4570,6 +4570,7 @@ itc_col_log_insert (it_cursor_t * itc)
 
 
 extern int32 cl_non_logged_write_mode;
+dk_session_t * dbg_log_ses;
 
 void
 itc_col_dbg_log (it_cursor_t * itc)
@@ -4579,7 +4580,6 @@ itc_col_dbg_log (it_cursor_t * itc)
   caddr_t *repl = lt->lt_replicate;
   dk_session_t *save = lt->lt_log;
   dk_session_t *ses;
-  static dk_session_t *dbg_log_ses;
   caddr_t *h = NULL;
   int fd;
   int inx;
