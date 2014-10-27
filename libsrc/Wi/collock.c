@@ -109,6 +109,8 @@ ceic_del_dbg_log_row (ce_ins_ctx_t * ceic, buffer_desc_t * buf)
       if (COL_NO_ROW == itc->itc_ranges[inx].r_end)
 	n_del++;
     }
+  if (!n_del)
+    return;
   itc->itc_matches = mp_alloc_box (ceic->ceic_mp, n_del * sizeof (row_no_t), DV_BIN);
   log_rds = (row_delta_t **)mp_alloc_box (ceic->ceic_mp, sizeof (caddr_t) * n_del, DV_BIN);
   for (inx = 0; inx < itc->itc_range_fill; inx++)
@@ -123,7 +125,7 @@ ceic_del_dbg_log_row (ce_ins_ctx_t * ceic, buffer_desc_t * buf)
 	  itc->itc_matches[fill++] = itc->itc_ranges[inx].r_first;
 	}
     }
-  end = itc->itc_matches[itc->itc_n_matches - 1] + 1;
+  end = itc->itc_matches[fill - 1] + 1;
   cpo.cpo_itc = itc;
   cpo.cpo_value_cb = ce_result;
   memzero (&dc, sizeof (dc));
