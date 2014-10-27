@@ -37,12 +37,12 @@ void
 ceic_del_dbg_log (ce_ins_ctx_t * ceic)
 {
   /* debug func for logging delete locality and order.  Log the batch of rows that went intoo this seg */
+  client_connection_t * cli = sqlc_client ();
   it_cursor_t * itc = ceic->ceic_itc;
-  lock_trx_t * lt = itc->itc_ltrx;
+  lock_trx_t * lt = cli->cli_trx;
   caddr_t * repl = lt->lt_replicate;
   dk_session_t * save = lt->lt_log;
   dk_session_t * ses;
-
   caddr_t * h = NULL;
   int fd;
   int inx;
@@ -56,7 +56,7 @@ ceic_del_dbg_log (ce_ins_ctx_t * ceic)
       DO_BOX (row_delta_t *, rd, inx, rds)
 	{
 	  cl_non_logged_write_mode = 0;
-	  log_delete (itc->itc_ltrx, rd , dbf_col_ins_dbg_log > 0 ? LOG_KEY_ONLY : 0);
+	  log_delete (lt, rd , dbf_col_ins_dbg_log > 0 ? LOG_KEY_ONLY : 0);
 	}
       END_DO_BOX;
     }
@@ -81,7 +81,8 @@ ceic_del_dbg_log (ce_ins_ctx_t * ceic)
     }
   END_WRITE_FAIL (dbg_log_ses);
   mutex_leave (log_write_mtx);
-  dk_free_tree (ses); dk_free_tree (h);
+  dk_free_tree (ses);
+  dk_free_tree (h);
   lt->lt_log = save;
   lt->lt_replicate = repl;
 }
@@ -188,6 +189,7 @@ ceic_del_dbg_log_row (ce_ins_ctx_t * ceic, buffer_desc_t * buf)
 	  row += rows_on_page;
 	}
     next_col: ;
+      if (cpo.cpo_dc->dc_n_values != n_del) GPF_T1 ("missed read of dc for del dbg  log");
       if (cpo.cpo_dc->dc_n_values > cpo.cpo_dc->dc_n_places) GPF_T1 ("filled dc past end");
       for (inx = 0; inx < n_del; inx++)
 	log_rds[inx]->rd_values[rdinx] = ((caddr_t*)dc.dc_values)[inx];
