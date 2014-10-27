@@ -46,6 +46,8 @@ ceic_del_dbg_log (ce_ins_ctx_t * ceic)
   caddr_t * h = NULL;
   int fd;
   int inx;
+  if (!ceic->ceic_dbg_del_rds)
+    return;
   lt->lt_log = ses = strses_allocate ();
   lt->lt_replicate = REPL_LOG;
   ceic->ceic_dbg_del_rds = dk_set_nreverse (ceic->ceic_dbg_del_rds);
