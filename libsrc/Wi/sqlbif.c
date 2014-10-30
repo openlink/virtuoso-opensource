@@ -13091,7 +13091,7 @@ int enable_bif_exec_stat = 1;
 int64
 bif_exec_start (client_connection_t * cli, caddr_t text)
 {
-  bif_exec_stat_t stat;
+  bif_exec_stat_t * stat;
   int64 ctr;
   if (!enable_bif_exec_stat)
     return 0;
@@ -13100,9 +13100,10 @@ bif_exec_start (client_connection_t * cli, caddr_t text)
       dk_mutex_init (&bif_exec_pending_mtx, MUTEX_TYPE_SHORT);
       bif_exec_pending = id_hash_allocate (201, sizeof (int64), sizeof (bif_exec_stat_t), boxint_hash, boxint_hashcmp);
     }
-  stat.exs_text = box_copy (text);
-  stat.exs_start = get_msec_real_time ();
-  stat.exs_cli = cli;
+  stat = (bif_exec_stat_t *) dk_alloc (sizeof (bif_exec_stat_t));
+  stat->exs_text = box_copy (text);
+  stat->exs_start = get_msec_real_time ();
+  stat->exs_cli = cli;
   mutex_enter (&bif_exec_pending_mtx);
   ctr = bif_exec_ctr++;
   id_hash_set (bif_exec_pending, (caddr_t)&ctr, (caddr_t)&stat);
@@ -13113,14 +13114,15 @@ bif_exec_start (client_connection_t * cli, caddr_t text)
 void
 bif_exec_done (int64 k)
 {
-  bif_exec_stat_t * place;
+  bif_exec_stat_t ** place;
   if (!enable_bif_exec_stat)
     return;
   mutex_enter (&bif_exec_pending_mtx);
-  place = (bif_exec_stat_t*) id_hash_get (bif_exec_pending, (caddr_t)&k);
-  if (place)
+  place = (bif_exec_stat_t**) id_hash_get (bif_exec_pending, (caddr_t)&k);
+  if (place && *place)
     {
-      dk_free_box (place->exs_text);
+      dk_free_box (place[0]->exs_text);
+      dk_free (place[0], sizeof (bif_exec_stat_t));
       id_hash_remove (bif_exec_pending, (caddr_t)&k);
     }
   mutex_leave (&bif_exec_pending_mtx);
