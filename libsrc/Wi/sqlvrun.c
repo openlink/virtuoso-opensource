@@ -840,8 +840,7 @@ ssl_insert_cast (insert_node_t * ins, caddr_t * inst, int nth_col, caddr_t * err
 	  else if (8 == elt_sz)
 	    {
 	      int64 val = ((int64*)from_dc->dc_values)[row];
-	      if (is_prec && !(val >=prec_lower && val <= prec_upper)
-		  && !DC_IS_NULL (from_dc, row))
+	      if (!DC_IS_NULL (from_dc, row) && is_prec && !(val >=prec_lower && val <= prec_upper))
 		{
 		  *err_ret = srv_make_new_error ("22023", "SR346",
 						 "Integer out of range for column %s", sch_id_to_col_name (wi_inst.wi_schema, cl->cl_col_id));
