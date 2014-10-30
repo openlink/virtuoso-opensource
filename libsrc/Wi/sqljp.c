@@ -228,7 +228,6 @@ jp_fanout (join_plan_t * jp)
   /* for sql this is the table card over the col pred cards , for rdf this is based on p stat */
   dbe_column_t *o_col = NULL;
   int jinx, p_found;
-  float p_stat[4];
   if (dfe_is_quad (jp->jp_tb_dfe))
     {
       dk_set_t parts = NULL;
