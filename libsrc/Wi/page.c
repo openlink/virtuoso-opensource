@@ -2498,7 +2498,11 @@ page_apply_1 (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t *
 void
 page_apply_s (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t ** delta, int op)
 {
+#if defined (VALGRIND)
+  page_apply_frame_t paf = {0};
+#else
   page_apply_frame_t paf;
+#endif
   page_apply_1 (itc, buf, n_delta, delta, op, &paf);
 }
 
