@@ -4128,6 +4128,11 @@ sqlg_make_sort_nodes (sqlo_t * so, data_source_t ** head, ST ** order_by,
 	      if (AMMSC_USER == go->go_op)
 		setp->setp_any_user_aggregate_gos = 1;
 	    }
+		  else
+		    {
+		      dk_free_box (ua_arglist);
+		      dk_free_box (acc_args);
+		    }
 	}
       END_DO_SET();
     }

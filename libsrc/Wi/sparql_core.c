@@ -411,15 +411,17 @@ void
 spar_error (sparp_t *sparp, const char *format, ...)
 {
   va_list ap;
-  caddr_t msg;
+  caddr_t msg, err;
   va_start (ap, format);
   msg = box_vsprintf (1500, format, ap);
   va_end (ap);
   if (NULL == sparp)
-    sqlr_new_error ("37000", "SP031", "SPARQL generic error: %.1500s", msg);
+    err = srv_make_new_error ("37000", "SP031", "SPARQL generic error: %.1500s", msg);
   else
-    sqlr_new_error ("37000", "SP031", "%.400s: %.1500s",
+    err = srv_make_new_error ("37000", "SP031", "%.400s: %.1500s",
       sparp->sparp_err_hdr, msg );
+  dk_free_tree (msg);
+  sqlr_resignal (err);
 }
 
 int

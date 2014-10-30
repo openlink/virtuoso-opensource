@@ -4814,7 +4814,7 @@ http_session_no_catch_arg (caddr_t * qst, state_slot_t ** args, int nth,
 caddr_t
 http_path_to_array (char * path, int mode)
 {
-  int n_fill, inx;
+  int n_fill, inx, max;
   unsigned char ch;
   char name [PATH_ELT_MAX_CHARS];
   dk_set_t paths = NULL;
@@ -4822,6 +4822,7 @@ http_path_to_array (char * path, int mode)
   n_fill = 0;
   if (!path)
     return NULL;
+  max = strlen (path);
   for (;;)
     {
       ch = path [inx++];
@@ -4842,6 +4843,11 @@ http_path_to_array (char * path, int mode)
 	}
       else if (ch == '%')
 	{
+	  if (inx >= max || (inx+1) >= max)
+	    {
+	      name[n_fill++] = ch;
+	      break;
+	    }
 	  name[n_fill++] = char_hex_digit (path [inx + 0]) * 16
 	    + char_hex_digit (path [inx + 1]);
 	  inx += 2;

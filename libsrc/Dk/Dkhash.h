@@ -37,7 +37,7 @@
  */
 
 
-#define ht_alloc(ht, sz) dk_alloc (sz)
+#define ht_alloc(ht, sz) DBG_NAME(dk_alloc) (DBG_ARGS sz)
 
 typedef void (*maphash_func) (const void *k, void *data);
 typedef void (*maphash3_func) (const void *k, void *data, void *env);

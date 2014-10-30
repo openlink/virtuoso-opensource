@@ -991,7 +991,7 @@ sqlo_pred_unit_1 (df_elt_t * lower, df_elt_t * upper, df_elt_t * in_tb, float * 
     }
   if (!in_tb)
     *u1 = col_pred_cost * 2;
-  else if (in_tb->_.table.key->key_is_col)
+  else if (DFE_TABLE == in_tb->dfe_type && in_tb->_.table.key->key_is_col)
     *u1 = sqlo_cs_col_pred_cost;
   else
     *u1 = COL_PRED_COST;
@@ -1714,10 +1714,14 @@ sqlo_eval_text_count (dbe_table_t * tb, caddr_t str, caddr_t ext_fti)
     }
   return ct;
  err:
+  if (lc)
+    lc_free (lc);
   cli->cli_user = usr;
   cli->cli_anytime_started = at_start;
   cli->cli_rpc_timeout = rpc_timeout;
   log_error ("compiler text card estimate got error %s %s, assuming unknown count", !err ? "" : ERR_STATE (err), !err ? "no message:" : ERR_MESSAGE (err));
+  if (err)
+    dk_free_tree (err);
   if (entered)
     {
       IN_TXN;

@@ -298,6 +298,18 @@ mal_register (const char *name, u_int line)
   return r;
 }
 
+size_t
+dbg_mal_count (const char *name, u_int line)
+{
+  malrec_t xrec, *r;
+
+  strncpy (xrec.fname, name, MALREC_FNAME_BUFLEN);
+  xrec.fname[MALREC_FNAME_BUFLEN-1] = '\0';
+  xrec.linenum = line;
+
+  r = (malrec_t *) dtab_find_record (_dbgtab, 1, (htrecord_t) &xrec);
+  return r ? r->numalloc - r->numfree : 0;
+}
 
 #ifdef DBGMAL_SIGNAL
 static RETSIGTYPE

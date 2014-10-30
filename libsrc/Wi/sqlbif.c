@@ -9479,6 +9479,15 @@ bif_mem_new_in_use (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+caddr_t
+bif_mem_count (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char *file = bif_string_arg (qst, args, 0, "mem_count");
+  long line = bif_long_arg (qst, args, 1, "mem_count");
+  long s;
+  s = dbg_mal_count (file, line);
+  return box_num (s);
+}
 
 caddr_t
 bif_mem_leaks (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -16552,6 +16561,7 @@ sql_bif_init (void)
   bif_define ("mem_all_in_use", bif_mem_all_in_use);
   bif_define ("mem_new_in_use", bif_mem_new_in_use);
   bif_define ("mem_leaks", bif_mem_leaks);
+  bif_define ("mem_count", bif_mem_count);
 #endif
   bif_define_ex ("mem_get_current_total", bif_mem_get_current_total, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("mem_summary", bif_mem_summary);
