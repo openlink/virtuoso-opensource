@@ -1931,16 +1931,16 @@ ewkt_print_sf12_points (dk_session_t * ses, int geo_flags, int pcount, geoc * Xs
 	SES_PRINT (ses, "EMPTY");
       else
 	{
-	  sprintf (buf, "%lf %lf", Xs[inx], Ys[inx]);
+          snprintf (buf, sizeof(buf), "%lf %lf", Xs[inx], Ys[inx]);
 	  SES_PRINT (ses, buf);
 	  if (geo_flags & GEO_A_Z)
 	    {
-	      sprintf (buf, " %lf", Zs[inx]);
+              snprintf (buf, sizeof(buf), " %lf", Zs[inx]);
 	      SES_PRINT (ses, buf);
 	    }
 	  if (geo_flags & GEO_A_M)
 	    {
-	      sprintf (buf, " %lf", Ms[inx]);
+              snprintf (buf, sizeof(buf), " %lf", Ms[inx]);
 	      SES_PRINT (ses, buf);
 	    }
 	}
@@ -2007,17 +2007,17 @@ ewkt_print_sf12 (geo_t * g, dk_session_t * ses)
   if (g->geo_srcode != GEO_SRCODE_DEFAULT)
     {
       char buf[30];
-      sprintf (buf, "SRID=%d;", GEO_SRID (g->geo_srcode));
+      snprintf (buf, sizeof(buf), "SRID=%d;", GEO_SRID(g->geo_srcode));
       SES_PRINT (ses, buf);
     }
   ewkt_print_sf12_one (g, ses, 1);
 }
 
-#define SES_DXF_REAL(ses,mark,v) do { char tmpbuf[50]; sprintf (tmpbuf, "\n%3d\n%lf", (mark), (double)(v)); SES_PRINT ((ses), tmpbuf); } while (0)
+#define SES_DXF_REAL(ses,mark,v) do { char tmpbuf[60]; snprintf (tmpbuf, sizeof(tmpbuf), "\n%3d\n%lf", (mark), (double)(v)); SES_PRINT ((ses), tmpbuf); } while (0)
 
-#define SES_DXF_INTEGER(ses,mark,v) do { char tmpbuf[50]; sprintf (tmpbuf, "\n%3d\n%d", (mark), (int)(v)); SES_PRINT ((ses), tmpbuf); } while (0)
+#define SES_DXF_INTEGER(ses,mark,v) do { char tmpbuf[50]; snprintf (tmpbuf, sizeof(tmpbuf), "\n%3d\n%d", (mark), (int)(v)); SES_PRINT ((ses), tmpbuf); } while (0)
 
-#define SES_DXF_ID(ses,mark,v) do { char tmpbuf[50]; sprintf (tmpbuf, "\n%3d\n%s", (mark), (const char *)(v)); SES_PRINT ((ses), tmpbuf); } while (0)
+#define SES_DXF_ID(ses,mark,v) do { char tmpbuf[50]; snprintf (tmpbuf, sizeof(tmpbuf), "\n%3d\n%s", (mark), (const char *)(v)); SES_PRINT ((ses), tmpbuf); } while (0)
 
 #define SES_DXF_XYZ(ses,xmark,x,y,z,flags) do { \
     SES_DXF_REAL (ses, xmark, (x)); \
