@@ -2511,7 +2511,7 @@ bif_profile_enable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       prof_start_time = get_msec_real_time ();
       time (&prof_start_time_st);
       cli->cli_run_clocks = 0;
-      cli->cli_cl_start_ts = 0;
+      cli->cli_cl_start_ts = rdtsc ();
       da_clear (&cli->cli_activity);
       da_clear (&cli->cli_compile_activity);
     }

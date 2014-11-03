@@ -11596,14 +11596,14 @@ cli_check_ws_terminate (client_connection_t *cli)
       if (!SESSTAT_ISSET (cli->cli_ws->ws_session->dks_session, SST_OK) ||
 	  cli->cli_ws->ws_session->dks_to_close)
 	return 1;
-      else if (cli->cli_start_time &&
-	  time_now_msec - cli->cli_start_time > HTTP_TERMINATE_CHECK_TIMEOUT &&
+      else if (cli->cli_ws_check_time &&
+	  time_now_msec - cli->cli_ws_check_time > HTTP_TERMINATE_CHECK_TIMEOUT &&
 	  cli->cli_ws->ws_session->dks_in_fill < cli->cli_ws->ws_session->dks_in_length)
 	{
 	  ws_connection_t *ws = cli->cli_ws;
 	  timeout_t to = { 0, 0 };
 
-	  cli->cli_start_time = time_now_msec;
+	  cli->cli_ws_check_time = time_now_msec;
 
 	  if (SER_SUCC == tcpses_is_read_ready (ws->ws_session->dks_session, &to))
 	    {

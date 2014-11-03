@@ -1677,6 +1677,7 @@ cli_set_start_times (client_connection_t * cli)
   if (prof_on)
     dt_now ((caddr_t)&cli->cli_start_dt);
   cli->cli_start_time = get_msec_real_time ();
+  cli->cli_ws_check_time = cli->cli_start_time;
   cli->cli_cl_start_ts = rdtsc ();
   cli->cli_activity.da_thread_time = 0;
 }

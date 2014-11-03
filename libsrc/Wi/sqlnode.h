@@ -1872,6 +1872,7 @@ typedef struct client_connection_s
     int			cli_inprocess;
 #endif
     uint32		cli_start_time;
+    uint32		cli_ws_check_time;
     caddr_t *		cli_info;
     cl_thread_t *	cli_clt; /* if cli of a cluster server thread, this is the clt */
     struct aq_request_s *	cli_aqr; /* if the cli is running an aq func, this is the aqr */
