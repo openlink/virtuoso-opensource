@@ -4643,7 +4643,7 @@ bif_stat_import (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       key = tb_name_to_key (tb, ks[1], 0);
       if (!key)
 	continue;
-      key->key_table->tb_count_estimate = unbox (ks[1]);
+      key->key_table->tb_count_estimate = unbox (ks[2]);
       if (ps)
 	{
 	  DO_BOX (caddr_t *, p, inx2, ps)
