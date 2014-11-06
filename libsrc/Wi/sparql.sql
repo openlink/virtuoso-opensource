@@ -16610,12 +16610,16 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
 {
   declare state, msg varchar;
   declare cmds any;
+  declare sparql_load_service_data_exists integer;
+  sparql_load_service_data_exists := coalesce ((select 1 from DB.DBA.SYS_USERS where U_NAME='SPARQL_LOAD_SERVICE_DATA'), 0);
   cmds := vector (
     'create role SPARQL_SELECT',
     'create role SPARQL_SPONGE',
+    'create role SPARQL_LOAD_SERVICE_DATA',
     'create role SPARQL_UPDATE',
     'grant SPARQL_SELECT to SPARQL_UPDATE',
     'grant SPARQL_SELECT to SPARQL_SPONGE',
+    'grant SPARQL_LOAD_SERVICE_DATA to SPARQL_UPDATE',
     'grant SPARQL_SPONGE to SPARQL_UPDATE',
     'grant select on DB.DBA.RDF_QUAD to SPARQL_SELECT',
     'grant all on DB.DBA.RDF_QUAD to SPARQL_UPDATE',
@@ -16776,10 +16780,11 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.SPARUL_ADD to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARUL_CLEAR to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARUL_COPY to SPARQL_UPDATE',
-    'grant execute on SPARUL_LOAD_SERVICE_DATA to SPARQL_SPONGE',
+    'grant execute on DB.DBA.SPARUL_LOAD_SERVICE_DATA to SPARQL_SPONGE',
     'grant execute on DB.DBA.SPARUL_CREATE to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARUL_DROP to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARUL_LOAD to SPARQL_UPDATE',
+    'grant execute on DB.DBA.SPARUL_LOAD_SERVICE_DATA to SPARQL_LOAD_SERVICE_DATA',
     'grant execute on DB.DBA.SPARUL_LOAD_SERVICE_DATA to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARUL_MOVE to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARUL_RUN to SPARQL_UPDATE',
@@ -16848,6 +16853,8 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     {
       exec (cmd, state, msg);
     }
+  if (not sparql_load_service_data_exists)
+    exec ('grant SPARQL_LOAD_SERVICE_DATA to SPARQL_SELECT', state, msg);
 }
 ;
 
