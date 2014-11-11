@@ -494,13 +494,20 @@ public class VirtGraph extends GraphBase
 
 
 
+
+    static String Blank2String(Node n) 
+    {
+      return "_:"+ n.toString().replace(':','_').replace('-','z');
+    }
+
+
 // GraphBase overrides
     public static String Node2Str(Node n)
     {
       if (n.isURI()) {
         return "<"+n+">";
       } else if (n.isBlank()) {
-        return "_:"+n; 
+        return Blank2String(n); 
       } else if (n.isLiteral()) {
         String s;
         StringBuffer sb = new StringBuffer();
@@ -532,7 +539,7 @@ public class VirtGraph extends GraphBase
       if (n.isURI()) 
 	ps.setString(col, n.toString());
       else if (n.isBlank()) 
-        ps.setString(col, "_:"+n.toString());
+        ps.setString(col, Blank2String(n));
       else 
         throw new SQLException("Only URI or Blank nodes can be used as subject");
     }
@@ -556,9 +563,9 @@ public class VirtGraph extends GraphBase
 	ps.setInt(col, 1);
         ps.setString(col+1, n.toString());
 	ps.setNull(col+2, java.sql.Types.VARCHAR);
-      } else if (n .isBlank()) {
+      } else if (n.isBlank()) {
 	ps.setInt(col, 1);
-	ps.setString(col+1, "_:"+n.toString());
+	ps.setString(col+1, Blank2String(n));
 	ps.setNull(col+2, java.sql.Types.VARCHAR);
       }	else if (n.isLiteral()) {
         String llang = n.getLiteralLanguage();
@@ -1025,8 +1032,8 @@ public class VirtGraph extends GraphBase
     				Node object, 
     				String _graphName) throws SQLException
     {
-      ps.setString(1, subject.isBlank()?"_:"+subject:subject.toString());
-      ps.setString(2, predicate.isBlank()?"_:"+predicate:predicate.toString());
+      ps.setString(1, subject.isBlank()?Blank2String(subject):subject.toString());
+      ps.setString(2, predicate.isBlank()?Blank2String(predicate):predicate.toString());
 
       if (object.isURI()) 
       {
@@ -1036,7 +1043,7 @@ public class VirtGraph extends GraphBase
       }
       else if (object.isBlank()) 
       {
-        ps.setString(3, "_:"+object.toString());
+        ps.setString(3, Blank2String(object));
         ps.setNull(4, java.sql.Types.VARCHAR);
         ps.setInt(5, 0);
       }
