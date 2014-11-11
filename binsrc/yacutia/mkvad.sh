@@ -310,7 +310,7 @@ echo "        {" >> $STICKER
 echo "          result ('ERROR', 'The conductor package requires server version $NEED_VERSION or greater');" >> $STICKER
 echo "          signal ('FATAL', 'The conductor package requires server version $NEED_VERSION or greater');" >> $STICKER
 echo "        }" >> $STICKER
-echo "      if (__proc_exists ('VALIDATE.DBA.validate') is null)" >> $STICKER
+echo "      if (__proc_exists ('DB.DBA.DAV_DET_CONTENT_MD5') is null)" >> $STICKER
 echo "        {" >> $STICKER
 echo "          result ('ERROR', 'Please update server version');" >> $STICKER
 echo "          signal ('FATAL', 'Please update server version');" >> $STICKER

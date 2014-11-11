@@ -139,6 +139,7 @@
           <v:variable name="dav_tags_public" persist="0" type="varchar" />
           <v:variable name="dav_encryption" type="varchar" default="'None'" />
           <v:variable name="dav_encryption_pwd" type="varchar" default="'None'" />
+          <v:variable name="dav_s3encryption" type="varchar" default="'None'" />
           <v:variable name="dav_redirect" type="varchar" default="''" />
           <v:variable name="dav_is_redirect" type="integer" default="0" />
           <v:variable name="chars" type="integer" default="60" />
@@ -618,7 +619,7 @@
                 retValue := vector ('name', 'mime', 'owner', 'group', 'permissions', 'publicTags', 'aci');
 
               else if (detClass = 'S3')
-                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci');
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'sse', 'S3sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci');
 
               else if (detClass in ('DynaRes', 'Share'))
                 retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'textSearch', 'inheritancePermissions', 'metadata', 'acl', 'aci');
@@ -707,15 +708,15 @@
 
               if      (detClass in ('GDrive', 'Dropbox', 'SkyDrive', 'Box'))
               {
-                retValue := vector (1, 1, vector ('syncEnabled', 'activity', 'checkInterval', 'path', 'graph'));
+                retValue := vector (1, 1, vector ('activity', 'checkInterval', 'path', 'graph'));
               }
               else if (detClass = 'RACKSPACE')
               {
-                retValue := vector (0, 1, vector ('syncEnabled', 'activity', 'checkInterval', 'path', 'Type', 'User', 'Container', 'API_Key', 'graph'));
+                retValue := vector (0, 1, vector ('activity', 'checkInterval', 'path', 'Type', 'User', 'Container', 'API_Key', 'graph'));
               }
               else if (detClass = 'S3')
               {
-                retValue := vector (0, 1, vector ('syncEnabled', 'activity', 'checkInterval', 'path', 'BucketName', 'AccessKeyID', 'SecretKey', 'graph'));
+                retValue := vector (0, 1, vector ('activity', 'checkInterval', 'path', 'BucketName', 'AccessKeyID', 'SecretKey', 'graph'));
               }
               else if (detClass = 'PropFilter')
               {
@@ -727,11 +728,11 @@
               }
               else if (detClass = 'IMAP')
               {
-                retValue := vector (0, 1, vector ('syncEnabled', 'activity', 'checkInterval', 'connection', 'server', 'port', 'user', 'password', 'folder', 'graph'));
+                retValue := vector (0, 1, vector ('activity', 'checkInterval', 'connection', 'server', 'port', 'user', 'password', 'folder', 'graph'));
               }
               else if (detClass = 'WebDAV')
               {
-                retValue := vector (1, 1, vector ('syncEnabled', 'activity', 'checkInterval', 'path', 'authenticationType', 'user', 'password', 'key', 'oauth', 'graph'));
+                retValue := vector (1, 1, vector ('activity', 'checkInterval', 'path', 'authenticationType', 'user', 'password', 'key', 'oauth', 'graph'));
               }
               else if (detClass = 'oMail')
               {
@@ -996,7 +997,7 @@
               }
               foreach (any label in labels[2]) do
               {
-                val := case when (label = 'syncEnabled') then 'on' else trim (get_keyword ('dav_' || det || '_' || label, params)) end;
+                val := trim (get_keyword ('dav_' || det || '_' || label, params));
                 if (not isnull (val))
                 {
                   if ((label = 'path') and (det <> 'WebDAV'))
@@ -2493,6 +2494,24 @@
                         </script>
                       ]]>
                     </v:template>
+                    <v:template name="tf_12a" type="simple" enabled="-- case when self.viewField ('S3sse') and (self.dav_type = 'R') and self.sse_enabled () and not self.dav_is_redirect then 1 else 0 end">
+                      <tr id="davs3_encryption" width="30%">
+                        <th>
+                          <vm:label for="dav_s3encryption" value="--'S3 Server Side Encryption'" />
+                        </th>
+                        <td>
+                          <?vsp
+                            self.dav_s3encryption := self.get_fieldProperty ('dav_s3encryption', self.dav_path, 'virt:s3-server-side-encryption', 'None');
+                            http (sprintf ('<input type="checkbox" name="dav_s3encryption" id="dav_s3encryption" disabled="disabled" value="AES256" %s />', case when (self.dav_s3encryption = 'None') then '' else 'checked="checked"' end));
+                          ?>
+                        </td>
+                      </tr>
+                      <![CDATA[
+                        <script type="text/javascript">
+                          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_encryption_2'), {checked: {show: ['davRow_encryption_password']}, unchecked: {hide: ['davRow_encryption_password']}})});
+                        </script>
+                      ]]>
+                    </v:template>
                     <v:template name="tf_13" type="simple" enabled="--case when self.viewField ('textSearch') and not self.dav_is_redirect then 1 else 0 end">
                       <tr id="davRow_text" width="30%">
                         <th>
@@ -3383,6 +3402,14 @@
                         if (strcontains (self.dav_encryption, 'AES256'))
                           connection_set ('server-side-encryption', self.dav_encryption);
 
+                        self.dav_s3encryption := null;
+                        if (self.editField ('S3sse'))
+                        {
+                          self.dav_s3encryption := get_keyword ('dav_s3encryption', params, 'None');
+                          if (strcontains (self.dav_s3encryption, 'AES256'))
+                            connection_set ('s3-server-side-encryption', self.dav_s3encryption);
+                        }
+
                         if (self.command_mode in (5, 6, 7))
                         {
                           if (self.dav_is_redirect)
@@ -3413,9 +3440,20 @@
                         if (self.dav_encryption is not null)
                         {
                           if ((self.dav_encryption = 'UserAES256') and (self.dav_encryption_pwd <> '**********'))
+                          {
+                            tmp := WEBDAV.DBA.DAV_PROP_GET (dav_fullPath, 'virt:server-side-encryption-password', '');
+                            if (self.dav_encryption_pwd <> tmp)
                             WEBDAV.DBA.DAV_PROP_SET (dav_fullPath, 'virt:server-side-encryption-password', self.dav_encryption_pwd);
-
+                          }
+                          tmp := WEBDAV.DBA.DAV_PROP_GET (dav_fullPath, 'virt:server-side-encryption', '');
+                          if (self.dav_encryption <> tmp)
                             WEBDAV.DBA.DAV_PROP_SET (dav_fullPath, 'virt:server-side-encryption', self.dav_encryption);
+                        }
+                        if (self.dav_s3encryption is not null)
+                        {
+                          tmp := WEBDAV.DBA.DAV_PROP_GET (dav_fullPath, 'virt:s3-server-side-encryption', 'None');
+                          if (self.dav_s3encryption <> tmp)
+                            WEBDAV.DBA.DAV_PROP_SET (dav_fullPath, 'virt:s3-server-side-encryption', self.dav_s3encryption);
                         }
 
                         if (not self.editField ('publicTags'))
@@ -4593,14 +4631,14 @@
                                     id := case when (rowset[1] = 'R') then sprintf ('id="%V"', path) else '' end;
                                     if ((self.returnName <> '') and (rowset[1] = 'R'))
                                     {
-                                      http (sprintf ('<a %s href="%s" onclick="javascript: $(\'item_name\').value = \'%s\'; return false;" title="%s"><img src="%s" border="0" /> %V</a>', id, WEBDAV.DBA.dav_url (path), replace (WEBDAV.DBA.dav_lpath (path), '\'', '\\\''), WEBDAV.DBA.utf2wide (rowset[0]), self.image_src (WEBDAV.DBA.ui_image(path, rowset[1], rowset[4])), WEBDAV.DBA.utf2wide (WEBDAV.DBA.stringCut (rowset[0], self.chars))));
+                                      click := sprintf ('onclick="javascript: $(\'item_name\').value = \'%s\'; return false;"', replace (WEBDAV.DBA.dav_lpath (path)));
                                     }
                                     else
                                     {
                                       click := case when (permission <> '') then sprintf ('ondblclick="javascript: vspxUpdate(\'%V\');" ', WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))) else '' end
                                             || sprintf ('onclick="javascript: vspxSelect(\'%V\'); return false;"', WEBDAV.DBA.utf2wide (replace (WEBDAV.DBA.dav_lpath (path), '\'', '\\\'')));
-                                      http (sprintf ('<a %s href="%s" %s title="%V" class="WEBDAV_a"><img src="%s" border="0" /> %V</a>', id, WEBDAV.DBA.utf2wide (WEBDAV.DBA.dav_url (path)), click, WEBDAV.DBA.utf2wide (rowset[0]), self.image_src (WEBDAV.DBA.ui_image (path, rowset[1], rowset[4])), WEBDAV.DBA.utf2wide (WEBDAV.DBA.stringCut (rowset[0], self.chars))));
                                     }
+                                    http (sprintf ('<a %s href="%s" %s title="%V" class="WEBDAV_a"><img src="%s" border="0" /> %V</a>', id, WEBDAV.DBA.utf2wide (path), click, WEBDAV.DBA.utf2wide (rowset[0]), self.image_src (WEBDAV.DBA.ui_image (path, rowset[1], rowset[4])), WEBDAV.DBA.utf2wide (WEBDAV.DBA.stringCut (rowset[0], self.chars))));
                                   ?>
                                   <v:template type="simple" enabled="-- case when (self.command_mode <> 3 or is_empty_or_null(WEBDAV.DBA.dc_get (self.search_dc, 'base', 'content'))) then 0 else 1 end">
                                     <br /><i><v:label value="--WEBDAV.DBA.content_excerpt((((control.vc_parent).vc_parent as vspx_row_template).te_rowset[8]), WEBDAV.DBA.dc_get(self.search_dc, 'base', 'content'))" format="%s" /></i>

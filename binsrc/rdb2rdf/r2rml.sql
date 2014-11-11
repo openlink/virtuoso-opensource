@@ -517,7 +517,7 @@ create method R2RML_GEN_CREATE_IOL_CLASS_OR_REF (in fld_idx integer, in mode int
       argtypes[argctr] := vector (coltype[1], coltype[4]);
       col_fmt := case
         when (coltype[1] in (__tag of date, __tag of datetime, __tag of datetime)) then '%D'
-        when (coltype[1] in (__tag of integer)) then '%d'
+        when (coltype[1] in (__tag of integer, __tag of smallint)) then '%d'
         when (coltype[1] in (__tag of real, __tag of double precision, __tag of numeric)) then '%g'
         when (coltype[1] in (__tag of varchar, __tag of nvarchar)) then
           case (termtype) when 'http://www.w3.org/ns/r2rml#Literal' then '%s' else '%U' end
