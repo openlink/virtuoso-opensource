@@ -3869,8 +3869,9 @@ create procedure WEBDAV.DBA.DAV_PROP_GET (
 
   WEBDAV.DBA.DAV_API_PARAMS (null, null, uname, gname, auth_name, auth_pwd);
   retValue := DB.DBA.DAV_PROP_GET (path, propName, auth_name, auth_pwd);
-  if (isinteger (retValue) and (retValue < 0) and (not isnull (propValue)))
+  if (WEBDAV.DBA.DAV_ERROR (retValue) and not isnull (propValue))
     return propValue;
+
   return retValue;
 }
 ;
@@ -3890,10 +3891,8 @@ create procedure WEBDAV.DBA.DAV_PROP_SET (
   declare retValue any;
 
   WEBDAV.DBA.DAV_API_PARAMS (null, null, uname, gname, auth_name, auth_pwd);
-  if (removeBefore)
-    retValue := DB.DBA.DAV_PROP_REMOVE (path, propName, auth_name, auth_pwd);
 
-  return DB.DBA.DAV_PROP_SET (path, propName, propValue, auth_name, auth_pwd);
+  return DB.DBA.DAV_PROP_SET (path, propName, propValue, auth_name, auth_pwd, 1);
 }
 ;
 

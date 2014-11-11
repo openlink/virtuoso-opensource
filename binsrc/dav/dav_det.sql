@@ -529,3 +529,26 @@ create function DB.DBA.DAV_DET_SYNC (
   call ('DB.DBA.' || det || '__load') (detcol_id, subPath_parts, detcol_parts, 1);
 }
 ;
+
+create function DB.DBA.DAV_DET_CONTENT_ROLLBACK (
+  in oldId any,
+  in oldContent any,
+  in path varchar)
+{
+  if (DAV_HIDE_ERROR (oldId) is not null)
+  {
+    update WS.WS.SYS_DAV_RES set RES_CONTENT = oldContent where RES_ID = DB.DBA.DAV_DET_DAV_ID (oldID);
+  }
+  else
+  {
+    DAV_DELETE_INT (path, 1, null, null, 0, 0);
+  }
+}
+;
+
+create function DB.DBA.DAV_DET_CONTENT_MD5 (
+  in id any)
+{
+  return md5 ((select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_ID = DB.DBA.DAV_DET_DAV_ID (id)));
+}
+;

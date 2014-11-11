@@ -155,7 +155,7 @@
   }
   else if (action = 'webdavVerify')
   {
-    declare _error, _server, _params, _password any;
+    declare _error, _server, _params, _password, _oauthSid any;
     declare exit handler for SQLSTATE '*'
     {
       _error := __SQL_MESSAGE;
@@ -170,6 +170,14 @@
         _password := DB.DBA.WebDAV__paramGet (DB.DBA.DAV_SEARCH_ID (get_keyword ('path', params), 'C'), 'C', 'password', 0, 1, 1);
 
       _params     := vector ('authenticationType', 'Digest', 'user', get_keyword ('user', params, ''), 'password', _password);
+    }
+    else if (get_keyword ('type', params) = 'oauth')
+    {
+      _oauthSid := get_keyword ('oauthSid', params, get_keyword ('sid', params));
+      if (isnull (_oauthSid))
+        _oauthSid := DB.DBA.WebDAV__paramGet (DB.DBA.DAV_SEARCH_ID (get_keyword ('path', params), 'C'), 'C', 'oauthSid', 0, 1, 1);
+
+      _params := vector ('authenticationType', 'oauth', 'oauthSid', _oauthSid);
     }
     else
     {

@@ -18,6 +18,10 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
+--
+-- API link: http://docs.aws.amazon.com/AmazonS3/latest/API/APIRest.html
+--
+
 use DB
 ;
 
@@ -230,57 +234,50 @@ create function "S3_DAV_RES_UPLOAD" (
 {
   -- dbg_obj_princ ('S3_DAV_RES_UPLOAD (', detcol_id, path_parts, ', [content], ', type, permissions, uid, gid, auth_uid, ')');
   declare ouid, ogid integer;
-  declare name, path, parentListID, listID, listItem, rdf_graph varchar;
-  declare url, header, body, params any;
-  declare retValue, retHeader, result, save, parentID any;
+  declare name, path, oPath, rdf_graph varchar;
+  declare oldID, oldContent any;
+  declare retValue, result, save, oEntry any;
   declare exit handler for sqlstate '*'
   {
+    DB.DBA.DAV_DET_CONTENT_ROLLBACK (oldID, oldContent, path);
     connection_set ('dav_store', save);
     resignal;
   };
 
   save := connection_get ('dav_store');
   path := DB.DBA.DAV_DET_PATH (detcol_id, path_parts);
-  if (save is null)
-  {
-    if (__tag (content) = 126)
-    {
-      declare real_content any;
+  oldID := DB.DBA.DAV_SEARCH_ID (path, 'R');
+  if (DAV_HIDE_ERROR (oldID) is not null)
+    oldContent := (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path);
 
-      real_content := http_body_read (1);
-      content := string_output_string (real_content);  -- check if bellow code can work with string session and if so remove this line
-    }
-    result := DB.DBA.S3__putObject (detcol_id, path_parts, 'R', content, type);
-    if (DAV_HIDE_ERROR (result) is null)
-    {
-      retValue := result;
-      goto _exit;
-    }
-    listItem := result;
-    listID := get_keyword ('path', listItem);
-  }
-_skip_create:;
+  -- store in local DAV first
   connection_set ('dav_store', 1);
-  DB.DBA.DAV_DET_OWNER (detcol_id, path_parts, DB.DBA.DAV_DET_USER (coalesce (uid, auth_uid)), DB.DBA.DAV_DET_USER (coalesce (gid, auth_uid)), ouid, ogid);
-  retValue := DAV_RES_UPLOAD_STRSES_INT (path, content, type, permissions, DB.DBA.DAV_DET_USER (coalesce (uid, auth_uid)), DB.DBA.DAV_DET_USER (coalesce (gid, auth_uid)), DB.DBA.DAV_DET_USER (http_dav_uid ()), DB.DBA.DAV_DET_PASSWORD (http_dav_uid ()), 0, ouid=>ouid, ogid=>ogid, check_locks=>0);
+  DB.DBA.DAV_DET_OWNER (detcol_id, path_parts, DB.DBA.DAV_DET_USER (uid, auth_uid), DB.DBA.DAV_DET_USER (gid, auth_uid), ouid, ogid);
+  retValue := DAV_RES_UPLOAD_STRSES_INT (path, content, type, permissions, DB.DBA.DAV_DET_USER (uid, auth_uid), DB.DBA.DAV_DET_USER (gid, auth_uid), DB.DBA.DAV_DET_USER (http_dav_uid ()), DB.DBA.DAV_DET_PASSWORD (http_dav_uid ()), 0, ouid=>ouid, ogid=>ogid, check_locks=>0);
 
-_exit:;
-  connection_set ('dav_store', save);
-  if (DAV_HIDE_ERROR (retValue) is not null)
+  -- store next
+  if ((DAV_HIDE_ERROR (retValue) is not null) and (save is null))
+  {
+    result := DB.DBA.S3__put (detcol_id, retValue);
+    if (DAV_HIDE_ERROR (result) is null)
+      retValue := result;
+  }
+
+  if (DAV_HIDE_ERROR (retValue) is null)
+  {
+    DB.DBA.DAV_DET_CONTENT_ROLLBACK (oldID, oldContent, path);
+  }
+  else
   {
     commit work;
     rdf_graph := DB.DBA.S3__paramGet (detcol_id, 'C', 'graph', 0);
     if (not DB.DBA.is_empty_or_null (rdf_graph))
       DB.DBA.DAV_DET_RDF (DB.DBA.S3__detName (), detcol_id, retValue, 'R');
 
-    if (save is null)
-    {
-      DB.DBA.S3__paramSet (retValue, 'R', 'Entry', DB.DBA.S3__obj2xml (listItem), 0);
-      DB.DBA.S3__paramSet (retValue, 'R', 'path', listID, 0);
-    }
     DB.DBA.S3__paramSet (retValue, 'R', 'virt:DETCOL_ID', cast (detcol_id as varchar), 0, 0);
     retValue := vector (DB.DBA.S3__detName (), detcol_id, retValue, 'R');
   }
+  connection_set ('dav_store', save);
   return retValue;
 }
 ;
@@ -296,9 +293,21 @@ create function "S3_DAV_PROP_REMOVE" (
   in auth_uid integer) returns integer
 {
   -- dbg_obj_princ ('S3_DAV_PROP_REMOVE (', id, what, propname, silent, auth_uid, ')');
-  declare retValue any;
+  declare retValue, md5Value any;
 
-  retValue := DAV_PROP_REMOVE_RAW (DB.DBA.DAV_DET_DAV_ID (id), what, propname, silent, auth_uid);
+  if ((what = 'R') and (propName in ('virt:server-side-encryption', 'virt:server-side-encryption-password')))
+    md5Value := DB.DBA.DAV_DET_CONTENT_MD5 (id);
+
+  retValue := DAV_PROP_REMOVE_RAW (id[2], what, propname, silent, auth_uid);
+  if (
+      (what = 'R') and
+      (DAV_HIDE_ERROR (retValue) is not null) and
+      (propName in ('virt:server-side-encryption', 'virt:server-side-encryption-password')) and
+      (md5Value <> DB.DBA.DAV_DET_CONTENT_MD5 (id))
+     )
+  {
+    DB.DBA.S3__put (DB.DBA.DAV_DET_DETCOL_ID (id), id);
+  }
 
   return retValue;
 }
@@ -315,16 +324,16 @@ create function "S3_DAV_PROP_SET" (
   in auth_uid integer) returns any
 {
   -- dbg_obj_princ ('S3_DAV_PROP_SET (', id, what, propname, propvalue, overwrite, auth_uid, ')');
-  declare retValue, realId any;
+  declare retValue, md5Value, tmp any;
 
-  if ((propName = 'virt:server-side-encryption') and (what = 'R'))
+  if ((propName = 'virt:s3-server-side-encryption') and (what = 'R'))
   {
-    declare tmp, path, det_path, path_parts, item any;
+    declare path, det_path, path_parts, item any;
 
     tmp := DB.DBA.S3_DAV_PROP_GET (id, what, propname, auth_uid);
     if (tmp <> propvalue)
     {
-      connection_set ('server-side-encryption', propvalue);
+      connection_set ('s3-server-side-encryption', propvalue);
       det_path := DB.DBA.DAV_SEARCH_PATH (DB.DBA.DAV_DET_DETCOL_ID (id), 'C');
       path := DB.DBA.DAV_SEARCH_PATH (id, what);
       path_parts := split_and_decode (replace (path, det_path, ''), 0, '\0\0/');
@@ -334,9 +343,20 @@ create function "S3_DAV_PROP_SET" (
     }
   }
 
-  realId := DB.DBA.DAV_DET_DAV_ID (id);
-  retValue := DB.DBA.DAV_PROP_SET_RAW (realId, what, propname, propvalue, 1, http_dav_uid ());
+  if ((what = 'R') and (propName in ('virt:server-side-encryption', 'virt:server-side-encryption-password')))
+    md5Value := DB.DBA.DAV_DET_CONTENT_MD5 (id);
 
+  tmp := id[2];
+  retValue := DB.DBA.DAV_PROP_SET_RAW (tmp, what, propname, propvalue, 1, http_dav_uid ());
+  if (
+      (what = 'R') and
+      (DAV_HIDE_ERROR (retValue) is not null) and
+      (propName in ('virt:server-side-encryption', 'virt:server-side-encryption-password')) and
+      (md5Value <> DB.DBA.DAV_DET_CONTENT_MD5 (id))
+     )
+  {
+    DB.DBA.S3__put (DB.DBA.DAV_DET_DETCOL_ID (id), id);
+  }
   return retValue;
 }
 ;
@@ -351,7 +371,7 @@ create function "S3_DAV_PROP_GET" (
   -- dbg_obj_princ ('S3_DAV_PROP_GET (', id, what, propname, auth_uid, ')');
   declare retValue any;
 
-  if ((propName = 'virt:server-side-encryption') and (what = 'R'))
+  if ((propName = 'virt:s3-server-side-encryption') and (what = 'R'))
   {
     declare oEntry any;
 
@@ -1261,6 +1281,33 @@ create function DB.DBA.S3__makeAWSHeader (
 
 -------------------------------------------------------------------------------
 --
+create function DB.DBA.S3__put (
+  in detcol_id any,
+  in id any)
+{
+  declare type, path varchar;
+  declare retValue, retHeader, content, pathParts any;
+
+  path := DB.DBA.DAV_SEARCH_PATH (id, 'R');
+  content := cast ((select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_ID = DB.DBA.DAV_DET_DAV_ID (id)) as varchar);
+  type := (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = DB.DBA.DAV_DET_DAV_ID (id));
+
+  -- get parent edit-media link and next get new session
+  pathParts := split_and_decode (trim (subseq (path, length (DB.DBA.DAV_SEARCH_PATH (detcol_id, 'C'))), '/'), 0, '\0\0/');
+  retValue := DB.DBA.S3__putObject (detcol_id, pathParts, 'R', content, type);
+  if (DAV_HIDE_ERROR (retValue) is null)
+    return retValue;
+
+  DB.DBA.S3__paramSet (id, 'R', 'Entry', DB.DBA.S3__obj2xml (retValue), 0);
+  DB.DBA.S3__paramSet (id, 'R', 'path', get_keyword ('path', retValue), 0);
+  DB.DBA.S3__paramRemove (id, 'R', 'download');
+
+  return retValue;
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create function DB.DBA.S3__sync (
   in id any)
 {
@@ -1373,17 +1420,8 @@ create function DB.DBA.S3__load (
                   declare downloaded any;
 
                   downloaded := DB.DBA.S3__paramGet (davItem[4], davItem[1], 'download', 0);
-                  if ((downloaded is null) and (get_keyword ('size', listItem) <> davItem[2]))
-                  {
-                    downloaded := '0';
-                    DB.DBA.S3__paramSet (davItem[4], davItem[1], 'download', '0', 0);
-                  }
                   if (downloaded is not null)
-                  {
-                    downloaded := cast (downloaded as integer);
-                    if (downloaded <= 5)
-                      downloads := vector_concat (downloads, vector (vector (davItem[4], davItem[1])));
-                  }
+                    downloads := vector_concat (downloads, vector (vector (davItem[4], davItem[1])));
                 }
               }
               goto _continue;
@@ -1677,13 +1715,13 @@ create function DB.DBA.S3__putObject (
     acl := null;
 
   -- put object
-  encryption := connection_get ('server-side-encryption');
+  encryption := connection_get ('s3-server-side-encryption');
   if (isnull (encryption))
   {
     path := DB.DBA.DAV_DET_PATH (detcol_id, path_parts);
     id := DB.DBA.DAV_SEARCH_ID (path, what);
     if (DAV_HIDE_ERROR (id) is not null)
-      encryption := DB.DBA.S3_DAV_PROP_GET (id, what, 'virt:server-side-encryption', http_dav_uid ());
+      encryption := DB.DBA.S3_DAV_PROP_GET (id, what, 'virt:s3-server-side-encryption', http_dav_uid ());
   }
 
   commit work;
@@ -1899,9 +1937,9 @@ create function DB.DBA.S3__copySingleObject (
     acl := null;
 
   -- encryption
-  encryption := connection_get ('server-side-encryption');
+  encryption := connection_get ('s3-server-side-encryption');
   if (isnull (encryption))
-    encryption := DB.DBA.S3__paramGet (source_id, what, 'virt:server-side-encryption', 0, 0);
+    encryption := DB.DBA.S3__paramGet (source_id, what, 'virt:s3-server-side-encryption', 0, 0);
 
   -- copy
   commit work;
@@ -2160,20 +2198,22 @@ create function DB.DBA.S3__downloads_aq (
       if (length (content) > 10485760)  -- 10MB
         log_enable (0, 1);
 
-       update WS.WS.SYS_DAV_RES set RES_CONTENT = content where RES_ID = id;
-       DB.DBA.S3__paramRemove (download[0], download[1], 'download');
+      update WS.WS.SYS_DAV_RES set RES_CONTENT = content where RES_ID = id;
+      DB.DBA.S3__paramRemove (download[0], download[1], 'download');
+
+      oEntry := DB.DBA.S3__paramGet (download[0], download[1], 'Entry', 0);
+      if (oEntry is not null)
+      {
+        oEntry := xtree_doc (oEntry);
+        DB.DBA.DAV_DET_ENTRY_XUPDATE (oEntry, 'amz-server-side-encryption', http_request_header (retHeader, 'x-amz-server-side-encryption', null, null));
+        DB.DBA.DAV_DET_ENTRY_XUPDATE (oEntry, 'amz-request-id', http_request_header (retHeader, 'x-amz-request-id', null, null));
+        DB.DBA.DAV_DET_ENTRY_XUPDATE (oEntry, 'amz-id-2', http_request_header (retHeader, 'x-amz-id-2', null, null));
+        DB.DBA.DAV_DET_ENTRY_XUPDATE (oEntry, 'etag', http_request_header (retHeader, 'ETag', null, null));
+        DB.DBA.S3__paramSet (download[0], download[1], 'Entry', DB.DBA.DAV_DET_XML2STRING (oEntry), 0);
+      }
+      items := vector_concat (items, vector (download));
+      goto _continue;
     }
-    oEntry := DB.DBA.S3__paramGet (download[0], download[1], 'Entry', 0);
-    if (oEntry is not null)
-    {
-      oEntry := xtree_doc (oEntry);
-      DB.DBA.DAV_DET_ENTRY_XUPDATE (oEntry, 'amz-server-side-encryption', http_request_header (retHeader, 'x-amz-server-side-encryption', null, null));
-      DB.DBA.DAV_DET_ENTRY_XUPDATE (oEntry, 'amz-request-id', http_request_header (retHeader, 'x-amz-request-id', null, null));
-      DB.DBA.DAV_DET_ENTRY_XUPDATE (oEntry, 'amz-id-2', http_request_header (retHeader, 'x-amz-id-2', null, null));
-      DB.DBA.S3__paramSet (download[0], download[1], 'Entry', DB.DBA.DAV_DET_XML2STRING (oEntry), 0);
-    }
-    items := vector_concat (items, vector (download));
-    goto _continue;
 
   _error:;
     downloaded := downloaded + 1;
