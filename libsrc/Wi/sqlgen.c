@@ -4569,6 +4569,7 @@ sqlo_exp_in_gby (ST * exp, ST ** specs)
 data_source_t *
 sqlg_group_node (sqlo_t * so, data_source_t ** head, df_elt_t * group, df_elt_t * dt_dfe, dk_set_t pre_code)
 {
+  ST **gb_full;
   sql_comp_t * sc = so->so_sc;
   data_source_t * read_node;
   op_table_t * ot = dt_dfe->_.sub.ot;
@@ -4600,10 +4601,12 @@ sqlg_group_node (sqlo_t * so, data_source_t ** head, df_elt_t * group, df_elt_t 
 	    ssl_out[inx] = NULL;
 	}
       END_DO_BOX;
+      gb_full = (ST **) tree->_.select_stmt.table_exp->_.table_exp.group_by_full;
+      if (1 == BOX_ELEMENTS (gb_full))
+	gb_full = (ST **) t_list (1, group->_.setp.specs);
       if (sqlg_distinct_same_as (so, head, group->_.setp.specs,  dt_dfe, pre_code))
 	pre_code = NULL;
-      sqlg_make_sort_nodes (so, head, (ST**) tree->_.select_stmt.table_exp->_.table_exp.group_by_full,
-			    ssl_out,  dt_dfe, 1, pre_code, group, (ST **)tree->_.select_stmt.selection);
+      sqlg_make_sort_nodes (so, head, gb_full, ssl_out, dt_dfe, 1, pre_code, group, (ST **) tree->_.select_stmt.selection);
       so->so_sc->sc_sort_insert_node->setp_card = group->_.setp.gb_card;
       sqlg_cl_multistate_group (so->so_sc);
     }
