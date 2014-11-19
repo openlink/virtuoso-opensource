@@ -2300,6 +2300,8 @@ chash_to_memcache (caddr_t * inst, index_tree_t * tree, hash_area_t * ha)
     }
   if (!hi->hi_memcache_from_mp)
     GPF_T1 ("writing mp boxes in non-mp memcache");
+  QR_RESET_CTX
+  {
   for (part = 0; part < MAX (cha->cha_n_partitions, 1); part++)
     {
       chash_t *cha_p = CHA_PARTITION (cha, part);
@@ -2331,6 +2333,14 @@ chash_to_memcache (caddr_t * inst, index_tree_t * tree, hash_area_t * ha)
 	    }
 	}
     }
+  }
+  QR_RESET_CODE
+  {
+    POP_QR_RESET;
+    SET_THR_TMP_POOL (NULL);
+    longjmp_splice (THREAD_CURRENT_THREAD->thr_reset_ctx, reset_code);
+  }
+  END_QR_RESET;
   SET_THR_TMP_POOL (NULL);
   hi->hi_chash = NULL;
 }
