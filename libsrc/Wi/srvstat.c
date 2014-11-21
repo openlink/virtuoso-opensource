@@ -396,6 +396,9 @@ extern int dbf_log_fsync;
 extern int dbf_assert_on_malformed_data;
 extern int dbf_max_itc_samples;
 
+extern int32 c_pcre_match_limit;
+extern int32 c_pcre_match_limit_recursion;
+
 void trset_start (caddr_t * qst);
 void trset_printf (const char *str, ...);
 void trset_end ();
@@ -1864,6 +1867,8 @@ stat_desc_t dbf_descs [] =
     {"enable_no_free", &enable_no_free, SD_INT32},
 #endif
     {"enable_rdf_box_const", &enable_rdf_box_const, SD_INT32},
+    {"c_pcre_match_limit", &c_pcre_match_limit, SD_INT32},
+    {"c_pcre_match_limit_recursion", &c_pcre_match_limit_recursion, SD_INT32},
     {NULL, NULL, NULL}
   };
 

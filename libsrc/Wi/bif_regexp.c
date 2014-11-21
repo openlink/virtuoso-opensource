@@ -887,6 +887,13 @@ get_regexp_code_1 (safe_hash_t * rx_codes, const char *pattern,
 	  if (!pcre_info->code_x)
 	    dbg_printf (("***warning RX100: regexp warning: extra regular expression compiling failed\n"));
 #endif
+	  if (!pcre_info->code_x)
+	    {
+	      pcre_info->code_x = pcre_malloc (sizeof (pcre_extra));
+	      if (pcre_info->code_x)
+		memset (pcre_info->code_x, 0, sizeof (pcre_extra));
+	    }
+
 	  if (!opts_hash)
 	    {
 	      opts_hash = hash_table_allocate (5);
@@ -906,11 +913,25 @@ get_regexp_code_1 (safe_hash_t * rx_codes, const char *pattern,
     }
   else
     *pcre_info = *pcre_info_ref;
+
   if (pcre_info->code_x)
     {
-      pcre_info->code_x->flags |= PCRE_EXTRA_MATCH_LIMIT_RECURSION;
-      pcre_info->code_x->match_limit_recursion = c_match_limit_recursion;
+#ifdef PCRE_EXTRA_MATCH_LIMIT
+      if (c_pcre_match_limit > 0)
+	{
+	  pcre_info->code_x->flags |= PCRE_EXTRA_MATCH_LIMIT;
+	  pcre_info->code_x->match_limit = c_pcre_match_limit;
+	}
+#endif
+#ifdef PCRE_EXTRA_MATCH_LIMIT_RECURSION
+      if (c_pcre_match_limit_recursion > 0)
+	{
+	  pcre_info->code_x->flags |= PCRE_EXTRA_MATCH_LIMIT_RECURSION;
+	  pcre_info->code_x->match_limit_recursion = c_pcre_match_limit_recursion;
+	}
+#endif
     }
+
   RELEASE_OBJECT (rx_codes);
   return NULL;
 }
@@ -938,6 +959,7 @@ bif_regexp_init ()
   INIT_OBJECT (&regexp_codes);
   regexp_codes.hash = id_hash_allocate (NHASHITEMS, sizeof (caddr_t), sizeof (pcre_info_t),
       strhash, strhashcmp);
+  id_hash_set_rehash_pct (regexp_codes.hash, 200);
 
   bif_define_ex ("regexp_match", bif_regexp_match, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("rdf_regex_impl", bif_rdf_regex_impl, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
