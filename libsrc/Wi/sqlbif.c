@@ -9424,7 +9424,7 @@ bif_page_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     dbg_page_map (buf);
     }
   if (buf->bd_content_map)
-    resource_store (PM_RC (buf->bd_content_map->pm_size), (void *) buf->bd_content_map);
+    pm_store (buf, (buf->bd_content_map->pm_size), (void *) buf->bd_content_map);
 
   return 0;
 }

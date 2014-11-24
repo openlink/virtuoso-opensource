@@ -1047,7 +1047,7 @@ buf_set_pm (buffer_desc_t * buf, page_map_t * pm)
   if (buf->bd_content_map->pm_size != PM_SIZE (pm->pm_count))
     {
       buf->bd_content_map->pm_count = 0;	/* do not copy entries in map_resize, might no longer fit in new size */
-      map_resize (&buf->bd_content_map, PM_SIZE (pm->pm_count));
+      map_resize (buf, &buf->bd_content_map, PM_SIZE (pm->pm_count));
     }
   sz = buf->bd_content_map->pm_size;
   memcpy_16 (buf->bd_content_map, pm, PM_ENTRIES_OFFSET + pm->pm_count * sizeof (short));
@@ -2469,7 +2469,7 @@ ceic_feed_flush (ce_ins_ctx_t * ceic)
   if (pm->pm_size != PM_SIZE (n * 2))
     {
       buf->bd_content_map->pm_count = 0;
-      map_resize (&buf->bd_content_map, PM_SIZE (n * 2));
+      map_resize (buf, &buf->bd_content_map, PM_SIZE (n * 2));
     }
   pm = buf->bd_content_map;
   pm->pm_count = n * 2;
@@ -4165,7 +4165,7 @@ pf_col_right_edge (page_fill_t * pf, row_delta_t * rd)
 	      {
 		after = 1;
 		right->bd_content_map->pm_count = 0;
-		map_resize (&right->bd_content_map, PM_SIZE (pm->pm_count));
+		  map_resize (right, &right->bd_content_map, PM_SIZE (pm->pm_count));
 		right_pm = right->bd_content_map;
 		right_pm->pm_count = 0;
 		right_pm->pm_bytes_free = PAGE_DATA_SZ;
