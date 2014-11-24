@@ -328,6 +328,9 @@ l_handle_file (FILE * fp)
 		cursor +=
 		    sprintf (post + cursor,
 		    "User-Agent: urlsimu Version 0.1\r\n");
+		if (rec_file)
+		  cursor += sprintf (post + cursor, "X-Recording: %s\r\n", rec_file);
+
 		if (user != NULL && passwd != NULL)
 		  {
 		    sprintf (tmp, "%s:%s", user, passwd);
@@ -676,6 +679,11 @@ l_handle_url (char *host, int port, char *line, int repeat)
     {
       sprintf (s_port, ":%d", port);
       strcat (tmp, s_port);
+    }
+  if (rec_file)
+    {
+      strcat (tmp, "\r\nX-Recording: ");
+      strcat (tmp, rec_file);
     }
   tmp_len = strlen (tmp);
 
@@ -1095,6 +1103,10 @@ main (int argc, char *argv[])
 	case 'l':
 	  send_header_line = TRUE;
 	  header_line = optarg;
+	  break;
+
+	case 'x':
+	  rec_file = optarg;
 	  break;
 
 	case '?':

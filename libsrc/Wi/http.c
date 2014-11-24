@@ -3390,6 +3390,28 @@ error_end:
 
 int soap_get_opt_flag (caddr_t * opts, char *opt_name);
 
+extern int64 dk_n_max_allocs;
+extern int64 dk_n_allocs;
+extern int64 dk_n_bytes;
+extern int64 dk_n_total;
+
+void
+ws_mem_record (ws_connection_t * ws)
+{
+  char * h = ws_header_field (ws->ws_lines, "X-Recording:", NULL);
+  static FILE *fp;
+  char * endpos;
+  if (!h) return;
+  while (isspace (*h)) h ++;
+  mutex_enter (ws_http_log_mtx);
+  if (!fp)
+    fp = fopen ("virtuoso.mem.log", "a");
+  fprintf (fp, BOXINT_FMT "," BOXINT_FMT "," BOXINT_FMT "," BOXINT_FMT ",%s", dk_n_allocs, dk_n_bytes, dk_n_total, dk_n_max_allocs, h);
+  dk_n_max_allocs = 0;
+  fflush (fp);
+  mutex_leave (ws_http_log_mtx);
+}
+
 void
 ws_request (ws_connection_t * ws)
 {
@@ -4049,6 +4071,7 @@ do_file:
   ws_connection_vars_clear (cli);
   cli_free_dae (cli);
 
+  ws_mem_record (ws);
   dk_free_tree ((caddr_t) err);
   dk_free_tree ((box_t) ws->ws_lines);
   ws->ws_lines = NULL;

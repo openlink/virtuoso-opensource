@@ -1240,6 +1240,7 @@ extern int64 dk_n_total;
 extern int64 dk_n_nosz_free;
 extern int64 dk_n_bytes;
 extern int64 dk_n_mmaps;
+extern int64 dk_n_max_allocs;
 size_t http_threads_mem_report ();
 size_t dk_alloc_global_cache_total ();
 size_t aq_thr_mem_cache_total ();
