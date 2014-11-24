@@ -83,6 +83,8 @@ static char *szStart = buffer;
 static char *szEnd = buffer;
 static char *to_file;
 static char *header_line;
+static char *result_label;
+static char *rec_file;
 
 static int
 sock_read_line (int fd, char *buf, int max)
@@ -213,14 +215,13 @@ l_usage (char *fname)
   fprintf (stderr, " -s = silent mode\n");
   fprintf (stderr, " -S = BIG silence mode. Just the last execution times\n");
   fprintf (stderr, " -s n = number of requests to go into one connection\n");
-  fprintf (stderr,
-      " -P = when -c is specified make the requests in connection pipelined\n");
+  fprintf (stderr, " -P = when -c is specified make the requests in connection pipelined\n");
   fprintf (stderr, " -p = password \n");
   fprintf (stderr, " -u = user \n");
   fprintf (stderr, " -q n = max seconds to wait between connects \n");
-  fprintf (stderr,
-      " -t <filename> = store content to file (overwrite mode)\n");
+  fprintf (stderr, " -t <filename> = store content to file (overwrite mode)\n");
   fprintf (stderr, " -l \"line\" = send http header line \n");
+  fprintf (stderr, " -r \"label\" = Label for result total time\n");
 
 }
 
@@ -251,7 +252,7 @@ l_handle_file (FILE * fp)
       exit (1);
     }
 
-  ta_init (&global_times, "Total");
+  ta_init (&global_times, result_label ? result_label : "Total");
   while (!feof (fp))
     {
       if (fgets (line, sizeof (line), fp) != NULL)
@@ -487,7 +488,7 @@ send_request (int fd, char *tmp, int i1, int requests_to_send, int tmp_len)
       else
 	file_to_put[0] = 0;
     }
-  if (file_to_put && strstr (method, "PUT"))
+  if (0 != file_to_put[0] && strstr (method, "PUT"))
     {
       fput = fopen (file_to_put, "rb");
       if (!fput)
@@ -1053,7 +1054,7 @@ main (int argc, char *argv[])
       exit (1);
     }
 #endif
-  while ((c = getopt (argc, argv, "u:p:fhc:sSq:Pt:l:")) != EOF)
+  while ((c = getopt (argc, argv, "u:p:fhc:sSq:Pt:l:r:x:")) != EOF)
     {
       switch (c)
 	{
@@ -1098,6 +1099,10 @@ main (int argc, char *argv[])
 	case 't':
 	  store_to_file = TRUE;
 	  to_file = optarg;
+	  break;
+
+	case 'r':
+	  result_label = optarg;
 	  break;
 
 	case 'l':
