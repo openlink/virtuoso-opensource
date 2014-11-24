@@ -54,7 +54,19 @@ public class VirtGraph extends GraphBase
         VirtuosoQueryEngine.register();
     }
 
+//    static final String S_TTLP_INSERT = "DB.DBA.TTLP_MT (?, '', ?, 255, 2, 3, ?)";
+    static final protected String S_BATCH_INSERT = "DB.DBA.rdf_insert_triple_c (?,?,?,?,?,?)";
+    static final protected String S_BATCH_DELETE = "DB.DBA.rdf_delete_triple_c (?,?,?,?,?,?)";
+    static final String S_CLEAR_GRAPH = "DB.DBA.rdf_clear_graphs_c (?)";
+
+    static final String sinsert = "sparql insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
+    static final String sdelete = "sparql delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
+    static final protected int BATCH_SIZE = 5000;
+    static final protected int MAX_CMD_SIZE = 36000;
+    static final String utf8 = "charset=utf-8";
+    static final String charset = "UTF-8";
     static public final String DEFAULT = "virt:DEFAULT";
+
     protected boolean isXA = false;
     protected String graphName;
     protected boolean readFromAllGraphs = false;
@@ -63,22 +75,13 @@ public class VirtGraph extends GraphBase
     protected String password;
     protected boolean roundrobin = false;
     protected int prefetchSize = 200;
+    protected int batchSize = BATCH_SIZE;
     protected Connection connection = null;
     protected String ruleSet = null;
     protected boolean useSameAs = false;
     protected int queryTimeout = 0;
     protected boolean useReprepare = true;
-//    static final String S_TTLP_INSERT = "DB.DBA.TTLP_MT (?, '', ?, 255, 2, 3, ?)";
-    static final String S_BATCH_INSERT = "DB.DBA.rdf_insert_triple_c (?,?,?,?,?,?)";
-    static final String S_BATCH_DELETE = "DB.DBA.rdf_delete_triple_c (?,?,?,?,?,?)";
-    static final String S_CLEAR_GRAPH = "DB.DBA.rdf_clear_graphs_c (?)";
-
-    static final String sinsert = "sparql insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
-    static final String sdelete = "sparql delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
-    static final int BATCH_SIZE = 5000;
-    static final int MAX_CMD_SIZE = 36000;
-    static final String utf8 = "charset=utf-8";
-    static final String charset = "UTF-8";
+    protected String sparqlPrefix = null;
 
     private VirtuosoConnectionPoolDataSource pds = new VirtuosoConnectionPoolDataSource();
     private DataSource ds;
@@ -336,6 +339,32 @@ public class VirtGraph extends GraphBase
     }
 
 
+    public int getBatchSize()
+    {
+    	return this.batchSize;
+    }
+
+
+    public void setBatchSize(int sz)
+    {
+    	this.batchSize = sz;
+    }
+
+
+    public String getSparqlPrefix()
+    {
+    	return this.sparqlPrefix;
+    }
+
+
+    public void setSparqlPrefix(String val)
+    {
+    	this.sparqlPrefix = val;
+    }
+
+
+
+
     public int getCount()
     {
         return size();
@@ -493,7 +522,20 @@ public class VirtGraph extends GraphBase
     }
 
 
+    protected void appendSparqlPrefixes(StringBuilder sb)
+    {
+      if (ruleSet!=null)
+        sb.append(" define input:inference '"+ruleSet+"'\n ");
+        
+      if (sparqlPrefix!=null) {
+        sb.append(sparqlPrefix);
+        sb.append('\n');
+      }
 
+      if (useSameAs)
+        sb.append(" define input:same-as \"yes\"\n ");
+      sb.append('\n');
+    }
 
     static String Blank2String(Node n) 
     {
@@ -510,7 +552,7 @@ public class VirtGraph extends GraphBase
         return Blank2String(n); 
       } else if (n.isLiteral()) {
         String s;
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         sb.append("\"");
         sb.append(escapeString(n.getLiteralLexicalForm()));
         sb.append("\"");
@@ -591,7 +633,7 @@ public class VirtGraph extends GraphBase
     }
 
     
-//--java5 or newer    @Override
+    @Override
     public void performAdd(Triple t)
     {
       performAdd(null, t.getSubject(), t.getPredicate(), t.getObject());
@@ -623,6 +665,7 @@ public class VirtGraph extends GraphBase
     }
 
 
+    @Override
     public void performDelete (Triple t)
     {
       performDelete(null, t.getSubject(), t.getPredicate(), t.getObject());
@@ -654,13 +697,9 @@ public class VirtGraph extends GraphBase
     @Override
     protected int graphBaseSize() 
     {
-      StringBuffer sb = new StringBuffer("select count(*) from (sparql define input:storage \"\" ");
+      StringBuilder sb = new StringBuilder("select count(*) from (sparql define input:storage \"\" ");
         
-      if (ruleSet!=null)
-        sb.append(" define input:inference '"+ruleSet+"'\n ");
-        
-      if (useSameAs)
-        sb.append(" define input:same-as \"yes\"\n ");
+      appendSparqlPrefixes(sb);
 
       if ( readFromAllGraphs )
         sb.append(" select * where {?s ?p ?o })f");
@@ -704,7 +743,7 @@ public class VirtGraph extends GraphBase
     {
       ResultSet rs = null;
       String S, P, O;
-      StringBuffer sb = new StringBuffer("sparql define input:storage \"\" "); 
+      StringBuilder sb = new StringBuilder("sparql define input:storage \"\" "); 
       String exec_text;
 
       checkOpen();
@@ -722,11 +761,7 @@ public class VirtGraph extends GraphBase
       if (!Node.ANY.equals(t.getObject()))
         O = Node2Str(t.getObject());
       
-      if (ruleSet!=null)
-        sb.append(" define input:inference '"+ruleSet+"'\n ");
-
-      if (useSameAs)
-        sb.append(" define input:same-as \"yes\"\n ");
+      appendSparqlPrefixes(sb);
 
       if ( readFromAllGraphs && _gName != null)
  	sb.append(" select * where { " + S +" "+ P +" "+ O +" } limit 1");
@@ -756,7 +791,7 @@ public class VirtGraph extends GraphBase
     protected ExtendedIterator<Triple> graphBaseFind(String _gName, TripleMatch tm) 
     {
       String S, P, O;
-      StringBuffer sb = new StringBuffer("sparql "); 
+      StringBuilder sb = new StringBuilder("sparql "); 
 
       checkOpen();
 
@@ -773,11 +808,7 @@ public class VirtGraph extends GraphBase
       if (tm.getMatchObject() != null)
         O = Node2Str(tm.getMatchObject());
 
-      if (ruleSet!=null)
-        sb.append(" define input:inference '"+ruleSet+"'\n ");
-
-      if (useSameAs)
-        sb.append(" define input:same-as \"yes\"\n ");
+      appendSparqlPrefixes(sb);
 
       if ( readFromAllGraphs && _gName == null)
         sb.append(" select * where { "+ S +" "+ P +" "+ O + " }");
@@ -813,6 +844,7 @@ public class VirtGraph extends GraphBase
     
 // Extra functions
 
+    @Override
     public void clear()
     {
       clear(NodeFactory.createURI(this.graphName));
@@ -845,14 +877,16 @@ public class VirtGraph extends GraphBase
 
     public void read (String url, String type)
     {
-      String exec_text;
+      StringBuilder sb = new StringBuilder("sparql \n");
 
-      exec_text ="sparql load \"" + url + "\" into graph <" + graphName + ">";
+      appendSparqlPrefixes(sb);
+
+      sb.append("load \"" + url + "\" into graph <" + graphName + ">");
 
       checkOpen();
       try {
         java.sql.Statement stmt = createStatement();
-        stmt.execute(exec_text);
+        stmt.execute(sb.toString());
         stmt.close();
       }	catch(Exception e) {
         throw new JenaException(e);
@@ -881,7 +915,7 @@ public class VirtGraph extends GraphBase
           ps.addBatch();
           count++;
 
-          if (count > BATCH_SIZE) {
+          if (count > batchSize) {
 	    ps.executeBatch();
 	    ps.clearBatch();
             count = 0;
@@ -935,7 +969,7 @@ public class VirtGraph extends GraphBase
           ps.addBatch();
           count++;
 
-          if (count > BATCH_SIZE) {
+          if (count > batchSize) {
 	    ps.executeBatch();
 	    ps.clearBatch();
             count = 0;
@@ -1026,7 +1060,7 @@ public class VirtGraph extends GraphBase
 
 
 
-    private void bindBatchParams(PreparedStatement ps, 
+    protected void bindBatchParams(PreparedStatement ps, 
     				Node subject, 
     				Node predicate, 
     				Node object, 
@@ -1130,12 +1164,15 @@ public class VirtGraph extends GraphBase
           if (nO != null)
             O = Node2Str(nO);
 
-          String query = "sparql delete from <"+
-             (_gName!=null? _gName:this.graphName)+
-             "> { "+S+" "+P+" "+O+" } where { "+S+" "+P+" "+O+" }";
+          StringBuilder sb = new StringBuilder("sparql ");
+
+          appendSparqlPrefixes(sb);
+          sb.append("delete from <");
+          sb.append((_gName!=null? _gName:this.graphName));
+          sb.append("> { "+S+" "+P+" "+O+" } where { "+S+" "+P+" "+O+" }");
 
           java.sql.Statement stmt = createStatement();
-          stmt.execute(query);
+          stmt.execute(sb.toString());
           stmt.close();
         }
       } catch(Exception e) {

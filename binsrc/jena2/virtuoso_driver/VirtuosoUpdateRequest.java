@@ -64,8 +64,10 @@ public class VirtuosoUpdateRequest
 
             for ( Iterator iter = requests.iterator() ; iter.hasNext(); )
             {
-                String query = "sparql\n "+ (String)iter.next();
-                stmt.execute(query);
+                StringBuilder sb = new StringBuilder("sparql\n");
+                graph.appendSparqlPrefixes(sb);
+                sb.append((String)iter.next());
+                stmt.execute(sb.toString());
             }
             requests.clear();
 
