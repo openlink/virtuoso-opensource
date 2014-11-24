@@ -163,7 +163,11 @@ cll_try_enter ()
 dk_session_t *
 cl_strses_allocate ()
 {
-  dk_session_t *ses = strses_allocate ();
+  dk_session_t *ses;
+  /* the head and 1st buffer of strses come from common, the extension will come from the user thread */
+  WITH_TLSF (dk_base_tlsf) 
+    ses = strses_allocate ();
+  END_WITH_TLSF;
   ses->dks_cluster_flags = DKS_TO_CLUSTER;
   return ses;
 }

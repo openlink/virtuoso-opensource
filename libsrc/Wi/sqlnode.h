@@ -1793,6 +1793,7 @@ typedef struct client_connection_s
     int			cli_n_to_autocommit;
     cl_slice_t *	cli_csl;
     cl_call_stack_t *	cli_cl_stack;
+    struct TLSF_struct *cli_tlsf;
     cl_aq_ctx_t *	cli_claq;
     //caddr_t *		cli_main_inst; /* if the cli is a dfg slice branch, this is the main qi of the dfg on this host.  The main qi waits for all branches, so ref secure */
     //struct cll_in_box_s *	cli_result_clib; /* for any thread of local qf or dfg, results go here */

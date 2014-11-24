@@ -27,7 +27,7 @@
  *  
 */
 
-#include "thread_int.h"
+#include "Dk.h"
 
 
 unsigned long context_switches;

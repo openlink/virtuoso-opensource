@@ -4449,13 +4449,18 @@ ws_init_func (ws_connection_t * ws)
 {
   ws->ws_thread = THREAD_CURRENT_THREAD;
   semaphore_enter (ws->ws_thread->thr_sem);
-  SET_THR_ATTR (ws->ws_thread, TA_IMMEDIATE_CLIENT, ws->ws_cli);
-  sqlc_set_client (ws->ws_cli);
-  ws->ws_cli->cli_trx->lt_thr = ws->ws_thread;
+  WITH_TLSF (dk_base_tlsf)
+    {
+      SET_THR_ATTR (ws->ws_thread, TA_IMMEDIATE_CLIENT, ws->ws_cli);
+      sqlc_set_client (ws->ws_cli);
+      ws->ws_cli->cli_trx->lt_thr = ws->ws_thread;
+    }
+  END_WITH_TLSF;
   for (;;)
     {
       dk_session_t * ses;
       http_trace (("serve connection ws %p ses %p\n", ws, ws->ws_session));
+      ws->ws_thread->thr_tlsf = ws->ws_thread->thr_own_tlsf;
       if (ws->ws_session->dks_ws_status == DKS_WS_CLIENT)
 	ws_serve_client_connection (ws);
       else

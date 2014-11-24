@@ -127,6 +127,7 @@ aq_thread_func (aq_thread_t * aqt)
       async_queue_t *aq = aqt->aqt_aq;
       aq_request_t *aqr = aqt->aqt_aqr;
       assert (AQR_QUEUED == aqr->aqr_state);
+      aqt->aqt_thread->thr_tlsf = aqt->aqt_cli->cli_tlsf;
       if (!aq->aq_no_lt_enter)
 	{
 	  lt_enter_anyway (aqt->aqt_cli->cli_trx);

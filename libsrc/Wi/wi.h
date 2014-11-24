@@ -197,6 +197,7 @@ struct buffer_pool_s
   int		bp_n_clean[BP_N_BUCKETS]; /* bp_ts at the boundary between buckets */
   int 		bp_n_dirty[BP_N_BUCKETS];
   buffer_desc_t **	bp_sort_tmp;
+  void **	bp_tlsf;
 };
 
 
@@ -1937,6 +1938,7 @@ extern int64 bdf_is_avail_mask; /* all bits on except read aside flag which does
 { \
   du_thread_t * __self = thr; \
   int reset_code;  \
+  struct TLSF_struct * __tlsf = __self->thr_tlsf; \
   jmp_buf_splice * __old_ctx = __self->thr_reset_ctx;\
   jmp_buf_splice __ctx;  \
   __self->thr_reset_ctx = &__ctx; \
@@ -1945,11 +1947,14 @@ extern int64 bdf_is_avail_mask; /* all bits on except read aside flag which does
 #define QR_RESET_CTX  QR_RESET_CTX_T (THREAD_CURRENT_THREAD)
 
 #define QR_RESET_CODE \
-  else
+  else \
+    { __self->thr_tlsf = __tlsf;
 
 
 #define END_QR_RESET \
+    } \
     POP_QR_RESET; \
+    __self->thr_tlsf = __tlsf;			\
 }
 
 #define POP_QR_RESET \

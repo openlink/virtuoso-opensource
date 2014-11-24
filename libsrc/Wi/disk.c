@@ -1610,6 +1610,8 @@ bp_make_buffer_list (int n)
   bp->bp_bufs = (buffer_desc_t *) dk_alloc (sizeof (buffer_desc_t) * n);
   memset (bp->bp_bufs, 0, sizeof (buffer_desc_t) * n);
   bp->bp_sort_tmp = (buffer_desc_t **) dk_alloc (sizeof (caddr_t) * n);
+  bp->bp_tlsf = tlsf_new (n * PM_SZ_1);
+  tlsf_set_comment (bp->bp_tlsf, "bp_tlsf");
 
   if (n > MIN_BUFS_FOR_ALLOC)
     malloc_bufs = 1;

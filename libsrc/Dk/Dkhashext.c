@@ -539,12 +539,14 @@ box_dict_hashtable_destr_hook (caddr_t dict)
   else
     {
       id_hash_iterator (&hit, (id_hash_t *) (dict));
-      while (hit_next (&hit, (caddr_t *) (&key), (caddr_t *) (&val)))
+      while (!ht->ht_mp && hit_next (&hit, (caddr_t *) (&key), (caddr_t *) (&val)))
 	{
 	  dk_free_tree (key[0]);
 	  dk_free_tree (val[0]);
 	}
     }
+  if (ht->ht_mp)
+    mp_free (ht->ht_mp);
   id_hash_clear ((id_hash_t *) (dict));
   ID_HASH_FREE_INTERNALS ((id_hash_t *) (dict));
   return 0;

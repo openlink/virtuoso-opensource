@@ -328,7 +328,7 @@ dbg_dk_alloc_box (DBG_PARAMS size_t bytes, dtp_t tag)
   align_bytes = 4 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes));
 #endif
 
-  ptr = (unsigned char *) dbg_malloc (DBG_ARGS align_bytes);
+  ptr = (unsigned char *) dbg_malloc (file, line, align_bytes);
   if (!ptr)
     return (box_t) ptr;
 
@@ -360,7 +360,7 @@ dbg_dk_alloc_box_long (DBG_PARAMS size_t bytes, dtp_t tag)
   align_bytes = 4 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes));
 #endif
 
-  ptr = (unsigned char *) dbg_malloc (DBG_ARGS align_bytes);
+  ptr = (unsigned char *) dbg_malloc (file, line, align_bytes);
   if (!ptr)
     return (box_t) ptr;
 
@@ -394,7 +394,7 @@ dbg_dk_try_alloc_box (DBG_PARAMS size_t bytes, dtp_t tag)
   align_bytes = 4 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes));
 #endif
 
-  ptr = (unsigned char *) dbg_malloc (DBG_ARGS align_bytes);
+  ptr = (unsigned char *) dbg_malloc (file, line, align_bytes);
   if (!ptr)
     return (box_t) ptr;
 
@@ -426,7 +426,7 @@ dbg_dk_alloc_box_zero (DBG_PARAMS size_t bytes, dtp_t tag)
   align_bytes = 4 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes));
 #endif
 
-  ptr = (unsigned char *) dbg_malloc (DBG_ARGS align_bytes);
+  ptr = (unsigned char *) dbg_malloc (file, line, align_bytes);
   if (!ptr)
     return (box_t) ptr;
 
@@ -529,6 +529,7 @@ dk_free_box (box_t box)
     case DV_C_STRING:
     case DV_SHORT_STRING_SERIAL:
     case DV_SYMBOL:
+    case DV_BIN:
       len = ALIGN_STR (len);
       break;
 
@@ -642,7 +643,7 @@ dk_free_box (box_t box)
 #ifdef MALLOC_DEBUG
   if (len >= 0xffffff)
     {
-      dbg_free (__FILE__, __LINE__, ptr - 8);
+      dbg_free_sized (__FILE__, __LINE__, ptr - 8, len);
       return 0;
     }
 #endif
@@ -720,6 +721,7 @@ dk_free_tree (box_t box)
     case DV_C_STRING:
     case DV_SHORT_STRING_SERIAL:
     case DV_SYMBOL:
+    case DV_BIN:
       len = ALIGN_STR (len);
       break;
 

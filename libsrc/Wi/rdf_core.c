@@ -1461,6 +1461,8 @@ nic_set (name_id_cache_t * nic, caddr_t name, boxint id)
 {
   caddr_t name_box = NULL;
   caddr_t *place;
+  WITH_TLSF (dk_base_tlsf)
+  {
   if (nic->nic_n_ways)
     {
       nic_set_n (nic, name, id);
@@ -1486,6 +1488,8 @@ nic_set (name_id_cache_t * nic, caddr_t name, boxint id)
 	}
       mutex_leave (nic->nic_mtx);
     }
+}
+  END_WITH_TLSF;
 }
 
 

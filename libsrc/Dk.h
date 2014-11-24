@@ -94,6 +94,7 @@ extern void ldbg_longjmp (jmp_buf env, int value);
 #include "Dk/Dkernel.h"
 
 #include "Thread/thread_int.h"
+#include "Dk/tlsf.h"
 
 #ifdef PMN_LOG
 # include "util/logmsg.h"
