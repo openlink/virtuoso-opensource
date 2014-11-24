@@ -245,7 +245,7 @@ buffer_desc_t * page_fault_map_sem (it_cursor_t * it, dp_addr_t dp, int stay_ins
 #define PF_STAY_ATOMIC 1
 
 #if defined (MTX_DEBUG) && !defined (PAGE_DEBUG)
-//#define PAGE_DEBUG
+#define PAGE_DEBUG
 #endif
 
 #ifdef PAGE_DEBUG
