@@ -2569,6 +2569,14 @@ int non_unq_printed = 0;
 
 extern int dbf_ignore_uneven_col;
 
+void
+itc_no_hi (it_cursor_t * itc, buffer_desc_t * buf)
+{
+  itc->itc_ltrx->lt_error = LTE_SQL_ERROR;
+  itc->itc_ltrx->lt_status = LT_BLOWN_OFF;
+  itc_bust_this_trx (itc, &buf, ITC_BUST_THROW);
+}
+
 int
 itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_in_singles)
 {
@@ -2669,6 +2677,8 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
 	      if (hrng->hrng_ht_id)
 		{
 		  index_tree_t *it = qst_get_chash (inst, hrng->hrng_ht, hrng->hrng_ht_id, NULL);
+		  if (!it)
+		    itc_no_hi (itc, buf);
 		  cpo.cpo_chash = it->it_hi->hi_chash;
 		  cpo.cpo_chash_dtp = cpo.cpo_chash->cha_sqt[0].sqt_dtp;
 		}
