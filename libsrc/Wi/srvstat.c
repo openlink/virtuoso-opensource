@@ -962,13 +962,13 @@ bif_exec_status ()
 {
   id_hash_iterator_t hit;
   int64 *k;
-  bif_exec_stat_t * exs;
+  bif_exec_stat_t ** exs;
   uint32 now = get_msec_real_time ();
   mutex_enter (&bif_exec_pending_mtx);
   id_hash_iterator (&hit, bif_exec_pending);
   while (hit_next (&hit, (caddr_t*)&k, (caddr_t*)&exs))
     {
-      rep_printf ("%d  %s\n", now - exs->exs_start, exs->exs_text);
+      rep_printf ("%d  %s\n", now - exs[0]->exs_start, exs[0]->exs_text);
     }
 
   mutex_leave (&bif_exec_pending_mtx);
