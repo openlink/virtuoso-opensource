@@ -32,6 +32,7 @@
 #endif
 #undef log
 #include "math.h"
+#include "tlsf.h"
 
 
 void
@@ -191,6 +192,8 @@ mp_free (mem_pool_t * mp)
     hash_table_free (mp->mp_box_to_dc);
 #endif
   mp_unregister (mp);
+  if (mp->mp_tlsf)
+    tlsf_destroy (mp->mp_tlsf); /*  supporting structs, the mmaps are part of mp large allocs */
   DO_SET (caddr_t, box, &mp->mp_trash)
   {
     dk_free_tree (box);
@@ -215,7 +218,6 @@ mp_free (mem_pool_t * mp)
   dk_free ((caddr_t) mp, sizeof (mem_pool_t));
 }
 
-#ifdef MALLOC_DEBUG
 void
 mp_check (mem_pool_t * mp)
 {
@@ -234,7 +236,7 @@ mp_check (mem_pool_t * mp)
 	GPF_T1 (err);
     }
 }
-#endif
+
 
 void
 mp_alloc_box_assert (mem_pool_t * mp, caddr_t box)
@@ -1460,7 +1462,7 @@ mp_mmap_mark (void * __ptr, size_t sz, int flag)
 	  if (!flag && !map) GPF_T1 ("freeing mmap mark where no mapping");
 	  if (!map)
 	    {
-	      map = dk_pool_map[map_off] = dk_alloc (sizeof (dk_pool_4g_t));
+	      map = dk_pool_map[map_off] = malloc (sizeof (dk_pool_4g_t));
 	      memzero (map, sizeof (dk_pool_4g_t));
 	    }
 	}
@@ -1812,11 +1814,28 @@ mp_large_alloc (mem_pool_t * mp, size_t sz)
   return ptr;
 }
 
+
+void
+mp_set_tlsf (mem_pool_t * mp, size_t  sz)
+{
+  int nth;
+  size_t sz2 = mm_next_size (sz, &nth);
+  void* area = mp_large_alloc (mp, sz2);
+  init_memory_pool (sz2, area);
+  mp->mp_tlsf = (tlsf_t*)area;
+  mp->mp_tlsf->tlsf_mp = mp;
+  mp->mp_tlsf->tlsf_id = TLSF_IN_MP;
+  mp->mp_tlsf->tlsf_grow_quantum = sz2;
+}
+
+
+
 void
 mm_free_sized (void* ptr, size_t sz)
 {
   int nth;
   size_t sz2 = mm_next_size (sz, &nth);
+  if (((ptrlong)ptr & 0xfff)) GPF_T1 ("large free not on 4k boundary");
   if (-1 == nth || !resource_store_timed (mm_rc[nth], ptr))
     mp_munmap (ptr, sz2);
 }

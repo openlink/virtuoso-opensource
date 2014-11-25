@@ -2307,7 +2307,7 @@ clear_old_root_images ()
 	if ((bp_ts_t)now - old_img->bd_timestamp > 30000)
 	  {
 	    *prev = old_img->bd_next;
-	    resource_store (PM_RC (old_img->bd_content_map->pm_size), (void*) old_img->bd_content_map);
+	    pm_store (old_img, (old_img->bd_content_map->pm_size), (void*) old_img->bd_content_map);
 	    buffer_free (old_img);
 	  }
 	else

@@ -1736,7 +1736,13 @@ int64 sqlo_p_stat_query (dbe_table_t * tb, caddr_t p);
 
 
 extern int32 enable_vec_reuse;
+#define thr_set_tlsf(x, y) ;
+#ifndef WITH_TLSF
+#define WITH_TLSF(x) {
+#define END_WITH_TLSF }
 
 #define B_NEW_VARZ(t, v) NEW_VARZ(t, v)
+#define tlsf_base_alloc(s) dk_alloc(s)
+#endif
 
 #endif /* _SQLFN_H */

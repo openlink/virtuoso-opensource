@@ -27,7 +27,7 @@
  *  
 */
 
-#include "thread_int.h"
+#include "Dk.h"
 
 
 static jmp_buf _stack_jmp;

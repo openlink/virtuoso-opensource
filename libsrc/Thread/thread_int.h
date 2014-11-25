@@ -131,6 +131,8 @@ struct thread_s
     semaphore_t	*	thr_schedule_sem;
     void *		thr_client_data;
     void *		thr_alloc_cache;
+  struct TLSF_struct *	thr_tlsf;
+  struct TLSF_struct *	thr_own_tlsf;
   /* preallocated thread attributes */
   jmp_buf_splice *	thr_reset_ctx;
   caddr_t		thr_reset_code;

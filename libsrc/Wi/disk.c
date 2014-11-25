@@ -744,7 +744,7 @@ page_map_t *
 map_allocate (ptrlong sz)
 {
   int bytes = (int) (PM_ENTRIES_OFFSET + sz * sizeof (short));
-  page_map_t * map = (page_map_t *) dk_alloc (bytes);
+  page_map_t * map = (page_map_t *) tlsf_base_alloc (bytes);
   memset (map, 0, bytes);
   map->pm_size = (short) sz;
   return map;
@@ -1610,6 +1610,8 @@ bp_make_buffer_list (int n)
   bp->bp_bufs = (buffer_desc_t *) dk_alloc (sizeof (buffer_desc_t) * n);
   memset (bp->bp_bufs, 0, sizeof (buffer_desc_t) * n);
   bp->bp_sort_tmp = (buffer_desc_t **) dk_alloc (sizeof (caddr_t) * n);
+  bp->bp_tlsf = tlsf_new (n * PM_SZ_1);
+  tlsf_set_comment (bp->bp_tlsf, "bp_tlsf");
 
   if (n > MIN_BUFS_FOR_ALLOC)
     malloc_bufs = 1;
@@ -2066,6 +2068,39 @@ int
 buf_disk_read_impl (buffer_desc_t * buf, db_buf_t target)
 #endif
 
+void
+pm_store (buffer_desc_t * buf, size_t sz, void * map)
+{
+#ifndef PM_TLSF
+  resource_store (PM_RC (sz), map);
+#else
+  tlsf_t * tlsf = buf->bd_pool ? buf->bd_pool->bp_tlsf : wi_inst.wi_bps[0]->bp_tlsf;
+  if (!tlsf)
+    GPF_T;
+  tlsf_free (map);
+#endif
+}
+
+void *
+pm_get (buffer_desc_t * buf, size_t sz)
+{
+#ifndef PM_TLSF
+  return resource_get (PM_RC (sz));
+#else
+  void * map;
+  int bytes = (int) (PM_ENTRIES_OFFSET + sz * sizeof (short));
+  tlsf_t * tlsf = buf->bd_pool ? buf->bd_pool->bp_tlsf : wi_inst.wi_bps[0]->bp_tlsf;
+  if (!tlsf)
+    GPF_T;
+  mutex_enter(&tlsf->tlsf_mtx);
+  map = malloc_ex (bytes, tlsf);
+  mutex_leave(&tlsf->tlsf_mtx);
+  memset (map, 0, bytes);
+  ((page_map_t *)map)->pm_size = (short) sz;
+  return map;
+#endif
+}
+
 int
 buf_disk_read (buffer_desc_t * buf)
 {
@@ -2162,7 +2197,7 @@ buf_disk_read (buffer_desc_t * buf)
     pg_make_col_map (buf);
   else if (buf->bd_content_map)
     {
-      resource_store (PM_RC (buf->bd_content_map->pm_size), (void*) buf->bd_content_map);
+      pm_store (buf, (buf->bd_content_map->pm_size), (void*) buf->bd_content_map);
       buf->bd_content_map = NULL;
     }
   if (DPF_BLOB == flags || DPF_BLOB_DIR == flags)

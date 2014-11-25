@@ -3841,6 +3841,7 @@ sql_ddl_node_input_1 (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
 #endif
   LEAVE_TXN;
 #endif
+  thr_set_tlsf (THREAD_CURRENT_THREAD, dk_base_tlsf);
   switch (tree->type)
     {
     case TABLE_DEF:

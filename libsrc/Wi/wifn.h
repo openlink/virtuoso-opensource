@@ -245,7 +245,7 @@ buffer_desc_t * page_fault_map_sem (it_cursor_t * it, dp_addr_t dp, int stay_ins
 #define PF_STAY_ATOMIC 1
 
 #if defined (MTX_DEBUG) && !defined (PAGE_DEBUG)
-//#define PAGE_DEBUG
+#define PAGE_DEBUG
 #endif
 
 #ifdef PAGE_DEBUG
@@ -490,8 +490,8 @@ void it_not_in_any (du_thread_t * self, index_tree_t * except);
 void it_free (index_tree_t * it);
 
 /* insert.c */
-void map_resize (page_map_t ** pm_ret, int new_sz);
-void map_insert_pos (page_map_t ** map_ret, int pos, int what);
+void map_resize (buffer_desc_t * buf, page_map_t ** pm_ret, int new_sz);
+void map_insert_pos (buffer_desc_t * buf, page_map_t ** map_ret, int pos, int what);
 void row_write_reserved (dtp_t * end, int n_bytes);
 
 int str_cmp_2 (db_buf_t dv1, db_buf_t dv2, db_buf_t dv3, int l1, int l2, int l3, unsigned short offset);
@@ -527,7 +527,7 @@ int itc_insert_unq_ck (it_cursor_t * it, row_delta_t * rd, buffer_desc_t ** unq_
 
 db_buf_t strses_to_db_buf (dk_session_t * ses);
 void itc_delete (it_cursor_t * it, buffer_desc_t ** buf_ret, int maybe_blobs);
-int map_delete (page_map_t ** map_ret, int pos);
+int map_delete (buffer_desc_t * buf, page_map_t ** map_ret, int pos);
 void dp_may_compact (dbe_storage_t *dbs, dp_addr_t);
 void wi_check_all_compact (int age_limit);
 extern dk_mutex_t * pl_ref_count_mtx;
@@ -537,7 +537,9 @@ int  itc_vacuum_compact (it_cursor_t * itc, buffer_desc_t ** buf_ret);
 void itc_fix_leaf_ptr (it_cursor_t * itc, buffer_desc_t * buf);
 void pg_move_cursors (it_cursor_t ** temp_itc, int fill, buffer_desc_t * buf_from,
 		 int from, dp_addr_t page_to, int to, buffer_desc_t * buf_to);
-void map_append (page_map_t ** pm_ret, int ent);
+void map_append (buffer_desc_t * buf, page_map_t ** pm_ret, int ent);
+void pm_store (buffer_desc_t * buf, size_t sz, void * map);
+void * pm_get (buffer_desc_t * buf, size_t sz);
 
 /* tree.c */
 

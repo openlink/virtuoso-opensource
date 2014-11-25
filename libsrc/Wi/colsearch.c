@@ -176,12 +176,12 @@ itc_col_free (it_cursor_t * itc)
 
 
 void
-col_make_map (page_map_t ** pm_ret, db_buf_t str, int head, int buf_len)
+col_make_map (buffer_desc_t * buf, page_map_t ** pm_ret, db_buf_t str, int head, int buf_len)
 {
   page_map_t *pm = *pm_ret;
   int fill = 0;
   if (!pm)
-    pm = (page_map_t *) resource_get (PM_RC (PM_SZ_1));
+    pm = (page_map_t *) pm_get (buf, (PM_SZ_1));
   pm->pm_bytes_free = buf_len;
   pm->pm_filled_to = head;
   DO_CE (ce, bytes, values, ce_type, flags, str + head, buf_len)
@@ -191,7 +191,7 @@ col_make_map (page_map_t ** pm_ret, db_buf_t str, int head, int buf_len)
     if (fill + 1 >= pm->pm_size)
       {
 	pm->pm_count = fill;
-	map_resize (&pm, PM_SIZE (fill + 2));
+	  map_resize (buf, &pm, PM_SIZE (fill + 2));
       }
     pm->pm_entries[fill] = ce - str;
     pm->pm_entries[fill + 1] = values;
@@ -208,7 +208,7 @@ col_make_map (page_map_t ** pm_ret, db_buf_t str, int head, int buf_len)
 void
 pg_make_col_map (buffer_desc_t * buf)
 {
-  col_make_map (&buf->bd_content_map, buf->bd_buffer, DP_DATA, PAGE_DATA_SZ);
+  col_make_map (buf, &buf->bd_content_map, buf->bd_buffer, DP_DATA, PAGE_DATA_SZ);
 }
 
 

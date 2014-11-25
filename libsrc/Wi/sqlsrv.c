@@ -114,11 +114,11 @@ caddr_t f##_w p \
 
 #  define CLI_ENTER \
   if (!cli->cli_inprocess) \
-    {mutex_enter (cli->cli_test_mtx); cli->cli_cl_start_ts = rdtsc (); }
+    {mutex_enter (cli->cli_test_mtx); cli->cli_cl_start_ts = rdtsc (); thr_set_tlsf (THREAD_CURRENT_THREAD, cli->cli_tlsf);}
 
 #  define CLI_LEAVE \
   if (!cli->cli_inprocess) \
-    { CLI_THREAD_TIME (cli); mutex_leave (cli->cli_test_mtx); }
+    { CLI_THREAD_TIME (cli); thr_set_tlsf (THREAD_CURRENT_THREAD, NULL); mutex_leave (cli->cli_test_mtx); }
 
 # else
 
@@ -433,7 +433,10 @@ cli_scrap_cursors (client_connection_t * cli, query_instance_t * exceptions,
 client_connection_t *
 client_connection_create (void)
 {
+  du_thread_t *self = THREAD_CURRENT_THREAD;
+  struct TLSF_struct *save_tlsf = self->thr_tlsf;
   B_NEW_VARZ (client_connection_t, cli);
+  thr_set_tlsf (self, dk_base_tlsf);
   cli->cli_statements = id_str_hash_create (31);
   cli->cli_cursors = id_str_hash_create (13);
   cli->cli_mtx = mutex_allocate ();
@@ -461,6 +464,7 @@ client_connection_create (void)
 #endif
   cli->cli_user_info = NULL;
   cli->cli_slice = QI_NO_SLICE;
+  thr_set_tlsf (self, save_tlsf);
   return cli;
 }
 
