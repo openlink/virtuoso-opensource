@@ -202,6 +202,8 @@ char *c_serverport;
 char *http_log_file = NULL;
 extern FILE *http_log;
 extern char *http_log_name;
+extern char *http_log_format;
+char *c_http_log_format;
 int32 c_error_log_level;
 int32 c_server_threads;
 int32 c_number_of_buffers;
@@ -1293,6 +1295,9 @@ cfg_setup (void)
 
   if (cfg_getstring (pconfig, section, "HTTPLogFile", &http_log_file) == -1)
     http_log_file = NULL;
+
+  if (cfg_getstring (pconfig, section, "HTTPLogFormat", &c_http_log_format) != -1)
+    http_log_format = c_http_log_format;
 
   if (cfg_getstring (pconfig, section, "ServerRoot", &www_root) == -1)
     www_root = ".";

@@ -894,7 +894,198 @@ error_end:
   return NULL;
 }
 
-static int
+#define WS_LOG_DEFAULT_FMT "%h %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-agent}i\""
+char * http_log_format = WS_LOG_DEFAULT_FMT;
+
+#ifndef WS_OLD_LOG
+#define WS_LOG_ERROR \
+      mutex_enter (ws_http_log_mtx); \
+      fflush (http_log); \
+      fclose (http_log); \
+      http_log = NULL; \
+      log_error ("The HTTP Log format is wrong, can't log requests"); \
+      mutex_leave (ws_http_log_mtx); \
+      return
+
+
+static void
+log_info_http (ws_connection_t * ws, const char * code, OFF_T clen)
+{
+  char * new_log = NULL;
+  char tmp[4096];
+  char format[100];
+  char buf[DKSES_OUT_BUFFER_LENGTH];
+  char *volatile ptr;
+  char *volatile start;
+  char * str;
+  int volatile len;
+  int http_resp_code = 0;
+  time_t now;
+  struct tm *tm;
+#if defined (HAVE_LOCALTIME_R) && !defined (WIN32)
+  struct tm tm1;
+#endif
+  dk_session_t sesn, *ses = &sesn;
+  scheduler_io_data_t io;
+
+  if (!http_log || !ws)
+    return;
+
+  str = http_log_format;
+  len = strlen (str);
+
+  memset (&sesn, 0, sizeof (sesn));
+  sesn.dks_out_buffer = (char*) &buf;
+  sesn.dks_out_length = sizeof (buf);
+  SESSION_SCH_DATA (ses) = &io;
+  memset (SESSION_SCH_DATA (ses), 0, sizeof (scheduler_io_data_t));
+
+  if (code)
+    sscanf (code, "%*s %i", &http_resp_code);
+  time (&now);
+#if defined (HAVE_LOCALTIME_R) && !defined (WIN32)
+  tm = localtime_r (&now, &tm1);
+#else
+  tm = localtime (&now);
+#endif
+
+  ptr = str;
+  tmp[0] = 0;
+next_fragment:
+  start = strchr (ptr, '%');
+
+  if (!start)
+    {
+      session_buffered_write (ses, ptr, len);
+      ptr += len;
+      len = 0;
+      goto format_string_completed;
+    }
+
+  if (start - ptr)
+    {
+      session_buffered_write (ses, ptr, start - ptr);
+      len -= (int) (start - ptr);
+    }
+
+  ptr = start + 1;
+  switch (*ptr)
+    {
+      case '{':
+	{
+	  caddr_t connvar_name, connvar_value, *connvar_valplace = NULL;
+	  client_connection_t *cli = ws->ws_cli;
+
+	  ptr++;
+	  while (isalnum ((unsigned char) (ptr[0])) || ('_' == ptr[0]) || ('-' == ptr[0]))
+	    ptr++;
+
+	  if ('}' != ptr[0])
+	    {
+	      WS_LOG_ERROR;
+	    }
+	  ptr++;
+	  memset (format, 0, sizeof (format));
+	  memcpy (format, start + 2, MIN ((ptr - start) - 3, sizeof (format) - 1));
+
+	  switch (*ptr)
+	    {
+	      case 'e':
+		  connvar_name = box_dv_short_string (format);
+		  connvar_valplace = (caddr_t *) id_hash_get (cli->cli_globals, (caddr_t) & connvar_name);
+		  dk_free_box (connvar_name);
+
+		  if (NULL != connvar_valplace)
+		    {
+		      connvar_value = connvar_valplace[0];
+		      session_buffered_write (ses, connvar_value, box_length (connvar_value) - 1);
+		    }
+		  break;
+	      case 'i':
+		  strncat_ck (format, ":", 1);
+		  connvar_value = ws_get_packed_hf (ws, format, NULL);
+		  if (connvar_value)
+		    {
+		      session_buffered_write (ses, connvar_value, box_length (connvar_value) - 1);
+		      dk_free_tree (connvar_value);
+		    }
+		  break;
+	      default:
+		  WS_LOG_ERROR;
+	    }
+	  goto get_next;
+	}
+      case 'h':
+	  strcpy_ck (tmp, ws->ws_client_ip);
+	  break;
+      case 'l':
+	  strcpy_ck (tmp, "-");
+	  break;
+      case 'u':
+	    {
+	      caddr_t u_id = ws_auth_get (ws);
+	      strcpy_ck (tmp, u_id);
+	      dk_free_tree (u_id);
+	    }
+	  break;
+      case 't':
+	    {
+	      char * monday [] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+	      int month, day, year;
+	      month = tm->tm_mon + 1;
+	      day = tm->tm_mday;
+	      year = tm->tm_year + 1900;
+	      snprintf (tmp, sizeof (tmp), "[%02d/%s/%04d:%02d:%02d:%02d %+05li]",
+		  (tm->tm_mday), monday [month - 1], year, tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz/36*100);
+	    }
+	  break;
+      case 'r':
+	  strcpy_ck (tmp, ws->ws_req_line && ws->ws_method != WM_ERROR ? ws->ws_req_line : "GET unspecified");
+	  strcat_ck (tmp, ws->ws_proto);
+	  tmp [sizeof (tmp) - 1] = 0;
+	  break;
+      case 's':
+	  snprintf (tmp, sizeof (tmp), "%d", http_resp_code);
+	  break;
+      case 'b':
+	  snprintf (tmp, sizeof (tmp), OFF_T_PRINTF_FMT, clen);
+	  break;
+      default:
+	  WS_LOG_ERROR;
+    }
+  session_buffered_write (ses, tmp, strlen (tmp));
+get_next:
+  ptr++;
+  len -= (int) (ptr - start);
+  if (len && ptr && *ptr)
+    goto next_fragment;
+
+format_string_completed:
+
+  session_buffered_write_char ('\n', ses);
+  session_buffered_write_char ('\0', ses);
+
+  mutex_enter (ws_http_log_mtx);
+  new_log = http_log_file_check (tm);
+  if (new_log)
+    {
+      fflush (http_log);
+      fclose (http_log);
+      http_log = fopen (new_log, "a");
+      if (!http_log)
+	{
+	  log_error ("Can't open new HTTP log file (%s)", new_log);
+	  mutex_leave (ws_http_log_mtx);
+	  return;
+	}
+    }
+  fputs (buf, http_log);
+  fflush (http_log);
+  mutex_leave (ws_http_log_mtx);
+  return;
+}
+#else
+static void
 log_info_http (ws_connection_t * ws, const char * code, OFF_T len)
 {
   char buf[4096];
@@ -912,7 +1103,7 @@ log_info_http (ws_connection_t * ws, const char * code, OFF_T len)
   char * new_log = NULL;
 
   if (!http_log || !ws)
-    return 0;
+    return;
 
   if (code)
     sscanf (code, "%*s %i", &http_resp_code);
@@ -958,16 +1149,16 @@ log_info_http (ws_connection_t * ws, const char * code, OFF_T len)
 	{
 	  log_error ("Can't open new HTTP log file (%s)", new_log);
 	  mutex_leave (ws_http_log_mtx);
-	  return 0;
+	  return;
 	}
     }
   fputs (buf, http_log);
   fflush (http_log);
   mutex_leave (ws_http_log_mtx);
 
-  return 0;
+  return;
 }
-
+#endif
 
 
 caddr_t
