@@ -1913,9 +1913,10 @@ box_num_always (boxint n)
 uint32 
 tlsf_size (caddr_t ptr)
 {
-  bhdr_t * b = (bhdr_t *) ((char *) ptr - BHDR_OVERHEAD);
-  if (FREE_BLOCK & b->size)
+  bhdr_t * b = BHDR (ptr);
+  if ((FREE_BLOCK & b->size))
     GPF_T1 ("tlsf length of free b,block by bhdr free bit");
+  if (b->size > 1000) bing ();
   return b->size;
 }
 
@@ -1932,11 +1933,13 @@ go_ua_start (caddr_t * inst, gb_op_t * go, index_tree_t * tree, caddr_t * dep_pt
 }
 
 extern int chash_block_size;
-
+int ua_gb_from_mp;
 
 void
 go_ua_store (caddr_t * inst, gb_op_t * go, index_tree_t * tree, caddr_t * dep_ptr)
 {
+  mem_pool_t * mp = tree->it_hi->hi_pool;
+  tlsf_t * tlsf;
   int any_len;
   caddr_t err = NULL;
   AUTO_POOL (1024);
@@ -1947,29 +1950,31 @@ go_ua_store (caddr_t * inst, gb_op_t * go, index_tree_t * tree, caddr_t * dep_pt
   if (err)
     sqlr_resignal (err);
   any_len = box_length (str) - 1;
-  if (place)
+  if (ua_gb_from_mp)
     {
-      int len = tlsf_size (place);
+      place = mp_alloc_box (mp, any_len, DV_NON_BOX);
+      *dep_ptr = place;
+    }
+  else 
+    {
+      int len = place ? tlsf_size (place) : 0;
+      if (!mp->mp_tlsf)
+	mp_set_tlsf (mp, chash_block_size);
+      tlsf = mp->mp_tlsf;
       if (len < any_len)
 	{
-	  free_ex (place, tree->it_hi->hi_pool->mp_tlsf);
-	  place = (caddr_t)malloc_ex (any_len * 2, tree->it_hi->hi_pool->mp_tlsf);
+	  mutex_enter (&tlsf->tlsf_mtx);
+	  if (place)
+	    free_ex (place, tlsf);
+	  place = malloc_ex (any_len, tlsf);
+	  mutex_leave (&tlsf->tlsf_mtx);
 	  *dep_ptr = place;
 	}
     }
-  else
-    {
-      mem_pool_t * mp = tree->it_hi->hi_pool;
-      if (!mp->mp_tlsf)
-	mp_set_tlsf (mp, chash_block_size);
-      place = malloc_ex (any_len, mp->mp_tlsf);
-      *dep_ptr = place;
-    }
-  memcpy_16 (place, str, any_len);
+      memcpy_16 (place, str, any_len);
   if (str < ap.ap_area || str > ap.ap_area + ap.ap_fill)
     dk_free_box (str);
-  
-}
+    }
 
 
 
