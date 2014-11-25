@@ -1261,6 +1261,29 @@ cfg_setup (void)
 
 
   /*
+   *  Parse [Flags] section
+   */
+  section = "Flags";
+  {
+    stat_desc_t *sd = &dbf_descs[0];
+    int32 v;
+    while (sd->sd_name)
+      {
+	if (cfg_getlong (pconfig, section, sd->sd_name, &v) != -1)
+	  {
+	    if ((ptrlong)SD_INT32 == (ptrlong) sd->sd_str_value)
+	      *((int32*)sd->sd_value) = v;
+	    else if (sd->sd_value)
+	      *(sd->sd_value) = (long) v;
+	    else
+	      log_error ("Cannot set flag %s", sd->sd_name);
+	  }
+	sd ++;
+      }
+  }
+
+
+  /*
    *  Parse [HTTPServer] section
    */
   section = "HTTPServer";
