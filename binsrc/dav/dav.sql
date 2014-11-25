@@ -3483,10 +3483,11 @@ create procedure WS.WS.POST (
   in lines varchar)
 {
   -- dbg_obj_princ ('WS.WS.POST (', path, params, lines, ')');
-  declare _content_type, _content_type_attr varchar;
+  declare _content_type, _content_type_attr, slug varchar;
 
   _content_type := http_request_header (lines, 'Content-Type', null, '');
   _content_type_attr := http_request_header (lines, 'Content-Type', 'type', '');
+  slug := http_request_header (lines, 'Slug', null, '');
   if (_content_type = 'application/vnd.syncml+wbxml' or
       _content_type = 'application/vnd.syncml+xml')
   {
@@ -3507,14 +3508,13 @@ create procedure WS.WS.POST (
   {
     WS.WS.PUT (path, params, lines);
   }
-  else if (_content_type = 'text/turtle')
+  else if (_content_type = 'text/turtle' or length (slug) > 0)
   {
     declare cid int;
     cid := DAV_HIDE_ERROR (DAV_SEARCH_ID (DAV_CONCAT_PATH (http_physical_path (), '/'),'C'));
     if (cid IS NOT NULL)
       {
-	declare p, slug varchar;
-	slug := http_request_header (lines, 'Slug', null, '');
+	declare p varchar;
 	if (length (slug))
 	  p := slug;
 	else
