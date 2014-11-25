@@ -28,8 +28,8 @@
 #undef MALLOC_DEBUG
 
 #include "libutil.h"
-#include <util/dyntab.h>
-#include <util/dbgmal.h>
+#include "util/dyntab.h"
+#include "util/dbgmal.h"
 
 #ifdef USE_KILL_RINGBUF
 #define KILL_RINGBUF_SIZE 0x1FF0
@@ -298,6 +298,18 @@ mal_register (const char *name, u_int line)
   return r;
 }
 
+size_t
+dbg_mal_count (const char *name, u_int line)
+{
+  malrec_t xrec, *r;
+
+  strncpy (xrec.fname, name, MALREC_FNAME_BUFLEN);
+  xrec.fname[MALREC_FNAME_BUFLEN-1] = '\0';
+  xrec.linenum = line;
+
+  r = (malrec_t *) dtab_find_record (_dbgtab, 1, (htrecord_t) &xrec);
+  return r ? r->numalloc - r->numfree : 0;
+}
 
 #ifdef DBGMAL_SIGNAL
 static RETSIGTYPE
@@ -403,11 +415,13 @@ err: \
   return NULL; \
   } while (0);
 
+#ifndef USE_TLSF
 void *
 dbg_malloc (const char *file, u_int line, size_t size)
 {
   DBG_MALLOC_IMPL (malloc(size), MALMAGIC_OK, NULL, 0)
 }
+#endif
 
 void *
 dbg_realloc (const char *file, u_int line, void *old, size_t size)
@@ -539,6 +553,7 @@ const char *dbg_find_allocation_error (void *data, void *expected_pool)
 
 int dbg_allows_free_nulls = 0;
 
+#ifndef USE_TLSF
 void
 dbg_free (const char *file, u_int line, void *data)
 {
@@ -595,7 +610,7 @@ dbg_free (const char *file, u_int line, void *data)
   FREE_WITH_DELAY (mhdr);
   mutex_leave (_dbgmal_mtx);
 }
-
+#endif
 
 void
 dbg_free_sized (const char *file, u_int line, void *data, size_t sz)

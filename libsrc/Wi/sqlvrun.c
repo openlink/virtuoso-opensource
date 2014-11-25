@@ -840,8 +840,7 @@ ssl_insert_cast (insert_node_t * ins, caddr_t * inst, int nth_col, caddr_t * err
 	  else if (8 == elt_sz)
 	    {
 	      int64 val = ((int64*)from_dc->dc_values)[row];
-	      if (is_prec && !(val >=prec_lower && val <= prec_upper)
-		  && !DC_IS_NULL (from_dc, row))
+	      if (is_prec && !DC_IS_NULL (from_dc, row) && !(val >=prec_lower && val <= prec_upper))
 		{
 		  *err_ret = srv_make_new_error ("22023", "SR346",
 						 "Integer out of range for column %s", sch_id_to_col_name (wi_inst.wi_schema, cl->cl_col_id));
@@ -3586,14 +3585,24 @@ it_print_wired (index_tree_t * it)
 
 
 int
-cha_mergeable (chash_t * ch1, chash_t * ch2)
+cha_mergeable (setp_node_t * setp, chash_t * ch1, chash_t * ch2)
 {
   int inx, n_sqt = box_length (ch1->cha_sqt) / sizeof (sql_type_t);
+  hash_area_t * ha = setp->setp_ha;
+  int dep_inx = ha->ha_n_keys;
   for (inx = 0; inx < n_sqt; inx++)
     {
       if (ch1->cha_sqt[inx].sqt_dtp != ch2->cha_sqt[inx].sqt_dtp)
 	return 0;
     }
+  DO_SET (gb_op_t *, go, &setp->setp_gb_ops)
+    {
+      state_slot_t * ssl = setp->setp_dependent_box[dep_inx - ha->ha_n_keys];
+      if (go->go_op != AMMSC_COUNT && !IS_NUM_DTP (ch1->cha_sqt[dep_inx].sqt_dtp))
+	return 0;
+      dep_inx++;
+    }
+  END_DO_SET ();
   return 1;
 }
 
@@ -3634,7 +3643,7 @@ vec_fref_chash_result (fun_ref_node_t * fref, table_source_t * ts, caddr_t * ins
 	    return 0;
 	      if (!first_tree)
 		first_tree = local_tree ? local_tree : tree;
-	      if (!cha_mergeable (first_tree->it_hi->hi_chash, tree->it_hi->hi_chash))
+	      if (!cha_mergeable (setp, first_tree->it_hi->hi_chash, tree->it_hi->hi_chash))
 		return 0;
 	}
 	  END_DO_BOX;

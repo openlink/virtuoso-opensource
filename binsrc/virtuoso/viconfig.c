@@ -202,6 +202,8 @@ char *c_serverport;
 char *http_log_file = NULL;
 extern FILE *http_log;
 extern char *http_log_name;
+extern char *http_log_format;
+char *c_http_log_format;
 int32 c_error_log_level;
 int32 c_server_threads;
 int32 c_number_of_buffers;
@@ -664,6 +666,8 @@ int cfg_getsize (PCONFIG pc, char * sec, char * attr, size_t * sz);
 int cfg2_getsize (PCONFIG pc,  char * sec, char * attr, size_t * sz);
 
 extern LOG *virtuoso_log;
+extern int tn_step_refers_to_input;
+
 static char *prefix;
 int
 cfg_setup (void)
@@ -671,6 +675,7 @@ cfg_setup (void)
   char *savestr;
   char *section;
   int32 long_helper;
+  char *tmp_str;
 
   if (f_config_file == NULL)
     f_config_file = "virtuoso.ini";
@@ -1259,6 +1264,34 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "EnableMonitor", &mon_enable) == -1)
     mon_enable = 1;
 
+  if (cfg_getstring (pconfig, section, "TransStepMode", &tmp_str) == 0)
+    {
+      if (!stricmp ("input", tmp_str))
+       tn_step_refers_to_input = 1;
+    }
+
+  /*
+   *  Parse [Flags] section
+   */
+  section = "Flags";
+  {
+    stat_desc_t *sd = &dbf_descs[0];
+    int32 v;
+    while (sd->sd_name)
+      {
+	if (cfg_getlong (pconfig, section, sd->sd_name, &v) != -1)
+	  {
+	    if ((ptrlong)SD_INT32 == (ptrlong) sd->sd_str_value)
+	      *((int32*)sd->sd_value) = v;
+	    else if (sd->sd_value)
+	      *(sd->sd_value) = (long) v;
+	    else
+	      log_error ("Cannot set flag %s", sd->sd_name);
+	  }
+	sd ++;
+      }
+  }
+
 
   /*
    *  Parse [HTTPServer] section
@@ -1270,6 +1303,9 @@ cfg_setup (void)
 
   if (cfg_getstring (pconfig, section, "HTTPLogFile", &http_log_file) == -1)
     http_log_file = NULL;
+
+  if (cfg_getstring (pconfig, section, "HTTPLogFormat", &c_http_log_format) != -1)
+    http_log_format = c_http_log_format;
 
   if (cfg_getstring (pconfig, section, "ServerRoot", &www_root) == -1)
     www_root = ".";

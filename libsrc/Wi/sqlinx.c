@@ -343,6 +343,14 @@ dfe_is_eq_pred (df_elt_t * pred)
 
 
 int
+dfe_is_single_eq_pred (df_elt_t * pred)
+{
+  return (pred && (
+		   ((DFE_BOP_PRED  == pred->dfe_type || DFE_BOP == pred->dfe_type) && BOP_EQ == pred->_.bin.op)));
+}
+
+
+int
 dfe_is_range_pred (df_elt_t * pred)
 {
   return (pred && (DFE_BOP_PRED  == pred->dfe_type || DFE_BOP == pred->dfe_type)
@@ -778,7 +786,7 @@ sqlo_key_add_pk_eqs (df_elt_t * tb_dfe, dbe_key_t * key, index_choice_t * ic, dk
       if (!tb_is_pk_part (tb_dfe->_.table.ot->ot_table, part))
 	continue;
       pred = sqlo_key_part_best (part, tb_dfe->_.table.col_preds, 0);
-      if (!dfe_is_eq_pred (pred))
+      if (!dfe_is_single_eq_pred (pred))
 	{
 	  /* the best is not an eq. Make an eq and remove all non-eq preds */
 	  caddr_t pref = tb_dfe->_.table.ot->ot_new_prefix;

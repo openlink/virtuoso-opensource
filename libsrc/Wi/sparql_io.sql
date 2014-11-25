@@ -608,6 +608,11 @@ create procedure DB.DBA.SPARQL_SD_PROBE (in service_iri varchar, in proxy_iri va
   g_iri := null;
   get_is_ok := null;
   post_is_ok := null;
+  if (service_iri like '%/sparql' or service_iri like '%/sparql-auth' or service_iri like '%/sparql-sd' or
+    exists (sparql define input:storage ""
+      prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+      ask from virtrdf: { `iri(?:service_iri)` virtrdf:dialect [] } ) )
+    set_user_id ('dba');
   if (isstring (registry_get ('URIQADefaultHost')) and strstr (service_iri, registry_get ('URIQADefaultHost')) is not null)
     signal ('22023', 'Can not load own service description');
   if (exists (sparql define input:storage ""
@@ -4415,6 +4420,7 @@ create procedure DB.DBA.RDF_GRANT_SPARQL_IO ()
     'grant execute on DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS to "SPARQL"',
     'grant execute on DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARQL_SD_PROBE to SPARQL_SPONGE',
+    'grant execute on DB.DBA.SPARQL_SD_PROBE to SPARQL_LOAD_SERVICE_DATA',
     'grant execute on DB.DBA.SPARQL_SINV_IMP to SPARQL_SPONGE',
     'grant select on DB.DBA.SPARQL_SINV_2 to SPARQL_SPONGE',
     'grant execute on DB.DBA.SPARQL_RESULTS_XML_WRITE_HEAD to SPARQL_SELECT',

@@ -62,10 +62,26 @@ uint32 lt_w_counter = 0; /* 32 bits exact, lower half lt_w_id no 64 bit id, must
 void
 lt_new_w_id (lock_trx_t * lt)
 {
+  ptrlong plt = 0;
+  int64 id;
   ASSERT_IN_TXN;
-  do
+  do {
     lt_w_counter++;
-  while (!lt_w_counter);
+    id = ((int64)local_cll.cll_this_host << 32) + lt_w_counter;
+    gethash_64 (plt, id, local_cll.cll_w_id_to_trx);
+    if (!plt)
+      {
+	gethash_64 (plt, id, local_cll.cll_dead_w_id);
+	if (plt)
+	  {
+	    log_info ("dead w id at lt w counter %d", lt_w_counter);
+	  }
+      }
+    else 
+      {
+	log_info ("occupied w id at lt w counter %d", lt_w_counter);
+      }	    
+  } while (!lt_w_counter || plt);
   if (lt->lt_w_id)
     remhash_64 (lt->lt_w_id, local_cll.cll_w_id_to_trx);
   lt->lt_w_id = (((int64)local_cll.cll_this_host) << 32) + lt_w_counter;
@@ -2291,7 +2307,7 @@ clear_old_root_images ()
 	if ((bp_ts_t)now - old_img->bd_timestamp > 30000)
 	  {
 	    *prev = old_img->bd_next;
-	    resource_store (PM_RC (old_img->bd_content_map->pm_size), (void*) old_img->bd_content_map);
+	    pm_store (old_img, (old_img->bd_content_map->pm_size), (void*) old_img->bd_content_map);
 	    buffer_free (old_img);
 	  }
 	else

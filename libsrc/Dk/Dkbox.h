@@ -486,14 +486,14 @@ typedef struct dk_mem_wrapper_s
 } dk_mem_wrapper_t;
 
 #define DV_MEM_WRAPPER 			218
-
+#define DV_BIN 222
 #define DV_SYMBOL			127		   /* moved from widv.h */
 
 #define DV_WIDE 			225		   /* wchar_t */
 #define DV_LONG_WIDE 			226		   /* wchar_t with 32 bit length */
 
 #define IS_STRING_DTP(dtp)		((DV_STRING == (dtp)) || (DV_UNAME == (dtp)))
-#define IS_STRING_ALIGN_DTP(dtp) 	(IS_STRING_DTP(dtp) || (DV_C_STRING == (dtp)) || (DV_SYMBOL == (dtp)) || (DV_SHORT_STRING_SERIAL == (dtp)))
+#define IS_STRING_ALIGN_DTP(dtp) 	(IS_STRING_DTP(dtp) || (DV_C_STRING == (dtp)) || (DV_SYMBOL == (dtp)) || DV_SHORT_STRING_SERIAL == (dtp) || DV_BIN == (dtp))
 
 #define LAST_DV_DTP 			220
 

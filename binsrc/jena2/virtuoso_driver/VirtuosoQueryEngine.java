@@ -99,7 +99,7 @@ public class VirtuosoQueryEngine extends QueryEngineMain
       if (args == null)
         return query;
       
-      StringBuffer buf = new StringBuffer();
+      StringBuilder buf = new StringBuilder();
       String delim = " ,)(;.";
       int i = 0;
       char ch;
@@ -146,13 +146,9 @@ public class VirtuosoQueryEngine extends QueryEngineMain
     
     private String fixQuery(String query, Binding args, VirtGraph vg)
     {
-	StringBuffer sb = new StringBuffer("sparql\n ");
+	StringBuilder sb = new StringBuilder("sparql\n ");
 
-	if (vg.getRuleSet()!=null)
-          sb.append(" define input:inference '"+vg.getRuleSet()+"'\n ");
-
-        if (vg.getSameAs())
-          sb.append(" define input:same-as \"yes\"\n ");
+	vg.appendSparqlPrefixes(sb);
 
         if (!vg.getReadFromAllGraphs())
 	  sb.append(" define input:default-graph-uri <" + vg.getGraphName() + "> \n");

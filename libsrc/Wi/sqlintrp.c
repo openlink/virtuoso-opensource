@@ -220,16 +220,16 @@ caddr_t
 sqlr_run_bif_in_sandbox (bif_metadata_t *bmd, caddr_t *args, caddr_t *err_ret)
 {
   int argctr, argcount = BOX_ELEMENTS (args);
-#ifdef MALLOC_DEBUG
-  size_t ssls_size = (argcount ? sizeof (state_slot_t) * argcount : 1); /* 1 instead of 0 to avoid "zero bytes allocation" warning */
-#else
   size_t ssls_size = sizeof (state_slot_t) * argcount;
-#endif
-  state_slot_t *ssls = (state_slot_t *)dk_alloc (ssls_size);
+  state_slot_t *ssls = NULL;
   state_slot_t **params = (state_slot_t **)dk_alloc_list (argcount);
   query_instance_t *qi_stub = (query_instance_t *)dk_alloc_list_zero (QI_FIRST_FREE + argcount);
   caddr_t ret_val = NULL;
-  memset (ssls, 0, ssls_size);
+  if (ssls_size)
+    {
+      ssls = (state_slot_t *)dk_alloc (ssls_size);
+      memset (ssls, 0, ssls_size);
+    }
   qi_stub->qi_client = sqlc_client ();
   qi_stub->qi_u_id = U_ID_NOBODY;
   qi_stub->qi_g_id = U_ID_NOGROUP;
@@ -264,7 +264,7 @@ sqlr_run_bif_in_sandbox (bif_metadata_t *bmd, caddr_t *args, caddr_t *err_ret)
   END_QR_RESET
   dk_free_box ((caddr_t)qi_stub);
   dk_free_box ((caddr_t)params);
-  dk_free (ssls, ssls_size);
+  if (ssls) dk_free (ssls, ssls_size);
   if (NULL != err_ret[0])
     {
       dk_free_tree (ret_val);

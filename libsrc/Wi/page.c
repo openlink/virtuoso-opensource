@@ -1826,7 +1826,7 @@ pf_rd_insert_1 (page_fill_t * pf, row_delta_t * rd)
     }
   place = pf->pf_current->bd_content_map->pm_filled_to;
   pf_shift_compress (pf, rd, NULL);
-  map_insert_pos (&pf->pf_current->bd_content_map, rd->rd_map_pos, pm->pm_filled_to);
+  map_insert_pos (pf->pf_current, &pf->pf_current->bd_content_map, rd->rd_map_pos, pm->pm_filled_to);
   pm = pf->pf_current->bd_content_map;
   pm->pm_filled_to += ROW_ALIGN (len);
   page_write_gap (pf->pf_current->bd_buffer + pm->pm_filled_to, PAGE_SZ - pm->pm_filled_to);
@@ -1894,7 +1894,7 @@ pf_rd_append (page_fill_t * pf, row_delta_t * rd, row_size_t * split_after)
       if (pf->pf_is_autocompact)
 	{
 	  extend = buffer_allocate (DPF_INDEX);
-	  extend->bd_content_map = resource_get (PM_RC (PM_SZ_1));
+	  extend->bd_content_map = pm_get (extend, (PM_SZ_1));
 	  pg_map_clear (extend);
 	  extend->bd_tree = pf->pf_itc->itc_tree;
 	}
@@ -1946,7 +1946,7 @@ pf_rd_append (page_fill_t * pf, row_delta_t * rd, row_size_t * split_after)
 	IE_SET_FLAGS (rf.rf_row, IEF_DELETE);
       if (len != ROW_ALIGN (len))
 	rf.rf_row[len] = 0; /* 0 for compression */
-      map_insert_pos (&pf->pf_current->bd_content_map, pm->pm_count, pm->pm_filled_to);
+      map_insert_pos (pf->pf_current, &pf->pf_current->bd_content_map, pm->pm_count, pm->pm_filled_to);
       pm = pf->pf_current->bd_content_map;
       pf_rd_move_and_lock (pf, rd);
       if (rd->rd_make_ins_rbe && RD_INSERT == rd->rd_op)
@@ -2228,7 +2228,7 @@ pf_change_org (page_fill_t * pf)
   if (t_buf->bd_content_map->pm_count > org->bd_content_map->pm_size)
     {
       int new_sz = PM_SIZE (t_buf->bd_content_map->pm_count);
-      map_resize (&org->bd_content_map, new_sz);
+      map_resize (org, &org->bd_content_map, new_sz);
     }
   org_sz = org->bd_content_map->pm_size;
   memcpy_16 (org->bd_content_map, t_buf->bd_content_map, PM_ENTRIES_OFFSET + t_buf->bd_content_map->pm_count * sizeof (short));
@@ -2498,7 +2498,11 @@ page_apply_1 (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t *
 void
 page_apply_s (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t ** delta, int op)
 {
+#if defined (VALGRIND)
+  page_apply_frame_t paf = {0};
+#else
   page_apply_frame_t paf;
+#endif
   page_apply_1 (itc, buf, n_delta, delta, op, &paf);
 }
 

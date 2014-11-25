@@ -229,6 +229,12 @@ create procedure irivv (in s any array)
   return  iris;
 }
 
+
+select  __ro2sq (irivv (vector ('pfaal', 'hans',  'hyrim'))[0]);
+echo both $if $equ $last[1]  "pfaal" "PASSED" "***FAILED";
+echo both ":  vec iri to id\n";
+ 
+
 drop table it2;
 create table it2 (k iri_id_8 primary key, d iri_id_8);
 
@@ -242,7 +248,5 @@ echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
 echo both ":  iri 32 ins range ck\n";
 
 
-select  __ro2sq (irivv (vector ('pfaal', 'hans',  'hyrim'))[0]);
-echo both $if $equ $last[1]  "pfaal" "PASSED" "***FAILED";
-echo both ":  vec iri to id\n";
+
 

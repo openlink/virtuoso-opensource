@@ -32,13 +32,6 @@ import java.util.*;
 
 public class StatementWrapper implements Statement, Closeable {
 
-  private Integer r_MaxFieldSize;
-  private Integer r_MaxRows;
-  private Boolean r_EscapeProcessing;
-  private Integer r_QueryTimeout;
-  private Integer r_FetchDirection;
-  private Integer r_FetchSize;
-
   protected Statement stmt;
   protected ConnectionWrapper wconn;
 #if JDK_VER >= 16
@@ -73,36 +66,6 @@ public class StatementWrapper implements Statement, Closeable {
     wconn.removeObjFromClose(this);
   }
 
-  protected void reset() throws SQLException {
-#if JDK_VER >= 16
-    HashMap<Object,Object> copy = (HashMap<Object,Object>) objsToClose.clone();
-#else
-    HashMap copy = (HashMap) objsToClose.clone();
-#endif
-    try {
-      for (Iterator i = copy.keySet().iterator(); i.hasNext(); )
-        ((ResultSetWrapper)(i.next())).close();
-
-      objsToClose.clear();
-      copy.clear();
-      if (r_MaxFieldSize != null) {
-        stmt.setMaxFieldSize(r_MaxFieldSize.intValue());
-      }
-      if (r_MaxRows != null)
-        stmt.setMaxRows(r_MaxRows.intValue());
-      if (r_EscapeProcessing != null)
-        stmt.setEscapeProcessing(r_EscapeProcessing.booleanValue());
-      if (r_QueryTimeout != null)
-        stmt.setQueryTimeout(r_QueryTimeout.intValue());
-      if (r_FetchDirection != null)
-        stmt.setFetchDirection(r_FetchDirection.intValue());
-      if (r_FetchSize != null)
-        stmt.setFetchSize(r_FetchSize.intValue());
-    } catch (SQLException ex) {
-      exceptionOccurred(ex);
-      throw ex;
-    }
-  }
 
   public synchronized void close() throws SQLException {
     if (isClosed)
@@ -163,8 +126,6 @@ public class StatementWrapper implements Statement, Closeable {
   public void setMaxFieldSize(int max) throws SQLException {
     check_close();
     try {
-      if (r_MaxFieldSize == null)  // save the initial MaxFieldSize state
-         r_MaxFieldSize = new Integer(getMaxFieldSize());
       stmt.setMaxFieldSize(max);
     } catch (SQLException ex) {
       exceptionOccurred(ex);
@@ -185,8 +146,6 @@ public class StatementWrapper implements Statement, Closeable {
   public void setMaxRows(int max) throws SQLException {
     check_close();
     try {
-      if (r_MaxRows == null)  // save the initial MaxRows state
-         r_MaxRows = new Integer(getMaxRows());
       stmt.setMaxRows(max);
     } catch (SQLException ex) {
       exceptionOccurred(ex);
@@ -197,8 +156,6 @@ public class StatementWrapper implements Statement, Closeable {
   public void setEscapeProcessing(boolean enable) throws SQLException {
     check_close();
     try {
-      if (r_EscapeProcessing == null)  // save the initial EscapeProcessing state
-         r_EscapeProcessing = new Boolean(true);
       stmt.setEscapeProcessing(enable);
     } catch (SQLException ex) {
       exceptionOccurred(ex);
@@ -219,8 +176,6 @@ public class StatementWrapper implements Statement, Closeable {
   public void setQueryTimeout(int seconds) throws SQLException {
     check_close();
     try {
-      if (r_QueryTimeout == null)  // save the initial QueryTimeout state
-         r_QueryTimeout = new Integer(getQueryTimeout());
       stmt.setQueryTimeout(seconds);
     } catch (SQLException ex) {
       exceptionOccurred(ex);
@@ -315,8 +270,6 @@ public class StatementWrapper implements Statement, Closeable {
   public void setFetchDirection(int direction) throws SQLException {
     check_close();
     try {
-      if (r_FetchDirection == null)  // save the initial FetchDirection state
-         r_FetchDirection = new Integer(ResultSet.FETCH_FORWARD);
       stmt.setFetchDirection(direction);
     } catch (SQLException ex) {
       exceptionOccurred(ex);
@@ -337,8 +290,6 @@ public class StatementWrapper implements Statement, Closeable {
   public void setFetchSize(int rows) throws SQLException {
     check_close();
     try {
-      if (r_FetchSize == null)  // save the initial FetchSize state
-         r_FetchSize = new Integer(getFetchSize());
       stmt.setFetchSize(rows);
     } catch (SQLException ex) {
       exceptionOccurred(ex);

@@ -175,7 +175,7 @@ public class VirtuosoConnection implements Connection
 
   private boolean useRoundRobin;
   // The pingStatement to know if the connection is still available
-  private PreparedStatement pingStatement = null;
+  private Statement pingStatement = null;
 
 
    protected class VhostRec
@@ -359,18 +359,24 @@ public class VirtuosoConnection implements Connection
       // Connect to the database
       connect(host,port,(String)prop.get("database"), sendbs, recvbs, (prop.get("log_enable") != null ? (Integer.parseInt(prop.getProperty("log_enable"))) : -1));
 
-      pingStatement = prepareStatement("select 1");
+      pingStatement = createStatement();
    }
 
-   public boolean isConnectionLost(int timeout_sec) 
+   public synchronized boolean isConnectionLost(int timeout_sec) 
    {
+     ResultSet rs = null;
      try{
 	pingStatement.setQueryTimeout(timeout_sec);
-        pingStatement.execute();
+        rs = pingStatement.executeQuery("select 1");
         return false;
      } catch (Exception e ) {
         return true;
-     } 
+     } finally {
+       if (rs!=null)
+         try{
+           rs.close();
+         } catch(Exception e){}
+     }
    }
 
    protected int getIntAttr(java.util.Properties info, String key, int def)
@@ -1075,37 +1081,39 @@ public class VirtuosoConnection implements Connection
     */
    public void close() throws VirtuosoException
    {
+      if (isClosed())
+        return;
+
       try
       {
-         // Is already closed ?
-         if(isClosed())
-            throw new VirtuosoException("The connection is already closed.",VirtuosoException.DISCONNECTED);
-         // Try to close all about the connection : socket and streams.
-         if(!in.isClosed())
-         {
-            in.close();
-            in = null;
-         }
-         if(!out.isClosed())
-         {
-            out.close();
-            out = null;
-         }
-         if(socket != null)
-         {
-            socket.close();
-            socket = null;
-         }
+         synchronized(this) {
+           // Try to close all about the connection : socket and streams.
+           if(!in.isClosed())
+           {
+             in.close();
+             in = null;
+           }
+           if(!out.isClosed())
+           {
+             out.close();
+             out = null;
+           }
+           if(socket != null)
+           {
+             socket.close();
+             socket = null;
+           }
 #if JDK_VER >= 16
-         pStatementCache.clear();
+           pStatementCache.clear();
 #endif
-         // Clear some variables
-         user = url = password = null;
-         futures = null;
+           // Clear some variables
+           user = url = password = null;
+           futures = null;
 #if JDK_VER >= 14
-         pooled_connection = null;
-         xa_connection = null;
+           pooled_connection = null;
+           xa_connection = null;
 #endif
+         }
       }
       catch(IOException e)
       {

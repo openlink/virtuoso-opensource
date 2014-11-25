@@ -185,6 +185,19 @@ sqlc_make_sort_out_node (sql_comp_t * sc, dk_set_t out_cols, dk_set_t out_slots,
 	ks->ks_cha_chp = cc_new_instance_slot (sc->sc_cc);
       }
   }
+  if (setp->setp_any_user_aggregate_gos)
+    {
+      int nth = 0;
+      int len = setp->setp_ha->ha_n_deps;
+      ts->ts_sort_read_mask = dk_alloc_box_zero (len, DV_BIN);
+      DO_SET (gb_op_t *, go, &setp->setp_gb_ops)
+	{
+	  if (AMMSC_USER == go->go_op)
+	    ts->ts_sort_read_mask[nth] = 1;
+	  nth++;
+	}
+      END_DO_SET ();
+    }
   table_source_om (sc->sc_cc, ts);
   if (is_gb)
     ts->ts_order_ks->ks_proc_set_ctr = ssl_new_variable (sc->sc_cc, "hash_iter", DV_BIN);

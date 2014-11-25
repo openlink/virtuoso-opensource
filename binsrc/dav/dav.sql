@@ -2081,15 +2081,21 @@ create procedure WS.WS.PUT (
     {
       content_type := 'text/html';
     }
-  client_etag := WS.WS.FINDPARAM (lines, 'If-Match:');
+  client_etag := trim(WS.WS.FINDPARAM (lines, 'If-Match:'), '" \r\n');
   if ((res_id_ is not null or _col is not null) and length (client_etag))
     {
       if (res_id_ is not null)
+      {
+	if (isinteger(res_id_))
+ 	{
 	select RES_COL, RES_NAME, RES_MOD_TIME into id_, res_name_, mod_time from WS.WS.SYS_DAV_RES where RES_ID = res_id_;
+		server_etag := WS.WS.ETAG (res_name_, id_, mod_time);
+	}
+	else
+		server_etag := client_etag;
+      }
       else
 	select COL_ID, COL_NAME, COL_MOD_TIME into id_, res_name_, mod_time from WS.WS.SYS_DAV_COL where COL_ID = _col;
-      server_etag := WS.WS.ETAG (res_name_, id_, mod_time);
-      client_etag := trim (client_etag, '" \r\n');
       if (client_etag <> server_etag)
 	{
 	  http_status_set (412);
@@ -3376,11 +3382,16 @@ create procedure WS.WS.GET_EXT_DAV_LDP(inout path any, inout lines any, inout pa
 	declare mod_time datetime;
 	declare gr any;
 	declare id_ integer;
+    declare pref_mime varchar;
 
 	-- LDPR request
 	accept := http_request_header_full (lines, 'Accept', '*/*');
-	accept := HTTP_RDF_GET_ACCEPT_BY_Q (accept);
-    if (accept = '*/*' and isinteger (_res_id) and exists (select 1 from WS.WS.SYS_DAV_RES where RES_ID = _res_id and RES_TYPE = 'text/turtle'))
+    if (isinteger (_res_id))
+      pref_mime := (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = _res_id);
+    else
+      pref_mime := null;
+    accept := HTTP_RDF_GET_ACCEPT_BY_Q (accept, pref_mime);
+    if (accept = '*/*' and isinteger (_res_id) and (pref_mime = 'text/turtle'))
       {
 	accept := 'text/turtle';
       }
@@ -3472,10 +3483,11 @@ create procedure WS.WS.POST (
   in lines varchar)
 {
   -- dbg_obj_princ ('WS.WS.POST (', path, params, lines, ')');
-  declare _content_type, _content_type_attr varchar;
+  declare _content_type, _content_type_attr, slug varchar;
 
   _content_type := http_request_header (lines, 'Content-Type', null, '');
   _content_type_attr := http_request_header (lines, 'Content-Type', 'type', '');
+  slug := http_request_header (lines, 'Slug', null, '');
   if (_content_type = 'application/vnd.syncml+wbxml' or
       _content_type = 'application/vnd.syncml+xml')
   {
@@ -3496,14 +3508,13 @@ create procedure WS.WS.POST (
   {
     WS.WS.PUT (path, params, lines);
   }
-  else if (_content_type = 'text/turtle')
+  else if (_content_type = 'text/turtle' or length (slug) > 0)
   {
     declare cid int;
     cid := DAV_HIDE_ERROR (DAV_SEARCH_ID (DAV_CONCAT_PATH (http_physical_path (), '/'),'C'));
     if (cid IS NOT NULL)
       {
-	declare p, slug varchar;
-	slug := http_request_header (lines, 'Slug', null, '');
+	declare p varchar;
 	if (length (slug))
 	  p := slug;
 	else
@@ -3595,7 +3606,7 @@ create procedure WS.WS.TTL_QUERY_POST (
   inout ses varchar,
   in is_res integer := 0)
 {
-  declare def_gr, giid, ns any;
+  declare def_gr, giid, ns, dict, triples any;
 	declare exit handler for sqlstate '*'
 	{
 	  connection_set ('__sql_state', __SQL_STATE);
@@ -3617,12 +3628,31 @@ create procedure WS.WS.TTL_QUERY_POST (
       	where { graph ?:giid { ?s ?p ?o .
       filter (?p not in (<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>, <http://www.w3.org/ns/ldp#contains>)) . } };
     }
+  {
+    declare exit handler for sqlstate '37000' {goto _again; };
+
+    ns := ses;
+    dict := dict_new ();
+    DB.DBA.RDF_TTL_LOAD_DICT (ns, def_gr, def_gr, dict);
+
+    goto _exit;
+  }
+_again:;
   ns := string_output ();
   for (select NS_PREFIX, NS_URL from DB.DBA.SYS_XML_PERSISTENT_NS_DECL) do
     {
       http (sprintf ('@prefix %s: <%s> . \t', NS_PREFIX, NS_URL), ns);
     }
   http (ses, ns);
+  dict := dict_new ();
+  DB.DBA.RDF_TTL_LOAD_DICT (ns, def_gr, def_gr, dict);
+
+_next:;
+  triples := dict_list_keys (dict, 1);
+  ns := string_output ();
+  DB.DBA.RDF_TRIPLES_TO_NICE_TTL (triples, ns);
+
+_exit:;
   DB.DBA.TTLP (ns, def_gr, def_gr, 255);
   if (def_gr like '%,meta')
     {
@@ -3638,6 +3668,9 @@ create procedure WS.WS.TTL_QUERY_POST (
       sparql insert into graph ?:giid { ?:nsubj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
       sparql delete from graph ?:giid { ?:subj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
     }
+  ses := ns;
+  log_enable (3);
+
   return 0;
 }
 ;

@@ -6989,6 +6989,7 @@ bif_xenc_pkcs12_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t name  = bif_string_arg (qst, args, 1, "xenc_pkcs12_export");
   caddr_t pass  = bif_string_arg (qst, args, 2, "xenc_pkcs12_export");
   int export_chain = BOX_ELEMENTS (args) > 3 ? bif_long_arg (qst, args, 3, "xenc_pkcs12_export") : 0;
+  caddr_t acerts = BOX_ELEMENTS (args) > 4 ? bif_string_arg (qst, args, 4, "xenc_pkcs12_export") : NULL;
 
   xenc_key_t * key = xenc_get_key_by_name (key_name, 1);
   X509 *x;
@@ -6999,9 +7000,17 @@ bif_xenc_pkcs12_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int len;
   caddr_t ret = NULL;
   STACK_OF (X509) * chain = NULL, *certs = NULL;
+  STACK_OF (X509_INFO) * inf = NULL;
 
   if (!key || !key->xek_evp_private_key || !key->xek_x509)
     goto err;
+
+  if (acerts)
+    {
+      BIO *in = BIO_new_mem_buf (acerts, box_length (acerts) - 1);
+      inf = PEM_X509_INFO_read_bio (in, NULL, NULL, NULL);
+      BIO_free (in);
+    }
 
   pk = key->xek_evp_private_key;
   x = key->xek_x509;
@@ -7029,6 +7038,15 @@ bif_xenc_pkcs12_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    sk_X509_push (certs, sk_X509_value (chain, i));
 	  sk_free (chain);
 	}
+      if (inf)
+	{
+	  for (i = 0; i < sk_X509_INFO_num (inf); i++)
+	    {
+	      X509_INFO *itmp = sk_X509_INFO_value (inf, i);
+	      if (itmp->x509)
+		sk_X509_push (certs, itmp->x509);
+	    }
+	}
     }
   p12 = PKCS12_create(pass, name, pk, x, certs, 0,0,0,0,0);
   b = BIO_new (BIO_s_mem());
@@ -7042,8 +7060,12 @@ bif_xenc_pkcs12_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   BIO_free (b);
   PKCS12_free (p12);
   sk_free (certs);
+  if (inf)
+    sk_X509_INFO_pop_free (inf, X509_INFO_free);
   return ret;
 err:
+  if (inf)
+    sk_X509_INFO_pop_free (inf, X509_INFO_free);
   return NULL;
 }
 

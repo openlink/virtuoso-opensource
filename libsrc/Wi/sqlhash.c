@@ -151,7 +151,6 @@ key_cl_count (dbe_col_loc_t * cls)
   return inx;
 }
 
-
 void
 setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, uint64 n_rows, int op)
 {
@@ -162,7 +161,7 @@ setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, uint64 n_rows, int op)
   int inx;
   int n_keys = dk_set_length (setp->setp_keys);
   int n_deps = dk_set_length (setp->setp_dependent);
-  NEW_VARZ (hash_area_t, ha);
+  hash_area_t * ha;
   if (op != HA_DISTINCT && n_keys > CHASH_GB_MAX_KEYS)
     sqlc_new_error (sc->sc_cc, "42000", "SQ186", "Over %d keys in group by or hash join", CHASH_GB_MAX_KEYS);
   if  (HA_DISTINCT == op && SETP_DISTINCT_MAX_KEYS <= n_keys)
@@ -179,6 +178,8 @@ setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, uint64 n_rows, int op)
 	    "group or join condition columns (%s)", ssl->ssl_name);
     }
   END_DO_SET();
+  ha = dk_alloc (sizeof (hash_area_t));
+  memset (ha, 0, sizeof (hash_area_t));
   ha->ha_row_size = 0;
   ha->ha_key = setp_temp_key (setp, &ha->ha_row_size, quietcast, op);
   setp->setp_ha = setp->setp_reserve_ha = ha;

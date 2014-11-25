@@ -113,7 +113,7 @@ __dbf_set ('dc_batch_sz', 10000);
 
 SPARQL PREFIX ex: <http://example.org/> PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> INSERT DATA INTO <http://test.org> {ex:p02 geo:geometry "POINT(25.466665 35.15)"^^virtrdf:Geometry};
 SPARQL PREFIX ex: <http://example.org/> PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> INSERT DATA INTO <http://test.org> {ex:p01 geo:geometry "POINT(25.4666665 35.15)"^^virtrdf:Geometry};
-SPARQL PREFIX ex: <http://example.org/> PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> SELECT ?s1 ?s2 FROM <http://test.org> WHERE {?s1 geo:geometry ?g1. ?s2 geo:geometry ?g2. FILTER(bif:st_intersects(?g1, ?g2))};
+SPARQL PREFIX ex: <http://example.org/> PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> SELECT ?s1 ?s2 FROM <http://test.org> WHERE {?s1 geo:geometry ?g1. ?s2 geo:geometry ?g2. FILTER(bif:st_intersects(?g1, ?g2, 0.001))};
 
 echo both $if $equ $rowcnt 4 "PASSED" "***FAILED";
 echo both ": in st_intersects\n";
@@ -171,3 +171,142 @@ filter (bif:st_intersects (?churchgeo, bif:st_point (2.3498, 48.853), 5)
 
 -- big cities with a lot of geo items 
 sparql select ?s (sql:num_or_null (?p))  count (*) where { ?s <http://dbpedia.org/ontology/populationTotal> ?p . filter ( sql:num_or_null (?p) > 6000000)  . ?s geo:geometry ?geo . filter (bif:st_intersects (?pt, ?geo,2)) . ?xx geo:geometry ?pt } group by ?s (sql:num_or_null (?p))order by desc 3 limit 20;
+
+-- Bug 16316
+
+sparql clear graph <http://www.example.com/ontology>;
+
+DB.DBA.TTLP ('
+<http://www.example.com/id/Object/0> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/0> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-90 40)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/1> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-91 40)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/2> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-92 40)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/3> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/3> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-93 40)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/4> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/4> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-94 40)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/5> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/5> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-95 40)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/10> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/10> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-90 41)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/11> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/11> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-91 41)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/12> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/12> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-92 41)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/13> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/13> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-93 41)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/14> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/14> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-94 41)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/15> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/15> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-95 41)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/20> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/20> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-90 42)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/21> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/21> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-91 42)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/22> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/22> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-92 42)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/23> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/23> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-93 42)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/24> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/24> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-94 42)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/25> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/25> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-95 42)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/30> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/30> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-90 43)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/31> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/31> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-91 43)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/32> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/32> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-92 43)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/33> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/33> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-93 43)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/34> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/34> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-94 43)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/35> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/35> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-95 43)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/40> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/40> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-90 44)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/41> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/41> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-91 44)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/42> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/42> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-92 44)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/43> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/43> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-93 44)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/44> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/44> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-94 44)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/45> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/45> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-95 44)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/50> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/50> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-90 45)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/51> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/51> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-91 45)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/52> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/52> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-92 45)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/53> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/53> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-93 45)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/54> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/54> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-94 45)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+
+<http://www.example.com/id/Object/55> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://www.example.com/ontology#Feature> .
+<http://www.example.com/id/Object/55> <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> "point(-95 45)"^^<http://www.openlinksw.com/schemas/virtrdf#Geometry> .
+', 'http://www.example.com/graph/test', 'http://www.example.com/graph/test' );
+
+
+DB.DBA.RDF_GEO_FILL ();
+
+SPARQL PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+PREFIX ex: <http://www.example.com/ontology#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT count(1) from <http://www.example.com/graph/test>
+WHERE {
+   ?feature rdf:type ex:Feature .
+   ?feature geo:geometry ?geo . } ;
+
+
+SPARQL PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+PREFIX ex: <http://www.example.com/ontology#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT ?feature ?geo  from <http://www.example.com/graph/test>
+WHERE {
+   ?feature rdf:type ex:Feature .
+   ?feature geo:geometry ?geo .
+   FILTER (bif:st_intersects (?geo,
+       bif:st_ewkt_read("POLYGON((-95 40, -94 41, -93 42, -92 43, -91 44, -90 45, -90 40, -95 40))"))) } ;
+
+echo both $if $equ $rowcnt 21 "PASSED" "***FAILED";
+echo both ": Bug 16316: select points inside a triangle by bif:st_intersects() filter\n";

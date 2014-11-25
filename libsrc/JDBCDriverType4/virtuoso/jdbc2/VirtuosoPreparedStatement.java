@@ -344,10 +344,14 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
     }
 #endif
 
+     if(close_flag)
+       return;
+
      synchronized (connection)
        {
 	 try
 	   {
+	     close_flag = true;
 	     // Check if a statement is treat
 	     if(statid == null)
 	       return;

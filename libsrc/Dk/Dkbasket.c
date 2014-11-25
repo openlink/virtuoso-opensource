@@ -215,7 +215,7 @@ rbuf_add (rbuf_t * rb, void* elt)
     rb->rb_add_cb (rb, elt);
   if (!rbe)
     {
-      rbe = (rbuf_elt_t*)dk_alloc (sizeof (rbuf_elt_t));
+      rbe = (rbuf_elt_t*)tlsf_base_alloc (sizeof (rbuf_elt_t));
       RBUF_TC (rbe_alloc_ctr);
       memzero (rbe, sizeof (rbuf_elt_t));
       rb->rb_first = rb->rb_last = rbe;
@@ -230,7 +230,7 @@ rbuf_add (rbuf_t * rb, void* elt)
 	}
       else
 	{
-	  new_rbe = (rbuf_elt_t*)dk_alloc (sizeof (rbuf_elt_t));
+	  new_rbe = (rbuf_elt_t*)tlsf_base_alloc (sizeof (rbuf_elt_t));
 	  RBUF_TC (rbe_alloc_ctr);
 	  memzero (new_rbe, sizeof (rbuf_elt_t));
 	  L2_INSERT_AFTER (rb->rb_first, rb->rb_last, rb->rb_last, new_rbe, rbe_);

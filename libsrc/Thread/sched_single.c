@@ -26,7 +26,7 @@
  *  
 */
 
-#include "thread_int.h"
+#include "Dk.h"
 
 char *build_thread_model = "-single";
 
@@ -276,6 +276,11 @@ mutex_allocate_typed (int n)
 
 void
 mutex_free (dk_mutex_t *mtx)
+{
+}
+
+void
+dk_mutex_destroy (dk_mutex_t *mtx)
 {
 }
 

@@ -1151,7 +1151,8 @@ void setp_order_row (setp_node_t * setp, caddr_t * qst);
 void setp_group_row (setp_node_t * setp, caddr_t * qst);
 #define HASH_NUM_SAFE(n) n = n & 0x7fffffff
 #define MAX_STACK_N_KEYS 200
-
+caddr_t go_ua_start (caddr_t * inst, gb_op_t * go, index_tree_t * tree, caddr_t * dep_ptr);
+void go_ua_store (caddr_t * inst, gb_op_t * go, index_tree_t * tree, caddr_t * dep_ptr);
 
 typedef struct itc_ha_feed_ret_s {
   hash_index_t *ihfr_hi;
@@ -1736,7 +1737,13 @@ int64 sqlo_p_stat_query (dbe_table_t * tb, caddr_t p);
 
 
 extern int32 enable_vec_reuse;
+#define thr_set_tlsf(x, y) ;
+#ifndef WITH_TLSF
+#define WITH_TLSF(x) {
+#define END_WITH_TLSF }
 
 #define B_NEW_VARZ(t, v) NEW_VARZ(t, v)
+#define tlsf_base_alloc(s) dk_alloc(s)
+#endif
 
 #endif /* _SQLFN_H */

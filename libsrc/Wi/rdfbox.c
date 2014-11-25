@@ -2254,6 +2254,8 @@ bif_rdf_long_from_batch_params (caddr_t * qst, caddr_t * err_ret, state_slot_t *
     case 3:
       {
         caddr_t val = bif_arg (qst, args, 1, "__rdf_long_from_batch_params");
+	if (DV_TYPE_OF (val) == DV_BIN)
+	  sqlr_new_error ("22023", "RLBPE", "Value datatype is not supported");
         err = qr_quick_exec (rdf_long_from_batch_params_qr3, qi->qi_client, "", &lc, 1,
           ":0", box_copy_tree (val), QRP_RAW );
         break;
@@ -2262,6 +2264,8 @@ bif_rdf_long_from_batch_params (caddr_t * qst, caddr_t * err_ret, state_slot_t *
       {
         caddr_t val = bif_arg (qst, args, 1, "__rdf_long_from_batch_params");
         caddr_t dt = bif_string_or_uname_arg (qst, args, 2, "__rdf_long_from_batch_params");
+	if (DV_TYPE_OF (val) == DV_BIN)
+	  sqlr_new_error ("22023", "RLBPE", "Value datatype is not supported");
         err = qr_quick_exec (rdf_long_from_batch_params_qr4, qi->qi_client, "", &lc, 2,
           ":0", box_copy_tree (val), QRP_RAW, ":1", box_copy_tree (dt), QRP_RAW );
         break;
@@ -2270,6 +2274,8 @@ bif_rdf_long_from_batch_params (caddr_t * qst, caddr_t * err_ret, state_slot_t *
       {
         caddr_t val = bif_arg (qst, args, 1, "__rdf_long_from_batch_params");
         caddr_t lang = bif_string_arg (qst, args, 2, "__rdf_long_from_batch_params");
+	if (DV_TYPE_OF (val) == DV_BIN)
+	  sqlr_new_error ("22023", "RLBPE", "Value datatype is not supported");
         err = qr_quick_exec (rdf_long_from_batch_params_qr5, qi->qi_client, "", &lc, 2,
           ":0", box_copy_tree (val), QRP_RAW, ":1", box_copy_tree (lang), QRP_RAW );
         break;
@@ -4458,10 +4464,9 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
                                          /* 0          1           */
             {                            /* 012.3456789012.3456.78 */
               session_buffered_write (ses, " , \"@language\" : \"", 18);
-              lang_id = rdf_lang_twobyte_to_string (((rdf_box_t *)obj)->rb_lang);
-              if (NULL != lang_id)
-                dks_esc_write (ses, lang_id, box_length (lang_id) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+	      dks_esc_write (ses, lang_id, box_length (lang_id) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
               session_buffered_write_char ('\"', ses);
+	      dk_free_box (lang_id);
             }
         }
     }
@@ -6182,8 +6187,8 @@ rdf_box_init ()
   bif_define_ex ("rdf_box_needs_digest", bif_rdf_box_needs_digest, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("rdf_box_strcmp", bif_rdf_box_strcmp, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("rdf_box_migrate_after_06_02_3129", bif_rdf_box_migrate_after_06_02_3129, BMD_RET_TYPE, &bt_integer, BMD_DONE);
-  bif_define_ex ("__rdf_long_of_obj", bif_rdf_long_of_obj, BMD_ALIAS, "__ro2lo", BMD_VECTOR_IMPL, bif_ro2lo_vec, BMD_RET_TYPE,
-      &bt_any_box, BMD_USES_INDEX, BMD_DONE);
+  bif_define_ex ("__rdf_long_of_obj", bif_rdf_long_of_obj, BMD_ALIAS, "__ro2lo", BMD_VECTOR_IMPL, bif_ro2lo_vec, BMD_RET_TYPE, 
+      &bt_any, BMD_USES_INDEX, BMD_DONE);
   bif_define_ex ("__rdf_box_make_complete", bif_rdf_box_make_complete, BMD_RET_TYPE, &bt_integer, BMD_USES_INDEX, BMD_DONE);
   bif_define_ex ("__rdf_box_to_ro_id_search_fields", bif_rdf_box_to_ro_id_search_fields, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("__rdf_sqlval_of_obj", bif_rdf_sqlval_of_obj, BMD_ALIAS, "__ro2sq", BMD_VECTOR_IMPL, bif_ro2sq_vec, BMD_RET_TYPE,

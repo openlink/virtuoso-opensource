@@ -427,12 +427,13 @@ dfe_cl_colocated (df_elt_t * prev, df_elt_t * dfe)
 
 
 int 
-dfe_n_in_order (df_elt_t * dfe, df_elt_t * prev_tb, df_elt_t ** prev_ret, float * card_between, int * eq_on_ordering, int * cl_colocated)
+dfe_n_in_order (df_elt_t * dfe, df_elt_t * prev_tb, df_elt_t ** prev_ret, float *card_between, int *eq_on_ordering, int *cl_colocated)
 {
   int c1, c2, n1, n2, mx, nth;
   int n_col_eqs = 0;
   df_elt_t * col1, *col2, *lower1, *upper1;
-  if (HR_FILL != dfe->_.table.hash_role);
+  if (HR_FILL == dfe->_.table.hash_role)
+    return 0;
   if (!prev_tb)
     prev_tb = dfe_prev_tb (dfe, card_between, 0);
   *prev_ret = prev_tb;
@@ -990,7 +991,7 @@ sqlo_pred_unit_1 (df_elt_t * lower, df_elt_t * upper, df_elt_t * in_tb, float * 
     }
   if (!in_tb)
     *u1 = col_pred_cost * 2;
-  else if (in_tb->_.table.key->key_is_col)
+  else if (DFE_TABLE == in_tb->dfe_type && in_tb->_.table.key->key_is_col)
     *u1 = sqlo_cs_col_pred_cost;
   else
     *u1 = COL_PRED_COST;
@@ -1713,10 +1714,14 @@ sqlo_eval_text_count (dbe_table_t * tb, caddr_t str, caddr_t ext_fti)
     }
   return ct;
  err:
+  if (lc)
+    lc_free (lc);
   cli->cli_user = usr;
   cli->cli_anytime_started = at_start;
   cli->cli_rpc_timeout = rpc_timeout;
   log_error ("compiler text card estimate got error %s %s, assuming unknown count", !err ? "" : ERR_STATE (err), !err ? "no message:" : ERR_MESSAGE (err));
+  if (err)
+    dk_free_tree (err);
   if (entered)
     {
       IN_TXN;
@@ -1785,7 +1790,7 @@ sqlo_text_estimate (df_elt_t * tb_dfe, df_elt_t ** text_pred, float * text_sel_r
 	  if (dfe->_.text.geo)
 	    {
 	      *text_pred = dfe;
-	      *text_sel_ret = dfe->dfe_arity ? dfe->dfe_arity : sqlo_geo_count (tb_dfe, dfe);
+	      *text_sel_ret = dfe->_.text.n_hits ? dfe->_.text.n_hits : sqlo_geo_count (tb_dfe, dfe);
 	      return 1;
 	    }
 	  if ('c' == dfe->_.text.type && DV_STRINGP ((str = (caddr_t)dfe->_.text.args[1])))
@@ -1927,7 +1932,7 @@ dfe_text_cost (df_elt_t * dfe, float *u1, float * a1, int text_order_anyway)
 	text_selectivity = 0.001;
       n_text_hits = ot_tbl_size * text_selectivity;
       text_pred->dfe_arity = n_text_hits;
-
+      text_pred->_.text.n_hits = n_text_hits;
       if (text_pred->_.text.geo)
 	text_key_cost = dbe_key_unit_cost (text_key->key_geo_table->tb_primary_key);
       else
@@ -3328,11 +3333,12 @@ rq_best_key (df_elt_t * dfe, rq_cols_t * rq)
 float
 rq_sample (df_elt_t * dfe, rq_cols_t * rq, index_choice_t * ic)
 {
+  df_elt_t * non_index_in = NULL;
   df_elt_t * lower[4];
   df_elt_t * upper[4];
   dbe_key_t * save_key = dfe->_.table.key;
   dbe_key_t * best_key;
-  int fill = 0;
+  int fill = 0, n_in_items = -2;
   int64 res;
   if (ic->ic_set_sample_key)
     best_key = ic->ic_key;
@@ -3345,6 +3351,10 @@ rq_sample (df_elt_t * dfe, rq_cols_t * rq, index_choice_t * ic)
 	{
 	  lower[fill] = rqp->rqp_lower;
 	  upper[fill] = rqp->rqp_upper;
+	  if (-2 == n_in_items)
+	    n_in_items = THR_ATTR (THREAD_CURRENT_THREAD, TA_N_IN_ITEMS);
+	  if (-1 == n_in_items && 1 == rqp->rqp_lower->_.bin.is_in_list && !non_index_in)
+	    non_index_in = rqp->rqp_lower;
 	  fill++;
 	}
       else
@@ -3353,7 +3363,21 @@ rq_sample (df_elt_t * dfe, rq_cols_t * rq, index_choice_t * ic)
   END_DO_SET();
   dfe->_.table.key = best_key;
   ic->ic_no_dep_sample = 1;
-  res = sqlo_inx_sample (dfe, best_key, lower, upper, fill, ic);
+  if (non_index_in)
+    {
+      du_thread_t * thr = THREAD_CURRENT_THREAD;;
+      df_elt_t ** in_list = sqlo_in_list (non_index_in, NULL, NULL);
+      int ctr, nth_save = (ptrlong) THR_ATTR (thr, TA_NTH_IN_ITEM);
+      res = 0;
+      for (ctr = 1; ctr < BOX_ELEMENTS (in_list); ctr++)
+	{
+	  SET_THR_ATTR (thr, TA_NTH_IN_ITEM, (caddr_t)(ptrlong) ctr - 1);
+	  res += sqlo_inx_sample (dfe, best_key, lower, upper, fill, ic);
+	}
+      SET_THR_ATTR (thr, TA_NTH_IN_ITEM, (caddr_t)(ptrlong) nth_save);
+    }
+  else
+    res = sqlo_inx_sample (dfe, best_key, lower, upper, fill, ic);
   ic->ic_no_dep_sample = 0;
   dfe->_.table.key = save_key;
   return MAX (0.3, res);
@@ -4164,7 +4188,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
       dfe_table_unq_card (dfe, ic, tb_count, &inx_arity, eq_preds, eq_fill, &col_arity);
     }
   else if (LOC_LOCAL == dfe->dfe_locus && (inx_const_fill || dfe_sample_dep_only (dfe, col_arity))
-	   && !(dfe->dfe_sqlo->so_sc->sc_is_update && 0 == strcmp (dfe->_.table.ot->ot_new_prefix, "t1")))
+	   /* && !(dfe->dfe_sqlo->so_sc->sc_is_update && 0 == strcmp (dfe->_.table.ot->ot_new_prefix, "t1")) */)
     {
       inx_sample = sqlo_inx_sample (dfe, key, inx_lowers, inx_uppers, inx_const_fill, ic);
       if (inx_sample >= 1 && sqlo_sample_dep_cols)

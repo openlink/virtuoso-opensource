@@ -345,6 +345,7 @@ typedef struct ce_ins_ctx_s
   dk_set_t		ceic_finalized_rls;
   struct row_delta_s **	ceic_rb_rds;
   row_no_t *	ceic_deletes;
+  dk_set_t	ceic_dbg_del_rds; /* dbg log of del del keys */
   int 		ceic_batch_bytes;
   dp_addr_t	ceic_last_dp;
   int		ceic_last_nth;

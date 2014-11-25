@@ -26,7 +26,182 @@
  */
 
 #include "sqlnode.h"
+#include "log.h" 
 
+extern dk_session_t * dbg_log_ses;
+extern int32 cl_non_logged_write_mode;
+extern int dbf_col_ins_dbg_log;
+
+
+void
+ceic_del_dbg_log (ce_ins_ctx_t * ceic)
+{
+  /* debug func for logging delete locality and order.  Log the batch of rows that went intoo this seg */
+  client_connection_t * cli = sqlc_client ();
+  it_cursor_t * itc = ceic->ceic_itc;
+  lock_trx_t * lt = cli->cli_trx;
+  caddr_t * repl = lt->lt_replicate;
+  dk_session_t * save = lt->lt_log;
+  dk_session_t * ses;
+  caddr_t * h = NULL;
+  int fd;
+  int inx;
+  if (!ceic->ceic_dbg_del_rds)
+    return;
+  lt->lt_log = ses = strses_allocate ();
+  lt->lt_replicate = REPL_LOG;
+  ceic->ceic_dbg_del_rds = dk_set_nreverse (ceic->ceic_dbg_del_rds);
+  DO_SET (row_delta_t **, rds, &ceic->ceic_dbg_del_rds)
+    {
+      DO_BOX (row_delta_t *, rd, inx, rds)
+	{
+	  cl_non_logged_write_mode = 0;
+	  log_delete (lt, rd , dbf_col_ins_dbg_log > 0 ? LOG_KEY_ONLY : 0);
+	}
+      END_DO_BOX;
+    }
+  END_DO_SET();
+  h = (caddr_t *) list (LOG_HEADER_LENGTH, 0, box_string (""), 0, box_num (strses_length (ses)), box_num (LOG_2PC_DISABLED));
+  mutex_enter (log_write_mtx);
+  /* write to file like in log_commit () */
+  if (!dbg_log_ses)
+    {
+      OFF_T off;
+      fd = fd_open ("virtuoso.debug.trx", LOG_OPEN_FLAGS);
+      off = LSEEK (fd, 0, SEEK_END);
+      dbg_log_ses = dk_session_allocate (SESCLASS_TCPIP);
+      tcpses_set_fd (dbg_log_ses->dks_session, fd);
+    }
+  CATCH_WRITE_FAIL (dbg_log_ses)
+    {
+      print_object ((caddr_t) h, dbg_log_ses, NULL, NULL);
+      strses_write_out (lt->lt_log, dbg_log_ses);
+      session_flush_1 (dbg_log_ses);
+      /* NO fsync.  Will fduck upp all timing fd_fsync (tcpses_get_fd (dbg_log_ses->dks_session)); */
+    }
+  END_WRITE_FAIL (dbg_log_ses);
+  mutex_leave (log_write_mtx);
+  dk_free_tree (ses);
+  dk_free_tree (h);
+  lt->lt_log = save;
+  lt->lt_replicate = repl;
+}
+
+
+void
+ceic_del_dbg_log_row (ce_ins_ctx_t * ceic, buffer_desc_t * buf)
+{
+  it_cursor_t * itc = ceic->ceic_itc;
+  col_pos_t cpo;
+  row_no_t end, row;
+  row_no_t * save_match = itc->itc_matches;
+  data_col_t dc;
+  int fill = 0, r, target, nth_page;
+  row_delta_t ** log_rds;
+  int nth = 0;
+  int n_del = 0, inx;
+  dbe_key_t * key = itc->itc_insert_key;
+  if (!ceic->ceic_mp)
+    ceic->ceic_mp = mem_pool_alloc ();
+  memzero (&cpo, sizeof (cpo));
+  for (inx = 0; inx < itc->itc_range_fill; inx++)
+    {
+      if (COL_NO_ROW == itc->itc_ranges[inx].r_end)
+	n_del++;
+    }
+  if (!n_del)
+    return;
+  itc->itc_matches = mp_alloc_box (ceic->ceic_mp, n_del * sizeof (row_no_t), DV_BIN);
+  log_rds = (row_delta_t **)mp_alloc_box (ceic->ceic_mp, sizeof (caddr_t) * n_del, DV_BIN);
+  for (inx = 0; inx < itc->itc_range_fill; inx++)
+    {
+      if (COL_NO_ROW == itc->itc_ranges[inx].r_end)
+	{
+	  row_delta_t * rd = log_rds[fill] = mp_alloc (ceic->ceic_mp, sizeof (row_delta_t));
+	  memzero (rd, sizeof (row_delta_t));
+	  rd->rd_key = key;
+	  rd->rd_op = RD_DELETE;
+	  rd->rd_values = mp_alloc_box (ceic->ceic_mp,  sizeof (caddr_t) * key->key_n_significant, DV_ARRAY_OF_POINTER);
+	  itc->itc_matches[fill++] = itc->itc_ranges[inx].r_first;
+	}
+    }
+  end = itc->itc_matches[fill - 1] + 1;
+  cpo.cpo_itc = itc;
+  cpo.cpo_value_cb = ce_result;
+  memzero (&dc, sizeof (dc));
+  dc.dc_mp = ceic->ceic_mp;
+  dc.dc_type = DCT_BOXES | DCT_FROM_POOL;
+  dc.dc_values = mp_alloc (ceic->ceic_mp, sizeof (caddr_t) * n_del);
+  dc.dc_sqt.sqt_dtp = DV_ARRAY_OF_POINTER;
+  dc.dc_n_places = n_del;
+  DO_SET (dbe_column_t *, col, &key->key_parts)
+    {
+      col_data_ref_t * cr;
+      int rdinx = key->key_part_in_layout_order[nth];
+      itc->itc_n_matches = n_del;
+      itc->itc_match_in = 0;
+      ceic->ceic_col = col;
+      ceic->ceic_nth_col = rdinx;
+      cr = itc->itc_col_refs[nth];
+      if (!cr)
+	itc->itc_col_refs[nth] = cr = itc_new_cr (itc);
+      if (!cr->cr_is_valid)
+	itc_fetch_col (itc, buf, &key->key_row_var[nth], FC_FROM_CEIC, (ptrlong)ceic);
+      dc.dc_n_values = 0;
+      cpo.cpo_dc = &dc;
+      cpo.cpo_cl = &key->key_row_var[nth];
+      target = itc->itc_matches[0];
+      row = 0;
+      itc->itc_match_in = 0;
+      for (nth_page = 0; nth_page < cr->cr_n_pages; nth_page++)
+	{
+	  page_map_t * pm = cr->cr_pages[nth_page].cp_map;
+	  int rows_on_page = 0;
+	  for (r = 0 == nth_page ? cr->cr_first_ce * 2 : 0; r < pm->pm_count; r += 2)
+	    {
+	      int is_last = 0, end2, r2, ces_on_page, prev_fill;
+	      if (row + pm->pm_entries[r + 1] <= target)
+		{
+		  row += pm->pm_entries[r + 1];
+		  continue;
+		}
+	      if (row >= end)
+		goto next_col;
+	      ces_on_page = nth_page == cr->cr_n_pages - 1 ? cr->cr_limit_ce : pm->pm_count;
+	      cpo.cpo_pm = pm;
+	      cpo.cpo_pm_pos = r;
+	      for (r2 = r; r2 < ces_on_page; r2 += 2)
+		rows_on_page += pm->pm_entries[r2 + 1];
+	      end2 = MIN (end, row + rows_on_page);
+	      if (end2 >= end)
+		is_last = 1;
+	      cpo.cpo_ce_row_no = row;
+	      cpo.cpo_string = cr->cr_pages[nth_page].cp_string + pm->pm_entries[r];
+	      cpo.cpo_bytes = pm->pm_filled_to - pm->pm_entries[r];
+	      prev_fill = cpo.cpo_dc->dc_n_values;
+	      target = cs_decode (&cpo, target, end2);
+	      if (DV_WIDE == cpo.cpo_cl->cl_sqt.sqt_col_dtp)
+		dc_wide_tags (cpo.cpo_dc, prev_fill);
+	      else if (cpo.cpo_cl->cl_sqt.sqt_is_xml || cpo.cpo_cl->cl_sqt.sqt_class)
+		dc_xml_entities (itc, cpo.cpo_cl, cpo.cpo_dc, prev_fill);
+	      if (is_last || target >= end)
+		goto next_col;
+	      break;
+	    }
+	  row += rows_on_page;
+	}
+    next_col: ;
+      if (cpo.cpo_dc->dc_n_values != n_del) GPF_T1 ("missed read of dc for del dbg  log");
+      if (cpo.cpo_dc->dc_n_values > cpo.cpo_dc->dc_n_places) GPF_T1 ("filled dc past end");
+      for (inx = 0; inx < n_del; inx++)
+	log_rds[inx]->rd_values[rdinx] = ((caddr_t*)dc.dc_values)[inx];
+      if (++nth == key->key_n_significant)
+	break;
+    }
+  END_DO_SET();
+  mp_set_push (ceic->ceic_mp, &ceic->ceic_dbg_del_rds, (void*)log_rds);
+  itc->itc_matches = save_match;
+}
 
 int
 itc_is_own_lock (it_cursor_t * itc, col_row_lock_t * clk)
@@ -1257,6 +1432,9 @@ ceic_col_finalize_row (ce_ins_ctx_t * ceic, buffer_desc_t * buf, int is_rb)
     return;
   ceic_finalize_move (ceic, buf);
   itc->itc_buf = buf;
+  if (1 == dbf_col_ins_dbg_log || key->key_id == dbf_col_ins_dbg_log
+      || (-dbf_col_ins_dbg_log == key->key_id))
+    ceic_del_dbg_log_row (ceic, buf);
   DO_SET (dbe_column_t *, col, &key->key_parts)
   {
     col_data_ref_t *cr;
@@ -1459,6 +1637,9 @@ pl_col_finalize_page (page_lock_t * pl, it_cursor_t * itc, int is_rb)
       ceic_col_finalize_row (&ceic, buf, is_rb);
     }
     }
+  if (1 == dbf_col_ins_dbg_log || itc->itc_insert_key->key_id == dbf_col_ins_dbg_log
+      || (-dbf_col_ins_dbg_log == itc->itc_insert_key->key_id))
+    ceic_del_dbg_log (&ceic);
   rds = ceic.ceic_rds;
   if (!rds || 0 == BOX_ELEMENTS (rds))
     {

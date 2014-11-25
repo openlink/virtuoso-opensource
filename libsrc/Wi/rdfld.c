@@ -362,7 +362,7 @@ cu_rl_cols (cucurbit_t * cu, caddr_t g_iid)
   data_col_t *p_dc = mp_data_col (clrg->clrg_pool, &ssl_iri_dummy, dc_batch_sz);
   data_col_t *o_dc = mp_data_col (clrg->clrg_pool, &ssl_any_dummy, dc_batch_sz);
   int is_gs = BOX_ELEMENTS (cu->cu_input_funcs) == 5;
-  int is_del = cu->cu_rdf_load_mode == RDF_LD_DEL_GS, allg;
+  int is_del = cu->cu_rdf_load_mode == RDF_LD_DEL_GS || cu->cu_rdf_load_mode == RDF_LD_DELETE, allg;
   dk_set_t set = NULL;
   caddr_t tmp[5], * quad;
   BOX_AUTO_TYPED (caddr_t *, quad, tmp, 4 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);

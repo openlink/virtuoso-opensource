@@ -2813,8 +2813,8 @@ rd_col_change (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd, dbe_col
 	*col_buf_ret = col_buf = it_new_col_page (itc->itc_tree, 0, 0, col);
       pm = col_buf->bd_content_map;
       fill = pm->pm_filled_to;
-      map_append (&col_buf->bd_content_map, fill);
-      map_append (&col_buf->bd_content_map, n_rows);
+      map_append (col_buf, &col_buf->bd_content_map, fill);
+      map_append (col_buf, &col_buf->bd_content_map, n_rows);
       pm = col_buf->bd_content_map;
       pm->pm_bytes_free -= len;
       col_buf->bd_buffer[fill] = CET_ANY | CE_RL;

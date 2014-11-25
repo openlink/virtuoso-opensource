@@ -183,9 +183,8 @@ then
     exit 1
 fi
 
-# XXX
-#LOG + running sql script tplmodule
-#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tplmodule.sql
+LOG + running sql script tplmodule
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tplmodule.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: PL modules tests -- tplmodule.sql"
@@ -219,9 +218,8 @@ then
     exit 1
 fi
 
-# XXX
-#LOG + running sql script trdfinf
-#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfinf.sql 
+LOG + running sql script trdfinf
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfinf.sql 
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rdf inference -- trdfinf.sql"
@@ -229,18 +227,16 @@ then
 fi
 
 
-# XXX
-#LOG + running sql script trdfinfifp
-#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfinfifp.sql 
+LOG + running sql script trdfinfifp
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfinfifp.sql 
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rdf inference -- trdfinfifp.sql"
     exit 1
 fi
 
-# XXX
-#LOG + running sql script ttrans2
-#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/ttrans2.sql 
+LOG + running sql script ttrans2
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/ttrans2.sql 
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rdf inference -- ttrans2.sql"

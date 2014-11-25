@@ -144,6 +144,8 @@ sqlc_call_ret_name (ST * tree, char * func_name, state_slot_t * ssl)
 }
 
 
+int tn_step_refers_to_input = 0;
+
 state_slot_t *
 sqlc_trans_funcs (sql_comp_t * sc, ST * tree, state_slot_t * ret, dk_set_t * code)
 {
@@ -185,14 +187,26 @@ sqlc_trans_funcs (sql_comp_t * sc, ST * tree, state_slot_t * ret, dk_set_t * cod
 	      sc->sc_trans->tn_step_out = (state_slot_t **)box_copy ((caddr_t)sc->sc_trans->tn_input);
 	      memset (sc->sc_trans->tn_step_out, 0, box_length ((caddr_t)sc->sc_trans->tn_step_out));
 	    }
-	  wanted = sc->sc_trans->tn_out_slots[pos];
-	  if (sc->sc_trans->tn_is_second_in_direction3)
-	    wanted_pos = box_position ((caddr_t *)(sc->sc_trans->tn_output_pos), (caddr_t)pos);
-          else
-	    wanted_pos = box_position ((caddr_t *)(sc->sc_trans->tn_input_pos), (caddr_t)pos);
-	  if (-1 == wanted_pos)
-	    sqlc_new_error (sc->sc_cc, "37000", "TR...", "T_STEP argument refers to an index %d of a column %.200s that is not in %s list (T_DIRECTION is set to %d)", pos+1, wanted->ssl_name, ((TRANS_LR == sc->sc_trans->tn_direction) ? "T_IN" : "T_OUT"), sc->sc_trans->tn_direction);
-	  sc->sc_trans->tn_step_out[wanted_pos] = ret;
+	  if (tn_step_refers_to_input)
+	    {
+	      if (pos < 0 || pos >= BOX_ELEMENTS (sc->sc_trans->tn_step_out))
+		sqlc_new_error (sc->sc_cc, "37000", "TR...",
+		    "tn_step column index out of range of inputs, TransStepMode = input, so tn_step (1) refers to 1st in tn_in ");
+	      sc->sc_trans->tn_step_out[pos] = ret;
+	    }
+	  else
+	    {
+	      wanted = sc->sc_trans->tn_out_slots[pos];
+	      if (sc->sc_trans->tn_is_second_in_direction3)
+		wanted_pos = box_position ((caddr_t *) (sc->sc_trans->tn_output_pos), (caddr_t) pos);
+	      else
+		wanted_pos = box_position ((caddr_t *) (sc->sc_trans->tn_input_pos), (caddr_t) pos);
+	      if (-1 == wanted_pos)
+		sqlc_new_error (sc->sc_cc, "37000", "TR...",
+		    "T_STEP argument refers to an index %d of a column %.200s that is not in %s list (T_DIRECTION is set to %d)", pos + 1,
+		    wanted->ssl_name, ((TRANS_LR == sc->sc_trans->tn_direction) ? "T_IN" : "T_OUT"), sc->sc_trans->tn_direction);
+	      sc->sc_trans->tn_step_out[wanted_pos] = ret;
+	    }
 	  cv_artm (code, (ao_func_t)box_identity, ret, ssl_new_constant (sc->sc_cc, NULL), NULL);
 	  ret->ssl_sqt.sqt_dtp = DV_ARRAY_OF_POINTER;
 	}
@@ -409,7 +423,7 @@ state_slot_t *
 sqlc_new_temp (sql_comp_t * sc, const char *name, dtp_t dtp)
 {
   state_slot_t *out;
-  if (sc->sc_cc->cc_query->qr_proc_vectored)
+  if (sc->sc_cc->cc_query && sc->sc_cc->cc_query->qr_proc_vectored)
     return ssl_new_vec (sc->sc_cc, name, dtp);
   if (sc->sc_temp_in_qst)
     {
@@ -2578,6 +2592,10 @@ cv_free (code_vec_t cv)
       else if (ins->ins_type == INS_FETCH)
 	{
 	  dk_free_box (ins->_.fetch.targets);
+	}
+      else if (ins->ins_type == IN_AGG && ins->_.agg.distinct)
+	{
+	  ha_free (ins->_.agg.distinct);
 	}
     }
   END_DO_INSTR

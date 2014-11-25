@@ -3447,6 +3447,9 @@ itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf, int * is_leaf)
 	  else  if (key->key_bit_cl && col->col_id == key->key_bit_cl->cl_col_id)
 	    {
 	      data_col = itc_bm_array (itc, buf);
+	      WITH_TLSF (dk_base_tlsf)
+		dk_check_tree (data_col);
+	      END_WITH_TLSF;
 	    }
 	  else
 	    {
@@ -3514,6 +3517,9 @@ itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf, int * is_leaf)
 	}
 	  if (data_col)
 	    {
+#ifdef DK_ALLOC_BOX_DEBUG
+	      dk_check_tree_iter (data_col, NULL, NULL);
+#endif
 	      dk_free_tree ((caddr_t)data_col);
 	      data_col = NULL;
 	    }

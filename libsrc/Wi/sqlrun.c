@@ -1417,6 +1417,7 @@ ks_cl_local_cast (key_source_t * ks, caddr_t * inst)
 
 int enable_ro_rc = 1;
 extern int qp_even_if_lock;
+extern int enable_cr_trace;
 
 int
 ks_start_search (key_source_t * ks, caddr_t * inst, caddr_t * state,
@@ -1929,6 +1930,7 @@ table_source_input (table_source_t * ts, caddr_t * inst,
 #endif
 	  if (ts->ts_need_placeholder)
 	    ts_set_placeholder (ts, inst, order_itc, &order_buf);
+	  rdbg_printf_if (enable_cr_trace, ("register %p L=%d pos=%d col_row=%d\n", order_itc, order_itc->itc_page, order_itc->itc_map_pos, order_itc->itc_col_row));
 	  itc_register_and_leave (order_itc, order_buf);
 	}
       else
@@ -1960,6 +1962,7 @@ table_source_input (table_source_t * ts, caddr_t * inst,
 	      {
 		order_itc->itc_ltrx = qi->qi_trx; /* in sliced cluster a local can be continued under many different lt's dependeing on which aq thread gets the continue */
 	    order_buf = page_reenter_excl (order_itc);
+		rdbg_printf_if (enable_cr_trace, ("%p reenter L=%d pos=%d col_row=%d\n", order_itc, order_itc->itc_page, order_itc->itc_map_pos, order_itc->itc_col_row));
 	      }
 	    if (ts->ts_order_ks->ks_vec_source)
 	      {
@@ -2980,6 +2983,17 @@ qi_alloc (query_t * qr, stmt_options_t * opts, caddr_t * auto_qi,
 
 
 void
+subq_not_continuable (query_t * qr, caddr_t * inst)
+{
+  /* when a skip node decides at end, the containing query will not be continueable.  But subq init is too much since will free hash build sides, gby temps etc which may be refd from anies in dcs still to be returned. So just set continuable off */
+
+  DO_SET (data_source_t *, qn, &qr->qr_nodes)
+    SRC_IN_STATE (qn, inst) = NULL;
+  END_DO_SET();
+}
+
+
+void
 skip_node_input (skip_node_t * sk, caddr_t * inst, caddr_t * qst)
 {
   QNCAST (query_instance_t, qi, inst);
@@ -3028,7 +3042,7 @@ skip_node_input (skip_node_t * sk, caddr_t * inst, caddr_t * qst)
 		  int n_save;
 		  qn_result ((data_source_t*)sk, inst, set);
 		  n_save = QST_INT (inst, sk->src_gen.src_out_fill);
-		  subq_init (sk->src_gen.src_query, inst);
+		  subq_not_continuable (sk->src_gen.src_query, inst);
 		  QST_INT (inst, sk->src_gen.src_out_fill) = n_save;
 		  is_reset = 1;
 		  break;

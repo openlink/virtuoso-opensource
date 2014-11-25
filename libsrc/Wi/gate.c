@@ -1276,7 +1276,7 @@ it_new_root_image (index_tree_t * tree, buffer_desc_t * buf)
   memcpy (new_image->bd_buffer, buf->bd_buffer, MIN (buf->bd_content_map->pm_filled_to + MAX_KV_GAP_BYTES, PAGE_SZ));
   new_image->bd_tree = tree;
   /* keep the actual size of the new map.  It may be that the old map's size if greater than the size implied by its count */
-  new_image->bd_content_map = resource_get (PM_RC (PM_SIZE (buf->bd_content_map->pm_count)));
+  new_image->bd_content_map = pm_get (new_image, (PM_SIZE (buf->bd_content_map->pm_count)));
   new_map_sz = new_image->bd_content_map->pm_size;
   memcpy (new_image->bd_content_map, buf->bd_content_map, PM_ENTRIES_OFFSET + buf->bd_content_map->pm_count * sizeof (short));
   new_image->bd_content_map->pm_size = new_map_sz;

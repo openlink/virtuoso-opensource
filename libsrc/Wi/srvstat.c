@@ -396,6 +396,10 @@ extern int dbf_log_fsync;
 extern int dbf_assert_on_malformed_data;
 extern int dbf_max_itc_samples;
 
+extern int32 c_pcre_match_limit;
+extern int32 c_pcre_match_limit_recursion;
+extern int32 pcre_max_cache_sz;
+
 void trset_start (caddr_t * qst);
 void trset_printf (const char *str, ...);
 void trset_end ();
@@ -958,13 +962,13 @@ bif_exec_status ()
 {
   id_hash_iterator_t hit;
   int64 *k;
-  bif_exec_stat_t * exs;
+  bif_exec_stat_t ** exs;
   uint32 now = get_msec_real_time ();
   mutex_enter (&bif_exec_pending_mtx);
   id_hash_iterator (&hit, bif_exec_pending);
   while (hit_next (&hit, (caddr_t*)&k, (caddr_t*)&exs))
     {
-      rep_printf ("%d  %s\n", now - exs->exs_start, exs->exs_text);
+      rep_printf ("%d  %s\n", now - exs[0]->exs_start, exs[0]->exs_text);
     }
 
   mutex_leave (&bif_exec_pending_mtx);
@@ -1236,6 +1240,7 @@ extern int64 dk_n_total;
 extern int64 dk_n_nosz_free;
 extern int64 dk_n_bytes;
 extern int64 dk_n_mmaps;
+extern int64 dk_n_max_allocs;
 size_t http_threads_mem_report ();
 size_t dk_alloc_global_cache_total ();
 size_t aq_thr_mem_cache_total ();
@@ -1864,6 +1869,9 @@ stat_desc_t dbf_descs [] =
     {"enable_no_free", &enable_no_free, SD_INT32},
 #endif
     {"enable_rdf_box_const", &enable_rdf_box_const, SD_INT32},
+    {"pcre_match_limit", &c_pcre_match_limit, SD_INT32},
+    {"pcre_match_limit_recursion", &c_pcre_match_limit_recursion, SD_INT32},
+    {"pcre_max_cache_sz", &pcre_max_cache_sz, SD_INT32},
     {NULL, NULL, NULL}
   };
 
@@ -2511,7 +2519,7 @@ bif_profile_enable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       prof_start_time = get_msec_real_time ();
       time (&prof_start_time_st);
       cli->cli_run_clocks = 0;
-      cli->cli_cl_start_ts = 0;
+      cli->cli_cl_start_ts = rdtsc ();
       da_clear (&cli->cli_activity);
       da_clear (&cli->cli_compile_activity);
     }
@@ -4643,7 +4651,7 @@ bif_stat_import (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       key = tb_name_to_key (tb, ks[1], 0);
       if (!key)
 	continue;
-      key->key_table->tb_count_estimate = unbox (ks[1]);
+      key->key_table->tb_count_estimate = unbox (ks[2]);
       if (ps)
 	{
 	  DO_BOX (caddr_t *, p, inx2, ps)

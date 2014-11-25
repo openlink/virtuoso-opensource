@@ -237,9 +237,16 @@ hi_allocate (unsigned int32 sz, int use_memcache, hash_area_t * ha)
   if (HA_DISTINCT == ha->ha_op || (use_memcache && sz < hi_end_memcache_size)
       || ha->ha_memcache_only)
     {
-      if (HA_FILL == ha->ha_op || HI_CHASH == use_memcache)
+      if (HA_FILL == ha->ha_op || HI_CHASH == use_memcache || ha->ha_memcache_only)
 	{
 	  hi->hi_pool = mem_pool_alloc ();
+	  if (ha->ha_memcache_only && HI_CHASH != use_memcache)
+	    {
+	      SET_THR_TMP_POOL (hi->hi_pool);
+	      hi->hi_memcache = t_id_hash_allocate (513, sizeof (hi_memcache_key_t), sizeof (caddr_t *), hi_memcache_hash, hi_memcache_cmp);
+	      hi->hi_memcache_from_mp = 1;
+	      SET_THR_TMP_POOL (NULL);
+	    }
 	}
       else
 	{
@@ -1354,6 +1361,45 @@ For procedures, we have no memcache. */
   hi->hi_memcache = NULL;
 }
 
+static void
+dc_pop_last_ssl (caddr_t * inst, state_slot_t * ssl)
+{
+  data_col_t * dc;
+  dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
+  if (DCT_NUM_INLINE & dc->dc_type)
+    {
+      dc->dc_n_values--;
+      if (dc->dc_nulls)
+	DC_CLR_NULL (dc, dc->dc_n_values);
+    }
+  else
+    dc_pop_last (dc);
+}
+
+
+void
+memcache_pop_last_out (setp_node_t * setp, key_source_t * ks, caddr_t * inst, int last)
+{
+  int inx;
+  dk_set_t out_slots = ks->ks_out_slots;
+  state_slot_t * ssl = NULL;
+  DO_BOX_0 (state_slot_t *, ssl1, inx, setp->setp_keys_box )
+    {
+      ssl = (state_slot_t*)out_slots->data;
+      out_slots = out_slots->next;
+      dc_pop_last_ssl (inst, ssl);
+    }
+  END_DO_BOX;
+  DO_BOX_0 (state_slot_t *, ssl1, inx, setp->setp_dependent_box)
+    {
+      ssl = (state_slot_t*)out_slots->data;
+      if (inx == last)
+	break;
+      out_slots = out_slots->next;
+      dc_pop_last_ssl (inst, ssl);
+    }
+  END_DO_BOX;
+}
 
 void
 memcache_read_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
@@ -1412,7 +1458,19 @@ memcache_read_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
 	  ssl = (state_slot_t*)out_slots->data;
 	  out_slots = out_slots->next;
 	  if (hi->hi_pool)
-	    qst_set_copy (inst, ssl, val[0][inx]);
+	    {
+	      if (ts->ts_sort_read_mask && ts->ts_sort_read_mask[inx])
+		{
+		  if (NULL == val[0][inx])
+		    {
+		      memcache_pop_last_out (setp, ks, inst, inx);
+		      goto next_row;
+		    }
+		  qst_set (inst, ssl, box_deserialize_string (val[0][inx], INT32_MAX, 0));
+		}
+	      else
+		qst_set_copy (inst, ssl, val[0][inx]);
+	    }
 	  else
 	    qst_set (inst, ssl, val[0][inx]);
 	  val[0][inx] = NULL;
@@ -1440,6 +1498,7 @@ memcache_read_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
 	  dc_reset_array (inst, (data_source_t*)ts, ts->src_gen.src_continue_reset, -1);
 	  goto next_batch;
 	}
+next_row:;
     }
   if (!hi->hi_pool)
     {
@@ -1453,7 +1512,8 @@ memcache_read_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
       mp_free (hi->hi_pool);
       hi->hi_pool = NULL;
     }
-  SRC_IN_STATE ((data_source_t*)ts, inst) = NULL;
+  if (branch == inst) /* if reading cluster branch, the calling chash reader decides when at end */
+    SRC_IN_STATE ((data_source_t*)ts, inst) = NULL;
   ts_always_null (ts, inst);
   if (QST_INT (inst, ts->src_gen.src_out_fill))
     qn_ts_send_output ((data_source_t *)ts, inst, ts->ts_after_join_test);
@@ -1747,7 +1807,7 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
 	      if (setp && setp->setp_any_distinct_gos)
 		{
 		  gb_op_t * go = (gb_op_t *)dk_set_nth (setp->setp_gb_ops, inx);
-		  if (go->go_distinct_ha)
+		  if (go && go->go_distinct_ha)
 		    {
 		      caddr_t val= qst_get (qst, go->go_distinct);
 		      if (DV_DB_NULL == DV_TYPE_OF (val))
@@ -1755,6 +1815,15 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
 			  deps[inx] = 0;
 			  continue;
 			}
+		    }
+		}
+	      if (setp && setp->setp_any_user_aggregate_gos)
+		{
+		  gb_op_t * go = (gb_op_t *)dk_set_nth (setp->setp_gb_ops, inx);
+		  if (go && AMMSC_USER == go->go_op)
+		    {
+		      deps[inx] = NULL;
+		      continue;
 		    }
 		}
 	      deps[inx] = mp_full_box_copy_tree (hi->hi_pool, QST_GET (qst, ha->ha_slots[n_keys+inx]));
@@ -1886,6 +1955,65 @@ box_num_always (boxint n)
   return b;
 }
 
+
+
+caddr_t
+go_ua_start (caddr_t * inst, gb_op_t * go, index_tree_t * tree, caddr_t * dep_ptr)
+{
+  hash_index_t * hi = tree->it_hi;
+  caddr_t box = QST_GET_V (inst, go->go_old_val), box2;
+  box2 = box_deserialize_reusing (*dep_ptr, box);
+  if (box2 != box)
+    QST_GET_V (inst, go->go_old_val) = box2;
+  return box2;
+}
+
+extern int chash_block_size;
+int ua_gb_from_mp;
+
+void
+go_ua_store (caddr_t * inst, gb_op_t * go, index_tree_t * tree, caddr_t * dep_ptr)
+{
+  mem_pool_t * mp = tree->it_hi->hi_pool;
+  tlsf_t * tlsf;
+  int any_len;
+  caddr_t err = NULL;
+  AUTO_POOL (1024);
+  caddr_t str;
+  caddr_t  place = *dep_ptr;
+  caddr_t box = QST_GET_V (inst, go->go_old_val);
+  str = box_to_any_1 (box, &err, &ap, DKS_TO_DC);
+  if (err)
+    sqlr_resignal (err);
+  any_len = box_length (str) - 1;
+  if (ua_gb_from_mp)
+    {
+      place = mp_alloc_box (mp, any_len, DV_NON_BOX);
+      *dep_ptr = place;
+    }
+  else 
+    {
+      size_t len = place ? tlsf_block_size (place) : 0;
+      if (!mp->mp_tlsf)
+	mp_set_tlsf (mp, chash_block_size);
+      tlsf = mp->mp_tlsf;
+      if (len < any_len)
+	{
+	  mutex_enter (&tlsf->tlsf_mtx);
+	  if (place)
+	    free_ex (place, tlsf);
+	  place = malloc_ex (any_len, tlsf);
+	  mutex_leave (&tlsf->tlsf_mtx);
+	  *dep_ptr = place;
+	}
+    }
+      memcpy_16 (place, str, any_len);
+  if (str < ap.ap_area || str > ap.ap_area + ap.ap_fill)
+    dk_free_box (str);
+    }
+
+
+
 #define AGG_C(dt, op) (((int)dt << 3) + op)
 #define code_vec_run_this_set(cv, qst) code_vec_run_1 (cv, qst, CV_THIS_SET_ONLY)
 
@@ -1911,6 +2039,8 @@ setp_group_row (setp_node_t * setp, caddr_t * qst)
 
   if (ihfr.ihfr_memcached)
     {
+      tree = qst_tree (qst, ha->ha_tree, ha->ha_set_no);
+      hi = tree->it_hi;
       dep_box_inx = 0;
       DO_SET (gb_op_t *, op, &setp->setp_gb_ops)
 	{
@@ -1925,9 +2055,7 @@ setp_group_row (setp_node_t * setp, caddr_t * qst)
 		qst_set (qst, op->go_old_val, NEW_DB_NULL);
 		code_vec_run_this_set (op->go_ua_init_setp_call, qst);
 		code_vec_run_this_set (op->go_ua_acc_setp_call, qst);
-	        dk_free_tree (dep_ptr[0]);
-	        dep_ptr[0] = QST_GET_V (qst, op->go_old_val);
-		QST_GET_V (qst, op->go_old_val) = NULL;
+		go_ua_store (qst, op, tree, dep_ptr); 
 		break;
 	      }
 	    }
@@ -2118,23 +2246,13 @@ runX_begin: ;
 	    case AMMSC_USER:
 	      {
 		caddr_t old_val, new_val;
-		old_val = QST_GET_V (qst, op->go_old_val) = dep_ptr[0];
-		dep_ptr[0] = NULL;
-		if (NULL == old_val)
-		  {
-		    qst_set (qst, op->go_old_val, NEW_DB_NULL);
-		    code_vec_run_this_set (op->go_ua_init_setp_call, qst);
-		  }
-		else if (DV_DB_NULL == DV_TYPE_OF (old_val))
+		old_val = go_ua_start (qst, op, tree, dep_ptr); 
+		if (NULL == old_val || DV_DB_NULL == DV_TYPE_OF (old_val))
 		  {
 		    code_vec_run_this_set (op->go_ua_init_setp_call, qst);
 		  }
 		code_vec_run_this_set (op->go_ua_acc_setp_call, qst);
-		new_val = QST_GET_V (qst, op->go_old_val);
-		if (NULL == new_val)
-		  new_val = box_num_nonull (0);
-		dep_ptr[0] = new_val;
-		QST_GET_V (qst, op->go_old_val) = NULL;
+		go_ua_store (qst, op, tree, dep_ptr); 
 		break;
 	      }
 	    }

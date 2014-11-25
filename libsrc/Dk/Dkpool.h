@@ -85,6 +85,7 @@ struct mem_pool_s
 #endif
   mem_pool_size_cap_t	mp_size_cap;
   caddr_t	mp_comment;
+  struct TLSF_struct *	mp_tlsf;
 };
 #else
 struct mem_block_s
@@ -111,6 +112,7 @@ struct mem_pool_s
 #endif
   caddr_t	mp_comment;
   mem_pool_size_cap_t	mp_size_cap;
+  struct TLSF_struct *	mp_tlsf;
 };
 #endif
 
@@ -135,6 +137,7 @@ EXE_EXPORT (caddr_t, mp_box_iri_id, (mem_pool_t * mp, iri_id_t num));
 EXE_EXPORT (caddr_t, mp_box_double, (mem_pool_t * mp, double num));
 EXE_EXPORT (caddr_t, mp_box_float, (mem_pool_t * mp, float num));
 void * mp_large_alloc (mem_pool_t * mp, size_t sz);
+void mp_set_tlsf (mem_pool_t * mp, size_t  sz);
 
 #ifdef MALLOC_DEBUG
 extern caddr_t dbg_mp_alloc_box (const char *file, int line, mem_pool_t * mp, size_t len, dtp_t dtp);

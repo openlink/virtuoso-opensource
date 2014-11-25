@@ -3760,9 +3760,9 @@ DBG_NAME(box_cast_to_UTF8) (DBG_PARAMS caddr_t * qst, caddr_t data)
 	else
 	*/
 	res = box_narrow_string_as_utf8 (NULL, result, 0, QST_CHARSET (qst), &err, 1);
+	dk_free_tree (result);
 	if (err)
 	  sqlr_resignal (err);
-	dk_free_tree (result);
 	return res;
       }
     }

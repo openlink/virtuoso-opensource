@@ -1813,9 +1813,9 @@ sqlc_expand_remote_cursor (sql_comp_t * sc, ST * tree)
 {
   /* single table select of remote/cluster/col-wise table, add prime key cols */
   ST **n_sel;
-  ST **from = tree->_.select_stmt.table_exp->_.table_exp.from;
-  ST *t1 = from[0]->_.table_ref.table;
-  if (1 == BOX_ELEMENTS (from) && ST_P (t1, TABLE_DOTTED) && !tree->_.select_stmt.table_exp->_.table_exp.group_by)
+  ST **from = tree->_.select_stmt.table_exp ? tree->_.select_stmt.table_exp->_.table_exp.from : NULL;
+  ST *t1 = from ? from[0]->_.table_ref.table : NULL;
+  if (1 == BOX_ELEMENTS_0 (from) && ST_P (t1, TABLE_DOTTED) && !tree->_.select_stmt.table_exp->_.table_exp.group_by)
     {
       dbe_table_t *tb = sch_name_to_table (sc->sc_cc->cc_schema, t1->_.table.name);
       remote_table_t *rt;

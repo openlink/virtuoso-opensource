@@ -394,7 +394,6 @@ kpd_free (key_partition_def_t * kpd)
   dk_free ((caddr_t)kpd, sizeof (key_partition_def_t));
 }
 
-
 void
 qr_free (query_t * qr)
 {

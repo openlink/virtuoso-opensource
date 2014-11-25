@@ -26,7 +26,7 @@
  *  
 */
 
-#include "thread_int.h"
+#include "Dk.h"
 
 struct rwlock_s {
   dk_mutex_t *mtx;

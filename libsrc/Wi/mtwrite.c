@@ -618,7 +618,7 @@ iq_aio (io_queue_t * iq)
 	    pg_make_col_map (buf);
 	  else if (buf->bd_content_map)
 	    {
-	      resource_store (PM_RC (buf->bd_content_map->pm_size), (void*) buf->bd_content_map);
+	      pm_store (buf, (buf->bd_content_map->pm_size), (void*) buf->bd_content_map);
 	      buf->bd_content_map = NULL;
 	    }
 	  if (DPF_BLOB == flags || DPF_BLOB_DIR == flags)

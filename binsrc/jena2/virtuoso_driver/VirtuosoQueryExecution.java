@@ -411,13 +411,9 @@ public class VirtuosoQueryExecution  implements QueryExecution
     
     private String getVosQuery()
     {
-	StringBuffer sb = new StringBuffer("sparql\n ");
+	StringBuilder sb = new StringBuilder("sparql\n ");
 	
-	if (graph.getRuleSet()!= null)
-          sb.append(" define input:inference '"+graph.getRuleSet()+"'\n");
-
-        if (graph.getSameAs())
-          sb.append(" define input:same-as \"yes\"\n");
+        graph.appendSparqlPrefixes(sb);
 
         if (!graph.getReadFromAllGraphs())
 	  sb.append(" define input:default-graph-uri <" + graph.getGraphName() + "> \n");

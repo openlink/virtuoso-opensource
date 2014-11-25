@@ -37,7 +37,7 @@
  */
 
 
-#define ht_alloc(ht, sz) dk_alloc (sz)
+#define ht_alloc(ht, sz) DBG_NAME(dk_alloc) (DBG_ARGS sz)
 
 typedef void (*maphash_func) (const void *k, void *data);
 typedef void (*maphash3_func) (const void *k, void *data, void *env);
@@ -56,7 +56,9 @@ typedef struct
   hash_elt_t *	ht_elements;
   uint32 	ht_count;
   uint32 	ht_actual_size;
-  uint32 	ht_rehash_threshold;
+  short		ht_tlsf_id;
+  unsigned char 	ht_rehash_threshold;
+  void *	ht_mp;
 #ifdef MTX_DEBUG
   dk_mutex_t *	ht_required_mtx;
 #endif

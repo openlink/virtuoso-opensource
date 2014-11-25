@@ -988,14 +988,18 @@ sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 	is_jtc = ST_P (j_right, JOINED_TABLE);
 	if (is_jtc && (!is_natural || (tree->_.join.type == OJ_LEFT || tree->_.join.type == OJ_FULL)))
 	  sco->sco_has_jt = 1;
-	sqlo_add_table_ref (so, &tree->_.join.left, sco->sco_has_jt ? &res_jt : res);
+	sqlo_add_table_ref (so, &tree->_.join.left, res);
 	left_ot = (op_table_t *) so->so_tables->data;
-	ptr = dk_set_last (so->so_this_dt->ot_from_ots);
-	sqlo_add_table_ref (so, &tree->_.join.right, sco->sco_has_jt ? &res_jt : res);
+	sqlo_add_table_ref (so, &tree->_.join.right, is_jtc ? &res_jt : res);
 	right_ot = (op_table_t *) so->so_tables->data;
 	sqlo_natural_join_cond (so, left_ot, right_ot, tree);
 	sqlo_scope (so, &(tree->_.join.cond));
-	t_st_and (&right_ot->ot_join_cond, tree->_.join.cond); /*always ste, even if some joins may be made into dts later*/
+	/* can be that the right subtree in a ij ends with oj in which case the right ot will be flagged outer. The cond in this case goes to to the top where, i.e. res, not to the join cond of the outer (optional) ot */
+if (J_INNER == tree->_.join.type && right_ot->ot_is_outer)
+  	  t_st_and (&right_ot->ot_enclosing_where_cond, tree->_.join.cond); /*always ste, even if some joins may be made into dts later*/
+
+	else
+	  t_st_and (&right_ot->ot_join_cond, tree->_.join.cond); /*always ste, even if some joins may be made into dts later*/
 	sco_merge (old_sco, sco);
 	so->so_scope = old_sco;
 	if (tree->_.join.type == OJ_LEFT || tree->_.join.type == OJ_FULL)
@@ -1007,15 +1011,6 @@ sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 	    t_set_push (res, tree);
 	    break;
 	  }
-	/*while (ptr && ptr->next && ptr->next->data != right_ot)
-	  {
-	    op_table_t *ot = (op_table_t *) ptr->next->data;
-	    if (!ot->ot_join_cond)
-	      ot->ot_join_cond = (ST *)STAR;
-	    ptr = ptr->next;
-	  }
-	  */
-	t_st_and (&right_ot->ot_join_cond, tree->_.join.cond);
 	break;
       }
     case DERIVED_TABLE:
@@ -1256,12 +1251,15 @@ sqlo_oj_has_const (ST * tree)
 }
 
 
+int enable_dt_inline = 1;
+
 int
 sqlo_dt_inlineable (sqlo_t *so, ST *tree, ST * from, op_table_t *ot, int single_only)
 {
   ST *dtexp = from->_.table_ref.table;
   ST *dt_orig = ST_P (dtexp, SELECT_STMT) ? dtexp->_.select_stmt.table_exp : NULL;
-
+  if (!enable_dt_inline)
+    return 0;
   if (ST_P (dtexp, SELECT_STMT) &&
       !dtexp->_.select_stmt.top &&
       dt_orig &&
@@ -1299,7 +1297,7 @@ sqlo_dt_inlineable (sqlo_t *so, ST *tree, ST * from, op_table_t *ot, int single_
 		dot->ot_prefix, dot->ot_new_prefix,
 		dot->ot_table ? dot->ot_table->tb_name : "(NONE)"));
 	}
-      return 1;
+      return enable_dt_inline;
     }
   return 0;
 }
@@ -3030,7 +3028,7 @@ int
 sqlo_is_unq_preserving (caddr_t name)
 {
   return (SINV_DV_STRINGP (name)
-	  && (!stricmp (name, "__ID2I") || !stricmp (name, "__RO2SQ") ));
+	  && (!stricmp (name, "__ID2I") || !stricmp (name, "__RO2SQ") || !stricmp (name, "__ID2IN") ));
 }
 
 

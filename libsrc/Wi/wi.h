@@ -34,6 +34,7 @@
 #define VAJRA
 #define VEC
 #define NO_CL GPF_T1 ("not available without cluster support")
+#define PM_TLSF 1
 #define KEYCOMP GPF_T1 ("not done with key comp");
 #define O12 GPF_T1("Database engine does not support this deprecated function. Please contact OpenLink Support.")
 /*#define PAGE_TRACE 1 */
@@ -197,6 +198,7 @@ struct buffer_pool_s
   int		bp_n_clean[BP_N_BUCKETS]; /* bp_ts at the boundary between buckets */
   int 		bp_n_dirty[BP_N_BUCKETS];
   buffer_desc_t **	bp_sort_tmp;
+  void *	bp_tlsf;
 };
 
 
@@ -1395,6 +1397,7 @@ struct page_map_s
 
 
 /* the different standard sizes of page_map_t */
+#ifndef PM_TLSF
 #define PM_SZ_1 50
 #define PM_SZ_2 200
 #define PM_SZ_3 720
@@ -1403,6 +1406,25 @@ struct page_map_s
 
 #define PM_SIZE(ct) \
   (ct < PM_SZ_1 ? PM_SZ_1 : (ct < PM_SZ_2 ? PM_SZ_2 : (ct < PM_SZ_3 ? PM_SZ_3 : (ct <= PM_SZ_4 ? PM_SZ_4 : (GPF_T1 ("pm size overflow"), 0)))))
+#else
+
+#define PM_SZ_1 75
+#define PM_SZ_2 163
+#define PM_SZ_3 339
+#define PM_SZ_4 691
+#define PM_SZ_5 1395
+#define PM_SZ_6 2803
+
+#define PM_SIZE(ct) \
+    (ct < PM_SZ_1 ? PM_SZ_1 : \
+     (ct < PM_SZ_2 ? PM_SZ_2 : \
+      (ct < PM_SZ_3 ? PM_SZ_3 : \
+       (ct < PM_SZ_4 ? PM_SZ_4 : \
+	(ct < PM_SZ_5 ? PM_SZ_5 : \
+	 (ct <= PM_SZ_6 ? PM_SZ_6 : \
+	  (GPF_T1 ("pm size overflow"), 0)))))))
+
+#endif
 extern resource_t * pm_rc_1;
 extern resource_t * pm_rc_2;
 extern resource_t * pm_rc_3;
@@ -1937,6 +1959,7 @@ extern int64 bdf_is_avail_mask; /* all bits on except read aside flag which does
 { \
   du_thread_t * __self = thr; \
   int reset_code;  \
+  struct TLSF_struct * __tlsf = __self->thr_tlsf; \
   jmp_buf_splice * __old_ctx = __self->thr_reset_ctx;\
   jmp_buf_splice __ctx;  \
   __self->thr_reset_ctx = &__ctx; \
@@ -1945,11 +1968,14 @@ extern int64 bdf_is_avail_mask; /* all bits on except read aside flag which does
 #define QR_RESET_CTX  QR_RESET_CTX_T (THREAD_CURRENT_THREAD)
 
 #define QR_RESET_CODE \
-  else
+  else \
+    { __self->thr_tlsf = __tlsf;
 
 
 #define END_QR_RESET \
+    } \
     POP_QR_RESET; \
+    __self->thr_tlsf = __tlsf;			\
 }
 
 #define POP_QR_RESET \

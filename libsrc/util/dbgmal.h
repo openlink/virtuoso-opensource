@@ -94,6 +94,7 @@ char *	dbg_strdup (const char *file, u_int line, const char *str);
 void	dbg_malstats (FILE *, int mode);
 int	dbg_mark (char *name);
 int	dbg_unmark (char *name);
+size_t  dbg_mal_count (const char *name, u_int line);
 
 void	 dbg_dump_mem(void);
 

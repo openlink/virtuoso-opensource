@@ -83,6 +83,12 @@ ceic_all_dtp (ce_ins_ctx_t * ceic, dtp_t dtp)
 #include "cevecins.c"
 
 
+#define INS_NAME ce_insert_vec_int64
+#define ELT_T int64
+#define SET_NA INT64_SET_CA
+#include "cevecins.c"
+
+
 #define VEC_DTP_CK(dtp) \
   if ((DV_ANY == ceic->ceic_col->col_sqt.sqt_dtp || DV_LONG_INT == dtp || DV_IRI_ID == dtp ||  !ceic->ceic_col->col_sqt.sqt_non_null) && !ceic_all_dtp (ceic, dtp)) \
     goto general;
@@ -662,9 +668,19 @@ append:
     {
       /* inserts at the end */
       int64 last_value = values[n_deltas - 1];
+      int inx2, skip_bytes = 0;
       if (value < first || value - first > 160)
 	goto no_order;
-      if ((last_value - first) / (n_deltas - nth) > 32)
+      if ((last_value - first) / (n_deltas - nth) > 20)
+	goto no_order;
+      for (inx2 = nth; inx2 < n_deltas - 1; inx2++)
+	{
+	  int delta =  values[inx2 + 1] - values[inx2];
+	  skip_bytes += delta / 15;
+	  if (delta > 15 * 15)
+	    goto no_order; /* skip of more than 15  bytes */
+	}
+      if (skip_bytes > 1000)
 	goto no_order;
       ce_rld_append (ceic, col_ceic, &ce, first, &values[nth], n_deltas - nth, ce_cur[-1], &space_after);
     }
@@ -1270,6 +1286,18 @@ ce_insert_1 (ce_ins_ctx_t * ceic, ce_ins_ctx_t ** col_ceic, db_buf_t ce, int spa
     case CE_VEC:
       VEC_DTP_CK (DV_LONG_INT);
       ce2 = ce_insert_vec_int (ceic, col_ceic, ce, space_after, split_at);
+      break;
+    case CE_VEC | CE_IS_IRI:
+      VEC_DTP_CK (DV_IRI_ID);
+      ce2 = ce_insert_vec_int (ceic, col_ceic, ce, space_after, split_at);
+      break;
+    case CE_VEC | CE_IS_64:
+      VEC_DTP_CK (DV_INT64);
+      ce2 = ce_insert_vec_int64 (ceic, col_ceic, ce, space_after, split_at);
+      break;
+    case CE_VEC | CE_IS_IRI | CE_IS_64:
+      VEC_DTP_CK (DV_IRI_ID_8);
+      ce2 = ce_insert_vec_int64 (ceic, col_ceic, ce, space_after, split_at);
       break;
     case CE_ALL_VARIANTS (CE_RL):
       ce2 = ce_insert_rl (ceic, col_ceic, ce, space_after, split_at);

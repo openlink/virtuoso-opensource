@@ -129,7 +129,7 @@ int
 dfe_p_stat (df_elt_t * tb_dfe, df_elt_t * pred, iri_id_t pid, dk_set_t * parts_ret, dbe_column_t * o_col, float *p_stat_ret,
     float *o_stat_ret)
 {
-  int found1, found2;
+  int found1 = 0, found2 = 0;
   int tried = 0;
   dbe_key_t *pk = tb_dfe->_.table.ot->ot_table->tb_primary_key;
   dbe_key_t *o_key = NULL;
@@ -228,7 +228,6 @@ jp_fanout (join_plan_t * jp)
   /* for sql this is the table card over the col pred cards , for rdf this is based on p stat */
   dbe_column_t *o_col = NULL;
   int jinx, p_found;
-  float p_stat[4];
   if (dfe_is_quad (jp->jp_tb_dfe))
     {
       dk_set_t parts = NULL;

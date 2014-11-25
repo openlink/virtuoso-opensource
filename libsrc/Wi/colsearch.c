@@ -176,12 +176,12 @@ itc_col_free (it_cursor_t * itc)
 
 
 void
-col_make_map (page_map_t ** pm_ret, db_buf_t str, int head, int buf_len)
+col_make_map (buffer_desc_t * buf, page_map_t ** pm_ret, db_buf_t str, int head, int buf_len)
 {
   page_map_t *pm = *pm_ret;
   int fill = 0;
   if (!pm)
-    pm = (page_map_t *) resource_get (PM_RC (PM_SZ_1));
+    pm = (page_map_t *) pm_get (buf, (PM_SZ_1));
   pm->pm_bytes_free = buf_len;
   pm->pm_filled_to = head;
   DO_CE (ce, bytes, values, ce_type, flags, str + head, buf_len)
@@ -191,7 +191,7 @@ col_make_map (page_map_t ** pm_ret, db_buf_t str, int head, int buf_len)
     if (fill + 1 >= pm->pm_size)
       {
 	pm->pm_count = fill;
-	map_resize (&pm, PM_SIZE (fill + 2));
+	  map_resize (buf, &pm, PM_SIZE (fill + 2));
       }
     pm->pm_entries[fill] = ce - str;
     pm->pm_entries[fill + 1] = values;
@@ -208,7 +208,7 @@ col_make_map (page_map_t ** pm_ret, db_buf_t str, int head, int buf_len)
 void
 pg_make_col_map (buffer_desc_t * buf)
 {
-  col_make_map (&buf->bd_content_map, buf->bd_buffer, DP_DATA, PAGE_DATA_SZ);
+  col_make_map (buf, &buf->bd_content_map, buf->bd_buffer, DP_DATA, PAGE_DATA_SZ);
 }
 
 
@@ -2569,6 +2569,14 @@ int non_unq_printed = 0;
 
 extern int dbf_ignore_uneven_col;
 
+void
+itc_no_hi (it_cursor_t * itc, buffer_desc_t * buf)
+{
+  itc->itc_ltrx->lt_error = LTE_SQL_ERROR;
+  itc->itc_ltrx->lt_status = LT_BLOWN_OFF;
+  itc_bust_this_trx (itc, &buf, ITC_BUST_THROW);
+}
+
 int
 itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_in_singles)
 {
@@ -2669,6 +2677,8 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
 	      if (hrng->hrng_ht_id)
 		{
 		  index_tree_t *it = qst_get_chash (inst, hrng->hrng_ht, hrng->hrng_ht_id, NULL);
+		  if (!it)
+		    itc_no_hi (itc, buf);
 		  cpo.cpo_chash = it->it_hi->hi_chash;
 		  cpo.cpo_chash_dtp = cpo.cpo_chash->cha_sqt[0].sqt_dtp;
 		}

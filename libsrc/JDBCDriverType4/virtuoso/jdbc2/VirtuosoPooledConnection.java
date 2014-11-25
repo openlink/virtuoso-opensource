@@ -46,17 +46,10 @@ import javax.sql.StatementEventListener;
 
 
 public class VirtuosoPooledConnection implements PooledConnection, Cloneable {
-#if JDK_VER >= 16
-  private LinkedList<Object> listeners = null;
-  private LinkedList<Object> pStmtsPool = null;
-#else
-  private LinkedList listeners = null;
-  private LinkedList pStmtsPool = null;
-#endif
+  private LinkedList<ConnectionEventListener> listeners = null;
   private ConnectionWrapper connWrapper = null;
   private VirtuosoConnection conn;
   private boolean sendEvent = true;
-  private int maxStatements = 0;
   protected String connURL;
   protected int hashConnURL;
   protected long tmClosed;
@@ -76,13 +69,8 @@ public class VirtuosoPooledConnection implements PooledConnection, Cloneable {
   }
 
   protected void init(VirtuosoConnectionPoolDataSource listener) {
-#if JDK_VER >= 16
-    listeners = new LinkedList<Object>();
-#else
-    listeners = new LinkedList();
-#endif
+    listeners = new LinkedList<ConnectionEventListener>();
     addConnectionEventListener(listener);
-    maxStatements = listener.getMaxStatements();
     conn.pooled_connection = this;
   }
 
@@ -101,9 +89,7 @@ public class VirtuosoPooledConnection implements PooledConnection, Cloneable {
       v.listeners = null;
       v.connWrapper = null;
       v.conn = conn;
-      v.pStmtsPool = null;
       v.sendEvent = true;
-      v.maxStatements = 0;
       v.connURL = connURL;
       v.hashConnURL = hashConnURL;
       v.tmClosed = tmClosed;
@@ -116,21 +102,15 @@ public class VirtuosoPooledConnection implements PooledConnection, Cloneable {
 
 
   protected VirtuosoPooledConnection reuse() {
-#if JDK_VER >= 16
-    LinkedList<Object> StmtsPool = connWrapper.reset();
-#else
-    LinkedList StmtsPool = connWrapper.reset();
-#endif
+    connWrapper.reset();
     VirtuosoPooledConnection pconn = (VirtuosoPooledConnection)this.clone();
     listeners.clear();
     this.connWrapper = null;
     this.conn.pooled_connection = null;
     this.conn.xa_connection = null;
     this.conn = null;
-    this.pStmtsPool = null;
     this.connURL = null;
     pconn.tmClosed = System.currentTimeMillis();
-    pconn.pStmtsPool = StmtsPool;
     pconn.conn.pooled_connection = pconn;
     pconn.conn.clearFutures();
     return pconn;
@@ -205,9 +185,6 @@ public class VirtuosoPooledConnection implements PooledConnection, Cloneable {
       conn.xa_connection = null;
     }
     conn = null;
-    if (pStmtsPool != null)
-      pStmtsPool.clear();
-    pStmtsPool = null;
     sendErrorEvent(new VirtuosoException("Physical Connection is closed", VirtuosoException.OK));
     if (ex != null)
       throw ex;
@@ -222,10 +199,8 @@ public class VirtuosoPooledConnection implements PooledConnection, Cloneable {
    *             if a database-access error occurs
    *
   **/
+  @Deprecated
   public void closeAll() throws java.sql.SQLException {
-    if (connWrapper != null) {
-      connWrapper.clearStmtsCache();
-    }
   }
 
 
@@ -248,11 +223,11 @@ public class VirtuosoPooledConnection implements PooledConnection, Cloneable {
     }
     if (connWrapper != null) {
       sendEvent = false;
-      pStmtsPool = connWrapper.reset();
+      connWrapper.reset();
       connWrapper.close();
       sendEvent = true;
     }
-    connWrapper = new ConnectionWrapper(conn, this, pStmtsPool, maxStatements);
+    connWrapper = new ConnectionWrapper(conn, this);
     return connWrapper;
   }
 
