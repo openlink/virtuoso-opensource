@@ -98,13 +98,13 @@ export LOGFILE
 . $VIRTUOSO_TEST/testlib.sh
 # some OS-es print line even not found
 #run_tests_in_parallel=`which parallel | wc -l`
-parallel 2> /dev/null
-if [ $? -ne 0 ]
-then
-    run_tests_in_parallel=0
-else
-    run_tests_in_parallel=1
-fi
+#parallel 2> /dev/null
+#if [ $? -ne 0 ]
+#then
+    #run_tests_in_parallel=0
+#else
+    #run_tests_in_parallel=1
+#fi
 run_tests_in_parallel=0
 
 #
