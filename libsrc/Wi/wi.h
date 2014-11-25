@@ -198,7 +198,7 @@ struct buffer_pool_s
   int		bp_n_clean[BP_N_BUCKETS]; /* bp_ts at the boundary between buckets */
   int 		bp_n_dirty[BP_N_BUCKETS];
   buffer_desc_t **	bp_sort_tmp;
-  void **	bp_tlsf;
+  void *	bp_tlsf;
 };
 
 
