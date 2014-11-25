@@ -1869,8 +1869,8 @@ stat_desc_t dbf_descs [] =
     {"enable_no_free", &enable_no_free, SD_INT32},
 #endif
     {"enable_rdf_box_const", &enable_rdf_box_const, SD_INT32},
-    {"c_pcre_match_limit", &c_pcre_match_limit, SD_INT32},
-    {"c_pcre_match_limit_recursion", &c_pcre_match_limit_recursion, SD_INT32},
+    {"pcre_match_limit", &c_pcre_match_limit, SD_INT32},
+    {"pcre_match_limit_recursion", &c_pcre_match_limit_recursion, SD_INT32},
     {"pcre_max_cache_sz", &pcre_max_cache_sz, SD_INT32},
     {NULL, NULL, NULL}
   };
