@@ -1151,7 +1151,8 @@ void setp_order_row (setp_node_t * setp, caddr_t * qst);
 void setp_group_row (setp_node_t * setp, caddr_t * qst);
 #define HASH_NUM_SAFE(n) n = n & 0x7fffffff
 #define MAX_STACK_N_KEYS 200
-
+caddr_t go_ua_start (caddr_t * inst, gb_op_t * go, index_tree_t * tree, caddr_t * dep_ptr);
+void go_ua_store (caddr_t * inst, gb_op_t * go, index_tree_t * tree, caddr_t * dep_ptr);
 
 typedef struct itc_ha_feed_ret_s {
   hash_index_t *ihfr_hi;
