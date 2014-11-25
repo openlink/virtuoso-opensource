@@ -666,6 +666,8 @@ int cfg_getsize (PCONFIG pc, char * sec, char * attr, size_t * sz);
 int cfg2_getsize (PCONFIG pc,  char * sec, char * attr, size_t * sz);
 
 extern LOG *virtuoso_log;
+extern int tn_step_refers_to_input;
+
 static char *prefix;
 int
 cfg_setup (void)
@@ -673,6 +675,7 @@ cfg_setup (void)
   char *savestr;
   char *section;
   int32 long_helper;
+  char *tmp_str;
 
   if (f_config_file == NULL)
     f_config_file = "virtuoso.ini";
@@ -1261,6 +1264,11 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "EnableMonitor", &mon_enable) == -1)
     mon_enable = 1;
 
+  if (cfg_getstring (pconfig, section, "TransStepMode", &tmp_str) == 0)
+    {
+      if (!stricmp ("input", tmp_str))
+       tn_step_refers_to_input = 1;
+    }
 
   /*
    *  Parse [Flags] section
