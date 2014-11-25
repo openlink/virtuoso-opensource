@@ -1910,17 +1910,6 @@ box_num_always (boxint n)
 
 
 
-uint32 
-tlsf_size (caddr_t ptr)
-{
-  bhdr_t * b = BHDR (ptr);
-  if ((FREE_BLOCK & b->size))
-    GPF_T1 ("tlsf length of free b,block by bhdr free bit");
-  if (b->size > 1000) bing ();
-  return b->size;
-}
-
-
 caddr_t
 go_ua_start (caddr_t * inst, gb_op_t * go, index_tree_t * tree, caddr_t * dep_ptr)
 {
@@ -1957,7 +1946,7 @@ go_ua_store (caddr_t * inst, gb_op_t * go, index_tree_t * tree, caddr_t * dep_pt
     }
   else 
     {
-      int len = place ? tlsf_size (place) : 0;
+      size_t len = place ? tlsf_block_size (place) : 0;
       if (!mp->mp_tlsf)
 	mp_set_tlsf (mp, chash_block_size);
       tlsf = mp->mp_tlsf;
