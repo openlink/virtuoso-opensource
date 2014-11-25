@@ -13165,7 +13165,7 @@ bif_exec_start (client_connection_t * cli, caddr_t text)
   if (!bif_exec_pending)
     {
       dk_mutex_init (&bif_exec_pending_mtx, MUTEX_TYPE_SHORT);
-      bif_exec_pending = id_hash_allocate (201, sizeof (int64), sizeof (bif_exec_stat_t), boxint_hash, boxint_hashcmp);
+      bif_exec_pending = id_hash_allocate (201, sizeof (int64 *), sizeof (bif_exec_stat_t *), boxint_hash, boxint_hashcmp);
     }
   stat = (bif_exec_stat_t *) dk_alloc (sizeof (bif_exec_stat_t));
   stat->exs_text = box_copy (text);
