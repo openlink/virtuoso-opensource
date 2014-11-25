@@ -1361,6 +1361,45 @@ For procedures, we have no memcache. */
   hi->hi_memcache = NULL;
 }
 
+static void
+dc_pop_last_ssl (caddr_t * inst, state_slot_t * ssl)
+{
+  data_col_t * dc;
+  dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
+  if (DCT_NUM_INLINE & dc->dc_type)
+    {
+      dc->dc_n_values--;
+      if (dc->dc_nulls)
+	DC_CLR_NULL (dc, dc->dc_n_values);
+    }
+  else
+    dc_pop_last (dc);
+}
+
+
+void
+memcache_pop_last_out (setp_node_t * setp, key_source_t * ks, caddr_t * inst, int last)
+{
+  int inx;
+  dk_set_t out_slots = ks->ks_out_slots;
+  state_slot_t * ssl = NULL;
+  DO_BOX_0 (state_slot_t *, ssl1, inx, setp->setp_keys_box )
+    {
+      ssl = (state_slot_t*)out_slots->data;
+      out_slots = out_slots->next;
+      dc_pop_last_ssl (inst, ssl);
+    }
+  END_DO_BOX;
+  DO_BOX_0 (state_slot_t *, ssl1, inx, setp->setp_dependent_box)
+    {
+      ssl = (state_slot_t*)out_slots->data;
+      if (inx == last)
+	break;
+      out_slots = out_slots->next;
+      dc_pop_last_ssl (inst, ssl);
+    }
+  END_DO_BOX;
+}
 
 void
 memcache_read_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
@@ -1421,7 +1460,14 @@ memcache_read_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
 	  if (hi->hi_pool)
 	    {
 	      if (ts->ts_sort_read_mask && ts->ts_sort_read_mask[inx])
-		qst_set (inst, ssl, box_deserialize_string (val[0][inx], INT32_MAX, 0));
+		{
+		  if (NULL == val[0][inx])
+		    {
+		      memcache_pop_last_out (setp, ks, inst, inx);
+		      goto next_row;
+		    }
+		  qst_set (inst, ssl, box_deserialize_string (val[0][inx], INT32_MAX, 0));
+		}
 	      else
 		qst_set_copy (inst, ssl, val[0][inx]);
 	    }
@@ -1452,6 +1498,7 @@ memcache_read_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
 	  dc_reset_array (inst, (data_source_t*)ts, ts->src_gen.src_continue_reset, -1);
 	  goto next_batch;
 	}
+next_row:;
     }
   if (!hi->hi_pool)
     {
