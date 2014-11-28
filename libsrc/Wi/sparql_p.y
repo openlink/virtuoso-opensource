@@ -2364,7 +2364,7 @@ spar_blank_node		/* [65]*	BlankNode	 ::=  BLANK_NODE_LABEL | ( '[' ']' )	*/
 spar_sparul1x_action_or_drop_macro_libs
 	: spar_sparul1x_action_or_drop_macro_lib	{ $$ = NULL; t_set_push (&($$), $1); }
 	| spar_sparul1x_action_or_drop_macro_libs spar_sparul1x_action_or_drop_macro_lib	{ $$ = $1; t_set_push (&($$), $2); }
-	| spar_sparul1x_action_or_drop_macro_libs _SEMI	{ $$ = $1; }
+	| spar_sparul1x_action_or_drop_macro_libs _SEMI spar_prolog	{ $$ = $1; }
 	;
 
 spar_sparul1x_action_or_drop_macro_lib		/* [DML*]	SparulAction	 ::=  */
