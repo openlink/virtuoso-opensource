@@ -793,4 +793,7 @@ extern int enable_cr_trace;
   itc->itc_col_row = 0
 #endif
 
+#define COL_DBG_LOG "virtuoso.debug.trx"
+void col_dbg_log_new ();
+
 #endif

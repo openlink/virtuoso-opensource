@@ -2184,6 +2184,7 @@ dbs_checkpoint (char *log_name, int shutdown)
       dbs_backup_check (dbs, shutdown);
     }
   END_DO_SET();
+  col_dbg_log_new ();
   if (CPT_NORMAL == shutdown)
     cpt_over ();
   auto_cpt_scheduled = 0;

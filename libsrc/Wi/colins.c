@@ -4571,6 +4571,34 @@ itc_col_log_insert (it_cursor_t * itc)
 
 extern int32 cl_non_logged_write_mode;
 dk_session_t * dbg_log_ses;
+caddr_t bif_curdatetime (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
+
+void
+col_dbg_log_new ()
+{
+  int fd, rc;
+  TIMESTAMP_STRUCT ts;
+  char *szExt, szNewName[255], szTS[15];
+  caddr_t now;
+  if (!dbg_log_ses)
+    return;
+
+  now = bif_curdatetime(NULL, NULL, NULL);
+  dt_to_timestamp_struct(now, &ts);
+  snprintf(szTS, sizeof (szTS), "%04d%02d%02d%02d%02d%02d",
+	ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second);
+  dk_free_box(now);
+  snprintf (szNewName, sizeof (szNewName), COL_DBG_LOG ".%s", szTS);
+
+  mutex_enter (log_write_mtx);
+  fd = tcpses_get_fd (dbg_log_ses->dks_session);
+  /*ftruncate (fd, 0);*/
+  fd_close (fd, 0);
+  rc = rename (COL_DBG_LOG, szNewName);
+  PrpcSessionFree (dbg_log_ses);
+  dbg_log_ses = NULL;
+  mutex_leave (log_write_mtx);
+}
 
 void
 itc_col_dbg_log (it_cursor_t * itc)
@@ -4602,7 +4630,7 @@ itc_col_dbg_log (it_cursor_t * itc)
   if (!dbg_log_ses)
     {
       OFF_T off;
-      fd = fd_open ("virtuoso.debug.trx", LOG_OPEN_FLAGS);
+      fd = fd_open (COL_DBG_LOG, LOG_OPEN_FLAGS);
       off = LSEEK (fd, 0, SEEK_END);
       dbg_log_ses = dk_session_allocate (SESCLASS_TCPIP);
       tcpses_set_fd (dbg_log_ses->dks_session, fd);

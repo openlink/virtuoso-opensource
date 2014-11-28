@@ -67,7 +67,7 @@ ceic_del_dbg_log (ce_ins_ctx_t * ceic)
   if (!dbg_log_ses)
     {
       OFF_T off;
-      fd = fd_open ("virtuoso.debug.trx", LOG_OPEN_FLAGS);
+      fd = fd_open (COL_DBG_LOG, LOG_OPEN_FLAGS);
       off = LSEEK (fd, 0, SEEK_END);
       dbg_log_ses = dk_session_allocate (SESCLASS_TCPIP);
       tcpses_set_fd (dbg_log_ses->dks_session, fd);
