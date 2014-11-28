@@ -375,6 +375,7 @@ extern int32 cl_stage;
 extern int32 cl_batch_bytes;
 extern int32 cl_first_buf;
 extern int32 iri_range_size;
+extern int32 enable_iri_nic_n;
 extern int enable_small_int_part;
 extern int iri_seqs_used;
 int64 tn_max_memory = 1000000000;
@@ -1777,6 +1778,7 @@ stat_desc_t dbf_descs [] =
     {"enable_hash_merge", (long *)&enable_hash_merge, SD_INT32},
     {"enable_hash_fill_join", (long *)&enable_hash_fill_join, SD_INT32},
     {"enable_subscore", (long *)&enable_subscore, SD_INT32},
+    {"enable_iri_nic_n", (long *)&enable_iri_nic_n, SD_INT32},
     {"enable_at_print", (long *)&enable_at_print, SD_INT32},
     {"enable_min_card", (long *)&enable_min_card},
     {"enable_distinct_sas", (long *)&enable_distinct_sas, SD_INT32},

@@ -3984,6 +3984,7 @@ bif_uriqa_dynamic_local_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
 void rdf_inf_init ();
 
 int iri_cache_size = 0;
+int32 enable_iri_nic_n = 1;
 
 
 dbe_key_t *
@@ -4236,7 +4237,8 @@ rdf_core_init (void)
   if (100 >= iri_cache_size)
     iri_cache_size = MIN (500000, main_bufs / 2);
   iri_name_cache = nic_allocate (iri_cache_size, 1, 0);
-  nic_set_n_ways (iri_name_cache, 64);
+  if (enable_iri_nic_n)
+    nic_set_n_ways (iri_name_cache, 64);
   iri_prefix_cache = nic_allocate (iri_cache_size / 10, 0, 0);
   nic_set_n_ways (iri_prefix_cache, 64);
   rdf_lang_cache = nic_allocate (255, 0, 0);
