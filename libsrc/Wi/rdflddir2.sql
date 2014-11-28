@@ -153,7 +153,9 @@ create procedure ld_is_rdfxml (in f any)
 create procedure
 ld_file (in f varchar, in graph varchar)
 {
-  declare gzip_name varchar;
+  declare gzip_name, base varchar;
+  base := graph;
+  if (base = 'with_delete') base := '';
   declare exit handler for sqlstate '*' {
     rollback work;
     update DB.DBA.LOAD_LIST
@@ -187,14 +189,14 @@ ld_file (in f varchar, in graph varchar)
       if (ld_is_rdfxml (gzip_name))
 	DB.DBA.RDF_LOAD_RDFXML_V (gz_file_open (f), graph, graph);
       else
-	TTLP_V (gz_file_open (f), graph, graph, ld_ttlp_flags (gzip_name, graph));
+	TTLP_V (gz_file_open (f), base, graph, ld_ttlp_flags (gzip_name, graph));
     }
   else
     {
       if (ld_is_rdfxml (f))
 	DB.DBA.RDF_LOAD_RDFXML_V (file_open (f), graph, graph);
       else
-	TTLP_V (file_open (f), graph, graph, ld_ttlp_flags (f, graph));
+	TTLP_V (file_open (f), base, graph, ld_ttlp_flags (f, graph));
     }
 
   log_stats (sprintf ('RDF load %s', f));
