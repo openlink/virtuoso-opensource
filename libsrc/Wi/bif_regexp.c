@@ -856,7 +856,7 @@ err_at_replace:
 }
 
 int32 c_pcre_match_limit_recursion = 500;
-int32 c_pcre_match_limit = 500;
+int32 c_pcre_match_limit = 100000;
 int32 pcre_max_cache_sz = 2000;
 int32 pcre_rnd_seed;
 
