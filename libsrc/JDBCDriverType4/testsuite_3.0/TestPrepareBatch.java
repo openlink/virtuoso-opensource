@@ -83,7 +83,7 @@ public class TestPrepareBatch
          int[] res = pstmt.executeBatch();
          pstmt.close();
          for(int i = 0;i < 100;i++)
-            if(res[i] != 1)
+            if(res[i] != 1 && res[i]!=PreparedStatement.SUCCESS_NO_INFO)
             {
                System.out.println(i + " " + res[i]);
                System.out.println("    FAILED");
@@ -117,7 +117,7 @@ public class TestPrepareBatch
          res = pstmt.executeBatch();
          pstmt.close();
          for(int i = 0;i < 100;i++)
-            if(res[i] != 1)
+            if(res[i] != 1 && res[i]!=PreparedStatement.SUCCESS_NO_INFO)
             {
                System.out.print("    FAILED");
                System.exit(-1);

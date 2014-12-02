@@ -815,7 +815,8 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
       if(cal != null && _ts != null)
         _ts = new java.sql.Timestamp(VirtuosoTypes.timeToCal(_ts, cal));
 
-      _ts.setNanos(val.getNanos());
+      if (_ts!=null)
+        _ts.setNanos(val.getNanos());
       return _ts;
    }
 
