@@ -279,6 +279,7 @@ public class VirtuosoBlob
 	     }
 
 	   Long init_read_len = null;
+/***
 	   if (pos - 1 < bh_offset ())
 	     {
 	       // we should go from start
@@ -292,6 +293,16 @@ public class VirtuosoBlob
 	     init_read_len = new Long (pos - bh_offset() - 1);
 //	     init_read_len = new Long ((pos - bh_offset() - 1) *
 //		 (dtp == VirtuosoTypes.DV_BLOB_WIDE_HANDLE ? -1 : 1));
+***/
+	   if (pos - 1 < bh_offset ())
+	     {
+	       // we should go from start
+	       //System.out.println ("vb: rewind pos:" + pos + " ofs:" + bh_offset());
+	       rewind();
+	     }
+	   
+	   if (pos - 1 > bh_offset ())
+	     init_read_len = new Long (pos - bh_offset() - 1);
 
 
 	   if (init_read_len != null)
