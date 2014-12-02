@@ -278,7 +278,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	     {
 		 vresultSet.setUpdateCount (0);
 		 vresultSet.getMoreResults (false);
-		 res[inx] = vresultSet.getUpdateCount();
+		 res[inx] = SUCCESS_NO_INFO; //vresultSet.getUpdateCount();
 	     }
 	   }
 	 catch(IOException e)
