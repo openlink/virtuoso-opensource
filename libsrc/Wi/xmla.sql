@@ -262,15 +262,30 @@ create procedure
 }
 ;
 
-create procedure xmla_get_user (inout uname varchar, inout passwd varchar)
+
+create procedure xmla_check_user (inout uname varchar, inout passwd varchar)
 {
+  declare ret int;
+
+  ret := 1;
+
   if (uname is null and is_https_ctx ())
     {
       uname := connection_get ('SPARQLUserId'); -- if WebID ACL is checked
       passwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = uname);
     }
+  
+  if (uname is null or passwd is null) 
+    {
+      if (ret = 1)
+        signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
+      else
+        signal ('00009', 'Unable to process the request, because the UserName property is not mapped to any SQL UserName');
+    }
+  return ret;
 }
 ;
+
 
 create procedure
 "Execute"  (in  "Command" varchar
@@ -314,14 +329,11 @@ create procedure
   uname := xmla_get_property ("Properties", 'UserName', null);
   passwd := xmla_get_property ("Properties", 'Password', null);
 
-  xmla_get_user (uname, passwd);
-
   -- XMLA command, no statement
   if (stmt is null and ("BeginSession" is not null or "EndSession" is not null))
     return xml_tree_doc ('<root xmlns="urn:schemas-microsoft-com:xml-analysis:empty" />');
 
-  if (uname is null or passwd is null)
-    signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
+  xmla_check_user (uname, passwd);
 
   state := '00000';
   stmt := get_keyword ('Statement', "Command");
@@ -858,9 +870,7 @@ create method xmla_dbschema_columns () for xmla_discover
       declare uname, passwd varchar;
       uname := self.xmla_get_property ('UserName', null);
       passwd := self.xmla_get_property ('Password', null);
-      xmla_get_user (uname, passwd);
-      if (uname is null or passwd is null)
-	signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
+      xmla_check_user (uname, passwd);
       set_user_id (uname, 1, passwd);
       exec('select
 	 name_part(KEY_TABLE, 0) as TABLE_CATALOG,
@@ -984,9 +994,7 @@ create method xmla_dbschema_foreign_keys () for xmla_discover
       declare uname, passwd varchar;
       uname := self.xmla_get_property ('UserName', null);
       passwd := self.xmla_get_property ('Password', null);
-      xmla_get_user (uname, passwd);
-      if (uname is null or passwd is null)
-	signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
+      xmla_check_user (uname, passwd);
       set_user_id (uname, 1, passwd);
       exec('select
     	 name_part (PK_TABLE, 0) as PK_TABLE_CATALOG varchar (128),
@@ -1063,9 +1071,7 @@ create method xmla_dbschema_primary_keys () for xmla_discover
       declare uname, passwd varchar;
       uname := self.xmla_get_property ('UserName', null);
       passwd := self.xmla_get_property ('Password', null);
-      xmla_get_user (uname, passwd);
-      if (uname is null or passwd is null)
-	signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
+      xmla_check_user (uname, passwd);
       set_user_id (uname, 1, passwd);
       exec('select
     	 name_part(KEY_TABLE, 0) AS TABLE_CATALOG NVARCHAR(128),
@@ -1210,9 +1216,7 @@ create method xmla_dbschema_tables () for xmla_discover
       declare uname, passwd varchar;
       uname := self.xmla_get_property ('UserName', null);
       passwd := self.xmla_get_property ('Password', null);
-      xmla_get_user (uname, passwd);
-      if (uname is null or passwd is null)
-	signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
+      xmla_check_user (uname, passwd);
       set_user_id (uname, 1, passwd);
       exec ('select name_part(KEY_TABLE, 0) as TABLE_CATALOG,
 	            name_part(KEY_TABLE, 1) as TABLE_SCHEMA,
