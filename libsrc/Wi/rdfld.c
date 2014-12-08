@@ -269,7 +269,7 @@ rl_query_init (dbe_table_t * quad_tb)
   DO_SET (dbe_key_t *, key, &quad_tb->tb_keys)
   {
     int first = 1;
-    sprintf (txt, "insert soft DB.DBA.RDF_QUAD index %s option (vectored) (", key->key_name);
+      sprintf (txt, "insert soft DB.DBA.RDF_QUAD index %s option (vectored%s) (", key->key_name, !key->key_is_primary ? ", no trigger" : "");
     pars[0] = 0;
     DO_SET (dbe_column_t *, col, &key->key_parts)
     {

@@ -942,7 +942,8 @@ sqlc_insert (sql_comp_t * sc, ST * tree)
       opts = tree ? tree->_.insert.opts : NULL;
       if (!sqlo_opt_value (opts, OPT_NO_IDENTITY))
       sqlc_insert_autoincrements (sc, ins, &code);
-      sqlc_ins_triggers (sc, ins, &code);
+      if (!sqlo_opt_value (opts, OPT_NO_TRIGGER))
+	sqlc_ins_triggers (sc, ins, &code);
       if (dk_set_length (ins->ins_values) != BOX_ELEMENTS (ins->ins_col_ids))
 	sqlc_new_error (sc->sc_cc, "21S01", "SQ099",
 	    "different number of cols and values in insert.");
