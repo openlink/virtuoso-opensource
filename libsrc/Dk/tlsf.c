@@ -954,7 +954,8 @@ tlsf_destroy (tlsf_t * tlsf)
   tlsf->tlsf_signature = 0;
   dk_mutex_destroy (&tlsf->tlsf_mtx);
 #ifdef MALLOC_DEBUG
-  id_hash_free (tlsf->tlsf_allocs);
+  if (tlsf->tlsf_allocs)
+    id_hash_free (tlsf->tlsf_allocs);
 #endif
 }
 
