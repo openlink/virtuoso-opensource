@@ -175,6 +175,7 @@ clause
 		ttlp_enter_trig_group (ttlp_arg);
 		TF_CHANGE_GRAPH_TO_DEFAULT (tf); }
 	    base_or_prefix_or_inner_triple_clauses _RBRA dot_opt {
+		ttlp_triple_process_prepared (ttlp_arg);
 		ttlp_leave_trig_group (ttlp_arg); }
 	| error { ttlyyerror_action ("Only a triple or a special clause (like prefix declaration) is allowed here"); }
 	;
@@ -244,7 +245,7 @@ dot_opt
 	;
 
 trig_block_or_predicate_object_list
-	: predicate_object_list_or_garbage _DOT_WS
+	: predicate_object_list_or_garbage _DOT_WS		{ ttlp_triple_process_prepared (ttlp_arg); }
 	| opt_eq_lbra {
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		TTLYYERROR_ACTION_COND (TTLP_ALLOW_TRIG, "Left curly brace can appear here only if the source text is TriG");
@@ -252,6 +253,7 @@ trig_block_or_predicate_object_list
 		TF_CHANGE_GRAPH (tf, ttlp_arg->ttlp_subj_uri); }
 	    base_or_prefix_or_inner_triple_clauses _RBRA dot_opt {
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
+		ttlp_triple_process_prepared (ttlp_arg);
 		ttlp_leave_trig_group (ttlp_arg);
 		TF_CHANGE_GRAPH_TO_DEFAULT (tf); }
 	;
@@ -276,8 +278,8 @@ base_or_prefix_or_inner_triple_clauses_nodot
 	;
 
 base_or_prefix_or_inner_triple_clauses_dot
-	: base_or_prefix_or_inner_triple_clause _DOT_WS
-	| base_or_prefix_or_inner_triple_clauses_dot base_or_prefix_or_inner_triple_clause _DOT_WS
+	: base_or_prefix_or_inner_triple_clause _DOT_WS		{ ttlp_triple_process_prepared (ttlp_arg); }
+	| base_or_prefix_or_inner_triple_clauses_dot base_or_prefix_or_inner_triple_clause _DOT_WS		{ ttlp_triple_process_prepared (ttlp_arg); }
 	;
 
 base_or_prefix_or_inner_triple_clause
@@ -297,8 +299,8 @@ inner_triple_clauses_nodot
 	;
 
 inner_triple_clauses_dot
-	: inner_triple_clause _DOT_WS
-	| inner_triple_clauses_dot inner_triple_clause _DOT_WS
+	: inner_triple_clause _DOT_WS		{ ttlp_triple_process_prepared (ttlp_arg); }
+	| inner_triple_clauses_dot inner_triple_clause _DOT_WS		{ ttlp_triple_process_prepared (ttlp_arg); }
 	;
 
 inner_triple_clause
@@ -329,17 +331,17 @@ triple_clause_with_nonq_subj
 top_triple_clause_with_nonq_subj
 	: VARIABLE { dk_free_tree (ttlp_arg->ttlp_subj_uri);
 		ttlp_arg->ttlp_subj_uri = $1; }
-	    predicate_object_list_or_garbage _DOT_WS
+	    predicate_object_list_or_garbage _DOT_WS		{ ttlp_triple_process_prepared (ttlp_arg); }
 	| blank { dk_free_tree (ttlp_arg->ttlp_subj_uri);
 		ttlp_arg->ttlp_subj_uri = $1; }
 	    top_blank_predicate_object_list_or_garbage_with_dot
 	| literal_subject {
 		TTLYYERROR_ACTION_COND (TTLP_SKIP_LITERAL_SUBJECTS, "Virtuoso does not support literal subjects");
 		dk_free_tree (ttlp_arg->ttlp_subj_uri); ttlp_arg->ttlp_subj_uri = NULL; }
-	    predicate_object_list_or_garbage _DOT_WS
+	    predicate_object_list_or_garbage _DOT_WS		{ ttlp_triple_process_prepared (ttlp_arg); }
 	| TTL_RECOVERABLE_ERROR { dk_free_tree (ttlp_arg->ttlp_subj_uri);
 		ttlp_arg->ttlp_subj_uri = NULL; }
-	    predicate_object_list_or_garbage _DOT_WS
+	    predicate_object_list_or_garbage _DOT_WS		{ ttlp_triple_process_prepared (ttlp_arg); }
 	| _GARBAGE_BEFORE_DOT_WS _DOT_WS
 	;
 
@@ -367,8 +369,8 @@ inner_predicate_object_list
 	;
 
 top_blank_predicate_object_list_or_garbage_with_dot
-	: top_blank_predicate_object_list _DOT_WS
-	| top_blank_predicate_object_list _GARBAGE_BEFORE_DOT_WS _DOT_WS
+	: top_blank_predicate_object_list _DOT_WS		{ ttlp_triple_process_prepared (ttlp_arg); }
+	| top_blank_predicate_object_list _GARBAGE_BEFORE_DOT_WS _DOT_WS		{ ttlp_triple_forget_prepared (ttlp_arg); }
 	| _DOT_WS { TTLYYERROR_ACTION_COND (TTLP_ACCEPT_DIRTY_SYNTAX, "Missing predicate and object between top-level blank node subject and a dot"); }
 	| _GARBAGE_BEFORE_DOT_WS _DOT_WS
 	| _LBRA_TOP_TRIG { ttlyyerror_action ("Virtuoso does not support blank nodes as graph identifiers inTriG, graphs are identified only by IRIs"); }
@@ -414,13 +416,13 @@ predicate_object_list_nosemi
 	;
 
 predicate_object_list_semi
-	: verb_and_object_list _SEMI
-	| predicate_object_list_semi verb_and_object_list_or_garbage _SEMI
+	: verb_and_object_list _SEMI		{ ttlp_triple_process_prepared (ttlp_arg); }
+	| predicate_object_list_semi verb_and_object_list_or_garbage _SEMI		{ ttlp_triple_process_prepared (ttlp_arg); }
 	;
 
 verb_and_object_list_or_garbage
 	: verb_and_object_list
-	| verb_and_object_list _GARBAGE_BEFORE_DOT_WS
+	| verb_and_object_list _GARBAGE_BEFORE_DOT_WS		{ ttlp_triple_forget_prepared (ttlp_arg); }
 	;
 
 verb_and_object_list
@@ -439,13 +441,14 @@ verb_and_object_list
 
 object_list_or_garbage
 	: object_list
-	| _GARBAGE_BEFORE_DOT_WS
+	| _GARBAGE_BEFORE_DOT_WS		{ ttlp_triple_forget_prepared (ttlp_arg); }
 	;
 
 object_list
 	: object_list_nocomma
 	| object_list_comma
-	| object_list _COMMA object_or_garbage	{; /* triple is made by object */ }
+	| object_list _COMMA		{ ttlp_triple_process_prepared (ttlp_arg); }
+		object_or_garbage
 	| _COMMA { ttlyyerror_action ("Missing object before comma"); }
 	| _SEMI { ttlyyerror_action ("Missing object before semicolon"); }
 	| _DOT_WS { ttlyyerror_action ("Missing object before dot"); }
@@ -459,8 +462,8 @@ object_list_nocomma
 	;
 
 object_list_comma
-	: object _COMMA
-	| object_list_comma object _COMMA
+	: object _COMMA					{ ttlp_triple_process_prepared (ttlp_arg); }
+	| object_list_comma object _COMMA		{ ttlp_triple_process_prepared (ttlp_arg); }
 	;
 
 verb
@@ -552,69 +555,41 @@ object_or_garbage
 
 object
 	: q_complete {
-		dk_free_tree (ttlp_arg->ttlp_obj);
-		ttlp_arg->ttlp_obj = ttlp_arg->ttlp_last_complete_uri;
-		ttlp_arg->ttlp_last_complete_uri = NULL;
-		ttlp_triple_and_inf (ttlp_arg, ttlp_arg->ttlp_obj); }
+		ttlp_triple_and_inf_prepare (ttlp_arg, ttlp_arg->ttlp_last_complete_uri);
+		ttlp_arg->ttlp_last_complete_uri = NULL; }
 	| VARIABLE {
-		dk_free_tree (ttlp_arg->ttlp_obj);
-		ttlp_arg->ttlp_obj = $1;
-		ttlp_triple_and_inf (ttlp_arg, $1); }
+		ttlp_triple_and_inf_prepare (ttlp_arg, $1); }
 	| blank	{
-		dk_free_tree (ttlp_arg->ttlp_obj);
-		ttlp_arg->ttlp_obj = $1;
-		ttlp_triple_and_inf (ttlp_arg, $1); }
+		ttlp_triple_and_inf_prepare (ttlp_arg, $1); }
 	| true_L {
-		ttlp_triple_l_and_inf (ttlp_arg, (caddr_t)((ptrlong)1), uname_xmlschema_ns_uri_hash_boolean, NULL); }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, (caddr_t)((ptrlong)1), uname_xmlschema_ns_uri_hash_boolean, NULL); }
 	| false_L {
-		ttlp_triple_l_and_inf (ttlp_arg, (caddr_t)((ptrlong)0), uname_xmlschema_ns_uri_hash_boolean, NULL); }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, (caddr_t)((ptrlong)0), uname_xmlschema_ns_uri_hash_boolean, NULL); }
 	| TURTLE_INTEGER {
-		dk_free_tree (ttlp_arg->ttlp_obj);
-		ttlp_arg->ttlp_obj = $1;
-		ttlp_triple_l_and_inf (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_integer, NULL); }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_integer, NULL); }
 	| TURTLE_DECIMAL {
-		dk_free_tree (ttlp_arg->ttlp_obj);
-		ttlp_arg->ttlp_obj = $1;
-		ttlp_triple_l_and_inf (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_decimal, NULL); }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_decimal, NULL); }
 	| TURTLE_DOUBLE {
-		dk_free_tree (ttlp_arg->ttlp_obj);
-		ttlp_arg->ttlp_obj = $1;
-		ttlp_triple_l_and_inf (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_double, NULL);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_double, NULL);	}
 	| NaN_L {
 	  	double myZERO = 0.0;
 		double myNAN_d = 0.0/myZERO;
-		dk_free_tree (ttlp_arg->ttlp_obj);
-		ttlp_arg->ttlp_obj = box_double (myNAN_d);
-		ttlp_triple_l_and_inf (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, box_double (myNAN_d), uname_xmlschema_ns_uri_hash_double, NULL);	}
 	| INF_L {
 	  	double myZERO = 0.0;
 		double myPOSINF_d = 1.0/myZERO;
-		dk_free_tree (ttlp_arg->ttlp_obj);
-		ttlp_arg->ttlp_obj = box_double (myPOSINF_d);
-		ttlp_triple_l_and_inf (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, box_double (myPOSINF_d), uname_xmlschema_ns_uri_hash_double, NULL);	}
 	| _MINUS_INF_L {
 	  	double myZERO = 0.0;
 		double myNEGINF_d = -1.0/myZERO;
-		dk_free_tree (ttlp_arg->ttlp_obj);
-		ttlp_arg->ttlp_obj = box_double (myNEGINF_d);
-		ttlp_triple_l_and_inf (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, box_double (myNEGINF_d), uname_xmlschema_ns_uri_hash_double, NULL);	}
 	| TURTLE_STRING	{
-		dk_free_tree (ttlp_arg->ttlp_obj);
-		ttlp_arg->ttlp_obj = $1;
-		ttlp_triple_l_and_inf (ttlp_arg, $1, NULL, NULL); }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, NULL, NULL); }
 	| TURTLE_STRING LANGTAG	{
-		dk_free_tree (ttlp_arg->ttlp_obj);
-		ttlp_arg->ttlp_obj = $1;
-		dk_free_tree (ttlp_arg->ttlp_obj_lang);
-		ttlp_arg->ttlp_obj_lang = $2;
-		ttlp_triple_l_and_inf (ttlp_arg, $1, NULL, $2);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, NULL, $2);	}
 	| TURTLE_STRING _CARET_CARET q_complete {
-		dk_free_tree (ttlp_arg->ttlp_obj);
-		ttlp_arg->ttlp_obj = $1;
-		dk_free_tree (ttlp_arg->ttlp_obj_type);
-		ttlp_arg->ttlp_obj_type = ttlp_arg->ttlp_last_complete_uri;
-		ttlp_arg->ttlp_last_complete_uri = NULL;
-		ttlp_triple_l_and_inf (ttlp_arg, ttlp_arg->ttlp_obj, ttlp_arg->ttlp_obj_type, NULL);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, ttlp_arg->ttlp_last_complete_uri, NULL);
+		ttlp_arg->ttlp_last_complete_uri = NULL;		}
 	| TTL_RECOVERABLE_ERROR { }
 	| TURTLE_STRING _CARET_CARET TTL_RECOVERABLE_ERROR {
 		dk_free_tree (ttlp_arg->ttlp_obj);
@@ -702,7 +677,8 @@ blank_block_subj_tail
 		  ttlp_arg->ttlp_subj_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
 		  ttlp_arg->ttlp_pred_is_reverse = (ptrlong)dk_set_pop (&(ttlp_arg->ttlp_saved_uris)); }
 	| _RSQBRA
-		{ $$ = ttlp_arg->ttlp_subj_uri;
+		{ ttlp_triple_process_prepared (ttlp_arg);
+		  $$ = ttlp_arg->ttlp_subj_uri;
 		  dk_free_tree (ttlp_arg->ttlp_pred_uri);
 		  ttlp_arg->ttlp_pred_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
 		  ttlp_arg->ttlp_subj_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
@@ -710,8 +686,10 @@ blank_block_subj_tail
 	;
 
 bad_dot_opt_rsqbra
-	:	_RSQBRA
-	|	_DOT_WS _RSQBRA	{ TTLYYERROR_ACTION_COND (TTLP_ACCEPT_DIRTY_SYNTAX, "The blank node block should contain only predicate-object between square brackets, trailing dot is not allowed"); }
+	:	_RSQBRA		{ ttlp_triple_process_prepared (ttlp_arg); }
+	|	_DOT_WS _RSQBRA	{
+		  TTLYYERROR_ACTION_COND (TTLP_ACCEPT_DIRTY_SYNTAX, "The blank node block should contain only predicate-object between square brackets, trailing dot is not allowed");
+		  ttlp_triple_process_prepared (ttlp_arg); }
 	|	_DOT_WS error	{ ttlyyerror_action ("The blank node block should contain only predicate-object between square brackets, no dots are allowed"); }
 	;
 
@@ -740,7 +718,7 @@ blank_block_seq
 		    {
 		      ttlp_arg->ttlp_subj_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
 		      ttlp_arg->ttlp_pred_uri = uname_rdf_ns_uri_rest;
-		      ttlp_triple_and_inf (ttlp_arg, uname_rdf_ns_uri_nil);
+		      ttlp_triple_and_inf_now (ttlp_arg, uname_rdf_ns_uri_nil, 0);
 		      dk_free_tree (ttlp_arg->ttlp_subj_uri);
 		      first_node = dk_set_pop (&(ttlp_arg->ttlp_saved_uris)); }
 		  ttlp_arg->ttlp_pred_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
@@ -752,13 +730,15 @@ blank_block_seq
 items
 	: /*empty*/	{}
 	| items object {
-		  caddr_t last_node = ttlp_arg->ttlp_subj_uri;
+		  caddr_t last_node;
+		  ttlp_triple_process_prepared (ttlp_arg);
+		  last_node = ttlp_arg->ttlp_subj_uri;
 		  ttlp_arg->ttlp_subj_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));
 		  dk_set_push (&(ttlp_arg->ttlp_saved_uris), last_node);
 		  if (NULL != ttlp_arg->ttlp_subj_uri)
 		    {
 		      ttlp_arg->ttlp_pred_uri = uname_rdf_ns_uri_rest;
-		      ttlp_triple_and_inf (ttlp_arg, last_node);
+		      ttlp_triple_and_inf_now (ttlp_arg, last_node, 0);
 		      dk_free_tree (ttlp_arg->ttlp_subj_uri);
 		      ttlp_arg->ttlp_subj_uri = NULL; }
 		  if (NULL == ttlp_arg->ttlp_unused_seq_bnodes)
@@ -780,7 +760,8 @@ blank_block_formula
 		  ttlp_arg->ttlp_subj_uri = NULL;
 		  ttlp_arg->ttlp_pred_uri = NULL; }
 		inner_triple_clauses _RBRA
-		{ $$ = ttlp_arg->ttlp_formula_iid;
+		{ ttlp_triple_process_prepared (ttlp_arg);
+		  $$ = ttlp_arg->ttlp_formula_iid;
 		  dk_free_tree (ttlp_arg->ttlp_subj_uri);
 		  dk_free_tree (ttlp_arg->ttlp_pred_uri);
 		  ttlp_arg->ttlp_pred_uri = dk_set_pop (&(ttlp_arg->ttlp_saved_uris));

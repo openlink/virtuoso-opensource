@@ -740,8 +740,13 @@ ttlp_reset_stacks (ttlp_t *ttlp)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_saved_uris)));
   while (NULL != ttlp->ttlp_unused_seq_bnodes)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_unused_seq_bnodes)));
+  if (NULL != ttlp->ttlp_last_complete_uri)
+    {
+      if (ttlp->ttlp_last_complete_uri != ttlp->ttlp_obj)
+        dk_free_tree (ttlp->ttlp_last_complete_uri);
+      ttlp->ttlp_last_complete_uri = NULL;
+    }
   dk_free_tree (ttlp->ttlp_last_q_save);		ttlp->ttlp_last_q_save = NULL;
-  dk_free_tree (ttlp->ttlp_last_complete_uri);	ttlp->ttlp_last_complete_uri = NULL;
   dk_free_tree (ttlp->ttlp_subj_uri);		ttlp->ttlp_subj_uri = NULL;
   dk_free_tree (ttlp->ttlp_pred_uri);		ttlp->ttlp_pred_uri = NULL;
   dk_free_tree (ttlp->ttlp_obj);			ttlp->ttlp_obj = NULL;
@@ -1061,7 +1066,73 @@ ttlp_uri_resolve (ttlp_t *ttlp_arg, caddr_t qname)
 }
 
 void
-ttlp_triple_and_inf (ttlp_t *ttlp_arg, caddr_t o_uri)
+ttlp_triple_and_inf_prepare (ttlp_t *ttlp_arg, caddr_t o_uri)
+{
+  if (ttlp_arg[0].ttlp_obj != o_uri)
+    {
+      if (NULL != ttlp_arg[0].ttlp_obj)
+        dk_free_tree (ttlp_arg[0].ttlp_obj);
+      ttlp_arg[0].ttlp_obj = o_uri;
+    }
+  if (ttlp_arg[0].ttlp_triple_is_prepared)
+    ttlyyerror_impl (ttlp_arg, "", "Internal error: an triple is not processed before complete reading of next triple");
+  ttlp_arg[0].ttlp_triple_is_prepared = ttlp_arg[0].ttlp_pred_is_reverse ? 'r' : 'R';
+}
+
+void
+ttlp_triple_l_and_inf_prepare (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang)
+{
+  if (ttlp_arg[0].ttlp_obj != o_sqlval)
+    {
+      if (NULL != ttlp_arg[0].ttlp_obj)
+        dk_free_tree (ttlp_arg[0].ttlp_obj);
+      ttlp_arg[0].ttlp_obj = o_sqlval;
+    }
+  if (ttlp_arg[0].ttlp_obj_type != o_dt)
+    {
+      if (NULL != ttlp_arg[0].ttlp_obj_type)
+        dk_free_tree (ttlp_arg[0].ttlp_obj_type);
+      ttlp_arg[0].ttlp_obj_type = o_dt;
+    }
+  if (ttlp_arg[0].ttlp_obj_lang != o_lang)
+    {
+      if (NULL != ttlp_arg[0].ttlp_obj_lang)
+        dk_free_tree (ttlp_arg[0].ttlp_obj_lang);
+      ttlp_arg[0].ttlp_obj_lang = o_lang;
+    }
+  if (ttlp_arg[0].ttlp_triple_is_prepared)
+    ttlyyerror_impl (ttlp_arg, "", "Internal error: an triple is not processed before complete reading of next triple");
+  ttlp_arg[0].ttlp_triple_is_prepared = ttlp_arg[0].ttlp_pred_is_reverse ? 'l' : 'L';
+}
+
+void
+ttlp_triple_process_prepared (ttlp_t *ttlp_arg)
+{
+  switch (ttlp_arg[0].ttlp_triple_is_prepared)
+    {
+    case 'R':
+      ttlp_triple_and_inf_now (ttlp_arg, ttlp_arg[0].ttlp_obj, 0);
+      ttlp_arg[0].ttlp_triple_is_prepared = 0;
+      return;
+    case 'r':
+      ttlp_triple_and_inf_now (ttlp_arg, ttlp_arg[0].ttlp_obj, 1);
+      ttlp_arg[0].ttlp_triple_is_prepared = 0;
+      return;
+    case 'L':
+      ttlp_triple_l_and_inf_now (ttlp_arg, ttlp_arg[0].ttlp_obj, ttlp_arg[0].ttlp_obj_type, ttlp_arg[0].ttlp_obj_lang, 0);
+      ttlp_arg[0].ttlp_triple_is_prepared = 0;
+      return;
+    case 'l':
+      ttlp_triple_l_and_inf_now (ttlp_arg, ttlp_arg[0].ttlp_obj, ttlp_arg[0].ttlp_obj_type, ttlp_arg[0].ttlp_obj_lang, 1);
+      ttlp_arg[0].ttlp_triple_is_prepared = 0;
+      return;
+    case 0: return;
+    default: GPF_T1 ("Bad ttlp_triple_is_prepared");
+    }
+}
+
+void
+ttlp_triple_and_inf_now (ttlp_t *ttlp_arg, caddr_t o_uri, int pred_is_reverse)
 {
   triple_feed_t *tf = ttlp_arg[0].ttlp_tf;
   caddr_t s = ttlp_arg[0].ttlp_subj_uri;
@@ -1069,7 +1140,7 @@ ttlp_triple_and_inf (ttlp_t *ttlp_arg, caddr_t o_uri)
   caddr_t o = o_uri;
   if ((NULL == s) || (NULL == p))
     return;
-  if (ttlp_arg[0].ttlp_pred_is_reverse)
+  if (pred_is_reverse)
     {
       caddr_t swap = o;
       o = s;
@@ -1088,14 +1159,14 @@ ttlp_triple_and_inf (ttlp_t *ttlp_arg, caddr_t o_uri)
 }
 
 void
-ttlp_triple_l_and_inf (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang)
+ttlp_triple_l_and_inf_now (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang, int is_reverse)
 {
   triple_feed_t *tf = ttlp_arg[0].ttlp_tf;
   caddr_t s = ttlp_arg[0].ttlp_subj_uri;
   caddr_t p = ttlp_arg[0].ttlp_pred_uri;
   if ((NULL == s) || (NULL == p))
     return;
-  if (ttlp_arg[0].ttlp_pred_is_reverse)
+  if (is_reverse)
     {
       if (!(ttlp_arg[0].ttlp_flags & TTLP_SKIP_LITERAL_SUBJECTS))
         ttlyyerror_impl (ttlp_arg, "", "Virtuoso does not support literal subjects");

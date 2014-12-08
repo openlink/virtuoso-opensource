@@ -187,7 +187,7 @@ clause
 	| _AT_prefix_L _COLON Q_IRI_REF dot_opt	{
 		dk_free_box (ttlp_arg->ttlp_default_ns_uri);
 		ttlp_arg->ttlp_default_ns_uri = $3; }
-	| subject pred object_with_ctx _DOT_WS
+	| subject pred object_with_ctx _DOT_WS		{ ttlp_triple_process_prepared (ttlp_arg); }
 	| subject pred _GARBAGE_BEFORE_DOT_WS _DOT_WS
 	| subject _GARBAGE_BEFORE_DOT_WS _DOT_WS
 	| _GARBAGE_BEFORE_DOT_WS _DOT_WS
@@ -274,61 +274,61 @@ object_with_ctx
 		ttlp_arg->ttlp_obj = ttlp_arg->ttlp_last_complete_uri;
 		ttlp_arg->ttlp_last_complete_uri = NULL; }
 	  ctx_opt {
-		ttlp_triple_and_inf (ttlp_arg, ttlp_arg->ttlp_obj); }
+		ttlp_triple_and_inf_prepare (ttlp_arg, ttlp_arg->ttlp_obj); }
 	| VARIABLE {
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1; }
 	  ctx_opt {
-		ttlp_triple_and_inf (ttlp_arg, $1); }
+		ttlp_triple_and_inf_prepare (ttlp_arg, $1); }
 	| blank {
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1; }
 	  ctx_opt {
-		ttlp_triple_and_inf (ttlp_arg, $1); }
+		ttlp_triple_and_inf_prepare (ttlp_arg, $1); }
 	| true_L ctx_opt {
-		ttlp_triple_l_and_inf (ttlp_arg, (caddr_t)((ptrlong)1), uname_xmlschema_ns_uri_hash_boolean, NULL); }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, (caddr_t)((ptrlong)1), uname_xmlschema_ns_uri_hash_boolean, NULL); }
 	| false_L ctx_opt {
-		ttlp_triple_l_and_inf (ttlp_arg, (caddr_t)((ptrlong)0), uname_xmlschema_ns_uri_hash_boolean, NULL); }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, (caddr_t)((ptrlong)0), uname_xmlschema_ns_uri_hash_boolean, NULL); }
 	| TURTLE_INTEGER ctx_opt {
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1;
-		ttlp_triple_l_and_inf (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_integer, NULL); }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_integer, NULL); }
 	| TURTLE_DECIMAL ctx_opt {
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1;
-		ttlp_triple_l_and_inf (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_decimal, NULL); }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_decimal, NULL); }
 	| TURTLE_DOUBLE ctx_opt {
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1;
-		ttlp_triple_l_and_inf (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_double, NULL);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_double, NULL);	}
 	| NaN_L ctx_opt {
 	  	double myZERO = 0.0;
 		double myNAN_d = 0.0/myZERO;
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = box_double (myNAN_d);
-		ttlp_triple_l_and_inf (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL);	}
 	| INF_L ctx_opt {
 	  	double myZERO = 0.0;
 	  	double myPOSINF_d = 1.0/myZERO;
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = box_double (myPOSINF_d);
-		ttlp_triple_l_and_inf (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL);	}
 	| _MINUS_INF_L ctx_opt {
 	  	double myZERO = 0.0;
 	 	double myNEGINF_d = -1.0/myZERO;
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = box_double (myNEGINF_d);
-		ttlp_triple_l_and_inf (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL);	}
 	| TURTLE_STRING ctx_opt	{
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1;
-		ttlp_triple_l_and_inf (ttlp_arg, $1, NULL, NULL); }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, NULL, NULL); }
 	| TURTLE_STRING LANGTAG ctx_opt	{
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1;
 		dk_free_tree (ttlp_arg->ttlp_obj_lang);
 		ttlp_arg->ttlp_obj_lang = $2;
-		ttlp_triple_l_and_inf (ttlp_arg, $1, NULL, $2);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, NULL, $2);	}
 	| TURTLE_STRING _CARET_CARET q_complete {
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1;
@@ -336,7 +336,7 @@ object_with_ctx
 		ttlp_arg->ttlp_obj_type = ttlp_arg->ttlp_last_complete_uri;
 		ttlp_arg->ttlp_last_complete_uri = NULL; }
 	  ctx_opt {
-		ttlp_triple_l_and_inf (ttlp_arg, ttlp_arg->ttlp_obj, ttlp_arg->ttlp_obj_type, NULL);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, ttlp_arg->ttlp_obj, ttlp_arg->ttlp_obj_type, NULL);	}
 	| TTL_RECOVERABLE_ERROR ctx_opt { }
 	| TURTLE_STRING _CARET_CARET TTL_RECOVERABLE_ERROR ctx_opt {
 		dk_free_tree (ttlp_arg->ttlp_obj);

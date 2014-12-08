@@ -102,11 +102,15 @@ typedef struct triple_feed_s {
   int *tf_line_no_ptr;		/*!< Pointer to some line number counter somewhere outside, may be NULL */
 } triple_feed_t;
 
+/*! Allocates a do-nothing triple feed. It will become useful when \c tf_cbk_names and corresponding \c tf_cbk_qrs callback queries are set by tf_set_cbk_names() . */
 extern triple_feed_t *tf_alloc (void);
+/*! Frees \c tf . It will not perform final commit. */
 extern void tf_free (triple_feed_t *tf);
 extern void tf_set_cbk_names (triple_feed_t *tf, ccaddr_t *cbk_names);
+/*! Indicates the beginning of a new graph. */
 extern void tf_new_graph (triple_feed_t *tf, caddr_t uri);
 extern caddr_t tf_get_iid (triple_feed_t *tf, caddr_t uri);
+/*! Calls the TRIPLE_FEED_COMMIT callback. */
 extern void tf_commit (triple_feed_t *tf);
 extern void tf_triple (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t o_uri);
 extern void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t obj_sqlval, caddr_t obj_datatype, caddr_t obj_language);
@@ -205,6 +209,7 @@ typedef struct ttlp_s
   caddr_t ttlp_obj;		/*!< Current object URI or value */
   caddr_t ttlp_obj_type;	/*!< Current object type URI */
   caddr_t ttlp_obj_lang;	/*!< Current object language mark */
+  char ttlp_triple_is_prepared;	/*!< Flags if some triple is prepared but not fed to ttlp_tf. */
   int ttlp_pred_is_reverse;	/*!< Flag if ttlp_pred_uri is used as reverse, e.g. in 'O is P of S' syntax */
   caddr_t ttlp_formula_iid;	/*!< IRI ID of the blank node of the formula ( '{ ... }' notation of N3 */
   int ttlp_in_trig_graph;	/*!< The parser is inside TriG graph so \c ttlp_inner_namespaces_prefix2iri is in use etc. */
@@ -263,8 +268,12 @@ extern caddr_t ttlp_uri_resolve (ttlp_t *ttlp_arg, caddr_t qname);
 extern caddr_t ttlp_strliteral (ttlp_t *ttlp_arg, const char *sparyytext, int mode, char delimiter);
 extern caddr_t ttl_lex_analyze (caddr_t str, int mode_bits, wcharset_t *query_charset);
 
-extern void ttlp_triple_and_inf (ttlp_t *ttlp_arg, caddr_t o_uri);
-extern void ttlp_triple_l_and_inf (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang);
+extern void ttlp_triple_and_inf_prepare (ttlp_t *ttlp_arg, caddr_t o_uri);
+extern void ttlp_triple_l_and_inf_prepare (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang);
+extern void ttlp_triple_process_prepared (ttlp_t *ttlp_arg);
+#define ttlp_triple_forget_prepared(ttlp_arg) do { (ttlp_arg)->ttlp_triple_is_prepared = 0; } while (0)
+extern void ttlp_triple_and_inf_now (ttlp_t *ttlp_arg, caddr_t o_uri, int is_reverse);
+extern void ttlp_triple_l_and_inf_now (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang, int is_reverse);
 extern void ttlp_triples_for_bnodes_debug (ttlp_t *ttlp_arg, caddr_t bnode_iid, int lineno, caddr_t label);
 
 #define RDFXML_COMPLETE		0
