@@ -9814,12 +9814,14 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
       SSL_set_verify (ssl, verify, (int (*)(int, X509_STORE_CTX *)) https_ssl_verify_callback);
       SSL_set_app_data (ssl, ap);
       SSL_set_session_id_context (ssl, (void*)&s_server_auth_session_id_context, sizeof(s_server_auth_session_id_context));
+      IO_SECT (qst);
       i = SSL_renegotiate (ssl);
       if (i <= 0) sqlr_new_error ("42000", ".....", "SSL_renegotiate failed");
       i = SSL_do_handshake (ssl);
       if (i <= 0) sqlr_new_error ("42000", ".....", "SSL_do_handshake failed");
       ssl->state = SSL_ST_ACCEPT;
       i = SSL_do_handshake (ssl);
+      END_IO_SECT (err_ret);
       if (i <= 0) sqlr_new_error ("42000", ".....", "SSL_do_handshake failed");
       if (SSL_get_peer_certificate (ssl))
 	return box_num (1);
