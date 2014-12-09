@@ -17097,9 +17097,10 @@ create procedure DB.DBA.RDF_QUAD_LOAD_CACHE ()
       count (dict_put (__rdf_graph_iri2id_dict(), __uname (id_to_iri (RGU_GRAPH_IID)), RGU_GRAPH_IID)) +
       count (dict_put (__rdf_graph_id2iri_dict(), RGU_GRAPH_IID, __uname (id_to_iri (RGU_GRAPH_IID))))
       from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID <> #i8192 and RGU_GRAPH_IID <> #i0 );
-  for (select RGGM_GROUP_IID as group_iid, DB.DBA.VECTOR_AGG (RGGM_MEMBER_IID) as membs
-         from DB.DBA.RDF_GRAPH_GROUP_MEMBER join DB.DBA.RDF_GRAPH_GROUP on (RGGM_GROUP_IID = RGG_IID) ) do
+  for select RGG_IID as group_iid from DB.DBA.RDF_GRAPH_GROUP do
     {
+      declare membs any;
+      membs := (select DB.DBA.VECTOR_AGG (RGGM_MEMBER_IID) from DB.DBA.RDF_GRAPH_GROUP_MEMBER where RGGM_GROUP_IID = group_iid);
       if (length (membs) < 1000)
         {
           gvector_digit_sort (membs, 1, 0, 1);
