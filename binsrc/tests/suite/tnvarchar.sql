@@ -45,10 +45,9 @@ create table WIDEZTEST (ID int not null primary key, DATA nvarchar);
 --ECHO BOTH ": casting narrow binary zeroes string into nvarchar STATE=" $STATE " MESSAGE=" $MESSAGE " length (DATA)=" $LAST[1] ", should be 9\n";
 
 insert into WIDEZTEST (ID, DATA) values (3, cast ('Abcdefghi' as nvarchar));
---insert into WIDEZTEST (ID, DATA) values (3, cast ('\x5\x0\x1\x0\x2\x0\x3\x0\x4' as nvarchar));
 select length (DATA) from WIDEZTEST where ID = 3;
 ECHO BOTH $IF $EQU $LAST[1] 9 "PASSED" "*** FAILED";
-ECHO BOTH ": casting narrow binary zeroes string into nvarchar column STATE=" $STATE " MESSAGE=" $MESSAGE "length (DATA)=" $LAST[1] ", should be 9\n";
+ECHO BOTH ": casting narrow string into nvarchar column STATE=" $STATE " MESSAGE=" $MESSAGE "length (DATA)=" $LAST[1] ", should be 9\n";
 
 exit;
 
