@@ -724,8 +724,6 @@ itc_like_compare (it_cursor_t * itc, buffer_desc_t * buf, caddr_t pattern, searc
   switch (dtp1)
 	      {
     case DV_SHORT_STRING:
-      if (collation && collation->co_is_wide)
-		collation = NULL;
 	break;
     case DV_WIDE:
       st = LIKE_ARG_UTF;
@@ -821,8 +819,6 @@ ce_like_filter (col_pos_t * cpo, int row, dtp_t flags, db_buf_t val, int len, in
   switch (dtp1)
     {
     case DV_SHORT_STRING:
-      if (collation && collation->co_is_wide)
-	collation = NULL;
       break;
     case DV_WIDE:
       st = LIKE_ARG_UTF;
