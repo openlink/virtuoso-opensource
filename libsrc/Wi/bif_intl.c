@@ -51,17 +51,61 @@ extern "C" {
 #endif
 
 int
-collation_define_memonly (caddr_t name, caddr_t table)
+collation_define_memonly (caddr_t name, caddr_t table, int is_utf8_if_narrow)
 {
   dtp_t dtp;
-  int ctr;
+  int is_narrow, ctr;
+  int raw_tbl_len, tbl_len;
   NEW_VARZ(collation_t, coll);
   if (NULL == table)
     table = uname___empty;
   dtp = DV_TYPE_OF (table);
-  if (dtp == DV_STRING || dtp == DV_C_STRING || dtp == DV_UNAME)
+  is_narrow = (dtp == DV_STRING || dtp == DV_C_STRING || dtp == DV_UNAME);
+  if (is_narrow && is_utf8_if_narrow)
     {
-      int raw_tbl_len = box_length (table) - 1, tbl_len = raw_tbl_len;
+      virt_mbstate_t ps;
+      memset (&ps, 0, sizeof (virt_mbstate_t));
+      const unsigned char *tail = (const unsigned char *)table;
+      const unsigned char *tail1 = tail;
+      const unsigned char *table_end = tail + box_length (table) - 1;
+      raw_tbl_len = virt_mbsnrtowcs (NULL, &tail1, table_end-tail, 0, &ps);
+      tbl_len = raw_tbl_len;
+      if (raw_tbl_len <= 0)
+        {
+          log_error (
+              "Error in collation %s definition: invalid encoding"
+              "It will not be defined. Drop the collation and recreate it.", name );
+          return -3;
+        }
+      if (tbl_len < 0x100)
+        tbl_len = 0x100;
+      coll->co_xlat_table = (wchar_t *)dk_alloc_box ((tbl_len + 1) * sizeof (wchar_t), DV_WIDE);
+      coll->co_xlat_table[tbl_len] = 0;
+      memset (&ps, 0, sizeof (virt_mbstate_t));
+      for (ctr = 0; ctr < raw_tbl_len; ctr++)
+        {
+          int read = virt_mbrtowc_z (coll->co_xlat_table + ctr, tail, table_end - tail, &ps);
+          if (read < 0)
+            {
+              log_error (
+                  "Error in collation %s definition: invalid encoding at or near offset %ld. "
+                  "It will not be defined. Drop the collation and recreate it.", name, (long)((ccaddr_t)tail - table) );
+              return read;
+            }
+          tail += read;
+        }
+      while (ctr < tbl_len)
+        {
+          coll->co_xlat_table[ctr] = ctr;
+          ctr++;
+        }
+      coll->co_xlat_table_len = tbl_len;
+      coll->co_xlats_narrow_to_narrow = 1;
+    }
+  else if (is_narrow)
+    {
+      raw_tbl_len = box_length (table) - 1;
+      tbl_len = raw_tbl_len;
       if (tbl_len < 0x100)
         tbl_len = 0x100;
       coll->co_xlat_table = (wchar_t *)dk_alloc_box ((tbl_len + 1) * sizeof (wchar_t), DV_WIDE);
@@ -75,7 +119,8 @@ collation_define_memonly (caddr_t name, caddr_t table)
     }
   else
     {
-      int raw_tbl_len = box_length (table) / sizeof (wchar_t) - 1, tbl_len = raw_tbl_len;
+      raw_tbl_len = box_length (table) / sizeof (wchar_t) - 1;
+      tbl_len = raw_tbl_len;
       if (tbl_len < 0x100)
         tbl_len = 0x100;
       coll->co_xlat_table = (wchar_t *)dk_alloc_box ((tbl_len + 1) * sizeof (wchar_t), DV_WIDE);
@@ -94,9 +139,13 @@ collation_define_memonly (caddr_t name, caddr_t table)
           break;
         }
     }
+  if (tbl_len & 0xff)
+    log_warning (
+        "Collation %s is defined as a table of length %d, that is formally valid but unusual. The length is usually a whole multiple of 256", name);
   coll->co_name = box_string (name);
   dk_free_box (name);
   id_hash_set (global_collations, (caddr_t) & coll->co_name, (caddr_t) & coll);
+  return 0;
 }
 
 /* adds a collation to the collations hash table (global_collations) */
@@ -105,7 +154,7 @@ bif_collation_define_memonly (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
 {
   caddr_t name = sqlp_box_id_upcase (bif_string_arg (qst, args, 0, "__collation_define_memonly"));
   caddr_t table = bif_string_or_wide_or_null_arg (qst, args, 1, "__collation_define_memonly");
-  collation_define_memonly (name, table);
+  collation_define_memonly (name, table, 0);
   return box_num (0);
 }
 

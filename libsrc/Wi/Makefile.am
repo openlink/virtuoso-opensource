@@ -604,6 +604,7 @@ libwic_la_LDLAGS  = -static
 #generated stuff
 
 SQL_FILES		= \
+	$(srcdir)/sys_unicode3_collations.sql \
 	$(srcdir)/system.sql \
 	$(srcdir)/system2.sql \
 	$(srcdir)/qlog.sql \

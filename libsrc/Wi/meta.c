@@ -2328,15 +2328,14 @@ isp_read_schema (lock_trx_t * lt)
 		  dk_free_tree (err);
 		  continue;
 		}
-              collation_define_memonly (coll_name, coll_table_casted);
+              collation_define_memonly (coll_name, coll_table_casted, 1);
               dk_free_box (coll_table_casted);
 	      break;
 	    }
 	  default:
-            collation_define_memonly (coll_name, coll_table);
+            collation_define_memonly (coll_name, coll_table, 1);
 	    break;
 	};
-	id_hash_set (global_collations, (caddr_t) & coll_name, (caddr_t) & coll);
 	dk_free_box (coll_table);
       }
     itc_page_leave (itc_collations, buf_collations);

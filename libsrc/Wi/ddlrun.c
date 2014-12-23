@@ -6400,15 +6400,13 @@ const char * pk3 =
 "}";
 
 
-static const char *collation_define_text =
-"create procedure collation_define (in _name varchar, in filename varchar, in add_type integer) \n"
+static const char *collation_define_int_text =
+"create procedure DB.DBA.__COLLATION_DEFINE_INT (in _name varchar, in deffile varchar, in coll_is_utf8 integer, in add_type integer) \n"
 "{ \n"
-"  declare deffile, def_vector, element, collation, name varchar; \n"
-"  declare coll_is_utf8, inx, weight, char_max, char_code, is_wide integer; \n"
+"  declare def_vector, element, collation, name varchar; \n"
+"  declare inx, weight, char_max, char_code, is_wide integer; \n"
 " \n"
 "  name := complete_collation_name (_name, 1); \n"
-"  deffile := file_to_string (filename); \n"
-"  coll_is_utf8 := case when (filename like '%.coll.utf8' or filename like '%.COLL.UTF8') then 1 else 0 end; \n"
 "  def_vector := split_and_decode (deffile, 0, \'\\0\\0\\n=\'); \n"
 "  is_wide := 0; \n"
 "  inx := 0; \n"
@@ -6469,6 +6467,17 @@ static const char *collation_define_text =
 "  __collation_define_memonly (name, collation); \n"
 "  insert replacing SYS_COLLATIONS (COLL_NAME, COLL_TABLE, COLL_WIDE) values (name, cast (collation as varbinary), is_wide); \n"
 "  log_text(\'__collation_define_memonly(?, ?)\', name, collation); \n"
+"} \n";
+
+
+static const char *collation_define_text =
+"create procedure collation_define (in _name varchar, in filename varchar, in add_type integer) \n"
+"{ \n"
+"  declare deffile varchar; \n"
+"  declare coll_is_utf8 integer; \n"
+"  deffile := file_to_string (filename); \n"
+"  coll_is_utf8 := case when (filename like '%.coll.utf8' or filename like '%.COLL.UTF8') then 1 else 0 end; \n"
+"  DB.DBA.__COLLATION_DEFINE_INT (_name, deffile, coll_is_utf8, add_type); \n"
 "} \n";
 
 
@@ -6598,6 +6607,7 @@ ddl_standard_procs (void)
   ddl_std_proc (pk2, 0);
   ddl_std_proc (pk3, 0);
   ddl_std_proc (bm_proc_1, 0);
+  ddl_std_proc (collation_define_int_text, 0);
   ddl_std_proc (collation_define_text, 0);
   ddl_std_proc (charset_define_text, 0);
   ddl_std_procs_inited = 1;

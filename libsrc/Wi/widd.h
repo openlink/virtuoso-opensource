@@ -155,7 +155,7 @@ typedef struct collation_s
 #define COLLATION_XLAT_WIDE_NOCHECK(co,src) ((co)->co_xlat_table[((unsigned int)(src))])
 #define COLLATION_XLAT_WIDE(co,src) ((((unsigned int)(src)) >= (co)->co_xlat_table_len) ? ((unsigned int)(src)) : COLLATION_XLAT_WIDE_NOCHECK(co,src))
 
-extern int collation_define_memonly (caddr_t name, caddr_t xlat_table);
+extern int collation_define_memonly (caddr_t name, caddr_t xlat_table, int is_utf8_if_narrow);
 
 
 struct sql_class_s;
