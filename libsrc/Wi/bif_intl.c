@@ -50,40 +50,62 @@ extern "C" {
 }
 #endif
 
-
-/* adds a collation to the collations hash table (global_collations) */
-static caddr_t
-bif_collation__define (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+int
+collation_define_memonly (caddr_t name, caddr_t table)
 {
-  /* params :
-     0 in  name
-     1 in  collation table
-     2 in  is_wide
-   */
-
-  caddr_t table = bif_string_or_wide_or_null_arg (qst, args, 1, "collation__define");
-  caddr_t name = sqlp_box_id_upcase (bif_string_arg (qst, args, 0, "collation__define"));
-  dtp_t dtp = DV_TYPE_OF (table);
+  dtp_t dtp;
+  int ctr;
   NEW_VARZ(collation_t, coll);
-
-  if (dtp == DV_STRING || dtp == DV_C_STRING)
+  if (NULL == table)
+    table = uname___empty;
+  dtp = DV_TYPE_OF (table);
+  if (dtp == DV_STRING || dtp == DV_C_STRING || dtp == DV_UNAME)
     {
-      coll->co_table = dk_alloc_box (256 + 1, DV_C_STRING);
-      memset (coll->co_table, 255, 256 + 1);
-      memcpy (coll->co_table, table, box_length(table));
+      int raw_tbl_len = box_length (table) - 1, tbl_len = raw_tbl_len;
+      if (tbl_len < 0x100)
+        tbl_len = 0x100;
+      coll->co_xlat_table = (wchar_t *)dk_alloc_box ((tbl_len + 1) * sizeof (wchar_t), DV_WIDE);
+      coll->co_xlat_table[tbl_len] = 0;
+      for (ctr = 0; ctr < raw_tbl_len; ctr++)
+        coll->co_xlat_table[ctr] = table[ctr];
+      for (ctr = raw_tbl_len; ctr < tbl_len; ctr++)
+        coll->co_xlat_table[ctr] = ctr;
+      coll->co_xlat_table_len = tbl_len;
+      coll->co_xlats_narrow_to_narrow = 1;
     }
-  else if (IS_WIDE_STRING_DTP (dtp))
+  else
     {
-      coll->co_table = dk_alloc_box ((65536 + 1) * sizeof (wchar_t), DV_WIDE);
-      memset (coll->co_table, 255, (65536 + 1) * sizeof (wchar_t));
-      memcpy (coll->co_table, table, box_length(table));
-      coll->co_is_wide = 1;
+      int raw_tbl_len = box_length (table) / sizeof (wchar_t) - 1, tbl_len = raw_tbl_len;
+      if (tbl_len < 0x100)
+        tbl_len = 0x100;
+      coll->co_xlat_table = (wchar_t *)dk_alloc_box ((tbl_len + 1) * sizeof (wchar_t), DV_WIDE);
+      coll->co_xlat_table[tbl_len] = 0;
+      for (ctr = 0; ctr < raw_tbl_len; ctr++)
+        coll->co_xlat_table[ctr] = ((wchar_t *)table)[ctr];
+      for (ctr = raw_tbl_len; ctr < tbl_len; ctr++)
+        coll->co_xlat_table[ctr] = ctr;
+      coll->co_xlat_table_len = tbl_len;
+      coll->co_xlats_narrow_to_narrow = 1;
+      for (ctr = 0; ctr < 0x100; ctr++)
+        {
+          if (coll->co_xlat_table[ctr] < 0xff)
+            continue;
+          coll->co_xlats_narrow_to_narrow = 0;
+          break;
+        }
     }
-
-
   coll->co_name = box_string (name);
   dk_free_box (name);
   id_hash_set (global_collations, (caddr_t) & coll->co_name, (caddr_t) & coll);
+}
+
+/* adds a collation to the collations hash table (global_collations) */
+static caddr_t
+bif_collation_define_memonly (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t name = sqlp_box_id_upcase (bif_string_arg (qst, args, 0, "__collation_define_memonly"));
+  caddr_t table = bif_string_or_wide_or_null_arg (qst, args, 1, "__collation_define_memonly");
+  collation_define_memonly (name, table);
   return box_num (0);
 }
 
@@ -232,18 +254,49 @@ bif_collation_order_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
      0 - in collation name
      1 - in the string to transform
   */
-  caddr_t coll_name = bif_string_arg (qst, args, 0, "complete_collation_name");
-  caddr_t string = bif_string_arg (qst, args, 1, "complete_collation_name");
-  caddr_t dest = box_dv_short_string (string);
+  caddr_t coll_name = bif_string_arg (qst, args, 0, "collation_order_string");
+  caddr_t string = bif_string_or_uname_or_wide_or_null_arg (qst, args, 1, "collation_order_string");
   collation_t *coll = sch_name_to_collation (coll_name);
+  int ctr, len;
   unsigned char *curr;
 
   if (!coll)
-    sqlr_new_error ("22023", "IN006", "Collation %s not defined", coll_name);
-
-  for (curr = (unsigned char *) dest; *curr; curr++)
-    *curr = coll->co_table[*curr];
-  return dest;
+    sqlr_new_error ("22023", "IN006", "Collation %.500s not defined", coll_name);
+  if (DV_WIDE == DV_TYPE_OF (string))
+    {
+      wchar_t *dest;
+      len = (box_length (string) / sizeof (wchar_t)) - 1;
+      dest = (wchar_t *)dk_alloc_box ((len+1) * sizeof (wchar_t), DV_WIDE);
+      if (COLLATION_XLAT_SAFE_FOR_WCHAR_T (coll))
+        {
+          for (ctr = 0; ctr < len; ctr++)
+            ((wchar_t *)(dest))[ctr] = COLLATION_XLAT_WIDE_NOCHECK (coll, ((wchar_t *)(string))[ctr]);
+        }
+      else
+        {
+          for (ctr = 0; ctr < len; ctr++)
+            ((wchar_t *)(dest))[ctr] = COLLATION_XLAT_WIDE (coll, ((wchar_t *)(string))[ctr]);
+        }
+      dest[len] = 0;
+      return (caddr_t)dest;
+    }
+  len = box_length (string) - 1;
+  if (coll->co_xlats_narrow_to_narrow)
+    {
+      caddr_t dest = dk_alloc_box (len+1, DV_STRING);
+      for (ctr = 0; ctr < len; ctr++)
+        dest[ctr] = COLLATION_XLAT_NARROW(coll,string[ctr]);
+      dest[len] = 0;
+      return (caddr_t)dest;
+    }
+  else
+    {
+      wchar_t *dest = (wchar_t *)dk_alloc_box ((len+1) * sizeof (wchar_t), DV_WIDE);
+      for (ctr = 0; ctr < len; ctr++)
+        dest[ctr] = COLLATION_XLAT_NARROW(coll,string[ctr]);
+      dest[len] = 0;
+      return (caddr_t)dest;
+    }
 }
 
 
@@ -1143,7 +1196,7 @@ bif_langmatches_pct_http (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 void
 bif_intl_init (void)
 {
-  bif_define_ex ("collation__define", bif_collation__define, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("__collation_define_memonly", bif_collation_define_memonly, BMD_RET_TYPE, &bt_integer, BMD_IS_DBA_ONLY, BMD_DONE);
   bif_define_ex ("charset__define", bif_charset_define, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("charset_canonical_name", bif_charset_canonical_name, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("complete_collation_name", bif_complete_collation_name, BMD_RET_TYPE, &bt_varchar, BMD_DONE);

@@ -2318,7 +2318,7 @@ isp_read_schema (lock_trx_t * lt)
 	  case DV_BLOB_WIDE_HANDLE:
 	    {
 	      caddr_t err = NULL;
-	      coll->co_table = safe_blob_to_string (lt, coll_table, &err);
+              caddr_t coll_table_casted = safe_blob_to_string (lt, coll_table, &err);
 	      if (err)
 		{
 		  log_error (
@@ -2328,12 +2328,12 @@ isp_read_schema (lock_trx_t * lt)
 		  dk_free_tree (err);
 		  continue;
 		}
+              collation_define_memonly (coll_name, coll_table_casted);
+              dk_free_box (coll_table_casted);
 	      break;
 	    }
 	  default:
-	    coll->co_table = dk_alloc_box (256, DV_C_STRING);
-	    if (coll_table && box_length(coll_table) >= 255 && coll_wide == 0)
-	      memcpy(coll->co_table, coll_table, 256);
+            collation_define_memonly (coll_name, coll_table);
 	    break;
 	};
 	id_hash_set (global_collations, (caddr_t) & coll_name, (caddr_t) & coll);

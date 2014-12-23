@@ -100,7 +100,7 @@ User-level object is of type DV_XML_ENTITY. */
    DV_BLOB_XXX_HANDLE dtp value.
    The idea is handle's dtp is one greater than blob's dtp for all
    except DV_BLOB_BIN blobs. */
-#ifdef DEBUG
+#ifdef BLOB_HANDLE_DEBUG
 #define DV_BLOB_HANDLE_DTP_FOR_BLOB_DTP(blob_dtp) \
   ((dtp_t)( \
     ((DV_BLOB_BIN == (blob_dtp)) ? ((dtp_t)DV_BLOB_HANDLE) : \
@@ -117,7 +117,7 @@ User-level object is of type DV_XML_ENTITY. */
 
 /* For given dtp value DV_BLOB_XXX_HANDLE returns appropriate
    DV_BLOB_XXX dtp value. */
-#ifdef DEBUG
+#ifdef BLOB_HANDLE_DEBUG
 #define DV_BLOB_DTP_FOR_BLOB_HANDLE_DTP(blob_handle_dtp) \
    ((dtp_t)( \
      ((DV_BLOB_HANDLE == (blob_handle_dtp)) || \

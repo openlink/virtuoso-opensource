@@ -86,7 +86,7 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t * collation, offset_t offset
 	  n2 = dv2[1];
 	  dv2 += 2;
 
-	  if (!collation || collation->co_is_wide)
+	  if (!collation)
 	    {
 	      while (1)
 		{
@@ -114,6 +114,7 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t * collation, offset_t offset
 	    {
 	      while (1)
 		{
+                  wchar_t xlat1, xlat2;
 		  if (inx == n1)
 		    {
 		      if (inx == n2)
@@ -123,9 +124,11 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t * collation, offset_t offset
 		    }
 		  if (inx == n2)
 		    return DVC_GREATER;
-		  if (collation->co_table[dv1[inx]] < collation->co_table[dv2[inx]])
+                  xlat1 = COLLATION_XLAT_NARROW (collation, dv1[inx]);
+                  xlat2 = COLLATION_XLAT_NARROW (collation, dv2[inx]);
+		  if (xlat1 < xlat2)
 		    return DVC_LESS;
-		  if (collation->co_table[dv1[inx]] > collation->co_table[dv2[inx]])
+		  if (xlat1 > xlat2)
 		    return DVC_GREATER;
 		  inx++;
 		}
@@ -160,8 +163,6 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t * collation, offset_t offset
 	n1 = dv1[1];
 	dtp1 = DV_LONG_STRING;
 	dv1 += 2;
-	if (collation && collation->co_is_wide)
-	  collation = NULL;
 	break;
       case DV_WIDE:
 	n1 = dv1[1];
@@ -173,11 +174,6 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t * collation, offset_t offset
 	else
 	  {
 	    dtp1 = DV_LONG_WIDE;
-	    if (collation && !collation->co_is_wide)
-	      {
-		collation = NULL;
-		dtp1 = DV_LONG_STRING;
-	      }
 	  }
 	dv1 += 2;
 	break;
@@ -200,8 +196,6 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t * collation, offset_t offset
       case DV_LONG_STRING:
 	n1 = LONG_REF_NA (dv1 + 1);
 	dv1 += 5;
-	if (collation && collation->co_is_wide)
-	  collation = NULL;
 	break;
       case DV_LONG_WIDE:
 	n1 = LONG_REF_NA (dv1 + 1);
@@ -210,14 +204,6 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t * collation, offset_t offset
 	  {
 	    collation = NULL;
 	    dtp1 = DV_LONG_STRING;
-	  }
-	else
-	  {
-	    if (collation && !collation->co_is_wide)
-	      {
-		collation = NULL;
-		dtp1 = DV_LONG_STRING;
-	      }
 	  }
 	break;
       case DV_BIN:
@@ -278,8 +264,6 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t * collation, offset_t offset
 	n2 = dv2[1];
 	dtp2 = DV_LONG_STRING;
 	dv2 += 2;
-	if (collation && collation->co_is_wide)
-	  collation = NULL;
 	break;
       case DV_WIDE:
 	n2 = dv2[1];
@@ -291,11 +275,6 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t * collation, offset_t offset
 	else
 	  {
 	    dtp2 = DV_LONG_WIDE;
-	    if (collation && !collation->co_is_wide)
-	      {
-		collation = NULL;
-		dtp2 = DV_LONG_STRING;
-	      }
 	  }
 	dv2 += 2;
 	break;
@@ -318,8 +297,6 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t * collation, offset_t offset
       case DV_LONG_STRING:
 	n2 = LONG_REF_NA (dv2 + 1);
 	dv2 += 5;
-	if (collation && collation->co_is_wide)
-	  collation = NULL;
 	break;
       case DV_LONG_WIDE:
 	n2 = LONG_REF_NA (dv2 + 1);
@@ -328,14 +305,6 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t * collation, offset_t offset
 	  {
 	    collation = NULL;
 	    dtp2 = DV_LONG_STRING;
-	  }
-	else
-	  {
-	    if (collation && !collation->co_is_wide)
-	      {
-		collation = NULL;
-		dtp2 = DV_LONG_STRING;
-	      }
 	  }
 	break;
       case DV_BIN:
@@ -404,6 +373,7 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t * collation, offset_t offset
 	    if (collation)
 	      while (1)
 		{
+                  wchar_t xlat1, xlat2;
 		  if (inx == n1)
 		    {
 		      if (inx == n2)
@@ -413,9 +383,11 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t * collation, offset_t offset
 		    }
 		  if (inx == n2)
 		    return DVC_GREATER;
-		  if (collation->co_table[(unsigned char) dv1[inx]] < collation->co_table[(unsigned char) dv2[inx]])
+		  xlat1 = COLLATION_XLAT_NARROW (collation, (unsigned char) dv1[inx]);
+		  xlat2 = COLLATION_XLAT_NARROW (collation, (unsigned char) dv2[inx]);
+		  if (xlat1 < xlat2)
 		    return DVC_LESS;
-		  if (collation->co_table[(unsigned char) dv1[inx]] > collation->co_table[(unsigned char) dv2[inx]])
+		  if (xlat1 > xlat2)
 		    return DVC_GREATER;
 		  inx++;
 		}

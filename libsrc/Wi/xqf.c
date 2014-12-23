@@ -1449,9 +1449,7 @@ collation_t * xpf_arg_collation (xp_instance_t* xqi, XT * tree, xml_entity_t * c
     {
       coll = sch_name_to_collation (coll_name);
       if (!coll)
-	sqlr_new_error ("22023", "IN006", "Collation %.300s not defined", coll_name);
-      if (!coll->co_is_wide)
-	sqlr_new_error ("42001", "XPQ??", "Collation %.300s must be wide", coll_name);
+        sqlr_new_error ("22023", "IN006", "Collation %.300s not defined", coll_name);
     }
   return coll;
 }
@@ -1926,9 +1924,9 @@ __xqf_ends_with (caddr_t str, caddr_t mstr, collation_t * coll)
       reverse_wide_string (wide1);
       reverse_wide_string (wide2);
 
-      while (1)
+      for (;;)
 	{
-	again:
+          wchar_t xlat1, xlat2;
 	  if (_1len && n1inx == _1len && n2inx != _2len)
 	    return 0;
 	  if (n2inx == _2len)
@@ -1936,19 +1934,21 @@ __xqf_ends_with (caddr_t str, caddr_t mstr, collation_t * coll)
 	      res = (caddr_t) 1;
 	      break;
 	    }
-	  if (!((wchar_t *)coll->co_table)[wide2[n2inx]])
+          xlat2 = COLLATION_XLAT_WIDE (coll, wide2[n2inx]);
+	  if (!xlat2)
 	    { /* ignore symbol, unicode normalization algorithm */
 	      n2inx++;
-	      goto again;
+	      continue;
 	    }
 	  if (!_1len)
 	    break;
-	  if (!((wchar_t *)coll->co_table)[wide1[n1inx]])
+          xlat1 = COLLATION_XLAT_WIDE (coll, wide1[n1inx]);
+	  if (!xlat1)
 	    { /* ignore symbol, unicode normalization algorithm */
 	      n1inx++;
-	      goto again;
+	      continue;
 	    }
-	  if (((wchar_t *)coll->co_table)[wide1[n1inx]] != ((wchar_t *)coll->co_table)[wide2[n2inx]])
+	  if (xlat1 != xlat2)
 	    break;
 	  n1inx++;
 	  n2inx++;
@@ -2386,11 +2386,13 @@ xqf_box_hash (query_instance_t* qi, caddr_t box, collation_t * coll)
 	while (inx < len)
 	  {
 	    int rc = (int) virt_mbrtowc (&wtmp, ((utf8char *)(box)) + inx, len - inx, &state);
+            wchar_t xlat;
 	    if (rc < 0)
 	      GPF_T1 ("inconsistent wide char data");
-	    if (((wchar_t*)coll->co_table)[wtmp])
+            xlat = COLLATION_XLAT_WIDE (coll, wtmp);
+	    if (xlat)
 	      {
-		h = ROL (h) ^ ((wchar_t*)coll->co_table)[wtmp];
+		h = ROL (h) ^ xlat;
 	      }
 	    inx+=rc;
 	  }

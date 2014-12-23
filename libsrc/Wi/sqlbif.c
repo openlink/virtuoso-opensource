@@ -2365,7 +2365,7 @@ caddr_t
 bif_make_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   ptrlong n = bif_long_range_arg (qst, args, 0, "make_string", 0, 10000000);
-  caddr_t str = dk_alloc_box_zero (n + 1, DV_LONG_STRING);
+  caddr_t str = dk_alloc_box_zero (n + 1, DV_STRING);
   return str;
 }
 
@@ -2374,7 +2374,7 @@ caddr_t
 bif_make_wstring (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   ptrlong n = bif_long_range_arg (qst, args, 0, "make_wstring", 0, 10000000 / VIRT_MB_CUR_MAX);
-  caddr_t str = dk_alloc_box_zero ((n + 1) * sizeof (wchar_t), DV_LONG_WIDE); /* was: n*sizeof (wchar_t)+1 */
+  caddr_t str = dk_alloc_box_zero ((n + 1) * sizeof (wchar_t), DV_WIDE); /* was: n*sizeof (wchar_t)+1 */
   return str;
 }
 

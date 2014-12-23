@@ -443,18 +443,8 @@ ddl_option_string (query_instance_t * qi, caddr_t * opts, dtp_t dtp, dk_set_t *c
 			}
 		      else
 			{
-			  if (IS_WIDE_STRING_DTP (dtp) && !coll->co_is_wide)
-			    {
-			      if (qi)
-				{
-				  SQL_DDL_ERROR (qi, ("42S22", "SQ140", "Collation %s is not wide", opt->_.op.arg_1));
-				}
-			    }
-			  else
-			    {
-			      strcat_ck (ostr, opt->_.op.arg_1);
-			      have_col = 1;
-			    }
+			  strcat_ck (ostr, opt->_.op.arg_1);
+			  have_col = 1;
 			}
 		    }
 		  else
@@ -6414,21 +6404,27 @@ static const char *collation_define_text =
 "create procedure collation_define (in _name varchar, in filename varchar, in add_type integer) \n"
 "{ \n"
 "  declare deffile, def_vector, element, collation, name varchar; \n"
-"  declare inx, weight, char_max, char_code, is_wide integer; \n"
+"  declare coll_is_utf8, inx, weight, char_max, char_code, is_wide integer; \n"
 " \n"
 "  name := complete_collation_name (_name, 1); \n"
 "  deffile := file_to_string (filename); \n"
+"  coll_is_utf8 := case when (filename like '%.coll.utf8' or filename like '%.COLL.UTF8') then 1 else 0 end; \n"
 "  def_vector := split_and_decode (deffile, 0, \'\\0\\0\\n=\'); \n"
 "  inx := 0; \n"
 "  while (inx < length (def_vector)) \n"
 "    { \n"
 "      element := trim(aref (def_vector, inx)); \n"
 "      if (length (element) > 1) \n"
-"	aset (def_vector, inx, atoi (element)); \n"
+"        { \n"
+"          if (coll_is_utf8 and bit_and (element[0], 128)) \n"
+"            def_vector[inx] := ascii (charset_recode (element, 'UTF-8', '_WIDE_')); \n"
+"          else \n"
+"            def_vector[inx] := atoi (element); \n"
+"        } \n"
 "      else if (length (element) > 0) \n"
-"	aset (def_vector, inx, ascii (element)); \n"
+"	def_vector[inx] := ascii (element); \n"
 "      else \n"
-"	aset (def_vector, inx, -1); \n"
+"	def_vector[inx] := -1; \n"
 "      inx := inx + 1; \n"
 "    } \n"
 "  if (add_type = 0) \n"
@@ -6472,8 +6468,8 @@ static const char *collation_define_text =
 "      aset (collation, inx, weight); \n"
 "      inx := inx + 1; \n"
 "    } \n"
-"   collation__define (name, collation); \n"
-"   log_text(\'collation__define(?, ?)\', name, collation); \n"
+"   __collation_define_memonly (name, collation); \n"
+"   log_text(\'__collation_define_memonly(?, ?)\', name, collation); \n"
 "   insert replacing SYS_COLLATIONS (COLL_NAME, COLL_TABLE, COLL_WIDE) values (name, collation, is_wide); \n"
 "} \n";
 
