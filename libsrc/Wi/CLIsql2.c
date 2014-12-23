@@ -4929,7 +4929,10 @@ SQLPutData (
   STMT (stmt, hstmt);
   SQLRETURN rc = SQL_SUCCESS;
   dk_session_t *ses = stmt->stmt_connection->con_session;
-  volatile SQLLEN newValue = (cbValue == SQL_NTS ?
+  volatile SQLLEN newValue;
+  if (stmt->stmt_next_putdata_dtp == DV_WIDE) /* Wides are serialized with 4 byte length no matter whether they're shorter than 256 or not */
+    stmt->stmt_next_putdata_dtp = DV_LONG_WIDE;
+  newValue = (cbValue == SQL_NTS ?
       (stmt->stmt_next_putdata_dtp == DV_LONG_STRING ?
 	  strlen ((const char *) rgbValue) : wcslen ((wchar_t *) rgbValue) * sizeof (wchar_t)) : cbValue);
 
