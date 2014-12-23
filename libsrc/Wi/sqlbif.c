@@ -15513,7 +15513,7 @@ bif_rdf_substr_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         memset (&mbstate, 0, sizeof(virt_mbstate_t));
         for (i=0; i<start && *pstart; ++i)
           {
-            pstart += virt_mbrlen (pstart, VIRT_MB_CUR_MAX, &mbstate);
+            pstart += virt_mbrlen_z (pstart, VIRT_MB_CUR_MAX, &mbstate);
           }
         str_n_chars = wide_char_length_of_utf8_string ((const unsigned char *)pstart, strlen(pstart));
 
@@ -16497,7 +16497,7 @@ sql_bif_init (void)
   bif_define ("xcontains", bif_stub_xcontains);
   bif_define_ex ("exists", bif_stub_exists, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   st_varchar = (sql_tree_tmp *) list (3, DV_LONG_STRING, 0, 0);
-  st_nvarchar = (sql_tree_tmp *) list (3, DV_LONG_WIDE, 0, 0);
+  st_nvarchar = (sql_tree_tmp *) list (3, DV_WIDE, 0, 0);
 
 
   bif_define_ex ("sequence_next", bif_sequence_next, BMD_RET_TYPE, &bt_integer, BMD_DONE);

@@ -176,7 +176,7 @@ again:
       virt_mbstate_t state;
       int charlen;
       memset (&state, 0, sizeof (virt_mbstate_t));
-      charlen = (int) virt_mbrtowc (&wc, src_tail, str_end - src_tail, &state);
+      charlen = (int) virt_mbrtowc_z (&wc, src_tail, str_end - src_tail, &state);
       if (charlen <= 0)
 	{
 	  wc = L'?';

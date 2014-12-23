@@ -1614,7 +1614,7 @@ row_set_col_cast (caddr_t data, sql_type_t *tsqt, caddr_t *err_ret,
 	  case DV_WIDE:
 	      if (!IS_WIDE_STRING_DTP (dtp))
 		{
-		  res = box_cast_to (qst, data, dtp, DV_LONG_WIDE, 0, 0, err_ret);
+		  res = box_cast_to (qst, data, dtp, DV_WIDE, 0, 0, err_ret);
 		}
 	      break;
 
@@ -1916,7 +1916,7 @@ row_insert_cast (row_delta_t * rd, dbe_col_loc_t * cl, caddr_t data,
     case DV_LONG_WIDE:
       if (!IS_WIDE_STRING_DTP (dtp))
 	{
-	  wide_str = box_cast_to (ins_itc->itc_out_state, data, dtp, DV_LONG_WIDE, 0, 0, err_ret);
+	  wide_str = box_cast_to (ins_itc->itc_out_state, data, dtp, DV_WIDE, 0, 0, err_ret);
 	  if (ins_itc)
 	    ITC_OWNS_PARAM (ins_itc, wide_str);
 	  if (*err_ret)
@@ -2157,7 +2157,7 @@ xmltype_in_blob_ok: ;
 	  }
 	if (DV_STRING == dtp)
 	  {
-	    data = box_cast_to (ins_itc->itc_out_state, data, DV_TYPE_OF (data), DV_LONG_WIDE, 0, 0, err_ret);
+	    data = box_cast_to (ins_itc->itc_out_state, data, DV_TYPE_OF (data), DV_WIDE, 0, 0, err_ret);
 	    ITC_OWNS_PARAM (ins_itc, data);
 	    if (*err_ret)
 	      return;

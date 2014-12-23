@@ -1031,7 +1031,7 @@ ks_search_param_wide (it_cursor_t * itc, search_spec_t * sp, caddr_t data, dtp_t
     {
       caddr_t err = NULL;
       caddr_t utf_data;
-      data = box_cast_to (itc->itc_out_state, data, dtp, DV_LONG_WIDE,
+      data = box_cast_to (itc->itc_out_state, data, dtp, DV_WIDE,
 			  sp->sp_cl.cl_sqt.sqt_precision, sp->sp_cl.cl_sqt.sqt_scale, &err);
       if (err)
 	{

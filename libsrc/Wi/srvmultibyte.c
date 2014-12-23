@@ -560,8 +560,8 @@ compare_wide_to_utf8 (caddr_t _utf8_data, long utf8_len,
 	if (winx == wide_len)
 	  return DVC_GREATER;
 
-	rc = (int) virt_mbrtowc (&wtmp, utf8_data + ninx, utf8_len - ninx, &state);
-	if (rc <= 0)
+	rc = (int) virt_mbrtowc_z (&wtmp, utf8_data + ninx, utf8_len - ninx, &state);
+	if (rc < 0)
 	  GPF_T1 ("inconsistent wide char data");
         xlat_wtmp = COLLATION_XLAT_WIDE (collation, wtmp);
         xlat2 = COLLATION_XLAT_WIDE (collation, wide_data[winx]);
@@ -585,8 +585,8 @@ compare_wide_to_utf8 (caddr_t _utf8_data, long utf8_len,
 	if (winx == wide_len)
 	  return DVC_GREATER;
 
-	rc = (int) virt_mbrtowc (&wtmp, utf8_data + ninx, utf8_len - ninx, &state);
-	if (rc <= 0)
+	rc = (int) virt_mbrtowc_z (&wtmp, utf8_data + ninx, utf8_len - ninx, &state);
+	if (rc < 0)
 	  GPF_T1 ("inconsistent wide char data");
 	if (wtmp < wide_data[winx])
 	  return DVC_LESS;
@@ -619,8 +619,8 @@ compare_utf8_with_collation (caddr_t dv1, long n1,
 	  {
 	    while (inx2 < n2)
 	      { /* skip all ignorable rest chars */
-		rc2 = (int) virt_mbrtowc (&wtmp2, (unsigned char *) (dv2 + inx2), n2 - inx2, &state2);
-		if (rc2 <= 0)
+		rc2 = (int) virt_mbrtowc_z (&wtmp2, (unsigned char *) (dv2 + inx2), n2 - inx2, &state2);
+		if (rc2 < 0)
 		  GPF_T1 ("inconsistent wide char data");
 		if (!COLLATION_XLAT_WIDE (collation, wtmp2))
 		  {
@@ -639,11 +639,11 @@ compare_utf8_with_collation (caddr_t dv1, long n1,
 	if (inx2 == n2)
 	  return DVC_GREATER;
 
-	rc1 = (int) virt_mbrtowc (&wtmp1, (unsigned char *) (dv1 + inx1), n1 - inx1, &state1);
-	if (rc1 <= 0)
+	rc1 = (int) virt_mbrtowc_z (&wtmp1, (unsigned char *) (dv1 + inx1), n1 - inx1, &state1);
+	if (rc1 < 0)
 	  GPF_T1 ("inconsistent wide char data");
-	rc2 = (int) virt_mbrtowc (&wtmp2, (unsigned char *) (dv2 + inx2), n2 - inx2, &state2);
-	if (rc2 <= 0)
+	rc2 = (int) virt_mbrtowc_z (&wtmp2, (unsigned char *) (dv2 + inx2), n2 - inx2, &state2);
+	if (rc2 < 0)
 	  GPF_T1 ("inconsistent wide char data");
         xlat_wtmp1 = COLLATION_XLAT_WIDE (collation, wtmp1);
 	if (!xlat_wtmp1)
@@ -677,11 +677,11 @@ compare_utf8_with_collation (caddr_t dv1, long n1,
 	if (inx2 == n2)
 	  return DVC_GREATER;
 
-	rc1 = (int) virt_mbrtowc (&wtmp1, (unsigned char *) (dv1 + inx1), n1 - inx1, &state1);
-	if (rc1 <= 0)
+	rc1 = (int) virt_mbrtowc_z (&wtmp1, (unsigned char *) (dv1 + inx1), n1 - inx1, &state1);
+	if (rc1 < 0)
 	  GPF_T1 ("inconsistent wide char data");
-	rc2 = (int) virt_mbrtowc (&wtmp2, (unsigned char *) (dv2 + inx2), n2 - inx2, &state2);
-	if (rc2 <= 0)
+	rc2 = (int) virt_mbrtowc_z (&wtmp2, (unsigned char *) (dv2 + inx2), n2 - inx2, &state2);
+	if (rc2 < 0)
 	  GPF_T1 ("inconsistent wide char data");
 	if (wtmp1 < wtmp2)
 	  return DVC_LESS;
@@ -882,8 +882,8 @@ box_utf8_string_as_narrow (ccaddr_t _str, caddr_t narrow, long max_len, wcharset
   for (inx = 0, src = str, memset (&state, 0, sizeof (virt_mbstate_t)); inx < len; inx++)
     {
       wchar_t wc;
-      long char_len = (long) virt_mbrtowc (&wc, src, (box_length (str)) - (long)((src - str)), &state);
-      if (char_len <= 0)
+      long char_len = (long) virt_mbrtowc_z (&wc, src, (box_length (str)) - (long)((src - str)), &state);
+      if (char_len < 0)
 	{
 	  box[inx] = '?';
 	  src++;
@@ -925,8 +925,8 @@ t_box_utf8_string_as_narrow (ccaddr_t _str, caddr_t narrow, long max_len, wchars
   for (inx = 0, src = str, memset (&state, 0, sizeof (virt_mbstate_t)); inx < len; inx++)
     {
       wchar_t wc;
-      long char_len = (long) virt_mbrtowc (&wc, src, (strlen ((char *) str)) - (long)((src - str)), &state);
-      if (char_len <= 0)
+      long char_len = (long) virt_mbrtowc_z (&wc, src, (strlen ((char *) str)) - (long)((src - str)), &state);
+      if (char_len < 0)
 	{
 	  box[inx] = '?';
 	  src++;
@@ -1041,7 +1041,7 @@ strstr_utf8_with_collation (caddr_t dv1, long n1,
 	      while(1)
 		{
 		  /* ignore all remaining ignorable signs */
-		  rc1 = (int) virt_mbrtowc (&wtmp1, (unsigned char *) dv1+n1inx_beg,
+		  rc1 = (int) virt_mbrtowc_z (&wtmp1, (unsigned char *) dv1+n1inx_beg,
 		      utf8_1len-n1inx_beg, &state1);
 		  if (rc1 < 0)
 		    GPF_T1 ("inconsistent wide char data");
@@ -1053,7 +1053,7 @@ strstr_utf8_with_collation (caddr_t dv1, long n1,
 		    return dv1+n1inx_beg;
 		}
 	    }
-	  rc2 = (int) virt_mbrtowc (&wtmp2, (unsigned char *) dv2+n2inx,
+	  rc2 = (int) virt_mbrtowc_z (&wtmp2, (unsigned char *) dv2+n2inx,
 	      utf8_2len-n2inx, &state2);
 	  if (rc2 < 0)
 	    GPF_T1 ("inconsistent wide char data");
@@ -1063,7 +1063,7 @@ strstr_utf8_with_collation (caddr_t dv1, long n1,
 	      n2inx+=rc2;
 	      goto again;
 	    }
-	  rc1 = (int) virt_mbrtowc (&wtmp1, (unsigned char *) dv1+n1inx,
+	  rc1 = (int) virt_mbrtowc_z (&wtmp1, (unsigned char *) dv1+n1inx,
 	      utf8_1len-n1inx, &state1);
 	  if (rc1 < 0)
 	    GPF_T1 ("inconsistent wide char data");
@@ -1101,9 +1101,9 @@ strstr_utf8_with_collation (caddr_t dv1, long n1,
 		next[0] = dv1+n1inx;
 	      return dv1+n1inx_beg;
 	    }
-	  rc1 = (int) virt_mbrtowc (&wtmp1, (unsigned char *) dv1+n1inx,
+	  rc1 = (int) virt_mbrtowc_z (&wtmp1, (unsigned char *) dv1+n1inx,
 	      utf8_1len-n1inx, &state1);
-	  rc2 = (int) virt_mbrtowc (&wtmp2, (unsigned char *) dv2+n2inx,
+	  rc2 = (int) virt_mbrtowc_z (&wtmp2, (unsigned char *) dv2+n2inx,
 	      utf8_2len-n2inx, &state2);
 	  if (rc1 < 0  || rc2 < 0)
 	    GPF_T1 ("inconsistent wide char data");

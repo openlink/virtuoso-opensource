@@ -991,7 +991,7 @@ xst_bsort (xslt_template_t ** bs, int n_bufs)
 	if (!intermediate) \
 	  intermediate = xsnf_default->xsnf_##name; \
 	wchar = 0; \
-	len = (int) virt_mbrtowc (&wchar, (utf8char *)intermediate, strlen (intermediate), &state); \
+	len = (int) virt_mbrtowc_z (&wchar, (utf8char *)intermediate, strlen (intermediate), &state); \
 	if (len > 0) \
 	  { \
 	    xn->xsnf_##name = dk_alloc_box (len + 1, DV_SHORT_STRING); \

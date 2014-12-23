@@ -2166,7 +2166,7 @@ xqf_string_to_codepoints (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   while (inx < utf8_len)
     {
       wchar_t wtmp;
-      int rc = (int) virt_mbrtowc (&wtmp, utf8_str + inx, utf8_len - inx, &state);
+      int rc = (int) virt_mbrtowc_z (&wtmp, utf8_str + inx, utf8_len - inx, &state);
       if (rc < 0)
 	GPF_T1 ("inconsistent wide char data");
       dk_set_push (&set, (caddr_t)((ptrlong)(wtmp)));
@@ -2385,7 +2385,7 @@ xqf_box_hash (query_instance_t* qi, caddr_t box, collation_t * coll)
 	int inx=0, len = box_length (box)-1;
 	while (inx < len)
 	  {
-	    int rc = (int) virt_mbrtowc (&wtmp, ((utf8char *)(box)) + inx, len - inx, &state);
+	    int rc = (int) virt_mbrtowc_z (&wtmp, ((utf8char *)(box)) + inx, len - inx, &state);
             wchar_t xlat;
 	    if (rc < 0)
 	      GPF_T1 ("inconsistent wide char data");

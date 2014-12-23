@@ -212,7 +212,7 @@ box_read_long_wide_string (dk_session_t *session, dtp_t macro)
   while (utf8_len-- > 0)
     {
       read = session_buffered_read_char (session);
-      rc = (int) virt_mbrtowc (tmp, (unsigned char *) &read, 1, &state);
+      rc = (int) virt_mbrtowc_z (tmp, (unsigned char *) &read, 1, &state);
       if (rc > 0)
 	{
 	  if (ptr - w_array == CHUNK_SIZE)

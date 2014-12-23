@@ -500,7 +500,7 @@ key_hash_utf8 (caddr_t _utf8, long _n, uint32 code, collation_t * collation)
       uint32 b;
       if (inx1 == _n)
 	return code;
-      rc1 = (long) virt_mbrtowc (&wtmp1, (unsigned char *) (_utf8 + inx1), _n - inx1, &state1);
+      rc1 = (long) virt_mbrtowc_z (&wtmp1, (unsigned char *) (_utf8 + inx1), _n - inx1, &state1);
       if (rc1 <= 0)
 	GPF_T1 ("inconsistent wide char data");
       if (collation)

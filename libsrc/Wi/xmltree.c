@@ -1231,7 +1231,7 @@ xslt_format_number (numeric_t value, caddr_t format,
 
 #define LOAD_FROM_XSNF(varname,field_name) \
   memset (&c_state, 0, sizeof (c_state)); \
-  virt_mbrtowc (&varname, (utf8char *)nf->field_name, strlen (nf->field_name), &c_state);
+  virt_mbrtowc_z (&varname, (utf8char *)nf->field_name, strlen (nf->field_name), &c_state);
 
   LOAD_FROM_XSNF(digit, xsnf_digit);
   LOAD_FROM_XSNF(zero_digit, xsnf_zero_digit);
