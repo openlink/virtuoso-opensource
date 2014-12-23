@@ -76,7 +76,7 @@ virt_wcsnrtombs (unsigned char * dst, wchar_t ** src, size_t nwc, size_t len, vi
 	    if ((wc & virt_utf8_encoding_mask[step - 2]) == 0)
 	      break;
 
-	  if (written + step >= len)
+	  if (written + step > len)
 	    {
 	      /* Too long.  */
 	      run -= 1;
