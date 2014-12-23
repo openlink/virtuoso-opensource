@@ -116,5 +116,12 @@ tabtoheader tmp/tmp2.c unicode3_uppers.h
 tabtoheader tmp/tmp3.c unicode3_spaces.h
 tabtoheader tmp/tmp4.c unicode3_basechars.h
 tabtoheader unicode3.dat unicode3_all_chars.h
+cat unicode3_all_chars.h | \
+  sed 's/UNICODE3_HEADER/UNICODE3_HEADER();/g' | \
+  sed 's/UNICODE3_FOOTER/UNICODE3_FOOTER();/g' | \
+  sed 's/^\(UNICODE3_REC.*\)$/\1;/g' | \
+  sed 's/UNICODE3_S\([1-9X]\)(UNICODE3_\([a-zA-Z0-9]*\)/UNICODE3_S\1(UNICODE3_G("\2")/g' | \
+  sed "s/\"/'/g" | \
+  sed 's/0x\([0-9A-F][0-9A-F][0-9A-F][0-9A-F]\)/0hex\1/g' > unicode3_all_chars.sql
 
 rm -rf tmp
