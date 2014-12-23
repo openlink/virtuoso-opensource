@@ -2249,13 +2249,13 @@ bif_aset (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 again:
   inx = (long) bif_long_arg (qst, args, idxctr, "aset");
   if (inx < 0)
-  goto bs;
+    goto bs;
   len = box_length (arr);
   switch (box_tag (arr))
   {
   case DV_STRING:
-    if (inx >= len)
-  goto bs;
+    if (inx >= len-1)
+      goto bs;
     arr[inx] = (char) bif_long_arg (qst, args, idxcount + 1, "aset");
     break;
   case DV_ARRAY_OF_POINTER: case DV_LIST_OF_POINTER: case DV_ARRAY_OF_XQVAL:
@@ -2272,7 +2272,6 @@ again:
     dk_free_tree (((caddr_t *) arr)[inx]);
     ((caddr_t *) arr)[inx] = box_copy_tree (it);
     break;
-
   case DV_ARRAY_OF_LONG:
     if (((size_t) inx) >= len / sizeof (caddr_t))
   goto bs;
@@ -2280,7 +2279,7 @@ again:
     break;
   case DV_ARRAY_OF_FLOAT:
     if (((size_t) inx) >= len / sizeof (caddr_t))
-  goto bs;
+      goto bs;
     ((float *) arr)[inx] = bif_float_arg (qst, args, idxcount + 1, "aset");
     break;
   case DV_ARRAY_OF_DOUBLE:
@@ -2290,8 +2289,8 @@ again:
     break;
   case DV_WIDE:
   case DV_LONG_WIDE:
-    if (((size_t) inx) >= len / sizeof (wchar_t))
-  goto bs;
+    if (((size_t) inx) >= (len / sizeof (wchar_t)) - 1)
+      goto bs;
     ((wchar_t *)arr)[inx] = (wchar_t) unbox (it);
     break;
   default:
