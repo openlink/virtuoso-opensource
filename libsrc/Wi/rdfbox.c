@@ -1996,23 +1996,30 @@ bif_rdf_box_to_ro_id_search_fields (caddr_t * qst, caddr_t * err_ret, state_slot
       ro_dt_and_lang = rb->rb_type << 16 | rb->rb_lang;
       if (rb->rb_ro_id)
         return NULL; /* No need to search */
-      if (DV_XML_ENTITY == cdtp && rb->rb_chksum_tail)
+      if (/* DV_XML_ENTITY == cdtp && */ rb->rb_chksum_tail)
         {
           QNCAST (rdf_bigbox_t, rbb, rb);
           ro_val = box_copy_tree (rbb->rbb_chksum);
           goto res; /* see below */
         }
-      if (DV_STRING != cdtp)
-        {
-          ro_val = box_copy_tree (content);
-          goto res; /* see below */
-        }
       if (DV_GEO == cdtp)
         {
           caddr_t err = NULL;
-          ro_val = box_to_any (content, &err);
+          caddr_t serial = box_to_any_1 (content, &err, NULL, DKS_TO_DC);
           if (err)
             sqlr_resignal (err);
+          len = box_length (serial) - 1;
+          if (len > RB_BOX_HASH_MIN_LEN)
+            {
+              ro_val = mdigest5 (serial);
+              goto res; /* see below */
+            }
+          ro_val = serial;
+          goto res; /* see below */
+        }
+      if (DV_STRING != cdtp)
+        {
+          ro_val = box_copy_tree (content);
           goto res; /* see below */
         }
       len = box_length (content) - 1;
