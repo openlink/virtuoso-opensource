@@ -1118,6 +1118,16 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 	break;
       }
 
+    case DV_IRI_ID:
+      {
+	iri_id_t iid = unbox_iri_id (exp);
+	if (iid >= MIN_64BIT_BNODE_IRI_ID)
+	  sprintf_more (text, tlen, fill, "#ib" IIDBOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+	else
+	  sprintf_more (text, tlen, fill, "#i" IIDBOXINT_FMT, (boxint)(iid));
+	break;
+      }
+
     case DV_DOUBLE_FLOAT:
       sprintf_more (text, tlen, fill, "%lg", unbox_double ((caddr_t) exp));
       sc->sc_exp_sqt.sqt_dtp = dtp;

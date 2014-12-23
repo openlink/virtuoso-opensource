@@ -984,7 +984,7 @@ create procedure RDF_VIEW_GEN_VD (in qual varchar)
 
     case when fct_installed
     then
-      '''/describe/?url=http%%3A//^{URIQADefaultHost}^%U%%23this&graph=http%%3A//^{URIQADefaultHost}^/<qual>%%23'','
+      '''/describe/?url=http%%3A//^{URIQADefaultHost}^%U%%23this&graph=http%%3A//^{URIQADefaultHost}^/<qual>%%23&distinct=0'','
     else
       '''/about/html/http://^{URIQADefaultHost}^%s'','
     end
