@@ -139,7 +139,7 @@ collation_define_memonly (caddr_t name, caddr_t table, int is_utf8_if_narrow)
           break;
         }
     }
-  if (tbl_len & 0xff)
+  if ((tbl_len & 0xff) && (tbl_len != 0xffff))
     log_warning (
         "Collation %s is defined as a table of length %d, that is formally valid but unusual. The length is usually a whole multiple of 256", name);
   coll->co_name = box_string (name);
