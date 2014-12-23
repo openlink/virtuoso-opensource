@@ -6467,8 +6467,8 @@ static const char *collation_define_text =
 "      inx := inx + 1; \n"
 "    } \n"
 "  __collation_define_memonly (name, collation); \n"
-"  log_text(\'__collation_define_memonly(?, ?)\', name, collation); \n"
 "  insert replacing SYS_COLLATIONS (COLL_NAME, COLL_TABLE, COLL_WIDE) values (name, cast (collation as varbinary), is_wide); \n"
+"  log_text(\'__collation_define_memonly(?, ?)\', name, collation); \n"
 "} \n";
 
 

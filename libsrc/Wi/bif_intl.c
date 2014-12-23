@@ -269,18 +269,19 @@ collation_order_string (collation_t *coll, caddr_t string, int auto_utf8)
   len = box_length (string) - 1;
   if (auto_utf8 &&
     ((DV_UNAME == string_dtp) ||
-     ((DV_STRING == string_dtp) && ((BF_IRI | BF_UTF8) & box_flags (string))) ) )
+     ((DV_STRING == string_dtp) &&
+       ((auto_utf8 & 2) || ((BF_IRI | BF_UTF8) & box_flags (string))) ) ) )
     {
       wchar_t *dest = (wchar_t *)box_utf8_as_wide_char (string, NULL, len, 0);
       int dest_len = (box_length (dest) / sizeof (wchar_t)) - 1;
       if (COLLATION_XLAT_SAFE_FOR_WCHAR_T (coll))
         {
-          for (ctr = 0; ctr < len; ctr++)
+          for (ctr = 0; ctr < dest_len; ctr++)
             dest[ctr] = COLLATION_XLAT_WIDE_NOCHECK (coll, dest[ctr]);
         }
       else
         {
-          for (ctr = 0; ctr < len; ctr++)
+          for (ctr = 0; ctr < dest_len; ctr++)
             dest[ctr] = COLLATION_XLAT_WIDE (coll, dest[ctr]);
         }
       return (caddr_t)dest;
@@ -321,7 +322,7 @@ bif_collation_order_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
     sqlr_new_error ("22023", "IN006", "Collation %.500s not defined", coll_name);
   if (!string)
     return NEW_DB_NULL;
-  return collation_order_string (coll, string, 0);
+  return collation_order_string (coll, string, 1);
 }
 
 caddr_t
@@ -341,7 +342,7 @@ bif_rdf_collation_order_string (caddr_t * qst, caddr_t * err_ret, state_slot_t *
     {
     case DV_DB_NULL: return NEW_DB_NULL;
     case DV_STRING: case DV_WIDE: case DV_UNAME:
-      return collation_order_string (coll, string, 1);
+      return collation_order_string (coll, string, 3);
     default:
       if (2 < BOX_ELEMENTS (args))
         return box_copy_tree (bif_arg (qst, args, 2, "rdf_collation_order_string"));
