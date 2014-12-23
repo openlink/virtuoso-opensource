@@ -1484,7 +1484,7 @@ __xqf_compare  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe, int do_wh
     case XQ_STARTSWITH:
       {
 	int len = 0, wide_len;
-	caddr_t wide_box = box_utf8_as_wide_char (str1, NULL, strlen (str1), 0, DV_WIDE), utf8_box;
+	caddr_t wide_box = box_utf8_as_wide_char (str1, NULL, strlen (str1), 0), utf8_box; 
 
 	wide_len = box_length (wide_box) / sizeof (wchar_t) - 1;
 	n = utf8_strlen ((utf8char *)str2);
@@ -1843,7 +1843,7 @@ void
 xqf_lower_case  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
   caddr_t str = xpf_arg (xqi, tree, ctx_xe, DV_STRING, 0);
-  wchar_t * wide_str = (wchar_t*) box_utf8_as_wide_char ((caddr_t) str, NULL, box_length (str), 0, DV_LONG_WIDE);
+  wchar_t * wide_str = (wchar_t*) box_utf8_as_wide_char ((caddr_t) str, NULL, box_length (str), 0);
   int i;
   int len = box_length (wide_str)/sizeof (wchar_t);
   wchar_t * res =  (wchar_t*)dk_alloc_box (len * sizeof (wchar_t), DV_WIDE);
@@ -1859,7 +1859,7 @@ void
 xqf_upper_case  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
   caddr_t str = xpf_arg (xqi, tree, ctx_xe, DV_STRING, 0);
-  wchar_t * wide_str = (wchar_t*) box_utf8_as_wide_char ((caddr_t) str, NULL, box_length (str), 0, DV_LONG_WIDE);
+  wchar_t * wide_str = (wchar_t*) box_utf8_as_wide_char ((caddr_t) str, NULL, box_length (str), 0);
   int i;
   int len = box_length (wide_str)/sizeof (wchar_t);
   wchar_t * res =  (wchar_t*)dk_alloc_box (len * sizeof (wchar_t), DV_WIDE);
@@ -1876,7 +1876,7 @@ xqf_escape_uri  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
   caddr_t str = xpf_arg (xqi, tree, ctx_xe, DV_STRING, 0);
   ptrlong esc_reserved = unbox (xpf_arg (xqi, tree, ctx_xe, DV_LONG_INT, 1));
-  wchar_t * wide_res = 0, *wide_str = (wchar_t*) box_utf8_as_wide_char ((caddr_t) str, NULL, box_length (str), 0, DV_LONG_WIDE);
+  wchar_t * wide_res = 0, *wide_str = (wchar_t*) box_utf8_as_wide_char ((caddr_t) str, NULL, box_length (str), 0);
   int esc_type = DKS_ESC_URI_NRES;
 
   if (esc_reserved)
@@ -1915,8 +1915,8 @@ __xqf_ends_with (caddr_t str, caddr_t mstr, collation_t * coll)
   long idx, utf8_idx = 0;
   if (coll)
     {
-      wchar_t *wide1 = (wchar_t*) box_utf8_as_wide_char (str, NULL, box_length (str) - 1, 0, DV_LONG_WIDE);
-      wchar_t *wide2 = (wchar_t*) box_utf8_as_wide_char (mstr, NULL, box_length (mstr) - 1, 0, DV_LONG_WIDE);
+      wchar_t *wide1 = (wchar_t*) box_utf8_as_wide_char (str, NULL, box_length (str) - 1, 0);
+      wchar_t *wide2 = (wchar_t*) box_utf8_as_wide_char (mstr, NULL, box_length (mstr) - 1, 0);
       size_t _1len = box_length (wide1)/sizeof (wchar_t) - 1;
       size_t _2len = box_length (wide2)/sizeof (wchar_t) - 1;
       int n1inx=0, n2inx=0;

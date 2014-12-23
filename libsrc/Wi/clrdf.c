@@ -149,7 +149,7 @@ cu_rdf_ins_label_normalize (mem_pool_t * mp, caddr_t lbl)
   caddr_t ret;
   int i, j, l;
 
-  l = (size_t) box_utf8_as_wide_char (lbl, (caddr_t) tmp, box_length (lbl) - 1, sizeof (tmp) / sizeof (wchar_t) - 1, DV_WIDE);
+  l = (size_t) box_utf8_as_wide_char (lbl, (caddr_t) tmp, box_length (lbl) - 1, sizeof (tmp) / sizeof (wchar_t) - 1);
   for (i = 0, j = 0; i < l; i++)
     {
       if (!wcschr (L"\'\",.", tmp[i]))

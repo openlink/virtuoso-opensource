@@ -693,9 +693,9 @@ compare_utf8_with_collation (caddr_t dv1, long n1,
 }
 
 caddr_t
-box_wide_char_string (caddr_t data, size_t len, dtp_t dtp)
+box_wide_char_string (caddr_t data, size_t len)
 {
-  caddr_t res = dk_alloc_box (len + sizeof (wchar_t), dtp);
+  caddr_t res = dk_alloc_box (len + sizeof (wchar_t), DV_WIDE);
   memcpy (res, data, len);
   ((wchar_t *)res)[len / sizeof (wchar_t)] = L'\x0';
   return res;
@@ -725,7 +725,7 @@ box_wide_string_as_narrow (caddr_t _str, caddr_t narrow, long max_len, wcharset_
       if (narrow) narrow[0] = 0;
       return box_dv_short_string("");
     } in case if not null narrow - leak */
-  box = (unsigned char *) (narrow ? narrow : dk_alloc_box (len + 1, DV_LONG_STRING));
+  box = (unsigned char *) (narrow ? narrow : dk_alloc_box (len + 1, DV_STRING));
   for (i = 0; i < len && str[i]; i++)
     box[i] = WCHAR_TO_CHAR(str[i], charset);
   box[len] = 0;
@@ -965,7 +965,7 @@ DBG_NAME(box_narrow_string_as_utf8) (DBG_PARAMS caddr_t _str, caddr_t narrow, lo
 
 
 caddr_t
-t_box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size_t max_wide_len, dtp_t dtp)
+t_box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size_t max_wide_len)
 {
   unsigned char *utf8 = (unsigned char *) _utf8;
   unsigned char *utf8work;
@@ -983,7 +983,7 @@ t_box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, si
   if (_wide_dest)
     dest = _wide_dest;
   else
-    dest = t_alloc_box ((int) (wide_len  + 1) * sizeof (wchar_t), dtp);
+    dest = t_alloc_box ((int) (wide_len  + 1) * sizeof (wchar_t), DV_WIDE);
 
   utf8work = utf8;
   memset (&state, 0, sizeof (virt_mbstate_t));

@@ -36,7 +36,7 @@ dk_session_t *bh_string_output_w (/* this was before 3.0: index_space_t * isp, *
 int compare_wide_to_utf8 (caddr_t utf8_data, long utf8_len, caddr_t wide_data, long wide_len, collation_t *collation);
 int compare_utf8_with_collation (caddr_t dv1, long n1, caddr_t dv2, long n2, collation_t *collation);
 
-caddr_t box_wide_char_string (caddr_t data, size_t len, dtp_t dtp);
+caddr_t box_wide_char_string (caddr_t data, size_t len);
 
 caddr_t box_narrow_string_as_wide (unsigned char *str, caddr_t wide, long max_len, wcharset_t *charset, caddr_t * err_ret, int isbox);
 caddr_t box_wide_string_as_narrow (caddr_t str, caddr_t narrow, long max_len, wcharset_t *charset);

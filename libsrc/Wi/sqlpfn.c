@@ -440,10 +440,10 @@ wideliteral (char *s)
 	      box = t_alloc_box (len + 1, DV_SHORT_STRING);
 	      start = s + 1;
 	      parse_string_literal ((unsigned char **) &start, (unsigned char *) box, 0);
-	      return t_box_utf8_as_wide_char (box, NULL, strlen (box), 0, DV_WIDE);
+	      return t_box_utf8_as_wide_char (box, NULL, strlen (box), 0);
 	    }
 	  else
-	    return t_box_utf8_as_wide_char (s + 2, NULL, strlen (s + 2) - 1, 0, DV_WIDE);
+	    return t_box_utf8_as_wide_char (s + 2, NULL, strlen (s + 2) - 1, 0);
 	}
       else
 	return NULL;

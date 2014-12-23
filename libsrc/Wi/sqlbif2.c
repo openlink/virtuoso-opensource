@@ -1085,14 +1085,14 @@ bif_rfc1808_parse_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       wchar_t *wideuri = (wchar_t *)uri;
       return list (6,
-        box_wide_char_string ((caddr_t)(wideuri + split.schema_begin)	, (split.schema_end - split.schema_begin) * sizeof (wchar_t)	, DV_WIDE),
-        box_wide_char_string ((caddr_t)(wideuri + split.netloc_begin)	, (split.netloc_end - split.netloc_begin) * sizeof (wchar_t)	, DV_WIDE),
+        box_wide_char_string ((caddr_t)(wideuri + split.schema_begin)	, (split.schema_end - split.schema_begin) * sizeof (wchar_t)),
+        box_wide_char_string ((caddr_t)(wideuri + split.netloc_begin)	, (split.netloc_end - split.netloc_begin) * sizeof (wchar_t)),
         (((split.path_end == split.path_begin) && (0 < split.two_slashes)) ?
-          box_wide_char_string ((caddr_t)(L"/"), sizeof (wchar_t), DV_WIDE) :
-          box_wide_char_string ((caddr_t)(wideuri + split.path_begin)	, (split.path_end - split.path_begin) * sizeof (wchar_t)	, DV_WIDE) ),
-        box_wide_char_string ((caddr_t)(wideuri + split.params_begin)	, (split.params_end - split.params_begin) * sizeof (wchar_t)	, DV_WIDE),
-        box_wide_char_string ((caddr_t)(wideuri + split.query_begin)	, (split.query_end - split.query_begin) * sizeof (wchar_t)	, DV_WIDE),
-        box_wide_char_string ((caddr_t)(wideuri + split.fragment_begin)	, (split.fragment_end - split.fragment_begin) * sizeof (wchar_t), DV_WIDE) );
+          box_wide_char_string ((caddr_t)(L"/"), sizeof (wchar_t)) :
+          box_wide_char_string ((caddr_t)(wideuri + split.path_begin)	, (split.path_end - split.path_begin) * sizeof (wchar_t)	) ),
+        box_wide_char_string ((caddr_t)(wideuri + split.params_begin)	, (split.params_end - split.params_begin) * sizeof (wchar_t)),
+        box_wide_char_string ((caddr_t)(wideuri + split.query_begin)	, (split.query_end - split.query_begin) * sizeof (wchar_t)),
+        box_wide_char_string ((caddr_t)(wideuri + split.fragment_begin)	, (split.fragment_end - split.fragment_begin) * sizeof (wchar_t)) );
     }
   else
     {

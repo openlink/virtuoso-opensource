@@ -149,7 +149,7 @@ bif_charset_define (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       wide_charset_free (wcharset);
       */
       sqlr_new_error ("2C000", "IN004", "charset %s already defined. Drop it first", name);
-      return box_wide_char_string ((caddr_t) (&wcharset->chrs_table[1]), 255 * sizeof (wchar_t), DV_WIDE);
+      return box_wide_char_string ((caddr_t) (&wcharset->chrs_table[1]), 255 * sizeof (wchar_t));
     }
   wcharset = wide_charset_create (name, table, box_length (_table) / sizeof (wchar_t) - 1,
       (char **) (aliases ? box_copy_tree ((box_t) aliases) : NULL));
@@ -170,7 +170,7 @@ bif_charset_define (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	}
     }
   END_DO_BOX;
-  return box_wide_char_string ((caddr_t) (&wcharset->chrs_table[1]), 255 * sizeof (wchar_t), DV_WIDE);
+  return box_wide_char_string ((caddr_t) (&wcharset->chrs_table[1]), 255 * sizeof (wchar_t));
 }
 
 static caddr_t
@@ -242,27 +242,13 @@ bif_complete_collation_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
   return result;
 }
 
-
-/* translates a string into it's collation weight equivalent
-   (by replacing each character with it's collation table lookup value).
-   The output is suitable for functions like strstr, strchr etc
-*/
 caddr_t
-bif_collation_order_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+collation_order_string (collation_t *coll, caddr_t string, int auto_utf8)
 {
-  /* params :
-     0 - in collation name
-     1 - in the string to transform
-  */
-  caddr_t coll_name = bif_string_arg (qst, args, 0, "collation_order_string");
-  caddr_t string = bif_string_or_uname_or_wide_or_null_arg (qst, args, 1, "collation_order_string");
-  collation_t *coll = sch_name_to_collation (coll_name);
+  dtp_t string_dtp = DV_TYPE_OF (string);
   int ctr, len;
   unsigned char *curr;
-
-  if (!coll)
-    sqlr_new_error ("22023", "IN006", "Collation %.500s not defined", coll_name);
-  if (DV_WIDE == DV_TYPE_OF (string))
+  if (DV_WIDE == string_dtp)
     {
       wchar_t *dest;
       len = (box_length (string) / sizeof (wchar_t)) - 1;
@@ -281,6 +267,24 @@ bif_collation_order_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
       return (caddr_t)dest;
     }
   len = box_length (string) - 1;
+  if (auto_utf8 &&
+    ((DV_UNAME == string_dtp) ||
+     ((DV_STRING == string_dtp) && ((BF_IRI | BF_UTF8) & box_flags (string))) ) )
+    {
+      wchar_t *dest = (wchar_t *)box_utf8_as_wide_char (string, NULL, len, 0);
+      int dest_len = (box_length (dest) / sizeof (wchar_t)) - 1;
+      if (COLLATION_XLAT_SAFE_FOR_WCHAR_T (coll))
+        {
+          for (ctr = 0; ctr < len; ctr++)
+            dest[ctr] = COLLATION_XLAT_WIDE_NOCHECK (coll, dest[ctr]);
+        }
+      else
+        {
+          for (ctr = 0; ctr < len; ctr++)
+            dest[ctr] = COLLATION_XLAT_WIDE (coll, dest[ctr]);
+        }
+      return (caddr_t)dest;
+    }
   if (coll->co_xlats_narrow_to_narrow)
     {
       caddr_t dest = dk_alloc_box (len+1, DV_STRING);
@@ -299,6 +303,51 @@ bif_collation_order_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
     }
 }
 
+/* translates a string into it's collation weight equivalent
+   (by replacing each character with it's collation table lookup value).
+   The output is suitable for functions like strstr, strchr etc
+*/
+caddr_t
+bif_collation_order_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  /* params :
+     0 - in collation name
+     1 - in the string to transform
+  */
+  caddr_t coll_name = bif_string_arg (qst, args, 0, "collation_order_string");
+  caddr_t string = bif_string_or_uname_or_wide_or_null_arg (qst, args, 1, "collation_order_string");
+  collation_t *coll = sch_name_to_collation (coll_name);
+  if (!coll)
+    sqlr_new_error ("22023", "IN006", "Collation %.500s not defined", coll_name);
+  if (!string)
+    return NEW_DB_NULL;
+  return collation_order_string (coll, string, 0);
+}
+
+caddr_t
+bif_rdf_collation_order_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  /* params :
+     0 - in collation name
+     1 - in the string to transform
+     2 - collation value for wrong types
+  */
+  caddr_t coll_name = bif_string_arg (qst, args, 0, "rdf_collation_order_string");
+  caddr_t string = bif_arg_unrdf (qst, args, 1, "rdf_collation_order_string");
+  collation_t *coll = sch_name_to_collation (coll_name);
+  if (!coll)
+    sqlr_new_error ("22023", "IN006", "Collation %.500s not defined", coll_name);
+  switch (DV_TYPE_OF (string))
+    {
+    case DV_DB_NULL: return NEW_DB_NULL;
+    case DV_STRING: case DV_WIDE: case DV_UNAME:
+      return collation_order_string (coll, string, 1);
+    default:
+      if (2 < BOX_ELEMENTS (args))
+        return box_copy_tree (bif_arg (qst, args, 2, "rdf_collation_order_string"));
+      return NEW_DB_NULL;
+    }
+}
 
 caddr_t
 bif_current_charset (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -445,7 +494,7 @@ charset_recode_from_cs_or_eh_to_cs (caddr_t narrow, int bom_skip_offset, encodin
   else if (cs1 == CHARSET_UTF8)
     {
       if (cs2 == CHARSET_WIDE)
-	ret = box_utf8_as_wide_char (narrow, NULL, box_length (narrow) - 1, 0, DV_WIDE);
+	ret = box_utf8_as_wide_char (narrow, NULL, box_length (narrow) - 1, 0);
       else
 	ret = box_utf8_string_as_narrow (narrow, NULL, 0, cs2);
       res_is_new_ret[0] = 1;
@@ -1200,7 +1249,8 @@ bif_intl_init (void)
   bif_define_ex ("charset__define", bif_charset_define, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("charset_canonical_name", bif_charset_canonical_name, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("complete_collation_name", bif_complete_collation_name, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
-  bif_define_ex ("collation_order_string", bif_collation_order_string, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("collation_order_string", bif_collation_order_string, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("rdf_collation_order_string", bif_rdf_collation_order_string, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("current_charset", bif_current_charset, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("charset_recode", bif_charset_recode, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("bf_text_to_UTF8", bif_bf_text_to_UTF8, BMD_RET_TYPE, &bt_varchar, BMD_DONE);

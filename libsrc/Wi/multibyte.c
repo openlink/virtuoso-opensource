@@ -49,7 +49,7 @@ extern "C" {
 
 
 caddr_t
-box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size_t max_wide_len, dtp_t dtp)
+box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size_t max_wide_len)
 {
   unsigned char *utf8 = (unsigned char *) _utf8;
   unsigned char *utf8work;
@@ -71,7 +71,7 @@ box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size
       wide_boxsize = (int) (wide_len + 1) * sizeof (wchar_t);
       if (wide_boxsize > MAX_READ_STRING)
         return NULL; /* Prohibitively long UTF-8 string as a source */
-      dest = dk_alloc_box (wide_boxsize, dtp);
+      dest = dk_alloc_box (wide_boxsize, DV_WIDE);
     }
   utf8work = utf8;
   memset (&state, 0, sizeof (virt_mbstate_t));
@@ -191,7 +191,7 @@ box_read_wide_string (dk_session_t *ses, dtp_t macro)
   utf8_len = session_buffered_read_char (ses);
   memset (string, 0, 2048);
   session_buffered_read (ses, (char *) string, utf8_len);
-  return box_utf8_as_wide_char ((caddr_t) string, NULL, utf8_len, 0, DV_WIDE);
+  return box_utf8_as_wide_char ((caddr_t) string, NULL, utf8_len, 0);
 }
 
 #define CHUNK_SIZE	2048
