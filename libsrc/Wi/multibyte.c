@@ -283,7 +283,7 @@ wide_char_length_of_utf8_string (const unsigned char *str, size_t utf8_length)
 }
 
 
-wchar_t *
+const wchar_t *
 virt_wcschr (const wchar_t *wcs, wchar_t wc)
 {
   if (wcs)
@@ -297,7 +297,7 @@ virt_wcschr (const wchar_t *wcs, wchar_t wc)
 }
 
 
-wchar_t *
+const wchar_t *
 virt_wcsrchr (const wchar_t *wcs, wchar_t wc)
 {
   wchar_t *wcs_end = (wchar_t *)wcs;
@@ -332,54 +332,76 @@ virt_wcslen (const wchar_t *wcs)
 int
 virt_wcsncmp (const wchar_t *from, const wchar_t *to, size_t len)
 {
-  while (from && *from && to && *to)
+  static wchar_t zero = 0;
+  if (!from)
+    from = &zero;
+  if (!to)
+    to = &zero;
+  while (*from && *to && (0 < len))
     {
       if (*from > *to)
-	return 1;
+        return 1;
       if (*from < *to)
-	return -1;
+        return -1;
       from++;
       to++;
+      len--;
     }
-  if (!from || !*from)
-    {
-      if (!to || !*to)
-	return 0;
-      else
-	return -1;
-    }
-  else
-    return 1;
+  return 0;
 }
 
-
-wchar_t *
+const wchar_t *
 virt_wcsstr (const wchar_t *wcs, const wchar_t *wc)
 {
   size_t len;
-  wchar_t *cp;
-  wchar_t *ep;
-
+  const wchar_t *cp;
+  const wchar_t *ep;
   len = virt_wcslen (wc);
-  ep = (wchar_t *) wcs + virt_wcslen (wcs) - len;
-  for (cp = (wchar_t *) wcs; cp <= ep; cp++)
-    if (*cp == *wc && !virt_wcsncmp (cp, wc, len))
-      return (wchar_t *) cp;
-
+  if (0 == len)
+    return wcs;
+  ep = wcs + virt_wcslen (wcs) - len;
+  if (ep < wcs)
+    return NULL;
+  for (cp = wcs; cp <= ep; cp++)
+    if (*cp == *wc && !virt_wmemcmp (cp, wc, len))
+      return cp;
   return NULL;
 }
 
-wchar_t *
+const wchar_t *
 virt_wcsrstr (const wchar_t *wcs, const wchar_t *wc)
 {
   size_t len;
   const wchar_t *cp;
-
+  const wchar_t *ep;
   len = virt_wcslen (wc);
-  for (cp = wcs + virt_wcslen (wcs) - len; cp >= wcs; --cp)
-    if (*cp == *wc && !virt_wcsncmp (cp, wc, len))
-      return (wchar_t *) cp;
+  if (0 == len)
+    return wcs;
+  ep = wcs + virt_wcslen (wcs) - len;
+  if (ep < wcs)
+  for (cp = ep; cp >= wcs; --cp)
+    if (*cp == *wc && !virt_wmemcmp (cp, wc, len))
+      return cp;
+  return NULL;
+}
 
+const wchar_t *
+virt_wmemmem (const wchar_t *haystack, size_t haystacklen, const wchar_t *needle, size_t needlelen)
+{
+  const wchar_t *stop;
+  size_t cmplen;
+  if (needlelen > haystacklen)
+    return NULL;
+  if (0 == needlelen)
+    return haystack;
+  stop = haystack + haystacklen - needlelen;
+  cmplen = (needlelen - 1) * sizeof (wchar_t);
+  while (haystack <= stop)
+    {
+      if (haystack[0] == needle[0] && !memcmp (haystack+1, needle+1, cmplen))
+        return haystack;
+      haystack++;
+    }
   return NULL;
 }
 

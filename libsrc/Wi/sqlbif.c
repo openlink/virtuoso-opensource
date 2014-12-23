@@ -5042,24 +5042,27 @@ bif_strstr_imp (caddr_t * qst, state_slot_t ** args, int opcode, const char *fun
         sqlr_new_error ("22023", "SR039", "The first argument to %s() is not a wide string", func_name);
       if (!IS_WIDE_STRING_DTP (dtp2))
         sqlr_new_error ("22023", "SR040", "The second argument to %s() is not a wide string", func_name);
+      len1 = box_length (str1);
+      len2 = box_length (str2);
+      if (len2 > len1)
+        {
+          inx = 0;
+          goto prepare_retval; /* see below */
+        }
       switch (opcode)
         {
         case BIF_STRSTR_POS:
         case BIF_STRSTR_BOOL_ANY:
-          inx = (char *)virt_wcsstr ((wchar_t *)str1, (wchar_t *)str2);
+          inx = (char *)virt_wmemmem ((const wchar_t *)str1, len1/sizeof(wchar_t) - 1, (const wchar_t *)str2, len2/sizeof(wchar_t) - 1);
           break;
         case BIF_STRSTR_BOOL_START:
-          len1 = box_length (str1);
-          len2 = box_length (str2);
-          if ((len2 > len1) || memcmp (str1, str2, len2 - sizeof (wchar_t)))
+          if (memcmp (str1, str2, len2 - sizeof (wchar_t)))
             inx = 0;
           else
             inx = str1;
           break;
         case BIF_STRSTR_BOOL_END:
-          len1 = box_length (str1);
-          len2 = box_length (str2);
-          if ((len2 > len1) || memcmp (str1 + len1 - len2, str2, len2 - sizeof (wchar_t)))
+          if (memcmp (str1 + len1 - len2, str2, len2 - sizeof (wchar_t)))
             inx = 0;
           else
             inx = str1 + (len1 - len2);
@@ -5092,6 +5095,7 @@ bif_strstr_imp (caddr_t * qst, state_slot_t ** args, int opcode, const char *fun
           break;
         }
     }
+prepare_retval:
   if (BIF_STRSTR_POS == opcode)
     {
       if (!inx)
