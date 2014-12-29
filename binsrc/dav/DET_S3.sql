@@ -1148,32 +1148,15 @@ create function DB.DBA.S3__makeUrl (
   in path varchar,
   in isSecure integer := 1)
 {
-  declare hostUrl, bucket, dir varchar;
-  declare s3Protocol, s3URL varchar;
+  declare bucket, dir varchar;
 
-  if (isSecure)
-  {
-    s3Protocol := 'http://';
-    s3URL := 's3.amazonaws.com';
-  } else {
-    s3Protocol := 'http://';
-    s3URL := 's3.amazonaws.com';
-  }
   path := ltrim (path, '/');
   bucket := DB.DBA.S3__bucketFromUrl (path);
-  if ((lcase (bucket) = bucket) and (bucket <> ''))
-  {
-    hostUrl := s3Protocol || bucket || '.' || s3URL || '/' || path;
-  }
-  else
-  {
     dir := case when (length (bucket) < length (path)) then subseq (path, length (bucket)+1) else '' end;
     if (bucket <> '')
       bucket := bucket || '/';
 
-    hostUrl := s3Protocol || s3URL || '/' || bucket || dir;
-  }
-  return hostUrl;
+  return 'http://s3.amazonaws.com/' || bucket || dir;
 }
 ;
 
