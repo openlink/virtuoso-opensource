@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -2413,13 +2413,13 @@ create procedure INIT_SERVER_SETTINGS ()
 	     'Enter your User ID and Password',
 	     '',
 	     '',
-	     'Copyright &copy; 1998-2014 OpenLink Software',
+	     'Copyright &copy; 1998-2015 OpenLink Software',
 	     '',
 	     sys_stat ('st_host_name'),
 	     1
 	    );
   }
-  update WA_SETTINGS set WS_COPYRIGHT = 'Copyright &copy; 1998-2014 OpenLink Software';
+  update WA_SETTINGS set WS_COPYRIGHT = 'Copyright &copy; 1998-2015 OpenLink Software';
 
   update WA_SETTINGS
      set WS_WELCOME_MESSAGE =
