@@ -89,6 +89,12 @@ static char WSSE_BASE64_ENCODING_TYPE[] = "wsse:Base64Binary";
 
 #define xenc_id_free(id) dk_free_box(id)
 
+#ifdef SHA256_ENABLE
+#define	DEFAULT_SHA_DIGEST	"sha256"
+#else
+#define	DEFAULT_SHA_DIGEST	"sha1"
+#endif
+
 char * wsse_uris[] = { WSS_WSS_URI, WSS_WSS_URI_0204, WSS_WSS_URI_0207, WSS_WSS_URI_OASIS, NULL };
 char * wsu_uris[] = { WSS_WSU_URI, WSS_WSU_URI_OASIS, NULL };
 
@@ -6391,7 +6397,7 @@ bif_xenc_x509_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t * subj = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 4, "xenc_x509_generate");
   caddr_t * exts = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 5, "xenc_x509_generate");
   float hours = BOX_ELEMENTS (args) > 6 ? (float) bif_float_arg (qst, args, 6, "xenc_x509_generate") : 0;
-  caddr_t digest_name = BOX_ELEMENTS (args) > 7 ? bif_string_arg (qst, args, 7, "xenc_x509_generate") : "sha1";
+  caddr_t digest_name = BOX_ELEMENTS (args) > 7 ? bif_string_arg (qst, args, 7, "xenc_x509_generate") : DEFAULT_SHA_DIGEST;
   xenc_key_t * ca_key = xenc_get_key_by_name (key_name, 1);
   xenc_key_t * cli_key = xenc_get_key_by_name (cli_pub_key, 1);
   X509 *x = NULL;
@@ -6537,7 +6543,7 @@ bif_xenc_x509_ss_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
   caddr_t * subj = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 3, "xenc_x509_ss_generate");
   caddr_t * exts = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 4, "xenc_x509_ss_generate");
   float hours = BOX_ELEMENTS (args) > 5 ? (float) bif_float_arg (qst, args, 5, "xenc_x509_ss_generate") : 0;
-  caddr_t digest_name = BOX_ELEMENTS (args) > 6 ? bif_string_arg (qst, args, 6, "xenc_x509_ss_generate") : "sha1";
+  caddr_t digest_name = BOX_ELEMENTS (args) > 6 ? bif_string_arg (qst, args, 6, "xenc_x509_ss_generate") : DEFAULT_SHA_DIGEST;
   xenc_key_t * key = xenc_get_key_by_name (key_name, 1);
   X509 *x = NULL;
   EVP_PKEY *pk = NULL;
@@ -6829,7 +6835,7 @@ bif_xenc_x509_from_csr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long serial = bif_long_arg (qst, args, 3, me);
   long days = bif_long_arg (qst, args, 4, me);
   float hours = BOX_ELEMENTS (args) > 5 ? (float) bif_float_arg (qst, args, 5, me) : 0;
-  caddr_t digest_name = BOX_ELEMENTS (args) > 6 ? bif_string_arg (qst, args, 6, me) : "sha1";
+  caddr_t digest_name = BOX_ELEMENTS (args) > 6 ? bif_string_arg (qst, args, 6, me) : DEFAULT_SHA_DIGEST;
   xenc_key_t * ca_key = xenc_get_key_by_name (key_name, 1), * k = xenc_get_key_by_name (cli_name, 1);
   X509 *x = NULL;
   X509_REQ *req = NULL;
