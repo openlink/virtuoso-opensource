@@ -41,11 +41,12 @@
       <v:variable name="_dav" type="varchar" default="''" persist="0" />
       <v:variable name="_del" type="varchar" default="''" persist="0" />
       <v:variable name="_redir" type="varchar" default="''" persist="0" />
-      <v:variable name="_store" type="varchar" default="''" persist="0" />
+      <v:variable name="_store" type="int" default="0" persist="0" />
       <v:variable name="_get_rdf" type="int" default="0" persist="0" />
       <v:variable name="_ask_rdf" type="int" default="0" persist="0" />
       <v:variable name="_udata" type="any" default="NULL" persist="0" />
       <v:variable name="_auth" type="varchar" default="''" persist="0" />
+      <v:variable name="_auth_ldp" type="varchar" default="''" persist="0" />
       <v:variable name="mode" type="varchar" default="''" persist="0" param-name="mode"/>
       <v:variable name="_old_url" type="varchar" default="''" persist="0" />
       <v:variable name="target_url" type="varchar" default="''" persist="0" />
@@ -65,6 +66,12 @@
       <v:variable name="_thr" type="int" default="1" persist="0" />
       <v:variable name="_delay" type="float" default="1" persist="0" />
       <v:variable name="_head" type="varchar" default="null" persist="0" />
+      <v:variable name="_use_tidy" type="varchar" default="'N'" persist="0" />
+      <v:variable name="_store_type" type="varchar" default="null" persist="0" />
+      <v:variable name="target_ldp_uid" type="varchar" default="''" persist="0" />
+      <v:variable name="target_ldp_pwd" type="varchar" default="''" persist="0" />
+      <v:variable name="_ldpr_creation_method" type="varchar" default="''" persist="0" />
+      <v:variable name="_folder_tree" type="varchar" default="''" persist="0" />
     </vm:variables>
     <vm:menu>
       <vm:menuitem value="WebDAV Content Management"/>
@@ -79,7 +86,9 @@
         ?>
       </h1>
     </vm:rawheader>
-    <vm:pagebody>
+    <vm:pagebody onload="admin_utils_onload_hndlr()">
+      <script type="text/javascript" src="admin_utils.js">
+      </script>
       <script type="text/javascript"><![CDATA[
 	function toggleMeta (btn, div_id)
 	{
@@ -93,7 +102,7 @@
       <v:before-data-bind>
         <v:script>
           <![CDATA[
-            declare _idx varchar;
+            declare _idx, store_prefix varchar;
             declare _n_own, ename integer;
             self.mode := get_keyword ('mode', self.vc_page.vc_event.ve_params, self.mode);
             if (get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'edit' or get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'copy')
@@ -119,10 +128,13 @@
               else if (self._other = 'checked')
 	        self._other := 1;
               self._own := (select U_NAME from WS.WS.SYS_DAV_USER where U_ID = _n_own);
-	      ename := concat(self._descr, '(', _host,' in /DAV/',_root,')');
+	      self._store_type := get_keyword ('store-type', self._udata, 'none');
+	      store_prefix := case when self._store_type = 'dav' then '/DAV/' else '' end;
+	      ename := concat(self._descr, '(', _host, ' in ', store_prefix ,_root, ')');
 	      self._intv := coalesce ((select SE_INTERVAL from SYS_SCHEDULED_EVENT where SE_NAME = ename), 0);
               --update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = self._host and VQ_ROOT = self._root;
-              self._root := concat('/DAV/', self._root);
+	      if (self._store_type = 'dav')
+		self._root := concat('/DAV/', self._root);
               self._newd := subseq(datestring(self._newd), 0, 19);
               self._old_url := self._url;
 	      self.target_url := 'http://';
@@ -132,6 +144,10 @@
 	      self._rdf_flw := '';
 	      self._html_meta := get_keyword ('follow-meta', self._udata, 0);
 	      self._rdf_graph := get_keyword ('rdf-graph', self._udata, '');
+	      self._use_tidy := get_keyword ('use-tidy', self._udata, 'Y');
+	      self._auth_ldp := get_keyword ('auth-ldp', self._udata, '');
+	      self._ldpr_creation_method := get_keyword ('ldpr-creation-method', self._udata, '');
+	      self._folder_tree := get_keyword ('folder-tree', self._udata, '');
 	      foreach (any x in _tmp) do
 	        {
 		  self._rdf_flw := self._rdf_flw || x || '\r\n';
@@ -145,6 +161,16 @@
 		    {
 		      self.target_uid := auth[0];
 		      self.target_pwd := auth[1];
+		    }
+		}
+	      if (length (self._auth_ldp))
+	        {
+		  declare auth any;
+		  auth := split_and_decode (self._auth_ldp, 0, '\0\0:');
+		  if (length (auth) = 2)
+		    {
+		      self.target_ldp_uid := auth[0];
+		      self.target_ldp_pwd := auth[1];
 		    }
 		}
               self.target_url := concat(self.target_url, self._host, self._url);
@@ -164,7 +190,6 @@
               self._root := '';
               self._flow := '';
               self._dflow := '';
-              self._store := '';
               self._redir := '1';
 	      self.target_url := '';
 	      self.target_uid := '';
@@ -173,12 +198,16 @@
               self._depth := 'unlimited';
 	      self._delay := 0;
 	      self._head := '';
+	      self._store_type := 'none';
+              self._store := 0;
+	      self.target_ldp_uid := '';
+	      self.target_ldp_pwd := '';
+	      self._ldpr_creation_method := '';
+	      self._folder_tree := '';
             }
           ]]>
         </v:script>
       </v:before-data-bind>
-      <script type="text/javascript" src="admin_utils.js">
-      </script>
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
           <td>
@@ -250,18 +279,184 @@
             </tr>
             <tr>
               <td>
-                Copy to local DAV collection
+               Target storage 
+              </td>
+	      <td width="1px">
+		<v:radio-button name="rb_store_type_none" value="none" group-name="choice_store_type" xhtml_id="choice_store_type_none"
+		  xhtml_onclick="rb_store_type_click_hndlr (this);"
+		  xhtml_disabled="--case when self.mode='edit' then 'disabled' else '@@hidden@@' end"
+		>
+		  <v:before-data-bind>
+		    <![CDATA[
+		    control.ufl_selected := case when (self._store_type = 'none') then 1 else 0 end;
+		    control.vc_data_bound := 1;
+		    ]]>
+		  </v:before-data-bind>
+		</v:radio-button>
+		<label for="choice_store_type_none">Do not store crawled documents</label>
+	      </td>
+            </tr>
+            <tr>
+              <td/>
+	      <td>
+		<v:radio-button name="rb_store_type_dav" value="dav" group-name="choice_store_type" xhtml_id="choice_store_type_dav" 
+		  xhtml_onclick="rb_store_type_click_hndlr (this);"
+		  xhtml_disabled="--case when self.mode='edit' then 'disabled' else '@@hidden@@' end"
+		>
+		  <v:before-data-bind>
+		    <![CDATA[
+		    control.ufl_selected := case when (self._store_type = 'dav') then 1 else 0 end;
+		    control.vc_data_bound := 1;
+		    ]]>
+		  </v:before-data-bind>
+		</v:radio-button>
+		<label for="choice_store_type_dav">Local WebDAV collection  <em>(/DAV/...)</em></label>
+	      </td>
+            </tr>
+	    <tr>
+	      <td/>
+	      <td>
+		<v:radio-button name="rb_store_type_ldp" value="ldp" group-name="choice_store_type" xhtml_id="choice_store_type_ldp"
+		  xhtml_onclick="rb_store_type_click_hndlr (this);"
+		  xhtml_disabled="--case when self.mode='edit' then 'disabled' else '@@hidden@@' end"
+		>
+		  <v:before-data-bind>
+		    <![CDATA[
+		      control.ufl_selected := case when (self._store_type = 'ldp') then 1 else 0 end;
+		      control.vc_data_bound := 1;
+		    ]]>
+		  </v:before-data-bind>
+		</v:radio-button>
+		<label for="choice_store_type_ldp">LDP container  <em>(http://...)</em></label>
+	      </td>
+	    </tr>
+	    <tr>
+	      <td/>
+	      <td>
+		<v:radio-button name="rb_store_type_custom" value="custom" group-name="choice_store_type" xhtml_id="choice_store_type_custom"
+		  xhtml_onclick="--case when self.mode='edit' then '' else 'rb_store_type_click_hndlr (this);' end"
+		  xhtml_disabled="--case when self.mode='edit' then 'disabled' else '@@hidden@@' end"
+		>
+		  <v:before-data-bind>
+		    <![CDATA[
+		      control.ufl_selected := case when (self._store_type = 'custom') then 1 else 0 end;
+		      control.vc_data_bound := 1;
+		    ]]>
+		  </v:before-data-bind>
+		</v:radio-button>
+		<label for="choice_store_type_custom">Custom</label>
+	      </td>
+	    </tr>
+            <tr>
+              <td>
+                Target storage: DAV path / LDPC URL
               </td>
               <td>
-                <v:text name="root" value="--self._root" xhtml_readonly="--case when self.mode='edit' then 'readonly' else '@@hidden@@' end"  xhtml_size="70"/>
+                <v:text name="root" xhtml_id="root" value="--self._root" xhtml_readonly="--case when self.mode='edit' then 'readonly' else '@@hidden@@' end"  xhtml_size="50"/>
                 <?vsp
                   if (self.mode <> 'edit')
                   {
                 ?>
-                <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="col" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="root"/>
+		<div id="div_dav_browser">
+		<vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="col" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="root"/>
+		</div>
                 <?vsp
                   }
                 ?>
+              </td>
+            </tr>
+            <tr>
+	      <td>Login name on target LDP server</td>
+              <td>
+                <v:text name="tar_ldp_uid" value="--self.target_ldp_uid" xhtml_size="20" xhtml_id="tar_ldp_uid" />
+              </td>
+            </tr>
+            <tr>
+	      <td>Login password on target LDP server</td>
+              <td>
+                <v:text name="tar_ldp_pwd" value="--self.target_ldp_pwd" type='password' xhtml_size="20" xhtml_id="tar_ldp_pwd" />
+              </td>
+            </tr>
+            <tr>
+              <td>
+              Create LDP resources using 
+              </td>
+	      <td width="1px">
+		<v:radio-button name="rb_ldpr_create_w_put" value="put" group-name="choice_ldpr_creation_method" xhtml_id="choice_ldpr_create_w_put"
+		  xhtml_disabled="--case when self.mode='edit' then 'disabled' else '@@hidden@@' end"
+		>
+		  <v:before-data-bind>
+		    <![CDATA[
+		    control.ufl_selected := case when (self._ldpr_creation_method = 'put') then 1 else 0 end;
+		    control.vc_data_bound := 1;
+		    ]]>
+		  </v:before-data-bind>
+		</v:radio-button>
+		<label for="choice_ldpr_create_w_post">PUT</label>
+		<v:radio-button name="rb_ldpr_create_w_post" value="post" group-name="choice_ldpr_creation_method" xhtml_id="choice_ldpr_create_w_post"
+		  xhtml_disabled="--case when self.mode='edit' then 'disabled' else '@@hidden@@' end"
+		>
+		  <v:before-data-bind>
+		    <![CDATA[
+		    control.ufl_selected := case when (self._ldpr_creation_method = 'post') then 1 else 0 end;
+		    control.vc_data_bound := 1;
+		    ]]>
+		  </v:before-data-bind>
+		</v:radio-button>
+		<label for="choice_ldpr_create_w_post">POST</label>
+	      </td>
+	    </tr>
+            <tr>
+              <td>
+              Source folder tree 
+              </td>
+	      <td width="1px">
+		<v:radio-button name="rb_folder_tree_recreate" value="recreate" group-name="choice_folder_tree" xhtml_id="choice_folder_tree_recreate"
+		  xhtml_disabled="--case when self.mode='edit' then 'disabled' else '@@hidden@@' end"
+		>
+		  <v:before-data-bind>
+		    <![CDATA[
+		    control.ufl_selected := case when (self._folder_tree = 'recreate') then 1 else 0 end;
+		    control.vc_data_bound := 1;
+		    ]]>
+		  </v:before-data-bind>
+		</v:radio-button>
+		<label for="choice_ldpr_create_w_post">Recreate on target</label>
+		<v:radio-button name="rb_folder_tree_collapse" value="collapse" group-name="choice_folder_tree" xhtml_id="choice_folder_tree_collapse"
+		  xhtml_disabled="--case when self.mode='edit' then 'disabled' else '@@hidden@@' end"
+		>
+		  <v:before-data-bind>
+		    <![CDATA[
+		    control.ufl_selected := case when (self._folder_tree = 'collapse') then 1 else 0 end;
+		    control.vc_data_bound := 1;
+		    ]]>
+		  </v:before-data-bind>
+		</v:radio-button>
+		<label for="choice_ldpr_create_w_post">Use only target LDPC</label>
+	      </td>
+	    </tr>
+            <tr>
+              <td>Store Function</td>
+              <td>
+                <v:text name="store_fn" value="--self._store_fn" xhtml_id="store_fn" xhtml_size="50"/>
+                <v:browse-button name="br_store" xhtml_id="br_store" value="Browse..."
+                        selector="vdir_browser.vspx"
+                        child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=630, width=600"
+                        browser-options="caption=Choose+authentication+function&amp;dir-separator=.&amp;quote-char=&amp;filter-char=%25&amp;content-proc=db.dba.vproc_browse_proc&amp;content-meta-proc=db.dba.vproc_browse_proc_meta&amp;multi-sel=0&amp;dir-sel=0&amp;&amp;retname=t_auth_func">
+                  <v:field name="store_fn" />
+                </v:browse-button>
+              </td>
+            </tr>
+            <tr>
+              <td>Extract Function</td>
+              <td>
+                <v:text name="ext_fn" value="--self._ext_fn" xhtml_size="50"/>
+                <v:browse-button name="br_ext" value="Browse..."
+                        selector="vdir_browser.vspx"
+                        child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=630, width=600"
+                        browser-options="caption=Choose+authentication+function&amp;dir-separator=.&amp;quote-char=&amp;filter-char=%25&amp;content-proc=db.dba.vproc_browse_proc&amp;content-meta-proc=db.dba.vproc_browse_proc_meta&amp;multi-sel=0&amp;dir-sel=0&amp;&amp;retname=t_auth_func">
+                  <v:field name="ext_fn" />
+                </v:browse-button>
               </td>
             </tr>
             <tr>
@@ -364,30 +559,6 @@
               </td>
             </tr>
             <tr>
-              <td>Store Function</td>
-              <td>
-                <v:text name="store_fn" value="--self._store_fn" xhtml_size="50"/>
-                <v:browse-button name="br_store" value="Browse..."
-                        selector="vdir_browser.vspx"
-                        child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=630, width=600"
-                        browser-options="caption=Choose+authentication+function&amp;dir-separator=.&amp;quote-char=&amp;filter-char=%25&amp;content-proc=db.dba.vproc_browse_proc&amp;content-meta-proc=db.dba.vproc_browse_proc_meta&amp;multi-sel=0&amp;dir-sel=0&amp;&amp;retname=t_auth_func">
-                  <v:field name="store_fn" />
-                </v:browse-button>
-              </td>
-            </tr>
-            <tr>
-              <td>Extract Function</td>
-              <td>
-                <v:text name="ext_fn" value="--self._ext_fn" xhtml_size="50"/>
-                <v:browse-button name="br_ext" value="Browse..."
-                        selector="vdir_browser.vspx"
-                        child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=630, width=600"
-                        browser-options="caption=Choose+authentication+function&amp;dir-separator=.&amp;quote-char=&amp;filter-char=%25&amp;content-proc=db.dba.vproc_browse_proc&amp;content-meta-proc=db.dba.vproc_browse_proc_meta&amp;multi-sel=0&amp;dir-sel=0&amp;&amp;retname=t_auth_func">
-                  <v:field name="ext_fn" />
-                </v:browse-button>
-              </td>
-            </tr>
-            <tr>
               <td/>
               <td>
                 <v:check-box name="semweb" value="1" initial-checked="--case when self._store_fn = 'WS.WS.SITEMAP_RDF_STORE' and self._ext_fn = 'WS.WS.SITEMAP_XML_PARSE' then 1 else 0 end" xhtml_id="semweb"/>
@@ -444,13 +615,6 @@
             <tr>
               <td/>
               <td>
-                <v:check-box name="store" value="1" initial-checked="--case when self._store then 1 else 0 end" xhtml_id="store"/>
-                <label for="store">Store documents locally</label>
-              </td>
-            </tr>
-            <tr>
-              <td/>
-              <td>
 		<v:check-box name="convhtml" value="1" initial-checked="--case when self._convhtml then 1 else 0 end" xhtml_id="convhtml"
 		  />
 		<label for="convhtml">Convert Links</label>
@@ -459,9 +623,17 @@
             <tr>
               <td/>
               <td>
+		<v:check-box name="use_tidy" value="Y" initial-checked="--case when self._use_tidy = 'Y' then 1 else 0 end" xhtml_id="use_tidy"
+		  />
+		<label for="use_tidy">Use HTML Tidy</label>
+              </td>
+            </tr>
+            <tr>
+              <td/>
+              <td>
 		<v:check-box name="ask_rdf" value="1" initial-checked="--case when self._ask_rdf then 1 else 0 end" xhtml_id="ask_rdf"
 		  />
-		<label for="ask_rdf">Run Sponger</label>
+		<label for="ask_rdf">Run Sponger *</label>
               </td>
             </tr>
             <tr>
@@ -477,7 +649,7 @@
               <td>
 		<v:check-box name="get_rdf" value="1" initial-checked="--case when self._get_rdf then 1 else 0 end" xhtml_id="get_rdf"
 		  xhtml_onchange='javascript: toggleMeta (this, "meta_opts");'/>
-		<label for="get_rdf">Store metadata *</label>
+		<label for="get_rdf">Show Sponger extractor cartridges *</label>
               </td>
             </tr>
             <tr>
@@ -548,9 +720,10 @@
                   <v:on-post>
                     <v:script>
                       <![CDATA[
-                        declare item, idx, len, _idx, tar_url, sav_host, desc_save varchar;
+                        declare item, idx, len, _idx, tar_url, sav_host, desc_save, store_prefix varchar;
                         declare ret_arr, opts, tmp any;
                         declare pos integer;
+			declare choice_store_type varchar;
                         tar_url := trim (get_keyword ('tar_url', params, ''));
 			desc_save := self._descr;
                         if (length(tar_url) <= 0)
@@ -574,6 +747,12 @@
 			    self._auth := concat (self.tar_uid.ufl_value,':',self.tar_pwd.ufl_value);
 			  }
 
+			self._auth_ldp := '';
+			if (length (self.tar_ldp_uid.ufl_value) and length (self.tar_ldp_pwd.ufl_value))
+			  {
+			    self._auth_ldp := concat (self.tar_ldp_uid.ufl_value,':',self.tar_ldp_pwd.ufl_value);
+			  }
+
 			if (self._host[0] = ascii ('@'))
 			  self._host := substring (self._host, 2, length (self._host));
 
@@ -594,10 +773,6 @@
                           self._url := trim(self._url);
                         }
                         self._root := trim (get_keyword ('root', params));
-                        if (self.mode <> 'edit' and right(self._root, 1) <> '/')
-                          self._root := concat(self._root, '/');
-                        if (left(self._root, 5) = '/DAV/')
-                          self._root := right(self._root, length(self._root) - 5);
                         self._newd := get_keyword ('newd', params);
                         self._flow := get_keyword ('flow', params);
                         self._dflow := get_keyword ('dflow', params);
@@ -634,7 +809,7 @@
                         self._dav := get_keyword ('dav', params);
                         self._own := get_keyword ('own', params);
                         self._redir := get_keyword ('redir', params);
-			self._store := get_keyword ('store', params, '0');
+			-- self._store := get_keyword ('store', params, '0');
 			self._get_rdf := atoi (get_keyword ('get_rdf', params, '0'));
 			self._ask_rdf := atoi (get_keyword ('ask_rdf', params, '0'));
 			self._accept_rdf := atoi (get_keyword ('accept_rdf', params, '0'));
@@ -642,6 +817,11 @@
 			self._bot := atoi (get_keyword ('bot', params, '0'));
 			self._thr := atoi (get_keyword ('thr', params, '1'));
 			self._delay := atof (get_keyword ('delay', params, '0'));
+			-- choice_store_type is disabled in edit mode, so won't be included in the params
+			self._store_type := get_keyword ('choice_store_type', params, self._store_type); 
+			self._store := case when self._store_type = 'none' then 0 else 1 end;
+			self._ldpr_creation_method := get_keyword ('choice_ldpr_creation_method', params, self._ldpr_creation_method); 
+			self._folder_tree := get_keyword ('choice_folder_tree', params, self._folder_tree); 
 
 			if (get_keyword ('semweb', params) = '1' and 0 = length (self._store_fn) and 0 = length (self._ext_fn))
 			  {
@@ -659,6 +839,7 @@
 		        self._rdf_flw := get_keyword ('rdf_flw', params, '');	  
 		        self._html_meta := atoi (get_keyword ('html_meta', params, '0'));	  
 		        self._rdf_graph := get_keyword ('rdf_graph', params, '');	  
+		        self._use_tidy := get_keyword ('use_tidy', params, 'N');
 			tmp := split_and_decode (self._rdf_flw, 0, '\0\0\n');
 			farr := vector ();
 			foreach (any x in tmp) do
@@ -667,6 +848,7 @@
 			    if (length (x))
 			      farr := vector_concat (farr, vector (x)); 
 			  }
+
 			opts := vector ();
 			-- 'meta_foaf', atoi (get_keyword ('meta_foaf', params, '0')),
 			-- 'meta_rdf', atoi (get_keyword ('meta_rdf', params, '0')),
@@ -679,6 +861,14 @@
 			  opts := vector_concat (opts, vector ('rdf-graph', self._rdf_graph));
                         if (self._ask_rdf)
 			  opts := vector_concat (opts, vector ('meta_rdf', 1));
+			opts := vector_concat (opts, vector ('use-tidy', self._use_tidy));
+			opts := vector_concat (opts, vector ('store-type', self._store_type));
+			if (length (self._auth_ldp))
+			  opts := vector_concat (opts, vector ('auth-ldp', self._auth_ldp));
+			if (length (self._ldpr_creation_method))
+			  opts := vector_concat (opts, vector ('ldpr-creation-method', self._ldpr_creation_method));
+			if (length (self._folder_tree))
+			  opts := vector_concat (opts, vector ('folder-tree', self._folder_tree));
 
 			self._udata := opts;
 
@@ -692,14 +882,32 @@
                           self.vc_is_valid := 0;
                           return;
                         }
+                        if (self.mode <> 'edit' and right(self._root, 1) <> '/')
+                          self._root := concat(self._root, '/');
+                        if (self._store_type = 'dav')
+			{
+			  if (left(self._root, 5) = '/DAV/')
+			    self._root := right(self._root, length(self._root) - 5);
+			  if (aref(self._root, 0) = ascii('/') or strstr(self._root , '..') is not null and self.mode <> 'edit')
+			  {
+			    self.vc_error_message := 'The local collection/resource destination MUST be a relative path under WebDAV root collection/resource and cannot contain a ''..''.';
+			    self.vc_is_valid := 0;
+			    return;
+			  }
+			}
+                        else if (self._store_type = 'ldp')
+			{
+			  declare rLdpUrl any;
+			  rLdpUrl := WS.WS.PARSE_URI(self._root);
+			  if (rLdpUrl[0] not in ('http', 'https') or length (rLdpUrl[1]) = 0 or length (rLdpUrl[2]) = 0)
+			  {
+			    self.vc_error_message := 'The target LDP container for storing crawled resources must be a valid URL.';
+			    self.vc_is_valid := 0;
+			    return;
+			  }
+			}
                         if (aref(self._url, 0) <> ascii('/'))
                           self._url := concat('/', self._url);
-                        if (aref(self._root, 0) = ascii('/') or strstr(self._root , '..') is not null and self.mode <> 'edit')
-                        {
-                          self.vc_error_message := 'The local collection/resource destination MUST be a relative path under WebDAV root collection/resource and cannot contain a ''..''.';
-                          self.vc_is_valid := 0;
-                          return;
-                        }
                         if (self._opage = 'checked')
                         {
                           declare u_arr any;
@@ -797,10 +1005,11 @@
 				    values (self._host,self._root,p_id,_seq);
 			       }
 		  	  }
-			ename := concat(self._descr, '(', self._host, ' in /DAV/', self._root, ')');
+			store_prefix := case when self._store_type = 'dav' then '/DAV/' else '' end;
+			ename := concat(self._descr, '(', self._host, ' in ', store_prefix, self._root, ')');
 			if (desc_save <> '')
 			  {
-			    ename_old := concat(desc_save, '(', self._host, ' in /DAV/', self._root, ')');
+			    ename_old := concat(desc_save, '(', self._host, ' in ', store_prefix, self._root, ')');
                             if (ename_old <> ename)
 			      delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = ename_old;   
 			  }  

@@ -219,6 +219,8 @@ alter table WS.WS.VFS_QUEUE add VQ_ORIGIN IRI_ID_8
 alter table WS.WS.VFS_URL add VU_RES_ID int
 ;
 
+-- -----------------------------------------------
+
 create procedure WS.WS.VFS_UPGRADE ()
 {
   declare inx int;
@@ -241,4 +243,41 @@ create procedure WS.WS.VFS_UPGRADE ()
 
 --!AFTER
 WS.WS.VFS_UPGRADE ()
+;
+
+-- -----------------------------------------------
+-- Update existing entries in VFS_SITE
+-- Set store-type in VS_UDATA if not present
+-- store-type ::= { none | dav | custom | ldp }
+
+create procedure WS.WS.VFS_SITE_UPDATE__SET_STORE_TYPE()
+{
+  for (select VS_HOST as _host, VS_ROOT as _root, VS_STORE as _store, VS_STORE_FN as _store_fn, deserialize(VS_UDATA) as _udata from WS.WS.VFS_SITE) do
+  {
+    declare _store_type varchar;
+
+    _store_type := get_keyword ('store-type', _udata);
+    if (length (_store_type) = 0)
+    {
+      if (_store = 1)
+      {
+	if (length (_store_fn) > 0)
+	  _store_type := 'custom';
+	else
+	  _store_type := 'dav';
+      }
+      else
+	_store_type := 'none';
+
+      _udata := vector_concat (_udata, vector ('store-type', _store_type));
+      update WS.WS.VFS_SITE set VS_UDATA = serialize(_udata) where VS_HOST = _host and VS_ROOT = _root;
+    }
+  }
+}
+;
+
+WS.WS.VFS_SITE_UPDATE__SET_STORE_TYPE ()
+;
+
+drop procedure WS.WS.VFS_SITE_UPDATE__SET_STORE_TYPE
 ;
