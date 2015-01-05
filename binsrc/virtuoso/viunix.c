@@ -572,7 +572,7 @@ main (int argc, char **argv)
 
   process_exit_hook = viunix_terminate;
 
-  thread_initial (50000);
+  thread_initial (60000);
   if (!background_sem)
     background_sem = semaphore_allocate (0);
 
