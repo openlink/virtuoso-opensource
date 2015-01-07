@@ -7214,58 +7214,34 @@ create procedure DB.DBA.RDF_DELETE_TRIPLES (in graph_iri any, in triples any, in
 create procedure DB.DBA.RDF_DELETE_TRIPLES_AGG (in graph_iid any, inout triples any, in log_mode integer := null)
 {
   declare ctr, old_log_enable, l integer;
+  declare is_local int;
+  declare dp any array;
+  is_local := sys_stat ('cl_run_local_only');
   if (not isiri_id (graph_iid))
     graph_iid := iri_to_id (graph_iid);
   if (__rdf_graph_is_in_enabled_repl (graph_iid))
     DB.DBA.RDF_REPL_DELETE_TRIPLES (id_to_iri (graph_iid), triples);
   old_log_enable := log_enable (log_mode, 1);
   declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
+  if (is_local)
+    dp := dpipe (5, 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_MAKE_RO');
+  else
+    dp := dpipe (5, 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'MAKE_RO_1');
+  dpipe_set_rdf_load (dp, 8);
   for vectored (in a_triple any array := triples)
             {
       declare a_s, a_p, a_o any array;
       a_s := a_triple[0];
       a_p := a_triple[1];
       a_o := a_triple[2];
-      if (not isiri_id (a_s))
-        a_s := __i2idn (a_s);
-      if (not isiri_id (a_p))
-        a_p := __i2idn (a_p);
-      if (isiri_id (a_s) and isiri_id (a_p))
-        {
-          if (isiri_id (a_o))
-            delete from DB.DBA.RDF_QUAD where G = graph_iid and S = a_s and P = a_p and O = a_o;
-          else
-            {
-              declare o_val any array;
-              declare o_dt_and_lang_twobyte integer;
-              if (__tag of rdf_box = __tag (a_o) and rdf_box_ro_id (a_o)) -- was if (__tag of rdf_box = __tag (a_o) and rdf_box_is_complete (a_o))
-                {
-                  -- dbg_obj_princ ('delete by O=a_o because the box has ro_id');
-                  delete from DB.DBA.RDF_QUAD where G = graph_iid and S = a_s and P = a_p and O = a_o;
-                }
-              else
-                {
-                  declare search_fields_are_ok integer;
-                  search_fields_are_ok := __rdf_box_to_ro_id_search_fields (a_o, o_val, o_dt_and_lang_twobyte);
-                  -- dbg_obj_princ ('__rdf_box_to_ro_id_search_fields (', a_o, ') returned ', search_fields_are_ok, o_val, o_dt_and_lang_twobyte);
-                  if (search_fields_are_ok)
-                    {
-                      -- dbg_obj_princ ('delete by search fields, ro_id will be ', (select rdf_box_from_ro_id(RO_ID) from DB.DBA.RDF_OBJ where RO_VAL = o_val and RO_DT_AND_LANG = o_dt_and_lang_twobyte));
-                      delete from DB.DBA.RDF_QUAD where G = graph_iid and S = a_s and P = a_p and O = (select rdf_box_from_ro_id(RO_ID) from DB.DBA.RDF_OBJ where RO_VAL = o_val and RO_DT_AND_LANG = o_dt_and_lang_twobyte);
-                    }
-                  else if (isstring (a_o)) /* it should be string IRI otherwise it's in RDF_OBJ */
-                    {
-                      -- dbg_obj_princ ('delete of string iri, iri_id will be ', iri_to_id (a_o));
-                      delete from DB.DBA.RDF_QUAD where G = graph_iid and S = a_s and P = a_p and O = iri_to_id (a_o);
-                    }
-                  else
-                    {
-                      -- dbg_obj_princ ('delete by O=a_o as a fallback');
-                      delete from DB.DBA.RDF_QUAD where G = graph_iid and S = a_s and P = a_p and O = a_o;
-                    }
-                }
-        }
+      dpipe_input (dp, graph_iid, a_s, a_p, a_o);
     }
+  if (is_local)
+    rl_dp_ids (dp, 0);
+  else
+    {
+      dpipe_next (dp, 0);
+      dpipe_next (dp, 1);
         }
       log_enable (old_log_enable, 1);
     }
