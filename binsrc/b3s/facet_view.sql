@@ -2634,3 +2634,14 @@ create procedure fct_desc_page_head ()
   <div id="hd_r"></div> <!-- hd_r -->');
 }
 ;
+
+create procedure fct_build_info ()
+{
+  declare r, d any;
+  d := (select R_VALUE from VAD..VAD_REGISTRY where R_TYPE = 'STRING' and R_SHKEY = 'Release Date' and R_KEY like '/VAD/fct/%');
+  if (d is null) return 'N/A';
+  d := stringdate (d);
+  r := sprintf ('%s %02d %d', subseq (monthname (d), 0, 3), dayofmonth (d), year (d));
+  return r;
+}
+;
