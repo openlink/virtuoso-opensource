@@ -49,6 +49,17 @@ create function DB.DBA.DAV_DET_PATH (
 }
 ;
 
+create function DB.DBA.DAV_DET_PATH_NAME (
+  in path varchar)
+{
+  path := trim (path, '/');
+  if (isnull (strrchr (path, '/')))
+    return path;
+
+  return right (path, length (path)-strrchr (path, '/')-1);
+}
+;
+
 create function DB.DBA.DAV_DET_DAV_LIST (
   in det varchar,
   inout detcol_id integer,
