@@ -27,6 +27,7 @@ conductor/cont_management.vspx
 conductor/cont_page.vspx
 conductor/cont_type_edit.vspx
 conductor/cont_type_remove.vspx
+conductor/csv_patterns.vspx
 conductor/dashboard_item_show.vspx
 conductor/dashboard_item_show.xsl
 conductor/dashboard_item.vspx

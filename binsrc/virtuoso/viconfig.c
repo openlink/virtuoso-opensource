@@ -674,6 +674,7 @@ cfg_setup (void)
 {
   char *savestr;
   char *section;
+  char *tmp_str;
   int32 long_helper;
   char *tmp_str;
 

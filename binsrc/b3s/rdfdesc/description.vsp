@@ -655,7 +655,7 @@ if (_subject <> '') {
     <?vsp b3s_render_dbg_out (dbg_out); ?>
 <!-- footer -->
     <div id="FT">
-       Faceted Search &amp; Find service v<?vsp http(DB.DBA.VAD_CHECK_VERSION('fct')); ?><br/>
+	Faceted Search &amp; Find service v<?vsp http(DB.DBA.VAD_CHECK_VERSION('fct')); ?> as of <?V fct_build_info () ?><br/>
 <?vsp if (_addthis_key <> '0') { ?>
   <div id="FT_share">
     <!-- AddThis Button BEGIN -->

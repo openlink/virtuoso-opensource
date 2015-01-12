@@ -143,7 +143,6 @@ sqlc_call_ret_name (ST * tree, char * func_name, state_slot_t * ssl)
     }
 }
 
-
 int tn_step_refers_to_input = 0;
 
 state_slot_t *

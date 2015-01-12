@@ -356,6 +356,15 @@
                                       <?vsp if (strstr (self.desc1.ufl_value, 'Graph API') is not null) { ?>
                                       <a href="/sponger/fb_access_token_popup.vsp" target="_blank">Get Facebook access token</a>
                                       <?vsp } ?>
+				      <?vsp 
+            if (strstr (self.desc1.ufl_value, 'CSV') is not null and exists (select 1 from DB.DBA.sys_keys where key_table = 'DB.DBA.CSV_HEADER_PATTERNS')) { ?>
+            <v:button style="url" action="simple" name="csv_patterns" value="CSV Patterns" >
+              <v:on-post><v:script><![CDATA[
+                http_request_status ('HTTP/1.1 302 Found');
+                http_header (sprintf('Location: csv_patterns.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+              ]]></v:script></v:on-post>
+            </v:button>
+                                      <?vsp } ?>
                                       <br />
                                       <span class="fm_ctl_btn">
                                         <v:button name="cancel1" value="Cancel" action="simple">
