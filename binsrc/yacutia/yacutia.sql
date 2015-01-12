@@ -462,6 +462,7 @@ create procedure adm_menu_tree ()
    </node>' end,
    '<node name="Sponger" url="rdf_filters.vspx" id="191" tip="Linked Data Cartridges " allowed="yacutia_message">
      <node name="Cartridges" url="rdf_filters.vspx" id="192" place="1" allowed="yacutia_sparql_page" />
+     <node name="CSV patterns" url="csv_patterns.vspx" id="199" place="1" allowed="yacutia_sparql_page" />
      <node name="Meta Cartridges" url="rdf_filters_pp.vspx" id="193" place="1" allowed="yacutia_sparql_page" />
     <node name="Entity URIs" url="entity_uri_patterns.vspx" id="195" place="1" allowed="yacutia_sparql_page" />
      <node name="Stylesheets" url="sparql_filters.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
