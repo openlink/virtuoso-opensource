@@ -97,7 +97,13 @@
                                       ]]>
                                     </v:on-post>
                                   </v:button>
-
+								   <v:button name="back" value="Back" action="simple">
+									  <v:on-post>
+										<![CDATA[
+										  self.vc_redirect ('rdf_filters.vspx');
+										]]>
+									  </v:on-post>
+                                  </v:button>
                                   <table class="listing" rules="groups">
                                     <tr class="listing_header_row">
                                       <th>Description</th>
