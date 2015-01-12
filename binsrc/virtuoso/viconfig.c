@@ -676,7 +676,6 @@ cfg_setup (void)
   char *section;
   char *tmp_str;
   int32 long_helper;
-  char *tmp_str;
 
   if (f_config_file == NULL)
     f_config_file = "virtuoso.ini";
