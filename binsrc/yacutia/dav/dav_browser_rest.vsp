@@ -20,13 +20,25 @@
 --
 
   declare N, id integer;
-  declare sid, realm, _account_name, action, subAction, node, nodePath varchar;
-  declare nodes, parts, returnData any;
+  declare sid, realm, vspx_user, action, subAction, node, nodePath varchar;
+  declare tmp, nodes, parts, returnData any;
 
   sid := get_keyword ('sid', params, '');
   realm := get_keyword ('realm', params, '');
 
-  id := cast (get_keyword ('id', params, '0') as integer);
+  vspx_user := connection_get ('vspx_user');
+  if (isnull (vspx_user) or (vspx_user = 'nobody'))
+  {
+    declare val_serviceId, val_uname varchar;
+    declare val_isRealUser integer;
+
+    if (VAL.DBA.authentication_details_for_connection (sid=>sid, realm=>realm, serviceId=>val_serviceId, uname=>val_uname, isRealUser=>val_isRealUser))
+    {
+      if (val_isRealUser)
+        connection_set ('vspx_user', val_uname);
+    }
+  }
+
   action := get_keyword ('a', params, '');
   subAction := get_keyword ('sa', params, '');
   if (action = 'search')
@@ -47,7 +59,7 @@
         returnData := vector_concat (returnData, vector (RS_URI, RS_CATNAME));
       }
     }
-    if (subAction = 'schemaProperties')
+    else if (subAction = 'schemaProperties')
     {
       declare schemaURI any;
 
@@ -57,7 +69,7 @@
         returnData := vector_concat (returnData, vector (c0, c1));
       }
     }
-    if (subAction = 'check')
+    else if (subAction = 'check')
     {
     	;
     }
@@ -190,6 +202,99 @@
     http_header ('Access-Control-Allow-Origin: *\r\n');
     http_header ('Content-Type: text/plain\r\n');
     http (_error);
+  }
+  else if (action = 'progress')
+  {
+    declare progressID, progressIndex, data any;
+    declare _error, command any;
+
+    _error := '';
+    if      (subAction = 'validate')
+    {
+      command := get_keyword ('c', params);
+      if      ((command = 'tag') and (not WEBDAV.DBA.validate_tags (get_keyword ('tp', params))))
+      {
+        _error := 'The expression contains no valid tag(s)!';
+      }
+      else if ((command = 'tag') and (not WEBDAV.DBA.validate_tags (get_keyword ('tp2', params))))
+      {
+        _error := 'The expression contains no valid tag(s)!';
+      }
+      else if (command = 'share')
+      {
+        -- validate ACL rules
+        {
+          declare exit handler for sqlstate '*'
+          {
+            _error := WEBDAV.DBA.test_clear (__SQL_MESSAGE);
+          	goto _end_share;
+          };
+          DB.DBA.ACL_VALIDATE (WEBDAV.DBA.aci_params (params), 1);
+        }
+      _end_share:;
+      }
+      else if (command = 'properties')
+      {
+        -- validate ACL rules
+        if (not WEBDAV.DBA.check_admin ((select U_ID from DB.DBA.SYS_USERS where U_NAME = coalesce (WEBDAV.DBA.account (), 'nobody'))))
+        {
+          tmp := WEBDAV.DBA.user_id (trim (get_keyword ('prop_group', params, get_keyword ('prop_group2', params, ''))));
+          if (not WEBDAV.DBA.group_own (tmp))
+            _error := 'Only own groups or ''dba'' group are allowed!';
+        }
+      }
+      http_rewrite ();
+      http_header ('Access-Control-Allow-Origin: *\r\n');
+      http_header ('Content-Type: text/plain\r\n');
+      http (_error);
+    }
+    else
+    {
+      progressID := get_keyword ('id', params, uuid ());
+      if      (subAction = 'init')
+      {
+  	    registry_set ('progress_index_' || progressID, '0');
+
+  	    http_rewrite ();
+        http_header ('Access-Control-Allow-Origin: *\r\n');
+        http (DB.DBA.params2json (vector ('id', progressID, 'index', 0)));
+  	    http_flush ();
+
+        {
+          declare exit handler for sqlstate '*'
+          {
+          	goto _end;
+          };
+          command := get_keyword ('c', params);
+          WEBDAV.DBA.progress_start (progressID, command, params);
+        }
+  	  _end:;
+
+        delay (5);
+  	    registry_remove ('progress_index_'  || progressID);
+  	    registry_remove ('progress_action_' || progressID);
+  	    registry_remove ('progress_data_' || progressID);
+      }
+      else if (subAction = 'check')
+      {
+        progressIndex := registry_get ('progress_index_' || progressID);
+        -- dbg_obj_print ('rest', action, subAction, progressID, progressIndex, registry_get ('progress_data_' || progressID));
+        if (not (isinteger (progressIndex) and (progressIndex = 0)))
+        {
+          data := registry_get ('progress_data_' || progressID);
+          if (isinteger (data))
+            data := '[]';
+
+    	    http_rewrite ();
+          http_header ('Access-Control-Allow-Origin: *\r\n');
+          http (DB.DBA.params2json (vector ('id', progressID, 'index', progressIndex, 'data', data)));
+        }
+      }
+      else if (subAction = 'stop')
+      {
+  	    registry_set ('progress_action_' || progressID, 'stop');
+      }
+    }
   }
   return;
 ?>

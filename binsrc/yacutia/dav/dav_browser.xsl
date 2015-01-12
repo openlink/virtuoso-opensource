@@ -557,6 +557,29 @@
             ]]>
           </v:method>
 
+          <v:method name="commandName" arglist="in command integer, in mode integer">
+            <![CDATA[
+              declare retValue varchar;
+
+              retValue := case
+                            when (self.command = 40) then 'Move'
+                            when (self.command = 50) then 'Copy'
+                            when (self.command = 60) then 'Delete'
+                            when (self.command = 65) then 'Unmount'
+                            when (self.command = 70) then case
+                                                            when (mode = 0) then 'Edit Properties of'
+                                                            when (mode = 1) then 'Properties'
+                                                            when (mode = 2) then 'Save'
+                                                          end
+                            when (self.command = 75) then 'Share'
+                            when (self.command = 90) then 'Tag'
+                            else 'Error'
+                          end;
+
+              return retValue;
+            ]]>
+          </v:method>
+
           <v:method name="actions" arglist="in detClass varchar">
             <![CDATA[
               declare retValue any;
@@ -1057,18 +1080,15 @@
               http ('  <table class="WEBDAV_grid" style="border: 0px;">');
               http ('    <thead>');
               http ('      <tr>');
-              http ('        <th width="50%">Name</th>');
-              http ('        <th>Size</th>');
+              http ('        <th width="30%">Name</th>');
               http ('        <th>Date Modified</th>');
               http ('        <th>Owner</th>');
               http ('        <th>Group</th>');
               http ('        <th>Permissions</th>');
-              if (self.v_step <> 'start')
-              {
-              http ('        <th>&nbsp;</th>');
-              }
+              http ('        <th>State</th>');
               http ('      </tr>');
               http ('    </thead>');
+              http ('    <tbody id="dav_list_body">');
 
               for (i := 0; i < length (self.items); i := i + 2)
               {
@@ -1076,19 +1096,17 @@
                 if (not WEBDAV.DBA.DAV_ERROR (item))
                 {
                   http ('    <tr>');
-                  http (sprintf ('<td nowrap="nowrap" valign="top"><img src="%s" alt="%s">&nbsp;&nbsp;%s</td>', WEBDAV.DBA.ui_image (WEBDAV.DBA.DAV_GET (item, 'fullPath'), WEBDAV.DBA.DAV_GET (item, 'type'), WEBDAV.DBA.DAV_GET (item, 'mimeType')), WEBDAV.DBA.ui_alt (WEBDAV.DBA.DAV_GET (item, 'name'), WEBDAV.DBA.DAV_GET (item, 'type')), self.items[i]));
-                  http (sprintf ('<td class="number" nowrap="nowrap" valign="top">%s</td>', WEBDAV.DBA.ui_size (WEBDAV.DBA.DAV_GET (item, 'length'), WEBDAV.DBA.DAV_GET (item, 'type'))));
+                  http (sprintf ('<td nowrap="nowrap" valign="top"><img src="%s" alt="%s"><input type="hidden" id="item" name="item" value="%V" />&nbsp;&nbsp;%s</td>', self.image_src (WEBDAV.DBA.ui_image (WEBDAV.DBA.DAV_GET (item, 'fullPath'), WEBDAV.DBA.DAV_GET (item, 'type'), WEBDAV.DBA.DAV_GET (item, 'mimeType'))), WEBDAV.DBA.ui_alt (WEBDAV.DBA.DAV_GET (item, 'name'), WEBDAV.DBA.DAV_GET (item, 'type')), self.items[i], self.items[i]));
                   http (sprintf ('<td nowrap="nowrap" valign="top">%s</td>', WEBDAV.DBA.ui_date (WEBDAV.DBA.DAV_GET (item, 'modificationTime'))));
                   http (sprintf ('<td valign="top">%s</td>', WEBDAV.DBA.DAV_GET (item, 'ownerName')));
                   http (sprintf ('<td valign="top">%s</td>', WEBDAV.DBA.DAV_GET (item, 'groupName')));
                   http (sprintf ('<td valign="top">%s</td>', WEBDAV.DBA.DAV_GET (item, 'permissionsName')));
-                  if (self.v_step <> 'start')
-                  {
                   http (sprintf ('<td style="color: red;">%s</td>', self.items[i+1]));
-                  }
                   http ('    </tr>');
                 }
               }
+
+              http ('    </tbody>');
               http ('  </table>');
               http ('</div>');
               http ('<br />');
@@ -1127,7 +1145,7 @@
               for (i := 0; i < length (params); i := i + 2)
               {
                 if (params[i] = 'cb_item')
-                  retValue := vector_concat (retValue, vector (params[i+1], null));
+                  retValue := vector_concat (retValue, vector (params[i+1], ''));
               }
 
               return retValue;
@@ -1346,10 +1364,6 @@
 
               http (sprintf ('<img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
 
-              if (self.mode = 'briefcase')
-              {
-              self.toolbarShow (writePermission, 'rename', 'Rename', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'rename\');"', 'renm_32.png', 'grey_renm_32.png', 1);
-              }
               self.toolbarShow (writePermission, 'copy', 'Copy', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'copy\');"', 'copy_32.png', 'grey_copy_32.png', 1);
               self.toolbarShow (writePermission, 'move', 'Move', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'move\');"', 'move_32.png', 'grey_move_32.png', 1);
               self.toolbarShow (writePermission, 'delete', 'Delete', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'delete\');"', 'del_32.png', 'grey_del_32.png', 1);
@@ -1568,45 +1582,33 @@
                     else if (_action = 'move')
                     {
                       self.command_push (40, 0);
-                      self.v_step := 'start';
                       self.v_source := WEBDAV.DBA.real_path (self.dir_path);
                       self.items := self.getItems (params);
                     }
                     else if (_action = 'copy')
                     {
                       self.command_push (50, 0);
-                      self.v_step := 'start';
                       self.v_source := WEBDAV.DBA.real_path (self.dir_path);
                       self.items := self.getItems (params);
                     }
                     else if (_action = 'delete')
                     {
                       self.command_push (60, 0);
-                      self.v_step := 'start';
                       self.items := self.getItems (params);
                     }
                     else if (_action = 'properties')
                     {
                       self.command_push (70, 0);
-                      self.v_step := 'start';
                       self.items := self.getItems (params);
                     }
                     else if (_action = 'share')
                     {
                       self.command_push (75, 0);
-                      self.v_step := 'start';
-                      self.items := self.getItems (params);
-                    }
-                    else if (_action = 'rename')
-                    {
-                      self.command_push (80, 0);
-                      self.v_step := 'start';
                       self.items := self.getItems (params);
                     }
                     else if (_action = 'tags')
                     {
                       self.command_push (90, 0);
-                      self.v_step := 'start';
                       self.items := self.getItems (params);
                     }
                     else if (_action = 'select')
@@ -3517,6 +3519,22 @@
                 </v:on-post>
               </v:button>
               <v:button action="simple" name="cVerify" xhtml_id="cVerify" value="Verify" xhtml_onclick="WEBDAV.verifyDialog(); return false;" xhtml_style="display: none;"/>
+              <v:button action="simple" name="cUnmount" xhtml_id="cUnmount" value="Unmount" enabled="--case when self.dav_subClass in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE') then 1 else 0 end">
+                <v:on-post>
+                  <![CDATA[
+                    if ((self.mode = 'webdav') and (self.command_mode = 10))
+                    {
+                      self.webdav_redirect (WEBDAV.DBA.path_parent (self.dav_path, 1), '');
+                      return;
+                    }
+                    self.command_pop (null);
+                    self.command_push (65, 0);
+                    self.items := vector (WEBDAV.DBA.DAV_GET (self.dav_item, 'fullPath'), '');
+                    self.dav_action := '';
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:on-post>
+              </v:button>
               <v:button action="simple" name="cCancel" value="Cancel" >
                 <v:on-post>
                   <![CDATA[
@@ -3619,15 +3637,25 @@
             </div>
           </v:template>
 
-          <v:template type="simple" name="template_40" enabled="--case when (self.command in (40, 50, 60)) then 1 else 0 end">
+          <v:template type="simple" name="template_40" enabled="--case when (self.command in (40, 50, 60, 65, 70, 75, 90)) then 1 else 0 end">
             <div class="WEBDAV_formHeader">
-              <?V case when (self.command = 40) then 'Move' else case when (self.command = 50) then 'Copy' else 'Delete' end end ?> listed items
+              <?V self.commandName (self.command, 0) ?> listed items
+            </div>
+            <input type="hidden" name="f_command" id="f_command" value="<?V lcase (self.commandName (self.command, 1)) ?>" />
+            <div id="progress_div" style="display: none; margin-bottom: 3px;">
+              <table id="progress_table" cellspacing="0" width="100%">
+                <tr>
+                  <td id="progress_text" style="font-weight: bold;" />
+                </tr>
+                <tr>
+                  <td id="progress_bar" />
+                </tr>
+              </table>
             </div>
             <?vsp self.showSelected(); ?>
-            <v:template type="simple" condition="((self.command <> 60) and (self.v_step <> 'error'))">
-              <div class="WEBDAV_formBody">
-                <table cellspacing="0">
-                  <v:template type="simple" condition="(self.v_step = 'start')">
+            <v:template type="simple" name="template_40_50" condition="(self.command in (40, 50))">
+              <table id="progress_params" class="WEBDAV_formBody">
+                <tr>
                     <th width="30%">
                       Destination folder
                     </th>
@@ -3640,107 +3668,33 @@
                         </script>
                       ]]>
                     </td>
-                  </v:template>
-                  <v:template type="simple" condition="(self.v_step = 'overwrite')">
-                    <th colspan="2">
-                      Some folder(s)/file(s) could not to be written or have to overwrite existing ones. Do you want to try to overwrite?
-                    </th>
-                  </v:template>
-                </table>
-              </div>
+                </tr>
+                <tr>
+                  <th />
+                  <td>
+                    <label>
+                      <input type="checkbox" name="f_overwrite" id="f_overwrite" value="1" />
+                      <b>Overwrite existing items</b>
+                    </label>
+                  </td>
+                </tr>
+              </table>
             </v:template>
-            <div class="WEBDAV_formFooter">
-              <v:button action="simple" name="Move_40" value="--case when (self.command = 40) then 'Move' else case when (self.command = 50) then 'Copy' else 'Delete' end end" enabled="-- case when self.v_step <> 'error' then 1 else 0 end">
-                <v:on-post>
-                  <![CDATA[
-                    declare I integer;
-                    declare retValue, item, itemPath, itemList any;
-                    declare targetPath varchar;
 
-                    if (self.v_step = 'start')
-                    {
-                      self.v_target := '/' || get_keyword ('f_folder', e.ve_params, '') || '/';
-                      self.v_target := replace (self.v_target, '//', '/');
-                    }
-                    if (self.v_step = 'overwrite')
-                      self.overwriteFlag := 1;
+            <v:template type="simple" name="template_65" condition="(self.command in (65))">
+              <table id="progress_params" class="WEBDAV_formBody">
+                <tr>
+                  <th width="30%" />
+                  <td>
+                    <label><input type="radio" name="f_unmount" id="f_unmount_0" value="U" checked="checked" title="Unmount" /><b>Unmount only</b></label><br />
+                    <label><input type="radio" name="f_unmount" id="f_unmount_1" value="D" title="Unmount and delete" /><b>Unmount and delete files from WebDAV</b></label>
+                  </td>
+                </tr>
+              </table>
+            </v:template>
 
-                    itemList := vector();
-                    for (i := 0; i < length (self.items); i := i+ 2)
-                    {
-                      itemPath := self.items[i];
-                      item := WEBDAV.DBA.DAV_INIT (itemPath);
-                      if (WEBDAV.DBA.DAV_ERROR (item))
-                      {
-                        retValue := item;
-                        self.retItems (itemList, itemPath, item, '');
-                      }
-                      else
-                      {
-                        if (self.command = 60)
-                        {
-                          retValue := WEBDAV.DBA.DAV_DELETE (itemPath);
-                          self.retItems (itemList, itemPath, retValue, 'Delete');
-                        }
-                        else
-                        {
-                          targetPath := WEBDAV.DBA.real_path (self.v_target) || WEBDAV.DBA.DAV_GET (item, 'name');
-                          if (WEBDAV.DBA.DAV_GET (item, 'type') = 'C')
-                          {
-                            targetPath := targetPath || '/';
-                          }
-                          if (self.command = 50)
-                          {
-                            retValue := WEBDAV.DBA.DAV_COPY (itemPath, targetPath, self.overwriteFlag, WEBDAV.DBA.DAV_GET (item, 'permissions'));
-                            self.retItems (itemList, itemPath, retValue, 'Copy');
-                          }
-                          else if (self.command = 40)
-                          {
-                            retValue := WEBDAV.DBA.DAV_MOVE (itemPath, targetPath, self.overwriteFlag);
-                            self.retItems (itemList, itemPath, retValue, 'Move');
-                          }
-                        }
-                      }
-                    }
-                    self.items := itemList;
-                    if (length (self.items) = 0)
-                    {
-                      self.v_step := 'end';
-                      self.command_pop (null);
-                    }
-                    else
-                    {
-                      if ((self.v_step = 'start') and (self.command <> 60))
-                      {
-                        self.v_step := 'overwrite';
-                      }
-                      else
-                      {
-                        self.v_step := 'error';
-                      }
-                    }
-                    self.vc_data_bind (e);
-                  ]]>
-                </v:on-post>
-              </v:button>
-              <v:button action="simple" name="Cancel_40" value="Cancel">
-                <v:on-post>
-                  <![CDATA[
-                    self.command_pop (null);
-                    self.vc_data_bind (self.vc_page.vc_event);
-                  ]]>
-                </v:on-post>
-              </v:button>
-            </div>
-          </v:template>
-
-          <v:template name="template_70" type="simple" enabled="-- equ (self.command, 70)">
-            <div class="WEBDAV_formHeader">
-              Update properties for listed items
-            </div>
-            <?vsp self.showSelected(); ?>
-            <v:template name="template_71" type="simple" enabled="-- case when self.v_step <> 'error' then 1 else 0 end">
-              <table class="WEBDAV_formBody">
+            <v:template type="simple" name="template_70" condition="(self.command in (70))">
+              <table id="progress_params" class="WEBDAV_formBody">
                 <tr>
                   <th>
                     <vm:label for="prop_mime" value="--'Content Type'" />
@@ -3903,164 +3857,8 @@
               </table>
             </v:template>
 
-            <div class="WEBDAV_formFooter">
-              <v:button action="simple" name="Update_70" value="Update" enabled="--case when self.v_step <> 'error' then 1 else 0 end">
-                <v:on-post>
-                  <![CDATA[
-                    declare I, N integer;
-                    declare retValue, item, itemPath, itemList, params any;
-                    declare prop_owner, prop_group integer;
-                    declare prop_mime, prop_add_perms, prop_rem_perms, prop_perms, one, zero varchar;
-                    declare c_properties, c_property, c_value, c_action any;
-                    declare exit handler for SQLSTATE '*'
-                    {
-                      if (__SQL_STATE = 'TEST')
-                      {
-                        self.vc_error_message := WEBDAV.DBA.test_clear (__SQL_MESSAGE);
-                        self.vc_is_valid := 0;
-                        return;
-                      }
-                      resignal;
-                    };
-
-                    params := e.ve_params;
-                    prop_mime  := trim (get_keyword ('prop_mime', params, get_keyword ('prop_mime2', params, '')));
-                    prop_owner := WEBDAV.DBA.user_id (trim (get_keyword ('prop_owner', params, get_keyword ('prop_owner2', params, ''))));
-                    prop_group := WEBDAV.DBA.user_id (trim (get_keyword ('prop_group', params, get_keyword ('prop_group2', params, ''))));
-
-                    -- validate group
-                    if (not WEBDAV.DBA.check_admin (self.account_id) and not WEBDAV.DBA.group_own (prop_group))
-                    {
-                      self.vc_error_message := 'Only own groups or ''dba'' group are allowed!';
-                      self.vc_is_valid := 0;
-                      return;
-                    }
-                    one := ascii('1');
-                    zero := ascii('0');
-                    prop_add_perms := '000000000N';
-                    for (N := 0; N < 9; N := N + 1)
-                    {
-                      if (get_keyword (sprintf ('prop_add_perm%i', N), params, '') <> '')
-                        aset(prop_add_perms, N, one);
-                    }
-                    prop_rem_perms := '000000000N';
-                    for (N := 0; N < 9; N := N + 1)
-                    {
-                      if (get_keyword (sprintf ('prop_rem_perm%i', N), params, '') <> '')
-                        aset(prop_rem_perms, N, one);
-                    }
-
-                    -- changing or adding properties
-                    c_properties := WEBDAV.DBA.prop_params (params, self.account_id);
-
-                    itemList := vector ();
-                    for (I := 0; I < length (self.items); I := I + 2)
-                    {
-                      itemPath := self.items[I];
-                      item := WEBDAV.DBA.DAV_INIT (itemPath);
-                      if (WEBDAV.DBA.DAV_ERROR (item))
-                      {
-                        self.retItems (itemList, itemPath, item, '');
-                      }
-                      else
-                      {
-                        if (('' <> prop_mime) and ('Do not change' <> prop_mime) and (WEBDAV.DBA.DAV_GET (item, 'type') = 'R') and (WEBDAV.DBA.DAV_GET (item, 'mimeType') <> prop_mime))
-                        {
-                          retValue := WEBDAV.DBA.DAV_SET (itemPath, 'mimeType', prop_mime);
-                          self.retItems (itemList, itemPath, retValue, 'Type update');
-                        }
-                        if ((prop_owner <> -1) and (isnull (WEBDAV.DBA.DAV_GET (item, 'ownerID')) or (WEBDAV.DBA.DAV_GET (item, 'ownerID') <> prop_owner)))
-                        {
-                          retValue := WEBDAV.DBA.DAV_SET (itemPath, 'ownerID', prop_owner);
-                          self.retItems (itemList, itemPath, retValue, 'Owner update');
-                        }
-                        if ((prop_group <> -1) and (isnull (WEBDAV.DBA.DAV_GET (item, 'groupID')) or (WEBDAV.DBA.DAV_GET (item, 'groupID') <> prop_group)))
-                        {
-                          retValue := WEBDAV.DBA.DAV_SET (itemPath, 'groupID', prop_group);
-                          self.retItems (itemList, itemPath, retValue, 'Group update');
-                        }
-                        -- permissions
-                        prop_perms := WEBDAV.DBA.DAV_GET (item, 'permissions');
-                        for (N := 0; N < 10; N := N + 1)
-                        {
-                          if (prop_add_perms[N] = one)
-                            aset(prop_perms, N, one);
-                          if (prop_rem_perms[N] = one)
-                            aset (prop_perms, N, zero);
-                        }
-                        if (get_keyword ('prop_index', params, '*') <> '*')
-                        {
-                          aset (prop_perms, 9, ascii (get_keyword ('prop_index', params)));
-                        }
-                        if (get_keyword ('prop_metagrab', params, '*') <> '*')
-                        {
-                          if (length(prop_perms) < 11)
-                            prop_perms := concat(prop_perms, ' ');
-                          aset (prop_perms, 10, ascii (get_keyword ('prop_metagrab', params)));
-                        }
-                        retValue := WEBDAV.DBA.DAV_SET (itemPath, 'permissions', prop_perms);
-                        self.retItems (itemList, itemPath, retValue, 'Permissons update');
-
-                        -- recursive
-                        if ((WEBDAV.DBA.DAV_GET (item, 'type') = 'C') and ('' <> get_keyword ('prop_recursive', params, '')))
-                        {
-                          WEBDAV.DBA.DAV_SET_RECURSIVE (itemPath, prop_perms, prop_owner, prop_group);
-                        }
-
-                        -- properties
-                        for (N := 0; N < length (c_properties); N := N + 1)
-                        {
-                          if (c_properties[N][0] <> '')
-                          {
-                            if (c_properties[N][2] = 'U')
-                            {
-                              retValue := WEBDAV.DBA.DAV_PROP_SET (itemPath, c_properties[N][0], c_properties[N][1]);
-                              self.retItems (itemList, itemPath, retValue, 'Property update');
-                            }
-                            else if (c_properties[N][2] = 'R')
-                            {
-                              retValue := WEBDAV.DBA.DAV_PROP_REMOVE (itemPath, c_properties[N][0]);
-                              self.retItems (itemList, itemPath, retValue, 'Property delete');
-                            }
-                          }
-                        }
-                      }
-                    }
-                    self.items := itemList;
-                    if (length (self.items) = 0)
-                    {
-                      self.v_step := 'end';
-                      self.command_pop (null);
-                    }
-                    else
-                    {
-                      self.v_step := 'error';
-                    }
-                    self.vc_data_bind (e);
-                  ]]>
-                </v:on-post>
-              </v:button>
-              <v:button action="simple" name="Cancel_70" value="Cancel">
-                <v:on-post>
-                  <![CDATA[
-                    self.command_pop (null);
-                    self.vc_data_bind (e);
-                  ]]>
-                </v:on-post>
-              </v:button>
-            </div>
-            <script>
-              initTab(2, 1);
-            </script>
-          </v:template>
-
-          <v:template name="template_75" type="simple" enabled="-- equ (self.command, 75)">
-            <div class="WEBDAV_formHeader">
-              Share listed items
-            </div>
-            <?vsp self.showSelected(); ?>
-            <v:template name="template_76" type="simple" enabled="-- case when self.v_step <> 'error' then 1 else 0 end">
-              <div class="WEBDAV_formBody">
+            <v:template type="simple" name="template_75" condition="(self.command in (75))">
+              <div id="progress_params" class="WEBDAV_formBody">
                 <fieldset style="background-color: #EFEFEF;">
                   <legend><b>ODS users/groups</b></legend>
                   <table>
@@ -4126,262 +3924,40 @@
               </div>
             </v:template>
 
-            <div class="WEBDAV_formFooter">
-              <v:button action="simple" name="Update_75" value="Share" enabled="--case when self.v_step <> 'error' then 1 else 0 end">
-                <v:on-post>
-                  <![CDATA[
-                    declare I, N integer;
-                    declare retValue, item, itemPath, itemList, params any;
-                    declare old_dav_acl, dav_acl, acl_value, aci_value any;
-                    declare exit handler for SQLSTATE '*'
-                    {
-                      if (__SQL_STATE = 'TEST')
-                      {
-                        self.vc_error_message := WEBDAV.DBA.test_clear (__SQL_MESSAGE);
-                        self.vc_is_valid := 0;
-                        return;
-                      }
-                      resignal;
-                    };
-
-                    params := e.ve_params;
-
-                    -- validate ACL rules
-                    --DB.DBA.ACL_VALIDATE (WEBDAV.DBA.aci_params (params));
-
-                    -- acl properties
-                    acl_value := WS.WS.ACL_PARSE (WEBDAV.DBA.acl_params (params));
-
-                    -- aci properties
-                    aci_value := WEBDAV.DBA.aci_n3 (WEBDAV.DBA.aci_params (params));
-
-                    itemList := vector ();
-                    for (I := 0; I < length (self.items); I := I + 2)
-                    {
-                      itemPath := self.items[I];
-                      item := WEBDAV.DBA.DAV_INIT (itemPath);
-                      if (WEBDAV.DBA.DAV_ERROR (item))
-                      {
-                        self.retItems (itemList, itemPath, item, '');
-                      }
-                      else
-                      {
-                        -- acl
-                        if (length (acl_value))
-                        {
-                          dav_acl := WEBDAV.DBA.DAV_GET (item, 'acl');
-                          old_dav_acl := dav_acl;
-                          foreach (any acl in acl_value) do
-                          {
-                            if ((WEBDAV.DBA.DAV_GET (item, 'type') = 'C') or (acl[2] = 0))
-                            {
-                              WS.WS.ACL_ADD_ENTRY (dav_acl, acl[0], acl[3], acl[1], acl[2]);
-                            }
-                          }
-                          if (old_dav_acl <> dav_acl)
-                          {
-                            if (not WEBDAV.DBA.DAV_ERROR (WEBDAV.DBA.DAV_SET (itemPath, 'acl', dav_acl)))
-                            {
-                              WEBDAV.DBA.acl_send_mail (self.account_id, itemPath, old_dav_acl, dav_acl);
-                            }
-                          }
-                        }
-
-                        -- aci - WebAccess
-                        if (length (aci_value))
-                        {
-                          retValue := WEBDAV.DBA.DAV_PROP_SET (itemPath, 'virt:aci_meta_n3', aci_value);
-                          self.retItems (itemList, itemPath, retValue, 'ACL update');
-                        }
-                      }
-                    }
-                    self.items := itemList;
-                    if (length (self.items) = 0)
-                    {
-                      self.v_step := 'end';
-                      self.command_pop (null);
-                    }
-                    else
-                    {
-                      self.v_step := 'error';
-                    }
-                    self.vc_data_bind (e);
-                  ]]>
-                </v:on-post>
-              </v:button>
-
-              <v:button action="simple" name="Cancel_75" value="Cancel">
-                <v:on-post>
-                  <![CDATA[
-                    self.command_pop (null);
-                    self.vc_data_bind (e);
-                  ]]>
-                </v:on-post>
-              </v:button>
-            </div>
-            <script>
-              initTab(2, 1);
-            </script>
-          </v:template>
-
-          <v:template name="template_80" type="simple" enabled="-- equ (self.command, 80)">
-            <v:before-data-bind>
-              <![CDATA[
-                if (self.v_step = 'start')
-                {
-                  declare N integer;
-                  declare tmp any;
-
-                  self.v_path := self.items[0];
-                  tmp := rtrim (self.items[0], '/');
-                  N := strrchr (tmp, '/');
-                  if (isnull(N))
-                    N := 0;
-                  self.v_parent := left (tmp, N);
-                  self.v_old := trim (subseq(tmp, N, length(tmp)), '/');
-                  self.v_new := self.v_old;
-                }
-              ]]>
-            </v:before-data-bind>
-            <div class="WEBDAV_formHeader">
-              Rename resource
-            </div>
-            <div>
-              <table class="WEBDAV_formBody" cellspacing="0">
-                <tr>
-                  <th width="30%">
-                    Parent Folder
-                  </th>
-                  <td>
-                    <span class="text"><v:label value="--self.v_parent" /></span>
-                  </td>
-                </tr>
+            <v:template type="simple" name="template_90" condition="(self.command in (90))">
+              <table id="progress_params" class="WEBDAV_formBody">
                 <tr>
                   <th>
-                    Old Name
+                    <v:label for="f_tagsPublic" value="Public tags (comma-separated)"/>
                   </th>
                   <td>
-                    <v:text name="f_old" value="--self.v_old" xhtml_disabled="disabled" xhtml_size="65%" />
-                  </td>
-                </tr>
-                <tr>
-                  <th>
-                    <vm:label for="f_new" value="New Name" />
-                  </th>
-                  <td>
-                    <v:text name="f_new" value="--self.v_new" xhtml_size="65%" />
-                  </td>
-                </tr>
-              </table>
-            </div>
-            <div class="WEBDAV_formFooter">
-              <v:button action="simple" value="Rename">
-                <v:on-post>
-                  <![CDATA[
-                    declare retValue, oldName, newName any;
-
-                    oldName := trim (self.f_old.ufl_value);
-                    newName := trim (self.f_new.ufl_value);
-                    if (oldName <> newName)
-                    {
-                      WEBDAV.DBA.test (newName, vector('name', 'New Name', 'class', 'varchar', 'type', 'varchar', 'canEmpty', 0));
-                      retValue := WEBDAV.DBA.DAV_SET (self.v_path, 'name', newName);
-                      if (WEBDAV.DBA.DAV_ERROR (retValue))
-                        signal('TEST', WEBDAV.DBA.DAV_PERROR (retValue) || '<>');
-                    }
-                    self.v_step := 'end';
-                    self.command_pop (null);
-                    self.vc_data_bind (e);
-                  ]]>
-                </v:on-post>
-              </v:button>
-              <v:button action="simple" name="Cancel_80" value="Cancel">
-                <v:on-post>
-                  <![CDATA[
-                    self.command_pop (null);
-                    self.vc_data_bind (e);
-                  ]]>
-                </v:on-post>
-              </v:button>
-            </div>
-          </v:template>
-
-          <v:template name="template_90" type="simple" enabled="-- equ (self.command, 90)">
-            <div class="WEBDAV_formHeader">
-              Tag listed items
-            </div>
-            <?vsp self.showSelected(); ?>
-            <div>
-              <table class="WEBDAV_formBody" cellspacing="0">
-                <tr>
-                  <th>
-                    <v:label for="f90_tags_public" value="Public tags (comma-separated)"/>
-                  </th>
-                  <td>
-                    <v:text name="f90_tags_public" xhtml_id="f90_tags_public" xhtml_class="textbox" xhtml_size="60"/>
+                    <v:text name="f_tagsPublic" xhtml_id="f_tagsPublic" xhtml_class="field-short" />
                     <v:template name="template_901" type="simple">
-                    <input type="button" value="Clear" onclick="javascript: $('f90_tags_public').value = ''" class="button" />
+                    <input type="button" value="Clear" onclick="javascript: $('f_tagsPublic').value = ''" class="button" />
                     </v:template>
                   </td>
                 </tr>
                 <tr>
                   <th>
-                    <v:label for="f90_tags_private" value="Private tags (comma-separated)"/>
+                    <v:label for="f_tagsPrivate" value="Private tags (comma-separated)"/>
                   </th>
                   <td>
-                    <v:text name="f90_tags_private" xhtml_id="f90_tags_private" xhtml_class="textbox" xhtml_size="60"/>
+                    <v:text name="f_tagsPrivate" xhtml_id="f_tagsPrivate" xhtml_class="field-short"/>
                     <v:template name="template_902" type="simple">
-                    <input type="button" value="Clear" onclick="javascript: $('f90_tags_private').value = ''" class="button" />
+                    <input type="button" value="Clear" onclick="javascript: $('f_tagsPrivate').value = ''" class="button" />
                     </v:template>
                   </td>
                 </tr>
               </table>
-            </div>
-            <div class="WEBDAV_formFooter">
-              <v:button action="simple" value="Tag">
-                <v:on-post>
-                  <![CDATA[
-                    declare N integer;
-                    declare itemPath, tags, tagsPublic, tagsPrivate any;
+            </v:template>
 
-                    tagsPublic := trim (self.f90_tags_public.ufl_value);
-                    if (not WEBDAV.DBA.validate_tags (tagsPublic))
-                    {
-                      signal ('TEST', 'The expression contains no valid tag(s)!<>');
-                    }
-                    tagsPrivate := trim (self.f90_tags_private.ufl_value);
-                    if (not WEBDAV.DBA.validate_tags (tagsPrivate))
-                    {
-                      signal ('TEST', 'The expression contains no valid tag(s)!<>');
-                    }
-                    if ((tagsPublic <> '') or (tagsPrivate <> ''))
-                    {
-                      for (N := 0; N < length (self.items); N := N + 2)
-                      {
-                        itemPath := self.items[N];
-                        if (tagsPublic <> '')
-                        {
-                          tags := WEBDAV.DBA.DAV_PROP_GET (itemPath, ':virtpublictags', '');
-                          WEBDAV.DBA.DAV_PROP_SET (itemPath, ':virtpublictags', WEBDAV.DBA.tags_join (tags, tagsPublic));
-                        }
-                        if (tagsPrivate <> '')
-                        {
-                          tags := WEBDAV.DBA.DAV_PROP_GET (itemPath, ':virtprivatetags', '');
-                          WEBDAV.DBA.DAV_PROP_SET (itemPath, ':virtprivatetags', WEBDAV.DBA.tags_join (tags, tagsPrivate));
-                        }
-                      }
-                    }
-                    self.v_step := 'end';
-                    self.command_pop (null);
-                    self.vc_data_bind (e);
-                  ]]>
-                </v:on-post>
-              </v:button>
-              <v:button action="simple" name="Cancel_90" value="Cancel">
+            <div class="WEBDAV_formFooter">
+              <v:button action="simple" name="Move_40" xhtml_id="progress_start" value="--self.commandName (self.command, 2)" enabled="-- case when self.v_step <> 'error' then 1 else 0 end" xhtml_onclick="javascript: WEBDAV.progressInit(); return false;" />
+              <v:button action="simple" name="Cancel_40" xhtml_id="progress_close" value="Cancel">
                 <v:on-post>
                   <![CDATA[
                     self.command_pop (null);
-                    self.vc_data_bind (e);
+                    self.vc_data_bind (self.vc_page.vc_event);
                   ]]>
                 </v:on-post>
               </v:button>
@@ -4838,7 +4414,7 @@
             <v:template type="simple" name="Brouse_Footer" enabled="-- case when (self.returnName <> '') then 1 else 0 end">
               <div style="margin-bottom: 0.5em;">
                 <b> Resource Name </b>
-                <v:text type="simple" name="item_name" xhtml_id="item_name" value="--WEBDAV.DBA.utf2wide (WEBDAV.DBA.real_path (self.dir_path))" xhtml_size="60" />
+                <v:text type="simple" name="item_name" xhtml_id="item_name" value="--''"  />
                 <input type="button" name="b_return" value="Select" onClick="javascript:  WEBDAV.selectRow ('F1')" />
                 <v:button name="b_cancel" action="simple" value="Cancel" xhtml_onClick="javascript: if (opener != null) opener.focus(); window.close()"/>
               </div>

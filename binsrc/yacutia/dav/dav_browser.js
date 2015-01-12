@@ -397,13 +397,6 @@ function windowShowInternal(sPage, sPageName, width, height) {
 }
 
 function windowShow(sPage, sPageName, width, height) {
-  function urlParam(fldName) {
-    var O = document.forms[0].elements[fldName];
-    if (O && O.value != '')
-      return '&' + fldName + '=' + encodeURIComponent(O.value);
-    return '';
-  }
-
   if (sPage.indexOf('form=') == -1)
     sPage += '&form=F1';
   if (sPage.indexOf('sid=') == -1)
@@ -457,6 +450,13 @@ function getObject(id, doc)
 {
   if (!doc) {doc = document;}
   return doc.getElementById(id);
+}
+
+function urlParam(fldName) {
+  var O = document.forms[0].elements[fldName];
+  if (O && O.value != '')
+    return '&' + fldName + '=' + encodeURIComponent(O.value);
+  return '';
 }
 
 showRow = (navigator.appName.indexOf("Internet Explorer") != -1) ? "block" : "table-row";
@@ -1150,4 +1150,165 @@ WEBDAV.menuPopup = function (obj, menuID)
     div.focus();
   }
   return false;
+}
+
+WEBDAV.progress = {};
+WEBDAV.progress.size = 40;
+WEBDAV.progress.increment = 100 / WEBDAV.progress.size;
+
+WEBDAV.progressParams = function()
+{
+  function __parent (o)
+  {
+    var o = o.parentNode;
+    if (!o || (o.id == 'progress_params'))
+      return o;
+
+    return __parent(o);
+  }
+
+  var frm = document.forms['F1'];
+  var params = '';
+  for (var N = 0; N < frm.elements.length; N++) {
+    if (__parent(frm.elements[N])) {
+      var o = frm.elements[N];
+      if ((o.name != 'item') && (o.type == 'text' || o.type == 'select-one' || o.type == 'radio' || o.type == 'checkbox')) {
+        if (o.type == 'text' || o.type == 'select-one')
+          params += '&' + o.name +'=' + encodeURIComponent(o.value);
+        if (o.type == 'checkbox')
+          params += '&' + o.name +'=' + encodeURIComponent((o.checked)? '1' : '0');
+        if (o.type == 'radio' && o.checked)
+          params += '&' + o.name +'=' + encodeURIComponent(o.value);
+      }
+    }
+  }
+  return params;
+}
+
+WEBDAV.progressInit = function()
+{
+  if ($v('progress_start') == 'Background')
+    $('progress_close').click();
+
+  var y = function (data) {
+    if (data == '') {
+      WEBDAV.progressInitPost();
+    } else {
+      alert(data);
+    }
+  }
+  var frm = document.forms['F1'];
+  var params = 'a=progress&sa=validate' + urlParam('sid') + urlParam('realm') + '&c='+$v('f_command') + WEBDAV.progressParams();
+  OAT.AJAX.POST(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp'), params, y, {async: true});
+  return false;
+}
+
+WEBDAV.progressInitPost = function()
+{
+  var x = function (data) {
+    try {
+      var o = OAT.JSON.parse(data);
+      WEBDAV.progress.id = o.id;
+    } catch (e) {}
+
+    OAT.Dom.hide('progress_params');
+    OAT.Dom.show('progress_div');
+
+    var centerCellName;
+    var tableText = "";
+    for (var N = 1; N <= WEBDAV.progress.size; N++) {
+      if (WEBDAV.progress.max) {
+        if (N == (WEBDAV.progress.size/2))
+          centerCellName = "progress_" + N;
+      }
+      tableText += "<td id=\"progress_" + N + "\" width=\"" + WEBDAV.progress.increment + "%\" height=\"20px\" bgcolor=\"blue\" />";
+    }
+    $("progress_text").innerHTML = "Executed 0 commands from " + WEBDAV.progress.max;
+    $("progress_bar").innerHTML = "<table width=\"100%\" border=\"0\" cellspacing=\"0\" cellpadding=\"0\"><tr>" + tableText + "</tr></table>";
+    WEBDAV.progress.center = $(centerCellName);
+    WEBDAV.progress.timer = setTimeout('WEBDAV.progressCheck()', 500);
+    $('progress_start').value = 'Background';
+  }
+
+  WEBDAV.progress.timer = null;
+  WEBDAV.progress.max = 0;
+  var frm = document.forms['F1'];
+  var params = 'a=progress&sa=init' + urlParam('sid') + urlParam('realm') + '&c='+$v('f_command') + WEBDAV.progressParams();
+  for (var N = 0; N < frm.elements.length; N++) {
+    var o = frm.elements[N];
+    if (o != null && o.name == 'item') {
+      params += '&item=' + encodeURIComponent(o.value);
+      WEBDAV.progress.max += 1;
+    }
+  }
+  if (!WEBDAV.progress.max)
+    return true;
+
+  OAT.AJAX.POST(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp'), params, x, {async: true});
+  return false;
+}
+
+WEBDAV.progressCheck = function()
+{
+  var x = function (data) {
+    var idx = WEBDAV.progress.max;
+    var results;
+    try {
+      var o = OAT.JSON.parse(data);
+      idx = o.index;
+      results = OAT.JSON.parse(o.data)
+    } catch (e) { }
+
+    var td = $('progress_text');
+    if (td)
+      td.innerHTML = "Executed " + idx + " commands from " + WEBDAV.progress.max;
+
+    var percentage = 100;
+    if (WEBDAV.progress.max != 0)
+      percentage = Math.round (idx * 100 / WEBDAV.progress.max);
+
+    var percentageText = "";
+    if (percentage < 10) {
+      percentageText = "&nbsp;" + percentage;
+    } else {
+      percentageText = percentage;
+    }
+    WEBDAV.progress.center.innerHTML = "<font color=\"white\">" + percentageText + "%</font>";
+    for (var N = 1; N <= WEBDAV.progress.size; N++) {
+      var cell = $("progress_" + N);
+      if (cell) {
+        if (percentage/N < WEBDAV.progress.increment) {
+          cell.style.backgroundColor = "blue";
+        } else {
+          cell.style.backgroundColor = "red";
+        }
+      }
+    }
+    // set return values
+    if (results) {
+      var trs = $('dav_list_body').getElementsByTagName('tr');
+      for (var N = 0; N < results.length; N++) {
+        if (N < trs.length) {
+          var tds = trs[N].getElementsByTagName('td');
+          if (tds.length)
+            tds[tds.length-1].innerHTML = results[N];
+        }
+      }
+    }
+
+    if (idx && (idx < WEBDAV.progress.max)) {
+      setTimeout('WEBDAV.progressCheck()', 500);
+    } else {
+      WEBDAV.progress.timer = null;
+      $('progress_close').value = 'Close';
+      OAT.Dom.hide('progress_start');
+    }
+  }
+  OAT.AJAX.POST(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp'), 'a=progress&sa=check&id='+WEBDAV.progress.id+urlParam('sid')+urlParam('realm'), x);
+}
+
+WEBDAV.progressStop = function()
+{
+  WEBDAV.progress.timer = null;
+  OAT.AJAX.POST(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp'), 'a=progress&sa=stop&id='+WEBDAV.progress.id+urlParam('sid')+urlParam('realm'), null, {async: false});
 }
