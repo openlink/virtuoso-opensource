@@ -280,9 +280,14 @@ fi
 	LOG "***ABORTED:tveccli "
 	exit 1
     fi
+
+cp -R $VIRTUOSO_TEST/tsparup/* .
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u follow_std=0 < $VIRTUOSO_TEST/tsparup/tsparup_run.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED:tsparup "
+    exit 1
 fi
-
-
 
 SHUTDOWN_SERVER
 
