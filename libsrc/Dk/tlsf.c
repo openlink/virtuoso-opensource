@@ -469,7 +469,7 @@ tlsf_large_alloc (tlsf_t * tlsf, size_t size)
 
 int no_place_limit = 0;
 
-#ifdef MALLOC_DEBUG
+#if defined(MALLOC_DEBUG) && defined(USE_TLSF)
 void *
 dbg_malloc(const char *file, u_int line, size_t size)
 {
