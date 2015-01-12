@@ -640,12 +640,15 @@ cfg_open_syslog (int level, char *c_facility)
 }
 
 extern LOG *virtuoso_log;
+extern int tn_step_refers_to_input;
+
 static char *prefix;
 int
 cfg_setup (void)
 {
   char *savestr;
   char *section;
+  char *tmp_str;
   int32 long_helper;
 
   if (f_config_file == NULL)
@@ -1472,6 +1475,12 @@ cfg_setup (void)
     c_sparql_max_mem_in_use = 0;
   if (cfg_getlong (pconfig, section, "TransitivityCacheEnabled", &tn_cache_enable) == -1)
     tn_cache_enable = 0;
+  if (0 == cfg_getstring (pconfig, "Parameters", "TransStepMode", &tmp_str))
+    {
+      if (!stricmp ("input", tmp_str))
+       tn_step_refers_to_input = 1;
+    }
+
   if (cfg_getlong (pconfig, section, "ShortenLongURIs", &rdf_shorten_long_iri) == -1)
     rdf_shorten_long_iri = 1;
   if (cfg_getlong (pconfig, section, "EnablePstats", &enable_p_stat) == -1)
