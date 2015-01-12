@@ -2159,6 +2159,10 @@ create procedure WS.WS.PUT (
        http_header (sprintf ('Location: %s\r\n', WS.WS.DAV_LINK (full_path)));
        http_header (http_header_get () || WS.WS.LDP_HDRS (0, 1, 0, 0, full_path));
     }
+  else
+    {
+       http_header (sprintf ('Location: %s\r\nLink: <http://www.w3.org/ns/ldp#Resource>; rel="type"\r\n', WS.WS.DAV_LINK (full_path)));
+    }
 
   rc := -28;
   rc := DAV_RES_UPLOAD_STRSES_INT (full_path, ses, content_type, _perms, auth_name, null, auth_name, auth_pwd, 0, now(), now(), null, uid, gid, 0, 1);
