@@ -208,9 +208,9 @@
   <xsl:if test="$view-type = 'entities-list' or $type = 'default'">
   <script type="text/javascript">
   if ($('pivot_a_ctr')) {
-    var pivot_a = OAT.Dom.create('a', {}, 'pivot_a');
-    pivot_a.href='/pivot_collections/pivot.vsp?sid=<xsl:value-of select="$sid"/>&amp;limit=75&amp;qrcodes=0&amp;CXML_redir_for_subjs=&amp;CXML_redir_for_hrefs=&amp;q=<xsl:value-of select="urlify (normalize-space(/facets/sparql))"/>'
-	  pivot_a.innerHTML = 'Make Pivot collection';
+      var pivot_a = OAT.Dom.create('a', {}, 'pivot_a');
+      pivot_a.href='/pivot_collections/pivot.vsp?sid=<xsl:value-of select="$sid"/>&amp;limit=0&amp;qrcodes=0&amp;CXML_redir_for_subjs=DESCRIBE&amp;CXML_redir_for_hrefs=DESCRIBE&amp;q=<xsl:value-of select="urlify (normalize-space(/facets/sparql))"/>'
+      pivot_a.innerHTML = 'Make Pivot collection';
       pivot_a.id = 'pivot_a_mpc';
 
       var pivot_pg = OAT.Dom.create('span', {}, 'pivot_pg');
