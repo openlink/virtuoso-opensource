@@ -934,13 +934,22 @@ create procedure WS.WS.LDP_STORE__LDPNR_CREATE (
   {
     if (hasParent)
     {
-      request_hdr := request_hdr || '\r\nSlug: ' || ldpnr_basename;
-      response := http_get (ldpnr_root || ldpnr_parent, response_hdr, 'POST', request_hdr, request_content);
+      declare target varchar;
+      target := ldpnr_root || ldpnr_parent;
+      -- Strip off trailing / from target LDPC (required by Fusepool Transforming LDP Proxy)
+      if (ends_with (target, '/'))
+	target := subseq (target, 0, length(target) - 1);
+      request_hdr := request_hdr || '\r\nAccept: */*\r\nSlug:' || ldpnr_basename;
+      response := http_get (target, response_hdr, 'POST', request_hdr, request_content);
     }
     else
     {
-      request_hdr := request_hdr || '\r\nSlug: ' || ldpnr_url;
-      response := http_get (ldpnr_root, response_hdr, 'POST', request_hdr, request_content);
+      declare target varchar;
+      target := ldpnr_root;
+      if (ends_with (target, '/'))
+	target := subseq (target, 0, length (target) - 1);
+      request_hdr := request_hdr || '\r\nAccept: */*\r\nSlug:' || ldpnr_url;
+      response := http_get (target, response_hdr, 'POST', request_hdr, request_content);
     }
   }
 
