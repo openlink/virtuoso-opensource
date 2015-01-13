@@ -529,6 +529,7 @@ typedef struct hash_area_s
   dbe_col_loc_t *	ha_cols;	/* cols of feeding table, correspond to ha_key_cols */
   state_slot_t **	ha_slots;	/* slots where values to feed come from if they do not come from columns direct */
   struct hash_area_s *	ha_org_ha; /* can be a temp ha on stack for merge of gby or such, must ref the originnal allocated ha in the ht */
+  caddr_t	ha_non_null; /* non null flags of ssls in ha_slots, can be nn in ha and nullable elsewhere for hash oj  */
   int			ha_n_keys;
   int			ha_n_deps;
   char 			ha_op;

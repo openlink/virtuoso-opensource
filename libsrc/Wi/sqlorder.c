@@ -41,6 +41,7 @@ ha_free (hash_area_t * ha)
 {
   dk_free_box ((caddr_t) ha->ha_key_cols);
   dk_free_box ((caddr_t) ha->ha_slots);
+  dk_free_box (ha->ha_non_null);
   dk_free_box ((caddr_t) ha->ha_cols);
   dk_free ((caddr_t)ha, sizeof (hash_area_t));
 }

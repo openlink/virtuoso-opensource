@@ -1898,6 +1898,8 @@ cha_allocate (setp_node_t * setp, caddr_t * inst, int64 card)
 	      cha->cha_sqt[inx].sqt_dtp = dtp;
 	    }
 	cha->cha_sqt[inx].sqt_non_null = ssl->ssl_sqt.sqt_non_null;
+	  if (ha->ha_non_null)
+	    cha->cha_sqt[inx].sqt_non_null = ha->ha_non_null[inx];
       }
     memcpy (&(cha->cha_new_sqt[inx]), &(cha->cha_sqt[inx]), sizeof (sql_type_t));
   }
