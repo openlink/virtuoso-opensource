@@ -2530,10 +2530,10 @@ sparp_rvr_add_restrictions (sparp_t *sparp, rdf_val_range_t *dest, ptrlong addon
     spar_internal_error (sparp, "sparp" "_rvr_add_restrictions(): unsupported addon restriction");
   if (((new_restr & SPART_VARR_IS_REF) && (new_restr & SPART_VARR_IS_LIT)) &&
       !((dest->rvrRestrictions & SPART_VARR_IS_REF) && (dest->rvrRestrictions & SPART_VARR_IS_LIT)) )
-    dbg_printf (("sparp" "_rvr_add_restrictions will tighten %x with %x (ref|lit)\n", (unsigned)(dest->rvrRestrictions), (unsigned)(addon->rvrRestrictions)));
+    dbg_printf (("sparp" "_rvr_add_restrictions will tighten %x with %x (ref|lit)\n", (unsigned)(dest->rvrRestrictions), (unsigned)(addon_restrictions)));
   if ((new_restr & SPART_VARR_CONFLICT) &&
       !(dest->rvrRestrictions & SPART_VARR_CONFLICT) )
-    dbg_printf (("sparp" "_rvr_add_restrictions will tighten %x with %x (SPART_VARR_CONFLICT)\n", (unsigned)(dest->rvrRestrictions), (unsigned)(addon->rvrRestrictions)));
+    dbg_printf (("sparp" "_rvr_add_restrictions will tighten %x with %x (SPART_VARR_CONFLICT)\n", (unsigned)(dest->rvrRestrictions), (unsigned)(addon_restrictions)));
 #endif
   if (new_restr & SPART_VARR_CONFLICT)
     goto conflict; /* see below */

@@ -212,22 +212,27 @@ extern int sparyylex (YYSTYPE *yylval, yyscan_t yyscanner);
 void *
 sparyyalloc (yy_size_t  size, yyscan_t yyscanner)
 {
-  return (void *) malloc( size );
+  return (void *) t_alloc_box (size, DV_STRING);
 }
 
 void *
-sparyyrealloc  (void * ptr, yy_size_t  size , yyscan_t yyscanner)
+sparyyrealloc  (void * ptr, yy_size_t  sz , yyscan_t yyscanner)
 {
-  if (NULL == ptr)
-    return sparyyalloc (size, yyscanner);
-  return (void *) realloc( (char *) ptr, size );
+  int old_sz = ((NULL == ptr) ? 0 : box_length (ptr));
+  if (old_sz < sz)
+    {
+      void *res = t_alloc_box (sz, DV_STRING);
+      memcpy (res, ptr, old_sz);
+      return res;
+    }
+  if (0 == sz)
+    return NULL;
+  return ptr;
 }
 
 void
 sparyyfree (void * ptr , yyscan_t yyscanner)
 {
-  if (NULL != ptr)
-    free( (char *) ptr );
 }
 
 %}

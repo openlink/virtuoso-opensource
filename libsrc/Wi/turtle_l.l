@@ -572,12 +572,6 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 
 %%
 
-/*void ttlyy_reset (yyscan_t scanner)
-{
-  ttlyyrestart (NULL, scanner);
-  TTLYYBEGIN (INITIAL);
-}*/
-
 int
 ttlyyerror_if_long_qname (ttlp_t *ttlp_arg, int lexcode, caddr_t box, const char *lex_type_descr, struct yyguts_t * yyg)
 {
