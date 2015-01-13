@@ -924,21 +924,25 @@ extern caddr_t uname___empty;
 extern void dkbox_terminate_module (void);
 
 #ifdef WORDS_BIGENDIAN
-#define DV_INT_TAG_WORD 		0x080000bd
+//#define DV_INT_TAG_WORD 		0x080000bd
 #define DV_INT_TAG_WORD_64 DV_INT_TAG_WORD
-#define DV_IRI_TAG_WORD 		0x080000f3
+//#define DV_IRI_TAG_WORD 		0x080000f3
 #define DV_IRI_TAG_WORD_64  DV_IRI_TAG_WORD
-#define DV_DOUBLE_TAG_WORD 		0x080000bf
-#define DV_FLOAT_TAG_WORD 		0x080000be
+//#define DV_DOUBLE_TAG_WORD 		0x080000bf
+//#define DV_FLOAT_TAG_WORD 		0x080000be
+#define DV_DOUBLE_TAG_WORD_64 		0x00000000080000bf
+#define DV_FLOAT_TAG_WORD_64 		0x00000000080000be
 
 
 #else
-#define DV_INT_TAG_WORD  		0xbd000008
+//#define DV_INT_TAG_WORD  		0xbd000008
 #define DV_INT_TAG_WORD_64 0xbd00000800000000
-#define DV_IRI_TAG_WORD 		0xf3000008
+//#define DV_IRI_TAG_WORD 		0xf3000008
 #define DV_IRI_TAG_WORD_64 		0xf300000800000000
-#define DV_DOUBLE_TAG_WORD  0xbf000008
-#define DV_FLOAT_TAG_WORD 0xbe000008
+//#define DV_DOUBLE_TAG_WORD  0xbf000008
+//#define DV_FLOAT_TAG_WORD 0xbe000008
+#define DV_DOUBLE_TAG_WORD_64  0xbf00000800000000
+#define DV_FLOAT_TAG_WORD_64 0xbe00000800000000
 #endif
 
 /* values for box_flags */

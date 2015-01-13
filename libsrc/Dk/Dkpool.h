@@ -401,7 +401,7 @@ extern box_tmp_copy_f box_tmp_copier[256];
     MP_BYTES (x, mp, 16); \
     x = ((char *)x) + 8; \
     *(int64 *)x = v; \
-    ((int32*)x)[-1] = tag_word; \
+    ((int64*)x)[-1] = tag_word; \
   }
 
 
@@ -410,7 +410,7 @@ extern box_tmp_copy_f box_tmp_copier[256];
     MP_BYTES (x, mp, 16); \
     x = ((char *)x) + 8; \
     *(double *)x = v; \
-    ((int32*)x)[-1] = tag_word; \
+    ((int64*)x)[-1] = tag_word; \
   }
 
 
@@ -419,7 +419,7 @@ extern box_tmp_copy_f box_tmp_copier[256];
     MP_BYTES (x, mp, 16); \
     x = ((char *)x) + 8; \
     *(float *)x = v; \
-    ((int32*)x)[-1] = tag_word; \
+    ((int64*)x)[-1] = tag_word; \
   }
 
 

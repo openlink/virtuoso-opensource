@@ -742,7 +742,7 @@ DBG_NAME (mp_box_num) (DBG_PARAMS mem_pool_t * mp, boxint n)
   if (!IS_POINTER (n))
     return (box_t) (ptrlong) n;
 
-  MP_INT (box, mp, n, DV_INT_TAG_WORD);
+  MP_INT (box, mp, n, DV_INT_TAG_WORD_64);
   return box;
 }
 
@@ -781,7 +781,7 @@ caddr_t
 DBG_NAME (mp_box_iri_id) (DBG_PARAMS mem_pool_t * mp, iri_id_t n)
 {
   caddr_t box;
-  MP_INT (box, mp, n, DV_IRI_TAG_WORD);
+  MP_INT (box, mp, n, DV_IRI_TAG_WORD_64);
   return box;
 }
 
@@ -790,7 +790,7 @@ caddr_t
 DBG_NAME (mp_box_double) (DBG_PARAMS mem_pool_t * mp, double n)
 {
   caddr_t box;
-  MP_DOUBLE (box, mp, n, DV_DOUBLE_TAG_WORD);
+  MP_DOUBLE (box, mp, n, DV_DOUBLE_TAG_WORD_64);
   return box;
 }
 
@@ -799,7 +799,7 @@ caddr_t
 DBG_NAME (mp_box_float) (DBG_PARAMS mem_pool_t * mp, float n)
 {
   caddr_t box;
-  MP_FLOAT (box, mp, n, DV_FLOAT_TAG_WORD);
+  MP_FLOAT (box, mp, n, DV_FLOAT_TAG_WORD_64);
   return box;
 }
 
