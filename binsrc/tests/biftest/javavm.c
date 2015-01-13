@@ -1456,14 +1456,13 @@ array_done:;
       utf8_chars_len = (*env)->GetStringUTFLength (env, jret->l);
       utf8_chars = (char *) (*env)->GetStringUTFChars (env, jret->l, NULL);
       if (0 == utf8_chars_len)
-	ret = box_wide_char_string (utf8_chars, 0, DV_WIDE);
+	ret = box_wide_char_string (utf8_chars, 0);
       else
 	{
 	  caddr_t temp = box_varchar_string (utf8_chars, utf8_chars_len,
 	      DV_SHORT_STRING);
 	  ret =
-	      box_utf8_as_wide_char (utf8_chars, NULL, utf8_chars_len, 0,
-	      DV_WIDE);
+	      box_utf8_as_wide_char (utf8_chars, NULL, utf8_chars_len, 0);
 	  dk_free_box (temp);
 	}
       (*env)->ReleaseStringUTFChars (env, jret->l, utf8_chars);
