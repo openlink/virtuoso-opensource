@@ -70,7 +70,7 @@ virt_wcsnrtombs (unsigned char * dst, wchar_t ** src, size_t nwc, size_t len, vi
 	}
       else
 	{
-	  size_t step;
+	  size_t step, cnt;
 
 	  for (step = 2; step < 6; ++step)
 	    if ((wc & virt_utf8_encoding_mask[step - 2]) == 0)
@@ -85,7 +85,7 @@ virt_wcsnrtombs (unsigned char * dst, wchar_t ** src, size_t nwc, size_t len, vi
                   run -= 1;
                   break;
                 }
-	      size_t cnt = step;
+	      cnt = step;
 
 	      dst[0] = virt_utf8_encoding_byte[cnt - 2];
 
