@@ -76,10 +76,6 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-#ifndef __SQL3_H
-#define __SQL3_H
-#include "sql3.h"
-#endif
 #include "repl.h"
 #include "replsr.h"
 #include "sqltype.h" /* for XMLTYPE_TO_ENTITY */
@@ -7733,6 +7729,7 @@ bif_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return 0;
 }
 
+#include "sql3.h"
 
 caddr_t
 sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strval, int find_lextype)
@@ -7748,6 +7745,7 @@ sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strva
       sql_comp_t sc;
       caddr_t result_array = NULL;
       caddr_t str;
+      yyscan_t scanner;
       memset (&sc, 0, sizeof (sc));
 
       if (!parse_mtx)
@@ -7758,30 +7756,31 @@ sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strva
       str = (caddr_t) t_alloc_box (20 + strlen (str2), DV_SHORT_STRING);
       snprintf (str, box_length (str), "EXEC SQL %s;", str2);
 
-
       yy_string_input_init (str);
+      scn3yylex_init (&scanner);
       sql_err_state[0] = 0;
       sql_err_native[0] = 0;
-      if (0 == setjmp_splice (&parse_reset))
+      if (0 == setjmp_splice (&(global_scs->parse_reset)))
 	{
 	  int lextype, olex = -1;
 	  long n_lexem;
-	  sql_yy_reset ();
-	  yyrestart (NULL);
+	  sql_yy_reset (scanner);
+	  /* No need as soon as thing is reentrant: scn3yyrestart (NULL, scanner); */
 	  for (n_lexem = 0;;)
 	    {
+	      YYSTYPE yylval;
 	      caddr_t boxed_plineno, boxed_text, boxed_lextype;
-	      lextype = yylex ();
+	      lextype = scn3yylex (&yylval, scanner);
 	      if (!lextype)
 		break;
 	      if (olex == lextype && lextype == ';')
 		continue;
-	      boxed_plineno = box_num (scn3_plineno);
+	      boxed_plineno = box_num (global_scs->scs_scn3c.plineno);
 	      /* if use_strval is given this means names etc. are expected to be in proper casemode,
 	         so must check for DV_SYMBOL otherwise stored procedure with lower case would fail on startup
 	         when cm_upper is set  */
 	      boxed_text = ((use_strval && (DV_STRINGP (yylval.strval) || DV_SYMBOL == DV_TYPE_OF (yylval.strval))) ?
-		  box_dv_short_string (yylval.strval) : box_dv_short_nchars (yytext, get_yyleng ()));
+		  box_dv_short_string (yylval.strval) : box_dv_short_nchars (scn3_get_yytext(scanner), scn3_get_yyleng (scanner)));
 	      boxed_lextype = box_num (lextype);
 	      dk_set_push (&lexems, list (3, boxed_plineno, boxed_text, boxed_lextype));
 	      olex = lextype;
@@ -7797,11 +7796,12 @@ sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strva
 	  char err[1000];
 	  snprintf (err, sizeof (err), "SQL lex analyzer: %s ", sql_err_text);
 	  lexems = dk_set_nreverse (lexems);
-	  dk_set_push (&lexems, list (2, scn3_plineno, box_dv_short_string (err)));
+	  dk_set_push (&lexems, list (2, global_scs->scs_scn3c.plineno, box_dv_short_string (err)));
 	  goto cleanup;
 	}
     cleanup:
-      sql_pop_all_buffers ();
+      sql_pop_all_buffers (scanner);
+      scn3yylex_destroy (scanner);
       SCS_STATE_POP;
       parse_leave ();
       MP_DONE ();
@@ -7821,79 +7821,6 @@ bif_sql_lex_analyze (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return sql_lex_analyze (str, qst, 0, 0, 0);
 }
 
-#if 0
-static
-caddr_t
-bif_sql_split_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  caddr_t str = bif_string_arg (qst, args, 0, "sql_split_text");
-  caddr_t **token_array = (caddr_t **)sql_lex_analyze (str, qst, 0, 0);
-  int level=0, i, line, oline = 1, n = BOX_ELEMENTS(token_array), last_semi;
-  dk_set_t stmts = NULL;
-  caddr_t result_array = NULL;
-
-  dk_session_t * ses = NULL;
-  if ((0 < n) && (2 == BOX_ELEMENTS (token_array[0])))
-    {
-      char err[2010];
-      strcpy_ck (err, token_array[0][1]);
-      dk_free_tree ((box_t) token_array);
-      sqlr_new_error ("37000", "SQ201", "%s", err);
-    }
-  ses = strses_allocate ();
-  last_semi = -1;
-  for (i=0; i<n; i++)
-  {
-    caddr_t *p = token_array[i];
-    caddr_t token = p[1];
-          line = (int) (ptrlong) p [0];
-    assert (NULL != token);
-
-    if (level || ';' != *token)
-    {
-        if (line != oline)
-          session_buffered_write (ses, "\n", 1);
-      session_buffered_write (ses, token, strlen(token));
-      session_buffered_write (ses, " ", 1);
-      switch (*token) {
-        case '{': level++; break;
-        case '}': level--; break;
-      }
-      oline = line;
-      continue;
-    }
-    if (i > (1 + last_semi))
-    {
-      int len = strses_length (ses);
-      char *out = (char *) dk_alloc_box (len + 1, DV_LONG_STRING);
-      strses_to_array (ses, out);
-      strses_flush (ses);
-      out[len] = 0;
-      dk_set_push (&stmts, out);
-    }
-    else
-      strses_flush (ses);
-    last_semi = i;
-    oline = line;
-  }
-
-    if (i > (1 + last_semi))
-    {
-      int len = strses_length (ses);
-      char *out = (char *) dk_alloc_box (len + 1, DV_LONG_STRING);
-      strses_to_array (ses, out);
-      strses_flush (ses);
-      out[len] = 0;
-      dk_set_push (&stmts, out);
-    }
-  dk_free_box ((box_t) ses);
-  dk_free_tree ((box_t) token_array);
-
-  result_array = revlist_to_array (stmts);
-  return result_array;
-}
-#endif
-
 #define SQL_SPLIT_TEXT_DEFAULT 0x0
 #define SQL_SPLIT_TEXT_KEEP_SEMICOLON 0x1
 #define SQL_SPLIT_TEXT_KEEP_EMPTY_STATEMENTS 0x2
@@ -7901,7 +7828,6 @@ bif_sql_split_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 extern dk_session_t *scn3split_ses_code;
 extern dk_session_t *scn3split_ses_tail;
-
 
 caddr_t
 sql_split_text (const char * str2, caddr_t * qst, int flags)
@@ -7914,6 +7840,7 @@ sql_split_text (const char * str2, caddr_t * qst, int flags)
   int start_lineno;
   int start_plineno;
   SCS_STATE_FRAME;
+  yyscan_t scanner;
   memset (&sc, 0, sizeof (sc));
 
   if (!parse_mtx)
@@ -7924,41 +7851,44 @@ sql_split_text (const char * str2, caddr_t * qst, int flags)
   str = (caddr_t) t_alloc_box (20 + strlen (str2), DV_SHORT_STRING);
   snprintf (str, box_length (str), "EXEC SQL %s", str2);
   yy_string_input_init (str);
+  scn3yylex_init (&scanner);
   sql_err_state[0] = 0;
   sql_err_native[0] = 0;
-  if (0 == setjmp_splice (&parse_reset))
+  if (0 == setjmp_splice (&(global_scs->parse_reset)))
     {
       int lextype = -1;
       /*int trail_pline = -1;*/
       caddr_t full_text, descr;
       size_t full_text_blen;
-      scn3split_yy_reset ();
-      scn3splityyrestart (NULL);
-      scn3split_ses = strses_allocate ();
+      scn3split_yy_reset (scanner);
+      /* No need as soon as thing is reentrant: scn3splityyrestart (NULL, scanner); */
+      global_scs->scs_scn3c.split_ses = strses_allocate ();
       has_useful_lexems = 0;
-      start_lineno = scn3_lineno;
-      start_plineno = scn3_plineno;
+      start_lineno = global_scs->scs_scn3c.lineno;
+      start_plineno = global_scs->scs_scn3c.plineno;
       start_filename = box_dv_short_string (scn3_get_file_name ());
       while (0 != lextype)
         {
+          YYSTYPE yylval;
           caddr_t end_filename;
-          lextype = scn3splityylex();
+          lextype = scn3splityylex (&yylval, scanner);
+
           if (!lextype)
 	    goto commit_the_statement; /* see below */
           if ((WS_WHITESPACE > lextype) && (';' != lextype))
             has_useful_lexems = 1;
-          if (((';' == lextype) || ('}' == lextype)) && (0 == scn3_lexdepth))
+          if (((';' == lextype) || ('}' == lextype)) && (0 == global_scs->scs_scn3c.lexdepth))
             {
-              /*trail_pline = scn3_plineno;*/
+              /*trail_pline = global_scs->scs_scn3c.plineno;*/
               goto commit_the_statement; /* see below */
             }
           continue;
 
 commit_the_statement:
           end_filename = box_dv_short_string (scn3_get_file_name ());
-          full_text = strses_string (scn3split_ses);
-          dk_free_tree (scn3split_ses);
-          scn3split_ses = strses_allocate ();
+          full_text = strses_string (global_scs->scs_scn3c.split_ses);
+          dk_free_tree (global_scs->scs_scn3c.split_ses);
+          global_scs->scs_scn3c.split_ses = strses_allocate ();
           full_text_blen = box_length(full_text);
           if (!has_useful_lexems && !(flags & SQL_SPLIT_TEXT_KEEP_EMPTY_STATEMENTS))
             goto nothing_to_commit;
@@ -7971,7 +7901,7 @@ commit_the_statement:
               descr = list (8,
                 full_text,
                 start_filename, box_num(start_lineno), box_num (start_plineno),
-                box_copy (end_filename), box_num (scn3_lineno), box_num (scn3_plineno),
+                box_copy (end_filename), box_num (global_scs->scs_scn3c.lineno), box_num (global_scs->scs_scn3c.plineno),
                 box_num (param_inx) );
             }
           else
@@ -7980,8 +7910,8 @@ commit_the_statement:
 nothing_to_commit:
           has_useful_lexems = 0;
           start_filename = end_filename;
-          start_lineno = scn3_lineno;
-          start_plineno = scn3_plineno;
+          start_lineno = global_scs->scs_scn3c.lineno;
+          start_plineno = global_scs->scs_scn3c.plineno;
           param_inx = 0;
           if (!lextype)
 	    break;
@@ -7992,17 +7922,18 @@ nothing_to_commit:
       char err[1000];
       snprintf (err, sizeof (err), "SQL lex splitter: %s ", sql_err_text);
       dk_set_push (&res, list (2,
-        scn3_plineno,
+        global_scs->scs_scn3c.plineno,
         box_dv_short_string (err) ) );
       goto cleanup;
     }
 cleanup:
-  scn3split_pop_all_buffers ();
-  MP_DONE();
+  scn3split_pop_all_buffers (scanner);
+  scn3splityylex_destroy (scanner);
+  dk_free_box (global_scs->scs_scn3c.split_ses); /* must be released inside semaphore */
+  global_scs->scs_scn3c.split_ses = NULL;
   SCS_STATE_POP;
-  dk_free_box (scn3split_ses); /* must be released inside semaphore */
-  scn3split_ses = NULL;
   parse_leave ();
+  MP_DONE();
   sc_free (&sc);
   dk_free_box (start_filename);
   return revlist_to_array (res);
@@ -8017,7 +7948,6 @@ bif_sql_split_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ptrlong flags = ((BOX_ELEMENTS(args) > 1) ? bif_long_arg (qst, args, 1, "sql_split_text") : SQL_SPLIT_TEXT_DEFAULT);
   return sql_split_text (str, qst, flags);
 }
-
 
 /* An excerpt from KUBLMAN.DOC
 

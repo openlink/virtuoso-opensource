@@ -133,7 +133,6 @@ typedef struct rdf_inf_slots_s
   state_slot_t *	ris_o;
 } rdf_inf_slots_t;
 
-
 typedef struct sql_comp_s
   {
     comp_context_t *	sc_cc;

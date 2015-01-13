@@ -73,25 +73,13 @@ typedef struct spar_query_env_s
   struct sparp_s *	sparqre_dbg_sparp;  /*!< A top-level instance of sparql compiler. For debug purposes and for mem pool callback only. Can be NULL; when non-NULL then the structure under pointer may be half-full. */
 } spar_query_env_t;
 
-extern int national_char;
-extern int uname_strlit;
-
 /* Place of an opened '(' or '{' */
 typedef struct scn3_paren_s {
   int sp_open_line;	/*!< Line number where it has been opened */
   char sp_close_paren;	/*!< The character that should be used to close it (e.g. '}' if '{' is opened */
 } scn3_paren_t;
 
-extern int scn3_lineno;	/*!< Throughout counter of lines in the source text */
-extern int scn3_plineno;	/*!< Physical counter of lines in the source text - used for the PL debugger */
-extern int scn3_lineno_increment;	/*!< This is zero for 'macroexpanded' fragments of SQL text, to prevent from confusing when a long text is inserted instead of a single line */
-extern int scn3_lexdepth;	/*!< Number of opened parenthesis */
-
-extern dk_set_t scn3_namespaces; /*!< List of namespace prefixes and URIs */
-
 #define SCN3_MAX_LEX_DEPTH 180	/*!< Maximum allowed number of any opened parenthesis in SQL text. SPARQL lexer has its own limit of the sort, \c SPARP_MAX_LEX_DEPTH */
-extern scn3_paren_t scn3_parens[SCN3_MAX_LEX_DEPTH];
-
 #define SCN3_MAX_BRACE_DEPTH 80		/*!< Maximum allowed number of any opened parenthesis outside pair of curly braces in SQL text. SPARQL lexer has its own limit of the sort, \c SPARP_MAX_BRACE_DEPTH */
 #define SCN3_MAX_PRAGMALINE_DEPTH 4	/*!< Maximum nesting of line locations (i.e. 1 + (max no of nested '#pragma line push')) */
 
@@ -100,7 +88,7 @@ See the body of scn3_sprint_curr_line_loc() to find out how to use such data
 to get a logical filename and line number for the correct position
 in the source text. */
 typedef struct scn3_line_loc_s {
-/*! The value of scn3_lineno at the beginning of #pragma line. */
+/*! The value of global_scs->scs_scn3c.lineno at the beginning of #pragma line. */
   int sll_start_lineno;
 /*! The value of scn3_lexdepth at the beginning of #pragma line.
 This is used to check that there are no cases when e.g. an '{' is
@@ -112,12 +100,6 @@ opened in one file and pair '}' is closed in some other file. */
   caddr_t sll_pragma_file;
 } scn3_line_loc_t;
 
-/*! Stack of logical locations. */
-extern scn3_line_loc_t scn3_line_locs[SCN3_MAX_PRAGMALINE_DEPTH];
-/*! This is the number of not-yet-popped '#pragma line push' directives. */
-extern int scn3_pragmaline_depth;
-
-
 #define MAX_INCLUDE_DEPTH 4	/*!< Maximum nesting of includes or fragments in different languages. */
 
 /*! Fragment written on one language (say, in SPARQL) that is included into the text on other language (say, in SQL) */
@@ -126,15 +108,11 @@ typedef struct scn3_include_fragment_s {
   scn3_include_frag_t _;
 } scn3_include_fragment_t;
 
-extern scn3_include_fragment_t scn3_include_stack [MAX_INCLUDE_DEPTH];
 
-/*! Number of fragments that are started but not yet completed. It's zero while the whole text is in SQL */
-extern int scn3_include_depth;
-
-/*! Flag that indicates that yylex() is called from yy_new_error() and error during te call should not cause infinite recursion */
-extern int scn3_inside_error_reporter;
-
-extern dk_session_t *scn3split_ses;
+#ifndef YY_TYPEDEF_YY_SCANNER_T
+#define YY_TYPEDEF_YY_SCANNER_T
+typedef void* yyscan_t;
+#endif
 
 extern void scn3_pragma_line (char *text);
 extern void scn3_pragma_line_push (void);
@@ -144,7 +122,7 @@ extern int scn3_sprint_curr_line_loc (char *buf, size_t max_buf);
 extern int scn3_get_lineno (void);
 extern char *scn3_get_file_name (void);
 extern void scn3_set_file_line (char *file, int file_nchars, int line_no);
-extern void scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_sql_text, scn3_include_fragment_t *outer);
+extern void scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_sql_text, scn3_include_fragment_t *outer, yyscan_t yyscanner);
 extern void sparp_compile_subselect (spar_query_env_t *sparqre);
 
 

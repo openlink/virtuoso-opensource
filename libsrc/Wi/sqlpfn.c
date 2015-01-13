@@ -671,6 +671,19 @@ t_sqlp_box_id_upcase (const char *str)
   return s;
 }
 
+caddr_t
+t_sqlp_box_id_upcase_nchars (const char * str, int len)
+{
+  /* nothing in 2 */
+  caddr_t s;
+  if (len > MAX_NAME_LEN - 2)
+    len = MAX_NAME_LEN - 2;
+  s = t_box_dv_short_nchars ((caddr_t) str, len);
+  box_tag_modify (s, DV_SYMBOL);
+  if (CM_UPPER == case_mode)
+    sqlp_upcase (s);
+  return s;
+}
 
 caddr_t
 sqlp_box_upcase (const char *str)
@@ -1643,17 +1656,17 @@ sqlp_for_statement (ST * sel, ST * body)
 		      while_fetch,
 		      while_handler,
 		      body),
-		  t_box_num (scn3_lineno),
+		  t_box_num (global_scs->scs_scn3c.lineno),
 		  t_box_num (scn3_get_lineno()),
 		  t_box_string (scn3_get_file_name())
 		        )),
 	  t_list (3, LABELED_STMT, t_box_string (cn),
 		t_list (5, COMPOUND_STMT, t_list (0),
-		  t_box_num (scn3_lineno),
+		  t_box_num (global_scs->scs_scn3c.lineno),
 		  t_box_num (scn3_get_lineno()),
 		  t_box_string (scn3_get_file_name())
 		  ))),
-	t_box_num (scn3_lineno),
+	t_box_num (global_scs->scs_scn3c.lineno),
 	t_box_num (scn3_get_lineno()),
 	t_box_string (scn3_get_file_name())
 	);
@@ -2349,7 +2362,7 @@ sqlp_pl_file (char * text)
           sem++;
 
 	  line_no = atol (sem);
-	  if (scn3_pragmaline_depth == 0)
+	  if (global_scs->scs_scn3c.pragmaline_depth == 0)
 	    { /* only on top level */
 	      pl_file_offs = atol (sem);
 	      pl_file = t_alloc_box (len+1, DV_STRING);
@@ -2367,8 +2380,8 @@ void _br_push (void)
 {
   if (parse_pldbg)
     {
-      t_set_push(&sql3_ppbreaks, t_box_num(scn3_plineno));
-      t_set_push(&sql3_pbreaks, t_box_num(scn3_lineno));
+      t_set_push(&sql3_ppbreaks, t_box_num(global_scs->scs_scn3c.plineno));
+      t_set_push(&sql3_pbreaks, t_box_num(global_scs->scs_scn3c.lineno));
       t_set_push(&sql3_breaks, t_box_num(scn3_get_lineno()));
     }
 }
@@ -2386,10 +2399,10 @@ void _br_pop (void)
 void _br_set (void)
 {
   if (parse_pldbg && sql3_pbreaks &&
-      (int) unbox ((box_t) sql3_pbreaks->data) != scn3_lineno)
+      (int) unbox ((box_t) sql3_pbreaks->data) != global_scs->scs_scn3c.lineno)
     {
-      sql3_ppbreaks->data = (void *)t_box_num(scn3_plineno);
-      sql3_pbreaks->data = (void *)t_box_num(scn3_lineno);
+      sql3_ppbreaks->data = (void *)t_box_num(global_scs->scs_scn3c.plineno);
+      sql3_pbreaks->data = (void *)t_box_num(global_scs->scs_scn3c.lineno);
       sql3_breaks->data = (void *)t_box_num(scn3_get_lineno());
     }
 }
@@ -2446,12 +2459,12 @@ ST * sqlp_c_for_statement (ST **init, ST *cond, ST **inc, ST * body)
 
   cst[init_cnt] = t_listst (3, WHILE_STMT, cond, t_listst (5, COMPOUND_STMT,
 	incst,
-	t_box_num (scn3_lineno),
+	t_box_num (global_scs->scs_scn3c.lineno),
 	t_box_num (scn3_get_lineno()),
 	t_box_string (scn3_get_file_name())));
 
   res = t_listst (5, COMPOUND_STMT, cst,
-      t_box_num (scn3_lineno),
+      t_box_num (global_scs->scs_scn3c.lineno),
       t_box_num (scn3_get_lineno()),
       t_box_string (scn3_get_file_name()));
   return res;
@@ -2497,7 +2510,7 @@ ST * sqlp_foreach_statement (ST *data_type, caddr_t var, ST *arr, ST *body)
 			    CALL_STMT, t_sqlp_box_id_upcase ("aref"),
 			      t_list (2, arr, t_box_copy_tree ((caddr_t) inx))))),
 	  body),
-	t_box_num (scn3_lineno),
+	t_box_num (global_scs->scs_scn3c.lineno),
 	t_box_num (scn3_get_lineno()),
 	t_box_string (scn3_get_file_name())));
 }

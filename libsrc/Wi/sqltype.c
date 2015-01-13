@@ -41,12 +41,12 @@
 #include "sqlbif.h"
 #include "sqlo.h"
 #include "sqlpfn.h"
+#include "sqlcstate.h"
+#include "xmltree.h"
 #ifndef __SQL3_H
 #define __SQL3_H
 #include "sql3.h"
 #endif
-#include "sqlcstate.h"
-#include "xmltree.h"
 
 sql_class_imp_t imp_map[UDT_N_LANGS];
 

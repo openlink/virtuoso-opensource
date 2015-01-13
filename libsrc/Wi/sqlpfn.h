@@ -67,6 +67,7 @@ caddr_t DBG_NAME (sqlp_box_id_upcase) (DBG_PARAMS const char *str);
 #define sqlp_box_id_upcase(s) dbg_sqlp_box_id_upcase (__FILE__, __LINE__, s)
 #endif
 caddr_t t_sqlp_box_id_upcase (const char * str);
+caddr_t t_sqlp_box_id_upcase_nchars (const char * str, int len);
 caddr_t sqlp_box_upcase (const char * str);
 caddr_t t_sqlp_box_upcase (const char * str);
 
@@ -196,28 +197,34 @@ ST * sqlp_wrapper_sqlxml_assign (ST * tree);
 
 int sqlp_tree_has_fun_ref (ST *tree);
 
-extern int scn3_lineno;
-extern int scn3_plineno;
 extern int scn3_get_lineno (void);
 extern char *scn3_get_file_name (void);
-extern char *yytext;
-#ifndef YY_DECL
-extern int yylex(void);
-extern int scn3splityylex(void);
+#ifndef YY_TYPEDEF_YY_SCANNER_T
+#define YY_TYPEDEF_YY_SCANNER_T
+typedef void* yyscan_t;
 #endif
-void yyrestart (FILE * in);
-void scn3splityyrestart (FILE * in);
-extern void sql_yy_reset (void);
-extern void scn3split_yy_reset (void);
-extern void sql_pop_all_buffers (void);
-extern void scn3split_pop_all_buffers (void);
-void yyerror (const char *s);
+#if 0
+#ifndef YY_DECL
+extern int scn3yylex (YYSTYPE *yylval, yyscan_t yyscanner);
+extern int scn3splityylex(YYSTYPE *yylval, yyscan_t yyscanner);
+#define YY_DECL int scn3yylex (YYSTYPE *yylval, yyscan_t yyscanner)
+#endif
+#endif
+extern int scn3yylex_init (yyscan_t* scanner);
+extern int scn3yylex_destroy (yyscan_t yyscanner );
+/* No need as soon as thing is reentrant: void scn3yyrestart (FILE * in, yyscan_t yyscanner); */
+/* No need as soon as thing is reentrant: void scn3splityyrestart (FILE * in, yyscan_t yyscanner); */
+extern void sql_yy_reset (yyscan_t yyscanner);
+extern void scn3split_yy_reset (yyscan_t yyscanner);
+extern void sql_pop_all_buffers (yyscan_t yyscanner);
+extern void scn3split_pop_all_buffers (yyscan_t yyscanner);
+/*void yyerror (const char *s);*/
 extern int yydebug;
-extern jmp_buf_splice parse_reset;
-extern size_t get_yyleng (void);
+extern char * scn3_get_yytext (yyscan_t yyscanner);
+extern size_t scn3_get_yyleng (yyscan_t yyscanner);
 int scn3_sprint_curr_line_loc (char *buf, size_t max_buf);
-extern int scn3_pragmaline_depth;
 void scn3_set_file_line (char *file, int file_nchars, int line_no);
+
 int bop_weight (int bop);
 
 extern char *part_tok (char ** place);

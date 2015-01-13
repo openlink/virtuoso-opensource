@@ -26,6 +26,26 @@
 #ifndef SQLCSTATE_H
 #define SQLCSTATE_H
 
+typedef struct scn3_context_s
+  {
+  int national_char;
+  int uname_strlit;
+  int lineno;			/*!< Throughout counter of lines in the source text */
+  int plineno;			/*!< Physical counter of lines in the source text - used for the PL debugger */
+  int lineno_increment;		/*!< This is zero for 'macroexpanded' fragments of SQL text, to prevent from confusing when a long text is inserted instead of a single line */
+  int lexdepth;			/*!< Number of opened parenthesis */
+  dk_set_t namespaces;		/*!< List of namespace prefixes and URIs */
+  scn3_paren_t parens[SCN3_MAX_LEX_DEPTH];
+  scn3_line_loc_t line_locs[SCN3_MAX_PRAGMALINE_DEPTH];		/*! Stack of logical locations. */
+  int pragmaline_depth;		/*! This is the number of not-yet-popped '#pragma line push' directives. */
+  scn3_include_fragment_t include_stack [MAX_INCLUDE_DEPTH];
+  int include_depth;		/*! Number of fragments that are started but not yet completed. It's zero while the whole text is in SQL */
+  int inside_error_reporter;	/*! Flag that indicates that yylex() is called from yy_new_error() and error during te call should not cause infinite recursion */
+  char *last_keyword_yytext;
+  int last_keyword_yyleng;
+  dk_session_t *split_ses;
+  } scn3_context_t;
+
 typedef struct sql_compile_state_s /* serialized in parse_sem */
 {
   oid_t scs_v_u_id;
@@ -54,6 +74,8 @@ typedef struct sql_compile_state_s /* serialized in parse_sem */
   char	scs_inside_sem;
   sql_comp_t *	scs_current_sc;
   sql_comp_t *	scs_top_sc;
+  scn3_context_t scs_scn3c;
+  jmp_buf_splice parse_reset;
 } sql_compile_state_t;
 
 
