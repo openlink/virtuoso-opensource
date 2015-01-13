@@ -46,15 +46,15 @@ virt_wcsnrtombs (unsigned char * dst, wchar_t ** src, size_t nwc, size_t len, vi
       wchar_t wc = run[0];
       run++;
 
+#ifdef MULTIBYTE_SANITY
       if (wc & ~0x7fffffff)
 	{
 	  /* This is no correct ISO 10646 character.  */
 	  /* errno = (EILSEQ); */
-#ifdef MULTIBYTE_SANITY
 	  GPF_T;
-#endif
 	  return (size_t) -1;
 	}
+#endif
 #ifdef MULTIBYTE_SANITY
       if (0 == wc)
 	{
@@ -70,22 +70,22 @@ virt_wcsnrtombs (unsigned char * dst, wchar_t ** src, size_t nwc, size_t len, vi
 	}
       else
 	{
-	  size_t step;
+	  size_t step, cnt;
 
 	  for (step = 2; step < 6; ++step)
 	    if ((wc & virt_utf8_encoding_mask[step - 2]) == 0)
 	      break;
 
-	  if (written + step >= len)
-	    {
-	      /* Too long.  */
-	      run -= 1;
-	      break;
-	    }
 
 	  if (dst != NULL)
 	    {
-	      size_t cnt = step;
+              if (written + step > len)
+	        {
+                  /* Too long.  */
+                  run -= 1;
+                  break;
+                }
+	      cnt = step;
 
 	      dst[0] = virt_utf8_encoding_byte[cnt - 2];
 

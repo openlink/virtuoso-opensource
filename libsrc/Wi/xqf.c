@@ -1449,9 +1449,7 @@ collation_t * xpf_arg_collation (xp_instance_t* xqi, XT * tree, xml_entity_t * c
     {
       coll = sch_name_to_collation (coll_name);
       if (!coll)
-	sqlr_new_error ("22023", "IN006", "Collation %.300s not defined", coll_name);
-      if (!coll->co_is_wide)
-	sqlr_new_error ("42001", "XPQ??", "Collation %.300s must be wide", coll_name);
+        sqlr_new_error ("22023", "IN006", "Collation %.300s not defined", coll_name);
     }
   return coll;
 }
@@ -1486,7 +1484,7 @@ __xqf_compare  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe, int do_wh
     case XQ_STARTSWITH:
       {
 	int len = 0, wide_len;
-	caddr_t wide_box = box_utf8_as_wide_char (str1, NULL, strlen (str1), 0, DV_WIDE), utf8_box;
+	caddr_t wide_box = box_utf8_as_wide_char (str1, NULL, strlen (str1), 0), utf8_box; 
 
 	wide_len = box_length (wide_box) / sizeof (wchar_t) - 1;
 	n = utf8_strlen ((utf8char *)str2);
@@ -1845,7 +1843,7 @@ void
 xqf_lower_case  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
   caddr_t str = xpf_arg (xqi, tree, ctx_xe, DV_STRING, 0);
-  wchar_t * wide_str = (wchar_t*) box_utf8_as_wide_char ((caddr_t) str, NULL, box_length (str), 0, DV_LONG_WIDE);
+  wchar_t * wide_str = (wchar_t*) box_utf8_as_wide_char ((caddr_t) str, NULL, box_length (str), 0);
   int i;
   int len = box_length (wide_str)/sizeof (wchar_t);
   wchar_t * res =  (wchar_t*)dk_alloc_box (len * sizeof (wchar_t), DV_WIDE);
@@ -1861,7 +1859,7 @@ void
 xqf_upper_case  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
   caddr_t str = xpf_arg (xqi, tree, ctx_xe, DV_STRING, 0);
-  wchar_t * wide_str = (wchar_t*) box_utf8_as_wide_char ((caddr_t) str, NULL, box_length (str), 0, DV_LONG_WIDE);
+  wchar_t * wide_str = (wchar_t*) box_utf8_as_wide_char ((caddr_t) str, NULL, box_length (str), 0);
   int i;
   int len = box_length (wide_str)/sizeof (wchar_t);
   wchar_t * res =  (wchar_t*)dk_alloc_box (len * sizeof (wchar_t), DV_WIDE);
@@ -1878,7 +1876,7 @@ xqf_escape_uri  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
   caddr_t str = xpf_arg (xqi, tree, ctx_xe, DV_STRING, 0);
   ptrlong esc_reserved = unbox (xpf_arg (xqi, tree, ctx_xe, DV_LONG_INT, 1));
-  wchar_t * wide_res = 0, *wide_str = (wchar_t*) box_utf8_as_wide_char ((caddr_t) str, NULL, box_length (str), 0, DV_LONG_WIDE);
+  wchar_t * wide_res = 0, *wide_str = (wchar_t*) box_utf8_as_wide_char ((caddr_t) str, NULL, box_length (str), 0);
   int esc_type = DKS_ESC_URI_NRES;
 
   if (esc_reserved)
@@ -1917,8 +1915,8 @@ __xqf_ends_with (caddr_t str, caddr_t mstr, collation_t * coll)
   long idx, utf8_idx = 0;
   if (coll)
     {
-      wchar_t *wide1 = (wchar_t*) box_utf8_as_wide_char (str, NULL, box_length (str) - 1, 0, DV_LONG_WIDE);
-      wchar_t *wide2 = (wchar_t*) box_utf8_as_wide_char (mstr, NULL, box_length (mstr) - 1, 0, DV_LONG_WIDE);
+      wchar_t *wide1 = (wchar_t*) box_utf8_as_wide_char (str, NULL, box_length (str) - 1, 0);
+      wchar_t *wide2 = (wchar_t*) box_utf8_as_wide_char (mstr, NULL, box_length (mstr) - 1, 0);
       size_t _1len = box_length (wide1)/sizeof (wchar_t) - 1;
       size_t _2len = box_length (wide2)/sizeof (wchar_t) - 1;
       int n1inx=0, n2inx=0;
@@ -1926,9 +1924,9 @@ __xqf_ends_with (caddr_t str, caddr_t mstr, collation_t * coll)
       reverse_wide_string (wide1);
       reverse_wide_string (wide2);
 
-      while (1)
+      for (;;)
 	{
-	again:
+          wchar_t xlat1, xlat2;
 	  if (_1len && n1inx == _1len && n2inx != _2len)
 	    return 0;
 	  if (n2inx == _2len)
@@ -1936,19 +1934,21 @@ __xqf_ends_with (caddr_t str, caddr_t mstr, collation_t * coll)
 	      res = (caddr_t) 1;
 	      break;
 	    }
-	  if (!((wchar_t *)coll->co_table)[wide2[n2inx]])
+          xlat2 = COLLATION_XLAT_WIDE (coll, wide2[n2inx]);
+	  if (!xlat2)
 	    { /* ignore symbol, unicode normalization algorithm */
 	      n2inx++;
-	      goto again;
+	      continue;
 	    }
 	  if (!_1len)
 	    break;
-	  if (!((wchar_t *)coll->co_table)[wide1[n1inx]])
+          xlat1 = COLLATION_XLAT_WIDE (coll, wide1[n1inx]);
+	  if (!xlat1)
 	    { /* ignore symbol, unicode normalization algorithm */
 	      n1inx++;
-	      goto again;
+	      continue;
 	    }
-	  if (((wchar_t *)coll->co_table)[wide1[n1inx]] != ((wchar_t *)coll->co_table)[wide2[n2inx]])
+	  if (xlat1 != xlat2)
 	    break;
 	  n1inx++;
 	  n2inx++;
@@ -2166,7 +2166,7 @@ xqf_string_to_codepoints (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   while (inx < utf8_len)
     {
       wchar_t wtmp;
-      int rc = (int) virt_mbrtowc (&wtmp, utf8_str + inx, utf8_len - inx, &state);
+      int rc = (int) virt_mbrtowc_z (&wtmp, utf8_str + inx, utf8_len - inx, &state);
       if (rc < 0)
 	GPF_T1 ("inconsistent wide char data");
       dk_set_push (&set, (caddr_t)((ptrlong)(wtmp)));
@@ -2385,12 +2385,14 @@ xqf_box_hash (query_instance_t* qi, caddr_t box, collation_t * coll)
 	int inx=0, len = box_length (box)-1;
 	while (inx < len)
 	  {
-	    int rc = (int) virt_mbrtowc (&wtmp, ((utf8char *)(box)) + inx, len - inx, &state);
+	    int rc = (int) virt_mbrtowc_z (&wtmp, ((utf8char *)(box)) + inx, len - inx, &state);
+            wchar_t xlat;
 	    if (rc < 0)
 	      GPF_T1 ("inconsistent wide char data");
-	    if (((wchar_t*)coll->co_table)[wtmp])
+            xlat = COLLATION_XLAT_WIDE (coll, wtmp);
+	    if (xlat)
 	      {
-		h = ROL (h) ^ ((wchar_t*)coll->co_table)[wtmp];
+		h = ROL (h) ^ xlat;
 	      }
 	    inx+=rc;
 	  }

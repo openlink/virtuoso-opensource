@@ -180,7 +180,7 @@ blob_ref_check (db_buf_t xx, int len, it_cursor_t * itc, dtp_t col_dtp)
     }
   else if (DV_LONG_WIDE == *xx || DV_WIDE == *xx)
     {
-      return box_utf8_as_wide_char ((caddr_t) xx + 1, NULL, len - 1, 0, DV_LONG_WIDE);
+      return box_utf8_as_wide_char ((caddr_t) xx + 1, NULL, len - 1, 0);
     }
   else if (DV_BIN == *xx)
     { /* GK: from hash fill (hash_cast in specific */
@@ -377,7 +377,7 @@ page_box_col (it_cursor_t * itc, buffer_desc_t * buf, db_buf_t row, dbe_col_loc_
     case DV_LONG_WIDE:
       {
 	VL;
-	return box_utf8_as_wide_char ((caddr_t) xx, NULL, len, 0, DV_LONG_WIDE);
+	return box_utf8_as_wide_char ((caddr_t) xx, NULL, len, 0);
       }
     case DV_SINGLE_FLOAT:
       FX;
@@ -938,7 +938,7 @@ box_varchar_string (db_buf_t place, size_t len, dtp_t dtp)
 
 
 void
-qst_set_wide_string (caddr_t * state, state_slot_t * sl, db_buf_t data, int len, dtp_t dtp, int isUTF8)
+qst_set_wide_string (caddr_t * state, state_slot_t * sl, db_buf_t data, int len, int isUTF8)
 {
 
 #ifdef QST_DEBUG
@@ -959,20 +959,20 @@ qst_set_wide_string (caddr_t * state, state_slot_t * sl, db_buf_t data, int len,
       if (!isUTF8 && IS_WIDE_STRING_DTP (old_dtp) &&
 	  box_length (old) == len + sizeof (wchar_t))
 	{
-	  box_reuse ((box_t) old, (box_t) data, len + sizeof (wchar_t), dtp);
+	  box_reuse ((box_t) old, (box_t) data, len + sizeof (wchar_t), DV_WIDE);
 	}
       else
 	{
 	  ssl_free_data (sl, old);
 	  *place = isUTF8 ?
-	    box_utf8_as_wide_char ((caddr_t) data, NULL, len, 0, dtp) :
-	    box_wide_char_string ((caddr_t) data, len, dtp);
+	    box_utf8_as_wide_char ((caddr_t) data, NULL, len, 0) :
+	    box_wide_char_string ((caddr_t) data, len);
 	}
     }
   else
     *place = isUTF8 ?
-      box_utf8_as_wide_char ((caddr_t) data, NULL, len, 0, dtp) :
-    box_wide_char_string ((caddr_t) data, len, dtp);
+      box_utf8_as_wide_char ((caddr_t) data, NULL, len, 0) :
+    box_wide_char_string ((caddr_t) data, len);
 #ifdef QST_DEBUG
     }
 #endif
@@ -1193,7 +1193,7 @@ itc_qst_set_column (it_cursor_t * it, buffer_desc_t * buf, dbe_col_loc_t * cl,
     case DV_LONG_WIDE:
       {
 	VLI;
-	qst_set_wide_string (qst, target, xx, len, DV_LONG_WIDE, 1);
+	qst_set_wide_string (qst, target, xx, len, 1);
 	return;
       }
 
@@ -1614,7 +1614,7 @@ row_set_col_cast (caddr_t data, sql_type_t *tsqt, caddr_t *err_ret,
 	  case DV_WIDE:
 	      if (!IS_WIDE_STRING_DTP (dtp))
 		{
-		  res = box_cast_to (qst, data, dtp, DV_LONG_WIDE, 0, 0, err_ret);
+		  res = box_cast_to (qst, data, dtp, DV_WIDE, 0, 0, err_ret);
 		}
 	      break;
 
@@ -1916,7 +1916,7 @@ row_insert_cast (row_delta_t * rd, dbe_col_loc_t * cl, caddr_t data,
     case DV_LONG_WIDE:
       if (!IS_WIDE_STRING_DTP (dtp))
 	{
-	  wide_str = box_cast_to (ins_itc->itc_out_state, data, dtp, DV_LONG_WIDE, 0, 0, err_ret);
+	  wide_str = box_cast_to (ins_itc->itc_out_state, data, dtp, DV_WIDE, 0, 0, err_ret);
 	  if (ins_itc)
 	    ITC_OWNS_PARAM (ins_itc, wide_str);
 	  if (*err_ret)
@@ -2157,7 +2157,7 @@ xmltype_in_blob_ok: ;
 	  }
 	if (DV_STRING == dtp)
 	  {
-	    data = box_cast_to (ins_itc->itc_out_state, data, DV_TYPE_OF (data), DV_LONG_WIDE, 0, 0, err_ret);
+	    data = box_cast_to (ins_itc->itc_out_state, data, DV_TYPE_OF (data), DV_WIDE, 0, 0, err_ret);
 	    ITC_OWNS_PARAM (ins_itc, data);
 	    if (*err_ret)
 	      return;

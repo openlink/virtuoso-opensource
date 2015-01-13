@@ -614,10 +614,11 @@ cmp_boxes_safe (ccaddr_t box1, ccaddr_t box2, collation_t * collation1, collatio
   if ((IS_STRING_DTP (dtp1) && IS_STRING_DTP (dtp2)) || ((DV_BIN == dtp1) && (DV_BIN == dtp2)))
     {
       inx = 0;
-      if (collation1 && !collation1->co_is_wide)
+      if (collation1)
 	{
 	  while (1)
 	    {
+	      wchar_t xlat1, xlat2;
 	      if (inx == n1)	/* box1 in end? */
 		{
 		  if (inx == n2)
@@ -625,16 +626,14 @@ cmp_boxes_safe (ccaddr_t box1, ccaddr_t box2, collation_t * collation1, collatio
 		  else
 		    return DVC_LESS;	/* otherwise box1 is shorter than box2 */
 		}
-
 	      if (inx == n2)
 		return DVC_GREATER;	/* box2 in end (but not box1) */
-
-	      if (collation1->co_table[(dtp_t) box1[inx]] < collation1->co_table[(dtp_t) box2[inx]])
-		return DVC_LESS;
-
-	      if (collation1->co_table[(dtp_t) box1[inx]] > collation1->co_table[(dtp_t) box2[inx]])
-		return DVC_GREATER;
-
+              xlat1 = COLLATION_XLAT_NARROW (collation1, (dtp_t) box1[inx]);
+              xlat2 = COLLATION_XLAT_NARROW (collation1, (dtp_t) box2[inx]);
+              if (xlat1 < xlat2)
+                return DVC_LESS;
+              if (xlat1 > xlat2)
+                return DVC_GREATER;
 	      inx++;
 	    }
 	}
@@ -827,10 +826,11 @@ cmp_boxes (ccaddr_t box1, ccaddr_t box2, collation_t * collation1, collation_t *
 	    }
 	}
 
-      if (collation1 && !collation1->co_is_wide)
+      if (collation1)
 	{
 	  while (1)
 	    {
+	      wchar_t xlat1, xlat2;
 	      if (inx == n1)	/* box1 in end? */
 		{
 		  if (inx == n2)
@@ -841,13 +841,12 @@ cmp_boxes (ccaddr_t box1, ccaddr_t box2, collation_t * collation1, collation_t *
 
 	      if (inx == n2)
 		return DVC_GREATER;	/* box2 in end (but not box1) */
-
-	      if (collation1->co_table[(dtp_t) box1[inx]] < collation1->co_table[(dtp_t) box2[inx]])
-		return DVC_LESS;
-
-	      if (collation1->co_table[(dtp_t) box1[inx]] > collation1->co_table[(dtp_t) box2[inx]])
-		return DVC_GREATER;
-
+              xlat1 = COLLATION_XLAT_NARROW (collation1, (dtp_t) box1[inx]);
+              xlat2 = COLLATION_XLAT_NARROW (collation1, (dtp_t) box2[inx]);
+              if (xlat1 < xlat2)
+                return DVC_LESS;
+              if (xlat1 > xlat2)
+                return DVC_GREATER;
 	      inx++;
 	    }
 	}

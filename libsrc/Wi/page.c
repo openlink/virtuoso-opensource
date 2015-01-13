@@ -1104,6 +1104,7 @@ page_col_cmp_1 (buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl, caddr_t v
 	{
 	  while (1)
 	    {
+              wchar_t xlat1, xlat2;
 	      if (inx == l1)
 		{
 		  if (inx == l2)
@@ -1113,11 +1114,11 @@ page_col_cmp_1 (buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl, caddr_t v
 		}
 	      if (inx == l2)
 		return DVC_GREATER;
-	      if (collation->co_table[(unsigned char)dv1[inx]] <
-		  collation->co_table[(unsigned char)dv2[inx]])
+              xlat1 = COLLATION_XLAT_NARROW (collation, (unsigned char)dv1[inx]);
+              xlat2 = COLLATION_XLAT_NARROW (collation, (unsigned char)dv2[inx]);
+              if (xlat1 < xlat2)
 		return DVC_LESS;
-	      if (collation->co_table[(unsigned char)dv1[inx]] >
-		  collation->co_table[(unsigned char)dv2[inx]])
+	      if (xlat1 > xlat2)
 		return DVC_GREATER;
 	      inx++;
 	    }
@@ -2631,7 +2632,8 @@ page_apply_parent (buffer_desc_t * buf, page_fill_t * pf, char first_affected, c
       END_DO_SET();
       rdbg_printf (("Set parent of L=%d to new root L=%d\n", pf->pf_current->bd_page, root->bd_page));
       pg_check_map (pf->pf_current);
-            page_leave_outside_map_chg (pf->pf_current, RWG_WAIT_SPLIT);
+      
+      page_leave_outside_map_chg (pf->pf_current, RWG_WAIT_SPLIT);
       rd_list_free (leaves);
       return;
     }

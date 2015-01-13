@@ -4681,11 +4681,9 @@ stmt_bhid_place (cli_stmt_t * stmt, long bhid)
       int btype = stmt->stmt_param_bind_type;
       size_t off = btype == 0 ? BHID_ROW (bhid) * len : BHID_ROW (bhid) * btype;
       int c_type = pb->pb_c_type;
-
       if (c_type == SQL_C_DEFAULT)
 	c_type = sql_type_to_sqlc_default (pb->pb_sql_type);
-
-      stmt->stmt_next_putdata_dtp = (c_type == SQL_C_WCHAR ? DV_LONG_WIDE : DV_LONG_STRING);
+      stmt->stmt_next_putdata_dtp = (c_type == SQL_C_WCHAR ? DV_WIDE : DV_STRING);
 
 #ifndef MAP_DIRECT_BIN_CHAR
       stmt->stmt_next_putdata_translate_char_bin = (c_type == SQL_C_CHAR &&
@@ -4713,7 +4711,7 @@ stmt_bhid_place (cli_stmt_t * stmt, long bhid)
       stmt->stmt_next_putdata_translate_char_bin = (c_type == SQL_C_CHAR && col_dtp == DV_BLOB_BIN);
 #endif
 
-      stmt->stmt_next_putdata_dtp = (c_type == SQL_C_WCHAR ? DV_LONG_WIDE : DV_LONG_STRING);
+      stmt->stmt_next_putdata_dtp = (c_type == SQL_C_WCHAR ? DV_WIDE : DV_STRING);
 
       return (cb->cb_place + (btype == 0 ? cb->cb_max_length * BHID_ROW (bhid) : btype * BHID_ROW (bhid)));
     }
@@ -4931,7 +4929,10 @@ SQLPutData (
   STMT (stmt, hstmt);
   SQLRETURN rc = SQL_SUCCESS;
   dk_session_t *ses = stmt->stmt_connection->con_session;
-  volatile SQLLEN newValue = (cbValue == SQL_NTS ?
+  volatile SQLLEN newValue;
+  if (stmt->stmt_next_putdata_dtp == DV_WIDE) /* Wides are serialized with 4 byte length no matter whether they're shorter than 256 or not */
+    stmt->stmt_next_putdata_dtp = DV_LONG_WIDE;
+  newValue = (cbValue == SQL_NTS ?
       (stmt->stmt_next_putdata_dtp == DV_LONG_STRING ?
 	  strlen ((const char *) rgbValue) : wcslen ((wchar_t *) rgbValue) * sizeof (wchar_t)) : cbValue);
 

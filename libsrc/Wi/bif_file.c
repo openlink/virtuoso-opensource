@@ -1579,7 +1579,7 @@ file_native_name (caddr_t se_name)
 	  long len = box_length (se_name) - 1;
 	  if (len > PATH_MAX * 30)
 	    len = PATH_MAX * 30;
-	  se1 = box_utf8_as_wide_char (se_name, NULL, len, 0, DV_WIDE);
+          se1 = box_utf8_as_wide_char (se_name, NULL, len, 0);
 	  res = file_native_name (se1);
 	  dk_free_box (se1);
 	  return res;

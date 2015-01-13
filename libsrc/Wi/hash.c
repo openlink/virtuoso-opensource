@@ -500,11 +500,11 @@ key_hash_utf8 (caddr_t _utf8, long _n, uint32 code, collation_t * collation)
       uint32 b;
       if (inx1 == _n)
 	return code;
-      rc1 = (long) virt_mbrtowc (&wtmp1, (unsigned char *) (_utf8 + inx1), _n - inx1, &state1);
+      rc1 = (long) virt_mbrtowc_z (&wtmp1, (unsigned char *) (_utf8 + inx1), _n - inx1, &state1);
       if (rc1 <= 0)
 	GPF_T1 ("inconsistent wide char data");
       if (collation)
-	b =((wchar_t *)collation->co_table)[wtmp1];
+	b = COLLATION_XLAT_WIDE (collation, wtmp1);
       else
 	b = wtmp1;
       code = (code * (b + 3 + inx2)) ^ (code >> 24);
@@ -532,7 +532,7 @@ key_hash_wide (caddr_t _wide, long * _len, uint32 code, collation_t * collation)
     {
       uint32 b;
       if (collation)
-	b = ((wchar_t*)collation->co_table)[((wchar_t*)_wide)[inx1]];
+	b = COLLATION_XLAT_WIDE (collation, ((wchar_t*)_wide)[inx1]);
       else
 	b = ((wchar_t*)_wide)[inx1];
       code = (code * (b + 3 + inx1)) ^ (code >> 24);
@@ -681,7 +681,7 @@ key_hash_box (caddr_t box, dtp_t dtp, uint32 code, int * var_len, collation_t * 
     {
       for (inx2 = 0; inx2 < len; inx2++)
 	{
-	  uint32 c = (uint32)collation->co_table[(unsigned int) box[inx2]];
+	  uint32 c = COLLATION_XLAT_WIDE (collation, box[inx2]);
 	  code = (code * (c + 3 + inx2)) ^ (code >> 24);
 	}
     }

@@ -251,7 +251,7 @@ bif_regexp_match (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	      if (arg_is_wide)
 		{
 		  if (utf8_mode)
-		    ret_mod_str = box_utf8_as_wide_char (mod_str, NULL, str_len - offvect[1], 0, DV_WIDE);
+		    ret_mod_str = box_utf8_as_wide_char (mod_str, NULL, str_len - offvect[1], 0);
 		  else
 		    ret_mod_str = box_narrow_string_as_wide ((unsigned char *) mod_str,
 			NULL, 0, QST_CHARSET (qst), err_ret, 1);
@@ -272,7 +272,7 @@ bif_regexp_match (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  if (utf8_mode && ret_str)
 	    {
 	      caddr_t wide_ret = box_utf8_as_wide_char (ret_str, NULL,
-		  box_length (ret_str) - 1, 0, DV_WIDE);
+		  box_length (ret_str) - 1, 0);
 	      dk_free_box (ret_str);
 	      ret_str = wide_ret;
 	    }
@@ -391,7 +391,7 @@ bif_regexp_substr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	      if (utf8_mode && ret_str)
 		{
 		  caddr_t wide_ret = box_utf8_as_wide_char (ret_str, NULL,
-		      box_length (ret_str) - 1, 0, DV_WIDE);
+		      box_length (ret_str) - 1, 0);
 		  dk_free_box (ret_str);
 		  ret_str = wide_ret;
 		}

@@ -49,15 +49,18 @@ typedef struct wcharset_s {
 /* size_t virt_mbsrtowcs (wchar_t *dst, unsigned char **src, size_t len, virt_mbstate_t *ps);
 size_t virt_wcsrtombs (unsigned char *dst, wchar_t **src, size_t len, virt_mbstate_t *ps); */
 
-wchar_t *virt_wcschr (const wchar_t *__wcs, wchar_t __wc);
-wchar_t *virt_wcsrchr (const wchar_t *__wcs, wchar_t __wc);
-wchar_t *virt_wcsstr (const wchar_t *__wcs, const wchar_t *__wc);
-wchar_t *virt_wcsrstr (const wchar_t *__wcs, const wchar_t *__wc);
+extern const wchar_t *virt_wcschr (const wchar_t *__wcs, wchar_t __wc);
+extern const wchar_t *virt_wcsrchr (const wchar_t *__wcs, wchar_t __wc);
+extern const wchar_t *virt_wcsstr (const wchar_t *__wcs, const wchar_t *__wc);
+extern const wchar_t *virt_wcsrstr (const wchar_t *__wcs, const wchar_t *__wc);
+extern const wchar_t *virt_wmemmem (const wchar_t *haystack, size_t haystacklen, const wchar_t *needle, size_t needlelen);
 size_t virt_wcslen (const wchar_t *__wcs);
-int virt_wcsncmp (const wchar_t *from, const wchar_t *to, size_t len);
+int virt_wcsncmp (const wchar_t *wcs1, const wchar_t *wcs2, size_t len);
+#define virt_wmemcmp(ptr1,ptr2,num) memcmp ((ptr1), (ptr2), (num) * sizeof(wchar_t))
 
-caddr_t box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size_t max_wide_len, dtp_t dtp);
-caddr_t t_box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size_t max_wide_len, dtp_t dtp);
+
+caddr_t box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size_t max_wide_len);
+caddr_t t_box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size_t max_wide_len);
 extern caddr_t DBG_NAME (box_wide_as_utf8_char) (DBG_PARAMS ccaddr_t _wide, size_t wide_len, dtp_t dtp);
 #ifdef MALLOC_DEBUG
 #define box_wide_as_utf8_char(w,l,d) dbg_box_wide_as_utf8_char (__FILE__,__LINE__,(w),(l),(d))

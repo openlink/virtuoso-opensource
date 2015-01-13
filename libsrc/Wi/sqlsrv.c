@@ -1025,7 +1025,7 @@ make_login_answer (client_connection_t *cli)
       list (2,
 	  box_string (cli->cli_charset->chrs_name),
 	  box_wide_char_string ( (caddr_t) &(cli->cli_charset->chrs_table[1]),
-	    sizeof (cli->cli_charset->chrs_table) - sizeof (wchar_t), DV_WIDE));
+	    sizeof (cli->cli_charset->chrs_table) - sizeof (wchar_t) ));
   return ret;
 }
 

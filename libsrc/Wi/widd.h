@@ -139,10 +139,24 @@ struct dbe_table_s
 
 typedef struct collation_s
   {
-    caddr_t	co_name;
-    caddr_t	co_table;
-    char	co_is_wide;
+    caddr_t		co_name;			/*!< Identifier of the collation, also a key in global_collations */
+    wchar_t *		co_xlat_table;			/*!< Translation table. Values are wchar_t even for 'narrow' collations */
+    int			co_xlat_table_len;		/*!< Length of translation table. It's always longer than 0xff so narrow xlat is possible w/o extra checks */
+    char		co_xlats_narrow_to_narrow;	/*!< Flags that all first 0x100 values in \c co_xlat_table are less than 0x100 so the collation order string for any narrow string can be returned as narrow */
   } collation_t;
+
+#if (0 <= WCHAR_MIN)
+#define COLLATION_XLAT_SAFE_FOR_WCHAR_T(co) ((co)->co_xlat_table_len > WCHAR_MAX)
+#else
+#define COLLATION_XLAT_SAFE_FOR_WCHAR_T(co) 0
+#endif
+
+#define COLLATION_XLAT_NARROW(co,src) ((co)->co_xlat_table[((unsigned char)(src))])
+#define COLLATION_XLAT_WIDE_NOCHECK(co,src) ((co)->co_xlat_table[((unsigned int)(src))])
+#define COLLATION_XLAT_WIDE(co,src) ((((unsigned int)(src)) >= (co)->co_xlat_table_len) ? ((unsigned int)(src)) : COLLATION_XLAT_WIDE_NOCHECK(co,src))
+
+extern int collation_define_memonly (caddr_t name, caddr_t xlat_table, int is_utf8_if_narrow);
+
 
 struct sql_class_s;
 struct sql_domain_s;

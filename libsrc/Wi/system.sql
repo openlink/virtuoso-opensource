@@ -21,6 +21,9 @@
 --
 --
 
+DB.DBA.__MAKE_UNICODE3_COLLATIONS ()
+;
+
 create table SYS_VT_INDEX (VI_TABLE varchar, VI_INDEX varchar, VI_COL varchar,
 	VI_ID_COL varchar, VI_INDEX_TABLE varchar,
        VI_ID_IS_PK integer, VI_ID_CONSTR varchar,

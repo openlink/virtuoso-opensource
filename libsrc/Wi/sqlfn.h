@@ -663,8 +663,7 @@ void qst_set_double (caddr_t * state, state_slot_t * sl, double dv);
 
 void qst_set_string (caddr_t * state, state_slot_t * sl, db_buf_t data, size_t len, uint32 flags);
 
-void qst_set_wide_string (caddr_t * state, state_slot_t * sl, db_buf_t data,
-    int len, dtp_t dtp, int isUTF8);
+void qst_set_wide_string (caddr_t * state, state_slot_t * sl, db_buf_t data, int len, int isUTF8);
 
 void qst_set_numeric_buf (caddr_t * state, state_slot_t * sl, db_buf_t xx);
 

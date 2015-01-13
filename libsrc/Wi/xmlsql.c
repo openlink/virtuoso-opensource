@@ -4370,7 +4370,7 @@ xs_idnval (id_hash_t * idn, id_hash_t * var, caddr_t val)
       res = (parm ? *parm : val);
 
       if (DV_STRINGP (res) && box_length (res) > 0)
-	return box_utf8_as_wide_char (res, NULL, box_length (res), 0, DV_WIDE);
+	return box_utf8_as_wide_char (res, NULL, box_length (res), 0);
       else
 	return box_copy (res);
     }

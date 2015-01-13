@@ -44,15 +44,17 @@ virt_wcrtomb (unsigned char *s, wchar_t wc, virt_mbstate_t *ps)
       wc = L'\0';
     }
 
+#ifdef MULTIBYTE_SANITY
   /* Store the UTF8 representation of WC.  */
-  if (wc < 0 || wc > 0x7fffffff)
+  if (wc& ~0x7fffffff)
     {
       /* This is no correct ISO 10646 character.  */
       /* errno  = (EILSEQ); */
       return (size_t) -1;
     }
+#endif
 
-  if (wc < 0x80)
+  if (!(wc & ~0x7f))
     {
       /* It's a one byte sequence.  */
       if (s != NULL)

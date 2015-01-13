@@ -49,7 +49,7 @@ extern "C" {
 
 
 caddr_t
-box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size_t max_wide_len, dtp_t dtp)
+box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size_t max_wide_len)
 {
   unsigned char *utf8 = (unsigned char *) _utf8;
   unsigned char *utf8work;
@@ -71,7 +71,7 @@ box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size
       wide_boxsize = (int) (wide_len + 1) * sizeof (wchar_t);
       if (wide_boxsize > MAX_READ_STRING)
         return NULL; /* Prohibitively long UTF-8 string as a source */
-      dest = dk_alloc_box (wide_boxsize, dtp);
+      dest = dk_alloc_box (wide_boxsize, DV_WIDE);
     }
   utf8work = utf8;
   memset (&state, 0, sizeof (virt_mbstate_t));
@@ -191,7 +191,7 @@ box_read_wide_string (dk_session_t *ses, dtp_t macro)
   utf8_len = session_buffered_read_char (ses);
   memset (string, 0, 2048);
   session_buffered_read (ses, (char *) string, utf8_len);
-  return box_utf8_as_wide_char ((caddr_t) string, NULL, utf8_len, 0, DV_WIDE);
+  return box_utf8_as_wide_char ((caddr_t) string, NULL, utf8_len, 0);
 }
 
 #define CHUNK_SIZE	2048
@@ -212,7 +212,7 @@ box_read_long_wide_string (dk_session_t *session, dtp_t macro)
   while (utf8_len-- > 0)
     {
       read = session_buffered_read_char (session);
-      rc = (int) virt_mbrtowc (tmp, (unsigned char *) &read, 1, &state);
+      rc = (int) virt_mbrtowc_z (tmp, (unsigned char *) &read, 1, &state);
       if (rc > 0)
 	{
 	  if (ptr - w_array == CHUNK_SIZE)
@@ -283,7 +283,7 @@ wide_char_length_of_utf8_string (const unsigned char *str, size_t utf8_length)
 }
 
 
-wchar_t *
+const wchar_t *
 virt_wcschr (const wchar_t *wcs, wchar_t wc)
 {
   if (wcs)
@@ -297,7 +297,7 @@ virt_wcschr (const wchar_t *wcs, wchar_t wc)
 }
 
 
-wchar_t *
+const wchar_t *
 virt_wcsrchr (const wchar_t *wcs, wchar_t wc)
 {
   wchar_t *wcs_end = (wchar_t *)wcs;
@@ -332,54 +332,76 @@ virt_wcslen (const wchar_t *wcs)
 int
 virt_wcsncmp (const wchar_t *from, const wchar_t *to, size_t len)
 {
-  while (from && *from && to && *to)
+  static wchar_t zero = 0;
+  if (!from)
+    from = &zero;
+  if (!to)
+    to = &zero;
+  while (*from && *to && (0 < len))
     {
       if (*from > *to)
-	return 1;
+        return 1;
       if (*from < *to)
-	return -1;
+        return -1;
       from++;
       to++;
+      len--;
     }
-  if (!from || !*from)
-    {
-      if (!to || !*to)
-	return 0;
-      else
-	return -1;
-    }
-  else
-    return 1;
+  return 0;
 }
 
-
-wchar_t *
+const wchar_t *
 virt_wcsstr (const wchar_t *wcs, const wchar_t *wc)
 {
   size_t len;
-  wchar_t *cp;
-  wchar_t *ep;
-
+  const wchar_t *cp;
+  const wchar_t *ep;
   len = virt_wcslen (wc);
-  ep = (wchar_t *) wcs + virt_wcslen (wcs) - len;
-  for (cp = (wchar_t *) wcs; cp <= ep; cp++)
-    if (*cp == *wc && !virt_wcsncmp (cp, wc, len))
-      return (wchar_t *) cp;
-
+  if (0 == len)
+    return wcs;
+  ep = wcs + virt_wcslen (wcs) - len;
+  if (ep < wcs)
+    return NULL;
+  for (cp = wcs; cp <= ep; cp++)
+    if (*cp == *wc && !virt_wmemcmp (cp, wc, len))
+      return cp;
   return NULL;
 }
 
-wchar_t *
+const wchar_t *
 virt_wcsrstr (const wchar_t *wcs, const wchar_t *wc)
 {
   size_t len;
   const wchar_t *cp;
-
+  const wchar_t *ep;
   len = virt_wcslen (wc);
-  for (cp = wcs + virt_wcslen (wcs) - len; cp >= wcs; --cp)
-    if (*cp == *wc && !virt_wcsncmp (cp, wc, len))
-      return (wchar_t *) cp;
+  if (0 == len)
+    return wcs;
+  ep = wcs + virt_wcslen (wcs) - len;
+  if (ep < wcs)
+  for (cp = ep; cp >= wcs; --cp)
+    if (*cp == *wc && !virt_wmemcmp (cp, wc, len))
+      return cp;
+  return NULL;
+}
 
+const wchar_t *
+virt_wmemmem (const wchar_t *haystack, size_t haystacklen, const wchar_t *needle, size_t needlelen)
+{
+  const wchar_t *stop;
+  size_t cmplen;
+  if (needlelen > haystacklen)
+    return NULL;
+  if (0 == needlelen)
+    return haystack;
+  stop = haystack + haystacklen - needlelen;
+  cmplen = (needlelen - 1) * sizeof (wchar_t);
+  while (haystack <= stop)
+    {
+      if (haystack[0] == needle[0] && !memcmp (haystack+1, needle+1, cmplen))
+        return haystack;
+      haystack++;
+    }
   return NULL;
 }
 

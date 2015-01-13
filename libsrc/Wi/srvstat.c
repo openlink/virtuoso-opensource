@@ -2864,7 +2864,9 @@ dbg_print_box_aux (caddr_t object, FILE * out, dk_hash_t *known)
 	case DV_WIDE:
 	case DV_LONG_WIDE:
 	  box_wide_string_as_narrow (object, temp, sizeof(temp) - 1, NULL);
-	  fprintf (out, "N\"%s\"", temp);
+	  fprintf (out, "N'");
+	  dbg_print_string_box (object, out);
+	  fprintf (out, "'");
 	  break;
 #ifdef BIF_XML
 	case DV_XML_ENTITY:

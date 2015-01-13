@@ -1803,10 +1803,16 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID,
             {
               v := rdf_box_data (v, 1);
               if (__tag of varchar <> __tag (v))
-                signal ('RDFXX', 'Language is set and the argument is invalid RDF box in DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL()');
+                {
+                  -- dbg_obj_princ ('DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (', v, dt_iid, lang, ')');
+                  signal ('RDFXX', 'Language is set and the argument is invalid RDF box in DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL()');
+                }
             }
           else
-            signal ('RDFXX', 'Language is specified for typed literal in DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL()');
+            {
+              -- dbg_obj_princ ('DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (', v, dt_iid, lang, ')');
+              signal ('RDFXX', 'Language is specified for typed literal in DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL()');
+            }
           if (dt_iid is not null)
             signal ('RDFXX', 'Both language and type are specified in call of DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL()');
         }

@@ -2520,7 +2520,7 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
 		{
 		  caddr_t wide;
 		  long wlen;
-		  wide = box_utf8_as_wide_char (str, NULL, len, 0, DV_WIDE);
+		  wide = box_utf8_as_wide_char (str, NULL, len, 0);
 		  wlen = box_length (wide) / sizeof (wchar_t) - 1;
 		  if (stmt->stmt_connection->con_wide_as_utf16)
 		    {

@@ -3350,7 +3350,7 @@ blob_subseq (lock_trx_t * lt, caddr_t bhp, size_t from, size_t to)
       MAKE_TRX_ERROR (lt->lt_error, err, LT_ERROR_DETAIL (lt));
       sqlr_resignal (err);
     }
-  if (NULL == (out = dk_try_alloc_box (bytes + sizeof_symbol, isWide ? DV_LONG_WIDE : DV_LONG_STRING)))
+  if (NULL == (out = dk_try_alloc_box (bytes + sizeof_symbol, isWide ? DV_WIDE : DV_STRING)))
     {
       caddr_t err = NULL;
       SET_DK_MEM_RESERVE_STATE (lt);
@@ -3449,7 +3449,7 @@ blob_to_string_isp (lock_trx_t * lt, caddr_t bhp)
       MAKE_TRX_ERROR (lt->lt_error, err, LT_ERROR_DETAIL (lt));
       sqlr_resignal (err);
     }
-  if (NULL == (out = dk_try_alloc_box (bytes + sizeof_symbol, isWide ? DV_LONG_WIDE : DV_LONG_STRING)))
+  if (NULL == (out = dk_try_alloc_box (bytes + sizeof_symbol, isWide ? DV_WIDE : DV_STRING)))
     {
       caddr_t err;
       SET_DK_MEM_RESERVE_STATE (lt);

@@ -868,7 +868,7 @@ bif_search_excerpt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     if (DV_STRINGP (hit))
       {
 	if ((BF_UTF8 | BF_IRI) & box_flags (hit))
-	  tmp_wide_hit = box_utf8_as_wide_char (hit, NULL, box_length (hit) - 1, 0, DV_STRING);
+	  tmp_wide_hit = box_utf8_as_wide_char (hit, NULL, box_length (hit) - 1, 0);
 	else
 	  tmp_wide_hit = box_narrow_string_as_wide ((unsigned char *) hit, NULL, 0, qst ? QST_CHARSET (qst) : NULL, NULL /* no err */ , 1);
 	if (NULL == tmp_wide_hit)

@@ -2092,11 +2092,11 @@ xpf_document_impl (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe, int ca
 	      {
 	      case DV_XML_ENTITY:
 		uri = xe_get_sysid_base_uri ((xml_entity_t *)base);
-		uri = box_utf8_as_wide_char (uri, NULL, strlen (uri), 0, DV_WIDE);
+		uri = box_utf8_as_wide_char (uri, NULL, strlen (uri), 0);
 		break;
 	      case DV_STRING:
 		uri = base;
-		uri = box_utf8_as_wide_char (uri, NULL, strlen (uri), 0, DV_WIDE);
+		uri = box_utf8_as_wide_char (uri, NULL, strlen (uri), 0);
 		break;
 	      default:
 		sqlr_new_error_xqi_xdl ("XP001", "XPF10", xqi, "XML entity or a string expected as \"base_uri\" argument of XPATH function %s()", fnames[call_mode]);

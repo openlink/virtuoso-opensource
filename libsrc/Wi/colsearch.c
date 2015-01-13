@@ -486,6 +486,7 @@ ce_col_cmp (db_buf_t any, int64 offset, dtp_t ce_flags, dbe_col_loc_t * cl, cadd
 	{
 	  while (1)
 	    {
+              wchar_t xlat1, xlat2;
 	      if (inx == l1)
 		{
 		  if (inx == l2)
@@ -495,9 +496,11 @@ ce_col_cmp (db_buf_t any, int64 offset, dtp_t ce_flags, dbe_col_loc_t * cl, cadd
 		}
 	      if (inx == l2)
 		return DVC_GREATER;
-	      if (collation->co_table[(unsigned char) dv1[inx]] < collation->co_table[(unsigned char) dv2[inx]])
+	      xlat1 = COLLATION_XLAT_NARROW (collation, (unsigned char) dv1[inx]);
+	      xlat2 = COLLATION_XLAT_NARROW (collation, (unsigned char) dv2[inx]);
+	      if (xlat1 < xlat2)
 		return DVC_LESS;
-	      if (collation->co_table[(unsigned char) dv1[inx]] > collation->co_table[(unsigned char) dv2[inx]])
+	      if (xlat1 > xlat2)
 		return DVC_GREATER;
 	      inx++;
 	    }

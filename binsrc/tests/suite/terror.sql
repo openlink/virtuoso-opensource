@@ -844,14 +844,14 @@ insert into WIDEZTEST (ID, DATA) values (2, N'\x5\x0\x1\x0\x2\x0\x3\x0\x4');
 ECHO BOTH $IF $NEQ $STATE OK "PASSED" "*** FAILED";
 ECHO BOTH ": inserting \\x0 into nvarchar column STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
-insert into WIDEZTEST (ID, DATA) values (10, cast ('\x5\x0\x1\x0\x2\x0\x3\x0\x4' as nvarchar));
-ECHO BOTH $IF $NEQ $STATE OK "PASSED" "*** FAILED";
-ECHO BOTH ": casting narrow binary zeroes string into nvarchar column STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+insert into WIDEZTEST (ID, DATA) values (10, cast ('\x5\xf0\x1\xf0\x2\xf0\x3\xf0\x4' as nvarchar));
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "*** FAILED";
+ECHO BOTH ": casting narrow string into nvarchar column STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 insert into WIDEZTEST (ID, DATA) values (13, cast ('Abcdefghi' as nvarchar));
 select length (DATA) from WIDEZTEST where ID = 13;
 ECHO BOTH $IF $EQU $LAST[1] 9 "PASSED" "*** FAILED";
-ECHO BOTH ": casting narrow binary zeroes string into nvarchar column STATE=" $STATE " MESSAGE=" $MESSAGE "length (DATA)=" $LAST[1] ", should be 9\n";
+ECHO BOTH ": casting narrow string into nvarchar column STATE=" $STATE " MESSAGE=" $MESSAGE "length (DATA)=" $LAST[1] ", should be 9\n";
 
 insert into WIDEZTEST (ID, DATA) values (3, cast ('\x5\xfc\x1\xfd\x2\xfe\x3\xff\x4' as nvarchar));
 select length (DATA) from WIDEZTEST where ID = 3;
@@ -866,8 +866,8 @@ ECHO BOTH ": ins func call casting narrow string into nvarchar column STATE=" $S
 update  WIDEZTEST set data =  cast ('\x5\xfc\x1\xfd\x2\xfe\x3\xff\x4' as nvarchar);
 select bin2hex(DATA) from WIDEZTEST where ID = 3;
 select length (DATA) from WIDEZTEST where ID = 3;
---ECHO BOTH $IF $EQU $LAST[1] 9 "PASSED" "*** FAILED";
---ECHO BOTH ": update casting narrow string into nvarchar column STATE=" $STATE " MESSAGE=" $MESSAGE " DATA LENGTH=" $LAST[1] ", must be 9\n";
+ECHO BOTH $IF $EQU $LAST[1] 9 "PASSED" "*** FAILED";
+ECHO BOTH ": update casting narrow string into nvarchar column STATE=" $STATE " MESSAGE=" $MESSAGE " DATA LENGTH=" $LAST[1] ", must be 9\n";
 
 update  WIDEZTEST set data =  ff (cast ('\x5\xfc\x1\xfd\x2\xfe\x3\xff\x4' as nvarchar));
 select length (DATA) from WIDEZTEST where ID = 3;
