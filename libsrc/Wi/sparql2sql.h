@@ -435,7 +435,7 @@ sparp_rewrite_basic() should not call sparp_simplify_expns() directly or indirec
 extern void sparp_rewrite_basic (sparp_t *sparp, SPART *req_top);
 
 /*! Checks whether \c sqlval of a literal is a proper string represendation of an object value with type \c dt_iri and language \c lang */
-extern int sparp_literal_is_xsd_valid (sparp_t *sparp, caddr_t sqlval, caddr_t dt_iri, caddr_t lang);
+extern int sparp_literal_is_xsd_valid (sparp_t *sparp, ccaddr_t sqlval, ccaddr_t dt_iri, ccaddr_t lang);
 
 /*! Tries to calculate the range of values returned by a \c tree and fill in the structure under \c rvr_ret.
 if \c return_independent_copy is zero then the filled structure should remain static, otherwise it gets its own copy of list of formats and can be edited

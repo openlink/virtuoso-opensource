@@ -654,7 +654,7 @@ spar_fill_lexem_bufs (sparp_t *sparp)
       for (;;)
         {
 	  curr_lex = sparp->sparp_curr_lexem_buf + fill_ctr;
-	  curr_lex->sparl_lex_value = sparyylex(&(curr_lex->sparl_sem_value), scanner);
+	  curr_lex->sparl_lex_value = sparyylex((YYSTYPE *)(&(curr_lex->sparl_sem_value)), scanner);
 	  curr_lex->sparl_lineno = sparp->sparp_lexlineno;
 	  curr_lex->sparl_depth = depth;
 	  if (0 == curr_lex->sparl_lex_value)

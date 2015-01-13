@@ -195,7 +195,6 @@ sparp_preprocess_obys (sparp_t *sparp, SPART *root)
 void
 sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars, dk_set_t binds_revlist)
 {
-  sparp_env_t *env = sparp->sparp_env;
   list_nonaggregate_retvals_t lnar;
   dk_set_t new_vars = NULL;
   SPART **retvals = query->_.req_top.retvals;
@@ -1471,10 +1470,10 @@ The query is found while testing a fix for bug 16064. */
               { /* If vars are in triple patterns of same BGP (eq_l->e_gp == eq_r->eq_gp) then they're nullabe due to nullable quad map value, not due to being in OPTIONAL {} */
                 goto same_source_of_two_nullables; /* see below */
               }
-            DO_BOX_FAST (int, l_sub_idx, l_sub_ctr, eq_l->e_subvalue_idxs)
+            DO_BOX_FAST (ptrlong, l_sub_idx, l_sub_ctr, eq_l->e_subvalue_idxs)
               {
                 sparp_equiv_t *l_sub = SPARP_EQUIV (sparp, l_sub_idx);
-                DO_BOX_FAST (int, r_sub_idx, l_sub_ctr, eq_r->e_subvalue_idxs)
+                DO_BOX_FAST (ptrlong, r_sub_idx, l_sub_ctr, eq_r->e_subvalue_idxs)
                   {
                     sparp_equiv_t *r_sub = SPARP_EQUIV (sparp, r_sub_idx);
                     if (l_sub->e_gp == r_sub->e_gp)
@@ -3299,7 +3298,7 @@ sparql_init_bif_optimizers (void)
 }
 
 int
-sparp_literal_is_xsd_valid (sparp_t *sparp, caddr_t sqlval, caddr_t dt_iri, caddr_t lang)
+sparp_literal_is_xsd_valid (sparp_t *sparp, ccaddr_t sqlval, ccaddr_t dt_iri, ccaddr_t lang)
 {
   dtp_t sqlval_dtp = DV_TYPE_OF (sqlval);
   if (DV_STRING != sqlval_dtp)
@@ -4176,8 +4175,6 @@ spar_binv_to_filter (sparp_t *sparp, SPART *parent_gp, SPART *member_gp, SPART *
   DO_BOX_FAST (SPART **, row, row_idx, rows)
     {
       SPART *cell;
-      id_hashed_key_t hash;
-      int row_idx2;
       if ('/' != mask[row_idx])
         continue;
       cell = row[0];
@@ -4919,7 +4916,7 @@ sparp_refresh_triple_cases (sparp_t *sparp, SPART **sources, SPART *triple)
   graph_type = SPART_TYPE(graph);
   if (SPART_IS_DEFAULT_GRAPH_BLANK(graph))
     required_source_type = SPART_GRAPH_FROM;
-  else if (SPAR_VARIABLE == SPART_TYPE(graph))
+  else if ((SPAR_VARIABLE == graph_type) || (SPAR_BLANK_NODE_LABEL == graph_type))
     required_source_type = SPART_GRAPH_NAMED;
   else
     required_source_type = 0;
@@ -7145,10 +7142,14 @@ sparp_gp_trav_add_graph_perm_read_filters (sparp_t *sparp, SPART *curr, sparp_tr
           g_norm_is_var = 0;
           DO_BOX_FAST (SPART *, src, ctr, sources)
             {
-              if (src->_.graph.use_expn_in_gs_checks && IS_BOX_POINTER (g_norm_expn) && !strcmp (SPAR_LIT_OR_QNAME_VAL (g_norm_expn), src->_.graph.iri))
+              if (src->_.graph.use_expn_in_gs_checks && IS_BOX_POINTER (g_norm_expn))
                 {
-                  g_fake_arg_for_side_fx = sparp_tree_full_copy (sparp, src->_.graph.expn, curr);
-                  break;
+                  caddr_t g_norm_expn_const = SPAR_LIT_OR_QNAME_VAL (g_norm_expn);
+                  if (IS_BOX_POINTER (g_norm_expn_const) && !strcmp (g_norm_expn_const, src->_.graph.iri))
+                    {
+                      g_fake_arg_for_side_fx = sparp_tree_full_copy (sparp, src->_.graph.expn, curr);
+                      break;
+                    }
                 }
             }
           END_DO_BOX_FAST;

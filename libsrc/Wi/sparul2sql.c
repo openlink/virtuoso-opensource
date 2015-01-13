@@ -63,7 +63,7 @@ spar_compose_report_flag (sparp_t *sparp)
   caddr_t res;
   if (NULL != sparp->sparp_sg->sg_output_compose_report)
     return sparp->sparp_sg->sg_output_compose_report;
-  fmtname = (sparp->sparp_env->spare_disable_output_formatting ? NULL : sparp->sparp_sg->sg_output_format_name); /* Report is always a result-set, so no spare_output_XXX_format name */
+  fmtname = (spare->spare_disable_output_formatting ? NULL : sparp->sparp_sg->sg_output_format_name); /* Report is always a result-set, so no spare_output_XXX_format name */
   if ((NULL == fmtname) && (NULL == sparp->sparp_env->spare_parent_env)
     && ssg_is_odbc_cli () )
     {

@@ -3643,7 +3643,7 @@ sparp_find_triple_with_var_obj_of_freetext (sparp_t *sparp, SPART *gp, SPART *fi
   SPART **args, *triple_with_var_obj = NULL;
   int memb_ctr;
   args = filt->_.funcall.argtrees;
-  ft_literal_var = filt->_.funcall.argtrees[0];
+  ft_literal_var = args[0];
   if (SPAR_VARIABLE != SPART_TYPE (ft_literal_var))
     spar_internal_error (sparp, "sparp_" "find_triple_with_var_obj_of_freetext(): the first argument of a ft predicate is not a variable");
   var_name = ft_literal_var->_.var.vname;
