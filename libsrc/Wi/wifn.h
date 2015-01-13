@@ -788,6 +788,7 @@ caddr_t DBG_NAME (sqlp_box_id_upcase) (DBG_PARAMS const char *str);
 #define sqlp_box_id_upcase(s) dbg_sqlp_box_id_upcase (__FILE__, __LINE__, s)
 #endif
 caddr_t t_sqlp_box_id_upcase (const char *str);
+caddr_t t_sqlp_box_id_upcase_nchars (const char * str, int len);
 void sqlp_upcase (char *str);
 caddr_t sqlp_box_upcase (const char *str);
 
