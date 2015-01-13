@@ -5559,37 +5559,28 @@ bif_lcase (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int i;
 
   if (NULL == str)
-  {
     return (NEW_DB_NULL);
-  }
   if (DV_WIDESTRINGP (str))
     {
       len = box_length (str)/sizeof (wchar_t);
-      res = dk_alloc_box (len * sizeof (wchar_t), DV_WIDE);
+      res = dk_alloc_box ((len + 1) * sizeof (wchar_t), DV_WIDE);
       for (i = 0; i < len; i++)
-  ((wchar_t *)res)[i] = (wchar_t)unicode3_getlcase((unichar)((wchar_t *)str)[i]);
+        ((wchar_t *)res)[i] = (wchar_t)unicode3_getlcase((unichar)((wchar_t *)str)[i]);
+      ((wchar_t *)res)[len] = (wchar_t)'\0';
       return res;
     }
-
 
   len = (box_length (str) - 1); /* box_length returns a length + 1 */
   res = dk_alloc_box (len + 1, DV_LONG_STRING);
   for (i = 0; i <= len; i++)
-  {
-    if (isISOletter (((unsigned char *) str)[i]))
-  {
-    (((unsigned char *) res)[i]) = raw_tolower (((unsigned char *) str)[i]);
-  }
-    else
-  {
-    /* Otherwise, just copy the byte, whatever it is: */
-    (((unsigned char *) res)[i]) = (((unsigned char *) str)[i]);
-  }
-  }
-
+    {
+      if (isISOletter (((unsigned char *) str)[i]))
+        (((unsigned char *) res)[i]) = raw_tolower (((unsigned char *) str)[i]);
+      else /* Otherwise, just copy the byte, whatever it is: */
+        (((unsigned char *) res)[i]) = (((unsigned char *) str)[i]);
+    }
   return res;
 }
-
 
 caddr_t
 bif_ucase (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -5600,15 +5591,14 @@ bif_ucase (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int i;
 
   if (NULL == str)
-  {
     return (NEW_DB_NULL);
-  }
   if (DV_WIDESTRINGP (str))
     {
       len = box_length (str)/sizeof (wchar_t);
-      res = dk_alloc_box (len * sizeof (wchar_t), DV_WIDE);
+      res = dk_alloc_box ((len + 1) * sizeof (wchar_t), DV_WIDE);
       for (i = 0; i < len; i++)
-  ((wchar_t *)res)[i] = (wchar_t)unicode3_getucase((unichar)((wchar_t *)str)[i]);
+        ((wchar_t *)res)[i] = (wchar_t)unicode3_getucase((unichar)((wchar_t *)str)[i]);
+      ((wchar_t *)res)[len] = (wchar_t)'\0';
       return res;
     }
 
@@ -5617,20 +5607,46 @@ bif_ucase (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   for (i = 0; i <= len; i++)
   {
     if (isISOletter (((unsigned char *) str)[i]))
-  {
-    (((unsigned char *) res)[i]) = raw_toupper (((unsigned char *) str)[i]);
+      (((unsigned char *) res)[i]) = raw_toupper (((unsigned char *) str)[i]);
+    else /* Otherwise, just copy the byte, whatever it is: */
+      (((unsigned char *) res)[i]) = (((unsigned char *) str)[i]);
   }
-    else
-  /* Otherwise, just copy the byte, whatever it is: */
-  {
-    (((unsigned char *) res)[i]) = (((unsigned char *) str)[i]);
-  }
-  }
-
-
   return res;
 }
 
+caddr_t
+bif_remove_unicode3_accents (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t str = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "remove_unicode3_accents");
+  long len;
+  caddr_t res;
+  int i;
+
+  if (NULL == str)
+    return (NEW_DB_NULL);
+  if (DV_WIDESTRINGP (str))
+    {
+      len = box_length (str)/sizeof (wchar_t);
+      res = dk_alloc_box ((len + 1) * sizeof (wchar_t), DV_WIDE);
+      for (i = 0; i < len; i++)
+        ((wchar_t *)res)[i] = (wchar_t)unicode3_getbasechar((unichar)((wchar_t *)str)[i]);
+      ((wchar_t *)res)[len] = (wchar_t)'\0';
+      return res;
+    }
+
+  len = (box_length (str) - 1); /* box_length returns a length + 1 */
+  res = box_copy (str);
+  for (i = 0; i < len; i++)
+  {
+    if (0x7f < (((unsigned char *) str)[i]))
+      {
+        unichar base = unicode3_getbasechar ((unichar)(((unsigned char *) str)[i]));
+        if (!(base & 0xff))
+          (((unsigned char *) res)[i]) = base;
+      }
+  }
+  return res;
+}
 
 /* The name is from Oracle. Could be also capitalize or capit ? */
 caddr_t
@@ -15583,15 +15599,14 @@ string literal  LCASE(string literal str)
 The LCASE function corresponds to the XPath fn:lower-case function. It returns a string literal whose lexical form is the lower case of the lexcial form of the argument.
 */
 caddr_t
-bif_rdf_ucase_lcase_impl(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, char upcase /* == 1 - upcase, ==0 - lcase */)
+bif_rdf_ucase_lcase_impl(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, unichar (*unicode3_get_x_case) (unichar), const char *fname, const char *longfname)
 {
   rdf_box_t *str_rdf_box;
-  caddr_t str = bif_arg_unrdf_ext (qst, args, 0, upcase ? "rdf_ucase_impl" : "rdf_lcase_impl", (caddr_t *)(&str_rdf_box));
+  caddr_t str = bif_arg_unrdf_ext (qst, args, 0, fname, (caddr_t *)(&str_rdf_box));
   char src_is_rdf_box = DV_TYPE_OF (str_rdf_box) == DV_RDF;
   size_t i, str_n_chars;
   wchar_t *wide_box = NULL;
   box_t r;
-  unichar (*unicode3_get_x_case) (unichar);
   switch (DV_TYPE_OF (str))
     {
     case DV_STRING: /* utf-8 */
@@ -15611,12 +15626,9 @@ bif_rdf_ucase_lcase_impl(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args,
     case DV_DB_NULL:
       return NEW_DB_NULL;
     default:
-      sqlr_new_error ("22023", "SL001", "The SPARQL 1.1 function %scase() needs a string value as 1st argument",
-          upcase ? "u" : "l" );
+      sqlr_new_error ("22023", "SL001", "The %s needs a string value as 1st argument", longfname);
     return NULL;
     }
-
-  unicode3_get_x_case = upcase ? unicode3_getucase : unicode3_getlcase;
   for (i=0; i<str_n_chars; ++i)
     {
       wide_box[i] = unicode3_get_x_case (wide_box[i]);
@@ -15641,13 +15653,19 @@ bif_rdf_ucase_lcase_impl(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args,
 caddr_t
 bif_rdf_ucase_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  return bif_rdf_ucase_lcase_impl (qst, err_ret, args, 1);
+  return bif_rdf_ucase_lcase_impl (qst, err_ret, args, unicode3_getucase, "rdf_ucase_impl", "SPARQL 1.1 UCASE() function");
 }
 
 caddr_t
 bif_rdf_lcase_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  return bif_rdf_ucase_lcase_impl (qst, err_ret, args, 0);
+  return bif_rdf_ucase_lcase_impl (qst, err_ret, args, unicode3_getlcase, "rdf_lcase_impl", "SPARQL 1.1 LCASE() function");
+}
+
+caddr_t
+bif_rdf_remove_unicode3_accents_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_rdf_ucase_lcase_impl (qst, err_ret, args, unicode3_getbasechar, "rdf_remove_unicode3_accents_impl", "SPARQL-BI REMOVE_UNICODE3_ACCENTS() function");
 }
 
 /*
@@ -16138,6 +16156,7 @@ bif_sparql_init (void)
   bif_define_ex ("rdf_substr_impl", bif_rdf_substr_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
   bif_define_ex ("rdf_ucase_impl", bif_rdf_ucase_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
   bif_define_ex ("rdf_lcase_impl", bif_rdf_lcase_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
+  bif_define_ex ("rdf_remove_unicode3_accents_impl", bif_rdf_remove_unicode3_accents_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
   bif_define_ex ("rdf_strafter_impl", bif_rdf_strafter_impl, BMD_RET_TYPE, &bt_any, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2,
       BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("rdf_strbefore_impl", bif_rdf_strbefore_impl, BMD_RET_TYPE, &bt_any, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2,
@@ -16293,6 +16312,7 @@ sql_bif_init (void)
       BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("ucase", bif_ucase, BMD_ALIAS, "upper", BMD_RET_TYPE, &bt_string, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1,
       BMD_IS_PURE, BMD_DONE);
+   bif_define_ex ("remove_unicode3_accents", bif_remove_unicode3_accents, BMD_RET_TYPE, &bt_string     , BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1      , BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("initcap"		, bif_initcap		, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE); /* Name is taken from Oracle */
   bif_define_ex ("split_and_decode"	, bif_split_and_decode	, BMD_RET_TYPE, &bt_any_box		, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 3	, BMD_IS_PURE, BMD_DONE);   /* Does it all! */
 
