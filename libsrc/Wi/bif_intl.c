@@ -64,10 +64,10 @@ collation_define_memonly (caddr_t name, caddr_t table, int is_utf8_if_narrow)
   if (is_narrow && is_utf8_if_narrow)
     {
       virt_mbstate_t ps;
-      memset (&ps, 0, sizeof (virt_mbstate_t));
       const unsigned char *tail = (const unsigned char *)table;
       const unsigned char *tail1 = tail;
       const unsigned char *table_end = tail + box_length (table) - 1;
+      memset (&ps, 0, sizeof (virt_mbstate_t));
       raw_tbl_len = virt_mbsnrtowcs (NULL, &tail1, table_end-tail, 0, &ps);
       tbl_len = raw_tbl_len;
       if (raw_tbl_len <= 0)
