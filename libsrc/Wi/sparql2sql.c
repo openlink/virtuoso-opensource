@@ -7830,22 +7830,33 @@ spar_propagate_limit_as_option (sparp_t *sparp, SPART *tree, SPART *outer_limit)
             {
               int memb_ctr, memb_count = BOX_ELEMENTS_0 (tree->_.gp.members);
               int nonoptional_ctr = 0;
+              SPART *nonoptional_member = NULL;
               if (0 == memb_count)
                 return;
               for (memb_ctr = 0; memb_ctr < memb_count; memb_ctr++)
                 {
                   SPART *memb = tree->_.gp.members[memb_ctr];
                   if ((SPAR_GP != SPART_TYPE (memb)) || (OPTIONAL_L != memb->_.gp.subtype))
-                    nonoptional_ctr++;
-                }
-              if (1 == nonoptional_ctr)
-                {
-                  for (memb_ctr = 0; memb_ctr < memb_count; memb_ctr++)
                     {
-                      SPART *memb = tree->_.gp.members[memb_ctr];
-                      spar_propagate_limit_as_option (sparp, memb, outer_limit);
+                      nonoptional_ctr++;
+                      nonoptional_member = memb;
+                      if (SPAR_GP == SPART_TYPE (memb))
+                        {
+                          int equiv_ctr;
+                          SPARP_FOREACH_GP_EQUIV (sparp, memb, equiv_ctr, eq)
+                            {
+                              if (eq->e_rvr.rvrRestrictions & (SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL))
+                                {
+                                  nonoptional_ctr++; /* An equality between equivs of member and external is anequivalent of an extra side for join */
+                                  break;
+                                }
+                            }
+                          END_SPARP_FOREACH_GP_EQUIV;
+                        }
                     }
                 }
+              if (1 == nonoptional_ctr)
+                spar_propagate_limit_as_option (sparp, nonoptional_member, outer_limit);
               if ((0 == tree->_.gp.subtype) && (NULL != outer_limit))
                 sparp_set_option (sparp, &(tree->_.gp.options), LIMIT_L, outer_limit, SPARP_SET_OPTION_REPLACING);
               return;
