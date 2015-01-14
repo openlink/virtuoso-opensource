@@ -315,7 +315,7 @@ blob_layout_ctor (dtp_t blob_handle_dtp, dp_addr_t start, dp_addr_t dir_start, i
 		  index_tree_t * it)
 {
   blob_layout_t *ret;
-#ifdef DEBUG
+#ifdef BLOB_HANDLE_DEBUG
   if ( DV_BLOB_HANDLE != blob_handle_dtp &&
     DV_BLOB_WIDE_HANDLE != blob_handle_dtp &&
     DV_BLOB_XPER_HANDLE != blob_handle_dtp)
@@ -338,7 +338,7 @@ blob_layout_from_handle_ctor (blob_handle_t *bh)
 {
   blob_layout_t *ret = (blob_layout_t *) dk_alloc_box_zero (sizeof (blob_layout_t), DV_CUSTOM);
   ret->bl_blob_handle_dtp = (dtp_t)DV_TYPE_OF (bh);
-#ifdef DEBUG
+#ifdef BLOB_HANDLE_DEBUG
   if ( DV_BLOB_HANDLE != ret->bl_blob_handle_dtp &&
     DV_BLOB_WIDE_HANDLE != ret->bl_blob_handle_dtp &&
     DV_BLOB_XPER_HANDLE != ret->bl_blob_handle_dtp)
