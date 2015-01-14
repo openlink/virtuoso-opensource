@@ -4388,12 +4388,6 @@ ws_read_req (ws_connection_t * ws)
 	    }
 	  if (ws_path_and_params (ws))
 	    goto end_req;
-    if (0 == ws_check_acl (ws, &hit))
-      {
-        ws->ws_try_pipeline = 0;
-        ws_strses_reply (ws, hit ? "HTTP/1.1 509 Bandwidth Limit Exceeded" : "HTTP/1.1 403 Forbidden");
-        goto end_req;
-      }
 #ifdef _IMSG
 	}
 #endif
