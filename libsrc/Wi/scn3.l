@@ -604,6 +604,42 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
   RETURN_CODE (IRI_LIT);
 }
 
+<SQL>0realhex[0-9A-Fa-f]* {
+  size_t ctr, len;
+  int32 res;
+  len = strlen (yytext);
+  ctr = 8;
+  if (len!=(8+8))
+    RETURN_CODE (NUM_ERROR); /* Too many significant digits */
+  res = 0;
+  while (ctr < len)
+    {
+      char c = toupper (yytext[ctr]);
+      res = (res << 4) | ((c <= '9') ? ( c - '0') : (c + 10 - 'A'));
+      ctr++;
+    }
+  yylval->box = t_box_float (((float *)(&res))[0]);
+  RETURN_CODE (APPROXNUM);
+}
+
+<SQL>0dblhex[0-9A-Fa-f]* {
+  size_t ctr, len;
+  int64 res;
+  len = strlen (yytext);
+  ctr = 7;
+  if (len!=(7+16))
+    RETURN_CODE (NUM_ERROR); /* Too many significant digits */
+  res = 0;
+  while (ctr < len)
+    {
+      char c = toupper (yytext[ctr]);
+      res = (res << 4) | ((c <= '9') ? ( c - '0') : (c + 10 - 'A'));
+      ctr++;
+    }
+  yylval->box = t_box_double (((double *)(&res))[0]);
+  RETURN_CODE (APPROXNUM);
+}
+
 <SQL>0hex[0-9A-Fa-f]* {
   size_t ctr, len;
   int64 res;
@@ -644,10 +680,23 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
   RETURN_CODE (APPROXNUM);
 }
 
-<SQL>[0-9]+[eE][+-]?[0-9]+	|
-<SQL>[0-9]+"."[0-9]+[eE][+-]?[0-9]+ |
-<SQL>"."[0-9]+[eE][+-]?[0-9]+	{
+<SQL>[0-9]+[eE][+-]?[0-9]+[D]?		|
+<SQL>[0-9]+"."[0-9]+[eE][+-]?[0-9]+[D]?	|
+<SQL>"."[0-9]+[eE][+-]?[0-9]+[D]?	|
+<SQL>[0-9]+[D]				|
+<SQL>[0-9]+"."[0-9]+[D]			|
+<SQL>"."[0-9]+[D] {
   yylval->box = t_box_double (atof (yytext));
+  RETURN_CODE (APPROXNUM);
+}
+
+<SQL>[0-9]+[eE][+-]?[0-9]+[R]		|
+<SQL>[0-9]+"."[0-9]+[eE][+-]?[0-9]+[R]	|
+<SQL>"."[0-9]+[eE][+-]?[0-9]+[R]		|
+<SQL>[0-9]+[R]				|
+<SQL>[0-9]+"."[0-9]+[R]			|
+<SQL>"."[0-9]+[R] {
+  yylval->box = t_box_float (atof (yytext));
   RETURN_CODE (APPROXNUM);
 }
 

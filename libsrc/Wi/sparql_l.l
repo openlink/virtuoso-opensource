@@ -578,10 +578,10 @@ void sparyyerror_if_long_qname (caddr_t box, const char *lex_type_descr, struct 
 
 int sparscn_NUMBER_int (YYSTYPE *yylval, struct yyguts_t * yyg)
 {
-  if (('-' == yytext[0]) ?                                   /* 01234567890123456789 */
-    ((19 > yyleng) || ((19 == yyleng) && (0 >= strcmp (yytext, "-223372036854775808"))))
-    :                                                        /* 0123456789012345678 */
-    ((18 > yyleng) || ((18 == yyleng) && (0 >= strcmp (yytext, "223372036854775807")))) )
+  if (('-' == yytext[0]) ?                                   /* 012345678901234567890 */
+    ((20 > yyleng) || ((20 == yyleng) && (0 >= strcmp (yytext, "-9223372036854775808"))))
+    :                                                        /* 01234567890123456789 */
+    ((19 > yyleng) || ((19 == yyleng) && (0 >= strcmp (yytext, "9223372036854775807")))) )
     {
       yylval->box = t_box_num_nonull (atol (yytext));
       return SPARQL_INTEGER;
@@ -606,19 +606,20 @@ int sparscn_NUMBER_decimal (YYSTYPE *yylval, struct yyguts_t * yyg)
   if (NUMERIC_STS_SUCCESS == rc)
     {
       if (NULL == (caddr_t) num)
-	yylval->box = t_box_num_nonull (0);
-      yylval->box = t_box_copy ((caddr_t) num);
+	yylval->box = (caddr_t)t_list (2, t_box_num_nonull (0), t_box_string (yytext));
+      yylval->box = (caddr_t)t_list (2, t_box_copy ((caddr_t) num), t_box_string (yytext));
       numeric_free (num);
       return SPARQL_DECIMAL;
     }
   numeric_free (num);
-  yylval->box = t_box_double (atof (yytext));
+  yylval->box = (caddr_t)t_list (2, t_box_double (atof (yytext)), t_box_string (yytext));
   return SPARQL_DECIMAL;
 }
 
-int sparscn_NUMBER_double (YYSTYPE *yylval, struct yyguts_t * yyg)
+int
+sparscn_NUMBER_double (YYSTYPE *yylval, struct yyguts_t * yyg)
 {
-  yylval->box = t_box_double (atof (yytext));
+  yylval->box = (caddr_t)t_list (2, t_box_double (atof (yytext)), t_box_string (yytext));
   return SPARQL_DOUBLE;
 }
 

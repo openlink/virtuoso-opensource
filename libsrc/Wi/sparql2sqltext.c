@@ -2319,7 +2319,7 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
           if (DV_UNAME == dtp)
             ssg_puts ("UNAME");
           /* no break */
-        case SQL_ATOM_UTF8_ONLY:
+        case SQL_ATOM_UTF8_ONLY: case SQL_ATOM_SPARQL_INTEROP:
           sqlc_string_virtuoso_literal (tmpbuf, buflen, &buffill, box);
           break;
         default: spar_internal_error (ssg->ssg_sparp, "ssg_" "print_box_as_sql_atom (): bad mode");
@@ -2334,47 +2334,62 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
         double boxdbl = (double)(unbox_float (box));
         if (1.0 > ((2 - 1.41484755040568800000e+16) + 1.41484755040568800000e+16))
           spar_error (ssg->ssg_sparp, "Platform-specific error: this build of Virtuoso does not support literals of type %s due to rounding errors in math functions", dv_type_title (dtp));
-        buffill = sprintf (tmpbuf, "cast (%lg", boxdbl);
-        if ((NULL == strchr (tmpbuf+6, '.')) && (NULL == strchr (tmpbuf+6, 'E')) && (NULL == strchr (tmpbuf+6, 'e')))
+        if (mode != SQL_ATOM_SPARQL_INTEROP)
           {
-            if (isalpha(tmpbuf[6+1]))
+            float f = unbox_float (box);
+            buffill = sprintf (tmpbuf, "0realhex%08x /* %lg */", ((uint32 *)(&f))[0], boxdbl);
+          }
+        else
+          {
+            buffill = sprintf (tmpbuf, "cast (%lg", boxdbl);
+            if ((NULL == strchr (tmpbuf+6, '.')) && (NULL == strchr (tmpbuf+6, 'E')) && (NULL == strchr (tmpbuf+6, 'e')))
               {
-		double myZERO = 0.0;
-		double myPOSINF_d = 1.0/myZERO;
-		double myNEGINF_d = -1.0/myZERO;
-                if (myPOSINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('Inf'");
-                else if (myNEGINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('-Inf'");
-                else buffill = sprintf (tmpbuf, "cast ('nan'");
-              }
-            else
-              {
-                strcpy (tmpbuf+buffill, ".0");
-                buffill += 2;
-              }
-          }                   /* 01234567890 */
-        strcpy (tmpbuf+buffill, " as float)");
-        buffill += 10;
+                if (isalpha(tmpbuf[6+1]))
+                  {
+                    double myZERO = 0.0;
+                    double myPOSINF_d = 1.0/myZERO;
+                    double myNEGINF_d = -1.0/myZERO;
+                    if (myPOSINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('Inf'");
+                    else if (myNEGINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('-Inf'");
+                    else buffill = sprintf (tmpbuf, "cast ('nan'");
+                  }
+                else
+                  {
+                    strcpy (tmpbuf+buffill, ".0e0");
+                    buffill += 2;
+                  }
+              }                   /* 01234567890 */
+            strcpy (tmpbuf+buffill, " as float)");
+            buffill += 10;
+          }
         break;
       }
     case DV_DOUBLE_FLOAT:
       {
         double boxdbl = unbox_double (box);
-        buffill = sprintf (tmpbuf, "%lg", boxdbl);
-        if ((NULL == strchr (tmpbuf, '.')) && (NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
+        if (mode != SQL_ATOM_SPARQL_INTEROP)
           {
-            if (isalpha(tmpbuf[1]))
+            buffill = sprintf (tmpbuf, "0dblhex%016Lx /* %lg */", ((uint64 *)(&boxdbl))[0], boxdbl);
+          }
+        else
+          {
+            buffill = sprintf (tmpbuf, "%lg", boxdbl);
+            if ((NULL == strchr (tmpbuf, '.')) && (NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
               {
-		double myZERO = 0.0;
-		double myPOSINF_d = 1.0/myZERO;
-		double myNEGINF_d = -1.0/myZERO;
-                if (myPOSINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('Inf' as double precision)");
-                else if (myNEGINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('-Inf' as double precision)");
-                else buffill = sprintf (tmpbuf, "cast ('NaN' as double precision)");
-              }
-            else
-              {
-                strcpy (tmpbuf+buffill, ".0");
-                buffill += 2;
+                if (isalpha(tmpbuf[1]))
+                  {
+                    double myZERO = 0.0;
+                    double myPOSINF_d = 1.0/myZERO;
+                    double myNEGINF_d = -1.0/myZERO;
+                    if (myPOSINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('Inf' as double precision)");
+                    else if (myNEGINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('-Inf' as double precision)");
+                    else buffill = sprintf (tmpbuf, "cast ('NaN' as double precision)");
+                  }
+                else
+                  {
+                    strcpy (tmpbuf+buffill, ".0e0");
+                    buffill += 2;
+                  }
               }
           }
         break;
@@ -2430,6 +2445,18 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
 }
 
 void
+ssg_print_float_literal_as_original (spar_sqlgen_t *ssg, SPART *lit)
+{
+  ssg_putchar (' ');
+  ssg_puts (lit->_.lit.original_text);
+  switch (DV_TYPE_OF (lit->_.lit.val))
+    {
+    case DV_DOUBLE_FLOAT: ssg_putchar('D'); break;
+    case DV_SINGLE_FLOAT: ssg_putchar('R'); break;
+    }
+}
+
+void
 ssg_print_literal_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
 {
   caddr_t value;
@@ -2440,6 +2467,11 @@ ssg_print_literal_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
       if (SPAR_LIT == lit->type)
         {
           value = lit->_.lit.val;
+          if ((NULL != lit->_.lit.original_text) && ((DV_DOUBLE_FLOAT == DV_TYPE_OF (value)) || DV_SINGLE_FLOAT == DV_TYPE_OF (value) || DV_NUMERIC == DV_TYPE_OF (value)))
+            {
+              ssg_print_float_literal_as_original (ssg, lit);
+              return;
+            }
           dt = lit->_.lit.datatype;
           /* lang = lit->_.lit.language; */
         }
@@ -2545,6 +2577,11 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
       dk_free_box (dflt_xsd_type_of_box);
       if (box_is_plain_num)
         {
+          if ((DV_ARRAY_OF_POINTER == lit_dtp) && (NULL != lit->_.lit.original_text) && ((DV_DOUBLE_FLOAT == DV_TYPE_OF (value)) || DV_SINGLE_FLOAT == DV_TYPE_OF (value) || DV_NUMERIC == DV_TYPE_OF (value)))
+            {
+              ssg_print_float_literal_as_original (ssg, lit);
+              return;
+            }
           ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
           return;
         }
@@ -2586,6 +2623,12 @@ ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
       if (SPAR_LIT == lit->type)
         {
           value = lit->_.lit.val;
+          if ((NULL != lit->_.lit.original_text) && ((DV_DOUBLE_FLOAT == DV_TYPE_OF (value)) || DV_SINGLE_FLOAT == DV_TYPE_OF (value)))
+            {
+              ssg_putchar (' ');
+              ssg_puts (lit->_.lit.original_text);
+              return;
+            }
           datatype = lit->_.lit.datatype;
           language = lit->_.lit.language;
         }

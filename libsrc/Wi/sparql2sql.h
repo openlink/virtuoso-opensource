@@ -1047,6 +1047,7 @@ extern void ssg_prin_id_with_suffix (spar_sqlgen_t *ssg, const char *name, const
 #define SQL_ATOM_NARROW_OR_WIDE	13
 #define SQL_ATOM_UNAME_ALLOWED	14
 #define SQL_ATOM_ABORT_ON_CAST	15	/*!< Intentionally "bad" mode to get an error on any cast to string */
+#define SQL_ATOM_SPARQL_INTEROP	16
 extern void ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode);
 extern void ssg_print_literal_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit);
 extern void ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit);

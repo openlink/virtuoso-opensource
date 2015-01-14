@@ -3840,14 +3840,14 @@ SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, cadd
   sql_tree_tmp *tgt_dtp_tree;
   SPART *res;
   if (NULL != lang)
-    return spartlist (sparp, 4, SPAR_LIT, strg, type, lang);
+    return spartlist (sparp, 5, SPAR_LIT, strg, type, lang, NULL);
 /* Fast casts for xsd types taht match to SQL types without additional checks */
   if (uname_xmlschema_ns_uri_hash_boolean == type)
     {
       if (!strcmp ("true", strg) || !strcmp ("1", strg))
-        return spartlist (sparp, 4, SPAR_LIT, (ptrlong)1, type, NULL);
+        return spartlist (sparp, 5, SPAR_LIT, (ptrlong)1, type, NULL, strg);
       if (!strcmp ("false", strg) || !strcmp ("0", strg))
-        return spartlist (sparp, 4, SPAR_LIT, t_box_num_nonull (0), type, NULL);
+        return spartlist (sparp, 5, SPAR_LIT, t_box_num_nonull (0), type, NULL, strg);
       goto cannot_cast;
     }
   if (uname_xmlschema_ns_uri_hash_date == type)
@@ -3887,7 +3887,7 @@ SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, cadd
     }
   if (uname_xmlschema_ns_uri_hash_string == type)
     {
-      return spartlist (sparp, 4, SPAR_LIT, strg, type, NULL);
+      return spartlist (sparp, 5, SPAR_LIT, strg, type, NULL, NULL);
     }
 /* Casts using xqf converters */
   if (!strncmp (type, XMLSCHEMA_NS_URI "#", XMLSCHEMA_NS_URI_LEN + 1 /* +1 is for '#' */))
@@ -3924,18 +3924,18 @@ SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, cadd
             }
           END_QR_RESET
         }
-      res = spartlist (sparp, 4, SPAR_LIT, t_full_box_copy_tree (parsed_value), type, NULL);
+      res = spartlist (sparp, 5, SPAR_LIT, t_full_box_copy_tree (parsed_value), type, NULL, strg);
       dk_free_tree (parsed_value);
       return res;
     }
 
 generic_literal:
-  return spartlist (sparp, 4, SPAR_LIT, strg, type, NULL);
+  return spartlist (sparp, 5, SPAR_LIT, strg, type, NULL, NULL);
 
 do_sql_cast:
   tgt_dtp_tree = (sql_tree_tmp *)t_list (3, (ptrlong)tgt_dtp, (ptrlong)NUMERIC_MAX_PRECISION, (ptrlong)NUMERIC_MAX_SCALE);
   parsed_value = box_cast ((caddr_t *)(sparp->sparp_sparqre->sparqre_qi), strg, tgt_dtp_tree, DV_STRING);
-  res = spartlist (sparp, 4, SPAR_LIT, t_full_box_copy_tree (parsed_value), type, NULL);
+  res = spartlist (sparp, 5, SPAR_LIT, t_full_box_copy_tree (parsed_value), type, NULL, strg);
   dk_free_tree (parsed_value);
   return res;
 
@@ -4202,7 +4202,7 @@ spar_make_regex_or_like_or_eq (sparp_t *sparp, SPART *strg, SPART *regexpn)
     }
   if (start_is_fixed && end_is_fixed)
     return spartlist (sparp, 3, BOP_EQ, strg,
-      spartlist (sparp, 4, SPAR_LIT, t_box_dv_short_nchars (val+1, final_len), NULL, NULL) );
+      spartlist (sparp, 5, SPAR_LIT, t_box_dv_short_nchars (val+1, final_len), NULL, NULL, NULL) );
   like_tmpl = t_alloc_box (final_len + 1, DV_STRING);
   tail = like_tmpl;
   if (!start_is_fixed)
@@ -4218,7 +4218,7 @@ spar_make_regex_or_like_or_eq (sparp_t *sparp, SPART *strg, SPART *regexpn)
 /*#endif*/
   return sparp_make_builtin_call (sparp, LIKE_L,
     (SPART **)t_list (2, strg,
-      spartlist (sparp, 4, SPAR_LIT, like_tmpl, NULL, NULL) ) );
+      spartlist (sparp, 5, SPAR_LIT, like_tmpl, NULL, NULL, NULL) ) );
 
 bad_regex:
  return sparp_make_builtin_call (sparp, SPAR_BIF_REGEX, (SPART **)t_list (2, strg, regexpn));
@@ -4896,7 +4896,7 @@ spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
       END_QR_RESET;
       action_sql = t_strses_string (ssg.ssg_out);
       ssg_free_internals (&ssg);
-      action_sqls [action_ctr] = spartlist (sparp, 4, SPAR_LIT, action_sql, NULL, NULL);
+      action_sqls [action_ctr] = spartlist (sparp, 5, SPAR_LIT, action_sql, NULL, NULL, NULL);
       sparp->sparp_entire_query = NULL;
     }
   END_DO_BOX_FAST;
@@ -5674,9 +5674,9 @@ spar_make_literal_from_sql_box (sparp_t * sparp, caddr_t box, int mode)
 {
   switch (DV_TYPE_OF (box))
     {
-    case DV_LONG_INT: return spartlist (sparp, 4, SPAR_LIT, t_box_num_nonull (unbox (box)), uname_xmlschema_ns_uri_hash_integer, NULL);
-    case DV_NUMERIC: return spartlist (sparp, 4, SPAR_LIT, t_box_copy (box), uname_xmlschema_ns_uri_hash_decimal, NULL);
-    case DV_DOUBLE_FLOAT: return spartlist (sparp, 4, SPAR_LIT, t_box_copy (box), uname_xmlschema_ns_uri_hash_double, NULL);
+    case DV_LONG_INT: return spartlist (sparp, 5, SPAR_LIT, t_box_num_nonull (unbox (box)), uname_xmlschema_ns_uri_hash_integer, NULL, NULL);
+    case DV_NUMERIC: return spartlist (sparp, 5, SPAR_LIT, t_box_copy (box), uname_xmlschema_ns_uri_hash_decimal, NULL, NULL);
+    case DV_DOUBLE_FLOAT: return spartlist (sparp, 5, SPAR_LIT, t_box_copy (box), uname_xmlschema_ns_uri_hash_double, NULL, NULL);
     case DV_UNAME: return spartlist (sparp, 2, SPAR_QNAME, t_box_copy (box));
     case DV_IRI_ID:
       {
@@ -5708,7 +5708,7 @@ spar_make_literal_from_sql_box (sparp_t * sparp, caddr_t box, int mode)
           (RDF_BOX_DEFAULT_LANG != rb->rb_lang) ||
           DV_STRING != DV_TYPE_OF (rb->rb_box) )
           spar_internal_error (sparp, "spar_" "make_literal_from_sql_box() does not support rdf boxes other than complete untyped strings, sorry");
-        return spartlist (sparp, 4, SPAR_LIT, t_box_copy (box), NULL, NULL);
+        return spartlist (sparp, 5, SPAR_LIT, t_box_copy (box), NULL, NULL, NULL);
       }
     case DV_STRING:
       if (BF_IRI & box_flags (box))
@@ -5717,7 +5717,7 @@ spar_make_literal_from_sql_box (sparp_t * sparp, caddr_t box, int mode)
             return spartlist (sparp, 2, SPAR_QNAME, t_box_copy (box));
           spar_internal_error (sparp, "spar_" "make_literal_from_sql_box(): a string has BF_IRI");
         }
-      return spartlist (sparp, 4, SPAR_LIT, t_box_copy (box), NULL, NULL);
+      return spartlist (sparp, 5, SPAR_LIT, t_box_copy (box), NULL, NULL, NULL);
     case DV_DB_NULL:
       switch (mode)
         {
@@ -5749,7 +5749,7 @@ spar_make_qname_or_literal_from_rvr (sparp_t * sparp, rdf_val_range_t *rvr, int 
     }
   if (make_naked_box_if_possible && !(rvr->rvrRestrictions & SPART_VARR_TYPED) && (NULL == rvr->rvrFixedValue))
     return (SPART *)t_box_copy ((caddr_t)(rvr->rvrFixedValue));
-  return spartlist (sparp, 4, SPAR_LIT, t_box_copy ((caddr_t)(rvr->rvrFixedValue)), t_box_copy ((caddr_t)(rvr->rvrDatatype)), t_box_copy ((caddr_t)(rvr->rvrLanguage)));
+  return spartlist (sparp, 5, SPAR_LIT, t_box_copy ((caddr_t)(rvr->rvrFixedValue)), t_box_copy ((caddr_t)(rvr->rvrDatatype)), t_box_copy ((caddr_t)(rvr->rvrLanguage)), NULL);
 }
 
 

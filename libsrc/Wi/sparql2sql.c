@@ -3529,7 +3529,7 @@ sparp_calc_bop_of_fixed_vals (sparp_t *sparp, ptrlong bop_type, rdf_val_range_t 
               case BOP_DIV: if (0 == r_int) return 3; res_int = l_int / r_int; break;
               case BOP_MOD: if (0 == r_int) return 3; res_int = l_int % r_int; break;
               }
-            res_ret[0] = spartlist (sparp, 4, SPAR_LIT, (SPART *)t_box_num_nonull(res_int), uname_xmlschema_ns_uri_hash_integer, NULL);
+            res_ret[0] = spartlist (sparp, 5, SPAR_LIT, (SPART *)t_box_num_nonull(res_int), uname_xmlschema_ns_uri_hash_integer, NULL, NULL);
           }
         return 1; /* !!!TBD add arithmetics for other datatypes and their combinations */
       }
@@ -7084,7 +7084,7 @@ restoring filters is a preorder one, the postorder needs a complete stack of thi
           else if (eq->e_rvr.rvrRestrictions & SPART_VARR_IS_REF)
             r = spartlist (sparp, 2, SPAR_QNAME, eq->e_rvr.rvrFixedValue);
           else
-            r = spartlist (sparp, 4, SPAR_LIT, eq->e_rvr.rvrFixedValue, eq->e_rvr.rvrDatatype, eq->e_rvr.rvrLanguage);
+            r = spartlist (sparp, 5, SPAR_LIT, eq->e_rvr.rvrFixedValue, eq->e_rvr.rvrDatatype, eq->e_rvr.rvrLanguage, NULL);
           filt = spartlist (sparp, 3, BOP_EQ, l, r);
           sparp_gp_attach_filter (sparp, parent_gp, filt, 0, NULL);
           if (NULL == recv_eq)
@@ -7211,7 +7211,7 @@ sparp_gp_trav_add_graph_perm_read_filters (sparp_t *sparp, SPART *curr, sparp_tr
         (NULL == g_fake_arg_for_side_fx) ?
           (SPART **)t_list (3, g_copy, spar_exec_uid_and_gs_cbk (sparp), RDF_GRAPH_PERM_READ) :
           (SPART **)t_list (5, g_copy, spar_exec_uid_and_gs_cbk (sparp), RDF_GRAPH_PERM_READ,
-            spartlist (sparp, 4, SPAR_LIT, t_box_dv_short_string ("SPARQL query"), NULL, NULL),
+            spartlist (sparp, 5, SPAR_LIT, t_box_dv_short_string ("SPARQL query"), NULL, NULL, NULL),
             g_fake_arg_for_side_fx ) );
       sparp_gp_attach_filter (sparp, curr, filter, 0, NULL);
       if (!g_norm_is_var ||
