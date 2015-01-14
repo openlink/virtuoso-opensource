@@ -3374,7 +3374,10 @@ vec_fref_single_result (fun_ref_node_t * fref, table_source_t * ts, caddr_t * in
       continue;
     for (set = 0; set < n_sets; set++)
       {
-	  int agg_set = set_nos ? ((int64*)set_nos->dc_values)[set] : set, no_old;
+	  int agg_set, no_old;
+	  if (set_nos && set >= set_nos->dc_n_values)
+	    sqlr_new_error ("42000", "VEC..",  "Internal error, please report query to the support");
+	  agg_set = set_nos ? ((int64*)set_nos->dc_values)[set] : set;
 	qi->qi_set = agg_set;
 	((query_instance_t *) branch)->qi_set = agg_set;
 	DO_SET (state_slot_t *, ssl, &fref->fnr_default_ssls)
