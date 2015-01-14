@@ -436,7 +436,8 @@ public class VirtuosoConnection implements Connection
           break;
         } catch (VirtuosoException e) {
 
-          if (e.getErrorCode() != VirtuosoException.IOERROR)
+          int erc = e.getErrorCode();
+          if (erc != VirtuosoException.IOERROR && erc != VirtuosoException.NOLICENCE)
             throw e;
 
           hostIndex++;
