@@ -340,6 +340,7 @@ typedef struct sparp_globals_s {
   caddr_t		sg_output_maxrows;		/*!< boxed maximum expected number of rows to return */
   caddr_t sg_output_compose_report;			/*!< Boxed non-NULL number that indicates wither a verbose report string should be created (value of 1) or just a number of changes (value of 0) */
   caddr_t		sg_sparul_log_mode;		/*!< log_mode argument of SPARQL_MODIFY_BY_DICT_CONTENTS() and similar procedures; if set then it's a boxed integer or boxed zero */
+  int			sg_comment_sql;			/*!< Flags that control storing comments in the resulting SQL text */
 } sparp_globals_t;
 
 typedef struct sparp_e4qm_s {

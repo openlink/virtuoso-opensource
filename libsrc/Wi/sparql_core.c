@@ -896,7 +896,7 @@ static const char *sparp_known_get_params[] = {
     "get:accept", "get:cartridge", "get:destination", "get:error-recovery", "get:group-destination", "get:login", "get:method", "get:note", "get:private", "get:proxy", "get:query", "get:refresh", "get:soft", "get:strategy", "get:uri", NULL };
 
 static const char *sparp_integer_defines[] = {
-    "input:grab-depth", "input:grab-limit", "output:maxrows", "sql:big-data-const", "sql:log-enable", "sql:signal-void-variables", NULL };
+    "input:grab-depth", "input:grab-limit", "output:maxrows", "sql:big-data-const", "sql:log-enable", "sql:signal-void-variables", "sql:comment", NULL };
 
 static const char *sparp_var_defines[] = { NULL };
 
@@ -1245,6 +1245,10 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           if ((0 > val) || (1 < val))
             spar_error (sparp, "define sql:signal-void-variables should have value 0 or 1");
             sparp->sparp_sg->sg_signal_void_variables = val;
+          return; }
+      if (!strcmp (param, "sql:comment")) {
+          ptrlong val = ((DV_LONG_INT == DV_TYPE_OF (value)) ? unbox_ptrlong (value) : 0);
+          sparp->sparp_sg->sg_comment_sql = val;
           return; }
     }
   spar_error (sparp, "Unsupported parameter '%.30s' in 'define'", param);
@@ -4876,6 +4880,7 @@ spar_make_topmost_sparul_sql (sparp_t *sparp, SPART **actions)
       ssg.ssg_sparp = sparp;
       ssg.ssg_tree = action;
       ssg.ssg_sources = ssg.ssg_tree->_.req_top.sources; /*!!!TBD merge with environment */
+      ssg.ssg_comment_sql = sparp->sparp_sg->sg_comment_sql;
       QR_RESET_CTX
         {
           ssg_make_sql_query_text (&ssg, 0);
@@ -5265,6 +5270,9 @@ sparp_query_parse (const char * str, spar_query_env_t *sparqre, int rewrite_all)
     return sparp;
   sparp->sparp_sg = (sparp_globals_t *) t_alloc (sizeof (sparp_globals_t));
   memset (sparp->sparp_sg, 0, sizeof (sparp_globals_t));
+#ifndef NDEBUG
+  sparp->sparp_sg->sg_comment_sql = 1;
+#endif
   QR_RESET_CTX
     {
       /* Bug 4566: sparpyyrestart (NULL); */
@@ -5448,6 +5456,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   ssg.ssg_sc = &sc;
   ssg.ssg_sparp = sparp;
   ssg.ssg_tree = sparp->sparp_entire_query;
+      ssg.ssg_comment_sql = sparp->sparp_sg->sg_comment_sql;
   ssg_make_whole_sql_text (&ssg);
   if (NULL != sparqre->sparqre_catched_error)
     {
@@ -5569,6 +5578,7 @@ bif_sparql_detalize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ssg.ssg_tree = sparp->sparp_entire_query;
   ssg.ssg_sd_flags = flags;
   ssg.ssg_sd_used_namespaces = id_str_hash_create (16);
+  ssg.ssg_comment_sql = sparp->sparp_sg->sg_comment_sql;
   QR_RESET_CTX
     {
       sparp_make_sparqld_text (&ssg);
@@ -5630,6 +5640,7 @@ bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ssg.ssg_sc = &sc;
   ssg.ssg_sparp = sparp;
   ssg.ssg_tree = sparp->sparp_entire_query;
+  ssg.ssg_comment_sql = sparp->sparp_sg->sg_comment_sql;
   ssg_make_whole_sql_text (&ssg);
   if (NULL != sparqre.sparqre_catched_error)
     {
@@ -5777,6 +5788,9 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
   memset (&spare, 0, sizeof (sparp_env_t));
   memset (&sparp, 0, sizeof (sparp_t));
   memset (&sparp_globals, 0, sizeof (sparp_globals_t));
+#ifndef NDEBUG
+  sparp_globals.sg_comment_sql = 1;
+#endif
   sparqre.sparqre_param_ctr = &param_ctr_for_sparqre;
   sparqre.sparqre_qi = (query_instance_t *) qst;
   sparp.sparp_sparqre = &sparqre;

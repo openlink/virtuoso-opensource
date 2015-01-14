@@ -918,6 +918,7 @@ typedef struct spar_sqlgen_s
   struct spar_sqlgen_s	*ssg_nested_ssg;	/*!< Ssg that prints some fragment for the current one, like a text of query to send to a remote service. This is used for GC on abort */
   SPART *		ssg_wrapping_gp;	/*!< A gp of subtype SELECT_L or SERVICE_L that contains the current subquery */
   SPART *		ssg_wrapping_sinv;	/*!< Service invocation description of \c ssg_wrapping_p in case of SERVICE_L gp subtype */
+  int			ssg_comment_sql;	/*!< The mode of putting comments into the generated SQL, as set by define sql:comments (default 0 for release, 1 otherwise) */
 /* Run-time environment */
   SPART			**ssg_sources;		/*!< Data sources from ssg_tree->_.req_top.sources and/or environment */
 /* SQL Codegen temporary values */
@@ -958,11 +959,30 @@ void ssg_free_internals (spar_sqlgen_t *ssg);
 
 #define ssg_putchar(c) session_buffered_write_char (c, ssg->ssg_out)
 #define ssg_puts(strg) session_buffered_write (ssg->ssg_out, strg, strlen (strg))
-#ifdef NDEBUG
-#define ssg_puts_with_comment(strg,cmt) session_buffered_write (ssg->ssg_out, strg, strlen (strg))
-#else
-#define ssg_puts_with_comment(strg,cmt) session_buffered_write (ssg->ssg_out, strg " /* " cmt " */", strlen (strg " /* " cmt " */"))
-#endif
+
+#define ssg_puts_with_comment(strg,cmt) do {\
+  if (ssg->ssg_comment_sql) \
+    ssg_puts (strg " /* " cmt " */"); \
+  else \
+    ssg_puts (strg); \
+} while (0)
+
+#define ssg_puts_with_comment3(strg,cmt1,cmt2,cmt3) do {\
+  if (ssg->ssg_comment_sql) \
+    { ssg_puts (strg " /* " cmt1); ssg_puts (cmt2); ssg_puts (cmt3 " */"); } \
+  else \
+    ssg_puts (strg); \
+} while (0)
+
+#define ssg_puts_comment(cmt) do {\
+  if (ssg->ssg_comment_sql) \
+    ssg_puts (" /* " cmt " */"); \
+} while (0)
+
+#define ssg_puts_comment3(cmt1,cmt2,cmt3) do {\
+  if (ssg->ssg_comment_sql) \
+    { ssg_puts (" /* " cmt1); ssg_puts (cmt2); ssg_puts (cmt3 " */"); } \
+} while (0)
 
 #define ssg_print_asname_tail(cmt,asname) do { \
   if (NULL != (asname)) { \
