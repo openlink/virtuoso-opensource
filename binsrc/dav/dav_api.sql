@@ -2003,6 +2003,13 @@ DAV_AUTHENTICATE_SSL_WEBID (
     declare cert, fing, vtype any;
 
     cert := client_attr ('client_certificate');
+    if (cert is null or cert = 0) {
+      https_renegotiate (3);
+      cert := client_attr ('client_certificate');
+    }
+    if (cert = 0)
+      return null;
+
     fing := get_certificate_info (6, cert);
     webidGraph := 'http:' || replace (fing, ':', '');
     if (not DB.DBA.WEBID_AUTH_GEN_2 (cert, 0, null, 1, 1, webid, webidGraph, 0, vtype))
