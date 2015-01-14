@@ -229,7 +229,7 @@ box_read_long_wide_string (dk_session_t *session, dtp_t macro)
 	  caddr_t chunk_ptr;
 	  while (NULL != (chunk_ptr = (caddr_t) dk_set_pop (&string_set)))
             {
-#ifdef MALLOC_DEBUG
+#ifndef NDEBUG
               ((wchar_t *)chunk_ptr)[CHUNK_SIZE - 1] = 0;
 #endif
 	      dk_free_box (chunk_ptr);
@@ -246,7 +246,7 @@ box_read_long_wide_string (dk_session_t *session, dtp_t macro)
       while (NULL != (chunk_ptr = (caddr_t) dk_set_pop (&string_set)))
 	{
 	  memcpy (box_ptr, chunk_ptr, CHUNK_SIZE * sizeof (wchar_t));
-#ifdef MALLOC_DEBUG
+#ifndef NDEBUG
           ((wchar_t *)chunk_ptr)[CHUNK_SIZE - 1] = 0;
 #endif
 	  dk_free_box (chunk_ptr);
@@ -255,7 +255,7 @@ box_read_long_wide_string (dk_session_t *session, dtp_t macro)
       if (ptr - w_array > 0)
 	{
 	  memcpy (box_ptr, w_array, (ptr - w_array) * sizeof (wchar_t));
-#ifdef MALLOC_DEBUG
+#ifndef NDEBUG
           w_array[CHUNK_SIZE - 1] = 0;
 #endif
 	  dk_free_box ((box_t) w_array);
@@ -265,7 +265,7 @@ box_read_long_wide_string (dk_session_t *session, dtp_t macro)
     }
   else
     { /* no wide chars at all */
-#ifdef MALLOC_DEBUG
+#ifndef NDEBUG
       w_array[CHUNK_SIZE - 1] = 0;
 #endif
       dk_free_box ((box_t) w_array);
