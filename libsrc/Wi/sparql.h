@@ -731,7 +731,7 @@ typedef struct spar_tree_s
         ptrlong own_idx;	/*!< Serial of the bindings invocation in the parser */
         SPART **vars;		/*!< Names of variables that are passed as parameters */
         SPART ***data_rows;	/*!< Rows of data. Note that they're not copied from spare_bindings_rowset and not duplicated if enclosing GP is duplicated. */
-        char *data_rows_mask;	/*!< Characters, one per data row, indicating whether the row is in use (char '/') or not in use due to ban by some cell (char '0' + column index or '\x7f', whatever is less, for debugging) */
+        char *data_rows_mask;	/*!< Characters, one per data row, indicating whether the row is in use (char '/') or not in use due to ban by some cell (char '0' + column index or '\x7f', whatever is less, for debugging) or not in use due to LIMIT (char '.') */
         ptrlong *counters_of_unbound;	/*!< Counters of unbound values in columns (rows not in use are excluded from counting). Cheating: This array is allocated as DV_STRING, not DV_ARRAY_OF_POINTER */
         ptrlong rows_in_use;	/*!< Count of rows still in use */
         ptrlong rows_last_rvr;	/*!< Count of rows in use when rvrs were refreshed last time */
