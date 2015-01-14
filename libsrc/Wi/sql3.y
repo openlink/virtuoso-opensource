@@ -583,7 +583,7 @@
 %token ARRAY SETS
 
 /* Extensions */
-%token CONTIGUOUS OBJECT_ID BITMAPPED UNDER CLUSTER __ELASTIC CLUSTERED VARCHAR VARBINARY BINARY LONG_L REPLACING SOFT HASH LOOP IRI_ID IRI_ID_8 SAME_AS TRANSITIVE QUIETCAST_L SPARQL_L
+%token CONTIGUOUS OBJECT_ID BITMAPPED UNDER CLUSTER __ELASTIC CLUSTERED VARCHAR VARBINARY BINARY LONG_L REPLACING SOFT HASH LOOP IRI_ID IRI_ID_8 SAME_AS TRANSITIVE QUIETCAST_L SPARQL_L UNAME_L
 
 /* Admin statements */
 %token SHUTDOWN CHECKPOINT BACKUP REPLICATION
@@ -810,6 +810,7 @@ identifier
 	| __TAG_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| RDF_BOX_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| VECTOR_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| UNAME_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	;
 
 opt_with_data
@@ -2892,6 +2893,7 @@ literal
 	| __TAG_L OF XML { $$ = (caddr_t) DV_XML_ENTITY; }
 	| __TAG_L OF RDF_BOX_L { $$ = (caddr_t) DV_RDF; }
 	| __TAG_L OF VECTOR_L { $$ = (caddr_t) DV_ARRAY_OF_POINTER; }
+	| __TAG_L OF UNAME_L { $$ = (caddr_t) DV_UNAME; }
 	;
 
 signed_literal
@@ -3025,7 +3027,7 @@ base_data_type
 		{ $$ = t_listst (2, (long) DV_SHORT_INT, (long) 0);
 		}
 	| BIGINT
-{ $$ = t_listst (3, (ptrlong) DV_INT64, t_box_num (19), t_box_num (0));
+		{ $$ = t_listst (3, (ptrlong) DV_INT64, t_box_num (19), t_box_num (0));
 		}
 	| FLOAT_L
 		{ $$ = t_listst (2, (long) DV_DOUBLE_FLOAT, (long) 0);
@@ -3107,12 +3109,15 @@ data_type
 	| VARCHAR
 		{ $$ = t_listst (2, (long) DV_LONG_STRING, (long) 0);
 		}
-	| VARCHAR '(' INTNUM ')'
-		{ $$ = t_listst (2, (long) DV_LONG_STRING, $3);
-		}
 	| CHARACTER '(' INTNUM ')'
 		{ $$ = t_listst (2, (long) DV_LONG_STRING, $3);
 		}
+	| VARCHAR '(' INTNUM ')'
+		{ $$ = t_listst (2, (long) DV_LONG_STRING, $3);
+		}
+/*	| UNAME_L
+		{ $$ = t_listst (2, (long) DV_UNAME, (long) 0);
+		}*/
 	;
 
 array_modifier
@@ -4263,7 +4268,7 @@ method_characteristic
 	| PARAMETER STYLE GENERAL      { $$ = NULL; /* no action for now */ }
 	| DETERMINISTIC                { $$ = NULL; /* no action for now */ }
 	| NOT DETERMINISTIC            { $$ = NULL; /* no action for now */ }
-	| NO_L SQL_L                     { $$ = NULL; /* no action for now */ }
+	| NO_L SQL_L                   { $$ = NULL; /* no action for now */ }
 	| CONTAINS SQL_L               { $$ = NULL; /* no action for now */ }
 	| READS SQL_L DATA             { $$ = NULL; /* no action for now */ }
 	| MODIFIES SQL_L DATA          { $$ = NULL; /* no action for now */ }

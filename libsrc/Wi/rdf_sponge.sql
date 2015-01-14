@@ -177,7 +177,7 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
         return 0;
       val := id_to_iri (val);
     }
-  if (217 = __tag (val))
+  if (__tag of UNAME = __tag (val))
     val := cast (val as varchar);
   dest := null;
   call (get_keyword_ucase ('resolver', env, 'DB.DBA.RDF_GRAB_RESOLVER_DEFAULT')) (get_keyword_ucase ('base_iri', env), val, url, dest, get_method);
@@ -447,9 +447,9 @@ create function DB.DBA.RDF_GRAB_RESOLVER_DEFAULT (in base varchar, in rel_uri va
 {
   declare rel_lattice_pos, base_lattice_pos integer;
   declare lattice_tail varchar;
-  if (217 = __tag (rel_uri))
+  if (__tag of UNAME = __tag (rel_uri))
     rel_uri := cast (rel_uri as varchar);
-  if (217 = __tag (base))
+  if (__tag of UNAME = __tag (base))
     base := cast (base as varchar);
   rel_lattice_pos := strrchr (rel_uri, '#');
   lattice_tail := '';

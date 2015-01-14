@@ -1018,20 +1018,20 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
         {
           if (_val >= min_bnode_iri_id ())
             http (sprintf ('\n   <binding name="%s"><bnode>%s</bnode></binding>', _name, id_to_iri (_val)), ses);
-	  else
-	    {
+          else
+            {
               declare res varchar;
               res := id_to_iri (_val);
 --              res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = _val));
               if (res is null)
                 res := sprintf ('bad://%d', iri_id_num (_val));
               http (sprintf ('\n   <binding name="%s"><uri>', _name), ses);
-	      res := charset_recode (res, 'UTF-8', '_WIDE_');
+              res := charset_recode (res, 'UTF-8', '_WIDE_');
               http_value (res, 0, ses);
               http ('</uri></binding>', ses);
-	    }
-	}
-      else if (isstring (_val) and (bit_and (1, __box_flags (_val))))
+            }
+        }
+      else if ((isstring (_val) and (bit_and (1, __box_flags (_val)))) or (__tag of UNAME = __tag (_val)))
         {
           if (_val like 'nodeID://%')
             http (sprintf ('\n   <binding name="%s"><bnode>%s</bnode></binding>', _name, _val), ses);
@@ -1154,20 +1154,20 @@ create procedure DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta 
       if (isiri_id (_val))
         {
           if (_val >= min_bnode_iri_id ())
-	    {
-	      http (sprintf (' rdf:nodeID="b%s"/></res:binding>', id_to_iri (_val)), ses);
-	    }
-	  else
-	    {
+            {
+              http (sprintf (' rdf:nodeID="b%s"/></res:binding>', id_to_iri (_val)), ses);
+            }
+          else
+            {
               declare res varchar;
               res := id_to_iri (_val);
 --              res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = _val));
               if (res is null)
                 res := sprintf ('bad://%d', iri_id_num (_val));
               http (sprintf (' rdf:resource="%V"/></res:binding>', charset_recode (res, 'UTF-8', '_WIDE_')), ses);
-	    }
-	}
-      else if (isstring (_val) and (1 = __box_flags (_val)))
+            }
+        }
+      else if ((isstring (_val) and (1 = __box_flags (_val))) or (__tag of UNAME = __tag (_val)))
         {
           if (_val like 'nodeID://%')
             http (sprintf (' rdf:nodeID="b%s"/></res:binding>', subseq(_val, 9)), ses);
@@ -1176,48 +1176,48 @@ create procedure DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta 
         }
       else
         {
-	  declare lang, dt varchar;
+          declare lang, dt varchar;
           declare val_tag integer;
           val_tag := __tag (_val);
-	  if (val_tag = 185) -- string output
-	    {
-              http ('>', ses);
-	      http_value (_val, 0, ses);
+          if (val_tag = 185) -- string output
+            {
+                     http ('>', ses);
+              http_value (_val, 0, ses);
+                     http ('</res:value></res:binding>', ses);
+                     goto end_of_binding;
+            }
+          if (val_tag = 230) -- XML entity
+            {
+                     http (' rdf:parseType="Literal">', ses);
+              http_value (_val, 0, ses);
               http ('</res:value></res:binding>', ses);
               goto end_of_binding;
-	    }
-	  if (val_tag = 230) -- XML entity
-	    {
-              http (' rdf:parseType="Literal">', ses);
-	      http_value (_val, 0, ses);
-              http ('</res:value></res:binding>', ses);
-              goto end_of_binding;
-	    }
-	  lang := DB.DBA.RDF_LANGUAGE_OF_LONG (_val, null);
-	  dt := DB.DBA.RDF_DATATYPE_IRI_OF_LONG (_val, null);
-	  if (lang is not null)
-	    {
-	      if (dt is not null)
-                http (sprintf (' xml:lang="%V" datatype="%V">', cast (lang as varchar), cast (dt as varchar)), ses);
-	      else
-                http (sprintf (' xml:lang="%V">', cast (lang as varchar)), ses);
-	    }
-	  else
-	    {
-	      if (dt is not null)
-                http (sprintf (' datatype="%V">', cast (dt as varchar)), ses);
-	      else
-                http ('>', ses);
-	    }
-          if (__tag of datetime = rdf_box_data_tag (_val))
-            __rdf_long_to_ttl (_val, ses);
+            }
+          lang := DB.DBA.RDF_LANGUAGE_OF_LONG (_val, null);
+          dt := DB.DBA.RDF_DATATYPE_IRI_OF_LONG (_val, null);
+          if (lang is not null)
+            {
+              if (dt is not null)
+                       http (sprintf (' xml:lang="%V" datatype="%V">', cast (lang as varchar), cast (dt as varchar)), ses);
+              else
+                       http (sprintf (' xml:lang="%V">', cast (lang as varchar)), ses);
+            }
           else
-	    {
-	      _val := __rdf_sqlval_of_obj (_val, 1);
-	      if (__tag (_val) = __tag of varchar) -- UTF-8 value kept in a DV_STRING box
-		_val := charset_recode (_val, 'UTF-8', '_WIDE_');
-	      http_value (__rdf_strsqlval (_val), 0, ses);
-	    }
+            {
+              if (dt is not null)
+                       http (sprintf (' datatype="%V">', cast (dt as varchar)), ses);
+              else
+                       http ('>', ses);
+            }
+                 if (__tag of datetime = rdf_box_data_tag (_val))
+                   __rdf_long_to_ttl (_val, ses);
+                 else
+            {
+              _val := __rdf_sqlval_of_obj (_val, 1);
+              if (__tag (_val) = __tag of varchar) -- UTF-8 value kept in a DV_STRING box
+                _val := charset_recode (_val, 'UTF-8', '_WIDE_');
+              http_value (__rdf_strsqlval (_val), 0, ses);
+            }
           http ('</res:value></res:binding>', ses);
         }
 end_of_binding: ;
@@ -1398,7 +1398,7 @@ create procedure DB.DBA.SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, ino
                   http ('</a>', ses);
                 }
             }
-          else if (isstring (val) and (1 = __box_flags (val)))
+          else if ((isstring (val) and (1 = __box_flags (val))) or (__tag of UNAME = __tag (val)))
             {
               if (is_js or val='' or (val[0]=95) or (val like 'nodeID://%'))
                 http_escape (val, esc_mode, ses, 1, 1);
@@ -1498,7 +1498,7 @@ create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in col
     }
   else if (__tag of varchar = __tag (val))
     {
-      if (1 = __box_flags (val))
+      if (bit_and (1, __box_flags (val)))
         {
           if (val like 'nodeID://%')
             http (sprintf ('"type": "bnode", "value": "%s', val), ses);
@@ -1511,6 +1511,16 @@ create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in col
       else
         {
           http ('"type": "literal", "value": "', ses);
+          http_escape (val, 11, ses, 1, 1);
+        }
+    }
+  else if (__tag of UNAME = __tag (val))
+    {
+      if (val like 'nodeID://%')
+        http (sprintf ('"type": "bnode", "value": "%s', val), ses);
+      else
+        {
+          http ('"type": "uri", "value": "', ses);
           http_escape (val, 11, ses, 1, 1);
         }
     }
@@ -3499,7 +3509,7 @@ host_found:
         {
           declare unknown_service varchar;
           unknown_service := connection_get ('SPARQL_endpoint_to_load_service_metadata');
-          if (__tag (unknown_service) in (__tag of varchar, 217))
+          if (__tag (unknown_service) in (__tag of varchar, __tag of UNAME))
             {
               if (isinteger (reported_unknown_services))
                 reported_unknown_services := dict_new ();

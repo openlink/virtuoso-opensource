@@ -1010,8 +1010,8 @@ type_ok:
       return case (length (rdf_box_data (o_col))) when 0 then 0 else 1 end;
 
 badtype:
-      signal ('RDFXX', signal ('RDFXX', sprintf ('Unknown datatype in DB.DBA.RQ_BOOL_OF_O, bad type id %d, string value "%s"',
-    twobyte, cast (rdf_box_data (o_col) as varchar) ) );
+      signal ('RDFXX', sprintf ('Unknown datatype in DB.DBA.RQ_BOOL_OF_O, bad type id %d, string value "%s"',
+        twobyte, cast (rdf_box_data (o_col) as varchar) ) );
     }
   if (o_col is null)
     return null;
@@ -1447,11 +1447,11 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL (in v any) returns any array
 {
   declare t int;
   t := __tag (v);
-  if (not (t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML, __tag of rdf_box)))
+  if (not (t in (126, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML, __tag of rdf_box)))
     return v;
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (t in (126, 217))
+  else if (t in (126, __tag of UNAME))
     v := cast (v as varchar);
   return DB.DBA.RDF_OBJ_ADD (257, v, 257);
 }
@@ -1462,11 +1462,11 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (in v any, in g_iid IRI_ID, in 
   declare t int;
   -- dbg_obj_princ ('DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (', v, g_iid, p_iid, ro_id_dict, ')');
   t := __tag (v);
-  if (not (t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML, __tag of rdf_box)))
+  if (not (t in (126, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML, __tag of rdf_box)))
     return v;
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (t in (126, 217))
+  else if (t in (126, __tag of UNAME))
     v := cast (v as varchar);
   if (not __rdf_obj_ft_rule_check (g_iid, p_iid))
     ro_id_dict := null;
@@ -1491,7 +1491,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID, 
   -- dbg_obj_princ ('DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (', v, dt_iid, lang, ')');
 retry_unrdf:
   t := __tag (v);
-  if (not (t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML)))
+  if (not (t in (126, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML)))
     {
       if (__tag of rdf_box = t)
         {
@@ -1503,7 +1503,7 @@ retry_unrdf:
     }
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (217 = t or 126 = t)
+  else if (__tag of UNAME = t or 126 = t)
     v := cast (v as varchar);
   if (dt_iid is not null)
     dt_twobyte := DB.DBA.RDF_TWOBYTE_OF_DATATYPE (dt_iid);
@@ -1524,7 +1524,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (in v any, in dt_iid IRI_I
   -- dbg_obj_princ ('DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (', v, dt_iid, lang, g_iid, p_iid, ro_id_dict, ')');
 retry_unrdf:
   t := __tag (v);
-  if (not (t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML)))
+  if (not (t in (126, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML)))
     {
       if (__tag of rdf_box = t)
         {
@@ -1536,7 +1536,7 @@ retry_unrdf:
     }
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (217 = t or 126 = t)
+  else if (__tag of UNAME = t or 126 = t)
     v := cast (v as varchar);
   if (dt_iid is not null)
     dt_twobyte := DB.DBA.RDF_TWOBYTE_OF_DATATYPE (dt_iid);
@@ -1567,7 +1567,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_STRINGS (
   in o_val any, in o_type varchar, in o_lang varchar ) returns any array
 {
   -- dbg_obj_princ ('DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_STRINGS (', o_val, o_type, o_lang, ')');
-  if (__tag (o_type) in (__tag of varchar, 217))
+  if (__tag (o_type) in (__tag of varchar, __tag of UNAME))
     {
       declare parsed any;
       parsed := __xqf_str_parse_to_rdf_box (o_val, o_type, isstring (o_val));
@@ -1619,6 +1619,8 @@ create function DB.DBA.RDF_DATATYPE_OF_OBJ (in shortobj any, in dflt varchar := 
         return null;
       if (isstring (shortobj) and bit_and (__box_flags (shortobj), 1))
         return null;
+      if (__tag of UNAME = __tag (shortobj))
+        return null;
       -- dbg_obj_princ ('DB.DBA.RDF_DATATYPE_OF_OBJ (', shortobj, ') will return ', __xsd_type (shortobj, dflt), ' for non-rdfbox');
       return __xsd_type (shortobj, dflt);
     }
@@ -1646,6 +1648,8 @@ create function DB.DBA.RDF_LANGUAGE_OF_OBJ (in shortobj any array, in dflt varch
       if (isiri_id (shortobj))
         return null;
       if (isstring (shortobj) and bit_and (__box_flags (shortobj), 1))
+        return null;
+      if (__tag of UNAME = __tag (shortobj))
         return null;
       -- dbg_obj_princ ('DB.DBA.RDF_LANGUAGE_OF_OBJ (', shortobj, ') got a non-rdfbox');
       return dflt;
@@ -1718,7 +1722,7 @@ create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any) returns any
   t := __tag (longobj);
   if (__tag of rdf_box <> t)
     {
-      if (not (t in (__tag of varchar, 126, 217, __tag of nvarchar, 133, 226)))
+      if (not (t in (__tag of varchar, 126, __tag of UNAME, __tag of nvarchar, 133, 226)))
         return longobj;
       if (t = 133)
 	{
@@ -1727,9 +1731,11 @@ create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any) returns any
 	}
       if (__tag of nvarchar = t or t = 226)
         longobj := charset_recode (longobj, '_WIDE_', 'UTF-8');
-      else if (t in (126, 217))
+      else if (t in (126, __tag of UNAME))
         longobj := cast (longobj as varchar);
       else if (bit_and (1, __box_flags (longobj)))
+        return iri_to_id (longobj);
+      else if (__tag of UNAME = t)
         return iri_to_id (longobj);
       return DB.DBA.RDF_OBJ_ADD (257, longobj, 257);
     }
@@ -1743,7 +1749,7 @@ create function DB.DBA.RDF_OBJ_OF_SQLVAL (in v any) returns any array
 {
   declare t int;
   t := __tag (v);
-  if (not (t in (__tag of varchar, 126, 217, __tag of nvarchar)))
+  if (not (t in (__tag of varchar, 126, __tag of UNAME, __tag of nvarchar)))
     {
       if (__tag of rdf_box = __tag(v) and 0 = rdf_box_ro_id (v))
         return DB.DBA.RDF_OBJ_ADD (257, v, 257);
@@ -1751,7 +1757,7 @@ create function DB.DBA.RDF_OBJ_OF_SQLVAL (in v any) returns any array
     }
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (t in (126, 217))
+  else if (t in (126, __tag of UNAME))
     v := cast (v as varchar);
   else if (bit_and (1, __box_flags (v)))
     return iri_to_id (v);
@@ -1767,11 +1773,11 @@ create function DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (in v any) returns any
   declare t int;
   declare res any;
   t := __tag (v);
-  if (not (t in (126, __tag of varchar, 217, __tag of nvarchar, __tag of XML)))
+  if (not (t in (126, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML)))
     return v;
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (217 = t or 126 = t)
+  else if (__tag of UNAME = t or 126 = t)
     v := cast (v as varchar);
   else if (bit_and (1, __box_flags (v)))
     return iri_to_id (v);
@@ -1786,11 +1792,11 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID,
   declare t, dt_twobyte, lang_twobyte int;
   declare res any;
   t := __tag (v);
---  if (not (t in (__tag of varchar, 217, __tag of nvarchar, __tag of XML)))
+--  if (not (t in (__tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML)))
 --    signal ('RDFXX', 'DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL() accepts only string representations of typed values');
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (217 = t)
+  else if (__tag of UNAME = t)
     v := cast (v as varchar);
   else if (__tag of varchar = t and 1 = __box_flags (v) and dt_iid is null and lang is null)
     return iri_to_id (v);
@@ -1842,7 +1848,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID,
 create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (
   in o_val any, in o_type varchar, in o_lang varchar ) returns any
 {
-  if (__tag (o_type) in (__tag of varchar, 217))
+  if (__tag (o_type) in (__tag of varchar, __tag of UNAME))
     {
       declare parsed any;
       parsed := __xqf_str_parse_to_rdf_box (o_val, o_type, isstring (o_val));
@@ -1860,7 +1866,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (
         iri_to_id (o_type),
         null );
     }
-  if (__tag (o_lang) in (__tag of varchar, 217))
+  if (__tag (o_lang) in (__tag of varchar, __tag of UNAME))
     return DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (o_val, NULL, o_lang);
   return DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (o_val);
 }
@@ -2070,11 +2076,11 @@ create function DB.DBA.RDF_LONG_OF_SQLVAL (in v varchar) returns any
 {
   declare t int;
   t := __tag (v);
-  if (not (t in (126, __tag of varchar, 217, __tag of nvarchar)))
+  if (not (t in (126, __tag of varchar, __tag of UNAME, __tag of nvarchar)))
     return v;
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (t in (126, 217))
+  else if (t in (126, __tag of UNAME))
     v := cast (v as varchar);
   else if ((t = __tag of varchar) and (1 = __box_flags (v)))
     return iri_to_id (v);
@@ -2136,7 +2142,7 @@ badtype:
     }
   return case (isiri_id (v)) when 0 then dflt else null end;
 --  t := __tag (v);
---  if (not (t in (__tag of varchar, 217, __tag of nvarchar)))
+--  if (not (t in (__tag of varchar, __tag of UNAME, __tag of nvarchar)))
 --    return NULL;
 --  return NULL; -- !!!TBD: uncomment this and make a support for UTF8 'language name' codepoint plane
 }
@@ -2145,7 +2151,7 @@ badtype:
 --!AWK PUBLIC
 create function DB.DBA.RDF_IS_BLANK_REF (in v any) returns any
 {
-  if ((__tag (v) = 217) or ((__tag (v) = __tag of varchar) and bit_and (1, __box_flags (v))))
+  if ((__tag (v) = __tag of UNAME) or ((__tag (v) = __tag of varchar) and bit_and (1, __box_flags (v))))
     {
       if ("LEFT" (v, 9) <> 'nodeID://')
         return 0;
@@ -2164,7 +2170,7 @@ create function DB.DBA.RDF_IS_BLANK_REF (in v any) returns any
 --!AWK PUBLIC
 create function DB.DBA.RDF_IS_URI_REF (in v any) returns any
 {
-  if ((__tag (v) = 217) or ((__tag (v) = __tag of varchar) and bit_and (1, __box_flags (v))))
+  if ((__tag (v) = __tag of UNAME) or ((__tag (v) = __tag of varchar) and bit_and (1, __box_flags (v))))
     {
       if ("LEFT" (v, 9) <> 'nodeID://')
         return 1;
@@ -2183,7 +2189,7 @@ create function DB.DBA.RDF_IS_URI_REF (in v any) returns any
 --!AWK PUBLIC
 create function DB.DBA.RDF_IS_REF (in v any) returns any
 {
-  if (__tag (v) in (217, 243))
+  if (__tag (v) in (__tag of UNAME, 243))
     return 1;
   if ((__tag of varchar = __tag (v)) and bit_and (1, __box_flags (v)))
     return 1;
@@ -2194,7 +2200,7 @@ create function DB.DBA.RDF_IS_REF (in v any) returns any
 --!AWK PUBLIC
 create function DB.DBA.RDF_IS_LITERAL (in v any) returns any
 {
-  if (__tag (v) in (217, 243))
+  if (__tag (v) in (__tag of UNAME, 243))
     return 0;
   if ((__tag of varchar = __tag (v)) and bit_and (1, __box_flags (v)))
     return 0;
@@ -2621,7 +2627,7 @@ create procedure DB.DBA.RDF_QUAD_L_RDB2RDF (in g_iid varchar, in s_iid varchar, 
   t := __tag (o_val);
   if (__tag of rdf_box <> t)
     {
-      if (not (t in (__tag of varchar, 126, 133, 217, __tag of nvarchar, 226)))
+      if (not (t in (__tag of varchar, 126, 133, __tag of UNAME, __tag of nvarchar, 226)))
         {
           goto o_val_done;
         }
@@ -2632,7 +2638,7 @@ create procedure DB.DBA.RDF_QUAD_L_RDB2RDF (in g_iid varchar, in s_iid varchar, 
 	}
       if (__tag of nvarchar = t or t = 226)
         o_val := charset_recode (o_val, '_WIDE_', 'UTF-8');
-      else if (t in (126, 217))
+      else if (t in (126, __tag of UNAME))
         o_val := cast (o_val as varchar);
       else if (bit_and (1, __box_flags (o_val)))
         {
@@ -3080,8 +3086,8 @@ create procedure DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L_XLAT (
       iri_to_id (s_xlat),
       iri_to_id (p_uri),
       DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (o_val,
-        case when (isstring (o_type) or __tag (o_type) = 217) then o_type else null end,
-        case when (isstring (o_lang) or __tag (o_lang) = 217) then o_lang else null end) ),
+        case when (isstring (o_type) or __tag (o_type) = __tag of UNAME) then o_type else null end,
+        case when (isstring (o_lang) or __tag (o_lang) = __tag of UNAME) then o_lang else null end) ),
     0);
 }
 ;
@@ -7314,7 +7320,7 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (inout _env any, in graph_ir
                   if (fld_ctr in (1,3) and is_bnode_iri_id (i))
                     signal ('RDF01', 'Bad variable value in INSERT: blank node can not be used as predicate or graph');
                 }
-              else if ((isstring (i) and (1 = __box_flags (i))) or (217 = __tag(i)))
+              else if ((isstring (i) and (1 = __box_flags (i))) or (__tag of UNAME = __tag(i)))
                 {
                   if (fld_ctr in (1,3) and (i like 'bnode://%'))
                     signal ('RDF01', 'Bad variable value in INSERT: blank node can not be used as predicate or graph');
@@ -7346,7 +7352,7 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (inout _env any, in graph_ir
                   if (fld_ctr in (1,3) and is_bnode_iri_id (arg))
                     signal ('RDF01', 'Bad const value in INSERT: blank node can not be used as predicate or graph');
                 }
-              else if ((isstring (arg) and (1 = __box_flags (arg))) or (217 = __tag(arg)))
+              else if ((isstring (arg) and (1 = __box_flags (arg))) or (__tag of UNAME = __tag(arg)))
                 {
                   if (fld_ctr in (1,3) and (arg like 'bnode://%'))
                     signal ('RDF01', 'Bad const value in INSERT: blank node can not be used as predicate or graph');
@@ -8143,7 +8149,7 @@ create function DB.DBA.RDF_DELETE_QUADS (in dflt_graph_iri any, inout quads any,
           r_s_iri := iri_canonicalize (__id2in (r_q[0]));
           r_p_iri := iri_canonicalize (__id2in (r_q[1]));
           r_o := r_q[2];
-          if (isiri_id (r_o) or (__tag (r_o) = 217) or ((__tag (r_o) = __tag of varchar) and bit_and (1, __box_flags (r_o))))
+          if (isiri_id (r_o) or (__tag (r_o) = __tag of UNAME) or ((__tag (r_o) = __tag of varchar) and bit_and (1, __box_flags (r_o))))
             r_q := vector (r_g_iri, r_s_iri, r_p_iri, iri_canonicalize (__id2in (r_o)));
           else
             r_q := vector (r_g_iri, r_s_iri, r_p_iri, __ro2sq (r_o));
@@ -8296,7 +8302,7 @@ create function DB.DBA.SPARQL_DELETE_QUAD_DICT_CONTENT (in dflt_graph_iri any, i
               r_s_iri := iri_canonicalize (__id2in (r_q[0]));
               r_p_iri := iri_canonicalize (__id2in (r_q[1]));
               r_o := r_q[2];
-              if (isiri_id (r_o) or (__tag (r_o) = 217) or ((__tag (r_o) = __tag of varchar) and bit_and (1, __box_flags (r_o))))
+              if (isiri_id (r_o) or (__tag (r_o) = __tag of UNAME) or ((__tag (r_o) = __tag of varchar) and bit_and (1, __box_flags (r_o))))
                 r_q := vector (r_g_iri, r_s_iri, r_p_iri, iri_canonicalize (__id2in (r_o)));
               else
                 r_q := vector (r_g_iri, r_s_iri, r_p_iri, __ro2sq (r_o));
@@ -8667,7 +8673,7 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
                   if (fld_ctr in (1,3) and is_bnode_iri_id (i))
                     signal ('RDF01', 'Bad variable value in CONSTRUCT: blank node can not be used as predicate or graph');
                 }
-              else if ((isstring (i) and (1 = __box_flags (i))) or (217 = __tag(i)))
+              else if ((isstring (i) and (1 = __box_flags (i))) or (__tag of UNAME = __tag(i)))
                 {
                   if (fld_ctr in (1,3) and (i like 'bnode://%'))
                     signal ('RDF01', 'Bad variable value in CONSTRUCT: blank node can not be used as predicate or graph');
@@ -8699,7 +8705,7 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
                   if (fld_ctr in (1,3) and is_bnode_iri_id (arg))
                     signal ('RDF01', 'Bad const value in CONSTRUCT: blank node can not be used as predicate or graph');
                 }
-              else if ((isstring (arg) and (1 = __box_flags (arg))) or (217 = __tag(arg)))
+              else if ((isstring (arg) and (1 = __box_flags (arg))) or (__tag of UNAME = __tag(arg)))
                 {
                   if (fld_ctr in (1,3) and (arg like 'bnode://%'))
                     signal ('RDF01', 'Bad const value in CONSTRUCT: blank node can not be used as predicate or graph');
@@ -8743,31 +8749,8 @@ create procedure DB.DBA.SPARQL_DESC_AGG_INIT (inout _env any)
 }
 ;
 
-create procedure DB.DBA.SPARQL_INSERT_DATA (in graph_iri any, in triple_ops any)
-{
-  for vectored (in triple_op any := triple_ops)
-    {
-      declare op, s, p, o any;
-
-      if (isiri_id (o_val))
-        __rdf_repl_quad (84, graph_iri, s_iri, p_iri, iri_canonicalize (o_val));
-      else if (__tag of rdf_box <> __tag (o_val))
-        __rdf_repl_quad (80, graph_iri, s_iri, p_iri, o_val);
-      else
-        {
-          declare dt_twobyte, lang_twobyte integer;
-          dt_twobyte := rdf_box_type (o_val);
-          lang_twobyte := rdf_box_lang (o_val);
-          if (257 <> dt_twobyte)
-            __rdf_repl_quad (81, graph_iri, s_iri, p_iri, rdf_box_data (o_val), (select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = dt_twobyte), NULL);
-          else if (257 <> lang_twobyte)
-            __rdf_repl_quad (82, graph_iri, s_iri, p_iri, rdf_box_data (o_val), NULL, (select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = lang_twobyte));
-          else
-            __rdf_repl_quad (80, graph_iri, s_iri, p_iri, rdf_box_data (o_val));
-        }
-    }
-}
-;
+-- create procedure DB.DBA.SPARQL_INSERT_DATA (in graph_iri any, in triple_ops any)
+-- is no longer available. Use DB.DBA.RDF_INSERT_TRIPLES (graph_iri, triples, log_mode) instead.
 
 create procedure DB.DBA.SPARQL_DESC_AGG_ACC (inout _env any, in vars any)
 {
@@ -11050,7 +11033,7 @@ create function DB.DBA.JSO_DUMP_FLD (in v any, inout ses any)
 {
   declare v_tag integer;
   v_tag := __tag(v);
-  if (v_tag = 217)
+  if (v_tag = __tag of UNAME)
     DB.DBA.JSO_DUMP_IRI (cast (v as varchar), ses);
   else if (v_tag = 243)
     DB.DBA.JSO_DUMP_IRI (id_to_iri (v), ses);
@@ -11167,15 +11150,15 @@ create function DB.DBA.JSO_FILTERED_PROPLIST (in only_custom integer := 0, in lo
       obj := proplist[ctr][0];
       p := proplist[ctr][1];
       o := proplist[ctr][2];
-          if (217 = __tag (obj))
+          if (__tag of UNAME = __tag (obj))
             obj_long := iri_ensure (obj);
           else
             obj_long := obj;
-          if (217 = __tag (p))
+          if (__tag of UNAME = __tag (p))
             p_long := iri_ensure (p);
           else
             p_long := p;
-          if (217 = __tag (o))
+          if (__tag of UNAME = __tag (o))
             o_long := iri_ensure (o);
           else
             o_long := __rdf_long_of_obj (DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL (o));
@@ -13522,7 +13505,7 @@ create procedure DB.DBA.RDF_QM_NORMALIZE_QMV (
   qmvid := qmvfix := NULL;
   if ((__tag of vector = __tag (qmv)) and (5 = length (qmv)))
     qmvid := DB.DBA.RDF_QM_DEFINE_MAP_VALUE (qmv, fldname, tablename, o_dt, o_lang);
-  else if (217 = __tag (qmv))
+  else if (__tag of UNAME = __tag (qmv))
       qmvfix := iri_to_id (qmv);
   else if (qmv is not null and not can_be_literal)
     signal ('22023', sprintf ('Quad map declaration can not specify a literal (non-IRI) constant for its %s (tag %d, length %d)',
@@ -16122,13 +16105,13 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
       declare iid IRI_ID;
       iri := mem_vec[mem_ctr];
       iid := mem_vec[mem_ctr+1];
-      if ((__tag (iri) <> 217 /* __tag of UNAME */) or (__tag (iid) <> __tag of IRI_ID))
+      if ((__tag (iri) <> __tag of UNAME) or (__tag (iid) <> __tag of IRI_ID))
         {
           result ('ERROR', null, null, null, null,
             sprintf ('Unexpected datatypes: tag of IRI "%.300s" is %d, tag of IRI_ID "%.300s" is %d; should be %d and %d',
               cast (iri as varchar), __tag (iri),
               cast (iid as varchar), __tag (iid),
-              217 /* __tag of UNAME */, __tag of IRI_ID ) );
+              __tag of UNAME, __tag of IRI_ID ) );
           err_recoverable_count := err_recoverable_count + 1;
           if (recovery)
             dict_remove (mem_dict, iri);
@@ -16165,13 +16148,13 @@ create procedure DB.DBA.RDF_GRAPH_SECURITY_AUDIT (in recovery integer)
       declare iri varchar;
       iid := mem_vec_inv[mem_ctr];
       iri := mem_vec_inv[mem_ctr+1];
-      if ((__tag (iid) <> __tag of IRI_ID) or (__tag (iri) <> 217 /* __tag of UNAME */))
+      if ((__tag (iid) <> __tag of IRI_ID) or (__tag (iri) <> __tag of UNAME))
         {
           result ('ERROR', null, null, null, null,
             sprintf ('Unexpected datatypes: tag of IRI_ID "%.300s" is %d, tag of IRI "%.300s" is %d; should be %d and %d',
               cast (iid as varchar), __tag (iid),
               cast (iri as varchar), __tag (iri),
-              __tag of IRI_ID, 217 /* __tag of UNAME */ ) );
+              __tag of IRI_ID, __tag of UNAME ) );
           err_recoverable_count := err_recoverable_count + 1;
           if (recovery)
             dict_remove (mem_dict_inv, iid);
