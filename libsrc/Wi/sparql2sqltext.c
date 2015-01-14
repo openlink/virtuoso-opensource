@@ -7734,10 +7734,10 @@ ssg_print_retval_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *ret_column, int col
         sqltype = ssg_sqltype_of_restr (ssg, sparp_restr_bits_of_expn (ssg->ssg_sparp, ret_column));
       if ((NULL == sqltype) || (' ' == sqltype[0]))
         {
-          ssg_puts (" CAST (");
+          ssg_puts (" CAST (__RO2SQ(");
           ssg->ssg_indent++;
           ssg_print_retval_simple_expn (ssg, gp, ret_column, needed, NULL);
-          ssg_puts_with_comment (" AS VARCHAR)", "retval strict type");
+          ssg_puts_with_comment (") AS VARCHAR)", "retval strict type");
           ssg->ssg_indent--;
           ssg_print_asname_tail ("typed retexpn", asname);
         }
