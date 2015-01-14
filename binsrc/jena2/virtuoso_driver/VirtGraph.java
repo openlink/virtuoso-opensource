@@ -539,7 +539,11 @@ public class VirtGraph extends GraphBase
 
     static String Blank2String(Node n) 
     {
-      return "_:"+ n.toString().replace(':','_').replace('-','z');
+      String ns = n.toString();
+      if (ns.startsWith("nodeID://"))
+        return ns;
+      else
+        return "_:"+ n.toString().replace(':','_').replace('-','z');
     }
 
 
@@ -549,7 +553,7 @@ public class VirtGraph extends GraphBase
       if (n.isURI()) {
         return "<"+n+">";
       } else if (n.isBlank()) {
-        return Blank2String(n); 
+        return "<"+Blank2String(n)+">"; 
       } else if (n.isLiteral()) {
         String s;
         StringBuilder sb = new StringBuilder();
@@ -580,7 +584,7 @@ public class VirtGraph extends GraphBase
 	return;
       if (n.isURI()) 
 	ps.setString(col, n.toString());
-      else if (n.isBlank()) 
+      else if (n.isBlank())
         ps.setString(col, Blank2String(n));
       else 
         throw new SQLException("Only URI or Blank nodes can be used as subject");
@@ -649,7 +653,6 @@ public class VirtGraph extends GraphBase
     protected void performAdd(String _gName, Node s, Node p, Node o)
     {
       java.sql.PreparedStatement ps;
-
       try {
         ps = prepareStatement(sinsert);
         ps.setString(1, (_gName!=null? _gName: this.graphName));
@@ -742,39 +745,62 @@ public class VirtGraph extends GraphBase
     protected boolean graphBaseContains(String _gName, Triple t) 
     {
       ResultSet rs = null;
-      String S, P, O;
       StringBuilder sb = new StringBuilder("sparql define input:storage \"\" "); 
-      String exec_text;
+      Node nS, nP, nO;
 
       checkOpen();
-
-      S = " ?s ";
-      P = " ?p ";
-      O = " ?o ";
-
-      if (!Node.ANY.equals(t.getSubject()))
-        S = Node2Str(t.getSubject());
-
-      if (!Node.ANY.equals(t.getPredicate()))
-        P = Node2Str(t.getPredicate());
-
-      if (!Node.ANY.equals(t.getObject()))
-        O = Node2Str(t.getObject());
-      
       appendSparqlPrefixes(sb);
 
-      if ( readFromAllGraphs && _gName != null)
- 	sb.append(" select * where { " + S +" "+ P +" "+ O +" } limit 1");
+      if ( readFromAllGraphs && _gName == null)
+        sb.append(" select * where { ");
       else
-        sb.append(" select * where { graph <"+ (_gName!=null?_gName:graphName) +"> { " + S +" "+ P +" "+ O +" }} limit 1");
+        sb.append(" select * from <" + (_gName!=null?_gName:graphName) + "> where { ");
 
-      try {
-	java.sql.Statement stmt = createStatement();
-	rs = stmt.executeQuery(sb.toString());
+      nS = t.getSubject();
+      nP = t.getPredicate();
+      nO = t.getObject();
+
+      if (nP.isBlank())
+         throw new JenaException("BNode could not be used as Predicate");
+
+      sb.append(' ');
+      if (!Node.ANY.equals(nS))
+        sb.append("`iri(??)`");
+      else
+        sb.append("?s");
+
+      sb.append(' ');
+      if (!Node.ANY.equals(nP))
+        sb.append("`iri(??)`");
+      else
+        sb.append("?p");
+
+      sb.append(' ');
+      if (!Node.ANY.equals(nO))
+        sb.append("`bif:__rdf_long_from_batch_params(??,??,??)`");
+      else
+        sb.append("?o");
+
+      sb.append(" } limit 1");
+
+      try 
+      {
+        java.sql.PreparedStatement ps = prepareStatement(sb.toString());
+        int col = 1;
+
+        if (!Node.ANY.equals(nS))
+          bindSubject(ps, col++, nS);
+        if (!Node.ANY.equals(nP))
+          bindPredicate(ps, col++, nP);
+        if (!Node.ANY.equals(nO))
+          bindObject(ps, col, nO);
+
+	rs = ps.executeQuery();
 	boolean ret = rs.next();
 	rs.close();
-	stmt.close();
+	ps.close();
 	return ret;
+
       } catch (Exception e) {
         throw new JenaException(e);
       }
@@ -790,35 +816,59 @@ public class VirtGraph extends GraphBase
 
     protected ExtendedIterator<Triple> graphBaseFind(String _gName, TripleMatch tm) 
     {
-      String S, P, O;
       StringBuilder sb = new StringBuilder("sparql "); 
+      Node nS, nP, nO;
 
       checkOpen();
 
-      S = " ?s ";
-      P = " ?p ";
-      O = " ?o ";
-
-      if (tm.getMatchSubject() != null)
-        S = Node2Str(tm.getMatchSubject());
-
-      if (tm.getMatchPredicate() != null)
-        P = Node2Str(tm.getMatchPredicate());
-
-      if (tm.getMatchObject() != null)
-        O = Node2Str(tm.getMatchObject());
-
       appendSparqlPrefixes(sb);
 
+
       if ( readFromAllGraphs && _gName == null)
-        sb.append(" select * where { "+ S +" "+ P +" "+ O + " }");
+        sb.append(" select * where { ");
       else
-        sb.append(" select * from <" + (_gName!=null?_gName:graphName) + "> where { " + S +" "+ P +" "+ O + " }");
+        sb.append(" select * from <" + (_gName!=null?_gName:graphName) + "> where { ");
+
+      nS = tm.getMatchSubject();
+      nP = tm.getMatchPredicate();
+      nO = tm.getMatchObject();
+
+      if (nP!=null && nP.isBlank())
+         throw new JenaException("BNode could not be used as Predicate");
+
+      sb.append(' ');
+      if (nS != null)
+        sb.append("`iri(??)`");
+      else
+        sb.append("?s");
+
+      sb.append(' ');
+      if (nP != null)
+        sb.append("`iri(??)`");
+      else
+        sb.append("?p");
+
+      sb.append(' ');
+      if (nO != null)
+        sb.append("`bif:__rdf_long_from_batch_params(??,??,??)`");
+      else
+        sb.append("?o");
+
+      sb.append(" }");
 
       try 
       {
-        java.sql.Statement stmt = createStatement();
-	return new VirtResSetIter(this, stmt, stmt.executeQuery(sb.toString()), tm);
+        java.sql.PreparedStatement ps = prepareStatement(sb.toString());
+        int col = 1;
+
+        if (nS != null)
+          bindSubject(ps, col++, nS);
+        if (nP != null)
+          bindPredicate(ps, col++, nP);
+        if (nO != null)
+          bindObject(ps, col, nO);
+
+	return new VirtResSetIter(this, ps, ps.executeQuery(), tm);
       } catch (Exception e) {
         throw new JenaException(e);
       }
@@ -1122,18 +1172,16 @@ public class VirtGraph extends GraphBase
 
     void delete_match(String _gName, TripleMatch tm)
     {
-      String S, P, O;
       Node nS, nP, nO;
 
       checkOpen();
 
-      S = "?s";
-      P = "?p";
-      O = "?o";
-
       nS = tm.getMatchSubject();
       nP = tm.getMatchPredicate();
       nO = tm.getMatchObject();
+
+      if (nP!=null && nP.isBlank())
+         throw new DeleteDeniedException("BNode could not be used as Predicate");
 
       try {
         if (nS == null && nP == null && nO == null) {
@@ -1155,25 +1203,63 @@ public class VirtGraph extends GraphBase
 
         } else  {
 
+          java.sql.PreparedStatement ps;
+
+          StringBuilder stm = new StringBuilder();
+
+          stm.append(' ');
           if (nS != null)
-            S = Node2Str(nS);
+            stm.append("`iri(??)`");
+          else
+            stm.append("?s");
 
+          stm.append(' ');
           if (nP != null)
-            P = Node2Str(nP);
+            stm.append("`iri(??)`");
+          else
+            stm.append("?p");
 
+          stm.append(' ');
           if (nO != null)
-            O = Node2Str(nO);
+            stm.append("`bif:__rdf_long_from_batch_params(??,??,??)`");
+          else
+            stm.append("?o");
 
           StringBuilder sb = new StringBuilder("sparql ");
 
           appendSparqlPrefixes(sb);
           sb.append("delete from <");
           sb.append((_gName!=null? _gName:this.graphName));
-          sb.append("> { "+S+" "+P+" "+O+" } where { "+S+" "+P+" "+O+" }");
+          sb.append("> { ");
 
-          java.sql.Statement stmt = createStatement();
-          stmt.execute(sb.toString());
-          stmt.close();
+          sb.append(stm.toString());
+          sb.append(" } where { ");
+          sb.append(stm.toString());
+
+          sb.append(" }");
+
+          ps = prepareStatement(sb.toString());
+          int col = 1;
+
+          if (nS != null)
+            bindSubject(ps, col++, nS);
+          if (nP != null)
+            bindPredicate(ps, col++, nP);
+          if (nO != null) {
+            bindObject(ps, col, nO);
+            col +=3;
+          }
+
+
+          if (nS != null)
+            bindSubject(ps, col++, nS);
+          if (nP != null)
+            bindPredicate(ps, col++, nP);
+          if (nO != null)
+            bindObject(ps, col, nO);
+
+          ps.execute();
+          ps.close();
         }
       } catch(Exception e) {
         throw new DeleteDeniedException(e.toString());
@@ -1232,7 +1318,8 @@ public class VirtGraph extends GraphBase
             return NodeFactory.createURI(vs.toString());
 
         } else if (vs.getIriType() == ExtendedString.BNODE) {
-          return NodeFactory.createAnon(AnonId.create(vs.toString().substring(9))); // nodeID://
+//          return NodeFactory.createAnon(AnonId.create(vs.toString().substring(9))); // nodeID://b1234
+          return NodeFactory.createAnon(AnonId.create(vs.toString())); // nodeID://
 
         } else {
           return NodeFactory.createLiteral(vs.toString()); 
