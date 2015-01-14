@@ -2730,7 +2730,11 @@ ssg_print_tr_var_expn (spar_sqlgen_t *ssg, SPART *var, ssg_valmode_t needed, con
   quad_map_t *qm;
   qm_value_t *qmv;
   if (NULL == tabid)
-    spar_sqlprint_error ("ssg_print_tr_var_expn(): no tabid");
+    {
+      ssg_puts_with_comment ("", "non-triple var as a scalar");
+      ssg_print_scalar_expn (ssg, var, needed, asname);
+      return;
+    }
   if (SPAR_RETVAL == var->type)
     {
       rv = var;
@@ -6614,15 +6618,12 @@ ssg_print_equalities_of_vars_with_globals_and_constants (spar_sqlgen_t *ssg, SPA
   for (var_ctr = 0; var_ctr < eq->e_var_count; var_ctr++)
     {
       SPART *var = eq->e_vars[var_ctr];
-      caddr_t tabid = var->_.var.tabid;
+      caddr_t tabid = ((VALUES_L == gp->_.gp.subtype) ? uname___empty : var->_.var.tabid);
       int mixed_restrictions = (eq->e_rvr.rvrRestrictions | var->_.var.rvr.rvrRestrictions);
-      if ((SPART_VARR_FIXED & mixed_restrictions) && (NULL != tabid))
+      if (print_nice_eq_to_fixed_val && (SPART_VARR_FIXED & mixed_restrictions) && (NULL != tabid))
         {
-          if (print_nice_eq_to_fixed_val)
-            {
-              SPART *var_triple = sparp_find_triple_of_var_or_retval (ssg->ssg_sparp, NULL, var, 1);
-              ssg_print_nice_equality_for_var_and_eq_fixed_val (ssg, &(eq->e_rvr), var, var_triple);
-            }
+          SPART *var_triple = sparp_find_triple_of_var_or_retval (ssg->ssg_sparp, NULL, var, 1);
+          ssg_print_nice_equality_for_var_and_eq_fixed_val (ssg, &(eq->e_rvr), var, var_triple);
           continue;
         }
       if (((SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL) & mixed_restrictions) && (NULL != tabid))
