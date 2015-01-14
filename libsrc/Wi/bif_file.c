@@ -6684,12 +6684,15 @@ err_end:
 /* CSV mode */
 #define CSV_STRICT	1
 #define CSV_LAX		2
+#define CSV_LAX_STR	3
 
 static caddr_t
 csv_field (dk_session_t * ses, int mode)
 {
   static void *r1, *r2, *r3;
   caddr_t regex, ret = NULL, str = strses_string (ses);
+  if (mode == CSV_LAX_STR)
+    goto string_val;
   if (mode == CSV_LAX && !strcmp (str, "NULL"))
     {
       ret = NEW_DB_NULL;
@@ -6718,6 +6721,7 @@ csv_field (dk_session_t * ses, int mode)
     }
   else
     {
+string_val:
       if (0 != str[0])
       ret = str;
       else
@@ -6787,7 +6791,7 @@ bif_get_csv_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       long f = bif_long_or_null_arg (qst, args, 4, "get_csv_row", &is_null_f);
       signal_error = f & 0x04;
       f &= 0x03;
-      if (!is_null_f && f != CSV_LAX && f != CSV_STRICT)
+      if (!is_null_f && f != CSV_LAX && f != CSV_STRICT && f != CSV_LAX_STR)
 	sqlr_new_error ("22023", "CSV03", "CSV parsing mode flag must be strict:1 or relaxing:2");
       mode = f;
     }
