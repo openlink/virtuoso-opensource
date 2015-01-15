@@ -2157,7 +2157,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	private void append(BNode bNode, StringBuilder sb)
 		throws RepositoryException
 	{
-		sb.append(bNode.toString());
+		sb.append("<");
+		sb.append(Blank2String(bNode));
+		sb.append(">");
 	}
 
 
@@ -2178,6 +2180,15 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			sb.append("@");
 			sb.append(lit.getLanguage());
 		}
+	}
+
+	String Blank2String(BNode bNode) 
+    	{
+		String bid = bNode.getID();
+		if (bid.startsWith("nodeID://"))
+		  return bid;
+		else
+		  return bNode.toString();
 	}
 
 	private void escapeString(String label, StringBuilder sb)
@@ -2263,18 +2274,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		flushDelayAdd();
 
 		ResultSet rs = null;
-		java.sql.Statement stmt = null;
-		String s = "?s";
-		String p = "?p";
-		String o = "?o";
-
-		if (subject != null) 
-			s = stringForResource(subject);
-		if (predicate != null) 
-			p = stringForURI(predicate);
-		if (object != null) 
-			o = stringForValue(object);
-
 		StringBuffer query = new StringBuffer("sparql ");
 
 		if (includeInferred && repository.ruleSet != null && repository.ruleSet.length() > 0)
@@ -2290,24 +2289,48 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	        }
 
 		query.append("where { graph ?g {");
-		query.append(s);
-		query.append(" ");
-		query.append(p);
-		query.append(" ");
-		query.append(o);
-		query.append(" }}");
+
+      		query.append(' ');
+      		if (subject != null)
+        		query.append("`iri(??)`");
+      		else
+        		query.append("?s");
+
+      		query.append(' ');
+      		if (predicate != null)
+        		query.append("`iri(??)`");
+      		else
+        		query.append("?p");
+
+      		query.append(' ');
+      		if (object != null)
+        		query.append("`bif:__rdf_long_from_batch_params(??,??,??)`");
+      		else
+        		query.append("?o");
+
+      		query.append(" }}");
 		if (hasOnly)
 			query.append(" LIMIT 1");
 
+		PreparedStatement ps;
 		try {
-			stmt = createStatement();
-			rs = stmt.executeQuery(query.toString());
+			ps = prepareStatement(query.toString());
+		    	int col = 1;
+
+		        if (subject != null)
+            			bindResource(ps, col++, subject);
+          		if (predicate != null)
+            			bindURI(ps, col++, predicate);
+          		if (object != null)
+            			bindValue(ps, col, object);
+
+			rs = ps.executeQuery();
 		}
 		catch (Exception e) {
 			throw new RepositoryException(getClass().getCanonicalName() + ": SPARQL execute failed." + "\n" + query.toString() + "[" + e + "]", e);
 		}
 
-		return new CloseableIterationStmt(stmt, rs, subject, predicate, object);
+		return new CloseableIterationStmt(ps, rs, subject, predicate, object);
 	}
 
 
@@ -2341,10 +2364,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 	
 	private void removeContext(Resource subject, URI predicate, Value object, Resource context) throws RepositoryException {
-		String S = "?s";
-		String P = "?p";
-		String O = "?o";
-
 		try {
 
 		    if (subject == null && predicate == null && object == null && context != null) {
@@ -2371,27 +2390,50 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		        if (context == null)
 		           throw new RepositoryException("Context can't be NULL");
 
-			if (subject != null)
-				S = stringForResource(subject);
+          		StringBuilder stm = new StringBuilder();
 
-			if (predicate != null)
-				P = stringForURI(predicate);
+          		stm.append(' ');
+          		if (subject != null)
+            			stm.append("`iri(??)`");
+          		else
+            			stm.append("?s");
 
-			if (object != null)
-				O = stringForValue(object);
+          		stm.append(' ');
+          		if (predicate != null)
+            			stm.append("`iri(??)`");
+          		else
+            			stm.append("?p");
 
-			// s = s.replaceAll("'", "''");
-			// p = p.replaceAll("'", "''");
-			// o = o.replaceAll("'", "''");
-		    	
-		    	// context should not be null at this point, at the least, it will be a wildcard
-		        String query = "sparql delete from graph <"+context+
-  				"> { "+S+" "+P+" "+O+" } from <"+context+
-  				"> where { "+S+" "+P+" "+O+" }";
+          		stm.append(' ');
+          		if (object != null)
+            			stm.append("`bif:__rdf_long_from_batch_params(??,??,??)`");
+          		else
+            			stm.append("?o");
 
-		    	java.sql.Statement stmt = createStatement();
-		    	stmt.execute(query);
-		    	stmt.close();
+		        String query = "sparql delete from <"+context+"> { "+
+		        	stm.toString()+" } where { "+stm.toString()+" }";
+
+		    	java.sql.PreparedStatement ps = prepareStatement(query);
+		    	int col = 1;
+
+		        if (subject != null)
+            			bindResource(ps, col++, subject);
+          		if (predicate != null)
+            			bindURI(ps, col++, predicate);
+          		if (object != null) {
+            			bindValue(ps, col, object);
+            			col +=3;
+            		}
+
+		        if (subject != null)
+            			bindResource(ps, col++, subject);
+          		if (predicate != null)
+            			bindURI(ps, col++, predicate);
+          		if (object != null)
+            			bindValue(ps, col, object);
+
+		    	ps.execute();
+		    	ps.close();
 		    }
 		}
 		catch (Exception e) {
@@ -2403,7 +2445,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	private void bindResource(PreparedStatement ps, int col, Resource n) throws SQLException {
 		if (n == null)
 			return;
-		ps.setString(col, n.toString());
+		if (n instanceof BNode)
+		  ps.setString(col, Blank2String((BNode)n));
+		else
+		  ps.setString(col, n.toString());
 	}
 
 	
@@ -2424,7 +2469,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 		else if (n instanceof BNode) {
 			ps.setInt(col, 1);
-			ps.setString(col+1, n.toString());
+			ps.setString(col+1, Blank2String((BNode)n));
 			ps.setNull(col+2, java.sql.Types.VARCHAR);
 		}
 		else if (n instanceof Literal) {
@@ -2452,19 +2497,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 	
-
-	private String stringForResource(Resource n)  throws RepositoryException {
-		StringBuilder sb = new StringBuilder(256);
-		append(n, sb);
-		return sb.toString();
-	}
-
-	
-	private String stringForURI(URI n)  throws RepositoryException {
-		StringBuilder sb = new StringBuilder(256);
-		append(n, sb);
-		return sb.toString();
-	}
 
 	
 	private String stringForValue(Value n)  throws RepositoryException {
@@ -2497,7 +2529,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			}
 			else if (ves.getIriType() == ExtendedString.BNODE) {
 				try {
-					valueString = valueString.substring(9); // "nodeID://"
 					return getRepository().getValueFactory().createBNode(valueString);
 				}
 				catch (IllegalArgumentException iaex) {
