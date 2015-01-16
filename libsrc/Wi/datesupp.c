@@ -48,17 +48,6 @@
 #define  YEAR_MAX    9999	/* Maximum year able to compute */
 
 
-/*
- *  The Gregorian Reformation date
- */
-#define GREG_YEAR	1582
-#define GREG_MONTH	10
-#define GREG_FIRST_DAY	5
-#define GREG_LAST_DAY	14
-#define GREG_JDAYS	577737L	/* date2num (GREG_YEAR, GREG_MONTH,
-				   GREG_FIRST_DAY - 1) */
-
-
 /* Number of days in months */
 static const int days_in_month[] =
 {
@@ -85,7 +74,7 @@ days_in_february (const int year)
       || ((year == GREG_YEAR)
 	  && (GREG_MONTH == 1
 	      || ((GREG_MONTH == 2)
-		  && (GREG_LAST_DAY >= 28)))))
+		  && (GREG_LAST_JULIAN_DAY_AS_PROLEPTIC_GREG >= 28)))))
     {
       day = (year & 3) ? 28 : ((!(year % 100) && (year % 400)) ? 28 : 29);
     }
@@ -184,9 +173,9 @@ date2num_old (const int year, const int month, const int day)
       || ((year == GREG_YEAR)
 	  && (month > GREG_MONTH
 	      || ((month == GREG_MONTH)
-		  && (day > GREG_LAST_DAY)))))
+		  && (day > GREG_LAST_JULIAN_DAY_AS_PROLEPTIC_GREG)))))
     {
-      julian_days -= (uint32) (GREG_LAST_DAY - GREG_FIRST_DAY + 1);
+      julian_days -= (uint32) (GREG_LAST_JULIAN_DAY_AS_PROLEPTIC_GREG - GREG_LAST_JULIAN_DAY);
     }
   if (year > GREG_YEAR)
     {
@@ -211,7 +200,7 @@ date2num (const int year, const int month, const int day)
   a = (14-month)/12;
   y = ((year < 0) ? year + 1 : year) + 4800 - a;
   m = month + 12 * a - 3;
-  if (year < GREG_YEAR || ((year == GREG_YEAR) && (month < GREG_MONTH || ((month == GREG_MONTH) && (day < GREG_LAST_DAY)))))
+  if (GREG_YMD_IS_PROLEPTIC_GREG(year,month,day))
     {
       jdn = day + (153*m + 2)/5 + 365*y + y/4 - 32083;
       if ((1722885 == jdn) && (1 == day))
@@ -244,7 +233,7 @@ num2date_old (int32 julian_days, int *year, int *month, int *day)
   int i;
 
   if (julian_days > GREG_JDAYS)
-    julian_days += (uint32) (GREG_LAST_DAY - GREG_FIRST_DAY + 1);
+    julian_days += (uint32) (GREG_LAST_JULIAN_DAY_AS_PROLEPTIC_GREG - GREG_LAST_JULIAN_DAY);
   x = (double) julian_days / (DAY_LAST + 0.25);
   i = (int) x;
   if ((double) i != x)
@@ -1324,11 +1313,17 @@ field_delim_checked:
         {
           int month = fld_values[1];
           int days_in_this_month = days_in_months[month-1];
-	  if (2 == month) /* February */
-	    days_in_this_month = days_in_february (fld_values[0]);
-	  if (fld_value > days_in_this_month)
+          if (2 == month) /* February */
+            days_in_this_month = days_in_february (fld_values[0]);
+          if (fld_value > days_in_this_month)
             {
               err_msg_ret[0] = box_sprintf (500, "Too many days (%d, the month has only %d)", fld_value, days_in_this_month);
+              return;
+            }
+          if (GREG_YMD_IS_POST_JULIAN_PROLEPTIC_GREG (fld_values[0], fld_values[1], fld_values[2]))
+            {
+              err_msg_ret[0] = box_sprintf (500, "The notation %04d-%02d-%02d refers to day that does not exist due to Gregorian reform, valid dates of that month are Julian 1 to %d and Gregorean %d to %d",
+                fld_values[0], fld_values[1], fld_values[2], GREG_LAST_JULIAN_DAY, GREG_LAST_JULIAN_DAY_AS_PROLEPTIC_GREG+1, days_in_this_month );
               return;
             }
         }

@@ -34,6 +34,19 @@
 #define GMTIMESTAMP_STRUCT TIMESTAMP_STRUCT
 
 /* datesupp.c */
+
+/* The Gregorian Reformation date. First day of Gregorian calendar is 1582-10-15 and that is the day after the 1582-10-04 that is the last Julian day. */
+#define GREG_YEAR				1582
+#define GREG_MONTH				10
+#define GREG_LAST_JULIAN_DAY			4
+#define GREG_LAST_JULIAN_DAY_AS_PROLEPTIC_GREG	14
+#define GREG_JDAYS	577737L	/* date2num (GREG_YEAR, GREG_MONTH, GREG_LAST_JULIAN_DAY) */
+
+#define GREG_YMD_IS_PROLEPTIC_GREG(year,month,day) \
+  ((year) < GREG_YEAR || (((year) == GREG_YEAR) && ((month) < GREG_MONTH || (((month) == GREG_MONTH) && ((day) <= GREG_LAST_JULIAN_DAY_AS_PROLEPTIC_GREG)))))
+#define GREG_YMD_IS_POST_JULIAN_PROLEPTIC_GREG(year,month,day) \
+  ((year == GREG_YEAR) && ((month == GREG_MONTH) && (day <= GREG_LAST_JULIAN_DAY_AS_PROLEPTIC_GREG) &&  (day > GREG_LAST_JULIAN_DAY)))
+
 int32 date2num (const int year, const int month, const int day);
 void num2date (int32 julian_days, int *year, int *month, int *day);
 int ymd_valid_p (const int year, const int month, const int day);
