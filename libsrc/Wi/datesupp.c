@@ -1214,6 +1214,12 @@ iso8601_or_odbc_string_to_dt_1 (const char *str, char *dt, int dtflags, int dt_t
             }
           continue;
         }
+      if ((DTFLAG_ZH == fld_flag) && (4 == fldlen))
+	{
+	  fld_values[fld_idx] = ((tail[0]-'0') * 10) + (tail[1]-'0');
+	  tail += 2;
+	  continue;
+	}
       err_msg_ret[0] = box_sprintf (500, "Incorrect %s field length", names[fld_idx]);
       return;
 
