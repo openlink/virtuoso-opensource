@@ -5155,11 +5155,15 @@ sparp_flatten_join (sparp_t *sparp, SPART *parent_gp)
           int memb_equiv_inx;
           int first_conflicting_predecessor_idx;
           int first_optional_sub_memb_pos;
+#if 0
+/* There was an error, bug 16535. In case of SELECT ?x WHERE { VALUES ?x { 1 2 } {} } the {} produces one empty binding, i.e. {} is (select top 1 1 where fake), not (select top 0 1 where fake)
+So this special case is not valid: */
           if (0 == sub_count)
             {
               sparp_gp_produce_nothing (sparp, parent_gp);
               return;
             }
+#endif
           if (0 == memb_ctr)
             goto just_remove_braces; /* see below */
 /* First member can always be flatten. For others, there is an exception.
