@@ -887,7 +887,8 @@ sec_check_login (char *name, char *pass, dk_session_t * ses)
     goto failed;
   if (0 == strcmp (pass, user->usr_pass))
     return user;
-
+  if (!ses->dks_peer_name)
+    goto failed;
   sec_login_digest (ses->dks_peer_name, name, user->usr_pass, digest);
   if (0 == memcmp (digest, pass, 16))
     return user;
