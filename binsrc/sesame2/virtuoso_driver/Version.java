@@ -29,7 +29,7 @@ public class Version {
    protected static final String DRV_VER = "2.7.3";
 
    // The major and minor version number
-   protected static final String build_id = "1.19";
+   protected static final String build_id = "1.20";
 
    public static void main(String args[])
    {

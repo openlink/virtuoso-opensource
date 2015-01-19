@@ -1911,7 +1911,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	private String substBindings(String query, BindingSet bindings)  throws RepositoryException 
 	{
 		StringBuffer buf = new StringBuffer();
-		String delim = " ,)(;.";
+		String delim = " \t\n\r\f,)(;.";
 	  	int i = 0;
 	  	char ch;
 	  	int qlen = query.length();
@@ -1954,8 +1954,37 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		return buf.toString();
 	}
 	
+
 	private String fixQuery(boolean isSPARUL, String query, Dataset dataset, boolean includeInferred, BindingSet bindings)  throws RepositoryException 
 	{
+	        Set <URI> list;
+	        String removeGraph = null;
+	        String insertGraph = null;
+
+		if (dataset != null)
+		{
+		   //TODO update later, when support of new defines will be added
+		   list = dataset.getDefaultRemoveGraphs();
+		   if (list!=null)
+		   {
+		     if (list.size()>1)
+		       throw new RepositoryException("Only ONE DefaultRemoveGraph is supported");
+
+		     Iterator<URI> it = list.iterator();
+		     while(it.hasNext())
+		     {
+		       removeGraph = " <"+it.next().toString()+"> ";
+		       break;
+		     }
+		   }
+
+		   URI g = dataset.getDefaultInsertGraph();
+		   if (g!=null) 
+		       insertGraph = " <"+g.toString()+"> ";
+		}
+		
+		query = SubstGraphs(query, insertGraph, removeGraph);
+
 		StringBuffer ret = new StringBuffer("sparql\n ");
 
 		if (includeInferred && repository.ruleSet!=null && repository.ruleSet.length() > 0)
@@ -1963,7 +1992,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		if (dataset != null)
 		{
-		   Set<URI> list = dataset.getDefaultGraphs();
+		   list = dataset.getDefaultGraphs();
 		   if (list != null)
 		   {
 		     Iterator<URI> it = list.iterator();
@@ -1990,6 +2019,114 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
+	private String SubstGraphs(String query, String gInsert, String gDelete)  
+	{
+	   ArrayList<String> lst = new ArrayList<String>(16);
+	   StringBuilder buf = new StringBuilder();
+	   String delim = "{} \t\n\r\f";
+	   int i = 0;
+	   char ch;
+	   int qlen = query.length();
+
+	   while( i < qlen) {
+	     ch = query.charAt(i++);
+
+	     if (delim.indexOf(ch)>=0) {
+	       if (buf.length()>0) {
+	         lst.add(buf.toString());
+	         buf.setLength(0);
+	       }
+	       lst.add(""+ch);
+	     }
+	     else if (ch == '\\') {
+	       buf.append(ch);
+	       if (i < qlen)
+	         buf.append(query.charAt(i++)); 
+
+	     } 
+	     else if (ch == '"' || ch == '\'') {
+	     	char end = ch;
+	     	buf.append(ch);
+	     	while (i < qlen) {
+	          ch = query.charAt(i++);
+	          buf.append(ch);
+	          if (ch == end)
+	            break;
+	      	}
+	     
+	     } else {
+	       buf.append(ch);
+	     }
+	   }
+
+	   if (buf.length()>0)
+	     lst.add(buf.toString());
+
+	   if (gInsert!=null)
+	     fixTermOp(lst, "INSERT", "INTO", gInsert);
+	   if (gDelete!=null)
+	     fixTermOp(lst, "DELETE", "FROM", gDelete);
+
+	   buf.setLength(0);
+	   for(i=0; i<lst.size(); i++)
+	     buf.append(lst.get(i));
+
+	   return buf.toString();
+	}
+
+	/**
+	 * NOTES:
+	 * if WITH exists doesn't use addTerm
+	 * if GRAPH exists doesn't use addTerm
+	 * if INSERT INTO doesn't use addTerm
+	 * if DELETE FROM doesn't use addTerm
+	**/
+	private void fixTermOp(ArrayList<String> lst, String term, String subTerm, String addTerm)
+	{
+	   int i;
+	   boolean WITH_used = false;
+	   boolean subTerm_used = false;
+	   boolean GRAPH_used = false;
+	   int in_term = -1;
+	   int term_cb_start = -1;
+
+	   for(i=0; i<lst.size(); i++) {
+	     String t = lst.get(i);
+
+	     if (t.equalsIgnoreCase("WITH") && in_term==-1) {
+	       WITH_used = true;
+	     }
+	     else if (t.equalsIgnoreCase(term)) {
+	       in_term = 0;
+	     }
+	     else if (t.equalsIgnoreCase(subTerm) && in_term==0) {
+	       subTerm_used = true;
+	     }
+	     else if (t.equals("{")) {
+	       if (in_term >=0) in_term++;
+
+	       if (in_term == 1)
+	         term_cb_start = i;
+	     }
+	     else if (t.equals("}")) {
+	       if (in_term == 1)
+	         in_term = -1;
+	       else
+	         in_term--;
+	     }
+	     else if (t.equalsIgnoreCase("GRAPH")){
+	       if (in_term == 1) 
+	         GRAPH_used = true;
+	     }
+	   }
+
+	   if (addTerm!=null && !WITH_used && !subTerm_used && !GRAPH_used
+	       && term_cb_start!=-1) {
+	     lst.add(term_cb_start, " "+subTerm + addTerm);
+	   }
+	}
+
+	
 	private synchronized void addToQuadStore(Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException 
 	{
 		verifyIsOpen();
