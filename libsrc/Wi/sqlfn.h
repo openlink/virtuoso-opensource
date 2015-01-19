@@ -1327,6 +1327,7 @@ void itc_invalidate_bm_crs (it_cursor_t * itc, buffer_desc_t * buf, int is_trans
 extern int iri_split (char * iri, caddr_t * pref, caddr_t * name);
 /*! This splits an IRI to "prefix" and "local" parts, making "local" as short as it is allowed by TURTLE syntax. */
 extern void iri_split_ttl_qname (const char * iri, caddr_t * pref, caddr_t * name, int abbreviate_nodeid);
+extern void iri_split_ttl_qname_impl (const char * iri, caddr_t * pref, caddr_t * name, int abbreviate_nodeid, int flag);
 int64  unbox_iri_int64 (caddr_t x);
 int itc_bm_land_lock (it_cursor_t * itc, buffer_desc_t ** buf_ret);
 void itc_init_bm_search (it_cursor_t * itc);
