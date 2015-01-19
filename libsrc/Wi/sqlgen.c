@@ -348,8 +348,13 @@ int
 sqlg_any_oby_order (df_elt_t * dfe)
 {
   for (dfe = dfe; dfe; dfe = dfe->dfe_prev)
-    if (DFE_TABLE == dfe->dfe_type && dfe->_.table.is_oby_order)
-      return 1;
+    if (DFE_TABLE == dfe->dfe_type)
+      {
+	if (dfe->_.table.is_oby_order)
+	  return 1;
+	if (sqlo_opt_value (dfe->_.table.ot->ot_opts, OPT_INDEX_ORDER))
+	  return 1;
+      }
   return 0;
 }
 
