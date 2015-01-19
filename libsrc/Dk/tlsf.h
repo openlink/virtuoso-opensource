@@ -41,7 +41,9 @@ extern void tlsf_base_free (void * c, size_t sz);
 
 
 /*#define USE_SBRK        (0) */
-#define USE_MMAP        (1) 
+#ifndef WIN32
+#define USE_MMAP        (1)
+#endif
 #define _DEBUG_TLSF_ 1
 #define TLSF_STATISTIC 1
 #define USE_PRINTF 1
@@ -70,7 +72,7 @@ extern void tlsf_base_free (void * c, size_t sz);
 #endif
 
 
-#if TLSF_USE_LOCKS
+#if !defined(WIN32) && defined(TLSF_USE_LOCKS)
 #include "target.h"
 #else
 #define TLSF_CREATE_LOCK(_unused_)   do{}while(0)
@@ -162,6 +164,7 @@ extern void tlsf_base_free (void * c, size_t sz);
 #define PAGE_SIZE (getpagesize())
 #endif
 
+#ifndef WIN32
 #ifdef USE_PRINTF
 #include <stdio.h>
 # define PRINT_MSG(fmt, args...) fprintf(tlsf_fp, fmt, ## args)
@@ -173,6 +176,10 @@ extern void tlsf_base_free (void * c, size_t sz);
 # if !defined(ERROR_MSG)
 #  define ERROR_MSG(fmt, args...)
 # endif
+#endif
+#else
+#define PRINT_MSG tlsf_printf
+#define ERROR_MSG printf
 #endif
 
 typedef unsigned int u32_t;     /* NOTE: Make sure that this type is 4 bytes long on your computer */

@@ -1978,10 +1978,10 @@ go_ua_store (caddr_t * inst, gb_op_t * go, index_tree_t * tree, caddr_t * dep_pt
   tlsf_t * tlsf;
   int any_len;
   caddr_t err = NULL;
-  AUTO_POOL (1024);
   caddr_t str;
   caddr_t  place = *dep_ptr;
   caddr_t box = QST_GET_V (inst, go->go_old_val);
+  AUTO_POOL (1024);
   str = box_to_any_1 (box, &err, &ap, DKS_TO_DC);
   if (err)
     sqlr_resignal (err);

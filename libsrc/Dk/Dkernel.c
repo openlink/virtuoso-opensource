@@ -53,6 +53,10 @@
 int LEVEL_VAR = 4;
 #endif
 
+#ifdef WIN32
+#define strcasecmp _stricmp
+#endif
+
 
 #ifdef _SSL
 #include <openssl/rsa.h>

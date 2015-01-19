@@ -272,6 +272,15 @@ static __inline__ bhdr_t *process_area(void *area, size_t size)
     return ib;
 }
 
+void 
+tlsf_printf (char * fmt, ...)
+{
+  va_list ap;
+  va_start (ap, fmt);
+  vfprintf (tlsf_fp, fmt, ap);
+  va_end (ap);
+}
+
 /******************************************************************/
 /******************** Begin of the allocator code *****************/
 /******************************************************************/
@@ -510,6 +519,10 @@ tlsf_malloc(DBG_PARAMS size_t size, du_thread_t * thr)
     printf ("over %d\n", no_place_limit);
   return ret;
 }
+
+#if defined (WIN32) || defined (SOLARIS)
+#define __builtin_prefetch(m) 
+#endif
 
 void 
 tlsf_free(void *ptr)
@@ -919,7 +932,11 @@ tlsf_new (size_t size)
 {
   tlsf_t * tlsf;
   void * area;
+#ifdef HAVE_SYS_MMAN_H  
   if ((area = mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)) != MAP_FAILED)
+#else
+  if ((area = malloc(size)) != NULL)
+#endif
     {
       init_memory_pool (size, area);
       tlsf = (tlsf_t*)area;
