@@ -3365,7 +3365,7 @@ rq_sample (df_elt_t * dfe, rq_cols_t * rq, index_choice_t * ic)
   ic->ic_no_dep_sample = 1;
   if (non_index_in)
     {
-      du_thread_t * thr = THREAD_CURRENT_THREAD;;
+      du_thread_t * thr = THREAD_CURRENT_THREAD;
       df_elt_t ** in_list = sqlo_in_list (non_index_in, NULL, NULL);
       int ctr, nth_save = (ptrlong) THR_ATTR (thr, TA_NTH_IN_ITEM);
       res = 0;
