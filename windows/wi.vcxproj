@@ -19,11 +19,13 @@
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v110</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v110</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -46,6 +48,7 @@
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ShortPlatform)\$(Configuration)\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ShortPlatform)\$(Configuration)\$(ProjectName)\</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ShortPlatform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <ExecutablePath Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\cygwin\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Midl>
@@ -650,20 +653,20 @@ cd $(ProjectDir)
     <CustomBuild Include="..\libsrc\Wi\scn3.l">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
 rm -f scn3_vsnet.c
-flex -oscn3_vsnet.c %(FullPath)
+flex -Pscn3yy -oscn3_vsnet.c %(FullPath)
 flex -Pscn3splityy -oscn3split.c %(FullPath)
 cd $(ProjectDir)
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)scn3_vsnet.c;%(RootDir)%(Directory)scn3split.c;%(Outputs)</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">cd %(RootDir)%(Directory)
 rm -f scn3_vsnet.c
-flex -oscn3_vsnet.c %(FullPath)
+flex -Pscn3yy -oscn3_vsnet.c %(FullPath)
 flex -Pscn3splityy -oscn3split.c %(FullPath)
 cd $(ProjectDir)
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
 rm -f scn3_vsnet.c
-flex -oscn3_vsnet.c %(FullPath)
+flex -Pscn3yy -oscn3_vsnet.c %(FullPath)
 flex -Pscn3splityy -oscn3split.c %(FullPath)
 cd $(ProjectDir)
 </Command>
@@ -671,20 +674,20 @@ cd $(ProjectDir)
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)scn3_vsnet.c;%(RootDir)%(Directory)scn3split.c;%(Outputs)</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
 rm -f scn3_vsnet.c
-flex -oscn3_vsnet.c %(FullPath)
+flex -Pscn3yy -oscn3_vsnet.c %(FullPath)
 flex -Pscn3splityy -oscn3split.c %(FullPath)
 cd $(ProjectDir)
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)scn3_vsnet.c;%(RootDir)%(Directory)scn3split.c;%(Outputs)</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd %(RootDir)%(Directory)
 rm -f scn3_vsnet.c
-flex -oscn3_vsnet.c %(FullPath)
+flex -Pscn3yy -oscn3_vsnet.c %(FullPath)
 flex -Pscn3splityy -oscn3split.c %(FullPath)
 cd $(ProjectDir)
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
 rm -f scn3_vsnet.c
-flex -oscn3_vsnet.c %(FullPath)
+flex -Pscn3yy -oscn3_vsnet.c %(FullPath)
 flex -Pscn3splityy -oscn3split.c %(FullPath)
 cd $(ProjectDir)
 </Command>
@@ -790,7 +793,7 @@ cd $(ProjectDir)
 cd %(RootDir)%(Directory)
 rm -f sql3.c
 rm -f sql3.h
-bison -y  -vd sql3.y -osql3.c
+bison -y  -vd -pscn3yy sql3.y -osql3.c
 cd $(ProjectDir)
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)sql3.c;%(RootDir)%(Directory)sql3.h;%(Outputs)</Outputs>
@@ -798,14 +801,14 @@ cd $(ProjectDir)
 cd %(RootDir)%(Directory)
 rm -f sql3.c
 rm -f sql3.h
-bison -y  -vd sql3.y -osql3.c
+bison -y  -vd -pscn3yy sql3.y -osql3.c
 cd $(ProjectDir)
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
 cd %(RootDir)%(Directory)
 rm -f sql3.c
 rm -f sql3.h
-bison -y  -vd sql3.y -osql3.c
+bison -y  -vd -pscn3yy sql3.y -osql3.c
 cd $(ProjectDir)
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)sql3.c;%(RootDir)%(Directory)sql3.h;%(Outputs)</Outputs>
@@ -814,7 +817,7 @@ cd $(ProjectDir)
 cd %(RootDir)%(Directory)
 rm -f sql3.c
 rm -f sql3.h
-bison -y  -vd sql3.y -osql3.c
+bison -y  -vd -pscn3yy sql3.y -osql3.c
 cd $(ProjectDir)
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)sql3.c;%(RootDir)%(Directory)sql3.h;%(Outputs)</Outputs>
@@ -822,7 +825,7 @@ cd $(ProjectDir)
 cd %(RootDir)%(Directory)
 rm -f sql3.c
 rm -f sql3.h
-bison -y  -vd sql3.y -osql3.c
+bison -y  -vd -pscn3yy sql3.y -osql3.c
 cd $(ProjectDir)
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

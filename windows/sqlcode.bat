@@ -1,4 +1,4 @@
-set SQL_FILES=system.sql system2.sql odbccat.sql useraggr.sql vt_text.sql phrasematch.sql hosting.sql
+set SQL_FILES=sys_unicode3_collations.sql system.sql system2.sql odbccat.sql useraggr.sql vt_text.sql phrasematch.sql hosting.sql
 set SQL_FILES_1=oledb.sql information_schema.sql
 set SQL_FILES_WS=../../binsrc/vsp/vsp_auth.sql soap.sql wsrp_ultim.xsl wsrp_resp.xsl wsrp_interm.xsl wsrp_error.xsl soap_sch.xsl soap_import_sch.xsl wsdl_expand.xsl wsdl_parts.xsl wsdl_import.xsl wsdl2rdf.xsl xmlrpc_soap.xsl soap_xmlrpc.xsl soap12_router.xsl ../../binsrc/ws/wsrm/wsrm_ddl.sql ../../binsrc/ws/wsrm/wsrm_xsd.sql ../../binsrc/ws/wsrm/wsrmcli.sql ../../binsrc/ws/wsrm/wsrmsrv.sql ../../binsrc/ws/wstr/wstr_ddl.sql ../../binsrc/ws/wstr/wstrcli.sql ../../binsrc/ws/wstr/wstrsrv.sql ../../binsrc/ws/wsrm/wsrmcall.xsl rdf_net.sql simile.sql http_auth.sql xmla.sql openxml.sql ../../binsrc/vspx/vspx.sql ../../binsrc/vspx/vspx_add_locations.xsl ../../binsrc/vspx/vspx_expand.xsl ../../binsrc/vspx/vspx_pre_xsd.xsl ../../binsrc/vspx/vspx_pre_sql.xsl ../../binsrc/vspx/vspx_log_format.xsl ../../binsrc/vspx/vspx.xsd ../../binsrc/vspx/vspx.xsl
 set SQL_FILES_REPL=snapshot_repl.sql repl.sql
