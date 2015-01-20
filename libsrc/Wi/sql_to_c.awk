@@ -748,7 +748,6 @@ END 	{
 	   print "      }\\"
 	   print "    \\"
 	   print "   DEFINE_PROC(name, text); \\"
-	   print "   dk_free_box (text); \\"
 	   print "  }\n\n"
            }
 	   print "#define DEFINE_OVERWRITE_PROC(name, proc) \\"
