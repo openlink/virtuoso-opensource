@@ -31,7 +31,7 @@
 #if !defined (WIN95COMPAT)
 #define _WIN32_WINNT 0x400
 #endif
-#include "thread_int.h"
+#include "Dk.h"
 
 char *build_thread_model = "-threads";
 
