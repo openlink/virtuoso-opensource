@@ -242,9 +242,6 @@ END
 // Bitmap
 //
 
-<<<<<<< Updated upstream
-IDB_BITMAPVIRT          BITMAP  DISCARDABLE     "virtodbc.bmp"
-=======
 IDB_BITMAPVIRT          BITMAP                  "virtodbc.bmp"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -284,7 +281,6 @@ BEGIN
     END
 END
 
->>>>>>> Stashed changes
 
 /////////////////////////////////////////////////////////////////////////////
 //
