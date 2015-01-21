@@ -3598,7 +3598,7 @@ bif_dict_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         ht->ht_dict_mem_in_use += raw_length (val) - raw_length (old_val_ptr[0]);
       if (ht->ht_mp)
 	{
-	  val = mp_full_box_copy_tree (ht->ht_mp, val);
+	  val = mp_full_box_copy_tree ((mem_pool_t *)(ht->ht_mp), val);
 	}
       else
 	{
@@ -3626,8 +3626,8 @@ bif_dict_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         }
       if (ht->ht_mp)
 	{
-	  key = mp_full_box_copy_tree (ht->ht_mp, key);
-	  val = mp_full_box_copy_tree (ht->ht_mp, val);
+	  key = mp_full_box_copy_tree ((mem_pool_t *)(ht->ht_mp), key);
+	  val = mp_full_box_copy_tree ((mem_pool_t *)(ht->ht_mp), val);
 	}
       else
 	{
@@ -3762,15 +3762,32 @@ bif_dict_inc_or_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (0 >= old_int)
         sqlr_new_error ("42000", "SR628",
           "dict_inc_or_put() can not increment a value if it is less than or equal to zero" );
-      dk_free_tree (old_val_ptr[0]);
       res = old_int + inc_val;
-      old_val_ptr[0] = box_num (res);
+      if (ht->ht_mp)
+        {
+          old_val_ptr[0] = mp_box_num ((mem_pool_t *)(ht->ht_mp), res);
+        }
+      else
+        {
+          dk_free_tree (old_val_ptr[0]);
+          old_val_ptr[0] = box_num (res);
+        }
     }
   else
     {
-      caddr_t val = box_num (inc_val);
-      key = box_copy_tree (key);
+      caddr_t val;
+      
       res = inc_val;
+      if (ht->ht_mp)
+        {
+          val = mp_box_num ((mem_pool_t *)(ht->ht_mp), inc_val);
+          key = mp_box_copy_tree ((mem_pool_t *)(ht->ht_mp), key);
+        }
+      else
+        {
+          val = box_num (inc_val);
+          key = box_copy_tree (key);
+        }
       if (ht->ht_mutex)
         box_make_tree_mt_safe (key);
       id_hash_set (ht, (caddr_t)(&key), (caddr_t)(&val));
@@ -3811,10 +3828,16 @@ bif_dict_dec_or_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (0 >= old_int)
         sqlr_new_error ("42000", "SR631",
           "dict_dec_or_remove() can not decrement a value if it is less than or equal to zero" );
-      if (!ht->ht_mp)
-	dk_free_tree (old_val_ptr[0]);
       res = old_int - dec_val;
-      old_val_ptr[0] = box_num (res);
+      if (ht->ht_mp)
+        {
+          old_val_ptr[0] = mp_box_num ((mem_pool_t *)(ht->ht_mp), res);
+        }
+      else
+        {
+          dk_free_tree (old_val_ptr[0]);
+          old_val_ptr[0] = box_num (res);
+        }
       ht->ht_dict_version++;
       hit->hit_dict_version++;
     }
