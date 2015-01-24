@@ -976,7 +976,7 @@ again:
    else if (__tag (_object) = 211)
      {
        http (sprintf ('<span %s>%s</span>', rdfa, datestring (_object)));
-       lang := b3s_xsd_link ('date');
+       lang := b3s_xsd_link ('dateTime');
      }
    else if (__tag (_object) = 230)
      {
