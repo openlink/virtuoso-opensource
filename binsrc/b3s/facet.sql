@@ -817,8 +817,8 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
 
   if ('list' = mode or 'propval-list' = mode)
     {
-      http (sprintf ('select distinct ?s%d as ?c1 ', this_s), pre);
-      http (sprintf (' order by desc (<LONG::IRI_RANK> (?s%d)) ', this_s), post);
+      http (sprintf ('select ?s%d as ?c1 ', this_s), pre);
+      http (sprintf (' group by (?s%d) order by desc (<LONG::IRI_RANK> (?s%d)) ', this_s, this_s), post);
     }
 
   if ('list-count' = mode)
@@ -829,8 +829,8 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
 
   if ('entities-list' = mode)
     {
-      http (sprintf ('select distinct ?s%d as ?c1 ', this_s), pre);
-      http (sprintf (' order by desc (<LONG::IRI_RANK> (?s%d)) ', this_s), post);
+      http (sprintf ('select ?s%d as ?c1 ', this_s), pre);
+      http (sprintf (' group by (?s%d) order by desc (<LONG::IRI_RANK> (?s%d)) ', this_s, this_s), post);
     }
 
   if ('properties' = mode)
