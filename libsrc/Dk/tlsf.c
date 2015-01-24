@@ -917,8 +917,14 @@ tlsf_print_all_blocks(tlsf_t * tlsf, void * ht1, int mode)
 
 #endif
 
-
-
+#ifdef WIN32
+int getpagesize()
+{
+  SYSTEM_INFO si;
+  GetSystemInfo(&si);
+  return si.dwPageSize;
+}
+#endif
 
 
 tlsf_t * dk_base_tlsf;
@@ -935,6 +941,7 @@ tlsf_new (size_t size)
 #ifdef HAVE_SYS_MMAN_H  
   if ((area = mmap(0, size, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0)) != MAP_FAILED)
 #else
+  size = ROUNDUP(size, PAGE_SIZE);
   if ((area = malloc(size)) != NULL)
 #endif
     {

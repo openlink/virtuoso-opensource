@@ -160,9 +160,7 @@ extern void tlsf_base_free (void * c, size_t sz);
 
 #define DEFAULT_AREA_SIZE (1024*10)
 
-#ifdef USE_MMAP
 #define PAGE_SIZE (getpagesize())
-#endif
 
 #ifndef WIN32
 #ifdef USE_PRINTF
