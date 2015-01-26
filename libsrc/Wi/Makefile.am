@@ -759,20 +759,20 @@ json_l.c: $(srcdir)/json.l json_p.h Makefile.am
 	@$(GEN) $(LEX) -o json_l.c -Pjsonyy $(srcdir)/json.l
 
 
-sqlwords.h: $(srcdir)/sqlwords.gperf
+sqlwords.h: $(srcdir)/sqlwords.gperf Makefile.am
 	@${GEN} --stdout ${GPERF} \
 		-o sqlwords.h \
 		-aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$$ \
 		-Nlex_hash_kw \
 		$(srcdir)/sqlwords.gperf
 
-sql3.c sql3.h: sql3.y
+sql3.c sql3.h: sql3.y Makefile.am
 	@$(GEN) $(YACC) -o sql3.c -pscn3yy -vd $(srcdir)/sql3.y
 
-scn3.c: scn3.l sql3.c sqlwords.h
+scn3.c: scn3.l sql3.c sqlwords.h Makefile.am
 	@$(GEN) $(LEX) -o scn3.c -Pscn3yy $(srcdir)/scn3.l
 
-scn3split.c: scn3.l sql3.c sqlwords.h
+scn3split.c: scn3.l sql3.c sqlwords.h Makefile.am
 	@$(GEN) $(LEX) -o scn3split.c -Pscn3splityy $(srcdir)/scn3.l
 
 $(top_srcdir)/binsrc/cached_resources/cached_resources.c:
