@@ -3400,12 +3400,54 @@ create procedure WS.WS.SPARQL_QUERY_POST (
 }
 ;
 
+create procedure WS.WS.TTL_QUERY_PREFIXES (
+  inout triples any,
+  inout ses any)
+{
+  declare env any;
+  declare tcount, tctr, first_dflt_g_idx integer;
+  declare first_g_idx integer;
+
+  tcount := length (triples);
+  if (0 = tcount)
+  {
+    return;
+  }
+
+  env := DB.DBA.RDF_TRIPLES_TO_TTL_ENV (tcount, 0, 0, ses);
+  {
+    whenever sqlstate '*' goto end_pred_sort;
+
+    rowvector_subj_sort (triples, 1, 1);
+  end_pred_sort: ;
+  }
+  {
+    whenever sqlstate '*' goto end_subj_sort;
+
+    rowvector_subj_sort (triples, 0, 1);
+  end_subj_sort: ;
+  }
+
+  rowvector_graph_sort (triples, 3, 1);
+  DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
+  for (tctr := 0; (tctr < tcount) and aref_or_default (triples, tctr, 3, null) is null; tctr := tctr + 1)
+  {
+    http_ttl_prefixes (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
+  }
+  first_g_idx := tctr;
+  for (tctr := first_g_idx; tctr < tcount; tctr := tctr + 1)
+  {
+    http_ttl_prefixes (env, triples[tctr][0], triples[tctr][1], triples[tctr][2], ses);
+  }
+}
+;
+
 create procedure WS.WS.TTL_QUERY_POST (
   in path varchar,
   inout ses varchar,
   in dav_call integer := 0)
 {
-  declare ns, def_gr, giid, dict, triples any;
+  declare ns, def_gr, giid, dict, triples, prefixes any;
 	declare exit handler for sqlstate '*'
 	{
 	  connection_set ('__sql_state', __SQL_STATE);
@@ -3457,7 +3499,13 @@ _again:;
 _next:;
   triples := dict_list_keys (dict, 1);
   ns := string_output ();
-  DB.DBA.RDF_TRIPLES_TO_NICE_TTL (triples, ns);
+  WS.WS.TTL_QUERY_PREFIXES (triples, ns);
+  prefixes := string_output_string(ns);
+  prefixes := replace (prefixes, '\n', ' ');
+  ns := string_output ();
+  http (prefixes, ns);
+  http ('\n# ----------------------------\n', ns);
+  http (ses, ns);
 
 _exit:;
   DB.DBA.TTLP (ns, def_gr, def_gr, 255);
