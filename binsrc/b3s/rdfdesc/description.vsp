@@ -294,7 +294,7 @@ again:
   if (accept = '*/*')
     accept := 'text/html';
   -- accepted types
-  qs := vector ('text/html', 'application/xhtml+xml', 'text/n3', 'text/rdf+n3', 'application/rdf+xml', 'application/json', 'text/plain');
+  qs := vector ('text/html', 'application/xhtml+xml', 'text/n3', 'text/turtle', 'application/rdf+xml', 'application/json', 'text/plain');
   -- quality prefs
   qv := vector (        0.5,                     0.7, 	    0.8,           0.8,                   1.0,                0.7,          0.1);
   best_q := 0;
@@ -704,7 +704,7 @@ if (_subject <> '') {
 	<a href="<?=rdf_link?><?= sprintf ('&output=%U', 'text/cxml')?>">CXML</a> |
         <a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/csv')?>">CSV</a> | RDF (
         <a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/plain') ?>">N-Triples</a>
-        <a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/rdf+n3') ?>">N3/Turtle</a>
+        <a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/turtle') ?>">N3/Turtle</a>
         <a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/rdf+json')?>">JSON</a> 
         <a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/rdf+xml') ?>">XML</a> ) | OData (
         <a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/atom+xml')?>">Atom</a> 
