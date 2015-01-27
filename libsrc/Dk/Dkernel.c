@@ -1511,12 +1511,18 @@ frq_create (dk_session_t * ses, caddr_t * request)
       future_request->rq_to_close = 1;
       return future_request;
     }
-  if (BOX_ELEMENTS (request) != DA_FRQ_LENGTH)
+  if (!IS_BOX_POINTER (request) || BOX_ELEMENTS (request) != DA_FRQ_LENGTH)
     {
       sr_report_future_error (ses, "", "invalid future request length");
-      dk_free_tree (request);
-      PrpcDisconnect (ses);
-      PrpcSessionFree (ses);
+      if (IS_BOX_POINTER (request))
+	dk_free_tree (request);
+      mutex_enter (thread_mtx);
+      if (ses->dks_thread_state == DKST_IDLE)
+	{
+	  PrpcDisconnect (ses);
+	  PrpcSessionFree (ses);
+	}
+      mutex_leave (thread_mtx);
       dk_free (future_request, sizeof (future_request_t));
       return NULL;
     }
