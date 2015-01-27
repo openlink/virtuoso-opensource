@@ -91,7 +91,7 @@ sparp_dump_weird_query (spar_query_env_t *sparqre, const char *reason, char *md5
   FILE *dump_file;
   const char *txt, *sqltxt;
   static dk_mutex_t *sparp_dump_weird_query_mtx;
-  if (NULL == sparp_dump_weird_query_mtx);
+  if (NULL == sparp_dump_weird_query_mtx)
     sparp_dump_weird_query_mtx = mutex_allocate();
   txt = sparqre->sparqre_dbg_query_text;
   if (NULL == txt)
