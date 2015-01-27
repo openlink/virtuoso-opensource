@@ -5,6 +5,8 @@
   declare host,gr,page_resource_uri,_S varhar;
   declare sid,ses_parms  varchar;
   declare arr any;
+  declare pageUrl varchar;
+  declare user_permissions int;
 
   gr := get_keyword ('g', params, '');
   arr := rfc1808_parse_uri (gr);
@@ -15,6 +17,8 @@
   page_resource_uri := gr;
   page_resource_uri := replace (page_resource_uri, '%23', '#');
 
+  pageUrl := FCT.DBA.build_page_url_on_current_host ('/fct/rdfdesc/settings.vsp', sprintf ('g=%U', page_resource_uri));
+
   _S := page_resource_uri;
 
   host := http_request_header (http_request_header (), 'Host');
@@ -24,6 +28,17 @@
   b3s_parse_inf (sid, params);
   ses_parms := b3s_render_ses_params ();
 
+    user_permissions := DB.DBA.RDF_GRAPH_USER_PERMS_GET (gr, http_nobody_uid());
+    if (bit_and (user_permissions, 1) = 0)
+    {
+      -- User doesn't have read permission
+      declare protocol, view_uri varchar;
+      view_uri := gr;
+      protocol := 'http'; if (is_https_ctx()) protocol := 'https';
+      http_status_set (303);
+      http_header (sprintf('Location: %s://%s//fct/rdfdesc/fct_no_view_perms.vsp?gr=%U%s\r\n', protocol, host, view_uri, FCT.DBA.get_describe_request_params (params)));
+      return;
+    }
 ?>
 <head>
   <base href="http<?V case is_https_ctx () when 1 then 's' else '' end ?>://<?V host ?>/fct/rdfdesc/" />
@@ -41,6 +56,8 @@
   <div id="PG">
     <div id="HD">
       <?vsp fct_desc_page_head (); ?>
+      <div id="hd_r">
+      </div>
       <ul id="main_menu">
         <?vsp if (sid is not null) { ?>
           <li><a href="<?= b3s_render_fct_link() ?>">Facets</a></li>

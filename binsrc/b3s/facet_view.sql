@@ -44,7 +44,8 @@ fct_view_info (in tree any, in ctx int, in txt any)
   http ('<h3 id="view_info">', txt);
   if ('list' = mode)
     {
-      http (sprintf ('Query results for Relations for %s%d', connection_get ('s_term'), pos), txt);
+      --http (sprintf ('Query results for Relations for %s%d', connection_get ('s_term'), pos), txt);
+      http ('Find entity relationships', txt);
     }
   if ('list-count' = mode)
     {
@@ -552,15 +553,18 @@ fct_query_info (in tree any,
 ;
 
 VHOST_REMOVE (lpath=>'/fct');
-VHOST_DEFINE (lpath=>'/fct',
+VHOST_DEFINE (
+  lpath=>'/fct',
     	ppath=>case when registry_get('_fct_path_') = 0 then '/fct/' else registry_get('_fct_path_') end,
 	is_dav=>atoi (case when registry_get('_fct_dav_') = 0 then '0' else registry_get('_fct_dav_') end),
-    	vsp_user=>'SPARQL', def_page=>'facet.vsp');
+  vsp_user=>'SPARQL',
+  def_page=>'facet.vsp'
+  );
 VHOST_REMOVE (lpath=>'/b3s');
 VHOST_DEFINE (lpath=>'/b3s',
     	ppath=>case when registry_get('_fct_path_') = 0 then '/fct/' else registry_get('_fct_path_') end || 'www/',
 	is_dav=>atoi (case when registry_get('_fct_dav_') = 0 then '0' else registry_get('_fct_dav_') end),
-    	vsp_user=>'dba', def_page=>'listall.vsp');
+    	vsp_user=>'SPARQL', def_page=>'listall.vsp');
 
 
 create procedure
@@ -625,7 +629,7 @@ fct_nav (in tree any,
   fct_set_conn_tlogy (tree);
 
   http ('<div id="fct_nav">', txt);
-  http ('<h3>Entity Relationship Exploration</h3>', txt);
+  http ('<h3>Entity Relationship Filters</h3>', txt);
   http ('<ul class="n1">', txt);
 
   if ('text-properties' = tp)
@@ -647,18 +651,18 @@ fct_nav (in tree any,
 
   if ('properties' <> tp)
     if (connection_get('s_term') = 's')
-      fct_view_link ('properties', 'Properties', txt, 'Entity Characteristic or Property');
+      fct_view_link ('properties', 'Relation Subject', txt, 'Relationships for which selected variable denotes relation subject');
     else
-      fct_view_link ('properties', 'Relation Subjects', txt, 'Relations for which selected Entity is an Object');
+      fct_view_link ('properties', 'Relation Entity', txt, 'Relationships for which selected variable denotes relation entity');
 
   if ('text' = tp and pos = 0)
     fct_view_link ('text-properties', 'Properties containing the text', txt);
 
   if ('properties-in' <> tp)
     if (connection_get('s_term') = 's')
-      fct_view_link ('properties-in', 'Referencing Properties', txt, 'Characteristics or Properties with Entity References as values');
+      fct_view_link ('properties-in', 'Relation Object', txt, 'Relationships for which selected variable denotes relation object');
     else
-      fct_view_link ('properties-in', 'Relation Objects', txt, 'Relations for which selected Entity is a Subject');
+      fct_view_link ('properties-in', 'Relation Value', txt, 'Relationships for which selected variable denotes relation value');
 
       if (tp <> 'list-count')
     {
@@ -2587,7 +2591,7 @@ exec:;
 create procedure fct_virt_info ()
 {
   http ('<a href="http://www.openlinksw.com/virtuoso/">OpenLink Virtuoso</a> version ');
-  http (sys_stat ('st_dbms_ver')); 
+  http (sprintf ('%s as of %s', sys_stat ('st_dbms_ver'), sys_stat('st_build_date')));
   http (', on ');
   http (sys_stat ('st_build_opsys_id')); http (sprintf (' (%s), ', host_id ()));
   http (case when sys_stat ('cl_run_local_only') = 1 then 'Single-Server' else 'Cluster' end); http (' Edition ');
@@ -2631,7 +2635,7 @@ create procedure fct_desc_page_head ()
     </h1>
     <div id="homelink"></div>
   </div> <!-- hd_l -->
-  <div id="hd_r"></div> <!-- hd_r -->');
+  ');
 }
 ;
 

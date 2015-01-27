@@ -8,8 +8,30 @@
 
 <?vsp
   declare main_ss varchar;
+  declare  pageUrl, query_str varchar;
   main_ss := registry_get ('fct_main_ss');
   if (not isstring (main_ss)) main_ss := 'styles/default.css';
+
+  pageUrl := http_path();
+  query_str := '';
+  for (declare i, j, l int, i := 0, j := 1, l := length (params); i < l; i := i + 2)
+  {
+    if (params[i] <> 'Content')
+    {
+      declare k,v varchar;
+      if (j > 1)
+	query_str := query_str || '&';
+      k := params[i];
+      v := params[i+1];
+      if (starts_with(v, 'http'))
+	v := sprintf ('%U', v);
+      query_str := query_str || k || '=' || v;
+      j := j + 1;
+    }
+  }
+  if (length (query_str))
+    pageUrl := pageUrl || '?' || query_str;
+
 ?>
   <link rel="stylesheet" type="text/css" href="<?=main_ss?>"  charset="utf-8" />
 
@@ -71,6 +93,8 @@
 <div id="PG">
 <div id="HD">
   <?vsp fct_page_head (); ?>
+    <div id="hd_r">
+    </div>
 </div><!-- #HD -->
 <div id="MD">
 <?vsp
