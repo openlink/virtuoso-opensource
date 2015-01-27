@@ -27,7 +27,6 @@ grant execute on DB.DBA.b3s_render_inf_opts to "SPARQL_SELECT";
 grant execute on DB.DBA.b3s_find_class_type to "SPARQL_SELECT";
 grant execute on b3s_http_url to "SPARQL_SELECT";
 grant execute on fct_make_curie to "SPARQL_SELECT";
-grant execute on fct_make_qr_code to "SPARQL_SELECT";
 grant execute on b3s_render_dbg_out to "SPARQL_SELECT";
 grant execute on VAD_CHECK_VERSION to "SPARQL_SELECT";
 grant execute on fct_virt_info to "SPARQL_SELECT";

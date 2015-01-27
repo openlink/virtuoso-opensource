@@ -41,6 +41,8 @@
   declare dbg_out any;
   declare inf_rule varchar;
   declare ses_parms varchar;
+  declare pageUrl varchar;
+  declare user_permissions int;
 
   white_page := 1;
 
@@ -85,6 +87,8 @@
   page_resource_uri := gr;
   page_resource_uri := replace (page_resource_uri, '%23', '#');
 
+  pageUrl := FCT.DBA.build_page_url_on_current_host ('/fct/rdfdesc/usage.vsp', sprintf ('g=%U', page_resource_uri));
+
   _S := page_resource_uri;
 
   proxy_iri := page_resource_uri;
@@ -128,6 +132,18 @@
   declare desc_qr varchar;
   desc_qr := sprintf ('define sql:describe-mode "CBD" DESCRIBE <%s>', page_resource_uri);
   desc_resource_uri := sprintf ('http://%{WSHost}s/sparql?query=%U&format=cxml', desc_qr);
+
+    user_permissions := DB.DBA.RDF_GRAPH_USER_PERMS_GET (gr, http_nobody_uid());
+    if (bit_and (user_permissions, 1) = 0)
+    {
+      -- User doesn't have read permission
+      declare protocol, view_uri varchar;
+      view_uri := gr;
+      protocol := 'http'; if (is_https_ctx()) protocol := 'https';
+      http_status_set (303);
+      http_header (sprintf('Location: %s://%s//fct/rdfdesc/fct_no_view_perms.vsp?gr=%U%s\r\n', protocol, host, view_uri, FCT.DBA.get_describe_request_params (params)));
+      return;
+    }
 ?>
 
 <!-- header -->
@@ -146,6 +162,8 @@
 <body class="usage_page">
   <div id="HD">
     <?vsp fct_desc_page_head (); ?>
+    <div id="hd_r">
+    </div>
     <ul id="main_menu">
       <?vsp if (sid is not null) { ?>
         <li><a href="<?= b3s_render_fct_link() ?>">Facets</a></li>
@@ -160,32 +178,27 @@
   </div> <!-- #HD -->
   <div id="MD">
     <div class="page_resource_info">
-      <h2>Usage stats on <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>">
+      <h2>About: <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>">
         <?vsp http (sprintf ('%s', label)); ?></a></h2>&nbsp;<a class="desc_permalink" href="usage.vsp?g=<?U b3s_u2w (page_resource_uri) ?>">Permalink</a>
-      <p> an Entity in Data Space: <a href="http://<?V host ?>"><?V host ?></a></p>
+	<p> an Entity references as follows: </p>
     </div>
     <div class="subj_nav">
       <?vsp if (_subject <> '') { ?>
         <p class="subj_desc"><?vsp http (sprintf ('%s', _subject)); ?></p>
       <?vsp } ?>
     <?vsp
-      declare qrimg, ua, qrd any;
-      qrd := HTTP_REQUESTED_URL () || '?' || http_request_get ('QUERY_STRING');
-      ua :=   http_request_header (lines, 'User-Agent');
-      qrimg := fct_make_qr_code (fct_make_curie (qrd, lines));
-      if (qrimg is not null and strcasestr (ua, 'Mobile') is null) {
     ?>
-	      <img id="qrcode" alt="QRcode image" src="data:image/jpg;base64,<?V qrimg ?>"/>
-    <?vsp } ?>
     </div> <!-- .subj_nav -->
 
 <!-- proptable -->
     <div id="TAB_ROW">
       <div class="tab <?vsp http (case when tp = 1 then ' tab_selected' else '' end); ?>">
-        <a href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=1<?V ses_parms ?>">Source Documents</a>
+	  <a  title="<?V case when connection_get('s_term') = 's' then 'Internal Document (named graph) Identifiers that denotes documents in which the current entity being described is the *subject* of one or more *RDF* based relations' else 'Internal Document (named graph) Identifiers that denotes documents in which the current entity being described is the *entity* of one or more *EAV* based relations' end  ?>"
+	      href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=1<?V ses_parms ?>">Subject of Relations In Document</a>
       </div>
       <div class="tab <?vsp http (case when tp = 2 then ' tab_selected' else '' end); ?>">
-        <a href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=2<?V ses_parms ?>">Referenced by Documents</a>
+	  <a title="<?V case when connection_get('s_term') = 's' then 'Internal Document (named graph) Identifiers that denotes documents in which the current entity being described is the *object* of one or more *RDF* based relations' else 'Internal Document (named graph) Identifiers that denotes documents in which the current entity being described is the *value* of one or more *EAV* based relations' end ?>"
+	      href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=2<?V ses_parms ?>">Object of Relations In Document</a>
       </div>
       <div class="tab <?vsp http (case when tp = 3 then ' tab_selected' else '' end); ?>">
         <a title="A list of reconciled identifiers resulting from interpretation of equivalence by name semantics defined by the Web Ontology (OWL)."
@@ -287,7 +300,7 @@
 	  <tr><td colspan="2">
 		  <input type="hidden" name="tp" value="<?V tp ?>"/>
 		  <input type="submit" name="set_graphs" value="Set Graphs"/> 
-		  <input type="submit" name="clear_graphs" value="Clear Graph Selection"/> 
+		  <input type="submit" name="clear_graphs" value="Exclude Graph Selection"/>
 	  </td></tr>
 	  <?vsp } ?>
         </table>
@@ -347,7 +360,7 @@
         <a href="<?=rdf_link || sprintf ('&output=%U', 'text/cxml')?>">CXML</a> |
         <a href="<?=rdf_link || sprintf ('&output=%U', 'text/csv')?>">CSV</a> | RDF (
         <a href="<?=rdf_link || sprintf ('&output=%U', 'text/plain') ?>">N-Triples</a>
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/rdf+n3') ?>">N3/Turtle</a>
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/turtle') ?>">N3/Turtle</a>
         <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+json')?>">JSON</a>
         <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+xml') ?>">XML</a> ) | OData (
         <a href="<?=rdf_link || sprintf ('&output=%U', 'application/atom+xml')?>">Atom</a>

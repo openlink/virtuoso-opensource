@@ -102,7 +102,7 @@ end_loop:;
 	      if ("output-format" = 'rdf' or "output-format" = 'rdf+xml')
 		accept := 'application/rdf+xml';
 	      else if ("output-format" = 'ttl' or "output-format" = 'turtle' or "output-format" = 'n3')
-		accept := 'text/rdf+n3';
+		accept := 'text/turtle';
 	    }
           stat := '00000';
 	  if (get not in ('soft', 'replacing'))
