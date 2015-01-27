@@ -204,7 +204,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "UNBOUND",		UNBOUND_L		, 0
 "UNDEF",		UNDEF_L			, 0
 "UNION",		UNION_L			, 0
-"URI",			SPARQL_BIF		, SPAR_BIF_URI
+"URI",			IRI_L			, 0
 "USING",		USING_L			, 0
 "UUID",			SPARQL_BIF		, SPAR_BIF_UUID
 "VALID",		SPARQL_BIF		, SPAR_BIF_VALID
