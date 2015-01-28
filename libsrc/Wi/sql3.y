@@ -829,7 +829,7 @@ base_table_opt
 base_table_def
 	: CREATE TABLE new_table_name '(' base_table_element_commalist ')' base_table_opt
 		{ $$ = t_listst (4, TABLE_DEF, $3,
-				 t_list_to_array (sqlc_ensure_primary_key (sqlp_process_col_options ($3, $5))), $7); }
+				 t_list_to_array (sqlc_ensure_primary_key (sqlp_process_col_options ($3, $5))), (ptrlong) $7); }
         | CREATE TABLE new_table_name AS query_exp opt_with_data
 		{ $$ = t_listst (4, CREATE_TABLE_AS, $3, $5, t_box_num ((ptrlong) $6)); }
 	;
