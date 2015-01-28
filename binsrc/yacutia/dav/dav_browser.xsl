@@ -3010,9 +3010,13 @@
                       dav_fullPath := WEBDAV.DBA.real_path (dav_fullPath, 1, self.dav_type);
                       if ((isnull (WEBDAV.DBA.DAV_GET (self.dav_item, 'fullPath')) or (WEBDAV.DBA.DAV_GET (self.dav_item, 'fullPath') <> dav_fullPath)) and ((self.dav_type = 'C') or (self.command_mode = 10)))
                       {
-                        retValue := DB.DBA.DAV_SEARCH_ID (dav_fullPath, self.dav_type);
+                        retValue := DB.DBA.DAV_SEARCH_ID (rtrim(dav_fullPath, '/') || '/', 'C');
                         if (not WEBDAV.DBA.DAV_ERROR (retValue))
-                          signal('TEST', 'Folder/File with such name already exists!<>');
+                          signal('TEST', 'Folder with such name already exists!<>');
+
+                        retValue := DB.DBA.DAV_SEARCH_ID (rtrim(dav_fullPath, '/'), 'R');
+                        if (not WEBDAV.DBA.DAV_ERROR (retValue))
+                          signal('TEST', 'File with such name already exists!<>');
                       }
 
                     _test_1:;
@@ -3218,7 +3222,10 @@
 
                         if (WEBDAV.DBA.DAV_GET (self.dav_item, 'fullPath') <> dav_fullPath)
                         {
-                          WEBDAV.DBA.DAV_SET (WEBDAV.DBA.DAV_GET (self.dav_item, 'fullPath'), 'name', dav_name);
+                          retValue := WEBDAV.DBA.DAV_SET (WEBDAV.DBA.DAV_GET (self.dav_item, 'fullPath'), 'name', dav_name);
+                          if (WEBDAV.DBA.DAV_ERROR (retValue))
+                            signal('TEST', concat(WEBDAV.DBA.DAV_PERROR (retValue), '<>'));
+
                           self.dav_path := dav_fullPath;
                         }
 
