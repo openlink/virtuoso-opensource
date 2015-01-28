@@ -43,6 +43,8 @@ extern void tlsf_base_free (void * c, size_t sz);
 /*#define USE_SBRK        (0) */
 #ifndef WIN32
 #define USE_MMAP        (1)
+#else
+#undef USE_MMAP
 #endif
 #define _DEBUG_TLSF_ 1
 #define TLSF_STATISTIC 1
