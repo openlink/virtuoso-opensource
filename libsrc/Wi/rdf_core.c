@@ -2320,7 +2320,7 @@ iri_split_ttl_qname_impl (const char * iri, caddr_t * pref_ret, caddr_t * name_r
 void
 iri_split_ttl_qname (const char * iri, caddr_t * pref_ret, caddr_t * name_ret, int abbreviate_nodeid)
 {
-  return iri_split_ttl_qname_impl (iri, pref_ret, name_ret, abbreviate_nodeid, SPLIT_MODE_TTL);
+  iri_split_ttl_qname_impl (iri, pref_ret, name_ret, abbreviate_nodeid, SPLIT_MODE_TTL);
 }
 
 name_id_cache_t * iri_name_cache;
