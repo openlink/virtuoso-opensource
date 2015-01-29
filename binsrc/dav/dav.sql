@@ -3504,7 +3504,7 @@ _next:;
   prefixes := replace (prefixes, '\n', ' ');
   ns := string_output ();
   http (prefixes, ns);
-  http ('\n# ----------------------------\n', ns);
+  http ('\n### Source document ###\n', ns);
   http (ses, ns);
 
 _exit:;
