@@ -1,25 +1,25 @@
---  
+--
 --  $Id: ttext_qual_hf.sql,v 1.5.10.1 2013/01/02 16:15:30 source Exp $
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2015 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 echo BOTH "STARTED: freetext (qualifiers, hook function) tests\n";
 CONNECT;
 
@@ -101,22 +101,22 @@ create procedure fth_dt_index_hook (inout vtb any, inout d_id integer)
 {
   declare data any;
   data := coalesce ((select concat (coalesce (dt, ''), ' ', c1) from fth where id = d_id), null);
---  dbg_obj_print ('ins: ', data);	
+--  dbg_obj_print ('ins: ', data);
   if (data is null)
     return 0;
   vt_batch_feed (vtb, data, 0);
-  return 1;  
+  return 1;
 }
 
 create procedure fth_dt_unindex_hook (inout vtb any, inout d_id integer)
 {
   declare data any;
   data := coalesce ((select concat (coalesce (dt, ''), ' ', c1) from fth where id = d_id), null);
---  dbg_obj_print ('del: ', data);	
+--  dbg_obj_print ('del: ', data);
   if (data is null)
     return 0;
   vt_batch_feed (vtb, data, 1);
-  return 1;  
+  return 1;
 }
 
 insert into fth values (1, 'abc', 'one');

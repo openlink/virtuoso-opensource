@@ -1,3 +1,23 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 
 
 -- test cluster partitioned group by + order by
@@ -31,7 +51,7 @@ select a.fi2, b.fi2, dfi2 from t1 a, (select c.fi2, d.fi2 as dfi2 from t1 c, t1 
 echo both $if $equ $rowcnt 44 "PASSED" "***FAILED";
 echo both ": partitioned oby in dfg dt\n";
 
--- the 2 below commented out since dt changed not to import join preds inside a top dt 
+-- the 2 below commented out since dt changed not to import join preds inside a top dt
 select a.fi2, b.fi2 from t1 a, (select top 3 fi2 from t1 order by fi2 + 1) b where b.fi2 between a.fi2 - 2 and a.fi2 + 2 and a.fi2 < 30 option (order);
 --echo both $if $equ $rowcnt 30 "PASSED" "***FAILED";
 --echo both ": partitioned oby in top dt\n";
@@ -88,7 +108,7 @@ create procedure sc_merge (inout e1 any, inout e2 any)
 }
 
 
-create aggregate strconc (in str varchar) returns varchar 
+create aggregate strconc (in str varchar) returns varchar
   from sc_init, sc_acc, sc_fin, sc_merge;
 
 
@@ -115,16 +135,16 @@ create procedure uc_merge (inout e1 any, inout e2 any)
 }
 
 
-create aggregate u_count (in n any) returns varchar 
+create aggregate u_count (in n any) returns varchar
   from uc_init, uc_acc, uc_fin, uc_merge;
 
 
-select a.string2, b.string1, sm from t1 a, 
+select a.string2, b.string1, sm from t1 a,
   (select string1, sum (row_no) as sm from t1 group by string1 order by 2) b
 where b.string1  = a.string2;
 
-select a.fi2, b.fi2, sm from t1 a, 
-  (select c.fi2, sum (c.row_no) as sm from t1 c  group by fi2 order by 2) b 
+select a.fi2, b.fi2, sm from t1 a,
+  (select c.fi2, sum (c.row_no) as sm from t1 c  group by fi2 order by 2) b
 where b.fi2 between a.fi2 - 2 and a.fi2 + 2 and a.fi2 < 30 option (order);
 
 
@@ -163,7 +183,7 @@ echo both $if $equ $last[1] 292 "PASSED" "***FAILED";
 echo both ": 292 for fi6 x distinct fi6 range\n";
 
 
-select a.fi6, b.fi6, ff 
+select a.fi6, b.fi6, ff
 from t1 a, (select fi6, strconc (fs4) as ff from t1 table option (index str1) where string1 > ''group by fi6 order by (strconc (fs4)) || ' ' desc) b
 where b.fi6 between a.fi6 - 1 and a.fi6 + 1 option (order);
 
@@ -171,7 +191,7 @@ echo both $if $equ $rowcnt 292 "PASSED" "***FAILED";
 echo both ": part ua,multistate dfg dt with gb/oby\n";
 
 update t1 set fi6 = row_no;
-select a.fi6, b.fi6, ff 
+select a.fi6, b.fi6, ff
 from t1 a, (select fi6, strconc (fs4) as ff from t1 table option (index str1) where string1 > ''group by fi6 order by  (strconc (fs4)) || ' '  desc) b
 where b.fi6 between a.fi6 - 1 and a.fi6 + 1 option (order);
 
@@ -186,10 +206,10 @@ cl_exec ('__dbf_set (''timeout_resolution_usec'', 200000)');
 cl_exec ('__dbf_set (''timeout_resolution_sec'', 0)');
 
 set result_timeout = 500;
--- timeout between the ssa iters 
+-- timeout between the ssa iters
 select top 20 a.fi2, u_count (b.fi2) from t1 a, t1 b where b.fi2 > a.fi2 group by a.fi2 order by u_count (b.fi2) + delay (0.05 + u_count (b.fi2) - u_count (b.fi2)) desc;
 
--- timeout before the 1st ssa iter 
+-- timeout before the 1st ssa iter
 select top 20 a.fi2, u_count (b.fi2) from t1 a, t1 b where b.fi2 > a.fi2 and 0 = delay (b.fi2 - b.fi2 + 0.01)group by a.fi2 order by u_count (b.fi2) desc;
 
 

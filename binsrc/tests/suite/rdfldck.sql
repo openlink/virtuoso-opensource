@@ -1,3 +1,23 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 
 
 -- check and stats statements for rdf
@@ -12,7 +32,7 @@ select count (*) from rdf_quad a table option (index rdf_quad_pogs) where not ex
 select count (*) from rdf_quad a table option (index rdf_quad_pogs) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_gs) where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s);
 
 
--- 
+--
 select count (s), count (p), count (o), count (g) from rdf_quad table option (index rdf_quad);
 
 
@@ -216,7 +236,7 @@ create procedure dups ()
     {
       fetch cr into g1, s1, p1, o1;
       if (pg <> g1 or p1 <> pp or o1 <> po)
-	{ 
+	{
 	di := dict_new ();
 	pg := g1; ps := s1; pp := p1; po := o1;
 	}
@@ -299,9 +319,9 @@ create procedure  ckpogs ()
   o1 := null;
   g1 := null;
   s1 := null;
-  for select p, o, g, s from rdf_quad table option (index rdf_quad_pogs) do 
+  for select p, o, g, s from rdf_quad table option (index rdf_quad_pogs) do
     {
-      
+
       if (p < p1) goto oow;
       if (p = p1 and o < o1) goto oow;
       if (p = p1 and o = o1 and g < g1) goto oow;
@@ -325,9 +345,9 @@ create procedure  ckop ()
   g1 := null;
   s1 := null;
   cl_set_slice ('DB.DBA.RDF_QUAD',  'RDF_QUAD_OP', 31);
-  for select o, p from rdf_quad table option (index rdf_quad_op, index_only, no cluster) do 
+  for select o, p from rdf_quad table option (index rdf_quad_op, index_only, no cluster) do
     {
-      
+
       if (o < o1) goto oow;
       if (o = o1 and p < p1) goto oow;
     p1 := p; o1 := o;

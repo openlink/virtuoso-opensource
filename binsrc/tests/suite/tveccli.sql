@@ -1,5 +1,25 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 
-create procedure p (in r int) 
+create procedure p (in r int)
 {
   result_names (r);
   result (r);
@@ -24,7 +44,7 @@ echo both $if $equ $last[1]  2 "PASSED" "***FAILED";
 echo both ": veccli 3\n";
 
 
-create procedure pv (in r int) 
+create procedure pv (in r int)
 {
   vectored;
   result_names (r);
@@ -54,7 +74,7 @@ foreach integer between 1 1 call pv (?);
 echo both $if $equ $last[1]  2 "PASSED" "***FAILED";
 echo both ": veccli 3\n";
 
-create procedure inc1 (in i int) returns int 
+create procedure inc1 (in i int) returns int
 {
   vectored;
   return i + 1;

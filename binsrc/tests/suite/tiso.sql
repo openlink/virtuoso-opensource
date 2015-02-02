@@ -1,25 +1,25 @@
---  
+--
 --  $Id: tiso.sql,v 1.5.6.1.4.1 2013/01/02 16:15:11 source Exp $
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2015 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 
 echo both "Transaction Isolation Tests\n";
@@ -34,7 +34,7 @@ create procedure rct_c (in num int, in sp int)
   declare ct int;
   declare rn int;
  ct:= 0;
-  declare exit handler for sqlstate '40001', sqlstate '23000', sqlstate '24000', sqlstate 'HY109', sqlstate '01001'  
+  declare exit handler for sqlstate '40001', sqlstate '23000', sqlstate '24000', sqlstate 'HY109', sqlstate '01001'
     {
       dbg_obj_print (__SQL_state, __SQL_message);
       rollback work;
@@ -52,7 +52,7 @@ create procedure rct_c (in num int, in sp int)
 	  else
 	    insert into rc_test values (rn, 1, 'xxxxxx');
 	}
-      else 
+      else
 	delete from rc_test where id = rn;
       commit work;
       ct := ct + 1;
@@ -64,7 +64,7 @@ create procedure rct_u (in num int, in sp int)
   declare ct int;
   declare rn int;
  ct:= 0;
-  declare exit handler for sqlstate '40001', sqlstate '23000', sqlstate '24000', sqlstate '01001', sqlstate 'HY109'   
+  declare exit handler for sqlstate '40001', sqlstate '23000', sqlstate '24000', sqlstate '01001', sqlstate 'HY109'
     {
       dbg_obj_print (__SQL_state, __SQL_message);
       rollback work;
@@ -82,7 +82,7 @@ create procedure rct_u (in num int, in sp int)
 	  else
 	    insert into rc_test values (rn, 1, 'xxxxxx');
 	}
-      else 
+      else
 	delete from rc_test where id = rn;
       commit work;
       ct := ct + 1;
@@ -94,7 +94,7 @@ create procedure rct_r (in num int, in sp int)
   declare ct int;
   declare rn int;
  ct:= 0;
-  declare exit handler for sqlstate '40001', sqlstate '23000', sqlstate '24000'   
+  declare exit handler for sqlstate '40001', sqlstate '23000', sqlstate '24000'
     {
       dbg_obj_print (__SQL_state, __SQL_message);
       rollback work;
@@ -112,7 +112,7 @@ create procedure rct_r (in num int, in sp int)
 	  else
 	    insert into rc_test values (rn, 1, 'xxxxxx');
 	}
-      else 
+      else
 	delete from rc_test where id = rn;
       commit work;
       ct := ct + 1;
@@ -124,7 +124,7 @@ create procedure rct_su (in num int, in sp int)
   declare ct int;
   declare rn int;
  ct:= 0;
-  declare exit handler for sqlstate '24000'  
+  declare exit handler for sqlstate '24000'
     {
       dbg_obj_print (__SQL_state, __SQL_message);
       rollback work;
@@ -142,7 +142,7 @@ create procedure rct_su (in num int, in sp int)
 	  else
 	    insert into rc_test values (rn, 1, 'xxxxxx');
 	}
-      else 
+      else
 	delete from rc_test where id = rn;
       commit work;
       ct := ct + 1;
@@ -155,7 +155,7 @@ create procedure rct_s (in num int, in sp int)
   declare ct int;
   declare rn int;
  ct:= 0;
-  declare exit handler for sqlstate '40001', sqlstate '24000'  
+  declare exit handler for sqlstate '40001', sqlstate '24000'
     {
       dbg_obj_print (__SQL_state, __SQL_message);
       rollback work;
@@ -173,7 +173,7 @@ create procedure rct_s (in num int, in sp int)
 	  else
 	    insert into rc_test values (rn, 1, 'xxxxxx');
 	}
-      else 
+      else
 	delete from rc_test where id = rn;
       commit work;
       ct := ct + 1;
@@ -185,7 +185,7 @@ create procedure rct_s_ne (in num int, in sp int)
   declare ct int;
   declare rn int;
  ct:= 0;
-  declare exit handler for sqlstate '40001', sqlstate '23000', sqlstate '24000', sqlstate 'HY109', sqlstate '01001'  
+  declare exit handler for sqlstate '40001', sqlstate '23000', sqlstate '24000', sqlstate 'HY109', sqlstate '01001'
     {
       dbg_obj_print (__SQL_state, __SQL_message);
       rollback work;
@@ -203,7 +203,7 @@ create procedure rct_s_ne (in num int, in sp int)
 	  else
 	    insert into rc_test values (rn, 1, 'xxxxxx');
 	}
-      else 
+      else
 	delete from rc_test where id = rn;
       commit work;
       ct := ct + 1;
@@ -217,7 +217,7 @@ create procedure rct_r_2 (in num int, in sp int)
   declare ct int;
   declare rn int;
  ct:= 0;
-  declare exit handler for sqlstate '40001', sqlstate '23000', sqlstate '24000', sqlstate 'HY109', sqlstate '01001'  
+  declare exit handler for sqlstate '40001', sqlstate '23000', sqlstate '24000', sqlstate 'HY109', sqlstate '01001'
     {
       dbg_obj_print (__SQL_state, __SQL_message);
       rollback work;
@@ -243,7 +243,7 @@ create procedure rct_r_2 (in num int, in sp int)
 		}
 	    }
 	}
-      else 
+      else
 	delete from rc_test where id >= rn and id < rn + sp;
       commit work;
       ct := ct + 1;

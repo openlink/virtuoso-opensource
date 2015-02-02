@@ -124,7 +124,7 @@ create procedure tro2sqv1 ()
   for vectored (in i any := iv, out ov := o)
     {
       declare o any;
-       o := __ro2sq (i);  
+       o := __ro2sq (i);
     }
   tro2sqv_res (ov);
 }
@@ -138,7 +138,7 @@ create procedure tro2sqv2 ()
   for vectored (in i any array := iv, out ov := o)
     {
       declare o any array;
-       o := __ro2sq (i);  
+       o := __ro2sq (i);
     }
   tro2sqv_res (ov);
 }
@@ -152,7 +152,7 @@ create procedure tro2sqv3 ()
   for vectored (in i any array := iv, out ov := o)
     {
       declare o any;
-       o := __ro2sq (i);  
+       o := __ro2sq (i);
     }
   tro2sqv_res (ov);
 }
@@ -166,7 +166,7 @@ create procedure tro2sqv4 ()
   for vectored (in i any := iv, out ov := o)
     {
       declare o any array;
-       o := __ro2sq (i);  
+       o := __ro2sq (i);
     }
   tro2sqv_res (ov);
 }
@@ -203,9 +203,9 @@ create procedure tro2sqv5 ()
     {
       declare o any array;
       if (i < 5)
-        o := __ro2sq (i);  
+        o := __ro2sq (i);
       else
-        o := __ro2sq (i);  
+        o := __ro2sq (i);
     }
   tro2sqv_res (ov);
 }
@@ -233,7 +233,7 @@ create procedure irivv (in s any array)
 select  __ro2sq (irivv (vector ('pfaal', 'hans',  'hyrim'))[0]);
 echo both $if $equ $last[1]  "pfaal" "PASSED" "***FAILED";
 echo both ":  vec iri to id\n";
- 
+
 
 drop table it2;
 create table it2 (k iri_id_8 primary key, d iri_id_8);

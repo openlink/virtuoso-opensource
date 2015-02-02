@@ -1,5 +1,25 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 
--- 2pc timing special cases 
+-- 2pc timing special cases
 -- Uses tblob table, expects state as after tblob.sql
 
 cl_exec ('__dbf_set (''dbf_cl_blob_autosend_limit'', 100000)');
@@ -53,7 +73,7 @@ commit work;
 echo both $if $equ $sqlstate OK "PASSED" "***FAILED";
 echo both ": checkpoint in mid 2pc\n";
 
--- 2pc recov cycle with blobs.  Ends with committed 
+-- 2pc recov cycle with blobs.  Ends with committed
 
 
 cl_exec ('__dbf_set (''dbf_cl_blob_autosend_limit'', 100000)');
@@ -68,7 +88,7 @@ echo both $if $equ $sqlstate OK "PASSED" "***FAILED";
 echo both ": OK for 2pc commit with branch failure after prepare.  Recov cycle will say committed\n";
 
 
--- 2pc recov cycle with blobs.  Ends with not committed 
+-- 2pc recov cycle with blobs.  Ends with not committed
 -- hard to get.  The branches must die after prepare but before the owner dies.  The owner must die before logging the final. The owner must not see the branches die.
 
 cl_exec ('__dbf_set (''dbf_cl_blob_autosend_limit'', 100000)');

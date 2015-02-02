@@ -1,3 +1,23 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 create function DB.DBA.ACCT_IRI (in n integer) { return sprintf ('http://bibm32/%d', n); }
 ;
 
@@ -33,7 +53,7 @@ create procedure DB.DBA.BSBM_ONE_OP (in acc_from integer, in acc_to integer, in 
       delete { ?afrom <http://bibm32/balance> ?afrombal . ?ato <http://bibm32/balance> ?atobal . }
       insert {
           ?afrom <http://bibm32/balance> `?afrombal - ?:op_sum` .
-          ?ato <http://bibm32/balance> `?atobal + ?:op_sum` . 
+          ?ato <http://bibm32/balance> `?atobal + ?:op_sum` .
           [] a <http://bibm32/op> ;
               <http://bibm32/from> ?afrom ;
               <http://bibm32/to> ?ato ;
@@ -145,7 +165,7 @@ create procedure DB.DBA.BSBM_ACID_CHECK_CONSISTENCY (in accts_count integer := 6
   for (sparql select ?s ?afrom ?ato ?op_sum from <http://bibm32/acid>
       where { ?s a <http://bibm32/op> .
           optional { ?s <http://bibm32/from> ?afrom }
-          optional { ?s <http://bibm32/to> ?ato } 
+          optional { ?s <http://bibm32/to> ?ato }
           optional { ?s <http://bibm32/opsum> ?op_sum } } ) do
     {
       if ("afrom" is null or "ato" is null or "op_sum" is null)

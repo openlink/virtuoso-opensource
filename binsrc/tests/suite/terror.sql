@@ -1365,7 +1365,7 @@ echo both "Error messages about reading free pages and bad blobs are expected ne
 echo both "Error messages about bad blobs or reading free pages are not expected after this point.\n";
 
 
--- bad nvarchar processing in ins replacing 
+-- bad nvarchar processing in ins replacing
 create table DB.DBA.UZZZER (
   KOD integer not null primary key,
   LGN nvarchar not null unique,
@@ -1374,7 +1374,7 @@ create table DB.DBA.UZZZER (
   LNAME nvarchar,
   ISGRP integer not null,
   ENB integer not null,
-  CMT long nvarchar 
+  CMT long nvarchar
 );
 
 insert replacing DB.DBA.UZZZER (
@@ -1386,7 +1386,7 @@ insert replacing DB.DBA.UZZZER (
   values ( 1, N'?? ??', N'????????', N'????', N'??????????', 0, 1, N'?? ??????? ????????, ??????? ? ???????? ???????? ?? ?????, ????? ?????? ??? ???? ?????? ??????????? ????? ? ????????, ??? ????? ????? ????? ?????' );
 
 
--- some non serializable cluster msg 
+-- some non serializable cluster msg
 cl_exec ('dbg_obj_print (?)', params => vector (dict_new ()));
 
 create table mig (id int primary key, d1 int);
@@ -1478,7 +1478,7 @@ create procedure ff (in q any) returns any array {return q;}
 select row_no, sum (ff (fi2)) from t1 group by row_no;
 
 
--- dpipe dependent code in placing dpipe 
+-- dpipe dependent code in placing dpipe
 explain ('select cast (__ro2sq (o) as real) as c, cast (__ro2sq (s) as varchar) as d, count (*) from rdf_quad group by c, d');
 
 explain ('select count (*) from t1 a where (select b.row_no from t1 b table option (loop) where b.row_no = a.row_no + 200) = a.row_no + 200');
@@ -1494,7 +1494,7 @@ create procedure t1cd (inout i int)
 select top 10 * from (select  row_no, mod (row_no / 256, 32) as t1s,  partition_group ('DB.DBA.T1', 'STR1', vector (string1), 0) as strs from t1 a table option (index t1) where not exists (select 1 from t1 b table option (loop, index str1) where b.string1 = a.string1 and b.row_no = a.row_no) ) f where t1s = strs;
 
 
---- nonsense group by and const 
+--- nonsense group by and const
 
 select u_group, count (*) from sys_users group by 0, u_group;
 
@@ -1546,7 +1546,7 @@ select xmlelement ("result", xmlattributes ('list' as "type"),
 	  fct_sparql_ser ("c1") as "sparql_ser"),
 	__ro2sq ("c1")),
 	xmlelement ("column", fct_label ("c1", 0, 'facets' )))))
-	from (sparql define output:valmode "LONG"  define input:storage virtrdf:IRI_Rank_Storage     
+	from (sparql define output:valmode "LONG"  define input:storage virtrdf:IRI_Rank_Storage
 	    select distinct ?s11 as ?c1 ?g where {?s1 ?s1condp ?s2 .
 	    filter (?s2 = """EMBL""") .
 	    ?s1 ?s1condp ?s3 .

@@ -1,4 +1,4 @@
---  
+--
 --  $Id: nwxml2_vad.sql,v 1.1.8.1 2013/01/02 16:14:46 source Exp $
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)

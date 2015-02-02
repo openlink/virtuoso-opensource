@@ -4,7 +4,7 @@
 --  $Id$
 --
 --  Various SQL optimized compiler tests, part 2.
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
@@ -13,17 +13,17 @@
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 echo BOTH "\nSTARTED: SQL Optimizer tests part 2 (sqlo2.sql)\n";
 SET ARGV[0] 0;
@@ -376,15 +376,15 @@ insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) value
 insert into locutusmetadata.dba.fam_assetUrl_Table (SubjectUri, GraphName) values ('subj16', 'User1');
 
 -- XXX
-SELECT dcterms_subject_Table.SubjectUri,fam_assetUrl_Table.fam_dateTimeOriginalUtc 
+SELECT dcterms_subject_Table.SubjectUri,fam_assetUrl_Table.fam_dateTimeOriginalUtc
 FROM
   locutusmetadata.dba.dcterms_subject_Table,
   locutusmetadata.dba.fam_assetUrl_Table
 WHERE ((
     (dcterms_subject_Table.subjectUri in
-      (select DISTINCT SubjectUri from locutusmetadata.dba.dcterms_subject_Table T 
-        where T.dcterms_subject like '%Larr%' 
-        union select DISTINCT SubjectUri from locutusmetadata.dba.dcterms_subject_Table T 
+      (select DISTINCT SubjectUri from locutusmetadata.dba.dcterms_subject_Table T
+        where T.dcterms_subject like '%Larr%'
+        union select DISTINCT SubjectUri from locutusmetadata.dba.dcterms_subject_Table T
         where T.dcterms_subject = 'Larry' )
     and dcterms_subject_Table.SubjectUri = fam_assetUrl_Table.SubjectUri
     and dcterms_subject_Table.GraphName = fam_assetUrl_Table.GraphName))
@@ -396,15 +396,15 @@ ORDER BY  fam_dateTimeOriginalUtc ASC;
 --ECHO BOTH ": BUG 14167 : union of DISTINCTs inside IN operator STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 -- XXX
---SELECT DS.SubjectUri, FA.fam_dateTimeOriginalUtc 
+--SELECT DS.SubjectUri, FA.fam_dateTimeOriginalUtc
 --FROM
 --  locutusmetadata.dba.dcterms_subject_Table DS,
 --  locutusmetadata.dba.fam_assetUrl_Table FA
 --WHERE
 --    (DS.subjectUri in (select * from
---      (select T1.SubjectUri from locutusmetadata.dba.dcterms_subject_Table T1 
---        where T1.dcterms_subject like '%Larr%' 
---        union select T2.SubjectUri from locutusmetadata.dba.dcterms_subject_Table T2 
+--      (select T1.SubjectUri from locutusmetadata.dba.dcterms_subject_Table T1
+--        where T1.dcterms_subject like '%Larr%'
+--        union select T2.SubjectUri from locutusmetadata.dba.dcterms_subject_Table T2
 --        where T2.dcterms_subject = 'Larry' ) T3))
 --and DS.SubjectUri = FA.SubjectUri
 --and 'User1' /* DS.GraphName */ = FA.GraphName
@@ -1356,7 +1356,7 @@ select count (*) from t1 where row_no = 111 or (row_no  is not null and (row_no 
 select count (*) from t1 where row_no = 111 or (row_no  is null and (row_no is null or row_no = 222));
 
 
--- hash fillers with hash joined existences 
+-- hash fillers with hash joined existences
 explain ('select count (*) from t1 a, t1 b where a.row_no = b.row_no and exists (select * from t1 c table option (hash) where c.row_no = b.row_no and c.string1 like ''1%'') option (order, hash)');
 select count (*) from t1 a, t1 b where a.row_no = b.row_no and exists (select * from t1 c table option (hash) where c.row_no = b.row_no and c.string1 like '1%') option (order, hash);
 echo both $if $equ $last[1] 353 "PASSED" "***FAILED";

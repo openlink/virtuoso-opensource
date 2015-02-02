@@ -1,3 +1,23 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 
 
 echo both "Geometry index test\n";
@@ -144,14 +164,14 @@ sparql select ?m (bif:st_distance (?geo, bif:st_point (0, 52))) where { ?m ?p ?o
 
 sparql select ?c count (*) where { ?s geo:geometry ?geo . filter (bif:st_intersects (bif:st_point (2.3498, 48.853), 5)) . ?s a ?c} group by ?c order by desc 2 limit 50;
 
-sparql 
+sparql
 http://linkedgeodata.org/vocabulary#cafe
 
 
 sparql select ?c count (*) where ?s a ?c . ?s geo:geometry ?geo . filter (bif:st_intersecs (?geo, st_point (2.3498, 48.853), 0.group by ?c order by desc 2 limit 20;
 
 
--- Stuff around Notre Dame de Paris 
+-- Stuff around Notre Dame de Paris
 sparql select ?c count (*) where {?s a ?c . ?s geo:geometry ?geo . filter (bif:st_intersects (?geo, bif:st_point (2.3498, 48.853), 0.3)) } group by ?c order by desc 2 limit 20;
 
 sparql prefix lgv: <http://linkedgeodata.org/vocabulary#> select ?c count (*) where {?s a ?c . ?s a lgv:place_of_worship . ?s geo:geometry ?geo . filter (bif:st_intersects (?geo, bif:st_point (2.3498, 48.853), 10)) } group by ?c order by desc 2 limit 200;
@@ -164,12 +184,12 @@ select ?cn where {?s lgv:name ?cn  . ?s geo:geometry ?geo . filter (bif:st_inter
 
 -- churches with the most bars
 sparql prefix lgv: <http://linkedgeodata.org/vocabulary#>
-select ?churchname ?cafename (bif:st_distance (?churchgeo, ?cafegeo))  
+select ?churchname ?cafename (bif:st_distance (?churchgeo, ?cafegeo))
 where { ?church a lgv:place_of_worship . ?church geo:geometry ?churchgeo . ?church lgv:name ?churchname . ?cafe a lgv:cafe . ?cafe lgv:name ?cafename . ?cafe geo:geometry ?cafegeo .
 filter (bif:st_intersects (?churchgeo, bif:st_point (2.3498, 48.853), 5)
 && bif:st_intersects (?cafegeo, ?churchgeo, 0.2)) } limit 100;
 
--- big cities with a lot of geo items 
+-- big cities with a lot of geo items
 sparql select ?s (sql:num_or_null (?p))  count (*) where { ?s <http://dbpedia.org/ontology/populationTotal> ?p . filter ( sql:num_or_null (?p) > 6000000)  . ?s geo:geometry ?geo . filter (bif:st_intersects (?pt, ?geo,2)) . ?xx geo:geometry ?pt } group by ?s (sql:num_or_null (?p))order by desc 3 limit 20;
 
 -- Bug 16316

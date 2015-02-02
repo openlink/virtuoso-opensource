@@ -1,5 +1,25 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 
--- Test some compressions 
+-- Test some compressions
 
 create procedure cs (in f int, in a any, in ck int := 0, in dtp int := 0)
 {
@@ -93,7 +113,7 @@ select length (cs (0, vector (#i1000000, #i1000000, #i1000004, #i1000020 , #i100
 select length (cs (0, vector (#ib1000000, #ib1000000, #ib1000004, #ib1000020 , #ib1000040), 1));
 
 
-select length (cs (0, vector (12.34, 23.45,  12.34, 23.45,  12.34, 23.45), 1)); 
+select length (cs (0, vector (12.34, 23.45,  12.34, 23.45,  12.34, 23.45), 1));
 
 select length (cs (0, vector (#i12, #i13, #i12, #i13, #ib22, #i13, #ib22), 1));
 
@@ -133,7 +153,7 @@ create procedure anyz (in o any)
 }
 
 
-select count (distinct anyz (o)) from (select top 10000 o from r2 table option (index r2)) f; 
+select count (distinct anyz (o)) from (select top 10000 o from r2 table option (index r2)) f;
 
 
 select sum (al), sum (ct) from
@@ -149,7 +169,7 @@ create distinct no primary key ref bitmap index r2_sp on r2 (s, p);
 create distinct no primary key ref index r2_op on r2 (o, p);
 
 __vt_index ('DB.DBA.R2', 'R2_OP', 'O', 'O', 'DB.DBA.RDF_OBJ_RO_FLAGS_WORDS');
- 
+
 
 
 create index r2_psog on r2 (p, s, o, g);
@@ -158,13 +178,13 @@ create bitmap index r2_pogs on r2 (p, o, g, s);
 
 create table ro_start (rs_string varchar, rs_id bigint, primary key (rs_string, rs_id));
 
-insert into ro_start select subseq (s, 0, case when length (s) < 10 then length (s) else 10 end), ro_id 
+insert into ro_start select subseq (s, 0, case when length (s) < 10 then length (s) else 10 end), ro_id
   from (select ro_id, case when ro_long is not null then blob_to_string (ro_long) else ro_val end as s from rdf_obj) f;
 
 create table r2_gs (g iri_id_8, s iri_id_8, primary key (g, s));
 create bitmap index r2_gs_bm on r2_gs (g, s);
 
-insert soft r2_gs (g, s) select g, s from r2; 
+insert soft r2_gs (g, s) select g, s from r2;
 
 create table r2_sp (s iri_id_8, p iri_id_8, primary key (s, p));
 
@@ -186,16 +206,16 @@ create table rcol_pogs (s iri_id_8, p iri_id_8, o any, g iri_id_8,
    sc long varchar, pc long varchar, oc long varchar, gc long varchar,
   primary key (p, o, g, s));
 
-create table rcol_sp (s iri_id_8, p iri_id_8, 
+create table rcol_sp (s iri_id_8, p iri_id_8,
    sc long varchar, pc long varchar,
   primary key (s, p));
 
 
-create table rcol_op (o any, p iri_id_8, 
+create table rcol_op (o any, p iri_id_8,
    oc long varchar, pc long varchar,
   primary key (o, p));
 
-create table rcol_gs (g iri_id_8, s iri_id_8, 
+create table rcol_gs (g iri_id_8, s iri_id_8,
    gc long varchar, sc long varchar,
   primary key (g, s));
 
@@ -225,7 +245,7 @@ create procedure cs_string_ck (inout cs varchar, in n int, in col varchar)
 	{
 	  dbg_obj_princ (' difference at ', inx, 'set ', n, 'col ', col, ' org, dec: ');
 	  dbg_obj_print (org[inx], ' and ', dec[inx]);
-	  signal ('xxxxx', 'bad compress round trip'); 
+	  signal ('xxxxx', 'bad compress round trip');
 	}
     }
   return str;
@@ -265,7 +285,7 @@ create procedure rcol_pogs (in step int := 2040, in skip int := 0, in first_p ir
 	   values (s1, p1, o1, g1, cs_string_ck (scs, n, 's'), cs_string_ck (pcs, n, 'p'), cs_string_ck (ocs, n, 'o'), cs_string_ck (gcs, n, 'g'));
        ctr := -1;
        }
-     else 
+     else
      ctr := ctr + 1;
    next: ;
    }
@@ -305,7 +325,7 @@ create procedure rcol_psog (in step int := 2040, in skip int := 0, in first_p ir
 	   values (s1, p1, o1, g1, cs_string_ck (scs, n, 's'), cs_string_ck (pcs, n, 'p'), cs_string_ck (ocs, n, 'o'), cs_string_ck (gcs, n, 'g'));
        ctr := -1;
        }
-     else 
+     else
      ctr := ctr + 1;
    next: ;
    }
@@ -335,7 +355,7 @@ create procedure rcol_sp (in step int := 2040, in skip int := 0, in first_p iri_
        n := n + step;
        ctr := 0;
       cs_done (scs); cs_done (pcs);
-       scs := cs_new (0); pcs := cs_new (0); 
+       scs := cs_new (0); pcs := cs_new (0);
        }
      cs_compress (scs, s); cs_compress (pcs, p);
      if (ctr = step)
@@ -344,7 +364,7 @@ create procedure rcol_sp (in step int := 2040, in skip int := 0, in first_p iri_
 	   values (s1, p1, cs_string_ck (scs, n, 's'), cs_string_ck (pcs, n, 'p'));
        ctr := -1;
        }
-     else 
+     else
      ctr := ctr + 1;
    next: ;
    }
@@ -374,7 +394,7 @@ create procedure rcol_op (in step int := 2040, in skip int := 0, in first_p iri_
        n := n + step;
        ctr := 0;
       cs_done (ocs); cs_done (pcs);
-       ocs := cs_new (0); pcs := cs_new (0); 
+       ocs := cs_new (0); pcs := cs_new (0);
        }
      cs_compress (ocs, o); cs_compress (pcs, p);
      if (ctr = step)
@@ -383,7 +403,7 @@ create procedure rcol_op (in step int := 2040, in skip int := 0, in first_p iri_
 	   values (o1, p1, cs_string_ck (ocs, n, 'o'), cs_string_ck (pcs, n, 'p'));
        ctr := -1;
        }
-     else 
+     else
      ctr := ctr + 1;
    next: ;
    }
@@ -455,7 +475,7 @@ create procedure rq_pogs (in step int := 2040, in skip int := 0, in first_p iri_
 	   values (s1, p1, o1, g1, cs_string_ck (scs, n, 's'), cs_string_ck (pcs, n, 'p'), cs_string_ck (ocs, n, 'o'), cs_string_ck (gcs, n, 'g'));
        ctr := -1;
        }
-     else 
+     else
      ctr := ctr + 1;
    next: ;
    }

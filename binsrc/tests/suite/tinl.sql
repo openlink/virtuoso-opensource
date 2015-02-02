@@ -1,3 +1,23 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 
 echo both "Test inlining exists as dt\n";
 
@@ -7,7 +27,7 @@ echo both "Test inlining exists as dt\n";
 select count (*) from t1 where string1 in (select string2 from t1 where row_no = 222);
 
 select count (*) from t1 where string1 in (select string2 from t1 where row_no > 0);
- 
+
 
 update t1 set fi2 = fi2 + 2  where row_no in (select row_no from t1 where string1 = '11');
 
@@ -32,7 +52,7 @@ explain ('select count (*) from t1 a where exists (select 1 from t1 b where a.ro
 explain ('select count (*) from t1 where (row_no, fi2) in (select row_no, fi2 from t1 where string1 = ''11'')');
 
 
--- VDB cases 
+-- VDB cases
 
 explain ('select count (*) from t1 where string1 in (select string2 from r1..t1 where row_no = 222)');
 

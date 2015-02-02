@@ -1,6 +1,26 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 
 
-create procedure rdi_quad (in s1 any array, in p1 any array, in o1 any array, in g1 any array) returns varchar 
+create procedure rdi_quad (in s1 any array, in p1 any array, in o1 any array, in g1 any array) returns varchar
 {
   vectored;
   declare o, o2, s,p, g any array;
@@ -20,7 +40,7 @@ create procedure rdi_quad (in s1 any array, in p1 any array, in o1 any array, in
       o := sprintf ('%.99s\n%s\n2', rdf_box_data (o2), (select rl_id from rdf_language where rl_twobyte = lng));
       else if (tp <> 257)
       o := sprintf ('%.99s\n%s\n3\n', rdf_box_data (o2), (select rdt_qname from rdf_datatype where rdt_twobyte = rdf_box_type (o2)));
-      else 
+      else
       o := sprintf ('%.99s\n-\n1\n', cast (rdf_box_data (o2) as varchar));
     }
   else if (isnumeric (o2))
@@ -32,7 +52,7 @@ create procedure rdi_quad (in s1 any array, in p1 any array, in o1 any array, in
 }
 
 
-	  
+
 
 
 

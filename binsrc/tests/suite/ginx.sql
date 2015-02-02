@@ -1,3 +1,23 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 
 -- Make geometries for geo:long, geo:lat pairs
 
@@ -11,12 +31,12 @@ create procedure num_or_null (in n any)
 create procedure rdf_geo_fill_single ()
 {
   for select "s", "long", "lat", "g" from (sparql define output:valmode "LONG" select ?g ?s ?long ?lat where {
-  graph ?g { ?s geo:long ?long . ?s geo:lat ?lat}}) f option (any order)  do 
+  graph ?g { ?s geo:long ?long . ?s geo:lat ?lat}}) f option (any order)  do
   {
     "lat" := num_or_null ("lat");
     "long" := num_or_null ("long");
     if (isnumeric ("lat") and isnumeric ("long"))
-      insert into rdf_quad (g, s, p, o) values ("g", "s", iri_to_id ('http://www.w3.org/2003/01/geo/wgs84_pos#geometry'), 
+      insert into rdf_quad (g, s, p, o) values ("g", "s", iri_to_id ('http://www.w3.org/2003/01/geo/wgs84_pos#geometry'),
 	rdf_geo_add (rdf_box (st_point ("long", "lat"), 256, 257, 0, 1)));
   }
 
@@ -59,7 +79,7 @@ create procedure GEO_FILL_SRV  (in arr any, in fill int)
     lng := num_or_null (l[2]);
     lat := num_or_null (l[3]);
       if (isnumeric (lat) and isnumeric (lng))
-	insert into rdf_quad (g, s, p, o) values ("g", "s", iri_to_id ('http://www.w3.org/2003/01/geo/wgs84_pos#geometry'), 
+	insert into rdf_quad (g, s, p, o) values ("g", "s", iri_to_id ('http://www.w3.org/2003/01/geo/wgs84_pos#geometry'),
 						  rdf_geo_add (rdf_box (st_point (lng, lat), 256, 257, 0, 1)));
     }
 }
@@ -74,7 +94,7 @@ create procedure rdf_geo_fill (in threads int := 4)
  ctr := 0;
   log_enable (2, 1);
   for select "s", "long", "lat", "g" from (sparql define output:valmode "LONG" select ?g ?s ?long ?lat where {
-  graph ?g { ?s geo:long ?long . ?s geo:lat ?lat}}) f  do 
+  graph ?g { ?s geo:long ?long . ?s geo:lat ?lat}}) f  do
   {
     arr[fill] := vector ("g", "s", rdf_box_data ("long"), rdf_box_data ("lat"));
     fill := fill + 1;

@@ -56,7 +56,7 @@ sparql
 select ?s ?p ?o
 where {
        ?s ?p ?o
-filter regex(?s, 
+filter regex(?s,
         #if $EQU $ARGV[6] YES
           "bif:"
         #else
@@ -125,7 +125,7 @@ SET u{UNEXISTING_VAR} 0;
 #endif
 
 select sys_stat ('db_default_columnstore');
-#if $EQU $U{COLUMNSTORE} 0                                                                                                                        
+#if $EQU $U{COLUMNSTORE} 0
     echoln both $IF $EQU $LAST[1] 0 "PASSED" "***FAILED" ": #IF on COLUMNSTORE";
 #else
     echoln both $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" ": #IF on COLUMNSTORE";

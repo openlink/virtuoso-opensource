@@ -69,7 +69,7 @@ echo both ":  wirds a ck 1\n";
 
 
 
--- check reading inx with mixed vcersions of keys 
+-- check reading inx with mixed vcersions of keys
 select count (*) from words where word > 'b';
 
 select count (*) from words a where exists (select 1 from words b table option (loop) where a.word = b.word);

@@ -1,3 +1,23 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 
 ---  Test checkpoint rollback.
 --- init situation has T1 filled as ../ins 1111 100000 100
@@ -26,7 +46,7 @@ create procedure str2ck (in use_rc int := 0)
 
 set autocommit manual;
 update T1 set lst = 'parashakti aum' || cast (row_no as varchar) where row_no between 50000 and 55000 and mod (row_no, 10) = 5;
-update t1 set fs5 = make_string (mod (row_no, 14)) where row_no < 40000; 
+update t1 set fs5 = make_string (mod (row_no, 14)) where row_no < 40000;
 str2ck ();
 echo both "done str2ck 1\n";
 

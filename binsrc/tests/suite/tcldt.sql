@@ -1,9 +1,26 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 
 
-
-
-
--- Multistate dt and code vec 
+-- Multistate dt and code vec
 
 
 
@@ -120,7 +137,7 @@ echo both ": oj of dt no hit 101 rows\n";
 
 
 
--- implicit top in value subq 
+-- implicit top in value subq
 
 select a.row_no, (select count (*) from t1 b where b.row_no between a.row_no - 2 and a.row_no + 2) from t1 a;
 
@@ -140,8 +157,8 @@ echo both $if $equ $last[2] 118 "PASSED" "***FAILED";
 echo both ": scalar subq with joined multivalue range\n";
 
 
--- top and skip of derived table 
--- Note that a dt with a top cannot import predicates. 
+-- top and skip of derived table
+-- Note that a dt with a top cannot import predicates.
 select a.row_no, b.row_no from t1 a, (select top 3 c.row_no from t1 c) b where b.row_no > a.row_no and a.row_no < 300 option (loop, order);
 
 
@@ -151,7 +168,7 @@ select a.row_no, b.row_no from t1 a, (select top 3 c.row_no from t1 c) b where b
 --echo both ": dt with in\n";
 
 
--- group by 
+-- group by
 
 update t1 set fi6 = row_no / 10;
 create index fi6 on t1 (fi6) partition (fi6 int);
@@ -176,7 +193,7 @@ echo both ": multistate  group by dt with range, gb not partitioned\n";
 
 
 
--- existence 
+-- existence
 
 select a.row_no from t1 a where not exists (select 1 from t1 b where b.row_no > a.row_no + 30) and not exists (select 1 from t1 c where c.row_no < a.row_no - 30);
 echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
@@ -213,16 +230,16 @@ echo both ":sparse   exists hash\n";
 select fi2, s.string1 from (select distinct string1 from t1) s, t1 where row_no = (select max (row_no) from t1 where string1 = s.string1);
 
 
--- both after code and after test are multistate 
+-- both after code and after test are multistate
 select row_no, (select count (*) from t1 b where b.string1 = a.string1) from t1 a where not exists (select 1 from t1 c table option (loop) where c.row_no = a.row_no + 10);
 
--- unions 
+-- unions
 
 select a.fi2, b.fi2 from t1 a, (select fi2 from t1 union select row_no from t1) b where a.fi2 + 1 = b.fi2 option (order);
 echo both $if $equ $rowcnt 99 "PASSED" "***FAILED";
 echo both ": union\n";
 
- 
+
 select a.fi2, b.fi2 from t1 a, (select fi2 from t1 union all select
 row_no from t1) b where a.fi2 + 1 = b.fi2 option (order);
 echo both $if $equ $rowcnt 198 "PASSED" "***FAILED";
@@ -232,7 +249,7 @@ echo both ": union all dt\n";
 
 
 
--- multistate except not supported 
+-- multistate except not supported
 -- select a.fi2, b.fi2 from t1 a, (select fi2 from t1 except select row_no from t1) b where a.fi2 + 1 = b.fi2 option (order);
 -- echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
 -- echo both ": except \n";
@@ -262,7 +279,7 @@ echo both ": final dfg w partitioned gb oby, many batches, one set\n";
 
 
 
--- vectored special cases of oby/gb 
+-- vectored special cases of oby/gb
 
 cl_exec ('__dbf_set (''qp_thread_min_usec'', 0)');
 cl_exec ('__dbf_set (''enable_qp'', 8)');
@@ -283,13 +300,13 @@ select a.row_no, c.row_no, ct from t1 a, (select b.row_no, count (*) as ct from 
 select a.fi2, b.fi2, c.fi2, d.fi2 from t1 a, (select distinct b1.fi2, b2.fi2 as fixx from t1 b1, t1 b2 where b1.fi2 = b2.fi2) b, t1 c left join t1 d on c.fi2 = d.fi2 where b.fi2 = a.fi2 and c.fi2 = a.fi2 option (loop, order);
 
 
--- scalar and ref param partition 
-create procedure refdfg (inout i int) 
+-- scalar and ref param partition
+create procedure refdfg (inout i int)
 {
   return (select count (*) from t1 a, t1 b where a.row_no = i and b.row_no = i +256);
 }
 
-create procedure refqf (inout i int) 
+create procedure refqf (inout i int)
 {
   return (select count (*) from t1 a, t1 b where a.row_no = i and b.row_no = a.row_no);
 }

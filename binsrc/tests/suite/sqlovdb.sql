@@ -681,7 +681,7 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": B8669-3: pass-through of SQLX statements\n";
 
 
--- hash fillers nested 
+-- hash fillers nested
 select count (*) from t1 a, r1..t1 b where a.row_no = b.row_no and exists (select * from r1..t1 c table option (hash) where c.row_no = b.row_no and c.string1 like '1%') option (order, hash);
 echo both $if $equ $last[1] 433 "PASSED" "***FAILED";
 echo both ": vdb hash join with filter with hash filler with hashed exists\n";

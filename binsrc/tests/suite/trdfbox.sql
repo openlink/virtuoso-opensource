@@ -1,25 +1,25 @@
---  
+--
 --  $Id: trdfbox.sql,v 1.1.4.1.4.1 2013/01/02 16:15:19 source Exp $
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2015 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 create table trb (rb any primary key);
 
@@ -31,7 +31,7 @@ insert into trb values (rdf_box ('snaap', 0, 0, 0, 1));
 
 insert into trb values ('pfaal');
 insert into trb values (rdf_box ('pfaal', 0, 0, 0, 1));
--- not unq, 0 type 0 lang is eq to untyped 
+-- not unq, 0 type 0 lang is eq to untyped
 insert into trb values (rdf_box ('pfaal', 2, 0, 0, 1));
 insert into trb values (rdf_box ('pfaal', 2, 0, 1111111, 1));
 -- not unq, to_id not in cmp of short.

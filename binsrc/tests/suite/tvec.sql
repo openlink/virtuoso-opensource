@@ -1,3 +1,23 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 
 
 
@@ -8,7 +28,7 @@ echo both $if equ $last[1] 1000000 "PASSED" "***FAILED";
 echo both ":  Starting tvec\n";
 
 
--- vectored query basic tests 
+-- vectored query basic tests
 
 select row_no from t1 where row_no < 110;
 
@@ -58,7 +78,7 @@ create procedure plt ()
   fetch cr into cn;
   close cr;
   cnt := (select count (*) from sys_cols);
-  for select "COLUMN" from sys_cols do { 
+  for select "COLUMN" from sys_cols do {
     cnt := cnt + 1;
   }
   return cn;
@@ -69,7 +89,7 @@ create procedure n1 (in n int)
 {
   if (mod (n, 2) = 1)
     return n * 2;
-  else 
+  else
     return -n * 2;
 }
 
@@ -85,7 +105,7 @@ create procedure n1v (in n int)
   vectored;
   if (modv (n, 2) = 1)
     return n * 2;
-  else 
+  else
     return -n * 2;
 }
 
@@ -104,7 +124,7 @@ create procedure vec_ex (in stmt varchar)
 }
 
 
--- error on main thread with branches unscheduled - see how stuff is freed 
+-- error on main thread with branches unscheduled - see how stuff is freed
 
 __dbf_set ('aq_max_threads', 2);
 __dbf_set ('enable_qp', 16);
@@ -113,7 +133,7 @@ select count (*) from t1 where row_no / (case when __qi_is_branch (row_no) then 
 __dbf_set ('aq_max_threads', 20);
 __dbf_set ('enable_qp', 8);
 
-select row_no, (select max (row_no) from t1 b where b.row_no = a.row_no) from t1 a where row_no + 0 between  900 and 1100 and mod (row_no, 2) = 1 and (select max (c.row_no) from t1 c where c.row_no = a.row_no)  > 950; 
+select row_no, (select max (row_no) from t1 b where b.row_no = a.row_no) from t1 a where row_no + 0 between  900 and 1100 and mod (row_no, 2) = 1 and (select max (c.row_no) from t1 c where c.row_no = a.row_no)  > 950;
 
 
 
@@ -121,7 +141,7 @@ __dbf_set ('enable_qp', 8);
 __dbf_set ('enable_split_range', 0);
 __dbf_set ('qp_thread_min_usec', 0);
 
--- make conditional subqs split in parallel, check that the results are gathered right 
+-- make conditional subqs split in parallel, check that the results are gathered right
 select row_no, case when mod (row_no, 2) = 1 then (select top 1 b.row_no from t1 b where b.row_no between a.row_no - 1 and a .row_no + 1 order by 1 asc) else (select top 1 b.row_no from t1 b where b.row_no between a.row_no - 1 and a .row_no + 1 order by 1 desc) end from  t1 a where row_no between 200 and 300;
 select row_no, (select sum (b.row_no) from t1 b where b.row_no between a.row_no - 1 and a.row_no + 1) from t1 a where  row_no between 100 and 110;
 select row_no, (select sum (b.row_no) from t1 b where b.row_no between a.row_no - 1 and a.row_no + 1) from t1 a where  row_no between 100 and 110 and row_no * 3 = (select sum (b.row_no) from t1 b where b.row_no between a.row_no - 1 and a.row_no + 1) ;

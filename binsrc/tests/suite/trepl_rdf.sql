@@ -1,25 +1,25 @@
---  
+--
 --  $Id: trepl_rdf.sql,v 1.1.2.3.4.3 2013/01/02 16:15:21 source Exp $
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2015 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 connect;
 ECHO BOTH "DSNs for subscriber: " $U{ds2} " publisher: " $U{ds1} "\n";
@@ -205,13 +205,13 @@ create table ZYZ_USERS (
     U_METHODS 		integer,
     U_DEF_PERMS 	char (11) 	default '110100000RR',
     U_HOME		varchar (128),
-    U_PASSWORD_HOOK 	varchar, 
-    U_PASSWORD_HOOK_DATA varchar, 
-    U_GET_PASSWORD	varchar, 
-    U_DEF_QUAL		varchar default NULL, 
+    U_PASSWORD_HOOK 	varchar,
+    U_PASSWORD_HOOK_DATA varchar,
+    U_GET_PASSWORD	varchar,
+    U_DEF_QUAL		varchar default NULL,
     U_OPTS		long varchar,
     primary key (U_NAME)
- ) 
+ )
 create unique index ZYZ_USERS_ID on ZYZ_USERS (U_ID)
 ;
 
@@ -553,7 +553,7 @@ create iri class oplsioc:mn_iri using
   option ( bijection ,
     returns	"http://sys/mn?group=%d&role=%d"
     union	"http://sys/mn?user=%d&role=%d" ) .
-  
+
 create literal class oplsioc:grantee_lit using
   function DB.DBA.RDF_DF_GRANTEE_ID_LIT (in id integer) returns varchar ,
   function DB.DBA.RDF_DF_GRANTEE_ID_LIT_INVERSE (in id_iri varchar) returns integer

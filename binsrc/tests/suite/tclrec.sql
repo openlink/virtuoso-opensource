@@ -1,3 +1,23 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 
 
 -- cluster recursive ops
@@ -9,7 +29,7 @@ select sys_stat ('cluster_enable');
 
 
 
--- run against ins 1111 100000 100 
+-- run against ins 1111 100000 100
 
 update t1 set fi6 = 100100 - row_no, fi3 = 100 + rnd (100000 + fi3 - fi3);
 
@@ -55,7 +75,7 @@ echo both ":  sum of rec daq in qf\n";
 select sum (rec (row_no, 0)) from t1 where row_no < 25600 and mod (row_no, 128) = 0 for update;
 echo both $if $equ $last[1] 9900  "PASSED" "***FAILED";
 echo both ":  sum of rec daq in qf for upd\n";
- 
+
 select c.row_no from t1 a, t1 b, t1 c where a.row_no = 111 and b.row_no = a.row_no + 1 and c.row_no = b.row_no + 1 and c.row_no / 0 = 1 option (any order)  ;
 
 select c.row_no from t1 a, t1 b, t1 c where a.row_no = 111 and b.row_no = a.row_no + 1 and c.row_no = b.row_no + 1 and c.row_no / 0 = 1;
@@ -121,33 +141,33 @@ echo both ": count qf w 3 dfg gby\n";
 create procedure dbl (in i innt) returns int
 {
   vectored;
-  return (select b.row_no from t1 a, t1 b where a.row_no = i and b.row_no = a.row_no * 2 option (loop, order)); 
+  return (select b.row_no from t1 a, t1 b where a.row_no = i and b.row_no = a.row_no * 2 option (loop, order));
 }
 
 
 create procedure dbl_dfg (in i innt) returns int
 {
   vectored;
-  return (select b.row_no from t1 a, t1 b where a.row_no = i and b.row_no = a.row_no * 2 option (loop, order, any order)); 
+  return (select b.row_no from t1 a, t1 b where a.row_no = i and b.row_no = a.row_no * 2 option (loop, order, any order));
 }
 
 
 create procedure dbl_dfg3 (in i innt) returns int
 {
   vectored;
-  return (select b.row_no from t1 a, t1 b, t1 c  where a.row_no = i and b.row_no = a.row_no * 2 and c.row_no = b.row_no / 3 option (loop, order, any order)); 
+  return (select b.row_no from t1 a, t1 b, t1 c  where a.row_no = i and b.row_no = a.row_no * 2 and c.row_no = b.row_no / 3 option (loop, order, any order));
 }
 
 create procedure add512 (in i innt) returns int
 {
   vectored;
-  return (select b.row_no from t1 a, t1 b where a.row_no = i + 256  and b.row_no = a.row_no + 256 option (loop, order)); 
+  return (select b.row_no from t1 a, t1 b where a.row_no = i + 256  and b.row_no = a.row_no + 256 option (loop, order));
 }
 
 create procedure add1k (in i innt) returns int
 {
   vectored;
-  return (select b.row_no from t1 a, t1 b where a.row_no = i + 256  and b.row_no = a.row_no + 768 option (loop, order)); 
+  return (select b.row_no from t1 a, t1 b where a.row_no = i + 256  and b.row_no = a.row_no + 768 option (loop, order));
 }
 
 create procedure t1cr (in r1 int, in r2 int)
@@ -246,5 +266,5 @@ set autocommit manual;
 insert into t1 (row_no, string1, string2) select row_no + 102400 + 200, string1, string2  from t1 where row_no = 111;
 
 rollback work;
- 
+
 #endif

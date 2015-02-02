@@ -1,3 +1,24 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
+
 echo both "Bitmap index tests\n";
 
 select sys_stat ('db_default_columnstore');
@@ -99,20 +120,20 @@ select id, k1 from tb a table option (index primary  key) where  not exists (sel
 
 --*** 2 below do not work because desc bitmap inx is not done in ectored exec
 select id, k1, (select b.id from tb b table option (index k1) where b.k1 = a.k1 and b.id < a.id order by b.id desc)
-from tb a table option (index primary  key) 
+from tb a table option (index primary  key)
 where id - 1 <> (select b.id from tb b table option (index k1) where b.k1 = a.k1 and b.id < a.id order by b.id desc);
 --echo both $if $equ $rowcnt 704 "PASSED" "***FAILED";
 -- echoln both ": bm select of previous in desc order with lt" $rowcnt 704 "\n";
 
 select id, k1, (select b.id from tb b table option (index k1) where b.k1 = a.k1 and b.id < a.id order by b.id + 0 desc)
-from tb a table option (index primary  key) 
+from tb a table option (index primary  key)
 where id - 1 <> (select b.id from tb b table option (index k1) where b.k1 = a.k1 and b.id < a.id order by b.id + 0 desc);
 --echo both $if $equ $rowcnt 704 "PASSED" "***FAILED";
 --echo both ": bm select of previous in desc order with lt sorted desc oby\n";
 
 #if $NEQ $U{COLUMNSTORE} 1
 select id, k1, (select b.id from tb b table option (index primary key) where b.k1 = a.k1 and b.id < a.id order by b.id desc)
-from tb a table option (index primary  key) 
+from tb a table option (index primary  key)
 where id - 1 <> (select b.id from tb b table option (index primary key) where b.k1 = a.k1 and b.id < a.id order by b.id desc);
 --XXX echo both $if $equ $rowcnt 704 "PASSED" "***FAILED";
 --echo both ": bm select of previous in desc order with lt : double check with pk\n";
@@ -263,7 +284,7 @@ bmck (18);
 --echo both $if $equ $sqlstate OK "PASSED" "***FAILED";
 --echo both ": bm and pk consistency\n";
 
--- Now for deletes at end of page 
+-- Now for deletes at end of page
 #if $NEQ $U{COLUMNSTORE} 1
 
 delete from tb;

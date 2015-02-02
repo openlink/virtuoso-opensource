@@ -1,25 +1,25 @@
---  
+--
 --  $Id: nwxml3.sql,v 1.16.6.1.4.1 2013/01/02 16:14:46 source Exp $
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
+--
 --  Copyright (C) 1998-2015 OpenLink Software
---  
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 
 echo "Start nwxml3\n";
@@ -47,7 +47,7 @@ create procedure xml_per_text(in f varchar, in text varchar)
   if (exists (select 1 from XML_TEXT2 where XT_FILE = f))
     update XML_TEXT2 set XT_TEXT = xper where XT_FILE = f;
   else
-    insert into XML_TEXT2 (XT_ID, XT_FILE, XT_TEXT) 
+    insert into XML_TEXT2 (XT_ID, XT_FILE, XT_TEXT)
       values (sequence_next ('XML_TEXT2'), f, xper);
   return;
  deadl:
@@ -66,7 +66,7 @@ create procedure xml_per_load (in f varchar)
   if (exists (select 1 from XML_TEXT2 where XT_FILE = f))
     update XML_TEXT2 set XT_TEXT = xper where XT_FILE = f;
   else
-    insert into XML_TEXT2 (XT_ID, XT_FILE, XT_TEXT) 
+    insert into XML_TEXT2 (XT_ID, XT_FILE, XT_TEXT)
       values (sequence_next ('XML_TEXT2'), f, xper);
   return;
  deadl:

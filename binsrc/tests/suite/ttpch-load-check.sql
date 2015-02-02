@@ -1,3 +1,23 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 -- test simple inserts, if they save leading spaces in varchars.
 
 CREATE TABLE TEST_SUPPLIER (
@@ -30,7 +50,7 @@ create procedure TEST_SUPPLIER_FILL ()
   declare str_out any;
   str_out := string_output();
   http( '2022|Supplier#000002022| dwebGX7Id2pc25YvY33|3|13-924-162-8911|4296.26| ironic, even deposits. blithely cl|', str_out);
-  csv_vec_load( str_out, 0, null, 'TEST_SUPPLIER', 0, vector ('csv-delimiter', '|', 'lax', 1, 'txn', 0)); 
+  csv_vec_load( str_out, 0, null, 'TEST_SUPPLIER', 0, vector ('csv-delimiter', '|', 'lax', 1, 'txn', 0));
 }
 
 TEST_SUPPLIER_FILL ();

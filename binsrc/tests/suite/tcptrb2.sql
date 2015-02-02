@@ -1,3 +1,23 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 
 
 -- Now the cpt rollback has checkpointed a virgin T1 on ins 1111 100000 100.
@@ -52,7 +72,7 @@ select count (*) from t2;
 echo both $if $equ $last[1] 0 "PASSED" "***FAILED";
 echo both ": 0 in T2 after insert, cpt and rb of insert.\n";
 
-update t1 set fi2 = fi2 + 1; 
+update t1 set fi2 = fi2 + 1;
 str2ck ();
 echo both "Done str2ck 5\n";
 
@@ -93,7 +113,7 @@ echo both "Done str2ck 9\n";
 
 load tcptrb3.sql;
 
-drop 
+drop
 table t1;
 drop table t2;
 shutdown;

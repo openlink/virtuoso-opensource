@@ -1,13 +1,33 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 --drop table csv_load_list;
 
 create table csv_load_list (
-    cl_file varchar, 
+    cl_file varchar,
     cl_file_in_zip varchar,
-    cl_state int default 0, 
-    cl_error long varchar, 
-    cl_table varchar, 
+    cl_state int default 0,
+    cl_error long varchar,
+    cl_table varchar,
     cl_options any,
-    cl_started datetime, 
+    cl_started datetime,
     cl_done datetime,
     primary key (cl_file, cl_file_in_zip))
 create index cl_state on csv_load_list (cl_state)
@@ -17,7 +37,7 @@ create procedure csv_cols_cb (inout r any, in inx int, inout cbd any)
 {
   if (cbd is null)
     cbd := vector ();
-  cbd := vector_concat (cbd, vector (r));   
+  cbd := vector_concat (cbd, vector (r));
 }
 ;
 
@@ -25,7 +45,7 @@ create procedure  csv_get_cols_array (inout ss any, in hr int, in offs int, in o
 {
   declare h, res any;
   declare inx, j, ncols, no_head int;
-  
+
   h := null;
   no_head := 0;
   if (hr < 0)
@@ -41,44 +61,44 @@ create procedure  csv_get_cols_array (inout ss any, in hr int, in offs int, in o
     {
       declare _row any;
       _row := h[hr];
-      for (j := 0; j < length (_row); j := j + 1)           
+      for (j := 0; j < length (_row); j := j + 1)
         {
 	  res := vector_concat (res, vector (vector (SYS_ALFANUM_NAME (cast (_row[j] as varchar)), null)));
         }
       for (inx := offs; inx < length (h); inx := inx + 1)
-       { 
+       {
 	 _row := h[inx];
-         for (j := 0; j < length (_row); j := j + 1)           
+         for (j := 0; j < length (_row); j := j + 1)
 	   {
 	     if (res[j][1] is null and not (isstring (_row[j]) and _row[j] = '') and _row[j] is not null)
                res[j][1] := __tag (_row[j]);
              else if (__tag (_row[j]) <> res[j][1] and 189 = res[j][1] and (isdouble (_row[j]) or isfloat (_row[j])))
 	       res[j][1] := __tag (_row[j]);
              else if (__tag (_row[j]) <> res[j][1] and isinteger (_row[j]) and (res[j][1] = 219 or 190 = res[j][1]))
-	       ;  
+	       ;
              else if (__tag (_row[j]) <> res[j][1])
                res[j][1] := -1;
 	   }
-       } 
+       }
     }
   for (inx := 0; inx < length (res); inx := inx + 1)
-    { 
+    {
        if (not isstring (res[inx][0]) and not isnull (res[inx][0]))
-         no_head := 1;	
+         no_head := 1;
        else if (trim (res[inx][0]) = '' or isnull (res[inx][0]))
-         res[inx][0] := sprintf ('COL%d', inx);	 
-    }  
+         res[inx][0] := sprintf ('COL%d', inx);
+    }
   for (inx := 0; inx < length (res); inx := inx + 1)
-    { 
+    {
        if (res[inx][1] = -1 or res[inx][1] is null)
-         res[inx][1] := 'VARCHAR';	 
+         res[inx][1] := 'VARCHAR';
        else
-         res[inx][1] := dv_type_title (res[inx][1]);	 
-    }  
+         res[inx][1] := dv_type_title (res[inx][1]);
+    }
   if (no_head)
     {
       for (inx := 0; inx < length (res); inx := inx + 1)
-	{ 
+	{
 	   res[inx][0] := sprintf ('COL%d', inx);
 	}
     }
@@ -98,15 +118,15 @@ create procedure csv_get_table_def (in fn varchar, in f varchar, in opts any)
     s := gz_file_open (f);
   else
     s := file_open (f);
-  st := 0; offs := 1; 
+  st := 0; offs := 1;
   if (isvector (opts) and mod (length (opts), 2) = 0)
     {
       st := atoi (get_keyword ('header', opts, '0'));
       offs := atoi (get_keyword ('offset', opts, '1'));
-    }  
-  arr := csv_get_cols_array (s, st, offs, opts);   
+    }
+  arr := csv_get_cols_array (s, st, offs, opts);
   ss := string_output ();
-  http (sprintf ('CREATE TABLE %s ( \n', fn), ss); 
+  http (sprintf ('CREATE TABLE %s ( \n', fn), ss);
   for (i := 0; i < length (arr); i := i + 1)
     {
        http (sprintf ('\t"%I" %s', arr[i][0], arr[i][1]), ss);
@@ -114,7 +134,7 @@ create procedure csv_get_table_def (in fn varchar, in f varchar, in opts any)
          http (', \n', ss);
     }
   http (')', ss);
-  return string_output_string (ss);  
+  return string_output_string (ss);
 }
 ;
 
@@ -131,7 +151,7 @@ create procedure csv_register (in path varchar, in mask varchar)
 	    {
 	      declare tbfile, ofile, tb, f, tbname, mod varchar;
 	      declare opts any;
-	      tb := null; 
+	      tb := null;
 	      f := ls[inx];
 	      tbfile := path || '/' || regexp_replace (f, '(\\.csv(\\.gz)?)|(\\.zip)', '') || '.tb';
 	      ofile :=  path || '/' || regexp_replace (f, '(\\.csv(\\.gz)?)|(\\.zip)', '') || '.cfg';
@@ -140,17 +160,17 @@ create procedure csv_register (in path varchar, in mask varchar)
 	      if (file_stat (ofile) <> 0)
 		{
 		  declare delim, quot, header, offs, enc varchar;
-		  delim  := cfg_item_value (ofile, 'csv', 'csv-delimiter'); 
-		  quot   := cfg_item_value (ofile, 'csv', 'csv-quote'); 
-		  enc    := cfg_item_value (ofile, 'csv', 'encoding'); 
-		  header := cfg_item_value (ofile, 'csv', 'header'); 
-		  offs   := cfg_item_value (ofile, 'csv', 'offset'); 
-		  mod   := cfg_item_value (ofile, 'csv', 'mode'); 
+		  delim  := cfg_item_value (ofile, 'csv', 'csv-delimiter');
+		  quot   := cfg_item_value (ofile, 'csv', 'csv-quote');
+		  enc    := cfg_item_value (ofile, 'csv', 'encoding');
+		  header := cfg_item_value (ofile, 'csv', 'header');
+		  offs   := cfg_item_value (ofile, 'csv', 'offset');
+		  mod   := cfg_item_value (ofile, 'csv', 'mode');
 
-		  if (delim  is not null) 
+		  if (delim  is not null)
 		    {
-		      delim := replace (delim, 'tab', '\t'); 
-		      delim := replace (delim, 'space', ' '); 
+		      delim := replace (delim, 'tab', '\t');
+		      delim := replace (delim, 'space', ' ');
 		      opts := vector_concat (opts, vector ('csv-delimiter', delim));
 		    }
 		  if (quot   is not null) opts := vector_concat (opts, vector ('csv-quote', quot));
@@ -177,7 +197,7 @@ create procedure csv_register (in path varchar, in mask varchar)
 		      declare stat, msg any;
 		      stat := '00000';
 		      declare continue handler for sqlstate '*' {
-	                log_message (sprintf ('Can not guess table name for file %s', f)); 		
+	                log_message (sprintf ('Can not guess table name for file %s', f));
 		      };
 		      {
 		        exec (csv_get_table_def (tbname, path||'/'||f, opts), stat, msg);
@@ -185,7 +205,7 @@ create procedure csv_register (in path varchar, in mask varchar)
 		          tb := tbname;
 			else
 		          log_message (sprintf ('Can not guess table name for file %s', f));
-	              } 		
+	              }
 		    }
 		  else if (f like '%.zip')
 		    {
@@ -201,7 +221,7 @@ create procedure csv_register (in path varchar, in mask varchar)
 			      tb := null;
 			      stat := '00000';
 			      declare continue handler for sqlstate '*' {
-				log_message (sprintf ('Can not guess table name for zipped file %s', zf[0])); 		
+				log_message (sprintf ('Can not guess table name for zipped file %s', zf[0]));
 			      };
 			      {
 				exec (csv_get_table_def (tbname, ss, opts), stat, msg);
@@ -210,19 +230,19 @@ create procedure csv_register (in path varchar, in mask varchar)
 				else
 				  log_message (sprintf ('Can not guess table name for zipped file %s', zf[0]));
 				if (tb is not null)
-				  insert into DB.DBA.CSV_LOAD_LIST (cl_file, cl_file_in_zip, cl_table, cl_options) 
+				  insert into DB.DBA.CSV_LOAD_LIST (cl_file, cl_file_in_zip, cl_table, cl_options)
 				      values (path || '/' || f, zf[0], tb, opts);
-			      } 		
+			      }
 			    }
 			}
 		      tb := null;
 		    }
-		  else   
+		  else
 		    log_message (sprintf ('Can not guess table name for file %s', f));
 		}
               if (tb is not null)
-                {		
-		  insert into DB.DBA.CSV_LOAD_LIST (cl_file, cl_file_in_zip, cl_table, cl_options) 
+                {
+		  insert into DB.DBA.CSV_LOAD_LIST (cl_file, cl_file_in_zip, cl_table, cl_options)
 		      values (path || '/' || f, '', tb, opts);
 		}
 	    }
@@ -232,7 +252,7 @@ create procedure csv_register (in path varchar, in mask varchar)
 }
 ;
 
-create procedure 
+create procedure
 csv_register_all (in path varchar, in mask varchar)
 {
   declare ls any;
@@ -254,10 +274,10 @@ csv_ld_file (in f varchar, in zf varchar, in tb varchar, in ld_mode int, in opts
 {
   declare ss, ret any;
   declare offs, st int;
-  st := 0; offs := 1; 
+  st := 0; offs := 1;
   declare exit handler for sqlstate '*' {
     rollback work;
-    update DB.DBA.CSV_LOAD_LIST set CL_STATE = 2, CL_DONE = now (), CL_ERROR = __sql_state || ' ' || __sql_message 
+    update DB.DBA.CSV_LOAD_LIST set CL_STATE = 2, CL_DONE = now (), CL_ERROR = __sql_state || ' ' || __sql_message
 		where CL_FILE = f and CL_FILE_IN_ZIP = zf;
     commit work;
     log_message (sprintf (' File %s error %s %s', f, __sql_state, __sql_message));
@@ -267,7 +287,7 @@ csv_ld_file (in f varchar, in zf varchar, in tb varchar, in ld_mode int, in opts
     {
       st := atoi (get_keyword ('header', opts, '0'));
       offs := atoi (get_keyword ('offset', opts, '1'));
-    }  
+    }
   if (f like '%.zip' and length (zf) = 0)
     {
       declare ff any;
@@ -293,9 +313,9 @@ csv_ld_file (in f varchar, in zf varchar, in tb varchar, in ld_mode int, in opts
     }
   else
     ret := csv_load_file (f, offs, null, tb, ld_mode, opts);
-  
+
   if (length (ret) = 2 and length (ret[1]))
-    update DB.DBA.CSV_LOAD_LIST set CL_ERROR = ret[1] where CL_FILE = f and CL_FILE_IN_ZIP = zf;  
+    update DB.DBA.CSV_LOAD_LIST set CL_ERROR = ret[1] where CL_FILE = f and CL_FILE_IN_ZIP = zf;
 }
 ;
 
