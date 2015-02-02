@@ -1,0 +1,39 @@
+#
+#  $Id$
+#
+#  CREDITS
+#
+#  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
+#
+#
+
+The OpenLink Software Ajax Toolkit (OAT) project wishes to acknowledge
+incorporation of code from the following projects:
+
+* oat/crypto.js
+
+    MD5 and SHA routines, along with their supplemental sub-routines are
+    Copyright (C) Paul Johnston 1999 - 2002.
+    Other contributors: Greg Holt, Andrew Kepert, Ydnar, Lostinet
+    Distributed under the BSD License	
+
+
+* oat/webclip.js and */styles/webclip.css
+
+    Copyright 2006 Microsoft Corporation.  
+    Microsoft's copyrights in this work are licensed under the
+    Creative Commons Attribution-ShareAlike 2.5 License.
+    To view a copy of this license visit:
+        http://creativecommons.org/licenses/by-sa/2.5
+
+    As permitted by the license's future-compatibility clause (4.b) we choose
+    to distribute it under the terms of CC-by-SA v3.0 for compatibility with the 
+    DFSG:
+	https://wiki.debian.org/DFSGLicenses
+
+
+* oat/OpenLayers.js
+
+  Copyright 2005-2006 MetaCarta, Inc., released under the BSD License.
+  Please see http://svn.openlayers.org/trunk/openlayers/license.txt
+  for the full text of the license.
