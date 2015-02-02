@@ -3781,7 +3781,7 @@ bif_dict_inc_or_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (ht->ht_mp)
         {
           val = mp_box_num ((mem_pool_t *)(ht->ht_mp), inc_val);
-          key = mp_box_copy_tree ((mem_pool_t *)(ht->ht_mp), key);
+          key = mp_full_box_copy_tree ((mem_pool_t *)(ht->ht_mp), key);
         }
       else
         {
