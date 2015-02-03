@@ -167,14 +167,15 @@ case ${VIRTUOSO_LAYOUT} in
 		prefix=/usr
 		localstatedir=/var
 	fi
-	vaddir=$datadir/virtuoso/vad
-	docdir=$datadir/doc/virtuoso
-	htmldocdir=$datadir/doc/virtuoso/html
-	pdfdocdir=$datadir/doc/virtuoso/pdf
-	demodir=$localstatedir/lib/virtuoso/demo
-	dbdir=$localstatedir/lib/virtuoso/db
-	httprootdir=$localstatedir/lib/virtuoso/vsp
-	hostingdir=$libdir/virtuoso/hosting
+	VIRTPKGDIR=virtuoso-opensource-$VOS_MAJOR
+	vaddir=$datadir/$VIRTPKGDIR/vad
+	docdir=$datadir/doc/$VIRTPKGDIR
+	htmldocdir=$datadir/doc/$VIRTPKGDIR/html
+	pdfdocdir=$datadir/doc/$VIRTPKGDIR/pdf
+	demodir=$localstatedir/lib/$VIRTPKGDIR/demo
+	dbdir=$localstatedir/lib/$VIRTPKGDIR/db
+	httprootdir=$localstatedir/lib/$VIRTPKGDIR/vsp
+	hostingdir=$libdir/$VIRTPKGDIR/hosting
 	;;
 
   [[Gg]][[Ee]][[Nn]][[Tt]][[Oo]][[Oo]])			# Gentoo
@@ -184,14 +185,15 @@ case ${VIRTUOSO_LAYOUT} in
 		prefix=/usr
 		localstatedir=/var
 	fi
-	vaddir=$datadir/virtuoso/vad
-	docdir=$datadir/doc/virtuoso
-	htmldocdir=$datadir/doc/virtuoso/html
-	pdfdocdir=$datadir/doc/virtuoso/pdf
-	demodir=$localstatedir/lib/virtuoso/demo
-	dbdir=$localstatedir/lib/virtuoso/db
-	httprootdir=$localstatedir/lib/virtuoso/vsp
-	hostingdir=$libdir/virtuoso/hosting
+	VIRTPKGDIR=virtuoso-$VOS_MAJOR
+	vaddir=$datadir/$VIRTPKGDIR/vad
+	docdir=$datadir/doc/$VIRTPKGDIR
+	htmldocdir=$datadir/doc/$VIRTPKGDIR/html
+	pdfdocdir=$datadir/doc/$VIRTPKGDIR/pdf
+	demodir=$localstatedir/lib/$VIRTPKGDIR/demo
+	dbdir=$localstatedir/lib/$VIRTPKGDIR/db
+	httprootdir=$localstatedir/lib/$VIRTPKGDIR/vsp
+	hostingdir=$libdir/$VIRTPKGDIR/hosting
 	;;
 
   [[Rr]][[Ee]][[Dd]][[Hh]][[Aa]][[Tt]])			# RedHat
