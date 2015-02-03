@@ -29,14 +29,26 @@ AC_REVISION($Id$)
 ##									##
 ##########################################################################
 
+m4_define(vos_major,	[7])
+m4_define(vos_minor,	[2])
+m4_define(vos_patch,	[0])
+m4_define(vos_devel,	[-rc2])
+
 AC_INIT([Virtuoso Open Source Edition (Column Store)],
-	[7.2.0-rc1],
+	vos_major.vos_minor.vos_patch[]vos_devel,
 	[vos.admin@openlinksw.com],
 	[virtuoso-opensource])
 AC_CONFIG_SRCDIR([libsrc/Dk.h])
 AC_CONFIG_AUX_DIR([binsrc/config])
 AC_CONFIG_MACRO_DIR([binsrc/config])
 AC_CONFIG_HEADER([libsrc/Dk/config.h])
+
+#
+# Version variables
+#
+VOS_MAJOR="vos_major"
+VOS_MINOR="vos_minor"
+VOS_PATCH="vos_patch"
 
 dnl
 dnl You may need to change the next macro for older versions of automake:
