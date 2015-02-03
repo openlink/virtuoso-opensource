@@ -1,108 +1,68 @@
 #!/usr/bin/make -f
-# -*- makefile -*-
-# Sample debian/rules that uses debhelper.
-# This file was originally written by Joey Hess and Craig Small.
-# As a special exception, when this file is copied by dh-make into a
-# dh-make output file, you may use that output file without restriction.
-# This special exception was added by Craig Small in version 0.37 of dh-make.
 
-# Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
+include /usr/share/cdbs/1/rules/debhelper.mk
+include /usr/share/cdbs/1/rules/patchsys-quilt.mk
+include /usr/share/cdbs/1/class/autotools.mk
+include /usr/share/cdbs/1/rules/utils.mk
 
+DEB_AUTO_UPDATE_ACLOCAL = 1.11
+DEB_AUTO_UPDATE_AUTOCONF = 2.61
+DEB_AUTO_UPDATE_AUTOMAKE = 1.11
+DEB_AUTO_UPDATE_LIBTOOL = pre
 
-# These are used for cross-compiling and for saving the configure script
-# from having to guess our platform (since we know it already)
-DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
-DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
-ifneq ($(DEB_HOST_GNU_TYPE),$(DEB_BUILD_GNU_TYPE))
-CROSS= --build $(DEB_BUILD_GNU_TYPE) --host $(DEB_HOST_GNU_TYPE)
-else
-CROSS= --build $(DEB_BUILD_GNU_TYPE)
+DEB_AUTOMAKE_ARGS += -Wno-portability
+
+DEB_CONFIGURE_EXTRA_FLAGS = --with-layout=debian \
+		--program-transform-name='s/isql$$/isql-vt/;s/isqlw/isqlw-vt/' \
+		--with-readline --without-internal-zlib \
+		--with-iodbc=/usr \
+		--enable-demo-vad \
+		--enable-tutorial-vad \
+		--enable-isparql-vad \
+		--enable-ods-vad \
+		--enable-rdfmappers-vad \
+		--enable-sparqldemo-vad \
+		--enable-syncml-vad \
+		--enable-bpel-vad
+
+ifeq ($(DEB_BUILD_ARCH),alpha)
+		EXTRA_LDFLAGS += -Wl,--no-relax
 endif
 
-# Building from CVS requires autogen.sh to create configure script
-configure:	autogen.sh
-	. ./.profile
-	./autogen.sh
+DEB_CONFIGURE_SCRIPT_ENV += \
+		LDFLAGS="-Wl,-z,defs -Wl,--no-undefined -Wl,--as-needed $(EXTRA_LDFLAGS)" \
+		MONO_DISABLE_SHM=1 \
+        DEBIANPKG=virtuoso-opensource-7.1
 
-config.status: configure
-	dh_testdir
-	# Add here commands to configure the package.
-ifneq "$(wildcard /usr/share/misc/config.sub)" ""
-	cp -f /usr/share/misc/config.sub config.sub
-endif
-ifneq "$(wildcard /usr/share/misc/config.guess)" ""
-	cp -f /usr/share/misc/config.guess config.guess
-endif
-	env CFLAGS="$(CFLAGS)" LDFLAGS="-Wl,-z,defs" ./configure $(CROSS) --with-layout=debian --program-transform-name="s/isql/isql-v/" --with-readline
+DEB_DH_INSTALL_ARGS := --sourcedir=debian/tmp
 
+# update-rc.d is manually called in virtuoso-opensource-7.1.postinst
+# See note there.
+DEB_DH_INSTALLINIT_ARGS += --noscripts
 
-build: build-stamp
+# Disabled for now
+#DEB_MAKE_INVOKE += -j
+#.NOTPARALLEL:
 
-build-stamp:  config.status 
-	dh_testdir
+clean::
+	debconf-updatepo
 
-	# Add here commands to compile the package.
-	$(MAKE)
-	#docbook-to-man debian/virtuoso-opensource.sgml > virtuoso-opensource.1
+build/virtuoso-opensource-7.1::
+	cd debian; find . -name "*.?.xml" -exec docbook2x-man --solinks {} \;
 
-	touch $@
+build/libvirtuoso5.5-cil::
+	$(MAKE) -C binsrc/VirtuosoClient.Net -f Makefile.mono
+	chmod -x binsrc/VirtuosoClient.Net/OpenLink.Data.Virtuoso.dll
 
-clean: 
-	dh_testdir
-	dh_testroot
-	rm -f build-stamp 
+cleanbuilddir/libvirtuoso5.5-cil::
+	$(MAKE) -C binsrc/VirtuosoClient.Net -f Makefile.mono clean
 
-	# Add here commands to clean up after the build process.
-	[ ! -f Makefile ] || $(MAKE) distclean
-	rm -f config.sub config.guess
+binary-install/libvirtuoso5.5-cil::
+	dh_installcligac
 
-	dh_clean 
+binary-predeb/libvirtuoso5.5-cil::
+	dh_makeclilibs
+	dh_clideps -d
 
-install: build
-	dh_testdir
-	dh_testroot
-	dh_clean -k 
-	dh_installdirs
-
-	# Add here commands to install the package into debian/virtuoso-opensource.
-	$(MAKE) DESTDIR=$(CURDIR)/debian/virtuoso-opensource install
-
-
-# Build architecture-independent files here.
-binary-indep: build install
-# We have nothing to do by default.
-
-# Build architecture-dependent files here.
-binary-arch: build install
-	dh_testdir
-	dh_testroot
-	dh_installchangelogs ChangeLog
-	dh_installdocs
-	dh_installexamples
-#	dh_install
-#	dh_installmenu
-#	dh_installdebconf	
-#	dh_installlogrotate
-#	dh_installemacsen
-#	dh_installpam
-#	dh_installmime
-#	dh_python
-	dh_installinit
-#	dh_installcron
-#	dh_installinfo
-	dh_installman
-	dh_link
-	dh_strip
-	dh_compress
-	dh_fixperms
-#	dh_perl
-#	dh_makeshlibs
-	dh_installdeb
-	dh_shlibdeps
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
-
-binary: binary-indep binary-arch
-.PHONY: build clean binary-indep binary-arch binary install 
+get-orig-source:
+	-uscan --download --verbose

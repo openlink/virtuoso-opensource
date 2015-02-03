@@ -1,11 +1,4 @@
 NEWS
 README
-README.CVS
-README.UPGRADE
-README.WINDOWS
-README.hibernate
-README.jena
-README.jsse
-README.php5
-README.sesame2
-README.sesame3
+debian/TODO.Debian
+debian/NEWS.Debian

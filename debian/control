@@ -1,15 +1,28 @@
 Source: virtuoso-opensource
-Section: misc
-Priority: extra
-Maintainer: OpenLink Virtuoso Maintainer <vos.admin@openlinksw.com>
-Build-Depends: debhelper (>= 5), autotools-dev, autoconf (>= 2.57), automake (>= 1.9), libtool (>= 1.5), flex (>= 2.5.33), bison (>= 2.3), gperf (>= 2.7.2), gawk (>= 3.1.1), m4 (>= 1.4.1), make (>= 3.79.1), libssl-dev (>= 0.9.7), libreadline-dev
-Standards-Version: 3.7.2
+Section: database
+Priority: optional
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+XSBC-Original-Maintainer: Obey Arthur Liu <arthur@milliways.fr>
+Standards-Version: 3.9.2
+Homepage: http://virtuoso.openlinksw.com/wiki/main/Main/
+Vcs-Browser: https://alioth.debian.org/plugins/scmgit/cgi-bin/gitweb.cgi?p=pkg-virtuoso/pkg-virtuoso.git
+Vcs-Git: git://scm.alioth.debian.org/git/pkg-virtuoso/pkg-virtuoso.git
+Build-Depends: libiodbc2-dev, cdbs, debhelper (>= 7), quilt, autotools-dev, autoconf (>=2.57),
+ automake (>=1.10), libtool (>=1.5.16), flex (>=2.5.4), bison (>=1.35),
+ gperf (>=2.7.2), gawk (>=3.1.1), m4 (>=1.4.1), make (>=3.79.1),
+ libssl-dev (>=0.9.7), libreadline-dev, zlib1g-dev, libxml2-dev, libpcre3-dev,
+ libldap2-dev, net-tools,
+ mono-gmcs (>= 1.0) [i386 kfreebsd-i386 powerpc amd64 kfreebsd-amd64 ia64 arm armeb armel sparc s390],
+ cli-common-dev (>= 0.4.4) [i386 kfreebsd-i386 powerpc amd64 kfreebsd-amd64 ia64 arm armeb armel sparc s390],
+ libmono-corlib2.0-cil (>= 1.2.6) [i386 kfreebsd-i386 powerpc amd64 kfreebsd-amd64 ia64 arm armeb armel sparc s390],
+ libmono-system-data2.0-cil (>= 1.0) [i386 kfreebsd-i386 powerpc amd64 kfreebsd-amd64 ia64 arm armeb armel sparc s390],
+ libmono-system2.0-cil (>= 1.2.6) [i386 kfreebsd-i386 powerpc amd64 kfreebsd-amd64 ia64 arm armeb armel sparc s390],
+ docbook2x, po-debconf, libmagickwand-dev
 
-Package: virtuoso-opensource
-Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Homepage: http://virtuoso.openlinksw.com/
-Description: OpenLink Virtuoso Open-Source Edition
+Package: virtuoso-nepomuk
+Architecture: all
+Depends: ${misc:Depends}, virtuoso-minimal
+Description: transitional package for virtuoso-minimal
  Virtuoso is a high-performance object-relational SQL database. As a
  database, it provides transactions, a smart SQL compiler, powerful
  stored-procedure language with optional Java and .Net server-side
@@ -19,4 +32,277 @@ Description: OpenLink Virtuoso Open-Source Edition
  OpenLink Virtuoso supports SPARQL embedded into SQL for querying RDF
  data stored in Virtuoso's database. SPARQL benefits from low-level
  support in the engine itself, such as SPARQL-aware type-casting rules
- and a dedicated IRI data type. 
+ and a dedicated IRI data type.
+ .
+ This is a dummy binary package to ensure the safe transition to the
+ virtuoso-minimal package.
+
+Package: virtuoso-opensource
+Architecture: all
+Depends: virtuoso-opensource-7.1, ${misc:Depends}
+Recommends: virtuoso-server, virtuoso-vsp-startpage, virtuoso-vad-conductor
+Suggests: virtuoso-vad-doc, virtuoso-vad-demo, virtuoso-vad-tutorial,
+ virtuoso-vad-rdfmappers, virtuoso-vad-sparqldemo, virtuoso-vad-syncml,
+ virtuoso-vad-bpel, virtuoso-vad-isparql, virtuoso-vad-ods
+Description: high-performance database
+ OpenLink Virtuoso is a high-performance object-relational SQL database.
+ It provides transactions, a smart SQL compiler, hot backup, SQL:1999
+ support, a powerful stored-procedure language supporting server-side
+ Java or .NET, and more. It supports all major data-access interfaces,
+ including ODBC, JDBC, ADO.NET, and OLE/DB.
+ .
+ Virtuoso supports SPARQL embedded into SQL for querying RDF data stored
+ in its database. SPARQL benefits from low-level support in the engine
+ itself, such as SPARQL-aware type-casting rules and a dedicated IRI data
+ type.
+ .
+ Install this metapackage for the full suite of packages that make up
+ Virtuoso OSE ("Open-Source Edition").
+
+Package: virtuoso-server
+Architecture: all
+Depends: virtuoso-opensource-7.1, ${misc:Depends}
+Description: high-performance database - server dependency package
+ OpenLink Virtuoso is a high-performance object-relational SQL database.
+ It provides transactions, a smart SQL compiler, hot backup, SQL:1999
+ support, a powerful stored-procedure language supporting server-side
+ Java or .NET, and more. It supports all major data-access interfaces,
+ including ODBC, JDBC, ADO.NET, and OLE/DB.
+ .
+ This is an empty package depending on the current "best" version of the
+ Virtuoso server framework, as recommended by the maintainers (currently
+ virtuoso-opensource-7.1). Install this package if in doubt about
+ which version you need.
+
+Package: virtuoso-minimal
+Architecture: all
+Depends: virtuoso-opensource-7.1-bin, libvirtodbc0, ${misc:Depends}
+Replaces: virtuoso-nepomuk (<< 6.1.2+dfsg1-1ubuntu1)
+Breaks: virtuoso-nepomuk (<< 6.1.2+dfsg1-1ubuntu1)
+Description: high-performance database - core dependency package
+ OpenLink Virtuoso is a high-performance object-relational SQL database.
+ It provides transactions, a smart SQL compiler, hot backup, SQL:1999
+ support, a powerful stored-procedure language supporting server-side
+ Java or .NET, and more. It supports all major data-access interfaces,
+ including ODBC, JDBC, ADO.NET, and OLE/DB.
+ .
+ This is an empty package depending on the current "best" version of the
+ core Virtuoso binaries, as recommended by the maintainers (currently
+ virtuoso-opensource-7.1-bin). This should usually be depended on by
+ all packages which use Virtuoso as an embedded database.
+
+Package: virtuoso-opensource-7.1
+Architecture: any
+Depends: virtuoso-opensource-7.1-common (= ${binary:Version}),
+ virtuoso-opensource-7.1-bin (= ${binary:Version}),
+ libvirtodbc0 (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
+Breaks: virtuoso-opensource-6.0 (<< 6.1.2+dfsg1-1ubuntu1)
+Description: high-performance database - support files
+ OpenLink Virtuoso is a high-performance object-relational SQL database.
+ It provides transactions, a smart SQL compiler, hot backup, SQL:1999
+ support, a powerful stored-procedure language supporting server-side
+ Java or .NET, and more. It supports all major data-access interfaces,
+ including ODBC, JDBC, ADO.NET, and OLE/DB.
+ .
+ This package provides the Virtuoso server framework.
+
+Package: virtuoso-opensource-7.1-common
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Conflicts: virtuoso-opensource-6.0-common
+Replaces: virtuoso-opensource-6.0-common
+Description: high-performance database - common files
+ OpenLink Virtuoso is a high-performance object-relational SQL database.
+ It provides transactions, a smart SQL compiler, hot backup, SQL:1999
+ support, a powerful stored-procedure language supporting server-side
+ Java or .NET, and more. It supports all major data-access interfaces,
+ including ODBC, JDBC, ADO.NET, and OLE/DB.
+ .
+ This package contains files common to all versions of Virtuoso.
+
+Package: virtuoso-opensource-7.1-bin
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Conflicts: virtuoso-opensource-6.0-bin
+Replaces: virtuoso-opensource-6.0-bin
+Description: high-performance database - binaries
+ OpenLink Virtuoso is a high-performance object-relational SQL database.
+ It provides transactions, a smart SQL compiler, hot backup, SQL:1999
+ support, a powerful stored-procedure language supporting server-side
+ Java or .NET, and more. It supports all major data-access interfaces,
+ including ODBC, JDBC, ADO.NET, and OLE/DB.
+ .
+ This package contains the core Virtuoso binaries.
+
+Package: virtuoso-vsp-startpage
+Architecture: all
+Depends: ${misc:Depends}, virtuoso-opensource
+Description: high-performance database - web interface files
+ OpenLink Virtuoso is a high-performance object-relational SQL database.
+ It provides transactions, a smart SQL compiler, hot backup, SQL:1999
+ support, a powerful stored-procedure language supporting server-side
+ Java or .NET, and more. It supports all major data-access interfaces,
+ including ODBC, JDBC, ADO.NET, and OLE/DB.
+ .
+ This package contains the files for Virtuoso's web interface.
+
+Package: virtuoso-vad-conductor
+Architecture: all
+Depends: ${misc:Depends}, virtuoso-opensource
+Description: high-performance database - conductor module
+ OpenLink Virtuoso is a high-performance object-relational SQL database.
+ It provides transactions, a smart SQL compiler, hot backup, SQL:1999
+ support, a powerful stored-procedure language supporting server-side
+ Java or .NET, and more. It supports all major data-access interfaces,
+ including ODBC, JDBC, ADO.NET, and OLE/DB.
+ .
+ This package contains the Virtuoso Application Distribution module
+ for the administration interface.
+
+Package: virtuoso-vad-doc
+Section: doc
+Architecture: all
+Depends: ${misc:Depends}, virtuoso-opensource
+Description: high-performance database - documentation module
+ OpenLink Virtuoso is a high-performance object-relational SQL database.
+ It provides transactions, a smart SQL compiler, hot backup, SQL:1999
+ support, a powerful stored-procedure language supporting server-side
+ Java or .NET, and more. It supports all major data-access interfaces,
+ including ODBC, JDBC, ADO.NET, and OLE/DB.
+ .
+ This package contains the Virtuoso Application Distribution module
+ for the documentation.
+
+Package: virtuoso-vad-demo
+Section: doc
+Architecture: all
+Depends: ${misc:Depends}, virtuoso-opensource
+Description: high-performance database - demo module
+ OpenLink Virtuoso is a high-performance object-relational SQL database.
+ It provides transactions, a smart SQL compiler, hot backup, SQL:1999
+ support, a powerful stored-procedure language supporting server-side
+ Java or .NET, and more. It supports all major data-access interfaces,
+ including ODBC, JDBC, ADO.NET, and OLE/DB.
+ .
+ This package contains the Virtuoso Application Distribution module
+ for the demonstration application.
+
+Package: virtuoso-vad-tutorial
+Section: doc
+Architecture: all
+Depends: ${misc:Depends}, virtuoso-opensource
+Description: high-performance database - tutorial module
+ OpenLink Virtuoso is a high-performance object-relational SQL database.
+ It provides transactions, a smart SQL compiler, hot backup, SQL:1999
+ support, a powerful stored-procedure language supporting server-side
+ Java or .NET, and more. It supports all major data-access interfaces,
+ including ODBC, JDBC, ADO.NET, and OLE/DB.
+ .
+ This package contains the Virtuoso Application Distribution module
+ for the tutorial application.
+
+Package: virtuoso-vad-rdfmappers
+Architecture: all
+Depends: ${misc:Depends}, virtuoso-opensource
+Description: high-performance database - RDF mappers module
+ OpenLink Virtuoso is a high-performance object-relational SQL database.
+ It provides transactions, a smart SQL compiler, hot backup, SQL:1999
+ support, a powerful stored-procedure language supporting server-side
+ Java or .NET, and more. It supports all major data-access interfaces,
+ including ODBC, JDBC, ADO.NET, and OLE/DB.
+ .
+ This package contains the Virtuoso Application Distribution module
+ for the RDF mappers application.
+
+Package: virtuoso-vad-sparqldemo
+Architecture: all
+Depends: ${misc:Depends}, virtuoso-opensource
+Description: high-performance database - SPARQL demo module
+ OpenLink Virtuoso is a high-performance object-relational SQL database.
+ It provides transactions, a smart SQL compiler, hot backup, SQL:1999
+ support, a powerful stored-procedure language supporting server-side
+ Java or .NET, and more. It supports all major data-access interfaces,
+ including ODBC, JDBC, ADO.NET, and OLE/DB.
+ .
+ This package contains the Virtuoso Application Distribution module
+ for the SPARQL demo application.
+
+Package: virtuoso-vad-syncml
+Architecture: all
+Depends: ${misc:Depends}, virtuoso-opensource
+Description: high-performance database - SyncML module
+ OpenLink Virtuoso is a high-performance object-relational SQL database.
+ It provides transactions, a smart SQL compiler, hot backup, SQL:1999
+ support, a powerful stored-procedure language supporting server-side
+ Java or .NET, and more. It supports all major data-access interfaces,
+ including ODBC, JDBC, ADO.NET, and OLE/DB.
+ .
+ This package contains the Virtuoso Application Distribution module
+ for Synchronization Markup Language support.
+
+Package: virtuoso-vad-bpel
+Architecture: all
+Depends: ${misc:Depends}, virtuoso-opensource
+Description: high-performance database - BPEL module
+ OpenLink Virtuoso is a high-performance object-relational SQL database.
+ It provides transactions, a smart SQL compiler, hot backup, SQL:1999
+ support, a powerful stored-procedure language supporting server-side
+ Java or .NET, and more. It supports all major data-access interfaces,
+ including ODBC, JDBC, ADO.NET, and OLE/DB.
+ .
+ This package contains the Virtuoso Application Distribution module
+ for Business Process Execution Language support.
+
+Package: virtuoso-vad-isparql
+Architecture: all
+Depends: ${misc:Depends}, virtuoso-opensource
+Description: high-performance database - iSPARQL module
+ OpenLink Virtuoso is a high-performance object-relational SQL database.
+ It provides transactions, a smart SQL compiler, hot backup, SQL:1999
+ support, a powerful stored-procedure language supporting server-side
+ Java or .NET, and more. It supports all major data-access interfaces,
+ including ODBC, JDBC, ADO.NET, and OLE/DB.
+ .
+ This package contains the Virtuoso Application Distribution module
+ for iSPARQL support.
+
+Package: virtuoso-vad-ods
+Architecture: all
+Depends: ${misc:Depends}, virtuoso-opensource
+Description: high-performance database - Open Data Spaces module
+ OpenLink Virtuoso is a high-performance object-relational SQL database.
+ It provides transactions, a smart SQL compiler, hot backup, SQL:1999
+ support, a powerful stored-procedure language supporting server-side
+ Java or .NET, and more. It supports all major data-access interfaces,
+ including ODBC, JDBC, ADO.NET, and OLE/DB.
+ .
+ This package contains the Virtuoso Application Distribution module
+ for Open Data Spaces support.
+
+Package: libvirtodbc0
+Depends: virtuoso-opensource-7.1-common (= ${binary:Version}),
+ libiodbc2, ${shlibs:Depends}, ${misc:Depends}
+Replaces: virtuoso-nepomuk (<< 6.1.2+dfsg1-1ubuntu1)
+Breaks: virtuoso-nepomuk (<< 6.1.2+dfsg1-1ubuntu1)
+Architecture: any
+Description: high-performance database - ODBC libraries
+ OpenLink Virtuoso is a high-performance object-relational SQL database.
+ It provides transactions, a smart SQL compiler, hot backup, SQL:1999
+ support, a powerful stored-procedure language supporting server-side
+ Java or .NET, and more. It supports all major data-access interfaces,
+ including ODBC, JDBC, ADO.NET, and OLE/DB.
+ .
+ This package contains the Virtuoso ODBC client libraries.
+
+Package: libvirtuoso5.5-cil
+Section: cli-mono
+Architecture: i386 kfreebsd-i386 powerpc amd64 kfreebsd-amd64 ia64 arm armeb armel sparc s390
+Depends: ${cli:Depends}, ${misc:Depends}
+Description: high-performance database - Mono assemblies
+ OpenLink Virtuoso is a high-performance object-relational SQL database.
+ It provides transactions, a smart SQL compiler, hot backup, SQL:1999
+ support, a powerful stored-procedure language supporting server-side
+ Java or .NET, and more. It supports all major data-access interfaces,
+ including ODBC, JDBC, ADO.NET, and OLE/DB.
+ .
+ This package contains Virtuoso's ADO.NET data provider for Mono.
