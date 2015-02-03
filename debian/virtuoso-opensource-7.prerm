@@ -1,0 +1,32 @@
+#!/bin/bash
+
+set -e
+
+. /usr/share/debconf/confmodule
+
+if [ -n "$DEBIAN_SCRIPT_DEBUG" ]; then set -v -x; DEBIAN_SCRIPT_TRACE=1; fi
+${DEBIAN_SCRIPT_TRACE:+ echo "#42#DEBUG# RUNNING $0 $*" 1>&2 }
+
+db_get virtuoso-opensource-7/register-odbc-dsn || true
+if [ "$RET" = "true" ]; then
+	odbcinst -u -s -l -n VOS || true
+fi
+
+# removing from list of owners of this question removes us from it's choices
+db_unregister virtuoso-opensource/primary-server
+
+# now check to see if we were the current default vos-server
+# (if so we need to delete the broken links)
+if db_get virtuoso-opensource/primary-server; then
+  db_metaget virtuoso-opensource/primary-server owners
+  db_subst virtuoso-opensource/primary-server choices $RET
+  db_metaget virtuoso-opensource/primary-server value
+  if [ "virtuoso-opensource-7" = "$RET" ] ; then
+		# prompt the user for a new choice
+    db_fset virtuoso-opensource/primary-server seen false
+    db_input medium virtuoso-opensource/primary-server || true
+    db_go || true
+  fi
+fi
+
+#DEBHELPER#

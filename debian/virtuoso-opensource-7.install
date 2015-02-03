@@ -1,0 +1,3 @@
+usr/lib/virtuoso-opensource-7/hosting/*.so
+var/lib/virtuoso-opensource-7/db/virtuoso.ini etc/virtuoso-opensource-7/
+../odbc.ini usr/share/virtuoso-opensource-7/
