@@ -39,7 +39,7 @@ Description: transitional package for virtuoso-minimal
 
 Package: virtuoso-opensource
 Architecture: all
-Depends: virtuoso-opensource-7.1, ${misc:Depends}
+Depends: virtuoso-opensource-7, ${misc:Depends}
 Recommends: virtuoso-server, virtuoso-vsp-startpage, virtuoso-vad-conductor
 Suggests: virtuoso-vad-doc, virtuoso-vad-demo, virtuoso-vad-tutorial,
  virtuoso-vad-rdfmappers, virtuoso-vad-sparqldemo, virtuoso-vad-syncml,
@@ -61,7 +61,7 @@ Description: high-performance database
 
 Package: virtuoso-server
 Architecture: all
-Depends: virtuoso-opensource-7.1, ${misc:Depends}
+Depends: virtuoso-opensource-7, ${misc:Depends}
 Description: high-performance database - server dependency package
  OpenLink Virtuoso is a high-performance object-relational SQL database.
  It provides transactions, a smart SQL compiler, hot backup, SQL:1999
@@ -71,12 +71,12 @@ Description: high-performance database - server dependency package
  .
  This is an empty package depending on the current "best" version of the
  Virtuoso server framework, as recommended by the maintainers (currently
- virtuoso-opensource-7.1). Install this package if in doubt about
+ virtuoso-opensource-7). Install this package if in doubt about
  which version you need.
 
 Package: virtuoso-minimal
 Architecture: all
-Depends: virtuoso-opensource-7.1-bin, libvirtodbc0, ${misc:Depends}
+Depends: virtuoso-opensource-7-bin, libvirtodbc0, ${misc:Depends}
 Replaces: virtuoso-nepomuk (<< 6.1.2+dfsg1-1ubuntu1)
 Breaks: virtuoso-nepomuk (<< 6.1.2+dfsg1-1ubuntu1)
 Description: high-performance database - core dependency package
@@ -88,13 +88,13 @@ Description: high-performance database - core dependency package
  .
  This is an empty package depending on the current "best" version of the
  core Virtuoso binaries, as recommended by the maintainers (currently
- virtuoso-opensource-7.1-bin). This should usually be depended on by
+ virtuoso-opensource-7-bin). This should usually be depended on by
  all packages which use Virtuoso as an embedded database.
 
-Package: virtuoso-opensource-7.1
+Package: virtuoso-opensource-7
 Architecture: any
-Depends: virtuoso-opensource-7.1-common (= ${binary:Version}),
- virtuoso-opensource-7.1-bin (= ${binary:Version}),
+Depends: virtuoso-opensource-7-common (= ${binary:Version}),
+ virtuoso-opensource-7-bin (= ${binary:Version}),
  libvirtodbc0 (= ${binary:Version}), ${shlibs:Depends}, ${misc:Depends}
 Breaks: virtuoso-opensource-6.0 (<< 6.1.2+dfsg1-1ubuntu1)
 Description: high-performance database - support files
@@ -106,7 +106,7 @@ Description: high-performance database - support files
  .
  This package provides the Virtuoso server framework.
 
-Package: virtuoso-opensource-7.1-common
+Package: virtuoso-opensource-7-common
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Conflicts: virtuoso-opensource-6.0-common
@@ -120,7 +120,7 @@ Description: high-performance database - common files
  .
  This package contains files common to all versions of Virtuoso.
 
-Package: virtuoso-opensource-7.1-bin
+Package: virtuoso-opensource-7-bin
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Conflicts: virtuoso-opensource-6.0-bin
@@ -280,7 +280,7 @@ Description: high-performance database - Open Data Spaces module
  for Open Data Spaces support.
 
 Package: libvirtodbc0
-Depends: virtuoso-opensource-7.1-common (= ${binary:Version}),
+Depends: virtuoso-opensource-7-common (= ${binary:Version}),
  libiodbc2, ${shlibs:Depends}, ${misc:Depends}
 Replaces: virtuoso-nepomuk (<< 6.1.2+dfsg1-1ubuntu1)
 Breaks: virtuoso-nepomuk (<< 6.1.2+dfsg1-1ubuntu1)

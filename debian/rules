@@ -32,11 +32,11 @@ endif
 DEB_CONFIGURE_SCRIPT_ENV += \
 		LDFLAGS="-Wl,-z,defs -Wl,--no-undefined -Wl,--as-needed $(EXTRA_LDFLAGS)" \
 		MONO_DISABLE_SHM=1 \
-        DEBIANPKG=virtuoso-opensource-7.1
+        DEBIANPKG=virtuoso-opensource-7
 
 DEB_DH_INSTALL_ARGS := --sourcedir=debian/tmp
 
-# update-rc.d is manually called in virtuoso-opensource-7.1.postinst
+# update-rc.d is manually called in virtuoso-opensource-7.postinst
 # See note there.
 DEB_DH_INSTALLINIT_ARGS += --noscripts
 
@@ -50,7 +50,7 @@ clean::
 pre-build::
 	./autogen.sh
 
-build/virtuoso-opensource-7.1::
+build/virtuoso-opensource-7::
 	cd debian; find . -name "*.?.xml" -exec docbook2x-man --solinks {} \;
 
 build/libvirtuoso5.5-cil::
