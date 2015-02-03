@@ -17,7 +17,7 @@ Build-Depends: libiodbc2-dev, cdbs, debhelper (>= 7), quilt, autotools-dev, auto
  libmono-corlib2.0-cil (>= 1.2.6) [i386 kfreebsd-i386 powerpc amd64 kfreebsd-amd64 ia64 arm armeb armel sparc s390],
  libmono-system-data2.0-cil (>= 1.0) [i386 kfreebsd-i386 powerpc amd64 kfreebsd-amd64 ia64 arm armeb armel sparc s390],
  libmono-system2.0-cil (>= 1.2.6) [i386 kfreebsd-i386 powerpc amd64 kfreebsd-amd64 ia64 arm armeb armel sparc s390],
- docbook2x, po-debconf, libmagickwand-dev
+ docbook2x, po-debconf, libmagickwand-dev, openjdk-7-jdk, openjdk-6-jdk
 
 Package: virtuoso-nepomuk
 Architecture: all
@@ -306,3 +306,16 @@ Description: high-performance database - Mono assemblies
  including ODBC, JDBC, ADO.NET, and OLE/DB.
  .
  This package contains Virtuoso's ADO.NET data provider for Mono.
+
+Package: libvirtjdbc0
+Depends: virtuoso-opensource-7-common (= ${binary:Version}),
+ libiodbc2, ${misc:Depends}
+Architecture: any
+Description: high-performance database - JDBC libraries
+ OpenLink Virtuoso is a high-performance object-relational SQL database.
+ It provides transactions, a smart SQL compiler, hot backup, SQL:1999
+ support, a powerful stored-procedure language supporting server-side
+ Java or .NET, and more. It supports all major data-access interfaces,
+ including ODBC, JDBC, ADO.NET, and OLE/DB.
+ .
+ This package contains the Virtuoso JDBC client libraries.

@@ -12,6 +12,10 @@ DEB_AUTO_UPDATE_LIBTOOL = pre
 
 DEB_AUTOMAKE_ARGS += -Wno-portability
 
+JDK6PATH = $(shell dpkg -L openjdk-6-jdk | grep "/usr/lib/jvm/java-6-openjdk" | cut -d - -f 1-4| cut -d / -f 1-5 | sort -u )
+
+JDK7PATH = $(shell dpkg -L openjdk-7-jdk | grep "/usr/lib/jvm/java-7-openjdk" | cut -d - -f 1-4| cut -d / -f 1-5 | sort -u)
+
 DEB_CONFIGURE_EXTRA_FLAGS = --with-layout=debian \
 		--program-transform-name='s/isql$$/isql-vt/;s/isqlw/isqlw-vt/' \
 		--with-readline --without-internal-zlib \
@@ -24,7 +28,9 @@ DEB_CONFIGURE_EXTRA_FLAGS = --with-layout=debian \
 		--enable-rdfmappers-vad \
 		--enable-sparqldemo-vad \
 		--enable-syncml-vad \
-		--enable-bpel-vad
+		--enable-bpel-vad \
+		--with-jdk4=$(JDK6PATH) \
+		--with-jdk4_1=$(JDK7PATH)
 
 ifeq ($(DEB_BUILD_ARCH),alpha)
 		EXTRA_LDFLAGS += -Wl,--no-relax
