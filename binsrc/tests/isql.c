@@ -9485,12 +9485,11 @@ connect_to_datasource (TCHAR *datasource, TCHAR *username, TCHAR *password)
     {
 #if defined (NO_DRIVER_CONNECT)
       isql_fprintf (error_stream,
-		    "%") PCT_S _T(": SQLDriverConnect not available on this platform. Please use SET DSN, UID and PWD commands before CONNECT command without arguments to connect. Connection string was: \"%s\"\n",
-		    progname, datasource);
+		    "%" PCT_S _T(": SQLDriverConnect not available on this platform. Please use SET DSN, UID and PWD commands before CONNECT command without arguments to connect.\n"), progname);
       isql_exit (1);
 #else
       SWORD conn_str_length;
-      TCHAR completed_conn_string[1001];
+      TCHAR completed_conn_string[4096];
 
 #ifdef ODBC_ONLY
       TCHAR dsn2[512];
@@ -9511,19 +9510,15 @@ connect_to_datasource (TCHAR *datasource, TCHAR *username, TCHAR *password)
 				  &conn_str_length,
 				  SQL_DRIVER_COMPLETE)))
 	{
+	  isql_fprintf (error_stream, _T("Connection: %") PCT_S _T("\n"),
+		rc == SQL_SUCCESS_WITH_INFO ? _T("Established (with info)") : _T("Failed"));
 	  print_error (((HENV) 0), hdbc, ((HSTMT) 0), rc);
-	  isql_fprintf (error_stream,
-			_T("%") PCT_S _T("connect with connection string \"%") PCT_S _T("\". Completed as: \"%") PCT_S _T("\", length=%d\n"),
-			((SQL_ERROR == rc) ? _T("could not ") : _T("")),
-			datasource, completed_conn_string, conn_str_length);
 	  if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
 	    isql_exit (3);
 	}
       else if (verbose_mode)	/* A success */
 	{
-	  isql_fprintf (error_stream,
-			_T("connected with connection string \"%") PCT_S _T("\". Completed as: \"%") PCT_S _T("\", length=%d.\n"),
-			datasource, completed_conn_string, conn_str_length);
+	  isql_fprintf (error_stream, _T("Connection: Established\n"));
 	}
 #endif
     }
