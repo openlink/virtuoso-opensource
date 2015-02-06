@@ -3090,12 +3090,25 @@ blob_check (blob_handle_t * bh)
 
       for (inx = 0; inx < n; inx++)
 	{
+	  int type;
+	  extent_map_t * em;
+	  extent_t * ext;
 	  dp = bh->bh_pages[inx];
+	  em = DBS_DP_TO_EM (it->it_storage, dp);
+	  mutex_enter (em->em_mtx);
+	  ext = EM_DP_TO_EXT (em, EXT_ROUND (dp));
+	  type = EXT_TYPE (ext);
+	  mutex_leave (em->em_mtx);
+	  if (type != EXT_BLOB)
+	    {
+	      log_info ("extent map not a BLOB extent dp=%d tp=%d", dp, type);
+	      GPF_T1 ("extent map not a BLOB extent");
+	    }
 	  if (dp <3 || dp > it->it_storage->dbs_n_pages)
 	    {
 	      error = 1;
+	      log_info ("Out of range  blob page refd start = %d L=%d max dp=%d", bh->bh_page, dp, it->it_storage->dbs_n_pages);
 	      GPF_T1 ("blob out of range");
-	      log_info ("Out of range  blob page refd start = %d L=%d ", bh->bh_page, dp);
 	    }
 	  else if (dp && dbs_is_free_page (it->it_storage, dp))
 	    {

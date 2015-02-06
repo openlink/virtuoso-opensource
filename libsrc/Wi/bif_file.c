@@ -4202,6 +4202,10 @@ zlib_box_uncompress (caddr_t src, dk_session_t * out, caddr_t * err_ret)
   inflateEnd (&zs);
 }
 
+#ifdef DBG_BLOB_PAGES_ACCOUNT
+extern int is_reg;
+#endif
+
 void
 zlib_blob_uncompress (lock_trx_t *lt, blob_handle_t *bh, dk_session_t * out, caddr_t * err_ret)
 {
