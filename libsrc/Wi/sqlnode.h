@@ -1881,6 +1881,7 @@ typedef struct client_connection_s
     dk_session_t *	cli_blob_ses_save; /* save the cli_session here for the time of reading b.blobs from cluster as if they were from client */
     struct xml_ns_2dict_s      *cli_ns_2dict;
     dk_set_t		cli_dae_blobs;
+    char               cli_logged_in;
   } client_connection_t;
 
 

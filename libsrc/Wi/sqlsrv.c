@@ -98,7 +98,7 @@ caddr_t f##_w p \
   dk_session_t * ses = IMMEDIATE_CLIENT; \
   client_connection_t * cli; \
   cli = DKS_DB_DATA (ses); \
-  if (!cli) \
+  if (!cli || !cli->cli_logged_in) \
     { \
       log_error ("SQL client operation on a connection which was not logged in.\n"); \
       ses->dks_to_close = 1; \
@@ -1246,6 +1246,7 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
 
   dk_free_tree ((caddr_t) info);
   srv_add_login (cli);
+  cli->cli_logged_in = 1;
   return ret;
 }
 
