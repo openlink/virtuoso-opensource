@@ -102,6 +102,7 @@ caddr_t f##_w p \
     { \
       log_error ("SQL client operation on a connection which was not logged in.\n"); \
       ses->dks_to_close = 1; \
+      DKST_RPC_DONE (ses); \
       return NULL; \
     } \
   CLI_ENTER; \
@@ -3197,6 +3198,7 @@ sf_overflow (future_request_t * frq)
 {
   client_connection_t * cli = DKS_DB_DATA (frq->rq_client);
   lock_trx_t * lt;
+  if (!cli) goto no;
   IN_TXN;
   lt = cli->cli_trx;
   if (0 == lt->lt_threads)
@@ -3222,6 +3224,7 @@ sf_overflow (future_request_t * frq)
 	}
     }
   LEAVE_TXN;
+no:
   frq_no_thread_reply (frq);
 }
 

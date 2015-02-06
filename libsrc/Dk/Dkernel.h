@@ -113,6 +113,8 @@ struct dk_session_s
 
   du_thread_t *			dks_waiting_http_recall_session;
   dk_hash_t *			dks_pending_futures;
+  caddr_t			dks_top_obj;
+  dk_set_t			dks_pending_obj;
 };
 
 /* dks_error */

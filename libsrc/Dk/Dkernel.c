@@ -1125,7 +1125,10 @@ future_wrapper (void *ignore)
 	      arg_array[finx] = NULL;
 	}
 
-      dk_free_box_and_int_boxes ((caddr_t) arguments);
+      if (error)
+	dk_free_tree (arguments);
+      else
+	dk_free_box_and_int_boxes ((caddr_t) arguments);
 
       /* Free this now. If freed after RPC func the references items may have been
          freed and reallocated and could be erroneously re-freed. */
@@ -1188,10 +1191,7 @@ future_wrapper (void *ignore)
 	    write_in_session ((caddr_t) ret_block, future->rq_client, NULL, NULL, 1);
 #endif
 	    CB_DONE;
-	    if (ret_type == DV_C_STRING)
-	      dk_free_box ((caddr_t) ret_box[0]);	/* mty HUHTI */
-	    dk_free_box_and_numbers ((caddr_t) ret_block);	/* mty HUHTI */
-	    dk_free_box_and_numbers ((caddr_t) ret_box);	/* mty HUHTI */
+	    dk_free_tree (ret_block);
 	  }
       }
 
@@ -1385,7 +1385,7 @@ future_wrapper (void *ignore)
 
 			  dk_free_box (req[FRQ_SERVICE_NAME]);
 			  req[FRQ_SERVICE_NAME] = NULL;
-			  dk_free_box_and_numbers ((box_t) req);	/* mty HUHTI */
+			  dk_free_tree ((box_t) req);	/* mty HUHTI */
 			}
 		      else
 			{
@@ -1516,13 +1516,8 @@ frq_create (dk_session_t * ses, caddr_t * request)
       sr_report_future_error (ses, "", "invalid future request length");
       if (IS_BOX_POINTER (request))
 	dk_free_tree (request);
-      mutex_enter (thread_mtx);
-      if (ses->dks_thread_state == DKST_IDLE)
-	{
-	  PrpcDisconnect (ses);
-	  PrpcSessionFree (ses);
-	}
-      mutex_leave (thread_mtx);
+      SESSTAT_CLR (ses->dks_session, SST_OK);
+      SESSTAT_SET (ses->dks_session, SST_BROKEN_CONNECTION);
       dk_free (future_request, sizeof (future_request_t));
       return NULL;
     }
@@ -1542,13 +1537,18 @@ frq_create (dk_session_t * ses, caddr_t * request)
 
       printf ("\nUnknown service %s requested. req no = %d", svc, (int) unbox (request[FRQ_COND_NUMBER]));
       dk_free (future_request, sizeof (future_request_t));
+      if (IS_BOX_POINTER (request))
+	dk_free_tree (request);
       return NULL;
     }
 
   future_request->rq_condition = (long) unbox (request[FRQ_COND_NUMBER]);	/* mty HUHTI */
   args = request[FRQ_ARGUMENTS];
   if (IS_BOX_POINTER (args) && DV_TYPE_OF (args) == DV_ARRAY_OF_POINTER)
-    future_request->rq_arguments = (long **) request[FRQ_ARGUMENTS];
+    {
+      future_request->rq_arguments = (long **) request[FRQ_ARGUMENTS];
+      request[FRQ_ARGUMENTS] = NULL;
+    }
 
   return future_request;
 }
@@ -1606,7 +1606,7 @@ schedule_request (TAKE_G dk_session_t * ses, caddr_t * request)
 
   dk_free_box (request[FRQ_SERVICE_NAME]);
   request[FRQ_SERVICE_NAME] = NULL;
-  dk_free_box_and_numbers ((box_t) request);	 /* mty HUHTI */
+  dk_free_tree ((box_t) request);	 /* mty HUHTI */
 #if 1						 /*!!! */
   ss_dprintf_2 (("Starting future %ld with thread %p", future_request->rq_condition,
 	  /*future_request->rq_service->sr_name, */ thread));
@@ -1679,7 +1679,7 @@ schedule_future:
       ss_dprintf_4 (("found no free thread - queueing"));
       queued_reqs++;
       if (client_trace_flag)
-	logit (L_DEBUG, "adding to in_basket client: %lx service: %s", future_request->rq_client, future_request->rq_service->sr_name);
+	logit (L_DEBUG, "adding to in_basket client: %lx service: %s", future_request->rq_client, future_request->rq_service ? future_request->rq_service->sr_name : "no service");
       thrs_printf ((thrs_fo, "**ses %p thr:%p req to basket\n", ses, THREAD_CURRENT_THREAD));
       basket_add (&in_basket, future_request);
       mutex_leave (thread_mtx);
@@ -2321,8 +2321,7 @@ read_service_request (dk_session_t * ses)
 
   if (!SESSTAT_ISSET (ses->dks_session, SST_TIMED_OUT) && !SESSTAT_ISSET (ses->dks_session, SST_BROKEN_CONNECTION) && (DV_TYPE_OF (request) != DV_ARRAY_OF_POINTER || BOX_ELEMENTS (request) < 1))
     {
-      if (!box_destr [DV_TYPE_OF (request)])
-	dk_free_tree (request);
+      dk_free_tree (request);
       sr_report_future_error (ses, "", "invalid future box");
       SESSTAT_CLR (ses->dks_session, SST_OK);
       SESSTAT_SET (ses->dks_session, SST_BROKEN_CONNECTION);
@@ -2425,6 +2424,7 @@ read_service_request (dk_session_t * ses)
 	{
 	  sr_report_future_error (ses, "", "invalid future answer length");
 	  PrpcDisconnect (ses);
+	  PrpcSessionFree (ses);
 	  dk_free_tree ((box_t) request);
 	  return 0;
 	}
@@ -2446,6 +2446,7 @@ read_service_request (dk_session_t * ses)
 	{
 	  sr_report_future_error (ses, "", "invalid future partial answer length");
 	  PrpcDisconnect (ses);
+	  PrpcSessionFree (ses);
 	  dk_free_tree ((box_t) request);
 	  return 0;
 	}
@@ -2463,6 +2464,7 @@ read_service_request (dk_session_t * ses)
     default:
       sr_report_future_error (ses, "", "invalid future type");
       PrpcDisconnect (ses);
+      PrpcSessionFree (ses);
       dk_free_tree ((box_t) request);
       return 0;
 
