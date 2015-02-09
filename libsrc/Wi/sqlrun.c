@@ -3398,7 +3398,8 @@ fref_setp_flush (fun_ref_node_t * fref, caddr_t * state)
       hash_area_t * ha = setp->setp_ha;
       if (setp == fref->fnr_setp)
 	continue;
-      itc_ha_flush_memcache (ha, state, 0);
+      if (!setp->setp_any_user_aggregate_gos && !setp->setp_any_distinct_gos)
+	itc_ha_flush_memcache (ha, state, SETP_NO_CHASH_FLUSH);
       setp_filled (setp, state);
       setp_mem_sort_flush (setp, state);
       if (setp->setp_ordered_gb_fref)
