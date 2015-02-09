@@ -46,6 +46,7 @@ void *read_object_boxing (dk_session_t * session);
 void init_readtable (void);
 void *PrpcReadObject (dk_session_t * session);
 macro_char_func *get_readtable (void);
+macro_char_func *get_rpcreadtable (void);
 void *scan_session (dk_session_t * session);
 void *scan_session_boxing (dk_session_t * session);
 void print_long (long l, dk_session_t * session);

@@ -781,6 +781,12 @@ get_readtable (void)
   return readtable;
 }
 
+macro_char_func *
+get_rpcreadtable (void)
+{
+  return rpcreadtable;
+}
+
 
 /*##**********************************************************************
 
