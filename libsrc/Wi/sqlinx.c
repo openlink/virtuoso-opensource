@@ -632,6 +632,7 @@ sqlo_rdf_string_range (df_elt_t * tb_dfe, index_choice_t * ic)
   dt_col_name = ((dbe_column_t*) range_tb->tb_primary_key->key_parts->next->data)->col_name;
   range_col = range_col_dfe->_.col.col;
   r_tb_dfe = sqlo_new_dfe (so, DFE_TABLE, NULL);
+  r_tb_dfe->dfe_super = tb_dfe; /* if expressions placed, then these are placed before tb dfe and must be found to avoid placing twice */
   snprintf (r_pref, sizeof (r_pref), "r%s", tb_dfe->_.table.ot->ot_new_prefix);
   r_ot = sqlo_ot_by_name (so, r_pref, range_tb);
   r_prefix = r_ot->ot_new_prefix;
