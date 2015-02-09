@@ -1384,6 +1384,10 @@ typedef struct setp_node_s
     state_slot_t *	setp_last;
     int			setp_ties;
     state_slot_t **	setp_dependent_box;
+    state_slot_t **	setp_org_slots; /* if shadows on keys and deps, this is the unshadowed keys+deps */
+    state_slot_t *	setp_top_id;
+    state_slot_t *	setp_top_clo;
+    state_slot_t *	setp_top_ser;
     state_slot_t *	setp_sorted;
     state_slot_t *	setp_flushing_mem_sort;
     struct fun_ref_node_s *	setp_ordered_gb_fref;

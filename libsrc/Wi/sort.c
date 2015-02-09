@@ -1073,6 +1073,28 @@ sort_read_vec_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
       int k_inx = 0, inx;
       if (nth >= fill)
 	    goto next_set;
+	  if (setp->setp_org_slots)
+	    {
+	      DO_BOX (state_slot_t *, ssl, inx, setp->setp_org_slots )
+		{
+		  if (!ts->ts_sort_read_mask[k_inx])
+		    { /* not all sort temp cols may be output cols */
+		      k_inx++;
+		      continue;
+		    }
+		  if (SSL_IS_VEC_OR_REF (ssl))
+		    dc_append_box (QST_BOX (data_col_t*, inst, ssl->ssl_index), arr[nth][k_inx]);
+		  else
+		    {
+		      qst_set (inst, ssl, arr[nth][k_inx]);
+		      arr[nth][k_inx] = NULL;
+		    }
+		  k_inx++;
+		}
+	      END_DO_BOX;
+	    }
+	  else
+	    {
 	  DO_BOX (state_slot_t *, ssl, inx, setp->setp_keys_box )
 	{
 	      if (!ts->ts_sort_read_mask[k_inx])
@@ -1107,6 +1129,7 @@ sort_read_vec_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
 	  k_inx++;
 	}
       END_DO_BOX;
+	    }
 	  qn_result ((data_source_t*)ts, inst, set);
       QST_INT (inst, ks->ks_pos_in_temp) = nth + 1;
 	  if (++n_results == batch)

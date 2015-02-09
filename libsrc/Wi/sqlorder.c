@@ -68,6 +68,7 @@ setp_node_free (setp_node_t * setp)
   setp->setp_gb_ops = NULL;
   dk_free_box ((box_t) setp->setp_keys_box);
   dk_free_box ((box_t) setp->setp_dependent_box);
+  dk_free_box ((box_t) setp->setp_org_slots);
   dk_set_free (setp->setp_key_is_desc);
   dk_free_box ((caddr_t) setp->setp_ordered_gb_out);
   dk_free_box ((box_t) setp->setp_merge_temps);
