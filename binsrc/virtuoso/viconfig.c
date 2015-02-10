@@ -259,6 +259,8 @@ extern int32 vdb_serialize_connect;
 extern int prpc_disable_burst_mode;
 extern int prpc_forced_fixed_thread;
 extern int prpc_force_burst_mode;
+extern int32 max_bad_rpc_on_connection;
+extern int32 max_bad_rpc_timeout;
 
 extern long sqlc_add_views_qualifiers;
 int32 c_sqlc_add_views_qualifiers;
@@ -774,6 +776,13 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "DisableTcpSocket", &c_disable_listen_on_tcp_sock) == -1)
     c_disable_listen_on_tcp_sock = 0;
 
+  if (cfg_getlong (pconfig, section, "MaxBadRPCs", &max_bad_rpc_on_connection) == -1)
+    max_bad_rpc_on_connection = 100;
+  if (max_bad_rpc_on_connection  > 0xffff) /* max 64k bad RPC requests */
+    max_bad_rpc_on_connection = 0xffff;
+
+  if (cfg_getlong (pconfig, section, "MaxBadRPCtimeout", &max_bad_rpc_timeout) == -1)
+    max_bad_rpc_timeout = 60;
 #ifdef _SSL
   if (cfg_getstring (pconfig, section, "SSLServerPort", &c_ssl_server_port) == -1)
     c_ssl_server_port = NULL;
