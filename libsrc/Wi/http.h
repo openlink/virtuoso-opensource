@@ -230,6 +230,8 @@ extern int32 https_client_verify;
 extern int32 https_client_verify_depth;
 extern char * https_client_verify_file;
 extern char * https_client_verify_crl_file;
+extern char * https_cipher_list;
+extern char * https_protocols;
 extern int32 http_threads;
 extern int32 ini_http_threads;
 extern int32 http_keep_alive_timeout;

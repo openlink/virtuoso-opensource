@@ -123,6 +123,8 @@ extern int32 https_client_verify;
 extern int32 https_client_verify_depth;
 extern char * https_client_verify_file;
 extern char * https_client_verify_crl_file;
+extern char * https_cipher_list;
+extern char * https_protocols;
 
 extern char *c_ssl_server_port;
 extern char *c_ssl_server_cert;
@@ -131,6 +133,8 @@ extern char *c_ssl_server_extra_certs;
 extern int32 ssl_server_verify;
 extern int32 ssl_server_verify_depth;
 extern char *ssl_server_verify_file;
+extern char *ssl_server_cipher_list;
+extern char *ssl_server_protocols;
 #endif
 extern int spotlight_integration;
 #ifdef BIF_XML
@@ -805,6 +809,12 @@ cfg_setup (void)
 
   if (cfg_getstring (pconfig, section, "X509ClientVerifyCAFile", &ssl_server_verify_file) == -1)
     ssl_server_verify_file = NULL;
+
+  if (cfg_getstring (pconfig, section, "SSL_CIPHER_LIST", &ssl_server_cipher_list) == -1)
+    ssl_server_cipher_list = "default";
+
+  if (cfg_getstring (pconfig, section, "SSL_PROTOCOLS", &ssl_server_protocols) == -1)
+    ssl_server_protocols = "default";
 #endif
 
   if (cfg_getlong (pconfig, section, "ServerThreads", &c_server_threads) == -1)
@@ -1413,6 +1423,12 @@ cfg_setup (void)
 
   if (cfg_getstring (pconfig, section, "X509ClientVerifyCAFile", &c_https_client_verify_file) == -1)
     c_https_client_verify_file = NULL;
+
+  if (cfg_getstring (pconfig, section, "SSL_CIPHER_LIST", &https_cipher_list) == -1)
+    https_cipher_list = "default";
+
+  if (cfg_getstring (pconfig, section, "SSL_PROTOCOLS", &https_protocols) == -1)
+    https_protocols = "default";
 #endif
 
   if (cfg_getlong (pconfig, section, "ServerThreads", &c_http_threads) == -1)

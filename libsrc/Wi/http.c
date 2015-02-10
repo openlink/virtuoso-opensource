@@ -206,6 +206,8 @@ void ws_proc_error (ws_connection_t * ws, caddr_t err);
 int ssl_port = 0;
 void * tcpses_get_sslctx (session_t * ses);
 void tcpses_set_sslctx (session_t * ses, void * ssl_ctx);
+extern int ssl_ctx_set_cipher_list (SSL_CTX *ctx, char *cipher_list);
+extern int ssl_ctx_set_protocol_options (SSL_CTX *ctx, char *protocols);
 #endif
 
 #ifdef _IMSG
@@ -8837,6 +8839,8 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
   char *https_cvfile = NULL;
   char *cert = NULL, *extra = NULL;
   char *skey = NULL;
+  char *ciphers = https_cipher_list;
+  char *protocols = https_protocols;
   long https_cvdepth = -1;
   int i, len, https_client_verify = -1;
   ssl_meth = SSLv23_server_method ();
@@ -8870,6 +8874,10 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
 	    https_client_verify = unbox (https_opts[i + 1]);
 	  else if (!stricmp (https_opts [i], "https_extra_chain_certificates") && DV_STRINGP (https_opts [i + 1]))  /* private key */
 	    extra = https_opts [i + 1];
+	  else if (!stricmp (https_opts [i], "https_cipher_list") && DV_STRINGP (https_opts [i + 1]))  /* Ciphers */
+	    ciphers = https_opts [i + 1];
+	  else if (!stricmp (https_opts [i], "https_protocols") && DV_STRINGP (https_opts [i + 1]))  /* Protocols */
+	    protocols = https_opts [i + 1];
 	}
     }
 
@@ -8880,6 +8888,22 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
     {
       cli_ssl_get_error_string (err_buf, sizeof (err_buf));
       log_error ("HTTPS: Error allocating SSL context: %s", err_buf);
+      goto err_exit;
+    }
+
+  /*
+   *  Set Protocols & Ciphers
+   */
+  if (!ssl_ctx_set_protocol_options (ssl_ctx, protocols))
+    {
+      cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+      log_error ("HTTPS: Error setting SSL Protocols options: %s", err_buf);
+      goto err_exit;
+    }
+  if (!ssl_ctx_set_cipher_list (ssl_ctx, ciphers))
+    {
+      cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+      log_error ("HTTPS: Error settings SSL Cipher list : %s", err_buf);
       goto err_exit;
     }
 
@@ -11476,6 +11500,22 @@ http_init_part_two ()
 	{
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
 	  log_error ("HTTPS: Error allocating SSL context: %s", err_buf);
+	  goto init_ssl_exit;
+	}
+
+      /*
+       *  Set Protocols & Ciphers
+       */
+      if (!ssl_ctx_set_protocol_options (ssl_ctx, https_protocols))
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  log_error ("HTTPS: Error setting SSL Protocols: %s", err_buf);
+	  goto init_ssl_exit;
+	}
+      if (!ssl_ctx_set_cipher_list (ssl_ctx, https_cipher_list))
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  log_error ("HTTPS: Error settings SSL Cipher list : %s", err_buf);
 	  goto init_ssl_exit;
 	}
 
