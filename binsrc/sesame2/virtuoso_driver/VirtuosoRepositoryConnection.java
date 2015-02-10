@@ -1749,8 +1749,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					// TODO need to parse these into appropriate resource values
 					String col = rsmd.getColumnName(i);
 					Object val = rs.getObject(i);
-					Value v = castValue(val);
-					qbs.addBinding(col, v);
+					if (val!=null){
+						Value v = castValue(val);
+						qbs.addBinding(col, v);
+					}
 				}
 				tqrh.handleSolution(qbs);
 			}
