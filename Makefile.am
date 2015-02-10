@@ -95,14 +95,44 @@ EXTRA_DIST = \
 	debian/copyright \
 	debian/dirs \
 	debian/docs \
-	debian/files \
-	debian/init.d \
+	debian/libvirtjdbc0.dirs \
+	debian/libvirtjdbc0.install \
+	debian/libvirtodbc0.config \
+	debian/libvirtodbc0.dirs \
+	debian/libvirtodbc0.install \
+	debian/libvirtodbc0.postinst \
+	debian/libvirtodbc0.prerm \
+	debian/libvirtodbc0.templates \
+	debian/libvirtuoso5.5-cil.install \
+	debian/NEWS.Debian \
+	debian/odbc.ini \
+	debian/odbcinst.ini \
+	debian/po/*.po \
+	debian/po/POTFILES.in \
+	debian/po/templates.pot \
 	debian/README.Debian \
 	debian/rules \
-	debian/virtuoso-opensource.postinst.debhelper \
-	debian/virtuoso-opensource.postrm.debhelper \
-	debian/virtuoso-opensource.prerm.debhelper \
-	debian/virtuoso-opensource.substvars \
+	debian/TODO.Debian \
+	debian/virtuoso-5.5.pc \
+	debian/virtuoso-opensource-7-bin.install \
+	debian/virtuoso-opensource-7-common.install \
+	debian/virtuoso-opensource-7.config \
+	debian/virtuoso-opensource-7.default \
+	debian/virtuoso-opensource-7.init \
+	debian/virtuoso-opensource-7.install \
+	debian/virtuoso-opensource-7.postinst \
+	debian/virtuoso-opensource-7.prerm \
+	debian/virtuoso-opensource-7.templates \
+	debian/virtuoso-vad-bpel.install \
+	debian/virtuoso-vad-conductor.install \
+	debian/virtuoso-vad-demo.install \
+	debian/virtuoso-vad-isparql.install \
+	debian/virtuoso-vad-ods.install \
+	debian/virtuoso-vad-rdfmappers.install \
+	debian/virtuoso-vad-sparqldemo.install \
+	debian/virtuoso-vad-syncml.install \
+	debian/virtuoso-vad-tutorial.install \
+	debian/virtuoso-vsp-startpage.install \
 	windows/*.bat \
 	windows/*.sln \
 	windows/*.vcxproj

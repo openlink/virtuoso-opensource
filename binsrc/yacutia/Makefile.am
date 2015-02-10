@@ -72,6 +72,7 @@ EXTRA_DIST = \
 	images/*.gif \
 	images/*.jpg \
 	images/*.png \
+	images/buttons/*.png \
 	images/dav_browser/*.png \
 	images/icons/*.gif \
 	images/icons/*.png \

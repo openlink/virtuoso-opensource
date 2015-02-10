@@ -65,4 +65,5 @@ rclean: clean
 EXTRA_DIST = \
 	encoding_wide.c in2.txt lang25.c lang25.def langfunc_templ.c \
 	language__en_UK.c language__en_US.c language__ru_RU.c \
-	unicode3.dat unicodetab2h.sh 
+	unicode3.dat unicodetab2h.sh \
+	unicode3_make_lex_collations.sql

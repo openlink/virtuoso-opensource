@@ -28,7 +28,8 @@ noinst_HEADERS = \
 	Dkparam.h Dkpool.h Dkresource.h Dksession.h Dksesstr.h \
 	Dksestcp.h Dksets.h Dkstubs.h Dksystem.h Dktrace.h \
 	Dktypes.h Dkutil.h Dkhash64.h Dkword.h Dksestcpint.h \
-	Dksimd.h tlsf.h
+	Dksimd.h tlsf.h mhash.h target.h
+
 
 #############################################
 #DKSRV
