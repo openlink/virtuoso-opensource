@@ -1,3 +1,117 @@
+February 17, 2015, V7.2.0:
+  * Virtuoso Engine
+    - Added new threadsafe / reentrant SQL parser
+    - Added support for using TLSF library for page-maps 
+    - Added support for setting SSL Protocols and Ciphers
+    - Added support for new Unicode-3 based collations
+    - Added support for custom HTTPLogFormat
+    - Added support for quality factor in accept headers
+    - Added rate limiter for bad connections
+    - Added ODBC 3.x alias for current_date, current_time and current_timestamp
+    - Improved cost based optimizer
+    - Improved LDP support
+    - Improved XPER support
+    - Improved CSV support
+    - Fixed handling of regexp cache size and pcre_match depth limit
+    - Fixed handling of multibyte strings
+    - Fixed handling of nvarchar data with zeroes in the middle
+    - Fixed handling of values in 10 day gap between Julian and Gregorian dates
+    - Fixed if expr in rdf o range condition, set super so they get placed once
+    - Fixed issue possibly reading freed block
+    - Fixed issue with TZ field without separator
+    - Fixed issue with duplicate hashes
+    - Fixed issue with invariant preds
+    - Fixed issue with non chash distinct gby with nulls
+    - Fixed issue with user aggregates and chash flush
+    - Fixed issues with outer join, order by and group by
+    - Fixed sending IRI IDs to remotes when using 'where 0'
+    - Fixed use SHA256 as default for certificate signing
+    - Fixed memory leaks and memory fragmentation
+    - Fixed ssl read/write error condition
+    - Fixed windows build
+
+  * GEO functions
+    - Added support for SPARQL INSERT with GEO literals
+    - Added support for upcoming proj4 plugin
+    - Fixed issue with rdf box with a geometry rdf type and a non geometry content
+    - Fixed calculation of serialization lengths for geo boxes
+    - Fixed compilation of a query with bif:st_intersects inside service {}
+    - Fixed serialization of geo boxes
+    - Fixed intersect to working with other geo shapes
+
+  * SPARQL
+    - Added new SPARQL pragma: define sql:comment 0/1
+    - Added indicator when max rows is returned on /sparql endpoint
+    - Added new role SPARQL_LOAD_SERVICE_DATA
+    - Added new client callable graph ins/del/replace functions
+    - Added support for __tag of UNAME
+    - Added support for multiple sparql update commands
+    - Added support for xsd:gYear and the like
+    - Added support for CASE x WHEN ... and CASE when in SPARQL
+    - Added support for 'HTML with nice turtle' output format
+    - Added TransStepMode option to virtuoso.ini
+    - Improved handling of floats and doubles in SPARQL compiler
+    - Improved Turtle parser
+    - Fixed SPARQL DELETE DATA when a complete RDF box w/o RO_ID is passed as obj
+    - Fixed URI() is synonym for IRI()
+    - Fixed equality of unames and strings, iri strings
+    - Fixed issue eliminating empty {} in VALUE join
+    - Fixed issue with R2RML
+    - Fixed issue with XMLA
+    - Fixed issue with base graph when  using 'with_delete' in bulkloader
+    - Fixed issue with multiple OPTIONAL
+    - Fixed issue with sparql ... with delete on certain datatypes
+    - Fixed issue with varbinary in rdf views
+    - Fixed printing optimized-away data rows of VALUES in sparql_explain() dump
+    - Fixed propagation of limits if SPART_VARR_EXTARNAL/GLOBAL variables present
+    - Fixed regression for SPARQL 1.1 VALUES bindings
+    - Fixed sort accented letters from "ORDER BY" in alphabetical order
+    - Fixed startup speed with many graph group members
+
+  * Jena & Sesame
+    - Upgraded to Jena 2.12.0
+    - Added support for Bulk Loading
+    - Added support for Dataset method using defaultInsertGraph and defaultRemoveGraph
+    - Fixed handling of blank nodes
+    - Fixed transaction handling
+    - Fixed NullPointerException for sparql with OPTIONAL
+    - Fixed issue with statement leaks in older Virtuoso JDBC driver
+    - Fixed issue with class definitions and classcast exceptions
+    - Fixed issue with large datasets like Uniprot
+
+  * JDBC Driver
+    - Enhanced Connection Pool implementation
+    - Added support for arrays for RDF Bulk loader
+    - Added JDBC4 compliant metadata required by JBOSS
+    - Fixed issue with statement leaks
+    - Fixed issue with RoundRobin if server out of license
+    - Fixed issue with stored procedures returning multiple resultsets
+    - Fixed issue with rewind on Virtuoso blob
+    - Fixed issue with batch procedure execution
+    - Fixed issue with dates
+    - Fixed issue with SQL_UTF8_EXECS=1
+    - Fixed issue with JDBC testsuite
+
+  * Faceted Browser
+    - Added support for graph selection and persist in fct state
+    - Added support for link out icons on certain doc and image links
+    - Added new description and sponger options as entity link types
+    - Added option for json output to fct service
+    - Added group by to speed up distinct
+    - Added precompiled queries to speed up usage.vsp
+    - Fixed base uri for crawlers
+    - Fixed color scheme
+    - Fixed graph perm check
+    - Fixed handling of foaf:depiction
+    - Fixed handling of iframe
+    - Fixed issue when lang is missing to fct service
+    - Fixed issue with dateTime
+    - Fixed issue with double quotes in literals
+    - Fixed issue with nodeID
+    - Fixed issue with null graphs
+    - Fixed labels
+    - Fixed links
+
 February 17, 2014, V7.1.0:
   * Engine
     - Enhancements to cost based optimizer

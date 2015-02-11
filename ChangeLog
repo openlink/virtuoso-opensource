@@ -2,6 +2,17 @@
 
     	Updated version number to 7.2.0 for release
 
+	Updated ChangeLog
+
+	Updated NEWS
+
+	Fixed some issues with make distcheck
+
+	Rebuild virtuoso sesame2 provider
+
+	Fixed NullPointerException with openrdf/sesame for sparql with OPTIONAL
+
+
 2015-02-10  VOS Maintainer  <vos.admin@openlinksw.com>
 
 	Added support for setting SSL Protocols and Ciphers
