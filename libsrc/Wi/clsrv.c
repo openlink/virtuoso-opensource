@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -163,7 +163,11 @@ cll_try_enter ()
 dk_session_t *
 cl_strses_allocate ()
 {
-  dk_session_t *ses = strses_allocate ();
+  dk_session_t *ses;
+  /* the head and 1st buffer of strses come from common, the extension will come from the user thread */
+  WITH_TLSF (dk_base_tlsf) 
+    ses = strses_allocate ();
+  END_WITH_TLSF;
   ses->dks_cluster_flags = DKS_TO_CLUSTER;
   return ses;
 }

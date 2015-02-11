@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2014 OpenLink Software
+ -  Copyright (C) 1998-2015 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -177,9 +177,8 @@
 		    connection_set ('LDAP_VERSION', atoi(self.lver.ufl_value));
 		    if (self.host.ufl_value not like 'ldap%://%')
 		    addr := 'ldap://'||self.host.ufl_value||':'||self.port.ufl_value;
-		    else  
+		    else
 		      addr := self.host.ufl_value||':'||self.port.ufl_value;
-		    dbg_obj_print (addr);
 		    ldap_search (addr, self.ssl.ufl_selected, self.base.ufl_value, sprintf ('(%s=%s)', self.uidf.ufl_value, self.uid.ufl_value),
 		    sprintf('%s=%s, %s', self.uidf.ufl_value, self.uid.ufl_value, self.bind.ufl_value),
 		    self.pwd.ufl_value);
@@ -202,7 +201,7 @@
 		    connection_set ('LDAP_VERSION', atoi(self.lver.ufl_value));
 		    if (self.host.ufl_value not like 'ldap%://%')
 		    addr := 'ldap://'||self.host.ufl_value||':'||self.port.ufl_value;
-		    else 
+		    else
 		      addr := self.host.ufl_value||':'||self.port.ufl_value;
 		    ldap_search (addr, self.ssl.ufl_selected, self.base.ufl_value, sprintf ('(%s=%s)', self.uidf.ufl_value, self.uid.ufl_value),
 		    sprintf('%s=%s, %s', self.uidf.ufl_value, self.uid.ufl_value, self.bind.ufl_value),

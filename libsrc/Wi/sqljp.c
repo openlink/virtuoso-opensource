@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -125,43 +125,43 @@ dfe_p_const_abbrev (df_elt_t * tb_dfe)
 }
 
 
-float *
-dfe_p_stat (df_elt_t * tb_dfe, df_elt_t * pred, iri_id_t pid, dk_set_t * parts_ret, dbe_column_t * o_col, float **o_stat_ret)
+int
+dfe_p_stat (df_elt_t * tb_dfe, df_elt_t * pred, iri_id_t pid, dk_set_t * parts_ret, dbe_column_t * o_col, float *p_stat_ret,
+    float *o_stat_ret)
 {
+  int found1 = 0, found2 = 0;
   int tried = 0;
-#if 0
-  caddr_t ctx_name = sqlo_opt_value (tb_dfe->_.table.ot->ot_opts, OPT_RDF_INFERENCE);
-  rdf_inf_ctx_t **place = ctx_name ? (rdf_inf_ctx_t **) id_hash_get (rdf_name_to_ric, (caddr_t) & ctx_name) : NULL;
-#endif
   dbe_key_t *pk = tb_dfe->_.table.ot->ot_table->tb_primary_key;
   dbe_key_t *o_key = NULL;
-  float *p_stat;
 again:
-  if (!pk->key_p_stat)
+  found1 = ric_p_stat_from_cache (dfe_ric (tb_dfe), pk, pid, p_stat_ret);
+  if (!found1)
     {
       if (tried)
-    return NULL;
+	return 0;
       tried = 1;
       dfe_init_p_stat (tb_dfe, pred);
       goto again;
     }
   if (o_col)
     o_key = tb_px_key (tb_dfe->_.table.ot->ot_table, o_col);
-  p_stat = (float *) id_hash_get (pk->key_p_stat, (caddr_t) & pid);
   *parts_ret = pk->key_parts;
-  if (o_key && o_stat_ret && o_key->key_p_stat)
-    *o_stat_ret = (float *) id_hash_get (o_key->key_p_stat, (caddr_t) & pid);
-  else if (o_stat_ret)
-    o_stat_ret = NULL;
-  if (!p_stat || (o_stat_ret && !o_stat_ret))
+  if (o_key && o_stat_ret)
+    {
+      float os[4];
+      found2 = ric_p_stat_from_cache (dfe_ric (tb_dfe), o_key, pid, os);
+      if (found2)
+	memcpy_16 (o_stat_ret, os, 4 * sizeof (float));
+      if (!found1 || (o_stat_ret && !found2))
     {
       if (tried)
-	return p_stat;
+	    return 0;
       tried = 1;
       dfe_init_p_stat (tb_dfe, pred);
       goto again;
     }
-  return p_stat;
+    }
+  return found1 + 2 * found2;
 }
 
 #define iri_id_check(x) (DV_IRI_ID == DV_TYPE_OF (x) ? unbox_iri_id (x) : 0)
@@ -227,16 +227,18 @@ jp_fanout (join_plan_t * jp)
 {
   /* for sql this is the table card over the col pred cards , for rdf this is based on p stat */
   dbe_column_t *o_col = NULL;
-  int jinx;
+  int jinx, p_found;
   if (dfe_is_quad (jp->jp_tb_dfe))
     {
       dk_set_t parts = NULL;
       int nth_col = 0;
-      float *p_stat, *o_stat = NULL;
+      float p_stat[4];
+      float o_stat[4];
       float s_card, o_card, g_card, misc_card = 1;
       iri_id_t p = 0, s = 0, g = 0;
       caddr_t o = NULL;
       df_elt_t *is_p = NULL, *is_s = NULL, *is_o = NULL, *is_g = NULL;
+      jp->jp_tb_dfe->dfe_locus = LOC_LOCAL;
       for (jinx = 0; jinx < jp->jp_n_preds; jinx++)
 	{
 	  pred_score_t *ps = &jp->jp_preds[jinx];
@@ -288,8 +290,8 @@ jp_fanout (join_plan_t * jp)
 	  if (is_o && o)
 	    return jp->jp_fanout = sqlo_rdfs_type_card (jp->jp_tb_dfe, is_p, is_o);
 	}
-      p_stat = dfe_p_stat (jp->jp_tb_dfe, is_p, p, &parts, o_col, &o_stat);
-      if (!p_stat)
+      p_found = dfe_p_stat (jp->jp_tb_dfe, is_p, p, &parts, o_col, p_stat, o_stat);
+      if (!p_found)
 	goto general;
 
       DO_SET (dbe_column_t *, part, &parts)
@@ -308,7 +310,7 @@ jp_fanout (join_plan_t * jp)
 	    o_card = p_stat[nth_col];
 	    break;
 		}
-	      o_card = o_stat ? o_stat[1] : p_stat[nth_col];
+		o_card = (2 & p_found) ? o_stat[1] : p_stat[nth_col];
 	      break;
 	    }
 	  case 'G':
@@ -507,7 +509,7 @@ jp_add (join_plan_t * jp, df_elt_t * tb_dfe, df_elt_t * pred, int is_join)
 	ps->ps_card = 1.0 / ps->ps_left_col->col_n_distinct;
     }
   if (!ps->ps_card)
-    ps->ps_card = 0, 5;
+    ps->ps_card = 0.5;
 }
 
 
@@ -545,6 +547,31 @@ dfe_jp_fill (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, join_plan_t * jp, 
   jp->jp_fanout = jp_fanout (jp);
   if (jp->jp_fanout < 0 && jp->jp_fanout != -1)
     bing ();
+}
+
+
+int
+jp_is_unplaceable_oj (df_elt_t * tb_dfe)
+{
+  op_table_t * ot = DFE_TABLE == tb_dfe->dfe_type ? tb_dfe->_.table.ot : tb_dfe->_.sub.ot;
+  if (DFE_TEXT_PRED == tb_dfe->dfe_type)
+    return 0;
+  if (ot->ot_is_outer)
+    {
+      int save = tb_dfe->dfe_is_placed;
+      tb_dfe->dfe_is_placed = 1;
+      DO_SET (df_elt_t *, pred, &ot->ot_join_preds)
+	{
+	  if (!dfe_reqd_placed (pred))
+	    {
+	      tb_dfe->dfe_is_placed = save;
+	      return 1;
+	    }
+	}
+      END_DO_SET ();
+      tb_dfe->dfe_is_placed = save;
+    }
+  return 0;
 }
 
 
@@ -625,6 +652,8 @@ dfe_join_score_jp (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, dk_set_t * r
 	root_jp->jp_reached += (float) jp.jp_n_joined / level;
       for (jinx = 0; jinx < jp.jp_n_joined; jinx++)
 	{
+	  if (jp_is_unplaceable_oj (jp.jp_joined[jinx]))
+	    continue;
 	  dfe_join_score_jp (so, ot, jp.jp_joined[jinx], res, &jp);
 	  any_tried = 1;
 	}
@@ -887,7 +916,7 @@ sqlo_hash_fill_join (sqlo_t * so, df_elt_t * hash_ref_tb, df_elt_t ** fill_ret, 
       DO_BOX (df_elt_t *, tb_dfe, inx, texp->_.table_exp.from)
 	  texp->_.table_exp.from[inx] =
 	  t_listst (3, TABLE_REF, t_listst (6, TABLE_DOTTED, tb_dfe->_.table.ot->ot_table->tb_name,
-	      tb_dfe->_.table.ot->ot_new_prefix, NULL, NULL, NULL), NULL);
+	      tb_dfe->_.table.ot->ot_new_prefix, NULL, NULL, tb_dfe->_.table.ot->ot_opts), NULL);
       END_DO_BOX;
       sel = t_box_copy_tree (sel);
       sqlo_scope (so, &sel);
@@ -996,6 +1025,8 @@ so_ensure_subq_cache (sqlo_t * so)
 }
 
 
+int sq_cache_hit, sq_cache_miss;
+
 df_elt_t *
 sqlo_dt_cache_lookup (sqlo_t * so, op_table_t * ot, dk_set_t imp_preds, caddr_t * cc_key_ret)
 {
@@ -1021,8 +1052,10 @@ sqlo_dt_cache_lookup (sqlo_t * so, op_table_t * ot, dk_set_t imp_preds, caddr_t 
   if (!place)
     {
       *cc_key_ret = t_box_string (sqk);
+      sq_cache_miss++;
       return NULL;
     }
+  sq_cache_hit++;
   *cc_key_ret = NULL;
   return sqlo_layout_copy (so, *place, NULL);
 }

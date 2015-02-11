@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -114,6 +114,7 @@ typedef double geo_measure_t;	/*!< Type of M coordinate */
 
 #define geoc_min(a,b) (((a)<(b))?(a):(b))
 #define geoc_max(a,b) (((a)<(b))?(b):(a))
+#define GEOC_SWAP(a,b) do { geoc swap = (a); (a) = (b); (b) = swap; } while (0)
 #define double_min(a,b) (((a)<(b))?(a):(b))
 #define double_max(a,b) (((a)<(b))?(b):(a))
 
@@ -274,8 +275,13 @@ extern int geo_pred (geo_t * g1, geo_t * g2, int op, double prec);
 struct dbe_table_s;
 extern int64 geo_estimate (struct dbe_table_s * tb, geo_t * g, int op, double prec, slice_id_t slice);
 
-#define DEG_TO_RAD (M_PI / 180)
-#define KM_TO_DEG (360 / (EARTH_RADIUS_GEOM_MEAN_KM * 2 * M_PI))
+#ifndef DEG_TO_RAD
+#define DEG_TO_RAD (M_PI / 180.0)
+#endif
+#ifndef RAD_TO_DEG
+#define RAD_TO_DEG (180.0 / M_PI)
+#endif
+#define KM_TO_DEG (360.0 / (EARTH_RADIUS_GEOM_MEAN_KM * 2.0 * M_PI))
 #define GEO_SET_LAT_DEG_BY_KM(deg,km) do { (deg) = (km) * KM_TO_DEG; } while (0)
 #define GEO_LON_TO_LAT_PER_DEG_RATIO(lat_deg) cos((lat_deg)/DEG_TO_RAD)
 #define GEO_SET_LON_DEG_BY_KM(deg,km,lat_deg) do { double latfactor = GEO_LON_TO_LAT_PER_DEG_RATIO(lat_deg); (deg) = ((km) > (latfactor * 360.0 / KM_TO_DEG)) ? 360.0 : ((km) * KM_TO_DEG / latfactor); } while (0)
@@ -292,6 +298,9 @@ EXE_EXPORT (void, geo_serialize, (geo_t * g, dk_session_t * ses));
 EXE_EXPORT (caddr_t, geo_deserialize, (dk_session_t * ses));
 
 EXE_EXPORT (void, geo_print_as_dxf_entity, (geo_t *g, caddr_t *attrs, dk_session_t * ses));
+
+extern int geo_calc_length_of_serialization (geo_t *g, int is_topmost);
+extern int geo_serial_length (geo_t *g);
 
 /* EWKT Reader */
 
@@ -319,6 +328,7 @@ typedef struct ewkt_kwd_metas_s
 
 EXE_EXPORT (ewkt_kwd_metas_t *, ewkt_find_metas_by_geotype, (int geotype));
 EXE_EXPORT (geo_t *, ewkt_parse, (const char *strg, caddr_t *err_ret));
+EXE_EXPORT (geo_t *, ewkt_parse_2, (const char *strg, int dflt_srid, caddr_t *err_ret));
 EXE_EXPORT (void, ewkt_print_sf12, (geo_t *g, dk_session_t *ses));
 
 EXE_EXPORT (geo_t *, bif_geo_arg, (caddr_t * qst, struct state_slot_s ** args, int inx, const char *fname, int geotype));
@@ -356,6 +366,10 @@ EXE_EXPORT (int, geo_XY_inoutside_polygon, (geoc pX, geoc pY, geo_t *g));
 EXE_EXPORT (void, geo_modify_by_translate, (geo_t *g, geoc dX, geoc dY, geoc dZ));
 EXE_EXPORT (void, geo_modify_by_transscale, (geo_t *g, geoc dX, geoc dY, geoc Xfactor, geoc Yfactor));
 EXE_EXPORT (void, geo_modify_by_affine2d, (geo_t *g, geoc XXa, geoc XYb, geoc YXd, geoc YYe, geoc Xoff, geoc Yoff));
+
+typedef geo_t *geo_srid_transform_cbk_t (caddr_t *qst, geo_t *g, int dest_srid, caddr_t *err_ret);
+EXE_EXPORT (void, geo_set_default_srid_transform_cbk, (geo_srid_transform_cbk_t *cbk));
+extern geo_srid_transform_cbk_t *geo_default_srid_transform_cbk;
 
 /*! Map projection callback that gets pointer to projection, longitude and latitude of a point, fills in X and Y of corresponding point on map and returns NULL on success or error message otherwise. */
 typedef const char *geo_proj_point_cbk_t (void *geo_proj, geoc longP, geoc latP, double *retX, double *retY);

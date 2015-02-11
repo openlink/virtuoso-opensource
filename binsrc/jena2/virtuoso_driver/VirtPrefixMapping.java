@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -53,8 +53,9 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
 	  // Populate the prefix map using data from the 
 	  // persistent graph properties
 	  String query = "DB.DBA.XML_SELECT_ALL_NS_DECLS (3)";
+	  Statement stmt = null;
 	  try {
-	    Statement stmt = m_graph.createStatement();
+	    stmt = m_graph.createStatement();
 	    ResultSet rs = stmt.executeQuery(query);
 
   	    while (rs.next()) {
@@ -66,7 +67,12 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
 	    rs.close();
 	  } catch (Exception e) {
 	     throw new JenaException(e);
-	  } 
+	  } finally {
+	    if (stmt!=null)
+	      try{
+	        stmt.close();
+	      }catch(Exception e){}
+	  }
 	}
 
         public PrefixMapping removeNsPrefix( String prefix )

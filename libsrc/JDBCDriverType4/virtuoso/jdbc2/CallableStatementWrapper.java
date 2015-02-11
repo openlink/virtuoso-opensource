@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -56,26 +56,7 @@ public class CallableStatementWrapper
           extends PreparedStatementWrapper implements CallableStatement{
 
   protected CallableStatementWrapper(ConnectionWrapper _wconn, CallableStatement _stmt) {
-    super(_wconn, _stmt, "");
-  }
-
-
-  protected void addLink() {
-    wconn.addObjToClose(this);
-  }
-
-  protected void removeLink() {
-    wconn.removeObjFromClose(this);
-  }
-
-  protected synchronized void closeAll() {
-    try {
-      close();
-    } catch(Exception e) { }
-  }
-
-  protected PreparedStatementWrapper reuse() {
-    throw new java.lang.UnsupportedOperationException();
+    super(_wconn, _stmt);
   }
 
 

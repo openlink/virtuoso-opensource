@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1244,7 +1244,16 @@ bif_x509_certificate_verify (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
   DO_BOX (caddr_t, ca, inx, ((caddr_t *) array))
   {
     mem_bio = BIO_new_mem_buf (ca, box_length (ca) - 1);
-    cacert = d2i_X509_bio (mem_bio, NULL);
+    if (NULL != strstr (ca, PEM_STRING_X509))
+      {
+#if OPENSSL_VERSION_NUMBER >= 0x00908000L
+	cacert = (X509 *)PEM_ASN1_read_bio ((d2i_of_void *)d2i_X509, PEM_STRING_X509, mem_bio, NULL, NULL, NULL);
+#else
+	cacert = (X509 *)PEM_ASN1_read_bio ((char *(*)())d2i_X509, PEM_STRING_X509, mem_bio, NULL, NULL, NULL);
+#endif
+      }
+    else
+      cacert = d2i_X509_bio (mem_bio, NULL);
     BIO_free (mem_bio);
     if (!cacert)
       {
@@ -1644,6 +1653,34 @@ bif_get_certificate_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 	ret = list (2, box_dv_short_string (buf), val);
 	break;
       }
+    case 14:					 /* certificate public key */
+      {
+	EVP_PKEY *k = X509_get_pubkey (cert);
+	BIO * b;
+	if (k)
+	  {
+#ifdef EVP_PKEY_RSA
+	    if (k->type == EVP_PKEY_RSA)
+	      {
+		char *data_ptr;
+		int len;
+		RSA *x = k->pkey.rsa;
+		b = BIO_new (BIO_s_mem());
+		i2d_RSA_PUBKEY_bio (b, x);
+		len = BIO_get_mem_data (b, &data_ptr);
+		ret = dk_alloc_box (len, DV_BIN);
+		memcpy (ret, data_ptr, len);
+		BIO_free (b);
+	      }
+	    else
+#endif
+	      *err_ret = srv_make_new_error ("42000", "XXXXX", "The certificate's public key not supported");
+	    EVP_PKEY_free (k);
+	  }
+	else
+	  *err_ret = srv_make_new_error ("42000", "XXXXX", "Can not read the public key from the certificate");
+	break;
+      }
     default:
       {
 	if (!internal)
@@ -1758,6 +1795,33 @@ bif_pkcs7_certificates (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (caddr_t) ret;
 }
 
+static caddr_t
+bif_base36enc (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  boxint value = bif_long_range_arg (qst, args, 0, "base36enc", 0, INT64_MAX);
+  char base36[36] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  char buf[14];
+  size_t offset = sizeof (buf);
+
+  buf[--offset] = '\0';
+  do 
+    {
+      buf [--offset] = base36 [value % 36];
+    } 
+  while (value /= 36);
+
+  return box_dv_short_string (&buf[offset]);
+}
+
+static caddr_t
+bif_base36dec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  boxint str = bif_string_arg (qst, args, 0, "base36dec");
+  boxint ret;
+  ret = strtoul(str, NULL, 36);
+  return box_num (ret);
+}
+
 void
 bif_crypto_init (void)
 {
@@ -1775,6 +1839,8 @@ bif_crypto_init (void)
   bif_define_ex ("pkcs7_certificates", bif_pkcs7_certificates, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("bin2hex", bif_bin2hex, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("hex2bin", bif_hex2bin, BMD_RET_TYPE, &bt_bin, BMD_DONE);
+  bif_define_ex ("base36enc", bif_base36enc, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("base36dec", bif_base36dec, BMD_RET_TYPE, &bt_integer, BMD_DONE);
 }
 
 #else /* _SSL dummy section for bifs that are defined here to not break existing apps */

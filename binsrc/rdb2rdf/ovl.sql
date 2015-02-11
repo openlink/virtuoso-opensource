@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -53,9 +53,8 @@ create function DB.DBA.OVL_EXEC_SPARQL (in source_g_iri varchar, in extras_g_iri
   declare qry_params, rset, metas any;
   state := '00000';
   full_qry := concat ('sparql define input:storage "" define input:default-graph-uri <', source_g_iri, '> define input:default-graph-uri <', extras_g_iri, '> define input:named-graph-uri <', rules_g_iri, '> ', qry);
-  -- qry_params := vector ('source_g_iri', source_g_iri, 'extras_g_iri', extras_g_iri, 'rules_g_iri', rules_g_iri);
-  qry_params := vector (extras_g_iri);
-  -- dbg_obj_princ ('DB.DBA.OVL_EXEC_SPARQL () executes ', qry);
+  qry_params := vector (':source_g_iri', source_g_iri, ':extras_g_iri', extras_g_iri, ':rules_g_iri', rules_g_iri);
+  -- dbg_obj_princ ('DB.DBA.OVL_EXEC_SPARQL () executes ', full_qry, ' with params ', qry_params);
   exec (full_qry, state, msg, qry_params, 1000, metas, rset);
   if (state <> '00000')
     {
@@ -76,44 +75,38 @@ create function DB.DBA.OVL_DERIVE_EXTRAS (in source_g_iri varchar, in extras_g_i
   vectorbld_init (err_agg);
   baserules := vector (
     ' select ?s, ("Error") as ?severity,
-        "Nothing to validate?!" as ?message
-      where {
-          optional { ?s ?p ?o }
-          filter (!bound (?s)) } limit 1',
+        bif:concat ("Nothing to validate, graph <", ?::source_g_iri, "> is totally empty") as ?message
+      where { filter not exists { ?s ?p ?o . } } limit 1',
     ' select ?s, ("Error") as ?severity,
-        "No graph with validation data?!" as ?message
+        bif:concat ("No graph with validation data, graph <", ?::rules_g_iri, "> is totally empty") as ?message
       where {
-          optional { graph ?rs { ?s ?p ?o } }
-          filter (!bound (?s)) } limit 1',
+          filter not exists { graph `iri(?::rules_g_iri)` { ?s ?p ?o . } } } limit 1',
     ' select ?s, ("Error") as ?severity,
         (bif:concat ("Property <", str(?prop), "> is obsolete. ", bif:coalesce(str(?prop_cmt), ""))) as ?message
       where {
           ?s ?prop ?o . 
-          graph ?rs {
+          graph `iri(?::rules_g_iri)` {
               ?prop a OVL:ObsoleteProperty .
-              optional { ?prop rdfs:comment ?prop_cmt } } }
+              optional { ?prop rdfs:comment ?prop_cmt . } } }
       group by ?s ?o order by asc (str(?s)) asc (str(?prop))
     ',
     ' select ?s, ("Error") as ?severity,
         (bif:concat ("Property <", str(?prop), "> is not know (typo in its IRI?)")) as ?message
       where {
           ?s ?prop ?o .
-          graph ?rs { ?prefx a OVL:ClosedWorldPrefix }
-          optional { graph ?rs { ?prop a ?t } }
-          filter (!bound (?t))
+          graph `iri(?::rules_g_iri)` { ?prefx a OVL:ClosedWorldPrefix . }
+          filter not exists { graph `iri(?::rules_g_iri)` { ?prop a ?t . } }
           filter (bif:starts_with (str (?prop), str(?prefx))) }
       group by ?s ?o order by asc (str(?s)) asc (str(?prop))
     ',
     ' select ?s, ("Error") as ?severity,
-        (bif:concat ("Property <", str(?prop), "> has domain <", str (?prop_dom), "> but the actual type of its subject is <", str (?t), ">")) as ?message
+        (bif:concat ("Property <", str(?prop), "> has domain <", str (?prop_dom), "> that has no subclasses, but the actual type of its subject is <", str (?t), ">")) as ?message
       where {
           ?s a ?t ; ?prop ?o . 
-          graph ?rs {
+          graph `iri(?::rules_g_iri)` {
               ?prop a rdf:Property ; rdfs:domain ?prop_dom .
-              optional { ?prop_dom OVL:superClassOf ?prop_subdom } .
-              optional { ?t OVL:superClassOf ?sub_of_t filter (?sub_of_t = ?prop_dom) } .
-              filter (!bound (?prop_subdom))
-              filter (!bound (?sub_of_t)) }
+              filter not exists { ?prop_dom OVL:superClassOf ?prop_subdom } }
+          filter not exists { graph `iri(?::rules_g_iri)` { ?t OVL:superClassOf ?prop_dom } } .
           filter (?t != ?prop_dom) }
       group by ?s ?t ?prop ?prop_dom order by asc (str(?s)) asc (str(?prop))
     ',
@@ -121,18 +114,33 @@ create function DB.DBA.OVL_DERIVE_EXTRAS (in source_g_iri varchar, in extras_g_i
         (bif:concat ("Property <", str(?prop), "> has domain <", str (?prop_dom), "> (with subtypes) but the actual type of its subject is <", str (?t), "> is not a subtype of the domain")) as ?message
       where {
           ?s a ?t ; ?prop ?o . 
-          graph ?rs {
-              ?prop a rdf:Property ; rdfs:domain ?prop_dom . ?prop_dom OVL:superClassOf ?prop_subdom
-              optional { ?prop_dom OVL:superClassOf ?t1 . filter (?t1 = ?t) } }
-          filter (!bound (?t1)) }
+          graph `iri(?::rules_g_iri)` {
+              ?prop a rdf:Property ; rdfs:domain ?prop_dom .
+              filter exists { ?prop_dom OVL:superClassOf ?prop_subdom } }
+          filter not exists { graph ?gs { ?prop_dom OVL:superClassOf ?t . } }
+          filter (?t != ?prop_dom ) }
       group by ?s ?t ?prop ?prop_dom order by asc(str(?s)) asc (str(?prop))
     ',
-    ' insert in graph iri(??) { ?prop_obj a ?range ; OVL:info `bif:concat("Node <", str (?prop_obj), "> gets type <", str (?range), "> because it is in range of <", str (?prop), ">")` }
+    ' select ?s, ("Info") as ?severity, bif:concat(count(?prop_obj), " nodes have no rdf:type specified but it can be cured because they are values of well-known properties such as <", sample(str(?prop)), ">") as ?message
        where {
-          graph ?rs { ?prop a rdf:Property, OVL:InferTypeFromRange ; rdfs:range ?range }
-          ?s ?prop ?prop_obj . optional { ?prop_obj a ?t }
-          filter (!bound(?t))
-          filter (!isliteral (?prop_obj)) }
+          graph `iri(?::rules_g_iri)` { ?prop a rdf:Property, OVL:InferTypeFromRange ; rdfs:range ?range }
+          [] ?prop ?prop_obj .
+          filter not exists { ?prop_obj a ?t }
+          filter (isREF (?prop_obj)) }
+    ',
+--    ' select ?s, ("Info") as ?severity, bif:concat("Node <", str (?prop_obj), "> will get type <", str (?range), "> because it is in range of <", str (?prop), ">") as ?message
+--       where {
+--          graph `iri(?::rules_g_iri)` { ?prop a rdf:Property, OVL:InferTypeFromRange ; rdfs:range ?range }
+--          ?s ?prop ?prop_obj .
+--          filter not exists { ?prop_obj a ?t }
+--          filter (isREF (?prop_obj)) }
+--    ',
+    ' insert in graph iri(?::extras_g_iri) { ?prop_obj a ?range ; OVL:info `bif:concat("Node <", str (?prop_obj), "> gets type <", str (?range), "> because it is in range of <", str (?prop), ">")` }
+       where {
+          graph `iri(?::rules_g_iri)` { ?prop a rdf:Property, OVL:InferTypeFromRange ; rdfs:range ?range }
+          ?s ?prop ?prop_obj .
+          filter not exists { ?prop_obj a ?t }
+          filter (isREF (?prop_obj)) }
     ' );
   old_extras_count := 0;
 next_round:
@@ -160,66 +168,65 @@ no_more_rounds:
 create function DB.DBA.OVL_VALIDATE_READONLY (in source_g_iri varchar, in extras_g_iri varchar, in rules_g_iri varchar) returns any
 {
   declare baserules, err_agg any;
+  if (extras_g_iri is null)
+    extras_g_iri := 'http://virtuoso.openlinksw.com/tmp/OVL/' || DB.DBA.R2RML_MD5_IRI (vector (source_g_iri, rules_g_iri));
+  sparql clear graph iri (?:extras_g_iri);
   baserules := vector (
 -- Checks for ranges:
     ' select ?s, ("Error") as ?severity,
         (bif:concat ("Property <", str(?prop), "> has range <", str (?prop_range), "> but the actual type of its object <", str (?o), "> is <", str (?t), ">")) as ?message
       where {
           ?s ?prop ?o . ?o a ?t .
-          graph ?rs {
+          graph `iri(?::rules_g_iri)` {
               ?prop a rdf:Property ; rdfs:range ?prop_range .
-              optional { ?prop_range OVL:superClassOf ?prop_subrange }
-              filter (!bound (?prop_subrange)) }
+              filter not exists { ?prop_range OVL:superClassOf ?prop_subrange } }
           filter (?t != ?prop_range) }
       group by ?s ?t ?prop ?prop_range ?o order by asc (str(?s)) asc (str(?prop))',
     ' select ?s, ("Error") as ?severity,
         (bif:concat ("Property <", str(?prop), "> has range <", str (?prop_range), "> but the actual type of its object <", str (?o), "> is not specified")) as ?message
       where {
-          ?s ?prop ?o . optional { ?o a ?t } . filter (!isliteral(?o)) . filter (!bound(?t))
-          graph ?rs {
+          ?s ?prop ?o .
+          filter not exists { ?o a ?t }
+          filter (!isliteral(?o))
+          graph `iri(?::rules_g_iri)` {
               ?prop a rdf:Property ; rdfs:range ?prop_range .
-              optional { ?prop_range OVL:superClassOf ?prop_subrange }
-              optional { ?prop_range OVL:enumOf ?enum_val }
-              filter (!bound (?prop_subrange))
-              filter (!bound (?enum_val))
+              filter not exists { ?prop_range OVL:superClassOf ?prop_subrange }
+              filter not exists { ?prop_range OVL:enumOf ?enum_val }
               filter (?prop_range != xsd:anyURI)
-              filter (isIRI(?o) && (?prop_range = rdfs:Class)) } }
+               } }
       group by ?s ?t ?prop ?prop_range ?o order by asc (str(?s)) asc (str(?prop))',
     ' select ?s, ("Error") as ?severity,
         (bif:concat ("Property <", str(?prop), "> has range <", str (?prop_range), "> but the actual type of its object \'", str (?o), "\' is <", str (?prop_range), ">")) as ?message
       where {
           ?s ?prop ?o . filter (isLiteral(?o))
-          graph ?rs {
+          graph `iri(?::rules_g_iri)` {
               ?prop a rdf:Property ; rdfs:range ?prop_range .
-              optional { ?prop_range OVL:enumOf ?enum_val }
-              filter (!bound (?enum_val))
-              filter (datatype (?o) != ?prop_range) } }
+              filter not exists { ?prop_range OVL:enumOf ?enum_val } }
+              filter (datatype (?o) != ?prop_range) }
       group by ?s ?prop ?prop_range ?o order by asc (str(?s)) asc (str(?prop))',
     ' select ?s, ("Error") as ?severity,
         (bif:concat ("Property <", str(?prop), "> has enum <", str (?prop_range), "> as range but the actual value is ", str (?enum_val) )) as ?message
       where {
           ?s ?prop ?enum_val
-          graph ?rs {
+          graph `iri(?::rules_g_iri)` {
               ?prop a rdf:Property ; rdfs:range ?prop_range .
               ?prop_range OVL:enumOf ?enum_val_1 . }
-          optional { graph ?rs { ?prop_range OVL:enumOf ?enum_val_2 } . FILTER (?enum_val_2 = ?enum_val) }
-          filter (!bound (?enum_val_2)) }
+          filter not exists { graph `iri(?::rules_g_iri)` { ?prop_range OVL:enumOf ?enum_val } } }
       group by ?s ?prop ?prop_range ?o order by asc (str(?s)) asc (str(?prop))',
 -- Checks for cardinalities:
     ' select ?s, ("Error") as ?severity,
         (bif:concat ("Property <", str(?prop), "> is mandatory but not specified")) as ?message
       where {
-          graph ?rs {
+          graph `iri(?::rules_g_iri)` {
               ?prop a rdf:Property ; rdfs:domain ?prop_dom ; owl:minCardinality ?minc . filter (?minc > 0)
               optional { ?prop_dom OVL:superClassOf ?prop_subdom } }
-            { ?s a ?prop_dom } union { ?s a ?prop_subdom }
-          optional { ?s ?prop ?o }
-          filter (!bound(?o)) }
+        { ?s a ?prop_dom } union { ?s a ?prop_subdom }
+        filter not exists { ?s ?prop ?o } }
       group by ?s ?prop order by asc (str(?s)) asc (str(?prop))',
     ' select ?s, ("Warning") as ?severity,
         (bif:concat ("Property <", str(?prop), "> has suspiciously many values (", str(count(?o)), " values, whereas ", str(min(?maxgoodc)), " is more than enough)")) as ?message
       where {
-          graph ?rs {
+          graph `iri(?::rules_g_iri)` {
               ?prop a rdf:Property ; OVL:maxGoodCard ?maxgoodc . optional { ?prop owl:maxCardinality ?maxc } }
           ?s ?prop ?o }
       group by ?s ?prop
@@ -228,7 +235,7 @@ create function DB.DBA.OVL_VALIDATE_READONLY (in source_g_iri varchar, in extras
     ' select ?s, ("Error") as ?severity,
         (bif:concat ("Property <", str(?prop), "> has prohibitively many values (", str(count(?o)), " values, max ", str(min (?maxc)), " allowed)")) as ?message
       where {
-          graph ?rs {
+          graph `iri(?::rules_g_iri)` {
               ?prop a rdf:Property ; owl:maxCardinality ?maxc }
           ?s ?prop ?o }
       group by ?s ?prop
@@ -237,7 +244,7 @@ create function DB.DBA.OVL_VALIDATE_READONLY (in source_g_iri varchar, in extras
     ' select ?s, ("Error") as ?severity,
         (bif:concat ("Properties <", str(?prop1), "> and <", str(?prop2), "> are mutualy exclusive for type <", str(?prop_dom), ">")) as ?message
       where {
-          graph ?rs {
+          graph `iri(?::rules_g_iri)` {
               ?prop_dom OVL:typeRestriction [ OVL:mutuallyExclusivePredicates ?prop1, ?prop2 ] . filter (str(?prop1) < str(?prop2))
               optional { ?prop_dom OVL:superClassOf ?prop_subdom } }
             { ?s a ?prop_dom } union { ?s a ?prop_subdom }
@@ -247,7 +254,7 @@ create function DB.DBA.OVL_VALIDATE_READONLY (in source_g_iri varchar, in extras
     ' select ?s, ("Error") as ?severity,
         (bif:concat ("Subject of type <", str(?prop_dom), "> does not have any of predicates of a mandatory group")) as ?message
       where {
-          graph ?rs {
+          graph `iri(?::rules_g_iri)` {
               ?prop_dom OVL:typeRestriction ?restr .
               ?restr OVL:needSomeOfPredicates ?pred .
               optional { ?prop_dom OVL:superClassOf ?prop_subdom } }
@@ -279,6 +286,20 @@ create function DB.DBA.OVL_VALIDATE_READONLY (in source_g_iri varchar, in extras
 }
 ;
 
+create function DB.DBA.OVL_REPORT_CONTAINS_ERRORS (inout res any)
+{
+  foreach (any err in res) do
+    {
+      if ('Info' <> err[1])
+        {
+          -- dbg_obj_princ ('DB.DBA.OVL_REPORT_CONTAINS_ERRORS () returns 1');
+          return 1;
+        }
+    }
+  return 0;
+}
+;
+
 create procedure DB.DBA.OVL_VALIDATE (in source_g_iri varchar, in rules_g_iri varchar)
 {
   declare extras_g_iri varchar;
@@ -292,8 +313,13 @@ create procedure DB.DBA.OVL_VALIDATE (in source_g_iri varchar, in rules_g_iri va
   res := DB.DBA.OVL_DERIVE_EXTRAS (source_g_iri, extras_g_iri, rules_g_iri);
   if (length (res))
     {
+      if (DB.DBA.OVL_REPORT_CONTAINS_ERRORS (res))
+        {
+          vectorbld_concat_acc (err_agg, res);
+          vectorbld_acc (err_agg, vector (NULL, 'Info', 'There may be more errors but the validation is interrupted'));
+          goto final_report;
+        }
       vectorbld_concat_acc (err_agg, res);
-      goto final_report;
     }
   res := DB.DBA.OVL_VALIDATE_READONLY (source_g_iri, extras_g_iri, rules_g_iri);
   vectorbld_concat_acc (err_agg, res);

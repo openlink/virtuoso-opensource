@@ -19,11 +19,13 @@
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v110</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v110</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -159,6 +161,8 @@
     <ClCompile Include="..\libsrc\util\strupr.c" />
     <ClCompile Include="..\libsrc\util\strxpect.c" />
     <ClCompile Include="..\libsrc\util\virt_mbrlen.c" />
+    <ClCompile Include="..\libsrc\util\virt_mbrlen_z.c" />
+    <ClCompile Include="..\libsrc\util\virt_mbrtowc_z.c" />
     <ClCompile Include="..\libsrc\util\win32\syslog.c" />
     <ClCompile Include="..\libsrc\util\terminat.c" />
     <ClCompile Include="..\libsrc\langfunc\ucm2enc.c" />

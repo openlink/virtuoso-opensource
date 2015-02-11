@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -56,6 +56,7 @@ typedef struct op_table_s
   ST *	ot_dt;
   ST *	ot_left_sel;
   ST *	ot_join_cond;
+  ST *	ot_enclosing_where_cond; /* optional or other ot can add a condition to the top level where of the enclosing dt */
   int	ot_is_outer;
   oid_t	ot_u_id;
   oid_t	ot_g_id;
@@ -116,6 +117,7 @@ typedef struct op_table_s
   df_elt_t *	ot_first_dfe; /* first dfe in current plan, one of ot from dfes */
   float		ot_initial_cost; /* cost of initial plan with this ot in first position */
   char		ot_any_plan; /* true if there is at least one full plan with this ot in first position */
+  char		ot_invariant_placed;
 } op_table_t;
 
 typedef struct jt_mark_s
@@ -208,6 +210,8 @@ struct df_elt_s
   bitf_t	dfe_unit_includes_vdb:1;
   bitf_t	dfe_is_joined:1; /* in planning next op, true if there is join to any previously placed dfe */
   bitf_t	dfe_is_planned:1; /* true if included in a multi-dfe next step in planning next dfe */
+  bitf_t	dfe_layout_unit_first:1;
+  bitf_t	dfe_cut_alt_plans:1;
   int32		dfe_hash;
   locus_t *	dfe_locus;
   dk_set_t	dfe_remote_locus_refs;
@@ -325,6 +329,7 @@ struct df_elt_s
     struct {
       df_elt_t **	body;
       dk_set_t		preds;
+      op_table_t *	invariant_of_ot;
     } filter;
     struct {
       int	op;
@@ -358,6 +363,7 @@ struct df_elt_s
     struct {
       int type;
       char geo;
+      float n_hits;
       ST ** args;
       dbe_column_t *col;
       state_slot_t *ssl;
@@ -921,7 +927,7 @@ void sqlg_non_index_ins (df_elt_t * tb_dfe);
 void sqlg_is_text_only (sqlo_t * so, df_elt_t *tb_dfe, table_source_t *ts);
 data_source_t * sqlg_make_path_ts (sqlo_t * so, df_elt_t * tb_dfe);
 int dfe_is_eq_pred (df_elt_t * pred);
-float sqlo_index_path_cost (dk_set_t path, float * cost_ret, float * card_ret, char * sure_ret);
+float sqlo_index_path_cost (dk_set_t path, float * cost_ret, float * card_ret, char * sure_ret, df_elt_t * tb_dfe);
 data_source_t * sqlg_make_ts (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * pre_code);
 float dfe_group_by_card (df_elt_t * dfe);
 int dfe_is_o_ro2sq_range (df_elt_t * pred, df_elt_t * tb_dfe, df_elt_t ** o_col_dfe_ret, df_elt_t ** exp_dfe_ret, int * op_ret);
@@ -969,5 +975,6 @@ dbe_key_t * tb_px_key (dbe_table_t * tb, dbe_column_t * col);
 float dfe_scan_card (df_elt_t * dfe);
 int sqlo_parse_tree_count_node (ST *tree, long *nodes, int n_nodes);
 int dfe_init_p_stat (df_elt_t * dfe, df_elt_t * lower);
+int sqlo_has_node (ST * tree, int type);
 
 #endif /* _SQLO_H */

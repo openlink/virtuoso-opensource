@@ -15,7 +15,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -41,6 +41,8 @@
   declare dbg_out any;
   declare inf_rule varchar;
   declare ses_parms varchar;
+  declare pageUrl varchar;
+  declare user_permissions int;
 
   white_page := 1;
 
@@ -64,6 +66,8 @@
 
   b3s_parse_inf (sid, params);
   grs := connection_get ('graphs');
+  if ({?'set_graphs'} is not null or {?'clear_graphs'} is not null)
+    fct_set_graphs (sid, grs);
 
   inf := b3s_render_inf_clause ();
   inf_rule := connection_get ('inf');
@@ -83,6 +87,8 @@
   page_resource_uri := gr;
   page_resource_uri := replace (page_resource_uri, '%23', '#');
 
+  pageUrl := FCT.DBA.build_page_url_on_current_host ('/fct/rdfdesc/usage.vsp', sprintf ('g=%U', page_resource_uri));
+
   _S := page_resource_uri;
 
   proxy_iri := page_resource_uri;
@@ -93,7 +99,7 @@
   http_header ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\n');
   label := ''; _subject := '';
 
-  exec (sprintf ('sparql  define input:inference "facets" select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S),
+  exec (sprintf ('sparql define sql:table-option "index primary key" define input:inference "facets" select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S), 
                  null, null, vector (), 0, meta, data);
 
   label := b3s_label_get (data, langs);
@@ -126,6 +132,18 @@
   declare desc_qr varchar;
   desc_qr := sprintf ('define sql:describe-mode "CBD" DESCRIBE <%s>', page_resource_uri);
   desc_resource_uri := sprintf ('http://%{WSHost}s/sparql?query=%U&format=cxml', desc_qr);
+
+    user_permissions := DB.DBA.RDF_GRAPH_USER_PERMS_GET (gr, http_nobody_uid());
+    if (bit_and (user_permissions, 1) = 0)
+    {
+      -- User doesn't have read permission
+      declare protocol, view_uri varchar;
+      view_uri := gr;
+      protocol := 'http'; if (is_https_ctx()) protocol := 'https';
+      http_status_set (303);
+      http_header (sprintf('Location: %s://%s//fct/rdfdesc/fct_no_view_perms.vsp?gr=%U%s\r\n', protocol, host, view_uri, FCT.DBA.get_describe_request_params (params)));
+      return;
+    }
 ?>
 
 <!-- header -->
@@ -144,6 +162,8 @@
 <body class="usage_page">
   <div id="HD">
     <?vsp fct_desc_page_head (); ?>
+    <div id="hd_r">
+    </div>
     <ul id="main_menu">
       <?vsp if (sid is not null) { ?>
         <li><a href="<?= b3s_render_fct_link() ?>">Facets</a></li>
@@ -158,32 +178,27 @@
   </div> <!-- #HD -->
   <div id="MD">
     <div class="page_resource_info">
-      <h2>Usage stats on <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>">
+      <h2>About: <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>">
         <?vsp http (sprintf ('%s', label)); ?></a></h2>&nbsp;<a class="desc_permalink" href="usage.vsp?g=<?U b3s_u2w (page_resource_uri) ?>">Permalink</a>
-      <p> an Entity in Data Space: <a href="http://<?V host ?>"><?V host ?></a></p>
+	<p> an Entity references as follows: </p>
     </div>
     <div class="subj_nav">
       <?vsp if (_subject <> '') { ?>
         <p class="subj_desc"><?vsp http (sprintf ('%s', _subject)); ?></p>
       <?vsp } ?>
     <?vsp
-      declare qrimg, ua, qrd any;
-      qrd := HTTP_REQUESTED_URL () || '?' || http_request_get ('QUERY_STRING');
-      ua :=   http_request_header (lines, 'User-Agent');
-      qrimg := fct_make_qr_code (fct_make_curie (qrd, lines));
-      if (qrimg is not null and strcasestr (ua, 'Mobile') is null) {
     ?>
-	      <img id="qrcode" alt="QRcode image" src="data:image/jpg;base64,<?V qrimg ?>"/>
-    <?vsp } ?>
     </div> <!-- .subj_nav -->
 
 <!-- proptable -->
     <div id="TAB_ROW">
       <div class="tab <?vsp http (case when tp = 1 then ' tab_selected' else '' end); ?>">
-        <a href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=1<?V ses_parms ?>">Source Documents</a>
+	  <a  title="<?V case when connection_get('s_term') = 's' then 'Internal Document (named graph) Identifiers that denotes documents in which the current entity being described is the *subject* of one or more *RDF* based relations' else 'Internal Document (named graph) Identifiers that denotes documents in which the current entity being described is the *entity* of one or more *EAV* based relations' end  ?>"
+	      href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=1<?V ses_parms ?>">Subject of Relations In Document</a>
       </div>
       <div class="tab <?vsp http (case when tp = 2 then ' tab_selected' else '' end); ?>">
-        <a href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=2<?V ses_parms ?>">Referenced by Documents</a>
+	  <a title="<?V case when connection_get('s_term') = 's' then 'Internal Document (named graph) Identifiers that denotes documents in which the current entity being described is the *object* of one or more *RDF* based relations' else 'Internal Document (named graph) Identifiers that denotes documents in which the current entity being described is the *value* of one or more *EAV* based relations' end ?>"
+	      href="<?V http_path () ?>?g=<?U _S ?>&amp;tp=2<?V ses_parms ?>">Object of Relations In Document</a>
       </div>
       <div class="tab <?vsp http (case when tp = 3 then ' tab_selected' else '' end); ?>">
         <a title="A list of reconciled identifiers resulting from interpretation of equivalence by name semantics defined by the Web Ontology (OWL)."
@@ -200,33 +215,32 @@
         <table class="description">
 	  <?vsp
 	    declare qr varchar;
+	    declare tgr any;
+	    tgr := vector ();
 	    if (tp = 1) -- refd in data sets
 	      {
-	        qr := sprintf ('sparql select ?g count (*) where { graph ?g { <%S> ?p ?o }} group by ?g order by desc 2 limit 20', _S);
+		qr := 'sparql define input:storage "" select ?g count (*) where { graph ?g { `iri(??)` ?p ?o }} group by ?g order by desc 2 limit 20';
                 http ('<tr><th class="property">Graph IRI</th><th class="value">Count</th></tr>\n');
 	      }
 	    if (tp = 2) -- defd in data sets
 	      {
-	        qr := sprintf ('sparql select ?g count (*) where { graph ?g { ?s ?p <%S>  }} group by ?g order by desc 2 limit 20', _S);
+	        qr := 'sparql define input:storage "" select ?g count (*) where { graph ?g { ?s ?p `iri(??)` }} group by ?g order by desc 2 limit 20';
                 http ('<tr><th>Graph IRI</th><th>Count</th></tr>\n');
 	      }
 	    if (tp = 3) -- Expanded sas
 	      {
-	         qr := sprintf ('sparql select ?syn (sql:rnk_scale (<LONG::IRI_RANK> (?syn))) where {{ select ?s ?syn  where {{?syn owl:sameAs ?s } union {?s owl:sameAs ?syn}}} option (transitive, t_distinct, t_min (0), T_in (?s), t_out (?syn)) . filter (!isliteral (?syn) && ?s = <%S> ) } order by desc 2 limit 20', _S);
-		 http (sprintf ('<tr><th>%s</th><th>Rank</th></tr>\n',
-		'Identifier (URI)'
-		--fct_s_term ()
-		));
+	         qr := 'sparql define input:storage "" select ?syn (sql:rnk_scale (<LONG::IRI_RANK> (?syn))) where {{ select ?s ?syn  where {{?syn owl:sameAs ?s } union {?s owl:sameAs ?syn}}} option (transitive, t_distinct, t_min (0), T_in (?s), t_out (?syn)) . filter (!isliteral (?syn) && ?s = iri(??) ) } order by desc 2 limit 20';
+		 http (sprintf ('<tr><th>%s</th><th>Rank</th></tr>\n', 'Identifier (URI)'));
 	      }
 	    if (tp = 4) -- Expanded ifp
 	      {
-	         qr := sprintf ('sparql select distinct ?syn ?p ?o (sql:rnk_scale (<LONG::IRI_RANK> (?syn))) where { <%S> ?p ?o .  filter (0 != (<LONG::bif:rdf_is_sub> ("%s", ?p, lod:ifp_like, 3))) .  ?syn ?p ?o . } order by desc 4 limit 20', _S, coalesce (inf_rule, 'b3sifp'));
+	         qr := sprintf ('sparql define input:storage "" select distinct ?syn ?p ?o (sql:rnk_scale (<LONG::IRI_RANK> (?syn))) where { `iri(??)` ?p ?o .  filter (0 != (<LONG::bif:rdf_is_sub> ("%s", ?p, lod:ifp_like, 3))) .  ?syn ?p ?o . } order by desc 4 limit 20', coalesce (inf_rule, 'b3sifp'));
 		 http (sprintf ('<tr><th>%s</th><th>%s</th><th>%s</th><th>Rank</th></tr>\n', fct_s_term (), fct_p_term (), fct_o_term ()));
 	      }
 
             b3s_dbg_out(dbg_out, qr);
 
-	    exec (qr, null, null, vector (), 0, null, null, h1);
+	    exec (qr, null, null, vector (_S), 0, null, null, h1); 
 	    while (0 = exec_next (h1, null, null, data))
 	      {
 	         http ('<tr>');
@@ -234,6 +248,8 @@
 		   {
 		     declare grvar any;
 	             grvar := data[0];
+		     if (position (grvar, grs))
+		       tgr := vector_concat (tgr, vector (grvar));
 		     http (sprintf ('<td><input type="checkbox" value="%V" name="graph" %s/><a href="/describe/?url=%U&graph=%U%s">%V</a></td>', 
 			grvar, 
 			case when position (grvar, grs) then 'checked' else '' end,
@@ -273,9 +289,18 @@
 	      }
 	    exec_close (h1);
 	  ?>
-	  <?vsp if (tp = 1 or tp = 2) { ?>
+	  <?vsp 
+	  if (tp = 1 or tp = 2) { 
+            foreach (any g in grs) do
+              {
+		 if (not position (g, tgr))
+                   http (sprintf ('<input type="hidden" name="graph" value="%V"/>', g));
+	      }
+          ?>
 	  <tr><td colspan="2">
+		  <input type="hidden" name="tp" value="<?V tp ?>"/>
 		  <input type="submit" name="set_graphs" value="Set Graphs"/> 
+		  <input type="submit" name="clear_graphs" value="Exclude Graph Selection"/>
 	  </td></tr>
 	  <?vsp } ?>
         </table>
@@ -335,7 +360,7 @@
         <a href="<?=rdf_link || sprintf ('&output=%U', 'text/cxml')?>">CXML</a> |
         <a href="<?=rdf_link || sprintf ('&output=%U', 'text/csv')?>">CSV</a> | RDF (
         <a href="<?=rdf_link || sprintf ('&output=%U', 'text/plain') ?>">N-Triples</a>
-        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/rdf+n3') ?>">N3/Turtle</a>
+        <a href="<?=rdf_link || sprintf ('&output=%U', 'text/turtle') ?>">N3/Turtle</a>
         <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+json')?>">JSON</a>
         <a href="<?=rdf_link || sprintf ('&output=%U', 'application/rdf+xml') ?>">XML</a> ) | OData (
         <a href="<?=rdf_link || sprintf ('&output=%U', 'application/atom+xml')?>">Atom</a>

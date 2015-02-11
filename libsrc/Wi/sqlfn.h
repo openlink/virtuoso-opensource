@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -73,25 +73,13 @@ typedef struct spar_query_env_s
   struct sparp_s *	sparqre_dbg_sparp;  /*!< A top-level instance of sparql compiler. For debug purposes and for mem pool callback only. Can be NULL; when non-NULL then the structure under pointer may be half-full. */
 } spar_query_env_t;
 
-extern int national_char;
-extern int uname_strlit;
-
 /* Place of an opened '(' or '{' */
 typedef struct scn3_paren_s {
   int sp_open_line;	/*!< Line number where it has been opened */
   char sp_close_paren;	/*!< The character that should be used to close it (e.g. '}' if '{' is opened */
 } scn3_paren_t;
 
-extern int scn3_lineno;	/*!< Throughout counter of lines in the source text */
-extern int scn3_plineno;	/*!< Physical counter of lines in the source text - used for the PL debugger */
-extern int scn3_lineno_increment;	/*!< This is zero for 'macroexpanded' fragments of SQL text, to prevent from confusing when a long text is inserted instead of a single line */
-extern int scn3_lexdepth;	/*!< Number of opened parenthesis */
-
-extern dk_set_t scn3_namespaces; /*!< List of namespace prefixes and URIs */
-
 #define SCN3_MAX_LEX_DEPTH 180	/*!< Maximum allowed number of any opened parenthesis in SQL text. SPARQL lexer has its own limit of the sort, \c SPARP_MAX_LEX_DEPTH */
-extern scn3_paren_t scn3_parens[SCN3_MAX_LEX_DEPTH];
-
 #define SCN3_MAX_BRACE_DEPTH 80		/*!< Maximum allowed number of any opened parenthesis outside pair of curly braces in SQL text. SPARQL lexer has its own limit of the sort, \c SPARP_MAX_BRACE_DEPTH */
 #define SCN3_MAX_PRAGMALINE_DEPTH 4	/*!< Maximum nesting of line locations (i.e. 1 + (max no of nested '#pragma line push')) */
 
@@ -100,7 +88,7 @@ See the body of scn3_sprint_curr_line_loc() to find out how to use such data
 to get a logical filename and line number for the correct position
 in the source text. */
 typedef struct scn3_line_loc_s {
-/*! The value of scn3_lineno at the beginning of #pragma line. */
+/*! The value of global_scs->scs_scn3c.lineno at the beginning of #pragma line. */
   int sll_start_lineno;
 /*! The value of scn3_lexdepth at the beginning of #pragma line.
 This is used to check that there are no cases when e.g. an '{' is
@@ -112,12 +100,6 @@ opened in one file and pair '}' is closed in some other file. */
   caddr_t sll_pragma_file;
 } scn3_line_loc_t;
 
-/*! Stack of logical locations. */
-extern scn3_line_loc_t scn3_line_locs[SCN3_MAX_PRAGMALINE_DEPTH];
-/*! This is the number of not-yet-popped '#pragma line push' directives. */
-extern int scn3_pragmaline_depth;
-
-
 #define MAX_INCLUDE_DEPTH 4	/*!< Maximum nesting of includes or fragments in different languages. */
 
 /*! Fragment written on one language (say, in SPARQL) that is included into the text on other language (say, in SQL) */
@@ -126,15 +108,11 @@ typedef struct scn3_include_fragment_s {
   scn3_include_frag_t _;
 } scn3_include_fragment_t;
 
-extern scn3_include_fragment_t scn3_include_stack [MAX_INCLUDE_DEPTH];
 
-/*! Number of fragments that are started but not yet completed. It's zero while the whole text is in SQL */
-extern int scn3_include_depth;
-
-/*! Flag that indicates that yylex() is called from yy_new_error() and error during te call should not cause infinite recursion */
-extern int scn3_inside_error_reporter;
-
-extern dk_session_t *scn3split_ses;
+#ifndef YY_TYPEDEF_YY_SCANNER_T
+#define YY_TYPEDEF_YY_SCANNER_T
+typedef void* yyscan_t;
+#endif
 
 extern void scn3_pragma_line (char *text);
 extern void scn3_pragma_line_push (void);
@@ -144,7 +122,7 @@ extern int scn3_sprint_curr_line_loc (char *buf, size_t max_buf);
 extern int scn3_get_lineno (void);
 extern char *scn3_get_file_name (void);
 extern void scn3_set_file_line (char *file, int file_nchars, int line_no);
-extern void scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_sql_text, scn3_include_fragment_t *outer);
+extern void scn3_sparp_inline_subselect (spar_query_env_t *sparqre, const char * tail_sql_text, scn3_include_fragment_t *outer, yyscan_t yyscanner);
 extern void sparp_compile_subselect (spar_query_env_t *sparqre);
 
 
@@ -245,9 +223,8 @@ query_t * qr_recompile (query_t * qr, caddr_t * err_ret);
 
 caddr_t lc_get_col (local_cursor_t * lc, char * name);
 
-void lc_free (local_cursor_t * lc);
-
-long lc_next (local_cursor_t * lc);
+EXE_EXPORT (void, lc_free, (local_cursor_t * lc));
+EXE_EXPORT (long, lc_next, (local_cursor_t * lc));
 #define LC_FREE(lc) if (lc) \
     		      lc_free (lc)
 
@@ -686,8 +663,7 @@ void qst_set_double (caddr_t * state, state_slot_t * sl, double dv);
 
 void qst_set_string (caddr_t * state, state_slot_t * sl, db_buf_t data, size_t len, uint32 flags);
 
-void qst_set_wide_string (caddr_t * state, state_slot_t * sl, db_buf_t data,
-    int len, dtp_t dtp, int isUTF8);
+void qst_set_wide_string (caddr_t * state, state_slot_t * sl, db_buf_t data, int len, int isUTF8);
 
 void qst_set_numeric_buf (caddr_t * state, state_slot_t * sl, db_buf_t xx);
 
@@ -710,11 +686,9 @@ void ssl_alias (state_slot_t * alias, state_slot_t * real);
 
 void ssl_copy_types (state_slot_t * to, state_slot_t * from);
 
-caddr_t qr_rec_exec (query_t * qr, client_connection_t * cli,
-    local_cursor_t ** lc_ret, query_instance_t * caller, stmt_options_t * opts,
-    long n_pars, ...);
+EXE_EXPORT (caddr_t, qr_rec_exec, (query_t * qr, client_connection_t * cli, local_cursor_t ** lc_ret, query_instance_t * caller, stmt_options_t * opts, long n_pars, ...));
 
-caddr_t lc_nth_col (local_cursor_t * lc, int n);
+EXE_EXPORT (caddr_t, lc_nth_col, (local_cursor_t * lc, int n));
 
 caddr_t sel_out_get (caddr_t * out_copy, int inx, state_slot_t * sl);
 
@@ -785,6 +759,12 @@ void pl_source_free (pl_source_t * pls);
 
 int err_is_state (caddr_t err, char * state);
 
+typedef void srv_global_init_plugin_action_t (char *mode);
+extern dk_set_t srv_global_init_pre_log_actions;
+extern dk_set_t srv_global_init_postponed_actions;
+EXE_EXPORT (dk_set_t *, get_srv_global_init_pre_log_actions_ptr, (void));
+EXE_EXPORT (dk_set_t *, get_srv_global_init_postponed_actions_ptr, (void));
+EXE_EXPORT (client_connection_t *, get_bootstrap_cli, (void));
 EXE_EXPORT (void, local_commit, (client_connection_t * cli));
 EXE_EXPORT (void, local_start_trx, (client_connection_t * cli));
 EXE_EXPORT (void, local_commit_end_trx, (client_connection_t * cli));
@@ -996,9 +976,21 @@ int sec_col_check (dbe_column_t * col, oid_t group, oid_t user, int op);
 void buf_bsort (buffer_desc_t ** bs, int n_bufs, sort_key_func_t key);
 
 
-#define QR_EXEC_CHECK_STACK(qi, addr, margin) \
-  if (THR_IS_STACK_OVERFLOW (qi->qi_thread, addr, margin)) \
-    return srv_make_new_error ("42000", "SR178", "Stack overflow (stack size is %ld, more than %ld is in use)", (long)(qi->qi_thread->thr_stack_size), (long)(qi->qi_thread->thr_stack_size - margin));
+#define QR_EXEC_CHECK_STACK(qi, addr, margin, params) \
+  if (THR_IS_STACK_OVERFLOW (qi->qi_thread, addr, margin))  { \
+    int pinx = 0; \
+    if (params) \
+      { \
+	DO_SET (state_slot_t *, parm, &qr->qr_parms) \
+	  { \
+	    if (!IS_SSL_REF_PARAMETER (parm->ssl_type)) \
+	      dk_free_tree (parms[pinx]); \
+	    pinx ++; \
+	  } \
+	END_DO_SET (); \
+      } \
+    return srv_make_new_error ("42000", "SR178", "Stack overflow (stack size is %ld, more than %ld is in use)", (long)(qi->qi_thread->thr_stack_size), (long)(qi->qi_thread->thr_stack_size - margin)); \
+  }
 
 
 #ifdef DEBUG
@@ -1136,7 +1128,8 @@ void setp_order_row (setp_node_t * setp, caddr_t * qst);
 void setp_group_row (setp_node_t * setp, caddr_t * qst);
 #define HASH_NUM_SAFE(n) n = n & 0x7fffffff
 #define MAX_STACK_N_KEYS 200
-
+caddr_t go_ua_start (caddr_t * inst, gb_op_t * go, index_tree_t * tree, caddr_t * dep_ptr);
+void go_ua_store (caddr_t * inst, gb_op_t * go, index_tree_t * tree, caddr_t * dep_ptr);
 
 typedef struct itc_ha_feed_ret_s {
   hash_index_t *ihfr_hi;
@@ -1147,7 +1140,7 @@ typedef struct itc_ha_feed_ret_s {
   caddr_t *ihfr_deps;
 } itc_ha_feed_ret_t;
 
-int itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned long feed_temp_blobs);
+int itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned long feed_temp_blobs, setp_node_t * setp);
 extern void itc_ha_flush_memcache (hash_area_t * ha, caddr_t * qst, int is_in_fill);
 
 /* is in fill */
@@ -1281,9 +1274,12 @@ extern int hash_join_enable;
 void list_wired_buffers (char *file, int line, char *format, ...);
 extern dk_mutex_t * parse_mtx;
 extern du_thread_t * parse_mtx_owner;
+void parse_enter ();
+void parse_leave ();
+extern int enable_parse_mtx;
 
-#define IN_PARSE { mutex_enter (parse_mtx); parse_mtx_owner = THREAD_CURRENT_THREAD; }
-#define LEAVE_PARSE { parse_mtx_owner = NULL; mutex_leave (parse_mtx); }
+#define IN_PARSE { parse_enter (); parse_mtx_owner = THREAD_CURRENT_THREAD; }
+#define LEAVE_PARSE { parse_mtx_owner = NULL; parse_leave (); }
 
 extern void set_ini_trace_option (void);
 
@@ -1331,6 +1327,7 @@ void itc_invalidate_bm_crs (it_cursor_t * itc, buffer_desc_t * buf, int is_trans
 extern int iri_split (char * iri, caddr_t * pref, caddr_t * name);
 /*! This splits an IRI to "prefix" and "local" parts, making "local" as short as it is allowed by TURTLE syntax. */
 extern void iri_split_ttl_qname (const char * iri, caddr_t * pref, caddr_t * name, int abbreviate_nodeid);
+extern void iri_split_ttl_qname_impl (const char * iri, caddr_t * pref, caddr_t * name, int abbreviate_nodeid, int flag);
 int64  unbox_iri_int64 (caddr_t x);
 int itc_bm_land_lock (it_cursor_t * itc, buffer_desc_t ** buf_ret);
 void itc_init_bm_search (it_cursor_t * itc);
@@ -1718,7 +1715,13 @@ int64 sqlo_p_stat_query (dbe_table_t * tb, caddr_t p);
 
 
 extern int32 enable_vec_reuse;
+#define thr_set_tlsf(x, y) ;
+#ifndef WITH_TLSF
+#define WITH_TLSF(x) {
+#define END_WITH_TLSF }
 
 #define B_NEW_VARZ(t, v) NEW_VARZ(t, v)
+#define tlsf_base_alloc(s) dk_alloc(s)
+#endif
 
 #endif /* _SQLFN_H */

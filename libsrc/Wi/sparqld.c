@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -21,6 +21,7 @@
  *
  */
 
+#include "datesupp.h"
 #include "sparql2sql.h"
 #include "sqlparext.h"
 /*#include "arith.h"
@@ -51,7 +52,19 @@ void ssg_sdprin_literal (spar_sqlgen_t *ssg, SPART *tree)
     case DV_ARRAY_OF_POINTER:
       if (SPAR_LIT != tree->type)
         spar_sqlprint_error ("ssg_" "sdprin_literal: non-literal vector as argument");
-      ssg_sdprin_literal (ssg, (SPART *)(tree->_.lit.val));
+        if (DV_DATETIME == DV_TYPE_OF (tree->_.lit.val))
+          {
+            char temp [100];
+            int mode = DT_PRINT_MODE_XML | dt_print_flags_of_xsd_type_uname (tree->_.lit.datatype);
+            dt_to_iso8601_string_ext (tree->_.lit.val, temp, sizeof (temp), mode);
+            ssg_putchar ('"');
+            ssg_puts (temp);
+            ssg_putchar ('"');
+          }
+        else if (NULL != tree->_.lit.original_text)
+          ssg_puts (tree->_.lit.original_text);
+        else
+          ssg_sdprin_literal (ssg, (SPART *)(tree->_.lit.val));
       if (DV_STRING != DV_TYPE_OF (tree->_.lit.val))
         return;
       if (NULL != tree->_.lit.datatype)
@@ -92,7 +105,7 @@ void ssg_sdprin_literal (spar_sqlgen_t *ssg, SPART *tree)
         return;
       }
     default:
-      ssg_print_box_as_sql_atom (ssg, (caddr_t)tree, SQL_ATOM_UTF8_ONLY);
+      ssg_print_box_as_sql_atom (ssg, (caddr_t)tree, SQL_ATOM_SPARQL_INTEROP);
       return;
     }
 }

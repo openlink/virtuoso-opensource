@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -866,7 +866,7 @@ lt_log_prime_key (lock_trx_t * lt, row_delta_t * rd, int is_upd)
 
 size_t txn_after_image_limit = 50000000L;
 #define TXN_CHECK_LOG_IMAGE(lt) \
-  if (txn_after_image_limit > 0 && lt->lt_log->dks_bytes_sent > (OFF_T) txn_after_image_limit) \
+  if (!lt->lt_backup && txn_after_image_limit > 0 && lt->lt_log->dks_bytes_sent > (OFF_T) txn_after_image_limit) \
     { \
       (lt)->lt_status = LT_BLOWN_OFF; \
       (lt)->lt_error = LTE_LOG_IMAGE; \

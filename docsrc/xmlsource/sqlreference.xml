@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2014 OpenLink Software
+ -  Copyright (C) 1998-2015 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -3328,7 +3328,7 @@ reset before db_activity () is called.
 settings.</para>
      <para>A query cannot set a timeout from inside itself. Only a stored procedure or a top level statement
 on a client connection can do this.</para>
-     <para>A request to SPARQL web service endpoint may specify the timeout as an additoional <emphasis>&amp;timeout=&lt;milliseconds&gt;</emphasis> parameter.
+     <para>A request to SPARQL web service endpoint may specify the timeout as an additional <emphasis>&amp;timeout=&lt;milliseconds&gt;</emphasis> parameter.
 The parameter value should be equal to or greater than 1000, otherwise it will be ignored.
 If <emphasis>SPARQL</emphasis> Virtuoso configuration file contains
 <emphasis>MaxQueryExecutionTime</emphasis> parameter and its value is greater than or equal to 1000
@@ -5302,6 +5302,387 @@ _______________________________________________________________________________
 
 ]]></programlisting>
   </sect2>
+</sect1>
+	<sect1 id="sqlrefgeospatial">
+		<title>Geometry Data Types and Spatial Index Support</title>
+<para>Virtuoso includes a spatial database capability from version 6.01.3126 onwards.
+This capability is specially geared towards geographical data in RDF but can be used with SQL also.
+The functions implemented follow the SQL MM spatial specification where applicable but the entire
+SQL MM function set is not supported.
+</para>
+<para>
+Spatial indexing is supported by a two dimensional R tree implementation. The geometries supported
+are limited to two dimensions, with a choice of WGS 84 latitude and longitude coordinates with
+haversine distances or a flat 2 dimensional plane for spatial reference system.
+</para>
+         <sect2 id="sqlrefgeospatialfuncs">
+		<title>SQL MM Function Support</title>
+         </sect2>
+         <sect2 id="sqlrefgeospatialspatref">
+		<title>Spatial References</title>
+<para>The default reference system is WGS84 with coordinates in degrees of longitude and latitude on
+Earth. The srid number for this is 4326 and is assigned by default to all new geometries.
+<link linkend="fn_st_setsrid"><function>st_setsrid</function></link> can be used for altering this.
+</para>
+<para>Distances and precisions for WGS84 are in kilometers, for other systems they are in the same
+unit as the coordinates.
+</para>
+<para>If the srid is not 4326, distances are calculated as on a flat 2D surface. WGS84 distances are
+calculated with the haversine formula.
+</para>
+         </sect2>
+         <sect2 id="sqlrefgeospatialgo">
+	   <title>Geometric Objects</title>
+<para>Only the 2D point is supported. It is created with:</para>
+<programlisting><![CDATA[
+st_point (x, y)
+]]></programlisting>
+<para>or by</para>
+<programlisting><![CDATA[
+st_geomfromtext ('POINT(1 2)').
+]]></programlisting>
+           <tip><title>See Also:</title>
+             <para><link linkend="fn_st_point"><function>st_point</function></link></para>
+             <para><link linkend="fn_st_geomfromtext"><function>st_geomfromtext</function></link></para>
+           </tip>
+         </sect2>
+         <sect2 id="sqlrefgeospatialwkt">
+		<title>Well Known Text</title>
+<para>The WKT representations for geometries are as follows:
+</para>
+<itemizedlist mark="bullet">
+  <listitem>Point POINT (&lt;x&gt; &lt;y&gt;) where &lt;x&gt; and &lt;y&gt; are strings of
+characters that can be parsed as a floating point number, as by the %g format character
+in the C language.</listitem>
+</itemizedlist>
+         </sect2>
+         <sect2 id="sqlrefgeospatialpg">
+		<title>Precision of Geometries</title>
+<para>The internal precision of geometry operations is 64 bit IEEE floating
+point. Normally, a geometry index for geography uses can be made with
+32 bit floats for space efficiency, as these still give a precision of
+about 2 meters on the surface of the Earth. A geometry object is
+stored with all coordinates either as float or double depending on
+which data type was supplied in creating the object. Note that the
+object itself can have more precise coordinates than the representation
+of its bounding box in the R tree index.
+</para>
+         </sect2>
+         <sect2 id="sqlrefgeospatialpr">
+	   <title>Predicates</title>
+<programlisting><![CDATA[
+isgeometry (in x any)
+]]></programlisting>
+<para>Returns 1 if the argument is a geometry.
+</para>
+           <tip><title>See Also:</title>
+             <para><link linkend="fn_isgeometry"><function>isgeometry</function></link></para>
+           </tip>
+         </sect2>
+         <sect2 id="sqlrefgeospatialqgr">
+		<title>Querying Geometric Relations</title>
+<para>The SQL MM predicates <link linkend="fn_st_intersects"><function>st_intersects</function></link>,
+<link linkend="fn_st_contains"><function>st_contains</function></link> and
+<link linkend="fn_st_within"><function>st_within</function></link> can be used
+to test whether two geometries overlap in different ways.
+</para>
+<para><link linkend="fn_st_intersects"><function>st_intersects</function></link> means that the
+1st and 2nd arguments have at least one shared point,
+<link linkend="fn_st_contains"><function>st_contains</function></link> means that the 2nd argument
+is fully contained in the 1st argument,
+<link linkend="fn_st_within"><function>st_within</function></link> means that the 1st argument is
+fully contained within the 2nd argument.
+</para>
+<para>These functions are extended with a third argument which gives a
+precision. The precision is a number that specifies a maximum
+distance between two points such that the points will still be
+considered to overlap. If both the 1st and 2nd arguments are points,
+then precision can be interpreted as the maximum distance between them.
+</para>
+<para>These do not require the presence of a geometry index but will use one
+if one is present and one of the geometry arguments is a column on
+which there is such an index.
+</para>
+         </sect2>
+         <sect2 id="sqlrefgeospatialdgi">
+		<title>Defining a Geometry Index</title>
+<para>The below sequence defines a table called geo and a geometry index on its geo column.
+</para>
+<programlisting><![CDATA[
+create table GEO (ID bigint, GEO any, primary key (ID))
+ alter index geo on geo partition (id int);
+
+CREATE TABLE GEO_INX ( X real no compress,
+                       Y real no compress,
+                       X2 real no compress,
+                       Y2 real no compress,
+                       id bigint no compress,
+                       primary key (X, Y, X2, Y2, id))
+                       ALTER INDEX geo_inx ON geo_inx PARTITION (id int);
+
+
+INSERT INTO sys_vt_index ( vi_table,
+                           vi_index,
+                           vi_col,
+                           vi_id_col,
+                           vi_index_table,
+                           vi_id_is_pk,
+                           vi_options)
+  VALUES ('DB.DBA.GEO',
+          'GEO',
+          'GEO',
+          'ID',
+          'DB.DBA.GEO_INX',
+          1,
+          'G');
+
+-- Reload the changed schema
+__ddl_changed ('DB.DBA.GEO');
+]]></programlisting>
+<para>A geometry index is a table of always five columns, the first 4 are
+the lower x, y and higher x, y of the object's bounding box, id is the
+identifier of the object, a foreign key into the table holding the
+geometries. In a cluster setting the geometry index must be
+partitioned on the id column. The columns of a geometry index must never be compressed,
+hence the mandatory no compress declaration.
+</para>
+<para>Geometry indices are declared in the sys_vt_index table, which also declares text indices.
+The G in the options column declares that this is a geometry index.
+</para>
+<para>A geometry index will be used when appropriate. The table holding the R tree with the bounding
+boxes should not normally be accessed directly.
+Explicit selects from a geometry index table with conditions on the columns will not generally
+work since the collation is not linear as in a regular index. Inserts by means other than
+geo_insert are not allowed.
+</para>
+         </sect2>
+         <sect2 id="sqlrefgeospatialinsdel">
+	   <title>Insert and Delete</title>
+<programlisting><![CDATA[
+geo_insert (in tb any, in geo any, in id int);
+geo_delete (in tb any, in geo any, in id int);
+]]></programlisting>
+<para>These functions insert and delete a geometry from an R tree index. The tb must be a
+fully qualified name of an R tree table.
+</para>
+<para>
+These functions will typically be used from triggers on a geometry column.
+The functions are transactional and make a transaction log record of the action.
+</para>
+           <tip><title>See Also:</title>
+             <para><link linkend="fn_geo_insert"><function>geo_insert</function></link></para>
+             <para><link linkend="fn_geo_delete"><function>geo_delete</function></link></para>
+           </tip>
+         </sect2>
+         <sect2 id="sqlrefgeospatialugcp">
+		<title>Using Geometries in Client Applications and SQL Procedures</title>
+<para>In SQL procedures, a geometry is a member of the ANY data type. The
+<link linkend="fn_isgeometry"><function>isgeometry ()</function></link> function
+can be used for testing if an object is a geometry. A geometry can only be stored in a column
+declared to be of type ANY.
+</para>
+<para>If a geometry would be returned to a client application as part of a result set, it is returned
+as a string containing its WKT text representation.
+For a client application to pass geometries to the server, it must pass these either as a WKT
+string parameter to st_geomfromtext or as numeric coordinate values for st_point or related
+functions. This applies to all clients, ODBC, JDBC, .net and any RDF frameworks.
+</para>
+ <tip><title>See Also:</title>
+    <para><link linkend="rdfsparqlgeospat">RDF and Geometry</link></para>
+  </tip>
+         </sect2>
+
+</sect1>
+<sect1 id="sqlbulkloadoperations"><title>SQL Bulk Load, ELT, File Tables and Zero Load Operations</title>
+  <sect2 id="sqlbulkloadoperationsftable"><title>File Tables</title>
+    <para>Virtuoso supports mapping files of comma separated values as tables from version 7.00.3206. This makes 
+    	bulk load of relational data straightforward and very fast. This also makes it possible to query data in 
+    	files without any loading into the database. The latter is specially convenient if data is queried just 
+    	once, where loading and subsequently dropping the data would be needless overhead. Also arbitrary ETL 
+    	transformations can be expressed in SQL, reading from a file table and inserting into a database table. 
+    	This includes the whole range of SQL functionality, including intermediate aggregations and the like.
+    </para>	
+    <para>This feature deprecates the CSV load functions in previous versions, e.g. csv_load.
+    </para>
+    <para>Queries can freely mix file tables and regular tables. Joins with file tables make hash join plans 
+    	where the smaller file is copied into a memory resident hash table. For very large hash tables, partitioned 
+    	hash join can be used, thus arbitrary joining between files is possible, fast and convenient.
+    </para>
+    <para>A file table is declared with a regular create table statement. If the table definition includes a 
+    	primary key, the file is assumed to be sorted as declared. In most cases a primary key should not be 
+    	declared when creating a file table. After the create table statement, the procedure fs_set_file declares 
+    	that the table is in fact a file. In a cluster setting the file should be visible to all the server 
+    	processes via a shared file system.</para>
+    <para>For example, to bulk load the TPC-H part table:</para>
+<programlisting><![CDATA[
+CREATE TABLE PART_F (
+    P_PARTKEY     INTEGER NOT NULL,
+    P_NAME        VARCHAR(55) NOT NULL,
+    P_MFGR        CHAR(25) NOT NULL,
+    P_BRAND       CHAR(10) NOT NULL,
+    P_TYPE        VARCHAR(25) NOT NULL,
+    P_SIZE        INTEGER NOT NULL,
+    P_CONTAINER   CHAR(10) NOT NULL,
+    P_RETAILPRICE double precision NOT NULL,
+    P_COMMENT     VARCHAR(23) NOT NULL    );
+
+ft_set_file ('PART_F', 'src/part.tbl', delimiter => '|');
+
+-- turn off logging and set insert mode to auto committing, non-transactional
+log_enable (2);
+
+-- read the file and insert into the previously create part table
+insert into part select * from part_f;
+	
+]]></programlisting>    
+    <para>The ft_set_file procedure takes the table name as first argument and a file system path relative to 
+    	the server's working directory as the second argument. Optional arguments allow specifying a delimiter, 
+    	newline character and escape character.
+    </para>
+<programlisting><![CDATA[
+	create procedure ft_set_file (in tb varchar, in fname varchar, in delimiter varchar, in newline varchar :=  '\n', in esc varchar := null)
+]]></programlisting>    
+    <para>Creating a file table requires dba group privileges and the file is subject to the file system access 
+    	limitations that apply to file_to_string and other file system access functions.</para>
+    <para>The newline and escape characters need to be single character strings. A newline or escape character 
+    	following the escape character is added to the parsed input without its special interpretation.</para>
+    <para>Each column in the CSV file is expected to end with the delimiter character. A field of zero length 
+    	is considered a SQL NULL value, i.e. if two delimiters are adjacent or if a line begins with the delimiter, 
+    	the field is considered NULL. The text in the field is parsed according to the data type declared for the 
+    	column whose position in the create table corresponds to the field position on the line. The parsing is 
+    	as by the SQL cast function from a varchar value. If the cast fails the line is silently ignored.
+    </para>
+    <para>When a table is declared as a file table, the file is sampled and statistics are written into the 
+    	sys_col_stat table. In this way the system is capable of making correct query plans involving joins of 
+    	file tables. For this reason, the file should exist and have the relevant content when the file table 
+    	is created.
+    </para>
+    <para>A file table will be read in parallel on multiple threads if a normal table would be read in 
+    	parallel in the same situation. In a single server, the ThreadsPerQuery (enable_qp in sys_stat) 
+    	setting controls the number of threads used. In a cluster setting each elastic slice corresponds 
+    	to a fraction of the file. This is why the file is expected to be visible from all the servers.
+    </para>
+    <para>If a table had previous content and subsequently was declared a file table, the previous content 
+    	will no longer be visible. The file table may cease to be a file table by the dba deleting the 
+    	corresponding row from sys_file_table and calling __ddl_changed on the file table. At this point 
+    	the previous, databases resident content of the table will be visible again. However the statistics 
+    	gathered from the file will still shadow the statistics of the table.
+    </para> 
+    <para>It is often the case that many CSV files have the same structure. For these cases it is sufficient 
+    	to create a single table and attach it to one of the files with ft_set_file. This file will provide 
+    	the statistics. In order to read a different file, one can use the FROM clause in the TABLE OPTION 
+    	clause of in the FROM clause of a select statement, as follows:
+   	</para> 
+<programlisting><![CDATA[
+-- get the count of well formed part rows from the part.tbl file
+SELECT COUNT (*) 
+  FROM part_f;
+
+-- do the same from src/part.tbl.2
+SELECT COUNT (*) 
+  FROM part_f TABLE OPTION (FROM 'src/part.tbl.2');
+]]></programlisting>    
+    <para>The value of the FROM option can be an arbitrary expression, however it must be independent of 
+    	values bound by the containing statement. It may depend on variables bound in an enclosing stored 
+    	procedure or from parameters but it cannot join to a column of another table in the same select 
+    	statement.
+    </para> 
+    <para>Arbitrary search conditions can be applied to file tables, for example:</para> 
+<programlisting><![CDATA[
+SELECT p_name, p_size, p_partkey 
+  FROM part_f 
+ WHERE p_name LIKE '%green%';
+]]></programlisting>    
+    <para>Joins are possible, for example:</para> 
+<programlisting><![CDATA[
+SELECT SUM (ps_availqty) 
+  FROM partsupp, part_f 
+ WHERE ps_partkey = p_partkey 
+   AND p_name LIKE '%green%';
+]]></programlisting>    
+    <para>This would join the partsupp table to the part file.</para> 
+    <para>File tables are not cached by the DBMS, they are read from the OS every time they are needed. A single 
+    	query will not read the same file multiple times, unless in the case of a partitioned (multtipass) hash 
+    	join. Nested loop joins are not applied to file tables. File tables cannot be updated and no transaction 
+    	control applies to them. Select permissions can be granted as for any other table.
+    </para>
+    <para></para>    
+  </sect2>  
+  <sect2 id="sqlbulkloadoperationsftableparallel"><title>Parallel Insert With File Tables and Transactions </title>
+    <para>A file table is copied into a database resident table with an INSERT... SELECT statement. Such a 
+    	statement executes in parallel if the session is in auto commit mode, i.e. log_enable (2) or 
+    	log_enable (3) has been previously executed on the session.
+    </para> 
+    <para>A file can be loaded inside a transaction if the connection is not in auto commit log_enable (2) or 3. 
+    	This will be multithreaded if enable_mt_txn is 1 in the [Flags] section of the ini file or 
+    	__dbf_set ('enable_mt_txn', 1) has been executed previously. The setting is global. Defaults vary according 
+    	to server version. Use sys_stat ('enable_nt_txn') to read the value of the setting.
+    </para> 
+    <para>For long files the transaction is liable to run out of rollback space. File table operations as such 
+    	do not affect the transaction context. Explicit commits may be interspersed in a select statement from a 
+    	file or other tables.
+    </para> 
+    <para>For example, the history keeping dimension updates from TPC DS can be implemented as follows. The item 
+    	table is a history keeping dimension that has an index on the i_item_id business key and has a primary key 
+    	of item surrogate key, with a new value for each version of the item record. The item record has a start 
+    	and end date (i_rec_start_date, i_rec_end_date) to mark the period of validity of the information. A null 
+    	value in item_rec_end_date marks the currently applicable record. When the item data is updated, the, a 
+    	new item is inserted and the previously current item record has its end date set to the current date. 
+    	These operations must occur atomically. Otherwise the implementation may choose whether to update many 
+    	item records in the same transaction.
+    </para> 
+    <para>In the below listing most columns have been left out for brevity:</para> 
+<programlisting><![CDATA[
+CREATE PROCEDURE item_update (in i_id varchar,...)
+{
+  vectored;
+  
+  UPDATE item 
+     SET i_rec_end_date = curdate 
+   WHERE i_id = i_id 
+     AND i_rec_end_date IS NULL;
+     
+  INSERT INTO item (i_ietm_sk, i_item_id, i_rec_end_date,...) 
+            VALUES (sequence_next ('item_sk_seq'), i_id, NULL,... )
+  not vectored { COMMIT WORK};
+}
+
+SELECT COUNT (item_update (i_item_id,....) 
+  FROM item_f....;
+]]></programlisting>    
+    <para>The select statement call the item_update procedure on a vector of item ids and other columns. 
+    	The procedure marks the expired record and inserts the new record, assigning new surrogate keys from a 
+    	sequence. After each batch it performs one commit. The next batch of items are updated in a separate 
+    	transaction.
+    </para> 
+    <para>This should be run on a single thread. In a multithreaded transaction the threads may not issue 
+    	individual commits. The code could be multithreaded by leaving out the commit from the stored procedure. 
+    	Then the commit would have to be after the completion of the select statement.
+    </para> 
+    <para>The following isql script bulk loads a whole TPC-H database. We leave out the create tables and 
+    	ft_set_files for brevity, they are all as in the part example above.
+    </para> 
+<programlisting><![CDATA[
+log_enable (2); INSERT INTO lineitem SELECT * FROM lineitem_f &
+log_enable (2); INSERT INTO orders   SELECT * FROM orders_f &
+log_enable (2); INSERT INTO customer SELECT * FROM customer_f &
+log_enable (2); INSERT INTO part     SELECT * FROM part_f &
+log_enable (2); INSERT INTO partsupp SELECT * FROM partsupp_f &
+log_enable (2); INSERT INTO supplier SELECT * FROM supplier_f &
+log_enable (2); INSERT INTO nation   SELECT * FROM nation_f &
+log_enable (2); INSERT INTO region   SELECT * FROM region_f &
+
+wait_for_children;
+checkpoint;
+]]></programlisting>    
+    <para>A multithreaded, non-logged, non-transactional insert is started for each table-file pair as a 
+    	background task. The wait_for_children isql command waits for all the background tasks to complete. 
+    	The checkpoint statement makes the state durable. Killing the server in before the checkpoint would 
+    	result in the server starting in a state with none of the effects of the bulk load present, since the 
+    	log_enable(2) turns off logging. The database is online during the bulk load and the progress may be 
+    	followed by periodically counting the tables, for example.
+   </para> 
+  </sect2>  
 </sect1>
 	<!-- ======================================== -->
 </chapter>

@@ -711,7 +711,6 @@ create procedure ODS_DELETE_USER_DATA (
     delete from DB.DBA.sn_related where snr_from = _sne_id or snr_to=_sne_id;
     delete from DB.DBA.sn_member  where snm_group = _sne_id or snm_entity=_sne_id;
     delete from DB.DBA.sn_person  where sne_org_id = _u_id;
-    delete from DB.DBA.sn_entity  where sne_org_id = _u_id;
     }
 
 skip_sn:;

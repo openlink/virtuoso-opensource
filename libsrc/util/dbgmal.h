@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -94,6 +94,7 @@ char *	dbg_strdup (const char *file, u_int line, const char *str);
 void	dbg_malstats (FILE *, int mode);
 int	dbg_mark (char *name);
 int	dbg_unmark (char *name);
+size_t  dbg_mal_count (const char *name, u_int line);
 
 void	 dbg_dump_mem(void);
 

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -179,7 +179,7 @@ strdev_round_utf8_partial_string (
   memset (&ps, 0, sizeof (ps));
   while (written < max_out_buf && max_utf8_chars)
     {
-      size_t utf_char_len = virt_mbrtowc (NULL, utf8_in, max_utf8_chars, &ps);
+      size_t utf_char_len = virt_mbrtowc_z (NULL, utf8_in, max_utf8_chars, &ps);
       if (utf_char_len == (size_t) - 1)
 	return (size_t) - 1;
 
@@ -836,7 +836,7 @@ strses_skip_wchars (unsigned char *data, long nbytes, long ofs)
   memset (&mb, 0, sizeof (mb));
   while (ofs)
     {
-      size_t sz = virt_mbrtowc (NULL, data_ptr,
+      size_t sz = virt_mbrtowc_z (NULL, data_ptr,
 	  VIRT_MB_CUR_MAX, &mb);
       if (sz == (size_t) - 1)
 	return NULL;
@@ -864,7 +864,7 @@ strses_cp_utf8_to_utf8 (unsigned char *dest_ptr, unsigned char *src_ptr, long sr
   memset (&mb, 0, sizeof (mb));
   while (copy_chars)
     {
-      size_t sz = virt_mbrtowc (NULL, src_ptr,
+      size_t sz = virt_mbrtowc_z (NULL, src_ptr,
 	  VIRT_MB_CUR_MAX, &mb);
       if (sz == (size_t) - 1)
 	GPF_T;
@@ -1429,7 +1429,7 @@ read_wides_from_utf8_file (
 
 	  while (nchars && (dest_ptr - dest) < readed)
 	    {
-	      size_t sz = virt_mbrtowc (NULL, data_ptr,
+	      size_t sz = virt_mbrtowc_z (NULL, data_ptr,
 		  VIRT_MB_CUR_MAX, &mb);
 	      if (sz == (size_t) - 1)
 		{

@@ -1,25 +1,25 @@
---  
+--
 --  $Id: tftext.sql,v 1.6.10.1 2013/01/02 16:15:09 source Exp $
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2014 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 
 create procedure tf_is_letter (in c integer)
@@ -241,7 +241,7 @@ create procedure is_ftext (in exp varchar)
 create table qrs (txt varchar, ct integer);
 
 create procedure qrs_ct ()
-{ 
+{
   set isolation = 'uncommitted';
   return ((select count (*) from qrs where ct is not null));
 }
@@ -274,7 +274,7 @@ create procedure tf_triggers (in n int, in under_row int,
   declare samples, ctr int;
   declare txt varchar;
   result_names (txt, samples);
-  ctr := 0; 
+  ctr := 0;
   for select tf_query_2 (rnd_substr (xt_text, 200)) as qr from xml_text where xt_id < under_row do {
     if (qr is not null and is_ftext (qr))
       {
@@ -327,7 +327,7 @@ create procedure rnd_qr ()
   set isolation = 'uncommitted';
   result_names (qr, n);
   select tt_query into qr from tt_query where tt_id = n;
-  result (qr, xt_count_max (qr, 100, 2000000000)); 
+  result (qr, xt_count_max (qr, 100, 2000000000));
 }
 
 

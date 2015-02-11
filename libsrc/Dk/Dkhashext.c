@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -539,12 +539,14 @@ box_dict_hashtable_destr_hook (caddr_t dict)
   else
     {
       id_hash_iterator (&hit, (id_hash_t *) (dict));
-      while (hit_next (&hit, (caddr_t *) (&key), (caddr_t *) (&val)))
+      while (!ht->ht_mp && hit_next (&hit, (caddr_t *) (&key), (caddr_t *) (&val)))
 	{
 	  dk_free_tree (key[0]);
 	  dk_free_tree (val[0]);
 	}
     }
+  if (ht->ht_mp)
+    mp_free (ht->ht_mp);
   id_hash_clear ((id_hash_t *) (dict));
   ID_HASH_FREE_INTERNALS ((id_hash_t *) (dict));
   return 0;
@@ -630,7 +632,7 @@ id_hash_set_rehash_pct (id_hash_t * ht, uint32 pct)
 
 #ifdef MALLOC_DEBUG
 #define DBG_HASHEXT_NAME(name) dbg_t_##name
-#define DBG_HASHEXT_ALLOC(SZ) dbg_mp_alloc_box (DBG_ARGS THR_TMP_POOL, (SZ), DV_CUSTOM)
+#define DBG_HASHEXT_ALLOC(SZ) dbg_mp_alloc_box (DBG_ARGS THR_TMP_POOL, (SZ), DV_NON_BOX)
 #else
 #define DBG_HASHEXT_NAME(name) t_##name
 #define DBG_HASHEXT_ALLOC(SZ) mp_alloc_box_ni (THR_TMP_POOL, (SZ), DV_NON_BOX)

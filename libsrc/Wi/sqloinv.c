@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -720,7 +720,7 @@ sqlo_geo_f_solve (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * cond, dk_set_t * co
       if (GSOP_INTERSECTS != ctype)
 	call->_.call.name = t_box_string (predicate_name_of_gsop (ctype));
       tb_dfe->_.table.text_pred->dfe_is_placed = DFE_PLACED;
-      //t_set_push (cond_ret, (void*)tb_dfe->_.table.text_pred);
+      /*t_set_push (cond_ret, (void*)tb_dfe->_.table.text_pred); */
       return 1;
     }
   if (dfe_geo_col_of (left, ot, &new_col))
@@ -736,14 +736,14 @@ sqlo_geo_f_solve (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * cond, dk_set_t * co
 	    sqlo_place_exp (so, tb_dfe, sqlo_df (so, args[2]));
 	  tb_dfe->_.table.text_pred = sqlo_df (so, copy);
 	  tb_dfe->_.table.text_pred->dfe_is_placed = DFE_PLACED;
-	  //t_set_push (cond_ret, (void*)tb_dfe->_.table.text_pred);
+	  /*t_set_push (cond_ret, (void*)tb_dfe->_.table.text_pred); */
 	  return 1;
 	}
       else
 	{
 	  tb_dfe->_.table.text_pred = cond;
 	  cond->dfe_is_placed = DFE_PLACED;
-	  //t_set_push (cond_ret, (void*)cond);
+	  /*t_set_push (cond_ret, (void*)cond); */
 	  sqlo_place_exp (so, tb_dfe, sqlo_df (so, contains[1]));
 	  if (BOX_ELEMENTS (contains) > 2)
 	    sqlo_place_exp (so, tb_dfe, sqlo_df (so, contains[2]));

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -424,7 +424,7 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Created new folder with admin account : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 meth ('http://localhost:$U{HTTPPORT1}/user/', 'MKCOL', 'dav:dav', null);
-ECHO BOTH $IF $EQU $STATE 'HT405' "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $STATE 'HT409' "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Access to / denied with user account : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 

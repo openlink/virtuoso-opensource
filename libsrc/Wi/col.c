@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -43,10 +43,6 @@
 
 #define IS_64(n) \
   (!((n) >= (int64) INT32_MIN && (n) <= (int64) INT32_MAX))
-
-#define IS_64_T(n, dtp)						\
-  (IS_IRI_DTP (dtp) ? (((iri_id_t)n) > (iri_id_t)0xffffffff) \
-: (!((n) >= (int64) INT32_MIN && (n) <= (int64) INT32_MAX)))
 
 
 dtp_t
@@ -375,7 +371,7 @@ cs_int_high_distinct (compress_state_t * cs, int from, int to)
   for (inx = from; inx < to; inx++)
     {
       int64 i = cs->cs_numbers[inx] >> 8;
-      //DH_ADD_INT ((&dh), n, 1);
+      /*DH_ADD_INT ((&dh), n, 1); */
 
 #define nth 1
 
@@ -3975,6 +3971,8 @@ cs_array_add (compress_state_t * cs, caddr_t any, int64 n)
   cs->cs_values[cs->cs_n_values++] = any;
 }
 
+dtp_t dtp_no_dict[256];
+
 
 void
 cs_compress (compress_state_t * cs, caddr_t any)
@@ -3984,7 +3982,7 @@ cs_compress (compress_state_t * cs, caddr_t any)
   int64 hash = 1;
   int box_len = box_length (any) - 1;
   cs->cs_non_comp_len += box_len;
-  if (DV_COL_BLOB_SERIAL == dtp)
+  if (dtp_no_dict[dtp])
     cs->cs_no_dict = 1;
   if (cs->cs_no_dict)
     cs_array_add (cs, any, n);
@@ -5229,7 +5227,7 @@ vhtst (v2di_t data, v2di_t h)
 {
   v2di_t tmp, k = data;
   k *= mhash_m_v;
-  //tmp = __builtin_ia32_vpshlq (k, mhash_r_v);
+  /*tmp = __builtin_ia32_vpshlq (k, mhash_r_v);*/
   k ^= tmp;
   k *= mhash_m_v;
   h ^= k;
@@ -5302,7 +5300,7 @@ hash_test_4v (uint64 * in, int n)
   memcpy (&mhash_r_v, &kl, sizeof (kl));
   test_vs.l[0] = -1;
   test_vs.l[1] = -1;
-  //tmp = __builtin_ia32_vpshlq (tmp, mhash_r_v);
+  /*tmp = __builtin_ia32_vpshlq (tmp, mhash_r_v);*/
   for (i = 0; i < n; i += 4)
     {
       v2di_u_t h1, h2;
@@ -5382,7 +5380,7 @@ cpy16 (long *t, long *s, int n)
   for (i = 0; i < n; i++)
     {
       __builtin_ia32_storeups ((float *) t, __builtin_ia32_loadups ((float *) s));
-      //*(v2di_u_t*)t = *(v2di_u_t*)s;
+      /* *(v2di_u_t*)t = *(v2di_u_t*)s;*/
       s += 2;
       t += 2;
     }
@@ -6047,5 +6045,13 @@ col_init ()
   bif_define ("__dcv_test", bif_dcvt);
   bif_define ("__string_test", bif_string_test);
   bif_define ("__ddl_table_col_drop_update", bif_ddl_table_col_update);
+  dtp_no_dict[DV_COL_BLOB_SERIAL] = 1;
+  dtp_no_dict[DV_ARRAY_OF_POINTER] = 1;
+  dtp_no_dict[DV_ARRAY_OF_LONG] = 1;
+  dtp_no_dict[DV_ARRAY_OF_FLOAT] = 1;
+  dtp_no_dict[DV_ARRAY_OF_DOUBLE] = 1;
+  dtp_no_dict[DV_GEO] = 1;
+  dtp_no_dict[DV_XML_ENTITY] = 1;
+  dtp_no_dict[DV_OBJECT] = 1;
   colin_init ();
 }

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -27,15 +27,33 @@
 
 #include "Dk.h"
 
+
+int enable_no_free = 0;
+
+
 #ifdef UNIX
 long init_brk;
 #endif
 
+
+size_t dk_init_size;
+
+void
+dk_set_initial_mem (size_t sz)
+{
+  dk_init_size = sz;
+}
+#define dk_tlsf_init()
+
+
 int64 dk_n_allocs;
 int64 dk_n_total;
+int64 dk_max_allocs;
+int64 dk_max_bytes;
 int64 dk_n_free;
 int64 dk_n_nosz_free;
 int64 dk_n_bytes;
+int64 dk_n_max_allocs;
 
 
 #ifndef MALLOC_DEBUG
@@ -50,16 +68,19 @@ int64 dk_n_bytes;
 
 extern void dk_box_initialize (void);
 
+#define NO_MALLOC_CACHE
+#undef CACHE_MALLOC
+
 #if !defined (NO_MALLOC_CACHE) && !defined (PURIFY) && !defined (VALGRIND)
 # if defined (UNIX) || defined (WIN32)
 #  define CACHE_MALLOC
 # endif
 #endif
 
+
 #define NO_SIZE ((size_t) -1)
 
 #ifdef CACHE_MALLOC
-
 
 
 #define AV_LIST_MEMBERS \
@@ -274,7 +295,6 @@ av_check_double_free (av_list_t * av1, void *thing, int len)
   log_error ("Looks like double free but the block is not twice in alloc cache, so proceeding");
 }
 
-int enable_no_free = 0;
 
 void
 av_clear (av_list_t * av, size_t sz)
@@ -556,6 +576,17 @@ dk_mutex_t *mdbg_mtx;
 #endif
 
 
+uint32 malloc_hits;
+uint32 malloc_misses;
+uint32 thread_malloc_hits;
+uint32 thread_malloc_misses;
+
+void
+dk_cpu_init ()
+{
+}
+
+
 void
 dk_memory_initialize (int do_malloc_cache)
 {
@@ -565,7 +596,9 @@ dk_memory_initialize (int do_malloc_cache)
   int s;
   if (is_mem_init)
     return;
+  dk_cpu_init ();
   is_mem_init = 1;
+  dk_tlsf_init ();
 
 #ifdef UNIX
   init_brk = (long) sbrk (0);
@@ -575,7 +608,6 @@ dk_memory_initialize (int do_malloc_cache)
   allocations = hash_table_allocate (0x100000);
   mdbg_mtx = mutex_allocate ();
 #endif
-
 #ifdef CACHE_MALLOC
   dk_cnt_mtx = mutex_allocate ();
   if (do_malloc_cache)
@@ -675,20 +707,35 @@ dk_cache_allocs (size_t sz, size_t cache_sz)
   if (0 == av->av_n_empty % 1000) \
     av_adjust ((av_list_t*) av, align_sz);
 
+
+#define MALLOC_IN_DK_ALLOC(c) \
+  dk_alloc_reserve_malloc (c, 1)
+#define FREE_IN_DK_FREE(c) free (c)
+
+
 void *
 dk_alloc (size_t c)
 {
+  thread_t *thr = NULL;
   void *thing = NULL;
   size_t align_sz;
   int nth_sz;
 #ifndef CACHE_MALLOC
   align_sz = ALIGN_8 (c);
-  thing = dk_alloc_reserve_malloc (ADD_END_MARK (align_sz), 1);
+  thing = MALLOC_IN_DK_ALLOC (ADD_END_MARK (align_sz));
+#ifdef ALLOC_CTR
+  dk_n_total ++;
+  dk_n_allocs++;
+  dk_n_bytes += align_sz;
+  if (dk_n_total > dk_max_allocs)
+    dk_max_allocs = dk_n_total;
+  if (dk_n_bytes > dk_max_bytes)
+    dk_max_bytes = dk_n_bytes;
+#endif
 #else
   av_s_list_t *av1;
   if (c <= MAX_CACHED_MALLOC_SIZE)
     {
-      thread_t *thr = NULL;
       ALIGN_A (align_sz, nth_sz, c);
       THREAD_ALLOC_LOOKUP (thr, thing, nth_sz);
 
@@ -720,7 +767,7 @@ dk_alloc (size_t c)
 	      mutex_leave (&av1->av_mtx);
 	    }
 
-	  thing = dk_alloc_reserve_malloc (ADD_END_MARK (align_sz), 1);
+	  thing = MALLOC_IN_DK_ALLOC (ADD_END_MARK (align_sz));
 	  CNT_ENTER;
 	  dk_n_total ++;
 	  CNT_LEAVE;
@@ -732,7 +779,7 @@ dk_alloc (size_t c)
   else
     {
       align_sz = _RNDUP_PWR2 (c, 4096);
-      thing = dk_alloc_reserve_malloc (ADD_END_MARK (align_sz), 1);
+      thing = MALLOC_IN_DK_ALLOC (ADD_END_MARK (align_sz));
       AV_MARK_ALLOC (thing, align_sz);
       CNT_ENTER;
       dk_n_total ++;
@@ -741,6 +788,8 @@ dk_alloc (size_t c)
       dk_n_bytes += align_sz;
     }
 #endif
+  if (dk_n_allocs > dk_n_max_allocs)
+    dk_n_max_allocs = dk_n_allocs;
 
   SET_END_MARK (thing, align_sz);
 
@@ -790,7 +839,7 @@ dk_free (void *ptr, size_t sz)
     mutex_enter (mdbg_mtx);
     free_count++;
     alloc_sz = (size_t) gethash (ptr, allocations);
-#error "memdbg not define supported.  Must correct the alignment to ALIGN_A
+#error " memdbg define not supported.  Must correct the alignment to ALIGN_A"
     if (!alloc_sz || (sz != NO_SIZE && ALIGN_8 (sz) != ALIGN_8 (alloc_sz)))
       GPF_T;
     CHECK_END_MARK (ptr, ALIGN_4 (alloc_sz));
@@ -834,7 +883,7 @@ dk_free (void *ptr, size_t sz)
 	  AV_PUT (av, ptr, FREE_FIT, ;);
 	  mutex_leave (&av->av_mtx);
 	full:
-	  free (ptr);
+	  FREE_IN_DK_FREE (ptr);
 	  CNT_ENTER;
 	  dk_n_total --;
 	  CNT_LEAVE;
@@ -845,7 +894,8 @@ dk_free (void *ptr, size_t sz)
     }
 #endif
 
-  free (ptr);
+  FREE_IN_DK_FREE (ptr);
+#ifdef ALLOC_CTR
   CNT_ENTER;
   dk_n_total --;
   CNT_LEAVE;
@@ -858,7 +908,9 @@ dk_free (void *ptr, size_t sz)
     {
       dk_n_nosz_free ++;
     }
+#endif
 }
+
 
 
 #ifdef MEMDBG
@@ -878,7 +930,6 @@ dk_check_end_marks (void)
 
 #else /* == if defined(MALLOC_DEBUG) */
 
-int enable_no_free = 0;
 
 void
 dk_alloc_assert (void *ptr)
@@ -1049,3 +1100,4 @@ dk_free (void *ptr, size_t sz)
   dbg_free_sized (__FILE__, __LINE__, ptr, sz);
 }
 #endif
+

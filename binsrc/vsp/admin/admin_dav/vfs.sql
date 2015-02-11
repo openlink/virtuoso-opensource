@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -130,7 +130,7 @@ nf_opt:
     _header := sprintf ('Authorization: Basic %s\r\n', encode_base64(_opts));
 
   if (accept_rdf and strstr (_header, 'Accept:') is null)
-    _header := _header || 'Accept: application/rdf+xml, text/n3, text/rdf+n3, */*\r\n'; -- /* rdf formats */
+    _header := _header || 'Accept: application/rdf+xml, text/n3, text/rdf+n3, */*;q=0.1\r\n'; -- /* rdf formats */
   -- global setting for crawler UA  
   ua := registry_get ('vfs_ua');
   if (isstring (ua) and length (ua) and strstr (_header, 'User-Agent:') is null)
@@ -295,7 +295,10 @@ get_again:
 	    WS.WS.GET_URLS (_host, _url, _root, _content, lev + 1, _c_type);
 
       if (store_hook is not null and __proc_exists (store_hook))
-	    call (store_hook) (_host, _url, _root, _content, _etag, _c_type, store_flag, _udata, lev + 1);
+	  {
+	    call (store_hook) (_host, _url, _root, _content, _etag, _c_type, store_flag, 
+		vector_concat (_udata, vector ('start_url', _start_url)), lev + 1);
+	  }
       else 
 	{
 	      WS.WS.LOCAL_STORE (_host, _url, _root, _content, _etag, _c_type, store_flag, conv_html);
@@ -672,6 +675,294 @@ err_end:
 }
 ;
 
+create procedure WS.WS.LDP_STORE (
+  in _host varchar,   -- target host being crawled, e.g. 'ods-qa.openlinksw.com:8890'
+  in _url varchar,    -- file path being crawled, e.g. '/DAV/fusepool_staging_area/tuscany/attractions/tuscany_museums.csv'
+  in _root varchar,   -- LDP root container for storage, e.g. 'http://fusepool.openlinksw.com/DAV/fusepool/ldp/'
+  inout _content varchar,
+  in _s_etag varchar,   
+  in _c_type varchar, -- content mime type
+  in store_flag int,  -- store? 1/0, from VFS_SITE(VS_STORE)
+  in _udata any,      -- vector of options from VFS_SITE(VS_UDATA)
+  in _level int      -- redirect level
+  )
+{
+  declare ldpc_credentials any;
+  declare start_url, start_url_processed varchar; -- Starting path of crawl: VFS_SITE(VS_URL)
+  declare i integer;
+  declare ldpnr_create_method varchar; -- 'put' or 'post'
+  declare src_folder_tree_handling varchar; -- 'recreate' or 'collapse'
+
+  -- ldpnr_create_method:
+  -- 'put' => Use PUT to create LDP-NRs 
+  --          The target containing LDPC is implied by the supplied LDPNR's URL when src_folder_tree_handling == 'recreate'
+  -- 'post' => Use POST + slug to create LDP-NRs
+
+  -- src_folder_tree_handling:
+  -- 'recreate' => Recreate the folder hierarchy under the source start_url under the target LDPC
+  -- 'collapse' => Do not recreate the folder hierarchy under the source start_url. 
+  --               Place all crawled files directly in the target LDPC (Required for Fusepool P3)
+
+  ldpc_credentials := get_keyword ('auth-ldp', _udata);
+  ldpnr_create_method := get_keyword ('ldpr-creation-method', _udata);
+  src_folder_tree_handling := get_keyword ('folder-tree', _udata);
+  start_url := get_keyword ('start_url', _udata); 
+
+  -- remove the leading directories from the _url of the crawled LDPC / LDPNR, to limit the creation of empty LDPCs
+  -- we use the last directory from the start_url, but remove all parent directories    
+  if (ends_with (start_url, '/')) start_url_processed := subseq (start_url, 0, length (start_url) - 1); -- trim the last '/' from start_url
+  if (strcontains (start_url_processed, '/'))
+  {
+    i := strrchr (start_url_processed, '/');
+    -- leave only the parent directories in start_url_processed
+    start_url_processed := subseq (start_url_processed, 0, i + 1);
+    -- remove them from _url
+    _url := subseq (_url, length (start_url_processed));
+  }
+
+  declare rc, isDir int;
+  isDir := ends_with (_url, '/');
+
+  if (src_folder_tree_handling = 'recreate') -- if we want to recreate the source folder structure
+  {
+    if (isDir) -- for directories
+    {
+      rc := WS.WS.LDP_STORE__LDPC_CREATE (_root, _url, ldpc_credentials);
+
+      -- TO DO: Fail quietly - just log message?
+      if (rc < 0)
+      {
+        signal ('CRAWL', 'LDP_STORE: LDPC creation failed', 'CWLXX');
+      }
+      else
+      {
+        -- add this to 'Retrieved Sites' (WS.WS.VFS_URL database table)
+        insert soft WS.WS.VFS_URL (VU_HOST, VU_URL, VU_CHKSUM, VU_CPTIME, VU_ETAG, VU_ROOT)
+            values (_host, _url, md5 (_content), now (), _s_etag, _root);
+        if (row_count () = 0)
+          update WS.WS.VFS_URL set VU_CHKSUM = md5 (_content), VU_CPTIME = now (), VU_ETAG = _s_etag where
+              VU_HOST = _host and VU_URL = _url and VU_ROOT = _root;
+      }
+    }
+    else -- for files
+    {
+      rc := WS.WS.LDP_STORE__LDPNR_CREATE (_content, _c_type, _root, _url, ldpc_credentials, ldpnr_create_method);
+
+      -- TO DO: Fail quietly - just log message?
+      if (rc < 0)
+      {
+        signal ('CRAWL', 'LDP_STORE: LDPNR creation failed', 'CWLXX');
+      }
+      else
+      {
+        -- add this to 'Retrieved Sites' (WS.WS.VFS_URL database table)
+        insert soft WS.WS.VFS_URL (VU_HOST, VU_URL, VU_CHKSUM, VU_CPTIME, VU_ETAG, VU_ROOT)
+            values (_host, _url, md5 (_content), now (), _s_etag, _root);
+        if (row_count () = 0)
+          update WS.WS.VFS_URL set VU_CHKSUM = md5 (_content), VU_CPTIME = now (), VU_ETAG = _s_etag where
+              VU_HOST = _host and VU_URL = _url and VU_ROOT = _root;
+      }
+    }
+  }
+
+  if (src_folder_tree_handling = 'collapse') -- if we want to store all source files into the same destination LDPC
+  {
+    if (isDir = 0) -- for files
+    {
+      -- we need to change _url so that it contains ONLY the file name
+      -- this is necessary because we want to 'collapse' the source file hierarchy
+      -- and save all source files into the same destination LDPC
+      declare i_last_sep int;      
+      i_last_sep := strrchr (_url, '/');      
+      _url := subseq (_url, i_last_sep + 1);
+
+      rc := WS.WS.LDP_STORE__LDPNR_CREATE (_content, _c_type, _root, _url, ldpc_credentials, ldpnr_create_method);
+
+      -- TO DO: Fail quietly - just log message?
+      if (rc < 0)
+      {
+        signal ('CRAWL', 'LDP_STORE: LDPNR creation failed', 'CWLXX');
+      }
+      else
+      {
+        -- add this to 'Retrieved Sites' (WS.WS.VFS_URL database table)
+        insert soft WS.WS.VFS_URL (VU_HOST, VU_URL, VU_CHKSUM, VU_CPTIME, VU_ETAG, VU_ROOT)
+            values (_host, _url, md5 (_content), now (), _s_etag, _root);
+        if (row_count () = 0)
+          update WS.WS.VFS_URL set VU_CHKSUM = md5 (_content), VU_CPTIME = now (), VU_ETAG = _s_etag where
+              VU_HOST = _host and VU_URL = _url and VU_ROOT = _root;
+      }
+    }
+  }  
+}
+;
+
+create procedure WS.WS.LDP_STORE__LDPC_CREATE (
+  in ldpc_root varchar, -- the root LDP Container, e.g. 'http://fusepool.openlinksw.com/DAV/fusepool/ldp/'  
+  in ldpc_url varchar, -- the URL of the LDPC to be created, e.g. '/DAV/fusepool_staging_area/tuscany/attractions/'
+  in ldp_credentials varchar -- the credentials for LDP, in 'username:password' format
+)
+{
+  declare request_hdr, response_hdr any;
+  declare request_content, request_content_mime_type, response, response_code, target_url varchar;
+  declare ldpc_fullpath, ldpc_parent, ldpc_basename varchar;
+  declare i_last_sep, rc, isLDPC int;
+
+  -- Check if the LDPC already exists
+  isLDPC := WS.WS.LDP_STORE__IS_LDPC (ldpc_root || ldpc_url);
+
+  if (isLDPC = 0) -- LDPC exists, we don't have to do anything
+    return 0;
+  else -- LDPC does not exist, we need to create it
+  {
+    -- Separate 'ldpc_url' to 'ldpc_parent' and 'ldpc_basename' urls
+    ldpc_fullpath := ldpc_url; -- Take the directory URL for modification
+    ldpc_fullpath := subseq (ldpc_fullpath, 0, length (ldpc_fullpath) - 1); -- Strip off trailing /
+
+    if (strcontains (ldpc_fullpath, '/')) -- if the directory has a parent directory
+    {
+      i_last_sep := strrchr (ldpc_fullpath, '/');
+      ldpc_parent := subseq (ldpc_fullpath, 0, i_last_sep + 1); 
+      ldpc_basename := subseq (ldpc_fullpath, i_last_sep + 1); 
+    }
+    else
+    {
+      ldpc_parent := '';
+      ldpc_basename := ldpc_fullpath;
+    }
+
+    -- if the LDPC has a parent container, we need to check if it exists and create it if it doesn't
+    -- this is done with a recursive call to WS.WS.LDP_STORE__LDPC_CREATE()
+    if (ldpc_parent <> '')
+    {
+      rc := WS.WS.LDP_STORE__LDPC_CREATE (ldpc_root, ldpc_parent, ldp_credentials);
+      if (rc < 0)
+      {
+        signal ('CRAWL', 'LDP_STORE: LDPC parent does not exist / creation failed', 'CWLXX');
+        return -1;
+      } -- if the parent container exists / is successfully created, we continue with the creation of the LDPC in question
+    } -- otherwise, there is not parent container and we continue with the creation of the LDPC in question 
+
+    -- we prepare the variables for the LDP calls for LDPC creation
+    request_content := '';
+    request_content_mime_type := 'text/turtle';
+    request_hdr := 'Link: <http://www.w3.org/ns/ldp#BasicContainer>; rel=\'type\'';
+    if (length (ldp_credentials) > 0)
+      request_hdr := request_hdr || '\r\nAuthorization: Basic  ' || encode_base64 (ldp_credentials);
+    request_hdr := request_hdr || '\r\nSlug: ' || ldpc_basename;
+    request_hdr := request_hdr || '\r\nContent-Type: ' || request_content_mime_type;
+
+    response := http_get (ldpc_root || ldpc_parent, response_hdr, 'POST', request_hdr, request_content);
+
+    response_code := WS.WS.FIND_KEYWORD (response_hdr, 'HTTP/1.');
+    response_code := subseq (response_code, strchr (response_code, ' ') + 1, length (response_code));
+    response_code := subseq (response_code, 0, strchr (response_code, ' '));
+
+    if (response_code = '201' or response_code = '204' or response_code = '200')
+      return 0;
+    else
+      return -1;
+  }
+}
+;
+
+-- Tells if the LDPC at the given URL exists, or not.
+-- Sends a GET request and interprets the response.
+create procedure WS.WS.LDP_STORE__IS_LDPC (in ldpc_url varchar)
+{
+  declare response, response_code varchar;
+  declare request_hdr, response_hdr any;
+  declare request_content varchar;
+
+  request_hdr := 'Content-Type: text/turtle';
+  -- request_hdr := 'Accept: text/turtle';
+  request_content := '';
+
+  response := http_get (ldpc_url, response_hdr, 'GET', request_hdr, request_content);
+
+  response_code := WS.WS.FIND_KEYWORD (response_hdr, 'HTTP/1.');
+  response_code := subseq (response_code, strchr (response_code, ' ') + 1, length (response_code));
+  response_code := subseq (response_code, 0, strchr (response_code, ' '));
+
+  if (response_code = '200')
+    return 0;
+  else
+    return -1;
+}
+;
+
+create procedure WS.WS.LDP_STORE__LDPNR_CREATE (
+  in request_content varchar,
+  in request_content_mime_type varchar,
+  in ldpnr_root varchar,
+  in ldpnr_url varchar,
+  in ldp_credentials varchar,
+  in ldpnr_create_method varchar
+)
+{
+  declare request_hdr, response_hdr any;
+  declare response, response_code varchar;
+  declare rc, isLDPC, hasParent, i_last_sep int;
+  declare ldpnr_parent, ldpnr_basename varchar;
+
+  hasParent := 0;
+  request_hdr := 'Content-Type: ' || request_content_mime_type;
+  if (length (ldp_credentials) > 0)
+    request_hdr := request_hdr || '\r\nAuthorization: Basic  ' || encode_base64 (ldp_credentials);
+
+  -- Before creating the non-RDF resource, we need to be sure its parent container exists
+  if (strcontains (ldpnr_url, '/')) -- if the resource has a parent directory
+  {
+    hasParent := 1;
+    i_last_sep := strrchr (ldpnr_url, '/');
+    ldpnr_parent := subseq (ldpnr_url, 0, i_last_sep + 1); 
+    ldpnr_basename := subseq (ldpnr_url, i_last_sep + 1);
+
+    rc := WS.WS.LDP_STORE__LDPC_CREATE (ldpnr_root, ldpnr_parent, ldp_credentials);
+    if (rc < 0)
+    {
+      signal ('CRAWL', 'LDP_STORE: LDPC parent does not exist / creation failed', 'CWLXX');
+      return -1;
+    }
+  }
+
+  if (ldpnr_create_method = 'put')
+  {
+    response := http_get (ldpnr_root || ldpnr_url, response_hdr, 'PUT', request_hdr, request_content);
+  }
+  else
+  {
+    if (hasParent)
+    {
+      declare target varchar;
+      target := ldpnr_root || ldpnr_parent;
+      -- Strip off trailing / from target LDPC (required by Fusepool Transforming LDP Proxy)
+      if (ends_with (target, '/'))
+	target := subseq (target, 0, length(target) - 1);
+      request_hdr := request_hdr || '\r\nAccept: */*\r\nSlug:' || ldpnr_basename;
+      response := http_get (target, response_hdr, 'POST', request_hdr, request_content);
+    }
+    else
+    {
+      declare target varchar;
+      target := ldpnr_root;
+      if (ends_with (target, '/'))
+	target := subseq (target, 0, length (target) - 1);
+      request_hdr := request_hdr || '\r\nAccept: */*\r\nSlug:' || ldpnr_url;
+      response := http_get (target, response_hdr, 'POST', request_hdr, request_content);
+    }
+  }
+
+  response_code := WS.WS.FIND_KEYWORD (response_hdr, 'HTTP/1.');
+  response_code := subseq (response_code, strchr (response_code, ' ') + 1, length (response_code));
+  response_code := subseq (response_code, 0, strchr (response_code, ' '));
+
+  if (response_code = '201' or response_code = '204' or response_code = '200')
+    return 0;
+  else
+    return -1;
+}
+;
 
 create procedure WS.WS.GET_URLS (in _host varchar, in _url varchar, in _root varchar, inout _content varchar, in lev int, in ctype varchar)
 {
@@ -680,23 +971,26 @@ create procedure WS.WS.GET_URLS (in _host varchar, in _url varchar, in _root var
   declare _flw, _nflw, _method, _delete, xp_exp, base, robots, care_of_bot varchar;
   declare _newer datetime;
   declare _own integer;
-  declare frames, _urls_arr, origin_iri, urls any;
+  declare frames, _urls_arr, origin_iri, urls, udata, use_tidy any;
 
   if (WS.WS.SITEMAP_PROCESS (_host, _url, _root, _content, ctype, lev))
     return;
 
   whenever not found goto no_site_rec;
-  select VS_SRC, VS_OTHER, VS_OWN, VS_METHOD, VS_FOLLOW, VS_NFOLLOW, VS_DEL, VS_NEWER, VS_XPATH, VS_DEPTH, VS_URL, VS_ROBOTS, VS_BOT
-      into _d_imgs, _other, _own, _method, _flw, _nflw, _delete, _newer, xp_exp, depth, _start_url, robots, care_of_bot
+  select VS_SRC, VS_OTHER, VS_OWN, VS_METHOD, VS_FOLLOW, VS_NFOLLOW, VS_DEL, VS_NEWER, VS_XPATH, VS_DEPTH, VS_URL, VS_ROBOTS, VS_BOT, deserialize (VS_UDATA)
+      into _d_imgs, _other, _own, _method, _flw, _nflw, _delete, _newer, xp_exp, depth, _start_url, robots, care_of_bot, udata
       from VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
   --dbg_obj_print ('OTHER SITES:', _other);
   if (depth is not null and depth >= 0 and lev > depth)
     return;
   frames := vector ();
+  use_tidy := 'Y';
+  if (isvector (udata) and isstring (get_keyword ('use-tidy', udata)))
+    use_tidy := get_keyword ('use-tidy', udata, 'Y');
   if (__tag (_content) = 193)
     _urls_arr := _content;
   else
-    _urls_arr := WS.WS.FIND_URI (_content, _d_imgs, _host, _url, xp_exp, frames, ctype);
+    _urls_arr := WS.WS.FIND_URI (_content, _d_imgs, _host, _url, xp_exp, frames, ctype, use_tidy);
 
   if (__tag (_urls_arr) = 193)
     _urls_arr_len := length (_urls_arr);
@@ -1079,7 +1373,7 @@ create procedure WS.WS.REPLACE_HREF (in _host varchar, in _url varchar, in _root
 
 
 create procedure WS.WS.FIND_URI (in _content varchar, in _d_imgs varchar,
-    in _host varchar, in _url varchar, in xp_exp varchar, out frames any, in ctype varchar)
+    in _host varchar, in _url varchar, in xp_exp varchar, out frames any, in ctype varchar, in use_tidy varchar := 'Y')
 {
   declare _len, _inx integer;
   declare xe, arr, arr1, ha, sa, ia, fr, ifr, sty, js any;
@@ -1091,7 +1385,7 @@ create procedure WS.WS.FIND_URI (in _content varchar, in _d_imgs varchar,
   if (not isstring (_content) and __tag (_content) <> 185)
     return vector ();
 
-  if (tidy_external () and ctype like 'text/html')
+  if (use_tidy = 'Y' and tidy_external () and ctype like 'text/html')
     _content := tidy_html (_content, 'output-xhtml:yes\r\ntidy-mark:no');
   if (ctype like 'application/%xml' or ctype = 'text/xml')
     _xml_tree := xml_tree (_content, 0);
@@ -1827,7 +2121,7 @@ create procedure WS.WS.VFS_EXTRACT_RDF (in _host varchar, in _root varchar, in _
 
   _graph := get_keyword ('rdf-graph', opts);
   if (length (_graph) = 0)
-  _graph := WS.WS.MAKE_URL (_host, _start_path);
+    _graph := WS.WS.MAKE_URL (_host, url);
   _base := WS.WS.MAKE_URL (_host, url);
 
   commit work;
@@ -1869,6 +2163,7 @@ again:
        strstr (mime_type, 'application/rdf+n3') is not null or
        strstr (mime_type, 'application/rdf+turtle') is not null or
        strstr (mime_type, 'application/turtle') is not null or
+       strstr (mime_type, 'text/turtle') is not null or
        strstr (mime_type, 'application/x-turtle') is not null
       )
         DB.DBA.TTLP (content, _base, _graph);
@@ -1948,16 +2243,18 @@ create procedure WS.WS.SITEMAP_ENSURE_NEW_SITE (in _host varchar, in _root varch
 create procedure WS.WS.SITEMAP_URLS_REGISTER (in _host varchar, in _root varchar, in src_url varchar, inout xp any, in lev int := 0, in sm int := 0, in delta int := 1)
 {
   declare _flw_s, _nflw_s, _url, _img, origin_iri varchar;
-  declare urls, inx any;
+  declare urls, inx, len, dict any;
+  dict := dict_new (1000);
   whenever not found goto no_ini;
   select VS_FOLLOW, VS_NFOLLOW, VS_URL, VS_SRC into _flw_s, _nflw_s, _url, _img
       from VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
   origin_iri := iri_to_id (WS.WS.MAKE_URL (_host, src_url), 1);
-  urls := make_array (length (xp), 'any');
+  len := length (xp);
+  urls := make_array (len, 'any');
   inx := 0;
   foreach (any u in xp) do
     {
-      declare hf, host, url, abs_url varchar;
+      declare hf, host, sch, url, abs_url varchar;
       declare ts datetime;
 
       ts := null;
@@ -1972,12 +2269,18 @@ create procedure WS.WS.SITEMAP_URLS_REGISTER (in _host varchar, in _root varchar
       abs_url := u; -- check spec if sitemap can have relative urls
       hf := WS.WS.PARSE_URI (u);
       host := hf[1];
+      sch := hf [0];
       hf [0] := '';
       hf [1] := '';
       hf [5] := ''; 
       url := WS.WS.VFS_URI_COMPOSE (hf);
-      if (host <> _host)
+      if (host <> _host or sch <> 'http')
+	{
 	url := abs_url;
+	  hf := WS.WS.PARSE_URI (url);
+	  hf [5] := ''; 
+	  url := WS.WS.VFS_URI_COMPOSE (hf);
+	}
       urls [inx] := url;	
       inx := inx + 1;
       if (WS.WS.FOLLOW (_host, _root, url, _flw_s, _nflw_s, _url, _img))
@@ -1988,10 +2291,12 @@ create procedure WS.WS.SITEMAP_URLS_REGISTER (in _host varchar, in _root varchar
 	    {
 	      update WS.WS.VFS_QUEUE set VQ_STAT = 'waiting' where VQ_HOST = _host and VQ_ROOT = _root and VQ_URL = url and VQ_TS < ts;
 	    }
+	  commit work;
+	  dict_put (dict, url, 1);
 	}
     }
   if (delta)
-    delete from WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root and VQ_ORIGIN = origin_iri and not position (VQ_URL, urls);
+    delete from WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root and VQ_ORIGIN = origin_iri and not dict_get (dict, VQ_URL, 0);
   if (length (xp))
     update WS.WS.VFS_SITE set VS_IS_SITEMAP = 1 where VS_HOST = _host and VS_ROOT = _root and VS_IS_SITEMAP = 0;
   commit work;
@@ -2112,7 +2417,7 @@ create procedure WS.WS.SITEMAP_RDF_STORE (in _host varchar, in _url varchar, in 
   use_tidy := 'N';
   if (isvector (udata) and isstring (get_keyword ('use-tidy', udata)))
     use_tidy := get_keyword ('use-tidy', udata, 'N');
-  base := WS.WS.VFS_URI_COMPOSE (vector ('http', _host, _url, '', '', ''));
+  base := WS.WS.MAKE_URL (_host, _url);
   if (not length (graph))  
     graph := base;
   url_ck := _url;

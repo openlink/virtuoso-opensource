@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -67,7 +67,7 @@ public class VirtuosoRepository implements Repository {
 	private DataSource _ds;
 	private ConnectionPoolDataSource _pds;
     
-	boolean useLazyAdd = false;
+	boolean useLazyAdd = true;
 	String defGraph;
 	int prefetchSize = 200;
 	int batchSize = 5000;
@@ -155,7 +155,7 @@ public class VirtuosoRepository implements Repository {
 
 	/**
 	 * Construct a VirtuosoRepository with a specified parameters.
-	 * useLazyAdd will be set to <tt>false</tt>.
+	 * useLazyAdd will be set to <tt>true</tt>.
 	 * 
 	 * @param url_hostlist
 	 *        the Virtuoso JDBC URL connection string or hostlist for poolled connection.
@@ -174,12 +174,12 @@ public class VirtuosoRepository implements Repository {
          *
 	 */
 	public VirtuosoRepository(String url_hostlist, String user, String password, String defGraph) {
-	        this(url_hostlist, user, password, defGraph, false);
+	        this(url_hostlist, user, password, defGraph, true);
 	}
 
 	/**
 	 * Construct a VirtuosoRepository with a specified parameters.
-	 * <tt>useLazyAdd</tt> will be set to <tt>false</tt>.
+	 * <tt>useLazyAdd</tt> will be set to <tt>true</tt>.
 	 * <tt>defGraph</tt> will be set to <tt>"sesame:nil"</tt>.
 	 * 
 	 * @param url_hostlist
@@ -195,7 +195,7 @@ public class VirtuosoRepository implements Repository {
 	 *        the user's password
 	 */
 	public VirtuosoRepository(String url_hostlist, String user, String password) {
-	        this(url_hostlist, user, password, false);
+	        this(url_hostlist, user, password, true);
 	}
 
 	/**

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -119,12 +119,16 @@ create procedure fct_svc () __soap_http 'text/xml'
   accept := http_request_header_full (lines, 'Accept', '*/*');
   accept := DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (accept);
   set http_charset='utf-8';
-  if (tp <> 'text/xml')
+  if (tp <> 'text/xml' and tp <> 'application/json')
     {
       http_status_set (500);
-      return '<error><code>22023</code><message>Invalid content type</message><diagnostics/></error>';
+      http_header ('Content-Type: text/plain\r\n');
+      return 'Invalid content type, supported are: application/json and text/xml';
     }
   cnt := http_body_read ();
+
+  if (tp = 'application/json')
+    cnt := json2xml (string_output_string (cnt));
 
 --  dbg_obj_print ('fct_svc');
 --  dbg_obj_print (string_output_string (cnt));
@@ -132,8 +136,9 @@ create procedure fct_svc () __soap_http 'text/xml'
   declare exit handler for sqlstate '*'
     {
       http_status_set (500);
-      return sprintf ('<error><code>%V</code><message>Error while executing query</message><diagnostics>%V</diagnostics></error>',
+      ret := sprintf ('<error><code>%V</code><message>Error while executing query</message><diagnostics>%V</diagnostics></error>',
 	  __SQL_STATE, __SQL_MESSAGE);
+      goto ret;
     };
   xt := xtree_doc (cnt);
   xslt := xslt (registry_get ('_fct_xslt_') || 'fct_req.xsl', xt);
@@ -148,6 +153,12 @@ create procedure fct_svc () __soap_http 'text/xml'
   if (0 >= timeout or timeout > maxt)
     timeout := maxt;
   ret := fct_svc_exec (xslt, timeout, accept, lines);
+ret:
+  if (tp = 'application/json')
+    {
+      http_header ('Content-Type: application/json\r\n');
+      ret := xml2json (ret);
+    }
   return ret;
 }
 ;

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -140,7 +140,7 @@ class VirtuosoOutputStream extends BufferedOutputStream
 #if JDK_VER >= 12
 	       {
 		 //System.out.println("DV_ARRAY_OF_POINTER");
-		 LinkedList o = (LinkedList)obj;
+		 List o = (List)obj;
 		 int length = o.size();
 		 write(VirtuosoTypes.DV_ARRAY_OF_POINTER);
 		 writeint(length);
@@ -854,6 +854,8 @@ class VirtuosoOutputStream extends BufferedOutputStream
 #if JDK_VER >= 12
       if(obj instanceof LinkedList)
          return VirtuosoTypes.DV_LIST_OF_POINTER;
+       if(obj instanceof ArrayList)
+           return VirtuosoTypes.DV_LIST_OF_POINTER;
 #endif
       if(obj instanceof openlink.util.Vector)
          return VirtuosoTypes.DV_ARRAY_OF_POINTER;

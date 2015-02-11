@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -362,7 +362,7 @@ FCT_LABEL_S (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
   if (__proc_exists ('rdf_resolve_labels_s') is not null)
     {
       declare ret any;
-      ret := rdf_resolve_labels_s (adler32 (lng), vector (x));
+      ret := rdf_resolve_labels_s (adler32 (coalesce (lng, '')), vector (x));
       ret := coalesce (ret[0], '');
       return __ro2sq (ret);
     }
@@ -551,6 +551,20 @@ fct_graph_clause (in tree any)
 }
 ;
 
+create procedure
+fct_named_graph_clause (in tree any)
+{
+  declare xt, xp, inx, s any;
+  inx := 1;
+  s := string_output ();
+  while ((xp := xpath_eval (sprintf ('//query/@graph%d', inx), tree)) is not null)
+    {
+      inx := inx + 1;
+      http (sprintf (' define input:default-graph-uri <%s> ', cast (xp as varchar)), s);
+    }
+  return string_output_string (s);
+}
+;
 create procedure
 fct_post (in tree any, in post any, in lim int, in offs int)
 {
@@ -785,7 +799,7 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
   offs := xpath_eval ('./@offset', tree, 1);
   lim  := xpath_eval ('./@limit', tree, 1);
 
-  http (sprintf (' %s %s %s ', fct_graph_clause (tree), fct_inf_clause (tree), fct_sas_clause (tree)), pre);
+  http (sprintf (' %s %s %s %s ', fct_graph_clause (tree), fct_named_graph_clause (tree), fct_inf_clause (tree), fct_sas_clause (tree)), pre);
 
   mode := fct_get_mode (tree, './@type');
 
@@ -803,8 +817,8 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
 
   if ('list' = mode or 'propval-list' = mode)
     {
-      http (sprintf ('select distinct ?s%d as ?c1 ', this_s), pre);
-      http (sprintf (' order by desc (<LONG::IRI_RANK> (?s%d)) ', this_s), post);
+      http (sprintf ('select ?s%d as ?c1 ', this_s), pre);
+      http (sprintf (' group by (?s%d) order by desc (<LONG::IRI_RANK> (?s%d)) ', this_s, this_s), post);
     }
 
   if ('list-count' = mode)
@@ -815,8 +829,8 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
 
   if ('entities-list' = mode)
     {
-      http (sprintf ('select distinct ?s%d as ?c1 ', this_s), pre);
-      http (sprintf (' order by desc (<LONG::IRI_RANK> (?s%d)) ', this_s), post);
+      http (sprintf ('select ?s%d as ?c1 ', this_s), pre);
+      http (sprintf (' group by (?s%d) order by desc (<LONG::IRI_RANK> (?s%d)) ', this_s, this_s), post);
     }
 
   if ('properties' = mode)

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -309,13 +309,13 @@ it_new_page (index_tree_t * it, dp_addr_t addr, int type, oid_t col_id,
     {
       page_map_t * map = buf->bd_content_map;
       if (!map)
-	buf->bd_content_map = (page_map_t*) resource_get (PM_RC (PM_SZ_1));
+	buf->bd_content_map = (page_map_t*) pm_get (buf, (PM_SZ_1));
       else
 	{
 	  if (map->pm_size > PM_SZ_1)
 	    {
-	      resource_store (PM_RC (map->pm_size), (void*) map);
-	      buf->bd_content_map = (page_map_t *) resource_get (PM_RC (PM_SZ_1));
+	      pm_store (buf, (map->pm_size), (void*) map);
+	      buf->bd_content_map = (page_map_t *) pm_get (buf, (PM_SZ_1));
 	    }
 	}
       pg_map_clear (buf);
@@ -323,7 +323,7 @@ it_new_page (index_tree_t * it, dp_addr_t addr, int type, oid_t col_id,
     }
   else if (buf->bd_content_map)
     {
-      resource_store (PM_RC (buf->bd_content_map->pm_size), (void*) buf->bd_content_map);
+      pm_store (buf, (buf->bd_content_map->pm_size), (void*) buf->bd_content_map);
       buf->bd_content_map = NULL;
     }
 

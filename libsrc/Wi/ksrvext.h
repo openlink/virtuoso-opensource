@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -446,8 +446,8 @@ caddr_t box_wide_as_utf8_char (caddr_t _wide, long wide_len, dtp_t dtp);
 caddr_t box_utf8_string_as_narrow (ccaddr_t _str, caddr_t narrow, long max_len,
     caddr_t _charset);
 extern caddr_t box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest,
-    long utf8_len, long max_wide_len, dtp_t dtp);
-caddr_t box_wide_char_string (caddr_t data, size_t len, dtp_t dtp);
+    long utf8_len, long max_wide_len);
+caddr_t box_wide_char_string (caddr_t data, size_t len);
 caddr_t box_varchar_string (db_buf_t place, int len, dtp_t dtp);
 caddr_t box_cast_to (caddr_t * qst, caddr_t data, dtp_t data_dtp,
     dtp_t to_dtp, ptrlong prec, ptrlong scale, caddr_t * err_ret);
@@ -638,7 +638,7 @@ caddr_t list_to_array (dk_set_t l);
 void dk_set_push (dk_set_t *ret, void *item);
 dk_set_t dk_set_nreverse (dk_set_t set);
 
-#define DV_EXTENSION_OBJ 255
+#define DV_EXTENSION_OBJ 251
 
 #define DO_SET(type, var, set) \
 	{ \

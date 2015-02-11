@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1118,6 +1118,16 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 	break;
       }
 
+    case DV_IRI_ID:
+      {
+	iri_id_t iid = unbox_iri_id (exp);
+	if (iid >= MIN_64BIT_BNODE_IRI_ID)
+	  sprintf_more (text, tlen, fill, "#ib" IIDBOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+	else
+	  sprintf_more (text, tlen, fill, "#i" IIDBOXINT_FMT, (boxint)(iid));
+	break;
+      }
+
     case DV_DOUBLE_FLOAT:
       sprintf_more (text, tlen, fill, "%lg", unbox_double ((caddr_t) exp));
       sc->sc_exp_sqt.sqt_dtp = dtp;
@@ -1813,9 +1823,9 @@ sqlc_expand_remote_cursor (sql_comp_t * sc, ST * tree)
 {
   /* single table select of remote/cluster/col-wise table, add prime key cols */
   ST **n_sel;
-  ST **from = tree->_.select_stmt.table_exp->_.table_exp.from;
-  ST *t1 = from[0]->_.table_ref.table;
-  if (1 == BOX_ELEMENTS (from) && ST_P (t1, TABLE_DOTTED) && !tree->_.select_stmt.table_exp->_.table_exp.group_by)
+  ST **from = tree->_.select_stmt.table_exp ? tree->_.select_stmt.table_exp->_.table_exp.from : NULL;
+  ST *t1 = from ? from[0]->_.table_ref.table : NULL;
+  if (1 == BOX_ELEMENTS_0 (from) && ST_P (t1, TABLE_DOTTED) && !tree->_.select_stmt.table_exp->_.table_exp.group_by)
     {
       dbe_table_t *tb = sch_name_to_table (sc->sc_cc->cc_schema, t1->_.table.name);
       remote_table_t *rt;

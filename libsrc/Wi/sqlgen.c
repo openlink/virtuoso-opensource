@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -348,8 +348,13 @@ int
 sqlg_any_oby_order (df_elt_t * dfe)
 {
   for (dfe = dfe; dfe; dfe = dfe->dfe_prev)
-    if (DFE_TABLE == dfe->dfe_type && dfe->_.table.is_oby_order)
-      return 1;
+    if (DFE_TABLE == dfe->dfe_type)
+      {
+	if (dfe->_.table.is_oby_order)
+	  return 1;
+	if (sqlo_opt_value (dfe->_.table.ot->ot_opts, OPT_INDEX_ORDER))
+	  return 1;
+      }
   return 0;
 }
 
@@ -1595,6 +1600,7 @@ sqlg_hash_source (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * pre_code)
   ref_slots = dk_set_nreverse (ref_slots);
   memcpy (ha_copy, ha, sizeof (hash_area_t));
   ha_copy->ha_slots = (state_slot_t **) dk_set_to_array (ref_slots);
+  ha_copy->ha_non_null = box_copy (ha->ha_non_null);
   ha_copy->ha_key_cols = (dbe_col_loc_t *) box_copy ((caddr_t) ha->ha_key_cols);
   ha_copy->ha_cols = NULL;
   hs->hs_ref_slots = (state_slot_t **) list_to_array (ref_slots);
@@ -1910,7 +1916,7 @@ sqlg_pop_sqs (sql_comp_t * sc, subq_source_t * sqs, data_source_t ** head, dk_se
     qn->src_continuations = NULL;
     if (qn != last)
       sql_node_append (head, qn);
-    if (IS_QN (qn, select_node_input_subq))
+      if (IS_QN (qn, select_node_input_subq) && !((select_node_t*)qn)->sel_subq_inlined)
       {
 	QNCAST (select_node_t, sel, qn);
 	sel->sel_set_ctr = sctr;
@@ -1924,6 +1930,17 @@ sqlg_pop_sqs (sql_comp_t * sc, subq_source_t * sqs, data_source_t ** head, dk_se
   qr->qr_nodes = dk_set_conc (sqr->qr_nodes, qr->qr_nodes);
   sqr->qr_nodes = NULL;
   return last;
+}
+
+int
+sqlg_in_inlined_subq (data_source_t * qn)
+{
+  for (qn = qn; qn; qn = qn_next (qn))
+    {
+      if (IS_QN (qn, select_node_input_subq))
+	return ((select_node_t*)qn)->sel_subq_inlined;
+    }
+  return 0;
 }
 
 int setp_is_high_card (setp_node_t * setp);
@@ -1948,8 +1965,18 @@ sqlg_inline_sqs (sql_comp_t * sc, df_elt_t * dfe, subq_source_t * sqs, data_sour
 	      return sqlg_pop_sqs (sc, sqs, head, pre_code);
 	    }
 	}
-      if (IS_QN (qn, breakup_node_input))
+      if (IS_QN (qn, setp_node_input) && ((setp_node_t*)qn)->setp_is_streaming)
 	{
+	  return sqlg_pop_sqs (sc, sqs, head, pre_code);
+	}
+      if (IS_QN (qn, breakup_node_input) && !sqlg_in_inlined_subq (qn))
+	{
+	  return sqlg_pop_sqs (sc, sqs, head, pre_code);
+	}
+      if (IS_QN (qn, setp_node_input) && ((setp_node_t*)qn)->setp_distinct && !sqlg_in_inlined_subq (qn))
+	{
+	  if (qn_next_qn (qn, (qn_input_fn)skip_node_input))
+	    break;
 	  return sqlg_pop_sqs (sc, sqs, head, pre_code);
 	}
     }
@@ -3439,6 +3466,7 @@ ha_copy (hash_area_t * ha)
   NEW_VARZ (hash_area_t, ha_copy);
   memcpy (ha_copy, ha, sizeof (hash_area_t));
   BOXC (ha_copy->ha_slots);
+  BOXC (ha_copy->ha_non_null);
   BOXC (ha_copy->ha_key_cols);
   ha_copy->ha_cols = NULL;
   return ha_copy;
@@ -4107,6 +4135,11 @@ sqlg_make_sort_nodes (sqlo_t * so, data_source_t ** head, ST ** order_by,
 	      if (AMMSC_USER == go->go_op)
 		setp->setp_any_user_aggregate_gos = 1;
 	    }
+		  else
+		    {
+		      dk_free_box (ua_arglist);
+		      dk_free_box (acc_args);
+		    }
 	}
       END_DO_SET();
     }
@@ -4256,7 +4289,7 @@ sqlg_make_sort_nodes (sqlo_t * so, data_source_t ** head, ST ** order_by,
 		sqlc_add_distinct_node (sc, head, (state_slot_t **) t_list_to_array (out_slots), (long) tb_dfe->dfe_arity, &code,
 		    NULL);
 	}
-	      //dt->_.select_stmt.top = NULL;
+	    /*dt->_.select_stmt.top = NULL; */
     }
 	  if (!is_grouping_sets || !setps->gsu_cont)
     {
@@ -4543,6 +4576,7 @@ sqlo_exp_in_gby (ST * exp, ST ** specs)
 data_source_t *
 sqlg_group_node (sqlo_t * so, data_source_t ** head, df_elt_t * group, df_elt_t * dt_dfe, dk_set_t pre_code)
 {
+  ST **gb_full;
   sql_comp_t * sc = so->so_sc;
   data_source_t * read_node;
   op_table_t * ot = dt_dfe->_.sub.ot;
@@ -4574,10 +4608,12 @@ sqlg_group_node (sqlo_t * so, data_source_t ** head, df_elt_t * group, df_elt_t 
 	    ssl_out[inx] = NULL;
 	}
       END_DO_BOX;
+      gb_full = (ST **) tree->_.select_stmt.table_exp->_.table_exp.group_by_full;
+      if (1 == BOX_ELEMENTS (gb_full))
+	gb_full = (ST **) t_list (1, group->_.setp.specs);
       if (sqlg_distinct_same_as (so, head, group->_.setp.specs,  dt_dfe, pre_code))
 	pre_code = NULL;
-      sqlg_make_sort_nodes (so, head, (ST**) tree->_.select_stmt.table_exp->_.table_exp.group_by_full,
-			    ssl_out,  dt_dfe, 1, pre_code, group, (ST **)tree->_.select_stmt.selection);
+      sqlg_make_sort_nodes (so, head, gb_full, ssl_out, dt_dfe, 1, pre_code, group, (ST **) tree->_.select_stmt.selection);
       so->so_sc->sc_sort_insert_node->setp_card = group->_.setp.gb_card;
       sqlg_cl_multistate_group (so->so_sc);
     }
@@ -4958,6 +4994,12 @@ sqlg_add_breakup_node (sql_comp_t * sc, data_source_t ** head, state_slot_t *** 
 	  state_slot_t * v = ssl_new_inst_variable (sc->sc_cc, "brkc", ssl->ssl_sqt.sqt_dtp);
 	  cv_artm (code, (ao_func_t) box_identity, v, ssl, NULL);
 	  ssl_out[inx] = v;
+	}
+      if (inx >= n_per_set)
+	{
+	  state_slot_t * prev = ssl_out[inx % n_per_set];
+	  if (prev->ssl_dtp != DV_ANY && dtp_canonical[ssl->ssl_dtp] != dtp_canonical[prev->ssl_dtp])
+	    prev->ssl_dtp = DV_ANY;
 	}
     }
   END_DO_BOX;
@@ -5618,6 +5660,10 @@ sqlg_dt_subquery (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query, ST ** tar
   char ord = so->so_sc->sc_order;
   update_node_t * kset = sc->sc_update_keyset;
   state_slot_t * set_no = sc->sc_set_no_ssl;
+  dk_set_t in_nodes = so->so_in_list_nodes;
+  dk_set_t all_list = so->so_all_list_nodes;
+  so->so_in_list_nodes = NULL;
+  so->so_all_list_nodes = NULL;
   sc->sc_update_keyset = NULL;
   sc->sc_set_no_ssl = new_set_no;
   sqlg_set_ts_order (so, dt_dfe);
@@ -5625,6 +5671,8 @@ sqlg_dt_subquery (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query, ST ** tar
   sc->sc_update_keyset = kset;
   sc->sc_set_no_ssl = set_no;
   so->so_sc->sc_order = ord;
+  so->so_in_list_nodes = in_nodes;
+  so->so_all_list_nodes = all_list;
   return qr;
 }
 
@@ -5845,6 +5893,7 @@ sqlg_top_1 (sqlo_t * so, df_elt_t * dfe, state_slot_t ***sel_out_ret)
   inner_cc.cc_query = outer_cc->cc_query;
   so->so_sc->sc_cc = &inner_cc;
   so->so_sc->sc_any_clb = 0;
+  thr_set_tlsf (THREAD_CURRENT_THREAD, sqlc_tlsf);
   dfe_unit_col_loci (dfe);
   DO_SET (df_elt_t *, filler, &so->so_hash_fillers)
     {

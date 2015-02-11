@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -246,7 +246,8 @@ virtodbc_connect (
     TKVList& props,
     int completion)
 {
-  TCHAR szValue[64];
+  TCHAR szValue[256];
+  TCHAR szEncrypt[MAX_PATH];
   TCHAR szUID[MAX_PATH]; /* could be certificate */
   TCHAR szPWD[MAX_PWD_LEN + 1];
   TCHAR szHost[MAX_SERVER_LEN + 1];
@@ -282,6 +283,7 @@ virtodbc_connect (
 
   /* UID */
   props.Get (_T("UID"), szUID, NUMCHARS (szUID));
+  props.Get (_T("Encrypt"), szEncrypt, NUMCHARS (szEncrypt));
 
   /* PWD */
   props.Get (_T("PWD"), szPWD, NUMCHARS (szPWD));
@@ -344,7 +346,7 @@ virtodbc_connect (
   if (con->con_pwd_cleartext == 3)
     {
       /* UID should hold the certificate filename the user selected at login */
-      con->con_encrypt = virt_wide_to_ansi (szUID);
+      con->con_encrypt = virt_wide_to_ansi (szEncrypt);
       szUID[0] = 0;
     }
   else if ((szStr = props.Value (_T("Encrypt"))) != NULL &&

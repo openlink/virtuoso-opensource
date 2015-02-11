@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -585,8 +585,8 @@ dc_mp_insert_copy_any (mem_pool_t * mp, data_col_t * dc, int inx, dbe_column_t *
       db_buf_t rdf_id = mp_dv_rdf_to_db_serial (mp, dv);
       return (caddr_t) rdf_id;
     }
-  if ((DV_STRING == dv[0] || DV_SHORT_STRING_SERIAL == dv[0] || DV_DB_NULL == dv[0]) && col && 'O' == col->col_name[0]
-      && tb_is_rdf_quad (col->col_defined_in) && !f_read_from_rebuilt_database)
+  if ((DV_STRING == dv[0] || DV_SHORT_STRING_SERIAL == dv[0] || DV_DB_NULL == dv[0] || DV_UNAME == dv[0] || DV_SYMBOL == dv[0] || DV_BOX_FLAGS == dv[0]) 
+      && col && 'O' == col->col_name[0] && tb_is_rdf_quad (col->col_defined_in) && !f_read_from_rebuilt_database)
     {
       if (THR_TMP_POOL == mp)
 	SET_THR_TMP_POOL (NULL);
@@ -841,7 +841,7 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
   dk_set_t parts;
   int null_skipped = 0;
   int n_rows, log_needed;
-  mem_pool_t *ins_mp = mem_pool_alloc ();
+  mem_pool_t * ins_mp;
   row_delta_t rd;
   row_delta_t **rds;
   int icol;
@@ -852,6 +852,8 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
   query_instance_t *qi = (query_instance_t *) qst;
   LOCAL_RD (right_rd);
   QI_CHECK_STACK (qi, &qst, INS_STACK_MARGIN);
+  ins_mp = mem_pool_alloc ();
+
   if (dbf_ko_pk && dbf_ko_pk == key->key_table->tb_primary_key->key_id && dbf_ko_key != key->key_id)
     return 0;
   right_rd.rd_temp = right_temp;

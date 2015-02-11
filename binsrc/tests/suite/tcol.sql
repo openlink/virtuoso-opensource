@@ -1,3 +1,23 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 
 
 create table tco (k1 bigint, k2 bigint not null, primary key (k1) column);
@@ -13,7 +33,7 @@ create procedure tco (in i1 int, in n int, in step int, in ck int := 0)
 {
   declare ctr int;
   log_enable (0, 1);
-  for (ctr := 0; ctr < n; ctr := ctr + 1) 
+  for (ctr := 0; ctr < n; ctr := ctr + 1)
     {
       insert into tco values (i1 + ctr * step, i1 + ctr * step);
       if (ck)
@@ -37,7 +57,7 @@ create procedure tcoins (in ak1 any array, in ak2 any array)
 }
 
 
-tcoins (vector (10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110), 
+tcoins (vector (10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 110),
        vector ( 0, 0, 3, 6, 7, 10, 14, 31, 34, 35, 39));
 
 tcoins (vector (91, 92), vector (35, 39));
@@ -397,7 +417,7 @@ tco5a (vector (15001, 15001), vector (15001, 20000), vector (1000, 2000));
 
 select count (*) from tco15 a where not exists (select 1 from tco15 b table option (loop) where a.krld1 = b.krld1 and a.krld2 = b.krld2 and a.kbm = b.kbm);
 
--- dict 
+-- dict
 
 
 tco5 (40000, 42000, 10);
@@ -406,7 +426,7 @@ tco5a (vector (41501, 41503, 41507), vector (41501, 41503, 41507), vector (100, 
 
 
 
--- int delta 
+-- int delta
 
 tco5 (50000, 60000, -5000);
 
@@ -421,7 +441,7 @@ tco5a (vector (50011, 50013, 50301, 50303), vector (50011, 50013, 50301, 50303),
 
 create procedure ce_seq (in ce_type int, in nth int)
 {
-  -- Given a ce type and a sequence number of a value, return value such that the consecutive values make up a ce of the type 
+  -- Given a ce type and a sequence number of a value, return value such that the consecutive values make up a ce of the type
     -- 1. rl 2. bm 3. rld 4. dict 5 int delta 6 vec ;
   if (1 = ce_type)
     return mod (nth, 259);
@@ -508,7 +528,7 @@ create procedure tdatins (in ak1 any array, in ak2 any array)
 }
 
 
-create procedure tdate (in i1 int, in i2 int, 
+create procedure tdate (in i1 int, in i2 int,
        in divisor int := 1, in date_offset int := 0)
 {
 declare ak1, ak2 any array;
@@ -547,7 +567,7 @@ create procedure tacins (in ak1 any array, in ak2 any array)
     }
 }
 
-create procedure tac (in i1 int, in i2 int, 
+create procedure tac (in i1 int, in i2 int,
        in divisor int := 1, in date_offset int := 0)
 {
 declare ak1, ak2 any array;
@@ -567,7 +587,7 @@ declare ak1, ak2 any array;
 
 tac (10000, 20000, 0.5);
 
- 
+
 select count (*) from tac a, tac b where a.k1 = b.k1 and a.k2 like '%22%' option (order, loop);
 
 select count (*) from tac a, tac b where b.k2 = a.k1 and a.k2 like '%22%' option (order, loop);
@@ -730,6 +750,6 @@ create table tch (k1 varchar, k2 varchar, primary key (k1, k2) column);
 
 
 
-create procedure 
+create procedure
 
-create procedure 
+create procedure

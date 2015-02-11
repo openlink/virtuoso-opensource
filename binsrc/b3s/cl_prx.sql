@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -102,7 +102,7 @@ end_loop:;
 	      if ("output-format" = 'rdf' or "output-format" = 'rdf+xml')
 		accept := 'application/rdf+xml';
 	      else if ("output-format" = 'ttl' or "output-format" = 'turtle' or "output-format" = 'n3')
-		accept := 'text/rdf+n3';
+		accept := 'text/turtle';
 	    }
           stat := '00000';
 	  if (get not in ('soft', 'replacing'))

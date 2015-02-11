@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -28,11 +28,7 @@ body {
   font-family: Gill Sans, Verdana, Helvetica, sans-serif;
   font-size: 9pt; text-align: center}
 
-a, a:visited {color: #242;}
 a.describe {margin-right: 6px}
-
-tr:hover {
-  background-color: #ddd;}
 
 pre {
   white-space: pre-wrap;       /* css-3 */
@@ -70,9 +66,9 @@ pre {
 #HD h2 { font-size: 14pt; float: left; margin: 20px 0 0 20px; color: #fff; padding: 0;}
 
 #main_menu {
-  margin: 40px 0; padding: 0;
+  margin: 8px 0; padding: 0;
   float: right;
-/*  clear: right;*/
+  clear: right;
   list-style-type: none;
   list-style-image: none;
   list-style-position: outside;
@@ -125,7 +121,12 @@ li#mnu_settings ul li { }
 
 #hd_l { float: left; clear: left}
 
-#hd_r { float: right; clear: right}
+#hd_r { 
+  float: right; 
+  clear: right; 
+  height: 30px; 
+  padding-right: 15px; 
+  }
 
 #hd_r img { margin: 15px 10px 0 0;
             vertical-align: middle;
@@ -139,9 +140,12 @@ a.logo { margin-left: 10px; float: left;}
 #MD { width: 100%;
       float: left;
       margin-top: 0;
-      background-color: #e9f2f7;
+      background-color: white;
       padding-bottom: 10px;
       margin-left: auto; margin-right: auto;}
+
+#MD tr:hover {
+  background-color: #ddd;}
 
 #MD div#settings {
   margin: 10px;
@@ -536,6 +540,8 @@ div.facet {
 }
 
 .plink_a {margin-left: 1em}
+.sparqlhpv_a {margin-left: 1em}
+.pivotedit_a {margin-left: 0.1em}
 
 div#sparql_link { margin-top: 10px; float: right;}
 div#sparql_link a {
@@ -575,13 +581,17 @@ div#dbg_output {
 
 span.advisory { font-weight: bold; }
 
-span.pivot_pg a,
-span.pivot_qrcode_opts a,
+span.pivot_page_opts a, 
+span.pivot_page_size a, 
 span.pivot_link_opts a { text-decoration: none; }
 
-span.pivot_pg a:hover,
-span.pivot_qrcode_opts a:hover,
+span.pivot_page_opts a:hover,
+span.pivot_page_size a:hover,
 span.pivot_link_opts a:hover { text-decoration: underline; }
+
+span.pivot_page_opts a:disabled,
+span.pivot_page_size a:disabled,
+span.pivot_link_opts a:disabled { color: #7F7F7F; }
 
 div#nav {
     float: left;
@@ -593,8 +603,6 @@ div#nav {
 a#sp_link { font-size: 9pt; font-weight:normal; }
 a.desc_permalink { font-size: 9pt; font-weight: normal }
 
-#qrcode { position:fixed; top:100px; right: 30px; z-index: 0; }
-
 #FT_share { margin: auto; width: 400px}
 
 #fct_form { margin-top: 1ex }
@@ -602,4 +610,3 @@ a.desc_permalink { font-size: 9pt; font-weight: normal }
 .addthis_toolbox { margin: 20px 10px auto; }
 
 #FT_share .addthis_toolbox { margin: 0 }
-

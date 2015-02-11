@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -102,11 +102,15 @@ typedef struct triple_feed_s {
   int *tf_line_no_ptr;		/*!< Pointer to some line number counter somewhere outside, may be NULL */
 } triple_feed_t;
 
+/*! Allocates a do-nothing triple feed. It will become useful when \c tf_cbk_names and corresponding \c tf_cbk_qrs callback queries are set by tf_set_cbk_names() . */
 extern triple_feed_t *tf_alloc (void);
+/*! Frees \c tf . It will not perform final commit. */
 extern void tf_free (triple_feed_t *tf);
 extern void tf_set_cbk_names (triple_feed_t *tf, ccaddr_t *cbk_names);
+/*! Indicates the beginning of a new graph. */
 extern void tf_new_graph (triple_feed_t *tf, caddr_t uri);
 extern caddr_t tf_get_iid (triple_feed_t *tf, caddr_t uri);
+/*! Calls the TRIPLE_FEED_COMMIT callback. */
 extern void tf_commit (triple_feed_t *tf);
 extern void tf_triple (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t o_uri);
 extern void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t obj_sqlval, caddr_t obj_datatype, caddr_t obj_language);
@@ -166,6 +170,7 @@ extern void tf_new_base (triple_feed_t *tf, caddr_t new_base);
 #define TTLP_ALLOW_NQUAD		0x0200	/*!< Enables NQuads syntax but disables TURTLE and TriG */
 #define TTLP_DEBUG_BNODES		0x1000	/*!< Add virtrdf:bnode-base, virtrdf:bnode-row and virtrdf:bnode-label triples for every created blank node. */
 #define TTLP_SNIFFER			0x2000	/*!< Sniffer mode: scan for Turtle fragments in non-Turtle texts. */
+#define TTLP_SNIFFER_COMPLETE		0x8000	/*!< Sniffer mode has ended with an error at the end of text and must be stopped, no more retries. */
 
 #define TTLP_ALLOW_QNAME_A		0x01
 #define TTLP_ALLOW_QNAME_HAS		0x02
@@ -197,12 +202,14 @@ typedef struct ttlp_s
   dk_set_t ttlp_saved_uris;	/*!< Stack that keeps URIs. YACC stack is not used to let us free memory on error */
   dk_set_t ttlp_unused_seq_bnodes;	/*!< A list of bnodes that were allocated for use in lists but not used because lists are terminated before use */
   caddr_t ttlp_base_uri;		/*!< Base URI used to resolve relative URIs of the document and optionally to resolve the relative URI of the graph in "graph CRUD" endpoint */
+  caddr_t ttlp_last_q_save;	/*!< Last \c QNAME_NS, to avoid memory leak */
   caddr_t ttlp_last_complete_uri;	/*!< Last \c QNAME or \c Q_IRI_REF that is expanded and resolved if needed */
   caddr_t ttlp_subj_uri;	/*!< Current subject URI, but it become object URI if ttlp_pred_is_reverse */
   caddr_t ttlp_pred_uri;	/*!< Current predicate URI */
   caddr_t ttlp_obj;		/*!< Current object URI or value */
   caddr_t ttlp_obj_type;	/*!< Current object type URI */
   caddr_t ttlp_obj_lang;	/*!< Current object language mark */
+  char ttlp_triple_is_prepared;	/*!< Flags if some triple is prepared but not fed to ttlp_tf. */
   int ttlp_pred_is_reverse;	/*!< Flag if ttlp_pred_uri is used as reverse, e.g. in 'O is P of S' syntax */
   caddr_t ttlp_formula_iid;	/*!< IRI ID of the blank node of the formula ( '{ ... }' notation of N3 */
   int ttlp_in_trig_graph;	/*!< The parser is inside TriG graph so \c ttlp_inner_namespaces_prefix2iri is in use etc. */
@@ -261,8 +268,12 @@ extern caddr_t ttlp_uri_resolve (ttlp_t *ttlp_arg, caddr_t qname);
 extern caddr_t ttlp_strliteral (ttlp_t *ttlp_arg, const char *sparyytext, int mode, char delimiter);
 extern caddr_t ttl_lex_analyze (caddr_t str, int mode_bits, wcharset_t *query_charset);
 
-extern void ttlp_triple_and_inf (ttlp_t *ttlp_arg, caddr_t o_uri);
-extern void ttlp_triple_l_and_inf (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang);
+extern void ttlp_triple_and_inf_prepare (ttlp_t *ttlp_arg, caddr_t o_uri);
+extern void ttlp_triple_l_and_inf_prepare (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang);
+extern void ttlp_triple_process_prepared (ttlp_t *ttlp_arg);
+#define ttlp_triple_forget_prepared(ttlp_arg) do { (ttlp_arg)->ttlp_triple_is_prepared = 0; } while (0)
+extern void ttlp_triple_and_inf_now (ttlp_t *ttlp_arg, caddr_t o_uri, int is_reverse);
+extern void ttlp_triple_l_and_inf_now (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang, int is_reverse);
 extern void ttlp_triples_for_bnodes_debug (ttlp_t *ttlp_arg, caddr_t bnode_iid, int lineno, caddr_t label);
 
 #define RDFXML_COMPLETE		0
@@ -326,5 +337,8 @@ extern caddr_t uriqa_dynamic_local_replace_nocheck (caddr_t name, client_connect
 caddr_t mdigest5 (caddr_t str);
 boxint rdf_new_iri_id (lock_trx_t * lt, char ** value_seq_ret, int nth, query_instance_t * qi);
 int rdf_graph_is_in_enabled_repl (caddr_t * qst, iri_id_t q_iid, int *answer_is_one_for_all_ret);
+
+#define SPLIT_MODE_TTL 0
+#define SPLIT_MODE_XML 1
 
 #endif

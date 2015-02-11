@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -62,7 +62,7 @@ int ext_free_count (extent_t * ext);
 extent_t * em_new_extent (extent_map_t * em, int type, dp_addr_t extends);
 dp_addr_t em_try_get_dp (extent_map_t * em, int pg_type, dp_addr_t near);
 dp_addr_t em_new_dp_1 (extent_map_t * em, int ext_type, dp_addr_t near);
-
+extern int32 c_dense_page_allocation;
 
 int
 fd_extend (dbe_storage_t * dbs, int fd, int n_pages)
@@ -1097,7 +1097,7 @@ em_new_dp (extent_map_t * em, int type, dp_addr_t near, int * hold)
   else if (EXT_BLOB == type)
     dp = em_new_blob (em, near);
   else
-    dp = em_new_dp_1 (em, type, near);
+    dp = em_new_dp_1 (em, type, c_dense_page_allocation ? DP_ANY : near);
   if (EXT_INDEX == type && em != em->em_dbs->dbs_extent_map)
     sethash (DP_ADDR2VOID(dp), em->em_uninitialized, (void*) 1);
   em_printf ((" alloc L=%d t=%d\n", dp, type));

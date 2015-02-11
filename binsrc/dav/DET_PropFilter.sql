@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -134,10 +134,10 @@ create function "PropFilter_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts
   if (not (isstring (pfc_spath)))
     {
       if (0 > "PropFilter_GET_CONDITION" (detcol_id, pfc_spath, pfc_name, pfc_value))
-	{
-	  -- dbg_obj_princ ('broken filter - no items');
-	  return -1;
-	}
+  {
+    -- dbg_obj_princ ('broken filter - no items');
+    return -1;
+  }
     }
   if (1 <> length(path_parts) or ('' = path_parts[0]))
     {
@@ -154,7 +154,7 @@ create function "PropFilter_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts
         PROP_NAME = pfc_name and PROP_TYPE = 'R' and "PropFilter_NORM" (PROP_VALUE) = pfc_value
       do
         {
-	  -- dbg_obj_princ ('hit (no fixed orig_id): ', RES_ID);
+    -- dbg_obj_princ ('hit (no fixed orig_id): ', RES_ID);
           hitlist := vector_concat (hitlist, vector (RES_ID));
         }
     }
@@ -166,7 +166,7 @@ create function "PropFilter_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts
         PROP_NAME = pfc_name and PROP_TYPE = 'R' and "PropFilter_NORM" (PROP_VALUE) = pfc_value
       do
         {
-	  -- dbg_obj_princ ('hit (fixed orig_id): ', RES_ID);
+    -- dbg_obj_princ ('hit (fixed orig_id): ', RES_ID);
           hitlist := vector_concat (hitlist, vector (RES_ID));
         }
     }
@@ -206,12 +206,12 @@ create function "PropFilter_DAV_AUTHENTICATE_HTTP" (in id any, in what char(1), 
   if (isinteger (a_uid))
     {
       if (a_uid < 0)
-	return a_uid;
+  return a_uid;
      if (a_uid = 1) -- Anonymous FTP
-	{
+  {
           a_uid := http_nobody_uid ();
-	  a_gid := http_nogroup_gid ();
-	}
+    a_gid := http_nogroup_gid ();
+  }
     }
   if (not DAV_CHECK_PERM (pperms, req, a_uid, a_gid, pgid, puid))
     return -13;
@@ -366,28 +366,28 @@ create function "PropFilter_DAV_DIR_SINGLE" (in id any, in what char(0), in path
         }
       else
         {
-	  declare pfc_spath, pfc_name, pfc_value varchar;
+    declare pfc_spath, pfc_name, pfc_value varchar;
           declare namesakes_no integer;
-	  if (0 > "PropFilter_GET_CONDITION" (id[1], pfc_spath, pfc_name, pfc_value))
-	    {
-	      -- dbg_obj_princ ('broken filter - bad id in DIR_SINGLE');
-	      return -1;
-	    }
+    if (0 > "PropFilter_GET_CONDITION" (id[1], pfc_spath, pfc_name, pfc_value))
+      {
+        -- dbg_obj_princ ('broken filter - bad id in DIR_SINGLE');
+        return -1;
+      }
           select count(1) into namesakes_no
-	  from WS.WS.SYS_DAV_RES r2 inner join WS.WS.SYS_DAV_PROP p2 on (r2.RES_ID = p2.PROP_PARENT_ID)
-	  where r2.RES_NAME = r1_RES_NAME and (r2.RES_FULL_PATH between pfc_spath and DAV_COL_PATH_BOUNDARY (pfc_spath)) and
-	    p2.PROP_NAME = pfc_name and p2.PROP_TYPE = 'R' and "PropFilter_NORM" (p2.PROP_VALUE) = pfc_value;
-	  if (0 = namesakes_no)
-	    return -1;
-	  if (1 < namesakes_no)
-	    merged := "PropFilter_FNMERGE" (r1_RES_NAME, RES_ID);
-	  else
-	    merged := r1_RES_NAME;
+    from WS.WS.SYS_DAV_RES r2 inner join WS.WS.SYS_DAV_PROP p2 on (r2.RES_ID = p2.PROP_PARENT_ID)
+    where r2.RES_NAME = r1_RES_NAME and (r2.RES_FULL_PATH between pfc_spath and DAV_COL_PATH_BOUNDARY (pfc_spath)) and
+      p2.PROP_NAME = pfc_name and p2.PROP_TYPE = 'R' and "PropFilter_NORM" (p2.PROP_VALUE) = pfc_value;
+    if (0 = namesakes_no)
+      return -1;
+    if (1 < namesakes_no)
+      merged := "PropFilter_FNMERGE" (r1_RES_NAME, RES_ID);
+    else
+      merged := r1_RES_NAME;
         }
 --                   0                                                       1    2     3
       return vector (DAV_CONCAT_PATH (DAV_SEARCH_PATH (id[1], 'C'), merged), 'R', clen, RES_MOD_TIME,
 --       4   5          6          7          8            9         10
-	 id, RES_PERMS, RES_GROUP, RES_OWNER, RES_CR_TIME, RES_TYPE, merged);
+   id, RES_PERMS, RES_GROUP, RES_OWNER, RES_CR_TIME, RES_TYPE, merged);
     }
   return -1;
 }
@@ -429,7 +429,7 @@ create function "PropFilter_DAV_DIR_LIST" (in detcol_id any, in path_parts any, 
         {
           merged := "PropFilter_FNMERGE" (RES_NAME, RES_ID);
           prev_is_patched := 1; -- The current one is with merging for sure.
-	  -- dbg_obj_princ ('Suspicious -- made merged');
+    -- dbg_obj_princ ('Suspicious -- made merged');
         }
       else if (RES_NAME = prev_raw_name)
         {
@@ -437,12 +437,12 @@ create function "PropFilter_DAV_DIR_LIST" (in detcol_id any, in path_parts any, 
           if (not prev_is_patched) -- The first record in a sequence of namesakes is written w/o merging, go fix it
             {
               declare prev_id integer;
-	      declare prev_merged varchar;
+        declare prev_merged varchar;
               prev_id := res[reslen-1][4][2];
               prev_merged := "PropFilter_FNMERGE" (RES_NAME, prev_id);
               res[reslen-1][10] := prev_merged;
               res[reslen-1][0] := DAV_CONCAT_PATH (detcol_path, prev_merged);
-	      -- dbg_obj_princ ('Both current and prev namesake are merged', RES_ID, prev_id);
+        -- dbg_obj_princ ('Both current and prev namesake are merged', RES_ID, prev_id);
             }
           prev_is_patched := 1; -- The current one is with merging for sure.
         }
@@ -455,7 +455,7 @@ create function "PropFilter_DAV_DIR_LIST" (in detcol_id any, in path_parts any, 
 --                                               0                                      1    2     3
       res := vector_concat (res, vector (vector (DAV_CONCAT_PATH (detcol_path, merged), 'R', clen, RES_MOD_TIME,
 --       4                                              5          6          7          8            9         10
-	 vector (UNAME'PropFilter', detcol_id, RES_ID), RES_PERMS, RES_GROUP, RES_OWNER, RES_CR_TIME, RES_TYPE, merged ) ) );
+   vector (UNAME'PropFilter', detcol_id, RES_ID), RES_PERMS, RES_GROUP, RES_OWNER, RES_CR_TIME, RES_TYPE, merged ) ) );
       prev_raw_name := RES_NAME;
       reslen := reslen + 1;
     }
@@ -512,7 +512,7 @@ order by RES_NAME, RES_ID',
         {
           merged := "PropFilter_FNMERGE" (orig_name, orig_id);
           prev_is_patched := 1; -- The current one is with merging for sure.
-	  -- dbg_obj_princ ('Suspicious -- made merged');
+    -- dbg_obj_princ ('Suspicious -- made merged');
         }
       else if (orig_name = prev_raw_name)
         {
@@ -520,12 +520,12 @@ order by RES_NAME, RES_ID',
           if (not prev_is_patched) -- The first record in a sequence of namesakes is written w/o merging, go fix it
             {
               declare prev_id integer;
-	      declare prev_merged varchar;
+        declare prev_merged varchar;
               prev_id := execrows[reslen-1][4][2];
               prev_merged := "PropFilter_FNMERGE" (orig_name, prev_id);
               execrows[reslen-1][10] := prev_merged;
               execrows[reslen-1][0] := DAV_CONCAT_PATH (detcol_path, prev_merged);
-	      -- dbg_obj_princ ('Both current and prev namesake are merged', orig_id, prev_id);
+        -- dbg_obj_princ ('Both current and prev namesake are merged', orig_id, prev_id);
             }
           prev_is_patched := 1; -- The current one is with merging for sure.
         }
@@ -734,9 +734,39 @@ create function "PropFilter_CONFIGURE" (
   in id integer,
   in params any)
 {
+  if (not isnull ("PropFilter_VERIFY" (DB.DBA.DAV_SEARCH_PATH (id, 'C'), params)))
+    return -38;
+
   DB.DBA.PropFilter__paramSet (id, 'C', 'SearchPath', get_keyword ('SearchPath', params), 0);
   DB.DBA.PropFilter__paramSet (id, 'C', 'PropName', get_keyword ('PropName', params), 0);
   DB.DBA.PropFilter__paramSet (id, 'C', 'PropValue', get_keyword ('PropValue', params), 0);
+
+  -- set DET Type Value
+  DB.DBA.PropFilter__paramSet (id, 'C', ':virtdet', DB.DBA.PropFilter__detName (), 0, 0, 0);
+}
+;
+
+create function "PropFilter_VERIFY" (
+  in path varchar,
+  in params any)
+{
+  -- dbg_obj_princ ('PropFilter_VARIFY (', path, params, ')');
+  declare exit handler for sqlstate '*'
+  {
+    return __SQL_MESSAGE;
+  };
+
+  VALIDATE.DBA.validate (get_keyword ('SearchPath', params), vector ('name', 'Search Path', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+  VALIDATE.DBA.validate (get_keyword ('PropName', params), vector ('name', 'Property Name', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+  VALIDATE.DBA.validate (get_keyword ('PropValue', params), vector ('name', 'Property Value', 'class', 'varchar', 'minLength', 1, 'maxLength', 255));
+
+  return null;
+}
+;
+
+create function DB.DBA.PropFilter__detName ()
+{
+  return UNAME'PropFilter';
 }
 ;
 
@@ -756,7 +786,7 @@ create function DB.DBA.PropFilter__paramSet (
     _propValue := serialize (_propValue);
 
   if (_encrypt)
-    _propValue := pwd_magic_calc ('s3', _propValue);
+    _propValue := pwd_magic_calc (DB.DBA.PropFilter__detName (), _propValue);
 
   if (_prefixed)
     _propName := 'virt:PropFilter-' || _propName;

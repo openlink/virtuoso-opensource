@@ -9,7 +9,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -702,12 +702,13 @@ int blobio_inited = 0;
 void
 blobio_init (void)
 {
-  macro_char_func *rt;
+  macro_char_func *rt, *rrt;
   if (blobio_inited)
     return;
   blobio_inited = 1;
 
   rt = get_readtable ();
+  rrt = get_rpcreadtable ();
   PrpcSetWriter (DV_BLOB_HANDLE, (ses_write_func) bh_serialize);
   rt[DV_BLOB_HANDLE] = (macro_char_func) bh_deserialize;
   PrpcSetWriter (DV_BLOB_XPER_HANDLE, (ses_write_func) bh_serialize_xper);
@@ -715,23 +716,23 @@ blobio_init (void)
   PrpcSetWriter (DV_BLOB_WIDE_HANDLE, (ses_write_func) bh_serialize_wide);
   rt[DV_BLOB_WIDE_HANDLE] = (macro_char_func) bh_deserialize_wide;
   PrpcSetWriter (DV_DATETIME, (ses_write_func) datetime_serialize);
-  rt[DV_DATETIME] = (macro_char_func) datetime_deserialize;
+  rrt[DV_DATETIME] = rt[DV_DATETIME] = (macro_char_func) datetime_deserialize;
   dt_init ();
 
   PrpcSetWriter (DV_NUMERIC, (ses_write_func) numeric_serialize);
-  rt[DV_NUMERIC] = (macro_char_func) numeric_deserialize;
+  rrt[DV_NUMERIC] = rt[DV_NUMERIC] = (macro_char_func) numeric_deserialize;
   PrpcSetWriter (DV_IGNORE, (ses_write_func) ign_serialize);
   rt[DV_IGNORE] = (macro_char_func) ign_deserialize;
   numeric_init ();
 
   PrpcSetWriter (DV_BIN, (ses_write_func) print_bin_string);
-  rt[DV_BIN] = (macro_char_func) box_read_bin_string;
-  rt[DV_LONG_BIN] = (macro_char_func) box_read_long_bin_string;
+  rrt[DV_BIN] = rt[DV_BIN] = (macro_char_func) box_read_bin_string;
+  rrt[DV_LONG_BIN] = rt[DV_LONG_BIN] = (macro_char_func) box_read_long_bin_string;
 
   PrpcSetWriter (DV_WIDE, (ses_write_func) wide_serialize);
   PrpcSetWriter (DV_LONG_WIDE, (ses_write_func) wide_serialize);
-  rt[DV_WIDE] = (macro_char_func) box_read_wide_string;
-  rt[DV_LONG_WIDE] = (macro_char_func) box_read_long_wide_string;
+  rrt[DV_WIDE] = rt[DV_WIDE] = (macro_char_func) box_read_wide_string;
+  rrt[DV_LONG_WIDE] = rt[DV_LONG_WIDE] = (macro_char_func) box_read_long_wide_string;
   rt[DV_COMPOSITE] = (macro_char_func) box_read_composite;
   PrpcSetWriter (DV_COMPOSITE, (ses_write_func) print_composite);
   dk_mem_hooks (DV_COMPOSITE, comp_copy, comp_destroy, 0);

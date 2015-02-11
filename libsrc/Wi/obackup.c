@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1102,16 +1102,18 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
   dbs_write_page_set (dbs, dbs->dbs_incbackup_set);
   LEAVE_DBS (dbs);
 
-//  DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
-//    {
-//    if (dbs->dbs_slices)
-//      {
-//#ifdef OBACKUP_TRACE
-//  fprintf (obackup_trace, "\n\n\DBS: %s\n", dbs->dbs_name);
-//#endif
-//      }
-//    }
-//  END_DO_SET();
+#if 0
+  DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
+  {
+    if (dbs->dbs_slices)
+      {
+#ifdef OBACKUP_TRACE
+	fprintf (obackup_trace, "\n\n\DBS: %s\n", dbs->dbs_name);
+#endif
+      }
+  }
+  END_DO_SET ();
+#endif
 
   if (obackup_trace)
     {
@@ -1432,6 +1434,7 @@ bif_backup_online_header_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
 
   memcpy (ctx->octx_file_prefix, fileprefix, strlen (fileprefix));
   ctx->octx_num = num;
+  ctx->octx_backup_patha = backup_patha;
 
   fd = backup_context_increment (ctx,1);
   if (fd < 0)

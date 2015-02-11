@@ -7,7 +7,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2014 OpenLink Software
+#  Copyright (C) 1998-2015 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -98,13 +98,13 @@ export LOGFILE
 . $VIRTUOSO_TEST/testlib.sh
 # some OS-es print line even not found
 #run_tests_in_parallel=`which parallel | wc -l`
-parallel 2> /dev/null
-if [ $? -ne 0 ]
-then
-    run_tests_in_parallel=0
-else
-    run_tests_in_parallel=1
-fi
+#parallel 2> /dev/null
+#if [ $? -ne 0 ]
+#then
+    #run_tests_in_parallel=0
+#else
+    #run_tests_in_parallel=1
+#fi
 run_tests_in_parallel=0
 
 #

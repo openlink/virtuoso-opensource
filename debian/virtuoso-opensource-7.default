@@ -1,0 +1,15 @@
+# Defaults for the virtuoso initscript, from virtuoso-opensource
+
+# This is the directory from where the database files are
+# placed, defined by a relative path in the configfile
+DBPATH=/var/lib/virtuoso-opensource-7/db
+
+# Please edit /etc/virtuoso-opensource-7.0/virtuoso.ini first
+# Removing the +wait breaks the init script!
+DAEMON_OPTS="+wait +configfile /etc/virtuoso-opensource-7/virtuoso.ini"
+
+# Remember to change passwords right after startup.
+# Read README.Debian for information on how to do so.
+
+# Set to 'yes' to start virtuoso, set to 'no' otherwise
+RUN=yes

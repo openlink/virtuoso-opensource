@@ -1,15 +1,18 @@
-This package was debianized by OpenLink Virtuoso Maintainer
-<vos.admin@openlinksw.com> on Wed, 08 Oct 2008 17:10:32 +0100.
+This package was debianized by:
 
-It was downloaded from <http://sourceforge.net/projects/virtuoso/>
+    Tim Haynes <thaynes@openlinksw.com on Tue Feb  3 12:37:02 CET 2015
 
-Upstream Author(s):
+It was downloaded from:
+
+    https://github.com/openlink/virtuoso-opensource
+
+Upstream Authors:
 
     OpenLink Virtuoso Maintainer <vos.admin@openlinksw.com>
 
 Copyright:
 
-    <Copyright (C) 1998-2014 OpenLink Software>
+    Copyright (C) 1998-2015 OpenLink Software
 
 License:
 
@@ -26,11 +29,1385 @@ License:
     along with this package; if not, write to the Free Software
     Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
 
-On Debian systems, the complete text of the GNU General
-Public License can be found in `/usr/share/common-licenses/GPL'.
+    OpenSSL exemption
+    -----------------
 
-The Debian packaging is (C) 2008-2014 OpenLink Software
-<vos.admin@openlinksw.com> and is licensed under the GPL, see above.
+    This project may be compiled/linked with the OpenSSL library. If so, the
+    following exemption is added to the above license:
 
-# Please also look if there are files or directories which have a
-# different copyright/license attached and list them here.
+        In addition, as a special exemption, OpenLink Software gives
+        permission to link the code of its release of Virtuoso with the
+        OpenSSL project's "OpenSSL" library (or with modified versions
+        of it that use the same license as the "OpenSSL" library), and
+        distribute the linked executables. You must obey the GNU General
+        Public License in all respects for all of the code used other
+        than "OpenSSL".
+
+
+    Client Protocol Driver exemptions
+    ---------------------------------
+
+        In addition, as a special exemption, OpenLink Software gives
+        permission to use the unmodified client libraries (ODBC, JDBC,
+        ADO.NET, OleDB, Jena, Sesame and Redland providers) in your own
+        application whether open-source or not, with no obligation to use
+        the GPL on the resulting application. In all other respects you
+        must abide by the terms of the GPL.
+
+    On Debian systems, the complete text of the GNU General
+    Public License version 2 can be found in `/usr/share/common-licenses/GPL-2'.
+
+Additional copyrights:
+
+    OpenLink Software Virtuso Open-Source Edition (VOS) contains
+    included or optional functionalities for which the copyright statements
+    are listed in CREDITS and reproduced below.
+
+    OpenSSL
+    <http://www.openssl.org/>
+    
+        This product includes software developed by the OpenSSL Project for use
+        in the OpenSSL Toolkit.
+    
+        This product includes cryptographic software written by Eric Young
+        (eay@cryptsoft.com).
+    
+        This product includes software written by Tim Hudson
+        (tjh@cryptsoft.com)
+    
+        OpenSSL is distributed under the terms of the OpenSSL License:
+        <http://www.openssl.org/source/license.html>
+
+        Copyright (c) 1998-2008 The OpenSSL Project.  All rights reserved.
+       
+        Redistribution and use in source and binary forms, with or without
+        modification, are permitted provided that the following conditions
+        are met:
+       
+        1. Redistributions of source code must retain the above copyright
+           notice, this list of conditions and the following disclaimer.
+       
+        2. Redistributions in binary form must reproduce the above copyright
+           notice, this list of conditions and the following disclaimer in
+           the documentation and/or other materials provided with the
+           distribution.
+       
+        3. All advertising materials mentioning features or use of this
+           software must display the following acknowledgment:
+           "This product includes software developed by the OpenSSL Project
+           for use in the OpenSSL Toolkit. (http://www.openssl.org/)"
+       
+        4. The names "OpenSSL Toolkit" and "OpenSSL Project" must not be used to
+           endorse or promote products derived from this software without
+           prior written permission. For written permission, please contact
+           openssl-core@openssl.org.
+       
+        5. Products derived from this software may not be called "OpenSSL"
+           nor may "OpenSSL" appear in their names without prior written
+           permission of the OpenSSL Project.
+       
+        6. Redistributions of any form whatsoever must retain the following
+           acknowledgment:
+           "This product includes software developed by the OpenSSL Project
+           for use in the OpenSSL Toolkit (http://www.openssl.org/)"
+       
+        THIS SOFTWARE IS PROVIDED BY THE OpenSSL PROJECT ``AS IS'' AND ANY
+        EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+        IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+        PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE OpenSSL PROJECT OR
+        ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+        SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+        NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+        LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+        HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+        STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+        ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+        OF THE POSSIBILITY OF SUCH DAMAGE.
+       
+        This product includes cryptographic software written by Eric Young
+        (eay@cryptsoft.com).  This product includes software written by Tim
+        Hudson (tjh@cryptsoft.com).
+       
+    
+        As cryptographic software, OpenSSL may be subject to export
+        restrictions: <http://www.openssl.org/support/faq.html#LEGAL1>
+    
+    
+    Tidy - HTML parser and pretty printer
+    <http://www.w3.org/People/Raggett/tidy/>
+    
+        This product includes Tidy developed by the World Wide Web Consortium.
+    
+        Tidy is distributed under the terms of the W3C License:
+        <http://tidy.sourceforge.net/license.html>
+
+        Copyright (c) 1998-2003 World Wide Web Consortium
+        (Massachusetts Institute of Technology, European Research 
+        Consortium for Informatics and Mathematics, Keio University).
+        All Rights Reserved.
+        
+        This software and documentation is provided "as is," and
+        the copyright holders and contributing author(s) make no
+        representations or warranties, express or implied, including
+        but not limited to, warranties of merchantability or fitness
+        for any particular purpose or that the use of the software or
+        documentation will not infringe any third party patents,
+        copyrights, trademarks or other rights. 
+        
+        The copyright holders and contributing author(s) will not be held
+        liable for any direct, indirect, special or consequential damages
+        arising out of any use of the software or documentation, even if
+        advised of the possibility of such damage.
+        
+        Permission is hereby granted to use, copy, modify, and distribute
+        this source code, or portions hereof, documentation and executables,
+        for any purpose, without fee, subject to the following restrictions:
+        
+        1. The origin of this source code must not be misrepresented.
+        2. Altered versions must be plainly marked as such and must
+           not be misrepresented as being the original source.
+        3. This Copyright notice may not be removed or altered from any
+           source or altered source distribution.
+         
+        The copyright holders and contributing author(s) specifically
+        permit, without fee, and encourage the use of this source code
+        as a component for supporting the Hypertext Markup Language in
+        commercial products. If you use this source code in a product,
+        acknowledgment is not required but would be appreciated.
+    
+    
+    PCRE
+    <http://www.pcre.org/>
+    
+        This product includes the Perl-Compatible Regular-Expression Library
+        (PCRE) by Phillip Hazel.
+    
+        PCRE is distributed under the terms of the BSD license:
+        <http://www.pcre.org/license.txt>
+
+        PCRE LICENCE
+        ------------
+        
+        PCRE is a library of functions to support regular expressions whose syntax
+        and semantics are as close as possible to those of the Perl 5 language.
+        
+        Release 8 of PCRE is distributed under the terms of the "BSD" licence, as
+        specified below. The documentation for PCRE, supplied in the "doc"
+        directory, is distributed under the same terms as the software itself.
+        
+        The basic library functions are written in C and are freestanding. Also
+        included in the distribution is a set of C++ wrapper functions.
+        
+        
+        THE BASIC LIBRARY FUNCTIONS
+        ---------------------------
+        
+        Written by:       Philip Hazel
+        Email local part: ph10
+        Email domain:     cam.ac.uk
+        
+        University of Cambridge Computing Service,
+        Cambridge, England.
+        
+        Copyright (c) 1997-2009 University of Cambridge
+        All rights reserved.
+        
+        
+        THE C++ WRAPPER FUNCTIONS
+        -------------------------
+        
+        Contributed by:   Google Inc.
+        
+        Copyright (c) 2007-2008, Google Inc.
+        All rights reserved.
+        
+        
+        THE "BSD" LICENCE
+        -----------------
+        
+        Redistribution and use in source and binary forms, with or without
+        modification, are permitted provided that the following conditions are met:
+        
+            * Redistributions of source code must retain the above copyright notice,
+              this list of conditions and the following disclaimer.
+        
+            * Redistributions in binary form must reproduce the above copyright
+              notice, this list of conditions and the following disclaimer in the
+              documentation and/or other materials provided with the distribution.
+        
+            * Neither the name of the University of Cambridge nor the name of Google
+              Inc. nor the names of their contributors may be used to endorse or
+              promote products derived from this software without specific prior
+              written permission.
+        
+        THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+        AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+        IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+        ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+        LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+        CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+        SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+        INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+        CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+        ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+        POSSIBILITY OF SUCH DAMAGE.
+    
+    
+    OAT
+    <http://sourceforge.net/projects/oat/>
+    
+        Virtuoso uses the OpenLink AJAX Toolkit (OAT) in the Data Space
+        application suite, distributable under the terms of the GNU Public
+        License v2: <http://www.gnu.org/copyleft/gpl.html>
+    
+    
+    SHA1 Javascript
+    
+        Virtuoso uses a Javsscript implementation of the Secure Hash Algorithm
+        (SHA1) as defined in FIPS PUB 180-1, written by Paul Johnston
+    
+        SHA1 is distributable under the terms of the BSD license
+        <http://pajhome.org.uk/crypt/md5>
+    
+    
+    Perl
+    <http://www.perl.com/>
+    
+        Virtuoso may be linked against libperl.so to provide a Perl hosting
+        environment.
+    
+        Perl is distributed under the terms of the Artistic License:
+        <http://www.perl.com/language/misc/Artistic.html>
+    
+    
+    Python
+    <http://www.python.org>
+    
+        Virtuoso may be linked against libpython.so to provide a Python hosting
+        environment.
+    
+        Python is distributed under the terms of the Python License:
+        <http://www.python.org/psf/license/>
+
+        PYTHON SOFTWARE FOUNDATION LICENSE VERSION 2
+        --------------------------------------------
+        
+        1. This LICENSE AGREEMENT is between the Python Software Foundation
+        ("PSF"), and the Individual or Organization ("Licensee") accessing and
+        otherwise using this software ("Python") in source or binary form and
+        its associated documentation.
+        
+        2. Subject to the terms and conditions of this License Agreement, PSF
+        hereby grants Licensee a nonexclusive, royalty-free, world-wide
+        license to reproduce, analyze, test, perform and/or display publicly,
+        prepare derivative works, distribute, and otherwise use Python
+        alone or in any derivative version, provided, however, that PSF's
+        License Agreement and PSF's notice of copyright, i.e., "Copyright (c)
+        2001, 2002, 2003, 2004, 2005, 2006 Python Software Foundation; All Rights
+        Reserved" are retained in Python alone or in any derivative version 
+        prepared by Licensee.
+        
+        3. In the event Licensee prepares a derivative work that is based on
+        or incorporates Python or any part thereof, and wants to make
+        the derivative work available to others as provided herein, then
+        Licensee hereby agrees to include in any such work a brief summary of
+        the changes made to Python.
+        
+        4. PSF is making Python available to Licensee on an "AS IS"
+        basis.  PSF MAKES NO REPRESENTATIONS OR WARRANTIES, EXPRESS OR
+        IMPLIED.  BY WAY OF EXAMPLE, BUT NOT LIMITATION, PSF MAKES NO AND
+        DISCLAIMS ANY REPRESENTATION OR WARRANTY OF MERCHANTABILITY OR FITNESS
+        FOR ANY PARTICULAR PURPOSE OR THAT THE USE OF PYTHON WILL NOT
+        INFRINGE ANY THIRD PARTY RIGHTS.
+        
+        5. PSF SHALL NOT BE LIABLE TO LICENSEE OR ANY OTHER USERS OF PYTHON
+        FOR ANY INCIDENTAL, SPECIAL, OR CONSEQUENTIAL DAMAGES OR LOSS AS
+        A RESULT OF MODIFYING, DISTRIBUTING, OR OTHERWISE USING PYTHON,
+        OR ANY DERIVATIVE THEREOF, EVEN IF ADVISED OF THE POSSIBILITY THEREOF.
+        
+        6. This License Agreement will automatically terminate upon a material
+        breach of its terms and conditions.
+        
+        7. Nothing in this License Agreement shall be deemed to create any
+        relationship of agency, partnership, or joint venture between PSF and
+        Licensee.  This License Agreement does not grant permission to use PSF
+        trademarks or trade name in a trademark sense to endorse or promote
+        products or services of Licensee, or any third party.
+        
+        8. By copying, installing or otherwise using Python, Licensee
+        agrees to be bound by the terms and conditions of this License
+        Agreement.
+        
+        
+        BEOPEN.COM LICENSE AGREEMENT FOR PYTHON 2.0
+        -------------------------------------------
+        
+        BEOPEN PYTHON OPEN SOURCE LICENSE AGREEMENT VERSION 1
+        
+        1. This LICENSE AGREEMENT is between BeOpen.com ("BeOpen"), having an
+        office at 160 Saratoga Avenue, Santa Clara, CA 95051, and the
+        Individual or Organization ("Licensee") accessing and otherwise using
+        this software in source or binary form and its associated
+        documentation ("the Software").
+        
+        2. Subject to the terms and conditions of this BeOpen Python License
+        Agreement, BeOpen hereby grants Licensee a non-exclusive,
+        royalty-free, world-wide license to reproduce, analyze, test, perform
+        and/or display publicly, prepare derivative works, distribute, and
+        otherwise use the Software alone or in any derivative version,
+        provided, however, that the BeOpen Python License is retained in the
+        Software, alone or in any derivative version prepared by Licensee.
+        
+        3. BeOpen is making the Software available to Licensee on an "AS IS"
+        basis.  BEOPEN MAKES NO REPRESENTATIONS OR WARRANTIES, EXPRESS OR
+        IMPLIED.  BY WAY OF EXAMPLE, BUT NOT LIMITATION, BEOPEN MAKES NO AND
+        DISCLAIMS ANY REPRESENTATION OR WARRANTY OF MERCHANTABILITY OR FITNESS
+        FOR ANY PARTICULAR PURPOSE OR THAT THE USE OF THE SOFTWARE WILL NOT
+        INFRINGE ANY THIRD PARTY RIGHTS.
+        
+        4. BEOPEN SHALL NOT BE LIABLE TO LICENSEE OR ANY OTHER USERS OF THE
+        SOFTWARE FOR ANY INCIDENTAL, SPECIAL, OR CONSEQUENTIAL DAMAGES OR LOSS
+        AS A RESULT OF USING, MODIFYING OR DISTRIBUTING THE SOFTWARE, OR ANY
+        DERIVATIVE THEREOF, EVEN IF ADVISED OF THE POSSIBILITY THEREOF.
+        
+        5. This License Agreement will automatically terminate upon a material
+        breach of its terms and conditions.
+        
+        6. This License Agreement shall be governed by and interpreted in all
+        respects by the law of the State of California, excluding conflict of
+        law provisions.  Nothing in this License Agreement shall be deemed to
+        create any relationship of agency, partnership, or joint venture
+        between BeOpen and Licensee.  This License Agreement does not grant
+        permission to use BeOpen trademarks or trade names in a trademark
+        sense to endorse or promote products or services of Licensee, or any
+        third party.  As an exception, the "BeOpen Python" logos available at
+        http://www.pythonlabs.com/logos.html may be used according to the
+        permissions granted on that web page.
+        
+        7. By copying, installing or otherwise using the software, Licensee
+        agrees to be bound by the terms and conditions of this License
+        Agreement.
+        
+        
+        CNRI LICENSE AGREEMENT FOR PYTHON 1.6.1
+        ---------------------------------------
+        
+        1. This LICENSE AGREEMENT is between the Corporation for National
+        Research Initiatives, having an office at 1895 Preston White Drive,
+        Reston, VA 20191 ("CNRI"), and the Individual or Organization
+        ("Licensee") accessing and otherwise using Python 1.6.1 software in
+        source or binary form and its associated documentation.
+        
+        2. Subject to the terms and conditions of this License Agreement, CNRI
+        hereby grants Licensee a nonexclusive, royalty-free, world-wide
+        license to reproduce, analyze, test, perform and/or display publicly,
+        prepare derivative works, distribute, and otherwise use Python 1.6.1
+        alone or in any derivative version, provided, however, that CNRI's
+        License Agreement and CNRI's notice of copyright, i.e., "Copyright (c)
+        1995-2001 Corporation for National Research Initiatives; All Rights
+        Reserved" are retained in Python 1.6.1 alone or in any derivative
+        version prepared by Licensee.  Alternately, in lieu of CNRI's License
+        Agreement, Licensee may substitute the following text (omitting the
+        quotes): "Python 1.6.1 is made available subject to the terms and
+        conditions in CNRI's License Agreement.  This Agreement together with
+        Python 1.6.1 may be located on the Internet using the following
+        unique, persistent identifier (known as a handle): 1895.22/1013.  This
+        Agreement may also be obtained from a proxy server on the Internet
+        using the following URL: http://hdl.handle.net/1895.22/1013".
+        
+        3. In the event Licensee prepares a derivative work that is based on
+        or incorporates Python 1.6.1 or any part thereof, and wants to make
+        the derivative work available to others as provided herein, then
+        Licensee hereby agrees to include in any such work a brief summary of
+        the changes made to Python 1.6.1.
+        
+        4. CNRI is making Python 1.6.1 available to Licensee on an "AS IS"
+        basis.  CNRI MAKES NO REPRESENTATIONS OR WARRANTIES, EXPRESS OR
+        IMPLIED.  BY WAY OF EXAMPLE, BUT NOT LIMITATION, CNRI MAKES NO AND
+        DISCLAIMS ANY REPRESENTATION OR WARRANTY OF MERCHANTABILITY OR FITNESS
+        FOR ANY PARTICULAR PURPOSE OR THAT THE USE OF PYTHON 1.6.1 WILL NOT
+        INFRINGE ANY THIRD PARTY RIGHTS.
+        
+        5. CNRI SHALL NOT BE LIABLE TO LICENSEE OR ANY OTHER USERS OF PYTHON
+        1.6.1 FOR ANY INCIDENTAL, SPECIAL, OR CONSEQUENTIAL DAMAGES OR LOSS AS
+        A RESULT OF MODIFYING, DISTRIBUTING, OR OTHERWISE USING PYTHON 1.6.1,
+        OR ANY DERIVATIVE THEREOF, EVEN IF ADVISED OF THE POSSIBILITY THEREOF.
+        
+        6. This License Agreement will automatically terminate upon a material
+        breach of its terms and conditions.
+        
+        7. This License Agreement shall be governed by the federal
+        intellectual property law of the United States, including without
+        limitation the federal copyright law, and, to the extent such
+        U.S. federal law does not apply, by the law of the Commonwealth of
+        Virginia, excluding Virginia's conflict of law provisions.
+        Notwithstanding the foregoing, with regard to derivative works based
+        on Python 1.6.1 that incorporate non-separable material that was
+        previously distributed under the GNU General Public License (GPL), the
+        law of the Commonwealth of Virginia shall govern this License
+        Agreement only as to issues arising under or with respect to
+        Paragraphs 4, 5, and 7 of this License Agreement.  Nothing in this
+        License Agreement shall be deemed to create any relationship of
+        agency, partnership, or joint venture between CNRI and Licensee.  This
+        License Agreement does not grant permission to use CNRI trademarks or
+        trade name in a trademark sense to endorse or promote products or
+        services of Licensee, or any third party.
+        
+        8. By clicking on the "ACCEPT" button where indicated, or by copying,
+        installing or otherwise using Python 1.6.1, Licensee agrees to be
+        bound by the terms and conditions of this License Agreement.
+        
+                ACCEPT
+        
+        
+        CWI LICENSE AGREEMENT FOR PYTHON 0.9.0 THROUGH 1.2
+        --------------------------------------------------
+        
+        Copyright (c) 1991 - 1995, Stichting Mathematisch Centrum Amsterdam,
+        The Netherlands.  All rights reserved.
+        
+        Permission to use, copy, modify, and distribute this software and its
+        documentation for any purpose and without fee is hereby granted,
+        provided that the above copyright notice appear in all copies and that
+        both that copyright notice and this permission notice appear in
+        supporting documentation, and that the name of Stichting Mathematisch
+        Centrum or CWI not be used in advertising or publicity pertaining to
+        distribution of the software without specific, written prior
+        permission.
+        
+        STICHTING MATHEMATISCH CENTRUM DISCLAIMS ALL WARRANTIES WITH REGARD TO
+        THIS SOFTWARE, INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND
+        FITNESS, IN NO EVENT SHALL STICHTING MATHEMATISCH CENTRUM BE LIABLE
+        FOR ANY SPECIAL, INDIRECT OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+        WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+        ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT
+        OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+    
+    
+    Ruby
+    <http://www.ruby-lang.org/>
+    
+        Virtuoso may be linked against libruby.so to provide a Ruby hosting
+        environment.
+    
+        Ruby is distributed under the terms of the Ruby License:
+        <http://www.ruby-lang.org/en/about/license.txt>
+
+        RUBY LICENSE
+        
+        Ruby is copyrighted free software by Yukihiro Matsumoto <matz@netlab.co.jp>.
+        You can redistribute it and/or modify it under either the terms of the GPL
+        (see COPYING.txt file), or the conditions below:
+        
+          1. You may make and give away verbatim copies of the source form of the
+             software without restriction, provided that you duplicate all of the
+             original copyright notices and associated disclaimers.
+        
+          2. You may modify your copy of the software in any way, provided that
+             you do at least ONE of the following:
+        
+             a) place your modifications in the Public Domain or otherwise
+                make them Freely Available, such as by posting said
+        	    modifications to Usenet or an equivalent medium, or by allowing
+        	    the author to include your modifications in the software.
+        
+             b) use the modified software only within your corporation or
+                organization.
+        
+             c) rename any non-standard executables so the names do not conflict
+        	    with standard executables, which must also be provided.
+        
+             d) make other distribution arrangements with the author.
+        
+          3. You may distribute the software in object code or executable
+             form, provided that you do at least ONE of the following:
+        
+             a) distribute the executables and library files of the software,
+        	    together with instructions (in the manual page or equivalent)
+        	    on where to get the original distribution.
+        
+             b) accompany the distribution with the machine-readable source of
+        	    the software.
+        
+             c) give non-standard executables non-standard names, with
+                instructions on where to get the original software distribution.
+        
+             d) make other distribution arrangements with the author.
+        
+          4. You may modify and include the part of the software into any other
+             software (possibly commercial).  But some files in the distribution
+             are not written by the author, so that they are not under this terms.
+        
+             They are gc.c(partly), utils.c(partly), regex.[ch], st.[ch] and some
+             files under the ./missing directory.  See each file for the copying
+             condition.
+        
+          5. The scripts and library files supplied as input to or produced as 
+             output from the software do not automatically fall under the
+             copyright of the software, but belong to whomever generated them, 
+             and may be sold commercially, and may be aggregated with this
+             software.
+        
+          6. THIS SOFTWARE IS PROVIDED "AS IS" AND WITHOUT ANY EXPRESS OR
+             IMPLIED WARRANTIES, INCLUDING, WITHOUT LIMITATION, THE IMPLIED
+             WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+             PURPOSE.
+    
+    
+    PHP
+    <http://www.php.net/>
+    
+        Virtuoso may be linked against libphp5.so to provide a PHP hosting
+        environment.
+    
+        PHP is distributed under the terms of the PHP License:
+        <http://php.net/license/>
+
+        -------------------------------------------------------------------- 
+                          The PHP License, version 3.01
+        Copyright (c) 1999 - 2009 The PHP Group. All rights reserved.
+        -------------------------------------------------------------------- 
+        
+        Redistribution and use in source and binary forms, with or without
+        modification, is permitted provided that the following conditions
+        are met:
+        
+          1. Redistributions of source code must retain the above copyright
+             notice, this list of conditions and the following disclaimer.
+         
+          2. Redistributions in binary form must reproduce the above copyright
+             notice, this list of conditions and the following disclaimer in
+             the documentation and/or other materials provided with the
+             distribution.
+         
+          3. The name "PHP" must not be used to endorse or promote products
+             derived from this software without prior written permission. For
+             written permission, please contact group@php.net.
+          
+          4. Products derived from this software may not be called "PHP", nor
+             may "PHP" appear in their name, without prior written permission
+             from group@php.net.  You may indicate that your software works in
+             conjunction with PHP by saying "Foo for PHP" instead of calling
+             it "PHP Foo" or "phpfoo"
+         
+          5. The PHP Group may publish revised and/or new versions of the
+             license from time to time. Each version will be given a
+             distinguishing version number.
+             Once covered code has been published under a particular version
+             of the license, you may always continue to use it under the terms
+             of that version. You may also choose to use such covered code
+             under the terms of any subsequent version of the license
+             published by the PHP Group. No one other than the PHP Group has
+             the right to modify the terms applicable to covered code created
+             under this License.
+        
+          6. Redistributions of any form whatsoever must retain the following
+             acknowledgment:
+             "This product includes PHP software, freely available from
+             <http://www.php.net/software/>".
+        
+        THIS SOFTWARE IS PROVIDED BY THE PHP DEVELOPMENT TEAM ``AS IS'' AND 
+        ANY EXPRESSED OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+        THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A 
+        PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE PHP
+        DEVELOPMENT TEAM OR ITS CONTRIBUTORS BE LIABLE FOR ANY DIRECT, 
+        INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES 
+        (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR 
+        SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+        HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT,
+        STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+        ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED
+        OF THE POSSIBILITY OF SUCH DAMAGE.
+        
+        -------------------------------------------------------------------- 
+        
+        This software consists of voluntary contributions made by many
+        individuals on behalf of the PHP Group.
+        
+        The PHP Group can be contacted via Email at group@php.net.
+        
+        For more information on the PHP Group and the PHP project, 
+        please see <http://www.php.net>.
+        
+        PHP includes the Zend Engine, freely available at
+        <http://www.zend.com>.
+    
+    
+    Java
+    <http://www.java.com/>
+    
+        Virtuoso may be linked against libjvm.so to provide a Java hosting
+        environment.
+    
+        Use of this module requires a JVM to be installed such as one from
+        <http://www.java.com/>
+    
+    
+    Readline
+    <http://directory.fsf.org/readline.html>
+    
+        Virtuoso Open-Source Edition may be compiled against the readline
+        library.
+    
+        Readline is distributed under the terms of the GNU Public License
+        version 2 or later:
+        <http://www.gnu.org/licenses/info/GPLv2orLater.html>
+    
+        This library is not present in OpenLink Virtuoso (commercial edition).
+    
+    
+    OpenLDAP
+    <http://www.openldap.org/>
+    
+        Virtuoso may be linked against OpenLdap to provide dynamic
+        authentication lookups against existing LDAP servers.
+    
+        OpenLDAP is distributed under the terms of the OpenLDAP Public License:
+        <http://www.openldap.org/software/release/license.html>
+
+        The OpenLDAP Public License
+          Version 2.8, 17 August 2003
+        
+        Redistribution and use of this software and associated documentation
+        ("Software"), with or without modification, are permitted provided
+        that the following conditions are met:
+        
+        1. Redistributions in source form must retain copyright statements
+           and notices,
+        
+        2. Redistributions in binary form must reproduce applicable copyright
+           statements and notices, this list of conditions, and the following
+           disclaimer in the documentation and/or other materials provided
+           with the distribution, and
+        
+        3. Redistributions must contain a verbatim copy of this document.
+        
+        The OpenLDAP Foundation may revise this license from time to time.
+        Each revision is distinguished by a version number.  You may use
+        this Software under terms of this license revision or under the
+        terms of any subsequent revision of the license.
+        
+        THIS SOFTWARE IS PROVIDED BY THE OPENLDAP FOUNDATION AND ITS
+        CONTRIBUTORS ``AS IS'' AND ANY EXPRESSED OR IMPLIED WARRANTIES,
+        INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY
+        AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.  IN NO EVENT
+        SHALL THE OPENLDAP FOUNDATION, ITS CONTRIBUTORS, OR THE AUTHOR(S)
+        OR OWNER(S) OF THE SOFTWARE BE LIABLE FOR ANY DIRECT, INDIRECT,
+        INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+        BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+        LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+        CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+        LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+        ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+        POSSIBILITY OF SUCH DAMAGE.
+        
+        The names of the authors and copyright holders must not be used in
+        advertising or otherwise to promote the sale, use or other dealing
+        in this Software without specific, written prior permission.  Title
+        to copyright in this Software shall at all times remain with copyright
+        holders.
+        
+        OpenLDAP is a registered trademark of the OpenLDAP Foundation.
+        
+        Copyright 1999-2003 The OpenLDAP Foundation, Redwood City,
+        California, USA.  All Rights Reserved.  Permission to copy and
+        distribute verbatim copies of this document is granted.
+    
+    
+    GTK+
+    <http://www.gtk.org/>
+    
+        Parts of Virtuoso may be linked against the Gimp Toolkit graphical
+        library (GTK+).
+    
+        GTK+ is distributed under the terms of the GNU Lesser General Public
+        License (LGPL): <http://www.gnu.org/licenses/lgpl.html>.
+    
+    
+    WBXML2
+    <http://libwbxml.aymerick.com>
+    
+        Parts of Virtuoso may be linked against the WBXML2 library.
+    
+        WBXML2 is distributed under the terms of the GNU Lesser General Public
+        License (LGPL): <http://www.gnu.org/licenses/lgpl.html>.
+    
+    
+    Handle System Client Library
+    <http://handle.net>
+    
+       Parts of Virtuoso may be linked against the Handle System Client library.
+    
+       The Handle System Client Library is distributed under the terms of
+       the Handle.NET Software Client Library (VER. 5) -- C Version License:
+       <http://hdl.handle.net/4263537/5027>
+
+        HANDLE.NET(C) SOFTWARE
+        CLIENT LIBRARY (ver. 5) -- C Version
+        
+        1. This LICENSE AGREEMENT is between the Corporation for National Research
+        Initiatives, having an office at 1895 Preston White Drive, Reston,
+        VA 20191-5434 ("CNRI"), and the Individual or Organization ("Licensee") that
+        has installed or otherwise used the HANDLE.NET: CLIENT LIBRARY (ver. 5) --
+        C Version ("Software"). Licensee shall be deemed to have entered into,
+        signed and agreed to be bound by the terms and conditions of this License
+        Agreement upon such installation or other use.
+        
+        2. Subject to the terms and conditions of this License Agreement, CNRI hereby
+        grants Licensee a nonexclusive, worldwide, royalty-free license to install,
+        reproduce, modify, display and/or perform publicly, prepare derivative works,
+        and distribute the Software to the public, with or without modification, in
+        source or binary form, provided, however, that CNRI's copyright notice:
+        "Copyright (C) 2009 Corporation for National Research Initiatives;
+        All Rights Reserved" and the following text (omitting the quotes), are both
+        retained in the Software alone or in any derivative version prepared by
+        Licensee:
+        "HANDLE.NET: CLIENT LIBRARY (ver. 5) -- C Version is made available subject
+        to CNRI's License Agreement located at: hdl:4263537/5027; it may also be
+        obtained at: http://hdl.handle.net/4263537/5027."
+        
+        3. CNRI is making the Software available to Licensee on an "AS IS" basis.
+        CNRI MAKES NO REPRESENTATIONS OR WARRANTIES, EXPRESS OR IMPLIED. BY WAY OF
+        EXAMPLE, BUT NOT LIMITATION, CNRI MAKES NO AND DISCLAIMS ANY REPRESENTATION
+        OR WARRANTY OF MERCHANTABILITY OR FITNESS FOR ANY PARTICULAR PURPOSE OR THAT
+        THE USE OF THE SOFTWARE WILL NOT INFRINGE ANY THIRD PARTY RIGHTS.
+        
+        4. CNRI SHALL NOT BE LIABLE TO LICENSEE OR ANY OTHER USER OF THS SOFTWARE FOR
+        ANY INCIDENTAL, SPECIAL, OR CONSEQUENTIAL DAMAGES OR LOSS AS A RESULT OF
+        USING, MODIFYING OR DISTRIBUTING THE SOFTWARE, OR ANY DERIVATIVE THEREOF, EVEN
+        IF ADVISED OF THE POSSIBILITY THEREOF.
+        
+        5. This License Agreement will automatically terminate upon a material breach
+        of its terms and conditions.
+        
+        6. This License Agreement shall be governed by and interpreted in all respects
+        by the law of the State of Virginia, excluding Virginia's conflict of law
+        provisions. Nothing in this License Agreement shall be deemed to create any
+        relationship of agency, partnership, or joint venture between CNRI and
+        Licensee. This License Agreement does not grant permission to use CNRI
+        trademarks or trade name in a trademark sense to endorse or promote products
+        or services of Licensee, or any third party.
+    
+    
+    sysexits.h
+    
+       Copyright (c) 1987, 1993
+        The Regents of the University of California.  All rights reserved.
+       
+       Redistribution and use in source and binary forms, with or without
+       modification, are permitted provided that the following conditions
+       are met:
+       1. Redistributions of source code must retain the above copyright
+          notice, this list of conditions and the following disclaimer.
+       2. Redistributions in binary form must reproduce the above copyright
+          notice, this list of conditions and the following disclaimer in the
+          documentation and/or other materials provided with the distribution.
+       4. Neither the name of the University nor the names of its contributors
+          may be used to endorse or promote products derived from this software
+          without specific prior written permission.
+       
+       THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+       ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+       IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+       ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+       FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+       DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+       OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+       HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+       LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+       OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+       SUCH DAMAGE.
+       
+        @(#)sysexits.h	8.1 (Berkeley) 6/2/93
+    
+    
+    
+    RedLand
+    
+       Copyright (C) 2000-2008, Openlink Software,  http://www.openlinksw.com/
+       
+       This package is Free Software and part of Redland http://librdf.org/
+       
+       It is licensed under the following three licenses as alternatives:
+         1. GNU Lesser General Public License (LGPL) V2.1 or any newer version
+         2. GNU General Public License (GPL) V2 or any newer version
+         3. Apache License, V2.0 or any newer version
+       
+       You may not use this file except in compliance with at least one of
+       the above three licenses.
+       
+       See LICENSE.html or LICENSE.txt at the top of this package for the
+       complete terms and further detail along with the license texts for
+       the licenses in COPYING.LIB, COPYING and LICENSE-2.0.txt respectively.
+    
+    
+    Apache JSP 2.0
+    
+      Copyright 2004 The Apache Software Foundation
+    
+      Licensed under the Apache License, Version 2.0 (the "License");
+      you may not use this file except in compliance with the License.
+      You may obtain a copy of the License at
+    
+          http://www.apache.org/licenses/LICENSE-2.0
+    
+      Unless required by applicable law or agreed to in writing, software
+      distributed under the License is distributed on an "AS IS" BASIS,
+      WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+      See the License for the specific language governing permissions and
+      limitations under the License.
+    
+    
+    Code Syntax Highlighter (with updated FSF address)
+    
+       Copyright (C) 2004 Dream Projections Inc.
+       
+       This program is free software; you can redistribute it and/or
+       modify it under the terms of the GNU General Public License
+       as published by the Free Software Foundation; either version 2
+       of the License, or (at your option) any later version.
+       
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+       
+       You should have received a copy of the GNU General Public License
+       along with this program; if not, write to the Free Software
+       Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
+    
+    
+    iODBC driver manager (with updated FSF address)
+    
+       Copyright (C) 1999-2005 by OpenLink Software <iodbc@openlinksw.com>
+       All Rights Reserved.
+     
+       This software is released under the terms of either of the following
+       licenses:
+     
+           - GNU Library General Public License (see LICENSE.LGPL) 
+           - The BSD License (see LICENSE.BSD).
+     
+       While not mandated by the BSD license, any patches you make to the
+       iODBC source code may be contributed back into the iODBC project
+       at your discretion. Contributions will benefit the Open Source and
+       Data Access community as a whole. Submissions may be made at:
+     
+           http://www.iodbc.org
+     
+     
+       GNU Library Generic Public License Version 2
+       ============================================
+       This library is free software; you can redistribute it and/or
+       modify it under the terms of the GNU Library General Public
+       License as published by the Free Software Foundation; either
+       version 2 of the License, or (at your option) any later version.
+     
+       This library is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+       Library General Public License for more details.
+     
+       You should have received a copy of the GNU Library General Public
+       License along with this library; if not, write to the Free
+       Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
+       MA 02110-1301, USA.
+     
+     
+       The BSD License
+       ===============
+       Redistribution and use in source and binary forms, with or without
+       modification, are permitted provided that the following conditions
+       are met:
+     
+       1. Redistributions of source code must retain the above copyright
+          notice, this list of conditions and the following disclaimer.
+       2. Redistributions in binary form must reproduce the above copyright
+          notice, this list of conditions and the following disclaimer in
+          the documentation and/or other materials provided with the
+          distribution.
+       3. Neither the name of OpenLink Software Inc. nor the names of its
+          contributors may be used to endorse or promote products derived
+          from this software without specific prior written permission.
+     
+       THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+       "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+       LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+       A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL OPENLINK OR
+       CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+       EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+       PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+       PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+       LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+       NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+       SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+    
+    
+    UUID library
+    
+       Copyright (C) 1996, 1997, 1998 Theodore Ts'o.
+      
+       %Begin-Header%
+       Redistribution and use in source and binary forms, with or without
+       modification, are permitted provided that the following conditions
+       are met:
+       1. Redistributions of source code must retain the above copyright
+          notice, and the entire permission notice in its entirety,
+          including the disclaimer of warranties.
+       2. Redistributions in binary form must reproduce the above copyright
+          notice, this list of conditions and the following disclaimer in the
+          documentation and/or other materials provided with the distribution.
+       3. The name of the author may not be used to endorse or promote
+          products derived from this software without specific prior
+          written permission.
+       
+       THIS SOFTWARE IS PROVIDED ``AS IS'' AND ANY EXPRESS OR IMPLIED
+       WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+       OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, ALL OF
+       WHICH ARE HEREBY DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR BE
+       LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+       CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
+       OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
+       BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+       LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+       (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE
+       USE OF THIS SOFTWARE, EVEN IF NOT ADVISED OF THE POSSIBILITY OF SUCH
+       DAMAGE.
+       %End-Header%
+    
+    
+    CKEditor
+    
+       Software License Agreement
+       ==========================
+       
+       CKEditor - The text editor for Internet - http://ckeditor.com
+       Copyright (c) 2003-2010, CKSource - Frederico Knabben. All rights reserved.
+       
+       Licensed under the terms of any of the following licenses at your
+       choice:
+       
+        - GNU General Public License Version 2 or later (the "GPL")
+          http://www.gnu.org/licenses/gpl.html
+          (See Appendix A)
+       
+        - GNU Lesser General Public License Version 2.1 or later (the "LGPL")
+          http://www.gnu.org/licenses/lgpl.html
+          (See Appendix B)
+       
+        - Mozilla Public License Version 1.1 or later (the "MPL")
+          http://www.mozilla.org/MPL/MPL-1.1.html
+          (See Appendix C)
+       
+       You are not required to, but if you want to explicitly declare the
+       license you have chosen to be bound to when using, reproducing,
+       modifying and distributing this software, just include a text file
+       titled "legal.txt" in your version of this software, indicating your
+       license choice. In any case, your choice will not restrict any
+       recipient of your version of this software to use, reproduce, modify
+       and distribute this software under any of the above licenses.
+       
+       Sources of Intellectual Property Included in CKEditor
+       =====================================================
+       
+       Where not otherwise indicated, all CKEditor content is authored by
+       CKSource engineers and consists of CKSource-owned intellectual
+       property. In some specific instances, CKEditor will incorporate work
+       done by developers outside of CKSource with their express permission.
+       
+       YUI Test: At _source/tests/yuitest.js can be found part of the source
+       code of YUI, which is licensed under the terms of the BSD License
+       (http://developer.yahoo.com/yui/license.txt). YUI is Copyright (C)
+       2008, Yahoo! Inc.
+       
+       Trademarks
+       ==========
+       
+       CKEditor is a trademark of CKSource - Frederico Knabben. All other brand
+       and product names are trademarks, registered trademarks or service
+       marks of their respective holders.
+    
+    
+    Ajax Engine
+    
+       Software License Agreement (BSD License)
+       
+       Copyright (c) 2005-2009 by Matthias Hertel, http://www.mathertel.de/
+       
+       All rights reserved.
+       
+       Redistribution and use in source and binary forms, with or without
+       modification, are permitted provided that the following conditions are
+       met:
+       
+           * Redistributions of source code must retain the above copyright
+             notice, this list of conditions and the following disclaimer.
+           * Redistributions in binary form must reproduce the above copyright
+             notice, this list of conditions and the following disclaimer in
+             the documentation and/or other materials provided with the
+             distribution.
+           * Neither the name of the copyright owners nor the names of its
+             contributors may be used to endorse or promote products derived
+             from this software without specific prior written permission.
+       
+       THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+       "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+       LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+       PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+       OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+       EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+       PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+       PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+       LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+       NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+       SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+    
+    
+    WebFX
+    
+                        Copyright (c) 1999 - 2005 Erik Arvidsson                   
+       
+       This software is provided "as is", without warranty of any kind, express or 
+       implied, including  but not limited  to the warranties of  merchantability, 
+       fitness for a particular purpose and noninfringement. In no event shall the 
+       authors or  copyright  holders be  liable for any claim,  damages or  other 
+       liability, whether  in an  action of  contract, tort  or otherwise, arising 
+       from,  out of  or in  connection with  the software or  the  use  or  other 
+       dealings in the software.                                                   
+       
+       This  software is  available under the  three different licenses  mentioned 
+       below.  To use this software you must chose, and qualify, for one of those. 
+
+       The WebFX Non-Commercial License          http://webfx.eae.net/license.html 
+       Permits  anyone the right to use the  software in a  non-commercial context 
+       free of charge.                                                             
+
+         The WebFX Non Commercial license only applies if all of the following
+         statements are true and not broken.
+         
+            1. The header in the P/C (1) may not be removed or modified.
+            2. The P/C is used in a non-commercial or non-profit environment (2).
+                  1. No money is put into the environment except the cost of the
+                     web space and domain name.
+                     You may of course also put money into hardware and software
+                     that run the environment.
+                     This means that no one can get paid to maintain the
+                     environment.
+                     No company, organization or institute can back up the
+                     environment financially. Non-profit organizations (3) are
+                     excluded.
+                  2. The environment that the P/C is used in cannot make any
+                     profit.
+                     This means that you cannot sell anything, directly or
+                     indirectly using the environment.
+                     You cannot use the P/C in an environment that act as a
+                     promotion/commercial for a commercial product.
+                     Commercial banners can be used as long as the income from
+                     these does not exceed the cost to maintain the environment.
+                     Donations are allowed.
+            3. The P/C may be freely modified as long as 1 - 2 are not broken.
+               Any work based on the P/C also fall under this license.
+               This means that if you base any work on the P/C then the new
+               product cannot be used commercially.
+            4. The P/C may be freely distributed as long as 1 - 3 are not
+               broken.
+               This means that the P/C cannot be redistributed to any third
+               commercial part because this would break 2.
+               This also means that if the P/C is included in a widget pack
+               (component library) then the widget pack (or parts of it that
+               uses the P/C) may not be used in a commercial environment.
+         
+         (1) P/C - product/component provided by WebFX.
+         (2) Environment - Program that uses the product/component. This
+             includes web sites, intranets and offline programs.
+         (3) Non-profit organization - a non-profit organization is a
+             organization that has no intention of making money in any way and
+             all work is done for charity.
+
+       The WebFX Commercial license           http://webfx.eae.net/commercial.html 
+       Permits the  license holder the right to use  the software in a  commercial 
+       context. Such license must be specifically obtained, however it's valid for 
+       any number of  implementations of the licensed software.                    
+
+         The WebFX Commercial License permits the inclusion of the products for
+         which a license has been obtained (hereby referred to as the products)
+         in any current or future product produced by the license holding
+         corporation (hereby referred to as the corporation) with the exception
+         of the following product-types:
+         
+             * Individual or combined sale of the products as a stand-alone
+               offer.
+             * Individual or combined sale of the products as part of a
+               components package or web development aid.
+         
+         The products may be included simply as enhancements to another product.
+         The products may be included simply as a part of another product. The
+         corporation may never profit directly from sale of the products, only
+         from the application they are included in. All intellectual property
+         rights and source code right will remain in the possession of WebFX and
+         the affected author.
+         
+         The products may not be resold. Neither may products deviated from the
+         original code, or products produced by reverse engineering the original
+         code, be sold or in any other way be profitable for the corporation.
+         If The products are included in a service offered by the corporation a
+         license must be obtained for each company the service is sold to.
+         
+         The license is valid only for the products and only for the purchased
+         version of those, with the following exceptions.
+         
+             * Minor updates.
+             * Major updates released within one (1) month of the purchase.
+             * The product has been discontinued and replaced by another product
+               within one (1) month of the purchase.
+         
+         A minor update consists of bug fixes and patches that may include some
+         enhancements and small, added features to the product. Minor updates
+         are signified by minor version number changes. For example, a minor
+         update from version 3.0 would be 3.1 or 3.01).
+         
+         A major upgrade consists of major enhancements and new features added
+         to the product. Major upgrades are signified by a major version number
+         change. For example, a major upgrade from version 3.0 would be 4.0.
+         
+         The corporation is entitled to a free update, if one or more of the
+         above criteria are met. Updates not addressed above requires a new
+         license, which can be purchased at rebated price if the old one is
+         revoked. 
+
+       GPL - The GNU General Public License    http://www.gnu.org/licenses/gpl.txt 
+       Permits anyone the right to use and modify the software without limitations 
+       as long as proper  credits are given  and the original  and modified source 
+       code are included. Requires  that the final product, software derivate from 
+       the original  source or any  software  utilizing a GPL  component, such  as 
+       this, is also licensed under the GPL license.                               
+    
+    
+    Berlin SPARQL Benchmark
+    
+       Copyright (C) 2000-2008 Hewlett-Packard Development Company, LP
+       Copyright (C) 2008 Andreas Schultz
+       
+       This program is free software: you can redistribute it and/or modify
+       it under the terms of the GNU General Public License as published by
+       the Free Software Foundation, either version 3 of the License, or
+       any later version.
+    
+       This program is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+       GNU General Public License for more details.
+    
+       You should have received a copy of the GNU General Public License
+       along with this program.  If not, see <http://www.gnu.org/licenses/>.
+    
+    
+    JavaScript RSA MD5
+    
+       A JavaScript implementation of the RSA Data Security, Inc. MD5 Message
+       Digest Algorithm, as defined in RFC 1321.
+       Version 2.1 Copyright (C) Paul Johnston 1999 - 2002.
+       Other contributors: Greg Holt, Andrew Kepert, Ydnar, Lostinet
+       Distributed under the BSD License
+
+       License to copy and use this software is granted provided that it is
+       identified as the "RSA Data Security, Inc. MD5 Message-Digest Algorithm"
+       in all material mentioning or referencing this software or this function.
+       
+       License is also granted to make and use derivative works provided that
+       such works are identified as "derived from the RSA Data Security, Inc.
+       MD5 Message-Digest Algorithm" in all material mentioning or referencing
+       the derived work.
+       
+       RSA Data Security, Inc. makes no representations concerning either the
+       merchantability of this software or the suitability of this software for
+       any particular purpose. It is provided "as is" without express or
+       implied warranty of any kind.
+       
+       These notices must be retained in any copies of any part of this
+       documentation and/or software.
+
+       Copyright (c) 1998 - 2009, Paul Johnston & Contributors
+       All rights reserved.
+       
+       Redistribution and use in source and binary forms, with or without
+       modification, are permitted provided that the following conditions are
+       met:
+       
+       Redistributions of source code must retain the above copyright notice,
+       this list of conditions and the following disclaimer. Redistributions in
+       binary form must reproduce the above copyright notice, this list of
+       conditions and the following disclaimer in the documentation and/or
+       other materials provided with the distribution.
+       
+       Neither the name of the author nor the names of its contributors may be
+       used to endorse or promote products derived from this software without
+       specific prior written permission.
+       
+       THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+       "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+       TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+       PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+       OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+       EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+       PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+       PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+       LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+       NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+       SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+    
+    
+    mm_menu
+    
+       mm_menu 20MAR2002 Version 6.0
+       Andy Finnell, March 2002
+       Copyright (c) 2000-2002 Macromedia, Inc.
+      
+       based on menu.js
+       by gary smith, July 1997
+       Copyright (c) 1997-1999 Netscape Communications Corp.
+      
+       Netscape grants you a royalty free license to use or modify this
+       software provided that this copyright notice appears on all copies.
+       This software is provided "AS IS," without a warranty of any kind.
+    
+    DocBk XML
+    
+       DocBk XML V3.1.7 DTD
+       Copyright (C) 1998, 1999 Norman Walsh
+       http://nwalsh.com/docbook/xml/
+       
+       You may distribute this DTD under the same terms as DocBook.
+       
+       Please direct all questions and comments about this DTD to
+       Norman Walsh, <ndw@nwalsh.com>.
+       
+       This DTD is based on the DocBook V3.1 DTD from OASIS:
+       
+         [DocBook is] Copyright 1992, 1993, 1994, 1995, 1996, 1998,
+         1999 HaL Computer Systems, Inc., O'Reilly & Associates, Inc.,
+         ArborText, Inc., Fujitsu Software Corporation, and the
+         Organization for the Advancement of Structured Information
+         Standards (OASIS).
+       
+         Permission to use, copy, modify and distribute the DocBook
+         DTD and its accompanying documentation for any purpose and
+         without fee is hereby granted in perpetuity, provided that
+         the above copyright notice and this paragraph appear in all
+         copies.  The copyright holders make no representation about
+         the suitability of the DTD for any purpose.  It is provided
+         "as is" without expressed or implied warranty.
+    
+    
+    MD5 in Java JDK Beta-2 (with updated FSF address)
+    
+       MD5 in Java JDK Beta-2
+       written Santeri Paavolainen, Helsinki Finland 1996
+       (c) Santeri Paavolainen, Helsinki Finland 1996
+      
+       This library is free software; you can redistribute it and/or
+       modify it under the terms of the GNU Library General Public
+       License as published by the Free Software Foundation; either
+       version 2 of the License, or (at your option) any later version.
+      
+       This library is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+       Library General Public License for more details.
+      
+       You should have received a copy of the GNU Library General Public
+       License along with this library; if not, write to the Free
+       Software Foundation, Inc., 51 Franklin St, Fifth Floor, Boston,
+       MA 02110-1301, USA.
+      
+       See http://www.cs.hut.fi/~santtu/java/ for more information on this
+       class.
+      
+       This is rather straight re-implementation of the reference implementation
+       given in RFC1321 by RSA.
+      
+       Passes MD5 test suite as defined in RFC1321.
+      
+      
+       This Java class has been derived from the RSA Data Security, Inc. MD5
+       Message-Digest Algorithm and its reference implementation.
+    
+    
+    Reentrent string tokenizer - Generic version (with updated FSF address)
+    
+       Copyright (C) 1991, 1996 Free Software Foundation, Inc.
+       This file is part of the GNU C Library.
+       
+       The GNU C Library is free software; you can redistribute it and/or
+       modify it under the terms of the GNU Library General Public License as
+       published by the Free Software Foundation; either version 2 of the
+       License, or (at your option) any later version.
+       
+       The GNU C Library is distributed in the hope that it will be useful,
+       but WITHOUT ANY WARRANTY; without even the implied warranty of
+       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+       Library General Public License for more details.
+       
+       You should have received a copy of the GNU Library General Public
+       License along with the GNU C Library; see the file COPYING.LIB.  If
+       not, write to the Free Software Foundation, Inc.,
+       51 Franklin St, Fifth Floor, Boston, MA 02110-1301, USA.
+    
+    
+    OpenLayers Map Viewer Library
+    
+       Copyright 2005-2008 MetaCarta, Inc., released under the Clear BSD license.
+       Please see http://svn.openlayers.org/trunk/openlayers/license.txt
+       for the full text of the license.
+       
+       Includes compressed code under the following licenses:
+       
+       (For uncompressed versions of the code used please see the
+       OpenLayers SVN repository: <http://openlayers.org/>)
+       
+       
+       Contains portions of Prototype.js:
+       
+       Prototype JavaScript framework, version 1.4.0
+        (c) 2005 Sam Stephenson <sam@conio.net>
+       
+        Prototype is freely distributable under the terms of an MIT-style license.
+        For details, see the Prototype web site: http://prototype.conio.net/
+       
+       
+       Contains portions of Rico <http://openrico.org/>
+       
+       Copyright 2005 Sabre Airline Solutions
+       
+       Licensed under the Apache License, Version 2.0 (the "License"); you
+       may not use this file except in compliance with the License. You
+       may obtain a copy of the License at
+       
+              http://www.apache.org/licenses/LICENSE-2.0
+       
+       Unless required by applicable law or agreed to in writing, software
+       distributed under the License is distributed on an "AS IS" BASIS,
+       WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+       implied. See the License for the specific language governing
+       permissions and limitations under the License.
+
+
+    MD5 and SHA routines, Johnston
+
+       MD5 and SHA routines, along with their supplemental sub-routines are
+       Copyright (C) Paul Johnston 1999 - 2002.
+       Other contributors: Greg Holt, Andrew Kepert, Ydnar, Lostinet
+       Distributed under the BSD License
+
+
+The Debian packaging is:
+
+    Copyright (C) 2008-2015 OpenLink Sofware <vos.admin@openlinksw.com>
+
+and builds on work by:
+
+    Copyright (C) 2009-2011 Obey Arthur Liu <arthur@milliways.fr>
+    Copyright (C) 2009-2010 Will Daniels <mail@willdaniels.co.uk>
+    Copyright (C) 2009 Olivier Berger <olivier.berger@it-sudparis.eu>
+    Copyright (C) 2008 Miriam Ruiz <little_miry@yahoo.es>
+    Copyright (C) 2012 José Manuel Santamaría Lema <panfaust@gmail.com>

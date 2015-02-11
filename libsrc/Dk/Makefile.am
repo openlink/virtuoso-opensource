@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2014 OpenLink Software
+#  Copyright (C) 1998-2015 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -28,7 +28,8 @@ noinst_HEADERS = \
 	Dkparam.h Dkpool.h Dkresource.h Dksession.h Dksesstr.h \
 	Dksestcp.h Dksets.h Dkstubs.h Dksystem.h Dktrace.h \
 	Dktypes.h Dkutil.h Dkhash64.h Dkword.h Dksestcpint.h \
-	Dksimd.h
+	Dksimd.h tlsf.h mhash.h target.h
+
 
 #############################################
 #DKSRV
@@ -53,7 +54,8 @@ libdksrv_la_SOURCES = \
 	Dkpool.c \
 	Dkutil.c \
 	Dkstubs.c \
-	Dkernel.c
+	Dkernel.c \
+	tlsf.c
 
 libdksrv_la_CFLAGS  = @VIRT_AM_CFLAGS@
 libdksrv_la_CFLAGS  += -I$(top_srcdir)/libsrc
@@ -82,7 +84,8 @@ libdk1t_la_SOURCES = \
 	Dkpool.c \
 	Dkutil.c \
 	Dkstubs.c \
-	Dkstkern.c
+	Dkstkern.c \
+	tlsf.c
 		     
 libdk1t_la_CFLAGS   = @VIRT_AM_CFLAGS@
 libdk1t_la_CFLAGS  += -I$(top_srcdir)/libsrc
@@ -111,7 +114,8 @@ libdk1t_nc_la_SOURCES = \
 	Dkpool.c \
 	Dkutil.c \
 	Dkstubs.c \
-	Dkstkern.c
+	Dkstkern.c \
+	tlsf.c
 		     
 libdk1t_nc_la_CFLAGS  = @VIRT_AM_CFLAGS@
 libdk1t_nc_la_CFLAGS  += -I$(top_srcdir)/libsrc

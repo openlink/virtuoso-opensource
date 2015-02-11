@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -641,6 +641,7 @@ DBG_NAME (dk_rehash) (DBG_PARAMS dk_hash_t * ht, uint32 new_sz)
   old_sz = ht->ht_actual_size;
   memset (&new_ht, 0, sizeof (new_ht));
   new_ht.ht_rehash_threshold = ht->ht_rehash_threshold;
+  new_ht.ht_tlsf_id = ht->ht_tlsf_id;
   new_ht.ht_actual_size = new_sz;
   new_ht.ht_elements = (hash_elt_t *) ht_alloc (ht, sizeof (hash_elt_t) * new_sz);
   memset (new_ht.ht_elements, 0xff, sizeof (hash_elt_t) * new_sz);

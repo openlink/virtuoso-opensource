@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3760,9 +3760,9 @@ DBG_NAME(box_cast_to_UTF8) (DBG_PARAMS caddr_t * qst, caddr_t data)
 	else
 	*/
 	res = box_narrow_string_as_utf8 (NULL, result, 0, QST_CHARSET (qst), &err, 1);
+	dk_free_tree (result);
 	if (err)
 	  sqlr_resignal (err);
-	dk_free_tree (result);
 	return res;
       }
     }

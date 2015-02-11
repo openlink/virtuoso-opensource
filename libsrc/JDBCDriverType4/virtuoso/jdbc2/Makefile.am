@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2014 OpenLink Software
+#  Copyright (C) 1998-2015 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -27,25 +27,25 @@
 if WITH_JDK2
 CLASSPATH2=$(CLASSPATH2)
 JDK2=@ac_jdk2_path@
-JDK2_FLAGS=-O -g:none
+JDK2_FLAGS=-g
 endif
 
 if WITH_JDK3
 CLASSPATH3=$(CLASSPATH3)
 JDK3=@ac_jdk3_path@
-JDK3_FLAGS=-O -g:none #-Xlint:deprecation -Xlint:unchecked
+JDK3_FLAGS=-g #-Xlint:deprecation -Xlint:unchecked
 endif
 
 if WITH_JDK4
 CLASSPATH4=$(CLASSPATH4)
 JDK4=@ac_jdk4_path@
-JDK4_FLAGS=-O -g:none #-Xlint:deprecation -Xlint:unchecked
+JDK4_FLAGS=-g #-Xlint:deprecation -Xlint:unchecked
 endif
 
 if WITH_JDK4_1
 CLASSPATH4=$(CLASSPATH4)
 JDK4_1=@ac_jdk4_1_path@
-JDK4_1_FLAGS=-O -g:none #-Xlint:deprecation -Xlint:unchecked
+JDK4_1_FLAGS=-g #-Xlint:deprecation -Xlint:unchecked
 endif
 
 
@@ -78,11 +78,15 @@ infiles = \
 	VirtuosoOutputStream.java \
 	VirtuosoPreparedStatement.java \
 	VirtuosoRdfBox.java \
+	VirtuosoPoint.java \
 	VirtuosoResultSet.java \
 	VirtuosoResultSetMetaData.java \
 	VirtuosoRow.java \
 	VirtuosoStatement.java \
-	VirtuosoTypes.java
+	VirtuosoTypes.java \
+	VirtuosoDate.java \
+	VirtuosoTime.java \
+	VirtuosoTimestamp.java
 
 in1files = \
 	BatchUpdateException.java \
@@ -96,6 +100,7 @@ in3files = \
 	PreparedStatementWrapper.java \
 	ResultSetWrapper.java \
 	StatementWrapper.java \
+	VirtuosoArray.java \
 	VirtuosoConnectionPoolDataSource.java \
 	VirtuosoDataSource.java \
 	VirtuosoDataSourceFactory.java \
@@ -246,7 +251,7 @@ std3: ../../virtjdbc3.jar
 ../../virtjdbc3.jar: outstd3 $(std3javafiles)
 	@echo jdbc3 javac $(JDK3_FLAGS)
 	@cd outstd3 ; $(JDK3)/javac $(JDK3_FLAGS) -classpath . virtuoso/jdbc3/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
-	@cd outstd3 ; $(JDK3)/jar cfm ../../../virtjdbc3.jar ../../../manifest3.main virtuoso/jdbc3/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class
+	@cd outstd3 ; $(JDK3)/jar cfm ../../../virtjdbc3.jar ../../../manifest3.main virtuoso/jdbc3/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class META-INF
 	@echo "............. Virtuoso pure Java 3.0 built"
 
 outstd3:
@@ -257,6 +262,9 @@ outstd3:
 	@mkdir outstd3/openlink
 	@mkdir outstd3/openlink/util
 	@mkdir outstd3/virtuoso/javax
+	@mkdir outstd3/META-INF
+	@mkdir outstd3/META-INF/services
+	@cp ../../java.sql.Driver3 outstd3/META-INF/services/java.sql.Driver
 
 outstd3/virtuoso/jdbc3/%.java: %.java
 	$(CPP) -P $(JCPPOPTS) $(jdbc3_defs) $< >$@
@@ -288,7 +296,7 @@ ssl3: ../../virtjdbc3ssl.jar
 ../../virtjdbc3ssl.jar: outssl3 $(ssl3javafiles)
 	@echo jdbc3 ssl javac $(JDK3_FLAGS)
 	@cd outssl3 ; $(JDK3)/javac $(JDK3_FLAGS) -classpath . virtuoso/jdbc3/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
-	@cd outssl3 ; $(JDK3)/jar cfm ../../../virtjdbc3ssl.jar ../../../manifest3.main virtuoso/jdbc3/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class
+	@cd outssl3 ; $(JDK3)/jar cfm ../../../virtjdbc3ssl.jar ../../../manifest3.main virtuoso/jdbc3/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class  META-INF
 	@echo "............. Virtuoso pure Java SSL 3.0 built"
 
 outssl3:
@@ -299,6 +307,9 @@ outssl3:
 	@mkdir outssl3/openlink
 	@mkdir outssl3/openlink/util
 	@mkdir outssl3/virtuoso/javax
+	@mkdir outssl3/META-INF
+	@mkdir outssl3/META-INF/services
+	@cp ../../java.sql.Driver3 outssl3/META-INF/services/java.sql.Driver
 
 outssl3/virtuoso/jdbc3/%.java: %.java
 	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc3_defs) $< >$@
@@ -339,7 +350,7 @@ std4: ../../virtjdbc4.jar
 ../../virtjdbc4.jar: outstd4 $(std4javafiles)
 	@echo jdbc4 ssl javac $(JDK4_FLAGS)
 	@cd outstd4 ; $(JDK4)/javac $(JDK4_FLAGS) -classpath . virtuoso/jdbc4/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
-	@cd outstd4 ; $(JDK4)/jar cfm ../../../virtjdbc4.jar ../../../manifest4.main virtuoso/jdbc4/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class
+	@cd outstd4 ; $(JDK4)/jar cfm ../../../virtjdbc4.jar ../../../manifest4.main virtuoso/jdbc4/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class META-INF
 	@echo "............. Virtuoso pure Java 4.0 built"
 
 outstd4:
@@ -350,6 +361,9 @@ outstd4:
 	@mkdir outstd4/openlink
 	@mkdir outstd4/openlink/util
 	@mkdir outstd4/virtuoso/javax
+	@mkdir outstd4/META-INF
+	@mkdir outstd4/META-INF/services
+	@cp ../../java.sql.Driver4 outstd4/META-INF/services/java.sql.Driver
 
 outstd4/virtuoso/jdbc4/%.java: %.java
 	$(CPP) -P $(JCPPOPTS) $(jdbc4_defs) $< >$@
@@ -383,7 +397,7 @@ ssl4: ../../virtjdbc4ssl.jar
 ../../virtjdbc4ssl.jar: outssl4 $(ssl4javafiles)
 	@echo jdbc4 ssl javac $(JDK4_FLAGS)
 	@cd outssl4 ; $(JDK4)/javac $(JDK4_FLAGS) -classpath . virtuoso/jdbc4/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
-	@cd outssl4 ; $(JDK4)/jar cfm ../../../virtjdbc4ssl.jar ../../../manifest4.main virtuoso/jdbc4/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class
+	@cd outssl4 ; $(JDK4)/jar cfm ../../../virtjdbc4ssl.jar ../../../manifest4.main virtuoso/jdbc4/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class META-INF
 	@echo "............. Virtuoso pure Java SSL 4.0 built"
 
 outssl4:
@@ -394,6 +408,9 @@ outssl4:
 	@mkdir outssl4/openlink
 	@mkdir outssl4/openlink/util
 	@mkdir outssl4/virtuoso/javax
+	@mkdir outssl4/META-INF
+	@mkdir outssl4/META-INF/services
+	@cp ../../java.sql.Driver4 outssl4/META-INF/services/java.sql.Driver
 
 outssl4/virtuoso/jdbc4/%.java: %.java
 	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_defs) $< >$@
@@ -434,7 +451,7 @@ std4_1: ../../virtjdbc4_1.jar
 ../../virtjdbc4_1.jar: outstd4_1 $(std4_1javafiles)
 	@echo jdbc4_1 ssl javac $(JDK4_1_FLAGS)
 	@cd outstd4_1 ; $(JDK4_1)/javac $(JDK4_1_FLAGS) -classpath . virtuoso/jdbc4/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
-	@cd outstd4_1 ; $(JDK4_1)/jar cfm ../../../virtjdbc4_1.jar ../../../manifest4.main virtuoso/jdbc4/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class
+	@cd outstd4_1 ; $(JDK4_1)/jar cfm ../../../virtjdbc4_1.jar ../../../manifest4.main virtuoso/jdbc4/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class META-INF
 	@echo "............. Virtuoso pure Java 4.1 built"
 
 outstd4_1:
@@ -445,6 +462,9 @@ outstd4_1:
 	@mkdir outstd4_1/openlink
 	@mkdir outstd4_1/openlink/util
 	@mkdir outstd4_1/virtuoso/javax
+	@mkdir outstd4_1/META-INF
+	@mkdir outstd4_1/META-INF/services
+	@cp ../../java.sql.Driver4 outstd4_1/META-INF/services/java.sql.Driver
 
 outstd4_1/virtuoso/jdbc4/%.java: %.java
 	$(CPP) -P $(JCPPOPTS) $(jdbc4_1_defs) $< >$@
@@ -478,7 +498,7 @@ ssl4_1: ../../virtjdbc4_1ssl.jar
 ../../virtjdbc4_1ssl.jar: outssl4_1 $(ssl4_1javafiles)
 	@echo jdbc4_1 ssl javac $(JDK4_1_FLAGS)
 	@cd outssl4_1 ; $(JDK4_1)/javac $(JDK4_1_FLAGS) -classpath . virtuoso/jdbc4/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
-	@cd outssl4_1 ; $(JDK4_1)/jar cfm ../../../virtjdbc4_1ssl.jar ../../../manifest4.main virtuoso/jdbc4/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class
+	@cd outssl4_1 ; $(JDK4_1)/jar cfm ../../../virtjdbc4_1ssl.jar ../../../manifest4.main virtuoso/jdbc4/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class META-INF
 	@echo "............. Virtuoso pure Java SSL 4.1 built"
 
 outssl4_1:
@@ -489,6 +509,9 @@ outssl4_1:
 	@mkdir outssl4_1/openlink
 	@mkdir outssl4_1/openlink/util
 	@mkdir outssl4_1/virtuoso/javax
+	@mkdir outssl4_1/META-INF
+	@mkdir outssl4_1/META-INF/services
+	@cp ../../java.sql.Driver4 outssl4_1/META-INF/services/java.sql.Driver
 
 outssl4_1/virtuoso/jdbc4/%.java: %.java
 	$(CPP) -P $(JCPPOPTS) -DSSL $(jdbc4_1_defs) $< >$@

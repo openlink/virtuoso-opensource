@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -209,6 +209,9 @@ extern long tc_dc_extend_values;
 
 extern int32 em_ra_window;
 extern int32 em_ra_threshold;
+extern int sqlo_max_layouts;
+extern int32 sqlo_compiler_exceeds_run_factor;
+
 extern int enable_mem_hash_join;
 #ifdef CACHE_MALLOC
 extern int enable_no_free;
@@ -372,6 +375,7 @@ extern int32 cl_stage;
 extern int32 cl_batch_bytes;
 extern int32 cl_first_buf;
 extern int32 iri_range_size;
+extern int32 enable_iri_nic_n;
 extern int enable_small_int_part;
 extern int iri_seqs_used;
 int64 tn_max_memory = 1000000000;
@@ -392,6 +396,10 @@ int cl_no_auto_remove;
 extern int dbf_log_fsync;
 extern int dbf_assert_on_malformed_data;
 extern int dbf_max_itc_samples;
+
+extern int32 c_pcre_match_limit;
+extern int32 c_pcre_match_limit_recursion;
+extern int32 pcre_max_cache_sz;
 
 void trset_start (caddr_t * qst);
 void trset_printf (const char *str, ...);
@@ -955,13 +963,13 @@ bif_exec_status ()
 {
   id_hash_iterator_t hit;
   int64 *k;
-  bif_exec_stat_t * exs;
+  bif_exec_stat_t ** exs;
   uint32 now = get_msec_real_time ();
   mutex_enter (&bif_exec_pending_mtx);
   id_hash_iterator (&hit, bif_exec_pending);
   while (hit_next (&hit, (caddr_t*)&k, (caddr_t*)&exs))
     {
-      rep_printf ("%d  %s\n", now - exs->exs_start, exs->exs_text);
+      rep_printf ("%d  %s\n", now - exs[0]->exs_start, exs[0]->exs_text);
     }
 
   mutex_leave (&bif_exec_pending_mtx);
@@ -1232,6 +1240,8 @@ extern int64 dk_n_free;
 extern int64 dk_n_total;
 extern int64 dk_n_nosz_free;
 extern int64 dk_n_bytes;
+extern int64 dk_n_mmaps;
+extern int64 dk_n_max_allocs;
 size_t http_threads_mem_report ();
 size_t dk_alloc_global_cache_total ();
 size_t aq_thr_mem_cache_total ();
@@ -1246,7 +1256,7 @@ mem_status_report ()
   mp_map_count_print (buf, sizeof (buf));
   rep_printf ("Memory:\n");
   rep_printf ("%s", buf);
-  rep_printf ("%Ld alloc, %Ld free, %Ld bytes, %Ld no size free, %Ld outstanding\n", dk_n_allocs, dk_n_free, dk_n_bytes, dk_n_nosz_free, dk_n_total);
+  rep_printf ("%Ld alloc, %Ld free, %Ld bytes, %Ld no size free, %Ld outstanding %Ld mmaps\n", dk_n_allocs, dk_n_free, dk_n_bytes, dk_n_nosz_free, dk_n_total, dk_n_mmaps);
   rep_printf ("%Ld WS, %Ld AQ, %Ld global\n", wsc, aqsz, gsz);
 }
 
@@ -1763,9 +1773,12 @@ stat_desc_t dbf_descs [] =
     {"cl_batches_per_rpc", (long *)&cl_batches_per_rpc, SD_INT32},
     {"cl_rdf_inf_inited", (long *)&cl_rdf_inf_inited, SD_INT32},
     {"enable_mem_hash_join", (long *)&    enable_mem_hash_join, SD_INT32},
+    {"sqlo_max_layouts", &sqlo_max_layouts, SD_INT32},
+    {"sqlo_compiler_exceeds_run_factor", &sqlo_compiler_exceeds_run_factor, SD_INT32},
     {"enable_hash_merge", (long *)&enable_hash_merge, SD_INT32},
     {"enable_hash_fill_join", (long *)&enable_hash_fill_join, SD_INT32},
     {"enable_subscore", (long *)&enable_subscore, SD_INT32},
+    {"enable_iri_nic_n", (long *)&enable_iri_nic_n, SD_INT32},
     {"enable_at_print", (long *)&enable_at_print, SD_INT32},
     {"enable_min_card", (long *)&enable_min_card},
     {"enable_distinct_sas", (long *)&enable_distinct_sas, SD_INT32},
@@ -1858,9 +1871,11 @@ stat_desc_t dbf_descs [] =
     {"enable_no_free", &enable_no_free, SD_INT32},
 #endif
     {"enable_rdf_box_const", &enable_rdf_box_const, SD_INT32},
+    {"pcre_match_limit", &c_pcre_match_limit, SD_INT32},
+    {"pcre_match_limit_recursion", &c_pcre_match_limit_recursion, SD_INT32},
+    {"pcre_max_cache_sz", &pcre_max_cache_sz, SD_INT32},
     {NULL, NULL, NULL}
   };
-
 
 caddr_t
 dbs_list ()
@@ -1922,7 +1937,7 @@ id_hash_t * sd_hash;
 caddr_t
 sys_stat_impl (const char *name)
 {
-  stat_desc_t *sd_arrays[] = {stat_descs, dbf_descs, NULL};
+  stat_desc_t *sd_arrays[] = {stat_descs, dbf_descs, rdf_preset_datatypes_descs, NULL};
   stat_desc_t **sd_arrays_tail;
   stat_desc_t **place;
 
@@ -2506,7 +2521,7 @@ bif_profile_enable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       prof_start_time = get_msec_real_time ();
       time (&prof_start_time_st);
       cli->cli_run_clocks = 0;
-      cli->cli_cl_start_ts = 0;
+      cli->cli_cl_start_ts = rdtsc ();
       da_clear (&cli->cli_activity);
       da_clear (&cli->cli_compile_activity);
     }
@@ -2633,18 +2648,44 @@ dbg_print_string_box (ccaddr_t object, FILE * out)
     {
       switch (tail[0])
         {
-	case '\'': fprintf (out, "\\\'"); break;
-	case '\"': fprintf (out, "\\\""); break;
-	case '\r': fprintf (out, "\\r"); break;
-	case '\n': fprintf (out, "\\n"); break;
-	case '\t': fprintf (out, "\\t"); break;
-	case '\\': fprintf (out, "\\\\"); break;
-	default:
+        case '\'': fprintf (out, "\\\'"); break;
+        case '\"': fprintf (out, "\\\""); break;
+        case '\r': fprintf (out, "\\r"); break;
+        case '\n': fprintf (out, "\\n"); break;
+        case '\t': fprintf (out, "\\t"); break;
+        case '\\': fprintf (out, "\\\\"); break;
+        default:
           if ((unsigned char)(tail[0]) < ' ')
-	    fprintf (out, "\\0%d%d", (tail[0] >> 3) & 7,  tail[0] & 7);
-	  else
-	    fputc (tail[0], out);
-	}
+            fprintf (out, "\\0%d%d", (tail[0] >> 3) & 7,  tail[0] & 7);
+          else
+            fputc (tail[0], out);
+      }
+    }
+}
+
+void
+dbg_print_wide_string_box (ccaddr_t object, FILE * out)
+{
+  const wchar_t *end = (const wchar_t *)object + box_length (object)/sizeof (wchar_t) - 1;
+  const wchar_t *tail;
+  for (tail = (const wchar_t *)object; tail < end; tail++)
+    {
+      switch (tail[0])
+        {
+        case '\'': fprintf (out, "\\\'"); break;
+        case '\"': fprintf (out, "\\\""); break;
+        case '\r': fprintf (out, "\\r"); break;
+        case '\n': fprintf (out, "\\n"); break;
+        case '\t': fprintf (out, "\\t"); break;
+        case '\\': fprintf (out, "\\\\"); break;
+        default:
+          if (tail[0] > 0xffffffff)
+            fprintf (out, "\\U%08x", (int)(tail[0]));
+          else if (tail[0] > 0x7f || tail[0] < L' ')
+            fprintf (out, "\\u%04x", (int)(tail[0]));
+          else
+            fputc (tail[0], out);
+      }
     }
 }
 
@@ -2848,8 +2889,9 @@ dbg_print_box_aux (caddr_t object, FILE * out, dk_hash_t *known)
 	  break;
 	case DV_WIDE:
 	case DV_LONG_WIDE:
-	  box_wide_string_as_narrow (object, temp, sizeof(temp) - 1, NULL);
-	  fprintf (out, "N\"%s\"", temp);
+	  fprintf (out, "N'");
+	  dbg_print_wide_string_box (object, out);
+	  fprintf (out, "'");
 	  break;
 #ifdef BIF_XML
 	case DV_XML_ENTITY:
@@ -3852,6 +3894,50 @@ bif_sys_index_space_usage (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
   return srv_collect_inx_space_stats (err_ret, qi);
 }
 
+static void
+sys_em_stat_entry (dk_set_t * set, dbe_key_t * key, extent_map_t * em)
+{
+  int32 n_free = em_free_count (em, EXT_INDEX);
+  int32 n_free_blob = em_free_count (em, EXT_BLOB);
+  int32 n_free_remap = em_free_count (em, EXT_REMAP);
+  dk_set_push (set, list (11, 
+		box_dv_short_string (key ? key->key_name : "no_key"),  
+		box_num (em->em_n_pages),
+		box_num (em->em_n_free_pages),
+		box_num (em->em_n_remap_pages),
+		box_num (em->em_n_free_remap_pages),
+		box_num (em->em_remap_on_hold),
+		box_num (em->em_n_blob_pages),
+		box_num (em->em_n_free_blob_pages),
+		box_num (n_free),
+		box_num (n_free_blob),
+		box_num (n_free_remap)
+		));
+}
+
+static caddr_t
+bif_sys_em_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *) qst;
+  extent_map_t * sys_em = wi_inst.wi_master->dbs_extent_map;
+  dk_set_t set = NULL;
+
+  sec_check_dba (qi, "sys_em_stat");
+  IN_DBS (wi_inst.wi_master);
+  sys_em_stat_entry (&set, NULL, sys_em);
+  DO_SET (index_tree_t * , it, &wi_inst.wi_master->dbs_trees)
+    {
+      extent_map_t * em = it->it_extent_map;
+      if (!em || em == sys_em) 
+	continue;
+      bing ();
+      sys_em_stat_entry (&set, it->it_key, em);
+    }
+  END_DO_SET()
+  LEAVE_DBS (wi_inst.wi_master);
+  return list_to_array (dk_set_nreverse (set));
+}
+
 
 caddr_t
 bif_col_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -4308,9 +4394,9 @@ bif_db_activity (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     : &qi->qi_client->cli_activity;
   caddr_t res;
   if ((flag & 1))
-    res = list (8, box_num (da->da_random_rows), box_num (da->da_seq_rows), box_num (da->da_lock_waits),
+    res = list (9, box_num (da->da_random_rows), box_num (da->da_seq_rows), box_num (da->da_lock_waits),
 		box_num (da->da_lock_wait_msec), box_num (da->da_disk_reads), box_num (da->da_spec_disk_reads),
-		box_num (da->da_cl_messages), box_num (da->da_cl_bytes));
+		box_num (da->da_cl_messages), box_num (da->da_cl_bytes), box_num (da->da_same_seg));
   else
     {
       char txt[200];
@@ -4520,14 +4606,16 @@ bif_stat_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   END_DO_HT;
   DO_HT (ptrlong, id, dbe_key_t *, key, sc->sc_id_to_key)
     {
+      id_hash_t * p_hash;
       caddr_t p_arr = NULL;
-      if (key->key_p_stat)
+      p_hash = (id_hash_t*)gethash ((void*)(ptrlong)key->key_id, empty_ric->ric_p_stat);
+      if (p_hash)
 	{
 	  dk_set_t psts = NULL;
 	  id_hash_iterator_t hit;
 	  float * arr;
 	  caddr_t * k;
-	  id_hash_iterator (&hit, key->key_p_stat);
+	  id_hash_iterator (&hit, p_hash);
 	  while (hit_next (&hit, (caddr_t*)&id, (caddr_t*)&arr))
 	    {
 	      dk_set_push (&psts, list (5, sc_data_to_ext (qi, box_iri_id (*(iri_id_t*)id)), box_float (arr[0]), box_float (arr[1]), box_float (arr[2]), box_float (arr[3])));
@@ -4578,10 +4666,9 @@ bif_stat_import (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (!col)
 	continue;
       col->col_n_distinct =  unbox (cs[2]);
-      col->col_n_distinct =  unbox (cs[2]);
       col->col_count =  unbox (cs[3]);
-      col->col_min =  unbox (sc_ext_to_data (qi, cs[4]));
-      col->col_max =  unbox (sc_ext_to_data (qi, cs[4]));
+      col->col_min = sc_ext_to_data (qi, cs[4]);
+      col->col_max = sc_ext_to_data (qi, cs[5]);
     }
   END_DO_BOX;
   DO_BOX (caddr_t *, ks, inx, stats[1])
@@ -4593,7 +4680,7 @@ bif_stat_import (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       key = tb_name_to_key (tb, ks[1], 0);
       if (!key)
 	continue;
-      key->key_table->tb_count_estimate = unbox (ks[1]);
+      key->key_table->tb_count_estimate = unbox (ks[2]);
       if (ps)
 	{
 	  DO_BOX (caddr_t *, p, inx2, ps)
@@ -4606,7 +4693,7 @@ bif_stat_import (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	      fs[1] = unbox_float (p[2]);
 	      fs[2] = unbox_float (p[3]);
 	      fs[3] = unbox_float (p[4]);
-	      id_hash_set  (key->key_p_stat, (caddr_t)iid, (caddr_t)&fs); 
+	      ric_set_p_stat (empty_ric, key, iid, fs); 
 	    }
 	  END_DO_BOX;
 	}
@@ -4617,7 +4704,7 @@ bif_stat_import (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       ric = rdf_name_to_ctx (rc[0]);
       if (!ric)
 	continue;
-      DO_BOX (caddr_t *, smp, inx, rc[1])
+      DO_BOX (caddr_t *, smp, inx2, rc[1])
 	{
 	  caddr_t k = sc_ext_to_data (qi, smp[0]);
 	  tb_sample_t smpl;
@@ -4633,6 +4720,38 @@ bif_stat_import (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+caddr_t
+bif_key_em_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *) qst;
+  dbe_key_t * key = bif_key_arg (qst, args, 0, "key_em_check");
+  int type = bif_long_arg (qst, args, 2, "key_em_check");
+  int flag = bif_long_arg (qst, args, 3, "key_em_check");
+  int n = 0;
+  dk_set_t l = NULL;
+  extent_map_t * em = key->key_fragments[0]->kf_it->it_extent_map;
+
+  DO_EXT (ext, em)
+    {
+      if (type == EXT_TYPE (ext))
+	{
+	  dp_addr_t dp;
+	  for (dp = ext->ext_dp; dp < ext->ext_dp + EXTENT_SZ; dp++)
+	    {
+	      int32 word = ext->ext_pages[(dp - ext->ext_dp) / 32];
+	      int bit = (dp - ext->ext_dp) % 32;
+	      if ((word & (1 << bit)))
+		{
+		  if (dbs_is_free_page (em->em_dbs, dp) || flag)
+		    dk_set_push (&l, (void*) box_num (dp));
+		  n++;
+		}
+	    }
+	}
+    }
+  END_DO_EXT;
+  return list_to_array (dk_set_nreverse (l));
+}
 
 void
 bif_status_init (void)
@@ -4662,6 +4781,7 @@ bif_status_init (void)
   bif_define ("itcs", dbg_print_itcs);
   bif_define_ex ("sys_index_space_usage", bif_sys_index_space_usage, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define ("db_activity", bif_db_activity);
+  bif_define_ex ("sys_em_stat", bif_sys_em_stat, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define ("ext_stat", bif_ext_stat);
   bif_define ("ext_em", bif_ext_em);
   bif_define ("key_seg_check", bif_key_seg_check);
@@ -4673,6 +4793,7 @@ bif_status_init (void)
 #ifndef NDEBUG
   bif_define ("_sys_real_cv_size", bif_real_cv_size);
 #endif
+  bif_define ("key_em_check", bif_key_em_check);
 }
 
 

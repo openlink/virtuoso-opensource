@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2014 OpenLink Software
+ -  Copyright (C) 1998-2015 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -64,7 +64,7 @@ XQuery searches a &quot;forest&quot;.  The result is an XML document.
 </para>
 <para>
 In order to create an XQuery you must both create the query statement
-&ndash; by typing or pasting it into the text box &ndash; and specify
+&mdash; by typing or pasting it into the text box &mdash; and specify
 the document context.  Since Virtuoso's XQuery implementation operates
 over XML data in relational tables, this means the tables and columns
 that are to be searched.
@@ -73,7 +73,7 @@ that are to be searched.
 Note that the XQuery language also allows a query to specify all or
 part of the document context for the query.  In the example below we
 will see how these can interact.  The user interface form permits you to 
-select a table &ndash; either one of the XQuery test data tables that come 
+select a table &mdash; either one of the XQuery test data tables that come
 with Virtuoso, or the WS.WS.SYS_DAV_RES table, which stores Virtuoso's WebDAV
 Repository content.
 </para>

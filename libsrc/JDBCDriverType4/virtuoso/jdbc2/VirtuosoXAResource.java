@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -86,6 +86,7 @@ public class VirtuosoXAResource implements XAResource
           end(r_currentXid, XAResource.TMFAIL);
         }
         catch (Exception e) {}
+      vConnection  = null;
     }
 
 
@@ -451,7 +452,7 @@ public class VirtuosoXAResource implements XAResource
                         VirtuosoFuture.tp_transaction,
                         args,
                         connection.timeout);
-                openlink.util.Vector res = future.nextResult();
+                openlink.util.Vector res = future.nextResult(false);
                 Object err = (res == null ? null : res.firstElement());
                 if (err instanceof openlink.util.Vector) {
                     throw new XAException();

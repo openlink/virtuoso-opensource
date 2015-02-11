@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -82,6 +82,12 @@
   if (DB.DBA.VAD_CHECK_VERSION('PivotViewer') is not NULL)
       pivot_installed := 'true';
 
+  declare html5_pivot_installed varchar;
+  html5_pivot_installed := 'false';
+
+  if (DB.DBA.VAD_CHECK_VERSION('html5pivotviewer') is not NULL)
+      html5_pivot_installed := 'true';
+
   declare sparql_cxml_installed varchar;
   sparql_cxml_installed := 'false';
 
@@ -122,6 +128,7 @@
    "addthis_key":"<?= addthis_key ?>",
 <?vsp } ?>
    "pivotInstalled":<?= pivot_installed ?>,
+   "html5PivotInstalled":<?= html5_pivot_installed ?>,
    "curiInstalled":<?= curi_installed ?>,
    "rdfMappersInstalled":<?= rdf_mappers_installed ?>,
    "sparqlCxmlInstalled":<?= sparql_cxml_installed ?>,

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3519,10 +3519,12 @@ bif_dict_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   id_hash_iterator_t *hit;
   id_hash_t *ht;
-  long size = 31, mmem = 0, ment = 0, arg;
+  long size = 31, mmem = 0, ment = 0, arg, use_mp = 1;
   switch (BOX_ELEMENTS(args))
     {
     default:
+      use_mp = (long) bif_long_arg (qst, args, 3, "dict_new");
+    case 3:	
       mmem = (long) bif_long_arg (qst, args, 2, "dict_new");
       /* no break */
     case 2:
@@ -3541,6 +3543,8 @@ bif_dict_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     ht->ht_dict_max_entries = ment;
   if (mmem > 0)
     ht->ht_dict_max_mem_in_use = mmem;
+  if (use_mp)
+    ht->ht_mp = mem_pool_alloc ();
   hit = (id_hash_iterator_t *)box_dv_dict_iterator ((caddr_t)ht);
   return (caddr_t)hit;
 }
@@ -3592,8 +3596,15 @@ bif_dict_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       if (0 < ht->ht_dict_max_mem_in_use)
         ht->ht_dict_mem_in_use += raw_length (val) - raw_length (old_val_ptr[0]);
-      dk_free_tree (old_val_ptr[0]);
-      val = box_copy_tree (val);
+      if (ht->ht_mp)
+	{
+	  val = mp_full_box_copy_tree ((mem_pool_t *)(ht->ht_mp), val);
+	}
+      else
+	{
+	  dk_free_tree (old_val_ptr[0]);
+	  val = box_copy_tree (val);
+	}
       if (ht->ht_mutex)
         box_make_tree_mt_safe (val);
       old_val_ptr[0] = val;
@@ -3613,8 +3624,16 @@ bif_dict_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
                 dv_type_title (dtp), dtp );
             }
         }
-      key = box_copy_tree (key);
-      val = box_copy_tree (val);
+      if (ht->ht_mp)
+	{
+	  key = mp_full_box_copy_tree ((mem_pool_t *)(ht->ht_mp), key);
+	  val = mp_full_box_copy_tree ((mem_pool_t *)(ht->ht_mp), val);
+	}
+      else
+	{
+	  key = box_copy_tree (key);
+	  val = box_copy_tree (val);
+	}
       if (ht->ht_mutex)
         {
           box_make_tree_mt_safe (key);
@@ -3699,8 +3718,11 @@ bif_dict_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       id_hash_remove (ht, (caddr_t)(&key));
       if (ht->ht_dict_max_mem_in_use > 0)
         ht->ht_dict_mem_in_use -= (raw_length (old_key) + raw_length (old_val) + 3 * sizeof (caddr_t));
-      dk_free_tree (old_key);
-      dk_free_tree (old_val);
+      if (!ht->ht_mp)
+	{
+	  dk_free_tree (old_key);
+	  dk_free_tree (old_val);
+	}
       id_hash_iterator (hit, ht);
       ht->ht_dict_version++;
       if (hit->hit_chilum != (char *)old_key_ptr)
@@ -3740,15 +3762,32 @@ bif_dict_inc_or_put (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (0 >= old_int)
         sqlr_new_error ("42000", "SR628",
           "dict_inc_or_put() can not increment a value if it is less than or equal to zero" );
-      dk_free_tree (old_val_ptr[0]);
       res = old_int + inc_val;
-      old_val_ptr[0] = box_num (res);
+      if (ht->ht_mp)
+        {
+          old_val_ptr[0] = mp_box_num ((mem_pool_t *)(ht->ht_mp), res);
+        }
+      else
+        {
+          dk_free_tree (old_val_ptr[0]);
+          old_val_ptr[0] = box_num (res);
+        }
     }
   else
     {
-      caddr_t val = box_num (inc_val);
-      key = box_copy_tree (key);
+      caddr_t val;
+      
       res = inc_val;
+      if (ht->ht_mp)
+        {
+          val = mp_box_num ((mem_pool_t *)(ht->ht_mp), inc_val);
+          key = mp_full_box_copy_tree ((mem_pool_t *)(ht->ht_mp), key);
+        }
+      else
+        {
+          val = box_num (inc_val);
+          key = box_copy_tree (key);
+        }
       if (ht->ht_mutex)
         box_make_tree_mt_safe (key);
       id_hash_set (ht, (caddr_t)(&key), (caddr_t)(&val));
@@ -3789,9 +3828,16 @@ bif_dict_dec_or_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (0 >= old_int)
         sqlr_new_error ("42000", "SR631",
           "dict_dec_or_remove() can not decrement a value if it is less than or equal to zero" );
-      dk_free_tree (old_val_ptr[0]);
       res = old_int - dec_val;
-      old_val_ptr[0] = box_num (res);
+      if (ht->ht_mp)
+        {
+          old_val_ptr[0] = mp_box_num ((mem_pool_t *)(ht->ht_mp), res);
+        }
+      else
+        {
+          dk_free_tree (old_val_ptr[0]);
+          old_val_ptr[0] = box_num (res);
+        }
       ht->ht_dict_version++;
       hit->hit_dict_version++;
     }
@@ -3804,8 +3850,11 @@ bif_dict_dec_or_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       id_hash_remove (ht, (caddr_t)(&key));
       if (ht->ht_dict_max_mem_in_use > 0)
         ht->ht_dict_mem_in_use -= (raw_length (old_key) + raw_length (old_val) + 3 * sizeof (caddr_t));
-      dk_free_tree (old_key);
-      dk_free_tree (old_val);
+      if (!ht->ht_mp)
+	{
+	  dk_free_tree (old_key);
+	  dk_free_tree (old_val);
+	}
       id_hash_iterator (hit, ht);
       ht->ht_dict_version++;
       if (hit->hit_chilum != (char *)old_key_ptr)
@@ -3888,12 +3937,17 @@ bif_dict_zap (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         mutex_leave (ht->ht_mutex);
       sqlr_new_error ("22023", "SR632", "dict_zap() can not zap a dictionary that is used in many places, if second parameter is 0 or 1");
     }
-      while (hit_next (&hit, (char **)&keyp, (char **)&valp))
+  while (!ht->ht_mp && hit_next (&hit, (char **)&keyp, (char **)&valp))
         {
            dk_free_tree (keyp[0]);
            dk_free_tree (valp[0]);
         }
       id_hash_clear (ht);
+  if (ht->ht_mp)
+    {
+      mp_free (ht->ht_mp);
+      ht->ht_mp = mem_pool_alloc ();
+    }
   ht->ht_dict_version++;
   ht->ht_dict_mem_in_use = 0;
   if (ht->ht_mutex)
@@ -3940,10 +3994,10 @@ bif_dict_list_keys (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     destructive &= ~1;
   while (hit_next (&hit, (char **)&keyp, (char **)&valp))
     {
-      if (destructive)
+      if (destructive && !ht->ht_mp)
         {
           (tail++)[0] = keyp[0];
-          dk_free_tree (valp[0]);
+	  dk_free_tree (valp[0]);
         }
       else
         {
@@ -3953,6 +4007,11 @@ bif_dict_list_keys (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (destructive)
     {
       id_hash_clear (ht);
+      if (ht->ht_mp)
+	{
+	  mp_free (ht->ht_mp);
+	  ht->ht_mp = mem_pool_alloc ();
+	}
       ht->ht_dict_version++;
       ht->ht_dict_mem_in_use = 0;
     }
@@ -3991,8 +4050,13 @@ bif_dict_destructive_list_rnd_keys (caddr_t * qst, caddr_t * err_ret, state_slot
       caddr_t key, val;
       while (id_hash_remove_rnd (ht, bucket_rnd, (caddr_t)&key, (caddr_t)&val))
 	{
-          dk_free_tree (val);
-          (tail++)[0] = key;
+	  if (!ht->ht_mp)
+	    {
+	      dk_free_tree (val);
+	      (tail++)[0] = key;
+	    }
+	  else
+	    (tail++)[0] = box_copy_tree (key);
           if (!(--len))
             goto res_done; /* see below */
 	}
@@ -4033,7 +4097,7 @@ bif_dict_to_vector (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     destructive &= ~1;
   while (hit_next (&hit, (char **)&keyp, (char **)&valp))
     {
-      if (destructive)
+      if (destructive && !ht->ht_mp)
         {
           (tail++)[0] = keyp[0];
           (tail++)[0] = valp[0];
@@ -4047,6 +4111,11 @@ bif_dict_to_vector (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (destructive)
     {
       id_hash_clear (ht);
+      if (ht->ht_mp)
+	{
+	  mp_free (ht->ht_mp);
+	  ht->ht_mp = mem_pool_alloc ();
+	}
       ht->ht_dict_version++;
       ht->ht_dict_mem_in_use = 0;
     }
@@ -4557,7 +4626,7 @@ bif_rowvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
             key_val = unbox (key);
           else if (DV_IRI_ID == key_dtp)
             key_val = unbox_iri_id (key);
-          else if ((('S' == algo) || ('O' == algo)) && ((DV_STRING == key_dtp) || (DV_UNAME == key_dtp)))
+          else if (((DV_STRING == key_dtp) || (DV_UNAME == key_dtp)) && (('S' == algo) || (('O' == algo) && (BF_IRI & box_flags (key)))))
             {
               /* caddr_t iid = key_name_to_iri_id (((query_instance_t *)qst)->qi_trx, key, 0); */
               caddr_t iid = iri_to_id (qst, key, IRI_TO_ID_IF_KNOWN, err_ret);

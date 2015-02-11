@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -864,7 +864,7 @@ pldbg_cmd_execute (dk_session_t * ses, caddr_t * args)
 
 				  snprintf (tmp, sizeof (tmp), "@%s in %s () at %ld\n",
 				     cli->cli_pldbg->pd_id,
-				     (qi && qi->qi_query->qr_proc_name ? qi->qi_query->qr_proc_name : "??"),
+				     (qi && qi->qi_query && qi->qi_query->qr_proc_name ? qi->qi_query->qr_proc_name : "??"),
 				     (long) (qi ? QI_LINE_NO(qi) : -1));
 				  SES_PRINT (out_ses, tmp);
 				}

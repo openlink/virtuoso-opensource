@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2014 OpenLink Software
+#  Copyright (C) 1998-2015 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -35,6 +35,7 @@ hosting_perl_la_CFLAGS += -I$(top_srcdir)/libsrc/Wi
 hosting_perl_la_CFLAGS += -I$(top_srcdir)/libsrc/plugin 
 hosting_perl_la_CFLAGS += $(PERL_CFLAGS)
 hosting_perl_la_LDFLAGS = -module -avoid-version -export-dynamic 
+hosting_perl_la_LDFLAGS += -export-symbols hosting_perl.exp
 hosting_perl_la_LDFLAGS += $(PERL_LDFLAGS)
 
 virt_handler.c: virt_handler.pm pl_to_c.awk
@@ -48,5 +49,6 @@ virt_handler.c: virt_handler.pm pl_to_c.awk
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
 	hosting_perl.def \
+	hosting_perl.exp \
 	pl_to_c.awk \
 	virt_handler.pm

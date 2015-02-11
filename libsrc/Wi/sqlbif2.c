@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1085,14 +1085,14 @@ bif_rfc1808_parse_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       wchar_t *wideuri = (wchar_t *)uri;
       return list (6,
-        box_wide_char_string ((caddr_t)(wideuri + split.schema_begin)	, (split.schema_end - split.schema_begin) * sizeof (wchar_t)	, DV_WIDE),
-        box_wide_char_string ((caddr_t)(wideuri + split.netloc_begin)	, (split.netloc_end - split.netloc_begin) * sizeof (wchar_t)	, DV_WIDE),
+        box_wide_char_string ((caddr_t)(wideuri + split.schema_begin)	, (split.schema_end - split.schema_begin) * sizeof (wchar_t)),
+        box_wide_char_string ((caddr_t)(wideuri + split.netloc_begin)	, (split.netloc_end - split.netloc_begin) * sizeof (wchar_t)),
         (((split.path_end == split.path_begin) && (0 < split.two_slashes)) ?
-          box_wide_char_string ((caddr_t)(L"/"), sizeof (wchar_t), DV_WIDE) :
-          box_wide_char_string ((caddr_t)(wideuri + split.path_begin)	, (split.path_end - split.path_begin) * sizeof (wchar_t)	, DV_WIDE) ),
-        box_wide_char_string ((caddr_t)(wideuri + split.params_begin)	, (split.params_end - split.params_begin) * sizeof (wchar_t)	, DV_WIDE),
-        box_wide_char_string ((caddr_t)(wideuri + split.query_begin)	, (split.query_end - split.query_begin) * sizeof (wchar_t)	, DV_WIDE),
-        box_wide_char_string ((caddr_t)(wideuri + split.fragment_begin)	, (split.fragment_end - split.fragment_begin) * sizeof (wchar_t), DV_WIDE) );
+          box_wide_char_string ((caddr_t)(L"/"), sizeof (wchar_t)) :
+          box_wide_char_string ((caddr_t)(wideuri + split.path_begin)	, (split.path_end - split.path_begin) * sizeof (wchar_t)	) ),
+        box_wide_char_string ((caddr_t)(wideuri + split.params_begin)	, (split.params_end - split.params_begin) * sizeof (wchar_t)),
+        box_wide_char_string ((caddr_t)(wideuri + split.query_begin)	, (split.query_end - split.query_begin) * sizeof (wchar_t)),
+        box_wide_char_string ((caddr_t)(wideuri + split.fragment_begin)	, (split.fragment_end - split.fragment_begin) * sizeof (wchar_t)) );
     }
   else
     {
@@ -1637,6 +1637,12 @@ bif_format_number (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 static caddr_t
+bif_set_client_acl_restrictions (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return NULL;
+}
+
+static caddr_t
 soundex (caddr_t name)
 {
 #define raw_toupper(C) ((C) & (255-32))
@@ -1767,6 +1773,7 @@ sqlbif2_init (void)
   bif_define ("__stop_cpt", bif_stop_cpt);
   bif_define ("soundex", bif_soundex);
   bif_define ("difference", bif_difference);
+  bif_define ("set_client_acl_restrictions", bif_set_client_acl_restrictions);
   /*bif_define ("repl_this_server", bif_this_server);*/
   /*sqls_bif_init ();*/
   sqls_bif_init ();

@@ -1,6 +1,26 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 
 -- Test cluster outer join and quietcast and nulls
--- test batched dt, subquery, existence 
+-- test batched dt, subquery, existence
 
 -- suppose start state of ins 1111 100 20
 
@@ -26,7 +46,7 @@ select count (a.fi2), count (b.fi2) from t1 a left join t1 b on b.fi2 = a.fi2 + 
 echo both $if $equ $last[2] 5 "PASSED" "***FAILED";
 echo both ": cl oj 2\n";
 
--- f is a colocation sequence break because of id to iri.  f_pass is safely colocatable 
+-- f is a colocation sequence break because of id to iri.  f_pass is safely colocatable
 create procedure f (in q any) { id_to_iri (#i100); return q;};
 create procedure f_pass (in q any) { return q;};
 

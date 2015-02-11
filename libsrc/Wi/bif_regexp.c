@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -38,7 +38,7 @@
  */
 
 #define NOFFSETS 20*3
-#define NHASHITEMS 2000
+#define NHASHITEMS 1000
 
 
 #define LOCK_OBJECT(__obj) \
@@ -251,7 +251,7 @@ bif_regexp_match (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	      if (arg_is_wide)
 		{
 		  if (utf8_mode)
-		    ret_mod_str = box_utf8_as_wide_char (mod_str, NULL, str_len - offvect[1], 0, DV_WIDE);
+		    ret_mod_str = box_utf8_as_wide_char (mod_str, NULL, str_len - offvect[1], 0);
 		  else
 		    ret_mod_str = box_narrow_string_as_wide ((unsigned char *) mod_str,
 			NULL, 0, QST_CHARSET (qst), err_ret, 1);
@@ -272,7 +272,7 @@ bif_regexp_match (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  if (utf8_mode && ret_str)
 	    {
 	      caddr_t wide_ret = box_utf8_as_wide_char (ret_str, NULL,
-		  box_length (ret_str) - 1, 0, DV_WIDE);
+		  box_length (ret_str) - 1, 0);
 	      dk_free_box (ret_str);
 	      ret_str = wide_ret;
 	    }
@@ -391,7 +391,7 @@ bif_regexp_substr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	      if (utf8_mode && ret_str)
 		{
 		  caddr_t wide_ret = box_utf8_as_wide_char (ret_str, NULL,
-		      box_length (ret_str) - 1, 0, DV_WIDE);
+		      box_length (ret_str) - 1, 0);
 		  dk_free_box (ret_str);
 		  ret_str = wide_ret;
 		}
@@ -855,13 +855,40 @@ err_at_replace:
   return res_strg;
 }
 
-int32 c_match_limit_recursion = 150;
+int32 c_pcre_match_limit_recursion = 500;
+int32 c_pcre_match_limit = 100000;
+int32 pcre_max_cache_sz = 2000;
+int32 pcre_rnd_seed;
+
+static void
+pcre_cache_check (id_hash_t * ht)
+{
+  while (ht->ht_count > pcre_max_cache_sz)
+    {
+      caddr_t key = NULL, k;
+      pcre_info_t * pinf;
+      dk_hash_t * data;
+      dk_hash_iterator_t hit;
+      int32 rnd  = sqlbif_rnd (&pcre_rnd_seed);
+      if (id_hash_remove_rnd (ht, rnd, (caddr_t)&key, (caddr_t)&data))
+	{
+	  dk_free_tree (key);
+	  dk_hash_iterator (&hit, data);
+	  while (dk_hit_next (&hit, (void **) &k, (void **) &pinf))
+	    {
+	      pcre_free (pinf->code);
+	      pcre_free (pinf->code_x);
+	      dk_free (pinf, sizeof (pcre_info_t));
+	    }
+	}
+    }
+}
 
 static caddr_t
 get_regexp_code_1 (safe_hash_t * rx_codes, const char *pattern,
 		 pcre_info_t * pcre_info, int options, void**ret)
 {
-  const char *error = 0;
+  const char *error = NULL;
   int erroff;
   dk_hash_t *opts_hash = NULL, **opts_hash_ptr = NULL;
   pcre_info_t *pcre_info_ref = NULL;
@@ -887,9 +914,17 @@ get_regexp_code_1 (safe_hash_t * rx_codes, const char *pattern,
 	  if (!pcre_info->code_x)
 	    dbg_printf (("***warning RX100: regexp warning: extra regular expression compiling failed\n"));
 #endif
+	  if (!pcre_info->code_x)
+	    {
+	      pcre_info->code_x = pcre_malloc (sizeof (pcre_extra));
+	      if (pcre_info->code_x)
+		memset (pcre_info->code_x, 0, sizeof (pcre_extra));
+	    }
+
 	  if (!opts_hash)
 	    {
 	      opts_hash = hash_table_allocate (5);
+	      pcre_cache_check (rx_codes->hash);
 	      id_hash_set (rx_codes->hash, (char *) &pattern_box, (char *) &opts_hash);
 	    }
 	  pcre_info_ref = (pcre_info_t *) dk_alloc (sizeof (pcre_info_t));
@@ -906,11 +941,25 @@ get_regexp_code_1 (safe_hash_t * rx_codes, const char *pattern,
     }
   else
     *pcre_info = *pcre_info_ref;
+
   if (pcre_info->code_x)
     {
-      pcre_info->code_x->flags |= PCRE_EXTRA_MATCH_LIMIT_RECURSION;
-      pcre_info->code_x->match_limit_recursion = c_match_limit_recursion;
+#ifdef PCRE_EXTRA_MATCH_LIMIT
+      if (c_pcre_match_limit > 0)
+	{
+	  pcre_info->code_x->flags |= PCRE_EXTRA_MATCH_LIMIT;
+	  pcre_info->code_x->match_limit = c_pcre_match_limit;
+	}
+#endif
+#ifdef PCRE_EXTRA_MATCH_LIMIT_RECURSION
+      if (c_pcre_match_limit_recursion > 0)
+	{
+	  pcre_info->code_x->flags |= PCRE_EXTRA_MATCH_LIMIT_RECURSION;
+	  pcre_info->code_x->match_limit_recursion = c_pcre_match_limit_recursion;
+	}
+#endif
     }
+
   RELEASE_OBJECT (rx_codes);
   return NULL;
 }
@@ -938,6 +987,7 @@ bif_regexp_init ()
   INIT_OBJECT (&regexp_codes);
   regexp_codes.hash = id_hash_allocate (NHASHITEMS, sizeof (caddr_t), sizeof (pcre_info_t),
       strhash, strhashcmp);
+  id_hash_set_rehash_pct (regexp_codes.hash, 200);
 
   bif_define_ex ("regexp_match", bif_regexp_match, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("rdf_regex_impl", bif_rdf_regex_impl, BMD_RET_TYPE, &bt_varchar, BMD_DONE);

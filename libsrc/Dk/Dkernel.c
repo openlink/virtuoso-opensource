@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -32,6 +32,8 @@
 #include "Dk.h"
 #include "Dk/Dksystem.h"
 #include "util/logmsg.h"
+#include "util/strfuns.h"
+
 
 #define BASKET_PEEK(b) basket_peek(b)
 
@@ -53,6 +55,10 @@
 int LEVEL_VAR = 4;
 #endif
 
+#ifdef WIN32
+#define strcasecmp _stricmp
+#endif
+
 
 #ifdef _SSL
 #include <openssl/rsa.h>
@@ -68,6 +74,9 @@ int LEVEL_VAR = 4;
 
 static void ssl_server_init ();
 
+int ssl_ctx_set_cipher_list(SSL_CTX *ctx, char *cipher_list);
+int ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol);
+
 #ifndef NO_THREAD
 static int ssl_server_accept (dk_session_t * listen, dk_session_t * ses);
 static unsigned int ssl_server_port = 0;
@@ -76,6 +85,8 @@ static SSL_CTX *ssl_server_ctx = NULL;
 int32 ssl_server_verify = 0;
 int32 ssl_server_verify_depth = 0;
 char *ssl_server_verify_file = NULL;
+char *ssl_server_cipher_list = NULL;
+char *ssl_server_protocols = NULL;
 #endif
 
 #ifndef NO_THREAD
@@ -85,7 +96,7 @@ long second_rpcs = 0;
 
 void (*process_exit_hook) (int);
 future_request_t *frq_create (dk_session_t * ses, caddr_t * request);
-
+id_hash_t * cli_abuse;
 
 void
 call_exit_outline (int status)
@@ -941,6 +952,7 @@ dk_report_error (const char *format, ...)
 
 int dbf_assert_on_malformed_data;
 
+dk_mutex_t bad_rpc_mtx;
 
 void
 sr_report_future_error (dk_session_t * ses, const char *service_name, const char *reason)
@@ -949,12 +961,23 @@ sr_report_future_error (dk_session_t * ses, const char *service_name, const char
       (ses->dks_session->ses_class == SESCLASS_TCPIP ||
        ses->dks_session->ses_class == SESCLASS_UDPIP))
     {
-      char ip_buffer[16];
+      char ip_buffer[16] = "", *ipp = &(ip_buffer[0]);
+      ptrlong p = 0, *pp;
+      uint32 now = approx_msec_real_time ();
       tcpses_print_client_ip (ses->dks_session, ip_buffer, sizeof (ip_buffer));
       if (service_name && strlen (service_name) > 0)
 	log_error ("Malformed RPC %.10s received from IP [%.256s] : %.255s. Disconnecting the client", service_name, ip_buffer, reason);
       else
 	log_error ("Malformed data received from IP [%.256s] : %.255s. Disconnecting the client", ip_buffer, reason);
+      mutex_enter (&bad_rpc_mtx);
+      pp = (ptrlong*) id_hash_get (cli_abuse, (caddr_t)&ipp);
+      if (pp)
+	p = (*pp) & 0xFFFF;
+      p ++;
+      p = ((ptrlong)now << 16) | p;
+      if (!pp) ipp = box_dv_short_string (ip_buffer);
+      id_hash_set (cli_abuse, (caddr_t)&ipp, (caddr_t)&p);
+      mutex_leave (&bad_rpc_mtx);
     }
 /* do not report - it's usually an internal session - like txn log, deserialize etc
   else
@@ -1121,7 +1144,10 @@ future_wrapper (void *ignore)
 	      arg_array[finx] = NULL;
 	}
 
-      dk_free_box_and_int_boxes ((caddr_t) arguments);
+      if (error)
+	dk_free_tree (arguments);
+      else
+	dk_free_box_and_int_boxes ((caddr_t) arguments);
 
       /* Free this now. If freed after RPC func the references items may have been
          freed and reallocated and could be erroneously re-freed. */
@@ -1184,10 +1210,7 @@ future_wrapper (void *ignore)
 	    write_in_session ((caddr_t) ret_block, future->rq_client, NULL, NULL, 1);
 #endif
 	    CB_DONE;
-	    if (ret_type == DV_C_STRING)
-	      dk_free_box ((caddr_t) ret_box[0]);	/* mty HUHTI */
-	    dk_free_box_and_numbers ((caddr_t) ret_block);	/* mty HUHTI */
-	    dk_free_box_and_numbers ((caddr_t) ret_box);	/* mty HUHTI */
+	    dk_free_tree (ret_block);
 	  }
       }
 
@@ -1381,7 +1404,7 @@ future_wrapper (void *ignore)
 
 			  dk_free_box (req[FRQ_SERVICE_NAME]);
 			  req[FRQ_SERVICE_NAME] = NULL;
-			  dk_free_box_and_numbers ((box_t) req);	/* mty HUHTI */
+			  dk_free_tree ((box_t) req);	/* mty HUHTI */
 			}
 		      else
 			{
@@ -1507,12 +1530,13 @@ frq_create (dk_session_t * ses, caddr_t * request)
       future_request->rq_to_close = 1;
       return future_request;
     }
-  if (BOX_ELEMENTS (request) != DA_FRQ_LENGTH)
+  if (!IS_BOX_POINTER (request) || BOX_ELEMENTS (request) != DA_FRQ_LENGTH)
     {
       sr_report_future_error (ses, "", "invalid future request length");
-      dk_free_tree (request);
-      PrpcDisconnect (ses);
-      PrpcSessionFree (ses);
+      if (IS_BOX_POINTER (request))
+	dk_free_tree (request);
+      SESSTAT_CLR (ses->dks_session, SST_OK);
+      SESSTAT_SET (ses->dks_session, SST_BROKEN_CONNECTION);
       dk_free (future_request, sizeof (future_request_t));
       return NULL;
     }
@@ -1532,13 +1556,18 @@ frq_create (dk_session_t * ses, caddr_t * request)
 
       printf ("\nUnknown service %s requested. req no = %d", svc, (int) unbox (request[FRQ_COND_NUMBER]));
       dk_free (future_request, sizeof (future_request_t));
+      if (IS_BOX_POINTER (request))
+	dk_free_tree (request);
       return NULL;
     }
 
   future_request->rq_condition = (long) unbox (request[FRQ_COND_NUMBER]);	/* mty HUHTI */
   args = request[FRQ_ARGUMENTS];
   if (IS_BOX_POINTER (args) && DV_TYPE_OF (args) == DV_ARRAY_OF_POINTER)
-    future_request->rq_arguments = (long **) request[FRQ_ARGUMENTS];
+    {
+      future_request->rq_arguments = (long **) request[FRQ_ARGUMENTS];
+      request[FRQ_ARGUMENTS] = NULL;
+    }
 
   return future_request;
 }
@@ -1596,7 +1625,7 @@ schedule_request (TAKE_G dk_session_t * ses, caddr_t * request)
 
   dk_free_box (request[FRQ_SERVICE_NAME]);
   request[FRQ_SERVICE_NAME] = NULL;
-  dk_free_box_and_numbers ((box_t) request);	 /* mty HUHTI */
+  dk_free_tree ((box_t) request);	 /* mty HUHTI */
 #if 1						 /*!!! */
   ss_dprintf_2 (("Starting future %ld with thread %p", future_request->rq_condition,
 	  /*future_request->rq_service->sr_name, */ thread));
@@ -1669,7 +1698,7 @@ schedule_future:
       ss_dprintf_4 (("found no free thread - queueing"));
       queued_reqs++;
       if (client_trace_flag)
-	logit (L_DEBUG, "adding to in_basket client: %lx service: %s", future_request->rq_client, future_request->rq_service->sr_name);
+	logit (L_DEBUG, "adding to in_basket client: %lx service: %s", future_request->rq_client, future_request->rq_service ? future_request->rq_service->sr_name : "no service");
       thrs_printf ((thrs_fo, "**ses %p thr:%p req to basket\n", ses, THREAD_CURRENT_THREAD));
       basket_add (&in_basket, future_request);
       mutex_leave (thread_mtx);
@@ -2311,8 +2340,7 @@ read_service_request (dk_session_t * ses)
 
   if (!SESSTAT_ISSET (ses->dks_session, SST_TIMED_OUT) && !SESSTAT_ISSET (ses->dks_session, SST_BROKEN_CONNECTION) && (DV_TYPE_OF (request) != DV_ARRAY_OF_POINTER || BOX_ELEMENTS (request) < 1))
     {
-      if (!box_destr [DV_TYPE_OF (request)])
-	dk_free_tree (request);
+      dk_free_tree (request);
       sr_report_future_error (ses, "", "invalid future box");
       SESSTAT_CLR (ses->dks_session, SST_OK);
       SESSTAT_SET (ses->dks_session, SST_BROKEN_CONNECTION);
@@ -2415,6 +2443,7 @@ read_service_request (dk_session_t * ses)
 	{
 	  sr_report_future_error (ses, "", "invalid future answer length");
 	  PrpcDisconnect (ses);
+	  PrpcSessionFree (ses);
 	  dk_free_tree ((box_t) request);
 	  return 0;
 	}
@@ -2436,6 +2465,7 @@ read_service_request (dk_session_t * ses)
 	{
 	  sr_report_future_error (ses, "", "invalid future partial answer length");
 	  PrpcDisconnect (ses);
+	  PrpcSessionFree (ses);
 	  dk_free_tree ((box_t) request);
 	  return 0;
 	}
@@ -2453,6 +2483,7 @@ read_service_request (dk_session_t * ses)
     default:
       sr_report_future_error (ses, "", "invalid future type");
       PrpcDisconnect (ses);
+      PrpcSessionFree (ses);
       dk_free_tree ((box_t) request);
       return 0;
 
@@ -2580,12 +2611,44 @@ dk_session_clear (dk_session_t * ses)
   the served sessions set.
 */
 #ifndef NO_THREAD
+int32 max_bad_rpc_on_connection = 100;
+int32 max_bad_rpc_timeout = 60;
+dk_mutex_t bad_rpc_mtx;
+
 static int
 accept_client (dk_session_t * ses)
 {
+  char ip_buffer[16] = "", *ipp = &(ip_buffer[0]);
+  ptrlong p = 0;
+  uint32 now = approx_msec_real_time (), last;
   dk_session_t *newses = dk_session_allocate (ses->dks_session->ses_class);
   without_scheduling_tic ();
   session_accept (ses->dks_session, newses->dks_session);
+  tcpses_print_client_ip (newses->dks_session, ip_buffer, sizeof (ip_buffer));
+
+  mutex_enter (&bad_rpc_mtx);
+  if (NULL != (p = (ptrlong) id_hash_get (cli_abuse, (caddr_t)&ipp)))
+    {
+      p = *(ptrlong*)p;
+      last = p >> 16;
+      p = p & 0xFFFF;
+    }
+  if (max_bad_rpc_on_connection > 0 && p && p >= max_bad_rpc_on_connection && (now - last) < max_bad_rpc_timeout * 1000)
+    {
+      p = ((ptrlong)now << 16) | p;
+      id_hash_set (cli_abuse, (caddr_t)&ipp, (caddr_t)&p); /* set timestamp */
+      PrpcDisconnect (newses);
+      PrpcSessionFree (newses);
+      mutex_leave (&bad_rpc_mtx);
+      return 0;
+    }
+  else if (max_bad_rpc_on_connection > 0 && p && p >= max_bad_rpc_on_connection && (now - last) > max_bad_rpc_timeout * 1000)
+    {
+      p = ((ptrlong)now << 16); /* reset counter */
+      id_hash_set (cli_abuse, (caddr_t)&ipp, (caddr_t)&p);
+    }
+  mutex_leave (&bad_rpc_mtx);
+
   restore_scheduling_tic ();
 
   SESSION_SCH_DATA (newses)->sio_default_read_ready_action = read_service_request;
@@ -3791,11 +3854,13 @@ PrpcInitialize1 (int mem_mode)
   process_futures_initialize (timeout_checker->dkt_process);
   semaphore_leave (timeout_checker->dkt_process->thr_sem);
 #endif
+  cli_abuse = id_hash_allocate (100, sizeof (caddr_t), sizeof (caddr_t), strhash, strhashcmp);
 
 #ifdef _SSL
   ssl_server_init ();
 #endif
 #ifndef NO_THREAD
+  dk_mutex_init (&bad_rpc_mtx, MUTEX_TYPE_SHORT);
 #ifdef MALLOC_DEBUG
   log_info ("*** THIS SERVER BINARY CONTAINS MEMORY DEBUG CODE! ***");
 #endif
@@ -5012,6 +5077,177 @@ ssl_thread_setup ()
   CRYPTO_set_id_callback ((unsigned long (*)()) ssl_thread_id);
 }
 
+
+/*
+ *  Define the SSL Protocol bits
+ */
+#define SSL_PROTOCOL_NONE  (0)
+#define SSL_PROTOCOL_SSLV2 (1<<0)
+#define SSL_PROTOCOL_SSLV3 (1<<1)
+#define SSL_PROTOCOL_TLSV1 (1<<2)
+#define SSL_PROTOCOL_TLSV1_1 (1<<3)
+#define SSL_PROTOCOL_TLSV1_2 (1<<4)
+
+#if OPENSSL_VERSION_NUMBER >= 0x1000100FL
+#define SSL_PROTOCOL_ALL   (SSL_PROTOCOL_TLSV1|SSL_PROTOCOL_TLSV1_1|SSL_PROTOCOL_TLSV1_2)
+#else
+#define SSL_PROTOCOL_ALL   (SSL_PROTOCOL_TLSV1)
+#endif
+
+#define	VIRTUOSO_DEFAULT_CIPHER_LIST "HIGH:!aNULL:!eNULL:!RC4:!DES:!MD5:!PSK:!SRP:!KRB5:!SSLv2:!EXP:!MEDIUM:!LOW:!DES-CBC-SHA:@STRENGTH"
+
+int
+ssl_ctx_set_cipher_list (SSL_CTX * ctx, char *cipher_list)
+{
+  /*
+   *  Default cipher lists excludes all the weak export ciphers
+   */
+  if (!cipher_list || !*cipher_list || !strcasecmp(cipher_list, "default"))
+    cipher_list = VIRTUOSO_DEFAULT_CIPHER_LIST;
+
+  if (!SSL_CTX_set_cipher_list (ssl_server_ctx, cipher_list))
+    {
+      log_error ("SSL: Failed setting cipher list [%s]", cipher_list);
+      return 0;
+}
+
+  return 1;
+}
+
+
+int
+ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
+{
+  int proto = SSL_PROTOCOL_NONE;
+  long ctx_options;
+  int i;
+
+  /*
+   *  Parse protocol list
+   */
+  if (!protocol || !*protocol || !strcasecmp(protocol, "default"))
+    protocol = "ALL";
+
+  for (i = 1; i <= cslnumentries (protocol); i++)
+    {
+      char *ent, *name;
+      char disable = 0;
+      int opt = 0;
+
+      name = ent = cslentry (protocol, i);
+      if (!ent)
+	continue;
+
+      /*
+       *  Check if we explicity want to enable (+) or disable (-!) a particular protocol
+       */
+      if (*ent == '-' || *ent == '!' || *ent == '+')
+	{
+	  name++;
+
+	  if (*ent == '-' || *ent == '!')
+	    disable = 1;
+	}
+
+      if (!strcasecmp (name, "SSLv3"))
+	opt = SSL_PROTOCOL_SSLV3;
+      else if (!strcasecmp (name, "TLSv1"))
+	opt = SSL_PROTOCOL_TLSV1;
+#if defined (SSL_OP_NO_TLSv1_1)
+      else if (!strcasecmp (name, "TLSv1_1") || !strcasecmp (name, "TLSv1.1"))
+	opt = SSL_PROTOCOL_TLSV1_1;
+#endif
+#if defined (SSL_OP_NO_TLSv1_2)
+      else if (!strcasecmp (name, "TLSv1_2") || !strcasecmp (name, "TLSv1.2"))
+	opt = SSL_PROTOCOL_TLSV1_2;
+#endif
+      else if (!strcasecmp (name, "ALL"))
+	opt = SSL_PROTOCOL_ALL;
+      else
+	{
+	  log_error ("SSL: Unsupported protocol [%s]", name);
+	  goto skip;
+	}
+
+      if (disable)
+	proto &= ~opt;
+      else
+	proto |= opt;
+
+    skip:
+      free (ent);
+    }
+
+  /*
+   *   Start by enabling all options
+   */
+  ctx_options = SSL_OP_ALL;
+
+  /*
+   *  Always disable SSLv2, as per RFC 6176
+   */
+  ctx_options |= SSL_OP_NO_SSLv2;
+
+  /*
+   *  Warn when user enables SSLv3 protocol
+   */
+  if (!(proto & SSL_PROTOCOL_SSLV3))
+    ctx_options |= SSL_OP_NO_SSLv3;
+  else
+    log_warning ("SSL: Enabling legacy protocol SSLv3 which may be vunerable");
+
+  /*
+   *  Check rest of protocols
+   */
+  if (!(proto & SSL_PROTOCOL_TLSV1))
+    ctx_options |= SSL_OP_NO_TLSv1;
+
+#if defined (SSL_OP_NO_TLSv1_1)
+  if (!(proto & SSL_PROTOCOL_TLSV1_1))
+    ctx_options |= SSL_OP_NO_TLSv1_1;
+#endif
+
+#if defined (SSL_OP_NO_TLSv1_2)
+  if (!(proto & SSL_PROTOCOL_TLSV1_2))
+    ctx_options |= SSL_OP_NO_TLSv1_2;
+#endif
+
+  /*
+   *  Disable compression on OpenSSL >= 1.0 to fix "CRIME" attack
+   */
+#ifdef SSL_OP_NO_COMPRESSION
+  ctx_options |= SSL_OP_NO_COMPRESSION;
+#endif
+
+  /*
+   *  Server prefers cipher in order it listed
+   */
+#ifdef SSL_OP_CIPHER_SERVER_PREFERENCE
+  ctx_options |= SSL_OP_CIPHER_SERVER_PREFERENCE;
+#endif
+
+  /*
+   *  Configure additional options
+   */
+  ctx_options |= SSL_OP_SINGLE_DH_USE;
+
+#ifdef SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION
+  ctx_options |= SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION;
+#endif
+
+  /*
+   *  Set options
+   */
+  if (!SSL_CTX_set_options (ctx, ctx_options))
+    {
+      log_error ("SSL: Failed setting protocol options [%s] [%lx]", protocol, ctx_options);
+      return 0;
+    }
+
+  return 1;
+}
+
+
 static void
 ssl_server_init ()
 {
@@ -5047,6 +5283,23 @@ ssl_server_init ()
       ERR_print_errors_fp (stderr);
       call_exit (-1);
     }
+
+#ifndef NO_THREAD
+  /*
+   *  Set Protocols & Ciphers
+   */
+  if (!ssl_ctx_set_protocol_options (ssl_server_ctx, ssl_server_protocols))
+    {
+      ERR_print_errors_fp (stderr);
+      call_exit (-1);
+    }
+  if (!ssl_ctx_set_cipher_list (ssl_server_ctx, ssl_server_cipher_list))
+    {
+      ERR_print_errors_fp (stderr);
+      call_exit (-1);
+    }
+#endif
+
   ssl_thread_setup ();
 }
 

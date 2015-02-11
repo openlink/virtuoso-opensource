@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -808,7 +808,7 @@ USER_KEYS_INIT (in username varchar, in opts any)
   declare keys, path, key_value, key_type, key_passwd, key_pkey, os_u_name, os_u_pass any;
   declare certs any;
 
-  debug := 1;
+  debug := 0;
 
   opts := deserialize (blob_to_string (opts));
 

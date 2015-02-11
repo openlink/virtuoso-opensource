@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -529,6 +529,7 @@ typedef struct hash_area_s
   dbe_col_loc_t *	ha_cols;	/* cols of feeding table, correspond to ha_key_cols */
   state_slot_t **	ha_slots;	/* slots where values to feed come from if they do not come from columns direct */
   struct hash_area_s *	ha_org_ha; /* can be a temp ha on stack for merge of gby or such, must ref the originnal allocated ha in the ht */
+  caddr_t	ha_non_null; /* non null flags of ssls in ha_slots, can be nn in ha and nullable elsewhere for hash oj  */
   int			ha_n_keys;
   int			ha_n_deps;
   char 			ha_op;
@@ -735,7 +736,7 @@ typedef struct table_source_s
     ts_alt_func_t 	ts_alternate_test;
     struct table_source_s *	ts_alternate;
     state_slot_t*		ts_alternate_cd;
-    caddr_t			ts_sort_read_mask; /* array of char flags.  Set if in reading sort temp the item at the place goes into the output */
+    caddr_t                     ts_sort_read_mask; /* array of char flags.  Set if in reading sort temp the item at the place goes into the output. For gby, set if user aggregate with a dv serialization in the ht */
     short		ts_max_rows; /* if last of top n and a single state makes this many, then can end whole set */
     short		ts_prefetch_rows; /* recommend cluster end batch   after this many because top later */
   } table_source_t;
@@ -1793,6 +1794,7 @@ typedef struct client_connection_s
     int			cli_n_to_autocommit;
     cl_slice_t *	cli_csl;
     cl_call_stack_t *	cli_cl_stack;
+    struct TLSF_struct *cli_tlsf;
     cl_aq_ctx_t *	cli_claq;
     //caddr_t *		cli_main_inst; /* if the cli is a dfg slice branch, this is the main qi of the dfg on this host.  The main qi waits for all branches, so ref secure */
     //struct cll_in_box_s *	cli_result_clib; /* for any thread of local qf or dfg, results go here */
@@ -1872,12 +1874,14 @@ typedef struct client_connection_s
     int			cli_inprocess;
 #endif
     uint32		cli_start_time;
+    uint32		cli_ws_check_time;
     caddr_t *		cli_info;
     cl_thread_t *	cli_clt; /* if cli of a cluster server thread, this is the clt */
     struct aq_request_s *	cli_aqr; /* if the cli is running an aq func, this is the aqr */
     dk_session_t *	cli_blob_ses_save; /* save the cli_session here for the time of reading b.blobs from cluster as if they were from client */
     struct xml_ns_2dict_s      *cli_ns_2dict;
     dk_set_t		cli_dae_blobs;
+    char               cli_logged_in;
   } client_connection_t;
 
 

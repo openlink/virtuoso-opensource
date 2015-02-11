@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -103,7 +103,7 @@ buf_asc_ck (buffer_desc_t * buf)
 
 
 int enable_ce_ins_check = 0;
-
+int enable_cr_trace;
 void
 itc_ce_check (it_cursor_t * itc, buffer_desc_t * buf, int leave)
 {
@@ -621,12 +621,13 @@ extern client_connection_t *rfwd_cli;
 //#define RQ_CHECK_TEXT "select count (*)  from rdf_quad a table option (index rdf_quad_op, index_only, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_op, index_only, no cluster) where  a.p = b.p and a.o = b.o )"
 //#define RQ_CHECK_TEXT "select count (*) from rdf_quad a table option (loop, index rdf_quad_pogs, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_pogs, no cluster)  where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s)"
 //#define RQ_CHECK_TEXT "select count (*)  from rdf_quad a table option (index rdf_quad_gs, index_only, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_gs, index_only, no cluster) where  a.g = b.g and a.s = b.s )"
-#define RQ_CHECK_TEXT "select 0, count (s), count (p), count (o), count (g) from rdf_quad table option (index rdf_quad) where p =  #i292339462 and s > #ib390000000"
+//#define RQ_CHECK_TEXT "select 0, count (s), count (p), count (o), count (g) from rdf_quad table option (index rdf_quad) where p =  #i292339462 and s > #ib390000000"
 
 #define RQ_RANGE_CHECK_TEXT_1 "select count (*) from rdf_quad a table option (loop, index rdf_quad_pogs, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_pogs, no cluster)  where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s) and p = ? and o >= ? and o <= ?"
 #define RQ_RANGE_CHECK_TEXT_2 "select count (*) from rdf_quad a table option (loop, index rdf_quad_pogs, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_pogs, no cluster)  where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s) and p >= ? and p <= ?"
 
 //#define RQ_CHECK_TEXT "select count (*) from t1 a table option (index str2) where not exists (select 1 from t1 b table option (loop, index str2) where b.string2 = a.string2 and b.row_no = a.row_no)"
+#define RQ_CHECK_TEXT "select count (*) from knows k1 table option (index k_p2) where not exists (select 1 from knows k2 table option (loop, index k_p2) where k1.k_person1id = k2.k_person1id and k1.k_person2id = k2.k_person2id)"
 
 
 void
@@ -783,6 +784,24 @@ mp_conc1 (mem_pool_t * mp, dk_set_t * r, void *v)
 {
   dk_set_t c = mp_cons (mp, v, NULL);
   *r = dk_set_conc (*r, c);
+}
+
+void
+mp_conc1_l (mem_pool_t * mp, dk_set_t * r, void* v, dk_set_t * last)
+{
+  dk_set_t c = mp_cons (mp, v, NULL);
+  if (!*r)
+    *r = c;
+  else if (*last)
+    {
+      (*last)->next = c;
+    }
+  else 
+    {
+      *last = dk_set_last (*r);
+      (*last)->next = c;
+    }
+  *last = c;
 }
 
 #if 0
@@ -1028,7 +1047,7 @@ buf_set_pm (buffer_desc_t * buf, page_map_t * pm)
   if (buf->bd_content_map->pm_size != PM_SIZE (pm->pm_count))
     {
       buf->bd_content_map->pm_count = 0;	/* do not copy entries in map_resize, might no longer fit in new size */
-      map_resize (&buf->bd_content_map, PM_SIZE (pm->pm_count));
+      map_resize (buf, &buf->bd_content_map, PM_SIZE (pm->pm_count));
     }
   sz = buf->bd_content_map->pm_size;
   memcpy_16 (buf->bd_content_map, pm, PM_ENTRIES_OFFSET + pm->pm_count * sizeof (short));
@@ -1117,6 +1136,8 @@ ceic_prepare_result_page (ce_ins_ctx_t * ceic)
   if (cer->cer_pm->pm_size < 2 * cer->cer_n_ces)
     cer->cer_pm = mp_pm_alloc (ceic->ceic_mp, cer->cer_n_ces * 2, NULL);
   cer->cer_pm->pm_bytes_free = PAGE_DATA_SZ;
+  if (cer->cer_n_ces > PM_MAX_CES)
+    GPF_T1 ("A cer has more ces than fit in a pm");
   return cer;
 }
 
@@ -1146,6 +1167,8 @@ cer_append_ce (ce_ins_ctx_t * ceic, ceic_result_page_t * cer, db_buf_t ce, int i
   pm->pm_entries[pm->pm_count + 1] = ce_n_values (ce);
   pm->pm_count += 2;
   pm->pm_filled_to += bytes;
+  if (pm->pm_count / 2 > PM_MAX_CES)
+    GPF_T1 ("filling more ces on a page than max per pm");
   cs_write_gap (cer->cer_buffer + pm->pm_filled_to, PAGE_SZ - pm->pm_filled_to);
   if (is_last)
     cer->cer_after_last_insert = 1;
@@ -1154,7 +1177,7 @@ cer_append_ce (ce_ins_ctx_t * ceic, ceic_result_page_t * cer, db_buf_t ce, int i
 
 #define CER_ADD(bytes, ce)				\
 {  \
-  if (cer->cer_pm->pm_bytes_free < bytes || cer->cer_n_ces >= (PM_MAX_ENTRIES - 4) / 2) \
+  if (cer->cer_pm->pm_bytes_free < bytes || cer->cer_n_ces >= PM_MAX_CES) \
     cer = ceic_result_page (ceic); \
   cer->cer_pm->pm_bytes_free -= bytes; \
   cer->cer_n_ces++; \
@@ -1233,12 +1256,13 @@ ceic_even_split (ce_ins_ctx_t * ceic, int first_ce_inx)
   /* if a page splits in 2 and left side has ces inside the run that can move to the right for balance then move some.  The move updates the pms of the cers and gives a split ce that marks the split instead of left going full. */
   page_map_t *pm1, *pm2;
   int n_avail, ctr, prev_diff, next_diff;
-  ceic_result_page_t *cer = ceic->ceic_res;
+  ceic_result_page_t *cer = ceic->ceic_res, *cer2;
   db_buf_t move_ce = NULL, prev_move = NULL;
   if (!cer->cer_next || cer->cer_next->cer_next)
     return NULL;
   pm1 = ceic->ceic_res->cer_pm;
-  pm2 = ceic->ceic_res->cer_next->cer_pm;
+  cer2 = ceic->ceic_res->cer_next;
+  pm2 = cer2->cer_pm;
   prev_diff = pm_free_diff (pm1, pm2);
   if (prev_diff < 1000)
     return NULL;
@@ -1251,13 +1275,15 @@ ceic_even_split (ce_ins_ctx_t * ceic, int first_ce_inx)
       cer->cer_ces = cer->cer_ces->next;
       next_diff = ((int) pm1->pm_bytes_free + bytes) - ((int) pm2->pm_bytes_free - bytes);
       next_diff = next_diff < 0 ? -next_diff : next_diff;
+      if (cer2->cer_n_ces >= PM_MAX_CES - 2)
+	return prev_move;
       if (next_diff > prev_diff)
 	return prev_move;
       prev_diff = next_diff;
       pm2->pm_bytes_free -= bytes;
       pm1->pm_bytes_free += bytes;
       cer->cer_n_ces--;
-      cer->cer_next->cer_n_ces++;
+      cer2->cer_n_ces++;
       prev_move = move_ce;
     }
   return move_ce;
@@ -1356,7 +1382,7 @@ ceic_apply (ce_ins_ctx_t * ceic, col_data_ref_t * cr, db_buf_t limit_ce)
 	      delta_bytes = ce_total_bytes (delta);
 	      if (!ceic->ceic_delta_ce && !split_ce)
 		delta_bytes += ce_last_insert_margin;
-	      if (cer->cer_bytes_free < delta_bytes || delta == split_ce)
+	      if (cer->cer_bytes_free < delta_bytes || cer->cer_pm->pm_count / 2 >= PM_MAX_CES || delta == split_ce)
 		cer = ceic_prepare_result_page (ceic);
 	      cer_append_ce (ceic, cer, delta, !ceic->ceic_delta_ce && !split_ce);
 	      if (CE_REPLACE == op)
@@ -1366,7 +1392,7 @@ ceic_apply (ce_ins_ctx_t * ceic, col_data_ref_t * cr, db_buf_t limit_ce)
 	}
       if (!any_replaces)
 	{
-	  if (cer->cer_bytes_free < bytes || split_ce == ce)
+	  if (cer->cer_bytes_free < bytes || cer->cer_pm->pm_count / 2 >= PM_MAX_CES || split_ce == ce)
 	    cer = ceic_prepare_result_page (ceic);
 	  cer_append_ce (ceic, cer, ce, 0);
 	}
@@ -1380,7 +1406,7 @@ ceic_apply (ce_ins_ctx_t * ceic, col_data_ref_t * cr, db_buf_t limit_ce)
       int delta_bytes = ce_total_bytes (delta);
       if (!ceic->ceic_delta_ce)
 	delta_bytes += ce_last_insert_margin;
-      if (cer->cer_bytes_free < delta_bytes)
+      if (cer->cer_bytes_free < delta_bytes || cer->cer_pm->pm_count / 2 >= PM_MAX_CES)
 	cer = ceic_prepare_result_page (ceic);
       cer_append_ce (ceic, cer, delta, !ceic->ceic_delta_ce && !split_ce);
       CEIC_NEXT_OP (ceic, delta, op, delta_row);
@@ -1475,6 +1501,16 @@ ceic_int_value (ce_ins_ctx_t * ceic, int nth, dtp_t * dtp_ret)
   if (DV_ANY == ceic->ceic_col->col_sqt.sqt_dtp)
     {
       return dv_int ((db_buf_t) val, dtp_ret);
+    }
+  if (DV_DOUBLE_FLOAT == ceic->ceic_col->col_sqt.sqt_dtp)
+    {
+      *dtp_ret = DV_LONG_INT;
+      return *(int64*)val;
+    }
+  if (DV_SINGLE_FLOAT == ceic->ceic_col->col_sqt.sqt_dtp)
+    {
+      *dtp_ret = DV_LONG_INT;
+      return *(int32*)val;
     }
   *dtp_ret = DV_TYPE_OF (val);
   return unbox_iri_int64 (val);
@@ -1785,7 +1821,7 @@ ceic_init_dc (ce_ins_ctx_t * ceic, data_col_t * dc, db_buf_t ce)
   dtp_t col_dtp = dtp_canonical[ceic->ceic_col->col_sqt.sqt_col_dtp];
   if (!cs)
     cs = ceic->ceic_cs;
-  //goto any;
+  /*goto any; */
   if (ceic->ceic_is_cpt_restore > COL_UPDATE)
     goto any;
   if (ceic->ceic_col->col_sqt.sqt_non_null && (DV_IRI_ID == col_dtp || DV_LONG_INT == col_dtp))
@@ -1891,6 +1927,7 @@ ce_comp_check (compress_state_t * cs, db_buf_t ce, dk_set_t * org, int *nth)
 void
 ceic_merge_insert (ce_ins_ctx_t * ceic, buffer_desc_t * buf, int ice, db_buf_t org_ce, int start, int split_at)
 {
+  dk_set_t l_ce = NULL, l_ce_op = NULL;
   int prev_checked = 0;
   dk_set_t ck_set = NULL;
   dtp_t pre_dc_dtp;
@@ -1955,9 +1992,9 @@ ceic_merge_insert (ce_ins_ctx_t * ceic, buffer_desc_t * buf, int ice, db_buf_t o
   cs_distinct_ces (cs);
   DO_SET (db_buf_t, prev_ce, &cs->cs_ready_ces)
   {
-    mp_conc1 (ceic->ceic_mp, &ceic->ceic_delta_ce_op, (void *) (ptrlong) (op | (itc->itc_nth_ce + (start ? 2 : 0))));
+    mp_conc1_l (ceic->ceic_mp, &ceic->ceic_delta_ce_op, (void *) (ptrlong) (op | (itc->itc_nth_ce + (start ? 2 : 0))), &l_ce_op);
     prev_ce = ce_skip_gap (prev_ce);
-    mp_conc1 (ceic->ceic_mp, &ceic->ceic_delta_ce, (void *) prev_ce);
+    mp_conc1_l (ceic->ceic_mp, &ceic->ceic_delta_ce, (void *) prev_ce, &l_ce);
     op = CE_INSERT;
     if (dbf_ce_comp_check)
       ce_comp_check (cs, prev_ce, &ck_set, &prev_checked);
@@ -1982,7 +2019,7 @@ mp_any_box (mem_pool_t * mp, db_buf_t dv)
 dk_set_t
 ce_right (ce_ins_ctx_t * ceic, db_buf_t org_ce, int start, int n_values)
 {
-  dk_set_t res = NULL;
+  dk_set_t res = NULL, l_ce;
   compress_state_t cs;
   db_buf_t last_ce;
   int last_ce_len, inx;
@@ -2018,21 +2055,14 @@ ce_right (ce_ins_ctx_t * ceic, db_buf_t org_ce, int start, int n_values)
     }
   SET_THR_TMP_POOL (NULL);
   cs_distinct_ces (&cs);
+  l_ce = NULL;
   DO_SET (db_buf_t, prev_ce, &cs.cs_ready_ces)
   {
-    mp_conc1 (ceic->ceic_mp, &res, (void *) prev_ce);
+    mp_conc1_l (ceic->ceic_mp, &res, (void *) prev_ce, &l_ce);
   }
   END_DO_SET ();
   cs_free_allocd_parts (&cs);
   return res;
-}
-
-
-void
-ceic_new_ce (ce_ins_ctx_t * ceic, db_buf_t ce, int op, int row)
-{
-  mp_conc1 (ceic->ceic_mp, &ceic->ceic_delta_ce_op, (void *) (ptrlong) (op | row));
-  mp_conc1 (ceic->ceic_mp, &ceic->ceic_delta_ce, (void *) ce);
 }
 
 
@@ -2439,7 +2469,7 @@ ceic_feed_flush (ce_ins_ctx_t * ceic)
   if (pm->pm_size != PM_SIZE (n * 2))
     {
       buf->bd_content_map->pm_count = 0;
-      map_resize (&buf->bd_content_map, PM_SIZE (n * 2));
+      map_resize (buf, &buf->bd_content_map, PM_SIZE (n * 2));
     }
   pm = buf->bd_content_map;
   pm->pm_count = n * 2;
@@ -2473,7 +2503,7 @@ ceic_feed (ce_ins_ctx_t * ceic, db_buf_t ce, int row)
 {
   int bytes = ce_total_bytes (ce), spacing;
   spacing = (row != -1 && bytes < 4090) ? 50 : 0;
-  if (ceic->ceic_batch_bytes + bytes > PAGE_DATA_SZ - spacing)
+  if (ceic->ceic_batch_bytes + bytes > PAGE_DATA_SZ - spacing || ceic->ceic_last_nth >= PM_MAX_CES - 1)
     {
       /* leave some space at end but only if dealing with ces of the segment itself.  If a ce from before the seg, must fit where it was, thus apply no margin, else the seg before could acquire a new page that would be unrefd from the previous col ref string */
       ceic_feed_flush (ceic);
@@ -3306,13 +3336,14 @@ ceic_split_registered (ce_ins_ctx_t * ceic, row_delta_t * rd, buffer_desc_t * bu
   ITC_IN_KNOWN_MAP (itc, itc->itc_page);
   for (reg = buf->bd_registered; reg; reg = next)
     {
-      next = itc->itc_next_on_page;
+      next = reg->itc_next_on_page;
       if (reg->itc_map_pos == itc->itc_map_pos
 	  && reg->itc_col_row >= splits[inx - 1] && (n_splits == inx || reg->itc_col_row < splits[inx]))
 	{
 	  reg->itc_bp.bp_transiting = 1;
 	  if (COL_NO_ROW != reg->itc_col_row)
 	    reg->itc_col_row -= splits[inx - 1];
+	  CR_TRACE (reg, "split move");
 	  itc_unregister_inner (reg, buf, 1);
 	  reg->itc_next_on_page = rd->rd_keep_together_itcs;
 	  rd->rd_keep_together_itcs = reg;
@@ -3603,7 +3634,7 @@ cr_set_new_first_ce_buf (col_data_ref_t * cr, buffer_desc_t * new_first_ce_buf)
 void
 ceic_no_split (ce_ins_ctx_t * ceic, buffer_desc_t * buf, int *action)
 {
-  int inx, col_inx, first_changed = -1;
+  int inx, col_inx;
   it_cursor_t *itc = ceic->ceic_itc;
   DO_BOX (col_data_ref_t *, cr, col_inx, itc->itc_col_refs)
   {
@@ -3624,11 +3655,13 @@ ceic_no_split (ce_ins_ctx_t * ceic, buffer_desc_t * buf, int *action)
 	    buffer_desc_t *buf = cr->cr_pages[inx].cp_buf;
 	    ceic_result_page_t *cer;
 	    last_page_ceic = page_ceic;
-	    if (-1 == first_changed)
-	      first_changed = inx;
 	    n_ces += ceic_n_new_ces (page_ceic);
 	    page_ceic->ceic_org_buf = buf;
 	    ceic_apply (page_ceic, cr, limit_ce);
+	    if (page_ceic->ceic_res->cer_n_ces > PM_MAX_CES)
+	      GPF_T1 ("more ces than fit in pm");
+
+
 	    is_first_cer = 1;
 	    if (page_ceic->ceic_res && page_ceic->ceic_res->cer_next)
 	      dp_may_compact (buf->bd_storage, buf->bd_page);
@@ -3969,7 +4002,7 @@ upd_col_pk (update_node_t * upd, caddr_t * inst)
 	if (!itc->itc_is_on_row || !itc->itc_rl)
 	  {
 	    rdbg_printf (("Row to update deld before update T=%d L=%d pos=%d\n",
-		    TRX_NO (cr_itc->itc_ltrx), cr_itc->itc_page, cr_itc->itc_map_pos));
+		    TRX_NO (itc->itc_ltrx), itc->itc_page, itc->itc_map_pos));
 	    upd_col_error (itc, buf, mp, "24000", "SR251",
 		"Cursor not on row in column store UPDATE or no lock on row.  Check that there are no autocommitting functions in the statement");
 	  }
@@ -4132,7 +4165,7 @@ pf_col_right_edge (page_fill_t * pf, row_delta_t * rd)
 	      {
 		after = 1;
 		right->bd_content_map->pm_count = 0;
-		map_resize (&right->bd_content_map, PM_SIZE (pm->pm_count));
+		  map_resize (right, &right->bd_content_map, PM_SIZE (pm->pm_count));
 		right_pm = right->bd_content_map;
 		right_pm->pm_count = 0;
 		right_pm->pm_bytes_free = PAGE_DATA_SZ;
@@ -4537,6 +4570,35 @@ itc_col_log_insert (it_cursor_t * itc)
 
 
 extern int32 cl_non_logged_write_mode;
+dk_session_t * dbg_log_ses;
+caddr_t bif_curdatetime (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
+
+void
+col_dbg_log_new ()
+{
+  int fd, rc;
+  TIMESTAMP_STRUCT ts;
+  char *szExt, szNewName[255], szTS[15];
+  caddr_t now;
+  if (!dbg_log_ses)
+    return;
+
+  now = bif_curdatetime(NULL, NULL, NULL);
+  dt_to_timestamp_struct(now, &ts);
+  snprintf(szTS, sizeof (szTS), "%04d%02d%02d%02d%02d%02d",
+	ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second);
+  dk_free_box(now);
+  snprintf (szNewName, sizeof (szNewName), COL_DBG_LOG ".%s", szTS);
+
+  mutex_enter (log_write_mtx);
+  fd = tcpses_get_fd (dbg_log_ses->dks_session);
+  /*ftruncate (fd, 0);*/
+  fd_close (fd, 0);
+  rc = rename (COL_DBG_LOG, szNewName);
+  PrpcSessionFree (dbg_log_ses);
+  dbg_log_ses = NULL;
+  mutex_leave (log_write_mtx);
+}
 
 void
 itc_col_dbg_log (it_cursor_t * itc)
@@ -4546,7 +4608,6 @@ itc_col_dbg_log (it_cursor_t * itc)
   caddr_t *repl = lt->lt_replicate;
   dk_session_t *save = lt->lt_log;
   dk_session_t *ses;
-  static dk_session_t *dbg_log_ses;
   caddr_t *h = NULL;
   int fd;
   int inx;
@@ -4569,7 +4630,7 @@ itc_col_dbg_log (it_cursor_t * itc)
   if (!dbg_log_ses)
     {
       OFF_T off;
-      fd = fd_open ("virtuoso.debug.trx", LOG_OPEN_FLAGS);
+      fd = fd_open (COL_DBG_LOG, LOG_OPEN_FLAGS);
       off = LSEEK (fd, 0, SEEK_END);
       dbg_log_ses = dk_session_allocate (SESCLASS_TCPIP);
       tcpses_set_fd (dbg_log_ses->dks_session, fd);
@@ -4698,7 +4759,7 @@ itc_col_vec_insert (it_cursor_t * itc, insert_node_t * ins)
 	{
 	  if (strstr (itc->itc_insert_key->key_name, "POGS"))
 	itc_pogs_seg_check (itc, buf);
-	  else if (strstr (itc->itc_insert_key->key_name, "QUAD_GS"))
+	  else if (strstr (itc->itc_insert_key->key_name, "k_p2"))
 	    itc_gs_seg_check (itc, buf);
 	}
       if (col_ins_error)

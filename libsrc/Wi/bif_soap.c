@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1070,7 +1070,7 @@ soap_box_xml_entity (caddr_t *entity, caddr_t *err_ret, dtp_t proposed_type, int
 
   if (type != DV_ARRAY_OF_POINTER)
     {
-      caddr_t wide = box_utf8_as_wide_char ((caddr_t) entity, NULL, box_length (entity) - 1, 0, DV_WIDE);
+      caddr_t wide = box_utf8_as_wide_char ((caddr_t) entity, NULL, box_length (entity) - 1, 0);
       if (!proposed_type)
 	return wide;
       else
@@ -6263,7 +6263,7 @@ ws_soap_get_url (ws_connection_t *ws, int full_path)
       if (szHost != szHostBuffer)
 	dk_free_box (szHost);
     }
-  len = BOX_ELEMENTS (ws->ws_path);
+  len = BOX_ELEMENTS_0 (ws->ws_path);
   if (!full_path)
     len --;
   DO_BOX (char *, path_elem, inx, ws->ws_path)
@@ -9389,7 +9389,7 @@ convert_value:
 	 }
        else
 	 {
-	   caddr_t wide = box_utf8_as_wide_char (value, NULL, box_length (value) - 1, 0, DV_WIDE);
+	   caddr_t wide = box_utf8_as_wide_char (value, NULL, box_length (value) - 1, 0);
 	   /* Special cases for datatypes:
 	      float is mapped to double to increase the precision,
 	      string is mapped to the nvarchar for wide characters support */

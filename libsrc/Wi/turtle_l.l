@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -133,6 +133,7 @@ int ttl_yy_null = YY_NULL;
 
 struct yyguts_t;
 
+/*! Signals an error (or return TTL_RECOVERABLE_ERROR) if \c box is too long. In case of troubles the box is freed. */
 extern int ttlyyerror_if_long_qname (ttlp_t *ttlp_arg, int lexcode, caddr_t box, const char *lex_type_descr, struct yyguts_t * yyg);
 
 #define TTL_TOKBOX_Q_FINAL(lexcode,lex_type_descr) \
@@ -142,6 +143,10 @@ extern int ttlyyerror_if_long_qname (ttlp_t *ttlp_arg, int lexcode, caddr_t box,
 
 #define TTL_TOKBOX_Q(n,lexcode,lex_type_descr) { \
     ttlyylval.box = box_dv_short_string (yytext+(n)); \
+    TTL_TOKBOX_Q_FINAL(lexcode,lex_type_descr) }
+
+#define TTL_TOKBOX_Q_SAVE(n,lexcode,lex_type_descr) { \
+    ttlp_arg->ttlp_last_q_save = ttlyylval.box = box_dv_short_string (yytext+(n)); \
     TTL_TOKBOX_Q_FINAL(lexcode,lex_type_descr) }
 
 #define TTL_TOKBOX_BNODE(n,lexcode,lex_type_descr) { \
@@ -388,7 +393,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
     tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "Invalid characters in local part of QName");
     TTL_TOKBOX_Q(0,QNAME,"qualified URI"); }
 
-<INITIAL>{SPAR_NCNAME_PREFIX}":"					{ TTL_TOKBOX_Q(0,QNAME_NS,"namespace"); }
+<INITIAL>{SPAR_NCNAME_PREFIX}":"					{ TTL_TOKBOX_Q_SAVE(0,QNAME_NS,"namespace"); }
 
 <GARBAGE_BOL,GARBAGE,TWO_CRS>{SPAR_NCNAME_PREFIX}":"			{ if (ttlp_qname_prefix_is_explicit_and_valid (ttlp_arg, yytext)) { TTLYYBEGIN(INITIAL); TTL_TOKBOX_Q(0,QNAME_NS,"namespace"); } }
 
@@ -475,8 +480,8 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <TURTLE_DDDQ>[\\]		{ ttlyyerror ("Bad escape sequence in a long double-quoted string"); }
 <TURTLE_SSSQ>.			{ ttlyyerror ("Bad character in a long single-quoted string"); }
 <TURTLE_DDDQ>.			{ ttlyyerror ("Bad character in a long double-quoted string"); }
-<TURTLE_SSSQ><<EOF>>		{ ttlyyerror ("Unterminated long single-quoted string"); }
-<TURTLE_DDDQ><<EOF>>		{ ttlyyerror ("Unterminated long double-quoted string"); }
+<TURTLE_SSSQ><<EOF>>		{ ttlp_arg[0].ttlp_flags |= TTLP_SNIFFER_COMPLETE; ttlyyerror ("Unterminated long single-quoted string"); }
+<TURTLE_DDDQ><<EOF>>		{ ttlp_arg[0].ttlp_flags |= TTLP_SNIFFER_COMPLETE; ttlyyerror ("Unterminated long double-quoted string"); }
 
 <INITIAL>['']		{ yymore(); TTLYYBEGIN (TURTLE_SQ); }
 <INITIAL>[""]		{ yymore(); TTLYYBEGIN (TURTLE_DQ); }
@@ -533,8 +538,8 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <TURTLE_BAD_SQ>['']("@"{SPAR_LANGTAG})? { TTLYYBEGIN (INITIAL); return TTL_RECOVERABLE_ERROR; }
 <TURTLE_BAD_DQ>[""]("@"{SPAR_LANGTAG})? { TTLYYBEGIN (INITIAL); return TTL_RECOVERABLE_ERROR; }
 
-<TURTLE_SQ,TURTLE_BAD_SQ><<EOF>>		{ ttlyyerror ("Unterminated short single-quoted string"); }
-<TURTLE_DQ,TURTLE_BAD_DQ><<EOF>>		{ ttlyyerror ("Unterminated short double-quoted string"); }
+<TURTLE_SQ,TURTLE_BAD_SQ><<EOF>>		{ ttlp_arg[0].ttlp_flags |= TTLP_SNIFFER_COMPLETE; ttlyyerror ("Unterminated short single-quoted string"); }
+<TURTLE_DQ,TURTLE_BAD_DQ><<EOF>>		{ ttlp_arg[0].ttlp_flags |= TTLP_SNIFFER_COMPLETE; ttlyyerror ("Unterminated short double-quoted string"); }
 
 <INITIAL>[+-]?{INTEGER_LITERAL}		{ return ttlp_NUMBER_int (yylval, ttlp_arg, yyg); }
 <INITIAL>[+-]?{DECIMAL_LITERAL}		{ return ttlp_NUMBER_decimal (yylval, ttlp_arg, yyg); }
@@ -566,12 +571,6 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <GARBAGE,GARBAGE_BOL>.					{ }
 
 %%
-
-/*void ttlyy_reset (yyscan_t scanner)
-{
-  ttlyyrestart (NULL, scanner);
-  TTLYYBEGIN (INITIAL);
-}*/
 
 int
 ttlyyerror_if_long_qname (ttlp_t *ttlp_arg, int lexcode, caddr_t box, const char *lex_type_descr, struct yyguts_t * yyg)
@@ -607,6 +606,9 @@ ttlyyerror_if_long_qname (ttlp_t *ttlp_arg, int lexcode, caddr_t box, const char
   return lexcode;
 
 err:
+  if (box == ttlp_arg->ttlp_last_q_save)
+    ttlp_arg->ttlp_last_q_save = NULL;
+  dk_free_box (box);
   TTLYYERROR_OR_RECOVER (buf);
   return 0; /* Never reached */
 }
@@ -682,38 +684,35 @@ ttl_lex_analyze (caddr_t str, int flags, wcharset_t *query_charset)
 #endif
   ttlp = ttlp_alloc ();
   ttlp->ttlp_flags = flags;
+  ttlp->ttlp_text = str;
+  ttlp->ttlp_text_len = strlen (str);
+  ttlp->ttlp_err_hdr = ((flags & TTLP_ALLOW_NQUAD) ? "NQuads lexical analyzer" : ((flags & TTLP_ALLOW_TRIG) ? "TriG lexical analyzer" : "TURTLE lexical analyzer"));
+  if (NULL == query_charset)
+    query_charset = default_charset;
+  if (NULL == query_charset)
+    ttlp->ttlp_enc = &eh__ISO8859_1;
+  else
+    {
+      ttlp->ttlp_enc = eh_get_handler (CHARSET_NAME (query_charset, NULL));
+      if (NULL == ttlp->ttlp_enc)
+        ttlp->ttlp_enc = &eh__ISO8859_1;
+    }
+  ttlyylex_init (&scanner);
+  ttlyyset_extra (ttlp, scanner);
+  if (flags & TTLP_SNIFFER)
+    yy_push_state (GARBAGE_BOL, scanner);
+  else
+    {
+#ifdef MALLOC_DEBUG
+      yy_push_state (INITIAL, scanner);
+#endif
+    }
 
 resume_sniffing:
   QR_RESET_CTX
     {
       if (sniffer_recovery)
         yy_push_state (GARBAGE, scanner);
-      else
-        {
-          ttlp->ttlp_text = str;
-          ttlp->ttlp_text_len = strlen (str);
-          ttlp->ttlp_err_hdr = ((flags & TTLP_ALLOW_NQUAD) ? "NQuads lexical analyzer" : ((flags & TTLP_ALLOW_TRIG) ? "TriG lexical analyzer" : "TURTLE lexical analyzer"));
-          if (NULL == query_charset)
-            query_charset = default_charset;
-          if (NULL == query_charset)
-            ttlp->ttlp_enc = &eh__ISO8859_1;
-          else
-            {
-              ttlp->ttlp_enc = eh_get_handler (CHARSET_NAME (query_charset, NULL));
-              if (NULL == ttlp->ttlp_enc)
-                ttlp->ttlp_enc = &eh__ISO8859_1;
-            }
-          ttlyylex_init (&scanner);
-          ttlyyset_extra (ttlp, scanner);
-          if (flags & TTLP_SNIFFER)
-            yy_push_state (GARBAGE_BOL, scanner);
-          else
-            {
-#ifdef MALLOC_DEBUG
-              yy_push_state (INITIAL, scanner);
-#endif
-            }
-        }
       for (;;)
         {
           caddr_t lex_value = NULL;
@@ -764,23 +763,23 @@ resume_sniffing:
   QR_RESET_CODE
     {
       du_thread_t *self = THREAD_CURRENT_THREAD;
-#ifdef TTLYYDEBUG
       caddr_t *err = (caddr_t *)thr_get_error_code (self);
+#ifdef TTLYYDEBUG
       ttlyy_dbg_printf (("{ERROR %s %s}", ERR_STATE(err), ERR_MESSAGE(err)));
 #endif
-      if (flags & TTLP_SNIFFER)
+      thr_set_error_code (self, NULL);
+      if ((flags & TTLP_SNIFFER) && (NULL == strstr (ERR_MESSAGE (err), "nternal error")))
         {
-          dk_free_tree (thr_get_error_code (self));
-          thr_set_error_code (self, NULL);
+          dk_free_tree (err);
           yy_pop_state (scanner);
           ttlp_reset_stacks (ttlp);
-          sniffer_recovery = 2;
+          if (!(ttlp->ttlp_flags & TTLP_SNIFFER_COMPLETE)) /* Note that \c ttlp->ttlp_flags might differ from \c flags in this bit. */
+            sniffer_recovery = 2;
         }
       else
         {
           /* ttlyydebug = 0; */
-          ttlp->ttlp_catched_error = thr_get_error_code (self);
-          thr_set_error_code (self, NULL);
+          ttlp->ttlp_catched_error = err;
         }
       /*no POP_QR_RESET*/;
     }
@@ -829,7 +828,20 @@ rdf_load_turtle (
   tf = ttlp->ttlp_tf;
   tf->tf_qi = qi;
   tf->tf_app_env = app_env;
-
+  QR_RESET_CTX
+    {
+      tf_set_cbk_names (tf, (ccaddr_t *)cbk_names);
+    }
+  QR_RESET_CODE
+    {
+      du_thread_t *self = THREAD_CURRENT_THREAD;
+      err_ret[0] = thr_get_error_code (self);
+      thr_set_error_code (self, NULL);
+      POP_QR_RESET;
+      ttlp_free (ttlp);
+      return NULL;
+    }
+  END_QR_RESET
   if (arg1_is_filename)
     {
       sec_check_dba (qi, "<read XML from URL of type file://...>");
@@ -906,29 +918,25 @@ iter_is_set:
   if (box_length (base_uri) > 1)
     tf->tf_base_uri = box_copy (base_uri);
   tf->tf_line_no_ptr = &(ttlp->ttlp_lexlineno);
+  ttlyylex_init (&scanner);
+  ttlyyset_extra (ttlp, scanner);
+  if ((ttlp->ttlp_iter == file_read) && !lite_mode && (YY_BUF_SIZE < 0x10000))
+    ttlyypush_buffer_state (ttlyy_create_buffer (NULL, (YY_BUF_SIZE > 0x2000) ? (YY_BUF_SIZE * 8) : 0x10000, scanner), scanner);
+  if (flags & TTLP_SNIFFER)
+    yy_push_state (GARBAGE_BOL, scanner);
+  else
+    {
+#ifdef MALLOC_DEBUG
+      yy_push_state (INITIAL, scanner);
+#endif
+    }
+  TF_CHANGE_GRAPH_TO_DEFAULT (tf);
+  /* ttlyydebug = 1; */
 resume_sniffing:
   QR_RESET_CTX
     {
       if (sniffer_recovery)
         yy_push_state (GARBAGE, scanner);
-      else
-        {
-          ttlyylex_init (&scanner);
-          ttlyyset_extra (ttlp, scanner);
-          if ((ttlp->ttlp_iter == file_read) && !lite_mode && (YY_BUF_SIZE < 0x10000))
-            ttlyypush_buffer_state (ttlyy_create_buffer (NULL, (YY_BUF_SIZE > 0x2000) ? (YY_BUF_SIZE * 8) : 0x10000, scanner), scanner);
-          if (flags & TTLP_SNIFFER)
-            yy_push_state (GARBAGE_BOL, scanner);
-          else
-            {
-#ifdef MALLOC_DEBUG
-              yy_push_state (INITIAL, scanner);
-#endif
-            }
-          tf_set_cbk_names (tf, (ccaddr_t *)cbk_names);
-          TF_CHANGE_GRAPH_TO_DEFAULT (tf);
-          /* ttlyydebug = 1; */
-        }
       if (flags & TTLP_SNIFFER)
         ttlyyparse (ttlp, scanner);
       if (flags & TTLP_ALLOW_NQUAD)
@@ -941,19 +949,20 @@ resume_sniffing:
   QR_RESET_CODE
     {
       du_thread_t *self = THREAD_CURRENT_THREAD;
-      if (flags & TTLP_SNIFFER)
+      caddr_t err = thr_get_error_code (self);
+      thr_set_error_code (self, NULL);
+      if ((flags & TTLP_SNIFFER) && (NULL == strstr (ERR_MESSAGE (err), "nternal error")))
         {
-          dk_free_tree (thr_get_error_code (self));
-          thr_set_error_code (self, NULL);
+          dk_free_tree (err);
           yy_pop_state (scanner);
           ttlp_reset_stacks (ttlp);
+          if (!(ttlp->ttlp_flags & TTLP_SNIFFER_COMPLETE)) /* Note that \c ttlp->ttlp_flags might differ from \c flags in this bit. */
           sniffer_recovery = 2;
         }
       else
         {
           /* ttlyydebug = 0; */
-          ttlp->ttlp_catched_error = thr_get_error_code (self);
-          thr_set_error_code (self, NULL);
+          ttlp->ttlp_catched_error = err;
           if (NULL != ttlp->ttlp_iter_abend)
             {
               ttlp->ttlp_iter_abend (ttlp->ttlp_iter_data);

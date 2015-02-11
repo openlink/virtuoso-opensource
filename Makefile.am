@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2014 OpenLink Software
+#  Copyright (C) 1998-2015 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -26,13 +26,13 @@ ACLOCAL_AMFLAGS 	= -I binsrc/config
 SUBDIRS = . docsrc libsrc binsrc appsrc
 
 dist_doc_DATA = \
-	AUTHORS \
-	COPYING \
-	CREDITS \
-	INSTALL \
-	LICENSE \
-	NEWS \
-	README*
+	$(srcdir)/AUTHORS \
+	$(srcdir)/COPYING \
+	$(srcdir)/CREDITS \
+	$(srcdir)/INSTALL \
+	$(srcdir)/LICENSE \
+	$(srcdir)/NEWS \
+	$(srcdir)/README*
 
 # ----------------------------------------------------------------------
 #
@@ -84,25 +84,56 @@ snapshot:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	autogen.sh \
-	bin/makever \
-	bin/generate \
-	bin/libtool.macosx \
-	bin/installer/virtuoso.ini bin/installer/demo.ini \
-	debian/changelog \
-	debian/compat \
-	debian/control \
-	debian/copyright \
-	debian/dirs \
-	debian/docs \
-	debian/files \
-	debian/init.d \
-	debian/README.Debian \
-	debian/rules \
-	debian/virtuoso-opensource.postinst.debhelper \
-	debian/virtuoso-opensource.postrm.debhelper \
-	debian/virtuoso-opensource.prerm.debhelper \
-	debian/virtuoso-opensource.substvars \
-	windows/*.bat \
-	windows/*.sln \
-	windows/*.vcxproj
+	$(srcdir)/README* \
+	$(srcdir)/autogen.sh \
+	$(srcdir)/bin/makever \
+	$(srcdir)/bin/generate \
+	$(srcdir)/bin/libtool.macosx \
+	$(srcdir)/bin/installer/virtuoso.ini bin/installer/demo.ini \
+	$(srcdir)/debian/changelog \
+	$(srcdir)/debian/compat \
+	$(srcdir)/debian/control \
+	$(srcdir)/debian/copyright \
+	$(srcdir)/debian/dirs \
+	$(srcdir)/debian/docs \
+	$(srcdir)/debian/libvirtjdbc0.dirs \
+	$(srcdir)/debian/libvirtjdbc0.install \
+	$(srcdir)/debian/libvirtodbc0.config \
+	$(srcdir)/debian/libvirtodbc0.dirs \
+	$(srcdir)/debian/libvirtodbc0.install \
+	$(srcdir)/debian/libvirtodbc0.postinst \
+	$(srcdir)/debian/libvirtodbc0.prerm \
+	$(srcdir)/debian/libvirtodbc0.templates \
+	$(srcdir)/debian/libvirtuoso5.5-cil.install \
+	$(srcdir)/debian/NEWS.Debian \
+	$(srcdir)/debian/odbc.ini \
+	$(srcdir)/debian/odbcinst.ini \
+	$(srcdir)/debian/po/*.po \
+	$(srcdir)/debian/po/POTFILES.in \
+	$(srcdir)/debian/po/templates.pot \
+	$(srcdir)/debian/README.Debian \
+	$(srcdir)/debian/rules \
+	$(srcdir)/debian/TODO.Debian \
+	$(srcdir)/debian/virtuoso-5.5.pc \
+	$(srcdir)/debian/virtuoso-opensource-7-bin.install \
+	$(srcdir)/debian/virtuoso-opensource-7-common.install \
+	$(srcdir)/debian/virtuoso-opensource-7.config \
+	$(srcdir)/debian/virtuoso-opensource-7.default \
+	$(srcdir)/debian/virtuoso-opensource-7.init \
+	$(srcdir)/debian/virtuoso-opensource-7.install \
+	$(srcdir)/debian/virtuoso-opensource-7.postinst \
+	$(srcdir)/debian/virtuoso-opensource-7.prerm \
+	$(srcdir)/debian/virtuoso-opensource-7.templates \
+	$(srcdir)/debian/virtuoso-vad-bpel.install \
+	$(srcdir)/debian/virtuoso-vad-conductor.install \
+	$(srcdir)/debian/virtuoso-vad-demo.install \
+	$(srcdir)/debian/virtuoso-vad-isparql.install \
+	$(srcdir)/debian/virtuoso-vad-ods.install \
+	$(srcdir)/debian/virtuoso-vad-rdfmappers.install \
+	$(srcdir)/debian/virtuoso-vad-sparqldemo.install \
+	$(srcdir)/debian/virtuoso-vad-syncml.install \
+	$(srcdir)/debian/virtuoso-vad-tutorial.install \
+	$(srcdir)/debian/virtuoso-vsp-startpage.install \
+	$(srcdir)/windows/*.bat \
+	$(srcdir)/windows/*.sln \
+	$(srcdir)/windows/*.vcxproj

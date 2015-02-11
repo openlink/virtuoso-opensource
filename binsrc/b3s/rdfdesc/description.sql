@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -442,6 +442,21 @@ b3s_parse_inf (in sid varchar, inout params any)
 	vectorbld_acc (grs, params[i+1]);
     }
   vectorbld_final (grs);
+  if (length (grs) = 0 and sid is not null and get_keyword ('set_graphs', params) is null)
+    {
+      declare xt, xp, inx any;
+      xt := (select fct_state from fct_state where fct_sid = sid);
+      inx := 1;
+      vectorbld_init (grs);
+      while (xt is not null and (xp := xpath_eval (sprintf ('//query/@graph%d', inx), xt)) is not null)
+	{
+	  vectorbld_acc (grs, cast (xp as varchar));
+	  inx := inx + 1;
+	}
+      vectorbld_final (grs);
+    }
+  if (get_keyword ('clear_graphs', params) is not null)
+    grs := vector ();
   connection_set ('graphs', grs);
 }
 ;
@@ -813,6 +828,19 @@ create procedure b3s_xsd_link (in t varchar)
 }
 ;
 
+create procedure b3s_o_is_out (in x any)
+{
+  declare f any;
+  f := 'http://xmlns.com/foaf/0.1/';
+  -- foaf:page, foaf:homePage, foaf:img, foaf:logo, foaf:depiction
+  if (__ro2sq (x) in (f||'page', f||'homePage', f||'img', f||'logo', f||'depiction'))
+    {
+      return 1;
+    }
+  return 0;
+}
+;
+
 create procedure
 b3s_http_print_r (in _object any, in sid varchar, in prop any, in langs any, in rel int := 1, in acc any := null, in _from varchar := null, in flag int := 0)
 {
@@ -874,8 +902,15 @@ again:
 	   	S = iri_to_id (_object, 0) and P = iri_to_id ('http://bblfish.net/work/atom-owl/2006-06-06/#src', 0);
 	   http (sprintf ('<div id="x_content"><iframe src="%s" width="100%%" height="100%%" frameborder="0"><p>Your browser does not support iframes.</p></iframe></div><br/>', src));
 	 }
-       else if (http_mime_type (_url) like 'image/%' or http_mime_type (_url) = 'application/x-openlink-photo')
-	 http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" style="border-width:0" alt="External Image" /></a>', rdfa, b3s_http_url (_url, sid, _from), _url));
+       else if (http_mime_type (_url) like 'image/%' or http_mime_type (_url) = 'application/x-openlink-photo' or prop = 'http://xmlns.com/foaf/0.1/depiction')
+	 {
+	   declare u any;
+	   if (b3s_o_is_out (prop))
+	     u := _url;
+	   else
+	     u := b3s_http_url (_url, sid, _from);
+	   http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" style="border-width:0" alt="External Image" /></a>', rdfa, u, _url));
+	 }
        else
 	 {
 	   usual_iri:;
@@ -891,6 +926,8 @@ again:
 	   vlbl := charset_recode (lbl, 'UTF-8', '_WIDE_');
 	   http_value (case when vlbl <> 0 then vlbl else lbl end);
 	   http (sprintf ('</a>'));
+	   if (b3s_o_is_out (prop))
+	     http (sprintf ('&nbsp;<a href="%s"><img src="/fct/images/goout.gif" border="0"/></a>', _url));
 	 }
        --if (registry_get ('fct_sponge') = '1' and _url like 'http://%' or _url like 'https://%')
        --	 http (sprintf ('&nbsp;<a class="uri" href="%s&sp=1"><img src="/fct/images/goout.gif" alt="Sponge" title="Sponge" border="0"/></a>', 
@@ -929,7 +966,7 @@ again:
        vlbl := charset_recode (_object, 'UTF-8', '_WIDE_');
        if (vlbl = 0)
          vlbl := charset_recode (_object, current_charset (), '_WIDE_');
-       if (vlbl = 0 or _object like '<object%')
+       if (vlbl = 0 or _object like '<object%' or _object like '<iframe%')
          http (_object);
        else
          http_value (vlbl);
@@ -939,7 +976,7 @@ again:
    else if (__tag (_object) = 211)
      {
        http (sprintf ('<span %s>%s</span>', rdfa, datestring (_object)));
-       lang := b3s_xsd_link ('date');
+       lang := b3s_xsd_link ('dateTime');
      }
    else if (__tag (_object) = 230)
      {
@@ -1069,26 +1106,6 @@ create procedure
 fct_make_selector (in subj any, in sid integer)
 {
   return null;
-}
-;
-
-create procedure fct_make_qr_code (in data_to_qrcode any, in src_width int := 120, in src_height int := 120, in qr_scale int := 3)
-{
-  declare qrcode_bytes, mixed_content, content varchar;
-  declare qrcode any;
-
-  if (__proc_exists ('QRcode encodeString8bit', 2) is null)
-    return null;
-
-  declare exit handler for sqlstate '*' { return null; };
-
-  content := "IM CreateImageBlob" (src_width, src_height, 'white', 'jpg');
-  qrcode := "QRcode encodeString8bit" (data_to_qrcode);
-  qrcode_bytes := aref_set_0 (qrcode, 0);
-  mixed_content := "IM PasteQRcode" (qrcode_bytes, qrcode[1], qrcode[2], qr_scale, qr_scale + 2, 0, 0, cast (content as varchar), length (content));
-  mixed_content := encode_base64 (cast (mixed_content as varchar));
-  mixed_content := replace (mixed_content, '\r\n', '');
-  return mixed_content;
 }
 ;
 
@@ -1242,4 +1259,63 @@ create procedure b3s_gs_check_needed ()
 }
 ;
 
+create procedure b3s_get_entity_graph (in entity_uri varchar)
+{
+  return coalesce ((select top 1 id_to_iri(G) from DB.DBA.RDF_QUAD where S = iri_to_id (entity_uri)), entity_uri);
+}
+;
+
 grant execute on b3s_gs_check_needed to public;
+
+create procedure fct_set_graphs (in sid any, in graphs any)
+{
+  declare xt, newx, s any;
+  if (sid is null) return;
+  xt := (select fct_state from fct_state where fct_sid = sid);
+  s := string_output ();
+  http ('<graphs>', s);
+  foreach (any g in graphs) do
+    {
+      http (sprintf ('<graph name="%V" />', g), s);
+    } 
+  http ('</graphs>', s);
+  newx := xslt (registry_get ('_fct_xslt_') || 'fct_set_graphs.xsl', xt, vector ('graphs', xtree_doc (s)));
+  update fct_state set fct_state = newx where fct_sid = sid; 
+  commit work;
+}
+;
+
+create procedure FCT.DBA.build_page_url_on_current_host (
+  in path varchar,
+  in query varchar)
+{
+  declare protocol varchar;
+  declare host any;
+
+  host := http_request_header (http_request_header (), 'X-Forwarded-Host', null, null);
+  if (host is null)
+    host := http_request_header (http_request_header (), 'Host');
+
+  protocol := 'http'; if (is_https_ctx()) protocol := 'https';
+
+  return sprintf ('%s://%s%s?%s', protocol, host, path, query);
+}
+;
+
+create procedure FCT.DBA.get_describe_request_params (
+  in params any
+  )
+{
+  declare desc_params varchar;
+
+  desc_params := '';
+  if (get_keyword ('sp', params) is not null)
+    desc_params := desc_params || '&sp=' || get_keyword ('sp', params);
+  if (get_keyword ('sponger:get', params) is not null)
+    desc_params := desc_params || '&sponger:get=' || get_keyword ('sponger:get', params);
+  if (get_keyword ('sr', params) is not null)
+    desc_params := desc_params || '&sr=' || get_keyword ('sr', params);
+
+  return desc_params;
+}
+;

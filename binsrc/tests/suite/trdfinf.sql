@@ -1,3 +1,23 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 
 sparql clear graph 'inft';
 
@@ -65,7 +85,7 @@ echo both ": 3 tarzans\n";
 sparql select * where {{ ?s ?p "Tarzan"} union { ?s ?p "Tarzan"@en } union { ?s ?p "Tarzan"^^<name> }};
 echo both $if $equ $rowcnt 3 "PASSED" "**FAILED";
 echo both ": 3 tarzans 2\n";
- 
+
 
 
 create procedure f (in q any) {return q;};
@@ -88,15 +108,13 @@ sparql define input:inference 'inft' select * from <inft> where { ?s <pd22> ?o }
 echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
 echo both ": 2 rows with symmetric pd22\n";
 
--- XXX: crash
---sparql define input:inference 'inft' select * from <inft> where { ?s  <pt1> ?o . filter (?s = <subj-t1-11>) };
---echo both $if $equ $rowcnt 4 "PASSED" "***FAILED";
---echo both ": 4 rows with unidirectional transitive pt1\n";
+sparql define input:inference 'inft' select * from <inft> where { ?s  <pt1> ?o . filter (?s = <subj-t1-11>) };
+echo both $if $equ $rowcnt 4 "PASSED" "***FAILED";
+echo both ": 4 rows with unidirectional transitive pt1\n";
 
--- XXX: enable after trans node
---sparql define input:inference 'inft' select * from <inft> where { ?s  <pdt1> ?o option (T_DISTINCT) . filter (?s = <subj-dt1-11>) };
---echo both $if $equ $rowcnt 6 "PASSED" "***FAILED";
---echo both ": 6 rows with symmetric transitive pdt1\n";
+sparql define input:inference 'inft' select * from <inft> where { ?s  <pdt1> ?o option (T_DISTINCT) . filter (?s = <subj-dt1-11>) };
+echo both $if $equ $rowcnt 6 "PASSED" "***FAILED";
+echo both ": 6 rows with symmetric transitive pdt1\n";
 
 select id_to_iri (s) from rdf_quad table option (with 'inft') where g = iri_to_id ('inft',0) and p = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 0) and o = iri_to_id ('c1', 0);
 echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
@@ -213,16 +231,16 @@ sparql  select * from <inft> where { ?s ?p <c1> option (inference 'inft') . ?s ?
 echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
 echo both ": fs fp go join fs fp go with  sparql inf inft\n";
 
---sparql define input:inference 'inft' select count (*) from <inft> where {?s ?p ?o};
+sparql define input:inference 'inft' select count (*) from <inft> where {?s ?p ?o};
 
---sparql define input:inference 'inft' select ?p count (?o) from <inft> where {?s ?p ?o};
+sparql define input:inference 'inft' select ?p count (?o) from <inft> where {?s ?p ?o};
 
---sparql define input:inference 'inft' select count (?p) count (?o) count (distinct ?o)  from <inft> where {?s ?p ?o};
+sparql define input:inference 'inft' select count (?p) count (?o) count (distinct ?o)  from <inft> where {?s ?p ?o};
 
 sparql select count distinct ?s ?p ?o from <g> where {?s ?p ?o};
 
 
---sparql define input:inference 'inft' select ?s ?p count  (?o) from <inft> from <extra> where {?s ?p ?o};
+sparql define input:inference 'inft' select ?s ?p count  (?o) from <inft> from <extra> where {?s ?p ?o};
 
 sparql define input:inference 'inft'
 select ?icpe ?cl from <inft> from <extra> where { ?icpe <icpe> ?v . optional { ?icpe a ?cl } };
@@ -240,15 +258,15 @@ ttlp (
 ', '', 'sas', 0);
 
 
-sparql define input:inference 'inft'
+sparql define input:inference 'inft' define input:same-as "yes"
 select ?cl from <inft> from <sas> where { <syn3-ic1> a ?cl };
---echo both $if $equ $last[1] c1 "PASSED" "***FAILED";
---echo both ": same-as with class\n";
+echo both $if $equ $last[1] c1 "PASSED" "***FAILED";
+echo both ": same-as with class\n";
 
-sparql define input:inference 'inft'
+sparql define input:inference 'inft' define input:same-as "yes"
 select ?p ?o  from <inft> from <sas> where { <syn3-ic1> ?p ?o };
---echo both $if $equ $rowcnt 10 "PASSED" "***FAILED";
---echo both ": properties following same-as\n";
+echo both $if $equ $rowcnt 10 "PASSED" "***FAILED";
+echo both ": properties following same-as\n";
 
 
 sparql define input:inference 'inft'
@@ -257,36 +275,32 @@ select ?s from <inft> from <sas> where { ?s <p1> <ic1p1> };
 
 ttlp (' @prefix owl: <http://www.w3.org/2002/07/owl#> .
  @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
-#<c2> rdfs:subClassOf <c1> .
 <p2> rdfs:subPropertyOf <p1> .
 <p1> rdfs:subPropertyOf <p0> .
-#<sas-ic1> owl:sameAs <ic1> .
 <sas-p1>  owl:sameAs <p1> .
 <sas-p12>  owl:sameAs <sas-p1> .
 <ic1> a <c1> .
-#<ic2> a <c2> .
 <ic1> <p1> <ic1p1> .
 <ic1> <p2> <ic1p2> .
 <ic1> <sas-p1> <ic1sas-p1> .
-#<ic2> <p1> <ic2p1> .
 ', '', 'sas-p');
 
 rdfs_rule_set ('sas-p', 'sas-p');
 
---sparql define input:inference 'sas-p' define input:same-as "yes"
---select * from <sas-p> where { ?s <p0> ?o };
---echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
---echo both ": same-as for super property\n";
+sparql define input:inference 'sas-p' define input:same-as "yes"
+select * from <sas-p> where { ?s <p0> ?o };
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+echo both ": same-as for super property\n";
 
---sparql define input:inference 'sas-p' define input:same-as "yes"
---select distinct * from <sas-p> where { ?s <p1> ?o };
---echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
---echo both ": same-as for property\n";
+sparql define input:inference 'sas-p' define input:same-as "yes"
+select distinct * from <sas-p> where { ?s <p1> ?o };
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+echo both ": same-as for property\n";
 
---sparql define input:inference 'sas-p' define input:same-as "yes"
---select * from <sas-p> where { ?s <sas-p1> ?o };
---echo both $if $equ $rowcnt 4 "PASSED" "***FAILED";
---echo both ": same-as for sameAs property\n";
+sparql define input:inference 'sas-p' define input:same-as "yes"
+select distinct * from <sas-p> where { ?s <sas-p1> ?o };
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+echo both ": same-as for sameAs property\n";
 
 
 create procedure s_list (in ctx varchare, in iri varchar, in axis int)
@@ -298,12 +312,12 @@ create procedure s_list (in ctx varchare, in iri varchar, in axis int)
     result (id_to_iri (a[inx]));
 }
 
-sparql clear <g1>;
-sparql clear <g2>;
-sparql clear <g3>;
-sparql insert data in <g1> { <s1> <p> 1; <q> 10 . };                                                           
-sparql insert data in <g2> { <s2> <p> 2; <q> 20 . };
-sparql insert data in <g3> { <s3> <p> 3; <q> 30 . };
+sparql clear graph <g1>;
+sparql clear graph <g2>;
+sparql clear graph <g3>;
+sparql insert into <g1> { <s1> <p> 1; <q> 10 . };
+sparql insert into <g2> { <s2> <p> 2; <q> 20 . };
+sparql insert into <g3> { <s3> <p> 3; <q> 30 . };
 
 sparql select * where { graph ?g { ?s ?p ?o . filter (?g = <g3>) }};
 echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";

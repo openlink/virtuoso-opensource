@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -69,7 +69,7 @@ echo both ":  wirds a ck 1\n";
 
 
 
--- check reading inx with mixed vcersions of keys 
+-- check reading inx with mixed vcersions of keys
 select count (*) from words where word > 'b';
 
 select count (*) from words a where exists (select 1 from words b table option (loop) where a.word = b.word);

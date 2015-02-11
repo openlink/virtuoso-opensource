@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -212,22 +212,27 @@ extern int sparyylex (YYSTYPE *yylval, yyscan_t yyscanner);
 void *
 sparyyalloc (yy_size_t  size, yyscan_t yyscanner)
 {
-  return (void *) malloc( size );
+  return (void *) t_alloc_box (size, DV_STRING);
 }
 
 void *
-sparyyrealloc  (void * ptr, yy_size_t  size , yyscan_t yyscanner)
+sparyyrealloc  (void * ptr, yy_size_t  sz , yyscan_t yyscanner)
 {
-  if (NULL == ptr)
-    return sparyyalloc (size, yyscanner);
-  return (void *) realloc( (char *) ptr, size );
+  int old_sz = ((NULL == ptr) ? 0 : box_length (ptr));
+  if (old_sz < sz)
+    {
+      void *res = t_alloc_box (sz, DV_STRING);
+      memcpy (res, ptr, old_sz);
+      return res;
+    }
+  if (0 == sz)
+    return NULL;
+  return ptr;
 }
 
 void
 sparyyfree (void * ptr , yyscan_t yyscanner)
 {
-  if (NULL != ptr)
-    free( (char *) ptr );
 }
 
 %}
@@ -573,10 +578,10 @@ void sparyyerror_if_long_qname (caddr_t box, const char *lex_type_descr, struct 
 
 int sparscn_NUMBER_int (YYSTYPE *yylval, struct yyguts_t * yyg)
 {
-  if (('-' == yytext[0]) ?                                   /* 01234567890123456789 */
-    ((19 > yyleng) || ((19 == yyleng) && (0 >= strcmp (yytext, "-223372036854775808"))))
-    :                                                        /* 0123456789012345678 */
-    ((18 > yyleng) || ((18 == yyleng) && (0 >= strcmp (yytext, "223372036854775807")))) )
+  if (('-' == yytext[0]) ?                                   /* 012345678901234567890 */
+    ((20 > yyleng) || ((20 == yyleng) && (0 >= strcmp (yytext, "-9223372036854775808"))))
+    :                                                        /* 01234567890123456789 */
+    ((19 > yyleng) || ((19 == yyleng) && (0 >= strcmp (yytext, "9223372036854775807")))) )
     {
       yylval->box = t_box_num_nonull (atol (yytext));
       return SPARQL_INTEGER;
@@ -601,19 +606,20 @@ int sparscn_NUMBER_decimal (YYSTYPE *yylval, struct yyguts_t * yyg)
   if (NUMERIC_STS_SUCCESS == rc)
     {
       if (NULL == (caddr_t) num)
-	yylval->box = t_box_num_nonull (0);
-      yylval->box = t_box_copy ((caddr_t) num);
+	yylval->box = (caddr_t)t_list (2, t_box_num_nonull (0), t_box_string (yytext));
+      yylval->box = (caddr_t)t_list (2, t_box_copy ((caddr_t) num), t_box_string (yytext));
       numeric_free (num);
       return SPARQL_DECIMAL;
     }
   numeric_free (num);
-  yylval->box = t_box_double (atof (yytext));
+  yylval->box = (caddr_t)t_list (2, t_box_double (atof (yytext)), t_box_string (yytext));
   return SPARQL_DECIMAL;
 }
 
-int sparscn_NUMBER_double (YYSTYPE *yylval, struct yyguts_t * yyg)
+int
+sparscn_NUMBER_double (YYSTYPE *yylval, struct yyguts_t * yyg)
 {
-  yylval->box = t_box_double (atof (yytext));
+  yylval->box = (caddr_t)t_list (2, t_box_double (atof (yytext)), t_box_string (yytext));
   return SPARQL_DOUBLE;
 }
 
@@ -649,7 +655,7 @@ spar_fill_lexem_bufs (sparp_t *sparp)
       for (;;)
         {
 	  curr_lex = sparp->sparp_curr_lexem_buf + fill_ctr;
-	  curr_lex->sparl_lex_value = sparyylex(&(curr_lex->sparl_sem_value), scanner);
+	  curr_lex->sparl_lex_value = sparyylex((YYSTYPE *)(&(curr_lex->sparl_sem_value)), scanner);
 	  curr_lex->sparl_lineno = sparp->sparp_lexlineno;
 	  curr_lex->sparl_depth = depth;
 	  if (0 == curr_lex->sparl_lex_value)

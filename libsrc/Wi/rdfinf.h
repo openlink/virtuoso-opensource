@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -47,6 +47,7 @@ typedef struct rdf_inf_ctx_s
   id_hash_t *	ric_ifp_exclude;			/*!< Map from ifp P iri to values that do not make identity even if they occur as ifp values of 2 subjects. e.g. sha1 of "mailto://" */
   id_hash_t *	ric_samples;				/*!< Cardinality estimates with this inf ctx enabled */
   dk_mutex_t *	ric_mtx;				/*!< Mutex for ric_samples sample cache */
+  dk_hash_t *	ric_p_stat;
 } rdf_inf_ctx_t;
 
 
@@ -89,6 +90,7 @@ struct rdf_inf_node_s
 #define ri_vec_array ri_iter.in_vec_array
   state_slot_t *	ri_outer_any_passed; /* if rhs of left outer, flag here to see if any answer. If not, do outer output when at end */
   state_slot_t *	ri_iterator;
+  state_slot_t *	ri_initial;
   state_slot_t *	ri_sas_in; /* the value whose same_as-s are to be listed */
   state_slot_t **	ri_sas_g;
     state_slot_t *	ri_sas_out;
@@ -237,5 +239,10 @@ caddr_t iri_ensure (caddr_t * qst, caddr_t name, int flag, caddr_t * err_ret);
   if (1 != cl_rdf_inf_inited) cl_rdf_inf_init_1 (qst);
 
 void  cl_rdf_inf_init_1 (caddr_t * qst);
+rdf_inf_ctx_t * dfe_ric (df_elt_t * dfe);
+int ric_p_stat_from_cache (rdf_inf_ctx_t * ric, dbe_key_t * key, iri_id_t id, float * p_stat);
+void ric_set_p_stat (rdf_inf_ctx_t * ric, dbe_key_t * key, caddr_t p, float * p_stat);
+extern rdf_inf_ctx_t * empty_ric;
+
 
 #endif

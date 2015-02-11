@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -605,7 +605,7 @@ uint32 any_base = 0;
     { \
       db_buf_t tgt; \
       int buf_fill = dc->dc_buf_fill, buf_len = dc->dc_buf_len; \
-      if (buf_fill + first_len <= buf_len) \
+      if (buf_fill + first_len + DC_STR_MARGIN <= buf_len) \
 	{ \
 	  tgt = ((db_buf_t*)dc->dc_values)[dc->dc_n_values++] = dc->dc_buffer + buf_fill; \
 	  memcpy_16 (tgt, ce_first_val, first_len); \

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -384,8 +384,9 @@ void
 dc_append_box (data_col_t * dc, caddr_t box)
 {
   caddr_t str;
+  dtp_t dtp = DV_TYPE_OF (box);
   DC_CHECK_LEN (dc, dc->dc_n_values);
-  if (IS_BOX_POINTER (box) && DV_DB_NULL == box_tag (box))
+  if (DV_DB_NULL == dtp)
     {
       dc_set_null (dc, dc->dc_n_values);
       return;
@@ -410,6 +411,8 @@ dc_append_box (data_col_t * dc, caddr_t box)
 #endif
       return;
     }
+  if (dc->dc_min_places && DV_ANY != dc->dc_dtp && dc->dc_dtp != dtp_canonical[dtp])
+    dc_heterogenous (dc);
   switch (dc->dc_dtp)
     {
     case DV_LONG_INT:
@@ -562,7 +565,7 @@ box_deserialize_reusing (db_buf_t string, caddr_t box)
     case DV_RDF_ID_8:
 	{
 	  rdf_box_t * x = (rdf_box_t *)box_deserialize_string ((caddr_t)string, INT32_MAX, 0);
-	  if (old_dtp == DV_RDF && 0 != x->rb_ro_id && x->rb_ro_id == ((rdf_box_t *)box)->rb_ro_id)
+	  if (old_dtp == DV_RDF && NULL != x && 0 != x->rb_ro_id && x->rb_ro_id == ((rdf_box_t *)box)->rb_ro_id)
 	    {
 	      dk_free_box (x);
 	      return box;

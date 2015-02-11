@@ -4,26 +4,26 @@
 --  $Id: rtesta.sql,v 1.7.6.2.4.1 2013/01/02 16:14:55 source Exp $
 --
 --  Remote database testing
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2014 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 --
 -- Array parameters in VDB
@@ -133,8 +133,8 @@ ECHO BOTH $IF $EQU $ROWCNT 59 "PASSED" "***FAILED";
 ECHO BOTH ": "  $ROWCNT " rows in join with between\n";
 
 
-select count (*), sum (a.row_no + b.row_no + c.row_no + d.row_no) 
-from r1..t1 a, 
+select count (*), sum (a.row_no + b.row_no + c.row_no + d.row_no)
+from r1..t1 a,
 	(select row_no, count (*) as ct  from r1..t1 table option (loop) group by row_no) b,
 	r1..t1 c table option (hash), r1..t1 d table option (loop)
 where b.row_no = f(a.row_no) and c.row_no = f (b.row_no) and c.row_no = f(b.row_no) and d.row_no = f(c.row_no)

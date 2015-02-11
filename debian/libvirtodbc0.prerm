@@ -1,0 +1,15 @@
+#!/bin/bash
+
+set -e
+
+. /usr/share/debconf/confmodule
+
+if [ -n "$DEBIAN_SCRIPT_DEBUG" ]; then set -v -x; DEBIAN_SCRIPT_TRACE=1; fi
+${DEBIAN_SCRIPT_TRACE:+ echo "#42#DEBUG# RUNNING $0 $*" 1>&2 }
+
+db_get libvirtodbc0/register-odbc-driver || true
+if [ "$RET" = "true" ]; then
+	odbcinst -u -d -n Virtuoso || true
+fi
+
+#DEBHELPER#

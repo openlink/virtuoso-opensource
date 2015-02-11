@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -32,6 +32,7 @@ import java.sql.ResultSetMetaData;
 
 import virtuoso.sql.*;
 
+import com.hp.hpl.jena.graph.NodeFactory;
 import com.hp.hpl.jena.shared.*;
 import com.hp.hpl.jena.query.Query;
 import com.hp.hpl.jena.query.ResultSet;
@@ -100,7 +101,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
           stmt.setQueryTimeout((int)(timeout/1000));
         java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
 
-        return new VResultSet(graph, rs);
+        return new VResultSet(graph, stmt, rs);
       }	catch(Exception e) {
         throw new JenaException("Can not create ResultSet.:"+e);
       }
@@ -189,7 +190,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
         if (timeout > 0)
           stmt.setQueryTimeout((int)(timeout/1000));
         java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
-        return new VirtResSetIter2(graph, rs);
+        return new VirtResSetIter2(graph, stmt, rs);
 
       } catch (Exception e) {
         throw new JenaException("execConstructTriples was FAILED.:"+e);
@@ -246,7 +247,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
         if (timeout > 0)
           stmt.setQueryTimeout((int)(timeout/1000));
         java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
-        return new VirtResSetIter2(graph, rs);
+        return new VirtResSetIter2(graph, stmt, rs);
 
       } catch (Exception e) {
         throw new JenaException("execDescribeTriples was FAILED.:"+e);
@@ -297,6 +298,11 @@ public class VirtuosoQueryExecution  implements QueryExecution
           stmt.cancel();
           stmt.close();
         } catch (Exception e) {}
+    }
+
+    public boolean isClosed()
+    {
+      return stmt==null;
     }
 
 
@@ -405,13 +411,9 @@ public class VirtuosoQueryExecution  implements QueryExecution
     
     private String getVosQuery()
     {
-	StringBuffer sb = new StringBuffer("sparql\n ");
+	StringBuilder sb = new StringBuilder("sparql\n ");
 	
-	if (graph.getRuleSet()!= null)
-          sb.append(" define input:inference '"+graph.getRuleSet()+"'\n");
-
-        if (graph.getSameAs())
-          sb.append(" define input:same-as \"yes\"\n");
+        graph.appendSparqlPrefixes(sb);
 
         if (!graph.getReadFromAllGraphs())
 	  sb.append(" define input:default-graph-uri <" + graph.getGraphName() + "> \n");
@@ -425,6 +427,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
     ///=== Inner class ===========================================
     public class VResultSet implements com.hp.hpl.jena.query.ResultSet 
     {
+      java.sql.Statement stmt;
       ResultSetMetaData rsmd;
       java.sql.ResultSet rs;
       boolean v_finished = false;
@@ -435,8 +438,9 @@ public class VirtuosoQueryExecution  implements QueryExecution
       int row_id = 0;
 
 
-        protected VResultSet(VirtGraph _g, java.sql.ResultSet _rs) 
+        protected VResultSet(VirtGraph _g, java.sql.Statement _stmt, java.sql.ResultSet _rs) 
 	{
+	  stmt = _stmt;
 	  rs = _rs;
 	  m = new VirtModel(_g);
 
@@ -543,7 +547,7 @@ public class VirtuosoQueryExecution  implements QueryExecution
 	    }
 
 	    if (virt_graph != null && !virt_graph.equals("virt:DEFAULT"))
-	      v_row.add(Var.alloc("graph"), Node.createURI(virt_graph));
+	      v_row.add(Var.alloc("graph"), NodeFactory.createURI(virt_graph));
 	  } 
 	  catch(Exception e)
 	  {
@@ -565,6 +569,13 @@ public class VirtuosoQueryExecution  implements QueryExecution
 	      try {
                 rs.close();
                 rs = null;
+              } catch (Exception e) { }
+            }
+	    if (stmt != null)
+	    {
+	      try {
+                stmt.close();
+                stmt = null;
               } catch (Exception e) { }
             }
           }

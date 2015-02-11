@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -127,6 +127,8 @@ service_write (dk_session_t * ses, char *buffer, int bytes)
 #else
 		  timeout_t tv = { 100, 0 };
 #endif
+		  if (ses->dks_write_block_timeout.to_sec > 0)
+		    tv.to_sec = ses->dks_write_block_timeout.to_sec;
 		retry:
 		  tcpses_is_write_ready (ses->dks_session, &tv);
 		  if (SESSTAT_W_ISSET (ses->dks_session, SST_TIMED_OUT))

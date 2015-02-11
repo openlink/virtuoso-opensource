@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -26,18 +26,14 @@ package virtuoso.jena.driver;
 import java.sql.*;
 import javax.sql.*;
 import java.util.Iterator;
-import java.util.Vector;
 import java.util.LinkedList;
 import java.util.List;
 
 
+import com.hp.hpl.jena.graph.*;
 import com.hp.hpl.jena.shared.*;
-import com.hp.hpl.jena.graph.Graph;
-import com.hp.hpl.jena.graph.Node;
 import com.hp.hpl.jena.util.iterator.*;
 
-import com.hp.hpl.jena.graph.Triple;
-import com.hp.hpl.jena.graph.TripleMatch;
 import com.hp.hpl.jena.query.Dataset;
 import com.hp.hpl.jena.query.LabelExistsException;
 import com.hp.hpl.jena.rdf.model.Model;
@@ -66,6 +62,31 @@ public class VirtDataset extends VirtGraph implements Dataset {
     public VirtDataset(String _graphName, DataSource _ds)
     {
       super(_graphName, _ds);
+    }
+
+    public VirtDataset(DataSource _ds)
+    {
+      super(_ds);
+    }
+
+    public VirtDataset(String _graphName, ConnectionPoolDataSource _ds)
+    {
+        super(_graphName, _ds);
+    }
+
+    public VirtDataset(ConnectionPoolDataSource _ds)
+    {
+        super(_ds);
+    }
+
+    public VirtDataset(String _graphName, XADataSource _ds)
+    {
+        super(_graphName, _ds);
+    }
+
+    public VirtDataset(XADataSource _ds)
+    {
+        super(_ds);
     }
 
     protected VirtDataset(VirtGraph g)
@@ -205,7 +226,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
 
       checkOpen();
       try {
-        List<String> names=new LinkedList(); 
+        List<String> names= new LinkedList<String>();
 
         java.sql.Statement stmt = createStatement();
         rs = stmt.executeQuery(exec_text);
@@ -235,32 +256,36 @@ public class VirtDataset extends VirtGraph implements Dataset {
 
     public boolean supportsTransactions()
     {
-      return true;
+        TransactionHandler handler = getTransactionHandler();
+        return handler.transactionsSupported();
     }
-    
-    /** Start either a READ or WRITE transaction */ 
+
+    public boolean supportsXATransactions()
+    {
+        VirtTransactionHandler handler = getTransactionHandler();
+        return handler.transactionsXASupported();
+    }
+
+    /** Start either a READ or WRITE transaction */
     public void begin(ReadWrite readWrite)
     {
-      try {
-        getConnection().setAutoCommit(false);
-      } catch (Exception e) {}
+      TransactionHandler handler = getTransactionHandler();
+      handler.begin();
     }
     
     
     /** Commit a transaction - finish the transaction and make any changes permanent (if a "write" transaction) */  
     public void commit()
     {
-      try{
-        getConnection().commit();
-      } catch (Exception e) {}
+      TransactionHandler handler = getTransactionHandler();
+      handler.commit();
     }
     
       /** Abort a transaction - finish the transaction and undo any changes (if a "write" transaction) */  
     public void abort()
     {
-      try{
-        getConnection().rollback();
-      } catch (Exception e) {}
+      TransactionHandler handler = getTransactionHandler();
+      handler.abort();
     }
 
     /** Say whether a transaction is active */ 
@@ -277,11 +302,14 @@ public class VirtDataset extends VirtGraph implements Dataset {
     /** Finish the transaction - if a write transaction and commit() has not been called, then abort */  
     public void end()
     {
+      TransactionHandler handler = getTransactionHandler();
+      handler.abort();
+/**
       try {
-//      getConnection().commit();
         getConnection().rollback();
         getConnection().setAutoCommit(true);
       } catch (Exception e) {}
+**/
     }
 
     /** Get the dataset in graph form */
@@ -330,12 +358,12 @@ public class VirtDataset extends VirtGraph implements Dataset {
 
         vd.checkOpen();
         try {
-	  List<Node> names=new LinkedList();
+	  List<Node> names= new LinkedList<Node>();
 
   	  java.sql.Statement stmt = vd.createStatement();
 	  rs = stmt.executeQuery(exec_text);
 	  while(rs.next())
-	    names.add(Node.createURI(rs.getString(1)));
+	    names.add(NodeFactory.createURI(rs.getString(1))); //NodeFactory.createURI()
 	  rs.close();
 	  return names;
 	} catch (Exception e) {
@@ -390,7 +418,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
       public void addGraph(Node graphName, Graph graph)
       {
 	try {
-          vd.clearGraph(graphName.toString());
+          vd.clear(graphName);
 //??todo add optimize  when graph is VirtGraph
           ExtendedIterator<Triple> it = graph.find(Node.ANY, Node.ANY, Node.ANY);
 	  vd.add(graphName.toString(), it, null);
@@ -403,7 +431,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
       public void removeGraph(Node graphName)
       {
 	try {
-          vd.clearGraph(graphName.toString());
+          vd.clear(graphName);
 	} catch (Exception e) {
 	  throw new JenaException("Error in removeGraph:"+e);
 	}
@@ -523,6 +551,11 @@ public class VirtDataset extends VirtGraph implements Dataset {
       public boolean contains(Quad quad)
       {
         return contains(quad.getGraph(), quad.getSubject(), quad.getPredicate(), quad.getObject());
+      }
+
+      public void clear()
+      {
+        vd.clear();
       }
 
     /** Test whether the dataset is empty */

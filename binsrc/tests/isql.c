@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -647,7 +647,7 @@ int web_mode = 0;		/* Is set to 1 in the beginning of main if used
 int kubl_mode = 1;		/* Currently affects only how MAXROWS are handled. */
 int print_banner_flag = 1, print_types_also = 1, verbose_mode = 1, echo_mode = 0,
     explain_mode = 0, sparql_translate_mode = 0, vert_row_out_mode = 0,
-    csv_mode = 0;
+    csv_mode = 0, profile_mode = 0;
 int flag_newlines_at_eor = 1;	/* By default print one nl at the end of row */
 long int select_max_rows = 0;	/* By default show them all. */
 long int perm_deadlock_retries = 0, vol_deadlock_retries = 0;
@@ -2637,8 +2637,9 @@ struct name_var_pair isql_variables[] =
   add_var_def (_T("SPARQL_TRANSLATE"), (&sparql_translate_mode), INT_FLAG, OFF_ON),
   add_var_def (_T("VERT_ROW_OUTPUT"), (&vert_row_out_mode), INT_FLAG, OFF_ON),
   add_var_def (_T("CSV"), (&csv_mode), INT_FLAG, OFF_ON),
-  add_var_def (_T("CVS_FIELD_SEPARATOR"), (&csv_field_separator), CHARPTR_VAR, NULL),
-  add_var_def (_T("CVS_ROW_SEPARATOR"), (&csv_row_separator), CHARPTR_VAR, NULL),
+  add_var_def (_T("PROFILE"), (&profile_mode), INT_FLAG, OFF_ON),
+  add_var_def (_T("CSV_FIELD_SEPARATOR"), (&csv_field_separator), CHARPTR_VAR, NULL),
+  add_var_def (_T("CSV_ROW_SEPARATOR"), (&csv_row_separator), CHARPTR_VAR, NULL),
   add_var_def (_T("HIDDEN_CRS"), (&clear_hidden_crs_flag), INT_FLAG, PRESERVED_CLEARED),
   add_var_def (_T("BINARY_OUTPUT"), (&flag_binary_output), INT_FLAG, OFF_ON),
   add_var_def (_T("BANNER"), (&print_banner_flag), INT_FLAG, OFF_ON),
@@ -5047,7 +5048,7 @@ print_blob_col_csv (HSTMT stmt, UWORD n_col, SQLULEN width, SWORD sql_type)
           break;
     }
 
-  if (n_col < n_out_cols - 1)  /* not the rightmost column? */
+  if (n_col < n_out_cols)  /* not the rightmost column? */
     isqlt_fputts (csv_field_separator, stdout);
 
   return rc;
@@ -6175,6 +6176,15 @@ again_exec:;
           rc = SQLBindParameter (stmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, isqlt_tcslen(q), 0, UCP(q), isqlt_tcslen(q), NULL);
           IF_ERR_GO (stmt, error, rc);
           rc = SQLExecute (stmt);
+        }
+      else if (profile_mode)
+        {
+	  print_blobs_flag = 1;
+	  rc = SQLPrepare (stmt, _T("PROFILE(?)"), SQL_NTS);
+	  IF_ERR_GO (stmt, error, rc);
+	  rc = SQLBindParameter (stmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, isqlt_tcslen(text), 0, UCP(text), isqlt_tcslen(text), NULL);
+	  IF_ERR_GO (stmt, error, rc);
+	  rc = SQLExecute (stmt);
         }
       else
         {
@@ -9475,12 +9485,11 @@ connect_to_datasource (TCHAR *datasource, TCHAR *username, TCHAR *password)
     {
 #if defined (NO_DRIVER_CONNECT)
       isql_fprintf (error_stream,
-		    "%") PCT_S _T(": SQLDriverConnect not available on this platform. Please use SET DSN, UID and PWD commands before CONNECT command without arguments to connect. Connection string was: \"%s\"\n",
-		    progname, datasource);
+		    "%" PCT_S _T(": SQLDriverConnect not available on this platform. Please use SET DSN, UID and PWD commands before CONNECT command without arguments to connect.\n"), progname);
       isql_exit (1);
 #else
       SWORD conn_str_length;
-      TCHAR completed_conn_string[1001];
+      TCHAR completed_conn_string[4096];
 
 #ifdef ODBC_ONLY
       TCHAR dsn2[512];
@@ -9501,19 +9510,15 @@ connect_to_datasource (TCHAR *datasource, TCHAR *username, TCHAR *password)
 				  &conn_str_length,
 				  SQL_DRIVER_COMPLETE)))
 	{
+	  isql_fprintf (error_stream, _T("Connection: %") PCT_S _T("\n"),
+		rc == SQL_SUCCESS_WITH_INFO ? _T("Established (with info)") : _T("Failed"));
 	  print_error (((HENV) 0), hdbc, ((HSTMT) 0), rc);
-	  isql_fprintf (error_stream,
-			_T("%") PCT_S _T("connect with connection string \"%") PCT_S _T("\". Completed as: \"%") PCT_S _T("\", length=%d\n"),
-			((SQL_ERROR == rc) ? _T("could not ") : _T("")),
-			datasource, completed_conn_string, conn_str_length);
 	  if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
 	    isql_exit (3);
 	}
       else if (verbose_mode)	/* A success */
 	{
-	  isql_fprintf (error_stream,
-			_T("connected with connection string \"%") PCT_S _T("\". Completed as: \"%") PCT_S _T("\", length=%d.\n"),
-			datasource, completed_conn_string, conn_str_length);
+	  isql_fprintf (error_stream, _T("Connection: Established\n"));
 	}
 #endif
     }

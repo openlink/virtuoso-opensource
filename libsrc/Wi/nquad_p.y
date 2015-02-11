@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -152,14 +152,14 @@ extern int ttlyylex (void *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner);
 %%
 
 nquaddoc
-        : /* empty */
+	: /* empty */
 	| nquaddoc clause
 	;
 
 clause
-        : _AT_keywords_L { ttlp_arg->ttlp_special_qnames = ~0; } keyword_list dot_opt
+	: _AT_keywords_L { ttlp_arg->ttlp_special_qnames = ~0; } keyword_list dot_opt
 	| _AT_base_L Q_IRI_REF dot_opt { dk_free_box (ttlp_arg->ttlp_tf->tf_base_uri); ttlp_arg->ttlp_tf->tf_base_uri = $2; }
-        | _AT_prefix_L QNAME_NS Q_IRI_REF dot_opt {
+	| _AT_prefix_L QNAME_NS Q_IRI_REF dot_opt {
 		caddr_t *old_uri_ptr;
 		if (NULL != ttlp_arg->ttlp_namespaces_prefix2iri)
 		  old_uri_ptr = (caddr_t *)id_hash_get (ttlp_arg->ttlp_namespaces_prefix2iri, (caddr_t)(&($2)));
@@ -182,15 +182,16 @@ clause
 		    old_uri_ptr[0] = $3;
 		  }
 		else
-		  id_hash_set (ttlp_arg->ttlp_namespaces_prefix2iri, (caddr_t)(&($2)), (caddr_t)(&($3))); }
+		  id_hash_set (ttlp_arg->ttlp_namespaces_prefix2iri, (caddr_t)(&($2)), (caddr_t)(&($3)));
+		ttlp_arg->ttlp_last_q_save = NULL; }
 	| _AT_prefix_L _COLON Q_IRI_REF dot_opt	{
 		dk_free_box (ttlp_arg->ttlp_default_ns_uri);
 		ttlp_arg->ttlp_default_ns_uri = $3; }
-	| subject pred object_with_ctx _DOT_WS
+	| subject pred object_with_ctx _DOT_WS		{ ttlp_triple_process_prepared (ttlp_arg); }
 	| subject pred _GARBAGE_BEFORE_DOT_WS _DOT_WS
 	| subject _GARBAGE_BEFORE_DOT_WS _DOT_WS
 	| _GARBAGE_BEFORE_DOT_WS _DOT_WS
-        | error { ttlyyerror_action ("Only a triple or a special clause (like prefix declaration) is allowed here"); }
+	| error { ttlyyerror_action ("Only a triple or a special clause (like prefix declaration) is allowed here"); }
 	;
 
 dot_opt
@@ -209,7 +210,7 @@ subject
 	| literal_subject {
 		TTLYYERROR_ACTION_COND (TTLP_SKIP_LITERAL_SUBJECTS, "Virtuoso does not support literal subjects");
 		dk_free_tree (ttlp_arg->ttlp_subj_uri); ttlp_arg->ttlp_subj_uri = NULL; }
-        | TTL_RECOVERABLE_ERROR { dk_free_tree (ttlp_arg->ttlp_subj_uri);
+	| TTL_RECOVERABLE_ERROR { dk_free_tree (ttlp_arg->ttlp_subj_uri);
 		ttlp_arg->ttlp_subj_uri = NULL; }
 	;
 
@@ -232,7 +233,7 @@ pred
 	| VARIABLE	{ dk_free_tree (ttlp_arg->ttlp_pred_uri); ttlp_arg->ttlp_pred_uri = $1; }
 	| _AT_a_L	{ dk_free_tree (ttlp_arg->ttlp_pred_uri); ttlp_arg->ttlp_pred_uri = uname_rdf_ns_uri_type; }
 	| _EQ		{ dk_free_tree (ttlp_arg->ttlp_pred_uri); ttlp_arg->ttlp_pred_uri = box_dv_uname_string ("http://www.w3.org/2002/07/owl#sameAs"); }
-        | _EQ_GT	{ dk_free_tree (ttlp_arg->ttlp_pred_uri); ttlp_arg->ttlp_pred_uri = box_dv_uname_string ("http://www.w3.org/2000/10/swap/log#implies"); }
+	| _EQ_GT	{ dk_free_tree (ttlp_arg->ttlp_pred_uri); ttlp_arg->ttlp_pred_uri = box_dv_uname_string ("http://www.w3.org/2000/10/swap/log#implies"); }
 	| _AT_has_L q_complete	{ dk_free_tree (ttlp_arg->ttlp_pred_uri); ttlp_arg->ttlp_pred_uri = ttlp_arg->ttlp_last_complete_uri; ttlp_arg->ttlp_last_complete_uri = NULL; }
 	| _AT_has_L VARIABLE	{ dk_free_tree (ttlp_arg->ttlp_pred_uri); ttlp_arg->ttlp_pred_uri = $2; }
 	| _AT_has_L  error { ttlyyerror_action ("Only predicate is allowed after \"has\" keyword"); }
@@ -243,15 +244,15 @@ pred
 	| BLANK_NODE_LABEL
 		{
 		  TTLYYERROR_ACTION_COND (TTLP_VERB_MAY_BE_BLANK, "Blank node (written as '_:...' label) can not be used as a predicate");
-                  dk_free_tree (ttlp_arg->ttlp_pred_uri);
-                  if (ttlp_arg->ttlp_formula_iid)
+		  dk_free_tree (ttlp_arg->ttlp_pred_uri);
+		  if (ttlp_arg->ttlp_formula_iid)
 		    ttlp_arg->ttlp_pred_uri = tf_formula_bnode_iid (ttlp_arg, $1);
-                  else
+		  else
 		    ttlp_arg->ttlp_pred_uri = tf_bnode_iid (ttlp_arg->ttlp_tf, $1);
 		}
 	| _AT_is_L q_complete _AT_of_L 	{ ttlp_arg->ttlp_pred_is_reverse = 1; dk_free_tree (ttlp_arg->ttlp_pred_uri); ttlp_arg->ttlp_pred_uri = ttlp_arg->ttlp_last_complete_uri; ttlp_arg->ttlp_last_complete_uri = NULL; }
 	| _AT_is_L VARIABLE _AT_of_L 	{ ttlp_arg->ttlp_pred_is_reverse = 1; dk_free_tree (ttlp_arg->ttlp_pred_uri); ttlp_arg->ttlp_pred_uri = $2; }
-        | _LT_EQ	{ ttlp_arg->ttlp_pred_is_reverse = 1; dk_free_tree (ttlp_arg->ttlp_pred_uri); ttlp_arg->ttlp_pred_uri = box_dv_uname_string ("http://www.w3.org/2000/10/swap/log#implies"); /* Note this 'double reversed' meaning :) */ }
+	| _LT_EQ	{ ttlp_arg->ttlp_pred_is_reverse = 1; dk_free_tree (ttlp_arg->ttlp_pred_uri); ttlp_arg->ttlp_pred_uri = box_dv_uname_string ("http://www.w3.org/2000/10/swap/log#implies"); /* Note this 'double reversed' meaning :) */ }
 	;
 
 literal_subject
@@ -273,61 +274,61 @@ object_with_ctx
 		ttlp_arg->ttlp_obj = ttlp_arg->ttlp_last_complete_uri;
 		ttlp_arg->ttlp_last_complete_uri = NULL; }
 	  ctx_opt {
-		ttlp_triple_and_inf (ttlp_arg, ttlp_arg->ttlp_obj); }
+		ttlp_triple_and_inf_prepare (ttlp_arg, ttlp_arg->ttlp_obj); }
 	| VARIABLE {
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1; }
 	  ctx_opt {
-		ttlp_triple_and_inf (ttlp_arg, $1); }
+		ttlp_triple_and_inf_prepare (ttlp_arg, $1); }
 	| blank {
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1; }
 	  ctx_opt {
-		ttlp_triple_and_inf (ttlp_arg, $1); }
+		ttlp_triple_and_inf_prepare (ttlp_arg, $1); }
 	| true_L ctx_opt {
-		ttlp_triple_l_and_inf (ttlp_arg, (caddr_t)((ptrlong)1), uname_xmlschema_ns_uri_hash_boolean, NULL); }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, (caddr_t)((ptrlong)1), uname_xmlschema_ns_uri_hash_boolean, NULL); }
 	| false_L ctx_opt {
-		ttlp_triple_l_and_inf (ttlp_arg, (caddr_t)((ptrlong)0), uname_xmlschema_ns_uri_hash_boolean, NULL); }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, (caddr_t)((ptrlong)0), uname_xmlschema_ns_uri_hash_boolean, NULL); }
 	| TURTLE_INTEGER ctx_opt {
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1;
-		ttlp_triple_l_and_inf (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_integer, NULL); }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_integer, NULL); }
 	| TURTLE_DECIMAL ctx_opt {
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1;
-		ttlp_triple_l_and_inf (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_decimal, NULL); }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_decimal, NULL); }
 	| TURTLE_DOUBLE ctx_opt {
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1;
-		ttlp_triple_l_and_inf (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_double, NULL);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, uname_xmlschema_ns_uri_hash_double, NULL);	}
 	| NaN_L ctx_opt {
 	  	double myZERO = 0.0;
 		double myNAN_d = 0.0/myZERO;
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = box_double (myNAN_d);
-		ttlp_triple_l_and_inf (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL);	}
 	| INF_L ctx_opt {
 	  	double myZERO = 0.0;
-          	double myPOSINF_d = 1.0/myZERO;
+	  	double myPOSINF_d = 1.0/myZERO;
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = box_double (myPOSINF_d);
-		ttlp_triple_l_and_inf (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL);	}
 	| _MINUS_INF_L ctx_opt {
 	  	double myZERO = 0.0;
-         	double myNEGINF_d = -1.0/myZERO;
+	 	double myNEGINF_d = -1.0/myZERO;
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = box_double (myNEGINF_d);
-		ttlp_triple_l_and_inf (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, ttlp_arg->ttlp_obj, uname_xmlschema_ns_uri_hash_double, NULL);	}
 	| TURTLE_STRING ctx_opt	{
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1;
-		ttlp_triple_l_and_inf (ttlp_arg, $1, NULL, NULL); }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, NULL, NULL); }
 	| TURTLE_STRING LANGTAG ctx_opt	{
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1;
 		dk_free_tree (ttlp_arg->ttlp_obj_lang);
 		ttlp_arg->ttlp_obj_lang = $2;
-		ttlp_triple_l_and_inf (ttlp_arg, $1, NULL, $2);	}
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, $1, NULL, $2);	}
 	| TURTLE_STRING _CARET_CARET q_complete {
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1;
@@ -335,16 +336,16 @@ object_with_ctx
 		ttlp_arg->ttlp_obj_type = ttlp_arg->ttlp_last_complete_uri;
 		ttlp_arg->ttlp_last_complete_uri = NULL; }
 	  ctx_opt {
-		ttlp_triple_l_and_inf (ttlp_arg, ttlp_arg->ttlp_obj, ttlp_arg->ttlp_obj_type, NULL);	}
-        | TTL_RECOVERABLE_ERROR ctx_opt { }
+		ttlp_triple_l_and_inf_prepare (ttlp_arg, ttlp_arg->ttlp_obj, ttlp_arg->ttlp_obj_type, NULL);	}
+	| TTL_RECOVERABLE_ERROR ctx_opt { }
 	| TURTLE_STRING _CARET_CARET TTL_RECOVERABLE_ERROR ctx_opt {
 		dk_free_tree (ttlp_arg->ttlp_obj);
 		ttlp_arg->ttlp_obj = $1; }
-        | TTL_RECOVERABLE_ERROR _CARET_CARET q_complete {
+	| TTL_RECOVERABLE_ERROR _CARET_CARET q_complete {
 		dk_free_tree (ttlp_arg->ttlp_last_complete_uri);
 		ttlp_arg->ttlp_last_complete_uri = NULL; }
 	  ctx_opt { }
-        | TTL_RECOVERABLE_ERROR _CARET_CARET TTL_RECOVERABLE_ERROR ctx_opt { }
+	| TTL_RECOVERABLE_ERROR _CARET_CARET TTL_RECOVERABLE_ERROR ctx_opt { }
 	;
 
 ctx_opt
@@ -357,7 +358,7 @@ ctx_opt
 		triple_feed_t *tf = ttlp_arg->ttlp_tf;
 		if ((NULL == tf->tf_current_graph_uri) || strcmp (tf->tf_current_graph_uri, ttlp_arg->ttlp_last_complete_uri))
 		  TF_CHANGE_GRAPH (tf, ttlp_arg->ttlp_last_complete_uri);
-                else {
+		else {
 		    dk_free_tree (ttlp_arg->ttlp_last_complete_uri);
 		    ttlp_arg->ttlp_last_complete_uri = NULL; } }
 	| TTL_RECOVERABLE_ERROR { }
@@ -368,9 +369,9 @@ ctx_opt
 blank
 	: BLANK_NODE_LABEL
 		{
-                  if (ttlp_arg->ttlp_formula_iid)
+		  if (ttlp_arg->ttlp_formula_iid)
 		    $$ = tf_formula_bnode_iid (ttlp_arg, $1);
-                  else
+		  else
 		    $$ = tf_bnode_iid (ttlp_arg->ttlp_tf, $1);
 		}
 	| _LSQBRA_RSQBRA	{ $$ = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL); }
@@ -379,14 +380,14 @@ blank
 q_complete
 	: Q_IRI_REF
 		{
-                  if (NULL != ttlp_arg->ttlp_last_complete_uri)
+		  if (NULL != ttlp_arg->ttlp_last_complete_uri)
 		    ttlyyerror_action ("Internal error: proven memory leak");
 		  ttlp_arg->ttlp_last_complete_uri = $1;
 		  TTLP_URI_RESOLVE_IF_NEEDED(ttlp_arg->ttlp_last_complete_uri);
 		 }
 	| QNAME
 		{
-                  if (NULL != ttlp_arg->ttlp_last_complete_uri)
+		  if (NULL != ttlp_arg->ttlp_last_complete_uri)
 		    ttlyyerror_action ("Internal error: proven memory leak");
 		  ttlp_arg->ttlp_last_complete_uri = $1;
 		  ttlp_arg->ttlp_last_complete_uri = ttlp_expand_qname_prefix (ttlp_arg, ttlp_arg->ttlp_last_complete_uri);
@@ -394,9 +395,11 @@ q_complete
 		}
 	| QNAME_NS
 		{
-                  if (NULL != ttlp_arg->ttlp_last_complete_uri)
+		  caddr_t uri = $1;
+		  if (NULL != ttlp_arg->ttlp_last_complete_uri)
 		    ttlyyerror_action ("Internal error: proven memory leak");
-		  ttlp_arg->ttlp_last_complete_uri = $1;
+		  ttlp_arg->ttlp_last_complete_uri = uri;
+		  ttlp_arg->ttlp_last_q_save = NULL;
 		  ttlp_arg->ttlp_last_complete_uri = ttlp_expand_qname_prefix (ttlp_arg, ttlp_arg->ttlp_last_complete_uri);
 		  TTLP_URI_RESOLVE_IF_NEEDED(ttlp_arg->ttlp_last_complete_uri);
 		}

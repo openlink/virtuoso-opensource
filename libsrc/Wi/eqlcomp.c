@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -339,6 +339,7 @@ qn_size (data_source_t * qn)
   QNSZ (ddl_node_input, ddl_node_t);
   QNSZ (op_node_input, op_node_t);
   QNSZ (breakup_node_input, breakup_node_t);
+  QNSZ (txs_input, text_node_t);
   return -1;
 }
 
@@ -392,7 +393,6 @@ kpd_free (key_partition_def_t * kpd)
   dk_free_box ((caddr_t)kpd->kpd_cols);
   dk_free ((caddr_t)kpd, sizeof (key_partition_def_t));
 }
-
 
 void
 qr_free (query_t * qr)
@@ -1566,7 +1566,8 @@ qr_no_copy_ssls (query_t * qr, dk_hash_t * no_copy)
 	  hash_area_t * ha = setp->setp_ha;
 	  if (ha && (HA_DISTINCT == ha->ha_op || HA_GROUP == ha->ha_op ||HA_ORDER == ha->ha_op))
 	    sethash ((void*)ha->ha_tree, no_copy, (void*)1);
-	  sethash ((void*)setp->setp_sorted, no_copy, (void*) 1);
+	  if (setp->setp_sorted)
+	    sethash ((void*)setp->setp_sorted, no_copy, (void*) 1);
 	}
     }
   END_DO_SET();
@@ -2649,7 +2650,7 @@ retry_dupe_check:
 	    prec = ROW_MAX_COL_BYTES;
 	  if (IS_WIDE_STRING_DTP (dtp) && !prec)
 	    prec = ROW_MAX_COL_BYTES;
-	  if (sl->ssl_type == SSL_COLUMN)
+	  if (sl->ssl_type == SSL_COLUMN || (SSL_VEC == sl->ssl_type && sl->ssl_column))
 	    {
 	      dbe_column_t *col = sl->ssl_column;
 	      long flags = 0;
@@ -2779,10 +2780,10 @@ eql_compile_2 (const char *string, client_connection_t * cli, caddr_t * err,
       client_connection_t *old_cli = sqlc_client ();
       if (!parse_mtx)
 	parse_mtx = mutex_allocate ();
-      mutex_enter (parse_mtx);
+      parse_enter ();
       sqlc_set_client (cli);
       qr = eql_compile_eql (string, cli, err);
-      mutex_leave (parse_mtx);
+      parse_leave ();
       sqlc_set_client (old_cli);
       return qr;
     }

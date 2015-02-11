@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <refentry id="fn_GROUP_DIGEST">
   <refmeta>
-    <refentrytitle>GROUP_DIGEST</refentrytitle>
+    <refentrytitle>DB.DBA.GROUP_DIGEST</refentrytitle>
     <refmiscinfo>rdf</refmiscinfo>
   </refmeta>
   <refnamediv>
-    <refname>GROUP_DIGEST</refname>
+    <refname>DB.DBA.GROUP_DIGEST</refname>
     <refpurpose>returns an arbitrary value from the multiset passed to it.</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_GROUP_DIGEST">
       <funcprototype id="fproto_GROUP_DIGEST">
-        <funcdef><function>GROUP_DIGEST</function></funcdef>
+        <funcdef><function>DB.DBA.GROUP_DIGEST</function></funcdef>
 	        <paramdef>in <parameter>token</parameter> varchar</paramdef>
 	        <paramdef>in <parameter>delim</parameter> varchar</paramdef>
 	        <paramdef>in <parameter>maxlen</parameter> integer</paramdef>
@@ -21,7 +21,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_GROUP_DIGEST">
     <title>Description</title>
-    <para>GROUP_DIGEST is aggregate function that performs a string concatenation across 
+    <para>DB.DBA.GROUP_DIGEST is aggregate function that performs a string concatenation across
     	the values of an expression with a group. The order of the strings is not specified. 
     	The separator character used in the concatenation may be given with the scalar 
     	argument delimiter. The function is an extended version of sql:GROUP_CONCAT(), with 
@@ -71,9 +71,11 @@ WHERE
   </refsect1>
   <refsect1 id="seealso_GROUP_DIGEST">
     <title>See Also</title>
-    <para><link linkend="fn_SAMPLE"><function>SAMPLE</function></link></para>
-    <para><link linkend="fn_GROUP_CONCAT"><function>GROUP_CONCAT</function></link></para>
-    <para><link linkend="samplegroupconcatdigest">Differences between SAMPLE, GROUP_CONCAT and GROUP_DIGEST functions usage.</link></para>        
+    <para><link linkend="fn_SAMPLE"><function>DB.DBA.SAMPLE</function></link></para>
+    <para><link linkend="fn_GROUP_CONCAT"><function>DB.DBA.GROUP_CONCAT</function></link></para>
+    <para><link linkend="fn_GROUP_CONCAT_DISTINCT"><function>DB.DBA.GROUP_CONCAT_DISTINCT</function></link></para>
+    <para><link linkend="samplegroupconcatdigest">Differences between DB.DBA.SAMPLE, DB.DBA.GROUP_CONCAT and
+    DB.DBA.GROUP_DIGEST functions usage.</link></para>
   </refsect1>
 </refentry>
 

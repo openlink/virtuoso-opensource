@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -93,63 +93,66 @@ extern void sparp_debug_weird (struct sparp_s *sparp, const char *file, int line
 #define SPAR_BOP_EQNAMES		(ptrlong)1052	/*!< A special "equality": arguments are variables whose names are merged into one equivalence class */
 #define SPAR_UNION_WO_ALL		(ptrlong)1053	/*!< A special union that will become SQL UNION, not SQL UNION ALL as we usually cheat */
 
-#define SPAR_BIF_ABS		(ptrlong)1101
-#define SPAR_BIF_BNODE		(ptrlong)1102
-#define SPAR_BIF_CEIL		(ptrlong)1103
-#define SPAR_BIF_COALESCE	(ptrlong)1104
-#define SPAR_BIF_CONCAT		(ptrlong)1105
-#define SPAR_BIF_CONTAINS	(ptrlong)1106
-#define SPAR_BIF_DAY		(ptrlong)1107
-#define SPAR_BIF_ENCODE_FOR_URI	(ptrlong)1108
-#define SPAR_BIF_FLOOR		(ptrlong)1109
-#define SPAR_BIF_HOURS		(ptrlong)1110
-#define SPAR_BIF_IF		(ptrlong)1111
-#define SPAR_BIF_ISBLANK	(ptrlong)1112
-#define SPAR_BIF_ISIRI		(ptrlong)1113
-#define SPAR_BIF_ISLITERAL	(ptrlong)1114
-#define SPAR_BIF_ISNUMERIC	(ptrlong)1115
-#define SPAR_BIF_ISREF		(ptrlong)1116
-#define SPAR_BIF_ISURI		(ptrlong)1117
-#define SPAR_BIF_LANGMATCHES	(ptrlong)1118
-#define SPAR_BIF_LCASE		(ptrlong)1119
-#define SPAR_BIF_MD5		(ptrlong)1120
-#define SPAR_BIF_MINUTES	(ptrlong)1121
-#define SPAR_BIF_MONTH		(ptrlong)1122
-#define SPAR_BIF_NOW		(ptrlong)1123
-#define SPAR_BIF_RAND		(ptrlong)1124
-#define SPAR_BIF_REGEX		(ptrlong)1125
-#define SPAR_BIF_REPLACE	(ptrlong)1126
-#define SPAR_BIF_ROUND		(ptrlong)1127
-#define SPAR_BIF_SAMETERM	(ptrlong)1128
-#define SPAR_BIF_SECONDS	(ptrlong)1129
-#define SPAR_BIF_SHA1		(ptrlong)1130
-#define SPAR_BIF_SHA224		(ptrlong)1131
-#define SPAR_BIF_SHA256		(ptrlong)1132
-#define SPAR_BIF_SHA384		(ptrlong)1133
-#define SPAR_BIF_SHA512		(ptrlong)1134
-#define SPAR_BIF_STR		(ptrlong)1135
-#define SPAR_BIF_STRAFTER	(ptrlong)1136
-#define SPAR_BIF_STRBEFORE	(ptrlong)1137
-#define SPAR_BIF_STRDT		(ptrlong)1138
-#define SPAR_BIF_STRENDS	(ptrlong)1139
-#define SPAR_BIF_STRLANG	(ptrlong)1140
-#define SPAR_BIF_STRLEN		(ptrlong)1141
-#define SPAR_BIF_STRSTARTS	(ptrlong)1142
-#define SPAR_BIF_STRUUID	(ptrlong)1143
-#define SPAR_BIF_SUBSTR		(ptrlong)1144
-#define SPAR_BIF_TIMEZONE	(ptrlong)1145
-#define SPAR_BIF_TZ		(ptrlong)1146
-#define SPAR_BIF_UCASE		(ptrlong)1147
-#define SPAR_BIF_URI		(ptrlong)1148
-#define SPAR_BIF_UUID		(ptrlong)1149
-#define SPAR_BIF_VALID		(ptrlong)1150
-#define SPAR_BIF_YEAR		(ptrlong)1151
-#define SPAR_BIF__ITEM_IN_VECTOR	(ptrlong)1152
+#define SPAR_BIF_ABS			(ptrlong)1101
+#define SPAR_BIF_BNODE			(ptrlong)1102
+#define SPAR_BIF_CASEWHEN		(ptrlong)1103
+#define SPAR_BIF_CASEX			(ptrlong)1104
+#define SPAR_BIF_CEIL			(ptrlong)1105
+#define SPAR_BIF_COALESCE		(ptrlong)1106
+#define SPAR_BIF_CONCAT			(ptrlong)1107
+#define SPAR_BIF_CONTAINS		(ptrlong)1108
+#define SPAR_BIF_DAY			(ptrlong)1109
+#define SPAR_BIF_ENCODE_FOR_URI		(ptrlong)1110
+#define SPAR_BIF_FLOOR			(ptrlong)1111
+#define SPAR_BIF_HOURS			(ptrlong)1112
+#define SPAR_BIF_IF			(ptrlong)1113
+#define SPAR_BIF_ISBLANK		(ptrlong)1114
+#define SPAR_BIF_ISIRI			(ptrlong)1115
+#define SPAR_BIF_ISLITERAL		(ptrlong)1116
+#define SPAR_BIF_ISNUMERIC		(ptrlong)1117
+#define SPAR_BIF_ISREF			(ptrlong)1118
+#define SPAR_BIF_ISURI			(ptrlong)1119
+#define SPAR_BIF_LANGMATCHES		(ptrlong)1120
+#define SPAR_BIF_LCASE			(ptrlong)1121
+#define SPAR_BIF_MD5			(ptrlong)1122
+#define SPAR_BIF_MINUTES		(ptrlong)1123
+#define SPAR_BIF_MONTH			(ptrlong)1124
+#define SPAR_BIF_NOW			(ptrlong)1125
+#define SPAR_BIF_RAND			(ptrlong)1126
+#define SPAR_BIF_REGEX			(ptrlong)1127
+#define SPAR_BIF_REMOVE_UNICODE3_ACCENTS	(ptrlong)1128
+#define SPAR_BIF_REPLACE		(ptrlong)1129
+#define SPAR_BIF_ROUND			(ptrlong)1130
+#define SPAR_BIF_SAMETERM		(ptrlong)1131
+#define SPAR_BIF_SECONDS		(ptrlong)1132
+#define SPAR_BIF_SHA1			(ptrlong)1133
+#define SPAR_BIF_SHA224			(ptrlong)1134
+#define SPAR_BIF_SHA256			(ptrlong)1135
+#define SPAR_BIF_SHA384			(ptrlong)1136
+#define SPAR_BIF_SHA512			(ptrlong)1137
+#define SPAR_BIF_STR			(ptrlong)1138
+#define SPAR_BIF_STRAFTER		(ptrlong)1139
+#define SPAR_BIF_STRBEFORE		(ptrlong)1140
+#define SPAR_BIF_STRDT			(ptrlong)1141
+#define SPAR_BIF_STRENDS		(ptrlong)1142
+#define SPAR_BIF_STRLANG		(ptrlong)1143
+#define SPAR_BIF_STRLEN			(ptrlong)1144
+#define SPAR_BIF_STRSTARTS		(ptrlong)1145
+#define SPAR_BIF_STRUUID		(ptrlong)1146
+#define SPAR_BIF_SUBSTR			(ptrlong)1147
+#define SPAR_BIF_TIMEZONE		(ptrlong)1148
+#define SPAR_BIF_TZ			(ptrlong)1149
+#define SPAR_BIF_UCASE			(ptrlong)1150
+#define SPAR_BIF_URI			(ptrlong)1151
+#define SPAR_BIF_UUID			(ptrlong)1152
+#define SPAR_BIF_VALID			(ptrlong)1153
+#define SPAR_BIF_YEAR			(ptrlong)1154
+#define SPAR_BIF__ITEM_IN_VECTOR	(ptrlong)1155
 
-#define SPAR_SML_CREATE		(ptrlong)1201
-#define SPAR_SML_DROP		(ptrlong)1202
-#define SPAR_SML_ATTACH		(ptrlong)1203
-#define SPAR_SML_DETACH		(ptrlong)1204
+#define SPAR_SML_CREATE			(ptrlong)1201
+#define SPAR_SML_DROP			(ptrlong)1202
+#define SPAR_SML_ATTACH			(ptrlong)1203
+#define SPAR_SML_DETACH			(ptrlong)1204
 
 #define SPARP_MAX_LEX_DEPTH 150				/*!< Maximum allowed number of any opened parenthesis in SPARQL text. SQL lexer has its own limit of the sort, \c SCN3_MAX_LEX_DEPTH . Note that SCN3_MAX_LEX_DEPTH will stay in effect while SQL lexer is looking for end of SPARQL statement, deeper nesting of SPARQL subquery may mean smaller "remaining" limit on SPARQL. */
 #define SPARP_MAX_BRACE_DEPTH 80			/*!< Maximum allowed number of any opened parenthesis outside pair of curly braces in SQL text. SQL lexer has its own limit of the sort, \c SCN3_MAX_BRACE_DEPTH */
@@ -337,6 +340,7 @@ typedef struct sparp_globals_s {
   caddr_t		sg_output_maxrows;		/*!< boxed maximum expected number of rows to return */
   caddr_t sg_output_compose_report;			/*!< Boxed non-NULL number that indicates wither a verbose report string should be created (value of 1) or just a number of changes (value of 0) */
   caddr_t		sg_sparul_log_mode;		/*!< log_mode argument of SPARQL_MODIFY_BY_DICT_CONTENTS() and similar procedures; if set then it's a boxed integer or boxed zero */
+  int			sg_comment_sql;			/*!< Flags that control storing comments in the resulting SQL text */
 } sparp_globals_t;
 
 typedef struct sparp_e4qm_s {
@@ -380,6 +384,7 @@ typedef struct sparp_s {
   spar_lexem_t *sparp_curr_lexem;
   spar_lexbmk_t sparp_curr_lexem_bmk;
   int sparp_in_precode_expn;		/*!< If nonzero (usually 1) then the parser reads precode-safe expression so it can not contain non-global variables, if bit 2 is set then even global variables are prohibited (like it is in INSERT DATA statement) */
+  int sparp_in_ctor_from_where;		/*!< If nonzero then the parser reads WHERE clause of CONSTRUCT WHERE or DELETE WHERE statement */
   int sparp_allow_aggregates_in_expn;	/*!< The parser reads result-set expressions, GROUP BY, ORDER BY, or HAVING. Each bit is responsible for one level of nesting. */
   int sparp_scalar_subq_count;		/*!< Counter of scalar subqueries. It's primary purpose is to track whether BIND expression contain scalar subqueries and hence is non-repeatable. */
   int sparp_query_uses_aggregates;	/*!< Nonzero if there is at least one aggregate in the whole source query, (not in the current SELECT!). This is solely for bypassing expanding top retvals for "plain SPARQL" queries, not for other logic of the compiler */
@@ -534,7 +539,7 @@ typedef struct triple_case_s
   ccaddr_t *tc_red_cuts[SPART_TRIPLE_FIELDS_COUNT];	/*!< Red cuts for values bound by the triple when they are generated by \c tc_qm */
 } triple_case_t;
 
-#define SPAR_MAX_BINDINGS_VIEW_CN 4 /*!< There are two representations of a binding: DB.DBA.SPARQL_BINDINGS_VIEW_C1 to DB.DBA.SPARQL_BINDINGS_VIEW_C4 make result sets of widths 1 to 4, DB.DBA.SPARQL_BINDINGS_VIEW makes result set of vectors of values */
+#define SPAR_MAX_BINDINGS_VIEW_CN 4 /*!< There are two representations of a binding: DB.DBA.SPARQL_BINDINGS_VIEW_C_1 to DB.DBA.SPARQL_BINDINGS_VIEW_C_4 make result sets of widths 1 to 4, DB.DBA.SPARQL_BINDINGS_VIEW makes result set of vectors of values */
 
 /*! A node of tree representation of a SPARQL query. Tree format is common for both syntax parser and optimizer. */
 typedef struct spar_tree_s
@@ -596,6 +601,7 @@ typedef struct spar_tree_s
         caddr_t val;
         caddr_t datatype;
         caddr_t language;
+        caddr_t original_text;
       } lit;
     struct { /* Note that all first members of \c qname case should match to \c lit case */
         /* #define SPAR_QNAME		(ptrlong)1011 */
@@ -726,7 +732,7 @@ typedef struct spar_tree_s
         ptrlong own_idx;	/*!< Serial of the bindings invocation in the parser */
         SPART **vars;		/*!< Names of variables that are passed as parameters */
         SPART ***data_rows;	/*!< Rows of data. Note that they're not copied from spare_bindings_rowset and not duplicated if enclosing GP is duplicated. */
-        char *data_rows_mask;	/*!< Characters, one per data row, indicating whether the row is in use (char '/') or not in use due to ban by some cell (char '0' + column index or '\x7f', whatever is less, for debugging) */
+        char *data_rows_mask;	/*!< Characters, one per data row, indicating whether the row is in use (char '/') or not in use due to ban by some cell (char '0' + column index or '\x7f', whatever is less, for debugging) or not in use due to LIMIT (char '.') */
         ptrlong *counters_of_unbound;	/*!< Counters of unbound values in columns (rows not in use are excluded from counting). Cheating: This array is allocated as DV_STRING, not DV_ARRAY_OF_POINTER */
         ptrlong rows_in_use;	/*!< Count of rows still in use */
         ptrlong rows_last_rvr;	/*!< Count of rows in use when rvrs were refreshed last time */
@@ -978,7 +984,7 @@ extern SPART *spar_make_fake_blank_node (sparp_t *sparp); /*!< Not for use in re
 extern SPART *spar_make_literal_from_sql_box (sparp_t * sparp, caddr_t box, int mode);
 extern SPART *spar_make_qname_or_literal_from_rvr (sparp_t * sparp, rdf_val_range_t *rvr, int make_naked_box_if_possible);
 
-#define SPAR_MAKE_BOOL_LITERAL(sparp,v) (spartlist ((sparp), 4, SPAR_LIT, (SPART *)t_box_num_nonull((v)?1:0), uname_xmlschema_ns_uri_hash_boolean, NULL))
+#define SPAR_MAKE_BOOL_LITERAL(sparp,v) (spartlist ((sparp), 5, SPAR_LIT, (SPART *)t_box_num_nonull((v)?1:0), uname_xmlschema_ns_uri_hash_boolean, NULL, t_box_string((v)?"true":"false")))
 
 extern SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, caddr_t lang);
 /*! Creates a new FROM / FROM NAMED / NOT FROM / NOT FROM NAMED source description and pushes it into context for future storing in req_top.sources.

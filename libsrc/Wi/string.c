@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -106,7 +106,7 @@ __convert_arg (const char *str, int type, int *need_free)
   if (LIKE_ARG_UTF == type || LIKE_ARG_CHAR == type)
     {
       *need_free = 1;
-      return (wchar_t *)(box_utf8_as_wide_char (str, NULL, strlen (str), 0, DV_WIDE));
+      return (wchar_t *)(box_utf8_as_wide_char (str, NULL, strlen (str), 0));
     }
   *need_free = 0;
   return (wchar_t *)str;

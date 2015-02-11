@@ -7,9 +7,9 @@
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2014 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
@@ -311,7 +311,7 @@ ECHO BOTH $IF $EQU $LAST[2] "viravira" "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Last word doubled='" $LAST[2] "'\n";
 
--- ibid with dt and sort, test placing of funcs in place of lowest card 
+-- ibid with dt and sort, test placing of funcs in place of lowest card
 select v1.word, v2.word from words v1, (select distinct word from words where length (word) > 2) v2
 where length(v1.word) >= 3 and v2.word = concat(v1.word,lcase(v1.word)) order by ucase (v1.word);
 

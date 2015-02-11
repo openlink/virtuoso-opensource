@@ -1,0 +1,2 @@
+usr/lib/virtodbc*.so usr/lib/odbc/
+../odbcinst.ini usr/share/libvirtodbc0/

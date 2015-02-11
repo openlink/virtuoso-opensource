@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -131,6 +131,8 @@ struct thread_s
     semaphore_t	*	thr_schedule_sem;
     void *		thr_client_data;
     void *		thr_alloc_cache;
+  struct TLSF_struct *	thr_tlsf;
+  struct TLSF_struct *	thr_own_tlsf;
   /* preallocated thread attributes */
   jmp_buf_splice *	thr_reset_ctx;
   caddr_t		thr_reset_code;

@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2014 OpenLink Software
+ -  Copyright (C) 1998-2015 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -186,8 +186,6 @@
                                     }
                                   }
                                 }
-                                dbg_obj_print(self.hosts);
-                                dbg_obj_print(self.hostLabels);
                                 ]]>
                             </v:before-data-bind>
 
@@ -229,8 +227,8 @@
                                           _https_lhost := split_and_decode (_https_host, 0, '\0\0|')[1];
 
                                           -- Get the cert and key which is used for this https listener. HTTPS listeners are setup implicitely by using the same auth options in all vhosts. So if the setup is not broken we can use any of the vhosts.
-                                          _cert := (select top 1 get_keyword('https_cert', deserialize(HP_AUTH_OPTIONS)) from DB.DBA.HTTP_PATH where get_keyword('https_cert', deserialize(HP_AUTH_OPTIONS)) is not null and VAL.DBA.normalize_host(HP_HOST,HP_LISTEN_HOST)=_https_host);
-                                          _key := (select top 1 get_keyword('https_key', deserialize(HP_AUTH_OPTIONS)) from DB.DBA.HTTP_PATH where get_keyword('https_cert', deserialize(HP_AUTH_OPTIONS)) is not null and VAL.DBA.normalize_host(HP_HOST,HP_LISTEN_HOST)=_https_host);
+                                          _cert := (select top 1 get_keyword('https_cert', deserialize(HP_AUTH_OPTIONS)) from DB.DBA.HTTP_PATH where get_keyword('https_cert', deserialize(HP_AUTH_OPTIONS)) is not null and HP_LISTEN_HOST = _https_lhost and HP_HOST = _https_vhost);
+                                          _key := (select top 1 get_keyword('https_key', deserialize(HP_AUTH_OPTIONS)) from DB.DBA.HTTP_PATH where get_keyword('https_cert', deserialize(HP_AUTH_OPTIONS)) is not null and HP_LISTEN_HOST = _https_lhost and HP_HOST = _https_vhost);
 
                                           VAL.DBA.setup_val_host (_http_vhost, _http_lhost, _https_vhost, _https_lhost, _cert, _key);
 

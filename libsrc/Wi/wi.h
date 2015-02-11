@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -34,6 +34,7 @@
 #define VAJRA
 #define VEC
 #define NO_CL GPF_T1 ("not available without cluster support")
+#define PM_TLSF 1
 #define KEYCOMP GPF_T1 ("not done with key comp");
 #define O12 GPF_T1("Database engine does not support this deprecated function. Please contact OpenLink Support.")
 /*#define PAGE_TRACE 1 */
@@ -197,6 +198,7 @@ struct buffer_pool_s
   int		bp_n_clean[BP_N_BUCKETS]; /* bp_ts at the boundary between buckets */
   int 		bp_n_dirty[BP_N_BUCKETS];
   buffer_desc_t **	bp_sort_tmp;
+  void *	bp_tlsf;
 };
 
 
@@ -790,6 +792,17 @@ struct placeholder_s
 
 typedef void (*itc_clup_func_t) (it_cursor_t *);
 
+
+#ifdef  COL_ZERO_TR
+typedef struct itc_cr_trace_s
+{
+  int	crt_line;
+  int	crt_set;
+  int	crt_ranges;
+  int	crt_first_set;
+} itc_cr_trace_t;
+#endif
+
 #define MAX_SEARCH_PARAMS (TB_MAX_COLS + 10)
 
 #define RA_MAX_ROOTS 80
@@ -934,6 +947,9 @@ struct it_cursor_s
     int			itc_ce_first_set;
     int			itc_ce_first_range;
     int			itc_row_of_ce;
+#ifdef COL_ZERO_TR
+    itc_cr_trace_t	itc_crt;
+#endif
     int			itc_first_filter_range;
     int 		itc_range_fill;
     short 		itc_nth_col_string;
@@ -1225,7 +1241,7 @@ len = row_length (row, key)
 }
 
 
-#define ITC_ASSERT_TRANSIT(itc, dp1, dp2) \\
+#define ITC_ASSERT_TRANSIT(itc, dp1, dp2) \
 {\
   it_map_t itm1 = IT_DP_MAP (itc->itc_tree, dp1);\
   it_map_t itm2 = IT_DP_MAP (itc->itc_tree, dp2);\
@@ -1381,6 +1397,7 @@ struct page_map_s
 
 
 /* the different standard sizes of page_map_t */
+#ifndef PM_TLSF
 #define PM_SZ_1 50
 #define PM_SZ_2 200
 #define PM_SZ_3 720
@@ -1389,6 +1406,25 @@ struct page_map_s
 
 #define PM_SIZE(ct) \
   (ct < PM_SZ_1 ? PM_SZ_1 : (ct < PM_SZ_2 ? PM_SZ_2 : (ct < PM_SZ_3 ? PM_SZ_3 : (ct <= PM_SZ_4 ? PM_SZ_4 : (GPF_T1 ("pm size overflow"), 0)))))
+#else
+
+#define PM_SZ_1 75
+#define PM_SZ_2 163
+#define PM_SZ_3 339
+#define PM_SZ_4 691
+#define PM_SZ_5 1395
+#define PM_SZ_6 2803
+
+#define PM_SIZE(ct) \
+    (ct < PM_SZ_1 ? PM_SZ_1 : \
+     (ct < PM_SZ_2 ? PM_SZ_2 : \
+      (ct < PM_SZ_3 ? PM_SZ_3 : \
+       (ct < PM_SZ_4 ? PM_SZ_4 : \
+	(ct < PM_SZ_5 ? PM_SZ_5 : \
+	 (ct <= PM_SZ_6 ? PM_SZ_6 : \
+	  (GPF_T1 ("pm size overflow"), 0)))))))
+
+#endif
 extern resource_t * pm_rc_1;
 extern resource_t * pm_rc_2;
 extern resource_t * pm_rc_3;
@@ -1923,6 +1959,7 @@ extern int64 bdf_is_avail_mask; /* all bits on except read aside flag which does
 { \
   du_thread_t * __self = thr; \
   int reset_code;  \
+  struct TLSF_struct * __tlsf = __self->thr_tlsf; \
   jmp_buf_splice * __old_ctx = __self->thr_reset_ctx;\
   jmp_buf_splice __ctx;  \
   __self->thr_reset_ctx = &__ctx; \
@@ -1931,11 +1968,14 @@ extern int64 bdf_is_avail_mask; /* all bits on except read aside flag which does
 #define QR_RESET_CTX  QR_RESET_CTX_T (THREAD_CURRENT_THREAD)
 
 #define QR_RESET_CODE \
-  else
+  else \
+    { __self->thr_tlsf = __tlsf;
 
 
 #define END_QR_RESET \
+    } \
     POP_QR_RESET; \
+    __self->thr_tlsf = __tlsf;			\
 }
 
 #define POP_QR_RESET \
@@ -2105,6 +2145,7 @@ typedef struct stat_desc_s
   } stat_desc_t;
 
 extern stat_desc_t dbf_descs[];
+extern stat_desc_t rdf_preset_datatypes_descs[];
 
 typedef struct s_time_t
 {

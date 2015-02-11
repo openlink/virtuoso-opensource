@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -151,7 +151,6 @@ key_cl_count (dbe_col_loc_t * cls)
   return inx;
 }
 
-
 void
 setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, uint64 n_rows, int op)
 {
@@ -162,7 +161,7 @@ setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, uint64 n_rows, int op)
   int inx;
   int n_keys = dk_set_length (setp->setp_keys);
   int n_deps = dk_set_length (setp->setp_dependent);
-  NEW_VARZ (hash_area_t, ha);
+  hash_area_t * ha;
   if (op != HA_DISTINCT && n_keys > CHASH_GB_MAX_KEYS)
     sqlc_new_error (sc->sc_cc, "42000", "SQ186", "Over %d keys in group by or hash join", CHASH_GB_MAX_KEYS);
   if  (HA_DISTINCT == op && SETP_DISTINCT_MAX_KEYS <= n_keys)
@@ -179,6 +178,8 @@ setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, uint64 n_rows, int op)
 	    "group or join condition columns (%s)", ssl->ssl_name);
     }
   END_DO_SET();
+  ha = dk_alloc (sizeof (hash_area_t));
+  memset (ha, 0, sizeof (hash_area_t));
   ha->ha_row_size = 0;
   ha->ha_key = setp_temp_key (setp, &ha->ha_row_size, quietcast, op);
   setp->setp_ha = setp->setp_reserve_ha = ha;
@@ -212,6 +213,14 @@ setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, uint64 n_rows, int op)
   ha->ha_op = op;
   if (setp->setp_any_user_aggregate_gos)
     ha->ha_memcache_only = 1;
+  if (HA_FILL == op)
+    {
+      int inx;
+      ha->ha_non_null = dk_alloc_box (BOX_ELEMENTS (ha->ha_slots), DV_BIN);
+      DO_BOX (state_slot_t *, ssl, inx, ha->ha_slots)
+	ha->ha_non_null[inx] = ha->ha_slots[inx]->ssl_sqt.sqt_non_null;
+      END_DO_BOX;
+    }
   if ((HA_GROUP == op && sqlg_is_vector && !setp->setp_any_user_aggregate_gos
       && !setp->setp_any_distinct_gos
       && ha->ha_n_keys <= CHASH_GB_MAX_KEYS)
@@ -291,7 +300,7 @@ setp_after_deserialize (setp_node_t * setp)
 	ha->ha_memcache_only = 1;
     }
   ha->ha_allow_nulls = 1;
-  if (setp->setp_any_user_aggregate_gos)
+  if (setp->setp_any_user_aggregate_gos || setp->setp_any_distinct_gos)
     ha->ha_memcache_only = 1;
   if (setp->setp_loc_ts)
     setp->setp_loc_ts->ts_order_ks->ks_key = ha->ha_key;

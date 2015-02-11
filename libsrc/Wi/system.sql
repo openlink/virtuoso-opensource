@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -20,6 +20,9 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 --
+
+DB.DBA.__MAKE_UNICODE3_COLLATIONS ()
+;
 
 create table SYS_VT_INDEX (VI_TABLE varchar, VI_INDEX varchar, VI_COL varchar,
 	VI_ID_COL varchar, VI_INDEX_TABLE varchar,
@@ -5605,9 +5608,11 @@ DB.DBA.SYS_SQL_VAL_PRINT (in v any)
   else if (isnumeric (v))
     return cast (v as varchar);
   else if (__tag (v) = 193)
-    {
-      return concat ('vector (',SYS_SQL_VECTOR_PRINT (v),')');
-    }
+    return concat ('vector (',SYS_SQL_VECTOR_PRINT (v),')');
+  else if (__tag (v) = 211)
+    return sprintf ('{ts ''%s''}', datestring (v));
+  else if (__tag (v) = __tag of nvarchar)
+    return sprintf ('N\'%S\'', replace (charset_recode (v, '_WIDE_', 'UTF-8'), '\\', '\\\\'));
   else if (__tag (v) = 255)
     return '<tag 255>';
   else
@@ -6109,16 +6114,27 @@ create procedure csv_ins_stmt (in tb varchar, out num_cols int, in col_opts any 
 }
 ;
 
-create procedure csv_file_header_check (in f any, in num_to_check int := 10)
+create procedure csv_file_header_check (in f any, in num_to_check int := 10, in opts any := null)
 {
   declare h, r, s, i any;
+  declare delim, quot, enc char;
+  declare mode int;
+
+  delim := quot := enc := mode := null;
+  if (isvector (opts) and mod (length (opts), 2) = 0)
+    {
+      delim := get_keyword ('csv-delimiter', opts);
+      quot  := get_keyword ('csv-quote', opts);
+      enc := get_keyword ('encoding', opts);
+      mode := get_keyword ('mode', opts);
+    }
   s := file_open (f);
-  h := get_csv_row (s);
+  h := get_csv_row (s, delim, quot, enc, mode);
   if (not isvector (h))
     return 0;
   for (i := 0; i < num_to_check; i := i + 1)
     {
-      r := get_csv_row (s);
+      r := get_csv_row (s, delim, quot, enc, mode);
       if (not isvector (r) or length (r) <> length (h))
 	return 0;
     }
@@ -6126,24 +6142,45 @@ create procedure csv_file_header_check (in f any, in num_to_check int := 10)
 }
 ;
 
-create procedure csv_table_def (in f varchar)
+create procedure csv_table_def (in f varchar, in tb_name varchar := null, in opts any := null)
 {
   declare head any;
   declare s, r, ss any;
   declare i int;
+  declare delim, quot, enc char;
+  declare mode, to_check int;
 
-  if (not csv_file_header_check (f))
+  delim := quot := enc := mode := null;
+  to_check := 10;
+  if (isvector (opts) and mod (length (opts), 2) = 0)
+    {
+      delim := get_keyword ('csv-delimiter', opts);
+      quot  := get_keyword ('csv-quote', opts);
+      enc := get_keyword ('encoding', opts);
+      mode := get_keyword ('mode', opts);
+      to_check := get_keyword ('max-rows', opts, 10);
+    }
+
+  if (not csv_file_header_check (f, to_check, opts))
     signal ('22023', 'Cannot guess the table definition');
 
+  if (tb_name is null)
+    tb_name := SYS_ALFANUM_NAME (f);
+  tb_name := complete_table_name (tb_name, 1);
   s := file_open (f);
-  head := get_csv_row (s);
-  r := get_csv_row (s);
+  head := get_csv_row (s, delim, quot, enc, mode);
+  r := get_csv_row (s, delim, quot, enc, mode);
   ss := string_output ();
-  http (sprintf ('CREATE TABLE "%I" ( \n', SYS_ALFANUM_NAME (f)), ss);
-  for (i := 0; i < length (head); i := i + 1)
+  http (sprintf ('CREATE TABLE "%I"."%I"."%I" ( \n', name_part (tb_name, 0), name_part (tb_name, 1), name_part (tb_name, 2)), ss);
+  for (i := 0; i < length (head) and isstring (head[i]); i := i + 1)
     {
-       http (sprintf ('\t"%I" %s', SYS_ALFANUM_NAME (head[i]), dv_type_title (__tag (r[i]))), ss);
-       if (i < length (head) - 1)
+       declare tp any;
+       if (r[i] is null)
+         tp := 'VARCHAR';
+       else
+         tp := dv_type_title (__tag (r[i]));
+       http (sprintf ('\t"%I" %s', SYS_ALFANUM_NAME (head[i]), tp), ss);
+       if (i < length (head) - 1 and isstring (head[i + 1]))
          http (', \n', ss);
     }
   http (')', ss);

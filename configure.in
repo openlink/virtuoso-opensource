@@ -6,7 +6,7 @@ AC_REVISION($Id$)
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2014 OpenLink Software
+#  Copyright (C) 1998-2015 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -29,14 +29,26 @@ AC_REVISION($Id$)
 ##									##
 ##########################################################################
 
+m4_define(vos_major,	[7])
+m4_define(vos_minor,	[2])
+m4_define(vos_patch,	[0])
+m4_define(vos_devel,	[])
+
 AC_INIT([Virtuoso Open Source Edition (Column Store)],
-	[7.1.0],
+	vos_major.vos_minor.vos_patch[]vos_devel,
 	[vos.admin@openlinksw.com],
 	[virtuoso-opensource])
 AC_CONFIG_SRCDIR([libsrc/Dk.h])
 AC_CONFIG_AUX_DIR([binsrc/config])
 AC_CONFIG_MACRO_DIR([binsrc/config])
 AC_CONFIG_HEADER([libsrc/Dk/config.h])
+
+#
+# Version variables
+#
+VOS_MAJOR="vos_major"
+VOS_MINOR="vos_minor"
+VOS_PATCH="vos_patch"
 
 dnl
 dnl You may need to change the next macro for older versions of automake:
@@ -155,14 +167,15 @@ case ${VIRTUOSO_LAYOUT} in
 		prefix=/usr
 		localstatedir=/var
 	fi
-	vaddir=$datadir/virtuoso/vad
-	docdir=$datadir/doc/virtuoso
-	htmldocdir=$datadir/doc/virtuoso/html
-	pdfdocdir=$datadir/doc/virtuoso/pdf
-	demodir=$localstatedir/lib/virtuoso/demo
-	dbdir=$localstatedir/lib/virtuoso/db
-	httprootdir=$localstatedir/lib/virtuoso/vsp
-	hostingdir=$libdir/virtuoso/hosting
+	VIRTPKGDIR=virtuoso-opensource-$VOS_MAJOR
+	vaddir=$datadir/$VIRTPKGDIR/vad
+	docdir=$datadir/doc/$VIRTPKGDIR
+	htmldocdir=$datadir/doc/$VIRTPKGDIR/html
+	pdfdocdir=$datadir/doc/$VIRTPKGDIR/pdf
+	demodir=$localstatedir/lib/$VIRTPKGDIR/demo
+	dbdir=$localstatedir/lib/$VIRTPKGDIR/db
+	httprootdir=$localstatedir/lib/$VIRTPKGDIR/vsp
+	hostingdir=$libdir/$VIRTPKGDIR/hosting
 	;;
 
   [[Gg]][[Ee]][[Nn]][[Tt]][[Oo]][[Oo]])			# Gentoo
@@ -172,14 +185,15 @@ case ${VIRTUOSO_LAYOUT} in
 		prefix=/usr
 		localstatedir=/var
 	fi
-	vaddir=$datadir/virtuoso/vad
-	docdir=$datadir/doc/virtuoso
-	htmldocdir=$datadir/doc/virtuoso/html
-	pdfdocdir=$datadir/doc/virtuoso/pdf
-	demodir=$localstatedir/lib/virtuoso/demo
-	dbdir=$localstatedir/lib/virtuoso/db
-	httprootdir=$localstatedir/lib/virtuoso/vsp
-	hostingdir=$libdir/virtuoso/hosting
+	VIRTPKGDIR=virtuoso-$VOS_MAJOR
+	vaddir=$datadir/$VIRTPKGDIR/vad
+	docdir=$datadir/doc/$VIRTPKGDIR
+	htmldocdir=$datadir/doc/$VIRTPKGDIR/html
+	pdfdocdir=$datadir/doc/$VIRTPKGDIR/pdf
+	demodir=$localstatedir/lib/$VIRTPKGDIR/demo
+	dbdir=$localstatedir/lib/$VIRTPKGDIR/db
+	httprootdir=$localstatedir/lib/$VIRTPKGDIR/vsp
+	hostingdir=$libdir/$VIRTPKGDIR/hosting
 	;;
 
   [[Rr]][[Ee]][[Dd]][[Hh]][[Aa]][[Tt]])			# RedHat

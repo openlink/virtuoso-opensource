@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2014 OpenLink Software
+ -  Copyright (C) 1998-2015 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -77,6 +77,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
     <keyword id="xml">XML</keyword>
     <keyword id="XPATH">XPATH &amp; XQUERY</keyword>
     <keyword id="misc">Miscellaneous</keyword>
+    <keyword id="geo">Geo Spatial</keyword>
     <keyword id="vad">VAD</keyword>
   </keywordset>
 </docinfo>
@@ -86,6 +87,9 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &regr_syy; &regr_sxx; &regr_sxy; &regr_avgx; &regr_avgy;
 &regr_r2; &regr_count; &regr_intercept; &regr_slope;
 &covar_samp; &covar_pop; &corr;
+&XQ_SEQUENCE_AGG; &VECTOR_AGG; &VECTOR_OF_NONNULLS_AGG; &VECTOR_OR_NULL_AGG;
+&VECTOR_OF_NONNULLS_OR_NULL_AGG; &VECTOR_CONCAT_AGG; &BAG_AGG; &BAG_OF_NONNULLS_AGG;
+&BAG_OR_NULL_AGG; &BAG_OF_NONNULLS_OR_NULL_AGG; &BAG_CONCAT_AGG;
 
 &abs; &any_grants; &aref; &ascii; &aset; &atof; &atoi; &att_local_name;
 
@@ -109,7 +113,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &dbname; &delay;
 &dict_dec_or_remove; &dict_duplicate; &dict_get; &dict_inc_or_put;
 &dict_iter_next; &dict_iter_rewind;
-&dict_list_keys; &dict_destructive_list_keys; &dict_new;
+&dict_list_keys; &dict_destructive_list_rnd_keys; &dict_new;
 &dict_put; &dict_remove; &dict_size; &dict_to_vector; &dict_zap;
 &disconnect_user; &dt_set_tz; &dvector;
 
@@ -128,7 +132,11 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &get_certificate_info; &get_keyword; &get_keyword_ucase; &get_timestamp;
 &getdate; &gvector_sort; &gvector_digit_sort; &gz_compress; &gz_uncompress;
 
-&hour; &http; &http_lock; &http_unlock; &http_acl_set; &http_acl_get; &http_acl_remove; &http_body_read; &http_client; &http_client_ext; &http_client_ip;
+&st_point; &st_x; &st_y; &st_distance; &st_srid; &st_setsrid; &st_astext;
+&st_geomfromtext; &st_intersects; &st_contains; &st_within; &isgeometry;
+&geo_insert; &geo_delete;
+
+&hour; &http; &http_lock; &http_unlock; &http_acl_set; &http_acl_get; &http_acl_remove; &http_body_read; &http_client; &http_client_ext; &http_client_ip; &dns_txt_get;
 &http_debug_log; &http_enable_gz; &http_file; &http_flush; &http_internal_redirect;
 &http_get; &http_header; &http_header_get; &http_kill; &http_listen_host; &http_map_table;
 &http_map_get; &http_param; &http_path; &http_pending_req; &http_physical_path; &http_proxy;
@@ -171,10 +179,10 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &rdf_triples_to_rdf_xml_text; &rdf_triples_to_ttl; &rdf_64bit_upgrade; &rdf_view_sync_to_physical;
 &rdf_convert_rdfxml_to_ttl; &rdf_graph_group_create; &rdf_graph_group_ins; &rdf_graph_user_perms_set; 
 &rdf_graph_user_perms_del; &rdf_all_user_perms_del; &rdfs_rule_set;
-&rdf_graph_collect_fp_list; &rdf_graph_diff; &rdf_suo_apply_patch;
+&rdf_geo_fill; &rdf_geo_add; &rdf_graph_collect_fp_list; &rdf_graph_diff; &rdf_suo_apply_patch;
 &rdf_suo_diff_ttl; &sparql_rdb2rdf_codegen; &sparql_rdb2rdf_list_tables; &sparql_select_known_graphs;
 &rowvector_digit_sort; <!-- &rowvector_subj_sort; -->
- &isref; &SAMPLE; &GROUP_CONCAT; &GROUP_DIGEST; &http_nt_triple; &http_ttl_triple; 
+ &isref; &SAMPLE; &GROUP_CONCAT; &GROUP_CONCAT_DISTINCT; &GROUP_DIGEST; &http_nt_triple; &http_ttl_triple;
 
 &ann_phrase_class_add; &ann_phrase_class_del; &ap_build_match_list; &ap_add_phrases;
 
@@ -225,7 +233,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &sqrt; &status; &key_estimate; &strcasestr; &strchr; &stringdate; &stringtime; &string_output;
 &string_output_flush; &string_output_gz_compress; &string_output_string;
 &string_to_file; &strrchr; &strstr; &subseq; &substring; &sub_schedule;
-&system; &sys_db_stat; &sys_lockdown; &sys_stat; &sys_stat_analyze; &sys_stat_histogram;
+&system; &uptime; &sys_db_stat; &sys_lockdown; &sys_stat; &sys_stat_analyze; &sys_stat_histogram;
 &table_set_policy; &table_drop_policy; &strcontains; &starts_with; &ends_with;
 
 &tcpip_gethostbyname; &tcpip_gethostbyaddr;

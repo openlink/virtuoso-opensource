@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -34,6 +34,19 @@
 #define GMTIMESTAMP_STRUCT TIMESTAMP_STRUCT
 
 /* datesupp.c */
+
+/* The Gregorian Reformation date. First day of Gregorian calendar is 1582-10-15 and that is the day after the 1582-10-04 that is the last Julian day. */
+#define GREG_YEAR				1582
+#define GREG_MONTH				10
+#define GREG_LAST_JULIAN_DAY			4
+#define GREG_LAST_JULIAN_DAY_AS_PROLEPTIC_GREG	14
+#define GREG_JDAYS	577737L	/* date2num (GREG_YEAR, GREG_MONTH, GREG_LAST_JULIAN_DAY) */
+
+#define GREG_YMD_IS_PROLEPTIC_GREG(year,month,day) \
+  ((year) < GREG_YEAR || (((year) == GREG_YEAR) && ((month) < GREG_MONTH || (((month) == GREG_MONTH) && ((day) <= GREG_LAST_JULIAN_DAY_AS_PROLEPTIC_GREG)))))
+#define GREG_YMD_IS_POST_JULIAN_PROLEPTIC_GREG(year,month,day) \
+  ((year == GREG_YEAR) && ((month == GREG_MONTH) && (day <= GREG_LAST_JULIAN_DAY_AS_PROLEPTIC_GREG) &&  (day > GREG_LAST_JULIAN_DAY)))
+
 int32 date2num (const int year, const int month, const int day);
 void num2date (int32 julian_days, int *year, int *month, int *day);
 int ymd_valid_p (const int year, const int month, const int day);
@@ -61,6 +74,7 @@ int dt_part_ck (char *str, int min, int max, int *err);
 void dt_to_string (const char *dt, char *str, int len);
 void dbg_dt_to_string (const char *dt, char *str, int len);
 void dt_to_iso8601_string (const char *dt, char *str, int len);
+void dt_to_iso8601_string_ext (const char *dt, char *buf, int len, int mode);
 void dt_to_rfc1123_string (const char *dt, char *str, int len);
 int print_dt_to_buffer (char *buf, caddr_t arg, int mode);
 
@@ -99,6 +113,9 @@ void dt_make_day_zero (char *dt);
 void dt_from_parts (char *dt, int year, int month, int day, int hour, int minute, int second, int fraction, int tz);
 int days_in_february (const int year);
 
+#define DT_PRINT_MODE_NO_Y 0x40
+#define DT_PRINT_MODE_NO_M 0x20
+#define DT_PRINT_MODE_NO_D 0x10
 #define DT_PRINT_MODE_YMD 0x4
 #define DT_PRINT_MODE_HMS 0x2
 #define DT_PRINT_MODE_XML 0x1
@@ -114,5 +131,11 @@ void dt_print (caddr_t dt);
 typedef caddr_t arithm_dt_operation_t (ccaddr_t box1, ccaddr_t box2, caddr_t *err_ret);
 extern arithm_dt_operation_t arithm_dt_add;
 extern arithm_dt_operation_t arithm_dt_subtract;
+
+extern int rb_type__xsd_gDay;
+extern int rb_type__xsd_gMonth;
+extern int rb_type__xsd_gMonthDay;
+extern int rb_type__xsd_gYear;
+extern int rb_type__xsd_gYearMonth;
 
 #endif /* _DATESUPP_H */

@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2014 OpenLink Software
+#  Copyright (C) 1998-2015 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -604,6 +604,7 @@ libwic_la_LDLAGS  = -static
 #generated stuff
 
 SQL_FILES		= \
+	$(srcdir)/sys_unicode3_collations.sql \
 	$(srcdir)/system.sql \
 	$(srcdir)/system2.sql \
 	$(srcdir)/qlog.sql \
@@ -639,6 +640,7 @@ SQL_FILES_DAV		= \
 	$(top_srcdir)/binsrc/dav/rdfxml2n3xml.xsl \
 	$(top_srcdir)/binsrc/dav/n3xml2uriqahtml.xsl \
 	$(top_srcdir)/binsrc/dav/uriqa.sql \
+	$(top_srcdir)/binsrc/dav/dav_det.sql \
 	$(top_srcdir)/binsrc/dav/DET_CatFilter.sql \
 	$(top_srcdir)/binsrc/dav/DET_HostFs.sql \
 	$(top_srcdir)/binsrc/dav/DET_ResFilter.sql \
@@ -736,6 +738,7 @@ SQL_FILES_WS		= \
 	$(srcdir)/rdf_net.sql \
 	$(srcdir)/simile.sql \
 	$(srcdir)/xrd2json.xsl \
+	$(srcdir)/xml2json.xsl \
 	$(srcdir)/http_auth.sql \
 	$(srcdir)/xmla.sql \
 	$(srcdir)/openxml.sql \
@@ -756,20 +759,20 @@ json_l.c: $(srcdir)/json.l json_p.h Makefile.am
 	@$(GEN) $(LEX) -o json_l.c -Pjsonyy $(srcdir)/json.l
 
 
-sqlwords.h: $(srcdir)/sqlwords.gperf
+sqlwords.h: $(srcdir)/sqlwords.gperf Makefile.am
 	@${GEN} --stdout ${GPERF} \
 		-o sqlwords.h \
 		-aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$$ \
 		-Nlex_hash_kw \
 		$(srcdir)/sqlwords.gperf
 
-sql3.c sql3.h: sql3.y
-	@$(GEN) $(YACC) -o sql3.c -vd $(srcdir)/sql3.y
+sql3.c sql3.h: sql3.y Makefile.am
+	@$(GEN) $(YACC) -o sql3.c -pscn3yy -vd $(srcdir)/sql3.y
 
-scn3.c: scn3.l sql3.c sqlwords.h
-	@$(GEN) $(LEX) -o scn3.c $(srcdir)/scn3.l
+scn3.c: scn3.l sql3.c sqlwords.h Makefile.am
+	@$(GEN) $(LEX) -o scn3.c -Pscn3yy $(srcdir)/scn3.l
 
-scn3split.c: scn3.l sql3.c sqlwords.h
+scn3split.c: scn3.l sql3.c sqlwords.h Makefile.am
 	@$(GEN) $(LEX) -o scn3split.c -Pscn3splityy $(srcdir)/scn3.l
 
 $(top_srcdir)/binsrc/cached_resources/cached_resources.c:

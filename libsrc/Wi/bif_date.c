@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -41,6 +41,7 @@
 #include "multibyte.h"
 #include "srvmultibyte.h"
 #include "util/strfuns.h"
+#include "uname_const_decl.h"
 
 #define KUBL_ILLEGAL_DATE_VALUE (0)	/* Added by AK 15-JAN-1997. */
 
@@ -57,6 +58,50 @@ bif_date_arg (caddr_t * qst, state_slot_t ** args, int nth, char *func)
   return arg;
 }
 
+caddr_t
+bif_date_arg_rb_type (caddr_t * qst, state_slot_t ** args, int nth, char *func, int *rb_type_ret)
+{
+  rdf_box_t *src_rdf_box;
+  caddr_t arg = bif_arg_unrdf_ext (qst, args, nth, func, (caddr_t *)(&src_rdf_box));
+  dtp_t dtp = DV_TYPE_OF (arg);
+  if (dtp != DV_DATETIME && dtp != DV_BIN)
+    sqlr_new_error ("22007", "DT001",
+	"Function %s needs a datetime, date or time as argument %d, not an arg of type %s (%d)",
+	func, nth + 1, dv_type_title (dtp), dtp);
+  if ((DV_RDF == DV_TYPE_OF (src_rdf_box))
+    && (RDF_BOX_DEFAULT_TYPE != src_rdf_box->rb_type)
+    && ((rb_type__xsd_gDay		== src_rdf_box->rb_type)
+        || (rb_type__xsd_gMonth		== src_rdf_box->rb_type)
+        || (rb_type__xsd_gMonthDay	== src_rdf_box->rb_type)
+        || (rb_type__xsd_gYear		== src_rdf_box->rb_type)
+        || (rb_type__xsd_gYearMonth	== src_rdf_box->rb_type) ) )
+    rb_type_ret[0] = src_rdf_box->rb_type;
+  else
+    rb_type_ret[0] = RDF_BOX_ILL_TYPE;
+  return arg;
+}
+
+int
+dt_print_flags_of_rb_type (int rb_type)
+{
+  if (rb_type__xsd_gDay		== rb_type)	return DT_PRINT_MODE_YMD | DT_PRINT_MODE_NO_Y | DT_PRINT_MODE_NO_M                     ;
+  if (rb_type__xsd_gMonth	== rb_type)	return DT_PRINT_MODE_YMD | DT_PRINT_MODE_NO_Y                      | DT_PRINT_MODE_NO_D;
+  if (rb_type__xsd_gMonthDay	== rb_type)	return DT_PRINT_MODE_YMD | DT_PRINT_MODE_NO_Y                                          ;
+  if (rb_type__xsd_gYear	== rb_type)	return DT_PRINT_MODE_YMD                      | DT_PRINT_MODE_NO_M | DT_PRINT_MODE_NO_D;
+  if (rb_type__xsd_gYearMonth	== rb_type)	return DT_PRINT_MODE_YMD |                                           DT_PRINT_MODE_NO_D;
+  return 0;
+}
+
+int
+dt_print_flags_of_xsd_type_uname (ccaddr_t xsd_type_uname)
+{
+  if (uname_xmlschema_ns_uri_hash_gDay		== xsd_type_uname)	return DT_PRINT_MODE_YMD | DT_PRINT_MODE_NO_Y | DT_PRINT_MODE_NO_M                     ;
+  if (uname_xmlschema_ns_uri_hash_gMonth	== xsd_type_uname)	return DT_PRINT_MODE_YMD | DT_PRINT_MODE_NO_Y                      | DT_PRINT_MODE_NO_D;
+  if (uname_xmlschema_ns_uri_hash_gMonthDay	== xsd_type_uname)	return DT_PRINT_MODE_YMD | DT_PRINT_MODE_NO_Y                                          ;
+  if (uname_xmlschema_ns_uri_hash_gYear		== xsd_type_uname)	return DT_PRINT_MODE_YMD                      | DT_PRINT_MODE_NO_M | DT_PRINT_MODE_NO_D;
+  if (uname_xmlschema_ns_uri_hash_gYearMonth	== xsd_type_uname)	return DT_PRINT_MODE_YMD |                                           DT_PRINT_MODE_NO_D;
+  return 0;
+}
 
 caddr_t
 bif_date_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -95,7 +140,28 @@ dt_print_to_buffer (char *buf, caddr_t arg, int mode)
     sqlr_new_error ("22023", "SR593", "Bit 2 in print mode requires TIME or DATETIME argument, not DATE");
   dt_to_GMTimestamp_struct (arg, &ts);
   if (DT_PRINT_MODE_YMD & mode)
-    res += sprintf (buf, "%04d-%02d-%02d", ts.year, ts.month, ts.day);
+    {
+      if (DT_PRINT_MODE_NO_D & mode)
+        {
+          if (DT_PRINT_MODE_NO_Y & mode)
+            res += sprintf (buf, "--%02d", ts.month + ((15 <= ts.day) ? 1 : 0));
+          else if (DT_PRINT_MODE_NO_M & mode)
+            res += sprintf (buf, "%04d", ts.year + ((6 <= ts.month) ? 1 : 0));
+          else if (15 <= ts.day)
+            res += sprintf (buf, "%02d-%02d", ts.year + ((12 == ts.month) ? 1 : 0), (ts.month % 12) + 1);
+          else
+            res += sprintf (buf, "%04d-%02d", ts.year, ts.month);
+        }
+      else if (DT_PRINT_MODE_NO_Y & mode)
+        {
+          if (DT_PRINT_MODE_NO_M & mode)
+            res += sprintf (buf, "---%02d", ts.day);
+          else
+            res += sprintf (buf, "--%04d-%02d", ts.month, ts.day);
+        }
+      else
+        res += sprintf (buf, "%04d-%02d-%02d", ts.year, ts.month, ts.day);
+    }
   if ((DT_PRINT_MODE_YMD & mode) && (DT_PRINT_MODE_HMS & mode))
     buf[res++] = ((DT_PRINT_MODE_XML & mode) ? 'T' : ' ');
   if (DT_PRINT_MODE_HMS & mode)
@@ -817,8 +883,10 @@ bif_curdatetime (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t res = dk_alloc_box (DT_LENGTH, DV_DATETIME);
   dt_now (res);
   if (args && BOX_ELEMENTS (args) > 0)
-    fract = (long) bif_long_arg (qst, args, 0, "curdatetime");
-  DT_SET_FRACTION (res, fract);
+    {
+      fract = (long) bif_long_arg (qst, args, 0, "curdatetime");
+      DT_SET_FRACTION (res, fract);
+    }
   return res;
 }
 
@@ -840,8 +908,10 @@ bif_curtime (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t res = dk_alloc_box (DT_LENGTH, DV_DATETIME);
   dt_now (res);
   if (args && BOX_ELEMENTS (args) > 0)
-    fract = (long) bif_long_arg (qst, args, 0, "curtime");
-  DT_SET_FRACTION (res, fract);
+    {
+      fract = (long) bif_long_arg (qst, args, 0, "curtime");
+      DT_SET_FRACTION (res, fract);
+    }
   dt_make_day_zero (res);
   return res;
 }
@@ -992,9 +1062,15 @@ bif_date_init ()
   bif_define_ex ("nasa_tjd_number"		, bif_nasa_tjd_number			, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("nasa_tjd_fraction"		, bif_nasa_tjd_fraction			, BMD_RET_TYPE, &bt_double	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("merge_nasa_tjd_to_datetime"	, bif_merge_nasa_tjd_to_datetime	, BMD_RET_TYPE, &bt_datetime	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("now"	, bif_timestamp	, BMD_ALIAS, "getdate"	, BMD_ALIAS, "rdf_now_impl", BMD_ALIAS, "get_timestamp", BMD_RET_TYPE, &bt_timestamp	, /*BMD_IS_PURE,*/ BMD_DONE);	/* This is standard name */
-  bif_define_ex ("curdate"			, bif_curdate				, BMD_RET_TYPE, &bt_date	, /*BMD_IS_PURE,*/ BMD_DONE);	/* This is standard fun. */
-  bif_define_ex ("curtime"			, bif_curtime				, BMD_RET_TYPE, &bt_time	, /*BMD_IS_PURE,*/ BMD_DONE);	/* This is standard fun. */
+  bif_define_ex ("now"				, bif_timestamp
+						, BMD_ALIAS, "getdate"
+						, BMD_ALIAS, "rdf_now_impl"
+						, BMD_ALIAS, "get_timestamp"
+						, BMD_ALIAS, "current_timestamp" 	, BMD_RET_TYPE, &bt_timestamp	, /*BMD_IS_PURE,*/ BMD_DONE);	/* This is standard name */
+bif_define_ex ("curdate"			, bif_curdate
+						, BMD_ALIAS, "current_date"		, BMD_RET_TYPE, &bt_date	, /*BMD_IS_PURE, */ BMD_DONE);	/* This is standard fun. */
+  bif_define_ex ("curtime"			, bif_curtime
+						, BMD_ALIAS, "current_time"		, BMD_RET_TYPE, &bt_time	, /*BMD_IS_PURE,*/ BMD_DONE);	/* This is standard fun. */
   bif_define_ex ("curdatetime"			, bif_curdatetime			, BMD_RET_TYPE, &bt_timestamp	, /*BMD_IS_PURE,*/ BMD_DONE);	/* This is our own. */
   bif_define_ex ("datestring"			, bif_date_string			, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("datestring_GMT"		, bif_date_string_GMT			, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);

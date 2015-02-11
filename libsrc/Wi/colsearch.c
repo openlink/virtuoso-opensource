@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -176,12 +176,12 @@ itc_col_free (it_cursor_t * itc)
 
 
 void
-col_make_map (page_map_t ** pm_ret, db_buf_t str, int head, int buf_len)
+col_make_map (buffer_desc_t * buf, page_map_t ** pm_ret, db_buf_t str, int head, int buf_len)
 {
   page_map_t *pm = *pm_ret;
   int fill = 0;
   if (!pm)
-    pm = (page_map_t *) resource_get (PM_RC (PM_SZ_1));
+    pm = (page_map_t *) pm_get (buf, (PM_SZ_1));
   pm->pm_bytes_free = buf_len;
   pm->pm_filled_to = head;
   DO_CE (ce, bytes, values, ce_type, flags, str + head, buf_len)
@@ -191,7 +191,7 @@ col_make_map (page_map_t ** pm_ret, db_buf_t str, int head, int buf_len)
     if (fill + 1 >= pm->pm_size)
       {
 	pm->pm_count = fill;
-	map_resize (&pm, PM_SIZE (fill + 2));
+	  map_resize (buf, &pm, PM_SIZE (fill + 2));
       }
     pm->pm_entries[fill] = ce - str;
     pm->pm_entries[fill + 1] = values;
@@ -208,7 +208,7 @@ col_make_map (page_map_t ** pm_ret, db_buf_t str, int head, int buf_len)
 void
 pg_make_col_map (buffer_desc_t * buf)
 {
-  col_make_map (&buf->bd_content_map, buf->bd_buffer, DP_DATA, PAGE_DATA_SZ);
+  col_make_map (buf, &buf->bd_content_map, buf->bd_buffer, DP_DATA, PAGE_DATA_SZ);
 }
 
 
@@ -486,6 +486,7 @@ ce_col_cmp (db_buf_t any, int64 offset, dtp_t ce_flags, dbe_col_loc_t * cl, cadd
 	{
 	  while (1)
 	    {
+              wchar_t xlat1, xlat2;
 	      if (inx == l1)
 		{
 		  if (inx == l2)
@@ -495,9 +496,11 @@ ce_col_cmp (db_buf_t any, int64 offset, dtp_t ce_flags, dbe_col_loc_t * cl, cadd
 		}
 	      if (inx == l2)
 		return DVC_GREATER;
-	      if (collation->co_table[(unsigned char) dv1[inx]] < collation->co_table[(unsigned char) dv2[inx]])
+	      xlat1 = COLLATION_XLAT_NARROW (collation, (unsigned char) dv1[inx]);
+	      xlat2 = COLLATION_XLAT_NARROW (collation, (unsigned char) dv2[inx]);
+	      if (xlat1 < xlat2)
 		return DVC_LESS;
-	      if (collation->co_table[(unsigned char) dv1[inx]] > collation->co_table[(unsigned char) dv2[inx]])
+	      if (xlat1 > xlat2)
 		return DVC_GREATER;
 	      inx++;
 	    }
@@ -2569,6 +2572,14 @@ int non_unq_printed = 0;
 
 extern int dbf_ignore_uneven_col;
 
+void
+itc_no_hi (it_cursor_t * itc, buffer_desc_t * buf)
+{
+  itc->itc_ltrx->lt_error = LTE_SQL_ERROR;
+  itc->itc_ltrx->lt_status = LT_BLOWN_OFF;
+  itc_bust_this_trx (itc, &buf, ITC_BUST_THROW);
+}
+
 int
 itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_in_singles)
 {
@@ -2583,7 +2594,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
   int initial_set = itc->itc_set, initial_n_matches = 0, nth_sp;
   int64 check_start_ts = 0;
   char do_sp_stat = itc->itc_n_row_specs > 1;
-  //memzero (&cpo, sizeof (cpo));
+  /*memzero (&cpo, sizeof (cpo)); */
   cpo.cpo_range = &itc->itc_ranges[itc->itc_set - itc->itc_col_first_set];
   if (!is_singles && itc->itc_rl)
     {
@@ -2598,7 +2609,8 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
 	}
       else
 	{
-	  itc->itc_col_row = 0;	/* start at 0 on next pagge, nothing here */
+	  CR_TRACE (itc, "no matches by lock");
+	  ITC_COL_ZERO (itc);
 	return DVC_LESS;
     }
     }
@@ -2621,7 +2633,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
 	}
       if (n <= 0)
 	{
-	  itc->itc_col_row = 0;
+	  ITC_COL_ZERO (itc);
 	return DVC_LESS;
 	}
       if (COL_NO_ROW == cpo.cpo_range->r_end)
@@ -2668,6 +2680,8 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
 	      if (hrng->hrng_ht_id)
 		{
 		  index_tree_t *it = qst_get_chash (inst, hrng->hrng_ht, hrng->hrng_ht_id, NULL);
+		  if (!it)
+		    itc_no_hi (itc, buf);
 		  cpo.cpo_chash = it->it_hi->hi_chash;
 		  cpo.cpo_chash_dtp = cpo.cpo_chash->cha_sqt[0].sqt_dtp;
 		}
@@ -2709,7 +2723,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
 	      if (cpo.cpo_range->r_first >= rows_in_seg)
 		{
 		  itc->itc_is_multiseg_set = 0;
-		  itc->itc_col_row = 0;
+		  ITC_COL_ZERO (itc);
 		  return DVC_LESS;
 		}
 	    }
@@ -2767,7 +2781,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
 	}
       if (itc->itc_match_out <= 0)
 	{
-	  itc->itc_col_row = 0;
+	  ITC_COL_ZERO (itc);
 	  if (is_singles)
 	    itc->itc_set += n_sets_in_singles - 1;
 	  return DVC_LESS;
@@ -2839,7 +2853,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
   if (!n_used)
     {
       if (itc->itc_n_results < itc->itc_batch_size)
-	itc->itc_col_row = 0;
+	ITC_COL_ZERO (itc);
       return DVC_LESS;
     }
   {
@@ -3000,7 +3014,7 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
   if (!stop_in_mid_seg)
     {
       cpo.cpo_range->r_first = 0;
-      itc->itc_col_row = 0;
+      ITC_COL_ZERO (itc);
       return DVC_LESS;
     }
   return DVC_MATCH;

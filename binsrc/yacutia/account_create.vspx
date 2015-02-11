@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2014 OpenLink Software
+ -  Copyright (C) 1998-2015 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -106,27 +106,14 @@
           self.user_name := get_keyword ('user_name', params, '');
           select U_NAME into user_id from SYS_USERS where U_ID = 0;
 
-          if (self.mode = 'edit' and
-              not exists (select 1
-                            from VSPX_SESSION
-                           where VS_SID = get_keyword ('sid', params)
-                             and VS_UID = user_id
-                             and not exists (select 1
-                                               from VSPX_SESSION
-                                              where VS_SID = get_keyword ('sid', params)
-                                                and VS_UID = self.user_name))
-             )
+          if (self.mode = 'edit' and not exists (select 1 from VSPX_SESSION where VS_SID = get_keyword ('sid', params) and VS_UID = user_id))
           {
             http_request_status ('HTTP/1.1 302 Found');
             http_header (sprintf ('Location: main_tabs.vspx?sid=%s&realm=%s\r\n', get_keyword ('sid', params), get_keyword ('realm', params)));
             return;
           }
 
-          if (self.mode = 'create' and
-              not exists (select 1
-                            from VSPX_SESSION
-                           where VS_SID = get_keyword ('sid', params)
-                             and VS_UID = user_id))
+          if (self.mode = 'create' and not exists (select 1 from VSPX_SESSION where VS_SID = get_keyword ('sid', params) and VS_UID = user_id))
           {
             http_request_status  ('HTTP/1.1 302 Found');
             http_header (sprintf ('Location: main_tabs.vspx?sid=%s&realm=%s\r\n', get_keyword ('sid', params), get_keyword ('realm', params)));
@@ -730,10 +717,12 @@
                                   <v:button action="simple" name="del_key" value="Remove Selected Keys" xhtml_tabindex="21">
                                     <v:on-post>
                                       <![CDATA[
+				        declare username any;
                                         if (self.vc_is_valid = 0)
                                           return;
 
-                                        set_user_id (self.user_name);
+					username:= self.t_login_name.ufl_value;
+                                        set_user_id (username);
                                         set_qualifier ('DB');
                                         for (declare i, l int, i := 0, l := length (params); i < l; i := i + 4)
                                         {
@@ -757,6 +746,7 @@
                                   <v:button action="simple" name="imp_key" value="Import Key">
                                     <v:on-post>
                                       <![CDATA[
+				        declare username any;
                                         if (self.vc_is_valid = 0)
                                           return;
                                         declare exit handler for sqlstate '*', not found
@@ -765,7 +755,8 @@
                                           self.vc_is_valid := 0;
                                           return;
                                         };
-                                        set_user_id (self.user_name);
+					username:= self.t_login_name.ufl_value;
+                                        set_user_id (username);
                                         USER_KEY_LOAD (self.k_name.ufl_value, get_keyword ('k_value', params), 'X.509', 'PKCS12', self.k_pwd.ufl_value, null, 1);
                                         exec (make_cert_stmt (self.k_name.ufl_value));
                                       ]]>

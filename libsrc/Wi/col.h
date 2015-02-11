@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -51,7 +51,7 @@
 #define CET_IRI CE_IS_IRI
 
 
-#define CE_MAX_CES 1000
+#define PM_MAX_CES ((PM_MAX_ENTRIES - 4) / 2)
 #define CE_VEC_MAX_VALUES 2267
 #define CS_MAX_VALUES 2267
 #define CE_DICT_MAX_VALUES ((PAGE_DATA_SZ / 3) * 2)
@@ -345,6 +345,7 @@ typedef struct ce_ins_ctx_s
   dk_set_t		ceic_finalized_rls;
   struct row_delta_s **	ceic_rb_rds;
   row_no_t *	ceic_deletes;
+  dk_set_t	ceic_dbg_del_rds; /* dbg log of del del keys */
   int 		ceic_batch_bytes;
   dp_addr_t	ceic_last_dp;
   int		ceic_last_nth;
@@ -773,5 +774,26 @@ void itc_set_sp_stat (it_cursor_t * itc);
 #endif
 extern int dbf_ignore_uneven_col;
 void ceic_upd_rd (ce_ins_ctx_t * ceic, int map_pos, int nth_col, db_buf_t str);
+void ce_skip_bits_2 (db_buf_t bits, int skip, int * byte_ret, int * bit_ret);
+#define IS_64_T(n, dtp)						\
+  (IS_IRI_DTP (dtp) ? (((iri_id_t)n) > (iri_id_t)0xffffffff) \
+: (!((n) >= (int64) INT32_MIN && (n) <= (int64) INT32_MAX)))
+
+extern int enable_cr_trace;
+#define CR_TRACE(itc, msg) if (enable_cr_trace) \
+  { printf ("move %p %d:%d col %d %s ln %d\n", itc, itc->itc_page, itc->itc_map_pos, itc->itc_col_row, msg, __LINE__); }
+
+
+/*#define COL_ZERO_TR*/
+#ifdef COL_ZERO_TR
+#define ITC_COL_ZERO(itc) \
+  { itc->itc_col_row = 0; itc->itc_crt.crt_line = __LINE__; itc->itc_crt.crt_ranges = itc->itc_range_fill; itc->itc_crt.crt_set = itc->itc_set; itc->itc_crt.crt_first_set = itc->itc_col_first_set; }
+#else
+#define ITC_COL_ZERO(itc) \
+  itc->itc_col_row = 0
+#endif
+
+#define COL_DBG_LOG "virtuoso.debug.trx"
+void col_dbg_log_new ();
 
 #endif

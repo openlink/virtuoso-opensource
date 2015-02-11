@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -141,13 +141,13 @@ class VirtuosoFuture
     * @return Object	A Vector object or a base class.
     * @exception virtuoso.jdbc2.VirtuosoException An internal error occurred.
     */
-   protected openlink.util.Vector nextResult() throws VirtuosoException
+   protected openlink.util.Vector nextResult(boolean sparql_executed) throws VirtuosoException
    {
       try
       {
          // Try to read an answer
         while(results.isEmpty())
-          connection.read_request();
+          connection.read_request(sparql_executed);
 
          // Get the next result of the queue
          //mutex.getSem();

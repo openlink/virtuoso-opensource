@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2015 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="entity_uri_patterns"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        vm:owner="yacutia_sparql_page"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Entity URI configuration</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="c_mode" type="varchar" default="'C/browse'"/>
+      <v:variable name="c_id" type="integer" default="null"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="MakeEntityURI"/>
+    </vm:menu>
+    <vm:header caption="Entity URI configuration"/>
+    <vm:pagebody>
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <!-- tab -->
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="url1" value="Extractor Cartridges" format="%s" url="rdf_filters.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="url2" value="Meta Cartridges" format="%s" url="rdf_filters_pp.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="url1" value="Stylesheets" format="%s" url="sparql_filters.vspx">Stylesheets</v:url>
+                      </td>
+                      <td class="page_tab_selected" align="center" nowrap="1">
+                        <v:url name="url1" value="Entity URIs" format="%s" url="entity_uri_patterns.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="url3" value="Console" format="%s" url="rdf_console.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="url4" value="Configuration" format="%s" url="rdf_conf.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_empty" align="center" width="100%">
+                        <table cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td width="100%" >
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                  <table class="tab_page">
+                    <tr>
+                      <td valign="top">
+                        <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+                          <tr>
+                            <td>
+                              <v:form name="fm" type="simple" method="POST">
+                                <vm:if test="self.c_mode = 'C/browse'">
+                                  <v:button name="add1" value="Add" action="simple">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        self.c_mode := 'C/add';
+
+                                        self.name1.ufl_value := '';
+                                        self.srcurl1.ufl_value := '';
+                                        self.desturl1.ufl_value := '';
+                                        self.entityfunc1.ufl_value := '';
+
+                                        self.c_id := null;
+                                        self.vc_data_bind (e);
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+
+                                  <table class="listing" rules="groups">
+                                    <tr class="listing_header_row">
+                                      <th>Cartridge</th>
+                                      <th>Source URL pattern</th>
+                                      <th>Destination URL pattern</th>
+                                      <th>Default mode</th>
+                                      <th width="1%">Action</th>
+                                    </tr>
+                                    <v:data-set name="maps" sql="select cartridgehookfn, urlsrcpattern, urldestpattern, defaultmode, mappingid from DB.DBA.RDF_ENTITY_URI_CARTRIDGE_MODES order by cartridgehookfn" scrollable="1" editable="1" nrows="1000">
+                                      <v:template name="maps_rep" type="repeat">
+                                        <v:template name="maps_brows" type="browse">
+                                          <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                                            <td style="display: none">
+                                              <v:label name="mappingid1" value="--(control.vc_parent as vspx_row_template).te_rowset[4]"/>
+                                            </td>
+                                            <td>
+                                              <v:button name="edit1" action="simple" style="url" value="''" xhtml_title="Edit" xhtml_alt="Edit">
+                                                <v:before-render>
+                                                  <![CDATA[
+                                                    control.ufl_value := '<img src="images/icons/edit_16.png" hspace="3" border="0"/>' || (control.vc_parent as vspx_row_template).te_rowset[0];
+                                                  ]]>
+                                                </v:before-render>
+                                                <v:on-post>
+                                                  <![CDATA[
+                                                    self.name1.ufl_value       := (control.vc_parent as vspx_row_template).te_rowset[0];
+                                                    self.srcurl1.ufl_value     := (control.vc_parent as vspx_row_template).te_rowset[1];
+                                                    self.desturl1.ufl_value    := (control.vc_parent as vspx_row_template).te_rowset[2];
+                                                    self.entityfunc1.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[3];
+                                                    self.mappingid1.ufl_value  := (control.vc_parent as vspx_row_template).te_rowset[4];
+
+                                                    self.c_id := (control.vc_parent as vspx_row_template).te_rowset[4];
+                                                    self.c_mode := 'C/edit';
+                                                    self.vc_data_bind (e);
+                                                  ]]>
+                                                </v:on-post>
+                                              </v:button>
+                                            </td>
+                                            <td>
+                                              <v:label name="la1" value="--(control.vc_parent as vspx_row_template).te_rowset[1]"/>
+                                            </td>
+                                            <td>
+                                              <v:label name="la2" value="--(control.vc_parent as vspx_row_template).te_rowset[2]"/>
+                                            </td>
+                                            <td nowrap="nowrap">
+                                              &nbsp;
+                                              <v:label name="la4" value="--(control.vc_parent as vspx_row_template).te_rowset[3]"/>
+                                            </td>
+                                            <td nowrap="1">
+                                              <v:button name="delete1" action="simple" style="url" value="''" enabled="--equ (matches_like ((control.vc_parent as vspx_row_template).te_rowset[1], 'http://local.virt/%'), 0)">
+                                                <v:before-render>
+                                                  <![CDATA[
+                                                    control.ufl_value := '<img src="images/icons/trash_16.png" border="0" alt="Delete" title="Delete"/> Delete';
+                                                  ]]>
+                                                </v:before-render>
+                                                <v:on-post>
+                                                  <![CDATA[
+                                                    delete from DB.DBA.RDF_ENTITY_URI_CARTRIDGE_MODES where mappingid = (control.vc_parent as vspx_row_template).te_rowset[4];
+                                                    self.vc_data_bind (e);
+                                                  ]]>
+                                                </v:on-post>
+                                              </v:button>
+                                            </td>
+                                          </tr>
+                                        </v:template>
+                                      </v:template>
+
+                                      <v:template name="maps_footer" type="simple">
+                                        <tr>
+                                          <td colspan="5" class="listing_col_action">
+                                            <vm:ds-navigation data-set="maps" type="set" />
+                                          </td>
+                                        </tr>
+                                      </v:template>
+                                    </v:data-set>
+                                  </table>
+                                </vm:if>
+
+                                <vm:if test="(self.c_mode = 'C/add') or (self.c_mode = 'C/edit')">
+                                  <div class="fm">
+                                    <fieldset>
+                                      <label for="name1">Cartridge</label>
+                                      <v:text name="name1" value="" xhtml_id="name1" error-glyph="*" xhtml_size="110" />
+                                      <span style="display: none">
+                                        (ID: <v:text name="mappingid1" value="" xhtml_id="name1" error-glyph="*" xhtml_size="4" />)
+                                      </span>
+                                      <br />
+                                      <label for="srcurl1">Source URL pattern</label>
+                                      <v:text name="srcurl1" xhtml_id="srcurl1" error-glyph="*" value="" xhtml_size="110" />
+                                      <br />
+                                      <label for="desturl1">Destination URL pattern</label>
+                                      <v:text name="desturl1" value="" xhtml_size="110" xhtml_id="desturl1" error-glyph="*" />
+                                      <br />
+                                      <label for="entityfunc1">Entity URI value/function</label>
+                                      <v:text name="entityfunc1" value="" xhtml_size="110" xhtml_id="entityfunc1" error-glyph="*" />
+                                      <br />
+                                      <span class="fm_ctl_btn">
+                                        <v:button name="cancel1" value="Cancel" action="simple">
+                                          <v:on-post>
+                                            <![CDATA[
+                                              self.c_mode := 'C/browse';
+                                              self.vc_data_bind (e);
+                                            ]]>
+                                          </v:on-post>
+                                        </v:button>
+
+                                        <v:button name="save1" value="--case when self.c_mode = 'C/add' then 'Add' else 'Update' end" action="simple">
+                                          <v:on-post>
+                                            if (not self.vc_is_valid)
+                                              return;
+
+                                            declare exit handler for sqlstate '23000'
+                                            {
+                                              rollback work;
+                                              self.vc_is_valid := 0;
+                                              self.vc_error_message := 'The values entered conflict with other GRDDL filter. Please supply correct values.';
+                                              return;
+                                            };
+
+                                            self.name1.ufl_value := trim (self.name1.ufl_value);
+                                            self.srcurl1.ufl_value := trim (self.srcurl1.ufl_value);
+                                            self.desturl1.ufl_value := trim (self.desturl1.ufl_value);
+                                            self.entityfunc1.ufl_value := trim(self.entityfunc1.ufl_value);
+
+                                            if (not length (self.name1.ufl_value) or not length (self.desturl1.ufl_value)  or not length(self.entityfunc1.ufl_value) )
+                                            {
+                                              rollback work;
+                                              self.vc_is_valid := 0;
+                                              self.vc_error_message := 'The name value cannot be empty.';
+                                              return;
+                                            }
+
+                                            if (self.c_mode = 'C/add')
+                                            {
+                                              insert into DB.DBA.RDF_ENTITY_URI_CARTRIDGE_MODES (cartridgehookfn, urlsrcpattern, urldestpattern, defaultmode, mappingid)
+                                                values (self.name1.ufl_value, self.srcurl1.ufl_value, self.desturl1.ufl_value, self.entityfunc1.ufl_value, sequence_next('DB.DBA.RDF_ENTITY_URI_CARTRIDGE_MODES.mappingid'));
+                                            }
+                                            else
+                                            {
+                                              update DB.DBA.RDF_ENTITY_URI_CARTRIDGE_MODES
+                                                 set cartridgehookfn= self.name1.ufl_value,
+                                                     urlsrcpattern = self.srcurl1.ufl_value,
+                                                     urldestpattern = self.desturl1.ufl_value,
+                                                     defaultmode = self.entityfunc1.ufl_value
+                                               where mappingid = self.c_id;
+                                            }
+
+                                            self.c_mode := 'C/browse';
+                                            self.vc_data_bind (e);
+                                          </v:on-post>
+                                        </v:button>
+                                      </span>
+                                    </fieldset>
+                                  </div>
+                               </vm:if>
+                              </v:form>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          <!-- end tab -->
+          </td>
+        </tr>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

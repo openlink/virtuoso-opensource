@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -131,6 +131,7 @@ void blobio_init (void);
 caddr_t datetime_serialize (caddr_t dt, dk_session_t * out);
 void dt_to_string (const char *dt, char *str, int len);
 void dt_to_iso8601_string (const char *dt, char *str, int len);
+void dt_to_iso8601_string_ext (const char *dt, char *buf, int len, int mode);
 void dt_to_rfc1123_string (const char *dt, char *str, int len);
 void dt_to_ms_string (const char *dt, char *str, int len);
 void sec_login_digest (char *ses_name, char *user, char *pwd, unsigned char *digest);

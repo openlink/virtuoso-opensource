@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -212,6 +212,7 @@ typedef struct lock_trx_s
     unsigned int	lt_trace_ctr;
     int	lt_line[LT_TRACE_SZ];
 #endif
+    char		lt_has_branches;
     dk_hash_t 		lt_lock;
 #define lt_has_locks(lt) ((lt)->lt_lock.ht_count)
     /* all below members are considered data area and cleared with memset in lt_cleare, saving individual ones as needed */
@@ -885,10 +886,12 @@ extern resource_t * rb_page_rc;
 #if defined (PAGE_TRACE) || 0 /* off unless page trace */
 #define rdbg_printf(a) printf a
 #define rdbg_printf_2(a) printf a
+#define rdbg_printf_if(c, a) if (c) printf a
 
 #else
 #define rdbg_printf(a)
 #define rdbg_printf_2(a)
+#define rdbg_printf_if(c, a)
 
 #endif
 

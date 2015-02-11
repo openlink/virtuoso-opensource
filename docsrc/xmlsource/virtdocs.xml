@@ -24,6 +24,21 @@
 <!ENTITY covar_samp 				SYSTEM 	"funcref/covar_samp.xml">
 <!ENTITY covar_pop 				SYSTEM 	"funcref/covar_pop.xml">
 <!ENTITY corr 					SYSTEM 	"funcref/corr.xml">
+
+<!ENTITY XQ_SEQUENCE_AGG 		                SYSTEM 	"funcref/XQ_SEQUENCE_AGG.xml">
+<!ENTITY VECTOR_AGG 		                    SYSTEM 	"funcref/VECTOR_AGG.xml">
+<!ENTITY VECTOR_OF_NONNULLS_AGG 		        SYSTEM 	"funcref/VECTOR_OF_NONNULLS_AGG.xml">
+<!ENTITY VECTOR_OR_NULL_AGG 		            SYSTEM 	"funcref/VECTOR_OR_NULL_AGG.xml">
+<!ENTITY VECTOR_OF_NONNULLS_OR_NULL_AGG 		SYSTEM 	"funcref/VECTOR_OF_NONNULLS_OR_NULL_AGG.xml">
+<!ENTITY VECTOR_CONCAT_AGG 		              SYSTEM 	"funcref/VECTOR_CONCAT_AGG.xml">
+<!ENTITY BAG_OF_NONNULLS_AGG 		            SYSTEM 	"funcref/BAG_OF_NONNULLS_AGG.xml">
+<!ENTITY BAG_AGG 		                        SYSTEM 	"funcref/BAG_AGG.xml">
+<!ENTITY BAG_OR_NULL_AGG 		                SYSTEM 	"funcref/BAG_OR_NULL_AGG.xml">
+<!ENTITY BAG_OF_NONNULLS_OR_NULL_AGG 		    SYSTEM 	"funcref/BAG_OF_NONNULLS_OR_NULL_AGG.xml">
+<!ENTITY BAG_CONCAT_AGG 		                SYSTEM 	"funcref/BAG_CONCAT_AGG.xml">
+
+
+
 <!-- end Aggr -->
 <!ENTITY mts_connect				SYSTEM "funcref/mts_connect.xml">
 <!ENTITY mts_get_timeout			SYSTEM "funcref/mts_get_timeout.xml">
@@ -133,6 +148,7 @@
 <!ENTITY dict_put               		SYSTEM "funcref/dict_put.xml">
 <!ENTITY dict_remove            		SYSTEM "funcref/dict_remove.xml">
 <!ENTITY dict_size				SYSTEM  "funcref/dict_size.xml">
+<!ENTITY dict_zap				SYSTEM  "funcref/dict_zap.xml">
 <!ENTITY dict_to_vector         		SYSTEM "funcref/dict_to_vector.xml">
 <!ENTITY disconnect_user			SYSTEM "funcref/disconnect_user.xml">
 <!ENTITY dt_set_tz				SYSTEM "funcref/dt_set_tz.xml">
@@ -214,6 +230,7 @@
 <!ENTITY http_proxy				SYSTEM "funcref/http_proxy.xml">
 <!ENTITY http_request_header			SYSTEM "funcref/http_request_header.xml">
 <!ENTITY http_request_status			SYSTEM "funcref/http_request_status.xml">
+<!ENTITY http_request_header_full	          SYSTEM	"funcref/http_request_header_full.xml">
 <!ENTITY http_request_get			SYSTEM "funcref/http_request_get.xml">
 <!ENTITY http_rewrite				SYSTEM "funcref/http_rewrite.xml">
 <!ENTITY http_root				SYSTEM "funcref/http_root.xml">
@@ -354,9 +371,12 @@
 <!ENTITY rdf_restore_metadata           	SYSTEM "funcref/rdf_restore_metadata.xml">
 <!ENTITY rdf_64bit_upgrade              	SYSTEM "funcref/rdf_64bit_upgrade.xml">
 <!ENTITY rdf_convert_rdfxml_to_ttl      	SYSTEM "funcref/rdf_convert_rdfxml_to_ttl.xml">
+<!ENTITY rdf_geo_fill                           SYSTEM  "funcref/rdf_geo_fill.xml">
+<!ENTITY rdf_geo_add                            SYSTEM  "funcref/rdf_geo_add.xml">
 <!ENTITY isref                                  SYSTEM  "funcref/isref.xml">
 <!ENTITY SAMPLE                                 SYSTEM  "funcref/SAMPLE.xml">
 <!ENTITY GROUP_CONCAT                           SYSTEM  "funcref/GROUP_CONCAT.xml">
+<!ENTITY GROUP_CONCAT_DISTINCT                  SYSTEM  "funcref/GROUP_CONCAT_DISTINCT.xml">
 <!ENTITY GROUP_DIGEST                           SYSTEM  "funcref/GROUP_DIGEST.xml">
 
 <!--
@@ -531,6 +551,7 @@
 <!ENTITY substring				SYSTEM "funcref/substring.xml">
 <!ENTITY sub_schedule				SYSTEM "funcref/sub_schedule.xml">
 <!ENTITY system					SYSTEM 	"funcref/system.xml">
+<!ENTITY uptime         SYSTEM 	"funcref/uptime.xml">
 <!ENTITY sys_db_stat				SYSTEM 	"funcref/sys_db_stat.xml">
 <!ENTITY sys_lockdown				SYSTEM 	"funcref/sys_lockdown.xml">
 <!ENTITY sys_stat				SYSTEM 	"funcref/sys_stat.xml">
@@ -857,6 +878,24 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 <!ENTITY vs_d_8					SYSTEM "tutorial/web/vs_d_8">
 -->
 
+
+<!ENTITY st_point                    SYSTEM  "funcref/st_point.xml">
+<!ENTITY st_x                        SYSTEM  "funcref/st_x.xml">
+<!ENTITY st_y                        SYSTEM  "funcref/st_y.xml">
+<!ENTITY st_distance                 SYSTEM  "funcref/st_distance.xml">
+<!ENTITY st_srid                     SYSTEM  "funcref/st_srid.xml">
+<!ENTITY st_setsrid                  SYSTEM  "funcref/st_setsrid.xml">
+<!ENTITY st_astext                   SYSTEM  "funcref/st_astext.xml">
+<!ENTITY st_geomfromtext             SYSTEM  "funcref/st_geomfromtext.xml">
+<!ENTITY st_intersects               SYSTEM  "funcref/st_intersects.xml">
+<!ENTITY st_contains                 SYSTEM  "funcref/st_contains.xml">
+<!ENTITY st_within                   SYSTEM  "funcref/st_within.xml">
+<!ENTITY isgeometry                  SYSTEM  "funcref/isgeometry.xml">
+<!ENTITY geo_insert                  SYSTEM  "funcref/geo_insert.xml">
+<!ENTITY geo_delete                  SYSTEM  "funcref/geo_delete.xml">
+
+
+
 <!ENTITY bpel_compile_script 			SYSTEM "bpel/bpel_compile_script.xml">
 <!ENTITY bpel_copy_script 			SYSTEM "bpel/bpel_copy_script.xml">
 <!ENTITY bpel_get_partner_links 		SYSTEM "bpel/bpel_get_partner_links.xml">
@@ -948,7 +987,7 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 <!ENTITY adminui 				SYSTEM "adminui.xml">
 <!ENTITY adminui.dbadmin  			SYSTEM "adminui.dbadmin.xml">
 <!ENTITY adminui.mailsrvadm  			SYSTEM "adminui.mailsrvadm.xml">
-  <!ENTITY adminui.newssrvadm  SYSTEM "adminui.rdfadm.xml">
+  <!ENTITY adminui.rdfadm  SYSTEM "adminui.rdfadm.xml">
 <!ENTITY adminui.newssrvadm  			SYSTEM "adminui.newssrvadm.xml">
 <!ENTITY adminui.querytools  			SYSTEM "adminui.querytools.xml">
 <!ENTITY adminui.replicationandsynchronization  SYSTEM "adminui.replicationandsynchronization.xml">
@@ -1035,7 +1074,7 @@ ls xpf_*.xml | sed 's/.xml//g' | sed 's/^\(.*\)$/\<!ENTITY \1 		SYSTEM "xmlref\/
 		<authorgroup><author><email>virtuoso.docs@openlinksw.com</email>
 		<firstname>OpenLink Software Documentation Team</firstname></author></authorgroup>
 		<copyright>
-			<year>1999 - 2009</year>
+			<year>1999 - 2014</year>
 			<holder>OpenLink Software</holder>
 		</copyright>
 		<keywordset>

@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2014 OpenLink Software
+#  Copyright (C) 1998-2015 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -83,7 +83,9 @@ libutil_la_SOURCES = \
 	uuid.c \
 	wcslen.c \
 	virt_mbrlen.c \
+	virt_mbrlen_z.c \
 	virt_mbrtowc.c \
+	virt_mbrtowc_z.c \
 	virt_mbsnrtowcs.c \
 	virt_wcrtomb.c \
 	virt_wcs_mask.c \
@@ -110,7 +112,7 @@ libutil_la_SOURCES = \
 BUILT_SOURCES = getdate.c
 
 getdate.c: getdate.y
-	@$(GEN) $(YACC) -o getdate.c $(top_srcdir)/libsrc/util/getdate.y
+	@$(GEN) $(YACC) -p OPL_gd_ -o getdate.c $(top_srcdir)/libsrc/util/getdate.y
 	
 
 

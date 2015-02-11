@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -124,7 +124,7 @@ create procedure tro2sqv1 ()
   for vectored (in i any := iv, out ov := o)
     {
       declare o any;
-       o := __ro2sq (i);  
+       o := __ro2sq (i);
     }
   tro2sqv_res (ov);
 }
@@ -138,7 +138,7 @@ create procedure tro2sqv2 ()
   for vectored (in i any array := iv, out ov := o)
     {
       declare o any array;
-       o := __ro2sq (i);  
+       o := __ro2sq (i);
     }
   tro2sqv_res (ov);
 }
@@ -152,7 +152,7 @@ create procedure tro2sqv3 ()
   for vectored (in i any array := iv, out ov := o)
     {
       declare o any;
-       o := __ro2sq (i);  
+       o := __ro2sq (i);
     }
   tro2sqv_res (ov);
 }
@@ -166,7 +166,7 @@ create procedure tro2sqv4 ()
   for vectored (in i any := iv, out ov := o)
     {
       declare o any array;
-       o := __ro2sq (i);  
+       o := __ro2sq (i);
     }
   tro2sqv_res (ov);
 }
@@ -203,9 +203,9 @@ create procedure tro2sqv5 ()
     {
       declare o any array;
       if (i < 5)
-        o := __ro2sq (i);  
+        o := __ro2sq (i);
       else
-        o := __ro2sq (i);  
+        o := __ro2sq (i);
     }
   tro2sqv_res (ov);
 }
@@ -233,4 +233,20 @@ create procedure irivv (in s any array)
 select  __ro2sq (irivv (vector ('pfaal', 'hans',  'hyrim'))[0]);
 echo both $if $equ $last[1]  "pfaal" "PASSED" "***FAILED";
 echo both ":  vec iri to id\n";
+
+
+drop table it2;
+create table it2 (k iri_id_8 primary key, d iri_id_8);
+
+-- check exception in insert to 32 bit iri array
+
+insert into it2 (k) select iri_id_from_num (row_no * 2) from t1;
+update it2 set d = iri_id_from_num (rnd (3000000000 + iri_id_num (k)));
+insert into it2 (k, d) values (#i11, iri_id_from_num (6000000000));
+select count (*) from it2 where d = #i6000000000;
+echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
+echo both ":  iri 32 ins range ck\n";
+
+
+
 

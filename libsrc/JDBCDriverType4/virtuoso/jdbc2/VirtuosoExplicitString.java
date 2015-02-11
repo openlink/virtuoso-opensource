@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -41,6 +41,16 @@ public class VirtuosoExplicitString
       this.dtp = dtp;
       this.bytes = bytes;
       this.str = null;
+      if (dtp == VirtuosoTypes.DV_STRING || dtp == VirtuosoTypes.DV_SHORT_STRING_SERIAL ||
+            dtp == VirtuosoTypes.DV_STRICT_STRING || dtp == VirtuosoTypes.DV_C_STRING ||
+            dtp == VirtuosoTypes.DV_BLOB || dtp == VirtuosoTypes.DV_ANY)
+        {
+            if (bytes.length < 256)
+                this.dtp = VirtuosoTypes.DV_SHORT_STRING_SERIAL;
+            else
+                this.dtp = VirtuosoTypes.DV_STRING;
+        }
+
     }
 
   protected VirtuosoExplicitString (String str, int dtp, VirtuosoConnection con) throws VirtuosoException

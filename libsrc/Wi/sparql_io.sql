@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -153,7 +153,7 @@ create function DB.DBA.SPARQL_RSET_TTL_HTTP_PRE (in colnames any, in accept varc
     {
       res [colctr * 7] := colnames [colctr];
     }
-  return vector (dict_new (16000), 0, '', '', '', 0, 0, res, 0);
+  return DB.DBA.RDF_TRIPLES_TO_TTL_ENV (16000, 0, res, ses);
 }
 ;
 
@@ -608,6 +608,11 @@ create procedure DB.DBA.SPARQL_SD_PROBE (in service_iri varchar, in proxy_iri va
   g_iri := null;
   get_is_ok := null;
   post_is_ok := null;
+  if (service_iri like '%/sparql' or service_iri like '%/sparql-auth' or service_iri like '%/sparql-sd' or
+    exists (sparql define input:storage ""
+      prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
+      ask from virtrdf: { `iri(?:service_iri)` virtrdf:dialect [] } ) )
+    set_user_id ('dba');
   if (isstring (registry_get ('URIQADefaultHost')) and strstr (service_iri, registry_get ('URIQADefaultHost')) is not null)
     signal ('22023', 'Can not load own service description');
   if (exists (sparql define input:storage ""
@@ -1013,20 +1018,20 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
         {
           if (_val >= min_bnode_iri_id ())
             http (sprintf ('\n   <binding name="%s"><bnode>%s</bnode></binding>', _name, id_to_iri (_val)), ses);
-	  else
-	    {
+          else
+            {
               declare res varchar;
               res := id_to_iri (_val);
 --              res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = _val));
               if (res is null)
                 res := sprintf ('bad://%d', iri_id_num (_val));
               http (sprintf ('\n   <binding name="%s"><uri>', _name), ses);
-	      res := charset_recode (res, 'UTF-8', '_WIDE_');
+              res := charset_recode (res, 'UTF-8', '_WIDE_');
               http_value (res, 0, ses);
               http ('</uri></binding>', ses);
-	    }
-	}
-      else if (isstring (_val) and (bit_and (1, __box_flags (_val))))
+            }
+        }
+      else if ((isstring (_val) and (bit_and (1, __box_flags (_val)))) or (__tag of UNAME = __tag (_val)))
         {
           if (_val like 'nodeID://%')
             http (sprintf ('\n   <binding name="%s"><bnode>%s</bnode></binding>', _name, _val), ses);
@@ -1149,20 +1154,20 @@ create procedure DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta 
       if (isiri_id (_val))
         {
           if (_val >= min_bnode_iri_id ())
-	    {
-	      http (sprintf (' rdf:nodeID="b%s"/></res:binding>', id_to_iri (_val)), ses);
-	    }
-	  else
-	    {
+            {
+              http (sprintf (' rdf:nodeID="b%s"/></res:binding>', id_to_iri (_val)), ses);
+            }
+          else
+            {
               declare res varchar;
               res := id_to_iri (_val);
 --              res := coalesce ((select RU_QNAME from DB.DBA.RDF_URL where RU_IID = _val));
               if (res is null)
                 res := sprintf ('bad://%d', iri_id_num (_val));
               http (sprintf (' rdf:resource="%V"/></res:binding>', charset_recode (res, 'UTF-8', '_WIDE_')), ses);
-	    }
-	}
-      else if (isstring (_val) and (1 = __box_flags (_val)))
+            }
+        }
+      else if ((isstring (_val) and (1 = __box_flags (_val))) or (__tag of UNAME = __tag (_val)))
         {
           if (_val like 'nodeID://%')
             http (sprintf (' rdf:nodeID="b%s"/></res:binding>', subseq(_val, 9)), ses);
@@ -1171,48 +1176,48 @@ create procedure DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta 
         }
       else
         {
-	  declare lang, dt varchar;
+          declare lang, dt varchar;
           declare val_tag integer;
           val_tag := __tag (_val);
-	  if (val_tag = 185) -- string output
-	    {
-              http ('>', ses);
-	      http_value (_val, 0, ses);
+          if (val_tag = 185) -- string output
+            {
+                     http ('>', ses);
+              http_value (_val, 0, ses);
+                     http ('</res:value></res:binding>', ses);
+                     goto end_of_binding;
+            }
+          if (val_tag = 230) -- XML entity
+            {
+                     http (' rdf:parseType="Literal">', ses);
+              http_value (_val, 0, ses);
               http ('</res:value></res:binding>', ses);
               goto end_of_binding;
-	    }
-	  if (val_tag = 230) -- XML entity
-	    {
-              http (' rdf:parseType="Literal">', ses);
-	      http_value (_val, 0, ses);
-              http ('</res:value></res:binding>', ses);
-              goto end_of_binding;
-	    }
-	  lang := DB.DBA.RDF_LANGUAGE_OF_LONG (_val, null);
-	  dt := DB.DBA.RDF_DATATYPE_IRI_OF_LONG (_val, null);
-	  if (lang is not null)
-	    {
-	      if (dt is not null)
-                http (sprintf (' xml:lang="%V" datatype="%V">', cast (lang as varchar), cast (dt as varchar)), ses);
-	      else
-                http (sprintf (' xml:lang="%V">', cast (lang as varchar)), ses);
-	    }
-	  else
-	    {
-	      if (dt is not null)
-                http (sprintf (' datatype="%V">', cast (dt as varchar)), ses);
-	      else
-                http ('>', ses);
-	    }
-          if (__tag of datetime = rdf_box_data_tag (_val))
-            __rdf_long_to_ttl (_val, ses);
+            }
+          lang := DB.DBA.RDF_LANGUAGE_OF_LONG (_val, null);
+          dt := DB.DBA.RDF_DATATYPE_IRI_OF_LONG (_val, null);
+          if (lang is not null)
+            {
+              if (dt is not null)
+                       http (sprintf (' xml:lang="%V" datatype="%V">', cast (lang as varchar), cast (dt as varchar)), ses);
+              else
+                       http (sprintf (' xml:lang="%V">', cast (lang as varchar)), ses);
+            }
           else
-	    {
-	      _val := __rdf_sqlval_of_obj (_val, 1);
-	      if (__tag (_val) = __tag of varchar) -- UTF-8 value kept in a DV_STRING box
-		_val := charset_recode (_val, 'UTF-8', '_WIDE_');
-	      http_value (__rdf_strsqlval (_val), 0, ses);
-	    }
+            {
+              if (dt is not null)
+                       http (sprintf (' datatype="%V">', cast (dt as varchar)), ses);
+              else
+                       http ('>', ses);
+            }
+                 if (__tag of datetime = rdf_box_data_tag (_val))
+                   __rdf_long_to_ttl (_val, ses);
+                 else
+            {
+              _val := __rdf_sqlval_of_obj (_val, 1);
+              if (__tag (_val) = __tag of varchar) -- UTF-8 value kept in a DV_STRING box
+                _val := charset_recode (_val, 'UTF-8', '_WIDE_');
+              http_value (__rdf_strsqlval (_val), 0, ses);
+            }
           http ('</res:value></res:binding>', ses);
         }
 end_of_binding: ;
@@ -1267,7 +1272,7 @@ create procedure DB.DBA.SPARQL_RESULTS_TTL_WRITE_RES (inout ses any, in mdta any
     {
       colbuf [colctr * 7] := cols[colctr][0];
     }
-  env := vector (dict_new (__min (len * 3, 16000)), 0, '', '', '', 0, 0, colbuf, ses);
+  env := DB.DBA.RDF_TRIPLES_TO_TTL_ENV (__min (len * 3, 16000), 0, colbuf, ses);
   rowctr := 0;
   while (rowctr < len)
     {
@@ -1393,7 +1398,7 @@ create procedure DB.DBA.SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, ino
                   http ('</a>', ses);
                 }
             }
-          else if (isstring (val) and (1 = __box_flags (val)))
+          else if ((isstring (val) and (1 = __box_flags (val))) or (__tag of UNAME = __tag (val)))
             {
               if (is_js or val='' or (val[0]=95) or (val like 'nodeID://%'))
                 http_escape (val, esc_mode, ses, 1, 1);
@@ -1493,7 +1498,7 @@ create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in col
     }
   else if (__tag of varchar = __tag (val))
     {
-      if (1 = __box_flags (val))
+      if (bit_and (1, __box_flags (val)))
         {
           if (val like 'nodeID://%')
             http (sprintf ('"type": "bnode", "value": "%s', val), ses);
@@ -1506,6 +1511,16 @@ create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in col
       else
         {
           http ('"type": "literal", "value": "', ses);
+          http_escape (val, 11, ses, 1, 1);
+        }
+    }
+  else if (__tag of UNAME = __tag (val))
+    {
+      if (val like 'nodeID://%')
+        http (sprintf ('"type": "bnode", "value": "%s', val), ses);
+      else
+        {
+          http ('"type": "uri", "value": "', ses);
           http_escape (val, 11, ses, 1, 1);
         }
     }
@@ -1754,6 +1769,11 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
         {
           DB.DBA.RDF_TRIPLES_TO_NICE_TTL (triples, ses);
           ret_mime := 'text/turtle';
+        }
+      else if (ret_format = 'HTML;NICE_TTL')
+        {
+          DB.DBA.RDF_TRIPLES_TO_HTML_NICE_TTL (triples, ses);
+          ret_mime := 'text/html';
         }
       else if (ret_format = 'SOAP')
 	{
@@ -2209,7 +2229,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_STYLE ()
 	body {
 	    padding: 0;
 	    margin: 0;
-    	    font-family:Gill Sans, Arial, Helvetica, sans-serif;
+	    font-family:Arial, Helvetica, sans-serif;
 	    font-size: 9pt;
 	    color: #333;
 	    background-color: #FDFDFD;
@@ -2320,13 +2340,13 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('\n');
     http('    <script type="text/javascript">\n');
     http('    /*<![CDATA[*/\n');
-    http('	var last_format = 1;\n');
+    http('	var last_format = 0;\n');
     http('	function format_select(query_obg)\n');
     http('	{\n');
     http('		var query = query_obg.value; \n');
     http('		var format = query_obg.form.format;\n');
     http('\n');
-    http('		if ((query.match(/\\bconstruct\\b/i) || query.match(/\\bdescribe\\b/i)) && last_format == 1) {\n');
+    http('		if ((query.match(/\\bconstruct\\b/i) || query.match(/\\bdescribe\\b/i)) && last_format != 2) {\n');
     http('			for(var i = format.options.length; i > 0; i--)\n');
     http('				format.options[i] = null;\n');
     http('			format.options[1] = new Option(\'Turtle\',\'text/turtle\');\n');
@@ -2342,22 +2362,23 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     http('			format.options[11] = new Option(\'HTML (table)\',\'text/x-html+tr\');\n');
     http('			format.options[12] = new Option(\'HTML+Microdata (inconvenient)\',\'text/html\');\n');
     http('			format.options[13] = new Option(\'HTML+Microdata (pretty-printed table)\',\'application/x-nice-microdata\');\n');
-    http('			format.options[14] = new Option(\'Microdata/JSON\',\'application/microdata+json\');\n');
-    http('			format.options[15] = new Option(\'CSV\',\'text/csv\');\n');
-    http('			format.options[16] = new Option(\'TSV\',\'text/tab-separated-values\');\n');
-    http('			format.options[17] = new Option(\'TriG\',\'application/x-trig\');\n');
+    http('			format.options[14] = new Option(\'Turtle-style HTML (for browsing, not for export)\',\'text/x-html-nice-turtle\');\n');
+    http('			format.options[15] = new Option(\'Microdata/JSON\',\'application/microdata+json\');\n');
+    http('			format.options[16] = new Option(\'CSV\',\'text/csv\');\n');
+    http('			format.options[17] = new Option(\'TSV\',\'text/tab-separated-values\');\n');
+    http('			format.options[18] = new Option(\'TriG\',\'application/x-trig\');\n');
 
     if (can_cxml)
       {
-	http('			format.options[18] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
+	http('			format.options[19] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
 	if (can_qrcode)
-	  http('		format.options[19] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
+	  http('		format.options[20] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
       }
     http('			format.selectedIndex = 1;\n');
     http('			last_format = 2;\n');
     http('		}\n');
     http('\n');
-    http('		if (!(query.match(/\\bconstruct\\b/i) || query.match(/\\bdescribe\\b/i)) && last_format == 2) {\n');
+    http('		if (!(query.match(/\\bconstruct\\b/i) || query.match(/\\bdescribe\\b/i)) && last_format != 1) {\n');
     http('			for(var i = format.options.length; i > 0; i--)\n');
     http('				format.options[i] = null;\n');
     http('			format.options[1] = new Option(\'HTML\',\'text/html\');\n');
@@ -2463,49 +2484,56 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
       )
     {
       opts := vector (
-        vector ('text/turtle'			, 'Turtle'					),
-        vector ('application/x-nice-turtle'	, 'Pretty-printed Turtle (slow!)'		),
-        vector ('application/rdf+json'		, 'RDF/JSON'					),
-        vector ('application/rdf+xml'		, 'RDF/XML'					),
-        vector ('text/plain'			, 'N-Triples'					),
-        vector ('application/xhtml+xml'		, 'XHTML+RDFa'					),
-        vector ('application/atom+xml'		, 'ATOM+XML'					),
-        vector ('application/odata+json'	, 'ODATA/JSON'					),
-        vector ('application/x-json+ld'		, 'JSON-LD'					),
-        vector ('text/x-html+ul'			, 'HTML (list)'					),
-        vector ('text/x-html+tr'			, 'HTML (table)'				),
-        vector ('text/html'			, 'HTML+Microdata (inconvenient)'		),
-        vector ('application/x-nice-microdata'	, 'HTML+Microdata (pretty-printed table)'	),
-        vector ('application/microdata+json'	, 'Microdata/JSON'				),
-        vector ('text/csv'			, 'CSV'						),
-        vector ('text/tab-separated-values'	, 'TSV'						),
-        vector ('application/x-trig'		, 'TriG'					) );
+        vector ('Turtle'						, 'text/turtle'				),
+        vector ('Pretty-printed Turtle (slow!)'				, 'application/x-nice-turtle'		),
+        vector ('RDF/JSON'						, 'application/rdf+json'		),
+        vector ('RDF/XML'						, 'application/rdf+xml'			),
+        vector ('N-Triples'						, 'text/plain'				),
+        vector ('XHTML+RDFa'						, 'application/xhtml+xml'		),
+        vector ('ATOM+XML'						, 'application/atom+xml'		),
+        vector ('ODATA/JSON'						, 'application/odata+json'		),
+        vector ('JSON-LD'						, 'application/x-json+ld'		),
+        vector ('HTML (list)'						, 'text/x-html+ul'			),
+        vector ('HTML (table)'						, 'text/x-html+tr'			),
+        vector ('HTML+Microdata (inconvenient)'				, 'text/html'				),
+        vector ('HTML+Microdata (pretty-printed table)'			, 'application/x-nice-microdata'		),
+        vector ('Turtle-style HTML (for browsing, not for export)'	, 'text/x-html-nice-turtle'		),
+        vector ('Microdata/JSON'					, 'application/microdata+json'		),
+        vector ('CSV'							, 'text/csv'				),
+        vector ('TSV'							, 'text/tab-separated-values'		),
+        vector ('TriG'							, 'application/x-trig'			) );
+      if (can_cxml)
+        {
+          opts := vector_concat (opts, vector (
+            vector ('CXML (Pivot Collection)'				, 'text/cxml'				) ) );
+          if (can_qrcode)
+            opts := vector_concat (opts, vector (
+              vector ('CXML (Pivot Collection with QRcodes)'		, 'text/cxml+qrcode'			) ) );
+        }
     }
   else
     {
       if (not length (format)) format := 'text/html';
       opts := vector (
-	  vector ('auto'				, 'Auto'		),
-	  vector ('text/html'				, 'HTML'		),
-	  vector ('application/vnd.ms-excel'		, 'Spreadsheet'		),
-	  vector ('application/sparql-results+xml'	, 'XML'			),
-	  vector ('application/sparql-results+json'	, 'JSON'		),
-	  vector ('application/javascript'		, 'Javascript'		),
-	  vector ('text/plain'				, 'NTriples'		),
-        vector ('application/rdf+xml',		'RDF/XML') );
+        vector ('Auto'							, 'auto'				),
+        vector ('HTML'							, 'text/html'				),
+        vector ('Spreadsheet'						, 'application/vnd.ms-excel'		),
+        vector ('XML'							, 'application/sparql-results+xml'	),
+        vector ('JSON'							, 'application/sparql-results+json'	),
+        vector ('Javascript'						, 'application/javascript'		),
+        vector ('Turtle'						, 'text/turtle'				),
+        vector ('RDF/XML'						, 'application/rdf+xml'			),
+        vector ('N-Triples'						, 'text/plain'				),
+        vector ('CSV'							, 'text/csv'				),
+        vector ('TSV'							, 'text/tab-separated-values'		) );
+        if (can_cxml)
+          opts := vector_concat (opts, vector (
+        vector ('CXML (Pivot Collection)'				, 'text/cxml'				) ) );
     }
   foreach (any x in opts) do
     {
       http(sprintf ('			<option value="%V" %s>%V</option>\n',
-	  x[0], case when format = x[0] then 'selected="selected"' else '' end , x[1]));
-    }
-  http('			<option value="text/csv">CSV</option>\n');
-  http('			<option value="text/tab-separated-values">TSV</option>\n');
-  if (can_cxml)
-    {
-      http('			<option value="text/cxml">CXML (Pivot Collection)</option>\n');
-      if (can_qrcode)
-        http('			<option value="text/cxml+qrcode">CXML (Pivot Collection with QRcode)</option>\n');
+          x[1], case when format = x[1] then 'selected="selected"' else '' end , x[0]));
     }
 }
 ;
@@ -2546,6 +2574,9 @@ create procedure WS.WS.SPARQL_ENDPOINT_CXML_OPTION (in can_pivot integer, in par
       opts := vector (
 	  vector ('',			'No link out'),
 	  vector ('121',		'External resource link'),
+	  vector ('DESCRIBE',		'External description link'),
+	  vector ('ABOUT_RDF',		'External sponged data link (RDF)'),
+	  vector ('ABOUT_HTML',		'External sponged data link (HTML)'),
 	  vector ('LOCAL_TTL', 		'External description resource (TTL)'),
 	  vector ('LOCAL_NTRIPLES', 	'External description resource (NTRIPLES)'),
 	  vector ('LOCAL_JSON', 	'External description resource (JSON)'),
@@ -2559,6 +2590,9 @@ create procedure WS.WS.SPARQL_ENDPOINT_CXML_OPTION (in can_pivot integer, in par
 	  vector ('',			'Local faceted navigation link'),
 	  vector ('121',		'External resource link'),
 	  vector ('LOCAL_PIVOT',	'External faceted navigation link'),
+	  vector ('DESCRIBE',		'External description link'),
+	  vector ('ABOUT_RDF',		'External sponged data link (RDF)'),
+	  vector ('ABOUT_HTML',		'External sponged data link (HTML)'),
 	  vector ('LOCAL_TTL', 		'External description resource (TTL)'),
 	  vector ('LOCAL_CXML',		'External description resource (CXML)'),
 	  vector ('LOCAL_NTRIPLES', 	'External description resource (NTRIPLES)'),
@@ -2911,6 +2945,13 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   if ('' <> def_qry)
     qtxt := 1;
   def_max := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'ResultSetMaxRows'), '-1'));
+
+  -- Get the max values as specified by the client but always stick to the system-wide max if there is any
+  if (not connection_get ('SPARQL/MaxQueryExecutionTime') is null)
+    hard_timeout := __min (cast (connection_get ('SPARQL/MaxQueryExecutionTime') as int) * 1000, hard_timeout);
+  if (not connection_get ('SPARQL/ResultSetMaxRows') is null)
+    def_max := __min (cast (connection_get ('SPARQL/ResultSetMaxRows') as int), def_max);
+
   -- if timeout specified and it's over 1 second
 
   save_dir := trim (get_keyword ('dname', params, ''));
@@ -2949,6 +2990,16 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
     soap_ver := 12;
   else if (soap_action is not null)
     soap_ver := 11;
+
+  if (content_type = 'application/sparql-update')
+    {
+      declare b any;
+      b := http_body_read ();
+      query := string_output_string (b);
+      paramcount := length (params);
+      if (paramcount = 0 or (((2 = paramcount) and ('Content' = params[0])) and soap_ver = 0))
+	goto execute_query;
+    }
 
   content := null;
   declare exit handler for sqlstate '*' {
@@ -3236,7 +3287,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   if (format <> '')
     accept := format;
   else
-    accept := http_request_header (lines, 'Accept', null, '');
+    accept := DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (http_request_header_full (lines, 'Accept', '*/*'));
   if (sp_ini)
     {
       SPARQL_INI_PARAMS (metas, rset);
@@ -3426,6 +3477,8 @@ host_found:
   start_time := msec_time();
   exec ( concat ('sparql {', full_query, '\n}'), state, msg, qry_params, vector ('max_rows', maxrows, 'use_cache', 1), metas, rset);
   commit work;
+  if (isvector (rset) and length (rset) = maxrows)
+    http_header (http_header_get () || sprintf ('X-SPARQL-MaxRows: %d\r\n', maxrows));
   -- dbg_obj_princ ('exec metas=', metas, ', state=', state, ', msg=', msg);
   if (state = '00000')
     goto write_results;
@@ -3456,7 +3509,7 @@ host_found:
         {
           declare unknown_service varchar;
           unknown_service := connection_get ('SPARQL_endpoint_to_load_service_metadata');
-          if (__tag (unknown_service) in (__tag of varchar, 217))
+          if (__tag (unknown_service) in (__tag of varchar, __tag of UNAME))
             {
               if (isinteger (reported_unknown_services))
                 reported_unknown_services := dict_new ();
@@ -4201,7 +4254,8 @@ DB.DBA.http_rq_file_handler (in content any, in params any, in lines any, inout 
       strcasestr (accept, 'text/cxml') is not null or
       strcasestr (accept, 'text/cxml+qrcode') is not null or
       strcasestr (accept, 'text/csv') is not null or
-      strcasestr (accept, 'application/x-nice-turtle') is not null
+      strcasestr (accept, 'application/x-nice-turtle') is not null or
+      strcasestr (accept, 'text/x-html-nice-turtle') is not null
      )
     {
       http_request_status ('HTTP/1.1 303 See Other');
@@ -4378,8 +4432,29 @@ create procedure DB.DBA.RDF_GRANT_SPARQL_IO ()
     'grant execute on DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS to "SPARQL"',
     'grant execute on DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV to SPARQL_UPDATE',
     'grant execute on DB.DBA.SPARQL_SD_PROBE to SPARQL_SPONGE',
+    'grant execute on DB.DBA.SPARQL_SD_PROBE to SPARQL_LOAD_SERVICE_DATA',
     'grant execute on DB.DBA.SPARQL_SINV_IMP to SPARQL_SPONGE',
-    'grant select on DB.DBA.SPARQL_SINV_2 to SPARQL_SPONGE' );
+    'grant select on DB.DBA.SPARQL_SINV_2 to SPARQL_SPONGE',
+    'grant execute on DB.DBA.SPARQL_RESULTS_XML_WRITE_HEAD to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_XML_WRITE_RES to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_NS to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_HEAD to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_RES to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_ROW to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_TTL_WRITE_NS to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_TTL_WRITE_HEAD to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_TTL_WRITE_RES to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_NT_WRITE_NS to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_NT_WRITE_HEAD to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_NT_WRITE_RES to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_JSON_WRITE to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_CSV_WRITE to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_TSV_WRITE to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_HTML_NICE_TTL_WRITE to SPARQL_SELECT',
+    'grant execute on DB.DBA.SPARQL_RESULTS_WRITE to SPARQL_SELECT' );
   foreach (varchar cmd in cmds) do
     {
       exec (cmd, state, msg);

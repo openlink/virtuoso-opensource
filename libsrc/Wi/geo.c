@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -96,28 +96,37 @@ cmpf_geo (buffer_desc_t * buf, int irow, it_cursor_t * itc)
   db_buf_t row = BUF_ROW (buf, irow);
   row_ver_t rv = IE_ROW_VERSION (row);
   dbe_key_t *key = itc->itc_insert_key;
-  double rx, rx2, ry, ry2;
+  double rx, rx2, ry, ry2, prec = 0;
   geo_t *g = (geo_t *) itc->itc_search_params[0];
-  int gs_op, gs_precision;
-  if (GEO_GSOP == g->geo_flags)
+  geo_t *g_shape = g;
+  int gs_op;
+  if (rv)
+    GPF_T1 ("a geo inx col is supposed to have 0 rv");
+  if (GEO_GSOP == GEO_TYPE_CORE (g->geo_flags))
     {
       gs_op = itc->itc_geo_op;
-      gs_precision = GSOP_PRECISION;
+      /* if precision is given, param 1 is the geometry being searched and 2 is the precision.  If the geo is a point and prec a number, see the distance */
+      g_shape = (geo_t *) itc->itc_search_params[1];
+      prec = unbox_coord (itc->itc_search_params[2]);
     }
   else
     {
       gs_op = GSOP_CONTAINS;
-      gs_precision = 0;
     }
-  if (rv)
-    GPF_T1 ("a geo inx col is supposed to have 0 rv");
   ROW_DBL_COL (&rx, buf, row, key->key_key_fixed[RD_X]);
+  if (g->XYbox.Xmax + prec < rx)
+    return DVC_LESS;
   ROW_DBL_COL (&rx2, buf, row, key->key_key_fixed[RD_X2]);
-  if (rx2 < g->XYbox.Xmin || g->XYbox.Xmax < rx)
+  if (rx2 + prec < g->XYbox.Xmin)
     return DVC_LESS;
   ROW_DBL_COL (&ry, buf, row, key->key_key_fixed[RD_Y]);
+  if (g->XYbox.Ymax + prec < ry)
+    return DVC_LESS;
   ROW_DBL_COL (&ry2, buf, row, key->key_key_fixed[RD_Y2]);
-  if (ry2 < g->XYbox.Ymin || g->XYbox.Ymax < ry)
+  if (ry2 + prec < g->XYbox.Ymin)
+    return DVC_LESS;
+  if ((NULL != g_shape) && (GEO_POINT == GEO_TYPE (g_shape->geo_flags)) && (rx2 - rx) < (prec / 100) && (ry2 - ry) < (prec / 100)
+      && prec < geo_distance (g_shape->geo_srcode, rx, ry, Xkey (g_shape), Ykey (g_shape)))
     return DVC_LESS;
   if (GSOP_CONTAINS == gs_op)
     {
@@ -131,14 +140,26 @@ cmpf_geo (buffer_desc_t * buf, int irow, it_cursor_t * itc)
       if (ry > g->XYbox.Ymin || ry2 < g->XYbox.Ymax)
 	return DVC_LESS;
     }
-  if (GSOP_PRECISION == gs_precision)
+  if (GSOP_INTERSECTS == gs_op)
     {
-      /* if precision is given, param 1 is the geometry being searched and 2 is the precision.  If the geo is a point and prec a number, see the distance */
-      geo_t *pt = (geo_t *) itc->itc_search_params[1];
-      double prec = unbox_coord (itc->itc_search_params[2]);
-      if (GEO_POINT == GEO_TYPE (pt->geo_flags) && (rx2 - rx) < (prec / 100) && (ry2 - ry) < (prec / 100)
-        && prec < geo_distance (pt->geo_srcode, rx, ry, Xkey(pt), Ykey(pt)))
-	return DVC_LESS;
+      geoc cutx, cuty, cutx2, cuty2;
+      cutx = rx * ((0 > rx) ? (1 - geoc_EPSILON) : (1 + geoc_EPSILON));
+      cuty = ry * ((0 > ry) ? (1 - geoc_EPSILON) : (1 + geoc_EPSILON));
+      cutx2 = rx2 * ((0 > rx) ? (1 + geoc_EPSILON) : (1 - geoc_EPSILON));
+      cuty2 = ry2 * ((0 > ry) ? (1 + geoc_EPSILON) : (1 - geoc_EPSILON));
+      if ((cutx >= cutx2) || (cuty >= cuty2))
+	{
+	  geo_t *pt;
+	  char pt_buf[sizeof (geo_t) + BOX_AUTO_OVERHEAD];
+	  BOX_AUTO_TYPED (geo_t *, pt, pt_buf, sizeof (geo_t), DV_GEO);
+	  pt->geo_flags = GEO_POINT;
+	  pt->XYbox.Xmin = pt->XYbox.Xmax = (rx + rx2) / 2.0;
+	  pt->XYbox.Ymin = pt->XYbox.Ymax = (ry + ry2) / 2.0;
+	  if (geo_pred (pt, g_shape, gs_op, prec + geoc_EPSILON * (1 + abs (rx) + abs (ry))))
+	    return DVC_MATCH;
+	  else
+	    return DVC_LESS;
+	}
     }
   return DVC_MATCH;
 }
@@ -514,14 +535,13 @@ itc_geo_new_root (it_cursor_t * itc, buffer_desc_t * buf, bbox_t * lbox, bbox_t 
   ITC_IN_KNOWN_MAP (itc, root->bd_page);
   /* don't set it in the middle of the itc_reset sequence */
   itc->itc_tree->it_root = root->bd_page;
-  rdbg_printf (("new root of %s L=%d \n", STR_OR (pf->pf_itc->itc_insert_key->key_name, "temp"), root->bd_page));
   ITC_LEAVE_MAP_NC (itc);
   itc->itc_page = root->bd_page;
   page_apply (itc, root, 2, leaves, 0);
   LONG_SET (buf->bd_buffer + DP_PARENT, root->bd_page);
   LONG_SET (ext->bd_buffer + DP_PARENT, root->bd_page);
-  rdbg_printf (("Set parent of L=%d to new root L=%d\n", leaf->bd_page, root->bd_page));
-  pg_check_map (leaf);
+  rdbg_printf (("Set parent of L=%d to new root L=%d\n", ext->bd_page, root->bd_page));
+  pg_check_map (ext);
   page_leave_outside_map_chg (buf, RWG_WAIT_SPLIT);
   page_leave_outside_map_chg (ext, RWG_WAIT_SPLIT);
   rd_free (leaves[0]);
@@ -1252,6 +1272,41 @@ bif_geo_delete (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+caddr_t
+bif_geo_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  dbe_key_t * key = NULL;
+  caddr_t tn = bif_arg (qst, args, 0, "geo_check");
+  geo_t * g = bif_geo_arg (qst, args, 1, "geo_check", GEO_ARG_ANY_NONNULL);
+  QNCAST (query_instance_t, qi, qst);
+  dbe_table_t * tb;
+  dtp_t dtp = DV_TYPE_OF (tn);
+  int rc = 0;
+  geo_t box;
+
+  if (DV_LONG_INT == dtp)
+    {
+      key = sch_id_to_key (wi_inst.wi_schema, unbox (tn));
+    }
+  else if (DV_STRING == dtp)
+    {
+      tb = sch_name_to_table (wi_inst.wi_schema, tn);
+      if (!tb || !key_is_geo (tb->tb_primary_key))
+	sqlr_new_error ("22032", "GEO..", "table %s is not a geo index table", tn);
+      key = tb->tb_primary_key;
+    }
+  if (!key || !key_is_geo (key))
+    sqlr_new_error ("22032", "GEO..", "key %d is not a geo key", (int)unbox (tn));
+  dtp = key->key_key_fixed[RD_X].cl_sqt.sqt_dtp;
+  geo_get_bounding_XYbox ((geo_t*)g, &box, 0, 0);
+  if (DV_SINGLE_FLOAT == dtp)
+    {
+      if (IS_OV ((float)box.XYbox.Xmin) || IS_OV ((float)box.XYbox.Xmax) || IS_OV ((float)box.XYbox.Ymin) || IS_OV ((float)box.XYbox.Ymax))
+	rc = 1;
+    }
+  return box_num (rc);
+}
+
 
 caddr_t
 geo_wkt (caddr_t x)
@@ -1356,7 +1411,7 @@ geo_rdf_check (text_node_t * txs, caddr_t * inst)
     {
       dtp_t dtp;
       int set = qst_vec_get_int64  (lc.lc_inst, sel->sel_set_no, lc.lc_position), hl;
-      db_buf_t dv = ((db_buf_t *)ser_dc->dc_values)[set];
+      db_buf_t dv = ((db_buf_t *)ser_dc->dc_values)[lc.lc_position];
       if (!IS_BOX_POINTER (dv))
 	continue;
       if (DV_SHORT_STRING_SERIAL == *dv)
@@ -1585,6 +1640,7 @@ geo_init ()
   bif_define_ex ("geo_insert"		, bif_geo_insert						, BMD_USES_INDEX, BMD_NEED_ENLIST, BMD_DONE);
   bif_define_ex ("geo_delete"		, bif_geo_delete						, BMD_USES_INDEX, BMD_NEED_ENLIST, BMD_DONE);
   bif_define_ex ("geo_estimate"		, bif_geo_estimate						, BMD_USES_INDEX, BMD_DONE);
+  bif_define_ex ("geo_check"		, bif_geo_check							, BMD_USES_INDEX, BMD_NEED_ENLIST, BMD_DONE);
   dk_mem_hooks_2 (DV_GEO, (box_copy_f) geo_copy, (box_destr_f) geo_destroy, 0, (box_tmp_copy_f) mp_geo_copy);
   get_readtable ()[DV_GEO] = (macro_char_func) geo_deserialize;
   PrpcSetWriter (DV_GEO, (ses_write_func) geo_serialize);

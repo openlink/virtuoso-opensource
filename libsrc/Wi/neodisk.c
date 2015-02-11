@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2184,6 +2184,7 @@ dbs_checkpoint (char *log_name, int shutdown)
       dbs_backup_check (dbs, shutdown);
     }
   END_DO_SET();
+  col_dbg_log_new ();
   if (CPT_NORMAL == shutdown)
     cpt_over ();
   auto_cpt_scheduled = 0;

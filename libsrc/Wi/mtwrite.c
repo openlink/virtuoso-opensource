@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -618,7 +618,7 @@ iq_aio (io_queue_t * iq)
 	    pg_make_col_map (buf);
 	  else if (buf->bd_content_map)
 	    {
-	      resource_store (PM_RC (buf->bd_content_map->pm_size), (void*) buf->bd_content_map);
+	      pm_store (buf, (buf->bd_content_map->pm_size), (void*) buf->bd_content_map);
 	      buf->bd_content_map = NULL;
 	    }
 	  if (DPF_BLOB == flags || DPF_BLOB_DIR == flags)
@@ -1311,7 +1311,8 @@ mt_write_init ()
       END_DO_SET ();
     }
   END_DO_SET();
-  dbs_mtwrite_init (wi_inst.wi_temp);
+  if (wi_inst.wi_temp)
+    dbs_mtwrite_init (wi_inst.wi_temp);
   bp_flush_sem = semaphore_allocate (0);
   bp_flush_thr = PrpcThreadAllocate ((thread_init_func) bp_flush_thread_func, 100000, NULL)->dkt_process;
 }

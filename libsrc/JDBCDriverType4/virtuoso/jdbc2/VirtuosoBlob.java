@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -279,6 +279,7 @@ public class VirtuosoBlob
 	     }
 
 	   Long init_read_len = null;
+/***
 	   if (pos - 1 < bh_offset ())
 	     {
 	       // we should go from start
@@ -292,6 +293,16 @@ public class VirtuosoBlob
 	     init_read_len = new Long (pos - bh_offset() - 1);
 //	     init_read_len = new Long ((pos - bh_offset() - 1) *
 //		 (dtp == VirtuosoTypes.DV_BLOB_WIDE_HANDLE ? -1 : 1));
+***/
+	   if (pos - 1 < bh_offset ())
+	     {
+	       // we should go from start
+	       //System.out.println ("vb: rewind pos:" + pos + " ofs:" + bh_offset());
+	       rewind();
+	     }
+	   
+	   if (pos - 1 > bh_offset ())
+	     init_read_len = new Long (pos - bh_offset() - 1);
 
 
 	   if (init_read_len != null)
@@ -313,7 +324,7 @@ public class VirtuosoBlob
 		   args[8] = new Long (this.bh_timestamp);
 		   //System.out.println ("vb: init read FUTURE: " + this.bh_current_page + " " + init_read_len + " " + this.bh_position);
 		   VirtuosoFuture future = connection.getFuture(VirtuosoFuture.getdata,args, -1);
-		   curr = future.nextResult();
+		   curr = future.nextResult(false);
 		   curr = (openlink.util.Vector) curr.firstElement();
 		   connection.removeFuture (future);
 		 }
@@ -375,7 +386,7 @@ public class VirtuosoBlob
 	       args[8] = new Long (this.bh_timestamp);
 	       //System.out.println ("vb: FUTURE: " + this.bh_current_page + " " + length + " " + this.bh_position);
 	       VirtuosoFuture future = connection.getFuture(VirtuosoFuture.getdata,args, -1);
-	       curr = future.nextResult();
+	       curr = future.nextResult(false);
 	       curr = (openlink.util.Vector) curr.firstElement();
 	       connection.removeFuture (future);
 	     }

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -269,7 +269,7 @@ rl_query_init (dbe_table_t * quad_tb)
   DO_SET (dbe_key_t *, key, &quad_tb->tb_keys)
   {
     int first = 1;
-    sprintf (txt, "insert soft DB.DBA.RDF_QUAD index %s option (vectored) (", key->key_name);
+      sprintf (txt, "insert soft DB.DBA.RDF_QUAD index %s option (vectored%s) (", key->key_name, !key->key_is_primary ? ", no trigger" : "");
     pars[0] = 0;
     DO_SET (dbe_column_t *, col, &key->key_parts)
     {
@@ -291,7 +291,7 @@ rl_query_init (dbe_table_t * quad_tb)
       int first = 1;
       if (key->key_distinct)
 	continue;
-      sprintf (txt, "delete from RDF_QUAD table option (index %s, vectored) where ", key->key_name);
+      sprintf (txt, "delete from DB.DBA.RDF_QUAD table option (index %s, vectored) where ", key->key_name);
       DO_SET (dbe_column_t *, col, &key->key_parts)
 	{
 	  sprintf (txt + strlen (txt), "%s %s = ? ", first ? "" : "AND", col->col_name);
@@ -362,7 +362,7 @@ cu_rl_cols (cucurbit_t * cu, caddr_t g_iid)
   data_col_t *p_dc = mp_data_col (clrg->clrg_pool, &ssl_iri_dummy, dc_batch_sz);
   data_col_t *o_dc = mp_data_col (clrg->clrg_pool, &ssl_any_dummy, dc_batch_sz);
   int is_gs = BOX_ELEMENTS (cu->cu_input_funcs) == 5;
-  int is_del = cu->cu_rdf_load_mode == RDF_LD_DEL_GS, allg;
+  int is_del = cu->cu_rdf_load_mode == RDF_LD_DEL_GS || cu->cu_rdf_load_mode == RDF_LD_DELETE, allg;
   dk_set_t set = NULL;
   caddr_t tmp[5], * quad;
   BOX_AUTO_TYPED (caddr_t *, quad, tmp, 4 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
@@ -561,8 +561,26 @@ l_make_ro_disp (cucurbit_t * cu, caddr_t * args, value_state_t * vs)
       dk_free_box (allocd_content);
       return NULL;
     }
-  else if (DV_GEO == dtp)
-    sqlr_new_error ("22023", "CLGEO", "A geometry without rdf box is not allowed as object of quad");
+  if (DV_GEO == dtp)
+    {
+      /* A trick instead of sqlr_new_error ("22023", "CLGEO", "A geometry without rdf box is not allowed as object of quad"); */
+      caddr_t err = NULL;
+      caddr_t content = box_to_any_1 (box, &err, NULL, DKS_TO_DC);
+      dt_lang = RDF_BOX_GEO << 16 | RDF_BOX_DEFAULT_LANG;
+      allocd_content = content;
+      len = box_length (content) - 1;
+      is_text = 2;
+      if (len > RB_BOX_HASH_MIN_LEN)
+        {
+          caddr_t trid = mdigest5 (content);
+          cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, trid, ap_box_num (&ap, dt_lang), content, (caddr_t)(ptrlong)is_text, NULL));
+          dk_free_box (trid);
+        }
+      else
+        cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, content, ap_box_num (&ap, dt_lang), l_null, (caddr_t)(ptrlong)is_text, NULL));
+      dk_free_box (allocd_content);
+      return NULL;
+    }
   else if (DV_STRING == dtp)
     len = box_length (box) - 1;
   if (DV_STRING != dtp || (!rdf_no_string_inline && len < RB_MAX_INLINED_CHARS))
@@ -669,14 +687,14 @@ l_iri_id_disp (cucurbit_t * cu, caddr_t name, value_state_t * vs)
   if (!pref_id_no)
     {
       AUTO_POOL (8);
-      cu_local_dispatch (cu, vs, cf_np, (caddr_t) ap_list (&ap, 3, prefix, local, ap_box_num (&ap, 0)));
+      cu_local_dispatch (cu, vs, cf_np, (caddr_t) ap_list (&ap, 3, prefix, local, ap_box_iri_id (&ap, 0)));
       dk_free_box (local);
       dk_free_box (prefix);
       return NULL;
     }
   dk_free_box (prefix);
   LONG_SET_NA (local, pref_id_no);
-  iri_id_no = 0;		//nic_name_id (iri_name_cache, local);
+  iri_id_no = 0;		/*nic_name_id (iri_name_cache, local); */
   if (iri_id_no)
     {
       dk_free_box (local);
@@ -685,7 +703,7 @@ l_iri_id_disp (cucurbit_t * cu, caddr_t name, value_state_t * vs)
     }
   {
     AUTO_POOL (8);
-    cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 2, local, NULL));
+    cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 2, local, ap_box_iri_id (&ap, 0)));
     dk_free_box (local);
   }
   return NULL;

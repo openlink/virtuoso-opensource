@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -112,6 +112,7 @@ extern char *http_cli_proxy_server;
 extern char *http_cli_proxy_except;
 extern int32 http_enable_client_cache;
 extern int32 log_proc_overwrite;
+extern char * backup_ignore_keys;
 
 #ifdef _SSL
 extern char *https_port;
@@ -122,6 +123,8 @@ extern int32 https_client_verify;
 extern int32 https_client_verify_depth;
 extern char * https_client_verify_file;
 extern char * https_client_verify_crl_file;
+extern char * https_cipher_list;
+extern char * https_protocols;
 
 extern char *c_ssl_server_port;
 extern char *c_ssl_server_cert;
@@ -130,6 +133,8 @@ extern char *c_ssl_server_extra_certs;
 extern int32 ssl_server_verify;
 extern int32 ssl_server_verify_depth;
 extern char *ssl_server_verify_file;
+extern char *ssl_server_cipher_list;
+extern char *ssl_server_protocols;
 #endif
 extern int spotlight_integration;
 #ifdef BIF_XML
@@ -201,6 +206,8 @@ char *c_serverport;
 char *http_log_file = NULL;
 extern FILE *http_log;
 extern char *http_log_name;
+extern char *http_log_format;
+char *c_http_log_format;
 int32 c_error_log_level;
 int32 c_server_threads;
 int32 c_number_of_buffers;
@@ -256,6 +263,8 @@ extern int32 vdb_serialize_connect;
 extern int prpc_disable_burst_mode;
 extern int prpc_forced_fixed_thread;
 extern int prpc_force_burst_mode;
+extern int32 max_bad_rpc_on_connection;
+extern int32 max_bad_rpc_timeout;
 
 extern long sqlc_add_views_qualifiers;
 int32 c_sqlc_add_views_qualifiers;
@@ -663,12 +672,15 @@ int cfg_getsize (PCONFIG pc, char * sec, char * attr, size_t * sz);
 int cfg2_getsize (PCONFIG pc,  char * sec, char * attr, size_t * sz);
 
 extern LOG *virtuoso_log;
+extern int tn_step_refers_to_input;
+
 static char *prefix;
 int
 cfg_setup (void)
 {
   char *savestr;
   char *section;
+  char *tmp_str;
   int32 long_helper;
 
   if (f_config_file == NULL)
@@ -768,6 +780,13 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "DisableTcpSocket", &c_disable_listen_on_tcp_sock) == -1)
     c_disable_listen_on_tcp_sock = 0;
 
+  if (cfg_getlong (pconfig, section, "MaxBadRPCs", &max_bad_rpc_on_connection) == -1)
+    max_bad_rpc_on_connection = 100;
+  if (max_bad_rpc_on_connection  > 0xffff) /* max 64k bad RPC requests */
+    max_bad_rpc_on_connection = 0xffff;
+
+  if (cfg_getlong (pconfig, section, "MaxBadRPCtimeout", &max_bad_rpc_timeout) == -1)
+    max_bad_rpc_timeout = 60;
 #ifdef _SSL
   if (cfg_getstring (pconfig, section, "SSLServerPort", &c_ssl_server_port) == -1)
     c_ssl_server_port = NULL;
@@ -790,6 +809,12 @@ cfg_setup (void)
 
   if (cfg_getstring (pconfig, section, "X509ClientVerifyCAFile", &ssl_server_verify_file) == -1)
     ssl_server_verify_file = NULL;
+
+  if (cfg_getstring (pconfig, section, "SSL_CIPHER_LIST", &ssl_server_cipher_list) == -1)
+    ssl_server_cipher_list = "default";
+
+  if (cfg_getstring (pconfig, section, "SSL_PROTOCOLS", &ssl_server_protocols) == -1)
+    ssl_server_protocols = "default";
 #endif
 
   if (cfg_getlong (pconfig, section, "ServerThreads", &c_server_threads) == -1)
@@ -886,6 +911,9 @@ cfg_setup (void)
 
   if (cfg_getstring (pconfig, section, "BackupDirs", &c_backup_dirs) == -1)
     c_backup_dirs = 0;
+
+  if (cfg_getstring (pconfig, section, "BackupIgnoreKeys", &backup_ignore_keys) == -1)
+    backup_ignore_keys = 0;
 
   if (cfg_getstring (pconfig, section, "SafeExecutables", &c_safe_execs) == -1)
     c_safe_execs = 0;
@@ -1043,7 +1071,7 @@ cfg_setup (void)
     c_c_use_aio = 0;
 
   if (cfg_getlong (pconfig, section, "AsyncQueueMaxThreads", &c_aq_max_threads) == -1)
-    c_aq_max_threads = 10;
+    c_aq_max_threads = 48;
 
   if (cfg_getlong (pconfig, section, "BuffersAllocation", &malloc_bufs) == -1)
     malloc_bufs = 0;
@@ -1234,7 +1262,7 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "ThreadsPerQuery", &enable_qp) == -1)
     {
-      enable_qp = 8;
+      enable_qp = 16;
     }
 
   if (cfg_getlong (pconfig, section, "MaxVectorSize", &dc_max_q_batch_sz) == -1)
@@ -1255,6 +1283,34 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "EnableMonitor", &mon_enable) == -1)
     mon_enable = 1;
 
+  if (cfg_getstring (pconfig, section, "TransStepMode", &tmp_str) == 0)
+    {
+      if (!stricmp ("input", tmp_str))
+       tn_step_refers_to_input = 1;
+    }
+
+  /*
+   *  Parse [Flags] section
+   */
+  section = "Flags";
+  {
+    stat_desc_t *sd = &dbf_descs[0];
+    int32 v;
+    while (sd->sd_name)
+      {
+	if (cfg_getlong (pconfig, section, sd->sd_name, &v) != -1)
+	  {
+	    if ((ptrlong)SD_INT32 == (ptrlong) sd->sd_str_value)
+	      *((int32*)sd->sd_value) = v;
+	    else if (sd->sd_value)
+	      *(sd->sd_value) = (long) v;
+	    else
+	      log_error ("Cannot set flag %s", sd->sd_name);
+	  }
+	sd ++;
+      }
+  }
+
 
   /*
    *  Parse [HTTPServer] section
@@ -1266,6 +1322,9 @@ cfg_setup (void)
 
   if (cfg_getstring (pconfig, section, "HTTPLogFile", &http_log_file) == -1)
     http_log_file = NULL;
+
+  if (cfg_getstring (pconfig, section, "HTTPLogFormat", &c_http_log_format) != -1)
+    http_log_format = c_http_log_format;
 
   if (cfg_getstring (pconfig, section, "ServerRoot", &www_root) == -1)
     www_root = ".";
@@ -1364,6 +1423,12 @@ cfg_setup (void)
 
   if (cfg_getstring (pconfig, section, "X509ClientVerifyCAFile", &c_https_client_verify_file) == -1)
     c_https_client_verify_file = NULL;
+
+  if (cfg_getstring (pconfig, section, "SSL_CIPHER_LIST", &https_cipher_list) == -1)
+    https_cipher_list = "default";
+
+  if (cfg_getstring (pconfig, section, "SSL_PROTOCOLS", &https_protocols) == -1)
+    https_protocols = "default";
 #endif
 
   if (cfg_getlong (pconfig, section, "ServerThreads", &c_http_threads) == -1)

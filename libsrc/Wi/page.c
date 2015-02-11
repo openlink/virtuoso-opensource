@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1104,6 +1104,7 @@ page_col_cmp_1 (buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl, caddr_t v
 	{
 	  while (1)
 	    {
+              wchar_t xlat1, xlat2;
 	      if (inx == l1)
 		{
 		  if (inx == l2)
@@ -1113,11 +1114,11 @@ page_col_cmp_1 (buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * cl, caddr_t v
 		}
 	      if (inx == l2)
 		return DVC_GREATER;
-	      if (collation->co_table[(unsigned char)dv1[inx]] <
-		  collation->co_table[(unsigned char)dv2[inx]])
+              xlat1 = COLLATION_XLAT_NARROW (collation, (unsigned char)dv1[inx]);
+              xlat2 = COLLATION_XLAT_NARROW (collation, (unsigned char)dv2[inx]);
+              if (xlat1 < xlat2)
 		return DVC_LESS;
-	      if (collation->co_table[(unsigned char)dv1[inx]] >
-		  collation->co_table[(unsigned char)dv2[inx]])
+	      if (xlat1 > xlat2)
 		return DVC_GREATER;
 	      inx++;
 	    }
@@ -1826,7 +1827,7 @@ pf_rd_insert_1 (page_fill_t * pf, row_delta_t * rd)
     }
   place = pf->pf_current->bd_content_map->pm_filled_to;
   pf_shift_compress (pf, rd, NULL);
-  map_insert_pos (&pf->pf_current->bd_content_map, rd->rd_map_pos, pm->pm_filled_to);
+  map_insert_pos (pf->pf_current, &pf->pf_current->bd_content_map, rd->rd_map_pos, pm->pm_filled_to);
   pm = pf->pf_current->bd_content_map;
   pm->pm_filled_to += ROW_ALIGN (len);
   page_write_gap (pf->pf_current->bd_buffer + pm->pm_filled_to, PAGE_SZ - pm->pm_filled_to);
@@ -1894,7 +1895,7 @@ pf_rd_append (page_fill_t * pf, row_delta_t * rd, row_size_t * split_after)
       if (pf->pf_is_autocompact)
 	{
 	  extend = buffer_allocate (DPF_INDEX);
-	  extend->bd_content_map = resource_get (PM_RC (PM_SZ_1));
+	  extend->bd_content_map = pm_get (extend, (PM_SZ_1));
 	  pg_map_clear (extend);
 	  extend->bd_tree = pf->pf_itc->itc_tree;
 	}
@@ -1946,7 +1947,7 @@ pf_rd_append (page_fill_t * pf, row_delta_t * rd, row_size_t * split_after)
 	IE_SET_FLAGS (rf.rf_row, IEF_DELETE);
       if (len != ROW_ALIGN (len))
 	rf.rf_row[len] = 0; /* 0 for compression */
-      map_insert_pos (&pf->pf_current->bd_content_map, pm->pm_count, pm->pm_filled_to);
+      map_insert_pos (pf->pf_current, &pf->pf_current->bd_content_map, pm->pm_count, pm->pm_filled_to);
       pm = pf->pf_current->bd_content_map;
       pf_rd_move_and_lock (pf, rd);
       if (rd->rd_make_ins_rbe && RD_INSERT == rd->rd_op)
@@ -2228,7 +2229,7 @@ pf_change_org (page_fill_t * pf)
   if (t_buf->bd_content_map->pm_count > org->bd_content_map->pm_size)
     {
       int new_sz = PM_SIZE (t_buf->bd_content_map->pm_count);
-      map_resize (&org->bd_content_map, new_sz);
+      map_resize (org, &org->bd_content_map, new_sz);
     }
   org_sz = org->bd_content_map->pm_size;
   memcpy_16 (org->bd_content_map, t_buf->bd_content_map, PM_ENTRIES_OFFSET + t_buf->bd_content_map->pm_count * sizeof (short));
@@ -2423,7 +2424,7 @@ page_apply_1 (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t *
 	  }
 	else if (irow < org_pm->pm_count)
 	  {
-	    if (itc->itc_insert_key->key_no_compression)
+	    if (itc->itc_insert_key->key_no_compression && !itc->itc_insert_key->key_is_col)
 	      page_whole_row (buf, irow, rd);
 	    else
 	    page_row (buf, irow, rd, 0);
@@ -2498,7 +2499,11 @@ page_apply_1 (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t *
 void
 page_apply_s (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t ** delta, int op)
 {
+#if defined (VALGRIND)
+  page_apply_frame_t paf = {0};
+#else
   page_apply_frame_t paf;
+#endif
   page_apply_1 (itc, buf, n_delta, delta, op, &paf);
 }
 
@@ -2627,7 +2632,8 @@ page_apply_parent (buffer_desc_t * buf, page_fill_t * pf, char first_affected, c
       END_DO_SET();
       rdbg_printf (("Set parent of L=%d to new root L=%d\n", pf->pf_current->bd_page, root->bd_page));
       pg_check_map (pf->pf_current);
-            page_leave_outside_map_chg (pf->pf_current, RWG_WAIT_SPLIT);
+      
+      page_leave_outside_map_chg (pf->pf_current, RWG_WAIT_SPLIT);
       rd_list_free (leaves);
       return;
     }

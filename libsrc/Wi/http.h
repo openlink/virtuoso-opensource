@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -84,7 +84,7 @@ typedef struct ws_http_map_s
   } ws_http_map_t;
 #endif
 
-#define HTTP_MAX_METHOD 20
+#define HTTP_MAX_METHOD 21
 
 typedef struct ws_connection_s
   {
@@ -138,6 +138,7 @@ typedef struct ws_connection_s
     char  		ws_options[HTTP_MAX_METHOD];
     char		ws_limited;
     char 		ws_thr_cache_clear;
+    char		ws_in_error_handler;
   } ws_connection_t;
 
 #define WS_CHARSET(ws, qst) \
@@ -229,6 +230,8 @@ extern int32 https_client_verify;
 extern int32 https_client_verify_depth;
 extern char * https_client_verify_file;
 extern char * https_client_verify_crl_file;
+extern char * https_cipher_list;
+extern char * https_protocols;
 extern int32 http_threads;
 extern int32 ini_http_threads;
 extern int32 http_keep_alive_timeout;
@@ -327,7 +330,10 @@ the order of columns in dks_charclasses, file dks_esc.c */
 #define DKS_ESC_TTL_IRI		0x0C
 #define DKS_ESC_JSWRITE_SQ	0x0D
 #define DKS_ESC_JSWRITE_DQ	0x0E
-#define COUNTOF__DKS_ESC	0x0F
+#define DKS_ESC_HTML_TTL_SQ	0x0F
+#define DKS_ESC_HTML_TTL_DQ	0x10
+#define DKS_ESC_HTML_TTL_IRI	0x11
+#define COUNTOF__DKS_ESC	0x12
 
 #define DKS_ESC_COMPAT_HTML	0x100
 #define DKS_ESC_COMPAT_SOAP	0x200

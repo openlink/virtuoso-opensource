@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -251,7 +251,7 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
       if(parameterIndex < 1 || parameterIndex > parameters.capacity())
          throw new VirtuosoException("Index " + parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
       // Return object
-      Object obj = mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
+      Object obj = VirtuosoTypes.mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
                      param_type[parameterIndex - 1],
                      param_scale[parameterIndex - 1]);
       if (_wasNull = (obj == null))
@@ -277,7 +277,7 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
       if(parameterIndex < 1 || parameterIndex > parameters.capacity())
          throw new VirtuosoException("Index " + parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
       // Return object
-      Object obj = mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
+      Object obj = VirtuosoTypes.mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
                      param_type[parameterIndex - 1],
                      param_scale[parameterIndex - 1]);
       _wasNull = (obj == null);
@@ -310,7 +310,7 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
       if(parameterIndex < 1 || parameterIndex > parameters.capacity())
          throw new VirtuosoException("Index " + parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
       // Return object
-      Object obj = mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
+      Object obj = VirtuosoTypes.mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
                      param_type[parameterIndex - 1],
                      param_scale[parameterIndex - 1]);
       if (_wasNull = (obj == null))
@@ -336,7 +336,7 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
       if(parameterIndex < 1 || parameterIndex > parameters.capacity())
          throw new VirtuosoException("Index " + parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
       // Return object
-      Object obj = mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
+      Object obj = VirtuosoTypes.mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
                      param_type[parameterIndex - 1],
                      param_scale[parameterIndex - 1]);
       if (_wasNull = (obj == null))
@@ -362,7 +362,7 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
       if(parameterIndex < 1 || parameterIndex > parameters.capacity())
          throw new VirtuosoException("Index " + parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
       // Return object
-      Object obj = mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
+      Object obj = VirtuosoTypes.mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
                      param_type[parameterIndex - 1],
                      param_scale[parameterIndex - 1]);
       if (_wasNull = (obj == null))
@@ -388,7 +388,7 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
       if(parameterIndex < 1 || parameterIndex > parameters.capacity())
          throw new VirtuosoException("Index " + parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
       // Return object
-      Object obj = mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
+      Object obj = VirtuosoTypes.mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
                      param_type[parameterIndex - 1],
                      param_scale[parameterIndex - 1]);
       if (_wasNull = (obj == null))
@@ -414,7 +414,7 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
       if(parameterIndex < 1 || parameterIndex > parameters.capacity())
          throw new VirtuosoException("Index " + parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
       // Return object
-      Object obj = mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
+      Object obj = VirtuosoTypes.mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
                      param_type[parameterIndex - 1],
                      param_scale[parameterIndex - 1]);
       if (_wasNull = (obj == null))
@@ -440,7 +440,7 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
       if(parameterIndex < 1 || parameterIndex > parameters.capacity())
          throw new VirtuosoException("Index " + parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
       // Return object
-      Object obj = mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
+      Object obj = VirtuosoTypes.mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
                      param_type[parameterIndex - 1],
                      param_scale[parameterIndex - 1]);
       if (_wasNull = (obj == null))
@@ -489,7 +489,7 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
       if(parameterIndex < 1 || parameterIndex > parameters.capacity())
          throw new VirtuosoException("Index " + parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
       // Return object
-      Object obj = mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
+      Object obj = VirtuosoTypes.mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
                      param_type[parameterIndex - 1],
                      param_scale[parameterIndex - 1]);
       if (_wasNull = (obj == null))
@@ -515,13 +515,13 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
       if(parameterIndex < 1 || parameterIndex > parameters.capacity())
          throw new VirtuosoException("Index " + parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
       // Return object
-      Object obj = mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
-                     param_type[parameterIndex - 1],
+      Object obj = VirtuosoTypes.mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
+                     Types.DATE,
                      param_scale[parameterIndex - 1]);
       if (_wasNull = (obj == null))
 	return null;
       else
-	return java.sql.Date.valueOf (((java.sql.Date) obj).toString());
+	return (java.sql.Date)obj;
    }
 
    /**
@@ -541,23 +541,13 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
       if(parameterIndex < 1 || parameterIndex > parameters.capacity())
          throw new VirtuosoException("Index " + parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
       // Return object
-      Object obj = mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
-                     param_type[parameterIndex - 1],
+      Object obj = VirtuosoTypes.mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
+                     Types.TIME,
                      param_scale[parameterIndex - 1]);
       if (_wasNull = (obj == null))
 	return null;
-      else if(obj instanceof java.sql.Time)
-	return java.sql.Time.valueOf (((java.sql.Time)obj).toString());
-      else if (obj instanceof java.util.Date)
-	{
-	  java.sql.Time tm = new java.sql.Time (((java.util.Date)obj).getTime());
-	  return java.sql.Time.valueOf(tm.toString());
-	}
-      else if(obj instanceof String)
-	{
-	  return java.sql.Time.valueOf((String)obj);
-	}
-      else return null;
+      else	
+        return (java.sql.Time)obj;
    }
 
    /**
@@ -577,13 +567,13 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
       if(parameterIndex < 1 || parameterIndex > parameters.capacity())
          throw new VirtuosoException("Index " + parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
       // Return object
-      Object obj = mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
-                     param_type[parameterIndex - 1],
+      Object obj = VirtuosoTypes.mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
+                     Types.TIMESTAMP,
                      param_scale[parameterIndex - 1]);
       if (_wasNull = (obj == null))
 	return null;
       else
-	return java.sql.Timestamp.valueOf (((java.sql.Timestamp) obj).toString());
+	return (java.sql.Timestamp)obj;
    }
 
    /**
@@ -602,34 +592,12 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
       if(parameterIndex < 1 || parameterIndex > parameters.capacity())
          throw new VirtuosoException("Index " + parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
       // Return object
-      Object obj = mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
+      Object obj = VirtuosoTypes.mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
                      param_type[parameterIndex - 1],
                      param_scale[parameterIndex - 1]);
 
-      if (_wasNull = (obj == null))
-	return null;
-      else
-	{
-          switch (param_type[parameterIndex - 1])
-            {
-              case Types.BIGINT:
-                obj = new Long(((Number)obj).longValue()); break;
-
-              case Types.DATE:
-		obj = java.sql.Date.valueOf (obj.toString());
-                break;
-
-              case Types.TIME:
-		obj = java.sql.Time.valueOf (obj.toString());
-                break;
-
-              case Types.TIMESTAMP:
-		obj = java.sql.Timestamp.valueOf (obj.toString());
-                break;
-
-             }
-          return obj;
-        }
+      _wasNull = (obj == null);
+      return obj;
    }
 
    /**
@@ -650,8 +618,8 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
       if(parameterIndex < 1 || parameterIndex > parameters.capacity())
          throw new VirtuosoException("Index " + parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
       // Return object
-      Object obj = mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
-                     param_type[parameterIndex - 1],
+      Object obj = VirtuosoTypes.mapJavaTypeToSqlType (objparams.elementAt(parameterIndex - 1),
+                     Types.DECIMAL,
                      param_scale[parameterIndex - 1]);
       if (_wasNull = (obj == null))
 	return null;
@@ -796,11 +764,12 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
     */
    public java.sql.Date getDate(int parameterIndex, Calendar cal) throws VirtuosoException
    {
-     java.sql.Date ret = this.getDate(parameterIndex);
-     if (ret == null)
-       return ret;
-     cal.setTime (ret);
-     return java.sql.Date.valueOf (new java.sql.Date (cal.getTime().getTime()).toString());
+     java.sql.Date date = this.getDate(parameterIndex);
+
+      if(cal != null && date != null)
+        date = new java.sql.Date(VirtuosoTypes.timeToCal(date, cal));
+
+      return date;
    }
 
    /**
@@ -817,11 +786,12 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
     */
    public java.sql.Time getTime(int parameterIndex, Calendar cal) throws VirtuosoException
    {
-     java.sql.Time ret = this.getTime(parameterIndex);
-     if (ret == null)
-       return ret;
-     cal.setTime (ret);
-     return java.sql.Time.valueOf (new java.sql.Time (cal.getTime().getTime()).toString());
+     java.sql.Time _time = this.getTime(parameterIndex);
+
+      if(cal != null && _time != null)
+        _time = new java.sql.Time(VirtuosoTypes.timeToCal(_time, cal));
+
+      return _time;
    }
 
    /**
@@ -838,11 +808,16 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
     */
    public java.sql.Timestamp getTimestamp(int parameterIndex, Calendar cal) throws SQLException
    {
-     java.sql.Timestamp ret = this.getTimestamp(parameterIndex);
-     if (ret == null)
-       return ret;
-     cal.setTime (ret);
-     return java.sql.Timestamp.valueOf (new java.sql.Timestamp (cal.getTime().getTime()).toString());
+     java.sql.Timestamp _ts, val;
+     
+     _ts = val = this.getTimestamp(parameterIndex);
+
+      if(cal != null && _ts != null)
+        _ts = new java.sql.Timestamp(VirtuosoTypes.timeToCal(_ts, cal));
+
+      if (_ts!=null)
+        _ts.setNanos(val.getNanos());
+      return _ts;
    }
 
    /**

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -94,6 +94,7 @@ extern void ldbg_longjmp (jmp_buf env, int value);
 #include "Dk/Dkernel.h"
 
 #include "Thread/thread_int.h"
+#include "Dk/tlsf.h"
 
 #ifdef PMN_LOG
 # include "util/logmsg.h"

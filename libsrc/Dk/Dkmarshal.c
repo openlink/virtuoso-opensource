@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -53,6 +53,7 @@
 
 macro_char_func readtable[256];
 ses_write_func writetable[256];
+macro_char_func rpcreadtable[256];
 
 #if 1
 /*** INLINE THIS ! */
@@ -298,9 +299,15 @@ read_object (dk_session_t * session)
   FAILED
   {
     res = NULL;
+    if (session->dks_pending_obj)
+      {
+	caddr_t box;
+	while (NULL != (box = dk_set_pop (&session->dks_pending_obj)))
+	  dk_free_tree (box);
+      }
   }
   END_READ_FAIL (session);
-
+  session->dks_top_obj = NULL;
   return (void *) res;
 }
 
@@ -321,8 +328,10 @@ box_read_short_string (dk_session_t * session, dtp_t dtp)
   char *string;
 
   MARSH_CHECK_BOX (string = (char *) dk_try_alloc_box (length + 1, DV_SHORT_STRING));
+  MARSH_KEEP_OBJ(session, string);
   session_buffered_read (session, string, length);
   string[length] = 0;
+  MARSH_POP_OBJ(session, string);
   return (void *) string;
 }
 
@@ -334,8 +343,10 @@ box_read_long_string (dk_session_t * session, dtp_t dtp)
   char *string;
   MARSH_CHECK_LENGTH (length);
   MARSH_CHECK_BOX (string = (char *) dk_try_alloc_box (length + 1, DV_LONG_STRING));
+  MARSH_KEEP_OBJ(session, string);
   session_buffered_read (session, string, (int) length);
   string[length] = 0;
+  MARSH_POP_OBJ(session, string);
   return (void *) string;
 }
 
@@ -381,9 +392,11 @@ box_read_short_cont_string (dk_session_t * session, dtp_t dtp)
   dtp_t length = session_buffered_read_char (session);
   unsigned char *string;
   MARSH_CHECK_BOX (string = (unsigned char *) dk_try_alloc_box (length + 2, DV_SHORT_CONT_STRING));
+  MARSH_KEEP_OBJ(session, string);
   string[0] = DV_SHORT_CONT_STRING;
   string[1] = length;
   session_buffered_read (session, (char *) (string + 2), (int) length);
+  MARSH_POP_OBJ(session, string);
   return (void *) string;
 }
 
@@ -397,6 +410,7 @@ box_read_long_cont_string (dk_session_t * session, dtp_t dtp)
 
   MARSH_CHECK_LENGTH (length + 5);
   MARSH_CHECK_BOX (string = (unsigned char *) dk_try_alloc_box (length + 5, DV_LONG_CONT_STRING));
+  MARSH_KEEP_OBJ(session, string);
   p = string;
   *p++ = DV_LONG_CONT_STRING;
   *p++ = (unsigned char) (length >> 24);
@@ -404,6 +418,7 @@ box_read_long_cont_string (dk_session_t * session, dtp_t dtp)
   *p++ = (unsigned char) (length >> 8);
   *p++ = (unsigned char) (length & 0xff);
   session_buffered_read (session, (char *) p, (int) length);
+  MARSH_POP_OBJ(session, string);
   return (void *) string;
 }
 
@@ -440,9 +455,11 @@ box_read_array (dk_session_t * session, dtp_t dtp)
 
   MARSH_CHECK_LENGTH (count * sizeof (void *));
   MARSH_CHECK_BOX (array = (void **) dk_try_alloc_box (sizeof (void *) * count, dtp));
+  memzero (array, sizeof (void *) * count);
+  MARSH_KEEP_OBJ(session, array);
   for (n = 0; n < count; n++)
     array[n] = scan_session_boxing (session);
-
+  MARSH_POP_OBJ(session, array);
   return (void *) array;
 }
 
@@ -456,9 +473,12 @@ box_read_array_of_double (dk_session_t * session, dtp_t dtp)
 
   MARSH_CHECK_LENGTH (count * sizeof (double));
   MARSH_CHECK_BOX (array = (double *) dk_try_alloc_box (sizeof (double) * count, dtp));
+  memzero (array, sizeof (double) * count);
+  MARSH_KEEP_OBJ(session, array);
   for (n = 0; n < count; n++)
     array[n] = read_double (session);
 
+  MARSH_POP_OBJ(session, array);
   return (void *) array;
 }
 
@@ -472,9 +492,12 @@ box_read_array_of_float (dk_session_t * session, dtp_t dtp)
 
   MARSH_CHECK_LENGTH (count * sizeof (float));
   MARSH_CHECK_BOX (array = (float *) dk_try_alloc_box (sizeof (float) * count, dtp));
+  memzero (array, sizeof (float) * count);
+  MARSH_KEEP_OBJ(session, array);
   for (n = 0; n < count; n++)
     array[n] = read_float (session);
 
+  MARSH_POP_OBJ(session, array);
   return (void *) array;
 }
 
@@ -488,10 +511,13 @@ box_read_packed_array_of_long (dk_session_t * session, dtp_t dtp)
 
   MARSH_CHECK_LENGTH (count * sizeof (ptrlong));
   MARSH_CHECK_BOX (array = (ptrlong *) dk_try_alloc_box (sizeof (ptrlong) * count, dtp));
+  memzero (array, sizeof (ptrlong) * count);
+  MARSH_KEEP_OBJ(session, array);
 
   for (n = 0; n < count; n++)
     array[n] = read_int (session);
 
+  MARSH_POP_OBJ(session, array);
   return (void *) array;
 }
 
@@ -505,9 +531,12 @@ box_read_array_of_long (dk_session_t * session, dtp_t dtp)
 
   MARSH_CHECK_LENGTH (count * sizeof (ptrlong));
   MARSH_CHECK_BOX (array = (ptrlong *) dk_try_alloc_box (sizeof (ptrlong) * count, dtp));
+  memzero (array, sizeof (ptrlong) * count);
+  MARSH_KEEP_OBJ(session, array);
   for (n = 0; n < count; n++)
     array[n] = read_long (session);
 
+  MARSH_POP_OBJ(session, array);
   return (void *) array;
 }
 
@@ -679,6 +708,7 @@ box_read_error (dk_session_t * session, dtp_t dtp)
       char temp[30];
       snprintf (temp, sizeof (temp), "Bad incoming tag %u", (unsigned) dtp);
       sr_report_future_error (session, "", temp);
+      SESSTAT_CLR (session->dks_session, SST_OK);
       SESSTAT_SET (session->dks_session, SST_BROKEN_CONNECTION);
     }
   longjmp_splice (&(SESSION_SCH_DATA (session)->sio_read_broken_context), 1);
@@ -730,6 +760,7 @@ init_readtable (void)
 
   readtable[DV_DB_NULL] = box_read_db_null;
   readtable[DV_BOX_FLAGS] = box_read_flags;
+  memcpy (&rpcreadtable[0], &readtable[0], sizeof (readtable));
   readtable[DV_RDF] = rb_deserialize;
   readtable[DV_RDF_ID] = rb_id_deserialize;
   readtable[DV_RDF_ID_8] = rb_id_deserialize;
@@ -748,6 +779,12 @@ macro_char_func *
 get_readtable (void)
 {
   return readtable;
+}
+
+macro_char_func *
+get_rpcreadtable (void)
+{
+  return rpcreadtable;
 }
 
 
@@ -787,6 +824,8 @@ scan_session (dk_session_t * session)
 /*
  *  Like scan_session, but allocates a box if needed
  */
+extern box_destr_f box_destr[256];
+
 void *
 scan_session_boxing (dk_session_t * session)
 {
@@ -815,6 +854,8 @@ scan_session_boxing (dk_session_t * session)
       return (box_t) box;
     }
 
+  if (session->dks_is_server && rpcreadtable[next_char] == box_read_error)
+    return box_read_error (session, next_char);
   result = (*readtable[next_char]) (session, next_char);
 
   if (next_char == DV_LONG_INT || next_char == DV_SHORT_INT)

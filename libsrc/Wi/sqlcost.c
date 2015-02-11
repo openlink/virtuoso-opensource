@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -100,6 +100,8 @@ void dfe_list_cost (df_elt_t * dfe, float * unit_ret, float * arity_ret, float *
 #define ABS(x) (x < 0 ? -(x) : x)
 #define IS_OV(f) (NAN == (f) || -NAN == (f) || INFINITY == (f) || -INFINITY == (f))
 
+int float_is_ov (float f);
+
 
 int
 key_n_partitions (dbe_key_t * key)
@@ -116,10 +118,28 @@ key_n_partitions (dbe_key_t * key)
     }
 }
 
+
+void
+tb_distinct_key_counts (dbe_table_t * tb)
+{
+  DO_SET (dbe_key_t *, key, &tb->tb_keys)
+    {
+      if (key->key_distinct)
+	key->key_count = key_count_estimate (key, tb->tb_primary_key->key_is_elastic ? 1 : 3, 1);
+    }
+  END_DO_SET();
+}
+
+
 int64
 dbe_key_count (dbe_key_t * key)
 {
   dbe_table_t * tb = key->key_table;
+  if (key->key_distinct)
+    {
+      dbe_key_count (key->key_table->tb_primary_key);
+      return key->key_count;
+    }
   if (key->key_table->tb_count != DBE_NO_STAT_DATA)
     return MAX (1, key->key_table->tb_count);
   else if (tb->tb_count_estimate == DBE_NO_STAT_DATA
@@ -129,6 +149,7 @@ dbe_key_count (dbe_key_t * key)
 	return 10000; /* if you know nothing, assume a remote table is 10K rows */
       tb->tb_count_estimate = key_count_estimate (tb->tb_primary_key, tb->tb_primary_key->key_is_elastic ? 1 : 3, 1);
       tb->tb_count_delta = 0;
+      tb_distinct_key_counts (tb);
       return MAX (1, tb->tb_count_estimate);
     }
   else
@@ -231,10 +252,11 @@ float
 dfe_scan_card (df_elt_t * dfe)
 {
   /* count  of rows in the index or if rdf quad with fixed p then the count of quads with the p. */
+  int found;
   dbe_table_t * tb = dfe->_.table.ot->ot_table;
   caddr_t p = NULL;
   float card = 0;
-  float * place;
+  float p_stat[4];
   dbe_key_t * key = dfe->_.table.key;
   if (!tb_is_rdf_quad (tb))
     return dbe_key_count (key);
@@ -247,14 +269,12 @@ dfe_scan_card (df_elt_t * dfe)
 	break;
     }
   END_DO_SET();
-  if (!p || !key->key_p_stat)
+  if (!p)
     return dbe_key_count (key);
-  mutex_enter (alt_ts_mtx);
-  place = (float*)id_hash_get (key->key_p_stat, (caddr_t)&((iri_id_t*)p)[0]);
-  if (place)
-    card = place[0];
-  mutex_leave (alt_ts_mtx);
-  if (!card)
+  found = ric_p_stat_from_cache (dfe_ric (dfe), key, unbox_iri_id (p), p_stat);
+  if (found)
+    card = p_stat[0];
+  if (!found)
     return dbe_key_count (key);
   return card;
 }
@@ -407,12 +427,13 @@ dfe_cl_colocated (df_elt_t * prev, df_elt_t * dfe)
 
 
 int 
-dfe_n_in_order (df_elt_t * dfe, df_elt_t * prev_tb, df_elt_t ** prev_ret, float * card_between, int * eq_on_ordering, int * cl_colocated)
+dfe_n_in_order (df_elt_t * dfe, df_elt_t * prev_tb, df_elt_t ** prev_ret, float *card_between, int *eq_on_ordering, int *cl_colocated)
 {
   int c1, c2, n1, n2, mx, nth;
   int n_col_eqs = 0;
   df_elt_t * col1, *col2, *lower1, *upper1;
-  if (HR_FILL != dfe->_.table.hash_role);
+  if (HR_FILL == dfe->_.table.hash_role)
+    return 0;
   if (!prev_tb)
     prev_tb = dfe_prev_tb (dfe, card_between, 0);
   *prev_ret = prev_tb;
@@ -715,6 +736,65 @@ dfe_try_ordered_key (df_elt_t * prev_tb, df_elt_t * dfe)
 }
 
 
+typedef struct fn_card_s
+{
+  char *	fnc_name;
+  float	fnc_card;
+  float	fnc_unit;
+  char	fnc_mode;
+} fn_card_t;
+
+/* fnc_mode */
+#define FN_RESTR_REL 0  /* the card of the containing is multiplied by the card of the func */
+#define FN_RESTR_ABS 1 /* if this, the card of the containing dfe cannot exceed the card given for the func */
+
+
+
+fn_card_t fn_cards[] =
+  {{"isiri_id", 1, 0.001},
+   {"rdf_is_sub", 0.8, 0.01, FN_RESTR_ABS},
+   {"__rgs_ack", 1, 0,1},
+   {"__rgs_ack_cbk", 1, 0,1},
+   {NULL, 0, 0}};
+
+
+int
+sqlo_fn_pred_unit (df_elt_t * pred, float * u1, float * a1, df_elt_t * in_tb)
+{
+  /* comparison of const and function call.  Some functions are specially known */
+  if (DFE_BOP_PRED == pred->dfe_type && pred->_.bin.left  && DFE_CONST == pred->_.bin.left->dfe_type 
+      && pred->_.bin.right && DFE_CALL == pred->_.bin.right->dfe_type)
+    {
+      int inx;
+      float card;
+      ST * call = pred->_.bin.right->dfe_tree;
+      caddr_t name = call ? call->_.call.name : NULL;
+      if (!SINV_DV_STRINGP (name))
+	return 0;
+      for (inx = 0; fn_cards[inx].fnc_name; inx++)
+	{
+	  if (!stricmp (name, fn_cards[inx].fnc_name))
+	    {
+	      *u1 = fn_cards[inx].fnc_unit;
+	      card = fn_cards[inx].fnc_card;
+	      if (FN_RESTR_ABS == fn_cards[inx].fnc_mode)
+		{
+		  /* means that the card of the in tb cannot exceed fnc_card but can be less */
+		  if (in_tb->dfe_arity < card)
+		    *a1 = card;
+		  else
+		    *a1 = card / in_tb->dfe_arity;
+		}
+	      else
+		*a1 = card;
+	      return 1;
+	    }
+	}
+    }
+  return 0;
+}
+
+
 caddr_t sqlo_iri_constant_name (ST* tree);
 
 float arity_scale (float ar);
@@ -911,12 +991,15 @@ sqlo_pred_unit_1 (df_elt_t * lower, df_elt_t * upper, df_elt_t * in_tb, float * 
     }
   if (!in_tb)
     *u1 = col_pred_cost * 2;
-  else if (in_tb->_.table.key->key_is_col)
+  else if (DFE_TABLE == in_tb->dfe_type && in_tb->_.table.key->key_is_col)
     *u1 = sqlo_cs_col_pred_cost;
   else
     *u1 = COL_PRED_COST;
   if (sqlo_in_list_unit (in_tb, lower, u1, a1))
     return;
+  if (sqlo_fn_pred_unit (lower, u1, a1, in_tb))
+    return;
+
   if (upper == lower)
     upper = NULL;
   if (BOP_EQ == lower->_.bin.op)
@@ -1193,7 +1276,7 @@ pst_pred_sort (pred_sort_stat_t * pst, pred_sort_t * pso, df_elt_t ** body, int 
 
 
 void
-dfe_pred_body_cost (df_elt_t **body, float * unit_ret, float * arity_ret, float * overhead_ret)
+dfe_pred_body_cost (df_elt_t **body, float * unit_ret, float * arity_ret, float * overhead_ret, df_elt_t * in_tb)
 {
   pred_sort_t pso_auto[PRED_SORT_MAX];
   int order_auto[PRED_SORT_MAX];
@@ -1213,14 +1296,14 @@ dfe_pred_body_cost (df_elt_t **body, float * unit_ret, float * arity_ret, float 
       switch (op)
 	{
 	  case BOP_NOT:
-	      dfe_pred_body_cost ((df_elt_t **) body[1], &u1, &a1, overhead_ret);
+	  dfe_pred_body_cost ((df_elt_t **) body[1], &u1, &a1, overhead_ret, in_tb);
 	      *unit_ret = u1;
 	      *arity_ret = 1 - a1;
 	      break;
 	  case BOP_OR:
 	      for (inx = 1; inx < n_terms; inx++)
 		{
-		  dfe_pred_body_cost ((df_elt_t **) body[inx], &u1, &a1, overhead_ret);
+	      dfe_pred_body_cost ((df_elt_t **) body[inx], &u1, &a1, overhead_ret, in_tb);
 	      if (inx < PRED_SORT_MAX + 1)
 		{
 		  pso[inx - 1].pso_cost = u1;
@@ -1239,7 +1322,7 @@ dfe_pred_body_cost (df_elt_t **body, float * unit_ret, float * arity_ret, float 
 	  case BOP_AND:
 	  for (inx = 1; inx < n_terms; inx++)
 	    {
-	      dfe_pred_body_cost ((df_elt_t **) body[inx], &u1, &a1, overhead_ret);
+	      dfe_pred_body_cost ((df_elt_t **) body[inx], &u1, &a1, overhead_ret, in_tb);
 	      if (inx < PRED_SORT_MAX + 1)
 		{
 		  pso[inx - 1].pso_cost = u1;
@@ -1258,7 +1341,7 @@ dfe_pred_body_cost (df_elt_t **body, float * unit_ret, float * arity_ret, float 
 	  case DFE_PRED_BODY:
 	      for (inx = 1; inx < n_terms; inx++)
 		{
-		  dfe_pred_body_cost ((df_elt_t **) body[inx], &u1, &a1, overhead_ret);
+	      dfe_pred_body_cost ((df_elt_t **) body[inx], &u1, &a1, overhead_ret, in_tb);
 		  cum += arity * u1;
 		  arity *= a1;
 		}
@@ -1274,24 +1357,59 @@ dfe_pred_body_cost (df_elt_t **body, float * unit_ret, float * arity_ret, float 
     {
       df_elt_t *pred = (df_elt_t *) body;
       if (pred->dfe_type == DFE_BOP_PRED || (pred->dfe_type == DFE_BOP && pred->_.bin.op >= BOP_EQ && pred->_.bin.op <= BOP_GTE))
-	sqlo_pred_unit (pred, NULL, NULL, unit_ret, arity_ret);
+	sqlo_pred_unit (pred, NULL, in_tb, unit_ret, arity_ret);
       else
 	dfe_unit_cost ((df_elt_t *) body, 1, unit_ret, arity_ret, overhead_ret);
     }
 }
 
 
-void
-key_set_p_stat (dbe_key_t * key, caddr_t p, float * p_stat)
+rdf_inf_ctx_t *
+dfe_ric (df_elt_t * dfe)
 {
-  if (!key->key_p_stat)
+  rdf_inf_ctx_t * ric;
+  if (DFE_TABLE != dfe->dfe_type)
+    return  empty_ric;
+  ric = rdf_name_to_ctx (sqlo_opt_value (dfe->_.table.ot->ot_opts, OPT_RDF_INFERENCE));
+  return ric ? ric : empty_ric;
+}
+
+
+void
+ric_set_p_stat (rdf_inf_ctx_t * ric, dbe_key_t * key, caddr_t p, float * p_stat)
+{
+  id_hash_t * p_hash;
+  mutex_enter (ric->ric_mtx);
+  p_hash = (id_hash_t*)gethash ((void*)(ptrlong)key->key_id, ric->ric_p_stat);
+  if (!p_hash)
     {
-      key->key_p_stat = id_hash_allocate (201, sizeof (iri_id_t), 4 * sizeof (float), boxint_hash, boxint_hashcmp);
-      id_hash_set_rehash_pct (key->key_p_stat, 200);
+      p_hash = id_hash_allocate (201, sizeof (iri_id_t), 4 * sizeof (float), boxint_hash, boxint_hashcmp);
+      sethash ((void*)(ptrlong)key->key_id, ric->ric_p_stat, (void*)p_hash);
+      id_hash_set_rehash_pct (p_hash, 200);
     }
-  mutex_enter (alt_ts_mtx);
-  id_hash_set (key->key_p_stat, (caddr_t)&((iri_id_t*)p)[0], (caddr_t)p_stat);
-  mutex_leave (alt_ts_mtx);
+  id_hash_set (p_hash, (caddr_t)&((iri_id_t*)p)[0], (caddr_t)p_stat);
+  mutex_leave (ric->ric_mtx);
+}
+
+
+int
+ric_p_stat_from_cache (rdf_inf_ctx_t * ric, dbe_key_t * key, iri_id_t id, float * p_stat)
+{
+  id_hash_t * p_hash;
+  int found = 0;
+  mutex_enter (ric->ric_mtx);
+  p_hash = (id_hash_t*)gethash ((void*)(ptrlong)key->key_id, ric->ric_p_stat);
+  if (p_hash)
+    {
+      float * place = (float*)id_hash_get (p_hash, (caddr_t)&id);
+      if (place)
+	{
+	  found = 1;
+	  memcpy_16 (p_stat, place, 4 * sizeof (float));
+	}
+    }
+  mutex_leave (ric->ric_mtx);
+  return found;
 }
 
 
@@ -1361,14 +1479,14 @@ sqlo_p_stat_query (dbe_table_t * tb, caddr_t p)
   p_stat[1] = s_cnt;
   p_stat[2] = o_cnt;
   p_stat[3] = 1;
-  key_set_p_stat (key, p, p_stat);
+  ric_set_p_stat (empty_ric, key, p, p_stat);
   col = tb_name_to_column (tb, "O");
   key = tb_px_key (tb, col);
   p_stat[0] = cnt;
   p_stat[1] = o_cnt;
   p_stat[2] = s_cnt;
   p_stat[3] = 1;
-  key_set_p_stat (key, p, p_stat);
+  ric_set_p_stat (empty_ric, key, p, p_stat);
   return cnt;
 }
 
@@ -1596,10 +1714,14 @@ sqlo_eval_text_count (dbe_table_t * tb, caddr_t str, caddr_t ext_fti)
     }
   return ct;
  err:
+  if (lc)
+    lc_free (lc);
   cli->cli_user = usr;
   cli->cli_anytime_started = at_start;
   cli->cli_rpc_timeout = rpc_timeout;
   log_error ("compiler text card estimate got error %s %s, assuming unknown count", !err ? "" : ERR_STATE (err), !err ? "no message:" : ERR_MESSAGE (err));
+  if (err)
+    dk_free_tree (err);
   if (entered)
     {
       IN_TXN;
@@ -1633,10 +1755,10 @@ sqlo_text_count (dbe_table_t * tb, caddr_t str, caddr_t ext_fti)
     {
       int is_sem = sqlc_inside_sem;
       if (is_sem)
-	mutex_leave (parse_mtx);
+	parse_leave ();
       ct = sqlo_eval_text_count (tb, str, ext_fti);
       if (is_sem)
-	mutex_enter (parse_mtx);
+	parse_enter ();
     }
   END_WITHOUT_TMP_POOL;
 
@@ -1668,7 +1790,7 @@ sqlo_text_estimate (df_elt_t * tb_dfe, df_elt_t ** text_pred, float * text_sel_r
 	  if (dfe->_.text.geo)
 	    {
 	      *text_pred = dfe;
-	      *text_sel_ret = dfe->dfe_arity ? dfe->dfe_arity : sqlo_geo_count (tb_dfe, dfe);
+	      *text_sel_ret = dfe->_.text.n_hits ? dfe->_.text.n_hits : sqlo_geo_count (tb_dfe, dfe);
 	      return 1;
 	    }
 	  if ('c' == dfe->_.text.type && DV_STRINGP ((str = (caddr_t)dfe->_.text.args[1])))
@@ -1809,6 +1931,8 @@ dfe_text_cost (df_elt_t * dfe, float *u1, float * a1, int text_order_anyway)
       else
 	text_selectivity = 0.001;
       n_text_hits = ot_tbl_size * text_selectivity;
+      text_pred->dfe_arity = n_text_hits;
+      text_pred->_.text.n_hits = n_text_hits;
       if (text_pred->_.text.geo)
 	text_key_cost = dbe_key_unit_cost (text_key->key_geo_table->tb_primary_key);
       else
@@ -1816,7 +1940,8 @@ dfe_text_cost (df_elt_t * dfe, float *u1, float * a1, int text_order_anyway)
       if (!text_order_anyway && sqlo_is_text_after_test (dfe, text_pred))
 	{
 	  /* the id is given, text match is an after test */
-	  total_cost += 1.5 * text_key_cost * total_card;
+	  total_cost += 2.5 * text_key_cost * total_card;
+	  text_pred->dfe_arity = text_selectivity;
 	  total_card *= text_selectivity;
 	}
       else
@@ -2265,7 +2390,6 @@ typedef struct sample_opt_s
   char			sop_use_sc_cache;
 } sample_opt_t;
 
-extern rdf_inf_ctx_t * empty_ric;
 
 #define SMPL_QUEUE 1
 #define SMPL_RESULT 2
@@ -2349,6 +2473,7 @@ sqlo_inx_sample_1 (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_el
       DO_SET (df_elt_t *, cp, &tb_dfe->_.table.col_preds)
 	{
 	  if (cp->dfe_type != DFE_TEXT_PRED && !sqlo_in_list (cp, NULL, NULL) &&
+	      DFE_COLUMN == cp->_.bin.left->dfe_type &&
 	      dk_set_member (key->key_parts, (void *) cp->_.bin.left->_.col.col) &&
 	      !dk_set_member (added_cols, (void *) cp->_.bin.left->_.col.col))
 	    {
@@ -2467,7 +2592,7 @@ ric_set_sample (rdf_inf_ctx_t * ctx, caddr_t sc_key, int64 est, float inx_card)
   smp.smp_inx_card = inx_card;
   smp.smp_time = approx_msec_real_time ();
   mutex_enter (ctx->ric_mtx);
-  if (ctx->ric_samples->ht_count > ric_samples_sz)
+  while (ctx->ric_samples->ht_count > ric_samples_sz)
     {
       caddr_t key = NULL;
       tb_sample_t old_smp;
@@ -2554,6 +2679,7 @@ ri_iterator_t * rit = ri_iterator (sub, ic->ic_inf_type, 1);
 	dk_free_tree (sc_key);
       sub->rs_n_subs = n_subs;
     }
+  super_sop->sop_n_sample_rows =sop.sop_n_sample_rows;
   dk_free_box ((caddr_t)rit);
   *variable = org_o;
   ic->ic_n_lookups = sub->rs_n_subs;
@@ -2568,19 +2694,18 @@ int enable_p_stat = 2;
 
 
 int
-sqlo_is_rdf_p (dbe_key_t * key, caddr_t p_const, float * prev_est)
+sqlo_is_rdf_p (df_elt_t * dfe, dbe_key_t * key, caddr_t p_const, float * prev_est)
 {
   iri_id_t p;
   if (enable_p_stat)
     {
-      float * place;
-      if (!key->key_p_stat)
-	return RDF_P_STAT_NEW;
+      float place[4];
+      int found;
       if (DV_IRI_ID != DV_TYPE_OF (p_const))
 	return RDF_NO_P_STAT;
       p = unbox_iri_id (p_const);
-      place = (float*)id_hash_get (key->key_p_stat, (caddr_t)&p);
-      if (!place)
+      found = ric_p_stat_from_cache (dfe_ric (dfe), key, p, place);
+      if (!found)
 	return RDF_P_STAT_NEW;
       *prev_est = place[0];
       return RDF_P_STAT_EXISTS;
@@ -2614,12 +2739,6 @@ sqlo_record_rdf_p (sample_opt_t * sop, dbe_key_t * key, caddr_t p_const, int64 e
     est = 1;
   if (0 == sop->sop_n_sample_rows)
     sop->sop_n_sample_rows = 1;
-  mutex_enter (alt_ts_mtx); /*any mtx that is never enterd, not worth one of its own */
-  if (!key->key_p_stat)
-    {
-      key->key_p_stat = id_hash_allocate (201, sizeof (iri_id_t), 4 * sizeof (float), boxint_hash, boxint_hashcmp);
-      id_hash_set_rehash_pct (key->key_p_stat, 200);
-    }
   distincts[0] = est;
   DO_SET (dbe_column_t *, col, &key->key_parts->next)
     {
@@ -2650,8 +2769,7 @@ sqlo_record_rdf_p (sample_opt_t * sop, dbe_key_t * key, caddr_t p_const, int64 e
   hash_table_free (sop->sop_cols);
   sop->sop_cols = NULL;
   if (completed)
-    id_hash_set (key->key_p_stat, (caddr_t)&p, (caddr_t)&distincts);
-  mutex_leave (alt_ts_mtx);
+    ric_set_p_stat (empty_ric, key, p_const, distincts);
   return 0;
 }
 
@@ -2762,6 +2880,8 @@ sqlo_non_leading_const_inf_cost (df_elt_t * tb_dfe, df_elt_t ** lowers, df_elt_t
   return;
 }
 
+int enable_inf_filter = 1;
+
 void
 sqlo_try_inf_filter (df_elt_t * tb_dfe, index_choice_t * ic)
 {
@@ -2773,8 +2893,9 @@ sqlo_try_inf_filter (df_elt_t * tb_dfe, index_choice_t * ic)
   dk_set_t old_cp = tb_dfe->_.table.col_preds;
   sqlo_t * so = tb_dfe->dfe_sqlo;
   index_choice_t filter_ic;
-  if (IC_AS_IS == ic->ic_op || ic->ic_n_lookups < 2)
+  if (!enable_inf_filter || IC_AS_IS == ic->ic_op || ic->ic_n_lookups < 2)
     return;
+  ic->ic_unit *= ic->ic_n_lookups;
   DO_SET (df_elt_t *, cp, &tb_dfe->_.table.col_preds)
     {
       if (DFE_BOP_PRED == cp->dfe_type && ic->ic_inf_dfe == cp->_.bin.right)
@@ -2788,13 +2909,15 @@ sqlo_try_inf_filter (df_elt_t * tb_dfe, index_choice_t * ic)
 	t_set_push (&no_inf_cp, (void*)cp);
     }
   END_DO_SET();
+  if (dk_set_length (no_inf_cp ) < 2)
+    return; /* if only one indexable cond is left after putting inferred as after test, it is not worthwhile */
   memset (&filter_ic, 0, sizeof (filter_ic));
   filter_ic.ic_op = IC_AS_IS;
   tb_dfe->_.table.col_preds = no_inf_cp;
   tb_dfe->dfe_unit = tb_dfe->dfe_arity = 0;
   dfe_table_cost_ic_1 (tb_dfe, &filter_ic, 0);
   tb_dfe->_.table.col_preds = old_cp;
-  if (filter_ic.ic_unit < ic->ic_unit * ic->ic_n_lookups)
+  if (filter_ic.ic_unit < ic->ic_unit)
     {
       ic->ic_n_lookups = 1;
       ic->ic_unit = filter_ic.ic_unit;
@@ -2838,6 +2961,7 @@ sqlo_inx_sample (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_
 	  sample_opt_t sop;
       int64 c;
 	  memset (&sop, 0, sizeof (sop));
+      sop.sop_ric = ic->ic_ric;
       for (inx = 0; inx < n_parts; inx++)
 	{
 	  dbe_column_t * left_col = cp_left_col (lowers[inx]);
@@ -2849,7 +2973,7 @@ sqlo_inx_sample (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_
 	}
       p_const = dfe_iri_const (p_dfe);
       if (is_p)
-	is_p = sqlo_is_rdf_p (key, p_const, &prev_est);
+	is_p = sqlo_is_rdf_p (tb_dfe, key, p_const, &prev_est);
 
     redo:
       if (RDF_P_STAT_NEW == is_p && !sop.sop_cols)
@@ -2890,7 +3014,7 @@ sqlo_inx_sample (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_
 	  else
 	    {
 	      ic->ic_n_lookups = 1;
-	      c = sqlo_inx_sample_1 (tb_dfe, key, lowers, uppers, n_parts, NULL, ic);
+	      c = sqlo_inx_sample_1 (tb_dfe, key, lowers, uppers, n_parts, &sop, ic);
 	    }
 	}
       dk_free_box (o_const);
@@ -2981,11 +3105,11 @@ sqlo_const_iri (sqlo_t * so, df_elt_t * dfe)
 void
 sqlo_rdf_col_card (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * dfe)
 {
-  int nth;
+  int nth, found;
   caddr_t p = NULL;
   dbe_key_t * key = tb_dfe->_.table.key;
-  float * place;
-  if (!key || !key->key_p_stat)
+  float place[4];
+  if (!key)
     return;
   DO_SET (df_elt_t *, pred, &tb_dfe->_.table.col_preds)
     {
@@ -2999,12 +3123,10 @@ sqlo_rdf_col_card (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * dfe)
   END_DO_SET();
   if (!p || DV_IRI_ID != DV_TYPE_OF (p))
     return;
-  mutex_enter (alt_ts_mtx);
-  place = (float*)id_hash_get (key->key_p_stat, (caddr_t)&((iri_id_t*)p)[0]);
+  found = ric_p_stat_from_cache (dfe_ric (dfe), key, unbox_iri_id (p), place);
   dk_free_box (p);
-  if (!place)
+  if (!found)
     {
-      mutex_leave (alt_ts_mtx);
       return;
     }
   nth = 1;
@@ -3018,7 +3140,6 @@ sqlo_rdf_col_card (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * dfe)
       nth++;
     }
   END_DO_SET();
-  mutex_leave (alt_ts_mtx);
 }
 
 
@@ -3134,7 +3255,7 @@ rq_cols_init (df_elt_t * dfe, rq_cols_t * rq)
 	}
       rqp->rqp_lower = sqlo_key_part_best (col, dfe->_.table.col_preds, 0);
       rqp->rqp_upper = sqlo_key_part_best (col, dfe->_.table.col_preds, 1);
-      if (rqp->rqp_lower && PRED_IS_EQ (rqp->rqp_lower))
+      if (rqp->rqp_lower && PRED_IS_EQ_OR_IN (rqp->rqp_lower))
 	rqp->rqp_op = pred_const_rhs  (rqp->rqp_lower) ? RQ_CONST_EQ : RQ_BOUND_EQ;
       else if (rqp->rqp_lower || rqp->rqp_upper)
 	{
@@ -3212,11 +3333,12 @@ rq_best_key (df_elt_t * dfe, rq_cols_t * rq)
 float
 rq_sample (df_elt_t * dfe, rq_cols_t * rq, index_choice_t * ic)
 {
+  df_elt_t * non_index_in = NULL;
   df_elt_t * lower[4];
   df_elt_t * upper[4];
   dbe_key_t * save_key = dfe->_.table.key;
   dbe_key_t * best_key;
-  int fill = 0;
+  int fill = 0, n_in_items = -2;
   int64 res;
   if (ic->ic_set_sample_key)
     best_key = ic->ic_key;
@@ -3229,6 +3351,10 @@ rq_sample (df_elt_t * dfe, rq_cols_t * rq, index_choice_t * ic)
 	{
 	  lower[fill] = rqp->rqp_lower;
 	  upper[fill] = rqp->rqp_upper;
+	  if (-2 == n_in_items)
+	    n_in_items = THR_ATTR (THREAD_CURRENT_THREAD, TA_N_IN_ITEMS);
+	  if (-1 == n_in_items && 1 == rqp->rqp_lower->_.bin.is_in_list && !non_index_in)
+	    non_index_in = rqp->rqp_lower;
 	  fill++;
 	}
       else
@@ -3237,7 +3363,21 @@ rq_sample (df_elt_t * dfe, rq_cols_t * rq, index_choice_t * ic)
   END_DO_SET();
   dfe->_.table.key = best_key;
   ic->ic_no_dep_sample = 1;
-  res = sqlo_inx_sample (dfe, best_key, lower, upper, fill, ic);
+  if (non_index_in)
+    {
+      du_thread_t * thr = THREAD_CURRENT_THREAD;
+      df_elt_t ** in_list = sqlo_in_list (non_index_in, NULL, NULL);
+      int ctr, nth_save = (ptrlong) THR_ATTR (thr, TA_NTH_IN_ITEM);
+      res = 0;
+      for (ctr = 1; ctr < BOX_ELEMENTS (in_list); ctr++)
+	{
+	  SET_THR_ATTR (thr, TA_NTH_IN_ITEM, (caddr_t)(ptrlong) ctr - 1);
+	  res += sqlo_inx_sample (dfe, best_key, lower, upper, fill, ic);
+	}
+      SET_THR_ATTR (thr, TA_NTH_IN_ITEM, (caddr_t)(ptrlong) nth_save);
+    }
+  else
+    res = sqlo_inx_sample (dfe, best_key, lower, upper, fill, ic);
   ic->ic_no_dep_sample = 0;
   dfe->_.table.key = save_key;
   return MAX (0.3, res);
@@ -3269,9 +3409,73 @@ tb_px_key (dbe_table_t * tb, dbe_column_t * col)
 #define SO_S 1
 #define SO_O 2
 
+
+int64
+rq_sample_subp (df_elt_t * dfe, rq_cols_t * rq, index_choice_t * ic)
+{
+  int64 sum = 0;
+  caddr_t * variable;
+  float p_stat[4];
+  float p_sum[4];
+  index_choice_t ic2 = *ic;
+  rdf_inf_ctx_t * ric = dfe_ric (dfe);
+  caddr_t * save_opts = dfe->_.table.ot->ot_opts;
+  caddr_t save;
+  rdf_sub_t * sub;
+  ri_iterator_t * rit;
+  int found;
+  rdf_sub_t * sub_iri;
+  variable = &rq->rq_p.rqp_lower->_.bin.right->dfe_tree;
+  save = *variable;
+  sub = ric_iri_to_sub (ric, save, RI_SUBPROPERTY, 0);
+  if (!sub || (!sub->rs_sub && !sub->rs_equiv))
+    {
+      found = ric_p_stat_from_cache (empty_ric, dfe->_.table.key, unbox_iri_id (*variable), p_stat);
+      if (!found)
+	{
+	  rq_sample (dfe, rq, ic);
+	  found = ric_p_stat_from_cache (empty_ric, dfe->_.table.key, unbox_iri_id (*variable), p_stat);
+	}
+      if (found)
+	{
+	  ric_set_p_stat (ric, dfe->_.table.key, *variable, p_stat);
+	  return p_stat[0];
+	}
+      return 0;
+    }
+  rit = ri_iterator (sub, RI_SUBPROPERTY, 1);
+  memzero (p_sum, sizeof (p_sum));
+  dfe->_.table.ot->ot_opts = NULL;
+  ic2.ic_ric = empty_ric;
+  while ((sub_iri = rit_next (rit)))
+    {
+      *variable = sub_iri->rs_iri;
+      found = ric_p_stat_from_cache (empty_ric, dfe->_.table.key, unbox_iri_id (*variable), p_stat);
+      if (!found)
+	{
+	  rq_sample (dfe, rq, &ic2);
+	  found = ric_p_stat_from_cache (empty_ric, dfe->_.table.key, unbox_iri_id (*variable), p_stat);
+	}
+      if (found)
+	{
+	  int inx;
+	  for (inx = 0; inx < 4; inx++)
+	    p_sum[inx] += p_stat[inx];
+	}
+    }
+  *variable = save;
+  dk_free_box ((caddr_t)rit);
+  ric_set_p_stat (ric, dfe->_.table.key, save, p_sum);
+  dfe->_.table.ot->ot_opts = save_opts;
+  return p_sum[0];
+}
+
+
 int64 
 dfe_p_card (df_elt_t * dfe, rq_cols_t * rq, float * p_stat, index_choice_t * ic, int so_ord)
 {
+  rdf_inf_ctx_t * ric = dfe_ric (dfe);
+  int found;
   dbe_key_t * save_key;
   caddr_t p;
   int64 sample;
@@ -3290,18 +3494,9 @@ dfe_p_card (df_elt_t * dfe, rq_cols_t * rq, float * p_stat, index_choice_t * ic,
   p = dfe_iri_const (rq->rq_p.rqp_lower->_.bin.right);
   if (!p)
     return -1;
-  mutex_enter (alt_ts_mtx);
-  if (!key->key_p_stat)
-    {
-      key->key_p_stat = id_hash_allocate (201, sizeof (iri_id_t), 4 * sizeof (float), boxint_hash, boxint_hashcmp);
-      id_hash_set_rehash_pct (key->key_p_stat, 200);
-    }
-  place = (float*)id_hash_get (key->key_p_stat, (caddr_t)&((iri_id_t*)p)[0]);
-  if (place)
-    memcpy_16 (p_stat, place, 4 * sizeof (float));
-  mutex_leave (alt_ts_mtx);
+  found = ric_p_stat_from_cache (ric, key, unbox_iri_id (p), p_stat);
   dk_free_box (p);
-  if (!place)
+  if (!found)
     {
       rq_cols_t rq2 = *rq;
       rq2.rq_s.rqp_op = RQ_UNBOUND;
@@ -3309,7 +3504,7 @@ dfe_p_card (df_elt_t * dfe, rq_cols_t * rq, float * p_stat, index_choice_t * ic,
       rq2.rq_g.rqp_op = RQ_UNBOUND;
       save_key = dfe->_.table.key;
       dfe->_.table.key = key;
-      sample = rq_sample (dfe, &rq2, ic);
+      sample = rq_sample_subp (dfe, &rq2, ic);
       dfe->_.table.key = save_key;
       if (sample <= 0)
 	return -1;
@@ -3323,6 +3518,7 @@ dfe_p_card (df_elt_t * dfe, rq_cols_t * rq, float * p_stat, index_choice_t * ic,
     }
   return p_stat[0];
 }
+
 
 
 int
@@ -3360,6 +3556,20 @@ sqlo_pg_sample (rq_cols_t * rq)
 }
 #endif
 
+
+float
+sqlo_p_stat_default (float c, float * p_stat)
+{
+  int inx;
+  for (inx = 0; inx < 4; inx++)
+    {
+      if (p_stat[inx] < 1)
+	p_stat[inx] = 1;
+    }
+  return p_stat[0];
+}
+
+
 int
 sqlo_use_p_stat_2 (df_elt_t * dfe, float *inx_card, float * col_card, index_choice_t * ic, int64 * sample_ret)
 {
@@ -3370,17 +3580,22 @@ sqlo_use_p_stat_2 (df_elt_t * dfe, float *inx_card, float * col_card, index_choi
   dbe_key_t * key = dfe->_.table.key;
   rq_cols_t rq;
   float p_stat[4];
-  if (!key->key_p_stat  || ic->ic_ric)
-    return 0;
   memzero (&rq, sizeof (rq));
   rq_cols_init (dfe, &rq);
+  if (key->key_distinct)
+    return 0;
   if (RQ_CONST_EQ != rq.rq_p.rqp_op)
+    return 0;
+  if ((dbe_column_t*)key->key_parts->data != rq.rq_p_col)
+    return 0;
+  if ((dbe_column_t*)key->key_parts->next->data == rq.rq_g_col)
     return 0;
   p_stat[0] = p_stat[1] = p_stat[2] = p_stat[3] = 10;
   p_card = dfe_p_card (dfe, &rq, p_stat, ic, SO_CURRENT);
   *sample_ret = p_card;
   if (-1 == p_card)
-    p_card = 10; /* suppose 10 if no estimate */
+    return 0;
+  p_card = sqlo_p_stat_default (p_card, p_stat);
   if (RQ_CONST_EQ == rq.rq_g.rqp_op && RQ_UNBOUND == rq.rq_s.rqp_op && RQ_UNBOUND == rq.rq_o.rqp_op)
     {
       /* there is only p and g, no s or o */
@@ -3508,16 +3723,17 @@ int32 enable_pg_card = 1;
 int
 sqlo_use_p_stat (df_elt_t * dfe, df_elt_t ** lowers, int inx_const_fill, int64 est, float *inx_arity, float *col_arity)
 {
-  /* if there is a sample with leading constant p and the rest variable, consult the key_p_stat for the p in question */
+  /* if there is a sample with leading constant p and the rest variable, consult the p stat for the p in question */
   caddr_t p;
-  float * place;
+  float place[4];
   dbe_key_t * key = dfe->_.table.key;
   df_elt_t * so_dfe, * g_dfe;
   df_elt_t * lower3 = NULL, * upper3 = NULL;
   dbe_column_t * col2, * col3 = NULL;
+  int found;
   if (!enable_p_stat || !inx_const_fill)
     return 0;
-  if (!key->key_p_stat || 0 != strcmp (((dbe_column_t*)key->key_parts->data)->col_name, "P")
+  if (0 != strcmp (((dbe_column_t*)key->key_parts->data)->col_name, "P")
       || !strstr (key->key_table->tb_name, "RDF_QUAD"))
     return 0;
   col2 = (dbe_column_t*)key->key_parts->next->data;
@@ -3555,14 +3771,11 @@ sqlo_use_p_stat (df_elt_t * dfe, df_elt_t ** lowers, int inx_const_fill, int64 e
   p = dfe_iri_const (lowers[0]->_.bin.right);
   if (!p)
     return 0;
-  mutex_enter (alt_ts_mtx);
-  place = (float*)id_hash_get (key->key_p_stat, (caddr_t)&((iri_id_t*)p)[0]);
-  dk_free_box (p);
-  if (!place)
-    {
-      mutex_leave (alt_ts_mtx);
-      return 0;
-    }
+  dfe_init_p_stat (dfe, lowers[0]);
+  found = ric_p_stat_from_cache (dfe_ric (dfe), key, unbox_iri_id (p), place);
+  dk_free_box  (p);
+  if (!found)
+    return 0;
   *inx_arity = est / place[1];
   mutex_leave (alt_ts_mtx);
   if (lower3 || upper3)
@@ -3691,7 +3904,7 @@ dfe_hash_fill_cost (df_elt_t * dfe, float * unit, float * card, float * overhead
 void
 dfe_table_ip_cost (df_elt_t * tb_dfe, index_choice_t * ic)
 {
-  sqlo_index_path_cost (tb_dfe->_.table.index_path, &ic->ic_unit, &ic->ic_arity, &ic->ic_leading_constants);
+  sqlo_index_path_cost (tb_dfe->_.table.index_path, &ic->ic_unit, &ic->ic_arity, &ic->ic_leading_constants, tb_dfe);
 }
 
 
@@ -3856,7 +4069,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
 	}
       if (dfe->_.table.join_test)
 	{
-	  dfe_pred_body_cost (dfe->_.table.join_test, &p_cost, &p_arity, overhead_ret);
+	  dfe_pred_body_cost (dfe->_.table.join_test, &p_cost, &p_arity, overhead_ret, dfe);
 	}
       return;
     }
@@ -3866,7 +4079,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
   DO_SET (dbe_column_t *, part, &dfe->_.table.key->key_parts)
     {
       int col_already_eq;
-      df_elt_t * lower = NULL;
+      df_elt_t * lower = NULL;
       df_elt_t * upper = NULL;
       lower = sqlo_key_part_best (part, dfe->_.table.col_preds, 0);
       upper = sqlo_key_part_best (part, dfe->_.table.col_preds, 1);
@@ -3975,10 +4188,10 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
       dfe_table_unq_card (dfe, ic, tb_count, &inx_arity, eq_preds, eq_fill, &col_arity);
     }
   else if (LOC_LOCAL == dfe->dfe_locus && (inx_const_fill || dfe_sample_dep_only (dfe, col_arity))
-	   && !(dfe->dfe_sqlo->so_sc->sc_is_update && 0 == strcmp (dfe->_.table.ot->ot_new_prefix, "t1")))
+	   /* && !(dfe->dfe_sqlo->so_sc->sc_is_update && 0 == strcmp (dfe->_.table.ot->ot_new_prefix, "t1")) */)
     {
       inx_sample = sqlo_inx_sample (dfe, key, inx_lowers, inx_uppers, inx_const_fill, ic);
-      if (inx_sample > 1 && sqlo_sample_dep_cols)
+      if (inx_sample >= 1 && sqlo_sample_dep_cols)
 	{
 	  col_arity /= ic->ic_col_card_corr;
 	  inx_sample = ic->ic_inx_card;
@@ -4068,7 +4281,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
     }
   if (dfe->_.table.join_test)
     {
-      dfe_pred_body_cost (dfe->_.table.join_test, &p_cost, &p_arity, overhead_ret);
+      dfe_pred_body_cost (dfe->_.table.join_test, &p_cost, &p_arity, overhead_ret, dfe);
       p_arity = arity_scale (p_arity);
     }
   else
@@ -4113,8 +4326,8 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
   /* the right of left outer has never cardinality < 1.  But the join tests etc are costed at cardinality that can be < 1. So adjust this as last.*/
   dfe->dfe_arity = *a1 = total_arity;
   dfe->dfe_unit = *u1 = total_cost;
-  if (IS_OV (dfe->dfe_unit) || IS_OV (dfe->dfe_unit)) bing ();
-  if (IC_AS_IS != ic->ic_op && ic->ic_ric)
+  if (IS_OV (dfe->dfe_unit) || IS_OV (dfe->dfe_arity)) bing ();
+  if (IC_AS_IS != ic->ic_op && ic->ic_ric && empty_ric != ic->ic_ric)
     sqlo_try_inf_filter (dfe, ic);
 }
 
@@ -4522,7 +4735,7 @@ dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float 
       sqlo_proc_cost (dfe, u1, a1);
       break;
     case DFE_FILTER:
-      dfe_pred_body_cost (dfe->_.filter.body,  u1, a1,  overhead_ret);
+      dfe_pred_body_cost (dfe->_.filter.body,  u1, a1,  overhead_ret, dfe);
 	break;
     default:
     deflt:

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -27,7 +27,7 @@
 */
 
 #include <pthread.h>
-#include "thread_int.h"
+#include "Dk.h"
 
 #if defined(linux) && defined(VIRT_GPROF)
 #define pthread_create gprof_pthread_create
@@ -252,6 +252,7 @@ thread_initial (unsigned long stack_size)
   stack_size = ((stack_size / 8192) + 1) * 8192;
 
   thr->thr_stack_size = stack_size;
+  thr->thr_stack_base = (void *) &stack_size;
   thr->thr_status = RUNNING;
   thr->thr_cv = _alloc_cv ();
   thr->thr_sem = semaphore_allocate (0);

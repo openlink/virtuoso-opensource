@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -731,8 +731,11 @@ cha_fixed (chash_t * cha, data_col_t * dc, int set, int *is_null)
 }
 
 
+#define NULL_B_DEP \
+  *is_null = (dc->dc_any_null && dc->dc_nulls && BIT_IS_SET (dc->dc_nulls, set))
+
 int64
-setp_non_agg_dep (setp_node_t * setp, caddr_t * inst, int nth_col, int set)
+setp_non_agg_dep (setp_node_t * setp, caddr_t * inst, int nth_col, int set, char * is_null)
 {
   /* gb has after aggs non-agg non-key dependents.  Set when creating the group */
   state_slot_t *ssl = setp->setp_ha->ha_slots[nth_col];
@@ -746,13 +749,23 @@ setp_non_agg_dep (setp_node_t * setp, caddr_t * inst, int nth_col, int set)
     case DV_DOUBLE_FLOAT:
     case DV_IRI_ID:
     case DV_IRI_ID_8:
+      NULL_B_DEP;
       return (int64) ((db_buf_t *) dc->dc_values)[set];
     case DV_SINGLE_FLOAT:
+      NULL_B_DEP;
       return ((uint32 *) dc->dc_values)[set];
     case DV_DATETIME:
+      NULL_B_DEP;
       return (int64) & dc->dc_values[set * DT_LENGTH];
     default:
-      GPF_T1 ("unsupported dc dtp in non-agg dep of setp");
+      {
+	caddr_t box;
+	if (!(DCT_BOXES & dc->dc_type))
+          GPF_T1 ("unsupported dc dtp in non-agg dep of setp");
+	box = ((caddr_t*)dc->dc_values)[set];
+	*is_null = 2 | (DV_DB_NULL == DV_TYPE_OF (box));
+	return (int64)box;
+      }
     }
   return 0;
 }
@@ -799,13 +812,14 @@ cha_new_gb (setp_node_t * setp, caddr_t * inst, db_buf_t ** key_vecs, chash_t * 
     }
   DO_SET (gb_op_t *, go, &setp->setp_gb_ops)
   {
-    if (AMMSC_COUNTSUM == go->go_op)
+      if (AMMSC_COUNTSUM == go->go_op || AMMSC_COUNT == go->go_op)
       {
 	row[nth_col + 1] = 0;
 	GB_HAS_VALUE (ha, row, nth_col);
       }
-    if (AMMSC_MAX == go->go_op || AMMSC_MIN == go->go_op)
+      else if (AMMSC_MAX == go->go_op || AMMSC_MIN == go->go_op)
       {
+	  row[nth_col + 1] = 0; /* may involve boxes, so init */
 	GB_NO_VALUE (ha, row, nth_col);
       }
     else if (AMMSC_SUM == go->go_op && !cha->cha_sqt[nth_col].sqt_non_null && cha_is_null (setp, inst, nth_col, row_no + base))
@@ -824,19 +838,46 @@ cha_new_gb (setp_node_t * setp, caddr_t * inst, db_buf_t ** key_vecs, chash_t * 
   n_cols = ha->ha_n_keys + ha->ha_n_deps;
   for (nth_col = nth_col; nth_col < n_cols; nth_col++)
     {
-      int64 val = setp_non_agg_dep (setp, inst, nth_col, row_no + base);
+      char is_null = 0;
+      int64 val = setp_non_agg_dep (setp, inst, nth_col, row_no + base, &is_null);
+      if (2 & is_null)
+	{
+	  caddr_t err = NULL;
+	  if (!(is_null & 1))
+	    GB_HAS_VALUE (ha, row, nth_col);
       if (DV_ANY == cha->cha_sqt[nth_col].sqt_dtp)
+	{
+	      if (!cha->cha_is_parallel)
+		row[nth_col + 1] = (int64) mp_box_to_any_1 ((caddr_t) val, &err, cha->cha_pool, DKS_TO_DC);
+	      else
+		{
+		  caddr_t box = box_to_any_1 ((caddr_t) val, &err, NULL, DKS_TO_DC);
+		  row[nth_col + 1] = (int64) cha_any (cha, (db_buf_t) box);
+		  dk_free_box (box);
+		}
+	    }
+	  else if (DV_ARRAY_OF_POINTER == cha->cha_sqt[nth_col].sqt_dtp)
+	    {
+	      row[nth_col + 1] = (int64) box_copy_tree ((caddr_t) val);
+	    }
+	  else
+	    {
+	      row[nth_col + 1] = 0;
+	    }
+	}
+      else if (DV_ANY == cha->cha_sqt[nth_col].sqt_dtp)
 	{
 	  row[nth_col + 1] = (ptrlong) cha_any (cha, (db_buf_t) (ptrlong) val);
 	}
       else if (DV_DATETIME == cha->cha_sqt[nth_col].sqt_dtp)
 	{
-	  db_buf_t dt = &((db_buf_t *) key_vecs)[nth_col][row_no * DT_LENGTH];
+	  if (!is_null)
 	  GB_HAS_VALUE (ha, row, nth_col);
-	  row[nth_col + 1] = (ptrlong) cha_dt (cha, dt);
+	  row[nth_col + 1] = (ptrlong) cha_dt (cha, (db_buf_t) val);
 	}
       else
 	{
+	  if (!is_null)
 	  GB_HAS_VALUE (ha, row, nth_col);
 	  row[nth_col + 1] = val;
 	}
@@ -1545,7 +1586,7 @@ setp_chash_run (setp_node_t * setp, caddr_t * inst, index_tree_t * it)
   dtp_t temp_any[9 * CHASH_GB_MAX_KEYS * ARTM_VEC_LEN];
   dtp_t nulls[CHASH_GB_MAX_KEYS][ARTM_VEC_LEN];
   int first_set, set;
-  //dcckz (ha, inst, n_sets);
+  /*dcckz (ha, inst, n_sets); */
   for (first_set = 0; first_set < n_sets; first_set += ARTM_VEC_LEN)
     {
       int any_temp_fill = 0;
@@ -1788,6 +1829,23 @@ cha_dtp (dtp_t dtp, int is_key)
     }
 }
 
+dtp_t 
+cha_gb_dtp (dtp_t dtp, int is_key, gb_op_t * go)
+{
+  if (is_key)
+    return cha_dtp (dtp, is_key);
+  if (vec_box_dtps[dtp])
+    return go ? DV_ARRAY_OF_POINTER :  DV_ANY;
+  switch (dtp)
+    {
+    case DV_ANY:
+      return go ? DV_ARRAY_OF_POINTER : dtp;
+    case DV_LONG_INT:  case DV_IRI_ID: case DV_DOUBLE_FLOAT:
+    case DV_DATETIME: case DV_SINGLE_FLOAT:
+      return dtp;
+    default: return DV_ARRAY_OF_POINTER;
+    }
+}
 
 index_tree_t *
 cha_allocate (setp_node_t * setp, caddr_t * inst, int64 card)
@@ -1828,8 +1886,20 @@ cha_allocate (setp_node_t * setp, caddr_t * inst, int64 card)
 	if (HA_FILL == ha->ha_op)
 	  cha->cha_sqt[inx].sqt_dtp = cha_dtp (dtp_canonical[ha->ha_key_cols[inx].cl_sqt.sqt_dtp], inx < ha->ha_n_keys);
 	else
-	  cha->cha_sqt[inx].sqt_dtp = cha_dtp (dc->dc_dtp, inx < ha->ha_n_keys);
+	    {
+	      dtp_t dtp;
+	      gb_op_t * go = NULL;
+	      if (inx >= ha->ha_n_keys)
+		go = (gb_op_t*)dk_set_nth (setp->setp_gb_ops, inx - ha->ha_n_keys);
+	      if (go && go->go_ua_arglist)
+		dtp = DV_ARRAY_OF_POINTER;
+	      else
+		dtp = cha_gb_dtp (dc->dc_dtp, inx < ha->ha_n_keys, go);
+	      cha->cha_sqt[inx].sqt_dtp = dtp;
+	    }
 	cha->cha_sqt[inx].sqt_non_null = ssl->ssl_sqt.sqt_non_null;
+	  if (ha->ha_non_null)
+	    cha->cha_sqt[inx].sqt_non_null = ha->ha_non_null[inx];
       }
     memcpy (&(cha->cha_new_sqt[inx]), &(cha->cha_sqt[inx]), sizeof (sql_type_t));
   }
@@ -1975,7 +2045,7 @@ setp_chash_group (setp_node_t * setp, caddr_t * inst)
       if (ssl->ssl_type < SSL_VEC)
 	goto no;
       dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
-      if (inx >= ha->ha_n_keys && !(DCT_NUM_INLINE & dc->dc_type))
+      if (inx >= ha->ha_n_keys && !(DCT_NUM_INLINE & dc->dc_type) && dk_set_nth (setp->setp_gb_ops, inx - ha->ha_n_keys))
 	goto no;
       if (cha && dc->dc_dtp != cha->cha_sqt[inx].sqt_dtp && !((DCT_BOXES & dc->dc_type) && DV_ANY == cha->cha_sqt[inx].sqt_dtp))
 	goto no;
@@ -2232,6 +2302,8 @@ chash_to_memcache (caddr_t * inst, index_tree_t * tree, hash_area_t * ha)
     }
   if (!hi->hi_memcache_from_mp)
     GPF_T1 ("writing mp boxes in non-mp memcache");
+  QR_RESET_CTX
+  {
   for (part = 0; part < MAX (cha->cha_n_partitions, 1); part++)
     {
       chash_t *cha_p = CHA_PARTITION (cha, part);
@@ -2263,6 +2335,14 @@ chash_to_memcache (caddr_t * inst, index_tree_t * tree, hash_area_t * ha)
 	    }
 	}
     }
+  }
+  QR_RESET_CODE
+  {
+    POP_QR_RESET;
+    SET_THR_TMP_POOL (NULL);
+    longjmp_splice (THREAD_CURRENT_THREAD->thr_reset_ctx, reset_code);
+  }
+  END_QR_RESET;
   SET_THR_TMP_POOL (NULL);
   hi->hi_chash = NULL;
 }
@@ -2388,9 +2468,9 @@ chash_merge (setp_node_t * setp, chash_t * cha, chash_t * delta, int n_to_go)
 	      cha_p = CHA_PARTITION (cha, h);
 	      array = cha_p->cha_array;
 	      pos1_1 = CHA_POS_1 (cha_p, h);
-	      //pos2_1 = CHA_POS_2 (cha_p, h);
+	      /*pos2_1 = CHA_POS_2 (cha_p, h); */
 	      __builtin_prefetch (array[pos1_1]);
-	      //__builtin_prefetch ( array[pos2_1]);
+	     /*__builtin_prefetch ( array[pos2_1]);*/
 	    }
 #endif
 	  for (row = 0; row < chp->h.h.chp_fill; row += de_p->cha_first_len)
@@ -2464,10 +2544,16 @@ dc_append_cha (data_col_t * dc, hash_area_t * ha, chash_t * cha, int64 * row, in
 	case DV_ANY:
 	  ((caddr_t *) dc->dc_values)[dc->dc_n_values++] = box_deserialize_string (((caddr_t *) row)[col + 1], INT32_MAX, 0);
 	  return;
+	case DV_ARRAY_OF_POINTER:
+	  ((caddr_t *)dc->dc_values)[dc->dc_n_values++] =  (caddr_t)row[col + 1];
+	  row[col + 1] = 0;
+	  return;
 	case DV_LONG_INT:
 	  ((caddr_t *) dc->dc_values)[dc->dc_n_values++] = box_num (row[col + 1]);
+	  return;
 	case DV_DOUBLE_FLOAT:
 	  ((caddr_t *) dc->dc_values)[dc->dc_n_values++] = box_double (((double *) row)[col + 1]);
+	  return;
 	case DV_IRI_ID:
 	  ((caddr_t *) dc->dc_values)[dc->dc_n_values++] = box_iri_id (row[col + 1]);
 	  return;
@@ -2481,8 +2567,10 @@ dc_append_cha (data_col_t * dc, hash_area_t * ha, chash_t * cha, int64 * row, in
 	    ((caddr_t *) dc->dc_values)[dc->dc_n_values++] = dt;
 	    return;
 	  }
+	default:
+	  ((caddr_t *)dc->dc_values)[dc->dc_n_values++] = box_deserialize_string (((caddr_t*)row)[col + 1], INT32_MAX, 0);
+          return;
 	}
-      GPF_T1 ("dc_append_cha(): unsupported type, dc of boxes");
       return;
     }
   switch (cha->cha_sqt[col].sqt_dtp)
@@ -4489,7 +4577,7 @@ itc_hash_compare (it_cursor_t * itc, buffer_desc_t * buf, search_spec_t * sp)
     case DV_INT64:
     case DV_IRI_ID:
     case DV_IRI_ID_8:
-      //: case DV_DOUBLE_FLOAT:
+      /* case DV_DOUBLE_FLOAT: */
       k = IS_BOX_POINTER (box) ? *(int64 *) box : (int64) (ptrlong) box;
       MHASH_STEP (h, k);
       break;
@@ -4508,16 +4596,21 @@ itc_hash_compare (it_cursor_t * itc, buffer_desc_t * buf, search_spec_t * sp)
       MHASH_VAR (h, box2, l);
       break;
     }
-  min = QST_INT (inst, hrng->hrng_min);
-  max = QST_INT (inst, hrng->hrng_max);
-  if (!(min <= H_PART (h) && max >= H_PART (h)))
+  if (hrng->hrng_min)
     {
-      dk_free_tree (box);
-      return DVC_LESS;
+      min = QST_INT (inst, hrng->hrng_min);
+      max = QST_INT (inst, hrng->hrng_max);
+      if (!(min <= H_PART (h) && max >= H_PART (h)))
+	{
+	  dk_free_tree (box);
+	  dk_free_box (box2);
+	  return DVC_LESS;
+	}
     }
-  if (hs && sp->sp_max_op != CMP_HASH_RANGE_ONLY)
+  if (sp->sp_max_op != CMP_HASH_RANGE_ONLY)
     {
-      index_tree_t *tree = QST_BOX (index_tree_t *, inst, hs->hs_ha->ha_tree->ssl_index);
+      state_slot_t *tree_ssl = hrng->hrng_ht ? hrng->hrng_ht : hs->hs_ha->ha_tree;
+      index_tree_t *tree = QST_BOX (index_tree_t *, inst, tree_ssl->ssl_index);
       chash_t *cha;
       if (!tree)
 	goto not_found;
@@ -4560,7 +4653,29 @@ itc_hash_compare (it_cursor_t * itc, buffer_desc_t * buf, search_spec_t * sp)
 	    }
 	  goto not_found;
 	found_e:
-	  if (hs->hs_ha->ha_n_deps)
+	  if (hs && hs->hs_ha->ha_n_deps)
+	    cha_inline_result (hs, cha, inst, ent, 1);
+	  goto found;
+	}
+      else
+	{
+	  dtp_t nulls = 0;
+	  db_buf_t *k = box2 ? (db_buf_t *) & box2 : (db_buf_t *) & box;
+	  ent = array[pos1_1];
+	  if (ent && h == ent[0] && cha_cmp (cha, ent, &k, 0, &nulls))
+	    goto found_a;
+	  ent = array[pos2_1];
+	  if (ent && h == ent[0] && cha_cmp (cha, ent, &k, 0, &nulls))
+	    goto found_a;
+	  for (e = 0; e < cha_p->cha_exception_fill; e++)
+	    {
+	      ent = cha_p->cha_exceptions[e];
+	      if (h == ent[0] && cha_cmp (cha, ent, &k, 0, &nulls))
+		goto found_a;
+	    }
+	  goto not_found;
+	found_a:
+	  if (hs && hs->hs_ha->ha_n_deps)
 	    cha_inline_result (hs, cha, inst, ent, 1);
 	  goto found;
 	}
@@ -4569,9 +4684,13 @@ itc_hash_compare (it_cursor_t * itc, buffer_desc_t * buf, search_spec_t * sp)
     goto found;
 not_found:
   dk_free_tree (box);
+  if (box2)
+    dk_free_box (box2);
   return DVC_LESS;
 found:
   dk_free_tree (box);
+  if (box2)
+    dk_free_box (box2);
   return DVC_MATCH;
 }
 

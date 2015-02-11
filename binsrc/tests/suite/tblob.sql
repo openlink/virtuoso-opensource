@@ -3,9 +3,9 @@
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2014 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
@@ -80,7 +80,7 @@ tb_e2 ();
 
 echo both $if $neq $sqlstate OK "PASSED" "***FAILED";
 echo both ": row too long check\n";
- 
+
 
 update tblob set b3 = '12345678901234567890';
 update tblob set b1 = b3, b2 = b3, b4 = b3;
@@ -172,13 +172,13 @@ create procedure tb_upd (in ct integer, in mode varchar)
 again:
   declare i, len integer;
   i := 0;
-  while (i < ct) 
+  while (i < ct)
     {
       update tblob set b1 = make_string (rnd (1000)),
     b2 = make_string (rnd (1001)),
     b3 = make_string (rnd (1003)),
     b4 = make_random_wide_string (),
-    --e1 = make_random_wide_string (1500), 
+    --e1 = make_random_wide_string (1500),
     e1 = make_string (rnd (1004)),
     e2 = make_string (rnd (1005));
       i := i + 1;
@@ -307,9 +307,9 @@ create procedure fill_twide ()
 {
   declare ctr, len int;
   for (ctr := 0; ctr < 1000; ctr := ctr + 1)
-    { 
+    {
     len := case when rnd (10) = 0 then 3 when  rnd (10) = 2 then 4 else 260 end;
-      insert replacing  twide (wk, wka, wd, wda, k) values (make_random_wide_string (len), make_random_wide_string (len), make_random_wide_string (len), make_random_wide_string (len), ctr); 
+      insert replacing  twide (wk, wka, wd, wda, k) values (make_random_wide_string (len), make_random_wide_string (len), make_random_wide_string (len), make_random_wide_string (len), ctr);
     }
 }
 
@@ -328,7 +328,7 @@ create procedure check_twide ()
   if (badinx) signal ('TWOOW', 'twide out of order');
   if (badlen) signal ('TWLEN', 'twide length wrong');
 }
- 
+
 
 fill_twide ();
 
@@ -396,11 +396,11 @@ foreach blob in words.esp update tblob set b1 = ? where k = 10002 and cl_idn (1,
 foreach blob in words.esp update tblob set b1 = ?, b2 = '', b3 = '', b4 = '', e1 = '', e2 = ''  where k between 10000 and 10010;
 
 
--- subseq done in cluster 
+-- subseq done in cluster
 select subseq (b1, 10000, 10500) from tblob where k > 9999;
 echo both $if $equ $rowcnt 8 "PASSED" "***FAILED";
 echo both ": b subseq 1\n";
--- subseq in cluster with sql func, then subseq done in coordinator. id_to_iri is a location sequence break. 
+-- subseq in cluster with sql func, then subseq done in coordinator. id_to_iri is a location sequence break.
 create procedure f (in q any) {return q;};
 create procedure f_noloc (in q any) { cl_idn (1); return q;};
 
@@ -444,12 +444,12 @@ echo both ": tblob insert check " $state "\n";
 create table rep_blob (id int primary key, b long varchar);
 alter index rep_blob on rep_blob partition cluster replicated;
 
-create procedure large_repl () 
-{ 
+create procedure large_repl ()
+{
   declare strs any;
- strs := string_output (); 
+ strs := string_output ();
   http (make_string (10000000), strs);
-  http (make_string (10000000), strs); 
+  http (make_string (10000000), strs);
   insert replacing rep_blob values (1, strs);
 }
 

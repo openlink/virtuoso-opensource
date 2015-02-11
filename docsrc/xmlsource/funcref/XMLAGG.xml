@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2014 OpenLink Software
+ -  Copyright (C) 1998-2015 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -65,7 +65,7 @@ inner SELECT statement that has an ORDER BY clause, not e.g. from a table refere
       </para>
     </refsect2>
   </refsect1>
-  <refsect1 id="ret_XMLAGG"><title>Parameters</title>
+  <refsect1 id="ret_XMLAGG"><title>Return Types</title>
     <para>The aggregate returns a vector that is a suitable input for functions <function>XMLELEMENT</function>,
  <function>XMLCONCAT</function> and <function>xml_tree_doc</function>.
     </para>

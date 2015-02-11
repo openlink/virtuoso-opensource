@@ -15,7 +15,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -41,9 +41,9 @@
 --
 
 
-  declare _S, odd_position any;
+  declare _G, _S, odd_position any;
   declare page_resource_uri, proxy_iri, rdf_link, label, vlbl, _subject any;
-  declare white_page, arr, data, meta, h1, h2, inx, gr, host, refr, sid, inf, sas, langs, best_q, grs any;
+  declare white_page, arr, data, meta, h1, h2, inx, gr, refr, sid, inf, sas, langs, best_q, grs any;
   declare urilookup integer;
   declare dbg_enable varchar;
   declare qry_str varchar;
@@ -56,13 +56,16 @@
   declare vis, printed, _skip, _last int;
   declare all_lang any;
   declare curr_pred any;
-  declare dt1, dt2, count_str, tbinf, tbsas, ua, doc, sp_mode, sp_accept varchar;
+  declare dt1, dt2, count_str, tbinf, tbsas, ua, doc, sp_mode, sp_accept, view_mode varchar;
   declare c_iri_a any;
   declare gs_user_id, gs_check_needed integer;
   declare gs_check_cond varchar;
-  declare state, msg any;
+  declare user_permissions, graph_perms_allow_sponge int;
+  declare host varchar;
+  declare pageUrl, err varchar;
+  declare dist int;
 
-  state := '00000'; msg := 'OK';
+  err := null;
   deadl := 0;
 
   declare exit handler for sqlstate '40001' {
@@ -74,6 +77,10 @@
   -- XXX: disabled
   --declare continue handler for sqlstate 'S1TAT';
   --set result_timeout = atoi (registry_get ('fct_timeout_max'));
+
+  host := http_request_header (http_request_header (), 'X-Forwarded-Host', null, null);
+  if (host is null)
+    host := http_request_header (http_request_header (), 'Host');
 
 again:
   n_per_page := 100;
@@ -87,6 +94,8 @@ again:
     }
   else connection_set ('b3s_dbg',0);
 
+  dist := atoi (get_keyword ('distinct', params, '1'));
+     
   connection_set ('ns_ctr', 1); /* for unknown xmlns to print in RDFa */
 
   white_page := 1;
@@ -94,6 +103,7 @@ again:
   inf := '';
 
   sp_mode := 'add';
+  view_mode := 'full';
 
   if (__proc_exists ('DB.DBA.lp_score_ck') is not null)
     DB.DBA.lp_score_ck (lines);
@@ -128,9 +138,6 @@ again:
   if ('1' = _addthis_key) _addthis_key := 'xa-4ce13e0065cdadc0';
 
 
-  host := http_request_header (http_request_header (), 'X-Forwarded-Host', null, null);
-  if (host is null)
-    host := http_request_header (http_request_header (), 'Host');
   langs := http_request_header_full (lines, 'Accept-Language', 'en');
   ua :=   http_request_header (lines, 'User-Agent');
   all_langs := b3s_get_lang_acc (lines);
@@ -177,15 +184,20 @@ again:
 
   arr := rfc1808_parse_uri (gr);
 
-  if (arr[0] = '' and arr[1] = '' and arr[2] <> '')
+  if (gr[0] <> '#'[0] and arr[0] = '' and arr[1] = '' and arr[2] <> '')
     gr := 'http://' || gr;
 
   arr := rfc1808_parse_uri (gr);
   arr [5] := '';
   doc := vspx_uri_compose (arr);
-
+  if (arr[0] = 'nodeID')
+    doc := rtrim (doc, '/');
+  if (gr[0] = '#'[0])
+    doc := gr;
+  -- If doc URI contains /about/id/entity/ or /about/id/, set _G to the URI following these components
+  _G := b3s_get_entity_graph (doc);
   page_resource_uri := gr;
-  page_resource_uri := replace (page_resource_uri, '%23', '#');
+  -- page_resource_uri := replace (page_resource_uri, '%23', '#');
   page_resource_uri := replace (page_resource_uri, ' ', '%20');
   page_resource_uri := replace (page_resource_uri, '"', '%22');
   __box_flags_set (page_resource_uri, 2);
@@ -209,11 +221,45 @@ again:
         return;  
       } 
 
+  pageUrl := FCT.DBA.build_page_url_on_current_host ('/describe/', sprintf ('url=%U%s', gr, FCT.DBA.get_describe_request_params (params)));
+
+    user_permissions := DB.DBA.RDF_GRAPH_USER_PERMS_GET (_G, http_nobody_uid());
+
+  graph_perms_allow_sponge := 1;
+  if (bit_and (user_permissions, 1) = 0 and bit_and (user_permissions, 4) = 0)
+  {
+    -- User doesn't have read permission
+    declare protocol, view_uri varchar;
+    -- graph_perms_allow_sponge := 0;
+    view_uri := gr;
+    protocol := 'http'; if (is_https_ctx()) protocol := 'https';
+    http_status_set (303);
+    http_header (sprintf('Location: %s://%s//fct/rdfdesc/fct_no_view_perms.vsp?gr=%U%s\r\n', protocol, host, view_uri, FCT.DBA.get_describe_request_params (params)));
+    return;
+  }
+  else if (bit_and (user_permissions, 4) = 0)
+  {
+    view_mode := 'read-only';
+    graph_perms_allow_sponge := 0;
+    if (bit_and (user_permissions, 2))
+      view_mode := 'read-write';
+  }
+
+  if (graph_perms_allow_sponge)
+  {
+    declare sp_done int;
+    sp_done := 0;
+    declare exit handler for sqlstate 'RDF*'
+    {
+      err := __SQL_MESSAGE;
+      goto errend; 
+    };
   -- if (get_keyword ('sp', params) = '1' and 0 = length (_F))
   if (get_keyword ('sp', params) = '1')
     {
-      EXEC (sprintf ('sparql define input:storage "" define get:soft "add" SELECT * from <%S> where { ?x ?y ?z . }', doc), state, msg);
+	DB.DBA.EXEC_AS (sprintf ('sparql define get:error-recovery "signal" define input:storage "" define get:soft "add" SELECT * from <%S> where { ?x ?y ?z . }', _G), 'SPARQL', 1);
       DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
+      sp_done := 1;
     }
   -- else if ((get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null) and 0 = length (_F))
   else if ((get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null))
@@ -224,15 +270,31 @@ again:
 	  refr := 0;
 	  if (exists (select 1 from SYS_HTTP_SPONGE where HS_ORIGIN_URI = doc))
 	    {
-	      sparql clear graph ?:doc;
+	      -- Checks whether any Sponger ACLs will prevent sponging, even if the user's graph permissions allow it. 
+              -- if (SPONGING_ALLOWED())  -- only available on develop/7.x branch
+	      {
+		-- We're user SPARQL at this point
+		DB.DBA.EXEC_AS (sprintf ('sparql clear graph <%S>', _G), 'dba');
+	      }
             }
         }
       else
         refr := atoi (get_keyword ('sr', params, '0'));
-      EXEC (sprintf ('sparql define input:storage "" define get:refresh "%d" define get:soft "%s" %s SELECT * from <%S> where { ?x ?y ?z . }', refr, sp_mode, sp_accept, doc), state, msg);
-      DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
-    }
 
+	DB.DBA.EXEC_AS (sprintf ('sparql define get:error-recovery "signal" define input:storage "" define get:refresh "%d" define get:soft "%s" %s SELECT * from <%S> where { ?x ?y ?z . }', refr, sp_mode, sp_accept, _G), 'SPARQL', 1);
+      DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
+      sp_done := 1;
+    }
+    errend:;
+    if (sp_done and __proc_exists ('DB.DBA.RDF_PROXY_ENTITY_IRI'))
+      {
+	declare pt any;
+	pt := DB.DBA.RDF_PROXY_ENTITY_IRI (_G);
+        http_status_set (302);
+	http_header (sprintf ('Location: /describe/?url=%U%s\r\n', pt, ses_parms));
+        return;
+      }
+  }
 
   odd_position := 0;
   set http_charset='utf-8';
@@ -294,7 +356,7 @@ again:
   if (accept = '*/*')
     accept := 'text/html';
   -- accepted types
-  qs := vector ('text/html', 'application/xhtml+xml', 'text/n3', 'text/rdf+n3', 'application/rdf+xml', 'application/json', 'text/plain');
+  qs := vector ('text/html', 'application/xhtml+xml', 'text/n3', 'text/turtle', 'application/rdf+xml', 'application/json', 'text/plain');
   -- quality prefs
   qv := vector (        0.5,                     0.7, 	    0.8,           0.8,                   1.0,                0.7,          0.1);
   best_q := 0;
@@ -385,7 +447,7 @@ again:
 
     <link rel="stylesheet" type="text/css" href="styles/highlighter.css" charset="utf-8" />
     <script type="text/javascript" >
-      var featureList=["tab"];
+      var featureList=["tab","ajax"];
     </script>
     <script type="text/javascript" src="/fct/oat/toolkit/loader.js"></script>
     <script type="text/javascript" src="s/description.js"></script>
@@ -395,6 +457,8 @@ again:
   <div id="PG">
     <div id="HD">
     <?vsp fct_desc_page_head (); ?>
+    <div id="hd_r">
+    </div>
     <ul id="main_menu">
       <?vsp if (sid is not null) { ?>
         <li><a href="<?= b3s_render_fct_link() ?>">Facets</a></li>
@@ -433,10 +497,13 @@ again:
     href="/describe/?url=<?U page_resource_uri ?><?= case when sid is
     not null then '&sid=' || sid end ?>&amp;sponger:get=add"
     title="Click to generate local descriptor data for this entity"
-    id="sp_link" rel="nofollow">Sponge</a>&nbsp;<a class="desc_permalink" href="<?vsp http (plink_href); ?>">Permalink</a></h2>
+    id="sp_link" rel="nofollow">Sponge</a>
+&nbsp;<a class="desc_permalink" href="<?vsp http (fct_make_curie (sprintf ('%s&distinct=%d',  plink_href, equ (dist, 0)), lines)); ?>" title="This link enables you toggle between normalized and un-normalized views of data using by applying or note applying a DISTINCT operator"><?vsp if (dist) http ('Not'); ?>Distinct</a>
+&nbsp;<a class="desc_permalink" href="<?vsp http (fct_make_curie (sprintf ('%s&distinct=%d', plink_href, dist), lines)); ?>">Permalink</a>
+    </h2>
       <div class="ds_inf_info">
 	    An Entity of Type : <a href="<?V e_type ?>"><?V e_type_label ?></a>,
-	    within Data Space : <a href="http://<?V host ?>"><?V host ?></a> associated with source <a href="usage.vsp?g=<?U _S ?><?V ses_parms ?>">dataset(s)</a><br/>
+	    within Data Space : <a href="http://<?V host ?>"><?V host ?></a> associated with source <a href="usage.vsp?g=<?U _S ?><?V ses_parms ?>">document(s)</a><br/>
 <?vsp
 
   declare is_class int;
@@ -479,7 +546,7 @@ again:
           {
 ?>
             <input type="hidden" name="cmd" value="new_with_class"/>
-            <button class="fct_sel_as_type" title="">New Facets Session with This Class</button>
+            <button class="fct_sel_as_type" title="">New Facet based on Instances of this Class</button>
 <?vsp
           }
 ?>
@@ -487,11 +554,8 @@ again:
       </form>
 <?vsp    
   }
-  declare qrimg any;
-  qrimg := fct_make_qr_code (fct_make_curie ('http://' || host || b3s_http_url (page_resource_uri, null, get_keyword ('graph', params)), lines));
-  if (qrimg is not null and strcasestr (ua, 'Mobile') is null) {
+  if (DB.DBA.VAD_CHECK_VERSION ('c_uri') is not null and __proc_exists ('QRcode encodeString8bit', 2) is not null and strcasestr (ua, 'Mobile') is null) {
 ?>
-	  <img id="qrcode" alt="QRcode image" src="data:image/jpg;base64,<?V qrimg ?>"/>
 <?vsp } ?>
       </div>
     </div>
@@ -505,8 +569,8 @@ if (_subject <> '') {
   <p class="subj_delim"></p>
 <?vsp
 }
-      if (state <> '00000' and dbg_enable = '1')
-         http_value (msg, 'div');
+     if (err is not null)
+       http_value (err, 'div');
 ?>
 <!--            <li><a href="/fct/facet.vsp?sid=<?V sid ?>&amp;cmd=set_class&amp;iri=<?V gr ?>">Choose <?V ''?> as Type</a></li>
                 <li><a href="/fct/facet.vsp?sid=<?V sid ?>&amp;cmd=open_property">Choose <?V ''?> as Property (p)</a></li>
@@ -543,6 +607,7 @@ if (_subject <> '') {
 
       --topof := '';
       qry_str := sprintf ('select %s PRED, OBJECT, FLAG from (%s UNION ALL %s) un0', topof, dt1, dt2);
+      if (dist = 0)
       qry_str := replace (qry_str, 'distinct', '');
       if (_last = 0)
         {
@@ -558,6 +623,7 @@ if (_subject <> '') {
 	    }
 	  dt2 := sprintf ('select count(*) as cnt from (sparql %s define output:valmode "LONG" select distinct ?p ?o %s where { ?o ?p <%S> } order by 1) sp2', inf, _F, _S);
 	  count_str := sprintf ('select sum (cnt) from (%s UNION ALL %s) un0', dt1, dt2);
+          if (dist = 0)
           count_str := replace (count_str, 'distinct', '');
           count_str := replace (count_str, 'order by 1', '');
 	  -- dbg_obj_princ ('count_str = ', count_str);
@@ -616,6 +682,7 @@ if (_subject <> '') {
 	  <div>
 	      <input type="hidden" name="url" value="<?V gr ?>" />
               <input type="submit" name="go" value="Go" style="width: 0px; height: 0px; margin: 0px; padding: 0px; outline: none; border: 0px;" />
+	      <input type="hidden" name="distinct" value="<?V dist ?>" />
 	      <?vsp if (connection_get ('inf') is not null) { ?>
 	      <input type="hidden" name="inf" value="<?V connection_get ('inf') ?>" />
 	      <?vsp } ?>
@@ -655,7 +722,7 @@ if (_subject <> '') {
     <?vsp b3s_render_dbg_out (dbg_out); ?>
 <!-- footer -->
     <div id="FT">
-       Faceted Search &amp; Find service v<?vsp http(DB.DBA.VAD_CHECK_VERSION('fct')); ?><br/>
+	Faceted Search &amp; Find service v<?vsp http(DB.DBA.VAD_CHECK_VERSION('fct')); ?> as of <?V fct_build_info () ?><br/>
 <?vsp if (_addthis_key <> '0') { ?>
   <div id="FT_share">
     <!-- AddThis Button BEGIN -->
@@ -704,7 +771,7 @@ if (_subject <> '') {
 	<a href="<?=rdf_link?><?= sprintf ('&output=%U', 'text/cxml')?>">CXML</a> |
         <a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/csv')?>">CSV</a> | RDF (
         <a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/plain') ?>">N-Triples</a>
-        <a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/rdf+n3') ?>">N3/Turtle</a>
+        <a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/turtle') ?>">N3/Turtle</a>
         <a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/rdf+json')?>">JSON</a> 
         <a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/rdf+xml') ?>">XML</a> ) | OData (
         <a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/atom+xml')?>">Atom</a> 

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -149,19 +149,64 @@ walk_dbtree ( it_cursor_t * it, buffer_desc_t ** buf_ret, int level,
   END_DO_ROWS;
 }
 
+char * backup_ignore_keys;
+
+void
+split_string (caddr_t str, char * chrs, dk_set_t * set)
+{
+  char *tok_s = NULL, *tok, *tmp;
+  caddr_t string = str ? box_dv_short_string (str) : NULL;
+  if (NULL == chrs)
+    chrs = ", "; 
+  if (NULL == string)
+    return;
+  tok_s = NULL;
+  tok = strtok_r (string, chrs, &tok_s);
+  while (tok)
+    {
+      if (tok && strlen (tok) > 0)
+	{
+	  while (*tok && isspace (*tok))
+	    tok++;
+	  if (tok && strlen (tok) > 1)
+	    tmp = tok + strlen (tok) - 1;
+	  else
+	    tmp = NULL;
+	  while (tmp && tmp >= tok && isspace (*tmp))
+	    *(tmp--) = 0;
+	  dk_set_push (set, box_dv_short_string (tok));
+	}
+      tok = strtok_r (NULL, chrs, &tok_s);
+    }
+  dk_free_box (string);
+}
+
+static int
+backup_key_is_ignored (dk_set_t * ign, dbe_key_t * key)
+{
+  DO_SET (caddr_t, kn, ign)
+    {
+      if (!stricmp (kn, key->key_name))
+	return 1;
+    }
+  END_DO_SET ();
+  return 0;
+} 
 
 static void
 walk_db (lock_trx_t * lt, page_func_t func)
 {
   buffer_desc_t *buf;
   it_cursor_t *itc;
+  dk_set_t ign = NULL;
+  split_string (backup_ignore_keys, NULL, &ign);
 
   memset (levels, 0, sizeof (levels));
 
   {
     DO_SET (index_tree_t * , it, &wi_inst.wi_master->dbs_trees)
       {
-	if (it != wi_inst.wi_master->dbs_cpt_tree)
+	if (it != wi_inst.wi_master->dbs_cpt_tree && !backup_key_is_ignored (&ign, it->it_key))
 	  {
 	    itc = itc_create (NULL , lt);
 	    itc_from_it (itc, it);
@@ -1424,6 +1469,194 @@ bif_log_index (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+int
+fds_same_file (int fd1, int fd2)
+{
+#ifndef WIN32
+  struct stat stat1, stat2;
+  if (fstat (fd1, &stat1) < 0)
+    return -1;
+  if (fstat (fd2, &stat2) < 0)
+    return -1;
+  return (stat1.st_dev == stat2.st_dev) && (stat1.st_ino == stat2.st_ino);
+#else
+  return 0;
+#endif
+}
+
+static caddr_t
+bif_read_log (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  dk_session_t * in = (dk_session_t *) bif_strses_arg (qst, args, 0, "read_log");
+  OFF_T off;
+  int bytes;
+  caddr_t *header;
+  dk_session_t trx_ses;
+  dk_session_t *str_in = &trx_ses;
+  scheduler_io_data_t trx_sio;
+  caddr_t trx_string;
+  dk_set_t set = NULL;
+  dbe_storage_t * dbs = wi_inst.wi_master;
+  dk_session_t * volatile log_ses;
+  int fd1, fd2, need_mtx = 0;
+
+  log_ses = dbs->dbs_log_session;
+  fd1 = tcpses_get_fd (log_ses->dks_session);
+  fd2 = in->dks_session->ses_file ? in->dks_session->ses_file->ses_file_descriptor : -1;
+  if (fd2 >= 0 && fds_same_file (fd1, fd2) > 0)
+    {
+      mutex_enter (log_write_mtx);
+      need_mtx = 1;
+    }
+  memset (&trx_ses, 0, sizeof (trx_ses));
+  memset (&trx_sio, 0, sizeof (trx_sio));
+  SESSION_SCH_DATA (&trx_ses) = &trx_sio;
+
+  header = (caddr_t *) read_object (in);
+  if (!DKSESSTAT_ISSET (in, SST_OK))
+    {
+      if (need_mtx) mutex_leave (log_write_mtx);
+      return NEW_DB_NULL;
+    }
+  if (!log_check_header (header))
+    {
+      dk_free_tree (header);
+      if (need_mtx) mutex_leave (log_write_mtx);
+      sqlr_new_error ("22023", "RL002", "Invalid log entry in replay.");
+    }
+  bytes = (int) unbox (header[LOGH_BYTES]);
+  trx_string = (char *) dk_alloc (bytes + 1);
+  CATCH_READ_FAIL (in)
+      session_buffered_read (in, trx_string, bytes);
+  FAILED
+    {
+      dk_free (trx_string, bytes + 1);
+      dk_free_tree (header);
+      if (need_mtx) mutex_leave (log_write_mtx);
+      sqlr_new_error ("22023", "RL002", "Invalid log entry in replay.");
+    }
+  END_READ_FAIL (in);
+  str_in->dks_in_buffer = trx_string;
+  str_in->dks_in_read = 0;
+  str_in->dks_in_fill = bytes;
+  dk_set_push (&set, header);
+  CATCH_READ_FAIL (str_in)
+    {
+      char op, flag;
+      long u_id = 0, count;
+      caddr_t count64 = 0;
+      caddr_t row = NULL, cols = NULL, vals = NULL;
+      dk_set_t res = NULL;
+      dbe_key_t * key;
+
+      while (str_in->dks_in_read != str_in->dks_in_fill)
+	{
+	  res = NULL;
+	  op = session_buffered_read_char (str_in);
+	  dk_set_push (&res, box_num (op));
+	  switch (op)
+	    {
+	      case LOG_KEY_INSERT:
+		  flag = session_buffered_read_char (str_in);
+		  dk_set_push (&res, box_num (flag));
+	      case LOG_INSERT:
+	      case LOG_INSERT_SOFT:
+	      case LOG_INSERT_REPL:
+		  row = scan_session (str_in);
+		  key = sch_id_to_key (wi_inst.wi_schema, unbox (((caddr_t *)row)[0]));
+		  DO_CL (cl, key->key_row_var)
+		    {
+		      dtp_t dtp = cl->cl_sqt.sqt_col_dtp;
+		      if (IS_BLOB_DTP (dtp))
+			{
+			  int inx = cl->cl_nth + 1; /* zero pos in row is the key id */
+			  caddr_t val = ((caddr_t *)row)[inx];
+			  dtp = DV_TYPE_OF (val);
+			  if (DV_STRING != dtp)
+			    continue;
+			  dtp = val[0];
+			  if (IS_BLOB_DTP (dtp))
+			    {
+			      dk_free_tree (val);
+			      ((caddr_t *)row)[inx] = box_dv_short_string ("<BLOB>");
+			    }
+			}
+		    }
+		  END_DO_CL;
+		  dk_set_push (&res, row);
+		  break;
+	      case LOG_DELETE:
+	      case LOG_KEY_DELETE:
+		  row = scan_session (str_in);
+		  dk_set_push (&res, row);
+		  break;
+	      case LOG_UPDATE:
+		    {
+		      int inx;
+		      row = scan_session (str_in);
+		      cols = scan_session (str_in);
+		      vals = scan_session (str_in);
+		      DO_BOX (caddr_t, v, inx, (caddr_t *)vals)
+			{
+			  if (DV_TYPE_OF (v) == DV_BLOB_HANDLE)
+			    {
+			      dk_free_tree (v);
+			      ((caddr_t *)vals)[inx] = box_dv_short_string ("<BLOB>");
+			    }
+			}
+		      END_DO_BOX;
+		      dk_set_push (&res, row);
+		      dk_set_push (&res, cols);
+		      dk_set_push (&res, vals);
+		    }
+		  break;
+	      case LOG_TEXT:
+		  row = scan_session (str_in);
+		  dk_set_push (&res, row);
+		  break;
+	      case LOG_USER_TEXT:
+		  u_id = read_long (str_in);
+		  row = scan_session (str_in);
+		  dk_set_push (&res, box_num (u_id));
+		  dk_set_push (&res, row);
+		  break;
+	      case LOG_SEQUENCE:
+		  row = scan_session (str_in);
+		  count = read_long (str_in);
+		  dk_set_push (&res, row);
+		  dk_set_push (&res, box_num (count));
+		  break;
+	      case LOG_SEQUENCE_64:
+		  row = scan_session (str_in);
+		  count64 = scan_session_boxing (str_in);
+		  dk_set_push (&res, row);
+		  dk_set_push (&res, count64);
+		  break;
+	      case LOG_DD_CHANGE:
+	      case LOG_SC_CHANGE_1:
+	      case LOG_SC_CHANGE_2:
+		  break;
+	    }
+	  dk_set_push (&set, list_to_array (dk_set_nreverse (res)));
+	}
+    }
+  FAILED
+    {
+      dk_set_push (&set, box_dv_short_string ("Error reading trx string"));
+    }
+  END_READ_FAIL (str_in);
+  log_skip_blobs_1 (in);
+  if (need_mtx) mutex_leave (log_write_mtx);
+
+  dk_free (trx_string, bytes + 1);
+  if (BOX_ELEMENTS (args) > 1 && ssl_is_settable (args[1]))
+    {
+      off = in->dks_bytes_received - in->dks_in_fill + in->dks_in_read;
+      qst_set (qst, args[1], box_num (off));
+    }
+  return list_to_array (dk_set_nreverse (set));
+}
+
 void
 recovery_init (void)
 {
@@ -1432,6 +1665,7 @@ recovery_init (void)
   bif_define ("backup_flush", bif_backup_flush);
   bif_define ("backup_close", bif_backup_close);
   bif_define ("backup_index", bif_log_index);
+  bif_define ("read_log", bif_read_log);
 #if 0
   bif_define ("crash_recovery_log_check", bif_crash_recovery_log_check);
 #endif

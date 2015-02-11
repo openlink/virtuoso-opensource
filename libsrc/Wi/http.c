@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -86,7 +86,7 @@ char *http_methods[] = { "NONE", "GET", "HEAD", "POST", "PUT", "DELETE", "OPTION
   			 "PROPFIND", "PROPPATCH", "COPY", "MOVE", "LOCK", "UNLOCK", "MKCOL",  /* WebDAV */
 			 "MGET", "MPUT", "MDELETE", 	/* URIQA */
 			 "REPORT", /* CalDAV */
-			 "TRACE", NULL };
+			 "TRACE", "PATCH", NULL };
 resource_t *ws_dbcs;
 basket_t ws_queue;
 dk_mutex_t * ws_queue_mtx;
@@ -206,6 +206,8 @@ void ws_proc_error (ws_connection_t * ws, caddr_t err);
 int ssl_port = 0;
 void * tcpses_get_sslctx (session_t * ses);
 void tcpses_set_sslctx (session_t * ses, void * ssl_ctx);
+extern int ssl_ctx_set_cipher_list (SSL_CTX *ctx, char *cipher_list);
+extern int ssl_ctx_set_protocol_options (SSL_CTX *ctx, char *protocols);
 #endif
 
 #ifdef _IMSG
@@ -894,7 +896,198 @@ error_end:
   return NULL;
 }
 
-static int
+#define WS_LOG_DEFAULT_FMT "%h %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-agent}i\""
+char * http_log_format = WS_LOG_DEFAULT_FMT;
+
+#ifndef WS_OLD_LOG
+#define WS_LOG_ERROR \
+      mutex_enter (ws_http_log_mtx); \
+      fflush (http_log); \
+      fclose (http_log); \
+      http_log = NULL; \
+      log_error ("The HTTP Log format is wrong, can't log requests"); \
+      mutex_leave (ws_http_log_mtx); \
+      return
+
+
+static void
+log_info_http (ws_connection_t * ws, const char * code, OFF_T clen)
+{
+  char * new_log = NULL;
+  char tmp[4096];
+  char format[100];
+  char buf[DKSES_OUT_BUFFER_LENGTH];
+  char *volatile ptr;
+  char *volatile start;
+  char * str;
+  int volatile len;
+  int http_resp_code = 0;
+  time_t now;
+  struct tm *tm;
+#if defined (HAVE_LOCALTIME_R) && !defined (WIN32)
+  struct tm tm1;
+#endif
+  dk_session_t sesn, *ses = &sesn;
+  scheduler_io_data_t io;
+
+  if (!http_log || !ws)
+    return;
+
+  str = http_log_format;
+  len = strlen (str);
+
+  memset (&sesn, 0, sizeof (sesn));
+  sesn.dks_out_buffer = (char*) &buf;
+  sesn.dks_out_length = sizeof (buf);
+  SESSION_SCH_DATA (ses) = &io;
+  memset (SESSION_SCH_DATA (ses), 0, sizeof (scheduler_io_data_t));
+
+  if (code)
+    sscanf (code, "%*s %i", &http_resp_code);
+  time (&now);
+#if defined (HAVE_LOCALTIME_R) && !defined (WIN32)
+  tm = localtime_r (&now, &tm1);
+#else
+  tm = localtime (&now);
+#endif
+
+  ptr = str;
+  tmp[0] = 0;
+next_fragment:
+  start = strchr (ptr, '%');
+
+  if (!start)
+    {
+      session_buffered_write (ses, ptr, len);
+      ptr += len;
+      len = 0;
+      goto format_string_completed;
+    }
+
+  if (start - ptr)
+    {
+      session_buffered_write (ses, ptr, start - ptr);
+      len -= (int) (start - ptr);
+    }
+
+  ptr = start + 1;
+  switch (*ptr)
+    {
+      case '{':
+	{
+	  caddr_t connvar_name, connvar_value, *connvar_valplace = NULL;
+	  client_connection_t *cli = ws->ws_cli;
+
+	  ptr++;
+	  while (isalnum ((unsigned char) (ptr[0])) || ('_' == ptr[0]) || ('-' == ptr[0]))
+	    ptr++;
+
+	  if ('}' != ptr[0])
+	    {
+	      WS_LOG_ERROR;
+	    }
+	  ptr++;
+	  memset (format, 0, sizeof (format));
+	  memcpy (format, start + 2, MIN ((ptr - start) - 3, sizeof (format) - 1));
+
+	  switch (*ptr)
+	    {
+	      case 'e':
+		  connvar_name = box_dv_short_string (format);
+		  connvar_valplace = (caddr_t *) id_hash_get (cli->cli_globals, (caddr_t) & connvar_name);
+		  dk_free_box (connvar_name);
+
+		  if (NULL != connvar_valplace)
+		    {
+		      connvar_value = connvar_valplace[0];
+		      session_buffered_write (ses, connvar_value, box_length (connvar_value) - 1);
+		    }
+		  break;
+	      case 'i':
+		  strncat_ck (format, ":", 1);
+		  connvar_value = ws_get_packed_hf (ws, format, NULL);
+		  if (connvar_value)
+		    {
+		      session_buffered_write (ses, connvar_value, box_length (connvar_value) - 1);
+		      dk_free_tree (connvar_value);
+		    }
+		  break;
+	      default:
+		  WS_LOG_ERROR;
+	    }
+	  goto get_next;
+	}
+      case 'h':
+	  strcpy_ck (tmp, ws->ws_client_ip);
+	  break;
+      case 'l':
+	  strcpy_ck (tmp, "-");
+	  break;
+      case 'u':
+	    {
+	      caddr_t u_id = ws_auth_get (ws);
+	      strcpy_ck (tmp, u_id);
+	      dk_free_tree (u_id);
+	    }
+	  break;
+      case 't':
+	    {
+	      char * monday [] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+	      int month, day, year;
+	      month = tm->tm_mon + 1;
+	      day = tm->tm_mday;
+	      year = tm->tm_year + 1900;
+	      snprintf (tmp, sizeof (tmp), "[%02d/%s/%04d:%02d:%02d:%02d %+05li]",
+		  (tm->tm_mday), monday [month - 1], year, tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz/36*100);
+	    }
+	  break;
+      case 'r':
+	  strcpy_ck (tmp, ws->ws_req_line && ws->ws_method != WM_ERROR ? ws->ws_req_line : "GET unspecified");
+	  strcat_ck (tmp, ws->ws_proto);
+	  tmp [sizeof (tmp) - 1] = 0;
+	  break;
+      case 's':
+	  snprintf (tmp, sizeof (tmp), "%d", http_resp_code);
+	  break;
+      case 'b':
+	  snprintf (tmp, sizeof (tmp), OFF_T_PRINTF_FMT, clen);
+	  break;
+      default:
+	  WS_LOG_ERROR;
+    }
+  session_buffered_write (ses, tmp, strlen (tmp));
+get_next:
+  ptr++;
+  len -= (int) (ptr - start);
+  if (len && ptr && *ptr)
+    goto next_fragment;
+
+format_string_completed:
+
+  session_buffered_write_char ('\n', ses);
+  session_buffered_write_char ('\0', ses);
+
+  mutex_enter (ws_http_log_mtx);
+  new_log = http_log_file_check (tm);
+  if (new_log)
+    {
+      fflush (http_log);
+      fclose (http_log);
+      http_log = fopen (new_log, "a");
+      if (!http_log)
+	{
+	  log_error ("Can't open new HTTP log file (%s)", new_log);
+	  mutex_leave (ws_http_log_mtx);
+	  return;
+	}
+    }
+  fputs (buf, http_log);
+  fflush (http_log);
+  mutex_leave (ws_http_log_mtx);
+  return;
+}
+#else
+static void
 log_info_http (ws_connection_t * ws, const char * code, OFF_T len)
 {
   char buf[4096];
@@ -912,7 +1105,7 @@ log_info_http (ws_connection_t * ws, const char * code, OFF_T len)
   char * new_log = NULL;
 
   if (!http_log || !ws)
-    return 0;
+    return;
 
   if (code)
     sscanf (code, "%*s %i", &http_resp_code);
@@ -958,16 +1151,16 @@ log_info_http (ws_connection_t * ws, const char * code, OFF_T len)
 	{
 	  log_error ("Can't open new HTTP log file (%s)", new_log);
 	  mutex_leave (ws_http_log_mtx);
-	  return 0;
+	  return;
 	}
     }
   fputs (buf, http_log);
   fflush (http_log);
   mutex_leave (ws_http_log_mtx);
 
-  return 0;
+  return;
 }
-
+#endif
 
 
 caddr_t
@@ -1669,6 +1862,7 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
       ws->ws_params = NULL;
       dk_free_tree ((box_t) ws->ws_resource);
       ws->ws_resource = NULL;
+      ws->ws_in_error_handler = 0;
     }
   dk_free_tree ((box_t) ws->ws_stream_params);
   ws->ws_stream_params = NULL;
@@ -1745,15 +1939,20 @@ ws_split_ac_header (const caddr_t header)
   char *tmp, *tok_s = NULL, *tok;
   dk_set_t set = NULL;
   caddr_t string = box_dv_short_string (header);
+  float q;
   tok = strtok_r (string, ",", &tok_s);
   while (tok)
     {
       char * sep;
       while (*tok && isspace (*tok))
 	tok++;
+      q = 1.0;
       sep = strchr (tok, ';');
       if (NULL != sep)
 	{
+	  char * eq = strchr (sep, '=');
+	  if (eq)
+	    q = atof (++eq);
           *sep = 0;
 	  tmp = sep > tok ? sep - 1 : NULL;
 	}
@@ -1768,6 +1967,7 @@ ws_split_ac_header (const caddr_t header)
       if (*tok)
 	{
 	  dk_set_push (&set, box_dv_short_string (tok));
+	  dk_set_push (&set, box_float (q));
 	}
       tok = strtok_r (NULL, ",", &tok_s);
     }
@@ -1779,7 +1979,7 @@ static caddr_t *
 ws_header_line_to_array (caddr_t string)
 {
   int len;
-  char buf [1000];
+  char buf [10000];
   dk_set_t lines = NULL;
   caddr_t * headers = NULL;
   dk_session_t * ses = NULL;
@@ -1841,6 +2041,7 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
   caddr_t * asked;
   char * match = NULL, * found = NULL;
   int inx;
+  float maxq = 0;
   int ignore = (ws->ws_p_path_string ?
       ((0 == strnicmp (ws->ws_p_path_string, "http://", 7)) ||
       (1 == is_http_handler (ws->ws_p_path_string))) : 0);
@@ -1863,13 +2064,17 @@ ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check
   if (!mime)
     mime = "text/html";
   asked = ws_split_ac_header (accept);
-  DO_BOX (caddr_t, p, inx, asked)
+  DO_BOX_FAST_STEP2 (caddr_t, p, caddr_t, q, inx, asked)
     {
+      float qf = unbox_float (q);
       p = ws_get_mime_variant (p, &found);
       if (DVC_MATCH == cmp_like (mime, p, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR))
 	{
-	  match = p;
-	  break;
+	  if (qf > maxq)
+	    {
+	      match = p;
+	      maxq = qf;
+	    }
 	}
     }
   END_DO_BOX;
@@ -1975,7 +2180,30 @@ ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
       if (orgs != WS_CORS_STAR)
 	dk_free_tree (orgs);
       if (rc)
-	snprintf (buf, buf_len, "Access-Control-Allow-Origin: %s\r\n", place ? *place : "*");
+	{
+	  char ach[2000] = {0}; 
+	  if (ws->ws_header && box_length (ws->ws_header))
+	    {
+	      caddr_t * hdrs = ws_header_line_to_array (ws->ws_header);
+	      strcat_ck (ach, "Access-Control-Expose-Headers: ");
+	      DO_BOX (caddr_t, hdr, inx, hdrs)
+		{
+		  char * sep = strchr (hdr, ':');
+		  if (sep) *sep = 0;
+		  if (sep && !strstr (ach, hdr))
+		    {
+		      strcat_ck (ach, hdr);
+		      strcat_ck (ach, ",");
+		    }
+		}
+	      END_DO_BOX;
+	      dk_free_tree (hdrs);
+	      ach[strlen (ach) - 1] = 0;
+	      strcat_ck (ach, "\r\n");
+	    }
+	  snprintf (buf, buf_len, "Access-Control-Allow-Origin: %s\r\n%s%s", 
+	      place ? *place : "*", place ? "Access-Control-Allow-Credentials: true\r\n" : "", ach);
+	}
     }
   dk_free_tree (origin);
   if (0 == rc && ws->ws_map && ws->ws_map->hm_cors_restricted)
@@ -3355,6 +3583,28 @@ error_end:
 
 int soap_get_opt_flag (caddr_t * opts, char *opt_name);
 
+extern int64 dk_n_max_allocs;
+extern int64 dk_n_allocs;
+extern int64 dk_n_bytes;
+extern int64 dk_n_total;
+
+void
+ws_mem_record (ws_connection_t * ws)
+{
+  char * h = ws_header_field (ws->ws_lines, "X-Recording:", NULL);
+  static FILE *fp;
+  char * endpos;
+  if (!h) return;
+  while (isspace (*h)) h ++;
+  mutex_enter (ws_http_log_mtx);
+  if (!fp)
+    fp = fopen ("virtuoso.mem.log", "a");
+  fprintf (fp, BOXINT_FMT "," BOXINT_FMT "," BOXINT_FMT "," BOXINT_FMT ",%s", dk_n_allocs, dk_n_bytes, dk_n_total, dk_n_max_allocs, h);
+  dk_n_max_allocs = 0;
+  fflush (fp);
+  mutex_leave (ws_http_log_mtx);
+}
+
 void
 ws_request (ws_connection_t * ws)
 {
@@ -3480,7 +3730,8 @@ request_do_again:
       LEAVE_TXN;
       if ((DV_STRING == DV_TYPE_OF (save_history_name)) &&
 	  ((0 == strncmp(vdir, save_history_name, (box_length (save_history_name) - 1)) &&
-	    '/' == vdir[box_length(save_history_name) - 1]) || !strcmp (save_history_name, "/")))
+	    ( '/' == vdir[box_length(save_history_name) - 1] || '?' == vdir[box_length(save_history_name) - 1])) ||
+	   !strcmp (save_history_name, "/")))
 	{
 	  static query_t *stmt = NULL;
 	  if (!stmt)
@@ -3917,13 +4168,21 @@ do_file:
 	      previous_http_status = ws->ws_status_code;
 
 	      ws_clear (ws, 1);
+	      ws->ws_in_error_handler = 1;
 
 	      dk_free_box (ws->ws_path_string);
-	      ws->ws_path_string = dk_alloc_box (strlen (text) + lpath_len + 2, DV_SHORT_STRING);
-	      if (lpath_len > 0 && lpath[lpath_len - 1] == '/')
-		snprintf (ws->ws_path_string, box_length (ws->ws_path_string), "%s%s", lpath, text);
+	      if (text[0] != '/')
+		{
+		  ws->ws_path_string = dk_alloc_box (strlen (text) + lpath_len + 2, DV_SHORT_STRING);
+		  if (lpath_len > 0 && lpath[lpath_len - 1] == '/')
+		    snprintf (ws->ws_path_string, box_length (ws->ws_path_string), "%s%s", lpath, text);
+		  else
+		    snprintf (ws->ws_path_string, box_length (ws->ws_path_string), "%s/%s", lpath, text);
+		}
 	      else
-		snprintf (ws->ws_path_string, box_length (ws->ws_path_string), "%s/%s", lpath, text);
+		{
+		  ws->ws_path_string = box_copy (text);
+		}
 	      dk_free_box (ws->ws_p_path_string); ws->ws_p_path_string = NULL;
 	      dk_free_tree ((box_t) ws->ws_p_path); ws->ws_p_path = NULL; path1 = "";
 	      ws_set_phy_path (ws, 0, ws->ws_path_string);
@@ -4005,6 +4264,7 @@ do_file:
   ws_connection_vars_clear (cli);
   cli_free_dae (cli);
 
+  ws_mem_record (ws);
   dk_free_tree ((caddr_t) err);
   dk_free_tree ((box_t) ws->ws_lines);
   ws->ws_lines = NULL;
@@ -4151,7 +4411,7 @@ ws_read_req (ws_connection_t * ws)
     }
   END_READ_FAIL (ws->ws_session);
 end_req:
-  /*empty*/;
+  ws_connection_vars_clear (ws->ws_cli); /* can have connection vars set from authentication hook */
 }
 
 
@@ -4399,13 +4659,18 @@ ws_init_func (ws_connection_t * ws)
 {
   ws->ws_thread = THREAD_CURRENT_THREAD;
   semaphore_enter (ws->ws_thread->thr_sem);
-  SET_THR_ATTR (ws->ws_thread, TA_IMMEDIATE_CLIENT, ws->ws_cli);
-  sqlc_set_client (ws->ws_cli);
-  ws->ws_cli->cli_trx->lt_thr = ws->ws_thread;
+  WITH_TLSF (dk_base_tlsf)
+    {
+      SET_THR_ATTR (ws->ws_thread, TA_IMMEDIATE_CLIENT, ws->ws_cli);
+      sqlc_set_client (ws->ws_cli);
+      ws->ws_cli->cli_trx->lt_thr = ws->ws_thread;
+    }
+  END_WITH_TLSF;
   for (;;)
     {
       dk_session_t * ses;
       http_trace (("serve connection ws %p ses %p\n", ws, ws->ws_session));
+      ws->ws_thread->thr_tlsf = ws->ws_thread->thr_own_tlsf;
       if (ws->ws_session->dks_ws_status == DKS_WS_CLIENT)
 	ws_serve_client_connection (ws);
       else
@@ -4764,7 +5029,7 @@ http_session_no_catch_arg (caddr_t * qst, state_slot_t ** args, int nth,
 caddr_t
 http_path_to_array (char * path, int mode)
 {
-  int n_fill, inx;
+  int n_fill, inx, max;
   unsigned char ch;
   char name [PATH_ELT_MAX_CHARS];
   dk_set_t paths = NULL;
@@ -4772,6 +5037,7 @@ http_path_to_array (char * path, int mode)
   n_fill = 0;
   if (!path)
     return NULL;
+  max = strlen (path);
   for (;;)
     {
       ch = path [inx++];
@@ -4792,6 +5058,11 @@ http_path_to_array (char * path, int mode)
 	}
       else if (ch == '%')
 	{
+	  if (inx >= max || (inx+1) >= max)
+	    {
+	      name[n_fill++] = ch;
+	      break;
+	    }
 	  name[n_fill++] = char_hex_digit (path [inx + 0]) * 16
 	    + char_hex_digit (path [inx + 1]);
 	  inx += 2;
@@ -8568,6 +8839,8 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
   char *https_cvfile = NULL;
   char *cert = NULL, *extra = NULL;
   char *skey = NULL;
+  char *ciphers = https_cipher_list;
+  char *protocols = https_protocols;
   long https_cvdepth = -1;
   int i, len, https_client_verify = -1;
   ssl_meth = SSLv23_server_method ();
@@ -8601,6 +8874,10 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
 	    https_client_verify = unbox (https_opts[i + 1]);
 	  else if (!stricmp (https_opts [i], "https_extra_chain_certificates") && DV_STRINGP (https_opts [i + 1]))  /* private key */
 	    extra = https_opts [i + 1];
+	  else if (!stricmp (https_opts [i], "https_cipher_list") && DV_STRINGP (https_opts [i + 1]))  /* Ciphers */
+	    ciphers = https_opts [i + 1];
+	  else if (!stricmp (https_opts [i], "https_protocols") && DV_STRINGP (https_opts [i + 1]))  /* Protocols */
+	    protocols = https_opts [i + 1];
 	}
     }
 
@@ -8611,6 +8888,22 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
     {
       cli_ssl_get_error_string (err_buf, sizeof (err_buf));
       log_error ("HTTPS: Error allocating SSL context: %s", err_buf);
+      goto err_exit;
+    }
+
+  /*
+   *  Set Protocols & Ciphers
+   */
+  if (!ssl_ctx_set_protocol_options (ssl_ctx, protocols))
+    {
+      cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+      log_error ("HTTPS: Error setting SSL Protocols options: %s", err_buf);
+      goto err_exit;
+    }
+  if (!ssl_ctx_set_cipher_list (ssl_ctx, ciphers))
+    {
+      cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+      log_error ("HTTPS: Error settings SSL Cipher list : %s", err_buf);
       goto err_exit;
     }
 
@@ -9539,12 +9832,14 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
       SSL_set_verify (ssl, verify, (int (*)(int, X509_STORE_CTX *)) https_ssl_verify_callback);
       SSL_set_app_data (ssl, ap);
       SSL_set_session_id_context (ssl, (void*)&s_server_auth_session_id_context, sizeof(s_server_auth_session_id_context));
+      IO_SECT (qst);
       i = SSL_renegotiate (ssl);
       if (i <= 0) sqlr_new_error ("42000", ".....", "SSL_renegotiate failed");
       i = SSL_do_handshake (ssl);
       if (i <= 0) sqlr_new_error ("42000", ".....", "SSL_do_handshake failed");
       ssl->state = SSL_ST_ACCEPT;
       i = SSL_do_handshake (ssl);
+      END_IO_SECT (err_ret);
       if (i <= 0) sqlr_new_error ("42000", ".....", "SSL_do_handshake failed");
       if (SSL_get_peer_certificate (ssl))
 	return box_num (1);
@@ -11208,6 +11503,22 @@ http_init_part_two ()
 	  goto init_ssl_exit;
 	}
 
+      /*
+       *  Set Protocols & Ciphers
+       */
+      if (!ssl_ctx_set_protocol_options (ssl_ctx, https_protocols))
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  log_error ("HTTPS: Error setting SSL Protocols: %s", err_buf);
+	  goto init_ssl_exit;
+	}
+      if (!ssl_ctx_set_cipher_list (ssl_ctx, https_cipher_list))
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  log_error ("HTTPS: Error settings SSL Cipher list : %s", err_buf);
+	  goto init_ssl_exit;
+	}
+
       if (!ssl_server_set_certificate (ssl_ctx, https_cert, https_key, https_extra))
 	goto init_ssl_exit;
 
@@ -11540,14 +11851,14 @@ cli_check_ws_terminate (client_connection_t *cli)
       if (!SESSTAT_ISSET (cli->cli_ws->ws_session->dks_session, SST_OK) ||
 	  cli->cli_ws->ws_session->dks_to_close)
 	return 1;
-      else if (cli->cli_start_time &&
-	  time_now_msec - cli->cli_start_time > HTTP_TERMINATE_CHECK_TIMEOUT &&
+      else if (cli->cli_ws_check_time &&
+	  time_now_msec - cli->cli_ws_check_time > HTTP_TERMINATE_CHECK_TIMEOUT &&
 	  cli->cli_ws->ws_session->dks_in_fill < cli->cli_ws->ws_session->dks_in_length)
 	{
 	  ws_connection_t *ws = cli->cli_ws;
 	  timeout_t to = { 0, 0 };
 
-	  cli->cli_start_time = time_now_msec;
+	  cli->cli_ws_check_time = time_now_msec;
 
 	  if (SER_SUCC == tcpses_is_read_ready (ws->ws_session->dks_session, &to))
 	    {

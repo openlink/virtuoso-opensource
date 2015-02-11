@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1423,7 +1423,7 @@ bif_daq_init ()
   bif_define ("daq_buffered_bytes", bif_daq_buffered_bytes);
   bif_define ("cl_set_slice", bif_cl_set_slice);
   name_to_cu_func = id_casemode_hash_create (11);
-//  func_name_to_cu_func = id_casemode_hash_create (11);
+/*  func_name_to_cu_func = id_casemode_hash_create (11); */
   bif_define_ex ("dpipe", bif_dpipe, BMD_OUT_OF_PARTITION, BMD_DONE);
   bif_define_ex ("dpipe_input", bif_dpipe_input, BMD_OUT_OF_PARTITION, BMD_DONE);
   bif_define_ex ("dpipe_next", bif_dpipe_next, BMD_OUT_OF_PARTITION, BMD_DONE);

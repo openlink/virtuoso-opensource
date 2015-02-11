@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1651,6 +1651,8 @@ sqlg_vec_setp (sql_comp_t * sc, setp_node_t * setp, dk_hash_t * res)
 	filter_done:;
 	}
       sqlg_vec_ref_ssls (sc, setp->setp_ha->ha_slots);
+      if (HA_DISTINCT == ha->ha_op)
+	cv_deduplicate_param_ssls (sc->sc_cc, setp->setp_ha->ha_slots);
       prev_tree_type = setp->setp_ha->ha_tree->ssl_type;
       ASG_SSL_AGG (NULL, NULL, setp->setp_ha->ha_tree);
       if (setp->setp_set_no_in_key)
@@ -2308,9 +2310,11 @@ sqlg_vec_upd (sql_comp_t * sc, update_node_t * upd)
   ref_ssls (NULL, upd->upd_trigger_args);
   if (!upd->upd_pk_change)
     {
-      //state_slot_t * co = ssl_new_placeholder (sc->sc_cc, "co");
-      //last_ts->ts_current_of = co;
-      //upd->upd_place = last_ts->ts_current_of;
+#if 0
+      state_slot_t *co = ssl_new_placeholder (sc->sc_cc, "co");
+      last_ts->ts_current_of = co;
+      upd->upd_place = last_ts->ts_current_of;
+#endif
       REF_SSL (NULL, upd->upd_place);
       sqlg_set_ts_plh (sc, last_ts);
       sqlg_vec_upd_col_pk (sc, upd);
@@ -2701,6 +2705,18 @@ sqlg_hs_realias_key_out (sql_comp_t * sc, hash_source_t * hs)
   hs->hs_out_aliases = NULL;
 }
 
+int
+qn_in_union_subq (data_source_t * qn)
+{
+  if (IS_QN (qn, subq_node_input) && !qn->src_sets)
+    {
+      QNCAST (subq_source_t, sqs, qn);
+      return IS_QN (sqs->sqs_query->qr_head_node,  union_node_input);
+    }
+  return 0;
+}
+
+
 int enable_unq_non_unq = 1;
 
 void
@@ -2749,6 +2765,12 @@ sqlg_vec_hs (sql_comp_t * sc, hash_source_t * hs)
 	if (sctr->sctr_ose || sctr->sctr_not_in_top_and)
 	  no_bloom_in_probe = 1;
       }
+      if (qn_in_union_subq (pred))
+	{
+	  	    hs->hs_partition_filter_self = 1;
+
+		    break;
+	}
     DO_BOX (state_slot_t *, ref, inx, hs->hs_ref_slots)
     {
       if (pred == gethash ((void *) ref, sc->sc_vec_ssl_def))
@@ -3380,6 +3402,7 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
       else
 	cv_vec_slots (sc, en->src_gen.src_after_code, NULL, NULL, &ign);
       sqlg_new_vec_ssls (sc, &en->src_gen);
+      qn_add_prof (sc, qn);
       return;
     }
   if (!src_resets_done)
@@ -3875,12 +3898,16 @@ sqlg_vec_ts (sql_comp_t * sc, table_source_t * ts)
 	    {
 	      sqlg_vec_cast (sc, ks->ks_vec_source, ks->ks_vec_cast, ks->ks_dc_val_cast, &sp->sp_min_ssl, fill,
 		  &ks->ks_last_vec_param, &sp->sp_cl.cl_sqt, cast_changes_card);
+	      if (sc->sc_in_cursor_def && sp->sp_min_ssl->ssl_type == SSL_VARIABLE)
+		ks->ks_copy_search_pars = 1;
 	      fill++;
 	    }
 	  if (sp->sp_max_ssl)
 	    {
 	      sqlg_vec_cast (sc, ks->ks_vec_source, ks->ks_vec_cast, ks->ks_dc_val_cast, &sp->sp_max_ssl, fill,
 		  &ks->ks_last_vec_param, &sp->sp_cl.cl_sqt, cast_changes_card);
+	      if (sc->sc_in_cursor_def && sp->sp_max_ssl->ssl_type == SSL_VARIABLE)
+		ks->ks_copy_search_pars = 1;
 	      fill++;
 	    }
 
@@ -3905,6 +3932,8 @@ sqlg_vec_ts (sql_comp_t * sc, table_source_t * ts)
 		  &ks->ks_last_vec_param, &target_sqt, cast_changes_card);
 	      if (!ks->ks_first_row_vec_ssl && SSL_IS_VEC_OR_REF (sp->sp_min_ssl))
 		ks->ks_first_row_vec_ssl = sp->sp_min_ssl;
+	      if (sc->sc_in_cursor_def && sp->sp_min_ssl->ssl_type == SSL_VARIABLE)
+		ks->ks_copy_search_pars = 1;
 	      fill++;
 	    }
 	  if (sp->sp_max_ssl)
@@ -3916,6 +3945,8 @@ sqlg_vec_ts (sql_comp_t * sc, table_source_t * ts)
 		  &ks->ks_last_vec_param, &target_sqt, cast_changes_card);
 	      if (!ks->ks_first_row_vec_ssl && SSL_IS_VEC_OR_REF (sp->sp_max_ssl))
 		ks->ks_first_row_vec_ssl = sp->sp_max_ssl;
+	      if (sc->sc_in_cursor_def && sp->sp_max_ssl->ssl_type == SSL_VARIABLE)
+		ks->ks_copy_search_pars = 1;
 	      fill++;
 	    }
 	}
@@ -4201,7 +4232,8 @@ sqlg_vec_qns (sql_comp_t * sc, data_source_t * qn, dk_set_t prev_nodes)
 	    sc->sc_vec_current = qn->src_prev;
 	  continue;
 	}
-      if (IS_QN (qn, outer_seq_end_input))
+      else if (IS_QN (qn, outer_seq_end_input)
+	       || (IS_QN (qn, select_node_input_subq) && ((select_node_t *)qn)->sel_subq_inlined))
 	prev_nodes = sc->sc_vec_pred;
       if (IS_QN (qn, gs_union_node_input))
 	qn = qn_next (qn);
@@ -4251,7 +4283,7 @@ ssl_by_index (sql_comp_t * sc, int inx)
 {
   DO_HT (state_slot_t *, ssl, void *, igm, sc->sc_vec_ssl_def)
   {
-    if (inx == ssl->ssl_index)
+      if (ssl && inx == ssl->ssl_index)
       return ssl;
   }
   END_DO_HT;

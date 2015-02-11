@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -44,7 +44,8 @@ fct_view_info (in tree any, in ctx int, in txt any)
   http ('<h3 id="view_info">', txt);
   if ('list' = mode)
     {
-      http (sprintf ('Query results for Relations for %s%d', connection_get ('s_term'), pos), txt);
+      --http (sprintf ('Query results for Relations for %s%d', connection_get ('s_term'), pos), txt);
+      http ('Find entity relationships', txt);
     }
   if ('list-count' = mode)
     {
@@ -147,13 +148,12 @@ fct_var_tag (in this_s int, in ctx int)
   else
     cl := 'focus';
 
-  return sprintf ('<a class="%s" href="/fct/facet.vsp?cmd=set_focus&sid=%d&n=%d" title="Focus on %s%d">%s%d</a>',
+  return sprintf ('<a class="%s" href="/fct/facet.vsp?cmd=set_focus&sid=%d&n=%d" title="Relation %s ?s%d">?s%d</a>',
                     cl,
                     connection_get ('sid'),
 		    this_s,
 		    fct_s_term (),
 		    this_s,
-		    fct_s_term (),
 		    this_s);
 }
 ;
@@ -285,8 +285,12 @@ fct_query_info (in tree any,
     }
   else if (n = 'text' or n = 'text-d')
     {
-      declare prop varchar;
+      declare prop, vt varchar;
       prop := cast (xpath_eval ('./@property', tree, 1) as varchar);
+      if (this_s = ctx)
+        vt := cast (xpath_eval ('../view/@type', tree, 1) as varchar);
+      else
+        vt := '';
 
       if (prop is not null)
         fct_li (sprintf (' %s has <span class="iri"><a href="#"/fct/facet.vsp?sid=%d&cmd=drop_text_prop">%s</a></span> containing text <span class="value">"%s"</span>. ',
@@ -295,6 +299,28 @@ fct_query_info (in tree any,
                          fct_short_form (prop),
                          charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8')),
                 txt);
+      else if (vt = 'properties')
+        fct_li (sprintf (' %s is the %s of <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=20&offset=0&cno=%d">any %s</a> where the %s is associated with <span class="value">"%s"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ', 
+                         fct_var_tag (this_s, ctx), 
+			 fct_s_term (),
+                         connection_get ('sid'), 
+                         cno,
+		         fct_p_term (),
+		         fct_o_term (),
+		         charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8'),
+                         connection_get ('sid')), 
+                 txt);
+      else if (vt = 'properties-in') 
+        fct_li (sprintf (' %s is the %s of <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=20&offset=0&cno=%d">any %s</a> where the %s is associated with <span class="value">"%s"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ', 
+                         fct_var_tag (this_s, ctx), 
+			 fct_o_term (),
+                         connection_get ('sid'), 
+                         cno,
+		         fct_p_term (),
+		         fct_s_term (),
+		         charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8'),
+                         connection_get ('sid')), 
+                 txt);
       else
         fct_li (sprintf (' %s has <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=20&offset=0&cno=%d">any %s</a> with %s <span class="value">"%s"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ',
                          fct_var_tag (this_s, ctx),
@@ -330,10 +356,10 @@ fct_query_info (in tree any,
                 txt);
 	}
       if (ctx)
-	http (sprintf ('<a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop&n=%d">Drop %s%d</a> ',
+	http (sprintf ('<a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop&n=%d">Drop ?s%d</a> ',
 	               connection_get ('sid'),
                        new_s,
-                       fct_s_term (),
+                       --fct_s_term (), 
                        new_s),
               txt);
 
@@ -354,10 +380,10 @@ fct_query_info (in tree any,
             txt);
 
       if (ctx)
-	http (sprintf ('<a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop&n=%d">Drop %s%d</a> ',
+	http (sprintf ('<a class="qry_nfo_cmd" href="/fct/facet.vsp?sid=%d&cmd=drop&n=%d">Drop ?s%d</a> ',
 	               connection_get ('sid'),
 	               new_s,
-                       fct_s_term (),
+                       --fct_s_term (), 
                        new_s), txt);
 
       fct_query_info_1 (tree, new_s, max_s, level, ctx, txt, cno);
@@ -527,15 +553,18 @@ fct_query_info (in tree any,
 ;
 
 VHOST_REMOVE (lpath=>'/fct');
-VHOST_DEFINE (lpath=>'/fct',
+VHOST_DEFINE (
+  lpath=>'/fct',
     	ppath=>case when registry_get('_fct_path_') = 0 then '/fct/' else registry_get('_fct_path_') end,
 	is_dav=>atoi (case when registry_get('_fct_dav_') = 0 then '0' else registry_get('_fct_dav_') end),
-    	vsp_user=>'SPARQL', def_page=>'facet.vsp');
+  vsp_user=>'SPARQL',
+  def_page=>'facet.vsp'
+  );
 VHOST_REMOVE (lpath=>'/b3s');
 VHOST_DEFINE (lpath=>'/b3s',
     	ppath=>case when registry_get('_fct_path_') = 0 then '/fct/' else registry_get('_fct_path_') end || 'www/',
 	is_dav=>atoi (case when registry_get('_fct_dav_') = 0 then '0' else registry_get('_fct_dav_') end),
-    	vsp_user=>'dba', def_page=>'listall.vsp');
+    	vsp_user=>'SPARQL', def_page=>'listall.vsp');
 
 
 create procedure
@@ -600,7 +629,7 @@ fct_nav (in tree any,
   fct_set_conn_tlogy (tree);
 
   http ('<div id="fct_nav">', txt);
-  http ('<h3>Entity Relationship Exploration</h3>', txt);
+  http ('<h3>Entity Relationship Filters</h3>', txt);
   http ('<ul class="n1">', txt);
 
   if ('text-properties' = tp)
@@ -622,25 +651,25 @@ fct_nav (in tree any,
 
   if ('properties' <> tp)
     if (connection_get('s_term') = 's')
-      fct_view_link ('properties', 'Properties', txt, 'Entity Characteristic or Property');
+      fct_view_link ('properties', 'Relation Subject', txt, 'Relationships for which selected variable denotes relation subject');
     else
-      fct_view_link ('properties', 'Relation Subjects', txt, 'Relations for which selected Entity is an Object');
+      fct_view_link ('properties', 'Relation Entity', txt, 'Relationships for which selected variable denotes relation entity');
 
   if ('text' = tp and pos = 0)
     fct_view_link ('text-properties', 'Properties containing the text', txt);
 
   if ('properties-in' <> tp)
     if (connection_get('s_term') = 's')
-      fct_view_link ('properties-in', 'Referencing Properties', txt, 'Characteristics or Properties with Entity References as values');
+      fct_view_link ('properties-in', 'Relation Object', txt, 'Relationships for which selected variable denotes relation object');
     else
-      fct_view_link ('properties-in', 'Relation Objects', txt, 'Relations for which selected Entity is a Subject');
+      fct_view_link ('properties-in', 'Relation Value', txt, 'Relationships for which selected variable denotes relation value');
 
       if (tp <> 'list-count')
     {
 	if (connection_get('s_term') = 's')
-	  fct_view_link ('list-count', 'Distinct objects (Aggregated)', txt, 'Displaying List of Distinct Entity Names ordered by Count');
+	fct_view_link ('list-count', 'Distinct (Count)', txt, 'Displaying List of Distinct Entity Names ordered by Count');
 	else
-	  fct_view_link ('list-count', 'Distinct values (Aggregated)', txt, 'Displaying List of Distinct Entity Names ordered by Count');
+	fct_view_link ('list-count', 'Distinct (Count)', txt, 'Displaying List of Distinct Entity Names ordered by Count');
     }
   if ('text' <> tp and tp <> 'text-d')
     {
@@ -2562,11 +2591,12 @@ exec:;
 create procedure fct_virt_info ()
 {
   http ('<a href="http://www.openlinksw.com/virtuoso/">OpenLink Virtuoso</a> version ');
-  http (sprintf ('%s as of %s', sys_stat ('st_dbms_ver'), sys_stat('st_build_date'))); 
+  http (sprintf ('%s as of %s', sys_stat ('st_dbms_ver'), sys_stat('st_build_date')));
   http (', on ');
   http (sys_stat ('st_build_opsys_id')); http (sprintf (' (%s), ', host_id ()));
-  http (case when sys_stat ('cl_run_local_only') = 1 then 'Standard Edition' else 'Cluster Edition' end);
-  http (case when sys_stat ('cl_run_local_only') = 0 then sprintf ('(%d server processes)', sys_stat ('cl_n_hosts')) else '' end);
+  http (case when sys_stat ('cl_run_local_only') = 1 then 'Single-Server' else 'Cluster' end); http (' Edition ');
+  http (case when sys_stat ('cl_run_local_only') = 0 then sprintf ('(%d server processes, %s total memory)', sys_stat ('cl_n_hosts'), mem_hum_size (mem_info_cl ())) 
+      else sprintf ('(%s total memory)', mem_hum_size (mem_info_cl ())) end); 
 }
 ;
 
@@ -2605,6 +2635,17 @@ create procedure fct_desc_page_head ()
     </h1>
     <div id="homelink"></div>
   </div> <!-- hd_l -->
-  <div id="hd_r"></div> <!-- hd_r -->');
+  ');
+}
+;
+
+create procedure fct_build_info ()
+{
+  declare r, d any;
+  d := (select R_VALUE from VAD..VAD_REGISTRY where R_TYPE = 'STRING' and R_SHKEY = 'Release Date' and R_KEY like '/VAD/fct/%');
+  if (d is null) return 'N/A';
+  d := stringdate (d);
+  r := sprintf ('%s %02d %d', subseq (monthname (d), 0, 3), dayofmonth (d), year (d));
+  return r;
 }
 ;

@@ -9,7 +9,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -32,6 +32,7 @@
 #endif
 #undef log
 #include "math.h"
+#include "tlsf.h"
 
 
 void
@@ -191,6 +192,8 @@ mp_free (mem_pool_t * mp)
     hash_table_free (mp->mp_box_to_dc);
 #endif
   mp_unregister (mp);
+  if (mp->mp_tlsf)
+    tlsf_destroy (mp->mp_tlsf); /*  supporting structs, the mmaps are part of mp large allocs */
   DO_SET (caddr_t, box, &mp->mp_trash)
   {
     dk_free_tree (box);
@@ -215,7 +218,6 @@ mp_free (mem_pool_t * mp)
   dk_free ((caddr_t) mp, sizeof (mem_pool_t));
 }
 
-#ifdef MALLOC_DEBUG
 void
 mp_check (mem_pool_t * mp)
 {
@@ -234,7 +236,7 @@ mp_check (mem_pool_t * mp)
 	GPF_T1 (err);
     }
 }
-#endif
+
 
 void
 mp_alloc_box_assert (mem_pool_t * mp, caddr_t box)
@@ -740,7 +742,7 @@ DBG_NAME (mp_box_num) (DBG_PARAMS mem_pool_t * mp, boxint n)
   if (!IS_POINTER (n))
     return (box_t) (ptrlong) n;
 
-  MP_INT (box, mp, n, DV_INT_TAG_WORD);
+  MP_INT (box, mp, n, DV_INT_TAG_WORD_64);
   return box;
 }
 
@@ -779,7 +781,7 @@ caddr_t
 DBG_NAME (mp_box_iri_id) (DBG_PARAMS mem_pool_t * mp, iri_id_t n)
 {
   caddr_t box;
-  MP_INT (box, mp, n, DV_IRI_TAG_WORD);
+  MP_INT (box, mp, n, DV_IRI_TAG_WORD_64);
   return box;
 }
 
@@ -788,7 +790,7 @@ caddr_t
 DBG_NAME (mp_box_double) (DBG_PARAMS mem_pool_t * mp, double n)
 {
   caddr_t box;
-  MP_DOUBLE (box, mp, n, DV_DOUBLE_TAG_WORD);
+  MP_DOUBLE (box, mp, n, DV_DOUBLE_TAG_WORD_64);
   return box;
 }
 
@@ -797,7 +799,7 @@ caddr_t
 DBG_NAME (mp_box_float) (DBG_PARAMS mem_pool_t * mp, float n)
 {
   caddr_t box;
-  MP_FLOAT (box, mp, n, DV_FLOAT_TAG_WORD);
+  MP_FLOAT (box, mp, n, DV_FLOAT_TAG_WORD_64);
   return box;
 }
 
@@ -1460,7 +1462,7 @@ mp_mmap_mark (void * __ptr, size_t sz, int flag)
 	  if (!flag && !map) GPF_T1 ("freeing mmap mark where no mapping");
 	  if (!map)
 	    {
-	      map = dk_pool_map[map_off] = dk_alloc (sizeof (dk_pool_4g_t));
+	      map = dk_pool_map[map_off] = malloc (sizeof (dk_pool_4g_t));
 	      memzero (map, sizeof (dk_pool_4g_t));
 	    }
 	}
@@ -1585,6 +1587,7 @@ mp_mark_check ()
 
 void mm_cache_clear ();
 
+int64 dk_n_mmaps;
 
 void *
 mp_mmap (size_t sz)
@@ -1609,6 +1612,7 @@ mp_mmap (size_t sz)
 	  continue;
     }
   mp_mmap_mark (ptr, sz, 1);
+      dk_n_mmaps++;
   return ptr;
     }
 #else
@@ -1649,6 +1653,7 @@ mp_munmap (void* ptr, size_t sz)
 	  log_error ("munmap failed with %d", errno);
 	  GPF_T1 ("munmap failed");
 	}
+      dk_n_mmaps--;
     }
 #else
   free (ptr);
@@ -1809,11 +1814,30 @@ mp_large_alloc (mem_pool_t * mp, size_t sz)
   return ptr;
 }
 
+
+void
+mp_set_tlsf (mem_pool_t * mp, size_t  sz)
+{
+  int nth;
+  size_t sz2 = mm_next_size (sz, &nth);
+  void* area = mp_large_alloc (mp, sz2);
+  init_memory_pool (sz2, area);
+  mp->mp_tlsf = (tlsf_t*)area;
+  mp->mp_tlsf->tlsf_mp = mp;
+  mp->mp_tlsf->tlsf_id = TLSF_IN_MP;
+  mp->mp_tlsf->tlsf_grow_quantum = sz2;
+}
+
+
+
 void
 mm_free_sized (void* ptr, size_t sz)
 {
   int nth;
   size_t sz2 = mm_next_size (sz, &nth);
+#ifdef HAVE_SYS_MMAN_H
+  if (((ptrlong)ptr & 0xfff)) GPF_T1 ("large free not on 4k boundary");
+#endif
   if (-1 == nth || !resource_store_timed (mm_rc[nth], ptr))
     mp_munmap (ptr, sz2);
 }
@@ -1984,7 +2008,10 @@ munmap_ck (void* ptr, size_t sz)
     mp_mmap_mark  (ptr, sz, 1);
 
   if (0 == rc || (-1 == rc && ENOMEM == errno))
-    return rc;
+    {
+      dk_n_mmaps--;
+      return rc;
+    }
   log_error ("munmap failed with errno %d ptr %p sz %ld", errno, ptr, sz);
   GPF_T1 ("munmap failed with other than ENOMEM");
   return -1;

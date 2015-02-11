@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -486,14 +486,14 @@ typedef struct dk_mem_wrapper_s
 } dk_mem_wrapper_t;
 
 #define DV_MEM_WRAPPER 			218
-
+#define DV_BIN 222
 #define DV_SYMBOL			127		   /* moved from widv.h */
 
 #define DV_WIDE 			225		   /* wchar_t */
 #define DV_LONG_WIDE 			226		   /* wchar_t with 32 bit length */
 
 #define IS_STRING_DTP(dtp)		((DV_STRING == (dtp)) || (DV_UNAME == (dtp)))
-#define IS_STRING_ALIGN_DTP(dtp) 	(IS_STRING_DTP(dtp) || (DV_C_STRING == (dtp)) || (DV_SYMBOL == (dtp)) || (DV_SHORT_STRING_SERIAL == (dtp)))
+#define IS_STRING_ALIGN_DTP(dtp) 	(IS_STRING_DTP(dtp) || (DV_C_STRING == (dtp)) || (DV_SYMBOL == (dtp)) || DV_SHORT_STRING_SERIAL == (dtp) || DV_BIN == (dtp))
 
 #define LAST_DV_DTP 			220
 
@@ -924,21 +924,25 @@ extern caddr_t uname___empty;
 extern void dkbox_terminate_module (void);
 
 #ifdef WORDS_BIGENDIAN
-#define DV_INT_TAG_WORD 		0x080000bd
+//#define DV_INT_TAG_WORD 		0x080000bd
 #define DV_INT_TAG_WORD_64 DV_INT_TAG_WORD
-#define DV_IRI_TAG_WORD 		0x080000f3
+//#define DV_IRI_TAG_WORD 		0x080000f3
 #define DV_IRI_TAG_WORD_64  DV_IRI_TAG_WORD
-#define DV_DOUBLE_TAG_WORD 		0x080000bf
-#define DV_FLOAT_TAG_WORD 		0x080000be
+//#define DV_DOUBLE_TAG_WORD 		0x080000bf
+//#define DV_FLOAT_TAG_WORD 		0x080000be
+#define DV_DOUBLE_TAG_WORD_64 		0x00000000080000bf
+#define DV_FLOAT_TAG_WORD_64 		0x00000000080000be
 
 
 #else
-#define DV_INT_TAG_WORD  		0xbd000008
+//#define DV_INT_TAG_WORD  		0xbd000008
 #define DV_INT_TAG_WORD_64 0xbd00000800000000
-#define DV_IRI_TAG_WORD 		0xf3000008
+//#define DV_IRI_TAG_WORD 		0xf3000008
 #define DV_IRI_TAG_WORD_64 		0xf300000800000000
-#define DV_DOUBLE_TAG_WORD  0xbf000008
-#define DV_FLOAT_TAG_WORD 0xbe000008
+//#define DV_DOUBLE_TAG_WORD  0xbf000008
+//#define DV_FLOAT_TAG_WORD 0xbe000008
+#define DV_DOUBLE_TAG_WORD_64  0xbf00000800000000
+#define DV_FLOAT_TAG_WORD_64 0xbe00000800000000
 #endif
 
 /* values for box_flags */

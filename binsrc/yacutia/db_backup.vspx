@@ -1,12 +1,10 @@
 <?xml version="1.0"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2014 OpenLink Software
+ -  Copyright (C) 1998-2015 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,7 +19,6 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="db_backup_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl"
    fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
@@ -31,21 +28,21 @@
 
   <script language="JavaScript">
     <![CDATA[
-    function doBrowse(target,fld_name, startPath, isDir, isDav)
-    {
-      window._result = document.form3[fld_name];
-      if (isDav)
-        target = 'popup_browser.vspx' + target;
-      else
-        target = 'popup2_browser.vspx' + target;
-      window.open( target + '&path=' +
-                  document.form3[fld_name].value +
-                  '&caption=Choose+' + (isDir ? 'location' : 'resource') +
-                  '&browse_type=' + (isDir ? 'col':'res') +
-                  '&retname=_result',
-                  'window',
-                  'scrollbars=yes, resizable=yes, menubar=no');
-    }
+      function doBrowse(target,fld_name, startPath, isDir, isDav)
+      {
+        window._result = document.form3[fld_name];
+        if (isDav)
+          target = 'popup_browser.vspx' + target;
+        else
+          target = 'popup2_browser.vspx' + target;
+        window.open(target +
+                    '&' + (isDav ? 'dir' : 'path') + '=' + document.form3[fld_name].value +
+                    '&caption=Choose+' + (isDir ? 'location': 'resource') +
+                    '&browse_type=' + (isDir ? 'col': 'res') +
+                    '&retname=_result',
+                    'window',
+                    'scrollbars=yes, resizable=yes, menubar=no');
+      }
     ]]>
   </script>
 

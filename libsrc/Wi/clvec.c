@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -184,7 +184,12 @@ clib_vec_read_into_slots (cll_in_box_t * clib, caddr_t * inst, dk_set_t slots)
 	  {
 	    db_buf_t dv = dre->dre_data;
 	    DB_BUF_TLEN (l, *dv, dv);
-	    if (DV_XML_ENTITY == dv[0])
+	    if (DV_DB_NULL == dv[0])
+	      {
+		((caddr_t *) dc->dc_values)[dc->dc_n_values++] = dk_alloc_box (0, DV_DB_NULL);
+		dc->dc_any_null = 1;
+	      }
+	    else if (DV_XML_ENTITY == dv[0])
 	      ((caddr_t *) dc->dc_values)[dc->dc_n_values++] = box_deserialize_xml (dv, clib->clib_group->clrg_inst);
 	    else
 	      ((caddr_t *) dc->dc_values)[dc->dc_n_values++] = box_deserialize_string ((caddr_t) dv, l, 0);
@@ -199,6 +204,8 @@ clib_vec_read_into_slots (cll_in_box_t * clib, caddr_t * inst, dk_set_t slots)
 	      {
 		db_buf_t dv = dre->dre_data;
 		DB_BUF_TLEN (l, *dv, dv);
+		if (DV_DB_NULL == *dv)
+		  dc->dc_any_null = 1;
 		/*dc_any_trap  (dv); */
 		dc_append_bytes (dc, dv, l, NULL, 0);
 		dre->dre_data += l;

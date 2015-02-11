@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -25,7 +25,10 @@ package virtuoso.jena.driver;
 
 import java.sql.*;
 import java.util.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import javax.sql.*;
+import javax.transaction.xa.*;
 
 import virtuoso.sql.*;
 
@@ -39,6 +42,10 @@ import com.hp.hpl.jena.rdf.model.impl.*;
 
 import virtuoso.jdbc4.VirtuosoConnectionPoolDataSource;
 import virtuoso.jdbc4.VirtuosoDataSource;
+import virtuoso.jdbc4.VirtuosoXADataSource;
+import virtuoso.jdbc4.VirtuosoDate;
+import virtuoso.jdbc4.VirtuosoTime;
+import virtuoso.jdbc4.VirtuosoTimestamp;
 
 
 public class VirtGraph extends GraphBase
@@ -47,7 +54,20 @@ public class VirtGraph extends GraphBase
         VirtuosoQueryEngine.register();
     }
 
+//    static final String S_TTLP_INSERT = "DB.DBA.TTLP_MT (?, '', ?, 255, 2, 3, ?)";
+    static final protected String S_BATCH_INSERT = "DB.DBA.rdf_insert_triple_c (?,?,?,?,?,?)";
+    static final protected String S_BATCH_DELETE = "DB.DBA.rdf_delete_triple_c (?,?,?,?,?,?)";
+    static final String S_CLEAR_GRAPH = "DB.DBA.rdf_clear_graphs_c (?)";
+
+    static final String sinsert = "sparql insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
+    static final String sdelete = "sparql delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
+    static final protected int BATCH_SIZE = 5000;
+    static final protected int MAX_CMD_SIZE = 36000;
+    static final String utf8 = "charset=utf-8";
+    static final String charset = "UTF-8";
     static public final String DEFAULT = "virt:DEFAULT";
+
+    protected boolean isXA = false;
     protected String graphName;
     protected boolean readFromAllGraphs = false;
     protected String url_hostlist;
@@ -55,20 +75,20 @@ public class VirtGraph extends GraphBase
     protected String password;
     protected boolean roundrobin = false;
     protected int prefetchSize = 200;
+    protected int batchSize = BATCH_SIZE;
     protected Connection connection = null;
     protected String ruleSet = null;
     protected boolean useSameAs = false;
     protected int queryTimeout = 0;
-    static final String S_TTLP_INSERT = "DB.DBA.TTLP(?,'',?,255)";
-    static final String sinsert = "sparql insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
-    static final String sdelete = "sparql delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
-    static final int BATCH_SIZE = 5000;
-    static final int MAX_CMD_SIZE = 36000;
-    static final String utf8 = "charset=utf-8";
-    static final String charset = "UTF-8";
+    protected boolean useReprepare = true;
+    protected String sparqlPrefix = null;
 
     private VirtuosoConnectionPoolDataSource pds = new VirtuosoConnectionPoolDataSource();
     private DataSource ds;
+    private XADataSource xa_ds;
+    private javax.transaction.xa.XAResource xa_resource = null;
+    private XAConnection xa_connection = null;
+    protected VirtTransactionHandler tranHandler = null;
 
 
     public VirtGraph()
@@ -100,19 +120,21 @@ public class VirtGraph extends GraphBase
 	if (_ds instanceof VirtuosoDataSource) {
 	    VirtuosoDataSource vds = (VirtuosoDataSource)_ds;
 	    this.url_hostlist = vds.getServerName();
-	    this.graphName = _graphName;
 	    this.user = vds.getUser();
 	    this.password = vds.getPassword();
 	}
 
-	if (this.graphName == null)
-	    this.graphName = DEFAULT;
+	this.graphName = _graphName==null?DEFAULT: _graphName;
 
 	try {
 	    connection = _ds.getConnection();
 	    ds = _ds;
 	    ModelCom m = new ModelCom(this); //don't drop is it needed for initialize internal Jena classes
 	    TypeMapper tm = TypeMapper.getInstance();
+
+            virtuoso.jdbc4.Driver drv = new virtuoso.jdbc4.Driver();
+            if (drv.getMajorVersion()>=3 && drv.getMinorVersion()>=72)
+                useReprepare = false;
 	} catch(Exception e) {
 	    throw new JenaException(e);
 	}
@@ -131,18 +153,20 @@ public class VirtGraph extends GraphBase
 	if (_ds instanceof VirtuosoConnectionPoolDataSource) {
 	    VirtuosoDataSource vds = (VirtuosoDataSource)_ds;
 	    this.url_hostlist = vds.getServerName();
-	    this.graphName = _graphName;
 	    this.user = vds.getUser();
 	    this.password = vds.getPassword();
 	}
 
-	if (this.graphName == null)
-	    this.graphName = DEFAULT;
+	this.graphName = _graphName==null?DEFAULT: _graphName;
 
 	try {
 	    connection = _ds.getPooledConnection().getConnection();
 	    ModelCom m = new ModelCom(this); //don't drop is it needed for initialize internal Jena classes
 	    TypeMapper tm = TypeMapper.getInstance();
+
+            virtuoso.jdbc4.Driver drv = new virtuoso.jdbc4.Driver();
+            if (drv.getMajorVersion()>=3 && drv.getMinorVersion()>=72)
+                useReprepare = false;
 	} catch(Exception e) {
 	    throw new JenaException(e);
 	}
@@ -155,19 +179,54 @@ public class VirtGraph extends GraphBase
     }
 
 
-    public VirtGraph(String graphName, String _url_hostlist, String user, 
+    public VirtGraph(String _graphName, XADataSource _ds) 
+    {
+	super();
+
+	if (_ds instanceof VirtuosoXADataSource) {
+	    VirtuosoXADataSource vds = (VirtuosoXADataSource)_ds;
+	    this.url_hostlist = vds.getServerName();
+	    this.user = vds.getUser();
+	    this.password = vds.getPassword();
+	}
+
+	this.graphName = _graphName==null?DEFAULT: _graphName;
+
+	try {
+	    xa_connection = _ds.getXAConnection();
+	    connection = xa_connection.getConnection();
+	    isXA = true;
+	    ModelCom m = new ModelCom(this); //don't drop is it needed for initialize internal Jena classes
+	    TypeMapper tm = TypeMapper.getInstance();
+
+            virtuoso.jdbc4.Driver drv = new virtuoso.jdbc4.Driver();
+            if (drv.getMajorVersion()>=3 && drv.getMinorVersion()>=72)
+                useReprepare = false;
+	} catch(Exception e) {
+	    throw new JenaException(e);
+	}
+    }
+
+
+    public VirtGraph(XADataSource _ds) 
+    {		
+	this(null, _ds);
+    }
+
+
+
+    
+    public VirtGraph(String _graphName, String _url_hostlist, String user, 
     		String password, boolean _roundrobin)
     {
 	super();
 
 	this.url_hostlist = _url_hostlist.trim();
 	this.roundrobin = _roundrobin;
-	this.graphName = graphName;
 	this.user = user;
 	this.password = password;
 
-	if(this.graphName == null)
-	    this.graphName = DEFAULT;
+	this.graphName = _graphName==null?DEFAULT: _graphName;
 
 	try {
 	    if (url_hostlist.startsWith("jdbc:virtuoso://")) {
@@ -200,6 +259,10 @@ public class VirtGraph extends GraphBase
 
 	    ModelCom m = new ModelCom(this); //don't drop is it needed for initialize internal Jena classes
 	    TypeMapper tm = TypeMapper.getInstance();
+
+            virtuoso.jdbc4.Driver drv = new virtuoso.jdbc4.Driver();
+            if (drv.getMajorVersion()>=3 && drv.getMinorVersion()>=72)
+                useReprepare = false;
 	} catch(Exception e) {
 	    throw new JenaException(e);
 	}
@@ -209,6 +272,16 @@ public class VirtGraph extends GraphBase
 // getters
     public DataSource getDataSource() {
         return ds;
+    }
+
+    public XAResource getXAResource() {
+    	try{
+            if (xa_resource==null)
+        	xa_resource = (xa_connection!=null)?xa_connection.getXAResource():null;
+            return xa_resource;
+        } catch(SQLException e) {
+            throw new JenaException(e);
+        }
     }
 
     public String getGraphName()
@@ -264,6 +337,32 @@ public class VirtGraph extends GraphBase
     {
     	this.queryTimeout = seconds;
     }
+
+
+    public int getBatchSize()
+    {
+    	return this.batchSize;
+    }
+
+
+    public void setBatchSize(int sz)
+    {
+    	this.batchSize = sz;
+    }
+
+
+    public String getSparqlPrefix()
+    {
+    	return this.sparqlPrefix;
+    }
+
+
+    public void setSparqlPrefix(String val)
+    {
+    	this.sparqlPrefix = val;
+    }
+
+
 
 
     public int getCount()
@@ -423,6 +522,30 @@ public class VirtGraph extends GraphBase
     }
 
 
+    protected void appendSparqlPrefixes(StringBuilder sb)
+    {
+      if (ruleSet!=null)
+        sb.append(" define input:inference '"+ruleSet+"'\n ");
+        
+      if (sparqlPrefix!=null) {
+        sb.append(sparqlPrefix);
+        sb.append('\n');
+      }
+
+      if (useSameAs)
+        sb.append(" define input:same-as \"yes\"\n ");
+      sb.append('\n');
+    }
+
+    static String Blank2String(Node n) 
+    {
+      String ns = n.toString();
+      if (ns.startsWith("nodeID://"))
+        return ns;
+      else
+        return "_:"+ n.toString().replace(':','_').replace('-','z');
+    }
+
 
 // GraphBase overrides
     public static String Node2Str(Node n)
@@ -430,10 +553,10 @@ public class VirtGraph extends GraphBase
       if (n.isURI()) {
         return "<"+n+">";
       } else if (n.isBlank()) {
-        return "_:"+n; 
+        return "<"+Blank2String(n)+">"; 
       } else if (n.isLiteral()) {
         String s;
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         sb.append("\"");
         sb.append(escapeString(n.getLiteralLexicalForm()));
         sb.append("\"");
@@ -461,8 +584,8 @@ public class VirtGraph extends GraphBase
 	return;
       if (n.isURI()) 
 	ps.setString(col, n.toString());
-      else if (n.isBlank()) 
-        ps.setString(col, "_:"+n.toString());
+      else if (n.isBlank())
+        ps.setString(col, Blank2String(n));
       else 
         throw new SQLException("Only URI or Blank nodes can be used as subject");
     }
@@ -473,7 +596,7 @@ public class VirtGraph extends GraphBase
       if (n == null)
         return;
       if (n.isURI()) 
-      ps.setString(col, n.toString());
+        ps.setString(col, n.toString());
       else
         throw new SQLException("Only URI nodes can be used as predicate");
     }
@@ -486,9 +609,9 @@ public class VirtGraph extends GraphBase
 	ps.setInt(col, 1);
         ps.setString(col+1, n.toString());
 	ps.setNull(col+2, java.sql.Types.VARCHAR);
-      } else if (n .isBlank()) {
+      } else if (n.isBlank()) {
 	ps.setInt(col, 1);
-	ps.setString(col+1, "_:"+n.toString());
+	ps.setString(col+1, Blank2String(n));
 	ps.setNull(col+2, java.sql.Types.VARCHAR);
       }	else if (n.isLiteral()) {
         String llang = n.getLiteralLanguage();
@@ -514,7 +637,7 @@ public class VirtGraph extends GraphBase
     }
 
     
-//--java5 or newer    @Override
+    @Override
     public void performAdd(Triple t)
     {
       performAdd(null, t.getSubject(), t.getPredicate(), t.getObject());
@@ -530,7 +653,6 @@ public class VirtGraph extends GraphBase
     protected void performAdd(String _gName, Node s, Node p, Node o)
     {
       java.sql.PreparedStatement ps;
-
       try {
         ps = prepareStatement(sinsert);
         ps.setString(1, (_gName!=null? _gName: this.graphName));
@@ -546,6 +668,7 @@ public class VirtGraph extends GraphBase
     }
 
 
+    @Override
     public void performDelete (Triple t)
     {
       performDelete(null, t.getSubject(), t.getPredicate(), t.getObject());
@@ -574,16 +697,12 @@ public class VirtGraph extends GraphBase
     /**
      * more efficient
      */
-//--java5 or newer    @Override
+    @Override
     protected int graphBaseSize() 
     {
-      StringBuffer sb = new StringBuffer("select count(*) from (sparql define input:storage \"\" ");
+      StringBuilder sb = new StringBuilder("select count(*) from (sparql define input:storage \"\" ");
         
-      if (ruleSet!=null)
-        sb.append(" define input:inference '"+ruleSet+"'\n ");
-        
-      if (useSameAs)
-        sb.append(" define input:same-as \"yes\"\n ");
+      appendSparqlPrefixes(sb);
 
       if ( readFromAllGraphs )
         sb.append(" select * where {?s ?p ?o })f");
@@ -616,7 +735,7 @@ public class VirtGraph extends GraphBase
     /** maybe more efficient than default impl
      * 
      */
-//--java5 or newer    @Override
+    @Override
     protected boolean graphBaseContains(Triple t) 
     {
       return graphBaseContains(null, t);
@@ -626,50 +745,69 @@ public class VirtGraph extends GraphBase
     protected boolean graphBaseContains(String _gName, Triple t) 
     {
       ResultSet rs = null;
-      String S, P, O;
-      StringBuffer sb = new StringBuffer("sparql define input:storage \"\" "); 
-      String exec_text;
+      StringBuilder sb = new StringBuilder("sparql define input:storage \"\" "); 
+      Node nS, nP, nO;
 
       checkOpen();
+      appendSparqlPrefixes(sb);
 
-      S = " ?s ";
-      P = " ?p ";
-      O = " ?o ";
-
-      if (!Node.ANY.equals(t.getSubject()))
-        S = Node2Str(t.getSubject());
-
-      if (!Node.ANY.equals(t.getPredicate()))
-        P = Node2Str(t.getPredicate());
-
-      if (!Node.ANY.equals(t.getObject()))
-        O = Node2Str(t.getObject());
-      
-      if (ruleSet!=null)
-        sb.append(" define input:inference '"+ruleSet+"'\n ");
-
-      if (useSameAs)
-        sb.append(" define input:same-as \"yes\"\n ");
-
-      if ( readFromAllGraphs && _gName != null)
- 	sb.append(" select * where { " + S +" "+ P +" "+ O +" } limit 1");
+      if ( readFromAllGraphs && _gName == null)
+        sb.append(" select * where { ");
       else
-        sb.append(" select * where { graph <"+ (_gName!=null?_gName:graphName) +"> { " + S +" "+ P +" "+ O +" }} limit 1");
+        sb.append(" select * from <" + (_gName!=null?_gName:graphName) + "> where { ");
 
-      try {
-	java.sql.Statement stmt = createStatement();
-	rs = stmt.executeQuery(sb.toString());
+      nS = t.getSubject();
+      nP = t.getPredicate();
+      nO = t.getObject();
+
+      if (nP.isBlank())
+         throw new JenaException("BNode could not be used as Predicate");
+
+      sb.append(' ');
+      if (!Node.ANY.equals(nS))
+        sb.append("`iri(??)`");
+      else
+        sb.append("?s");
+
+      sb.append(' ');
+      if (!Node.ANY.equals(nP))
+        sb.append("`iri(??)`");
+      else
+        sb.append("?p");
+
+      sb.append(' ');
+      if (!Node.ANY.equals(nO))
+        sb.append("`bif:__rdf_long_from_batch_params(??,??,??)`");
+      else
+        sb.append("?o");
+
+      sb.append(" } limit 1");
+
+      try 
+      {
+        java.sql.PreparedStatement ps = prepareStatement(sb.toString());
+        int col = 1;
+
+        if (!Node.ANY.equals(nS))
+          bindSubject(ps, col++, nS);
+        if (!Node.ANY.equals(nP))
+          bindPredicate(ps, col++, nP);
+        if (!Node.ANY.equals(nO))
+          bindObject(ps, col, nO);
+
+	rs = ps.executeQuery();
 	boolean ret = rs.next();
 	rs.close();
-	stmt.close();
+	ps.close();
 	return ret;
+
       } catch (Exception e) {
         throw new JenaException(e);
       }
     }
 
 
-//--java5 or newer    @Override
+    @Override
     public ExtendedIterator<Triple> graphBaseFind(TripleMatch tm) 
     {
       return graphBaseFind(null, tm);
@@ -678,52 +816,76 @@ public class VirtGraph extends GraphBase
 
     protected ExtendedIterator<Triple> graphBaseFind(String _gName, TripleMatch tm) 
     {
-      String S, P, O;
-      StringBuffer sb = new StringBuffer("sparql "); 
+      StringBuilder sb = new StringBuilder("sparql "); 
+      Node nS, nP, nO;
 
       checkOpen();
 
-      S = " ?s ";
-      P = " ?p ";
-      O = " ?o ";
+      appendSparqlPrefixes(sb);
 
-      if (tm.getMatchSubject() != null)
-        S = Node2Str(tm.getMatchSubject());
-
-      if (tm.getMatchPredicate() != null)
-        P = Node2Str(tm.getMatchPredicate());
-
-      if (tm.getMatchObject() != null)
-        O = Node2Str(tm.getMatchObject());
-
-      if (ruleSet!=null)
-        sb.append(" define input:inference '"+ruleSet+"'\n ");
-
-      if (useSameAs)
-        sb.append(" define input:same-as \"yes\"\n ");
 
       if ( readFromAllGraphs && _gName == null)
-        sb.append(" select * where { "+ S +" "+ P +" "+ O + " }");
+        sb.append(" select * where { ");
       else
-        sb.append(" select * from <" + (_gName!=null?_gName:graphName) + "> where { " + S +" "+ P +" "+ O + " }");
+        sb.append(" select * from <" + (_gName!=null?_gName:graphName) + "> where { ");
+
+      nS = tm.getMatchSubject();
+      nP = tm.getMatchPredicate();
+      nO = tm.getMatchObject();
+
+      if (nP!=null && nP.isBlank())
+         throw new JenaException("BNode could not be used as Predicate");
+
+      sb.append(' ');
+      if (nS != null)
+        sb.append("`iri(??)`");
+      else
+        sb.append("?s");
+
+      sb.append(' ');
+      if (nP != null)
+        sb.append("`iri(??)`");
+      else
+        sb.append("?p");
+
+      sb.append(' ');
+      if (nO != null)
+        sb.append("`bif:__rdf_long_from_batch_params(??,??,??)`");
+      else
+        sb.append("?o");
+
+      sb.append(" }");
 
       try 
       {
-        java.sql.PreparedStatement stmt;
-        stmt = prepareStatement(sb.toString());
-	return new VirtResSetIter(this, stmt.executeQuery(), tm);
+        java.sql.PreparedStatement ps = prepareStatement(sb.toString());
+        int col = 1;
+
+        if (nS != null)
+          bindSubject(ps, col++, nS);
+        if (nP != null)
+          bindPredicate(ps, col++, nP);
+        if (nO != null)
+          bindObject(ps, col, nO);
+
+	return new VirtResSetIter(this, ps, ps.executeQuery(), tm);
       } catch (Exception e) {
         throw new JenaException(e);
       }
     }
 
 
-//--java5 or newer    @Override
+    @Override
     public void close() 
     {
       try {
         super.close(); // will set closed = true
-        connection.close();
+        if (connection!=null)
+          connection.close();
+        connection = null;
+        if (xa_connection != null)
+          xa_connection.close();
+        xa_connection = null;
       } catch (Exception e) {
         throw new JenaException(e);
       }
@@ -732,23 +894,49 @@ public class VirtGraph extends GraphBase
     
 // Extra functions
 
+    @Override
     public void clear()
     {
-      clearGraph(this.graphName);
+      clear(NodeFactory.createURI(this.graphName));
       getEventManager().notifyEvent( this, GraphEvents.removeAll );
     }
 
 
+    public void clear(Node... graphs)
+    {
+      if (graphs!=null && graphs.length > 0)
+        try {
+          String [] graphNames = new String[graphs.length];
+          for (int i = 0; i < graphs.length; i++) 
+            graphNames[i] = graphs[i].toString();
+
+          java.sql.PreparedStatement ps = prepareStatement(S_CLEAR_GRAPH);
+
+          Array gArray = connection.createArrayOf ("VARCHAR", graphNames);
+          ps.setArray (1, gArray);
+          ps.executeUpdate ();
+          ps.close();
+          gArray.free();
+	}
+	catch (Exception e) {
+          throw new JenaException(e);
+        }
+    }
+
+
+
     public void read (String url, String type)
     {
-      String exec_text;
+      StringBuilder sb = new StringBuilder("sparql \n");
 
-      exec_text ="sparql load \"" + url + "\" into graph <" + graphName + ">";
+      appendSparqlPrefixes(sb);
+
+      sb.append("load \"" + url + "\" into graph <" + graphName + ">");
 
       checkOpen();
       try {
         java.sql.Statement stmt = createStatement();
-        stmt.execute(exec_text);
+        stmt.execute(sb.toString());
         stmt.close();
       }	catch(Exception e) {
         throw new JenaException(e);
@@ -759,9 +947,10 @@ public class VirtGraph extends GraphBase
 //--java5 or newer    @SuppressWarnings("unchecked")
     void add(String _gName, Iterator<Triple> it, List<Triple> list) 
     {
+      PreparedStatement ps = null;
       try {
-        PreparedStatement ps = prepareStatement(S_TTLP_INSERT);
-        StringBuilder sb = new StringBuilder(256);
+        ps = prepareStatement(S_BATCH_INSERT);
+
         int count = 0;
 	    
         while (it.hasNext())
@@ -771,38 +960,95 @@ public class VirtGraph extends GraphBase
           if (list != null)
             list.add(t);
 
-          sb.append(Node2Str(t.getSubject()));
-          sb.append(' ');
-          sb.append(Node2Str(t.getPredicate()));
-          sb.append(' ');
-          sb.append(Node2Str(t.getObject()));
-          sb.append(" .\n");
+          bindBatchParams(ps, t.getSubject(), t.getPredicate(),
+          		t.getObject(), _gName);
+          ps.addBatch();
           count++;
 
-          if (count > BATCH_SIZE) {
-	    ps.setString(1, sb.toString());
-            ps.setString(2, (_gName!=null? _gName: this.graphName));
-	    ps.executeUpdate();
-	    sb.setLength(0);
+          if (count > batchSize) {
+	    ps.executeBatch();
+	    ps.clearBatch();
             count = 0;
+            if (useReprepare) {
+               try {
+                 ps.close();
+                 ps = null;
+               } catch(Exception e){}
+               ps = prepareStatement(S_BATCH_INSERT);
+            }
           }
         }
 
         if (count > 0) 
         {
-          ps.setString(1, sb.toString());
-          ps.setString(2, (_gName!=null? _gName: this.graphName));
-          ps.executeUpdate();
+	  ps.executeBatch();
+	  ps.clearBatch();
         }
-        ps.close();
 
       }	catch(Exception e) {
         throw new JenaException(e);
+      } finally {
+        if (ps!=null)
+          try {
+            ps.close();
+          } catch (SQLException e){}
       }
     }
 
 
+/***
+/// disabled, because there is issue in DB.DBA.rdf_delete_triple_c
 
+    void delete(Iterator<Triple> it, List<Triple> list) 
+    {
+      PreparedStatement ps = null;
+      try {
+        ps = prepareStatement(S_BATCH_DELETE);
+
+        int count = 0;
+	    
+        while (it.hasNext())
+        {
+          Triple t = (Triple) it.next();
+
+          if (list != null)
+            list.add(t);
+
+          bindBatchParams(ps, t.getSubject(), t.getPredicate(),
+          		t.getObject(), this.graphName);
+          ps.addBatch();
+          count++;
+
+          if (count > batchSize) {
+	    ps.executeBatch();
+	    ps.clearBatch();
+            count = 0;
+            if (useReprepare) {
+               try {
+                 ps.close();
+                 ps = null;
+               } catch(Exception e){}
+               ps = prepareStatement(S_BATCH_DELETE);
+            }
+          }
+        }
+
+        if (count > 0) 
+        {
+	  ps.executeBatch();
+	  ps.clearBatch();
+        }
+
+      }	catch(Exception e) {
+        throw new JenaException(e);
+      } finally {
+        if (ps!=null)
+          try {
+            ps.close();
+          } catch (SQLException e) {}
+      }
+    }
+***/
     void delete(Iterator<Triple> it, List<Triple> list)
     {
       String del_start = "sparql define output:format '_JAVA_' DELETE FROM <";
@@ -852,7 +1098,7 @@ public class VirtGraph extends GraphBase
           data.append(" }");
 	  stmt.execute(data.toString());
         }
-      
+
       }	catch(Exception e) {
         throw new JenaException(e);
       } finally {
@@ -863,6 +1109,62 @@ public class VirtGraph extends GraphBase
     }
 
 
+
+    protected void bindBatchParams(PreparedStatement ps, 
+    				Node subject, 
+    				Node predicate, 
+    				Node object, 
+    				String _graphName) throws SQLException
+    {
+      ps.setString(1, subject.isBlank()?Blank2String(subject):subject.toString());
+      ps.setString(2, predicate.isBlank()?Blank2String(predicate):predicate.toString());
+
+      if (object.isURI()) 
+      {
+        ps.setString(3, object.toString());
+        ps.setNull(4, java.sql.Types.VARCHAR);
+        ps.setInt(5, 0);
+      }
+      else if (object.isBlank()) 
+      {
+        ps.setString(3, Blank2String(object));
+        ps.setNull(4, java.sql.Types.VARCHAR);
+        ps.setInt(5, 0);
+      }
+      else if (object.isLiteral())
+      {
+        String s;
+        ps.setString(3, object.getLiteralLexicalForm());
+        String s_lang = object.getLiteralLanguage();
+        String s_type = object.getLiteralDatatypeURI();
+        if (s_type !=null && s_type.length() > 0) 
+        {
+          ps.setString(4, s_type);
+          ps.setInt(5, 3);
+        }
+        else if (s_lang != null && s_lang.length() > 0) 
+        {
+          ps.setString(4, s_lang);
+          ps.setInt(5, 2);
+        }
+        else
+        {
+          ps.setNull(4,java.sql.Types.VARCHAR);
+          ps.setInt(5, 1);
+        }
+      }
+      else
+      {
+        ps.setString(3, object.toString());
+        ps.setNull(4, java.sql.Types.VARCHAR);
+        ps.setInt(5, 0);
+      }
+
+      ps.setString(6, _graphName);
+    }
+
+
+
     void delete_match(TripleMatch tm)
     {
       delete_match(null, tm);
@@ -870,23 +1172,22 @@ public class VirtGraph extends GraphBase
 
     void delete_match(String _gName, TripleMatch tm)
     {
-      String S, P, O;
       Node nS, nP, nO;
 
       checkOpen();
-
-      S = "?s";
-      P = "?p";
-      O = "?o";
 
       nS = tm.getMatchSubject();
       nP = tm.getMatchPredicate();
       nO = tm.getMatchObject();
 
+      if (nP!=null && nP.isBlank())
+         throw new DeleteDeniedException("BNode could not be used as Predicate");
+
       try {
         if (nS == null && nP == null && nO == null) {
 
-          clearGraph((_gName!=null? _gName:this.graphName));
+          String gr = (_gName!=null? _gName:this.graphName);
+          clear(NodeFactory.createURI(gr));
 
         } else if (nS != null && nP != null && nO != null) {
           java.sql.PreparedStatement ps;
@@ -902,42 +1203,66 @@ public class VirtGraph extends GraphBase
 
         } else  {
 
+          java.sql.PreparedStatement ps;
+
+          StringBuilder stm = new StringBuilder();
+
+          stm.append(' ');
           if (nS != null)
-            S = Node2Str(nS);
+            stm.append("`iri(??)`");
+          else
+            stm.append("?s");
 
+          stm.append(' ');
           if (nP != null)
-            P = Node2Str(nP);
+            stm.append("`iri(??)`");
+          else
+            stm.append("?p");
 
+          stm.append(' ');
           if (nO != null)
-            O = Node2Str(nO);
+            stm.append("`bif:__rdf_long_from_batch_params(??,??,??)`");
+          else
+            stm.append("?o");
 
-          String query = "sparql delete from <"+
-             (_gName!=null? _gName:this.graphName)+
-             "> { "+S+" "+P+" "+O+" } where { "+S+" "+P+" "+O+" }";
+          StringBuilder sb = new StringBuilder("sparql ");
 
-          java.sql.Statement stmt = createStatement();
-          stmt.execute(query);
-          stmt.close();
+          appendSparqlPrefixes(sb);
+          sb.append("delete from <");
+          sb.append((_gName!=null? _gName:this.graphName));
+          sb.append("> { ");
+
+          sb.append(stm.toString());
+          sb.append(" } where { ");
+          sb.append(stm.toString());
+
+          sb.append(" }");
+
+          ps = prepareStatement(sb.toString());
+          int col = 1;
+
+          if (nS != null)
+            bindSubject(ps, col++, nS);
+          if (nP != null)
+            bindPredicate(ps, col++, nP);
+          if (nO != null) {
+            bindObject(ps, col, nO);
+            col +=3;
+          }
+
+
+          if (nS != null)
+            bindSubject(ps, col++, nS);
+          if (nP != null)
+            bindPredicate(ps, col++, nP);
+          if (nO != null)
+            bindObject(ps, col, nO);
+
+          ps.execute();
+          ps.close();
         }
       } catch(Exception e) {
         throw new DeleteDeniedException(e.toString());
-      }
-    }
-
-
-    void clearGraph(String name)
-    {
-      String query = "sparql clear graph iri(??)";
-
-      checkOpen();
-
-      try {
-        java.sql.PreparedStatement ps = prepareStatement(query);
-        ps.setString(1, name);
-        ps.execute();
-        ps.close();
-      }	catch(Exception e) {
-        throw new JenaException(e);
       }
     }
 
@@ -950,13 +1275,15 @@ public class VirtGraph extends GraphBase
 
     
     
-//--java5 or newer    @Override
-    public TransactionHandler getTransactionHandler()
+    @Override
+    public VirtTransactionHandler getTransactionHandler()
     {
-      return new VirtTransactionHandler(this);
+      if (tranHandler == null)
+        tranHandler = new VirtTransactionHandler(this);
+      return tranHandler;
     }
 
-//--java5 or newer    @Override
+    @Override
     public BulkUpdateHandler getBulkUpdateHandler()
     {
       if (bulkHandler == null) 
@@ -986,15 +1313,16 @@ public class VirtGraph extends GraphBase
         if (vs.getIriType() == ExtendedString.IRI && (vs.getStrType() & 0x01)== 0x01) 
         {
           if (vs.toString().indexOf ("_:") == 0)
-            return Node.createAnon(AnonId.create(vs.toString().substring(2))); // _:
+            return NodeFactory.createAnon(AnonId.create(vs.toString().substring(2))); // _:
           else
-            return Node.createURI(vs.toString());
+            return NodeFactory.createURI(vs.toString());
 
         } else if (vs.getIriType() == ExtendedString.BNODE) {
-          return Node.createAnon(AnonId.create(vs.toString().substring(9))); // nodeID://
+//          return NodeFactory.createAnon(AnonId.create(vs.toString().substring(9))); // nodeID://b1234
+          return NodeFactory.createAnon(AnonId.create(vs.toString())); // nodeID://
 
         } else {
-          return Node.createLiteral(vs.toString()); 
+          return NodeFactory.createLiteral(vs.toString()); 
         }
 
       } else if (o instanceof RdfBox) {
@@ -1005,160 +1333,149 @@ public class VirtGraph extends GraphBase
 
         if ( rb_type != null)
           dt = TypeMapper.getInstance().getSafeTypeByName(rb_type);
-        return Node.createLiteral(rb.toString(), rb.getLang(), dt);
+        return NodeFactory.createLiteral(rb.toString(), rb.getLang(), dt);
+
+      } else if (o instanceof java.lang.Long) {
+
+        RDFDatatype dt = null;
+        dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#long");
+        return NodeFactory.createLiteral(o.toString(), null, dt);
 
       } else if (o instanceof java.lang.Integer) {
 
         RDFDatatype dt = null;
         dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#integer");
-        return Node.createLiteral(o.toString(), null, dt);
+        return NodeFactory.createLiteral(o.toString(), null, dt);
 
       } else if (o instanceof java.lang.Short) {
 
         RDFDatatype dt = null;
 //      dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#short");
         dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#integer");
-        return Node.createLiteral(o.toString(), null, dt);
+        return NodeFactory.createLiteral(o.toString(), null, dt);
 
       } else if (o instanceof java.lang.Float) {
 
         RDFDatatype dt = null;
         dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#float");
-        return Node.createLiteral(o.toString(), null, dt);
+        return NodeFactory.createLiteral(o.toString(), null, dt);
 
       } else if (o instanceof java.lang.Double) {
 
         RDFDatatype dt = null;
         dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#double");
-        return Node.createLiteral(o.toString(), null, dt);
+        return NodeFactory.createLiteral(o.toString(), null, dt);
 
       } else if (o instanceof java.math.BigDecimal) {
 
         RDFDatatype dt = null;
         dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#decimal");
-        return Node.createLiteral(o.toString(), null, dt);
+        return NodeFactory.createLiteral(o.toString(), null, dt);
 
       } else if (o instanceof java.sql.Blob) {
 
         RDFDatatype dt = null;
         dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#hexBinary");
-        return Node.createLiteral(o.toString(), null, dt);
+        return NodeFactory.createLiteral(o.toString(), null, dt);
 
       } else if (o instanceof java.sql.Date) {
 
         RDFDatatype dt = null;
         dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#date");
-        return Node.createLiteral(o.toString(), null, dt);
+        return NodeFactory.createLiteral(o.toString(), null, dt);
 
       } else if (o instanceof java.sql.Timestamp) {
 
         RDFDatatype dt = null;
         dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#dateTime");
-        return Node.createLiteral(Timestamp2String((java.sql.Timestamp)o), null, dt);
+        return NodeFactory.createLiteral(Timestamp2String((java.sql.Timestamp)o), null, dt);
 
       } else if (o instanceof java.sql.Time) {
 
         RDFDatatype dt = null;
         dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#time");
-        return Node.createLiteral(o.toString(), null, dt);
+        return NodeFactory.createLiteral(o.toString(), null, dt);
+
+      } else if (o instanceof VirtuosoDate) {
+
+        RDFDatatype dt = null;
+        dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#date");
+        return NodeFactory.createLiteral(((VirtuosoDate)o).toXSD_String(), null, dt);
+
+      }	else if (o instanceof VirtuosoTimestamp) {
+
+        RDFDatatype dt = null;
+        dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#dateTime");
+        return NodeFactory.createLiteral(((VirtuosoTimestamp)o).toXSD_String(), null, dt);
+
+      }	else if (o instanceof VirtuosoTime) {
+
+        RDFDatatype dt = null;
+        dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#time");
+        return NodeFactory.createLiteral(((VirtuosoTime)o).toXSD_String(), null, dt);
 
       } else {
 
-        return Node.createLiteral(o.toString());
+        return NodeFactory.createLiteral(o.toString());
       }
     }
+
 
     private static String Timestamp2String(java.sql.Timestamp v)
     {
-      GregorianCalendar cal = new GregorianCalendar();
-      cal.setTime(v);
+        GregorianCalendar cal = new GregorianCalendar();
+        int timezone = cal.get(Calendar.ZONE_OFFSET)/60000; //min
 
-      int year = cal.get(Calendar.YEAR);
-      int month = cal.get(Calendar.MONTH) + 1;
-      int day = cal.get(Calendar.DAY_OF_MONTH);
-      int hour = cal.get(Calendar.HOUR_OF_DAY);
-      int minute = cal.get(Calendar.MINUTE);
-      int second = cal.get(Calendar.SECOND);
-      int nanos = v.getNanos();
+        StringBuilder sb = new StringBuilder();
+        DateFormat formatter= new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+        String nanosString;
+        String timeZoneString = null;
+        String zeros = "000000000";
+        int nanos = v.getNanos();
 
-      String yearS;
-      String monthS;
-      String dayS;
-      String hourS;
-      String minuteS;
-      String secondS;
-      String nanosS;
-      String zeros = "000000000";
-      String yearZeros = "0000";
-      StringBuffer timestampBuf;
+        sb.append(formatter.format(v));
 
-      if (year < 1000) {
-          yearS = "" + year;
-          yearS = yearZeros.substring(0, (4-yearS.length())) + yearS;
-      } else {
-          yearS = "" + year;
-      }
+        if (nanos == 0) {
+            nanosString = "000";
+        } else {
+            nanosString = Integer.toString(nanos);
 
-      if (month < 10)
-          monthS = "0" + month;
-      else
-          monthS = Integer.toString(month);
+            // Add leading zeros
+            nanosString = zeros.substring(0, (9-nanosString.length())) +
+                    nanosString;
 
-      if (day < 10)
-          dayS = "0" + day;
-      else
-          dayS = Integer.toString(day);
+            // Truncate trailing zeros
+            char[] nanosChar = new char[nanosString.length()];
+            nanosString.getChars(0, nanosString.length(), nanosChar, 0);
+            int truncIndex = 8;
+            while (nanosChar[truncIndex] == '0') {
+                truncIndex--;
+            }
 
-      if (hour < 10)
-          hourS = "0" + hour;
-      else
-          hourS = Integer.toString(hour);
+            nanosString = new String(nanosChar, 0, truncIndex + 1);
+        }
 
-      if (minute < 10)
-          minuteS = "0" + minute;
-      else
-          minuteS = Integer.toString(minute);
-      
-      if (second < 10)
-          secondS = "0" + second;
-      else
-          secondS = Integer.toString(second);
-      
-      if (nanos == 0) {
-          nanosS = "0";
-      } else {
-          nanosS = Integer.toString(nanos);
+        sb.append(".");
+        sb.append(nanosString);
+        sb.append(timezone>0?'+':'-');
 
-          // Add leading 0
-          nanosS = zeros.substring(0, (9-nanosS.length())) + nanosS; 
+        int tz = Math.abs(timezone);
+        int tzh = tz/60;
+        int tzm = tz%60;
 
-          // Truncate trailing 0
-          char[] nanosChar = new char[nanosS.length()];
-          nanosS.getChars(0, nanosS.length(), nanosChar, 0);
-          int truncIndex = 8;
-          while (nanosChar[truncIndex] == '0') {
-      	    truncIndex--;
-          }
-          nanosS = new String(nanosChar, 0, truncIndex + 1);
-      }
+        if (tzh < 10)
+            sb.append('0');
 
-      timestampBuf = new StringBuffer();
-      timestampBuf.append(yearS);
-      timestampBuf.append("-");
-      timestampBuf.append(monthS);
-      timestampBuf.append("-");
-      timestampBuf.append(dayS);
-      timestampBuf.append("T");
-      timestampBuf.append(hourS);
-      timestampBuf.append(":");
-      timestampBuf.append(minuteS);
-      timestampBuf.append(":");
-      timestampBuf.append(secondS);
-      timestampBuf.append(".");
-      timestampBuf.append(nanosS);
+        sb.append(tzh);
+        sb.append(':');
 
-      return (timestampBuf.toString());
+        if (tzm < 10)
+            sb.append('0');
+
+        sb.append(tzm);
+        return sb.toString();
     }
+
 
 }
 

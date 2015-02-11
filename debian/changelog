@@ -1,6 +1,25 @@
-virtuoso-opensource (7.0.1) unstable; urgency=low
+virtuoso-opensource (7.2) unstable; urgency=low
+
+  * Bump version number 
+
+ -- OpenLink Virtuoso Maintainer <vos.admin@openlinksw.com>  Mon, 02 Feb 2015 13:44:00 +0100
+virtuoso-opensource (7.1) unstable; urgency=low
+
+  * Misc minor packaging fixes
+
+ -- OpenLink Virtuoso Maintainer <vos.admin@openlinksw.com>  Mon, 04 Aug 2014 17:44:00 +0100
+
+virtuoso-opensource (7.1) unstable; urgency=low
+
+  * Merged Ubuntu-style packaging from LOD2 project
+
+ -- OpenLink Virtuoso Maintainer <vos.admin@openlinksw.com>  Thu, 24 Jul 2014 16:15:00 +0100
+
+virtuoso-opensource (7.1) unstable; urgency=low
 
   * New release
+
+ -- OpenLink Virtuoso Maintainer <vos.admin@openlinksw.com>  Mon, 17 Feb 2014 17:00:00 +0100
 
 virtuoso-opensource (6.1.7) unstable; urgency=low
 

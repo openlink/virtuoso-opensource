@@ -1,3 +1,23 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 create function wikicmp (in _t1 varchar, in _t2 varchar)
 {
   _t1 := trim (WV..DELETE_SYSINFO_FOR(_t1, NULL), '\n\r\t ');
@@ -24,7 +44,7 @@ create procedure upload_topic (in _localname varchar, in _cluster varchar, in _f
 
       dbg_obj_print (_text);
 
-      res := http_get ('http://localhost:' || server_http_port() || '/wiki/main/' || _cluster || '/' || _localname, 
+      res := http_get ('http://localhost:' || server_http_port() || '/wiki/main/' || _cluster || '/' || _localname,
 		hdr,
 		'POST',
 		'Content-Type: application/x-www-form-urlencoded',
@@ -35,7 +55,7 @@ create procedure upload_topic (in _localname varchar, in _cluster varchar, in _f
       declare _text varchar;
       declare hdr any;
       _text := file_to_string (_filename);
-      res := http_get ('http://localhost:' || server_http_port() || '/DAV/home/dav/wiki/' || _cluster || '/' || _localname || '.txt', 
+      res := http_get ('http://localhost:' || server_http_port() || '/DAV/home/dav/wiki/' || _cluster || '/' || _localname || '.txt',
 		hdr,
 		'PUT',
 		'Authorization: Basic ' || encode_base64('dav:dav') ,
@@ -67,14 +87,14 @@ create procedure check_topic (in _localname varchar, in _cluster varchar, in _fi
       if (_filename is not null)
         signal ('WVT01', 'Can not retrieve text by internal API');
     }
-  else 
+  else
     {
       if (_filename is null)
 	    signal ('WVT02', 'text retrieved by internal API');
       _topic.ti_find_metadata_by_id ();
       _topic.ti_text := WV.WIKI.DELETE_SYSINFO_FOR (_topic.ti_text, NULL);
       if (wikicmp (_topic.ti_text, _etalon) is not null)
-        { 
+        {
           dbg_obj_print (_topic.ti_text, _etalon);
           signal ('WVT03', 'text retrieved by internal API is not eq to the etalon: ' || wikicmp (_topic.ti_text, _etalon));
         }
@@ -106,7 +126,7 @@ create procedure check_topic (in _localname varchar, in _cluster varchar, in _fi
     }
 }
 ;
-  
+
 
 create procedure create_cluster_test (in _cluster varchar)
 {
@@ -121,12 +141,12 @@ create procedure delete_cluster_test (in _cluster varchar)
   declare h any;
 
   select WAI_INST into
-        inst 
+        inst
    from  DB.DBA.WA_INSTANCE where WAI_NAME = _cluster and WAI_TYPE_NAME = 'oWiki';
 
 
   h := udt_implements_method(inst, fix_identifier_case('wa_drop_instance'));
-  if (h) 
+  if (h)
 	call (h) (inst);
   else
         signal ('WVT10', 'Screwed instance');

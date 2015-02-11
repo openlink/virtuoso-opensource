@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2014 OpenLink Software
+ -  Copyright (C) 1998-2015 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,7 +19,6 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="http_edit_path_page"
         decor="yacutia_decor.vspx"
@@ -31,61 +28,60 @@
         xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <script language="JavaScript">
     <![CDATA[
-    function doBrowse(target,fld_name, startPath, isDir, isDav)
-    {
-      var start_p, tp;
+      function doBrowse(target,fld_name, startPath, isDir, isDav)
+      {
+        var start_p, tp;
 
-      window._result = document.frm_edit_path[fld_name];
-      if (isDav)
-        target = 'popup_browser.vspx' + target;
-      else
-        target = 'popup2_browser.vspx' + target;
+        window._result = document.frm_edit_path[fld_name];
+        if (isDav)
+          target = 'popup_browser.vspx' + target;
+        else
+          target = 'popup2_browser.vspx' + target;
 
-      start_p = document.frm_edit_path[fld_name].value;
-
-      if (fld_name != startPath)
+        start_p = document.frm_edit_path[fld_name].value;
+        if (fld_name != startPath)
         {
           start_p = document.frm_edit_path[startPath].value;
-	}
-
-      tp = (isDir ? 'col' : 'res');
-      if (document.frm_edit_path['c_inherit'].checked)
-        {
-	  tp = 'both';
-	  if (start_p[start_p.length-1] != '/')
-	    {
-	      var sl = start_p.lastIndexOf ('/');
-	      if (sl > 0)
-	        start_p = start_p.substr(0, sl);
-	    }
         }
 
-      window.open( target + '&path=' +
-                  start_p +
-                  '&caption=Choose+' + (isDir ? 'location' : 'resource') +
-		  '&browse_type=' + tp +
-		  '&start-path='+ (isDir ? 'HTTP_ROOT' : 'FILE_ONLY') +
-                  '&retname=_result',
-                  'window',
-                  'scrollbars=yes, resizable=yes, menubar=no, width=640, height=600');
-    }
+        tp = (isDir ? 'col' : 'res');
+        if (document.frm_edit_path['c_inherit'].checked)
+        {
+          tp = 'both';
+          if (start_p[start_p.length-1] != '/')
+          {
+            var sl = start_p.lastIndexOf ('/');
+            if (sl > 0)
+              start_p = start_p.substr(0, sl);
+          }
+        }
 
-    function defineOpts (val)
-    {
-      if ('SSL' == val.options[val.selectedIndex].value) {
-        if (document.frm_edit_path.t_auth_opt.value == '') {
-          document.frm_edit_path.t_auth_opt.value = 'https_cert=[file_with_certificate].pem;\nhttps_key=[file_with_private_key].pem;';
+        window.open( target +
+                    '&' + (isDav ? 'dir' : 'path') + '=' + start_p +
+                    '&caption=Choose+' + (isDir ? 'location' : 'resource') +
+                    '&browse_type=' + tp +
+                    '&start-path='+ (isDir ? 'HTTP_ROOT' : 'FILE_ONLY') +
+                    '&retname=_result',
+                    'window',
+                    'scrollbars=yes, resizable=yes, menubar=no, width=640, height=600');
+      }
+
+      function defineOpts (val)
+      {
+        if ('SSL' == val.options[val.selectedIndex].value) {
+          if (document.frm_edit_path.t_auth_opt.value == '') {
+            document.frm_edit_path.t_auth_opt.value = 'https_cert=[file_with_certificate].pem;\nhttps_key=[file_with_private_key].pem;';
+          }
         }
       }
-    }
 
-    function changePhysicalFolder (cb, f)
-    {
-      if (cb.checked)
-        f.t_ppath.value = '/DAV/';
-      else
-        f.t_ppath.value = '/';
-    }
+      function changePhysicalFolder (cb, f)
+      {
+        if (cb.checked)
+          f.t_ppath.value = '/DAV/';
+        else
+          f.t_ppath.value = '/';
+      }
     ]]>
   </script>
   <vm:pagetitle>Virtuoso HTTP Server Management</vm:pagetitle>
@@ -183,8 +179,8 @@
 	      if (not isstring (self.ssbrow))
 	        self.ssbrow := '';
 	        self.noinherit := get_keyword ('noinherit', self.global_opts);
-                  self.cors := get_keyword ('cors', self.global_opts, '');  
-                  self.cors_rej := get_keyword ('cors_restricted', self.global_opts, 0);  
+                  self.cors := get_keyword ('cors', self.global_opts, '');
+                  self.cors_rej := get_keyword ('cors_restricted', self.global_opts, 0);
 	        }
             }
             else if (self.mode = 'add1')
@@ -748,9 +744,9 @@
                       if(self.after_func = '') self.after_func := NULL;
 		      if (self.c_cors_rej.ufl_selected)
 		        self.cors_rej := 1;
-	              else		
+	              else
 		        self.cors_rej := 0;
-	              self.cors := get_keyword ('t_cors', params, NULL); 		
+	              self.cors := get_keyword ('t_cors', params, NULL);
                       self.auth_opt := self.t_auth_opt.ufl_value;
                       if (self.auth_opt = '' or self.auth_opt = 0)
                         self.auth_opt := NULL;
@@ -768,7 +764,7 @@
                                 if (tmp[inx] in ('https_verify', 'https_cv_depth'))
 				  tmp[inx+1] := atoi (tmp[inx+1]);
 			     }
-			  self.auth_opt := tmp;    
+			  self.auth_opt := tmp;
                       }
 
                       if (self.soap_opt = '' or self.soap_opt = 0)
@@ -817,7 +813,7 @@
 		        }
 	              if (length (self.cors))
 		        {
-			  self.global_opts := vector_concat ( coalesce (self.global_opts, vector()), 
+			  self.global_opts := vector_concat ( coalesce (self.global_opts, vector()),
 			    vector('cors', self.cors, 'cors_restricted', self.cors_rej));
 			}
 

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -127,6 +127,7 @@ aq_thread_func (aq_thread_t * aqt)
       async_queue_t *aq = aqt->aqt_aq;
       aq_request_t *aqr = aqt->aqt_aqr;
       assert (AQR_QUEUED == aqr->aqr_state);
+      aqt->aqt_thread->thr_tlsf = aqt->aqt_cli->cli_tlsf;
       if (!aq->aq_no_lt_enter)
 	{
 	  lt_enter_anyway (aqt->aqt_cli->cli_trx);
@@ -242,7 +243,7 @@ aqt_allocate ()
 	lt_done (cli->cli_trx);
 	LEAVE_TXN;
 	client_connection_free (cli);
-	dk_free_tree (ses);
+	PrpcSessionFree (ses);	/* not a box and not free in freeing cli */
 	dk_free (aqt, sizeof (aq_thread_t));
 	return NULL;
       }
@@ -900,6 +901,7 @@ bif_async_queue (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (AQ_TXN_BRANCH & flags)
     {
       aq->aq_rc_w_id = LT_MAIN_W_ID (qi->qi_client->cli_trx);
+      qi->qi_client->cli_trx->lt_has_branches = 1;
       lt_timestamp (qi->qi_trx, (char *) &aq->aq_lt_timestamp);
     }
   if (!(flags & AQ_CLUSTER_RECURSIVE))

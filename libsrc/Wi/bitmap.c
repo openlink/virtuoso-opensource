@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -939,7 +939,7 @@ key_bm_insert (it_cursor_t * itc, row_delta_t * rd)
     if (1017819 == unbox_iri_id (itc->itc_search_params[0])
 	&& 1000151 == unbox_iri_id (itc->itc_search_params[1])
 	&& !memcmp (tmp, itc->itc_search_params[2], 5)
-	//&& 1000199 == unbox_iri_id (itc->itc_search_params[3])
+	/* && 1000199 == unbox_iri_id (itc->itc_search_params[3]) */
 	)
       printf ("bing\n");
   }

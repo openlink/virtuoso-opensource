@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -144,6 +144,7 @@ caddr_t dc_box (data_col_t * dc, int inx);
    : DCT_BOXES & dc->dc_type ? DV_DB_NULL == DV_TYPE_OF (((caddr_t*)dc->dc_values)[inx]) \
    : DV_DB_NULL == ((db_buf_t*)dc->dc_values)[inx][0])
 
+#define DC_STR_MARGIN 16
 
 extern int dc_str_buf_unit;
 int64 dc_any_value (data_col_t * dc, int inx);

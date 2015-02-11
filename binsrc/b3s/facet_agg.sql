@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -191,7 +191,7 @@ fct_agg_text (in tree any,
 
   if ('view' = n)
     {
-      http (sprintf (' filter (datatype (?s%d) IN (xsd:double, xsd:int, xsd:numeric, xsd:float, xsd:integer)) . ', this_s), txt);
+      http (sprintf (' filter (datatype (?s%d) IN (xsd:double, xsd:int, xsd:numeric, xsd:float, xsd:integer, xsd:decimal)) . ', this_s), txt);
       fct_agg_view (tree, agg, this_s, txt, pre, post, full_tree, plain);
     }
 }

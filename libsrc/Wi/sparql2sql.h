@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -261,9 +261,6 @@ extern sparp_equiv_t *sparp_equiv_exact_copy (sparp_t *sparp, sparp_equiv_t *ori
 #define SPARP_EQUIV_MERGE_CONFLICT	1003 /*!< Restrict or merge is done but it is proven that restrictions contradict */
 #define SPARP_EQUIV_MERGE_DUPE		1004 /*!< Merge gets \c primary equal to \c secondary */
 
-/*! Returns 1 if tree always returns a reference or NULL but never returns literal */
-extern int sparp_tree_returns_ref (sparp_t *sparp, SPART *tree);
-
 /*! Tries to restrict \c primary by \c datatype and/or value.
 If neither datatype nor value is provided, SPARP_EQUIV_MERGE_OK is returned. */
 extern int sparp_equiv_restrict_by_constant (sparp_t *sparp, sparp_equiv_t *primary, ccaddr_t datatype, SPART *value);
@@ -438,7 +435,7 @@ sparp_rewrite_basic() should not call sparp_simplify_expns() directly or indirec
 extern void sparp_rewrite_basic (sparp_t *sparp, SPART *req_top);
 
 /*! Checks whether \c sqlval of a literal is a proper string represendation of an object value with type \c dt_iri and language \c lang */
-extern int sparp_literal_is_xsd_valid (sparp_t *sparp, caddr_t sqlval, caddr_t dt_iri, caddr_t lang);
+extern int sparp_literal_is_xsd_valid (sparp_t *sparp, ccaddr_t sqlval, ccaddr_t dt_iri, ccaddr_t lang);
 
 /*! Tries to calculate the range of values returned by a \c tree and fill in the structure under \c rvr_ret.
 if \c return_independent_copy is zero then the filled structure should remain static, otherwise it gets its own copy of list of formats and can be edited
@@ -514,8 +511,9 @@ extern SPART *sparp_find_subexpn_in_retlist (sparp_t *sparp, const char *varname
 extern int sparp_subexpn_position1_in_retlist (sparp_t *sparp, const char *varname, SPART **retvals);
 
 /*! This returns a mapping of \c var.
-If var_triple is NULL then it tries to find it using \c sparp_find_triple_of_var() for vars and \c sparp_find_triple_of_var_or_retval() for retvals */
-extern qm_value_t *sparp_find_qmv_of_var_or_retval (sparp_t *sparp, SPART *var_triple, SPART *gp, SPART *var);
+If var_triple is NULL then it tries to find it using \c sparp_find_triple_of_var() for vars and \c sparp_find_triple_of_var_or_retval() for retvals.
+\c allow_returning_null is useful when a \c var is a retval from subselect so it is not associated with any triple pattern */
+extern qm_value_t *sparp_find_qmv_of_var_or_retval (sparp_t *sparp, SPART *var_triple, SPART *gp, SPART *var, int allow_returning_null);
 
 extern int sparp_find_language_dialect_by_service (sparp_t *sparp, SPART *service_expn);
 
@@ -833,7 +831,7 @@ sqlval of SSG_VALMODE_AUTO is cheap because "auto" can become sqlval when needed
 sqlval SSG_VALMODE_SHORT_OR_LONG \c m1 or \c m2 is not cheap.
 SSG_VALMODE_LONG \c m1 is not cheap by default but can be treated as cheap if \c sqlval_is_ok_and_cheap_ret[0] has bit 0x2 set:
 this bit is convenient if \c m1 is a result of previous ssg_smallest_union_valmode() of other members of same union.
-Similarly, SSG_VALMODE_LONG \c m1 is not cheap by default but can be treated as cheap if \c sqlval_is_ok_and_cheap_ret[0] has bit 0x4 set:
+Similarly, SSG_VALMODE_LONG \c m2 is not cheap by default but can be treated as cheap if \c sqlval_is_ok_and_cheap_ret[0] has bit 0x4 set:
 this is primarily for internal use when ssg_smallest_union_valmode() calls itself with swapped arguments. */
 extern ssg_valmode_t ssg_smallest_union_valmode (ssg_valmode_t m1, ssg_valmode_t m2, int *sqlval_is_ok_and_cheap_ret);
 extern ssg_valmode_t ssg_largest_intersect_valmode (ssg_valmode_t m1, ssg_valmode_t m2);
@@ -920,6 +918,7 @@ typedef struct spar_sqlgen_s
   struct spar_sqlgen_s	*ssg_nested_ssg;	/*!< Ssg that prints some fragment for the current one, like a text of query to send to a remote service. This is used for GC on abort */
   SPART *		ssg_wrapping_gp;	/*!< A gp of subtype SELECT_L or SERVICE_L that contains the current subquery */
   SPART *		ssg_wrapping_sinv;	/*!< Service invocation description of \c ssg_wrapping_p in case of SERVICE_L gp subtype */
+  int			ssg_comment_sql;	/*!< The mode of putting comments into the generated SQL, as set by define sql:comments (default 0 for release, 1 otherwise) */
 /* Run-time environment */
   SPART			**ssg_sources;		/*!< Data sources from ssg_tree->_.req_top.sources and/or environment */
 /* SQL Codegen temporary values */
@@ -960,11 +959,30 @@ void ssg_free_internals (spar_sqlgen_t *ssg);
 
 #define ssg_putchar(c) session_buffered_write_char (c, ssg->ssg_out)
 #define ssg_puts(strg) session_buffered_write (ssg->ssg_out, strg, strlen (strg))
-#ifdef NDEBUG
-#define ssg_puts_with_comment(strg,cmt) session_buffered_write (ssg->ssg_out, strg, strlen (strg))
-#else
-#define ssg_puts_with_comment(strg,cmt) session_buffered_write (ssg->ssg_out, strg " /* " cmt " */", strlen (strg " /* " cmt " */"))
-#endif
+
+#define ssg_puts_with_comment(strg,cmt) do {\
+  if (ssg->ssg_comment_sql) \
+    ssg_puts (strg " /* " cmt " */"); \
+  else \
+    ssg_puts (strg); \
+} while (0)
+
+#define ssg_puts_with_comment3(strg,cmt1,cmt2,cmt3) do {\
+  if (ssg->ssg_comment_sql) \
+    { ssg_puts (strg " /* " cmt1); ssg_puts (cmt2); ssg_puts (cmt3 " */"); } \
+  else \
+    ssg_puts (strg); \
+} while (0)
+
+#define ssg_puts_comment(cmt) do {\
+  if (ssg->ssg_comment_sql) \
+    ssg_puts (" /* " cmt " */"); \
+} while (0)
+
+#define ssg_puts_comment3(cmt1,cmt2,cmt3) do {\
+  if (ssg->ssg_comment_sql) \
+    { ssg_puts (" /* " cmt1); ssg_puts (cmt2); ssg_puts (cmt3 " */"); } \
+} while (0)
 
 #define ssg_print_asname_tail(cmt,asname) do { \
   if (NULL != (asname)) { \
@@ -1029,6 +1047,7 @@ extern void ssg_prin_id_with_suffix (spar_sqlgen_t *ssg, const char *name, const
 #define SQL_ATOM_NARROW_OR_WIDE	13
 #define SQL_ATOM_UNAME_ALLOWED	14
 #define SQL_ATOM_ABORT_ON_CAST	15	/*!< Intentionally "bad" mode to get an error on any cast to string */
+#define SQL_ATOM_SPARQL_INTEROP	16
 extern void ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode);
 extern void ssg_print_literal_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit);
 extern void ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit);

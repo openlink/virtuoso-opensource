@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -252,10 +252,10 @@ create function "CatFilter_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts 
   if (not (isstring (rfc_spath)))
     {
       if (0 > "CatFilter_GET_CONDITION" (detcol_id, cfc_id, rfc_spath, rfc_list_cond, rfc_del_action))
-	{
-	  -- dbg_obj_princ ('broken filter - no items');
-	  return -1;
-	}
+  {
+    -- dbg_obj_princ ('broken filter - no items');
+    return -1;
+  }
     }
   if (0 = path_len)
     return -1;
@@ -632,18 +632,18 @@ create function "CatFilter_DAV_DIR_SINGLE" (in id any, in what char(0), in path 
       declare loc_name, subcol_perms varchar;
       declare set_readonly integer;
       if (0 > "CatFilter_GET_CONDITION" (id[1], cfc_id, rfc_spath, rfc_list_cond, rfc_del_action))
-	{
-	-- dbg_obj_princ ('broken filter - no items');
-	return -1;
-	}
+  {
+  -- dbg_obj_princ ('broken filter - no items');
+  return -1;
+  }
       subcol_perms := coalesce ((select COL_PERMS from WS.WS.SYS_DAV_COL where COL_ID = id[1]), '000000000N');
       subcol_perms[2] := 48; subcol_perms[5] := 48; subcol_perms[8] := 48; -- Can't execute in CatFilter so place zero chars.
       set_readonly := 0;
       if (length (rfc_del_action) < length (rfc_list_cond))
-	{
+  {
           -- dbg_obj_princ ('del_action = ', rfc_del_action, 'rfc_list_cond = ', rfc_list_cond);
           set_readonly := 1;
-	}
+  }
       else
         {
           declare filt_len integer;
@@ -684,33 +684,33 @@ create function "CatFilter_DAV_DIR_SINGLE" (in id any, in what char(0), in path 
       else
         {
           declare cfc_id integer;
-	  declare rfc_spath varchar;
-	  declare rfc_list_cond, rfc_del_action varchar;
-	  declare tmp_comp, namesakes any;
+    declare rfc_spath varchar;
+    declare rfc_list_cond, rfc_del_action varchar;
+    declare tmp_comp, namesakes any;
           declare namesakes_no integer;
-	  if (0 > "CatFilter_GET_CONDITION" (id[1], cfc_id, rfc_spath, rfc_list_cond, rfc_del_action))
-	    {
-	      -- dbg_obj_princ ('broken filter - bad id in DIR_SINGLE');
-	      return -1;
-	    }
+    if (0 > "CatFilter_GET_CONDITION" (id[1], cfc_id, rfc_spath, rfc_list_cond, rfc_del_action))
+      {
+        -- dbg_obj_princ ('broken filter - bad id in DIR_SINGLE');
+        return -1;
+      }
           tmp_comp := vector ('',
             vector_concat (
               vector (vector ('RES_NAME', '=', r1_RES_NAME)),
               get_keyword ('', rfc_list_cond) ) );
-	  namesakes := DAV_DIR_FILTER_INT (rfc_spath, 1, tmp_comp, null, null, auth_uid);
-	  namesakes_no := length (namesakes);
-	  if (0 = namesakes_no)
-	    return -1;
-	  if (1 < namesakes_no)
-	    merged := "ResFilter_FNMERGE" (r1_RES_NAME, RES_ID);
-	  else
-	    merged := r1_RES_NAME;
+    namesakes := DAV_DIR_FILTER_INT (rfc_spath, 1, tmp_comp, null, null, auth_uid);
+    namesakes_no := length (namesakes);
+    if (0 = namesakes_no)
+      return -1;
+    if (1 < namesakes_no)
+      merged := "ResFilter_FNMERGE" (r1_RES_NAME, RES_ID);
+    else
+      merged := r1_RES_NAME;
         }
       path [length (path) - 1] := merged;
 --                   0                            1    2     3
       return vector (DAV_CONCAT_PATH ('/', path), 'R', clen, RES_MOD_TIME,
 --       4   5          6          7          8            9         10
-	 id, RES_PERMS, RES_GROUP, RES_OWNER, RES_CR_TIME, RES_TYPE, merged);
+   id, RES_PERMS, RES_GROUP, RES_OWNER, RES_CR_TIME, RES_TYPE, merged);
     }
   return -1;
 }
@@ -860,13 +860,13 @@ nf_c_last1:
 --        res_id_max := 0;
           while (res0_id <= res_id_max) fetch c0 into res0_id;
           -- dbg_obj_princ ('CatFilter_GET_RDF_INVERSE_HITS_DISTVALS: res0_id is ', res0_id);
-	  if (res0_id > res_id_max) res_id_max := res0_id;
+    if (res0_id > res_id_max) res_id_max := res0_id;
           while (res1_id < res_id_max) fetch c1 into res1_id;
           -- dbg_obj_princ ('CatFilter_GET_RDF_INVERSE_HITS_DISTVALS: res1_id is ', res1_id);
-	  if (res1_id > res_id_max) res_id_max := res1_id;
+    if (res1_id > res_id_max) res_id_max := res1_id;
           while (res2_id < res_id_max) fetch c2 into res2_id;
           -- dbg_obj_princ ('CatFilter_GET_RDF_INVERSE_HITS_DISTVALS: res2_id is ', res2_id);
-	  if (res2_id > res_id_max) res_id_max := res2_id;
+    if (res2_id > res_id_max) res_id_max := res2_id;
           if ((res0_id = res_id_max) and (res1_id = res_id_max) and (res2_id = res_id_max))
             {
               -- dbg_obj_princ ('CatFilter_GET_RDF_INVERSE_HITS_DISTVALS: put hit ', res_id_max);
@@ -887,13 +887,13 @@ nf_c_last1:
       while (1)
         {
           while (res0_id <= res_id_max) fetch c0 into res0_id;
-	  if (res0_id > res_id_max) res_id_max := res0_id;
+    if (res0_id > res_id_max) res_id_max := res0_id;
           while (res1_id < res_id_max) fetch c1 into res1_id;
-	  if (res1_id > res_id_max) res_id_max := res1_id;
+    if (res1_id > res_id_max) res_id_max := res1_id;
           while (res2_id < res_id_max) fetch c2 into res2_id;
-	  if (res2_id > res_id_max) res_id_max := res2_id;
+    if (res2_id > res_id_max) res_id_max := res2_id;
           while (res3_id < res_id_max) fetch c3 into res3_id;
-	  if (res3_id > res_id_max) res_id_max := res3_id;
+    if (res3_id > res_id_max) res_id_max := res3_id;
           if ((res0_id = res_id_max) and (res1_id = res_id_max) and (res2_id = res_id_max) and (res3_id = res_id_max))
             {
               -- dbg_obj_princ ('CatFilter_GET_RDF_INVERSE_HITS_DISTVALS: put hit ', res_id_max);
@@ -915,15 +915,15 @@ nf_c_last1:
       while (1)
         {
           while (res0_id <= res_id_max) fetch c0 into res0_id;
-	  if (res0_id > res_id_max) res_id_max := res0_id;
+    if (res0_id > res_id_max) res_id_max := res0_id;
           while (res1_id < res_id_max) fetch c1 into res1_id;
-	  if (res1_id > res_id_max) res_id_max := res1_id;
+    if (res1_id > res_id_max) res_id_max := res1_id;
           while (res2_id < res_id_max) fetch c2 into res2_id;
-	  if (res2_id > res_id_max) res_id_max := res2_id;
+    if (res2_id > res_id_max) res_id_max := res2_id;
           while (res3_id < res_id_max) fetch c3 into res3_id;
-	  if (res3_id > res_id_max) res_id_max := res3_id;
+    if (res3_id > res_id_max) res_id_max := res3_id;
           while (res4_id < res_id_max) fetch c4 into res4_id;
-	  if (res4_id > res_id_max) res_id_max := res4_id;
+    if (res4_id > res_id_max) res_id_max := res4_id;
           if ((res0_id = res_id_max) and (res1_id = res_id_max) and (res2_id = res_id_max) and (res3_id = res_id_max) and (res4_id = res_id_max))
             dict_put (hit_ids, res_id_max, 1);
         }
@@ -1027,7 +1027,7 @@ create function "CatFilter_GET_RDF_INVERSE_HITS_RES_IDS" (in cfc_id integer, ino
           if ((res0_id = res_id_max) and (res1_id = res_id_max))
             {
               -- dbg_obj_princ ('CatFilter_GET_RDF_INVERSE_HITS_RES_IDS: put hit ', res_id_max);
-	      vectorbld_acc (acc, res0_id);
+        vectorbld_acc (acc, res0_id);
               res_id_max := res_id_max + 1;
             }
         }
@@ -1044,15 +1044,15 @@ create function "CatFilter_GET_RDF_INVERSE_HITS_RES_IDS" (in cfc_id integer, ino
       while (1)
         {
           while (res1_id < res_id_max) fetch c1 into res1_id;
-	  if (res1_id > res_id_max) res_id_max := res1_id;
+    if (res1_id > res_id_max) res_id_max := res1_id;
           while (res2_id < res_id_max) fetch c2 into res2_id;
-	  if (res2_id > res_id_max) res_id_max := res2_id;
+    if (res2_id > res_id_max) res_id_max := res2_id;
           while (res0_id < res_id_max) fetch c0 into res0_id;
-	  if (res0_id > res_id_max) res_id_max := res0_id;
+    if (res0_id > res_id_max) res_id_max := res0_id;
           if ((res0_id = res_id_max) and (res1_id = res_id_max) and (res2_id = res_id_max))
             {
               -- dbg_obj_princ ('CatFilter_GET_RDF_INVERSE_HITS_RES_IDS: put hit ', res_id_max);
-	      vectorbld_acc (acc, res0_id);
+        vectorbld_acc (acc, res0_id);
               res_id_max := res_id_max + 1;
             }
         }
@@ -1070,17 +1070,17 @@ create function "CatFilter_GET_RDF_INVERSE_HITS_RES_IDS" (in cfc_id integer, ino
       while (1)
         {
           while (res1_id < res_id_max) fetch c1 into res1_id;
-	  if (res1_id > res_id_max) res_id_max := res1_id;
+    if (res1_id > res_id_max) res_id_max := res1_id;
           while (res2_id < res_id_max) fetch c2 into res2_id;
-	  if (res2_id > res_id_max) res_id_max := res2_id;
+    if (res2_id > res_id_max) res_id_max := res2_id;
           while (res3_id < res_id_max) fetch c3 into res3_id;
-	  if (res3_id > res_id_max) res_id_max := res3_id;
+    if (res3_id > res_id_max) res_id_max := res3_id;
           while (res0_id < res_id_max) fetch c0 into res0_id;
-	  if (res0_id > res_id_max) res_id_max := res0_id;
+    if (res0_id > res_id_max) res_id_max := res0_id;
           if ((res0_id = res_id_max) and (res1_id = res_id_max) and (res2_id = res_id_max) and (res3_id = res_id_max))
             {
               -- dbg_obj_princ ('CatFilter_GET_RDF_INVERSE_HITS_RES_IDS: put hit ', res_id_max);
-	      vectorbld_acc (acc, res0_id);
+        vectorbld_acc (acc, res0_id);
               res_id_max := res_id_max + 1;
             }
         }
@@ -1099,19 +1099,19 @@ create function "CatFilter_GET_RDF_INVERSE_HITS_RES_IDS" (in cfc_id integer, ino
       while (1)
         {
           while (res1_id < res_id_max) fetch c1 into res1_id;
-	  if (res1_id > res_id_max) res_id_max := res1_id;
+    if (res1_id > res_id_max) res_id_max := res1_id;
           while (res2_id < res_id_max) fetch c2 into res2_id;
-	  if (res2_id > res_id_max) res_id_max := res2_id;
+    if (res2_id > res_id_max) res_id_max := res2_id;
           while (res3_id < res_id_max) fetch c3 into res3_id;
-	  if (res3_id > res_id_max) res_id_max := res3_id;
+    if (res3_id > res_id_max) res_id_max := res3_id;
           while (res4_id < res_id_max) fetch c4 into res4_id;
-	  if (res4_id > res_id_max) res_id_max := res4_id;
+    if (res4_id > res_id_max) res_id_max := res4_id;
           while (res0_id < res_id_max) fetch c0 into res0_id;
-	  if (res0_id > res_id_max) res_id_max := res0_id;
+    if (res0_id > res_id_max) res_id_max := res0_id;
           if ((res0_id = res_id_max) and (res1_id = res_id_max) and (res2_id = res_id_max) and (res3_id = res_id_max) and (res4_id = res_id_max))
             {
               -- dbg_obj_princ ('CatFilter_GET_RDF_INVERSE_HITS_RES_IDS: put hit ', res_id_max);
-	      vectorbld_acc (acc, res0_id);
+        vectorbld_acc (acc, res0_id);
               res_id_max := res_id_max + 1;
             }
         }
@@ -1288,8 +1288,8 @@ create function "CatFilter_DAV_DIR_LIST" (in detcol_id any, in path_parts any, i
           subcol_fullpath := DAV_CONCAT_PATH (detcol_path, sch[1] || '/');
           vectorbld_acc (res,
             vector (subcol_fullpath, 'C', 0, now (),
-	      vector (UNAME'CatFilter', detcol_id, null, sch[0], null),
-	      subcol_perms, 0, auth_uid, now (), 'dav/unix-directory', sch[1]) );
+        vector (UNAME'CatFilter', detcol_id, null, sch[0], null),
+        subcol_perms, 0, auth_uid, now (), 'dav/unix-directory', sch[1]) );
           if (recursive > 0)
             vectorbld_concat_acc (res,
               "CatFilter_DAV_DIR_LIST" (detcol_id,
@@ -1317,8 +1317,8 @@ create function "CatFilter_DAV_DIR_LIST" (in detcol_id any, in path_parts any, i
           --  return vector();
           return vector (
             vector (DAV_CONCAT_PATH (detcol_path, path_parts), 'C', 0, now (),
-	      vector (UNAME'CatFilter', detcol_id, null, schema_uri, filter_data),
-	      subcol_perms, 0, auth_uid, now (), 'dav/unix-directory', path_parts [depth - 2] ) );
+        vector (UNAME'CatFilter', detcol_id, null, schema_uri, filter_data),
+        subcol_perms, 0, auth_uid, now (), 'dav/unix-directory', path_parts [depth - 2] ) );
         }
       foreach (varchar val in distvals) do
         {
@@ -1326,8 +1326,8 @@ create function "CatFilter_DAV_DIR_LIST" (in detcol_id any, in path_parts any, i
           subcol_fullpath := DAV_CONCAT_PATH ( DAV_CONCAT_PATH (detcol_path, path_parts), val || '/');
           vectorbld_acc (res,
             vector (subcol_fullpath, 'C', 0, now (),
-	      vector (UNAME'CatFilter', detcol_id, null, schema_uri, vector_concat (filter_data, vector (val))),
-	      subcol_perms, 0, auth_uid, now (), 'dav/unix-directory', val) );
+        vector (UNAME'CatFilter', detcol_id, null, schema_uri, vector_concat (filter_data, vector (val))),
+        subcol_perms, 0, auth_uid, now (), 'dav/unix-directory', val) );
           if (recursive > 0)
             vectorbld_concat_acc (res,
               "CatFilter_DAV_DIR_LIST" (detcol_id,
@@ -1348,8 +1348,8 @@ create function "CatFilter_DAV_DIR_LIST" (in detcol_id any, in path_parts any, i
           --  return vector();
           return vector (
             vector (DAV_CONCAT_PATH (detcol_path, path_parts), 'C', 0, now (),
-	      vector (UNAME'CatFilter', detcol_id, null, schema_uri, filter_data),
-	      subcol_perms, 0, auth_uid, now (), 'dav/unix-directory', path_parts [depth - 2] ) );
+        vector (UNAME'CatFilter', detcol_id, null, schema_uri, filter_data),
+        subcol_perms, 0, auth_uid, now (), 'dav/unix-directory', path_parts [depth - 2] ) );
         }
 -- The 'if' below disables infinite recursion.
 -- All resources will be displayed, but not all subcollections.
@@ -1362,8 +1362,8 @@ create function "CatFilter_DAV_DIR_LIST" (in detcol_id any, in path_parts any, i
           subcol_fullpath := DAV_CONCAT_PATH (DAV_CONCAT_PATH (detcol_path, path_parts), prop[1] || '/');
           vectorbld_acc (res,
             vector (subcol_fullpath, 'C', 0, now (),
-	      vector (UNAME'CatFilter', detcol_id, null, prop[0], null),
-	      subcol_perms, 0, auth_uid, now (), 'dav/unix-directory', prop[1]) );
+        vector (UNAME'CatFilter', detcol_id, null, prop[0], null),
+        subcol_perms, 0, auth_uid, now (), 'dav/unix-directory', prop[1]) );
           if (recursive > 0)
             vectorbld_concat_acc (res,
               "CatFilter_DAV_DIR_LIST" (detcol_id,
@@ -1391,15 +1391,15 @@ create function "CatFilter_DAV_DIR_LIST" (in detcol_id any, in path_parts any, i
           declare r_id integer;
           r_id := res_ids [itm_ctr];
           res_dir_single := coalesce ((
-	    select
+      select
 --                    0                                        1    2                     3
               vector (DAV_CONCAT_PATH (detcol_path, RES_NAME), 'R', length (RES_CONTENT), RES_MOD_TIME,
 --              4     5          6          7          8            9         10
-	        r_id, RES_PERMS, RES_GROUP, RES_OWNER, RES_CR_TIME, RES_TYPE, RES_NAME )
-	    from WS.WS.SYS_DAV_RES
-	    where RES_ID = r_id ) );
-	  if (res_dir_single is not null)
-	    vectorbld_acc (resources, res_dir_single);
+          r_id, RES_PERMS, RES_GROUP, RES_OWNER, RES_CR_TIME, RES_TYPE, RES_NAME )
+      from WS.WS.SYS_DAV_RES
+      where RES_ID = r_id ) );
+    if (res_dir_single is not null)
+      vectorbld_acc (resources, res_dir_single);
         }
       for select CFD_DET_SUBCOL_ID, CFD_DET from WS.WS.SYS_DAV_CATFILTER_DETS where CFD_CF_ID = cfc_id do
         {
@@ -1407,7 +1407,7 @@ create function "CatFilter_DAV_DIR_LIST" (in detcol_id any, in path_parts any, i
           if (exists (select top 1 1 from SYS_PROCEDURES where P_NAME = fix_identifier_case('DB.DBA.') || CFD_DET || '_CF_GET_RDF_HITS'))
             {
               det_res_ids := call (CFD_DET || '_CF_GET_RDF_HITS') (CFD_DET_SUBCOL_ID, cfc_id, rfc_spath, rfc_list_cond, schema_uri, filter_data, detcol_path, 1, auth_uid);
-	      vectorbld_concat_acc (resources, det_res_ids);
+        vectorbld_concat_acc (resources, det_res_ids);
             }
         }
       vectorbld_final (resources);
@@ -1767,45 +1767,39 @@ create function "CatFilter_CONFIGURE" (
   in auth_uid integer := null) returns integer
 {
   declare cfid, rc, ctr integer;
-  declare colname varchar;
+  declare colPath varchar;
   declare compilation, del_act any;
+
+  if (not isnull ("CatFilter_VERIFY" (DB.DBA.DAV_SEARCH_PATH (id, 'C'), vector ('params', params, 'path', path, 'filter', filter))))
+    return -38;
+
+  colPath := DAV_SEARCH_PATH (id, 'C');
+  if (DAV_HIDE_ERROR (colPath) is null)
+    return colPath;
+
+  rc := DAV_SEARCH_ID (path, 'C');
+  if (DAV_HIDE_ERROR (rc) is null)
+    return rc;
 
   compilation := vector ('', filter);
   rc := DAV_DIR_FILTER_INT (path, 1, compilation, auth_uname, auth_upwd, auth_uid);
   if (isinteger (rc))
     return rc;
 
-  if (DAV_HIDE_ERROR (id) is null)
-    return -20;
-
-  colname := DAV_SEARCH_PATH (id, 'C');
-  if (not (isstring (colname)))
-    return -23;
-
-  rc := DAV_SEARCH_ID (path, 'C');
+  rc := DAV_PROP_SET_INT (colPath, 'virt:Filter-Params', params, null, null, 0, 1, 1);
   if (DAV_HIDE_ERROR (rc) is null)
     return rc;
 
-  if (path <> DAV_SEARCH_PATH (rc, 'C'))
-    return -2;
-
-  if (path between colname and (colname || '\255\255\255\255'))
-    return -28;
-
-  rc := DAV_PROP_SET_INT (colname, 'virt:Filter-Params', params, null, null, 0, 1, 1);
+  rc := DAV_PROP_SET_INT (colPath, 'virt:ResFilter-SearchPath', path, null, null, 0, 1, 1);
   if (DAV_HIDE_ERROR (rc) is null)
     return rc;
 
-  rc := DAV_PROP_SET_INT (colname, 'virt:ResFilter-SearchPath', path, null, null, 0, 1, 1);
-  if (DAV_HIDE_ERROR (rc) is null)
-    return rc;
-
-  rc := DAV_PROP_SET_INT (colname, 'virt:ResFilter-ListCond', "ResFilter_ENCODE_FILTER" (compilation), null, null, 0, 1, 1);
+  rc := DAV_PROP_SET_INT (colPath, 'virt:ResFilter-ListCond', "ResFilter_ENCODE_FILTER" (compilation), null, null, 0, 1, 1);
   if (DAV_HIDE_ERROR (rc) is null)
     return rc;
 
   del_act := "ResFilter_MAKE_DEL_ACTION_FROM_CONDITION" (compilation);
-  rc := DAV_PROP_SET_INT (colname, 'virt:ResFilter-DelAction', "ResFilter_ENCODE_FILTER" (del_act), null, null, 0, 1, 1);
+  rc := DAV_PROP_SET_INT (colPath, 'virt:ResFilter-DelAction', "ResFilter_ENCODE_FILTER" (del_act), null, null, 0, 1, 1);
   if (DAV_HIDE_ERROR (rc) is null)
     return rc;
 
@@ -1822,29 +1816,75 @@ create function "CatFilter_CONFIGURE" (
     for (select p.PROP_VALUE, p.PROP_PARENT_ID
            from WS.WS.SYS_DAV_RES r join WS.WS.SYS_DAV_PROP p on (r.RES_ID = p.PROP_PARENT_ID)
           where (r.RES_FULL_PATH between path and path_z) and (p.PROP_NAME = 'http://local.virt/DAV-RDF') and (p.PROP_TYPE = 'R')) do
-	  {
-	    "CatFilter_FEED_DAV_RDF_INVERSE" (PROP_VALUE, PROP_PARENT_ID, 0, cfid);
-	    ctr := ctr + 1;
-	    if (mod (ctr, 1000) = 0)
-	      commit work;
-	  }
+    {
+      "CatFilter_FEED_DAV_RDF_INVERSE" (PROP_VALUE, PROP_PARENT_ID, 0, cfid);
+      ctr := ctr + 1;
+      if (mod (ctr, 1000) = 0)
+        commit work;
+    }
     commit work;
     for (select COL_ID, COL_DET, WS.WS.COL_PATH (COL_ID) as _c_path from WS.WS.SYS_DAV_COL where COL_DET is not null and not (COL_DET like '%Filter')) do
     {
       if ("LEFT" (_c_path, length (path)) = path)
-	    {
+      {
         insert replacing WS.WS.SYS_DAV_CATFILTER_DETS (CFD_CF_ID, CFD_DET_SUBCOL_ID, CFD_DET)
-	        values (cfid, COL_ID, COL_DET);
-    	}
-	  }
+          values (cfid, COL_ID, COL_DET);
+      }
+    }
   }
-  rc := DAV_PROP_SET_INT (colname, 'virt:CatFilter-ID', cast (cfid as varchar), null, null, 0, 1, 1);
+  rc := DAV_PROP_SET_INT (colPath, 'virt:CatFilter-ID', cast (cfid as varchar), null, null, 0, 1, 1);
   if (DAV_HIDE_ERROR (rc) is null)
     return rc;
 
-  update WS.WS.SYS_DAV_COL set COL_DET='CatFilter' where COL_ID=id;
+  -- set DET Type Value
+  DB.DBA.CatFilter__paramSet (id, 'C', ':virtdet', DB.DBA.CatFilter__detName (), 0, 0, 0);
+}
+;
 
-  return 0;
+create function "CatFilter_VERIFY" (
+  in path integer,
+  in params any)
+{
+  declare tmp any;
+
+  tmp := get_keyword ('path', params);
+  if (tmp between path and (path || '\255\255\255\255'))
+    return sprintf ('Search path (%s) can not contains in folder full path (%s)!', tmp, path);
+
+  return null;
+}
+;
+
+create function DB.DBA.CatFilter__detName ()
+{
+  return UNAME'CatFilter';
+}
+;
+
+create function DB.DBA.CatFilter__paramSet (
+  in _id any,
+  in _what varchar,
+  in _propName varchar,
+  in _propValue any,
+  in _serialized integer := 1,
+  in _prefixed integer := 1,
+  in _encrypt integer := 0)
+{
+  -- dbg_obj_princ ('DB.DBA.CatFilter__paramSet', _propName, _propValue, ')');
+  declare retValue any;
+
+  if (_serialized)
+    _propValue := serialize (_propValue);
+
+  if (_encrypt)
+    _propValue := pwd_magic_calc (DB.DBA.CatFilter__detName (), _propValue);
+
+  if (_prefixed)
+    _propName := 'virt:CatFilter-' || _propName;
+
+  retValue := DB.DBA.DAV_PROP_SET_RAW (_id, _what, _propName, _propValue, 1, http_dav_uid ());
+
+  return retValue;
 }
 ;
 
@@ -1859,7 +1899,7 @@ create procedure "CatFilter_FEED_DAV_RDF_INVERSE" (inout propval any, inout prop
   else
     {
       if ((not isstring (propval)) or (propval = ''))
-	return;
+  return;
       pv := propval;
     }
   if (193 <> pv[0])

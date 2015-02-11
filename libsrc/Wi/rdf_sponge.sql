@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -177,7 +177,7 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
         return 0;
       val := id_to_iri (val);
     }
-  if (217 = __tag (val))
+  if (__tag of UNAME = __tag (val))
     val := cast (val as varchar);
   dest := null;
   call (get_keyword_ucase ('resolver', env, 'DB.DBA.RDF_GRAB_RESOLVER_DEFAULT')) (get_keyword_ucase ('base_iri', env), val, url, dest, get_method);
@@ -447,9 +447,9 @@ create function DB.DBA.RDF_GRAB_RESOLVER_DEFAULT (in base varchar, in rel_uri va
 {
   declare rel_lattice_pos, base_lattice_pos integer;
   declare lattice_tail varchar;
-  if (217 = __tag (rel_uri))
+  if (__tag of UNAME = __tag (rel_uri))
     rel_uri := cast (rel_uri as varchar);
-  if (217 = __tag (base))
+  if (__tag of UNAME = __tag (base))
     base := cast (base as varchar);
   rel_lattice_pos := strrchr (rel_uri, '#');
   lattice_tail := '';
@@ -949,14 +949,14 @@ perform_actual_load:
 	  rollback work;
 	  update DB.DBA.SYS_HTTP_SPONGE
 	      set HS_SQL_STATE = 'RDFXX',
-	      HS_SQL_MESSAGE = sprintf ('Unable to retrieve RDF data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]),
+	      HS_SQL_MESSAGE = sprintf ('Unable to retrieve data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]),
 	      HS_EXPIRATION = now (),
 	      HS_EXP_IS_TRUE = 0,
 	      HS_NOTE = get_note
 		  where
 		  HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
 	  commit work;
-	  signal ('RDFXX', sprintf ('Unable to retrieve RDF data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]));
+	  signal ('RDFXX', sprintf ('Unable to retrieve data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]));
 	}
       goto resp_received;
     }
@@ -996,13 +996,13 @@ resp_received:
       rollback work;
       update DB.DBA.SYS_HTTP_SPONGE
 	  set HS_SQL_STATE = 'RDFXX',
-	  HS_SQL_MESSAGE = sprintf ('Unable to retrieve RDF data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]),
+	  HS_SQL_MESSAGE = sprintf ('Unable to retrieve data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]),
 	  HS_EXPIRATION = now (),
 	  HS_EXP_IS_TRUE = 0, HS_NOTE = get_note
 	      where
 	      HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
       commit work;
-      signal ('RDFXX', sprintf ('Unable to retrieve RDF data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]));
+      signal ('RDFXX', sprintf ('Unable to retrieve data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]));
     }
   --!!!TBD: proper character set handling in response
   new_download_size := length (ret_body);
@@ -1611,6 +1611,10 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI(in uri varchar := '', in login varc
 create procedure DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC (in contents varchar, in base varchar, in graph varchar, in mimetype varchar :='text/html')
 {
   declare proxyiri, docproxyiri, dociri varchar;
+
+  if (__proc_exists ('DB.DBA.RM_SPONGE_DOC_IRI') is null)
+    return;
+
   proxyiri := DB.DBA.RDF_PROXY_ENTITY_IRI (graph);
   docproxyiri := DB.DBA.RDF_SPONGE_PROXY_IRI (graph);
   dociri:=DB.DBA.RM_SPONGE_DOC_IRI(graph);
@@ -1699,13 +1703,13 @@ retry_after_deadlock:
       if (xpath_eval ('[ xmlns:dv="http://www.w3.org/2003/g/data-view#" ] /*[1]/@dv:transformation', xt) is not null)
         goto load_grddl;
       DB.DBA.RDF_LOAD_RDFXML (ret_body, base, coalesce (dest, graph_iri));
-      if (extra <> '0')
+      if (get_soft <> 'no-sponge')
         DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, coalesce (dest, graph_iri), ret_content_type);
       rdf_fmt := 1;
       if (groupdest is not null)
         {
           DB.DBA.RDF_LOAD_RDFXML (ret_body, base, groupdest);
-          if (extra <> '0')
+	  if (get_soft <> 'no-sponge')
             DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, groupdest, ret_content_type);
         }
         goto load_grddl;
@@ -1746,14 +1750,16 @@ retry_after_deadlock:
       --log_enable (2, 1);
       --if (dest is null)
       --  DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1);
+
       DB.DBA.TTLP (ret_body, base, coalesce (dest, graph_iri), ttl_mode);
-      if(extra<>'0')
+      if (get_soft <> 'no-sponge')
         DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, coalesce (dest, graph_iri), ret_content_type);
       rdf_fmt := 1;
+
       if (groupdest is not null)
         {
           DB.DBA.TTLP (ret_body, base, groupdest);
-          if(extra<>'0')
+          if(get_soft <> 'no-sponge')
             DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, groupdest, ret_content_type);
         }
       if (exists (select 1 from DB.DBA.SYS_RDF_MAPPERS where RM_TYPE = 'URL' and regexp_match (RM_PATTERN, new_origin_uri) and RM_ENABLED = 1))

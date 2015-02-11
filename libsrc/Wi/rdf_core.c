@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -740,7 +740,13 @@ ttlp_reset_stacks (ttlp_t *ttlp)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_saved_uris)));
   while (NULL != ttlp->ttlp_unused_seq_bnodes)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_unused_seq_bnodes)));
-  dk_free_tree (ttlp->ttlp_last_complete_uri);	ttlp->ttlp_last_complete_uri = NULL;
+  if (NULL != ttlp->ttlp_last_complete_uri)
+    {
+      if (ttlp->ttlp_last_complete_uri != ttlp->ttlp_obj)
+        dk_free_tree (ttlp->ttlp_last_complete_uri);
+      ttlp->ttlp_last_complete_uri = NULL;
+    }
+  dk_free_tree (ttlp->ttlp_last_q_save);		ttlp->ttlp_last_q_save = NULL;
   dk_free_tree (ttlp->ttlp_subj_uri);		ttlp->ttlp_subj_uri = NULL;
   dk_free_tree (ttlp->ttlp_pred_uri);		ttlp->ttlp_pred_uri = NULL;
   dk_free_tree (ttlp->ttlp_obj);			ttlp->ttlp_obj = NULL;
@@ -1060,7 +1066,73 @@ ttlp_uri_resolve (ttlp_t *ttlp_arg, caddr_t qname)
 }
 
 void
-ttlp_triple_and_inf (ttlp_t *ttlp_arg, caddr_t o_uri)
+ttlp_triple_and_inf_prepare (ttlp_t *ttlp_arg, caddr_t o_uri)
+{
+  if (ttlp_arg[0].ttlp_obj != o_uri)
+    {
+      if (NULL != ttlp_arg[0].ttlp_obj)
+        dk_free_tree (ttlp_arg[0].ttlp_obj);
+      ttlp_arg[0].ttlp_obj = o_uri;
+    }
+  if (ttlp_arg[0].ttlp_triple_is_prepared)
+    ttlyyerror_impl (ttlp_arg, "", "Internal error: an triple is not processed before complete reading of next triple");
+  ttlp_arg[0].ttlp_triple_is_prepared = ttlp_arg[0].ttlp_pred_is_reverse ? 'r' : 'R';
+}
+
+void
+ttlp_triple_l_and_inf_prepare (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang)
+{
+  if (ttlp_arg[0].ttlp_obj != o_sqlval)
+    {
+      if (NULL != ttlp_arg[0].ttlp_obj)
+        dk_free_tree (ttlp_arg[0].ttlp_obj);
+      ttlp_arg[0].ttlp_obj = o_sqlval;
+    }
+  if (ttlp_arg[0].ttlp_obj_type != o_dt)
+    {
+      if (NULL != ttlp_arg[0].ttlp_obj_type)
+        dk_free_tree (ttlp_arg[0].ttlp_obj_type);
+      ttlp_arg[0].ttlp_obj_type = o_dt;
+    }
+  if (ttlp_arg[0].ttlp_obj_lang != o_lang)
+    {
+      if (NULL != ttlp_arg[0].ttlp_obj_lang)
+        dk_free_tree (ttlp_arg[0].ttlp_obj_lang);
+      ttlp_arg[0].ttlp_obj_lang = o_lang;
+    }
+  if (ttlp_arg[0].ttlp_triple_is_prepared)
+    ttlyyerror_impl (ttlp_arg, "", "Internal error: an triple is not processed before complete reading of next triple");
+  ttlp_arg[0].ttlp_triple_is_prepared = ttlp_arg[0].ttlp_pred_is_reverse ? 'l' : 'L';
+}
+
+void
+ttlp_triple_process_prepared (ttlp_t *ttlp_arg)
+{
+  switch (ttlp_arg[0].ttlp_triple_is_prepared)
+    {
+    case 'R':
+      ttlp_triple_and_inf_now (ttlp_arg, ttlp_arg[0].ttlp_obj, 0);
+      ttlp_arg[0].ttlp_triple_is_prepared = 0;
+      return;
+    case 'r':
+      ttlp_triple_and_inf_now (ttlp_arg, ttlp_arg[0].ttlp_obj, 1);
+      ttlp_arg[0].ttlp_triple_is_prepared = 0;
+      return;
+    case 'L':
+      ttlp_triple_l_and_inf_now (ttlp_arg, ttlp_arg[0].ttlp_obj, ttlp_arg[0].ttlp_obj_type, ttlp_arg[0].ttlp_obj_lang, 0);
+      ttlp_arg[0].ttlp_triple_is_prepared = 0;
+      return;
+    case 'l':
+      ttlp_triple_l_and_inf_now (ttlp_arg, ttlp_arg[0].ttlp_obj, ttlp_arg[0].ttlp_obj_type, ttlp_arg[0].ttlp_obj_lang, 1);
+      ttlp_arg[0].ttlp_triple_is_prepared = 0;
+      return;
+    case 0: return;
+    default: GPF_T1 ("Bad ttlp_triple_is_prepared");
+    }
+}
+
+void
+ttlp_triple_and_inf_now (ttlp_t *ttlp_arg, caddr_t o_uri, int pred_is_reverse)
 {
   triple_feed_t *tf = ttlp_arg[0].ttlp_tf;
   caddr_t s = ttlp_arg[0].ttlp_subj_uri;
@@ -1068,7 +1140,7 @@ ttlp_triple_and_inf (ttlp_t *ttlp_arg, caddr_t o_uri)
   caddr_t o = o_uri;
   if ((NULL == s) || (NULL == p))
     return;
-  if (ttlp_arg[0].ttlp_pred_is_reverse)
+  if (pred_is_reverse)
     {
       caddr_t swap = o;
       o = s;
@@ -1087,14 +1159,14 @@ ttlp_triple_and_inf (ttlp_t *ttlp_arg, caddr_t o_uri)
 }
 
 void
-ttlp_triple_l_and_inf (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang)
+ttlp_triple_l_and_inf_now (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang, int is_reverse)
 {
   triple_feed_t *tf = ttlp_arg[0].ttlp_tf;
   caddr_t s = ttlp_arg[0].ttlp_subj_uri;
   caddr_t p = ttlp_arg[0].ttlp_pred_uri;
   if ((NULL == s) || (NULL == p))
     return;
-  if (ttlp_arg[0].ttlp_pred_is_reverse)
+  if (is_reverse)
     {
       if (!(ttlp_arg[0].ttlp_flags & TTLP_SKIP_LITERAL_SUBJECTS))
         ttlyyerror_impl (ttlp_arg, "", "Virtuoso does not support literal subjects");
@@ -1460,6 +1532,8 @@ nic_set (name_id_cache_t * nic, caddr_t name, boxint id)
 {
   caddr_t name_box = NULL;
   caddr_t *place;
+  WITH_TLSF (dk_base_tlsf)
+  {
   if (nic->nic_n_ways)
     {
       nic_set_n (nic, name, id);
@@ -1485,6 +1559,8 @@ nic_set (name_id_cache_t * nic, caddr_t name, boxint id)
 	}
       mutex_leave (nic->nic_mtx);
     }
+}
+  END_WITH_TLSF;
 }
 
 
@@ -2208,7 +2284,7 @@ local_start_found:
 }
 
 void
-iri_split_ttl_qname (const char * iri, caddr_t * pref_ret, caddr_t * name_ret, int abbreviate_nodeid)
+iri_split_ttl_qname_impl (const char * iri, caddr_t * pref_ret, caddr_t * name_ret, int abbreviate_nodeid, int flag)
 {
   const char *tail;
   int iri_strlen;
@@ -2222,7 +2298,7 @@ iri_split_ttl_qname (const char * iri, caddr_t * pref_ret, caddr_t * name_ret, i
   for (tail = iri + iri_strlen; tail > iri; tail--)
     {
       unsigned char c = (unsigned char) tail[-1];
-      if (!isalnum(c) && ('_' != c) && ('-' != c) && !(c & 0x80))
+      if (!isalnum(c) && ('_' != c) && ('-' != c) && !(c & 0x80) && !(flag == SPLIT_MODE_XML && '.' == c))
         break;
     }
   if (isdigit (tail[0]) || ('-' == tail[0]) || ((tail > iri) && (NULL == strchr ("#/:?", tail[-1]))))
@@ -2239,6 +2315,12 @@ iri_split_ttl_qname (const char * iri, caddr_t * pref_ret, caddr_t * name_ret, i
   else
     pref_ret[0] = box_dv_short_nchars (iri, tail - iri);
   name_ret[0] = box_dv_short_nchars (tail, iri + iri_strlen - tail);
+}
+
+void
+iri_split_ttl_qname (const char * iri, caddr_t * pref_ret, caddr_t * name_ret, int abbreviate_nodeid)
+{
+  iri_split_ttl_qname_impl (iri, pref_ret, name_ret, abbreviate_nodeid, SPLIT_MODE_TTL);
 }
 
 name_id_cache_t * iri_name_cache;
@@ -3979,6 +4061,7 @@ bif_uriqa_dynamic_local_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
 void rdf_inf_init ();
 
 int iri_cache_size = 0;
+int32 enable_iri_nic_n = 1;
 
 
 dbe_key_t *
@@ -4231,7 +4314,8 @@ rdf_core_init (void)
   if (100 >= iri_cache_size)
     iri_cache_size = MIN (500000, main_bufs / 2);
   iri_name_cache = nic_allocate (iri_cache_size, 1, 0);
-  nic_set_n_ways (iri_name_cache, 64);
+  if (enable_iri_nic_n)
+    nic_set_n_ways (iri_name_cache, 64);
   iri_prefix_cache = nic_allocate (iri_cache_size / 10, 0, 0);
   nic_set_n_ways (iri_prefix_cache, 64);
   rdf_lang_cache = nic_allocate (255, 0, 0);

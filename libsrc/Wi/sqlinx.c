@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -254,25 +254,70 @@ sqlo_ip_copy (df_elt_t * tb_dfe, dk_set_t path)
   return res;
 }
 
+static int
+sqlo_key_sp_or_op (df_elt_t * tb_dfe, dbe_key_t * key)
+{
+  QNCAST (dbe_column_t, col, key->key_parts->data);
+  if (!tb_is_rdf_quad (tb_dfe->_.table.ot->ot_table))
+    return 0;
+  if (key->key_distinct && key->key_decl_parts == 2 && (0 == strcmp (col->col_name, "S") || 0 == strcmp (col->col_name, "O")))
+    {
+      df_elt_t * pred = sqlo_key_part_best (col, tb_dfe->_.table.col_preds, 0);
+      return dfe_is_eq_pred (pred);
+    }
+  return 0;
+}
+
+static int
+sqlo_key_only_on_leading_so (df_elt_t * tb_dfe, dbe_key_t * first, dbe_key_t * second)
+{
+  int inx = 0;
+  if (second->key_decl_parts != 4 || first->key_decl_parts != 2)
+    return 0;
+  DO_SET (dbe_column_t *, col, &first->key_parts)
+    {
+      if (dk_set_position (second->key_parts, col) > 1)
+	return 0;
+    }
+  END_DO_SET();
+  if (!sqlo_key_part_best ((dbe_column_t *) second->key_parts->next->next->data, tb_dfe->_.table.col_preds, 0))
+    return 1;
+  return 0;
+}
 
 float
-sqlo_index_path_cost (dk_set_t path, float * cost_ret, float * card_ret, char * sure_ret)
+sqlo_index_path_cost (dk_set_t path, float * cost_ret, float * card_ret, char * sure_ret, df_elt_t * tb_dfe)
 {
   float cost = -1, card = 1;
-  int n_sure = 0;
+  int n_sure = 0, inx = 0;
+  dbe_key_t * first_so_key = NULL;
   DO_SET (index_choice_t *, ic, &path)
     {
       if (-1 == cost)
 	{
+	  if (sqlo_key_sp_or_op (tb_dfe, ic->ic_key))
+	    {
+	      if (!ic->ic_text_order)
+		{
+		  if (ic->ic_arity < 2)
+		    ic->ic_arity = 2;
+		  else if (ic->ic_arity > 20)
+		    ic->ic_arity = 20;
+		}
+	      first_so_key = ic->ic_key;
+	    }
 	  cost = ic->ic_unit;
 	  card = ic->ic_arity;
 	  n_sure = ic->ic_leading_constants;
 	}
       else
 	{
+	  if (first_so_key && inx == 1 && !ic->ic_key->key_distinct && sqlo_key_only_on_leading_so (tb_dfe, first_so_key, ic->ic_key))
+	    ic->ic_arity = 1.2;
 	  cost += card * ic->ic_unit;
 	  card *= ic->ic_arity;
 	}
+      inx ++;
     }
   END_DO_SET();
   if (n_sure >= *sure_ret)
@@ -294,6 +339,14 @@ dfe_is_eq_pred (df_elt_t * pred)
   return (pred && (
 		((DFE_BOP_PRED  == pred->dfe_type || DFE_BOP == pred->dfe_type) && BOP_EQ == pred->_.bin.op)
 		|| sqlo_in_list (pred, NULL, NULL))) ;
+}
+
+
+int
+dfe_is_single_eq_pred (df_elt_t * pred)
+{
+  return (pred && (
+		   ((DFE_BOP_PRED  == pred->dfe_type || DFE_BOP == pred->dfe_type) && BOP_EQ == pred->_.bin.op)));
 }
 
 
@@ -579,6 +632,7 @@ sqlo_rdf_string_range (df_elt_t * tb_dfe, index_choice_t * ic)
   dt_col_name = ((dbe_column_t*) range_tb->tb_primary_key->key_parts->next->data)->col_name;
   range_col = range_col_dfe->_.col.col;
   r_tb_dfe = sqlo_new_dfe (so, DFE_TABLE, NULL);
+  r_tb_dfe->dfe_super = tb_dfe; /* if expressions placed, then these are placed before tb dfe and must be found to avoid placing twice */
   snprintf (r_pref, sizeof (r_pref), "r%s", tb_dfe->_.table.ot->ot_new_prefix);
   r_ot = sqlo_ot_by_name (so, r_pref, range_tb);
   r_prefix = r_ot->ot_new_prefix;
@@ -733,7 +787,7 @@ sqlo_key_add_pk_eqs (df_elt_t * tb_dfe, dbe_key_t * key, index_choice_t * ic, dk
       if (!tb_is_pk_part (tb_dfe->_.table.ot->ot_table, part))
 	continue;
       pred = sqlo_key_part_best (part, tb_dfe->_.table.col_preds, 0);
-      if (!dfe_is_eq_pred (pred))
+      if (!dfe_is_single_eq_pred (pred))
 	{
 	  /* the best is not an eq. Make an eq and remove all non-eq preds */
 	  caddr_t pref = tb_dfe->_.table.ot->ot_new_prefix;
@@ -803,7 +857,7 @@ sqlo_index_path (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t path, int pk_given)
 		t_set_push (&ic.ic_col_preds, (void*)text_id_pred);
 	      sqlo_ip_trailing_text (tb_dfe, &ic);
 	      path = dk_set_nreverse (path);
-	      cost = sqlo_index_path_cost (path, &best_cost, &so->so_best_index_card, &so->so_best_index_card_sure);
+	      cost = sqlo_index_path_cost (path, &best_cost, &so->so_best_index_card, &so->so_best_index_card_sure, tb_dfe);
 	      path = dk_set_nreverse (path);
 	      if (cost < so->so_best_index_cost || -1 == so->so_best_index_cost)
 		{

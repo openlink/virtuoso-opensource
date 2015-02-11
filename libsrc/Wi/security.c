@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -887,7 +887,8 @@ sec_check_login (char *name, char *pass, dk_session_t * ses)
     goto failed;
   if (0 == strcmp (pass, user->usr_pass))
     return user;
-
+  if (!ses->dks_peer_name)
+    goto failed;
   sec_login_digest (ses->dks_peer_name, name, user->usr_pass, digest);
   if (0 == memcmp (digest, pass, 16))
     return user;
@@ -1964,6 +1965,7 @@ sec_user_read_groups (char *name)
 void
 sec_read_users (void)
 {
+  int save;
   caddr_t err;
   static query_t *null_users_qr = NULL;
   client_connection_t *cli = bootstrap_cli;
@@ -2062,7 +2064,11 @@ sec_read_users (void)
 
   /* separate txn for this.
      May fuck up on non-unique key in recovery of old databases */
+  /* no users, so no mt queries, error in aq if no user exists */
+  save = enable_qp;
+  enable_qp = 1;
   err = qr_quick_exec (null_users_qr, cli, "", NULL, 0);
+  enable_qp = save;
   PRINT_ERR(err);
   local_commit (bootstrap_cli);
 
@@ -2124,7 +2130,7 @@ sec_read_users (void)
   user_t_dba->usr_disabled = 0;
   user_t_dba->usr_is_role = 0;
   user_t_dba->usr_is_sql = 1;
-
+  bootstrap_cli->cli_user = user_t_dba;
   if (user_t_dba->usr_g_ids)
     {
       dk_free_box ((box_t) user_t_dba->usr_g_ids);
@@ -2524,6 +2530,7 @@ sec_call_login_hook (caddr_t *puid, caddr_t digest, dk_session_t *ses, client_co
 	"DB.DBA.USER_CERT_LOGIN"))
     return ret;
 
+  sqlc_set_client (cli);
   local_start_trx (cli);
   cli_set_start_times (cli);
   err = qr_quick_exec (sec_call_login_hook_qr, cli, NULL,

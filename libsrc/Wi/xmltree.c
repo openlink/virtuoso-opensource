@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -401,13 +401,13 @@ xqi_cast (xp_instance_t * xqi, int slot, dtp_t dtp)
 	{
 	  xte_string_value_from_tree ((caddr_t*) val, XQI_ADDRESS (xqi, slot), DV_LONG_STRING);
 	  val = XQI_GET (xqi, slot);
-	  XQI_SET (xqi, slot, box_utf8_as_wide_char (val, NULL, strlen (val), 0, dtp));
+	  XQI_SET (xqi, slot, box_utf8_as_wide_char (val, NULL, strlen (val), 0));
 	}
       else if (DV_XML_ENTITY == val_dtp)
 	{
 	  xe_string_value_1 ((xml_entity_t *)val, XQI_ADDRESS (xqi, slot), DV_LONG_STRING);
 	  val = XQI_GET (xqi, slot);
-	  XQI_SET (xqi, slot, box_utf8_as_wide_char (val, NULL, strlen (val), 0, dtp));
+	  XQI_SET (xqi, slot, box_utf8_as_wide_char (val, NULL, strlen (val), 0));
 	}
       else if (DV_NUMERIC == val_dtp)
 	{
@@ -421,7 +421,7 @@ xqi_cast (xp_instance_t * xqi, int slot, dtp_t dtp)
 	    XQI_SET (xqi, slot, box_narrow_string_as_wide ((unsigned char *) tmp, NULL, -1, NULL, NULL, 0));
 	}
       else
-	XQI_SET (xqi, slot, box_utf8_as_wide_char (val, NULL, strlen (val), 0, dtp));
+	XQI_SET (xqi, slot, box_utf8_as_wide_char (val, NULL, strlen (val), 0));
       return (XQI_GET (xqi, slot));
     }
   GPF_T1 ("Bad target type in xqi_cast");
@@ -1189,8 +1189,7 @@ xslt_format_number (numeric_t value, caddr_t format,
   int currency_format = 0;
 
   wchar_t *pattern =
-      (wchar_t *) box_utf8_as_wide_char (format, NULL, strlen (format), 0,
-      DV_WIDE);
+      (wchar_t *) box_utf8_as_wide_char (format, NULL, strlen (format), 0);
 
   caddr_t res = NULL, res1;
   caddr_t res_prefix, res_suffix;
@@ -1232,7 +1231,7 @@ xslt_format_number (numeric_t value, caddr_t format,
 
 #define LOAD_FROM_XSNF(varname,field_name) \
   memset (&c_state, 0, sizeof (c_state)); \
-  virt_mbrtowc (&varname, (utf8char *)nf->field_name, strlen (nf->field_name), &c_state);
+  virt_mbrtowc_z (&varname, (utf8char *)nf->field_name, strlen (nf->field_name), &c_state);
 
   LOAD_FROM_XSNF(digit, xsnf_digit);
   LOAD_FROM_XSNF(zero_digit, xsnf_zero_digit);
@@ -3857,7 +3856,7 @@ params_ready:
 	    {
 	      if (DV_STRINGP (val))
 	        {
-		  val = box_utf8_as_wide_char (val, NULL, box_length (val), 0, DV_WIDE);
+		  val = box_utf8_as_wide_char (val, NULL, box_length (val), 0);
 		  if (NULL == val)
 		    sqlr_new_error ("22003", "SR476", "Out of memory allocation limits: %s() tries to return an abnormally long NVARCHAR", funname);
 		}
@@ -8113,7 +8112,7 @@ xn_xe_from_text (xpath_node_t * xn, query_instance_t * qi)
 	}
       /* No break. If we're not sure that this is a serialized vector that this is a text */
     case XE_PLAIN_TEXT:
-      if (DV_STRINGP (val))
+      if (DV_STRING == dtp || DV_UNAME == dtp || DV_BIN == dtp)
 	str = val;
       else if (DV_WIDESTRINGP (val))
 	{
@@ -8373,7 +8372,7 @@ try_next_val:
       if (XPDV_NODESET == predicted)
 	{
 	  XN_QST_SET (xn, qst, xn->xn_output_val, DV_STRINGP (val) ?
-	    box_utf8_as_wide_char (val, NULL, box_length (val), 0, DV_WIDE) :
+	    box_utf8_as_wide_char (val, NULL, box_length (val), 0) :
 	    box_copy_tree (val) );
 	  save_xqi = 1;
 	}
@@ -8381,7 +8380,7 @@ try_next_val:
 	{
 	  rc = SQL_SUCCESS;
 	  XN_QST_SET (xn, qst, xn->xn_output_val, DV_STRINGP (val) ?
-	    box_utf8_as_wide_char (val, NULL, box_length (val), 0, DV_WIDE) :
+	    box_utf8_as_wide_char (val, NULL, box_length (val), 0) :
 	    box_copy_tree (val));
 	}
       if (save_xqi)
@@ -8460,7 +8459,7 @@ try_next_val:
 	}
       if (NULL != xn->xn_output_val)
 	XN_QST_SET (xn, qst, xn->xn_output_val, DV_STRINGP (val) ?
-	  box_utf8_as_wide_char (val, NULL, box_length (val), 0, DV_WIDE) :
+	  box_utf8_as_wide_char (val, NULL, box_length (val), 0) :
 	  box_copy_tree (val));
     }
   QR_RESET_CODE

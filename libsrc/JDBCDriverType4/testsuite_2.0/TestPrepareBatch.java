@@ -2,7 +2,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -83,7 +83,7 @@ public class TestPrepareBatch
          int[] res = pstmt.executeBatch();
          pstmt.close();
          for(int i = 0;i < 100;i++)
-            if(res[i] != 1)
+            if(res[i] != 1 && res[i]!=PreparedStatement.SUCCESS_NO_INFO)
             {
                System.out.println(i + " " + res[i]);
                System.out.print("    FAILED");
@@ -117,7 +117,7 @@ public class TestPrepareBatch
          res = pstmt.executeBatch();
          pstmt.close();
          for(int i = 0;i < 100;i++)
-            if(res[i] != 1)
+            if(res[i] != 1 && res[i]!=PreparedStatement.SUCCESS_NO_INFO)
             {
                System.out.print("    FAILED");
                System.exit(-1);

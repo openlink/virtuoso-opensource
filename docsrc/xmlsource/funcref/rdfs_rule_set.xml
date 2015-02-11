@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2014 OpenLink Software
+ -  Copyright (C) 1998-2015 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -70,8 +70,8 @@ Done. -- 15 msec.
 SQL> SELECT * FROM DB.DBA.SYS_RDF_SCHEMA ;
 RS_NAME                              RS_URI                                                         RS_G
 VARCHAR NOT NULL                     VARCHAR NOT NULL                                               VARCHAR
-_______________________________________________________________________________                    
-                                                                                                   
+_______________________________________________________________________________                    
+                                                                                                   
 http://localhost:8890/dataspace      http://localhost:8890/dataspace/inf                            NULL
 http://www.w3.org/2002/07/owl#       http://www.w3.org/2002/07/owl#                                 NULL
 myset                                http://mygraph.com                                             NULL

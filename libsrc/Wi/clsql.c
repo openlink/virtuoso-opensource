@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1497,6 +1497,17 @@ sqlg_cl_multistate_group (sql_comp_t * sc)
   END_DO_SET ();
 }
 
+int enable_high_card_part = 0;
+float c_setp_partition_threshold = 100000;
+
+int
+setp_is_high_card (setp_node_t * setp)
+{
+  return enable_high_card_part && setp->setp_card > c_setp_partition_threshold && !setp->setp_in_union;
+}
+
+
+
 void
 qf_set_max_rows (query_frag_t * qf, int max)
 {
@@ -1593,14 +1604,4 @@ int
 sqlg_distinct_colocated (sql_comp_t * sc, state_slot_t ** ssls, int n_ssls)
 {
   return 0;
-}
-
-
-int enable_high_card_part = 0;
-float c_setp_partition_threshold = 100000;
-
-int
-setp_is_high_card (setp_node_t * setp)
-{
-  return enable_high_card_part && setp->setp_card > c_setp_partition_threshold && !setp->setp_in_union;
 }

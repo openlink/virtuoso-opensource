@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -654,6 +654,15 @@ virtodbc__SQLDriverConnect (SQLHDBC hdbc,
   con->con_pwd_cleartext = PWDCLEARW ? _ttoi (PWDCLEARW) : 0;
   SERVERCERTW = cfgdata[oSERVERCERT].data && _tcslen (cfgdata[oSERVERCERT].data) ? (cfgdata[oSERVERCERT].data) : NULL;
   con->con_ca_list = virt_wide_to_ansi (SERVERCERTW);
+
+  /*
+   * When using public authentication protocol, identity is provided by the certificate and cannot be overruled by the application
+   */
+  if (con->con_pwd_cleartext == 3)
+    {
+	free (cfgdata[oUID].data);
+	cfgdata[oUID].data = NULL;
+    }
 #else
   con->con_encrypt = NULL;
   ENCRYPTW = NULL;

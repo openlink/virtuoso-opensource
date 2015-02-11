@@ -7,7 +7,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2014 OpenLink Software
+#  Copyright (C) 1998-2015 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -289,7 +289,7 @@ echo "  <caption>" >> $STICKER
 echo "    <name package=\"conductor\">" >> $STICKER
 echo "      <prop name=\"Title\" value=\"Virtuoso Conductor\"/>" >> $STICKER
 echo "      <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-echo "      <prop name=\"Copyright\" value=\"(C) 1998-2014 OpenLink Software\"/>" >> $STICKER
+echo "      <prop name=\"Copyright\" value=\"(C) 1998-2015 OpenLink Software\"/>" >> $STICKER
 echo "      <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso/conductor/download\"/>" >> $STICKER
 echo "      <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso/conductor/download\"/>" >> $STICKER
 echo "    </name>" >> $STICKER
@@ -310,15 +310,20 @@ echo "        {" >> $STICKER
 echo "          result ('ERROR', 'The conductor package requires server version $NEED_VERSION or greater');" >> $STICKER
 echo "          signal ('FATAL', 'The conductor package requires server version $NEED_VERSION or greater');" >> $STICKER
 echo "        }" >> $STICKER
-echo "      if (__proc_exists ('WS.WS.TTL_REDIRECT_ENABLED') is null)" >> $STICKER
+echo "      if (__proc_exists ('DB.DBA.DAV_DET_CONTENT_MD5') is null)" >> $STICKER
 echo "        {" >> $STICKER
 echo "          result ('ERROR', 'Please update server version');" >> $STICKER
 echo "          signal ('FATAL', 'Please update server version');" >> $STICKER
 echo "        }" >> $STICKER
-echo "     if (((__proc_exists ('DB.DBA.WebDAV_DAV_AUTHENTICATE') is not null) and (__proc_exists ('DB.DBA.WebDAV__verify') is null)) or ((__proc_exists ('DB.DBA.SkyDrive_DAV_AUTHENTICATE') is not null) and (__proc_exists ('DB.DBA.SkyDrive_CONFIGURE') is null)) or ((__proc_exists ('DB.DBA.oMail_DAV_AUTHENTICATE') is not null) and (__proc_exists ('DB.DBA.oMail_CONFIGURE') is null)))" >> $STICKER
+echo "      if ((__proc_exists ('DB.DBA.WebDAV_DAV_AUTHENTICATE') is not null) and (__proc_exists ('DB.DBA.WebDAV_VERIFY') is null))" >> $STICKER
+echo "        {" >> $STICKER
+echo "          result ('ERROR', 'Please install the last Briefcase VAD packages');" >> $STICKER
+echo "          signal ('FATAL', 'Please install the last Briefcase VAD packages');" >> $STICKER
+echo "        }" >> $STICKER
+echo "      if ((__proc_exists ('DB.DBA.oMail_DAV_AUTHENTICATE') is not null) and (__proc_exists ('DB.DBA.oMail_CONFIGURE') is null))" >> $STICKER
 echo "       {" >> $STICKER
-echo "         result ('ERROR', 'Please install the last Briefcase and WebMail VAD packages');" >> $STICKER
-echo "         signal ('FATAL', 'Please install the last Briefcase and WebMail VAD packages');" >> $STICKER
+echo "          result ('ERROR', 'Please install the last WebMail VAD packages');" >> $STICKER
+echo "          signal ('FATAL', 'Please install the last WebMail VAD packages');" >> $STICKER
 echo "       }" >> $STICKER
 echo "      if (equ ($ISDAV, 0) and isinteger (file_stat (http_root ())))" >> $STICKER
 echo "        {" >> $STICKER

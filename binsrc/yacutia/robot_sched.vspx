@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2014 OpenLink Software
+ -  Copyright (C) 1998-2015 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -128,7 +128,8 @@
         <v:form name="event_form" type="simple" method="POST" action="robot_sched.vspx">
           <input type="hidden" name="mode" value="<?= get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
 	  <v:before-data-bind><![CDATA[
-            declare _host, _root, _name varchar;
+            declare _host, _root, _name, _store_type, store_prefix varchar;
+	    declare _udata any;
 	    if (get_keyword('mode', self.vc_page.vc_event.ve_params) = 'edt')
 	      {
 	        if (self.ename = '')
@@ -141,8 +142,10 @@
 	        declare exit handler for not found {
 	          signal ('.....', sprintf ('No such target'));
 	        };
-                select VS_DESCR into _name from WS.WS.VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
-                self.ename := concat(_name, '(', _host,' in /DAV/',_root,')');
+                select VS_DESCR, deserialize(VS_UDATA) into _name, _udata from WS.WS.VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
+		_store_type := get_keyword ('store-type', _udata, 'none');
+		store_prefix := case when _store_type = 'dav' then '/DAV/' else '' end;
+                self.ename := concat(_name, '(', _host,' in ',store_prefix,_root,')');
               }
 	    ]]></v:before-data-bind>
           <v:on-post>

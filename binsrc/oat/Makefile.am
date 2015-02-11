@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Ajax Toolkit (OAT) project
 #
 #  Copyright (C) 2006 Ondrej Zara
-#  Copyright (C) 2006-2014 OpenLink Software
+#  Copyright (C) 2006-2015 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -21,6 +21,7 @@
 EXTRA_DIST = \
 	$(srcdir)/LICENSE \
 	$(srcdir)/COPYING \
+	$(srcdir)/CREDITS \
 	$(srcdir)/images/*.gif \
 	$(srcdir)/images/*.png \
 	$(srcdir)/images/markers/*.png \

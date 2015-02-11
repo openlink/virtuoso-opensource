@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -193,9 +193,8 @@ yacutia_http_log_ui_labels ()
 
 create procedure adm_menu_tree ()
 {
-  declare wa_available, rdf_available, policy_vad integer;
+  declare wa_available, rdf_available integer;
   wa_available := VAD.DBA.VER_LT ('1.02.13', DB.DBA.VAD_CHECK_VERSION ('Framework'));
-  policy_vad := DB.DBA.VAD_CHECK_VERSION ('policy_manager');
   rdf_available := check_package ('cartridges');
   return concat (
 '<?xml version="1.0" ?>
@@ -392,8 +391,13 @@ create procedure adm_menu_tree ()
       <node name="Delete Path" url="http_del_path.vspx" id="156" place="1" allowed="yacutia_http_server_management_page"/>
       <node name="URL rewrite" url="http_url_rewrite.vspx" id="193" place="1" allowed="yacutia_http_server_management_page"/>
       <node name="Content Negotiation" url="http_tcn.vspx" id="194" place="1" allowed="yacutia_http_server_management_page"/>
-   </node>
- </node>
+   </node>',
+ case when check_package('inclusion-engine') then
+  '<node name="Inclusion Engine" url="iengine.vspx" id="1500" allowed="yacutia_ie">
+    <node name="Inclusion Engine" url="iengine.vspx" id="1510" place="1"  allowed="yacutia_ie"/>
+   </node>'
+ end,
+'</node>
  <node name="XML" url="xml_sql.vspx" id="106" tip="XML Services permit manipulation of XML data from stored and SQL sources" allowed="yacutia_xml">
    <node name="SQL-XML" url="xml_sql.vspx" id="107" allowed="yacutia_sql_xml_page">
      <node name="SQL-XML" url="xml_sql2.vspx" id="108" place="1" allowed="yacutia_sql_xml_page">
@@ -457,7 +461,9 @@ create procedure adm_menu_tree ()
    </node>' end,
    '<node name="Sponger" url="rdf_filters.vspx" id="191" tip="Linked Data Cartridges " allowed="yacutia_message">
      <node name="Cartridges" url="rdf_filters.vspx" id="192" place="1" allowed="yacutia_sparql_page" />
+     <node name="CSV patterns" url="csv_patterns.vspx" id="199" place="1" allowed="yacutia_sparql_page" />
      <node name="Meta Cartridges" url="rdf_filters_pp.vspx" id="193" place="1" allowed="yacutia_sparql_page" />
+    <node name="Entity URIs" url="entity_uri_patterns.vspx" id="195" place="1" allowed="yacutia_sparql_page" />
      <node name="Stylesheets" url="sparql_filters.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
      <node name="Console" url="rdf_console.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
      <node name="Configuration" url="rdf_conf.vspx" id="182" place="1" allowed="yacutia_sparql_page" />
@@ -473,7 +479,7 @@ create procedure adm_menu_tree ()
      <node name="Schemas" url="rdf_schemas.vspx" id="189" place="1" allowed="yacutia_sparql_page" />
    </node>
    <node name="Namespaces"  url="persistent_xmlns.vspx" id="183" allowed="yacutia_message" />',
-     case when ((wa_available > 0 or policy_vad is not null) and rdf_available > 0) then
+     case when (rdf_available > 0) then
      '<node name="Access Control" url="sparql_acl.vspx" id="274" allowed="yacutia_acls">
         <node name="ACL List" url="sec_auth_serv_sp.vspx" id="277" place="1" allowed="yacutia_acls"/>
         <node name="Sponger Groups" url="sec_auth_sponger_1.vspx" id="277" place="1" allowed="yacutia_acls"/>

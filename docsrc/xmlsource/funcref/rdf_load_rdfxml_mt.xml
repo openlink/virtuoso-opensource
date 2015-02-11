@@ -17,6 +17,7 @@
         <paramdef>in <parameter>graph</parameter> varchar</paramdef>
         <paramdef><optional>in <parameter>log_mode</parameter> integer</optional></paramdef>
         <paramdef><optional>in <parameter>threads</parameter> integer</optional></paramdef>
+         <paramdef><optional>in <parameter>transactional </parameter> integer</optional></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
@@ -40,6 +41,9 @@
     </refsect2>
     <refsect2><title>threads</title>
       <para>number of threads that insert quads into the database. It should not be less than 1, obviously; it is better to not set it greater than <emphasis>((N-2)/k)-1</emphasis> where <emphasis>N</emphasis> is the number of available CPU cores and <emphasis>k</emphasis> is the number of loadings that happen at the same time.</para>
+    </refsect2>
+    <refsect2><title>transactional</title>
+      <para>controls the transaction mode which is "0" by default i.e. off and can be turned on by setting it to "1".</para>
     </refsect2>
   </refsect1>
   <refsect1 id="ret_rdf_load_rdfxml_mt"><title>Return Types</title>

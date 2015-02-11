@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -98,10 +98,11 @@ caddr_t f##_w p \
   dk_session_t * ses = IMMEDIATE_CLIENT; \
   client_connection_t * cli; \
   cli = DKS_DB_DATA (ses); \
-  if (!cli) \
+  if (!cli || !cli->cli_logged_in) \
     { \
       log_error ("SQL client operation on a connection which was not logged in.\n"); \
       ses->dks_to_close = 1; \
+      DKST_RPC_DONE (ses); \
       return NULL; \
     } \
   CLI_ENTER; \
@@ -114,11 +115,11 @@ caddr_t f##_w p \
 
 #  define CLI_ENTER \
   if (!cli->cli_inprocess) \
-    {mutex_enter (cli->cli_test_mtx); cli->cli_cl_start_ts = rdtsc (); }
+    {mutex_enter (cli->cli_test_mtx); cli->cli_cl_start_ts = rdtsc (); thr_set_tlsf (THREAD_CURRENT_THREAD, cli->cli_tlsf);}
 
 #  define CLI_LEAVE \
   if (!cli->cli_inprocess) \
-    { CLI_THREAD_TIME (cli); mutex_leave (cli->cli_test_mtx); }
+    { CLI_THREAD_TIME (cli); thr_set_tlsf (THREAD_CURRENT_THREAD, NULL); mutex_leave (cli->cli_test_mtx); }
 
 # else
 
@@ -433,7 +434,10 @@ cli_scrap_cursors (client_connection_t * cli, query_instance_t * exceptions,
 client_connection_t *
 client_connection_create (void)
 {
+  du_thread_t *self = THREAD_CURRENT_THREAD;
+  struct TLSF_struct *save_tlsf = self->thr_tlsf;
   B_NEW_VARZ (client_connection_t, cli);
+  thr_set_tlsf (self, dk_base_tlsf);
   cli->cli_statements = id_str_hash_create (31);
   cli->cli_cursors = id_str_hash_create (13);
   cli->cli_mtx = mutex_allocate ();
@@ -461,6 +465,7 @@ client_connection_create (void)
 #endif
   cli->cli_user_info = NULL;
   cli->cli_slice = QI_NO_SLICE;
+  thr_set_tlsf (self, save_tlsf);
   return cli;
 }
 
@@ -1021,7 +1026,7 @@ make_login_answer (client_connection_t *cli)
       list (2,
 	  box_string (cli->cli_charset->chrs_name),
 	  box_wide_char_string ( (caddr_t) &(cli->cli_charset->chrs_table[1]),
-	    sizeof (cli->cli_charset->chrs_table) - sizeof (wchar_t), DV_WIDE));
+	    sizeof (cli->cli_charset->chrs_table) - sizeof (wchar_t) ));
   return ret;
 }
 
@@ -1241,6 +1246,7 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
 
   dk_free_tree ((caddr_t) info);
   srv_add_login (cli);
+  cli->cli_logged_in = 1;
   return ret;
 }
 
@@ -1677,10 +1683,13 @@ cli_set_start_times (client_connection_t * cli)
   if (prof_on)
     dt_now ((caddr_t)&cli->cli_start_dt);
   cli->cli_start_time = get_msec_real_time ();
+  cli->cli_ws_check_time = cli->cli_start_time;
   cli->cli_cl_start_ts = rdtsc ();
   cli->cli_activity.da_thread_time = 0;
 }
 
+
+int enable_vec_cli_call = 1;
 
 void
 sf_sql_execute (caddr_t stmt_id, char *text, char *cursor_name,
@@ -1911,7 +1920,7 @@ report_error:
       log_info ("EXEC_1 %s %s %s %s Exec %d time(s) %.*s", user, from, peer, stmt->sst_id,
 	  n_params, LOG_PRINT_STR_L, stmt->sst_query->qr_text ? ((stmt->sst_query->qr_text[0] == -35) ? "" : stmt->sst_query->qr_text) :"");
     }
-  if (!stmt->sst_query->qr_select_node && !stmt->sst_query->qr_is_call)
+  if (!stmt->sst_query->qr_select_node && ((stmt->sst_query->qr_proc_vectored && enable_vec_cli_call && n_params > 1) ||  !stmt->sst_query->qr_is_call))
     {
       err = qr_dml_array_exec (cli, stmt->sst_query, CALLER_CLIENT,
 			       cursor_name ? box_string (cursor_name) : NULL,
@@ -3175,9 +3184,12 @@ frq_no_thread_reply (future_request_t * frq)
   self->dkt_requests[0] = NULL;
   dk_free_tree (err);
 #else
+  static caddr_t nothr = NULL;
+  if (!nothr)
+    nothr = box_dv_short_string ("no_threads");
   dk_free_tree ((caddr_t) frq->rq_arguments);
-  frq->rq_arguments = (long**) list (01, 0);
-  frq->rq_service = find_service ("no_threads");
+  frq->rq_arguments = (long**) list (1, 0);
+  frq->rq_service = find_service (nothr);
 #endif
 }
 
@@ -3187,6 +3199,7 @@ sf_overflow (future_request_t * frq)
 {
   client_connection_t * cli = DKS_DB_DATA (frq->rq_client);
   lock_trx_t * lt;
+  if (!cli) goto no;
   IN_TXN;
   lt = cli->cli_trx;
   if (0 == lt->lt_threads)
@@ -3212,6 +3225,7 @@ sf_overflow (future_request_t * frq)
 	}
     }
   LEAVE_TXN;
+no:
   frq_no_thread_reply (frq);
 }
 
@@ -3756,6 +3770,32 @@ void   rdf_key_comp_init ();
 extern int enable_col_by_default, c_col_by_default;
 long get_total_sys_mem ();
 
+dk_set_t srv_global_init_pre_log_actions = NULL;
+dk_set_t srv_global_init_postponed_actions = NULL;
+
+dk_set_t *
+get_srv_global_init_pre_log_actions_ptr (void)
+{
+  return &srv_global_init_pre_log_actions;
+}
+
+dk_set_t *
+get_srv_global_init_postponed_actions_ptr (void)
+{
+  return &srv_global_init_postponed_actions;
+}
+
+void
+srv_global_init_plugin_actions (dk_set_t *set_ptr, char *mode)
+{
+  set_ptr[0] = dk_set_nreverse (set_ptr[0]);
+  while (NULL != set_ptr[0])
+    {
+      srv_global_init_plugin_action_t *f = (srv_global_init_plugin_action_t *)dk_set_pop (set_ptr);
+      f (mode);
+    }
+}
+
 void
 srv_global_init (char *mode)
 {
@@ -3950,6 +3990,7 @@ srv_global_init (char *mode)
 	db_replay_registry_sequences ();
       else
 	id_hash_clear (registry);
+      srv_global_init_plugin_actions (&srv_global_init_pre_log_actions, mode);
       log_init (wi_inst.wi_master);
       local_commit (bootstrap_cli);
       c_checkpoint_interval = 0;
@@ -4020,6 +4061,7 @@ srv_global_init (char *mode)
     }
   if (!f_read_from_rebuilt_database)
     {
+      srv_global_init_plugin_actions (&srv_global_init_pre_log_actions, mode);
       log_init (wi_inst.wi_master);
     }
   if (strchr (mode, 'r'))
@@ -4080,6 +4122,7 @@ srv_global_init (char *mode)
 	  sf_shutdown (sf_make_new_log_name (wi_inst.wi_master), bootstrap_cli->cli_trx);
     }
   ddl_redo_undefined_triggers ();
+  srv_global_init_plugin_actions (&srv_global_init_postponed_actions, mode);
   IN_TXN;
   lt_leave(bootstrap_cli->cli_trx);
   LEAVE_TXN;

@@ -1,0 +1,329 @@
+# Dutch translation of virtuoso-opensource debconf templates.
+# Copyright (C) 2011 THE PACKAGE'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the virtuoso-opensource package.
+# Jeroen Schot <schot@a-eskwadraat.nl>, 2011.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: virtuoso-opensource 7.0.2+dfsg1-1\n"
+"Report-Msgid-Bugs-To: virtuoso-opensource@packages.debian.org\n"
+"POT-Creation-Date: 2014-08-11 06:30+0100\n"
+"PO-Revision-Date: 2011-05-13 08:58+0200\n"
+"Last-Translator: Jeroen Schot <schot@a-eskwadraat.nl>\n"
+"Language-Team: Debian l10n Dutch <debian-l10n-dutch@lists.debian.org>\n"
+"Language: nl\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Type: password
+#. Description
+#: ../virtuoso-opensource-7.templates:2001
+msgid "Password for DBA and DAV users:"
+msgstr "Wachtwoord voor DBA- en DAV-gebruikers"
+
+#. Type: password
+#. Description
+#: ../virtuoso-opensource-7.templates:2001
+msgid ""
+"Following installation, users and passwords in Virtuoso can be managed using "
+"the command line tools (see the full documentation) or via the Conductor web "
+"application which is installed by default at http://localhost:8890/conductor."
+msgstr ""
+"Na de installatie kunt u gebruikers en wachtwoorden in Virtuoso beheren met "
+"de commandoregel-hulpprogramma's (zie de documentatie) of via de "
+"webapplicatie Conductor die standaard op http://localhost:8899/conductor "
+"wordt geïnstalleerd."
+
+#. Type: password
+#. Description
+#: ../virtuoso-opensource-7.templates:2001
+msgid ""
+"Two users (\"dba\" and \"dav\") are created by default, with administrative "
+"access to Virtuoso. Secure passwords must be chosen for these users in order "
+"to complete the installation."
+msgstr ""
+"Er worden standaard twee gebruikers (\"dba\" en \"dav\") aangemaakt met "
+"beheerderstoegang tot Virtuoso. Om de installatie af te maken dient u "
+"veilige wachtwoorden voor deze gebruikers te kiezen."
+
+#. Type: password
+#. Description
+#: ../virtuoso-opensource-7.templates:2001
+msgid ""
+"If you leave this blank, the daemon will be disabled unless a non-default "
+"password already exists."
+msgstr ""
+"Als u dit leeg laat zal de achtergronddienst worden gedeactiveerd, tenzij er "
+"al een niet-standaard wachtwoord bestaat."
+
+#. Type: password
+#. Description
+#: ../virtuoso-opensource-7.templates:3001
+msgid "Administrative users password confirmation:"
+msgstr "Beheerderswachtwoord (nogmaals ter bevestiging):"
+
+#. Type: error
+#. Description
+#: ../virtuoso-opensource-7.templates:4001
+msgid "Password mismatch"
+msgstr "Wachtwoorden komen niet overeen"
+
+#. Type: error
+#. Description
+#: ../virtuoso-opensource-7.templates:4001
+msgid ""
+"The two passwords you entered were not the same. Please enter a password "
+"again."
+msgstr ""
+"De twee wachtwoorden die u heeft ingevoerd waren niet gelijk. Voer "
+"alstublieft nogmaals een wachtwoord in."
+
+#. Type: note
+#. Description
+#: ../virtuoso-opensource-7.templates:5001
+msgid "No initial password set, daemon disabled"
+msgstr ""
+"Geen initieel wachtwoord ingesteld, de achtergronddienst is gedeactiveerd."
+
+#. Type: note
+#. Description
+#: ../virtuoso-opensource-7.templates:5001
+msgid ""
+"For security reasons, the default Virtuoso instance is disabled because no "
+"administration password was provided."
+msgstr ""
+"Omwille van de veiligheid is de standaard Virtuoso-dienst gedeactiveerd, "
+"daar er geen beheerderswachtwoord is opgegeven."
+
+#. Type: note
+#. Description
+#: ../virtuoso-opensource-7.templates:5001
+#, fuzzy
+#| msgid ""
+#| "You can enable the daemon manually by setting RUN to \"yes\" in /etc/"
+#| "default/virtuoso-opensource-7. The default DBA user password will then be "
+#| "\"dba\"."
+msgid ""
+"You can enable the daemon manually by setting RUN to \"yes\" in /etc/default/"
+"virtuoso-opensource-7. The default DBA user password will then be \"dba\"."
+msgstr ""
+"U kunt de achtergronddienst handmatig activeren door in /etc/default/"
+"virtuoso-opensource-7 de instelling RUN op \"yes\" te zetten. Het standaard "
+"DBA-wachtwoord is dan \"dba\"."
+
+#. Type: error
+#. Description
+#: ../virtuoso-opensource-7.templates:6001
+msgid "Unable to set password for the Virtuoso DBA user"
+msgstr "Kan wachtwoord voor de DBA-gebruiker van Virtuoso niet instellen"
+
+#. Type: error
+#. Description
+#: ../virtuoso-opensource-7.templates:6001
+msgid ""
+"An error occurred while setting the password for the Virtuoso administrative "
+"user. This may have happened because the account already has a password, or "
+"because of a communication problem with the Virtuoso server."
+msgstr ""
+"Er is een fout opgetreden bij het instellen van het wachtwoord voor de "
+"beheerder van Virtuoso. Dit kan komen doordat de account al een wachtwoord "
+"heeft of door een communicatieprobleem met de Virtuoso-server."
+
+#. Type: error
+#. Description
+#: ../virtuoso-opensource-7.templates:6001
+msgid ""
+"If the database already existed then it will have retained the original "
+"password. If there was some other problem then the default password (\"dba"
+"\") is used."
+msgstr ""
+"Als de database al bestond dan heeft het nog steeds zijn oorspronkelijke "
+"wachtwoord. Als er een ander probleem was dan is het standaardwachtwoord "
+"(\"dba\") gebruikt."
+
+#. Type: error
+#. Description
+#: ../virtuoso-opensource-7.templates:6001
+msgid ""
+"It is recommended to check the passwords for the users \"dba\" and \"dav\" "
+"immediately after installation."
+msgstr ""
+"U wordt aangeraden om direct na de installatie de wachtwoorden voor de "
+"gebruikers \"dba\" en \"dav\" te controleren."
+
+#. Type: boolean
+#. Description
+#: ../virtuoso-opensource-7.templates:7001
+msgid "Remove all Virtuoso databases?"
+msgstr "Alle databases van Virtuoso verwijderen?"
+
+#. Type: boolean
+#. Description
+#: ../virtuoso-opensource-7.templates:7001
+#, fuzzy
+#| msgid ""
+#| "The /var/lib/virtuoso-opensource-7 directory which contains the Virtuoso "
+#| "databases is about to be removed."
+msgid ""
+"The /var/lib/virtuoso-opensource-7 directory which contains the Virtuoso "
+"databases is about to be removed."
+msgstr ""
+"De map /var/lib/virtuoso-opensource-7, die de Virtuoso-databases bevat, "
+"staat op het punt om verwijderd te worden."
+
+#. Type: boolean
+#. Description
+#: ../virtuoso-opensource-7.templates:7001
+msgid ""
+"If you're removing the Virtuoso package in order to later install a more "
+"recent version, or if a different Virtuoso package is already using it, you "
+"can choose to keep databases."
+msgstr ""
+"Als u het Virtuoso-pakket verwijdert om later een nieuwere versie te "
+"installeren of als de database al door een andere Virtuoso-pakket wordt "
+"gebruikt kunt u er voor kiezen om de databases te houden."
+
+#. Type: string
+#. Description
+#: ../virtuoso-opensource-7.templates:8001
+msgid "HTTP server port:"
+msgstr "HTTP-serverpoort:"
+
+#. Type: string
+#. Description
+#: ../virtuoso-opensource-7.templates:8001
+msgid ""
+"Virtuoso provides a web server capable of hosting HTML and VSP pages (with "
+"optional support for other languages). If you are installing this instance "
+"as a public web server directly on the Internet, you probably want to choose "
+"80 as web server port."
+msgstr ""
+"Virtuoso is voorzien van een webserver die HTML- en VPS-pagina's kan "
+"aanbieden (met optionele ondersteuning voor andere talen). Indien u deze "
+"dienst als een publieke webserver over het Internet installeert wilt u "
+"waarschijnlijk 80 als webserver-poort kiezen."
+
+#. Type: string
+#. Description
+#: ../virtuoso-opensource-7.templates:8001
+#, fuzzy
+#| msgid ""
+#| "Please note that the default web server root directory is /var/lib/"
+#| "virtuoso-opensource-7/vsp and will be empty unless you also install the "
+#| "package containing the standard Virtuoso start page."
+msgid ""
+"Please note that the default web server root directory is /var/lib/virtuoso-"
+"opensource-7/vsp and will be empty unless you also install the package "
+"containing the standard Virtuoso start page."
+msgstr ""
+"Let op: De standaard hoofdmap van de webserver is /var/lib/virtuoso-"
+"opensource-7.1/vsp en is leeg, tenzij u ook het pakket met de standaard "
+"Virtuoso startpagina installeert."
+
+#. Type: string
+#. Description
+#: ../virtuoso-opensource-7.templates:9001
+msgid "Database server port:"
+msgstr "Database-serverpoort:"
+
+#. Type: string
+#. Description
+#: ../virtuoso-opensource-7.templates:9001
+msgid ""
+"You may change here the port on which the Virtuoso database server will "
+"listen for connections."
+msgstr ""
+"Hier kunt u de poort waarop wijzigen de Virtuoso-databaseserver luistert."
+
+#. Type: string
+#. Description
+#: ../virtuoso-opensource-7.templates:9001
+msgid ""
+"Modifying this default value can improve security on servers that might be "
+"targets for unauthorized intrusion."
+msgstr ""
+"Op servers die mogelijk doelwit zijn van niet-geautoriseerde toegang kan het "
+"wijzigen van deze waarde de veiligheid verhogen."
+
+#. Type: boolean
+#. Description
+#: ../virtuoso-opensource-7.templates:10001
+msgid "Register an ODBC system DSN for Virtuoso?"
+msgstr "Een ODBC-systeem-DSN voor Virtuoso registreren?"
+
+#. Type: boolean
+#. Description
+#: ../virtuoso-opensource-7.templates:10001
+msgid ""
+"An ODBC manager (unixodbc or iODBC) is already installed on this system, and "
+"the Virtuoso ODBC driver is installed."
+msgstr ""
+"Er is al een ODBC-manager (unixodbc of iODBC) geïnstalleerd op dit systeem "
+"en het ODBC-stuurprogramma van Virtuoso is geïnstalleerd."
+
+#. Type: boolean
+#. Description
+#: ../virtuoso-opensource-7.templates:10001
+msgid ""
+"The default Virtuoso instance can be automatically added to the list of "
+"available System Data Sources (and automatically deleted from the list when "
+"this package is removed)."
+msgstr ""
+"De standaard Virtuoso-dienst kan automatisch worden toegevoegd aan de lijst "
+"van beschikbare System Data Sources (en weggehaald als dit pakket wordt "
+"verwijderd)."
+
+#. Type: boolean
+#. Description
+#: ../virtuoso-opensource-7.templates:10001
+msgid ""
+"If you choose this option, the DSN will be named \"VOS\". User and password "
+"details are omitted from the DSN for security reasons."
+msgstr ""
+"Als u voor deze optie kiest zal de DSN de naam \"VOS\" krijgen. Gebruiker- "
+"en wachtwoordinformatie worden omwille van de veiligheid weggelaten uit de "
+"DSN."
+
+#. Type: select
+#. Description
+#: ../virtuoso-opensource-7.templates:11001
+msgid "Default Virtuoso server package:"
+msgstr "Standaard Virtuoso-serverpakket:"
+
+#. Type: select
+#. Description
+#: ../virtuoso-opensource-7.templates:11001
+msgid ""
+"Please choose the version of virtuoso-server that will be linked to by the "
+"default (unversioned) names, for init scripts and client tools."
+msgstr ""
+"Kies alstublieft de versie van virtuoso-server die gekoppeld dient te worden "
+"aan standaardnamen (zonder versienummer), voor init-scripts en client-"
+"hulpprogramma's."
+
+#. Type: boolean
+#. Description
+#: ../libvirtodbc0.templates:2001
+msgid "Register the Virtuoso ODBC driver?"
+msgstr "De Virtuoso-ODBC-stuurprogramma's registreren?"
+
+#. Type: boolean
+#. Description
+#: ../libvirtodbc0.templates:2001
+msgid ""
+"An ODBC manager (unixodbc or iODBC)  is already installed on this system."
+msgstr ""
+"Er is al een ODBC-manager (unixodbc of iODBC) geïnstalleerd op dit systeem."
+
+#. Type: boolean
+#. Description
+#: ../libvirtodbc0.templates:2001
+msgid ""
+"The Virtuoso ODBC driver can be automatically added to the list of available "
+"ODBC drivers (and automatically deleted from the list when this package is "
+"removed)."
+msgstr ""
+"Het Virtuoso-ODBC-stuurprogramma kan automatisch aan de lijst van "
+"beschikbare ODBC-stuurprogramma's worden toegevoegd (en weggehaald als dit "
+"pakket wordt verwijderd)."

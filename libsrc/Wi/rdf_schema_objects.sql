@@ -6,7 +6,7 @@
 --
 --  RDF Schema objects, generator of RDF Views
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -684,7 +684,7 @@ create procedure
 rdf_view_dv_to_sql_str_type (in _dv varchar)
 {
    if (_dv = 189 or _dv = 188 or _dv = 247) return 'integer';
-   else if (_dv = 182 or _dv = 125 or _dv = 131) return 'varchar';
+   else if (_dv = 182 or _dv = 125 or _dv = 131 or _dv = 222) return 'varchar';
    else if (__tag of double precision = _dv) return 'numeric';
    else if (__tag of real = _dv) return 'float';
    else if (__tag of numeric = _dv) return 'numeric';
@@ -701,7 +701,7 @@ create procedure
 rdf_view_dv_to_xsd_str_type (in _dv varchar)
 {
    if (_dv = 189 or _dv = 188 or _dv = 247) return 'int';
-   else if (_dv = 182 or _dv = 125 or _dv = 131 or _dv = 132) return 'string';
+   else if (_dv = 182 or _dv = 125 or _dv = 131 or _dv = 132 or _dv = 222) return 'string';
    else if (__tag of double precision = _dv) return 'numeric';
    else if (__tag of real = _dv) return 'float';
    else if (__tag of numeric = _dv) return 'numeric';
@@ -984,7 +984,7 @@ create procedure RDF_VIEW_GEN_VD (in qual varchar)
 
     case when fct_installed
     then
-      '''/describe/?url=http%%3A//^{URIQADefaultHost}^%U%%23this&graph=http%%3A//^{URIQADefaultHost}^/<qual>%%23'','
+      '''/describe/?url=http%%3A//^{URIQADefaultHost}^%U%%23this&graph=http%%3A//^{URIQADefaultHost}^/<qual>%%23&distinct=0'','
     else
       '''/about/html/http://^{URIQADefaultHost}^%s'','
     end
@@ -1145,7 +1145,7 @@ RDF_VIEW_DO_SYNC (in qualifier varchar, in load_data int := 0, in pgraph varchar
 ;
 
 create procedure
-RDF_VIEW_SYNC_TO_PHYSICAL (in vgraph varchar, in load_data int := 0, in pgraph varchar := null, in log_mode int := 1, in load_atomic int := 1)
+RDF_VIEW_SYNC_TO_PHYSICAL (in vgraph varchar, in load_data int := 0, in pgraph varchar := null, in log_mode int := 3, in load_atomic int := 0)
 {
    declare mask varchar;
    declare txt, tbls, err_ret, opt any;
@@ -1334,7 +1334,7 @@ DB.DBA.R2RML_CREATE_DATASET (in nth int, in qualifier varchar, in qual_ns varcha
      graph_def := '';
    ret := ret || sprintf ('<#TriplesMap%U> a rr:TriplesMap; rr:logicalTable [ rr:tableSchema "%s" ; rr:tableOwner "%s" ; rr:tableName "%s" ]; \n',
      tbl_name, qual, own, tbl_name );
-   ret := ret || sprintf ('rr:subjectMap [ rr:termtype "IRI"  ; rr:template "http://%s/%s/%s%s"; rr:class %s; %s];\n',
+   ret := ret || sprintf ('rr:subjectMap [ rr:termType rr:IRI  ; rr:template "http://%s/%s/%s%s"; rr:class %s; %s];\n',
      uriqa_str, qual, tbl_name_l, pk_text, DB.DBA.R2RML_QUAL_NOTATION (qualifier, qual_ns, rdf_view_cls_name (tbl_name)), graph_def );
 
    inx := 0;
@@ -1351,7 +1351,7 @@ DB.DBA.R2RML_CREATE_DATASET (in nth int, in qualifier varchar, in qual_ns varcha
        pk_text := '';
        for select FKCOLUMN_NAME from SYS_FOREIGN_KEYS where FK_TABLE = tbl and PK_TABLE = pkt order by KEY_SEQ do
          pk_text := pk_text || sprintf ('/%U={%s}', FKCOLUMN_NAME, FKCOLUMN_NAME);
-       ret := ret || sprintf ('rr:predicateObjectMap [ rr:predicateMap [ rr:constant %s ] ; rr:objectMap [ rr:termtype "IRI" ; rr:template "http://%s/%s/%s%s" ]; ] ;\n',
+       ret := ret || sprintf ('rr:predicateObjectMap [ rr:predicateMap [ rr:constant %s ] ; rr:objectMap [ rr:termType rr:IRI ; rr:template "http://%s/%s/%s%s" ]; ] ;\n',
          DB.DBA.R2RML_QUAL_NOTATION (qualifier, qual_ns, concat (tbl_name_l, '_has_', lower (name_part (pkt, 3)))),
          uriqa_str, qual, lower (name_part (pkt, 3)), pk_text );
 	 }
@@ -1373,7 +1373,7 @@ DB.DBA.R2RML_CREATE_DATASET (in nth int, in qualifier varchar, in qual_ns varcha
 	 }
        else
 	 {
-           ret := ret || sprintf ('rr:predicateObjectMap [ rr:predicateMap [ rr:constant %s ] ; rr:objectMap [ rr:termtype "IRI" ; rr:template "http://%s/%s/%s%s" ]; ] ;\n',
+           ret := ret || sprintf ('rr:predicateObjectMap [ rr:predicateMap [ rr:constant %s ] ; rr:objectMap [ rr:termType rr:IRI ; rr:template "http://%s/%s/%s%s" ]; ] ;\n',
              DB.DBA.R2RML_QUAL_NOTATION (qualifier, qual_ns, concat (tbl_name_l, '_has_', lower (name_part (fkt, 3)))),
              uriqa_str, qual, lower (name_part (fkt, 3)), pk_text );
 	 }

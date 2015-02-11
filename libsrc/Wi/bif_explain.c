@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -305,17 +305,18 @@ ssl_print (state_slot_t * ssl)
     case SSL_CONSTANT:
 	{
 	  caddr_t err_ret = NULL;
-	  dtp_t dtp = DV_TYPE_OF (ssl->ssl_constant);
+	  caddr_t cval = ssl->ssl_constant;
+	  dtp_t dtp = DV_TYPE_OF (cval);
 	  if (DV_DB_NULL == dtp)
 	    stmt_printf (("<DB_NULL>"));
 	  else if (DV_RDF == dtp)
 	    {
-	      rdf_box_t * rb = (rdf_box_t*)ssl->ssl_constant;
+	      rdf_box_t * rb = (rdf_box_t*)cval;
 	      stmt_printf (("rdflit" BOXINT_FMT, rb->rb_ro_id));
 	    }
 	  else
 	    {
-	      caddr_t strval = box_cast_to (NULL, ssl->ssl_constant,
+	      caddr_t strval = box_cast_to (NULL, cval,
 					    dtp, DV_SHORT_STRING,
 		  NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE,
 		  &err_ret);
@@ -325,7 +326,7 @@ ssl_print (state_slot_t * ssl)
 		    {
 		      case DV_IRI_ID:
 			    {
-			      caddr_t str = dv_iri_short_name (ssl->ssl_constant);
+			caddr_t str = dv_iri_short_name (cval);
 			      if (str)
 				{
 				  stmt_printf ((" #" EXPLAIN_LINE_MAX_STR_FORMAT " ", str));
@@ -337,7 +338,12 @@ ssl_print (state_slot_t * ssl)
 			  stmt_printf ((" " EXPLAIN_LINE_MAX_STR_FORMAT " ", strval));
 			  break;
 		      default:
-			  stmt_printf (("<c " EXPLAIN_LINE_MAX_STR_FORMAT ">", strval));
+		      if (box_flags (cval))
+		        stmt_printf (("<tag %d flag %d c " EXPLAIN_LINE_MAX_STR_FORMAT ">", DV_TYPE_OF (cval), box_flags (cval), strval));
+		      else if (DV_STRING != DV_TYPE_OF (cval))
+		        stmt_printf (("<tag %d c " EXPLAIN_LINE_MAX_STR_FORMAT ">", DV_TYPE_OF (cval), strval));
+		      else
+		        stmt_printf (("<c " EXPLAIN_LINE_MAX_STR_FORMAT ">", strval));
 		    }
 		}
 	      else
@@ -1877,7 +1883,7 @@ node_print (data_source_t * node)
 	  stmt_printf (("\n"));
 	}
       { 
-	  // milos: set the 'first' flag on
+	  /* milos: set the 'first' flag on */
 	  du_thread_t * self = THREAD_CURRENT_THREAD;
 	  qr_comment_t * comm = THR_ATTR (self, TA_STAT_COMM);
 	  caddr_t * ctx_inst;
@@ -3687,7 +3693,7 @@ bif_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   sc.sc_exp_print_hook = xsql_print_stmt;
 
   MP_START();
-  mutex_enter (parse_mtx);
+  parse_enter ();
   SCS_STATE_PUSH;
   sqlc_target_rds (local_rds);
 
@@ -3709,7 +3715,7 @@ bif_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   sqlc_set_client (old_cli);
   SCS_STATE_POP;
   MP_DONE();
-  mutex_leave (parse_mtx);
+  parse_leave ();
   sc_free (&sc);
   qr_free (qr);
 

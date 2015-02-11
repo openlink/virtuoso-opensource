@@ -1,25 +1,25 @@
---  
+--
 --  $Id: xmlsupp.sql,v 1.14.10.1 2013/01/02 16:15:40 source Exp $
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2014 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 
 
@@ -196,7 +196,7 @@ create procedure xml_doc_get (in uri varchar)
     {
       signal ('....', sprintf ('Unsupported protocol %s', proto));
     }
-    
+
   id := xml_new_d_id (0);
   insert into vxml_document (e_id, e_level, d_uri, E_NAME)
     values (id, 0, uri, 'document');
@@ -211,11 +211,11 @@ create procedure xml_doc_get (in uri varchar)
 create procedure ancestor_of (in id1 varchar, in id2 varchar, in mode integer,
 			      in a1 varchar, in a2 varchar)
 {
-  if (exists (select 1 from vxml_entity e1, vxml_entity e2 where e1.e_id = id1 
+  if (exists (select 1 from vxml_entity e1, vxml_entity e2 where e1.e_id = id1
 	      and ancestor_of (e1.e_id, e2.e_id, mode, a1, a2)
 	      and cast (e2.e_id as varbinary) = id2))
     return 1;
-  else 
+  else
     return 0;
 }
 
@@ -223,7 +223,7 @@ create procedure sax_entity (in ent varbinary, in tag varchar, in flag integer)
 {
   declare is_first, level1 integer;
   is_first := 1;
-  for select _ROW as row, e_level as e_level from VXML_ENTITY where E_ID >= ent do 
+  for select _ROW as row, e_level as e_level from VXML_ENTITY where E_ID >= ent do
     {
       if (is_first) {
 	is_first := 0;
@@ -254,5 +254,5 @@ create procedure xml_test (in uri varchar)
 }
 
 
-xml_element_table ('DB.DBA.VXML_DOCUMENT', 'document', 
+xml_element_table ('DB.DBA.VXML_DOCUMENT', 'document',
 	vector ('D_URI','D_URI'));

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2014 OpenLink Software
+ -  Copyright (C) 1998-2015 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -346,6 +346,630 @@ less than 1 ms at a time.  Also note that the precision may also vary between pl
 		</note>
 	</sect3>
 	<!-- ======================================== -->
+	<sect3 id="readingqueryprofile">
+    <title>Reading a Query profile</title>
+    <para>A query plan is essentially a pipeline of operations that can be read from top to bottom. The operator 
+    above produces the input for the operator below. Nesting is indicated by braces. Operators enclosed in braces 
+    must completely process their input before continuing with operators after the section in braces. A case in 
+    point is aggregation which is demoted by for { ... } ... . The section in braces generates the rows to be 
+    aggregated and one it is fully evaluated the execution proceeds with the operators after the fork. These will 
+    typically read the temporary table filled by the operators inside the fork.</para>
+    <para>Query variables are demoted with &lt;$v...&gt;. A reference to a query variable set by an operator that is not 
+    immediately the preceding one is demoted by &lt;r $...&gt; via ...&gt;. The position of the variable in the query 
+    state follows the $ sign.</para>
+    <para>After this is given the symbolic name of the variable, e.g. a column name or the name of the function of 
+    which this is the return value.</para>
+    <para>If this is a reference to a query variable assigned earlier in the plan with one or more operators between 
+    the reference and the assignment, the reference contains a via .... section which lists the operators that are 
+    between the reference and the assignment.</para>
+    <para>The operators are identified by a unique number. Internally this is the location in the query state where 
+    the operator keeps the mapping between its rows of input and output.</para>
+    <para>With vectored execution, an operator may receive any number of rows of input which it may reorder at its 
+    convenience. For this it must record for each row of output which row of input this corresponds to. Thus when 
+    referencing a query variable set earlier in the plan one must take into account the reordering and 
+    addition/dropping of rows in affected by the operators between the reference and the initial assignment. 
+    This is the meaning of the via section in the &lt;r $xx &gt; notation.</para>
+    <para>The last part of the query variable reference is a two letter indication of the type. If the first 
+    letter is followed by n this means that the variable is non-null. The type letters are a for any, r for IRI, 
+    i for integer, d for double, f for float, t for datetime,  N for wide string, s for string.</para>
+    <para>If the plan is a profile, i.e. it is annotated with actual times and cardinalities from running the query, 
+    each operator is preceded by a passage that indicates its percentage of total CPU time of the plan, its fanout 
+    and the number of rows of input. The fanout is the number of rows of Output divided by the number of rows 
+    of input.</para>
+    <para>The principal operators in a plan are:</para>
+    <itemizedlist>
+      <listitem>
+        <emphasis>Cluster outer seq start</emphasis> -- Queries and subqueries begin with this operator. It assigns numbers to the sets of parameter  bindings the query gets as input. An optional section also begins with this. An optional section is the table or derived table on the right hand side of a left outer join.
+      </listitem>                               
+      <listitem>
+        <emphasis>From</emphasis> -- Accessing an index
+      </listitem>  
+      <listitem>
+        <emphasis>Sort</emphasis> -- Group by, order by, distinct or hash join build side
+      </listitem>  
+      <listitem>
+        <emphasis>group by read</emphasis> -- Accessing the results of a group by filled in by a previous sort operator.
+      </listitem>  
+      <listitem>
+        <emphasis>Top oby</emphasis> -- Accessing a previously filled top k order by temporary space
+      </listitem>         
+      <listitem>
+        <emphasis>Select</emphasis> -- At the end of a plan, send the rows of input to the client. If Subq select return the rows of input as rows of output of the enclosing subquery.
+      </listitem>                           
+      <listitem>
+        <emphasis>Subquery</emphasis> -- Indicates a SQL derived table, i.e. select in a from clause. The input is the output of the previous node.
+      </listitem>  
+      <listitem>
+        <emphasis>Cluster ocation fragment</emphasis> -- A set of operators partitioned and shipped to a partition 
+        in a cluster. There are single part fragments and distributed fragments (DFG). A DFG is a query fragment 
+        which begins with a stage operator. The stage is a partitioning exchange operator which routes its rows 
+        of input to the next operator in the appropriate partition based on the partitioningh columns of the row 
+        of input.
+      </listitem>                    
+      <listitem>
+        <emphasis>Outer seq end</emphasis> -- This demotes the end of an optional section, i.e. the table/derived 
+        table on the right side of left outer join. This has the effect of making aligned vectors of all the vector 
+        query variables assigned in the optional section. When producing rows for which there was no match in the 
+        optional section, these will be set to null. References to these variables downstream in the plan will be 
+        to the shadowing variables, listed in the shadow clause following this.
+      </listitem>           
+    </itemizedlist>
+    <para>Some operators such as index access (From) have a section called vector param casts. This is used when 
+    the vector that serves as parameter is not aligned or not of the type required by the operator. For example, 
+    a vector of column values in an index lookup might not be of the type of the column but might be of a type 
+    castable to this. In any case, the para,key values for index lookup are made into solid aligned, materialized 
+    vectors. After this there is a sort step that orders the input according to key order, so that matches are 
+    generated from left to right.</para>
+    <para>In the event of a cluster partitioned operation, i.e. stage node or non-DFG location fragment (QF), the 
+    first table source (From) after the stage or fragment serves to both align and cast all inputs needed 
+    downstream in the DFG or QF. The operator first partitions the rows of input. Each partition then gets solid, 
+    aligned vectors of input values which are directly suitable for input to the first index lookup (From).</para>
+    <para>We consider an example: The setup is a cluster of 4 server processes with each 8 slices of data. There 
+    is one table, ct_c, which is joined to itself:</para>
+<programlisting><![CDATA[
+profile ('SELECT COUNT (*) from ct_c a, ct_c b WHERE a.k2 = b.k1 option (loop, order)');
+]]></programlisting>
+    <para>This returns a result set in which is found the below. This is also in the ql_plan column of the 
+    sys_query_log view:</para>
+<programlisting><![CDATA[    
+{
+-- In the below excerpt some lines are omitted. Comments are inline.
+
+
+time   1.3e-06% fanout         1          1 rows in
+
+s# 98 cluster outer seq start, set no <V $40 set_ctr in>   
+save ctx:()
+
+-- the section inside the fork is executed to the end 
+-- before the section after the fork is started.
+s# 161 Fork 42
+{ 
+wait time   0.00012% of exec real time, fanout         0
+
+-- The below introduces the 2 stage DFG which does most of the work.
+s# 108   { Cluster location fragment 51 0 unordered
+   Params: ()
+Output: ()   
+
+-- First partitioning step. Each of the 32 slices gets the 
+-- identical plan to execute, this is a flood for all is this 
+-- first step does not specify a partitioning key value.
+
+time     8e-05% fanout         0          0 rows in
+s# 115 Stage 1: Params: (<V $112 set_ctr in>)
+
+-- This is the initial table scan. The operator is executed 
+-- 32 times, once for each slice of data. 
+
+time      0.33% fanout   3.1e+06         32 rows in
+s# 121 from DB.DBA.ct_c by ct_c    1.7e+08 rows  
+Key ct_c  ASC  (<V $28 a.k2 in>)
+ [copies params]
+vector param casts: <V $40 set_ctr in>-> <V $112 set_ctr in>
+ 
+-- This is the second partitioning step, each of the rows of 
+-- output of the previous is sent to the slice corresponding to K2.
+
+time        31% fanout       0.9      2e+08 rows in
+s# 131 Stage 2: Params: (<v $134 q_a.k2 S136 in>, <V $138 set_ctr in>)
+
+-- This is the 2nd index lookup, by a.k2 = b.k1 There are two 
+-- parameters given in the vector param cast section, the first 
+-- is a.k2 and the second is the set number. This is constant 
+-- since the query is run on a single row of input but if the 
+-- query were run on multiple rows of input this would specify 
+-- which row of input the a.k2 comes from so that this would be 
+-- aggregated in the right place. Many aggregates can be produced 
+-- in a single invocation with multiple rows of input.
+
+time        68% fanout         0      2e+08 rows in
+s# 144 from DB.DBA.ct_c by ct_c  unq         1 rows   
+Key ct_c  ASC  ()
+ inlined  k1 = <v $134 q_a.k2 S136 in>
+vector param casts: <V $28 a.k2 in>-> <v $134 q_a.k2 S136 in>, <r $112 set_ctr via  S121>-> <V $138 set_ctr in>
+ 
+ 
+-- This is the aggregation.
+
+After code:
+      0:  sum <V $43 count i> 1 set no <r $138 set_ctr via  S144>
+      5: BReturn 0
+ 
+}
+}
+
+-- The below returns the aggregate to the client. The combining of 
+-- aggregates from different slices is implicit in the for operator 
+-- whenever this ends with a cluster location fragment.
+
+time   5.4e-07% fanout         0          1 rows in
+s# 164 Select (<V $43 count i>)
+  set no: <V $40 set_ctr in>
+}
+]]></programlisting>
+	</sect3>		
+	<sect3 id="tunvectoredexecandhashjoins">
+    <title>Tuning Vectored Execution and Hash Joins</title>
+    <para><emphasis>Note</emphasis>: This section applies only to versions 7.00 and up.</para>
+    <para>Query evaluation performance is significantly affected by parallelization, the vector size and the use 
+    of hash joins and fast in-memory hash tables for group by and distinct.</para>
+    <para>This section explains the configuration parameters and event counters that allow optimizing these 
+    factors.</para>
+    <para>The SQL function <emphasis>cl_sys_stat</emphasis> (in name varchar, in clr int := 0) allows reading 
+    and optionally resetting these counters. In the case of a cluster, the value returned is the sum of the 
+    values of the metric gathered from all server processes, for a single server this is the local value. 
+    In a cluster, to get individual counter values, use sys_stat instead when connected to the process of 
+    interest.</para>
+    <para>To do TPC H at scale 100G on a 32 thread machine, the virtuoso.ini should have the following settings. 
+    Only settings at non-default values are mentioned:</para>
+<programlisting><![CDATA[    
+[Parameters]
+ServerThreads              = 100
+NumberOfBuffers            = 5000000
+
+;  The working set of the 100G database when stored column-wise is 38G, 
+;  so configure this much for database buffers:
+; 5000000 / 128            = 39G 
+
+;  Read committed
+DefaultIsolation           = 2
+
+;  SQL optimizer work space
+MaxMemPoolSize             = 100000000
+
+;  Use large vectors when appropriate
+AdjustVectorSize           = 1
+
+;  Split queries in up to 32 independently evaluable fragments, 
+;  so up to 32 threads per query.
+ThreadsPerQuery            = 32
+
+;  Thread pool has 32 worker threads divided across all queries 
+;  in addition to the client thread taken by each query.
+AsyncQueueMaxThreads       = 32
+
+;  All queries can collectively take up to 30G without space 
+;  saving measures being applied. Space saving measures are 
+;  running on small vector size when a large size would be 
+;  faster and the use of partitioned (multiple pass) hash join.
+MaxQueryMem                = 30G
+
+;  Of the MaxQueryMem, hash join hash tables can take up to 30G,
+;  i.e. all of it. A single hash table will only take half of the
+;  remaining space, though. So if 2 queries that both need a 30G 
+;  hash table run at the same time, the first will do 2 passes, 
+;  taking a hash table of 15G at a time, This leaves 20G space. 
+;  The second will have 15G left, of which it will take half, 
+;  7.5G. This will require 4 passes over the data. 
+HashJoinSpace              = 30G
+
+]]></programlisting>
+    <para>To analyze the performance of a query workload:</para>
+    <orderedlist>
+      <listitem>Turn on query logging in sys_query_log. This view contains most metrics and the full 
+      text of the query plan with the per operator timings and cardinalities:
+<programlisting><![CDATA[
+SQL> prof_enable (1);
+]]></programlisting>          
+      </listitem>Print long result columns without truncating:
+<programlisting><![CDATA[
+SQL> set blobs on;
+]]></programlisting>      
+      <listitem>Run the query.</listitem>
+      <listitem>Use the profile function for a convenient overview of query execution. For example:
+<programlisting><![CDATA[
+SQL> profile ('SELECT COUNT (*) FROM orders, lineitem WHERE l_orderkey = o_orderkey');
+]]></programlisting>
+      <para><link linkend="EfficientSQL">See summary of execution time, CPU%, compilation time and IO</link></para>
+      </listitem>
+      <listitem>Read the relevant event counters, resetting the count for the next query. For example:
+<programlisting><![CDATA[
+SQL> select cl_sys_stat ('tc_qp_thread', clr => 1);
+]]></programlisting>    
+      <para>The relevant counters are:</para>
+      <itemizedlist mark="bullet">
+        <listitem>
+          <emphasis>tc_qp_thread</emphasis> -- How many threads were started for query parallelization. This is not 
+          the number of parallel threads as not all of these threads needed to be running at the same time.
+         </listitem>
+        <listitem>
+          <emphasis>tc_part_hash_join</emphasis> -- If a hash join is partitioned, i.e. needs to make multiple passes 
+          on over the data, this is the count of passes. This is incremented by 2 if the hash join does 2 passes and not 
+          incremented if the hash join goes in a single pass. Normally this should stay at 0 or the hash join space 
+          (HashJoinSpace in init, see above) should be increased.
+        </listitem>
+        <listitem>
+          <emphasis>tc_no_mem_for_longer_batch</emphasis> -- This is the count of times the execution engine did not 
+          switch to large vectors because there was not enough space. This should normally be 0, if this is not so, 
+          increase MaxQueryMem in the ini file.</listitem>
+        <listitem>
+          <emphasis>tc_slow_temp_insert</emphasis> -- If a distinct or group by temporary space grows over the available 
+          query memory, a another data structure will be used so that the hash table can be paged out to disk. This is 
+          tens of times less efficient than the memory only structure. This counter is the count of rows inserted into 
+          a page-able group by or distinct hash table. This should be 0, if not, increase MaxQueryMem.
+        </listitem>
+        <listitem>
+          <emphasis>mp_max_large_in_use</emphasis> -- This is the maximum amount of query memory that has been allocated 
+          to date. Reset this before the query of interest, run and read the counter. This is the peak simultaneous 
+          memory use by the query.
+        </listitem>
+        <listitem>
+          <emphasis>mp_large_in_use</emphasis> -- This is the current amount of query memory in use. Do not reset 
+          this.
+        </listitem>          
+        <listitem>
+          <emphasis>c_max_large_vec</emphasis> -- This is the MaxQueryMem init setting in bytes. This can be 
+          altered at run time with <link linkend="fn_dbf_set"><function>__dbf_set</function></link>.
+        </listitem>  
+      </itemizedlist>  
+      </listitem>
+    </orderedlist>    
+	</sect3>	
+	<sect3 id="tunparamsmworkload">
+		<title>Tuning Parameters for Multiuser Workloads</title>
+		<para>This section describes parameters and event counters that affect memory and parallelism and are 
+			specially relevant for high concurrency situations. Different switches and event counters are described. 
+			Setting these requires dba privileges. The event counters are accessed with <emphasis>sys_stat</emphasis> 
+			and set with <link linkend="fn_dbf_set"><function>__dbf_set</function></link>. For example: </para>
+<programlisting><![CDATA[
+select sys_stat ('tc_qp_thread');
+
+or 
+
+__dbf_set ('dc_batch_sz', 10000);
+]]></programlisting>
+    <para>Some of the parameters have corresponding INI file settings. All of these can be set in an 
+    	INI file in the [Flags] section with a stanza like: </para>
+<programlisting><![CDATA[
+dc_batch_sz = 10000 
+]]></programlisting>
+    <para>First, make sure that the <emphasis>ServerThreads</emphasis> in either 
+    <link linkend="ini_Parameters">[Parameters] ini section</link> (if application with connected clients) or 
+    in <link linkend="ini_HTTPServer">[HTTPServer] ini section</link> (if over web protocols), is larger than 
+    the number of actual connections.
+    </para>
+    <para>Next, the workload should be profiled to see its memory utilization and intrinsic use of parallelism. 
+    	Splitting a query into independently executable parallel fragments increases its memory utilization, 
+    	Switching to larger vector sizes also increases a query's memory utilization while providing increased 
+    	locality of data access. Together these techniques can result in a 100+ fold difference in the transient 
+    	memory consumption of a query. Use of hash joins may also increase the transient memory consumption since 
+    	in a hash join one half of the join must be materialized.</para>
+    <para>With relatively small numbers of concurrent queries, e.g. 10, these techniques are nearly always 
+    	beneficial. With hundreds of queries the memory overhead may become a limiting factor.</para>
+    <para>The <emphasis>MaxQueryMem</emphasis> INI file setting controls how much memory is kept for query 
+    execution. This amount of space is maintained allocated. Transient memory use may exceed this but then the 
+    memory above this amount is unmapped when no longer needed. Mapping and unmapping memory takes time. 
+    Concurrent mmap and munmap calls on different threads will serialize and bring down the CPU utilization of a 
+    process even when there is enough parallelism for full platform utiliization.</para>
+    <para>The <emphasis>mp_mmap_clocks</emphasis> counter is the cumulative amount of real time in CPU clocks 
+    spent in mmap or munmap systtem calls. This can increase faster than real time if multiple threads are 
+    involved.</para>     
+    <para>If this value grows fast, e.g. at over 10% of real time, the monitor prints a message in the server 
+    	event log. This is an indication that memory utilization may have to be tuned.</para>
+    <para>For analyzing the behavior of a workload as concerns memory, do the following:</para>  
+    <itemizedlist mark="bullet">
+      <listitem>Run the workload once for warmup.</listitem>
+      <listitem>Clear the following counters:
+        <itemizedlist mark="bullet">
+          <listitem><code>mp_max_large_in_use</code> -- Highest to date amount of concurrently used memory</listitem>
+          <listitem><code>tc_qp_thread</code> -- count of times a query made a parallel executive fragment. Not increased if running single threaded.</listitem>
+          <listitem><code>tc_adjust_batch_sz</code> -- count of times vector size was switched to larger</listitem>
+          <listitem><code>mp_mmap_clocks</code> -- cumulative time inside mmap or munmap.</listitem>
+        </itemizedlist>      	
+       <para>For example:</para>
+<programlisting><![CDATA[
+__dbf_set ('mp_max_large_in_use', 0);	
+]]></programlisting>
+      </listitem>
+      <listitem>Run the workload on a single thread with default settings.</listitem>
+      <listitem>Observe the values.</listitem>
+    </itemizedlist>
+	  <sect4 id="tunparamsmworkloadex">    
+	  	<title>Example Scenario</title>
+      <orderedlist>
+        <listitem>Clear the counters.</listitem>
+        <listitem>Set <code>enable_dyn_batch_sz</code> to 0, causing queries to only use the initial vector size, 
+        <code>dc_batch_sz</code> or <code>VectorSize</code> in the INI file.</listitem>
+        <listitem>Set <code>enable_qp</code> to 1, causing queries to run single threaded.</listitem>
+        <listitem>Run the workload on a single thread. The difference in elapsed real time will show how much 
+        	benefit the workload has from intra-query parallelization and long vector sizes. If the workload used 
+        	any of the memory consuming techniques the peak memory in the second case will be lower. How much lower 
+        	is entirely workload dependent.
+          <itemizedlist mark="bullet">
+            <listitem><emphasis>Note</emphasis>: One may additionally try the workload on a single thread with 
+            <code>hash_join_enable</code> set to 0 and 2, respectively. 0 means no hash join plans are made, 
+            2 means that hash join is used when appropriate for either SQL or SPARQL queries. The peak memory 
+            utilization and run times may be significantly affected.</listitem>
+          </itemizedlist>
+        </listitem>
+        <listitem>Having completed these metrics, one may move to the multi-user case. Note that 
+        	<code>MaxQueryMem</code>, (<code>c_max_large_vec</code> setting with 
+        	<link linkend="fn_dbf_set"><function>__dbf_set</function></link>) should be set to a reasonable 
+        	value, e.g. the peak consumption with the chosen settings times the number of parallel sessions. 
+        </listitem>
+        <listitem>Expected Results -- Experience demonstrates for example that with a 128 concurrent users 
+        	<code>setting enable_qp</code> to 1 and <code>enable_dyn_batch_sz</code> to 0 increased the throughput 
+        	of the sample workload by a factor of 2.5. The workload derived, even in single user mode, little 
+        	benefit from dynamic vector size or multithreading, under 30%. In the case at hand, the difference in 
+        	performance was mostly accounted for by <code>mmap</code>, see the <code>mp_mmap_clocks</code> 
+        	counter. 
+          <itemizedlist mark="bullet">
+            <listitem>If more concurrent queries are than CPU cores are expected, there is little point in 
+            	intra-query parallelism, controlled by <code>ThreadsPerQuery</code> in the INI file or 
+            	<code>enable_qp</code> in <link linkend="fn_dbf_set"><function>__dbf_set</function></link>.
+            </listitem>
+            <listitem>If <code>mp_mmap_clocks</code> continues to grow fast during the execution one may 
+            increase <code>c_max_large_vec</code>. This will cause more <code>mmap</code>'s to be kept in 
+            reserve, thus in principle decreasing the frequency of <code>mmap</code> and <code>munmap</code> 
+            system calls.</listitem>            
+            <listitem>If running with hash join enabled, there is a possibility of partitioned hash joins where 
+              the query executes in multiple passes in order to build smaller hash tables. This is given by 
+            	<code>tc_part_hash_join</code>, which is increased by 1 for each non-first pass over a hash join. 
+            	If the counter increases the <code>HashJoinSpace</code> setting in the INI file should be 
+            	increased. With <link linkend="fn_dbf_set"><function>__dbf_set</function></link> this is 
+            	<code>chash_space_avail</code>.
+            </listitem>
+          </itemizedlist>        	
+        </listitem>
+        <listitem>Notes:
+          <itemizedlist mark="bullet">
+            <listitem>The results from above may not happen with a single user but happen all the time with 
+            	multiple users. The monitor will print a warning message about this in the message log.
+            </listitem>
+            <listitem>One may also try a different default vector size, specially if very pressed on memory. 
+            	The default of 10000 values is generally a good small value but smaller may be possible, 
+            	however not under 1000.
+            </listitem>
+          </itemizedlist>        	
+        </listitem>                                                
+      </orderedlist>
+	  </sect4>
+	</sect3>			
+  <sect3 id="querylogging">
+    <title>Query Logging</title>
+    <para>As of version 7.00 Virtuoso offers optional server side query logging. This records a large number 
+    of execution statistics as well as the full query text and execution plan with per-operator timing and 
+    cardinality information.</para>
+    <para>This feature is enabled in the Parameters section of virtuoso.ini:</para> 
+<programlisting><![CDATA[
+; virtuoso.ini
+...
+[Parameters]
+QueryLog = filename 
+]]></programlisting>    
+    <para>At run time, this may be enabled or disabled with prof_enable (), overriding the specification of the 
+    ini file. The default file name for the query log is virtuoso.qrl in the server's working directory, if not 
+    otherwise specified in the ini file.</para>
+    <para>The file is in binary format and is not conveniently readable as such. It is most easily accessed via 
+    the DB.DBA.SYS_QUERY_LOG system view. This view has parameters for specifying a non-default file path for the 
+    query log file as well as a datetime range for selecting the entries of interest.</para>
+    <para>For example:</para>
+<programlisting><![CDATA[
+SELECT * 
+  FROM sys_query_log 
+ WHERE qrl_file = 'other.qrl' 
+   AND qrl_start_dt = cast ('2011-10-1' as datetime) 
+   AND qrl_end_dt = cast ('2011-10-2' as datetime)
+]]></programlisting>
+    <para>This will select entries from the file other.qrl that are between the given dates. Note that the qrl* 
+    columns are not actual result column of the view but are considered as parameters, hence the use of = instead 
+    of a range condition.</para>
+    <para>All statements executed over a SQL client connection (ODBC/JDBC etc) are logged, as well as any 
+    statements executed on an SPARQL end point. DAV and web services requests are not logged unless they perform 
+    an exec function call. CPU usage for committing transactions or for background data organization such as 
+    autocompact or automatic checkpoints are not logged.</para>
+    <para>A select statement is logged at the time it produces its last row of output, not at the time this row of 
+    output is fetched by a client.</para>
+    <para>Some of the columns are in units of clocks, whose meaning varies from system to system. On Intel this 
+    corresponds to the value returned by the RDTSC instruction. All values are intervals. The relation of this 
+    to real time may vary in function of automatic variation of clock frequency.</para>
+    <para>The columns of SYS_QUERY_LOG  are as follows:</para>
+    <itemizedlist mark="bullet">
+      <listitem>
+        <emphasis>ql_id</emphasis> -- Serial number of the log entry. If the server was started many times 
+        with the same file these will not be unique. Combine with <emphasis>ql_start_dt</emphasis> for unique identification.
+      </listitem>
+      <listitem>
+        <emphasis>ql_start_dt</emphasis> -- datetime of the start of the query
+      </listitem>
+      <listitem>
+        <emphasis>ql_rt_msec</emphasis> -- real time elapsed in milliseconds between the start and the logging 
+        of the query
+      </listitem>
+      <listitem>
+        <emphasis>ql_rt_clocks</emphasis> -- Clock cycles of real time spent running the query, not including time 
+        between consecutive fetches from a client if the query was a cursor fetched in multiple chunks by a client. 
+        This is the number of clocks during which there was at least one thread running on behalf of the query. 
+        The average CPU% of the query is given by:
+<programlisting><![CDATA[
+100 * ql_thread_clocks / ql_rt_clocks
+]]></programlisting>        
+        </listitem>
+      <listitem>
+        <emphasis>ql_client_ip</emphasis> -- Requesting client IP as dotted decimal.
+      </listitem>
+      <listitem>
+        <emphasis>ql_user</emphasis> -- User account on behalf of which the query was executed.
+      </listitem>
+      <listitem>
+        <emphasis>ql_sqlstate</emphasis> -- SQL state if query terminated with error, NULL otherwise.
+      </listitem>
+      <listitem>
+        <emphasis>ql_error</emphasis> -- Error message if query terminated with error, NULL otherwise.
+      </listitem>
+      <listitem>
+        <emphasis>ql_swap</emphasis> -- Cumulative count of major page faults since startup of this Virtuoso process.
+      </listitem>
+      <listitem>
+        <emphasis>ql_user_cpu</emphasis> -- Cumulative user CPU in milliseconds for this server process.
+      </listitem>        
+      <listitem>
+        <emphasis>ql_sys_cpu</emphasis> -- Cumulative system CPU in milliseconds for this server process.
+      </listitem>   
+      <listitem>
+        <emphasis>ql_text</emphasis> -- Source text of the query
+      </listitem>   
+      <listitem>
+        <emphasis>ql_params</emphasis> -- NULL.
+      </listitem>   
+      <listitem>
+        <emphasis>ql_plan_hash</emphasis> -- Hash number calculated from the  execution plan, ignoring literals. 
+        Can be used for grouping executions of the same query with differing literals together. If difference of 
+        literals causes a different plan, this number will be different.
+      </listitem>     
+      <listitem>
+        <emphasis>ql_c_clocks</emphasis> -- CPU clocks of real time used for query compilation. This will be 0 if 
+        the query is separately prepared of if the query compilation comes from a cache of recently compiled 
+        queries. This is likely if the query is parametrized and executed multiple times.
+      </listitem>   
+      <listitem>
+        <emphasis>ql_c_msec</emphasis> -- Real time used for query compilation in milliseconds.
+      </listitem>                                                     
+      <listitem>
+        <emphasis>ql_c_disk</emphasis> -- Count of disk reads done on behalf of the query compilation, this 
+        stands for index sampling initiated by the compilation and does not include any speculative read 
+        possibly triggered by the sampling.
+      </listitem>    
+      <listitem>
+        <emphasis>ql_c_disk_wait</emphasis> -- Count of clocks the compilation was blocked waiting for disk.
+      </listitem>  
+      <listitem>
+        <emphasis>ql_c_cl_wait</emphasis> -- Count of clocks the compilation was waiting for information from 
+        cluster peers. Such waiting indicates sampling done on remote partitions. If the run time of the query 
+        is small, this may be a significant factor in query execution real time.
+      </listitem>  
+      <listitem>
+        <emphasis>ql_cl_messages</emphasis> -- Count of distinct cluster messages sent on behalf of the compilation. 
+        These are all related to sampling. Many samples can be combined into one message in some situations. 
+        Samples are also cached on the requesting server so repeatedly compiling the same statement will send 
+        the messages only the first time in unless the cache has timed out in the meantime.
+      </listitem>  
+      <listitem>
+        <emphasis>ql_c_rnd_rows</emphasis> -- Count of rows retrieved as part of compile time sampling.
+      </listitem>                               
+    </itemizedlist>
+    <para>The below columns correspond directly to the fields returned by db_activity (). These are summed over 
+    all the threads in all the hosts that have done something on behalf of the logged query.</para>
+    <itemizedlist>
+      <listitem>
+        <emphasis>ql_rnd_rows</emphasis> -- Count of random row lookups. Each sequential lookup begins with 
+        one random one for each partition concerned.
+      </listitem>                               
+      <listitem>
+        <emphasis>ql_seq_rows</emphasis> -- Sequential rows fetched, each non-first row which is selected counts 
+        as one. A row that is looked at but does not satisfy applicable query criteria does not count.
+      </listitem>  
+      <listitem>
+        <emphasis>ql_same_seg</emphasis> -- Count of times the next random lookup in a vectored lookup falls on 
+        the same column-wise segment as the previous.
+      </listitem>  
+      <listitem>
+        <emphasis>ql_same_page</emphasis> -- Ibid, for the next lookup falling on the same row-wise leaf page.
+      </listitem>  
+      <listitem>
+        <emphasis>ql_same_parent</emphasis> -- Ibid, for the case of the next lookup falling on a sibling page 
+        of the row-wise leaf page of the previous lookup.
+      </listitem>                          
+    </itemizedlist>
+    <para>For column-wise indices, all the three above counters can be non-zero since these consist of multi-row 
+    segments each under a row on a row-wise leaf page. For a row-wise index the same seg counter is always 0.</para>
+    <itemizedlist>
+      <listitem>
+        <emphasis>ql_thread_clocks</emphasis> -- Sum of clocks spent on any thread for the logged query. Time 
+        spent waiting for other threads, for disk or for replies from cluster peers is not counted, thus only 
+        running cycles count. These are added up across all hosts in a cluster.
+      </listitem>                               
+      <listitem>
+        <emphasis>ql_disk_wait_clocks</emphasis> -- Total clocks any thread spends waiting for disk on behalf 
+        of the query. If two threads wait for the same page which is fetched once the wait is counted double. 
+        This is not the same as the total read time of the pages since read ahead can fetch pages before they 
+        are needed, thus involving no wait.
+      </listitem>  
+      <listitem>
+        <emphasis>ql_cl_wait_clocks</emphasis> -- Total clocks a thread running on behalf of the query spends 
+        waiting for a cluster reply. This may be zero if the coordinating thread has work until any cluster 
+        replies arrive, in which case there will be no wait.  If this is high then the workload is bound by 
+        interconnect or is unevenly distributed across a cluster.
+      </listitem>  
+      <listitem>
+        <emphasis>ql_pg_wait_clocks</emphasis> -- Count get page wait.
+      </listitem>  
+      <listitem>
+        <emphasis>ql_disk_reads</emphasis> -- Count disc reads.
+      </listitem>   
+      <listitem>
+        <emphasis>ql_spec_disk_reads</emphasis> -- Count of speculative disk reads triggered on behalf of the 
+        query. Any read ahead or any upgrading of a single page read into a read of a whole extent counts towards 
+        this, only allocated pages that are read are counted but merging near-adjacent reads may cause actually 
+        more disk IO to take place.
+      </listitem>  
+      <listitem>
+        <emphasis>ql_messages</emphasis> -- Count of distinct cluster messages sent on behalf of the query. Any 
+        message is counted once. Client-server messages are not counted.
+      </listitem>   
+      <listitem>
+        <emphasis>ql_message_bytes</emphasis> -- Total bytes sent in all cluster messages  sent on behalf 
+        of the query.
+      </listitem>  
+      <listitem>
+        <emphasis>ql_qp_threads</emphasis> -- Count of times an extra thread is created for parallelizing 
+        work on the query in question. The count may be high since consecutively launched threads are counted, 
+        this is not a maximum degree of concurrency.
+      </listitem>   
+      <listitem>
+        <emphasis>ql_vec_bytes</emphasis> -- reserved
+      </listitem>  
+      <listitem>
+        <emphasis>ql_vec_bytes_max</emphasis> -- reserved
+      </listitem>   
+      <listitem>
+        <emphasis>ql_lock_waits</emphasis> -- Count of times a thread has waited for a lock on behalf of the query.
+      </listitem>  
+      <listitem>
+        <emphasis>ql_lock_wait_msec</emphasis> -- Total milliseconds any thread has spent waiting for a lock on 
+        behalf of the query. This may be longer than real time since many threads may wait at the same time.
+      </listitem>                                                  
+      <listitem>
+        <emphasis>ql_plan</emphasis> -- Text representation of the execution plan, annotated with CPU time 
+        percentages and fanouts for the different operators. Fanout is the count of output rows divided by 
+        the count of input rows.
+      </listitem>     
+      <listitem>
+        <emphasis>ql_node_stat</emphasis> -- reserved
+      </listitem>     
+      <listitem>
+        <emphasis>ql_c_memory</emphasis> -- Count of bytes allocated for compiling the query. This is the peak 
+        size of the memory pool for query compilation.
+      </listitem>     
+      <listitem>
+        <emphasis>ql_rows_affected</emphasis> -- Count of inserted/updated/deleted rows. If the query was a 
+        select with a top and an order by, this is is the count of produced rows before the top restriction 
+        was applied.
+      </listitem>     
+    </itemizedlist>
+  </sect3>    
+	<!-- ======================================== -->
 	<sect3 id="METERS_SYSVIEWS">
 		<title>Meters &amp; System Views</title>
 		<sect4 id="kdlstat">
@@ -502,7 +1126,7 @@ which has consecutive lines of text. The lines can be up to several hundred
 characters.
 </para>
 			<para>The contents of the status summary are described in
-      the <link linkend="DBSTAT">Administrator&apos;s Guide</link>.</para>
+      the <link linkend="DBSTAT">Administrator's Guide</link>.</para>
 		</sect4>
 
 		<sect4 id="statusfunc">
@@ -521,7 +1145,7 @@ will contain more than 1 row of a given key. No page contains rows from more tha
 blobs (when not inlined on the row) will be placed in consecutive DB pages (up
 to their size). In addition to the blob and key pages the Virtuoso DB will hold a number of
 pages containing internal data. So the sum of the pages occupied by the key rows and the blobs is
-less then the amount of occupied pages (as reported by the 
+leas then the amount of occupied pages (as reported by the 
 <link linkend="fn_status"><function>status()</function></link> BIF).</para>
 
 <para>To provide detailed information about the space consumption of each key there's

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -397,7 +397,7 @@ is_db_file (char *f)
 }
 
 int
-is_allowed (char *path)
+is_allowed_int (char *path, int allow_db_files_ro)
 {
   int rc = 0;
   caddr_t abs_path = NULL;
@@ -415,7 +415,7 @@ is_allowed (char *path)
 
 
   /* explicitly deny any db file */
-  if (is_db_file (abs_path))
+  if (!allow_db_files_ro && is_db_file (abs_path))
     {
       rc = 0;
       goto ret;
@@ -465,9 +465,14 @@ ret:
   return rc;
 }
 
+int
+is_allowed (char *path)
+{
+  return is_allowed_int (path, 0);
+}
 
 void
-file_path_assert (caddr_t fname_cvt, caddr_t *err_ret, int free_fname_cvt)
+file_path_assert_int (caddr_t fname_cvt, caddr_t *err_ret, int free_fname_cvt, int allow_db_files_ro)
 {
   caddr_t err = NULL;
   if (!DV_STRINGP (fname_cvt))
@@ -476,7 +481,7 @@ file_path_assert (caddr_t fname_cvt, caddr_t *err_ret, int free_fname_cvt)
     err = srv_make_new_error ("42000", "FA117",
       "File path '%.200s...' is too long (%ld chars), OS limit is %ld chars",
       fname_cvt, (long)(box_length (fname_cvt) - 1), (long)PATH_MAX);
-  else if (!is_allowed (fname_cvt))
+  else if (!is_allowed_int (fname_cvt, allow_db_files_ro))
     err = srv_make_new_error ("42000", "FA003",
       "Access to '%.1000s' is denied due to access control in ini file",
     fname_cvt );
@@ -490,6 +495,11 @@ file_path_assert (caddr_t fname_cvt, caddr_t *err_ret, int free_fname_cvt)
     sqlr_resignal (err);
 }
 
+void
+file_path_assert (caddr_t fname_cvt, caddr_t *err_ret, int free_fname_cvt)
+{
+  file_path_assert_int (fname_cvt, err_ret, free_fname_cvt, 0);
+}
 
 static caddr_t
 bif_sys_unlink (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -1569,7 +1579,7 @@ file_native_name (caddr_t se_name)
 	  long len = box_length (se_name) - 1;
 	  if (len > PATH_MAX * 30)
 	    len = PATH_MAX * 30;
-	  se1 = box_utf8_as_wide_char (se_name, NULL, len, 0, DV_WIDE);
+          se1 = box_utf8_as_wide_char (se_name, NULL, len, 0);
 	  res = file_native_name (se1);
 	  dk_free_box (se1);
 	  return res;
@@ -4192,6 +4202,10 @@ zlib_box_uncompress (caddr_t src, dk_session_t * out, caddr_t * err_ret)
   inflateEnd (&zs);
 }
 
+#ifdef DBG_BLOB_PAGES_ACCOUNT
+extern int is_reg;
+#endif
+
 void
 zlib_blob_uncompress (lock_trx_t *lt, blob_handle_t *bh, dk_session_t * out, caddr_t * err_ret)
 {
@@ -6327,14 +6341,15 @@ caddr_t
 bif_file_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t fname = bif_string_arg (qst, args, 0, "file_open");
+  OFF_T start_off = BOX_ELEMENTS (args) > 1 ? bif_long_low_range_arg (qst, args, 1, "file_open", 0) : 0;
   dk_session_t * ses = strses_allocate ();
   caddr_t fname_cvt, err = NULL;
   int fd = 0;
-  OFF_T off;
+  OFF_T off, ck;
   strsestmpfile_t * sesfile;
 
   fname_cvt = file_native_name (fname);
-  file_path_assert (fname_cvt, &err, 0);
+  file_path_assert_int (fname_cvt, &err, 0, QI_IS_DBA ((QI*)qst));
   if (NULL != err)
     goto signal_error;
   fd = fd_open (fname_cvt, OPEN_FLAGS_RO);
@@ -6356,11 +6371,20 @@ bif_file_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  "Seek error in file '%.1000s', error : %s", fname_cvt, virt_strerror (saved_errno));
       goto signal_error;
     }
-  LSEEK (fd, 0, SEEK_SET);
+  ck = LSEEK (fd, start_off, SEEK_SET);
+  if (ck == -1)
+    {
+      int saved_errno = errno;
+      fd_close (fd, fname);
+      err = srv_make_new_error ("39000", "FA025",
+	  "Seek error in file '%.1000s', error : %s", fname_cvt, virt_strerror (saved_errno));
+      goto signal_error;
+    }
   strses_enable_paging (ses, DKSES_IN_BUFFER_LENGTH);
   sesfile = ses->dks_session->ses_file;
   sesfile->ses_file_descriptor = fd;
   sesfile->ses_fd_fill = sesfile->ses_fd_fill_chars = off;
+  sesfile->ses_fd_read = start_off;
   dk_free_box (fname_cvt);
   return (caddr_t) ses;
 signal_error:
@@ -6664,12 +6688,15 @@ err_end:
 /* CSV mode */
 #define CSV_STRICT	1
 #define CSV_LAX		2
+#define CSV_LAX_STR	3
 
 static caddr_t
 csv_field (dk_session_t * ses, int mode)
 {
   static void *r1, *r2, *r3;
   caddr_t regex, ret = NULL, str = strses_string (ses);
+  if (mode == CSV_LAX_STR)
+    goto string_val;
   if (mode == CSV_LAX && !strcmp (str, "NULL"))
     {
       ret = NEW_DB_NULL;
@@ -6698,6 +6725,7 @@ csv_field (dk_session_t * ses, int mode)
     }
   else
     {
+string_val:
       if (0 != str[0])
       ret = str;
       else
@@ -6767,7 +6795,7 @@ bif_get_csv_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       long f = bif_long_or_null_arg (qst, args, 4, "get_csv_row", &is_null_f);
       signal_error = f & 0x04;
       f &= 0x03;
-      if (!is_null_f && f != CSV_LAX && f != CSV_STRICT)
+      if (!is_null_f && f != CSV_LAX && f != CSV_STRICT && f != CSV_LAX_STR)
 	sqlr_new_error ("22023", "CSV03", "CSV parsing mode flag must be strict:1 or relaxing:2");
       mode = f;
     }

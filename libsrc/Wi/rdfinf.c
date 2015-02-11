@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -774,6 +774,10 @@ rdf_inf_pre_input (rdf_inf_pre_node_t * ri, caddr_t * inst,
 		      && (list = ri_list (ri, qst_get (inst, ri->ri_p), &sub))))
 		{
 		  rit = ri_iterator (sub, ri->ri_mode, 1);
+		  if (ri->ri_o == ri->ri_output)
+		    qst_set (inst, ri->ri_initial, box_copy_tree (qst_get (inst, ri->ri_o)));
+		  else if (ri->ri_p == ri->ri_output)
+		    qst_set (inst, ri->ri_initial, box_copy_tree (qst_get (inst, ri->ri_p)));
 		  rit_next (rit); /* pop off initial value */
 		  if (rit_next (rit))
 		    {
@@ -815,6 +819,8 @@ rdf_inf_pre_input (rdf_inf_pre_node_t * ri, caddr_t * inst,
       if (rit->rit_at_end)
 	{
 	  SRC_IN_STATE ((data_source_t *) ri, inst) = NULL;
+	  if (ri->ri_o == ri->ri_output || ri->ri_p == ri->ri_output)
+	    qst_set (inst, ri->ri_output, box_copy_tree (qst_get (inst, ri->ri_initial)));
 	  ri_outer_output (ri, ri->ri_outer_any_passed, inst);
 	  return;
 	}
@@ -823,7 +829,21 @@ rdf_inf_pre_input (rdf_inf_pre_node_t * ri, caddr_t * inst,
       if (!rit_next (rit))
 	{
 	  SRC_IN_STATE ((data_source_t*)ri, inst) = NULL;
-	  qn_send_output ((data_source_t *)ri, inst);
+	  QR_RESET_CTX
+	    {
+	      qn_send_output ((data_source_t *)ri, inst);
+	    }
+	  QR_RESET_CODE
+	    {
+	      QNCAST (query_instance_t, qi, inst);
+	      POP_QR_RESET;
+	      if (ri->ri_o == ri->ri_output || ri->ri_p == ri->ri_output)
+		qst_set (inst, ri->ri_output, box_copy_tree (qst_get (inst, ri->ri_initial)));
+	      longjmp_splice (qi->qi_thread->thr_reset_ctx, reset_code);
+	    }
+	  END_QR_RESET;
+	  if (ri->ri_o == ri->ri_output || ri->ri_p == ri->ri_output)
+	    qst_set (inst, ri->ri_output, box_copy_tree (qst_get (inst, ri->ri_initial)));
 	  ri_outer_output (ri, ri->ri_outer_any_passed, inst);
 	  return;
 	}
@@ -836,6 +856,7 @@ rdf_inf_pre_input (rdf_inf_pre_node_t * ri, caddr_t * inst,
 id_hash_t * rdf_name_to_ric;
 
 rdf_inf_ctx_t *
+
 rdf_name_to_ctx (caddr_t name)
 {
   rdf_inf_ctx_t ** place;
@@ -916,6 +937,7 @@ ric_allocate (caddr_t n2)
       ctx->ric_mtx = mutex_allocate ();
       ctx->ric_samples = id_hash_allocate (601, sizeof (caddr_t), sizeof (tb_sample_t), treehash, treehashcmp);
   id_hash_set_rehash_pct (ctx->ric_samples, 200);
+  ctx->ric_p_stat = hash_table_allocate (11);
       return ctx;
     }
 
@@ -1787,6 +1809,7 @@ sqlg_rdf_inf_node (sql_comp_t *sc)
 {
   SQL_NODE_INIT (rdf_inf_pre_node_t, ri, rdf_inf_pre_input, rdf_inf_pre_free);
   ri->ri_iterator = ssl_new_variable (sc->sc_cc, "iter", DV_ANY);
+  ri->ri_initial = ssl_new_variable (sc->sc_cc, "init_value", DV_ANY);
   return ri;
 }
 
@@ -1959,6 +1982,13 @@ ssl_inf_name (df_elt_t * dfe)
 
 rdf_inf_ctx_t * sas_dummy_ctx;
 
+int
+ric_iri_has_subs (rdf_inf_ctx_t * ric, caddr_t iri, int mode)
+{
+  rdf_sub_t * sub = ric_iri_to_sub (ric, iri, mode, 0);
+  return sub && (sub->rs_sub || sub->rs_equiv);
+}
+
 
 void
 sqlg_leading_subclass_inf (sqlo_t * so, data_source_t ** q_head, data_source_t * ts, df_elt_t * p_dfe, caddr_t p_const, df_elt_t * o_dfe, caddr_t o_iri,
@@ -1971,6 +2001,8 @@ sqlg_leading_subclass_inf (sqlo_t * so, data_source_t ** q_head, data_source_t *
     return;
   if (!p_const && !p_dfe && !sqlg_col_ssl (tb_dfe, "P"))
     return; /* if p is neither specified nor extracted, then do nothing.  P must ve specified or extracted if a dfe is for inference */
+  if (p_const && o_iri && !ric_iri_has_subs (ctx, o_iri, RI_SUBCLASS))
+    return;
   ri = sqlg_rdf_inf_node (so->so_sc);
   qn_ins_before (tb_dfe->dfe_sqlo->so_sc, q_head, (data_source_t *)ts, (data_source_t *)ri);
   ri->ri_mode = RI_SUBCLASS;
@@ -2039,6 +2071,8 @@ sqlg_leading_subproperty_inf (sqlo_t * so, data_source_t ** q_head, data_source_
     return;
   if (!p_const && !p_dfe && !sqlg_col_ssl (tb_dfe, "P"))
     return; /* if p is neither specified nor extracted, then do nothing.  P must ve specified or extracted if a dfe is for inference */
+  if (p_const && !ric_iri_has_subs (ctx, p_const, RI_SUBPROPERTY))
+    return;
   ri = sqlg_rdf_inf_node (so->so_sc);
   qn_ins_before (tb_dfe->dfe_sqlo->so_sc, q_head, (data_source_t *)ts, (data_source_t *)ri);
   ri->ri_mode = RI_SUBPROPERTY;
@@ -2504,6 +2538,7 @@ sqlg_cl_bracket_outer (sqlo_t * so, data_source_t * first)
     ose->ose_out_slots = (state_slot_t **) ht_keys_to_array (res);
     DO_BOX (state_slot_t *, ssl, inx, ose->ose_out_slots)
       {
+	ssl->ssl_sqt.sqt_non_null = 0;
 	ssl->ssl_always_vec = 1;
       }
     END_DO_BOX;

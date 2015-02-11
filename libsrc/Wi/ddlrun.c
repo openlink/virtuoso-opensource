@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -443,18 +443,8 @@ ddl_option_string (query_instance_t * qi, caddr_t * opts, dtp_t dtp, dk_set_t *c
 			}
 		      else
 			{
-			  if (IS_WIDE_STRING_DTP (dtp) && !coll->co_is_wide)
-			    {
-			      if (qi)
-				{
-				  SQL_DDL_ERROR (qi, ("42S22", "SQ140", "Collation %s is not wide", opt->_.op.arg_1));
-				}
-			    }
-			  else
-			    {
-			      strcat_ck (ostr, opt->_.op.arg_1);
-			      have_col = 1;
-			    }
+			  strcat_ck (ostr, opt->_.op.arg_1);
+			  have_col = 1;
 			}
 		    }
 		  else
@@ -701,6 +691,9 @@ ddl_table_changed (query_instance_t * qi, char *full_tb_name)
 
 client_connection_t *bootstrap_cli;
 int ddl_std_procs_inited = 0;
+
+client_connection_t *
+get_bootstrap_cli (void) { return bootstrap_cli; }
 
 void
 ddl_key_opt (query_instance_t * qi, char * tb_name, key_id_t key_id)
@@ -1803,7 +1796,6 @@ ddl_init_schema (void)
   isp_load_stats_data (bootstrap_cli);
   local_commit (bootstrap_cli);
 }
-
 
 const char *
 err_first_line (const char * text)
@@ -3839,6 +3831,7 @@ sql_ddl_node_input_1 (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
 #endif
   LEAVE_TXN;
 #endif
+  thr_set_tlsf (THREAD_CURRENT_THREAD, dk_base_tlsf);
   switch (tree->type)
     {
     case TABLE_DEF:
@@ -6407,25 +6400,33 @@ const char * pk3 =
 "}";
 
 
-static const char *collation_define_text =
-"create procedure collation_define (in _name varchar, in filename varchar, in add_type integer) \n"
+static const char *collation_define_int_text =
+"create procedure DB.DBA.__COLLATION_DEFINE_INT (in _name varchar, in deffile varchar, in coll_is_utf8 integer, in add_type integer) \n"
 "{ \n"
-"  declare deffile, def_vector, element, collation, name varchar; \n"
+"  declare def_vector, element, collation, name varchar; \n"
 "  declare inx, weight, char_max, char_code, is_wide integer; \n"
 " \n"
 "  name := complete_collation_name (_name, 1); \n"
-"  deffile := file_to_string (filename); \n"
 "  def_vector := split_and_decode (deffile, 0, \'\\0\\0\\n=\'); \n"
+"  is_wide := 0; \n"
 "  inx := 0; \n"
 "  while (inx < length (def_vector)) \n"
 "    { \n"
 "      element := trim(aref (def_vector, inx)); \n"
 "      if (length (element) > 1) \n"
-"	aset (def_vector, inx, atoi (element)); \n"
+"        { \n"
+"          if (coll_is_utf8 and bit_and (element[0], 128)) \n"
+"            element := ascii (charset_recode (element, 'UTF-8', '_WIDE_')); \n"
+"          else \n"
+"            element := atoi (element); \n"
+"        } \n"
 "      else if (length (element) > 0) \n"
-"	aset (def_vector, inx, ascii (element)); \n"
+"        element := ascii (element); \n"
 "      else \n"
-"	aset (def_vector, inx, -1); \n"
+"        element := -1; \n"
+"      if (mod (inx, 2) = 0 and element > 255) \n"
+"        is_wide := 1; \n"
+"      def_vector[inx] := element; \n"
 "      inx := inx + 1; \n"
 "    } \n"
 "  if (add_type = 0) \n"
@@ -6442,36 +6443,41 @@ static const char *collation_define_text =
 "	} \n"
 "      return; \n"
 "    } \n"
-"  if (add_type = 1) \n"
-"    { \n"
-"      char_max := 256; \n"
-"      collation := make_string (char_max); \n"
-"      is_wide := 0; \n"
-"    } \n"
-"  else if (add_type = 2) \n"
+"  if (add_type = 2) \n"
+"    is_wide := 1; \n"
+"  if (is_wide) \n"
 "    { \n"
 "      char_max := 65536; \n"
-"      collation := make_wstring(char_max); \n"
-"      is_wide := 1; \n"
+"      collation := make_wstring(char_max, wchr1(65535)); \n"
 "    } \n"
 "  else \n"
 "    { \n"
-"      signal (\'22023\', sprintf (\'parse_collation : invalid table size %d\', add_type), 'SR279'); \n"
-"      return; \n"
+"      char_max := 256; \n"
+"      collation := make_string (char_max); \n"
 "    } \n"
-" \n"
 "  inx := 0; \n"
 "  while (inx < char_max) \n"
 "    { \n"
 "      weight := get_keyword (inx, def_vector, -1); \n"
 "      if (weight < 0) \n"
-"	weight := inx; \n"
+"	weight := case (inx) when 0 then 1 else inx end; \n"
 "      aset (collation, inx, weight); \n"
 "      inx := inx + 1; \n"
 "    } \n"
-"   collation__define (name, collation); \n"
-"   log_text(\'collation__define(?, ?)\', name, collation); \n"
-"   insert replacing SYS_COLLATIONS (COLL_NAME, COLL_TABLE, COLL_WIDE) values (name, collation, is_wide); \n"
+"  __collation_define_memonly (name, collation); \n"
+"  insert replacing SYS_COLLATIONS (COLL_NAME, COLL_TABLE, COLL_WIDE) values (name, cast (collation as varbinary), is_wide); \n"
+"  log_text(\'__collation_define_memonly(?, ?)\', name, collation); \n"
+"} \n";
+
+
+static const char *collation_define_text =
+"create procedure collation_define (in _name varchar, in filename varchar, in add_type integer) \n"
+"{ \n"
+"  declare deffile varchar; \n"
+"  declare coll_is_utf8 integer; \n"
+"  deffile := file_to_string (filename); \n"
+"  coll_is_utf8 := case when (filename like '%.coll.utf8' or filename like '%.COLL.UTF8') then 1 else 0 end; \n"
+"  DB.DBA.__COLLATION_DEFINE_INT (_name, deffile, coll_is_utf8, add_type); \n"
 "} \n";
 
 
@@ -6601,6 +6607,7 @@ ddl_standard_procs (void)
   ddl_std_proc (pk2, 0);
   ddl_std_proc (pk3, 0);
   ddl_std_proc (bm_proc_1, 0);
+  ddl_std_proc (collation_define_int_text, 0);
   ddl_std_proc (collation_define_text, 0);
   ddl_std_proc (charset_define_text, 0);
   ddl_std_procs_inited = 1;

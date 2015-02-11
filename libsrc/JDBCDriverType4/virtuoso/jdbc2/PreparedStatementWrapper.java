@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -51,55 +51,10 @@ import java.sql.NClob;
 #endif
 
 public class PreparedStatementWrapper
-          extends StatementWrapper implements PreparedStatement, Cloneable {
+          extends StatementWrapper implements PreparedStatement {
 
-  protected String stmtKey;
-  protected int hashStmtKey;
-
-  protected PreparedStatementWrapper(ConnectionWrapper _wconn, PreparedStatement _stmt, String _stmtKey) {
+  protected PreparedStatementWrapper(ConnectionWrapper _wconn, PreparedStatement _stmt) {
     super(_wconn, _stmt);
-    stmtKey = _stmtKey;
-    hashStmtKey = stmtKey.hashCode();
-  }
-
-
-  protected void addLink() {
-    if (wconn != null)
-      wconn.pStmtPool.addToUsed(this);
-  }
-
-  protected void removeLink() {
-    try {
-      if (wconn != null)
-        wconn.pStmtPool.reuse(this);
-    } catch (Exception e) {}
-  }
-
-  protected synchronized void closeAll() {
-    //avoid the call 'removeLink' and reusing
-    wconn = null;
-    try {
-      close();
-    } catch(Exception e) { }
-  }
-
-  protected synchronized Object clone() {
-    try {
-      PreparedStatementWrapper v = (PreparedStatementWrapper)super.clone();
-      v.isClosed = false;
-      return v;
-    } catch (CloneNotSupportedException e) {
-      // this shouldn't happen, since we are Cloneable
-      throw new InternalError();
-    }
-  }
-
-  protected PreparedStatementWrapper reuse() throws SQLException {
-    reset();
-    PreparedStatementWrapper pStmt = (PreparedStatementWrapper)clone();
-    stmt = null;
-    objsToClose = null;
-    return pStmt;
   }
 
 

@@ -1,25 +1,25 @@
---  
+--
 --  $Id: nwxmlco.sql,v 1.4.10.1 2013/01/02 16:14:47 source Exp $
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2014 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2015 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 
 
@@ -32,7 +32,7 @@ update xml_text set xt_tsid = composite (- xt_id, xt_id);
 create unique index xt_tsid on xml_text (xt_tsid);
 
 create text index on xml_text (xt_text) with key xt_tsid clustered with (xt_file);
- 
+
 select xt_id from xml_text where contains (xt_text, 'database and transaction',0,r, 'desc', 'start_id', composite (7));
 
 vt_batch_update ('DB.DBA.XML_TEXT', 'ON', 0);
@@ -51,7 +51,7 @@ create procedure xml_text_load (in f varchar)
     {
       declare id integer;
       id := sequence_next ('XML_TEXT');
-      insert into XML_TEXT (XT_ID, xt_tsid, XT_FILE, XT_TEXT) 
+      insert into XML_TEXT (XT_ID, xt_tsid, XT_FILE, XT_TEXT)
 	values (id, composite (id, id), f, file_to_string (f));
     }
 }

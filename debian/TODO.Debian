@@ -1,0 +1,41 @@
+   Debian Packaging TODO list for
+OpenLink Virtuoso Open-Source Edition
+=====================================
+
+Severity: Normal
+ * Fix soname versioning or make libraries private.
+   Libraries like the ODBC drivers are not versioned upstream in the soname.
+   Versioning them would require coordination with upstream. Making them
+   private with a --libdir=/usr/lib/virtuoso-opensource-6.1 ./configure option
+   seems to break VAD packages building.
+
+Severity: Wishlist
+ * Remove the shiped W3C Tidy library.
+   A very old version of Tidy is shipped. This version is no longer in Debian.
+   The current Debian version has a very different API. The problem is that
+   Virtuoso re-exports the Tidy API through its plugin API, so we can't just
+   replace Tidy with the new version, even though there are provisions in the
+   code to do so (see libsrc/Wi/bif_tidy.c for OLD_TIDY).
+
+ * Fix parallel building.
+   Some fixes have been applied to make main compilation mostly work. There
+   were some issues with shell scripts trampling on each other (see
+   libsrc/plugin/Makefile.am for example). It still doesn't work though.
+   The tests during VAD packages building fail, at least for the "demo" VAD
+   package. I'm not sure whether this is due to buggy main compiled code, VAD
+   packages building or test harness.
+   Disabling the "demo" VAD seems to make it work but the target that creates
+   the /var/lib/virtuoso-opensource-6.1/db/virtuoso.ini isn't run,
+   which is suspicious.
+
+Severity: Unknown
+ * Have a look at VAD packages building for path issues.
+   There seems to be a lot of "file not found" errors during the building of
+   VAD packages, particularly concerning image files and so on. It looks like
+   the problem comes from VAD packages building shell scripts not honoring the
+   PREFIX parameter from the ./configure script.
+
+Severity: Wishlist
+ * Package runtime hosting for Mono (ASP.NET), Java, PHP and Python.
+   Not sure how much work this will be, but currently Mono at least needs a
+   custom patched build.

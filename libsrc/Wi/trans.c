@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1560,8 +1560,10 @@ trans_node_input (trans_node_t * tn, caddr_t * inst, caddr_t * state)
     tn->tn_prepared_step->qr_select_node->src_gen.src_input = (qn_input_fn)select_node_input_subq;
   if (THR_TMP_POOL)
     GPF_T1 ("not supposed to run trans node with tmp pool set on entry");
-  //if (0 && tn_cache_lookup (tn, inst, state))
-  //  return;
+#if 0
+  if (0 && tn_cache_lookup (tn, inst, state))
+    return;
+#endif
   trans_node_vec_input (tn, inst, state);
 }
 

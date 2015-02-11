@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -984,7 +984,7 @@ update_node_input (update_node_t * upd, caddr_t * inst, caddr_t * state)
   if (upd->upd_policy_qr)
     trig_call (upd->upd_policy_qr, inst, upd->upd_trigger_args, upd->upd_table, (data_source_t*)upd);
 
-  if (!upd->upd_trigger_args)
+  if (!upd->upd_trigger_args || upd->upd_no_trig)
     {
       if (upd->src_gen.src_sets)
 	{

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1680,7 +1680,7 @@ proc_name (char * name)
       proc_name_t * found = *place;
       found->pn_ref_count++;
       mutex_leave (proc_name_mtx);
-      dk_free (pn, -1);
+      dk_free (pn, (PN_HEADER +len + 1));
       return found;
     }
   id_hash_set (proc_name_hash, (caddr_t)&pn, (caddr_t)&pn);
@@ -2318,7 +2318,7 @@ isp_read_schema (lock_trx_t * lt)
 	  case DV_BLOB_WIDE_HANDLE:
 	    {
 	      caddr_t err = NULL;
-	      coll->co_table = safe_blob_to_string (lt, coll_table, &err);
+              caddr_t coll_table_casted = safe_blob_to_string (lt, coll_table, &err);
 	      if (err)
 		{
 		  log_error (
@@ -2328,15 +2328,14 @@ isp_read_schema (lock_trx_t * lt)
 		  dk_free_tree (err);
 		  continue;
 		}
+              collation_define_memonly (coll_name, coll_table_casted, 1);
+              dk_free_box (coll_table_casted);
 	      break;
 	    }
 	  default:
-	    coll->co_table = dk_alloc_box (256, DV_C_STRING);
-	    if (coll_table && box_length(coll_table) >= 255 && coll_wide == 0)
-	      memcpy(coll->co_table, coll_table, 256);
+            collation_define_memonly (coll_name, coll_table, 1);
 	    break;
 	};
-	id_hash_set (global_collations, (caddr_t) & coll_name, (caddr_t) & coll);
 	dk_free_box (coll_table);
       }
     itc_page_leave (itc_collations, buf_collations);
@@ -2652,11 +2651,11 @@ qi_name_to_table (query_instance_t * qi, const char *name)
 {
   dbe_table_t *tb;
   if (parse_mtx)
-    mutex_enter (parse_mtx);
+    parse_enter ();
   sqlc_set_client (qi->qi_client);
   tb = sch_name_to_table (isp_schema (NULL), name);
   if (parse_mtx)
-    mutex_leave (parse_mtx);
+    parse_leave ();
   return tb;
 }
 

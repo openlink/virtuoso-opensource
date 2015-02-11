@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2251,14 +2251,14 @@ static char *vt_free_text_proc_gen_text =
 "	   sprintf (\' if (0 = in_batch and 0 = sys_stat (\\\'cl_run_local_only\\\')) "
 " 	         { \\\n %s\"VT_BATCH_REAL_PROCESS_CL_%s\" (invd, doc_id);\\\n return;\\\n }\', dbpref, data_table_suffix) "
 "	   else \'\' end, \n"
-"	   sprintf ( \'declare len, qp, clen, part, inx, enab int; len := length (invd) / 2; qp := sys_stat (''enable_qp''); enab := sys_stat (''enable_mt_ft_inx''); "
-"		       if (0 = sys_stat (\\\'cl_run_local_only\\\') or enab = 0 or qp < 2 or len < 200) { %s\"VT_BATCH_REAL_PROCESS_1_%s\" (invd, doc_id); } "
+"	   sprintf ( \'declare len, qp, clen, part, n_parts, inx, enab int; len := length (invd) / 2; qp := sys_stat (''enable_qp''); enab := sys_stat (''enable_mt_ft_inx''); "
+"		       if (0 = sys_stat (\\\'cl_run_local_only\\\') or enab = 0 or qp < 2 or len < 200  or len <= qp) { %s\"VT_BATCH_REAL_PROCESS_1_%s\" (invd, doc_id); } "
 "                      else { \\\n"
 "			  declare aq any; \\\n"
 "			  gvector_sort (invd, 2, 0, 1); \\\n"
-"			  aq := async_queue (qp, 8);  clen := 2 * (len / qp); \\\n"
-"			  for (inx := 0; inx < qp and (inx * qp) < len; inx := inx + 1) { \\\n"
-"			     part := subseq (invd, clen * inx, clen * (inx + 1)); \\\n"
+"			  aq := async_queue (qp, 8);  clen := 2 * (len / qp); n_parts := qp;\\\n"
+"			  for (inx := 0; inx < n_parts; inx := inx + 1) { \\\n"
+"			     part := subseq (invd, clen * inx, case when inx = n_parts - 1 then len * 2 else clen * (inx + 1) end); \\\n"
 /*"			     dbg_obj_print ('' from '', clen * inx, '' to '', clen * (inx + 1) , '' part '' , length (part), '' len '', len); \\\n"*/
 "			     aq_request (aq, ''%sVT_BATCH_REAL_PROCESS_1_%s'', vector (part, doc_id)); \\\n"
 "			  } \\\n"
@@ -2938,13 +2938,11 @@ static char *vt_create_update_log_text =
 "	     txn_error (6); \\\n"
 "	     signal (\\\'22008\\\', \\\'Invalid XML supplied for an validating free text index of <DB>.<DBA>.<TB>:\\\n\\\' || __SQL_MESSAGE, \\\'FT030\\\'); \\\n"
 "       }\', "
-// ZIV
 "       \'create procedure <DB>.<DBA>.\"VT_INC_INDEX_SLICE_<SUFF>\" (in slid int)\n"
 "       {\n"
 "         cl_set_slice (\\'<DB_1>.<DBA_1>.<TBU>\\', \\'<TBU>\\', slid);\n"
 "         <DB>.<DBA>.\"VT_INC_INDEX_1_<SUFF>\" ();\n"
 "       }\', \n"
-// ZIV end.
 "	\'create procedure <DB>.<DBA>.\"VT_INC_INDEX_<SUFF>\" () \n"
 "	{ \n"
 "	  if (0 = <IS_CL>) \n"
@@ -2952,7 +2950,6 @@ static char *vt_create_update_log_text =
 "	  else \n"
 "	    DB.DBA.CL_EXEC (\\'<DB>.<DBA>.\"VT_INC_INDEX_SRV_<SUFF>\" ()\\'); \n"
 "	}\', \n"
-// ZIV
 "	\'create procedure <DB>.<DBA>.\"VT_INC_INDEX_SRV_<SUFF>\" () \n"
 "	{ \n"
 "	  declare aq, slices any; \n"
@@ -2965,7 +2962,6 @@ static char *vt_create_update_log_text =
 "	    aq_request (aq, \\'<DB_1>.<DBA_1>.VT_INC_INDEX_SLICE_<SUFF>\\', vector (slices[inx])); }\n"
 "	  aq_wait_all (aq); \n"
 "	}\', \n"
-// ZIV end.
 "	\'create procedure <DB>.<DBA>.\"VT_INC_INDEX_1_<SUFF>\" () \n"
 "	{ \n"
 "	  declare _vtlog_id, _data, _dmltype, _vt_wordump, _vt_offband_data, vtb, decses, dav_res_type any; \n"

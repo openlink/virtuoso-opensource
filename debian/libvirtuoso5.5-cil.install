@@ -1,0 +1,2 @@
+../../binsrc/VirtuosoClient.Net/*.dll /usr/lib/cli/virtuoso-5.5
+../virtuoso-5.5.pc /usr/lib/pkgconfig

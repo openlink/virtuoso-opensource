@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -24,6 +24,7 @@ package virtuoso.jena.driver;
 
 import java.util.*;
 
+import com.hp.hpl.jena.graph.NodeFactory;
 import com.hp.hpl.jena.shared.*;
 import com.hp.hpl.jena.graph.Node;
 
@@ -98,7 +99,7 @@ public class VirtuosoQueryEngine extends QueryEngineMain
       if (args == null)
         return query;
       
-      StringBuffer buf = new StringBuffer();
+      StringBuilder buf = new StringBuilder();
       String delim = " ,)(;.";
       int i = 0;
       char ch;
@@ -145,13 +146,9 @@ public class VirtuosoQueryEngine extends QueryEngineMain
     
     private String fixQuery(String query, Binding args, VirtGraph vg)
     {
-	StringBuffer sb = new StringBuffer("sparql\n ");
+	StringBuilder sb = new StringBuilder("sparql\n ");
 
-	if (vg.getRuleSet()!=null)
-          sb.append(" define input:inference '"+vg.getRuleSet()+"'\n ");
-
-        if (vg.getSameAs())
-          sb.append(" define input:same-as \"yes\"\n ");
+	vg.appendSparqlPrefixes(sb);
 
         if (!vg.getReadFromAllGraphs())
 	  sb.append(" define input:default-graph-uri <" + vg.getGraphName() + "> \n");
@@ -294,6 +291,12 @@ public class VirtuosoQueryEngine extends QueryEngineMain
               rs = null;
             } catch (Exception e) { }
           }
+          if (stmt != null) {
+  	    try {
+              stmt.close();
+              stmt = null;
+            } catch (Exception e) { }
+          }
         }
         v_finished = true;
       }
@@ -324,7 +327,7 @@ public class VirtuosoQueryEngine extends QueryEngineMain
           }
 
           if (virt_graph != null && !virt_graph.equals("virt:DEFAULT"))
-	    v_row.add(Var.alloc("graph"), Node.createURI(virt_graph));
+	    v_row.add(Var.alloc("graph"), NodeFactory.createURI(virt_graph));
         } 
         catch(Exception e) {
           throw new JenaException("extractRow is FAILED.:"+e);

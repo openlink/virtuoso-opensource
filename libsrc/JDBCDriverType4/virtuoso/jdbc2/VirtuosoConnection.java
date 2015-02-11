@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -175,7 +175,7 @@ public class VirtuosoConnection implements Connection
 
   private boolean useRoundRobin;
   // The pingStatement to know if the connection is still available
-  private PreparedStatement pingStatement = null;
+  private Statement pingStatement = null;
 
 
    protected class VhostRec
@@ -359,18 +359,24 @@ public class VirtuosoConnection implements Connection
       // Connect to the database
       connect(host,port,(String)prop.get("database"), sendbs, recvbs, (prop.get("log_enable") != null ? (Integer.parseInt(prop.getProperty("log_enable"))) : -1));
 
-      pingStatement = prepareStatement("select 1");
+      pingStatement = createStatement();
    }
 
-   public boolean isConnectionLost(int timeout_sec) 
+   public synchronized boolean isConnectionLost(int timeout_sec) 
    {
+     ResultSet rs = null;
      try{
 	pingStatement.setQueryTimeout(timeout_sec);
-        pingStatement.execute();
+        rs = pingStatement.executeQuery("select 1");
         return false;
      } catch (Exception e ) {
         return true;
-     } 
+     } finally {
+       if (rs!=null)
+         try{
+           rs.close();
+         } catch(Exception e){}
+     }
    }
 
    protected int getIntAttr(java.util.Properties info, String key, int def)
@@ -430,7 +436,8 @@ public class VirtuosoConnection implements Connection
           break;
         } catch (VirtuosoException e) {
 
-          if (e.getErrorCode() != VirtuosoException.IOERROR)
+          int erc = e.getErrorCode();
+          if (erc != VirtuosoException.IOERROR && erc != VirtuosoException.NOLICENCE)
             throw e;
 
           hostIndex++;
@@ -569,7 +576,7 @@ public class VirtuosoConnection implements Connection
 	     Object [] caller_id_args = new Object[1];
 	     caller_id_args[0] = null;
 	     VirtuosoFuture future = getFuture(VirtuosoFuture.callerid,caller_id_args, timeout);
-	     openlink.util.Vector result_future = (openlink.util.Vector)future.nextResult().firstElement();
+	     openlink.util.Vector result_future = (openlink.util.Vector)future.nextResult(false).firstElement();
 	     peer_name = (String)(result_future.elementAt(1));
 
 	     if (result_future.size() > 2)
@@ -610,7 +617,7 @@ public class VirtuosoConnection implements Connection
 
 	     args[2] = VirtuosoTypes.version;
 	     future = getFuture(VirtuosoFuture.scon,args, this.timeout);
-	     result_future = (openlink.util.Vector)future.nextResult();
+	     result_future = (openlink.util.Vector)future.nextResult(false);
 	     // Check if it's a login answer
 	     if(!(result_future.firstElement() instanceof Short))
 	       {
@@ -902,7 +909,7 @@ public class VirtuosoConnection implements Connection
     * @exception java.io.IOException	A stream error occurred.
     * @exception virtuoso.jdbc2.VirtuosoException An internal error occurred.
     */
-   protected boolean read_request() throws IOException, VirtuosoException
+   protected boolean read_request(boolean sparql_executed) throws IOException, VirtuosoException
    {
      if (futures == null)
        throw new VirtuosoException ("Activity on a closed connection", "IM001", VirtuosoException.SQLERROR);
@@ -910,7 +917,7 @@ public class VirtuosoConnection implements Connection
      Object _result;
 #if JDK_VER >= 14
      try {
-        _result = in.read_object();
+        _result = in.read_object(sparql_executed);
      } catch (IOException ex) {
         if (pooled_connection != null) {
             VirtuosoException vex =
@@ -933,7 +940,7 @@ public class VirtuosoConnection implements Connection
         throw ex;
      }
 #else
-    _result = in.read_object();
+    _result = in.read_object(sparql_executed);
 #endif
      //System.out.println ("req end");
      if (VirtuosoFuture.rpc_log != null)
@@ -1075,37 +1082,39 @@ public class VirtuosoConnection implements Connection
     */
    public void close() throws VirtuosoException
    {
+      if (isClosed())
+        return;
+
       try
       {
-         // Is already closed ?
-         if(isClosed())
-            throw new VirtuosoException("The connection is already closed.",VirtuosoException.DISCONNECTED);
-         // Try to close all about the connection : socket and streams.
-         if(!in.isClosed())
-         {
-            in.close();
-            in = null;
-         }
-         if(!out.isClosed())
-         {
-            out.close();
-            out = null;
-         }
-         if(socket != null)
-         {
-            socket.close();
-            socket = null;
-         }
+         synchronized(this) {
+           // Try to close all about the connection : socket and streams.
+           if(!in.isClosed())
+           {
+             in.close();
+             in = null;
+           }
+           if(!out.isClosed())
+           {
+             out.close();
+             out = null;
+           }
+           if(socket != null)
+           {
+             socket.close();
+             socket = null;
+           }
 #if JDK_VER >= 16
-         pStatementCache.clear();
+           pStatementCache.clear();
 #endif
-         // Clear some variables
-         user = url = password = null;
-         futures = null;
+           // Clear some variables
+           user = url = password = null;
+           futures = null;
 #if JDK_VER >= 14
-         pooled_connection = null;
-         xa_connection = null;
+           pooled_connection = null;
+           xa_connection = null;
 #endif
+         }
       }
       catch(IOException e)
       {
@@ -1132,7 +1141,7 @@ public class VirtuosoConnection implements Connection
 	args[0] = new Long(VirtuosoTypes.SQL_COMMIT);
 	args[1] = null;
 	VirtuosoFuture fut = getFuture(VirtuosoFuture.transaction,args, this.timeout);
-	openlink.util.Vector trsres = fut.nextResult();
+	openlink.util.Vector trsres = fut.nextResult(false);
 	//System.err.println ("commit returned " + trsres.toString());
 	Object _err = (trsres == null) ? null: ((openlink.util.Vector)trsres).firstElement();
 	if (_err instanceof openlink.util.Vector)
@@ -1313,7 +1322,7 @@ public class VirtuosoConnection implements Connection
          args[0] = new Long(VirtuosoTypes.SQL_ROLLBACK);
          args[1] = null;
          VirtuosoFuture fut = getFuture(VirtuosoFuture.transaction,args, this.timeout);
-         openlink.util.Vector trsres = fut.nextResult();
+         openlink.util.Vector trsres = fut.nextResult(false);
 	 //System.err.println ("rollback returned " + trsres.toString());
 	 Object _err = (trsres == null) ? null: ((openlink.util.Vector)trsres).firstElement();
 	 if (_err instanceof openlink.util.Vector)
@@ -1844,6 +1853,12 @@ public class VirtuosoConnection implements Connection
        return prepareStatement (sql);
      }
 
+   synchronized void checkClosed() throws SQLException
+   {
+        if (isClosed())
+            throw new VirtuosoException("The connection is already closed.",VirtuosoException.DISCONNECTED);
+    }
+
 #if JDK_VER >= 16
     //------------------------- JDBC 4.0 -----------------------------------
     /**
@@ -2148,7 +2163,13 @@ public class VirtuosoConnection implements Connection
   */
   public Array createArrayOf(String typeName, Object[] elements) throws SQLException
   {
-    throw new VirtuosoFNSException ("createArrayOf(typeName, elements)  not supported", VirtuosoException.NOTIMPLEMENTED);
+      checkClosed();
+      if (typeName == null)
+          throw new VirtuosoException("typeName is null.",VirtuosoException.MISCERROR);
+
+      if (elements == null)
+          return null;
+      return new VirtuosoArray(typeName, elements);
   }
 
 /**

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -55,22 +55,32 @@ pg_map_clear (buffer_desc_t * buf)
 
 
 void
-map_resize (page_map_t ** pm_ret, int new_sz)
+map_resize (buffer_desc_t * buf, page_map_t ** pm_ret, int new_sz)
 {
   page_map_t * pm = *pm_ret;
-  page_map_t * new_pm = (page_map_t *) resource_get (PM_RC (new_sz));
+  page_map_t * new_pm;
+#if 1
+  new_pm = (page_map_t *) pm_get (buf, (new_sz));
 #ifdef VALGRIND
   new_pm->pm_entries[new_sz - 1] = 0xc0c0; /* for valgrind */
 #endif
   memcpy (new_pm, pm, PM_ENTRIES_OFFSET + sizeof (short) * pm->pm_count);
   *pm_ret = new_pm;
-  resource_store (PM_RC (pm->pm_size), (void*) pm);
+  pm_store (buf, (pm->pm_size), (void*) pm);
+#else
+  tlsf_t *tlsf = buf->bd_pool ? buf->bd_pool->bp_tlsf : wi_inst.wi_bps[0]->bp_tlsf;
+  int bytes = (int) (PM_ENTRIES_OFFSET + new_sz * sizeof (short));
+  mutex_enter(&tlsf->tlsf_mtx);
+  new_pm = realloc_ex (pm, bytes, tlsf);
+  mutex_leave(&tlsf->tlsf_mtx);
+  *pm_ret = new_pm;
+#endif
   new_pm->pm_size = new_sz;
 }
 
 
 void
-map_append (page_map_t ** pm_ret, int ent)
+map_append (buffer_desc_t * buf, page_map_t ** pm_ret, int ent)
 {
   page_map_t * pm = *pm_ret;
   if (pm->pm_count + 1 > pm->pm_size)
@@ -78,7 +88,7 @@ map_append (page_map_t ** pm_ret, int ent)
       int new_sz = PM_SIZE (pm->pm_size);
       if (pm->pm_count + 1 > PM_MAX_ENTRIES)
 	GPF_T1 ("page map entry count overflow");
-      map_resize (pm_ret, new_sz);
+      map_resize (buf, pm_ret, new_sz);
       pm = *pm_ret;
     }
   pm->pm_entries[pm->pm_count++] = ent;
@@ -144,7 +154,7 @@ pg_make_map (buffer_desc_t * buf)
       sch_id_to_key (wi_inst.wi_schema, k_id);
   if (!map)
     {
-      map = (page_map_t *) resource_get (PM_RC (PM_SZ_1));
+      map = (page_map_t *) pm_get (buf, (PM_SZ_1));
     }
   if (pos && !pg_key)
     {
@@ -182,7 +192,7 @@ pg_make_map (buffer_desc_t * buf)
       if (inx >= map->pm_size)
 	{
 	  map->pm_count = inx;
-	  map_resize (&map, PM_SIZE (map->pm_size));
+	  map_resize (buf, &map, PM_SIZE (map->pm_size));
 	}
       map->pm_entries[inx++] = pos;
       if (pos + len > fill)
@@ -219,7 +229,7 @@ pg_make_map (buffer_desc_t * buf)
   sz = PM_SIZE (map->pm_count);
   if (sz < map->pm_size)
     {
-      map_resize (&map, sz);
+      map_resize (buf, &map, sz);
     }
   buf->bd_content_map = map;
   return 0;
@@ -500,14 +510,14 @@ long mid_inserts = 0;
 
 
 int
-map_insert (page_map_t ** map_ret, int at, int what)
+map_insert (buffer_desc_t * buf, page_map_t ** map_ret, int at, int what)
 {
   page_map_t * map = *map_ret;
   int inx, prev = 0, tmp;
   int ct = map->pm_count;
   if (map->pm_count == map->pm_size)
     {
-      map_resize (map_ret, PM_SIZE (map->pm_size));
+      map_resize (buf, map_ret, PM_SIZE (map->pm_size));
       map = *map_ret;
     }
 
@@ -548,7 +558,7 @@ map_insert (page_map_t ** map_ret, int at, int what)
 
 
 void
-map_insert_pos (page_map_t ** map_ret, int pos, int what)
+map_insert_pos (buffer_desc_t * buf, page_map_t ** map_ret, int pos, int what)
 {
   page_map_t * map = *map_ret;
   int ct = map->pm_count;
@@ -556,7 +566,7 @@ map_insert_pos (page_map_t ** map_ret, int pos, int what)
     GPF_T1 ("map_insert_pos after end");
   if (map->pm_count == map->pm_size)
     {
-      map_resize (map_ret, PM_SIZE (map->pm_size));
+      map_resize (buf, map_ret, PM_SIZE (map->pm_size));
       map = *map_ret;
     }
 
@@ -751,7 +761,7 @@ strses_to_db_buf (dk_session_t * ses)
 
 
 int
-map_delete (page_map_t ** map_ret, int pos)
+map_delete (buffer_desc_t * buf, page_map_t ** map_ret, int pos)
 {
   page_map_t * map = *map_ret;
   int inx, prev_pos = 0, sz;
@@ -767,7 +777,7 @@ map_delete (page_map_t ** map_ret, int pos)
 	  map->pm_count--;
 	  sz = PM_SIZE (map->pm_count);
 	  if (sz < map->pm_size && map->pm_count < ((sz / 10) * 8))
-	    map_resize (map_ret, sz);
+	    map_resize (buf, map_ret, sz);
 	  return prev_pos;
 	}
       prev_pos = ent;
@@ -1242,7 +1252,7 @@ itc_compact (it_cursor_t * itc, buffer_desc_t * parent, page_rel_t * pr, int pr_
   memset (&pf, 0, sizeof (pf));
   pf.pf_is_autocompact = 1;
   pf.pf_current = buffer_allocate (DPF_INDEX);
-  pf.pf_current->bd_content_map = resource_get (PM_RC (PM_SZ_1));
+  pf.pf_current->bd_content_map = pm_get (pf.pf_current, (PM_SZ_1));
   pg_map_clear (pf.pf_current);
   pf.pf_current->bd_tree = itc->itc_tree;
   pf.pf_itc = itc;
@@ -1296,7 +1306,7 @@ itc_compact (it_cursor_t * itc, buffer_desc_t * parent, page_rel_t * pr, int pr_
       inx = 0;
       DO_SET (buffer_desc_t *, buf, &pf.pf_left)
 	{
-	  resource_store (PM_RC (buf->bd_content_map->pm_size), (void*)buf->bd_content_map);
+	  pm_store (buf, (buf->bd_content_map->pm_size), (void*)buf->bd_content_map);
 	  buffer_free (buf);
 	  /*page_leave_outside_map (pr[inx].pr_buf);*/
 	  inx++;
@@ -1342,7 +1352,7 @@ itc_compact (it_cursor_t * itc, buffer_desc_t * parent, page_rel_t * pr, int pr_
       itc_delta_this_buffer (itc, pr[inx].pr_buf, DELTA_STAY_INSIDE);
       ITC_LEAVE_MAP_NC (itc);
       memcpy (pr[inx].pr_buf->bd_buffer + DP_DATA, buf->bd_buffer + DP_DATA, copy_len);
-      resource_store (PM_RC (pm->pm_size), (void*) pm);
+      pm_store (pr[inx].pr_buf, (pm->pm_size), (void*) pm);
       pr[inx].pr_buf->bd_content_map = buf->bd_content_map;
       pg_check_map (pr[inx].pr_buf);
       ITC_IN_KNOWN_MAP (itc, pr[inx].pr_buf->bd_page)

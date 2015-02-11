@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -914,10 +914,14 @@ http_cli_connect (http_cli_ctx * ctx)
 	  int dst = tcpses_get_fd (ctx->hcctx_http_out->dks_session);
 	  char * pkcs12_file = ctx->hcctx_pkcs12_file;
 	  char * pass = ctx->hcctx_cert_pass;
+	  timeout_t to = {100, 0};
 
 	  ctx->hcctx_ssl_method = SSLv23_client_method();
 	  ctx->hcctx_ssl_ctx = SSL_CTX_new (ctx->hcctx_ssl_method);
 	  ctx->hcctx_ssl = SSL_new (ctx->hcctx_ssl_ctx);
+	  if (ctx->hcctx_timeout > 0)
+	    to.to_sec = ctx->hcctx_timeout;
+	  session_set_control (ctx->hcctx_http_out->dks_session, SC_TIMEOUT, (char *)(&to), sizeof (timeout_t));
 	  SSL_set_fd (ctx->hcctx_ssl, dst);
 
 	  if (pkcs12_file && 0 == atoi(pkcs12_file))
@@ -1030,6 +1034,20 @@ http_cli_add_req_hdr (http_cli_ctx * ctx, char* hdrin)
   return (HC_RET_OK);
 }
 
+void
+http_cli_print_patched_url (dk_session_t * ses, caddr_t url)
+{
+  int i;
+  for (i = 0; i < strlen (url); i++)
+    {
+      if (url[i] == ' ')
+	SES_PRINT (ses, "%20");
+      else if (url[i] == '#')
+	break;
+      else
+	session_buffered_write_char (url[i], ses);
+    }
+}
 
 HC_RET
 http_cli_send_req (http_cli_ctx * ctx)
@@ -1042,7 +1060,7 @@ http_cli_send_req (http_cli_ctx * ctx)
     {
       SES_PRINT (ctx->hcctx_http_out, http_cli_get_method_string (ctx));
       SES_PRINT (ctx->hcctx_http_out, " ");
-      SES_PRINT (ctx->hcctx_http_out, http_cli_get_doc_str (ctx));
+      http_cli_print_patched_url (ctx->hcctx_http_out, http_cli_get_doc_str (ctx));
       snprintf (req_tmp, sizeof (req_tmp),
 	       " HTTP/%d.%d\r\n", ctx->hcctx_http_maj, ctx->hcctx_http_min);
       SES_PRINT (ctx->hcctx_http_out, req_tmp);
@@ -1179,8 +1197,8 @@ http_cli_parse_resp_hdr (http_cli_ctx * ctx, char* hdr, int num_chars)
 HC_RET
 http_cli_read_resp_hdrs (http_cli_ctx * ctx)
 {
-  char read_buf[4096];
-  char resp_hdr_tmp[4096];
+  char read_buf[DKSES_IN_BUFFER_LENGTH];
+  char resp_hdr_tmp[DKSES_IN_BUFFER_LENGTH];
   int resp_hdr_tmp_fill;
   int num_chars;
 
@@ -2457,7 +2475,7 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, ch
       to_free_head = 0;
     }
 
-  if (ctx->hcctx_is_gzip && DV_STRINGP (ret))
+  if (ctx->hcctx_is_gzip && DV_STRINGP (ret) && box_length (ret) > 2)
     {
       dk_session_t *out = strses_allocate ();
       strses_enable_paging (out, http_ses_size);

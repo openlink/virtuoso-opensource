@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -852,6 +852,11 @@ qn_vec_reuse (data_source_t * qn, caddr_t * inst)
     }
 }
 
+#define ZINPUTS_ERR do { \
+  if (qi->qi_query && qi->qi_query->qr_text) \
+    log_error ("0 inputs on: %s", qi->qi_query->qr_text); \
+  sqlr_new_error ("42000", "ZIN00", "cannot run on 0 inputs"); \
+} while (0)
 
 void
 qn_input (data_source_t * xx, caddr_t * inst, caddr_t * state)
@@ -874,14 +879,14 @@ qn_input (data_source_t * xx, caddr_t * inst, caddr_t * state)
     {
       n_sets = qi->qi_n_sets;
       /* non-vectored calling a vec subq will have no src_prev and 0 sets in qi, so what starts with a set ctr is an exception */
-      if (!n_sets && !IS_QN (xx, set_ctr_input)) GPF_T1 ("cannot run on 0 inputs");
+      if (!n_sets && !IS_QN (xx, set_ctr_input)) ZINPUTS_ERR;
       if (state)
 	SRC_N_IN (xx, inst, n_sets);
     }
   if (xx->src_prev)
     {
       n_sets = QST_INT (inst, xx->src_prev->src_out_fill);
-      if (!n_sets) GPF_T1 ("cannot run on 0 inputs");
+      if (!n_sets) ZINPUTS_ERR;
       if (state)
 	SRC_N_IN (xx, inst, n_sets);
     }
@@ -1026,7 +1031,7 @@ ks_search_param_wide (it_cursor_t * itc, search_spec_t * sp, caddr_t data, dtp_t
     {
       caddr_t err = NULL;
       caddr_t utf_data;
-      data = box_cast_to (itc->itc_out_state, data, dtp, DV_LONG_WIDE,
+      data = box_cast_to (itc->itc_out_state, data, dtp, DV_WIDE,
 			  sp->sp_cl.cl_sqt.sqt_precision, sp->sp_cl.cl_sqt.sqt_scale, &err);
       if (err)
 	{
@@ -1412,6 +1417,7 @@ ks_cl_local_cast (key_source_t * ks, caddr_t * inst)
 
 int enable_ro_rc = 1;
 extern int qp_even_if_lock;
+extern int enable_cr_trace;
 
 int
 ks_start_search (key_source_t * ks, caddr_t * inst, caddr_t * state,
@@ -1924,6 +1930,7 @@ table_source_input (table_source_t * ts, caddr_t * inst,
 #endif
 	  if (ts->ts_need_placeholder)
 	    ts_set_placeholder (ts, inst, order_itc, &order_buf);
+	  rdbg_printf_if (enable_cr_trace, ("register %p L=%d pos=%d col_row=%d\n", order_itc, order_itc->itc_page, order_itc->itc_map_pos, order_itc->itc_col_row));
 	  itc_register_and_leave (order_itc, order_buf);
 	}
       else
@@ -1955,6 +1962,7 @@ table_source_input (table_source_t * ts, caddr_t * inst,
 	      {
 		order_itc->itc_ltrx = qi->qi_trx; /* in sliced cluster a local can be continued under many different lt's dependeing on which aq thread gets the continue */
 	    order_buf = page_reenter_excl (order_itc);
+		rdbg_printf_if (enable_cr_trace, ("%p reenter L=%d pos=%d col_row=%d\n", order_itc, order_itc->itc_page, order_itc->itc_map_pos, order_itc->itc_col_row));
 	      }
 	    if (ts->ts_order_ks->ks_vec_source)
 	      {
@@ -2975,6 +2983,17 @@ qi_alloc (query_t * qr, stmt_options_t * opts, caddr_t * auto_qi,
 
 
 void
+subq_not_continuable (query_t * qr, caddr_t * inst)
+{
+  /* when a skip node decides at end, the containing query will not be continueable.  But subq init is too much since will free hash build sides, gby temps etc which may be refd from anies in dcs still to be returned. So just set continuable off */
+
+  DO_SET (data_source_t *, qn, &qr->qr_nodes)
+    SRC_IN_STATE (qn, inst) = NULL;
+  END_DO_SET();
+}
+
+
+void
 skip_node_input (skip_node_t * sk, caddr_t * inst, caddr_t * qst)
 {
   QNCAST (query_instance_t, qi, inst);
@@ -3023,7 +3042,7 @@ skip_node_input (skip_node_t * sk, caddr_t * inst, caddr_t * qst)
 		  int n_save;
 		  qn_result ((data_source_t*)sk, inst, set);
 		  n_save = QST_INT (inst, sk->src_gen.src_out_fill);
-		  subq_init (sk->src_gen.src_query, inst);
+		  subq_not_continuable (sk->src_gen.src_query, inst);
 		  QST_INT (inst, sk->src_gen.src_out_fill) = n_save;
 		  is_reset = 1;
 		  break;
@@ -3302,7 +3321,25 @@ fnr_max_set_no (fun_ref_node_t * fref, caddr_t * inst, state_slot_t ** ssl_ret)
   if (ssl_ret)
     *ssl_ret = set_no_ssl;
   if (!set_nos->dc_n_values)
-    GPF_T1 ("musta forgotten branch copy of set no ssl for fref");
+    {
+      /* can be there are flattened subqs so many set ctrs are possible, take the closest that has a value */
+      data_source_t * prev = fref->src_gen.src_prev;
+      for (prev = prev; prev; prev = prev->src_prev)
+	{
+	  if (IS_QN (prev, set_ctr_input))
+	    {
+	      QNCAST (set_ctr_node_t, sctr, prev);
+	      if (ssl_ret)
+		*ssl_ret = sctr->sctr_set_no;
+	      set_nos = QST_BOX (data_col_t *, inst, sctr->sctr_set_no->ssl_index);
+	      if (!set_nos || !set_nos->dc_n_values)
+		continue;
+	      return set_nos->dc_n_values;
+	    }
+	}
+      sqlr_new_error ("QPINT", "QPINT", "Internal, support:  Forgotten copy of set no dc for qp fref preset.  To work around, set enable_qp = 1 with __dbf_set to disable query parallelization");
+      GPF_T1 ("musta forgotten branch copy of set no ssl for fref");
+    }
   return ((int64*)set_nos->dc_values)[set_nos->dc_n_values - 1];
 }
 
@@ -3349,7 +3386,7 @@ fref_setp_flush (fun_ref_node_t * fref, caddr_t * state)
       hash_area_t * ha = setp->setp_ha;
       if (HA_GROUP == ha->ha_op)
 	{
-	  if (!setp->setp_any_user_aggregate_gos)
+	  if (!setp->setp_any_user_aggregate_gos && !setp->setp_any_distinct_gos)
 	    itc_ha_flush_memcache (ha, state, SETP_NO_CHASH_FLUSH);
 	}
       setp_filled (setp, state);
@@ -3361,7 +3398,8 @@ fref_setp_flush (fun_ref_node_t * fref, caddr_t * state)
       hash_area_t * ha = setp->setp_ha;
       if (setp == fref->fnr_setp)
 	continue;
-      itc_ha_flush_memcache (ha, state, 0);
+      if (!setp->setp_any_user_aggregate_gos && !setp->setp_any_distinct_gos)
+	itc_ha_flush_memcache (ha, state, SETP_NO_CHASH_FLUSH);
       setp_filled (setp, state);
       setp_mem_sort_flush (setp, state);
       if (setp->setp_ordered_gb_fref)
@@ -3700,8 +3738,13 @@ qr_mt_dml_sync (query_t * qr, query_instance_t * qi)
 		}
 	      do {
 		err = NULL;
-		aq_wait_all (aq, &err);
-		dk_free_tree (err);
+		IO_SECT (qi)
+		{
+		  aq_wait_all (aq, &err);
+		  dk_free_tree (err);
+		  err = NULL;
+		}
+		END_IO_SECT (&err);
 	      } while (err);
 	    }
 	}
@@ -3893,6 +3936,14 @@ cli_send_row_count (client_connection_t * cli, long n_affected, caddr_t * ret,
   else
     print_int (SQL_SUCCESS, __ses);
   PRPC_ANSWER_END (0);
+}
+
+void
+cli_send_non_last_proc_ret (client_connection_t * cli, long n_affected, caddr_t * ret,
+    du_thread_t * thr)
+{
+  PrpcAddAnswer (SQL_SUCCESS, DV_ARRAY_OF_POINTER, 1, 0);
+  dk_free_tree ((caddr_t) ret);
 }
 
 
@@ -4222,7 +4273,17 @@ qr_exec (client_connection_t * cli, query_t * qr,
     ret = cli_anytime_error (qi->qi_client);
   else
     {
-      ret = qi->qi_proc_ret;
+      {
+	ret = qi->qi_proc_ret;
+	if (ret && DV_ARRAY_OF_POINTER == DV_TYPE_OF (ret) && qr->qr_proc_vectored)
+	  {
+	    {
+	      caddr_t * prev = ret;
+	      ret = (caddr_t*)((caddr_t*)ret)[0];
+	      dk_free_box ((caddr_t)prev);
+	    }
+	  }
+      }
       qi->qi_proc_ret = NULL;
     }
   n_affected = qi->qi_n_affected;
@@ -4279,6 +4340,7 @@ qr_dml_array_exec (client_connection_t * cli, query_t * qr,
   /* when client exec dml in cluster, pass all param rows as a cluster batch  */
   int n_sets = qr->qr_proc_vectored ? BOX_ELEMENTS (param_array) : 0;
   caddr_t detail = NULL;
+  caddr_t * rets = NULL;
   long n_affected;
   int param_inx;
   int inx, was_autocommit, is_timeout = LTE_OK;
@@ -4445,6 +4507,8 @@ qr_dml_array_exec (client_connection_t * cli, query_t * qr,
  qr_complete:
   PLD_SEM_CLEAR(qi)
     n_affected = qi->qi_n_affected;
+  rets = (caddr_t*)qi->qi_proc_ret;
+  qi->qi_proc_ret = NULL;
   self_thread = qi->qi_thread;
   detail = box_copy (LT_ERROR_DETAIL (qi->qi_trx));
   is_timeout = qi_kill (qi, QI_DONE);
@@ -4453,14 +4517,29 @@ qr_dml_array_exec (client_connection_t * cli, query_t * qr,
       caddr_t err;
       err = qi_txn_code (is_timeout, caller, detail);
       dk_free_box (detail);
+      dk_free_tree ((caddr_t)rets);
       return err;
     }
   dk_free_box (detail);
   if (CALLER_CLIENT == caller)
     {
+      caddr_t ret = NULL;
       for (inx = 0; inx < param_inx - 1; inx++)
-	cli_send_row_count (cli, 0, NULL, self_thread);
-      cli_send_row_count (cli, n_affected, NULL, self_thread);
+	{
+	  if (rets)
+	    {
+	      ret = rets[inx];
+	      rets[inx] = NULL;
+	    }
+	  cli_send_non_last_proc_ret (cli, 0, (caddr_t*)ret, self_thread);
+	}
+      if (rets)
+	{
+	  ret = rets[param_inx - 1];
+	  rets[param_inx - 1] = NULL;
+	}
+      cli_send_row_count (cli, n_affected, (caddr_t*)ret, self_thread);
+      dk_free_box (rets);
     }
 #ifdef WIRE_DEBUG
   list_wired_buffers (__FILE__, __LINE__, "qr_exec finish");
@@ -4516,8 +4595,8 @@ qr_subq_exec (client_connection_t * cli, query_t * qr,
   int inx;
   volatile int n_actual_params;
   caddr_t ret;
-  caddr_t *inst = (caddr_t *) qi_alloc (qr, opts, auto_qi, auto_qi_len, is_vec ? caller->qi_n_sets : 0);
-  query_instance_t *qi = (query_instance_t *) inst;
+  caddr_t *inst;
+  query_instance_t *qi;
   caddr_t *state;
   char saved_qual_buf[25 + BOX_AUTO_OVERHEAD];
   user_t * saved_user = cli->cli_user;
@@ -4527,7 +4606,9 @@ qr_subq_exec (client_connection_t * cli, query_t * qr,
   long end_time;
 #endif
 
-  QR_EXEC_CHECK_STACK (caller, &ret, CALL_STACK_MARGIN);
+  QR_EXEC_CHECK_STACK (caller, &ret, CALL_STACK_MARGIN, parms);
+  inst = (caddr_t *) qi_alloc (qr, opts, auto_qi, auto_qi_len, is_vec ? caller->qi_n_sets : 0);
+  qi = (query_instance_t *) inst;
   state = inst;
   if (cli->cli_qualifier)
     {
@@ -4709,8 +4790,8 @@ qr_subq_exec_vec (client_connection_t * cli, query_t * qr,
   long n_affected;
   int inx;
   int n_actual_params, n_sets = qi_n_sets (caller);
-  caddr_t *inst = (caddr_t *) qi_alloc (qr, opts, auto_qi, auto_qi_len, n_sets);
-  query_instance_t *qi = (query_instance_t *) inst;
+  caddr_t *inst;
+  query_instance_t *qi;
   caddr_t *state;
   user_t * saved_user = cli->cli_user;
   char saved_qual_buf[25 + BOX_AUTO_OVERHEAD];
@@ -4720,7 +4801,9 @@ qr_subq_exec_vec (client_connection_t * cli, query_t * qr,
   long end_time;
 #endif
 
-  QR_EXEC_CHECK_STACK (caller, &ret, CALL_STACK_MARGIN);
+  QR_EXEC_CHECK_STACK (caller, &ret, CALL_STACK_MARGIN, NULL);
+  inst = (caddr_t *) qi_alloc (qr, opts, auto_qi, auto_qi_len, n_sets);
+  qi = (query_instance_t *) inst;
   state = inst;
   if (cli->cli_qualifier)
     {

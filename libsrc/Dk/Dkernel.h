@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -87,6 +87,8 @@ struct dk_session_s
 
   /*! max msecs to block on a read */
   timeout_t 			dks_read_block_timeout;
+  /*! max msecs to block on a write */
+  timeout_t 			dks_write_block_timeout;
   /*! Is this a client or server initiated session */
   char 				dks_is_server;
   char 				dks_cluster_flags;
@@ -111,6 +113,8 @@ struct dk_session_s
 
   du_thread_t *			dks_waiting_http_recall_session;
   dk_hash_t *			dks_pending_futures;
+  caddr_t			dks_top_obj;
+  dk_set_t			dks_pending_obj;
 };
 
 /* dks_error */
@@ -523,7 +527,7 @@ typedef struct scheduler_io_data_s
 
 #define DA_FRQ_LENGTH			5
 
-#define IS_FRQ(r) ((r) && BOX_ELEMENTS_0 ((r)) >= DA_FRQ_LENGTH && (r)[DA_MESSAGE_TYPE] == DA_FUTURE_REQUEST && IS_STRING_DTP (DV_TYPE_OF ((r)[FRQ_SERVICE_NAME])))
+#define IS_FRQ(r) ((r) && IS_BOX_POINTER ((r)) && BOX_ELEMENTS_0 ((r)) >= DA_FRQ_LENGTH && (r)[DA_MESSAGE_TYPE] == DA_FUTURE_REQUEST && IS_STRING_DTP (DV_TYPE_OF ((r)[FRQ_SERVICE_NAME])))
 
 /*
  * RRC = remote realize condition = future answer.

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -75,10 +75,6 @@ extern "C" {
 #include "xmlparser.h"
 #ifdef __cplusplus
 }
-#endif
-#ifndef __SQL3_H
-#define __SQL3_H
-#include "sql3.h"
 #endif
 #include "repl.h"
 #include "replsr.h"
@@ -185,6 +181,18 @@ bif_string_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
   if (dtp != DV_STRING)
     sqlr_new_error ("22023", "SR014",
   "Function %s needs a string as argument %d, not an arg of type %s (%d)",
+  func, nth + 1, dv_type_title (dtp), dtp);
+  return arg;
+}
+
+caddr_t
+bif_wide_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
+{
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
+  dtp_t dtp = DV_TYPE_OF (arg);
+  if (dtp != DV_WIDE)
+    sqlr_new_error ("22023", "SR014",
+  "Function %s needs a wide string (i.e., a NVARCHAR) as argument %d, not an arg of type %s (%d)",
   func, nth + 1, dv_type_title (dtp), dtp);
   return arg;
 }
@@ -1175,7 +1183,7 @@ bif_proc_table_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args,
   ha->ha_slots = pvals;
   QR_RESET_CTX
     {
-      itc_ha_feed (&ihfr, ha, result_qst, 1);
+      itc_ha_feed (&ihfr, ha, result_qst, 1, NULL);
     }
   QR_RESET_CODE
     {
@@ -2241,13 +2249,13 @@ bif_aset (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 again:
   inx = (long) bif_long_arg (qst, args, idxctr, "aset");
   if (inx < 0)
-  goto bs;
+    goto bs;
   len = box_length (arr);
   switch (box_tag (arr))
   {
   case DV_STRING:
-    if (inx >= len)
-  goto bs;
+    if (inx >= len-1)
+      goto bs;
     arr[inx] = (char) bif_long_arg (qst, args, idxcount + 1, "aset");
     break;
   case DV_ARRAY_OF_POINTER: case DV_LIST_OF_POINTER: case DV_ARRAY_OF_XQVAL:
@@ -2264,7 +2272,6 @@ again:
     dk_free_tree (((caddr_t *) arr)[inx]);
     ((caddr_t *) arr)[inx] = box_copy_tree (it);
     break;
-
   case DV_ARRAY_OF_LONG:
     if (((size_t) inx) >= len / sizeof (caddr_t))
   goto bs;
@@ -2272,7 +2279,7 @@ again:
     break;
   case DV_ARRAY_OF_FLOAT:
     if (((size_t) inx) >= len / sizeof (caddr_t))
-  goto bs;
+      goto bs;
     ((float *) arr)[inx] = bif_float_arg (qst, args, idxcount + 1, "aset");
     break;
   case DV_ARRAY_OF_DOUBLE:
@@ -2282,8 +2289,8 @@ again:
     break;
   case DV_WIDE:
   case DV_LONG_WIDE:
-    if (((size_t) inx) >= len / sizeof (wchar_t))
-  goto bs;
+    if (((size_t) inx) >= (len / sizeof (wchar_t)) - 1)
+      goto bs;
     ((wchar_t *)arr)[inx] = (wchar_t) unbox (it);
     break;
   default:
@@ -2369,8 +2376,24 @@ caddr_t
 bif_make_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   ptrlong n = bif_long_range_arg (qst, args, 0, "make_string", 0, 10000000);
-  caddr_t str = dk_alloc_box_zero (n + 1, DV_LONG_STRING);
-  return str;
+  if (1 < BOX_ELEMENTS (args))
+    {
+      caddr_t pattern = bif_string_arg (qst, args, 1, "make_string");
+      caddr_t str;
+      char *tail, *end;
+      int pattern_len = box_length (pattern) - 1;
+      if (0 == pattern_len)
+        return dk_alloc_box_zero (n + 1, DV_STRING);
+      str = dk_alloc_box (n + 1, DV_STRING);
+      end = str + n;
+      for (tail = str; tail <= end - pattern_len; tail += pattern_len)
+        memcpy (tail, pattern, pattern_len);
+      if (tail < end)
+        memcpy (tail, pattern, end - tail);
+      str[n] = 0;
+      return str;
+    }
+  return dk_alloc_box_zero (n + 1, DV_STRING);
 }
 
 
@@ -2378,8 +2401,25 @@ caddr_t
 bif_make_wstring (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   ptrlong n = bif_long_range_arg (qst, args, 0, "make_wstring", 0, 10000000 / VIRT_MB_CUR_MAX);
-  caddr_t str = dk_alloc_box_zero ((n + 1) * sizeof (wchar_t), DV_LONG_WIDE); /* was: n*sizeof (wchar_t)+1 */
-  return str;
+  int bytes = (n + 1) * sizeof (wchar_t);
+  if (1 < BOX_ELEMENTS (args))
+    {
+      caddr_t pattern = bif_wide_arg (qst, args, 1, "make_wstring");
+      caddr_t str;
+      char *tail, *end;
+      int pattern_len = box_length (pattern) - sizeof (wchar_t);
+      if (0 == pattern_len)
+        return dk_alloc_box_zero (bytes, DV_WIDE);
+      str = dk_alloc_box (bytes, DV_WIDE);
+      end = str + n * sizeof (wchar_t);
+      for (tail = str; tail <= end - pattern_len; tail += pattern_len)
+        memcpy (tail, pattern, pattern_len);
+      if (tail < end)
+        memcpy (tail, pattern, end - tail);
+      ((wchar_t *)str)[n] = 0;
+      return str;
+    }
+  return dk_alloc_box_zero (bytes, DV_WIDE); /* was: n*sizeof (wchar_t)+1 */
 }
 
 
@@ -2387,8 +2427,23 @@ caddr_t
 bif_make_bin_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   ptrlong n = bif_long_range_arg (qst, args, 0, "make_bin_string", 0, 10000000);
-  caddr_t str = dk_alloc_box_zero (n * sizeof (wchar_t), DV_BIN);
-  return str;
+  if (1 < BOX_ELEMENTS (args))
+    {
+      caddr_t pattern = bif_string_arg (qst, args, 1, "make_bin_string");
+      caddr_t str;
+      char *tail, *end;
+      int pattern_len = box_length (pattern);
+      if (0 == pattern_len)
+        return dk_alloc_box_zero (n * sizeof (wchar_t), DV_BIN);
+      str = dk_alloc_box (n * sizeof (wchar_t), DV_BIN);
+      end = str + n * sizeof (wchar_t);
+      for (tail = str; tail <= end - pattern_len; tail += pattern_len)
+        memcpy (tail, pattern, pattern_len);
+      if (tail < end)
+        memcpy (tail, pattern, end - tail);
+      return str;
+    }
+  return dk_alloc_box_zero (n * sizeof (wchar_t), DV_BIN);
 }
 
 
@@ -4040,7 +4095,10 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
       case 'D':
 	{
-	  caddr_t arg = bif_date_arg (qst, args, arg_inx, szMe);
+	  int rb_type;
+	  caddr_t arg = bif_date_arg_rb_type (qst, args, arg_inx, szMe, &rb_type);
+	  if ((0 == (arg_len & (DT_PRINT_MODE_YMD | DT_PRINT_MODE_HMS))) && (RDF_BOX_ILL_TYPE != rb_type))
+            arg_len |= dt_print_flags_of_rb_type (rb_type);
 	  dt_print_to_buffer (tmp, arg, arg_len);
 	}
 	break;
@@ -4762,7 +4820,7 @@ retry_unrdf:
               int fmt_idx = dk_set_length (res);
               if ((fmt_idx < expected_dtp_len) && ((DV_WIDE & 0x7F) == (expected_dtp_strg[fmt_idx] & 0x7F)))
                 {
-                  val = box_utf8_as_wide_char (buf, NULL, out-buf, 0, DV_WIDE);
+                  val = box_utf8_as_wide_char (buf, NULL, out-buf, 0);
                   if (NULL == val)
                     {
 		      dk_free_box (buf);
@@ -4983,24 +5041,27 @@ bif_strstr_imp (caddr_t * qst, state_slot_t ** args, int opcode, const char *fun
         sqlr_new_error ("22023", "SR039", "The first argument to %s() is not a wide string", func_name);
       if (!IS_WIDE_STRING_DTP (dtp2))
         sqlr_new_error ("22023", "SR040", "The second argument to %s() is not a wide string", func_name);
+      len1 = box_length (str1);
+      len2 = box_length (str2);
+      if (len2 > len1)
+        {
+          inx = 0;
+          goto prepare_retval; /* see below */
+        }
       switch (opcode)
         {
         case BIF_STRSTR_POS:
         case BIF_STRSTR_BOOL_ANY:
-          inx = (char *)virt_wcsstr ((wchar_t *)str1, (wchar_t *)str2);
+          inx = (char *)virt_wmemmem ((const wchar_t *)str1, len1/sizeof(wchar_t) - 1, (const wchar_t *)str2, len2/sizeof(wchar_t) - 1);
           break;
         case BIF_STRSTR_BOOL_START:
-          len1 = box_length (str1);
-          len2 = box_length (str2);
-          if ((len2 > len1) || memcmp (str1, str2, len2 - sizeof (wchar_t)))
+          if (memcmp (str1, str2, len2 - sizeof (wchar_t)))
             inx = 0;
           else
             inx = str1;
           break;
         case BIF_STRSTR_BOOL_END:
-          len1 = box_length (str1);
-          len2 = box_length (str2);
-          if ((len2 > len1) || memcmp (str1 + len1 - len2, str2, len2 - sizeof (wchar_t)))
+          if (memcmp (str1 + len1 - len2, str2, len2 - sizeof (wchar_t)))
             inx = 0;
           else
             inx = str1 + (len1 - len2);
@@ -5033,6 +5094,7 @@ bif_strstr_imp (caddr_t * qst, state_slot_t ** args, int opcode, const char *fun
           break;
         }
     }
+prepare_retval:
   if (BIF_STRSTR_POS == opcode)
     {
       if (!inx)
@@ -5429,21 +5491,28 @@ bif_chr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     n >>= 8;      /* Next highest byte in the long arg. */
   }
   temp[i] = '\0';
-  str = dk_alloc_box ((i + 1), DV_LONG_STRING);
-  memcpy (str, temp, (i + 1));
-  return str;
+  return box_dv_short_nchars (temp, i);
 }
 
 caddr_t
 bif_chr1 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   unsigned long n = (unsigned long) bif_long_arg (qst, args, 0, "chr1");
-  caddr_t str = dk_alloc_box (2, DV_LONG_STRING);
+  caddr_t str = dk_alloc_box (2, DV_STRING);
   str[0] = (n & 0xff);
   str[1] = '\0';
   return str;
 }
 
+caddr_t
+bif_wchr1 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  unsigned long n = (unsigned long) bif_long_arg (qst, args, 0, "wchr1");
+  caddr_t str = dk_alloc_box (2 * sizeof(wchar_t), DV_WIDE);
+  ((wchar_t *)str)[0] = n;
+  ((wchar_t *)str)[1] = 0;
+  return str;
+}
 
 /* Let's use our own definitions in the following functions, so that we
    get also the ISO 8859/1 diacritic letters between 192 and 255
@@ -5490,37 +5559,28 @@ bif_lcase (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int i;
 
   if (NULL == str)
-  {
     return (NEW_DB_NULL);
-  }
   if (DV_WIDESTRINGP (str))
     {
       len = box_length (str)/sizeof (wchar_t);
-      res = dk_alloc_box (len * sizeof (wchar_t), DV_WIDE);
+      res = dk_alloc_box ((len + 1) * sizeof (wchar_t), DV_WIDE);
       for (i = 0; i < len; i++)
-  ((wchar_t *)res)[i] = (wchar_t)unicode3_getlcase((unichar)((wchar_t *)str)[i]);
+        ((wchar_t *)res)[i] = (wchar_t)unicode3_getlcase((unichar)((wchar_t *)str)[i]);
+      ((wchar_t *)res)[len] = (wchar_t)'\0';
       return res;
     }
-
 
   len = (box_length (str) - 1); /* box_length returns a length + 1 */
   res = dk_alloc_box (len + 1, DV_LONG_STRING);
   for (i = 0; i <= len; i++)
-  {
-    if (isISOletter (((unsigned char *) str)[i]))
-  {
-    (((unsigned char *) res)[i]) = raw_tolower (((unsigned char *) str)[i]);
-  }
-    else
-  {
-    /* Otherwise, just copy the byte, whatever it is: */
-    (((unsigned char *) res)[i]) = (((unsigned char *) str)[i]);
-  }
-  }
-
+    {
+      if (isISOletter (((unsigned char *) str)[i]))
+        (((unsigned char *) res)[i]) = raw_tolower (((unsigned char *) str)[i]);
+      else /* Otherwise, just copy the byte, whatever it is: */
+        (((unsigned char *) res)[i]) = (((unsigned char *) str)[i]);
+    }
   return res;
 }
-
 
 caddr_t
 bif_ucase (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -5531,15 +5591,14 @@ bif_ucase (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int i;
 
   if (NULL == str)
-  {
     return (NEW_DB_NULL);
-  }
   if (DV_WIDESTRINGP (str))
     {
       len = box_length (str)/sizeof (wchar_t);
-      res = dk_alloc_box (len * sizeof (wchar_t), DV_WIDE);
+      res = dk_alloc_box ((len + 1) * sizeof (wchar_t), DV_WIDE);
       for (i = 0; i < len; i++)
-  ((wchar_t *)res)[i] = (wchar_t)unicode3_getucase((unichar)((wchar_t *)str)[i]);
+        ((wchar_t *)res)[i] = (wchar_t)unicode3_getucase((unichar)((wchar_t *)str)[i]);
+      ((wchar_t *)res)[len] = (wchar_t)'\0';
       return res;
     }
 
@@ -5548,20 +5607,46 @@ bif_ucase (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   for (i = 0; i <= len; i++)
   {
     if (isISOletter (((unsigned char *) str)[i]))
-  {
-    (((unsigned char *) res)[i]) = raw_toupper (((unsigned char *) str)[i]);
+      (((unsigned char *) res)[i]) = raw_toupper (((unsigned char *) str)[i]);
+    else /* Otherwise, just copy the byte, whatever it is: */
+      (((unsigned char *) res)[i]) = (((unsigned char *) str)[i]);
   }
-    else
-  /* Otherwise, just copy the byte, whatever it is: */
-  {
-    (((unsigned char *) res)[i]) = (((unsigned char *) str)[i]);
-  }
-  }
-
-
   return res;
 }
 
+caddr_t
+bif_remove_unicode3_accents (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t str = bif_string_or_uname_or_wide_or_null_arg (qst, args, 0, "remove_unicode3_accents");
+  long len;
+  caddr_t res;
+  int i;
+
+  if (NULL == str)
+    return (NEW_DB_NULL);
+  if (DV_WIDESTRINGP (str))
+    {
+      len = box_length (str)/sizeof (wchar_t);
+      res = dk_alloc_box ((len + 1) * sizeof (wchar_t), DV_WIDE);
+      for (i = 0; i < len; i++)
+        ((wchar_t *)res)[i] = (wchar_t)unicode3_getbasechar((unichar)((wchar_t *)str)[i]);
+      ((wchar_t *)res)[len] = (wchar_t)'\0';
+      return res;
+    }
+
+  len = (box_length (str) - 1); /* box_length returns a length + 1 */
+  res = box_copy (str);
+  for (i = 0; i < len; i++)
+  {
+    if (0x7f < (((unsigned char *) str)[i]))
+      {
+        unichar base = unicode3_getbasechar ((unichar)(((unsigned char *) str)[i]));
+        if (!(base & 0xff))
+          (((unsigned char *) res)[i]) = base;
+      }
+  }
+  return res;
+}
 
 /* The name is from Oracle. Could be also capitalize or capit ? */
 caddr_t
@@ -7730,6 +7815,7 @@ bif_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return 0;
 }
 
+#include "sql3.h"
 
 caddr_t
 sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strval, int find_lextype)
@@ -7745,40 +7831,42 @@ sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strva
       sql_comp_t sc;
       caddr_t result_array = NULL;
       caddr_t str;
+      yyscan_t scanner;
       memset (&sc, 0, sizeof (sc));
 
       if (!parse_mtx)
 	parse_mtx = mutex_allocate ();
       MP_START ();
-      mutex_enter (parse_mtx);
+      parse_enter ();
       SCS_STATE_PUSH;
       str = (caddr_t) t_alloc_box (20 + strlen (str2), DV_SHORT_STRING);
       snprintf (str, box_length (str), "EXEC SQL %s;", str2);
 
-
       yy_string_input_init (str);
+      scn3yylex_init (&scanner);
       sql_err_state[0] = 0;
       sql_err_native[0] = 0;
-      if (0 == setjmp_splice (&parse_reset))
+      if (0 == setjmp_splice (&(global_scs->parse_reset)))
 	{
 	  int lextype, olex = -1;
 	  long n_lexem;
-	  sql_yy_reset ();
-	  yyrestart (NULL);
+	  sql_yy_reset (scanner);
+	  /* No need as soon as thing is reentrant: scn3yyrestart (NULL, scanner); */
 	  for (n_lexem = 0;;)
 	    {
+	      YYSTYPE yylval;
 	      caddr_t boxed_plineno, boxed_text, boxed_lextype;
-	      lextype = yylex ();
+	      lextype = scn3yylex (&yylval, scanner);
 	      if (!lextype)
 		break;
 	      if (olex == lextype && lextype == ';')
 		continue;
-	      boxed_plineno = box_num (scn3_plineno);
+	      boxed_plineno = box_num (global_scs->scs_scn3c.plineno);
 	      /* if use_strval is given this means names etc. are expected to be in proper casemode,
 	         so must check for DV_SYMBOL otherwise stored procedure with lower case would fail on startup
 	         when cm_upper is set  */
 	      boxed_text = ((use_strval && (DV_STRINGP (yylval.strval) || DV_SYMBOL == DV_TYPE_OF (yylval.strval))) ?
-		  box_dv_short_string (yylval.strval) : box_dv_short_nchars (yytext, get_yyleng ()));
+		  box_dv_short_string (yylval.strval) : box_dv_short_nchars (scn3_get_yytext(scanner), scn3_get_yyleng (scanner)));
 	      boxed_lextype = box_num (lextype);
 	      dk_set_push (&lexems, list (3, boxed_plineno, boxed_text, boxed_lextype));
 	      olex = lextype;
@@ -7794,13 +7882,14 @@ sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strva
 	  char err[1000];
 	  snprintf (err, sizeof (err), "SQL lex analyzer: %s ", sql_err_text);
 	  lexems = dk_set_nreverse (lexems);
-	  dk_set_push (&lexems, list (2, scn3_plineno, box_dv_short_string (err)));
+	  dk_set_push (&lexems, list (2, global_scs->scs_scn3c.plineno, box_dv_short_string (err)));
 	  goto cleanup;
 	}
     cleanup:
-      sql_pop_all_buffers ();
+      sql_pop_all_buffers (scanner);
+      scn3yylex_destroy (scanner);
       SCS_STATE_POP;
-      mutex_leave (parse_mtx);
+      parse_leave ();
       MP_DONE ();
       sc_free (&sc);
       result_array = (caddr_t) (dk_set_to_array (lexems));
@@ -7818,79 +7907,6 @@ bif_sql_lex_analyze (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return sql_lex_analyze (str, qst, 0, 0, 0);
 }
 
-#if 0
-static
-caddr_t
-bif_sql_split_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
-{
-  caddr_t str = bif_string_arg (qst, args, 0, "sql_split_text");
-  caddr_t **token_array = (caddr_t **)sql_lex_analyze (str, qst, 0, 0);
-  int level=0, i, line, oline = 1, n = BOX_ELEMENTS(token_array), last_semi;
-  dk_set_t stmts = NULL;
-  caddr_t result_array = NULL;
-
-  dk_session_t * ses = NULL;
-  if ((0 < n) && (2 == BOX_ELEMENTS (token_array[0])))
-    {
-      char err[2010];
-      strcpy_ck (err, token_array[0][1]);
-      dk_free_tree ((box_t) token_array);
-      sqlr_new_error ("37000", "SQ201", "%s", err);
-    }
-  ses = strses_allocate ();
-  last_semi = -1;
-  for (i=0; i<n; i++)
-  {
-    caddr_t *p = token_array[i];
-    caddr_t token = p[1];
-          line = (int) (ptrlong) p [0];
-    assert (NULL != token);
-
-    if (level || ';' != *token)
-    {
-        if (line != oline)
-          session_buffered_write (ses, "\n", 1);
-      session_buffered_write (ses, token, strlen(token));
-      session_buffered_write (ses, " ", 1);
-      switch (*token) {
-        case '{': level++; break;
-        case '}': level--; break;
-      }
-      oline = line;
-      continue;
-    }
-    if (i > (1 + last_semi))
-    {
-      int len = strses_length (ses);
-      char *out = (char *) dk_alloc_box (len + 1, DV_LONG_STRING);
-      strses_to_array (ses, out);
-      strses_flush (ses);
-      out[len] = 0;
-      dk_set_push (&stmts, out);
-    }
-    else
-      strses_flush (ses);
-    last_semi = i;
-    oline = line;
-  }
-
-    if (i > (1 + last_semi))
-    {
-      int len = strses_length (ses);
-      char *out = (char *) dk_alloc_box (len + 1, DV_LONG_STRING);
-      strses_to_array (ses, out);
-      strses_flush (ses);
-      out[len] = 0;
-      dk_set_push (&stmts, out);
-    }
-  dk_free_box ((box_t) ses);
-  dk_free_tree ((box_t) token_array);
-
-  result_array = revlist_to_array (stmts);
-  return result_array;
-}
-#endif
-
 #define SQL_SPLIT_TEXT_DEFAULT 0x0
 #define SQL_SPLIT_TEXT_KEEP_SEMICOLON 0x1
 #define SQL_SPLIT_TEXT_KEEP_EMPTY_STATEMENTS 0x2
@@ -7898,7 +7914,6 @@ bif_sql_split_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 extern dk_session_t *scn3split_ses_code;
 extern dk_session_t *scn3split_ses_tail;
-
 
 caddr_t
 sql_split_text (const char * str2, caddr_t * qst, int flags)
@@ -7911,51 +7926,55 @@ sql_split_text (const char * str2, caddr_t * qst, int flags)
   int start_lineno;
   int start_plineno;
   SCS_STATE_FRAME;
+  yyscan_t scanner;
   memset (&sc, 0, sizeof (sc));
 
   if (!parse_mtx)
     parse_mtx = mutex_allocate ();
   MP_START();
-  mutex_enter (parse_mtx);
+  parse_enter ();
   SCS_STATE_PUSH;
   str = (caddr_t) t_alloc_box (20 + strlen (str2), DV_SHORT_STRING);
   snprintf (str, box_length (str), "EXEC SQL %s", str2);
   yy_string_input_init (str);
+  scn3yylex_init (&scanner);
   sql_err_state[0] = 0;
   sql_err_native[0] = 0;
-  if (0 == setjmp_splice (&parse_reset))
+  if (0 == setjmp_splice (&(global_scs->parse_reset)))
     {
       int lextype = -1;
       /*int trail_pline = -1;*/
       caddr_t full_text, descr;
       size_t full_text_blen;
-      scn3split_yy_reset ();
-      scn3splityyrestart (NULL);
-      scn3split_ses = strses_allocate ();
+      scn3split_yy_reset (scanner);
+      /* No need as soon as thing is reentrant: scn3splityyrestart (NULL, scanner); */
+      global_scs->scs_scn3c.split_ses = strses_allocate ();
       has_useful_lexems = 0;
-      start_lineno = scn3_lineno;
-      start_plineno = scn3_plineno;
+      start_lineno = global_scs->scs_scn3c.lineno;
+      start_plineno = global_scs->scs_scn3c.plineno;
       start_filename = box_dv_short_string (scn3_get_file_name ());
       while (0 != lextype)
         {
+          YYSTYPE yylval;
           caddr_t end_filename;
-          lextype = scn3splityylex();
+          lextype = scn3splityylex (&yylval, scanner);
+
           if (!lextype)
 	    goto commit_the_statement; /* see below */
           if ((WS_WHITESPACE > lextype) && (';' != lextype))
             has_useful_lexems = 1;
-          if (((';' == lextype) || ('}' == lextype)) && (0 == scn3_lexdepth))
+          if (((';' == lextype) || ('}' == lextype)) && (0 == global_scs->scs_scn3c.lexdepth))
             {
-              /*trail_pline = scn3_plineno;*/
+              /*trail_pline = global_scs->scs_scn3c.plineno;*/
               goto commit_the_statement; /* see below */
             }
           continue;
 
 commit_the_statement:
           end_filename = box_dv_short_string (scn3_get_file_name ());
-          full_text = strses_string (scn3split_ses);
-          dk_free_tree (scn3split_ses);
-          scn3split_ses = strses_allocate ();
+          full_text = strses_string (global_scs->scs_scn3c.split_ses);
+          dk_free_tree (global_scs->scs_scn3c.split_ses);
+          global_scs->scs_scn3c.split_ses = strses_allocate ();
           full_text_blen = box_length(full_text);
           if (!has_useful_lexems && !(flags & SQL_SPLIT_TEXT_KEEP_EMPTY_STATEMENTS))
             goto nothing_to_commit;
@@ -7968,7 +7987,7 @@ commit_the_statement:
               descr = list (8,
                 full_text,
                 start_filename, box_num(start_lineno), box_num (start_plineno),
-                box_copy (end_filename), box_num (scn3_lineno), box_num (scn3_plineno),
+                box_copy (end_filename), box_num (global_scs->scs_scn3c.lineno), box_num (global_scs->scs_scn3c.plineno),
                 box_num (param_inx) );
             }
           else
@@ -7977,8 +7996,8 @@ commit_the_statement:
 nothing_to_commit:
           has_useful_lexems = 0;
           start_filename = end_filename;
-          start_lineno = scn3_lineno;
-          start_plineno = scn3_plineno;
+          start_lineno = global_scs->scs_scn3c.lineno;
+          start_plineno = global_scs->scs_scn3c.plineno;
           param_inx = 0;
           if (!lextype)
 	    break;
@@ -7989,17 +8008,18 @@ nothing_to_commit:
       char err[1000];
       snprintf (err, sizeof (err), "SQL lex splitter: %s ", sql_err_text);
       dk_set_push (&res, list (2,
-        scn3_plineno,
+        global_scs->scs_scn3c.plineno,
         box_dv_short_string (err) ) );
       goto cleanup;
     }
 cleanup:
-  scn3split_pop_all_buffers ();
-  MP_DONE();
+  scn3split_pop_all_buffers (scanner);
+  scn3splityylex_destroy (scanner);
+  dk_free_box (global_scs->scs_scn3c.split_ses); /* must be released inside semaphore */
+  global_scs->scs_scn3c.split_ses = NULL;
   SCS_STATE_POP;
-  dk_free_box (scn3split_ses); /* must be released inside semaphore */
-  scn3split_ses = NULL;
-  mutex_leave (parse_mtx);
+  parse_leave ();
+  MP_DONE();
   sc_free (&sc);
   dk_free_box (start_filename);
   return revlist_to_array (res);
@@ -8014,7 +8034,6 @@ bif_sql_split_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   ptrlong flags = ((BOX_ELEMENTS(args) > 1) ? bif_long_arg (qst, args, 1, "sql_split_text") : SQL_SPLIT_TEXT_DEFAULT);
   return sql_split_text (str, qst, flags);
 }
-
 
 /* An excerpt from KUBLMAN.DOC
 
@@ -9413,12 +9432,15 @@ bif_page_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   else
     {
-      itc_from_it (itc, buf->bd_tree);
-      col_ac_set_dirty (qst, args, itc, buf, 5, 10);
+      if (buf->bd_tree)
+	{
+	  itc_from_it (itc, buf->bd_tree);
+	  col_ac_set_dirty (qst, args, itc, buf, 5, 10);
+	}
     dbg_page_map (buf);
     }
   if (buf->bd_content_map)
-    resource_store (PM_RC (buf->bd_content_map->pm_size), (void *) buf->bd_content_map);
+    pm_store (buf, (buf->bd_content_map->pm_size), (void *) buf->bd_content_map);
 
   return 0;
 }
@@ -9473,6 +9495,15 @@ bif_mem_new_in_use (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+caddr_t
+bif_mem_count (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char *file = bif_string_arg (qst, args, 0, "mem_count");
+  long line = bif_long_arg (qst, args, 1, "mem_count");
+  long s;
+  s = dbg_mal_count (file, line);
+  return box_num (s);
+}
 
 caddr_t
 bif_mem_leaks (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -9486,8 +9517,69 @@ bif_mem_leaks (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 #endif
 
+extern FILE *tlsf_fp;
 
-caddr_t bif_mem_get_current_total (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+caddr_t
+bif_tlsf_dump_bp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char *dp = bif_string_or_null_arg (qst, args, 0, "tlsf_dump_bp");
+  FILE *fd = dp ? fopen (dp, "at") : stderr;
+  int inx;
+  tlsf_fp = fd;
+  DO_BOX (buffer_pool_t *, bp, inx, wi_inst.wi_bps)
+  {
+    fprintf (fd, "BP: %d\n", inx);
+    tlsf_print_all_blocks (bp->bp_tlsf, NULL, AB_ALL);
+  }
+  END_DO_BOX;
+  if (fd)
+    fclose (fd);
+  tlsf_fp = stderr;
+  return NULL;
+}
+
+
+void
+tlsf_dump_1 (ptrlong tlp, char *fn, id_hash_t * ht, int ht_mode)
+{
+  FILE *fd = fn ? fopen (fn, "at") : stderr;
+  tlsf_t *tlsf;
+  if (tlp > 0 && tlp < MAX_TLSFS)
+    tlsf = dk_all_tlsfs[tlp];
+  else
+    tlsf = (tlsf_t *) tlp;
+  tlsf_fp = fd;
+  tlsf_print_all_blocks (tlsf, ht, ht_mode);
+  if (fd)
+    fclose (fd);
+  tlsf_fp = stderr;
+  return;
+}
+
+
+caddr_t
+bif_tlsf_dump (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  QNCAST (QI, qi, qst);
+  ptrlong tlp = bif_long_arg (qst, args, 0, "tlsf_dump");
+  char *fn = bif_string_or_null_arg (qst, args, 1, "tlsf_dump_bp");
+  id_hash_iterator_t *hit;
+  id_hash_t *ht = NULL;
+  int ht_mode = AB_ALLOCD;
+  if (BOX_ELEMENTS (args) > 2)
+    {
+      hit = bif_arg (qst, args, 2, "tlsf_dump");
+      ht_mode = bif_long_arg (qst, args, 3, "tlsf_dump");
+      if (DV_DICT_ITERATOR == DV_TYPE_OF (hit))
+	ht = hit->hit_hash;
+    }
+  tlsf_dump_1 (tlp, fn, ht, ht_mode);
+  return NULL;
+}
+
+
+caddr_t
+bif_mem_get_current_total (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
 #ifdef MALLOC_DEBUG
   return box_num (dbg_malloc_get_current_total());
@@ -9500,8 +9592,14 @@ caddr_t bif_mem_get_current_total (caddr_t * qst, caddr_t * err_ret, state_slot_
 caddr_t
 bif_mem_summary (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
+  char *dp = bif_string_or_null_arg (qst, args, 0, "mem_summary");
+  FILE *fd = dp ? fopen (dp, "at") : NULL;
+  tlsf_summary (fd ? fd : stderr);
+  if (fd)
+    fclose (fd);
   return NULL;
 }
+
 
 
 #ifdef MALLOC_STRESS
@@ -9633,8 +9731,23 @@ box_cast (caddr_t * qst, caddr_t data, ST * dtp, dtp_t arg_dtp)
 #endif
       data = rb->rb_box;
       arg_dtp = DV_TYPE_OF (data);
-      if (DV_STRING == arg_dtp)
-        box_flags (data) |= BF_UTF8;
+      switch (arg_dtp)
+        {
+        case DV_STRING:
+          box_flags (data) |= BF_UTF8;
+          break;
+        case DV_DATETIME:
+          {
+            if (DV_STRING == dtp->type)
+              {
+                char temp [100];
+                int mode = DT_PRINT_MODE_XML | dt_print_flags_of_rb_type (rb->rb_type);
+                dt_to_iso8601_string_ext (data, temp, sizeof (temp), mode);
+                return box_dv_short_string (temp);
+              }
+            break;
+          }
+        }
     }
   switch (dtp->type)
     {
@@ -10082,7 +10195,7 @@ do_bin:
 do_bin_again:
 	  if (IS_WIDE_STRING_DTP (arg_dtp))
 	    {
-	      long utf8_len;
+	      long utf8_len, actual_utf8_len;
 	      virt_mbstate_t state;
 	      wchar_t *wide = (wchar_t *) data;
 	      wchar_t *wide_work;
@@ -10098,7 +10211,8 @@ do_bin_again:
 
 	      wide_work = wide;
 	      memset (&state, 0, sizeof (virt_mbstate_t));
-	      if (utf8_len != virt_wcsnrtombs ((unsigned char *) res, &wide_work, wide_len, utf8_len, &state))
+              actual_utf8_len = virt_wcsnrtombs ((unsigned char *) res, &wide_work, wide_len, utf8_len, &state);
+	      if (utf8_len != actual_utf8_len)
 		GPF_T1("non consistent wide char to multi-byte translation of a buffer");
 	      if (NULL != tmp_res)
 		dk_free_box (tmp_res);
@@ -10183,7 +10297,7 @@ do_wide:
 	      return (box_copy (data));
 	  case DV_BIN:
 		{
-		  caddr_t res = box_utf8_as_wide_char (data, NULL, box_length (data), 0, DV_WIDE);
+		  caddr_t res = box_utf8_as_wide_char (data, NULL, box_length (data), 0);
 		  if (res)
 		    return res;
 		  else
@@ -10504,6 +10618,22 @@ bif_blob_page (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (dtp != DV_BLOB_HANDLE && dtp != DV_BLOB_WIDE_HANDLE)
   return (box_num (0));
   return (box_num ((((blob_handle_t *) bh)->bh_page)));
+}
+
+dk_set_t bh_dp_list_n (lock_trx_t * lt, blob_handle_t * bh);
+
+caddr_t
+bif_blob_dps (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  QNCAST (query_instance_t, qi, qst);
+  caddr_t bh = bif_arg (qst, args, 0, "blob_dps");
+  dk_set_t l;
+
+  dtp_t dtp = DV_TYPE_OF (bh);
+  if (dtp != DV_BLOB_HANDLE && dtp != DV_BLOB_WIDE_HANDLE)
+    return NEW_DB_NULL;
+  l = bh_dp_list_n (qi->qi_trx, bh);
+  return list_to_array (l);
 }
 
 
@@ -10985,10 +11115,10 @@ bif_set_qualifier (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       sqlr_new_error ("22023", "SR484", "The qualifier cannot be longer than %d characters nor empty string", MAX_NAME_LEN);
     }
   sch_normalize_new_table_case (isp_schema (qi->qi_space), q, box_length (q), NULL, 0);
-  mutex_enter (parse_mtx);
+  parse_enter ();
   dk_free_box (qi->qi_client->cli_qualifier);
   qi->qi_client->cli_qualifier = q;
-  mutex_leave (parse_mtx);
+  parse_leave ();
 
   if (!cli_ws && cli_is_interactive (cli))
   {
@@ -11461,8 +11591,7 @@ bif_set_user_os_acount_int (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
 caddr_t
 bif_set_user_data (caddr_t * inst, caddr_t * err_ret, state_slot_t ** args)
 {
-  sec_set_user_data (bif_string_arg (inst, args, 0, "set_set_user_data"),
-    bif_string_arg (inst, args, 1, "set_set_user_data"));
+  sec_set_user_data (bif_string_arg (inst, args, 0, "set_set_user_data"), bif_string_arg (inst, args, 1, "set_set_user_data"));
   return 0;
 }
 
@@ -11893,6 +12022,46 @@ bif_deserialize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return res;
 }
 
+static caddr_t
+bif_serialize_to_string_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t xx = bif_arg (qst, args, 0, "serialize");
+  dk_session_t *out = strses_allocate ();
+
+  strses_enable_paging (out, 1024 * 1024 * 10);
+  CATCH_WRITE_FAIL (out)
+    {
+      print_object (xx, out, NULL, NULL);
+    }
+  FAILED
+    {
+      dtp_t tag = DV_TYPE_OF (xx);
+      *err_ret = srv_make_new_error ("22023", "SR479",
+	  "Cannot serialize the data of type %s (%u) in serialize",
+	  dv_type_title (tag), (unsigned) tag);
+    }
+  END_WRITE_FAIL (out);
+  return out;
+}
+
+static caddr_t
+bif_deserialize_from_string_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  dk_session_t * in = (dk_session_t *) bif_strses_arg (qst, args, 0, "deserialize");
+  caddr_t ret;
+  ret = (caddr_t) read_object (in);
+  return ret;
+}
+
+caddr_t
+bif_serial_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int dtp_or_approx = BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "__serial_length") : 0;
+  caddr_t xx = bif_arg (qst, args, 0, "__serial_length");
+  if ((0 != dtp_or_approx) && (SERIAL_LENGTH_APPROX != dtp_or_approx) && (DV_TYPE_OF (xx) != dtp_or_approx))
+    sec_check_dba ((query_instance_t *)qst, "__serial_length");
+  return box_num (box_serial_length (xx, dtp_or_approx));
+}
 
 caddr_t
 bif_composite (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -12276,6 +12445,7 @@ bif_ddl_change (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int sys_tb = (id_hash_system_tables && NULL != id_hash_get (id_hash_system_tables, (caddr_t) &tb));
   if (tb_def && tb_def->tb_primary_key && tb_def->tb_primary_key->key_id <= KI_UDT)
     sqlr_new_error ("42000", ".....", "May not redef or reload def of system table");
+  thr_set_tlsf (THREAD_CURRENT_THREAD, dk_base_tlsf);
   log_dd_change (qi -> qi_trx, tb);
   qi_read_table_schema (qi, tb_def && !sys_tb ? tb_def->tb_name : tb);
   qi->qi_trx->lt_replicate = (caddr_t *)repl;
@@ -12761,7 +12931,7 @@ bif_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (NULL != charset && ssl_is_settable (args[1]))
 	{
 	  caddr_t ret_table = box_wide_char_string ((caddr_t) &charset->chrs_table[1],
-	      255 * sizeof (wchar_t), DV_WIDE);
+	      255 * sizeof (wchar_t));
 	  qst_set (qst, args[1], ret_table);
 	}
     }
@@ -13005,18 +13175,19 @@ int enable_bif_exec_stat = 1;
 int64
 bif_exec_start (client_connection_t * cli, caddr_t text)
 {
-  bif_exec_stat_t stat;
+  bif_exec_stat_t * stat;
   int64 ctr;
   if (!enable_bif_exec_stat)
     return 0;
   if (!bif_exec_pending)
     {
       dk_mutex_init (&bif_exec_pending_mtx, MUTEX_TYPE_SHORT);
-      bif_exec_pending = id_hash_allocate (201, sizeof (int64), sizeof (bif_exec_stat_t), boxint_hash, boxint_hashcmp);
+      bif_exec_pending = id_hash_allocate (201, sizeof (int64 *), sizeof (bif_exec_stat_t *), boxint_hash, boxint_hashcmp);
     }
-  stat.exs_text = box_copy (text);
-  stat.exs_start = get_msec_real_time ();
-  stat.exs_cli = cli;
+  stat = (bif_exec_stat_t *) dk_alloc (sizeof (bif_exec_stat_t));
+  stat->exs_text = box_copy (text);
+  stat->exs_start = get_msec_real_time ();
+  stat->exs_cli = cli;
   mutex_enter (&bif_exec_pending_mtx);
   ctr = bif_exec_ctr++;
   id_hash_set (bif_exec_pending, (caddr_t)&ctr, (caddr_t)&stat);
@@ -13027,14 +13198,15 @@ bif_exec_start (client_connection_t * cli, caddr_t text)
 void
 bif_exec_done (int64 k)
 {
-  bif_exec_stat_t * place;
+  bif_exec_stat_t ** place;
   if (!enable_bif_exec_stat)
     return;
   mutex_enter (&bif_exec_pending_mtx);
-  place = (bif_exec_stat_t*) id_hash_get (bif_exec_pending, (caddr_t)&k);
-  if (place)
+  place = (bif_exec_stat_t**) id_hash_get (bif_exec_pending, (caddr_t)&k);
+  if (place && *place)
     {
-      dk_free_box (place->exs_text);
+      dk_free_box (place[0]->exs_text);
+      dk_free (place[0], sizeof (bif_exec_stat_t));
       id_hash_remove (bif_exec_pending, (caddr_t)&k);
     }
   mutex_leave (&bif_exec_pending_mtx);
@@ -15360,7 +15532,7 @@ bif_rdf_substr_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         memset (&mbstate, 0, sizeof(virt_mbstate_t));
         for (i=0; i<start && *pstart; ++i)
           {
-            pstart += virt_mbrlen (pstart, VIRT_MB_CUR_MAX, &mbstate);
+            pstart += virt_mbrlen_z (pstart, VIRT_MB_CUR_MAX, &mbstate);
           }
         str_n_chars = wide_char_length_of_utf8_string ((const unsigned char *)pstart, strlen(pstart));
 
@@ -15427,21 +15599,20 @@ string literal  LCASE(string literal str)
 The LCASE function corresponds to the XPath fn:lower-case function. It returns a string literal whose lexical form is the lower case of the lexcial form of the argument.
 */
 caddr_t
-bif_rdf_ucase_lcase_impl(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, char upcase /* == 1 - upcase, ==0 - lcase */)
+bif_rdf_ucase_lcase_impl(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, unichar (*unicode3_get_x_case) (unichar), const char *fname, const char *longfname)
 {
   rdf_box_t *str_rdf_box;
-  caddr_t str = bif_arg_unrdf_ext (qst, args, 0, upcase ? "rdf_ucase_impl" : "rdf_lcase_impl", (caddr_t *)(&str_rdf_box));
+  caddr_t str = bif_arg_unrdf_ext (qst, args, 0, fname, (caddr_t *)(&str_rdf_box));
   char src_is_rdf_box = DV_TYPE_OF (str_rdf_box) == DV_RDF;
   size_t i, str_n_chars;
   wchar_t *wide_box = NULL;
   box_t r;
-  unichar (*unicode3_get_x_case) (unichar);
   switch (DV_TYPE_OF (str))
     {
     case DV_STRING: /* utf-8 */
     case DV_UNAME:
       {
-        wide_box =  (wchar_t*) box_utf8_as_wide_char (str, NULL, strlen(str), 0, DV_WIDE);
+        wide_box =  (wchar_t*) box_utf8_as_wide_char (str, NULL, strlen(str), 0);
         str_n_chars= virt_wcslen (wide_box);
       }
       break;
@@ -15455,12 +15626,9 @@ bif_rdf_ucase_lcase_impl(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args,
     case DV_DB_NULL:
       return NEW_DB_NULL;
     default:
-      sqlr_new_error ("22023", "SL001", "The SPARQL 1.1 function %scase() needs a string value as 1st argument",
-          upcase ? "u" : "l" );
+      sqlr_new_error ("22023", "SL001", "The %s needs a string value as 1st argument", longfname);
     return NULL;
     }
-
-  unicode3_get_x_case = upcase ? unicode3_getucase : unicode3_getlcase;
   for (i=0; i<str_n_chars; ++i)
     {
       wide_box[i] = unicode3_get_x_case (wide_box[i]);
@@ -15485,13 +15653,19 @@ bif_rdf_ucase_lcase_impl(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args,
 caddr_t
 bif_rdf_ucase_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  return bif_rdf_ucase_lcase_impl (qst, err_ret, args, 1);
+  return bif_rdf_ucase_lcase_impl (qst, err_ret, args, unicode3_getucase, "rdf_ucase_impl", "SPARQL 1.1 UCASE() function");
 }
 
 caddr_t
 bif_rdf_lcase_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  return bif_rdf_ucase_lcase_impl (qst, err_ret, args, 0);
+  return bif_rdf_ucase_lcase_impl (qst, err_ret, args, unicode3_getlcase, "rdf_lcase_impl", "SPARQL 1.1 LCASE() function");
+}
+
+caddr_t
+bif_rdf_remove_unicode3_accents_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_rdf_ucase_lcase_impl (qst, err_ret, args, unicode3_getbasechar, "rdf_remove_unicode3_accents_impl", "SPARQL-BI REMOVE_UNICODE3_ACCENTS() function");
 }
 
 /*
@@ -15982,6 +16156,7 @@ bif_sparql_init (void)
   bif_define_ex ("rdf_substr_impl", bif_rdf_substr_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
   bif_define_ex ("rdf_ucase_impl", bif_rdf_ucase_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
   bif_define_ex ("rdf_lcase_impl", bif_rdf_lcase_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
+  bif_define_ex ("rdf_remove_unicode3_accents_impl", bif_rdf_remove_unicode3_accents_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
   bif_define_ex ("rdf_strafter_impl", bif_rdf_strafter_impl, BMD_RET_TYPE, &bt_any, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2,
       BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("rdf_strbefore_impl", bif_rdf_strbefore_impl, BMD_RET_TYPE, &bt_any, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2,
@@ -16071,6 +16246,7 @@ sql_bif_init (void)
   bif_define_ex ("ascii", bif_ascii, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("chr", bif_chr, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("chr1", bif_chr1, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("wchr1", bif_wchr1, BMD_RET_TYPE, &bt_wvarchar, BMD_DONE);
 
 /* Substring extraction: */
   bif_define_ex ("subseq"		, bif_subseq		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3	, BMD_IS_PURE, BMD_DONE);
@@ -16085,11 +16261,11 @@ sql_bif_init (void)
 /* Producing new strings by repetition: */
   bif_define_ex ("repeat"		, bif_repeat		, BMD_RET_TYPE, &bt_string	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("space"		, bif_space		, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("make_string", bif_make_string, BMD_RET_TYPE, &bt_varchar, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
+  bif_define_ex ("make_string", bif_make_string, BMD_RET_TYPE, &bt_varchar, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 2, BMD_IS_PURE,
       BMD_DONE);
-  bif_define_ex ("make_wstring", bif_make_wstring, BMD_RET_TYPE, &bt_wvarchar, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1,
+  bif_define_ex ("make_wstring", bif_make_wstring, BMD_RET_TYPE, &bt_wvarchar, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 2,
       BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("make_bin_string", bif_make_bin_string, BMD_RET_TYPE, &bt_varbinary, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1,
+  bif_define_ex ("make_bin_string", bif_make_bin_string, BMD_RET_TYPE, &bt_varbinary, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 2,
       BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("concat", bif_concat, BMD_ALIAS, "concatenate", BMD_RET_TYPE, &bt_string, BMD_MIN_ARGCOUNT, 0, BMD_IS_PURE,
       BMD_DONE);
@@ -16136,6 +16312,7 @@ sql_bif_init (void)
       BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("ucase", bif_ucase, BMD_ALIAS, "upper", BMD_RET_TYPE, &bt_string, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1,
       BMD_IS_PURE, BMD_DONE);
+   bif_define_ex ("remove_unicode3_accents", bif_remove_unicode3_accents, BMD_RET_TYPE, &bt_string     , BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1      , BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("initcap"		, bif_initcap		, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE); /* Name is taken from Oracle */
   bif_define_ex ("split_and_decode"	, bif_split_and_decode	, BMD_RET_TYPE, &bt_any_box		, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 3	, BMD_IS_PURE, BMD_DONE);   /* Does it all! */
 
@@ -16332,6 +16509,7 @@ sql_bif_init (void)
   bif_define_ex ("blob_to_string", bif_blob_to_string, BMD_RET_TYPE, &bt_string, BMD_DONE);
   bif_define_ex ("blob_to_string_output", bif_blob_to_string_output, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
   bif_define ("blob_page", bif_blob_page);
+  bif_define ("blob_dps", bif_blob_dps);
   bif_define_ex ("_cvt"		, bif_convert		, BMD_RET_TYPE, &bt_convert	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3	, BMD_IS_PURE, BMD_DONE);
   bif_define ("__cast_internal", bif_cast_internal);
   bif_define ("__ssl_const", bif_stub_ssl_const);
@@ -16342,7 +16520,7 @@ sql_bif_init (void)
   bif_define ("xcontains", bif_stub_xcontains);
   bif_define_ex ("exists", bif_stub_exists, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   st_varchar = (sql_tree_tmp *) list (3, DV_LONG_STRING, 0, 0);
-  st_nvarchar = (sql_tree_tmp *) list (3, DV_LONG_WIDE, 0, 0);
+  st_nvarchar = (sql_tree_tmp *) list (3, DV_WIDE, 0, 0);
 
 
   bif_define_ex ("sequence_next", bif_sequence_next, BMD_RET_TYPE, &bt_integer, BMD_DONE);
@@ -16389,8 +16567,11 @@ sql_bif_init (void)
   bif_define ("repl_is_raw", bif_repl_is_raw);
   bif_define ("log_enable", bif_log_enable);
   bif_set_vectored (bif_log_enable, (bif_vec_t)bif_log_enable);
-  bif_define_ex ("serialize", bif_serialize, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("serialize", bif_serialize, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("__serial_length", bif_serial_length, BMD_RET_TYPE, &bt_integer_nn, BMD_DONE);
   bif_define_ex ("deserialize", bif_deserialize, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("serialize_to_string_session", bif_serialize_to_string_session, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("deserialize_from_string_session", bif_deserialize_from_string_session, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("complete_table_name", bif_complete_table_name, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("complete_proc_name", bif_complete_proc_name, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("__any_grants", bif_any_grants, BMD_RET_TYPE, &bt_integer, BMD_DONE);
@@ -16471,9 +16652,13 @@ sql_bif_init (void)
   bif_define ("mem_all_in_use", bif_mem_all_in_use);
   bif_define ("mem_new_in_use", bif_mem_new_in_use);
   bif_define ("mem_leaks", bif_mem_leaks);
+  bif_define ("mem_count", bif_mem_count);
 #endif
   bif_define_ex ("mem_get_current_total", bif_mem_get_current_total, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("mem_summary", bif_mem_summary);
+  bif_define ("tlsf_dump_bp", bif_tlsf_dump_bp);
+  bif_define ("tlsf_dump", bif_tlsf_dump);
+
 #ifdef MALLOC_STRESS
   bif_define ("set_hard_memlimit", bif_set_hard_memlimit);
   bif_define ("set_hit_memlimit", bif_set_hit_memlimit);

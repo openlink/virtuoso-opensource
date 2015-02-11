@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1291,7 +1291,7 @@ DB.DBA.VHOST_DUMP_SQL (in lpath varchar, in vhost varchar := '*ini*', in lhost v
 ;
 
 -- /* get a header field based on max of quality value */
-create procedure DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (in accept varchar)
+create procedure DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (in accept varchar, in mask any := null)
 {
   declare format, itm varchar;
   declare arr any;
@@ -1322,6 +1322,8 @@ create procedure DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (in accept varchar)
 	  best_q := q;
 	  format := itm;
 	}
+      if (mask is not null and q = best_q and itm like mask)
+	format := itm;
     }
   return format;
 }

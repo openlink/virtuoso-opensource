@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -34,6 +34,7 @@
 #include "xmltree.h"
 #include "sqlbif.h"
 #include "srvstat.h"
+#include "geo.h"
 
 
 signed char  db_buf_const_length[256];
@@ -275,7 +276,7 @@ box_serial_length (caddr_t box, dtp_t dtp)
 	boxint n = IS_BOX_POINTER (box) ? *((ptrlong *) box) : (boxint)((ptrlong)box); /* Is it ((ptrlong *) box) or ((boxint *) box) ??? */
 	if ((n > -128) && (n < 128))
 	  return 2;
-	else if (n > 0x80000000 && n < 0x7fffffff)
+	else if (n >= (int64) INT32_MIN && n <= (int64) INT32_MAX)
 	  return 5;
 	else
 	  return 9;
@@ -288,7 +289,7 @@ box_serial_length (caddr_t box, dtp_t dtp)
     case DV_IRI_ID:
       {
 	iri_id_t iid = unbox_iri_id (box);
-	return  (iid < 0xffffffff) ? 5 : 9;
+	return  (iid <= 0xffffffff) ? 5 : 9;
       }
     case DV_SINGLE_FLOAT:
       return 5;
@@ -302,6 +303,11 @@ box_serial_length (caddr_t box, dtp_t dtp)
       return 1 + DT_LENGTH;
     case DV_RDF:
       return rb_serial_length (box);
+    case DV_GEO:
+      {
+        geo_t *g = (geo_t *)box;
+        return geo_serial_length (g);
+      }
     case DV_ARRAY_OF_POINTER: /* _ROW */
 	{
 	  int inx, elts = BOX_ELEMENTS (box);
@@ -718,8 +724,6 @@ itc_like_compare (it_cursor_t * itc, buffer_desc_t * buf, caddr_t pattern, searc
   switch (dtp1)
 	      {
     case DV_SHORT_STRING:
-      if (collation && collation->co_is_wide)
-		collation = NULL;
 	break;
     case DV_WIDE:
       st = LIKE_ARG_UTF;
@@ -815,8 +819,6 @@ ce_like_filter (col_pos_t * cpo, int row, dtp_t flags, db_buf_t val, int len, in
   switch (dtp1)
     {
     case DV_SHORT_STRING:
-      if (collation && collation->co_is_wide)
-	collation = NULL;
       break;
     case DV_WIDE:
       st = LIKE_ARG_UTF;
@@ -1617,7 +1619,7 @@ itc_next (it_cursor_t * it, buffer_desc_t ** buf_ret)
     }
  skip_bitmap:
   ks = it->itc_ks;
-  if (ks && (ks->ks_local_test || ks->ks_local_code || ks->ks_setp))
+  if (ks && (ks->ks_local_test || ks->ks_local_code || ks->ks_setp || ks->ks_qf_output))
     {
       int rc;
       query_instance_t * volatile qi = (query_instance_t *) it->itc_out_state;
@@ -3291,10 +3293,14 @@ itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
 	}
       if (upd_col)
 	{
-	  col->col_count = cs->cs_n_values / (float) itc->itc_st.n_sample_rows * est;
-	  if (CL_RUN_SINGLE_CLUSTER == cl_run_local_only)
-	    col->col_count *= key_n_partitions (key);
-	  if (itc->itc_st.n_sample_rows)
+	  if (key && !key->key_distinct)
+	    {
+	      col->col_count = cs->cs_n_values / (float) itc->itc_st.n_sample_rows * est;
+	      if (CL_RUN_SINGLE_CLUSTER == cl_run_local_only)
+		col->col_count *= key_n_partitions (key);
+	    }
+	  /* for distinct value count, consider a distinct projection is the col in question is the first, otherwise do not trust one */
+	  if (itc->itc_st.n_sample_rows && (key && (!key->key_distinct || col == (dbe_column_t*)key->key_parts->data)))
 	    {
 	      /* if n distinct under 2% of samples and under 200 values, assume that this is a flag.  If more distinct, scale pro rata.  */
 	      if (cs->cs_distinct->ht_inserts < itc->itc_st.n_sample_rows / 50 && cs->cs_distinct->ht_count < 200)
@@ -3318,7 +3324,7 @@ itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
 		  col->col_max = col_min_max_trunc (maxb);
 		}
 	    }
-	  else
+	  else if (key && !key->key_distinct)
 	    {
 	      col->col_n_distinct = 1;
 	      col->col_avg_len = 0; /* no data, use declared prec instead */
@@ -3422,7 +3428,7 @@ itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf, int * is_leaf)
 	{
 	  if (itc->itc_insert_key->key_is_col)
 	    {
-	      //if (tlsf_check (THREAD_CURRENT_THREAD->thr_tlsf, 0)) GPF_T1 ("corrupt");
+	      /*if (tlsf_check (THREAD_CURRENT_THREAD->thr_tlsf, 0)) GPF_T1 ("corrupt");*/
 	      data_col = itc_box_col_seg (itc, buf, cl);
 	      if (col == (dbe_column_t*)itc->itc_insert_key->key_parts->data && 1 == itc->itc_search_par_fill)
 		{
@@ -3437,6 +3443,9 @@ itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf, int * is_leaf)
 	  else  if (key->key_bit_cl && col->col_id == key->key_bit_cl->cl_col_id)
 	    {
 	      data_col = itc_bm_array (itc, buf);
+	      WITH_TLSF (dk_base_tlsf)
+		dk_check_tree (data_col);
+	      END_WITH_TLSF;
 	    }
 	  else
 	    {
@@ -3497,13 +3506,16 @@ itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf, int * is_leaf)
 	    }
 	  else
 	    {
-		  uint64 one = CS_IN_SAMPLE | CS_SAMPLE_INC | 1;
+	      uint64 one = CS_IN_SAMPLE | CS_SAMPLE_INC | 1;
 	      id_hash_set (col_stat->cs_distinct, (caddr_t) &data, (caddr_t)&one);
-		  //if (THREAD_CURRENT_THREAD->thr_tlsf->tlsf_total_mapped < 4000000 && tlsf_check (THREAD_CURRENT_THREAD->thr_tlsf, 0)) GPF_T1 ("corrupt");
+	      /*if (THREAD_CURRENT_THREAD->thr_tlsf->tlsf_total_mapped < 4000000 && tlsf_check (THREAD_CURRENT_THREAD->thr_tlsf, 0)) GPF_T1 ("corrupt");*/
 	    }
 	}
 	  if (data_col)
 	    {
+#ifdef DK_ALLOC_BOX_DEBUG
+	      dk_check_tree_iter (data_col, NULL, NULL);
+#endif
 	      dk_free_tree ((caddr_t)data_col);
 	      data_col = NULL;
 	    }

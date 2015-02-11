@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -35,6 +35,7 @@ import com.hp.hpl.jena.rdf.model.*;
 
 public class VirtResSetIter extends NiceIterator<Triple>
 {
+    protected java.sql.Statement v_stmt;
     protected ResultSet 	v_resultSet;
     protected Triple 		v_row;
     protected TripleMatch 	v_in;
@@ -47,20 +48,14 @@ public class VirtResSetIter extends NiceIterator<Triple>
         v_finished = true;
     }
 
-    public VirtResSetIter(VirtGraph graph, ResultSet resultSet, TripleMatch in)
+    public VirtResSetIter(VirtGraph graph, java.sql.Statement stmt, ResultSet resultSet, TripleMatch in)
     {
+        v_stmt = stmt;
         v_resultSet = resultSet;
 	v_in = in;
 	v_graph = graph;
     }
 
-    public void reset(ResultSet resultSet, PreparedStatement sourceStatement)
-    {
-        v_resultSet = resultSet;
-        v_finished = false;
-        v_prefetched = false;
-        v_row = null;
-    }
 
     public boolean hasNext()
     {
@@ -158,6 +153,15 @@ public class VirtResSetIter extends NiceIterator<Triple>
 		{
 		    throw new JenaException(e);
 		}
+	    }
+	    if (v_stmt != null)
+	    {
+		try
+		{
+		    v_stmt.close();
+		    v_stmt = null;
+		}
+		catch (SQLException e) {}
 	    }
 	}
 	v_finished = true;

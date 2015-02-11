@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -840,8 +840,7 @@ ssl_insert_cast (insert_node_t * ins, caddr_t * inst, int nth_col, caddr_t * err
 	  else if (8 == elt_sz)
 	    {
 	      int64 val = ((int64*)from_dc->dc_values)[row];
-	      if (is_prec && !(val >=prec_lower && val <= prec_upper)
-		  && !DC_IS_NULL (from_dc, row))
+	      if (is_prec && !DC_IS_NULL (from_dc, row) && !(val >=prec_lower && val <= prec_upper))
 		{
 		  *err_ret = srv_make_new_error ("22023", "SR346",
 						 "Integer out of range for column %s", sch_id_to_col_name (wi_inst.wi_schema, cl->cl_col_id));
@@ -1713,6 +1712,7 @@ itc_param_sort (key_source_t * ks, it_cursor_t * itc, int is_del_with_nulls)
   if (itc->itc_insert_key && itc->itc_insert_key->key_is_col && !itc->itc_is_col)
     itc_col_init (itc);
   itc->itc_set = 0;
+  itc->itc_first_set = 0;
   itc->itc_n_sets = n_params;
   itc->itc_n_results = 0;
   if (!n_params)
@@ -2361,6 +2361,7 @@ itc_copy (it_cursor_t * itc)
       caddr_t c = NULL;
       if (!itc->itc_n_sets || !ITC_P_VEC (itc, inx))
 	c = box_mt_copy_tree (itc->itc_search_params[inx]);
+      ITC_P_VEC (cp, inx) = NULL;
       ITC_SEARCH_PARAM (cp, c);
       if (c)
 	ITC_OWNS_PARAM (cp, c);
@@ -2902,6 +2903,8 @@ ts_split_sets (table_source_t * ts, caddr_t * inst, it_cursor_t * itc, int n_par
   n_ways = 1 + qi_inc_branch_count (qi, enable_qp, n_ways - 1);
   if (n_ways < 2)
     return itc_reset (itc);
+  if (n_ways > n_sets)
+    n_ways = n_sets;
   chunk = n_sets / n_ways;
   for (inx = 0; inx < n_ways - 1; inx++)
     {
@@ -3371,7 +3374,10 @@ vec_fref_single_result (fun_ref_node_t * fref, table_source_t * ts, caddr_t * in
       continue;
     for (set = 0; set < n_sets; set++)
       {
-	  int agg_set = set_nos ? ((int64*)set_nos->dc_values)[set] : set, no_old;
+	  int agg_set, no_old;
+	  if (set_nos && set >= set_nos->dc_n_values)
+	    sqlr_new_error ("42000", "VEC..",  "Internal error, please report query to the support");
+	  agg_set = set_nos ? ((int64*)set_nos->dc_values)[set] : set;
 	qi->qi_set = agg_set;
 	((query_instance_t *) branch)->qi_set = agg_set;
 	DO_SET (state_slot_t *, ssl, &fref->fnr_default_ssls)
@@ -3582,14 +3588,24 @@ it_print_wired (index_tree_t * it)
 
 
 int
-cha_mergeable (chash_t * ch1, chash_t * ch2)
+cha_mergeable (setp_node_t * setp, chash_t * ch1, chash_t * ch2)
 {
   int inx, n_sqt = box_length (ch1->cha_sqt) / sizeof (sql_type_t);
+  hash_area_t * ha = setp->setp_ha;
+  int dep_inx = ha->ha_n_keys;
   for (inx = 0; inx < n_sqt; inx++)
     {
       if (ch1->cha_sqt[inx].sqt_dtp != ch2->cha_sqt[inx].sqt_dtp)
 	return 0;
     }
+  DO_SET (gb_op_t *, go, &setp->setp_gb_ops)
+    {
+      state_slot_t * ssl = setp->setp_dependent_box[dep_inx - ha->ha_n_keys];
+      if (go->go_op != AMMSC_COUNT && !IS_NUM_DTP (ch1->cha_sqt[dep_inx].sqt_dtp))
+	return 0;
+      dep_inx++;
+    }
+  END_DO_SET ();
   return 1;
 }
 
@@ -3630,7 +3646,7 @@ vec_fref_chash_result (fun_ref_node_t * fref, table_source_t * ts, caddr_t * ins
 	    return 0;
 	      if (!first_tree)
 		first_tree = local_tree ? local_tree : tree;
-	      if (!cha_mergeable (first_tree->it_hi->hi_chash, tree->it_hi->hi_chash))
+	      if (!cha_mergeable (setp, first_tree->it_hi->hi_chash, tree->it_hi->hi_chash))
 		return 0;
 	}
 	  END_DO_BOX;

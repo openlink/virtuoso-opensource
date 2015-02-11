@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -178,10 +178,10 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_owl_rule_2', 1, '/ontology/(.*)\x24'
 '/data3/%s.rdf', vector ('par_1'), NULL, 'application/rdf.xml', 2, 303, 'Content-Type: application/rdf+xml');
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_owl_rule_3', 1, '/ontology/(.*)\x24', vector ('par_1'), 1,
-'/data3/%s.n3', vector ('par_1'), NULL, 'text/rdf.n3', 1, 303, 'Content-Type: text/rdf+n3');
+'/data3/%s.ttl', vector ('par_1'), NULL, 'text/turtle', 1, 303, 'Content-Type: text/turtle');
 
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_owl_rule_4', 1, '/ontology/(.*)\x24', vector ('par_1'), 1,
-'/data3/%s.n3', vector ('par_1'), NULL, 'application/x-turtle', 2, 303, 'Content-Type: application/x-turtle');
+'/data3/%s.jsonld', vector ('par_1'), NULL, 'application/ld.json', 2, 303, 'Content-Type: application/ld+json');
 
 -- RDF link
 create procedure DB.DBA.DBP_GRAPH_PARAM (in par varchar, in fmt varchar, in val varchar)
@@ -289,7 +289,7 @@ DB.DBA.VHOST_REMOVE (lpath=>'/data3');
 DB.DBA.VHOST_DEFINE (lpath=>'/data3', ppath=>registry_get('_dbpedia_path_'), is_dav=>atoi (registry_get('_dbpedia_dav_')),
 	 vsp_user=>'dba', opts=>vector ('url_rewrite', 'dbpl_data3_rule_list', 'expiration_function', 'DB.DBA.DBP_CHECK_304', 'graph', registry_get ('dbp_graph')));
 
-DB.DBA.URLREWRITE_CREATE_RULELIST ( 'dbpl_data3_rule_list', 1, vector ('dbpl_data3_rule_1', 'dbpl_data3_rule_2', 'dbpl_data3_rule_3', 'dbpl_data3_rule_4', 'dbpl_data3_rule_5'));
+DB.DBA.URLREWRITE_CREATE_RULELIST ( 'dbpl_data3_rule_list', 1, vector ('dbpl_data3_rule_1', 'dbpl_data3_rule_2', 'dbpl_data3_rule_3', 'dbpl_data3_rule_4', 'dbpl_data3_rule_5', 'dbpl_data3_rule_6'));
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_data3_rule_1', 1, '/data3/(.*)\\.(n3|rdf|ttl)', vector ('par_1', 'fmt'), 1,
 '/sparql?default-graph-uri=http%%3A%%2F%%2F'||replace(registry_get('dbp_graph'),'http://','')||'%%2Fresource%%2Fclasses%%23&query='||dbp_gen_describe ('ontology')||'&format=%U',
 vector ('par_1', 'par_1', 'par_1', 'par_1', 'par_1', 'par_1', 'fmt'), NULL, NULL, 2, null, '');
@@ -310,6 +310,9 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_data3_rule_5', 1, '/data3/(.*)\\.jso
 '/sparql?default-graph-uri=http%%3A%%2F%%2F'||replace(registry_get('dbp_graph'),'http://','')||'%%2Fresource%%2Fclasses%%23&query='||dbp_gen_describe ('ontology')||'&format=application%%2Fodata%%2Bjson',
 vector ('par_1', 'par_1', 'par_1', 'par_1', 'par_1', 'par_1'), NULL, NULL, 2, null, '');
 
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_data3_rule_6', 1, '/data3/(.*)\\.jsonld', vector ('par_1'), 1,
+'/sparql?default-graph-uri=http%%3A%%2F%%2F'||replace(registry_get('dbp_graph'),'http://','')||'%%2Fresource%%2Fclasses%%23&query='||dbp_gen_describe ('ontology')||'&format=application%%2Fld%%2Bjson',
+vector ('par_1', 'par_1', 'par_1', 'par_1', 'par_1', 'par_1'), NULL, NULL, 2, null, '');
 
 -- HTML
 DB.DBA.VHOST_REMOVE (lpath=>'/page');

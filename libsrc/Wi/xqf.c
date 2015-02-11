@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -26,6 +26,7 @@
 #include "CLI.h"
 #include "xmltree.h"
 #include "arith.h"
+#include "geo.h"
 #include "sqlbif.h"
 #include "xml.h"
 #include "date.h"
@@ -571,25 +572,31 @@ xqf_duration (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 #define XQ_DAY		7
 #define COUNTOF__XQ_DT_MODE	8
 
+typedef struct xq_dt_mode_s {
+  const char *name;
+  int dt_type;
+  int flags; }
+xq_dt_mode_t;
+
+xq_dt_mode_t xq_dt_modes[] = {
+  {"dateTime"	, DT_TYPE_DATETIME	, DTFLAG_YY | DTFLAG_MM | DTFLAG_DD | DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS | DTFLAG_SF | DTFLAG_ZH | DTFLAG_ZM	},
+  {"date"	, DT_TYPE_DATE		, DTFLAG_YY | DTFLAG_MM | DTFLAG_DD |                                                  DTFLAG_ZH | DTFLAG_ZM	},
+  {"time"	, DT_TYPE_TIME		,                                     DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS | DTFLAG_SF | DTFLAG_ZH | DTFLAG_ZM	},
+  {"gYearMonth"	, DT_TYPE_DATE		, DTFLAG_YY | DTFLAG_MM |                                                              DTFLAG_ZH | DTFLAG_ZM	},
+  {"gYear"	, DT_TYPE_DATE		, DTFLAG_YY |                                                                          DTFLAG_ZH | DTFLAG_ZM	},
+  {"gMonthDay"	, DT_TYPE_DATE		,             DTFLAG_MM | DTFLAG_DD |                                                  DTFLAG_ZH | DTFLAG_ZM	},
+  {"gMonth"	, DT_TYPE_DATE		,             DTFLAG_MM |                                                              DTFLAG_ZH | DTFLAG_ZM	},
+  {"gDay"	, DT_TYPE_DATE		,                         DTFLAG_DD |                                                  DTFLAG_ZH | DTFLAG_ZM	}
+};
+
 static void
 __datetime_from_string (caddr_t *n, const char *str, int do_what)
 {
-  int flags[] = {0x1ff, 0x187, 0x1f8, 0x183, 0x181, 0x186, 0x182, 0x184};
-  int types[] = { DT_TYPE_DATETIME, DT_TYPE_DATE, DT_TYPE_TIME, DT_TYPE_DATETIME, DT_TYPE_DATETIME, DT_TYPE_DATETIME, DT_TYPE_DATETIME, DT_TYPE_DATETIME };
-  const char *names[] = {	"dateTime",
-				"date",
-				"time",
-				"gYearMonth",
-				"gYear",
-				"gMonthDay",
-				"gMonth",
-				"gDay",
-  };
   caddr_t err_msg = NULL;
   caddr_t err;
   assert (do_what >= 0 && do_what < COUNTOF__XQ_DT_MODE);
   n[0] = dk_alloc_box_zero (DT_LENGTH, DV_DATETIME);
-  iso8601_or_odbc_string_to_dt (str, n[0], flags[do_what], types[do_what], &err_msg);
+  iso8601_or_odbc_string_to_dt (str, n[0], xq_dt_modes[do_what].flags, xq_dt_modes[do_what].dt_type, &err_msg);
   if (NULL == err_msg)
     return;
   if (0 == do_what)
@@ -599,7 +606,7 @@ __datetime_from_string (caddr_t *n, const char *str, int do_what)
     }
   dk_free_box (n[0]);
   n[0] = NULL;
-  err = srv_make_new_error ("42001", "XPQ??", "%s in %s constructor: \"%.300s\"", err_msg, names[do_what], str);
+  err = srv_make_new_error ("42001", "XPQ??", "%s in %s constructor: \"%.300s\"", err_msg, xq_dt_modes[do_what].name, str);
   dk_free_box (err_msg);
   sqlr_resignal (err);
 }
@@ -1442,9 +1449,7 @@ collation_t * xpf_arg_collation (xp_instance_t* xqi, XT * tree, xml_entity_t * c
     {
       coll = sch_name_to_collation (coll_name);
       if (!coll)
-	sqlr_new_error ("22023", "IN006", "Collation %.300s not defined", coll_name);
-      if (!coll->co_is_wide)
-	sqlr_new_error ("42001", "XPQ??", "Collation %.300s must be wide", coll_name);
+        sqlr_new_error ("22023", "IN006", "Collation %.300s not defined", coll_name);
     }
   return coll;
 }
@@ -1479,7 +1484,7 @@ __xqf_compare  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe, int do_wh
     case XQ_STARTSWITH:
       {
 	int len = 0, wide_len;
-	caddr_t wide_box = box_utf8_as_wide_char (str1, NULL, strlen (str1), 0, DV_WIDE), utf8_box;
+	caddr_t wide_box = box_utf8_as_wide_char (str1, NULL, strlen (str1), 0), utf8_box; 
 
 	wide_len = box_length (wide_box) / sizeof (wchar_t) - 1;
 	n = utf8_strlen ((utf8char *)str2);
@@ -1838,7 +1843,7 @@ void
 xqf_lower_case  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
   caddr_t str = xpf_arg (xqi, tree, ctx_xe, DV_STRING, 0);
-  wchar_t * wide_str = (wchar_t*) box_utf8_as_wide_char ((caddr_t) str, NULL, box_length (str), 0, DV_LONG_WIDE);
+  wchar_t * wide_str = (wchar_t*) box_utf8_as_wide_char ((caddr_t) str, NULL, box_length (str), 0);
   int i;
   int len = box_length (wide_str)/sizeof (wchar_t);
   wchar_t * res =  (wchar_t*)dk_alloc_box (len * sizeof (wchar_t), DV_WIDE);
@@ -1854,7 +1859,7 @@ void
 xqf_upper_case  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
   caddr_t str = xpf_arg (xqi, tree, ctx_xe, DV_STRING, 0);
-  wchar_t * wide_str = (wchar_t*) box_utf8_as_wide_char ((caddr_t) str, NULL, box_length (str), 0, DV_LONG_WIDE);
+  wchar_t * wide_str = (wchar_t*) box_utf8_as_wide_char ((caddr_t) str, NULL, box_length (str), 0);
   int i;
   int len = box_length (wide_str)/sizeof (wchar_t);
   wchar_t * res =  (wchar_t*)dk_alloc_box (len * sizeof (wchar_t), DV_WIDE);
@@ -1871,7 +1876,7 @@ xqf_escape_uri  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
   caddr_t str = xpf_arg (xqi, tree, ctx_xe, DV_STRING, 0);
   ptrlong esc_reserved = unbox (xpf_arg (xqi, tree, ctx_xe, DV_LONG_INT, 1));
-  wchar_t * wide_res = 0, *wide_str = (wchar_t*) box_utf8_as_wide_char ((caddr_t) str, NULL, box_length (str), 0, DV_LONG_WIDE);
+  wchar_t * wide_res = 0, *wide_str = (wchar_t*) box_utf8_as_wide_char ((caddr_t) str, NULL, box_length (str), 0);
   int esc_type = DKS_ESC_URI_NRES;
 
   if (esc_reserved)
@@ -1910,8 +1915,8 @@ __xqf_ends_with (caddr_t str, caddr_t mstr, collation_t * coll)
   long idx, utf8_idx = 0;
   if (coll)
     {
-      wchar_t *wide1 = (wchar_t*) box_utf8_as_wide_char (str, NULL, box_length (str) - 1, 0, DV_LONG_WIDE);
-      wchar_t *wide2 = (wchar_t*) box_utf8_as_wide_char (mstr, NULL, box_length (mstr) - 1, 0, DV_LONG_WIDE);
+      wchar_t *wide1 = (wchar_t*) box_utf8_as_wide_char (str, NULL, box_length (str) - 1, 0);
+      wchar_t *wide2 = (wchar_t*) box_utf8_as_wide_char (mstr, NULL, box_length (mstr) - 1, 0);
       size_t _1len = box_length (wide1)/sizeof (wchar_t) - 1;
       size_t _2len = box_length (wide2)/sizeof (wchar_t) - 1;
       int n1inx=0, n2inx=0;
@@ -1919,9 +1924,9 @@ __xqf_ends_with (caddr_t str, caddr_t mstr, collation_t * coll)
       reverse_wide_string (wide1);
       reverse_wide_string (wide2);
 
-      while (1)
+      for (;;)
 	{
-	again:
+          wchar_t xlat1, xlat2;
 	  if (_1len && n1inx == _1len && n2inx != _2len)
 	    return 0;
 	  if (n2inx == _2len)
@@ -1929,19 +1934,21 @@ __xqf_ends_with (caddr_t str, caddr_t mstr, collation_t * coll)
 	      res = (caddr_t) 1;
 	      break;
 	    }
-	  if (!((wchar_t *)coll->co_table)[wide2[n2inx]])
+          xlat2 = COLLATION_XLAT_WIDE (coll, wide2[n2inx]);
+	  if (!xlat2)
 	    { /* ignore symbol, unicode normalization algorithm */
 	      n2inx++;
-	      goto again;
+	      continue;
 	    }
 	  if (!_1len)
 	    break;
-	  if (!((wchar_t *)coll->co_table)[wide1[n1inx]])
+          xlat1 = COLLATION_XLAT_WIDE (coll, wide1[n1inx]);
+	  if (!xlat1)
 	    { /* ignore symbol, unicode normalization algorithm */
 	      n1inx++;
-	      goto again;
+	      continue;
 	    }
-	  if (((wchar_t *)coll->co_table)[wide1[n1inx]] != ((wchar_t *)coll->co_table)[wide2[n2inx]])
+	  if (xlat1 != xlat2)
 	    break;
 	  n1inx++;
 	  n2inx++;
@@ -2159,7 +2166,7 @@ xqf_string_to_codepoints (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   while (inx < utf8_len)
     {
       wchar_t wtmp;
-      int rc = (int) virt_mbrtowc (&wtmp, utf8_str + inx, utf8_len - inx, &state);
+      int rc = (int) virt_mbrtowc_z (&wtmp, utf8_str + inx, utf8_len - inx, &state);
       if (rc < 0)
 	GPF_T1 ("inconsistent wide char data");
       dk_set_push (&set, (caddr_t)((ptrlong)(wtmp)));
@@ -2378,12 +2385,14 @@ xqf_box_hash (query_instance_t* qi, caddr_t box, collation_t * coll)
 	int inx=0, len = box_length (box)-1;
 	while (inx < len)
 	  {
-	    int rc = (int) virt_mbrtowc (&wtmp, ((utf8char *)(box)) + inx, len - inx, &state);
+	    int rc = (int) virt_mbrtowc_z (&wtmp, ((utf8char *)(box)) + inx, len - inx, &state);
+            wchar_t xlat;
 	    if (rc < 0)
 	      GPF_T1 ("inconsistent wide char data");
-	    if (((wchar_t*)coll->co_table)[wtmp])
+            xlat = COLLATION_XLAT_WIDE (coll, wtmp);
+	    if (xlat)
 	      {
-		h = ROL (h) ^ ((wchar_t*)coll->co_table)[wtmp];
+		h = ROL (h) ^ xlat;
 	      }
 	    inx+=rc;
 	  }
@@ -3556,11 +3565,12 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
 	{
 	  caddr_t err = NULL;
 	  caddr_t g = geo_parse_wkt (arg, &err);
-	  if (err && !suppress_error)
+	  if (err && (!suppress_error || !strcmp (type_iri, "http://www.openlinksw.com/schemas/virtrdf#Geometry")))
 	    sqlr_resignal (err);
 	  if (!err)
 	    {
 	      rdf_box_t * rb = rb_allocate ();
+	      geo_calc_bounding (g, GEO_CALC_BOUNDING_DO_ALL);
 	      rb->rb_type = RDF_BOX_GEO;
 	      rb->rb_lang = RDF_BOX_DEFAULT_LANG;
 	      rb->rb_box = g;

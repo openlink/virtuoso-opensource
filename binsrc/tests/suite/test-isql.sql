@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -56,7 +56,7 @@ sparql
 select ?s ?p ?o
 where {
        ?s ?p ?o
-filter regex(?s, 
+filter regex(?s,
         #if $EQU $ARGV[6] YES
           "bif:"
         #else
@@ -125,7 +125,7 @@ SET u{UNEXISTING_VAR} 0;
 #endif
 
 select sys_stat ('db_default_columnstore');
-#if $EQU $U{COLUMNSTORE} 0                                                                                                                        
+#if $EQU $U{COLUMNSTORE} 0
     echoln both $IF $EQU $LAST[1] 0 "PASSED" "***FAILED" ": #IF on COLUMNSTORE";
 #else
     echoln both $IF $EQU $LAST[1] 1 "PASSED" "***FAILED" ": #IF on COLUMNSTORE";

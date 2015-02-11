@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1467,6 +1467,7 @@ sqlc_trig_param (sql_comp_t * sc, char *prefix, dbe_column_t * col)
       ssl->ssl_sqt = col->col_sqt;
       ssl->ssl_vec_param = SSL_VP_IN;
       ssl_set_dc_type (ssl);
+      sc->sc_cc->cc_query->qr_parms = dk_set_conc (sc->sc_cc->cc_query->qr_parms, dk_set_cons ((caddr_t) ssl, NULL));
     }
   else
     {

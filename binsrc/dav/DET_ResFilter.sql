@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2014 OpenLink Software
+--  Copyright (C) 1998-2015 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -115,53 +115,53 @@ create procedure "ResFilter_FIT_INTO_CONDITION" (in id any, in what char (1), in
           if (isarray (id))
             {
               call (cast (id[0] as varchar) || '_DAV_PROP_SET')(id, what, pred[3], pred[2], 1, auth_uid);
-	      goto next_pred;
+        goto next_pred;
             }
-	  whenever not found goto ins_prop;
-	  select p.PROP_ID, "ResFilter_NORM" (p.PROP_VALUE) into propid, old_value from WS.WS.SYS_DAV_PROP p, WS.WS.SYS_DAV_RES r where p.PROP_NAME = pred[3] and p.PROP_PARENT_ID = id and p.PROP_TYPE = what and r.RES_ID = id;
-	  if (old_value <> pred[2])
-	    update WS.WS.SYS_DAV_PROP set PROP_VALUE = pred[2] where PROP_ID = propid;
-	  goto next_pred;
+    whenever not found goto ins_prop;
+    select p.PROP_ID, "ResFilter_NORM" (p.PROP_VALUE) into propid, old_value from WS.WS.SYS_DAV_PROP p, WS.WS.SYS_DAV_RES r where p.PROP_NAME = pred[3] and p.PROP_PARENT_ID = id and p.PROP_TYPE = what and r.RES_ID = id;
+    if (old_value <> pred[2])
+      update WS.WS.SYS_DAV_PROP set PROP_VALUE = pred[2] where PROP_ID = propid;
+    goto next_pred;
 ins_prop:
-	  propid := WS.WS.GETID ('P');
-	  insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_VALUE, PROP_PARENT_ID, PROP_TYPE)
+    propid := WS.WS.GETID ('P');
+    insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_VALUE, PROP_PARENT_ID, PROP_TYPE)
           values (propid, pred[3], pred[2], id, what);
-	  goto next_pred;
-	}
+    goto next_pred;
+  }
       if (('PROP_VALUE' = pred_name) and ('<>' = pred_cmp))
         {
           if (isarray (id))
             {
               call (cast (id[0] as varchar) || '_DAV_PROP_REMOVE')(id, what, pred[3], 1, auth_uid);
-	      goto next_pred;
+        goto next_pred;
             }
-	  whenever not found goto next_pred;
-	  select p.PROP_ID into propid from WS.WS.SYS_DAV_PROP p, WS.WS.SYS_DAV_RES r where p.PROP_NAME = pred[3] and p.PROP_PARENT_ID = id and p.PROP_TYPE = what and r.RES_ID = id and "ResFilter_NORM" (p.PROP_VALUE) = pred[2];
-	  delete from WS.WS.SYS_DAV_PROP where PROP_ID = propid;
-	  goto next_pred;
-	}
+    whenever not found goto next_pred;
+    select p.PROP_ID into propid from WS.WS.SYS_DAV_PROP p, WS.WS.SYS_DAV_RES r where p.PROP_NAME = pred[3] and p.PROP_PARENT_ID = id and p.PROP_TYPE = what and r.RES_ID = id and "ResFilter_NORM" (p.PROP_VALUE) = pred[2];
+    delete from WS.WS.SYS_DAV_PROP where PROP_ID = propid;
+    goto next_pred;
+  }
       if (('PROP_NAME' = pred_name) and ('not_exists' = pred_cmp))
         {
           if (isarray (id))
             {
               call (cast (id[0] as varchar) || '_DAV_PROP_REMOVE')(id, what, pred[3], 1, auth_uid);
-	      goto next_pred;
+        goto next_pred;
             }
-	  whenever not found goto next_pred;
-	  select p.PROP_ID into propid from WS.WS.SYS_DAV_PROP p, WS.WS.SYS_DAV_RES r where p.PROP_NAME = pred[2] and p.PROP_PARENT_ID = id and p.PROP_TYPE = what and r.RES_ID = id;
-	  delete from WS.WS.SYS_DAV_PROP where PROP_ID = propid;
-	  goto next_pred;
-	}
+    whenever not found goto next_pred;
+    select p.PROP_ID into propid from WS.WS.SYS_DAV_PROP p, WS.WS.SYS_DAV_RES r where p.PROP_NAME = pred[2] and p.PROP_PARENT_ID = id and p.PROP_TYPE = what and r.RES_ID = id;
+    delete from WS.WS.SYS_DAV_PROP where PROP_ID = propid;
+    goto next_pred;
+  }
       else if (('RDF_VALUE' = pred_name) and (('=' = pred_cmp) or ('<>' = pred_cmp)) and (5 = length (pred)) and ('http://local.virt/DAV-RDF' = pred [3]))
         {
-	  has_rdf_preds := 1;
-	  goto next_pred;
-	}
+    has_rdf_preds := 1;
+    goto next_pred;
+  }
       else if (('RDF_PRED' = pred_name) and ('not_exists' = pred_cmp) and (4 = length (pred)) and ('http://local.virt/DAV-RDF' = pred [3]))
         {
-	  has_rdf_preds := 1;
-	  goto next_pred;
-	}
+    has_rdf_preds := 1;
+    goto next_pred;
+  }
       else
         {
           -- dbg_obj_princ ('ResFilter_FIT_INTO_CONDITION has failed on ', pred);
@@ -178,16 +178,16 @@ next_pred: ;
       xte_nodebld_init (acc_n3);
       foreach (any pred in raw_filter) do
         {
-	  declare pred_name, pred_cmp varchar;
+    declare pred_name, pred_cmp varchar;
           pred_name := pred [0];
-	  pred_cmp := pred [1];
-	  if (('RDF_VALUE' = pred_name) and ('=' = pred_cmp))
-    	    {
-	      xte_nodebld_acc (acc_n3,
-	        xte_node (
-		  xte_head ('N3', 'N3S', top_path, 'N3P', pred [4]),
-		  pred [2] ) );
-	    }
+    pred_cmp := pred [1];
+    if (('RDF_VALUE' = pred_name) and ('=' = pred_cmp))
+          {
+        xte_nodebld_acc (acc_n3,
+          xte_node (
+      xte_head ('N3', 'N3S', top_path, 'N3P', pred [4]),
+      pred [2] ) );
+      }
         }
       xte_nodebld_final (acc_n3, xte_head (' root'));
       acc_n3 := xml_tree_doc (acc_n3);
@@ -202,7 +202,7 @@ next_pred: ;
             }
           if (isentity (old_prop))
             {
-	      old_n3 := xslt ('http://local.virt/davxml2n3xml', old_prop);
+        old_n3 := xslt ('http://local.virt/davxml2n3xml', old_prop);
               goto do_merge;
             }
           goto old_prop_found;
@@ -219,18 +219,18 @@ do_merge:
       new_n3 := DAV_RDF_MERGE (old_n3, acc_n3, null, -1);
       foreach (any pred in raw_filter) do
         {
-	  declare pred_name, pred_cmp varchar;
+    declare pred_name, pred_cmp varchar;
           pred_name := pred [0];
-	  pred_cmp := pred [1];
-	  if (('RDF_PRED' = pred_name) and ('<>' = pred_cmp))
-    	    {
-    	      new_n3 := XMLUpdate (new_n3, '/N3[N3P=' || WS.WS.STR_SQL_APOS (pred[4]) || '][string (.) =' || WS.WS.STR_SQL_APOS (pred[2]) || ']', null);
-	    }
-	  else
-	  if (('RDF_PRED' = pred_name) and ('not_exists' = pred_cmp))
-    	    {
-    	      new_n3 := XMLUpdate (new_n3, '/N3[N3P=' || WS.WS.STR_SQL_APOS (pred[2]) || ']', null);
-	    }
+    pred_cmp := pred [1];
+    if (('RDF_PRED' = pred_name) and ('<>' = pred_cmp))
+          {
+            new_n3 := XMLUpdate (new_n3, '/N3[N3P=' || WS.WS.STR_SQL_APOS (pred[4]) || '][string (.) =' || WS.WS.STR_SQL_APOS (pred[2]) || ']', null);
+      }
+    else
+    if (('RDF_PRED' = pred_name) and ('not_exists' = pred_cmp))
+          {
+            new_n3 := XMLUpdate (new_n3, '/N3[N3P=' || WS.WS.STR_SQL_APOS (pred[2]) || ']', null);
+      }
         }
       new_davxml := DAV_RDF_PREPROCESS_RDFXML (new_n3, top_path, 1);
       if (isarray (id))
@@ -240,12 +240,12 @@ do_merge:
         }
       else if (propid is null)
         {
-	  propid := WS.WS.GETID ('P');
-	  insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_VALUE, PROP_PARENT_ID, PROP_TYPE)
+    propid := WS.WS.GETID ('P');
+    insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_VALUE, PROP_PARENT_ID, PROP_TYPE)
           values (propid, 'http://local.virt/DAV-RDF', serialize (new_davxml), id, what);
-	}
+  }
       else
-	update WS.WS.SYS_DAV_PROP set PROP_VALUE = serialize (new_davxml) where PROP_ID = propid;
+  update WS.WS.SYS_DAV_PROP set PROP_VALUE = serialize (new_davxml) where PROP_ID = propid;
     }
 }
 ;
@@ -363,10 +363,10 @@ create function "ResFilter_DAV_SEARCH_ID_IMPL" (in detcol_id any, in path_parts 
   if (not (isstring (rfc_spath)))
     {
       if (0 > "ResFilter_GET_CONDITION" (detcol_id, rfc_spath, rfc_list_cond, rfc_del_action))
-	{
-	  -- dbg_obj_princ ('broken filter - no items');
-	  return -1;
-	}
+  {
+    -- dbg_obj_princ ('broken filter - no items');
+    return -1;
+  }
     }
   if (1 <> length(path_parts) or ('' = path_parts[0]))
     {
@@ -426,12 +426,12 @@ create function "ResFilter_DAV_AUTHENTICATE_HTTP" (in id any, in what char(1), i
   if (isinteger (a_uid))
     {
       if (a_uid < 0)
-	return a_uid;
+  return a_uid;
      if (a_uid = 1) -- Anonymous FTP
-	{
+  {
           a_uid := 0;
-	  a_gid := 0;
-	}
+    a_gid := 0;
+  }
     }
   if (not DAV_CHECK_PERM (pperms, req, a_uid, a_gid, pgid, puid))
     return -13;
@@ -589,32 +589,32 @@ create function "ResFilter_DAV_DIR_SINGLE" (in id any, in what char(0), in path 
         }
       else
         {
-	  declare rfc_spath varchar;
-	  declare rfc_list_cond, rfc_del_action varchar;
-	  declare tmp_comp, namesakes any;
+    declare rfc_spath varchar;
+    declare rfc_list_cond, rfc_del_action varchar;
+    declare tmp_comp, namesakes any;
           declare namesakes_no integer;
-	  if (0 > "ResFilter_GET_CONDITION" (id[1], rfc_spath, rfc_list_cond, rfc_del_action))
-	    {
-	      -- dbg_obj_princ ('broken filter - bad id in DIR_SINGLE');
-	      return -1;
-	    }
+    if (0 > "ResFilter_GET_CONDITION" (id[1], rfc_spath, rfc_list_cond, rfc_del_action))
+      {
+        -- dbg_obj_princ ('broken filter - bad id in DIR_SINGLE');
+        return -1;
+      }
           tmp_comp := vector ('',
             vector_concat (
               vector (vector ('RES_NAME', '=', r1_RES_NAME)),
               get_keyword ('', rfc_list_cond) ) );
-	  namesakes := DAV_DIR_FILTER_INT (rfc_spath, 1, tmp_comp, null, null, auth_uid);
-	  namesakes_no := length (namesakes);
-	  if (0 = namesakes_no)
-	    return -1;
-	  if (1 < namesakes_no)
-	    merged := "ResFilter_FNMERGE" (r1_RES_NAME, RES_ID);
-	  else
-	    merged := r1_RES_NAME;
+    namesakes := DAV_DIR_FILTER_INT (rfc_spath, 1, tmp_comp, null, null, auth_uid);
+    namesakes_no := length (namesakes);
+    if (0 = namesakes_no)
+      return -1;
+    if (1 < namesakes_no)
+      merged := "ResFilter_FNMERGE" (r1_RES_NAME, RES_ID);
+    else
+      merged := r1_RES_NAME;
         }
 --                   0                                                       1    2     3
       return vector (DAV_CONCAT_PATH (DAV_SEARCH_PATH (id[1], 'C'), merged), 'R', clen, RES_MOD_TIME,
 --       4   5          6          7          8            9         10
-	 id, RES_PERMS, RES_GROUP, RES_OWNER, RES_CR_TIME, RES_TYPE, merged);
+   id, RES_PERMS, RES_GROUP, RES_OWNER, RES_CR_TIME, RES_TYPE, merged);
     }
   return -1;
 }
@@ -948,50 +948,91 @@ create function "ResFilter_CONFIGURE" (
 {
   -- dbg_obj_princ ('ResFilter_CONFIGURE', id, params, path, filter);
   declare rc integer;
-  declare colname varchar;
+  declare colPath varchar;
   declare compilation, del_act any;
+
+  if (not isnull ("ResFilter_VERIFY" (DB.DBA.DAV_SEARCH_PATH (id, 'C'), vector ('params', params, 'path', path, 'filter', filter))))
+    return -38;
+
+  colPath := DAV_SEARCH_PATH (id, 'C');
+  if (DAV_HIDE_ERROR (colPath) is null)
+    return colPath;
+
+  rc := DAV_SEARCH_ID (path, 'C');
+  if (DAV_HIDE_ERROR (rc) is null)
+    return rc;
 
   compilation := vector ('', filter);
   rc := DAV_DIR_FILTER_INT (path, 1, compilation, auth_uname, auth_upwd, auth_uid);
   if (isinteger (rc))
     return rc;
 
-  if (not isinteger (id))
-    return -20;
-
-  colname := DAV_SEARCH_PATH (id, 'C');
-  if (not (isstring (colname)))
-    return -23;
-
-  rc := DAV_SEARCH_ID (path, 'C');
+  rc := DAV_PROP_SET_INT (colPath, 'virt:Filter-Params', params, null, null, 0, 1, 1);
   if (DAV_HIDE_ERROR (rc) is null)
     return rc;
 
-  if (path <> DAV_SEARCH_PATH (rc, 'C'))
-    return -2;
-
-  if (path between colname and (colname || '\255\255\255\255'))
-    return -28;
-
-  rc := DAV_PROP_SET_INT (colname, 'virt:Filter-Params', params, null, null, 0, 1, 1);
+  rc := DAV_PROP_SET_INT (colPath, 'virt:ResFilter-SearchPath', path, null, null, 0, 1, 1);
   if (DAV_HIDE_ERROR (rc) is null)
     return rc;
 
-  rc := DAV_PROP_SET_INT (colname, 'virt:ResFilter-SearchPath', path, null, null, 0, 1, 1);
-  if (DAV_HIDE_ERROR (rc) is null)
-    return rc;
-
-  rc := DAV_PROP_SET_INT (colname, 'virt:ResFilter-ListCond', "ResFilter_ENCODE_FILTER" (compilation), null, null, 0, 1, 1);
+  rc := DAV_PROP_SET_INT (colPath, 'virt:ResFilter-ListCond', "ResFilter_ENCODE_FILTER" (compilation), null, null, 0, 1, 1);
   if (DAV_HIDE_ERROR (rc) is null)
     return rc;
 
   del_act := "ResFilter_MAKE_DEL_ACTION_FROM_CONDITION" (compilation);
-  rc := DAV_PROP_SET_INT (colname, 'virt:ResFilter-DelAction', "ResFilter_ENCODE_FILTER" (del_act), null, null, 0, 1, 1);
+  rc := DAV_PROP_SET_INT (colPath, 'virt:ResFilter-DelAction', "ResFilter_ENCODE_FILTER" (del_act), null, null, 0, 1, 1);
   if (DAV_HIDE_ERROR (rc) is null)
     return rc;
 
-  update WS.WS.SYS_DAV_COL set COL_DET='ResFilter' where COL_ID=id;
+  -- set DET Type Value
+  DB.DBA.ResFilter__paramSet (id, 'C', ':virtdet', DB.DBA.ResFilter__detName (), 0, 0, 0);
+}
+;
 
-  return 0;
+create function "ResFilter_VERIFY" (
+  in path integer,
+  in params any)
+{
+  -- dbg_obj_princ ('ResFilter_VERIFY (', path, params, ')');
+  declare tmp any;
+
+  tmp := get_keyword ('path', params);
+  if (tmp between path and (path || '\255\255\255\255'))
+    return sprintf ('Search path (%s) can not contains in folder full path (%s)!', tmp, path);
+
+  return null;
+}
+;
+
+create function DB.DBA.ResFilter__detName ()
+{
+  return UNAME'ResFilter';
+}
+;
+
+create function DB.DBA.ResFilter__paramSet (
+  in _id any,
+  in _what varchar,
+  in _propName varchar,
+  in _propValue any,
+  in _serialized integer := 1,
+  in _prefixed integer := 1,
+  in _encrypt integer := 0)
+{
+  -- dbg_obj_princ ('DB.DBA.ResFilter__paramSet', _propName, _propValue, ')');
+  declare retValue any;
+
+  if (_serialized)
+    _propValue := serialize (_propValue);
+
+  if (_encrypt)
+    _propValue := pwd_magic_calc (DB.DBA.ResFilter__detName (), _propValue);
+
+  if (_prefixed)
+    _propName := 'virt:ResFilter-' || _propName;
+
+  retValue := DB.DBA.DAV_PROP_SET_RAW (_id, _what, _propName, _propValue, 1, http_dav_uid ());
+
+  return retValue;
 }
 ;

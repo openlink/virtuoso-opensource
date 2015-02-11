@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -363,7 +363,10 @@ sqlo_dfe_print (df_elt_t * dfe, int offset)
 	    sqlo_print (("%*.*sOut cols :\n", offset, offset, " "));
 	    DO_BOX (df_elt_t *, out, inx, dfe->_.sub.dt_out)
 	      {
-		sqlo_dfe_print (out, offset + OFS_INCR);
+		if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (out))
+		  sqlo_print (("- "));
+		else
+		  sqlo_dfe_print (out, offset + OFS_INCR);
 	      }
 	    END_DO_BOX;
 	  }
@@ -637,7 +640,7 @@ dbg_qi_print_slots (query_instance_t * qi, state_slot_t ** slots, int nthset)
   fflush (stdout);
 }
 
-#endif // DEBUG
+#endif /* DEBUG */
 
 
 void

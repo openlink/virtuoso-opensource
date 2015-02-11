@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2014 OpenLink Software
+ *  Copyright (C) 1998-2015 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -42,7 +42,7 @@ extern numeric_t num_int64_max;
 extern numeric_t num_int64_min;
 void db_buf_length  (unsigned char * buf, long * head_ret, long * len_ret);
 int box_serial_length (caddr_t box, dtp_t dtp);
-#define SERIAL_LENGTH_APPROX 1
+#define SERIAL_LENGTH_APPROX 1	/*!< A special fake dtp to indicate that box_serial_length() do not have to return an accurate value and some overestimated number is OK */
 int rb_serial_length (caddr_t x);
 
 extern signed char db_buf_const_length [256];
@@ -245,7 +245,7 @@ buffer_desc_t * page_fault_map_sem (it_cursor_t * it, dp_addr_t dp, int stay_ins
 #define PF_STAY_ATOMIC 1
 
 #if defined (MTX_DEBUG) && !defined (PAGE_DEBUG)
-//#define PAGE_DEBUG
+#define PAGE_DEBUG
 #endif
 
 #ifdef PAGE_DEBUG
@@ -490,8 +490,8 @@ void it_not_in_any (du_thread_t * self, index_tree_t * except);
 void it_free (index_tree_t * it);
 
 /* insert.c */
-void map_resize (page_map_t ** pm_ret, int new_sz);
-void map_insert_pos (page_map_t ** map_ret, int pos, int what);
+void map_resize (buffer_desc_t * buf, page_map_t ** pm_ret, int new_sz);
+void map_insert_pos (buffer_desc_t * buf, page_map_t ** map_ret, int pos, int what);
 void row_write_reserved (dtp_t * end, int n_bytes);
 
 int str_cmp_2 (db_buf_t dv1, db_buf_t dv2, db_buf_t dv3, int l1, int l2, int l3, unsigned short offset);
@@ -527,7 +527,7 @@ int itc_insert_unq_ck (it_cursor_t * it, row_delta_t * rd, buffer_desc_t ** unq_
 
 db_buf_t strses_to_db_buf (dk_session_t * ses);
 void itc_delete (it_cursor_t * it, buffer_desc_t ** buf_ret, int maybe_blobs);
-int map_delete (page_map_t ** map_ret, int pos);
+int map_delete (buffer_desc_t * buf, page_map_t ** map_ret, int pos);
 void dp_may_compact (dbe_storage_t *dbs, dp_addr_t);
 void wi_check_all_compact (int age_limit);
 extern dk_mutex_t * pl_ref_count_mtx;
@@ -537,7 +537,9 @@ int  itc_vacuum_compact (it_cursor_t * itc, buffer_desc_t ** buf_ret);
 void itc_fix_leaf_ptr (it_cursor_t * itc, buffer_desc_t * buf);
 void pg_move_cursors (it_cursor_t ** temp_itc, int fill, buffer_desc_t * buf_from,
 		 int from, dp_addr_t page_to, int to, buffer_desc_t * buf_to);
-void map_append (page_map_t ** pm_ret, int ent);
+void map_append (buffer_desc_t * buf, page_map_t ** pm_ret, int ent);
+void pm_store (buffer_desc_t * buf, size_t sz, void * map);
+void * pm_get (buffer_desc_t * buf, size_t sz);
 
 /* tree.c */
 
@@ -786,6 +788,7 @@ caddr_t DBG_NAME (sqlp_box_id_upcase) (DBG_PARAMS const char *str);
 #define sqlp_box_id_upcase(s) dbg_sqlp_box_id_upcase (__FILE__, __LINE__, s)
 #endif
 caddr_t t_sqlp_box_id_upcase (const char *str);
+caddr_t t_sqlp_box_id_upcase_nchars (const char * str, int len);
 void sqlp_upcase (char *str);
 caddr_t sqlp_box_upcase (const char *str);
 
