@@ -4863,7 +4863,7 @@ sqlo_has_no_subq (df_elt_t * dfe)
   if (!is_pred)
     return sqlo_parse_tree_has_node (dfe->dfe_tree, SELECT_STMT);
   if (!dfe->_.bin.no_subq)
-    dfe->_.bin.no_subq = 1 + sqlo_parse_tree_has_node (dfe->dfe_tree, SELECT_STMT);
+    dfe->_.bin.no_subq = 1 + !sqlo_parse_tree_has_node (dfe->dfe_tree, SELECT_STMT);
   return dfe->_.bin.no_subq - 1;
 }
 
