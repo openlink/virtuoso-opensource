@@ -916,6 +916,7 @@ xp_rdfxml_element_end (void *userdata, const char * name)
           children = CONS (literal_head, children);
           literal_tree = list_to_array (children);
           literal_xte = xte_from_tree (literal_tree, xp->xp_qi);
+	  literal_xte->xe_doc.xd->xout_encoding = box_dv_short_string ("UTF-8");
           obj = (caddr_t) literal_xte;
           lang_in_effect = NULL;
         }
