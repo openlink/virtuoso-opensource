@@ -786,61 +786,96 @@ caddr_t spar_strliteral (sparp_t *sparp, const char *strg, int strg_is_long, int
   while (src_tail < src_end)
     {
       switch (src_tail[0])
-	{
-	case '\\':
+        {
+        case '\\':
           {
-	    const char *bs_src		= "abfnrtv/\\\'\"uU";
-	    const char *bs_trans	= "\a\b\f\n\r\t\v/\\\'\"\0\0";
+            const char *bs_src		= "abfnrtv/\\\'\"uU";
+            const char *bs_trans	= "\a\b\f\n\r\t\v/\\\'\"\0\0";
             const char *bs_lengths	= "\2\2\2\2\2\2\2\2\2\2\2\6\012";
-	    const char *hit = strchr (bs_src, src_tail[1]);
-	    char bs_len, bs_tran;
-	    const char *nextchr;
-	    if (NULL == hit)
-	      {
-		err_msg = "Unsupported escape sequence after '\'";
-		goto err;
-	      }
+            const char *hit = strchr (bs_src, src_tail[1]);
+            char bs_len, bs_tran;
+            const char *nextchr;
+            if (NULL == hit)
+              {
+        	err_msg = "Unsupported escape sequence after '\'";
+        	goto err;
+              }
             bs_len = bs_lengths [hit - bs_src];
             bs_tran = bs_trans [hit - bs_src];
-	    nextchr = src_tail + bs_len;
-	    if ((src_tail + bs_len) > src_end)
-	      {
-	        err_msg = "There is no place for escape sequence between '\' and the end of string";
-	        goto err;
-	      }
+            nextchr = src_tail + bs_len;
+            if ((src_tail + bs_len) > src_end)
+              {
+                err_msg = "There is no place for escape sequence between '\' and the end of string";
+                goto err;
+              }
             if ('\0' != bs_tran)
               (tgt_tail++)[0] = bs_tran;
-	    else
-	      {
-		unichar acc = 0;
-		for (src_tail += 2; src_tail < nextchr; src_tail++)
-		  {
-		    int dgt = src_tail[0];
-		    if ((dgt >= '0') && (dgt <= '9'))
-		      dgt = dgt - '0';
-		    else if ((dgt >= 'A') && (dgt <= 'F'))
-		      dgt = 10 + dgt - 'A';
-		    else if ((dgt >= 'a') && (dgt <= 'f'))
-		      dgt = 10 + dgt - 'a';
-		    else
-		      {
-		        err_msg = "Invalid hexadecimal digit in escape sequence";
-			goto err;
-		      }
-		    acc = acc * 16 + dgt;
-		  }
-		if (acc < 0)
-		  {
-		    err_msg = "The \\U escape sequence represents invalid Unicode char";
-		    goto err;
-		  }
-		tgt_tail = eh_encode_char__UTF8 (acc, tgt_tail, tgt_tail + MAX_UTF8_CHAR);
-	      }
-	    src_tail = nextchr;
+            else
+              {
+                unichar first_surro_u = 0;
+                unichar acc = 0;
+next_u:
+                for (src_tail += 2; src_tail < nextchr; src_tail++)
+                  {
+                    int dgt = src_tail[0];
+                    if ((dgt >= '0') && (dgt <= '9'))
+                      dgt = dgt - '0';
+                    else if ((dgt >= 'A') && (dgt <= 'F'))
+                      dgt = 10 + dgt - 'A';
+                    else if ((dgt >= 'a') && (dgt <= 'f'))
+                      dgt = 10 + dgt - 'a';
+                    else
+                      {
+                        err_msg = "Invalid hexadecimal digit in escape sequence";
+                        goto err;
+                      }
+                    acc = acc * 16 + dgt;
+                  }
+                if (acc < 0)
+                  {
+                    err_msg = "The \\U escape sequence represents invalid Unicode char";
+                    goto err;
+                  }
+                if (0 != first_surro_u)
+                  {
+                    if ((acc >= 0xDC00) && (acc <= 0xDFFF))
+                      {
+                        unichar utf16pair = (first_surro_u << 10) + acc - 0x35FDC00;
+                        tgt_tail = eh_encode_char__UTF8 (utf16pair, tgt_tail, tgt_tail + MAX_UTF8_CHAR);
+                        first_surro_u = 0;
+                      }
+                    else
+                      {
+                        err_msg = "The \\u....\\u.... UTF-16 escape sequence has low surrogate part out of \\uDC00--\\uDFFF range";
+                        goto err;
+                      }
+                  }
+                else if (is_json && (6 == bs_len) && (acc >= 0xD800) && (acc <= 0xDFFF))
+                  {
+                    if (acc >= 0xDC00)
+                      {
+                        err_msg = "The \\u.... low surrogate UTF-16 part from \\uDC00--\\uDFFF range is not prepended by a high surrogate part";
+                        goto err;
+                      }
+                    first_surro_u = acc;
+                    acc = 0;
+                    if (('\\' != src_tail[0]) || ('u' != src_tail[1]))
+                      {
+                        err_msg = "Missing second \\u part in the \\u....\\u.... UTF-16 escape sequence after high surrogate part from \\uD800--\\uDBFF range";
+                        goto err;
+                      }
+                    nextchr += 6;
+                    /* src_tail is not incremented by 2 here because it is the init operator of for() after goto */
+                    goto next_u; /* see above */
+                  }
+                else
+                  tgt_tail = eh_encode_char__UTF8 (acc, tgt_tail, tgt_tail + MAX_UTF8_CHAR);
+              }
+            src_tail = nextchr;
             continue;
-	  }
-	default: (tgt_tail++)[0] = (src_tail++)[0];
-	}
+          }
+        default: (tgt_tail++)[0] = (src_tail++)[0];
+        }
     }
   res = t_box_dv_short_nchars (tmp_buf, tgt_tail - tmp_buf);
   box_flags (res) = BF_UTF8;
