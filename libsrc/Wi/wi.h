@@ -34,7 +34,9 @@
 #define VAJRA
 #define VEC
 #define NO_CL GPF_T1 ("not available without cluster support")
+#if defined(linux)
 #define PM_TLSF 1
+#endif
 #define KEYCOMP GPF_T1 ("not done with key comp");
 #define O12 GPF_T1("Database engine does not support this deprecated function. Please contact OpenLink Support.")
 /*#define PAGE_TRACE 1 */
