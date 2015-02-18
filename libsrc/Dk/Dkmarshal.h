@@ -68,7 +68,7 @@ void PrpcSetWriter (dtp_t dtp, ses_write_func f);
 int64 read_int (dk_session_t *session);
 extern ses_write_func int64_serialize_client_f;
 
-void *box_read_error (dk_session_t * session, dtp_t dtp);
+NORETURN void box_read_error (dk_session_t * session, dtp_t dtp);
 
 #define MAX_READ_STRING 0xfffffe /*3 byte len - 1 for the final 0, box_length returns correct len */
 #define MARSH_CHECK_LENGTH(length) \

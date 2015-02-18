@@ -1388,7 +1388,7 @@ ewkt_get_token (ewkt_input_t * in, ewkt_token_val_t * val)
   return res;
 }
 
-void
+NORETURN void
 ewkt_signal (ewkt_input_t * in, const char *error)
 {
   in->ewkt_error = error;
