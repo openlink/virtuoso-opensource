@@ -385,6 +385,7 @@ extern void (*cfg_set_checkpoint_interval)(int32 f);
 extern dp_addr_t crashdump_start_dp, crashdump_end_dp;
 
 int32 c_vt_batch_size_limit = 0;
+extern int32 txs_max_terms;
 
 int32 c_callstack_on_exception = 0;
 extern long callstack_on_exception; /* from sqlintrp.c */
@@ -974,6 +975,9 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "FreeTextBatchSize", &c_vt_batch_size_limit) == -1)
     c_vt_batch_size_limit = 10000000;
+
+  if (cfg_getlong (pconfig, section, "FreeTextMaxQueryTerms", &txs_max_terms) == -1)
+    txs_max_terms = 300;
 
   if (cfg_getlong (pconfig, section, "CallstackOnException", &c_callstack_on_exception) == -1)
     c_callstack_on_exception = 0;
