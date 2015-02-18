@@ -708,6 +708,8 @@ dfe_tb_o_range_comp (df_elt_t * left, df_elt_t * right, df_elt_t * tb_dfe)
   ST * tree = left->dfe_tree;
   if (dk_set_member (right->dfe_tables, (void*)tb_dfe))
     return 0;
+  if (right->dfe_type == DFE_CONST && (IS_NUM_DTP (DV_TYPE_OF (right->dfe_tree)) || IS_DATE_DTP (DV_TYPE_OF (right->dfe_tree))))
+    return 0;
   if (ST_P (tree, CALL_STMT) && DV_STRINGP (tree->_.call.name)
       && !stricmp (tree->_.call.name, "__ro2sq")
       && 1 == BOX_ELEMENTS (tree->_.call.params)
