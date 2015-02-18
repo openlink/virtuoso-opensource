@@ -5047,6 +5047,7 @@ ssl_server_key_setup ()
 #error Must have openssl configures with threads support
 #endif
 
+#ifndef NO_THREAD
 static dk_mutex_t ** lock_cs;
 
 void
@@ -5076,6 +5077,7 @@ ssl_thread_setup ()
   CRYPTO_set_locking_callback ((void (*) (int, int, char *, int)) ssl_locking_callback);
   CRYPTO_set_id_callback ((unsigned long (*)()) ssl_thread_id);
 }
+#endif
 
 
 /*
@@ -5300,7 +5302,9 @@ ssl_server_init ()
     }
 #endif
 
+#ifndef NO_THREAD
   ssl_thread_setup ();
+#endif
 }
 
 
