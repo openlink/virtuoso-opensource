@@ -2436,7 +2436,7 @@ static int
 db_lck_lock_fd (int fd, char *name)
 {
 #if defined (F_SETLK)
-  struct flock fl;
+  struct flock fl = {0};
 
   /* Get an advisory WRITE lock */
   fl.l_type = F_WRLCK;
@@ -2470,7 +2470,7 @@ static void
 db_lck_unlock_fd (int fd, char *name)
 {
 #if defined (F_SETLK)
-  struct flock fl;
+  struct flock fl = {0};
 
   /* Unlock */
   fl.l_type = F_UNLCK;
