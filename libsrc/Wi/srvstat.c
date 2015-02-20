@@ -1410,7 +1410,7 @@ extern long mp_sparql_cap;
 extern long srv_cpu_count;
 extern int32 col_seg_max_bytes;
 extern int32 col_seg_max_rows;
-
+extern int32 enable_qrc;
 
 
 stat_desc_t stat_descs [] =
@@ -1874,6 +1874,7 @@ stat_desc_t dbf_descs [] =
     {"pcre_match_limit", &c_pcre_match_limit, SD_INT32},
     {"pcre_match_limit_recursion", &c_pcre_match_limit_recursion, SD_INT32},
     {"pcre_max_cache_sz", &pcre_max_cache_sz, SD_INT32},
+    {"enable_qrc", &enable_qrc, SD_INT32},
     {NULL, NULL, NULL}
   };
 

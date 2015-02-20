@@ -57,7 +57,7 @@
 #include "http.h"
 #include "mhash.h"
 
-int enable_qrc; /* generate query plan comments and warnings */
+int32 enable_qrc; /* generate query plan comments and warnings */
 #define MSG_MAX_LEN 100
 #define TA_STAT_COMM 1219
 
