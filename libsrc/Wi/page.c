@@ -2512,8 +2512,10 @@ void
 page_apply (it_cursor_t * itc, buffer_desc_t * buf, int n_delta, row_delta_t ** delta, int op)
 {
   du_thread_t * self = THREAD_CURRENT_THREAD;
+#ifdef DEBUG
   if (THR_IS_STACK_OVERFLOW (self, &self, PAGE_SZ + 1000 * sizeof (caddr_t)))
     GPF_T1 ("page_apply called with not enough stack");
+#endif
   if (THR_IS_STACK_OVERFLOW (self, &self, sizeof (page_apply_frame_t) + PAGE_SZ + 1000 * sizeof (caddr_t)))
     {
       NEW_VAR (page_apply_frame_t, paf);
