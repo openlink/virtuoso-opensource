@@ -1000,23 +1000,6 @@ then
       LOG "***ABORTED: twsrm.sql"
       exit 1
    fi
-   if [ -f $HOME/vad/ods_framework_dav.vad -a -f $HOME/vad/ods_blog_dav.vad -a -f $HOME/vad/val_dav.vad ]
-   then
-       cp $HOME/vad/ods_framework_dav.vad http
-       cp $HOME/vad/ods_blog_dav.vad http
-       cp $HOME/vad/val_dav.vad http
-       DoCommand $DSN "registry_set ('__blog_api_tests__', '1');" 
-       DoCommand $DSN "checkpoint;" 
-       DoCommand $DSN "VAD_INSTALL ('val_dav.vad', 0);" 
-       DoCommand $DSN "VAD_INSTALL ('ods_framework_dav.vad', 0);" 
-       DoCommand $DSN "VAD_INSTALL ('ods_blog_dav.vad', 0);" 
-       RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/tblog.sql 
-       if test $STATUS -ne 0
-       then
-	   LOG "***ABORTED: tblog.sql"
-	   exit 1
-       fi
-   fi
 
 
 if [ -f $PLUGINDIR/wbxml2.so -a -f $HOME/vad/syncml_dav.vad ]
