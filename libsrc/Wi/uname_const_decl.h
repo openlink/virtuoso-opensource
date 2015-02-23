@@ -71,6 +71,7 @@ extern caddr_t uname__txt;
 extern caddr_t uname__xslt;
 extern caddr_t uname_SPECIAL_cc_bif_c_AVG;
 extern caddr_t uname_SPECIAL_cc_bif_c_COUNT;
+extern caddr_t uname_SPECIAL_cc_bif_c_GROUPING;
 extern caddr_t uname_SPECIAL_cc_bif_c_MAX;
 extern caddr_t uname_SPECIAL_cc_bif_c_MIN;
 extern caddr_t uname_SPECIAL_cc_bif_c_SUM;

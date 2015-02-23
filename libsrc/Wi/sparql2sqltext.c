@@ -1949,6 +1949,8 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
         return SSG_VALMODE_LONG;
 #endif
       }
+    case ORDER_L:
+      return sparp_expn_native_valmode (sparp, tree->_.oby.expn);
     default: break;
     }
   spar_internal_error (sparp, "sparp_" "expn_native_valmode(): unsupported case");
@@ -2173,7 +2175,7 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
     case SPAR_FUNCALL:
       {
         caddr_t qname = tree->_.funcall.qname;
-        if ((uname_SPECIAL_cc_bif_c_MAX == qname || uname_SPECIAL_cc_bif_c_MIN == qname) &&
+        if ((uname_SPECIAL_cc_bif_c_MAX == qname || uname_SPECIAL_cc_bif_c_MIN == qname || uname_SPECIAL_cc_bif_c_GROUPING == qname) &&
           (1 == BOX_ELEMENTS (tree->_.funcall.argtrees)) )
           return sparp_restr_bits_of_expn (sparp, tree->_.funcall.argtrees[0]) & ~SPART_VARR_NOT_NULL;
         if (uname_SPECIAL_cc_bif_c_AVG == qname &&
@@ -2246,11 +2248,13 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
         SPART *sub_req;
         if (tree->_.gp.subtype != SELECT_L)
           spar_internal_error (sparp, "sparp_" "restr_bits_of_expn(): unsupported subtype of GP tree");
-	sub_req = tree->_.gp.subquery;
+        sub_req = tree->_.gp.subquery;
         if (ASK_L == sub_req->_.req_top.subtype)
           return SPART_VARR_NOT_NULL | SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL | SPART_VARR_IS_BOOL;
         return sparp_restr_bits_of_expn (sparp, sub_req->_.req_top.retvals[0]) & ~SPART_VARR_NOT_NULL;
       }
+    case ORDER_L:
+      return sparp_restr_bits_of_expn (sparp, tree->_.oby.expn);
     default: spar_internal_error (sparp, "sparp_" "restr_bits_of_expn(): unsupported case");
     }
   return 0; /* Never reached, to keep compiler happy */
@@ -4305,6 +4309,76 @@ expanded_sameterm_ready:
           {
           case 'B': ssg_puts (" rdf_"); break;
           case 'S': ssg_puts (" DB.DBA.rdf_"); break;
+          case '-':
+            switch (sbd->sbd_subtype)
+              {
+              case SPAR_BIF__CUBE: case SPAR_BIF__GROUPING_LIST:case SPAR_BIF__GROUPING_SETS: case SPAR_BIF__ROLLUP:
+                {
+                  switch (sbd->sbd_subtype)
+                    {
+                      case SPAR_BIF__CUBE:		ssg_puts (" CUBE (");		break;
+                      case SPAR_BIF__GROUPING_LIST:	ssg_puts (" (");		break;
+                      case SPAR_BIF__GROUPING_SETS:	ssg_puts (" GROUPING SETS (");	break;
+                      case SPAR_BIF__ROLLUP:		ssg_puts (" ROLLUP (");		break;
+                    }
+                  ssg->ssg_indent++;
+                  DO_BOX_FAST (SPART *, arg, argctr, tree->_.builtin.args)
+                    {
+                      if (argctr)
+                        ssg_puts (", ");
+                      ssg_print_scalar_expn (ssg, arg, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                    }
+                  END_DO_BOX_FAST;
+                  ssg->ssg_indent--;
+                  ssg_putchar (')');
+                  goto cant_have_asname; /* see below */
+                }
+              case SPAR_BIF__GROUPING_SET:
+                {
+                  if (NULL != tree->_.builtin.args[0])
+                    {
+                      ssg_puts (" ORDER BY ");
+                      ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                    }
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[1], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                  goto cant_have_asname; /* see below */
+                }
+              case TOP_L:
+                {
+                  ptrlong all_or_distinct = (ptrlong)(tree->_.builtin.args[0]);
+                  SPART *from_n = tree->_.builtin.args[1];
+                  SPART *to_n = tree->_.builtin.args[2];
+                  ptrlong with_ties = (ptrlong)(tree->_.builtin.args[3]);
+                  switch (all_or_distinct)
+                    {
+                    case ALL_L: ssg_puts (" ALL"); break;
+                    case DISTINCT_L: ssg_puts (" DISTINCT"); break;
+                    case 0: break;
+                    default: spar_internal_error (ssg->ssg_sparp, "ssg_print_builtin_expn(): neither ALL nor DISTINCT in TOP");
+                    }
+                  if (NULL != from_n)
+                    {
+                      ssg_puts (" (");
+                      ssg->ssg_indent++;
+                      ssg_print_scalar_expn (ssg, from_n, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                      if (NULL != to_n)
+                        {
+                          ssg_puts (", ");
+                          ssg_print_scalar_expn (ssg, to_n, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                        }
+                      ssg->ssg_indent--;
+                      ssg_putchar (')');
+                    }
+                  switch (with_ties)
+                    {
+                    case TIES_L: ssg_puts (" WITH_TIES"); break;
+                    case 0: break;
+                    default: spar_internal_error (ssg->ssg_sparp, "ssg_print_builtin_expn(): something other than WITH TIES in TOP");
+                    }
+                  goto cant_have_asname; /* see below */
+                }
+              /* no break */
+              }
           default:
             if (!strcmp ("BIND", sbd->sbd_name))
               spar_error (ssg->ssg_sparp, "Built-in function BIND is not implemented");
@@ -4338,6 +4412,11 @@ print_asname:
       ssg_putchar (' ');  
       ssg_prin_id (ssg, asname);
     }
+  return;
+cant_have_asname:
+  if (NULL_ASNAME != asname)
+    spar_internal_error (ssg->ssg_sparp, "Weird use of asname with special built-in");
+  return;
 }
 
 
@@ -4444,7 +4523,7 @@ valmode_is_found:
         return SSG_VALMODE_LONG;
       if (uname_SPECIAL_cc_bif_c_COUNT == name)
         return SSG_VALMODE_SQLVAL;
-      if (uname_SPECIAL_cc_bif_c_MIN == name || uname_SPECIAL_cc_bif_c_MAX == name)
+      if (uname_SPECIAL_cc_bif_c_MIN == name || uname_SPECIAL_cc_bif_c_MAX == name || uname_SPECIAL_cc_bif_c_GROUPING == name)
         {
           SPART **args = tree->_.funcall.argtrees;
           SPART *arg1 = ((0 < BOX_ELEMENTS (args)) ? args[0] : NULL);
@@ -4601,6 +4680,13 @@ sparp_argtype_of_function (sparp_t *sparp, caddr_t name, SPART *tree, int arg_id
         }
       if (uname_SPECIAL_cc_bif_c_AVG == name || uname_SPECIAL_cc_bif_c_SUM == name)
         return SSG_VALMODE_NUM;
+      if (uname_SPECIAL_cc_bif_c_GROUPING == name)
+        {
+          SPART **args = tree->_.funcall.argtrees;
+          SPART *arg1 = ((0 < BOX_ELEMENTS (args)) ? args[0] : NULL);
+          ssg_valmode_t arg1_native = sparp_expn_native_valmode (sparp, arg1);
+          return arg1_native;
+        }
       if (
         !strcmp (name, "SPECIAL::bif:__rgs_assert_cbk") ||
         !strcmp (name, "SPECIAL::bif:__rgs_assert") ||
@@ -5530,6 +5616,17 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
           }
         END_DO_BOX_FAST;
         return;
+      }
+    case ORDER_L:
+      {
+      ssg_print_scalar_expn (ssg, tree->_.oby.expn, needed, NULL_ASNAME);
+      switch (tree->_.oby.direction)
+        {
+        case 0: break;
+        case ASC_L: ssg_puts (" ASC"); break;
+        case DESC_L: ssg_puts (" DESC"); break;
+        }
+      goto print_asname;
       }
     default:
       spar_sqlprint_error ("ssg_" "print_scalar_expn(): unsupported scalar expression type");
@@ -9712,7 +9809,7 @@ ssg_print_orderby_item (spar_sqlgen_t *ssg, SPART *gp, SPART *oby_itm)
   ssg_print_retval_simple_expn (ssg, gp, oby_itm->_.oby.expn, SSG_VALMODE_SQLVAL, NULL_ASNAME);
   switch (oby_itm->_.oby.direction)
     {
-    case ASC_L: ssg_puts (" ASC"); break;
+    case 0: case ASC_L: ssg_puts (" ASC"); break;
     case DESC_L: ssg_puts (" DESC"); break;
     }
 }

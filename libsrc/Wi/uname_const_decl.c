@@ -48,6 +48,7 @@ caddr_t uname__txt;
 caddr_t uname__xslt;
 caddr_t uname_SPECIAL_cc_bif_c_AVG;
 caddr_t uname_SPECIAL_cc_bif_c_COUNT;
+caddr_t uname_SPECIAL_cc_bif_c_GROUPING;
 caddr_t uname_SPECIAL_cc_bif_c_MAX;
 caddr_t uname_SPECIAL_cc_bif_c_MIN;
 caddr_t uname_SPECIAL_cc_bif_c_SUM;
@@ -241,6 +242,7 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname__xslt				, " xslt"			},
   { &uname_SPECIAL_cc_bif_c_AVG			, "SPECIAL::bif:AVG"		},
   { &uname_SPECIAL_cc_bif_c_COUNT		, "SPECIAL::bif:COUNT"		},
+  { &uname_SPECIAL_cc_bif_c_GROUPING			, "SPECIAL::bif:GROUPING"			},
   { &uname_SPECIAL_cc_bif_c_MAX			, "SPECIAL::bif:MAX"		},
   { &uname_SPECIAL_cc_bif_c_MIN			, "SPECIAL::bif:MIN"		},
   { &uname_SPECIAL_cc_bif_c_SUM			, "SPECIAL::bif:SUM"		},

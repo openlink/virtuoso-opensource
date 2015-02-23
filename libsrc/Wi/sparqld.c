@@ -1343,7 +1343,7 @@ fname_printed:
         SPART *expn = tree->_.oby.expn;
         switch (tree->_.oby.direction)
           {
-          case ASC_L: ssg_puts (" ASC ("); break;
+          case 0: case ASC_L: ssg_puts (" ASC ("); break;
           case DESC_L: ssg_puts (" DESC ("); break;
           }
         ssg->ssg_indent++;

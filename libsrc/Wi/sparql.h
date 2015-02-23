@@ -147,7 +147,12 @@ extern void sparp_debug_weird (struct sparp_s *sparp, const char *file, int line
 #define SPAR_BIF_UUID			(ptrlong)1152
 #define SPAR_BIF_VALID			(ptrlong)1153
 #define SPAR_BIF_YEAR			(ptrlong)1154
-#define SPAR_BIF__ITEM_IN_VECTOR	(ptrlong)1155
+#define SPAR_BIF__CUBE			(ptrlong)1155
+#define SPAR_BIF__ITEM_IN_VECTOR	(ptrlong)1156
+#define SPAR_BIF__GROUPING_LIST		(ptrlong)1157
+#define SPAR_BIF__GROUPING_SET		(ptrlong)1158
+#define SPAR_BIF__GROUPING_SETS		(ptrlong)1159
+#define SPAR_BIF__ROLLUP		(ptrlong)1160
 
 #define SPAR_SML_CREATE			(ptrlong)1201
 #define SPAR_SML_DROP			(ptrlong)1202
@@ -446,9 +451,17 @@ typedef struct sparp_s {
 
 /*extern void sparqr_free (spar_query_t *sparqr);*/
 
-extern void spar_error (sparp_t *sparp, const char *format, ...);
+extern void spar_error (sparp_t *sparp, const char *format, ...)
+#ifdef __GNUC__
+                __attribute__ ((format (printf, 2, 3)))
+#endif
+;
 extern void spar_internal_error (sparp_t *sparp, const char *strg);
-extern int spar_audit_error (sparp_t *sparp, const char *format, ...); /* returns fake 1 as a value for return */
+extern int spar_audit_error (sparp_t *sparp, const char *format, ...) /* returns fake 1 as a value for return */
+#ifdef __GNUC__
+                __attribute__ ((format (printf, 2, 3)))
+#endif
+;
 extern caddr_t spar_source_place (sparp_t *sparp, char *raw_text);
 extern caddr_t spar_dbg_string_of_triple_field (sparp_t *sparp, SPART *fld);
 extern void sparyyerror_impl (sparp_t *xpp, char *raw_text, const char *strg);

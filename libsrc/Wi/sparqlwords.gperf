@@ -52,6 +52,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "COPY",			COPY_L			, 0
 "COUNT",		COUNT_L			, 0
 "CREATE",		CREATE_L		, 0
+"CUBE",			CUBE_L			, 0
 "DATA",			DATA_L			, 0
 "DATATYPE",		DATATYPE_L		, 0
 "DAY",			SPARQL_BIF		, SPAR_BIF_DAY
@@ -80,6 +81,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "GRAPH",		GRAPH_L			, 0
 "GROUP",		GROUP_L			, 0
 "GROUP_CONCAT",		GROUP_CONCAT_L		, 0
+"GROUPING",		GROUPING_L		, 0
 "HAVING",		HAVING_L		, 0
 "IF",			SPARQL_BIF		, SPAR_BIF_IF
 "IFP",			IFP_L			, 0
@@ -141,6 +143,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "REMOVE_UNICODE3_ACCENTS",	SPARQL_BIF	, SPAR_BIF_REMOVE_UNICODE3_ACCENTS
 "REPLACE",		SPARQL_BIF		, SPAR_BIF_REPLACE
 "RETURNS",		RETURNS_L		, 0
+"ROLLUP",		ROLLUP_L		, 0
 "ROUND",		SPARQL_BIF		, SPAR_BIF_ROUND
 "SCORE",		SCORE_L			, 0
 "SCORE_LIMIT",		SCORE_LIMIT_L		, 0
@@ -154,6 +157,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "SECONDS",		SPARQL_BIF		, SPAR_BIF_SECONDS
 "SELECT",		SELECT_L		, 0
 "SERVICE",		SERVICE_L		, 0
+"SETS",			SETS_L			, 0
 "SHA1",			SPARQL_BIF		, SPAR_BIF_SHA1
 "SHA224",		SPARQL_BIF		, SPAR_BIF_SHA224
 "SHA256",		SPARQL_BIF		, SPAR_BIF_SHA256
