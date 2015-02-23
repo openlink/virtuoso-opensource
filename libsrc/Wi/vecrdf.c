@@ -619,6 +619,153 @@ bif_ro2lo_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slo
   bif_ro2sq_vec_1 (qst, err_ret, args, ret, 1);
 }
 
+query_t *rb_ebv_of_ro_qr;
+
+void
+bif_ro2ebv_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret)
+{
+  static dtp_t dv_null = DV_DB_NULL;
+  db_buf_t empty_mark;
+  QNCAST (query_instance_t, qi, qst);
+  db_buf_t set_mask = qi->qi_set_mask;
+  int set, n_sets = qi->qi_n_sets, first_set = 0, is_boxes;
+  int bit_len = ALIGN_8 (qi->qi_n_sets) / 8;
+  db_buf_t rb_bits = NULL, iri_bits = NULL;
+  db_buf_t save = qi->qi_set_mask;
+  int * rb_sets = NULL;
+  int rb_fill = 0;
+  caddr_t err = NULL;
+  state_slot_t * ssl = args[0];
+  data_col_t * arg, *dc;
+  if (!rb_ebv_of_ro_qr)
+    {
+      rb_ebv_of_ro_qr = sql_compile_static ("select case \
+  when __rdf_dt_and_lang_flags(RO_DT_AND_LANG, 1) then case when __tag(RO_VAL) in __tag of varchar, __tag of null then null when 0 then 0 else 1 end \
+  when RO_VAL is null then 1 \
+  when RO_VAL = '' then 0 \
+  else 1 end \
+from DB.DBA.RDF_OBJ where RO_ID = rdf_box_ro_id (?)", qi->qi_client, &err, SQLC_DEFAULT);
+      if (err)
+        sqlr_resignal (err);
+    }
+
+  if (!ret)
+    return;
+  dc = QST_BOX (data_col_t *, qst, ret->ssl_index);
+  if (BOX_ELEMENTS (args) < 1) 
+    sqlr_new_error ("42001", "VEC..", "Not enough arguments for __ro2ebv");
+  arg = QST_BOX (data_col_t *, qst, ssl->ssl_index);  
+
+  if (DV_ANY == ret->ssl_sqt.sqt_dtp && DV_ANY != dc->dc_dtp)
+    dc_heterogenous (dc);
+  is_boxes = DCT_BOXES & arg->dc_type;
+  empty_mark = (DCT_BOXES & dc->dc_type) ? NULL : &dv_null;
+  DC_CHECK_LEN (dc, qi->qi_n_sets - 1);
+  if (DCT_BOXES & dc->dc_type)
+    DC_FILL_TO (dc, int64, qi->qi_n_sets);
+  if (DV_ANY == dc->dc_dtp)
+    DC_FILL_TO (dc, caddr_t, qi->qi_n_sets);
+  SET_LOOP 
+    {
+      db_buf_t dv;
+      dtp_t dtp;
+      int row_no = set;
+      if (SSL_REF == ssl->ssl_type)
+	row_no = sslr_set_no (qst, ssl, row_no);
+      dv = ((db_buf_t *)arg->dc_values)[row_no];
+      dtp = is_boxes ? DV_TYPE_OF (dv) : dv[0];
+      if (DV_RDF_ID == dtp || DV_RDF_ID_8 == dtp
+        || (DV_RDF == dtp &&
+          (is_boxes ? !((rdf_box_t*)dv)->rb_is_complete : !(RBS_COMPLETE & dv[1])) ) )
+	{
+	  if (!rb_bits)
+	    {
+	      rb_bits = dc_alloc (arg, bit_len);
+	      memset (rb_bits, 0, bit_len);
+	      rb_sets = (int*)dc_alloc (arg, sizeof (int) * qi->qi_n_sets);
+	    }
+	  rb_sets[rb_fill++] = set;
+	  rb_bits[set >> 3] |= 1 << (set & 7);
+	  ((db_buf_t*)dc->dc_values)[set] = empty_mark;
+	  dc->dc_n_values = set + 1;
+	}
+#if 0 /* write something meaningful here */
+      else if ((DV_IRI_ID == dtp || DV_IRI_ID_8 == dtp))
+	{
+	  if (!iri_bits)
+	    {
+	      iri_bits = dc_alloc (arg, bit_len);
+	      memset (iri_bits, 0, bit_len);
+	    }
+	  iri_bits[set >> 3] |= 1 << (set & 7);
+	  ((db_buf_t*)dc->dc_values)[set] = empty_mark;
+	  dc->dc_n_values = set + 1;
+	}
+      else
+	{
+	  dc_assign (qst, ret, set, args[0], set);
+	}
+#endif
+    }
+  END_SET_LOOP;
+  dc->dc_n_values = MAX (dc->dc_n_values, qi->qi_set + 1);
+#if 0 /* write something meaningful here */
+  if (rb_bits)
+    {
+      int inx, n_res = 0;
+      local_cursor_t lc;
+      select_node_t * sel = rb_complete_qr->qr_select_node;
+      qi->qi_set_mask = rb_bits;
+      memset (&lc, 0, sizeof (lc));
+      err = qr_subq_exec_vec (qi->qi_client, rb_complete_qr, qi, NULL, 0, args, ret, NULL, &lc);
+      if (err)
+	{
+	  dc_no_empty_marks (dc, empty_mark);
+	  sqlr_resignal (err);
+	}
+      while (lc_next (&lc))
+	{
+	  int set = qst_vec_get_int64  (lc.lc_inst, sel->sel_set_no, lc.lc_position);
+	  int dt_lang = qst_vec_get_int64  (lc.lc_inst, sel->sel_out_slots[0], lc.lc_position);
+	  int flags = qst_vec_get_int64  (lc.lc_inst, sel->sel_out_slots[1], lc.lc_position);
+	  caddr_t  val = lc_nth_col (&lc, 2);
+	  caddr_t  lng = lc_nth_col (&lc, 3);
+	  int out_set = rb_sets[set];
+	  int arg_row = sslr_set_no (qst, args[0], out_set);
+	  int64 ro_id = dc_rb_id (arg, arg_row);
+	  dc_set_rb (dc, out_set, dt_lang, flags, val, lng, ro_id);
+	  n_res++;
+	}
+      for (inx = 0; inx <dc->dc_n_values; inx++)
+	{
+	  if (BIT_IS_SET (rb_bits, inx))
+	    { 
+	      if (empty_mark == ((db_buf_t*)dc->dc_values)[inx])
+		{
+		  dc->dc_any_null = 1;
+		  dc_no_empty_marks (dc, empty_mark);
+		  bing ();
+		}
+	    }
+	}
+      if (lc.lc_inst)
+	qi_free (lc.lc_inst);
+      if (lc.lc_error)
+	{
+	  dc_no_empty_marks (dc, empty_mark);
+	  sqlr_resignal (lc.lc_error);
+	}
+    }
+  if (iri_bits)
+    {
+      qi->qi_set_mask = iri_bits;
+      dc_no_empty_marks (dc, empty_mark);
+      bif_id2i_vec (qst, err_ret, args, ret);
+    }
+#endif
+  qi->qi_set_mask = save;
+}
+
 void
 rbs_string_range (dtp_t ** buf, int * len, int * is_string)
 {

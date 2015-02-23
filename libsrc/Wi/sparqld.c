@@ -493,6 +493,16 @@ ssg_sdprint_equiv_restrs (spar_sqlgen_t *ssg, sparp_equiv_t *eq)
       ssg_sdprin_varname (ssg, eq->e_varnames[0]);
       ssg_puts (" = ");
       ssg_sdprint_tree (ssg, (SPART *)(eq->e_rvr.rvrFixedValue));
+      if ((DV_STRING == DV_TYPE_OF (eq->e_rvr.rvrFixedValue)) && (NULL != eq->e_rvr.rvrDatatype))
+        {
+          ssg_puts ("^^");
+          ssg_sdprint_tree (ssg, (SPART *)(eq->e_rvr.rvrDatatype));
+        }
+      if (NULL != eq->e_rvr.rvrLanguage)
+        {
+          ssg_puts ("@");
+          ssg_puts (eq->e_rvr.rvrLanguage);
+        }
       ssg_puts (")");
       goto end_builtin_checks;
     }

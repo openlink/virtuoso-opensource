@@ -173,6 +173,94 @@ rdf_fetch_or_create_system_iri_ids (caddr_t * qst)
 
 iri_id_t bnode_t_treshold = ~((iri_id_t)0);
 
+int
+rb_uname_to_flags_of_parseable_datatype (caddr_t dt_uname)
+{
+  if
+    ( (uname_xmlschema_ns_uri_hash_byte		    == dt_uname)
+    || (uname_xmlschema_ns_uri_hash_decimal		== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_double		== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_float		== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_int			== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_integer		== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_long		== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_negativeInteger	== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_nonNegativeInteger	== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_nonPositiveInteger	== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_positiveInteger	== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_short		== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_unsignedByte	== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_unsignedInt		== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_unsignedLong	== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_unsignedShort	== dt_uname) )
+    return RDF_TYPE_PARSEABLE | RDF_TYPE_PARSEABLE_TO_NUMERIC;
+  if
+    ( (uname_xmlschema_ns_uri_hash_boolean		== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_date		== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_dateTime		== dt_uname)
+  /*|| (uname_xmlschema_ns_uri_hash_dateTimeStamp	== dt_uname)*/
+    || (uname_xmlschema_ns_uri_hash_dayTimeDuration	== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_duration		== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_gDay		== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_gMonth		== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_gMonthDay		== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_gYear		== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_gYearMonth		== dt_uname)
+  /*|| (uname_xmlschema_ns_uri_hash_hexBinary		== dt_uname)*/
+  /*|| (uname_xmlschema_ns_uri_hash_language		== dt_uname)*/
+  /*|| (uname_xmlschema_ns_uri_hash_normalizedString	== dt_uname)*/
+  /*|| (uname_xmlschema_ns_uri_hash_string		== dt_uname)*/
+    || (uname_xmlschema_ns_uri_hash_time		== dt_uname)
+  /*|| (uname_xmlschema_ns_uri_hash_token		== dt_uname)*/
+    || (uname_xmlschema_ns_uri_hash_yearMonthDuration	== dt_uname) )
+    return RDF_TYPE_PARSEABLE;
+  return 0;
+}
+
+int
+rb_twobyte_to_flags_of_parseable_datatype (unsigned short dt_twobyte)
+{
+  if
+    ( (rb_type__xsd_byte		== dt_twobyte)
+    || (rb_type__xsd_decimal		== dt_twobyte)
+    || (rb_type__xsd_double		== dt_twobyte)
+    || (rb_type__xsd_float		== dt_twobyte)
+    || (rb_type__xsd_int		== dt_twobyte)
+    || (rb_type__xsd_integer		== dt_twobyte)
+    || (rb_type__xsd_long		== dt_twobyte)
+    || (rb_type__xsd_negativeInteger	== dt_twobyte)
+    || (rb_type__xsd_nonNegativeInteger	== dt_twobyte)
+    || (rb_type__xsd_nonPositiveInteger	== dt_twobyte)
+    || (rb_type__xsd_positiveInteger	== dt_twobyte)
+    || (rb_type__xsd_short		== dt_twobyte)
+    || (rb_type__xsd_unsignedByte	== dt_twobyte)
+    || (rb_type__xsd_unsignedInt	== dt_twobyte)
+    || (rb_type__xsd_unsignedLong	== dt_twobyte)
+    || (rb_type__xsd_unsignedShort	== dt_twobyte) )
+    return RDF_TYPE_PARSEABLE | RDF_TYPE_PARSEABLE_TO_NUMERIC;
+  if
+    ( (rb_type__xsd_boolean		== dt_twobyte)
+    || (rb_type__xsd_date		== dt_twobyte)
+    || (rb_type__xsd_dateTime		== dt_twobyte)
+  /*|| (rb_type__xsd_dateTimeStamp	== dt_twobyte)*/
+    || (rb_type__xsd_dayTimeDuration	== dt_twobyte)
+    || (rb_type__xsd_duration		== dt_twobyte)
+    || (rb_type__xsd_gDay		== dt_twobyte)
+    || (rb_type__xsd_gMonth		== dt_twobyte)
+    || (rb_type__xsd_gMonthDay		== dt_twobyte)
+    || (rb_type__xsd_gYear		== dt_twobyte)
+    || (rb_type__xsd_gYearMonth		== dt_twobyte)
+  /*|| (rb_type__xsd_hexBinary		== dt_twobyte)*/
+  /*|| (rb_type__xsd_language		== dt_twobyte)*/
+  /*|| (rb_type__xsd_normalizedString	== dt_twobyte)*/
+  /*|| (rb_type__xsd_string		== dt_twobyte)*/
+    || (rb_type__xsd_time		== dt_twobyte)
+  /*|| (rb_type__xsd_token		== dt_twobyte)*/
+    || (rb_type__xsd_yearMonthDuration	== dt_twobyte) )
+    return RDF_TYPE_PARSEABLE;
+  return 0;
+}
+
 caddr_t
 bif_rdf_set_bnode_t_treshold (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -2107,6 +2195,106 @@ bif_rdf_sqlval_of_obj (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     || ((1 < BOX_ELEMENTS (args)) && bif_long_arg (qst, args, 1, "__rdf_sqlval_of_obj")) )
     return box_copy_tree (rb->rb_box);
   return box_copy (rb);
+}
+
+caddr_t
+rdf_bool_of_plain_box (caddr_t val)
+{
+  switch (DV_TYPE_OF (val))
+    {
+    case DV_LONG_INT: return (caddr_t)(unbox (val) ? 1 : 0);
+    case DV_SINGLE_FLOAT: return (caddr_t)(unbox_float (val) ? 1 : 0);
+    case DV_DOUBLE_FLOAT: return (caddr_t)(unbox_double (val) ? 1 : 0);
+    case DV_NUMERIC: return (caddr_t)(num_is_zero ((numeric_t)(val)) ? 1 : 0);
+    case DV_STRING: return (box_flags (val) & BF_IRI) ? NEW_DB_NULL : ((caddr_t)((1 < box_length (val)) ? 1 : 0));
+    case DV_BIN: return (caddr_t)((1 < box_length (val)) ? 1 : 0);
+    case DV_WIDE: return (caddr_t)((sizeof(wchar_t) < box_length (val)) ? 1 : 0);
+    default: /* case DV_DATETIME: case DV_XML_ENTITY: case DV_GEO: case DV_IRI_ID: case DV_UNAME: case DV_DB_NULL: */ return NEW_DB_NULL;
+    }
+}
+
+caddr_t
+bif_rdf_bool_of_obj (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t shortobj = bif_arg (qst, args, 0, "__rdf_bool_of_obj");
+  dtp_t so_dtp = DV_TYPE_OF (shortobj);
+  rdf_box_t *rb;
+  query_instance_t * qi = (query_instance_t *) qst;
+  switch (DV_TYPE_OF (shortobj))
+    {
+    case DV_RDF_ID:
+      {
+      sqlr_new_error ("42000", "RDF31", "Internal SPARQL compiler error: cannot get EBV from RDF_ID");
+      return NULL; /* Never reached */
+      }
+    case DV_RDF:
+      {
+        dtp_t box_dtp;
+        rb = (rdf_box_t *)shortobj;
+        if (!rb->rb_is_complete)
+          rb_complete (rb, qi->qi_trx, qi);
+        box_dtp = DV_TYPE_OF (rb->rb_box);
+        if ((DV_STRING != box_dtp) || (RDF_BOX_DEFAULT_TYPE >= rb->rb_type))
+          return rdf_bool_of_plain_box (rb->rb_box);
+        if (rb_type__xsd_boolean == rb->rb_type)
+          {
+            if (!strcasecmp (rb->rb_box, "true") || !strcmp (rb->rb_box, "1"))
+              return (caddr_t)1;
+            if (!strcasecmp (rb->rb_box, "false") || !strcmp (rb->rb_box, "0"))
+              return (caddr_t)0;
+            return NEW_DB_NULL;
+          }
+        if (rb_twobyte_to_flags_of_parseable_datatype (rb->rb_type) & RDF_TYPE_PARSEABLE_TO_NUMERIC)
+          {
+            if (DV_STRING == box_dtp)
+              return (caddr_t)0;
+            return rdf_bool_of_plain_box (rb->rb_box);
+          }
+        return NEW_DB_NULL;
+      }
+    }
+  return rdf_bool_of_plain_box (shortobj);
+}
+
+caddr_t
+bif_rdf_bool_of_sqlval  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t shortobj = bif_arg (qst, args, 0, "__rdf_bool_of_sqlval");
+  switch (DV_TYPE_OF (shortobj))
+    {
+    case DV_RDF_ID:
+      {
+      sqlr_new_error ("42000", "RDF31", "Internal SPARQL compiler error: cannot get EBV from RDF_ID");
+      return NULL; /* Never reached */
+      }
+    case DV_RDF:
+      {
+        query_instance_t * qi = (query_instance_t *) qst;
+        rdf_box_t *rb = (rdf_box_t *)shortobj;
+        dtp_t box_dtp;
+        if (!rb->rb_is_complete)
+          rb_complete (rb, qi->qi_trx, qi);
+        box_dtp = DV_TYPE_OF (rb->rb_box);
+        if ((DV_STRING != box_dtp) || (RDF_BOX_DEFAULT_TYPE >= rb->rb_type))
+          return rdf_bool_of_plain_box (rb->rb_box);
+        if (rb_type__xsd_boolean == rb->rb_type)
+          {
+            if (!strcasecmp (rb->rb_box, "true") || !strcmp (rb->rb_box, "1"))
+              return (caddr_t)1;
+            if (!strcasecmp (rb->rb_box, "false") || !strcmp (rb->rb_box, "0"))
+              return (caddr_t)0;
+            return NEW_DB_NULL;
+          }
+        if (rb_twobyte_to_flags_of_parseable_datatype (rb->rb_type) & RDF_TYPE_PARSEABLE_TO_NUMERIC)
+          {
+            if (DV_STRING == box_dtp)
+              return (caddr_t)0;
+            return rdf_bool_of_plain_box (rb->rb_box);
+          }
+        return NEW_DB_NULL;
+      }
+    default: return rdf_bool_of_plain_box (shortobj);
+    }
 }
 
 caddr_t
@@ -6207,7 +6395,7 @@ bif_iri_name_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 extern box_tmp_copy_f box_tmp_copier[256];
 void bif_ro2lo_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
 void bif_ro2sq_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
-void bif_ro2lo_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
+void bif_ro2ebv_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
 void bif_str_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
 
 
@@ -6261,6 +6449,10 @@ rdf_box_init ()
   bif_define_ex ("__rdf_box_to_ro_id_search_fields", bif_rdf_box_to_ro_id_search_fields, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("__rdf_sqlval_of_obj", bif_rdf_sqlval_of_obj, BMD_ALIAS, "__ro2sq", BMD_VECTOR_IMPL, bif_ro2sq_vec, BMD_RET_TYPE,
       &bt_any, BMD_USES_INDEX, BMD_DONE);
+  bif_define_ex ("__rdf_bool_of_obj", bif_rdf_bool_of_obj, BMD_ALIAS, "__rdf_sparql_ebv_of_obj", BMD_ALIAS, "__ro2ebv",
+      /*BMD_VECTOR_IMPL, bif_ro2ebv_vec, */ BMD_RET_TYPE, &bt_integer, BMD_USES_INDEX, BMD_DONE);
+  bif_define_ex ("__rdf_bool_of_sqlval", bif_rdf_bool_of_sqlval, BMD_ALIAS, "__rdf_sparql_ebv_of_sqlval", BMD_RET_TYPE, &bt_any,
+      BMD_USES_INDEX, BMD_DONE);
   bif_define_ex ("__rdf_strsqlval", bif_rdf_strsqlval, BMD_VECTOR_IMPL, bif_str_vec, BMD_RET_TYPE, &bt_varchar, BMD_USES_INDEX,
       BMD_DONE);
   bif_define_ex ("__rdf_long_to_ttl", bif_rdf_long_to_ttl, BMD_RET_TYPE, &bt_any, BMD_DONE);
@@ -6310,11 +6502,9 @@ rdf_box_init ()
   bif_define ("__rdf_graph_approx_perms", bif_rdf_graph_approx_perms);
   bif_define ("__rdf_graph_specific_perms_of_user", bif_rdf_graph_specific_perms_of_user);
   bif_define ("__rgs_assert", bif_rgs_assert);
-  bif_define ("__rgs_assert_cbk", bif_rgs_assert_cbk);
-  bif_set_uses_index (bif_rgs_assert_cbk );
-  bif_define ("__rgs_ack", bif_rgs_ack);
-  bif_define ("__rgs_ack_cbk", bif_rgs_ack_cbk);
-  bif_set_uses_index (bif_rgs_ack_cbk );
+  bif_define_ex ("__rgs_assert_cbk", bif_rgs_assert_cbk, BMD_USES_INDEX, BMD_DONE);
+  bif_define_ex ("__rgs_ack", bif_rgs_ack, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("__rgs_ack_cbk", bif_rgs_ack_cbk, BMD_RET_TYPE, &bt_integer, BMD_USES_INDEX, BMD_DONE);
   bif_define_ex ("__rdf_repl_uid", bif_rdf_repl_uid, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("__rgs_prepare_del_or_ins", bif_rgs_prepare_del_or_ins, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_set_uses_index (bif_rgs_prepare_del_or_ins);

@@ -318,6 +318,9 @@ typedef struct sparp_env_s
   caddr_t		spare_sql_refresh_free_text;	/*!< Flags if there's any use of bif:contains or the like, so 'sql:refresh-free-text' 'yes' option should be added to any vector of sponge options. This is a _boxed_ integer even if it's zero; that is used to store a reference to a changing integer in a compiled tree. */
 } sparp_env_t;
 
+#define SPARP_EBV_SQL		0	/*!< Cast to boolean implicitly, i.e. as that will happen in SQL */
+#define SPARP_EBV_SPARQL11	1	/*!< Cast to boolean according to SPARQL 1.1 Efficient Boolean Value rules */
+
 typedef struct sparp_globals_s {
   struct sparp_equiv_s **sg_equivs;	/*!< All variable equivalences made for the tree, in pointer to a growing buffer */
 #ifdef SPARQL_DEBUG
@@ -341,6 +344,7 @@ typedef struct sparp_globals_s {
   caddr_t sg_output_compose_report;			/*!< Boxed non-NULL number that indicates wither a verbose report string should be created (value of 1) or just a number of changes (value of 0) */
   caddr_t		sg_sparul_log_mode;		/*!< log_mode argument of SPARQL_MODIFY_BY_DICT_CONTENTS() and similar procedures; if set then it's a boxed integer or boxed zero */
   int			sg_comment_sql;			/*!< Flags that control storing comments in the resulting SQL text */
+  int			sg_ebv_mode;			/*!< Mode for booleans, one of SPARL_EBV_xxx constants */
 } sparp_globals_t;
 
 typedef struct sparp_e4qm_s {
@@ -436,6 +440,9 @@ typedef struct sparp_s {
 
 
 #define sparp_env() sparp_arg->sparp_env
+#define sparp_ebv_mode sparp_sg->sg_ebv_mode
+#define qmfAutoEbvTmpl(sparp,qmf) (((sparp)->sparp_ebv_mode && (NULL != (qmf)->qmfSparqlEbvTmpl)) ? (qmf)->qmfSparqlEbvTmpl : (qmf)->qmfBoolTmpl)
+#define qmfAutoEbvOfShortTmpl(sparp,qmf) (((sparp)->sparp_ebv_mode && (NULL != (qmf)->qmfSparqlEbvOfShortTmpl)) ? (qmf)->qmfSparqlEbvOfShortTmpl : (qmf)->qmfBoolOfShortTmpl)
 
 /*extern void sparqr_free (spar_query_t *sparqr);*/
 
