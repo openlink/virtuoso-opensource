@@ -530,17 +530,17 @@ dk_free_box (box_t box)
 
   switch (tag)
     {
-#ifdef MALLOC_DEBUG
     case DV_WIDE:
+#ifndef NDEBUG
       if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
         GPF_T1 ("Free of a damaged wide string");
+#endif
 #ifdef DOUBLE_ALIGN
       len = ALIGN_8 (len);
 #else
       len = ALIGN_4 (len);
 #endif
       break;
-#endif
     case DV_STRING:
     case DV_C_STRING:
     case DV_SHORT_STRING_SERIAL:
@@ -722,17 +722,17 @@ dk_free_tree (box_t box)
 
   switch (tag)
     {
-#ifdef MALLOC_DEBUG
     case DV_WIDE:
+#ifndef NDEBUG
       if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
         GPF_T1 ("Free of a tree with a damaged wide string");
+#endif
 #ifdef DOUBLE_ALIGN
       len = ALIGN_8 (len);
 #else
       len = ALIGN_4 (len);
 #endif
       break;
-#endif
     case DV_STRING:
     case DV_C_STRING:
     case DV_SHORT_STRING_SERIAL:
@@ -816,6 +816,18 @@ void
 box_reuse (caddr_t box, ccaddr_t data, size_t len, dtp_t dtp)
 {
   dk_alloc_box_assert (box);
+#ifndef NDEBUG
+  if (DV_WIDE == DV_TYPE_OF (box))
+    {
+      if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
+        GPF_T1 ("Reuse of a damaged wide string");
+    }
+  if (DV_WIDE == dtp)
+    {
+      if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)data)[len/sizeof (wchar_t) - 1]))
+        GPF_T1 ("Reuse of a box for a damaged wide string");
+    }
+#endif
   box_tag_modify (box, dtp);
   ((dtp_t *) box)[-4] = (dtp_t) (len & 0xff);
   ((dtp_t *) box)[-3] = (dtp_t) (len >> 8);
@@ -1135,12 +1147,12 @@ DBG_NAME (box_copy) (DBG_PARAMS cbox_t box)
   switch (tag)
     {
     case DV_WIDE:
-#ifdef MALLOC_DEBUG
+#ifndef NDEBUG
       len = box_length (box);
       if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
         GPF_T1 ("Copy of a damaged wide string");
-      break;
 #endif
+      break;
     case DV_STRING:
     case DV_ARRAY_OF_POINTER:
     case DV_LIST_OF_POINTER:
@@ -1266,13 +1278,13 @@ box_t DBG_NAME (box_copy_tree) (DBG_PARAMS cbox_t box)
   tag = box_tag (box);
   switch (tag)
     {
-#ifdef MALLOC_DEBUG
     case DV_WIDE:
+#ifndef NDEBUG
       len = box_length (box);
       if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
         GPF_T1 ("Copy of a tree with a damaged wide string");
-      break;
 #endif
+      break;
     case DV_ARRAY_OF_POINTER:
     case DV_LIST_OF_POINTER:
     case DV_ARRAY_OF_XQVAL:
@@ -1361,6 +1373,13 @@ DBG_NAME (box_try_copy_tree) (DBG_PARAMS box_t box, box_t stub)
   tag = box_tag (box);
   switch (tag)
     {
+    case DV_WIDE:
+#ifndef NDEBUG
+      len = box_length (box);
+      if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
+        GPF_T1 ("Copy of a tree with a damaged wide string");
+#endif
+      break;
     case DV_ARRAY_OF_POINTER:
     case DV_LIST_OF_POINTER:
     case DV_ARRAY_OF_XQVAL:

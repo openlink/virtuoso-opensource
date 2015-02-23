@@ -137,42 +137,60 @@ extern long box_types_free[256];	/* implicit zero-fill assumed */
 #define box_tag_modify(box,new_tag) 	box_tag_modify_impl(box,new_tag)
 #endif
 
+#ifdef WIDE_DEBUG
+#define WIDE_BOX_HEADER_BP(bytes,tag) do { \
+    if ((DV_WIDE == (tag)) && (1600 <= (bytes)) && (1608 >= (bytes)) && (1604 != (bytes))) \
+      GPF_T1 ("failed wide debug, WIDE_BOX_HEADER_BP"); \
+  } while (0)
+#else
+#define WIDE_BOX_HEADER_BP(bytes,tag)
+#endif
+
+
 #ifdef WORDS_BIGENDIAN
 #ifdef NDEBUG
-#define WRITE_BOX_HEADER(ptr, bytes, tag) \
+#define WRITE_BOX_HEADER(ptr, bytes, tag) do { \
+    WIDE_BOX_HEADER_BP (bytes,tag); \
   ((uint32*)(ptr))[-1] = 0;		   \
   *ptr++ = (unsigned char) (bytes & 0xff); \
   *ptr++ = (unsigned char) ((bytes >> 8) & 0xff); \
   *ptr++ = (unsigned char) ((bytes >> 16) & 0xff); \
-  *ptr++ = (unsigned char) tag
+    *ptr++ = (unsigned char) tag; \
+  } while (0)
 #else
   /* GK : this is to signal when a  box to be allocated exceeds the maximum allowed length */
-#define WRITE_BOX_HEADER(ptr, bytes, tag) \
+#define WRITE_BOX_HEADER(ptr, bytes, tag) do { \
+    WIDE_BOX_HEADER_BP (bytes,tag); \
   if (bytes >= (256L * 256L * 256L)) \
     GPF_T1 ("box to allocate too large"); \
   ((uint32*)(ptr))[-1] = 0;		   \
   *ptr++ = (unsigned char) (bytes & 0xff); \
   *ptr++ = (unsigned char) ((bytes >> 8) & 0xff); \
   *ptr++ = (unsigned char) ((bytes >> 16) & 0xff); \
-  *ptr++ = (unsigned char) tag
+    *ptr++ = (unsigned char) tag; \
+  } while (0)
 #endif
 #else
 #ifdef NDEBUG
-#define WRITE_BOX_HEADER(ptr, bytes, tag) \
+#define WRITE_BOX_HEADER(ptr, bytes, tag) do { \
+    WIDE_BOX_HEADER_BP (bytes,tag); \
   ((uint32*)(ptr))[-1] = 0;		   \
   ((uint32*)ptr)[0] = bytes; \
   ptr[3] = (unsigned char) tag; \
-ptr += 4
+    ptr += 4; \
+  } while (0)
 
 #else
   /* GK : this is to signal when a  box to be allocated exceeds the maximum allowed length */
-#define WRITE_BOX_HEADER(ptr, bytes, tag) \
+#define WRITE_BOX_HEADER(ptr, bytes, tag) do { \
+    WIDE_BOX_HEADER_BP (bytes,tag); \
   if (bytes >= (256L * 256L * 256L)) \
     GPF_T1 ("box to allocate too large"); \
   ((uint32*)(ptr))[-1] = 0;		   \
   ((uint32*)ptr)[0] = bytes; \
   ptr[3] = (unsigned char) tag; \
-  ptr += 4
+    ptr += 4; \
+  } while (0)
 #endif
 #endif
 
