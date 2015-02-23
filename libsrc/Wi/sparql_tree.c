@@ -2028,7 +2028,7 @@ rvr_can_be_tightened (sparp_t *sparp, rdf_val_range_t *dest, rdf_val_range_t *ad
     return 0; /* Can't be tighened --- it's conflict already, no matter how many reasons do we have for that */
   if (add_on->rvrRestrictions & ~(dest->rvrRestrictions) &
     ( SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK | SPART_VARR_IRI_CALC | SPART_VARR_IS_LIT |
-      SPART_VARR_TYPED | SPART_VARR_FIXED | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL | SPART_VARR_ALWAYS_NULL ) )
+      SPART_VARR_TYPED | SPART_VARR_FIXED | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL | SPART_VARR_IS_BOOL | SPART_VARR_ALWAYS_NULL ) )
     return 1;
   if ((add_on->rvrRestrictions & SPART_VARR_TYPED) && (dest->rvrDatatype != add_on->rvrDatatype))
     return 1; /* Both are typed (if add_on is typed and dest is not then flag diff woud return 1 before), different types would tighten to the conflict */

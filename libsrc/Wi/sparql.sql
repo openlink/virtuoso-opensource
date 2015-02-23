@@ -978,47 +978,17 @@ create function DB.DBA.RQ_SQLVAL_OF_O (in o_col any) returns any -- DEPRECATED
 }
 ;
 
-create function DB.DBA.RQ_BOOL_OF_O (in o_col any) returns any
+create function DB.DBA.RQ_BOOL_OF_O (in o_col any array) returns any
 {
-  declare t, len integer;
-  if (isiri_id (o_col))
-    return NULL;
-  if (isinteger (o_col))
-    {
-      if (o_col)
-        return 1;
-      return 0;
-    }
-  if (__tag of rdf_box = __tag (o_col))
-    {
-      declare twobyte integer;
-      declare dtqname any;
-      if (__tag of varchar <> rdf_box_data_tag (o_col))
-        {
-          whenever sqlstate '*' goto retnull;
-          return neq (rdf_box_data (o_col), 0.0);
-        }
-      twobyte := rdf_box_type (o_col);
-      if (257 = twobyte)
-        goto type_ok;
-      whenever not found goto badtype;
-      select RDT_QNAME into dtqname from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = twobyte;
-      if (dtqname <> UNAME'http://www.w3.org/2001/XMLSchema#string')
-        return null;
+  vectored;
+  return __rdf_bool_of_sqlval (__ro2sq(o_col));
+}
+;
 
-type_ok:
-      return case (length (rdf_box_data (o_col))) when 0 then 0 else 1 end;
-
-badtype:
-      signal ('RDFXX', sprintf ('Unknown datatype in DB.DBA.RQ_BOOL_OF_O, bad type id %d, string value "%s"',
-        twobyte, cast (rdf_box_data (o_col) as varchar) ) );
-    }
-  if (o_col is null)
-    return null;
-  whenever sqlstate '*' goto retnull;
-  return neq (o_col, 0.0);
-retnull:
-  return null;
+create function DB.DBA.RQ_SPARQL_EBV_OF_O (in o_col any array) returns any
+{
+  vectored;
+  return __rdf_sparql_ebv_of_sqlval (__ro2sq(o_col));
 }
 ;
 
@@ -1669,38 +1639,17 @@ create function DB.DBA.RDF_SQLVAL_OF_OBJ (in shortobj any) returns any -- DEPREC
 }
 ;
 
-create function DB.DBA.RDF_BOOL_OF_OBJ (in shortobj any) returns any
+create function DB.DBA.RDF_BOOL_OF_OBJ (in shortobj any array) returns any
 {
-  if (isiri_id (shortobj))
-    return null;
-  if (isinteger (shortobj))
-    {
-      if (shortobj)
-        return 1;
-      return 0;
-    }
-  if (__tag of rdf_box <> __tag (shortobj))
-    {
-      if (shortobj is null)
-        return null;
-      if (equ (shortobj, 0.0) or equ (shortobj, '')) return 0; else return 1;
-    }
-  declare twobyte integer;
-  twobyte := rdf_box_type (shortobj);
-  if (257 = twobyte)
-    goto type_ok;
-  declare dtqname varchar;
-  whenever not found goto badtype;
-  select RDT_QNAME into dtqname from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = twobyte;
-  if (dtqname <> UNAME'http://www.w3.org/2001/XMLSchema#string')
-    return null;
+  vectored;
+  return __rdf_bool_of_sqlval (__ro2sq(shortobj));
+}
+;
 
-type_ok:
-  return case length (rdf_box_data (shortobj)) when 0 then 0 else 1 end;
-
-badtype:
-  signal ('RDFXX', sprintf ('Unknown datatype in DB.DBA.RDF_BOOL_OF_OBJ, bad type id %d, string value "%s"',
-    twobyte, cast (rdf_box_data (shortobj) as varchar) ) );
+create function DB.DBA.RDF_SPARQL_EBV_OF_OBJ (in shortobj any array) returns any
+{
+  vectored;
+  return __rdf_sparql_ebv_of_sqlval (__ro2sq(shortobj));
 }
 ;
 
@@ -16522,7 +16471,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
 {
   declare ver varchar;
   declare inx int;
-  ver := '2014-02-20 0001v7';
+  ver := '2015-02-02 0002v7';
   if (USER <> 'dba')
     signal ('RDFXX', 'Only DBA can reload quad map metadata');
   if (not exists (sparql define input:storage "" ask where {
@@ -16655,7 +16604,8 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_TWOBYTE_OF_LANGUAGE to SPARQL_SELECT',
     'grant execute on DB.DBA.RQ_LONG_OF_O to SPARQL_SELECT', -- DEPRECATED
     'grant execute on DB.DBA.RQ_SQLVAL_OF_O to SPARQL_SELECT', -- DEPRECATED
-    'grant execute on DB.DBA.RDF_BOOL_OF_O to SPARQL_SELECT',
+    'grant execute on DB.DBA.RQ_BOOL_OF_O to SPARQL_SELECT',
+    'grant execute on DB.DBA.RQ_SPARQL_EBV_OF_O to SPARQL_SELECT',
     'grant execute on DB.DBA.RQ_IID_OF_O to SPARQL_SELECT', -- DEPRECATED
     'grant execute on DB.DBA.RQ_O_IS_LIT to SPARQL_SELECT', -- DEPRECATED
     'grant execute on DB.DBA.RDF_OBJ_ADD to SPARQL_SELECT',
@@ -16670,6 +16620,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_LANGUAGE_OF_OBJ to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_SQLVAL_OF_OBJ to SPARQL_SELECT', -- DEPRECATED
     'grant execute on DB.DBA.RDF_BOOL_OF_OBJ to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_SPARQL_EBV_OF_OBJ to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_QNAME_OF_OBJ to SPARQL_SELECT', -- DEPRECATED
     'grant execute on DB.DBA.RDF_STRSQLVAL_OF_OBJ to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_OBJ_OF_LONG to SPARQL_SELECT',

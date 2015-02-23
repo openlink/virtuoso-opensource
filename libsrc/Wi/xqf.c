@@ -265,7 +265,7 @@ __integer_from_string (caddr_t *n, const char *str, int do_what)
   while ('0'== *p) p++;
   if  (
     (s && ((XQ_NNINT == do_what) || (XQ_PINT == do_what) || ((XQ_UINT8 <= do_what) && (XQ_UINT64 >= do_what)))) ||
-    (!s && ((XQ_NPINT == do_what) || (XQ_NINT == do_what))) ||
+    (!s && ((XQ_NINT == do_what) || ((XQ_NPINT == do_what) && ('\0' != p[0])))) ||
     (('\0' == p[0]) && ((XQ_NINT == do_what) || (XQ_PINT == do_what))) )
     sqlr_new_error ("42001", "XPQ??", "'%.100s' is not a valid value for %s constructor", str, s_int_name[do_what] );
   if (XQ_INT <= do_what)
