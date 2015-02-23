@@ -4463,10 +4463,12 @@ valmode_is_found:
         return SSG_VALMODE_NUM;
       if (
         !strcmp (name, "SPECIAL::bif:__rgs_assert_cbk") ||
-        !strcmp (name, "SPECIAL::bif:__rgs_assert") ||
+        !strcmp (name, "SPECIAL::bif:__rgs_assert") )
+        return SSG_VALMODE_SQLVAL;
+      if (
         !strcmp (name, "SPECIAL::bif:__rgs_ack_cbk") ||
         !strcmp (name, "SPECIAL::bif:__rgs_ack") )
-        return SSG_VALMODE_SQLVAL;
+        return SSG_VALMODE_NUM;
       spar_internal_error (sparp, "sparp_" "rettype_of_function(): unsupported SPECIAL");
     }
   if (!strncmp (name, "bif:", 4))
@@ -4783,7 +4785,7 @@ const char *ssg_tmpl_ref_short_of_X (qm_format_t *qm_fmt, ssg_valmode_t native)
 
 #define SSG_IDENTITY_VALMODED_TMPL ((const char *)1)
 
-const char *ssg_tmpl_X_of_Y (ssg_valmode_t needed, ssg_valmode_t native)
+const char *ssg_tmpl_X_of_Y (spar_sqlgen_t *ssg, ssg_valmode_t needed, ssg_valmode_t native)
 {
   if (SSG_VALMODE_LONG == needed)
     {
@@ -4813,8 +4815,18 @@ const char *ssg_tmpl_X_of_Y (ssg_valmode_t needed, ssg_valmode_t native)
   else if (SSG_VALMODE_BOOL == needed)
     {
       if (SSG_VALMODE_NUM	== native)	return SSG_IDENTITY_VALMODED_TMPL;
-      if (SSG_VALMODE_LONG	== native)	return " DB.DBA.RDF_BOOL_OF_LONG (^{tree}^)";
-      if (SSG_VALMODE_SQLVAL	== native)	return SSG_IDENTITY_VALMODED_TMPL;
+      if (SSG_VALMODE_LONG	== native)
+        {
+          if (ssg->ssg_sparp->sparp_ebv_mode)
+            return " __rdf_sparql_ebv_of_sqlval (__ro2sq (^{tree}^))";
+          return " __rdf_bool_of_sqlval (__ro2sq (^{tree}^))";
+        }
+      if (SSG_VALMODE_SQLVAL	== native)
+        {
+          if (ssg->ssg_sparp->sparp_ebv_mode)
+            return " __rdf_sparql_ebv_of_sqlval (^{tree}^)";
+          return SSG_IDENTITY_VALMODED_TMPL;
+        }
     }
   else if (SSG_VALMODE_NUM == needed)
     {
@@ -4986,7 +4998,7 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
       ssg_print_valmoded_scalar_expn (ssg, tree, SSG_VALMODE_LONG, native, asname);
       return;
     }
-  tmpl = ssg_tmpl_X_of_Y (needed, native);
+  tmpl = ssg_tmpl_X_of_Y (ssg, needed, native);
   if (SSG_IDENTITY_VALMODED_TMPL == tmpl)
     ssg_print_scalar_expn (ssg, tree, native, asname);
   else
@@ -5395,7 +5407,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
                 ssg_puts_with_comment (" NULL", "wrong bool");
                 goto print_asname;
               }
-            if ((DV_STRING == DV_TYPE_OF (litvalue)) && (NULL != littype) && rb_uname_is_parseable_datatype (littype))
+            if ((DV_STRING == DV_TYPE_OF (litvalue)) && (NULL != littype) && (rb_uname_to_flags_of_parseable_datatype (littype) & RDF_TYPE_PARSEABLE))
               ssg_puts_with_comment (" NULL", "wrong parseable");
             else
               ssg_print_bool_of_plain_box (ssg, litvalue);
