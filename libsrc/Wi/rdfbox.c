@@ -174,83 +174,91 @@ rdf_fetch_or_create_system_iri_ids (caddr_t * qst)
 iri_id_t bnode_t_treshold = ~((iri_id_t)0);
 
 int
-rb_uname_is_parseable_datatype (caddr_t dt_uname)
+rb_uname_to_flags_of_parseable_datatype (caddr_t dt_uname)
 {
-  return
+  if
+    ( (uname_xmlschema_ns_uri_hash_byte		    == dt_uname)
+    || (uname_xmlschema_ns_uri_hash_decimal		== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_double		== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_float		== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_int			== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_integer		== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_long		== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_negativeInteger	== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_nonNegativeInteger	== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_nonPositiveInteger	== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_positiveInteger	== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_short		== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_unsignedByte	== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_unsignedInt		== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_unsignedLong	== dt_uname)
+    || (uname_xmlschema_ns_uri_hash_unsignedShort	== dt_uname) )
+    return RDF_TYPE_PARSEABLE | RDF_TYPE_PARSEABLE_TO_NUMERIC;
+  if
     ( (uname_xmlschema_ns_uri_hash_boolean		== dt_uname)
-    || (uname_xmlschema_ns_uri_hash_byte		== dt_uname)
     || (uname_xmlschema_ns_uri_hash_date		== dt_uname)
     || (uname_xmlschema_ns_uri_hash_dateTime		== dt_uname)
   /*|| (uname_xmlschema_ns_uri_hash_dateTimeStamp	== dt_uname)*/
     || (uname_xmlschema_ns_uri_hash_dayTimeDuration	== dt_uname)
-    || (uname_xmlschema_ns_uri_hash_decimal		== dt_uname)
-    || (uname_xmlschema_ns_uri_hash_double		== dt_uname)
     || (uname_xmlschema_ns_uri_hash_duration		== dt_uname)
-    || (uname_xmlschema_ns_uri_hash_float		== dt_uname)
     || (uname_xmlschema_ns_uri_hash_gDay		== dt_uname)
     || (uname_xmlschema_ns_uri_hash_gMonth		== dt_uname)
     || (uname_xmlschema_ns_uri_hash_gMonthDay		== dt_uname)
     || (uname_xmlschema_ns_uri_hash_gYear		== dt_uname)
     || (uname_xmlschema_ns_uri_hash_gYearMonth		== dt_uname)
   /*|| (uname_xmlschema_ns_uri_hash_hexBinary		== dt_uname)*/
-    || (uname_xmlschema_ns_uri_hash_int			== dt_uname)
-    || (uname_xmlschema_ns_uri_hash_integer		== dt_uname)
   /*|| (uname_xmlschema_ns_uri_hash_language		== dt_uname)*/
-    || (uname_xmlschema_ns_uri_hash_long		== dt_uname)
-    || (uname_xmlschema_ns_uri_hash_negativeInteger	== dt_uname)
-    || (uname_xmlschema_ns_uri_hash_nonNegativeInteger	== dt_uname)
-    || (uname_xmlschema_ns_uri_hash_nonPositiveInteger	== dt_uname)
   /*|| (uname_xmlschema_ns_uri_hash_normalizedString	== dt_uname)*/
-    || (uname_xmlschema_ns_uri_hash_positiveInteger	== dt_uname)
-    || (uname_xmlschema_ns_uri_hash_short		== dt_uname)
   /*|| (uname_xmlschema_ns_uri_hash_string		== dt_uname)*/
     || (uname_xmlschema_ns_uri_hash_time		== dt_uname)
   /*|| (uname_xmlschema_ns_uri_hash_token		== dt_uname)*/
-    || (uname_xmlschema_ns_uri_hash_unsignedByte	== dt_uname)
-    || (uname_xmlschema_ns_uri_hash_unsignedInt		== dt_uname)
-    || (uname_xmlschema_ns_uri_hash_unsignedLong	== dt_uname)
-    || (uname_xmlschema_ns_uri_hash_unsignedShort	== dt_uname)
-    || (uname_xmlschema_ns_uri_hash_yearMonthDuration	== dt_uname) );
+    || (uname_xmlschema_ns_uri_hash_yearMonthDuration	== dt_uname) )
+    return RDF_TYPE_PARSEABLE;
+  return 0;
 }
 
 int
-rb_twobyte_is_parseable_datatype (unsigned short dt_twobyte)
+rb_twobyte_to_flags_of_parseable_datatype (unsigned short dt_twobyte)
 {
-  return
+  if
+    ( (rb_type__xsd_byte		== dt_twobyte)
+    || (rb_type__xsd_decimal		== dt_twobyte)
+    || (rb_type__xsd_double		== dt_twobyte)
+    || (rb_type__xsd_float		== dt_twobyte)
+    || (rb_type__xsd_int		== dt_twobyte)
+    || (rb_type__xsd_integer		== dt_twobyte)
+    || (rb_type__xsd_long		== dt_twobyte)
+    || (rb_type__xsd_negativeInteger	== dt_twobyte)
+    || (rb_type__xsd_nonNegativeInteger	== dt_twobyte)
+    || (rb_type__xsd_nonPositiveInteger	== dt_twobyte)
+    || (rb_type__xsd_positiveInteger	== dt_twobyte)
+    || (rb_type__xsd_short		== dt_twobyte)
+    || (rb_type__xsd_unsignedByte	== dt_twobyte)
+    || (rb_type__xsd_unsignedInt	== dt_twobyte)
+    || (rb_type__xsd_unsignedLong	== dt_twobyte)
+    || (rb_type__xsd_unsignedShort	== dt_twobyte) )
+    return RDF_TYPE_PARSEABLE | RDF_TYPE_PARSEABLE_TO_NUMERIC;
+  if
     ( (rb_type__xsd_boolean		== dt_twobyte)
-    || (rb_type__xsd_byte		== dt_twobyte)
     || (rb_type__xsd_date		== dt_twobyte)
     || (rb_type__xsd_dateTime		== dt_twobyte)
   /*|| (rb_type__xsd_dateTimeStamp	== dt_twobyte)*/
     || (rb_type__xsd_dayTimeDuration	== dt_twobyte)
-    || (rb_type__xsd_decimal		== dt_twobyte)
-    || (rb_type__xsd_double		== dt_twobyte)
     || (rb_type__xsd_duration		== dt_twobyte)
-    || (rb_type__xsd_float		== dt_twobyte)
     || (rb_type__xsd_gDay		== dt_twobyte)
     || (rb_type__xsd_gMonth		== dt_twobyte)
     || (rb_type__xsd_gMonthDay		== dt_twobyte)
     || (rb_type__xsd_gYear		== dt_twobyte)
     || (rb_type__xsd_gYearMonth		== dt_twobyte)
   /*|| (rb_type__xsd_hexBinary		== dt_twobyte)*/
-    || (rb_type__xsd_int		== dt_twobyte)
-    || (rb_type__xsd_integer		== dt_twobyte)
   /*|| (rb_type__xsd_language		== dt_twobyte)*/
-    || (rb_type__xsd_long		== dt_twobyte)
-    || (rb_type__xsd_negativeInteger	== dt_twobyte)
-    || (rb_type__xsd_nonNegativeInteger	== dt_twobyte)
-    || (rb_type__xsd_nonPositiveInteger	== dt_twobyte)
   /*|| (rb_type__xsd_normalizedString	== dt_twobyte)*/
-    || (rb_type__xsd_positiveInteger	== dt_twobyte)
-    || (rb_type__xsd_short		== dt_twobyte)
   /*|| (rb_type__xsd_string		== dt_twobyte)*/
     || (rb_type__xsd_time		== dt_twobyte)
   /*|| (rb_type__xsd_token		== dt_twobyte)*/
-    || (rb_type__xsd_unsignedByte	== dt_twobyte)
-    || (rb_type__xsd_unsignedInt	== dt_twobyte)
-    || (rb_type__xsd_unsignedLong	== dt_twobyte)
-    || (rb_type__xsd_unsignedShort	== dt_twobyte)
-    || (rb_type__xsd_yearMonthDuration	== dt_twobyte) );
+    || (rb_type__xsd_yearMonthDuration	== dt_twobyte) )
+    return RDF_TYPE_PARSEABLE;
+  return 0;
 }
 
 caddr_t
@@ -2198,10 +2206,9 @@ rdf_bool_of_plain_box (caddr_t val)
     case DV_SINGLE_FLOAT: return (caddr_t)(unbox_float (val) ? 1 : 0);
     case DV_DOUBLE_FLOAT: return (caddr_t)(unbox_double (val) ? 1 : 0);
     case DV_NUMERIC: return (caddr_t)(num_is_zero ((numeric_t)(val)) ? 1 : 0);
-    case DV_DATETIME: case DV_XML_ENTITY: case DV_GEO: return (caddr_t)1;
     case DV_STRING: case DV_BIN: return (caddr_t)((1 < box_length (val)) ? 1 : 0);
     case DV_WIDE: return (caddr_t)((sizeof(wchar_t) < box_length (val)) ? 1 : 0);
-    default: /* case DV_IRI_ID: case DV_UNAME: case DV_DB_NULL: */ return NEW_DB_NULL;
+    default: /* case DV_DATETIME: case DV_XML_ENTITY: case DV_GEO: case DV_IRI_ID: case DV_UNAME: case DV_DB_NULL: */ return NEW_DB_NULL;
     }
 }
 
@@ -2234,9 +2241,13 @@ bif_rdf_bool_of_sqlval  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
               return (caddr_t)0;
             return NEW_DB_NULL;
           }
-        if ((DV_STRING == box_dtp) && rb_twobyte_is_parseable_datatype (rb->rb_type))
-          return (caddr_t)0;
-        return rdf_bool_of_plain_box (rb->rb_box);
+        if (rb_twobyte_to_flags_of_parseable_datatype (rb->rb_type) & RDF_TYPE_PARSEABLE_TO_NUMERIC)
+          {
+            if (DV_STRING == box_dtp)
+              return (caddr_t)0;
+            return rdf_bool_of_plain_box (rb->rb_box);
+          }
+        return NEW_DB_NULL;
       }
     default: return rdf_bool_of_plain_box (shortobj);
     }
@@ -6445,11 +6456,9 @@ rdf_box_init ()
   bif_define ("__rdf_graph_approx_perms", bif_rdf_graph_approx_perms);
   bif_define ("__rdf_graph_specific_perms_of_user", bif_rdf_graph_specific_perms_of_user);
   bif_define ("__rgs_assert", bif_rgs_assert);
-  bif_define ("__rgs_assert_cbk", bif_rgs_assert_cbk);
-  bif_set_uses_index (bif_rgs_assert_cbk );
-  bif_define ("__rgs_ack", bif_rgs_ack);
-  bif_define ("__rgs_ack_cbk", bif_rgs_ack_cbk);
-  bif_set_uses_index (bif_rgs_ack_cbk );
+  bif_define_ex ("__rgs_assert_cbk", bif_rgs_assert_cbk, BMD_USES_INDEX, BMD_DONE);
+  bif_define_ex ("__rgs_ack", bif_rgs_ack, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("__rgs_ack_cbk", bif_rgs_ack_cbk, BMD_RET_TYPE, &bt_integer, BMD_USES_INDEX, BMD_DONE);
   bif_define_ex ("__rdf_repl_uid", bif_rdf_repl_uid, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("__rgs_prepare_del_or_ins", bif_rgs_prepare_del_or_ins, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_set_uses_index (bif_rgs_prepare_del_or_ins);
