@@ -6351,7 +6351,7 @@ bif_iri_name_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 extern box_tmp_copy_f box_tmp_copier[256];
 void bif_ro2lo_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
 void bif_ro2sq_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
-void bif_ro2lo_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
+void bif_ro2ebv_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
 void bif_str_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
 
 
@@ -6405,6 +6405,8 @@ rdf_box_init ()
   bif_define_ex ("__rdf_box_to_ro_id_search_fields", bif_rdf_box_to_ro_id_search_fields, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("__rdf_sqlval_of_obj", bif_rdf_sqlval_of_obj, BMD_ALIAS, "__ro2sq", BMD_VECTOR_IMPL, bif_ro2sq_vec, BMD_RET_TYPE,
       &bt_any, BMD_USES_INDEX, BMD_DONE);
+  bif_define_ex ("__rdf_bool_of_obj", bif_rdf_bool_of_obj, BMD_ALIAS, "__rdf_sparql_ebv_of_obj", BMD_ALIAS, "__ro2ebv",
+      /*BMD_VECTOR_IMPL, bif_ro2ebv_vec, */ BMD_RET_TYPE, &bt_integer, BMD_USES_INDEX, BMD_DONE);
   bif_define_ex ("__rdf_bool_of_sqlval", bif_rdf_bool_of_sqlval, BMD_ALIAS, "__rdf_sparql_ebv_of_sqlval", BMD_RET_TYPE, &bt_any,
       BMD_USES_INDEX, BMD_DONE);
   bif_define_ex ("__rdf_strsqlval", bif_rdf_strsqlval, BMD_VECTOR_IMPL, bif_str_vec, BMD_RET_TYPE, &bt_varchar, BMD_USES_INDEX,
