@@ -376,7 +376,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <tree> spar_grouping_sets
 %type <backstack> spar_grouping_set_list
 %type <tree> spar_grouping_set
-%type <tree> spar_options_of_top
+%type <tree> spar_options_of_top_lpar
 %type <token_type> spar_all_distinct_opt
 %type <token_type> spar_ties_opt
 %type <tree> spar_having_clause_opt
@@ -1082,24 +1082,24 @@ spar_grouping_set
 	| _LPAR spar_order_conditions _RPAR {
 		$$ = sparp_make_builtin_call (sparp_arg, SPAR_BIF__GROUPING_SET,  (SPART **)t_list (2, NULL,
 		    sparp_make_builtin_call (sparp_arg, SPAR_BIF__GROUPING_LIST, (SPART **)t_revlist_to_array ($2)) ) ); }
-	| ORDER_L BY_L spar_options_of_top _LPAR spar_order_conditions _RPAR {
+	| ORDER_L BY_L spar_options_of_top_lpar spar_order_conditions _RPAR {
 		$$ = sparp_make_builtin_call (sparp_arg, SPAR_BIF__GROUPING_SET,  (SPART **)t_list (2, $3,
-		    sparp_make_builtin_call (sparp_arg, SPAR_BIF__GROUPING_LIST, (SPART **)t_revlist_to_array ($5)) ) ); }
+		    sparp_make_builtin_call (sparp_arg, SPAR_BIF__GROUPING_LIST, (SPART **)t_revlist_to_array ($4)) ) ); }
 	;
 
-spar_options_of_top
-	: spar_all_distinct_opt {
+spar_options_of_top_lpar
+	: spar_all_distinct_opt _LPAR {
 		if (0 == $1)
 		  $$ = NULL;
 		else
 		  $$ = sparp_make_builtin_call (sparp_arg, TOP_L, (SPART **)t_list (4, $1, NULL, NULL, NULL)); }
-	| spar_all_distinct_opt TOP_L spar_integer_literal spar_ties_opt {
+	| spar_all_distinct_opt TOP_L spar_integer_literal spar_ties_opt _LPAR {
 		$$ = sparp_make_builtin_call (sparp_arg, TOP_L, (SPART **)t_list (4, $1, $3, NULL, $4)); }
-	| spar_all_distinct_opt TOP_L _LPAR spar_expn _RPAR spar_ties_opt {
+	| spar_all_distinct_opt TOP_L _LPAR spar_expn _RPAR spar_ties_opt _LPAR {
 		$$ = sparp_make_builtin_call (sparp_arg, TOP_L, (SPART **)t_list (4, $1, $4, NULL, $6)); }
-	| spar_all_distinct_opt TOP_L spar_integer_literal _COMMA spar_optminus_integer_literal spar_ties_opt {
+	| spar_all_distinct_opt TOP_L spar_integer_literal _COMMA spar_optminus_integer_literal spar_ties_opt _LPAR {
 		$$ = sparp_make_builtin_call (sparp_arg, TOP_L, (SPART **)t_list (4, $1, $3, $5, $6)); }
-	| spar_all_distinct_opt TOP_L _LPAR spar_expn _COMMA spar_expn _RPAR spar_ties_opt {
+	| spar_all_distinct_opt TOP_L _LPAR spar_expn _COMMA spar_expn _RPAR spar_ties_opt _LPAR {
 		$$ = sparp_make_builtin_call (sparp_arg, TOP_L, (SPART **)t_list (4, $1, $4, $6, $8)); }
 	;
 
@@ -2381,12 +2381,12 @@ spar_numeric_literal	/* [59]	NumericLiteral	 ::=  INTEGER | DECIMAL | DOUBLE	*/
 	;
 
 spar_integer_literal
-	: SPARQL_INTEGER	{ $$ = spartlist (sparp_arg, 4, SPAR_LIT, $1, uname_xmlschema_ns_uri_hash_integer, NULL); }
+	: SPARQL_INTEGER	{ $$ = spartlist (sparp_arg, 5, SPAR_LIT, $1, uname_xmlschema_ns_uri_hash_integer, NULL, NULL); }
 	;
 
 spar_optminus_integer_literal
-	: SPARQL_INTEGER	{ $$ = spartlist (sparp_arg, 4, SPAR_LIT, $1, uname_xmlschema_ns_uri_hash_integer, NULL); }
-	| MINUS_L SPARQL_INTEGER	{ $$ = spartlist (sparp_arg, 4, SPAR_LIT, t_box_num (-unbox($2)), uname_xmlschema_ns_uri_hash_integer, NULL); }
+	: SPARQL_INTEGER	{ $$ = spartlist (sparp_arg, 5, SPAR_LIT, $1, uname_xmlschema_ns_uri_hash_integer, NULL, NULL); }
+	| MINUS_L SPARQL_INTEGER	{ $$ = spartlist (sparp_arg, 5, SPAR_LIT, t_box_num (-unbox($2)), uname_xmlschema_ns_uri_hash_integer, NULL, NULL); }
 	;
 
 spar_rdf_literal	/* [60]	RDFLiteral	 ::=  String ( LANGTAG | ( '^^' IRIref ) )?	*/

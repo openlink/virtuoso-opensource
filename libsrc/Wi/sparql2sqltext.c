@@ -4358,7 +4358,7 @@ expanded_sameterm_ready:
                     }
                   if (NULL != from_n)
                     {
-                      ssg_puts (" (");
+                      ssg_puts (" TOP (");
                       ssg->ssg_indent++;
                       ssg_print_scalar_expn (ssg, from_n, SSG_VALMODE_SQLVAL, NULL_ASNAME);
                       if (NULL != to_n)

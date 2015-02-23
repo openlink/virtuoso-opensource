@@ -187,6 +187,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "THEN",			THEN_L			, 0
 "TIMEZONE",		SPARQL_BIF		, SPAR_BIF_TIMEZONE
 "TO",			TO_L			, 0
+"TOP",			TOP_L			, 0
 "TRANSITIVE",		TRANSITIVE_L		, 0
 "TRUE",			true_L			, 0
 "TZ",			SPARQL_BIF		, SPAR_BIF_TZ
