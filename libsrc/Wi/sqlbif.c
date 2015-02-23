@@ -16106,7 +16106,7 @@ bif_rdf_valid_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (NULL == dt_uname) /* Invalid twobytes of a datatype? */
         return box_bool (0);
       /* Despite the use of bif_string_or_uname_or_wide_or_null_arg() we handle only UNAMEs here */
-      if (rb_uname_is_parseable_datatype (dt_uname))
+      if (rb_uname_to_flags_of_parseable_datatype (dt_uname) & RDF_TYPE_PARSEABLE)
         return box_bool (0);
     }
   return box_bool (1);
