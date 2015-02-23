@@ -2206,10 +2206,54 @@ rdf_bool_of_plain_box (caddr_t val)
     case DV_SINGLE_FLOAT: return (caddr_t)(unbox_float (val) ? 1 : 0);
     case DV_DOUBLE_FLOAT: return (caddr_t)(unbox_double (val) ? 1 : 0);
     case DV_NUMERIC: return (caddr_t)(num_is_zero ((numeric_t)(val)) ? 1 : 0);
-    case DV_STRING: case DV_BIN: return (caddr_t)((1 < box_length (val)) ? 1 : 0);
+    case DV_STRING: return (box_flags (val) & BF_IRI) ? NEW_DB_NULL : ((caddr_t)((1 < box_length (val)) ? 1 : 0));
+    case DV_BIN: return (caddr_t)((1 < box_length (val)) ? 1 : 0);
     case DV_WIDE: return (caddr_t)((sizeof(wchar_t) < box_length (val)) ? 1 : 0);
     default: /* case DV_DATETIME: case DV_XML_ENTITY: case DV_GEO: case DV_IRI_ID: case DV_UNAME: case DV_DB_NULL: */ return NEW_DB_NULL;
     }
+}
+
+caddr_t
+bif_rdf_bool_of_obj (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t shortobj = bif_arg (qst, args, 0, "__rdf_bool_of_obj");
+  dtp_t so_dtp = DV_TYPE_OF (shortobj);
+  rdf_box_t *rb;
+  query_instance_t * qi = (query_instance_t *) qst;
+  switch (DV_TYPE_OF (shortobj))
+    {
+    case DV_RDF_ID:
+      {
+      sqlr_new_error ("42000", "RDF31", "Internal SPARQL compiler error: cannot get EBV from RDF_ID");
+      return NULL; /* Never reached */
+      }
+    case DV_RDF:
+      {
+        dtp_t box_dtp;
+        rb = (rdf_box_t *)shortobj;
+        if (!rb->rb_is_complete)
+          rb_complete (rb, qi->qi_trx, qi);
+        box_dtp = DV_TYPE_OF (rb->rb_box);
+        if ((DV_STRING != box_dtp) || (RDF_BOX_DEFAULT_TYPE >= rb->rb_type))
+          return rdf_bool_of_plain_box (rb->rb_box);
+        if (rb_type__xsd_boolean == rb->rb_type)
+          {
+            if (!strcasecmp (rb->rb_box, "true") || !strcmp (rb->rb_box, "1"))
+              return (caddr_t)1;
+            if (!strcasecmp (rb->rb_box, "false") || !strcmp (rb->rb_box, "0"))
+              return (caddr_t)0;
+            return NEW_DB_NULL;
+          }
+        if (rb_twobyte_to_flags_of_parseable_datatype (rb->rb_type) & RDF_TYPE_PARSEABLE_TO_NUMERIC)
+          {
+            if (DV_STRING == box_dtp)
+              return (caddr_t)0;
+            return rdf_bool_of_plain_box (rb->rb_box);
+          }
+        return NEW_DB_NULL;
+      }
+    }
+  return rdf_bool_of_plain_box (shortobj);
 }
 
 caddr_t
