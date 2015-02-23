@@ -168,6 +168,30 @@ dk_mmap_brk (size_t sz)
   ((sz) >= box_min_mmap && (sz) < 0xffffff ? mm_free_sized (ptr, sz) : dk_free (ptr, sz))
 #endif
 
+#ifndef NDEBUG
+#define dk_alloc_box_check_length(bytes,tag) do { \
+  if ((bytes) & ~0xffffff) \
+    GPF_T1 ("box to allocate is too large"); \
+  switch ((tag)) { \
+    case DV_SHORT_STRING_SERIAL: case DV_LONG_WIDE: \
+      GPF_T1 ("misused tag of box to allocate"); \
+      break; \
+    case DV_WIDE: \
+      if ((bytes) % sizeof (wchar_t)) \
+        GPF_T1 ("DV_WIDE of length that is not divisible on sizeof (wchar_t)"); \
+      if (0 == (bytes)) \
+        GPF_T1 ("DV_WIDE with no room for trailing zero"); \
+      break; \
+    case DV_STRING: case DV_C_STRING: \
+      if (0 == (bytes)) \
+        GPF_T1 ("String with no room for trailing zero"); \
+      break; \
+    } \
+} while (0)
+#else
+#define dk_alloc_box_check_length(bytes,tag) do { ; } while (0)
+#endif
+
 
 size_t box_min_mmap = (1024 * 100 ) - 8;
 #undef dk_alloc_box
@@ -176,11 +200,7 @@ dk_alloc_box (size_t bytes, dtp_t tag)
 {
   unsigned char *ptr;
   size_t align_bytes;
-#ifdef MALLOC_DEBUG
-  if (bytes & ~0xffffff)
-    GPF_T1 ("box to allocate is too large");
-#endif
-
+  dk_alloc_box_check_length (bytes, tag);
   /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
   align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
@@ -248,11 +268,7 @@ dk_try_alloc_box (size_t bytes, dtp_t tag)
   unsigned char *ptr = NULL;
   size_t align_bytes;
 
-#ifdef MALLOC_DEBUG
-  if (bytes & ~0xffffff)
-    GPF_T1 ("box to allocate is too large");
-#endif
-
+  dk_alloc_box_check_length (bytes, tag);
   /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
   align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
@@ -287,7 +303,7 @@ dk_alloc_box_zero (size_t bytes, dtp_t tag)
 {
   unsigned char *ptr;
   size_t align_bytes;
-
+  dk_alloc_box_check_length (bytes, tag);
   /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
   align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
@@ -320,7 +336,7 @@ dbg_dk_alloc_box (DBG_PARAMS size_t bytes, dtp_t tag)
 {
   unsigned char *ptr;
   uint32 align_bytes;
-
+  dk_alloc_box_check_length (bytes, tag);
   /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
   align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
@@ -352,7 +368,7 @@ dbg_dk_alloc_box_long (DBG_PARAMS size_t bytes, dtp_t tag)
 {
   unsigned char *ptr;
   uint32 align_bytes;
-
+  dk_alloc_box_check_length (bytes, tag);
   /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
   align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
@@ -386,7 +402,7 @@ dbg_dk_try_alloc_box (DBG_PARAMS size_t bytes, dtp_t tag)
 {
   unsigned char *ptr;
   uint32 align_bytes;
-
+  dk_alloc_box_check_length (bytes, tag);
   /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
   align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
@@ -418,7 +434,7 @@ dbg_dk_alloc_box_zero (DBG_PARAMS size_t bytes, dtp_t tag)
 {
   unsigned char *ptr;
   uint32 align_bytes;
-
+  dk_alloc_box_check_length (bytes, tag);
   /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
   align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
