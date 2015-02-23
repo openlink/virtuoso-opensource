@@ -1350,7 +1350,8 @@ void
 ceic_finalize_ranges (ce_ins_ctx_t * ceic, int is_rb)
 {
   it_cursor_t *itc = ceic->ceic_itc;
-  int inx;
+  dbe_key_t *key = itc->itc_insert_key;
+  int inx, deletes = 0;
   row_lock_t *rl = itc->itc_rl;
   itc->itc_range_fill = 0;
   for (inx = 0; inx < rl->rl_n_cols; inx++)
@@ -1359,6 +1360,7 @@ ceic_finalize_ranges (ce_ins_ctx_t * ceic, int is_rb)
       int action = clk_action (ceic, clk, is_rb);
       if (CEA_DELETE == action)
 	{
+	  deletes ++;
 	  itc_range (itc, rl->rl_cols[inx]->clk_pos, COL_NO_ROW);
 	  if (RB_CPT != is_rb)
 	    clk->clk_change |= CLK_FINALIZED;
@@ -1370,6 +1372,10 @@ ceic_finalize_ranges (ce_ins_ctx_t * ceic, int is_rb)
 	    clk->clk_change |= CLK_FINALIZED;
 	}
     }
+  /* update statistics */
+  if (key->key_is_primary)
+    key->key_table->tb_count_delta -= deletes;
+  key->key_n_deletes += deletes;
 }
 
 int

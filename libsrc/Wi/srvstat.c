@@ -2174,6 +2174,8 @@ bif_key_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    return (box_num (it_remap_count (key->key_fragments[0]->kf_it)));
 	  if (0 == strcmp (stat_name, "n_rows"))
 	    return (box_num (key->key_table->tb_count));
+	  if (0 == strcmp (stat_name, "n_deletes"))
+	    return (box_num (key->key_n_deletes));
 	  if (0 == strcmp (stat_name, "ac_in"))
 	    return (box_num (key->key_ac_in));
 	  if (0 == strcmp (stat_name, "ac_out"))
