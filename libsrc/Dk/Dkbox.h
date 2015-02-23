@@ -889,6 +889,12 @@ caddr_t dbg_box_vsprintf (const char *file, int line, size_t buflen_eval, const 
 
 EXE_EXPORT (caddr_t, box_sprintf, (size_t buflen_eval, const char *format,...));
 
+extern caddr_t box_sprintf (size_t buflen_eval, const char *format,...)
+#ifdef __GNUC__
+                __attribute__ ((format (printf, 2, 3)))
+#endif
+;
+
 #ifdef MALLOC_DEBUG
 typedef caddr_t box_sprintf_impl_t (size_t buflen_eval, const char *format, ...);
 typedef struct box_sprintf_track_s

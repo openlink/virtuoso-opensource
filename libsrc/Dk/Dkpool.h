@@ -370,7 +370,11 @@ void mp_check_tree (mem_pool_t * mp, box_t box);
 
 #ifdef _DKSYSTEM_H
 caddr_t t_box_vsprintf (size_t buflen_eval, const char *format, va_list tail);
-caddr_t t_box_sprintf (size_t buflen_eval, const char *format, ...);
+caddr_t t_box_sprintf (size_t buflen_eval, const char *format, ...)
+#ifdef __GNUC__
+                __attribute__ ((format (printf, 2, 3)))
+#endif
+;
 #endif
 
 void mp_trash (mem_pool_t * mp, caddr_t box);
