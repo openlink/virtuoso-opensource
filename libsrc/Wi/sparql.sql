@@ -1628,7 +1628,7 @@ create function DB.DBA.RDF_LANGUAGE_OF_OBJ (in shortobj any array, in dflt varch
   -- dbg_obj_princ ('DB.DBA.RDF_LANGUAGE_OF_OBJ (', shortobj, ') found twobyte ', twobyte);
   if (257 = twobyte)
     return dflt;
-  return coalesce ((select lower (RL_ID)  from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte), 
+  return coalesce ((select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte), 
      signal ('RDFXX', sprintf ('Unknown language in DB.DBA.RDF_LANGUAGE_OF_OBJ, bad string "%s"', cast (shortobj as varchar))));
 }
 ;
@@ -1919,7 +1919,7 @@ create function DB.DBA.RDF_LANGUAGE_OF_LONG (in longobj any, in dflt varchar := 
       if (257 = twobyte)
         return dflt;
       whenever not found goto badlang;
-      select lower (RL_ID) into res from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte;
+      select RL_ID into res from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte;
       return res;
 
 badlang:
@@ -3632,7 +3632,7 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
         }
       else if (257 <> rdf_box_lang (obj))
         {
-          res := coalesce ((select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
+          res := coalesce ((select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
           http ('"@', ses); http (res, ses); http (' ', ses);
         }
       else
@@ -4349,7 +4349,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
               if (257 <> rdf_box_type (obj))
                 dt := coalesce ((select __bft (RDT_QNAME, 1) from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = rdf_box_type (obj)));
               else if (257 <> rdf_box_lang (obj))
-                lang := coalesce ((select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
+                lang := coalesce ((select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
               sqlval := __rdf_sqlval_of_obj (obj, 1);
               if (__tag of datetime = __tag (sqlval))
                 {
@@ -4553,7 +4553,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
           if (__tag of rdf_box = __tag (obj))
             {
               if (257 <> rdf_box_lang (obj))
-                lang := coalesce ((select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
+                lang := coalesce ((select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
               else if (257 <> rdf_box_type (obj))
                 dt := coalesce ((select __bft (RDT_QNAME, 1) from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = rdf_box_type (obj)));
               sqlval := __rdf_sqlval_of_obj (obj, 1);
@@ -4715,7 +4715,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
           if (__tag of rdf_box = __tag (obj))
             {
               if (257 <> rdf_box_lang (obj))
-                lang := coalesce ((select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
+                lang := coalesce ((select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
               else if (257 <> rdf_box_type (obj))
                 dt := coalesce ((select __bft (RDT_QNAME, 1) from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = rdf_box_type (obj)));
               sqlval := __rdf_sqlval_of_obj (obj, 1);
@@ -4881,7 +4881,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
           if (__tag of rdf_box = __tag (obj))
             {
               if (257 <> rdf_box_lang (obj))
-                lang := coalesce ((select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
+                lang := coalesce ((select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
 --DT          else if (257 <> rdf_box_type (obj))
 --DT            dt := coalesce ((select __bft (RDT_QNAME, 1) from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = rdf_box_type (obj)));
               sqlval := __rdf_sqlval_of_obj (obj, 1);
@@ -5087,7 +5087,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
           if (__tag of rdf_box = __tag (obj))
             {
               if (257 <> rdf_box_lang (obj))
-                lang := coalesce ((select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
+                lang := coalesce ((select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
 --DT          else if (257 <> rdf_box_type (obj))
 --DT            dt := coalesce ((select __bft (RDT_QNAME, 1) from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = rdf_box_type (obj)));
               sqlval := __rdf_sqlval_of_obj (obj, 1);
@@ -5224,7 +5224,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (inout triples any, inout 
           if (__tag of rdf_box = __tag (obj))
             {
               if (257 <> rdf_box_lang (obj))
-                lang := coalesce ((select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
+                lang := coalesce ((select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
 --DT          else if (257 <> rdf_box_type (obj))
 --DT            dt := coalesce ((select __bft (RDT_QNAME, 1) from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = rdf_box_type (obj)));
               sqlval := __rdf_sqlval_of_obj (obj, 1);
@@ -5569,7 +5569,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT (inout triples any, in prin
 		       twobyte := rdf_box_lang (obj);
 		       if (twobyte <> 257)
 		         {
-			   lang := coalesce ((select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte), lang);
+			   lang := coalesce ((select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte), lang);
 			 }
 		     }
 		   rc := langmatches_pct_http (lang, range);
@@ -5613,7 +5613,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_ATOM_XML_TEXT (inout triples any, in prin
 		       twobyte := rdf_box_lang (obj);
 		       if (twobyte <> 257)
 			 {
-			   lang := coalesce ((select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte), lang);
+			   lang := coalesce ((select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte), lang);
 			   http (sprintf (' xml:lang="%s"', lang), ses);
 			 }
 		      http ('>', ses);
@@ -8529,7 +8529,7 @@ create procedure DB.DBA.BEST_LANGMATCH_ACC (inout env any, in obj any array, in 
       else
         {
           whenever not found goto badlang;
-          select lower (RL_ID) into lang from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte;
+          select RL_ID into lang from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = twobyte;
           goto lang_ready;
 badlang:
           signal ('RDFXX', sprintf ('Unknown language in DB.DBA.BEST_LANGMATCH_ACC, bad lang id %d', twobyte));
@@ -10323,7 +10323,7 @@ next_batch:
 --            (select id_to_iri (RDT_IID) from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = dt_twobyte) ) end;
 --          lang_twobyte := rdf_box_lang (O);
 --          O_LANG := case (lang_twobyte) when 257 then NULL else coalesce (
---            (select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = lang_twobyte) ) end;
+--            (select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = lang_twobyte) ) end;
 --          result (S, P, O, 0, O_DT, O_LANG);
 --        }
       else if (S is not null and P is not null and O is not null)
@@ -10368,7 +10368,7 @@ create procedure DB.DBA.RDF_DICT_OF_TRIPLES_TO_FOUR_COLS (in dict any, in destru
             (select id_to_iri (RDT_IID) from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = dt_twobyte) ) end;
           lang_twobyte := rdf_box_lang (O);
           --O_LANG := case (lang_twobyte) when 257 then NULL else coalesce (
-          --  (select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = lang_twobyte) ) end;
+          --  (select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = lang_twobyte) ) end;
           result (S, P, O, coalesce (O_DT, ''));
         }
       else if (S is not null and P is not null and O is not null)

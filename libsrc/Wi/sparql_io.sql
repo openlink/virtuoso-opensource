@@ -1488,7 +1488,7 @@ create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in col
       else if (257 <> rdf_box_lang (val))
         {
           http ('"type": "literal", "xml:lang": "', ses);
-          res := coalesce ((select lower (RL_ID) from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (val)));
+          res := coalesce ((select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (val)));
           http_escape (res, 11, ses, 1, 1);
           http ('", "value": "', ses);
         }
