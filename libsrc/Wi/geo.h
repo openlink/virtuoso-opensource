@@ -112,6 +112,12 @@ typedef unsigned short geo_flags_t;	/*!< Type for flags of a shape (type + seria
 typedef double geoc;		/*!< Type of geographical coordinate */
 typedef double geo_measure_t;	/*!< Type of M coordinate */
 
+#define GEOC_WKT_STAR_FMT "%.*g"
+#define GEOC_WKT_PREC 14
+#define GEOC_DXF_STAR_FMT "%.*g"
+#define GEOC_DXF_PREC 14
+
+
 #define geoc_min(a,b) (((a)<(b))?(a):(b))
 #define geoc_max(a,b) (((a)<(b))?(b):(a))
 #define GEOC_SWAP(a,b) do { geoc swap = (a); (a) = (b); (b) = swap; } while (0)

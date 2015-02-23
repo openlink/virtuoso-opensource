@@ -384,6 +384,38 @@ ptr += 4
 /* 8 byte float */
 #define DV_DOUBLE_FLOAT 		191
 
+#ifdef FLT_DECIMAL_DIG
+#define SINGLE_E_PREC (FLT_DECIMAL_DIG-1)
+#else
+#ifdef FLT_DIG
+#define SINGLE_E_PREC (FLT_DIG+2)
+#else
+#define SINGLE_E_PREC 8
+#endif
+#endif
+
+#define SINGLE_E_STAR_FMT "%.*e"
+#define SINGLE_G_LEN (DOUBLE_E_PREC + 4)
+#define SINGLE_G_STAR_FMT "%.*g"
+
+#ifdef DBL_DECIMAL_DIG
+#define DOUBLE_E_PREC (DBL_DECIMAL_DIG-1)
+#else
+#ifdef DECIMAL_DIG
+#define DOUBLE_E_PREC (DECIMAL_DIG-1)
+#else
+#ifdef DBL_DIG
+#define DOUBLE_E_PREC (DBL_DIG+2)
+#else
+#define DOUBLE_E_PREC 16
+#endif
+#endif
+#endif
+
+#define DOUBLE_E_STAR_FMT "%.*e"
+#define DOUBLE_G_LEN (DOUBLE_E_PREC + 4)
+#define DOUBLE_G_STAR_FMT "%.*g"
+
 /* 1 byte character */
 #define DV_CHARACTER 			192
 

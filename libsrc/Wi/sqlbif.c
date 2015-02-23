@@ -10310,10 +10310,10 @@ do_wide:
 	      snprintf (tmp, sizeof (tmp), BOXINT_FMT, unbox (data));
 	      break;
 	  case DV_SINGLE_FLOAT:
-	      snprintf (tmp, sizeof (tmp), "%f", unbox_float (data));
+	      snprintf (tmp, sizeof (tmp), SINGLE_E_STAR_FMT, SINGLE_E_PREC, unbox_float (data));
 	      break;
 	  case DV_DOUBLE_FLOAT:
-	      snprintf (tmp, sizeof (tmp), "%f", unbox_double (data));
+	      snprintf (tmp, sizeof (tmp), DOUBLE_E_STAR_FMT, DOUBLE_E_PREC, unbox_double (data));
 	      break;
 	  case DV_BLOB_HANDLE:
 	  case DV_BLOB_WIDE_HANDLE:

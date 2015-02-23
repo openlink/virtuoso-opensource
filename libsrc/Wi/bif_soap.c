@@ -1509,7 +1509,7 @@ soap_print_box (caddr_t object, dk_session_t *out, const char *tag, int soap_ver
 	    for (n = 0; n < length; n++)
 	      {
 		SES_PRINT (out, "<item>");
-		snprintf (temp, sizeof (temp), "%f", ((double *) object)[n]);
+		snprintf (temp, sizeof (temp), DOUBLE_E_STAR_FMT, DOUBLE_E_PREC, ((double *) object)[n]);
 		SES_PRINT (out, temp);
 		SES_PRINT (out, "</item>");
 	      }
@@ -1536,7 +1536,7 @@ soap_print_box (caddr_t object, dk_session_t *out, const char *tag, int soap_ver
 	    for (n = 0; n < length; n++)
 	      {
 		  SES_PRINT (out, "<item>");
-		snprintf (temp, sizeof (temp), "%f", ((float *) object)[n]);
+		snprintf (temp, sizeof (temp), SINGLE_E_STAR_FMT, SINGLE_E_PREC, ((float *) object)[n]);
 		SES_PRINT (out, temp);
 		SES_PRINT (out, "</item>");
 	      }
@@ -1564,17 +1564,17 @@ soap_print_box (caddr_t object, dk_session_t *out, const char *tag, int soap_ver
 
 	case DV_SINGLE_FLOAT:
 	    if (SOAP_USES_TYPES)
-	      snprintf (temp, sizeof (temp), " xsi:type=\"xsd:float\" dt:dt=\"float\">%f", *(float *) object);
+	      snprintf (temp, sizeof (temp), " xsi:type=\"xsd:float\" dt:dt=\"float\">" SINGLE_E_STAR_FMT, SINGLE_E_PREC, *(float *) object);
 	    else
-	      snprintf (temp, sizeof (temp), ">%f", *(float *) object);
+	      snprintf (temp, sizeof (temp), ">" SINGLE_E_STAR_FMT, SINGLE_E_PREC, *(float *) object);
 	  SES_PRINT (out, temp);
 	  break;
 
 	case DV_DOUBLE_FLOAT:
 	   if (SOAP_USES_TYPES)
-	     snprintf (temp, sizeof (temp), " xsi:type=\"xsd:double\" dt:dt=\"double\">%f", *(double *) object);
+	     snprintf (temp, sizeof (temp), " xsi:type=\"xsd:double\" dt:dt=\"double\">" DOUBLE_E_STAR_FMT, DOUBLE_E_PREC, *(double *) object);
 	   else
-	     snprintf (temp, sizeof (temp), ">%f", *(double *) object);
+	     snprintf (temp, sizeof (temp), ">" DOUBLE_E_STAR_FMT, DOUBLE_E_PREC, *(double *) object);
 	  SES_PRINT (out, temp);
 	  break;
 	case DV_OBJECT:

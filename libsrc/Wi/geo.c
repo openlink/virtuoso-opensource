@@ -1315,7 +1315,7 @@ geo_wkt (caddr_t x)
   if ((GEO_POINT == GEO_TYPE (g->geo_flags)) && (GEO_SRCODE_DEFAULT == g->geo_srcode))
     {
       char xx[100];
-      snprintf (xx, sizeof (xx), "POINT(%g %g)", Xkey(g), Ykey(g));
+      snprintf (xx, sizeof (xx), "POINT(" GEOC_WKT_STAR_FMT " " GEOC_WKT_STAR_FMT ")", GEOC_WKT_PREC, Xkey(g), GEOC_WKT_PREC, Ykey(g));
       return box_dv_short_string (xx);
     }
   else
@@ -1623,7 +1623,7 @@ dbg_geo_to_text (caddr_t x)
   switch (GEO_TYPE (g->geo_flags))
     {
     case GEO_POINT:
-      snprintf (tmp, sizeof (tmp), "<point %g %g>", Xkey(g), Ykey(g));
+      snprintf (tmp, sizeof (tmp), "<point " GEOC_WKT_STAR_FMT " " GEOC_WKT_STAR_FMT ">", GEOC_WKT_PREC, Xkey(g), GEOC_WKT_PREC, Ykey(g));
       break;
     default:
       sprintf (tmp, "<geo type %d>", GEO_TYPE (g->geo_flags));

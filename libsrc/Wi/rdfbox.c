@@ -3291,7 +3291,7 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
         char tmpbuf[50];
         int buffill;
         double boxdbl = (double)(unbox_float (obj_box_value));
-        buffill = sprintf (tmpbuf, "\"%lg", boxdbl);
+        buffill = sprintf (tmpbuf, "\"" SINGLE_G_STAR_FMT, SINGLE_G_LEN, boxdbl);
         if ((NULL == strchr (tmpbuf+1, '.')) && (NULL == strchr (tmpbuf+1, 'E')) && (NULL == strchr (tmpbuf+1, 'e')))
           {
             if (isalpha(tmpbuf[1+1]))
@@ -3325,7 +3325,7 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
 	    http_ttl_write_duration (ses, boxdbl, "second");
 	    break;
 	  }
-        buffill = sprintf (tmpbuf, "%lg", boxdbl);
+        buffill = sprintf (tmpbuf, DOUBLE_G_STAR_FMT, DOUBLE_G_LEN, boxdbl);
         if ((NULL == strchr (tmpbuf, '.')) && (NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
           {
             if (isalpha(tmpbuf[1]))
