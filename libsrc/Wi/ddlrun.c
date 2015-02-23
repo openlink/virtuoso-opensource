@@ -5626,7 +5626,7 @@ const char * drop_proc_text =
 "  select U_GROUP into ug from DB.DBA.SYS_USERS where U_NAME = user;\n"
 "\n"
 "  if (ug <> 0 and user <> name_part (nn, 1))\n"
-"    signal ('42000', concat ('Must be in dba group to drop non-owned ',  case proc when 4 then 'aggregate' when 0 then 'module' else 'procedure' end), 'SR271');\n"
+"    signal ('42000', concat ('Must be in DBA group to drop non-owned ',  case proc when 4 then 'aggregate' when 0 then 'module' else 'procedure' end), 'SR271:SECURITY');\n"
 "\n"
 "  if (proc > 0 and __proc_exists (p, 0) is not null) "
 "   signal ('42000', concat ('Trying to drop a module in DROP ', case proc when 4 then 'AGGREGATE' else 'PROCEDURE' end), 'SR314'); "

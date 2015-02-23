@@ -708,7 +708,7 @@ bif_dpipe_set_rdf_load (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (!cu)
     sqlr_new_error ("42000", "CL...", "Not a dpipe daq");
   if (!QI_IS_DBA (qi) && !sec_user_has_group_name ("SPARQL_UPDATE", qi->qi_u_id))
-    sqlr_new_error ("42000", "CL...", "No permission to use rdf load");
+    sqlr_new_error ("42000", "CL...:SECURITY", "No SPARQL_UPDATE permission to use RDF loader");
   cu->cu_ready_cb = cu_rdf_ins_cb;
   if (BOX_ELEMENTS (args) > 1)
     cu->cu_rdf_load_mode = bif_long_arg (qst, args, 1, "dpipe_set_rdf_load");

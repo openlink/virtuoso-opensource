@@ -1145,7 +1145,7 @@ sf_sql_connect (char *username, char *password, char *cli_ver, caddr_t *info)
 	    err = srv_make_new_error ("28000", "SR311",
 		"Bad login");
 	  else
-	    err = srv_make_new_error ("08004", "SR311",
+	    err = srv_make_new_error ("08004", "SR311:SECURITY",
 		"Shutting down the server permitted only to DBA group");
 	  DKST_RPC_DONE (client);
 	  PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, FINAL, 1);

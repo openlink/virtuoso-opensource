@@ -570,7 +570,7 @@ udt_compile_class_def (dbe_schema_t * sc, caddr_t _tree, sql_class_t * udt,
 	      !sec_udt_check (udt->scl_super, cli->cli_user->usr_g_id,
 		cli->cli_user->usr_id, GR_UDT_UNDER))
 	    {
-	      caddr_t err = srv_make_new_error ("42000", "UD096",
+	      caddr_t err = srv_make_new_error ("42000", "UD096:SECURITY",
 		  "No permission to use type %.200s as a superclass for %.200s",
 		  udt->scl_super->scl_name, udt->scl_name);
 	      if (err_ret)
@@ -1965,7 +1965,7 @@ udt_instantiate_class (caddr_t * qst, sql_class_t * udt, long mtd_inx,
     return dk_alloc_box (0, DV_DB_NULL);
 
   if (!sec_udt_check_qst (udt, qst, GR_EXECUTE))
-    sqlr_new_error ("42000", "UD097", "No permission to instantiate user defined type %.200s", udt->scl_name);
+    sqlr_new_error ("42000", "UD097:SECURITY", "No permission to instantiate user defined type %.200s", udt->scl_name);
 
   if (imp_map[udt->scl_ext_lang].scli_instantiate_class)
     return imp_map[udt->scl_ext_lang].scli_instantiate_class (qst, udt, cons_mtd, args, n_args);
@@ -2003,7 +2003,7 @@ udt_member_observer (caddr_t *qst, caddr_t udi, sql_field_t *fld, int member_inx
   if (DV_TYPE_OF (udi) != DV_OBJECT)
     sqlr_new_error ("22023", "UD026", "Invalid instance in user defined type observer");
   if (!sec_udt_check_qst (UDT_I_CLASS (udi), qst, GR_EXECUTE))
-    sqlr_new_error ("42000", "UD098", "No permission to access members of user defined type %.200s",
+    sqlr_new_error ("42000", "UD098:SECURITY", "No permission to access members of user defined type %.200s",
 	UDT_I_CLASS (udi)->scl_name);
   if (imp_map[fld->sfl_ext_lang].scli_member_observer)
     return imp_map[fld->sfl_ext_lang].scli_member_observer (qst, udi, fld, member_inx);
@@ -2018,7 +2018,7 @@ udt_member_mutator (caddr_t *qst, caddr_t udi, sql_field_t *fld, int member_inx,
   if (DV_TYPE_OF (udi) != DV_OBJECT)
     sqlr_new_error ("22023", "UD027", "Invalid instance in user defined type mutator");
   if (!sec_udt_check_qst (UDT_I_CLASS (udi), qst, GR_EXECUTE))
-    sqlr_new_error ("42000", "UD099", "No permission to change members of user defined type %.200s",
+    sqlr_new_error ("42000", "UD099:SECURITY", "No permission to change members of user defined type %.200s",
 	UDT_I_CLASS (udi)->scl_name);
   if (DV_TYPE_OF (udi) == DV_OBJECT && imp_map[fld->sfl_ext_lang].scli_member_mutator)
     return imp_map[fld->sfl_ext_lang].scli_member_mutator (qst, udi, fld, member_inx, new_val);
@@ -2046,7 +2046,7 @@ udt_method_call (caddr_t *qst, sql_class_t *udt, caddr_t udi,
 	mtd->scm_name, udt->scl_name);
 
   if (!sec_udt_check_qst (udi ? UDT_I_CLASS (udi) : udt, qst, GR_EXECUTE))
-    sqlr_new_error ("42000", "UD100", "No permission to call methods of user defined type %.200s",
+    sqlr_new_error ("42000", "UD100:SECURITY", "No permission to call methods of user defined type %.200s",
 	(udi ? UDT_I_CLASS (udi)->scl_name : udt->scl_name));
 
   if (imp_map[mtd->scm_ext_lang].scli_method_call)
@@ -2240,7 +2240,7 @@ udt_sql_method_call (caddr_t *qst, sql_class_t *udt, caddr_t udi,
 	}
       if (!sec_udt_check_qst (udt, qst, GR_EXECUTE) &&
 	  !sec_proc_check (proc, eff_g_id, eff_u_id))
-	sqlr_new_error ("42000", "SR186", "No permission to execute method %s of type %s with user ID %d, group ID %d",
+	sqlr_new_error ("42000", "SR186:SECURITY", "No permission to execute method %s of type %s with user ID %d, group ID %d",
 	    mtd->scm_name, mtd->scm_class->scl_name, (int)eff_g_id, (int)eff_u_id );
 
       BOX_AUTO (ptmp, pars_auto, param_len, DV_ARRAY_OF_POINTER);
@@ -3240,7 +3240,7 @@ sqlp_udt_method_decl (int specific, int mtd_type,
     {
       char msg[300];
       snprintf (msg, sizeof (msg), "No permission to define methods of class %.200s", udt->scl_name);
-      yy_new_error (msg, "42000", "UD101");
+      yy_new_error (msg, "42000", "UD101:SECURITY");
     }
   if (specific)
     {

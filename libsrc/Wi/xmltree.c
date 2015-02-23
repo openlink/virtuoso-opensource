@@ -10328,7 +10328,7 @@ xml_ns_2dict_t *
 xml_global_ns_2dict_get (caddr_t *qst, const char *fname)
 {
   if ((NULL != fname) && !sec_bif_caller_is_dba ((query_instance_t *)qst))
-    sqlr_new_error ("42000", "SR585", "Function %.300s() is restricted to dba group when it tries to access to the global namespace dictionary.", fname);
+    sqlr_new_error ("42000", "SR585:SECURITY", "Function %.300s() is restricted to DBA group when it tries to access to the global namespace dictionary.", fname);
   if (NULL == xml_global_ns_2dict)
     {
       xml_global_ns_2dict_mutex = mutex_allocate ();

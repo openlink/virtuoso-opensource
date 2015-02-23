@@ -1455,7 +1455,7 @@ ws_url_rewrite (ws_connection_t *ws)
     }
   if (!sec_user_has_group (G_ID_DBA, proc->qr_proc_owner))
     {
-      err = srv_make_new_error ("42000", "HT059", "The stored procedure DB.DBA.HTTP_URLREWRITE is not property of DBA group");
+      err = srv_make_new_error ("42000", "HT059:SECURITY", "The stored procedure DB.DBA.HTTP_URLREWRITE is not property of DBA group");
       goto error_end;
     }
   if (proc->qr_to_recompile)
@@ -3380,7 +3380,7 @@ ws_auth_check (ws_connection_t * ws)
     }
   if (!sec_user_has_group (G_ID_DBA, proc->qr_proc_owner))
     {
-      err = srv_make_new_error ("42000", "HT059", "The authentication procedure %s is not property of DBA group", auth_proc);
+      err = srv_make_new_error ("42000", "HT059:SECURITY", "The authentication procedure %s is not property of DBA group", auth_proc);
       goto error_end;
     }
   if (proc->qr_to_recompile)
@@ -3528,7 +3528,7 @@ ws_check_rdf_accept (ws_connection_t *ws)
     }
   if (!sec_user_has_group (G_ID_DBA, proc->qr_proc_owner))
     {
-      err = srv_make_new_error ("42000", "HT059", "The stored procedure " "DB.DBA.HTTP_RDF_ACCEPT" "is not property of DBA group");
+      err = srv_make_new_error ("42000", "HT059:SECURITY", "The stored procedure " "DB.DBA.HTTP_RDF_ACCEPT" "is not property of DBA group");
       goto error_end;
     }
   if (proc->qr_to_recompile)

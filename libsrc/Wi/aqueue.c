@@ -949,7 +949,7 @@ aq_sql_func (caddr_t * av, caddr_t * err_ret)
   if (!cli->cli_user || !sec_proc_check (proc, cli->cli_user->usr_id, cli->cli_user->usr_g_id))
     {
       user_t * usr = cli->cli_user;
-      *err_ret = srv_make_new_error ("42000", "SR186", "No permission to execute %s in aq_request() with user ID %d, group ID %d",
+      *err_ret = srv_make_new_error ("42000", "SR186:SECURITY", "No permission to execute %s in aq_request() with user ID %d, group ID %d",
         full_name, (int)(usr ? usr->usr_id : 0), (int)(usr ? usr->usr_g_id : 0) );
       dk_free_tree ((caddr_t) params);
       return NULL;
@@ -958,7 +958,7 @@ aq_sql_func (caddr_t * av, caddr_t * err_ret)
   {
     if (SSL_REF_PARAMETER == ssl->ssl_type)
       {
-	*err_ret = srv_make_new_error ("42000", "AQ002", "Reference parameters not allowed in aq_request");
+	  *err_ret = srv_make_new_error ("42000", "AQ002", "Reference parameters not allowed in aq_request()");
 	dk_free_tree ((caddr_t) params);
 	return NULL;
       }

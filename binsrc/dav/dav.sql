@@ -6317,6 +6317,29 @@ create procedure DB.DBA.DAV_SET_AUTHENTICATE_HTTP_STATUS (
 }
 ;
 
+create procedure DB.DBA.HTTP_DEFAULT_ERROR_PAGE (in status varchar, in title varchar, in head varchar, in state varchar, in msg varchar)
+{
+  if (status is not null)
+    http_request_status (status);
+  http (sprintf (
+      '<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">\n' ||
+      '<html>\n' ||
+      '  <head>\n' ||
+      '    <title>%V</title>\n' ||
+      '  </head>\n' ||
+      '  <body>\n',
+      coalesce (title, status, head, 'Error ' || state) ) );
+  if (head is not null or status is not null)
+    {
+      http (sprintf ('    <h1>%V</h1>\n',
+      coalesce (head, status) ) );
+    }
+  http (sprintf ('    <h3>%V</h3>\n<xmp>', 'Error ' || state));
+  http (msg);
+  http ('</xmp></body></html>');
+}
+;
+
 create procedure DB.DBA.DAV_SET_HTTP_STATUS (
   in status any,
   in title any := null,

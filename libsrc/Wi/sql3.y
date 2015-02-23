@@ -3243,20 +3243,6 @@ admin_statement
 		{ $$ = t_listst (4, OP_LOG_OFF, NULL, NULL, NULL); }
 	;
 
-/* embedded condition things */
-/*
-sql
-	: WHENEVER NOT FOUND when_action
-	| WHENEVER SQLERROR when_action
-	;
-
-when_action
-	: GOTO identifier
-	| CONTINUE
-	;
-*/
-
-
 /* SQL Procedures */
 
 sql

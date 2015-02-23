@@ -2309,7 +2309,7 @@ sec_check_ddl (query_instance_t * qi, ST * tree)
 	    case MODIFY_COLUMN: sqlr_new_error ("42S02", "SR157", "No in table alter table modify column");
 	  }
     }
-  sqlr_new_error ("42000", "SR158",
+  sqlr_new_error ("42000", "SR158:SECURITY",
       "Permission denied. Must be owner of object or member of dba group.");
 }
 
@@ -2342,7 +2342,7 @@ void
 sec_check_dba (query_instance_t * qi, const char * func)
 {
   if (!sec_bif_caller_is_dba (qi))
-    sqlr_new_error ("42000", "SR159", "Function %.300s restricted to dba group.", func);
+    sqlr_new_error ("42000", "SR159:SECURITY", "Function %.300s restricted to DBA group.", func);
 }
 
 
