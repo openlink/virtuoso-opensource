@@ -710,11 +710,11 @@ blobio_init (void)
   rt = get_readtable ();
   rrt = get_rpcreadtable ();
   PrpcSetWriter (DV_BLOB_HANDLE, (ses_write_func) bh_serialize);
-  rt[DV_BLOB_HANDLE] = (macro_char_func) bh_deserialize;
+  rrt[DV_BLOB_HANDLE] = rt[DV_BLOB_HANDLE] = (macro_char_func) bh_deserialize;
   PrpcSetWriter (DV_BLOB_XPER_HANDLE, (ses_write_func) bh_serialize_xper);
   rt[DV_BLOB_XPER_HANDLE] = (macro_char_func) bh_deserialize_xper;
   PrpcSetWriter (DV_BLOB_WIDE_HANDLE, (ses_write_func) bh_serialize_wide);
-  rt[DV_BLOB_WIDE_HANDLE] = (macro_char_func) bh_deserialize_wide;
+  rrt[DV_BLOB_WIDE_HANDLE] = rt[DV_BLOB_WIDE_HANDLE] = (macro_char_func) bh_deserialize_wide;
   PrpcSetWriter (DV_DATETIME, (ses_write_func) datetime_serialize);
   rrt[DV_DATETIME] = rt[DV_DATETIME] = (macro_char_func) datetime_deserialize;
   dt_init ();
@@ -742,11 +742,11 @@ blobio_init (void)
   dk_mem_hooks_2 (DV_BLOB_WIDE_HANDLE, bh_copy, bh_destroy, 0, bh_mp_copy);
 
   PrpcSetWriter (DV_SYMBOL, (ses_write_func) symbol_write);
-  rt[DV_SYMBOL] = box_read_symbol;
+  rrt[DV_SYMBOL] = rt[DV_SYMBOL] = box_read_symbol;
 
   PrpcSetWriter (DV_IRI_ID, (ses_write_func) iri_id_write);
-  rt[DV_IRI_ID] = box_read_iri_id;
-  rt[DV_IRI_ID_8] = box_read_iri_id;
+  rrt[DV_IRI_ID] = rt[DV_IRI_ID] = box_read_iri_id;
+  rrt[DV_IRI_ID_8] = rt[DV_IRI_ID_8] = box_read_iri_id;
 
 
   rt[DV_OBJECT] = udt_client_deserialize;
