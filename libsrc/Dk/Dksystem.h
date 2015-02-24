@@ -191,7 +191,7 @@ char *strtok_r ();
  *  Portable way to tag functions that do not return
  */
 #if (_MSC_VER >= 1310)		/* MS Visual Studio 2003/.NET Framework 1.1 or newer */
-#  define NORETURN 		__declspec(noreturn)
+#  define NORETURN 		/*__declspec(noreturn)*/
 #elif defined(__HP_cc) && (__HP_cc >= 61000)
 #  define NORETURN 		__attribute__((noreturn))
 #elif (GCC_VERSION >= 3004) || defined (__clang__)
