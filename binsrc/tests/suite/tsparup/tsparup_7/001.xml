@@ -57,7 +57,7 @@ Select (s, p, o)
 <row>
     <col dtp="182">http://mygraph/#austrian_lot_source_1</col>
     <col dtp="182">http://www.opengis.net/ont/geosparql#geometry</col>
-    <col dtp="246">MULTIPOLYGON(((0.000000 0.000000,1.000000 0.000000,1.000000 1.000000,0.000000 1.000000,0.000000 0.000000)))</col>
+    <col dtp="246">MULTIPOLYGON(((0 0,1 0,1 1,0 1,0 0)))</col>
 </row>
     </result>
 </test>
