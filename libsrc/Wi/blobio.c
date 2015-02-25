@@ -722,7 +722,7 @@ blobio_init (void)
   PrpcSetWriter (DV_NUMERIC, (ses_write_func) numeric_serialize);
   rrt[DV_NUMERIC] = rt[DV_NUMERIC] = (macro_char_func) numeric_deserialize;
   PrpcSetWriter (DV_IGNORE, (ses_write_func) ign_serialize);
-  rt[DV_IGNORE] = (macro_char_func) ign_deserialize;
+  rrt[DV_IGNORE] = rt[DV_IGNORE] = (macro_char_func) ign_deserialize;
   numeric_init ();
 
   PrpcSetWriter (DV_BIN, (ses_write_func) print_bin_string);
