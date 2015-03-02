@@ -6992,7 +6992,7 @@ rep_loop (FILE * infp, TCHAR *new_prompt)
       else if (ifdef_current_is_true ())
         /* A normal semicolon terminated statement */
         {
-          if (virtext &&
+          if (virtext && !sparql_translate_mode &&
               ( latest_statement_begins_at () != current_linecount() ||
                 is_declaration (input) ) )
             {
