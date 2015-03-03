@@ -3655,6 +3655,7 @@ create procedure WS.WS.TTL_QUERY_POST (
   declare ns, def_gr, giid, dict, triples, prefixes any;
 	declare exit handler for sqlstate '*'
 	{
+  _error:;
 	  connection_set ('__sql_state', __SQL_STATE);
 	  connection_set ('__sql_message', __SQL_MESSAGE);
 	  return -44;
@@ -3675,7 +3676,18 @@ create procedure WS.WS.TTL_QUERY_POST (
       filter (?p not in (<http://www.w3.org/1999/02/22-rdf-syntax-ns#type>, <http://www.w3.org/ns/ldp#contains>)) . } };
     }
   {
-    declare exit handler for sqlstate '37000' {goto _again; };
+    declare exit handler for sqlstate '37000' {
+      if (connection_get ('__WebDAV_ttl_prefixes__') = 'yes')
+        goto _again;
+
+      if (connection_get ('__WebDAV_ttl_prefixes__') = 'no')
+        goto _error;
+
+      if (not WS.WS.TTL_PREFIXES_ENABLED ())
+        goto _error;
+
+      goto _again;
+    };
 
     ns := ses;
     dict := dict_new ();
@@ -3749,6 +3761,12 @@ create procedure WS.WS.SPARQL_QUERY_UPDATE (in content any, in full_path varchar
   def_gr := WS.WS.DAV_IRI (full_path);
   pars := vector ('query', string_output_string (content), 'default-graph-uri', def_gr);
   WS.WS."/!sparql/" (path, pars, lines);
+}
+;
+
+create procedure WS.WS.TTL_PREFIXES_ENABLED ()
+{
+  return case when registry_get ('__WebDAV_ttl_prefixes__') = 'yes' then 1 else 0 end;
 }
 ;
 

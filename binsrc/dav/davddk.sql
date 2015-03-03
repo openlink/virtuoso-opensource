@@ -2930,6 +2930,11 @@ insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('video/x-ms-wmx','wmx
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('video/x-ms-wvx','wvx')
 ;
 
+update WS.WS.SYS_DAV_RES_TYPES
+   set T_TYPE = 'application/x-apple-diskimage'
+ where T_TYPE = 'application/octet-stream' and T_EXT = 'dmg'
+;
+
 select count(*) from WS.WS.SYS_DAV_RES_TYPES where http_mime_type_add (T_EXT, T_TYPE)
 ;
 
