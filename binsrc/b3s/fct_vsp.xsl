@@ -355,7 +355,7 @@
   <thead>
     <xsl:choose>
       <xsl:when test="$view-type = 'properties'">
-	  <tr><th></th><th>?s<xsl:value-of select="$pos"/> Subject Of <xsl:value-of select="$p_term"/></th><!--th>Label</th--><th></th><th>Count</th></tr>
+	  <tr><th></th><th>?s<xsl:value-of select="$pos"/><xsl:text> has </xsl:text> <xsl:value-of select="$p_term"/></th><!--th>Label</th--><th></th><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'list-count'">
 	<tr><th></th><th><xsl:value-of select="$s_term"/></th><!--th>Title</th--><th></th><th>Count</th></tr>
@@ -364,7 +364,7 @@
 	<tr><th></th><th><xsl:value-of select="$p_term"/></th><!--th>Label</th--><th></th><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'properties-in'">
-	<tr><th></th><th>?s<xsl:value-of select="$pos"/> Object Of <xsl:value-of select="$p_term"/></th><!--th>Label</th--><th></th><th>Count</th></tr>
+	  <tr><th></th><th>?s<xsl:value-of select="$pos"/><xsl:text> is </xsl:text><xsl:value-of select="$o_term"/> Of <xsl:value-of select="$p_term"/></th><!--th>Label</th--><th></th><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'list'">
 	<tr><th></th><th></th><th></th></tr>
@@ -466,10 +466,26 @@
             </td>
             <td>
               <xsl:if test="'uri' = column[1]/@datatype or 'url' = column[1]/@datatype">
+		  <xsl:variable name="desc_title">
+		  <xsl:choose>
+		      <xsl:when test="$view-type = 'properties' or $view-type = 'properties-in'">
+			  Describe<xsl:text> </xsl:text><xsl:value-of select="$p_term"/>
+		      </xsl:when>
+		      <xsl:when test="$view-type = 'classes'">
+			  Describe<xsl:text> </xsl:text><xsl:value-of select="$t_term"/>
+		      </xsl:when>
+		      <xsl:when test="$view-type = 'list-count'">
+			  Describe<xsl:text> </xsl:text><xsl:value-of select="$s_term"/>
+		      </xsl:when>
+		      <xsl:otherwise>
+			  Describe
+		      </xsl:otherwise>
+		  </xsl:choose>
+		  </xsl:variable>  
                 <xsl:call-template name="render-describe-link">
                   <xsl:with-param name="uri" select="column[1]"/>
                   <xsl:with-param name="shortform" select="column[1]/@shortform"/>
-                  <xsl:with-param name="content">Describe</xsl:with-param>
+		  <xsl:with-param name="content"><xsl:value-of select="$desc_title"/></xsl:with-param>
                 </xsl:call-template>
               </xsl:if>
             </td>
