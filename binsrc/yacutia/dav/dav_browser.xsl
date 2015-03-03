@@ -656,6 +656,9 @@
               else if (detClass in ('Blog', 'News3', 'bookmark', 'calendar'))
                 retValue := vector ('name', 'mime', 'owner', 'group', 'permissions', 'publicTags', 'acl', 'aci');
 
+              else if (detClass in ('CatFilter', 'ResFilter'))
+                retValue := vector ('name', 'mime', 'owner', 'group', 'permissions', 'acl', 'aci');
+
               else if (detClass in ('oMail'))
                 retValue := vector ('name', 'mime', 'owner', 'group', 'permissions', 'publicTags');
 
@@ -685,9 +688,6 @@
 
               if      (detClass in ('', 'UnderVersioning'))
                 retValue := self.viewFields (detClass, what, mode);
-
-              else if      (detClass = 'Versioning')
-                retValue := vector ();
 
               else if (detClass = 'rdfSink')
                 retValue := self.viewFields (detClass, what, mode);
