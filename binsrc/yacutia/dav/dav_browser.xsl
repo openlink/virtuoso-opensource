@@ -3647,6 +3647,20 @@
               <?V case when self.command = 20 then 'Edit' else 'View' end ?> resource <?V WEBDAV.DBA.utf2wide (self.source) ?>
             </div>
             <div style="padding-right: 6px;">
+              <v:template type="simple" name="template_20a" enabled="--case when (self.command = 20) and (self.mimeType = 'text/turtle') and __proc_exists ('WS.WS.TTL_PREFIXES_ENABLED') then 1 else 0 end">
+                <div class="boxHeader">
+                  <input type="button" class="button" onclick="javascript: WEBDAV.prefixDialog();" value="Search prefix" />
+                  <label>
+                    <?vsp
+                      declare S varchar;
+
+                      S := get_keyword ('f_ttl_prefixes', self.vc_page.vc_event.ve_params, cast (WS.WS.TTL_PREFIXES_ENABLED () as varchar));
+                      http (sprintf ('<input type="checkbox" name="f_ttl_prefixes" id="f_ttl_prefixes" value="1" title=".TTL prefixes" %s />', case when S = '1' then 'checked="checked"' else '' end));
+                    ?>
+                    Add automaticaly missed prefixes
+                  </label>
+                </div>
+              </v:template>
               <div id="f_plain">
                 <?vsp
                   http (sprintf ('<textarea id="f_content_plain" name="f_content_plain" style="width: 100%%; height: 360px" %s>%V</textarea>', case when self.command = 30 then 'disabled="disabled"' else '' end, get_keyword ('f_content_plain', self.vc_page.vc_event.ve_params, WEBDAV.DBA.utf2wide (cast (WEBDAV.DBA.DAV_RES_CONTENT (self.source) as varchar)))));
@@ -3673,6 +3687,14 @@
                     if (not WEBDAV.DBA.DAV_ERROR (item))
                     {
                       content := get_keyword ('f_content_plain', params, '');
+                      if (self.mimeType = 'text/turtle')
+                      {
+                        if (get_keyword ('f_ttl_prefixes', params, '0') = '0')
+                           connection_set ('__WebDAV_ttl_prefixes__', 'no');
+
+                        if (get_keyword ('f_ttl_prefixes', params) = '1')
+                           connection_set ('__WebDAV_ttl_prefixes__', 'yes');
+                      }
                       retValue := WEBDAV.DBA.DAV_RES_UPLOAD (self.source, content, WEBDAV.DBA.DAV_GET (item, 'mimeType'), WEBDAV.DBA.DAV_GET (item, 'permissions'), WEBDAV.DBA.DAV_GET (item, 'ownerID'), WEBDAV.DBA.DAV_GET (item, 'groupID'));
                       if (WEBDAV.DBA.DAV_ERROR (retValue))
                         signal ('TEST', WEBDAV.DBA.DAV_PERROR (retValue) || '<>');
