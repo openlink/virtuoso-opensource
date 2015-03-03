@@ -1011,7 +1011,7 @@ WEBDAV.verifyDialog = function ()
   if ($('item_path'))
     params += '&path='      + encodeURIComponent($v('item_path'));
 
-  OAT.AJAX.GET(WEBDAV.httpsLink('dav/dav_browser_rest.vsp')+'?'+params, '', x, {type:OAT.AJAX.TYPE_TEXT, timeout: 5000, onend: function(){OAT.MSG.detach(OAT.AJAX, 'AJAX_TIMEOUT', t);}});
+  OAT.AJAX.GET(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp')+'?'+params, '', x, {type:OAT.AJAX.TYPE_TEXT, timeout: 5000, onend: function(){OAT.MSG.detach(OAT.AJAX, 'AJAX_TIMEOUT', t);}});
 }
 
 var dav_IMAP_connection;
@@ -1076,7 +1076,7 @@ WEBDAV.loadIMAPFolders = function ()
 
       dav_IMAP_seqNo += 1;
       var seqNo = dav_IMAP_seqNo;
-      OAT.AJAX.GET(WEBDAV.httpsLink('dav/dav_browser_rest.vsp')+'?a=mailFolders'+params, '', function(data){x(seqNo, data);});
+      OAT.AJAX.GET(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp')+'?a=mailFolders'+params, '', function(data){x(seqNo, data);});
     }
   }
 }
