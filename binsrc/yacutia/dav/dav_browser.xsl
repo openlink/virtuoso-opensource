@@ -1391,11 +1391,8 @@
               if ((self.mode = 'briefcase') and (self.account_role <> 'public'))
               {
               http (sprintf ('<img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
-
               self.toolbarShow (writePermission, 'bookmarklet', 'Bookmarklet', 'onclick="javascript: vspxPost(\'action\', \'_cmd\', \'bookmarklet\');"', 'bmklet_32.png', '', 0);
               }
-            ?>
-            <?vsp
               if (WEBDAV.DBA.DAV_REQUIRE_VERSION ('1.0'))
               {
                 http (sprintf ('<img src="%s" height="32" width="2" border="0" class="toolbar" />', self.image_src ('dav/image/c.gif')));
