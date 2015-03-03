@@ -6633,7 +6633,7 @@ create procedure vspx_url_render (in fmt varchar, in val any, in url any, in sid
       declare uinfo any;
       uinfo := WS.WS.PARSE_URI (url);
       if (uinfo[0] = '' or is_local = 1)
-        url := vspx_uri_add_parameters (url, sprintf ('sid=%U&realm=%%U', sid, realm));
+        url := vspx_uri_add_parameters (url, sprintf ('sid=%U&realm=%U', sid, realm));
     }
   http (sprintf ('<a href="%V">', url));
   if (length (fmt))
