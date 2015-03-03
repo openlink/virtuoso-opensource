@@ -31,8 +31,8 @@ AC_REVISION($Id$)
 
 m4_define(vos_major,	[7])
 m4_define(vos_minor,	[2])
-m4_define(vos_patch,	[0])
-m4_define(vos_devel,	[])
+m4_define(vos_patch,	[1])
+m4_define(vos_devel,	[-dev])
 
 AC_INIT([Virtuoso Open Source Edition (Column Store)],
 	vos_major.vos_minor.vos_patch[]vos_devel,
@@ -2443,23 +2443,23 @@ AC_HELP_STRING([--disable-all-vads], [disable building all vad packages])dnl
        *)	AC_MSG_ERROR(bad value ${enableval} for --enable-all-vads) ;;
      esac
   ],
-  [ with_all_vad="yes" ]
+  [ with_all_vad="no_change" ]
 )
 
-if test "x$with_all_vad" = "xno"
+if test "x$with_all_vad" != "xno_change"
 then
-    with_bpel_vad="no"
-    with_conductor_vad="no"
-    with_dbpedia_vad="no"
-    with_demo_vad="no"
-    with_fct_vad="no"
-    with_isparql_vad="no"
-    with_ods_vad="no"
-    with_rdb2rdf_vad="no"
-    with_rdfmappers_vad="no"
-    with_sparqldemo_vad="no"
-    with_syncml_vad="no"
-    with_tutorial_vad="no"
+    with_bpel_vad="$with_all_vad"
+    with_conductor_vad="$with_all_vad"
+    with_dbpedia_vad="$with_all_vad"
+    with_demo_vad="$with_all_vad"
+    with_fct_vad="$with_all_vad"
+    with_isparql_vad="$with_all_vad"
+    with_ods_vad="$with_all_vad"
+    with_rdb2rdf_vad="$with_all_vad"
+    with_rdfmappers_vad="$with_all_vad"
+    with_sparqldemo_vad="$with_all_vad"
+    with_syncml_vad="$with_all_vad"
+    with_tutorial_vad="$with_all_vad"
 fi
 
 AM_CONDITIONAL(WITH_BPEL_VAD, test "x$with_bpel_vad" = "xyes")

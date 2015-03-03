@@ -1410,7 +1410,7 @@ extern long mp_sparql_cap;
 extern long srv_cpu_count;
 extern int32 col_seg_max_bytes;
 extern int32 col_seg_max_rows;
-
+extern int32 enable_qrc;
 
 
 stat_desc_t stat_descs [] =
@@ -1874,6 +1874,7 @@ stat_desc_t dbf_descs [] =
     {"pcre_match_limit", &c_pcre_match_limit, SD_INT32},
     {"pcre_match_limit_recursion", &c_pcre_match_limit_recursion, SD_INT32},
     {"pcre_max_cache_sz", &pcre_max_cache_sz, SD_INT32},
+    {"enable_qrc", &enable_qrc, SD_INT32},
     {NULL, NULL, NULL}
   };
 
@@ -2173,6 +2174,8 @@ bif_key_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    return (box_num (it_remap_count (key->key_fragments[0]->kf_it)));
 	  if (0 == strcmp (stat_name, "n_rows"))
 	    return (box_num (key->key_table->tb_count));
+	  if (0 == strcmp (stat_name, "n_deletes"))
+	    return (box_num (key->key_n_deletes));
 	  if (0 == strcmp (stat_name, "ac_in"))
 	    return (box_num (key->key_ac_in));
 	  if (0 == strcmp (stat_name, "ac_out"))
@@ -2827,7 +2830,7 @@ dbg_print_box_aux (caddr_t object, FILE * out, dk_hash_t *known)
 	    fprintf (out, "#D(");
 	    for (n = 0; n < length; n++)
 	      {
-		fprintf (out, "%f ", ((double *) object)[n]);
+		fprintf (out, DOUBLE_E_STAR_FMT " ", DOUBLE_E_PREC, ((double *) object)[n]);
 	      }
 	    fprintf (out, ")");
 	    break;
@@ -2840,7 +2843,7 @@ dbg_print_box_aux (caddr_t object, FILE * out, dk_hash_t *known)
 	    fprintf (out, "#F(");
 	    for (n = 0; n < length; n++)
 	      {
-		fprintf (out, "%f ", ((float *) object)[n]);
+		fprintf (out, SINGLE_E_STAR_FMT " ", SINGLE_E_PREC, ((float *) object)[n]);
 	      }
 	    fprintf (out, ")");
 	    break;
@@ -2864,11 +2867,11 @@ dbg_print_box_aux (caddr_t object, FILE * out, dk_hash_t *known)
 	  break;
 
 	case DV_SINGLE_FLOAT:
-	  fprintf (out, "%f", *(float *) object);
+	  fprintf (out, SINGLE_E_STAR_FMT, SINGLE_E_PREC, *(float *) object);
 	  break;
 
 	case DV_DOUBLE_FLOAT:
-	  fprintf (out, "%f", *(double *) object);
+	  fprintf (out, DOUBLE_E_STAR_FMT, DOUBLE_E_PREC, *(double *) object);
 	  break;
 
 	case DV_DB_NULL:
@@ -3056,14 +3059,14 @@ printf_dv (db_buf_t dv, FILE * out)
       {
 	float f;
 	EXT_TO_FLOAT (&f, (dv + 1));
-	fprintf (out, "%f ", f);
+	fprintf (out, SINGLE_E_STAR_FMT " ", SINGLE_E_PREC, f);
 	break;
       }
     case DV_DOUBLE_FLOAT:
       {
 	double f;
 	EXT_TO_DOUBLE (&f, (dv + 1));
-	fprintf (out, "%f ", f);
+	fprintf (out, DOUBLE_E_STAR_FMT " ", DOUBLE_E_PREC, f);
 	break;
       }
     default:
@@ -3255,7 +3258,7 @@ row_map_fprint (FILE * out, buffer_desc_t * buf, db_buf_t row, dbe_key_t * key)
 	  {
 	    float f;
 	    EXT_TO_FLOAT (&f, xx);
-	    fprintf (out, " %f ", f);
+	    fprintf (out, " " SINGLE_E_STAR_FMT " ", SINGLE_E_PREC, f);
 	    break;
 	  }
 	case DV_DOUBLE_FLOAT:

@@ -81,7 +81,7 @@ fct_view_info (in tree any, in ctx int, in txt any)
     }
   if ('classes' = mode)
     {
-      http ('Displaying Entity Types', txt);
+      http ('Displaying Type', txt);
     }
   if ('text' = mode or 'text-d' = mode)
     {
@@ -115,8 +115,8 @@ create procedure fct_p_term ()
 {
   declare s_term varchar;
   s_term := connection_get ('s_term');
-  if (s_term = 's') return 'Triple'; -- Property
-  return 'Relation'; -- Attribute
+  if (s_term = 's') return 'Predicate';
+  return 'Attribute';
 }
 ;
 
@@ -647,22 +647,22 @@ fct_nav (in tree any,
     if (connection_get('c_term') = 'class')
 	fct_view_link ('classes', 'Classes', txt);
     else
-	fct_view_link ('classes', 'Entity Types', txt, 'Entity Category or Class');
+	fct_view_link ('classes', 'Type', txt, 'Entity Category or Class');
 
   if ('properties' <> tp)
     if (connection_get('s_term') = 's')
-      fct_view_link ('properties', 'Relation Subject', txt, 'Relationships for which selected variable denotes relation subject');
+      fct_view_link ('properties', 'Subject', txt, 'Relationships for which selected variable denotes relation subject');
     else
-      fct_view_link ('properties', 'Relation Entity', txt, 'Relationships for which selected variable denotes relation entity');
+      fct_view_link ('properties', 'Attributes', txt, 'Relationships for which selected variable denotes relation entity');
 
   if ('text' = tp and pos = 0)
     fct_view_link ('text-properties', 'Properties containing the text', txt);
 
   if ('properties-in' <> tp)
     if (connection_get('s_term') = 's')
-      fct_view_link ('properties-in', 'Relation Object', txt, 'Relationships for which selected variable denotes relation object');
+      fct_view_link ('properties-in', 'Object', txt, 'Relationships for which selected variable denotes relation object');
     else
-      fct_view_link ('properties-in', 'Relation Value', txt, 'Relationships for which selected variable denotes relation value');
+      fct_view_link ('properties-in', 'Values', txt, 'Relationships for which selected variable denotes relation value');
 
       if (tp <> 'list-count')
     {

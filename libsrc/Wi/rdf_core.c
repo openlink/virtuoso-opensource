@@ -258,7 +258,7 @@ sqlr_set_cbk_name_and_proc (client_connection_t *cli, const char *cbk_name, cons
     }
   if (NULL != cli->cli_user && !sec_proc_check (proc_ret[0], cli->cli_user->usr_id, cli->cli_user->usr_g_id))
     {
-      err_ret[0] = srv_make_new_error ("42000", "SR575", "No permission to execute %.300s as callback of %.100s() with user ID %d, group ID %d",
+      err_ret[0] = srv_make_new_error ("42000", "SR575:SECURITY", "No permission to execute %.300s as callback of %.100s() with user ID %d, group ID %d",
         full_name, funname, (int)(cli->cli_user->usr_id), (int)(cli->cli_user->usr_g_id) );
       return;
     }

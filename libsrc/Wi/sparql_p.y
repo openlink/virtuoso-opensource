@@ -163,6 +163,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token COUNT_L		/* Fake, used only in sparqlwords.gperf */
 %token COUNT_LPAR		/*:: PUNCT("COUNT ("), SPAR, LAST1("COUNT ()"), LAST1("COUNT\r\n()"), LAST1("COUNT #qq\r\n()"), ERR("COUNT"), ERR("COUNT bad") ::*/
 %token COUNT_DISTINCT_L		/*:: PUNCT("COUNT DISTINCT"), SPAR, LAST("COUNT DISTINCT"), LAST("COUNT\r\nDISTINCT"), LAST("COUNT #qq\r\nDISTINCT"), ERR("COUNT"), ERR("COUNT bad") ::*/
+%token CUBE_L		/*:: PUNCT_SPAR_LAST("CUBE") ::*/
 %token DATA_L		/*:: PUNCT_SPAR_LAST("DATA") ::*/
 %token DATATYPE_L	/*:: PUNCT_SPAR_LAST("DATATYPE") ::*/
 %token DEFAULT_L	/*:: PUNCT_SPAR_LAST("DEFAULT") ::*/
@@ -187,6 +188,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token GRAPH_L		/*:: PUNCT_SPAR_LAST("GRAPH") ::*/
 %token GROUP_L		/*:: PUNCT_SPAR_LAST("GROUP") ::*/
 %token GROUP_CONCAT_L	/*:: PUNCT_SPAR_LAST("GROUP_CONCAT") ::*/
+%token GROUPING_L	/*:: PUNCT_SPAR_LAST("GROUPING") ::*/
 %token HAVING_L		/*:: PUNCT_SPAR_LAST("HAVING") ::*/
 %token IDENTIFIED_L	/*:: PUNCT("IDENTIFIED"), SPAR, LAST1("IDENTIFIED BY"), LAST1("IDENTIFIED\r\nBY"), LAST1("IDENTIFIED #qq\r\nBY"), ERR("IDENTIFIED"), ERR("IDENTIFIED bad") ::*/
 %token IFP_L		/*:: PUNCT_SPAR_LAST("IFP") ::*/
@@ -235,6 +237,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token QUAD_L		/*:: PUNCT_SPAR_LAST("QUAD") ::*/
 %token REDUCED_L	/*:: PUNCT_SPAR_LAST("REDUCED") ::*/
 %token RETURNS_L	/*:: PUNCT_SPAR_LAST("RETURNS") ::*/
+%token ROLLUP_L		/*:: PUNCT_SPAR_LAST("ROLLUP") ::*/
 %token SAME_AS_L	/*:: PUNCT_SPAR_LAST("SAME_AS") ::*/
 %token SAME_AS_O_L	/*:: PUNCT_SPAR_LAST("SAME_AS_O") ::*/
 %token SAME_AS_P_L	/*:: PUNCT_SPAR_LAST("SAME_AS_P") ::*/
@@ -245,6 +248,7 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token SCORE_LIMIT_L	/*:: PUNCT_SPAR_LAST("SCORE_LIMIT") ::*/
 %token SELECT_L		/*:: PUNCT_SPAR_LAST("SELECT") ::*/
 %token SERVICE_L	/*:: PUNCT_SPAR_LAST("SERVICE") ::*/
+%token SETS_L		/*:: PUNCT_SPAR_LAST("SETS") ::*/
 %token SILENT_L		/*:: PUNCT_SPAR_LAST("SILENT") ::*/
 %token SOFT_L		/*:: PUNCT_SPAR_LAST("SOFT") ::*/
 %token SQLQUERY_L	/*:: PUNCT("SQLQUERY"), SPAR, LAST1("SQLQUERY {"), LAST1("SQLQUERY ("), LAST1("SQLQUERY #cmt\n{"), LAST1("SQLQUERY\r\n("), ERR("SQLQUERY"), ERR("SQLQUERY bad") ::*/
@@ -256,6 +260,10 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token TABLE_OPTION_L	/*:: PUNCT_SPAR_LAST("TABLE_OPTION") ::*/
 %token TEXT_L		/*:: PUNCT_SPAR_LAST("TEXT") ::*/
 %token THEN_L		/*:: PUNCT_SPAR_LAST("THEN") ::*/
+%token TIES_L		/*:: PUNCT_SPAR_LAST("TIES") ::*/
+%token TO_L		/*:: PUNCT_SPAR_LAST("TO") ::*/
+%token TOP_L		/*:: PUNCT_SPAR_LAST("TOP") ::*/
+%token TRANSITIVE_L	/*:: PUNCT_SPAR_LAST("TRANSITIVE") ::*/
 %token T_CYCLES_ONLY_L	/*:: PUNCT_SPAR_LAST("T_CYCLES_ONLY") ::*/
 %token T_DIRECTION_L	/*:: PUNCT_SPAR_LAST("T_DIRECTION") ::*/
 %token T_DISTINCT_L	/*:: PUNCT_SPAR_LAST("T_DISTINCT") ::*/
@@ -270,8 +278,6 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %token T_NO_ORDER_L	/*:: PUNCT_SPAR_LAST("T_NO_ORDER") ::*/
 %token T_SHORTEST_ONLY_L	/*:: PUNCT_SPAR_LAST("T_SHORTEST_ONLY") ::*/
 %token T_STEP_L		/*:: PUNCT_SPAR_LAST("T_STEP") ::*/
-%token TO_L		/*:: PUNCT_SPAR_LAST("TO") ::*/
-%token TRANSITIVE_L	/*:: PUNCT_SPAR_LAST("TRANSITIVE") ::*/
 %token true_L		/*:: PUNCT_SPAR_LAST("true") ::*/
 %token UNBOUND_L	/*:: PUNCT_SPAR_LAST("UNBOUND") ::*/
 %token UNDEF_L		/*:: PUNCT_SPAR_LAST("UNDEF") ::*/
@@ -364,11 +370,20 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <nothing> spar_where_clause_tail
 %type <tree> spar_solution_modifier
 %type <trees> spar_group_clause_opt
+%type <backstack> spar_group_expns_or_sets
 %type <backstack> spar_group_expns
 %type <tree> spar_group_expn
+%type <tree> spar_grouping_sets
+%type <backstack> spar_grouping_set_list
+%type <tree> spar_grouping_set
+%type <tree> spar_options_of_top_lpar
+%type <token_type> spar_all_distinct_opt
+%type <token_type> spar_ties_opt
 %type <tree> spar_having_clause_opt
 %type <trees> spar_order_clause_opt
 %type <backstack> spar_order_conditions
+%type <backstack> spar_order_condition_nocommalist
+%type <backstack> spar_order_condition_commalist
 %type <tree> spar_order_condition
 %type <token_type> spar_asc_or_desc_opt
 %type <tree> spar_limit_clause_opt
@@ -469,6 +484,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <backstack> spar_macro_arg_list_opt
 %type <backstack> spar_macro_arg_list
 %type <tree> spar_numeric_literal
+%type <tree> spar_integer_literal
+%type <tree> spar_optminus_integer_literal
 %type <tree> spar_rdf_literal
 %type <tree> spar_boolean_literal
 %type <tree> spar_iriref
@@ -1022,9 +1039,14 @@ spar_group_clause_opt	/* [Virt]	GroupClause	 ::=  'GROUP' 'BY' GroupExpn+	*/
 	: /* empty */				{ $$ = NULL; }
 	| GROUP_L BY_L {
 		sparp_arg->sparp_allow_aggregates_in_expn |= 1; }
-	    spar_group_expns	{
+	    spar_group_expns_or_sets	{
 		$$ = (SPART **)t_revlist_to_array ($4);
 		sparp_arg->sparp_allow_aggregates_in_expn &= ~1; }
+	;
+
+spar_group_expns_or_sets
+	: spar_group_expns { $$ = $1; }
+	| spar_grouping_sets { $$ = NULL; t_set_push (&($$), $1); }
 	;
 
 spar_group_expns	/* ::=  GroupExpn+	*/
@@ -1041,6 +1063,57 @@ spar_group_expn		/* [Virt]	GroupExpn	 ::=  */
 	| spar_var
 	| spar_bin_op_sign	{ sparyyerror (sparp_arg, "GROUP BY clause contains a binary operator expression that is not enclosed in (...)"); }
 	;
+
+spar_grouping_sets
+	: GROUPING_L SETS_L _LPAR spar_grouping_set_list _RPAR { $$ = sparp_make_builtin_call (sparp_arg, SPAR_BIF__GROUPING_SETS, (SPART **)t_revlist_to_array ($4)); }
+	| ROLLUP_L _LPAR spar_order_conditions _RPAR { $$ = sparp_make_builtin_call (sparp_arg, SPAR_BIF__ROLLUP, (SPART **)t_revlist_to_array ($3)); }
+	| CUBE_L _LPAR spar_order_conditions _RPAR { $$ = sparp_make_builtin_call (sparp_arg, SPAR_BIF__CUBE, (SPART **)t_revlist_to_array ($3)); }
+	;
+
+spar_grouping_set_list 
+	: spar_grouping_set { $$ = NULL; t_set_push (&($$), $1); }
+	| spar_grouping_set_list _COMMA spar_grouping_set { $$ = $1; t_set_push (&($$), $3); }
+	;
+
+spar_grouping_set
+	: _LPAR _RPAR {
+		$$ = sparp_make_builtin_call (sparp_arg, SPAR_BIF__GROUPING_SET, (SPART **)t_list (2, NULL,
+		    sparp_make_builtin_call (sparp_arg, SPAR_BIF__GROUPING_LIST, (SPART **)t_list (0)) ) ); }
+	| _LPAR spar_order_conditions _RPAR {
+		$$ = sparp_make_builtin_call (sparp_arg, SPAR_BIF__GROUPING_SET,  (SPART **)t_list (2, NULL,
+		    sparp_make_builtin_call (sparp_arg, SPAR_BIF__GROUPING_LIST, (SPART **)t_revlist_to_array ($2)) ) ); }
+	| ORDER_L BY_L spar_options_of_top_lpar spar_order_conditions _RPAR {
+		$$ = sparp_make_builtin_call (sparp_arg, SPAR_BIF__GROUPING_SET,  (SPART **)t_list (2, $3,
+		    sparp_make_builtin_call (sparp_arg, SPAR_BIF__GROUPING_LIST, (SPART **)t_revlist_to_array ($4)) ) ); }
+	;
+
+spar_options_of_top_lpar
+	: spar_all_distinct_opt _LPAR {
+		if (0 == $1)
+		  $$ = NULL;
+		else
+		  $$ = sparp_make_builtin_call (sparp_arg, TOP_L, (SPART **)t_list (4, $1, NULL, NULL, NULL)); }
+	| spar_all_distinct_opt TOP_L spar_integer_literal spar_ties_opt _LPAR {
+		$$ = sparp_make_builtin_call (sparp_arg, TOP_L, (SPART **)t_list (4, $1, $3, NULL, $4)); }
+	| spar_all_distinct_opt TOP_L _LPAR spar_expn _RPAR spar_ties_opt _LPAR {
+		$$ = sparp_make_builtin_call (sparp_arg, TOP_L, (SPART **)t_list (4, $1, $4, NULL, $6)); }
+	| spar_all_distinct_opt TOP_L spar_integer_literal _COMMA spar_optminus_integer_literal spar_ties_opt _LPAR {
+		$$ = sparp_make_builtin_call (sparp_arg, TOP_L, (SPART **)t_list (4, $1, $3, $5, $6)); }
+	| spar_all_distinct_opt TOP_L _LPAR spar_expn _COMMA spar_expn _RPAR spar_ties_opt _LPAR {
+		$$ = sparp_make_builtin_call (sparp_arg, TOP_L, (SPART **)t_list (4, $1, $4, $6, $8)); }
+	;
+
+spar_all_distinct_opt
+	: /* empty */	{ $$ = 0; }
+	| ALL_L		{ $$ = ALL_L; }
+	| DISTINCT_L	{ $$ = DISTINCT_L; }
+	;
+
+spar_ties_opt
+	: { $$ = 0; }
+	| WITH_L TIES_L { $$ = 1; }
+	;
+
 
 spar_bin_op_sign
 	: _PLUS
@@ -1074,8 +1147,19 @@ spar_order_clause_opt	/* [15]	OrderClause	 ::=  'ORDER' 'BY' OrderCondition+	*/
 	;
 
 spar_order_conditions	/* ::=  OrderCondition+	*/
-	: spar_order_condition				{ $$ = NULL; t_set_push (&($$), $1); }
-	| spar_order_conditions spar_order_condition	{ $$ = $1; t_set_push (&($$), $2); }
+	: spar_order_condition						{ $$ = NULL; t_set_push (&($$), $1); }
+	| spar_order_condition spar_order_condition_nocommalist		{ $$ = dk_set_conc ($2, t_cons ((void*) $1, NULL)); }
+	| spar_order_condition _COMMA spar_order_condition_commalist	{ $$ = dk_set_conc ($3, t_cons ((void*) $1, NULL)); }
+	;
+
+spar_order_condition_nocommalist	/* ::=  OrderCondition*	*/
+	: spar_order_condition					{ $$ = NULL; t_set_push (&($$), $1); }
+	| spar_order_condition_nocommalist spar_order_condition	{ $$ = $1; t_set_push (&($$), $2); }
+	;
+
+spar_order_condition_commalist	/* ::=  OrderCondition*	*/
+	: spar_order_condition						{ $$ = NULL; t_set_push (&($$), $1); }
+	| spar_order_condition_commalist _COMMA spar_order_condition	{ $$ = $1; t_set_push (&($$), $3); }
 	;
 
 spar_order_condition	/* [16]*	OrderCondition	 ::=  ( 'ASC' | 'DESC' )? */
@@ -1089,7 +1173,7 @@ spar_order_condition	/* [16]*	OrderCondition	 ::=  ( 'ASC' | 'DESC' )? */
 	;
 
 spar_asc_or_desc_opt	/* ::=  ( 'ASC' | 'DESC' )? */
-	: /* empty */	{ $$ = ASC_L; }
+	: /* empty */	{ $$ = 0; }
 	| ASC_L		{ $$ = ASC_L; }
 	| DESC_L	{ $$ = DESC_L; }
 	;
@@ -1864,11 +1948,12 @@ spar_agg_name	/* [Virt]	AggName	 ::=  'COUNT' | 'AVG' | 'MIN' | 'MAX' | 'SUM'	*/
 	;
 
 spar_agg_name_int
-	: COUNT_LPAR	{ $$ = uname_SPECIAL_cc_bif_c_COUNT; }
-	| AVG_L _LPAR	{ $$ = uname_SPECIAL_cc_bif_c_AVG; }
-	| MIN_L _LPAR	{ $$ = uname_SPECIAL_cc_bif_c_MIN; }
-	| MAX_L _LPAR	{ $$ = uname_SPECIAL_cc_bif_c_MAX; }
-	| SUM_L _LPAR	{ $$ = uname_SPECIAL_cc_bif_c_SUM; }
+	: COUNT_LPAR		{ $$ = uname_SPECIAL_cc_bif_c_COUNT; }
+	| AVG_L _LPAR		{ $$ = uname_SPECIAL_cc_bif_c_AVG; }
+	| GROUPING_L _LPAR	{ $$ = uname_SPECIAL_cc_bif_c_GROUPING; }
+	| MIN_L _LPAR		{ $$ = uname_SPECIAL_cc_bif_c_MIN; }
+	| MAX_L _LPAR		{ $$ = uname_SPECIAL_cc_bif_c_MAX; }
+	| SUM_L _LPAR		{ $$ = uname_SPECIAL_cc_bif_c_SUM; }
 	;
 
 spar_group_concat_begin
@@ -2293,6 +2378,15 @@ spar_numeric_literal	/* [59]	NumericLiteral	 ::=  INTEGER | DECIMAL | DOUBLE	*/
 	| NAN_L			{ double myZERO = 0.0;
 				  double myNAN_d = 0.0/myZERO;
 				  $$ = spartlist (sparp_arg, 5, SPAR_LIT, t_box_double (myNAN_d), uname_xmlschema_ns_uri_hash_double, NULL, "NAN"); }
+	;
+
+spar_integer_literal
+	: SPARQL_INTEGER	{ $$ = spartlist (sparp_arg, 5, SPAR_LIT, $1, uname_xmlschema_ns_uri_hash_integer, NULL, NULL); }
+	;
+
+spar_optminus_integer_literal
+	: SPARQL_INTEGER	{ $$ = spartlist (sparp_arg, 5, SPAR_LIT, $1, uname_xmlschema_ns_uri_hash_integer, NULL, NULL); }
+	| MINUS_L SPARQL_INTEGER	{ $$ = spartlist (sparp_arg, 5, SPAR_LIT, t_box_num (-unbox($2)), uname_xmlschema_ns_uri_hash_integer, NULL, NULL); }
 	;
 
 spar_rdf_literal	/* [60]	RDFLiteral	 ::=  String ( LANGTAG | ( '^^' IRIref ) )?	*/

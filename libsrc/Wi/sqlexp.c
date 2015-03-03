@@ -855,9 +855,6 @@ ssl_type_to_name (char ssl_type)
   return "<unnamed>";
 }
 
-#define IS_DATE_DTP(dtp) \
-  (DV_TIMESTAMP == (dtp) || DV_DATE == (dtp) || DV_DATETIME == (dtp))
-
 void
 cv_bop_params (state_slot_t * l, state_slot_t * r, const char *op)
 {

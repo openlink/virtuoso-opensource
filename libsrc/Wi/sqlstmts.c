@@ -1357,8 +1357,8 @@ sqlc_update_pos (sql_comp_t * sc, ST * tree, subq_compilation_t * cursor_sqc, ST
 	if (!sec_checked &&
 	    !sec_col_check (col, SC_G_ID (sc), SC_U_ID (sc), GR_UPDATE))
 	  sqlc_new_error (sc->sc_cc,
-	      "42000", "SQ103", "Update of column %.100s of table %.300s not allowed (user ID = %lu)",
-              col->col_name, tb->tb_name, SC_U_ID (sc) );
+	      "42000", "SQ103:SECURITY", "Update of column %.100s of table %.300s is not allowed (user ID = %lu)",
+              col->col_name, tb->tb_name, (long)(SC_U_ID (sc)) );
 	col_ids[inx] = col->col_id;
       }
       END_DO_BOX;
@@ -1519,8 +1519,8 @@ sqlc_update_searched (sql_comp_t * sc, ST * tree)
 	  {
 	    dk_free_box ((caddr_t) col_ids);
 	    sqlc_new_error (sc->sc_cc,
-		"42000", "SQ107", "Update of column %.100s of table %.300s not allowed (user ID = %lu)",
-                col->col_name, tb->tb_name, (oid_t) unbox (tb_ref->_.table.u_id) );
+		"42000", "SQ107:SECURITY", "Update of column %.100s of table %.300s not allowed (user ID = %lu)",
+                col->col_name, tb->tb_name, (long) unbox (tb_ref->_.table.u_id) );
 	  }
 	col_ids[inx] = col->col_id;
       }
@@ -1613,7 +1613,7 @@ sqlc_delete_pos (sql_comp_t * sc, ST * tree, subq_compilation_t * cursor_sqc, ST
   if (tb && (tb->tb_primary_key->key_is_col || find_remote_table (tb->tb_name, 0) || (tb->tb_primary_key->key_partition && !sqlo_opt_value (tree->_.delete_pos.opts, OPT_NO_CLUSTER))))
     {
       if (!src_ret)
-	sqlc_new_error (sc->sc_cc, "37000", "NOPOS", "Positioned statement not allowed only in procedures");
+	sqlc_new_error (sc->sc_cc, "37000", "NOPOS", "Positioned statement is allowed only in procedures");
       *src_ret = sqlc_delete_cl_pos (sc, tree, cursor_sqc);
       return;
     }
@@ -1622,7 +1622,7 @@ sqlc_delete_pos (sql_comp_t * sc, ST * tree, subq_compilation_t * cursor_sqc, ST
       trig_cols_t tc;
       SQL_NODE_INIT (delete_node_t, del, delete_node_input, del_free);
       if (tb && !sec_tb_check (tb, SC_G_ID (sc), SC_U_ID (sc), GR_DELETE))
-	sqlc_new_error (sc->sc_cc, "43000", "SQ108", "Permission denied for delete from %.300s (user ID = %lu)", tb->tb_name, SC_U_ID (sc));
+	sqlc_new_error (sc->sc_cc, "43000", "SQ108:SECURITY", "Permission denied for delete from %.300s (user ID = %lu)", tb->tb_name, SC_U_ID (sc));
 
       del->del_table = tb;
       del->del_policy_qr = sqlc_make_policy_trig (sc->sc_cc, tb, TB_RLS_D);
@@ -1676,7 +1676,7 @@ sqlc_delete_searched (sql_comp_t * sc, ST * tree)
   sqlc_table_used (sc, tb);
   if (tb
       && !sec_tb_check (tb, (oid_t) unbox (from->_.table.g_id), (oid_t) unbox (from->_.table.u_id), GR_DELETE))
-    sqlc_new_error (sc->sc_cc, "42000", "SQ110", "Permission denied for delete from %.300s (user ID = %lu)",
+    sqlc_new_error (sc->sc_cc, "42000", "SQ110:SECURITY", "Permission denied for delete from %.300s (user ID = %lu)",
         tb->tb_name, (oid_t) unbox (from->_.table.u_id) );
 
   if (tb && find_remote_table (tb->tb_name, 0))

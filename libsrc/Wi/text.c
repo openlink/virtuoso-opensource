@@ -2956,6 +2956,44 @@ txs_set_offband (text_node_t * txs, caddr_t * qst)
     }
 }
 
+int32 txs_max_terms = 300;
+
+int
+txs_check_tree (caddr_t * tree)
+{
+  int op = (int) ((ptrlong *)tree)[0];
+  switch (op)
+    {
+      case SRC_WORD:
+	  return 1;
+      case BOP_AND:
+      case SRC_NEAR:
+      case BOP_OR:
+      case SRC_WORD_CHAIN:
+	    {
+	      size_t inx, tree_elems = BOX_ELEMENTS (tree);
+	      if (tree_elems > txs_max_terms)
+		return 0;
+	      for (inx = 2; inx < tree_elems; inx++)
+		{
+		  if (!txs_check_tree ((caddr_t*) tree[inx]))
+		    return 0;
+		}
+	      return 1;
+	    }
+      case XP_AND_NOT:
+	    {
+	      if (!txs_check_tree ((caddr_t*) tree[3]))
+		return 0;
+	      if (!txs_check_tree ((caddr_t*) tree[2]))
+		return 0;
+	      return 1;
+	    }
+      default:
+	  return 1;
+    }
+  return 1;
+}
 
 void
 txs_init (text_node_t * txs, query_instance_t * qi)
@@ -3028,6 +3066,12 @@ parse_new_tree:
 	  dk_free_tree ((caddr_t)tree);
 	  dk_free_tree (dtd_config);
 	  sqlr_resignal (err);
+	}
+      if (!txs_check_tree (tree))
+	{
+	  dk_free_tree ((caddr_t)tree);
+	  dk_free_tree (dtd_config);
+	  sqlr_new_error ("22023", "XP371" , "Free text expression too long");
 	}
       xpt_edit_range_flags (tree, ~SRC_RANGE_DUMMY, SRC_RANGE_MAIN);
       qst_set (qst, txs->txs_cached_dtd_config, dtd_config);

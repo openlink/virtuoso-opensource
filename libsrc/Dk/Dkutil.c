@@ -84,8 +84,10 @@ gpf_notice (const char *file, int line, const char *text)
 #endif
 #endif
   *(long *) -1 = -1;
+
   call_exit (1);
-  return 0;
+
+  exit(1);
 }
 
 

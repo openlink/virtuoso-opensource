@@ -189,7 +189,7 @@ pldbg_print_value (dk_session_t * ses, box_t box, query_instance_t *qi)
 	      for (i = 0; i < l; i++)
 		{
 		  char buffer[50];
-		  snprintf (buffer, sizeof (buffer), "%f ", ((float *) box)[i]);
+		  snprintf (buffer, sizeof (buffer), SINGLE_E_STAR_FMT " ", SINGLE_E_PREC, ((float *) box)[i]);
 		  SES_PRINT (ses, buffer);
 		}
 	      SES_PRINT (ses, ")");
@@ -202,7 +202,7 @@ pldbg_print_value (dk_session_t * ses, box_t box, query_instance_t *qi)
 	      for (i = 0; i < l; i++)
 		{
 		  char buffer[50];
-		  snprintf (buffer, sizeof (buffer), "%f ", ((double *) box)[i]);
+		  snprintf (buffer, sizeof (buffer), DOUBLE_E_STAR_FMT " ", DOUBLE_E_PREC, ((double *) box)[i]);
 		  SES_PRINT (ses, buffer);
 		}
 	      SES_PRINT (ses, ")");

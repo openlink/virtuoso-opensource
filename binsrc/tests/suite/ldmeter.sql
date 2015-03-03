@@ -28,11 +28,13 @@ create table ld_metric
  lm_first_id int,
  lm_secs_since_start int,
  lm_n_rows bigint,
+ lm_n_deletes bigint,
  lm_cpu int,
  lm_io_stat any,
  lm_read_time bigint,
  lm_read_pct float,
  lm_rows_per_s float,
+ lm_dels_per_s float,
  lm_cpu_pct float,
  lm_rusage any
  );
@@ -62,32 +64,35 @@ create procedure ld_sample (in is_first int := 0)
 {
   declare ru any;
   declare now datetime;
-  declare id, n_rows, read_time, last_read_time, elapsed int;
+  declare id, n_rows, read_time, last_read_time, elapsed, n_dels int;
  id := sequence_next ('lm');
  now := curdatetime ();
  n_rows := (select cl_sys_stat (key_table, name_part (key_name, 2), 'touches') from sys_keys where key_name = 'DB.DBA.RDF_QUAD');
+ n_dels := (select cl_sys_stat (key_table, name_part (key_name, 2), 'n_deletes') from sys_keys where key_name = 'DB.DBA.RDF_QUAD');
+
  ru := getrusage ();
   if (is_first)
     {
 
-      insert into ld_metric (lm_id, lm_dt, lm_first_id, lm_cpu, lm_read_time, lm_n_rows, lm_rusage, lm_secs_since_start, lm_io_stat)
-	values (id, now, id, ru[0] + ru[1], sys_stat ('read_cum_time'), n_rows, ru, 0, io_stat());
+      insert into ld_metric (lm_id, lm_dt, lm_first_id, lm_cpu, lm_read_time, lm_n_rows, lm_rusage, lm_secs_since_start, lm_io_stat, lm_n_deletes) 
+	values (id, now, id, ru[0] + ru[1], sys_stat ('read_cum_time'), n_rows, ru, 0, io_stat(), n_dels);
 }
   else
     {
       declare last_dt, start_dt datetime;
-      declare first_id, last_rows, last_cpu, last_read  int;
+      declare first_id, last_rows, last_cpu, last_read, last_dels  int;
       select lm_id, lm_dt  into first_id, start_dt from ld_metric where lm_dt < now and lm_first_id = lm_id order by lm_dt desc;
-      select lm_dt, lm_n_rows, lm_cpu, lm_read_time into last_dt, last_rows, last_cpu, last_read
+      select lm_dt, lm_n_rows, lm_cpu, lm_read_time, lm_n_deletes into last_dt, last_rows, last_cpu, last_read, last_dels  
 	from ld_metric where lm_dt < now order by lm_dt desc;
 
-      insert into ld_metric (lm_id, lm_dt, lm_first_id, lm_cpu, lm_read_time, lm_n_rows, lm_rusage, lm_secs_since_start, lm_io_stat)
-	values (id, now, first_id, ru[0] + ru[1], sys_stat ('read_cum_time'), n_rows, ru, datediff ('second', start_dt, now), io_stat ());
+      insert into ld_metric (lm_id, lm_dt, lm_first_id, lm_cpu, lm_read_time, lm_n_rows, lm_rusage, lm_secs_since_start, lm_io_stat, lm_n_deletes) 
+	values (id, now, first_id, ru[0] + ru[1], sys_stat ('read_cum_time'), n_rows, ru, datediff ('second', start_dt, now), io_stat (), n_dels);
     elapsed := datediff ('second', last_dt, now);
       update ld_metric set
 	lm_read_pct = (sys_stat ('read_cum_time') - last_read) / 10 / (0.0001 + elapsed),
 	lm_cpu_pct = (((ru[0] + ru[1]) - last_cpu) / 10) / (0.001 + elapsed),
-	lm_rows_per_s = (n_rows - last_rows) / (0.001 + elapsed)
+	lm_rows_per_s = (n_rows - last_rows) / (0.001 + elapsed),
+	lm_dels_per_s = (n_dels - last_dels) / (0.001 + elapsed)
 	where lm_id = id;
     }
   commit work;

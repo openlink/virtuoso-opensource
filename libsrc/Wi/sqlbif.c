@@ -10310,10 +10310,10 @@ do_wide:
 	      snprintf (tmp, sizeof (tmp), BOXINT_FMT, unbox (data));
 	      break;
 	  case DV_SINGLE_FLOAT:
-	      snprintf (tmp, sizeof (tmp), "%f", unbox_float (data));
+	      snprintf (tmp, sizeof (tmp), SINGLE_E_STAR_FMT, SINGLE_E_PREC, unbox_float (data));
 	      break;
 	  case DV_DOUBLE_FLOAT:
-	      snprintf (tmp, sizeof (tmp), "%f", unbox_double (data));
+	      snprintf (tmp, sizeof (tmp), DOUBLE_E_STAR_FMT, DOUBLE_E_PREC, unbox_double (data));
 	      break;
 	  case DV_BLOB_HANDLE:
 	  case DV_BLOB_WIDE_HANDLE:
@@ -10541,7 +10541,7 @@ bif_blob_to_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (((blob_handle_t*)bh)->bh_length > 10000000)
     sqlr_new_error ("22001", "SR072",
-	"Blob longer than maximum string length not allowed in blob_to_string");
+	"Blob longer than maximum string length not allowed in blob_to_string()");
     res = blob_to_string (qi->qi_trx, bh);
   return res;
 }
@@ -10737,10 +10737,10 @@ check_sequence_grants (query_instance_t * qi, caddr_t name)
   if (sec_bif_caller_is_dba (qi))
     return;
   if (id_hash_get (dba_sequences, (caddr_t)&name))
-    sqlr_new_error ("42000", "SR159", "Sequence %.300s restricted to dba group.", name);
+    sqlr_new_error ("42000", "SR159:SECURITY", "Sequence %.300s restricted to DBA group.", name);
   tbl = sequence_auto_increment_of (name);
   if (tbl && !sec_tb_check (tbl, qi->qi_u_id, qi->qi_g_id, GR_INSERT))
-    sqlr_new_error ("42000", "SR159", "No permission to write sequence %.300s.", name);
+    sqlr_new_error ("42000", "SR159:SECURITY", "No permission to write sequence %.300s with user ID %d, group ID %d", name, (int)(qi->qi_u_id), (int)(qi->qi_g_id));
 }
 
 static int registry_name_is_protected (const caddr_t name)
@@ -11031,7 +11031,7 @@ bif_registry_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (2 < BOX_ELEMENTS (args))
     {
       if (!sec_bif_caller_is_dba ((query_instance_t *)qst))
-        sqlr_new_error ("42000", "SR159", "Function registry_set restricted to dba group when is called with 3 arguments.");
+        sqlr_new_error ("42000", "SR159:SECURITY", "Function registry_set() is restricted to DBA group when is called with 3 arguments.");
       force = bif_long_arg (qst, args, 2, "registry_set");
     }
   switch (name_is_protected)
@@ -11039,11 +11039,11 @@ bif_registry_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     case 0: break;
     case 1:
       if (force) break;
-      sqlr_new_error ("42000", "SR483", "Function registry_set needs nonzero third argument to modify registry variable '%.300s'.", name);
+      sqlr_new_error ("42000", "SR483", "Function registry_set() needs nonzero third argument to modify registry variable '%.300s'.", name);
     case 2:
       if (2 == force)
         return (box_num (0));
-      sqlr_new_error ("42000", "SR484", "Function registry_set can not modify protected registry variable '%.300s'.", name);
+      sqlr_new_error ("42000", "SR484", "Function registry_set() can not modify protected registry variable '%.300s'.", name);
     }
   check_sequence_grants ((query_instance_t *)qst, name);
   IN_TXN;
@@ -12000,11 +12000,11 @@ bif_deserialize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (!IS_BLOB_HANDLE_DTP(dtp))
     sqlr_new_error ("22023", "SR581", "deserialize() requires a blob or NULL or string argument");
   if (((blob_handle_t *) xx)->bh_ask_from_client)
-    sqlr_new_error ("22023", "SR582", "Blob argument to deserialize () must be a non-interactive blob");
+    sqlr_new_error ("22023", "SR582", "Blob argument to deserialize() must be a non-interactive blob");
   if (0 == (((blob_handle_t *) xx)->bh_length))
-    sqlr_new_error ("22023", "SR583", "Empty blob is not a valid argument for deserialize () built-in function");
+    sqlr_new_error ("22023", "SR583", "Empty blob is not a valid argument for deserialize() built-in function");
   if (((blob_handle_t*)xx)->bh_length > 10000000)
-    sqlr_new_error ("22001", "SR584", "Blob longer than maximum string length not allowed in deserialize ()");
+    sqlr_new_error ("22001", "SR584", "Blob longer than maximum string length not allowed in deserialize()");
     tmp_xx = blob_to_string (qi->qi_trx, xx);
   QR_RESET_CTX
     {
@@ -12206,7 +12206,7 @@ caddr_t bif_icc_name_arg (caddr_t * qst, state_slot_t ** args, int nth, const ch
   if (caller_is_dba)
     return arg;
   if (' ' == arg[0])
-    sqlr_new_error ("42000", "ICC01", "Lock names whose first char is whitespace are reserved for dba group.");
+    sqlr_new_error ("42000", "ICC01:SECURITY", "Lock names whose first char is whitespace are reserved for DBA group.");
   if (name_to_set)
     {
       char *at_sign = strrchr(arg, '@');
@@ -16106,40 +16106,7 @@ bif_rdf_valid_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (NULL == dt_uname) /* Invalid twobytes of a datatype? */
         return box_bool (0);
       /* Despite the use of bif_string_or_uname_or_wide_or_null_arg() we handle only UNAMEs here */
-      if ( (uname_xmlschema_ns_uri_hash_boolean			== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_byte			== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_date			== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_dateTime		== dt_uname)
-      /*|| (uname_xmlschema_ns_uri_hash_dateTimeStamp		== dt_uname)*/
-        || (uname_xmlschema_ns_uri_hash_dayTimeDuration		== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_decimal			== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_double			== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_duration		== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_float			== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_gDay			== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_gMonth			== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_gMonthDay		== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_gYear			== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_gYearMonth		== dt_uname)
-      /*|| (uname_xmlschema_ns_uri_hash_hexBinary		== dt_uname)*/
-        || (uname_xmlschema_ns_uri_hash_int			== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_integer			== dt_uname)
-      /*|| (uname_xmlschema_ns_uri_hash_language		== dt_uname)*/
-        || (uname_xmlschema_ns_uri_hash_long			== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_negativeInteger		== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_nonNegativeInteger	== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_nonPositiveInteger	== dt_uname)
-      /*|| (uname_xmlschema_ns_uri_hash_normalizedString	== dt_uname)*/
-        || (uname_xmlschema_ns_uri_hash_positiveInteger		== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_short			== dt_uname)
-      /*|| (uname_xmlschema_ns_uri_hash_string			== dt_uname)*/
-        || (uname_xmlschema_ns_uri_hash_time			== dt_uname)
-      /*|| (uname_xmlschema_ns_uri_hash_token			== dt_uname)*/
-        || (uname_xmlschema_ns_uri_hash_unsignedByte		== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_unsignedInt		== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_unsignedLong		== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_unsignedShort		== dt_uname)
-        || (uname_xmlschema_ns_uri_hash_yearMonthDuration	== dt_uname) )
+      if (rb_uname_to_flags_of_parseable_datatype (dt_uname) & RDF_TYPE_PARSEABLE)
         return box_bool (0);
     }
   return box_bool (1);

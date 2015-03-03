@@ -1490,7 +1490,7 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 	  {
 	    dbe_table_t *tb = sc->sc_tables[0]->ct_table;
 	    if (tb && !sec_tb_check (tb, sc->sc_tables[0]->ct_g_id, sc->sc_tables[0]->ct_u_id, GR_DELETE))
-	      sqlc_new_error (sc->sc_cc, "42000", "SQ110", "Permission denied for delete from table %.300s", tb->tb_name);
+	      sqlc_new_error (sc->sc_cc, "42000", "SQ110:SECURITY", "Permission denied for delete from table %.300s", tb->tb_name);
 	    sprintf_more (text, tlen, fill, "DELETE FROM ");
 	    sqlc_quote_dotted (text, tlen, fill, tb_remote_name (sc->sc_tables[0]->ct_table));
 	    if (tree->_.delete_src.table_exp->_.table_exp.where)
@@ -1519,8 +1519,8 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 		if (col_obj)
 		  {
 		    if (!sec_checked && !sec_col_check (col_obj, sc->sc_tables[0]->ct_g_id, sc->sc_tables[0]->ct_u_id, GR_UPDATE))
-		      sqlc_new_error (sc->sc_cc, "42000", "SQ164", "Update of column %s of table %.300s not allowed (user ID = %lu)",
-			  col_obj->col_name, sc->sc_tables[0]->ct_table->tb_name, sc->sc_tables[0]->ct_u_id);
+		      sqlc_new_error (sc->sc_cc, "42000", "SQ164:SECURITY", "Update of column %s of table %.300s not allowed (user ID = %lu)",
+			  col_obj->col_name, sc->sc_tables[0]->ct_table->tb_name, (long)(sc->sc_tables[0]->ct_u_id) );
 		  }
 		sprintf_more (text, tlen, fill, " ");
 		sqlc_quote_dotted (text, tlen, fill, col_obj ? col_obj->col_name : (char *) tree->_.update_src.cols[inx]);

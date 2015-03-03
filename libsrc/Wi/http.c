@@ -1455,7 +1455,7 @@ ws_url_rewrite (ws_connection_t *ws)
     }
   if (!sec_user_has_group (G_ID_DBA, proc->qr_proc_owner))
     {
-      err = srv_make_new_error ("42000", "HT059", "The stored procedure DB.DBA.HTTP_URLREWRITE is not property of DBA group");
+      err = srv_make_new_error ("42000", "HT059:SECURITY", "The stored procedure DB.DBA.HTTP_URLREWRITE is not property of DBA group");
       goto error_end;
     }
   if (proc->qr_to_recompile)
@@ -3380,7 +3380,7 @@ ws_auth_check (ws_connection_t * ws)
     }
   if (!sec_user_has_group (G_ID_DBA, proc->qr_proc_owner))
     {
-      err = srv_make_new_error ("42000", "HT059", "The authentication procedure %s is not property of DBA group", auth_proc);
+      err = srv_make_new_error ("42000", "HT059:SECURITY", "The authentication procedure %s is not property of DBA group", auth_proc);
       goto error_end;
     }
   if (proc->qr_to_recompile)
@@ -3528,7 +3528,7 @@ ws_check_rdf_accept (ws_connection_t *ws)
     }
   if (!sec_user_has_group (G_ID_DBA, proc->qr_proc_owner))
     {
-      err = srv_make_new_error ("42000", "HT059", "The stored procedure " "DB.DBA.HTTP_RDF_ACCEPT" "is not property of DBA group");
+      err = srv_make_new_error ("42000", "HT059:SECURITY", "The stored procedure " "DB.DBA.HTTP_RDF_ACCEPT" "is not property of DBA group");
       goto error_end;
     }
   if (proc->qr_to_recompile)
@@ -9917,9 +9917,10 @@ caddr_t
 bif_http_escape (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   dk_session_t * out = http_session_no_catch_arg (qst, args, 2, "http_escape");
-  caddr_t text = bif_varchar_or_bin_arg (qst, args, 0, "http_escape");
+  caddr_t text = bif_arg (qst, args, 0, "http_escape");
+  int box_len = box_length (text);
   int mode = (int) bif_long_arg (qst, args, 1, "http_escape");
-  wcharset_t *src_charset = (((BOX_ELEMENTS (args) >= 4) && bif_long_arg (qst, args, 3, "http_escape")) ? CHARSET_UTF8 : default_charset);
+  wcharset_t *src_charset;
   wcharset_t *tgt_charset = (((BOX_ELEMENTS (args) < 5) || bif_long_arg (qst, args, 4, "http_escape")) ? CHARSET_UTF8 : default_charset);
   if (
     ((mode & 0xff) >= COUNTOF__DKS_ESC) ||
@@ -9928,7 +9929,23 @@ bif_http_escape (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       sqlr_new_error ("22023", "HT058",
         "Incorrect escaping mode (%d) is specified in parameter 2 of http_escape()", mode);
     }
-  dks_esc_write (out, text, box_length(text)-1, tgt_charset, src_charset, mode);
+  switch (DV_TYPE_OF (text))
+    {
+    case DV_STRING: case DV_BIN:
+      src_charset = (((BOX_ELEMENTS (args) >= 4) && bif_long_arg (qst, args, 3, "http_escape")) ? CHARSET_UTF8 : default_charset);
+      if (0 < box_len)
+        dks_esc_write (out, text, box_len - 1, tgt_charset, src_charset, mode);
+      break;
+    case DV_UNAME:
+      if ((BOX_ELEMENTS (args) >= 4) && (0 == bif_long_arg (qst, args, 3, "http_escape")) && (CHARSET_UTF8 != default_charset))
+        sqlr_new_error ("22023", "HT058",
+          "First argument of http_escape() is UNAME but the encoding is explicitly specified as non-UTF-8");
+      dks_esc_write (out, text, box_len - 1, tgt_charset, CHARSET_UTF8, mode);
+      break;
+    case DV_WIDE:
+      dks_wide_esc_write (out, (wchar_t *)text, (box_len/sizeof (wchar_t)) - 1, tgt_charset, mode);
+      break;
+    }
   return NULL;
 }
 

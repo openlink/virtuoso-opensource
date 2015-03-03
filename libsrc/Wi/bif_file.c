@@ -2113,7 +2113,7 @@ bif_cfg_write (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   PCONFIG pcfgFile = NULL;
   char *pszPath, *pszSection, *pszItemName, *pszItemValue;
 
-  sec_check_dba ((query_instance_t *) qst, "cfg_write");	/* allowed only for dba group */
+  sec_check_dba ((query_instance_t *) qst, "cfg_write");	/* allowed only for DBA group */
 
   pszPath = bif_string_arg (qst, args, 0, "cfg_write");
   pszSection = bif_string_arg (qst, args, 1, "cfg_write");
@@ -2867,8 +2867,8 @@ bif_run_executable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    full_exe_name);
       if ((1 == safety) && (NULL != cli->cli_user)
 	  && (0 == sec_user_has_group (0, cli->cli_user->usr_g_id)))
-	sqlr_new_error ("42000", "SR407",
-	    "Running of file '%s' is restricted to dba group.",
+	sqlr_new_error ("42000", "SR407:SECURITY",
+	    "Running of file '%s' is restricted to DBA group.",
 	    full_exe_name);
     }
 #ifdef WIN32

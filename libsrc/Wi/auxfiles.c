@@ -89,7 +89,7 @@ int n_oldest_flushable;
 int null_bad_dtp;
 int atomic_dive = 0;
 int dive_pa_mode = PA_READ;
-int c_compress_mode = 0;
+int32 c_compress_mode = 0;
 int default_txn_isolation = ISO_COMMITTED;
 int c_col_by_default = 0;
 int c_query_log = 0;

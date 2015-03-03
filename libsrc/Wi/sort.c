@@ -1030,9 +1030,19 @@ sort_read_vec_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
   int n_results = 0, last_set, batch;
   caddr_t ** arr;
   ptrlong top = unbox (qst_get (inst, setp->setp_top));
-  ptrlong skip = setp->setp_top_skip ? unbox (qst_get (inst, setp->setp_top_skip)) : 0;
+  ptrlong skip = 0;
   ptrlong fill;
   int set, n_sets = QST_INT (inst, ts->src_gen.src_prev->src_out_fill);
+  if (setp->setp_top_skip)
+    {
+      if (!SSL_IS_VEC_OR_REF (setp->setp_top_skip))
+	skip = unbox (qst_get (inst, setp->setp_top_skip));
+      else
+	{ /* the skip is not supposed to be different on different sets, thus for vec ssl we take 1st */
+	  data_col_t * dc = (data_col_t *) (inst[setp->setp_top_skip->ssl_index]);
+	  skip = ((int64*)(dc->dc_values))[0];
+	}
+    }
   if (setp->setp_partitioned)
     {
       top += skip;

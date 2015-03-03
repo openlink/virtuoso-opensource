@@ -371,7 +371,7 @@ create procedure USER_PASSWORD_SET (in name varchar, in passwd varchar)
     }
   select U_ID, U_GROUP into _u_id, _u_group from DB.DBA.SYS_USERS where U_NAME = USER;
   if (not (_u_id = 0 or _u_group = 0))
-    signal ('42000', 'Function DB.DBA.USER_PASSWORD_SET is restricted to dba group', 'SR285');
+    signal ('42000', 'Function DB.DBA.USER_PASSWORD_SET() is restricted to DBA group', 'SR285:SECURITY');
   if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = name and U_DAV_ENABLE = 1 and U_IS_ROLE = 0))
     signal ('42000', concat ('The user ''', name, ''' does not exist'), 'SR286');
   if (not isstring (passwd) or length (passwd) < 1)

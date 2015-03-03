@@ -833,7 +833,7 @@ create procedure b3s_o_is_out (in x any)
   declare f any;
   f := 'http://xmlns.com/foaf/0.1/';
   -- foaf:page, foaf:homePage, foaf:img, foaf:logo, foaf:depiction
-  if (__ro2sq (x) in (f||'page', f||'homePage', f||'img', f||'logo', f||'depiction'))
+  if (__ro2sq (x) in (f||'page', f||'homePage', f||'img', f||'logo', f||'depiction', 'http://schema.org/url'))
     {
       return 1;
     }
@@ -966,7 +966,7 @@ again:
        vlbl := charset_recode (_object, 'UTF-8', '_WIDE_');
        if (vlbl = 0)
          vlbl := charset_recode (_object, current_charset (), '_WIDE_');
-       if (vlbl = 0 or _object like '<object%' or _object like '<iframe%')
+       if (vlbl = 0 or _object like '<object%' or _object like '<iframe%' or ltrim (_object) like '<%' or strstr (_object, '<a href') is not null)
          http (_object);
        else
          http_value (vlbl);

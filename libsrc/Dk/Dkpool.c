@@ -114,7 +114,7 @@ mp_map_count_print (char * buf, size_t max)
     }
   END_DO_HT;
   mutex_leave (&mp_reg_mtx);
-  snprintf (buf, max, "%d maps in mps, %ld bytes, %Ld in use, %Ld max in use\n", ctr, sz, mp_large_in_use, mp_max_large_in_use);
+  snprintf (buf, max, "%d maps in mps, %Ld bytes, %Ld in use, %Ld max in use\n", ctr, (long long)sz, (long long)mp_large_in_use, (long long)mp_max_large_in_use);
 }
 
 #else
@@ -1507,7 +1507,7 @@ mp_by_address (uint64 ptr)
 	{
 	  if (ptr >= start && ptr < start + sz)
 	    {
-	      printf ("Address %p is %ld bytes inside map starting at %p of size %ld\n", (void*)ptr, ptr - start, (void*)start, sz);
+	      printf ("Address %p is %Ld bytes inside map starting at %p of size %Ld\n", (void*)ptr, ptr - start, (void*)start, (long long)sz);
 	    }
 	}
       END_DO_HT;
@@ -1522,7 +1522,7 @@ mp_by_address (uint64 ptr)
 	  int64 start = (int64) (rc->rc_items[inx2]);
 	  if (ptr >= start && ptr < start + mm_sizes[inx])
 	    {
-	      printf ("Address %x is %ld bytes indes arc cached block start %p size %ld\n", (void*)ptr, ptr - start, (void*)start, mm_sizes[inx]);
+	      printf ("Address %x is %Ld bytes indes arc cached block start %p size %Ld\n", (void*)ptr, ptr - start, (void*)start, (long long)(mm_sizes[inx]));
 	      return;
 	    }
 	}

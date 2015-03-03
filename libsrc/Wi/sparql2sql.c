@@ -1453,7 +1453,7 @@ spar_var_eq_to_equiv (sparp_t *sparp, SPART *curr, sparp_equiv_t *eq_l, SPART *r
   ptrlong tree_restr_bits = sparp_restr_bits_of_expn (sparp, r);
   eq_l->e_rvr.rvrRestrictions |= SPART_VARR_NOT_NULL | (tree_restr_bits & (
     SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK |
-    SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL |
+    SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL | SPART_VARR_IS_BOOL |
     SPART_VARR_NOT_NULL | SPART_VARR_ALWAYS_NULL ) );
   switch (SPART_TYPE (r))
     {
@@ -1519,8 +1519,10 @@ same_source_of_two_nullables: ;
           default:
             {
               const sparp_bif_desc_t *bif_desc = sparp_bif_descs + r->_.builtin.desc_ofs;
-              if ((SSG_VALMODE_NUM == bif_desc->sbd_ret_valmode) || (SSG_VALMODE_BOOL == bif_desc->sbd_ret_valmode))
+              if (SSG_VALMODE_NUM == bif_desc->sbd_ret_valmode)
                 eq_l->e_rvr.rvrRestrictions |= SPART_VARR_LONG_EQ_SQL;
+              else if (SSG_VALMODE_BOOL == bif_desc->sbd_ret_valmode)
+                eq_l->e_rvr.rvrRestrictions |= SPART_VARR_LONG_EQ_SQL | SPART_VARR_IS_BOOL;
             }
           }
         return 0;
@@ -2373,7 +2375,7 @@ sparp_restr_of_select_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t
           ptrlong restr_bits = sparp_restr_bits_of_expn (sparp, sub_expn);
           eq->e_rvr.rvrRestrictions |= restr_bits & (
             SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK |
-            SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL |
+            SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL | SPART_VARR_IS_BOOL |
             SPART_VARR_NOT_NULL | SPART_VARR_ALWAYS_NULL );
         }
     }
@@ -2654,7 +2656,7 @@ sparp_gp_trav_eq_restr_from_connected_receivers_gp_in (sparp_t *sparp, SPART *cu
              SPART_VARR_IS_BLANK | SPART_VARR_IS_IRI |
              SPART_VARR_IS_LIT | SPART_VARR_IS_REF |
              SPART_VARR_TYPED | SPART_VARR_FIXED |
-             SPART_VARR_SPRINTFF | SPART_VARR_LONG_EQ_SQL );
+             SPART_VARR_SPRINTFF | SPART_VARR_LONG_EQ_SQL | SPART_VARR_IS_BOOL );
          if ((NULL == var->_.var.tabid) && (VALUES_L != curr->_.gp.subtype))
            continue;
          sparp_rvr_tighten (sparp, &(var->_.var.rvr), &(eq->e_rvr), changeable);
@@ -3196,7 +3198,7 @@ bifsparqlopt_special_bif_agg (sparp_t *sparp, int bif_opt_opcode, SPART *tree, b
           sparp_get_expn_rvr (sparp, tree->_.funcall.argtrees[0], rvr_ret, 1 /*return_independent_copy*/);
         else
           memset (rvr_ret, 0, sizeof (rdf_val_range_t));
-        if (uname_SPECIAL_cc_bif_c_MAX == qname || uname_SPECIAL_cc_bif_c_MIN == qname)
+        if (uname_SPECIAL_cc_bif_c_MAX == qname || uname_SPECIAL_cc_bif_c_MIN == qname || uname_SPECIAL_cc_bif_c_GROUPING == qname)
           {
             rvr_ret->rvrRestrictions &= ~SPART_VARR_NOT_NULL;
             break;
@@ -3401,7 +3403,7 @@ sparp_get_expn_rvr (sparp_t *sparp, SPART *tree, rdf_val_range_t *rvr_ret, int r
     case BOP_SAME: case BOP_NSAME:
     case BOP_AND: case BOP_OR: case BOP_NOT:
       memset (rvr_ret, 0, sizeof (rdf_val_range_t));
-      rvr_ret->rvrRestrictions = SPART_VARR_TYPED | SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL;
+      rvr_ret->rvrRestrictions = SPART_VARR_TYPED | SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL | SPART_VARR_IS_BOOL;
       rvr_ret->rvrDatatype = uname_xmlschema_ns_uri_hash_boolean;
       return;
     case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
@@ -3601,9 +3603,12 @@ sparp_simplify_builtin (sparp_t *sparp, SPART *tree, int *trouble_ret)
     case SPAR_BIF_COALESCE: break;
     case SPAR_BIF_CONCAT: break;
     case SPAR_BIF_CONTAINS: break;
+    case SPAR_BIF__CUBE: break;
     case SPAR_BIF_DAY: break;
     case SPAR_BIF_ENCODE_FOR_URI: break;
     case SPAR_BIF_FLOOR: break;
+    case SPAR_BIF__GROUPING_SET: break;
+    case SPAR_BIF__GROUPING_SETS: break;
     case SPAR_BIF_HOURS: break;
     case SPAR_BIF_IF:
       {
@@ -3667,6 +3672,7 @@ sparp_simplify_builtin (sparp_t *sparp, SPART *tree, int *trouble_ret)
     case SPAR_BIF_REMOVE_UNICODE3_ACCENTS: break;
     case SPAR_BIF_REPLACE: break;
     case SPAR_BIF_ROUND: break;
+    case SPAR_BIF__ROLLUP: break;
     case SPAR_BIF_SAMETERM: break;
     case SPAR_BIF_SECONDS: break;
     case SPAR_BIF_SHA1: break;
@@ -4228,7 +4234,7 @@ spar_refresh_binv_var_rvrs (sparp_t *sparp, SPART *binv)
   for (varctr = varcount; varctr--; /* no step */)
     {
       SPART *var;
-      int restr_set = SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK | SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL;
+      int restr_set = SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK | SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL | SPART_VARR_IS_BOOL;
       if (binv->_.binv.counters_of_unbound[varctr])
         continue;
       var = binv->_.binv.vars[varctr];
@@ -4243,7 +4249,7 @@ spar_refresh_binv_var_rvrs (sparp_t *sparp, SPART *binv)
           switch (SPART_TYPE (datum))
             {
             case SPAR_QNAME:
-              restr_set &= ~(SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL);
+              restr_set &= ~(SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL | SPART_VARR_IS_BOOL);
               /*                                 0123456789 */
               if (!strncmp (datum->_.qname.val, "nodeID://", 9))
                 restr_set &= ~SPART_VARR_IS_IRI;
@@ -4260,6 +4266,8 @@ spar_refresh_binv_var_rvrs (sparp_t *sparp, SPART *binv)
                       datum_dtp = DV_TYPE_OF (datum->_.lit.val);
                     if (!((DV_LONG_INT == datum_dtp) || (DV_DOUBLE_FLOAT == datum_dtp) || (DV_SINGLE_FLOAT == datum_dtp) || (DV_DATETIME == datum_dtp)))
                       restr_set &= ~SPART_VARR_LONG_EQ_SQL;
+                    if (!(DV_LONG_INT == datum_dtp))
+                      restr_set &= ~SPART_VARR_IS_BOOL;
                   }
                 break;
               }

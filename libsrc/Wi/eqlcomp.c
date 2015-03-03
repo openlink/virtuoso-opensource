@@ -2738,7 +2738,7 @@ eql_compile_eql (const char *string, client_connection_t * cli, caddr_t * err)
 
     if (cli->cli_user && !sec_user_has_group (0, cli->cli_user->usr_g_id))
       {
-	sqlc_new_error (&cc, "42000", "SQ060", "Must be in dba group to use EQL.");
+	sqlc_new_error (&cc, "42000", "SQ060:SECURITY", "Must be in DBA group to use EQL.");
       }
     eql_stmt_comp (&cc, (caddr_t) text, &head, &tail);
 

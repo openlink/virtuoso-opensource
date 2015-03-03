@@ -137,7 +137,7 @@ cu_rl_local_exec (cucurbit_t * cu)
     if (!cli->cli_user || !sec_proc_check (proc, cli->cli_user->usr_id, cli->cli_user->usr_g_id))
       {
 	user_t *usr = cli->cli_user;
-	sqlr_new_error ("42000", "SR186", "No permission to execute dpipe %s with user ID %d, group ID %d",
+	sqlr_new_error ("42000", "SR186:SECURITY", "No permission to execute dpipe %s with user ID %d, group ID %d",
 	    clo->_.call.func, (int) (usr ? usr->usr_id : 0), (int) (usr ? usr->usr_g_id : 0));
       }
     memcpy (save_pars, clo->_.call.params, box_length ((caddr_t) clo->_.call.params));

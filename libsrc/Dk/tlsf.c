@@ -1151,7 +1151,7 @@ tlsf_check (tlsf_t * tlsf, int mode)
 	    fill += 3;
 	  }
 	qsort (arr, fill / 3, 3 * sizeof (int64), mbs_cmp);
-	printf ("%ld/%Ld total %ld/%d allocd %Ld/%d free\n", total, n_blocks, allocd_bytes, n_allocd, free_bytes, n_free);
+	printf ("%Ld/%Ld total %Ld/%d allocd %Ld/%d free\n", total, n_blocks, allocd_bytes, n_allocd, free_bytes, n_free);
 	for (inx = 0; inx < fill; inx += 3)
 	  {
 	    printf ("sz %Ld %Ld allocd %Ld free\n", arr[inx], arr[inx + 1], arr[inx + 2]);

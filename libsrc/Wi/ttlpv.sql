@@ -161,7 +161,8 @@ create procedure rdf_rl_lang_id (in ln varchar)
 {
   declare id, old_mode int;
   declare daq  any;
-  id := (select rl_twobyte from rdf_language  where rl_id = ln);
+  ln := lower (ln);
+  id := (select RL_TWOBYTE from DB.DBA.RDF_LANGUAGE where RL_ID = ln);
   if (id)
     {
       rdf_cache_id ('l', ln, id);
@@ -180,7 +181,7 @@ create procedure rdf_rl_lang_id (in ln varchar)
  again:
   if (2 = old_mode)
     log_enable (0, 1);
-  id := (select rl_twobyte from rdf_language  where rl_id = ln);
+  id := (select RL_TWOBYTE from DB.DBA.RDF_LANGUAGE where RL_ID = ln);
   if (id)
     {
       rdf_cache_id ('l', ln, id);
