@@ -290,6 +290,12 @@ function updateLabel(value)
       OAT.Dom.hide('tab_'+i);
   }
 
+  if (['', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'].indexOf(value) === -1) {
+    OAT.Dom.hide('tr_dav_ldp');
+  } else {
+    OAT.Dom.show('tr_dav_ldp');
+  }
+
   if (!value)
     return;
 
@@ -327,6 +333,7 @@ function updateLabel(value)
     OAT.Dom.show('cVerify');
   else
     OAT.Dom.hide('cVerify');
+
 
 }
 

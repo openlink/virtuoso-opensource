@@ -627,13 +627,13 @@
               declare retValue any;
 
               if      (detClass in ('', 'UnderVersioning'))
-                retValue := vector ('destination', 'source', 'name', 'mime', 'link', 'folderType', 'owner', 'group', 'permissions', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
+                retValue := vector ('destination', 'source', 'name', 'mime', 'link', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
 
               else if      (detClass = 'Versioning')
                 retValue := vector ('name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'properties');
 
               else if (detClass = 'rdfSink')
-                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
 
               else if (detClass = 'HostFS')
                 retValue := vector ('source', 'name', 'mime', 'owner', 'group', 'permissions', 'textSearch', 'metadata', 'acl');
@@ -642,13 +642,13 @@
                 retValue := vector ('name', 'mime', 'owner', 'group', 'permissions', 'publicTags', 'aci');
 
               else if (detClass = 'S3')
-                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'sse', 'S3sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci');
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'sse', 'S3sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci');
 
               else if (detClass in ('DynaRes', 'Share'))
                 retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'textSearch', 'inheritancePermissions', 'metadata', 'acl', 'aci');
 
               else if (detClass in ('GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
-                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'acl', 'aci');
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'acl', 'aci');
 
               else if (detClass in ('CalDAV', 'CardDAV'))
                 retValue := vector ('source', 'name', 'mime', 'owner', 'group', 'permissions', 'publicTags', 'aci');
@@ -670,6 +670,9 @@
           <v:method name="viewField" arglist="in field varchar">
             <![CDATA[
               if (not isarray (self.dav_viewFields))
+                return 0;
+
+              if ((field = 'ldp') and (atod (sys_stat ('st_dbms_ver')) < 7.0))
                 return 0;
 
               return WEBDAV.DBA.vector_contains (self.dav_viewFields, field);
@@ -719,6 +722,9 @@
           <v:method name="editField" arglist="in field varchar">
             <![CDATA[
               if (not isarray (self.dav_editFields))
+                return 0;
+
+              if ((field = 'ldp') and (atod (sys_stat ('st_dbms_ver')) < 7.0))
                 return 0;
 
               return WEBDAV.DBA.vector_contains (self.dav_editFields, field);
@@ -2514,6 +2520,39 @@
                         </script>
                       ]]>
                     </v:template>
+                    <v:template name="tf_12b" type="simple" enabled="-- case when self.viewField ('ldp') and (self.dav_type = 'C') and not self.dav_is_redirect then 1 else 0 end">
+                      <tr id="tr_dav_ldp">
+                        <th width="30%"> </th>
+                        <td>
+                          <label>
+                            <?vsp
+                              declare tmp, checked, class any;
+
+                              class := case when (self.dav_enable and not self.editField ('ldp')) then 'disabled' else '' end;
+                              tmp := self.get_fieldProperty ('dav_ldp', self.dav_path, 'LDP', '');
+                              if (tmp = '')
+                              {
+                                if (DB.DBA.LDP_ENABLED (DB.DBA.DAV_SEARCH_ID (self.dav_path, 'C')))
+                                {
+                                  class := 'disabled';
+                                  checked := 'checked="checked"';
+                                }
+                                else
+                                {
+                                  checked := '';
+                                }
+                              }
+                              else
+                              {
+                                checked := 'checked="checked"';
+                              }
+                              http (sprintf ('<input type="checkbox" name="dav_ldp" id="dav_ldp" value="ldp:BasicContainer" disabled="disabled" title="LDP enable/disable" class="%s" %s />', class, checked));
+                            ?>
+                            <b> LDP enable/disable</b>
+                          </label>
+                        </td>
+                      </tr>
+                    </v:template>
                     <v:template name="tf_13" type="simple" enabled="--case when self.viewField ('textSearch') and not self.dav_is_redirect then 1 else 0 end">
                       <tr id="davRow_text" width="30%">
                         <th>
@@ -2633,7 +2672,7 @@
                                   declare N integer;
                                   declare properties any;
 
-                                  properties := WEBDAV.DBA.DAV_PROP_LIST (self.dav_path, '%', vector ('virt:%', 'http://www.openlinksw.com/schemas/%', 'http://local.virt/DAV-RDF%'));
+                                  properties := WEBDAV.DBA.DAV_PROP_LIST (self.dav_path, '%', vector ('LDP', 'virt:%', 'http://www.openlinksw.com/schemas/%', 'http://local.virt/DAV-RDF%'));
                                 ?>
                                 <table id="c_tbl" class="WEBDAV_formList" cellspacing="0">
                                   <tr>
@@ -2853,7 +2892,7 @@
                 <v:on-post>
                   <![CDATA[
                     declare N, M, retValue, dav_owner, dav_group, dav_encryption_state integer;
-                    declare mode, dav_detType, dav_mime, dav_name, dav_link, dav_fullPath, dav_perms, msg, _p varchar;
+                    declare mode, dav_detType, dav_mime, dav_name, dav_link, dav_fullPath, dav_perms, dav_ldp, msg, _p varchar;
                     declare properties, c_properties, v_properties any;
                     declare dav_acl, dav_aci, old_dav_aci, dav_filename, dav_file, rdf_content any;
                     declare params, detParams, itemList any;
@@ -3403,6 +3442,26 @@
                             signal('TEST', tmp);
                         }
                       _exec_8:;
+                        -- LDP
+                        if (not self.editField ('ldp'))
+                          goto _exec_9;
+
+                        dav_ldp := get_keyword ('dav_ldp', params, '');
+                        tmp := WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'LDP', '');
+                        if (dav_ldp <> tmp)
+                        {
+                          if (dav_ldp = '')
+                          {
+                            WEBDAV.DBA.DAV_PROP_REMOVE (self.dav_path, 'LDP');
+                          }
+                          else
+                          {
+                            WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'LDP', dav_ldp);
+                            WEBDAV.DBA.ldp_recovery (dav_fullPath);
+                          }
+                        }
+
+                      _exec_9:;
                       }
 
                       -- File
@@ -3466,24 +3525,24 @@
                         }
 
                         if (not self.editField ('publicTags'))
-                          goto _exec_9;
+                          goto _exec_10;
 
                         WEBDAV.DBA.DAV_SET (dav_fullPath, 'publictags', self.dav_tags_public);
 
-                      _exec_9:;
+                      _exec_10:;
                         if (not self.editField ('privateTags'))
-                          goto _exec_10;
+                          goto _exec_11;
 
                         WEBDAV.DBA.DAV_SET (dav_fullPath, 'privatetags', self.dav_tags_private);
 
-                      _exec_10:;
+                      _exec_11:;
                       }
 
                       -- properties
                       if (not self.editField ('properties'))
-                        goto _exec_11;
+                        goto _exec_12;
 
-                      properties := WEBDAV.DBA.DAV_PROP_LIST (dav_fullPath, '%', vector ('redirectref', 'virt:%', 'DAV:%', 'http://www.openlinksw.com/schemas/%', 'http://local.virt/DAV-RDF%'));
+                      properties := WEBDAV.DBA.DAV_PROP_LIST (dav_fullPath, '%', vector ('redirectref', 'LDP', 'virt:%', 'DAV:%', 'http://www.openlinksw.com/schemas/%', 'http://local.virt/DAV-RDF%'));
                       for (N := 0; N < length (properties); N := N + 1)
                       {
                         WEBDAV.DBA.DAV_PROP_REMOVE (dav_fullPath, properties[N][0]);
@@ -3493,14 +3552,14 @@
                         WEBDAV.DBA.DAV_PROP_SET (dav_fullPath, c_properties[N][0], c_properties[N][1]);
                       }
 
-                    _exec_11:;
+                    _exec_12:;
                       -- symbolic link
                       if (not self.editField ('link') or not self.dav_is_redirect)
-                        goto _exec_12;
+                        goto _exec_13;
 
                       WEBDAV.DBA.DAV_PROP_SET (dav_fullPath, 'redirectref', dav_link);
 
-                    _exec_12:;
+                    _exec_13:;
                       -- Auto versioning
                       if ((self.dav_type = 'C') or (self.command_mode <> 10))
                       {
