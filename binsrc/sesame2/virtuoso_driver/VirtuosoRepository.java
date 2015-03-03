@@ -68,8 +68,9 @@ public class VirtuosoRepository implements Repository {
 	private ConnectionPoolDataSource _pds;
     
 	boolean useLazyAdd = true;
+	boolean insertBNodeAsURI = false;
 	String defGraph;
-	int prefetchSize = 200;
+	int prefetchSize = 100;
 	int batchSize = 5000;
 	int queryTimeout = 0;
 	String ruleSet;
@@ -285,7 +286,7 @@ public class VirtuosoRepository implements Repository {
 	}
 
 	/**
-	 * Set the buffer fetch size(default 200) 
+	 * Set the buffer fetch size(default 100) 
 	 * 
 	 * @param sz
 	 *        buffer fetch size.
@@ -338,8 +339,8 @@ public class VirtuosoRepository implements Repository {
 	/**
 	 * Set the RoundRobin state for connection(default false) 
 	 * 
-	 * @param sz
-	 *        buffer fetch size.
+	 * @param v
+	 *        true - use roundrobin
 	 */
 	public void setRoundrobin(boolean v) {
 		this.roundrobin = v;
@@ -351,6 +352,26 @@ public class VirtuosoRepository implements Repository {
 	public boolean getRoundrobin() {
 		return this.roundrobin;
 	}
+
+
+	/**
+	 * Set the insertBNodeAsURI state for connection(default false) 
+	 * 
+	 * @param v
+	 *        true - insert BNode as URI
+	 *        false - insert BNode as Virtuoso BNode
+	 */
+	public void setInsertBNodeAsURI(boolean v) {
+		this.insertBNodeAsURI = v;
+	}
+
+	/**
+	 * Get the insertBNodeAsURI state for connection
+	 */
+	public boolean getInsertBNodeAsURI() {
+		return this.insertBNodeAsURI;
+	}
+
 
 	
 	/**
