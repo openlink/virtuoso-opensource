@@ -4814,10 +4814,10 @@ bif_http_ld_json_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else                         /* 01.2345678901 */
     session_buffered_write (ses, " ,\n        ", 11);
   if (obj_is_iri)
-    {
-      session_buffered_write_char ('\"', ses);
+    {                            /* 01 2345 678 90*/
+      session_buffered_write (ses, "{ \"@id\": \"", 10);
       dks_esc_write (ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
-      session_buffered_write_char ('\"', ses);
+      session_buffered_write (ses, "\"}", 2);
     }
   else
     http_ld_json_write_literal_obj (ses, qi, obj, obj_dtp);
