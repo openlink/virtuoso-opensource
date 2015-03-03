@@ -966,7 +966,7 @@ again:
        vlbl := charset_recode (_object, 'UTF-8', '_WIDE_');
        if (vlbl = 0)
          vlbl := charset_recode (_object, current_charset (), '_WIDE_');
-       if (vlbl = 0 or _object like '<object%' or _object like '<iframe%' or ltrim (_object) like '<%')
+       if (vlbl = 0 or _object like '<object%' or _object like '<iframe%' or ltrim (_object) like '<%' or strstr (_object, '<a href') is not null)
          http (_object);
        else
          http_value (vlbl);
