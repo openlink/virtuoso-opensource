@@ -355,7 +355,16 @@
   <thead>
     <xsl:choose>
       <xsl:when test="$view-type = 'properties'">
-	  <tr><th></th><th>?s<xsl:value-of select="$pos"/><xsl:text> has </xsl:text> <xsl:value-of select="$p_term"/></th><!--th>Label</th--><th></th><th>Count</th></tr>
+	  <tr><th></th><th>?s<xsl:value-of select="$pos"/>
+		  <xsl:choose>
+		      <xsl:when test="$p_term = 'Attribute'">
+			  <xsl:text> has </xsl:text> 
+		      </xsl:when>
+		      <xsl:otherwise>
+			  <xsl:text> subjectOf </xsl:text> 
+		      </xsl:otherwise>
+		  </xsl:choose>
+		  <xsl:value-of select="$p_term"/></th><!--th>Label</th--><th></th><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'list-count'">
 	<tr><th></th><th><xsl:value-of select="$s_term"/></th><!--th>Title</th--><th></th><th>Count</th></tr>
@@ -370,7 +379,7 @@
 	<tr><th></th><th></th><th></th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'classes'">
-	  <tr><th></th><th>?s<xsl:value-of select="$pos"/><xsl:text> </xsl:text><xsl:value-of select="$t_term"/></th><!--th>Label</th--><th></th><th>Count</th></tr>
+	  <tr><th></th><th>?s<xsl:value-of select="$pos"/><xsl:text> instanceOf </xsl:text><xsl:value-of select="$t_term"/></th><!--th>Label</th--><th></th><th>Count</th></tr>
       </xsl:when>
       <xsl:when test="$view-type = 'text' or $view-type = 'text-d'">
 	<tr><th></th><th></th><th></th><th><xsl:value-of select="$s_term"/></th><th>Title</th><th>Named Graph</th></tr>
