@@ -71,7 +71,7 @@ public class VirtuosoStatement implements Statement
    private int maxFieldSize;
 
    // The number of rows to be fetched for each query
-   private int prefetch = VirtuosoTypes.DEFAULTPREFETCH;
+   protected int prefetch = VirtuosoTypes.DEFAULTPREFETCH;
 
    // The maximum of rows which can be returned by a query
    private int maxRows;
