@@ -111,6 +111,7 @@ extern char *http_proxy_address;
 extern char *http_cli_proxy_server;
 extern char *http_cli_proxy_except;
 extern int32 http_enable_client_cache;
+extern int32 ws_write_timeout;
 extern int32 log_proc_overwrite;
 extern char * backup_ignore_keys;
 
@@ -1494,6 +1495,9 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "HTTPClientCache", &http_enable_client_cache) == -1)
     http_enable_client_cache = 0;
+
+  if (cfg_getlong (pconfig, section, "WriteTimeout", &ws_write_timeout) == -1)
+    ws_write_timeout = 0;
   /*
    * FIXME: set meaningful default for c_http_proxy_connection_cache_timeout
    * if c_http_max_cached_proxy_connections is set to something whenever

@@ -4456,6 +4456,21 @@ ws_switch_to_keep_alive (ws_connection_t * ws)
   mutex_leave (ws_queue_mtx);
 }
 
+int32 ws_write_timeout = 0;
+
+void 
+ws_set_write_timeout (ws_connection_t * ws)
+{
+  int block = 0;
+  dk_session_t * client = ws->ws_session;
+  if (!ws_write_timeout)
+    return;
+  client->dks_session->ses_fduplex = 1;
+  client->dks_session->ses_w_status = SST_OK;
+  client->dks_session->ses_status = SST_OK;
+  client->dks_write_block_timeout.to_sec = ws_write_timeout;
+  session_set_control (client->dks_session, SC_BLOCKING, (void*)&block, sizeof (int));
+}
 
 void
 ws_serve_connection (ws_connection_t * ws)
@@ -4497,6 +4512,7 @@ ws_serve_connection (ws_connection_t * ws)
 #endif
 
  next_input:
+  ws_set_write_timeout (ws);
   ws->ws_cli->cli_http_ses = ws->ws_session;
   ws_read_req (ws);
   try_pipeline = ws_can_try_pipeline (ws);
@@ -4697,6 +4713,7 @@ ws_init_func (ws_connection_t * ws)
 	    ws->ws_session = dk_session_allocate (SESCLASS_TCPIP);
 	  session_accept (ses->dks_session, ws->ws_session->dks_session);
 	  ws->ws_session->dks_ws_status = DKS_WS_ACCEPTED;
+	  ws_set_write_timeout (ws);
 #if defined (_SSL) || defined (_IMSG)
 	  /* initialize ws stricture for ssl, pop3, imap, nntp & ftp service */
 	  ws_inet_session_init (ses, ws);
