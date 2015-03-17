@@ -182,14 +182,14 @@
 					</tr>
 					<tr>
 						<td>
-						        Insert BNode as Virtuoso URI
+						        Insert BNode as Virtuoso IRI
 						</td>
 						<td>
-							<input type="radio" id="insertBNodeAsURI"
-								name="Insert BNode as Virtuoso URI" size="48" value="true" />
+							<input type="radio" id="insertBNodeAsVirtuosoIRI"
+								name="Insert BNode as Virtuoso IRI" size="48" value="true" />
 							<xsl:value-of select="$true.label" />
 							<input type="radio" id="insertBNodeAsURI"
-								name="Insert BNode as Virtuoso URI" size="48" value="false" checked="true" />
+								name="Insert BNode as Virtuoso IRI" size="48" value="false" checked="true" />
 							<xsl:value-of select="$false.label" />
 						</td>
 						<td></td>
