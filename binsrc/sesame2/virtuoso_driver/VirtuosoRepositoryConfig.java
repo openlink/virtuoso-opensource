@@ -32,7 +32,7 @@ import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.FETCHSIZE;
 import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.ROUNDROBIN;
 import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.RULESET;
 import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.BATCHSIZE;
-import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.INSERTBNodeAsURI;
+import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.INSERTBNodeAsVirtuosoIRI;
 
 import org.openrdf.model.Graph;
 import org.openrdf.model.Literal;
@@ -66,7 +66,7 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 
 	private int batchSize = 5000;
 
-	private boolean insertBNodeAsURI = false;
+	private boolean insertBNodeAsVirtuosoIRI = false;
 
 	public VirtuosoRepositoryConfig() {
 		super(VirtuosoRepositoryFactory.REPOSITORY_TYPE);
@@ -157,12 +157,12 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 	}
 
 
-	public void setInsertBNodeAsURI(boolean v) {
-		this.insertBNodeAsURI = v;
+	public void setInsertBNodeAsVirtuosoIRI(boolean v) {
+		this.insertBNodeAsVirtuosoIRI = v;
 	}
 
-	public boolean getInsertBNodeAsURI() {
-		return this.insertBNodeAsURI;
+	public boolean getInsertBNodeAsVirtuosoIRI() {
+		return this.insertBNodeAsVirtuosoIRI;
 	}
 
 	
@@ -209,7 +209,7 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 
 		graph.add(implNode, BATCHSIZE, vf.createLiteral(Integer.toString(batchSize,10)));
 
-		graph.add(implNode, INSERTBNodeAsURI, vf.createLiteral(new Boolean(insertBNodeAsURI).toString()));
+		graph.add(implNode, INSERTBNodeAsVirtuosoIRI, vf.createLiteral(new Boolean(insertBNodeAsVirtuosoIRI).toString()));
 
 		return implNode;
 	}
@@ -257,9 +257,9 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 			if (batchsize != null) {
 				setBatchSize(Integer.parseInt(batchsize.getLabel()));
 			}
-			Literal bnodeAsUri = GraphUtil.getOptionalObjectLiteral(graph, implNode, INSERTBNodeAsURI);
+			Literal bnodeAsUri = GraphUtil.getOptionalObjectLiteral(graph, implNode, INSERTBNodeAsVirtuosoIRI);
 			if (roundrobin != null) {
-				setInsertBNodeAsURI(Boolean.parseBoolean(bnodeAsUri.getLabel()));
+				setInsertBNodeAsVirtuosoIRI(Boolean.parseBoolean(bnodeAsUri.getLabel()));
 			}
 
 		}

@@ -32,162 +32,153 @@ import com.hp.hpl.jena.shared.*;
 
 public class VirtTransactionHandler extends TransactionHandlerBase implements XAResource {
 
-	private VirtGraph graph = null;
-	private Boolean m_transactionsSupported = null;
-    
-
-	public VirtTransactionHandler(VirtGraph _graph ) {
-		super();
-		this.graph = _graph;
-	}
-
-	public boolean transactionsSupported() {
-		if (m_transactionsSupported != null) {
-			return(m_transactionsSupported.booleanValue());	
-		}
-		
-		try {
-			Connection c = graph.getConnection();
-			if ( c != null) {
-				m_transactionsSupported = new Boolean(c.getMetaData().supportsMultipleTransactions());
-				return(m_transactionsSupported.booleanValue());
-			}
-		} catch (Exception e) {
-			throw new JenaException(e);
-		}
-		return (false);
-	}
-
-	private XAResource checkXA()
-	{
-		if (!graph.isXA)
-			throw new JenaException("XA Transaction is supported only for XAConnections");
-		return graph.getXAResource();
-	}
-
-	private void checkNotXA(String cmd)
-	{
-		if (graph.isXA)
-			throw new JenaException("Method '"+cmd+"' doesn't work with XAConnection");
-	}
-
-	public boolean transactionsXASupported() {
-		return graph.isXA;
-	}
-
-    	public void start(Xid xid, int i) throws XAException
-    	{
-    		XAResource xa = checkXA();
-    		xa.start(xid, i);
-    	}
-    	public void commit(Xid xid, boolean flag) throws XAException
-    	{
-    		XAResource xa = checkXA();
-    		xa.commit(xid, flag);
-    	}
-
-    	public void end(Xid xid, int i) throws XAException
-    	{
-    		XAResource xa = checkXA();
-    		xa.end(xid, i);
-    	}
-
-    	public void forget(Xid xid) throws XAException
-    	{
-    		XAResource xa = checkXA();
-    		xa.forget(xid);
-    	}
-
-    	public int prepare(Xid xid) throws XAException
-    	{
-    		XAResource xa = checkXA();
-    		return xa.prepare(xid);
-    	}
-
-    	public Xid[] recover(int i) throws XAException
-    	{
-    		XAResource xa = checkXA();
-    		return xa.recover(i);
-    	}
-
-    	public void rollback(Xid xid) throws XAException
-    	{
-    		XAResource xa = checkXA();
-    		xa.rollback(xid);
-    	}
-
-    	public boolean setTransactionTimeout(int i) throws XAException
-    	{
-    		XAResource xa = checkXA();
-    		return xa.setTransactionTimeout(i);
-    	}
-    	public int getTransactionTimeout() throws XAException
-    	{
-    		XAResource xa = checkXA();
-    		return xa.getTransactionTimeout();
-    	}
-
-    	public boolean isSameRM(XAResource tr) throws XAException
-    	{
-    		XAResource xa = checkXA();
-    		if (tr instanceof VirtTransactionHandler) {
-    		  return xa.isSameRM(((VirtTransactionHandler)tr).checkXA());
-    		}else {
-    		  return xa.isSameRM(tr);  
-    		}
-    	}
+    private VirtGraph graph = null;
+    private Boolean m_transactionsSupported = null;
 
 
-	public void begin() {
-	        checkNotXA("begin");
-		if (transactionsSupported()) {
-			try {
-				Connection c = graph.getConnection();
-				if (c.getTransactionIsolation() != Connection.TRANSACTION_READ_COMMITTED) {
-					c.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-				}
-				if (c.getAutoCommit()) {
-					c.setAutoCommit(false);
-				}
-			} catch (SQLException e) {
-				throw new JenaException("Transaction begin failed: ", e);
-			}
-		} else {
-			notSupported("begin transaction");
-		}
-	}
+    public VirtTransactionHandler(VirtGraph _graph) {
+        super();
+        this.graph = _graph;
+    }
 
-	public void abort() {
-	        checkNotXA("abort");
-		if (transactionsSupported()) {
-			try {
-				Connection c = graph.getConnection();
-				c.rollback();
-				c.setAutoCommit(true);
-			} catch (SQLException e) {
-				throw new JenaException("Transaction rollback failed: ", e);
-			}
-		} else {
-			notSupported("abort transaction");
-		}
-	}
+    public boolean transactionsSupported() {
+        if (m_transactionsSupported != null) {
+            return (m_transactionsSupported.booleanValue());
+        }
 
-	public void commit() {
-	        checkNotXA("commit");
-		if (transactionsSupported()) {
-			try {
-				Connection c = graph.getConnection();
-				c.commit();
-				c.setAutoCommit(true);
-			} catch (SQLException e) {
-				throw new JenaException("Transaction commit failed: ", e);
-			}
-		} else {
-			notSupported("commit transaction");
-		}
-	}
+        try {
+            Connection c = graph.getConnection();
+            if (c != null) {
+                m_transactionsSupported = new Boolean(c.getMetaData().supportsMultipleTransactions());
+                return (m_transactionsSupported.booleanValue());
+            }
+        } catch (Exception e) {
+            throw new JenaException(e);
+        }
+        return (false);
+    }
 
-	private void notSupported(String opName)
-		{ throw new UnsupportedOperationException(opName); }
+    private XAResource checkXA() {
+        if (!graph.isXA)
+            throw new JenaException("XA Transaction is supported only for XAConnections");
+        return graph.getXAResource();
+    }
+
+    private void checkNotXA(String cmd) {
+        if (graph.isXA)
+            throw new JenaException("Method '" + cmd + "' doesn't work with XAConnection");
+    }
+
+    public boolean transactionsXASupported() {
+        return graph.isXA;
+    }
+
+    public void start(Xid xid, int i) throws XAException {
+        XAResource xa = checkXA();
+        xa.start(xid, i);
+    }
+
+    public void commit(Xid xid, boolean flag) throws XAException {
+        XAResource xa = checkXA();
+        xa.commit(xid, flag);
+    }
+
+    public void end(Xid xid, int i) throws XAException {
+        XAResource xa = checkXA();
+        xa.end(xid, i);
+    }
+
+    public void forget(Xid xid) throws XAException {
+        XAResource xa = checkXA();
+        xa.forget(xid);
+    }
+
+    public int prepare(Xid xid) throws XAException {
+        XAResource xa = checkXA();
+        return xa.prepare(xid);
+    }
+
+    public Xid[] recover(int i) throws XAException {
+        XAResource xa = checkXA();
+        return xa.recover(i);
+    }
+
+    public void rollback(Xid xid) throws XAException {
+        XAResource xa = checkXA();
+        xa.rollback(xid);
+    }
+
+    public boolean setTransactionTimeout(int i) throws XAException {
+        XAResource xa = checkXA();
+        return xa.setTransactionTimeout(i);
+    }
+
+    public int getTransactionTimeout() throws XAException {
+        XAResource xa = checkXA();
+        return xa.getTransactionTimeout();
+    }
+
+    public boolean isSameRM(XAResource tr) throws XAException {
+        XAResource xa = checkXA();
+        if (tr instanceof VirtTransactionHandler) {
+            return xa.isSameRM(((VirtTransactionHandler) tr).checkXA());
+        } else {
+            return xa.isSameRM(tr);
+        }
+    }
+
+
+    public void begin() {
+        checkNotXA("begin");
+        if (transactionsSupported()) {
+            try {
+                Connection c = graph.getConnection();
+                if (c.getTransactionIsolation() != Connection.TRANSACTION_READ_COMMITTED) {
+                    c.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
+                }
+                if (c.getAutoCommit()) {
+                    c.setAutoCommit(false);
+                }
+            } catch (SQLException e) {
+                throw new JenaException("Transaction begin failed: ", e);
+            }
+        } else {
+            notSupported("begin transaction");
+        }
+    }
+
+    public void abort() {
+        checkNotXA("abort");
+        if (transactionsSupported()) {
+            try {
+                Connection c = graph.getConnection();
+                c.rollback();
+                c.setAutoCommit(true);
+            } catch (SQLException e) {
+                throw new JenaException("Transaction rollback failed: ", e);
+            }
+        } else {
+            notSupported("abort transaction");
+        }
+    }
+
+    public void commit() {
+        checkNotXA("commit");
+        if (transactionsSupported()) {
+            try {
+                Connection c = graph.getConnection();
+                c.commit();
+                c.setAutoCommit(true);
+            } catch (SQLException e) {
+                throw new JenaException("Transaction commit failed: ", e);
+            }
+        } else {
+            notSupported("commit transaction");
+        }
+    }
+
+    private void notSupported(String opName) {
+        throw new UnsupportedOperationException(opName);
+    }
 
 }

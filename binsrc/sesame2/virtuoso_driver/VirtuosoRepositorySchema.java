@@ -65,8 +65,8 @@ public class VirtuosoRepositorySchema {
 	/** <tt>http://www.openrdf.org/config/repository/virtuoso#batchSize</tt> */
 	public final static URI BATCHSIZE;
 
-	/** <tt>http://www.openrdf.org/config/repository/virtuoso#insertBNodeAsURI</tt> */
-	public final static URI INSERTBNodeAsURI;
+	/** <tt>http://www.openrdf.org/config/repository/virtuoso#insertBNodeAsVirtuosoIRI</tt> */
+	public final static URI INSERTBNodeAsVirtuosoIRI;
 
 	static {
 		ValueFactory factory = ValueFactoryImpl.getInstance();
@@ -79,7 +79,7 @@ public class VirtuosoRepositorySchema {
 		ROUNDROBIN = factory.createURI(NAMESPACE, "roundRobin");
 		RULESET    = factory.createURI(NAMESPACE, "ruleSet");
 		BATCHSIZE  = factory.createURI(NAMESPACE, "batchSize");
-		INSERTBNodeAsURI  = factory.createURI(NAMESPACE, "insertBNodeAsURI");
+		INSERTBNodeAsVirtuosoIRI  = factory.createURI(NAMESPACE, "insertBNodeAsVirtuosoIRI");
 	}
 }
 
