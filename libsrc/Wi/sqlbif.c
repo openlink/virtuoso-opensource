@@ -15700,8 +15700,10 @@ The CONTAINS function corresponds to the XPath fn:contains. The arguments must b
 caddr_t
 bif_rdf_strcontains_x_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char *fnname, const char *sparql_fnname, int op_flags)
 {
-  ccaddr_t str = bif_arg_unrdf (qst, args, 0, fnname);
-  ccaddr_t pattern = bif_arg_unrdf (qst, args, 1, fnname);
+  caddr_t str_orig, pattern_orig;
+  ccaddr_t str = bif_arg_unrdf_ext (qst, args, 0, fnname, &str_orig);
+  ccaddr_t pattern = bif_arg_unrdf_ext (qst, args, 1, fnname, &pattern_orig);
+  int str_lang, pattern_lang;
   /*ccaddr_t str_end, pattern_position;*/
   size_t str_len, size_of_str_char, /*str_n_chars, pattern_n_chars,*/ pattern_len;
   int op_flags_place = op_flags & 0x0F;
@@ -15709,16 +15711,38 @@ bif_rdf_strcontains_x_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
   int found = 0;
   size_t hit_pos = 0;
   caddr_t res;
+  switch (DV_TYPE_OF (str))
+    {
+    case DV_STRING: 
+    case DV_UNAME:
+    case DV_WIDE:
+    case DV_LONG_WIDE:
+      break;
+    case DV_DB_NULL:
+      return NEW_DB_NULL;
+    default:
+      sqlr_new_error ("22023", "SL001", "The SPARQL 1.1 function %s() needs a string value as first argument", sparql_fnname);
+      return NULL;
+    }
   switch (DV_TYPE_OF (pattern))
     {
-      case DV_STRING: 
-      case DV_UNAME:
-      case DV_WIDE:
-      case DV_LONG_WIDE:
-	  break;
-      default:
-	  sqlr_new_error ("22023", "SL001", "The SPARQL 1.1 function %s() needs a string value as 2d argument", sparql_fnname);
-	  return NULL;
+    case DV_STRING: 
+    case DV_UNAME:
+    case DV_WIDE:
+    case DV_LONG_WIDE:
+      break;
+    case DV_DB_NULL:
+      return NEW_DB_NULL;
+    default:
+      sqlr_new_error ("22023", "SL001", "The SPARQL 1.1 function %s() needs a string value as second argument", sparql_fnname);
+      return NULL;
+    }
+  pattern_lang = (DV_RDF == DV_TYPE_OF (pattern_orig)) ? ((rdf_box_t *)pattern_orig)->rb_lang : RDF_BOX_DEFAULT_LANG;
+  str_lang = (DV_RDF == DV_TYPE_OF (str_orig)) ? ((rdf_box_t *)str_orig)->rb_lang : RDF_BOX_DEFAULT_LANG;
+  if (pattern_lang != RDF_BOX_DEFAULT_LANG)
+    {
+      if (str_lang != pattern_lang)
+        return NEW_DB_NULL;
     }
   switch (DV_TYPE_OF (str))
     {
@@ -15787,29 +15811,38 @@ bif_rdf_strcontains_x_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
           }
       }
       break;
-    case DV_DB_NULL:
-      return NEW_DB_NULL;
-    default:
-      sqlr_new_error ("22023", "SL001", "The SPARQL 1.1 function %s() needs a string value as 1st argument", sparql_fnname);
-    return NULL;
     }
   switch (op_flags_ret)
     {
     case STRCONTAINS_RET_BOOL:
-      res = (caddr_t)box_bool(found);
-      break;
+      return (caddr_t)box_bool(found);
     case STRCONTAINS_RET_AFTER:
       if (!found)
-        return box_dv_short_string ("");
-      res = dk_alloc_box (str_len + size_of_str_char - (hit_pos + pattern_len), box_tag (str));
-      memcpy (res, str + hit_pos + pattern_len, str_len + size_of_str_char - (hit_pos + pattern_len));
+        res = box_dv_short_string ("");
+      else
+        {
+          res = dk_alloc_box (str_len + size_of_str_char - (hit_pos + pattern_len), box_tag (str));
+          memcpy (res, str + hit_pos + pattern_len, str_len + size_of_str_char - (hit_pos + pattern_len));
+        }
       break;
     case STRCONTAINS_RET_BEFORE:
       if (!found)
-        return box_dv_short_string ("");
-      res = dk_alloc_box (hit_pos + size_of_str_char, box_tag (str));
-      memcpy (res, str, hit_pos + size_of_str_char);
+        res = box_dv_short_string ("");
+      else
+        {
+          res = dk_alloc_box (hit_pos + size_of_str_char, box_tag (str));
+          memcpy (res, str, hit_pos + size_of_str_char);
+        }
       break;
+    }
+  if (str_lang != RDF_BOX_DEFAULT_LANG)
+    {
+      rdf_box_t *res_rb = rb_allocate ();
+      res_rb->rb_box = res;
+      res_rb->rb_is_complete = 1;
+      res_rb->rb_type = RDF_BOX_DEFAULT_TYPE;
+      res_rb->rb_lang = str_lang;
+      res = (caddr_t)res_rb;
     }
   return res;
 }

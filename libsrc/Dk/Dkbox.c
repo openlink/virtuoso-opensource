@@ -1513,7 +1513,8 @@ rdf_box_audit_impl (rdf_box_t * rb)
   if ((0 == rb->rb_ro_id) && (0 == rb->rb_is_complete))
     GPF_T1 ("RDF box is too incomplete");
 #endif
-  if (rb->rb_type < RDF_BOX_MIN_TYPE) GPF_T1 ("rb type out pof range");
+  if ((rb->rb_type < RDF_BOX_MIN_TYPE) || (rb->rb_type > RDF_BOX_MAX_TYPE)) GPF_T1 ("rb type out of range");
+  if ((rb->rb_lang < RDF_BOX_DEFAULT_LANG) || (rb->rb_lang > RDF_BOX_MAX_LANG)) GPF_T1 ("rb lang out of range");
   if (rb->rb_is_complete)
     rb_dt_lang_check(rb);
 }
