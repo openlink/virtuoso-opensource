@@ -483,7 +483,8 @@ int sparyylex_from_sparp_bufs (caddr_t *yylval, sparp_t *sparp)
 %type <backstack> spar_arg_list
 %type <backstack> spar_macro_arg_list_opt
 %type <backstack> spar_macro_arg_list
-%type <tree> spar_numeric_literal
+%type <tree> spar_nonsigned_numeric_literal
+%type <tree> spar_optsigned_numeric_literal
 %type <tree> spar_integer_literal
 %type <tree> spar_optminus_integer_literal
 %type <tree> spar_rdf_literal
@@ -821,9 +822,7 @@ spar_dm_patitem_p	/* [Virt]	PatternItemP	 ::=  VAR1 | VAR2 | 'a' | IRIref	*/
 spar_dm_patitem_o	/* [Virt]	PatternItemO	 ::=  VAR1 | VAR2 | IRIref	*/
 			/*... | RDFLiteral | ( '-' | '+' )? NumericLiteral | BooleanLiteral | NIL	*/
 	: QD_VARNAME { $$ = spar_make_param_or_variable (sparp_arg, $1); }
-	| spar_numeric_literal
-	| _PLUS spar_numeric_literal	%prec MATH_UPLUS	{ $$ = $2; }
-	| _MINUS spar_numeric_literal	%prec MATH_UMINUS	{ $$ = $2; spar_change_sign (&($2->_.lit.val)); }
+	| spar_optsigned_numeric_literal
 	| NIL_L				{ $$ = (SPART *)t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#nil"); }
 	| spar_rdf_literal
 	| spar_boolean_literal
@@ -1264,7 +1263,7 @@ spar_bindvals
 
 spar_bindval
 	: spar_iriref
-	| spar_numeric_literal
+	| spar_optsigned_numeric_literal
 	| spar_rdf_literal
 	| spar_boolean_literal
 	| spar_blank_node
@@ -1451,7 +1450,7 @@ spar_inline_data_values_opt
 
 spar_inline_data_value
 	: spar_iriref
-	| spar_numeric_literal
+	| spar_optsigned_numeric_literal
 	| spar_rdf_literal
 	| spar_boolean_literal
 	| spar_blank_node
@@ -2013,9 +2012,7 @@ spar_graph_term		/* [42]*	GraphTerm	 ::=  IRIref | RDFLiteral | ( '-' | '+' )? N
 			/*... | BooleanLiteral | BlankNode | NIL | Backquoted	*/
 	: spar_iriref
 	| spar_rdf_literal
-	| spar_numeric_literal
-	| _PLUS spar_numeric_literal	%prec MATH_UPLUS	{ $$ = $2; }
-	| _MINUS spar_numeric_literal	%prec MATH_UMINUS	{ $$ = $2; spar_change_sign (&($2->_.lit.val)); }
+	| spar_optsigned_numeric_literal
 	| spar_boolean_literal
 	| spar_blank_node
 	| NIL_L				{ $$ = (SPART *)t_box_dv_uname_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#nil"); }
@@ -2217,7 +2214,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 		        $$ = spar_make_funcall (sparp_arg, is_agg, fname, args);
 		      } } }
 	| spar_rdf_literal		{ $$ = (SPART *)($1); }
-	| spar_numeric_literal		{ $$ = (SPART *)($1); }
+	| spar_nonsigned_numeric_literal		{ $$ = (SPART *)($1); }
 	| spar_boolean_literal		{ $$ = (SPART *)($1); }
 	| spar_blank_node  /* Excluded from final 1.1: { sparyyerror (sparp_arg, "Blank node labels can not be used in expressions, only in triple patterns"); } */
 	| spar_var
@@ -2368,7 +2365,7 @@ spar_expn_or_ggp			/* [Virt]	ExpnOrGgp	 ::=  Expn | GroupGraphPattern	*/
 	    spar_gp _RBRA { $$ = spar_gp_finalize (sparp_arg, NULL); }
 	;
 
-spar_numeric_literal	/* [59]	NumericLiteral	 ::=  INTEGER | DECIMAL | DOUBLE	*/
+spar_nonsigned_numeric_literal	/* [59]	NumericLiteral	 ::=  INTEGER | DECIMAL | DOUBLE	*/
 	: SPARQL_INTEGER	{ $$ = spartlist (sparp_arg, 5, SPAR_LIT, $1, uname_xmlschema_ns_uri_hash_integer, NULL, NULL); }
 	| SPARQL_DECIMAL	{ $$ = spartlist (sparp_arg, 5, SPAR_LIT, ((caddr_t *)$1)[0], uname_xmlschema_ns_uri_hash_decimal, NULL, ((caddr_t *)$1)[1]); }
 	| SPARQL_DOUBLE		{ $$ = spartlist (sparp_arg, 5, SPAR_LIT, ((caddr_t *)$1)[0], uname_xmlschema_ns_uri_hash_double, NULL, ((caddr_t *)$1)[1]); }
@@ -2378,6 +2375,12 @@ spar_numeric_literal	/* [59]	NumericLiteral	 ::=  INTEGER | DECIMAL | DOUBLE	*/
 	| NAN_L			{ double myZERO = 0.0;
 				  double myNAN_d = 0.0/myZERO;
 				  $$ = spartlist (sparp_arg, 5, SPAR_LIT, t_box_double (myNAN_d), uname_xmlschema_ns_uri_hash_double, NULL, "NAN"); }
+	;
+
+spar_optsigned_numeric_literal	/* [Virt]	SignedNumericLiteral	 ::=  ( '+' | '-' )? NumericLiteral	*/
+	: spar_nonsigned_numeric_literal
+	| _PLUS spar_nonsigned_numeric_literal	%prec MATH_UPLUS	{ $$ = $2; }
+	| _MINUS spar_nonsigned_numeric_literal	%prec MATH_UMINUS	{ $$ = $2; spar_change_sign (&($2->_.lit.val)); }
 	;
 
 spar_integer_literal
@@ -3216,7 +3219,7 @@ spar_qm_field_or_blank	/* [Virt]	QmFieldOrBlank	 ::=  QmField | ( '[' ']' )	*/
 
 spar_qm_field		/* [Virt]	QmField		 ::=  */
 	: spar_qm_iriref_const_expn { $$ = (SPART *)$1; }	/* see case below */
-	| spar_numeric_literal			/*... NumericLiteral	*/
+	| spar_optsigned_numeric_literal		/*... NumericLiteral	*/
 	| spar_rdf_literal			/*... | RdfLiteral	*/
 	| spar_qm_iriref_const_expn		/*... | ( QmIRIrefConst ( '(' ( QmSqlCol ( ',' QmSqlCol )* )? ')' )? )	*/
 	    _LPAR spar_qm_sqlcol_commalist_opt _RPAR {
