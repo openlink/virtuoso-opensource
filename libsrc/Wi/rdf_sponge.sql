@@ -1358,7 +1358,7 @@ create procedure DB.DBA.RDF_HTTP_URL_GET (inout url any, in base any, inout hdr 
     content := http_get (url, hdr, meth, req_hdr, cnt, proxy);
   redirects := redirects - 1;
 
-  if (hdr[0] not like 'HTTP/1._ 200 %')
+  if (hdr[0] not like 'HTTP/1._ 200 %' and hdr[0] not like 'HTTP/1._ 203 %')
     {
       if (hdr[0] like 'HTTP/1._ 30_ %' and hdr[0] not like 'HTTP/1._ 304 %')
 	{
