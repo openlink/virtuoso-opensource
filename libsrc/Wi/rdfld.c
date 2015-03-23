@@ -510,6 +510,7 @@ l_make_ro_disp (cucurbit_t * cu, caddr_t * args, value_state_t * vs)
       rdf_box_t *rb = (rdf_box_t *) box;
       caddr_t content = rb->rb_box;
       dtp_t cdtp = DV_TYPE_OF (content);
+      rdf_obj_ft_rule_iid_hkey_t iid_hkey = { 0, 0 };
       if (rb->rb_ro_id)
 	{
 	  cu_set_value (cu, vs, box_copy_tree (box));
@@ -548,6 +549,13 @@ l_make_ro_disp (cucurbit_t * cu, caddr_t * args, value_state_t * vs)
 	}
       else
 	is_text = rb->rb_is_text_index;
+      if (!is_text) /* check if all graphs are enabled */
+	{
+	  mutex_enter (rdf_obj_ft_rules_mtx);
+	  if (NULL != id_hash_get (rdf_obj_ft_rules_by_iids, (caddr_t)(&iid_hkey)))
+	    is_text = 1;
+	  mutex_leave (rdf_obj_ft_rules_mtx);
+	}
       len = box_length (content) - 1;
       if (len > RB_BOX_HASH_MIN_LEN)
 	{

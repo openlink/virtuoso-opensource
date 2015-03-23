@@ -3585,18 +3585,6 @@ id_hash_t *rdf_obj_ft_rules_by_iris = NULL;
 id_hash_t *rdf_obj_ft_graph_rule_counts = NULL;
 ptrlong rdf_obj_ft_predonly_rule_count = 0;
 
-typedef struct rdf_obj_ft_rule_iid_hkey_s
-{
-   iri_id_t hkey_g;
-   iri_id_t hkey_iid_p;
-} rdf_obj_ft_rule_iid_hkey_t;
-
-typedef struct rdf_obj_ft_rule_iri_hkey_s
-{
-   iri_id_t hkey_g;
-   caddr_t hkey_iri_p;
-} rdf_obj_ft_rule_iri_hkey_t;
-
 id_hashed_key_t
 rdf_obj_ft_rule_iid_hkey_hash (caddr_t p_data)
 {

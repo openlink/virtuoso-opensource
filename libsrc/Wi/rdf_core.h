@@ -346,4 +346,20 @@ int rdf_graph_is_in_enabled_repl (caddr_t * qst, iri_id_t q_iid, int *answer_is_
 #define SPLIT_MODE_TTL 0
 #define SPLIT_MODE_XML 1
 
+extern dk_mutex_t *rdf_obj_ft_rules_mtx;
+extern id_hash_t *rdf_obj_ft_rules_by_iids;
+
+typedef struct rdf_obj_ft_rule_iid_hkey_s
+{
+   iri_id_t hkey_g;
+   iri_id_t hkey_iid_p;
+} rdf_obj_ft_rule_iid_hkey_t;
+
+typedef struct rdf_obj_ft_rule_iri_hkey_s
+{
+   iri_id_t hkey_g;
+   caddr_t hkey_iri_p;
+} rdf_obj_ft_rule_iri_hkey_t;
+
+
 #endif
