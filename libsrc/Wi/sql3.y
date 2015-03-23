@@ -1726,6 +1726,7 @@ sql_option
 	| NO_L CLUSTER { $$ = t_CONS (OPT_NO_CLUSTER, t_CONS (1, NULL)); }
 	| NO_L IDENTITY { $$ = t_CONS (OPT_NO_IDENTITY, t_CONS (1, NULL)); }
 	| NO_L TRIGGER { $$ = t_CONS (OPT_NO_TRIGGER, t_CONS (1, NULL)); }
+	| TRIGGER { $$ = t_CONS (OPT_TRIGGER, t_CONS (1, NULL)); }
 	| INTO scalar_exp { $$ = t_CONS (OPT_INTO, t_CONS ($2, NULL)); }
 	| FETCH column_ref BY scalar_exp SET column_ref { $$ = t_cons ((void*)OPT_INS_FETCH, t_cons (t_list (4, OPT_INS_FETCH, $2, $4, $6), NULL)); }
 | INDEX ORDER { $$ = t_cons ((void*)OPT_INDEX_ORDER, t_cons ((void*)1, NULL)); }

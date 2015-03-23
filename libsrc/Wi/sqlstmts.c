@@ -1671,8 +1671,10 @@ sqlc_delete_searched (sql_comp_t * sc, ST * tree)
   trig_cols_t tc;
   ST *vd;
   ST *from = tree->_.delete_src.table_exp->_.table_exp.from[0];
+  caddr_t * opts = tree->_.delete_src.table_exp->_.table_exp.opts;
   dbe_table_t *tb = sch_name_to_table (sc->sc_cc->cc_schema,
       from->_.table.name);
+  int key_trig_event = sqlo_opt_value (opts, OPT_TRIGGER) ? TRIG_DELETE : -1;
   sqlc_table_used (sc, tb);
   if (tb
       && !sec_tb_check (tb, (oid_t) unbox (from->_.table.g_id), (oid_t) unbox (from->_.table.u_id), GR_DELETE))
@@ -1698,7 +1700,7 @@ sqlc_delete_searched (sql_comp_t * sc, ST * tree)
       del->del_table = tb;
       del->del_policy_qr = sqlc_make_policy_trig (sc->sc_cc, tb, TB_RLS_D);
       del->del_key_only = sqlc_del_key_only (sc, del->del_table, tree->_.delete_src.table_exp);
-      tc_init (&tc, del->del_key_only ? -1 : TRIG_DELETE, tb, NULL, NULL, sqlg_is_vector ? (del->del_key_only ? del->del_key_only : TC_ALL_KEYS) : 0);
+      tc_init (&tc, del->del_key_only ? key_trig_event : TRIG_DELETE, tb, NULL, NULL, sqlg_is_vector ? (del->del_key_only ? del->del_key_only : TC_ALL_KEYS) : 0);
       sc->sc_in_cursor_def = 1;
       sc->sc_cc->cc_query->qr_lock_mode = PL_EXCLUSIVE;
       sc->sc_parallel_dml = enable_mt_txn;

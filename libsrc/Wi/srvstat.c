@@ -1411,6 +1411,7 @@ extern long srv_cpu_count;
 extern int32 col_seg_max_bytes;
 extern int32 col_seg_max_rows;
 extern int32 enable_qrc;
+extern int32 enable_rdf_trig;
 
 
 stat_desc_t stat_descs [] =
@@ -1859,6 +1860,7 @@ stat_desc_t dbf_descs [] =
     {"dbf_max_itc_samples", (long *)&dbf_max_itc_samples, SD_INT32},
     {"enable_mt_ft_inx", (long *)&enable_mt_ft_inx, SD_INT32},
     {"disable_rdf_init", (long *)&disable_rdf_init, SD_INT32},
+    {"enable_rdf_trig", (long *)&enable_rdf_trig, SD_INT32},
     {"enable_pg_card", (long *)&enable_pg_card, SD_INT32},
     {"enable_ce_ins_check",  (long *)&enable_ce_ins_check, SD_INT32},
     {"dbf_ignore_uneven_col", (long *)&dbf_ignore_uneven_col, SD_INT32},

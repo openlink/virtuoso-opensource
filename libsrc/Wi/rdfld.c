@@ -247,6 +247,7 @@ aq_rl_del_key_func (caddr_t av, caddr_t * err_ret)
 }
 
 int rl_query_inited;
+int32 enable_rdf_trig = 0;
 
 void
 rl_query_init (dbe_table_t * quad_tb)
@@ -298,7 +299,7 @@ rl_query_init (dbe_table_t * quad_tb)
 	  first = 0;
 	}
       END_DO_SET();
-      sprintf (txt + strlen (txt), "option (index %s, vectored)", key->key_name);
+      sprintf (txt + strlen (txt), "option (index %s, vectored%s)", key->key_name, key->key_is_primary && enable_rdf_trig ? ", trigger" : "");
       rl_del_qrs[nth_key] = sql_compile (txt, bootstrap_cli, &err, SQLC_DEFAULT);
       nth_key++;
       if (err)
