@@ -1739,6 +1739,8 @@ create procedure DAV_GET_UID_BY_WEBID (out a_uid int, out a_gid int)
     return 0;
 
   cert := client_attr ('client_certificate');
+  if (cert = 0)
+    return 0;
   a_uid := null;
   a_gid := null;
   st := '00000';
