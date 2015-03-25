@@ -2635,10 +2635,19 @@ sqlg_hs_non_partitionable (sql_comp_t * sc, hash_source_t * hs)
 int
 sqlg_can_merge_hs (sql_comp_t * sc, hash_source_t * hs, table_source_t * ts, state_slot_t * ssl)
 {
+  data_source_t *next;
   if (!enable_hash_merge)
     return MRG_NONE;
   if (hs->hs_ha->ha_n_keys > 1)
     return MRG_NONE;
+  next = qn_next ((data_source_t *) ts);
+  if (next && IS_QN (next, rdf_inf_pre_input))
+    {
+      /* a rdf quad followed by iterator over super cannot get a merge because the after iterator decides the values, not the ts */
+      QNCAST (rdf_inf_pre_node_t, ri, next);
+      if (ri->ri_is_after)
+	return MRG_NONE;
+    }
   DO_SET (search_spec_t *, sp, &ts->ts_order_ks->ks_hash_spec)
   {
     hash_range_spec_t *hrng = (hash_range_spec_t *) sp->sp_min_ssl;
