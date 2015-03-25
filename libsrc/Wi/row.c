@@ -2883,6 +2883,7 @@ it_key_col_ddl (index_tree_t *it, dbe_key_t * key, dbe_column_t * col, int is_dr
   dp_addr_t prev_dropped = 0;
   caddr_t err = NULL;
   caddr_t deflt = is_drop ? NULL : box_to_any (col->col_default, &err);
+  int crinx;
   ITC_INIT (itc, NULL, NULL);
   itc_from_it (itc, it);
   itc->itc_insert_key = key;
@@ -2948,6 +2949,12 @@ it_key_col_ddl (index_tree_t *it, dbe_key_t * key, dbe_column_t * col, int is_dr
 	    rd_list_free (rd_array);
 	    if (ceic.ceic_mp)
 	      mp_free (ceic.ceic_mp);
+	    DO_BOX (col_data_ref_t *, cr, crinx, itc->itc_col_refs)
+	      {
+		if (cr)
+		  cr->cr_pages[0].cp_ceic = NULL;
+	      }
+	    END_DO_BOX;
 	    buf = itc_set_by_placeholder (itc, pl);
 	    itc_unregister_inner ((it_cursor_t*)pl, buf, 0);
 	    plh_free (pl);
