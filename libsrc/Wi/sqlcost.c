@@ -3987,53 +3987,8 @@ dfe_table_unq_card (df_elt_t * dfe, index_choice_t * ic, float tb_card, float * 
   inx_card = MIN (1, inx_card);
   *inx_card_ret = inx_card;
 }
-
-
 extern caddr_t rdfs_type;
-
-int
-dfe_rdfs_type_check_card (df_elt_t * dfe, index_choice_t * ic, df_elt_t ** eqs, int n_eqs, float * inx_cost_ret)
-{
-  /* recognize p = rdfs:type and s and o given, s not constant. Favor use of pogs  */
-  dbe_key_t * key;
-  caddr_t name;
-  int s_pos, o_pos, p_pos;
-  if (n_eqs < 3 || !dfe_is_quad (dfe))
-    return 0;
-  key = dfe->_.table.key;
-  p_pos = dfe_rq_col_pos (dfe, 'P', 0);
-  if (-1 == p_pos || !eqs[p_pos])
-    return 0;
-  name = sqlo_iri_constant_name (eqs[p_pos]->_.bin.right->dfe_tree);
-  if (!name)
-    return 0;
-  if (!box_equal (name, rdfs_type) && strcmp (name, RDFS_TYPE_IRI))
-    return 0;
-  s_pos = dfe_rq_col_pos (dfe, 'S', 0);
-  o_pos = dfe_rq_col_pos (dfe, 'O', 0);
-  if (o_pos < 0 || s_pos < 0 || o_pos >= n_eqs || s_pos >= n_eqs || !eqs[s_pos] || !eqs[o_pos])
-    return 0;
-  if (3 == s_pos || 3 == o_pos)
-    {
-      /* can be pos are given and specify a type but are not leading consecutive.  The card will be the same but inx card and col card will reflect  */
-      if (!eqs[0])
-	{
-	  ic->ic_col_card = 0.8 / ic->ic_inx_card;
-	  return 1;
-	}
-      if (!eqs[1] || !eqs[2])
-	{
-	  float key_card = dbe_key_count (dfe->_.table.key);
-	  ic->ic_inx_card = key_card / 100;
-	  ic->ic_col_card = 80 / key_card;
-	  return 1;
-	}
-    }
-  ic->ic_inx_card = 0.8;
-  dfe->_.table.is_arity_sure = 6; /* set this so that this will be believed rather than a sample with less parts */
-  return 1;
-}
-
+int dfe_rdfs_type_check_card (df_elt_t * dfe, index_choice_t * ic, df_elt_t ** eqs, int n_eqs, float *inx_cost_ret);
 
 void
 dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
@@ -4843,4 +4798,56 @@ sqlo_score (df_elt_t * dfe, float in_arity)
     sqlo_print (("Unit : %f Arity : %f\n", (double) u1, (double) a1));*/
   dfe->dfe_unit = u1 + overhead ;
   return (in_arity * u1 + overhead);
+}
+
+
+
+int
+dfe_rdfs_type_check_card (df_elt_t * dfe, index_choice_t * ic, df_elt_t ** eqs, int n_eqs, float *inx_cost_ret)
+{
+  /* recognize p = rdfs:type and s and o given, s not constant. Favor use of pogs  */
+  dbe_key_t *key;
+  caddr_t name;
+  int s_pos, o_pos, p_pos;
+  if (n_eqs < 3 || !dfe_is_quad (dfe))
+    return 0;
+  key = dfe->_.table.key;
+  p_pos = dfe_rq_col_pos (dfe, 'P', 0);
+  if (-1 == p_pos || !eqs[p_pos])
+    return 0;
+  name = sqlo_iri_constant_name (eqs[p_pos]->_.bin.right->dfe_tree);
+  if (!name)
+    return 0;
+  if (!box_equal (name, rdfs_type) && strcmp (name, RDFS_TYPE_IRI))
+    return 0;
+  s_pos = dfe_rq_col_pos (dfe, 'S', 0);
+  o_pos = dfe_rq_col_pos (dfe, 'O', 0);
+  if (o_pos < 0 || s_pos < 0)
+    return 0;
+  if (!eqs[s_pos])
+    return 0;
+  if (dfe->_.table.is_inf_col_given)
+    goto already_in;
+  if (o_pos >= n_eqs || s_pos >= n_eqs || !eqs[s_pos] || !eqs[o_pos])
+    return 0;
+  if (3 == s_pos || 3 == o_pos)
+    {
+      /* can be pos are given and specify a type but are not leading consecutive.  The card will be the same but inx card and col card will reflect  */
+      if (!eqs[0])
+	{
+	  ic->ic_col_card = 0.8 / ic->ic_inx_card;
+	  return 1;
+	}
+      if (!eqs[1] || !eqs[2])
+	{
+	  float key_card = dbe_key_count (dfe->_.table.key);
+	  ic->ic_inx_card = key_card / 100;
+	  ic->ic_col_card = 80 / key_card;
+	  return 1;
+	}
+    }
+already_in:
+  ic->ic_inx_card = 0.8;
+  dfe->_.table.is_arity_sure = 6;	/* set this so that this will be believed rather than a sample with less parts */
+  return 1;
 }
