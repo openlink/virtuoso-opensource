@@ -2525,7 +2525,10 @@ sqlo_inx_sample_1 (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_el
 	  dk_free_tree (sc_key);
 	  itc_free (itc);
 	  sop->sop_res_from_ric_cache = 1;
-	  ic->ic_col_card_corr = col_predicted / (c / ic->ic_inx_card);
+	  if (!c)
+	    ic->ic_col_card_corr = 1;
+	  else 
+	    ic->ic_col_card_corr = col_predicted / (c / ic->ic_inx_card);
 	  return c;
 	}
     sample_for_cols: ;
@@ -2544,7 +2547,10 @@ sqlo_inx_sample_1 (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_el
       itc_free (itc);
       c = place->smp_card;
       ic->ic_inx_card = place->smp_inx_card;
-      ic->ic_col_card_corr = col_predicted / (c / ic->ic_inx_card);
+      if (!c)
+	ic->ic_col_card_corr = 1;
+      else
+	ic->ic_col_card_corr = col_predicted / (c / ic->ic_inx_card);
       return c;
     }
   if (sop)
@@ -2576,7 +2582,10 @@ sqlo_inx_sample_1 (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_el
     }
   c = res * row_sel;
   ic->ic_inx_card = res;
-  ic->ic_col_card_corr = col_predicted / (c / ic->ic_inx_card);
+  if (!c)
+    ic->ic_col_card_corr = 1;
+  else
+    ic->ic_col_card_corr = col_predicted / (c / ic->ic_inx_card);
   return c;
 }
 
@@ -2618,6 +2627,7 @@ sqlo_inx_inf_sample (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_
   int is_first = 1;
   caddr_t org_o = *variable;
   int64 s, est = 0;
+  float inx_card = 0;
   int any_est = 0;
 ri_iterator_t * rit = ri_iterator (sub, ic->ic_inf_type, 1);
   rdf_sub_t * sub_iri;
@@ -2637,6 +2647,7 @@ ri_iterator_t * rit = ri_iterator (sub, ic->ic_inf_type, 1);
       if (s >= 0)
 	{
 	  est += s;
+	  inx_card += ic->ic_inx_card;
 	  any_est = 1;
 	  if (sop.sop_res_from_ric_cache)
 	    {
@@ -2673,7 +2684,7 @@ ri_iterator_t * rit = ri_iterator (sub, ic->ic_inf_type, 1);
     {
       if (any_est)
 	{
-	  ric_set_sample (sop.sop_ric, sc_key, est, ic->ic_inx_card);
+	  ric_set_sample (sop.sop_ric, sc_key, est, inx_card);
 	}
       else
 	dk_free_tree (sc_key);
@@ -2683,6 +2694,7 @@ ri_iterator_t * rit = ri_iterator (sub, ic->ic_inf_type, 1);
   dk_free_box ((caddr_t)rit);
   *variable = org_o;
   ic->ic_n_lookups = sub->rs_n_subs;
+  ic->ic_inx_card = inx_card;
   return any_est ? est : -1;
 }
 
