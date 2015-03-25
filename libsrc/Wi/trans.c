@@ -1164,7 +1164,7 @@ tn_lowest_sas_result (trans_node_t * tn, caddr_t * inst, trans_set_t * ts)
     }
   END_DO_SET();
   if (!res)
-    return;
+    res_box = ((caddr_t*)ts->ts_value)[0];
   dc_append_box (QST_BOX (data_col_t *, inst, tn->tn_output[0]->ssl_index), res_box);
   qn_result ((data_source_t*)tn, inst, QST_INT (inst, tn->clb.clb_nth_set) - 1);
   if (QST_INT (inst, tn->src_gen.src_out_fill) >= QST_INT (inst, tn->src_gen.src_batch_size))
