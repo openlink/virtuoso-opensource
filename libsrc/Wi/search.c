@@ -4078,14 +4078,12 @@ itc_local_sample (it_cursor_t * itc)
   itc->itc_random_search = RANDOM_SEARCH_ON;
   itc->itc_dive_mode = PA_READ_ONLY;
   buf = itc_reset (itc);
-#if GEO_INDEX
   if (itc->itc_insert_key->key_is_geo)
     {
       dbe_table_t * tb = itc->itc_insert_key->key_table;
       double ar = geo_page_area (itc, buf);
       tb->tb_geo_area = MAX (tb->tb_geo_area, ar);
     }
-#endif
   if (!itc->itc_key_spec.ksp_spec_array && !itc->itc_geo_op)
     {
       res = itc_sample_1 (itc, &buf, NULL, -1);
