@@ -2146,6 +2146,10 @@ sqlg_rdf_inf_same_as_opt (df_elt_t * tb_dfe)
     }
   do
     {
+      if (dfe->dfe_type == DFE_TABLE && sqlo_opt_value (dfe->_.table.ot->ot_opts, OPT_SAME_AS))
+	{
+	  return ctx;
+	}
       if (dfe->dfe_type == DFE_DT && sqlo_opt_value (dfe->_.table.ot->ot_opts, OPT_SAME_AS))
 	{
 	  return ctx;
@@ -2267,8 +2271,9 @@ sqlg_leading_same_as (sqlo_t * so, data_source_t ** q_head, data_source_t * ts,
 			ctx, tb_dfe, inxop_inx, &sas_o)
 
 #define LEADING_SAME_AS_P \
-  sqlg_leading_same_as (tb_dfe->dfe_sqlo, q_head, ts, g_dfe, s_dfe, p_dfe, o_dfe, RI_SAME_AS_P, \
-			ctx, tb_dfe, inxop_inx, &sas_p)
+  {  if (DFE_CONST != p_dfe->dfe_type || empty_ric == ctx)		\
+    sqlg_leading_same_as (tb_dfe->dfe_sqlo, q_head, ts, g_dfe, s_dfe, p_dfe, o_dfe, RI_SAME_AS_P, \
+			  ctx, tb_dfe, inxop_inx, &sas_p); }
 
 #define LEADING_IFP_S \
   sqlg_leading_same_as (tb_dfe->dfe_sqlo, q_head, ts, g_dfe, s_dfe, p_dfe, o_dfe, RI_SAME_AS_IFP | RI_SAME_AS_S, \
