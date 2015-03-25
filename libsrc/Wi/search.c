@@ -3364,11 +3364,13 @@ itc_n_p_matches_in_col (it_cursor_t * itc, caddr_t * data_col, int * first, int 
 {
   /* in column wise inx sample can hit a seg with many different values of the 1st key part.  If so, count how many there are. */
   caddr_t param = itc->itc_search_params[0];
+  iri_id_t iri = DV_IRI_ID == DV_TYPE_OF (param) ? unbox_iri_id (param) : 0;
   int len = BOX_ELEMENTS (data_col);
   int inx = 0;
   for (inx = 0; inx < len; inx++)
     {
-      if (box_equal (param, data_col[inx]))
+      caddr_t d = data_col[inx];
+      if (IS_BOX_POINTER (d) && iri == *(iri_id_t*)d)
 	{
 	  *first = inx;
 	  break;
@@ -3381,7 +3383,8 @@ itc_n_p_matches_in_col (it_cursor_t * itc, caddr_t * data_col, int * first, int 
     }
   for (inx = len - 1; inx >= 0; inx--)
 	{
-	  if (box_equal (param, data_col[inx]))
+	  caddr_t d = data_col[inx];
+	  if (IS_BOX_POINTER (d) && iri == *(iri_id_t*)d)
 	    {
 	      *last = inx + 1;
 	      break;
