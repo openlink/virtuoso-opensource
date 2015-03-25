@@ -1574,6 +1574,7 @@ again:
 	      rdf_box_t *rb = rb_allocate ();
 	      rb->rb_ro_id = id;
 	      rb->rb_type = RDF_BOX_GEO;
+	      rb->rb_lang = RDF_BOX_DEFAULT_LANG 		;
 	      qst_vec_set (inst, txs->txs_d_id, (caddr_t) rb);
 	    }
 	  else
