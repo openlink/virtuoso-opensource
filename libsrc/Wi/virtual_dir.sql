@@ -58,6 +58,27 @@ primary key (HP_LISTEN_HOST, HP_HOST, HP_LPATH)
 )
 ;
 
+-- Default mappings to be created on all existing listeners
+create table DB.DBA.HTTP_PATH_DEFAULT (
+HPD_LPATH        varchar not null, -- logical path
+HPD_PPATH    varchar not null, -- physical path
+HPD_STORE_AS_DAV   integer not null, -- flag for webDAV storage
+HPD_DIR_BROWSEABLE   integer not null, -- directory listing allowed
+HPD_DEFAULT    varchar,    -- default page
+HPD_REALM          varchar,          -- authentication realm
+HPD_AUTH_FUNC      varchar,          -- witch function authenticate this directory
+HPD_POSTPROCESS_FUNC varchar,          -- function call after request
+HPD_RUN_VSP_AS     varchar,          -- uid for VSPs REFERENCES SYS_USERS (U_NAME) ON DELETE SET NULL
+HPD_RUN_SOAP_AS    varchar,          -- uid for SOAP REFERENCES SYS_USERS (U_NAME) ON DELETE SET NULL
+HPD_PERSIST_SES_VARS integer not null, -- have a persistent session variables
+HPD_SOAP_OPTIONS long varchar,   -- SOAP options
+HPD_AUTH_OPTIONS varchar,    -- Authentication options
+HPD_OPTIONS    any,      -- Global options
+HPD_IS_DEFAULT_HOST  integer,    -- default host mapping
+primary key (HPD_LPATH)
+)
+;
+
 create table HTTP_ACL (
 HA_LIST   varchar not null,   -- ACL name (group)
 HA_ORDER  integer not null,   -- Order in the list
@@ -1262,6 +1283,7 @@ DB.DBA.VHOST_DUMP_SQL (in lpath varchar, in vhost varchar := '*ini*', in lhost v
         http (concat ('\t lpath=>', SYS_SQL_VAL_PRINT (lpath), ',\n'), ses);
         http (concat ('\t ppath=>', SYS_SQL_VAL_PRINT (HP_PPATH), ',\n'), ses);
         http (concat ('\t is_dav=>', SYS_SQL_VAL_PRINT (HP_STORE_AS_DAV), ',\n'), ses);
+        http (concat ('\t is_brws=>', SYS_SQL_VAL_PRINT (HP_DIR_BROWSEABLE), ',\n'), ses);
 	if (HP_DEFAULT is not null)
         http (concat ('\t def_page=>', SYS_SQL_VAL_PRINT (HP_DEFAULT), ',\n'), ses);
 	if (HP_SECURITY is not null)
@@ -1679,4 +1701,157 @@ create procedure WS.WS.host_meta_dss ()
   http ('</Signature>\n', ses);
   return string_output_string (ses);
 }
+;
+
+--!
+-- (Re-)Creates all default virtual dirs on the given listener.
+--/
+create procedure DB.DBA.CREATE_DEFAULT_VHOSTS (in vhost varchar := '*ini*', in lhost varchar := '*ini*')
+{
+  declare auth any;
+  declare sec, cert, sslKey varchar;
+  declare httpsVerify, httpsCvD int;
+
+  -- Get security from the listener (needs to be the same for all vdirs)
+  sec := (select top 1 HP_SECURITY from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = lhost and HP_HOST = vhost);
+  cert := (select top 1 get_keyword('https_cert', deserialize(HP_AUTH_OPTIONS)) from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = lhost and HP_HOST = vhost);
+  sslKey := (select top 1 get_keyword('https_key', deserialize(HP_AUTH_OPTIONS)) from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = lhost and HP_HOST = vhost);
+  httpsVerify := (select top 1 get_keyword('https_verify', deserialize(HP_AUTH_OPTIONS)) from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = lhost and HP_HOST = vhost);
+  httpsCvD := (select top 1 get_keyword('https_cv_depth', deserialize(HP_AUTH_OPTIONS)) from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = lhost and HP_HOST = vhost);
+  auth := vector ();
+  if (sslKey is not null)
+    {
+      auth := vector ('https_key', sslKey, 'https_cert', cert, 'https_verify', httpsVerify, 'https_cv_depth', httpsCvD);
+    }
+
+  for (select
+        HPD_LPATH,
+        HPD_PPATH,
+        HPD_STORE_AS_DAV,
+        HPD_DIR_BROWSEABLE,
+        HPD_DEFAULT,
+        HPD_REALM,
+        HPD_AUTH_FUNC,
+        HPD_POSTPROCESS_FUNC,
+        HPD_RUN_VSP_AS,
+        HPD_RUN_SOAP_AS,
+        HPD_PERSIST_SES_VARS,
+        HPD_SOAP_OPTIONS,
+        HPD_AUTH_OPTIONS,
+        HPD_OPTIONS,
+        HPD_IS_DEFAULT_HOST
+      from DB.DBA.HTTP_PATH_DEFAULT) do
+    {
+      DB.DBA.VHOST_REMOVE (
+        vhost=>vhost,
+        lhost=>lhost,
+        lpath=>HPD_LPATH);
+
+      DB.DBA.VHOST_DEFINE (
+        vhost=>vhost,
+        lhost=>lhost,
+        lpath=>HPD_LPATH,
+        ppath=>HPD_PPATH,
+        is_dav=>HPD_STORE_AS_DAV,
+        is_brws=>HPD_DIR_BROWSEABLE,
+        def_page=>HPD_DEFAULT,
+        auth_fn=>HPD_AUTH_FUNC,
+        realm=>HPD_REALM,
+        ppr_fn=>HPD_POSTPROCESS_FUNC,
+        vsp_user=>HPD_RUN_VSP_AS,
+        soap_user=>HPD_RUN_SOAP_AS,
+        sec=>sec,
+        ses_vars=>HPD_PERSIST_SES_VARS,
+        soap_opts=>deserialize (HPD_SOAP_OPTIONS),
+        auth_opts=>vector_concat (deserialize (HPD_AUTH_OPTIONS), auth),
+        opts=>deserialize (HPD_OPTIONS),
+        is_default_host=>HPD_IS_DEFAULT_HOST);
+    }
+}
+;
+
+--!
+-- Add a default host to be created for each new listener.
+--/
+create procedure DB.DBA.ADD_DEFAULT_VHOST (
+  in lpath varchar,
+  in ppath varchar,
+  in is_dav integer := 0,
+  in is_brws integer := 0,
+  in def_page varchar := null,
+  in auth_fn varchar := null,
+  in realm varchar := null,
+  in ppr_fn varchar := null,
+  in vsp_user varchar := null,
+  in soap_user varchar := null,
+  in ses_vars integer := 0,
+  in soap_opts any := null,
+  in auth_opts any := null,
+  in opts any := null,
+  in is_default_host integer := 0,
+  in overwrite int := 0)
+{
+  if (overwrite)
+    {
+      delete from DB.DBA.HTTP_PATH_DEFAULT where HPD_LPATH = lpath;
+    }
+
+  insert into
+    DB.DBA.HTTP_PATH_DEFAULT (
+      HPD_LPATH,
+      HPD_PPATH,
+      HPD_STORE_AS_DAV,
+      HPD_DIR_BROWSEABLE,
+      HPD_DEFAULT,
+      HPD_REALM,
+      HPD_AUTH_FUNC,
+      HPD_POSTPROCESS_FUNC,
+      HPD_RUN_VSP_AS,
+      HPD_RUN_SOAP_AS,
+      HPD_PERSIST_SES_VARS,
+      HPD_SOAP_OPTIONS,
+      HPD_AUTH_OPTIONS,
+      HPD_OPTIONS,
+      HPD_IS_DEFAULT_HOST)
+    values (
+      lpath,
+      ppath,
+      is_dav,
+      is_brws,
+      def_page,
+      realm,
+      auth_fn,
+      ppr_fn,
+      vsp_user,
+      soap_user,
+      ses_vars,
+      serialize (soap_opts),
+      serialize (auth_opts),
+      serialize (opts),
+      is_default_host);
+}
+;
+
+-- Trigger to create default vdirs on new listener
+create trigger HTTP_PATH_ins_def after insert on DB.DBA.HTTP_PATH referencing new as N
+{
+  -- Check if this is the first entry for the listener
+  if (not exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = N.HP_HOST and HP_LISTEN_HOST = N.HP_LISTEN_HOST and HP_LPATH <> N.HP_LPATH))
+    {
+      declare exit handler for sqlstate '*'
+        {
+          log_message (sprintf ('Failed to create default virtual hosts for %s %s (%s). Please fix the configuration.', N.HP_HOST, N.HP_LISTEN_HOST, __SQL_MESSAGE));
+        };
+      CREATE_DEFAULT_VHOSTS (vhost=>N.HP_HOST, lhost=>N.HP_LISTEN_HOST);
+    }
+}
+;
+
+-- Default WebDAV mapping for all future http listeners
+insert soft DB.DBA.HTTP_PATH_DEFAULT
+(
+HPD_LPATH, HPD_PPATH, HPD_STORE_AS_DAV, HPD_DIR_BROWSEABLE, HPD_DEFAULT,
+HPD_REALM, HPD_AUTH_FUNC, HPD_POSTPROCESS_FUNC, HPD_RUN_VSP_AS, HPD_RUN_SOAP_AS, HPD_PERSIST_SES_VARS)
+values ( '/DAV', '/DAV/', 1, 1, NULL, NULL, NULL, NULL, 'dba', NULL, 0
+)
 ;
