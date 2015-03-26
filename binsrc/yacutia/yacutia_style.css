@@ -863,7 +863,7 @@ div.dialog_text {
 
 div.confirm_dialog
 {
-  clear:both
+  clear:both;
   border: 4px solid red;
   padding: 10px;
 }

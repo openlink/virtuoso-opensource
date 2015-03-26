@@ -255,6 +255,7 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": new listen host defined on : " $U{HTTPPORT2} " : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
+VHOST_REMOVE ('localhost:$U{HTTPPORT1}','localhost:$U{HTTPPORT1}', '/DAV', 1) ;
 VHOST_DEFINE ('localhost:$U{HTTPPORT1}','localhost:$U{HTTPPORT1}', '/DAV', '/DAV/', 1, 1, 'def.html', 'DB.DBA.HP_AUTH_DAV_PROTOCOL', 'dav realm', 'DB.DBA.HP_SES_VARS_STORE', 'dba', 'dba', 'Basic', 1) ;
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
@@ -342,6 +343,7 @@ ECHO BOTH ": DAV browse page not retrieved (wrong password) : STATE=" $STATE " M
 VHOST_REMOVE ('localhost:$U{HTTPPORT1}','localhost:$U{HTTPPORT1}', '/', 1);
 VHOST_REMOVE ('localhost:$U{HTTPPORT1}','localhost:$U{HTTPPORT1}', '/DAV', 1);
 VHOST_REMOVE ('localhost:$U{HTTPPORT2}','localhost:$U{HTTPPORT2}', '/', 1);
+VHOST_REMOVE ('localhost:$U{HTTPPORT2}','localhost:$U{HTTPPORT2}', '/DAV', 1);
 
 --- XXX: this is timing ????
 delay (2);
@@ -493,6 +495,7 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": HTTP test string_session tmp file : STATE=" $STATE "  LAST="  $LAST[1] "\n";
 
 VHOST_REMOVE ('localhost:$U{HTTPPORT1}','localhost:$U{HTTPPORT1}', '/', 1);
+VHOST_REMOVE ('localhost:$U{HTTPPORT1}','localhost:$U{HTTPPORT1}', '/DAV', 1);
 
 select http_listen_host ('localhost:$U{HTTPPORT1}',2);
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
