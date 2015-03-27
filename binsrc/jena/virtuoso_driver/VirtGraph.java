@@ -105,13 +105,11 @@ public class VirtGraph extends GraphBase
 	if (_ds instanceof VirtuosoDataSource) {
 	    VirtuosoDataSource vds = (VirtuosoDataSource)_ds;
 	    this.url_hostlist = vds.getServerName();
-	    this.graphName = _graphName;
 	    this.user = vds.getUser();
 	    this.password = vds.getPassword();
 	}
 
-	if (this.graphName == null)
-	    this.graphName = DEFAULT;
+        this.graphName = _graphName == null ? DEFAULT : _graphName;
 
 	try {
 	    connection = _ds.getConnection();
@@ -137,13 +135,11 @@ public class VirtGraph extends GraphBase
 	if (_ds instanceof VirtuosoConnectionPoolDataSource) {
 	    VirtuosoDataSource vds = (VirtuosoDataSource)_ds;
 	    this.url_hostlist = vds.getServerName();
-	    this.graphName = _graphName;
 	    this.user = vds.getUser();
 	    this.password = vds.getPassword();
 	}
 
-	if (this.graphName == null)
-	    this.graphName = DEFAULT;
+        this.graphName = _graphName == null ? DEFAULT : _graphName;
 
 	try {
 	    connection = _ds.getPooledConnection().getConnection();
@@ -161,19 +157,17 @@ public class VirtGraph extends GraphBase
     }
 
 
-    public VirtGraph(String graphName, String _url_hostlist, String user, 
+    public VirtGraph(String _graphName, String _url_hostlist, String user, 
     		String password, boolean _roundrobin)
     {
 	super();
 
 	this.url_hostlist = _url_hostlist.trim();
 	this.roundrobin = _roundrobin;
-	this.graphName = graphName;
 	this.user = user;
 	this.password = password;
 
-	if(this.graphName == null)
-	    this.graphName = DEFAULT;
+        this.graphName = _graphName == null ? DEFAULT : _graphName;
 
 	try {
 	    if (url_hostlist.startsWith("jdbc:virtuoso://")) {
