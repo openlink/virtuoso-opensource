@@ -1511,35 +1511,36 @@ sparp_lit_native_valmode (SPART *tree)
       dtp = DV_TYPE_OF (tree->_.lit.val);
       if (NULL != tree->_.lit.datatype)
         {
+	caddr_t dt = tree->_.lit.datatype;
         switch (dtp)
           {
           case DV_DOUBLE_FLOAT:
-            if (uname_xmlschema_ns_uri_hash_double == tree->_.lit.datatype)
+            if (uname_xmlschema_ns_uri_hash_double == dt)
               return SSG_VALMODE_NUM;
             /* no break */
           case DV_SINGLE_FLOAT:
           case DV_NUMERIC:
-            if (uname_xmlschema_ns_uri_hash_decimal == tree->_.lit.datatype)
+            if (uname_xmlschema_ns_uri_hash_decimal == dt)
               return SSG_VALMODE_NUM;
             /* no break */
           case DV_LONG_INT:
-            if (uname_xmlschema_ns_uri_hash_integer == tree->_.lit.datatype)
+            if (uname_xmlschema_ns_uri_hash_integer == dt)
               return SSG_VALMODE_NUM;
-            if (uname_xmlschema_ns_uri_hash_boolean == tree->_.lit.datatype)
+            if (uname_xmlschema_ns_uri_hash_boolean == dt)
               return SSG_VALMODE_BOOL;
             break;
           case DV_DATETIME:
-            if (uname_xmlschema_ns_uri_hash_dateTime == tree->_.lit.datatype)
+            if (uname_xmlschema_ns_uri_hash_dateTime == dt)
               return SSG_VALMODE_NUM;
-            if (uname_xmlschema_ns_uri_hash_date == tree->_.lit.datatype)
+            if (uname_xmlschema_ns_uri_hash_date == dt)
               return SSG_VALMODE_NUM;
-            if (uname_xmlschema_ns_uri_hash_time == tree->_.lit.datatype)
+            if (uname_xmlschema_ns_uri_hash_time == dt)
               return SSG_VALMODE_NUM;
             break;
 #if 0
           case DV_STRING:
-            if ((uname_xmlschema_ns_uri_hash_dayTimeDuration == tree->_.lit.datatype) &&
-              sparp_literal_is_xsd_valid (sparp, tree->_.lit.val, tree->_.lit.datatype, tree->_.lit.language) )
+            if ((uname_xmlschema_ns_uri_hash_dayTimeDuration == dt) &&
+              sparp_literal_is_xsd_valid (sparp, tree->_.lit.val, dt, tree->_.lit.language) )
               return SSG_VALMODE_NUM;
             break;
 #endif

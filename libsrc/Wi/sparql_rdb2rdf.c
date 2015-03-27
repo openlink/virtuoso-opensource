@@ -652,14 +652,17 @@ void
 rdb2rdf_print_fld_expn (rdb2rdf_optree_t *rro, int cast_to_obj, int alias_no, quad_map_t *qm, qm_value_t *fld_qmv, const char *prefix, spar_sqlgen_t *ssg)
 {
   qm_format_t *fmt = fld_qmv->qmvFormat;
+  int wrap_to_obj_of_long = cast_to_obj && !(fmt->qmfValRange.rvrRestrictions & SPART_VARR_LONG_EQ_SQL);
 /*  if (fmt->qmfValRange.rvrRestrictions & SPART_VARR_IS_REF)
     ssg_puts ("__i2id (");
-  else */ if (cast_to_obj && !(fmt->qmfValRange.rvrRestrictions & SPART_VARR_LONG_EQ_SQL))
+  else */
+  if (wrap_to_obj_of_long)
     ssg_puts ("DB.DBA.RDF_OBJ_OF_LONG (");
   ssg_print_tmpl (ssg, fmt, fmt->qmfLongOfShortTmpl, prefix, fld_qmv, NULL, NULL_ASNAME);
 /*  if (fmt->qmfValRange.rvrRestrictions & SPART_VARR_IS_REF)
     ssg_putchar (')');
-  else */ if (cast_to_obj && !(fmt->qmfValRange.rvrRestrictions & SPART_VARR_LONG_EQ_SQL))
+  else */
+  if (wrap_to_obj_of_long)
     ssg_putchar (')');
 }
 
