@@ -1992,16 +1992,16 @@ sparp_set_valmodes_of_t_inouts (sparp_t *sparp, sparp_t *sub_sparp, SPART *wrapp
       if (!in_vmode->qmfIsBijection)
         spar_error (sparp, "Variable ?%.100s in T_IN list is not made by bijection", in_vname);
       if (1 != in_vmode->qmfColumnCount)
-        spar_error (sparp, "Variable ?%.100s in T_IN list is made from %d database columns, should be made from exactly one", in_vname);
+        spar_error (sparp, "Variable ?%.100s in T_IN list is made from %d database columns, should be made from exactly one", in_vname, (int)(in_vmode->qmfColumnCount));
       if (!IS_BOX_POINTER (out_vmode))
         spar_error (sparp, "Variable ?%.100s in T_IN list is not a value from some triple", out_vname);
       if (!out_vmode->qmfIsBijection)
         spar_error (sparp, "Variable ?%.100s in T_IN list is not made by bijection", out_vname);
       if (1 != out_vmode->qmfColumnCount)
-        spar_error (sparp, "Variable ?%.100s in T_IN list is made from %d database columns, should be made from exactly one", out_vname);
+        spar_error (sparp, "Variable ?%.100s in T_IN list is made from %d database columns, should be made from exactly one", out_vname, (int)(out_vmode->qmfColumnCount));
       mixed_vmode = ssg_smallest_union_valmode (in_vmode, out_vmode, &sqlval_is_ok_and_cheap);
       if (!IS_BOX_POINTER (mixed_vmode)) /*!!! TBD better decision making, at least for SSG_VALMODE_LONG with and without sqlval_is_ok_and_cheap set and for SSG_VALMODE_SQLVAL */
-        spar_error (sparp, "Variable ?%.100s in T_IN list and corresponding variable ?%.100s in T_OUT get values from columns that are too different", in_vmode, out_vname);
+        spar_error (sparp, "Variable ?%.100s in T_IN list and corresponding variable ?%.100s in T_OUT get values from columns that are too different", in_vname, out_vname);
       in_alias->_.alias.native = out_alias->_.alias.native = mixed_vmode;
     }
 }
@@ -5122,12 +5122,12 @@ ssg_triple_retval_alias (spar_sqlgen_t *ssg, SPART *triple, int field_idx, int c
               while ((0 < ctr--) && (v < t) && (isalnum ((unsigned char) (t[-1])))) t--;
               tail = t;
             }
-          full_vname = t_box_sprintf (210, "%lx~%.100s", box_hash_cut ((caddr_t)v, 1), tail);
+          full_vname = t_box_sprintf (210, "%lx~%.100s", (long)box_hash_cut ((caddr_t)v, 1), tail);
         }
       else
         {
           if (NULL == qmv->qmvHash)
-            qmv->qmvHash = /* not t_*/box_sprintf (210, "%lx", box_hash_cut ((caddr_t)qmv, 3));
+            qmv->qmvHash = /* not t_*/box_sprintf (210, "%lx", (long)box_hash_cut ((caddr_t)qmv, 3));
           if (col_idx >= BOX_ELEMENTS_0 (qmv->qmvColumns))
             {
               if (col_idx > 0)
@@ -5140,7 +5140,7 @@ ssg_triple_retval_alias (spar_sqlgen_t *ssg, SPART *triple, int field_idx, int c
               if ('\"' != colname[0])
                 full_vname = t_box_sprintf (210, "%.100s~%.100s", qmv->qmvHash, colname);
               else
-                full_vname = t_box_sprintf (210, "%.100s%lx", qmv->qmvHash, box_hash ((caddr_t)colname));
+                full_vname = t_box_sprintf (210, "%.100s%lx", qmv->qmvHash, (long)box_hash ((caddr_t)colname));
             }
         }
       return full_vname;
