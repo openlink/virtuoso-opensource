@@ -40,6 +40,9 @@ import com.hp.hpl.jena.datatypes.xsd.impl.*;
 
 import virtuoso.jdbc3.VirtuosoConnectionPoolDataSource;
 import virtuoso.jdbc3.VirtuosoDataSource;
+import virtuoso.jdbc3.VirtuosoDate;
+import virtuoso.jdbc3.VirtuosoTime;
+import virtuoso.jdbc3.VirtuosoTimestamp;
 
 
 public class VirtGraph extends GraphBase
@@ -60,7 +63,8 @@ public class VirtGraph extends GraphBase
     protected String ruleSet = null;
     protected boolean useSameAs = false;
     protected int queryTimeout = 0;
-    static final String S_TTLP_INSERT = "DB.DBA.TTLP(?,'',?,255)";
+//    static final String S_TTLP_INSERT = "DB.DBA.TTLP(?,'',?,255)";
+    static final String S_TTLP_INSERT = "DB.DBA.TTLP_MT (?, '', ?, 255, 2, 3, ?)";
     static final String sinsert = "sparql insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
     static final String sdelete = "sparql delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
     static final int BATCH_SIZE = 5000;
@@ -420,6 +424,11 @@ public class VirtGraph extends GraphBase
     }
 
 
+    static String Blank2String(Node n) 
+    {
+      return "_:"+ n.toString().replace(':','_').replace('-','z');
+    }
+
 
 // GraphBase overrides
     public static String Node2Str(Node n)
@@ -427,7 +436,7 @@ public class VirtGraph extends GraphBase
       if (n.isURI()) {
         return "<"+n+">";
       } else if (n.isBlank()) {
-        return "_:"+n; 
+        return Blank2String(n); // "_:"+n; 
       } else if (n.isLiteral()) {
         String s;
         StringBuffer sb = new StringBuffer();
@@ -459,7 +468,7 @@ public class VirtGraph extends GraphBase
       if (n.isURI()) 
 	ps.setString(col, n.toString());
       else if (n.isBlank()) 
-        ps.setString(col, "_:"+n.toString());
+        ps.setString(col, Blank2String(n)); // "_:"+n.toString());
       else 
         throw new SQLException("Only URI or Blank nodes can be used as subject");
     }
@@ -470,7 +479,7 @@ public class VirtGraph extends GraphBase
       if (n == null)
         return;
       if (n.isURI()) 
-      ps.setString(col, n.toString());
+        ps.setString(col, n.toString());
       else
         throw new SQLException("Only URI nodes can be used as predicate");
     }
@@ -485,22 +494,22 @@ public class VirtGraph extends GraphBase
 	ps.setNull(col+2, java.sql.Types.VARCHAR);
       } else if (n .isBlank()) {
 	ps.setInt(col, 1);
-	ps.setString(col+1, "_:"+n.toString());
+	ps.setString(col+1, Blank2String(n)); // "_:"+n.toString());
 	ps.setNull(col+2, java.sql.Types.VARCHAR);
       }	else if (n.isLiteral()) {
         String llang = n.getLiteralLanguage();
         String ltype = n.getLiteralDatatypeURI();
 	if (llang != null && llang.length() > 0) {
           ps.setInt(col, 5);
-          ps.setString(col+1, n.getLiteralValue().toString());
+          ps.setString(col+1, n.getLiteralLexicalForm());
           ps.setString(col+2, n.getLiteralLanguage());
         } else if (ltype != null && ltype.length() > 0) {
           ps.setInt(col, 4);
-          ps.setString(col+1, n.getLiteralValue().toString());
+          ps.setString(col+1, n.getLiteralLexicalForm());
           ps.setString(col+2, n.getLiteralDatatypeURI());
         } else {
           ps.setInt(col, 3);
-          ps.setString(col+1, n.getLiteralValue().toString());
+          ps.setString(col+1, n.getLiteralLexicalForm());
           ps.setNull(col+2, java.sql.Types.VARCHAR);
         }	
       }	else {
@@ -750,6 +759,7 @@ public class VirtGraph extends GraphBase
           if (count > BATCH_SIZE) {
 	    ps.setString(1, sb.toString());
             ps.setString(2, this.graphName);
+            ps.setInt(3, connection.getAutoCommit()?0:1);
 	    ps.executeUpdate();
 	    sb.setLength(0);
             count = 0;
@@ -760,6 +770,7 @@ public class VirtGraph extends GraphBase
         {
 	  ps.setString(1, sb.toString());
           ps.setString(2, (_gName!=null? _gName: this.graphName));
+          ps.setInt(3, connection.getAutoCommit()?0:1);
 	  ps.executeUpdate();
         }
         ps.close();
@@ -1007,6 +1018,24 @@ public class VirtGraph extends GraphBase
         RDFDatatype dt = null;
         dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#hexBinary");
         return Node.createLiteral(o.toString(), null, dt);
+
+      } else if (o instanceof VirtuosoDate) {
+
+        RDFDatatype dt = null;
+        dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#date");
+        return Node.createLiteral(((VirtuosoDate)o).toXSD_String(), null, dt);
+
+      }	else if (o instanceof VirtuosoTimestamp) {
+
+        RDFDatatype dt = null;
+        dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#dateTime");
+        return Node.createLiteral(((VirtuosoTimestamp)o).toXSD_String(), null, dt);
+
+      }	else if (o instanceof VirtuosoTime) {
+
+        RDFDatatype dt = null;
+        dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#time");
+        return Node.createLiteral(((VirtuosoTime)o).toXSD_String(), null, dt);
 
       } else if (o instanceof java.sql.Date) {
 
