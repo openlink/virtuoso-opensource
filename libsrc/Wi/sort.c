@@ -1025,10 +1025,10 @@ void
 sort_read_vec_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
 {
   QNCAST (query_instance_t, qi, inst);
-  key_source_t * ks = ts->ts_order_ks;
-  setp_node_t * setp = ts->ts_order_ks->ks_from_setp;
+  key_source_t *ks = ts->ts_order_ks;
+  setp_node_t *setp = ts->ts_order_ks->ks_from_setp;
   int n_results = 0, last_set, batch;
-  caddr_t ** arr;
+  caddr_t **arr;
   ptrlong top = unbox (qst_get (inst, setp->setp_top));
   ptrlong skip = 0;
   ptrlong fill;
@@ -1038,9 +1038,9 @@ sort_read_vec_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
       if (!SSL_IS_VEC_OR_REF (setp->setp_top_skip))
 	skip = unbox (qst_get (inst, setp->setp_top_skip));
       else
-	{ /* the skip is not supposed to be different on different sets, thus for vec ssl we take 1st */
-	  data_col_t * dc = (data_col_t *) (inst[setp->setp_top_skip->ssl_index]);
-	  skip = ((int64*)(dc->dc_values))[0];
+	{			/* the skip is not supposed to be different on different sets, thus for vec ssl we take 1st */
+	  data_col_t *dc = (data_col_t *) (inst[setp->setp_top_skip->ssl_index]);
+	  skip = ((int64 *) (dc->dc_values))[0];
 	}
     }
   if (setp->setp_partitioned)
@@ -1053,19 +1053,19 @@ sort_read_vec_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
       QST_INT (inst, ts->clb.clb_nth_set) = 0;
       last_set = QST_INT (inst, ts->clb.clb_nth_set) = 0;
     }
- next_batch:
+next_batch:
   batch = QST_INT (inst, ts->src_gen.src_batch_size);
   n_results = 0;
   ks_vec_new_results (ks, inst, NULL);
   last_set = QST_INT (inst, ts->clb.clb_nth_set);
   for (set = last_set; set < n_sets; set++)
     {
-      data_col_t * dc;
+      data_col_t *dc;
       qi->qi_set = qst_vec_get_int64 (inst, ks->ks_set_no, set);
       if (qi->qi_set < 0 || qi->qi_set >= n_sets)
 	{
 	  qi->qi_set = 0;
-	  sqlr_new_error ("MISCI", "SORTI",  "set no in reading top order by out of range..  Reprt the query to support");
+	  sqlr_new_error ("MISCI", "SORTI", "set no in reading top order by out of range..  Reprt the query to support");
 	}
       dc = QST_BOX (data_col_t *, inst, setp->setp_sorted->ssl_index);
       if (dc->dc_n_values <= qi->qi_set)
@@ -1075,68 +1075,91 @@ sort_read_vec_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
       QST_INT (inst, ts->clb.clb_nth_set) = set;
       if (!arr)
 	continue;
-  if (state)
-    QST_INT (inst, ks->ks_pos_in_temp) = skip;
-  for (;;)
-    {
-      int nth = QST_INT (inst, ks->ks_pos_in_temp);
-      int k_inx = 0, inx;
-      if (nth >= fill)
+      if (state)
+	QST_INT (inst, ks->ks_pos_in_temp) = skip;
+      for (;;)
+	{
+	  int nth = QST_INT (inst, ks->ks_pos_in_temp);
+	  int k_inx = 0, inx;
+	  if (nth >= fill)
 	    goto next_set;
-	  DO_BOX (state_slot_t *, ssl, inx, setp->setp_keys_box )
-	{
-	      if (!ts->ts_sort_read_mask[k_inx])
-		{ /* not all sort temp cols may be output cols */
-		  k_inx++;
-		  continue;
-	}
-	      if (SSL_IS_VEC_OR_REF (ssl))
-		dc_append_box (QST_BOX (data_col_t*, inst, ssl->ssl_index), arr[nth][k_inx]);
-	      else
-	{
-	  qst_set (inst, ssl, arr[nth][k_inx]);
-	  arr[nth][k_inx] = NULL;
-		}
-	  k_inx++;
-	}
-      END_DO_BOX;
-      DO_BOX (state_slot_t *, ssl, inx, setp->setp_dependent_box)
-	{
-	      if (!ts->ts_sort_read_mask[k_inx])
-		{
-		  k_inx++;
-		  continue;
-		}
-	      if (SSL_IS_VEC_OR_REF (ssl))
-		dc_append_box (QST_BOX (data_col_t*, inst, ssl->ssl_index), arr[nth][k_inx]);
-	      else
-		{
-	  qst_set (inst, ssl, arr[nth][k_inx]);
-	  arr[nth][k_inx] = NULL;
-		}
-	  k_inx++;
-	}
-      END_DO_BOX;
-	  qn_result ((data_source_t*)ts, inst, set);
-      QST_INT (inst, ks->ks_pos_in_temp) = nth + 1;
+	  if (setp->setp_org_slots)
+	    {
+	      DO_BOX (state_slot_t *, ssl, inx, setp->setp_org_slots)
+	      {
+		if (!ts->ts_sort_read_mask[k_inx])
+		  {		/* not all sort temp cols may be output cols */
+		    k_inx++;
+		    continue;
+		  }
+		if (SSL_IS_VEC_OR_REF (ssl))
+		  dc_append_box (QST_BOX (data_col_t *, inst, ssl->ssl_index), arr[nth][k_inx]);
+		else
+		  {
+		    qst_set (inst, ssl, arr[nth][k_inx]);
+		    arr[nth][k_inx] = NULL;
+		  }
+		k_inx++;
+	      }
+	      END_DO_BOX;
+	    }
+	  else
+	    {
+	      DO_BOX (state_slot_t *, ssl, inx, setp->setp_keys_box)
+	      {
+		if (!ts->ts_sort_read_mask[k_inx])
+		  {		/* not all sort temp cols may be output cols */
+		    k_inx++;
+		    continue;
+		  }
+		if (SSL_IS_VEC_OR_REF (ssl))
+		  dc_append_box (QST_BOX (data_col_t *, inst, ssl->ssl_index), arr[nth][k_inx]);
+		else
+		  {
+		    qst_set (inst, ssl, arr[nth][k_inx]);
+		    arr[nth][k_inx] = NULL;
+		  }
+		k_inx++;
+	      }
+	      END_DO_BOX;
+	      DO_BOX (state_slot_t *, ssl, inx, setp->setp_dependent_box)
+	      {
+		if (!ts->ts_sort_read_mask[k_inx])
+		  {
+		    k_inx++;
+		    continue;
+		  }
+		if (SSL_IS_VEC_OR_REF (ssl))
+		  dc_append_box (QST_BOX (data_col_t *, inst, ssl->ssl_index), arr[nth][k_inx]);
+		else
+		  {
+		    qst_set (inst, ssl, arr[nth][k_inx]);
+		    arr[nth][k_inx] = NULL;
+		  }
+		k_inx++;
+	      }
+	      END_DO_BOX;
+	    }
+	  qn_result ((data_source_t *) ts, inst, set);
+	  QST_INT (inst, ks->ks_pos_in_temp) = nth + 1;
 	  if (++n_results == batch)
 	    {
 	      SRC_IN_STATE (ts, inst) = inst;
 	      QST_INT (inst, ts->clb.clb_nth_set) = set;
 	      ts_always_null (ts, inst);
-	      qn_send_output ((data_source_t*)ts, inst);
+	      qn_send_output ((data_source_t *) ts, inst);
 	      state = NULL;
-	      dc_reset_array (inst, (data_source_t*)ts, ts->src_gen.src_continue_reset, -1);
+	      dc_reset_array (inst, (data_source_t *) ts, ts->src_gen.src_continue_reset, -1);
 	      goto next_batch;
 	    }
-    }
+	}
     next_set:
       QST_INT (inst, ks->ks_pos_in_temp) = 0;
     }
-  SRC_IN_STATE ((data_source_t*)ts, inst) = NULL;
+  SRC_IN_STATE ((data_source_t *) ts, inst) = NULL;
   ts_always_null (ts, inst);
   if (QST_INT (inst, ts->src_gen.src_out_fill))
-    qn_ts_send_output ((data_source_t *)ts, inst, ts->ts_after_join_test);
+    qn_ts_send_output ((data_source_t *) ts, inst, ts->ts_after_join_test);
 }
 
 
