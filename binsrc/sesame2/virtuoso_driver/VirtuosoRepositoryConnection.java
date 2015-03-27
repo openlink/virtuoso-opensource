@@ -3138,18 +3138,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#hexBinary");
 			return getRepository().getValueFactory().createLiteral(val.toString(), type);
 		}
-		else if (val instanceof java.sql.Date) {
-			URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#date");
-			return getRepository().getValueFactory().createLiteral(val.toString(), type);
-		}
-		else if (val instanceof java.sql.Timestamp) {
-			URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#dateTime");
-			return getRepository().getValueFactory().createLiteral(Timestamp2String((java.sql.Timestamp)val), type);
-		}
-		else if (val instanceof java.sql.Time) {
-			URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#time");
-			return getRepository().getValueFactory().createLiteral(val.toString(), type);
-		}
 		else if (val instanceof VirtuosoDate) {
 			URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#date");
 			return getRepository().getValueFactory().createLiteral(((VirtuosoDate)val).toXSD_String(), type);
@@ -3161,6 +3149,18 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		else if (val instanceof VirtuosoTime) {
 			URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#time");
 			return getRepository().getValueFactory().createLiteral(((VirtuosoTime)val).toXSD_String(), type);
+		}
+		else if (val instanceof java.sql.Date) {
+			URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#date");
+			return getRepository().getValueFactory().createLiteral(val.toString(), type);
+		}
+		else if (val instanceof java.sql.Timestamp) {
+			URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#dateTime");
+			return getRepository().getValueFactory().createLiteral(Timestamp2String((java.sql.Timestamp)val), type);
+		}
+		else if (val instanceof java.sql.Time) {
+			URI type = getRepository().getValueFactory().createURI("http://www.w3.org/2001/XMLSchema#time");
+			return getRepository().getValueFactory().createLiteral(val.toString(), type);
 		}
 		else { // if(val instanceof String) {
 			try {
