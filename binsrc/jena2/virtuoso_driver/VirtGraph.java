@@ -618,15 +618,15 @@ public class VirtGraph extends GraphBase
         String ltype = n.getLiteralDatatypeURI();
 	if (llang != null && llang.length() > 0) {
           ps.setInt(col, 5);
-          ps.setString(col+1, n.getLiteralValue().toString());
+          ps.setString(col+1, n.getLiteralLexicalForm());
           ps.setString(col+2, n.getLiteralLanguage());
         } else if (ltype != null && ltype.length() > 0) {
           ps.setInt(col, 4);
-          ps.setString(col+1, n.getLiteralValue().toString());
+          ps.setString(col+1, n.getLiteralLexicalForm());
           ps.setString(col+2, n.getLiteralDatatypeURI());
         } else {
           ps.setInt(col, 3);
-          ps.setString(col+1, n.getLiteralValue().toString());
+          ps.setString(col+1, n.getLiteralLexicalForm());
           ps.setNull(col+2, java.sql.Types.VARCHAR);
         }	
       }	else {
