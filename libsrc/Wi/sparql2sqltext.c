@@ -1537,13 +1537,15 @@ sparp_lit_native_valmode (SPART *tree)
             if (uname_xmlschema_ns_uri_hash_time == dt)
               return SSG_VALMODE_NUM;
             break;
-#if 0
           case DV_STRING:
+#if 0
             if ((uname_xmlschema_ns_uri_hash_dayTimeDuration == dt) &&
               sparp_literal_is_xsd_valid (sparp, tree->_.lit.val, dt, tree->_.lit.language) )
               return SSG_VALMODE_NUM;
-            break;
 #endif
+            if ((uname_xmlschema_ns_uri_hash_string != dt) && rb_uname_to_flags_of_parseable_datatype (dt) & RDF_TYPE_PARSEABLE)
+              return SSG_VALMODE_LONG; /* String literal value of parseable datatype means ill formed weak-known datatype, such as some numeric. */
+            break;
           }
         }
       return SSG_VALMODE_SQLVAL;
@@ -1567,7 +1569,11 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
   if (eq->e_rvr.rvrRestrictions & (SPART_VARR_CONFLICT | SPART_VARR_ALWAYS_NULL))
     return SSG_VALMODE_BOOL; /* A smallest possible type because the equiv is in conflict and no binding exists */
   if (SPART_VARR_FIXED & eq->e_rvr.rvrRestrictions)
+    {
+      if ((DV_STRING == DV_TYPE_OF (eq->e_rvr.rvrFixedValue)) && (NULL != eq->e_rvr.rvrDatatype) && (rb_uname_to_flags_of_parseable_datatype (eq->e_rvr.rvrDatatype) & RDF_TYPE_PARSEABLE))
+	return SSG_VALMODE_LONG;	/* String literal value of parseable datatype means ill formed weak-known datatype, such as some numeric; Garbage should be handled with caution, not with speed in mind */
     return SSG_VALMODE_SQLVAL;
+    }
   if (SELECT_L == gp->_.gp.subtype)
     {
       caddr_t varname = eq->e_varnames[0];
@@ -6582,25 +6588,59 @@ retry_good_ignoring_front_varname:
         if (!(flags & SSG_RETVAL_FROM_JOIN_MEMBER))
           goto try_write_null; /* see below */
         memb_len = BOX_ELEMENTS_INT (gp->_.gp.members);
-        if (2 == memb_len)
-          { /* Special case for coalesce as a result of value that may come from more than one optional, bug 16064 */
-            SPART *gp_first_member = gp->_.gp.members[0];
+	if (!(SPART_VARR_NOT_NULL & eq->e_rvr.rvrRestrictions) && (1 < BOX_ELEMENTS (eq->e_subvalue_idxs)))
+	  {			/* Special case for coalesce as a result of full outer join like two VALUES with UNBOUNDs for same variable in bug 16670 */
+	    int sub_is_first_coalesce_arg = 1;
+	    sub_flags = (SSG_RETVAL_FROM_GOOD_SELECTED |
+              (flags & (SSG_RETVAL_OPTIONAL_MAKES_NULLABLE | SSG_RETVAL_MUST_PRINT_SOMETHING | SSG_RETVAL_FROM_ANY_SELECTED | SSG_RETVAL_CAN_PRINT_NULL) ) );
+	    ssg_puts (" COALESCE (");
+	    ssg->ssg_indent++;
+	    ssg_newline (0);
+	    for (memb_ctr = 0; memb_ctr < memb_len; memb_ctr++)
+	      {
+		int final_sub_flags = sub_flags;
+		gp_member = gp->_.gp.members[memb_ctr];
+		if (SPAR_GP != gp_member->type)
+		  continue;
+		subval = sparp_equiv_get_subvalue_ro (ssg->ssg_equivs, ssg->ssg_equiv_count, gp_member, eq);
+		if (NULL == subval)
+		  continue;
+		if (OPTIONAL_L == gp_member->_.gp.subtype)
+		  final_sub_flags |= SSG_RETVAL_OPTIONAL_MAKES_NULLABLE;
+		if (sub_is_first_coalesce_arg)
+		  sub_is_first_coalesce_arg = 0;
+		else
+		  {
+		    ssg_putchar (',');
+		    ssg_newline (0);
+		  }
+		printed = ssg_print_equiv_retval_expn (ssg, gp_member, subval, final_sub_flags, needed, asname);	/*#2 */
+	      }
+	    ssg_putchar (')');
+	    ssg->ssg_indent--;
+	    goto write_assuffix;	/* see below */
+	  }
+        do { /* Special case for coalesce as a result of value that may come from more than one optional, bug 16064 */
+	    SPART *gp_first_member;
             sparp_equiv_t *first_subval;
+	    if (2 != memb_len)
+	      break;
+	    gp_first_member = gp->_.gp.members[0];
             if (SPAR_GP != gp_first_member->type)
-              goto print_plain_sub;
+	      break;
             gp_member = gp->_.gp.members[1];
             if (SPAR_GP != gp_member->type)
-              goto print_plain_sub;
+	      break;
             if (OPTIONAL_L != gp_member->_.gp.subtype)
-              goto print_plain_sub;
+	      break;
             subval = sparp_equiv_get_subvalue_ro (ssg->ssg_equivs, ssg->ssg_equiv_count, gp_member, eq);
             if (NULL == subval)
-              goto print_plain_sub;
+	      break;
             first_subval = sparp_equiv_get_subvalue_ro (ssg->ssg_equivs, ssg->ssg_equiv_count, gp_first_member, eq);
             if (NULL == first_subval)
-              goto print_plain_sub;
+	      break;
             if (first_subval->e_rvr.rvrRestrictions & SPART_VARR_NOT_NULL)
-              goto print_plain_sub;
+	      break;
             ssg_puts (" COALESCE (");
             ssg->ssg_indent++;
             ssg_newline (0);
@@ -6614,8 +6654,7 @@ retry_good_ignoring_front_varname:
             ssg_putchar (')');
             ssg->ssg_indent--;
             goto write_assuffix; /* see below */
-          }
-print_plain_sub:
+          } while (0);
         for (memb_ctr = 0; memb_ctr < memb_len; memb_ctr++)
           {
             gp_member = gp->_.gp.members[memb_ctr];
@@ -7116,7 +7155,12 @@ name_is_non_ghost: ;
       sample_var->_.var.rvr.rvrRestrictions &= ~restrs_not_filtered_in_subqs;
       if (SPART_VARR_FIXED & restrs_not_filtered_in_subqs)
         {
-          SPART *bop = spartlist (ssg->ssg_sparp, 3, BOP_EQ, sample_var, eq->e_rvr.rvrFixedValue);
+	  SPART *rval, *bop;
+          if ((DV_STRING == DV_TYPE_OF (eq->e_rvr.rvrFixedValue)) && (NULL != eq->e_rvr.rvrDatatype) && (rb_uname_to_flags_of_parseable_datatype (eq->e_rvr.rvrDatatype) & RDF_TYPE_PARSEABLE))
+            rval = spartlist (ssg->ssg_sparp, 5, SPAR_LIT, eq->e_rvr.rvrFixedValue, eq->e_rvr.rvrDatatype, eq->e_rvr.rvrLanguage, eq->e_rvr.rvrFixedValue);
+	  else
+	    rval = (SPART *) (eq->e_rvr.rvrFixedValue);
+	  bop = spartlist (ssg->ssg_sparp, 3, BOP_EQ, sample_var, rval);
           ssg_print_where_or_and (ssg, "value of equiv class, fixed by replaced filter");
           ssg_print_bop_bool_expn (ssg, bop, " = "	, " equ ("	, 1, SSG_VALMODE_BOOL);
         }
