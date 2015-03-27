@@ -2446,14 +2446,15 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
 #endif
     case DV_DATETIME:
       {
+        const char *cast_strg;
         const char *as_strg;
         switch (DT_DT_TYPE (box))
           {
-          case DT_TYPE_DATE: as_strg = "' AS DATE)"; break;
-          case DT_TYPE_TIME: as_strg = "' AS TIME)"; break;
-          default: as_strg = "' AS DATETIME)"; break;
+          case DT_TYPE_DATE: cast_strg = "CAST ('"; as_strg = "' AS DATE)"; break;
+          case DT_TYPE_TIME: cast_strg = "CAST ('"; as_strg = "' AS TIME)"; break;
+          default: cast_strg = "CAST ('"; as_strg = "' AS DATETIME)"; break;
           }
-        ssg_puts ("CAST ('");
+        ssg_puts (cast_strg);
         dt_to_iso8601_string (box, tmpbuf, buflen);
         ssg_puts (tmpbuf);
         ssg_puts (as_strg);
