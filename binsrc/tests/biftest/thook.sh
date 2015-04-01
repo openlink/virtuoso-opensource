@@ -34,7 +34,7 @@ SQLOPTIMIZE=${SQLOPTIMIZE-0}
 LOCKFILE=virtuoso.lck
 #DSN=1111
 
-cat virtuoso-sample.ini | sed -e "s/PORT/$PORT/g" -e "s/SQLOPTIMIZE/$SQLOPTIMIZE/g" -e "s/HTTP_LISTEN/$HTTPPORT/g" > virtuoso.ini
+cat "${srcdir}/virtuoso-sample.ini" | sed -e "s/PORT/$PORT/g" -e "s/SQLOPTIMIZE/$SQLOPTIMIZE/g" -e "s/HTTP_LISTEN/$HTTPPORT/g" > virtuoso.ini
 rm -f thook.bad
 rm -f $OUTPUT
 rm -f virtuoso.db

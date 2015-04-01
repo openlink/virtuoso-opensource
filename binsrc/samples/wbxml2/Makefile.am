@@ -35,14 +35,14 @@ wbxml2_la_SOURCES = \
 wbxml2_la_CFLAGS  = @VIRT_AM_CFLAGS@
 wbxml2_la_CFLAGS  += -I$(top_srcdir)/libsrc
 wbxml2_la_CFLAGS  += -I$(top_srcdir)/libsrc/Dk 
-wbxml2_la_CFLAGS  += -I$(top_srcdir)/libsrc/Wi 
+wbxml2_la_CFLAGS  += -I$(top_srcdir)/libsrc/Wi -I$(top_builddir)/libsrc/Wi
 wbxml2_la_CFLAGS  += -I$(top_srcdir)/libsrc/odbcsdk/include 
 wbxml2_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin 
 wbxml2_la_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc 
 wbxml2_la_CFLAGS  += @ZLIB_INC@
 wbxml2_la_CFLAGS  += $(WBXML2_CFLAGS)
 wbxml2_la_CFLAGS  += -D_GNU_SOURCE -DGLOBALREF=extern -D_USRDLL
-wbxml2_la_LDFLAGS = -module -avoid-version -export-dynamic -no-undefined -export-symbols wbxml2.exp
+wbxml2_la_LDFLAGS = -module -avoid-version -export-dynamic -no-undefined -export-symbols $(srcdir)/wbxml2.exp
 wbxml2_la_LIBADD  = $(WBXML2_LDFLAGS) -lexpat
 
 # ----------------------------------------------------------------------
@@ -51,7 +51,7 @@ wbxml2_la_LIBADD  = $(WBXML2_LDFLAGS) -lexpat
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.sql \
+	$(srcdir)/*.sql \
 	wbxml.input \
 	wbxml2.def \
 	wbxml2.exp

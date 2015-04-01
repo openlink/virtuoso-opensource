@@ -69,6 +69,6 @@ virt_sesame.jar: $(SESAME_SRC)
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
 	README \
-	virtuoso_driver/*.java \
+	$(srcdir)/virtuoso_driver/*.java \
 	virtuoso_driver/data.nt \
 	virt_sesame.jar

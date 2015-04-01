@@ -97,18 +97,18 @@ VERSION_INIT()
       fi
   else
       rm -f version.tmp
-      for i in `find . -name 'Entries' | grep -v "vad/" | grep -v "toolkit[a-z\-_]*/"`; do
+      for i in `find $HOME/binsrc/isparql/ -name 'Entries' | grep -v "vad/" | grep -v "toolkit[a-z\-_]*/"`; do
 	  cat $i | grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
       done
       # Also reflect changes in oat
-      for i in `find ../oat -name 'Entries' `; do
+      for i in `find $HOME/binsrc/oat -name 'Entries' `; do
 	  cat "$i" | grep -v "version\."| grep "^[^D].*" | cut -f 3 -d "/" | sed -e "s/1\.//g" >> version.tmp
       done
       VERSION=`cat version.tmp | awk ' BEGIN { cnt=0 } { cnt = cnt + $1 } END { printf "1.%02.02f", cnt/100 }'`
       rm -f version.tmp
       echo "$VERSION" > vad_version
   fi
-  echo "$VERSION/$PACKDATE" > version
+  echo "$VERSION/$PACKDATE" > $TOP/binsrc/isparql/version
 }
 
 
@@ -256,13 +256,13 @@ directory_init() {
 	  done
 	done
 
-  cp *.html vad/data/iSPARQL
-  cp *.vsp vad/data/iSPARQL
-  #cp *.sql vad/data/iSPARQL
-  cp *.js vad/data/iSPARQL
-  #cp *.css vad/data/iSPARQL
-  #cp hover.htc vad/data/iSPARQL
-  cp version vad/data/iSPARQL
+  cp $HOME/binsrc/isparql/*.html vad/data/iSPARQL
+  cp $HOME/binsrc/isparql/*.vsp vad/data/iSPARQL
+  #cp $HOME/binsrc/isparql/*.sql vad/data/iSPARQL
+  cp $HOME/binsrc/isparql/*.js vad/data/iSPARQL
+  #cp $HOME/binsrc/isparql/*.css vad/data/iSPARQL
+  #cp $HOME/binsrc/isparql/hover.htc vad/data/iSPARQL
+  cp $TOP/binsrc/isparql/version vad/data/iSPARQL
 }
 
 virtuoso_shutdown() {

@@ -45,7 +45,7 @@ virt_mail_CFLAGS += -I$(top_srcdir)/libsrc/Wi
 virt_mail_CFLAGS += -I$(top_srcdir)/libsrc/odbcsdk/include
 
 virt_mail_LDADD = \
-	$(top_srcdir)/libsrc/util/libutil.la \
+	$(top_builddir)/libsrc/util/libutil.la \
 	$(top_builddir)/libsrc/Wi/libwic.la \
 	$(top_builddir)/libsrc/Dk/libdk1t.la \
 	$(top_builddir)/libsrc/Thread/libthrs.la \
@@ -68,7 +68,7 @@ odbc_mail_CFLAGS += -I$(top_srcdir)/libsrc/Wi
 odbc_mail_CFLAGS += -I$(top_srcdir)/libsrc/odbcsdk/include
 
 odbc_mail_LDADD = \
-	$(top_srcdir)/libsrc/util/libutil.la \
+	$(top_builddir)/libsrc/util/libutil.la \
 	$(top_builddir)/libsrc/Dk/libdk1t.la \
 	$(top_builddir)/libsrc/Thread/libthrs.la \
 	$(top_builddir)/libsrc/util/libutil.la \
@@ -101,7 +101,7 @@ EXTRA_DIST = \
 	win32/maildrop.rc \
 	win32/maildrop.rgs \
 	win32/mpl.c \
-	win32/OpenX/*.txt \
+	$(srcdir)/win32/OpenX/*.txt \
 	win32/OpenX/BUILDING \
 	win32/OpenX/Dialogs.ifs \
 	win32/OpenX/maildrop.iss \

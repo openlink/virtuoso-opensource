@@ -26,8 +26,8 @@
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.sql \
-	*.vsp \
-	*.xml \
-	*.xsd \
-	*.xsl
+	$(srcdir)/*.sql \
+	$(srcdir)/*.vsp \
+	$(srcdir)/*.xml \
+	$(srcdir)/*.xsd \
+	$(srcdir)/*.xsl

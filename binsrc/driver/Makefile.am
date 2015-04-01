@@ -49,15 +49,15 @@ VIRTODBC_CFLAGS	= $(base_cflags)
 VIRTODBC_LDFLAGS = -avoid-version -export-dynamic -no-undefined
 
 VIRTODBC_FIBER_LIBS = \
-        $(top_srcdir)/libsrc/Thread/libthrs.la \
-        $(top_srcdir)/libsrc/Dk/libdk1t_nc.la \
-	$(top_srcdir)/libsrc/util/libutil.la \
+        $(top_builddir)/libsrc/Thread/libthrs.la \
+        $(top_builddir)/libsrc/Dk/libdk1t_nc.la \
+	$(top_builddir)/libsrc/util/libutil.la \
 	$(clntlibs)
 
 VIRTODBC_PTHREAD_LIBS = \
-        $(top_srcdir)/libsrc/Thread/libthrp.la \
-        $(top_srcdir)/libsrc/Dk/libdk1t_nc.la \
-	$(top_srcdir)/libsrc/util/libutil.la \
+        $(top_builddir)/libsrc/Thread/libthrp.la \
+        $(top_builddir)/libsrc/Dk/libdk1t_nc.la \
+	$(top_builddir)/libsrc/util/libutil.la \
 	$(clntlibs) \
 	@LIBTHR@
 
@@ -92,7 +92,7 @@ libvirtodbc_u_la_SOURCES = \
 #  Ansi/Fiber based client
 #
 virtodbc_la_SOURCES = virt_vers.c
-virtodbc_la_LDFLAGS = -module $(VIRTODBC_LDFLAGS) -export-symbols virt.exp
+virtodbc_la_LDFLAGS = -module $(VIRTODBC_LDFLAGS) -export-symbols $(srcdir)/virt.exp
 virtodbc_la_LIBADD = \
 	libvirtodbc.la \
 	$(VIRTODBC_FIBER_LIBS)
@@ -112,7 +112,7 @@ virtodbc_r_la_LIBADD = \
 #  Unicode/Fiber based client
 #
 virtodbcu_la_SOURCES =  virt_vers_u.c
-virtodbcu_la_LDFLAGS = -module $(VIRTODBC_LDFLAGS) -export-symbols virt_u.exp
+virtodbcu_la_LDFLAGS = -module $(VIRTODBC_LDFLAGS) -export-symbols $(srcdir)/virt_u.exp
 virtodbcu_la_LIBADD = \
 	libvirtodbc.la \
 	libvirtodbc_u.la \

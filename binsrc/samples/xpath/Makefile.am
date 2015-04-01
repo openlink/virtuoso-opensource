@@ -27,7 +27,7 @@
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
 	files2dav.sh \
-	*.jpg \
-	*.sql \
-	*.txt \
-	*.vsp
+	$(srcdir)/*.jpg \
+	$(srcdir)/*.sql \
+	$(srcdir)/*.txt \
+	$(srcdir)/*.vsp

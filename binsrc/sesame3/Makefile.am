@@ -127,4 +127,4 @@ EXTRA_DIST = \
 	META-INF/templates/virtuoso.ttl \
 	virt_sesame3.jar \
 	virtuoso_driver/data.nt \
-	virtuoso_driver/*.java
+	$(srcdir)/virtuoso_driver/*.java

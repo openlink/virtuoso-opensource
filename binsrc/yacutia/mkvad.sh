@@ -258,9 +258,9 @@ LOAD_SQL()
 
 VERSION_INIT()
 {
-      if [ -f vad_version ]
+      if [ -f $HOME/binsrc/yacutia/vad_version ]
       then
-	  VERSION=`cat vad_version`
+	  VERSION=`cat $HOME/binsrc/yacutia/vad_version`
       else
         LOG "The vad_version does not exist, please verify your checkout"
 	exit 1
@@ -357,9 +357,9 @@ echo "  <resources>" >> $STICKER
 
   if [ "$ISDAV" = "1" ]
   then
-      FLIST=`cat conductor.list | grep -v '\.\.'`
+      FLIST=`cat $HOME/binsrc/yacutia/conductor.list | grep -v '\.\.'`
   else
-      FLIST=`cat conductor.list`
+      FLIST=`cat $HOME/binsrc/yacutia/conductor.list`
   fi
 
 for file in $FLIST
@@ -436,25 +436,26 @@ cp -f $HOME/binsrc/xddl/xddl.sql vad/vsp/conductor
 cp -f $HOME/binsrc/xddl/xddl_dav.sql vad/vsp/conductor
 cp -f $HOME/binsrc/xddl/xddl_filesystem.sql vad/vsp/conductor
 
+cp -f $HOME/binsrc/yacutia/* vad/vsp/conductor
 cp -f * vad/vsp/conductor
-cp -f dav/* vad/vsp/conductor/dav
-cp -f dav/image/* vad/vsp/conductor/dav/image
-cp -f dav/image/dav/* vad/vsp/conductor/dav/image/dav
-cp -f images/* vad/vsp/conductor/images
-cp -f images/icons/* vad/vsp/conductor/images/icons
-cp -f syntax/* vad/vsp/conductor/syntax
+cp -f $HOME/binsrc/yacutia/dav/* vad/vsp/conductor/dav
+cp -f $HOME/binsrc/yacutia/dav/image/* vad/vsp/conductor/dav/image
+cp -f $HOME/binsrc/yacutia/dav/image/dav/* vad/vsp/conductor/dav/image/dav
+cp -f $HOME/binsrc/yacutia/images/* vad/vsp/conductor/images
+cp -f $HOME/binsrc/yacutia/images/icons/* vad/vsp/conductor/images/icons
+cp -f $HOME/binsrc/yacutia/syntax/* vad/vsp/conductor/syntax
 cp -f $HOME/binsrc/oat/toolkit/*.js vad/vsp/conductor/toolkit/.
 cp -f $HOME/binsrc/oat/images/* vad/vsp/conductor/toolkit/images
 cp -f $HOME/binsrc/oat/styles/* vad/vsp/conductor/toolkit/styles
 cp -f $HOME/binsrc/vspx/vdir_helper.sql vad/vsp/conductor
-cp -f help/*.xml vad/vsp/conductor/help
+cp -f $HOME/binsrc/yacutia/help/*.xml vad/vsp/conductor/help
 
 VERSION_INIT
 
 CREATE_STICKER 0
 CREATE_STICKER 1
 
-cat mkvad.ini | sed -e "s/1112/$PORT/g" | sed -e "s/1113/$HTTPPORT/g" > virtuoso.ini
+cat $HOME/binsrc/yacutia/mkvad.ini | sed -e "s/1112/$PORT/g" | sed -e "s/1113/$HTTPPORT/g" > virtuoso.ini
 STOP_SERVER
 START_SERVER
 

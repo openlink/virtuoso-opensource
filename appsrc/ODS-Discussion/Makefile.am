@@ -44,17 +44,17 @@ clean-local:
 	-rm -rf vad
 
 EXTRA_DIST = \
-	*.dox \
-	*.css \
-	*.js \
-	*.sql \
-	*.vsp \
-	*.vspx \
-	*.xhtml \
-	*.xsl \
+	$(srcdir)/*.dox \
+	$(srcdir)/*.css \
+	$(srcdir)/*.js \
+	$(srcdir)/*.sql \
+	$(srcdir)/*.vsp \
+	$(srcdir)/*.vspx \
+	$(srcdir)/*.xhtml \
+	$(srcdir)/*.xsl \
 	vad_version \
-	comp/*.xsl \
-	images/*.gif \
-	images/*.jpg \
-	images/*.png \
+	$(srcdir)/comp/*.xsl \
+	$(srcdir)/images/*.gif \
+	$(srcdir)/images/*.jpg \
+	$(srcdir)/images/*.png \
 	make_vad.sh

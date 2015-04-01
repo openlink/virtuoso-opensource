@@ -124,10 +124,10 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.xsl \
+	$(srcdir)/*.xsl \
 	META-INF/services/org.openrdf.repository.config.RepositoryFactory \
 	virtuoso.ttl \
-	virtuoso_driver/*.java \
+	$(srcdir)/virtuoso_driver/*.java \
 	virtuoso_driver/data.nt \
 	manifest.main \
 	virt_sesame2.jar

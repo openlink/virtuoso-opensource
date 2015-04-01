@@ -37,7 +37,7 @@ CLEANFILES =  \
 	virtuoso.pxa
 
 conductor_filesystem.vad conductor_dav.vad: $(EXTRA_DIST)
-	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost $(SHELL) ./mkvad.sh
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(top_srcdir)" HOST=localhost $(SHELL) $(srcdir)/mkvad.sh
 
 clean-local:
 	-rm -rf vad
@@ -48,38 +48,38 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.css \
-	*.htm \
-	*.html \
-	*.js \
-	*.sql \
-	*.vsp \
-	*.vspx \
-	*.xml \
-	*.xsl \
+	$(srcdir)/*.css \
+	$(srcdir)/*.htm \
+	$(srcdir)/*.html \
+	$(srcdir)/*.js \
+	$(srcdir)/*.sql \
+	$(srcdir)/*.vsp \
+	$(srcdir)/*.vspx \
+	$(srcdir)/*.xml \
+	$(srcdir)/*.xsl \
 	conductor.list \
-	dav/*.css \
-	dav/*.js \
-	dav/*.sql \
-	dav/*.vsp \
-	dav/*.xsl \
-	dav/image/*.gif \
-	dav/image/*.png \
-	dav/image/dav/*.gif \
-	dav/image/dav/*.png \
+	$(srcdir)/dav/*.css \
+	$(srcdir)/dav/*.js \
+	$(srcdir)/dav/*.sql \
+	$(srcdir)/dav/*.vsp \
+	$(srcdir)/dav/*.xsl \
+	$(srcdir)/dav/image/*.gif \
+	$(srcdir)/dav/image/*.png \
+	$(srcdir)/dav/image/dav/*.gif \
+	$(srcdir)/dav/image/dav/*.png \
 	ent.dtd \
-	help/*.xml \
-	images/*.gif \
-	images/*.jpg \
-	images/*.png \
-	images/buttons/*.png \
-	images/dav_browser/*.png \
-	images/icons/*.gif \
-	images/icons/*.png \
+	$(srcdir)/help/*.xml \
+	$(srcdir)/images/*.gif \
+	$(srcdir)/images/*.jpg \
+	$(srcdir)/images/*.png \
+	$(srcdir)/images/buttons/*.png \
+	$(srcdir)/images/dav_browser/*.png \
+	$(srcdir)/images/icons/*.gif \
+	$(srcdir)/images/icons/*.png \
 	INSTALL \
 	mkvad.ini \
 	mkvad.sh \
 	README \
-	syntax/*.css \
-	syntax/*.js \
+	$(srcdir)/syntax/*.css \
+	$(srcdir)/syntax/*.js \
 	vad_version

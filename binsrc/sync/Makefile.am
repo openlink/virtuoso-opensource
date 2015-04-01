@@ -52,6 +52,6 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.sql \
-	*.vsp \
+	$(srcdir)/*.sql \
+	$(srcdir)/*.vsp \
 	make_vad.sh

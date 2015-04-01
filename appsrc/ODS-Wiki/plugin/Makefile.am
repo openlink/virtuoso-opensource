@@ -114,8 +114,8 @@ creole_wikilex.c: creole_wikilex.l
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
- 	*.def \
-	*.exp \
+	$(srcdir)/*.def \
+	$(srcdir)/*.exp \
 	maclex.l \
 	wikilex.l \
 	media_maclex.l \

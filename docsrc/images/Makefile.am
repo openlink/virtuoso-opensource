@@ -26,18 +26,18 @@
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.gif \
-	*.jpg \
-	*.png \
-	inst/*.png \
-	mac/*.gif \
-	mac/*.jpg \
-	mac/*.png \
-	misc/*.gif \
-	misc/*.jpg \
-	misc/favicon.ico \
-	rth/*.jpg \
-	rth/*.png \
-	tree/*.gif \
-	ui/*.jpg \
-	ui/*.png
+	$(srcdir)/*.gif \
+	$(srcdir)/*.jpg \
+	$(srcdir)/*.png \
+	$(srcdir)/inst/*.png \
+	$(srcdir)/mac/*.gif \
+	$(srcdir)/mac/*.jpg \
+	$(srcdir)/mac/*.png \
+	$(srcdir)/misc/*.gif \
+	$(srcdir)/misc/*.jpg \
+	$(srcdir)/misc/favicon.ico \
+	$(srcdir)/rth/*.jpg \
+	$(srcdir)/rth/*.png \
+	$(srcdir)/tree/*.gif \
+	$(srcdir)/ui/*.jpg \
+	$(srcdir)/ui/*.png

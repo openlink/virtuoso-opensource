@@ -52,27 +52,27 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.sql \
+	$(srcdir)/*.sql \
 	make_vad.sh \
-	data/*.sql \
+	$(srcdir)/data/*.sql \
 	data/nyt_people.nt.gz \
-	ontologies/owl/*.owl \
-	ontologies/xbrl/*.owl \
-	rdfdesc/*.sql \
-	rdfdesc/*.vsp \
-	rdfdesc/images/*.gif \
-	rdfdesc/images/*.png \
-	rdfdesc/statics/*.css \
-	rdfdesc/statics/*.gif \
-	rdfdesc/statics/*.js \
-	rdfdesc/statics/*.png \
-	rdfdesc/statics/*.svg \
-	rdfdesc/style/*.css \
-	sponger_front_page/*.js \
-	sponger_front_page/*.vsp \
-	sponger_front_page/skin/i/*.gif \
-	sponger_front_page/skin/i/*.jpg \
-	sponger_front_page/skin/i/*.png \
-	sponger_front_page/skin/ss/*.css \
+	$(srcdir)/ontologies/owl/*.owl \
+	$(srcdir)/ontologies/xbrl/*.owl \
+	$(srcdir)/rdfdesc/*.sql \
+	$(srcdir)/rdfdesc/*.vsp \
+	$(srcdir)/rdfdesc/images/*.gif \
+	$(srcdir)/rdfdesc/images/*.png \
+	$(srcdir)/rdfdesc/statics/*.css \
+	$(srcdir)/rdfdesc/statics/*.gif \
+	$(srcdir)/rdfdesc/statics/*.js \
+	$(srcdir)/rdfdesc/statics/*.png \
+	$(srcdir)/rdfdesc/statics/*.svg \
+	$(srcdir)/rdfdesc/style/*.css \
+	$(srcdir)/sponger_front_page/*.js \
+	$(srcdir)/sponger_front_page/*.vsp \
+	$(srcdir)/sponger_front_page/skin/i/*.gif \
+	$(srcdir)/sponger_front_page/skin/i/*.jpg \
+	$(srcdir)/sponger_front_page/skin/i/*.png \
+	$(srcdir)/sponger_front_page/skin/ss/*.css \
 	vad_version \
-	xslt/main/*.xsl
+	$(srcdir)/xslt/main/*.xsl

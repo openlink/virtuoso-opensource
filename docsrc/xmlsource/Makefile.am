@@ -26,26 +26,26 @@
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	bpel/*.xml \
+	$(srcdir)/bpel/*.xml \
 	_DirInfo.sh \
 	DocBook/40chg.txt \
 	DocBook/ChangeLog \
 	DocBook/COPYRIGHT \
-	DocBook/*.dtd \
-	DocBook/*.ent \
+	$(srcdir)/DocBook/*.dtd \
+	$(srcdir)/DocBook/*.ent \
 	DocBook/ent/ChangeLog \
-	DocBook/ent/*.ent \
-	DocBook/*.mod \
+	$(srcdir)/DocBook/ent/*.ent \
+	$(srcdir)/DocBook/*.mod \
 	DocBook/README \
 	DocBook/readme.txt \
 	DocBook/VERSION \
-	DocBook/*.xml \
+	$(srcdir)/DocBook/*.xml \
 	funcref/README \
 	funcref/template.sh \
-	funcref/*.xml \
+	$(srcdir)/funcref/*.xml \
 	funcref/xo/README \
-	funcref/xo/*.xml \
+	$(srcdir)/funcref/xo/*.xml \
 	Virtdocs.spp \
-	vspx_ref/*.xml \
-	*.xml \
-	xmlref/*.xml
+	$(srcdir)/vspx_ref/*.xml \
+	$(srcdir)/*.xml \
+	$(srcdir)/xmlref/*.xml

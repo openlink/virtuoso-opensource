@@ -105,13 +105,15 @@ TESTS_ENVIRONMENT= \
 	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
 	PORT=$(PORT) \
 	SERVER=virtuoso-t \
-	TOP="$(TOP)"
+	TOP="$(TOP)" \
+	top_srcdir="$(abs_top_srcdir)" \
+	srcdir="$(abs_srcdir)"
 
 check-local:
-	env $(TESTS_ENVIRONMENT) $(SHELL) ./test_server.sh
+	env $(TESTS_ENVIRONMENT) $(SHELL) $(srcdir)/test_server.sh
 
 clean-local:
-	TOP="$(TOP)" ./clean.sh
+	env $(TESTS_ENVIRONMENT) $(srcdir)/clean.sh
 
 
 # ----------------------------------------------------------------------
@@ -121,15 +123,15 @@ clean-local:
 # ----------------------------------------------------------------------
 EXTRA_DIST= \
 	$(check_SCRIPTS) \
-	*.dtd \
-	*.eml \
-	*.nq \
-	*.pem \
-	*.sql \
-	*.txt \
-	*.vsp \
-	*.xml \
-	*.xsl \
+	$(srcdir)/*.dtd \
+	$(srcdir)/*.eml \
+	$(srcdir)/*.nq \
+	$(srcdir)/*.pem \
+	$(srcdir)/*.sql \
+	$(srcdir)/*.txt \
+	$(srcdir)/*.vsp \
+	$(srcdir)/*.xml \
+	$(srcdir)/*.xsl \
 	cluster-test.ini \
 	grddl-tests.tar.gz \
 	pdd_txt.gz \

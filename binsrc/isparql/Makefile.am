@@ -34,7 +34,7 @@ CLEANFILES =  \
 	version
 
 isparql_dav.vad: $(EXTRA_DIST)
-	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost $(SHELL) ./make_vad.sh
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(top_srcdir)" TOP="$(TOP)" HOST=localhost $(SHELL) $(srcdir)/make_vad.sh
 
 clean-local:
 	-rm -rf vad
@@ -45,14 +45,14 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.html \
-	*.js \
-	*.vsp \
-	images/*.gif \
-	images/*.jpg \
-	images/*.png \
+	$(srcdir)/*.html \
+	$(srcdir)/*.js \
+	$(srcdir)/*.vsp \
+	$(srcdir)/images/*.gif \
+	$(srcdir)/images/*.jpg \
+	$(srcdir)/images/*.png \
 	make_vad.sh \
-	sql/*.sql \
-	styles/*.css \
+	$(srcdir)/sql/*.sql \
+	$(srcdir)/styles/*.css \
 	vad_version \
-	xslt/*.xsl
+	$(srcdir)/xslt/*.xsl

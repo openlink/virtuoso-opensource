@@ -26,14 +26,14 @@ all: cached_resources.c
 
 cached_resources.c: \
 	cache_gen.sh res_to_c.awk cache_gen.sh Makefile.am \
-	openlinksw-sparql/*.ttl \
+	$(srcdir)/openlinksw-sparql/*.ttl \
 	w3-1999-xhtml/vocab \
 	w3-2000-01/rdf-schema \
-	w3-TR-xhtml1-DTD/*.ent \
-	w3-TR-xhtml1-DTD/*.dtd \
-	openlinksw-sparql/*.ttl
+	$(srcdir)/w3-TR-xhtml1-DTD/*.ent \
+	$(srcdir)/w3-TR-xhtml1-DTD/*.dtd \
+	$(srcdir)/openlinksw-sparql/*.ttl
 	@echo Generating cached_resources.c 
-	@$(SHELL) ./cache_gen.sh > cached_resources.c
+	@$(SHELL) $< > cached_resources.c
 
 .PHONY: clean
 clean:

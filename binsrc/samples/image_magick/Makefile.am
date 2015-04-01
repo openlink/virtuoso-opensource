@@ -25,19 +25,19 @@ endif
 
 im_la_SOURCES = \
 	im.c \
-	$(top_srcdir)/libsrc/plugin/import_gate_virtuoso.c
+	$(top_builddir)/libsrc/plugin/import_gate_virtuoso.c
 
 im_la_CFLAGS  = @VIRT_AM_CFLAGS@
 im_la_CFLAGS  += -I$(top_srcdir)/libsrc
 im_la_CFLAGS  += -I$(top_srcdir)/libsrc/Dk 
-im_la_CFLAGS  += -I$(top_srcdir)/libsrc/Wi 
+im_la_CFLAGS  += -I$(top_srcdir)/libsrc/Wi -I$(top_builddir)/libsrc/Wi
 im_la_CFLAGS  += -I$(top_srcdir)/libsrc/odbcsdk/include 
-im_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin 
+im_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin -I$(top_builddir)/libsrc/plugin
 im_la_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc 
 im_la_CFLAGS  += @ZLIB_INC@
 im_la_CFLAGS  += $(IM_CPPFLAGS)
 im_la_CFLAGS  += -D_GNU_SOURCE -DGLOBALREF=extern -D_USRDLL
-im_la_LDFLAGS = -module -avoid-version -export-dynamic -export-symbols im.exp -no-undefined
+im_la_LDFLAGS = -module -avoid-version -export-dynamic -export-symbols $(srcdir)/im.exp -no-undefined
 im_la_LIBADD  = $(IM_LDFLAGS) $(IM_LIBS)
 
 # ----------------------------------------------------------------------
@@ -46,6 +46,6 @@ im_la_LIBADD  = $(IM_LDFLAGS) $(IM_LIBS)
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.sql \
+	$(srcdir)/*.sql \
 	im.def \
 	im.exp

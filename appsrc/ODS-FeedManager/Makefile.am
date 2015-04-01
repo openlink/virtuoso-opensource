@@ -44,19 +44,19 @@ clean-local:
 	-rm -rf vad
 
 EXTRA_DIST = \
-	*.dox \
+	$(srcdir)/*.dox \
 	make_vad.sh \
-	sql/*.sql \
+	$(srcdir)/sql/*.sql \
 	vad_version \
-	www/*.vsp \
-	www/*.vspx \
-	www/css/*.css \
-	www/image/*.gif \
-	www/image/*.jpg \
-	www/image/*.png \
-	www/image/gems/*.gif \
-	www/image/gems/*.png \
-	www/js/*.js \
-	www/template/*.vspx \
-	www/template/*.xsl \
-	xslt/*.xsl
+	$(srcdir)/www/*.vsp \
+	$(srcdir)/www/*.vspx \
+	$(srcdir)/www/css/*.css \
+	$(srcdir)/www/image/*.gif \
+	$(srcdir)/www/image/*.jpg \
+	$(srcdir)/www/image/*.png \
+	$(srcdir)/www/image/gems/*.gif \
+	$(srcdir)/www/image/gems/*.png \
+	$(srcdir)/www/js/*.js \
+	$(srcdir)/www/template/*.vspx \
+	$(srcdir)/www/template/*.xsl \
+	$(srcdir)/xslt/*.xsl

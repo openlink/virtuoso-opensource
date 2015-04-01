@@ -111,16 +111,16 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	virtuoso_driver/*.java \
+	$(srcdir)/virtuoso_driver/*.java \
 	manifest.main \
 	virt_jena.jar \
-	testsuite/*.java \
-	testsuite/*.class \
+	$(srcdir)/testsuite/*.java \
+	$(srcdir)/testsuite/*.class \
 	testsuite/start.bat \
 	testsuite/start.sh \
-	testsuite/testing/regression/testModelEquals/*.nt \
-	testsuite/testing/regression/testModelEquals/*.rdf \
-	testsuite/testing/regression/testNTripleReader/*.nt \
-	testsuite/testing/regression/testReaderInterface/*.nt \
-	testsuite/testing/regression/testReaderInterface/*.rdf \
-	testsuite/testing/regression/testWriterAndReader/*.rdf 
+	$(srcdir)/testsuite/testing/regression/testModelEquals/*.nt \
+	$(srcdir)/testsuite/testing/regression/testModelEquals/*.rdf \
+	$(srcdir)/testsuite/testing/regression/testNTripleReader/*.nt \
+	$(srcdir)/testsuite/testing/regression/testReaderInterface/*.nt \
+	$(srcdir)/testsuite/testing/regression/testReaderInterface/*.rdf \
+	$(srcdir)/testsuite/testing/regression/testWriterAndReader/*.rdf 

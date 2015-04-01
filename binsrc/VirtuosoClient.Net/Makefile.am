@@ -26,10 +26,10 @@
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.bmp \
-	*.cs \
+	$(srcdir)/*.bmp \
+	$(srcdir)/*.cs \
 	Makefile.mono \
-	design/*.cs \
+	$(srcdir)/design/*.cs \
 	design/VirtuosoDotNetDSNForm.resx \
 	VirtuosoClient.NET.csproj \
 	VirtuosoClient.NET.vc2005.csproj \

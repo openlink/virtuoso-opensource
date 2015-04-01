@@ -44,7 +44,7 @@ clean-local:
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
 	make_vad.sh \
-	*.sql \
-	*.ttl \
-	*.xml \
+	$(srcdir)/*.sql \
+	$(srcdir)/*.ttl \
+	$(srcdir)/*.xml \
 	vad_version

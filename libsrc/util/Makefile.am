@@ -127,9 +127,9 @@ EXTRA_DIST = \
 	MSG_EN.bin \
 	pcrelib/AUTHORS \
 	pcrelib/LICENCE \
-	pcrelib/*.c \
-	pcrelib/*.h \
-	pcrelib/*.src \
+	$(srcdir)/pcrelib/*.c \
+	$(srcdir)/pcrelib/*.h \
+	$(srcdir)/pcrelib/*.src \
 	win32/ptrlong.h \
 	win32/syslog.c \
 	win32/syslog.h \

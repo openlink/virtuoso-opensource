@@ -29,14 +29,14 @@ install-data-local:
 	mkdir -p "$(DESTDIR)$(httprootdir)"/images
 	mkdir -p "$(DESTDIR)$(httprootdir)"/admin
 	mkdir -p "$(DESTDIR)$(httprootdir)"/vsmx
-	$(INSTALL_DATA) *.html "$(DESTDIR)$(httprootdir)"
-	$(INSTALL_DATA) *.css "$(DESTDIR)$(httprootdir)"
-	$(INSTALL_DATA) *.txt "$(DESTDIR)$(httprootdir)"
-	$(INSTALL_DATA) admin/index_left.vsp "$(DESTDIR)$(httprootdir)"/admin
-	$(INSTALL_DATA) images/*.gif "$(DESTDIR)$(httprootdir)"/images
-	$(INSTALL_DATA) images/*.png "$(DESTDIR)$(httprootdir)"/images
-	$(INSTALL_DATA) images/*.jpg "$(DESTDIR)$(httprootdir)"/images
-	$(INSTALL_DATA) vsmx/*.* "$(DESTDIR)$(httprootdir)"/vsmx
+	$(INSTALL_DATA) $(srcdir)/*.html "$(DESTDIR)$(httprootdir)"
+	$(INSTALL_DATA) $(srcdir)/*.css "$(DESTDIR)$(httprootdir)"
+	$(INSTALL_DATA) $(srcdir)/*.txt "$(DESTDIR)$(httprootdir)"
+	$(INSTALL_DATA) $(srcdir)/admin/index_left.vsp "$(DESTDIR)$(httprootdir)"/admin
+	$(INSTALL_DATA) $(srcdir)/images/*.gif "$(DESTDIR)$(httprootdir)"/images
+	$(INSTALL_DATA) $(srcdir)/images/*.png "$(DESTDIR)$(httprootdir)"/images
+	$(INSTALL_DATA) $(srcdir)/images/*.jpg "$(DESTDIR)$(httprootdir)"/images
+	$(INSTALL_DATA) $(srcdir)/vsmx/*.* "$(DESTDIR)$(httprootdir)"/vsmx
 
 
 uninstall-local:
@@ -49,73 +49,73 @@ uninstall-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST =  \
-	*.css \
-	*.html \
-	*.sql \
-	*.txt \
-	*.vsp \
-	admin/*.css \
-	admin/*.html \
-	admin/*.js \
-	admin/*.sql \
-	admin/*.vsp \
-	admin/*.vspx \
-	admin/admin_dav/*.css \
-	admin/admin_dav/*.html \
-	admin/admin_dav/*.js \
-	admin/admin_dav/*.sql \
-	admin/admin_dav/*.vsp \
-	admin/admin_dav/*.vspx \
-	admin/admin_dav/*.xml \
-	admin/admin_dav/*.xsl \
-	admin/admin_dav/images/16x16/*.gif \
-	admin/admin_news/*.sql \
-	admin/admin_news/*.vsp \
-	admin/admin_repl/*.js \
-	admin/admin_repl/*.vsp \
-	admin/admin_trx_repl/*.vsp \
-	admin/dbpump/*.html \
-	admin/dbpump/*.sql \
-	admin/dbpump/*.txt \
-	admin/dbpump/*.vsp \
-	admin/dbpump/*.xsl \
+	$(srcdir)/*.css \
+	$(srcdir)/*.html \
+	$(srcdir)/*.sql \
+	$(srcdir)/*.txt \
+	$(srcdir)/*.vsp \
+	$(srcdir)/admin/*.css \
+	$(srcdir)/admin/*.html \
+	$(srcdir)/admin/*.js \
+	$(srcdir)/admin/*.sql \
+	$(srcdir)/admin/*.vsp \
+	$(srcdir)/admin/*.vspx \
+	$(srcdir)/admin/admin_dav/*.css \
+	$(srcdir)/admin/admin_dav/*.html \
+	$(srcdir)/admin/admin_dav/*.js \
+	$(srcdir)/admin/admin_dav/*.sql \
+	$(srcdir)/admin/admin_dav/*.vsp \
+	$(srcdir)/admin/admin_dav/*.vspx \
+	$(srcdir)/admin/admin_dav/*.xml \
+	$(srcdir)/admin/admin_dav/*.xsl \
+	$(srcdir)/admin/admin_dav/images/16x16/*.gif \
+	$(srcdir)/admin/admin_news/*.sql \
+	$(srcdir)/admin/admin_news/*.vsp \
+	$(srcdir)/admin/admin_repl/*.js \
+	$(srcdir)/admin/admin_repl/*.vsp \
+	$(srcdir)/admin/admin_trx_repl/*.vsp \
+	$(srcdir)/admin/dbpump/*.html \
+	$(srcdir)/admin/dbpump/*.sql \
+	$(srcdir)/admin/dbpump/*.txt \
+	$(srcdir)/admin/dbpump/*.vsp \
+	$(srcdir)/admin/dbpump/*.xsl \
 	admin/dbpump/oper.pars \
 	admin/dbpump/operpars.awk \
 	admin/dbpump/parse_oper_pars.sh \
 	admin/dbpump/root.isql \
 	admin/dbpump/schema.osql \
-	admin/debug/*.sql \
-	admin/debug/*.vspx \
+	$(srcdir)/admin/debug/*.sql \
+	$(srcdir)/admin/debug/*.vspx \
 	admin/debug/filter.awk \
 	admin/debug/make_vad.sh \
 	admin/debug/read.me \
 	admin/debug/run_tests.sh \
-	admin/images/*.gif \
-	admin/images/*.jpg \
-	admin/vad/*.gif \
-	admin/vad/*.vsp \
+	$(srcdir)/admin/images/*.gif \
+	$(srcdir)/admin/images/*.jpg \
+	$(srcdir)/admin/vad/*.gif \
+	$(srcdir)/admin/vad/*.vsp \
 	admin/vad/vad_sticker.dtd \
-	doc/*.css \
-	doc/*.gif \
-	doc/*.jpg \
-	doc/*.png \
-	doc/*.vsp \
-	doc/*.vspx \
-	doc/*.xsl \
-	images/*.gif \
-	images/*.jpg \
-	images/*.png \
+	$(srcdir)/doc/*.css \
+	$(srcdir)/doc/*.gif \
+	$(srcdir)/doc/*.jpg \
+	$(srcdir)/doc/*.png \
+	$(srcdir)/doc/*.vsp \
+	$(srcdir)/doc/*.vspx \
+	$(srcdir)/doc/*.xsl \
+	$(srcdir)/images/*.gif \
+	$(srcdir)/images/*.jpg \
+	$(srcdir)/images/*.png \
 	install.sh \
-	mime/*.htm \
-	mime/*.vsp \
-	soapdemo/*.css \
-	soapdemo/*.html \
-	soapdemo/*.java \
-	soapdemo/*.sql \
-	soapdemo/*.vsp \
+	$(srcdir)/mime/*.htm \
+	$(srcdir)/mime/*.vsp \
+	$(srcdir)/soapdemo/*.css \
+	$(srcdir)/soapdemo/*.html \
+	$(srcdir)/soapdemo/*.java \
+	$(srcdir)/soapdemo/*.sql \
+	$(srcdir)/soapdemo/*.vsp \
 	soapdemo/demo.jar \
 	soapdemo/GNUmakefile \
-	soapdemo/r4/*.sql \
+	$(srcdir)/soapdemo/r4/*.sql \
 	soapdemo/r4/complex-doc-1.xsd \
 	soapdemo/r4/complex-doc-2.xsd \
 	soapdemo/r4/complex-doc-3.xsd \
@@ -134,8 +134,8 @@ EXTRA_DIST =  \
 	soapdemo/saxapi.jar \
 	soapdemo/soaprt.jar \
 	soapdemo/xerces.jar \
-	vsmx/*.css \
-	vsmx/*.gif \
-	vsmx/*.jpg \
-	vsmx/*.vspx \
-	vsmx/*.xsl
+	$(srcdir)/vsmx/*.css \
+	$(srcdir)/vsmx/*.gif \
+	$(srcdir)/vsmx/*.jpg \
+	$(srcdir)/vsmx/*.vspx \
+	$(srcdir)/vsmx/*.xsl

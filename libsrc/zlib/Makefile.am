@@ -66,8 +66,8 @@ libz_la_LDFLAGS = -prefer-pic
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.txt \
-	*.xml \
+	$(srcdir)/*.txt \
+	$(srcdir)/*.xml \
 	ChangeLog \
 	FAQ \
 	INDEX \
@@ -84,75 +84,75 @@ EXTRA_DIST = \
 	zlib2ansi \
 	amiga/Makefile.pup \
 	amiga/Makefile.sas \
-	contrib/ada/*.txt \
-	contrib/ada/*.adb \
-	contrib/ada/*.ads \
+	$(srcdir)/contrib/ada/*.txt \
+	$(srcdir)/contrib/ada/*.adb \
+	$(srcdir)/contrib/ada/*.ads \
 	contrib/ada/zlib.gpr \
-	contrib/amd64/*.S \
-	contrib/asm686/*.S \
+	$(srcdir)/contrib/amd64/*.S \
+	$(srcdir)/contrib/asm686/*.S \
 	contrib/asm686/README.686 \
-	contrib/blast/*.c \
-	contrib/blast/*.h \
-	contrib/blast/*.txt \
+	$(srcdir)/contrib/blast/*.c \
+	$(srcdir)/contrib/blast/*.h \
+	$(srcdir)/contrib/blast/*.txt \
 	contrib/blast/Makefile \
 	contrib/blast/README \
 	contrib/blast/test.pk \
-	contrib/delphi/*.txt \
+	$(srcdir)/contrib/delphi/*.txt \
 	contrib/delphi/ZLib.pas \
 	contrib/delphi/ZLibConst.pas \
 	contrib/delphi/zlibd32.mak \
-	contrib/dotzlib/*.txt \
+	$(srcdir)/contrib/dotzlib/*.txt \
 	contrib/dotzlib/DotZLib.build \
 	contrib/dotzlib/DotZLib.chm \
 	contrib/dotzlib/DotZLib.sln \
-	contrib/dotzlib/DotZLib/*.cs \
+	$(srcdir)/contrib/dotzlib/DotZLib/*.cs \
 	contrib/dotzlib/DotZLib/DotZLib.csproj \
-	contrib/gcc_gvmat64/*.S \
-	contrib/infback9/*.c \
-	contrib/infback9/*.h \
+	$(srcdir)/contrib/gcc_gvmat64/*.S \
+	$(srcdir)/contrib/infback9/*.c \
+	$(srcdir)/contrib/infback9/*.h \
 	contrib/infback9/README \
-	contrib/inflate86/*.c \
-	contrib/inflate86/*.S \
-	contrib/iostream/*.h \
+	$(srcdir)/contrib/inflate86/*.c \
+	$(srcdir)/contrib/inflate86/*.S \
+	$(srcdir)/contrib/iostream/*.h \
 	contrib/iostream/test.cpp \
 	contrib/iostream/zfstream.cpp \
-	contrib/iostream2/*.h \
+	$(srcdir)/contrib/iostream2/*.h \
 	contrib/iostream2/zstream_test.cpp \
-	contrib/iostream3/*.h \
+	$(srcdir)/contrib/iostream3/*.h \
 	contrib/iostream3/README \
 	contrib/iostream3/test.cc \
 	contrib/iostream3/TODO \
 	contrib/iostream3/zfstream.cc \
-	contrib/masmx64/*.c \
-	contrib/masmx64/*.txt \
+	$(srcdir)/contrib/masmx64/*.c \
+	$(srcdir)/contrib/masmx64/*.txt \
 	contrib/masmx64/bld_ml64.bat \
 	contrib/masmx64/gvmat64.asm \
 	contrib/masmx64/inffasx64.asm \
-	contrib/masmx86/*.txt \
+	$(srcdir)/contrib/masmx86/*.txt \
 	contrib/masmx86/bld_ml32.bat \
 	contrib/masmx86/inffas32.asm \
 	contrib/masmx86/match686.asm \
-	contrib/minizip/*.c \
-	contrib/minizip/*.h \
-	contrib/minizip/*.txt \
+	$(srcdir)/contrib/minizip/*.c \
+	$(srcdir)/contrib/minizip/*.h \
+	$(srcdir)/contrib/minizip/*.txt \
 	contrib/minizip/Makefile \
 	contrib/minizip/make_vms.com \
-	contrib/pascal/*.txt \
+	$(srcdir)/contrib/pascal/*.txt \
 	contrib/pascal/example.pas \
 	contrib/pascal/zlibd32.mak \
 	contrib/pascal/zlibpas.pas \
-	contrib/puff/*.c \
-	contrib/puff/*.h \
+	$(srcdir)/contrib/puff/*.c \
+	$(srcdir)/contrib/puff/*.h \
 	contrib/puff/Makefile \
 	contrib/puff/README \
 	contrib/puff/zeros.raw \
 	contrib/README.contrib \
-	contrib/testzlib/*.c \
-	contrib/testzlib/*.txt \
-	contrib/untgz/*.c \
+	$(srcdir)/contrib/testzlib/*.c \
+	$(srcdir)/contrib/testzlib/*.txt \
+	$(srcdir)/contrib/untgz/*.c \
 	contrib/untgz/Makefile \
 	contrib/untgz/Makefile.msc \
-	contrib/vstudio/*.txt \
+	$(srcdir)/contrib/vstudio/*.txt \
 	contrib/vstudio/vc10/miniunz.vcxproj \
 	contrib/vstudio/vc10/miniunz.vcxproj.filters \
 	contrib/vstudio/vc10/miniunz.vcxproj.user \
@@ -183,11 +183,11 @@ EXTRA_DIST = \
 	contrib/vstudio/vc9/zlibvc.def \
 	contrib/vstudio/vc9/zlibvc.sln \
 	contrib/vstudio/vc9/zlibvc.vcproj \
-	doc/*.txt \
+	$(srcdir)/doc/*.txt \
 	example.c \
-	examples/*.c \
-	examples/*.h \
-	examples/*.html \
+	$(srcdir)/examples/*.c \
+	$(srcdir)/examples/*.h \
+	$(srcdir)/examples/*.html \
 	examples/README.examples \
 	msdos/Makefile.bor \
 	msdos/Makefile.dj2 \
@@ -196,8 +196,8 @@ EXTRA_DIST = \
 	msdos/Makefile.tc \
 	nintendods/Makefile \
 	nintendods/README \
-	old/*.txt \
-	old/as400/*.txt \
+	$(srcdir)/old/*.txt \
+	$(srcdir)/old/as400/*.txt \
 	old/as400/bndsrc \
 	old/as400/compile.clp \
 	old/as400/zlib.inc \
@@ -206,7 +206,7 @@ EXTRA_DIST = \
 	old/os2/Makefile.os2 \
 	old/os2/zlib.def \
 	old/README \
-	old/visualc6/*.txt \
+	$(srcdir)/old/visualc6/*.txt \
 	old/visualc6/example.dsp \
 	old/visualc6/minigzip.dsp \
 	old/visualc6/zlib.dsp \
@@ -214,7 +214,7 @@ EXTRA_DIST = \
 	qnx/package.qpg \
 	watcom/watcom_f.mak \
 	watcom/watcom_l.mak \
-	win32/*.txt \
+	$(srcdir)/win32/*.txt \
 	win32/Makefile.bor \
 	win32/Makefile.emx \
 	win32/Makefile.gcc \

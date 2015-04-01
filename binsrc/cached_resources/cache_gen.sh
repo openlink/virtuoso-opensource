@@ -28,6 +28,10 @@ LANG=C
 LC_ALL=POSIX
 export LANG LC_ALL
 
+# ----------------------------------------------------------------------
+#  Facilitate out-of-tree call
+# ----------------------------------------------------------------------
+SCRIPTDIR="`dirname "${0}"`"
 
 
 cache_file()
@@ -40,7 +44,7 @@ cache_file()
   pdate=${publishingdate}
   comment=$3
   echo "static const char * ${arrayname}[] =" >> texts.tmp
-  awk -f res_to_c.awk $filename >> texts.tmp
+  awk -f "${SCRIPTDIR}/res_to_c.awk" "${SCRIPTDIR}/${filename}" >> texts.tmp
   echo "" >> texts.tmp
   echo "CACHE_RESOURCE (${arrayname}, \"${uri}\", \"${publicid}\", \"${pdate}\", \"${comment}\");" >> function.tmp
 }

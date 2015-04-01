@@ -29,20 +29,20 @@ TOP=@TOP@
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST= \
-	*.sql \
-	*.txt \
-	MySQLqueries/*.txt \
-	Oraclequeries/*.txt \
-	queries/*.txt \
+	$(srcdir)/*.sql \
+	$(srcdir)/*.txt \
+	$(srcdir)/MySQLqueries/*.txt \
+	$(srcdir)/Oraclequeries/*.txt \
+	$(srcdir)/queries/*.txt \
 	run_javac.sh \
 	run_test.sh \
-	SQLqueries/*.txt \
-	src/benchmark/generator/*.java \
-	src/benchmark/model/*.java \
-	src/benchmark/qualification/*.java \
-	src/benchmark/serializer/*.java \
-	src/benchmark/testdriver/*.java \
-	src/benchmark/tools/*.java \
-	src/benchmark/vocabulary/*.java \
+	$(srcdir)/SQLqueries/*.txt \
+	$(srcdir)/src/benchmark/generator/*.java \
+	$(srcdir)/src/benchmark/model/*.java \
+	$(srcdir)/src/benchmark/qualification/*.java \
+	$(srcdir)/src/benchmark/serializer/*.java \
+	$(srcdir)/src/benchmark/testdriver/*.java \
+	$(srcdir)/src/benchmark/tools/*.java \
+	$(srcdir)/src/benchmark/vocabulary/*.java \
 	src/README \
 	virtuoso.ini

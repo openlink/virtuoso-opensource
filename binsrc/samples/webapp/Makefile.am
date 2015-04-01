@@ -26,32 +26,32 @@
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.sql \
-	appcookie/*.sql \
-	appcookie/*.vsp \
-	appdigest/*.sql \
-	appdigest/*.vsp \
-	appjs/*.sql \
-	appjs/*.vsp \
-	appsimple/*.sql \
-	appsimple/*.vsp \
-	appssl/*.sql \
-	appssl/*.vsp \
-	appurl/*.sql \
-	appurl/*.vsp \
-	appurla/*.sql \
-	appurla/*.vsp \
-	eNews/*.gif \
-	eNews/*.js \
-	eNews/*.sql \
-	eNews/*.txt \
-	eNews/*.vsp \
-	eNews/*.xsl \
-	eNews/css/*.css \
+	$(srcdir)/*.sql \
+	$(srcdir)/appcookie/*.sql \
+	$(srcdir)/appcookie/*.vsp \
+	$(srcdir)/appdigest/*.sql \
+	$(srcdir)/appdigest/*.vsp \
+	$(srcdir)/appjs/*.sql \
+	$(srcdir)/appjs/*.vsp \
+	$(srcdir)/appsimple/*.sql \
+	$(srcdir)/appsimple/*.vsp \
+	$(srcdir)/appssl/*.sql \
+	$(srcdir)/appssl/*.vsp \
+	$(srcdir)/appurl/*.sql \
+	$(srcdir)/appurl/*.vsp \
+	$(srcdir)/appurla/*.sql \
+	$(srcdir)/appurla/*.vsp \
+	$(srcdir)/eNews/*.gif \
+	$(srcdir)/eNews/*.js \
+	$(srcdir)/eNews/*.sql \
+	$(srcdir)/eNews/*.txt \
+	$(srcdir)/eNews/*.vsp \
+	$(srcdir)/eNews/*.xsl \
+	$(srcdir)/eNews/css/*.css \
 	eNews/enews.ini \
-	eNews/stylesheets/*.xsl \
-	forums/*.sql \
-	forums/*.txt \
-	forums/*.vsp \
-	forums/i/*.gif \
-	forums/xslt/forums/*.xsl
+	$(srcdir)/eNews/stylesheets/*.xsl \
+	$(srcdir)/forums/*.sql \
+	$(srcdir)/forums/*.txt \
+	$(srcdir)/forums/*.vsp \
+	$(srcdir)/forums/i/*.gif \
+	$(srcdir)/forums/xslt/forums/*.xsl

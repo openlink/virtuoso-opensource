@@ -22,18 +22,18 @@
 BUILT_SOURCES=wsrm_xsd.sql
 
 SCH_FILES = \
-	wsrm.xsd \
-	wsp.xsd \
-	wsa.xsd \
-	utility.xsd \
-	utility200306.xsd \
-	wss.xsd \
-	wss0212.xsd \
-	wsa200403.xsd \
-	oasis200401wssutility.xsd \
-	orabpel.xsd \
-	wsrm_2005_02.xsd \
-	wsa200408.xsd
+	$(srcdir)/wsrm.xsd \
+	$(srcdir)/wsp.xsd \
+	$(srcdir)/wsa.xsd \
+	$(srcdir)/utility.xsd \
+	$(srcdir)/utility200306.xsd \
+	$(srcdir)/wss.xsd \
+	$(srcdir)/wss0212.xsd \
+	$(srcdir)/wsa200403.xsd \
+	$(srcdir)/oasis200401wssutility.xsd \
+	$(srcdir)/orabpel.xsd \
+	$(srcdir)/wsrm_2005_02.xsd \
+	$(srcdir)/wsa200408.xsd
 
 GEN=$(SHELL) ${top_srcdir}/bin/generate
 
@@ -50,7 +50,7 @@ wsrm_xsd.sql: $(SCH_FILES) xsd2sql.awk Makefile
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.sql \
-	*.xsd \
-	xsd2sql.awk \
-	*.xsl
+	$(srcdir)/*.sql \
+	$(srcdir)/*.xsd \
+	$(srcdir)/xsd2sql.awk \
+	$(srcdir)/*.xsl

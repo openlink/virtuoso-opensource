@@ -26,16 +26,16 @@
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.rdf \
-	*.sql \
-	*.url \
-	*.xsl \
+	$(srcdir)/*.rdf \
+	$(srcdir)/*.sql \
+	$(srcdir)/*.url \
+	$(srcdir)/*.xsl \
 	.dav_load.sh \
 	.dav_load.sql \
 	dav_metr.sh \
 	rdav.sh \
 	Resource.pdf \
-	Versioning/*.sql \
+	$(srcdir)/Versioning/*.sql \
 	Versioning/DETVerTest.m4 \
 	Versioning/GNUmakefile \
 	Versioning/test.m4

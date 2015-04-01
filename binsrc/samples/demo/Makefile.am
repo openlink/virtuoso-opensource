@@ -69,9 +69,9 @@ doc_dav.vad: mkdoc.sh mksearch.sql drop.sql mkdemo.ini
 #
 # ----------------------------------------------------------------------
 DEMO_DEPS=\
-	*.owl \
-	*.sql \
-	*.txt \
+	$(srcdir)/*.owl \
+	$(srcdir)/*.sql \
+	$(srcdir)/*.txt \
 	art.tar.gz \
 	flags.tar.gz \
 	CAT1 \
@@ -91,10 +91,10 @@ DEMO_DEPS=\
 	EMP7 \
 	EMP8 \
 	EMP9 \
-	thalia_test/*.rq \
-	thalia_test/*.sql \
-	thalia_test/*.owl \
-	tpc-h/*.sql \
+	$(srcdir)/thalia_test/*.rq \
+	$(srcdir)/thalia_test/*.sql \
+	$(srcdir)/thalia_test/*.owl \
+	$(srcdir)/tpc-h/*.sql \
 	vad_version \
 	make_vad.sh
 
@@ -196,9 +196,9 @@ endif
 #
 # ----------------------------------------------------------------------
 CLEANFILES =  \
-	*.log \
-	*.output \
-	*.vad \
+	$(srcdir)/*.log \
+	$(srcdir)/*.output \
+	$(srcdir)/*.vad \
 	art.tar \
 	default.ini \
 	demo.db \

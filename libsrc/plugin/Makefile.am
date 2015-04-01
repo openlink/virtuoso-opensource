@@ -34,6 +34,7 @@ base_plugin_cflags  += -I$(top_srcdir)/libsrc/langfunc
 base_plugin_cflags  += -I$(top_srcdir)/libsrc/plugin 
 base_plugin_cflags  += -I$(top_srcdir)/libsrc/Xml.new 
 base_plugin_cflags  += -I$(top_srcdir)/libsrc/Wi
+base_plugin_cflags  += -I$(top_builddir)/libsrc/Wi
 base_plugin_cflags  += -I$(top_srcdir)/libsrc/odbcsdk/include
 
 base_plugin_ldflags = -module -avoid-version
@@ -94,8 +95,8 @@ generated_code = \
 
 $(generated_code): .generated
 
-.generated: Makefile.am gen_all_gates.sh gen_gate.sh gate_virtuoso.h plugin_lang25.h plugin_msdtc.h
-	cd $(top_srcdir)/libsrc/plugin; $(SHELL) $(srcdir)/gen_all_gates.sh
+.generated: gen_all_gates.sh Makefile.am gen_gate.sh gate_virtuoso.h plugin_lang25.h plugin_msdtc.h
+	cd $(top_builddir)/libsrc/plugin; $(SHELL) $<
 	-rm -rf tmp
 	touch .generated
 

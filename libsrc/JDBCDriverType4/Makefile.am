@@ -152,8 +152,8 @@ clean-local:
 
 EXTRA_DIST = \
 	JDBC.release \
-	manifest*.main \
-	openlink/util/*.java \
+	$(srcdir)/manifest*.main \
+	$(srcdir)/openlink/util/*.java \
 	termcap \
 	test2.bat \
 	test2.sh \

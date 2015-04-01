@@ -29,7 +29,8 @@
 #  Load functions
 #
 VIRTDEV_HOME=${VIRTDEV_HOME-$TOP}
-VIRTUOSO_TEST=${VIRTUOSO_TEST-$VIRTDEV_HOME/binsrc/tests/suite}
+VIRTUOSO_TEST=${VIRTUOSO_TEST-${top_srcdir}/binsrc/tests/suite}
+VIRTUOSO_BTEST=${VIRTUOSO_TEST-$VIRTDEV_HOME/binsrc/tests/suite}
 export VIRTDEV_HOME VIRTUOSO_TEST
 
 . $VIRTUOSO_TEST/testlib.sh
