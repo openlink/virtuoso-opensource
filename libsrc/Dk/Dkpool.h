@@ -144,9 +144,9 @@ extern caddr_t dbg_mp_alloc_box (const char *file, int line, mem_pool_t * mp, si
 extern caddr_t dbg_mp_alloc_box_ni (const char *file, int line, mem_pool_t * mp, int len, dtp_t dtp);
 extern caddr_t dbg_mp_box_string (const char *file, int line, mem_pool_t * mp, const char *str);
 extern caddr_t dbg_mp_box_substr (const char *file, int line, mem_pool_t * mp, ccaddr_t str, int n1, int n2);
-extern box_t dbg_mp_box_dv_short_nchars (const char *file, int line, mem_pool_t * mp, const char *str, size_t len);
+extern caddr_t dbg_mp_box_dv_short_nchars (const char *file, int line, mem_pool_t * mp, const char *str, size_t len);
 extern caddr_t dbg_mp_box_dv_uname_string (const char *file, int line, mem_pool_t * mp, const char *str);
-extern box_t dbg_mp_box_dv_uname_nchars (const char *file, int line, mem_pool_t * mp, const char *str, size_t len);
+extern caddr_t dbg_mp_box_dv_uname_nchars (const char *file, int line, mem_pool_t * mp, const char *str, size_t len);
 extern caddr_t dbg_mp_box_copy (const char *file, int line, mem_pool_t * mp, caddr_t box);
 extern caddr_t dbg_mp_box_copy_tree (const char *file, int line, mem_pool_t * mp, caddr_t box);
 extern caddr_t dbg_mp_full_box_copy_tree (const char *file, int line, mem_pool_t * mp, caddr_t box);

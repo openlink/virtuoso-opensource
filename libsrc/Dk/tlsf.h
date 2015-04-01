@@ -269,7 +269,6 @@ void tlsf_set_comment (tlsf_t * tlsf, char * name);
 #define BHDR(b)  ((bhdr_t*)(((char*)b) - BHDR_OVERHEAD))
 
 
-#ifdef MALLOC_DEBUG
 
 typedef struct mdbg_place_s
 {
@@ -277,6 +276,7 @@ typedef struct mdbg_place_s
   int		mpl_line;
 } mdbg_place_t;
 
+#ifdef MALLOC_DEBUG
 
 typedef struct mdbg_stat_s
 {
