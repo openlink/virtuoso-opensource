@@ -3755,7 +3755,7 @@ sqlo_use_p_stat_2 (df_elt_t * dfe, float *inx_card, float * col_card, index_choi
 	rc = dfe_p_card (dfe, &rq, o_stat, ic, SO_O);
       else
 		rc = dfe_p_card (dfe, &rq, o_stat, ic, SO_S);
-      if (-1 == rc)
+      if (-1 == rc || !o_stat[1])
 	return 0;
       *inx_card = p_card / p_stat[1] / o_stat[1];
       return 1;
