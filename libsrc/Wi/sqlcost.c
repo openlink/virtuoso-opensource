@@ -596,6 +596,32 @@ dfe_vec_index_unit (df_elt_t * dfe, float spacing)
     }
 }
 
+void
+dfe_cl_bottle_factor (df_elt_t * dfe, float * unit_ret)
+{
+#ifdef CL6
+  /* if multipart key with a constant or low card value in partitioning col, all traffic will go via the one place, so penalize this by 1/n partitions */
+  df_elt_t * part_value, *pred;
+  dbe_key_t * key = dfe->_.table.key;
+  key_partition_def_t * kpd = key->key_partition;
+  dbe_column_t * part_col;
+  if (dfe->_.table.in_arity < 1000)
+    return; /* if few lookups, no greate gain in paralllelism, so no penalty for passing then through a single partition */
+  if (CL_RUN_LOCAL == cl_run_local_only || !kpd || clm_replicated == kpd->kpd_map
+      || !kpd->kpd_cols || BOX_ELEMENTS (kpd->kpd_cols) < 1)
+    return;
+  part_col = sch_id_to_column (wi_inst.wi_schema, kpd->kpd_cols[0]->cp_col_id);
+  pred = sqlo_key_part_best (part_col, dfe->_.table.col_preds, 0);
+  if (!pred || !dfe_is_eq_pred (pred))
+    return;
+    part_value = pred->_.bin.right;
+    if (DFE_CONST == part_value->dfe_type)
+      {
+	*unit_ret = *unit_ret * kpd->kpd_map->clm_distinct_slices;
+      }
+#endif
+}
+
 int enable_vec_cost = 1;
 extern int32 enable_dyn_batch_sz;
 #define dc_max_batch_sz_f (enable_dyn_batch_sz ? dc_max_batch_sz : dc_batch_sz)
@@ -605,7 +631,7 @@ dfe_vec_inx_cost (df_elt_t * dfe, index_choice_t * ic, int64 sample)
 {
   /* determine distance between consecutive hits.  If in order with previous, will be distance of previous times hanout of this if fanout > 1.
    * if not in order, will be card of the table as selected by leading constants divided by min of expected inputs and max vector size */
-  float sort_cost = 0;
+  float sort_cost = 0, inx_cost;
   df_elt_t * prev_tb;
   float card_between = 1;
   int eq_on_ordering = 0;
@@ -613,6 +639,7 @@ dfe_vec_inx_cost (df_elt_t * dfe, index_choice_t * ic, int64 sample)
   float spacing;
   dbe_key_t * key = dfe->_.table.key;
   float ref_card = 1;
+  float vec_sz, max_vec;
   if (HR_NONE != dfe->_.table.hash_role)
     return 8; /* hash fillers and refs do not take this into account */
   order = dfe_n_in_order  (dfe, NULL, &prev_tb, &card_between, &eq_on_ordering, &cl_colocated);
@@ -622,7 +649,6 @@ dfe_vec_inx_cost (df_elt_t * dfe, index_choice_t * ic, int64 sample)
     {
       float t_card;
       int slices;
-      float vec_sz, max_vec;
       int64 key_card = dbe_key_count (dfe->_.table.key);
       if (ic->ic_leading_constants)
 	t_card = -1 != sample ? sample : key_card;
@@ -634,9 +660,10 @@ dfe_vec_inx_cost (df_elt_t * dfe, index_choice_t * ic, int64 sample)
 	max_vec = ref_card / enable_qp;
       vec_sz = MIN (max_vec, ref_card);
       vec_sz = MAX (1, vec_sz);
-      spacing = t_card / vec_sz;
+      spacing = t_card / (MAX (1, vec_sz));
       dfe->_.table.hit_spacing = spacing;
       vec_sz = MIN (ref_card, max_vec);
+      vec_sz = MAX (1, vec_sz);
       sort_cost = lin_int (&li_dc_sort_cost, vec_sz);
     }
   else
@@ -663,7 +690,12 @@ dfe_vec_inx_cost (df_elt_t * dfe, index_choice_t * ic, int64 sample)
   else
     dfe->_.table.is_cl_part_first = 0;
   ic->ic_spacing = dfe->_.table.hit_spacing;
-  return  dfe_vec_index_unit (dfe, dfe->_.table.hit_spacing) + sort_cost;
+  inx_cost =   dfe_vec_index_unit (dfe, dfe->_.table.hit_spacing) + sort_cost;
+  /* if leading constant, spacing is narrow but there is still at least one lookup from top, hence add one full lookup divided by vec size */
+  if (ic->ic_leading_constants)
+    inx_cost += dbe_key_unit_cost (key) / MAX (1, vec_sz);
+  dfe_cl_bottle_factor (dfe, &inx_cost);
+  return inx_cost;
 }
 
 
@@ -753,7 +785,7 @@ typedef struct fn_card_s
 fn_card_t fn_cards[] =
   {{"isiri_id", 1, 0.001},
    {"rdf_is_sub", 0.8, 0.01, FN_RESTR_ABS},
-   {"__rgs_ack", 1, 0,1},
+   {"__rgs_ack", 0, 0,1}, /* near always false, occurs inside a not, so sec cond always passes */
    {"__rgs_ack_cbk", 1, 0,1},
    {NULL, 0, 0}};
 
@@ -783,7 +815,7 @@ sqlo_fn_pred_unit (df_elt_t * pred, float * u1, float * a1, df_elt_t * in_tb)
 		  if (in_tb->dfe_arity < card)
 		    *a1 = card;
 		  else
-		    *a1 = card / in_tb->dfe_arity;
+		    *a1 = card;
 		}
 	      else
 		*a1 = card;
@@ -1923,11 +1955,13 @@ dfe_text_cost (df_elt_t * dfe, float *u1, float * a1, int text_order_anyway)
   float text_key_cost;
   int64 ot_tbl_size = dfe_scan_card (dfe);
   dbe_key_t * text_key = tb_text_key (ot_tbl);
+  if (!ot_tbl_size)
+    ot_tbl_size = 1; /* no /0 error */
   text_known = sqlo_text_estimate (dfe, &text_pred, &text_selectivity);
   if (text_pred)
     {
       if (text_known)
-	text_selectivity = text_selectivity / (ot_tbl_size | 1);
+	text_selectivity = text_selectivity / ot_tbl_size;
       else
 	text_selectivity = 0.001;
       n_text_hits = ot_tbl_size * text_selectivity;
