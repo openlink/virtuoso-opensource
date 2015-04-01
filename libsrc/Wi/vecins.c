@@ -905,6 +905,7 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
       rd1->rd_values = (caddr_t *) mp_alloc_box (ins_mp, sizeof (caddr_t) * n_parts, DV_ARRAY_OF_POINTER);
       for (icol = 0; icol < n_parts; icol++)
 	{
+	  dtp_t val_dtp;
 	  dbe_column_t *col = ik->ik_cols[icol];
 	  if (SSL_IS_VEC (ik->ik_slots[icol]))
 	    {
@@ -919,7 +920,8 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
 	      else
 		{
 		  caddr_t val = dc_mp_box_for_rd (ins_mp, dc, inx);
-		  if (DV_WIDE == col->col_sqt.sqt_col_dtp && DV_WIDE == DV_TYPE_OF (val))
+		  val_dtp = DV_TYPE_OF (val);
+		  if (DV_WIDE == col->col_sqt.sqt_col_dtp && DV_WIDE == val_dtp)
 		    val = mp_box_wide_as_utf8_char (ins_mp, val, (box_length (val) / sizeof (wchar_t)) - 1, DV_STRING);
 		  rd1->rd_values[icol] = val;
 		}
@@ -930,8 +932,18 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
 	    rd_vec_blob (itc, rd1, col, icol, ins_mp);
 
 	len_ck:
+	  val_dtp = DV_TYPE_OF (rd1->rd_values[icol]);
+	  if (col->col_sqt.sqt_non_null && DV_DB_NULL == val_dtp)
+	    {
+	      SET_THR_TMP_POOL (NULL);
+	      mp_free (ins_mp);
+	      itc->itc_ltrx->lt_status = LT_BLOWN_OFF;
+	      itc->itc_ltrx->lt_error = LTE_SQL_ERROR;
+	      sqlr_new_error ("22026", "INULL", "Insert of null for non null column %s , key %s",
+			      col->col_name, key->key_name);
+	    }
 	  if (key->key_not_null && !col->col_sqt.sqt_non_null && icol < key->key_n_significant
-	      && DV_DB_NULL == DV_TYPE_OF (rd1->rd_values[icol]))
+	      && DV_DB_NULL == val_dtp)
 	    {
 	      rds[inx] = (row_delta_t *) - 1;
 	      null_skipped = 1;
