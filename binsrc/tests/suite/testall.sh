@@ -166,7 +166,6 @@ else
     do
 	#tstexe=$tst.sh
 	RUN_TEST $cfg $tst
-	cd $VIRTUOSO_TEST
     done
 fi
 

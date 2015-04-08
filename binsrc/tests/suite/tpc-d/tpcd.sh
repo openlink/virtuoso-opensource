@@ -225,12 +225,18 @@ RUN $ISQL $PORT dba dba '"EXEC=shutdown"' VERBOSE=OFF PROMPT=OFF ERRORS=STDOUT
 
 START_SERVER
 
+curdir=`pwd`
+cd "${srcdir}" || {
+	LOG "***ABORTED: cannot change to source directory (${srcdir})"
+	exit 1
+}
+
 if [ z$1 = zload ]
 then
-  ./LOAD.sh $PORT dba dba tables
-  ./LOAD.sh $PORT dba dba indexes
-  ./LOAD.sh $PORT dba dba procedures
-  ./LOAD.sh $PORT dba dba load 1
+  ${srcdir}/LOAD.sh $PORT dba dba tables
+  ${srcdir}/LOAD.sh $PORT dba dba indexes
+  ${srcdir}/LOAD.sh $PORT dba dba procedures
+  ${srcdir}/LOAD.sh $PORT dba dba load 1
 
   LOG "Begin load MS SQL Server Data"
   RUN $ISQL $PORT PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < all_ms.sql
@@ -292,6 +298,7 @@ fi
 #
 
 #rm -rf tpcd.ini
+cd "${curdir}"
 
 RUN $ISQL $PORT dba dba '"EXEC=shutdown"' VERBOSE=OFF PROMPT=OFF ERRORS=STDOUT
 CHECK_LOG

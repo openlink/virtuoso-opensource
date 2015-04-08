@@ -20,8 +20,11 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
-VIRTUOSO_TEST=${VIRTUOSO_TEST-$VIRTDEV_HOME/binsrc/tests/suite}
-export VIRTUOSO_TEST
+VIRTUOSO_BUILD=$TOP
+VIRTDEV_HOME=${VIRTDEV_HOME-$VIRTUOSO_BUILD}
+VIRTUOSO_TEST=${VIRTUOSO_TEST-${top_srcdir}/binsrc/tests/suite}
+VIRTUOSO_BTEST=${VIRTUOSO_BTEST-$VIRTDEV_HOME/binsrc/tests/suite}
+export VIRTUOSO_TEST VIRTUOSO_BTEST
 . $VIRTUOSO_TEST/testlib.sh
 LOGFILE=tpcd.output
 
@@ -284,8 +287,8 @@ in
 	    ;;
 
 	zprocedures)
-	    echo $_ISQL create_procedures.sql >> $LOGFILE
-	    $_ISQL create_procedures.sql >> $LOGFILE
+	    echo $_ISQL $VIRTUOSO_TEST/tpc-d/create_procedures.sql >> $LOGFILE
+	    $_ISQL $VIRTUOSO_TEST/tpc-d/create_procedures.sql >> $LOGFILE
 	    if test $? -ne 0
 	      then
 	        LOG "*** ABORTED: LOAD.sh -- procedures.sql"

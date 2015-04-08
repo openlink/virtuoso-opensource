@@ -27,10 +27,10 @@ export LOGFILE
 PATH=".:../../../../mono/lib/1.0:../../../..//mono/bin:../../../tests/:$PATH"
 export PATH
 
-mcs -target:library sample.cs 
-mcs -target:library tax.cs 
-mcs -target:library Point.cs 
-mcs -target:library Point_ho_s_10.cs
+mcs -target:library ${srcdir}/sample.cs 
+mcs -target:library ${srcdir}/tax.cs 
+mcs -target:library ${srcdir}/Point.cs 
+mcs -target:library ${srcdir}/Point_ho_s_10.cs
 
 rm -f $LOGFILE
 rm -f clrsrv.db

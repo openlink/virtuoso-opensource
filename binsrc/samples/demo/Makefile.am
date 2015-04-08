@@ -42,10 +42,14 @@ TESTS_ENVIRONMENT= \
 	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
 	PORT=$(PORT) \
 	prefix="$(prefix)" \
-	TOP="$(TOP)"
+	TOP="$(TOP)" \
+	top_srcdir="$(abs_top_srcdir)" \
+	srcdir="$(abs_srcdir)"
 
 check-local:
-	env $(TESTS_ENVIRONMENT) $(SHELL) ./mkdemo.sh
+if WITH_ODS_VAD
+	env $(TESTS_ENVIRONMENT) $(SHELL) $(srcdir)/mkdemo.sh
+endif
 
 
 # ----------------------------------------------------------------------
@@ -60,7 +64,7 @@ doc_dav.vad: mkdoc.sh mksearch.sql drop.sql mkdemo.ini
 	HTMLDOC="$(HTMLDOC)" \
 	HOST=localhost \
 	MAKE="$(MAKE)" \
-	$(SHELL) ./mkdoc.sh
+	$(SHELL) $(srcdir)/mkdoc.sh
 
 
 # ----------------------------------------------------------------------
@@ -104,7 +108,7 @@ demo_dav.vad: make_vad.sh $(DEMO_DEPS) doc_dav.vad
 	HOME="$(TOP)" \
 	HTMLDOC="$(HTMLDOC)" \
 	HOST=localhost \
-	$(SHELL) ./make_vad.sh
+	$(SHELL) $(srcdir)/make_vad.sh
 
 
 
@@ -120,7 +124,9 @@ demo.db: mkdemo.sh mkdemo.ini doc_dav.vad demo_dav.vad
 	HTMLDOC="$(HTMLDOC)" \
 	prefix="$(prefix)" \
 	HOST=localhost \
-	$(SHELL) mkdemo.sh
+	top_srcdir="$(abs_top_srcdir)" \
+	srcdir="$(srcdir)" \
+	$(SHELL) $(srcdir)/mkdemo.sh
 
 
 # ----------------------------------------------------------------------
@@ -171,7 +177,7 @@ install-data-local:
 	$(do_subst) < "$(srcdir)/install_ini.sh.in" > "install_ini.sh"
 	chmod +x install_ini.sh
 	mkdir -p "$(DESTDIR)$(dbdir)"
-	$(SHELL) ./install_ini.sh database
+	$(SHELL) $(srcdir)/install_ini.sh database
 if WITH_HTMLDOC
 	mkdir -p "$(DESTDIR)$(htmldocdir)"
 	-$(INSTALL_DATA) $(top_srcdir)/docsrc/html_virt/*.html "$(DESTDIR)$(htmldocdir)"

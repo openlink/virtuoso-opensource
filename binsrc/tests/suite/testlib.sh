@@ -510,13 +510,13 @@ GENERATE_PORTS()
 if [ $run_tests_in_parallel -ne 0 ]
 then
   ROUND_ROBIN_LOCK_INDEX=""
-  create_round_robin_lock_file $VIRTUOSO_TEST/PORTS/port $virtuoso_port_range_start $virtuoso_port_range_end "port locked by test $test"
+  create_round_robin_lock_file $VIRTUOSO_BTEST/PORTS/port $virtuoso_port_range_start $virtuoso_port_range_end "port locked by test $test"
   GENERATED_PORT=$ROUND_ROBIN_LOCK_INDEX
 
   if [ $n_ports -gt 1 ]
   then
     ROUND_ROBIN_LOCK_INDEX=""
-    create_round_robin_lock_file $VIRTUOSO_TEST/PORTS/port $http_port_range_start $http_port_range_end "port locked by test $test for HTTP"
+    create_round_robin_lock_file $VIRTUOSO_BTEST/PORTS/port $http_port_range_start $http_port_range_end "port locked by test $test for HTTP"
     GENERATED_HTTPPORT=$ROUND_ROBIN_LOCK_INDEX  
   fi
 else
@@ -545,38 +545,40 @@ RUN_TEST()
   GET_TEST_DIR_SUFFIX $CURRENT_VIRTUOSO_CAPACITY $CURRENT_VIRTUOSO_TABLE_SCHEME
   test_dir_suffix=$GET_TEST_DIR_SUFFIX_RESULT
   test_dir=${test}.$test_dir_suffix
-  rm -rf $VIRTUOSO_TEST/$test_dir
-  mkdir $VIRTUOSO_TEST/$test_dir
+  rm -rf $VIRTUOSO_BTEST/$test_dir
+  mkdir $VIRTUOSO_BTEST/$test_dir
   LOGFILE=$test.output
   export LOGFILE
   
-  cp $CFGFILE $VIRTUOSO_TEST/$test_dir
-  cp $TESTCFGFILE $VIRTUOSO_TEST/$test_dir
+  cp $CFGFILE $VIRTUOSO_BTEST/$test_dir
+  cp $TESTCFGFILE $VIRTUOSO_BTEST/$test_dir
 
   if [ -s $VIRTUOSO_TEST/ident.txt ]
   then
-    cp $VIRTUOSO_TEST/ident.txt $VIRTUOSO_TEST/$test_dir
+    cp $VIRTUOSO_TEST/ident.txt $VIRTUOSO_BTEST/$test_dir
   else
     MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
     START_SERVER $PORT 1000
-    GENERATE_RELEASE_IDENT $PORT $VIRTUOSO_TEST/ident.txt
+    GENERATE_RELEASE_IDENT $PORT $VIRTUOSO_BTEST/ident.txt
     STOP_SERVER
-    cp $VIRTUOSO_TEST/ident.txt $VIRTUOSO_TEST/$test_dir
+    cp $VIRTUOSO_BTEST/ident.txt $VIRTUOSO_BTEST/$test_dir
   fi
   
   GENERATE_PORTS 2
   PORT=$GENERATED_PORT
   HTTPPORT=$GENERATED_HTTPPORT
   echo "test started: $test, Virtuoso port $PORT, HTTP port $HTTPPORT"
-  cd $VIRTUOSO_TEST/$test_dir
+  curdir=`pwd`
+  cd $VIRTUOSO_BTEST/$test_dir
   export SILENT=$silent
   if [ "$silent" = "1" ]
   then
-      $VIRTUOSO_TEST/$test_exe $* > $VIRTUOSO_TEST/$test_dir/stdout 2>&1
+      $VIRTUOSO_BTEST/$test_exe $* > $VIRTUOSO_BTEST/$test_dir/stdout 2>&1
   else
-      $VIRTUOSO_TEST/$test_exe $* 
+      $VIRTUOSO_BTEST/$test_exe $*
   fi
   echo "test finished: $test"
+  cd "${curdir}"
 }
 
 RUN_SQL_TEST()
@@ -598,26 +600,26 @@ RUN_SQL_TEST()
   GET_TEST_DIR_SUFFIX $CURRENT_VIRTUOSO_CAPACITY $CURRENT_VIRTUOSO_TABLE_SCHEME
   test_dir_suffix=$GET_TEST_DIR_SUFFIX_RESULT
   test_dir=${test}.$test_dir_suffix  
-  rm -rf $VIRTUOSO_TEST/$test_dir
-  mkdir $VIRTUOSO_TEST/$test_dir
+  rm -rf $VIRTUOSO_BTEST/$test_dir
+  mkdir $VIRTUOSO_BTEST/$test_dir
   LOGFILE=$test.output
   export LOGFILE
   export SILENT=$silent
 
-  cp $CFGFILE $VIRTUOSO_TEST/$test_dir
-  cp $TESTCFGFILE $VIRTUOSO_TEST/$test_dir
-  cp $VIRTUOSO_TEST/words.esp $VIRTUOSO_TEST/$test_dir
-  cp $VIRTUOSO_TEST/spanish.coll $VIRTUOSO_TEST/$test_dir
+  cp $CFGFILE $VIRTUOSO_BTEST/$test_dir
+  cp $TESTCFGFILE $VIRTUOSO_BTEST/$test_dir
+  cp $VIRTUOSO_TEST/words.esp $VIRTUOSO_BTEST/$test_dir
+  cp $VIRTUOSO_TEST/spanish.coll $VIRTUOSO_BTEST/$test_dir
 
   if [ -s $VIRTUOSO_TEST/ident.txt ]
   then
-    cp $VIRTUOSO_TEST/ident.txt $VIRTUOSO_TEST/$test_dir
+    cp $VIRTUOSO_TEST/ident.txt $VIRTUOSO_BTEST/$test_dir
   else
     MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
     START_SERVER $PORT 1000
-    GENERATE_RELEASE_IDENT $PORT $VIRTUOSO_TEST/ident.txt
+    GENERATE_RELEASE_IDENT $PORT $VIRTUOSO_BTEST/ident.txt
     STOP_SERVER
-    cp $VIRTUOSO_TEST/ident.txt $VIRTUOSO_TEST/$test_dir
+    cp $VIRTUOSO_BTEST/ident.txt $VIRTUOSO_BTEST/$test_dir
   fi
   
   GENERATE_PORTS 2
@@ -626,7 +628,8 @@ RUN_SQL_TEST()
   HTTPPORT=$GENERATED_HTTPPORT
 
   echo "test started: $test, Virtuoso port $PORT, HTTP port $HTTPPORT"
-  cd $VIRTUOSO_TEST/$test_dir
+  curdir=`pwd`
+  cd $VIRTUOSO_BTEST/$test_dir
   
   BANNER "STARTED TEST " $test
   MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
@@ -644,6 +647,7 @@ RUN_SQL_TEST()
   CHECK_LOG
   
   echo "test finished: $test"
+  cd "${curdir}"
 }
 
 RUN_DIFF()

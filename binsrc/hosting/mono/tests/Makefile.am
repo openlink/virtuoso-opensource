@@ -22,7 +22,7 @@
 noinst_SCRIPTS = tclrsrv.sh
 
 check:
-	./tclrsrv.sh
+	env srcdir="$(abs_srcdir)" $(srcdir)/tclrsrv.sh
 
 clean-local:
 	rm -rf *.dll

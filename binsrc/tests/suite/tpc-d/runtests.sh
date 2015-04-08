@@ -20,5 +20,5 @@
 #  
 #  
 
-./tpcd.sh load
-./tpcd.sh run
+${srcdir}/tpcd.sh load
+${srcdir}/tpcd.sh run

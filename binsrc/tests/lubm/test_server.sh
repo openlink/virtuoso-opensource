@@ -38,7 +38,7 @@ case $SERVER in
 	  DBLOGFILE=virtuoso.trx
 	  DELETEMASK="virtuoso.lck $DBLOGFILE $DBFILE virtuoso.tdb virtuoso.ttr"
 	  SRVMSGLOGFILE="virtuoso.log"
-	  TESTCFGFILE=virtuoso-1111.ini
+	  TESTCFGFILE=${srcdir}/virtuoso-1111.ini
           #TESTCFGFILEDS1=virtuoso-1111.ini
           #TESTCFGFILEDS2=virtuoso-1112.ini
 	  BACKUP_DUMP_OPTION=+backup-dump
@@ -56,7 +56,7 @@ case $SERVER in
 	  DBLOGFILE=wi.trx
 	  DELETEMASK="`ls wi.* witemp.* | grep -v wi.err`"
 	  SRVMSGLOGFILE="wi.err"
-	  TESTCFGFILE=witest.cfg
+	  TESTCFGFILE=${srcdir}/witest.cfg
           #TESTCFGFILEDS1=witest.cfg
           #TESTCFGFILEDS2=witest.cfg
 	  BACKUP_DUMP_OPTION=-d
@@ -88,5 +88,5 @@ then
   echo BACKUP_DUMP_OPTION = $BACKUP_DUMP_OPTION
   echo CRASH_DUMP_OPTION = $CRASH_DUMP_OPTION
 else
-  ./tlubm.sh
+  ${srcdir}/tlubm.sh
 fi
