@@ -5849,7 +5849,8 @@ sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, sparp_trav_state_t 
               int sub_memb_ctr, bad_subcase_found = 0;
               if (!filt_is_detached)
                 {
-/* If some branches are inappropriate for that trick then we don't detach the external filter in order to guarantee that results of all branches are filtered somewhere outside. */
+/* If some branches are inappropriate for that trick then we don't remove the external filter in order to guarantee that results of all branches are filtered somewhere outside.
+Github issue #212 had shown that in that case the external filter should be detached before copying and attached back to its place, not simply kept intact */
                   DO_BOX_FAST_REV (SPART *, sub_memb, sub_memb_ctr, sub_gp->_.gp.members)
                     {
                       if ((SPAR_GP != SPART_TYPE (sub_memb)) || (0 != sub_memb->_.gp.subtype))
@@ -5862,7 +5863,7 @@ sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, sparp_trav_state_t 
                 }
               DO_BOX_FAST_REV (SPART *, sub_memb, sub_memb_ctr, sub_gp->_.gp.members)
                 {
-                  if (!bad_subcase_found && !filt_is_detached)
+                  if (!filt_is_detached /* && !bad_subcase_found --- fix for github #212, note attach below */)
                     {
                       sparp_gp_detach_filter (sparp, curr, filt_ctr, NULL);
                       filt_is_detached = 1;
@@ -5871,6 +5872,8 @@ sparp_gp_trav_localize_filters (sparp_t *sparp, SPART *curr, sparp_trav_state_t 
                   sparp_gp_attach_filter (sparp, sub_memb, filter_clone, 0, NULL);
                 }
               END_DO_BOX_FAST_REV;
+              if (bad_subcase_found && filt_is_detached) /* Fix for github #212 */
+                sparp_gp_attach_filter (sparp, curr, filt, filt_ctr, NULL);
               continue;
             }
           if (!filt_is_detached)
