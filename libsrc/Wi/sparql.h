@@ -498,7 +498,9 @@ extern ptrlong sparp_tr_usage_natural_restrictions[SPART_TRIPLE_FIELDS_COUNT];
 #define SPART_GRAPH_NOT_GROUP		0x1081	/*!< == SPART_GRAPH_NOT_FROM | SPART_GRAPH_GROUP_BIT */
 #define SPART_GRAPH_NOT_NAMED		0x1090
 
+#define SPARP_EQUIV_COUNT(sparp) ((sparp)->sparp_sg->sg_equiv_count)
 #define SPARP_EQUIV(sparp,idx) ((sparp)->sparp_sg->sg_equivs[(idx)])
+#define SPARP_SINV_COUNT(sparp) ((sparp)->sparp_sg->sg_sinv_count)
 #define SPARP_SINV(sparp,idx) ((sparp)->sparp_sg->sg_sinvs[(idx)])
 
 #ifdef DEBUG

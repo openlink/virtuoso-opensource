@@ -116,8 +116,9 @@ sparp_gp_trav_list_subquery_retval_names (sparp_t *sparp, SPART *curr, sparp_tra
 }
 
 typedef struct list_nonaggregate_retvals_s {
-  dk_set_t names;
-  ptrlong agg_found;
+  dk_set_t names;			/*!< List of variable names found */
+  ptrlong agg_found;			/*!< Flags whether any aggreagte is found in the searched expressions */
+  dk_set_t aggs_with_stars;		/*!< List of aggregate function calls with _STAR, like COUNT(*) or COUNT (DISTINCT *) */
   } list_nonaggregate_retvals_t;
 
 int
@@ -145,6 +146,8 @@ sparp_gp_trav_list_nonaggregate_retvals (sparp_t *sparp, SPART *curr, sparp_trav
       if (curr->_.funcall.agg_mode)
         {
           ((list_nonaggregate_retvals_t *)(common_env))->agg_found = 1;
+          if ((1 == BOX_ELEMENTS (curr->_.funcall.argtrees)) && ((SPART *)((ptrlong)_STAR) == curr->_.funcall.argtrees[0]))
+            t_set_push (&(((list_nonaggregate_retvals_t *)(common_env))->aggs_with_stars), curr);
           return SPAR_GPT_NODOWN;
         }
       break;
@@ -199,8 +202,7 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
   dk_set_t new_vars = NULL;
   SPART **retvals = query->_.req_top.retvals;
   sparp_preprocess_obys (sparp, query);
-  lnar.agg_found = 0;
-  lnar.names = NULL;
+  memset (&lnar, 0, sizeof (list_nonaggregate_retvals_t));
   if (IS_BOX_POINTER (retvals))
     {
 #if 0
@@ -249,16 +251,17 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
               if (0 > dk_set_position_of_string (names_in_groupings, varname))
                 spar_error (sparp, "Variable ?%.200s is used in the result set outside aggregate and not mentioned in GROUP BY clause", varname);
             }
-          return;
         }
-      while (NULL != lnar.names)
+      if (NULL == query->_.req_top.groupings)
         {
-          caddr_t varname = (caddr_t)t_set_pop (&(lnar.names));
-          SPART *var = spar_make_variable (sparp, varname);
-          t_set_push (&new_vars, var);
+          DO_SET (caddr_t, varname, &(lnar.names))
+            {
+              SPART *var = spar_make_variable (sparp, varname);
+              t_set_push (&new_vars, var);
+            }
+          END_DO_SET()
+          query->_.req_top.groupings = (SPART **)t_revlist_to_array_or_null (new_vars);
         }
-      query->_.req_top.groupings = (SPART **)t_revlist_to_array_or_null (new_vars);
-      return;
     }
   {
     sparp_trav_state_t stss [SPARP_MAX_SYNTDEPTH+2];
@@ -270,7 +273,7 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
   }
   if (((SPART **)_STAR == retvals) && (NULL == lnar.names) && sparp->sparp_sg->sg_signal_void_variables)
     spar_error (sparp, "The list of return values contains '*' but the pattern does not contain variables");
-  while (NULL != binds_revlist)
+  while (NULL != lnar.aggs_with_stars)
     {
       SPART *call = (SPART *)t_set_pop (&(lnar.aggs_with_stars));
       dk_set_t args = NULL;
@@ -297,13 +300,13 @@ sparp_expand_top_retvals (sparp_t *sparp, SPART *query, int safely_copy_all_vars
     {
       t_set_push (&new_vars, sparp_tree_full_copy (sparp, bind, query->_.req_top.pattern));
     }
-  while (NULL != lnar.names)
+  END_DO_SET()
+  DO_SET (caddr_t, varname, &(lnar.names))
     {
-      caddr_t varname = (caddr_t)t_set_pop (&(lnar.names));
       SPART *var = spar_make_variable (sparp, varname);
       t_set_push (&new_vars, var);
     }
-
+  END_DO_SET()
   if ((SPART **)_STAR == retvals)
     {
       if (NULL == new_vars)

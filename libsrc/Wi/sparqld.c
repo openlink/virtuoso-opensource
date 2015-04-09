@@ -764,11 +764,27 @@ static const char *sparql11aggregates[] = { "AVG", "COUNT", "GROUP_CONCAT", "MAX
                 colon[0] = ':';
               }
           }
+        if (!strcmp (fname, "SQLVAL::_STAR"))
+          {
+            ssg_puts (" *");
+            return;
+          }
         ssg_sdprin_qname (ssg, (SPART *)(fname));
 fname_printed:
         ssg_putchar ('(');
         ssg->ssg_indent++;
+        if (tree->_.funcall.agg_mode)
+          {
+            if (DISTINCT_L == tree->_.funcall.agg_mode)
+              ssg_puts (" DISTINCT");
+            if ((1 == BOX_ELEMENTS (tree->_.funcall.argtrees)) && ((SPART *)((ptrlong)_STAR) == tree->_.funcall.argtrees[0]))
+              {
+                ssg_puts (" *");
+                goto args_printed; /* see below */
+              }
+          }
         ssg_sdprint_tree_list (ssg, tree->_.funcall.argtrees, ',');
+args_printed:
         ssg_putchar (')');
         ssg->ssg_indent--;
         return;

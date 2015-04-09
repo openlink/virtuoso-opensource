@@ -4854,7 +4854,7 @@ ssg_prin_function_name (spar_sqlgen_t *ssg, ccaddr_t name)
   delim = strstr (name, "::");
   if (NULL != delim)
     name = delim + 2;
-  if (name == strstr (name, "bif:"))
+  if (!strncmp (name, "bif:", 4))
     {
       name = name + 4;
       if ('_' == name[0])
@@ -4874,11 +4874,15 @@ ssg_prin_function_name (spar_sqlgen_t *ssg, ccaddr_t name)
       else
         ssg_puts(name); /*not ssg_prin_id (ssg, name);*/
     }
-  else if (name == strstr (name, "sql:"))
+  else if (!strncmp (name, "sql:", 4))
     {
       name = name + 4;
       ssg_puts ("DB.DBA.");
       ssg_puts(name); /*not ssg_prin_id (ssg, name);*/
+    }
+  else if (!strcmp (name, "_STAR"))
+    {
+      ssg_puts_comment ("expansion of '*' argument:");
     }
   else if ('\0' != name[0])
     {
@@ -5308,6 +5312,30 @@ ssg_print_bool_of_plain_box (spar_sqlgen_t *ssg, caddr_t val)
 }
 
 void
+ssg_print_star_retvals_by_selid (spar_sqlgen_t *ssg, caddr_t selid)
+{
+  int needs_comma, eq_ctr, eq_count;
+  ssg_puts (" (");
+  ssg->ssg_indent++;
+  eq_count = SPARP_EQUIV_COUNT (ssg->ssg_sparp);
+  for (eq_ctr = 0; eq_ctr < eq_count; eq_ctr++)
+    {
+      sparp_equiv_t *eq = SPARP_EQUIV (ssg->ssg_sparp, eq_ctr);
+      if ((NULL == eq) || eq->e_deprecated || strcmp (eq->e_gp->_.gp.selid, selid))
+        continue;
+      if (needs_comma)
+        ssg_putchar (',');
+      else
+        needs_comma = 1;
+      ssg_print_equiv (ssg, selid, eq, NULL_ASNAME);
+    }
+  if (!needs_comma)
+    ssg_puts ("1");
+  ssg->ssg_indent--;
+  ssg_puts (")");
+}
+
+void
 ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, const char *asname)
 {
   ssg_valmode_t native = NULL;
@@ -5413,7 +5441,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
       }
     case SPAR_FUNCALL:
       {
-        int curr_arg_is_long, prev_arg_is_long = 0, arg_ctr, arg_count = BOX_ELEMENTS (tree->_.funcall.argtrees);
+        int bigtext, curr_arg_is_long, prev_arg_is_long = 0, arg_ctr, arg_count = BOX_ELEMENTS (tree->_.funcall.argtrees);
         xqf_str_parser_desc_t *parser_desc;
         if (NULL == native)
           native = sparp_rettype_of_function (ssg->ssg_sparp, tree->_.funcall.qname, tree);
@@ -5482,24 +5510,32 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
             goto print_asname;
           }
         ssg_putchar (' ');
+        bigtext =
+          ((NULL != strstr (tree->_.funcall.qname, "bif:")) ||
+           (NULL != strstr (tree->_.funcall.qname, "sql:")) ||
+           (arg_count > 3) );
         ssg_prin_function_name (ssg, tree->_.funcall.qname);
         ssg_puts (" (");
+        ssg->ssg_indent++;
         if (tree->_.funcall.agg_mode)
           {
-            if ((uname_SPECIAL_cc_bif_c_COUNT == tree->_.funcall.qname) && ((SPART *)((ptrlong)1) == tree->_.funcall.argtrees[0]))
-              arg_count = 1; /* Trick to handle SELECT COUNT FROM ... that is translated to SELECT COUNT (1, all vars) */
             if (DISTINCT_L == tree->_.funcall.agg_mode)
               ssg_puts (" DISTINCT");
+            if ((SPART *)((ptrlong)_STAR) == tree->_.funcall.argtrees[0])
+              {
+                ssg_print_star_retvals_by_selid (ssg, ssg->ssg_tree->_.req_top.retselid);
+                goto args_are_printed; /* see below */
+              }
           }
-        ssg->ssg_indent++;
         for (arg_ctr = 0; arg_ctr < arg_count; arg_ctr++)
           {
             SPART *arg = tree->_.funcall.argtrees[arg_ctr];
             ssg_valmode_t argtype = sparp_argtype_of_function (ssg->ssg_sparp, tree->_.funcall.qname, tree, arg_ctr);
             if (arg_ctr > 0)
               ssg_putchar (',');
-            curr_arg_is_long = SPAR_FUNCALL_ARG_IS_LONG (arg);
-            if (curr_arg_is_long || prev_arg_is_long) ssg_newline (0); else ssg_putchar (' ');
+            if (!bigtext)
+              curr_arg_is_long = SPAR_FUNCALL_ARG_IS_LONG (arg);
+            if (bigtext || curr_arg_is_long || prev_arg_is_long) ssg_newline (0); else ssg_putchar (' ');
             if (SSG_VALMODE_AUTO == argtype)
               {
                 ssg_valmode_t arg_native = sparp_expn_native_valmode (ssg->ssg_sparp, arg);
@@ -5512,6 +5548,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
           }
         if (tree->_.funcall.agg_mode && (uname_SPECIAL_cc_bif_c_AVG == tree->_.funcall.qname))
           ssg_puts (" + 0.0");
+args_are_printed:
         ssg->ssg_indent--;
         ssg_putchar (')');
         goto print_asname;
@@ -7845,7 +7882,7 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
       }
     case SPAR_FUNCALL:
       {
-        int bigtext, arg_ctr, arg_count = BOX_ELEMENTS (tree->_.funcall.argtrees);
+        int bigtext, curr_arg_is_long, prev_arg_is_long = 0, arg_ctr, arg_count = BOX_ELEMENTS (tree->_.funcall.argtrees);
         xqf_str_parser_desc_t *parser_desc;
         ssg_valmode_t native = sparp_rettype_of_function (ssg->ssg_sparp, tree->_.funcall.qname, tree);
         if (((SSG_VALMODE_SHORT_OR_LONG == needed) && ((SSG_VALMODE_LONG == native) || (SSG_VALMODE_NUM == native) || (SSG_VALMODE_BOOL == native))) ||
@@ -7947,10 +7984,13 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
         ssg_puts (" (");
         if (tree->_.funcall.agg_mode)
           {
-            if ((uname_SPECIAL_cc_bif_c_COUNT == tree->_.funcall.qname) && ((SPART *)((ptrlong)1) == tree->_.funcall.argtrees[0]))
-              arg_count = 1; /* Trick to handle SELECT COUNT FROM ... that is translated to SELECT COUNT (1, all vars) */
             if (DISTINCT_L == tree->_.funcall.agg_mode)
               ssg_puts (" DISTINCT");
+            if ((SPART *)((ptrlong)_STAR) == tree->_.funcall.argtrees[0])
+              {
+                ssg_print_star_retvals_by_selid (ssg, ssg->ssg_tree->_.req_top.retselid);
+                goto args_are_printed; /* see below */
+              }
           }
         ssg->ssg_indent++;
         for (arg_ctr = 0; arg_ctr < arg_count; arg_ctr++)
@@ -7959,7 +7999,9 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
             ssg_valmode_t argtype = sparp_argtype_of_function (ssg->ssg_sparp, tree->_.funcall.qname, tree, arg_ctr);
             if (arg_ctr > 0)
               ssg_putchar (',');
-            if (bigtext) ssg_newline (0); else ssg_putchar (' ');
+            if (!bigtext)
+              curr_arg_is_long = SPAR_FUNCALL_ARG_IS_LONG (arg);
+            if (bigtext || curr_arg_is_long || prev_arg_is_long) ssg_newline (0); else ssg_putchar (' ');
             if (SSG_VALMODE_AUTO == argtype)
               {
                 ssg_valmode_t arg_native = sparp_expn_native_valmode (ssg->ssg_sparp, arg);
@@ -7968,10 +8010,12 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
               }
             else
               ssg_print_retval_simple_expn (ssg, gp, arg, argtype, NULL_ASNAME);
+            prev_arg_is_long = curr_arg_is_long;
           }
         if (tree->_.funcall.agg_mode && (uname_SPECIAL_cc_bif_c_AVG == tree->_.funcall.qname))
           ssg_puts (" + 0.0");
         ssg->ssg_indent--;
+args_are_printed:
         ssg_putchar (')');
         goto print_asname;
       }
