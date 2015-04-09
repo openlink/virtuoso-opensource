@@ -155,7 +155,7 @@ select_node_input_subq_vec (select_node_t * sel, caddr_t * inst, caddr_t * state
 	  if (!(bits[ext_set_no >> 3] & (1 << (ext_set_no & 7))))
 	    {
 	      bits[ext_set_no >> 3] |= 1 << (ext_set_no & 7);
-	      dc_assign (inst, sel->sel_scalar_ret, ext_set_no, sel->sel_out_slots[0], row);
+	      dc_assign_copy (inst, sel->sel_scalar_ret, ext_set_no, sel->sel_out_slots[0], row);
 	    }
 	}
     }
@@ -442,6 +442,11 @@ ins_vec_subq (instruction_t * ins, caddr_t * inst)
   char save_lock = qi->qi_lock_mode;
   int n_bytes = ALIGN_8 (n_sets) / 8;
   select_node_t *sel = qr->qr_select_node;
+  if (sel && sel->sel_scalar_ret)
+    {
+      data_col_t *scalar_ret = QST_BOX (data_col_t *, inst, sel->sel_scalar_ret->ssl_index);
+      dc_reset (scalar_ret);
+    }
   if (sel)
     {
       bits = QST_BOX (db_buf_t, inst, qr->qr_select_node->sel_vec_set_mask);
