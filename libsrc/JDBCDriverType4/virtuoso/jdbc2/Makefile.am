@@ -60,94 +60,94 @@ jdbc4_1_defs = -DJDK_VER=17 -Djdbc2=jdbc4 '-DVIRT_JDBC_VER="4.1"'
 # Sources
 ###########################################
 infiles = \
-	Driver.java \
-	VirtuosoAsciiInputStream.java \
-	VirtuosoBlob.java \
-	VirtuosoBlobStream.java \
-	VirtuosoCallableStatement.java \
-	VirtuosoClobStream.java \
-	VirtuosoColumn.java \
-	VirtuosoConnection.java \
-	VirtuosoDatabaseMetaData.java \
-	VirtuosoException.java \
-	VirtuosoExplicitString.java \
-	VirtuosoExtendedString.java \
-	VirtuosoFuture.java \
-	VirtuosoInputStream.java \
-	VirtuosoNullParameter.java \
-	VirtuosoOutputStream.java \
-	VirtuosoPreparedStatement.java \
-	VirtuosoRdfBox.java \
-	VirtuosoPoint.java \
-	VirtuosoResultSet.java \
-	VirtuosoResultSetMetaData.java \
-	VirtuosoRow.java \
-	VirtuosoStatement.java \
-	VirtuosoTypes.java \
-	VirtuosoDate.java \
-	VirtuosoTime.java \
-	VirtuosoTimestamp.java
+	$(srcdir)/Driver.java \
+	$(srcdir)/VirtuosoAsciiInputStream.java \
+	$(srcdir)/VirtuosoBlob.java \
+	$(srcdir)/VirtuosoBlobStream.java \
+	$(srcdir)/VirtuosoCallableStatement.java \
+	$(srcdir)/VirtuosoClobStream.java \
+	$(srcdir)/VirtuosoColumn.java \
+	$(srcdir)/VirtuosoConnection.java \
+	$(srcdir)/VirtuosoDatabaseMetaData.java \
+	$(srcdir)/VirtuosoException.java \
+	$(srcdir)/VirtuosoExplicitString.java \
+	$(srcdir)/VirtuosoExtendedString.java \
+	$(srcdir)/VirtuosoFuture.java \
+	$(srcdir)/VirtuosoInputStream.java \
+	$(srcdir)/VirtuosoNullParameter.java \
+	$(srcdir)/VirtuosoOutputStream.java \
+	$(srcdir)/VirtuosoPreparedStatement.java \
+	$(srcdir)/VirtuosoRdfBox.java \
+	$(srcdir)/VirtuosoPoint.java \
+	$(srcdir)/VirtuosoResultSet.java \
+	$(srcdir)/VirtuosoResultSetMetaData.java \
+	$(srcdir)/VirtuosoRow.java \
+	$(srcdir)/VirtuosoStatement.java \
+	$(srcdir)/VirtuosoTypes.java \
+	$(srcdir)/VirtuosoDate.java \
+	$(srcdir)/VirtuosoTime.java \
+	$(srcdir)/VirtuosoTimestamp.java
 
 in1files = \
-	BatchUpdateException.java \
-	Types.java \
-	VirtuosoClob.java
+	$(srcdir)/BatchUpdateException.java \
+	$(srcdir)/Types.java \
+	$(srcdir)/VirtuosoClob.java
 
 in3files = \
-	CallableStatementWrapper.java \
-	Closeable.java \
-	ConnectionWrapper.java \
-	PreparedStatementWrapper.java \
-	ResultSetWrapper.java \
-	StatementWrapper.java \
-	VirtuosoArray.java \
-	VirtuosoConnectionPoolDataSource.java \
-	VirtuosoDataSource.java \
-	VirtuosoDataSourceFactory.java \
-	VirtuosoParameterMetaData.java \
-	VirtuosoPooledConnection.java \
-	VirtuosoPoolManager.java \
-	VirtuosoPoolStatistic.java \
-	VirtuosoXAConnection.java \
-	VirtuosoXADataSource.java \
-	VirtuosoXAResource.java \
-	VirtuosoXid.java \
-	XAResourceManager.java \
-	XATransaction.java
+	$(srcdir)/CallableStatementWrapper.java \
+	$(srcdir)/Closeable.java \
+	$(srcdir)/ConnectionWrapper.java \
+	$(srcdir)/PreparedStatementWrapper.java \
+	$(srcdir)/ResultSetWrapper.java \
+	$(srcdir)/StatementWrapper.java \
+	$(srcdir)/VirtuosoArray.java \
+	$(srcdir)/VirtuosoConnectionPoolDataSource.java \
+	$(srcdir)/VirtuosoDataSource.java \
+	$(srcdir)/VirtuosoDataSourceFactory.java \
+	$(srcdir)/VirtuosoParameterMetaData.java \
+	$(srcdir)/VirtuosoPooledConnection.java \
+	$(srcdir)/VirtuosoPoolManager.java \
+	$(srcdir)/VirtuosoPoolStatistic.java \
+	$(srcdir)/VirtuosoXAConnection.java \
+	$(srcdir)/VirtuosoXADataSource.java \
+	$(srcdir)/VirtuosoXAResource.java \
+	$(srcdir)/VirtuosoXid.java \
+	$(srcdir)/XAResourceManager.java \
+	$(srcdir)/XATransaction.java
 
 in4files = \
-	LRUCache.java \
-	VirtuosoFNSException.java
+	$(srcdir)/LRUCache.java \
+	$(srcdir)/VirtuosoFNSException.java
 
 utilfiles = \
-	MD5.java \
-	Vector.java \
-	VectorOfDouble.java \
-	VectorOfFloat.java \
-	VectorOfLong.java
+	$(srcdir)/MD5.java \
+	$(srcdir)/Vector.java \
+	$(srcdir)/VectorOfDouble.java \
+	$(srcdir)/VectorOfFloat.java \
+	$(srcdir)/VectorOfLong.java
 
 util3files = \
-	BaseMessage.java \
-	OPLHeapBlob.java \
-	OPLHeapClob.java \
-	OPLMessage_u.java \
-	messages_u.java
+	$(srcdir)/BaseMessage.java \
+	$(srcdir)/OPLHeapBlob.java \
+	$(srcdir)/OPLHeapClob.java \
+	$(srcdir)/OPLMessage_u.java \
+	$(srcdir)/messages_u.java
 
 util4files = \
-	OPLHeapNClob.java
+	$(srcdir)/OPLHeapNClob.java
 
 
 javaxfiles = \
-	BaseRowSet.java \
-	OPLCachedRowSet.java \
-	OPLJdbcRowSet.java \
-	OPLMessage_x.java \
-	OPLRowSetMetaData.java \
-	messages_x.java
+	$(srcdir)/BaseRowSet.java \
+	$(srcdir)/OPLCachedRowSet.java \
+	$(srcdir)/OPLJdbcRowSet.java \
+	$(srcdir)/OPLMessage_x.java \
+	$(srcdir)/OPLRowSetMetaData.java \
+	$(srcdir)/messages_x.java
 
 sqlfiles = \
-	ExtendedString.java \
-	RdfBox.java
+	$(srcdir)/ExtendedString.java \
+	$(srcdir)/RdfBox.java
 
 
 ###########################################
