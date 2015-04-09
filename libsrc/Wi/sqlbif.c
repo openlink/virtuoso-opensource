@@ -10450,7 +10450,7 @@ box_cast_to (caddr_t *qst, caddr_t data, dtp_t data_dtp,
 caddr_t
 bif_convert (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  ST *dtp = (ST *) QST_GET (qst, args[0]);
+  ST *dtp = (ST *) (BOX_ELEMENTS (args) > 0 ? QST_GET (qst, args[0]) : NULL);
   caddr_t data = bif_arg (qst, args, 1, "convert");
   dtp_t arg_dtp = DV_TYPE_OF (data);
 
