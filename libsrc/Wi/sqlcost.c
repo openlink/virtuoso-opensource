@@ -599,27 +599,6 @@ dfe_vec_index_unit (df_elt_t * dfe, float spacing)
 void
 dfe_cl_bottle_factor (df_elt_t * dfe, float * unit_ret)
 {
-#ifdef CL6
-  /* if multipart key with a constant or low card value in partitioning col, all traffic will go via the one place, so penalize this by 1/n partitions */
-  df_elt_t * part_value, *pred;
-  dbe_key_t * key = dfe->_.table.key;
-  key_partition_def_t * kpd = key->key_partition;
-  dbe_column_t * part_col;
-  if (dfe->_.table.in_arity < 1000)
-    return; /* if few lookups, no greate gain in paralllelism, so no penalty for passing then through a single partition */
-  if (CL_RUN_LOCAL == cl_run_local_only || !kpd || clm_replicated == kpd->kpd_map
-      || !kpd->kpd_cols || BOX_ELEMENTS (kpd->kpd_cols) < 1)
-    return;
-  part_col = sch_id_to_column (wi_inst.wi_schema, kpd->kpd_cols[0]->cp_col_id);
-  pred = sqlo_key_part_best (part_col, dfe->_.table.col_preds, 0);
-  if (!pred || !dfe_is_eq_pred (pred))
-    return;
-    part_value = pred->_.bin.right;
-    if (DFE_CONST == part_value->dfe_type)
-      {
-	*unit_ret = *unit_ret * kpd->kpd_map->clm_distinct_slices;
-      }
-#endif
 }
 
 int enable_vec_cost = 1;
