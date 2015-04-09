@@ -24,7 +24,7 @@ hosting_LTLIBRARIES = hosting_python.la
 endif
 
 hosting_python_la_SOURCES	= hosting_python.c \
-			          $(top_srcdir)/libsrc/plugin/import_gate_virtuoso.c
+			          $(top_builddir)/libsrc/plugin/import_gate_virtuoso.c
 
 GEN=$(SHELL) ${top_srcdir}/bin/generate
 

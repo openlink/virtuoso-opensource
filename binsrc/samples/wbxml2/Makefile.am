@@ -30,7 +30,7 @@ endif
 
 wbxml2_la_SOURCES = \
 	wbxml2.c \
-	$(top_srcdir)/libsrc/plugin/import_gate_virtuoso.c
+	$(top_builddir)/libsrc/plugin/import_gate_virtuoso.c
 
 wbxml2_la_CFLAGS  = @VIRT_AM_CFLAGS@
 wbxml2_la_CFLAGS  += -I$(top_srcdir)/libsrc

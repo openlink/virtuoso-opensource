@@ -34,25 +34,25 @@ endif
 
 
 JENA_SRC= \
-	virtuoso_driver/Version.java \
-	virtuoso_driver/VirtBulkUpdateHandler.java \
-	virtuoso_driver/VirtDataSource.java \
-	virtuoso_driver/VirtGraph.java \
-	virtuoso_driver/VirtInfGraph.java \
-	virtuoso_driver/VirtModel.java \
-	virtuoso_driver/VirtPrefixMapping.java \
-	virtuoso_driver/VirtResSetIter.java \
-	virtuoso_driver/VirtTransactionHandler.java \
-	virtuoso_driver/VirtuosoQueryEngine.java \
-	virtuoso_driver/VirtuosoQueryExecutionFactory.java \
-	virtuoso_driver/VirtuosoQueryExecution.java \
-	virtuoso_driver/VirtuosoUpdateFactory.java \
-	virtuoso_driver/VirtuosoUpdateRequest.java
+	$(srcdir)/virtuoso_driver/Version.java \
+	$(srcdir)/virtuoso_driver/VirtBulkUpdateHandler.java \
+	$(srcdir)/virtuoso_driver/VirtDataSource.java \
+	$(srcdir)/virtuoso_driver/VirtGraph.java \
+	$(srcdir)/virtuoso_driver/VirtInfGraph.java \
+	$(srcdir)/virtuoso_driver/VirtModel.java \
+	$(srcdir)/virtuoso_driver/VirtPrefixMapping.java \
+	$(srcdir)/virtuoso_driver/VirtResSetIter.java \
+	$(srcdir)/virtuoso_driver/VirtTransactionHandler.java \
+	$(srcdir)/virtuoso_driver/VirtuosoQueryEngine.java \
+	$(srcdir)/virtuoso_driver/VirtuosoQueryExecutionFactory.java \
+	$(srcdir)/virtuoso_driver/VirtuosoQueryExecution.java \
+	$(srcdir)/virtuoso_driver/VirtuosoUpdateFactory.java \
+	$(srcdir)/virtuoso_driver/VirtuosoUpdateRequest.java
 
 TESTSUITE_SRC= \
-	testsuite/VirtuosoTestGraph.java
+	$(srcdir)/testsuite/VirtuosoTestGraph.java
 
-JENA_CLASSPATH=.:lib/junit-4.5.jar:lib/arq-2.8.1.jar:lib/iri-0.7.jar:lib/jena-2.6.2.jar:lib/jena-2.6.2-tests.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc3.jar
+JENA_CLASSPATH=.:lib/junit-4.5.jar:lib/arq-2.8.1.jar:lib/iri-0.7.jar:lib/jena-2.6.2.jar:lib/jena-2.6.2-tests.jar:$(top_builddir)/libsrc/JDBCDriverType4/virtjdbc3.jar
 
 all-am: $(TARGETS)
 
@@ -70,9 +70,10 @@ virt_jena.jar: $(JENA_SRC) manifest.main
 	-rm -rf out.driver
 	-mkdir out.driver
 	$(JAVAC) $(JDK_FLAGS) -d out.driver \
+		-sourcepath "$(srcdir)" \
 		-classpath "$(JENA_CLASSPATH)" \
 		$(JENA_SRC)
-	$(JAR) cvfm virt_jena.jar manifest.main -C out.driver virtuoso
+	$(JAR) cvfm virt_jena.jar $(srcdir)/manifest.main -C out.driver virtuoso
 
 .PHONY: doc
 doc:
@@ -88,7 +89,7 @@ run-tests: virt_jena.jar
 	$(JAVAC) $(JDK_FLAGS) \
 		-classpath "$(JENA_CLASSPATH):./virt_jena.jar" \
 		$(TESTSUITE_SRC)
-	cd testsuite && env JAVA="$(JAVA)" PORT="$(PORT)" $(SHELL) ./start.sh
+	cd testsuite && env JAVA="$(JAVA)" PORT="$(PORT)" $(SHELL) $(srcdir)/testsuite/start.sh
 else
 run-tests:
 	@echo "***WARNING: Disabled Jena test suite"

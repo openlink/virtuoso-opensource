@@ -29,7 +29,7 @@ wikiv_la_SOURCES = \
 	wikiv.c \
 	maclex.c \
 	wikilex.c \
-	$(top_srcdir)/libsrc/plugin/import_gate_virtuoso.c
+	$(top_builddir)/libsrc/plugin/import_gate_virtuoso.c
 
 wikiv_la_CFLAGS  = @VIRT_AM_CFLAGS@
 wikiv_la_CFLAGS  += -I$(top_srcdir)/libsrc
@@ -47,7 +47,7 @@ mediawiki_la_SOURCES = \
 	mediawiki.c \
 	media_maclex.c \
 	media_wikilex.c \
-	$(top_srcdir)/libsrc/plugin/import_gate_virtuoso.c
+	$(top_builddir)/libsrc/plugin/import_gate_virtuoso.c
 
 mediawiki_la_CFLAGS  = @VIRT_AM_CFLAGS@
 mediawiki_la_CFLAGS  += -I$(top_srcdir)/libsrc
@@ -65,7 +65,7 @@ creolewiki_la_SOURCES = \
 	creolewiki.c \
 	creole_maclex.c \
 	creole_wikilex.c \
-	$(top_srcdir)/libsrc/plugin/import_gate_virtuoso.c
+	$(top_builddir)/libsrc/plugin/import_gate_virtuoso.c
 
 creolewiki_la_CFLAGS  = @VIRT_AM_CFLAGS@
 creolewiki_la_CFLAGS  += -I$(top_srcdir)/libsrc
