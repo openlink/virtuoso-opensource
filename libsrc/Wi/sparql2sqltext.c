@@ -7756,8 +7756,8 @@ void ssg_print_retval_bop_calc_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree,
   SPART *left = tree->_.bin_exp.left;
   SPART *right = tree->_.bin_exp.right;
   ssg_valmode_t op_arg_valmode;
-  if ((needed == SSG_VALMODE_LONG) || (needed == SSG_VALMODE_NUM))
-    needed = SSG_VALMODE_SQLVAL; /* Trick! This uses the fact that integers 0 and 1 are stored identically in SQLVAL and LONG valmodes */
+  if ((needed == SSG_VALMODE_LONG) || (needed == SSG_VALMODE_NUM) || (needed == SSG_VALMODE_BOOL))
+    needed = SSG_VALMODE_SQLVAL; /* Trick! This uses the fact that integers 0 and 1 are stored identically in SQLVAL, LONG, NUM and BOOL valmodes */
   else if (needed != SSG_VALMODE_SQLVAL)
     spar_sqlprint_error ("ssg_print_retval_bop_calc_expn(): unsupported valmode");
   if (cmp_op)
