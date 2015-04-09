@@ -34,9 +34,6 @@ extern void *calloc_ex(size_t, size_t, void *);
 extern void *tlsf_malloc(DBG_PARAMS size_t size, du_thread_t * thr);
 extern void tlsf_free(void *ptr);
 extern void * tlsf_id_alloc (size_t sz, short tlsf_id);
-#ifndef MALLOC_DEBUG
-extern void * tlsf_base_alloc (size_t c);
-#endif
 extern void tlsf_base_free (void * c, size_t sz);
 
 

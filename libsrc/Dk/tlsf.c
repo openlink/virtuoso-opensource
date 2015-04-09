@@ -487,19 +487,6 @@ tlsf_large_alloc (tlsf_t * tlsf, size_t size)
 
 int no_place_limit = 0;
 
-#if defined(__no__MALLOC_DEBUG) && defined(USE_TLSF)
-void *
-dbg_malloc(const char *file, u_int line, size_t size)
-{
-  return tlsf_malloc(DBG_ARGS size, THREAD_CURRENT_THREAD);
-}
-
-void 
-dbg_free (const char *file, u_int line, void *data)
-{
-  tlsf_free (data);
-}
-#endif
 
 void *
 tlsf_malloc(DBG_PARAMS size_t size, du_thread_t * thr)
@@ -1327,6 +1314,7 @@ tlsf_mdbg_init ()
 {
   dk_mutex_init (&mdbg_place_mtx, MUTEX_TYPE_SHORT);
   mdbg_tlsf = tlsf_new (1000000);
+  tlsf_fp = stderr;
   WITH_TLSF (mdbg_tlsf)
   {
     mdbg_place_to_id = id_hash_allocate (MDBG_HASH_SIZE, sizeof (mdbg_place_t), sizeof (uint32), mdbg_place_hash, mdbg_place_hash_cmp);
