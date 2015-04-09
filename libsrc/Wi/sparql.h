@@ -93,66 +93,68 @@ extern void sparp_debug_weird (struct sparp_s *sparp, const char *file, int line
 #define SPAR_BOP_EQNAMES		(ptrlong)1052	/*!< A special "equality": arguments are variables whose names are merged into one equivalence class */
 #define SPAR_UNION_WO_ALL		(ptrlong)1053	/*!< A special union that will become SQL UNION, not SQL UNION ALL as we usually cheat */
 
-#define SPAR_BIF_ABS			(ptrlong)1101
-#define SPAR_BIF_BNODE			(ptrlong)1102
-#define SPAR_BIF_CASEWHEN		(ptrlong)1103
-#define SPAR_BIF_CASEX			(ptrlong)1104
-#define SPAR_BIF_CEIL			(ptrlong)1105
-#define SPAR_BIF_COALESCE		(ptrlong)1106
-#define SPAR_BIF_CONCAT			(ptrlong)1107
-#define SPAR_BIF_CONTAINS		(ptrlong)1108
-#define SPAR_BIF_DAY			(ptrlong)1109
-#define SPAR_BIF_ENCODE_FOR_URI		(ptrlong)1110
-#define SPAR_BIF_FLOOR			(ptrlong)1111
-#define SPAR_BIF_HOURS			(ptrlong)1112
-#define SPAR_BIF_IF			(ptrlong)1113
-#define SPAR_BIF_ISBLANK		(ptrlong)1114
-#define SPAR_BIF_ISIRI			(ptrlong)1115
-#define SPAR_BIF_ISLITERAL		(ptrlong)1116
-#define SPAR_BIF_ISNUMERIC		(ptrlong)1117
-#define SPAR_BIF_ISREF			(ptrlong)1118
-#define SPAR_BIF_ISURI			(ptrlong)1119
-#define SPAR_BIF_LANGMATCHES		(ptrlong)1120
-#define SPAR_BIF_LCASE			(ptrlong)1121
-#define SPAR_BIF_MD5			(ptrlong)1122
-#define SPAR_BIF_MINUTES		(ptrlong)1123
-#define SPAR_BIF_MONTH			(ptrlong)1124
-#define SPAR_BIF_NOW			(ptrlong)1125
-#define SPAR_BIF_RAND			(ptrlong)1126
-#define SPAR_BIF_REGEX			(ptrlong)1127
-#define SPAR_BIF_REMOVE_UNICODE3_ACCENTS	(ptrlong)1128
-#define SPAR_BIF_REPLACE		(ptrlong)1129
-#define SPAR_BIF_ROUND			(ptrlong)1130
-#define SPAR_BIF_SAMETERM		(ptrlong)1131
-#define SPAR_BIF_SECONDS		(ptrlong)1132
-#define SPAR_BIF_SHA1			(ptrlong)1133
-#define SPAR_BIF_SHA224			(ptrlong)1134
-#define SPAR_BIF_SHA256			(ptrlong)1135
-#define SPAR_BIF_SHA384			(ptrlong)1136
-#define SPAR_BIF_SHA512			(ptrlong)1137
-#define SPAR_BIF_STR			(ptrlong)1138
-#define SPAR_BIF_STRAFTER		(ptrlong)1139
-#define SPAR_BIF_STRBEFORE		(ptrlong)1140
-#define SPAR_BIF_STRDT			(ptrlong)1141
-#define SPAR_BIF_STRENDS		(ptrlong)1142
-#define SPAR_BIF_STRLANG		(ptrlong)1143
-#define SPAR_BIF_STRLEN			(ptrlong)1144
-#define SPAR_BIF_STRSTARTS		(ptrlong)1145
-#define SPAR_BIF_STRUUID		(ptrlong)1146
-#define SPAR_BIF_SUBSTR			(ptrlong)1147
-#define SPAR_BIF_TIMEZONE		(ptrlong)1148
-#define SPAR_BIF_TZ			(ptrlong)1149
-#define SPAR_BIF_UCASE			(ptrlong)1150
-#define SPAR_BIF_URI			(ptrlong)1151
-#define SPAR_BIF_UUID			(ptrlong)1152
-#define SPAR_BIF_VALID			(ptrlong)1153
-#define SPAR_BIF_YEAR			(ptrlong)1154
-#define SPAR_BIF__CUBE			(ptrlong)1155
-#define SPAR_BIF__ITEM_IN_VECTOR	(ptrlong)1156
-#define SPAR_BIF__GROUPING_LIST		(ptrlong)1157
-#define SPAR_BIF__GROUPING_SET		(ptrlong)1158
-#define SPAR_BIF__GROUPING_SETS		(ptrlong)1159
-#define SPAR_BIF__ROLLUP		(ptrlong)1160
+#define SPAR_BIF_ABS				(ptrlong)1101
+#define SPAR_BIF_BNODE				(ptrlong)1102
+#define SPAR_BIF_CASEWHEN			(ptrlong)1103
+#define SPAR_BIF_CASEX				(ptrlong)1104
+#define SPAR_BIF_CEIL				(ptrlong)1105
+#define SPAR_BIF_COALESCE			(ptrlong)1106
+#define SPAR_BIF_CONCAT				(ptrlong)1107
+#define SPAR_BIF_CONTAINS			(ptrlong)1108
+#define SPAR_BIF_DAY				(ptrlong)1109
+#define SPAR_BIF_EBV				(ptrlong)1110
+#define SPAR_BIF_EBV_INT			(ptrlong)1111
+#define SPAR_BIF_ENCODE_FOR_URI			(ptrlong)1112
+#define SPAR_BIF_FLOOR				(ptrlong)1113
+#define SPAR_BIF_HOURS				(ptrlong)1114
+#define SPAR_BIF_IF				(ptrlong)1115
+#define SPAR_BIF_ISBLANK			(ptrlong)1116
+#define SPAR_BIF_ISIRI				(ptrlong)1117
+#define SPAR_BIF_ISLITERAL			(ptrlong)1118
+#define SPAR_BIF_ISNUMERIC			(ptrlong)1119
+#define SPAR_BIF_ISREF				(ptrlong)1120
+#define SPAR_BIF_ISURI				(ptrlong)1121
+#define SPAR_BIF_LANGMATCHES			(ptrlong)1122
+#define SPAR_BIF_LCASE				(ptrlong)1123
+#define SPAR_BIF_MD5				(ptrlong)1124
+#define SPAR_BIF_MINUTES			(ptrlong)1125
+#define SPAR_BIF_MONTH				(ptrlong)1126
+#define SPAR_BIF_NOW				(ptrlong)1127
+#define SPAR_BIF_RAND				(ptrlong)1128
+#define SPAR_BIF_REGEX				(ptrlong)1129
+#define SPAR_BIF_REMOVE_UNICODE3_ACCENTS	(ptrlong)1130
+#define SPAR_BIF_REPLACE			(ptrlong)1131
+#define SPAR_BIF_ROUND				(ptrlong)1132
+#define SPAR_BIF_SAMETERM			(ptrlong)1133
+#define SPAR_BIF_SECONDS			(ptrlong)1134
+#define SPAR_BIF_SHA1				(ptrlong)1135
+#define SPAR_BIF_SHA224				(ptrlong)1136
+#define SPAR_BIF_SHA256				(ptrlong)1137
+#define SPAR_BIF_SHA384				(ptrlong)1138
+#define SPAR_BIF_SHA512				(ptrlong)1139
+#define SPAR_BIF_STR				(ptrlong)1140
+#define SPAR_BIF_STRAFTER			(ptrlong)1141
+#define SPAR_BIF_STRBEFORE			(ptrlong)1142
+#define SPAR_BIF_STRDT				(ptrlong)1143
+#define SPAR_BIF_STRENDS			(ptrlong)1144
+#define SPAR_BIF_STRLANG			(ptrlong)1145
+#define SPAR_BIF_STRLEN				(ptrlong)1146
+#define SPAR_BIF_STRSTARTS			(ptrlong)1147
+#define SPAR_BIF_STRUUID			(ptrlong)1148
+#define SPAR_BIF_SUBSTR				(ptrlong)1149
+#define SPAR_BIF_TIMEZONE			(ptrlong)1150
+#define SPAR_BIF_TZ				(ptrlong)1151
+#define SPAR_BIF_UCASE				(ptrlong)1152
+#define SPAR_BIF_URI				(ptrlong)1153
+#define SPAR_BIF_UUID				(ptrlong)1154
+#define SPAR_BIF_VALID				(ptrlong)1155
+#define SPAR_BIF_YEAR				(ptrlong)1156
+#define SPAR_BIF__CUBE				(ptrlong)1157
+#define SPAR_BIF__ITEM_IN_VECTOR		(ptrlong)1158
+#define SPAR_BIF__GROUPING_LIST			(ptrlong)1159
+#define SPAR_BIF__GROUPING_SET			(ptrlong)1160
+#define SPAR_BIF__GROUPING_SETS			(ptrlong)1161
+#define SPAR_BIF__ROLLUP			(ptrlong)1162
 
 #define SPAR_SML_CREATE			(ptrlong)1201
 #define SPAR_SML_DROP			(ptrlong)1202
@@ -446,8 +448,6 @@ typedef struct sparp_s {
 
 #define sparp_env() sparp_arg->sparp_env
 #define sparp_ebv_mode sparp_sg->sg_ebv_mode
-#define qmfAutoEbvTmpl(sparp,qmf) (((sparp)->sparp_ebv_mode && (NULL != (qmf)->qmfSparqlEbvTmpl)) ? (qmf)->qmfSparqlEbvTmpl : (qmf)->qmfBoolTmpl)
-#define qmfAutoEbvOfShortTmpl(sparp,qmf) (((sparp)->sparp_ebv_mode && (NULL != (qmf)->qmfSparqlEbvOfShortTmpl)) ? (qmf)->qmfSparqlEbvOfShortTmpl : (qmf)->qmfBoolOfShortTmpl)
 
 /*extern void sparqr_free (spar_query_t *sparqr);*/
 
@@ -1004,7 +1004,8 @@ extern SPART *spar_make_fake_blank_node (sparp_t *sparp); /*!< Not for use in re
 extern SPART *spar_make_literal_from_sql_box (sparp_t * sparp, caddr_t box, int mode);
 extern SPART *spar_make_qname_or_literal_from_rvr (sparp_t * sparp, rdf_val_range_t *rvr, int make_naked_box_if_possible);
 
-#define SPAR_MAKE_BOOL_LITERAL(sparp,v) (spartlist ((sparp), 5, SPAR_LIT, (SPART *)t_box_num_nonull((v)?1:0), uname_xmlschema_ns_uri_hash_boolean, NULL, t_box_string((v)?"true":"false")))
+#define SPAR_MAKE_INT_LITERAL(sparp,v) (spartlist ((sparp), 5, SPAR_LIT, (SPART *)t_box_num_nonull(v), uname_xmlschema_ns_uri_hash_integer, NULL, NULL))
+#define SPAR_MAKE_EBV_LITERAL(sparp,v) (spartlist ((sparp), 5, SPAR_LIT, (SPART *)t_box_num_nonull((v)?1:0), uname_xmlschema_ns_uri_hash_boolean, NULL, t_box_string((v)?"true":"false")))
 
 extern SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, caddr_t lang);
 /*! Creates a new FROM / FROM NAMED / NOT FROM / NOT FROM NAMED source description and pushes it into context for future storing in req_top.sources.

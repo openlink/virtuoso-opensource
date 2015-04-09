@@ -801,8 +801,8 @@ spar_macroprocess_tree (sparp_t *sparp, SPART *tree, spar_mproc_ctx_t *ctx)
                         SPART *arg_copy;
                         spar_mproc_ctx_t gparg_ctx;
                         if (SPAR_GP != SPART_TYPE (arg))
-                          spar_error (sparp, "The argument #%d (?%.20s) of macro <%.200s> should be a group pattern",
-                            tree->_.macropu.pindex, tree->_.macropu.pname, ctx->smpc_mcall->_.macrocall.mname );
+                          spar_error (sparp, "The argument #%ld (?%.20s) of macro <%.200s> should be a group pattern",
+                            (long)(tree->_.macropu.pindex), tree->_.macropu.pname, ctx->smpc_mcall->_.macrocall.mname );
                         arg_copy = sparp_tree_full_copy (sparp, arg, NULL);
                         memset (&gparg_ctx, 0, sizeof (spar_mproc_ctx_t));
                         gparg_ctx.smpc_unictr = (sparp->sparp_unictr)++;

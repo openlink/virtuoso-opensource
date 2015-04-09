@@ -978,17 +978,17 @@ create function DB.DBA.RQ_SQLVAL_OF_O (in o_col any) returns any -- DEPRECATED
 }
 ;
 
-create function DB.DBA.RQ_BOOL_OF_O (in o_col any array) returns any
+create function DB.DBA.RQ_BOOL_OF_O (in o_col any array) returns any -- DEPRECATED
 {
   vectored;
-  return __rdf_bool_of_sqlval (__ro2sq(o_col));
+  return sparql_ebv_int_of_sqlval (__ro2sq(o_col));
 }
 ;
 
-create function DB.DBA.RQ_SPARQL_EBV_OF_O (in o_col any array) returns any
+create function DB.DBA.RQ_SPARQL_EBV_OF_O (in o_col any array) returns any -- DEPRECATED
 {
   vectored;
-  return __rdf_sparql_ebv_of_sqlval (__ro2sq(o_col));
+  return sparql_ebv_of_sqlval (__ro2sq(o_col));
 }
 ;
 
@@ -1642,14 +1642,14 @@ create function DB.DBA.RDF_SQLVAL_OF_OBJ (in shortobj any) returns any -- DEPREC
 create function DB.DBA.RDF_BOOL_OF_OBJ (in shortobj any array) returns any
 {
   vectored;
-  return __rdf_bool_of_sqlval (__ro2sq(shortobj));
+  return sparql_ebv (__ro2sq(shortobj));
 }
 ;
 
 create function DB.DBA.RDF_SPARQL_EBV_OF_OBJ (in shortobj any array) returns any
 {
   vectored;
-  return __rdf_sparql_ebv_of_sqlval (__ro2sq(shortobj));
+  return sparql_ebv (__ro2sq(shortobj));
 }
 ;
 
@@ -3606,6 +3606,21 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
     }
   else if (__tag of rdf_box = __tag (obj))
     {
+      declare dt_iri varchar;
+      if (257 <> rdf_box_type (obj))
+        {
+          dt_iri := coalesce ((select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = rdf_box_type (obj)));
+          if (dt_iri is null)
+            signal ('RDFXX', sprintf ('Bad rdf box type (%d), box "%s"', rdf_box_type (obj), cast (rdf_box_data (obj) as varchar)));
+          if (dt_iri = 'http://www.w3.org/2001/XMLSchema#boolean' and rdf_box_data_tag (obj) = __tag of integer)
+            {
+              http (case sparql_ebv_of_obj (obj) when 0 then '"false"^^<' else '"true"^^<' end, ses);
+              http ('http://www.w3.org/2001/XMLSchema#boolean> ', ses);
+            }
+          return;
+        }
+      else
+        dt_iri := null;
       http ('"', ses);
       if (rdf_box_data_tag (obj) in (__tag of varchar, __tag of long varchar, __tag of nvarchar, __tag of long nvarchar, 185))
         http_escape (__rdf_sqlval_of_obj (obj, 1), 11, ses, 1, 1);
@@ -3621,13 +3636,10 @@ create procedure DB.DBA.RDF_LONG_TO_TTL (inout obj any, inout ses any)
         }
       else
         http_escape (cast (__rdf_sqlval_of_obj (obj, 1) as varchar), 11, ses, 1, 1);
-      if (257 <> rdf_box_type (obj))
+      if (dt_iri is not null)
         {
-          res := coalesce ((select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = rdf_box_type (obj)));
-          if (res is null)
-            signal ('RDFXX', sprintf ('Bad rdf box type (%d), box "%s"', rdf_box_type (obj), cast (rdf_box_data (obj) as varchar)));
           http ('"^^<', ses);
-          http_escape (res, 12, ses, 1, 1);
+          http_escape (dt_iri, 12, ses, 1, 1);
           http ('> ', ses);
         }
       else if (257 <> rdf_box_lang (obj))
@@ -16471,7 +16483,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
 {
   declare ver varchar;
   declare inx int;
-  ver := '2015-02-02 0002v7';
+  ver := '2015-03-16 0001v7';
   if (USER <> 'dba')
     signal ('RDFXX', 'Only DBA can reload quad map metadata');
   if (not exists (sparql define input:storage "" ask where {

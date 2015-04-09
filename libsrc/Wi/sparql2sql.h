@@ -820,8 +820,8 @@ struct rdf_ds_s;
 #define SSG_VALMODE_SQLVAL		((ssg_valmode_t)((ptrlong)(0x330)))	/*!< SQL value to bereturned to the SQL caller */
 #define SSG_VALMODE_DATATYPE		((ssg_valmode_t)((ptrlong)(0x340)))	/*!< Datatype UNAME or BF_URI string, not a value */
 #define SSG_VALMODE_LANGUAGE		((ssg_valmode_t)((ptrlong)(0x350)))	/*!< Language is needed, not a value */
-#define SSG_VALMODE_AUTO		((ssg_valmode_t)((ptrlong)(0x360)))	/*!< Something simplest */
-#define SSG_VALMODE_BOOL		((ssg_valmode_t)((ptrlong)(0x370)))	/*!< No more than a boolean is needed */
+#define SSG_VALMODE_BOOL		((ssg_valmode_t)((ptrlong)(0x360)))	/*!< No more than a boolean is needed */
+#define SSG_VALMODE_AUTO		((ssg_valmode_t)((ptrlong)(0x370)))	/*!< Something simplest */
 #define SSG_VALMODE_SPECIAL		((ssg_valmode_t)((ptrlong)(0x380)))
 /* typedef struct rdf_ds_field_s *ssg_valmode_t; -- moved to sparql.h */
 

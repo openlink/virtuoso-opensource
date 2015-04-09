@@ -3382,7 +3382,7 @@ xdt_define_builtin (
 static xqf_str_parser_desc_t xqf_str_parser_descs[] = {
 /* Keep these strings sorted alphabetically by p_name! */
 /*	p_name			| p_proc			| p_rcheck		| p_opcode		| null	| box	| p_dest_dtp	| p_typed_bif_name		| p_sql_cast_type */
-    {	"boolean"		, __boolean_from_string		, __boolean_rcheck	, 0			, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_boolean"	, NULL			},
+    {	"boolean"		, __boolean_from_string		, __boolean_rcheck	, 0			, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_boolean"	, NULL			},
     {	"byte"			, __integer_from_string		, __integer_rcheck	, XQ_INT8		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
     {	"currentDateTime"	, __cur_datetime		, NULL			, 0			, 0	, 0	, 0		, "__xqf_str_parse_datetime"	, NULL			},
     {	"date"			, __datetime_from_string	, __datetime_rcheck	, XQ_DATE		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_date"	, "DATE"		},

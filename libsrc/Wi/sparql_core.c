@@ -4591,6 +4591,8 @@ const sparp_bif_desc_t sparp_bif_descs[] = {
   { "cube"		, SPAR_BIF__CUBE			, '-'	, SSG_SD_VIRTSPECIFIC	, 2	, 0xFFF	, SSG_VALMODE_SQLVAL	, { NULL, NULL, NULL}					, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "datatype"		, DATATYPE_L			, '-'	, 0			, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_IRI | SPART_VARR_IS_REF	},
   { "day"		, SPAR_BIF_DAY			, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_NUM, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
+  { "ebv"		, SPAR_BIF_EBV			, '-'	, SSG_SD_VIRTSPECIFIC	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT	},
+  { "ebv_int"		, SPAR_BIF_EBV_INT		, '-'	, SSG_SD_VIRTSPECIFIC	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL | SPART_VARR_IS_BOOL	},
   { "encode_for_uri"	, SPAR_BIF_ENCODE_FOR_URI	, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL	},
   { "floor"		, SPAR_BIF_FLOOR		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_NUM, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "grouping list"	, SPAR_BIF__GROUPING_LIST	, '-'	, SSG_SD_VIRTSPECIFIC	, 0	, 0xFFF	, SSG_VALMODE_SQLVAL	, { NULL, NULL, NULL}					, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
@@ -5318,6 +5320,7 @@ sparp_query_parse (const char * str, spar_query_env_t *sparqre, int rewrite_all)
 #ifndef NDEBUG
   sparp->sparp_sg->sg_comment_sql = 1;
 #endif
+  sparp->sparp_sg->sg_ebv_mode = 1;
   QR_RESET_CTX
     {
       /* Bug 4566: sparpyyrestart (NULL); */
@@ -5471,7 +5474,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   caddr_t str = strses_string (sparqre->sparqre_src->sif_skipped_part);
   caddr_t res;
 #ifdef SPARQL_DEBUG
-  printf ("\nsparp_compile_subselect() input:\n%s", str);
+  printf ("\nsparp_compile_subselect() input:\n%s\n", str);
 #endif
   strses_free (sparqre->sparqre_src->sif_skipped_part);
   sparqre->sparqre_src->sif_skipped_part = NULL;
@@ -5483,7 +5486,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   if (NULL != sparp->sparp_sparqre->sparqre_catched_error)
     {
 #ifdef SPARQL_DEBUG
-      printf ("\nsparp_compile_subselect() caught parse error: %s", ERR_MESSAGE(sparp->sparp_sparqre->sparqre_catched_error));
+      printf ("\nsparp_compile_subselect() caught parse error: %s\n", ERR_MESSAGE(sparp->sparp_sparqre->sparqre_catched_error));
 #endif
       SPARP_RESTORE_MP_SIZE_CAP(THR_TMP_POOL);
       return;
@@ -5514,7 +5517,7 @@ sparp_compile_subselect (spar_query_env_t *sparqre)
   session_buffered_write_char (0 /*YY_END_OF_BUFFER_CHAR*/, ssg.ssg_out); /* Second terminator. Most of Lex-es need two! */
   res = t_strses_string (ssg.ssg_out);
 #ifdef SPARQL_DEBUG
-  printf ("\nsparp_compile_subselect() done: %s", res);
+  printf ("\nsparp_compile_subselect() done:\n%s\n", res);
 #endif
   SPARP_RESTORE_MP_SIZE_CAP(THR_TMP_POOL);
   ssg_free_internals (&ssg);
@@ -5719,7 +5722,7 @@ spar_make_literal_from_sql_box (sparp_t * sparp, caddr_t box, int mode)
 {
   switch (DV_TYPE_OF (box))
     {
-    case DV_LONG_INT: return spartlist (sparp, 5, SPAR_LIT, t_box_num_nonull (unbox (box)), uname_xmlschema_ns_uri_hash_integer, NULL, NULL);
+    case DV_LONG_INT: return SPAR_MAKE_INT_LITERAL (sparp, unbox (box));
     case DV_NUMERIC: return spartlist (sparp, 5, SPAR_LIT, t_box_copy (box), uname_xmlschema_ns_uri_hash_decimal, NULL, NULL);
     case DV_DOUBLE_FLOAT: return spartlist (sparp, 5, SPAR_LIT, t_box_copy (box), uname_xmlschema_ns_uri_hash_double, NULL, NULL);
     case DV_UNAME: return spartlist (sparp, 2, SPAR_QNAME, t_box_copy (box));
@@ -5836,6 +5839,7 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
 #ifndef NDEBUG
   sparp_globals.sg_comment_sql = 1;
 #endif
+  sparp_globals.sg_ebv_mode = 1;
   sparqre.sparqre_param_ctr = &param_ctr_for_sparqre;
   sparqre.sparqre_qi = (query_instance_t *) qst;
   sparp.sparp_sparqre = &sparqre;
