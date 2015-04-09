@@ -2011,7 +2011,7 @@ bif_dbf_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   sec_check_dba ((query_instance_t*)qst, "__dbf_set");
   place = (stat_desc_t**)id_hash_get (sd_hash, (caddr_t)&name);
   if (!place)
-    sqlr_new_error ("42000", "SR...", "sys_stat_set, parameter does not exist");
+    sqlr_new_error ("42000", "SR...", "__dbf_set, parameter does not exist");
 
 
   sd = *place;
