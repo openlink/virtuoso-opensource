@@ -625,6 +625,13 @@ create procedure ID_TO_IRI_VEC (in id iri_id)
   declare idn int;
   if (id is null)
     return id;
+  if (not isiri_id (id))
+    {
+      if (__tag (id) = __tag of UNAME)
+        return id;
+      if (__tag (id) = __tag of varchar and bit_and (__box_flags (id), 1))
+        return id;
+    }
   idn := iri_id_num (id);
   if ((id >= #ib0) and (id < min_named_bnode_iri_id()))
     {
@@ -654,14 +661,16 @@ create procedure ID_TO_IRI_VEC (in id iri_id)
 ;
 
 
-
 create procedure ID_TO_IRI_VEC_NS (in id any array)
 {
   vectored;
   declare name, pref varchar;
   declare idn int;
   if (not isiri_id (id))
-    return id;
+    return (case (__tag (id))
+      when __tag of UNAME then id
+      when __tag of varchar then case when bit_and (__box_flags (id), 1) then id else NULL end
+      else NULL end );
   idn := iri_id_num (id);
   if ((id >= #ib0) and (id < min_named_bnode_iri_id()))
     {
