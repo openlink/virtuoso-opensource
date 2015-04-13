@@ -5113,13 +5113,23 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
         }
       if (SSG_VALMODE_DATATYPE == needed)
         {
+          ptrlong tree_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, tree);
+          int need_check_for_null = !(tree_restr_bits & SPART_VARR_NOT_NULL);
+          if (need_check_for_null)
+            {
+              ssg_puts (" CASE WHEN (");
+              ssg_print_scalar_expn (ssg, tree, native, NULL_ASNAME);
+              ssg_puts (" IS NULL) THEN NULL ELSE");
+            }
           ssg_print_box_as_sql_atom (ssg, uname_xmlschema_ns_uri_hash_boolean, SQL_ATOM_UNAME_ALLOWED);
-          return;
+          if (need_check_for_null)
+            ssg_puts (" END");
+          goto print_asname; /* see below */
         }
       if (SSG_VALMODE_LANGUAGE == needed)
         {
           ssg_puts_with_comment (" NULL", "lang of bool");
-          return;
+          goto print_asname; /* see below */
         }
       native = SSG_VALMODE_LONG;
     }
@@ -5244,6 +5254,14 @@ use_standard_template:
   else
     ssg_print_tmpl (ssg, native, tmpl, NULL, NULL, tree, asname);
   return;
+
+print_asname:
+  if (IS_BOX_POINTER (asname))
+    {
+      ssg_puts_with_comment (" AS", "valmoded scalar");
+      ssg_putchar (' ');  
+      ssg_prin_id (ssg, asname);
+    }
 }
 
 caddr_t
