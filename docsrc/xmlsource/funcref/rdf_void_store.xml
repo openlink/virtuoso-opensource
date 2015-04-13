@@ -33,8 +33,7 @@ correct results, the first graph should be loaded in the database before executi
   </refsect1>
   <refsect1 id="examples_rdf_void_store">
     <title>Examples</title>
-    <example id="ex_rdf_void_store"><title></title>
-      <para></para>
+    <example id="ex_rdf_void_store"><title>Simple example</title>
       <screen><![CDATA[
 SQL>DB.DBA.RDF_VOID_STORE('http://www.openlinksw.com/blog/~kidehen','http://mystatistics.com');
 Done. -- 201 msec.

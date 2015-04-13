@@ -63,8 +63,7 @@
 -->
   <refsect1 id="examples_sparql_rexec">
    <title>Examples</title>
-    <example id="ex_sparql_rexec"><title></title>
-      <para></para>
+    <example id="ex_sparql_rexec"><title>Simple Use</title>
 <screen><![CDATA[
 create procedure SPARQL_TEST (in rquri varchar, in graph_uri varchar, in resuri varchar, in in_result integer := 0)
 {

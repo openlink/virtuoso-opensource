@@ -67,10 +67,9 @@
 	</tbody>
       </tgroup>
     </table>
-  <para></para>
   </refsect1>
   <refsect1 id="xte_nodebld_init"><title>Examples</title>
-    <example id="ex_xte_nodebld_init"><title></title>
+    <example id="ex_xte_nodebld_init"><title>Simple Use</title>
       <para>After calling xte_nodebld_init() the vector acc of type any is empty and may be used  
             by xte_nodebld_acc function </para>
       <screen>  xte_nodebld_init(acc);</screen>

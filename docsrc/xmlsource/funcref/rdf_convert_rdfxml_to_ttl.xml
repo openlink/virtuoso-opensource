@@ -62,8 +62,7 @@
   </refsect1>
   <refsect1 id="examples_rdf_convert_rdfxml_to_ttl">
     <title>Examples</title>
-    <example id="ex_rdf_convert_rdfxml_to_ttl"><title></title>
-<para></para>
+    <example id="ex_rdf_convert_rdfxml_to_ttl"><title>Simple example</title>
 <screen><![CDATA[
 create procedure DB.DBA.RDF_XML_IRI_TO_TTL (inout obj any, inout ses any)
 {

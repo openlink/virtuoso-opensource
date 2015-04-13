@@ -42,8 +42,7 @@ without any pretty-print or nesting optimization.</para>
 -->
   <refsect1 id="examples_rdf_triples_to_ttl">
     <title>Examples</title>
-    <example id="ex_rdf_triples_to_ttl"><title></title>
-      <para></para>
+    <example id="ex_rdf_triples_to_ttl"><title>Simple example</title>
       <screen><![CDATA[
 SQL>create procedure RDFXML2N3 (in _rdfxml varchar)
 {

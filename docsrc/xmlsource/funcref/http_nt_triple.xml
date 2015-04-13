@@ -53,7 +53,7 @@ vector (0, 0, 0);
   </refsect1>
   <refsect1 id="examples_http_nt_triple">
     <title>Examples</title>
-    <example id="ex_http_nt_triple"><title></title>
+    <example id="ex_http_nt_triple"><title>Simple Use</title>
 <programlisting><![CDATA[
 create procedure dump_rdftriples_to_nt(inout triples any, inout ses any)
 {
@@ -77,12 +77,12 @@ create procedure dump_rdftriples_to_nt(inout triples any, inout ses any)
   </refsect1>
   <refsect1 id="seealso_http_nt_triple">
     <title>See Also</title>
-    <para><link linkend="fn_http_ttl_triple"><function>http_ttl_triple</function></link></para>    
-    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link></para>
-    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
-    <para><link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML</function></link></para>
-    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></link></para>
-    <para><link linkend="fn_ttlp_mt"><function>TTLP_MT</function></link></para>
-    <para><link linkend="fn_ttlp_mt_local_file"><function>TTLP_MT_LOCAL_FILE</function></link></para>
+    <para><link linkend="fn_http_ttl_triple"><function>http_ttl_triple()</function></link></para>
+    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA()</function></link></para>
+    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA()</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML()</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT()</function></link></para>
+    <para><link linkend="fn_ttlp_mt"><function>TTLP_MT()</function></link></para>
+    <para><link linkend="fn_ttlp_mt_local_file"><function>TTLP_MT_LOCAL_FILE()</function></link></para>
   </refsect1>
 </refentry>

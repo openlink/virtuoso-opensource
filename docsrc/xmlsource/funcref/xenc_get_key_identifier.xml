@@ -54,15 +54,9 @@
 	  a NULL will be returned).
       </para>
   </refsect1>
-  <refsect1 id="errors_xenc_get_key_identifier">
-    <title>Errors</title>
-    <para>This function can generate the following errors:</para>
-    <errorcode></errorcode>
-  </refsect1>
   <refsect1 id="examples_xenc_get_key_identifier">
     <title>Examples</title>
     <example id="ex_xenc_get_key_identifier"><title>Determine the key identifier</title>
-      <para></para>
       <screen><![CDATA[
 SQL> select xenc_get_key_identifier ('myKey');
 callret

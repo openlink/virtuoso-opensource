@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<refentry id="fn_attach_from_csv">
+  <refmeta>
+    <refentrytitle>attach_from_csv</refentrytitle>
+    <refmiscinfo>file</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>attach_from_csv</refname>
+    <refpurpose>Attaches CSV files as virtual tables in Virtuoso.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_attach_from_csv">
+      <funcprototype id="fproto_attach_from_csv">
+        <funcdef><function>attach_from_csv</function></funcdef>
+	        <paramdef>in <parameter>tb</parameter> varchar</paramdef>
+	        <paramdef>in <parameter>fname</parameter> any</paramdef>
+	        <paramdef>in <parameter>delimiter</parameter> varchar (default '')</paramdef>
+	        <paramdef>in <parameter>newline</parameter> varchar (default '\n')</paramdef>
+	        <paramdef>in <parameter>esc</parameter> varchar (default null)</paramdef>
+	        <paramdef>in <parameter>skip_rows</parameter> int (default 1)</paramdef>
+	        <paramdef><optional>in <parameter>pkey_columns</parameter> any (default null)</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_attach_from_csv">
+    <title>Description</title>
+    <para>This function attaches CSV files as virtual tables in Virtuoso, enabling them to be queried as if local
+    	to the Virtuoso database schema.</para>
+  </refsect1>
+  <refsect1 id="params_attach_from_csv">
+    <title>Parameters</title>
+    <refsect2><title>tb</title>
+      <para>Name of the Virtuoso SQL table to be associated with the attached CSV file</para>
+    </refsect2>
+    <refsect2><title>fname</title>
+      <para>Name of the CSV file, which must be situated in a file system location within the scope of 'DirsAllowed' INI setting,
+      	in one of the following forms:</para>
+      <itemizedlist mark="bullet">
+        <listitem>'contacts.csv' -- relative path, here assuming a file in the 'pwd' of the Virtuoso instance</listitem>
+        <listitem>'/tmp/contacts.csv' -- absolute path, here assuming a file located in the '/tmp' folder/directory</listitem>
+        <listitem>'file:contacts.csv' or 'file:/tmp/contacts.csv' -- these common forms of incorrect file: scheme URIs are
+        	treated as simple (absolute or relative) paths</listitem>
+        <listitem>'file:///tmp/contacts.csv' -- absolute path, using file: scheme URI based identification <i>(implementation in progress)</i></listitem>
+      </itemizedlist>
+    </refsect2>
+    <refsect2><title>delimiter</title>
+      <para>Specifies a single character to be treated as the field delimiter.</para>
+    </refsect2>
+    <refsect2><title>newline</title>
+      <para>Specifies a single character to be treated as newline.</para>
+    </refsect2>
+    <refsect2><title>esc</title>
+      <para>Specifies a single character to be treated as escape.</para>
+    </refsect2>
+    <refsect2><title>skip_rows</title>
+      <para>Specifies a number of rows to be ignored as instance data. Default is '1', this typically being the CSV header row.</para>
+    </refsect2>
+    <refsect2><title>pkey_columns</title>
+      <para>Specifies which ordinal column(s) of the CSV to use as the primary key of the virtual table.</para>
+      <orderedlist>
+        <listitem>By default, this parameter value is null, and the virtual table will have no primary key.</listitem>
+        <listitem>For a simple primary key, based on a single CSV column, this parameter should be set to that column's
+        	ordinal value (first column = 1, second column = 2, etc.). </listitem>
+        <listitem> For a compound primary key, comprised of multiple CSV columns, this parameter should be set to a vector.
+        	For example, for a primary key comprised of ordinal columns 1 and 3, the parameter value should be vector(1,3) .</listitem>
+      </orderedlist>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="errors_attach_from_csv">
+    <title>Errors</title>
+    <para>Issues associated with CSV file structure, in regards to virtual table creation suitability, will be reported back as errors.</para>
+  </refsect1>
+  <refsect1 id="examples_attach_from_csv">
+    <title>Examples</title>
+    <example id="ex_attach_from_csv_1"><title>Simplified CSV File Attachment</title>
+    <para>This example demonstrates how to directly attach external CSV file to Virtuoso that functions like any other internal TABLE:</para>
+    <orderedlist>
+      <listitem>Create CSV file named <code>contacts1.csv</code>:
+<programlisting><![CDATA[
+$ cat > contacts1.csv
+Id,Fname,Sname,Age
+0,John,Smith,48
+1,Anna,Clarks,62
+2,Rojer,Danrette,27
+3,Kate,Sigton,56
+4,Tim,Craft,41
+]]></programlisting>
+      </listitem>
+      <listitem>Place the created <code>contacts1.csv</code> file within scope of <code>DirsAllowed</code> INI setting.</listitem>
+      <listitem>Call the attach_from_csv function from iSQL or Virtuoso Conductor UI ( http://host:port/conductor ) . Note: As the pkey_columns parameter
+      	value is not specified, by default the virtual table will have no Primary Key:
+<programlisting><![CDATA[
+SQL> attach_from_csv ('csv.tutorials.contacts1', 'file:contacts1.csv', ',', '\n', null, 1);
+Done. -- 109 msec.
+]]></programlisting>
+      </listitem>
+      <listitem>Check the inserted data in the csv.tutorials.contacts1 table:
+<programlisting><![CDATA[
+SQL> SELECT * FROM csv.tutorials.contacts1 ;
+Id          Fname         Sname       Age
+INTEGER     VARCHAR       VARCHAR     INTEGER
+_____________________________________________________
+
+0           John          Smith       48
+1           Anna          Clarks      62
+2           Rojer         Danrette    27
+3           Kate          Sigton      56
+4           Tim           Craft       41
+
+5 Rows. -- 78 msec.
+]]></programlisting>
+      </listitem>
+      <listitem>Check the Primary Key columns:
+<programlisting><![CDATA[
+SQL> primarykeys csv.tutorials.contacts1;
+Showing SQLPrimaryKeys of tables like 'csv.tutorials.contacts1', tabletype/colname like 'NULL'
+TABLE_QUALIFIER  TABLE_OWNER  TABLE_NAME   COLUMN_NAME   KEY_SEQ   PK_NAME  ROOT_QUALIFIER  ROOT_OWNER  ROOT_NAME
+VARCHAR          VARCHAR      VARCHAR      VARCHAR       SMALLINT  VARCHAR  VARCHAR         VARCHAR     VARCHAR
+__________________________________________________________________________________________________________________
+
+
+0 Rows. -- 47 msec.
+]]></programlisting>
+      </listitem>
+    </orderedlist>
+  </example>
+
+  <example id="ex_attach_from_csv_2"><title>Simplified CSV File Attachment with Compound Key Generation</title>
+    <para>In this example a CSV File System is not only attached to Virtuoso, but as part of the process a Primary Key is
+    	generated using the first and second ordinal columns from the CSV file content:</para>
+    <orderedlist>
+      <listitem>Create CSV file named <code>contacts2.csv</code>:
+<programlisting><![CDATA[
+$ cat > contacts2.csv
+Fname,Sname,Age
+John,Smith,48
+Anna,Clarks,62
+Rojer,Danrette,27
+Kate,Sigton,56
+Tim,Craft,41
+]]></programlisting>
+      </listitem>
+      <listitem>Place the created <code>contacts2.csv</code> file within scope of <code>DirsAllowed</code> INI setting.</listitem>
+      <listitem>Call the attach_from_csv function from iSQL or Virtuoso Conductor UI ( http://host:port/conductor ):
+<programlisting><![CDATA[
+SQL> attach_from_csv ('csv.tutorials.contacts2', 'file:contacts2.csv', ',', '\n', null, 1, vector(1,2));
+Done. -- 109 msec.
+]]></programlisting>
+      </listitem>
+      <listitem>Check the inserted data in the csv.tutorials.contacts2 table:
+<programlisting><![CDATA[
+SQL> SELECT * FROM csv.tutorials.contacts2 ;
+Fname         Sname       Age
+VARCHAR       VARCHAR     INTEGER
+_____________________________________________________
+
+John          Smith       48
+Anna          Clarks      62
+Rojer         Danrette    27
+Kate          Sigton      56
+Tim           Craft       41
+
+5 Rows. -- 78 msec.
+]]></programlisting>
+      </listitem>
+      <listitem>Check the Primary Key columns:
+<programlisting><![CDATA[
+SQL> primarykeys csv.tutorials.contacts2;
+Showing SQLPrimaryKeys of tables like 'csv.tutorials.contacts2', tabletype/colname like 'NULL'
+TABLE_QUALIFIER  TABLE_OWNER  TABLE_NAME               COLUMN_NAME  KEY_SEQ   PK_NAME                  ROOT_QUALIFIER  ROOT_OWNER  ROOT_NAME
+VARCHAR          VARCHAR      VARCHAR                  VARCHAR      SMALLINT  VARCHAR                  VARCHAR         VARCHAR     VARCHAR
+____________________________________________________________________________________________________________________________________________
+
+DB               DBA          csv.tutorials.contacts2  Fname        1         csv.tutorials.contacts2  DB              DBA         csv.tutorials.contacts2
+DB               DBA          csv.tutorials.contacts2  Sname        2         csv.tutorials.contacts2  DB              DBA         csv.tutorials.contacts2
+
+2 Rows. -- 32 msec.
+]]></programlisting>
+      </listitem>
+    </orderedlist>
+  </example>
+
+  <example id="ex_attach_from_csv_3"><title>Simplified CSV File Attachment with Composite Key Generation</title>
+    <para>In this example a CSV File System is not only attached to Virtuoso, but as part of the process a Primary Key is generated
+    	using the second (<code>CompanyID</code>), third (<code>Fname</code>) and forth (<code>Sname</code>) ordinal columns. In this
+    	example the CompanyID column (which uniquely identifies a company) is combined with the <code>Fname</code> and <code>Sname</code>
+    	columns to create a primary key for each contact:</para>
+    <orderedlist>
+      <listitem>Create CSV file named <code>contacts3.csv</code>:
+<programlisting><![CDATA[
+$ cat > contacts3.csv
+CompanyName,CompanyID,Fname,Sname,Age
+MLogistic,12,John,Smith,48
+ZiAirLines,13,Anna,Clarks,62
+MLogistic,12,Rojer,Danrette,27
+MLogistic,12,Kate,Sigton,56
+ZiAirLines,13,Tim,Craft,41
+]]></programlisting>
+      </listitem>
+      <listitem>Place the created <code>contacts3.csv</code> file within scope of <code>DirsAllowed</code> INI setting.</listitem>
+      <listitem>Call the attach_from_csv function from iSQL or Virtuoso Conductor UI ( http://host:port/conductor ):
+<programlisting><![CDATA[
+SQL> attach_from_csv ('csv.tutorials.contacts3', 'file:contacts3.csv', ',', '\n', null, 1, vector (2,3,4));
+Done. -- 109 msec.
+]]></programlisting>
+      </listitem>
+      <listitem>Check the inserted data in the csv.tutorials.contacts3 table:
+<programlisting><![CDATA[
+SQL> SELECT * FROM csv.tutorials.contacts3 ;
+CompanyName     CompanyID   Fname     Sname       Age
+VARCHAR 	      INTEGER     VARCHAR   VARCHAR     INTEGER
+___________________________________________________________
+
+MLogistic       12          John      Smith       48
+ZiAirLines      13          Anna      Clarks      62
+MLogistic       12          Rojer     Danrette    27
+MLogistic       12          Kate      Sigton      56
+ZiAirLines      13          Tim       Craft       41
+
+5 Rows. -- 78 msec.
+]]></programlisting>
+      </listitem>
+      <listitem>Check the Primary Key columns:
+<programlisting><![CDATA[
+SQL> primarykeys csv.tutorials.contacts3;
+Showing SQLPrimaryKeys of tables like 'csv.tutorials.contacts3', tabletype/colname like 'NULL'
+TABLE_QUALIFIER  TABLE_OWNER  TABLE_NAME               COLUMN_NAME  KEY_SEQ    PK_NAME                  ROOT_QUALIFIER   ROOT_OWNER  ROOT_NAME
+VARCHAR          VARCHAR      VARCHAR                  VARCHAR      SMALLINT   VARCHAR                  VARCHAR          VARCHAR     VARCHAR
+___________________________________________________________________________________________________________________________________
+
+DB               DBA          csv.tutorials.contacts3  CompanyID    1          csv.tutorials.contacts3  DB               DBA         csv.tutorials.contacts3
+DB               DBA          csv.tutorials.contacts3  Fname        2          csv.tutorials.contacts3  DB               DBA         csv.tutorials.contacts3
+DB               DBA          csv.tutorials.contacts3  Sname        3          csv.tutorials.contacts3  DB               DBA         csv.tutorials.contacts3
+
+3 Rows. -- 47 msec.
+]]></programlisting>
+      </listitem>
+    </orderedlist>
+    </example>
+  </refsect1>
+
+  <refsect1 id="seealso_attach_from_csv">
+    <title>See Also</title>
+    <para><link linkend="fn_get_csv_row"><function>get_csv_row</function></link></para>
+    <para><link linkend="fn_csv_load_file"><function>csv_load_file</function></link></para>
+    <para><link linkend="fn_csv_parse"><function>csv_parse</function></link></para>
+    <para><link linkend="fn_csv_cols_def"><function>csv_cols_def</function></link></para>
+    <para><link linkend="fn_csv_table_def"><function>csv_table_def</function></link></para>
+  </refsect1>
+</refentry>

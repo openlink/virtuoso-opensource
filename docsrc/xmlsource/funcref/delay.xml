@@ -76,7 +76,6 @@
   <refsect1 id="examples_delay">
     <title>Examples</title>
     <example id="ex_delay"><title>Simple example</title>
-      <para></para>
       <screen>
 create procedure 
 waitsome (in _interval integer)

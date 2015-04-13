@@ -54,9 +54,9 @@ No. of rows in result: 1
   </refsect1>
   <refsect1 id="seealso_sample">
     <title>See Also</title>
-    <para><link linkend="fn_GROUP_CONCAT_DISTINCT"><function>DB.DBA.GROUP_CONCAT_DISTINCT</function></link></para>
-    <para><link linkend="fn_GROUP_CONCAT"><function>DB.DBA.GROUP_CONCAT</function></link></para>
-    <para><link linkend="fn_GROUP_DIGEST"><function>DB.DBA.GROUP_DIGEST</function></link></para>
+    <para><link linkend="fn_GROUP_CONCAT_DISTINCT"><function>DB.DBA.GROUP_CONCAT_DISTINCT()</function></link></para>
+    <para><link linkend="fn_GROUP_CONCAT"><function>DB.DBA.GROUP_CONCAT()</function></link></para>
+    <para><link linkend="fn_GROUP_DIGEST"><function>DB.DBA.GROUP_DIGEST()</function></link></para>
     <para><link linkend="samplegroupconcatdigest">Differences between DB.DBA.SAMPLE, DB.DBA.GROUP_CONCAT and
     DB.DBA.GROUP_DIGEST functions usage.</link></para>
   </refsect1>

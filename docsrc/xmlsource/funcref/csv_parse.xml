@@ -68,8 +68,7 @@ type of columns error will be signaled.</para>
   </refsect1>-->
   <refsect1 id="examples_csv_parse">
     <title>Examples</title>
-    <example id="ex_csv_parse"><title></title>
-    <para></para>
+    <example id="ex_csv_parse"><title>Simple Use</title>
 <programlisting><![CDATA[
 create procedure y_csv_cb (inout r any, in inx int, inout cbd any)
 {

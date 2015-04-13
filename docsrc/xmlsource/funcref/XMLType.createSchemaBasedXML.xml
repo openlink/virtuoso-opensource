@@ -40,13 +40,11 @@
   </refsynopsisdiv>
   <refsect1 id="desc_XMLType.createSchemaBasedXML">
     <title>Description</title>
-    <para>The function creates a new instance of XMLType by copying the given one and
-assigning a new schema URL to it. Parameter<parameter>schema_url</parameter> specifies a new URL;
-if it is omitted then a non-schema based instance is created like the 
-<function>XMLType.createNonSchemaBasedXML()</function> function.
-</para>
-    <para>The returned copy has an internal &quot;validated&quot; flag set to 0, 
-	even if the new URL is equal to the URL of the original instance.</para>
+    <para>The function creates a new instance of XMLType by copying the given one and assigning a new schema URL to it.
+    	Parameter <code>schema_url</code> specifies a new URL; if it is omitted then a non-schema based instance is created like
+    	the <link linkend="fn_XMLType.createNonSchemaBasedXML"><function>XMLType.createNonSchemaBasedXML()</function></link> function.</para>
+    <para>The returned copy has an internal "validated" flag set to 0, even if the new URL is equal to the URL of the
+    	original instance.</para>
   </refsect1>
   <refsect1 id="params_XMLType.createSchemaBasedXML">
     <title>Parameters</title>
@@ -60,8 +58,7 @@ if it is omitted then a non-schema based instance is created like the
   <refsect1 id="examples_XMLType.createSchemaBasedXML">
     <title>Examples</title>
     <example id="ex_XMLType.createSchemaBasedXML"><title>Converting a non schema-based instance to schema-based one</title>
-      <para>The procedure creates a schema-based copy of a sample 
-	  non schema-based instance.</para>
+      <para>The procedure creates a schema-based copy of a sample non schema-based instance.</para>
       <screen><![CDATA[
 create procedure schema_assignment_test ()
 {

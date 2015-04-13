@@ -46,8 +46,7 @@ without any pretty-print or nesting optimization.</para>
 -->
   <refsect1 id="examples_rdf_triples_to_rdf_xml_text">
     <title>Examples</title>
-    <example id="ex_rdf_triples_to_rdf_xml_text"><title></title>
-      <para></para>
+    <example id="ex_rdf_triples_to_rdf_xml_text"><title>Simple example</title>
       <screen><![CDATA[
 create procedure simple_test(in query varchar, in dflt_graph varchar)
 {

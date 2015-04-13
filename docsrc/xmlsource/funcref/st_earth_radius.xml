@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+
+  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+  project.
+
+  Copyright (C) 1998-2015 OpenLink Software
+
+  This project is free software; you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published by the
+  Free Software Foundation; only version 2 of the License, dated June 1991.
+
+  This program is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+
+  You should have received a copy of the GNU General Public License along
+  with this program; if not, write to the Free Software Foundation, Inc.,
+  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+
+  $
+-->
+<refentry id="fn_earth_radius">
+  <refmeta>
+    <refentrytitle>earth_radius</refentrytitle>
+    <refmiscinfo>geo</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>earth_radius</refname>
+    <refpurpose>returns geom.mean of radius of Earth</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_earth_radius">
+      <funcprototype id="fproto_earth_radius">
+        <funcdef><function>earth_radius</function></funcdef>
+        <paramdef />
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_earth_radius">
+    <title>Description</title>
+    <para>returns geom.mean of radius of Earth in kilometers, 6367.43568</para>
+  </refsect1>
+  <refsect1 id="ret_earth_radius"><title>Return Types</title>
+    <para>Returns any.</para>
+  </refsect1>
+  <refsect1 id="examples_earth_radius">
+    <title>Examples</title>
+    <example id="ex_earth_radius"><title>Simple Use</title>
+<programlisting><![CDATA[
+SELECT earth_radius ()
+earth_radius
+ANY
+ 6367.43568
+]]></programlisting>
+    </example>
+  </refsect1>
+    <para><link linkend="fn_dist_from_point_to_line_segment"><function>dist_from_point_to_line_segment()</function></link></para>
+    <para><link linkend="fn_st_point"><function>st_point()</function></link></para>
+    <para><link linkend="fn_st_x"><function>st_x()</function></link></para>
+    <para><link linkend="fn_st_y"><function>st_y()</function></link></para>
+    <para><link linkend="fn_ST_Z"><function>ST_Z()</function></link></para>
+    <para><link linkend="fn_st_distance"><function>st_distance()</function></link></para>
+    <para><link linkend="fn_ST_SetSRID"><function>ST_SetSRID()</function></link></para>
+    <para><link linkend="fn_st_astext"><function>st_astext()</function></link></para>
+    <para><link linkend="fn_st_geomfromtext"><function>st_geomfromtext()</function></link></para>
+    <para><link linkend="fn_st_intersects"><function>st_intersects()</function></link></para>
+    <para><link linkend="fn_st_contains"><function>st_contains()</function></link></para>
+    <para><link linkend="fn_st_within"><function>st_within()</function></link></para>
+    <para><link linkend="fn_isgeometry"><function>isgeometry()</function></link></para>
+    <para><link linkend="fn_geo_insert"><function>geo_insert()</function></link></para>
+    <para><link linkend="fn_geo_delete"><function>geo_delete()</function></link></para>
+    <para><link linkend="fn_rdf_geo_add"><function>DB.DBA.RDF_GEO_ADD()</function></link></para>
+    <para><link linkend="fn_rdf_geo_fill"><function>DB.DBA.RDF_GEO_FILL()</function></link></para>
+</refentry>

@@ -49,7 +49,8 @@ control over case-sensitivity. </para>
 </refsect1>
   <refsect1 id="params_regexp_like"><title>Parameters</title>
     <refsect2><title>source_string</title>
-      <para></para></refsect2>
+      <para>Source string</para>
+    </refsect2>
     <refsect2><title>pattern</title>
       <para>The regular expression to match.  The following special classes are supported:</para>
 	  <simplelist>
@@ -67,12 +68,9 @@ control over case-sensitivity. </para>
     <refsect2><title>match_parameter</title>
       <para>This is null by default.</para></refsect2>
   </refsect1>
-  <refsect1 id="ret_regexp_like"><title>Returns</title>
-  <para></para>
-  </refsect1>
  <refsect1 id="examples_regexp_like"><title>Examples</title>
     <example id="ex_regexp_like">
-<title>Examples</title>
+<title>Simple Use</title>
 <para>The following SQL query's WHERE clause shows the REGEXP_LIKE operator,
 which searches the ZIP column for a pattern that satisfies the regular expression
 [^[:digit:]]. It will retrieve those rows in the ZIPCODE table for which the ZIP

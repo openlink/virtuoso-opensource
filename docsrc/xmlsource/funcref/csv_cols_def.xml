@@ -37,8 +37,7 @@ type of columns error will be signaled.</para>
   </refsect1>-->
   <refsect1 id="examples_csv_cols_def">
     <title>Examples</title>
-    <example id="ex_csv_cols_def"><title></title>
-    <para></para>
+    <example id="ex_csv_cols_def"><title>Simple Use</title>
 <programlisting><![CDATA[
 SQL>create procedure my_csv_get_columns (in file_name varchar)
 {

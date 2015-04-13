@@ -6,7 +6,7 @@
   </refmeta>
   <refnamediv>
     <refname>DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS</refname>
-    <refpurpose>returns all graphs.</refpurpose>
+    <refpurpose>returns all explicitly created graphs.</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_sparql_select_known_graphs">
@@ -17,7 +17,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_sparql_select_known_graphs">
     <title>Description</title>
-    <para>This function returns all graphs URIs.</para>
+    <para> This function returns URIs for all explicitly created graphs.</para>
   </refsect1>
   <refsect1 id="params_sparql_select_known_graphs">
     <title>Parameters</title>
@@ -27,15 +27,20 @@
   </refsect1>
   <refsect1 id="examples_sparql_select_known_graphs">
     <title>Examples</title>
-    <example id="ex_sparql_select_known_graphs"><title></title>
-      <para></para>
+    <example id="ex_sparql_select_known_graphs"><title>Simple Use</title>
 <programlisting><![CDATA[
+# Create explicitly a graph:
+CREATE GRAPH <http://example.com/mygraph>;
+callret-0
+Create graph <http://example.com/mygraph> -- done
+...
 SQL> DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS();
 GRAPH_IRI
 VARCHAR
 _______________________________________________________________________________
 
 http://www.openlinksw.com/schemas/virtrdf#
+http://example.com/mygraph
 http://localhost:8891/DAV
 http://localhost:8891/dataspace
 http://localhost:8891/dataspace/inf
@@ -54,7 +59,6 @@ http://www.w3.org/1999/02/22-rdf-syntax-ns#
 http://www.w3.org/2000/01/rdf-schema#
 http://scot-project.org/scot/ns#
 http://rdfs.org/sioc/ns#
-http://www.w3.org/2004/02/skos/core
 
 20 Rows. -- 188 msec.
 ]]></programlisting>

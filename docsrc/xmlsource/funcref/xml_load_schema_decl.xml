@@ -28,9 +28,8 @@
   </refmeta>
   <refnamediv>
     <refname>xml_load_schema_decl</refname>
-    <refpurpose> returns a string with list of errors detected by XML 
-		Schema processor on reading given XML Schema definition 
-		document. </refpurpose>
+    <refpurpose>returns a string with list of errors detected by XML Schema processor on reading given XML Schema
+    	definition document.</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_xml_load_schema_decl"> 
@@ -43,9 +42,9 @@
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="desc"><title>Description</title>
-	Loads given file using base_uri. Try to parse file of XML Schema 
-	definition and check it for correctness to XML Schema specification.
+  <refsect1 id="desc_xml_load_schema_decl"><title>Description</title>
+	<para>Loads given file using base_uri. Try to parse file of XML Schema definition and check it for correctness to XML
+		Schema specification.</para>
   </refsect1>
   <refsect1 id="params"><title>Parameters</title>
     <refsect2><title>base_uri</title>
@@ -58,23 +57,22 @@
       <para>configuration string of the validator, default is empty string meaning that DTD validator should be fully disabled and only critical errors should be reported</para></refsect2>
   </refsect1>
   <refsect1 id="ret"><title>Return Types</title><para>Human readable list of errors if applicable as a varchar.</para></refsect1>
-
   <refsect1 id="examples"><title>Validating XML Against a XML Schema</title>
-    <example id="ex_xml_load_schema_decl"><title></title>
-<programlisting>
+    <example id="ex_xml_load_schema_decl"><title>Simple Use</title>
+<programlisting><![CDATA[
 declare _result varchar;  
 _result := xml_load_schema_decl (
   'http://localhost.localdomain/xmlrepository',
   'persons.xsd', 'UTF-8', 'x-any');
 
 if (_result = '') _result := 'NO ERRORS DETECTED'; 
-</programlisting>
+]]></programlisting>
     </example>
   </refsect1>
   <refsect1 id="seealso"><title>See Also</title>
-    <para><link linkend="fn_xml_validate_schema">xml_validate_schema()</link></para>
-    <para><link linkend="fn_xml_auto_schema">xml_auto_schema()</link></para>
-    <para><link linkend="fn_xml_view_schema">xml_view_schema</link></para>
-    <para><link linkend="fn_xml_validate_dtd">xml_validate_dtd()</link></para>
+    <para><link linkend="fn_xml_validate_schema"><function>xml_validate_schema()</function></link></para>
+    <para><link linkend="fn_xml_auto_schema"><function>xml_auto_schema()</function></link></para>
+    <para><link linkend="fn_xml_view_schema"><function>xml_view_schema()</function></link></para>
+    <para><link linkend="fn_xml_validate_dtd"><function>xml_validate_dtd()</function></link></para>
   </refsect1>
 </refentry>

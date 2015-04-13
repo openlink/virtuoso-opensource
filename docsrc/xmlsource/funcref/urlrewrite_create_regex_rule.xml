@@ -111,7 +111,6 @@ Note that '*Accept*' will return the whole &quot;Accept:&quot; line whereas '*ac
   <refsect1 id="examples_urlrewrite_create_regex_rule">
     <title>Examples</title>
     <example id="ex_urlrewrite_create_regex_rule1"><title>Example 1</title>
-      <para></para>
 <programlisting><![CDATA[
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     'demo_nw_rule1',
@@ -129,7 +128,6 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
 ]]></programlisting>
     </example>
     <example id="ex_urlrewrite_create_regex_rule2"><title>Example 2</title>
-      <para></para>
 <programlisting><![CDATA[
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE (
     'demo_nw_rule2',

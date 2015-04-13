@@ -68,8 +68,7 @@
     </table>
   </refsect1>
   <refsect1 id="examples_md5"><title>Examples</title>
-    <example id="ex_md5"><title></title>
-      <para></para>
+    <example id="ex_md5"><title>Simple example</title>
       <screen>SQL> select md5 ('blah blah');
 callret
 VARCHAR

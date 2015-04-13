@@ -80,13 +80,13 @@
 -->
   <refsect1 id="seealso_sparql_rexec_with_meta">
     <title>See Also</title>
-    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link></para>
-    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
-    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></link></para>
-    <para><link linkend="fn_ttlp"><function>DB.DBA.TTLP</function></link></para>
-    <para><link linkend="fn_ttlp_mt"><function>DB.DBA.TTLP_MT</function></link></para>
-    <para><link linkend="fn_rdf_triples_to_rdf_xml_text"><function>DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT</function></link></para>
-    <para><link linkend="fn_sparql_rexec"><function>DB.DBA.SPARQL_REXEC</function></link></para>
-    <para><link linkend="fn_sparql_rexec_to_array"><function>DB.DBA.SPARQL_REXEC_TO_ARRAY</function></link></para>
+    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA()</function></link></para>
+    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA()</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT()</function></link></para>
+    <para><link linkend="fn_ttlp"><function>DB.DBA.TTLP()</function></link></para>
+    <para><link linkend="fn_ttlp_mt"><function>DB.DBA.TTLP_MT()</function></link></para>
+    <para><link linkend="fn_rdf_triples_to_rdf_xml_text"><function>DB.DBA.RDF_TRIPLES_TO_RDF_XML_TEXT()</function></link></para>
+    <para><link linkend="fn_sparql_rexec"><function>DB.DBA.SPARQL_REXEC()</function></link></para>
+    <para><link linkend="fn_sparql_rexec_to_array"><function>DB.DBA.SPARQL_REXEC_TO_ARRAY()</function></link></para>
   </refsect1>
 </refentry>

@@ -31,8 +31,7 @@
   </refsect1>
   <refsect1 id="examples_isref">
     <title>Examples</title>
-    <example id="ex_isref"><title></title>
-      <para></para>
+    <example id="ex_isref"><title>Simple example</title>
 <programlisting><![CDATA[
 SQL>SPARQL
 SELECT COUNT(DISTINCT (?o)) 

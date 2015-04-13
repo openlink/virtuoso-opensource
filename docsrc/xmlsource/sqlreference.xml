@@ -498,7 +498,7 @@ VARCHAR before returning it to the application.</para>
 </sect1>
 
 	<!-- ======================================== -->
-	<sect1 id="QUALIFIEDNAMES">
+	<sect1 id="qualifiednames">
 		<title>Qualified Names</title>
 		<sect2 id="qual_owners">
 			<title>Qualifiers and Owners</title>
@@ -663,7 +663,7 @@ B'', X'' and 0x return binary literals.
     </sect1>
 
 
-	<sect1 id="CREATETABLE">
+	<sect1 id="createtable">
 		<title>CREATE TABLE Statement</title>
 		<sect2 id="syntax">
 			<title>Syntax</title>
@@ -935,7 +935,7 @@ CREATE TABLE SAMPLE (
   statement because a subtable always inherits the supertable&apos;s primary key.</para>
 
   <tip><title>See Also:</title>
-  <para><link linkend="CREATEINDEX">CREATE INDEX</link> for the index options.</para></tip>
+  <para><link linkend="createindex">CREATE INDEX</link> for the index options.</para></tip>
 
 </sect2>
 
@@ -1150,7 +1150,7 @@ particular schema. The syntax is as follows:</para>
 WITH SCHEMA (namespace-uri, top-element-name [, optional-dtd-configuration])
 ]]></programlisting>
   <para>To use this feature, you should make load an XMLSchema to the server by a
-<link linkend="CREATEXMLSCHEMA">CREATE XML SCHEMA</link> statement.
+<link linkend="createxmlschema">CREATE XML SCHEMA</link> statement.
 As soon as schema is loaded, its target namespace URI can be used in WITH SCHEMA
 constraint to validate every new value of the column against this schema.
 In addition, the constraint ensures that the document is a well-formed XML document
@@ -1243,13 +1243,13 @@ the constraint but you can drop triggers without re-creating the table.
 </para>
 
 <tip><title>See Also:</title>
-  <para><link linkend="CREATEXMLSCHEMA">CREATE XML SCHEMA Statement</link></para>
+  <para><link linkend="createxmlschema">CREATE XML SCHEMA Statement</link></para>
   <para><link linkend="fn_xml_validate_schema"><function>xml_validate_schema()</function></link></para>
 </tip>
   </sect2>
 	</sect1>
 
-  <sect1 id="DROPTABLE">
+  <sect1 id="droptable">
 		<title>DROP TABLE Statement</title>
 		<programlisting>
 drop_table
@@ -1261,7 +1261,7 @@ This statement drops a table. This requires dba privileges or ownership of the
 table.  Any subtables are automatically dropped.  Supertables are not affected.
 </para>
 	</sect1>
-	<sect1 id="CREATEINDEX"><title>CREATE INDEX Statement</title>
+	<sect1 id="createindex"><title>CREATE INDEX Statement</title>
 
 	<programlisting>
 index_column_commalist
@@ -1306,7 +1306,7 @@ create_index_def
 </tip>
 </sect1>
 
-	<sect1 id="DROPINDEX">
+	<sect1 id="dropindex">
 		<title>DROP INDEX Statement</title>
 
 		<programlisting>
@@ -1324,7 +1324,7 @@ opt_table
   <para>Optionally, a table name can be given if the index name is not unique.
   The table name may be qualified.</para>
 </sect1>
-	<sect1 id="ALTERTABLE"><title>ALTER TABLE Statement</title>
+	<sect1 id="altertable"><title>ALTER TABLE Statement</title>
 
 		<programlisting><![CDATA[
 add_column:
@@ -1443,7 +1443,7 @@ ALTER TABLE test_add_check ADD CONSTRAINT chkage CHECK (age > 18);
   </sect2>
 	</sect1>
 
-  <sect1 id="CREATEVIEW"><title>CREATE VIEW Statement</title>
+  <sect1 id="createview"><title>CREATE VIEW Statement</title>
 		<programlisting>
 &lt;view definition&gt; ::=
     CREATE VIEW &lt;table name&gt; [ &lt;left paren&gt; &lt;view column list&gt;
@@ -1451,7 +1451,7 @@ ALTER TABLE test_add_check ADD CONSTRAINT chkage CHECK (age > 18);
       AS &lt;query expression&gt;
 </programlisting>
 	</sect1>
-  <sect1 id="CREATEXMLSCHEMA"><title>CREATE XML SCHEMA Statement</title>
+  <sect1 id="createxmlschema"><title>CREATE XML SCHEMA Statement</title>
 		<programlisting>
 &lt;xml schema definition&gt; ::=
     CREATE XML SCHEMA &lt;text of schema&gt;
@@ -1479,7 +1479,7 @@ if their target namespace URIs have identical protocol names and host names and 
 and schema X imports Y using relative (not absolute!) URI that contain only relative path,
 (no protocol and no host).
 </para>
-<example id="ex_CREATEXMLSCHEMA"><title>Registering Sibling Schemas</title>
+<example id="ex_createxmlschema"><title>Registering Sibling Schemas</title>
 <para>Two sibling schemas are registered here.
 First statement registers an XMLSchema for &quot;http://www.example.com/parts&quot; target namespace.
 Second statement registers an XMLSchema for &quot;http://www.example.com/jobs&quot; target namespace
@@ -1556,13 +1556,13 @@ later.
 </para>
 </note>
 	</sect1>
-  <sect1 id="DROPXMLSCHEMA"><title>DROP XML SCHEMA Statement</title>
+  <sect1 id="dropxmlschema"><title>DROP XML SCHEMA Statement</title>
 		<programlisting>
 &lt;xml schema removal&gt; ::=
     DROP XML SCHEMA &lt;target URI&gt;
 </programlisting>
 <para>
-This reverts the effect of <link linkend="CREATEXMLSCHEMA">CREATE XML SCHEMA</link>.
+This reverts the effect of <link linkend="createxmlschema">CREATE XML SCHEMA</link>.
 </para>
 <para>The &lt;target URI&gt; should be a string constant that is equal to the value of
 "targetNamespace" attribute of "xs:schema" element of a previously declared XML schema.
@@ -1779,7 +1779,7 @@ update demo.dba.employees e
 	</example>
 </sect1>
 
-	<sect1 id="SELECTSTMT">
+	<sect1 id="selectstmt">
 		<title>SELECT Statement</title>
 		<sect2 id="selectsyntax">
 			<title>Syntax</title>
@@ -2103,43 +2103,100 @@ it being a function reference.
 </para>
 		<sect3 id="ordergrping_cube">
 		<title>CUBE and ROLLUP</title>
-		<para>Virtuoso database offers the tool which increase efficiency of SQL summary queries and
- simplify such operations. The options ROLLUP and CUBE in the GROUP BY allow creating more comprehensive
- summary operations. The result of CUBE and ROLLUP are result sets which could be produced in other
-way only with additional coding and queries. </para>
-		<para>The ROLLUP and CUBE extends the result set of GROUP BY. The ROLLUP builds consequence
- of subtotal aggregates on every queried level including the grand total. The CUBE is an extension of ROLLUP.
- It builds all possible subtotal aggregates combination for given GROUP BY.</para>
-		<para>Here are the examples of ROLLUP and CUBE usage:</para>
-		<programlisting>
-select j, grouping (j), k, grouping (k), t, grouping (t), sum (i) from TABLE1 group by rollup (j,k,t);
-select j, grouping (j), k, grouping (k), t, grouping (t), sum (i) from ROLLUP1 group by cube (j,k,t);
-</programlisting>
-		<para>the grouping(c1) procedure returns &quot;1&quot; if the column &quot;c1&quot; is
- not in the dynamic GROUP BY set, and returns &quot;0&quot; otherwise.</para>
+		<para>Virtuoso database offers a way to increase efficiency of SQL summary queries and simplify the operations. By using
+			the options <code>ROLLUP</code> and <code>CUBE</code> in <code>GROUP BY</code>, can be executed more comprehensive summary
+			operations. The produced result sets could be also produced without using these option but rahter with additional coding
+			and queries.</para>
+		<para>The options <code>ROLLUP</code> and <code>CUBE</code> extend the result set of <code>GROUP BY</code>:</para>
+    <itemizedlist mark="bullet">
+      <listitem><code>ROLLUP</code>: builds a consequence of subtotal aggregates on every queried level including the grand total.</listitem>
+      <listitem><code>CUBE</code>: this option is an extension of <code>ROLLUP</code>. It builds all possible subtotal aggregates combinations for given <code>GROUP BY</code>.</listitem>
+    </itemizedlist>
+		<para>For example:</para>
+<programlisting><![CDATA[
+  SELECT j, grouping (j), k, grouping (k), t, grouping (t), SUM (i)
+    FROM MyDemo
+GROUP BY ROLLUP (j,k,t);
+
+  SELECT j, grouping (j), k, grouping (k), t, grouping (t), SUM (i)
+    FROM MyDemoCube
+GROUP BY CUBE (j,k,t);
+]]></programlisting>
+		<para>The <code>grouping(param)</code> procedure returns &quot;1&quot; if the column &quot;param&quot; is not in the
+		dynamic GROUP BY set, and returns &quot;0&quot; otherwise.</para>
 		<para>The result set of:</para>
-		<programlisting>
-select j, k, t, sum (i) from TABLE1 group by rollup (j,k,t) ;
-</programlisting>
-		<para>is equivalent of accumulate result sets of:</para>
-		<programlisting>
-select j, k, t, sum (i) from TABLE1 group by j,k,t;
-select NULL, k, t, sum (i) from TABLE1 group by k,t;
-select NULL, NULL, t, sum (i) from TABLE1 group t;
-select NULL, NULL, NULL, sum (i) from TABLE1;
-</programlisting>
+<programlisting><![CDATA[
+  SELECT j, k, t, SUM (i)
+    FROM MyDemo
+GROUP BY ROLLUP (j,k,t) ;
+]]></programlisting>
+		<para>is equivalent of the accumulated result sets of:</para>
+<programlisting><![CDATA[
+  SELECT j, k, t, SUM (i)
+    FROM MyDemo
+GROUP BY j,k,t;
+
+  SELECT NULL, k, t, SUM (i)
+    FROM MyDemo
+GROUP BY k,t;
+
+  SELECT NULL, NULL, t, SUM (i)
+    FROM MyDemo
+GROUP BY t;
+
+  SELECT NULL, NULL, NULL, SUM (i)
+    FROM MyDemo;
+]]></programlisting>
 		<para>The result set of:</para>
-		<programlisting>
-select t,s, sum (i) from TABLE1 group by cube (t,s);
-</programlisting>
-		<para>is equivalent of accumulate result set of:</para>
-		<programlisting>
-select t,s, sum (i) from TABLE1 group by t,s;
-select t,NULL, sum (i) from TABLE1 group by t;
-select s,NULL, sum (i) from TABLE1 group by s;
-select NULL,NULL, sum (i) from TABLE1;
-</programlisting>
+<programlisting><![CDATA[
+SELECT t,s, SUM (i) FROM MyDemo GROUP BY CUBE (t,s);
+]]></programlisting>
+		<para>is equivalent of the accumulated result set of:</para>
+<programlisting><![CDATA[
+  SELECT t,s, SUM (i)
+    FROM MyDemo
+   GROUP BY t,s;
+
+  SELECT t,NULL, SUM (i)
+    FROM MyDemo
+GROUP BY t;
+
+  SELECT s,NULL, SUM (i)
+    FROM MyDemo
+GROUP BY s;
+
+  SELECT NULL,NULL, SUM (i)
+    FROM MyDemo;
+]]></programlisting>
 		</sect3>
+		</sect2>
+		<sect2 id="gsets">
+			<title>Grouping Sets</title>
+			<para>The grouping sets variant of group by allows specifying exactly which combinations of groupings are needed.
+				<code>CUBE</code> and <code>ROLLUP</code> are shorthands that expand into a grouping sets specification. This is useful
+				for applications like faceted search where there are separate group by's on properties of interest.</para>
+			<para>The grouping function behaves identically to <code>CUBE</code> and <code>ROLLUP</code>.</para>
+			<para>The syntax is:</para>
+<programlisting><![CDATA[
+GROUP BY grouping sets (<grouping set>[,...])
+]]></programlisting>
+			<para>The grouping set is a list of grouping columns in parentheses or <code>()</code> to denote an aggregate without grouping.</para>
+			<para>For example:</para>
+<programlisting><![CDATA[
+  SELECT key_table, key_is_main, COUNT (*)
+    FROM SYS_KEYS
+GROUP BY grouping sets ((key_table), (key_is_main), ());
+]]></programlisting>
+			<para>This shows for each table the number of indices, then the number of primary key and non-primary key indices
+				across all tables and finally the total number of indices in the schema. A <code>CUBE</code> would produce these
+				same groupings but it would further add the <code>key_table</code>, <code>key_is_main</code> grouping.</para>
+			<para>As an extension to SQL 99 OLAP extensions, the Virtuoso grouping sets specification also supports an <code>ORDER BY</code>
+			with optional top. In the place of a grouping set one can write:</para>
+<programlisting><![CDATA[
+ORDER BY [top k] (<column> [,...])
+]]></programlisting>
+			<para>In this way a single query can produce a set of ordered result rows and different grouped aggregates on the columns
+				in the result set.</para>
 		</sect2>
 		<sect2 id="derivedtables">
 			<title>Derived Tables</title>
@@ -2603,7 +2660,7 @@ the breakup is returned in the result set.
 
 </sect1>
 	<!-- ======================================== -->
-	<sect1 id="COMMIT_ROLLBACK">
+	<sect1 id="commit_rollback">
 		<title>COMMIT WORK, ROLLBACK WORK Statement</title>
 		<para>
 These statements reset the current transaction.  COMMIT WORK leaves all the changes made
@@ -2662,7 +2719,7 @@ create trigger sal_negative on &quot;Employee&quot; after update (&quot;Salary&q
 		</tip>
 	</sect1>
 	<!-- ======================================== -->
-	<sect1 id="CHECKPOINT">
+	<sect1 id="checkpoint">
 		<title>CHECKPOINT, SHUTDOWN Statement</title>
 		<programlisting>
 admin_statement
@@ -3010,7 +3067,7 @@ This is the previous join but now using the view.
 
 	<!-- ======================================== -->
 	<!-- ======================================== -->
-	<sect1 id="GRANT">
+	<sect1 id="grant">
 		<title>GRANT, REVOKE Statement</title>
 		<programlisting>
 privilege_def
@@ -3189,7 +3246,7 @@ GRANT/REVOKE UNDER on <user_defined_type>
 
 	</sect1>
 	<!-- ======================================== -->
-	<sect1 id="SETstmt">
+	<sect1 id="setstmt">
 		<title>SET Statement</title>
 		<sect2 id="isolation">
 			<title>ISOLATION</title>
@@ -3421,7 +3478,7 @@ The BEST keyword does not affect the ALL or CORRESPONDING BY options of UNION.
 &sqlinverse;
 
 
-	<sect1 id="GRAMMAR">
+	<sect1 id="grammar">
 		<title>SQL Grammar</title>
 		<programlisting>
     sql_list
@@ -4310,7 +4367,7 @@ The BEST keyword does not affect the ALL or CORRESPONDING BY options of UNION.
 	    ;
 </programlisting>
 	</sect1>
-        <sect1 id="BITMAPINDICES">
+        <sect1 id="bitmapindices">
 		<title>Bitmap Indices</title>
         <para>
 A bitmap index is a special type of index that is tailored for being efficient for key columns with relatively
@@ -5312,49 +5369,101 @@ SQL MM function set is not supported.
 </para>
 <para>
 Spatial indexing is supported by a two dimensional R tree implementation. The geometries supported
-are limited to two dimensions, with a choice of WGS 84 latitude and longitude coordinates with
+may have from two to four dimensions, with a choice of WGS 84 (or similar) latitude and longitude coordinates with
 haversine distances or a flat 2 dimensional plane for spatial reference system.
 </para>
-         <sect2 id="sqlrefgeospatialfuncs">
-		<title>SQL MM Function Support</title>
-         </sect2>
          <sect2 id="sqlrefgeospatialspatref">
 		<title>Spatial References</title>
-<para>The default reference system is WGS84 with coordinates in degrees of longitude and latitude on
-Earth. The srid number for this is 4326 and is assigned by default to all new geometries.
-<link linkend="fn_st_setsrid"><function>st_setsrid</function></link> can be used for altering this.
+<para>The default reference system is WGS-84 with coordinates in degrees of longitude and latitude on
+Earth. The SRID number for this is 4326 and is assigned by default to all new geometries.
+<link linkend="fn_ST_Transform"><function>ST_Transform</function></link> can be used to re-calculate coordinates of a shape from one spatial reference system to another.
+<link linkend="fn_ST_SetSRID"><function>ST_SetSRID</function></link> can be used for altering SRID without altering coordinates.
 </para>
-<para>Distances and precisions for WGS84 are in kilometers, for other systems they are in the same
+<para>Distances and precisions for "latitude-longitude" spatial reference systems are in kilometers, as approximately calculated with the haversine formula. For other systems they are in the same
 unit as the coordinates.
-</para>
-<para>If the srid is not 4326, distances are calculated as on a flat 2D surface. WGS84 distances are
-calculated with the haversine formula.
 </para>
          </sect2>
          <sect2 id="sqlrefgeospatialgo">
 	   <title>Geometric Objects</title>
-<para>Only the 2D point is supported. It is created with:</para>
-<programlisting><![CDATA[
-st_point (x, y)
-]]></programlisting>
-<para>or by</para>
-<programlisting><![CDATA[
-st_geomfromtext ('POINT(1 2)').
-]]></programlisting>
-           <tip><title>See Also:</title>
-             <para><link linkend="fn_st_point"><function>st_point</function></link></para>
-             <para><link linkend="fn_st_geomfromtext"><function>st_geomfromtext</function></link></para>
-           </tip>
-         </sect2>
-         <sect2 id="sqlrefgeospatialwkt">
-		<title>Well Known Text</title>
-<para>The WKT representations for geometries are as follows:
+<para>
+Virtuoso supports a wide variety of spatial features that can be represented in WKT or SHP:
+<!-- TBD! reformat -->
+BOX, BOX2D, BOX3D, BOXM, BOXZ, BOXZM
+CIRCULARSTRING
+COMPOUNDCURVE
+CURVEPOLYGON
+EMPTY
+GEOMETRYCOLLECTION, GEOMETRYCOLLECTIONM, GEOMETRYCOLLECTIONZ,
+GEOMETRYCOLLECTIONZM
+LINESTRING, LINESTRINGM, LINESTRINGZ, LINESTRINGZM
+MULTICURVE
+MULTILINESTRING, MULTILINESTRINGM, MULTILINESTRINGZ, MULTILINESTRINGZM
+MULTIPOINT, MULTIPOINTM, MULTIPOINTZ, MULTIPOINTZM
+MULTIPOLYGON, MULTIPOLYGONM, MULTIPOLYGONZ, MULTIPOLYGONZM
+POINT, POINTM, POINTZ, POINTZM
+POLYGON, POLYGONM, POLYGONZ, POLYGONZM
+POLYLINE, POLYLINEZ
+RING, RINGM, RINGZ, RINGZM
 </para>
-<itemizedlist mark="bullet">
-  <listitem>Point POINT (&lt;x&gt; &lt;y&gt;) where &lt;x&gt; and &lt;y&gt; are strings of
-characters that can be parsed as a floating point number, as by the %g format character
-in the C language.</listitem>
-</itemizedlist>
+<para>
+Some less popular types are not yet supported:
+<!-- TBD! reformat -->
+CIRCULARSTRINGM, CIRCULARSTRINGZ, CIRCULARSTRINGZM
+COMPOUNDCURVEM, COMPOUNDCURVEZ, COMPOUNDCURVEZM
+CURVE, CURVEM, CURVEZ, CURVEZM
+CURVEPOLYGONM, CURVEPOLYGONZ, CURVEPOLYGONZM
+GEOMETRY, GEOMETRYZ, GEOMETRYZM
+MULTICURVEM, MULTICURVEZ, MULTICURVEZM
+MULTIPATCH
+MULTISURFACE, MULTISURFACEM, MULTISURFACEZ, MULTISURFACEZM
+POLYHEDRALSURFACE, POLYHEDRALSURFACEM, POLYHEDRALSURFACEZ,
+POLYHEDRALSURFACEZM
+POLYLINEM
+SURFACE, SURFACEM, SURFACEZ, SURFACEZM
+TIN, TINM, TINZ, TINZM
+</para>
+<para>
+For the sake of speed and scalability, spatial support has some intentional restrictions,
+that will probably persist for long time.
+</para>
+<para>
+--- No support for circumpolar shapes. A ring with a pole inside it or
+on the border of it may be treated as an error or result in wrong
+calculations of spatial relations. E.g. the st_intersects of two
+triangles POLYGON((0 89, 120 89, 240 89, 0 89)) and POLYGON((0 88, 120
+88, 240 88, 0 88)) may return FALSE. st_intersects of two triangles
+POLYGON((0 89, 60 90, 120 89, 0 89)) and POLYGON((120 88, 180 90, 240
+88, 120 88)) may also return FALSE. Note that Equator is a circumpolar
+shape.
+</para>
+<para>
+--- No support for long orthodromic or near-orthodromic arcs. The
+implementation assumes that shapes reside inside their bounding boxes so
+st_intersects of two orthodromic arcs, LINE (0 1, 180 1) and LINE (90 1,
+270 1) may return FALSE. However big shapes made of small segments (such
+as a coastline of Eurasia) will be handled correctly. Shapes that are
+close to 180 longitude get two sets of bounding boxes, shifted 360 one
+from another, so relations between Alaska and Chukotka will be
+calculated correctly no matter what offset is used.
+</para>
+<para>
+--- In order to deal with weird data sources, the range for longitudes
+is -270 to -540 and the range for latitudes is -90 to +90 for most cases
+and -96 to +96 for some features such as bounding boxes. If the parsing
+of a shape did not report range errors for co-ordinates then there's no
+warranty that all points are in WGS ranges.
+</para>
+<para>
+--- Peculiarities like self-touch or self-intersection of polygons can
+be detected, but no warranties are given.
+</para>
+<para>
+--- Arcstrings are poorly supported and their support will never be
+optimized for speed. Each arc is supposed to be no longer than 180
+degrees. As a result, ESRI circles that consist of two arcs 180+180 are
+supported whereas ST_Intersects on "ill" circles like 270+90 may return
+wrong answers.
+</para>
          </sect2>
          <sect2 id="sqlrefgeospatialpg">
 		<title>Precision of Geometries</title>
@@ -5366,6 +5475,13 @@ stored with all coordinates either as float or double depending on
 which data type was supplied in creating the object. Note that the
 object itself can have more precise coordinates than the representation
 of its bounding box in the R tree index.
+</para>
+<para>
+Bounding boxes for shapes can be calculated approximately as soon as shape contain any arcs.
+In any case, bounding box of a shape is a bit bigger than the shape itself in order to tolerate rounding errors.
+Predicates for spatial relations accept an additional, non-standard, argument for tolerance.
+If the tolerance is greater than zero, borders of shapes are treated as wide lines with thickness is approximately equal to the specified tolerance.
+That is useful for dealing with inaccurate data such as amateur GPS/GLONASS tracks, coordinates rounded to minutes when published in Dbpedia and the like.
 </para>
          </sect2>
          <sect2 id="sqlrefgeospatialpr">
@@ -5492,6 +5608,526 @@ functions. This applies to all clients, ODBC, JDBC, .net and any RDF frameworks.
   </tip>
          </sect2>
 
+   <sect2 id="sqlrefgeospatial7enchance">
+   	 <title>Virtuoso 7.1+ Geo Spatial Data type and function enhancements</title>
+     <para>As of Virtuoso 7.1+ (open source and commercial) a number of major enhancements in Geo Spatial support have been made
+     	to improve the Geometry data types and functions supported, as well as improve compliance with the emerging
+     	<ulink url="http://www.geosparql.org/">GeoSPARQL</ulink> and <ulink url="http://www.opengeospatial.org/">OGC</ulink>
+     	standards.</para>
+     	<sect3 id="sqlrefgeospatial7enchancedt">
+     		<title>Virtuoso Geo Spatial Geometry data types and sample queries</title>
+     		  <para>The table below outlines the common WKT (Well Known Text) representations for several types of geometric objects
+     		  	used in RDF:</para>
+          <figure id="geospatial1" float="1">
+            <title>Geo Spatial Geometry Data Types</title>
+            <graphic fileref="ui/geosptypes.png"/>
+          </figure>
+          <para>The following queries "counts the number of items of each type whose coordinates fall within a bounded box shape" for
+          	the various RDF geometry data types now supported by Virtuoso. The links are to live examples of the query running against
+          	the OpenLink LOD Cloud Server instance.</para>
+          <sect4 id="sqlrefgeospatial7enchancedtbox">
+            <title>BOX</title>
+<programlisting><![CDATA[
+SELECT ?f AS ?facet COUNT(?s) AS ?cnt
+FROM <http://linkedgeodata.org>
+WHERE
+  {
+   ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?f .
+   ?s <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> ?p .
+   FILTER(bif:st_intersects(bif:st_geomfromtext("BOX(0.3412 43.5141, 9.3412 48.0141)"), ?p))
+  }
+GROUP BY ?f
+ORDER BY DESC(?cnt)
+LIMIT 10
+]]></programlisting>
+            <itemizedlist mark="bullet">
+              <listitem><ulink url="http://bit.ly/1gwmvTC">View the SPARQL Query Definition via SPARQL Protocol URL;</ulink></listitem>
+              <listitem><ulink url="http://bit.ly/1hKj6pE">View the SPARQL Query Results via SPARQL Protocol URL</ulink></listitem>
+            </itemizedlist>
+          </sect4>
+          <sect4 id="sqlrefgeospatial7enchancedtpolygon">
+            <title>POLYGON</title>
+<programlisting><![CDATA[
+SELECT ?f AS ?facet COUNT(?s) AS ?cnt
+FROM <http://linkedgeodata.org>
+WHERE
+  {
+    ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?f .
+    ?s <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> ?p .
+    FILTER( bif:st_intersects( bif:st_geomfromtext( "POLYGON((1 2, 6 1, 9 3, 8 5, 3 6, 1 2))" ), ?p ) )
+  }
+GROUP BY ?f
+ORDER BY DESC(?cnt)
+LIMIT 10
+]]></programlisting>
+            <itemizedlist mark="bullet">
+              <listitem><ulink url="http://bit.ly/1hp78Nw">View the SPARQL Query Definition via SPARQL Protocol URL;</ulink></listitem>
+              <listitem><ulink url="http://bit.ly/1cg1qKK">View the SPARQL Query Results via SPARQL Protocol URL</ulink></listitem>
+            </itemizedlist>
+          </sect4>
+          <sect4 id="sqlrefgeospatial7enchancedtpolygonhole">
+            <title>POLYGON WITH HOLE</title>
+<programlisting><![CDATA[
+SELECT ?f AS ?facet COUNT(?s) AS ?cnt
+FROM <http://linkedgeodata.org>
+WHERE
+  {
+    ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?f .
+    ?s <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> ?p .
+    FILTER( bif:st_intersects( bif:st_geomfromtext( "POLYGON((1 2, 6 1, 9 3, 8 5, 3 6, 1 2), (3 3, 5 5, 6 2, 3 3))" ), ?p ) )
+  }
+GROUP BY ?f
+ORDER BY DESC(?cnt)
+LIMIT 10
+]]></programlisting>
+            <itemizedlist mark="bullet">
+              <listitem><ulink url="http://bit.ly/1gwmJtN">View the SPARQL Query Definition via SPARQL Protocol URL;</ulink></listitem>
+              <listitem><ulink url="http://bit.ly/1bEEeLg">View the SPARQL Query Results via SPARQL Protocol URL</ulink></listitem>
+            </itemizedlist>
+          </sect4>
+          <sect4 id="sqlrefgeospatial7enchancedtmpolygon">
+            <title>MULTIPOLYGON</title>
+<programlisting><![CDATA[
+SELECT ?f AS ?facet COUNT(?s) AS ?cnt
+FROM <http://linkedgeodata.org>
+WHERE
+  {
+    ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?f .
+    ?s <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> ?p .
+    FILTER( bif:st_intersects( bif:st_geomfromtext( "MULTIPOLYGON(((1 2, 6 1, 9 3, 3 6, 1 2)), ((4 9, 7 6, 9 8, 4 9)))" ), ?p ) )
+  }
+GROUP BY ?f
+ORDER BY DESC(?cnt)
+LIMIT 10
+]]></programlisting>
+            <itemizedlist mark="bullet">
+              <listitem><ulink url="http://bit.ly/1jtEBIL">View the SPARQL Query Definition via SPARQL Protocol URL;</ulink></listitem>
+              <listitem><ulink url="http://bit.ly/OtlPqJ">View the SPARQL Query Results via SPARQL Protocol URL</ulink></listitem>
+            </itemizedlist>
+          </sect4>
+          <sect4 id="sqlrefgeospatial7enchancedtgcollection">
+            <title>GEOMETRY COLLECTION</title>
+<programlisting><![CDATA[
+SELECT ?f AS ?facet COUNT(?s) AS ?cnt
+FROM <http://linkedgeodata.org>
+WHERE
+  {
+    ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?f .
+    ?s <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> ?p .
+    FILTER( bif:st_intersects( bif:st_geomfromtext( "GEOMETRYCOLLECTION( POINT(4 5), POINT(7 4), POINT(6 2), LINESTRING(4 5, 6 7, 7 4, 6 2), POLYGON((1 2, 6 1, 9 3, 8 5, 3 6, 1 2)) )" ), ?p ) )
+  }
+GROUP BY ?f
+ORDER BY DESC(?cnt)
+LIMIT 10
+]]></programlisting>
+            <itemizedlist mark="bullet">
+              <listitem><ulink url="http://bit.ly/1h5pYuF">View the SPARQL Query Definition via SPARQL Protocol URL;</ulink></listitem>
+              <listitem><ulink url="http://bit.ly/OtlYdH">View the SPARQL Query Results via SPARQL Protocol URL</ulink></listitem>
+            </itemizedlist>
+          </sect4>
+          <sect4 id="sqlrefgeospatial7enchancedtdmpoint">
+            <title>MULTI POINT</title>
+<programlisting><![CDATA[
+SELECT ?f AS ?facet COUNT(?s) AS ?cnt
+FROM <http://linkedgeodata.org>
+WHERE
+  {
+    ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?f .
+    ?s <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> ?p .
+    FILTER( bif:st_intersects( bif:st_geomfromtext( "MULTIPOINT(3 7, 4 2, 8 6)" ), ?p ) )
+  }
+GROUP BY ?f
+ORDER BY DESC(?cnt)
+LIMIT 10
+]]></programlisting>
+            <itemizedlist mark="bullet">
+              <listitem><ulink url="http://bit.ly/1piJibH">View the SPARQL Query Definition via SPARQL Protocol URL;</ulink></listitem>
+              <listitem><ulink url="http://bit.ly/Otm1pR">View the SPARQL Query Results via SPARQL Protocol URL</ulink></listitem>
+            </itemizedlist>
+          </sect4>
+          <sect4 id="sqlrefgeospatial7enchancedtlstring">
+            <title>LINE STRING</title>
+<programlisting><![CDATA[
+SELECT ?f AS ?facet COUNT(?s) AS ?cnt
+FROM <http://linkedgeodata.org>
+WHERE
+  {
+    ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?f .
+    ?s <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> ?p .
+    FILTER( bif:st_intersects( bif:st_geomfromtext( "LINESTRING(1 2, 3 6, 9 4)" ), ?p ) )
+  }
+GROUP BY ?f
+ORDER BY DESC(?cnt)
+LIMIT 10
+]]></programlisting>
+            <itemizedlist mark="bullet">
+              <listitem><ulink url="http://bit.ly/1piJwQ6">View the SPARQL Query Definition via SPARQL Protocol URL;</ulink></listitem>
+              <listitem><ulink url="http://bit.ly/1h5qfhh">View the SPARQL Query Results via SPARQL Protocol URL</ulink></listitem>
+            </itemizedlist>
+          </sect4>
+          <sect4 id="sqlrefgeospatial7enchancedtmlstring">
+            <title>MULTI LINE STRING</title>
+<programlisting><![CDATA[
+SELECT ?f AS ?facet COUNT(?s) AS ?cnt
+FROM <http://linkedgeodata.org>
+WHERE
+  {
+    ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?f .
+    ?s <http://www.w3.org/2003/01/geo/wgs84_pos#geometry> ?p .
+    FILTER( bif:st_intersects( bif:st_geomfromtext( "MULTILINESTRING((1 8, 4 4), (4 9, 8 5, 6 2, 1 4))" ), ?p ) )
+  }
+GROUP BY ?f
+ORDER BY DESC(?cnt)
+LIMIT 10
+]]></programlisting>
+            <itemizedlist mark="bullet">
+              <listitem><ulink url="http://bit.ly/1leUyWc">View the SPARQL Query Definition via SPARQL Protocol URL;</ulink></listitem>
+              <listitem><ulink url="http://bit.ly/1bEHcza">View the SPARQL Query Results via SPARQL Protocol URL</ulink></listitem>
+            </itemizedlist>
+          </sect4>
+          <sect4 id="sqlrefgeospatial7enchancedtsupported">
+            <title>Supported types of shapes</title>
+<programlisting><![CDATA[
+BOX, BOX2D, BOX3D, BOXM, BOXZ, BOXZM
+CIRCULARSTRING
+COMPOUNDCURVE
+CURVEPOLYGON
+EMPTY
+GEOMETRYCOLLECTION, GEOMETRYCOLLECTIONM, GEOMETRYCOLLECTIONZ,
+GEOMETRYCOLLECTIONZM
+LINESTRING, LINESTRINGM, LINESTRINGZ, LINESTRINGZM
+MULTICURVE
+MULTILINESTRING, MULTILINESTRINGM, MULTILINESTRINGZ, MULTILINESTRINGZM
+MULTIPOINT, MULTIPOINTM, MULTIPOINTZ, MULTIPOINTZM
+MULTIPOLYGON, MULTIPOLYGONM, MULTIPOLYGONZ, MULTIPOLYGONZM
+POINT, POINTM, POINTZ, POINTZM
+POLYGON, POLYGONM, POLYGONZ, POLYGONZM
+POLYLINE, POLYLINEZ
+RING, RINGM, RINGZ, RINGZM
+]]></programlisting>
+          </sect4>
+          <sect4 id="sqlrefgeospatial7enchancedtnsy">
+            <title>Not yet supported types</title>
+<programlisting><![CDATA[
+CIRCULARSTRINGM, CIRCULARSTRINGZ, CIRCULARSTRINGZM
+COMPOUNDCURVEM, COMPOUNDCURVEZ, COMPOUNDCURVEZM
+CURVE, CURVEM, CURVEZ, CURVEZM
+CURVEPOLYGONM, CURVEPOLYGONZ, CURVEPOLYGONZM
+GEOMETRY, GEOMETRYZ, GEOMETRYZM
+MULTICURVEM, MULTICURVEZ, MULTICURVEZM
+MULTIPATCH
+MULTISURFACE, MULTISURFACEM, MULTISURFACEZ, MULTISURFACEZM
+POLYHEDRALSURFACE, POLYHEDRALSURFACEM, POLYHEDRALSURFACEZ,
+POLYHEDRALSURFACEZM
+POLYLINEM
+SURFACE, SURFACEM, SURFACEZ, SURFACEZM
+TIN, TINM, TINZ, TINZM
+]]></programlisting>
+          </sect4>
+     	</sect3>
+     	<sect3 id="sqlrefgeospatial7enchancefunc">
+     	  <title>Virtuoso Geo Spatial geometry functions</title>
+     	  <para>The following Virtuoso Geo Spatial geometry functions are available for use in both SQL and RDF Geo Spatial
+     	  	queries. The listed functions are built-in SQL functions. As all built-in functions of Virtuoso, geo-specific
+     	  	functions can be called from SPARQL with prefix <code>bif:</code>. For example:</para>
+<programlisting><![CDATA[
+bif:earth_radius()
+etc.
+]]></programlisting>
+        <itemizedlist mark="bullet">
+          <listitem><link linkend="fn_earth_radius"><function>earth_radius()</function></link>: returns geom.mean of
+          radius of Earth in kilometers, 6367.43568</listitem>
+          <listitem><link linkend="fn_haversine_deg_km"><function>haversine_deg_km (lat1, long1, lat2, long2)</function></link>:
+          returns distance between two points on Earth sphere, adjusting radius of sphere to latitudes.</listitem>
+          <listitem><link linkend="fn_dist_from_point_to_line_segment"><function>dist_from_point_to_line_segment (Xpoint,
+          	Ypoint, Xsegment1, Ysegment1,Xsegment2, Ysegment2)</function></link>: returns the distance between a point and a
+          	segment on a plane.</listitem>
+          <listitem><link linkend="fn_st_point"><function>st_point</function></link>: returns a point with given coordinates in
+          default SRID. z and/or m may be missing or equal to NULL, indicating the absence of co-ordinate.</listitem>
+          <listitem><link linkend="fn_st_linestring"><function>st_linestring (item1, item2,..., itemN)</function></link>:
+          returns a linestring in default SRID, the coordinates of vertices are specified by arguments that are points, 2-, 3-
+          or 4-item vectors of coordinates, linestrings, arcstrings or vectors of the above mentioned values. Repeating vertices
+          are automatically removed, except the case of repeating vertices in the middle of a linestring/arcstring argument.
+          </listitem>
+          <listitem><link linkend="fn_st_x"><function>st_x()</function></link>: returns X or longitude of a point.</listitem>
+          <listitem><link linkend="fn_st_y"><function>st_y()</function></link>: returns X or longitude of a point.</listitem>
+          <listitem><link linkend="fn_ST_XMin"><function>ST_XMin (shape)</function></link>,
+          <link linkend="fn_ST_YMin"><function>ST_YMin (shape)</function></link>,
+          <link linkend="fn_ST_XMax"><function>ST_XMax (shape)</function></link>,
+          <link linkend="fn_ST_YMax"><function>ST_YMax (shape)</function></link>: return boundaries of a
+          bounding box around a shape. Bounding boxes around arcs are calculated in assumption that no one arc is longer than
+          a half of full circle.</listitem>
+          <listitem><link linkend="fn_st_intersects"><function>st_intersects (shape1, shape2 [, proximity]) </function></link>:
+          checks whether two shapes intersect or some of its points are within the specified proximity. Current version is not
+          complete and does not support arcs of all sorts and rings of polygons, this is fixed in the next release.</listitem>
+          <listitem><link linkend="fn_may_intersect"><function>st_may_intersect (shape1, shape2 [, proximity])</function></link>:
+          checks whether bounding boxes of two shapes
+          intersect or some of its points are within the specified proximity. This is much faster than full
+          <link linkend="fn_st_intersects"><function>st_intersects()</function></link> check (actually that is the initial part of
+          <link linkend="fn_st_intersects"><function>st_intersects()</function></link> execution)</listitem>
+          <listitem><link linkend="fn_st_contains"><function>(haystack_shape, needle_shape [, proximity])</function></link>:</listitem>
+          <listitem><link linkend="fn_st_within"><function>st_within (needle_shape, haystack_shape [, proximity]) </function></link>:
+          checks whether <code>haystack_shape</code> contains the <code>needle_shape</code>.
+          If proximity is specified, it is treated as an extra wide border around <code>haystack_shape</code>.
+          In current version, only a combination of bounding box and a point is supported, the functionality will be extended
+          in the next release.</listitem>
+          <listitem><link linkend="fn_st_distance"><function>st_distance (shape1, shape2)</function></link>: returns the
+          distance in units of plane or in kilometers on sphere.</listitem>
+          <listitem><link linkend="fn_isgeometry"><function>isgeometry (v) </function></link>: returns whether the given v is a spatial object.</listitem>
+          <listitem><link linkend="fn_st_astext"><function>st_astext (shape)</function></link>: returns EWKT representation of a shape.</listitem>
+          <listitem><link linkend="fn_ST_SRID"><function>ST_SRID (shape)</function></link>: returns SRID of shape's spatial reference system or 0 for shape on plane.</listitem>
+          <listitem><link linkend="fn_ST_SetSRID"><function>ST_SetSRID (shape, new_srid)</function></link>: replaces the SRID of a shape but does not transform the shape or
+          its coordinates from old SRID to a new one.</listitem>
+          <listitem><link linkend="fn_st_geomfromtext"><function>st_geomfromtext (ewkt_text)</function></link>: Parses the string and returns the corresponding geometry.</listitem>
+          <listitem><link linkend="fn_st_ewkt_read"><function>st_ewkt_read (ewkt_text)</function></link>: Parses the giwen text as a EWKT and returns the parsed shape.</listitem>
+          <listitem><link linkend="fn_http_st_ewkt"><function>http_st_ewkt (shape, ses)</function></link>: Writes a EWKT representation of a shape to the given session, a
+          fast replacement for <link linkend="fn_st_astext"><function>st_astext (shape)</function></link>.</listitem>
+          <listitem><link linkend="fn_http_st_dxf_entity"><function>http_st_dxf_entity (shape, attrs, ses)</function></link>: writes a DXF (Data Exchange Format) representation of
+          shape into the given output session.Attrs is a vector of arbitrary DXF properties in form (tag1, value1, tag2, value2...)
+          where tags are integer codes according to DXF specification, related values are not validated and printed to the
+          session as is. Current version does not support ARCSTRINGs, CURVEs and CURVEPOLYGONs. If shape is null, the function
+          returns without writing anything to the shape.</listitem>
+          <listitem><link linkend="fn_st_get_bounding_box"><function>st_get_bounding_box (shape)</function></link>: returns BOX2D that is a bounding box of a shape.</listitem>
+          <listitem><link linkend="fn_GeometryType"><function>GeometryType (shape)</function></link>: returns EWKT type name of a shape.</listitem>
+          <listitem><link linkend="fn_ST_NumGeometries"><function>ST_NumGeometries (shape)</function></link>: returns number of members of a MULTI... or ...COLLECTION shape, 1
+          for other sorts of shapes.</listitem>
+          <listitem><link linkend="fn_ST_GeometryN"><function>ST_GeometryN (shape, idx)</function></link>: Given a 1-based index of a member of a MULTI... or ...COLLECTION shape,
+          returns the member.</listitem>
+          <listitem><link linkend="fn_ST_ExteriorRing"><function>ST_ExteriorRing (polygon_shape)</function></link>: Returns an external (the very first) ring of a polygon.</listitem>
+          <listitem><link linkend="fn_ST_NumInteriorRings"><function>ST_NumInteriorRings (polygon_shape)</function></link>: returns number of interior rings of the given polygon, NULL if
+          shape is not a polygon.</listitem>
+          <listitem><link linkend="fn_ST_InteriorRingN"><function>ST_InteriorRingN (polygon_shape, idx)</function></link>: Given a 1-based index of an interior ring of a polygon,
+          returns the ring. Wrong index is not reported as an error and NULL is returned.</listitem>
+          <listitem><link linkend="fn_st_get_bounding_box_n"><function>st_get_bounding_box_n (shape, idx)</function></link>: Given a 1-based index of a member of a MULTI... or ...COLLECTION
+          shape, returns the bounding box of a member. This is a fast equivalent of
+          <link linkend="fn_st_get_bounding_box"><function>st_get_bounding_box (ST_GeometryN (shape,idx))</function></link>.</listitem>
+          <listitem><link linkend="fn_ST_Translate"><function>ST_Translate (shape, dX, dY [, dZ])</function></link>: returns a copy of a shape with all coordinates shifted by
+          the provided dX, dY and dZ.</listitem>
+          <listitem><link linkend="fn_ST_TransScale"><function>ST_TransScale (shape, dX, dY, Xfactor, Yfactor)</function></link>: returns a copy of a shape with all coordinates
+          shifted by the provided dX, dY and then multiplied by Xfactor and Yfactor. In current version, differente values for
+          Xfactor and Yfactor will result in distorted arcs.</listitem>
+          <listitem><link linkend="fn_st_transform_by_custom_projection"><function>st_transform_by_custom_projection (shape, algorithm_id, ...)</function></link>: Performs a custom projection
+          of shape, using the specified algorithm and algorithm-specific arguments. Current version supports only one
+          algorithm, <link linkend="fn_st_transform_by_custom_projection"><function>st_transform_by_custom_projection (shape, 'OLAEAPS', long_of_center, lat_of_center)</function></link>
+          for Oblique Lampert Azimuthal Equal-Area Projection System with the specified center point.</listitem>
+          <listitem><link linkend="fn_ST_Transform"><function>ST_Transform (shape, deST_SRID, [orig_proj4_string, dest_proj4_string])</function></link>:  Transforms the given
+          shape from its current spatial reference system to one specified by <code>deST_SRID</code>. Two optional arguments are
+          for "cheating": the SRID of the resulting shape is set to <code>deST_SRID</code> but the conversion is done by proj4
+          using <code>origin_proj4_string</code> for projection of original shape and <code>dest_proj4_string</code> for the
+          result. If <code>orig_proj4_string</code> or <code>dest_proj4_string</code> argument is passed but is NULL instead
+          of string, the projection corresponding to original or destination SRID is used. <link linkend="fn_ST_Transform"><function>ST_Transform</function></link> is
+          provided by a separate plugin named v7proj4, as described below. When the plugin is loaded, functions like
+          <link linkend="fn_st_intersects"><function>st_intersects()</function></link> support pairs of arguments with different SRIDs by converting coords of second argument
+          into the system of the first one, as required by OGC and GeoSPARQL.</listitem>
+          <listitem><link linkend="fn_postgis_proj_version"><function>postgis_proj_version()</function></link>: Returns the version of proj4 in use, as a string, for compatibility with PostGIS.</listitem>
+        </itemizedlist>
+     </sect3>
+     <sect3 id="sqlrefgeospatial7enchanceplg">
+       <title>v7proj4 plugin</title>
+       <para>The Virtuoso v7proj4 hosted plugin module is required for performing transformation between different
+       	co-ordinates systems using the <link linkend="fn_ST_Transform"><function>ST_Transform()</function></link> function. The plugin is based on
+       	<ulink url="http://trac.osgeo.org/proj/">Frank Warmerdam's proj4</ulink> library and it's practical to have
+       	the proj4 package installed on every box of Virtuoso cluster, even if the build is performed on single machine
+       	or on different location at all. The reason is that the plugin should load data about coordinate systems to
+       	work and the simplest way to get the right data from a high-quality source is to use the package.</para>
+       	<sect4 id="sqlrefgeospatial7enchanceplgcomp">
+          <title>Compiling open source v7proj4 plugin</title>
+          <para>The v7proj4 is currently available in the default develop/7 branch of the
+          	"<ulink url="https://github.com/v7fasttrack/virtuoso-opensource">v7fasttrack</ulink>" git repository and
+          	can be build as follows:</para>
+<programlisting><![CDATA[
+git clone https://github.com/v7fasttrack/virtuoso-opensource.git
+cd virtuoso-opensource
+./autogen.sh
+export CFLAGS="-msse4.2 -DSSE42"
+./configure
+make -j 24
+make install
+]]></programlisting>
+          <para>Note first the "proj.4" library must be installed on the system and can be proj.4 download area, which
+          	the configure script will detect the installation of enabling the v7proj4 plugin library to be built
+          	in ~/libsrc/plugin/.libs:</para>
+<programlisting><![CDATA[
+ls libsrc/plugin/.libs/v7proj4*
+libsrc/plugin/.libs/v7proj4.a
+libsrc/plugin/.libs/v7proj4.la
+libsrc/plugin/.libs/v7proj4.lai
+libsrc/plugin/.libs/v7proj4_la-import_gate_virtuoso.o
+libsrc/plugin/.libs/v7proj4_la-sql_v7proj4.o
+libsrc/plugin/.libs/v7proj4_la-v7proj4_plugin.o
+libsrc/plugin/.libs/v7proj4.so
+libsrc/plugin/.libs/v7proj4.ver
+]]></programlisting>
+        </sect4>
+        <sect4 id="sqlrefgeospatial7enchanceplginst">
+          <title>Installation and Configuration of v7proj4 plugin</title>
+          <para>When the plugin (v7proj4.so) is built, it needs to be added to the [Plugins] section of Virtuoso configuration file
+          	(virtuoso.ini or the like), also on every node of a cluster:</para>
+<programlisting><![CDATA[
+[Plugins]
+LoadPath = ./plugins
+Load2    = plain, v7proj4
+]]></programlisting>
+          <para>If everything is fine then the virtuoso.log file will contain something like the following lines after the next
+          	startup:</para>
+<programlisting><![CDATA[
+21:30:10 { Loading plugin 1: Type `plain', file `shapefileio' in `.'
+21:30:10   ShapefileIO version 0.1virt71 from OpenLink Software
+21:30:10   Shapefile support based on Frank Warmerdam's Shapelib
+21:30:10   SUCCESS plugin 1: loaded from ./plugins/shapefileio.so }
+21:30:10 { Loading plugin 2: Type `plain', file `v7proj4' in `.'
+21:30:11   plain version 3208 from OpenLink Software
+21:30:11   Cartographic Projections support based on Frank Warmerdam's
+proj4 library
+21:30:11   SUCCESS plugin 2: loaded from ./plugins/v7proj4.so }
+21:30:11 OpenLink Virtuoso Universal Server
+21:30:11 Version 07.10.3208-pthreads for Linux as of Mar 31 2014
+...
+21:30:28 PL LOG: Initial setup of DB.DBA.SYS_V7PROJ4_SRIDS data from
+files in "/usr/share/proj"
+21:30:30 PL LOG: DB.DBA.SYS_V7PROJ4_SRIDS now contains 6930 spatial
+reference systems
+...
+21:30:32 Server online at 1720 (pid 9654)
+]]></programlisting>
+          <para>To store descriptions of coordinate systems, the plugin creates a table:</para>
+<programlisting><![CDATA[
+create table DB.DBA.SYS_V7PROJ4_SRIDS (
+ SR_ID integer,
+ SR_FAMILY varchar not null,
+ SR_TAG varchar,
+ SR_ORIGIN varchar not null,
+ SR_IRI IRI_ID_8,
+ SR_PROJ4_STRING varchar not null,
+ SR_WKT varchar,
+ SR_COMMENT varchar,
+ SR_PROJ4_XML any,
+ primary key (SR_ID, SR_FAMILY) )
+;
+]]></programlisting>
+          <para>and fills it with data from files epsg, esri, esri.extra, nad83 and nad27 of directory /usr/share/proj. Note
+          	these files must exist in the /usr/share/proj directory otherwise a message will be reported in the log file
+          	indicated the file could not be found. Every row of the table is identified with name of "family" of coordinate
+          	systems and an integer SRID. Different sources may assign same SRID to different reference systems, however
+          	descriptions of well-known systems match exactly or the difference is not noticeable for any practical
+          	application.</para>
+          <para>The loading process uses family names 'EPSG', 'ESRI', 'NAD83' and 'NAD27'. When the <link linkend="fn_ST_Transform"><function>ST_Transform()</function></link>
+          searches for a coordinate system that corresponds to a given SRID then it returns first record found while checking
+          the following families in the following order: 'PG', 'EPSG', 'ESRI','NAD83', 'NAD27'. Thus it is practical to put
+          all custom definitions in 'PG' family, thus they will get the highest priority.</para>
+          <para>A sample <ulink url="http://www.epsg.org/">EPSG</ulink> file containing the mapping for the proj.4
+          <ulink url="http://spatialreference.org/ref/epsg/4326/">EPSG:4326</ulink> coordinate system is:</para>
+<programlisting><![CDATA[
+$ cat /usr/share/proj/epsg
+<4326>+proj=longlat +ellps=WGS84 +datum=WGS84 +no_defs<>
+]]></programlisting>
+<programlisting><![CDATA[
+SQL> SELECT * FROM DB.DBA.SYS_V7PROJ4_SRIDS;
+SR_ID             SR_FAMILY          SR_TAG    SR_ORIGIN              SR_IRI    SR_PROJ4_STRING                                    SR_WKT    SR_COMMENT   SR_PROJ4_XML
+INTEGER NOT NULL  VARCHAR NOT NULL   VARCHAR   VARCHAR NOT NULL       VARCHAR   VARCHAR NOT NULL                                   VARCHAR   VARCHAR      VARCHAR
+_______________________________________________________________________________
+
+4326              EPSG               4326      /usr/share/proj/epsg   NULL      +datum=WGS84 +ellps=WGS84 +no_defs +proj=longlat             NULL         NULL
+
+1 Rows. -- 0 msec.
+SQL>
+]]></programlisting>
+          <para>There are two procedures are available for loading more co-ordinate systems:</para>
+          <orderedlist>
+            <listitem><code>DB.DBA.V7PROJ4_LOAD_SYS_SRIDS</code>: it is called at server startup if the v7proj4 plugin is loaded:
+<programlisting><![CDATA[
+DB.DBA.V7PROJ4_LOAD_SYS_SRIDS (
+  in projdir varchar := '/usr/share/proj',
+  in only_if_empty_table integer := 0
+)
+]]></programlisting>
+            </listitem>
+            <listitem><code>DB.DBA.V7PROJ4_LOAD_INIT_FILE</code>: it is lower-level procedure:
+<programlisting><![CDATA[
+DB.DBA.V7PROJ4_LOAD_INIT_FILE (
+  in path varchar,
+  in _sr_family varchar
+)
+]]></programlisting>
+            </listitem>
+          </orderedlist>
+          <para>The main part of <code>DB.DBA.V7PROJ4_LOAD_SYS_SRIDS()</code> is a sequence of: </para>
+<programlisting><![CDATA[
+DB.DBA.V7PROJ4_LOAD_INIT_FILE (projdir || '/epsg', 'EPSG');
+DB.DBA.V7PROJ4_LOAD_INIT_FILE (projdir || '/esri', 'ESRI');
+DB.DBA.V7PROJ4_LOAD_INIT_FILE (projdir || '/esri.extra', 'ESRI');
+DB.DBA.V7PROJ4_LOAD_INIT_FILE (projdir || '/nad83', 'NAD83');
+DB.DBA.V7PROJ4_LOAD_INIT_FILE (projdir || '/nad27', 'NAD27');
+]]></programlisting>
+          <para>Rows with same SRID but different <code>SR_FAMILY</code> may exist in the table, however only one
+          projection per SRID is used and <code>SR_FAMILY</code> defines the priority. The internal search query
+          for projection by SRID is:</para>
+<programlisting><![CDATA[
+SELECT COALESCE
+   (
+     ( SELECT SR_PROJ4_STRING FROM DB.DBA.SYS_V7PROJ4_SRIDS WHERE SR_ID=:0 AND SR_FAMILY='PG'),
+     ( SELECT SR_PROJ4_STRING FROM DB.DBA.SYS_V7PROJ4_SRIDS WHERE SR_ID=:0 AND SR_FAMILY='EPSG'),
+     ( SELECT SR_PROJ4_STRING FROM DB.DBA.SYS_V7PROJ4_SRIDS WHERE SR_ID=:0 AND SR_FAMILY='ESRI'),
+     ( SELECT SR_PROJ4_STRING FROM DB.DBA.SYS_V7PROJ4_SRIDS WHERE SR_ID=:0 AND SR_FAMILY='NAD83'),
+     ( SELECT SR_PROJ4_STRING FROM DB.DBA.SYS_V7PROJ4_SRIDS WHERE SR_ID=:0 AND SR_FAMILY='NAD27')
+   )
+]]></programlisting>
+          <para>so for <link linkend="fn_ST_Transform"><function>ST_Transform()</function></link> function 'PG' overrides everything else, EPSG is the next highest priority,
+          then ESRI, NAD83 and NAD27. However custom queries and procedure may select whatever they please, including sr families
+          not listed here or strings from other tables etc., and feed projection strings directly to <link linkend="fn_ST_Transform"><function>ST_Transform()</function></link>.</para>
+          <para>The co-ordinate systems can also be updated by direct manipulations on <code>DB.DBA.SYS_V7PROJ4_SRIDS table</code>
+          (the table it is readable for public and writable for DBA only). When the table is edited, call function
+          "<code>Proj4 cache_reset()</code>" to prevent SQL runtime from using previously prepared projections that might become
+          obsolete after changes in the table. Note that proj4 projections are for normalized data in radians whereas Virtuoso
+          stores shapes using numbers that come from WKT, i.e. they're latitudes and longitudes in degrees for almost all cases.</para>
+          <para>The v7proj4 plugin automatically applies <code>RAD_TO_DEG</code> multiplier before conversion and/or
+          <code>RAD_TO_DEG</code> multiplier after conversion when source and/or destination coordinate systems are
+          latitude-longitude or geocentric. Even if this conversion is done automatically, you should remember that it
+          happens, for the following reason. Many "how-to" instructions for spatial data sets contain paragraphs like
+          "how to convert these data to WGS-84" and sample C/C++ code contains transformations like
+          <code>{ x *= RAD_TO_DEG; y *= RAD_TO_DEG; }</code>. These transformations will probably be redundant in the
+          corresponding Virtuoso/PL code whereas proj4 strings can be used unchanged and passed as 3rd and 4th arguments of
+          <link linkend="fn_ST_Transform"><function>ST_Transform()</function></link> function. If degrees-to-radians conversion is made twice then the data can be calculated
+          as if the shape is located in a totally different place of ellipsoid. If the post-transformation radians-to-degrees
+          conversion is also made twice, the resulting shape may look like the real one but coordinates may be tens kilometers
+          away from correct values.</para>
+        </sect4>
+        <sect4 id="sqlrefgeospatial7enchanceplginex">
+          <title>ST_Transform() Example</title>
+          <para>Below are some example uses of the <link linkend="fn_ST_Transform"><function>ST_Transform()</function></link> function to transform some of the sample
+          coordinate systems load into Virtuoso:</para>
+<programlisting><![CDATA[
+SQL> SELECT * FROM DB.DBA.SYS_V7PROJ4_SRIDS;
+SR_ID              SR_FAMILY          SR_TAG    SR_ORIGIN              SR_IRI    SR_PROJ4_STRING                                                                                                                                                                         SR_WKT    SR_COMMENT   SR_PROJ4_XML
+INTEGER NOT NULL   VARCHAR NOT NULL   VARCHAR   VARCHAR NOT NULL       VARCHAR   VARCHAR NOT NULL                                                                                                                                                                        VARCHAR   VARCHAR      VARCHAR
+_______________________________________________________________________________
+
+2005               EPSG               2005      /usr/share/proj/epsg   NULL      +ellps=clrk80 +k=0.9995000000000001 +lat_0=0 +lon_0=-62 +no_defs +proj=tmerc +units=m +x_0=400000 +y_0=0                                                                                          NULL         NULL
+2249               EPSG               2249      /usr/share/proj/epsg   NULL      +datum=NAD83 +ellps=GRS80 +lat_0=41 +lat_1=42.68333333333333 +lat_2=41.71666666666667 +lon_0=-71.5 +no_defs +proj=lcc +to_meter=0.3048006096012192 +x_0=200000.0001016002 +y_0=750000             NULL         NULL
+4326               EPSG               4326      /usr/share/proj/epsg   NULL      +datum=WGS84 +ellps=WGS84 +no_defs +proj=longlat                                                                                                                                                  NULL         NULL
+
+3 Rows. -- 1 msec.
+SQL> SELECT ST_Transform (st_geomfromtext ('POLYGON((-16 20.25,-16.1 20.35,-15.9 20.35,-16 20.25))'), 1, '+proj=latlong +ellps=clrk66', '+proj=merc +ellps=clrk66 +lat_ts=33');
+unnamed
+VARCHAR NOT NULL
+_______________________________________________________________________________
+
+SRID=1;POLYGON((-1495284.211473 1920596.789917,-1504629.737795 1930501.842961,-1485938.685152 1930501.842961,-1495284.211473 1920596.789917))
+
+1 Rows. -- 0 msec.
+SQL> SELECT ST_AsText(ST_Transform(ST_GeomFromText('POLYGON((743238 2967416,743238 2967450, 743265 2967450,743265.625 2967416,743238 2967416))',2249),4326)) AS wgs_geom;
+wgs_geom
+VARCHAR NOT NULL
+_______________________________________________________________________________
+
+POLYGON((-71.177685 42.390290,-71.177684 42.390383,-71.177584 42.390383,-71.177583 42.390289,-71.177685 42.390290))
+
+1 Rows. -- 1 msec.
+SQL>
+]]></programlisting>
+        </sect4>
+     </sect3>
+   </sect2>
 </sect1>
 <sect1 id="sqlbulkloadoperations"><title>SQL Bulk Load, ELT, File Tables and Zero Load Operations</title>
   <sect2 id="sqlbulkloadoperationsftable"><title>File Tables</title>

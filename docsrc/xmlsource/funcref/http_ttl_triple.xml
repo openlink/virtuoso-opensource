@@ -58,7 +58,7 @@ vector (dict_new (16000), 0, '', '', '', 0, 0, 0, 0);
   </refsect1>
   <refsect1 id="examples_http_ttl_triple">
     <title>Examples</title>
-    <example id="ex_http_ttl_triple"><title></title>
+    <example id="ex_http_ttl_triple">
 <para><emphasis>Example 1</emphasis></para>    
 <programlisting><![CDATA[
 CREATE PROCEDURE dump_one_graph 
@@ -163,12 +163,12 @@ end_subj_sort: ;
   </refsect1>
   <refsect1 id="seealso_http_ttl_triple">
     <title>See Also</title>
-    <para><link linkend="fn_http_nt_triple"><function>http_nt_triple</function></link></para>        
-    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link></para>
-    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
-    <para><link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML</function></link></para>
-    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></link></para>
-    <para><link linkend="fn_ttlp_mt"><function>TTLP_MT</function></link></para>
-    <para><link linkend="fn_ttlp_mt_local_file"><function>TTLP_MT_LOCAL_FILE</function></link></para>
+    <para><link linkend="fn_http_nt_triple"><function>http_nt_triple()</function></link></para>
+    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA()</function></link></para>
+    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA()</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML()</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT()</function></link></para>
+    <para><link linkend="fn_ttlp_mt"><function>TTLP_MT()</function></link></para>
+    <para><link linkend="fn_ttlp_mt_local_file"><function>TTLP_MT_LOCAL_FILE()</function></link></para>
   </refsect1>
 </refentry>

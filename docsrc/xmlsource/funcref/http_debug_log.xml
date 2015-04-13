@@ -85,7 +85,6 @@
 	</tbody>
       </tgroup>
     </table>
-  <para></para>
   </refsect1>
   <refsect1 id="examples_http_debug_log"><title>Examples</title>
     <example id="ex_http_debug_log_1"><title>Logging DAV HTTP Requests</title>

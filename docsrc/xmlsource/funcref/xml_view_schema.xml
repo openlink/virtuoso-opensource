@@ -115,8 +115,9 @@ _______________________________________________________________________________
 
 &lt;/xsd:schema&gt;
 
-1 Rows. -- 5 msec.
+1 Rows. - - 5 msec.
 </programlisting>
+
 -->
 
 <programlisting>
@@ -163,5 +164,3 @@ _______________________________________________________________________________
     <para><link linkend="fn_xml_persistent">xml_persistent()</link></para>
   </refsect1>
 </refentry>
-
-

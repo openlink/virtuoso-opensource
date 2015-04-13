@@ -75,18 +75,18 @@ The simplest approach is to omit the parameter at all if you don't know the numb
   </refsect1> -->
   <refsect1 id="seealso_dict_new">
     <title>See Also</title>
-    <para><link linkend="fn_dict_zap"><function>dict_zap</function></link></para>
-    <para><link linkend="fn_dict_put"><function>dict_put</function></link></para>
-    <para><link linkend="fn_dict_get"><function>dict_get</function></link></para>
-    <para><link linkend="fn_dict_remove"><function>dict_remove</function></link></para>
-    <para><link linkend="fn_dict_inc_or_put"><function>dict_inc_or_put</function></link></para>
-    <para><link linkend="fn_dict_dec_or_remove"><function>dict_dec_or_remove</function></link></para>
-    <para><link linkend="fn_dict_size"><function>dict_size</function></link></para>
-    <para><link linkend="fn_dict_duplicate"><function>dict_duplicate</function></link></para>
-    <para><link linkend="fn_dict_to_vector"><function>dict_to_vector</function></link></para>
-    <para><link linkend="fn_dict_list_keys"><function>dict_list_keys</function></link></para>
-    <para><link linkend="fn_dict_destructive_list_rnd_keys"><function>dict_destructive_list_rnd_keys</function></link></para>
-    <para><link linkend="fn_dict_iter_rewind"><function>dict_iter_rewind</function></link></para>
-    <para><link linkend="fn_dict_iter_next"><function>dict_iter_next</function></link></para>
+    <para><link linkend="fn_dict_zap"><function>dict_zap()</function></link></para>
+    <para><link linkend="fn_dict_put"><function>dict_put()</function></link></para>
+    <para><link linkend="fn_dict_get"><function>dict_get()</function></link></para>
+    <para><link linkend="fn_dict_remove"><function>dict_remove()</function></link></para>
+    <para><link linkend="fn_dict_inc_or_put"><function>dict_inc_or_put()</function></link></para>
+    <para><link linkend="fn_dict_dec_or_remove"><function>dict_dec_or_remove()</function></link></para>
+    <para><link linkend="fn_dict_size"><function>dict_size()</function></link></para>
+    <para><link linkend="fn_dict_duplicate"><function>dict_duplicate()</function></link></para>
+    <para><link linkend="fn_dict_to_vector"><function>dict_to_vector()</function></link></para>
+    <para><link linkend="fn_dict_list_keys"><function>dict_list_keys()</function></link></para>
+    <para><link linkend="fn_dict_destructive_list_rnd_keys"><function>dict_destructive_list_rnd_keys()</function></link></para>
+    <para><link linkend="fn_dict_iter_rewind"><function>dict_iter_rewind()</function></link></para>
+    <para><link linkend="fn_dict_iter_next"><function>dict_iter_next()</function></link></para>
   </refsect1>
 </refentry>

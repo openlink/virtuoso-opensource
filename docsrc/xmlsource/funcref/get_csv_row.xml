@@ -52,7 +52,7 @@ the string using the BIF like cast sprintf_inverse and so on.</para>
 -->
   <refsect1 id="examples_get_csv_row">
     <title>Examples</title>
-    <example id="ex_get_csv_row"><title></title>
+    <example id="ex_get_csv_row"><title>Simple Use</title>
     <para>The following example prints on the Virtuoso Server console the CSV columns names:</para>
 <programlisting><![CDATA[
 SQL>create procedure my_csv (in file_name varchar)
@@ -83,10 +83,10 @@ s Phone;Business Fax;Pager;Company;Job Title;Department;Office Location;Notes' )
   </refsect1>
   <refsect1 id="seealso_get_csv_row">
     <title>See Also</title>
-    <para><link linkend="fn_csv_load_file"><function>csv_load_file</function></link></para>
-    <para><link linkend="fn_csv_load"><function>csv_load</function></link></para>
-    <para><link linkend="fn_csv_parse"><function>csv_parse</function></link></para>
-    <para><link linkend="fn_csv_cols_def"><function>csv_cols_def</function></link></para>
-    <para><link linkend="fn_csv_table_def"><function>csv_table_def</function></link></para>
+    <para><link linkend="fn_csv_load_file"><function>csv_load_file()</function></link></para>
+    <para><link linkend="fn_csv_load"><function>csv_load()</function></link></para>
+    <para><link linkend="fn_csv_parse"><function>csv_parse()</function></link></para>
+    <para><link linkend="fn_csv_cols_def"><function>csv_cols_def()</function></link></para>
+    <para><link linkend="fn_csv_table_def"><function>csv_table_def()</function></link></para>
   </refsect1>
 </refentry>

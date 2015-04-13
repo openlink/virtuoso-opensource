@@ -42,8 +42,7 @@
 -->
   <refsect1 id="examples_rdf_langmatches">
    <title>Examples</title>
-    <example id="ex_rdf_langmatches"><title></title>
-     <para></para>
+    <example id="ex_rdf_langmatches"><title>Simple example</title>
 <screen><![CDATA[
 SQL>SELECT DB.DBA.RDF_QNAME_OF_IID ( /*retval[*/  "s-4-1-t0"."P" /* p */ /*]retval*/ ) AS /*tmpl*/ "p",
     DB.DBA.RDF_SQLVAL_OF_OBJ ( /*retval[*/  "s-4-1-t0"."O" /* v */ /*]retval*/ ) AS /*tmpl*/ "v"

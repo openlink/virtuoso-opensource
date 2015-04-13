@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+
+  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+  project.
+
+  Copyright (C) 1998-2015 OpenLink Software
+
+  This project is free software; you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published by the
+  Free Software Foundation; only version 2 of the License, dated June 1991.
+
+  This program is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+
+  You should have received a copy of the GNU General Public License along
+  with this program; if not, write to the Free Software Foundation, Inc.,
+  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+
+  $
+-->
+<refentry id="fn_st_get_bounding_box_n">
+  <refmeta>
+    <refentrytitle>st_get_bounding_box_n</refentrytitle>
+    <refmiscinfo>geo</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>st_get_bounding_box_n</refname>
+    <refpurpose>Given a 1-based index of a member of a MULTI... or ...COLLECTION shape, returns the bounding box of a member.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_st_get_bounding_box_n">
+      <funcprototype id="fproto_st_get_bounding_box_n">
+        <funcdef><function>st_get_bounding_box_n</function></funcdef>
+	      <paramdef>in <parameter>shape</parameter> any</paramdef>
+	      <paramdef>in <parameter>idx</parameter> any</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_st_get_bounding_box_n">
+    <title>Description</title>
+    <para>Given a 1-based index of a member of a MULTI... or ...COLLECTION shape, returns the bounding box of a member.
+    	This is a fast equivalent of
+    	<link linkend="fn_st_get_bounding_box_n"><function>st_get_bounding_box_n(ST_GeometryN (shape,idx))</function></link>. </para>
+  </refsect1>
+  <refsect1 id="params_st_get_bounding_box_n">
+    <title>Parameters</title>
+    <refsect2><title>shape</title><para>Shape</para></refsect2>
+    <refsect2><title>idx</title><para>Index</para></refsect2>
+  </refsect1>
+  <refsect1 id="ret_st_get_bounding_box_n"><title>Return Types</title>
+    <para>Returns any.</para>
+  </refsect1>
+  <refsect1 id="examples_st_get_bounding_box_n">
+    <title>Examples</title>
+    <example id="ex_st_get_bounding_box_n"><title>Simple Use</title>
+      <screen><![CDATA[
+SQL> select st_get_bounding_box_n (
+              st_ewkt_read ('
+                GEOMETRYCOLLECTION(
+                  POINT(0 0),
+                  MULTILINESTRING(
+                    (1 5,0 1,4 0,5 4),
+                    (1 5,1 0,4 0,4 5)),
+                  MULTIPOLYGON(
+                    ((1 3,2 4,1 5,0 4,1 3)),
+                    ((1 2,2 1,1 0,0 1,1 2))))'), 1)
+unnamed
+VARCHAR NOT NULL
+_______________________________________________________________________________
+
+BOX2D(0.0 0.0,0.0 0.0)
+
+SQL> select st_get_bounding_box_n (
+              st_ewkt_read ('
+                GEOMETRYCOLLECTION(
+                  POINT(0 0),
+                  MULTILINESTRING(
+                    (1 5,0 1,4 0,5 4),
+                    (1 5,1 0,4 0,4 5)),
+                  MULTIPOLYGON(
+                    ((1 3,2 4,1 5,0 4,1 3)),
+                    ((1 2,2 1,1 0,0 1,1 2))))'), 2)
+unnamed
+VARCHAR NOT NULL
+_______________________________________________________________________________
+
+BOX2D(0.0 0.0,5.000001 5.000001)
+]]>
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_st_get_bounding_box_n">
+    <title>See Also</title>
+    <para><link linkend="fn_st_get_bounding_box"><function>st_get_bounding_box()</function></link></para>
+    <para><link linkend="fn_st_point"><function>st_point</function></link></para>
+    <para><link linkend="fn_st_x"><function>st_x</function></link></para>
+    <para><link linkend="fn_st_y"><function>st_y</function></link></para>
+    <para><link linkend="fn_ST_Z"><function>ST_Z</function></link></para>
+    <para><link linkend="fn_st_distance"><function>st_distance</function></link></para>
+    <para><link linkend="fn_ST_SetSRID"><function>ST_SetSRID</function></link></para>
+    <para><link linkend="fn_st_astext"><function>st_astext</function></link></para>
+    <para><link linkend="fn_st_geomfromtext"><function>st_geomfromtext</function></link></para>
+    <para><link linkend="fn_st_intersects"><function>st_intersects</function></link></para>
+    <para><link linkend="fn_st_contains"><function>st_contains</function></link></para>
+    <para><link linkend="fn_st_within"><function>st_within</function></link></para>
+    <para><link linkend="fn_isgeometry"><function>isgeometry</function></link></para>
+    <para><link linkend="fn_geo_insert"><function>geo_insert</function></link></para>
+    <para><link linkend="fn_geo_delete"><function>geo_delete</function></link></para>
+    <para><link linkend="fn_rdf_geo_add"><function>DB.DBA.RDF_GEO_ADD</function></link></para>
+    <para><link linkend="fn_rdf_geo_fill"><function>DB.DBA.RDF_GEO_FILL</function></link></para>
+  </refsect1>
+</refentry>

@@ -46,8 +46,7 @@
 -->
   <refsect1 id="examples_rdf_ttl2hash">
    <title>Examples</title>
-    <example id="ex_rdf_ttl2hash"><title></title>
-     <para></para>
+    <example id="ex_rdf_ttl2hash"><title>Simple example</title>
 <screen><![CDATA[
 ]]></screen>
     </example>

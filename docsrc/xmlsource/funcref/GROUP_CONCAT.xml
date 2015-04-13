@@ -42,7 +42,7 @@
   </refsect1>
   <refsect1 id="examples_GROUP_CONCAT">
     <title>Examples</title>
-    <example id="ex_GROUP_CONCAT"><title></title>
+    <example id="ex_GROUP_CONCAT"><title>Simple Use</title>
 <programlisting><![CDATA[
 SQL>SPARQL 
 SELECT ?name, (sql:GROUP_CONCAT(?near, ' , '))
@@ -77,9 +77,9 @@ No. of rows in result: 10
   </refsect1>
   <refsect1 id="seealso_GROUP_CONCAT">
     <title>See Also</title>
-    <para><link linkend="fn_SAMPLE"><function>DB.DBA.SAMPLE</function></link></para>
-    <para><link linkend="fn_GROUP_CONCAT_DISTINCT"><function>DB.DBA.GROUP_CONCAT_DISTINCT</function></link></para>
-    <para><link linkend="fn_GROUP_DIGEST"><function>DB.DBA.GROUP_DIGEST</function></link></para>
+    <para><link linkend="fn_SAMPLE"><function>DB.DBA.SAMPLE()</function></link></para>
+    <para><link linkend="fn_GROUP_CONCAT_DISTINCT"><function>DB.DBA.GROUP_CONCAT_DISTINCT()</function></link></para>
+    <para><link linkend="fn_GROUP_DIGEST"><function>DB.DBA.GROUP_DIGEST()</function></link></para>
     <para><link linkend="samplegroupconcatdigest">Differences between DB.DBA.SAMPLE, DB.DBA.GROUP_CONCAT and
     DB.DBA.GROUP_DIGEST functions usage.</link></para>
   </refsect1>

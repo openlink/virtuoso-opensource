@@ -53,8 +53,7 @@
   </refsect1>
   <refsect1 id="examples_st_y">
     <title>Examples</title>
-    <example id="ex_st_y"><title></title>
-      <para></para>
+    <example id="ex_st_y"><title>Simple Use</title>
 <programlisting><![CDATA[
 SQL>SELECT st_y( st_point (10, 20));
 callret
@@ -93,8 +92,8 @@ No. of rows in result: 10
     <para><link linkend="fn_st_point"><function>st_point</function></link></para>
     <para><link linkend="fn_st_x"><function>st_x</function></link></para>
     <para><link linkend="fn_st_distance"><function>st_distance</function></link></para>
-    <para><link linkend="fn_st_srid"><function>st_srid</function></link></para>
-    <para><link linkend="fn_st_setsrid"><function>st_setsrid</function></link></para>
+    <para><link linkend="fn_ST_SRID"><function>st_srid</function></link></para>
+    <para><link linkend="fn_ST_SetSRID"><function>st_setsrid</function></link></para>
     <para><link linkend="fn_st_astext"><function>st_astext</function></link></para>
     <para><link linkend="fn_st_geomfromtext"><function>st_geomfromtext</function></link></para>
     <para><link linkend="fn_st_intersects"><function>st_intersects</function></link></para>

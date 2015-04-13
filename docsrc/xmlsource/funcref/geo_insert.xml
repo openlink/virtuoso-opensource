@@ -42,8 +42,7 @@ on a geometry column. The function is transactional and makes a transaction log 
   </refsect1>
   <refsect1 id="examples_geo_insert">
     <title>Examples</title>
-    <example id="ex_geo_insert"><title></title>
-      <para></para>
+    <example id="ex_geo_insert"><title>Simple example</title>
 <programlisting><![CDATA[
 ]]></programlisting>
     </example>
@@ -54,8 +53,8 @@ on a geometry column. The function is transactional and makes a transaction log 
     <para><link linkend="fn_st_x"><function>st_x</function></link></para>
     <para><link linkend="fn_st_y"><function>st_y</function></link></para>
     <para><link linkend="fn_st_distance"><function>st_distance</function></link></para>
-    <para><link linkend="fn_st_srid"><function>st_srid</function></link></para>
-    <para><link linkend="fn_st_setsrid"><function>st_setsrid</function></link></para>
+    <para><link linkend="fn_ST_SRID"><function>st_srid</function></link></para>
+    <para><link linkend="fn_ST_SetSRID"><function>st_setsrid</function></link></para>
     <para><link linkend="fn_st_astext"><function>st_astext</function></link></para>
     <para><link linkend="fn_st_geomfromtext"><function>st_geomfromtext</function></link></para>
     <para><link linkend="fn_st_intersects"><function>st_intersects</function></link></para>

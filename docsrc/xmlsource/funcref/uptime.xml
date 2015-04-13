@@ -42,7 +42,7 @@
 	<para>The uptime function will run a string result set with how much time server have been up.</para>
 	</refsect1>
 	<refsect1 id="examples"><title>Examples</title>
-    <example id="ex_uptime"><title></title>
+    <example id="ex_uptime"><title>Simple Use</title>
 <programlisting>
 <![CDATA[
 SQL> uptime();
@@ -57,7 +57,7 @@ _______________________________________________________________________________
   </refsect1>
   <refsect1 id="seealso"><title>See Also</title>
     <para>
-      <link linkend="fn_system"><function>system</function></link>
+      <link linkend="fn_system"><function>system()</function></link>
     </para>
   </refsect1>
 </refentry>

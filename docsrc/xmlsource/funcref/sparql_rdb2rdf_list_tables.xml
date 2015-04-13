@@ -46,6 +46,6 @@
   <refsect1 id="seealso_sparql_rdb2rdf_list_tables">
     <title>See Also</title>
     <para><link linkend="rdb2rdftriggers">RDB2RDF Triggers</link></para>             
-    <para><link linkend="fn_sparql_rdb2rdf_codegen">DB.DBA.SPARQL_RDB2RDF_CODEGEN</link></para>                
+    <para><link linkend="fn_sparql_rdb2rdf_codegen"><function>DB.DBA.SPARQL_RDB2RDF_CODEGEN()</function></link></para>
   </refsect1>
 </refentry>

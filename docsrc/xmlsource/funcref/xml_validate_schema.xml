@@ -84,7 +84,7 @@ how to let validator to do better job.</para></refsect2>
   </refsect1>
   <refsect1 id="ret"><title>Return Types</title><para>Human readable list of errors if applicable as a varchar.</para></refsect1>
   <refsect1 id="examples"><title>Validating XML Against a DTD</title>
-    <example id="ex_xml_validate_schema"><title></title>
+    <example id="ex_xml_validate_schema"><title>Simple Use</title>
 <programlisting>
 declare _result varchar;  
 _result := xml_validate_schema (
@@ -96,11 +96,11 @@ if (_res = '') _res := 'NO ERRORS DETECTED';
     </example>
   </refsect1>
   <refsect1 id="seealso"><title>See Also</title>
-    <para><link linkend="fn_xml_validate_dtd">xml_validate_dtd</link></para>
-    <para><link linkend="fn_xml_view_dtd">xml_view_dtd</link></para>
-    <para><link linkend="fn_xml_view_schema">xml_view_schema</link></para>
-    <para><link linkend="fn_xtree_doc">xtree_doc</link></para>
-    <para><link linkend="fn_xper_doc">xper_doc</link></para>
+    <para><link linkend="fn_xml_validate_dtd"><function>xml_validate_dtd()</function></link></para>
+    <para><link linkend="fn_xml_view_dtd"><function>xml_view_dtd()</function></link></para>
+    <para><link linkend="fn_xml_view_schema"><function>xml_view_schema()</function></link></para>
+    <para><link linkend="fn_xtree_doc"><function>xtree_doc()</function></link></para>
+    <para><link linkend="fn_xper_doc"><function>xper_doc()</function></link></para>
   </refsect1>
 </refentry>
 

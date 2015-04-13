@@ -45,7 +45,7 @@
 -->
   <refsect1 id="examples_ld_dir">
     <title>Examples</title>
-    <example id="ex_ld_dir"><title></title>
+    <example id="ex_ld_dir"><title>Simple Use</title>
 <programlisting><![CDATA[
 ld_dir ('/data8/2848260', '%.gz', 'http://bsbm.org');
 ]]></programlisting>    
@@ -58,13 +58,13 @@ ld_dir ('/data8/2848260', '%.gz', 'http://bsbm.org');
   </refsect1>
   <refsect1 id="seealso_ld_dir">
     <title>See Also</title>
-    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link></para>
-    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
-    <para><link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML</function></link></para>
-    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></link></para>
-    <para><link linkend="fn_ttlp_mt"><function>DB.DBA.TTLP_MT</function></link></para>
-    <para><link linkend="fn_ttlp"><function>DB.DBA.TTLP</function></link></para>
-    <para><link linkend="fn_ttlp_mt_local_file"><function>DB.DBA.TTLP_MT_LOCAL_FILE</function></link></para>
+    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA()</function></link></para>
+    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA()</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML()</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT()</function></link></para>
+    <para><link linkend="fn_ttlp_mt"><function>DB.DBA.TTLP_MT()</function></link></para>
+    <para><link linkend="fn_ttlp"><function>DB.DBA.TTLP()</function></link></para>
+    <para><link linkend="fn_ttlp_mt_local_file"><function>DB.DBA.TTLP_MT_LOCAL_FILE()</function></link></para>
     <para><link linkend="rdfperfloadingutility">RDF Bulk Load Utility</link></para>
   </refsect1>
 </refentry>

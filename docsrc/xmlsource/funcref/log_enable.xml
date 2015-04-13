@@ -34,8 +34,8 @@
     <funcsynopsis id="fsyn_log_enable">
       <funcprototype id="fproto_log_enable">
         <funcdef><function>log_enable</function></funcdef>
-        <paramdef>in <parameter>bits</parameter> integer
-        <optional>in <parameter>quiet</parameter> integer</optional></paramdef>
+        <paramdef>in <parameter>bits</parameter> integer</paramdef>
+        <paramdef><optional>in <parameter>quiet</parameter> integer</optional></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>

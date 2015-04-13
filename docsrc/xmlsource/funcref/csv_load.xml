@@ -64,8 +64,7 @@ type of columns error will be signaled.</para>
   </refsect1>
   <refsect1 id="examples_csv_load">
     <title>Examples</title>
-    <example id="ex_csv_load"><title></title>
-    <para></para>
+    <example id="ex_csv_load"><title>Simple Use</title>
 <programlisting><![CDATA[
 SQL>create procedure my_csv_load (in file_name varchar)
 {

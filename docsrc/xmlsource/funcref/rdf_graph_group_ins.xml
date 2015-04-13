@@ -58,8 +58,7 @@
   </refsect1>
   <refsect1 id="examples_rdf_graph_group_ins">
     <title>Examples</title>
-    <example id="ex_rdf_graph_group_ins"><title></title>
-      <para></para>
+    <example id="ex_rdf_graph_group_ins"><title>Simple example</title>
       <screen><![CDATA[
 SQL>DB.DBA.RDF_GRAPH_GROUP_CREATE ('TestGroup',1);
 Done. -- 50 msec.

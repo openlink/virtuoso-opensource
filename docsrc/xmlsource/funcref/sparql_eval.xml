@@ -47,8 +47,7 @@
 -->
   <refsect1 id="examples_sparql_eval">
    <title>Examples</title>
-    <example id="ex_sparql_eval"><title></title>
-      <para></para>
+    <example id="ex_sparql_eval"><title>Simple Use</title>
       <screen><![CDATA[
 SQL>DB.DBA.SPARQL_EVAL('SELECT * WHERE {?s ?p ?o}','http://example/bookStore' ,10);
 s                     p              o

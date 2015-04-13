@@ -78,7 +78,6 @@
   <refsect1 id="examples_dsig_template_ext">
     <title>Examples</title>
     <example id="ex_dsig_template_ext"><title>Making a XML signature template</title>
-      <para></para>
       <screen><![CDATA[
 create procedure XENC_TEMPLATE (in body varchar, in key_name varchar)
 {
@@ -126,9 +125,5 @@ create procedure XENC_TEMPLATE (in body varchar, in key_name varchar)
 ]]>
 </screen>
     </example>
-  </refsect1>
-  <refsect1 id="seealso_dsig_template_ext">
-    <title>See Also</title>
-    <para><link linkend="fn"><function></function></link></para>
   </refsect1>
 </refentry>

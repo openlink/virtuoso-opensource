@@ -37,7 +37,7 @@
   </refsect1>
   <refsect1 id="examples_rdf_datatype_of_obj">
    <title>Examples</title>
-    <example id="ex_rdf_datatype_of_obj"><title></title>
+    <example id="ex_rdf_datatype_of_obj"><title>Usage Examples</title>
 <programlisting><![CDATA[
 # Explicit typecast (insert) 
 SQL> sparql insert into <test_datatype> { <a> <string> "string 1"^^xsd:string . };

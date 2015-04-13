@@ -54,8 +54,8 @@
   <refsect1 id="seealso_rdf_suo_apply_patch">
     <title>See Also</title>
     <para><link linkend="fastapproxdiffandpatch">Fast Approximate RDF Graph Diff and Patch</link></para>             
-    <para><link linkend="fn_rdf_graph_diff">DB.DBA.RDF_GRAPH_DIFF</link></para>
-    <para><link linkend="fn_rdf_suo_diff_ttl">DB.DBA.RDF_SUO_DIFF_TTL</link></para>
-    <para><link linkend="fn_rdf_graph_collect_fp_list">DB.DBA.RDF_GRAPH_COLLECT_FP_LIST</link></para>            
+    <para><link linkend="fn_rdf_graph_diff"><function>DB.DBA.RDF_GRAPH_DIFF()</function></link></para>
+    <para><link linkend="fn_rdf_suo_diff_ttl"><function>DB.DBA.RDF_SUO_DIFF_TTL()</function></link></para>
+    <para><link linkend="fn_rdf_graph_collect_fp_list"><function>DB.DBA.RDF_GRAPH_COLLECT_FP_LIST()</function></link></para>
   </refsect1>
 </refentry>

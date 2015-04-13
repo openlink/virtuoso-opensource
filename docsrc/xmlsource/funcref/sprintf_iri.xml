@@ -49,7 +49,7 @@
 </refsect1>
  <refsect1 id="examples_sprintf_iri">
    <title>Examples</title>
-    <example id="ex_sprintf_iri"><title></title>
+    <example id="ex_sprintf_iri"><title>Simple Use</title>
       <screen><![CDATA[
 create function job_history(
   in EMPLOYEE_ID integer,

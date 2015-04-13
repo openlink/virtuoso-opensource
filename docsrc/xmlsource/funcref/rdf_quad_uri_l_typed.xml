@@ -58,8 +58,7 @@
 -->
   <refsect1 id="examples_rdf_quad_uri_l_typed">
    <title>Examples</title>
-    <example id="ex_rdf_quad_uri_l_typed"><title></title>
-     <para></para>
+    <example id="ex_rdf_quad_uri_l_typed"><title>Simple example</title>
 <screen><![CDATA[
 SQL>DB.DBA.RDF_QUAD_URI_L_TYPED ('g_many', 's1', 'p_some', 'z016,g_many,s1,p_some', null, 'en');
 

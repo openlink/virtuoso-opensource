@@ -47,7 +47,8 @@ Default is 0, meaning no permitted deviations from the spec. Other supported bit
  64 - Relax TURTLE syntax to include popular violations.
 128 - Try to recover from lexical errors as much as it is possible.
 256 - Allows TriG syntax, thus loading data in more than one graph.
-512 - Allows loading N-quad dataset files with and optional context value to indicate provenance as detailed
+ 512 - Allows loading N-quad dataset files with and optional context value to indicate provenance as detailed.
+8192 - Enables searching for Turtle within the string.
 <ulink url="http://sw.deri.org/2008/07/n-quads/">here</ulink>.
 ]]></programlisting>
     </refsect2>
@@ -131,11 +132,11 @@ Done. -- 48 msec.
   </refsect1>
   <refsect1 id="seealso_ttlp">
     <title>See Also</title>
-    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link></para>
-    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
-    <para><link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML</function></link></para>
-    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></link></para>
-    <para><link linkend="fn_ttlp_mt"><function>DB.DBA.TTLP_MT</function></link></para>
-    <para><link linkend="fn_ttlp_mt_local_file"><function>DB.DBA.TTLP_MT_LOCAL_FILE</function></link></para>
+    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA()</function></link></para>
+    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA()</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML()</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT()</function></link></para>
+    <para><link linkend="fn_ttlp_mt"><function>DB.DBA.TTLP_MT()</function></link></para>
+    <para><link linkend="fn_ttlp_mt_local_file"><function>DB.DBA.TTLP_MT_LOCAL_FILE()</function></link></para>
   </refsect1>
 </refentry>

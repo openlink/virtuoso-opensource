@@ -844,6 +844,12 @@ SQL> registry_set ('sparql_endpoint_xsl', 'http://host:port/path/isparql.xsl');
 <link linkend="anytimequeries">Anytime Queries</link> for more details</entry>
         <entry>No</entry>
       </row>
+      <row>
+        <entry>debug</entry>
+        <entry>If set to on, SPARQL Compiler will check if all variables are declared, and if there
+        	is variable that is not declared, an error will be raised</entry>
+        <entry>No</entry>
+      </row>
     </tbody>
   </tgroup>
 </table>
@@ -1312,6 +1318,35 @@ TURTLE output, 'application/x-rdf+json' and 'application/rdf+json' are for "Seri
 Results in JSON". When a client specifies obsolete MIME type but not its standard variant, an obsolete
 variant is returned for interoperability.
 </para>
+</sect4>
+<sect4 id="viewresultspagesparqldebug"><title>Strict checking of void variables</title>
+  <para>To set SPARQL Endpoint to check if all variables in a given query are declared correctly,
+  	one should hatch the the Options "Strict checking of void variables" check-box. In that case,
+  	if a variable declaration is missing, i.e. not included in the SPARQL Query WHERE clause, then an error will be raised.
+  	For example, on attempt to execute the following query:
+  </para>
+<programlisting><![CDATA[
+-- 	Options "Strict checking of void variables" check-box is checked:
+select ?y
+where
+ {
+  ?s ?p ?o
+ }
+]]></programlisting>
+   <para>since the variable <code>?y</code> is not declared, the following error will be raised:</para>
+<programlisting><![CDATA[
+Virtuoso 37000 Error SP031: SPARQL compiler:
+Variable 'y' is used in the query result set but not assigned
+
+SPARQL query:
+
+#output-format:text/html
+define sql:signal-void-variables 1 define sql:gs-app-callback "ODS" select ?y
+where
+{
+?s ?p ?o
+}
+]]></programlisting>
 </sect4>
 <sect4 id="viewresultspagesparqlqex"><title>View Results Page of SPARQL Query Execution</title>
 <para>To view SPARQL Endpoint Results page of SPARQL query execution should be used the parameter 
@@ -4892,7 +4927,7 @@ transitive properties from SKOS vocabulary: Variant II</title>
 <p>This example shows how to find entities that are subcategories of Protestant Churches, no deeper
 than 3 levels within the concept scheme hierarchy, filtered by a specific subcategory. It demonstrates
 use of inference rules, sub-queries, and filter to obtain entities associated with category:
-Protestant_churches combined with the use of the transitivitve closure, sets to a maximum of 3 steps down a SKOS based concept scheme hierarchy:</p>
+Protestant_churches combined with the use of the transitivitve closure, sets to a maximum of 3 steps down a SKOS based concept scheme hierarchy:</p>
 <orderedlist>
   <listitem>Make sure the inference rule "skos-trans" is created as described in the previous <link linkend="rdfsparqlimplementatiotransexamples7">example</link></listitem>
   <listitem>Go to SPARQL endpoint, for ex. http://lod.openlinksw.com/sparql</listitem>
@@ -5616,7 +5651,7 @@ WHERE
     ?s foaf:Name ?name . ?name bif:contains "'rich*'".
   }
 </programlisting>
-<para>would match all subjects whose <emphasis>foaf:Name</emphasis> contained a word starting with Rich.
+<para>would match all subjects whose <emphasis>foaf:Name</emphasis> contain a word Rich.
 This would match Richard, Richie etc.
 </para>
 <para>Note that words and phrases should be enclosed in quotes if they contain spaces or
@@ -8497,26 +8532,48 @@ query text is not important.</para>
 become equivalent to NOT FROM and NOT FROM NAMED clauses like <emphasis>input:default-graph-uri</emphasis>
 and <emphasis>input:named-graph-uri</emphasis> mimics FROM and FROM NAMED.</para>
 </sect2>
-<sect2 id="rdfgraphsecurity"><title>Graph-Level Security</title>
-<para>Virtuoso supports graph-level security for "physical" RDF storage. That is somewhat similar to table
-access permissions in SQL. However, the difference between SPARQL and SQL data models results in totally
-different style of security administration. In SQL, when new application is installed it comes with its own
-set of tables and every query in its code explicitly specifies tables in use. Security restrictions of two
-applications interfere only if applications knows each other and are supposedly designed to cooperate. It
-is possible to write an application that will get list of available tables and retrieve data from any given
-table but that is a special case and it usually requires DBA privileges.</para>
-
-<para>In SPARQL, data of different applications shares one table and the query language allows to select data
-of all applications at once. This feature makes SPARQL convenient for cross-application data integration. At
-the same time, that become a giant security hole if any sensitive data are stored.</para>
-
-<para>A blind copying SQL security model to SPARQL domain would result in significant loss of performance or
-weak security or even both problems at the same time. That is why SPARQL model is made much more restrictive,
-even if it becomes inconvenient for some administration tasks.</para>
-
-<para>Graph-level security does not replace traditional SQL security. A user should become member of
-appropriate group (SPARQL_SELECT, SPARQL_SPONGE or SPARQL_UPDATE) in order to start using its graph-level
-privileges.</para>
+  <sect2 id="rdfgraphsecuritylevel"><title>Graph-Level Security</title>
+    <para>Virtuoso supports graph-level security for "physical" RDF storage. That is somewhat similar to table access
+    	permissions in SQL. However, the difference between SPARQL and SQL data models results in totally different style
+    	of security administration. In SQL, when new application is installed it comes with its own set of tables and every
+    	query in its code explicitly specifies tables in use. Security restrictions of two applications interfere only if
+    	applications knows each other and are supposedly designed to cooperate. It is possible to write an application that
+    	will get list of available tables and retrieve data from any given table but that is a special case and it usually
+    	requires DBA privileges.</para>
+    <para>In SPARQL, data of different applications shares one table and the query language allows to select data of all
+    	applications at once. This feature makes SPARQL convenient for cross-application data integration. At the same time,
+    	that become a giant security hole if any sensitive data are stored.</para>
+    <para>A blind copying SQL security model to SPARQL domain would result in significant loss of performance or weak
+    	security or even both problems at the same time. That is why SPARQL model is made much more restrictive, even if
+    	it becomes inconvenient for some administration tasks.</para>
+    <para>Graph-level security does not replace traditional SQL security. A user should become member of appropriate
+    	group (<code>SPARQL_SELECT</code>, <code>SPARQL_SPONGE</code> or <code>SPARQL_UPDATE</code>) in order to start
+    	using its graph-level privileges.</para>
+  </sect2>
+  <sect2 id="rdfgraphsecuritylevelrow"><title>Graph-Level Security and SQL</title>
+    <para>SPARQL-level graph security is sufficient for SPARQL client operating over HTTP. It is not sufficient for SQL
+    	clients due to the fact that graph level security is baked into the SPARQL compiler, not by an SQL compiler.</para>
+    <para>The Virtuoso SPARQL compiler analyzes the graph-level permissions of a user (an identity principal named using
+    	an identifier e.g., WebID or NetID). For each triple pattern or graph group pattern the compiler adds an implicit
+    	FILTER () that ensures that appropriate privileges are granted on target named graphs to a given user. Ultimately,
+    	these FILTERs becomes part of the generated SQL code processed against the RDF_QUAD and related RDF data management
+    	system tables.</para>
+    <para>SQL users accessing Virtuoso via ODBC, JDBC, ADO.NET, and OLE-DB connections have the ability to execute arbitrary
+    	SQL code via stored procedures, subject to SQL level privileges on target Tables and Views which provides a point of
+    	vulnerability to the RDF system tables (RDF_QUAD and others). To close this vulnerability, the SQL compiler restricts
+    	SQL connection access, in regards to RDF system tables, to members of <code>the SPARQL_SELECT_RAW</code> group.</para>
+    <para><i><emphasis>Note:</emphasis> <code>SPARQL_SELECT_RAW</code> group is a feature applicable to Virtuoso 7.5 or higher.</i></para>
+    <sect3 id="rdfgraphsecuritylevelrowex"><title>Graph-Level Security and SQL Usage Example</title>
+      <para>The following example demonstrates how to grant <code>SPARQL_SELECT_RAW</code> to a Virtuoso SQL user:</para>
+<programlisting><![CDATA[
+SQL> DB.DBA.USER_CREATE ('John', 'John');
+Done. -- 0 msec.
+SQL> GRANT SPARQL_SELECT to "John";
+Done. -- 0 msec.
+SQL> GRANT SPARQL_SELECT_RAW to "John";
+Done. -- 0 msec.
+]]></programlisting>
+    </sect3>
 </sect2>
 <sect2 id="rdfgraphsecurityunddefperm"><title>Understanding Default Permissions</title>
 
@@ -10917,6 +10974,11 @@ system</listitem>
   <listitem>Click on Cancel to return to the initial Linked Data View Generation form.</listitem>
 </orderedlist>
 </sect2>
+<sect2 id="rdfrdfviewgnrisql"><title>Manual Linked Data Generation &amp; Deployment using iSQL command-line</title>
+To generate data synchronization triggers and/or actual RDF quad store data from transient Linked Data views, one can use the
+Virtuoso built-in <link linkend="fn_rdf_view_sync_to_physical"><function>RDF_VIEW_SYNC_TO_PHYSICAL()</function></link> function calling it
+from the iSQL command-line. See <link linkend="fn_rdf_view_sync_to_physical"><function>more details and usage examples.</function></link>
+</sect2>
 </sect1>
 
 <sect1 id="r2rml"><title>Virtuoso R2RML Support</title>
@@ -11180,7 +11242,7 @@ SPARQL
     <para><emphasis>rr:sqlQuery</emphasis> is not currently supported, due to limitations in 
     the optimizer used for Virtuoso's native implementation of Linked Data Views.</para>
   </sect2>      
-  <sect2 id="r2rmlgenlviewisql"><title>Generating an R2RML Linked Data View from ISQL</title>  
+  <sect2 id="r2rmlgenlviewisql"><title>Generating an R2RML based Linked Data View from iSQL command-line</title>
     <para>Using Virtuoso you can programmatically generate Linked Data Views atop Relational Data Sources, 
     	using R2RML via the built-in function: <emphasis>R2RML_GENERATE_LINKED_VIEW</emphasis> function. 
     	In order to use this function, you need to have the 
@@ -12593,7 +12655,7 @@ into graph <http://www.openlinksw.com/> -- done</callret-0>
 </para>
 <figure id="virtuosospongerdiagram" float="1">
 		<title>OpenLink Linked Data generation options</title>
-		<graphic fileref="linked_data_gen_opts3.png"/>
+		<graphic fileref="Sponger_LinkedDataGenOptions_2014_v3.png"/>
         </figure>
 <para>
 Architecturally, the Sponger is comprised of a number of Cartridges two types of cartridges: Extractor 
@@ -14899,7 +14961,7 @@ follows:</para>
 <listitem>Micro-formats
   <itemizedlist>
     <listitem>GRDDL - GRDDL Data Views: RDF expressed in XHTML and XML: http://www.w3.org/2003/g/data-view#</listitem>
-    <listitem>eRDF - http://purl.org/NET/erdf/profile</listitem>
+    <listitem>eLinked Data - http://purl.org/NET/erdf/profile</listitem>
     <listitem>RDFa</listitem>
     <listitem>hCard - http://www.w3.org/2006/03/hcard</listitem>
     <listitem>hCalendar - http://dannyayers.com/microformats/hcalendar-profile</listitem>
@@ -14913,7 +14975,7 @@ follows:</para>
 </listitem>
 <listitem>Feeds extraction
   <itemizedlist>
-    <listitem>RSS/RDF - SIOC &amp; AtomOWL</listitem>
+    <listitem>RSS/Linked Data - SIOC &amp; AtomOWL</listitem>
     <listitem>RSS 1.0 - RSS/RDF, SIOC &amp; AtomOWL</listitem>
     <listitem>Atom 1.0 - RSS/RDF, SIOC &amp; AtomOWL</listitem>
   </itemizedlist>
@@ -15801,7 +15863,7 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (
     aq_request (async_queue, 'DB.DBA.RDF_SW_PING',
                 vector (ping_service, new_origin_uri));
 ]]></programlisting>
-        <para>For more details refer to section <link linkend="ASYNCEXECMULTITHREAD">Asynchronous Execution and Multithreading in Virtuoso/PL</link></para>
+        <para>For more details refer to section <link linkend="asyncexecmultithread">Asynchronous Execution and Multithreading in Virtuoso/PL</link></para>
       </sect4>
       <sect4 id="virtuosospongeremname">
         <title>Main Namespaces used by OpenLink Cartridges</title>
@@ -16129,6 +16191,259 @@ sparql define get:soft "soft" select * from <http://www.amazon.com/Apple-touch-G
 ]]></programlisting>      	
 </listitem>                  
     </orderedlist>
+  </sect3>
+</sect2>
+<sect2 id="virtuosospongernnt"><title>Sponger and Nanotations</title>
+  <sect3 id="virtuosospongernnts"><title>Situation Analysis</title>
+    <para>Since the advent of blogging, it has been clear to everyone that posts require augmentation in order to truly
+    	function as rapid-fire meme vectors. For instance, could you imagine early blog posts without tagging?</para>
+    <para>Today, we've evolved from early literal tagging (which didn't scale an iota) to wide use of <code>@handles</code> and
+    <code>#hastags</code>. Basically, <code>@handles</code> are social network specific HTTP URIs that denote Agents (People,
+    Organizations, and Bots) while <code>#hashtags</code> are HTTP URIs that denote Topics.</para>
+    <para><emphasis>Problem:</emphasis> Looking at the picture above, in regards to productively encoding and decoding information
+    via the World Wide Web medium, it should be obvious that <code>@handles</code> and <code>#hashtags</code> are basically the
+    digital equivalents of nouns. And as a consequence, we are basically trying to replicate the power of natural language
+    sentences without critical components such as verbs (connectors) and adjectives (classifiers).</para>
+    <para><emphasis>A Solution:</emphasis> Leverage the power of an existing language, based on open standards, that already
+    delivers the power of natural language without being limited by the physical constraints of paper (as a mechanism for
+    sentence persistence and exchange).</para>
+    <para>This is where RDF comes into play. It is an open standards based language for constructing digital sentences that pack
+    	the same (or even more power) its natural language equivalents. Through the power of RDF it is possible to create
+    	micro-annotations (aka. Nanotations) that are embeddable in any kind of text based documents. Naturally, the aforementioned
+    	claim doesn't apply to every RDF notation, which is why RDF-Turtle is the vehicle we've chosen to unleash the full power of
+    	RDF and the Semantic Web it enables when digital sentences take the form of Linked Open Data.</para>
+  </sect3>
+  <sect3 id="virtuosospongernntw"><title>What is Nanotation?</title>
+    <para>Nanotation is a mechanism for using embedded digital sentences to enhance blog posts, forum discussion posts, tweets
+    	(and other micro-blogging posts), HTML, and plain text document. In addition, it turns each of the aforementioned document
+    	types into end-user oriented conduits for contributing data to public and/or private Linked Open Data clouds, on a
+    	piecemeal basis -- i.e., you turn curating and publishing Linked Open Data Cloud into a productive crowd-sourced jigsaw
+    	puzzle game.</para>
+  </sect3>
+  <sect3 id="virtuosospongernntm"><title>Why is it important?</title>
+    <para>Being able to say anything, about anything, whenever, and from wherever, in a manner that's both machine and human
+    	comprehensible has always sat at the very foundations of the Semantic Web Project's value proposition. Unfortunately,
+    	confusion about RDF -- the powerful language that drives the notion of a global Semantic Web -- lead to a general
+    	bottom-up misconception whereby most perceive it as a document content format rather that an abstract language (system
+    	of signs, syntax, and semantics) exploitable using a wide variety of notations.</para>
+  </sect3>
+  <sect3 id="virtuosospongernnthow"><title>How do I use it?</title>
+    <para>Due to the compact nature of RDF-Turtle notation, it is possible to embed RDF statements into any text based content.
+    	The only requirements are as follows:</para>
+    <itemizedlist mark="bullet">
+      <listitem>Use the following as a marker for embedded RDF-Turtle based RDF statements:
+<programlisting><![CDATA[
+## Turtle Start ##g
+## {Trutle-based-RDF-statements}g
+## Turtle End ##
+]]></programlisting>
+      </listitem>
+      <listitem>Honor the use of &lt;&gt; to indicate reference identifiers (absolute or relative) </listitem>
+      <listitem>Optionally treat <code>@handle</code> as an HTTP URIs that denote Agents -- for a given data space
+      (e.g., Twitter, LinkedIn, Facebook, Google+ etc..)</listitem>
+      <listitem>Optionally tread <code>#hashtag</code> as an HTTP URI that denotes a Topic -- ditto .</listitem>
+    </itemizedlist>
+     <sect4 id="virtuosospongernnthowbasicr"><title>Basic Rules (authors and processing engines)</title>
+       <para>As per natural language sentences we have the following parts:</para>
+       <orderedlist>
+         <listitem><emphasis>Subject</emphasis> -- statement focal point </listitem>
+         <listitem><emphasis>Predicate</emphasis> -- connection, association, link </listitem>
+         <listitem><emphasis>Object</emphasis> -- value of the connection, association, link.</listitem>
+       </orderedlist>
+       <para>Each sentence subject, predicate, object is denoted (named or referred to) using an identifier (word, phrase,
+       	or term). If you want to generate Linked Data that flows across data spaces your best bet is to denote (refer to)
+       	sentence subject, predicate, and object (optionally) using identifiers that function like terms -- by using HTTP URIs.</para>
+       <para>Use prefixes to shorten RDF-Turtle statements:</para>
+<programlisting><![CDATA[
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+]]></programlisting>
+       <para>Enables statements such as:</para>
+<programlisting><![CDATA[
+<>g
+a foaf:Document .
+]]></programlisting>
+     </sect4>
+     <sect4 id="virtuosospongernnthowex"><title>Examples</title>
+<orderedlist>
+  <listitem>Most basic Nanotation:
+<programlisting><![CDATA[
+<> a <#Document> .g
+<> <#topic> <#Nanotation>.
+]]></programlisting>
+  </listitem>
+  <listitem>More sophisticated Nanotation that leverages terms from existing vocabularies:
+<programlisting><![CDATA[
+<> a foaf:Document .g
+<> foaf:topic <#Nanotation>  .
+]]></programlisting>
+  </listitem>
+  <listitem>More sophisticated Nanotation that leverages commas and semicolons for statement
+  	brevity e.g. when multiple sentences have a common Subject:
+<programlisting><![CDATA[
+<>g
+a foaf:Document;g
+foaf:topic <#Nanotation>.
+]]></programlisting>
+  </listitem>
+  <listitem>When multiple sentences have a common Subject and Predicate but varying list of Objects:
+<programlisting><![CDATA[
+<>g
+a foaf:Document;g
+foaf:topic <#Nanotation>, <#SemanticWeb>, <#LinkedData>.
+]]></programlisting>
+  </listitem>
+  <listitem>Incorporation of Pronouns into RDF sentence:
+<programlisting><![CDATA[
+<> a foaf:Document .g
+<> foaf:maker [a foaf:Person;g
+               foaf:name "Kingsley Idehen"  ] .
+]]></programlisting>
+  </listitem>
+  <listitem>Processor (parser) hint markers that help Nanotation processors negate seriously mangled HTML content:
+<programlisting><![CDATA[
+## Turtle Start ##g
+g
+<>g
+a foaf:Document;g
+foaf:topic <#Nanotation>, <#SemanticWeb>, <#LinkedData>.g
+g
+## Turtle End ##
+]]></programlisting>
+  </listitem>
+</orderedlist>
+     </sect4>
+     <sect4 id="virtuosospongernnthowprusage"><title>Nanotation Processor Usage</title>
+       <para>A nanotation processer is an application or service that's capable of consuming text content enhanced with
+       	RDF-Turtle based nanotations. Virtuoso's in-built Linked Data Transformation middleware (aka "Sponger") is an
+       	example of an application that supports nanotation. Likewise, our URIBurner service which is a free public service
+       	driven by an instance of Virtuoso with the Sponger module enabled: </para>
+       <itemizedlist mark="bullet">
+         <listitem>When using your own instance of Virtuoso, the Sponger service is invoked via the URL pattern:g
+<programlisting><![CDATA[
+http://{cname-of-virtuoso-host-machine}/sponger
+]]></programlisting>
+         </listitem>
+         <listitem>When using the public <ulink url="http://linkeddata.uriburner.com/">URIBurner service</ulink>, the Sponger
+         services is invoked via the URL:g
+<programlisting><![CDATA[
+http://linkeddata.uriburner.com/
+]]></programlisting>
+         </listitem>
+         <listitem>Note: Either approach outlined above will lead you to an HTML page that contains an input field into which
+         	you can type or paste an HTTP-accessible document URL. Alternatively you can use the following URI patterns:
+<programlisting><![CDATA[
+http://{cname-of-virtuoso-host-machine}/about/html/{document-http-uri}
+]]></programlisting>
+         </listitem>
+       </itemizedlist>
+       <para>In all cases, you will end up with an HTML document that includes RDF statements that describe the processed
+       	document in a manner that also reveals all the embedded nanotations.</para>
+     </sect4>
+     <sect4 id="virtuosospongernnthownotes"><title>Virtuoso Sponger Implementation Notes</title>
+       <para>The Sponger treats resources transferred over HTTP as a duality of both a container document and a primary entity.
+       	When a resource is deemed to be an HTML document, the document is treated as the primary entity. Otherwise, where the
+       	domain is well known, a custom extractor cartridge populates the primary entity with data arising from API calls and
+       	the HTML content is regarded as secondary, relegated to the container document. For example, G+ posts are recognized
+       	and the Sponger concentrates on presenting the timestamp, body, tags and links and other features of a post.</para>
+       <para>When sponging an HTTP resource, multiple extractor cartridges might be brought to bear. Consequently, there may
+       	be multiple triples containing the entity's content.</para>
+       <para>The Turtle Sniffer is implemented as a Metacartridge, i.e it runs after all the extractor cartridges have run,
+       	augmenting data in the graph. It uses SPARQL inference to collate predicates that constitute "content" for this purpose,
+       	along with the HTTP request content (if any), flattening each to plain text.</para>
+       <para>Currently, the list of potential content predicates is:</para>
+       <itemizedlist mark="bullet">
+         <listitem><code>bibo:content</code> (e.g. arising from the HTML+Variants extractor cartridge) </listitem>
+         <listitem><code>bibo:abstract</code> </listitem>
+         <listitem><code>oplgplus:annotation</code> (used by Google+ for text when sharing items)</listitem>
+       </itemizedlist>
+       <para>For each of these contents, it checks if it matches the patterns:</para>
+<programlisting><![CDATA[
+## Nanotation Start ## .... ## Nannotation End ##
+]]></programlisting>
+<programlisting><![CDATA[
+## Turtle Start ## .... ## Turtle Stop ##
+]]></programlisting>
+<programlisting><![CDATA[
+{.... } (note: only applies to tweets on Twitter)
+]]></programlisting>
+       <para>If a content contains one or more nanotation blocks, each block is parsed in turn as Turtle; if not,
+       	it attempts to parse the content item as Turtle in entirety.</para>
+       <para>The HTTP document content is only inspected in case of no triples having been extracted by prior means.</para>
+       <para>Optionally (enabled by default) each triple may be reified, i.e an rdf:Statement entity created to describe its
+       	subject, predicate and object, so you can identify triples arising from nanotations as entities labelled 'Embedded
+       	Turtle Statement' and a number in the graph.</para>
+       	<sect5 id="virtuosospongernnthownotesdom"><title>Domain-Aware Tag and User Expansion</title>
+          <para>The Turtle Sniffer expands the patterns <code>#word</code> and <code>@word</code> when they appear in URI
+          (&lt;&gt;) or double quotes (""), in the context of the domain of the URI being sponged.</para>
+          <para>For example, a Tweet containing the nanotation: </para>
+<programlisting><![CDATA[
+## Nannotation Start ##g
+<@kidehen> foaf:name "Kingsley Idehen" ;g
+           foaf:knows <@openlink> ;g
+           scot:has_tag <#Data> .g
+## Nannotation End ##
+]]></programlisting>
+          <para>will be expanded to a Turtle string:</para>
+<programlisting><![CDATA[
+<https://twitter.com/kidehen> foaf:name "Kingsley Idehen" ;g
+  foaf:knows <https://twitter.com/openlink> ;g
+  scot:has_tag <https://twitter.com/hashtag/Data#this> .
+]]></programlisting>
+          <para>We recognize custom URI formats for users and tags in the contexts of Facebook, Twitter, G+, LinkedIn and Delicious.</para>
+          <para>Note that the word must appear within quotes -- this is to avoid confusion with Turtle's @prefix directive (which is
+          	not a user!) and problems that would be caused by performing similar expansions within a quoted sentence.</para>
+       	</sect5>
+     </sect4>
+  </sect3>
+  <sect3 id="virtuosospongernntliveexamples"><title>Live Examples</title>
+    <itemizedlist mark="bullet">
+      <listitem><ulink url="http://twitter.com/kidehen/status/493857326680776705">RDF statement about Privacy;</ulink></listitem>
+      <listitem><ulink url="http://twitter.com/kidehen/status/493848344590966785">RDFs usage re. property/predicate description;</ulink></listitem>
+      <listitem><ulink url="https://plus.google.com/112399767740508618350/posts/hNt1df5G7tk">owl:sameAs relation inserted into a Google+ Post;</ulink></listitem>
+      <listitem><ulink url="https://www.facebook.com/kidehen/posts/10152525312840751">Heavy duty RDF statements in a Facebook post;</ulink></listitem>
+      <listitem><ulink url="http://twitter.com/kidehen/status/494089069995896832">Another Facebook post that puts Ted Nelsons talk on documents and hypertext into contemporary context;</ulink></listitem>
+      <listitem><ulink url="https://twitter.com/OpenLink/status/556128747297193985">A tweet reply demonstrating multiple embedded nanotation blocks and tags.</ulink></listitem>
+    </itemizedlist>
+  </sect3>
+    <sect3 id="virtuosospongernntliveexamplesstar"><title>Nanotation generated 5-Star Linked Open Data (via URIBurner - a Nanotation Processor) Examples</title>
+    <itemizedlist mark="bullet">
+      <listitem><ulink url="http://bit.ly/nanotations-from-2014-07-28">Various Nanotations from 28th July 2014;</ulink></listitem>
+      <listitem><ulink url="http://bit.ly/nanotations-for-2014-07-27">Various Nanotations from 27th July 2014;</ulink></listitem>
+      <listitem><ulink url="http://bit.ly/utterances-on-twitter-2014-07-25-by-statement-subject">Various Nanotations from 25th July 2014;</ulink></listitem>
+      <listitem><ulink url="http://linkeddata.uriburner.com/about/html/https://twitter.com/OpenLink/status/556128747297193985">A tweet reply demonstrating multiple embedded nanotation blocks and tags.</ulink></listitem>
+    </itemizedlist>
+  </sect3>
+  <sect3 id="virtuosospongernntfctexamples"><title>Faceted Browser Nanotation Examples</title>
+    <itemizedlist mark="bullet">
+     <listitem>Nanotation based RDF statement that describes Nannotation:
+       <figure id="rdf1" float="1">
+         <title>Faceted Browser Nanotation RDF</title>
+         <graphic fileref="ui/nano1.png"/>
+       </figure>
+     </listitem>
+     <listitem>Nanotation that represents a "Hat Tip" relationship type:
+       <figure id="rdf1" float="1">
+         <title>Faceted Browser Nanotation Hat Tip Type</title>
+         <graphic fileref="ui/nano2.png"/>
+       </figure>
+     </listitem>
+     <listitem>Nanotation generated RDF statements aggregated by Subject:
+       <figure id="rdf1" float="1">
+         <title>Faceted Browser Nanotation RDF Aggregation by Subject</title>
+         <graphic fileref="ui/nano3.png"/>
+       </figure>
+     </listitem>
+     <listitem>Nanotation generated RDF statements by Subject:
+       <figure id="rdf1" float="1">
+         <title>Faceted Browser Nanotation Generation by Subject</title>
+         <graphic fileref="ui/nano4.png"/>
+       </figure>
+     </listitem>
+    </itemizedlist>
+  </sect3>
+  <sect3 id="virtuosospongernnts"><title></title>
+  </sect3>
+  <sect3 id="virtuosospongernnts"><title></title>
   </sect3>
 </sect2>
 <sect2 id="virtuosospongersampleuses"><title>Sponger Usage Examples</title>
@@ -21289,8 +21604,8 @@ can then be used for retrieving properties of these objects.
     <para><link linkend="fn_st_x"><function>st_x</function></link></para>
     <para><link linkend="fn_st_y"><function>st_y</function></link></para>
     <para><link linkend="fn_st_distance"><function>st_distance</function></link></para>
-    <para><link linkend="fn_st_srid"><function>st_srid</function></link></para>
-    <para><link linkend="fn_st_setsrid"><function>st_setsrid</function></link></para>
+    <para><link linkend="fn_ST_SRID"><function>ST_SRID</function></link></para>
+    <para><link linkend="fn_ST_SetSRID"><function>ST_SetSRID</function></link></para>
     <para><link linkend="fn_st_astext"><function>st_astext</function></link></para>
     <para><link linkend="fn_st_geomfromtext"><function>st_geomfromtext</function></link></para>
     <para><link linkend="fn_st_contains"><function>st_contains</function></link></para>
@@ -25403,8 +25718,11 @@ public class VirtuosoSPARQLExample9 {
     </sect4>
 </sect3>
     <sect3 id="rdfnativestorageprovidersjenajavadoc"><title>Javadoc API Documentation</title>
-    <para><ulink url="http://docs.openlinksw.com/jena/">Jena Provider Javadoc API Documentation</ulink> is available enabling the complete set of classes, interfaces and methods implemented for the provider to be viewed.
-</para>
+    <para>Javadocs covers the complete set of classes, interfaces, and methods implemented by the provider:</para>
+    <itemizedlist mark="bullet">
+      <listitem><ulink url="http://docs.openlinksw.com/jena/">Javadoc API Documentation for the Jena 2.6 Provider</ulink></listitem>
+      <listitem><ulink url="http://docs.openlinksw.com/jena2/">Javadoc API Documentation for the Jena 2.10+ Provider</ulink></listitem>
+    </itemizedlist>
     </sect3>
   </sect2>
   <sect2 id="rdfnativestorageproviderssesame"><title>Virtuoso Sesame Provider</title>
@@ -25432,7 +25750,8 @@ public class VirtuosoSPARQLExample9 {
       <title>Fig. 1 Sesame Component Stack</title>
       <graphic fileref="ui/VirtSesame2Provider.png"/>
     </figure>
-    <para>If you need more information about how to set up your environment for working with the Sesame APIs, take a look at Chapter 4 of the Sesame User Guide, <ulink url="http://www.openrdf.org/doc/sesame2/users/RDF">Setting up to use the Sesame libraries</ulink>.
+    <para>If you need more information about how to set up your environment for working with the Sesame APIs, take a look at
+    	Chapter 4 of the Sesame User Guide, <ulink url="http://www.openrdf.org/doc/sesame2/users/ch04.html">Setting up to use the Sesame libraries</ulink>.
 </para>
     </sect3>
     <sect3 id="rdfnativestorageproviderssesamesetup"><title>Setup</title>
@@ -25442,16 +25761,22 @@ public class VirtuosoSPARQLExample9 {
       2 or greater installed.</para>
       <para>You should download the Virtuoso Sesame 2 Provider JAR archive for the version of Sesame being used,
       Virtuoso JDBC Driver, Sesame Framework and associated classes and sample programs from our
-      <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSDownload">download page</ulink>
+      <ulink url="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VOSDownload">download page</ulink> .
+      Note the version of the Sesame Provider (virt_sesame2.jar) can be determined with the command:
 </para>
+<programlisting><![CDATA[
+$ java -jar virt_sesame2.jarg
+OpenLink Virtuoso(TM) Provider for Sesame2(TM) Version 2.6.5 [Build 1.7]
+]]></programlisting>
     </sect4>
-    <sect4 id="rdfnativestorageproviderssesamecmppr"><title>Compiling Sesame Sample Program</title>
+    <sect4 id="rdfnativestorageproviderssesamecmppr"><title>Compiling Sesame 2 Sample Program</title>
     <orderedlist>
       <listitem>Ensure that full paths to the following files are all included in the active CLASSPATH setting --
     <itemizedlist mark="bullet">
       <listitem>openrdf-sesame-2.1.2-onejar.jar</listitem>
       <listitem>slf4j-api-1.5.0.jar</listitem>
       <listitem>slf4j-jdk14-1.5.0.jar</listitem>
+      <listitem>commons-io-2.0.jar</listitem>
       <listitem>virtjdbc3.jar</listitem>
       <listitem>virt_sesame2.jar</listitem>
    </itemizedlist>
@@ -25460,7 +25785,7 @@ public class VirtuosoSPARQLExample9 {
 <programlisting><![CDATA[
 javac VirtuosoTest.java
 ]]></programlisting>
-      <para>Note: to use utf-8 and to use row auto commit is recommended to add the following to the connect string: 
+      <para>Note: we recommend adding the following to the connect string, to use utf-8 and row-auto-commit:
 </para>
 <programlisting><![CDATA[
 "/charset=UTF-8/log_enable=2"
@@ -25474,11 +25799,12 @@ Repository repository = new VirtuosoRepository("jdbc:virtuoso://" + sa[0] + ":" 
     </sect4>
     <sect4 id="rdfnativestorageproviderssesametesting"><title>Testing</title>
     <orderedlist>
-      <listitem>Ensure that full paths to the following files are all included in the active CLASSPATH setting:
+      <listitem>Ensure that full paths to the following files are all included in the active CLASSPATH setting (note the addition of virtuoso_driver, here):
     <itemizedlist mark="bullet">
       <listitem>openrdf-sesame-2.1.2-onejar.jar</listitem>
       <listitem>slf4j-api-1.5.0.jar</listitem>
       <listitem>slf4j-jdk14-1.5.0.jar</listitem>
+      <listitem>commons-io-2.0.jar</listitem>
       <listitem>virtjdbc3.jar</listitem>
       <listitem>virt_sesame2.jar</listitem>
       <listitem>virtuoso_driver</listitem>
@@ -25491,6 +25817,7 @@ java VirtuosoTest <hostname> <port> <uid> <pwd>
       </listitem>
       <listitem>The test run should look like this:
 <programlisting><![CDATA[
+g
 $ java VirtuosoTest localhost 1111 dba dba
 
 == TEST 1:  : Start
@@ -25554,7 +25881,7 @@ PASSED: TEST 11
 PASSED: TEST 12
 
 == TEST 13:  : Start
-   Writing the statements to file: (/Users/hughwilliams/src/virtuoso-opensource/binsrc/sesame2/results.n3.txt)
+   Writing the statements to file: (/Users/src/virtuoso-opensource/binsrc/sesame2/results.n3.txt)g
 == TEST 13:  : End
 PASSED: TEST 13
 
@@ -25927,7 +26254,11 @@ finally {
     </para>
     </sect4>
     <sect4 id="rdfnativestorageproviderssesamegettingstartevcnqapi"><title>Javadoc API Documentation</title>
-      <para><ulink url="http://docs.openlinksw.com/sesame/">Sesame Provider Javadoc API Documentation</ulink> is available enabling the complete set of classes, interfaces and methods implemented for the provider to be viewed.</para>
+      <para>Javadocs covers the complete set of classes, interfaces, and methods implemented by the provider:</para>
+      <itemizedlist mark="bullet">
+        <listitem><ulink url="http://docs.openlinksw.com/sesame/">Javadoc API Documentation for the Sesame 2.6 Provider</ulink></listitem>
+        <listitem><ulink url="http://docs.openlinksw.com/sesame2/">Javadoc API Documentation for the Sesame 2.7+ Provider</ulink></listitem>
+      </itemizedlist>
     </sect4>
     </sect3>
     <sect3 id="rdfnativestorageproviderssesamestpandtesting"><title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>

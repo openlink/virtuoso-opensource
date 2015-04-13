@@ -47,8 +47,7 @@
 -->
   <refsect1 id="examples_sparql_eval_to_array">
    <title>Examples</title>
-    <example id="ex_sparql_eval_to_array"><title></title>
-      <para></para>
+    <example id="ex_sparql_eval_to_array"><title>Simple Use</title>
       <screen><![CDATA[
 SQL> select DB.DBA.SPARQL_EVAL_TO_ARRAY('SELECT * WHERE {?s ?p ?o}','http://example/bookStore' ,2);
 callret

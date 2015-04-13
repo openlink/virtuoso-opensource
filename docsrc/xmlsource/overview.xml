@@ -1508,7 +1508,7 @@ WHERE
 ]]></programlisting>      
     </sect2>  
     <sect2 id="virtuosotipsandtricksmultithreadjdbc">
-      <title>How can I make Multi Thread Virtuoso connection using JDBC??</title>     
+      <title>How can I make Multi Thread Virtuoso connection using JDBC?</title>
       <para>See details <link linkend="JDBCDriverhibernatesetupandtestingexmp4">here</link>.</para> 
     </sect2>            
     <sect2 id="virtuosotipsandtricksgetcertattr">

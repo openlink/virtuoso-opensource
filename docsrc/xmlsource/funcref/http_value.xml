@@ -107,7 +107,6 @@
 	</tbody>
       </tgroup>
     </table>
-  <para></para>
   </refsect1>
   <refsect1 id="examples_http_value"><title>Using http_value()</title>
     <example id="ex_http_value"><title>HTTP output</title>

@@ -59,7 +59,6 @@ by <link linkend="createtxtidxstmt">CREATE TEXT INDEX</link>.
       <para></para></refsect2>
   </refsect1>
 -->
-  <refsect1 id="ret_vt_batch"><title>Return Types</title><para></para></refsect1>
   <refsect1 id="errors_vt_batch"><title>Errors</title>
     <table><title>Errors signalled by</title>
       <tgroup cols="4">
@@ -83,10 +82,10 @@ by <link linkend="createtxtidxstmt">CREATE TEXT INDEX</link>.
   </refsect1>
 -->
   <refsect1 id="seealso_vt_batch"><title>See Also</title>
-    <para><link linkend="fn_vt_drop_ftt">vt_drop_ftt</link></para>
-    <para><link linkend="fn_vt_batch_d_id">vt_batch_d_id</link></para>
-    <para><link linkend="fn_vt_batch_update">vt_batch_update</link></para>
-    <para><link linkend="fn_vt_create_text_index">vt_create_text_index</link></para>
+    <para><link linkend="fn_vt_drop_ftt"><function>vt_drop_ftt()</function></link></para>
+    <para><link linkend="fn_vt_batch_d_id"><function>vt_batch_d_id()</function></link></para>
+    <para><link linkend="fn_vt_batch_update"><function>vt_batch_update()</function></link></para>
+    <para><link linkend="fn_vt_create_text_index"><function>vt_create_text_index()</function></link></para>
   </refsect1>
 </refentry>
 

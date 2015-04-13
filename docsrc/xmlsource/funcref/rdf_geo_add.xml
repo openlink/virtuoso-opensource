@@ -54,13 +54,9 @@ is essential for performance.</para>
       <para>Geometry to be translated into RDF box.</para>
     </refsect2>
   </refsect1>
-  <refsect1 id="ret_rdf_geo_add"><title>Return Types</title>
-    <para></para>
-  </refsect1>
   <refsect1 id="examples_rdf_geo_add">
     <title>Examples</title>
-    <example id="ex_rdf_geo_add"><title></title>
-      <para></para>
+    <example id="ex_rdf_geo_add"><title>Simple example</title>
 <programlisting><![CDATA[
 INSERT INTO RDF_QUAD (g, s, p, o)
 VALUES (
@@ -80,8 +76,8 @@ VALUES (
     <para><link linkend="fn_st_x"><function>st_x</function></link></para>
     <para><link linkend="fn_st_y"><function>st_y</function></link></para>
     <para><link linkend="fn_st_distance"><function>st_distance</function></link></para>
-    <para><link linkend="fn_st_srid"><function>st_srid</function></link></para>
-    <para><link linkend="fn_st_setsrid"><function>st_setsrid</function></link></para>
+    <para><link linkend="fn_ST_SRID"><function>st_srid</function></link></para>
+    <para><link linkend="fn_ST_SetSRID"><function>st_setsrid</function></link></para>
     <para><link linkend="fn_st_astext"><function>st_astext</function></link></para>
     <para><link linkend="fn_st_geomfromtext"><function>st_geomfromtext</function></link></para>
     <para><link linkend="fn_st_intersects"><function>st_intersects</function></link></para>

@@ -51,10 +51,10 @@ with parameter "mode" equal to 'replacing'.</para>
 'soft' return APC_ID of (unchanged) existing class, 'replacing' will continue with update.</para>
     </refsect2>
     <refsect2><title>auth_uname</title>
-      <para></para>
+      <para>Authentication name</para>
     </refsect2>
     <refsect2><title>auth_pwd</title>
-      <para></para>
+      <para>Authentication password</para>
     </refsect2>
   </refsect1>
   <refsect1 id="examples_ann_phrase_class_add">

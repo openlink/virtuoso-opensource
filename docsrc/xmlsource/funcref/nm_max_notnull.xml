@@ -116,9 +116,9 @@ No. of rows in result: 2
   </refsect1>
     <refsect1 id="seealso___max_notnull">
     <title>See Also</title>
-    <para><link linkend="fn_nm_max"><function>__max</function></link></para>    
-    <para><link linkend="fn_nm_min"><function>__min</function></link></para>
-    <para><link linkend="fn_nm_min_notnull"><function>__min_notnull</function></link></para>
+    <para><link linkend="fn_nm_max"><function>__max()</function></link></para>
+    <para><link linkend="fn_nm_min"><function>__min()</function></link></para>
+    <para><link linkend="fn_nm_min_notnull"><function>__min_notnull()</function></link></para>
   </refsect1>
 </refentry>
 

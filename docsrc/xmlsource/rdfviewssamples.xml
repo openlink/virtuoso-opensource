@@ -66,7 +66,11 @@ SPARQL drop quad map graph iri("http://^{URIQADefaultHost}^/Northwind")
 SPARQL drop quad map virtrdf:NorthwindDemo
 ;
 ]]></programlisting>
-<note><para>The <emphasis>^{URIQADefaultHost}^</emphasis> macro is replaced with the value of <emphasis>DefaultHost</emphasis> parameter of <link linkend="ini_URIQA">[URIQA]</link> section of configuration file. The IRI is written as <emphasis>iri("http://^{URIQADefaultHost}^/Northwind")</emphasis>, not as <emphasis>&lt;http://^{URIQADefaultHost}^/Northwind&gt;</emphasis> because macro of this sort works only inside SPARQL string values.</para></note>
+<note><para>The <emphasis>^{URIQADefaultHost}^</emphasis> macro is replaced with the value of
+<emphasis>DefaultHost</emphasis> parameter of <link linkend="ini_URIQA">[URIQA]</link> section of
+configuration file. The IRI is written as <emphasis>iri("http://^{URIQADefaultHost}^/Northwind")</emphasis>,
+not as <emphasis>&lt;http://^{URIQADefaultHost}^/Northwind&gt;</emphasis> because macro of this sort works
+only inside SPARQL string values.</para></note>
 
 <para>Now it's safe to create IRI classes needed for the view. If
 these classes are used only in the view we define then it is safe to

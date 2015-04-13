@@ -53,8 +53,7 @@
   </refsect1>
   <refsect1 id="examples_isgeometry">
     <title>Examples</title>
-    <example id="ex_isgeometry"><title></title>
-      <para></para>
+    <example id="ex_isgeometry"><title>Simple example</title>
 <programlisting><![CDATA[
 SQL>SELECT isgeometry(st_point(0, 52));
 callret
@@ -96,8 +95,8 @@ No. of rows in result: 10
     <para><link linkend="fn_st_x"><function>st_x</function></link></para>
     <para><link linkend="fn_st_y"><function>st_y</function></link></para>
     <para><link linkend="fn_st_distance"><function>st_distance</function></link></para>
-    <para><link linkend="fn_st_srid"><function>st_srid</function></link></para>
-    <para><link linkend="fn_st_setsrid"><function>st_setsrid</function></link></para>
+    <para><link linkend="fn_ST_SRID"><function>st_srid</function></link></para>
+    <para><link linkend="fn_ST_SetSRID"><function>st_setsrid</function></link></para>
     <para><link linkend="fn_st_astext"><function>st_astext</function></link></para>
     <para><link linkend="fn_st_geomfromtext"><function>st_geomfromtext</function></link></para>
     <para><link linkend="fn_st_intersects"><function>st_intersects</function></link></para>

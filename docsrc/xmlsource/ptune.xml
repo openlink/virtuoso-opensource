@@ -626,6 +626,71 @@ SQL> select cl_sys_stat ('tc_qp_thread', clr => 1);
       </listitem>
     </orderedlist>    
 	</sect3>	
+	<sect3 id="ptunehighcardin">
+		<title>High Cardinality Group By And Distinct</title>
+	  <para>There are multiple implementations of group by and distinct used in different circumstances by different
+	  	versions of Virtuoso. Versions of Virtuoso 7 prior to 7.5 have a memory based cuckoo hash based group by and
+	  	hash join. 7.5 and onwards have a linear hash based implementation of same. Additionally, all version 7's have a
+	  	pageable, i.e. potentially disk based implementation of group by that may get used if there is no space in memory.</para>
+	</sect3>
+	<sect3 id="ptuneprtgroupby">
+		<title>Partitioned Group By</title>
+	  <para>Versions 7.5 and onwards have a choice of a partitioned or re-aggregated parallel group by. The group by with
+	  	re-aggregation produces an intermediate result on each thread and then adds these up after the completion of each
+	  	thread into a final result. This is efficient for low-cardinality cases (few distinct values of grouping columns)
+	  	but inefficient for high cardinality. In the high cardinality case, it is better to use a partitioned group by
+	  	operator. In the partitioned case, a hash is computed from the grouping columns and this decides which thread gets
+	  	to do the aggregation. There is information exchange between threads (or processes in a scale-out setting) but
+	  	there is no need for re-aggregation. This is significantly more performant with many groups. The peak memory
+	  	utilization is the same.</para>
+      <para>The <code>c_setp_partition_threshold</code> setting in the <emphasis>Flags</emphasis> section of virtuoso.ini
+      defines when to use a partitioned group by. The default threshold is 100000. If the cost model estimates more distinct
+      values than this threshold, a partitioned group by will be produced. In a query plan with explain of profile, a
+      partitioned group by is present when there is a stage &lt;n&gt; operator in front of the sort operator for the group by.
+      	In a cluster plan, the partitioned group by may be colocated with the table right before it, so the stage operator
+      	will be before this.</para>
+	</sect3>
+	<sect3 id="ptuneorderedgroupby">
+		<title>Ordered Group By</title>
+	  <para>For version 7.5 onwards, a special case for ordered group by is recognized. In an ordered group by, the system takes
+	  	advantage of physical data ordering to limit the memory footprint of the group by: If it is known that grouping keys will
+	  	not reoccur past a certain window, then all grouping keys that are processed can be emitted as results in a continuous
+	  	stream so that only a window of groups need be kept at a time.</para>
+    <para>This is recognized in a query plan by the word "streaming" occurring on the line of the sort operator for the group by.</para>
+    <para>Ordered group by is rare to non-existent with RDF, where data orderings with an application meaning do not occur, due
+    	to having no multipart keys. With a SQL schema grouping on a set of columns including the primary ordering column of the
+    	outermost scan in a plan, an ordered group by will typically be generated. An ordered group by is usually better than a
+    	partitioned or re-aggregated group by. The exception may be cases where the outermost ordering column has low cardinality,
+    	or a very biased value distribution e.g. the P in the RDF PSOG.</para>
+	</sect3>
+	<sect3 id="ptunememorygroupby">
+		<title>Memory for Group By</title>
+	  <para>In Virtuoso 7 prior to 7.5, the memory for a group by is <code> (3 + n_keys + n_aggregates) * 8 </code> bytes per
+	  group plus the natural length of any dates or strings in the keys or aggregates. In 7.5 onwards, the memory is 8 bytes
+	  less per entry.</para>
+	</sect3>
+	<sect3 id="ptuneslowgroupby">
+		<title>Slow Group By</title>
+	  <para>The use of the disk-based group by is easily 100x less efficient than the vectored memory based hash tables.
+	  	Falling back to this can be considered an error in configuration and can be detected with the
+	  	<code>tc_slow_temp_insert</code> counter readable with <code>sys_stat</code>. If this increases then there is not
+	  	enough memory for group by/distinct as used by the application. The monitor may print a message about this in
+	  	the server messages log.</para>
+    <para>The maximum size of a memory based group by hash table is by default 1/10 of the MaxQueryMem setting in
+    	Parameters in the virtuoso.ini file. If a single hash table exceeds this or if the hash table plus the amount
+    	of large query memory blocks (e.g. vectors) allocated across the process exceeds MaxQueryMem, then the switch
+    	to the slow pageable hash table takes place. This can be avoided by explicitly setting a larger MaxQueryMem
+    	or by changing the <code>cha_max_gby_bytes</code> setting in the Flags section of the ini file. We note that
+    	for parallel query plans the first condition to trigger is the condition on <code>mp_large_in_use</code> +
+    	the hash table memory exceeding MaxQueryMem. A query will have more than 10 threads and the hash tables for
+    	memory based hashes are included in <code>mp_large_in_use</code>.</para>
+    	<para>To track the general memory consumption in large blocks, use the <code>mp_large_in_use</code> and
+    	<code>mp_max_large_in_use meters</code> accessible with <code>sys_stat</code> and <code>__dbf_set</code>.
+    	Large blocks are for example vectors, group by's and hash join build sides.</para>
+    <para>To interactively try different memory settings, one can modify <code>c_max_large_vec</code> with
+    <code>__dbf_set</code>. This is the number of bytes of outstanding large blocks after which pageable group
+    by's will be used and vector sizes will no longer be adjusted upward.</para>
+	</sect3>
 	<sect3 id="tunparamsmworkload">
 		<title>Tuning Parameters for Multiuser Workloads</title>
 		<para>This section describes parameters and event counters that affect memory and parallelism and are 
@@ -1283,7 +1348,26 @@ SET TRANSACTION ISOLATION LEVEL READ COMMITTED
     returns.</para>
 
 	</sect4>
-	
+  <sect4 id="ptunetransparallel"><title>Transaction Parallelism</title>
+	  <para>From Virtuoso 7.1 onwards, data manipulation statements can be multithreaded. The virtuoso.ini <code>[Flags]</code> settings
+	  <code>enable_mt_txn</code> and <code>enable_mt_transact</code> control transaction parallelism. These are 1 for enable and 0 for
+	  disable. Defaults are version dependent, off in 7.1 and 7.2 and on in subsequent. The
+	  <link linkend="fn_sys_stat"><function>sys_stat()</function></link> and
+	  <link linkend="fn_dbf_set"><function>__dbf_set()</function></link> functions can be used for querying and altering these.</para>
+
+	  <para>DML statements, e.g. insert, delete, update, are automatically multithreaded according to <code>enable_qp</code>
+	  (<code>ThreadsPerQuery</code> in ini [Parameters] when <code>enable_mt_txn</code> is on).</para>
+
+	  <para>RDF load (<link linkend="fn_ttlp"><function>DB.DBA.ttlp()</function></link> and related functions) when in transactional
+	  mode (log_enable 0 or 1)  are also multithreaded when <code>enable_mt_txn</code> is on. Otherwise these are multithreaded when
+	  in non-transactional mode (<code>log_enable</code> 2 or 3) and  single threaded in transactional mode.</para>
+
+	  <para>The <code>enable_mt_transact</code> setting controls the parallelism of a commit or rollback. Specially for column store
+	  deletes, the commit may take a long time, as this is the point where the physical deletion takes place. To accelerate this,
+	  <code>enable_mt_transact</code> should be on. This is however not worthwhile for short row store transactions, as the overhead
+	  of making threads is greater than the time it takes to finalize a transaction om a page. Again, large, scattered row store
+	  deletes may justify use of <code>enable_mt_transact</code>.</para>
+  </sect4>
 	<sect4 id="ptunesampledeadlockhandler"><title>Sample Deadlock Handler</title>
 
 
@@ -1509,14 +1593,13 @@ select s_quantity from stock where s_i_id = 111 for update;
     addition to waits for determining where the waiting takes
     place.</para>
 
-    <para>To get a general picture, use the Conductor's Statistics
-    page or simply do</para>
-
-    <para>select top 5 * from sys_l_statt order by wait_msecs
-    desc;</para>
-
-    <para>to get a quick view of where time is spent. You can also
-    sort by waits desc or locks desc.</para>
+    <para>To get a general picture, use the Conductor's Statistics page or simply do:</para>
+<programlisting><![CDATA[
+select top 5 *
+  from sys_l_statt
+ order by wait_msecs desc;
+]]></programlisting>
+    <para>to get a quick view of where time is spent. You can also sort by waits desc or locks desc.</para>
 
     <sect4 id="ptunemetricdiagsqlissues"><title>SQL Issues</title>
 
@@ -1556,7 +1639,7 @@ select s_quantity from stock where s_i_id = 111 for update;
 
 	</sect4>
 
-    <sect4 id="ptunemetricdiagsqlissues"><title>Tracing and Debugging</title>
+    <sect4 id="ptunemetricdiagsqdebug"><title>Tracing and Debugging</title>
 
     <para>The most detailed picture of a system's behavior, including
     deadlocks nd other exceptions cn be obtained with profiling. If

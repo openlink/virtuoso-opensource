@@ -47,7 +47,7 @@
   </refsect1>
   <refsect1 id="examples_isstring">
     <title>Examples</title>
-    <example id="ex_isstring"><title></title>
+    <example id="ex_isstring"><title>Simple Use</title>
       <screen><![CDATA[
 SQL>select isstring('Cadena de los patos amarillos')
 		-&gt; 1 (Yes it is a string)

@@ -41,7 +41,7 @@
   </refsect1>
   <refsect1 id="examples___dbf_set">
     <title>Examples</title>
-    <example id="ex___dbf_set"><title></title>
+    <example id="ex___dbf_set"><title>Simple Use</title>
 <para>Set the maximum number of outstanding parallel work units to 16:</para>
 <programlisting><![CDATA[
 SQL> __dbf_set ('enable_qp', 16);

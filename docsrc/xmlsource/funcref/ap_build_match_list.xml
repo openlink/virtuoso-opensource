@@ -53,12 +53,12 @@ silently ignored.</para>
       <para>0 for plain text, 1 for standard-compliant HTML or 2 for "dirty" HTML</para>
     </refsect2>
     <refsect2><title>report_flags</title>
-      <para></para>
+      <para>Report flag</para>
     </refsect2>
   </refsect1>
   <refsect1 id="examples_ap_build_match_list">
     <title>Examples</title>
-    <example id="ex_ap_build_match_list"><title></title>
+    <example id="ex_ap_build_match_list"><title>Simple Use</title>
       <para>Usage example can be found <link linkend="sqlreffastphraseexample">here</link>.</para>
     </example>
   </refsect1>

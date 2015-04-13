@@ -29,10 +29,10 @@ set can not be deleted while used by some advertiser (as described <link linkend
       <para>a name of phrase set to delete</para>
     </refsect2>
     <refsect2><title>auth_uname</title>
-      <para></para>
+      <para>Authentication name</para>
     </refsect2>
     <refsect2><title>auth_pwd</title>
-      <para></para>
+      <para>Authentication password</para>
     </refsect2>
   </refsect1>
   <refsect1 id="examples_ann_phrase_class_del">
