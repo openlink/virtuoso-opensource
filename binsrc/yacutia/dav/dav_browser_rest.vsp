@@ -296,5 +296,27 @@
       }
     }
   }
+  else if (action = 'prefix')
+  {
+    declare prefix varchar;
+    declare head, content any;
+
+    prefix := get_keyword ('p', params);
+    returnData := DB.DBA.RDFData_std_pref (prefix, 1);
+    if (isnull (returnData))
+    {
+      commit work;
+      content := http_get (sprintf ('http://prefix.cc/%U.file.json', prefix), head);
+      if (head[0] like 'HTTP/1._ 20_ %')
+      {
+        returnData := get_keyword (prefix, DB.DBA.json2obj (content));
+      }
+    }
+
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http_header ('Content-Type: text/plain\r\n');
+    http (DB.DBA.obj2json (returnData));
+  }
   return;
 ?>

@@ -1123,14 +1123,14 @@ WEBDAV.prefixDialog = function ()
         var prefixTD = $("td_prefix");
         if (prefixTD)
         {
-          prefixTD.innerHTML = json[$v("f_prefix")];
+          prefixTD.innerHTML = (json) ? json : 'N/A';
           OAT.Dom.show("tr_prefix");
         }
       } else {
         OAT.Dom.hide("tr_prefix");
       }
     }
-    OAT.AJAX.GET('http://prefix.cc/'+encodeURIComponent($v("f_prefix"))+'.file.json', null, x, {type: OAT.AJAX.TYPE_TEXT, onstart: function(){}, onerror: function(){}});
+    OAT.AJAX.POST(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp')+'?a=prefix&p='+$v("f_prefix"), null, x);
   };
   prefixDialog.show ();
 }
