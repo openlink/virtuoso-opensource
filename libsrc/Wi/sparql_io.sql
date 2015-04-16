@@ -2204,7 +2204,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_STYLE ()
 	body {
 	    padding: 0;
 	    margin: 0;
-    	    font-family:Gill Sans, Arial, Helvetica, sans-serif;
+	    font-family:Arial, Helvetica, sans-serif;
 	    font-size: 9pt;
 	    color: #333;
 	    background-color: #FDFDFD;
