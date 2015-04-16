@@ -612,44 +612,6 @@ create procedure b3s_label_get (inout data any, in langs any)
 ;
 
 create procedure
-b3s_rel_print (in val any, in rel any, in flag int := 0)
-{
-  declare delim, delim1, delim2, delim3 integer;
-  declare inx int;
-  declare nss, loc, nspref varchar;
-
-  delim1 := coalesce (strrchr (val, '/'), -1);
-  delim2 := coalesce (strrchr (val, '#'), -1);
-  delim3 := coalesce (strrchr (val, ':'), -1);
-  delim := __max (delim1, delim2, delim3);
-  nss := null;
-  loc := val;
-  if (delim < 0) return loc;
-  nss := subseq (val, 0, delim + 1);
-  loc := subseq (val, delim + 1);
-
-  nspref := __xml_get_ns_prefix (nss, 2);
-  if (nspref is null)
-    {
-      inx := connection_get ('ns_ctr');
-      connection_set ('ns_ctr', inx + 1);
-      nspref := sprintf ('ns%d', inx);
-    }
-
-
-  nss := sprintf ('xmlns:%s="%s"', nspref, nss);
-  if (flag)
-    loc := sprintf ('property="%s:%s"', nspref, loc);
-  else if (rel)
-    loc := sprintf ('rel="%s:%s"', nspref, loc);
-  else
-    loc := sprintf ('rev="%s:%s"', nspref, loc);
-  return concat (loc, ' ', nss);
-}
-;
-
-
-create procedure
 b3s_uri_curie (in uri varchar)
 {
   declare delim integer;
@@ -833,7 +795,7 @@ create procedure b3s_o_is_out (in x any)
   declare f any;
   f := 'http://xmlns.com/foaf/0.1/';
   -- foaf:page, foaf:homePage, foaf:img, foaf:logo, foaf:depiction
-  if (__ro2sq (x) in (f||'page', f||'homePage', f||'img', f||'logo', f||'depiction', 'http://schema.org/url'))
+  if (__ro2sq (x) in (f||'page', f||'homePage', f||'img', f||'logo', f||'depiction', 'http://schema.org/url', 'http://schema.org/downloadUrl'))
     {
       return 1;
     }
@@ -842,9 +804,9 @@ create procedure b3s_o_is_out (in x any)
 ;
 
 create procedure
-b3s_http_print_r (in _object any, in sid varchar, in prop any, in langs any, in rel int := 1, in acc any := null, in _from varchar := null, in flag int := 0)
+b3s_http_print_r (in subj any, in _object any, in sid varchar, in prop any, in langs any, in rel int := 1, in acc any := null, in _from varchar := null, in flag int := 0)
 {
-   declare lang, rdfs_type, rdfa, visible any;
+   declare lang, rdfs_type, rdfa, visible, itemid any;
 
    if (_object is null)
      return;
@@ -868,9 +830,19 @@ b3s_http_print_r (in _object any, in sid varchar, in prop any, in langs any, in 
    if (__tag of IRI_ID = __tag (rdfs_type))
      rdfs_type := id_to_iri (rdfs_type);
 
-   rdfa := b3s_rel_print (prop, rel, 1);
+   rdfa := sprintf ('itemprop="%s"', prop);
    visible := b3s_str_lang_check (lang, acc);
-   http (sprintf ('\t<li%s><span class="literal">', case visible when 0 then ' style="display:none;"' else '' end));
+   itemid := subj;
+   if (flag = 1 and (__tag (_object) = 243 or 
+     (isstring (_object) and (__box_flags (_object)= 1 or _object like 'nodeID://%' or _object like 'http://%'))))
+     {
+       if (__tag of IRI_ID = __tag (_object))
+	 itemid := id_to_iri (_object);
+       else
+	 itemid := _object;
+     }
+   http (sprintf ('\t<li%s itemid="%s" itemscope itemtype="%s"><span class="literal">', 
+   	case visible when 0 then ' style="display:none;"' else '' end, itemid, 'http://www.w3.org/2002/07/owl#Thing'));
 again:
    if (__tag (_object) = 246)
      {
@@ -893,7 +865,6 @@ again:
 
        http (sprintf ('<!-- %d -->', length (_url)));
 
-       rdfa := b3s_rel_print (prop, rel, 0);
        if (prop = 'http://bblfish.net/work/atom-owl/2006-06-06/#content' and _object like '%#content%')
 	 {
 	   declare src any;
@@ -901,6 +872,7 @@ again:
 	   select id_to_iri (O) into src from DB.DBA.RDF_QUAD where
 	   	S = iri_to_id (_object, 0) and P = iri_to_id ('http://bblfish.net/work/atom-owl/2006-06-06/#src', 0);
 	   http (sprintf ('<div id="x_content"><iframe src="%s" width="100%%" height="100%%" frameborder="0"><p>Your browser does not support iframes.</p></iframe></div><br/>', src));
+	   http (sprintf ('<link %s href="%s"/>', rdfa, case when flag = 0 then _object else subj end));
 	 }
        else if (http_mime_type (_url) like 'image/%' or http_mime_type (_url) = 'application/x-openlink-photo' or prop = 'http://xmlns.com/foaf/0.1/depiction')
 	 {
@@ -922,10 +894,11 @@ again:
 	     lbl := b3s_uri_curie(_url);
 	   -- XXX: must encode as wide label to print correctly
 	   --http (sprintf ('<a class="uri" %s href="%s">%V</a>', rdfa, b3s_http_url (_url, sid, _from), lbl));
-	   http (sprintf ('<a class="uri" %s href="%s">', rdfa, b3s_http_url (_url, sid, _from)));
+	   http (sprintf ('<a class="uri" href="%s">', b3s_http_url (_url, sid, _from)));
 	   vlbl := charset_recode (lbl, 'UTF-8', '_WIDE_');
 	   http_value (case when vlbl <> 0 then vlbl else lbl end);
 	   http (sprintf ('</a>'));
+	   http (sprintf ('<link %s href="%s"/>', rdfa, case when flag = 0 then _url else subj end));
 	   if (b3s_o_is_out (prop))
 	     http (sprintf ('&nbsp;<a href="%s"><img src="/fct/images/goout.gif" border="0"/></a>', _url));
 	 }

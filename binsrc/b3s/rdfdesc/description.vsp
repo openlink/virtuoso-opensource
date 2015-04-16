@@ -453,7 +453,7 @@ again:
     <script type="text/javascript" src="s/description.js"></script>
 <?vsp fct_links_mup (_S, rdf_link); ?>
 </head>
-<body about="<?V page_resource_uri ?>">
+<body>
   <div id="PG">
     <div id="HD">
     <?vsp fct_desc_page_head (); ?>
@@ -659,7 +659,7 @@ if (_subject <> '') {
 	       b3s_http_print_l (PRED, odd_position, flag, sid, langs);
 	       curr_pred := pred;
 	     }
-           vis := b3s_http_print_r (OBJECT, sid, PRED, langs, 1, all_langs, _from, FLAG);
+           vis := b3s_http_print_r (page_resource_uri, OBJECT, sid, PRED, langs, 1, all_langs, _from, FLAG);
 	   nxt1:;
 	   inx := inx + 1;
 	   skip:;
@@ -786,13 +786,13 @@ if (_subject <> '') {
         <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="/fct/images/sw-sparql-blue.png" style="border-width:0"/></a>
         <a href="<?=rdf_link?>" title="RDF data"><img src="/fct/images/sw-rdf-blue.png" alt="[RDF Data]" style="border-width:0"/></a>
 
-	<span about=""
+	<!--span 
 	resource="http://www.w3.org/TR/rdfa-syntax"
 	rel="dc:conformsTo" xmlns:dc="http://purl.org/dc/terms/">
 	<a href="http://validator.w3.org/check?uri=referer"><img
 	    src="http://www.w3.org/Icons/valid-xhtml-rdfa"
 	    alt="Valid XHTML + RDFa" height="27" /></a>
-	</span>
+	</span-->
 	<br />
 	<?vsp fct_virt_info (); ?><br />
 	<?vsp
