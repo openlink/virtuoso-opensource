@@ -3647,6 +3647,11 @@
               <v:template type="simple" name="template_20a" enabled="--case when (self.command = 20) and (self.mimeType = 'text/turtle') and __proc_exists ('WS.WS.TTL_PREFIXES_ENABLED') then 1 else 0 end">
                 <div class="boxHeader">
                   <input type="button" class="button" onclick="javascript: WEBDAV.prefixDialog();" value="Search prefix" />
+                  &amp;nbsp;
+                  <input type="button" class="button" onclick="javascript: WEBDAV.prefixesDialog();" value="Prefixes" />
+                  &amp;nbsp;
+                  <input type="button" class="button" onclick="javascript: WEBDAV.verifyTurtleDialog();" value="Verify" />
+                  &amp;nbsp;
                   <label>
                     <?vsp
                       declare S varchar;

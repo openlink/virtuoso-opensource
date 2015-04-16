@@ -318,5 +318,70 @@
     http_header ('Content-Type: text/plain\r\n');
     http (DB.DBA.obj2json (returnData));
   }
+  else if (action = 'prefixes')
+  {
+    declare _graph, _content, _ns, _dictionary, _triples any;
+    declare exit handler for sqlstate '37000' {
+      returnData := vector ('state', __SQL_STATE, 'message', VALIDATE.DBA.clear (__SQL_MESSAGE));
+
+      goto _exit_3;
+    };
+
+    returnData := vector ();
+    _content := get_keyword ('content', params);
+    _graph := 'http://local.virt/dav/' || cast (rnd (1000) as varchar);
+    {
+      declare exit handler for sqlstate '37000' {goto _again; };
+
+      _dictionary := dict_new ();
+      DB.DBA.RDF_TTL_LOAD_DICT (_content, _graph, _graph, _dictionary);
+
+      goto _exit_3;
+    }
+  _again:;
+    _ns := string_output ();
+    for (select NS_PREFIX, NS_URL from DB.DBA.SYS_XML_PERSISTENT_NS_DECL) do
+    {
+      http (sprintf ('@prefix %s: <%s> . \t', NS_PREFIX, NS_URL), _ns);
+    }
+    http (_content, _ns);
+    _dictionary := dict_new ();
+    DB.DBA.RDF_TTL_LOAD_DICT (_ns, _graph, _graph, _dictionary);
+
+    _triples := dict_list_keys (_dictionary, 1);
+    _ns := string_output ();
+    WS.WS.TTL_QUERY_PREFIXES (_triples, _ns);
+    -- returnData := vector ('prefixes', split_and_decode (string_output_string(_ns), 0, '\0\0\n'));
+    returnData := vector ('prefixes', string_output_string(_ns));
+
+  _exit_3:;
+    SPARQL clear graph ?:_graph;
+
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http_header ('Content-Type: text/plain\r\n');
+    http (DB.DBA.params2json (returnData));
+  }
+  else if (action = 'verifyTurtle')
+  {
+    declare _graph, _content any;
+    declare exit handler for sqlstate '37000' {
+      returnData := vector ('state', __SQL_STATE, 'message', VALIDATE.DBA.clear (__SQL_MESSAGE));
+
+      goto _exit_4;
+    };
+
+    returnData := vector ();
+    _content := get_keyword ('content', params);
+    _graph := 'http://local.virt/dav/' || cast (rnd (1000) as varchar);
+    DB.DBA.TTLP (_content, _graph, _graph, 255);
+
+  _exit_4:;
+    SPARQL clear graph ?:_graph;
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http_header ('Content-Type: text/plain\r\n');
+    http (DB.DBA.params2json (returnData));
+  }
   return;
 ?>
