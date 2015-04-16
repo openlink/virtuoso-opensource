@@ -217,11 +217,11 @@
         declare pagectr integer;
         if (length (selected_users) > users_per_page * count_of_users_pages)
         {
-          http ('<p>Not all found ' || uor || 's are shown below, the following links scroll horisontally by first ' || users_per_page * 20 || ' ' || uor || 's:');
+          http ('<p>Not all found ' || uor || 's are shown below, the following links scroll horizontally by first ' || users_per_page * 20 || ' ' || uor || 's:');
         }
         else
         {
-          http ('<p>Not all found ' || uor || 's are shown below, the following links scroll horisontally by ' || uor || 's:');
+          http ('<p>Not all found ' || uor || 's are shown below, the following links scroll horizontally by ' || uor || 's:');
         }
         for (pagectr := 0; pagectr < count_of_users_pages; pagectr := pagectr + 1)
         {
@@ -297,12 +297,12 @@
     ]]>
   </v:method>
 
-  <vm:pagetitle>WebDAV Content Management</vm:pagetitle>
+  <vm:pagetitle>Linked Data - Graph Management</vm:pagetitle>
   <vm:pagewrapper>
     <vm:menu>
-      <vm:menuitem value="Graphs Management"/>
+      <vm:menuitem value="RDF Document (Named Graph) Management"/>
     </vm:menu>
-    <vm:header caption="Graphs Management">
+    <vm:header caption="RDF Document (Named Graph) Management">
     </vm:header>
     <vm:pagebody>
       <table cellpadding='10' cellspacing='0' border='0' width='100%'>
