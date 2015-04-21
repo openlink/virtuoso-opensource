@@ -2157,6 +2157,28 @@
                           </vm:if>
                         </td>
                       </tr>
+                      <tr id="dav_plain_turtle" style="display: none;">
+                        <th width="30%"></th>
+                        <td>
+                          <v:template name="tf_4a" type="simple" enabled="--case when self.viewField ('source') and (self.command_mode = 6) then 1 else 0 end">
+                            <input type="button" class="button" onclick="javascript: WEBDAV.prefixDialog();" value="Search prefix" />
+                            &amp;nbsp;
+                            <input type="button" class="button" onclick="javascript: WEBDAV.prefixesDialog('dav_content_plain');" value="Prefixes" />
+                            &amp;nbsp;
+                            <input type="button" class="button" onclick="javascript: WEBDAV.verifyTurtleDialog('dav_content_plain');" value="Verify" />
+                            &amp;nbsp;
+                          </v:template>
+                          <label>
+                            <?vsp
+                              declare S varchar;
+
+                              S := get_keyword ('f_ttl_prefixes', self.vc_page.vc_event.ve_params, cast (WS.WS.TTL_PREFIXES_ENABLED () as varchar));
+                              http (sprintf ('<input type="checkbox" name="f_ttl_prefixes" id="f_ttl_prefixes" value="1" title=".TTL prefixes" %s />', case when S = '1' then 'checked="checked"' else '' end));
+                            ?>
+                            Add automaticaly missed prefixes
+                          </label>
+                        </td>
+                      </tr>
                     </v:template>
                     <v:template name="tf_5" type="simple" enabled="--case when self.viewField ('link') and self.dav_is_redirect then 1 else 0 end">
                       <tr id="davRow_link">
@@ -3149,6 +3171,14 @@
                       if (self.command_mode = 6)
                       {
                         dav_file := get_keyword (case when WEBDAV.DBA.VAD_CHECK ('Framework') and (dav_mime = 'text/html') then 'dav_content_html' else 'dav_content_plain' end, params, '');
+                        if (dav_mime = 'text/turtle')
+                        {
+                          if (get_keyword ('f_ttl_prefixes', params, '0') = '0')
+                             connection_set ('__WebDAV_ttl_prefixes__', 'no');
+
+                          if (get_keyword ('f_ttl_prefixes', params) = '1')
+                             connection_set ('__WebDAV_ttl_prefixes__', 'yes');
+                        }
                       }
 
                     _test_6:;
@@ -3648,9 +3678,9 @@
                 <div class="boxHeader">
                   <input type="button" class="button" onclick="javascript: WEBDAV.prefixDialog();" value="Search prefix" />
                   &amp;nbsp;
-                  <input type="button" class="button" onclick="javascript: WEBDAV.prefixesDialog();" value="Prefixes" />
+                  <input type="button" class="button" onclick="javascript: WEBDAV.prefixesDialog('f_content_plain');" value="Prefixes" />
                   &amp;nbsp;
-                  <input type="button" class="button" onclick="javascript: WEBDAV.verifyTurtleDialog();" value="Verify" />
+                  <input type="button" class="button" onclick="javascript: WEBDAV.verifyTurtleDialog('f_content_plain');" value="Verify" />
                   &amp;nbsp;
                   <label>
                     <?vsp

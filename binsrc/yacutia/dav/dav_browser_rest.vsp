@@ -328,7 +328,7 @@
     };
 
     returnData := vector ();
-    _content := get_keyword ('content', params);
+    _content := get_keyword ('content', params, '');
     _graph := 'http://local.virt/dav/' || cast (rnd (1000) as varchar);
     {
       declare exit handler for sqlstate '37000' {goto _again; };
@@ -372,7 +372,7 @@
     };
 
     returnData := vector ();
-    _content := get_keyword ('content', params);
+    _content := get_keyword ('content', params, '');
     _graph := 'http://local.virt/dav/' || cast (rnd (1000) as varchar);
     DB.DBA.TTLP (_content, _graph, _graph, 255);
 

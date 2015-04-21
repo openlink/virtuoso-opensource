@@ -774,9 +774,17 @@ WEBDAV.toggleEditor = function ()
 
   if ($v('dav_mime') == 'text/html') {
     OAT.Dom.hide('dav_plain');
+    OAT.Dom.hide('dav_plain_turtle');
     OAT.Dom.show('dav_html');
-  } else {
+  }
+  else if ($v('dav_mime') == 'text/turtle') {
     OAT.Dom.show('dav_plain');
+    OAT.Dom.show('dav_plain_turtle');
+    OAT.Dom.hide('dav_html');
+  }
+  else {
+    OAT.Dom.show('dav_plain');
+    OAT.Dom.hide('dav_plain_turtle');
     OAT.Dom.hide('dav_html');
   }
 }
@@ -1135,7 +1143,7 @@ WEBDAV.prefixDialog = function ()
   prefixDialog.show ();
 }
 
-WEBDAV.prefixesDialog = function ()
+WEBDAV.prefixesDialog = function (el)
 {
   var prefixesDiv = $('prefixesDiv');
   if (prefixesDiv)
@@ -1209,15 +1217,15 @@ WEBDAV.prefixesDialog = function ()
     if (insert) {
       var prefixesInsert = $('prefixes_insert');
       prefixesInsert.onclick = function () {
-        $(f_content_plain).value = o.prefixes + $(f_content_plain).value;
+        $(el).value = o.prefixes + $(el).value;
       };
       OAT.Dom.show(prefixesInsert);
     }
   }
-  OAT.AJAX.POST(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp')+'?a=prefixes', $v("f_content_plain"), x);
+  OAT.AJAX.POST(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp')+'?a=prefixes', $v(el), x);
 }
 
-WEBDAV.verifyTurtleDialog = function ()
+WEBDAV.verifyTurtleDialog = function (el)
 {
   var verifyTurtleDiv = $('verifyTurtleDiv');
   if (verifyTurtleDiv)
@@ -1275,7 +1283,7 @@ WEBDAV.verifyTurtleDialog = function ()
     content = content.replace('{text}', txt);
     verifyTurtleDiv.innerHTML = content;
   }
-  OAT.AJAX.POST(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp')+'?a=verifyTurtle', $v("f_content_plain"), x);
+  OAT.AJAX.POST(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp')+'?a=verifyTurtle', $v(el), x);
 }
 
 WEBDAV.httpsLink = function (page) {
