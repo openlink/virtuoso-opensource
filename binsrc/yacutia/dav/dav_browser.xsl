@@ -781,7 +781,7 @@
               declare retValue varchar;
 
               retValue := self.get_fieldProperty (sprintf ('dav_%s_graph', det), self.dav_path, sprintf ('virt:%s-graph', det), '');
-              if ((retValue = '') and (self.command = 10) and (self.command_mode = 0))
+              if ((retValue = '') and (self.command = 10) and (self.command_mode = 0) and (det = 'rdfSink'))
                 retValue := 'urn:dav:' || replace (WEBDAV.DBA.path_escape (subseq (WS.WS.FIXPATH (WEBDAV.DBA.real_path (self.dav_path)), 5)), '/', ':');
 
               return retValue;
@@ -844,13 +844,51 @@
 
           <v:method name="detSpongerUI" arglist="in det varchar, in ndx integer">
             <![CDATA[
-              declare S, T varchar;
+              declare S, T, graph varchar;
               declare N integer;
               declare cartridges, selectedCartridges any;
 
-              S := self.get_fieldProperty (sprintf ('dav_%s_sponger', det), self.dav_path, sprintf ('virt:%s-sponger', det), 'off');
+              if (det <> 'rdfSink')
+              {
+                graph := trim (self.detGraphUI (det));
               http (sprintf (
                 '<tr>\n' ||
+                '  <th>\n' ||
+                  '    <label for="dav_%s_binding">Enable Named Graph Binding (on/off)</label>\n' ||
+                '  </th>\n' ||
+                '  <td>\n' ||
+                  '    <input type="checkbox" name="dav_%s_binding" id="dav_%s_binding" %s disabled="disabled" onchange="javascript: graphBindingChange(this, \'%s\', %d);" value="on" />\n' ||
+                '  </td>\n' ||
+                '</tr>\n',
+                det,
+                det,
+                det,
+                  case when graph <> '' then 'checked="checked"' else '' end,
+                  det,
+                  ndx
+                ));
+
+                http (sprintf (
+                  '<tr id="dav%d_graph" %s>\n' ||
+                  '  <th> \n' ||
+                  '    <label for="dav_%s_graph">Graph name</label> \n' ||
+                  '  </th> \n' ||
+                  '  <td> \n' ||
+                  '    <input type="text" name="dav_%s_graph" id="dav_%s_graph" value="%V" disabled="disabled" class="field-text" /> \n' ||
+                  '  </td> \n' ||
+                  '</tr> \n',
+                  ndx,
+                  case when graph = '' then 'style="display: none;"' else '' end,
+                  det,
+                  det,
+                  det,
+                  graph
+                ));
+              }
+
+              S := self.get_fieldProperty (sprintf ('dav_%s_sponger', det), self.dav_path, sprintf ('virt:%s-sponger', det), 'off');
+              http (sprintf (
+                '<tr id="dav%d_sponger" %s>\n' ||
                 '  <th>\n' ||
                 '    <label for="dav_%s_sponger">Sponger (on/off)</label>\n' ||
                 '  </th>\n' ||
@@ -858,6 +896,8 @@
                 '    <input type="checkbox" name="dav_%s_sponger" id="dav_%s_sponger" %s disabled="disabled" onchange="javascript: destinationChange(this, {checked: {show: [''dav%d_cartridge'', ''dav%d_metaCartridge'']}, unchecked: {hide: [''dav%d_cartridge'', ''dav%d_metaCartridge'']}});" value="on" />\n' ||
                 '  </td>\n' ||
                 '</tr>\n',
+                ndx,
+                case when graph = '' then 'style="display: none;"' else '' end,
                 det,
                 det,
                 det,
@@ -4753,20 +4793,6 @@
             </v:text>
           </td>
         </tr>
-        <tr>
-          <th>
-            <v:label for="dav_S3_graph" value="--'Graph name'" />
-          </th>
-          <td>
-            <v:text name="dav_S3_graph" xhtml_id="dav_S3_graph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.detGraphUI ('S3');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
-          </td>
-        </tr>
         <?vsp
           self.detSpongerUI ('S3', 6);
         ?>
@@ -5469,20 +5495,6 @@
             </script>
           </td>
         </tr>
-        <tr>
-          <th>
-            <vm:label for="dav_IMAP_graph" value="--'Graph name'" />
-          </th>
-          <td>
-            <v:text name="dav_IMAP_graph" xhtml_id="dav_IMAP_graph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.detGraphUI ('IMAP');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
-          </td>
-        </tr>
         <?vsp
           self.detSpongerUI ('IMAP', 11);
         ?>
@@ -5532,20 +5544,6 @@
                 ]]>
               </v:before-data-bind>
             </v:text> minutes
-          </td>
-        </tr>
-        <tr>
-          <th>
-            <v:label for="dav_GDrive_graph" value="--'Graph name'" />
-          </th>
-          <td>
-            <v:text name="dav_GDrive_graph" xhtml_id="dav_GDrive_graph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.detGraphUI ('GDrive');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
           </td>
         </tr>
         <?vsp
@@ -5637,20 +5635,6 @@
             </v:text> minutes
           </td>
         </tr>
-        <tr>
-          <th>
-            <v:label for="dav_Dropbox_graph" value="--'Graph name'" />
-          </th>
-          <td>
-            <v:text name="dav_Dropbox_graph" xhtml_id="dav_Dropbox_graph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.detGraphUI ('Dropbox');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
-          </td>
-        </tr>
         <?vsp
           self.detSpongerUI ('Dropbox', 13);
         ?>
@@ -5740,20 +5724,6 @@
             </v:text> minutes
           </td>
         </tr>
-        <tr>
-          <th>
-            <v:label for="dav_SkyDrive_graph" value="--'Graph name'" />
-          </th>
-          <td>
-            <v:text name="dav_SkyDrive_graph" xhtml_id="dav_SkyDrive_graph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.detGraphUI ('SkyDrive');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
-          </td>
-        </tr>
         <?vsp
           self.detSpongerUI ('SkyDrive', 14);
         ?>
@@ -5841,20 +5811,6 @@
                 ]]>
               </v:before-data-bind>
             </v:text> minutes
-          </td>
-        </tr>
-        <tr>
-          <th>
-            <v:label for="dav_Box_graph" value="--'Graph name'" />
-          </th>
-          <td>
-            <v:text name="dav_Box_graph" xhtml_id="dav_Box_graph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.detGraphUI ('Box');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
           </td>
         </tr>
         <?vsp
@@ -6075,20 +6031,6 @@
             </v:text>
           </td>
         </tr>
-        <tr>
-          <th>
-            <v:label for="dav_WebDAV_graph" value="--'Graph name'" />
-          </th>
-          <td>
-            <v:text name="dav_WebDAV_graph" xhtml_id="dav_WebDAV_graph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.detGraphUI ('WebDAV');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
-          </td>
-        </tr>
         <?vsp
           self.detSpongerUI ('WebDAV', 16);
         ?>
@@ -6209,20 +6151,6 @@
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_RACKSPACE_path', self.dav_path, 'virt:RACKSPACE-path', '/');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
-          </td>
-        </tr>
-        <tr>
-          <th>
-            <v:label for="dav_RACKSPACE_graph" value="Graph name" />
-          </th>
-          <td>
-            <v:text name="dav_RACKSPACE_graph" xhtml_id="dav_RACKSPACE_graph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.detGraphUI ('RACKSPACE');
                 ]]>
               </v:before-data-bind>
             </v:text>

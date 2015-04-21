@@ -270,6 +270,17 @@ function getFileName(obj)
     $('dav_name').value = S;
 }
 
+function graphBindingChange(obj, det, ndx)
+{
+  destinationChange(obj, {"checked": {"show": ['dav'+ndx+'_graph', 'dav'+ndx+'_sponger']}, "unchecked": {"hide": ['dav'+ndx+'_graph', 'dav'+ndx+'_sponger'], "clear": ['dav_'+det+'_graph']}});
+  if (obj.checked) {
+    destinationChange($('dav_'+det+'_sponger'), {"checked": {"show": ['dav'+ndx+'_cartridge', 'dav'+ndx+'_metaCartridge']}, "unchecked": {"hide": ['dav'+ndx+'_cartridge', 'dav'+ndx+'_metaCartridge']}});
+  }
+  else {
+    destinationChange(obj, {"checked": {"show": ['dav'+ndx+'_cartridge', 'dav'+ndx+'_metaCartridge']}, "unchecked": {"hide": ['dav'+ndx+'_cartridge', 'dav'+ndx+'_metaCartridge']}});
+  }
+}
+
 function chkbx(bx1, bx2)
 {
   if (bx1.checked == true && bx2.checked == true)
@@ -795,13 +806,16 @@ WEBDAV.updateRdfGraph = function ()
     var graphPrefix;
     var rdfGraph;
 
+    if ((det === 'rdfSink') || $('dav_'+det+'_binding').checked) {
     rdfGraph = $('dav_'+det+'_graph');
     if (!rdfGraph)
       return;
 
     graphPrefix = $v('rdfGraph_prefix');
-    if ((rdfGraph.value == '') || (rdfGraph.value == (graphPrefix+$v('dav_name_save'))))
+      if ((rdfGraph.value == '') || (rdfGraph.value == (graphPrefix+$v('dav_name_save')))) {
       rdfGraph.value = graphPrefix + escape($v('dav_name'));
+  }
+    }
   }
   function updateRdfBaseInternal(det) {
     var basePrefix;
