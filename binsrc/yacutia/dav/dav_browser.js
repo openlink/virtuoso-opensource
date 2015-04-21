@@ -329,7 +329,7 @@ function updateLabel(value)
   else if (value == 'RACKSPACE')
     showLabel(17, 17);
 
-  if ((value == 'IMAP') || (value == 'WebDAV'))
+  if (value == 'WebDAV')
     OAT.Dom.show('cVerify');
   else
     OAT.Dom.hide('cVerify');
@@ -982,14 +982,6 @@ WEBDAV.verifyDialog = function ()
 
   OAT.MSG.attach(OAT.AJAX, 'AJAX_TIMEOUT', t);
   var params;
-  if (verifyType == 'IMAP') {
-    params = '&a=mailVerify'
-           + '&connection=' + encodeURIComponent($v('dav_IMAP_connection'))
-             + '&server='     + encodeURIComponent($v('dav_IMAP_server'))
-             + '&port='       + encodeURIComponent($v('dav_IMAP_port'))
-             + '&user='       + encodeURIComponent($v('dav_IMAP_user'))
-             + '&password='   + encodeURIComponent($v('dav_IMAP_password'));
-  }
   if (verifyType == 'WebDAV') {
     var webdavType;
     if ($('dav_WebDAV_authenticationType_1') && $('dav_WebDAV_authenticationType_1').checked)
@@ -1051,7 +1043,7 @@ WEBDAV.loadIMAPFolders = function ()
     dav_IMAP_password = $v('dav_IMAP_password').trim();
     needLoad = true;
   }
-  if (needLoad) {
+  if (needLoad && dav_IMAP_server && dav_IMAP_port && dav_IMAP_user && dav_IMAP_password && (dav_IMAP_password !== '**********')) {
     var x = function(seqNo, data) {
       if (seqNo < dav_IMAP_seqNo)
         return;
@@ -1073,7 +1065,6 @@ WEBDAV.loadIMAPFolders = function ()
         dav_IMAP_time = new Date();
       }
     }
-    if (dav_IMAP_server && dav_IMAP_user && dav_IMAP_password) {
       var params = '&connection=' + encodeURIComponent(dav_IMAP_connection)
                  + '&server='     + encodeURIComponent(dav_IMAP_server)
                  + '&port='       + encodeURIComponent(dav_IMAP_port)
@@ -1087,7 +1078,6 @@ WEBDAV.loadIMAPFolders = function ()
       OAT.AJAX.GET(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp')+'?a=mailFolders'+params, '', function(data){x(seqNo, data);});
     }
   }
-}
 
 
 WEBDAV.prefixDialog = function ()
