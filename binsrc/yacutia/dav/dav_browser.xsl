@@ -627,13 +627,13 @@
               declare retValue any;
 
               if      (detClass in ('', 'UnderVersioning'))
-                retValue := vector ('destination', 'source', 'name', 'mime', 'link', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
+                retValue := vector ('destination', 'source', 'name', 'mime', 'link', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
 
               else if      (detClass = 'Versioning')
                 retValue := vector ('name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'properties');
 
               else if (detClass = 'rdfSink')
-                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
 
               else if (detClass = 'HostFS')
                 retValue := vector ('source', 'name', 'mime', 'owner', 'group', 'permissions', 'textSearch', 'metadata', 'acl');
@@ -642,13 +642,13 @@
                 retValue := vector ('name', 'mime', 'owner', 'group', 'permissions', 'publicTags', 'aci');
 
               else if (detClass = 'S3')
-                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'sse', 'S3sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci');
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'S3sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci');
 
               else if (detClass in ('DynaRes', 'Share'))
                 retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'textSearch', 'inheritancePermissions', 'metadata', 'acl', 'aci');
 
               else if (detClass in ('GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
-                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'acl', 'aci');
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'acl', 'aci');
 
               else if (detClass in ('CalDAV', 'CardDAV'))
                 retValue := vector ('source', 'name', 'mime', 'owner', 'group', 'permissions', 'publicTags', 'aci');
@@ -676,6 +676,9 @@
                 return 0;
 
               if ((field = 'ldp') and (atod (sys_stat ('st_dbms_ver')) < 7.0))
+                return 0;
+
+              if ((field = 'turtleRedirect') and not WS.WS.TTL_REDIRECT_ENABLED ())
                 return 0;
 
               return WEBDAV.DBA.vector_contains (self.dav_viewFields, field);
@@ -2612,6 +2615,36 @@
                         </td>
                       </tr>
                     </v:template>
+                    <v:template name="tf_12c" type="simple" enabled="-- case when self.viewField ('turtleRedirect') and (self.dav_type = 'C') and not self.dav_is_redirect then 1 else 0 end">
+                      <tr>
+                        <th width="30%">Enable redirection for .TTL files</th>
+                        <td>
+                          <label>
+                            <?vsp
+                              declare tmp, checked any;
+
+                              tmp := self.get_fieldProperty ('dav_turtleRedirect', self.dav_path, 'virt:turtleRedirect', 'yes');
+                              if (tmp = 'yes')
+                              {
+                                checked := 'checked="checked"';
+                              }
+                              else
+                              {
+                                checked := '';
+                              }
+                              http (sprintf ('<input type="checkbox" name="dav_turtleRedirect" id="dav_turtleRedirect" value="yes" disabled="disabled" title="Turtle Redirect" %s />',  checked));
+                            ?>
+                            <b> ('text/html' content negotiation only)</b>
+                          </label>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th width="30%">.TTL files redirection params</th>
+                        <td>
+                          <v:text name="dav_turtleRedirectParams" xhtml_id="dav_turtleRedirectParams" value="--self.get_fieldProperty ('dav_turtleRedirectParams', self.dav_path, 'virt:turtleRedirectParams', '')" xhtml_disabled="disabled" xhtml_class="field-short" />
+                        </td>
+                      </tr>
+                    </v:template>
                     <v:template name="tf_13" type="simple" enabled="--case when self.viewField ('textSearch') and not self.dav_is_redirect then 1 else 0 end">
                       <tr id="davRow_text" width="30%">
                         <th>
@@ -2951,8 +2984,8 @@
                 <v:on-post>
                   <![CDATA[
                     declare N, M, retValue, dav_owner, dav_group, dav_encryption_state integer;
-                    declare mode, dav_detType, dav_mime, dav_name, dav_link, dav_fullPath, dav_perms, dav_ldp, msg, _p varchar;
-                    declare properties, c_properties, v_properties any;
+                    declare mode, dav_detType, dav_mime, dav_name, dav_link, dav_fullPath, dav_perms, dav_ldp, dav_turtleRedirect, dav_turtleRedirectParams, msg, _p varchar;
+                    declare properties, c_properties any;
                     declare dav_acl, dav_aci, old_dav_aci, dav_filename, dav_file, rdf_content any;
                     declare params, detParams, itemList any;
                     declare tmp any;
@@ -3511,7 +3544,7 @@
                       _exec_8:;
                         -- LDP
                         if (not self.editField ('ldp'))
-                          goto _exec_9;
+                          goto _exec_85;
 
                         dav_ldp := get_keyword ('dav_ldp', params, '');
                         tmp := WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'LDP', '');
@@ -3526,6 +3559,23 @@
                             WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'LDP', dav_ldp);
                             WEBDAV.DBA.ldp_recovery (dav_fullPath);
                           }
+                        }
+
+                      _exec_85:;
+                        if (not self.editField ('turtleRedirect'))
+                          goto _exec_9;
+
+                        dav_turtleRedirect := get_keyword ('dav_turtleRedirect', params, 'no');
+                        tmp := WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:turtleRedirect', '');
+                        if (dav_turtleRedirect <> tmp)
+                        {
+                          WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:turtleRedirect', dav_turtleRedirect);
+                        }
+                        dav_turtleRedirectParams := get_keyword ('dav_turtleRedirectParams', params, '');
+                        tmp := WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:turtleRedirectParams', '');
+                        if (dav_turtleRedirectParams <> tmp)
+                        {
+                          WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:turtleRedirectParams', dav_turtleRedirectParams);
                         }
 
                       _exec_9:;
