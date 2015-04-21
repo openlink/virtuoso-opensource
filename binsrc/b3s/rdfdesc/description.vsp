@@ -345,7 +345,7 @@ again:
 
   _subject := b3s_label_get (data, langs);
 
-  rdf_link := sprintf ('/sparql?query=%U', __box_flags_tweak (sprintf ('define sql:describe-mode "LOD" %s DESCRIBE <%s>', b3s_render_inf_clause(), _S), 2)); 
+  rdf_link := sprintf ('/sparql?query=%U', __box_flags_tweak (sprintf ('define sql:describe-mode "CBD" %s DESCRIBE <%s>', b3s_render_inf_clause(), _S), 2)); 
   __box_flags_set (rdf_link, 2);
 
   declare __res_desc, qs, qv, best_variant, accept varchar;
