@@ -2617,7 +2617,7 @@
                     </v:template>
                     <v:template name="tf_12c" type="simple" enabled="-- case when self.viewField ('turtleRedirect') and (self.dav_type = 'C') and not self.dav_is_redirect then 1 else 0 end">
                       <tr>
-                        <th width="30%">Enable redirection for .TTL files</th>
+                        <th width="30%">Enable Content Negotiation based Redirection</th>
                         <td>
                           <label>
                             <?vsp
@@ -2634,12 +2634,12 @@
                               }
                               http (sprintf ('<input type="checkbox" name="dav_turtleRedirect" id="dav_turtleRedirect" value="yes" disabled="disabled" title="Turtle Redirect" %s />',  checked));
                             ?>
-                            <b> ('text/html' content negotiation only)</b>
+                            <b> ('text/html' content negotiation for 'text/turtle' files)</b>
                           </label>
                         </td>
                       </tr>
                       <tr>
-                        <th width="30%">.TTL files redirection params</th>
+                        <th width="30%">Redirection URL Params</th>
                         <td>
                           <v:text name="dav_turtleRedirectParams" xhtml_id="dav_turtleRedirectParams" value="--self.get_fieldProperty ('dav_turtleRedirectParams', self.dav_path, 'virt:turtleRedirectParams', '')" xhtml_disabled="disabled" xhtml_class="field-short" />
                         </td>
