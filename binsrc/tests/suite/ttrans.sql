@@ -55,7 +55,7 @@ echo both ": trans rl\n";
 
 -- XXX: was 1
 select * from (select transitive t_in (1) t_out (2) t_distinct  p1, p2 from knows) k where p1 = 1 and p2 = 4;
-echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
+echo both $if $gte $rowcnt 1 "PASSED" "***FAILED";
 echo both ": trans lrrl 1\n";
 
 
