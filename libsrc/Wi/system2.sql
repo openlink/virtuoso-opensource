@@ -1409,7 +1409,7 @@ qt_check (in file varchar, out message varchar, in record_new integer := 0) retu
         {
 	  declare t any;
 	  t := cast (vals[i] as varchar);
-	  if (__tag(c[i]) in (191, 190))
+	  if (__tag(c[i]) in (191, 190, 219))
 	    {
 	      declare delta float;
 	      t := cast (t as double precision);
