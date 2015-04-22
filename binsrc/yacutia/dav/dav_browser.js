@@ -270,6 +270,17 @@ function getFileName(obj)
     $('dav_name').value = S;
 }
 
+function graphBindingChange(obj, det, ndx)
+{
+  destinationChange(obj, {"checked": {"show": ['dav'+ndx+'_graph', 'dav'+ndx+'_sponger']}, "unchecked": {"hide": ['dav'+ndx+'_graph', 'dav'+ndx+'_sponger'], "clear": ['dav_'+det+'_graph']}});
+  if (obj.checked) {
+    destinationChange($('dav_'+det+'_sponger'), {"checked": {"show": ['dav'+ndx+'_cartridge', 'dav'+ndx+'_metaCartridge']}, "unchecked": {"hide": ['dav'+ndx+'_cartridge', 'dav'+ndx+'_metaCartridge']}});
+  }
+  else {
+    destinationChange(obj, {"checked": {"show": ['dav'+ndx+'_cartridge', 'dav'+ndx+'_metaCartridge']}, "unchecked": {"hide": ['dav'+ndx+'_cartridge', 'dav'+ndx+'_metaCartridge']}});
+  }
+}
+
 function chkbx(bx1, bx2)
 {
   if (bx1.checked == true && bx2.checked == true)
@@ -329,7 +340,7 @@ function updateLabel(value)
   else if (value == 'RACKSPACE')
     showLabel(17, 17);
 
-  if ((value == 'IMAP') || (value == 'WebDAV'))
+  if (value == 'WebDAV')
     OAT.Dom.show('cVerify');
   else
     OAT.Dom.hide('cVerify');
@@ -774,9 +785,17 @@ WEBDAV.toggleEditor = function ()
 
   if ($v('dav_mime') == 'text/html') {
     OAT.Dom.hide('dav_plain');
+    OAT.Dom.hide('dav_plain_turtle');
     OAT.Dom.show('dav_html');
-  } else {
+  }
+  else if ($v('dav_mime') == 'text/turtle') {
     OAT.Dom.show('dav_plain');
+    OAT.Dom.show('dav_plain_turtle');
+    OAT.Dom.hide('dav_html');
+  }
+  else {
+    OAT.Dom.show('dav_plain');
+    OAT.Dom.hide('dav_plain_turtle');
     OAT.Dom.hide('dav_html');
   }
 }
@@ -787,13 +806,16 @@ WEBDAV.updateRdfGraph = function ()
     var graphPrefix;
     var rdfGraph;
 
+    if ((det === 'rdfSink') || $('dav_'+det+'_binding').checked) {
     rdfGraph = $('dav_'+det+'_graph');
     if (!rdfGraph)
       return;
 
     graphPrefix = $v('rdfGraph_prefix');
-    if ((rdfGraph.value == '') || (rdfGraph.value == (graphPrefix+$v('dav_name_save'))))
+      if ((rdfGraph.value == '') || (rdfGraph.value == (graphPrefix+$v('dav_name_save')))) {
       rdfGraph.value = graphPrefix + escape($v('dav_name'));
+  }
+    }
   }
   function updateRdfBaseInternal(det) {
     var basePrefix;
@@ -974,14 +996,6 @@ WEBDAV.verifyDialog = function ()
 
   OAT.MSG.attach(OAT.AJAX, 'AJAX_TIMEOUT', t);
   var params;
-  if (verifyType == 'IMAP') {
-    params = '&a=mailVerify'
-           + '&connection=' + encodeURIComponent($v('dav_IMAP_connection'))
-             + '&server='     + encodeURIComponent($v('dav_IMAP_server'))
-             + '&port='       + encodeURIComponent($v('dav_IMAP_port'))
-             + '&user='       + encodeURIComponent($v('dav_IMAP_user'))
-             + '&password='   + encodeURIComponent($v('dav_IMAP_password'));
-  }
   if (verifyType == 'WebDAV') {
     var webdavType;
     if ($('dav_WebDAV_authenticationType_1') && $('dav_WebDAV_authenticationType_1').checked)
@@ -1043,7 +1057,7 @@ WEBDAV.loadIMAPFolders = function ()
     dav_IMAP_password = $v('dav_IMAP_password').trim();
     needLoad = true;
   }
-  if (needLoad) {
+  if (needLoad && dav_IMAP_server && dav_IMAP_port && dav_IMAP_user && dav_IMAP_password && (dav_IMAP_password !== '**********')) {
     var x = function(seqNo, data) {
       if (seqNo < dav_IMAP_seqNo)
         return;
@@ -1065,7 +1079,6 @@ WEBDAV.loadIMAPFolders = function ()
         dav_IMAP_time = new Date();
       }
     }
-    if (dav_IMAP_server && dav_IMAP_user && dav_IMAP_password) {
       var params = '&connection=' + encodeURIComponent(dav_IMAP_connection)
                  + '&server='     + encodeURIComponent(dav_IMAP_server)
                  + '&port='       + encodeURIComponent(dav_IMAP_port)
@@ -1079,7 +1092,6 @@ WEBDAV.loadIMAPFolders = function ()
       OAT.AJAX.GET(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp')+'?a=mailFolders'+params, '', function(data){x(seqNo, data);});
     }
   }
-}
 
 
 WEBDAV.prefixDialog = function ()
@@ -1123,16 +1135,159 @@ WEBDAV.prefixDialog = function ()
         var prefixTD = $("td_prefix");
         if (prefixTD)
         {
-          prefixTD.innerHTML = json[$v("f_prefix")];
+          prefixTD.innerHTML = (json) ? json : 'N/A';
           OAT.Dom.show("tr_prefix");
         }
       } else {
         OAT.Dom.hide("tr_prefix");
       }
     }
-    OAT.AJAX.GET('http://prefix.cc/'+encodeURIComponent($v("f_prefix"))+'.file.json', null, x, {type: OAT.AJAX.TYPE_TEXT, onstart: function(){}, onerror: function(){}});
+    OAT.AJAX.POST(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp')+'?a=prefix&p='+$v("f_prefix"), null, x);
   };
   prefixDialog.show ();
+}
+
+WEBDAV.prefixesDialog = function (el)
+{
+  var prefixesDiv = $('prefixesDiv');
+  if (prefixesDiv)
+    OAT.Dom.unlink(prefixesDiv);
+
+  var content =
+    '<div style="padding: 1em;">' +
+    '  <table style="width: 100%;">' +
+    '    <tr>' +
+    '      <td align="right">' +
+    '        <b>Prefixes:</b>' +
+    '      </td>' +
+    '      <td>{text}</td>' +
+    '    </tr>' +
+    '    <tr><td align="center" colspan="2"><hr /><td></tr>' +
+    '    <tr>' +
+    '      <td align="center" colspan="2">' +
+    '        <input type="button" value="Insert" id="prefixes_insert" style="display: none;" />' +
+    '        <input type="button" value="Close" onclick="javascript: prefixesDialog.hide(); return false;" />' +
+    '      <td>' +
+    '    </tr>' +
+    '  </table>' +
+    '</div>'
+  ;
+  prefixesDiv = OAT.Dom.create('div', {height: '120px', overflow: 'hidden'});
+  prefixesDiv.id = 'prefixesDiv';
+  prefixesDiv.innerHTML = '<img src="'+OAT.Preferences.imagePath+'Ajax_throbber.gif'+'" style="margin: 70px 220px;" />';
+  prefixesDialog = new OAT.Dialog('Find missed prefixes', prefixesDiv, {width: 550, buttons: 0, resize: 0, modal: 1});
+  prefixesDialog.cancel = prefixesDialog.hide;
+  prefixesDialog.show();
+
+  var x = function (data) {
+    var txt;
+    var o;
+    var insert = false;
+    var encodeHTML = function (str) {
+      return str.replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&apos;');
+    };
+
+    try {
+      o = OAT.JSON.parse(data);
+      WEBDAV.progress.id = o.id;
+    }
+    catch (e) {}
+
+    if (o) {
+      if (o.error) {
+        txt = '<i style="color: red;">' + o.message + '</i>';
+      }
+      else {
+        if (o.prefixes && (o.prefixes.length > 0)) {
+          insert = true;
+          prefixesDiv.style.height = 100 + ((o.prefixes.split('\n').length) * 12) + 'px';
+          o.prefixes = o.prefixes.replace(/\t/g, ' ');
+          txt = '<i style="color: green;"><pre>' + encodeHTML(o.prefixes) + '</pre></i>';
+        }
+        else {
+          txt = '<i style="color: green;">No missed prefixes</i>';
+        }
+      }
+    }
+    else {
+      txt = '<i style="color: red;">Call error</i>';
+    }
+    content = content.replace('{text}', txt);
+    prefixesDiv.innerHTML = content;
+    if (insert) {
+      var prefixesInsert = $('prefixes_insert');
+      prefixesInsert.onclick = function () {
+        $(el).value = o.prefixes + $(el).value;
+      };
+      OAT.Dom.show(prefixesInsert);
+    }
+  }
+  OAT.AJAX.POST(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp')+'?a=prefixes', $v(el), x);
+}
+
+WEBDAV.verifyTurtleDialog = function (el)
+{
+  var verifyTurtleDiv = $('verifyTurtleDiv');
+  if (verifyTurtleDiv)
+    OAT.Dom.unlink(verifyTurtleDiv);
+
+  var content =
+    '<div style="padding: 1em;">' +
+    '  <table style="width: 100%;">' +
+    '    <tr>' +
+    '      <td align="right">' +
+    '        <b>Verification:</b>' +
+    '      </td>' +
+    '      <td>{text}</td>' +
+    '    </tr>' +
+    '    <tr><td align="center" colspan="2"><hr /><td></tr>' +
+    '    <tr>' +
+    '      <td align="center" colspan="2">' +
+    '        <input type="button" value="Close" onclick="javascript: verifyTurtleDialog.hide(); return false;" />' +
+    '      <td>' +
+    '    </tr>' +
+    '  </table>' +
+    '</div>'
+  ;
+  verifyTurtleDiv = OAT.Dom.create('div', {height: '100px', overflow: 'hidden'});
+  verifyTurtleDiv.id = 'verifyTurtleDiv';
+  verifyTurtleDiv.innerHTML = '<img src="'+OAT.Preferences.imagePath+'Ajax_throbber.gif'+'" style="margin: 70px 220px;" />';
+  verifyTurtleDialog = new OAT.Dialog('Find missed prefixes', verifyTurtleDiv, {width: 550, buttons: 0, resize: 0, modal: 1});
+  verifyTurtleDialog.cancel = verifyTurtleDialog.hide;
+  verifyTurtleDialog.show();
+
+  var x = function (data) {
+    var txt;
+    var o;
+
+    try {
+      o = OAT.JSON.parse(data);
+      WEBDAV.progress.id = o.id;
+    }
+    catch (e) {}
+
+    if (o) {
+      if (o.state) {
+        if (o.message.length > 30) {
+          verifyTurtleDiv.style.height = '120px';
+        }
+        txt = '<i style="color: red;">' + o.message + '</i>';
+      }
+      else {
+        txt = '<i style="color: green;">Successful</i>';
+      }
+    }
+    else {
+      txt = '<i style="color: red;">Call error</i>';
+    }
+    content = content.replace('{text}', txt);
+    verifyTurtleDiv.innerHTML = content;
+  }
+  OAT.AJAX.POST(WEBDAV.httpsLink(WEBDAV.Preferences.restPath+'dav_browser_rest.vsp')+'?a=verifyTurtle', $v(el), x);
 }
 
 WEBDAV.httpsLink = function (page) {

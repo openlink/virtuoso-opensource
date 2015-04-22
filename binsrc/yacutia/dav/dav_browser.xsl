@@ -627,13 +627,13 @@
               declare retValue any;
 
               if      (detClass in ('', 'UnderVersioning'))
-                retValue := vector ('destination', 'source', 'name', 'mime', 'link', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
+                retValue := vector ('destination', 'source', 'name', 'mime', 'link', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
 
               else if      (detClass = 'Versioning')
                 retValue := vector ('name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'properties');
 
               else if (detClass = 'rdfSink')
-                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
 
               else if (detClass = 'HostFS')
                 retValue := vector ('source', 'name', 'mime', 'owner', 'group', 'permissions', 'textSearch', 'metadata', 'acl');
@@ -642,13 +642,13 @@
                 retValue := vector ('name', 'mime', 'owner', 'group', 'permissions', 'publicTags', 'aci');
 
               else if (detClass = 'S3')
-                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'sse', 'S3sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci');
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'S3sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'publicTags', 'privateTags', 'properties', 'acl', 'aci');
 
               else if (detClass in ('DynaRes', 'Share'))
                 retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'textSearch', 'inheritancePermissions', 'metadata', 'acl', 'aci');
 
               else if (detClass in ('GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE'))
-                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'acl', 'aci');
+                retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'acl', 'aci');
 
               else if (detClass in ('CalDAV', 'CardDAV'))
                 retValue := vector ('source', 'name', 'mime', 'owner', 'group', 'permissions', 'publicTags', 'aci');
@@ -676,6 +676,9 @@
                 return 0;
 
               if ((field = 'ldp') and (atod (sys_stat ('st_dbms_ver')) < 7.0))
+                return 0;
+
+              if ((field = 'turtleRedirect') and not WS.WS.TTL_REDIRECT_ENABLED ())
                 return 0;
 
               return WEBDAV.DBA.vector_contains (self.dav_viewFields, field);
@@ -781,7 +784,7 @@
               declare retValue varchar;
 
               retValue := self.get_fieldProperty (sprintf ('dav_%s_graph', det), self.dav_path, sprintf ('virt:%s-graph', det), '');
-              if ((retValue = '') and (self.command = 10) and (self.command_mode = 0))
+              if ((retValue = '') and (self.command = 10) and (self.command_mode = 0) and (det = 'rdfSink'))
                 retValue := 'urn:dav:' || replace (WEBDAV.DBA.path_escape (subseq (WS.WS.FIXPATH (WEBDAV.DBA.real_path (self.dav_path)), 5)), '/', ':');
 
               return retValue;
@@ -844,13 +847,51 @@
 
           <v:method name="detSpongerUI" arglist="in det varchar, in ndx integer">
             <![CDATA[
-              declare S, T varchar;
+              declare S, T, graph varchar;
               declare N integer;
               declare cartridges, selectedCartridges any;
 
-              S := self.get_fieldProperty (sprintf ('dav_%s_sponger', det), self.dav_path, sprintf ('virt:%s-sponger', det), 'off');
+              if (det <> 'rdfSink')
+              {
+                graph := trim (self.detGraphUI (det));
               http (sprintf (
                 '<tr>\n' ||
+                '  <th>\n' ||
+                  '    <label for="dav_%s_binding">Enable Named Graph Binding (on/off)</label>\n' ||
+                '  </th>\n' ||
+                '  <td>\n' ||
+                  '    <input type="checkbox" name="dav_%s_binding" id="dav_%s_binding" %s disabled="disabled" onchange="javascript: graphBindingChange(this, \'%s\', %d);" value="on" />\n' ||
+                '  </td>\n' ||
+                '</tr>\n',
+                det,
+                det,
+                det,
+                  case when graph <> '' then 'checked="checked"' else '' end,
+                  det,
+                  ndx
+                ));
+
+                http (sprintf (
+                  '<tr id="dav%d_graph" %s>\n' ||
+                  '  <th> \n' ||
+                  '    <label for="dav_%s_graph">Graph name</label> \n' ||
+                  '  </th> \n' ||
+                  '  <td> \n' ||
+                  '    <input type="text" name="dav_%s_graph" id="dav_%s_graph" value="%V" disabled="disabled" class="field-text" /> \n' ||
+                  '  </td> \n' ||
+                  '</tr> \n',
+                  ndx,
+                  case when graph = '' then 'style="display: none;"' else '' end,
+                  det,
+                  det,
+                  det,
+                  graph
+                ));
+              }
+
+              S := self.get_fieldProperty (sprintf ('dav_%s_sponger', det), self.dav_path, sprintf ('virt:%s-sponger', det), 'off');
+              http (sprintf (
+                '<tr id="dav%d_sponger" %s>\n' ||
                 '  <th>\n' ||
                 '    <label for="dav_%s_sponger">Sponger (on/off)</label>\n' ||
                 '  </th>\n' ||
@@ -858,6 +899,8 @@
                 '    <input type="checkbox" name="dav_%s_sponger" id="dav_%s_sponger" %s disabled="disabled" onchange="javascript: destinationChange(this, {checked: {show: [''dav%d_cartridge'', ''dav%d_metaCartridge'']}, unchecked: {hide: [''dav%d_cartridge'', ''dav%d_metaCartridge'']}});" value="on" />\n' ||
                 '  </td>\n' ||
                 '</tr>\n',
+                ndx,
+                case when graph = '' then 'style="display: none;"' else '' end,
                 det,
                 det,
                 det,
@@ -2157,6 +2200,28 @@
                           </vm:if>
                         </td>
                       </tr>
+                      <tr id="dav_plain_turtle" style="display: none;">
+                        <th width="30%"></th>
+                        <td>
+                          <v:template name="tf_4a" type="simple" enabled="--case when self.viewField ('source') and (self.command_mode = 6) then 1 else 0 end">
+                            <input type="button" class="button" onclick="javascript: WEBDAV.prefixDialog();" value="Search prefix" />
+                            &amp;nbsp;
+                            <input type="button" class="button" onclick="javascript: WEBDAV.prefixesDialog('dav_content_plain');" value="Prefixes" />
+                            &amp;nbsp;
+                            <input type="button" class="button" onclick="javascript: WEBDAV.verifyTurtleDialog('dav_content_plain');" value="Verify" />
+                            &amp;nbsp;
+                          </v:template>
+                          <label>
+                            <?vsp
+                              declare S varchar;
+
+                              S := get_keyword ('f_ttl_prefixes', self.vc_page.vc_event.ve_params, cast (WS.WS.TTL_PREFIXES_ENABLED () as varchar));
+                              http (sprintf ('<input type="checkbox" name="f_ttl_prefixes" id="f_ttl_prefixes" value="1" title=".TTL prefixes" %s />', case when S = '1' then 'checked="checked"' else '' end));
+                            ?>
+                            Add automaticaly missed prefixes
+                          </label>
+                        </td>
+                      </tr>
                     </v:template>
                     <v:template name="tf_5" type="simple" enabled="--case when self.viewField ('link') and self.dav_is_redirect then 1 else 0 end">
                       <tr id="davRow_link">
@@ -2550,6 +2615,36 @@
                         </td>
                       </tr>
                     </v:template>
+                    <v:template name="tf_12c" type="simple" enabled="-- case when self.viewField ('turtleRedirect') and (self.dav_type = 'C') and not self.dav_is_redirect then 1 else 0 end">
+                      <tr>
+                        <th width="30%">Enable Content Negotiation based Redirection</th>
+                        <td>
+                          <label>
+                            <?vsp
+                              declare tmp, checked any;
+
+                              tmp := self.get_fieldProperty ('dav_turtleRedirect', self.dav_path, 'virt:turtleRedirect', 'yes');
+                              if (tmp = 'yes')
+                              {
+                                checked := 'checked="checked"';
+                              }
+                              else
+                              {
+                                checked := '';
+                              }
+                              http (sprintf ('<input type="checkbox" name="dav_turtleRedirect" id="dav_turtleRedirect" value="yes" disabled="disabled" title="Turtle Redirect" %s />',  checked));
+                            ?>
+                            <b> ('text/html' content negotiation for 'text/turtle' files)</b>
+                          </label>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th width="30%">Redirection URL Params</th>
+                        <td>
+                          <v:text name="dav_turtleRedirectParams" xhtml_id="dav_turtleRedirectParams" value="--self.get_fieldProperty ('dav_turtleRedirectParams', self.dav_path, 'virt:turtleRedirectParams', '')" xhtml_disabled="disabled" xhtml_class="field-short" />
+                        </td>
+                      </tr>
+                    </v:template>
                     <v:template name="tf_13" type="simple" enabled="--case when self.viewField ('textSearch') and not self.dav_is_redirect then 1 else 0 end">
                       <tr id="davRow_text" width="30%">
                         <th>
@@ -2889,8 +2984,8 @@
                 <v:on-post>
                   <![CDATA[
                     declare N, M, retValue, dav_owner, dav_group, dav_encryption_state integer;
-                    declare mode, dav_detType, dav_mime, dav_name, dav_link, dav_fullPath, dav_perms, dav_ldp, msg, _p varchar;
-                    declare properties, c_properties, v_properties any;
+                    declare mode, dav_detType, dav_mime, dav_name, dav_link, dav_fullPath, dav_perms, dav_ldp, dav_turtleRedirect, dav_turtleRedirectParams, msg, _p varchar;
+                    declare properties, c_properties any;
                     declare dav_acl, dav_aci, old_dav_aci, dav_filename, dav_file, rdf_content any;
                     declare params, detParams, itemList any;
                     declare tmp any;
@@ -3149,6 +3244,14 @@
                       if (self.command_mode = 6)
                       {
                         dav_file := get_keyword (case when WEBDAV.DBA.VAD_CHECK ('Framework') and (dav_mime = 'text/html') then 'dav_content_html' else 'dav_content_plain' end, params, '');
+                        if (dav_mime = 'text/turtle')
+                        {
+                          if (get_keyword ('f_ttl_prefixes', params, '0') = '0')
+                             connection_set ('__WebDAV_ttl_prefixes__', 'no');
+
+                          if (get_keyword ('f_ttl_prefixes', params) = '1')
+                             connection_set ('__WebDAV_ttl_prefixes__', 'yes');
+                        }
                       }
 
                     _test_6:;
@@ -3441,7 +3544,7 @@
                       _exec_8:;
                         -- LDP
                         if (not self.editField ('ldp'))
-                          goto _exec_9;
+                          goto _exec_85;
 
                         dav_ldp := get_keyword ('dav_ldp', params, '');
                         tmp := WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'LDP', '');
@@ -3456,6 +3559,23 @@
                             WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'LDP', dav_ldp);
                             WEBDAV.DBA.ldp_recovery (dav_fullPath);
                           }
+                        }
+
+                      _exec_85:;
+                        if (not self.editField ('turtleRedirect'))
+                          goto _exec_9;
+
+                        dav_turtleRedirect := get_keyword ('dav_turtleRedirect', params, 'no');
+                        tmp := WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:turtleRedirect', '');
+                        if (dav_turtleRedirect <> tmp)
+                        {
+                          WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:turtleRedirect', dav_turtleRedirect);
+                        }
+                        dav_turtleRedirectParams := get_keyword ('dav_turtleRedirectParams', params, '');
+                        tmp := WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'virt:turtleRedirectParams', '');
+                        if (dav_turtleRedirectParams <> tmp)
+                        {
+                          WEBDAV.DBA.DAV_PROP_SET (self.dav_path, 'virt:turtleRedirectParams', dav_turtleRedirectParams);
                         }
 
                       _exec_9:;
@@ -3647,6 +3767,11 @@
               <v:template type="simple" name="template_20a" enabled="--case when (self.command = 20) and (self.mimeType = 'text/turtle') and __proc_exists ('WS.WS.TTL_PREFIXES_ENABLED') then 1 else 0 end">
                 <div class="boxHeader">
                   <input type="button" class="button" onclick="javascript: WEBDAV.prefixDialog();" value="Search prefix" />
+                  &amp;nbsp;
+                  <input type="button" class="button" onclick="javascript: WEBDAV.prefixesDialog('f_content_plain');" value="Prefixes" />
+                  &amp;nbsp;
+                  <input type="button" class="button" onclick="javascript: WEBDAV.verifyTurtleDialog('f_content_plain');" value="Verify" />
+                  &amp;nbsp;
                   <label>
                     <?vsp
                       declare S varchar;
@@ -4299,7 +4424,7 @@
                                       click := case when (permission <> '') then sprintf ('ondblclick="javascript: vspxUpdate(\'%V\');" ', WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))) else '' end
                                             || sprintf ('onclick="javascript: vspxSelect(\'%V\'); return false;"', WEBDAV.DBA.utf2wide (replace (WEBDAV.DBA.dav_lpath (path), '\'', '\\\'')));
                                     }
-                                    http (sprintf ('<a %s href="%s" %s title="%V" class="WEBDAV_a"><img src="%s" border="0" /> %V</a>', id, WEBDAV.DBA.utf2wide (path), click, WEBDAV.DBA.utf2wide (rowset[0]), self.image_src (WEBDAV.DBA.ui_image (path, rowset[1], rowset[4])), WEBDAV.DBA.utf2wide (WEBDAV.DBA.stringCut (rowset[0], self.chars))));
+                                    http (sprintf ('<a %s href="%s" %s title="%V" class="WEBDAV_a"><img src="%s" border="0" /> %V</a>', id, WEBDAV.DBA.dav_url (path), click, WEBDAV.DBA.utf2wide (rowset[0]), self.image_src (WEBDAV.DBA.ui_image (path, rowset[1], rowset[4])), WEBDAV.DBA.utf2wide (WEBDAV.DBA.stringCut (rowset[0], self.chars))));
                                   ?>
                                   <v:template type="simple" enabled="-- case when (self.command_mode <> 3 or is_empty_or_null(WEBDAV.DBA.dc_get (self.search_dc, 'base', 'content'))) then 0 else 1 end">
                                     <br /><i><v:label value="--WEBDAV.DBA.content_excerpt((((control.vc_parent).vc_parent as vspx_row_template).te_rowset[8]), WEBDAV.DBA.dc_get(self.search_dc, 'base', 'content'))" format="%s" /></i>
@@ -4713,20 +4838,6 @@
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_S3_SecretKey', self.dav_path, 'virt:S3-SecretKey', '');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
-          </td>
-        </tr>
-        <tr>
-          <th>
-            <v:label for="dav_S3_graph" value="--'Graph name'" />
-          </th>
-          <td>
-            <v:text name="dav_S3_graph" xhtml_id="dav_S3_graph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.detGraphUI ('S3');
                 ]]>
               </v:before-data-bind>
             </v:text>
@@ -5434,20 +5545,6 @@
             </script>
           </td>
         </tr>
-        <tr>
-          <th>
-            <vm:label for="dav_IMAP_graph" value="--'Graph name'" />
-          </th>
-          <td>
-            <v:text name="dav_IMAP_graph" xhtml_id="dav_IMAP_graph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.detGraphUI ('IMAP');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
-          </td>
-        </tr>
         <?vsp
           self.detSpongerUI ('IMAP', 11);
         ?>
@@ -5497,20 +5594,6 @@
                 ]]>
               </v:before-data-bind>
             </v:text> minutes
-          </td>
-        </tr>
-        <tr>
-          <th>
-            <v:label for="dav_GDrive_graph" value="--'Graph name'" />
-          </th>
-          <td>
-            <v:text name="dav_GDrive_graph" xhtml_id="dav_GDrive_graph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.detGraphUI ('GDrive');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
           </td>
         </tr>
         <?vsp
@@ -5602,20 +5685,6 @@
             </v:text> minutes
           </td>
         </tr>
-        <tr>
-          <th>
-            <v:label for="dav_Dropbox_graph" value="--'Graph name'" />
-          </th>
-          <td>
-            <v:text name="dav_Dropbox_graph" xhtml_id="dav_Dropbox_graph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.detGraphUI ('Dropbox');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
-          </td>
-        </tr>
         <?vsp
           self.detSpongerUI ('Dropbox', 13);
         ?>
@@ -5705,20 +5774,6 @@
             </v:text> minutes
           </td>
         </tr>
-        <tr>
-          <th>
-            <v:label for="dav_SkyDrive_graph" value="--'Graph name'" />
-          </th>
-          <td>
-            <v:text name="dav_SkyDrive_graph" xhtml_id="dav_SkyDrive_graph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.detGraphUI ('SkyDrive');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
-          </td>
-        </tr>
         <?vsp
           self.detSpongerUI ('SkyDrive', 14);
         ?>
@@ -5806,20 +5861,6 @@
                 ]]>
               </v:before-data-bind>
             </v:text> minutes
-          </td>
-        </tr>
-        <tr>
-          <th>
-            <v:label for="dav_Box_graph" value="--'Graph name'" />
-          </th>
-          <td>
-            <v:text name="dav_Box_graph" xhtml_id="dav_Box_graph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.detGraphUI ('Box');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
           </td>
         </tr>
         <?vsp
@@ -6040,20 +6081,6 @@
             </v:text>
           </td>
         </tr>
-        <tr>
-          <th>
-            <v:label for="dav_WebDAV_graph" value="--'Graph name'" />
-          </th>
-          <td>
-            <v:text name="dav_WebDAV_graph" xhtml_id="dav_WebDAV_graph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.detGraphUI ('WebDAV');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
-          </td>
-        </tr>
         <?vsp
           self.detSpongerUI ('WebDAV', 16);
         ?>
@@ -6174,20 +6201,6 @@
               <v:before-data-bind>
                 <![CDATA[
                   control.ufl_value := self.get_fieldProperty ('dav_RACKSPACE_path', self.dav_path, 'virt:RACKSPACE-path', '/');
-                ]]>
-              </v:before-data-bind>
-            </v:text>
-          </td>
-        </tr>
-        <tr>
-          <th>
-            <v:label for="dav_RACKSPACE_graph" value="Graph name" />
-          </th>
-          <td>
-            <v:text name="dav_RACKSPACE_graph" xhtml_id="dav_RACKSPACE_graph" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
-              <v:before-data-bind>
-                <![CDATA[
-                  control.ufl_value := self.detGraphUI ('RACKSPACE');
                 ]]>
               </v:before-data-bind>
             </v:text>

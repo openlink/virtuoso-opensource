@@ -2972,19 +2972,29 @@ again:
     }
 
     _accept := HTTP_RDF_GET_ACCEPT_BY_Q (http_request_header_full (lines, 'Accept', '*/*'));
-  if (WS.WS.TTL_REDIRECT_ENABLED () and isinteger (_res_id) and (_accept = 'text/html') and (cont_type = 'text/turtle') and not isnull (DB.DBA.VAD_CHECK_VERSION ('fct')))
+    if (WS.WS.TTL_REDIRECT_ENABLED () and isinteger (_res_id) and (_accept = 'text/html') and (cont_type = 'text/turtle') and not isnull (DB.DBA.VAD_CHECK_VERSION ('fct')))
     {
-      declare sp_opt any;
+      declare sp_opt, sp_col_opt any;
 
-      http_rewrite ();
-      http_status_set (303);
-      if (registry_get ('__WebDAV_sponge_ttl__') = 'yes')
-        sp_opt := '&sponger:get=add';
-      else
-        sp_opt := '';
-      http_header (http_header_get () || sprintf ('Location: %s/describe/?url=%U%s\r\n',
-      WS.WS.DAV_HOST (), WS.WS.DAV_HOST () || replace (full_path, ' ', '%20'), sp_opt));
-      return;
+      sp_col_opt := DB.DBA.TTL_REDIRECT_PARAMS (_col);
+      if (not isnull (sp_col_opt))
+      {
+        sp_col_opt := '&' || trim (sp_col_opt, '&');
+        http_rewrite ();
+        http_status_set (303);
+        if (registry_get ('__WebDAV_sponge_ttl__') = 'yes')
+        {
+          sp_opt := '&sponger:get=add';
+        }
+        else
+        {
+          sp_opt := '';
+        }
+        http_header (http_header_get () || sprintf ('Location: %s/describe/?url=%U%s%s\r\n',
+          WS.WS.DAV_HOST (), WS.WS.DAV_HOST () || replace (full_path, ' ', '%20'), sp_opt, sp_col_opt));
+
+        return;
+      }
     }
 
     _sse_cont_type := cont_type;
@@ -6478,5 +6488,35 @@ create procedure LDP_ENABLED (in _col_id any)
     }
   nf:
   return 0;
+}
+;
+
+create procedure DB.DBA.TTL_REDIRECT_PARAMS (
+  in _col_id any)
+{
+  declare _p_id, _tmp any;
+  whenever not found goto _not_found;
+
+  while (_col_id > 0 or isvector (_col_id))
+  {
+    _tmp := DB.DBA.DAV_PROP_GET_INT (_col_id, 'C', 'virt:turtleRedirect', 0);
+    if (DAV_HIDE_ERROR (_tmp) is not null)
+    {
+      if (_tmp <> 'yes')
+  	    return null;
+
+      _tmp := DB.DBA.DAV_PROP_GET_INT (_col_id, 'C', 'virt:turtleRedirectParams', 0);
+      if (DAV_HIDE_ERROR (_tmp) is not null)
+  	    return _tmp;
+
+      return '';
+	  }
+
+    _p_id := DAV_SEARCH_ID (DAV_SEARCH_PATH (_col_id, 'C'), 'P');
+    _col_id := _p_id;
+  }
+_not_found:
+
+  return '';
 }
 ;

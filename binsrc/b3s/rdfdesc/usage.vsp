@@ -108,7 +108,7 @@
                   select ?o (lang(?o)) where { <%S> rdfs:comment ?o }', inf, _S), null, null, vector (), 0, meta, data);
   _subject := b3s_label_get (data, langs);
 
-  rdf_link := sprintf ('/sparql?query=%U', sprintf ('define sql:describe-mode "LOD" %s DESCRIBE <%s>', b3s_render_inf_clause(), _S));
+  rdf_link := sprintf ('/sparql?query=%U', sprintf ('define sql:describe-mode "CBD" %s DESCRIBE <%s>', b3s_render_inf_clause(), _S)); 
 
   declare __res_desc varchar;
   __res_desc := b3s_uri_curie(page_resource_uri);

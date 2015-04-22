@@ -1573,6 +1573,8 @@ fct_exec (in tree any,
 
   declare v_pos integer;
   v_pos := fct_view_pos(tree);
+  if (sqls <> 'S1TAT' and n_rows = 0)
+    connection_set ('noresult', 1);
 
   res := xmlelement ("facets", xmlelement ("sparql", query),
                                xmlelement ("time", msec_time () - start_time),
