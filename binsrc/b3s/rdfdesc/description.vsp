@@ -60,11 +60,14 @@
   declare c_iri_a any;
   declare gs_user_id, gs_check_needed integer;
   declare gs_check_cond varchar;
-  declare user_permissions, graph_perms_allow_sponge int;
+  declare sponge_request,  graph_perms_allow_sponge int;
+  declare val_serviceId varchar;
+  declare val_auth_method integer;
   declare host varchar;
   declare pageUrl, err varchar;
   declare dist int;
 
+  val_serviceId := null;
   err := null;
   deadl := 0;
 
@@ -103,7 +106,6 @@ again:
   inf := '';
 
   sp_mode := 'add';
-  view_mode := 'full';
 
   if (__proc_exists ('DB.DBA.lp_score_ck') is not null)
     DB.DBA.lp_score_ck (lines);
@@ -194,8 +196,12 @@ again:
     doc := rtrim (doc, '/');
   if (gr[0] = '#'[0])
     doc := gr;
-  -- If doc URI contains /about/id/entity/ or /about/id/, set _G to the URI following these components
-  _G := b3s_get_entity_graph (doc);
+
+  sponge_request := 0;
+  if (get_keyword ('sp', params) = '1' or get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null)
+    sponge_request := 1;
+
+  _G := b3s_get_entity_graph (doc, sponge_request);
   page_resource_uri := gr;
   -- page_resource_uri := replace (page_resource_uri, '%23', '#');
   page_resource_uri := replace (page_resource_uri, ' ', '%20');
@@ -210,8 +216,9 @@ again:
   sp_accept := get_keyword ('sponger:accept', params, '');
   if (length (sp_accept))
     sp_accept := 'define get:accept "' || sp_accept || '"';
+
   -- check ACL
-  if (get_keyword ('sp', params) = '1' or get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null)
+  if (sponge_request)
     if (__proc_exists ('DB.DBA.RDF_SPONGE_AUTH_SI') is not null and 0 = DB.DBA.RDF_SPONGE_AUTH_SI ('Virtuoso Sponger'))
       {
         http_rewrite ();
@@ -223,26 +230,18 @@ again:
 
   pageUrl := FCT.DBA.build_page_url_on_current_host ('/describe/', sprintf ('url=%U%s', gr, FCT.DBA.get_describe_request_params (params)));
 
-    user_permissions := DB.DBA.RDF_GRAPH_USER_PERMS_GET (_G, http_nobody_uid());
-
-  graph_perms_allow_sponge := 1;
-  if (bit_and (user_permissions, 1) = 0 and bit_and (user_permissions, 4) = 0)
+  graph_perms_allow_sponge := sponge_request;
+  view_mode := 'full';
+  b3s_get_user_graph_permissions (_G, pageUrl, 0, val_serviceId, val_auth_method, graph_perms_allow_sponge, view_mode); 
+  if (view_mode = 'none')
   {
     -- User doesn't have read permission
     declare protocol, view_uri varchar;
-    -- graph_perms_allow_sponge := 0;
     view_uri := gr;
     protocol := 'http'; if (is_https_ctx()) protocol := 'https';
     http_status_set (303);
     http_header (sprintf('Location: %s://%s//fct/rdfdesc/fct_no_view_perms.vsp?gr=%U%s\r\n', protocol, host, view_uri, FCT.DBA.get_describe_request_params (params)));
     return;
-  }
-  else if (bit_and (user_permissions, 4) = 0)
-  {
-    view_mode := 'read-only';
-    graph_perms_allow_sponge := 0;
-    if (bit_and (user_permissions, 2))
-      view_mode := 'read-write';
   }
 
   if (graph_perms_allow_sponge)
@@ -295,6 +294,7 @@ again:
         return;
       }
   }
+  set_user_id (http_map_get ('vsp_uid'));
 
   odd_position := 0;
   set http_charset='utf-8';

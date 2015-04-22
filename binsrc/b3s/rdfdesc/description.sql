@@ -1232,9 +1232,149 @@ create procedure b3s_gs_check_needed ()
 }
 ;
 
-create procedure b3s_get_entity_graph (in entity_uri varchar)
+--- Identifies the graph(s) containing the given entity
+--- * For entity URIs of the form /about/id[/entity]/{data_source_uri}[#child_entity_id] or /proxy-iri/xxx
+---   ensures that the correct data source URI is sponged
+-- * Allows us the check the permissions on the graph before an attempted read or sponge and, if reading or
+--   sponging is denied, provide some feedback in the /describe UI, rather than just display an empty result set.
+-- * If we're not handling a sponge request and the given entity is present in multiple graphs:
+--     * null is returned for the entity graph
+--     * we then make no attempt to determine the user's permissions on these graphs prior to the select to
+--       fetch the results for display. It's assumed that RDF_GRAPH_USER_PERMS_ACK() will filter the results
+--       from any graphs for which the user doesn't have read permission.
+create procedure b3s_get_entity_graph (in entity_uri varchar, in sponge_request int)
 {
-  return coalesce ((select top 1 id_to_iri(G) from DB.DBA.RDF_QUAD where S = iri_to_id (entity_uri)), entity_uri);
+  declare arr, pa, sch, nhost, tmp, npath, entity_graph any;
+
+  arr := rfc1808_parse_uri (entity_uri);
+  if (arr[0] = 'nodeID')
+    return rtrim (entity_uri, '/');
+
+  if (not (arr[2] like '/about/id%' or arr[2] like '/proxy-iri/%'))
+  {
+    if (sponge_request)
+      return entity_uri; -- the entity description is sponged to a graph with the same URI
+    else
+    {
+      declare num_containing_graphs int;
+      num_containing_graphs := (
+	select count(distinct G) from DB.DBA.RDF_QUAD where 
+          S = iri_to_id (entity_uri) and 
+	  G not in (select RGGM_MEMBER_IID from DB.DBA.RDF_GRAPH_GROUP_MEMBER 
+                    where RGGM_GROUP_IID = iri_to_id('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')));
+      if (num_containing_graphs > 1)
+	return null;
+      else
+	 return (select top 1 id_to_iri(G) from DB.DBA.RDF_QUAD where 
+          S = iri_to_id (entity_uri) and 
+	  G not in (select RGGM_MEMBER_IID from DB.DBA.RDF_GRAPH_GROUP_MEMBER 
+                    where RGGM_GROUP_IID = iri_to_id('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')));
+    }
+  }
+
+  -- Handle /about/id/* and /proxy-iri/* style entity URIs
+
+  entity_graph := (select top 1 id_to_iri(G) from DB.DBA.RDF_QUAD where 
+	  S = iri_to_id (entity_uri) and
+	  G not in (select RGGM_MEMBER_IID from DB.DBA.RDF_GRAPH_GROUP_MEMBER 
+                    where RGGM_GROUP_IID = iri_to_id('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs')));
+  if (entity_graph is not null)
+    return entity_graph;
+
+  -- Assume the original containing graph has been cleared. Deduce it.
+
+  if (arr[2] like '/proxy-iri/%')
+    return RDF_SPONGE_PROXY_IRI_GET_GRAPH (entity_uri);
+
+  entity_graph := entity_uri;
+  -- Strip off fragment - entity_uri could be a child entity with a hash URI
+  arr[5] := ''; 
+
+  pa := split_and_decode (arr[2], 0, '\0\0/');
+  if (length (pa) > 5 and pa[3] = 'entity' and pa[4] <> '' and pa [5] <> '')
+{
+    -- Set entity_graph to the URI following /about/id/entity/
+    sch := pa[4];
+    nhost := pa [5];
+    tmp := '/about/id/entity/' || sch || '/' || nhost;
+    npath := subseq (arr[2], length (tmp));    
+    arr[0] := sch;
+    arr[1] := nhost;
+    arr[2] := npath;
+    
+    if (lower(arr[0]) in ('acct', 'mailto')) 
+    {
+      arr [2] := arr[1];
+      arr [1] := '';
+    }
+
+    entity_graph := DB.DBA.vspx_uri_compose (arr);
+  }
+  else if (length (pa) > 4 and pa[3] <> '' and pa [4] <> '')
+  {
+    -- Set entity_graph to the URI following /about/id/
+    sch := pa[3];
+    nhost := pa [4];
+    tmp := '/about/id/' || sch || '/' || nhost;
+    npath := subseq (arr[2], length (tmp));    
+    arr[0] := sch;
+    arr[1] := nhost;
+    arr[2] := npath;
+    
+    if (sch in ('acct', 'mailto'))
+    {
+      arr[2] := arr[1];
+      arr[1] := '';
+    }
+	    
+    entity_graph := DB.DBA.vspx_uri_compose (arr);
+  }
+
+  return entity_graph;
+}
+;
+
+-- Checks a user's permissions on a single graph
+create procedure b3s_get_user_graph_permissions (
+  in graph varchar,
+  in pageUrl varchar,
+  in val_vad_present int,
+  inout val_serviceId varchar,
+  inout val_auth_method int,
+  inout graph_perms_allow_sponge int,
+  inout view_mode varchar
+  )
+{
+  declare user_permissions int;
+
+  view_mode := 'full';
+  graph_perms_allow_sponge := 1;
+  user_permissions := 15;
+
+  -- graph == null indicates that the subject entity URI being viewed is contained in multiple graphs.
+  -- Don't attempt to check permissions here if this is the case, as here we only check permissions
+  -- on a single graph
+  -- FIX ME: 
+  -- See use of RDF_GRAPH_USER_PERMS_ACK [1] by dt1 and dt2 in description.vsp. 
+  -- Filtering of results from multiple graphs should be done at this point [1]
+
+  if (graph is not null)
+    user_permissions := DB.DBA.RDF_GRAPH_USER_PERMS_GET (graph, http_nobody_uid());
+
+  if (bit_and (user_permissions, 1) = 0)
+  {
+    -- User doesn't have read permission
+    view_mode := 'none';
+    graph_perms_allow_sponge := 0;
+  }
+  else if (bit_and (user_permissions, 4) = 0)
+  {
+    graph_perms_allow_sponge := 0;
+    if (bit_and (user_permissions, 2))
+      view_mode := 'read-write';
+    else
+      view_mode := 'read-only';
+  }
 }
 ;
 
@@ -1257,6 +1397,7 @@ create procedure fct_set_graphs (in sid any, in graphs any)
   commit work;
 }
 ;
+
 
 create procedure FCT.DBA.build_page_url_on_current_host (
   in path varchar,
