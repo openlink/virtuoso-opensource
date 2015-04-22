@@ -2111,11 +2111,14 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 		SPAR_BIN_OP ($$, BOP_PLUS, SPAR_MAKE_INT_LITERAL (sparp_arg, 0), $2); }
 	| _MINUS spar_expn	%prec MATH_UMINUS	{
 		caddr_t *val_ptr = NULL;
-		if (DV_ARRAY_OF_POINTER == DV_TYPE_OF ($2)) {
-		    if (SPAR_LIT == $2->type)
-		      val_ptr = &($2->_.lit.val); }
-		else
-		  val_ptr = (caddr_t *)($2);
+		caddr_t orig_text = NULL;
+		caddr_t *orig_text_ptr = NULL;
+		if ((DV_ARRAY_OF_POINTER == DV_TYPE_OF ($2)) && (SPAR_LIT == $2->type)) {
+		    val_ptr = &($2->_.lit.val);
+		    orig_text = $2->_.lit.original_text;
+		    if (NULL != orig_text)
+		      orig_text_ptr = &($2->_.lit.original_text);
+		    $2->_.lit.original_text = NULL; }
 		if (NULL != val_ptr) {
 		    dtp_t val_dtp = DV_TYPE_OF (val_ptr[0]);
 		    if (DV_LONG_INT == val_dtp)
@@ -2129,7 +2132,14 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 		if (NULL == val_ptr)
 		  SPAR_BIN_OP ($$, BOP_MINUS, SPAR_MAKE_INT_LITERAL (sparp_arg, 0), $2);
 		else
-		  $$ = $2; }
+		  {
+		    $$ = $2;
+		    if (NULL != orig_text_ptr)
+		      {
+		        if ('-' == orig_text[0])
+		          orig_text_ptr[0] = t_box_dv_short_string (orig_text+1);
+		        else
+		          orig_text_ptr[0] = t_box_dv_short_strconcat ("-", orig_text); } } }
         | _LPAR spar_expn _RPAR	{ $$ = $2; }	/* [58]	PrimaryExpn	 ::=  */
 			/*... BracketedExpn | BuiltInCall | IRIrefOrFunctionOrMacro	*/
 			/*... | RDFLiteral | NumericLiteral | BooleanLiteral | BlankNode | Var	*/
@@ -2378,7 +2388,11 @@ spar_nonsigned_numeric_literal	/* [59]	NumericLiteral	 ::=  INTEGER | DECIMAL | 
 spar_optsigned_numeric_literal	/* [Virt]	SignedNumericLiteral	 ::=  ( '+' | '-' )? NumericLiteral	*/
 	: spar_nonsigned_numeric_literal
 	| _PLUS spar_nonsigned_numeric_literal	%prec MATH_UPLUS	{ $$ = $2; }
-	| _MINUS spar_nonsigned_numeric_literal	%prec MATH_UMINUS	{ $$ = $2; spar_change_sign (&($2->_.lit.val)); }
+	| _MINUS spar_nonsigned_numeric_literal	%prec MATH_UMINUS	{
+		spar_change_sign (&($2->_.lit.val));
+		if (NULL != $2->_.lit.original_text)
+		  $2->_.lit.original_text = t_box_dv_short_strconcat ("-", $2->_.lit.original_text);
+		$$ = $2; }
 	;
 
 spar_integer_literal
