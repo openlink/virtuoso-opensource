@@ -1038,17 +1038,23 @@ CL_START_SERVER ()
     db_port=$1
     timeout=$2
 
+    if [ -z $timeout ]
+    then
+	timeout=600
+    fi
+
     db_port1=$db_port
-    db_port2=`cat cl2/virtuoso.ini | grep "ServerPort" | sed -e "s/ServerPort\s*=\s*//g"`
-    db_port3=`cat cl3/virtuoso.ini | grep "ServerPort" | sed -e "s/ServerPort\s*=\s*//g"`
-    db_port4=`cat cl4/virtuoso.ini | grep "ServerPort" | sed -e "s/ServerPort\s*=\s*//g"`
+    db_port2=`cat cl2/virtuoso.ini | grep "ServerPort" | sed -e "s/ServerPort.*=//g"`
+    db_port3=`cat cl3/virtuoso.ini | grep "ServerPort" | sed -e "s/ServerPort.*=//g"`
+    db_port4=`cat cl4/virtuoso.ini | grep "ServerPort" | sed -e "s/ServerPort.*=//g"`
     
-    cl_port1=`cat cl1/cluster.ini | egrep "Host1 *= *[[:alpha:]]+[:][[:digit:]]+" | sed -e "s/Host.\s*=\s*localhost://g"`
-    cl_port2=`cat cl2/cluster.ini | egrep "Host2 *= *[[:alpha:]]+[:][[:digit:]]+" | sed -e "s/Host.\s*=\s*localhost://g"`
-    cl_port3=`cat cl3/cluster.ini | egrep "Host3 *= *[[:alpha:]]+[:][[:digit:]]+" | sed -e "s/Host.\s*=\s*localhost://g"`
-    cl_port4=`cat cl4/cluster.ini | egrep "Host4 *= *[[:alpha:]]+[:][[:digit:]]+" | sed -e "s/Host.\s*=\s*localhost://g"`
+    cl_port1=`cat cl1/cluster.ini | egrep "Host1 *= *[[:alpha:]]+[:][[:digit:]]+" | sed -e "s/Host.*localhost://g"`
+    cl_port2=`cat cl2/cluster.ini | egrep "Host2 *= *[[:alpha:]]+[:][[:digit:]]+" | sed -e "s/Host.*localhost://g"`
+    cl_port3=`cat cl3/cluster.ini | egrep "Host3 *= *[[:alpha:]]+[:][[:digit:]]+" | sed -e "s/Host.*localhost://g"`
+    cl_port4=`cat cl4/cluster.ini | egrep "Host4 *= *[[:alpha:]]+[:][[:digit:]]+" | sed -e "s/Host.*localhost://g"`
 
     p_range="$db_port2 $db_port3 $db_port4 $cl_port1 $cl_port2 $cl_port3 $cl_port4"
+    echo PORTS $p_range
 
     if test ! -z "`echo $p_range | grep $HTTPPORT`"
     then
@@ -1134,14 +1140,14 @@ CL_START_SERVER ()
           master_host=`grep "Master\s*=" cluster.ini | cut -d "=" -f 2`
           if [ "$this_host" = "$master_host" ]
           then 
-              LOG "RDF storage will be reconfigured for elastic cluster now ..."
-              RUN $ISQL $port dba dba "exec=select 1"
+              LOG "Checking coordinator"
+              RUN $ISQL $db_port1 dba dba 'exec="select 1"'
               if test $STATUS -ne 0
               then
-                      LOG "***ABORTED: RDF storage cannot be reconfigured for elastic cluster. "
+                      LOG "***ABORTED: coordinator is not available"
                       exit 3
               else 
-                      echo "virtuoso and RDF storage inited on port $port" > virtuoso-cluster-inited
+                      echo "virtuoso storage inited on port $db_port1" > virtuoso-cluster-inited
               fi
           fi
         fi
