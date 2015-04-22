@@ -22,9 +22,7 @@
       if (j > 1)
 	query_str := query_str || '&';
       k := params[i];
-      v := params[i+1];
-      if (starts_with(v, 'http'))
-	v := sprintf ('%U', v);
+      v := sprintf ('%U', params[i+1]);
       query_str := query_str || k || '=' || v;
       j := j + 1;
     }
