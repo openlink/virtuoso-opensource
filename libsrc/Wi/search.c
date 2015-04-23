@@ -3398,6 +3398,7 @@ itc_n_p_matches_in_col (it_cursor_t * itc, caddr_t * data_col, int * first, int 
 void
 itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf, int * is_leaf)
 {
+  int64 ppos;
   int n_data = 1;
   db_buf_t row = BUF_ROW (buf, itc->itc_map_pos);
   dbe_key_t * key = itc->itc_insert_key;
@@ -3405,6 +3406,12 @@ itc_row_col_stat (it_cursor_t * itc, buffer_desc_t * buf, int * is_leaf)
   int len_limit = -1, first_match = 0;
   if (!kv ||  KV_LEFT_DUMMY == kv)
     return;
+  ppos = itc->itc_page + (int64)itc->itc_map_pos << 32;
+  if (!itc->itc_st.visited)
+    itc->itc_st.visited = hash_table_allocate (203);
+  if (gethash ((void*)ppos, itc->itc_st.visited))
+    return;
+  sethash ((void*)ppos, itc->itc_st.visited, (void*)1);
   if (!*is_leaf)
     {
       *is_leaf = 1;
@@ -3915,7 +3922,7 @@ itc_sample_1 (it_cursor_t * it, buffer_desc_t ** buf_ret, int64 * n_leaves_ret, 
   if (leaf_ctr)
     {
       any_leaf_match = 1;
-      if (1 == leaf_ctr && -1 == level_of_single_leaf_match)
+      if (1 == leaf_ctr && -1 == level_of_single_leaf_match && !leaf_estimate)
 	level_of_single_leaf_match = level;
     }
   if (leaf_estimate)
@@ -4088,13 +4095,29 @@ itc_local_sample (it_cursor_t * itc)
     {
       res = itc_sample_1 (itc, &buf, NULL, -1);
       itc_page_leave (itc, buf);
-      return res;
+      if (n_leaves < 2 || 1 == dbf_max_itc_samples)
+	goto return_res;
+      if (itc->itc_row_specs)
+	{
+	  float row_sel =  itc_row_selectivity (itc, res);
+	  if (row_sel > 0.1 && row_sel < 0.9)
+	    goto return_res;
+	}
+      else
+	max_samples = MIN (max_samples, 5);
+      samples[0] = res;
+      goto regular;
     }
   itc->itc_random_search = RANDOM_SEARCH_OFF;
   samples[0] = itc_sample_1 (itc, &buf, &n_leaves, -1);
   itc_page_leave (itc, buf);
+
   if (!n_leaves)
-    return samples[0];
+    {
+      res =  samples[0];
+      goto return_res;
+    }
+  regular:
   {
     int angle, step = 248, offset = 5;
     for (;;)
@@ -4123,7 +4146,14 @@ itc_local_sample (it_cursor_t * itc)
   }
   if (CL_RUN_SINGLE_CLUSTER == cl_run_local_only && itc->itc_insert_key->key_partition && itc->itc_insert_key->key_partition->kpd_map != clm_replicated)
     mean *= key_n_partitions (itc->itc_insert_key);
-  return ((int64) mean);
+  res = ((int64) mean);
+ return_res:
+  if (itc->itc_st.visited)
+    {
+      hash_table_free (itc->itc_st.visited);
+      itc->itc_st.visited = NULL;
+    }
+  return res;
 }
 
 int enable_exact_p_stat = 0;
@@ -4137,9 +4167,9 @@ itc_sample (it_cursor_t * itc)
   for (inx = 0; inx < itc->itc_search_par_fill; inx++)
     if (DV_DB_NULL == DV_TYPE_OF (itc->itc_search_params[inx]))
       return 0;
-  if (enable_exact_p_stat && 1 == itc->itc_search_par_fill && tb_is_rdf_quad (itc->itc_insert_key->key_table)
-      && CL_RUN_SINGLE_CLUSTER != cl_run_local_only
-      && 'P' == toupper (((dbe_column_t *) itc->itc_insert_key->key_parts->data)->col_name[0]) && itc->itc_st.cols)
+  if (enable_exact_p_stat && 1 == itc->itc_search_par_fill && tb_is_rdf_quad (itc->itc_insert_key->key_table) && CL_RUN_SINGLE_CLUSTER != cl_run_local_only
+      && 'P' == toupper (((dbe_column_t *)itc->itc_insert_key->key_parts->data)->col_name[0])
+      && itc->itc_st.cols)
     {
       int64 res = sqlo_p_stat_query (itc->itc_insert_key->key_table, itc->itc_search_params[0]);
       if (-1 != res)

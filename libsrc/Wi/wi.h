@@ -1007,6 +1007,7 @@ struct it_cursor_s
       int	segs_sampled;
       int	rows_in_segs;
       dk_hash_t *	cols;	/* hash from de_col_t to col_stat_t *for random sample col stats. */
+      dk_hash_t *	visited;
       struct tb_sample_s *	smp;
       int		n_rows_sampled;
       int		n_row_spec_matches;
