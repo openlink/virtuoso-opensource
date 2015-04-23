@@ -1939,6 +1939,7 @@ cha_clear_1 (chash_t * cha)
     cha->cha_init_data = cha->cha_current_data;
   cha_clear_fill (cha->cha_current);
   cha_clear_fill (cha->cha_current_data);
+  cha->cha_exception_fill = 0;
 }
 
 
