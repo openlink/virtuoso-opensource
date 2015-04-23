@@ -1401,6 +1401,7 @@ void ssi_free (ssa_iter_node_t * ssi);
 
 
 caddr_t box_append_1 (caddr_t box, caddr_t elt);
+caddr_t box_concat (caddr_t b1, caddr_t b2);
 
 query_t * sch_ua_func_ua (caddr_t name);
 

@@ -1104,8 +1104,8 @@ sparp_equiv_dbg_gp_print (sparp_t *sparp, SPART *tree)
   SPARP_FOREACH_GP_EQUIV(sparp,tree,eq_ctr,eq)
     {
       int varname_count, varname_ctr;
-      spar_dbg_printf ((" ( %d subv (%d bindings), %d recv, %d gspo, %d const, %d opt, %d subq:",
-      BOX_ELEMENTS_INT_0(eq->e_subvalue_idxs), (int)(eq->e_nested_bindings), BOX_ELEMENTS_INT_0(eq->e_receiver_idxs),
+      spar_dbg_printf ((" ( %d subv (%d bindings, %d nest.opt.), %d recv, %d gspo, %d const, %d opt, %d subq:",
+      BOX_ELEMENTS_INT_0(eq->e_subvalue_idxs), (int)(eq->e_nested_bindings), (int)(eq->e_nested_optionals), BOX_ELEMENTS_INT_0(eq->e_receiver_idxs),
         (int)(eq->e_gspo_uses), (int)(eq->e_const_reads), (int)(eq->e_optional_reads), (int)(eq->e_subquery_uses) ));
       varname_count = BOX_ELEMENTS (eq->e_varnames);
       for (varname_ctr = 0; varname_ctr < varname_count; varname_ctr++)
@@ -1463,7 +1463,11 @@ sparp_equiv_connect_outer_to_inner (sparp_t *sparp, sparp_equiv_t *outer, sparp_
   outer->e_subvalue_idxs = (ptrlong *)t_list_concat_tail ((caddr_t)(outer->e_subvalue_idxs), 1, (ptrlong)(inner->e_own_idx));
   inner->e_receiver_idxs = (ptrlong *)t_list_concat_tail ((caddr_t)(inner->e_receiver_idxs), 1, (ptrlong)(outer->e_own_idx));
   if (SPARP_EQ_IS_ASSIGNED_LOCALLY(inner))
-    outer->e_nested_bindings += 1;
+    {
+      outer->e_nested_bindings += 1;
+      if (OPTIONAL_L == inner->e_gp->_.gp.subtype)
+        outer->e_nested_optionals += 1;
+    }
   return 1;
 }
 
@@ -1508,7 +1512,11 @@ sparp_equiv_disconnect_outer_from_inner (sparp_t *sparp, sparp_equiv_t *outer, s
   outer->e_subvalue_idxs = (ptrlong *)t_list_remove_nth ((caddr_t)(outer->e_subvalue_idxs), i_listed_in_o);
   inner->e_receiver_idxs = (ptrlong *)t_list_remove_nth ((caddr_t)(inner->e_receiver_idxs), o_listed_in_i);
   if (SPARP_EQ_IS_ASSIGNED_LOCALLY (inner))
-    outer->e_nested_bindings -= 1;
+    {
+      outer->e_nested_bindings -= 1;
+      if (OPTIONAL_L == inner->e_gp->_.gp.subtype)
+        outer->e_nested_optionals -= 1;
+    }
   return 1;
 }
 
@@ -1836,6 +1844,7 @@ sparp_equiv_merge (sparp_t *sparp, sparp_equiv_t *pri, sparp_equiv_t *sec)
   pri->e_gspo_uses += sec->e_gspo_uses;
   sec->e_gspo_uses = 0;
   sec->e_nested_bindings = 0;
+  sec->e_nested_optionals = 0;
   pri->e_const_reads += sec->e_const_reads;
   sec->e_const_reads = 0;
   while (BOX_ELEMENTS_INT_0 (sec->e_subvalue_idxs))
@@ -1854,11 +1863,15 @@ sparp_equiv_merge (sparp_t *sparp, sparp_equiv_t *pri, sparp_equiv_t *sec)
     }
   pri->e_nested_bindings = ((VALUES_L == pri->e_gp->_.gp.subtype) ? 1 : 0);
   pri->e_nested_bindings = 0;
+  pri->e_nested_optionals = 0;
   DO_BOX_FAST_REV (ptrlong, sub_idx, ctr1, pri->e_subvalue_idxs)
     {
       sparp_equiv_t *sub_eq = SPARP_EQUIV(sparp,sub_idx);
-      if (SPARP_EQ_IS_ASSIGNED_LOCALLY(sub_eq))
-        pri->e_nested_bindings += 1;
+      if (!SPARP_EQ_IS_ASSIGNED_LOCALLY(sub_eq))
+        continue;
+      pri->e_nested_bindings += 1;
+      if (OPTIONAL_L == sub_eq->e_gp->_.gp.subtype)
+        pri->e_nested_optionals += 1;
     }
   END_DO_BOX_FAST;
 #ifdef SPARQL_DEBUG
@@ -3182,6 +3195,7 @@ sparp_tree_full_clone_int (sparp_t *sparp, SPART *orig, SPART *parent_gp)
 #endif
           cloned_eq->e_gspo_uses = eq->e_gspo_uses;
           cloned_eq->e_nested_bindings = eq->e_nested_bindings;
+          cloned_eq->e_nested_optionals = eq->e_nested_optionals;
           cloned_eq->e_const_reads = eq->e_const_reads;
           cloned_eq->e_optional_reads = eq->e_optional_reads;
           cloned_eq->e_subquery_uses = eq->e_subquery_uses;
@@ -4987,9 +5001,9 @@ spart_dump_eq (sparp_equiv_t *eq, dk_session_t *ses)
 {
   int varname_count, varname_ctr, var_ctr;
   char buf[100];
-  sprintf (buf, " %s( %d subv (%d bindings), %d recv, %d gspo, %d const, %d opt, %d subq:",
+  sprintf (buf, " %s( %d subv (%d bindings, %d nest.opt.), %d recv, %d gspo, %d const, %d opt, %d subq:",
   (eq->e_deprecated ? "deprecated " : ""),
-    BOX_ELEMENTS_INT_0(eq->e_subvalue_idxs), (int)(eq->e_nested_bindings), BOX_ELEMENTS_INT_0(eq->e_receiver_idxs),
+    BOX_ELEMENTS_INT_0(eq->e_subvalue_idxs), (int)(eq->e_nested_bindings), (int)(eq->e_nested_optionals), BOX_ELEMENTS_INT_0(eq->e_receiver_idxs),
     (int)(eq->e_gspo_uses), (int)(eq->e_const_reads), (int)(eq->e_optional_reads), (int)(eq->e_subquery_uses) );
   SES_PRINT (ses, buf);
   varname_count = BOX_ELEMENTS (eq->e_varnames);

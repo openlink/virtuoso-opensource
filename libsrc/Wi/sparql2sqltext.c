@@ -7680,7 +7680,8 @@ print_sub_eq_sub:
           caddr_t sub2_selid = sub2_gp->_.gp.selid;
           ssg_valmode_t sub_native, sub2_native, common_native;
           SPART *left_sub_gp = NULL;
-          int col_ctr, col_count, is_good, sub_is_nullable_inline, sub2_is_nullable_inline;
+          int col_ctr, col_count, is_good;
+          const char *sub_is_nullable_inline, *sub2_is_nullable_inline;
           if (!print_inner_filter_conds && (sub_gp == sub2_gp))
             continue;
           if (!print_cross_join_conds && (sub_gp != sub2_gp))
@@ -7735,15 +7736,19 @@ print_sub_eq_sub:
             ssg_puts_comment ("note SSG_VALMODE_LONG:");
           col_count = ((IS_BOX_POINTER (common_native)) ? common_native->qmfColumnCount : 1);
           ssg_print_where_or_and (ssg, "two retvals belong to same equiv");
-          sub_is_nullable_inline = (
-            (VALUES_L == sub_gp->_.gp.subtype) ?
+          sub_is_nullable_inline = NULL;
+          if ((VALUES_L == sub_gp->_.gp.subtype) &&
             (sub_gp->_.gp.subquery->_.binv.counters_of_unbound [
-                sparp_find_binv_rset_pos_of_varname (ssg->ssg_sparp, sub_gp, sub_gp->_.gp.subquery, sub_eq->e_varnames[0]) ] ) :
-            ((OPTIONAL_L == sub2_gp->_.gp.subtype) && !(sub_eq->e_rvr.rvrRestrictions & SPART_VARR_NOT_NULL)) /* This case is for Bug16064 */ );
-          sub2_is_nullable_inline = (
-            (VALUES_L == sub2_gp->_.gp.subtype) &&
+                  sparp_find_binv_rset_pos_of_varname (ssg->ssg_sparp, sub_gp, sub_gp->_.gp.subquery, sub_eq->e_varnames[0]) ] ) )
+            sub_is_nullable_inline = "nullable in left hand VALUES";
+          else if ((OPTIONAL_L == sub2_gp->_.gp.subtype) && (sub_eq->e_nested_bindings == sub_eq->e_nested_optionals) &&
+            (0 == sub_eq->e_gspo_uses) && (0 == sub_eq->e_subquery_uses) ) /* This case is for Bug16064 */
+            sub_is_nullable_inline = "same nullable in both left hand and right hand OPTIONALs";
+          sub2_is_nullable_inline = NULL;
+          if ((VALUES_L == sub2_gp->_.gp.subtype) &&
             (sub2_gp->_.gp.subquery->_.binv.counters_of_unbound [
-                sparp_find_binv_rset_pos_of_varname (ssg->ssg_sparp, sub2_gp, sub2_gp->_.gp.subquery, sub2_eq->e_varnames[0]) ] ) );
+                sparp_find_binv_rset_pos_of_varname (ssg->ssg_sparp, sub2_gp, sub2_gp->_.gp.subquery, sub2_eq->e_varnames[0]) ] ) )
+            sub2_is_nullable_inline = "nullable in right hand VALUES";
           if (sub_is_nullable_inline || sub2_is_nullable_inline)
             {
               ssg_puts (" (");
@@ -7751,14 +7756,14 @@ print_sub_eq_sub:
               if (sub_is_nullable_inline)
                 {
                   ssg_print_equiv_retval_expn (ssg, sub_gp, sub_eq, SSG_RETVAL_FROM_GOOD_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING, SSG_VALMODE_LONG, NULL_ASNAME);
-                  ssg_puts (" IS NULL ");
+                  ssg_puts_with_comment3 (" IS NULL ", "", sub_is_nullable_inline, "");
                 }
               if (sub_is_nullable_inline && sub2_is_nullable_inline)
                 ssg_puts (" OR ");
               if (sub2_is_nullable_inline)
                 {
                   ssg_print_equiv_retval_expn (ssg, sub2_gp, sub2_eq, SSG_RETVAL_FROM_GOOD_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING, SSG_VALMODE_LONG, NULL_ASNAME);
-                  ssg_puts (" IS NULL ");
+                  ssg_puts_with_comment3 (" IS NULL ", "", sub2_is_nullable_inline, "");
                 }
               ssg_puts (" OR (");
               ssg->ssg_indent ++;

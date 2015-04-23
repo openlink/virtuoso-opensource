@@ -755,11 +755,15 @@ sparp_gp_trav_cu_out_triples_1 (sparp_t *sparp, SPART *curr, sparp_trav_state_t 
         {
           int sub_ctr;
           eq->e_nested_bindings = ((VALUES_L == curr->_.gp.subtype) ? 1 : 0);
+          eq->e_nested_optionals = 0;
           DO_BOX_FAST_REV (ptrlong, sub_idx, sub_ctr, eq->e_subvalue_idxs)
             {
               sparp_equiv_t *sub_eq = SPARP_EQUIV(sparp,sub_idx);
-              if (SPARP_EQ_IS_ASSIGNED_LOCALLY(sub_eq))
-                eq->e_nested_bindings += 1;
+              if (!SPARP_EQ_IS_ASSIGNED_LOCALLY(sub_eq))
+                continue;
+              eq->e_nested_bindings += 1;
+              if (OPTIONAL_L == sub_eq->e_gp->_.gp.subtype)
+                eq->e_nested_optionals += 1;
             }
           END_DO_BOX_FAST;
         }
