@@ -1240,6 +1240,16 @@ pl_finalize_page (page_lock_t * pl, it_cursor_t * itc)
   rds = (row_delta_t **) list_to_array (dk_set_nreverse (rd_list));
   if (!PL_IS_PAGE (pl))
     buf_sort ((buffer_desc_t **)rds, BOX_ELEMENTS (rds), (sort_key_func_t) rd_pos_key);
+  if (itc->itc_insert_key->key_is_primary)
+    {
+      int inx, n_del = 0;
+      DO_BOX (row_delta_t *, rd, inx, rds)
+	if (RD_DELETE == rd->rd_op)
+	  n_del++;
+      END_DO_BOX;
+      if (n_del)
+	itc->itc_insert_key->key_table->tb_count_delta -= n_del;
+    }
   page_apply (itc, buf, BOX_ELEMENTS (rds), rds, PA_RELEASE_PL);
   rd_list_free (rds);
 }
