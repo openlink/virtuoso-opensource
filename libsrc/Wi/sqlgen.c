@@ -5777,6 +5777,8 @@ dfe_unit_col_loci (df_elt_t * dfe)
 		    }
 		  END_DO_BOX;
 		}
+	      if (dfe->dfe_tree && dfe->dfe_tree != dfe->_.sub.ot->ot_dt)
+		dfe->_.sub.ot->ot_dt = dfe->dfe_tree;
 	      if (dfe->_.sub.hash_filler_of)
 		t_set_push (&dfe->dfe_sqlo->so_hash_fillers, (void*) dfe);
 	      dfe_list_col_loci (dfe->_.sub.first);

@@ -1508,7 +1508,11 @@ sqlo_hash_fill_dt_place_col (df_elt_t * dt_dfe, df_elt_t * col)
   if (!is_out_dfe)
     dt_dfe->_.sub.dt_out = (df_elt_t**)t_box_append_1 ((caddr_t)out, (caddr_t)ref_dfe);
   if (!is_name)
-    tree->_.select_stmt.selection = (caddr_t*)t_box_append_1 ((caddr_t)tree->_.select_stmt.selection, (caddr_t) t_listst (5, BOP_AS, ref_dfe->dfe_tree, NULL, t_box_string (tmp), NULL, NULL));
+    {
+      if (tree == dt_dfe->_.sub.ot->ot_dt)
+	tree = dt_dfe->dfe_tree = (ST*)t_box_copy_tree ((caddr_t)tree);
+      tree->_.select_stmt.selection = (caddr_t*)t_box_append_1 ((caddr_t)tree->_.select_stmt.selection, (caddr_t) t_listst (5, BOP_AS, ref_dfe->dfe_tree, NULL, t_box_string (tmp), NULL, NULL));
+    }
 }
 
 
