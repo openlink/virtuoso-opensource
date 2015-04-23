@@ -2015,6 +2015,59 @@ box_position_no_tag (caddr_t * box, caddr_t elt)
 }
 
 
+void
+sqlg_mark_not_gen (df_elt_t * dfe)
+{
+  /* a trans dt has the reverse dir sharing col and possibly col pred dfes with the fwd direction.  These must be marked placed and not gen to get the reverse with right placing */
+  if (!IS_BOX_POINTER (dfe))
+    return;
+  if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (dfe))
+    {
+      int inx;
+      df_elt_t ** dfe_arr = (df_elt_t **) dfe;
+      DO_BOX (df_elt_t *, elt, inx, dfe_arr)
+	{
+	  sqlg_mark_not_gen (elt);
+	}
+      END_DO_BOX;
+      return;
+    }
+  switch (dfe->dfe_type)
+    {
+    case DFE_VALUE_SUBQ:
+    case DFE_EXISTS:
+    case DFE_DT:
+      {
+	df_elt_t * sub;
+	if (dfe->_.sub.generated_dfe)
+	  {
+	    sqlg_mark_not_gen (dfe->_.sub.generated_dfe);
+	    return;
+	  }
+	sqlg_mark_not_gen ((df_elt_t*)dfe->_.sub.after_join_test);
+	sqlg_mark_not_gen ((df_elt_t*)dfe->_.sub.vdb_join_test);
+	sqlg_mark_not_gen ((df_elt_t*)dfe->_.sub.invariant_test);
+	for (sub = dfe->_.sub.first; sub; sub = sub->dfe_next)
+	  sqlg_mark_not_gen (sub);
+	break;
+      }
+    case DFE_TABLE:
+      {
+	DO_SET (df_elt_t *, col, &dfe->_.table.out_cols)
+	  col->dfe_is_placed = DFE_PLACED;
+	END_DO_SET();
+	DO_SET (df_elt_t *, col, &dfe->_.table.all_preds)
+	  col->dfe_is_placed = DFE_PLACED;
+	END_DO_SET();
+	sqlg_mark_not_gen ((df_elt_t*)dfe->_.table.join_test);
+	sqlg_mark_not_gen ((df_elt_t*)dfe->_.table.after_join_test);
+	sqlg_mark_not_gen ((df_elt_t*)dfe->_.table.vdb_join_test);
+	break;
+      }
+    }
+}
+
+
 state_slot_t *
 tn_nth_col (sql_comp_t *sc, trans_node_t * tn, int inx)
 {
@@ -2158,6 +2211,7 @@ sqlg_make_trans_dt  (sqlo_t * so, df_elt_t * dt_dfe, ST **target_names, dk_set_t
   if (tl->tl_complement)
     {
       tl->tl_complement->dfe_super = dt_dfe;
+      sqlg_mark_not_gen (tl->tl_complement);
       tn->tn_complement = (trans_node_t*)sqlg_make_trans_dt (so, tl->tl_complement, target_names, pre_code);
       tn->tn_complement->tn_is_primary = 0;
       tn->tn_complement->tn_complement = tn;
