@@ -2245,6 +2245,8 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 	  }
 	END_DO_BOX;
 	placed = dfe_skip_exp_dfes (placed, &dfe, 1);
+	placed = dfe_skip_to_min_card (placed, super, dfe);
+	so->so_mark_gb_dep = 1;
 	sqlo_place_dfe_after (so, pref_loc, placed, dfe);
 	return dfe;
       }
