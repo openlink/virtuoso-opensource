@@ -837,7 +837,7 @@ bif_str_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_
 	    rbs_string_range (&dv, &len, &is_string);
 	    if (!is_string)
               {
-                rdf_box_t *rb = box_deserialize_string (dv, 0, 0);
+                rdf_box_t *rb = box_deserialize_string (dv, INT32_MAX, 0);
                 if ((rb_type__xsd_boolean == rb->rb_type) && (DV_LONG_INT == DV_TYPE_OF (rb->rb_box)))
                   {
                     int save = dc->dc_n_values;
