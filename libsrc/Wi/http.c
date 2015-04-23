@@ -1038,7 +1038,7 @@ next_fragment:
 	      day = tm->tm_mday;
 	      year = tm->tm_year + 1900;
 	      snprintf (tmp, sizeof (tmp), "[%02d/%s/%04d:%02d:%02d:%02d %+05li]",
-		  (tm->tm_mday), monday [month - 1], year, tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz/36*100);
+		  (tm->tm_mday), monday [month - 1], year, tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz_for_logs/36*100);
 	    }
 	  break;
       case 'r':
@@ -1128,7 +1128,7 @@ log_info_http (ws_connection_t * ws, const char * code, OFF_T len)
 
   snprintf (buf, sizeof (buf), "%s %s [%02d/%s/%04d:%02d:%02d:%02d %+05li] \"%.2000s%s\" %d " OFF_T_PRINTF_FMT " \"%.1000s\" \"%.500s\"\n",
       ws->ws_client_ip, u_id, (tm->tm_mday), monday [month - 1], year,
-      tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz/36*100,
+      tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz_for_logs/36*100,
       (ws->ws_req_line
 #ifdef WM_ERROR
        && ws->ws_method != WM_ERROR
@@ -10793,7 +10793,7 @@ bif_ftp_log (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   snprintf (buff, sizeof (buff), "%s %s [%02d/%s/%04d:%02d:%02d:%02d %+05li] \"%.2000s\" %.3s %ld\n",
       host_name, user, (tm->tm_mday), monday [month - 1], year,
-      tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz/36*100,
+      tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz_for_logs/36*100,
       command, resp, len);
 
   dk_free_box (host_name);

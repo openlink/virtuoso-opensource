@@ -2461,9 +2461,29 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
         const char *as_strg;
         switch (DT_DT_TYPE (box))
           {
-          case DT_TYPE_DATE: cast_strg = "CAST ('"; as_strg = "' AS DATE)"; break;
-          case DT_TYPE_TIME: cast_strg = "CAST ('"; as_strg = "' AS TIME)"; break;
-          default: cast_strg = "CAST ('"; as_strg = "' AS DATETIME)"; break;
+#ifdef DT_TZL
+	  case DT_TYPE_DATE:
+	    cast_strg = "CAST ('";
+	    as_strg = (DT_TZL (box) ? "T' AS DATE)" : "' AS DATE)");
+	    break;
+	  case DT_TYPE_TIME:
+	    cast_strg = (DT_TZL (box) ? "CAST ('T" : "CAST ('");
+	    as_strg = "' AS TIME)";
+	    break;
+#else
+	  case DT_TYPE_DATE:
+	    cast_strg = "CAST ('";
+	    as_strg = "' AS DATE)";
+	    break;
+	  case DT_TYPE_TIME:
+	    cast_strg = "CAST ('";
+	    as_strg = "' AS TIME)";
+	    break;
+#endif
+	  default:
+	    cast_strg = "CAST ('";
+	    as_strg = "' AS DATETIME)";
+	    break;
           }
         ssg_puts (cast_strg);
         dt_to_iso8601_string (box, tmpbuf, buflen);

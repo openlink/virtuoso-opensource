@@ -5931,5 +5931,3 @@ qr_print_ssl (query_t * qr, ssl_index_t i)
       printf ("%p\n", ssl);
   END_DO_SET ();
 }
-
-

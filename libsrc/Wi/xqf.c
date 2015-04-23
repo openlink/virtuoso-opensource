@@ -579,14 +579,14 @@ typedef struct xq_dt_mode_s {
 xq_dt_mode_t;
 
 xq_dt_mode_t xq_dt_modes[] = {
-  {"dateTime"	, DT_TYPE_DATETIME	, DTFLAG_YY | DTFLAG_MM | DTFLAG_DD | DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS | DTFLAG_SF | DTFLAG_ZH | DTFLAG_ZM	},
-  {"date"	, DT_TYPE_DATE		, DTFLAG_YY | DTFLAG_MM | DTFLAG_DD |                                                  DTFLAG_ZH | DTFLAG_ZM	},
-  {"time"	, DT_TYPE_TIME		,                                     DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS | DTFLAG_SF | DTFLAG_ZH | DTFLAG_ZM	},
-  {"gYearMonth"	, DT_TYPE_DATE		, DTFLAG_YY | DTFLAG_MM |                                                              DTFLAG_ZH | DTFLAG_ZM	},
-  {"gYear"	, DT_TYPE_DATE		, DTFLAG_YY |                                                                          DTFLAG_ZH | DTFLAG_ZM	},
-  {"gMonthDay"	, DT_TYPE_DATE		,             DTFLAG_MM | DTFLAG_DD |                                                  DTFLAG_ZH | DTFLAG_ZM	},
-  {"gMonth"	, DT_TYPE_DATE		,             DTFLAG_MM |                                                              DTFLAG_ZH | DTFLAG_ZM	},
-  {"gDay"	, DT_TYPE_DATE		,                         DTFLAG_DD |                                                  DTFLAG_ZH | DTFLAG_ZM	}
+  {"dateTime"	, DT_TYPE_DATETIME	, DTFLAG_YY | DTFLAG_MM | DTFLAG_DD | DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS | DTFLAG_SF | DTFLAG_ZH | DTFLAG_ZM | DTFLAG_T_FORMAT_SETS_TZL | DTFLAG_DATES_AND_TIMES_ARE_ISO	},
+  {"date"	, DT_TYPE_DATE		, DTFLAG_YY | DTFLAG_MM | DTFLAG_DD |                                                  DTFLAG_ZH | DTFLAG_ZM | DTFLAG_T_FORMAT_SETS_TZL | DTFLAG_DATES_AND_TIMES_ARE_ISO	},
+  {"time"	, DT_TYPE_TIME		,                                     DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS | DTFLAG_SF | DTFLAG_ZH | DTFLAG_ZM | DTFLAG_T_FORMAT_SETS_TZL | DTFLAG_DATES_AND_TIMES_ARE_ISO	},
+  {"gYearMonth"	, DT_TYPE_DATE		, DTFLAG_YY | DTFLAG_MM |                                                              DTFLAG_ZH | DTFLAG_ZM | DTFLAG_T_FORMAT_SETS_TZL | DTFLAG_DATES_AND_TIMES_ARE_ISO	},
+  {"gYear"	, DT_TYPE_DATE		, DTFLAG_YY |                                                                          DTFLAG_ZH | DTFLAG_ZM | DTFLAG_T_FORMAT_SETS_TZL | DTFLAG_DATES_AND_TIMES_ARE_ISO	},
+  {"gMonthDay"	, DT_TYPE_DATE		,             DTFLAG_MM | DTFLAG_DD |                                                  DTFLAG_ZH | DTFLAG_ZM | DTFLAG_T_FORMAT_SETS_TZL | DTFLAG_DATES_AND_TIMES_ARE_ISO	},
+  {"gMonth"	, DT_TYPE_DATE		,             DTFLAG_MM |                                                              DTFLAG_ZH | DTFLAG_ZM | DTFLAG_T_FORMAT_SETS_TZL | DTFLAG_DATES_AND_TIMES_ARE_ISO	},
+  {"gDay"	, DT_TYPE_DATE		,                         DTFLAG_DD |                                                  DTFLAG_ZH | DTFLAG_ZM | DTFLAG_T_FORMAT_SETS_TZL | DTFLAG_DATES_AND_TIMES_ARE_ISO	}
 };
 
 static void
@@ -3385,7 +3385,7 @@ static xqf_str_parser_desc_t xqf_str_parser_descs[] = {
     {	"boolean"		, __boolean_from_string		, __boolean_rcheck	, 0			, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_boolean"	, NULL			},
     {	"byte"			, __integer_from_string		, __integer_rcheck	, XQ_INT8		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
     {	"currentDateTime"	, __cur_datetime		, NULL			, 0			, 0	, 0	, 0		, "__xqf_str_parse_datetime"	, NULL			},
-    {	"date"			, __datetime_from_string	, __datetime_rcheck	, XQ_DATE		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_date"	, "DATE"		},
+    {	"date"			, __datetime_from_string	, __datetime_rcheck	, XQ_DATE		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_date"	, NULL /* not "DATE" */	},
     {	"dateTime"		, __datetime_from_string	, __datetime_rcheck	, XQ_DATETIME		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_datetime"	, "DATETIME"		},
     {	"dayTimeDuration"	, __duration_from_string	, NULL /*???*/		, 0			, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
     {	"decimal"		, __numeric_from_string		, NULL			, 0			, 0	, 0	, DV_NUMERIC	, "__xqf_str_parse_numeric"	, "DECIMAL"		},
@@ -3408,7 +3408,7 @@ static xqf_str_parser_desc_t xqf_str_parser_descs[] = {
     {	"precisionDecimal"	, __numeric_from_string		, NULL /*???*/		, 0			, 0	, 1	, DV_NUMERIC	, "__xqf_str_parse_numeric"	, NULL			},
     {	"short"			, __integer_from_string		, __integer_rcheck	, XQ_INT16		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
     {	"string"		, __gen_string_from_string	, __gen_string_rcheck	, XQ_STRING		, 0	, 1	, DV_STRING	, "__xqf_str_parse_nvarchar"	, "VARCHAR"		},
-    {	"time"			, __datetime_from_string	, __datetime_rcheck	, XQ_TIME		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_time"	, "TIME"		},
+    {	"time"			, __datetime_from_string	, __datetime_rcheck	, XQ_TIME		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_time"	, NULL /* not "TIME" */	},
     {	"token"			, __gen_string_from_string	, __gen_string_rcheck	, XQ_TOKEN		, 0	, 1	, 0		, "__xqf_str_parse_nvarchar"	, NULL			},
     {	"unsignedByte"		, __integer_from_string		, __integer_rcheck	, XQ_UINT8		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
     {	"unsignedInt"		, __integer_from_string		, __integer_rcheck	, XQ_UINT32		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},

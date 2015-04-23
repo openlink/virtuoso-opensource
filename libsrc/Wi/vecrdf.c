@@ -30,6 +30,7 @@
 #include "rdf_core.h"
 #include "http.h" /* For DKS_ESC_XXX constants */
 #include "date.h" /* For DT_TYPE_DATE and the like */
+#include "datesupp.h" /* For DT_PRINT_MODE_XML */
 #include "security.h" /* For sec_check_dba() */
 
 
@@ -800,6 +801,7 @@ rbs_string_range (dtp_t ** buf, int * len, int * is_string)
     *is_string = 0;
 }
 
+extern int rb_type__xsd_boolean;
 
 void
 bif_str_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret)
@@ -834,7 +836,32 @@ bif_str_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_
 	    int len, is_string = 0;
 	    rbs_string_range (&dv, &len, &is_string);
 	    if (!is_string)
-	      goto general;
+              {
+                rdf_box_t *rb = box_deserialize_string (dv, 0, 0);
+                if ((rb_type__xsd_boolean == rb->rb_type) && (DV_LONG_INT == DV_TYPE_OF (rb->rb_box)))
+                  {
+                    int save = dc->dc_n_values;
+                    dc->dc_n_values = set;
+                    dc_append_box (dc, box_dv_short_string (unbox (rb->rb_box) ? uname_true : uname_false));
+                    dc->dc_n_values = save;
+                    dk_free_box (rb);
+                    break;
+                  }
+                if (DV_DATETIME == DV_TYPE_OF (rb->rb_box))
+                  {
+                    char temp[100];
+                    int mode = DT_PRINT_MODE_XML | dt_print_flags_of_rb_type (rb->rb_type);
+                    int save = dc->dc_n_values;
+                    dc->dc_n_values = set;
+                    dt_to_iso8601_string_ext (rb->rb_box, temp, sizeof (temp), mode);
+                    dc_append_box (dc, box_dv_short_string (temp));
+                    dc->dc_n_values = save;
+                    dk_free_box (rb);
+                    break;
+                  }
+                dk_free_box (rb);
+	        goto general;
+              }
 	    if (len < 256)
 	      {
 		dv[-1] = len;
@@ -856,7 +883,15 @@ bif_str_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_
 	  general:
 	    err = NULL;
 	    box = qst_get (qst, ret);
-	    cast = box_cast_to (qst, box, DV_TYPE_OF (box), DV_STRING, 0, 0, &err);
+            if (DV_DATETIME == DV_TYPE_OF (box))
+              {
+                char temp[100];
+                int mode = DT_PRINT_MODE_XML;
+                dt_to_iso8601_string_ext (box, temp, sizeof (temp), mode);
+                cast = box_dv_short_string (temp);
+              }
+            else
+	      cast = box_cast_to (qst, box, DV_TYPE_OF (box), DV_STRING, 0, 0, &err);
 	    if (err)
 	      {
 		dk_free_tree (err);

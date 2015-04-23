@@ -3889,7 +3889,7 @@ SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, cadd
         return spartlist (sparp, 5, SPAR_LIT, t_box_num_nonull (0), type, NULL, strg);
       goto cannot_cast;
     }
-  if (uname_xmlschema_ns_uri_hash_date == type)
+/*  if (uname_xmlschema_ns_uri_hash_date == type)
     {
       tgt_dtp = DV_DATE;
       goto do_sql_cast;
@@ -3898,7 +3898,7 @@ SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, cadd
     {
       tgt_dtp = DV_DATETIME;
       goto do_sql_cast;
-    }
+    }*/
   if (uname_xmlschema_ns_uri_hash_decimal == type)
     {
       tgt_dtp = DV_NUMERIC;
@@ -3919,11 +3919,11 @@ SPART *spar_make_typed_literal (sparp_t *sparp, caddr_t strg, caddr_t type, cadd
       tgt_dtp = DV_LONG_INT;
       goto do_sql_cast;
     }
-  if (uname_xmlschema_ns_uri_hash_time == type)
+/*  if (uname_xmlschema_ns_uri_hash_time == type)
     {
       tgt_dtp = DV_TIME;
       goto do_sql_cast;
-    }
+    }*/
   if (uname_xmlschema_ns_uri_hash_string == type)
     {
       return spartlist (sparp, 5, SPAR_LIT, strg, type, NULL, NULL);

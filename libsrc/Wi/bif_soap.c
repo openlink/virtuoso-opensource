@@ -4248,6 +4248,8 @@ bif_soap_print_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    session_buffered_write (out, temp, strlen (temp));
 	    break;
 	  case 1:
+	    if (DT_TZL (object))
+	      sqlr_new_error ("42000", "SP040", "Can no print timezoneless datetime in RDF1123 format");
 	    dt_to_rfc1123_string (object, temp, sizeof (temp));
 	    session_buffered_write (out, temp, strlen (temp));
 	    break;

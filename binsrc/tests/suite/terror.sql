@@ -1593,3 +1593,7 @@ select xmlelement ("result", xmlattributes ('list' as "type"),
 ;
 ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": long sql statement, over 64K ssls STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select cast (cast ('2012-05-29T17:44:44.356+0010' as dateTime) as varchar);
+echo both $if $equ $last[1]  "2012-05-29 17:44:44.356+00:10" "PASSED" "***FAILED";
+echo both ":  cast of Oracle Java datetime syntax string to DATETIME\n";

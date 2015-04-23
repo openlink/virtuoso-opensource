@@ -3263,7 +3263,7 @@ log_replay_time (caddr_t * header)
       if (BOX_ELEMENTS (dta) == 2 && DV_DATETIME == DV_TYPE_OF (dta[0]))
 	{
 	  int64 w_id = unbox (dta[1]);
-	  if (DVC_LESS == dt_compare (wi_inst.wi_log_replay_dt, dta[0]))
+	  if (DVC_LESS == dt_compare (wi_inst.wi_log_replay_dt, dta[0], 1))
 	    memcpy (wi_inst.wi_log_replay_dt, dta[0], DT_LENGTH);
 	  if (QFID_HOST (w_id) == local_cll.cll_this_host
 	      &&  (!log_last_local_w_id || W_ID_GT ((int32)w_id, log_last_local_w_id)))

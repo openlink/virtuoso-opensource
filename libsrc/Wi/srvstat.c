@@ -465,6 +465,8 @@ long sparql_max_mem_in_use = 0;
 extern int rdf_create_graph_keywords;
 extern int rdf_query_graph_keywords;
 
+extern int timezoneless_datetimes;
+
 static long thr_cli_running;
 static long thr_cli_waiting;
 static long thr_cli_vdb;
@@ -1314,7 +1316,7 @@ status_report (const char * mode, query_instance_t * qi)
     {
       rep_printf ("Started on: %04d-%02d-%02d %02d:%02d GMT%+d\n",
 		  st_started_since_year, st_started_since_month, st_started_since_day,
-	  st_started_since_hour, st_started_since_minute, dt_local_tz / 60);
+	  st_started_since_hour, st_started_since_minute, dt_local_tz_for_logs / 60);
     }
   if (!gen_info)
     return;
@@ -1877,6 +1879,7 @@ stat_desc_t dbf_descs [] =
     {"pcre_match_limit_recursion", &c_pcre_match_limit_recursion, SD_INT32},
     {"pcre_max_cache_sz", &pcre_max_cache_sz, SD_INT32},
     {"enable_qrc", &enable_qrc, SD_INT32},
+    {"timezoneless_datetimes", &timezoneless_datetimes, SD_INT32},
     {NULL, NULL, NULL}
   };
 

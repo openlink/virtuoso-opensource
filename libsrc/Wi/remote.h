@@ -51,6 +51,7 @@ typedef struct remote_ds_s
     dk_mutex_t *	rds_pass_through_funcs_mtx;
     dk_hash_t *	        rds_rexec_grants;
     id_hash_t *		rds_connections_hash;
+    int 		rds_timezoneless_datetimes;
   } remote_ds_t;
 
 
