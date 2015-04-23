@@ -919,6 +919,8 @@ sqlo_eq_cost (dbe_column_t * left_col, df_elt_t * right, df_elt_t * lower, float
 	    n_dist = right_col->col_n_distinct;
 	  if (!is_rdf_col && right_col && COL_KP_UNQ != left_col->col_is_key_part &&  COL_KP_UNQ == right_col->col_is_key_part)
 	    n_dist = right_col->col_n_distinct;
+	  if (!right_col && DFE_COLUMN == right->dfe_type && right->_.col.card > 0 && n_dist > right->_.col.card)
+	    n_dist = right->_.col.card;
 	  *a1 = 1.0 / n_dist;
 	}
       else
