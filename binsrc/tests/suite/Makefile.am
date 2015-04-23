@@ -110,6 +110,9 @@ TESTS_ENVIRONMENT= \
 check-local:
 	env $(TESTS_ENVIRONMENT) $(SHELL) ./test_server.sh
 
+test:
+	env $(TESTS_ENVIRONMENT) $(SHELL) ./test_server.sh $(T)
+
 clean-local:
 	TOP="$(TOP)" ./clean.sh
 
