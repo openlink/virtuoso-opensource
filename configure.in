@@ -2799,7 +2799,7 @@ AC_CONFIG_FILES([
 ])
 
 AC_CONFIG_COMMANDS([default], [
-	chmod 755 bin/makever
+	chmod 755 ${srcdir}/bin/makever
 ])
 
 AC_OUTPUT
