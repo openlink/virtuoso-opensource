@@ -5353,6 +5353,7 @@ ddl_store_proc (caddr_t * state, op_node_t * op)
     }
   else
     {
+      oid_t org_user = qi->qi_u_id;
 #ifdef VIRT30_40
       if (is_27_40_incompartible_procedure (qst_get (state, op->op_arg_1)))
         goto skip_incomp;
@@ -5360,8 +5361,10 @@ ddl_store_proc (caddr_t * state, op_node_t * op)
       /* first we will remove all entries with the same name,
 	 because the PK of that table is not designed to keep only one entry per name */
       is_cl = !cl_run_local_only;
+      qi->qi_u_id = U_ID_DBA;
       err = qr_rec_exec (is_cl ? cl_proc_rm_duplicate_query : proc_rm_duplicate_query, cli, NULL, qi, NULL, 1,
 			 ":0", qst_get (state, op->op_arg_1), QRP_STR);
+      qi->qi_u_id = org_user;
       /* the grants also must be removed */
       qr_rec_exec (proc_revoke_query, cli, NULL, qi, NULL, 1,
 		   ":0", qst_get (state, op->op_arg_1), QRP_STR);
