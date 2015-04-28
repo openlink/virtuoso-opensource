@@ -1777,7 +1777,9 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
           {
             ssg_valmode_t union_valmode = SSG_VALMODE_AUTO;
             int sqlval_is_ok_and_cheap = 0x2;
-            int argctr, argcount = BOX_ELEMENTS (tree->_.builtin.args);
+            int argctr, argcount = BOX_ELEMENTS_0 (tree->_.builtin.args);
+            if (0 == argcount)
+              return SSG_VALMODE_BOOL;
             for (argctr = argcount; argctr--; /* no step */)
               {
                 ssg_valmode_t arg_valmode = sparp_expn_native_valmode (sparp, tree->_.builtin.args[argctr]);
@@ -2156,9 +2158,12 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
             }
           case SPAR_BIF_COALESCE:
             {
-              ptrlong union_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
-              int argcount = BOX_ELEMENTS (tree->_.builtin.args);
+              ptrlong union_bits;
+              int argcount = BOX_ELEMENTS_0 (tree->_.builtin.args);
               int argctr;
+              if (0 == argcount)
+                return SPART_VARR_ALWAYS_NULL;
+              union_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
               for (argctr = argcount; --argctr /* not argctr-- */; /* no step */)
                 {
                   ptrlong arg_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[argctr]);
@@ -3968,7 +3973,14 @@ expanded_sameterm_ready:
       }
     case SPAR_BIF_COALESCE:
       {
-        ssg_valmode_t union_valmode = sparp_expn_native_valmode (ssg->ssg_sparp, tree);
+        int argctr, argcount = BOX_ELEMENTS_0 (tree->_.builtin.args);
+        ssg_valmode_t union_valmode;
+        if (0 == argcount)
+          {
+            ssg_puts_with_comment (" NULL", "coalesce() with 0 args");
+            goto print_asname;
+          }
+        union_valmode = sparp_expn_native_valmode (ssg->ssg_sparp, tree);
         if (IS_BOX_POINTER (union_valmode) && (1 != union_valmode->qmfColumnCount))
           union_valmode = SSG_VALMODE_LONG;
         if (union_valmode != needed)
@@ -3976,7 +3988,6 @@ expanded_sameterm_ready:
         else
           {
             const char *nested_asname = (IS_BOX_POINTER (asname) ? NULL_ASNAME : asname);
-            int argctr, argcount = BOX_ELEMENTS (tree->_.builtin.args);
             ssg_puts (" coalesce ("); ssg->ssg_indent++;
             for (argctr = 0; argctr < argcount; argctr++)
               {
