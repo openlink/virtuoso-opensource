@@ -66,6 +66,8 @@
   declare host varchar;
   declare pageUrl, err varchar;
   declare dist int;
+  declare stat, msg varchar;
+  declare metas, rset any;
 
   val_serviceId := null;
   err := null;
@@ -256,7 +258,7 @@ again:
   -- if (get_keyword ('sp', params) = '1' and 0 = length (_F))
   if (get_keyword ('sp', params) = '1')
     {
-	DB.DBA.EXEC_AS (sprintf ('sparql define get:error-recovery "signal" define input:storage "" define get:soft "add" SELECT * from <%S> where { ?x ?y ?z . }', _G), 'SPARQL', 1);
+      exec (sprintf ('sparql define get:error-recovery "signal" define input:storage "" define get:soft "add" SELECT * from <%S> where { ?x ?y ?z . }', _G), stat, msg, vector (), 0, metas, rset);
       DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
       sp_done := 1;
     }
@@ -273,14 +275,14 @@ again:
               -- if (SPONGING_ALLOWED())  -- only available on develop/7.x branch
 	      {
 		-- We're user SPARQL at this point
-		DB.DBA.EXEC_AS (sprintf ('sparql clear graph <%S>', _G), 'dba');
+		exec (sprintf ('sparql clear graph <%S>', _G), stat, msg, vector (), 0, metas, rset);
 	      }
             }
         }
       else
         refr := atoi (get_keyword ('sr', params, '0'));
 
-	DB.DBA.EXEC_AS (sprintf ('sparql define get:error-recovery "signal" define input:storage "" define get:refresh "%d" define get:soft "%s" %s SELECT * from <%S> where { ?x ?y ?z . }', refr, sp_mode, sp_accept, _G), 'SPARQL', 1);
+      exec (sprintf ('sparql define get:error-recovery "signal" define input:storage "" define get:refresh "%d" define get:soft "%s" %s SELECT * from <%S> where { ?x ?y ?z . }', refr, sp_mode, sp_accept, _G), stat, msg, vector (), 0, metas, rset);
       DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
       sp_done := 1;
     }
@@ -294,7 +296,7 @@ again:
         return;
       }
   }
-  set_user_id (http_map_get ('vsp_uid'));
+  --set_user_id (http_map_get ('vsp_uid'));
 
   odd_position := 0;
   set http_charset='utf-8';
