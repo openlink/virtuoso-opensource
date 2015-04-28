@@ -2419,7 +2419,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	  char dt [DT_LENGTH];
 	  char last_modify[100];
 
-	  dt_now (dt);
+	  dt_now_tz (dt);
 	  dt_to_rfc1123_string (dt, last_modify, sizeof (last_modify));
 	  SES_PRINT (ws->ws_session, "Date: ");
 	  SES_PRINT (ws->ws_session, last_modify);
@@ -2928,7 +2928,7 @@ ws_file (ws_connection_t * ws)
   int n_ranges = 0;
 
   box_date = dk_alloc_box (DT_LENGTH, DV_DATETIME);
-  dt_now (box_date);
+  dt_now_tz (box_date);
   dt_to_rfc1123_string (box_date, date_now, sizeof (date_now));
   dk_free_box (box_date);
 
