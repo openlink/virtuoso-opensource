@@ -1043,8 +1043,10 @@ create procedure
     {
       declare ext_oid varchar;
       declare exit handler for sqlstate '*' {
-        goto normal_auth;
+        goto cert_auth;
       };
+
+      user_name := null;
 
 	-- subject
 	cn := get_certificate_info (2);
@@ -1052,7 +1054,7 @@ create procedure
 	fp := get_certificate_info (6);
 
 	if (fp is null)
-	  goto normal_auth;
+	  goto cert_auth;
 
         ext_oid := virtuoso_ini_item_value ('Parameters', 'X509ExtensionOID');
 
@@ -1075,17 +1077,24 @@ create procedure
 	    rc := 1;
 	  }
     }
-  -- normal verification
+
+  cert_auth:;
+
+
+  -- normal verification (only if rc != 0 which means "no access")
 normal_auth:
-  if (__proc_exists ('DB.DBA.DBEV_LOGIN'))
+  if (rc <> 0)
     {
-      rc := "DB"."DBA"."DBEV_LOGIN" (user_name, digest, session_random);
-    }
-  else if (rc <= 0) -- only if not authenticated 
-    {
-      rc := DB.DBA.FOAF_SSL_LOGIN (user_name, digest, session_random);
-      if (rc = 0)
-        rc := DB.DBA.LDAP_LOGIN (user_name, digest, session_random);
+      if (__proc_exists ('DB.DBA.DBEV_LOGIN'))
+	{
+	  rc := "DB"."DBA"."DBEV_LOGIN" (user_name, digest, session_random);
+	}
+      else if (rc <= 0) -- only if not authenticated 
+	{
+	  rc := DB.DBA.FOAF_SSL_LOGIN (user_name, digest, session_random);
+	  if (rc = 0)
+	    rc := DB.DBA.LDAP_LOGIN (user_name, digest, session_random);
+	}
     }
   return rc;
 }
