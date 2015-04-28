@@ -447,11 +447,11 @@ USER_GRANT_ROLE (in _name varchar, in _role varchar, in grant_opt integer := 0)
     }
   if (_g_id = http_nobody_uid () or _g_id = http_nogroup_gid ())
     {
-	signal ('37000', sprintf ('System role "%s" can not be granted to "%s"', _role, _name), 'U0013');
+	signal ('37000', sprintf ('System role "%s" cannot be granted to "%s"', _role, _name), 'U0013');
     }
   if (_u_id = http_nobody_uid () or _u_id = http_nogroup_gid ())
     {
-	signal ('37000', sprintf ('Role "%s" can not be granted to special account "%s"', _role, _name), 'U0014');
+	signal ('37000', sprintf ('Role "%s" cannot be granted to special account "%s"', _role, _name), 'U0014');
     }
 
     {
@@ -499,7 +499,7 @@ USER_REVOKE_ROLE (in _name varchar, in _role varchar)
   GET_SEC_OBJECT_ID (_role, _g_id, _g_is_sql, opts);
   if ((_g_id = http_nogroup_gid () and _u_id = http_nobody_uid ()) or (_g_id = http_admin_gid() and _u_id = http_dav_uid()))
     {
-      signal ('37000', sprintf ('Built-in role "%s" can not be revoked from built-in user "%s"', _role, _name), 'U0015');
+      signal ('37000', sprintf ('Built-in role "%s" cannot be revoked from built-in user "%s"', _role, _name), 'U0015');
     }
   for select distinct GI_SUB as sub from SYS_ROLE_GRANTS where
     GI_SUPER = _u_id and GI_GRANT = _g_id
@@ -767,7 +767,7 @@ USER_KEY_STORE (in username varchar, in key_name varchar, in key_type varchar, i
       if (key_value is null)
 	key_value := xenc_key_serialize (key_name, 1);
       if (key_value is null)
-	signal ('22023', 'Can not serialize the key');
+	signal ('22023', 'Cannot serialize the key');
     }
 
   keys := coalesce (USER_GET_OPTION (username, 'KEYS'), vector ());
@@ -787,7 +787,7 @@ USER_KEY_DELETE (in username varchar, in key_name varchar)
   declare keys any;
   declare inx int;
   if (lower(user) <> 'dba' and username <> user)
-    signal ('42000', 'Can\'t delete non own keys');
+    signal ('42000', 'Cannot delete non own keys');
   keys := coalesce (USER_GET_OPTION (username, 'KEYS'), vector ());
   inx := position (key_name, keys);
   if (inx > 0)
@@ -862,7 +862,7 @@ USER_KEYS_INIT (in username varchar, in opts any)
  	    key_value := file_to_string (path);
 	  else
 	    {
-	      log_message (sprintf ('XENC: Can\'t open key file: %s', path));
+	      log_message (sprintf ('XENC: Cannot open key file: %s', path));
 	      goto next;
 	    }
 	}
@@ -1104,7 +1104,7 @@ SET_USER_OS_ACOUNT (in username varchar, in os_u_name varchar,
 	return 1;
     }
   signal ('42000',
-      concat ('Can''t login system user ', os_u_name, '. Logon failure: unknown user name or bad password.'),
+      concat ('Cannot login system user ', os_u_name, '. Logon failure: unknown user name or bad password.'),
       'SR359');
 }
 ;
