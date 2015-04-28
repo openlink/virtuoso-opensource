@@ -1198,7 +1198,7 @@ rdb2rdf_print_body_begin (spar_sqlgen_t *ssg, int inserts_are_possible)
   if (inserts_are_possible)
     ssg_puts ("  declare old_g_iid, ro_id_dict any;\n");
   ssg_puts ("  declare exit handler for sqlstate '*' {\n");
-  ssg_puts ("      dbg_obj_princ ('RDB2RDF trigger fail: ', __SQL_STATE, ': ', __SQL_MESSAGE);\n");
+  ssg_puts ("      -- dbg_obj_princ ('RDB2RDF trigger fail: ', __SQL_STATE, ': ', __SQL_MESSAGE);\n");
   if (inserts_are_possible)
     ssg_puts ("      if (dict_size (ro_id_dict)) DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (old_g_iid, ro_id_dict);\n");
   ssg_puts ("      resignal;\n };\n");

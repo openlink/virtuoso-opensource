@@ -9499,7 +9499,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_CBD (in subj_dict any, in consts any, i
 next_iteration:
   all_s_count := length (all_subjs);
   gvector_sort (all_subjs, 1, 0, 0);
-  dbg_obj_princ ('new iteration: all_subjs = ', all_subjs);
+  -- dbg_obj_princ ('new iteration: all_subjs = ', all_subjs);
   if (__tag of integer = __tag (good_graphs))
     graphs_listed := 0;
   else
@@ -9547,14 +9547,14 @@ next_iteration:
       vectorbld_final (phys_subjects);
       goto describe_physical_subjects;
     }
-  dbg_obj_princ ('storage_name=',storage_name, ' sorted_good_graphs=', sorted_good_graphs, ' sorted_bad_graphs=', sorted_bad_graphs);
+  -- dbg_obj_princ ('storage_name=',storage_name, ' sorted_good_graphs=', sorted_good_graphs, ' sorted_bad_graphs=', sorted_bad_graphs);
   for (s_ctr := 0; s_ctr < all_s_count; s_ctr := s_ctr + 1)
     {
       declare s, phys_s, maps any;
       declare maps_len integer;
       s := all_subjs [s_ctr];
       maps := sparql_quad_maps_for_quad (NULL, s, NULL, NULL, storage_name, case (graphs_listed) when 0 then vector() else sorted_good_graphs end, sorted_bad_graphs);
-      dbg_obj_princ ('s = ', s, id_to_iri (s), ' maps = ', maps);
+      -- dbg_obj_princ ('s = ', s, id_to_iri (s), ' maps = ', maps);
       maps_len := length (maps);
       if ((maps_len > 0) and (inf_ruleset is null) and (maps[maps_len-1][0] = UNAME'http://www.openlinksw.com/schemas/virtrdf#DefaultQuadMap'))
         {
@@ -9576,8 +9576,8 @@ next_iteration:
         all_subjs [s_ctr] := vector (s, maps);
       else
         all_subjs [s_ctr] := 0;
-      dbg_obj_princ ('s = ', s, ' maps = ', maps);
-      dbg_obj_princ ('all_subjs [', s_ctr, '] = ', all_subjs [s_ctr]);
+      -- dbg_obj_princ ('s = ', s, ' maps = ', maps);
+      -- dbg_obj_princ ('all_subjs [', s_ctr, '] = ', all_subjs [s_ctr]);
     }
   vectorbld_final (phys_subjects);
   for (s_ctr := 0; s_ctr < all_s_count; s_ctr := s_ctr + 1)
@@ -9638,7 +9638,7 @@ next_iteration:
             }
           http ('}\n', ses);
           txt := string_output_string (ses);
-          dbg_obj_princ ('Procedure text: ', txt);
+          -- dbg_obj_princ ('Procedure text: ', txt);
           saved_user := user;
           set_user_id ('dba', 1);
           exec (txt);
@@ -9646,12 +9646,12 @@ next_iteration:
         }
       if (graphs_listed)
         {
-          dbg_obj_princ ('call (''DB.DBA.', fname, ''')(', s, subj_dict, next_iter_subjs, res, sorted_good_graphs, ')');
+          -- dbg_obj_princ ('call (''DB.DBA.', fname, ''')(', s, subj_dict, next_iter_subjs, res, sorted_good_graphs, ')');
           call ('DB.DBA.' || fname)(s, subj_dict, next_iter_subjs, res, sorted_good_graphs);
         }
       else
         {
-          dbg_obj_princ ('call (''DB.DBA.', fname, ''')(', s, subj_dict, next_iter_subjs, res, ')');
+          -- dbg_obj_princ ('call (''DB.DBA.', fname, ''')(', s, subj_dict, next_iter_subjs, res, ')');
           call ('DB.DBA.' || fname)(s, subj_dict, next_iter_subjs, res);
         }
 end_of_s: ;
@@ -9660,14 +9660,14 @@ end_of_s: ;
 describe_physical_subjects:
   gvector_sort (phys_subjects, 1, 0, 0);
   phys_s_count := length (phys_subjects);
-  dbg_obj_princ ('phys_subjects = ', phys_subjects);
+  -- dbg_obj_princ ('phys_subjects = ', phys_subjects);
   if (0 = phys_s_count)
     return res;
-  dbg_obj_princ ('sorted_bad_graphs = ', sorted_bad_graphs);
+  -- dbg_obj_princ ('sorted_bad_graphs = ', sorted_bad_graphs);
   if (graphs_listed)
     {
       gvector_sort (sorted_good_graphs, 1, 0, 0);
-      dbg_obj_princ ('sorted_good_graphs = ', sorted_good_graphs);
+      -- dbg_obj_princ ('sorted_good_graphs = ', sorted_good_graphs);
       for (g_ctr := good_g_count - 1; g_ctr >= 0; g_ctr := g_ctr - 1)
         {
           declare graph any;
@@ -9678,7 +9678,7 @@ describe_physical_subjects:
               subj := phys_subjects [s_ctr];
               for (select P as p1, O as obj1 from DB.DBA.RDF_QUAD where G = graph and S = subj) do
                 {
-                  dbg_obj_princ ('found3 ', subj, p1, ' in ', graph);
+                  -- dbg_obj_princ ('found3 ', subj, p1, ' in ', graph);
                   dict_bitor_or_put (res, vector (subj, p1, __rdf_long_of_obj (obj1)), 1);
                   if (isiri_id (obj1) and obj1 > min_bnode_iri_id() and dict_get (subj_dict, obj1) is null)
                     dict_put (next_iter_subjs, obj1, 1);
@@ -9706,7 +9706,7 @@ describe_physical_subjects:
             __rgs_ack_cbk (G, uid, 1) and
             (gs_app_callback is null or bit_and (1, call (gs_app_callback) (G, gs_app_uid))) ) do
             {
-              dbg_obj_princ ('found4 ', subj, p1);
+              -- dbg_obj_princ ('found4 ', subj, p1);
               dict_bitor_or_put (res, vector (subj, p1, __rdf_long_of_obj (obj1)), 1);
               if (isiri_id (obj1) and obj1 > min_bnode_iri_id() and dict_get (subj_dict, obj1) is null)
                 dict_put (next_iter_subjs, obj1, 1);
@@ -9727,7 +9727,7 @@ describe_physical_subjects:
 ret_or_next_iter:
   if (0 = dict_size (next_iter_subjs))
     {
-      dbg_obj_princ ('no new subjs, res = ', dict_list_keys (res, 0));
+      -- dbg_obj_princ ('no new subjs, res = ', dict_list_keys (res, 0));
       return res;
     }
   all_subjs := dict_list_keys (next_iter_subjs, 1);
@@ -9764,7 +9764,7 @@ create procedure DB.DBA.SPARQL_DESC_DICT_CBD_PHYSICAL (in subj_dict any, in cons
 next_iteration:
   all_s_count := length (all_subjs);
   gvector_sort (all_subjs, 1, 0, 0);
-  dbg_obj_princ ('new iteration: all_subjs = ', all_subjs);
+  -- dbg_obj_princ ('new iteration: all_subjs = ', all_subjs);
   if (__tag of integer = __tag (good_graphs))
     graphs_listed := 0;
   else
@@ -9791,14 +9791,14 @@ next_iteration:
     }
   vectorbld_final (sorted_bad_graphs);
   bad_g_count := length (sorted_bad_graphs);
-  dbg_obj_princ ('all_subjs = ', all_subjs);
+  -- dbg_obj_princ ('all_subjs = ', all_subjs);
   if (0 = all_s_count)
     return res;
-  dbg_obj_princ ('sorted_bad_graphs = ', sorted_bad_graphs);
+  -- dbg_obj_princ ('sorted_bad_graphs = ', sorted_bad_graphs);
   if (graphs_listed)
     {
       gvector_sort (sorted_good_graphs, 1, 0, 0);
-      dbg_obj_princ ('sorted_good_graphs = ', sorted_good_graphs);
+      -- dbg_obj_princ ('sorted_good_graphs = ', sorted_good_graphs);
       for (g_ctr := good_g_count - 1; g_ctr >= 0; g_ctr := g_ctr - 1)
         {
           declare graph any;
@@ -9809,7 +9809,7 @@ next_iteration:
               subj := all_subjs [s_ctr];
               for (select P as p1, O as obj1 from DB.DBA.RDF_QUAD where G = graph and S = subj) do
                 {
-                  dbg_obj_princ ('found3 ', subj, p1, ' in ', graph);
+                  -- dbg_obj_princ ('found3 ', subj, p1, ' in ', graph);
                   dict_bitor_or_put (res, vector (subj, p1, __rdf_long_of_obj (obj1)), 1);
                   if (isiri_id (obj1) and obj1 > min_bnode_iri_id() and dict_get (subj_dict, obj1) is null)
                     dict_put (next_iter_subjs, obj1, 1);
@@ -9837,7 +9837,7 @@ next_iteration:
             __rgs_ack_cbk (G, uid, 1) and
             (gs_app_callback is null or bit_and (1, call (gs_app_callback) (G, gs_app_uid))) ) do
             {
-              dbg_obj_princ ('found4 ', subj, p1);
+              -- dbg_obj_princ ('found4 ', subj, p1);
               dict_bitor_or_put (res, vector (subj, p1, __rdf_long_of_obj (obj1)), 1);
               if (isiri_id (obj1) and obj1 > min_bnode_iri_id() and dict_get (subj_dict, obj1) is null)
                 dict_put (next_iter_subjs, obj1, 1);
@@ -9859,7 +9859,7 @@ next_iteration:
 ret_or_next_iter:
   if (0 = dict_size (next_iter_subjs))
     {
-      dbg_obj_princ ('no new subjs, res = ', dict_list_keys (res, 0));
+      -- dbg_obj_princ ('no new subjs, res = ', dict_list_keys (res, 0));
       return res;
     }
   all_subjs := dict_list_keys (next_iter_subjs, 1);
