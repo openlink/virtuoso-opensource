@@ -139,8 +139,11 @@ from sys_query_log where qrl_start_dt = sdate order by ql_start_dt;
 	row1 := res[r];
 	  for (c := 0; c < length (row1); c := c + 1)
 	    {
-	      http_value (row1[c], 0, strses);
-	      http ('\t', strses);
+	      {declare exit handler for sqlstate '*' 
+						   { http_value ('***', 0, strses); };
+		http_value (row1[c], 0, strses);
+	      };
+	      http ('\t', strses );
 	    }
 	  http ('\n', strses);
     }
