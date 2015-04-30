@@ -3593,7 +3593,6 @@ ws_mem_record (ws_connection_t * ws)
 {
   char * h = ws_header_field (ws->ws_lines, "X-Recording:", NULL);
   static FILE *fp;
-  char * endpos;
   if (!h) return;
   while (isspace (*h)) h ++;
   mutex_enter (ws_http_log_mtx);
@@ -4713,11 +4712,11 @@ ws_init_func (ws_connection_t * ws)
 	    ws->ws_session = dk_session_allocate (SESCLASS_TCPIP);
 	  session_accept (ses->dks_session, ws->ws_session->dks_session);
 	  ws->ws_session->dks_ws_status = DKS_WS_ACCEPTED;
-	  ws_set_write_timeout (ws);
 #if defined (_SSL) || defined (_IMSG)
 	  /* initialize ws stricture for ssl, pop3, imap, nntp & ftp service */
 	  ws_inet_session_init (ses, ws);
 #endif
+	  ws_set_write_timeout (ws);
 	  http_trace (("connect from queue accept ws %p ses %p\n", ws, ws->ws_session));
 	  tws_connections ++;
 	  SESSION_SCH_DATA (ses)->sio_default_read_ready_action = (io_action_func) ws_ready;
@@ -9817,6 +9816,7 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
   char * me = "https_renegotiate";
   query_instance_t *qi = (query_instance_t *)qst;
   ws_connection_t *ws = qi->qi_client->cli_ws;
+  int ctr = 0;
 #ifdef _SSL
   SSL *ssl = NULL;
 #endif
@@ -9832,6 +9832,7 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
       static int s_server_auth_session_id_context;
       int https_client_verify = BOX_ELEMENTS (args) > 0 ? bif_long_arg (qst, args, 0, me) : HTTPS_VERIFY_OPTIONAL_NO_CA;
       int https_client_verify_depth = BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, me) : 15;
+      char err_buf [1024];
       s_server_auth_session_id_context ++;
 
       if (https_client_verify < 0 || https_client_verify > HTTPS_VERIFY_OPTIONAL_NO_CA)
@@ -9849,15 +9850,35 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
       SSL_set_verify (ssl, verify, (int (*)(int, X509_STORE_CTX *)) https_ssl_verify_callback);
       SSL_set_app_data (ssl, ap);
       SSL_set_session_id_context (ssl, (void*)&s_server_auth_session_id_context, sizeof(s_server_auth_session_id_context));
+      i = 0;
       IO_SECT (qst);
       i = SSL_renegotiate (ssl);
-      if (i <= 0) sqlr_new_error ("42000", ".....", "SSL_renegotiate failed");
-      i = SSL_do_handshake (ssl);
-      if (i <= 0) sqlr_new_error ("42000", ".....", "SSL_do_handshake failed");
+      if (i <= 0)
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  sqlr_new_error ("42000", "..001", "SSL_renegotiate failed %s", err_buf);
+	}
+	i = SSL_do_handshake (ssl);
+      if (i <= 0) 
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  sqlr_new_error ("42000", "..002", "SSL_do_handshake failed %s", err_buf);
+	}
       ssl->state = SSL_ST_ACCEPT;
-      i = SSL_do_handshake (ssl);
+      while (SSL_renegotiate_pending (ssl) && ctr < 1000)
+	{
+	  timeout_t to = { 0, 1000 };
+	  i = SSL_do_handshake (ssl);
+	  if (i <= 0)
+	    tcpses_is_read_ready (ws->ws_session->dks_session, &to);
+	  ctr ++;
+	}
       END_IO_SECT (err_ret);
-      if (i <= 0) sqlr_new_error ("42000", ".....", "SSL_do_handshake failed");
+      if (i <= 0) 
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  sqlr_new_error ("42000", "..003", "SSL_do_handshake failed %s", err_buf);
+	}
       if (SSL_get_peer_certificate (ssl))
 	return box_num (1);
     }
