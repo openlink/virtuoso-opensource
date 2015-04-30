@@ -4589,7 +4589,7 @@ dfe_exp_card (sqlo_t * so, df_elt_t * dfe)
       if (dfe->_.col.card)
 	return dfe->_.col.card;
       if (dfe->_.col.col)
-	return dfe->_.col.col->col_n_distinct;
+	return MAX (1, dfe->_.col.col->col_n_distinct); /* if unset, is -1 */
       return 1000;
     case DFE_BOP:
       return dfe_exp_card (so, dfe->_.bin.left) * dfe_exp_card (so, dfe->_.bin.right);
