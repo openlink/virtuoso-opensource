@@ -2158,27 +2158,31 @@ ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
 {
 #ifdef VIRTUAL_DIR
   caddr_t origin = ws_mime_header_field (ws->ws_lines, "Origin", NULL, 1);
+  char * ret_origin = NULL;
   int rc = 0;
-  if (origin && ws->ws_status_code < 500 && ws->ws_map && ws->ws_map->hm_cors)
+  if (origin && ws->ws_map && ws->ws_map->hm_cors)
     {
       caddr_t * orgs = ws_split_cors (origin), * place = NULL;
       int inx;
       if (ws->ws_map->hm_cors == (id_hash_t *) WS_CORS_STAR)
-	rc = 1;
+	{
+	  if (orgs != WS_CORS_STAR && BOX_ELEMENTS_0 (orgs) > 0)
+	    ret_origin = orgs[0];
+	  rc = 1;
+	}
       else if (orgs != WS_CORS_STAR)
 	{
 	  DO_BOX (caddr_t, org, inx, orgs)
 	    {
 	      if (NULL != (place = (caddr_t *) id_hash_get_key (ws->ws_map->hm_cors, (caddr_t) & org)))
 		{
+		  ret_origin = org;
 		  rc = 1;
 		  break;
 		}
 	    }
 	  END_DO_BOX;
 	}
-      if (orgs != WS_CORS_STAR)
-	dk_free_tree (orgs);
       if (rc)
 	{
 	  char ach[2000] = {0}; 
@@ -2201,9 +2205,16 @@ ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
 	      ach[strlen (ach) - 1] = 0;
 	      strcat_ck (ach, "\r\n");
 	    }
+	  if (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Access-Control-Allow-Headers:")))
+	    {
+	      strcat_ck (ach, "Access-Control-Allow-Headers: Accept, Authorization, Slug, Link, Origin, Content-type");
+	      strcat_ck (ach, "\r\n");
+	    }
 	  snprintf (buf, buf_len, "Access-Control-Allow-Origin: %s\r\n%s%s", 
-	      place ? *place : "*", place ? "Access-Control-Allow-Credentials: true\r\n" : "", ach);
+	      ret_origin ? ret_origin : "*", ret_origin ? "Access-Control-Allow-Credentials: true\r\n" : "", ach);
 	}
+      if (orgs != WS_CORS_STAR)
+	dk_free_tree (orgs);
     }
   dk_free_tree (origin);
   if (0 == rc && ws->ws_map && ws->ws_map->hm_cors_restricted)

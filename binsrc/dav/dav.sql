@@ -115,7 +115,7 @@ not_found: ;
 		'DAV: 1,2,<http://www.openlinksw.com/virtuoso/webdav/1.0>\r\n',
 		ldp_head,
 		'Access-Control-Allow-Methods: GET,HEAD,POST,PUT,DELETE,OPTIONS,PROPFIND,PROPPATCH,COPY,MOVE,LOCK,UNLOCK,TRACE,PATCH\r\n',
-		'Access-Control-Allow-Headers: accept, slug, link, origin, content-type\r\n',
+		'Access-Control-Allow-Headers: authorization, accept, slug, link, origin, content-type\r\n',
 		'Accept-Patch: */*\r\n',
 		'Accept-Post: */*\r\n',
 		sprintf ('MS-Author-Via: %s\r\n', msauthor)));
