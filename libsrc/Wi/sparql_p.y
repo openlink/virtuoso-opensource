@@ -1926,7 +1926,7 @@ spar_retcols		/* ::=  ( Expn+ )	*/
 spar_ret_agg_call	/* [Virt]	RetAggCall	 ::=  AggName '(', ( '*' | ( 'DISTINCT'? Var ) ) ')'	*/
 	: spar_agg_name spar_expn _RPAR	{ $$ = spar_make_funcall (sparp_arg, 1, $1, (SPART **)t_list (1, $2)); }
         | spar_agg_name _STAR _RPAR     {
-                SPART *arg = ((uname_SPECIAL_cc_bif_c_COUNT == $1) ? SPAR_MAKE_INT_LITERAL (sparp_arg, 1) : (ptrlong)_STAR);
+                SPART *arg = ((uname_SPECIAL_cc_bif_c_COUNT == $1) ? SPAR_MAKE_INT_LITERAL (sparp_arg, 1) : (SPART *)((ptrlong)_STAR));
                 $$ = spar_make_funcall (sparp_arg, 1, $1, (SPART **)t_list (1, arg)); }
 	| spar_agg_name DISTINCT_L _STAR _RPAR	{ $$ = spar_make_funcall (sparp_arg, DISTINCT_L, $1, (SPART **)t_list (1, (ptrlong)_STAR)); }
         | spar_agg_name DISTINCT_L spar_expn _RPAR	{ $$ = spar_make_funcall (sparp_arg, DISTINCT_L, $1, (SPART **)t_list (1, $3)); }
@@ -2229,7 +2229,7 @@ spar_expn		/* [43]	Expn		 ::=  ConditionalOrExpn	( 'AS' ( VAR1 | VAR2 ) ) */
 	| spar_blank_node  /* Excluded from final 1.1: { sparyyerror (sparp_arg, "Blank node labels can not be used in expressions, only in triple patterns"); } */
 	| spar_var
 	| spar_macro_call
-	| UNDEF_L { SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_VIRTSPECIFIC, "UNDEF_L outside VALUES clause"); $$ = t_NEW_DB_NULL; }
+	| UNDEF_L { SPAR_ERROR_IF_UNSUPPORTED_SYNTAX (SSG_SD_VIRTSPECIFIC, "UNDEF_L outside VALUES clause"); $$ = (SPART *)t_NEW_DB_NULL; }
 	;
 
 spar_built_in_call	/* [52]*	BuiltInCall	 ::=  */
