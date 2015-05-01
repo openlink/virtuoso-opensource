@@ -151,13 +151,13 @@ typedef struct sparp_equiv_s
     ptrlong e_var_count;	/*!< Number of used items in e_vars. This can be zero if equiv passes top-level var from alias to alias without local uses */
     ptrlong e_gspo_uses;	/*!< Number of all local uses in members (+1 for each in G, P, S or O in triples). Note that nonzero e_gspo_uses does not imply SPART_VARR_NOT_NULL if some members has triple.subtype == OPTIONAL_L */
     ptrlong e_nested_bindings;	/*!< Number of all nested uses in members (+1 for each in G, P, S or O in triples, +1 for each sub-gp use, +1 if \c e_gp is of subtype VALUES_L) */
-    ptrlong e_nested_optionals;	/*!< Number of all nested uses in OPTIONAL_L members (+1 for each OPTIONAL subquery use) */
+    ptrlong e_nested_optionals;	/*!< Number of all nested uses in OPTIONAL_L members, VALUES_L memebers with UNDEF for the variable in question and"pure chains" to such OPTIONALs and VALUEs (+1 for each such sub-gp use) */
     ptrlong e_const_reads;	/*!< Number of constant-read uses in filters and in 'graph' of members */
     ptrlong e_optional_reads;	/*!< Number of uses in scalar subqueries of filters; both local and member filter are counted */
     ptrlong e_subquery_uses;	/*!< Number of all local uses in subquery (0 for plain queries, 1 in groups of subtype SELECT_L) */
     ptrlong e_replaces_filter;	/*!< Bitmask of SPART_RVR_XXX bits, nonzero if a filter has been replaced (and removed) by tightening of this equiv or by merging this and some other equiv, so the equiv is the only bearer of knowledge about the restriction. */
     rdf_val_range_t e_rvr;	/*!< Restrictions that are common for all variables. They are combined from rvrs of variables and subvalues, however rvrs of variables can be tightened by ancestor equivs, making the dependencies circular. */
-    ptrlong *e_subvalue_idxs;	/*!< Subselects where values of these variables come from, as array of indexes of equivs */
+    ptrlong *e_subvalue_idxs;	/*!< Subselects where values of these variables come from, as array of indexes of equivs. The order is not defined, but subvalues from OPTIONALs are after all other. */
     ptrlong *e_receiver_idxs;	/*!< Aliases of surrounding query where values of variables from this equiv are used, as array of indexes of equivs */
     ptrlong e_clone_idx;	/*!< Index of the current clone of the equiv */
     ptrlong e_cloning_serial;	/*!< The serial used when \c e_clone_idx is set, should be equal to \c sparp->sparp_sg->sg_cloning_serial */
@@ -194,6 +194,17 @@ typedef struct sparp_equiv_s
 #define SPARP_EQ_IS_USED(eq) \
   ((0 != eq->e_const_reads) || (0 != BOX_ELEMENTS_0 (eq->e_receiver_idxs)))
 
+#define SPAR_VALUES_GP_HAS_UNBOUND(sparp,wrapping_gp,vname) \
+      ((wrapping_gp)->_.gp.subquery->_.binv.counters_of_unbound [ \
+                  sparp_find_binv_rset_pos_of_varname ((sparp), (wrapping_gp), (wrapping_gp)->_.gp.subquery, (vname)) ] )
+
+#define SPARP_EQ_RETURNS_LIKE_OPTIONAL(sparp,eq) \
+  ( (OPTIONAL_L == (eq)->e_gp->_.gp.subtype) \
+    || \
+    ((VALUES_L == (eq)->e_gp->_.gp.subtype) && \
+      SPAR_VALUES_GP_HAS_UNBOUND((sparp), (eq)->e_gp, (eq)->e_varnames[0]) ) \
+    || \
+    (((eq)->e_nested_bindings == (eq)->e_nested_optionals) && (0 == (eq)->e_gspo_uses) && (0 == (eq)->e_subquery_uses) ) )
 
 #define SPARP_EQUIV_GET_NAMESAKES	0x01	/*!< \c sparp_equiv_get() returns equiv of namesakes, no need to search for exact var. */
 #define SPARP_EQUIV_INS_CLASS		0x02	/*!< \c sparp_equiv_get() has a right to add a new equiv to the \c haystack_gp */

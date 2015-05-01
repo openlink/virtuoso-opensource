@@ -754,15 +754,21 @@ sparp_gp_trav_cu_out_triples_1 (sparp_t *sparp, SPART *curr, sparp_trav_state_t 
       SPARP_FOREACH_GP_EQUIV (sparp, curr, eq_ctr, eq)
         {
           int sub_ctr;
-          eq->e_nested_bindings = ((VALUES_L == curr->_.gp.subtype) ? 1 : 0);
+          eq->e_nested_bindings = 0;
           eq->e_nested_optionals = 0;
+          if (VALUES_L == curr->_.gp.subtype)
+            {
+              eq->e_nested_bindings += 1;
+              if (SPAR_VALUES_GP_HAS_UNBOUND(sparp,curr,eq->e_varnames[0]))
+                eq->e_nested_optionals += 1;
+            }
           DO_BOX_FAST_REV (ptrlong, sub_idx, sub_ctr, eq->e_subvalue_idxs)
             {
               sparp_equiv_t *sub_eq = SPARP_EQUIV(sparp,sub_idx);
               if (!SPARP_EQ_IS_ASSIGNED_LOCALLY(sub_eq))
                 continue;
               eq->e_nested_bindings += 1;
-              if (OPTIONAL_L == sub_eq->e_gp->_.gp.subtype)
+              if (SPARP_EQ_RETURNS_LIKE_OPTIONAL(sparp,sub_eq))
                 eq->e_nested_optionals += 1;
             }
           END_DO_BOX_FAST;
@@ -2395,18 +2401,30 @@ sparp_restr_of_select_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t
   SPART *sub_expn = sparp_find_subexpn_in_retlist (sparp, vname, gp->_.gp.subquery->_.req_top./*orig_*/retvals, 0);
   if (NULL != sub_expn)
     {
-      if (SPAR_IS_BLANK_OR_VAR(sub_expn))
+      switch (SPART_TYPE (sub_expn))
         {
-          sparp_equiv_t *eq_sub = sparp_equiv_get (sparp, gp->_.gp.subquery->_.req_top.pattern, sub_expn, 0);
-          sparp_equiv_tighten (sparp, eq, &(eq_sub->e_rvr), ~(SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
-        }
-      else
-        {
-          ptrlong restr_bits = sparp_restr_bits_of_expn (sparp, sub_expn);
-          eq->e_rvr.rvrRestrictions |= restr_bits & (
-            SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK |
-            SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL | SPART_VARR_IS_BOOL |
-            SPART_VARR_NOT_NULL | SPART_VARR_ALWAYS_NULL );
+        case SPAR_BLANK_NODE_LABEL: case SPAR_VARIABLE:
+          {
+            sparp_equiv_t *eq_sub = sparp_equiv_get (sparp, gp->_.gp.subquery->_.req_top.pattern, sub_expn, 0);
+            sparp_equiv_tighten (sparp, eq, &(eq_sub->e_rvr), ~(SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
+            break;
+          }
+        case SPAR_LIT: case SPAR_QNAME:
+          {
+            rdf_val_range_t tmp;
+            sparp_rvr_set_by_constant (sparp, &tmp, NULL, sub_expn);
+            sparp_rvr_tighten (sparp, &(eq->e_rvr), &tmp, ~0);
+            break;
+          }
+        default:
+          {
+            ptrlong restr_bits = sparp_restr_bits_of_expn (sparp, sub_expn);
+            eq->e_rvr.rvrRestrictions |= restr_bits & (
+              SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_IS_BLANK |
+              SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL | SPART_VARR_IS_BOOL |
+              SPART_VARR_NOT_NULL | SPART_VARR_ALWAYS_NULL );
+            break;
+          }
         }
     }
 }
@@ -2492,6 +2510,8 @@ sparp_restr_of_join_eq_from_connected_subvalue (sparp_t *sparp, sparp_equiv_t *e
         (0 == eq->e_replaces_filter) && SPARP_EQ_IS_ASSIGNED_LOCALLY (sub_eq) &&
         !(sub_eq->e_rvr.rvrRestrictions & (SPART_VARR_CONFLICT | SPART_VARR_ALWAYS_NULL)) )
         sparp_equiv_tighten (sparp, eq, &(sub_eq->e_rvr), ~(SPART_VARR_NOT_NULL | SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
+      else if ((1 < eq->e_nested_bindings) && !(eq->e_rvr.rvrRestrictions & SPART_VARR_NOT_NULL))
+        sparp_equiv_loose (sparp, eq, &(sub_eq->e_rvr), ~(SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
     }
   else
     if (SPARP_EQ_IS_ASSIGNED_LOCALLY (sub_eq))
@@ -4178,7 +4198,7 @@ spar_binv_is_convertible_to_filter (sparp_t *sparp, SPART *parent_gp, SPART *mem
   eq = sparp_equiv_get_ro (sparp->sparp_sg->sg_equivs, sparp->sparp_sg->sg_equiv_count, parent_gp, (SPART *)(member_binv->_.binv.vars[0]->_.var.vname), SPARP_EQUIV_GET_NAMESAKES);
   if (NULL == eq)
     return 0;
-  if (!((eq->e_rvr.rvrRestrictions & SPART_VARR_GLOBAL) || (0 < eq->e_gspo_uses) || (1 < eq->e_nested_bindings)))
+  if (!((eq->e_rvr.rvrRestrictions & (SPART_VARR_EXTERNAL | SPART_VARR_GLOBAL)) || (0 < eq->e_gspo_uses) || ((eq->e_nested_optionals + 1) < eq->e_nested_bindings)))
     return 0;
   /* The most boring thing is check for duplicate values. It should be as fast as possible and not memory-consuming, so we're cheating. */
   hash_mod = member_binv->_.binv.rows_in_use;
