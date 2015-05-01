@@ -833,7 +833,7 @@ extern void spart_dump (void *tree_arg, dk_session_t *ses, int indent, const cha
    (SPAR_LIT == (tree)->type) || (SPAR_QNAME == (tree)->type)/* || (SPAR_QNAME_NS == (tree)->type)*/ )
 
 #define SPAR_LIT_VAL(tree) \
-  ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree)) ? ((caddr_t)(tree)) : \
+  ((DV_ARRAY_OF_POINTER != DV_TYPE_OF ((caddr_t)(tree))) ? ((caddr_t)(tree)) : \
    (SPAR_LIT == (tree)->type) ? (tree)->_.lit.val : NULL )
 
 #define SPAR_LIT_DATATYPE(tree) \
