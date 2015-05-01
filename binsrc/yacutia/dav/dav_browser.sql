@@ -1862,6 +1862,9 @@ create procedure WEBDAV.DBA.user_initialize (
 
     if (WEBDAV.DBA.DAV_ERROR (cid))
       signal ('BRF03', concat ('User''s folder ''Public'' can not be created.', WEBDAV.DBA.DAV_PERROR(cid)));
+
+    -- create "Shared Resources" folder
+    WEBDAV.DBA.acl_share_create (uid);
   }
 }
 ;
