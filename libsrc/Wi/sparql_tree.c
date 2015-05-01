@@ -1424,10 +1424,10 @@ sparp_equiv_connect_outer_to_inner (sparp_t *sparp, sparp_equiv_t *outer, sparp_
 {
   int i_ctr, i_count;
   int o_listed_in_i = 0;
-#ifdef DEBUG
   int o_ctr, o_count;
   int i_listed_in_o = 0;
   o_count = BOX_ELEMENTS_0 (outer->e_subvalue_idxs);
+#ifdef DEBUG
   for (o_ctr = o_count; o_ctr--; /* no step */)
     {
       if (outer->e_subvalue_idxs[o_ctr] == inner->e_own_idx)
