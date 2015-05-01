@@ -7766,14 +7766,14 @@ print_sub_eq_sub:
               ssg->ssg_indent ++;
               if (sub_is_nullable_inline)
                 {
-                  ssg_print_equiv_retval_expn (ssg, sub_gp, sub_eq, SSG_RETVAL_FROM_GOOD_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING, SSG_VALMODE_LONG, NULL_ASNAME);
+                  ssg_print_equiv_retval_expn (ssg, sub_gp, sub_eq, SSG_RETVAL_FROM_GOOD_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING, SSG_VALMODE_AUTO, NULL_ASNAME);
                   ssg_puts_with_comment3 (" IS NULL ", "", sub_is_nullable_inline, "");
                 }
               if (sub_is_nullable_inline && sub2_is_nullable_inline)
                 ssg_puts (" OR ");
               if (sub2_is_nullable_inline)
                 {
-                  ssg_print_equiv_retval_expn (ssg, sub2_gp, sub2_eq, SSG_RETVAL_FROM_GOOD_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING, SSG_VALMODE_LONG, NULL_ASNAME);
+                  ssg_print_equiv_retval_expn (ssg, sub2_gp, sub2_eq, SSG_RETVAL_FROM_GOOD_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING, SSG_VALMODE_AUTO, NULL_ASNAME);
                   ssg_puts_with_comment3 (" IS NULL ", "", sub2_is_nullable_inline, "");
                 }
               ssg_puts (" OR (");
