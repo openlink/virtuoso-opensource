@@ -888,7 +888,7 @@ create function "S3_CONFIGURE" (
   in params any)
 {
   -- dbg_obj_princ ('S3_CONFIGURE (', id, params, ')');
-  declare syncEnabled, oldGraph, newGraph varchar;
+  declare syncEnabled varchar;
 
   if (not isnull ("S3_VERIFY" (DB.DBA.DAV_SEARCH_PATH (id, 'C'), params)))
     return -38;
@@ -904,11 +904,7 @@ create function "S3_CONFIGURE" (
   DB.DBA.S3__paramSet (id, 'C', 'syncEnabled',    syncEnabled, 0);
 
   -- Graph
-  oldGraph := coalesce (DB.DBA.S3__paramGet (id, 'C', 'graph', 0), '');
-  newGraph := get_keyword ('graph', params, '');
-  DB.DBA.S3__paramSet (id, 'C', 'graph',            newGraph, 0);
-  if (__proc_exists ('WEBDAV.DBA.graph_update') is not null)
-    WEBDAV.DBA.graph_update (id, DB.DBA.S3__detName (), oldGraph, newGraph);
+  DB.DBA.S3__paramSet (id, 'C', 'graph',          get_keyword ('graph', params), 0);
 
   -- Sponger
   DB.DBA.S3__paramSet (id, 'C', 'sponger',        get_keyword ('sponger', params), 0);
