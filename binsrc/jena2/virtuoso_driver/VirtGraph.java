@@ -1642,24 +1642,6 @@ public class VirtGraph extends GraphBase {
             dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#hexBinary");
             return NodeFactory.createLiteral(o.toString(), null, dt);
 
-        } else if (o instanceof java.sql.Date) {
-
-            RDFDatatype dt = null;
-            dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#date");
-            return NodeFactory.createLiteral(o.toString(), null, dt);
-
-        } else if (o instanceof java.sql.Timestamp) {
-
-            RDFDatatype dt = null;
-            dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#dateTime");
-            return NodeFactory.createLiteral(Timestamp2String((java.sql.Timestamp) o), null, dt);
-
-        } else if (o instanceof java.sql.Time) {
-
-            RDFDatatype dt = null;
-            dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#time");
-            return NodeFactory.createLiteral(o.toString(), null, dt);
-
         } else if (o instanceof VirtuosoDate) {
 
             RDFDatatype dt = null;
@@ -1677,6 +1659,24 @@ public class VirtGraph extends GraphBase {
             RDFDatatype dt = null;
             dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#time");
             return NodeFactory.createLiteral(((VirtuosoTime) o).toXSD_String(), null, dt);
+
+        } else if (o instanceof java.sql.Date) {
+
+            RDFDatatype dt = null;
+            dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#date");
+            return NodeFactory.createLiteral(o.toString(), null, dt);
+
+        } else if (o instanceof java.sql.Timestamp) {
+
+            RDFDatatype dt = null;
+            dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#dateTime");
+            return NodeFactory.createLiteral(Timestamp2String((java.sql.Timestamp) o), null, dt);
+
+        } else if (o instanceof java.sql.Time) {
+
+            RDFDatatype dt = null;
+            dt = TypeMapper.getInstance().getSafeTypeByName("http://www.w3.org/2001/XMLSchema#time");
+            return NodeFactory.createLiteral(o.toString(), null, dt);
 
         } else {
 
