@@ -177,7 +177,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	private int psInsertBNodeCount = 0;
 
 	private boolean useLazyAdd = false;
-	private int prefetchSize = 200;
+	private int prefetchSize = 100;
 	private boolean useReprepare = true;
 	private boolean insertBNodeAsVirtuosoIRI = false;
 
@@ -2927,14 +2927,21 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 		else if (val instanceof RdfBox) {
 			RdfBox rb = (RdfBox) val;
+			String rb_val = rb.toString();
+
 			if (rb.getLang() != null) {
-				return getRepository().getValueFactory().createLiteral(rb.toString(), rb.getLang());
+				return getRepository().getValueFactory().createLiteral(rb_val, rb.getLang());
 			}
 			else if (rb.getType() != null) {
-				return getRepository().getValueFactory().createLiteral(rb.toString(), this.getRepository().getValueFactory().createURI(rb.getType()));
+			        String rb_type = rb.getType();
+                                if (rb_val.length()==1 && (rb_val.charAt(0)=='1' || rb_val.charAt(0)=='0')) {
+                                  if (rb_type.equals("http://www.w3.org/2001/XMLSchema#boolean")) 
+                                    return getRepository().getValueFactory().createLiteral(rb_val.charAt(0)=='1'?"true":"false", this.getRepository().getValueFactory().createURI(rb_type));
+                                }
+				return getRepository().getValueFactory().createLiteral(rb_val, this.getRepository().getValueFactory().createURI(rb_type));
 			}
 			else {
-				return getRepository().getValueFactory().createLiteral(rb.toString());
+				return getRepository().getValueFactory().createLiteral(rb_val);
 			}
 		}
 		else if (val instanceof java.lang.Long) {
