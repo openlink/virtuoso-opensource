@@ -58,7 +58,7 @@ public class VirtGraph extends GraphBase {
 //    static final protected String S_BATCH_DELETE = "DB.DBA.rdf_delete_triple_c (?,?,?,?,?,?)";
     static final String S_CLEAR_GRAPH = "DB.DBA.rdf_clear_graphs_c (?)";
 
-    static final String S_TTLP_INSERT = "DB.DBA.TTLP_MT (?, '', ?, 255, 2, 3, ?)";
+//    static final String S_TTLP_INSERT = "DB.DBA.TTLP_MT (?, '', ?, 255, 2, 3, ?)";
 
 //    static final String sinsert = "sparql insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
     static final String sdelete = "sparql delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
@@ -650,15 +650,15 @@ public class VirtGraph extends GraphBase {
             String ltype = n.getLiteralDatatypeURI();
             if (llang != null && llang.length() > 0) {
                 ps.setInt(col, 5);
-                ps.setString(col + 1, n.getLiteralValue().toString());
+                ps.setString(col + 1, n.getLiteralLexicalForm());
                 ps.setString(col + 2, n.getLiteralLanguage());
             } else if (ltype != null && ltype.length() > 0) {
                 ps.setInt(col, 4);
-                ps.setString(col + 1, n.getLiteralValue().toString());
+                ps.setString(col + 1, n.getLiteralLexicalForm());
                 ps.setString(col + 2, n.getLiteralDatatypeURI());
             } else {
                 ps.setInt(col, 3);
-                ps.setString(col + 1, n.getLiteralValue().toString());
+                ps.setString(col + 1, n.getLiteralLexicalForm());
                 ps.setNull(col + 2, java.sql.Types.VARCHAR);
             }
         } else {
@@ -681,7 +681,6 @@ public class VirtGraph extends GraphBase {
 
 
     protected void performAdd(String _gName, Node nS, Node nP, Node nO) {
-        java.sql.PreparedStatement ps;
         _gName = (_gName != null ? _gName : this.graphName);
 
         try {
@@ -695,6 +694,8 @@ public class VirtGraph extends GraphBase {
                 }
 
             } else {
+/**
+                java.sql.PreparedStatement ps;
                 ps = prepareStatement(S_TTLP_INSERT);
                 int transactional = connection.getAutoCommit() ? 0 : 1;
 
@@ -711,6 +712,22 @@ public class VirtGraph extends GraphBase {
                 ps.setInt(3, transactional);
                 ps.executeUpdate();
                 ps.close();
+**/
+                java.sql.Statement st = createStatement();
+
+                StringBuilder data = new StringBuilder(1024);
+                data.append("sparql insert into <");
+                data.append(_gName);
+                data.append("> { ");
+                data.append(Node2Str_add(nS));
+                data.append(' ');
+                data.append(Node2Str_add(nP));
+                data.append(' ');
+                data.append(Node2Str_add(nO));
+                data.append(" .}");
+
+                st.execute(data.toString());
+                st.close();
             }
         } catch (Exception e) {
             throw new AddDeniedException(e.toString());
@@ -1568,10 +1585,19 @@ public class VirtGraph extends GraphBase {
             RdfBox rb = (RdfBox) o;
             String rb_type = rb.getType();
             RDFDatatype dt = null;
+            String rb_val = rb.toString();
 
-            if (rb_type != null)
+
+            if (rb_type != null) {
                 dt = TypeMapper.getInstance().getSafeTypeByName(rb_type);
-            return NodeFactory.createLiteral(rb.toString(), rb.getLang(), dt);
+            
+                if (rb_val.length()==1 && (rb_val.charAt(0)=='1' || rb_val.charAt(0)=='0')) {
+                  if (rb_type.equals("http://www.w3.org/2001/XMLSchema#boolean")) 
+                    return NodeFactory.createLiteral(rb_val.charAt(0)=='1'?"true":"false", rb.getLang(), dt);
+                }
+            }
+
+            return NodeFactory.createLiteral(rb_val, rb.getLang(), dt);
 
         } else if (o instanceof java.lang.Long) {
 
