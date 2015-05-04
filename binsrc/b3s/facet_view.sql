@@ -651,7 +651,7 @@ fct_nav (in tree any,
 
   if ('properties' <> tp)
     if (connection_get('s_term') = 's')
-      fct_view_link ('properties', 'Subject', txt, 'Relationships for which selected variable denotes relation subject');
+      fct_view_link ('properties', 'Predicates', txt, 'Relationships for which selected variable denotes relation subject');
     else
       fct_view_link ('properties', 'Attributes', txt, 'Relationships for which selected variable denotes relation entity');
 
