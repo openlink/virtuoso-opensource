@@ -797,18 +797,6 @@
             ]]>
           </v:method>
 
-          <v:method name="detGraph" arglist="in params any, in det varchar">
-            <![CDATA[
-              declare oldGraph, newGraph, prop varchar;
-
-              prop := sprintf ('virt:%s-graph', det);
-              oldGraph := WEBDAV.DBA.DAV_PROP_GET (self.dav_path, prop, '');
-              newGraph := get_keyword (sprintf ('dav_%s_graph', det), params, '');
-              WEBDAV.DBA.DAV_PROP_SET (self.dav_path, prop, newGraph);
-              WEBDAV.DBA.graph_update (DB.DBA.DAV_SEARCH_ID (self.dav_path, 'C'), det, oldGraph, newGraph);
-            ]]>
-          </v:method>
-
           <v:method name="detSpongerPrepare" arglist="in params any, in det varchar, in ndx integer, inout sponger varchar, inout cartridges varchar, inout metaCartridges varchar">
             <![CDATA[
               declare N integer;
@@ -1040,7 +1028,7 @@
             ]]>
           </v:method>
 
-          <v:method name="detParamsPrepare" arglist="in det varchar, in properties any, in ndx integer">
+          <v:method name="detParamsPrepare" arglist="in det varchar, in ndx integer">
             <![CDATA[
               declare json varchar;
               declare retValue, params, labels, val any;
@@ -1101,10 +1089,6 @@
                 retValue := WEBDAV.DBA.set_keyword ('params', retValue, self.search_dc);
                 retValue := WEBDAV.DBA.set_keyword ('path',   retValue, WEBDAV.DBA.real_path (WEBDAV.DBA.dc_get (self.search_dc, 'base', 'path', '/DAV/')));
                 retValue := WEBDAV.DBA.set_keyword ('filter', retValue, WEBDAV.DBA.dc_filter (self.search_dc));
-              }
-              if (not isnull (properties))
-              {
-                self.virtPropertiesRestore (properties, 'virt:' || det || '-%');
               }
               return retValue;
             ]]>
@@ -3080,7 +3064,6 @@
                     {
                       -- WebDAV
                       -- Action test
-                      v_properties := vector ();
                       if (self.command_mode = 10)
                       {
                         mode := 'edit';
@@ -3186,7 +3169,7 @@
                       if (self.dav_type = 'C')
                       {
                         -- verify input DET params
-                        detParams := self.detParamsPrepare (dav_detType, null, null);
+                        detParams := self.detParamsPrepare (dav_detType, null);
                         if (not isnull (detParams))
                         {
                           tmp := null;
@@ -3443,20 +3426,16 @@
                             WEBDAV.DBA.DAV_SET_RECURSIVE (self.dav_path, dav_perms, dav_owner, dav_group);
 
                           if ((dav_detType <> 'Versioning') and isinteger (self.dav_id))
+                          {
+                            -- clear old properties
+                            itemList := WEBDAV.DBA.DAV_PROP_LIST (dav_fullPath, 'virt:%', vector (sprintf ('virt:%s-%%', dav_detType), 'virt:aci_meta%'));
+                            foreach (any item in itemList) do
                             {
-                              -- clear old properties
-                              itemList := DB.DBA.DAV_PROP_LIST_INT (DB.DBA.DAV_SEARCH_ID (dav_fullPath, 'C'), 'C', 'virt:%', 0);
-                              foreach (any item in itemList) do
-                              {
-                                if (item[0] not like ('virt:aci_meta%'))
-                                {
-                                  v_properties := vector_concat (v_properties, vector (item));
-                                  DB.DBA.DAV_PROP_REMOVE_INT (dav_fullPath, item[0], null, null, 0, 0, 0);
-                                }
-                              }
-                              WEBDAV.DBA.exec ('delete from DB.DBA.SYNC_COLS_TYPES where CT_COL_ID = ?', vector (DB.DBA.DAV_SEARCH_ID (self.dav_path, 'C')));
+                              DB.DBA.DAV_PROP_REMOVE_INT (dav_fullPath, item[0], null, null, 0, 0, 0);
                             }
+                            WEBDAV.DBA.exec ('delete from DB.DBA.SYNC_COLS_TYPES where CT_COL_ID = ?', vector (DB.DBA.DAV_SEARCH_ID (self.dav_path, 'C')));
                           }
+                        }
                         WEBDAV.DBA.DAV_SET (dav_fullPath, 'permissions-inheritance', get_keyword ('dav_permissions_inheritance', params, 'N'));
 
                         if (not self.editField ('name'))
@@ -3477,51 +3456,51 @@
                         }
                         else if (dav_detType in ('ResFilter', 'CatFilter'))
                         {
-                          detParams := self.detParamsPrepare (dav_detType, v_properties, null);
+                          detParams := self.detParamsPrepare (dav_detType, null);
                         }
-                          if (dav_detType = 'oMail')
-                          {
-                          detParams := self.detParamsPrepare (dav_detType, v_properties, null);
-                          }
-                          else if (dav_detType = 'PropFilter')
-                          {
-                          detParams := self.detParamsPrepare (dav_detType, v_properties, null);
-                          }
-                          else if (dav_detType = 'S3')
-                          {
-                          detParams := self.detParamsPrepare (dav_detType, v_properties, 6);
+                        if (dav_detType = 'oMail')
+                        {
+                          detParams := self.detParamsPrepare (dav_detType, null);
+                        }
+                        else if (dav_detType = 'PropFilter')
+                        {
+                          detParams := self.detParamsPrepare (dav_detType, null);
+                        }
+                        else if (dav_detType = 'S3')
+                        {
+                          detParams := self.detParamsPrepare (dav_detType, 6);
                         }
                         else if (dav_detType = 'rdfSink')
                         {
-                          detParams := self.detParamsPrepare (dav_detType, v_properties, 8);
+                          detParams := self.detParamsPrepare (dav_detType, 8);
                         }
                         else if (dav_detType = 'IMAP')
                         {
-                          detParams := self.detParamsPrepare (dav_detType, v_properties, 11);
-                          }
-                          else if (dav_detType = 'GDrive')
-                          {
-                          detParams := self.detParamsPrepare (dav_detType, v_properties, 12);
-                            }
-                          else if (dav_detType = 'Dropbox')
-                          {
-                          detParams := self.detParamsPrepare (dav_detType, v_properties, 13);
-                            }
-                          else if (dav_detType = 'SkyDrive')
-                          {
-                          detParams := self.detParamsPrepare (dav_detType, v_properties, 14);
-                            }
-                          else if (dav_detType = 'Box')
-                          {
-                          detParams := self.detParamsPrepare (dav_detType, v_properties, 15);
-                          }
-                          else if (dav_detType = 'WebDAV')
-                          {
-                          detParams := self.detParamsPrepare (dav_detType, v_properties, 16);
-                          }
-                          else if (dav_detType = 'RACKSPACE')
-                          {
-                          detParams := self.detParamsPrepare (dav_detType, v_properties, 17);
+                          detParams := self.detParamsPrepare (dav_detType, 11);
+                        }
+                        else if (dav_detType = 'GDrive')
+                        {
+                          detParams := self.detParamsPrepare (dav_detType, 12);
+                        }
+                        else if (dav_detType = 'Dropbox')
+                        {
+                          detParams := self.detParamsPrepare (dav_detType, 13);
+                        }
+                        else if (dav_detType = 'SkyDrive')
+                        {
+                          detParams := self.detParamsPrepare (dav_detType, 14);
+                        }
+                        else if (dav_detType = 'Box')
+                        {
+                          detParams := self.detParamsPrepare (dav_detType, 15);
+                        }
+                        else if (dav_detType = 'WebDAV')
+                        {
+                          detParams := self.detParamsPrepare (dav_detType, 16);
+                        }
+                        else if (dav_detType = 'RACKSPACE')
+                        {
+                          detParams := self.detParamsPrepare (dav_detType, 17);
                         }
                         if (not isnull (detParams))
                         {
