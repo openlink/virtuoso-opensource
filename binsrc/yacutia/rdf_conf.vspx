@@ -34,6 +34,7 @@
       <v:variable name="del" default="null" type="int" persist="temp" param-name="del" />
       <v:variable name="vhost" default="null" type="varchar" persist="temp" param-name="vhost" />
       <v:variable name="lhost" default="null" type="varchar" persist="temp" param-name="lhost" />
+      <v:variable name="sponger_async_threshold" default="null" type="varchar" persist="temp" param-name="sponger_async_threshold" />
     </vm:variables>
     <vm:menu>
       <vm:menuitem value="Configuration"/>
@@ -113,6 +114,26 @@
                                 </v:before-data-bind>
                               </v:check-box> Use VAL with Sponger Cartridges
                             </label>
+			    <br />
+                            <label>
+			      Asynchronous mode - content length threshold (Minimum 8192 bytes): <!-- See {LDGEN|LDENR}.DBA.Extractor_isLongRunning() -->
+			      <v:text name="sponger_async_mode_threshold" value="--self.sponger_async_threshold"  xhtml_size="20" xhtml_id="spngr_async_thrshld">
+                                <v:before-data-bind>
+                                  <![CDATA[
+				    declare llrt integer;
+				    llrt := atoi(cast(registry_get('__ldgen_long_running_threshold') as varchar));
+				    if (llrt <= 8192)
+				    {
+				      -- Bad registry setting
+				      registry_remove ('__ldgen_long_running_threshold');
+				      llrt := 8192;
+				    }
+                                    self.sponger_async_threshold := sprintf('%d', llrt); 
+                                    control.vc_data_bound := 1;
+                                  ]]>
+                                </v:before-data-bind>
+                              </v:text>
+                            </label>
                             <br /><br />
                             <v:button action="simple" name="save1" value="Save Settings">
                               <v:on-post>
@@ -125,6 +146,19 @@
                                   {
                                     registry_set ('__rdf_mappers_use_VAL', '0');
                                   }
+
+				  declare llrt integer;
+				  llrt := __max(8192, atoi(get_keyword('sponger_async_mode_threshold', control.vc_page.vc_event.ve_params)));
+				  if (llrt <> 8192)
+                                  {
+                                    registry_set ('__ldgen_long_running_threshold', sprintf ('%d', llrt));
+                                  }
+                                  else
+                                  {
+				    -- Remove registry setting to fallback to default of 8192 bytes
+                                    registry_remove ('__ldgen_long_running_threshold');
+                                  }
+
                                   self.vc_data_bind (self.vc_page.vc_event);
                                 ]]>
                               </v:on-post>
