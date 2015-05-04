@@ -165,7 +165,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         static final String S_DELETE = "sparql delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
         static final String S_BATCH_INSERT = "DB.DBA.rdf_insert_triple_c (?,?,?,?,?,?)";
         static final String S_CLEAR_GRAPH = "DB.DBA.rdf_clear_graphs_c (?)";
-        static final String S_NEW_BLANK = "select sequence_next('RDF_URL_IID_BLANK')";
 
         static final String S_TTLP_INSERT = "DB.DBA.TTLP_MT (?, '', ?, 255, 2, 3, ?)";
 
@@ -180,8 +179,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	private boolean useLazyAdd = false;
 	private int prefetchSize = 200;
 	private boolean useReprepare = true;
-	private boolean insertBNodeAsURI = false;
-	private HashMap<String, StringBuilder> bnodeData = new HashMap<String,StringBuilder>();
+	private boolean insertBNodeAsVirtuosoIRI = false;
 
 	private volatile ParserConfig parserConfig = new ParserConfig();
 
@@ -192,7 +190,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		this.useLazyAdd = repository.useLazyAdd;
 		this.prefetchSize = repository.prefetchSize;
 		this.BATCH_SIZE = repository.batchSize;
-		this.insertBNodeAsURI = repository.insertBNodeAsURI;
+		this.insertBNodeAsVirtuosoIRI = repository.insertBNodeAsVirtuosoIRI;
 		this.nilContext = new ValueFactoryImpl().createURI(repository.defGraph);
 		this.repository.initialize();
 
@@ -265,7 +263,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         If the connection could not be closed.
 	 */
 	public void close() throws RepositoryException {
-		dropDelayAdd();
 		try {
 			if (!getQuadStoreConnection().isClosed()) {
 				getQuadStoreConnection().close();
@@ -914,7 +911,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		flushDelayAdd();
 		try {
 			getQuadStoreConnection().commit();
-//			getQuadStoreConnection().setAutoCommit(true);
+			getQuadStoreConnection().setAutoCommit(true);
 		}
 		catch (SQLException e) {
 			throw new RepositoryException(e);
@@ -933,7 +930,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		dropDelayAdd();
 		try {
 			getQuadStoreConnection().rollback();
-//			getQuadStoreConnection().setAutoCommit(true);
+			getQuadStoreConnection().setAutoCommit(true);
 		}
 		catch (SQLException e) {
 			throw new RepositoryException("Problem with rollback", e);
@@ -1019,19 +1016,18 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				
 				int count = 0;
 				PreparedStatement ps = null; 
-				PreparedStatement ps_bnode_new = null;
-				java.sql.Statement st_bnode = null;
-				HashMap<String, StringBuilder> map = new HashMap<String,StringBuilder>();
-				HashMap<String, Long> map_bnode = new HashMap<String,Long>();
+				java.sql.Statement st_cmd = null;
 			        Resource[] _contexts = checkDMLContext(contexts);
 
 				public void startRDF() throws RDFHandlerException {
-					try {
-						ps_bnode_new = prepareStatement(VirtuosoRepositoryConnection.S_NEW_BLANK);
-						st_bnode = createStatement();
-					}
-					catch (SQLException e) {
-						throw new RDFHandlerException("Problem PrepareStatement: ", e);
+					if (!insertBNodeAsVirtuosoIRI) {
+					    try {
+						st_cmd = createStatement();
+			        		st_cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', dict_new(1000))");
+			        	    }	
+					    catch (SQLException e) {
+						throw new RDFHandlerException("Problem with creation of BNode cache: ", e);
+					    }
 					}
 				}
 
@@ -1039,31 +1035,29 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					try {
 						if (count > 0)
 						  ps = flushDelayAdd_batch(ps, count);
-						if (map.size()>0)
-						  flushDelayAdd_batch_BNode(st_bnode, map);
-
 					}
 					catch (RepositoryException e) {
 						throw new RDFHandlerException("Problem executing query: ", e);
+					}
+					try {
+						if (st_cmd!=null)
+			    			  st_cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', NULL)");
+					}
+					catch (SQLException e) {
+						throw new RDFHandlerException("Problem with clearing of BNode cache: ", e);
 					}
 					if (ps != null) {
 					        try {
 						    ps.close();
 						} catch (Exception e) {} 
 					}
-					if (ps_bnode_new != null) {
+					if (st_cmd != null) {
 					        try {
-						    ps_bnode_new.close();
-						} catch (Exception e) {} 
-					}
-					if (st_bnode != null) {
-					        try {
-						    st_bnode.close();
+						    st_cmd.close();
 						} catch (Exception e) {} 
 					}
 					ps = null;
-					ps_bnode_new = null;
-					st_bnode = null;
+					st_cmd = null;
 					count = 0;
 				}
 
@@ -1090,35 +1084,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 						hcontexts = _contexts;
 					}
 
-					Resource s = st.getSubject();
-					URI p = st.getPredicate();
-					Value o = st.getObject();
-					Object bn_s = null;
-					Object bn_o = null;
-					
-					if (!insertBNodeAsURI) {
-						if (s instanceof BNode) 
-							bn_s = BNode2String_batch_add(ps_bnode_new, map_bnode, (BNode)s);
-						if (o instanceof BNode) 
-							bn_o = BNode2String_batch_add(ps_bnode_new, map_bnode, (BNode)o);
-						if (bn_s!=null || bn_o!=null) {
+			        	ps = addToQuadStore_batch(ps, st.getSubject(), 
+			        		st.getPredicate(), st.getObject(), hcontexts);
+			        	count += hcontexts.length;
 
-						    addToQuadStore_batch_BNode(st_bnode, map, 
-						    	bn_s!=null?bn_s:s,
-						    	p,
-						    	bn_o!=null?bn_o:o, hcontexts);
-						} else {
-
-				        	    ps = addToQuadStore_batch(ps,s, p, o, hcontexts);
-				        	    count += hcontexts.length;
-						}
-					} else {
-				        	ps = addToQuadStore_batch(ps, s, p, o, hcontexts);
-				        	count += hcontexts.length;
-					}
 				        if (count > BATCH_SIZE) {
 				        	ps = flushDelayAdd_batch(ps, count);
-				        	count = 0;   
+				        	count = 0;
 				        }
 				   }	
 				   catch(Exception e) {
@@ -1298,15 +1270,12 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		int count = 0;
 		PreparedStatement ps = null; 
-		PreparedStatement ps_bnode_new = null;
-		java.sql.Statement st_bnode = null;
-		HashMap<String, StringBuilder> map = new HashMap<String,StringBuilder>();
-		HashMap<String, Long> map_bnode = new HashMap<String,Long>();
+		java.sql.Statement st_cmd = null;
 
 		try {
-			if (!insertBNodeAsURI) {
-				ps_bnode_new = prepareStatement(VirtuosoRepositoryConnection.S_NEW_BLANK);
-				st_bnode = createStatement();
+			if (!insertBNodeAsVirtuosoIRI) {
+				st_cmd = createStatement();
+			        st_cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', dict_new(1000))");
 			}
 
 			while (it.hasNext()) {
@@ -1318,59 +1287,34 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					contexts = _contexts;
 				}
 
-				Resource s = st.getSubject();
-				URI p = st.getPredicate();
-				Value o = st.getObject();
-				Object bn_s = null;
-				Object bn_o = null;
-					
-				if (!insertBNodeAsURI) {
-					if (s instanceof BNode) 
-						bn_s = BNode2String_batch_add(ps_bnode_new, map_bnode, (BNode)s);
-					if (o instanceof BNode) 
-						bn_o = BNode2String_batch_add(ps_bnode_new, map_bnode, (BNode)o);
-					if (bn_s!=null || bn_o!=null) {
+			        ps = addToQuadStore_batch(ps, st.getSubject(), 
+			        	st.getPredicate(), st.getObject(), contexts);
+			        count += contexts.length;
 
-					    addToQuadStore_batch_BNode(st_bnode, map, 
-					    	bn_s!=null?bn_s:s,
-					    	p,
-					    	bn_o!=null?bn_o:o, contexts);
-					} else {
-
-				       	    ps = addToQuadStore_batch(ps,s, p, o, contexts);
-				       	    count += contexts.length;
-					}
-				} else {
-				       	ps = addToQuadStore_batch(ps, s, p, o, contexts);
-				       	count += contexts.length;
-				}
 				if (count > BATCH_SIZE) {
 				       	ps = flushDelayAdd_batch(ps, count);
-				       	count = 0;   
+				       	count = 0;
 				}
 			}
 			if (count > 0)
 				ps = flushDelayAdd_batch(ps, count);
-			if (map.size()>0)
-				flushDelayAdd_batch_BNode(st_bnode, map);
+			if (st_cmd!=null)
+			    st_cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', NULL)");
+		}	
+		catch(Exception e) {
+		   	throw new RepositoryException(e);
+		} 
+		finally {
 			if (ps != null) {
 			        try {
 				    ps.close();
 				} catch (Exception e) {} 
 			}
-			if (ps_bnode_new != null) {
+			if (st_cmd != null) {
 			        try {
-				    ps_bnode_new.close();
+				    st_cmd.close();
 				} catch (Exception e) {} 
 			}
-			if (st_bnode != null) {
-			        try {
-				    st_bnode.close();
-				} catch (Exception e) {} 
-			}
-		}	
-		catch(Exception e) {
-		   	throw new RepositoryException(e);
 		}
 	}
 
@@ -1403,15 +1347,12 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		int count = 0;
 		PreparedStatement ps = null; 
-		PreparedStatement ps_bnode_new = null;
-		java.sql.Statement st_bnode = null;
-		HashMap<String, StringBuilder> map = new HashMap<String,StringBuilder>();
-		HashMap<String, Long> map_bnode = new HashMap<String,Long>();
+		java.sql.Statement st_cmd = null;
 
 		try {
-			if (!insertBNodeAsURI) {
-				ps_bnode_new = prepareStatement(VirtuosoRepositoryConnection.S_NEW_BLANK);
-				st_bnode = createStatement();
+			if (!insertBNodeAsVirtuosoIRI) {
+				st_cmd = createStatement();
+			        st_cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', dict_new(1000))");
 			}
 
 			while (statements.hasNext()) {
@@ -1423,60 +1364,35 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					contexts = _contexts;
 				}
 
-				Resource s = st.getSubject();
-				URI p = st.getPredicate();
-				Value o = st.getObject();
-				Object bn_s = null;
-				Object bn_o = null;
-					
-				if (!insertBNodeAsURI) {
-					if (s instanceof BNode) 
-						bn_s = BNode2String_batch_add(ps_bnode_new, map_bnode, (BNode)s);
-					if (o instanceof BNode) 
-						bn_o = BNode2String_batch_add(ps_bnode_new, map_bnode, (BNode)o);
-					if (bn_s!=null || bn_o!=null) {
+			        ps = addToQuadStore_batch(ps, st.getSubject(), 
+			        	st.getPredicate(), st.getObject(), contexts);
+			        count += contexts.length;
 
-					    addToQuadStore_batch_BNode(st_bnode, map, 
-					    	bn_s!=null?bn_s:s,
-					    	p,
-					    	bn_o!=null?bn_o:o, contexts);
-					} else {
-
-				       	    ps = addToQuadStore_batch(ps,s, p, o, contexts);
-				       	    count += contexts.length;
-					}
-				} else {
-				       	ps = addToQuadStore_batch(ps, s, p, o, contexts);
-				       	count += contexts.length;
-				}
 				if (count > BATCH_SIZE) {
 				       	ps = flushDelayAdd_batch(ps, count);
-				       	count = 0;   
+				       	count = 0;
 				}
 			}
 
 			if (count > 0)
 				ps = flushDelayAdd_batch(ps, count);
-			if (map.size()>0)
-				flushDelayAdd_batch_BNode(st_bnode, map);
+			if (st_cmd!=null)
+			    st_cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', NULL)");
+		}
+		catch(Exception e) {
+		   	throw new RepositoryException(e);
+		}
+		finally {
 			if (ps != null) {
 			        try {
 				    ps.close();
 				} catch (Exception e) {} 
 			}
-			if (ps_bnode_new != null) {
+			if (st_cmd != null) {
 			        try {
-				    ps_bnode_new.close();
+				    st_cmd.close();
 				} catch (Exception e) {} 
 			}
-			if (st_bnode != null) {
-			        try {
-				    st_bnode.close();
-				} catch (Exception e) {} 
-			}
-		}
-		catch(Exception e) {
-		   	throw new RepositoryException(e);
 		}
 	}
 
@@ -2087,8 +2003,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	  int timeout = repository.getQueryTimeout();
           if (timeout > 0)
             stmt.setQueryTimeout(timeout);
-//?? Temporary disable using
-//??          stmt.setFetchSize(prefetchSize);
+          stmt.setFetchSize(prefetchSize);
           return stmt;
 	}
 
@@ -2098,8 +2013,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	  int timeout = repository.getQueryTimeout();
           if (timeout > 0)
            	stmt.setQueryTimeout(timeout);
-//?? Temporary disable using
-//??          stmt.setFetchSize(prefetchSize);
+          stmt.setFetchSize(prefetchSize);
           return stmt;
 	}
 	
@@ -2323,31 +2237,18 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	private synchronized PreparedStatement addToQuadStore_batch(PreparedStatement ps, 
-		Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException 
-	{
-		try {
-	        	if (ps == null)
-				ps = prepareStatement(VirtuosoRepositoryConnection.S_BATCH_INSERT);
-			addToQuadStore_asURI(ps, subject, predicate, object, contexts);
-		}
-		catch (Exception e) {
-			throw new RepositoryException(e);
-		}
-		return ps;
-	}
-
-
-
 	private synchronized void addToQuadStore(Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException 
 	{
+		if (contexts.length == 0)
+			return;
+
 		try {
 		    boolean isAutoCommit = getQuadStoreConnection().getAutoCommit();
 		
 		    if (psInsert == null)
 			psInsert = prepareStatement(S_BATCH_INSERT);
 
-		    if (!insertBNodeAsURI) {
+		    if (!insertBNodeAsVirtuosoIRI) {
 			if (psInsert_BNode == null)
 				psInsert_BNode = prepareStatement(S_TTLP_INSERT);
 			
@@ -2355,27 +2256,26 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			Object bn_o = null;
 
 			if (subject instanceof BNode) 
-				bn_s = "_:"+((BNode)subject).getID().replace(':','_').replace('-','z');
+				bn_s = "_:"+((BNode)subject).getID().replace(':','_').replace('-','z').replace('/','y');
 			if (object instanceof BNode) {
-				bn_o = "_:"+((BNode)object).getID().replace(':','_').replace('-','z');
+				bn_o = "_:"+((BNode)object).getID().replace(':','_').replace('-','z').replace('/','y');
 			}	
 
 			if (bn_s!=null || bn_o!=null) {
-			    addToQuadStore_BNode(bnodeData, 
+			    addToQuadStore_BNode( 
 			    	bn_s!=null?bn_s:subject,
 			    	predicate,
 			    	bn_o!=null?bn_o:object, contexts);
-	        	    psInsertBNodeCount += contexts.length;
+			    psInsertBNodeCount += contexts.length;
 			} else {
-	        	    addToQuadStore_asURI(psInsert,subject, predicate, object, contexts);
+	        	    addToQuadStore_asURI(subject, predicate, object, contexts);
 	        	    psInsertCount += contexts.length;
 			}
 
 		    } else {
-			addToQuadStore_asURI(psInsert, subject, predicate, object, contexts);
-		    	psInsertCount += contexts.length;
+			addToQuadStore_asURI(subject, predicate, object, contexts);
+	        	psInsertCount += contexts.length;
 		    }
-
 
 	            if (!isAutoCommit && useLazyAdd) {
 			if (psInsertCount >= BATCH_SIZE || psInsertBNodeCount >= BATCH_SIZE)
@@ -2390,18 +2290,20 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	private synchronized void addToQuadStore_BNode(Map<String,StringBuilder> map,
-		Object subject, URI predicate, Object object, Resource... contexts) throws RepositoryException 
+	private synchronized void addToQuadStore_BNode(Object subject, URI predicate, 
+		Object object, Resource... contexts) throws RepositoryException 
 	{
+		if (contexts.length == 0)
+			return;
+
 		verifyIsOpen();
 		try {
+		        int transactional = quadStoreConnection.getAutoCommit()?0:1;
+
 			for (int i = 0; i < contexts.length; i++) {
 
 				String ctx = contexts[i].stringValue();
-				StringBuilder sb = map.get(ctx);
-				if (sb == null)
-					sb = new StringBuilder(256);
-
+				StringBuilder sb = new StringBuilder(256);
 				append(subject, sb);
 				sb.append(' ');
 				append(predicate, sb);
@@ -2409,7 +2311,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				append(object, sb);
 				sb.append(" .\n");
 
-				map.put(ctx, sb);
+				psInsert_BNode.setString(1, sb.toString());
+				psInsert_BNode.setString(2, ctx);
+				psInsert_BNode.setInt(3, transactional);
+				psInsert_BNode.addBatch();
 			}
 		}
 		catch (Exception e) {
@@ -2418,50 +2323,15 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 	
 
-	private synchronized void addToQuadStore_batch_BNode(java.sql.Statement st, 
-	        Map<String,StringBuilder> map,
-		Object subject, URI predicate, Object object, Resource... contexts) throws RepositoryException 
-	{
-		verifyIsOpen();
-		try {
-			for (int i = 0; i < contexts.length; i++) {
-				String ctx = contexts[i].stringValue();
-				StringBuilder row = new StringBuilder(256);
-
-				append(subject, row);
-				row.append(' ');
-				append(predicate, row);
-				row.append(' ');
-				append(object, row);
-				row.append(" .\n");
-
-				StringBuilder sb = map.get(ctx);
-				if (sb!=null && sb.length()+row.length()>MAX_CMD_SIZE) {
-					flushDelayAdd_batch_BNode(st, map);
-	     			    	sb = null;
-				}
-
-				if (sb == null)
-					sb = new StringBuilder(256);
-				sb.append(row);
-				map.put(ctx, sb);
-			}
-		}
-		catch (Exception e) {
-			throw new RepositoryException(e);
-		}
-	}
-	
-
-	private synchronized void addToQuadStore_asURI(PreparedStatement ps, 
-		Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException 
+	private synchronized void addToQuadStore_asURI(Resource subject, URI predicate, 
+		Value object, Resource... contexts) throws RepositoryException 
 	{
 		verifyIsOpen();
 
 		try {
 			for (int i = 0; i < contexts.length; i++) {
-				bindParams(ps, subject, predicate, object, contexts[i]);
-				ps.addBatch();
+				bindParams(psInsert, subject, predicate, object, contexts[i]);
+				psInsert.addBatch();
 			}
 		}
 		catch (Exception e) {
@@ -2473,6 +2343,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	private void bindParams(PreparedStatement ps, 
 		Resource subject, URI predicate, Value object, Resource context) throws SQLException, RepositoryException
 	{
+	        int flags = 0;
+
+	        if (!insertBNodeAsVirtuosoIRI && (object instanceof BNode))
+	          flags = 15;
+
 		ps.setString(1, subject.toString());
 		ps.setString(2, predicate.toString());
 
@@ -2480,7 +2355,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		{
 		  ps.setString(3,  object.toString());
 		  ps.setNull(4, java.sql.Types.VARCHAR);
-		  ps.setInt(5, 0);
+		  ps.setInt(5, flags);
 		}
 		else if (object instanceof Literal)
 		{
@@ -2512,13 +2387,35 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
+	private synchronized PreparedStatement addToQuadStore_batch(PreparedStatement ps, 
+		Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException 
+	{
+		verifyIsOpen();
+
+		try {
+	        	if (ps == null)
+				ps = prepareStatement(VirtuosoRepositoryConnection.S_BATCH_INSERT);
+
+			for (int i = 0; i < contexts.length; i++) {
+				bindParams(ps, subject, predicate, object, contexts[i]);
+				ps.addBatch();
+			}
+		}
+		catch (Exception e) {
+			throw new RepositoryException(e);
+		}
+		return ps;
+	}
+
+
+
 	private synchronized PreparedStatement flushDelayAdd_batch(PreparedStatement ps, 
 		int psCount) throws RepositoryException 
 	{
 		try {
 			if (psCount > 0 && ps!=null) {
 				ps.executeBatch();
-				ps.clearBatch();
+				ps.clearBatch();	
 				if (useReprepare) { 
 				  try{ 
 				    ps.close();
@@ -2531,49 +2428,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			throw new RepositoryException(e);
 		}
 		return ps;
-	}
-
-	
-	private synchronized void flushDelayAdd_batch_BNode(java.sql.Statement st, 
-		Map<String,StringBuilder> map) throws RepositoryException 
-	{
-		try {
-			for(Map.Entry<String,StringBuilder> e : map.entrySet()) {
-
-				StringBuilder sb = new StringBuilder(256);
-				sb.append("sparql define output:format '_JAVA_' insert into <");
-				sb.append(e.getKey());
-				sb.append("> { ");
-				sb.append(e.getValue().toString());
-				sb.append(" }");
-				st.executeUpdate(sb.toString());
-			}
-			map.clear();
-		}
-		catch (Exception e) {
-			throw new RepositoryException(e);
-		}
-	}
-
-	
-	private synchronized void flushDelayAdd_BNode(PreparedStatement ps, 
-		Map<String,StringBuilder> map) throws RepositoryException 
-	{
-		try {
-		        int transactional = quadStoreConnection.getAutoCommit()?0:1;
-
-			for(Map.Entry<String,StringBuilder> e : map.entrySet()) {
-
-				ps.setString(1, e.getValue().toString());
-				ps.setString(2, e.getKey());
-				ps.setInt(3, transactional);
-				ps.executeUpdate();
-			}
-			map.clear();
-		}
-		catch (Exception e) {
-			throw new RepositoryException(e);
-		}
 	}
 
 	
@@ -2597,65 +2451,33 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	private synchronized void dropDelayAdd_BNode(Map<String,StringBuilder> data)
-	{
-		if (data != null) 
-			data.clear();
-
-	}
-
-	private synchronized void dropDelayAdd_batch_BNode(Map<String,StringBuilder> data)
-	{
-		if (data != null) 
-			data.clear();
-
-	}
-
-
 	private synchronized void flushDelayAdd() throws RepositoryException 
 	{
 		psInsert = flushDelayAdd_batch(psInsert, psInsertCount);
 		psInsertCount = 0;
-		flushDelayAdd_BNode(psInsert_BNode, bnodeData);
+		if (psInsert_BNode!=null && psInsertBNodeCount > 0)
+		    try {
+			psInsert_BNode.executeBatch();
+			psInsert_BNode.clearBatch();
+		    }
+		    catch (Exception e) {
+			throw new RepositoryException(e);
+		    }
 		psInsertBNodeCount = 0;
-
 	}
 
 	private synchronized void dropDelayAdd() throws RepositoryException 
 	{
 		psInsert = dropDelayAdd_batch(psInsert, psInsertCount);
 		psInsertCount = 0;
-		dropDelayAdd_BNode(bnodeData);
+		if (psInsertBNodeCount > 0 && psInsert_BNode!=null)
+		    try {
+			psInsert_BNode.clearBatch();
+		    } catch (Exception e) {
+			throw new RepositoryException(e);
+		    }
 		psInsertBNodeCount = 0;
 	}
-
-
-	private long get_NEW_BNode(PreparedStatement ps) throws SQLException
-	{
-		long ret = 0;
-		if (ps !=null) {
-			ResultSet rs = ps.executeQuery();
-        		if (rs.next())
-        			ret = rs.getLong(1);
-        		rs.close();
-		}  
-		return ret;
-	}
-	
-	
-	private String BNode2String_batch_add(PreparedStatement ps, HashMap<String, Long> map, BNode bn) throws RepositoryException, SQLException
-	{
-		String bid = bn.toString();
-		Long num = map.get(bid);
-		if (num == null) 
-			num = get_NEW_BNode(ps);
-		if (num == 0)
-			throw new RepositoryException("Could not get new BLANK ID");
-					     
-		map.put(bid, num);
-		return "`bif:iri_id_from_num("+num+")`"; // `bif:iri_id_from_num(4611686018427397956)`
-	}
-
 
 
 	private void append(Object value, StringBuilder sb)
@@ -2708,7 +2530,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			sb.append("')`");
 
 		} else {
-	        	if (insertBNodeAsURI) {
+	        	if (insertBNodeAsVirtuosoIRI) {
 				sb.append("<");
 				sb.append(bNode.toString());
 				sb.append(">");
@@ -3407,8 +3229,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			for (int i = 1; i <= rsmd.getColumnCount(); i++) {
 				String col = rsmd.getColumnName(i);
 				Object val = v_rs.getObject(i);
-				Value v = castValue(val);
-				((QueryBindingSet)v_row).setBinding(col, v);
+				if (val!=null) {
+					Value v = castValue(val);
+					((QueryBindingSet)v_row).setBinding(col, v);
+				}
 			}
 		}
 	}
