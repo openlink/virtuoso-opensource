@@ -111,7 +111,7 @@
 	  if (trim(req_path,'/') <> '')
 	    _xsl_params := vector_concat(_xsl_params,vector('path',ltrim(req_path,'/')));
 	    
-	  _xsl_params := vector_concat(_xsl_params,vector('now_rfc1123',date_rfc1123(now())));
+	  _xsl_params := vector_concat(_xsl_params,vector('now_rfc1123',date_rfc1123(curutcdatetime())));
 	  
 	  http_value(xslt('file://'||_TUT_ROOT || '/page'||xml_output||'.xsl',_TUT_XML,_xsl_params),null,_stream);
 	  if (_file = '')
