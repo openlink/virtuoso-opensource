@@ -17147,6 +17147,7 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
       exec ('revoke "SPARQL_UPDATE" from "SPARQL"', stat, msg);
       return;
     }
+  commit work;
   if (1 <> sys_stat ('cl_run_local_only'))
     goto final_qm_reload;
   if (244 = coalesce ((select COL_DTP from SYS_COLS where "TABLE" = 'DB.DBA.RDF_QUAD' and "COLUMN"='G'), 0))
