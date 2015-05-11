@@ -24,7 +24,7 @@
 --!AWK PUBLIC
 create procedure DB.DBA.SPARQL_RSET_XML_WRITE_NS (inout ses any)
 {
-  --http ('<?xml version="1.0" encoding="UTF-8"?>\n', ses);
+  http ('<?xml version="1.1" ?>\n', ses);
   http ('<sparql xmlns="http://www.w3.org/2005/sparql-results#" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.w3.org/2001/sw/DataAccess/rf1/result2.xsd">', ses);
 }
 ;
