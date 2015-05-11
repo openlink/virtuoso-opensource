@@ -233,7 +233,7 @@ bif_regexp_match (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       str_len = (int) strlen (str);
       result = pcre_exec (cd_info.code, cd_info.code_x, str, str_len, 0, r_opts,
 	  offvect, NOFFSETS);
-      if (result != -1)
+      if (result >= 0)
 	{
 	  ret_str = dk_alloc_box (offvect[1] - offvect[0] + 1, DV_SHORT_STRING);
 	  strncpy (ret_str, str + offvect[0], offvect[1] - offvect[0]);
