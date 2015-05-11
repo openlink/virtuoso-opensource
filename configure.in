@@ -283,13 +283,14 @@ case ${VIRTUOSO_LAYOUT} in
 esac
 AC_MSG_RESULT([${virtuoso_layout}])
 
-AC_SUBST(vaddir)
-AC_SUBST(demodir)
 AC_SUBST(dbdir)
-AC_SUBST(htmldocdir)
-AC_SUBST(pdfdocdir)
-AC_SUBST(httprootdir)
+AC_SUBST(demodir)
+AC_SUBST(docdir)
 AC_SUBST(hostingdir)
+AC_SUBST(htmldocdir)
+AC_SUBST(httprootdir)
+AC_SUBST(pdfdocdir)
+AC_SUBST(vaddir)
 
 ##########################################################################
 ##									##
