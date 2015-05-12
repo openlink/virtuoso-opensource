@@ -2729,11 +2729,11 @@ function_call
 	| CALL '(' scalar_exp ')' '(' opt_arg_commalist ')'
 		{ $$ = t_listst (3, CALL_STMT, t_list (1, $3),
 			t_list_to_array ($6)); }
-	| CURRENT_DATE
+	| CURRENT_DATE opt_lpar_rpar
 		{
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("curdate"), t_list (0));
 		}
-	| CURRENT_TIME
+	| CURRENT_TIME opt_lpar_rpar
 		{
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("curtime"), t_list (0));
 		}
@@ -2741,7 +2741,7 @@ function_call
 		{
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("curtime"), t_list (1, $3));
 		}
-	| CURRENT_TIMESTAMP
+	| CURRENT_TIMESTAMP opt_lpar_rpar
 		{
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("curdatetime"), t_list (0));
 		}
@@ -2755,6 +2755,11 @@ function_call
 		  caddr_t bit_index = t_box_num (0);
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("__grouping"), t_list (3, $3, bit, bit_index));
 		}
+	;
+
+opt_lpar_rpar
+	: /* empty */
+	| '(' ')'
 	;
 
 /* the call return statement {?=call x [()]} */
