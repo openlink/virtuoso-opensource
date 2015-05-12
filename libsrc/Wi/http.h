@@ -315,27 +315,27 @@ extern dk_session_t *http_session_no_catch_arg (caddr_t * qst, state_slot_t ** a
 
 /* The order of the values in this enumeration should match
 the order of columns in dks_charclasses, file dks_esc.c */
-#define DKS_ESC_NONE		0x00
-#define DKS_ESC_PTEXT		0x01
-#define DKS_ESC_SQATTR		0x02
-#define DKS_ESC_DQATTR		0x03
-#define DKS_ESC_COMMENT		0x04
-#define DKS_ESC_CDATA		0x05
-#define DKS_ESC_URI		0x06
-#define DKS_ESC_DAV		0x07
-#define DKS_ESC_URI_RES		0x08
-#define DKS_ESC_URI_NRES	0x09
-#define DKS_ESC_TTL_SQ		0x0A
-#define DKS_ESC_TTL_DQ		0x0B
-#define DKS_ESC_TTL_IRI		0x0C
-#define DKS_ESC_JSWRITE_SQ	0x0D
-#define DKS_ESC_JSWRITE_DQ	0x0E
-#define DKS_ESC_HTML_TTL_SQ	0x0F
-#define DKS_ESC_HTML_TTL_DQ	0x10
-#define DKS_ESC_HTML_TTL_IRI	0x11
-#define DKS_ESC_JAVA_SQ		0x12
-#define DKS_ESC_JAVA_DQ		0x13
-#define COUNTOF__DKS_ESC	0x14
+#define DKS_ESC_NONE		0x00	/*!  0 */
+#define DKS_ESC_PTEXT		0x01	/*!  1 */
+#define DKS_ESC_SQATTR		0x02	/*!  2 */
+#define DKS_ESC_DQATTR		0x03	/*!  3 */
+#define DKS_ESC_COMMENT		0x04	/*!  4 */
+#define DKS_ESC_CDATA		0x05	/*!  5 */
+#define DKS_ESC_URI		0x06	/*!  6 */
+#define DKS_ESC_DAV		0x07	/*!  7 */
+#define DKS_ESC_URI_RES		0x08	/*!  8 */
+#define DKS_ESC_URI_NRES	0x09	/*!  9 */
+#define DKS_ESC_TTL_SQ		0x0A	/*! 10 */
+#define DKS_ESC_TTL_DQ		0x0B	/*! 11 */
+#define DKS_ESC_TTL_IRI		0x0C	/*! 12 */
+#define DKS_ESC_JSWRITE_SQ	0x0D	/*! 13 */
+#define DKS_ESC_JSWRITE_DQ	0x0E	/*! 14 */
+#define DKS_ESC_HTML_TTL_SQ	0x0F	/*! 15 */
+#define DKS_ESC_HTML_TTL_DQ	0x10	/*! 16 */
+#define DKS_ESC_HTML_TTL_IRI	0x11	/*! 17 */
+#define DKS_ESC_JAVA_SQ		0x12	/*! 18 */
+#define DKS_ESC_JAVA_DQ		0x13	/*! 19 */
+#define COUNTOF__DKS_ESC	0x14	/*! 20 */
 
 #define DKS_ESC_COMPAT_HTML	0x100
 #define DKS_ESC_COMPAT_SOAP	0x200
