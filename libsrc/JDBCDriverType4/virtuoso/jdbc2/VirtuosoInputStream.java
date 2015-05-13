@@ -829,7 +829,7 @@ class VirtuosoInputStream extends BufferedInputStream
    {
       java.util.Calendar cal_dat = new java.util.GregorianCalendar ();
       int day = read() << 16 | read() << 8 | read();
-      int hour = read() & 0x1f;
+      int hour = read();
       int temp = read();
       int minute = temp >> 2;
       int second = (((temp & 0x3) << 4) | ((temp = read()) >> 4));
