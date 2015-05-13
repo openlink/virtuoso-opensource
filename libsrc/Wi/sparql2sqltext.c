@@ -5683,7 +5683,7 @@ args_are_printed:
               native = sparp_lit_native_valmode (tree);
             if (SSG_VALMODE_NUM == native)
               ssg_print_literal_as_sqlval (ssg, NULL, tree);
-            else if ((uname_xmlschema_ns_uri_hash_dayTimeDuration == tree->_.lit.datatype) &&
+            else if (((RDF_TYPE_PARSEABLE_TO_NUMERIC | RDF_TYPE_PARSEABLE_TO_DTDURATION) & rb_uname_to_flags_of_parseable_datatype (tree->_.lit.datatype)) &&
               sparp_literal_is_xsd_valid (ssg->ssg_sparp, tree->_.lit.val, tree->_.lit.datatype, tree->_.lit.language) )
               {
                 const char *p_name;

@@ -195,11 +195,13 @@ rb_uname_to_flags_of_parseable_datatype (caddr_t dt_uname)
     || (uname_xmlschema_ns_uri_hash_unsignedShort	== dt_uname) )
     return RDF_TYPE_PARSEABLE | RDF_TYPE_PARSEABLE_TO_NUMERIC;
   if
+    ( (uname_xmlschema_ns_uri_hash_dayTimeDuration	== dt_uname) )
+    return RDF_TYPE_PARSEABLE | RDF_TYPE_PARSEABLE_TO_DTDURATION;
+  if
     ( (uname_xmlschema_ns_uri_hash_boolean		== dt_uname)
     || (uname_xmlschema_ns_uri_hash_date		== dt_uname)
     || (uname_xmlschema_ns_uri_hash_dateTime		== dt_uname)
   /*|| (uname_xmlschema_ns_uri_hash_dateTimeStamp	== dt_uname)*/
-    || (uname_xmlschema_ns_uri_hash_dayTimeDuration	== dt_uname)
     || (uname_xmlschema_ns_uri_hash_duration		== dt_uname)
     || (uname_xmlschema_ns_uri_hash_gDay		== dt_uname)
     || (uname_xmlschema_ns_uri_hash_gMonth		== dt_uname)
@@ -239,11 +241,13 @@ rb_twobyte_to_flags_of_parseable_datatype (unsigned short dt_twobyte)
     || (rb_type__xsd_unsignedShort	== dt_twobyte) )
     return RDF_TYPE_PARSEABLE | RDF_TYPE_PARSEABLE_TO_NUMERIC;
   if
+    ( (rb_type__xsd_dayTimeDuration	== dt_twobyte) )
+    return RDF_TYPE_PARSEABLE | RDF_TYPE_PARSEABLE_TO_DTDURATION;
+  if
     ( (rb_type__xsd_boolean		== dt_twobyte)
     || (rb_type__xsd_date		== dt_twobyte)
     || (rb_type__xsd_dateTime		== dt_twobyte)
   /*|| (rb_type__xsd_dateTimeStamp	== dt_twobyte)*/
-    || (rb_type__xsd_dayTimeDuration	== dt_twobyte)
     || (rb_type__xsd_duration		== dt_twobyte)
     || (rb_type__xsd_gDay		== dt_twobyte)
     || (rb_type__xsd_gMonth		== dt_twobyte)
