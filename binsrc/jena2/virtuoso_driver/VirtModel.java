@@ -40,7 +40,6 @@ import com.hp.hpl.jena.rdf.model.*;
 import com.hp.hpl.jena.rdf.model.impl.*;
 
 
-import openlink.util.Vector;
 import virtuoso.jdbc4.VirtuosoDataSource;
 
 public class VirtModel extends ModelCom {
