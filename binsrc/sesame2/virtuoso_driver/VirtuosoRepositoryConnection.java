@@ -3337,7 +3337,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         sb.append(formatter.format(v));
 
         if (nanos == 0) {
-            nanosString = "000";
+//            nanosString = "000";
+            nanosString = "";
         } else {
             nanosString = Integer.toString(nanos);
 
@@ -3356,8 +3357,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             nanosString = new String(nanosChar, 0, truncIndex + 1);
         }
 
-        sb.append(".");
-        sb.append(nanosString);
+        if (nanosString.length()>0) {
+          sb.append(".");
+          sb.append(nanosString);
+        }
+
         sb.append(timezone>0?'+':'-');
 
         int tz = Math.abs(timezone);
