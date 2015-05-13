@@ -75,7 +75,7 @@ public class VirtGraph extends GraphBase {
     protected String user;
     protected String password;
     protected boolean roundrobin = false;
-    protected int prefetchSize = 200;
+    protected int prefetchSize = 100;
     protected int batchSize = BATCH_SIZE;
     protected Connection connection = null;
     protected String ruleSet = null;
