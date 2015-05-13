@@ -502,33 +502,6 @@ public class VirtGraph extends GraphBase {
     }
 
 
-    private long get_NEW_BNode(PreparedStatement ps) throws SQLException {
-        long ret = 0;
-        if (ps != null) {
-            ResultSet rs = ps.executeQuery();
-            if (rs.next())
-                ret = rs.getLong(1);
-            rs.close();
-        }
-        return ret;
-    }
-
-
-    private String BNode2String_batch_add(PreparedStatement ps, HashMap<String, Long> map, Node bn) throws JenaException, SQLException
-    {
-        String bid = bn.toString();
-        Long num = map.get(bid);
-        if (num == null)
-            num = get_NEW_BNode(ps);
-        if (num == 0)
-            throw new JenaException("Could not get new BLANK ID");
-
-        map.put(bid, num);
-        return "`bif:iri_id_from_num("+num+")`"; // `bif:iri_id_from_num(4611686018427397956)`
-    }
-
-
-
     static String BNode2String(Node n) {
         String ns = n.toString();
         if (ns.startsWith("nodeID://"))
