@@ -106,6 +106,7 @@ caddr_t f##_w p \
       return NULL; \
     } \
   CLI_ENTER; \
+  sqlc_set_client (NULL); \
   f p1; \
   CLI_LEAVE; \
   return NULL; \
