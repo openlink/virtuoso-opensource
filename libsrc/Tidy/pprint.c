@@ -1,58 +1,21 @@
 /*
- *  $Id$
- *
- *  pprint.c -- pretty print parse tree
- *
- *  Copyright (c) 1998-2000 World Wide Web Consortium
- *  (Massachusetts Institute of Technology, Institut National de
- *  Recherche en Informatique et en Automatique, Keio University).
- *  All Rights Reserved.
- *
- *  Contributing Author(s):
- *
- *  Dave Raggett <dsr@w3.org>
- *
- *  The contributing author(s) would like to thank all those who
- *  helped with testing, bug fixes, and patience.  This wouldn't
- *  have been possible without all of you.
- *
- *  COPYRIGHT NOTICE:
- *
- *  This software and documentation is provided "as is," and
- *  the copyright holders and contributing author(s) make no
- *  representations or warranties, express or implied, including
- *  but not limited to, warranties of merchantability or fitness
- *  for any particular purpose or that the use of the software or
- *  documentation will not infringe any third party patents,
- *  copyrights, trademarks or other rights.
- *
- *  The copyright holders and contributing author(s) will not be
- *  liable for any direct, indirect, special or consequential damages
- *  arising out of any use of the software or documentation, even if
- *  advised of the possibility of such damage.
- *
- *  Permission is hereby granted to use, copy, modify, and distribute
- *  this source code, or portions hereof, documentation and executables,
- *  for any purpose, without fee, subject to the following restrictions:
- *
- *  1. The origin of this source code must not be misrepresented.
- *  2. Altered versions must be plainly marked as such and must
- *     not be misrepresented as being the original source.
- *  3. This Copyright notice may not be removed or altered from any
- *     source or altered source distribution.
- *
- *  The copyright holders and contributing author(s) specifically
- *  permit, without fee, and encourage the use of this source code
- *  as a component for supporting the Hypertext Markup Language in
- *  commercial products. If you use this source code in a product,
- *  acknowledgment is not required but would be appreciated.
- */
+  pprint.c -- pretty print parse tree  
+  
+  (c) 1998-2007 (W3C) MIT, ERCIM, Keio University
+  See tidy.h for the copyright notice.
+
+*/
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "platform.h"
-#include "html.h"
+
+#include "pprint.h"
+#include "tidy-int.h"
+#include "parser.h"
+#include "entities.h"
+#include "tmbstr.h"
+#include "utf8.h"
 
 /*
   Block-level and unknown elements are printed on
@@ -65,343 +28,717 @@
   start tags and before end tags
 */
 
-static void PPrintAsp(Out *fout, uint indent,
-                   Lexer *lexer, Node *node);
-static void PPrintJste(Out *fout, uint indent,
-                   Lexer *lexer, Node *node);
-static void PPrintPhp(Out *fout, uint indent,
-                   Lexer *lexer, Node *node);
+static void PPrintAsp( TidyDocImpl* doc, uint indent, Node* node );
+static void PPrintJste( TidyDocImpl* doc, uint indent, Node* node );
+static void PPrintPhp( TidyDocImpl* doc, uint indent, Node* node );
+static int  TextEndsWithNewline( Lexer *lexer, Node *node, uint mode );
+static int  TextStartsWithWhitespace( Lexer *lexer, Node *node, uint start, uint mode );
+static Bool InsideHead( TidyDocImpl* doc, Node *node );
+static Bool ShouldIndent( TidyDocImpl* doc, Node *node );
 
+#if SUPPORT_ASIAN_ENCODINGS
+/* #431953 - start RJ Wraplen adjusted for smooth international ride */
 
-#define NORMAL        0
-#define PREFORMATTED  1
-#define COMMENT       2
-#define ATTRIBVALUE   4
-#define NOWRAP        8
-#define CDATA         16
+#if 0
+uint CWrapLen( TidyDocImpl* doc, uint ind )
+{
+    ctmbstr lang = cfgStr( doc, TidyLanguage );
+    uint wraplen = cfg( doc, TidyWrapLen );
 
-extern int CharEncoding;
+    if ( !TY_(tmbstrcasecmp)(lang, "zh") )
+        /* Chinese characters take two positions on a fixed-width screen */ 
+        /* It would be more accurate to keep a parallel linelen and wraphere
+           incremented by 2 for Chinese characters and 1 otherwise, but this
+           is way simpler.
+        */
+        return (ind + (( wraplen - ind ) / 2)) ; 
+    
+    if ( !TY_(tmbstrcasecmp)(lang, "ja") )
+        /* average Japanese text is 30% kanji */
+        return (ind + ((( wraplen - ind ) * 7) / 10)) ; 
+    
+    return wraplen;
+}
+#endif
 
-static uint *linebuf;
-static uint lbufsize;
-static uint linelen;
-static uint wraphere;
-static Bool InAttVal;
-static Bool InString;
-
-static int slide, count;
-static Node *slidecontent;
-
-int foo;  /* debug */
+typedef enum
+{
+  UC00, /* None                       */
+  UCPC, /* Punctuation, Connector     */
+  UCPD, /* Punctuation, Dash          */
+  UCPE, /* Punctuation, Close         */
+  UCPS, /* Punctuation, Open          */
+  UCPI, /* Punctuation, Initial quote */
+  UCPF, /* Punctuation, Final quote   */
+  UCPO, /* Punctuation, Other         */
+  UCZS, /* Separator, Space           */
+  UCZL, /* Separator, Line            */
+  UCZP  /* Separator, Paragraph       */
+} UnicodeCategory;
 
 /*
-  1010  A
-  1011  B
-  1100  C
-  1101  D
-  1110  E
-  1111  F
+  From the original code, the following characters are removed:
+
+    U+2011 (non-breaking hyphen)
+    U+202F (narrow non-break space)
+    U+2044 (fraction slash) 
+    U+200B (zero width space)
+    ...... (bidi formatting control characters)
+
+  U+2011 and U+202F are non-breaking, U+2044 is a Sm character,
+  U+200B is a non-visible space, wrapping after it would make
+  this space visible, bidi should be done using HTML features
+  and the characters are neither Px or Zx.
+
+  The following Unicode 3.0 punctuation characters are added:
+
+    U+2048 (question exclamation mark)
+    U+2049 (exclamation question mark)
+    U+204A (tironian sign et)
+    U+204B (reversed pilcrow sign)
+    U+204C (black leftwards bullet)
+    U+204D (black rightwards bullet)
+    U+3030 (wavy dash)
+    U+30FB (katakana middle dot)
+    U+FE63 (small hyphen-minus)
+    U+FE68 (small reverse solidus)
+    U+FF3F (fullwidth low line)
+    U+FF5B (fullwidth left curly bracket)
+    U+FF5D (fullwidth right curly bracket)
+
+  Other additional characters were not included in Unicode 3.0.
+  The table is based on Unicode 4.0. It must include only those
+  characters marking a wrapping point, "before" if the general
+  category is UCPS or UCPI, otherwise "after".
 */
-
-/* return one less that the number of bytes used by UTF-8 char */
-/* str points to 1st byte, *ch initialized to 1st byte */
-uint GetUTF8(unsigned char *str, uint *ch)
+static struct _unicode4cat
 {
-    uint c, n, i, bytes;
+  unsigned long code;
+  UnicodeCategory category;
+} const unicode4cat[] =
+{
+#if 0
+  { 0x037E, UCPO }, { 0x0387, UCPO }, { 0x055A, UCPO }, { 0x055B, UCPO },
+  { 0x055C, UCPO }, { 0x055D, UCPO }, { 0x055E, UCPO }, { 0x055F, UCPO },
+  { 0x0589, UCPO }, { 0x058A, UCPD }, { 0x05BE, UCPO }, { 0x05C0, UCPO },
+  { 0x05C3, UCPO }, { 0x05F3, UCPO }, { 0x05F4, UCPO }, { 0x060C, UCPO },
+  { 0x060D, UCPO }, { 0x061B, UCPO }, { 0x061F, UCPO }, { 0x066A, UCPO },
+  { 0x066B, UCPO }, { 0x066C, UCPO }, { 0x066D, UCPO }, { 0x06D4, UCPO },
+  { 0x0700, UCPO }, { 0x0701, UCPO }, { 0x0702, UCPO }, { 0x0703, UCPO },
+  { 0x0704, UCPO }, { 0x0705, UCPO }, { 0x0706, UCPO }, { 0x0707, UCPO },
+  { 0x0708, UCPO }, { 0x0709, UCPO }, { 0x070A, UCPO }, { 0x070B, UCPO },
+  { 0x070C, UCPO }, { 0x070D, UCPO }, { 0x0964, UCPO }, { 0x0965, UCPO },
+  { 0x0970, UCPO }, { 0x0DF4, UCPO }, { 0x0E4F, UCPO }, { 0x0E5A, UCPO },
+  { 0x0E5B, UCPO }, { 0x0F04, UCPO }, { 0x0F05, UCPO }, { 0x0F06, UCPO },
+  { 0x0F07, UCPO }, { 0x0F08, UCPO }, { 0x0F09, UCPO }, { 0x0F0A, UCPO },
+  { 0x0F0B, UCPO }, { 0x0F0D, UCPO }, { 0x0F0E, UCPO }, { 0x0F0F, UCPO },
+  { 0x0F10, UCPO }, { 0x0F11, UCPO }, { 0x0F12, UCPO }, { 0x0F3A, UCPS },
+  { 0x0F3B, UCPE }, { 0x0F3C, UCPS }, { 0x0F3D, UCPE }, { 0x0F85, UCPO },
+  { 0x104A, UCPO }, { 0x104B, UCPO }, { 0x104C, UCPO }, { 0x104D, UCPO },
+  { 0x104E, UCPO }, { 0x104F, UCPO }, { 0x10FB, UCPO }, { 0x1361, UCPO },
+  { 0x1362, UCPO }, { 0x1363, UCPO }, { 0x1364, UCPO }, { 0x1365, UCPO },
+  { 0x1366, UCPO }, { 0x1367, UCPO }, { 0x1368, UCPO }, { 0x166D, UCPO },
+  { 0x166E, UCPO }, { 0x1680, UCZS }, { 0x169B, UCPS }, { 0x169C, UCPE },
+  { 0x16EB, UCPO }, { 0x16EC, UCPO }, { 0x16ED, UCPO }, { 0x1735, UCPO },
+  { 0x1736, UCPO }, { 0x17D4, UCPO }, { 0x17D5, UCPO }, { 0x17D6, UCPO },
+  { 0x17D8, UCPO }, { 0x17D9, UCPO }, { 0x17DA, UCPO }, { 0x1800, UCPO },
+  { 0x1801, UCPO }, { 0x1802, UCPO }, { 0x1803, UCPO }, { 0x1804, UCPO },
+  { 0x1805, UCPO }, { 0x1806, UCPD }, { 0x1807, UCPO }, { 0x1808, UCPO },
+  { 0x1809, UCPO }, { 0x180A, UCPO }, { 0x180E, UCZS }, { 0x1944, UCPO },
+  { 0x1945, UCPO }, 
+#endif
+  { 0x2000, UCZS }, { 0x2001, UCZS }, { 0x2002, UCZS }, { 0x2003, UCZS },
+  { 0x2004, UCZS }, { 0x2005, UCZS }, { 0x2006, UCZS }, { 0x2008, UCZS },
+  { 0x2009, UCZS }, { 0x200A, UCZS }, { 0x2010, UCPD }, { 0x2012, UCPD },
+  { 0x2013, UCPD }, { 0x2014, UCPD }, { 0x2015, UCPD }, { 0x2016, UCPO },
+  { 0x2017, UCPO }, { 0x2018, UCPI }, { 0x2019, UCPF }, { 0x201A, UCPS },
+  { 0x201B, UCPI }, { 0x201C, UCPI }, { 0x201D, UCPF }, { 0x201E, UCPS },
+  { 0x201F, UCPI }, { 0x2020, UCPO }, { 0x2021, UCPO }, { 0x2022, UCPO },
+  { 0x2023, UCPO }, { 0x2024, UCPO }, { 0x2025, UCPO }, { 0x2026, UCPO },
+  { 0x2027, UCPO }, { 0x2028, UCZL }, { 0x2029, UCZP }, { 0x2030, UCPO },
+  { 0x2031, UCPO }, { 0x2032, UCPO }, { 0x2033, UCPO }, { 0x2034, UCPO },
+  { 0x2035, UCPO }, { 0x2036, UCPO }, { 0x2037, UCPO }, { 0x2038, UCPO },
+  { 0x2039, UCPI }, { 0x203A, UCPF }, { 0x203B, UCPO }, { 0x203C, UCPO },
+  { 0x203D, UCPO }, { 0x203E, UCPO }, { 0x203F, UCPC }, { 0x2040, UCPC },
+  { 0x2041, UCPO }, { 0x2042, UCPO }, { 0x2043, UCPO }, { 0x2045, UCPS },
+  { 0x2046, UCPE }, { 0x2047, UCPO }, { 0x2048, UCPO }, { 0x2049, UCPO },
+  { 0x204A, UCPO }, { 0x204B, UCPO }, { 0x204C, UCPO }, { 0x204D, UCPO },
+  { 0x204E, UCPO }, { 0x204F, UCPO }, { 0x2050, UCPO }, { 0x2051, UCPO },
+  { 0x2053, UCPO }, { 0x2054, UCPC }, { 0x2057, UCPO }, { 0x205F, UCZS },
+  { 0x207D, UCPS }, { 0x207E, UCPE }, { 0x208D, UCPS }, { 0x208E, UCPE },
+  { 0x2329, UCPS }, { 0x232A, UCPE }, { 0x23B4, UCPS }, { 0x23B5, UCPE },
+  { 0x23B6, UCPO }, { 0x2768, UCPS }, { 0x2769, UCPE }, { 0x276A, UCPS },
+  { 0x276B, UCPE }, { 0x276C, UCPS }, { 0x276D, UCPE }, { 0x276E, UCPS },
+  { 0x276F, UCPE }, { 0x2770, UCPS }, { 0x2771, UCPE }, { 0x2772, UCPS },
+  { 0x2773, UCPE }, { 0x2774, UCPS }, { 0x2775, UCPE }, { 0x27E6, UCPS },
+  { 0x27E7, UCPE }, { 0x27E8, UCPS }, { 0x27E9, UCPE }, { 0x27EA, UCPS },
+  { 0x27EB, UCPE }, { 0x2983, UCPS }, { 0x2984, UCPE }, { 0x2985, UCPS },
+  { 0x2986, UCPE }, { 0x2987, UCPS }, { 0x2988, UCPE }, { 0x2989, UCPS },
+  { 0x298A, UCPE }, { 0x298B, UCPS }, { 0x298C, UCPE }, { 0x298D, UCPS },
+  { 0x298E, UCPE }, { 0x298F, UCPS }, { 0x2990, UCPE }, { 0x2991, UCPS },
+  { 0x2992, UCPE }, { 0x2993, UCPS }, { 0x2994, UCPE }, { 0x2995, UCPS },
+  { 0x2996, UCPE }, { 0x2997, UCPS }, { 0x2998, UCPE }, { 0x29D8, UCPS },
+  { 0x29D9, UCPE }, { 0x29DA, UCPS }, { 0x29DB, UCPE }, { 0x29FC, UCPS },
+  { 0x29FD, UCPE }, { 0x3001, UCPO }, { 0x3002, UCPO }, { 0x3003, UCPO },
+  { 0x3008, UCPS }, { 0x3009, UCPE }, { 0x300A, UCPS }, { 0x300B, UCPE },
+  { 0x300C, UCPS }, { 0x300D, UCPE }, { 0x300E, UCPS }, { 0x300F, UCPE },
+  { 0x3010, UCPS }, { 0x3011, UCPE }, { 0x3014, UCPS }, { 0x3015, UCPE },
+  { 0x3016, UCPS }, { 0x3017, UCPE }, { 0x3018, UCPS }, { 0x3019, UCPE },
+  { 0x301A, UCPS }, { 0x301B, UCPE }, { 0x301C, UCPD }, { 0x301D, UCPS },
+  { 0x301E, UCPE }, { 0x301F, UCPE }, { 0x3030, UCPD }, { 0x303D, UCPO },
+  { 0x30A0, UCPD }, { 0x30FB, UCPC }, { 0xFD3E, UCPS }, { 0xFD3F, UCPE },
+  { 0xFE30, UCPO }, { 0xFE31, UCPD }, { 0xFE32, UCPD }, { 0xFE33, UCPC },
+  { 0xFE34, UCPC }, { 0xFE35, UCPS }, { 0xFE36, UCPE }, { 0xFE37, UCPS },
+  { 0xFE38, UCPE }, { 0xFE39, UCPS }, { 0xFE3A, UCPE }, { 0xFE3B, UCPS },
+  { 0xFE3C, UCPE }, { 0xFE3D, UCPS }, { 0xFE3E, UCPE }, { 0xFE3F, UCPS },
+  { 0xFE40, UCPE }, { 0xFE41, UCPS }, { 0xFE42, UCPE }, { 0xFE43, UCPS },
+  { 0xFE44, UCPE }, { 0xFE45, UCPO }, { 0xFE46, UCPO }, { 0xFE47, UCPS },
+  { 0xFE48, UCPE }, { 0xFE49, UCPO }, { 0xFE4A, UCPO }, { 0xFE4B, UCPO },
+  { 0xFE4C, UCPO }, { 0xFE4D, UCPC }, { 0xFE4E, UCPC }, { 0xFE4F, UCPC },
+  { 0xFE50, UCPO }, { 0xFE51, UCPO }, { 0xFE52, UCPO }, { 0xFE54, UCPO },
+  { 0xFE55, UCPO }, { 0xFE56, UCPO }, { 0xFE57, UCPO }, { 0xFE58, UCPD },
+  { 0xFE59, UCPS }, { 0xFE5A, UCPE }, { 0xFE5B, UCPS }, { 0xFE5C, UCPE },
+  { 0xFE5D, UCPS }, { 0xFE5E, UCPE }, { 0xFE5F, UCPO }, { 0xFE60, UCPO },
+  { 0xFE61, UCPO }, { 0xFE63, UCPD }, { 0xFE68, UCPO }, { 0xFE6A, UCPO },
+  { 0xFE6B, UCPO }, { 0xFF01, UCPO }, { 0xFF02, UCPO }, { 0xFF03, UCPO },
+  { 0xFF05, UCPO }, { 0xFF06, UCPO }, { 0xFF07, UCPO }, { 0xFF08, UCPS },
+  { 0xFF09, UCPE }, { 0xFF0A, UCPO }, { 0xFF0C, UCPO }, { 0xFF0D, UCPD },
+  { 0xFF0E, UCPO }, { 0xFF0F, UCPO }, { 0xFF1A, UCPO }, { 0xFF1B, UCPO },
+  { 0xFF1F, UCPO }, { 0xFF20, UCPO }, { 0xFF3B, UCPS }, { 0xFF3C, UCPO },
+  { 0xFF3D, UCPE }, { 0xFF3F, UCPC }, { 0xFF5B, UCPS }, { 0xFF5D, UCPE },
+  { 0xFF5F, UCPS }, { 0xFF60, UCPE }, { 0xFF61, UCPO }, { 0xFF62, UCPS },
+  { 0xFF63, UCPE }, { 0xFF64, UCPO }, { 0xFF65, UCPC }, { 0x10100,UCPO },
+  { 0x10101,UCPO }, { 0x1039F,UCPO },
 
-    c = str[0];
+  /* final entry */
+  { 0x0000, UC00 }
+};
 
-    if ((c & 0xE0) == 0xC0)  /* 110X XXXX  two bytes */
-    {
-        n = c & 31;
-        bytes = 2;
-    }
-    else if ((c & 0xF0) == 0xE0)  /* 1110 XXXX  three bytes */
-    {
-        n = c & 15;
-        bytes = 3;
-    }
-    else if ((c & 0xF8) == 0xF0)  /* 1111 0XXX  four bytes */
-    {
-        n = c & 7;
-        bytes = 4;
-    }
-    else if ((c & 0xFC) == 0xF8)  /* 1111 10XX  five bytes */
-    {
-        n = c & 3;
-        bytes = 5;
-    }
-    else if ((c & 0xFE) == 0xFC)       /* 1111 110X  six bytes */
+typedef enum
+{
+    NoWrapPoint,
+    WrapBefore,
+    WrapAfter
+} WrapPoint;
 
-    {
-        n = c & 1;
-        bytes = 6;
-    }
-    else  /* 0XXX XXXX one byte */
-    {
-        *ch = c;
-        return 0;
-    }
+/*
+  If long lines of text have no white space as defined in HTML 4
+  (U+0009, U+000A, U+000D, U+000C, U+0020) other characters could
+  be used to determine a wrap point. Since user agents would
+  normalize the inserted newline character to a space character,
+  this wrapping behaviour would insert visual whitespace into the
+  document.
 
-    /* successor bytes should have the form 10XX XXXX */
-    for (i = 1; i < bytes; ++i)
-    {
-        c = str[i];
-        n = (n << 6) | (c & 0x3F);
-    }
+  Characters of the General Category Pi and Ps in the Unicode
+  character database (opening punctuation and intial quote
+  characters) mark a wrapping point before the character, other
+  punctuation characters (Pc, Pd, Pe, Pf, and Po), breakable
+  space characters (Zs), and paragraph and line separators
+  (Zl, Zp) mark a wrap point after the character. Using this
+  function Tidy can for example pretty print
 
-    *ch = n;
-    return bytes - 1;
+    <p>....................&ldquo;...quote...&rdquo;...</p>
+  as
+    <p>....................\n&ldquo;...quote...&rdquo;...</p>
+  or
+    <p>....................&ldquo;...quote...&rdquo;\n...</p>
+
+  if the next normal wrapping point would exceed the user
+  chosen wrapping column.
+*/
+static WrapPoint CharacterWrapPoint(tchar c)
+{
+    int i;
+    for (i = 0; unicode4cat[i].code && unicode4cat[i].code <= c; ++i)
+        if (unicode4cat[i].code == c)
+        {
+            /* wrapping before opening punctuation and initial quotes */
+            if (unicode4cat[i].category == UCPS ||
+                unicode4cat[i].category == UCPI)
+                return WrapBefore;
+            /* else wrapping after this character */
+            else
+                return WrapAfter;
+        }
+    /* character has no effect on line wrapping */
+    return NoWrapPoint;
 }
 
-/* store char c as UTF-8 encoded byte stream */
-char *PutUTF8(char *buf, uint c)
+static WrapPoint Big5WrapPoint(tchar c)
 {
-    if (c < 128)
-        *buf++ = c;
-    else if (c <= 0x7FF)
-    {
-        *buf++ =  (0xC0 | (c >> 6));
-        *buf++ = (0x80 | (c & 0x3F));
+    if ((c & 0xFF00) == 0xA100)
+    { 
+        /* opening brackets have odd codes: break before them */ 
+        if ( c > 0xA15C && c < 0xA1AD && (c & 1) == 1 ) 
+            return WrapBefore;
+        return WrapAfter;
     }
-    else if (c <= 0xFFFF)
+    return NoWrapPoint;
+}
+
+#endif /* SUPPORT_ASIAN_ENCODINGS */
+
+static void InitIndent( TidyIndent* ind )
+{
+    ind->spaces = -1;
+    ind->attrValStart = -1;
+    ind->attrStringStart = -1;
+}
+
+void TY_(InitPrintBuf)( TidyDocImpl* doc )
+{
+    TidyClearMemory( &doc->pprint, sizeof(TidyPrintImpl) );
+    InitIndent( &doc->pprint.indent[0] );
+    InitIndent( &doc->pprint.indent[1] );
+    doc->pprint.allocator = doc->allocator;
+}
+
+void TY_(FreePrintBuf)( TidyDocImpl* doc )
+{
+    TidyDocFree( doc, doc->pprint.linebuf );
+    TY_(InitPrintBuf)( doc );
+}
+
+static void expand( TidyPrintImpl* pprint, uint len )
+{
+    uint* ip;
+    uint buflen = pprint->lbufsize;
+
+    if ( buflen == 0 )
+        buflen = 256;
+    while ( len >= buflen )
+        buflen *= 2;
+
+    ip = (uint*) TidyRealloc( pprint->allocator, pprint->linebuf, buflen*sizeof(uint) );
+    if ( ip )
     {
-        *buf++ =  (0xE0 | (c >> 12));
-        *buf++ =  (0x80 | ((c >> 6) & 0x3F));
-        *buf++ =  (0x80 | (c & 0x3F));
+      TidyClearMemory( ip+pprint->lbufsize, 
+                       (buflen-pprint->lbufsize)*sizeof(uint) );
+      pprint->lbufsize = buflen;
+      pprint->linebuf = ip;
     }
-    else if (c <= 0x1FFFFF)
+}
+
+static uint GetSpaces( TidyPrintImpl* pprint )
+{
+    int spaces = pprint->indent[ 0 ].spaces;
+    return ( spaces < 0 ? 0U : (uint) spaces );
+}
+static int ClearInString( TidyPrintImpl* pprint )
+{
+    TidyIndent *ind = pprint->indent + pprint->ixInd;
+    return ind->attrStringStart = -1;
+}
+static int ToggleInString( TidyPrintImpl* pprint )
+{
+    TidyIndent *ind = pprint->indent + pprint->ixInd;
+    Bool inString = ( ind->attrStringStart >= 0 );
+    return ind->attrStringStart = ( inString ? -1 : (int) pprint->linelen );
+}
+static Bool IsInString( TidyPrintImpl* pprint )
+{
+    TidyIndent *ind = pprint->indent + 0; /* Always 1st */
+    return ( ind->attrStringStart >= 0 && 
+             ind->attrStringStart < (int) pprint->linelen );
+}
+static Bool IsWrapInString( TidyPrintImpl* pprint )
+{
+    TidyIndent *ind = pprint->indent + 0; /* Always 1st */
+    int wrap = (int) pprint->wraphere;
+    return ( ind->attrStringStart == 0 ||
+             (ind->attrStringStart > 0 && ind->attrStringStart < wrap) );
+}
+
+static Bool HasMixedContent (Node *element)
+{
+    Node * node;
+
+    if (!element)
+        return no;
+
+    for (node = element->content; node; node = node->next)
+        if ( TY_(nodeIsText)(node) )
+             return yes;
+
+    return no;
+}
+
+static void ClearInAttrVal( TidyPrintImpl* pprint )
+{
+    TidyIndent *ind = pprint->indent + pprint->ixInd;
+    ind->attrValStart = -1;
+}
+static int SetInAttrVal( TidyPrintImpl* pprint )
+{
+    TidyIndent *ind = pprint->indent + pprint->ixInd;
+    return ind->attrValStart = (int) pprint->linelen;
+}
+static Bool IsWrapInAttrVal( TidyPrintImpl* pprint )
+{
+    TidyIndent *ind = pprint->indent + 0; /* Always 1st */
+    int wrap = (int) pprint->wraphere;
+    return ( ind->attrValStart == 0 ||
+             (ind->attrValStart > 0 && ind->attrValStart < wrap) );
+}
+
+static Bool WantIndent( TidyDocImpl* doc )
+{
+    TidyPrintImpl* pprint = &doc->pprint;
+    Bool wantIt = GetSpaces(pprint) > 0;
+    if ( wantIt )
     {
-        *buf++ =  (0xF0 | (c >> 18));
-        *buf++ =  (0x80 | ((c >> 12) & 0x3F));
-        *buf++ =  (0x80 | ((c >> 6) & 0x3F));
-        *buf++ =  (0x80 | (c & 0x3F));
+        Bool indentAttrs = cfgBool( doc, TidyIndentAttributes );
+        wantIt = ( ( !IsWrapInAttrVal(pprint) || indentAttrs ) &&
+                   !IsWrapInString(pprint) );
+    }
+    return wantIt;
+}
+
+
+static uint  WrapOff( TidyDocImpl* doc )
+{
+    uint saveWrap = cfg( doc, TidyWrapLen );
+    TY_(SetOptionInt)( doc, TidyWrapLen, 0xFFFFFFFF );  /* very large number */
+    return saveWrap;
+}
+
+static void  WrapOn( TidyDocImpl* doc, uint saveWrap )
+{
+    TY_(SetOptionInt)( doc, TidyWrapLen, saveWrap );
+}
+
+static uint  WrapOffCond( TidyDocImpl* doc, Bool onoff )
+{
+    if ( onoff )
+        return WrapOff( doc );
+    return cfg( doc, TidyWrapLen );
+}
+
+
+static void AddC( TidyPrintImpl* pprint, uint c, uint string_index)
+{
+    if ( string_index + 1 >= pprint->lbufsize )
+        expand( pprint, string_index + 1 );
+    pprint->linebuf[string_index] = c;
+}
+
+static uint AddChar( TidyPrintImpl* pprint, uint c )
+{
+    AddC( pprint, c, pprint->linelen );
+    return ++pprint->linelen;
+}
+
+static uint AddAsciiString( TidyPrintImpl* pprint, ctmbstr str, uint string_index )
+{
+    uint ix, len = TY_(tmbstrlen)( str );
+    if ( string_index + len >= pprint->lbufsize )
+        expand( pprint, string_index + len );
+
+    for ( ix=0; ix<len; ++ix )
+        pprint->linebuf[string_index + ix] = str[ ix ];
+    return string_index + len;
+}
+
+static uint AddString( TidyPrintImpl* pprint, ctmbstr str )
+{
+   return pprint->linelen = AddAsciiString( pprint, str, pprint->linelen );
+}
+
+/* Saves current output point as the wrap point,
+** but only if indentation would NOT overflow 
+** the current line.  Otherwise keep previous wrap point.
+*/
+static Bool SetWrap( TidyDocImpl* doc, uint indent )
+{
+    TidyPrintImpl* pprint = &doc->pprint;
+    Bool wrap = ( indent + pprint->linelen < cfg(doc, TidyWrapLen) );
+    if ( wrap )
+    {
+        if ( pprint->indent[0].spaces < 0 )
+            pprint->indent[0].spaces = indent;
+        pprint->wraphere = pprint->linelen;
+    }
+    else if ( pprint->ixInd == 0 )
+    {
+        /* Save indent 1st time we pass the the wrap line */
+        pprint->indent[ 1 ].spaces = indent;
+        pprint->ixInd = 1;
+    }
+    return wrap;
+}
+
+static void CarryOver( int* valTo, int* valFrom, uint wrapPoint )
+{
+  if ( *valFrom > (int) wrapPoint )
+  {
+    *valTo = *valFrom - wrapPoint;
+    *valFrom = -1;
+  }
+}
+
+
+static Bool SetWrapAttr( TidyDocImpl* doc,
+                         uint indent, int attrStart, int strStart )
+{
+    TidyPrintImpl* pprint = &doc->pprint;
+    TidyIndent *ind = pprint->indent + 0;
+
+    Bool wrap = ( indent + pprint->linelen < cfg(doc, TidyWrapLen) );
+    if ( wrap )
+    {
+        if ( ind[0].spaces < 0 )
+            ind[0].spaces = indent;
+        pprint->wraphere = pprint->linelen;
+    }
+    else if ( pprint->ixInd == 0 )
+    {
+        /* Save indent 1st time we pass the the wrap line */
+        pprint->indent[ 1 ].spaces = indent;
+        pprint->ixInd = 1;
+
+        /* Carry over string state */
+        CarryOver( &ind[1].attrStringStart, &ind[0].attrStringStart, pprint->wraphere );
+        CarryOver( &ind[1].attrValStart, &ind[0].attrValStart, pprint->wraphere );
+    }
+    ind += doc->pprint.ixInd;
+    ind->attrValStart = attrStart;
+    ind->attrStringStart = strStart;
+    return wrap;
+}
+
+
+/* Reset indent state after flushing a new line
+*/
+static void ResetLine( TidyPrintImpl* pprint )
+{
+    TidyIndent* ind = pprint->indent + 0;
+    if ( pprint->ixInd > 0 )
+    {
+        ind[0] = ind[1];
+        InitIndent( &ind[1] );
+    }
+
+    if ( pprint->wraphere > 0 )
+    {
+        int wrap = (int) pprint->wraphere;
+        if ( ind[0].attrStringStart > wrap )
+            ind[0].attrStringStart -= wrap;
+        if ( ind[0].attrValStart > wrap )
+            ind[0].attrValStart -= wrap;
     }
     else
     {
-        *buf++ =  (0xF8 | (c >> 24));
-        *buf++ =  (0x80 | ((c >> 18) & 0x3F));
-        *buf++ =  (0x80 | ((c >> 12) & 0x3F));
-        *buf++ =  (0x80 | ((c >> 6) & 0x3F));
-        *buf++ =  (0x80 | (c & 0x3F));
+        if ( ind[0].attrStringStart > 0 )
+            ind[0].attrStringStart = 0;
+        if ( ind[0].attrValStart > 0 )
+            ind[0].attrValStart = 0;
     }
-
-    return buf;
+    pprint->wraphere = pprint->ixInd = 0;
 }
 
-
-void FreePrintBuf(void)
+/* Shift text after wrap point to
+** beginning of next line.
+*/
+static void ResetLineAfterWrap( TidyPrintImpl* pprint )
 {
-    if (linebuf)
-        MemFree(linebuf);
-
-    linebuf = null;
-    lbufsize = 0;
-}
-
-static void AddC(uint c, uint index)
-{
-    if (index + 1 >= lbufsize)
+    if ( pprint->linelen > pprint->wraphere )
     {
-        while (index + 1 >= lbufsize)
+        uint *p = pprint->linebuf;
+        uint *q = p + pprint->wraphere;
+        uint *end = p + pprint->linelen;
+
+        if ( ! IsWrapInAttrVal(pprint) )
         {
-            if (lbufsize == 0)
-                lbufsize = 256;
-            else
-                lbufsize = lbufsize * 2;
+            while ( q < end && *q == ' ' )
+                ++q, ++pprint->wraphere;
         }
 
-       linebuf = (uint *)MemRealloc(linebuf, lbufsize*sizeof(uint));
+        while ( q < end )
+            *p++ = *q++;
+
+        pprint->linelen -= pprint->wraphere;
+    }
+    else
+    {
+        pprint->linelen = 0;
     }
 
-    linebuf[index] = (uint)c;
+    ResetLine( pprint );
 }
 
-static void WrapLine(Out *fout, uint indent)
+/* Goes ahead with writing current line up to
+** previously saved wrap point.  Shifts unwritten
+** text in output buffer to beginning of next line.
+*/
+static void WrapLine( TidyDocImpl* doc )
 {
-    uint i, *p, *q;
+    TidyPrintImpl* pprint = &doc->pprint;
+    uint i;
 
-    if (wraphere == 0)
+    if ( pprint->wraphere == 0 )
         return;
 
-    for (i = 0; i < indent; ++i)
-        outc(' ', fout);
-
-    for (i = 0; i < wraphere; ++i)
-        outc(linebuf[i], fout);
-
-    if (InString)
+    if ( WantIndent(doc) )
     {
-        outc(' ', fout);
-        outc('\\', fout);
+        uint spaces = GetSpaces( pprint );
+        for ( i = 0; i < spaces; ++i )
+            TY_(WriteChar)( ' ', doc->docOut );
     }
 
-    outc('\n', fout);
+    for ( i = 0; i < pprint->wraphere; ++i )
+        TY_(WriteChar)( pprint->linebuf[i], doc->docOut );
 
-    if (linelen > wraphere)
-    {
-        p = linebuf;
+    if ( IsWrapInString(pprint) )
+        TY_(WriteChar)( '\\', doc->docOut );
 
-        if (linebuf[wraphere] == ' ')
-            ++wraphere;
-
-        q = linebuf + wraphere;
-        AddC('\0', linelen);
-
-        while ((*p++ = *q++));
-
-        linelen -= wraphere;
-    }
-    else
-        linelen = 0;
-
-    wraphere = 0;
+    TY_(WriteChar)( '\n', doc->docOut );
+    ResetLineAfterWrap( pprint );
 }
 
-static void WrapAttrVal(Out *fout, uint indent, Bool inString)
+/* Checks current output line length along with current indent.
+** If combined they overflow output line length, go ahead
+** and flush output up to the current wrap point.
+*/
+static Bool CheckWrapLine( TidyDocImpl* doc )
 {
-    uint i, *p, *q;
-
-    for (i = 0; i < indent; ++i)
-        outc(' ', fout);
-
-    for (i = 0; i < wraphere; ++i)
-        outc(linebuf[i], fout);
-
-    outc(' ', fout);
-
-    if (inString)
-        outc('\\', fout);
-
-    outc('\n', fout);
-
-    if (linelen > wraphere)
+    TidyPrintImpl* pprint = &doc->pprint;
+    if ( GetSpaces(pprint) + pprint->linelen >= cfg(doc, TidyWrapLen) )
     {
-        p = linebuf;
-
-        if (linebuf[wraphere] == ' ')
-            ++wraphere;
-
-        q = linebuf + wraphere;
-        AddC('\0', linelen);
-
-        while ((*p++ = *q++));
-
-        linelen -= wraphere;
+        WrapLine( doc );
+        return yes;
     }
-    else
-        linelen = 0;
-
-    wraphere = 0;
+    return no;
 }
 
-void PFlushLine(Out *fout, uint indent)
+static Bool CheckWrapIndent( TidyDocImpl* doc, uint indent )
 {
+    TidyPrintImpl* pprint = &doc->pprint;
+    if ( GetSpaces(pprint) + pprint->linelen >= cfg(doc, TidyWrapLen) )
+    {
+        WrapLine( doc );
+        if ( pprint->indent[ 0 ].spaces < 0 )
+            pprint->indent[ 0 ].spaces = indent;
+        return yes;
+    }
+    return no;
+}
+
+static void WrapAttrVal( TidyDocImpl* doc )
+{
+    TidyPrintImpl* pprint = &doc->pprint;
     uint i;
 
-    if (linelen > 0)
+    /* assert( IsWrapInAttrVal(pprint) ); */
+    if ( WantIndent(doc) )
     {
-        if (indent + linelen >= wraplen)
-            WrapLine(fout, indent);
-
-        if (!InAttVal || IndentAttributes)
-        {
-            for (i = 0; i < indent; ++i)
-                outc(' ', fout);
-        }
-
-        for (i = 0; i < linelen; ++i)
-            outc(linebuf[i], fout);
+        uint spaces = GetSpaces( pprint );
+        for ( i = 0; i < spaces; ++i )
+            TY_(WriteChar)( ' ', doc->docOut );
     }
 
-    outc('\n', fout);
-    linelen = wraphere = 0;
-    InAttVal = no;
+    for ( i = 0; i < pprint->wraphere; ++i )
+        TY_(WriteChar)( pprint->linebuf[i], doc->docOut );
+
+    if ( IsWrapInString(pprint) )
+        TY_(WriteChar)( '\\', doc->docOut );
+    else
+        TY_(WriteChar)( ' ', doc->docOut );
+
+    TY_(WriteChar)( '\n', doc->docOut );
+    ResetLineAfterWrap( pprint );
 }
 
-void PCondFlushLine(Out *fout, uint indent)
+static void PFlushLineImpl( TidyDocImpl* doc )
 {
+    TidyPrintImpl* pprint = &doc->pprint;
+
     uint i;
 
-    if (linelen > 0)
+    CheckWrapLine( doc );
+
+    if ( WantIndent(doc) )
     {
-        if (indent + linelen >= wraplen)
-            WrapLine(fout, indent);
+        uint spaces = GetSpaces( pprint );
+        for ( i = 0; i < spaces; ++i )
+            TY_(WriteChar)( ' ', doc->docOut );
+    }
 
-        if (!InAttVal || IndentAttributes)
-        {
-            for (i = 0; i < indent; ++i)
-                outc(' ', fout);
-        }
+    for ( i = 0; i < pprint->linelen; ++i )
+        TY_(WriteChar)( pprint->linebuf[i], doc->docOut );
+    
+    if ( IsInString(pprint) )
+        TY_(WriteChar)( '\\', doc->docOut );
+    ResetLine( pprint );
+    pprint->linelen = 0;
+}
 
-        for (i = 0; i < linelen; ++i)
-            outc(linebuf[i], fout);
+void TY_(PFlushLine)( TidyDocImpl* doc, uint indent )
+{
+    TidyPrintImpl* pprint = &doc->pprint;
 
-        outc('\n', fout);
-        linelen = wraphere = 0;
-        InAttVal = no;
+    if ( pprint->linelen > 0 )
+        PFlushLineImpl( doc );
+
+    TY_(WriteChar)( '\n', doc->docOut );
+    pprint->indent[ 0 ].spaces = indent;
+}
+
+static void PCondFlushLine( TidyDocImpl* doc, uint indent )
+{
+    TidyPrintImpl* pprint = &doc->pprint;
+
+    if ( pprint->linelen > 0 )
+    {
+         PFlushLineImpl( doc );
+
+         TY_(WriteChar)( '\n', doc->docOut );
+         pprint->indent[ 0 ].spaces = indent;
     }
 }
 
-static void PPrintChar(uint c, uint mode)
+static void PPrintChar( TidyDocImpl* doc, uint c, uint mode )
 {
-    char *p, entity[128];
+    tmbchar entity[128];
+    ctmbstr p;
+    TidyPrintImpl* pprint  = &doc->pprint;
+    uint outenc = cfg( doc, TidyOutCharEncoding );
+    Bool qmark = cfgBool( doc, TidyQuoteMarks );
 
-    if (c == ' ' && !(mode & (PREFORMATTED | COMMENT | ATTRIBVALUE)))
+    if ( c == ' ' && !(mode & (PREFORMATTED | COMMENT | ATTRIBVALUE | CDATA)))
     {
         /* coerce a space character to a non-breaking space */
         if (mode & NOWRAP)
         {
+            ctmbstr ent = "&nbsp;";
             /* by default XML doesn't define &nbsp; */
-            if (NumEntities || XmlTags)
-            {
-                AddC('&', linelen++);
-                AddC('#', linelen++);
-                AddC('1', linelen++);
-                AddC('6', linelen++);
-                AddC('0', linelen++);
-                AddC(';', linelen++);
-            }
-            else /* otherwise use named entity */
-            {
-                AddC('&', linelen++);
-                AddC('n', linelen++);
-                AddC('b', linelen++);
-                AddC('s', linelen++);
-                AddC('p', linelen++);
-                AddC(';', linelen++);
-            }
+            if ( cfgBool(doc, TidyNumEntities) || cfgBool(doc, TidyXmlTags) )
+                ent = "&#160;";
+            AddString( pprint, ent );
             return;
         }
         else
-            wraphere = linelen;
+            pprint->wraphere = pprint->linelen;
     }
 
     /* comment characters are passed raw */
-    if (mode & COMMENT)
+    if ( mode & (COMMENT | CDATA) )
     {
-        AddC(c, linelen++);
+        AddChar( pprint, c );
         return;
     }
 
     /* except in CDATA map < to &lt; etc. */
-    if (! (mode & CDATA) )
+    if ( !(mode & CDATA) )
     {
-        if (c == '<')
+        if ( c == '<')
         {
-            AddC('&', linelen++);
-            AddC('l', linelen++);
-            AddC('t', linelen++);
-            AddC(';', linelen++);
+            AddString( pprint, "&lt;" );
             return;
         }
-
-        if (c == '>')
+            
+        if ( c == '>')
         {
-            AddC('&', linelen++);
-            AddC('g', linelen++);
-            AddC('t', linelen++);
-            AddC(';', linelen++);
+            AddString( pprint, "&gt;" );
             return;
         }
 
@@ -410,1407 +747,1653 @@ static void PPrintChar(uint c, uint mode)
           quoted as &amp; The latter is required
           for XML where naked '&' are illegal.
         */
-        if (c == '&' && QuoteAmpersand)
+        if ( c == '&' && cfgBool(doc, TidyQuoteAmpersand)
+             && !cfgBool(doc, TidyPreserveEntities)
+             && ( mode != OtherNamespace) ) /* #130 MathML attr and entity fix! */
         {
-            AddC('&', linelen++);
-            AddC('a', linelen++);
-            AddC('m', linelen++);
-            AddC('p', linelen++);
-            AddC(';', linelen++);
+            AddString( pprint, "&amp;" );
             return;
         }
 
-        if (c == '"' && QuoteMarks)
+        if ( c == '"' && qmark )
         {
-            AddC('&', linelen++);
-            AddC('q', linelen++);
-            AddC('u', linelen++);
-            AddC('o', linelen++);
-            AddC('t', linelen++);
-            AddC(';', linelen++);
+            AddString( pprint, "&quot;" );
             return;
         }
 
-        if (c == '\'' && QuoteMarks)
+        if ( c == '\'' && qmark )
         {
-            AddC('&', linelen++);
-            AddC('#', linelen++);
-            AddC('3', linelen++);
-            AddC('9', linelen++);
-            AddC(';', linelen++);
+            AddString( pprint, "&#39;" );
             return;
         }
 
-        if (c == 160 && CharEncoding != RAW)
+        if ( c == 160 && outenc != RAW )
         {
-            if (QuoteNbsp)
+            if ( cfgBool(doc, TidyQuoteNbsp) )
             {
-                AddC('&', linelen++);
-
-                if (NumEntities)
-                {
-                    AddC('#', linelen++);
-                    AddC('1', linelen++);
-                    AddC('6', linelen++);
-                    AddC('0', linelen++);
-                }
+                if ( cfgBool(doc, TidyNumEntities) ||
+                     cfgBool(doc, TidyXmlTags) )
+                    AddString( pprint, "&#160;" );
                 else
-                {
-                    AddC('n', linelen++);
-                    AddC('b', linelen++);
-                    AddC('s', linelen++);
-                    AddC('p', linelen++);
-                }
-
-                AddC(';', linelen++);
+                    AddString( pprint, "&nbsp;" );
             }
             else
-                AddC(c, linelen++);
-
+                AddChar( pprint, c );
             return;
         }
     }
 
-    /* otherwise ISO 2022 characters are passed raw */
-    if (CharEncoding == ISO2022 || CharEncoding == RAW)
-    {
-        AddC(c, linelen++);
-        return;
-    }
+#if SUPPORT_ASIAN_ENCODINGS
 
-    /* if preformatted text, map &nbsp; to space */
-    if (c == 160 && (mode & PREFORMATTED))
+    /* #431953 - start RJ */
+    /* Handle encoding-specific issues */
+    switch ( outenc )
     {
-        AddC(' ', linelen++);
-        return;
-    }
-
-    /*
-     Filters from Word and PowerPoint often use smart
-     quotes resulting in character codes between 128
-     and 159. Unfortunately, the corresponding HTML 4.0
-     entities for these are not widely supported. The
-     following converts dashes and quotation marks to
-     the nearest ASCII equivalent. My thanks to
-     Andrzej Novosiolov for his help with this code.
-    */
-
-    if (MakeClean)
-    {
-        if (c >= 0x2013 && c <= 0x201E)
+    case UTF8:
+#if SUPPORT_UTF16_ENCODINGS
+    case UTF16:
+    case UTF16LE:
+    case UTF16BE:
+#endif
+        if (!(mode & PREFORMATTED) && cfg(doc, TidyPunctWrap))
         {
-            switch (c) {
-              case 0x2013:
-              case 0x2014:
-                c = '-';
-                break;
-              case 0x2018:
-              case 0x2019:
-              case 0x201A:
-                c = '\'';
-                break;
-              case 0x201C:
-              case 0x201D:
-              case 0x201E:
-                c = '"';
-                break;
-              }
+            WrapPoint wp = CharacterWrapPoint(c);
+            if (wp == WrapBefore)
+                pprint->wraphere = pprint->linelen;
+            else if (wp == WrapAfter)
+                pprint->wraphere = pprint->linelen + 1;
         }
+        break;
+
+    case BIG5:
+        /* Allow linebreak at Chinese punctuation characters */
+        /* There are not many spaces in Chinese */
+        AddChar( pprint, c );
+        if (!(mode & PREFORMATTED)  && cfg(doc, TidyPunctWrap))
+        {
+            WrapPoint wp = Big5WrapPoint(c);
+            if (wp == WrapBefore)
+                pprint->wraphere = pprint->linelen;
+            else if (wp == WrapAfter)
+                pprint->wraphere = pprint->linelen + 1;
+        }
+        return;
+
+    case SHIFTJIS:
+#ifndef NO_NATIVE_ISO2022_SUPPORT
+    case ISO2022: /* ISO 2022 characters are passed raw */
+#endif
+    case RAW:
+        AddChar( pprint, c );
+        return;
     }
+    /* #431953 - end RJ */
+
+#else /* SUPPORT_ASIAN_ENCODINGS */
+
+    /* otherwise ISO 2022 characters are passed raw */
+    if (
+#ifndef NO_NATIVE_ISO2022_SUPPORT
+        outenc == ISO2022 ||
+#endif
+        outenc == RAW )
+    {
+        AddChar( pprint, c );
+        return;
+    }
+
+#endif /* SUPPORT_ASIAN_ENCODINGS */
 
     /* don't map latin-1 chars to entities */
-    if (CharEncoding == LATIN1)
+    if ( outenc == LATIN1 )
     {
         if (c > 255)  /* multi byte chars */
         {
-            if (!NumEntities && (p = EntityName(c)) != null)
-                snprintf(entity, sizeof (entity), "&%s;", p);
+            uint vers = TY_(HTMLVersion)( doc );
+            if ( !cfgBool(doc, TidyNumEntities) && (p = TY_(EntityName)(c, vers)) )
+                TY_(tmbsnprintf)(entity, sizeof(entity), "&%s;", p);
             else
-                snprintf(entity, sizeof (entity), "&#%u;", c);
+                TY_(tmbsnprintf)(entity, sizeof(entity), "&#%u;", c);
 
-            for (p = entity; *p; ++p)
-                AddC(*p, linelen++);
-
+            AddString( pprint, entity );
             return;
         }
 
         if (c > 126 && c < 160)
         {
-            snprintf(entity, sizeof (entity), "&#%d;", c);
-
-            for (p = entity; *p; ++p)
-                AddC(*p, linelen++);
-
+            TY_(tmbsnprintf)(entity, sizeof(entity), "&#%u;", c);
+            AddString( pprint, entity );
             return;
         }
 
-        AddC(c, linelen++);
+        AddChar( pprint, c );
         return;
     }
 
-    /* don't map utf8 chars to entities */
-    if (CharEncoding == UTF8)
+    /* don't map UTF-8 chars to entities */
+    if ( outenc == UTF8 )
     {
-        AddC(c, linelen++);
+        AddChar( pprint, c );
         return;
     }
+
+#if SUPPORT_UTF16_ENCODINGS
+    /* don't map UTF-16 chars to entities */
+    if ( outenc == UTF16 || outenc == UTF16LE || outenc == UTF16BE )
+    {
+        AddChar( pprint, c );
+        return;
+    }
+#endif
 
     /* use numeric entities only  for XML */
-    if (XmlTags)
+    if ( cfgBool(doc, TidyXmlTags) )
     {
         /* if ASCII use numeric entities for chars > 127 */
-        if (c > 127 && CharEncoding == ASCII)
+        if ( c > 127 && outenc == ASCII )
         {
-            snprintf (entity, sizeof (entity), "&#%u;", c);
-
-            for (p = entity; *p; ++p)
-                AddC(*p, linelen++);
-
+            TY_(tmbsnprintf)(entity, sizeof(entity), "&#%u;", c);
+            AddString( pprint, entity );
             return;
         }
 
         /* otherwise output char raw */
-        AddC(c, linelen++);
+        AddChar( pprint, c );
         return;
     }
 
     /* default treatment for ASCII */
-    if (c > 126 || (c < ' ' && c != '\t'))
+    if ( outenc == ASCII && (c > 126 || (c < ' ' && c != '\t')) )
     {
-        if (!NumEntities && (p = EntityName(c)) != null)
-            snprintf (entity, sizeof (entity), "&%s;", p);
+        uint vers = TY_(HTMLVersion)( doc );
+        if (!cfgBool(doc, TidyNumEntities) && (p = TY_(EntityName)(c, vers)) )
+            TY_(tmbsnprintf)(entity, sizeof(entity), "&%s;", p);
         else
-            snprintf(entity, sizeof (entity), "&#%u;", c);
+            TY_(tmbsnprintf)(entity, sizeof(entity), "&#%u;", c);
 
-        for (p = entity; *p; ++p)
-            AddC(*p, linelen++);
-
+        AddString( pprint, entity );
         return;
     }
 
-    AddC(c, linelen++);
+    AddChar( pprint, c );
 }
 
-/*
+static uint IncrWS( uint start, uint end, uint indent, int ixWS )
+{
+  if ( ixWS > 0 )
+  {
+    uint st = start + MIN( (uint)ixWS, indent );
+    start = MIN( st, end );
+  }
+  return start;
+}
+/* 
   The line buffer is uint not char so we can
   hold Unicode values unencoded. The translation
-  to UTF-8 is deferred to the outc routine called
+  to UTF-8 is deferred to the TY_(WriteChar)() routine called
   to flush the line buffer.
 */
-static void PPrintText(Out *fout, uint mode, uint indent,
-                Lexer *lexer, uint start, uint end)
+static void PPrintText( TidyDocImpl* doc, uint mode, uint indent,
+                        Node* node  )
 {
-    uint i, c;
+    uint start = node->start;
+    uint end = node->end;
+    uint ix, c = 0;
+    int  ixNL = TextEndsWithNewline( doc->lexer, node, mode );
+    int  ixWS = TextStartsWithWhitespace( doc->lexer, node, start, mode );
+    if ( ixNL > 0 )
+      end -= ixNL;
+    start = IncrWS( start, end, indent, ixWS );
 
-    for (i = start; i < end; ++i)
+    for ( ix = start; ix < end; ++ix )
     {
-        if (indent + linelen >= wraplen)
-            WrapLine(fout, indent);
-
-        c = (unsigned char)lexer->lexbuf[i];
+        CheckWrapIndent( doc, indent );
+        /*
+        if ( CheckWrapIndent(doc, indent) )
+        {
+            ixWS = TextStartsWithWhitespace( doc->lexer, node, ix );
+            ix = IncrWS( ix, end, indent, ixWS );
+        }
+        */
+        c = (byte) doc->lexer->lexbuf[ix];
 
         /* look for UTF-8 multibyte character */
-        if (c > 0x7F)
-             i += GetUTF8((unsigned char *)lexer->lexbuf + i, &c);
+        if ( c > 0x7F )
+             ix += TY_(GetUTF8)( doc->lexer->lexbuf + ix, &c );
 
-        if (c == '\n')
+        if ( c == '\n' )
         {
-            PFlushLine(fout, indent);
-            continue;
+            TY_(PFlushLine)( doc, indent );
+            ixWS = TextStartsWithWhitespace( doc->lexer, node, ix+1, mode );
+            ix = IncrWS( ix, end, indent, ixWS );
         }
-
-	if (0 == c)
-          PPrintChar('?', mode);
-	else
-          PPrintChar(c, mode);
+        else
+        {
+            PPrintChar( doc, c, mode );
+        }
     }
 }
 
-static void PPrintString(Out *fout, uint indent, char *str)
+#if 0
+static void PPrintString( TidyDocImpl* doc, uint indent, ctmbstr str )
 {
-    while (*str != '\0')
-        AddC(*str++, linelen++);
+    while ( *str != '\0' )
+        AddChar( &doc->pprint, *str++ );
 }
+#endif /* 0 */
 
-static void PPrintAttrValue(Out *fout, uint indent,
-                            char *value, int delim, Bool wrappable)
+
+static void PPrintAttrValue( TidyDocImpl* doc, uint indent,
+                             ctmbstr value, uint delim, Bool wrappable, Bool scriptAttr )
 {
-    uint c;
-    Bool wasinstring = no;
+    TidyPrintImpl* pprint = &doc->pprint;
+    Bool scriptlets = cfgBool(doc, TidyWrapScriptlets);
 
-    int mode = (wrappable ? (NORMAL | ATTRIBVALUE) : (PREFORMATTED | ATTRIBVALUE));
+    uint mode = PREFORMATTED | ATTRIBVALUE;
+    if ( wrappable )
+        mode = NORMAL | ATTRIBVALUE;
 
     /* look for ASP, Tango or PHP instructions for computed attribute value */
-    if (value && value[0] == '<')
+    if ( value && value[0] == '<' )
     {
-        if (value[1] == '%' || value[1] == '@'|| wstrncmp(value, "<?php", 5) == 0)
+        if ( value[1] == '%' || value[1] == '@'||
+             TY_(tmbstrncmp)(value, "<?php", 5) == 0 )
             mode |= CDATA;
     }
 
-    if (delim == null)
+    if ( delim == 0 )
         delim = '"';
 
-    AddC('=', linelen++);
+    AddChar( pprint, '=' );
 
     /* don't wrap after "=" for xml documents */
-    if (!XmlOut)
+    if ( !cfgBool(doc, TidyXmlOut) || cfgBool(doc, TidyXhtmlOut) )
     {
-        if (indent + linelen < wraplen)
-            wraphere = linelen;
-
-        if (indent + linelen >= wraplen)
-            WrapLine(fout, indent);
-
-        if (indent + linelen < wraplen)
-            wraphere = linelen;
-        else
-            PCondFlushLine(fout, indent);
+        SetWrap( doc, indent );
+        CheckWrapIndent( doc, indent );
+        /*
+        if ( !SetWrap(doc, indent) )
+            PCondFlushLine( doc, indent );
+        */
     }
 
-    AddC(delim, linelen++);
+    AddChar( pprint, delim );
 
-    if (value)
+    if ( value )
     {
-        InString = no;
+        uint wraplen = cfg( doc, TidyWrapLen );
+        int attrStart = SetInAttrVal( pprint );
+        int strStart = ClearInString( pprint );
 
         while (*value != '\0')
         {
-            c = (unsigned char)*value;
+            uint c = *value;
 
-            if (wrappable && c == ' ' && indent + linelen < wraplen)
+            if ( wrappable && c == ' ' )
+                SetWrapAttr( doc, indent, attrStart, strStart );
+
+            if ( wrappable && pprint->wraphere > 0 &&
+                 GetSpaces(pprint) + pprint->linelen >= wraplen )
+                WrapAttrVal( doc );
+
+            if ( c == delim )
             {
-                wraphere = linelen;
-                wasinstring = InString;
-            }
-
-            if (wrappable && wraphere > 0 && indent + linelen >= wraplen)
-                WrapAttrVal(fout, indent, wasinstring);
-
-            if (c == (uint)delim)
-            {
-                char *entity;
-
-                entity = (c == '"' ? "&quot;" : "&#39;");
-
-                while (*entity != '\0')
-                    AddC(*entity++, linelen++);
-
+                ctmbstr entity = (c == '"' ? "&quot;" : "&#39;");
+                AddString( pprint, entity );
                 ++value;
                 continue;
             }
             else if (c == '"')
             {
-                if (QuoteMarks)
-                {
-                    AddC('&', linelen++);
-                    AddC('q', linelen++);
-                    AddC('u', linelen++);
-                    AddC('o', linelen++);
-                    AddC('t', linelen++);
-                    AddC(';', linelen++);
-                }
+                if ( cfgBool(doc, TidyQuoteMarks) )
+                    AddString( pprint, "&quot;" );
                 else
-                    AddC('"', linelen++);
+                    AddChar( pprint, c );
 
-                if (delim == '\'')
-                    InString = (Bool)(!InString);
+                if ( delim == '\'' && scriptAttr && scriptlets )
+                    strStart = ToggleInString( pprint );
 
                 ++value;
                 continue;
             }
-            else if (c == '\'')
+            else if ( c == '\'' )
             {
-                if (QuoteMarks)
-                {
-                    AddC('&', linelen++);
-                    AddC('#', linelen++);
-                    AddC('3', linelen++);
-                    AddC('9', linelen++);
-                    AddC(';', linelen++);
-                }
+                if ( cfgBool(doc, TidyQuoteMarks) )
+                    AddString( pprint, "&#39;" );
                 else
-                    AddC('\'', linelen++);
+                    AddChar( pprint, c );
 
-                if (delim == '"')
-                    InString = (Bool)(!InString);
+                if ( delim == '"' && scriptAttr && scriptlets )
+                    strStart = ToggleInString( pprint );
 
                 ++value;
                 continue;
             }
 
             /* look for UTF-8 multibyte character */
-            if (c > 0x7F)
-                 value += GetUTF8((unsigned char *)value, &c);
-
+            if ( c > 0x7F )
+                 value += TY_(GetUTF8)( value, &c );
             ++value;
 
-            if (c == '\n')
+            if ( c == '\n' )
             {
-                PFlushLine(fout, indent);
+                /* No indent inside Javascript literals */
+                TY_(PFlushLine)( doc, (strStart < 0
+                                       && !cfgBool(doc, TidyLiteralAttribs) ?
+                                       indent : 0) );
                 continue;
             }
-
-            PPrintChar(c, mode);
+            PPrintChar( doc, c, mode );
         }
+        ClearInAttrVal( pprint );
+        ClearInString( pprint );
     }
-
-    InString = no;
-    AddC(delim, linelen++);
+    AddChar( pprint, delim );
 }
 
-static void PPrintAttribute(Out *fout, uint indent,
-                            Node *node, AttVal *attr)
+static uint AttrIndent( TidyDocImpl* doc, Node* node, AttVal* ARG_UNUSED(attr) )
 {
-    char *name;
-    Bool wrappable = no;
+  uint spaces = cfg( doc, TidyIndentSpaces );
+  uint xtra = 2;  /* 1 for the '<', another for the ' ' */
+  if ( node->element == NULL )
+    return spaces;
 
-    if (IndentAttributes)
+  if ( !TY_(nodeHasCM)(node, CM_INLINE) ||
+       !ShouldIndent(doc, node->parent ? node->parent: node) )
+    return xtra + TY_(tmbstrlen)( node->element );
+
+  if ( NULL != (node = TY_(FindContainer)(node)) )
+    return xtra + TY_(tmbstrlen)( node->element );
+  return spaces;
+}
+
+static Bool AttrNoIndentFirst( /*TidyDocImpl* doc,*/ Node* node, AttVal* attr )
+{
+  return ( attr==node->attributes );
+  
+  /*&& 
+           ( InsideHead(doc, node) ||
+             !TY_(nodeHasCM)(node, CM_INLINE) ) );
+             */
+}
+
+static void PPrintAttribute( TidyDocImpl* doc, uint indent,
+                             Node *node, AttVal *attr )
+{
+    TidyPrintImpl* pprint = &doc->pprint;
+    Bool xmlOut    = cfgBool( doc, TidyXmlOut );
+    Bool xhtmlOut  = cfgBool( doc, TidyXhtmlOut );
+    Bool wrapAttrs = cfgBool( doc, TidyWrapAttVals );
+    Bool ucAttrs   = cfgBool( doc, TidyUpperCaseAttrs );
+    Bool indAttrs  = cfgBool( doc, TidyIndentAttributes );
+    uint xtra      = AttrIndent( doc, node, attr );
+    Bool first     = AttrNoIndentFirst( /*doc,*/ node, attr );
+    tmbstr name    = attr->attribute;
+    Bool wrappable = no;
+    tchar c;
+
+    /* fix for odd attribute indentation bug triggered by long values */
+    if (!indAttrs)
+      xtra = 0;
+
+    if ( indAttrs )
     {
-        PFlushLine(fout, indent);
-        indent += spaces;
+        if ( TY_(nodeIsElement)(node) && !first )
+        {
+            indent += xtra;
+            PCondFlushLine( doc, indent );
+        }
+        else
+          indAttrs = no;
     }
 
-    name = attr->attribute;
+    CheckWrapIndent( doc, indent );
 
-    if (indent + linelen >= wraplen)
-        WrapLine(fout, indent);
-
-    if (!XmlTags && !XmlOut && attr->dict)
+    if ( !xmlOut && !xhtmlOut && attr->dict )
     {
-        if (IsScript(name))
-            wrappable = WrapScriptlets;
-        else if (!attr->dict->nowrap && WrapAttVals)
+        if ( TY_(IsScript)(doc, name) )
+            wrappable = cfgBool( doc, TidyWrapScriptlets );
+        else if (!(attrIsCONTENT(attr) || attrIsVALUE(attr) || attrIsALT(attr) || attrIsTITLE(attr)) && wrapAttrs )
             wrappable = yes;
     }
 
-    if (indent + linelen < wraplen)
+    if ( !first && !SetWrap(doc, indent) )
     {
-        wraphere = linelen;
-        AddC(' ', linelen++);
+        TY_(PFlushLine)( doc, indent+xtra );  /* Put it on next line */
+    }
+    else if ( pprint->linelen > 0 )
+    {
+        AddChar( pprint, ' ' );
+    }
+
+    /* Attribute name */
+    while (*name)
+    {
+        c = (unsigned char)*name;
+
+        if (c > 0x7F)
+            name += TY_(GetUTF8)(name, &c);
+        else if (ucAttrs)
+            c = TY_(ToUpper)(c);
+
+        AddChar(pprint, c);
+        ++name;
+    }
+
+/* fix for bug 732038 */
+#if 0
+    /* If not indenting attributes, bump up indent for 
+    ** value after putting out name.
+    */
+    if ( !indAttrs )
+        indent += xtra;
+#endif
+
+    CheckWrapIndent( doc, indent );
+ 
+    if ( attr->value == NULL )
+    {
+        Bool isB = TY_(IsBoolAttribute)(attr);
+        Bool scriptAttr = TY_(attrIsEvent)(attr);
+
+        if ( xmlOut )
+            PPrintAttrValue( doc, indent, isB ? attr->attribute : NULLSTR,
+                             attr->delim, no, scriptAttr );
+
+        else if ( !isB && !TY_(IsNewNode)(node) )
+            PPrintAttrValue( doc, indent, "", attr->delim, yes, scriptAttr );
+
+        else 
+            SetWrap( doc, indent );
     }
     else
-    {
-        PCondFlushLine(fout, indent);
-        AddC(' ', linelen++);
-    }
-
-    while (*name != '\0')
-        AddC(FoldCase(*name++, UpperCaseAttrs), linelen++);
-
-    if (indent + linelen >= wraplen)
-        WrapLine(fout, indent);
-
-    if (attr->value == null)
-    {
-        if (XmlTags || XmlOut)
-            PPrintAttrValue(fout, indent, attr->attribute, attr->delim, yes);
-        else if (!IsBoolAttribute(attr) && !IsNewNode(node))
-            PPrintAttrValue(fout, indent, "", attr->delim, yes);
-        else if (indent + linelen < wraplen)
-            wraphere = linelen;
-
-    }
-    else
-        PPrintAttrValue(fout, indent, attr->value, attr->delim, wrappable);
+        PPrintAttrValue( doc, indent, attr->value, attr->delim, wrappable, no );
 }
 
-static void PPrintAttrs(Out *fout, uint indent,
-                        Lexer *lexer, Node *node, AttVal *attr)
+static void PPrintAttrs( TidyDocImpl* doc, uint indent, Node *node )
 {
-    if (attr)
-    {
-        if (attr->next)
-            PPrintAttrs(fout, indent, lexer, node, attr->next);
-
-        if (attr->attribute != null)
-            PPrintAttribute(fout, indent, node, attr);
-        else if (attr->asp != null)
-        {
-            AddC(' ', linelen++);
-            PPrintAsp(fout, indent, lexer, attr->asp);
-        }
-        else if (attr->php != null)
-        {
-            AddC(' ', linelen++);
-            PPrintPhp(fout, indent, lexer, attr->php);
-        }
-    }
+    TidyPrintImpl* pprint = &doc->pprint;
+    AttVal* av;
 
     /* add xml:space attribute to pre and other elements */
-    if (XmlOut == yes &&
-            XmlSpace &&
-            XMLPreserveWhiteSpace (node) &&
-            !GetAttrByName(node, "xml:space"))
-        PPrintString(fout, indent, " xml:space=\"preserve\"");
+    if ( cfgBool(doc, TidyXmlOut) && cfgBool(doc, TidyXmlSpace) &&
+         !TY_(GetAttrByName)(node, "xml:space") &&
+         TY_(XMLPreserveWhiteSpace)(doc, node) )
+    {
+        TY_(AddAttribute)( doc, node, "xml:space", "preserve" );
+    }
+
+    for ( av = node->attributes; av; av = av->next )
+    {
+        if ( av->attribute != NULL )
+        {
+            PPrintAttribute( doc, indent, node, av );
+        }
+        else if ( av->asp != NULL )
+        {
+            AddChar( pprint, ' ' );
+            PPrintAsp( doc, indent, av->asp );
+        }
+        else if ( av->php != NULL )
+        {
+            AddChar( pprint, ' ' );
+            PPrintPhp( doc, indent, av->php );
+        }
+    }
+}
+
+Bool TY_(TextNodeEndWithSpace)( Lexer *lexer, Node *node )
+{
+    if (TY_(nodeIsText)(node) && node->end > node->start)
+    {
+        uint i, c = '\0'; /* initialised to avoid warnings */
+        for (i = node->start; i < node->end; ++i)
+        {
+            c = (byte) lexer->lexbuf[i];
+            if ( c > 0x7F )
+                i += TY_(GetUTF8)( lexer->lexbuf + i, &c );
+        }
+
+        if ( c == ' ' || c == '\n' )
+            return yes;
+    }
+    return no;
 }
 
 /*
  Line can be wrapped immediately after inline start tag provided
- if follows a text node ending in a space, or it parent is an
- inline element that that rule applies to. This behaviour was
- reverse engineered from Netscape 3.0
+ if follows a text node ending in a space, or it follows a <br>,
+ or its parent is an inline element that that rule applies to.
+ This behaviour was reverse engineered from Netscape 3.0.
+
+ Line wrapping can occur if an element is not empty and before a block
+ level. For instance:
+ <p><span>
+ x</span>y</p>
+ will display properly. Whereas
+ <p><img />
+ x</p> won't.
 */
-static Bool AfterSpace(Lexer *lexer, Node *node)
+static Bool AfterSpaceImp(Lexer *lexer, Node *node, Bool isEmpty)
 {
     Node *prev;
-    uint c;
 
-    if (!node || !node->tag || !(node->tag->model & CM_INLINE))
+    if ( !TY_(nodeCMIsInline)(node) )
         return yes;
 
     prev = node->prev;
-
     if (prev)
     {
-        if (prev->type == TextNode && prev->end > prev->start)
-        {
-            c = (unsigned char)lexer->lexbuf[prev->end - 1];
-
-            if (c == 160 || c == ' ' || c == '\n')
-                return yes;
-        }
+        if (TY_(nodeIsText)(prev))
+            return TY_(TextNodeEndWithSpace)( lexer, prev );
+        else if (nodeIsBR(prev))
+            return yes;
 
         return no;
     }
 
-    return AfterSpace(lexer, node->parent);
+    if ( isEmpty && !TY_(nodeCMIsInline)(node->parent) )
+        return no;
+
+    return AfterSpaceImp(lexer, node->parent, isEmpty);
 }
 
-static void PPrintTag(Lexer *lexer, Out *fout,
-                      uint mode, uint indent, Node *node)
+static Bool AfterSpace(Lexer *lexer, Node *node)
 {
-    char c, *p;
+    return AfterSpaceImp(lexer, node, TY_(nodeCMIsEmpty)(node));
+}
 
-    AddC('<', linelen++);
+static void PPrintEndTag( TidyDocImpl* doc, uint ARG_UNUSED(mode),
+                          uint ARG_UNUSED(indent), Node *node );
 
-    if (node->type == EndTag)
-        AddC('/', linelen++);
+/*\
+ *  See Issue #162 - void elements also get a closing tag, like img, br, ...
+ *
+ *  from : http://www.w3.org/TR/html-markup/syntax.html#syntax-elements
+ *  A complete list of the void elements in HTML:
+ *  area, base, br, col, command, embed, hr, img, input, keygen, link, meta, param, source, track, wbr
+ *
+ *  This could be sped up by NOT using the macro nodeIsXXXX, since this repeatedly checks the node,
+ *  and then the node->tag, which here are checked at the beginning...
+ *
+ *  Some have already been done... at least where no macro yet exists.
+ *
+ *  And maybe a switch(id) case would be faster.
+\*/
 
-    for (p = node->element; (c = *p); ++p)
-        AddC(FoldCase(c, UpperCaseTags), linelen++);
+static Bool TY_(isVoidElement)( Node *node )
+{
+    TidyTagId id;
+    if ( !node )
+        return no;
+    if ( !node->tag )
+        return no;
+    id = node->tag->id;
+    if (nodeIsAREA(node))
+        return yes;
+    if (nodeIsBASE(node))
+        return yes;
+    if (nodeIsBR(node))
+        return yes;
+    if (nodeIsCOL(node))
+        return yes;
+    /* if (nodeIsCOMMAND(node)) */
+    if (id == TidyTag_COMMAND)
+        return yes;
+    if (nodeIsEMBED(node))
+        return yes;
+    if (nodeIsHR(node))
+        return yes;
+    if (nodeIsIMG(node))
+        return yes;
+    if (nodeIsINPUT(node))
+        return yes;
+    /* if (nodeIsKEYGEN(node)) */
+    if (id == TidyTag_KEYGEN )
+        return yes;
+    if (nodeIsLINK(node))
+        return yes;
+    if (nodeIsMETA(node))
+        return yes;
+    if (nodeIsPARAM(node))
+        return yes;
+    /* if (nodeIsSOURCE(node)) */
+    if (id == TidyTag_SOURCE )
+        return yes;
+    /* if (nodeIsTRACK(node)) */
+    if (id == TidyTag_TRACK )
+        return yes;
+    if (nodeIsWBR(node))
+        return yes;
 
-    PPrintAttrs(fout, indent, lexer, node, node->attributes);
+    return no;
+}
 
-    if ((XmlOut == yes || lexer->isvoyager) &&
-            (node->type == StartEndTag || node->tag->model & CM_EMPTY ))
+static void PPrintTag( TidyDocImpl* doc,
+                       uint mode, uint indent, Node *node )
+{
+    TidyPrintImpl* pprint = &doc->pprint;
+    Bool uc = cfgBool( doc, TidyUpperCaseTags );
+    Bool xhtmlOut = cfgBool( doc, TidyXhtmlOut );
+    Bool xmlOut = cfgBool( doc, TidyXmlOut );
+    tchar c;
+    tmbstr s = node->element;
+
+    AddChar( pprint, '<' );
+
+    if ( node->type == EndTag )
+        AddChar( pprint, '/' );
+
+    if (s)
     {
-        AddC(' ', linelen++);   /* compatibility hack */
-        AddC('/', linelen++);
+        while (*s)
+        {
+            c = (unsigned char)*s;
+
+            if (c > 0x7F)
+                s += TY_(GetUTF8)(s, &c);
+            else if (uc)
+                c = TY_(ToUpper)(c);
+
+            AddChar(pprint, c);
+            ++s;
+        }
     }
 
-    AddC('>', linelen++);;
+    PPrintAttrs( doc, indent, node );
 
-    if (node->type != StartEndTag && !(mode & PREFORMATTED))
+    if ( (xmlOut || xhtmlOut) &&
+         (node->type == StartEndTag || TY_(nodeCMIsEmpty)(node)) )
     {
-        if (indent + linelen >= wraplen)
-            WrapLine(fout, indent);
+        AddChar( pprint, ' ' );   /* Space is NS compatibility hack <br /> */
+        AddChar( pprint, '/' );   /* Required end tag marker */
+    }
 
-        if (indent + linelen < wraplen)
+    AddChar( pprint, '>' );
+
+    /*\
+     *  Appears this was added for Issue #111, #112, #113, but will now add an end tag
+     *  for elements like <img ...> which do NOT have an EndTag, even in html5
+     *  See Issue #162 - void elements also get a closing tag, like img, br, ...
+     *  A complete list of the void elements in HTML:
+     *  area, base, br, col, command, embed, hr, img, input, keygen, link, meta, param, source, track, wbr
+    \*/
+    if ((node->type == StartEndTag && TY_(HTMLVersion)(doc) == HT50) && !TY_(isVoidElement)(node) )
+    {
+        PPrintEndTag( doc, mode, indent, node );
+    }
+
+    if ( (node->type != StartEndTag || xhtmlOut || (node->type == StartEndTag && TY_(HTMLVersion)(doc) == HT50)) && !(mode & PREFORMATTED) )
+    {
+        uint wraplen = cfg( doc, TidyWrapLen );
+        CheckWrapIndent( doc, indent );
+
+        if ( indent + pprint->linelen < wraplen )
         {
-            /*
-             wrap after start tag if is <br/> or if it's not
-             inline or it is an empty tag followed by </a>
-            */
-            if (AfterSpace(lexer, node))
+            /* wrap after start tag if is <br/> or if it's not inline.
+               Technically, it would be safe to call only AfterSpace.
+               However, it would disrupt the existing algorithm. So let's
+               leave as is. Note that AfterSpace returns true for non inline
+               elements but can still be false for some <br>. So it has to
+               stay as well. */
+            if (!(mode & NOWRAP)
+                && (!TY_(nodeCMIsInline)(node) || nodeIsBR(node))
+                && AfterSpace(doc->lexer, node))
             {
-                if (!(mode & NOWRAP) &&
-                    (!(node->tag->model & CM_INLINE) ||
-                      (node->tag == tag_br) ||
-                      ((node->tag->model & CM_EMPTY) &&
-                      node->next == null &&
-                      node->parent->tag == tag_a)))
-                {
-                    wraphere = linelen;
-                }
+                pprint->wraphere = pprint->linelen;
             }
         }
-        else
-            PCondFlushLine(fout, indent);
+        /* flush the current buffer only if it is known to be safe,
+           i.e. it will not introduce some spurious white spaces.
+           See bug #996484 */
+        else if ( mode & NOWRAP ||
+                  nodeIsBR(node) || AfterSpace(doc->lexer, node))
+            PCondFlushLine( doc, indent );
     }
 }
 
-static void PPrintEndTag(Out *fout, uint mode, uint indent, Node *node)
+static void PPrintEndTag( TidyDocImpl* doc, uint ARG_UNUSED(mode),
+                          uint ARG_UNUSED(indent), Node *node )
 {
-    char c, *p;
+    TidyPrintImpl* pprint = &doc->pprint;
+    Bool uc = cfgBool( doc, TidyUpperCaseTags );
+    tmbstr s = node->element;
+    tchar c;
 
    /*
      Netscape ignores SGML standard by not ignoring a
-     line break before </A> or </U> etc. To avoid rendering
+     line break before </A> or </U> etc. To avoid rendering 
      this as an underlined space, I disable line wrapping
      before inline end tags by the #if 0 ... #endif
    */
 #if 0
-    if (indent + linelen < wraplen && !(mode & NOWRAP))
-        wraphere = linelen;
+    if ( !(mode & NOWRAP) )
+        SetWrap( doc, indent );
 #endif
 
-    AddC('<', linelen++);
-    AddC('/', linelen++);
+    AddString( pprint, "</" );
 
-    for (p = node->element; (c = *p); ++p)
-        AddC(FoldCase(c, UpperCaseTags), linelen++);
+    if (s)
+    {
+        while (*s)
+        {
+             c = (unsigned char)*s;
 
-    AddC('>', linelen++);
+             if (c > 0x7F)
+                 s += TY_(GetUTF8)(s, &c);
+             else if (uc)
+                 c = TY_(ToUpper)(c);
+
+             AddChar(pprint, c);
+             ++s;
+        }
+    }
+
+    AddChar( pprint, '>' );
 }
 
-static void PPrintComment(Out *fout, uint indent,
-                   Lexer *lexer, Node *node)
+static void PPrintComment( TidyDocImpl* doc, uint indent, Node* node )
 {
-    if (indent + linelen < wraplen)
-        wraphere = linelen;
+    TidyPrintImpl* pprint = &doc->pprint;
 
-    AddC('<', linelen++);
-    AddC('!', linelen++);
-    AddC('-', linelen++);
-    AddC('-', linelen++);
+    SetWrap( doc, indent );
+    AddString( pprint, "<!--" );
+
 #if 0
-    if (linelen < wraplen)
-        wraphere = linelen;
+    SetWrap( doc, indent );
 #endif
-    PPrintText(fout, COMMENT, indent,
-                    lexer, node->start, node->end);
+
+    PPrintText(doc, COMMENT, 0, node);
+
 #if 0
-    if (indent + linelen < wraplen)
-        wraphere = linelen;
-    AddC('-', linelen++);
-    AddC('-', linelen++);
+    SetWrap( doc, indent );
+    AddString( pprint, "--" );
 #endif
-    AddC('>', linelen++);
 
-    if (node->linebreak)
-        PFlushLine(fout, indent);
+    AddString(pprint, "--");
+    AddChar( pprint, '>' );
+    if ( node->linebreak && node->next )
+        TY_(PFlushLine)( doc, indent );
 }
 
-static void PPrintDocType(Out *fout, uint indent,
-                          Lexer *lexer, Node *node)
+static void PPrintDocType( TidyDocImpl* doc, uint indent, Node *node )
 {
-    Bool q = QuoteMarks;
+    TidyPrintImpl* pprint = &doc->pprint;
+    uint wraplen = cfg( doc, TidyWrapLen );
+    uint spaces = cfg( doc, TidyIndentSpaces );
+    AttVal* fpi = TY_(GetAttrByName)(node, "PUBLIC");
+    AttVal* sys = TY_(GetAttrByName)(node, "SYSTEM");
 
-    QuoteMarks = no;
+    /* todo: handle non-ASCII characters in FPI / SI / node->element */
 
-    if (indent + linelen < wraplen)
-        wraphere = linelen;
+    SetWrap( doc, indent );
+    PCondFlushLine( doc, indent );
 
-    PCondFlushLine(fout, indent);
+    AddString( pprint, "<!DOCTYPE " );
+    SetWrap( doc, indent );
+    if (node->element)
+    {
+        AddString(pprint, node->element);
+    }
 
-    AddC('<', linelen++);
-    AddC('!', linelen++);
-    AddC('D', linelen++);
-    AddC('O', linelen++);
-    AddC('C', linelen++);
-    AddC('T', linelen++);
-    AddC('Y', linelen++);
-    AddC('P', linelen++);
-    AddC('E', linelen++);
-    AddC(' ', linelen++);
+    if (fpi && fpi->value)
+    {
+        AddString(pprint, " PUBLIC ");
+        AddChar(pprint, fpi->delim);
+        AddString(pprint, fpi->value);
+        AddChar(pprint, fpi->delim);
+    }
 
-    if (indent + linelen < wraplen)
-        wraphere = linelen;
+    if (fpi && fpi->value && sys && sys->value)
+    {
+        uint i = pprint->linelen - (TY_(tmbstrlen)(sys->value) + 2) - 1;
+        if (!(i>0&&TY_(tmbstrlen)(sys->value)+2+i<wraplen&&i<=(spaces?spaces:2)*2))
+            i = 0;
 
-    PPrintText(fout, null, indent,
-                    lexer, node->start, node->end);
+        PCondFlushLine(doc, i);
+        if (pprint->linelen)
+            AddChar(pprint, ' ');
+    }
+    else if (sys && sys->value)
+    {
+        AddString(pprint, " SYSTEM ");
+    }
 
-    if (linelen < wraplen)
-        wraphere = linelen;
+    if (sys && sys->value)
+    {
+        AddChar(pprint, sys->delim);
+        AddString(pprint, sys->value);
+        AddChar(pprint, sys->delim);
+    }
 
-    AddC('>', linelen++);
-    QuoteMarks = q;
-    PCondFlushLine(fout, indent);
+    if (node->content)
+    {
+        PCondFlushLine(doc, indent);
+        AddChar(pprint, '[');
+        PPrintText(doc, CDATA, 0, node->content);
+        AddChar(pprint, ']');
+    }
+
+    SetWrap( doc, 0 );
+    AddChar( pprint, '>' );
+    PCondFlushLine( doc, indent );
 }
 
-static void PPrintPI(Out *fout, uint indent,
-                   Lexer *lexer, Node *node)
+static void PPrintPI( TidyDocImpl* doc, uint indent, Node *node )
 {
-    if (indent + linelen < wraplen)
-        wraphere = linelen;
+    TidyPrintImpl* pprint = &doc->pprint;
+    tchar c;
+    tmbstr s;
 
-    AddC('<', linelen++);
-    AddC('?', linelen++);
+    SetWrap( doc, indent );
+    AddString( pprint, "<?" );
+
+    s = node->element;
+
+    while (s && *s)
+    {
+        c = (unsigned char)*s;
+        if (c > 0x7F)
+            s += TY_(GetUTF8)(s, &c);
+        AddChar(pprint, c);
+        ++s;
+    }
 
     /* set CDATA to pass < and > unescaped */
-    PPrintText(fout, CDATA, indent,
-                    lexer, node->start, node->end);
+    PPrintText( doc, CDATA, indent, node );
 
-    if (lexer->lexbuf[node->end - 1] != '?')
-        AddC('?', linelen++);
+    if (cfgBool(doc, TidyXmlOut) ||
+        cfgBool(doc, TidyXhtmlOut) || node->closed)
+        AddChar( pprint, '?' );
 
-    AddC('>', linelen++);
+    AddChar( pprint, '>' );
+    PCondFlushLine( doc, indent );
+}
 
-    PCondFlushLine(fout, indent);
+static void PPrintXmlDecl( TidyDocImpl* doc, uint indent, Node *node )
+{
+    AttVal* att;
+    uint saveWrap;
+    TidyPrintImpl* pprint = &doc->pprint;
+    Bool ucAttrs;
+    SetWrap( doc, indent );
+    saveWrap = WrapOff( doc );
+
+    /* no case translation for XML declaration pseudo attributes */
+    ucAttrs = cfgBool(doc, TidyUpperCaseAttrs);
+    TY_(SetOptionBool)(doc, TidyUpperCaseAttrs, no);
+
+    AddString( pprint, "<?xml" );
+
+    /* Force order of XML declaration attributes */
+    /* PPrintAttrs( doc, indent, node ); */
+    if ( NULL != (att = TY_(AttrGetById)(node, TidyAttr_VERSION)) )
+      PPrintAttribute( doc, indent, node, att );
+    if ( NULL != (att = TY_(AttrGetById)(node, TidyAttr_ENCODING)) )
+      PPrintAttribute( doc, indent, node, att );
+    if ( NULL != (att = TY_(GetAttrByName)(node, "standalone")) )
+      PPrintAttribute( doc, indent, node, att );
+
+    /* restore old config value */
+    TY_(SetOptionBool)(doc, TidyUpperCaseAttrs, ucAttrs);
+
+    if ( node->end <= 0 || doc->lexer->lexbuf[node->end - 1] != '?' )
+        AddChar( pprint, '?' );
+    AddChar( pprint, '>' );
+    WrapOn( doc, saveWrap );
+    TY_(PFlushLine)( doc, indent );
 }
 
 /* note ASP and JSTE share <% ... %> syntax */
-static void PPrintAsp(Out *fout, uint indent,
-                   Lexer *lexer, Node *node)
+static void PPrintAsp( TidyDocImpl* doc, uint indent, Node *node )
 {
-    int savewraplen = wraplen;
-
-    /* disable wrapping if so requested */
-
-    if (!WrapAsp || !WrapJste)
-        wraplen = 0xFFFFFF;  /* a very large number */
+    TidyPrintImpl* pprint = &doc->pprint;
+    Bool wrapAsp  = cfgBool( doc, TidyWrapAsp );
+    Bool wrapJste = cfgBool( doc, TidyWrapJste );
+    uint saveWrap = WrapOffCond( doc, !wrapAsp || !wrapJste );
 
 #if 0
-    if (indent + linelen < wraplen)
-        wraphere = linelen;
+    SetWrap( doc, indent );
 #endif
-    AddC('<', linelen++);
-    AddC('%', linelen++);
+    AddString( pprint, "<%" );
+    PPrintText( doc, (wrapAsp ? CDATA : COMMENT), indent, node );
+    AddString( pprint, "%>" );
 
-    PPrintText(fout, (WrapAsp ? CDATA : COMMENT), indent,
-                    lexer, node->start, node->end);
-
-    AddC('%', linelen++);
-    AddC('>', linelen++);
-    /* PCondFlushLine(fout, indent); */
-    wraplen = savewraplen;
+    /* PCondFlushLine( doc, indent ); */
+    WrapOn( doc, saveWrap );
 }
 
 /* JSTE also supports <# ... #> syntax */
-static void PPrintJste(Out *fout, uint indent,
-                   Lexer *lexer, Node *node)
+static void PPrintJste( TidyDocImpl* doc, uint indent, Node *node )
 {
-    int savewraplen = wraplen;
+    TidyPrintImpl* pprint = &doc->pprint;
+    Bool wrapAsp = cfgBool( doc, TidyWrapAsp );
+    uint saveWrap = WrapOffCond( doc, !wrapAsp  );
 
-    /* disable wrapping if so requested */
+    AddString( pprint, "<#" );
+    PPrintText( doc, (cfgBool(doc, TidyWrapJste) ? CDATA : COMMENT),
+                indent, node );
+    AddString( pprint, "#>" );
 
-    if (!WrapAsp)
-        wraplen = 0xFFFFFF;  /* a very large number */
-
-    AddC('<', linelen++);
-    AddC('#', linelen++);
-
-    PPrintText(fout, (WrapJste ? CDATA : COMMENT), indent,
-                    lexer, node->start, node->end);
-
-    AddC('#', linelen++);
-    AddC('>', linelen++);
-    /* PCondFlushLine(fout, indent); */
-    wraplen = savewraplen;
+    /* PCondFlushLine( doc, indent ); */
+    WrapOn( doc, saveWrap );
 }
 
 /* PHP is based on XML processing instructions */
-static void PPrintPhp(Out *fout, uint indent,
-                   Lexer *lexer, Node *node)
+static void PPrintPhp( TidyDocImpl* doc, uint indent, Node *node )
 {
-    int savewraplen = wraplen;
+    TidyPrintImpl* pprint = &doc->pprint;
+    Bool wrapPhp = cfgBool( doc, TidyWrapPhp );
+    uint saveWrap = WrapOffCond( doc, !wrapPhp  );
+#if 0
+    SetWrap( doc, indent );
+#endif
 
-    /* disable wrapping if so requested */
+    AddString( pprint, "<?" );
+    PPrintText( doc, (wrapPhp ? CDATA : COMMENT),
+                indent, node );
+    AddString( pprint, "?>" );
 
-    if (!WrapPhp)
-        wraplen = 0xFFFFFF;  /* a very large number */
+    /* PCondFlushLine( doc, indent ); */
+    WrapOn( doc, saveWrap );
+}
+
+static void PPrintCDATA( TidyDocImpl* doc, uint indent, Node *node )
+{
+    uint saveWrap;
+    TidyPrintImpl* pprint = &doc->pprint;
+    Bool indentCData = cfgBool( doc, TidyIndentCdata );
+    if ( !indentCData )
+        indent = 0;
+
+    PCondFlushLine( doc, indent );
+    saveWrap = WrapOff( doc );        /* disable wrapping */
+
+    AddString( pprint, "<![CDATA[" );
+    PPrintText( doc, COMMENT, indent, node );
+    AddString( pprint, "]]>" );
+
+    PCondFlushLine( doc, indent );
+    WrapOn( doc, saveWrap );          /* restore wrapping */
+}
+
+static void PPrintSection( TidyDocImpl* doc, uint indent, Node *node )
+{
+    TidyPrintImpl* pprint = &doc->pprint;
+    Bool wrapSect = cfgBool( doc, TidyWrapSection );
+    uint saveWrap = WrapOffCond( doc, !wrapSect  );
+#if 0
+    SetWrap( doc, indent );
+#endif
+
+    AddString( pprint, "<![" );
+    PPrintText( doc, (wrapSect ? CDATA : COMMENT),
+                indent, node );
+    AddString( pprint, "]>" );
+
+    /* PCondFlushLine( doc, indent ); */
+    WrapOn( doc, saveWrap );
+}
+
 
 #if 0
-    if (indent + linelen < wraplen)
-        wraphere = linelen;
+/*
+** Print script and style elements. For XHTML, wrap the content as follows:
+**
+**     JavaScript:
+**         //<![CDATA[
+**             content
+**         //]]>
+**     VBScript:
+**         '<![CDATA[
+**             content
+**         ']]>
+**     CSS:
+**         / *<![CDATA[* /     Extra spaces to keep compiler happy
+**             content
+**         / *]]>* /
+**     other:
+**         <![CDATA[
+**             content
+**         ]]>
+*/
 #endif
-    AddC('<', linelen++);
-    AddC('?', linelen++);
 
-    PPrintText(fout, (WrapPhp ? CDATA : COMMENT), indent,
-                    lexer, node->start, node->end);
+static ctmbstr CDATA_START           = "<![CDATA[";
+static ctmbstr CDATA_END             = "]]>";
+static ctmbstr JS_COMMENT_START      = "//";
+static ctmbstr JS_COMMENT_END        = "";
+static ctmbstr VB_COMMENT_START      = "\'";
+static ctmbstr VB_COMMENT_END        = "";
+static ctmbstr CSS_COMMENT_START     = "/*";
+static ctmbstr CSS_COMMENT_END       = "*/";
+static ctmbstr DEFAULT_COMMENT_START = "";
+static ctmbstr DEFAULT_COMMENT_END   = "";
 
-    AddC('?', linelen++);
-    AddC('>', linelen++);
-    /* PCondFlushLine(fout, indent); */
-    wraplen = savewraplen;
+static Bool InsideHead( TidyDocImpl* doc, Node *node )
+{
+  if ( nodeIsHEAD(node) )
+    return yes;
+
+  if ( node->parent != NULL )
+    return InsideHead( doc, node->parent );
+
+  return no;
 }
 
-static void PPrintCDATA(Out *fout, uint indent,
-                   Lexer *lexer, Node *node)
+/* Is text node and already ends w/ a newline?
+ 
+   Used to pretty print CDATA/PRE text content.
+   If it already ends on a newline, it is not
+   necessary to print another before printing end tag.
+*/
+static int TextEndsWithNewline(Lexer *lexer, Node *node, uint mode )
 {
-    int savewraplen = wraplen;
+    if ( (mode & (CDATA|COMMENT)) && TY_(nodeIsText)(node) && node->end > node->start )
+    {
+        uint ch, ix = node->end - 1;
+        /* Skip non-newline whitespace. */
+        while ( ix >= node->start && (ch = (lexer->lexbuf[ix] & 0xff))
+                && ( ch == ' ' || ch == '\t' || ch == '\r' ) )
+            --ix;
 
-    PCondFlushLine(fout, indent);
-
-    /* disable wrapping */
-
-    wraplen = 0xFFFFFF;  /* a very large number */
-
-    AddC('<', linelen++);
-    AddC('!', linelen++);
-    AddC('[', linelen++);
-    AddC('C', linelen++);
-    AddC('D', linelen++);
-    AddC('A', linelen++);
-    AddC('T', linelen++);
-    AddC('A', linelen++);
-    AddC('[', linelen++);
-
-    PPrintText(fout, COMMENT, indent,
-                    lexer, node->start, node->end);
-
-    AddC(']', linelen++);
-    AddC(']', linelen++);
-    AddC('>', linelen++);
-    PCondFlushLine(fout, indent);
-    wraplen = savewraplen;
+        if ( lexer->lexbuf[ ix ] == '\n' )
+          return node->end - ix - 1; /* #543262 tidy eats all memory */
+    }
+    return -1;
 }
 
-static void PPrintSection(Out *fout, uint indent,
-                   Lexer *lexer, Node *node)
+/*\
+ * Issue #133 - creeping indent - a very OLD bug - 2nd tidy run increases the indent!
+ * If the node is text, then remove any white space equal to the indent,
+ * but this also applies to the AspTag, which is text like...
+ * And may apply to other text like nodes as well.
+ *
+ * Here the total white space is returned, and then a sister service, IncrWS() 
+ * will advance the start of the lexer output by the amount of the indent.
+\*/
+static Bool TY_(nodeIsTextLike)( Node *node )
 {
-    int savewraplen = wraplen;
-
-    /* disable wrapping if so requested */
-
-    if (!WrapSection)
-        wraplen = 0xFFFFFF;  /* a very large number */
-
-#if 0
-    if (indent + linelen < wraplen)
-        wraphere = linelen;
-#endif
-    AddC('<', linelen++);
-    AddC('!', linelen++);
-    AddC('[', linelen++);
-
-    PPrintText(fout, (WrapSection ? CDATA : COMMENT), indent,
-                    lexer, node->start, node->end);
-
-    AddC(']', linelen++);
-    AddC('>', linelen++);
-    /* PCondFlushLine(fout, indent); */
-    wraplen = savewraplen;
+    if ( TY_(nodeIsText)(node) )
+        return yes;
+    if ( node->type == AspTag )
+        return yes;
+    /* add other text like nodes... */
+    return no;
 }
 
-static Bool ShouldIndent(Node *node)
+static int TextStartsWithWhitespace( Lexer *lexer, Node *node, uint start, uint mode )
 {
-    if (IndentContent == no)
+    assert( node != NULL );
+    if ( (mode & (CDATA|COMMENT)) && TY_(nodeIsTextLike)(node) && node->end > node->start && start >= node->start )
+    {
+        uint ch, ix = start;
+        /* Skip whitespace. */
+        while ( ix < node->end && (ch = (lexer->lexbuf[ix] & 0xff))
+                && ( ch==' ' || ch=='\t' || ch=='\r' ) )
+            ++ix;
+
+        if ( ix > start )
+          return ix - start;
+    }
+    return -1;
+}
+
+static Bool HasCDATA( Lexer* lexer, Node* node )
+{
+    /* Scan forward through the textarray. Since the characters we're
+    ** looking for are < 0x7f, we don't have to do any UTF-8 decoding.
+    */
+    ctmbstr start = lexer->lexbuf + node->start;
+    int len = node->end - node->start + 1;
+
+    if ( node->type != TextNode )
         return no;
 
-    if (SmartIndent)
-    {
-        if (node->content && (node->tag->model & CM_NO_INDENT))
-        {
-            for (node = node->content; node; node = node->next)
-                if (node->tag && node->tag->model & CM_BLOCK)
-                    return yes;
+    return ( NULL != TY_(tmbsubstrn)( start, len, CDATA_START ));
+}
 
+
+static
+void PPrintScriptStyle( TidyDocImpl* doc, uint mode, uint indent, Node *node )
+{
+    TidyPrintImpl* pprint = &doc->pprint;
+    Node*   content;
+    ctmbstr commentStart = DEFAULT_COMMENT_START;
+    ctmbstr commentEnd = DEFAULT_COMMENT_END;
+    Bool    hasCData = no;
+    int     contentIndent = -1;
+    Bool    xhtmlOut = cfgBool( doc, TidyXhtmlOut );
+
+    if ( InsideHead(doc, node) )
+      TY_(PFlushLine)( doc, indent );
+
+    PCondFlushLine( doc, indent );  /* Issue #56 - long oustanding bug - flush any existing closing tag */
+
+    PPrintTag( doc, mode, indent, node );
+
+    /* use zero indent here, see http://tidy.sf.net/bug/729972 
+       WHY??? TY_(PFlushLine)(doc, 0); */
+    TY_(PFlushLine)(doc, indent);
+
+    if ( xhtmlOut && node->content != NULL )
+    {
+        AttVal* type = attrGetTYPE(node);
+
+        if (AttrValueIs(type, "text/javascript"))
+        {
+            commentStart = JS_COMMENT_START;
+            commentEnd = JS_COMMENT_END;
+        }
+        else if (AttrValueIs(type, "text/css"))
+        {
+            commentStart = CSS_COMMENT_START;
+            commentEnd = CSS_COMMENT_END;
+        }
+        else if (AttrValueIs(type, "text/vbscript"))
+        {
+            commentStart = VB_COMMENT_START;
+            commentEnd = VB_COMMENT_END;
+        }
+
+        hasCData = HasCDATA(doc->lexer, node->content);
+
+        if (!hasCData)
+        {
+            uint saveWrap = WrapOff( doc );
+
+            AddString( pprint, commentStart );
+            AddString( pprint, CDATA_START );
+            AddString( pprint, commentEnd );
+            PCondFlushLine( doc, indent );
+
+            WrapOn( doc, saveWrap );
+        }
+    }
+
+    for ( content = node->content;
+          content != NULL;
+          content = content->next )
+    {
+        /*
+          This is a bit odd, with the current code there can only
+          be one child and the only caller of this function defines
+          all these modes already...
+        */
+        TY_(PPrintTree)( doc, (mode | PREFORMATTED | NOWRAP | CDATA), 
+                         indent, content );
+
+        if ( content == node->last )
+            contentIndent = TextEndsWithNewline( doc->lexer, content, CDATA );
+    }
+
+    if ( contentIndent < 0 )
+    {
+        PCondFlushLine( doc, indent );
+        contentIndent = 0;
+    }
+
+    if ( xhtmlOut && node->content != NULL )
+    {
+        if ( ! hasCData )
+        {
+            uint saveWrap = WrapOff( doc );
+
+            AddString( pprint, commentStart );
+            AddString( pprint, CDATA_END );
+            AddString( pprint, commentEnd );
+
+            WrapOn( doc, saveWrap );
+            PCondFlushLine( doc, indent );
+        }
+    }
+
+    if ( node->content && pprint->indent[ 0 ].spaces != (int)indent )
+    {
+        pprint->indent[ 0 ].spaces = indent;
+    }
+    PPrintEndTag( doc, mode, indent, node );
+    if ( cfgAutoBool(doc, TidyIndentContent) == TidyNoState
+         && node->next != NULL &&
+         !( TY_(nodeHasCM)(node, CM_INLINE) || TY_(nodeIsText)(node) ) )
+        TY_(PFlushLine)( doc, indent );
+}
+
+
+
+static Bool ShouldIndent( TidyDocImpl* doc, Node *node )
+{
+    TidyTriState indentContent = cfgAutoBool( doc, TidyIndentContent );
+    if ( indentContent == TidyNoState )
+        return no;
+
+    if ( nodeIsTEXTAREA(node) )
+        return no;
+
+    if ( indentContent == TidyAutoState )
+    {
+        if ( node->content && TY_(nodeHasCM)(node, CM_NO_INDENT) )
+        {
+            for ( node = node->content; node; node = node->next )
+                if ( TY_(nodeHasCM)(node, CM_BLOCK) )
+                    return yes;
             return no;
         }
 
-        if (node->tag->model & CM_HEADING)
+        if ( TY_(nodeHasCM)(node, CM_HEADING) )
             return no;
 
-        if (node->tag == tag_p)
+        if ( nodeIsHTML(node) )
             return no;
 
-        if (node->tag == tag_title)
+        if ( nodeIsP(node) )
+            return no;
+
+        if ( nodeIsTITLE(node) )
+            return no;
+
+        /* http://tidy.sf.net/issue/1610888
+           Indenting <div><img /></div> produces spurious lines with IE 6.x */
+        if ( nodeIsDIV(node) && node->last && nodeIsIMG(node->last) )
             return no;
     }
 
-    if (node->tag->model & (CM_FIELD | CM_OBJECT))
+    if ( TY_(nodeHasCM)(node, CM_FIELD | CM_OBJECT) )
         return yes;
 
-    if (node->tag == tag_map)
+    if ( nodeIsMAP(node) )
         return yes;
 
-    return (Bool)(!(node->tag->model & CM_INLINE));
+    return ( !TY_(nodeHasCM)( node, CM_INLINE ) && node->content );
 }
 
-void PPrintTree(Out *fout, uint mode, uint indent,
-                    Lexer *lexer, Node *node)
+/*
+ Feature request #434940 - fix by Dave Raggett/Ignacio Vazquez-Abrams 21 Jun 01
+ print just the content of the body element.
+ useful when you want to reuse material from
+ other documents.
+
+ -- Sebastiano Vigna <vigna@dsi.unimi.it>
+*/
+void TY_(PrintBody)( TidyDocImpl* doc )
+{
+    Node *node = TY_(FindBody)( doc );
+
+    if ( node )
+    {
+        for ( node = node->content; node != NULL; node = node->next )
+            TY_(PPrintTree)( doc, NORMAL, 0, node );
+    }
+}
+
+/* #130 MathML attr and entity fix! 
+   Support MathML namepsace */
+static void PPrintMathML( TidyDocImpl* doc, uint indent, Node *node )
+{
+    Node *content;
+    uint mode = OtherNamespace;
+
+    PPrintTag( doc, mode, indent, node );
+
+    for ( content = node->content; content; content = content->next )
+           TY_(PPrintTree)( doc, mode, indent, content );
+
+    PPrintEndTag( doc, mode, indent, node );
+}
+
+void TY_(PPrintTree)( TidyDocImpl* doc, uint mode, uint indent, Node *node )
 {
     Node *content, *last;
+    uint spaces = cfg( doc, TidyIndentSpaces );
+    Bool xhtml = cfgBool( doc, TidyXhtmlOut );
 
-    if (node == null)
+    if ( node == NULL )
         return;
 
     if (node->type == TextNode)
-        PPrintText(fout, mode, indent,
-                    lexer, node->start, node->end);
-    else if (node->type == CommentTag)
     {
-        PPrintComment(fout, indent, lexer, node);
+        PPrintText( doc, mode, indent, node );
     }
-    else if (node->type == RootNode)
+    else if ( node->type == CommentTag )
     {
-        for (content = node->content;
-                content != null;
-                content = content->next)
-           PPrintTree(fout, mode, indent, lexer, content);
+        PPrintComment( doc, indent, node );
     }
-    else if (node->type == DocTypeTag)
-        PPrintDocType(fout, indent, lexer, node);
-    else if (node->type == ProcInsTag)
-        PPrintPI(fout, indent, lexer, node);
-    else if (node->type == CDATATag)
-        PPrintCDATA(fout, indent, lexer, node);
-    else if (node->type == SectionTag)
-        PPrintSection(fout, indent, lexer, node);
-    else if (node->type == AspTag)
-        PPrintAsp(fout, indent, lexer, node);
-    else if (node->type == JsteTag)
-        PPrintJste(fout, indent, lexer, node);
-    else if (node->type == PhpTag)
-        PPrintPhp(fout, indent, lexer, node);
-    else if (node->tag->model & CM_EMPTY || node->type == StartEndTag)
+    else if ( node->type == RootNode )
     {
-        if (!(node->tag->model & CM_INLINE))
-            PCondFlushLine(fout, indent);
+        for ( content = node->content; content; content = content->next )
+           TY_(PPrintTree)( doc, mode, indent, content );
+    }
+    else if ( node->type == DocTypeTag )
+        PPrintDocType( doc, indent, node );
+    else if ( node->type == ProcInsTag)
+        PPrintPI( doc, indent, node );
+    else if ( node->type == XmlDecl)
+        PPrintXmlDecl( doc, indent, node );
+    else if ( node->type == CDATATag)
+        PPrintCDATA( doc, indent, node );
+    else if ( node->type == SectionTag)
+        PPrintSection( doc, indent, node );
+    else if ( node->type == AspTag)
+        PPrintAsp( doc, indent, node );
+    else if ( node->type == JsteTag)
+        PPrintJste( doc, indent, node );
+    else if ( node->type == PhpTag)
+        PPrintPhp( doc, indent, node );
+    else if ( nodeIsMATHML(node) )
+        PPrintMathML( doc, indent, node ); /* #130 MathML attr and entity fix! */
+    else if ( TY_(nodeCMIsEmpty)(node) ||
+              (node->type == StartEndTag && !xhtml) )
+    {
+        /* Issue #8 - flush to new line? 
+           maybe use if ( TY_(nodeHasCM)(node, CM_BLOCK) ) instead
+           or remove the CM_INLINE from the tag
+         */
+        if ( ! TY_(nodeHasCM)(node, CM_INLINE) )
+            PCondFlushLine( doc, indent );
 
-        if (node->tag == tag_br && node->prev && node->prev->tag != tag_br && BreakBeforeBR)
-            PFlushLine(fout, indent);
+        if ( nodeIsBR(node) && node->prev &&
+             !(nodeIsBR(node->prev) || (mode & PREFORMATTED)) &&
+             cfgBool(doc, TidyBreakBeforeBR) )
+            TY_(PFlushLine)( doc, indent );
 
-        if (MakeClean && node->tag == tag_wbr)
-            PPrintString(fout, indent, " ");
-        else
-            PPrintTag(lexer, fout, mode, indent, node);
+        if ( nodeIsHR(node) )
+        {
+            /* insert extra newline for classic formatting */
+            Bool classic = cfgBool( doc, TidyVertSpace );
+            if (classic && node->parent && node->parent->content != node)
+            {
+                TY_(PFlushLine)( doc, indent );
+            }
+        }
 
-        if (node->tag == tag_param || node->tag == tag_area)
-            PCondFlushLine(fout, indent);
-        else if (node->tag == tag_br || node->tag == tag_hr)
-            PFlushLine(fout, indent);
+        PPrintTag( doc, mode, indent, node );
+
+        if (node->next)
+        {
+          if (nodeIsPARAM(node) || nodeIsAREA(node))
+              PCondFlushLine(doc, indent);
+          else if ((nodeIsBR(node) && !(mode & PREFORMATTED))
+                   || nodeIsHR(node))
+              TY_(PFlushLine)(doc, indent);
+        }
     }
     else /* some kind of container element */
     {
-        if (node->tag && node->tag->parser == ParsePre)
+        if ( node->type == StartEndTag )
+            node->type = StartTag;
+
+        if ( node->tag && 
+             (node->tag->parser == TY_(ParsePre) || nodeIsTEXTAREA(node)) )
         {
-            PCondFlushLine(fout, indent);
+            Bool classic  = cfgBool( doc, TidyVertSpace );
+            uint indprev = indent;
+            PCondFlushLine( doc, indent );
 
-            indent = 0;
-            PCondFlushLine(fout, indent);
-            PPrintTag(lexer, fout, mode, indent, node);
-            PFlushLine(fout, indent);
+            PCondFlushLine( doc, indent );
 
-            for (content = node->content;
-                    content != null;
-                    content = content->next)
-                PPrintTree(fout, (mode | PREFORMATTED | NOWRAP), indent, lexer, content);
-
-            PCondFlushLine(fout, indent);
-            PPrintEndTag(fout, mode, indent, node);
-            PFlushLine(fout, indent);
-
-            if (IndentContent == no && node->next != null)
-                PFlushLine(fout, indent);
-        }
-        else if (node->tag == tag_style || node->tag == tag_script)
-        {
-            PCondFlushLine(fout, indent);
-
-            indent = 0;
-            PCondFlushLine(fout, indent);
-            PPrintTag(lexer, fout, mode, indent, node);
-            PFlushLine(fout, indent);
-
-            for (content = node->content;
-                    content != null;
-                    content = content->next)
-                PPrintTree(fout, (mode | PREFORMATTED | NOWRAP |CDATA), indent, lexer, content);
-
-            PCondFlushLine(fout, indent);
-            PPrintEndTag(fout, mode, indent, node);
-            PFlushLine(fout, indent);
-
-            if (IndentContent == no && node->next != null)
-                PFlushLine(fout, indent);
-        }
-        else if (node->tag->model & CM_INLINE)
-        {
-            if (MakeClean)
+            /* insert extra newline for classic formatting */
+            if (classic && node->parent && node->parent->content != node)
             {
-                /* discards <font> and </font> tags */
-                if (node->tag == tag_font)
-                {
-                    for (content = node->content;
-                            content != null;
-                            content = content->next)
-                        PPrintTree(fout, mode, indent, lexer, content);
-                    return;
-                }
+                TY_(PFlushLine)( doc, indent );
+            }
+            PPrintTag( doc, mode, indent, node );
 
+            indent = 0;
+            TY_(PFlushLine)( doc, indent );
+
+            for ( content = node->content; content; content = content->next )
+            {
+                TY_(PPrintTree)( doc, (mode | PREFORMATTED | NOWRAP),
+                                 indent, content );
+            }
+            PCondFlushLine( doc, indent );
+            indent = indprev;
+            PPrintEndTag( doc, mode, indent, node );
+
+            if ( cfgAutoBool(doc, TidyIndentContent) == TidyNoState
+                 && node->next != NULL )
+                TY_(PFlushLine)( doc, indent );
+        }
+        else if ( nodeIsSTYLE(node) || nodeIsSCRIPT(node) )
+        {
+            PPrintScriptStyle( doc, (mode | PREFORMATTED | NOWRAP | CDATA),
+                               indent, node );
+        }
+        else if ( TY_(nodeCMIsInline)(node) )
+        {
+            if ( cfgBool(doc, TidyMakeClean) )
+            {
                 /* replace <nobr>...</nobr> by &nbsp; or &#160; etc. */
-                if (node->tag == tag_nobr)
+                if ( nodeIsNOBR(node) )
                 {
-                    for (content = node->content;
-                            content != null;
-                            content = content->next)
-                        PPrintTree(fout, mode|NOWRAP, indent, lexer, content);
+                    for ( content = node->content;
+                          content != NULL;
+                          content = content->next)
+                        TY_(PPrintTree)( doc, mode|NOWRAP, indent, content );
                     return;
                 }
             }
 
             /* otherwise a normal inline element */
-
-            PPrintTag(lexer, fout, mode, indent, node);
+            PPrintTag( doc, mode, indent, node );
 
             /* indent content for SELECT, TEXTAREA, MAP, OBJECT and APPLET */
-
-            if (ShouldIndent(node))
+            if ( ShouldIndent(doc, node) )
             {
-                PCondFlushLine(fout, indent);
                 indent += spaces;
+                PCondFlushLine( doc, indent );
 
-                for (content = node->content;
-                        content != null;
-                        content = content->next)
-                    PPrintTree(fout, mode, indent, lexer, content);
+                for ( content = node->content;
+                      content != NULL;
+                      content = content->next )
+                    TY_(PPrintTree)( doc, mode, indent, content );
 
-                PCondFlushLine(fout, indent);
                 indent -= spaces;
-                PCondFlushLine(fout, indent);
+                PCondFlushLine( doc, indent );
+                /* PCondFlushLine( doc, indent ); */
             }
             else
             {
-
-                for (content = node->content;
-                        content != null;
-                        content = content->next)
-                    PPrintTree(fout, mode, indent, lexer, content);
+                for ( content = node->content;
+                      content != NULL;
+                      content = content->next )
+                    TY_(PPrintTree)( doc, mode, indent, content );
             }
-
-            PPrintEndTag(fout, mode, indent, node);
+            PPrintEndTag( doc, mode, indent, node );
         }
         else /* other tags */
         {
-            PCondFlushLine(fout, indent);
+            Bool indcont  = ( cfgAutoBool(doc, TidyIndentContent) != TidyNoState );
+            Bool indsmart = ( cfgAutoBool(doc, TidyIndentContent) == TidyAutoState );
+            Bool hideend  = cfgBool( doc, TidyHideEndTags ) ||
+              cfgBool( doc, TidyOmitOptionalTags );
+            Bool classic  = cfgBool( doc, TidyVertSpace );
+            uint contentIndent = indent;
 
-            if (SmartIndent && node->prev != null)
-                PFlushLine(fout, indent);
-
-            if (HideEndTags == no || !(node->tag && (node->tag->model & CM_OMITST)))
+            /* insert extra newline for classic formatting */
+            if (classic && node->parent && node->parent->content != node && !nodeIsHTML(node))
             {
-                PPrintTag(lexer, fout, mode, indent, node);
-
-                if (ShouldIndent(node))
-                    PCondFlushLine(fout, indent);
-                else if (node->tag->model & CM_HTML || node->tag == tag_noframes ||
-                            (node->tag->model & CM_HEAD && !(node->tag == tag_title)))
-                    PFlushLine(fout, indent);
+                TY_(PFlushLine)( doc, indent );
             }
-#ifndef BIF_TIDY
-            if (node->tag == tag_body && BurstSlides)
-                PPrintSlide(fout, mode, (IndentContent ? indent+spaces : indent), lexer);
-            else
-#endif
+
+            if ( ShouldIndent(doc, node) )
+                contentIndent += spaces;
+
+            PCondFlushLine( doc, indent );
+
+            /*\
+             *  Issue #180 - with the above PCondFlushLine, 
+             *  this adds an uneccessary additional line!
+             *  Maybe only if 'classic' ie --vertical-space yes 
+            \*/
+            if ( indsmart && node->prev != NULL && classic)
+                TY_(PFlushLine)( doc, indent );
+
+            /* do not omit elements with attributes */
+            if ( !hideend || !TY_(nodeHasCM)(node, CM_OMITST) ||
+                 node->attributes != NULL )
             {
-                last = null;
+                PPrintTag( doc, mode, indent, node );
 
-                for (content = node->content;
-                        content != null; content = content->next)
+                if ( ShouldIndent(doc, node) )
                 {
-                    /* kludge for naked text before block level tag */
-                    if (last && !IndentContent && last->type == TextNode &&
-                        content->tag && content->tag->model & CM_BLOCK)
-                    {
-                        PFlushLine(fout, indent);
-                        PFlushLine(fout, indent);
-                    }
-
-                    PPrintTree(fout, mode,
-                        (ShouldIndent(node) ? indent+spaces : indent), lexer, content);
-
-                    last = content;
+                    /* fix for bug 530791, don't wrap after */
+                    /* <li> if first child is text node     */
+                    if (!(nodeIsLI(node) && TY_(nodeIsText)(node->content)))
+                        PCondFlushLine( doc, contentIndent );
                 }
+                else if ( TY_(nodeHasCM)(node, CM_HTML) || nodeIsNOFRAMES(node) ||
+                          (TY_(nodeHasCM)(node, CM_HEAD) && !nodeIsTITLE(node)) )
+                    TY_(PFlushLine)( doc, contentIndent );
+            }
+
+            last = NULL;
+            for ( content = node->content; content; content = content->next )
+            {
+                /* kludge for naked text before block level tag */
+                if ( last && !indcont && TY_(nodeIsText)(last) &&
+                     content->tag && !TY_(nodeHasCM)(content, CM_INLINE) )
+                {
+                    /* TY_(PFlushLine)(fout, indent); */
+                    TY_(PFlushLine)( doc, contentIndent );
+                }
+
+                TY_(PPrintTree)( doc, mode, contentIndent, content );
+                last = content;
             }
 
             /* don't flush line for td and th */
-            if (ShouldIndent(node) ||
-                ((node->tag->model & CM_HTML || node->tag == tag_noframes ||
-                    (node->tag->model & CM_HEAD && !(node->tag == tag_title)))
-                    && HideEndTags == no))
+            if ( ShouldIndent(doc, node) ||
+                 ( !hideend &&
+                   ( TY_(nodeHasCM)(node, CM_HTML) || 
+                     nodeIsNOFRAMES(node) ||
+                     (TY_(nodeHasCM)(node, CM_HEAD) && !nodeIsTITLE(node))
+                   )
+                 )
+               )
             {
-                PCondFlushLine(fout, (IndentContent ? indent+spaces : indent));
-
-                if (HideEndTags == no || !(node->tag->model & CM_OPT))
+                PCondFlushLine( doc, indent );
+                if ( !hideend || !TY_(nodeHasCM)(node, CM_OPT) )
                 {
-                    PPrintEndTag(fout, mode, indent, node);
-                    PFlushLine(fout, indent);
+                    PPrintEndTag( doc, mode, indent, node );
+                    /* TY_(PFlushLine)( doc, indent ); */
                 }
             }
             else
             {
-                if (HideEndTags == no || !(node->tag->model & CM_OPT))
-                    PPrintEndTag(fout, mode, indent, node);
-
-                PFlushLine(fout, indent);
+                if ( !hideend || !TY_(nodeHasCM)(node, CM_OPT) )
+                {
+                    /* newline before endtag for classic formatting */
+                    if ( classic && !HasMixedContent(node) )
+                        TY_(PFlushLine)( doc, indent );
+                    PPrintEndTag( doc, mode, indent, node );
+                }
             }
 
-            if (IndentContent == no &&
-                node->next != null &&
-                HideEndTags == no &&
-                (node->tag->model & (CM_BLOCK|CM_LIST|CM_DEFLIST|CM_TABLE)))
-            {
-                PFlushLine(fout, indent);
-            }
+            if (!indcont && !hideend && !nodeIsHTML(node) && !classic)
+                TY_(PFlushLine)( doc, indent );
+            else if (classic && node->next != NULL && TY_(nodeHasCM)(node, CM_LIST|CM_DEFLIST|CM_TABLE|CM_BLOCK/*|CM_HEADING*/))
+                TY_(PFlushLine)( doc, indent );
         }
     }
 }
 
-void PPrintXMLTree(Out *fout, uint mode, uint indent,
-                    Lexer *lexer, Node *node)
+void TY_(PPrintXMLTree)( TidyDocImpl* doc, uint mode, uint indent, Node *node )
 {
-    if (node == null)
+    Bool xhtmlOut = cfgBool( doc, TidyXhtmlOut );
+    if (node == NULL)
         return;
 
-    if (node->type == TextNode)
+    if ( node->type == TextNode)
     {
-        PPrintText(fout, mode, indent,
-                    lexer, node->start, node->end);
+        PPrintText( doc, mode, indent, node );
     }
-    else if (node->type == CommentTag)
+    else if ( node->type == CommentTag )
     {
-        PCondFlushLine(fout, indent);
-        PPrintComment(fout, 0, lexer, node);
-        PCondFlushLine(fout, 0);
+        PCondFlushLine( doc, indent );
+        PPrintComment( doc, indent, node);
+        /* PCondFlushLine( doc, 0 ); */
     }
-    else if (node->type == RootNode)
+    else if ( node->type == RootNode )
     {
         Node *content;
-
-        for (content = node->content;
-                content != null;
-                content = content->next)
-           PPrintXMLTree(fout, mode, indent, lexer, content);
+        for ( content = node->content;
+              content != NULL;
+              content = content->next )
+           TY_(PPrintXMLTree)( doc, mode, indent, content );
     }
-    else if (node->type == DocTypeTag)
-        PPrintDocType(fout, indent, lexer, node);
-    else if (node->type == ProcInsTag)
-        PPrintPI(fout, indent, lexer, node);
-    else if (node->type == CDATATag)
-        PPrintCDATA(fout, indent, lexer, node);
-    else if (node->type == SectionTag)
-        PPrintSection(fout, indent, lexer, node);
-    else if (node->type == AspTag)
-        PPrintAsp(fout, indent, lexer, node);
-    else if (node->type == JsteTag)
-        PPrintJste(fout, indent, lexer, node);
-    else if (node->type == PhpTag)
-        PPrintPhp(fout, indent, lexer, node);
-    else if (node->tag->model & CM_EMPTY || node->type == StartEndTag)
+    else if ( node->type == DocTypeTag )
+        PPrintDocType( doc, indent, node );
+    else if ( node->type == ProcInsTag )
+        PPrintPI( doc, indent, node );
+    else if ( node->type == XmlDecl )
+        PPrintXmlDecl( doc, indent, node );
+    else if ( node->type == CDATATag )
+        PPrintCDATA( doc, indent, node );
+    else if ( node->type == SectionTag )
+        PPrintSection( doc, indent, node );
+    else if ( node->type == AspTag )
+        PPrintAsp( doc, indent, node );
+    else if ( node->type == JsteTag)
+        PPrintJste( doc, indent, node );
+    else if ( node->type == PhpTag)
+        PPrintPhp( doc, indent, node );
+    else if ( TY_(nodeHasCM)(node, CM_EMPTY) ||
+              (node->type == StartEndTag && !xhtmlOut) )
     {
-        PCondFlushLine(fout, indent);
-        PPrintTag(lexer, fout, mode, indent, node);
-        PFlushLine(fout, indent);
-
-        if (node->next)
-            PFlushLine(fout, indent);
+        PCondFlushLine( doc, indent );
+        PPrintTag( doc, mode, indent, node );
+        /* TY_(PFlushLine)( doc, indent ); */
     }
     else /* some kind of container element */
     {
+        uint spaces = cfg( doc, TidyIndentSpaces );
         Node *content;
         Bool mixed = no;
-        int cindent;
+        uint cindent;
 
-        for (content = node->content; content; content = content->next)
+        for ( content = node->content; content; content = content->next )
         {
-            if (content->type == TextNode)
+            if ( TY_(nodeIsText)(content) )
             {
                 mixed = yes;
                 break;
             }
         }
 
-        PCondFlushLine(fout, indent);
+        PCondFlushLine( doc, indent );
 
-        if (XMLPreserveWhiteSpace(node))
+        if ( TY_(XMLPreserveWhiteSpace)(doc, node) )
         {
             indent = 0;
-            cindent = 0;
             mixed = no;
+            cindent = 0;
         }
         else if (mixed)
             cindent = indent;
         else
             cindent = indent + spaces;
 
-        PPrintTag(lexer, fout, mode, indent, node);
+        PPrintTag( doc, mode, indent, node );
+        if ( !mixed && node->content )
+            TY_(PFlushLine)( doc, cindent );
+ 
+        for ( content = node->content; content; content = content->next )
+            TY_(PPrintXMLTree)( doc, mode, cindent, content );
 
-        if (!mixed)
-            PFlushLine(fout, indent);
+        if ( !mixed && node->content )
+            PCondFlushLine( doc, indent );
 
-        for (content = node->content;
-                content != null;
-                content = content->next)
-            PPrintXMLTree(fout, mode, cindent, lexer, content);
-
-        if (!mixed)
-            PCondFlushLine(fout, cindent);
-
-        PPrintEndTag(fout, mode, indent, node);
-        PCondFlushLine(fout, indent);
-
-        if (node->next)
-            PFlushLine(fout, indent);
+        PPrintEndTag( doc, mode, indent, node );
+        /* PCondFlushLine( doc, indent ); */
     }
 }
 
-Node *FindHead(Node *root)
-{
-    Node *node;
-
-    node = root->content;
-
-    while (node && node->tag != tag_html)
-        node = node->next;
-
-    if (node == null)
-        return null;
-
-    node = node->content;
-
-    while (node && node->tag != tag_head)
-        node = node->next;
-
-    return node;
-}
-
-Node *FindBody(Node *root)
-{
-    Node *node;
-
-    node = root->content;
-
-    while (node && node->tag != tag_html)
-        node = node->next;
-
-    if (node == null)
-        return null;
-
-    node = node->content;
-
-    while (node && node->tag != tag_body)
-        node = node->next;
-
-    return node;
-}
-
-/* split parse tree by h2 elements and output to separate files */
-
-/* counts number of h2 children belonging to node */
-int CountSlides(Node *node)
-{
-    int n = 1;
-
-    for (node = node->content; node; node = node->next)
-        if (node->tag == tag_h2)
-            ++n;
-
-    return n;
-}
-
 /*
-   inserts a space gif called "dot.gif" to ensure
-   that the  slide is at least n pixels high
+ * local variables:
+ * mode: c
+ * indent-tabs-mode: nil
+ * c-basic-offset: 4
+ * eval: (c-set-offset 'substatement-open 0)
+ * end:
  */
-static void PrintVertSpacer(Out *fout, uint indent)
-{
-    PCondFlushLine(fout, indent);
-    PPrintString(fout, indent ,
-    "<img width=\"0\" height=\"0\" hspace=\"1\" src=\"dot.gif\" vspace=\"%d\" align=\"left\">");
-    PCondFlushLine(fout, indent);
-}
-
-static void PrintNavBar(Out *fout, uint indent)
-{
-    char buf[128];
-
-    PCondFlushLine(fout, indent);
-    PPrintString(fout, indent , "<center><small>");
-
-    if (slide > 1)
-    {
-        snprintf (buf, sizeof (buf), "<a href=\"slide%d.html\">previous</a> | ", slide-1);
-        PPrintString(fout, indent , buf);
-        PCondFlushLine(fout, indent);
-
-        if (slide < count)
-            PPrintString(fout, indent , "<a href=\"slide1.html\">start</a> | ");
-        else
-            PPrintString(fout, indent , "<a href=\"slide1.html\">start</a>");
-
-        PCondFlushLine(fout, indent);
-    }
-
-    if (slide < count)
-    {
-        snprintf(buf, sizeof (buf), "<a href=\"slide%d.html\">next</a>", slide+1);
-        PPrintString(fout, indent , buf);
-    }
-
-    PPrintString(fout, indent , "</small></center>");
-    PCondFlushLine(fout, indent);
-}
-
-#ifndef BIF_TIDY
-
-/*
-  Called from PPrintTree to print the content of a slide from
-  the node slidecontent. On return slidecontent points to the
-  node starting the next slide or null. The variables slide
-  and count are used to customise the navigation bar.
-*/
-void PPrintSlide(Out *fout, uint mode, uint indent, Lexer *lexer)
-{
-    Node *content, *last;
-    char buf[256];
-
-    /* insert div for onclick handler */
-    snprintf(buf, sizeof (buf), "<div onclick=\"document.location='slide%d.html'\">",
-                    (slide < count ? slide + 1 : 1));
-    PPrintString(fout, indent, buf);
-    PCondFlushLine(fout, indent);
-
-    /* first print the h2 element and navbar */
-    if (slidecontent->tag == tag_h2)
-    {
-        PrintNavBar(fout, indent);
-
-        /* now print an hr after h2 */
-
-        AddC('<', linelen++);
-
-
-        AddC(FoldCase('h', UpperCaseTags), linelen++);
-        AddC(FoldCase('r', UpperCaseTags), linelen++);
-
-        if (XmlOut == yes)
-            PPrintString(fout, indent , " />");
-        else
-            AddC('>', linelen++);
-
-
-        if (IndentContent == yes)
-            PCondFlushLine(fout, indent);
-
-        /* PrintVertSpacer(fout, indent); */
-
-        /*PCondFlushLine(fout, indent); */
-
-        /* print the h2 element */
-        PPrintTree(fout, mode,
-            (IndentContent ? indent+spaces : indent), lexer, slidecontent);
-
-        slidecontent = slidecontent->next;
-    }
-
-    /* now continue until we reach the next h2 */
-
-    last = null;
-    content = slidecontent;
-
-    for (; content != null; content = content->next)
-    {
-        if (content->tag == tag_h2)
-            break;
-
-        /* kludge for naked text before block level tag */
-        if (last && !IndentContent && last->type == TextNode &&
-            content->tag && content->tag->model & CM_BLOCK)
-        {
-            PFlushLine(fout, indent);
-            PFlushLine(fout, indent);
-        }
-
-        PPrintTree(fout, mode,
-            (IndentContent ? indent+spaces : indent), lexer, content);
-
-        last = content;
-    }
-
-    slidecontent = content;
-
-    /* now print epilog */
-
-    PCondFlushLine(fout, indent);
-
-    PPrintString(fout, indent , "<br clear=\"all\">");
-    PCondFlushLine(fout, indent);
-
-    AddC('<', linelen++);
-
-
-    AddC(FoldCase('h', UpperCaseTags), linelen++);
-    AddC(FoldCase('r', UpperCaseTags), linelen++);
-
-    if (XmlOut == yes)
-        PPrintString(fout, indent , " />");
-    else
-        AddC('>', linelen++);
-
-
-    if (IndentContent == yes)
-        PCondFlushLine(fout, indent);
-
-    PrintNavBar(fout, indent);
-
-    /* end tag for div */
-    PPrintString(fout, indent, "</div>");
-    PCondFlushLine(fout, indent);
-}
-
-#endif
-
-/*
-Add meta element for page transition effect, this works on IE but not NS
-*/
-
-void AddTransitionEffect(Lexer *lexer, Node *root, int effect, float duration)
-{
-    Node *head = FindHead(root);
-    char transition[128];
-
-    if (0 <= effect && effect <= 23)
-        snprintf (transition, sizeof (transition), "revealTrans(Duration=%g,Transition=%d)", duration, effect);
-    else
-        snprintf (transition, sizeof (transition), "blendTrans(Duration=%g)", duration);
-
-    if (head)
-    {
-        Node *meta = InferredTag(lexer, "meta");
-        AddAttribute(meta, "http-equiv", "Page-Enter");
-        AddAttribute(meta, "content", transition);
-        InsertNodeAtStart(head, meta);
-    }
-}
-
-#ifdef BIF_TIDY
-/* bif version does not support cutting of HTML into slides */
-#else
-void CreateSlides(Lexer *lexer, Node *root)
-{
-    Node *body;
-    char buf[128];
-    Out out;
-    FILE *fp;
-
-    body = FindBody(root);
-    count = CountSlides(body);
-    slidecontent = body->content;
-    AddTransitionEffect(lexer, root, EFFECT_BLEND, 3.0);
-
-    for (slide = 1; slide <= count; ++slide)
-    {
-        snprintf (buf, sizeof (buf), "slide%d.html", slide);
-        out.state = FSM_ASCII;
-        out.encoding = CharEncoding;
-
-        if ((fp = fopen(buf, "w")))
-        {
-            out.fp = fp;
-            PPrintTree(&out, null, 0, lexer, root);
-            PFlushLine(&out, 0);
-            fclose(fp);
-        }
-    }
-
-    /*
-     delete superfluous slides by deleting slideN.html
-     for N = count+1, count+2, etc. until no such file
-     is found.
-    */
-
-    for (;;)
-    {
-        snprintf (buf, sizeof (buf), "slide%d.html", slide);
-
-        if (unlink(buf) != 0)
-            break;
-
-        ++slide;
-    }
-}
-#endif
-
