@@ -3734,13 +3734,19 @@ _exit:;
       org_path := replace (path, ',meta', '');
       subj := iri_to_id (WS.WS.DAV_LINK (org_path));
       nsubj := iri_to_id (WS.WS.DAV_IRI (org_path));
-      sparql insert into graph ?:giid { ?:nsubj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
-      sparql delete from graph ?:giid { ?:subj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+      if (nsubj <> subj)
+	{
+	  sparql insert into graph ?:giid { ?:nsubj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+	  sparql delete from graph ?:giid { ?:subj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+	}
       org_path := org_path || '/';
       subj := iri_to_id (WS.WS.DAV_LINK (org_path));
       nsubj := iri_to_id (WS.WS.DAV_IRI (org_path));
-      sparql insert into graph ?:giid { ?:nsubj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
-      sparql delete from graph ?:giid { ?:subj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+      if (nsubj <> subj)
+	{
+	  sparql insert into graph ?:giid { ?:nsubj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+	  sparql delete from graph ?:giid { ?:subj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+	}
     }
   ses := ns;
   log_enable (3);
