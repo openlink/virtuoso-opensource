@@ -5298,18 +5298,27 @@ create procedure WS.WS.WAC_DELETE (
     connection_set ('dav_acl_sync', null);
   }
   set_user_id ('dba');
-  delete from DB.DBA.RDF_QUAD b where exists (select 1 from DB.DBA.RDF_QUAD a WHERE a.G = b.G and a.S = b.S and a.P = b.P and a.O = b.O and 
+  for select a.G as GG, a.S as SS, a.P as PP, a.O as OO from DB.DBA.RDF_QUAD a WHERE
       	a.G = __i2idn (graph) and 
   	a.P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') and 
-  	a.O = __i2idn ('http://www.w3.org/ns/auth/acl#Authorization') );
-  delete from DB.DBA.RDF_QUAD b where exists (select 1 from DB.DBA.RDF_QUAD a WHERE a.G = b.G and a.S = b.S and a.P = b.P and a.O = b.O and 
+  	a.O = __i2idn ('http://www.w3.org/ns/auth/acl#Authorization') do
+	{
+	  delete from DB.DBA.RDF_QUAD where G = GG and S = SS and P = PP and O = OO;
+	}
+  for select a.G as GG, a.S as SS, a.P as PP, a.O as OO from DB.DBA.RDF_QUAD a WHERE
       	a.G = __i2idn (graph) and 
   	a.P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') and 
-  	a.O = __i2idn ('http://www.openlinksw.com/schemas/acl/filter#Filter') );
-  delete from DB.DBA.RDF_QUAD b where exists (select 1 from DB.DBA.RDF_QUAD a WHERE a.G = b.G and a.S = b.S and a.P = b.P and a.O = b.O and 
+  	a.O = __i2idn ('http://www.openlinksw.com/schemas/acl/filter#Filter') do
+	{
+	  delete from DB.DBA.RDF_QUAD where G = GG and S = SS and P = PP and O = OO;
+	}
+  for select a.G as GG, a.S as SS, a.P as PP, a.O as OO from DB.DBA.RDF_QUAD a WHERE
       	a.G = __i2idn (graph) and 
   	a.P = __i2idn ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type') and 
-  	a.O = __i2idn ('http://www.openlinksw.com/schemas/acl/filter#Criteria') );
+  	a.O = __i2idn ('http://www.openlinksw.com/schemas/acl/filter#Criteria') do
+	{
+	  delete from DB.DBA.RDF_QUAD where G = GG and S = SS and P = PP and O = OO;
+	}
 }
 ;
 
