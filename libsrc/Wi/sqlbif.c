@@ -5562,7 +5562,7 @@ bif_lcase (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return (NEW_DB_NULL);
   if (DV_WIDESTRINGP (str))
     {
-      len = box_length (str)/sizeof (wchar_t);
+      len = box_length (str)/sizeof (wchar_t) - 1;
       res = dk_alloc_box ((len + 1) * sizeof (wchar_t), DV_WIDE);
       for (i = 0; i < len; i++)
         ((wchar_t *)res)[i] = (wchar_t)unicode3_getlcase((unichar)((wchar_t *)str)[i]);
@@ -5594,7 +5594,7 @@ bif_ucase (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return (NEW_DB_NULL);
   if (DV_WIDESTRINGP (str))
     {
-      len = box_length (str)/sizeof (wchar_t);
+      len = box_length (str)/sizeof (wchar_t) - 1;
       res = dk_alloc_box ((len + 1) * sizeof (wchar_t), DV_WIDE);
       for (i = 0; i < len; i++)
         ((wchar_t *)res)[i] = (wchar_t)unicode3_getucase((unichar)((wchar_t *)str)[i]);
@@ -5626,7 +5626,7 @@ bif_remove_unicode3_accents (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
     return (NEW_DB_NULL);
   if (DV_WIDESTRINGP (str))
     {
-      len = box_length (str)/sizeof (wchar_t);
+      len = box_length (str)/sizeof (wchar_t) - 1;
       res = dk_alloc_box ((len + 1) * sizeof (wchar_t), DV_WIDE);
       for (i = 0; i < len; i++)
         ((wchar_t *)res)[i] = (wchar_t)unicode3_getbasechar((unichar)((wchar_t *)str)[i]);
