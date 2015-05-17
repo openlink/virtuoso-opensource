@@ -880,6 +880,7 @@ pcre_cache_check (id_hash_t * ht)
 	      pcre_free (pinf->code_x);
 	      dk_free (pinf, sizeof (pcre_info_t));
 	    }
+	  hash_table_free (data);
 	}
     }
 }
