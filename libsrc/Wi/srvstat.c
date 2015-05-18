@@ -1414,6 +1414,7 @@ extern int32 col_seg_max_bytes;
 extern int32 col_seg_max_rows;
 extern int32 enable_qrc;
 extern int32 enable_rdf_trig;
+extern int32 enable_sslr_check;
 
 
 stat_desc_t stat_descs [] =
@@ -1820,6 +1821,7 @@ stat_desc_t dbf_descs [] =
     {"dbf_col_ins_dbg_log", (long *)&dbf_col_ins_dbg_log, SD_INT32},
     {"dbf_col_del_leaf", (long *)&dbf_col_del_leaf, SD_INT32},
     {"enable_pogs_check", (long *)&enable_pogs_check, SD_INT32},
+    {"enable_sslr_check", (long *)&enable_sslr_check, SD_INT32},
     {"chash_space_avail", (long *)&chash_space_avail},
     {"chash_per_query_pct", (long *)&chash_per_query_pct, SD_INT32},
     {"enable_chash_gb", (long *)&enable_chash_gb, SD_INT32},

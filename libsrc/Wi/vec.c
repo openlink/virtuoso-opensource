@@ -1276,6 +1276,8 @@ dc_elt_size (data_col_t * dc)
   return box; \
 }
 
+int32 enable_sslr_check = 0;
+
 caddr_t
 sslr_qst_get (caddr_t * inst, state_slot_ref_t * sslr, int row_no)
 {
@@ -1289,11 +1291,12 @@ sslr_qst_get (caddr_t * inst, state_slot_ref_t * sslr, int row_no)
       for (step = 0; step < sslr->sslr_distance; step++)
 	{
 	  int *set_nos = (int *) inst[sslr->sslr_set_nos[step]];
-#if 0
-	  uint32 fill = QST_INT (inst, sslr->sslr_set_nos[step] + 1);
-	  if ((uint32) row_no > fill)
-	    GPF_T1 ("access to set beyond present results");
-#endif
+	  if (enable_sslr_check)
+	    {
+	      uint32 fill = QST_INT (inst, sslr->sslr_set_nos[step] + 1);
+	      if ((uint32) row_no > fill)
+		log_error ("access to set beyond present results, please report query to the support");
+	    }
 	  row_no = set_nos[row_no];
 	}
     }
