@@ -64,8 +64,7 @@
 	  declare x509 varchar;
 	  x509 := xenc_X509_certificate_serialize ('dsa-test');
 	  ...
-]]>
-</screen>
+]]></screen>
     </example>
   </refsect1>
 </refentry>

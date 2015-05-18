@@ -59,21 +59,7 @@ by <link linkend="createtxtidxstmt">CREATE TEXT INDEX</link>.
       <para></para></refsect2>
   </refsect1>
 -->
-  <refsect1 id="errors_vt_batch"><title>Errors</title>
-    <table><title>Errors signalled by</title>
-      <tgroup cols="4">
-       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
-	<tbody>
-	  <row>
-	    <entry><errorcode></errorcode></entry>
-	    <entry><errorcode></errorcode></entry>
-	    <entry><errorname></errorname></entry>
-	    <entry></entry>
-	  </row>
-	</tbody>
-      </tgroup>
-    </table>
-  </refsect1>
+
 <!--  <refsect1 id="examples_vt_batch"><title>Examples</title>
     <example id="ex_"><title></title>
       <para></para>

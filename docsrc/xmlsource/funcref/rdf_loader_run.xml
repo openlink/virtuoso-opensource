@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2015 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<refentry id="fn_rdf_loader_run">
+  <refmeta>
+    <refentrytitle>rdf_loader_run</refentrytitle>
+    <refmiscinfo>rdf</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>rdf_loader_run</refname>
+    <refpurpose>Performs bulk load.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_rdf_loader_run">
+      <funcprototype id="fproto_rdf_loader_run">
+        <funcdef><function>rdf_loader_run</function></funcdef>
+	        <paramdef><optional>in <parameter>max_files</parameter> integer := NULL</optional></paramdef>
+	        <paramdef><optional>in <parameter>log_enable</parameter> int := 2</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_rdf_loader_run">
+    <title>Description</title>
+    <para>Virtuoso Bulk Loader function that performs bulk load. The function recognizes several file types, including .ttl,
+    	.nt, .xml, .rdf, .owl, .nq, .n4, and others. Internally the function uses ttlp or db..rdf_load_rdfxml, as appropriate.
+    	Please see <link linkend="http://virtuoso.openlinksw.com/dataspace/doc/dav/wiki/Main/VirtBulkRDFLoader">more details</link>
+    	for what file formats and file extensions are supported.</para>
+    <para><emphasis>Note:</emphasis> The Virtuoso Bulk Loader functions must be present. They are pre-loaded starting with
+    commercial version 06.02.3129 and open source version 6.1.3, but must be manually loaded into older versions.
+    </para>
+  </refsect1>
+  <refsect1 id="params_rdf_loader_run">
+    <title>Parameters</title>
+    <refsect2><title>max_files</title>
+      <para>Maximum files to be loaded.</para>
+    </refsect2>
+    <refsect2><title>log_enable</title>
+      <para>For the default value 2 triggers are disabled, to speed the loading of data.
+      	If triggers are required (e.g., for RDF Graph replication between nodes), then the log_enable mode should be set to 3.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="examples_rdf_loader_run">
+   <title>Examples</title>
+    <example id="ex_rdf_loader_run"><title>Simple example</title>
+<screen><![CDATA[
+SQL> rdf_loader_run();
+]]></screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_rdf_loader_run">
+    <title>See Also</title>
+    <para><link linkend="http://virtuoso.openlinksw.com/dataspace/doc/dav/wiki/Main/VirtBulkRDFLoader#Prerequisites">Bulk Loading RDF Source Files into one or more Graph IRIs</link></para>
+    <para><link linkend="fn_ld_dir()">ld_dir()</link></para>
+    <para><link linkend="fn_ld_dir_all()">ld_dir_all()</link></para>
+    <para><link linkend="fn_rdf_load_stop">rdf_load_stop()</link></para>
+  </refsect1>
+</refentry>

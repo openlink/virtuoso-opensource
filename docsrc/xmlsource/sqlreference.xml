@@ -5326,8 +5326,7 @@ Done. -- 0 msec.
 SQL>ap_add_phrases (9,
     vector (
       vector ('OpenLink'		, vector ('OpenLink'		, 'http://www.openlinksw.com'		, 'OpenLink Software'	, ' The industry leading provider of High Performance drivers'	)),
-      vector ('OpenLink Virtuoso'	, vector ('OpenLink Virtuoso'	, 'http://www.openlinksw.com/virtuoso'	, 'OpenLink Virtuoso'	, ' OpenLink Universal Integration Middleware'			)),
-      vector ('Bulgaria'		, vector ('Bulgaria'		, 'http://www.government.bg/English/'	, 'Bulgaria'		, ' Republic of Bulgaria'					))
+      vector ('OpenLink Virtuoso'	, vector ('OpenLink Virtuoso'	, 'http://virtuoso.openlinksw.com'	, 'OpenLink Virtuoso'	, ' OpenLink Universal Integration Middleware'			)),
     ) )
 ;
 
@@ -5350,8 +5349,7 @@ _______________________________________________________________________________
   var v_descs = [ ];
   var v_descs = [ ];
   var v_links = [
-        ["Bulgaria"     , "http://www.government.bg/English/"   , "Bulgaria"    , " Republic of Bulgaria"       ],
-        ["OpenLink Virtuoso"    , "http://www.openlinksw.com/virtuoso"  , "OpenLink Virtuoso"   , " OpenLink Universal Integration Middleware"  ],
+        ["OpenLink Virtuoso"    , "http://virtuoso.openlinksw.com"  , "OpenLink Virtuoso"   , " OpenLink Universal Integration Middleware"  ],
         ["OpenLink"     , "http://www.openlinksw.com"   , "OpenLink Software"   , " The industry leading provider of High Performance drivers"  ] ];
 --></script><script DEFER language="javascript" src="lookup.js"></script></html>
 

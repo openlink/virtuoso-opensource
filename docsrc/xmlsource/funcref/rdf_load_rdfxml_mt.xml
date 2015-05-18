@@ -1,4 +1,25 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2015 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
 <refentry id="fn_rdf_load_rdfxml_mt">
   <refmeta>
     <refentrytitle>DB.DBA.RDF_LOAD_RDFXML_MT</refentrytitle>
@@ -54,11 +75,11 @@
     <example id="ex_rdf_load_rdfxml_mt"><title>Usage Example</title>
       <para>The following example demonstrates importing data from the rdf file resource Kingsley_Idehen.rdf which can be downloaded from <ulink url="http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com/about.rdf">here</ulink></para>
 <screen><![CDATA[
-SQL> DB.DBA.RDF_LOAD_RDFXML_MT (file_to_string_output ('tmp/Kingsley_Idehen.rdf'), '', 'http://mytest.com');
+SQL> DB.DBA.RDF_LOAD_RDFXML_MT (file_to_string_output ('tmp/Kingsley_Idehen.rdf'), '', 'http://example.com');
 Done. -- 61 msec.
 SQL>sparql
 select *
-from <http://mytest.com>
+from <http://example.com>
 where {?s ?p ?o};
 
 s             p                    o

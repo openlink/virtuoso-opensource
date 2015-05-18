@@ -743,7 +743,7 @@ the exact format of the object returned is known:
         </para>
 <screen>
 SQL&gt;select aref(aref(
-	soap_client (url=&gt;sprintf ('http://localhost:%s/mysoapdomain', server_http_port ()),
+	soap_client (url=&gt;sprintf ('http://example.com:%s/mysoapdomain', server_http_port ()),
 	operation=&gt;'SOAPTEST',
 	parameters=&gt;vector('par', 'demotext')),
 	1), 1);
@@ -769,7 +769,7 @@ and preferably tested by pointing a web browser at
 
         </para>
         <screen><![CDATA[
-SQL> select http_get (sprintf ('http://localhost:%s/mysoapdomain/services.wsdl', server_http_port()));
+SQL> select http_get (sprintf ('http://example.com:%s/mysoapdomain/services.wsdl', server_http_port()));
 callret
 VARCHAR
 _______________________________________________________________________________

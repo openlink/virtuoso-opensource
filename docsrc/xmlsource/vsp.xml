@@ -987,7 +987,7 @@ We can, however, add PL code to handle errors and display a different page.
 	    ]]></programlisting>
     </example>
     <tip><title>See Also:</title>
-	<para><ulink url="/tutorial/wap/index.vsp">WML Tutorials</ulink></para>
+	<para><ulink url="http://demo.openlinksw.com/tutorial/wap/index.vsp">WML Tutorials</ulink></para>
     </tip>
 
 </sect2>

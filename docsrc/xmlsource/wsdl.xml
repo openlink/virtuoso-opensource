@@ -151,7 +151,7 @@ and have been granted execution to the new SOAPDEMO user are  now available
 as SOAP services and described by WSDL in this example, Virtuoso would publish
 them from the URL:</para>
 <programlisting>
-http://localhost/services/services.wsdl
+http://example.com/services/services.wsdl
 </programlisting>
 <para>which will yield the following WSDL description:</para>
 <screen>
@@ -190,7 +190,7 @@ http://localhost/services/services.wsdl
 	</binding>
 	<service name='SOAPService'>
 		<port name='SOAPPort' binding='tns:SOAPBinding'>
-			<soap:address location='http://localhost/services'/>
+			<soap:address location='http://example.com/services'/>
 		</port>
 	</service>
 </definitions>
@@ -323,7 +323,7 @@ grant execute on echoStructArray to SOAP_U1;
   <service name="VirtuosoLiteral">
     <documentation>Virtuoso SOAP services</documentation>
     <port name="LiteralDocLiteralPort" binding="tns:LiteralDocLiteralBinding">
-      <soap:address location="http://localhost:8890/soap-lit"/>
+      <soap:address location="http://example.com/soap-lit"/>
     </port>
   </service>
 </definitions>

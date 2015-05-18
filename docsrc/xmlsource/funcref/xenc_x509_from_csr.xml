@@ -21,19 +21,19 @@
  -  
  -  
 -->
-<refentry id="fn_x509_from_csr">
+<refentry id="fn_xenc_x509_from_csr">
   <refmeta>
-    <refentrytitle>x509_from_csr</refentrytitle>
+    <refentrytitle>xenc_x509_from_csr</refentrytitle>
     <refmiscinfo>hash</refmiscinfo>
   </refmeta>
   <refnamediv>
-    <refname>x509_from_csr</refname>
+    <refname>xenc_x509_from_csr</refname>
     <refpurpose>Generate x509 certificate from CSR.</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
-    <funcsynopsis id="fsyn_x509_from_csr">
-      <funcprototype id="fproto_x509_from_csr">
-        <funcdef>varchar <function>x509_from_csr</function></funcdef>
+    <funcsynopsis id="fsyn_xenc_x509_from_csr">
+      <funcprototype id="fproto_xenc_x509_from_csr">
+        <funcdef>varchar <function>xenc_x509_from_csr</function></funcdef>
 	        <paramdef>in <parameter>ca_key_name</parameter> varchar</paramdef>
 	        <paramdef>in <parameter>cli_key_name</parameter> varchar</paramdef>	        
 	        <paramdef>in <parameter>csr_str</parameter> varchar</paramdef>	        
@@ -43,12 +43,12 @@
      </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="desc_x509_from_csr"><title>Description</title>
+  <refsect1 id="desc_xenc_x509_from_csr"><title>Description</title>
       <para>This function generates Certificate Signing Request (CSR). The function return 1 upon success, 
       	sql error on failure. The new certificate can be exported in PEM format with 
       	<link linkend="fn_xenc_pem_export"><function>xenc_pem_export(cli_key_name)</function></link>.</para>
   </refsect1>
-  <refsect1 id="params_x509_from_csr"><title>Parameters</title>
+  <refsect1 id="params_xenc_x509_from_csr"><title>Parameters</title>
     <refsect2>
     	<title>ca_key_name</title>
       <para>The name of CA private key which will be used to sign certificate.</para>
@@ -74,11 +74,11 @@
   	  <para>How many hours will be valid the certificate.</para>
     </refsect2>              
   </refsect1>
-  <refsect1 id="ret_x509_from_csr"><title>Return Types</title>
+  <refsect1 id="ret_xenc_x509_from_csr"><title>Return Types</title>
       <para>the function returns 1 upon success, sql error on failure.</para>
   </refsect1>
-  <refsect1 id="errors_x509_from_csr"><title>Errors</title>
-    <table><title>Errors signalled by <function>x509_from_csr</function></title>
+  <refsect1 id="errors_xenc_x509_from_csr"><title>Errors</title>
+    <table><title>Errors signalled by <function>xenc_x509_from_csr</function></title>
       <tgroup cols="4">
         <thead>
           <row>
@@ -159,8 +159,8 @@
       </tgroup>
     </table>
   </refsect1>
-  <refsect1 id="examples_x509_from_csr"><title>Example</title>
-    <example id="ex_x509_from_csr">
+  <refsect1 id="examples_xenc_x509_from_csr"><title>Example</title>
+    <example id="ex_xenc_x509_from_csr">
     	<para>The following example demonstrates how to generate Certificate Signing Request (CSR).</para>
       <itemizedlist mark="bullet">
         <listitem><link linkend="vfoafsslcacondt">Using Conductor, for user dba import a certificate with primary key and with name id_rsa.</link></listitem>
@@ -226,9 +226,9 @@ p0nYaVhJ9WV0ntVnx1H8/LKwrgyLlhXacVw4jyXwFMSo+YuONj+kKpobNH2cl+u1
 ]]></programlisting>
     </example>
   </refsect1>
-  <refsect1 id="seealso_x509_from_csr"><title>See Also</title>
+  <refsect1 id="seealso_xenc_x509_from_csr"><title>See Also</title>
     <para><link linkend="fn_get_certificate_info">get_certificate_info()</link></para>
-    <para><link linkend="fn_x509_csr_generate">x509_csr_generate()</link></para>
+    <para><link linkend="fn_xenc_x509_csr_generate">xenc_x509_csr_generate()</link></para>
     <para><link linkend="fn_xenc_x509_generate">xenc_x509_generate()</link></para>    
  </refsect1>
 </refentry>

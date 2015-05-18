@@ -1,4 +1,25 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2015 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
 <refentry id="fn_ttlp">
   <refmeta>
     <refentrytitle>DB.DBA.TTLP</refentrytitle>
@@ -105,7 +126,7 @@ the document, no matter what is the destination graph. Here is a simple example:
 ]]></programlisting>
     <para>Load the file:</para>
 <programlisting><![CDATA[
-SQL>DB.DBA.TTLP (file_to_string_output ('./nquad.nq'), '', 'http://localhost:8890/DAV/test', 512);
+SQL>DB.DBA.TTLP (file_to_string_output ('./nquad.nq'), '', 'http://example.com/DAV/test', 512);
 Done. -- 48 msec.
 ]]></programlisting>
     <para>Select all triples from the graph with URI the fourth provenance URI from the NQuad file i.e.: &lt;http://www.w3.org/People/Berners-Lee/card&gt;:</para>

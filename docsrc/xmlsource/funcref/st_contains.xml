@@ -19,7 +19,6 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <refentry id="fn_st_contains">
   <refmeta>
@@ -28,8 +27,7 @@
   </refmeta>
   <refnamediv>
     <refname>st_contains</refname>
-    <refpurpose>Returns true if all points
-of a given geometry g2 are in another geometry g1.</refpurpose>
+    <refpurpose>Returns true if all points of a given geometry g2 are in another geometry g1.</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_st_contains">

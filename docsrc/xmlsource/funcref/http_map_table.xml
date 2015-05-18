@@ -139,7 +139,7 @@ http_map_table ('/vdir', '/admin/', 'www.foo.com', 'host.foo.com');
     <example id="ex_http_map_table"><title>Create entry for a SOAP service</title>
       <screen>http_map_table ('/soapapp', '/soapapp/', 'www.foo.com', 'host.foo.com', NULL,
                  NULL, NULL, 'SSL', 'SOAP_APP', 'mysoapapp_auth_hook', 'mysoapapp_post_processor',
-                 NULL, 'mysoapapp_user', 1, vector ('NameSpace', 'http://www.openlinksw.com/soap/v11/',
+                 NULL, 'mysoapapp_user', 1, vector ('NameSpace', 'http://example.com/soap/v11/',
                                                   'ServiceName','soapApp'));
 </screen>
     </example>

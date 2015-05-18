@@ -89,7 +89,7 @@ The attribute &quot;persist&quot; means to save its value to session table for i
 			    </para>
     <screen><![CDATA[
 				
-                                <v:page name="variable_demo01" xmlns:v="http://www.openlinksw.com/vspx/">
+                                <v:page name="variable_demo01" xmlns:v="http://example.com/vspx/">
 				<v:variable name="mask" type="varchar" default="null" />
 				<?vsp
 				  self.mask := 'test';

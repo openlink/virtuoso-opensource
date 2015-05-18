@@ -426,7 +426,7 @@ CREATE PROCEDURE CFIBO (IN X INTEGER)
 		<sect2 id="grantprocstmt">
 			<title>Grand Execute Statement</title>
 <programlisting><![CDATA[
-GGRANT EXECUTE ON proceudre_name TO "{USER | ROLE}" ;
+GRANT EXECUTE ON proceudre_name TO "{USER | ROLE}" ;
 ]]></programlisting>
 <para>The identifier quote character (double quotes) is important usage information since it indicates that 
 the USER or ROLE has a literal identifier. Just as a reference (e.g., URL or URI) has the identifier quote 

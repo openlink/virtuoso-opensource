@@ -98,13 +98,12 @@
 		  'Virtuoso Generated Certificate',
 			'authorityKeyIdentifier',
 			'keyid,issuer:always'));
-]]>
-</screen>
+]]></screen>
     </example>
   </refsect1>
   <refsect1 id="seealso_xenc_x509_generate">
     <title>See Also</title>
-    <para><link linkend="fn_xenc_SPKI_read"><function>xenc_SPKI_read</function></link></para>
-    <para><link linkend="fn_xenc_x509_ss_generate"><function>xenc_x509_ss_generate</function></link></para>
+    <para><link linkend="fn_xenc_SPKI_read"><function>xenc_SPKI_read()</function></link></para>
+    <para><link linkend="fn_xenc_x509_ss_generate"><function>xenc_x509_ss_generate()</function></link></para>
   </refsect1>
 </refentry>

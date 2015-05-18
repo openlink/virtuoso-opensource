@@ -98,7 +98,7 @@ RS_NAME                              RS_URI                                     
 VARCHAR NOT NULL                     VARCHAR NOT NULL                                               VARCHAR
 _______________________________________________________________________________                    
                                                                                                    
-http://localhost:8890/dataspace      http://localhost:8890/dataspace/inf                            NULL
+http://example.com/dataspace         http://example.com/dataspace/inf          NULL
 http://www.w3.org/2002/07/owl#       http://www.w3.org/2002/07/owl#                                 NULL
 myset                                http://mygraph.com                                             NULL
 virtrdf-ifp                          virtrdf-ifp                                                    NULL

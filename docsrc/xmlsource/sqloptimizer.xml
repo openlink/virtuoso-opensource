@@ -474,8 +474,9 @@ select row_no from t1 where row_no in (select row_no from t1 where fi2 = 2 optio
       </tgroup>
     </table>
     <para>When reporting issues with query optimization it will be useful to include statistics from the database in order to
-    	facilitate reproducing the effect. The function stat_export() produces a statistics summary that can be read back into another
-    	database with the stat_import() function.</para>
+    	facilitate reproducing the effect. The function <link linkend="fn_stat_export"><function>stat_export()</function></link>
+    	produces a statistics summary that can be read back into another database with the
+    	<link linkend="fn_stat_import"><function>stat_import()</function></link> function.</para>
     <para>To export statistics:</para>
 <programlisting><![CDATA[
 string_to_file('stat.dv', serialize(stat_export()), -2);

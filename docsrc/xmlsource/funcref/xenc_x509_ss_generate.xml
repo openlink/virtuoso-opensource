@@ -79,14 +79,14 @@
 		vector ('authorityKeyIdentifier', 'keyid,issuer:always'));
        USER_KEY_STORE (user, 'id_rsa', 'X.509', 2, '', xenc_pkcs12_export ('id_rsa', 'CA Certificate', ''));
        ...
-]]>
-</screen>
+]]></screen>
     </example>
   </refsect1>
   <refsect1 id="seealso_xenc_x509_ss_generate">
     <title>See Also</title>
-    <para><link linkend="fn_xenc_x509_generate"><function>xenc_x509_generate</function></link></para>
-    <para><link linkend="fn_xenc_key_RSA_create"><function>xenc_key_RSA_create</function></link></para>
-    <para><link linkend="fn_xenc_pkcs12_export"><function>xenc_pkcs12_export</function></link></para>
+    <para><link linkend="fn_user_key_store"><function>user_key_store()</function></link></para>
+    <para><link linkend="fn_xenc_x509_generate"><function>xenc_x509_generate()</function></link></para>
+    <para><link linkend="fn_xenc_key_RSA_create"><function>xenc_key_RSA_create()</function></link></para>
+    <para><link linkend="fn_xenc_pkcs12_export"><function>xenc_pkcs12_export()</function></link></para>
   </refsect1>
 </refentry>

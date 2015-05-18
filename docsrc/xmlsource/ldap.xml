@@ -95,9 +95,9 @@
   OpenLDAP with Virtuoso on the Linux platform.  For other platforms the 
   installation of OpenLDAP and configuration of the ODBC data source may differ.</para>
 <orderedlist>
-  <listitem><para>download the OpenLDAP distribution from <ulink url="www.openldap.org">OpenLDAP.org</ulink>.</para></listitem>
+  <listitem><para>download the OpenLDAP distribution from <ulink url="http://www.openldap.org">OpenLDAP.org</ulink>.</para></listitem>
   <listitem><para>Build OpenLDAP with the --enable-sql option.</para></listitem>
-  <listitem><para>You may need the iODBC library installed, which can be obtained from <ulink url="www.iodbc.org">iODBC.org</ulink>.</para></listitem>
+  <listitem><para>You may need the iODBC library installed, which can be obtained from <ulink url="http://www.iodbc.org">iODBC.org</ulink>.</para></listitem>
   <listitem><para>install the LDAP server using: make install</para></listitem>
   <listitem><para>copy the following text into the slapd.conf</para>
 <programlisting>

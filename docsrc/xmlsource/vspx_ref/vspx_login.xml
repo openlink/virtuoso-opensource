@@ -210,7 +210,7 @@ This can be arbitrary content.
 			    
 			<html>
 			<body>
-			<v:page name="login_page_01" xmlns:v="http://www.openlinksw.com/vspx/" >
+			<v:page name="login_page_01" xmlns:v="http://example.com/vspx/" >
 			   <v:login name="login01" realm="vspx" mode="url" 
 				    user-password="sql_user_password" 
 				    user-password-check="sql_user_password_check" >

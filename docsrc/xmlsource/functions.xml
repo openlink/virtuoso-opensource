@@ -103,8 +103,9 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &collation_define; &complete_table_name; &composite; &composite_ref;
 &concat; &concatenate; &connection_get; &connection_id; &connection_is_dirty;
 &connection_set; &connection_vars; &connection_vars_set; &contains;
-&cov_load; &cov_report; &cov_store; &createXML; &curdate;
-&current_charset; &vacuum; &sparql_to_sql_text;
+&cov_load; &cov_report; &cov_store; &createXML; &curdate; &forget_timezone; &is_timezoneless;
+&adjust_timezone; &rdf_now_impl; &current_timestamp; &curdatetime; &curdatetimeoffset;
+&curutcdatetime; &sysutcdatetime; &current_charset; &vacuum; &sparql_to_sql_text;
 
 &dateadd; &datediff; &datestring; &datestring_gmt;
 &dav_api_add; &dav_api_change; &dav_api_lock; &dav_api_search; &dav_api_user;
@@ -154,7 +155,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &lcase; &ldap_search; &ldap_delete; &ldap_add; &ldap_modify;
 &left; &length; &lfs_exp; &lh_get_handler; &lh_load_handler;
 &locate; &log; &log10; &log_enable; &log_text;&read_log;
-&lower; &ltrim; &__dbf_set;
+&lower; &ltrim; &__dbf_set; &stat_import; &stat_export;
 
 &make_array; &make_string; &md5; &md5_init; &md5_update;
 &md5_final; &mime_body; &mime_part; &mime_tree; &minute; &mod; &month;
@@ -173,7 +174,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 
 &randomize; &rclose; &regexp_match; &regexp_parse; &regexp_substr;
 &rdf_audit_metadata;&rdf_graph_security_audit; &rdf_default_user_perms_set; &rdf_default_user_perms_del;
-&rdf_backup_metadata; &rdf_void_store;
+&rdf_backup_metadata; &rdf_void_store; &rdf_load_stop; &rdf_loader_run; &ld_dir_all;
 <!-- TBD: &rdf_load_turtle; -->
 &rdf_restore_metadata; &rdf_load_rdfxml_mt; &rdf_load_rdfxml; &rdf_load_rdfa; &ld_dir; &ttlp; &ttlp_mt; &ttlp_mt_local_file; &rdf_datatype_of_obj; 
 &rdf_triples_to_rdf_xml_text; &rdf_triples_to_ttl; &rdf_64bit_upgrade; &rdf_view_sync_to_physical;
@@ -210,7 +211,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &REPL_DROP_SNAPSHOT_SUB; &REPL_DROP_SNAPSHOT_PUB; &REPL_INIT_SNAPSHOT;
 &REPL_UPDATE_SNAPSHOT; &REPL_SNP_SERVER; &REPL_SERVER_NAME;
 &REPL_ADD_CR; &REPL_ADD_DAV_CR; &REPL_ADD_SNAPSHOT_CR; &rdf_repl_start; 
-&rdf_repl_graph_ins; &rdf_repl_graph_del;
+&rdf_repl_stop; &rdf_repl_sync; &rdf_repl_graph_ins; &rdf_repl_graph_del;
 &result; &result_names; &rexecute; &rstmtexec; &right; &rmoreresults;
 &rnd; &rnext; &row_count; &rtrim;
 
@@ -254,7 +255,7 @@ built-in functions of the Virtuoso XPATH Processor.  These can be used in XPATH,
 &upper; &user_change_password; &user_create;
 &user_drop; &user_get_option; &user_grant_role; &user_revoke_role;
 &user_role_create; &user_role_drop; &user_set_qualifier; &user_set_option;
-&user_set_password; &username; &uudecode; &uuencode; &uuvalidate;
+&user_set_password; &username; &uudecode; &uuencode; &uuvalidate; &user_key_store;
 
 &vad_check; &vad_check_installability; &vad_check_uninstallability; &vad_fail_check;
 &vad_install; &vad_load_file;	&vad_load_sql_file; &vad_pack; &vad_safe_exec; &vad_uninstall;

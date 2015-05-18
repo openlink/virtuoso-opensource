@@ -1,3 +1,24 @@
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2015 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
 <chapter label="rdfandsparql.xml" id="rdfandsparql"><title>RDF Data Access and Data Management</title>
 <abstract>
 <para>
@@ -1532,7 +1553,9 @@ create table DB.DBA.SYS_SPARQL_HOST (
   SH_HOST	varchar not null primary key, -- host mask
   SH_GRAPH_URI	varchar,      -- default 'default graph' uri
   SH_USER_URI	varchar,      -- reserved for any use in applications
-  SH_DEFINES	long varchar  -- additional defines for requests
+  SH_BASE_URI varchar,                  -- for future use (not used currently) to set BASE in sparql queries. Should be NULL for now.
+  SH_DEFINES	long varchar,             -- additional defines for requests
+  PRIMARY KEY (SH_HOST)
 )
 </programlisting>
 <para>You can find detailed descriptions of the table columns <link linkend="rdfdefaultgraph">here</link>.
@@ -1859,13 +1882,13 @@ openssl pkcs12 -in mykey.p12 -out mykey.pem -nodes
 to be using self-signed X.509 certificates signed by self-signed root CA.</listitem>
     </itemizedlist>  	
 <programlisting><![CDATA[
-	curl -k -E mykey.pem "https://localhost/sparql-webid?query=select+*+where+\{+%3Fx+%3Fy+%3Fz+.+\}+limit+10&format=text%2Fn3"
+	curl -k -E mykey.pem "https://example.com/sparql-webid?query=select+*+where+\{+%3Fx+%3Fy+%3Fz+.+\}+limit+10&format=text%2Fn3"
 
 @prefix res: <http://www.w3.org/2005/sparql-results#> .
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 _:_ a res:ResultSet .
 _:_ res:resultVariable "x" , "y" , "z" .
-@prefix ns0:    <https://localhost/tutorial/> .
+@prefix ns0:    <https://example.com/tutorial/> .
 @prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 _:_ res:solution [
       res:binding [ res:variable "x" ; res:value ns0:hosting ] ;
@@ -1972,7 +1995,7 @@ SQL>
 </listitem>
       <listitem>Execute:
 <programlisting><![CDATA[
-SQL>select http_client ('https://localhost/sparql-webid?query=select+*+where+{+%3Fx+%3Fy+%3Fz+.+}+limit+10&format=text%2Fn3', cert_file=>'d
+SQL>select http_client ('https://example.com/sparql-webid?query=select+*+where+{+%3Fx+%3Fy+%3Fz+.+}+limit+10&format=text%2Fn3', cert_file=>'d
 b:cli_key', insecure=>1);
 callret
 VARCHAR
@@ -1983,7 +2006,7 @@ _______________________________________________________________________________
 @prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 _:_ a res:ResultSet .
 _:_ res:resultVariable "x" , "y" , "z" .
-@prefix ns0:    <https://localhost/tutorial/> .
+@prefix ns0:    <https://example.com/tutorial/> .
 @prefix rdf:    <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
 _:_ res:solution [
       res:binding [ res:variable "x" ; res:value ns0:hosting ] ;
@@ -2230,7 +2253,7 @@ curl -F "query=SELECT DISTINCT ?p FROM <http://demo.openlinksw.com/DAV/home/demo
 curl -F "query=SELECT DISTINCT ?Concept FROM <http://dbpedia.org> WHERE {?s a ?Concept} LIMIT 10" http://dbpedia.org/sparql
 ]]></programlisting>
 <programlisting><![CDATA[
-curl -F "query=SELECT DISTINCT ?Concept FROM <http://myopenlink.net/dataspace/person/kidehen> WHERE {?s a ?Concept} LIMIT 10" http://demo.openlinksw.com/sparql
+curl -F "query=SELECT DISTINCT ?Concept FROM <http://example.com/dataspace/person/kidehen> WHERE {?s a ?Concept} LIMIT 10" http://demo.openlinksw.com/sparql
 ]]></programlisting>
 <programlisting><![CDATA[
 curl -F "query=SELECT DISTINCT ?Concept FROM <http://data.openlinksw.com/oplweb/product_family/virtuoso> WHERE {?s a ?Concept} LIMIT 10" http://demo.openlinksw.com/sparql
@@ -2307,14 +2330,14 @@ ns11:this       foaf:nick       "TEST" .
 ns5:this        foaf:holdsAccount       ns8:demo ,
                 ns8:MySpace ,
                 ns12:this .
-@prefix ns21:   <http://myopenlink.net/dataspace/person/imitko#> .
+@prefix ns21:   <http://example.com/dataspace/person/imitko#> .
 ns5:this        foaf:knows      ns21:this ,
                 ns17:this ,
                 ns16:this ,
                 ns3:juliette ,
                 ns10:this ,
                 ns7:this .
-@prefix ns22:   <http://myopenlink.net/dataspace/person/kidehen#> .
+@prefix ns22:   <http://example.com/dataspace/person/kidehen#> .
 ns5:this        foaf:knows      ns22:this ,
                 ns18:this ,
                 ns11:this ,
@@ -3540,8 +3563,8 @@ http://www.w3.org/2001/sw/DataAccess/tests/data/Sorting/sort-0#four
 ]]></programlisting>
 <para>Another example:</para>
 <programlisting><![CDATA[
-INSERT INTO GRAPH <http://localhost:8890/Northwind> 
-{ `iri($?)` <http://localhost:8890/schemas/northwind#has_province> "Valencia" };	
+INSERT INTO GRAPH <http://example.com/Northwind>
+{ `iri($?)` <http://example.com/schemas/northwind#has_province> "Valencia" };
 ]]></programlisting>
 <para>An inline SPARQL query can refer to SQL variables that are in scope in the SQL query or stored procedure containing it.
 Virtuoso extends the SPARQL syntax with a special notation to this effect. A reference to SQL variable X can be written as <emphasis>?:X</emphasis> or <emphasis>$:X</emphasis>.
@@ -4144,7 +4167,9 @@ create table DB.DBA.SYS_SPARQL_HOST (
   SH_HOST	varchar not null primary key, -- host mask
   SH_GRAPH_URI	varchar,      -- 'default default' graph uri
   SH_USER_URI	varchar,      -- reserved for any use in applications
-  SH_DEFINES	long varchar  -- additional defines for requests
+  SH_BASE_URI varchar,                  -- for future use (not used currently) to set BASE in sparql queries. Should be NULL for now.
+  SH_DEFINES	long varchar,             -- additional defines for requests
+  PRIMARY KEY (SH_HOST)
 )
 </programlisting>
 <para>
@@ -5252,7 +5277,7 @@ WHERE
     <listitem>Save locally the content from above for ex. to file with the name "soap.xml".</listitem>
     <listitem>To pass the SOAP request to a Virtuoso SPARQL Endpoint, execute the following curl command:
 <programlisting><![CDATA[
-$ curl -d@soap.xml -H "Content-Type:text/xml" -H "SOAPAction: ''" http://localhost:8890/sparql
+$ curl -d@soap.xml -H "Content-Type:text/xml" -H "SOAPAction: ''" http://example.com/sparql
 <soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
   <soapenv:Body>
     <query-result xmlns="http://www.w3.org/2005/09/sparql-protocol-types/#">
@@ -6041,7 +6066,7 @@ of being specified in the 'insert into graph' clause.
        </para>
 <programlisting><![CDATA[
 SQL>SPARQL DEFINE input:default-graph-uri <http://mygraph.com>
-INSERT INTO <http://mygraph.com> { <http://myopenlink.net/dataspace/Kingsley#this> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/ns#User> };
+INSERT INTO <http://mygraph.com> { <http://example.com/dataspace/Kingsley#this> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/ns#User> };
 callret-0
 VARCHAR
 _______________________________________________________________________________
@@ -6108,12 +6133,12 @@ Drop graph <qq> -- done
    </itemizedlist>
 </sect4>
 <sect4 id="rdfsparulexamples3"><title>Example for deleting all triples for given subject</title>
-<para>The following statement deletes all records with &lt;http://myopenlink.net/dataspace/Kingsley#this&gt; as the subject:</para>
+<para>The following statement deletes all records with &lt;http://example.com/dataspace/Kingsley#this&gt; as the subject:</para>
 <programlisting><![CDATA[
 SQL>SPARQL
 DELETE FROM GRAPH <http://mygraph.com> { ?s ?p ?o }
  FROM <http://mygraph.com>
-WHERE { ?s ?p ?o . filter ( ?s = <http://myopenlink.net/dataspace/Kingsley#this>) };
+WHERE { ?s ?p ?o . filter ( ?s = <http://example.com/dataspace/Kingsley#this>) };
 callret-0
 VARCHAR
 _______________________________________________________________________________
@@ -6125,9 +6150,9 @@ Delete from <http://mygraph.com>, 1 triples -- done
 <para>Alternatively, the statement can be written in this way:</para>
 <programlisting><![CDATA[
 SQL>SPARQL
-DELETE FROM GRAPH <http://mygraph.com> { <http://myopenlink.net/dataspace/Kingsley#this> ?p ?o }
+DELETE FROM GRAPH <http://mygraph.com> { <http://example.com/dataspace/Kingsley#this> ?p ?o }
  FROM <http://mygraph.com>
-WHERE { <http://myopenlink.net/dataspace/Kingsley#this> ?p ?o };
+WHERE { <http://example.com/dataspace/Kingsley#this> ?p ?o };
 callret-0
 VARCHAR
 _______________________________________________________________________________
@@ -6143,7 +6168,7 @@ compatibility, but the SPARUL specification lists only 'insert into'. For exampl
 the statements below are equivalent:
 </para>
 <programlisting><![CDATA[
-SQL>SPARQL INSERT INTO GRAPH <http://mygraph.com> {  <http://myopenlink.net/dataspace/Kingsley#this>
+SQL>SPARQL INSERT INTO GRAPH <http://mygraph.com> {  <http://example.com/dataspace/Kingsley#this>
                                                      <http://rdfs.org/sioc/ns#id>
                                                      <Kingsley> };
 callret-0
@@ -6153,7 +6178,7 @@ ______________________________________________________________________________
 Insert into <http://mygraph.com>, 1 triples -- done
 
 1 Rows. -- 0 msec.
-SQL>SPARQL INSERT INTO GRAPH <http://mygraph.com> {  <http://myopenlink.net/dataspace/Caroline#this>
+SQL>SPARQL INSERT INTO GRAPH <http://mygraph.com> {  <http://example.com/dataspace/Caroline#this>
                                                      <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
                                                      <http://rdfs.org/sioc/ns#User> };
 callret-0
@@ -6166,7 +6191,7 @@ Insert into <http://mygraph.com>, 1 triples -- done
 
 -- and
 
-SQL>SPARQL INSERT IN GRAPH <http://mygraph.com> {  <http://myopenlink.net/dataspace/Kingsley#this>
+SQL>SPARQL INSERT IN GRAPH <http://mygraph.com> {  <http://example.com/dataspace/Kingsley#this>
                                                    <http://rdfs.org/sioc/ns#id>
                                                    <Kingsley> };
 callret-0
@@ -6176,7 +6201,7 @@ _______________________________________________________________________________
 Insert into <http://mygraph.com>, 1 triples -- done
 
 1 Rows. -- 10 msec.
-SQL>SPARQL INSERT IN GRAPH <http://mygraph.com> {  <http://myopenlink.net/dataspace/Caroline#this>
+SQL>SPARQL INSERT IN GRAPH <http://mygraph.com> {  <http://example.com/dataspace/Caroline#this>
                                                    <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
                                                    <http://rdfs.org/sioc/ns#User> };
 callret-0
@@ -6282,7 +6307,7 @@ SQL>SPARQL
 MODIFY GRAPH <http://mygraph.com> 
 DELETE { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o } 
 INSERT { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> ?o } 
-FROM <http://mytest.com> 	
+FROM <http://example.com>
 WHERE { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o };
 	
 
@@ -6295,7 +6320,7 @@ WHERE { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o };
 	
 -- update a graph with delete of particular tripple
 SQL>SPARQL
-DELETE FROM GRAPH <http://mygraph.com> { <http://myopenlink.net/dataspace/Caroline#this> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> <http://rdfs.org/sioc/ns#User> };
+DELETE FROM GRAPH <http://mygraph.com> { <http://example.com/dataspace/Caroline#this> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> <http://rdfs.org/sioc/ns#User> };
 
 ]]></programlisting>
 </sect4>
@@ -6304,9 +6329,9 @@ DELETE FROM GRAPH <http://mygraph.com> { <http://myopenlink.net/dataspace/Caroli
 <orderedlist>
   <listitem>Suppose there is a sample file kidehen.n3:
 <programlisting><![CDATA[
-<http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/ns#User> .
-<http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this> <http://www.w3.org/2000/01/rdf-schema#label> 	"Kingsley" .
-<http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this> <http://rdfs.org/sioc/ns#creator_of> <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1300> .
+<http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/ns#User> .
+<http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this> <http://www.w3.org/2000/01/rdf-schema#label> 	"Kingsley" .
+<http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this> <http://rdfs.org/sioc/ns#creator_of> <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1300> .
 ]]></programlisting>
 </listitem>
   <listitem>Using Conductor UI go to Web Application Server and create folder, for ex. with name "n3_collection"</listitem>
@@ -6338,7 +6363,7 @@ callret-0
 VARCHAR
 _______________________________________________________________________________
 
-Load <http://localhost:8890/DAV/n3_collection/kidehen.n3> into graph <http://mygraph.com> -- done
+Load <http://example.com/DAV/n3_collection/kidehen.n3> into graph <http://mygraph.com> -- done
 
 1 Rows. -- 30 msec.
 ]]></programlisting>
@@ -6357,9 +6382,9 @@ s                                                                  p            
 VARCHAR                                                            VARCHAR                                             VARCHAR
 _______________________________________________________________________________
 
-http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this    http://www.w3.org/1999/02/22-rdf-syntax-ns#type     http://rdfs.org/sioc/ns#User
-http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this    http://rdfs.org/sioc/ns#creator_of                  http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1300
-http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this    http://www.w3.org/2000/01/rdf-schema#label          Kingsley
+http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this    http://www.w3.org/1999/02/22-rdf-syntax-ns#type     http://rdfs.org/sioc/ns#User
+http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this    http://rdfs.org/sioc/ns#creator_of                  http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1300
+http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this    http://www.w3.org/2000/01/rdf-schema#label          Kingsley
 
 3 Rows. -- 10 msec.
 ]]></programlisting>
@@ -6372,10 +6397,10 @@ executed in sequence.
 </para>
 <programlisting><![CDATA[
 SQL>SPARQL
-INSERT IN GRAPH <http://mygraph.com> { <http://myopenlink.net/dataspace/Kingsley#this>
+INSERT IN GRAPH <http://mygraph.com> { <http://example.com/dataspace/Kingsley#this>
                                        <http://rdfs.org/sioc/ns#id>
                                        <Kingsley> }
-INSERT INTO GRAPH <http://mygraph.com> { <http://myopenlink.net/dataspace/Caroline#this>
+INSERT INTO GRAPH <http://mygraph.com> { <http://example.com/dataspace/Caroline#this>
                                          <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
                                          <http://rdfs.org/sioc/ns#User> }
 INSERT INTO GRAPH <http://mygraph.com> { ?s <http://rdfs.org/sioc/ns#id> `iri (bif:concat (str (?o), "Idehen"))` }
@@ -6399,7 +6424,7 @@ INSERT { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> ?o }
 FROM <http://mygraph.com>	
 WHERE { ?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> ?o };
 
-SQL>DELETE FROM GRAPH <http://mygraph.com> { <http://myopenlink.net/dataspace/Caroline#this> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> <http://rdfs.org/sioc/ns#User> };
+SQL>DELETE FROM GRAPH <http://mygraph.com> { <http://example.com/dataspace/Caroline#this> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type1> <http://rdfs.org/sioc/ns#User> };
 
 SQL>SPARQL
 load bif:concat ("http://", bif:registry_get("URIQADefaultHost"), "/DAV/n3_collection/kidehen.n3") INTO GRAPH <http://mygraph.com>;
@@ -7440,7 +7465,7 @@ http://id.myopenlink.net/dataspace/person/demo#this
           </listitem>
           <listitem>Execute the query:
 <programlisting><![CDATA[
-INSERT INTO GRAPH <http://mytest.com> {
+INSERT INTO GRAPH <http://example.com> {
   <s1> <p1> <o1> .
   <s2> <p2> <o2> .
   <s3> <p3> <o3> 
@@ -9203,7 +9228,7 @@ SPARQL
   DEFINE get:soft "replacing"
   DEFINE get:private <urn:Anna:Sponged:Data>
   SELECT *
-  FROM <http://anna-example.com/>
+  FROM <http://example.com/anna/>
   WHERE
     { ?s ?p ?o };
 ]]></programlisting>
@@ -9267,7 +9292,7 @@ SPARQL
   DEFINE get:soft "replacing"
   DEFINE get:private <urn:Brad:Sponged:Data>
   SELECT *
-  FROM <http://brad-example.com/>
+  FROM <http://example.com/brad/>
   WHERE
     { ?s ?p ?o };
 ]]></programlisting>
@@ -9331,7 +9356,7 @@ SPARQL
   DEFINE get:soft "replacing"
   DEFINE get:private <urn:Carl:Sponged:Data>
   SELECT *
-  FROM <http://carl-example.com/>
+  FROM <http://example.com/carl/>
   WHERE
     { ?s ?p ?o };
 ]]></programlisting>
@@ -9401,9 +9426,9 @@ VARCHAR                  VARCHAR
 __________________________________________________________
 
 ....
-urn:Anna:Sponged:Data    http://anna-example.com/
-urn:Brad:Sponged:Data    http://brad-example.com/
-urn:Carl:Sponged:Data    http://carl-example.com/
+urn:Anna:Sponged:Data    http://example.com/anna/
+urn:Brad:Sponged:Data    http://example.com/brad/
+urn:Carl:Sponged:Data    http://example.com/carl/
 urn:Carl:Sponged:Data    http://www.openlinksw.com/data/turtle/licenses.ttl
 urn:Carl:Sponged:Data    http://www.openlinksw.com/data/turtle/products.ttl
 urn:Carl:Sponged:Data    http://www.openlinksw.com/data/turtle/software.ttl
@@ -9494,9 +9519,9 @@ DB.DBA.RDF_GRAPH_USER_PERMS_SET ('urn:Carl:Sponged:Data', 'Carl', 15);
 
 
 -- Set Anna's, Brad's and Carl's graphs by inserting them into the <b>virtrdf:PrivateGraphs</b> graph group:
-DB.DBA.RDF_GRAPH_GROUP_INS ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'http://anna-example.com/');
-DB.DBA.RDF_GRAPH_GROUP_INS ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'http://brad-example.com/');
-DB.DBA.RDF_GRAPH_GROUP_INS ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'http://carl-example.com/');
+DB.DBA.RDF_GRAPH_GROUP_INS ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'http://example.com/anna/');
+DB.DBA.RDF_GRAPH_GROUP_INS ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'http://example.com/brad/');
+DB.DBA.RDF_GRAPH_GROUP_INS ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'http://example.com/carl/');
 ]]></programlisting>
      </listitem>
      <listitem>Examples with invalid graph group names:
@@ -9556,7 +9581,7 @@ SPARQL
   DEFINE get:soft "replacing"
   DEFINE get:private <urn:Anna:Sponged:Data>
   SELECT *
-  FROM <http://anna-example.com/>
+  FROM <http://example.com/anna/>
   WHERE
     { ?s ?p ?o };
 ]]></programlisting>
@@ -9620,7 +9645,7 @@ SPARQL
   DEFINE get:soft "replacing"
   DEFINE get:private <urn:Brad:Sponged:Data>
   SELECT *
-  FROM <http://brad-example.com/>
+  FROM <http://example.com/brad/>
   WHERE
     { ?s ?p ?o };
 ]]></programlisting>
@@ -9684,7 +9709,7 @@ SPARQL
   DEFINE get:soft "replacing"
   DEFINE get:private <urn:Carl:Sponged:Data>
   SELECT *
-  FROM <http://carl-example.com/>
+  FROM <http://example.com/carl/>
   WHERE
     { ?s ?p ?o };
 ]]></programlisting>
@@ -11735,7 +11760,7 @@ multiple streams and load these in parallel using this function.</listitem>
 <programlisting><![CDATA[
 curl -i -d "INSERT {<http://demo.openlinksw.com/DAV/home/demo_about.rdf>
 <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/ns#User>}" -u "demo:demo"
--H "Content-Type: application/sparql-query" http://localhost:8890/DAV/xx/yy
+-H "Content-Type: application/sparql-query" http://example.com/DAV/xx/yy
 ]]></programlisting>
         <para>The response should be:</para>
 <programlisting><![CDATA[
@@ -11765,17 +11790,17 @@ rdf:resource="http://rdfs.org/sioc/ns#User"/>
         <para>Execute the following command:</para>
 <programlisting><![CDATA[
 curl -i -d "INSERT IN GRAPH <http://mygraph.com>
-{ <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this>
+{ <http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this>
   <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
   <http://rdfs.org/sioc/ns#User> .
-  <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this>
+  <http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this>
   <http://www.w3.org/2000/01/rdf-schema#label>
   <Kingsley Uyi Idehen> .
-  <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this>
+  <http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this>
   <http://rdfs.org/sioc/ns#creator_of>
 
 <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1300>
-  } " -u "demo:demo" -H "Content-Type: application/sparql-query" http://localhost:8890/DAV/home/demo/test/myrq
+  } " -u "demo:demo" -H "Content-Type: application/sparql-query" http://example.com/DAV/home/demo/test/myrq
 ]]></programlisting>
         <para>As result the response will be:</para>
 <programlisting><![CDATA[
@@ -11788,7 +11813,7 @@ Accept-Ranges: bytes
 MS-Author-Via: SPARQL
 Content-Length: 0
 ]]></programlisting>
-        <para>Now let's check the inserted triples. Go to the sparql endpoint, i.e. http://localhost:8890/sparql and:</para>
+        <para>Now let's check the inserted triples. Go to the sparql endpoint, i.e. http://example.com/sparql and:</para>
 <orderedlist>
 <listitem>Enter for Default Graph URI:
 <programlisting><![CDATA[
@@ -11804,9 +11829,9 @@ SELECT * WHERE {?s ?p ?o}
 <listitem>As result will be shown the inserted triples:
 <programlisting><![CDATA[
 s  	                                                          p                                                 o
-http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this   http://www.w3.org/1999/02/22-rdf-syntax-ns#type   http://rdfs.org/sioc/ns#User
-http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this   http://www.w3.org/2000/01/rdf-schema#label 	    Kingsley
-http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this   http://rdfs.org/sioc/ns#creator_of                http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1300
+http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this   http://www.w3.org/1999/02/22-rdf-syntax-ns#type   http://rdfs.org/sioc/ns#User
+http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this   http://www.w3.org/2000/01/rdf-schema#label 	      Kingsley
+http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this   http://rdfs.org/sioc/ns#creator_of                http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1300
 ]]></programlisting>
    </listitem>
 </orderedlist>
@@ -11901,7 +11926,7 @@ curl -F "query=SELECT DISTINCT ?p FROM <http://demo.openlinksw.com/DAV/home/demo
 curl -F "query=SELECT distinct ?Concept FROM <http://dbpedia.org> WHERE {?s a ?Concept} limit 10" http://dbpedia.org/sparql
 ]]></programlisting>
 <programlisting><![CDATA[
-curl -F "query=SELECT distinct ?Concept FROM <http://myopenlink.net/dataspace/person/kidehen> WHERE {?s a ?Concept} limit 10" http://demo.openlinksw.com/sparql
+curl -F "query=SELECT distinct ?Concept FROM <http://example.com/dataspace/person/kidehen> WHERE {?s a ?Concept} limit 10" http://demo.openlinksw.com/sparql
 ]]></programlisting>
 <programlisting><![CDATA[
 curl -F "query=SELECT distinct ?Concept FROM <http://data.openlinksw.com/oplweb/product_family/virtuoso> WHERE {?s a ?Concept} limit 10" http://demo.openlinksw.com/sparql
@@ -11928,42 +11953,42 @@ SPARQL LOAD <ResourceURL>
 <programlisting><![CDATA[
 SPARQL insert in graph <http://mygraph.com>
     {
-  <http://myopenlink.net/dataspace/Kingsley#this>
+  <http://example.com/dataspace/Kingsley#this>
   <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
   <http://rdfs.org/sioc/ns#User> .
 
-  <http://myopenlink.net/dataspace/Kingsley#this>
+  <http://example.com/dataspace/Kingsley#this>
   <http://rdfs.org/sioc/ns#id>
   <Kingsley> .
 
-  <http://myopenlink.net/dataspace/Caroline#this>
+  <http://example.com/dataspace/Caroline#this>
   <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
   <http://rdfs.org/sioc/ns#User> .
 
- <http://myopenlink.net/dataspace/Caroline#this>
+ <http://example.com/dataspace/Caroline#this>
   <http://rdfs.org/sioc/ns#id>
   <Caroline> .
 
-   <http://myopenlink.net/dataspace/Matt#this>
+   <http://example.com/dataspace/Matt#this>
   <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
   <http://rdfs.org/sioc/ns#User> .
 
-  <http://myopenlink.net/dataspace/Matt#this>
+  <http://example.com/dataspace/Matt#this>
   <http://rdfs.org/sioc/ns#id>
   <Matt> .
 
-   <http://myopenlink.net/dataspace/demo#this>
+   <http://example.com/dataspace/demo#this>
   <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>
   <http://rdfs.org/sioc/ns#User> .
 
-  <http://myopenlink.net/dataspace/demo#this>
+  <http://example.com/dataspace/demo#this>
   <http://rdfs.org/sioc/ns#id>
   <demo> .};
 ]]></programlisting>
    </listitem>
    <listitem>Load from .rq file:
      <orderedlist>
-       <listitem>Create DAV collection which is visible to public, for ex: http://localhost:8890/DAV/tmp</listitem>
+       <listitem>Create DAV collection which is visible to public, for ex: http://example.com/DAV/tmp</listitem>
        <listitem>Upload to the DAV collection the following file for ex. with name listall.rq and with the following content:
 <programlisting><![CDATA[
 SPARQL
@@ -11993,7 +12018,7 @@ callret-0
 VARCHAR
 _______________________________________________________________________________
 
-Load <http://localhost:8890/DAV/tmp/listall.rq> into graph <http://myNewGraph.com> -- done
+Load <http://example.com/DAV/tmp/listall.rq> into graph <http://myNewGraph.com> -- done
 
 1 Rows. -- 321 msec.
 ]]></programlisting>
@@ -12108,7 +12133,7 @@ http://www.dajobe.org/foaf.rdf#i              http://purl.org/dc/elements/1.1/da
         <para>Suppose there is ODS user test3 with ODS password 1, which has testWiki wiki instance.</para>
         <para>Execute the following:</para>
 <programlisting><![CDATA[
-curl -i -d "INSERT {<http://localhost:8890/dataspace/test3/wiki/testWiki> <http://atomowl.org/ontologies/atomrdf#contains> <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://rdfs.org/sioc/ns#has_container> <http://localhost:8890/dataspace/test3/wiki/testWiki> . <http://localhost:8890/dataspace/test3/wiki/testWiki> <http://atomowl.org/ontologies/atomrdf#entry> <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> . <http://localhost:8890/dataspace/test3/wiki/testWiki> <http://rdfs.org/sioc/ns#container_of> <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://rdfs.org/sioc/ns#topic>  <http://localhost:8890/dataspace/test3/wiki/testWiki> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://atomowl.org/ontologies/atomrdf#source> <http://localhost:8890/dataspace/test3/wiki/testWiki> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/types#Comment> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://atomowl.org/ontologies/atomrdf#Entry> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://www.w3.org/2000/01/rdf-schema#label> 'MyTest' . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://atomowl.org/ontologies/atomrdf#Link> . <http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://rdfs.org/sioc/ns#content> <test>}" -u "test3:1" -H "Content-Type: application/sparql-query" http://localhost:8890/DAV/home/test3/wiki/testWiki/MyTest
+curl -i -d "INSERT {<http://example.com/dataspace/test3/wiki/testWiki> <http://atomowl.org/ontologies/atomrdf#contains> <http://example.com/dataspace/test3/wiki/testWiki/MyTest> . <http://example.com/dataspace/test3/wiki/testWiki/MyTest> <http://rdfs.org/sioc/ns#has_container> <http://example.com/dataspace/test3/wiki/testWiki> . <http://example.com/dataspace/test3/wiki/testWiki> <http://atomowl.org/ontologies/atomrdf#entry> <http://example.com/dataspace/test3/wiki/testWiki/MyTest> . <http://example.com/dataspace/test3/wiki/testWiki> <http://rdfs.org/sioc/ns#container_of> <http://example.com/dataspace/test3/wiki/testWiki/MyTest> . <http://example.com/dataspace/test3/wiki/testWiki/MyTest> <http://rdfs.org/sioc/ns#topic>  <http://example.com/dataspace/test3/wiki/testWiki> . <http://example.com/dataspace/test3/wiki/testWiki/MyTest> <http://atomowl.org/ontologies/atomrdf#source> <http://example.com/dataspace/test3/wiki/testWiki> . <http://example.com/dataspace/test3/wiki/testWiki/MyTest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://rdfs.org/sioc/types#Comment> . <http://example.com/dataspace/test3/wiki/testWiki/MyTest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://atomowl.org/ontologies/atomrdf#Entry> . <http://example.com/dataspace/test3/wiki/testWiki/MyTest> <http://www.w3.org/2000/01/rdf-schema#label> 'MyTest' . <http://example.com/dataspace/test3/wiki/testWiki/MyTest> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://atomowl.org/ontologies/atomrdf#Link> . <http://example.com/dataspace/test3/wiki/testWiki/MyTest> <http://rdfs.org/sioc/ns#content> <test>}" -u "test3:1" -H "Content-Type: application/sparql-query" http://example.com/DAV/home/test3/wiki/testWiki/MyTest
 ]]></programlisting>
         <para>As result we should have 2 files created:</para>
 <itemizedlist>
@@ -12116,33 +12141,33 @@ curl -i -d "INSERT {<http://localhost:8890/dataspace/test3/wiki/testWiki> <http:
 <programlisting><![CDATA[
 <?xml version="1.0" encoding="utf-8" ?>
 <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#">
-<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki"><ns0pred:entry xmlns:ns0pred="http://atomowl.org/ontologies/atomrdf#" rdf:resource="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"/></rdf:Description>
-<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:label xmlns:ns0pred="http://www.w3.org/2000/01/rdf-schema#">MyTest</ns0pred:label></rdf:Description>
-<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:type xmlns:ns0pred="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:resource="http://atomowl.org/ontologies/atomrdf#Link"/></rdf:Description>
-<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:type xmlns:ns0pred="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:resource="http://rdfs.org/sioc/types#Comment"/></rdf:Description>
-<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:type xmlns:ns0pred="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:resource="http://atomowl.org/ontologies/atomrdf#Entry"/></rdf:Description>
-<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:has_container xmlns:ns0pred="http://rdfs.org/sioc/ns#" rdf:resource="http://localhost:8890/dataspace/test3/wiki/testWiki"/></rdf:Description>
-<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki"><ns0pred:container_of xmlns:ns0pred="http://rdfs.org/sioc/ns#" rdf:resource="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"/></rdf:Description>
-<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki"><ns0pred:contains xmlns:ns0pred="http://atomowl.org/ontologies/atomrdf#" rdf:resource="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"/></rdf:Description>
-<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:content xmlns:ns0pred="http://rdfs.org/sioc/ns#">test</ns0pred:content></rdf:Description>
-<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:topic xmlns:ns0pred="http://rdfs.org/sioc/ns#" rdf:resource="http://localhost:8890/dataspace/test3/wiki/testWiki"/></rdf:Description>
-<rdf:Description rdf:about="http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:source xmlns:ns0pred="http://atomowl.org/ontologies/atomrdf#" rdf:resource="http://localhost:8890/dataspace/test3/wiki/testWiki"/></rdf:Description>
+<rdf:Description rdf:about="http://example.com/dataspace/test3/wiki/testWiki"><ns0pred:entry xmlns:ns0pred="http://atomowl.org/ontologies/atomrdf#" rdf:resource="http://example.com/dataspace/test3/wiki/testWiki/MyTest"/></rdf:Description>
+<rdf:Description rdf:about="http://example.com/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:label xmlns:ns0pred="http://www.w3.org/2000/01/rdf-schema#">MyTest</ns0pred:label></rdf:Description>
+<rdf:Description rdf:about="http://example.com/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:type xmlns:ns0pred="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:resource="http://atomowl.org/ontologies/atomrdf#Link"/></rdf:Description>
+<rdf:Description rdf:about="http://example.com/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:type xmlns:ns0pred="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:resource="http://rdfs.org/sioc/types#Comment"/></rdf:Description>
+<rdf:Description rdf:about="http://example.com/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:type xmlns:ns0pred="http://www.w3.org/1999/02/22-rdf-syntax-ns#" rdf:resource="http://atomowl.org/ontologies/atomrdf#Entry"/></rdf:Description>
+<rdf:Description rdf:about="http://example.com/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:has_container xmlns:ns0pred="http://rdfs.org/sioc/ns#" rdf:resource="http://example.com/dataspace/test3/wiki/testWiki"/></rdf:Description>
+<rdf:Description rdf:about="http://example.com/dataspace/test3/wiki/testWiki"><ns0pred:container_of xmlns:ns0pred="http://rdfs.org/sioc/ns#" rdf:resource="http://example.com/dataspace/test3/wiki/testWiki/MyTest"/></rdf:Description>
+<rdf:Description rdf:about="http://example.com/dataspace/test3/wiki/testWiki"><ns0pred:contains xmlns:ns0pred="http://atomowl.org/ontologies/atomrdf#" rdf:resource="http://example.com/dataspace/test3/wiki/testWiki/MyTest"/></rdf:Description>
+<rdf:Description rdf:about="http://example.com/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:content xmlns:ns0pred="http://rdfs.org/sioc/ns#">test</ns0pred:content></rdf:Description>
+<rdf:Description rdf:about="http://example.com/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:topic xmlns:ns0pred="http://rdfs.org/sioc/ns#" rdf:resource="http://example.com/dataspace/test3/wiki/testWiki"/></rdf:Description>
+<rdf:Description rdf:about="http://example.com/dataspace/test3/wiki/testWiki/MyTest"><ns0pred:source xmlns:ns0pred="http://atomowl.org/ontologies/atomrdf#" rdf:resource="http://example.com/dataspace/test3/wiki/testWiki"/></rdf:Description>
 </rdf:RDF>
 ]]></programlisting>
    </listitem>
 <listitem>To the user's wiki instance will be added a new WikiWord "MyTest" with content the value of the SIOC term attribute "content":
 <programlisting><![CDATA[
-<http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest> <http://rdfs.org/sioc/ns#content> <test>
+<http://example.com/dataspace/test3/wiki/testWiki/MyTest> <http://rdfs.org/sioc/ns#content> <test>
 i.e. the content will be "test".
 ]]></programlisting>
    </listitem>
 </itemizedlist>
         <para>Now let's check what data was inserted in the Quad Store:</para>
 <orderedlist>
-<listitem>Go to the sparql endpoint, i.e. for ex. to http://localhost:8890/sparql</listitem>
+<listitem>Go to the sparql endpoint, i.e. for ex. to http://example.com/sparql</listitem>
 <listitem>Enter for Default Graph URI:
 <programlisting><![CDATA[
-http://localhost:8890/DAV/home/test3/wiki/testWiki/MyTest
+http://example.com/DAV/home/test3/wiki/testWiki/MyTest
 ]]></programlisting>
    </listitem>
 <listitem>Enter for Query text:
@@ -12154,17 +12179,17 @@ SELECT * WHERE {?s ?p ?o}
 <listitem>As result will be shown the inserted triples:
 <programlisting><![CDATA[
 s  	                                                    p  	                                             o
-http://localhost:8890/dataspace/test3/wiki/testWiki 	    http://rdfs.org/sioc/ns#container_of 	     http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest
-http://localhost:8890/dataspace/test3/wiki/testWiki 	    http://atomowl.org/ontologies/atomrdf#entry      http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest
-http://localhost:8890/dataspace/test3/wiki/testWiki 	    http://atomowl.org/ontologies/atomrdf#contains   http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest
-http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://www.w3.org/1999/02/22-rdf-syntax-ns#type  http://rdfs.org/sioc/types#Comment
-http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://www.w3.org/1999/02/22-rdf-syntax-ns#type  http://atomowl.org/ontologies/atomrdf#Entry
-http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://www.w3.org/1999/02/22-rdf-syntax-ns#type  http://atomowl.org/ontologies/atomrdf#Link
-http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://www.w3.org/2000/01/rdf-schema#label 	     MyTest
-http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://rdfs.org/sioc/ns#has_container 	     http://localhost:8890/dataspace/test3/wiki/testWiki
-http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://rdfs.org/sioc/ns#content 	             test
-http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://rdfs.org/sioc/ns#topic 	             http://localhost:8890/dataspace/test3/wiki/testWiki
-http://localhost:8890/dataspace/test3/wiki/testWiki/MyTest  http://atomowl.org/ontologies/atomrdf#source     http://localhost:8890/dataspace/test3/wiki/testWiki
+http://example.com/dataspace/test3/wiki/testWiki 	    http://rdfs.org/sioc/ns#container_of 	     http://example.com/dataspace/test3/wiki/testWiki/MyTest
+http://example.com/dataspace/test3/wiki/testWiki 	    http://atomowl.org/ontologies/atomrdf#entry      http://example.com/dataspace/test3/wiki/testWiki/MyTest
+http://example.com/dataspace/test3/wiki/testWiki 	    http://atomowl.org/ontologies/atomrdf#contains   http://example.com/dataspace/test3/wiki/testWiki/MyTest
+http://example.com/dataspace/test3/wiki/testWiki/MyTest  http://www.w3.org/1999/02/22-rdf-syntax-ns#type  http://rdfs.org/sioc/types#Comment
+http://example.com/dataspace/test3/wiki/testWiki/MyTest  http://www.w3.org/1999/02/22-rdf-syntax-ns#type  http://atomowl.org/ontologies/atomrdf#Entry
+http://example.com/dataspace/test3/wiki/testWiki/MyTest  http://www.w3.org/1999/02/22-rdf-syntax-ns#type  http://atomowl.org/ontologies/atomrdf#Link
+http://example.com/dataspace/test3/wiki/testWiki/MyTest  http://www.w3.org/2000/01/rdf-schema#label 	     MyTest
+http://example.com/dataspace/test3/wiki/testWiki/MyTest  http://rdfs.org/sioc/ns#has_container 	     http://example.com/dataspace/test3/wiki/testWiki
+http://example.com/dataspace/test3/wiki/testWiki/MyTest  http://rdfs.org/sioc/ns#content 	             test
+http://example.com/dataspace/test3/wiki/testWiki/MyTest  http://rdfs.org/sioc/ns#topic 	             http://example.com/dataspace/test3/wiki/testWiki
+http://example.com/dataspace/test3/wiki/testWiki/MyTest  http://atomowl.org/ontologies/atomrdf#source     http://example.com/dataspace/test3/wiki/testWiki
 ]]></programlisting>
    </listitem>
 </orderedlist>
@@ -12176,7 +12201,7 @@ the Quad Store is updated automatically, or you can load from DAV manually to qu
       <para><emphasis>Example:</emphasis></para>
       <para><emphasis>Example 1: Using ODS Briefcase</emphasis></para>
       <orderedlist>
-        <listitem>Go to your ods location, for ex. http://localhost:8890/ods</listitem>
+        <listitem>Go to your ods location, for ex. http://example.com/ods</listitem>
         <listitem>Register user, for ex. user test1</listitem>
         <listitem>Login if not already in ods</listitem>
         <listitem>Go to ODS -> Briefcase</listitem>
@@ -12198,7 +12223,7 @@ the Quad Store is updated automatically, or you can load from DAV manually to qu
         <listitem>In the shown form set:
           <itemizedlist>
             <listitem>Destination: RDF Store</listitem>
-            <listitem>RDF graph name for ex. with the value: http://localhost:8890/DAV/home/test2/mytest/</listitem>
+            <listitem>RDF graph name for ex. with the value: http://example.com/DAV/home/test2/mytest/</listitem>
             <listitem>Select URL or File. For ex. you can select the following file with name jose.rdf:
 <programlisting><![CDATA[
 <rdf:RDF xmlns="http://www.example/jose/foaf.rdf#"
@@ -12238,7 +12263,7 @@ will have this value: http://host:port/DAV/home/username/rdf_sink/</listitem>
       </orderedlist>
       <para>Execute from ISQL or from the SPARQL endpoint the following query:</para>
 <programlisting><![CDATA[
-SELECT * FROM <http://localhost:8890/DAV/home/test2/mytest/>
+SELECT * FROM <http://example.com/DAV/home/test2/mytest/>
 WHERE {?s ?p ?o}
 ]]></programlisting>
       <para>As result should be shown:</para>
@@ -12258,7 +12283,7 @@ http://www.example/jose/foaf.rdf#juan 	  http://xmlns.com/foaf/0.1/mbox 	       
 ]]></programlisting>
       <para><emphasis>Example 2: Using Conductor UI</emphasis></para>
       <orderedlist>
-        <listitem>Go to Conductor UI, for ex. at http://localhost:8890/conductor</listitem>
+        <listitem>Go to Conductor UI, for ex. at http://example.com/conductor</listitem>
         <listitem>Login as dba user</listitem>
         <listitem>Go to Linked Data -&gt; Quad Store Upload
           <figure id="uc1" float="1">
@@ -12287,7 +12312,7 @@ http://www.example/jose/foaf.rdf#juan 	  http://xmlns.com/foaf/0.1/mbox 	       
 non-RDF but get RDF and this can go to the Quad Store).</para>
       <para><emphasis>Example:</emphasis></para>
       <orderedlist>
-        <listitem>Go to Conductor UI. For ex. at http://localhost:8890/conductor :
+        <listitem>Go to Conductor UI. For ex. at http://example.com/conductor :
           <figure id="rdfinsertwebdav11" float="1">
 	          <title>Using Virtuoso Crawler</title>
 	          <graphic fileref="ui/rdfinsert11.png"/>
@@ -12440,7 +12465,7 @@ id
 VARCHAR
 _______________________________________________________________________________
 
-http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this
+http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this
 http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D
 http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D
 http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this
@@ -12918,7 +12943,7 @@ select * from <http://mygraph> where {?s ?p ?o}
         	RDF quad store as graph http://mygraph .
         </para>	
         <para>The new graph can then be queried using the basic SPARQL client normally available 
-        	in a default Virtuoso installation at http://localhost:8890/sparql/. e.g.: 
+        	in a default Virtuoso installation at http://example.com/sparql/. e.g.:
         </para>		
 <programlisting><![CDATA[
 select * from <http://mygraph> where {?s ?p ?o}	
@@ -15070,7 +15095,7 @@ SQL> SELECT APERTURE.DBA."MetaExtractor"().getMetaFromFile ('some_pdf_in_server_
          </itemizedlist>
 <para>You should now be able to Fetch all Network Resource document types supported by the Aperture framework, (using
 one of the standard Sponger invocation mechanisms, for instance with a URL of the form
-http://localhost:8890/about/rdf/http://targethost/targetfile.pdf), subject to the MIME type pattern
+http://example.com/about/rdf/http://targethost/targetfile.pdf), subject to the MIME type pattern
 filters configured for the cartridge in the Conductor UI. By default the Aperture cartridge is
 registered to match MIME types (application/octet-stream)|(application/pdf)|(application/mspowerpoint).
 To Fetch all the Network Resource MIME types Aperture is capable of handling, changed the MIME type pattern to
@@ -15216,18 +15241,18 @@ http://api.nytimes.com/svc/elections/us/v2/president/2008/finances/candidates/ob
 RDF data using the Freebase cartridge. Click the 'down arrow' adjacent to the 'Barack Obama' link to
 explore the retrieved data.</para>
         <para>Assuming your Virtuoso instance is running on port 8890 on localhost, the list of data caches displayed
-by ODE should include: http://localhost:8890/about/html/http/www.freebase.com/view/en/barack_obama#this</para>
-        <para>The information displayed in the rest of the page relates to the entity instance identified by this URI. The prefix http://localhost:8890/about/html/http/ prepended to the
+by ODE should include: http://example.com/about/html/http/www.freebase.com/view/en/barack_obama#this</para>
+        <para>The information displayed in the rest of the page relates to the entity instance identified by this URI. The prefix http://example.com/about/html/http/ prepended to the
 original URI indicates that the Sponger Proxy Service has been invoked. The Sponger creates an associated
 entity instance (identified by the above URI with the #this suffix) which holds network resource information being fetched 
 about the original entity.</para>
         <para><emphasis>Using the Command Line</emphasis></para>
         <para>As an alternative to ODE, you can perform Network Resource Fetch from the command line with the command:</para>
 <programlisting><![CDATA[
-curl -H "Accept: text/xml" "http://localhost:8890/about/html/http/www.freebase.com/view/en/barack_obama"
+curl -H "Accept: text/xml" "http://example.com/about/html/http/www.freebase.com/view/en/barack_obama"
 ]]></programlisting>
         <para>To view the results, you can use Conductor's browser-based SPARQL interface (e.g.
-http://localhost:8890/sparql) to query the resulting graph generated by the Sponger,
+http://example.com/sparql) to query the resulting graph generated by the Sponger,
 http://www.freebase.com/view/en/barack_obama.</para>
         <para><emphasis>Installing the Meta-Cartridge</emphasis></para>
         <para>To register the meta-cartridge, a procedure similar to the following can be used:</para>
@@ -15295,8 +15320,8 @@ create procedure DB.DBA.RDF_NYTCF_LOOKUP(
   -- baseUri specifies what the generated RDF description is about
   -- <rdf:Description rdf:about="{baseUri}">
   -- Example baseUri's:
-  -- http://localhost:8890/about/rdf/http://www.freebase.com/view/en/barack_obama#this
-  -- http://localhost:8890/about/rdf/http://www.freebase.com/view/en/hillary_rodham_clinton#this
+  -- http://example.com/about/rdf/http://www.freebase.com/view/en/barack_obama#this
+  -- http://example.com/about/rdf/http://www.freebase.com/view/en/hillary_rodham_clinton#this
   declare path any;
   declare lang, k, base_uri varchar;
 
@@ -15327,7 +15352,7 @@ create procedure DB.DBA.RDF_MQL_RESOURCE_IS_SENATOR (
   --
   -- To test for senators, we start by looking for two statements in the Freebase cartridge output, similar to:
   --
-  -- <rdf:Description rdf:about="http://localhost:8890/about/rdf/http://www.freebase.com/view/en/hillary_rodham_clinton#this">
+  -- <rdf:Description rdf:about="http://example.com/about/rdf/http://www.freebase.com/view/en/hillary_rodham_clinton#this">
   --   <rdf:type rdf:resource="http://xmlns.com/foaf/0.1/Person"/>
   --   <rdfs:seeAlso rdf:resource="http://en.wikipedia.org/wiki/Hillary_Rodham_Clinton"/>
   --   ...
@@ -15573,7 +15598,7 @@ RDF_MQL_RESOURCE_IS_SENATOR checks if the resource described by Freebase is a U.
 Only then does it make sense to query for campaign finance data from the NYTCF data space.</para>
         <para>To test for senators, the procedure starts by looking for two statements in the Freebase cartridge output similar to:</para>
 <programlisting><![CDATA[
-<rdf:Description rdf:about="http://localhost:8890/about/rdf/http://www.freebase.com/view/en/barack_obama#this">
+<rdf:Description rdf:about="http://example.com/about/rdf/http://www.freebase.com/view/en/barack_obama#this">
   <rdf:type rdf:resource="http://xmlns.com/foaf/0.1/Person"/>
   <rdfs:seeAlso rdf:resource="http://en.wikipedia.org/wiki/Barack_Obama"/>
   ...
@@ -15871,7 +15896,7 @@ create procedure DB.DBA.RDF_LOAD_HTML_RESPONSE (
 is given below. Some of these ontologies may prove useful when creating your own cartridges.</para>
         <itemizedlist mark="bullet">
           <listitem>- http://www.openlinksw.com/virtuoso/xslt/</listitem>
-          <listitem>- http://www.openlinksw.com/schemas/XHTML# </listitem>
+          <listitem>- http://example.com/schemas/XHTML# </listitem>
           <listitem>rdf: http://www.w3.org/1999/02/22-rdf-syntax-ns# </listitem>
           <listitem>rdfs: http://www.w3.org/2000/01/rdf-schema# </listitem>
           <listitem>dc: http://purl.org/dc/elements/1.1/</listitem>
@@ -16233,8 +16258,8 @@ sparql define get:soft "soft" select * from <http://www.amazon.com/Apple-touch-G
     <itemizedlist mark="bullet">
       <listitem>Use the following as a marker for embedded RDF-Turtle based RDF statements:
 <programlisting><![CDATA[
-## Turtle Start ##g
-## {Trutle-based-RDF-statements}g
+## Turtle Start ##
+## {Trutle-based-RDF-statements}
 ## Turtle End ##
 ]]></programlisting>
       </listitem>
@@ -16259,7 +16284,7 @@ sparql define get:soft "soft" select * from <http://www.amazon.com/Apple-touch-G
 ]]></programlisting>
        <para>Enables statements such as:</para>
 <programlisting><![CDATA[
-<>g
+<>
 a foaf:Document .
 ]]></programlisting>
      </sect4>
@@ -16267,46 +16292,46 @@ a foaf:Document .
 <orderedlist>
   <listitem>Most basic Nanotation:
 <programlisting><![CDATA[
-<> a <#Document> .g
+<> a <#Document> .
 <> <#topic> <#Nanotation>.
 ]]></programlisting>
   </listitem>
   <listitem>More sophisticated Nanotation that leverages terms from existing vocabularies:
 <programlisting><![CDATA[
-<> a foaf:Document .g
+<> a foaf:Document .
 <> foaf:topic <#Nanotation>  .
 ]]></programlisting>
   </listitem>
   <listitem>More sophisticated Nanotation that leverages commas and semicolons for statement
   	brevity e.g. when multiple sentences have a common Subject:
 <programlisting><![CDATA[
-<>g
-a foaf:Document;g
+<>
+a foaf:Document;
 foaf:topic <#Nanotation>.
 ]]></programlisting>
   </listitem>
   <listitem>When multiple sentences have a common Subject and Predicate but varying list of Objects:
 <programlisting><![CDATA[
-<>g
-a foaf:Document;g
+<>
+a foaf:Document;
 foaf:topic <#Nanotation>, <#SemanticWeb>, <#LinkedData>.
 ]]></programlisting>
   </listitem>
   <listitem>Incorporation of Pronouns into RDF sentence:
 <programlisting><![CDATA[
-<> a foaf:Document .g
-<> foaf:maker [a foaf:Person;g
+<> a foaf:Document .
+<> foaf:maker [a foaf:Person;
                foaf:name "Kingsley Idehen"  ] .
 ]]></programlisting>
   </listitem>
   <listitem>Processor (parser) hint markers that help Nanotation processors negate seriously mangled HTML content:
 <programlisting><![CDATA[
-## Turtle Start ##g
-g
-<>g
-a foaf:Document;g
-foaf:topic <#Nanotation>, <#SemanticWeb>, <#LinkedData>.g
-g
+## Turtle Start ##
+
+<>
+a foaf:Document;
+foaf:topic <#Nanotation>, <#SemanticWeb>, <#LinkedData>.
+
 ## Turtle End ##
 ]]></programlisting>
   </listitem>
@@ -16318,13 +16343,13 @@ g
        	example of an application that supports nanotation. Likewise, our URIBurner service which is a free public service
        	driven by an instance of Virtuoso with the Sponger module enabled: </para>
        <itemizedlist mark="bullet">
-         <listitem>When using your own instance of Virtuoso, the Sponger service is invoked via the URL pattern:g
+         <listitem>When using your own instance of Virtuoso, the Sponger service is invoked via the URL pattern:
 <programlisting><![CDATA[
 http://{cname-of-virtuoso-host-machine}/sponger
 ]]></programlisting>
          </listitem>
          <listitem>When using the public <ulink url="http://linkeddata.uriburner.com/">URIBurner service</ulink>, the Sponger
-         services is invoked via the URL:g
+         services is invoked via the URL:
 <programlisting><![CDATA[
 http://linkeddata.uriburner.com/
 ]]></programlisting>
@@ -16377,16 +16402,16 @@ http://{cname-of-virtuoso-host-machine}/about/html/{document-http-uri}
           (&lt;&gt;) or double quotes (""), in the context of the domain of the URI being sponged.</para>
           <para>For example, a Tweet containing the nanotation: </para>
 <programlisting><![CDATA[
-## Nannotation Start ##g
-<@kidehen> foaf:name "Kingsley Idehen" ;g
-           foaf:knows <@openlink> ;g
-           scot:has_tag <#Data> .g
+## Nannotation Start ##
+<@kidehen> foaf:name "Kingsley Idehen" ;
+           foaf:knows <@openlink> ;
+           scot:has_tag <#Data> .
 ## Nannotation End ##
 ]]></programlisting>
           <para>will be expanded to a Turtle string:</para>
 <programlisting><![CDATA[
-<https://twitter.com/kidehen> foaf:name "Kingsley Idehen" ;g
-  foaf:knows <https://twitter.com/openlink> ;g
+<https://twitter.com/kidehen> foaf:name "Kingsley Idehen" ;
+  foaf:knows <https://twitter.com/openlink> ;
   scot:has_tag <https://twitter.com/hashtag/Data#this> .
 ]]></programlisting>
           <para>We recognize custom URI formats for users and tags in the contexts of Facebook, Twitter, G+, LinkedIn and Delicious.</para>
@@ -18065,7 +18090,7 @@ Other <emphasis>get:...</emphasis> parameters are useless without this one.</lis
 These can be used if data should be retrieved from a mirror, not from original resource location or in any other case when the destination graph IRI differs from the location of the resource.</listitem>
 <programlisting><![CDATA[
 SQL>SPARQL
-define get:uri "http://myopenlink.net/dataspace/person/kidehen"
+define get:uri "http://example.com/dataspace/person/kidehen"
 SELECT ?id
 FROM NAMED <http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/sioc.ttl>
 WHERE { graph ?g { ?id a ?o } }
@@ -18082,7 +18107,7 @@ http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openli
 http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1261
 http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1261
 http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1261
-http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this
+http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this
 http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D
 http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D
 
@@ -18112,7 +18137,7 @@ http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openli
 http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1261
 http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1261
 http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1261
-http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this
+http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this
 http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D
 http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D
 
@@ -18141,7 +18166,7 @@ http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openli
 http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1261
 http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1261
 http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D/1261
-http://www.openlinksw.com/dataspace/kidehen@openlinksw.com#this
+http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this
 http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D
 http://www.openlinksw.com/dataspace/kidehen@openlinksw.com/weblog/kidehen@openlinksw.com%27s%20BLOG%20%5B127%5D
 
@@ -18172,9 +18197,6 @@ VARCHAR
 _______________________________________________________________________________
 
 http://www.openlinksw.com/dataspace/person/oerling#this
-http://www.openlinksw.com/mt-tb
-http://www.openlinksw.com/RPC2
-http://www.openlinksw.com/dataspace/oerling#this
 http://www.openlinksw.com/dataspace/oerling/weblog/Orri%20Erling%27s%20Blog
 http://www.openlinksw.com/dataspace/oerling/weblog/Orri%20Erling%27s%20Blog
 http://www.openlinksw.com/dataspace/oerling/weblog/Orri%20Erling%27s%20Blog/958
@@ -18199,9 +18221,6 @@ VARCHAR
 _______________________________________________________________________________
 
 http://www.openlinksw.com/dataspace/person/oerling#this
-http://www.openlinksw.com/mt-tb
-http://www.openlinksw.com/RPC2
-http://www.openlinksw.com/dataspace/oerling#this
 http://www.openlinksw.com/dataspace/oerling/weblog/Orri%20Erling%27s%20Blog
 http://www.openlinksw.com/dataspace/oerling/weblog/Orri%20Erling%27s%20Blog
 http://www.openlinksw.com/dataspace/oerling/weblog/Orri%20Erling%27s%20Blog/958
@@ -18227,11 +18246,11 @@ grab options are not allowed as they are global for the query. Only specific 'ge
 SQL>SPARQL
 PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 SELECT DISTINCT ?friend
-FROM NAMED  <http://myopenlink.net/dataspace/person/kidehen>
+FROM NAMED  <http://example.com/dataspace/person/kidehen>
 OPTION (get:soft "soft", get:method "GET")
 WHERE
   {
-      <http://myopenlink.net/dataspace/person/kidehen#this> foaf:knows
+      <http://example.com/dataspace/person/kidehen#this> foaf:knows
 ?friend .
   };
 friend
@@ -18244,12 +18263,12 @@ http://www.w3.org/People/Connolly/#me
 http://my.opera.com/chaals/xml/foaf#me
 http://www.w3.org/People/Berners-Lee/card#amy
 http://www.w3.org/People/EM/contact#me
-http://myopenlink.net/dataspace/person/ghard#this
-http://myopenlink.net/dataspace/person/omfaluyi#this
-http://myopenlink.net/dataspace/person/alanr#this
-http://myopenlink.net/dataspace/person/bblfish#this
-http://myopenlink.net/dataspace/person/danja#this
-http://myopenlink.net/dataspace/person/tthibodeau#this
+http://example.com/dataspace/person/ghard#this
+http://example.com/dataspace/person/omfaluyi#this
+http://example.com/dataspace/person/alanr#this
+http://example.com/dataspace/person/bblfish#this
+http://example.com/dataspace/person/danja#this
+http://example.com/dataspace/person/tthibodeau#this
 ...
 36 Rows. -- 1693 msec.
 ]]></programlisting>
@@ -18286,16 +18305,16 @@ id                                                      firstname  nick
 VARCHAR                                                 VARCHAR    VARCHAR
 _______________________________________________________________________________
 
-http://myopenlink.net/dataspace/person/pmitchell#this   LaRenda    sdmonroe
-http://myopenlink.net/dataspace/person/pmitchell#this   LaRenda    kidehen{at}openlinksw.com
-http://myopenlink.net/dataspace/person/pmitchell#this   LaRenda    alexmidd
-http://myopenlink.net/dataspace/person/abm#this         Alan       kidehen{at}openlinksw.com
-http://myopenlink.net/dataspace/person/igods#this       Cameron    kidehen{at}openlinksw.com
-http://myopenlink.net/dataspace/person/goern#this       Christoph  captsolo
-http://myopenlink.net/dataspace/person/dangrig#this     Dan        rickbruner
-http://myopenlink.net/dataspace/person/dangrig#this     Dan        sdmonroe
-http://myopenlink.net/dataspace/person/dangrig#this     Dan        lszczepa
-http://myopenlink.net/dataspace/person/dangrig#this     Dan        kidehen
+http://example.com/dataspace/person/pmitchell#this   LaRenda    sdmonroe
+http://example.com/dataspace/person/pmitchell#this   LaRenda    kidehen{at}openlinksw.com
+http://example.com/dataspace/person/pmitchell#this   LaRenda    alexmidd
+http://example.com/dataspace/person/abm#this         Alan       kidehen{at}openlinksw.com
+http://example.com/dataspace/person/igods#this       Cameron    kidehen{at}openlinksw.com
+http://example.com/dataspace/person/goern#this       Christoph  captsolo
+http://example.com/dataspace/person/dangrig#this     Dan        rickbruner
+http://example.com/dataspace/person/dangrig#this     Dan        sdmonroe
+http://example.com/dataspace/person/dangrig#this     Dan        lszczepa
+http://example.com/dataspace/person/dangrig#this     Dan        kidehen
 
 10 Rows. -- 80 msec.
 ]]></programlisting>
@@ -18327,16 +18346,16 @@ id                                                         firstname  nick
 VARCHAR                                                    VARCHAR    VARCHAR
 _______________________________________________________________________________
 
-http://myopenlink.net/dataspace/person/ghard#this          Yrj+?n+?   kidehen
+http://example.com/dataspace/person/ghard#this          Yrj+?n+?   kidehen
 http://inamidst.com/sbp/foaf#Sean                          Sean       d8uv
-http://myopenlink.net/dataspace/person/dangrig#this        Dan        rickbruner
-http://myopenlink.net/dataspace/person/dangrig#this        Dan        sdmonroe
-http://myopenlink.net/dataspace/person/dangrig#this        Dan        lszczepa
-http://myopenlink.net/dataspace/person/dangrig#this        Dan        kidehen
+http://example.com/dataspace/person/dangrig#this        Dan        rickbruner
+http://example.com/dataspace/person/dangrig#this        Dan        sdmonroe
+http://example.com/dataspace/person/dangrig#this        Dan        lszczepa
+http://example.com/dataspace/person/dangrig#this        Dan        kidehen
 http://captsolo.net/semweb/foaf-captsolo.rdf#Uldis_Bojars  Uldis      mortenf
 http://captsolo.net/semweb/foaf-captsolo.rdf#Uldis_Bojars  Uldis      danja
 http://captsolo.net/semweb/foaf-captsolo.rdf#Uldis_Bojars  Uldis      zool
-http://myopenlink.net/dataspace/person/rickbruner#this     Rick       dangrig
+http://example.com/dataspace/person/rickbruner#this     Rick       dangrig
 
 10 Rows. -- 530 msec.
 
@@ -18369,16 +18388,16 @@ id
 VARCHAR
 _______________________________________________________________________________
 
-http://www.openlinksw.com/virtrdf-data-formats#default-iid
-http://www.openlinksw.com/virtrdf-data-formats#default-iid-nullable
-http://www.openlinksw.com/virtrdf-data-formats#default-iid-nonblank
-http://www.openlinksw.com/virtrdf-data-formats#default-iid-nonblank-nullable
-http://www.openlinksw.com/virtrdf-data-formats#default
-http://www.openlinksw.com/virtrdf-data-formats#default-nullable
-http://www.openlinksw.com/virtrdf-data-formats#sql-varchar
-http://www.openlinksw.com/virtrdf-data-formats#sql-varchar-nullable
-http://www.openlinksw.com/virtrdf-data-formats#sql-longvarchar
-http://www.openlinksw.com/virtrdf-data-formats#sql-longvarchar-nullable
+http://example.com/virtrdf-data-formats#default-iid
+http://example.com/virtrdf-data-formats#default-iid-nullable
+http://example.com/virtrdf-data-formats#default-iid-nonblank
+http://example.com/virtrdf-data-formats#default-iid-nonblank-nullable
+http://example.com/virtrdf-data-formats#default
+http://example.com/virtrdf-data-formats#default-nullable
+http://example.com/virtrdf-data-formats#sql-varchar
+http://example.com/virtrdf-data-formats#sql-varchar-nullable
+http://example.com/virtrdf-data-formats#sql-longvarchar
+http://example.com/virtrdf-data-formats#sql-longvarchar-nullable
 
 10 Rows. -- 530 msec.
 
@@ -18412,16 +18431,16 @@ id                                                      firstname   nick
 VARCHAR                                                 VARCHAR     VARCHAR
 ____________________________________________________________________
 
-http://myopenlink.net/dataspace/person/pmitchell#this   LaRenda     sdmonroe
-http://myopenlink.net/dataspace/person/pmitchell#this   LaRenda     kidehen{at}openlinksw.com
-http://myopenlink.net/dataspace/person/pmitchell#this   LaRenda     alexmidd
-http://myopenlink.net/dataspace/person/abm#this         Alan        kidehen{at}openlinksw.com
-http://myopenlink.net/dataspace/person/igods#this       Cameron     kidehen{at}openlinksw.com
-http://myopenlink.net/dataspace/person/goern#this       Christoph   captsolo
-http://myopenlink.net/dataspace/person/dangrig#this     Dan         rickbruner
-http://myopenlink.net/dataspace/person/dangrig#this     Dan         sdmonroe
-http://myopenlink.net/dataspace/person/dangrig#this     Dan         lszczepa
-http://myopenlink.net/dataspace/person/dangrig#this     Dan         kidehen
+http://example.com/dataspace/person/pmitchell#this   LaRenda     sdmonroe
+http://example.com/dataspace/person/pmitchell#this   LaRenda     kidehen{at}openlinksw.com
+http://example.com/dataspace/person/pmitchell#this   LaRenda     alexmidd
+http://example.com/dataspace/person/abm#this         Alan        kidehen{at}openlinksw.com
+http://example.com/dataspace/person/igods#this       Cameron     kidehen{at}openlinksw.com
+http://example.com/dataspace/person/goern#this       Christoph   captsolo
+http://example.com/dataspace/person/dangrig#this     Dan         rickbruner
+http://example.com/dataspace/person/dangrig#this     Dan         sdmonroe
+http://example.com/dataspace/person/dangrig#this     Dan         lszczepa
+http://example.com/dataspace/person/dangrig#this     Dan         kidehen
 
 10 Rows. -- 660 msec.
 
@@ -18459,17 +18478,16 @@ VARCHAR
 _______________________________________________________________________________
 
 mailto:somebody@example.domain
-http://localhost:8895/dataspace/person/dav#this
-http://localhost:8895/dataspace/person/dba#this
+http://example.com/dataspace/person/dav#this
+http://example.com/dataspace/person/dba#this
 mailto:2@F.D
-http://localhost:8895/dataspace/person/test1#this
+http://example.com/dataspace/person/test1#this
 http://www.openlinksw.com/blog/~kidehen/gems/rss.xml#Kingsley%20Uyi%20Idehen
-http://art.weblogsinc.com/rss.xml#
 http://digitalmusic.weblogsinc.com/rss.xml#
 http://partners.userland.com/nytrss/books.xml#
 http://partners.userland.com/nytrss/arts.xml#
 
-10 Rows. -- 105 msec.
+9 Rows. -- 105 msec.
 
 ]]></programlisting>
   <listitem><emphasis>input:grab-limit</emphasis> should be an integer that is a maximum allowed number of resource retrievals.
@@ -18507,17 +18525,16 @@ VARCHAR
 _______________________________________________________________________________
 
 mailto:somebody@example.domain
-http://localhost:8895/dataspace/person/dav#this
-http://localhost:8895/dataspace/person/dba#this
+http://example.com/dataspace/person/dav#this
+http://example.com/dataspace/person/dba#this
 mailto:2@F.D
-http://localhost:8895/dataspace/person/test1#this
+http://example.com/dataspace/person/test1#this
 http://www.openlinksw.com/blog/~kidehen/gems/rss.xml#Kingsley%20Uyi%20Idehen
-http://art.weblogsinc.com/rss.xml#
 http://digitalmusic.weblogsinc.com/rss.xml#
 http://partners.userland.com/nytrss/books.xml#
 http://partners.userland.com/nytrss/arts.xml#
 
-10 Rows. -- 115 msec.
+9 Rows. -- 115 msec.
 
 ]]></programlisting>
   <listitem><emphasis>input:grab-resolver</emphasis> is a name of procedure that resolve IRIs and determines the HTTP method of retrieval.
@@ -18743,7 +18760,7 @@ Admin User Interface or a collection of Virtuoso Stored Procedure Language (PL)-
 </para>
 <para>The steps for configuring URL Rewrite rules via the Virtuoso Conductor are as follows:</para>
 <itemizedlist>
-<listitem>Assuming you are using the local demonstration database, load http://localhost:8890/conductor
+<listitem>Assuming you are using the local demonstration database, load http://example.com/conductor
 into your browser, and then proceed through the Conductor as follows:</listitem>
 <listitem>Click the "Web Application Server", and "Virtual Domains &amp; Directories" tabs</listitem>
 <listitem>Pick the domain that contains the virtual directories to which the rules are to be applied
@@ -19110,7 +19127,7 @@ negotiation. In the response, the Vary header field expresses the parameters the
 to select a representation, i.e. only the Negotiate and Accept header fields are considered.</para>
 <programlisting><![CDATA[
 $ curl -i -H "Accept: text/xml;q=0.3,text/html;q=1.0,text/plain;q=0.5,*/*;
-q=0.3" -H "Negotiate: *" http://localhost:8890/DAV/TCN/page
+q=0.3" -H "Negotiate: *" http://example.com/DAV/TCN/page
 HTTP/1.1 200 OK Server: Virtuoso/05.00.3021 (Linux) i686-pc-linux-gnu
 VDB Connection: Keep-Alive Date: Wed, 31 Oct 2007 15:43:18
 GMT Accept-Ranges: bytes TCN: choice Vary: negotiate,accept
@@ -19123,7 +19140,7 @@ Content-Length: 49
 </para>
 <programlisting><![CDATA[
 $ curl -i -H "Accept: text/xml,text/html;q=0.7,text/plain;q=0.5,*/*;q=0.3" -H "Negotiate:
-*" http://localhost:8890/DAV/TCN/page HTTP/1.1 200 OK Server: Virtuoso/05.00.3021
+*" http://example.com/DAV/TCN/page HTTP/1.1 200 OK Server: Virtuoso/05.00.3021
 (Linux) i686-pc-linux-gnu VDB Connection: Keep-Alive Date: Wed, 31 Oct 2007
 15:44:07 GMT Accept-Ranges: bytes TCN: choice Vary: negotiate,accept
 Content-Location: page.xml Content-Type: text/xml ETag:
@@ -19138,7 +19155,7 @@ HTML representation of the list so that the end user can decide on the preferred
 variant himself if the user agent is unable to.</para>
 <programlisting><![CDATA[
 $ curl -i -H "Accept: text/xml,text/html;q=0.7,text/plain;q=0.5,*/*;q=0.3" -H "Negotiate:
-vlist" http://localhost:8890/DAV/TCN/page HTTP/1.1 300 Multiple Choices Server:
+vlist" http://example.com/DAV/TCN/page HTTP/1.1 300 Multiple Choices Server:
 Virtuoso/05.00.3021 (Linux) i686-pc-linux-gnu VDB Connection: close Content-Type:
 text/html; charset=ISO-8859-1 Date: Wed, 31 Oct 2007 15:44:35 GMT Accept-Ranges:
 bytes TCN: list Vary: negotiate,accept Alternates: {"page.html" 0.900000 {type text/html}},
@@ -19252,8 +19269,8 @@ s                                                      p                        
 VARCHAR                                                VARCHAR                                           VARCHAR
 _______________________________________________________________________________
 
-http://www.dlib.org/dlib/march99/bunker/03bunker.html  http://www.w3.org/1999/02/22-rdf-syntax-ns#type   http://www.openlinksw.com/schemas/XHTML#
-http://www.dlib.org/dlib/march99/bunker/03bunker.html  http://www.openlinksw.com/schemas/XHTML#title     Collaboration as a Key to Digital Library Development: High Performance Image Management at the University of Washington
+http://www.dlib.org/dlib/march99/bunker/03bunker.html  http://www.w3.org/1999/02/22-rdf-syntax-ns#type   http://example.com/schemas/XHTML#
+http://www.dlib.org/dlib/march99/bunker/03bunker.html  http://example.com/schemas/XHTML#title     Collaboration as a Key to Digital Library Development: High Performance Image Management at the University of Washington
 
 2 Rows. -- 12388 msec.
 ]]></programlisting>
@@ -19298,7 +19315,7 @@ PREFIX foaf: <http://xmlns.com/foaf/0.1/>
 SELECT DISTINCT ?friendsname ?friendshomepage ?foafsname ?foafshomepage
 WHERE
  {
-  <http://myopenlink.net/dataspace/person/kidehen#this> foaf:knows ?friend .
+  <http://example.com/dataspace/person/kidehen#this> foaf:knows ?friend .
   ?friend foaf:mbox_sha1sum ?mbox .
   ?friendsURI foaf:mbox_sha1sum ?mbox .
   ?friendsURI foaf:name ?friendsname .
@@ -20464,39 +20481,37 @@ prefix foaf: <http://xmlns.com/foaf/0.1/>
 prefix owl: <http://www.w3.org/2002/07/owl#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
 SELECT *
-from <http://myopenlink.net/dataspace>
+from <http://example.com/dataspace>
 where
  {
-    ?person a foaf:Person FILTER REGEX(?person ,"http://myopenlink.net/dataspace/person/kidehen#this").
+    ?person a foaf:Person FILTER REGEX(?person ,"http://example.com/dataspace/person/kidehen#this").
     ?person foaf:name ?name .
     ?person owl:sameAs ?sameas .
   }
-limit 10;
+limit 8;
 person                                               name             sameas
 VARCHAR                                              VARCHAR          VARCHAR
 _______________________________________________________________________________
 
-http://myopenlink.net/dataspace/person/kidehen#this  Kingsley Idehen  http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this
-http://myopenlink.net/dataspace/person/kidehen#this  Kingsley Idehen  http://my.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this
-http://myopenlink.net/dataspace/person/kidehen#this  Kingsley Idehen  http://kidehen.idehen.net/dataspace/person/kidehen#this
-http://myopenlink.net/dataspace/person/kidehen#this  Kingsley Idehen  http://qdos.com/user/e922b748a2eb667bf37b188018002dec
-http://myopenlink.net/dataspace/person/kidehen#this  Kingsley Idehen  http://knowee.net/kidehen/ids/id3684976382
-http://myopenlink.net/dataspace/person/kidehen#this  Kingsley Idehen  http://dbpedia.org/resource/Kingsley_Idehen
-http://myopenlink.net/dataspace/person/kidehen#this  Kingsley Idehen  http://dbtune.org/last-fm/kidehen
-http://myopenlink.net/dataspace/person/kidehen#this  Kingsley Idehen  http://revyu.com/people/kidehen
-http://myopenlink.net/dataspace/person/kidehen#this  Kingsley Idehen  http://identi.ca/user/14092
-http://myopenlink.net/dataspace/person/kidehen#this  Kingsley Idehen  http://myopenlink.net/proxy?url=http%3A%2F%2Fwww.facebook.com%2Fpeople%2FKingsley_Idehen%2F605980750&force=rdf&login=kidehen
+http://example.com/dataspace/person/kidehen#this  Kingsley Idehen  http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this
+http://example.com/dataspace/person/kidehen#this  Kingsley Idehen  http://my.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this
+http://example.com/dataspace/person/kidehen#this  Kingsley Idehen  http://kidehen.idehen.net/dataspace/person/kidehen#this
+http://example.com/dataspace/person/kidehen#this  Kingsley Idehen  http://qdos.com/user/e922b748a2eb667bf37b188018002dec
+http://example.com/dataspace/person/kidehen#this  Kingsley Idehen  http://knowee.net/kidehen/ids/id3684976382
+http://example.com/dataspace/person/kidehen#this  Kingsley Idehen  http://dbpedia.org/resource/Kingsley_Idehen
+http://example.com/dataspace/person/kidehen#this  Kingsley Idehen  http://identi.ca/user/14092
+http://example.com/dataspace/person/kidehen#this  Kingsley Idehen  http://myopenlink.net/proxy?url=http%3A%2F%2Fwww.facebook.com%2Fpeople%2FKingsley_Idehen%2F605980750&force=rdf&login=kidehen
 
-10 Rows. -- 181 msec.
+8 Rows. -- 181 msec.
 ]]></programlisting>
 <para>So if we have:</para>
 <programlisting><![CDATA[
-<http://myopenlink.net/dataspace/person/kidehen#this>  	<http://www.w3.org/2002/07/owl#sameAs> <http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this> .
-<http://myopenlink.net/dataspace/person/kidehen#this>  	<http://xmlns.com/foaf/0.1/name>  	Kingsley Idehen
+<http://example.com/dataspace/person/kidehen#this>  	<http://www.w3.org/2002/07/owl#sameAs> <http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this> .
+<http://example.com/dataspace/person/kidehen#this>  	<http://xmlns.com/foaf/0.1/name>  	   Kingsley Idehen
 ]]></programlisting>
 <para>
 and we instantiate <emphasis>?s &lt;http://xmlns.com/foaf/0.1/name> "Kingsley Idehen"</emphasis>
-we get <emphasis>?s</emphasis> bound to <emphasis>&lt;http://myopenlink.net/dataspace/person/kidehen#this></emphasis>.
+we get <emphasis>?s</emphasis> bound to <emphasis>&lt;http://example.com/dataspace/person/kidehen#this></emphasis>.
 </para>
 <para>
 If we instantiate <emphasis>&lt;http://www.openlinksw.com/dataspace/person/kidehen@openlinksw.com#this>
@@ -20539,16 +20554,16 @@ LIMIT 10;
 s
 VARCHAR
 ___________________________________________________
-http://myopenlink.net/dataspace/person/kidehen#this
-http://myopenlink.net/dataspace/person/kidehen#this
-http://myopenlink.net/dataspace/person/kidehen#this
-http://myopenlink.net/dataspace/person/kidehen#this
-http://myopenlink.net/dataspace/person/kidehen#this
-http://myopenlink.net/dataspace/person/kidehen#this
+http://example.com/dataspace/person/kidehen#this
+http://example.com/dataspace/person/kidehen#this
+http://example.com/dataspace/person/kidehen#this
+http://example.com/dataspace/person/kidehen#this
+http://example.com/dataspace/person/kidehen#this
+http://example.com/dataspace/person/kidehen#this
 http://demo.openlinksw.com/dataspace/kingsley#person
-http://myopenlink.net/dataspace/person/kidehen#this
-http://myopenlink.net/dataspace/person/kidehen#this
-http://myopenlink.net/dataspace/person/kidehen#this
+http://example.com/dataspace/person/kidehen#this
+http://example.com/dataspace/person/kidehen#this
+http://example.com/dataspace/person/kidehen#this
 No. of rows in result: 10
 ]]></programlisting>
 </sect3>
@@ -20606,18 +20621,18 @@ WHERE {?s ?p ?o}
 <sect3 id="rdfsparqlruleexamples1"><title>Example for loading data space instance data Triples
 into a Named Graph for schema/ontology data</title>
 <para>The following example shows how to load data space instance data Triples
-into a Named Graph: &lt;http://localhost:8890/test&gt;, for schema/ontology data called:
-&lt;http://localhost:8890/schema/test&gt; that expresses assertions about subclasses and
+into a Named Graph: &lt;http://example.com/test&gt;, for schema/ontology data called:
+&lt;http://example.com/schema/test&gt; that expresses assertions about subclasses and
 subproperties.</para>
 <programlisting><![CDATA[
 ttlp ('
-   <http://localhost:8890/dataspace>  	                        <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://rdfs.org/sioc/ns#Space>.
-   <http://localhost:8890/dataspace/test2/weblog/test2tWeblog>  <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://rdfs.org/sioc/types#Weblog> .
-   <http://localhost:8890/dataspace/discussion/oWiki-test1Wiki> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://rdfs.org/sioc/types#MessageBoard>.
-   <http://localhost:8890/dataspace>                            <http://rdfs.org/sioc/ns#link>                     <http://localhost:8890/ods> .
-   <http://localhost:8890/dataspace/test2/weblog/test2tWeblog>  <http://rdfs.org/sioc/ns#link>                     <http://localhost:8890/dataspace/test2/weblog/test2tWeblog>.
-   <http://localhost:8890/dataspace/discussion/oWiki-test1Wiki> <http://rdfs.org/sioc/ns#link>                     <http://localhost:8890/dataspace/discussion/oWiki-test1Wiki> .
-   ', '', 'http://localhost:8890/test');
+   <http://example.com/dataspace>  	                        <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://rdfs.org/sioc/ns#Space>.
+   <http://example.com/dataspace/test2/weblog/test2tWeblog>  <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://rdfs.org/sioc/types#Weblog> .
+   <http://example.com/dataspace/discussion/oWiki-test1Wiki> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://rdfs.org/sioc/types#MessageBoard>.
+   <http://example.com/dataspace>                            <http://rdfs.org/sioc/ns#link>                     <http://example.com/ods> .
+   <http://example.com/dataspace/test2/weblog/test2tWeblog>  <http://rdfs.org/sioc/ns#link>                     <http://example.com/dataspace/test2/weblog/test2tWeblog>.
+   <http://example.com/dataspace/discussion/oWiki-test1Wiki> <http://rdfs.org/sioc/ns#link>                     <http://example.com/dataspace/discussion/oWiki-test1Wiki> .
+   ', '', 'http://example.com/test');
 ]]></programlisting>
 <programlisting><![CDATA[
 ttlp (' @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
@@ -20627,27 +20642,27 @@ ttlp (' @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
   <http://rdfs.org/sioc/types#Weblog> rdfs:subClassOf <http://rdfs.org/sioc/ns#Forum> .
   <http://rdfs.org/sioc/types#MessageBoard> rdfs:subClassOf <http://rdfs.org/sioc/ns#Forum> .
   <http://rdfs.org/sioc/ns#link> rdfs:subPropertyOf <http://rdfs.org/sioc/ns> .
-  ', '', 'http://localhost:8890/schema/test');
+  ', '', 'http://example.com/schema/test');
 ]]></programlisting>
 <programlisting>
-rdfs_rule_set ('http://localhost:8890/schema/property_rules1', 'http://localhost:8890/schema/test');
+rdfs_rule_set ('http://example.com/schema/property_rules1', 'http://example.com/schema/test');
 </programlisting>
-<para>This defines the rule context http://localhost:8890/schema/property_rules1 that is initialized
-from the contents of graph http://localhost:8890/schema/test.
+<para>This defines the rule context http://example.com/schema/property_rules1 that is initialized
+from the contents of graph http://example.com/schema/test.
 </para>
 <programlisting><![CDATA[
 SQL>SPARQL
-define input:inference "http://localhost:8890/schema/property_rules1"
+define input:inference "http://example.com/schema/property_rules1"
 SELECT ?s
-FROM <http://localhost:8890/test>
+FROM <http://example.com/test>
 WHERE {?s <http://www.w3.org/1999/02/22-rdf-syntax-ns#type>  <http://rdfs.org/sioc/ns#Space> };
 s
 VARCHAR
 _______________________________________________________________________________
 
-http://localhost:8890/dataspace/test2/weblog/test2tWeblog
-http://localhost:8890/dataspace/discussion/oWiki-test1Wiki
-http://localhost:8890/dataspace
+http://example.com/dataspace/test2/weblog/test2tWeblog
+http://example.com/dataspace/discussion/oWiki-test1Wiki
+http://example.com/dataspace
 
 3 Rows. -- 0 msec.
 ]]></programlisting>
@@ -20655,29 +20670,29 @@ http://localhost:8890/dataspace
 and http://rdfs.org/sioc/types#MessageBoard are subclasses of http://rdfs.org/sioc/ns#Space,
 instances of http://rdfs.org/sioc/ns#Space, http://rdfs.org/sioc/types#Weblog and
 http://rdfs.org/sioc/types#MessageBoard are all returned. This results in the subjects
-http://localhost:8890/dataspace, http://localhost:8890/dataspace/test2/weblog/test2tWeblog and
-http://localhost:8890/dataspace/discussion/oWiki-test1Wiki.
+http://example.com/dataspace, http://example.com/dataspace/test2/weblog/test2tWeblog and
+http://example.com/dataspace/discussion/oWiki-test1Wiki.
 </para>
 <programlisting><![CDATA[
 SQL>SELECT id_to_iri (s)
-FROM rdf_quad table option (with 'http://localhost:8890/schema/property_rules1')
-WHERE g = iri_to_id ('http://localhost:8890/test',0)
+FROM rdf_quad table option (with 'http://example.com/schema/property_rules1')
+WHERE g = iri_to_id ('http://example.com/test',0)
   AND p = iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 0)
   AND o = iri_to_id ('http://rdfs.org/sioc/ns#Space', 0);
 callret
 VARCHAR
 _______________________________________________________________________________
 
-http://localhost:8890/dataspace/test2/weblog/test2tWeblog
-http://localhost:8890/dataspace/discussion/oWiki-test1Wiki
-http://localhost:8890/dataspace
+http://example.com/dataspace/test2/weblog/test2tWeblog
+http://example.com/dataspace/discussion/oWiki-test1Wiki
+http://example.com/dataspace
 
 3 Rows. -- 10 msec.
 ]]></programlisting>
 <para>This is the corresponding SQL query, internally generated by the SPARQL query.</para>
 <para>Below we first look for all instances of http://rdfs.org/sioc/ns#Space with some
-property set to http://localhost:8890/dataspace/test2/weblog/test2tWeblog.
-We get the subject http://localhost:8890/dataspace/test2/weblog/test2tWeblog and the
+property set to http://example.com/dataspace/test2/weblog/test2tWeblog.
+We get the subject http://example.com/dataspace/test2/weblog/test2tWeblog and the
 properties http://rdfs.org/sioc/ns#link and http://rdfs.org/sioc/ns.
 The join involves both subclass and subproperty inference. Then we turn off the inference
 for the second pattern and only get the property http://rdfs.org/sioc/ns#link. Then we do
@@ -20685,39 +20700,39 @@ the same but now specify that inference should apply only to the first triple pa
 </para>
 <programlisting><![CDATA[
 SQL>SPARQL
-define input:inference  "http://localhost:8890/schema/property_rules1"
+define input:inference  "http://example.com/schema/property_rules1"
 SELECT *
-FROM <http://localhost:8890/test>
+FROM <http://example.com/test>
 WHERE
   {
     ?s ?p <http://rdfs.org/sioc/ns#Space> .
-    ?s ?p1 <http://localhost:8890/dataspace/test2/weblog/test2tWeblog> .
+    ?s ?p1 <http://example.com/dataspace/test2/weblog/test2tWeblog> .
   };
 
 s             p              p1
 VARCHAR       VARCHAR       VARCHAR
 _______________________________________________________________________________
 
-http://localhost:8890/dataspace/test2/weblog/test2tWeblog  http://www.w3.org/1999/02/22-rdf-syntax-ns#type http://rdfs.org/sioc/ns#link
-http://localhost:8890/dataspace/test2/weblog/test2tWeblog  http://www.w3.org/1999/02/22-rdf-syntax-ns#type http://rdfs.org/sioc/ns
+http://example.com/dataspace/test2/weblog/test2tWeblog  http://www.w3.org/1999/02/22-rdf-syntax-ns#type http://rdfs.org/sioc/ns#link
+http://example.com/dataspace/test2/weblog/test2tWeblog  http://www.w3.org/1999/02/22-rdf-syntax-ns#type http://rdfs.org/sioc/ns
 
 2 Rows. -- 0 msec.
 
 
 SQL>SPARQL
 SELECT *
-FROM <http://localhost:8890/test>
+FROM <http://example.com/test>
 WHERE
   {
-    ?s ?p <http://rdfs.org/sioc/ns#Space> OPTION (inference 'http://localhost:8890/schema/property_rules1') .
-    ?s ?p1 <http://localhost:8890/dataspace/test2/weblog/test2tWeblog> .
+    ?s ?p <http://rdfs.org/sioc/ns#Space> OPTION (inference 'http://example.com/schema/property_rules1') .
+    ?s ?p1 <http://example.com/dataspace/test2/weblog/test2tWeblog> .
   };
 
 s             p              p1
 VARCHAR       VARCHAR        VARCHAR
 _______________________________________________________________________________
 
-http://localhost:8890/dataspace/test2/weblog/test2tWeblog  http://www.w3.org/1999/02/22-rdf-syntax-ns#type http://rdfs.org/sioc/ns#link
+http://example.com/dataspace/test2/weblog/test2tWeblog  http://www.w3.org/1999/02/22-rdf-syntax-ns#type http://rdfs.org/sioc/ns#link
 
 1 Rows. -- 10 msec.
 
@@ -22548,69 +22563,44 @@ ORDER BY ASC ( ?date )
   </sect2>
 </sect1>
 
-<!--
 <sect1 id="rdfreplication"><title>RDF Replication</title>
-<para>
-Tables of RDF storage, such as DB.DBA.RDF_QUAD and DB.DBA.RDF_OBJ, can not be replicated in a usual way,
-because it's content is cached in memory in special ways and synchronized with values outside these tables,
-such as current values of special sequence objects.
-Moreover, same IRI may have different internal IRI_IDs on different boxes, because the assigned IDs vary if new IRIs appear in data in different order.
-Similarly, there will be different IDs of RDF literal, datatypes and languages, blocking any attempt of one-to-one replication between RDF storages.</para>
-<para>
-However, a special asynchronous RDF replication makes it possible to configure a "publisher" Virtuoso instance to keep the log of changes in some RDF graphs
-and subscribe some Virtuoso instances to replay all these changes.</para>
-<para>
-Configuration functions are quite straightforward.</para>
-<para>
-RDF graphs to replicate are all members of &lt;http://www.openlinksw.com/schemas/virtrdf#rdf_repl_graph_group&gt; graph group.
-That group can be filled in with graphs like any other graph group, but it is better to get the advantage of proper security check made by
-</para>
-<funcprototype id="fproto_DB.DBA.RDF_REPL_GRAPH_INS">
-  <funcdef>procedure <function>DB.DBA.RDF_REPL_GRAPH_INS</function></funcdef>
-  <paramdef>in <parameter>memb_iri</parameter> varchar</paramdef>
-</funcprototype>
-<para>
-that inserts a graph to the group and</para>
-<funcprototype id="fproto_DB.DBA.RDF_REPL_GRAPH_DEL">
-  <funcdef>procedure <function>DB.DBA.RDF_REPL_GRAPH_DEL</function></funcdef>
-  <paramdef>in <parameter>memb_iri</parameter> varchar</paramdef>
-</funcprototype>
-<para>
-that removes a graph from the group.
-Only publicly readable graphs can be replicated, an error is signalled otherwise, and it is better to know about a security issue as early as possible.</para>
-<funcprototype id="fproto_DB.DBA.RDF_REPL_START">
-  <funcdef>procedure <function>DB.DBA.RDF_REPL_START</function></funcdef>
-  <paramdef>in <parameter>quiet</parameter> integer := 0</paramdef>
-</funcprototype>
-<para>
-starts the RDF replication at the publishing side.
-It creates replication "publication" named '__rdf_repl' and makes a log file '__rdf_repl.log' to record changes in replicated graphs.
-If the replication has been started before then an error is signalled; passing value 1 for parameter "quiet" elimintaes the error so the incorrect call has no effect at all.
-If the replication is enabled then the value of registry variable 'DB.DBA.RDF_REPL' indicates the moment of replication start.</para>
-<para>
-<function>DB.DBA.RDF_REPL_START</function>() performs a security check before starting the replication to check.</para>
-<funcprototype id="fproto_DB.DBA.RDF_REPL_STOP">
-  <funcdef>procedure <function>DB.DBA.RDF_REPL_STOP</function></funcdef>
-  <paramdef> in <parameter>quiet</parameter> integer := 0</paramdef>
-</funcprototype>
-<para>
-stops the RDF replication at the publishing side.
-It calls <function><link linkend="fn_repl_unpublish">repl_unpublish</link></function> but does not make empty reates replication "publication" named '__rdf_repl' and makes a log file '__rdf_repl.log' to record changes in replicated graphs.</para>
-<para>
-Replication is asynchronous and the order of insertion and removal operations at the subscriber's side may not match the order at the publisher.
-As a result, it is not recommended to make few subscriptions that writes changes of few publishers into one common graph.
-A client-side application can force the synchronuzation by calling</para>
-<funcprototype id="fproto_DB.DBA.RDF_REPL_SYNC">
-  <funcdef>procedure <function>DB.DBA.RDF_REPL_SYNC</function></funcdef>
-  <paramdef>in <parameter>publisher</parameter> varchar</paramdef>
-  <paramdef>in <parameter>user</parameter> varchar</paramdef>
-  <paramdef>in <parameter>pwd</parameter> varchar</paramdef>
-</funcprototype>
-<para>
-that acts like <function><link linkend="fn_repl_sync">repl_sync</link></function> but for an RDF subscription.
-<function>DB.DBA.RDF_REPL_SYNC</function> will not only initial synchronisation but also wait for the end of subscription to guarantee that the total effect of INSERT and DELETE operations is correct even if these operations were made in an order that differs from the original one.</para>
+  <para>Tables of RDF storage, such as DB.DBA.RDF_QUAD and DB.DBA.RDF_OBJ, can not be replicated in a usual way, because it's
+  	content is cached in memory in special ways and synchronized with values outside these tables, such as current values of
+  	special sequence objects.</para>
+  <para>Moreover, same IRI may have different internal IRI_IDs on different boxes, because the assigned IDs vary if new IRIs
+  	appear in data in different order. Similarly, there will be different IDs of RDF literal, datatypes and languages,
+  	blocking any attempt of one-to-one replication between RDF storages.</para>
+  <para>However, a special asynchronous RDF replication makes it possible to configure a "publisher" Virtuoso instance to keep
+  	the log of changes in some RDF graphs and subscribe some Virtuoso instances to replay all these changes.</para>
+  <para>Configuration functions are quite straightforward.</para>
+  <para>RDF graphs to replicate are all members of &lt;http://www.openlinksw.com/schemas/virtrdf#rdf_repl_graph_group&gt; graph
+  	group. That group can be filled in with graphs like any other graph group, but it is better to get the advantage of proper
+  	security check made by <link linkend="fn_rdf_repl_graph_ins"><function>DB.DBA.RDF_REPL_GRAPH_INS()</function></link> that inserts
+  	a graph to the group and <link linkend="fn_rdf_repl_graph_del"><function>DB.DBA.RDF_REPL_GRAPH_DEL()</function></link> that
+  	removes a graph from the group.</para>
+  <para>Only publicly readable graphs can be replicated, an error is signalled otherwise, and it is better to know about a
+  	security issue as early as possible.</para>
+  <para>The <link linkend="fn_rdf_repl_start"><function>DB.DBA.RDF_REPL_START()</function></link>	function starts the RDF replication
+    at the publishing side. It creates replication "publication" named '__rdf_repl' and makes a log file '__rdf_repl.log' to
+    record changes in replicated graphs. If the replication has been started before then an error is signalled; passing value 1
+    for parameter "quiet" elimintaes the error so the incorrect call has no effect at all. If the replication is enabled then
+    the value of registry variable 'DB.DBA.RDF_REPL' indicates the moment of replication start.</para>
+  <para> The <link linkend="fn_rdf_repl_start"><function>DB.DBA.RDF_REPL_START()</function></link> function performs a
+  security check before starting the replication to check.</para>
+  <para>The <link linkend="fn_rdf_repl_stop"><function>DB.DBA.RDF_REPL_STOP()</function></link> stops the RDF replication at the
+  publishing side. It calls <link linkend="fn_repl_unpublish"><function>repl_unpublish()</function></link> but does not make
+  empty reates replication "publication" named '__rdf_repl' and makes a log file '__rdf_repl.log' to record changes in
+  replicated graphs.</para>
+  <para>Replication is asynchronous and the order of insertion and removal operations at the subscriber's side may not match
+  	the order at the publisher. As a result, it is not recommended to make few subscriptions that writes changes of few
+  	publishers into one common graph. A client-side application can force the synchronuzation by calling
+  	<link linkend="fn_rdf_repl_sync"><function>DB.DBA.RDF_REPL_SYNC()</function></link> that acts like
+  	<link linkend="fn_repl_sync"><function>repl_sync()</function></link> but for an RDF subscription.
+  	<link linkend="fn_rdf_repl_sync"><function>DB.DBA.RDF_REPL_SYNC()</function></link> will not only initial synchronisation
+  	but also wait for the end of subscription to guarantee that the total effect of INSERT and DELETE operations is correct
+  	even if these operations were made in an order that differs from the original one.</para>
 </sect1>
--->
+
 <sect1 id="rdfperformancetuning"><title>RDF Performance Tuning</title>
 <para>For RDF query performance, we have the following possible questions:</para>
 <itemizedlist mark="bullet" spacing="compact">
@@ -22845,6 +22835,7 @@ CREATE TABLE "DB"."DBA"."SYS_SPARQL_HOST"
   "SH_HOST" VARCHAR,         -- host pattern
   "SH_GRAPH_URI" VARCHAR,    -- default graph
   "SH_USER_URI" VARCHAR,     -- reserved for any use in applications
+  "SH_BASE_URI" VARCHAR,     -- for future use (not used currently) to set BASE in sparql queries. Should be NULL for now.
   "SH_DEFINES" LONG VARCHAR, -- list of 'define xx:yy "zz" ' defines as a string 
   PRIMARY KEY ("SH_HOST")
 );
@@ -23818,7 +23809,8 @@ DB.DBA.rdf_loader_run ();
 <programlisting><![CDATA[
 cl_exec ('rdf_ld_srv ()'); 
 ]]></programlisting>
-         <para>This will start one rdf_loader_run on each node of the cluster. Note that in such a 
+         <para>This will start one <link linkend="fn_rdf_loader_run">rdf_loader_run()</link> on each node of the cluster.
+         Note that in such a
          	setting all the server processes must see the same files at the same path.</para>
          <para>On an isql session one may execute rdf_loader_run () &amp; several times, forking a new 
          	isql for each such command, similarly to what a Unix shell does.</para> 
@@ -23841,7 +23833,7 @@ cl_exec ('checkpoint');
 rdf_load_stop ();
 ]]></programlisting>   
          <para>This will cause the files being loaded at the time to finish load but no new loads 
-         	will start until explicitly started with <function>rdf_loader_run ()</function>.</para>
+         	will start until explicitly started with <link linkend="fn_rdf_loader_run">rdf_loader_run()</link>.</para>
          <para>Specially note that on a cluster the database will be inconsistent if one server 
          	process does a checkpoint and another does not. Thus guaranteeing a checkpoint on all 
          	is necessary. This is easily done with an isql script with the following content:</para>
@@ -23874,13 +23866,13 @@ cl_exec ('DB.DBA.RDF_LD_SRV (2)');
 
 cl_exec ('checkpoint');
 ]]></programlisting>
-         <para><function>rdf_loader_run ()</function> recognizes several file types, including .ttl, .nt, .xml, .rdf, 
+         <para><link linkend="fn_rdf_loader_run">rdf_loader_run()</link> recognizes several file types, including .ttl, .nt, .xml, .rdf,
          	.owl, .nq, .n4, and others. Internally the function uses 
          	<link linkend="fn_ttlp"><function>DB.DBA.ttlp()</function></link> or 
          	<link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.rdf_load_rdfxml</function></link>, 
          	as appropriate.</para>
          	<para>See <link linkend="rdfperfloadinglod">the next section</link> for detailed description 
-         	of the <function>rdf_loader_run ()</function> function.</para>
+         	of the <link linkend="fn_rdf_loader_run">rdf_loader_run()</link> function.</para>
        </sect3>
        <sect3 id="rdfperfloadinglod"><title>Loading LOD RDF data</title>
 <para>To load the rdf data to LOD instance, perform the following steps:
@@ -25765,7 +25757,7 @@ public class VirtuosoSPARQLExample9 {
       Note the version of the Sesame Provider (virt_sesame2.jar) can be determined with the command:
 </para>
 <programlisting><![CDATA[
-$ java -jar virt_sesame2.jarg
+$ java -jar virt_sesame2.jar
 OpenLink Virtuoso(TM) Provider for Sesame2(TM) Version 2.6.5 [Build 1.7]
 ]]></programlisting>
     </sect4>
@@ -25817,7 +25809,7 @@ java VirtuosoTest <hostname> <port> <uid> <pwd>
       </listitem>
       <listitem>The test run should look like this:
 <programlisting><![CDATA[
-g
+
 $ java VirtuosoTest localhost 1111 dba dba
 
 == TEST 1:  : Start
@@ -25876,12 +25868,12 @@ PASSED: TEST 10
 PASSED: TEST 11
 
 == TEST 12:  : Start
-   Retrieving statement (http://myopenlink.net/dataspace/person/kidehen http://myopenlink.net/foaf/name null)
+   Retrieving statement (http://example.com/dataspace/person/kidehen http://myopenlink.net/foaf/name null)
 == TEST 12:  : End
 PASSED: TEST 12
 
 == TEST 13:  : Start
-   Writing the statements to file: (/Users/src/virtuoso-opensource/binsrc/sesame2/results.n3.txt)g
+   Writing the statements to file: (/Users/src/virtuoso-opensource/binsrc/sesame2/results.n3.txt)
 == TEST 13:  : End
 PASSED: TEST 13
 
@@ -26310,12 +26302,12 @@ use by the Sesame HTTP Repository for accessing the Virtuoso RDF repository.</li
 <code>~/webapps/openrdf-workbench/transformations/</code> directory. Note "create.xsl" replaces the default provided with Sesame and contains the necessary entries required to reference the new "create-virtuoso.xsl" template file for Virtuoso repository configuration.</listitem>
   <listitem>The Sesame HTTP Repository will now be accessible on the URLs
 <programlisting><![CDATA[
-http://localhost:8080/openrdf-sesame
-http://localhost:8080/openrdf-workbench
+http://example.com/openrdf-sesame
+http://example.com/openrdf-workbench
 ]]></programlisting>
          </listitem>
    <listitem>The Sesame OpenRDF Workbench is used for accessing the Sesame HTTP Repositories, loading
-"<ulink url="http://localhost:8080/openrdf-workbench">http://localhost:8080/openrdf-workbench</ulink>" will enable the
+"<ulink url="http://example.com/openrdf-workbench">http://example.com/openrdf-workbench</ulink>" will enable the
 default "SYSTEM" repository to be accessed.
      <figure id="ss1" float="1">
        <title>Virtuoso Sesame HTTP Repository Configuration and Usage</title>
@@ -26518,8 +26510,8 @@ SLF4J: See http://www.slf4j.org/codes.html#multiple_bindings for an explanation.
 Connected to default data directory
 Commands end with '.' at the end of a line
 Type 'help.' for help
-> connect http://localhost:8080/openrdf-sesame.
-Connected to http://localhost:8080/openrdf-sesame
+> connect http://example.com/openrdf-sesame.
+Connected to http://example.com/openrdf-sesame
 > show r.
 +----------
 |SYSTEM ("System configuration repository")
@@ -26527,21 +26519,21 @@ Connected to http://localhost:8080/openrdf-sesame
 +----------
 > open VirtSesRep.
 Opened repository 'VirtSesRep'
-VirtSesRep> sparql select * from <http://localhost:8890/Northwind> where {?s ?p ?o} Limit 10.
+VirtSesRep> sparql select * from <http://example.com/Northwind> where {?s ?p ?o} Limit 10.
 Evaluating query...
 +------------------------+------------------------+------------------------+
 | s                      | p                      | o                      |
 +------------------------+------------------------+------------------------+
-| <http://localhost:8890/Northwind/CustomerContact/ALFKI#this>| rdf:type  | foaf:Person            |
-| <http://localhost:8890/Northwind/CustomerContact/ALFKI#this>| rdf:type  | northwind:CustomerContact|
-| <http://localhost:8890/Northwind/CustomerContact/ALFKI#this>| opl:isDescribedUsing   | northwind:             |
-| <http://localhost:8890/Northwind/CustomerContact/ANATR#this>| rdf:type | foaf:Person            |
-| <http://localhost:8890/Northwind/CustomerContact/ANATR#this>| rdf:type | northwind:CustomerContact|
-| <http://localhost:8890/Northwind/CustomerContact/ANATR#this>| opl:isDescribedUsing   | northwind:             |
-| <http://localhost:8890/Northwind/CustomerContact/ANTON#this>| rdf:type  | foaf:Person            |
-| <http://localhost:8890/Northwind/CustomerContact/ANTON#this>| rdf:type  | northwind:CustomerContact|
-| <http://localhost:8890/Northwind/CustomerContact/ANTON#this>| opl:isDescribedUsing   | northwind:             |
-| <http://localhost:8890/Northwind/CustomerContact/AROUT#this>| rdf:type  | foaf:Person            |
+| <http://example.com/Northwind/CustomerContact/ALFKI#this>| rdf:type  | foaf:Person            |
+| <http://example.com/Northwind/CustomerContact/ALFKI#this>| rdf:type  | northwind:CustomerContact|
+| <http://example.com/Northwind/CustomerContact/ALFKI#this>| opl:isDescribedUsing   | northwind:             |
+| <http://example.com/Northwind/CustomerContact/ANATR#this>| rdf:type | foaf:Person            |
+| <http://example.com/Northwind/CustomerContact/ANATR#this>| rdf:type | northwind:CustomerContact|
+| <http://example.com/Northwind/CustomerContact/ANATR#this>| opl:isDescribedUsing   | northwind:             |
+| <http://example.com/Northwind/CustomerContact/ANTON#this>| rdf:type  | foaf:Person            |
+| <http://example.com/Northwind/CustomerContact/ANTON#this>| rdf:type  | northwind:CustomerContact|
+| <http://example.com/Northwind/CustomerContact/ANTON#this>| opl:isDescribedUsing   | northwind:             |
+| <http://example.com/Northwind/CustomerContact/AROUT#this>| rdf:type  | foaf:Person            |
 +------------------------+------------------------+------------------------+
 10 result(s) (530 ms)
 VirtSesRep> show n.
@@ -27305,7 +27297,7 @@ SchedulerInterval        = 1
 ServerPort                  = 8891
 ...
 [URIQA]
-DefaultHost = localhost:8891
+DefaultHost = example.com:8891
 ...
 [Replication]
 ServerName   = db1
@@ -27352,7 +27344,7 @@ SchedulerInterval        = 1
 ServerPort                  = 8893
 ...
 [URIQA]
-DefaultHost = localhost:8893
+DefaultHost = example.com:8893
 ...
 [Replication]
 ServerName   = db3
@@ -27632,7 +27624,7 @@ SchedulerInterval        = 1
 ServerPort                  = 8891
 ...
 [URIQA]
-DefaultHost = localhost:8891
+DefaultHost = example.com:8891
 ...
 [Replication]
 ServerName   = db1
@@ -27679,7 +27671,7 @@ SchedulerInterval        = 1
 ServerPort                  = 8893
 ...
 [URIQA]
-DefaultHost = localhost:8893
+DefaultHost = example.com:8893
 ...
 [Replication]
 ServerName   = db3
@@ -27697,7 +27689,7 @@ ServerName   = db3
          </sect5> 
          <sect5 id="rdfgraphreplicationtoplchainexpr"><title>Create Publication on db1</title> 
 <orderedlist>
-  <listitem>Go to http://localhost:8891/conductor and log in as dba</listitem> 
+  <listitem>Go to http://example.com:8891/conductor and log in as dba</listitem>
   <listitem>Go to Conductor - &gt; Replication - &gt; Transactional - &gt; Publications
      <figure id="chain2" float="1">
        <title>Chain Replication Topology</title>
@@ -27738,7 +27730,7 @@ http://example.org
          </sect5> 
          <sect5 id="rdfgraphreplicationtoplchainexpr"><title>Create subscription from db2 to db1's Publication</title> 
 <orderedlist>
-  <listitem>Log in at http://localhost:8892/conductor</listitem> 
+  <listitem>Log in at http://example.com:8892/conductor</listitem>
   <listitem>Go to Replication - &gt; Transactional - &gt; Subscriptions 
      <figure id="chain7" float="1">
        <title>Chain Replication Topology</title>
@@ -27805,7 +27797,7 @@ http://example.org
          </sect5> 
          <sect5 id="rdfgraphreplicationtoplchainexpr"><title>Create Publication on db2</title> 
          <orderedlist>
-  <listitem>Go to http://localhost:8892/conductor and log in as dba</listitem> 
+  <listitem>Go to http://example.com:8892/conductor and log in as dba</listitem>
   <listitem>Go to Conductor - &gt; Replication - &gt; Transactional - &gt; Publications
      <figure id="chain17" float="1">
        <title>Chain Replication Topology</title>
@@ -27846,7 +27838,7 @@ http://example.org
          </sect5> 
          <sect5 id="rdfgraphreplicationtoplchainexpr"><title>Create subscription from db3 to db2's Publication</title> 
          <orderedlist>
-  <listitem>Log in at http://localhost:8893/conductor</listitem> 
+  <listitem>Log in at http://example.com:8893/conductor</listitem>
   <listitem>Go to Replication - &gt; Transactional - &gt; Subscriptions 
      <figure id="chain22" float="1">
        <title>Chain Replication Topology</title>
@@ -27912,7 +27904,7 @@ http://example.org
          </sect5>  
          <sect5 id="rdfgraphreplicationtoplchainind"><title>Insert Data into a Named Graph on the db1 Virtuoso Instance</title>                                    
 <orderedlist>
-  <listitem>Log in at http://localhost:8891/conductor</listitem> 
+  <listitem>Log in at http://example.com:8891/conductor</listitem>
   <listitem>Go to Linked Data -&gt; Quad Store Upload:
      <figure id="chain32" float="1">
        <title>Chain Replication Topology</title>
@@ -27945,7 +27937,7 @@ http://example.org
      </figure>
   </listitem>    
   <listitem>Check the count of the inserted triples by executing a query like the following against the SPARQL endpoint, 
-http://localhost:8891/sparql:
+http://example.com:8891/sparql:
 <programlisting><![CDATA[
 SELECT COUNT(*) 
    FROM <http://example.org>
@@ -28018,7 +28010,7 @@ SPARQL INSERT INTO GRAPH <http://example.org>
      </figure>
   </listitem>    
   <listitem>Check the count of the destination instance graph's triples by executing the following query like against the SPARQL endpoint, 
-http://localhost:8891/sparql:
+http://example.com:8891/sparql:
 <programlisting><![CDATA[
 SELECT COUNT(*) 
    FROM <http://example.org>
@@ -28081,7 +28073,7 @@ SchedulerInterval        = 1
 ServerPort                  = 8891
 ...
 [URIQA]
-DefaultHost = localhost:8891
+DefaultHost = example.com:8891
 ...
 [Replication]
 ServerName   = db1
@@ -28124,7 +28116,7 @@ ServerName   = db2
          
          <sect5 id="rdfgraphreplicationtoplbidexprcph"><title>Create Publication on db2</title> 
 <orderedlist>
-  <listitem>Go to http://localhost:8892/conductor and log in as dba</listitem>
+  <listitem>Go to http://example.com:8892/conductor and log in as dba</listitem>
   <listitem>Go to Conductor -&gt; Replication -&gt; Transactional -&gt; Publications
      <figure id="bid1" float="1">
         <title>Bi-directional Replication Topology</title>
@@ -28166,7 +28158,7 @@ http://example.org
          </sect5> 
          <sect5 id="rdfgraphreplicationtoplbidexprcs"><title>Create subscription from db1 to db2's Publication</title> 
 <orderedlist>
-  <listitem>Log in at http://localhost:8891/conductor
+  <listitem>Log in at http://example.com:8891/conductor
   </listitem>
   <listitem>Go to Replication -&gt; Transactional -&gt; Subscriptions 
      <figure id="bid1" float="1">
@@ -28236,7 +28228,7 @@ http://example.org
          </sect5> 
          <sect5 id="rdfgraphreplicationtoplbidexprcpd"><title>Create Publication on db1</title> 
 <orderedlist>
-  <listitem>Go to http://localhost:8891/conductor and log in as dba
+  <listitem>Go to http://example.com:8891/conductor and log in as dba
   </listitem>
   <listitem>Go to Conductor -&gt; Replication -&gt; Transactional -&gt; Publications
      <figure id="bid1" float="1">
@@ -28281,7 +28273,7 @@ http://example.org
       </sect5>
          <sect5 id="rdfgraphreplicationtoplbidexprcsh"><title>Create subscription from db2 to db1's Publication</title> 
 <orderedlist>
-  <listitem>Log in at http://localhost:8892/conductor
+  <listitem>Log in at http://example.com:8892/conductor
   </listitem>
   <listitem>Go to Replication -&gt; Transactional -&gt; Subscriptions 
      <figure id="bid1" float="1">
@@ -28349,7 +28341,7 @@ http://example.org
          </sect5> 
          <sect5 id="rdfgraphreplicationtoplbidexprinsh"><title>Insert Data into a Named Graph on the db2 Virtuoso Instance</title> 
 <orderedlist>
-  <listitem>Log in at http://localhost:8892/conductor
+  <listitem>Log in at http://example.com:8892/conductor
   </listitem>
   <listitem>Go to Linked Data -&gt; Quad Store Upload:
      <figure id="bid1" float="1">
@@ -28382,7 +28374,7 @@ http://example.org
      </figure>
   </listitem>
   <listitem>Check the count of the inserted triples by executing a query like the following against the SPARQL endpoint, 
-http://localhost:8892/sparql:
+http://example.com:8892/sparql:
 <programlisting><![CDATA[
 SELECT COUNT(*) 
    FROM <http://example.org>
@@ -28445,7 +28437,7 @@ SPARQL INSERT INTO GRAPH <http://example.org>
      </figure>
   </listitem>
   <listitem>Check the count of the destination instance graph's triples by executing the following query like against the SPARQL endpoint, 
-http://localhost:8892/sparql:
+http://example.com:8892/sparql:
 <programlisting><![CDATA[
 SELECT COUNT(*) 
    FROM <http://example.org>
@@ -28512,7 +28504,7 @@ SPARQL INSERT INTO GRAPH <http://example.org>
      </figure>
   </listitem>
   <listitem>Check the count of the destination instance graph's triples by executing the following query like against the SPARQL endpoint, 
-http://localhost:8891/sparql:
+http://example.com:8891/sparql:
 <programlisting><![CDATA[
 SELECT COUNT(*) 
    FROM <http://example.org>
@@ -28581,7 +28573,7 @@ SchedulerInterval        = 1
 ServerPort                  = 8891
 ...
 [URIQA]
-DefaultHost = localhost:8891
+DefaultHost = example.com:8891
 ...
 [Replication]
 ServerName   = db1-r
@@ -28628,7 +28620,7 @@ SchedulerInterval        = 1
 ServerPort                  = 8893
 ...
 [URIQA]
-DefaultHost = localhost:8893
+DefaultHost = example.com:8893
 ...
 [Replication]
 ServerName   = db3-r

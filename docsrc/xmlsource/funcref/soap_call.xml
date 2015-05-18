@@ -103,7 +103,7 @@ If the value is negated : i.e. -1 or -11 then the soap_call procedure enters "de
     <example ID="VDOCS-SOAPCLIENT-01"><title>Calling a SQL procedure fishselect (in str varchar)</title>
     <programlisting>
 declare ret any;
-ret := soap_call (&apos;localhost:6666&apos;, &apos;/SOAP&apos;,
+ret := soap_call (&apos;example.com&apos;, &apos;/SOAP&apos;,
 	 &apos;urn:com-openlinksw-virtuoso&apos;,
 	 &apos;fishselect&apos;,
 	 vector (&apos;str&apos;, &apos;G&apos;));

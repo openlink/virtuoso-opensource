@@ -759,7 +759,7 @@ omepage+%3Furl+%7D%0D%0A&format=sparql"
 </sparql>	
 ]]></programlisting>      	
       </listitem>
-      <listitem>Go to Conductor UI. For ex. http://localhost:8890/conductor :
+      <listitem>Go to Conductor UI. For ex. http://example.com/conductor :
         <figure id="scp1" float="1">
           <title>Crawling SPARQL Endpoints</title>
           <graphic fileref="ui/scp1.png"/>

@@ -1173,6 +1173,47 @@ This is followed by a size letter M or G.  A single hash join hash table  will o
         </tip>
 	    </formalpara>
 	  </listitem>
+
+
+    <listitem id="ini_TimezonelessDatetimes">
+	    <formalpara>
+		    <title>TimezonelessDatetimes</title>
+		    <para>Enables Timezoneless Support. Different applications may require different behavior when input data contain
+		    	timezoneless values. In some cases it is better to "cast" all of them to timezoned than to upgrade existing code.
+		    	Virtuoso offers 5 different modes of support -- 0, 1, 2, 3 and 4. This should be set before creating the database
+		    	and the set value is stored in the database. After database is created, an attempt to change the mode by patching
+		    	<link linkend="VIRTINI">virtuoso.ini</link> will have no effect and virtuoso.log will contain a warning about
+		    	mismatch between virtuoso.ini and the database file.</para>
+		    	<para>The possible variants are:</para>
+      <itemizedlist mark="bullet">
+        <listitem>TimezonelessDatetimes=0 -- Never use timezoneless, as it was in old databases. Always set local timezone on parsing strings if no timezone
+        	specified. An attempt to set timezoneless by calling function
+        	<link linkend="fn_forget_timezone"><function>forget_timezone()</function></link> will signal error. Timezoneless values
+        	still may come from outside as dezerializations of timezoneless DATETIME values, serialized by other database instances,
+        	but not in any other way:
+        </listitem>
+        <listitem>TimezonelessDatetimes=1 -- When parsing strings, set timezoneless if ISO format tells so:
+        </listitem>
+        <listitem>TimezonelessDatetimes=2 -- Set timezoneless always, exception is when the parsed string contains explicit timezone or when RFC requires the
+        	use of GMT or when timezone is set by function <link linkend="fn_adjust_timezone"><function>adjust_timezone()</function></link>. This is default for new databases if
+        	<code>TimezonelessDatetimes</code> parameter is missing in virtuoso.ini
+        </listitem>
+        <listitem>TimezonelessDatetimes=3 -- Never use timezoneless. Always set local timezone on parsing strings if not timezone specified. An attempt to set
+        	timezoneless by calling function <link linkend="fn_forget_timezone"><function>forget_timezone()</function></link> will
+        	signal error. Timezoneless values still may come from outside as deserializations of timezoneless DATETIME values,
+        	serialized by other database instances, but not in any other way. The difference with <code>TimezonelessDatetimes=0</code>
+        	is that timezones are always printed on cast datetimes to strings etc. so timezoneless-aware clients will get unambiguous data.
+        </listitem>
+        <listitem>TimezonelessDatetimes=4 -- On parsing string, set timezone to GMT if no timezone specified. However, timezoneless can be set by calling
+      	function <link linkend="fn_forget_timezone"><function>forget_timezone()</function></link> . This mode can be convenient
+      	for global web services when real "local" timezones of specific users are not known.
+        </listitem>
+      </itemizedlist>
+  		<para>For new applications, consider the use of <code>TimezonelessDatetimes=2</code> as primary variant,
+  		<code>TimezonelessDatetimes=1</code> as the second best.</para>
+	    </formalpara>
+	  </listitem>
+
           </itemizedlist>
           <para>Note: The default for startup behavior is to always read full extents and the default for the normal 
 behavior is to trigger preread on the third read inside one second.</para>
@@ -1329,8 +1370,8 @@ The log file is rotated daily.</para>
 <para>An example of which is:</para>
 <programlisting><![CDATA[
 127.0.0.1 - - [12/Sep/2006:12:31:17 +0300] "GET /ods/ HTTP/1.1" 200 19453 "" "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.0.6) Gecko.."
-127.0.0.1 - - [12/Sep/2006:12:31:18 +0300] "GET /ods/default.css HTTP/1.1" 200 41389 "http://localhost:8894/ods/" "Mozilla/5.0 (Windows; U; ..."
-127.0.0.1 - - [12/Sep/2006:12:31:19 +0300] "GET /ods/common.js HTTP/1.1" 200 7481 "http://localhost:8894/ods/" "Mozilla/5.0 (Windows; U; ..."]]></programlisting>
+127.0.0.1 - - [12/Sep/2006:12:31:18 +0300] "GET /ods/default.css HTTP/1.1" 200 41389 "http://example.com/ods/" "Mozilla/5.0 (Windows; U; ..."
+127.0.0.1 - - [12/Sep/2006:12:31:19 +0300] "GET /ods/common.js HTTP/1.1" 200 7481 "http://example.com/ods/" "Mozilla/5.0 (Windows; U; ..."]]></programlisting>
 				</listitem>
 				<listitem id="ini_HTTPServer_MacCachedProxyConnections">
 					<formalpara>
@@ -2687,6 +2728,11 @@ Usage:
   +checkpoint-only       exit as soon as checkpoint on startup is complete
   +backup-dump           dump database into the transaction log, then exit
   +crash-dump            dump inconsistent database into the transaction log, then exit
+  +log6                  If you're starting with a Virtuoso 5 server, and migrating to a Virtuoso 6 or
+                         later server, append +log6 after +backup-dump or +crash-dump.
+                         Note: The extra +log6 argument is not needed, and may have unexpected effect,
+                         so please leave it off if starting with a Virtuoso 6 server and moving to
+                         Virtuoso 6 or later.
   +crash-dump-data-ini   specify the DB ini to use for reading the data to dump
   +restore-crash-dump    restore from a crash-dump
   +wait                  wait for background initialization to complete

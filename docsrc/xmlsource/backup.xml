@@ -333,6 +333,7 @@ in virtuoso.ini and exit when complete.</para></listitem>
     <listitem><para>Change the DatabaseFile setting in virtuoso.ini to a
 non-existing database file or delete the old database file.</para></listitem>
     <listitem><para>Start the server with the +restore-crash-dump option. The option is essential.</para>
+              <para>Important: When restore on v6 you also must give it +log6 flag i.e.: +restore-crash-dump +log6 .</para>
               <para>
                 <tip><title>See Also:</title>
                   <para><ulink linkend="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtTipsAndTricksDBMSBackupCrashDump">How can I move a Virtuoso database from one hardware and/or software platform to another?</ulink></para>
