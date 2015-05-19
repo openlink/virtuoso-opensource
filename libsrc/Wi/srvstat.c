@@ -210,6 +210,7 @@ extern long tc_dc_extend_values;
 extern int32 em_ra_window;
 extern int32 em_ra_threshold;
 extern int sqlo_max_layouts;
+extern int enable_initial_plan;
 extern int32 sqlo_compiler_exceeds_run_factor;
 
 extern int enable_mem_hash_join;
@@ -1778,6 +1779,7 @@ stat_desc_t dbf_descs [] =
     {"cl_rdf_inf_inited", (long *)&cl_rdf_inf_inited, SD_INT32},
     {"enable_mem_hash_join", (long *)&    enable_mem_hash_join, SD_INT32},
     {"sqlo_max_layouts", &sqlo_max_layouts, SD_INT32},
+    {"enable_initial_plan", &enable_initial_plan, SD_INT32},
     {"sqlo_compiler_exceeds_run_factor", &sqlo_compiler_exceeds_run_factor, SD_INT32},
     {"enable_hash_merge", (long *)&enable_hash_merge, SD_INT32},
     {"enable_hash_fill_join", (long *)&enable_hash_fill_join, SD_INT32},
