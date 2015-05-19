@@ -203,6 +203,23 @@ setp_mem_insert (setp_node_t * setp, caddr_t * qst, int pos, caddr_t ** arr, int
 
 long setp_top_row_limit = 10000;
 
+
+int
+setp_top_get (caddr_t * inst, state_slot_t * ssl, int deflt)
+{
+  /* top, skip are usually const.  can be exp in which case vector and ssl ref from setp not applicable in reader or mrg ctx, different qi's and different set nos.  Use elt 0 if vec */
+  if (!ssl)
+    return deflt;
+  if (SSL_IS_VEC_OR_REF (ssl))
+    {
+      state_slot_t ts = *ssl;
+      ts.ssl_type = SSL_VEC;
+      return unbox (sslr_qst_get (inst, (state_slot_ref_t*)&ts, 0));
+    }
+  return unbox (qst_get (inst, ssl));
+}
+
+
 void
 setp_mem_sort (setp_node_t * setp, caddr_t * qst, int n_sets, int merge_set)
 {
@@ -210,8 +227,8 @@ setp_mem_sort (setp_node_t * setp, caddr_t * qst, int n_sets, int merge_set)
   int set, prev_set;
   QNCAST (query_instance_t, qi, qst);
   caddr_t ** arr;
-  ptrlong top = unbox (qst_get (qst, setp->setp_top));
-  ptrlong skip = setp->setp_top_skip ? unbox (qst_get (qst, setp->setp_top_skip)) : 0;
+  ptrlong top = setp_top_get (qst, setp->setp_top, 0);
+  ptrlong skip = setp_top_get (qst, setp->setp_top_skip, 0);
   ptrlong fill;
   ptrlong rc, guess, at_or_above, below;
   int skip_only = (top == -1 && skip >= 0 ? 1 : 0);
@@ -1029,20 +1046,11 @@ sort_read_vec_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
   setp_node_t *setp = ts->ts_order_ks->ks_from_setp;
   int n_results = 0, last_set, batch;
   caddr_t **arr;
-  ptrlong top = unbox (qst_get (inst, setp->setp_top));
-  ptrlong skip = 0;
+  ptrlong top = setp_top_get (inst, setp->setp_top, 0);
+  ptrlong skip = setp_top_get (inst, setp->setp_top_skip, 0);
   ptrlong fill;
   int set, n_sets = QST_INT (inst, ts->src_gen.src_prev->src_out_fill);
-  if (setp->setp_top_skip)
-    {
-      if (!SSL_IS_VEC_OR_REF (setp->setp_top_skip))
-	skip = unbox (qst_get (inst, setp->setp_top_skip));
-      else
-	{			/* the skip is not supposed to be different on different sets, thus for vec ssl we take 1st */
-	  data_col_t *dc = (data_col_t *) (inst[setp->setp_top_skip->ssl_index]);
-	  skip = ((int64 *) (dc->dc_values))[0];
-	}
-    }
+
   if (setp->setp_partitioned)
     {
       top += skip;

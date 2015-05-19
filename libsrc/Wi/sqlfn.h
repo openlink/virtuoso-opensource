@@ -718,6 +718,7 @@ void end_node_free (end_node_t * en);
 void setp_temp_clear (setp_node_t * setp, hash_area_t * ha, caddr_t * qst);
 void setp_mem_sort_flush (setp_node_t * setp, caddr_t * qst);
 void setp_mem_sort (setp_node_t * setp, caddr_t * qst, int n_sets, int merge_set);
+int setp_top_get (caddr_t * inst, state_slot_t * ssl, int deflt);
 void setp_filled (setp_node_t * setp, caddr_t * qst);
 
 void union_node_input (union_node_t * setp, caddr_t * inst, caddr_t * state);

@@ -3536,8 +3536,8 @@ vec_top_merge (setp_node_t * setp, fun_ref_node_t * fref, caddr_t * inst, caddr_
 {
   int nth;
   caddr_t **arr = (caddr_t **) qst_get (branch, setp->setp_sorted);
-  ptrlong top = unbox (qst_get (inst, setp->setp_top));
-  ptrlong skip = setp->setp_top_skip ? unbox (qst_get (inst, setp->setp_top_skip)) : 0;
+  ptrlong top = setp_top_get (inst, setp->setp_top, 0);
+  ptrlong skip = setp_top_get (inst, setp->setp_top_skip, 0);
   ptrlong fill;
   QNCAST (query_instance_t, qi, inst);
   setp_node_t tmp_setp;
