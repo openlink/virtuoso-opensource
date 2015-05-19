@@ -1465,7 +1465,7 @@ sqlc_update_searched (sql_comp_t * sc, ST * tree)
   ST *vd;
   caddr_t * opts = tree->_.update_src.table_exp->_.table_exp.opts;
   int trig_event = sqlo_opt_value (opts, OPT_NO_TRIGGER) ? -1 : TRIG_UPDATE;
-  int inx, sec_checked;
+  int inx, sec_checked, env_done = 0;
   ST * tb_ref = tree->_.update_src.table;
   dbe_table_t *tb = sch_name_to_table (sc->sc_cc->cc_schema,
       tree->_.update_src.table->_.table.name);
@@ -1570,6 +1570,8 @@ sqlc_update_searched (sql_comp_t * sc, ST * tree)
 			 (data_source_t *) upd);
       sqlc_upd_param_types (sc, upd);
       upd_optimize (sc, upd);
+      if (!env_done)
+	sqlg_qr_env (sc, sc->sc_cc->cc_query);
     }
 }
 
@@ -1674,7 +1676,7 @@ sqlc_delete_searched (sql_comp_t * sc, ST * tree)
   caddr_t * opts = tree->_.delete_src.table_exp->_.table_exp.opts;
   dbe_table_t *tb = sch_name_to_table (sc->sc_cc->cc_schema,
       from->_.table.name);
-  int key_trig_event = sqlo_opt_value (opts, OPT_TRIGGER) ? TRIG_DELETE : -1;
+  int key_trig_event = sqlo_opt_value (opts, OPT_TRIGGER) ? TRIG_DELETE : -1, env_done = 0;
   sqlc_table_used (sc, tb);
   if (tb
       && !sec_tb_check (tb, (oid_t) unbox (from->_.table.g_id), (oid_t) unbox (from->_.table.u_id), GR_DELETE))
@@ -1725,6 +1727,8 @@ sqlc_delete_searched (sql_comp_t * sc, ST * tree)
 	sql_node_append (&sc->sc_cc->cc_query->qr_head_node,
 			 (data_source_t *) del);
       tc_free (&tc);
+      if (!env_done)
+	sqlg_qr_env (sc, sc->sc_cc->cc_query);
     }
 }
 
