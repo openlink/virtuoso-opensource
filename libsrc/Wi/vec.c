@@ -1276,6 +1276,7 @@ dc_elt_size (data_col_t * dc)
   return box; \
 }
 
+extern int dbf_explain_level;
 int32 enable_sslr_check = 0;
 
 caddr_t
@@ -1298,7 +1299,12 @@ sslr_qst_get (caddr_t * inst, state_slot_ref_t * sslr, int row_no)
 		{
 		  QNCAST (query_instance_t, qi, inst);
 		  if (qi->qi_query)
-		    qr_print (qi->qi_query);
+		    {
+		      int save = dbf_explain_level;
+		      dbf_explain_level = 3;
+		      qr_print (qi->qi_query);
+		      dbf_explain_level = save;
+		    }
 		  log_error ("access to set beyond present results, please report query to the support");
 		  enable_sslr_check = 0;
 		}
