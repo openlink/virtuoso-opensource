@@ -2101,3 +2101,4 @@ extern int enable_vec;
 
 
 #endif /* _SQLNODE_H */
+void qr_print (query_t * qr);

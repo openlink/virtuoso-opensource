@@ -196,7 +196,6 @@ qr_qn_total (query_t * qr)
 
 #define stmt_printf(a) trset_printf a
 
-static void qr_print (query_t * qr);
 static void node_print (data_source_t * node);
 
 
@@ -2373,7 +2372,7 @@ qr_print_params (query_t * qr)
     }
 }
 
-static void
+void
 qr_print (query_t * qr)
 {
   du_thread_t * self = THREAD_CURRENT_THREAD;

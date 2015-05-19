@@ -1295,7 +1295,13 @@ sslr_qst_get (caddr_t * inst, state_slot_ref_t * sslr, int row_no)
 	    {
 	      uint32 fill = QST_INT (inst, sslr->sslr_set_nos[step] + 1);
 	      if ((uint32) row_no > fill)
-		log_error ("access to set beyond present results, please report query to the support");
+		{
+		  QNCAST (query_instance_t, qi, inst);
+		  if (qi->qi_query)
+		    qr_print (qi->qi_query);
+		  log_error ("access to set beyond present results, please report query to the support");
+		  enable_sslr_check = 0;
+		}
 	    }
 	  row_no = set_nos[row_no];
 	}
