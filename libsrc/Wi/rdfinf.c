@@ -1253,6 +1253,7 @@ bif_rdf_inf_set_ifp_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
       caddr_t grp_iri = key_id_to_iri (qi, unbox_iri_int64 (grps[ifp_ctr]));
       printf ("INF '%s' loading: IFP <%s> belongs to <%s> group\n", ctx->ric_name, ifp_iri, grp_iri);
     }
+  sas_ensure ();
 #endif
 
 /* At this point, every group in grps[ctr] is labeled by exactly one its representative. Now it's easy to fill in the hashtable */
