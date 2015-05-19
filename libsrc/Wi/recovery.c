@@ -204,6 +204,9 @@ walk_db (lock_trx_t * lt, page_func_t func)
   memset (levels, 0, sizeof (levels));
 
   {
+    IN_TXN;
+    lt_threads_set_inner (lt, 1);
+    LEAVE_TXN;
     DO_SET (index_tree_t * , it, &wi_inst.wi_master->dbs_trees)
       {
 	if (it != wi_inst.wi_master->dbs_cpt_tree && !backup_key_is_ignored (&ign, it->it_key))
@@ -229,12 +232,17 @@ walk_db (lock_trx_t * lt, page_func_t func)
 	    ITC_FAILED
 	      {
 		itc_free (itc);
+		if (!srv_have_global_lock(THREAD_CURRENT_THREAD))
+		  LEAVE_CPT (lt);
 	      }
 	    END_FAIL (itc);
 	    itc_free (itc);
 	  }
       }
     END_DO_SET()
+    IN_TXN;
+    lt_threads_set_inner (lt, 0);
+    LEAVE_TXN;
   }
 }
 
