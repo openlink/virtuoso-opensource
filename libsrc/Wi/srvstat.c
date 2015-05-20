@@ -316,6 +316,8 @@ long vt_batch_size_limit = 1000000L;
 /* flags for simulated exceptions */
 long dbf_no_disk = 0;
 long dbf_log_no_disk;
+extern int32 dbf_log_always;
+extern int32 dbf_no_atomic;
 long dbf_2pc_prepare_wait; /* wait this many msec between prepare and commit */
 long dbf_2pc_wait; /* wait this many msec after each 2pc message or log write */
 long dbf_branch_transact_wait; /* wait this many msec onn cluster branch before doing rollback, prepare or commit */
@@ -1763,6 +1765,8 @@ stat_desc_t dbf_descs [] =
     {"dbf_2pc_wait", &dbf_2pc_wait, NULL},
     {"dbf_branch_transact_wait", &dbf_branch_transact_wait, NULL},
     {"dbf_log_no_disk", &dbf_log_no_disk, NULL},
+    {"dbf_log_always", &dbf_log_always, SD_INT32},
+    {"dbf_no_atomic", &dbf_no_atomic, SD_INT32},
     {"txn_after_image_limit", &txn_after_image_limit, NULL},
     {"dbf_clop_enter_wait", &dbf_clop_enter_wait, NULL},
     {"dbf_cl_skip_wait_notify", &dbf_cl_skip_wait_notify, NULL},

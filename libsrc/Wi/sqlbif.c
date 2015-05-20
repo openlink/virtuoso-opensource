@@ -11938,6 +11938,8 @@ bif_repl_is_raw (caddr_t * inst, caddr_t * err_ret, state_slot_t ** args)
   return box_num (qi->qi_trx->lt_repl_is_raw);
 }
 
+int32 dbf_log_always = 0;
+
 
 caddr_t
 bif_log_enable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -11949,6 +11951,7 @@ bif_log_enable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long old_value;
   int in_atomic = 4 & flag;
   flag &= 3;
+  flag |= dbf_log_always;
   old_value = (((REPL_NO_LOG == qi->qi_trx->lt_replicate) ? 0 : 1) |	/* not || */
       (qi->qi_client->cli_row_autocommit ? 2 : 0));
 
