@@ -268,6 +268,16 @@ int64
 dc_rb_id (data_col_t * dc, int inx)
 {
   db_buf_t place = ((db_buf_t *) dc->dc_values)[inx];
+  if ((DCT_BOXES & dc->dc_type))
+    {
+      caddr_t box = (caddr_t)place;
+      dtp_t dtp = DV_TYPE_OF (box);
+      if (DV_RDF == dtp)
+	return ((rdf_box_t*)box)->rb_ro_id;
+      return 0;
+    }
+  if (DV_ANY != dc->dc_sqt.sqt_dtp)
+    return 0;
   if (DV_RDF_ID == place[0])
     return LONG_REF_NA (place + 1);
   else if (DV_RDF_ID_8 == place[0])
