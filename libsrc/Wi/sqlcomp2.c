@@ -2202,6 +2202,7 @@ sqlc_subquery_1 (sql_comp_t * super_sc, predicate_t * super_pred, ST ** ptree, i
     lisp_throw (CATCH_LISP_ERROR, 1);
   }
   END_CATCH;
+  sc.sc_cc->cc_query->qr_super = super_sc->sc_cc->cc_query;
   sc_free (&sc);
   dk_set_push (&super_sc->sc_cc->cc_query->qr_subq_queries, subq_comp->sqc_query);
   return subq_comp;
