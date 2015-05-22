@@ -66,38 +66,7 @@ public class VirtuosoDate extends java.sql.Date
 
     public String toXSD_String ()
     {
-        StringBuilder sb = new StringBuilder();
-        DateFormat formatter= new SimpleDateFormat("yyyy-MM-dd");
-        String timeZoneString = null;
-/**
-        if (with_timezone)
-        {
-            StringBuffer s = new StringBuffer();
-            s.append(timezone>0?'+':'-');
-
-            int tz = Math.abs(timezone);
-            int tzh = tz/60;
-            int tzm = tz%60;
-
-            if (tzh < 10)
-                s.append('0');
-
-            s.append(tzh);
-            s.append(':');
-
-            if (tzm < 10)
-                s.append('0');
-
-            s.append(tzm);
-            timeZoneString = s.toString();
-            formatter.setTimeZone(TimeZone.getTimeZone("GMT"+timeZoneString));
-        }
- **/
-        sb.append(formatter.format(this));
-
-        if (timeZoneString!=null)
-            sb.append(timeZoneString);
-        return sb.toString();
+       return toString();
     }
 }
 
