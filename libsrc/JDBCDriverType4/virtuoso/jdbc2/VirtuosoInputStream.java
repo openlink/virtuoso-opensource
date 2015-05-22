@@ -743,11 +743,13 @@ class VirtuosoInputStream extends BufferedInputStream
             is_complete = true;
             box = read_object (sparql_executed);
             if (type == VirtuosoRdfBox.RDF_BOX_GEO_TYPE) {
-                String data = ((String)box).substring(6);
-                try {
-                    box = new VirtuosoPoint(data.substring(0, data.length()-1));
-                } catch (Exception e){
-                    throw new VirtuosoException(e, VirtuosoException.IOERROR);
+                if (box instanceof String && ((String)box).length()>5  && ((String)box).substring(0,5).equalsIgnoreCase("point")) {
+                    String data = ((String)box).substring(6);
+                    try {
+                        box = new VirtuosoPoint(data.substring(0, data.length()-1));
+                    } catch (Exception e){
+                        throw new VirtuosoException(e, VirtuosoException.IOERROR);
+                    }
                 }
             }
         }
