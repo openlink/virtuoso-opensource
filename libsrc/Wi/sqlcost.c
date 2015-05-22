@@ -1429,6 +1429,7 @@ ric_p_stat_from_cache (rdf_inf_ctx_t * ric, dbe_key_t * key, iri_id_t id, float 
 int64
 sqlo_p_stat_query (dbe_table_t * tb, caddr_t p)
 {
+  float n_g;
   int entered = 0, rc;
   int64 cnt, s_cnt, o_cnt;
   dbe_column_t * col;
@@ -1486,19 +1487,21 @@ sqlo_p_stat_query (dbe_table_t * tb, caddr_t p)
     }
   if (err)
     return -1;
+  col = tb_name_to_column (tb, "G");
+  n_g = col->col_n_distinct;
   col = tb_name_to_column (tb, "S");
   key = tb_px_key (tb, col);
   p_stat[0] = cnt;
   p_stat[1] = s_cnt;
   p_stat[2] = o_cnt;
-  p_stat[3] = 1;
+  p_stat[3] = MIN (p_stat[0], n_g);
   ric_set_p_stat (empty_ric, key, p, p_stat);
   col = tb_name_to_column (tb, "O");
   key = tb_px_key (tb, col);
   p_stat[0] = cnt;
   p_stat[1] = o_cnt;
   p_stat[2] = s_cnt;
-  p_stat[3] = 1;
+  p_stat[3] = MIN (p_stat[0], n_g);
   ric_set_p_stat (empty_ric, key, p, p_stat);
   return cnt;
 }
