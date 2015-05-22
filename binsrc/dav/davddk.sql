@@ -46,7 +46,7 @@ create table WS.WS.SYS_DAV_COL (
 alter index SYS_DAV_COL on WS.WS.SYS_DAV_COL partition (COL_PARENT int)
 create index SYS_DAV_COL_PARENT_ID on WS.WS.SYS_DAV_COL (COL_PARENT) partition (COL_PARENT int)
 create unique index SYS_DAV_COL_ID on WS.WS.SYS_DAV_COL (COL_ID) partition (COL_ID int)
-create index SYS_DAV_COL_IID on WS.WS.SYS_DAV_COL (COL_IID) partition (COL_IID int (0hexffff00))
+create not null index SYS_DAV_COL_IID on WS.WS.SYS_DAV_COL (COL_IID) partition (COL_IID int (0hexffff00))
 ;
 
 --#IF VER=5
