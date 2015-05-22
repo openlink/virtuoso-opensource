@@ -2179,19 +2179,13 @@ create procedure WS.WS.PUT (
     {
       commit work;
       http_request_status ('HTTP/1.1 201 Created');
-	declare _col_parent, _etag varchar;
-	_col_parent :=  DB.DBA.DAV_SEARCH_PATH (_col_parent_id, 'C');
+
+  	declare _etag varchar;
+
 	_etag := WS.WS.ETAG_BY_ID (rc, rc_type);
 	if (_etag is not null)
 	  http_header (http_header_get () || sprintf ('ETag: "%s"\r\n', _etag));
-	if (LDP_ENABLED (_col_parent_id))
-	{
-		declare par_graph, cur_graph any;
-		par_graph := (WS.WS.DAV_IRI (_col_parent));
-		cur_graph := (WS.WS.DAV_IRI (full_path));
-		TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', par_graph, cur_graph), par_graph, par_graph);
-		--SPARQL INSERT IN GRAPH ?:par_graph { ?:par_graph <http://www.w3.org/ns/ldp#contains> ?:cur_graph . };
-	}
+
     if (_atomPub)
     {
       WS.WS.DAV_ATOM_ENTRY (rc, 'R');
@@ -6494,6 +6488,40 @@ create procedure LDP_ENABLED (in _col_id any)
     }
   nf:
   return 0;
+}
+;
+
+create procedure DB.DBA.LDP_CREATE (
+  in path any)
+{
+  -- dbg_obj_princ ('LDP_CREATE (', path, ')');
+  declare id_parent any;
+  declare path_parent, graph, graph_parent varchar;
+
+  id_parent := DB.DBA.DAV_SEARCH_ID (concat ('/', trim (path, '/'), '/'), 'P');
+	if (not isnull (DB.DBA.DAV_HIDE_ERROR (id_parent)) and DB.DBA.LDP_ENABLED (id_parent))
+	{
+  	path_parent := DB.DBA.DAV_SEARCH_PATH (id_parent, 'C');
+		graph_parent := WS.WS.DAV_IRI (path_parent);
+		graph := WS.WS.DAV_IRI (path);
+		TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', graph_parent, graph), graph_parent, graph_parent);
+	}
+}
+;
+
+create procedure DB.DBA.LDP_DELETE (
+  in path any)
+{
+  -- dbg_obj_princ ('LDP_DELETE (', path, ')');
+  declare graph varchar;
+
+  graph := WS.WS.DAV_IRI (path);
+  SPARQL clear graph ?:graph;
+  delete
+    from DB.DBA.RDF_QUAD b
+   where exists (select 1
+                   from DB.DBA.RDF_QUAD a
+                  WHERE a.G = b.G and a.S = b.S and a.P = b.P and a.O = b.O and	a.P = __i2idn ('http://www.w3.org/ns/ldp#contains') and a.O = __i2idn (graph));
 }
 ;
 

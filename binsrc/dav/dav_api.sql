@@ -2395,7 +2395,7 @@ DAV_COL_CREATE_INT (
                 values (rc, name, pid, ouid, ogid, permissions, now(), now ());
     if (not row_count())
       rc := -3;
-      if (LDP_ENABLED (pid))
+      if (DB.DBA.LDP_ENABLED (pid))
 	{
 	  declare uri any;
 	  uri := WS.WS.DAV_IRI (path);
@@ -2425,7 +2425,7 @@ create procedure DB.DBA.IS_REDIRECT_REF (inout path any)
 }
 ;
 
-create procedure is_rdf_type(in type varchar) returns integer	
+create procedure is_rdf_type(in type varchar) returns integer
 {
 	if (
 		strstr (type, 'text/n3') is not null or
@@ -2524,6 +2524,12 @@ create procedure DAV_RES_UPLOAD_STRSES_INT (
   old_log_mode := log_enable (bit_or (new_log_mode, 4), 1);
   rc := DAV_RES_UPLOAD_STRSES_INT_INNER (path, content, type, permissions, uid, gid, auth_uname, auth_pwd, extern, cr_time, mod_time, _rowguid, ouid, ogid, check_locks);
   log_enable (bit_or (old_log_mode, 4), 1);
+  if (DAV_HIDE_ERROR (rc) is not null)
+  {
+    -- create LDP triple if needed
+    DB.DBA.LDP_CREATE (path);
+  }
+
   return rc;
 }
 ;
@@ -3174,10 +3180,10 @@ create procedure DAV_DELETE_INT (
   in check_locks any := 1
 )
 {
-  declare id, rc integer;
+  declare id, id_meta, rc integer;
   declare what char;
   declare auth_uid integer;
-  declare par any;
+  declare par, path_meta any;
   whenever sqlstate 'HT508' goto disabled_owner;
   whenever sqlstate 'HT509' goto disabled_home;
 
@@ -3210,20 +3216,26 @@ create procedure DAV_DELETE_INT (
     return call (cast (det as varchar) || '_DAV_DELETE') (detcol_id, unreached_path, what, silent, auth_uid);
   }
 
+  path_meta := rtrim (path, '/') || ',meta';
+  id_meta := DAV_SEARCH_ID (path_meta, 'R');
   if (what = 'R')
   {
     declare type, graph varchar;
 
     type := (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = id);
-    if (is_rdf_type(type))
+    if (is_rdf_type (type))
     {
-      graph := WS.WS.DAV_IRI (path);
-      SPARQL clear graph ?:graph;
-      SPARQL delete { graph ?g { ?s <http://www.w3.org/ns/ldp#contains> ?o } } 
-      where { graph ?g { ?s <http://www.w3.org/ns/ldp#contains> ?o . filter (?o = iri(?:graph)) }};
+      DB.DBA.LDP_DELETE (path);
+    }
+    delete from WS.WS.SYS_DAV_RES where RES_ID = id;
+
+    -- delete *,meta
+    if (not isnull (DB.DBA.DAV_HIDE_ERROR (id_meta)))
+    {
+      delete from WS.WS.SYS_DAV_RES where RES_ID = id_meta;
+      DB.DBA.LDP_DELETE (path_meta);
     }
 
-    delete from WS.WS.SYS_DAV_RES where RES_ID = id;
     RDF_SINK_DELETE (path);
   }
   else if (what = 'C')
@@ -3288,6 +3300,14 @@ create procedure DAV_DELETE_INT (
       }
     }
     delete from WS.WS.SYS_DAV_COL where COL_ID = id;
+    DB.DBA.LDP_DELETE (path);
+
+    -- delete *,meta
+    if (not isnull (DB.DBA.DAV_HIDE_ERROR (id_meta)))
+    {
+      delete from WS.WS.SYS_DAV_RES where RES_ID = id_meta;
+      DB.DBA.LDP_DELETE (path_meta);
+    }
   }
   else if (not silent)
   {
@@ -3298,6 +3318,7 @@ create procedure DAV_DELETE_INT (
 
 disabled_owner:
   return -42;
+
 disabled_home:
   return -43;
 }
