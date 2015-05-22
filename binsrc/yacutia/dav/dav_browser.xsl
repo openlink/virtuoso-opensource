@@ -2202,7 +2202,7 @@
                               S := get_keyword ('f_ttl_prefixes', self.vc_page.vc_event.ve_params, cast (WS.WS.TTL_PREFIXES_ENABLED () as varchar));
                               http (sprintf ('<input type="checkbox" name="f_ttl_prefixes" id="f_ttl_prefixes" value="1" title=".TTL prefixes" %s />', case when S = '1' then 'checked="checked"' else '' end));
                             ?>
-                            Add automaticaly missed prefixes
+                            Add automatically missed prefixes
                           </label>
                         </td>
                       </tr>
@@ -3758,7 +3758,7 @@
                       S := get_keyword ('f_ttl_prefixes', self.vc_page.vc_event.ve_params, cast (WS.WS.TTL_PREFIXES_ENABLED () as varchar));
                       http (sprintf ('<input type="checkbox" name="f_ttl_prefixes" id="f_ttl_prefixes" value="1" title=".TTL prefixes" %s />', case when S = '1' then 'checked="checked"' else '' end));
                     ?>
-                    Add automaticaly missed prefixes
+                    Add automatically missed prefixes
                   </label>
                 </div>
               </v:template>
