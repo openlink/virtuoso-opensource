@@ -116,18 +116,34 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\libsrc\Tidy\access.c" />
+    <ClCompile Include="..\libsrc\Tidy\alloc.c" />
+    <ClCompile Include="..\libsrc\Tidy\attrask.c" />
+    <ClCompile Include="..\libsrc\Tidy\attrdict.c" />
+    <ClCompile Include="..\libsrc\Tidy\attrget.c" />
     <ClCompile Include="..\libsrc\Tidy\attrs.c" />
+    <ClCompile Include="..\libsrc\Tidy\buffio.c" />
+    <ClCompile Include="..\libsrc\Tidy\charsets.c" />
     <ClCompile Include="..\libsrc\Tidy\clean.c" />
     <ClCompile Include="..\libsrc\Tidy\config.c" />
     <ClCompile Include="..\libsrc\Tidy\entities.c" />
+    <ClCompile Include="..\libsrc\Tidy\fileio.c" />
+    <ClCompile Include="..\libsrc\Tidy\gdoc.c" />
+    <ClCompile Include="..\libsrc\Tidy\iconvtc.c" />
     <ClCompile Include="..\libsrc\Tidy\istack.c" />
     <ClCompile Include="..\libsrc\Tidy\lexer.c" />
     <ClCompile Include="..\libsrc\Tidy\localize.c" />
+    <ClCompile Include="..\libsrc\Tidy\mappedio.c" />
     <ClCompile Include="..\libsrc\Tidy\parser.c" />
     <ClCompile Include="..\libsrc\Tidy\pprint.c" />
-    <ClCompile Include="..\libsrc\Tidy\tab2space.c" />
+    <ClCompile Include="..\libsrc\Tidy\sprtf.c" />
+    <ClCompile Include="..\libsrc\Tidy\streamio.c" />
+    <ClCompile Include="..\libsrc\Tidy\tagask.c" />
     <ClCompile Include="..\libsrc\Tidy\tags.c" />
-    <ClCompile Include="..\libsrc\Tidy\tidy.c" />
+    <ClCompile Include="..\libsrc\Tidy\tidylib.c" />
+    <ClCompile Include="..\libsrc\Tidy\tmbstr.c" />
+    <ClCompile Include="..\libsrc\Tidy\utf8.c" />
+    <ClCompile Include="..\libsrc\Tidy\win32tc.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libsrc\Tidy\html.h" />
