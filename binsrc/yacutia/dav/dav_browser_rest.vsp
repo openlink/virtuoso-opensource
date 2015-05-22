@@ -32,11 +32,12 @@
     declare val_serviceId, val_uname varchar;
     declare val_isRealUser integer;
 
-    if (VAL.DBA.authentication_details_for_connection (sid=>sid, realm=>realm, serviceId=>val_serviceId, uname=>val_uname, isRealUser=>val_isRealUser))
-    {
-      if (val_isRealUser)
-        connection_set ('vspx_user', val_uname);
-    }
+      val_uname := (select U.U_NAME
+                      from DB.DBA.VSPX_SESSION S, DB.DBA.SYS_USERS U
+                     where S.VS_REALM = realm
+                       and S.VS_SID   = sid
+                       and S.VS_UID   = U.U_NAME);
+      connection_set ('vspx_user', val_uname);
   }
 
   action := get_keyword ('a', params, '');
