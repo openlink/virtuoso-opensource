@@ -212,6 +212,7 @@ extern int32 em_ra_threshold;
 extern int sqlo_max_layouts;
 extern size_t sqlo_max_mp_size;
 extern int enable_initial_plan;
+extern int32 enable_dt_leaf;
 extern int32 sqlo_compiler_exceeds_run_factor;
 
 extern int enable_mem_hash_join;
@@ -1786,6 +1787,7 @@ stat_desc_t dbf_descs [] =
     {"sqlo_max_layouts", &sqlo_max_layouts, SD_INT32},
     {"sqlo_max_mp_size", &sqlo_max_mp_size},
     {"enable_initial_plan", &enable_initial_plan, SD_INT32},
+    {"enable_dt_leaf", &enable_dt_leaf, SD_INT32},
     {"sqlo_compiler_exceeds_run_factor", &sqlo_compiler_exceeds_run_factor, SD_INT32},
     {"enable_hash_merge", (long *)&enable_hash_merge, SD_INT32},
     {"enable_hash_fill_join", (long *)&enable_hash_fill_join, SD_INT32},
