@@ -1049,7 +1049,7 @@ sort_read_vec_input (table_source_t * ts, caddr_t * inst, caddr_t * state)
   ptrlong top = setp_top_get (inst, setp->setp_top, 0);
   ptrlong skip = setp_top_get (inst, setp->setp_top_skip, 0);
   ptrlong fill;
-  int set, n_sets = QST_INT (inst, ts->src_gen.src_prev->src_out_fill);
+  int set, n_sets = ts->src_gen.src_prev ? QST_INT (inst, ts->src_gen.src_prev->src_out_fill) : qi->qi_n_sets;
 
   if (setp->setp_partitioned)
     {
@@ -1069,7 +1069,7 @@ next_batch:
   for (set = last_set; set < n_sets; set++)
     {
       data_col_t *dc;
-      qi->qi_set = qst_vec_get_int64 (inst, ks->ks_set_no, set);
+      qi->qi_set = ks->ks_set_no ? qst_vec_get_int64 (inst, ks->ks_set_no, set) : 0;
       if (qi->qi_set < 0 || qi->qi_set >= n_sets)
 	{
 	  qi->qi_set = 0;

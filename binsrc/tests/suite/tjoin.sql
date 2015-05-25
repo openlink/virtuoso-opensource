@@ -203,6 +203,10 @@ select top 10 row_no + 100, * from t1_fr;
 select top 10 row_no + 100, * from t1_fr order by string2;
 
 
+select  string2, count (*) from t1_fr group by  string2;
+
+select  string2, count (*) from t1_fr group by  string2 order by string2;
+
 select fi2, avg (row_no), min (row_no), count (*), count (row_no + 1) from t1_fr group by fi2;
 
 update t1 set fi2 = row_no / 3;
