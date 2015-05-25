@@ -899,10 +899,13 @@ class VirtuosoInputStream extends BufferedInputStream
            }
 
            num2date(day, cal_dat);
-           cal_dat.set (Calendar.HOUR_OF_DAY, hour);
-           cal_dat.set (Calendar.MINUTE, minute);
-           cal_dat.set(Calendar.SECOND, second);
-
+           if (type!=VirtuosoTypes.DT_TYPE_DATE) 
+             {
+               cal_dat.set (Calendar.HOUR_OF_DAY, hour);
+               cal_dat.set (Calendar.MINUTE, minute);
+               cal_dat.set (Calendar.SECOND, second);
+               cal_dat.set (Calendar.MILLISECOND, fraction/1000);
+             }
        }
 
       switch(type)
