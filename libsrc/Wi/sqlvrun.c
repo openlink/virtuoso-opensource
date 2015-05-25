@@ -2419,7 +2419,6 @@ ts_handle_aq (table_source_t * ts, caddr_t * inst, buffer_desc_t ** order_buf_re
   QNCAST (query_instance_t, qi, inst);
   if (aq_state != TS_AQ_COORD_AQ_WAIT)
     {
-      if (itc->itc_buf_registered && itc->itc_map_pos >= itc->itc_buf_registered->bd_content_map->pm_count) GPF_T1 ("itc regd after end of pagfe in ts_thread ");
       itc->itc_ltrx = qi->qi_trx;
       if (1 == itc->itc_n_sets && !itc->itc_param_order)
 	{
