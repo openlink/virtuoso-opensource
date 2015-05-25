@@ -763,7 +763,7 @@ create procedure rdf_vec_ins_triples (in s any, in p any, in o any, in g any)
     else
       {
         dp := dpipe (5, 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'MAKE_RO_1', 'IRI_TO_ID_1');
-	dpipe_set_rdf_load (dp, 1);
+	dpipe_set_rdf_load (dp, 2); -- multiple graphs flag as G is given
       }
   }
   dpipe_input (dp, s, p, null, o, g);
