@@ -10837,6 +10837,8 @@ create function DB.DBA.JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, i
 create procedure DB.DBA.JSO_LIST_INSTANCES_OF_GRAPH (in jgraph varchar, out instances any)
 {
   declare md, res, st, msg any;
+  if (not isiri_id (jgraph))
+    jgraph := __i2id (jgraph);
   st:= '00000';
   exec (
     'select DB.DBA.VECTOR_AGG (
