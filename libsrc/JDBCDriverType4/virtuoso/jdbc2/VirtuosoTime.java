@@ -68,7 +68,7 @@ public class VirtuosoTime extends java.sql.Time
     public String toXSD_String ()
     {
         StringBuilder sb = new StringBuilder();
-        DateFormat formatter= new SimpleDateFormat("HH:mm:ss");
+        DateFormat formatter= new SimpleDateFormat("HH:mm:ss.SSS");
         String timeZoneString = null;
 
         if (with_timezone)
