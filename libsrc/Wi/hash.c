@@ -1709,7 +1709,7 @@ itc_ha_feed (itc_ha_feed_ret_t *ret, hash_area_t * ha, caddr_t * qst, unsigned l
   hash_inx_b_ptr_t hibp;
 #endif
   int keys_on_stack;
-  int do_flush;
+  int do_flush = 0;
   index_tree_t * tree = qst_tree (qst, ha->ha_tree, ha->ha_set_no);
   if (!tree)
     {
