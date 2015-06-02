@@ -1504,7 +1504,6 @@ next_row:;
     {
       id_hash_free (hi->hi_memcache);
       hi->hi_memcache = NULL;
-      qst_set (branch, setp->setp_ha->ha_tree, NULL);
     }
   else
     {
@@ -1512,6 +1511,7 @@ next_row:;
       mp_free (hi->hi_pool);
       hi->hi_pool = NULL;
     }
+  qst_set (branch, setp->setp_ha->ha_tree, NULL);
   if (branch == inst) /* if reading cluster branch, the calling chash reader decides when at end */
     SRC_IN_STATE ((data_source_t*)ts, inst) = NULL;
   ts_always_null (ts, inst);
