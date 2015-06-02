@@ -238,6 +238,7 @@ extern int enable_conn_rc_fifo;
 extern int enable_cm_still_wanted;
 extern int enable_cancel_waiting;
 extern int enable_setp_partition;
+extern int32 setp_distinct_max_keys;
 extern int enable_stream_gb;
 extern int enable_min_card;
 extern int enable_hash_colocate;
@@ -1792,6 +1793,7 @@ stat_desc_t dbf_descs [] =
     {"enable_hash_merge", (long *)&enable_hash_merge, SD_INT32},
     {"enable_hash_fill_join", (long *)&enable_hash_fill_join, SD_INT32},
     {"enable_subscore", (long *)&enable_subscore, SD_INT32},
+    {"setp_distinct_max_keys", (long *)&setp_distinct_max_keys, SD_INT32},
     {"enable_iri_nic_n", (long *)&enable_iri_nic_n, SD_INT32},
     {"enable_at_print", (long *)&enable_at_print, SD_INT32},
     {"enable_min_card", (long *)&enable_min_card},

@@ -1430,7 +1430,8 @@ typedef struct setp_node_s
     char	setp_cl_partition;
 } setp_node_t;
 
-#define SETP_DISTINCT_MAX_KEYS 100
+extern int32 setp_distinct_max_keys;
+#define SETP_DISTINCT_MAX_KEYS setp_distinct_max_keys
 #define SETP_DISTINCT_NO_OP 2
 #define IS_SETP(qn) IS_QN (qn, setp_node_input)
 

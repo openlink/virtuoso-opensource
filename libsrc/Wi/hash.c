@@ -1597,7 +1597,8 @@ void
 ha_rehash (caddr_t * inst, hash_area_t * ha, index_tree_t * it)
 {
   buffer_desc_t * buf;
-  state_slot_t tmp_ssl[SETP_DISTINCT_MAX_KEYS];
+  char tmp_ssl_buf[sizeof (state_slot_t) * 200 + BOX_AUTO_OVERHEAD];
+  state_slot_t * tmp_ssl;
   it_cursor_t itc_auto;
   it_cursor_t * itc = &itc_auto;
   it_cursor_t * ref_itc = (it_cursor_t*)QST_GET_V (inst, ha->ha_ref_itc);
@@ -1615,6 +1616,7 @@ ha_rehash (caddr_t * inst, hash_area_t * ha, index_tree_t * it)
       page_leave_outside_map (ref_itc->itc_buf);
       ref_itc->itc_buf = NULL;
     }
+  BOX_AUTO_TYPED (state_slot_t *, tmp_ssl, tmp_ssl_buf, sizeof (state_slot_t) * setp_distinct_max_keys, DV_BIN);
   memset (&ks, 0, sizeof (ks));
   memset (&setp, 0, sizeof (setp));
   ITC_INIT (itc, NULL, NULL);
@@ -1668,6 +1670,7 @@ ha_rehash (caddr_t * inst, hash_area_t * ha, index_tree_t * it)
     }
   ITC_FAILED
     {
+      BOX_DONE (tmp_ssl, tmp_ssl_buf);
       itc_free (itc);
     }
   END_FAIL (itc);
@@ -1679,6 +1682,7 @@ ha_rehash (caddr_t * inst, hash_area_t * ha, index_tree_t * it)
       qst_set (inst, ssl, save[inx]);
     }
   END_DO_BOX;
+  BOX_DONE (tmp_ssl, tmp_ssl_buf);
   dk_free_box ((caddr_t)save);
   dk_set_free (ks.ks_out_slots);
   ITC_IN_KNOWN_MAP (insert_itc, last_dp);

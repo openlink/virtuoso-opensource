@@ -151,6 +151,8 @@ key_cl_count (dbe_col_loc_t * cls)
   return inx;
 }
 
+int32 setp_distinct_max_keys = 100;
+
 void
 setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, uint64 n_rows, int op)
 {
