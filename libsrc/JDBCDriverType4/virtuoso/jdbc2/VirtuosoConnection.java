@@ -696,10 +696,8 @@ public class VirtuosoConnection implements Connection
 			   //System.err.println ("txn timeout = " + txn_timeout);
 			 }
 
-			 if (trxisolation <= 0) {
-			   trxisolation = (int) cdef_param (client_defaults, "SQL_TXN_ISOLATION", trxisolation);
-			   //System.err.println ("txn isolation = " + trxisolation);
-			 }
+			 trxisolation = (int) cdef_param (client_defaults, "SQL_TXN_ISOLATION", trxisolation);
+			 //System.err.println ("txn isolation = " + trxisolation);
 
 			 utf8_execs = cdef_param (client_defaults, "SQL_UTF8_EXECS", 0) != 0;
 			 //System.err.println ("utf8_execs = " + utf8_execs);
