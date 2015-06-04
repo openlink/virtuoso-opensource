@@ -828,6 +828,11 @@ create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, 
       parsed := __xqf_str_parse_to_rdf_box (o, o_type, 1);
       if (parsed is not null)
         {
+	  if (__tag of XML = __tag (parsed))
+	    {
+	      parsed := rdf_box (parsed, 300, 257, 0, 1);
+	      rdf_box_set_type (parsed, 257);
+	    }
           if (__tag of rdf_box = __tag (parsed))
             {
               if (257 = rdf_box_type (parsed))
@@ -864,7 +869,7 @@ create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, 
   else if (4 = o_flags)
     {
       rb := rdf_box (xml_tree_doc (o), 300, 257, 0, 1);
-      rdf_set_type (rb, 257);
+      rdf_box_set_type (rb, 257);
       if (is_text and 246 = __tag (o))
 	rdf_box_set_is_text (o, 1);
       return rb;
