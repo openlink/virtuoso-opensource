@@ -770,7 +770,7 @@ create procedure WEBDAV.DBA.dc_compareMetas (inout cmp_metas any)
 --
 create procedure WEBDAV.DBA.dt_current_time()
 {
-  return dateadd('minute', - timezone(now()),now());
+  return dateadd('minute', - timezone(curdatetime_tz()),curdatetime_tz());
 }
 ;
 
@@ -790,7 +790,7 @@ create procedure WEBDAV.DBA.dt_gmt2user(
     pUser := WEBDAV.DBA.account ();
   if (isnull (pUser))
     return pDate;
-  tz := cast (coalesce (USER_GET_OPTION(pUser, 'TIMEZONE'), 0) as integer) * 60 - timezone(now());
+  tz := cast (coalesce (USER_GET_OPTION(pUser, 'TIMEZONE'), 0) as integer) * 60 - timezone(curdatetime_tz());
   return dateadd('minute', tz, pDate);
 };
 

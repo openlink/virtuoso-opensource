@@ -370,7 +370,7 @@ create function DB.DBA.DAV_DET_STRINGDATE (
   if (isstring (rs))
     rs := stringdate (rs);
 
-  return dateadd ('minute', timezone (now()), rs);
+  return dateadd ('minute', timezone (curdatetime_tz()), rs);
 }
 ;
 

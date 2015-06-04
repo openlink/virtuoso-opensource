@@ -693,7 +693,7 @@ http(sprintf('<xsl:for-each select="text">
       <td class="stat_col_label">Time Zone</td><td>
       <?vsp
 	 declare tz int;
-	 tz := timezone (now ());
+	 tz := timezone (curdatetime_tz ());
 	 http (sprintf ('GMT %s%d min.', case when tz >=0 then '+' else '' end, tz));
       ?>
   </td></tr>
