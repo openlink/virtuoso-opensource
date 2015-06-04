@@ -2328,7 +2328,11 @@ dfe_const_to_spec (df_elt_t * lower, df_elt_t * upper, dbe_key_t * key,
   if (in_list)
     left_col = in_list[0]->_.col.col;
   else
-    left_col = lower->_.bin.left->_.col.col;
+    {
+      if (DFE_COLUMN != lower->_.bin.left->dfe_type)
+	SQL_GPF_T(NULL);
+      left_col = lower->_.bin.left->_.col.col;
+    }
   if (left_col == (dbe_column_t *) CI_ROW)
     SQL_GPF_T(NULL);
   sp->sp_cl = *key_find_cl (key, left_col->col_id);
