@@ -1021,7 +1021,7 @@
 
               gmt := get_keyword ('access_timestamp', params);
               if (not isnull (gmt))
-                return datestring (dateadd ('minute', timezone (now()), stringdate (gmt)));
+                return datestring (dateadd ('minute', timezone (curdatetime_tz()), stringdate (gmt)));
 
             _exit:;
               return datestring (now ());
