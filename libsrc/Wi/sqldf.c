@@ -1492,6 +1492,7 @@ sqlo_hash_fill_dt_place_col (df_elt_t * dt_dfe, df_elt_t * col)
 	}
     }
   END_DO_BOX;
+  if (!col->_.col.col) SQL_GPF_T1 (so->so_sc->sc_cc, "col is not supposed to be virtual");
   ref_dfe = sqlo_df (so, t_listst (3, COL_DOTTED, defd->_.table.ot->ot_new_prefix, col->_.col.col->col_name));
   so->so_gen_pt = dt_dfe->_.sub.last;
   sqlo_place_exp (so, dt_dfe, ref_dfe);
