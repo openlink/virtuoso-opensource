@@ -1011,10 +1011,14 @@ spar_where_clause_opt
 
 spar_where_clause	/* [13*]	WhereClause	 ::=  'WHERE'? GroupGraphPattern	*/
 	: WHERE_L _LBRA	{
+		if (NULL != sparp_arg->sparp_env->spare_need_for_default_sparul_target) /* trick for bug 16901 */
+		  sparp_arg->sparp_env->spare_found_default_sparul_target = spar_default_sparul_target (sparp_arg, sparp_arg->sparp_env->spare_need_for_default_sparul_target);
 		sparp_arg->sparp_allow_aggregates_in_expn &= ~1;
 		spar_gp_init (sparp_arg, WHERE_L); }
 	    spar_where_clause_tail { }
 	| _LBRA {
+		if (NULL != sparp_arg->sparp_env->spare_need_for_default_sparul_target) /* trick for bug 16901 */
+		  sparp_arg->sparp_env->spare_found_default_sparul_target = spar_default_sparul_target (sparp_arg, sparp_arg->sparp_env->spare_need_for_default_sparul_target);
 		sparp_arg->sparp_allow_aggregates_in_expn &= ~1;
 		spar_gp_init (sparp_arg, WHERE_L); }
 	    spar_where_clause_tail { }
@@ -2513,14 +2517,12 @@ spar_sparul_insert	/* [DML]*	InsertAction	 ::=  */
 		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
 	    spar_ctor_template_nolbra {
 		if (NULL != $2)
-		  $<tree>$ = $2;
+		  sparp_arg->sparp_env->spare_found_default_sparul_target = $2;
 		else if (spar_ctor_uses_default_graph ($5))
-		  $<tree>$ = spar_default_sparul_target (sparp_arg, "triple constructor in INSERT {...} without GRAPH {...}");
-		else
-		  $<tree>$ = NULL; }
+		  sparp_arg->sparp_env->spare_need_for_default_sparul_target = "triple constructor in INSERT {...} without GRAPH {...}"; }
 	    spar_action_solution {
 		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, INSERT_L, NULL, $7 );
-		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $<tree>6, $5); }
+		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, sparp_arg->sparp_env->spare_found_default_sparul_target, $5); }
 	;
 
 spar_sparul_insertdata	/* [DML]*	InsertDataAction	 ::=  */
@@ -2546,14 +2548,12 @@ spar_sparul_delete	/* [DML]*	DeleteAction	 ::=  */
 		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
 	    spar_ctor_template_nolbra {
 		if (NULL != $2)
-		  $<tree>$ = $2;
+		  sparp_arg->sparp_env->spare_found_default_sparul_target = $2;
 		else if (spar_ctor_uses_default_graph ($5))
-		  $<tree>$ = spar_default_sparul_target (sparp_arg, "triple constructor in DELETE {...} without GRAPH {...}");
-		else
-		  $<tree>$ = NULL; }
+		  sparp_arg->sparp_env->spare_need_for_default_sparul_target = "triple constructor in DELETE {...} without GRAPH {...}"; }
 	    spar_action_solution {
 		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, DELETE_L, NULL, $7 );
-		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $<tree>6, $5); }
+		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, sparp_arg->sparp_env->spare_found_default_sparul_target, $5); }
 	;
 
 spar_sparul_deletedata	/* [DML]*	DeleteDataAction	 ::=  */
@@ -2580,16 +2580,14 @@ spar_sparul_modify	/* [DML]*	ModifyAction	 ::=  */
 		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
 	    spar_ctor_template_nolbra INSERT_L _LBRA spar_ctor_template_nolbra {
 		if (NULL != $2)
-		  $<tree>$ = $2;
+		  sparp_arg->sparp_env->spare_found_default_sparul_target = $2;
 		else if (spar_ctor_uses_default_graph ($6))
-		  $<tree>$ = spar_default_sparul_target (sparp_arg, "triple constructor in DELETE {...} without GRAPH {...}");
+		  sparp_arg->sparp_env->spare_need_for_default_sparul_target = "triple constructor in DELETE {...} without GRAPH {...}";
 		else if (spar_ctor_uses_default_graph ($9))
-		  $<tree>$ = spar_default_sparul_target (sparp_arg, "triple constructor in INSERT {...} without GRAPH {...}");
-		else
-		  $<tree>$ = NULL; }
+		  sparp_arg->sparp_env->spare_need_for_default_sparul_target = "triple constructor in INSERT {...} without GRAPH {...}"; }
 	    spar_action_solution {
 		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, MODIFY_L, NULL, $11 );
-		spar_compose_retvals_of_modify (sparp_arg, $$, $<tree>10, $6, $9); }
+		spar_compose_retvals_of_modify (sparp_arg, $$, sparp_arg->sparp_env->spare_found_default_sparul_target, $6, $9); }
 	;
 
 spar_sparul_clear	/* [DML]*	ClearAction	 ::=  'CLEAR' 'SILENT'? DropTarget	*/
@@ -2693,20 +2691,18 @@ spar_sparul11_deleteinsert	/* [DML]*	DeleteInsert11Action	 ::=  */
 		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
 	    spar_ctor_template_nolbra spar_sparul11_insert_opt {
 		if (spar_ctor_uses_default_graph ($4))
-		  $<tree>$ = spar_default_sparul_target (sparp_arg, "triple constructor in DELETE {...} without GRAPH {...}");
+		  sparp_arg->sparp_env->spare_need_for_default_sparul_target = "triple constructor in DELETE {...} without GRAPH {...}";
 		else if ((NULL != $5) && spar_ctor_uses_default_graph ($5))
-		  $<tree>$ = spar_default_sparul_target (sparp_arg, "triple constructor in INSERT {...} without GRAPH {...}");
-		else
-		  $<tree>$ = NULL; }
+		  sparp_arg->sparp_env->spare_need_for_default_sparul_target = "triple constructor in INSERT {...} without GRAPH {...}"; }
 	    spar_action_solution {
 		if (NULL != $5)
 		  {
 		    $$ = spar_make_top_or_special_case_from_wm (sparp_arg, MODIFY_L, NULL, $7 );
-		    spar_compose_retvals_of_modify (sparp_arg, $$, $<tree>6, $4, $5); }
+		    spar_compose_retvals_of_modify (sparp_arg, $$, sparp_arg->sparp_env->spare_found_default_sparul_target, $4, $5); }
 		else
 		  {
 		    $$ = spar_make_top_or_special_case_from_wm (sparp_arg, DELETE_L, NULL, $7 );
-		    spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $<tree>6, $4); } }
+		    spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, sparp_arg->sparp_env->spare_found_default_sparul_target, $4); } }
 	| DELETE_L WHERE_L _LBRA {
 		sparp_arg->sparp_allow_aggregates_in_expn &= ~1;
 		sparp_arg->sparp_in_ctor_from_where = 1;
@@ -2732,12 +2728,10 @@ spar_sparul11_insert	/* [DML]*	Insert11Action	 ::=  */
 		t_set_push (&(sparp_arg->sparp_env->spare_propvar_sets), NULL); }
 	    spar_ctor_template_nolbra {
 		if (spar_ctor_uses_default_graph ($4))
-		  $<tree>$ = spar_default_sparul_target (sparp_arg, "triple constructor in INSERT {...} without GRAPH {...}");
-		else
-		  $<tree>$ = NULL; }
+		  sparp_arg->sparp_env->spare_need_for_default_sparul_target = "triple constructor in INSERT {...} without GRAPH {...}"; }
 	    spar_action_solution {
 		$$ = spar_make_top_or_special_case_from_wm (sparp_arg, INSERT_L, NULL, $6 );
-		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, $<tree>5, $4); }
+		spar_compose_retvals_of_insert_or_delete (sparp_arg, $$, sparp_arg->sparp_env->spare_found_default_sparul_target, $4); }
 	;
 
 spar_sparul11_insert_opt

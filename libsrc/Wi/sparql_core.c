@@ -4960,6 +4960,10 @@ SPART *
 spar_make_fake_action_solution (sparp_t *sparp)
 {
   SPART * fake_gp;
+/* The need for fake action solution means no USING and WHERE clauses, hence the code that would be otherwise called at the very beginning of WHERE clause */
+  if (NULL != sparp->sparp_env->spare_need_for_default_sparul_target)
+    sparp->sparp_env->spare_found_default_sparul_target = spar_default_sparul_target (sparp, sparp->sparp_env->spare_need_for_default_sparul_target);
+/* Now the fake gp of subtype WHERE_L */
   spar_gp_init (sparp, WHERE_L);
   fake_gp = spar_gp_finalize (sparp, NULL);
   return spartlist (sparp, 8, SPAR_WHERE_MODIFS,

@@ -323,6 +323,8 @@ typedef struct sparp_env_s
   int			spare_disable_output_formatting;	/*!< Indicates that sg_output_xxx_format_name are all ignored, because the query is intermediate in iterative get with "seealso" */
   dk_set_t		spare_propvar_sets;		/*!< Stack of sets of propvars that should form triples */
   caddr_t		spare_sql_refresh_free_text;	/*!< Flags if there's any use of bif:contains or the like, so 'sql:refresh-free-text' 'yes' option should be added to any vector of sponge options. This is a _boxed_ integer even if it's zero; that is used to store a reference to a changing integer in a compiled tree. */
+  SPART *               spare_found_default_sparul_target;	/*!< If \c spare_need_for_default_sparul_target is non-NULL, this remembers the result of spare_default_sparul_target() at the end of list of USING clauses. It can also be set after INSERT IN graph_precode, DELETE FROM graph_precode or MODIFY graph_precode */
+  const char *		spare_need_for_default_sparul_target;	/*!< When non-NULL, a single default graph should be provided by single USING, WITH or fallback; missing all three means the error */
 } sparp_env_t;
 
 #define SPARP_EBV_SQL		0	/*!< Cast to boolean implicitly, i.e. as that will happen in SQL */
