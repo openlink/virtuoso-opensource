@@ -671,12 +671,12 @@ sqlc_coalesce_exp (sql_comp_t * sc, ST * tree, dk_set_t * code)
     {
       jmp_label_t ok = sqlc_new_label (sc);
       jmp_label_t next = sqlc_new_label (sc);
-      if (1 == inx)
-	sqlg_cond_start (sc);
       ST *cond = exps[inx];
       state_slot_t *cres;
       DEF_PRIVATE_ELTS;
 
+      if (1 == inx)
+	sqlg_cond_start (sc);
       SET_PRIVATE_ELTS (sc, dfe, inx);
       GENERATE_CONTROL_EXP (sc, dfe, inx, code);
       cres = scalar_exp_generate (sc, cond, code);
