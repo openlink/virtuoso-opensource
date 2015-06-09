@@ -1973,15 +1973,15 @@ sparp_values_equal (sparp_t *sparp, ccaddr_t first, ccaddr_t first_dt, ccaddr_t 
         {
 #ifndef NDEBUG
           if ((NULL != first_dt) || (NULL != first_lang))
-            spar_internal_error (sparp, "sparp_" "values_equal(): first is a uname with non-NULL dt/lang");
+            spar_internal_error (sparp, "sparp_" "values_equal(): first is a UNAME with non-NULL dt/lang");
 #endif
           first_is_iri = 1;
         }
       else
         {
 #ifndef NDEBUG
-          if ((DV_STRING != DV_TYPE_OF (first_val)) && ((NULL != first_dt) || (NULL != first_lang)))
-            spar_internal_error (sparp, "sparp_" "values_equal(): first is a non-string with non-NULL dt/lang");
+          if ((DV_STRING != DV_TYPE_OF (first_val)) && (NULL != first_lang))
+            spar_internal_error (sparp, "sparp_" "values_equal(): first is a non-string with non-NULL lang");
 #endif
           first_is_iri = 0;
         }
@@ -2023,22 +2023,27 @@ sparp_values_equal (sparp_t *sparp, ccaddr_t first, ccaddr_t first_dt, ccaddr_t 
       else
         {
 #ifndef NDEBUG
-          if ((DV_STRING != DV_TYPE_OF (second_val)) && ((NULL != second_dt) || (NULL != second_lang)))
-            spar_internal_error (sparp, "sparp_" "values_equal(): second is a non-string with non-NULL dt/lang");
+          if ((DV_STRING != DV_TYPE_OF (second_val)) && (NULL != second_lang))
+            spar_internal_error (sparp, "sparp_" "values_equal(): second is a non-string with non-NULL lang");
 #endif
           second_is_iri = 0;
         }
     }
-
-
   if (first_is_iri != second_is_iri)
     return 0;
   if (first_is_iri)
     return first_val == second_val ? 1 : 0;
-  if (first_dt != second_dt)
-    return 0;
   if (first_lang != second_lang)
     return 0;
+  if (first_dt != second_dt)
+    {
+      if ((NULL == first_dt) && (DV_STRING != DV_TYPE_OF (first_val)))
+        first_dt = xsd_type_of_box ((caddr_t)first_val);
+      if ((NULL == second_dt) && (DV_STRING != DV_TYPE_OF (second_val)))
+        second_dt = xsd_type_of_box ((caddr_t)second_val);
+      if (first_dt != second_dt)
+        return 0;
+    }
   if (DVC_MATCH != cmp_boxes_safe (first_val, second_val, NULL, NULL))
     return 0;
   return 1;
@@ -2529,6 +2534,7 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
             }
           else
             {
+              dest->rvrFixedValue = value;
               dest->rvrDatatype = xsd_type_of_box ((caddr_t)value);
               if (uname_xmlschema_ns_uri_hash_string == dest->rvrDatatype)
                 dest->rvrDatatype = NULL;
