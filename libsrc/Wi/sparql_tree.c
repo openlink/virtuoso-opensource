@@ -2534,7 +2534,7 @@ sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datat
             }
           else
             {
-              dest->rvrFixedValue = value;
+              dest->rvrFixedValue = (caddr_t)value;
               dest->rvrDatatype = xsd_type_of_box ((caddr_t)value);
               if (uname_xmlschema_ns_uri_hash_string == dest->rvrDatatype)
                 dest->rvrDatatype = NULL;
