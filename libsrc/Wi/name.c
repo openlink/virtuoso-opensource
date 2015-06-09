@@ -153,7 +153,7 @@ sqlc_col_table_1 (sql_comp_t * sc, ST * col_ref, dbe_column_t ** col_ret,
       if (ct_found && n_found == 1 && ct_col_ref (sc, ct_found, col_ref, col_ret, crr_ret, err_if_not))
 	return ct_found;
 
-      prefix_table = sch_name_to_table (sc->sc_cc->cc_schema,
+      prefix_table = sch_name_to_table (wi_inst.wi_schema,
 	  col_ref->_.col_ref.prefix);
       DO_BOX (comp_table_t *, ct, inx, sc->sc_tables)
       {

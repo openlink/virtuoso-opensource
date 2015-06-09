@@ -1530,7 +1530,6 @@ typedef struct comp_context_s
     dk_set_t		cc_state_slots;
     id_hash_t *		cc_slots;
     query_t *		cc_query;
-    dbe_schema_t *	cc_schema;
     caddr_t		cc_error;
     struct comp_context_s *cc_super_cc;
     dk_hash_t * 	cc_keep_ssl;
@@ -1540,9 +1539,6 @@ typedef struct comp_context_s
   memset (&cc, 0, sizeof (cc)); \
   cc.cc_query = qr; \
   cc.cc_instance_fill = QI_FIRST_FREE; \
-  cc.cc_schema = wi_inst.wi_schema; \
-  if (cli->cli_new_schema) \
-    cc.cc_schema = cli->cli_new_schema; \
   cc.cc_super_cc = &cc;
 
 

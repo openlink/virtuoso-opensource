@@ -2598,7 +2598,7 @@ sqlc_udt_is_udt_call (sql_comp_t * sc, char *name, dk_set_t * code,
 
   if (fun_udt_name)
     {
-      udt = sch_name_to_type (sc->sc_cc->cc_schema, fun_udt_name);
+      udt = sch_name_to_type (wi_inst.wi_schema, fun_udt_name);
       if (!udt)
 	sqlc_new_error (sc->sc_cc, "37000", "UD040",
 	    "User defined type %.200s not found in member observer (... AS ...) call",
@@ -2645,7 +2645,7 @@ sqlc_udt_is_udt_call (sql_comp_t * sc, char *name, dk_set_t * code,
 	}
       dk_free_box (fld_inx_box);
     }
-  else if (NULL != (udt = sch_name_to_type (sc->sc_cc->cc_schema, name)) && !udt->scl_migrate_to)
+  else if (NULL != (udt = sch_name_to_type (wi_inst.wi_schema, name)) && !udt->scl_migrate_to)
     {				/* constructor */
       state_slot_t **bif_parms = (state_slot_t **) dk_alloc_box (box_length (params) + 2 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
       sql_method_t *best_method = NULL;
@@ -2791,7 +2791,7 @@ sqlc_udt_static_method_call (sql_comp_t * sc, char *name, dk_set_t * code,
     state_slot_t * ret, state_slot_t ** params, caddr_t ret_param,
     caddr_t type_name)
 {
-  sql_class_t *udt = sch_name_to_type (sc->sc_cc->cc_schema, type_name);
+  sql_class_t *udt = sch_name_to_type (wi_inst.wi_schema, type_name);
   int best_mtd_inx = -1;
   caddr_t err = NULL;
   state_slot_t **bif_params;
@@ -2865,7 +2865,7 @@ sqlc_udt_dynamic_method_call (sql_comp_t * sc, char *name, dk_set_t * code,
     }
   else
     {
-      sql_class_t *udt_spec = sch_name_to_type (sc->sc_cc->cc_schema, type_name);
+      sql_class_t *udt_spec = sch_name_to_type (wi_inst.wi_schema, type_name);
       if (NULL == udt_spec)
 	{
 	  err =
@@ -3221,7 +3221,7 @@ sqlp_udt_method_decl (int specific, int mtd_type,
     caddr_t mtd_name, caddr_t params_list, caddr_t opt_ret,
     caddr_t udt_name, caddr_t body, caddr_t alt_ret_type)
 {
-  dbe_schema_t *sc = top_sc->sc_cc->cc_schema;
+  dbe_schema_t *sc = wi_inst.wi_schema;
   sql_class_t *udt = sch_name_to_type (sc, udt_name);
   sql_method_t *mtd_found = NULL;
   int mtd_inx_found = 0;
@@ -3377,10 +3377,10 @@ sqlc_udt_store_method_def (sql_comp_t *sc, client_connection_t *cli, int cr_type
 
   if (mtd_id)
     {
-      udt = sch_id_to_type (sc->sc_cc->cc_schema, mtd_id);
+      udt = sch_id_to_type (wi_inst.wi_schema, mtd_id);
     }
   else
-      udt = sch_name_to_type (sc->sc_cc->cc_schema, mtd_name);
+      udt = sch_name_to_type (wi_inst.wi_schema, mtd_name);
   if (!udt || !udt->scl_method_map || mtd_index < 0 || mtd_index > UDT_N_METHODS (udt))
     {
       if (err)

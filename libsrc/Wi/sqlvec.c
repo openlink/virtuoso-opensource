@@ -1933,7 +1933,7 @@ sqlg_vec_del (sql_comp_t * sc, delete_node_t * del)
   data_source_t *qn = sc->sc_vec_qf ? sc->sc_vec_qf->qf_head_node : sc->sc_cc->cc_query->qr_head_node;
   int is_first = 1;
   table_source_t *last_no_test = NULL;
-  if (sch_view_def (sc->sc_cc->cc_schema, del->del_table->tb_name))
+  if (sch_view_def (wi_inst.wi_schema, del->del_table->tb_name))
     {
       del->del_is_view = 1;
       return;
@@ -2138,8 +2138,7 @@ sqlg_vec_upd_ins (sql_comp_t * sc, update_node_t * upd)
 	n_fixed = BOX_ELEMENTS (upd->upd_fixed_cl);
       DO_BOX_0 (state_slot_t *, ssl, inx, upd->upd_quick_values)
       {
-	dbe_column_t *col =
-	    sch_id_to_column (wi_inst.wi_schema,
+	dbe_column_t *col = sch_id_to_column (wi_inst.wi_schema,
 	    inx < n_fixed ? upd->upd_fixed_cl[inx]->cl_col_id : upd->upd_var_cl[inx - n_fixed]->cl_col_id);
 	state_slot_t *copy = gethash ((void *) col, copies);
 	if (copy)
@@ -2268,7 +2267,7 @@ sqlg_vec_upd (sql_comp_t * sc, update_node_t * upd)
   data_source_t *qn = sc->sc_vec_qf ? sc->sc_vec_qf->qf_head_node : sc->sc_cc->cc_query->qr_head_node;
   int is_first = 1;
   table_source_t *last_no_test = NULL;
-  if (sch_view_def (sc->sc_cc->cc_schema, upd->upd_table->tb_name))
+  if (sch_view_def (wi_inst.wi_schema, upd->upd_table->tb_name))
     {
       upd->upd_is_view = 1;
       return;

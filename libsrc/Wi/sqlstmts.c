@@ -605,7 +605,7 @@ sqlc_stmt_nth_col_type (sql_comp_t * sc, dbe_table_t * tb, ST * tree, int nth)
 	  tb_name = tree->_.update_pos.table->_.table.name;
 	  break;
 	}
-      tb = sch_name_to_table (sc->sc_cc->cc_schema, tb_name);
+      tb = sch_name_to_table (wi_inst.wi_schema, tb_name);
       if (!tb)
 	SQL_GPF_T1 (sc->sc_cc, "no table, although should already be checked");
     }
@@ -646,7 +646,7 @@ sqlc_ins_param_types (sql_comp_t * sc, insert_node_t * ins)
   DO_SET (state_slot_t *, ssl,  &ins->ins_values)
     {
       state_slot_t lsl;
-      dbe_column_t * col = sch_id_to_col (sc->sc_cc->cc_schema,
+      dbe_column_t * col = sch_id_to_col (wi_inst.wi_schema,
 	  ins->ins_col_ids[inx]);
       memset (&lsl, 0, sizeof (state_slot_t));
       lsl.ssl_name = col->col_name;
@@ -843,7 +843,7 @@ sqlc_insert (sql_comp_t * sc, ST * tree)
   caddr_t * opts;
   ST * tb_ref = tree->_.insert.table;
   ST * vd;
-  dbe_table_t *tb = sch_name_to_table (sc->sc_cc->cc_schema,
+  dbe_table_t *tb = sch_name_to_table (wi_inst.wi_schema,
       tb_ref->_.table.name);
   sqlc_table_used (sc, tb);
   if (tb && find_remote_table (tb->tb_name, 0))
@@ -870,7 +870,7 @@ sqlc_insert (sql_comp_t * sc, ST * tree)
 
   if (!tree->_.insert.cols)
     tree->_.insert.cols = (ST **) ins_tb_all_cols (tb);
-  if ((vd = (ST *)sch_view_def (sc->sc_cc->cc_schema, tb->tb_name)) &&
+  if ((vd = (ST *)sch_view_def (wi_inst.wi_schema, tb->tb_name)) &&
       !tb_is_trig_at (tb, TRIG_INSERT, TRIG_INSTEAD, NULL))
     {
       sqlc_insert_view (sc, vd, tree, tb);
@@ -1107,7 +1107,7 @@ upd_optimize (sql_comp_t *sc, update_node_t * upd)
 {
   dk_set_t fixed_cls = NULL, fixed_vals = NULL;
   dk_set_t var_cls = NULL, var_vals = NULL;
-  dbe_schema_t * sch = sc->sc_cc->cc_schema;
+  dbe_schema_t * sch = wi_inst.wi_schema;
   dbe_key_t *key = upd->upd_table->tb_primary_key;
   /*dbe_column_t * col;*/
   int inx = 0;
@@ -1238,7 +1238,7 @@ sqlc_upd_param_types (sql_comp_t * sc, update_node_t * upd)
     {
       state_slot_t * ssl = upd->upd_values[inx];
       state_slot_t lsl;
-      dbe_column_t * col = sch_id_to_col (sc->sc_cc->cc_schema, col_id);
+      dbe_column_t * col = sch_id_to_col (wi_inst.wi_schema, col_id);
       memset (&lsl, 0, sizeof (state_slot_t));
       lsl.ssl_name = col->col_name;
       lsl.ssl_column = col;
@@ -1296,7 +1296,7 @@ ST *
 sqlc_update_cl_pos (sql_comp_t * sc, ST * tree, subq_compilation_t * sqc)
 {
   ST * texp, * stree;
-  dbe_table_t *tb = sch_name_to_table (sc->sc_cc->cc_schema,
+  dbe_table_t *tb = sch_name_to_table (wi_inst.wi_schema,
 				       tree->_.update_pos.table->_.table.name);
 
   if (!sqc)
@@ -1319,7 +1319,7 @@ sqlc_update_cl_pos (sql_comp_t * sc, ST * tree, subq_compilation_t * sqc)
 void
 sqlc_update_pos (sql_comp_t * sc, ST * tree, subq_compilation_t * cursor_sqc, ST ** src_ret)
 {
-  dbe_table_t *tb = sch_name_to_table (sc->sc_cc->cc_schema,
+  dbe_table_t *tb = sch_name_to_table (wi_inst.wi_schema,
       tree->_.update_pos.table->_.table.name);
   sqlc_table_used (sc, tb);
   if (tb && (tb->tb_primary_key->key_is_col || find_remote_table (tb->tb_name, 0) || (tb->tb_primary_key->key_partition && !sqlo_opt_value (tree->_.update_pos.opts, OPT_NO_CLUSTER))))
@@ -1467,13 +1467,13 @@ sqlc_update_searched (sql_comp_t * sc, ST * tree)
   int trig_event = sqlo_opt_value (opts, OPT_NO_TRIGGER) ? -1 : TRIG_UPDATE;
   int inx, sec_checked, env_done = 0;
   ST * tb_ref = tree->_.update_src.table;
-  dbe_table_t *tb = sch_name_to_table (sc->sc_cc->cc_schema,
+  dbe_table_t *tb = sch_name_to_table (wi_inst.wi_schema,
       tree->_.update_src.table->_.table.name);
   sqlc_table_used (sc, tb);
   if (tb && find_remote_table (tb->tb_name, 0))
     {
     }
-  else if (tb && (vd = (ST *) sch_view_def (sc->sc_cc->cc_schema, tb->tb_name)) &&
+  else if (tb && (vd = (ST *) sch_view_def (wi_inst.wi_schema, tb->tb_name)) &&
       !tb_is_trig_at (tb, TRIG_UPDATE, TRIG_INSTEAD, NULL))
     {
       sqlc_update_view (sc, vd, tree, tb);
@@ -1591,7 +1591,7 @@ ST *
 sqlc_delete_cl_pos (sql_comp_t * sc, ST * tree, subq_compilation_t * sqc)
 {
   ST * texp, * stree;
-  dbe_table_t *tb = sch_name_to_table (sc->sc_cc->cc_schema,
+  dbe_table_t *tb = sch_name_to_table (wi_inst.wi_schema,
 				       tree->_.delete_pos.table->_.table.name);
   if (!sqc)
     sqlc_new_error (sc->sc_cc, "37000", "CL...", "current of ref allowed only in PL with partitioned tables");
@@ -1609,7 +1609,7 @@ sqlc_delete_cl_pos (sql_comp_t * sc, ST * tree, subq_compilation_t * sqc)
 void
 sqlc_delete_pos (sql_comp_t * sc, ST * tree, subq_compilation_t * cursor_sqc, ST ** src_ret)
 {
-  dbe_table_t *tb = sch_name_to_table (sc->sc_cc->cc_schema,
+  dbe_table_t *tb = sch_name_to_table (wi_inst.wi_schema,
       tree->_.delete_pos.table->_.table.name);
   sqlc_table_used (sc, tb);
   if (tb && (tb->tb_primary_key->key_is_col || find_remote_table (tb->tb_name, 0) || (tb->tb_primary_key->key_partition && !sqlo_opt_value (tree->_.delete_pos.opts, OPT_NO_CLUSTER))))
@@ -1674,7 +1674,7 @@ sqlc_delete_searched (sql_comp_t * sc, ST * tree)
   ST *vd;
   ST *from = tree->_.delete_src.table_exp->_.table_exp.from[0];
   caddr_t * opts = tree->_.delete_src.table_exp->_.table_exp.opts;
-  dbe_table_t *tb = sch_name_to_table (sc->sc_cc->cc_schema,
+  dbe_table_t *tb = sch_name_to_table (wi_inst.wi_schema,
       from->_.table.name);
   int key_trig_event = sqlo_opt_value (opts, OPT_TRIGGER) ? TRIG_DELETE : -1, env_done = 0;
   sqlc_table_used (sc, tb);
@@ -1686,7 +1686,7 @@ sqlc_delete_searched (sql_comp_t * sc, ST * tree)
   if (tb && find_remote_table (tb->tb_name, 0))
     {
     }
-  else if (tb && (vd = (ST *) sch_view_def (sc->sc_cc->cc_schema, tb->tb_name)) &&
+  else if (tb && (vd = (ST *) sch_view_def (wi_inst.wi_schema, tb->tb_name)) &&
       !tb_is_trig_at (tb, TRIG_DELETE, TRIG_INSTEAD, NULL))
     {
       sqlc_delete_view (sc, vd, tree);
@@ -1868,13 +1868,13 @@ sqlc_sch_list (sql_comp_t * sc, ST * tree)
       /* compile the view just for the sake of checking */
       if (!sc->sc_store_procs)
 	{
-	  dbe_table_t *tb = sch_name_to_table (sc->sc_cc->cc_schema,
+	  dbe_table_t *tb = sch_name_to_table (wi_inst.wi_schema,
 	      elt->_.view_def.name);
 	  if (!tb)
 	    sqlc_new_error (sc->sc_cc, "42S02", "SQ112",
 		"View without table %s", elt->_.view_def.name);
           sqlo_calculate_subq_view_scope (sc, &elt->_.view_def.exp);
-	      sch_set_view_def (sc->sc_cc->cc_schema, elt->_.view_def.name,
+	      sch_set_view_def (wi_inst.wi_schema, elt->_.view_def.name,
 	      (caddr_t) elt->_.view_def.exp);
 	  return;
 	}

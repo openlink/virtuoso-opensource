@@ -4129,7 +4129,7 @@ sqlg_make_sort_nodes (sqlo_t * so, data_source_t ** head, ST ** order_by,
 	    }
 	  aggregate = sqlg_dfe_ssl (so, sqlo_df (so, fref));
 		  if (AMMSC_USER != fref->_.fn_ref.fn_code)
-	  sqlg_find_aggregate_sqt (sc->sc_cc->cc_schema, &(arg->ssl_sqt), fref, &(aggregate->ssl_sqt));
+		sqlg_find_aggregate_sqt (wi_inst.wi_schema, &(arg->ssl_sqt), fref, &(aggregate->ssl_sqt));
 		  else
 		    aggregate->ssl_sqt.sqt_dtp = DV_ARRAY_OF_POINTER;
 	  if (!dk_set_member (out_slots, aggregate))
@@ -5947,7 +5947,6 @@ sqlg_top_1 (sqlo_t * so, df_elt_t * dfe, state_slot_t ***sel_out_ret)
   comp_context_t * outer_cc = so->so_sc->sc_cc;
   comp_context_t inner_cc;
   memset (&inner_cc, 0, sizeof (inner_cc));
-  inner_cc.cc_schema = outer_cc->cc_schema;
   inner_cc.cc_super_cc = outer_cc->cc_super_cc;
   inner_cc.cc_query = outer_cc->cc_query;
   so->so_sc->sc_cc = &inner_cc;

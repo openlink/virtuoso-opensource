@@ -326,14 +326,14 @@ sqlc_call_exp (sql_comp_t * sc, dk_set_t * code, state_slot_t * ret, ST * tree)
 	  sch_split_name (cli_qual (sqlc_client ()),
 	      sc->sc_super->sc_cc->cc_query->qr_proc_name,
               rq, ro, rn);
-	  full_name = sch_full_proc_name_1 (sc->sc_cc->cc_schema, fun_name,
+	  full_name = sch_full_proc_name_1 (wi_inst.wi_schema, fun_name,
 	      cli_qual (sqlc_client ()), CLI_OWNER (sqlc_client ()), rn);
 	}
       else
-	full_name = sch_full_proc_name (sc->sc_cc->cc_schema, fun_name,
+	full_name = sch_full_proc_name (wi_inst.wi_schema, fun_name,
 	    cli_qual (sqlc_client ()), CLI_OWNER (sqlc_client ()));
       if (full_name)
-	proc = sch_proc_def (sc->sc_cc->cc_schema, full_name);
+	proc = sch_proc_def (wi_inst.wi_schema, full_name);
     }
 
   if (!fun_udt_name &&
@@ -1415,7 +1415,7 @@ cv_call_set_type (sql_comp_t * sc, instruction_t * ins, query_t *qr_found)
     }
   else
     {
-      query_t *qr = qr_found ? qr_found : sch_proc_def (sc->sc_cc->cc_schema, ins->_.call.proc);
+      query_t *qr = qr_found ? qr_found : sch_proc_def (wi_inst.wi_schema, ins->_.call.proc);
       if (!qr || IS_REMOTE_ROUTINE_QR (qr) || !qr->qr_proc_ret_type)
 	goto generic_box;
       else

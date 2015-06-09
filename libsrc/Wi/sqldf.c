@@ -7699,8 +7699,8 @@ sqlp_collect_from_pkeys (sqlo_t * so, ST* tree)
       if (!ST_P (tb, TABLE_DOTTED))
 	return NULL;
 
-      tb_found = sch_name_to_table (so->so_sc->sc_cc->cc_schema, tb->_.table.name);
-      view = (ST*) sch_view_def (so->so_sc->sc_cc->cc_schema, tb_found->tb_name);
+      tb_found = sch_name_to_table (wi_inst.wi_schema, tb->_.table.name);
+      view = (ST*) sch_view_def (wi_inst.wi_schema, tb_found->tb_name);
 
       if (view)
 	return NULL;
