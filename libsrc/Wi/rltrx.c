@@ -228,7 +228,7 @@ itc_split_lock (it_cursor_t * itc, buffer_desc_t * left, buffer_desc_t * extend)
 
       TC (tc_pl_split);
     }
-  else if (!itc->itc_non_txn_insert)
+  else if (!itc->itc_non_txn_insert && itc->itc_ltrx)
     lt_add_pl (itc->itc_ltrx, extend_pl, 1);
 
   /* must add after PL_IS_PAGE is set. If row level, extend_pl
