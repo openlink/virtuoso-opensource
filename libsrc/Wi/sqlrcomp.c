@@ -1133,6 +1133,11 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
       sc->sc_exp_sqt.sqt_dtp = dtp;
       break;
 
+    case DV_SINGLE_FLOAT:
+      sprintf_more (text, tlen, fill, "%lg", unbox_float ((caddr_t) exp));
+      sc->sc_exp_sqt.sqt_dtp = dtp;
+      break;
+
     case DV_NUMERIC:
       numeric_to_string ((numeric_t) exp, text + *fill, tlen - *fill);
       *fill += (int) strlen (text + *fill);
