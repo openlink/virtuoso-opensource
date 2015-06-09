@@ -2620,6 +2620,8 @@ sqlg_pred_1 (sqlo_t * so, df_elt_t ** body, dk_set_t * code, int succ, int fail,
 	    }
 	  else
 	    {
+	      if (inx == 2)
+		sqlg_cond_start (sc);
 	      sqlg_pred_1 (so, (df_elt_t **) body[inx], code, succ, fail, unk);
 	    }
 	}
@@ -2640,7 +2642,11 @@ sqlg_pred_1 (sqlo_t * so, df_elt_t ** body, dk_set_t * code, int succ, int fail,
 	      cv_label (code, temp_succ);
 	    }
 	  else
-	    sqlg_pred_1 (so, (df_elt_t **) body[inx], code, succ, fail, unk);
+	    {
+	      if (2 == inx)
+		sqlg_cond_start (sc);
+	      sqlg_pred_1 (so, (df_elt_t **) body[inx], code, succ, fail, unk);
+	    }
 	}
       if (inx > 1)
 	sqlg_cond_end (sc);
