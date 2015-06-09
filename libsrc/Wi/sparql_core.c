@@ -1047,11 +1047,18 @@ sparp_define (sparp_t *sparp, caddr_t param, ptrlong value_lexem_type, caddr_t v
           sparp->sparp_env->spare_src.ssrc_freeze_status |= SPARP_SSRC_FROZEN_BY_PROTOCOL | SPARP_SSRC_FROZEN_BY_WITH;
           return;
         }
+      if (!strcmp (param, "input:target-fallback-graph-uri"))
+        {
+          caddr_t iri = ('\0' == value[0]) ? uname_virtrdf_ns_uri_DefaultSparul11Target : t_box_dv_uname_string (value);
+          SPART *val = spartlist (sparp, 2, SPAR_QNAME, iri);
+          sparp->sparp_env->spare_src.ssrc_fallback_target = val;
+          return;
+        }
       if (!strcmp (param, "input:with-fallback-graph-uri"))
         {
           caddr_t iri = ('\0' == value[0]) ? uname_virtrdf_ns_uri_DefaultSparul11Target : t_box_dv_uname_string (value);
           SPART *val = spartlist (sparp, 2, SPAR_QNAME, iri);
-          sparp->sparp_env->spare_src.ssrc_graph_set_by_fallback_with = val;
+          sparp->sparp_env->spare_src.ssrc_fallback_target = sparp->sparp_env->spare_src.ssrc_fallback_default_graph = val;
           return;
         }
       if (!strcmp (param, "input:freeze"))
@@ -4184,27 +4191,48 @@ plain_source_without_sponge:
 }
 
 SPART *
-spar_default_sparul_target (sparp_t *sparp, const char *reason_to_use)
+spar_default_sparul_target (sparp_t *sparp, const char *reason_to_use, int preliminary_call)
 {
   dk_set_t dflt_graphs = sparp->sparp_env->spare_src.ssrc_default_graphs;
   SPART *u_graph = sparp->sparp_env->spare_src.ssrc_graph_set_by_with;
   if (NULL != u_graph)
     return sparp_tree_full_copy (sparp, (SPART *)(u_graph), NULL);
-  if ((NULL == dflt_graphs) || (((SPART *)(dflt_graphs->data))->_.graph.subtype > SPART_GRAPH_MIN_NEGATION))
+  if ((NULL == dflt_graphs) || (((SPART *)(dflt_graphs->data))->_.graph.subtype != SPART_GRAPH_FROM))
     {
-      SPART *fbk_graph = sparp->sparp_env->spare_src.ssrc_graph_set_by_fallback_with;
+      SPART *fbk_graph = sparp->sparp_env->spare_src.ssrc_fallback_target;
       if (NULL != fbk_graph)
+        return sparp_tree_full_copy (sparp, (SPART *)(fbk_graph), NULL);
+      if (preliminary_call)
         {
-          sparp_make_and_push_new_graph_source (sparp, SPART_GRAPH_FROM, fbk_graph, NULL, SPARP_SSRC_FROZEN_BY_PROTOCOL);
-          return sparp_tree_full_copy (sparp, (SPART *)(fbk_graph), NULL);
+          sparp->sparp_env->spare_need_for_default_sparul_target = reason_to_use;
+          return NULL;
         }
-      spar_error (sparp, "No default graph specified in the preamble, but it is needed for %.200s", reason_to_use);
+      fbk_graph = sparp->sparp_env->spare_src.ssrc_fallback_default_graph;
+      if (NULL == fbk_graph)
+        spar_error (sparp, "No plain default graph specified in the preamble, but it is needed for %.200s", reason_to_use);
+      return sparp_tree_full_copy (sparp, (SPART *)(fbk_graph), NULL);
     }
   if ((NULL != dflt_graphs->next) && (((SPART *)(dflt_graphs->next->data))->_.graph.subtype < SPART_GRAPH_MIN_NEGATION))
     spar_error (sparp, "More than one default graph specified in the preamble; single default graph is needed for %.200s", reason_to_use);
   if (SPART_GRAPH_GROUP == ((SPART *)(dflt_graphs->data))->_.graph.subtype)
     spar_error (sparp, "The IRI in preamble refers to default graph group, not to a single default graph; the default graph is needed for %.200s", reason_to_use);
   return sparp_tree_full_copy (sparp, (SPART *)(dflt_graphs->data), NULL);
+}
+
+void
+spar_apply_fallback_default_graph (sparp_t *sparp, int target_fallback_first)
+{
+  dk_set_t dflt_graphs = sparp->sparp_env->spare_src.ssrc_default_graphs;
+  if ((NULL == dflt_graphs) || (((SPART *)(dflt_graphs->data))->_.graph.subtype > SPART_GRAPH_MIN_NEGATION))
+    {
+      SPART *fbk_graph = NULL;
+      if (target_fallback_first)
+        fbk_graph = sparp->sparp_env->spare_src.ssrc_fallback_target;
+      if (NULL == fbk_graph)
+        fbk_graph = sparp->sparp_env->spare_src.ssrc_fallback_default_graph;
+      if (NULL != fbk_graph)
+        sparp_make_and_push_new_graph_source (sparp, SPART_GRAPH_FROM, fbk_graph, NULL, SPARP_SSRC_FROZEN_BY_PROTOCOL);
+    }
 }
 
 SPART *
@@ -4808,6 +4836,16 @@ SPART *spar_make_graph_precode_for_clear (sparp_t *sparp, SPART *graph_precode, 
           t_set_push (&graphs, spar_simplify_graph_to_patch (sparp, src));
         }
       END_DO_SET ();
+      if (NULL == graphs)
+        {
+          SPART *fbk_graph = sparp->sparp_env->spare_src.ssrc_fallback_target;
+          if (NULL == fbk_graph)
+            fbk_graph = sparp->sparp_env->spare_src.ssrc_fallback_default_graph;
+          if (NULL != fbk_graph)
+            t_set_push (&graphs, spar_simplify_graph_to_patch (sparp, fbk_graph));
+        }
+      if ((NULL == graphs) && (DEFAULT_L == ((ptrlong)graph_precode)))
+        spar_error (sparp, "SPARQL 1.1 CLEAR DEFAULT operator requires declaration of a plain default graph");
     }
   if (clear_named)
     {
@@ -4871,11 +4909,14 @@ spar_make_sparul_copymoveadd (sparp_t *sparp, ptrlong opcode, SPART *from_graph_
       dk_set_t graphs = sparp->sparp_env->spare_src.ssrc_default_graphs;
       if ((NULL == graphs) || (SPART_GRAPH_FROM != ((SPART *)(graphs->data))->_.graph.subtype))
         {
-          SPART *fbk_graph = sparp->sparp_env->spare_src.ssrc_graph_set_by_fallback_with;
-          if (NULL != fbk_graph)
-            single_default = sparp_tree_full_copy (sparp, (SPART *)(fbk_graph), NULL);
-          else
+          SPART *fbk_graph = NULL;
+          if (DEFAULT_L == (ptrlong)(to_graph_precode))
+            fbk_graph = sparp->sparp_env->spare_src.ssrc_fallback_target;
+          if (NULL == fbk_graph)
+            fbk_graph = sparp->sparp_env->spare_src.ssrc_fallback_default_graph;
+          if (NULL == fbk_graph)
             spar_error (sparp, "SPARQL 1.1 %s...DEFAULT operator requires declaration of a plain default graph", opname);
+          single_default = sparp_tree_full_copy (sparp, (SPART *)(fbk_graph), NULL);
         }
       else
         {
@@ -4962,7 +5003,7 @@ spar_make_fake_action_solution (sparp_t *sparp)
   SPART * fake_gp;
 /* The need for fake action solution means no USING and WHERE clauses, hence the code that would be otherwise called at the very beginning of WHERE clause */
   if (NULL != sparp->sparp_env->spare_need_for_default_sparul_target)
-    sparp->sparp_env->spare_found_default_sparul_target = spar_default_sparul_target (sparp, sparp->sparp_env->spare_need_for_default_sparul_target);
+    sparp->sparp_env->spare_found_default_sparul_target = spar_default_sparul_target (sparp, sparp->sparp_env->spare_need_for_default_sparul_target, 0);
 /* Now the fake gp of subtype WHERE_L */
   spar_gp_init (sparp, WHERE_L);
   fake_gp = spar_gp_finalize (sparp, NULL);
