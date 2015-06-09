@@ -2613,6 +2613,8 @@ sqlg_pred_1 (sqlo_t * so, df_elt_t ** body, dk_set_t * code, int succ, int fail,
 	  if (inx != n_terms - 1)
 	    {
 	      jmp_label_t temp_fail = sqlc_new_label (sc);
+	      if (inx == 2)
+		sqlg_cond_start (sc);
 	      sqlg_pred_1 (so, (df_elt_t **) body[inx], code, succ, temp_fail, temp_fail);
 	      cv_label (code, temp_fail);
 	    }
@@ -2621,6 +2623,8 @@ sqlg_pred_1 (sqlo_t * so, df_elt_t ** body, dk_set_t * code, int succ, int fail,
 	      sqlg_pred_1 (so, (df_elt_t **) body[inx], code, succ, fail, unk);
 	    }
 	}
+      if (inx > 1)
+	sqlg_cond_end (sc);
       return;
     }
   if (BOP_AND == op)
@@ -2630,22 +2634,23 @@ sqlg_pred_1 (sqlo_t * so, df_elt_t ** body, dk_set_t * code, int succ, int fail,
 	  if (inx < n_terms - 1)
 	    {
 	      jmp_label_t temp_succ = sqlc_new_label (sc);
+	      if (2 == inx)
+		sqlg_cond_start (sc);
 	      sqlg_pred_1 (so, (df_elt_t **) body[inx], code, temp_succ, fail, unk);
 	      cv_label (code, temp_succ);
 	    }
 	  else
 	    sqlg_pred_1 (so, (df_elt_t **) body[inx], code, succ, fail, unk);
 	}
+      if (inx > 1)
+	sqlg_cond_end (sc);
       return;
     }
   else
     {
       for (inx = 1; inx < n_terms; inx++)
 	{
-	  char save = sc->sc_re_emit_code;
-	  sc->sc_re_emit_code = !sc->sc_is_first_cond;
 	  sqlg_dfe_code (so, body[inx], code, succ, fail, unk);
-	  sc->sc_re_emit_code = save;
 	}
       sc->sc_is_first_cond = 0;
     }
@@ -2768,16 +2773,8 @@ code_vec_t
 sqlg_pred_body (sqlo_t * so, df_elt_t **  body)
 {
   code_vec_t cv;
-  dk_set_t save = so->so_sc->sc_re_emitted_dfes;
-  so->so_sc->sc_re_emitted_dfes = NULL;
   so->so_sc->sc_is_first_cond = 1;
   cv = sqlg_pred_body_1 (so, body, NULL);
-  DO_SET (df_elt_t *, dfe, &so->so_sc->sc_re_emitted_dfes)
-    {
-      dfe->dfe_ssl = NULL;
-    }
-  END_DO_SET();
-  so->so_sc->sc_re_emitted_dfes = save;
   return cv;
 }
 

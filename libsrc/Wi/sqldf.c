@@ -2072,8 +2072,11 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
   locus_t * pref_loc;
   int inx;
   df_elt_t * placed = NULL;
+  int is_ro2lo = 0;
   /* check if equal exp already placed */
   locus_t * loc = super->dfe_locus;
+  if (st_is_call (dfe->dfe_tree, "__ro2lo", 1))
+    {is_ro2lo = 1; bing (); }
   if (!IS_BOX_POINTER (dfe))
     return dfe; /*true and falsecond markers */
   so->so_crossed_oby = NULL;
@@ -2093,6 +2096,8 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 	      /* even if doing a conditional exp and the subexp is already
 	       * placed in the directly preceding code sequence, return the placed one instead of repeating */
 	      placed = dfe_latest (so, 1, &dfe, 0);
+	      if (is_ro2lo && placed)
+		bing ();
 	      so->so_place_code_forr_cond = prev;
 	    }
 	  if (placed && so->so_context_dt)
