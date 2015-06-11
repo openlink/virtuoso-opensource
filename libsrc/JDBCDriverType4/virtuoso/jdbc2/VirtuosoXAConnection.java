@@ -44,11 +44,7 @@ public class VirtuosoXAConnection implements XAConnection {
         resource = new VirtuosoXAResource(pconn, server, port);
 	if (VirtuosoFuture.rpc_log != null)
 	{
-	    synchronized (VirtuosoFuture.rpc_log)
-	    {
 		VirtuosoFuture.rpc_log.println ("new VirtuosoXAConnection (connection=" + connection.hashCode() + ") :" + hashCode() + ")");
-		VirtuosoFuture.rpc_log.flush();
-	    }
 	}
     }
 
@@ -73,11 +69,7 @@ public class VirtuosoXAConnection implements XAConnection {
         throw new VirtuosoException("Connection is closed.",VirtuosoException.DISCONNECTED);
      if (VirtuosoFuture.rpc_log != null)
        {
-	 synchronized (VirtuosoFuture.rpc_log)
-	   {
 	     VirtuosoFuture.rpc_log.println ("VirtuosoXAConnection.getVirtuosoXAResource () ret " + resource.hashCode() + " :" + hashCode());
-	     VirtuosoFuture.rpc_log.flush();
-	   }
        }
       return resource;
     }

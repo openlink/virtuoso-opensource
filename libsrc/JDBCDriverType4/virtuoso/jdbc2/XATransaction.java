@@ -40,11 +40,7 @@ class XATransaction
     XATransaction (VirtuosoXid xid, int status) {
      if (VirtuosoFuture.rpc_log != null)
        {
-	 synchronized (VirtuosoFuture.rpc_log)
-	   {
 	     VirtuosoFuture.rpc_log.println ("new VirtuosoXATransaction (xid=" + xid.hashCode() + ", status=" + status + ") :" + hashCode());
-	     VirtuosoFuture.rpc_log.flush();
-	   }
        }
         this.xid = xid;
         this.status = status;
@@ -57,11 +53,7 @@ class XATransaction
     int getStatus() {
      if (VirtuosoFuture.rpc_log != null)
        {
-	 synchronized (VirtuosoFuture.rpc_log)
-	   {
 	     VirtuosoFuture.rpc_log.println ("VirtuosoXATransaction.getStatus () ret=" + status + " :" + hashCode() + ")");
-	     VirtuosoFuture.rpc_log.flush();
-	   }
        }
         return status;
     }
@@ -70,11 +62,7 @@ class XATransaction
         this.status = status;
      if (VirtuosoFuture.rpc_log != null)
        {
-	 synchronized (VirtuosoFuture.rpc_log)
-	   {
 	     VirtuosoFuture.rpc_log.println ("VirtuosoXATransaction.setStatus (status=" + status + ") :" + hashCode() + ")");
-	     VirtuosoFuture.rpc_log.flush();
-	   }
        }
     }
 
@@ -90,11 +78,7 @@ class XATransaction
 
       if (VirtuosoFuture.rpc_log != null)
         {
-	  synchronized (VirtuosoFuture.rpc_log)
-	    {
 	      VirtuosoFuture.rpc_log.println ("VirtuosoXATransaction.changeStatus (nstatus=" + nstatus + ") :" + hashCode() + ")");
-	      VirtuosoFuture.rpc_log.flush();
-	    }
         }
     }
 

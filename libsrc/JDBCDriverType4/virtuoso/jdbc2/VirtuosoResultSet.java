@@ -596,11 +596,7 @@ public class VirtuosoResultSet implements ResultSet
                case VirtuosoTypes.QA_ERROR:
 		  if (VirtuosoFuture.rpc_log != null)
 		  {
-		      synchronized (VirtuosoFuture.rpc_log)
-		      {
 			  VirtuosoFuture.rpc_log.println ("---> QA_ERROR err=[" + (String)result.elementAt(2) + "] stat=[" + (String)result.elementAt(1) + "]");
-			  VirtuosoFuture.rpc_log.flush();
-		      }
 		  }
                   isLastResult = true;
                   isLastRow = true;

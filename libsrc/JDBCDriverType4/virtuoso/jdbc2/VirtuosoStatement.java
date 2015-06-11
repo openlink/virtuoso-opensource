@@ -175,11 +175,7 @@ public class VirtuosoStatement implements Statement
            VirtuosoXAConnection xac = (VirtuosoXAConnection) connection.xa_connection;
 	   if (VirtuosoFuture.rpc_log != null)
 	   {
-	       synchronized (VirtuosoFuture.rpc_log)
-	       {
 		   VirtuosoFuture.rpc_log.println ("VirtuosoStatement.getStmtOpts () xa_res=" + xac.getVirtuosoXAResource().hashCode() + " :" + hashCode());
-		   VirtuosoFuture.rpc_log.flush();
-	       }
 	   }
            arrLong[3] = new Long(xac.getVirtuosoXAResource().txn_timeout * 1000);
        } else {
@@ -190,11 +186,7 @@ public class VirtuosoStatement implements Statement
 #endif
      if (VirtuosoFuture.rpc_log != null)
        {
-	 synchronized (VirtuosoFuture.rpc_log)
-	   {
 	     VirtuosoFuture.rpc_log.println ("VirtuosoStatement.getStmtOpts (txn_timeout=" + arrLong[3] + ") (con=" + connection.hashCode() + ") :" + hashCode());
-	     VirtuosoFuture.rpc_log.flush();
-	   }
        }
        arrLong[4] = new Long(prefetch);
        // Set the autocommit

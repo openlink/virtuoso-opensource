@@ -69,7 +69,7 @@ class VirtuosoFuture
    // Set if there has been a DA_FUTURE_ANSWER message to this future
    private boolean is_complete = false;
 
-   protected static PrintStream rpc_log = null;
+   protected static PrintWriter rpc_log = null;
    // Mutex used to access to the queue of results
    //private Semaphore mutex;
    /**

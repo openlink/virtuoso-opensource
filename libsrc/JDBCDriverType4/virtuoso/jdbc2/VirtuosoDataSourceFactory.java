@@ -73,6 +73,10 @@ public class VirtuosoDataSourceFactory implements ObjectFactory {
 
     if (ds != null) {
       StringRefAddr refS;
+
+      if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_logFileName)) != null)
+          ((VirtuosoDataSource) ds).setLogFileName((String)refS.getContent());
+
       if ((refS = (StringRefAddr)ref.get(VirtuosoDataSource.n_dataSourceName)) != null)
           ((VirtuosoDataSource) ds).setDataSourceName((String)refS.getContent());
 

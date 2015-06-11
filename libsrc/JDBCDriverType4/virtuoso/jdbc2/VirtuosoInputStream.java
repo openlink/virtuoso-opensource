@@ -463,14 +463,10 @@ class VirtuosoInputStream extends BufferedInputStream
        {
          if (VirtuosoFuture.rpc_log != null)
            {
-             synchronized (VirtuosoFuture.rpc_log)
-               {
-                 VirtuosoFuture.rpc_log.println ("(conn " + connection.hashCode() + ") **** runtime " +
+                 VirtuosoFuture.rpc_log.println ("  **(conn " + connection.hashCode() + ") **** runtime " +
                      e.getClass().getName() + " encountered while reading tag " + tag);
                  e.printStackTrace(VirtuosoFuture.rpc_log);
-               }
            }
-//         throw new Error (e.getClass().getName() + ":" + e.getMessage());
            throw new VirtuosoException(e.getClass().getName() + ":" + e.getMessage(),VirtuosoException.IOERROR);
 
        }
