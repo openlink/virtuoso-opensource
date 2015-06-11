@@ -914,8 +914,6 @@ public class VirtGraph extends GraphBase {
             if (connection != null)
                 connection.close();
             connection = null;
-            if (xa_connection != null)
-                xa_connection.close();
             xa_connection = null;
         } catch (Exception e) {
             throw new JenaException(e);
