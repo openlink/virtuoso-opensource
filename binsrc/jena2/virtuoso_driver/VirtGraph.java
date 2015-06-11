@@ -1446,7 +1446,7 @@ public class VirtGraph extends GraphBase {
             }
         }
 
-        String del_start = "sparql define output:format '_JAVA_' DELETE FROM <";
+        String del_start = "sparql define output:format '_JAVA_' DELETE WHERE { GRAPH <";
         java.sql.Statement stmt = null;
         int count = 0;
         StringBuilder data = new StringBuilder(256);
@@ -1482,7 +1482,7 @@ public class VirtGraph extends GraphBase {
                 row.append(" .\n");
 
                 if (splitCmdData && count > 0 && data.length() + row.length() > MAX_CMD_SIZE) {
-                    data.append(" }");
+                    data.append(" }}");
                     stmt.execute(data.toString());
 
                     data.setLength(0);
@@ -1497,7 +1497,7 @@ public class VirtGraph extends GraphBase {
             }
 
             if (count > 0) {
-                data.append(" }");
+                data.append(" }}");
                 stmt.execute(data.toString());
             }
 
@@ -1542,7 +1542,6 @@ public class VirtGraph extends GraphBase {
             ps.setNull(4, java.sql.Types.VARCHAR);
             ps.setInt(5, 0);
         } else if (object.isLiteral()) {
-            String s;
             ps.setString(3, object.getLiteralLexicalForm());
             String s_lang = object.getLiteralLanguage();
             String s_type = object.getLiteralDatatypeURI();
