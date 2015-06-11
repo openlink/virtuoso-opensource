@@ -91,7 +91,7 @@ public class VirtGraph extends GraphBase {
     private javax.transaction.xa.XAResource xa_resource = null;
     private XAConnection xa_connection = null;
     protected VirtTransactionHandler tranHandler = null;
-    private Object lck_add = new Object();
+    private final Object lck_add = new Object();
 
     private boolean batch_add_executed = false;
     PreparedStatement psInsert = null;
@@ -597,6 +597,7 @@ public class VirtGraph extends GraphBase {
         else
             throw new SQLException("Only URI or Blank nodes can be used as subject");
     }
+
 
     void bindPredicate(PreparedStatement ps, int col, Node n) throws SQLException {
         if (n == null)
@@ -1295,7 +1296,8 @@ public class VirtGraph extends GraphBase {
             throw new JenaException(e);
         } finally {
             try {
-                stmt.close();
+                if (stmt!=null)
+                  stmt.close();
             } catch (Exception e) {
             }
         }
@@ -1333,6 +1335,158 @@ public class VirtGraph extends GraphBase {
 
                     data.setLength(0);
                     data.append(del_start);
+                    data.append(_gName);
+                    data.append("> { ");
+                    count = 0;
+                }
+
+                data.append(row);
+                count++;
+            }
+
+            if (count > 0) {
+                data.append(" }");
+                stmt.execute(data.toString());
+            }
+
+        } catch (Exception e) {
+            throw new JenaException(e);
+        } finally {
+            try {
+                if (stmt!=null)
+                    stmt.close();
+            } catch (Exception e) {
+            }
+        }
+    }
+
+
+    protected void md_delete_Model(StmtIterator it)
+    {
+        LinkedList<DelItem> lst = new LinkedList<DelItem>();
+        LinkedList<DelItem> cmd = new LinkedList<DelItem>();
+        while(it.hasNext()) {
+            Statement st = it.nextStatement();
+            Node s = st.getSubject().asNode();
+            Node p = st.getPredicate().asNode();
+            Node o = st.getObject().asNode();
+            if (!s.isBlank() && !p.isBlank() && !o.isBlank())
+                cmd.add(new DelItem(s, p, o));
+            else
+                lst.add(new DelItem(s, p, o));
+        }
+        it.close();
+
+        // process Non Blank items
+        md_apply_delete(cmd, null, true);
+        cmd.clear();
+
+        // process Blank items
+        while(lst.size() > 0) {
+            HashMap<String,String> bnodes = new HashMap<String,String>();
+            DelItem i = lst.removeFirst();
+            md_load_Bnodes(bnodes, i);
+            cmd.add(i);
+
+            boolean added = false;
+            do {
+                Iterator<DelItem> iter = lst.iterator();
+                added = false;
+                while(iter.hasNext()) {
+                    i = iter.next();
+                    if (md_check_Item(bnodes, i)) {
+                        cmd.add(i);
+                        iter.remove();
+                        added = true;
+                    }
+                }
+            } while(added);
+
+            md_apply_delete(cmd, bnodes, false);
+            cmd.clear();
+        }
+    }
+
+
+    void md_load_Bnodes(HashMap<String,String> bnodes, DelItem i)
+    {
+        if (i.s instanceof String)
+            bnodes.put((String)i.s, (String)i.s);
+        if (i.p instanceof String)
+            bnodes.put((String)i.p, (String)i.p);
+        if (i.o instanceof String)
+            bnodes.put((String)i.o, (String)i.o);
+    }
+
+
+    boolean md_check_Item(HashMap<String,String> bnodes, DelItem i)
+    {
+        boolean add = false;
+
+        if (i.s instanceof String && bnodes.containsKey((String)i.s))
+            add = true;
+        if (i.p instanceof String && bnodes.containsKey((String)i.p))
+            add = true;
+        if (i.o instanceof String && bnodes.containsKey((String)i.o))
+            add = true;
+
+        if (add)
+            md_load_Bnodes(bnodes, i);
+
+        return add;
+    }
+
+    void md_apply_delete(LinkedList<DelItem> cmd, HashMap<String,String> bnodes, boolean splitCmdData)
+    {
+        if (bnodes!=null) {
+            int id = 0;
+            for(String key: bnodes.keySet()) {
+                bnodes.put(key, "?a"+id);
+                id++;
+            }
+        }
+
+        String del_start = "sparql define output:format '_JAVA_' DELETE FROM <";
+        java.sql.Statement stmt = null;
+        int count = 0;
+        StringBuilder data = new StringBuilder(256);
+
+        data.append(del_start);
+        data.append(this.graphName);
+        data.append("> { ");
+
+        try {
+            stmt = createStatement();
+
+            for(DelItem it : cmd) {
+                StringBuilder row = new StringBuilder(256);
+                if (bnodes!=null && it.s instanceof String) {
+                    row.append(bnodes.get((String)it.s));
+                } else {
+                    row.append(Node2Str((Node)it.s));
+                }
+                row.append(' ');
+
+                if (bnodes!=null && it.p instanceof String) {
+                    row.append(bnodes.get((String)it.p));
+                } else {
+                    row.append(Node2Str((Node)it.p));
+                }
+                row.append(' ');
+
+                if (bnodes!=null && it.o instanceof String) {
+                    row.append(bnodes.get((String)it.o));
+                } else {
+                    row.append(Node2Str((Node)it.o));
+                }
+                row.append(" .\n");
+
+                if (splitCmdData && count > 0 && data.length() + row.length() > MAX_CMD_SIZE) {
+                    data.append(" }");
+                    stmt.execute(data.toString());
+
+                    data.setLength(0);
+                    data.append(del_start);
                     data.append(this.graphName);
                     data.append("> { ");
                     count = 0;
@@ -1351,9 +1505,22 @@ public class VirtGraph extends GraphBase {
             throw new JenaException(e);
         } finally {
             try {
-                stmt.close();
-            } catch (Exception e) {
-            }
+                if (stmt!=null)
+                    stmt.close();
+            } catch (Exception e) {  }
+        }
+    }
+
+
+    class DelItem {
+        Object s;
+        Object p;
+        Object o;
+
+        DelItem(Node _s, Node _p, Node _o) {
+            s = _s.isBlank() ? _s.toString() : _s;
+            p = _p.isBlank() ? _p.toString() : _p;
+            o = _o.isBlank() ? _o.toString() : _o;
         }
     }
 

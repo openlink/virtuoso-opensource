@@ -142,6 +142,7 @@ public class VirtModel extends ModelCom {
         ((VirtGraph) this.graph).setInsertBNodeAsVirtuosoIRI(v);
     }
 
+
     @Override
     public Model read(String url) {
         VirtGraph g = (VirtGraph)getGraph();
@@ -262,5 +263,12 @@ public class VirtModel extends ModelCom {
         return this;
     }
 
+    @Override
+    public Model remove(Model m)
+    {
+        VirtGraph _g = (VirtGraph) this.graph;
+        _g.md_delete_Model(m.listStatements());
+        return this;
+    }
 
 }
