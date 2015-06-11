@@ -17194,6 +17194,15 @@ DB.DBA.RDF_QUAD_FT_UPGRADE ()
 DB.DBA.RDF_CREATE_SPARQL_ROLES ()
 ;
 
+create aggregate VT_WORD_STRING_ID_AGG (in word_string varchar) returns any
+  from vt_word_string_id_init, vt_word_string_id_acc, vt_word_string_id_final
+;
+
+create aggregate VT_WORD_STRING_RO_ID_AGG (in word_string varchar) returns any
+  from vt_word_string_id_init, vt_word_string_id_acc, vt_word_string_ro_id_final
+;
+
+
 -- loading subclass inference ctxs
 
 
