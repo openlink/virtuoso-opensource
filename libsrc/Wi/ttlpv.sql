@@ -906,7 +906,7 @@ create procedure DB.DBA.RDF_INSERT_TRIPLE_C (in s any array, in p any array, in 
     else
       {
 	dp := dpipe (5, 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'MAKE_RO_1', 'IRI_TO_ID_1');
-	dpipe_set_rdf_load (dp, 1);
+	dpipe_set_rdf_load (dp, 2);
       }
   }
   --dbg_obj_princ ('After bnodes check, will call dpipe_input (dp, ', s, p, null, o, g, ')...');
