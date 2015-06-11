@@ -4510,6 +4510,8 @@ itc_col_ins_dups (it_cursor_t * itc, buffer_desc_t * buf, insert_node_t * ins)
 	      if (!itc_is_own_del_clk (itc, itc->itc_ranges[inx].r_first, &clk, &point, &next))
 		continue;
 	      clk->clk_change &= ~CLK_DELETE_AT_COMMIT;
+	      if (ins->ins_mode == INS_SOFT && (ins->ins_key_only || cl_run_local_only == CL_RUN_CLUSTER || itc->itc_insert_key->key_is_primary))
+		log_insert (itc->itc_ltrx, itc->itc_vec_rds[itc->itc_param_order[inx]], itc->itc_ins_flags);
 	      if (itc->itc_insert_key->key_n_significant * 2 == itc->itc_insert_key->key_n_parts)
 		continue;
 	    }

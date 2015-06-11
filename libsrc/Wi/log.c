@@ -2235,7 +2235,8 @@ log_key_ins_del_qr (dbe_key_t * key, caddr_t * err_ret, int op, int ins_mode, in
 	    {
 	      int n_cols, k, need_comma = 0;
 	      caddr_t * names;
-	      sb_printf(&sb, "INSERT %s \"%s\".\"%s\".\"%s\"", ((LOG_INSERT_SOFT == op || INS_SOFT == ins_mode || -1 == ins_mode) ? "SOFT" : ((op == LOG_INSERT_REPL || ins_mode == LOG_INSERT_REPL) ? "REPLACING" : "INTO")),
+	char * mode = ((LOG_INSERT_SOFT == op || INS_SOFT == ins_mode || -1 == ins_mode) ? "SOFT" : ((op == LOG_INSERT_REPL || ins_mode == LOG_INSERT_REPL) ? "REPLACING" : "INTO"));
+	sb_printf(&sb, "INSERT %s \"%s\".\"%s\".\"%s\"", mode, 
 		 ESC(key_table->tb_qualifier, 1), ESC(key_table->tb_owner, 2), ESC(key_table->tb_name_only,3));
 	      if (op == LOG_KEY_INSERT && !old_key)
 		{
@@ -2396,7 +2397,7 @@ get_vec_query (lre_request_t *request, dbe_key_t * key, int flag, caddr_t * err_
     }
   while (key->key_migrate_to)
     key = sch_id_to_key (wi_inst.wi_schema, key->key_migrate_to);
-  res = log_key_ins_del_qr (key, err_ret, op, flag, 1);
+  res = log_key_ins_del_qr (key, err_ret, op, op == LOG_KEY_INSERT && flag == LOG_INSERT_SOFT ? INS_SOFT : flag, 1);
   sethash ((void*)(ptrlong)op, lq->lrq_qrs, (void*)res);
   return res;
 }
