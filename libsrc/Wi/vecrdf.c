@@ -166,12 +166,14 @@ rb_serialize_complete (caddr_t x, dk_session_t * ses)
     flags |= RBS_HAS_LANG;
   if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
     flags |= RBS_HAS_TYPE;
-  if (rb->rb_chksum_tail)
+  if (rb->rb_chksum_tail && rb->rb_ro_id)
     flags |= RBS_CHKSUM;
 
   flags |= RBS_COMPLETE;
   session_buffered_write_char (flags, ses);
-  if (!rb->rb_box)
+  if (rb->rb_chksum_tail && rb->rb_ro_id)
+    print_object (((rdf_bigbox_t *)rb)->rbb_chksum, ses, NULL, NULL);
+  else if (!rb->rb_box)
     print_int (0, ses);		/* a zero int with should be printed with int tag for partitioning etc */
   else
     print_object (rb->rb_box, ses, NULL, NULL);
@@ -186,7 +188,7 @@ rb_serialize_complete (caddr_t x, dk_session_t * ses)
     print_short (rb->rb_type, ses);
   if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
     print_short (rb->rb_lang, ses);
-  if (rb->rb_chksum_tail)
+  if (rb->rb_chksum_tail && rb->rb_ro_id)
     session_buffered_write_char (((rdf_bigbox_t *) rb)->rbb_box_dtp, ses);
 
 }

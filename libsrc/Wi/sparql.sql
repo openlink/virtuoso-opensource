@@ -1814,7 +1814,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (
       if (parsed is not null)
         {
           if (__tag of XML = __tag (parsed))
-	    parsed := rdf_box (parsed, 257, 257, 0, 1);
+	    parsed := rdf_box (parsed, 300, 257, 0, 1);
           if (__tag of rdf_box = __tag (parsed))
             rdf_box_set_type (parsed,
               DB.DBA.RDF_TWOBYTE_OF_DATATYPE (iri_to_id (o_type)));
