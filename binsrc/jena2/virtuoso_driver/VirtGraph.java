@@ -1438,6 +1438,8 @@ public class VirtGraph extends GraphBase {
 
     void md_apply_delete(LinkedList<DelItem> cmd, HashMap<String,String> bnodes, boolean splitCmdData)
     {
+        String del_start = null;
+
         if (bnodes!=null) {
             int id = 0;
             for(String key: bnodes.keySet()) {
@@ -1446,7 +1448,11 @@ public class VirtGraph extends GraphBase {
             }
         }
 
-        String del_start = "sparql define output:format '_JAVA_' DELETE WHERE { GRAPH <";
+        if (bnodes!=null)
+          del_start = "sparql define output:format '_JAVA_' DELETE WHERE { GRAPH <";
+        else
+          del_start = "sparql define output:format '_JAVA_' DELETE FROM <";
+
         java.sql.Statement stmt = null;
         int count = 0;
         StringBuilder data = new StringBuilder(256);
@@ -1482,7 +1488,11 @@ public class VirtGraph extends GraphBase {
                 row.append(" .\n");
 
                 if (splitCmdData && count > 0 && data.length() + row.length() > MAX_CMD_SIZE) {
-                    data.append(" }}");
+                    if (bnodes!=null)
+                      data.append(" }}");
+                    else
+                      data.append(" }");
+
                     stmt.execute(data.toString());
 
                     data.setLength(0);
@@ -1497,12 +1507,16 @@ public class VirtGraph extends GraphBase {
             }
 
             if (count > 0) {
-                data.append(" }}");
+                if (bnodes!=null)
+                  data.append(" }}");
+                else
+                  data.append(" }");
+
                 stmt.execute(data.toString());
             }
 
         } catch (Exception e) {
-            throw new JenaException(e);
+            throw new JenaException(e+"\n"+data.toString());
         } finally {
             try {
                 if (stmt!=null)
