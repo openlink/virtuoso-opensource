@@ -9215,7 +9215,7 @@ create procedure OMAIL.WA.str2vector (
 --
 create procedure OMAIL.WA.dt_current_time()
 {
-  return dateadd('minute', - timezone(now()),now());
+  return dateadd('minute', - timezone(curdatetime_tz()),curdatetime_tz());
 }
 ;
 
@@ -9237,7 +9237,7 @@ create procedure OMAIL.WA.dt_gmt2user(
     pUser := connection_get('vspx_user');
   if (isnull(pUser))
     return pDate;
-  tz := cast(coalesce(USER_GET_OPTION(pUser, 'TIMEZONE'), timezone(now())/60) as integer) * 60;
+  tz := cast(coalesce(USER_GET_OPTION(pUser, 'TIMEZONE'), timezone(curdatetime_tz())/60) as integer) * 60;
   return dateadd('minute', tz, pDate);
 }
 ;
@@ -9447,6 +9447,8 @@ _end:
 create procedure OMAIL.WA.dt_rfc1123 (
   in dt datetime)
 {
+  if (timezone (dt) is null)
+    dt := dt_set_tz (dt, 0);
   return soap_print_box (dt, '', 1);
 }
 ;
@@ -9482,7 +9484,7 @@ create procedure OMAIL.WA.dt_rfc822 (
   s  := xslt_format_number (second (pDateTime), '00');
   k  := xslt_format_number (dayofweek (pDateTime), '00');
   y  := cast (year (pDateTime) as varchar);
-  z  := timezone (pDateTime);
+  z  := coalesce(timezone (pDateTime), 0);
   if (z < 0)
   {
     zz := '-';
@@ -9553,8 +9555,8 @@ create procedure OMAIL.WA.dt_now (
   in tz integer := null)
 {
   if (isnull (tz))
-    tz := timezone (now());
-  return dateadd ('minute', tz - timezone (now()), now());
+    tz := timezone (curdatetime_tz());
+  return dateadd ('minute', tz - timezone (curdatetime_tz()), curdatetime_tz());
 }
 ;
 
@@ -9624,8 +9626,8 @@ create procedure OMAIL.WA.dt_curdate (
   declare dt date;
 
   if (isnull (tz))
-    tz := timezone (now());
-  return OMAIL.WA.dt_dateClear (dateadd ('minute', tz - timezone (now()), now()));
+    tz := timezone (curdatetime_tz());
+  return OMAIL.WA.dt_dateClear (dateadd ('minute', tz - timezone (curdatetime_tz()), curdatetime_tz()));
 }
 ;
 

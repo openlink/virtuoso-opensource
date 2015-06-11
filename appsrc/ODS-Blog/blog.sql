@@ -2593,6 +2593,8 @@ procedure "blogger.getUsersBlogs" (
 create procedure
 date_rfc1123 (in dt datetime)
 {
+  if (timezone (dt) is null)
+    dt := dt_set_tz (dt, 0);
   return soap_print_box (dt, '', 1);
 }
 ;

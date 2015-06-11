@@ -1055,7 +1055,7 @@ create function "calendar_DAV_RES_CONTENT" (in id any, inout content any, out ty
 	declare tz integer;
     type := 'text/calendar';
 	whenever not found goto endline;
-	tz := timezone(now());
+	tz := timezone(curdatetime_tz());
 	if (id[7] is not null)
 	{
         content := CAL.WA.det_export_vcal (id[4], tz, id[7]);
