@@ -17178,7 +17178,8 @@ final_qm_reload:
   DB.DBA.SPARQL_RELOAD_QM_GRAPH ();
   insert soft rdf_datatype (rdt_iid, rdt_twobyte, rdt_qname) values
     (iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#Geometry'), 256, 'http://www.openlinksw.com/schemas/virtrdf#Geometry');
-
+  if (0 = sys_stat ('db_exists') and 1 <> sys_stat ('cl_run_local_only'))
+    cl_exec ('checkpoint');
   return;
 }
 ;
