@@ -4461,6 +4461,19 @@ typedef struct dsort_itm_s {
   int di_pos;
 } dsort_itm_t;
 
+void
+check_gvector_args (int vect_elems, int block_elts, int key_ofs, const char *funname)
+{
+  if (block_elts <= 0)
+    sqlr_new_error ("22023", "SR488", "Second argument of %s() should be positive integer", funname);
+  if (block_elts > MAX_VECTOR_BSORT_BLOCK)
+    sqlr_new_error ("22023", "SR488", "Second argument of %s() is greater than maximum supported block length %d", funname, MAX_VECTOR_BSORT_BLOCK);
+  if (vect_elems % block_elts != 0)
+    sqlr_new_error ("22023", "SR489", "In call of %s(), length of vector in argument #1 is not a whole multiple of argument #2", funname);
+  if ((0 > key_ofs) || (key_ofs >= block_elts))
+    sqlr_new_error ("22023", "SR490", "In call of %s(), argument #3 should be nonnegative integer that is less than argument #2", funname);
+}
+
 caddr_t
 bif_gvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char *funname, char algo)
 {
@@ -4471,14 +4484,7 @@ bif_gvector_sort_imp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, co
   int sort_asc = bif_long_range_arg (qst, args, 3, funname, 0, 1);
   int group_count;
   vector_sort_t specs;
-  if (block_elts <= 0)
-    sqlr_new_error ("22023", "SR488", "Second argument of %s() should be positive integer", funname);
-  if (block_elts > MAX_VECTOR_BSORT_BLOCK)
-    sqlr_new_error ("22023", "SR488", "Second argument of %s() is greater than maximum supported block length %d", funname, MAX_VECTOR_BSORT_BLOCK);
-  if (vect_elems % block_elts != 0)
-    sqlr_new_error ("22023", "SR489", "In call of %s(), length of vector in argument #1 is not a whole multiple of argument #2", funname);
-  if ((0 > key_ofs) || (key_ofs >= block_elts))
-    sqlr_new_error ("22023", "SR490", "In call of %s(), argument #3 should be nonnegative integer that is less than argument #2", funname);
+  check_gvector_args (vect_elems, block_elts, key_ofs, funname);
   group_count = vect_elems / block_elts;
   if (1 >= group_count)
     return box_num (group_count); /* No need to sort empty or single-element vector */
@@ -4603,6 +4609,40 @@ caddr_t
 bif_gvector_digit_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   return bif_gvector_sort_imp (qst, err_ret, args, "gvector_digit_sort", 'D');
+}
+
+caddr_t
+bif_gvector_deduplicate_sorted (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t *vect = (caddr_t *)bif_array_of_pointer_arg (qst, args, 0, "gvector_deduplicate_sorted");
+  int vect_elems = BOX_ELEMENTS (vect);
+  int block_elts = bif_long_range_arg (qst, args, 1, "gvector_deduplicate_sorted", 1, 1024);
+  int key_ofs = bif_long_range_arg (qst, args, 2, "gvector_deduplicate_sorted", 0, 1024);
+  int group_count, last_unique_idx;
+  int itm_idx;
+  caddr_t *res;
+  check_gvector_args (vect_elems, block_elts, key_ofs, "gvector_deduplicate_sorted");
+  group_count = vect_elems / block_elts;
+  if (1 >= group_count)
+    return box_num (group_count); /* No need to deduplicate empty or single-element vector */
+  last_unique_idx = 0;
+  for (itm_idx = 1; itm_idx < group_count; itm_idx++)
+    {
+      if (DVC_MATCH == cmp_boxes (vect[last_unique_idx * block_elts + key_ofs], vect[itm_idx * block_elts + key_ofs], NULL, NULL))
+        continue;
+      last_unique_idx++;
+      if (last_unique_idx == itm_idx)
+        continue;
+      memcpy (vect + last_unique_idx, vect + itm_idx, block_elts * sizeof (caddr_t));
+      memset (vect + itm_idx, 0, block_elts * sizeof (caddr_t));
+    }
+  if (last_unique_idx + 1 == group_count)
+    return box_num (group_count); /* No need to deduplicate empty or single-element vector */
+  res = dk_alloc_list ((last_unique_idx + 1) * block_elts);
+  memcpy (res, vect, (last_unique_idx + 1) * block_elts * sizeof (caddr_t));
+  QST_GET_ADDR (qst, args[0])[0] = (caddr_t)res;
+  dk_free_box /*not _tree*/ ((caddr_t)vect);
+  return box_num (last_unique_idx + 1);
 }
 
 caddr_t
@@ -5248,6 +5288,7 @@ xslt_init (void)
   bif_define ("dict_key_eq", bif_dict_key_eq);
   bif_define ("gvector_sort", bif_gvector_sort);
   bif_define ("gvector_digit_sort", bif_gvector_digit_sort);
+  bif_define ("gvector_deduplicate_sorted", bif_gvector_deduplicate_sorted);
   bif_define ("rowvector_digit_sort", bif_rowvector_digit_sort);
   bif_define ("rowvector_subj_sort", bif_rowvector_subj_sort);
   bif_set_uses_index (bif_rowvector_subj_sort);
