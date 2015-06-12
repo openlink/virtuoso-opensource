@@ -518,9 +518,11 @@ bif_vt_word_string_id_acc (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
 	int total = box_length (str) - 1;
 	while (pos < total)
 	  {
+	    db_buf_t id_place;
+	    boxint id;
 	    WP_LENGTH (str + pos, hl, l, str, total);
-	    db_buf_t id_place = (db_buf_t) (str + pos + hl);
-	    boxint id = D_ID_NUM_REF (id_place);
+            id_place = (db_buf_t)(str + pos + hl);
+            id = D_ID_NUM_REF(id_place);
 	    REALLOC_ACC_IF_NEEDED (acc_addr, acc, acc_len, acc_used, 1);
 	    acc[++acc_used] = id;
 	    acc[0] = acc_used;
