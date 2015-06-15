@@ -559,7 +559,7 @@ create table DB.DBA.SYS_HTTP_SPONGE (
   primary key (HS_LOCAL_IRI, HS_PARSER)
 )
 alter index SYS_HTTP_SPONGE on DB.DBA.SYS_HTTP_SPONGE partition (HS_LOCAL_IRI varchar)
-create index SYS_HTTP_SPONGE_EXPIRATION on DB.DBA.SYS_HTTP_SPONGE (HS_EXPIRATION desc) partition (HS_LOCAL_IRI varchar)
+create not null index SYS_HTTP_SPONGE_EXPIRATION on DB.DBA.SYS_HTTP_SPONGE (HS_EXPIRATION desc) partition (HS_LOCAL_IRI varchar)
 create index SYS_HTTP_SPONGE_FROM_IRI on DB.DBA.SYS_HTTP_SPONGE (HS_FROM_IRI, HS_PARSER) partition (HS_FROM_IRI varchar)
 create index SYS_HTTP_SPONGE_ORIGIN_URI on DB.DBA.SYS_HTTP_SPONGE (HS_ORIGIN_URI) partition (HS_ORIGIN_URI varchar)
 ;
