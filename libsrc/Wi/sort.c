@@ -549,6 +549,10 @@ setp_temp_clear (setp_node_t * setp, hash_area_t * ha, caddr_t * qst)
     qst_clr (qst, setp->setp_sorted);
   if (setp->setp_row_ctr)
     qst_clr (qst, setp->setp_row_ctr);
+  if (setp->setp_fill_cha)
+    QST_BOX (caddr_t, qst, setp->setp_fill_cha) = NULL;
+  if (setp->setp_hash_fill_partitioned)
+    QST_BOX (caddr_t, qst, setp->setp_hash_fill_partitioned) = NULL;
 }
 
 
