@@ -3026,7 +3026,7 @@ sqlo_inx_sample (df_elt_t * tb_dfe, dbe_key_t * key, df_elt_t ** lowers, df_elt_
 	  sop.sop_ric = empty_ric;
 	  sop.sop_sc_key_ret = &sc_key;
 	  c = sqlo_inx_sample_1 (tb_dfe, key, lowers, uppers, n_parts, &sop, ic);
-	  if (!sop.sop_res_from_ric_cache && c >= 0)
+	  if (!sop.sop_res_from_ric_cache && c >= 0 && sc_key)
 	    {
 	      ric_set_sample (empty_ric, sc_key, c, ic->ic_inx_card);
 	    }
