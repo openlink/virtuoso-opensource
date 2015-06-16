@@ -918,26 +918,26 @@ rdf_inf_ctx (char * name)
 
 rdf_inf_ctx_t *
 ric_allocate (caddr_t n2)
-    {
+{
   NEW_VARZ (rdf_inf_ctx_t, ctx);
   ctx->ric_name = n2;
-  id_hash_set (rdf_name_to_ric, (caddr_t)&n2, (caddr_t)&ctx);
-      ctx->ric_iri_to_subclass = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
-      ctx->ric_iri_to_subproperty = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
-      ctx->ric_iid_to_rel_ifp = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
-      ctx->ric_samples = id_hash_allocate (601, sizeof (caddr_t), sizeof (tb_sample_t), treehash, treehashcmp);
-      /*ctx->ric_prop_props = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);*/
-      ctx->ric_ifp_exclude = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
-      id_hash_set_rehash_pct (ctx->ric_iri_to_subclass, 200);
-      id_hash_set_rehash_pct (ctx->ric_iri_to_subproperty, 200);
-      id_hash_set_rehash_pct (ctx->ric_iid_to_rel_ifp, 200);
-      id_hash_set_rehash_pct (ctx->ric_samples, 200);
-      id_hash_set_rehash_pct (ctx->ric_ifp_exclude, 200);
+  id_hash_set (rdf_name_to_ric, (caddr_t) & n2, (caddr_t) & ctx);
+  ctx->ric_iri_to_subclass = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+  ctx->ric_iri_to_subproperty = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+  ctx->ric_iid_to_rel_ifp = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+  ctx->ric_samples = id_hash_allocate (601, sizeof (caddr_t), sizeof (tb_sample_t), treehash, treehashcmp);
+  /*ctx->ric_prop_props = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp); */
   ctx->ric_ifp_exclude = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
-      ctx->ric_mtx = mutex_allocate ();
+  id_hash_set_rehash_pct (ctx->ric_iri_to_subclass, 200);
+  id_hash_set_rehash_pct (ctx->ric_iri_to_subproperty, 200);
+  id_hash_set_rehash_pct (ctx->ric_iid_to_rel_ifp, 200);
+  id_hash_set_rehash_pct (ctx->ric_samples, 200);
+  id_hash_set_rehash_pct (ctx->ric_ifp_exclude, 200);
+  ctx->ric_ifp_exclude = id_hash_allocate (61, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+  ctx->ric_mtx = mutex_allocate ();
   ctx->ric_p_stat = hash_table_allocate (11);
-      return ctx;
-    }
+  return ctx;
+}
 
 rdf_inf_ctx_t *
 bif_ctx_arg (caddr_t * qst, state_slot_t ** args, int nth, char * name, int create)
