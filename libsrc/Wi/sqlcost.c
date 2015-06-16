@@ -2618,6 +2618,7 @@ void
 ric_set_sample (rdf_inf_ctx_t * ctx, caddr_t sc_key, int64 est, float inx_card)
 {
   tb_sample_t smp;
+  tb_sample_t * place = NULL;
   memset (&smp, 0, sizeof (smp));
   smp.smp_card = est;
   smp.smp_inx_card = inx_card;
@@ -2633,7 +2634,14 @@ ric_set_sample (rdf_inf_ctx_t * ctx, caddr_t sc_key, int64 est, float inx_card)
 	  dk_free_tree (key);
 	}
     }
-  id_hash_set (ctx->ric_samples, (caddr_t)&sc_key, (caddr_t)&smp);
+  place = (tb_sample_t*) id_hash_get (ctx->ric_samples, (caddr_t) &sc_key);
+  if (place)
+    {
+      dk_free_tree (sc_key);
+      memcpy (place, &smp, sizeof (tb_sample_t));
+    }
+  else
+    id_hash_set (ctx->ric_samples, (caddr_t)&sc_key, (caddr_t)&smp);
   mutex_leave (ctx->ric_mtx);
 }
 
