@@ -42,8 +42,9 @@ noinst_HEADERS = \
 	sprtf.h \
 	streamio.h \
 	tags.h \
-	tidy-int.h \
+	tidy.h \
 	tidyenum.h \
+	tidy-int.h \
 	tmbstr.h \
 	utf8.h \
 	version.h \
@@ -89,4 +90,4 @@ libtidy_la_CFLAGS  += -I$(top_srcdir)/libsrc/Dk
 #  Additional files to distribute
 #
 # ----------------------------------------------------------------------
-EXTRA_DIST = tab2space.c
+EXTRA_DIST = #tab2space.c
