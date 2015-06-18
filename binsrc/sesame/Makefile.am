@@ -24,10 +24,18 @@ if WITH_JDK3
 TARGETS		= lib virt_sesame.jar
 JDK		= @ac_jdk3_path@
 JDK_FLAGS	= -O -g:none
+
+JAVA		= $(JDK)/java
 JAVAC		= $(JDK)/javac
 JAVAH		= $(JDK)/javah
 JAVADOC		= $(JDK)/javadoc
 JAR		= $(JDK)/jar
+else
+JAVA		= :
+JAVAC		= :
+JAVAH		= :
+JAVADOC		= :
+JAR		= :
 endif
 
 
@@ -54,11 +62,9 @@ lib:
 virt_sesame.jar: $(SESAME_SRC)
 	-rm -rf out.driver
 	@mkdir out.driver
-	env PATH="$(JDK)/Commands:$(JDK)/bin:$(PATH)" \
 	$(JAVAC) $(JDK_FLAGS) -d out.driver \
 		-classpath "$(SESAME_CLASSPATH)" \
 		$(SESAME_SRC)
-	env PATH="$(JDK)/Commands:$(JDK)/bin:$(PATH)" \
 	$(JAR) cvf virt_sesame.jar -C out.driver virtuoso
 	
 

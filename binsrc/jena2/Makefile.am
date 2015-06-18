@@ -30,6 +30,12 @@ JAVAC		= $(JDK)/javac
 JAVAH		= $(JDK)/javah
 JAVADOC		= $(JDK)/javadoc
 JAR		= $(JDK)/jar
+else
+JAVA		= :
+JAVAC		= :
+JAVAH		= :
+JAVADOC		= :
+JAR		= :
 endif
 
 
