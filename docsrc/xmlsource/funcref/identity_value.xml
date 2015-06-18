@@ -34,7 +34,7 @@
     <funcsynopsis id="fsyn_identity_value">
       <funcprototype id="fproto_identity_value">
         <funcdef>integer <function>identity_value</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>

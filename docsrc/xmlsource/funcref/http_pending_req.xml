@@ -34,7 +34,7 @@
     <funcsynopsis id="fsyn_http_pending_req">
       <funcprototype id="fproto_http_pending_req">
         <funcdef><function>http_pending_req</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>

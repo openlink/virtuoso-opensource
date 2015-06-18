@@ -34,25 +34,28 @@
     <funcsynopsis id="fsyn_rdf_now_impl">
       <funcprototype id="fproto_rdf_now_impl">
         <funcdef><function>rdf_now_impl</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
   <refsect1 id="desc_rdf_now_impl"><title>Description</title>
-    <para>This function returns the timestamp associated with current transaction as a <type>DATETIME</type>.</para>
-    <para>The function name refer to one function ( alias of <link linkend="fn_now"><function>now()</function></link> ) that
-    returns the timestamp of current transaction. It is the datetime of the beginning of current transaction with the
-    fractional part of seconds replaced with serial number of a transaction within the second. If
-    <code>TimezonelessDatetimes=0</code> then the time has local timezone offset (as it was set at the time of last
-    server start); otherwise it is timezoneless.</para>
+    <para>This function returns the timestamp associated with current transaction as a <type>DATETIME</type>. The function name
+    refer to one function ( alias of <link linkend="fn_now"><function>now()</function></link> ) that returns the timestamp of
+    current transaction. It is the datetime of the beginning of current transaction with the fractional part of seconds replaced
+    with serial number of a transaction within the second. If <code>TimezonelessDatetimes=0</code> then the time has local timezone
+    offset (as it was set at the time of last server start); otherwise it is timezoneless.</para>
   </refsect1>
   <refsect1 id="params_rdf_now_impl"><title>Parameters</title>
-    <para>None.</para>
+    <refsect2>
+      <title></title>
+      <para>None</para>
+    </refsect2>
   </refsect1>
   <refsect1 id="examples_rdf_now_impl"><title>Examples</title>
     <example id="ex_rdf_now_impl"><title>Simple example</title>
       <para>Get a timestamp in human-readable form:</para>
-      <screen>SQL> select rdf_now_impl();
+<screen>
+SQL> select rdf_now_impl();
 DATETIME
 2015-05-04 08:28:18.228407
 No. of rows in result: 1

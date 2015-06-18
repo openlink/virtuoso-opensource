@@ -34,7 +34,7 @@
     <funcsynopsis id="fsyn_earth_radius">
       <funcprototype id="fproto_earth_radius">
         <funcdef><function>earth_radius</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>

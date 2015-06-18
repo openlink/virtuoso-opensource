@@ -44,13 +44,13 @@
     <funcsynopsis id="fsyn_backup_close">
       <funcprototype id="fproto_backup_close">
         <funcdef><function>backup_close</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
     <funcsynopsis id="fsyn_backup_flush">
       <funcprototype id="fproto_backup_flush">
         <funcdef><function>backup_flush</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
     <funcsynopsis id="fsyn_backup_prepare">

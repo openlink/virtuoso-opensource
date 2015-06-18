@@ -34,7 +34,7 @@
     <funcsynopsis id="fsyn_username">
       <funcprototype id="fproto_username">
         <funcdef><function>username</function></funcdef> 
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>

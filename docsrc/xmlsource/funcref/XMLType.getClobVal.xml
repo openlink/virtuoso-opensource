@@ -34,7 +34,7 @@
     <funcsynopsis id="fsyn_XMLType.getClobVal">
       <funcprototype id="fproto_XMLType.getClobVal">
         <funcdef><function>XMLType.getClobVal</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>

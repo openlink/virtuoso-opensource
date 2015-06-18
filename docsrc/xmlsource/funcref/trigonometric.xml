@@ -105,7 +105,7 @@
     <funcsynopsis id="fsyn_pi">
       <funcprototype id="fproto_pi">
         <funcdef><function>pi</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>

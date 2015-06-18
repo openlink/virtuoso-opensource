@@ -34,7 +34,7 @@
     <funcsynopsis id="fsyn_java_vm_detach">
       <funcprototype id="fprot_java_vm_detach">
         <funcdef><function>java_vm_detach</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>

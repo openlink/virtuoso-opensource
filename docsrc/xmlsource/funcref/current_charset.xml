@@ -34,7 +34,7 @@
     <funcsynopsis id="fsyn_current_charset">
       <funcprototype id="fproto_current_charset">
 	<funcdef><function>current_charset</function></funcdef>
-	<paramdef />
+	<paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>

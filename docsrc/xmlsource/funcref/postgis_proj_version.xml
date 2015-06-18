@@ -34,7 +34,7 @@
     <funcsynopsis id="fsyn_postgis_proj_version">
       <funcprototype id="fproto_postgis_proj_version">
         <funcdef><function>postgis_proj_version</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>

@@ -34,7 +34,7 @@
     <funcsynopsis id="fsyn_http_header_get">
       <funcprototype id="fproto_http_header_get">
         <funcdef>varchar <function>http_header_get</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>

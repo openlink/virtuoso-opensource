@@ -1551,7 +1551,7 @@ Host name configuration for SPARQL web service endpoints can be managed via the 
 <programlisting>
 create table DB.DBA.SYS_SPARQL_HOST (
   SH_HOST	varchar not null primary key, -- host mask
-  SH_GRAPH_URI	varchar,      -- default 'default graph' uri
+  SH_GRAPH_URI varchar,                 -- default graph uri
   SH_USER_URI	varchar,      -- reserved for any use in applications
   SH_BASE_URI varchar,                  -- for future use (not used currently) to set BASE in sparql queries. Should be NULL for now.
   SH_DEFINES	long varchar,             -- additional defines for requests
@@ -4165,26 +4165,44 @@ This facility is configured via table <emphasis>DB.DBA.SYS_SPARQL_HOST</emphasis
 <programlisting>
 create table DB.DBA.SYS_SPARQL_HOST (
   SH_HOST	varchar not null primary key, -- host mask
-  SH_GRAPH_URI	varchar,      -- 'default default' graph uri
+  SH_GRAPH_URI varchar,                 -- default graph uri
   SH_USER_URI	varchar,      -- reserved for any use in applications
   SH_BASE_URI varchar,                  -- for future use (not used currently) to set BASE in sparql queries. Should be NULL for now.
   SH_DEFINES	long varchar,             -- additional defines for requests
   PRIMARY KEY (SH_HOST)
 )
 </programlisting>
+
 <para>
 When the SPARQL web service endpoint receives a request it checks the <emphasis>Host</emphasis> HTTP header line.
 This line contains zero or more target host names, delimited by commas.
-For every host name in the line, the service scans the <emphasis>DB.DBA.SYS_SPARQL_HOST</emphasis> table in search of a row containing a matching host name in <emphasis>SH_HOST</emphasis>.
-The <emphasis>SH_HOST</emphasis> field acts as 'pattern' argument for the SQL string operator LIKE. If a matching row is found, the text of SPARQL request is extended.
-If a default graph is not explicitly set by the HTTP parameters and <emphasis>SH_GRAPH_URI</emphasis> is not null then the default graph is set to <emphasis>SH_GRAPH_URI</emphasis>.
-If <emphasis>SH_DEFINES</emphasis> is not null then it is added in front of the query; so this field is a good place for the text for any <emphasis>define</emphasis> options.
+For every host name in the line, the service scans the <emphasis>DB.DBA.SYS_SPARQL_HOST</emphasis> table in search of a
+row containing a matching host name in <emphasis>SH_HOST</emphasis>.
+The <emphasis>SH_HOST</emphasis> field acts as 'pattern' argument for the SQL string operator LIKE. If a matching row is found,
+the text of SPARQL request is extended.</para>
+
+<para>
+If a default graph is not explicitly set by the HTTP parameters and <emphasis>SH_GRAPH_URI</emphasis> is not null then the
+default graph is set to <emphasis>SH_GRAPH_URI</emphasis>.</para>
+
+<para>
+If <emphasis>SH_DEFINES</emphasis> is not null then it is added in front of the query; so this field is a good place for the
+text for any <link linkend="rdfsparqlimplementationextent">DEFINE</link> options.
+See <link linkend="rdfcontrollingsparqloutputtypes">various</link> DEFINE examples usage.
 </para>
+
 <para>SH_USER_URI is for arbitrary user data and can be used in any way by the
 application that is "responsible" for the declared host.</para>
+
 <para>
 The search of <emphasis>DB.DBA.SYS_SPARQL_HOST</emphasis> stops at the first found row, other possible matches are silently ignored.
 </para>
+
+<para>Example Usage:</para>
+<programlisting><![CDATA[
+INSERT INTO DB.DBA.SYS_SPARQL_HOST (SH_HOST, SH_GRAPH_URI, SH_USER_URI, SH_BASE_URI, SH_DEFINES) VALUES
+('example.com', 'urn:example:com', 'urn:example:user', NULL, 'define input:inference "http://mygraph.com"');
+]]></programlisting>
 </sect2>
 
 <sect2 id="rdfsqlfromsparql"><title>Calling SQL from SPARQL</title>
@@ -22830,16 +22848,14 @@ Create column index RDF_QUAD_GPSO on RDF_QUAD (G, P, S, O) partition (S int (0he
       it by adding a row into <code>DB.DBA.SYS_SPARQL_HOST</code>.
       </para>
 <programlisting><![CDATA[
-CREATE TABLE "DB"."DBA"."SYS_SPARQL_HOST"
-(
-  "SH_HOST" VARCHAR,         -- host pattern
-  "SH_GRAPH_URI" VARCHAR,    -- default graph
-  "SH_USER_URI" VARCHAR,     -- reserved for any use in applications
-  "SH_BASE_URI" VARCHAR,     -- for future use (not used currently) to set BASE in sparql queries. Should be NULL for now.
-  "SH_DEFINES" LONG VARCHAR, -- list of 'define xx:yy "zz" ' defines as a string 
-  PRIMARY KEY ("SH_HOST")
-);
-
+create table DB.DBA.SYS_SPARQL_HOST (
+  SH_HOST	varchar not null primary key, -- host mask
+  SH_GRAPH_URI varchar,                 -- default graph uri
+  SH_USER_URI	varchar,                  -- reserved for any use in applications
+  SH_BASE_URI varchar,                  -- for future use (not used currently) to set BASE in sparql queries. Should be NULL for now.
+  SH_DEFINES long varchar,              -- additional defines for requests
+  PRIMARY KEY (SH_HOST)
+)
 ]]></programlisting>
 <para>You can find detailed descriptions of the table columns <link linkend="rdfdefaultgraph">here</link>.</para>
       <para>The idea is that if the client specifies the default graph in the request, or uses named graphs and

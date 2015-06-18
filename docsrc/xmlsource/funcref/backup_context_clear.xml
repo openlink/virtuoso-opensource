@@ -35,7 +35,7 @@
     <funcsynopsis id="fsyn_backup_context_clear">
       <funcprototype id="fproto_backup_context_clear">
         <funcdef><function>backup_context_clear</function></funcdef>
-	<paramdef />
+	<paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>

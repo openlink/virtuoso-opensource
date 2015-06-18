@@ -34,7 +34,7 @@
     <funcsynopsis id="fsyn_repl_stat">
       <funcprototype id="fproto_repl_stat">
         <funcdef><function>REPL_STAT</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>

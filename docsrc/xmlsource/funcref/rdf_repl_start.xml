@@ -34,7 +34,7 @@
     <funcsynopsis id="fsyn_rdf_repl_start">
       <funcprototype id="fproto_rdf_repl_start">
         <funcdef><function>RDF_REPL_START</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>

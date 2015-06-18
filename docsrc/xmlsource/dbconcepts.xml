@@ -449,7 +449,7 @@ literals can be used.  The datetime/timestamp literal is of the form
 not with other types without explicit casting.</para>
 </sect3>
   <sect3 id="timezoneless">
-	  <title>Timezoneless</title>
+	  <title>Timezoneless Datetimes</title>
 		<para>Some traditional relational databases keep all values of DATETIME type as combination of time and timezone
 			data. Other keep time in some specific timezone without paying any attention to timezone at all. In RDF, the
 			incoming triples may contain literals of types like xsd:dateTime with arbitrary values matching ISO 8601, and

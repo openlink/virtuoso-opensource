@@ -34,7 +34,7 @@
     <funcsynopsis id="fsyn_current_timestamp">
       <funcprototype id="fproto_current_timestamp">
         <funcdef><function>current_timestamp</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
