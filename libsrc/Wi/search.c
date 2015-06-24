@@ -4093,7 +4093,7 @@ itc_local_sample (it_cursor_t * itc)
     }
   if (!itc->itc_key_spec.ksp_spec_array && !itc->itc_geo_op)
     {
-      res = itc_sample_1 (itc, &buf, NULL, -1);
+      res = itc_sample_1 (itc, &buf, &n_leaves, -1);
       itc_page_leave (itc, buf);
       if (n_leaves < 2 || 1 == dbf_max_itc_samples)
 	goto return_res;

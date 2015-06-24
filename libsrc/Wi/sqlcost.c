@@ -613,7 +613,7 @@ dfe_vec_inx_cost (df_elt_t * dfe, index_choice_t * ic, int64 sample)
   float sort_cost = 0, inx_cost;
   df_elt_t * prev_tb;
   float card_between = 1;
-  int eq_on_ordering = 0;
+  int eq_on_ordering = 0, slices;
   int order, cl_colocated = 0;
   float spacing;
   dbe_key_t * key = dfe->_.table.key;
@@ -624,21 +624,20 @@ dfe_vec_inx_cost (df_elt_t * dfe, index_choice_t * ic, int64 sample)
   order = dfe_n_in_order  (dfe, NULL, &prev_tb, &card_between, &eq_on_ordering, &cl_colocated);
   ic->ic_in_order = order;
   ref_card = dfe_arity_with_supers (dfe->dfe_prev);
+  slices = key->key_partition ? key->key_partition->kpd_map->clm_distinct_slices : 1;
+  max_vec = dc_max_batch_sz_f / slices;
+  if (1 == slices && ref_card < enable_qp * dc_max_batch_sz_f && ref_card > dc_batch_sz * enable_qp)
+    max_vec = ref_card / enable_qp;
+  vec_sz = MIN (max_vec, ref_card);
+  vec_sz = MAX (1, vec_sz);
   if (!order)
     {
       float t_card;
-      int slices;
       int64 key_card = dbe_key_count (dfe->_.table.key);
       if (ic->ic_leading_constants)
 	t_card = -1 != sample ? sample : key_card;
       else
 	t_card = key_card;
-      slices = key->key_partition ? key->key_partition->kpd_map->clm_distinct_slices : 1;
-      max_vec = dc_max_batch_sz_f / slices;
-      if (1 == slices && ref_card < enable_qp * dc_max_batch_sz_f && ref_card > dc_batch_sz * enable_qp)
-	max_vec = ref_card / enable_qp;
-      vec_sz = MIN (max_vec, ref_card);
-      vec_sz = MAX (1, vec_sz);
       spacing = t_card / (MAX (1, vec_sz));
       dfe->_.table.hit_spacing = spacing;
       vec_sz = MIN (ref_card, max_vec);
